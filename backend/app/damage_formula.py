@@ -1,0 +1,100 @@
+"""Implements the NIKKE damage formula documented at https://nikke.gg/damage-formula/
+
+Final Damage =
+    Base Damage
+    x Final ATK Modifiers
+    x Major Modifiers
+    x Element Bonus Damage
+    x Charge Damage
+    x Damage Up
+    x Damage Taken
+"""
+
+
+def _base_damage(atk, atk_percent, flat_atk, enemy_def, enemy_def_percent, flat_enemy_def):
+    offense = atk * (1 + atk_percent) + flat_atk
+    defense = enemy_def * (1 + enemy_def_percent) + flat_enemy_def
+    return offense - defense
+
+
+def _major_modifiers(
+    is_critical,
+    other_critical_damage_sources,
+    core_hit_bonus,
+    other_core_damage_sources,
+    full_burst_bonus,
+    effective_range_bonus,
+):
+    crit_term = 0.5 if is_critical else 0.0
+    return (
+        1
+        + crit_term
+        + other_critical_damage_sources
+        + core_hit_bonus
+        + other_core_damage_sources
+        + full_burst_bonus * 0.5
+        + effective_range_bonus * 0.3
+    )
+
+
+def calculate_damage(
+    atk,
+    enemy_def,
+    atk_percent=0.0,
+    flat_atk=0.0,
+    enemy_def_percent=0.0,
+    flat_enemy_def=0.0,
+    final_atk_modifier=0.0,
+    is_critical=False,
+    other_critical_damage_sources=0.0,
+    core_hit_bonus=0.0,
+    other_core_damage_sources=0.0,
+    full_burst_bonus=0.0,
+    effective_range_bonus=0.0,
+    element_multiplier=1.0,
+    other_elemental_bonus=0.0,
+    charge_damage_bonus=0.0,
+    attack_damage_up=0.0,
+    sustained_damage_up=0.0,
+    true_damage_up=0.0,
+    pierce_damage_up=0.0,
+    damage_to_parts_up=0.0,
+    shield_damage_up=0.0,
+    projectile_explosion_damage_up=0.0,
+    damage_taken_up=0.0,
+    distributed_damage_up=0.0,
+):
+    base_damage = _base_damage(
+        atk, atk_percent, flat_atk, enemy_def, enemy_def_percent, flat_enemy_def
+    )
+    final_atk_modifiers = 1 + final_atk_modifier
+    major_modifiers = _major_modifiers(
+        is_critical,
+        other_critical_damage_sources,
+        core_hit_bonus,
+        other_core_damage_sources,
+        full_burst_bonus,
+        effective_range_bonus,
+    )
+    element_bonus_damage = element_multiplier + other_elemental_bonus
+    charge_damage = 1 + charge_damage_bonus
+    damage_up = 1 + (
+        attack_damage_up
+        + sustained_damage_up
+        + true_damage_up
+        + pierce_damage_up
+        + damage_to_parts_up
+        + shield_damage_up
+        + projectile_explosion_damage_up
+    )
+    damage_taken = 1 + damage_taken_up + distributed_damage_up
+
+    return (
+        base_damage
+        * final_atk_modifiers
+        * major_modifiers
+        * element_bonus_damage
+        * charge_damage
+        * damage_up
+        * damage_taken
+    )
