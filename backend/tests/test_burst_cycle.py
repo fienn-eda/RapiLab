@@ -77,3 +77,59 @@ def test_fight_duration_shorter_than_first_charge_produces_no_bursts():
     deck = make_deck()
     events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=3.0, mode="auto")
     assert events == []
+
+
+def test_on_battle_start_hook_fires_once_at_time_zero():
+    deck = make_deck()
+    calls = []
+    simulate_burst_cycle(
+        deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto",
+        on_battle_start=lambda time: calls.append(time),
+    )
+    assert calls == [0.0]
+
+
+def test_on_tier_fire_hook_fires_for_each_burst_with_slug_and_time():
+    deck = make_deck()
+    calls = []
+    simulate_burst_cycle(
+        deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto",
+        on_tier_fire=lambda tier, slug, time: calls.append((tier, slug, time)),
+    )
+    assert calls == [
+        (1, "b1_unit", 5.0),
+        (2, "b2_unit", 5.0),
+        (3, "b3_unit_a", 5.0),
+    ]
+
+
+def test_on_full_burst_enter_hook_fires_at_tier3_time():
+    deck = make_deck()
+    calls = []
+    simulate_burst_cycle(
+        deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto",
+        on_full_burst_enter=lambda time: calls.append(time),
+    )
+    assert calls == [5.0]
+
+
+def test_on_full_burst_end_hook_return_value_reduces_all_cooldowns():
+    # tier1/tier2 have only one eligible Nikke each with a 20s cooldown, so
+    # without cooldown reduction the second cycle would miss (see the
+    # dedicated failure test above). A 15s reduction from the hook should be
+    # enough to let the second cycle's tier1/tier2 fire on time.
+    deck = make_deck()
+    events = simulate_burst_cycle(
+        deck, gauge_charge_time=5.0, fight_duration=35.0, mode="auto",
+        on_full_burst_end=lambda time: 15.0,
+    )
+    assert events.count({"type": "full_burst_start", "time": 5.0}) == 1
+    assert any(e["type"] == "full_burst_start" and e["time"] == 20.0 for e in events)
+    assert not any(e["type"] == "full_burst_missed" for e in events)
+
+
+def test_hooks_are_optional_and_default_to_no_op():
+    deck = make_deck()
+    # should not raise even though no hooks are supplied
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto")
+    assert len(events) > 0

@@ -14,11 +14,32 @@ Nikke's `cooldown` are supplied by the caller.
 FULL_BURST_DURATION = 10.0
 
 
-def simulate_burst_cycle(deck, gauge_charge_time, fight_duration, mode="auto"):
+def simulate_burst_cycle(
+    deck,
+    gauge_charge_time,
+    fight_duration,
+    mode="auto",
+    on_battle_start=None,
+    on_tier_fire=None,
+    on_full_burst_enter=None,
+    on_full_burst_end=None,
+):
+    """Optional hooks let a caller (e.g. raid_simulator) interleave skill
+    triggers with the scheduling without duplicating this algorithm:
+        on_battle_start(time)             - called once, before the first cycle
+        on_tier_fire(tier, slug, time)     - called as each burst tier fires
+        on_full_burst_enter(time)          - called when tier 3 fires
+        on_full_burst_end(time) -> seconds - called when Full Burst ends; the
+            returned number of seconds (if any) is subtracted from every
+            Nikke's last-used-at, i.e. an instant squad-wide cooldown pulse.
+    """
     gap = 0.0 if mode == "auto" else 0.1
     last_used_at = {member["slug"]: float("-inf") for member in deck}
     events = []
     time = 0.0
+
+    if on_battle_start:
+        on_battle_start(0.0)
 
     while True:
         charge_end = time + gauge_charge_time
@@ -43,6 +64,8 @@ def simulate_burst_cycle(deck, gauge_charge_time, fight_duration, mode="auto"):
             chosen = eligible[0]
             events.append({"type": "burst", "tier": tier, "slug": chosen["slug"], "time": fire_time})
             last_used_at[chosen["slug"]] = fire_time
+            if on_tier_fire:
+                on_tier_fire(tier, chosen["slug"], fire_time)
             if tier == 3:
                 tier3_fire_time = fire_time
             fire_time += gap
@@ -51,9 +74,18 @@ def simulate_burst_cycle(deck, gauge_charge_time, fight_duration, mode="auto"):
             events.append({"type": "full_burst_missed", "time": fire_time})
             break
 
+        if on_full_burst_enter:
+            on_full_burst_enter(tier3_fire_time)
+
         full_burst_end = tier3_fire_time + FULL_BURST_DURATION
         events.append({"type": "full_burst_start", "time": tier3_fire_time})
         events.append({"type": "full_burst_end", "time": full_burst_end})
+
+        cooldown_reduction = on_full_burst_end(full_burst_end) if on_full_burst_end else None
+        if cooldown_reduction:
+            for slug in last_used_at:
+                last_used_at[slug] -= cooldown_reduction
+
         time = full_burst_end
 
     return events
