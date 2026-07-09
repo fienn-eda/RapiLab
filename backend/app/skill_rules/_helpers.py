@@ -23,3 +23,24 @@ def cdr_pulse_rule(trigger, seconds, scope="squad"):
         registry.add_pulse(Pulse("burst_cooldown_reduction_sec", seconds, scope, caster_slug))
 
     return SkillRule(trigger=trigger, action=action)
+
+
+def escalating_buff_rule(trigger, tiers):
+    """Cumulative "Once/Twice/Three times, previous effects trigger repeatedly".
+
+    tiers[k] is the list of (stat, value, scope, duration) UNLOCKED at the
+    (k+1)-th activation; use an empty list for a tier with no DPS-relevant
+    effect (e.g. a Hit Rate step). On the Nth activation every unlocked tier
+    (1..N) is re-applied, so each tier's duration-limited buff refreshes and the
+    bundle saturates once all tiers are unlocked. Relies on
+    SquadContext.activation_count, so it must be fired via fire_trigger.
+    """
+
+    def action(context, caster_slug, time, registry):
+        n = context.activation_count(caster_slug, trigger)
+        for unlock_at, buffs in enumerate(tiers, start=1):
+            if n >= unlock_at:
+                for stat, value, scope, duration in buffs:
+                    registry.add(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
+
+    return SkillRule(trigger=trigger, action=action)

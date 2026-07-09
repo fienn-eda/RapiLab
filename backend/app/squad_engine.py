@@ -24,6 +24,16 @@ class SquadContext:
         self.members = members
         self._status: dict[str, set[str]] = {m.slug: set() for m in members}
         self.burst_used_this_cycle: set[str] = set()
+        self._activations: dict[tuple[str, str], int] = {}
+
+    def record_activation(self, slug: str, trigger: str) -> None:
+        self._activations[(slug, trigger)] = self._activations.get((slug, trigger), 0) + 1
+
+    def activation_count(self, slug: str, trigger: str) -> int:
+        """How many times `trigger` has fired for `slug` so far (1-based inside
+        an action, since fire_trigger records before running it). For a per-cycle
+        trigger this is the burst-cycle number - used to escalate ramping buffs."""
+        return self._activations.get((slug, trigger), 0)
 
     def has_status(self, slug: str, flag: str) -> bool:
         return flag in self._status[slug]
@@ -54,6 +64,16 @@ def has_status(flag: str) -> Callable[[SquadContext, str], bool]:
     return check
 
 
+def deck_contains(slug: str) -> Callable[[SquadContext, str], bool]:
+    """Condition: another named Nikke is in the deck (e.g. Mast keys its Drunken
+    stack retention off Anchor's presence)."""
+
+    def check(context: SquadContext, caster_slug: str) -> bool:
+        return any(m.slug == slug for m in context.members)
+
+    return check
+
+
 def not_condition(
     condition: Callable[[SquadContext, str], bool]
 ) -> Callable[[SquadContext, str], bool]:
@@ -76,8 +96,9 @@ class SkillRule:
 
 def fire_trigger(trigger, rules_by_slug, context, registry, time):
     for slug, rules in rules_by_slug.items():
-        for rule in rules:
-            if rule.trigger != trigger:
-                continue
+        matching = [rule for rule in rules if rule.trigger == trigger]
+        if matching:
+            context.record_activation(slug, trigger)
+        for rule in matching:
             if rule.condition(context, slug):
                 rule.action(context, slug, time, registry)

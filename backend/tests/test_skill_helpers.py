@@ -1,5 +1,5 @@
 from app.effects import EffectRegistry
-from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
+from app.skill_rules._helpers import buff_rule, cdr_pulse_rule, escalating_buff_rule
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 
@@ -24,6 +24,32 @@ def test_buff_rule_adds_all_listed_effects_scoped_and_timed():
     assert registry.total_for("crit_rate", ally, now=2.0) == 0.0     # self-only
     assert registry.total_for("crit_rate", src, now=2.0) == 0.30
     assert registry.total_for("atk_percent", ally, now=7.1) == 0.0   # expired
+
+
+def test_escalating_buff_rule_applies_tiers_cumulatively_by_activation():
+    # "Once/Twice/Three times, previous effects trigger repeatedly": each tier
+    # unlocks on its activation and is re-applied every activation after. Tier 1
+    # here is empty (e.g. a non-DPS hit-rate step).
+    rule = escalating_buff_rule("full_burst_end", [
+        [],
+        [("flat_atk", 100.0, "squad", 10.0)],
+        [("reload_speed_percent", 0.4, "squad", 15.0)],
+    ])
+    registry = EffectRegistry()
+    context = ctx()
+    ally = {"slug": "ally", "element": "Fire"}
+
+    fire_trigger("full_burst_end", {"src": [rule]}, context, registry, time=10.0)
+    assert registry.total_for("flat_atk", ally, now=10.0) == 0.0  # cycle 1: nothing
+
+    fire_trigger("full_burst_end", {"src": [rule]}, context, registry, time=30.0)
+    assert registry.total_for("flat_atk", ally, now=30.0) == 100.0  # cycle 2 unlock
+    assert registry.total_for("reload_speed_percent", ally, now=30.0) == 0.0
+
+    fire_trigger("full_burst_end", {"src": [rule]}, context, registry, time=50.0)
+    # cycle 3: reload unlocks; flat_atk re-applied fresh (its cycle-2 window expired)
+    assert registry.total_for("flat_atk", ally, now=50.0) == 100.0
+    assert registry.total_for("reload_speed_percent", ally, now=50.0) == 0.4
 
 
 def test_cdr_pulse_rule_emits_a_drainable_pulse():

@@ -3,6 +3,7 @@ from app.squad_engine import (
     SkillRule,
     SquadContext,
     SquadMember,
+    deck_contains,
     fire_trigger,
     has_status,
     no_other_burst_tier_allies,
@@ -107,6 +108,44 @@ def test_fire_trigger_only_matches_requested_trigger_type():
     fire_trigger("battle_start", rules_by_slug, ctx, registry, time=0.0)
 
     assert applied == []
+
+
+def test_activation_count_tracks_firings_per_slug_and_trigger():
+    ctx = make_context(SquadMember("anchor", burst_tier=2, element="Water"))
+    registry = EffectRegistry()
+    seen = []
+
+    def record(context, caster_slug, time, registry):
+        seen.append(context.activation_count(caster_slug, "full_burst_end"))
+
+    rules = {"anchor": [SkillRule(trigger="full_burst_end", action=record)]}
+    for t in (10.0, 25.0, 40.0):
+        fire_trigger("full_burst_end", rules, ctx, registry, time=t)
+
+    # each firing sees a 1-based count of how many times this trigger has fired
+    # for this Nikke - i.e. the burst-cycle number for a per-cycle trigger.
+    assert seen == [1, 2, 3]
+
+
+def test_activation_count_zero_before_firing_and_separate_per_trigger():
+    ctx = make_context(SquadMember("anchor", burst_tier=2, element="Water"))
+    assert ctx.activation_count("anchor", "full_burst_end") == 0
+
+    registry = EffectRegistry()
+    rules = {"anchor": [SkillRule(trigger="full_burst_end", action=lambda c, s, t, r: None)]}
+    fire_trigger("full_burst_end", rules, ctx, registry, time=1.0)
+
+    assert ctx.activation_count("anchor", "full_burst_end") == 1
+    assert ctx.activation_count("anchor", "own_burst_activate") == 0
+
+
+def test_deck_contains_checks_squad_membership():
+    ctx = make_context(
+        SquadMember("mast", burst_tier=2, element="Water"),
+        SquadMember("anchor", burst_tier=2, element="Water"),
+    )
+    assert deck_contains("anchor")(ctx, "mast") is True
+    assert deck_contains("liter")(ctx, "mast") is False
 
 
 def test_branching_rules_pick_the_matching_branch_by_condition():
