@@ -8,17 +8,27 @@ the caster's base ATK stat *before* additional %ATK buffs/flat bonuses are
 layered on top, i.e. atk_for_hit = base_atk * (X / 100), then that value
 feeds into calculate_damage's atk/atk_percent/flat_atk as usual.
 
-Known simplification: burst damage is computed as non-critical with no
-core-hit bonus (crit-rate-to-expected-damage and core-hit-eligibility per
-skill aren't resolved yet). Normal-attack DPS between bursts isn't
-accumulated at all - that needs the still-deferred attack-rate model. So
-`total_damage` here is burst-skill damage only, a floor, not the full
+Core hit damage is a uniform +100% (200% total, i.e. exactly doubles a hit
+with no other modifiers) across every weapon type, per Fienn's direct
+in-game/ShiftyPad tooltip check - this corrects an earlier "1/1.5" figure
+pulled from a summarized fetch of the nikke.gg formula page, which turned
+out to be an unreliable paraphrase. `core_hittable` toggles it for the
+whole simulation (some raid bosses have an exploitable core, some don't);
+per-skill core-hit eligibility (some skills may not benefit at all) isn't
+modeled, so this applies uniformly to every burst-damage instance for now.
+
+Known simplification: burst damage is computed as non-critical (crit-rate-
+to-expected-damage isn't resolved yet). Normal-attack DPS between bursts
+isn't accumulated at all - that needs the still-deferred attack-rate model.
+So `total_damage` here is burst-skill damage only, a floor, not the full
 picture.
 """
 from app.burst_cycle import simulate_burst_cycle
 from app.damage_formula import calculate_damage
 from app.effects import EffectRegistry
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
+
+CORE_HIT_BONUS = 1.0
 
 
 def simulate_raid(
@@ -30,6 +40,7 @@ def simulate_raid(
     gauge_charge_time,
     fight_duration,
     mode="auto",
+    core_hittable=False,
 ):
     context = SquadContext([SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck])
     registry = EffectRegistry()
@@ -57,6 +68,7 @@ def simulate_raid(
             flat_atk=registry.total_for("flat_atk", target, time),
             other_elemental_bonus=registry.total_for("other_elemental_bonus", target, time),
             other_critical_damage_sources=registry.total_for("other_critical_damage_sources", target, time),
+            core_hit_bonus=CORE_HIT_BONUS if core_hittable else 0.0,
             charge_damage_bonus=registry.total_for("charge_damage_bonus", target, time),
             attack_damage_up=registry.total_for("attack_damage_up", target, time),
             damage_to_parts_up=registry.total_for("damage_to_parts_up", target, time),

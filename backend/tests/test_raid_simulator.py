@@ -45,6 +45,36 @@ def test_battle_start_buff_is_active_by_the_time_the_burst_fires():
     assert result["total_damage"] == 150000.0
 
 
+def test_core_hittable_true_doubles_burst_damage_via_200_percent_core_bonus():
+    rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
+    without_core = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+    )
+    with_core = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        core_hittable=True,
+    )
+    # per Fienn's in-game tooltip check, core damage is a uniform 200% across
+    # every weapon type (+1.0 to the major modifier), i.e. exactly double a
+    # hit with no other modifiers active.
+    assert with_core["total_damage"] == without_core["total_damage"] * 2
+    assert without_core["total_damage"] == 10000.0
+
+
 def test_burst_damage_with_no_buffs_uses_plain_percent_of_atk():
     rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
     result = simulate_raid(
