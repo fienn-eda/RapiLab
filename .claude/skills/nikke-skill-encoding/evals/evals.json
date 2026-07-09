@@ -1,0 +1,26 @@
+{
+  "skill_name": "nikke-skill-encoding",
+  "evals": [
+    {
+      "id": 0,
+      "name": "scarlet-b3-attacker-nuke",
+      "prompt": "Scarlet 스킬을 덱 빌더에 인코딩해줘. 애장품(시그니처 웨폰)은 없어. 데이터는 char_scarlet.json에 있어.",
+      "expected_output": "backend/app/skill_rules/scarlet.py with self ATK (stacking -> steady state), a Scarlet Flash burst-nuke percent helper, crit rate; registered with (rules, burst_percent); normal-attack-count trigger deferred + documented; tests pass.",
+      "files": ["char_scarlet.json"]
+    },
+    {
+      "id": 1,
+      "name": "blanc-b2-defender-support",
+      "prompt": "Blanc를 덱 빌더 시뮬레이션 엔진에 추가해줘. 애장품 없음. char_blanc.json 참고.",
+      "expected_output": "backend/app/skill_rules/blanc.py modeling only DPS-relevant buffs (attack damage etc.), skipping shields/heals as survivability; burst_percent None; deferrals documented; registered; tests pass.",
+      "files": ["char_blanc.json"]
+    },
+    {
+      "id": 2,
+      "name": "naga-b2-supporter-caster-scaled",
+      "prompt": "Naga 스킬 인코딩 부탁해. 애장품 미완성이야. char_naga.json 데이터 있음.",
+      "expected_output": "backend/app/skill_rules/naga.py with caster-scaled flat_atk (ATK% of caster's ATK on burst), core-damage buff approximated as squad, normal-attack-count triggers deferred + documented; burst_percent None; registered; tests pass.",
+      "files": ["char_naga.json"]
+    }
+  ]
+}
