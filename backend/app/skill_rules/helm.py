@@ -1,15 +1,20 @@
 """SkillRule encoding of Helm's "Frontline Command" (skills[0]) and "Fire
 Away" (skills[1]) from api.dotgg.gg slug "helm".
 
-Not modeled: "Aegis Cannon" (skills[2], her burst skill) - it's a pure damage
-instance ("Deals X% of final ATK as Burst Skill damage" to the highest-ATK
-enemy) plus a damage-proportional heal-over-time, neither of which this
-buff/status-oriented engine handles yet; damage instances need the
-raid_simulator's damage-accumulation piece, and the heal is irrelevant to
-DPS output.
+Fienn's Helm has her signature weapon completed, so callers must build these
+rules from the "dollskills" array's values, not "skills" - the cherished-
+weapon version changes more than numbers (e.g. Frontline Command gains an
+entirely new full-charge-hit effect) even where a stat's own value carries
+over unchanged (e.g. the crit rate on Frontline Command is the same in both).
+
+"Aegis Cannon" (skills[2]/dollskills[2], her burst skill) is mostly a pure
+damage instance - use aegis_cannon_burst_percent() for the "X% of final ATK"
+figure raid_simulator needs; the damage-proportional heal-over-time isn't
+modeled since it doesn't affect DPS output.
 
 "Frontline Command" fires on `on_last_bullet_hit`, a trigger nothing emits
-yet - it depends on the deferred attack-rate/ammo model.
+yet - it depends on the deferred attack-rate/ammo model. Same for the
+full-charge-hit effects on both skills (heal/gauge-fill/bonus damage).
 """
 from app.effects import Effect
 from app.squad_engine import SkillRule
@@ -52,3 +57,7 @@ def build_fire_away_rules(values: dict) -> list[SkillRule]:
         SkillRule(trigger="battle_start", action=grant_damage_to_parts),
         SkillRule(trigger="full_burst_enter", action=grant_attack_damage_up),
     ]
+
+
+def aegis_cannon_burst_percent(values: dict) -> float:
+    return float(values["description_value_01"])
