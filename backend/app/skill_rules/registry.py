@@ -8,6 +8,7 @@ whose burst skill is buffs-only (no "X% of ATK" nuke), e.g. Crown/Anis: Star.
 Each builder takes a `skill_values` dict keyed by that Nikke's sub-skill names
 (plus caster base stats where a skill scales off them, e.g. Crown).
 """
+from app.skill_rules.ade_agent_bunny import build_ade_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
 from app.skill_rules.anis_star import build_starfall_rules
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
@@ -68,6 +69,7 @@ def _build_privaty(sv):
 
 _BUILDERS = {
     "anis-star": _build_anis_star,
+    "ade-agent-bunny": lambda sv: (build_ade_rules(sv), None),
     "anchor-innocent-maid": lambda sv: (build_anchor_rules(sv), None),
     "crown": _build_crown,
     "rapi-red-hood": _build_rapi_red_hood,
