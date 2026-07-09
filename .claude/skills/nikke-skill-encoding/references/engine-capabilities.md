@@ -41,7 +41,7 @@ Damage stats (fed into `calculate_damage`, so they change damage numbers):
 Scheduling stats (change the burst rotation / shot timing, not per-hit damage):
 | stat | mechanism | game wording |
 |---|---|---|
-| `burst_cooldown_reduction_sec` | **Pulse**, drained at full-burst-end | "Cooldown of Burst Skill ▼ X sec" |
+| `burst_cooldown_reduction_sec` | **Pulse**, drained at full-burst-end; **scope-aware** (self reduces only the caster's cooldown, squad reduces everyone's) | "Cooldown of Burst Skill ▼ X sec" |
 | `max_ammo_percent` | scales base magazine size (increases and decreases both apply to BASE, summed) | "Max Ammunition Capacity ▲/▼ X%" |
 | `reload_speed_percent` | shortens reloads | "Reloading Speed ▲ X%" |
 

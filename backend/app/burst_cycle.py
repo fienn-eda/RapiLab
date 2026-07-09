@@ -39,9 +39,11 @@ def simulate_burst_cycle(
         on_battle_start(time)             - called once, before the first cycle
         on_tier_fire(tier, slug, time)     - called as each burst tier fires
         on_full_burst_enter(time)          - called when tier 3 fires
-        on_full_burst_end(time) -> seconds - called when Full Burst ends; the
-            returned number of seconds (if any) is subtracted from every
-            Nikke's last-used-at, i.e. an instant squad-wide cooldown pulse.
+        on_full_burst_end(time) -> {slug: seconds} - called when Full Burst
+            ends; each Nikke's last-used-at is reduced by its entry (an instant
+            cooldown pulse). Returning a per-slug map lets a self-scoped pulse
+            (e.g. Blanc's own CDR) reduce only the caster's cooldown while a
+            squad-scoped one reduces everyone's.
     """
     gap = 0.0 if mode == "auto" else 0.1
     last_used_at = {member["slug"]: float("-inf") for member in deck}
@@ -95,8 +97,8 @@ def simulate_burst_cycle(
 
         cooldown_reduction = on_full_burst_end(full_burst_end) if on_full_burst_end else None
         if cooldown_reduction:
-            for slug in last_used_at:
-                last_used_at[slug] -= cooldown_reduction
+            for slug, reduction in cooldown_reduction.items():
+                last_used_at[slug] -= reduction
 
         time = full_burst_end
 

@@ -48,5 +48,19 @@ how to encode it, and current engine status.
   max** — Fienn wants the per-cycle ramp (and it composes with deck-dependent
   behaviour like Mast's). Seen on: Anchor (both passives).
 
+## Self-scoped, same-squad-ally-gated burst CDR
+- **What:** some units reduce **their own** Burst-Skill cooldown ("Affects self.
+  Cooldown of Burst Skill ▼ X sec"), often gated on a *same-squad* ally being
+  present. E.g. Blanc's Rabbit Twins W self-CDR needs Rouge or Noir in the deck;
+  it's what lets her long 60s burst keep pace.
+- **Easy mistake:** emitting it as a normal (squad) CDR pulse. The engine's CDR
+  reduces cooldowns per pulse **scope**, so a squad-scoped pulse would speed up
+  the *dealers'* rotation too and massively over-credit the deck.
+- **Encode:** emit a `Pulse("burst_cooldown_reduction_sec", secs, "self", slug)`
+  (self scope → reduces only the caster's cooldown) and gate the rule with a
+  condition that checks the deck for the required ally (see `blanc.py`,
+  `has_squad_twin`). "Same-squad ally" means a specific named unit, not any ally
+  — confirm which with Fienn.
+
 ---
 *Add new mechanics above this line as they come up.*

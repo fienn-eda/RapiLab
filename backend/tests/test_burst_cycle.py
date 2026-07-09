@@ -133,11 +133,11 @@ def test_on_full_burst_end_hook_return_value_reduces_all_cooldowns():
     # cooldown clears at t=25 (see the test above). A 15s reduction applied
     # at t=15 pulls that up to t=10, which is earlier than the 5s gauge-charge
     # floor (t=20) - so the gauge floor becomes the new bottleneck and the
-    # second cycle starts at t=20 instead.
+    # second cycle starts at t=20 instead. The hook returns a per-slug map.
     deck = make_deck()
     events = simulate_burst_cycle(
         deck, gauge_charge_time=5.0, fight_duration=35.0, mode="auto",
-        on_full_burst_end=lambda time: 15.0,
+        on_full_burst_end=lambda time: {member["slug"]: 15.0 for member in deck},
     )
     assert events.count({"type": "full_burst_start", "time": 5.0}) == 1
     assert any(e["type"] == "full_burst_start" and e["time"] == 20.0 for e in events)

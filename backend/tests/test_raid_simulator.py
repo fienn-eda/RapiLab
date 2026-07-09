@@ -316,6 +316,36 @@ def test_cooldown_reduction_pulse_from_full_burst_end_enables_a_second_cycle():
     assert [e["time"] for e in attacker_hits] == [5.0, 20.0]
 
 
+def test_self_scoped_cdr_only_reduces_the_casters_cooldown():
+    # A self-scoped burst-cooldown pulse (e.g. Blanc's own CDR) must reduce only
+    # the caster's cooldown, not the whole squad's - otherwise it would speed up
+    # the dealers' rotation too. Here the attacker self-CDRs 25s; the 2nd cycle
+    # stays gunner-gated at t=45 (gunner's 40s cooldown is untouched), NOT the
+    # t=20 a squad-wide CDR would produce.
+    deck = [
+        {"slug": "gunner", "burst_tier": 1, "element": "Iron", "cooldown": 40.0},
+        {"slug": "mid", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "attacker", "burst_tier": 3, "element": "Iron", "cooldown": 20.0},
+    ]
+
+    def self_cdr(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("burst_cooldown_reduction_sec", 25.0, "self", caster_slug))
+
+    rules = {"gunner": [], "mid": [], "attacker": [SkillRule(trigger="full_burst_end", action=self_cdr)]}
+    result = simulate_raid(
+        deck,
+        rules,
+        burst_damage_percents={},
+        base_stats={s: {"atk": 0, "def": 0, "max_hp": 0} for s in ("gunner", "mid", "attacker")},
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=60.0,
+        mode="auto",
+    )
+    starts = [e["time"] for e in result["events"] if e["type"] == "full_burst_start"]
+    assert starts == [5.0, 45.0]
+
+
 def test_full_burst_enter_and_full_burst_end_triggers_fire_for_all_members():
     enter_calls = []
     end_calls = []

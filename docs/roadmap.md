@@ -7,8 +7,8 @@
 
 - 마지막 갱신: 2026-07-10
 - 브랜치: `wip/scaffolding`
-- 테스트: **176 passed** (마지막 전체 실행 기준)
-- 인코딩된 니케: **17명**
+- 테스트: **183 passed** (마지막 전체 실행 기준)
+- 인코딩된 니케: **19명**
 
 ---
 
@@ -63,11 +63,12 @@
   - 실전 덱 5: `anis-star`, `crown`, `rapi-red-hood`, `helm`, `privaty`
   - 버스트1 배치 10: `liter`, `little-mermaid`, `miranda`, `moran`, `rouge`,
     `d-killer-wife`, `tove`, `volume`, `zwei`, `soline-frost-ticket`
-  - 버스트2 배치: `anchor-innocent-maid`, `mast-romantic-maid`
+  - 버스트2 배치: `anchor-innocent-maid`, `mast-romantic-maid`,
+    `ade-agent-bunny`, `blanc`
 - 각 니케 = `skill_rules/<name>.py` 빌더, `registry.py`에 등록.
-- 버스트2 진행 중 (남은 요청: Ade, Arcana, Arcana: Fortune Mate, Blanc,
-  Brid: Silent Track, Grave, Mint, Nayuta). 여러 명이 미지원 메커니즘·조건부
-  타겟팅에 의존 → 트리아지 후 개별 처리. (Crown은 이미 인코딩됨.)
+- 버스트2 진행 중 (남은 요청: Arcana, Arcana: Fortune Mate, Brid: Silent Track,
+  Grave, Mint, Nayuta). 여러 명이 미지원 메커니즘·조건부 타겟팅에 의존 →
+  트리아지 후 개별 처리. (Crown은 이미 인코딩됨.)
 - **다음:** 남은 버스트2 유닛 계속 (엔진 유용성은 인코딩 수에 비례).
 
 ### Phase 4 — 단일 최적 덱 추천 ✅

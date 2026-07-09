@@ -126,11 +126,24 @@ def simulate_raid(
     def on_full_burst_enter(time):
         fire_trigger("full_burst_enter", rules_by_slug, context, registry, time)
 
+    def cdr_targets(pulse):
+        if pulse.scope == "self":
+            return [pulse.source_slug]
+        if pulse.scope == "squad":
+            return [m["slug"] for m in deck]
+        if pulse.scope.startswith("element:"):
+            element = pulse.scope.split(":", 1)[1]
+            return [m["slug"] for m in deck if m["element"] == element]
+        raise ValueError(f"unknown pulse scope: {pulse.scope}")
+
     def on_full_burst_end(time):
         fire_trigger("full_burst_end", rules_by_slug, context, registry, time)
         context.burst_used_this_cycle.clear()
-        pulses = registry.drain_pulses("burst_cooldown_reduction_sec")
-        return sum(pulse.value for pulse in pulses)
+        reductions = {}
+        for pulse in registry.drain_pulses("burst_cooldown_reduction_sec"):
+            for slug in cdr_targets(pulse):
+                reductions[slug] = reductions.get(slug, 0.0) + pulse.value
+        return reductions
 
     events = simulate_burst_cycle(
         deck,
