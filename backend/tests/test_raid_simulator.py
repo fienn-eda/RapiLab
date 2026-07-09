@@ -85,6 +85,42 @@ def test_core_hittable_true_doubles_burst_damage_via_200_percent_core_bonus():
     assert without_core["total_damage"] == 10000.0
 
 
+def test_boss_element_grants_advantage_bonus_to_matching_attackers():
+    # make_deck's attacker is Iron; Iron > Electric, so a boss with Electric
+    # element gives the attacker +10%, while a Fire boss (Iron neutral) doesn't.
+    rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
+    kwargs = dict(
+        rules_by_slug=rules_by_slug,
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+    )
+    neutral = simulate_raid(make_deck(), boss_element="Fire", **kwargs)
+    advantaged = simulate_raid(make_deck(), boss_element="Electric", **kwargs)
+
+    assert neutral["total_damage"] == 10000.0
+    assert round(advantaged["total_damage"], 5) == round(10000.0 * 1.1, 5)
+
+
+def test_boss_element_none_applies_no_advantage():
+    rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        boss_element=None,
+    )
+    assert result["total_damage"] == 10000.0
+
+
 def test_burst_damage_with_no_buffs_uses_plain_percent_of_atk():
     rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
     result = simulate_raid(

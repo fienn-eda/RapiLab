@@ -32,6 +32,10 @@ moment, so temporary buffs correctly speed up reloads or grow magazines
 only while active - see attack_rate's docstring for exactly when each is
 evaluated.
 
+`boss_element` (optional) applies NIKKE's +10% elemental advantage to every
+damage instance from an attacker whose element beats the boss's; None means
+no element is considered (neutral for everyone).
+
 Known simplifications: all damage is computed as non-critical (crit-rate-
 to-expected-damage isn't resolved yet); a slug missing from `weapon_stats`
 contributes no normal-attack damage (e.g. while that character's weapon
@@ -41,6 +45,7 @@ from app.attack_rate import CHARGE_WEAPONS, generate_shot_times
 from app.burst_cycle import simulate_burst_cycle
 from app.damage_formula import calculate_damage
 from app.effects import EffectRegistry
+from app.elements import element_multiplier
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 CORE_HIT_BONUS = 1.0
@@ -57,6 +62,7 @@ def simulate_raid(
     mode="auto",
     core_hittable=False,
     weapon_stats=None,
+    boss_element=None,
 ):
     weapon_stats = weapon_stats or {}
     context = SquadContext([SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck])
@@ -66,6 +72,11 @@ def simulate_raid(
 
     def target_for(slug):
         return {"slug": slug, "element": member_by_slug[slug]["element"]}
+
+    def element_bonus_for(slug):
+        if boss_element is None:
+            return 1.0
+        return element_multiplier(member_by_slug[slug]["element"], boss_element)
 
     def on_battle_start(time):
         fire_trigger("battle_start", rules_by_slug, context, registry, time)
@@ -86,6 +97,7 @@ def simulate_raid(
             other_elemental_bonus=registry.total_for("other_elemental_bonus", target, time),
             other_critical_damage_sources=registry.total_for("other_critical_damage_sources", target, time),
             core_hit_bonus=CORE_HIT_BONUS if core_hittable else 0.0,
+            element_multiplier=element_bonus_for(slug),
             charge_damage_bonus=registry.total_for("charge_damage_bonus", target, time),
             attack_damage_up=registry.total_for("attack_damage_up", target, time),
             damage_to_parts_up=registry.total_for("damage_to_parts_up", target, time),
@@ -140,6 +152,7 @@ def simulate_raid(
                     "other_critical_damage_sources", target, shot_time
                 ),
                 core_hit_bonus=CORE_HIT_BONUS if core_hittable else 0.0,
+                element_multiplier=element_bonus_for(slug),
                 charge_damage_bonus=charge_damage_bonus,
                 attack_damage_up=registry.total_for("attack_damage_up", target, shot_time),
                 damage_to_parts_up=registry.total_for("damage_to_parts_up", target, shot_time),
