@@ -1,5 +1,8 @@
 from app.effects import EffectRegistry
-from app.skill_rules.rapi_red_hood import build_battlefield_assessment_rules
+from app.skill_rules.rapi_red_hood import (
+    build_battlefield_assessment_rules,
+    power_of_inheritance_stage3_burst_percent,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # Real skill level 10 values from api.dotgg.gg for rapi-red-hood's skills[0]
@@ -86,3 +89,10 @@ def test_combat_assist_branch_fires_on_full_burst_enter_when_no_burst1_ally():
     # and the self-buff branch should NOT have fired
     rapi = {"slug": "rapi-red-hood", "element": "Fire"}
     assert registry.total_for("atk_percent", rapi, now=5.0) == 0.0
+
+
+def test_power_of_inheritance_stage3_burst_percent_reads_the_damage_slot():
+    # rapi-red-hood has no signature weapon (no dollskills entry), so this
+    # is the base skill's level-10 value for the Stage 3 nuke.
+    values = {"description_value_05": "2808"}
+    assert power_of_inheritance_stage3_burst_percent(values) == 2808.0

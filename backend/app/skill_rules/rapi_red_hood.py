@@ -74,3 +74,11 @@ def build_battlefield_assessment_rules(values: dict) -> list[SkillRule]:
         SkillRule(trigger="full_burst_enter", condition=in_combat_assist, action=combat_assist_branch),
         SkillRule(trigger="full_burst_enter", condition=not_in_combat_assist, action=self_buff_branch),
     ]
+
+
+def power_of_inheritance_stage3_burst_percent(values: dict) -> float:
+    """The Stage 3 branch's "Deals X% of final ATK as additional damage" -
+    only correct when NOT in Combat Assist (i.e. a Burst 1 ally is present),
+    which is the case in Fienn's actual deck. Stage 1's own damage isn't
+    modeled since that branch doesn't apply here."""
+    return float(values["description_value_05"])
