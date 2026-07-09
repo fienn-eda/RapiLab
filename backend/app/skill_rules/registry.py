@@ -16,9 +16,13 @@ from app.skill_rules.helm import (
     build_fire_away_rules,
     build_frontline_command_rules,
 )
+from app.skill_rules.little_mermaid import build_little_mermaid_rules
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.miranda import build_miranda_rules
+from app.skill_rules.moran import build_moran_rules
 from app.skill_rules.rouge import build_rouge_rules
+from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
+from app.skill_rules.tove import build_tove_rules
 from app.skill_rules.privaty import (
     ak_missile_burst_percent,
     build_ak_missile_rules,
@@ -72,6 +76,10 @@ _BUILDERS = {
     "rouge": lambda sv: (build_rouge_rules(sv), None),
     "zwei": lambda sv: (build_zwei_rules(sv), None),
     "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), kill_the_target_burst_percent(sv)),
+    "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
+    "moran": lambda sv: (build_moran_rules(sv), None),
+    "tove": lambda sv: (build_tove_rules(sv), None),
+    "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
 }
 
 ENCODED_SLUGS = tuple(_BUILDERS)
