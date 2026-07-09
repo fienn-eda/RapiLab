@@ -63,6 +63,24 @@ def test_magazine_ammo_up_increases_shots_per_magazine():
     assert [round(t, 4) for t in shots] == [round(i * 0.1, 4) for i in range(10)]
 
 
+def test_max_ammo_increase_and_decrease_both_apply_to_base_ammo_additively():
+    # Per Fienn's in-game check: an overload ammo INCREASE and Privaty's EX
+    # Magazine ammo DECREASE are both computed against BASE ammo and summed,
+    # NOT the decrease applied to the already-increased total. Base 300, +200%
+    # overload, -50.66% Privaty -> 300*(1 + 2.0 - 0.5066) = 748 rounds, not
+    # 300*(1+2.0)*(1-0.5066) = 444. Since total_for sums all max_ammo_percent
+    # effects, passing their sum here reproduces exactly that additive-on-base
+    # behavior.
+    summed_percent = 2.0 - 0.5066
+    shots = generate_magazine_shot_times(
+        rate_of_fire=1000.0, max_ammo=300, reload_time=1000.0, fight_duration=1.0,
+        max_ammo_percent_at=lambda t: summed_percent,
+    )
+    # one magazine only (huge reload keeps us in the first magazine); its size
+    # is the whole story here.
+    assert len(shots) == 748
+
+
 def test_charge_shots_fire_max_ammo_rounds_before_reloading():
     # charge_time=1, max_ammo=3, reload_time=2: three charged shots 1s apart
     # (t=1,2,3), THEN a 2s reload before the next magazine's first shot.

@@ -1,6 +1,16 @@
 from app.effects import Effect, Pulse
 from app.raid_simulator import simulate_raid
+from app.skill_rules.privaty import build_ex_magazine_rules
 from app.squad_engine import SkillRule
+
+# Real dollskills level-10 values for Privaty's EX Magazine (signature weapon
+# completed), matching test_skill_rules_privaty.py.
+PRIVATY_EX_MAGAZINE = {
+    "description_value_01": "23.61", "description_value_02": "10",
+    "description_value_03": "51.16", "description_value_04": "10",
+    "description_value_05": "50.66", "description_value_06": "10",
+    "description_value_07": "20.16", "description_value_08": "10",
+}
 
 
 def make_deck():
@@ -243,6 +253,94 @@ def test_normal_attack_schedule_speeds_up_after_a_reload_speed_buff():
     unbuffed_shots = [e for e in unbuffed["damage_log"] if e["source"] == "normal_attack"]
     buffed_shots = [e for e in buffed["damage_log"] if e["source"] == "normal_attack"]
     assert len(buffed_shots) > len(unbuffed_shots)
+
+
+def test_privaty_ex_magazine_reload_buff_speeds_up_squad_reloads_end_to_end():
+    # Regression guard: Privaty's real EX Magazine, built from its actual skill
+    # values, must feed its squad-wide reload_speed_percent buff into an ally's
+    # normal-attack schedule. Measured on the reload GAP directly rather than
+    # net shot count, because EX Magazine also cuts max ammo, which otherwise
+    # masks the reload benefit in a raw shot tally (that interaction is real -
+    # see the ammo-reduction test - just not what this test is isolating).
+    #
+    # The ally's first magazine starts at t=0 (before Full Burst at ~2.2s, so
+    # its size is unreduced), fires 36 AR rounds at 12/sec, and empties at
+    # t=3.0s - inside the buff window - so its reload is the one that should
+    # speed up.
+    deck = [
+        {"slug": "privaty", "burst_tier": 3, "element": "Water", "cooldown": 40.0},
+        {"slug": "ally", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+    ]
+    base_stats = {s: {"atk": 1000, "def": 0, "max_hp": 0} for s in ("privaty", "ally", "b2")}
+    weapon_stats = {
+        "ally": {
+            "weapon": "AR", "damage_percent": 10.0, "max_ammo": 36,
+            "reload_time": 3.0, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        }
+    }
+
+    def second_magazine_start(rules):
+        result = simulate_raid(
+            deck, rules, burst_damage_percents={}, base_stats=base_stats, enemy_def=0,
+            gauge_charge_time=2.0, fight_duration=8.0, mode="manual", weapon_stats=weapon_stats,
+        )
+        shots = [e["time"] for e in result["damage_log"] if e["source"] == "normal_attack"]
+        # 36-round first magazine -> shot index 36 is the second magazine's first shot
+        return shots[36]
+
+    with_ex = second_magazine_start(
+        {"privaty": build_ex_magazine_rules(PRIVATY_EX_MAGAZINE), "ally": [], "b2": []}
+    )
+    without_ex = second_magazine_start({"privaty": [], "ally": [], "b2": []})
+
+    # without buff: 2nd magazine at 3.0 (empty) + 3.0 (reload) = 6.0s
+    # with buff: reload = 3.0 / (1 + 0.5116) ~= 1.98s -> ~4.98s
+    assert without_ex == 6.0
+    assert with_ex < without_ex
+
+
+def test_ammo_increase_and_decrease_both_apply_to_base_ammo_through_the_registry():
+    # End-to-end version of test_attack_rate's additive-on-base test, driven by
+    # real summed Effects: a +200% ammo buff and a -50.66% ammo reduction (the
+    # magnitudes of a maxed overload option and Privaty's EX Magazine) net to
+    # base*(1 + 2.0 - 0.5066), i.e. the reduction comes off BASE, never off the
+    # 3x-overloaded total (which would give 444, not 748). Both are applied at
+    # battle_start so both are active when the single magazine starts at t=0 -
+    # this test targets the base-only summing math, not EX Magazine's full-
+    # burst timing (magazine size is evaluated at each magazine's start).
+    deck = [
+        {"slug": "gunner", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b3", "burst_tier": 3, "element": "Iron", "cooldown": 40.0},
+    ]
+    base_stats = {s: {"atk": 1000, "def": 0, "max_hp": 0} for s in ("gunner", "b2", "b3")}
+    weapon_stats = {
+        "gunner": {
+            "weapon": "MG", "damage_percent": 1.0, "max_ammo": 300,
+            "reload_time": 1000.0, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        }
+    }
+
+    def grant_ammo_effects(context, caster_slug, time, registry):
+        registry.add(Effect("max_ammo_percent", 2.0, "self", None, "gunner"), applied_at=time)
+        registry.add(Effect("max_ammo_percent", -0.5066, "self", None, "gunner"), applied_at=time)
+
+    result = simulate_raid(
+        deck,
+        {"gunner": [SkillRule(trigger="battle_start", action=grant_ammo_effects)], "b2": [], "b3": []},
+        burst_damage_percents={},
+        base_stats=base_stats,
+        enemy_def=0,
+        gauge_charge_time=2.0,
+        # end before the 1000s reload so all shots come from the one first
+        # magazine, whose size is exactly what's under test.
+        fight_duration=20.0,
+        mode="manual",
+        weapon_stats=weapon_stats,
+    )
+    shots = [e for e in result["damage_log"] if e["source"] == "normal_attack"]
+    assert len(shots) == 748
 
 
 def test_normal_attack_damage_uses_live_buffs_at_shot_time():
