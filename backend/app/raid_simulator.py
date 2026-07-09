@@ -42,9 +42,11 @@ damage buffs both raise output, which is what most Burst-1 supporters exist
 to do. base_crit_rate can be overridden (e.g. 0.0 in tests that want
 deterministic non-crit numbers).
 
-Known simplification: a slug missing from `weapon_stats` contributes no
+Known simplifications: a slug missing from `weapon_stats` contributes no
 normal-attack damage (e.g. while that character's weapon data hasn't been
-entered yet).
+entered yet); pierce_damage_up is applied to every hit as a general damage-up
+term (the formula's Damage Up bucket), not gated to actual pierce hits, since
+per-hit pierce flags aren't modeled.
 """
 from app.attack_rate import CHARGE_WEAPONS, generate_shot_times
 from app.burst_cycle import simulate_burst_cycle
@@ -113,6 +115,7 @@ def simulate_raid(
             charge_damage_bonus=registry.total_for("charge_damage_bonus", target, time),
             attack_damage_up=registry.total_for("attack_damage_up", target, time),
             damage_to_parts_up=registry.total_for("damage_to_parts_up", target, time),
+            pierce_damage_up=registry.total_for("pierce_damage_up", target, time),
         )
         damage_log.append({"slug": slug, "time": time, "damage": damage, "source": "burst"})
 
@@ -170,6 +173,7 @@ def simulate_raid(
                 charge_damage_bonus=charge_damage_bonus,
                 attack_damage_up=registry.total_for("attack_damage_up", target, shot_time),
                 damage_to_parts_up=registry.total_for("damage_to_parts_up", target, shot_time),
+                pierce_damage_up=registry.total_for("pierce_damage_up", target, shot_time),
             )
             damage_log.append({"slug": slug, "time": shot_time, "damage": damage, "source": "normal_attack"})
 

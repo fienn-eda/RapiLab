@@ -10,6 +10,7 @@ Each builder takes a `skill_values` dict keyed by that Nikke's sub-skill names
 """
 from app.skill_rules.anis_star import build_starfall_rules
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
+from app.skill_rules.d_killer_wife import build_d_killer_wife_rules, kill_the_target_burst_percent
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
     build_fire_away_rules,
@@ -17,6 +18,7 @@ from app.skill_rules.helm import (
 )
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.miranda import build_miranda_rules
+from app.skill_rules.rouge import build_rouge_rules
 from app.skill_rules.privaty import (
     ak_missile_burst_percent,
     build_ak_missile_rules,
@@ -27,6 +29,7 @@ from app.skill_rules.rapi_red_hood import (
     power_of_inheritance_stage3_burst_percent,
 )
 from app.skill_rules.volume import build_volume_rules
+from app.skill_rules.zwei import build_zwei_rules
 
 
 def _build_anis_star(sv):
@@ -66,6 +69,9 @@ _BUILDERS = {
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
     "miranda": lambda sv: (build_miranda_rules(sv), None),
+    "rouge": lambda sv: (build_rouge_rules(sv), None),
+    "zwei": lambda sv: (build_zwei_rules(sv), None),
+    "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), kill_the_target_burst_percent(sv)),
 }
 
 ENCODED_SLUGS = tuple(_BUILDERS)
