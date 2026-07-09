@@ -111,11 +111,15 @@ def simulate_raid(
             other_critical_damage_sources=registry.total_for("other_critical_damage_sources", target, time),
             crit_rate=crit_rate_for(target, time),
             core_hit_bonus=CORE_HIT_BONUS if core_hittable else 0.0,
+            other_core_damage_sources=(
+                registry.total_for("other_core_damage_sources", target, time) if core_hittable else 0.0
+            ),
             element_multiplier=element_bonus_for(slug),
             charge_damage_bonus=registry.total_for("charge_damage_bonus", target, time),
             attack_damage_up=registry.total_for("attack_damage_up", target, time),
             damage_to_parts_up=registry.total_for("damage_to_parts_up", target, time),
             pierce_damage_up=registry.total_for("pierce_damage_up", target, time),
+            damage_taken_up=registry.total_for("damage_taken_up", target, time),
         )
         damage_log.append({"slug": slug, "time": time, "damage": damage, "source": "burst"})
 
@@ -169,11 +173,17 @@ def simulate_raid(
                 ),
                 crit_rate=crit_rate_for(target, shot_time),
                 core_hit_bonus=CORE_HIT_BONUS if core_hittable else 0.0,
+                other_core_damage_sources=(
+                    registry.total_for("other_core_damage_sources", target, shot_time)
+                    if core_hittable
+                    else 0.0
+                ),
                 element_multiplier=element_bonus_for(slug),
                 charge_damage_bonus=charge_damage_bonus,
                 attack_damage_up=registry.total_for("attack_damage_up", target, shot_time),
                 damage_to_parts_up=registry.total_for("damage_to_parts_up", target, shot_time),
                 pierce_damage_up=registry.total_for("pierce_damage_up", target, shot_time),
+                damage_taken_up=registry.total_for("damage_taken_up", target, shot_time),
             )
             damage_log.append({"slug": slug, "time": shot_time, "damage": damage, "source": "normal_attack"})
 

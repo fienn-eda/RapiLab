@@ -35,6 +35,8 @@ Damage stats (fed into `calculate_damage`, so they change damage numbers):
 | `attack_damage_up` | Attack Damage bucket | "Attack Damage ▲ X%" |
 | `damage_to_parts_up` | damage to parts/interruption | "Damage to (Interruption) Parts ▲" |
 | `pierce_damage_up` | pierce damage (modeled as general damage-up) | "Pierce Damage ▲ X%" |
+| `damage_taken_up` | enemy damage-taken debuff — model as **squad** scope (all attackers share it) | "Damage Taken ▲ X%" (on enemy) |
+| `other_core_damage_sources` | core-damage buff, **gated on `core_hittable`** (inert if boss has no core) | "Damage dealt when attacking core ▲ X%" |
 
 Scheduling stats (change the burst rotation / shot timing, not per-hit damage):
 | stat | mechanism | game wording |
@@ -60,20 +62,18 @@ Defer these; if a Nikke's contribution is mostly these, say so — a thin
 encoding is honest.
 
 **Valid formula terms that raid_simulator just doesn't wire from the registry
-yet** — a real gap, not a dead end:
-- `other_core_damage_sources` (core damage buffs — "Damage dealt when attacking
-  core ▲"). Core hits are currently a uniform sim-wide `core_hittable` toggle;
-  per-source core-damage buffs aren't read from the registry.
-- `damage_taken_up` (enemy damage-taken debuffs — a direct damage multiplier).
+yet** — a real gap, not a dead end: `sustained_damage_up`, `true_damage_up`,
+`shield_damage_up`, `projectile_explosion_damage_up`, `distributed_damage_up`,
+and the major-modifier terms `full_burst_bonus` / `effective_range_bonus` /
+`final_atk_modifier`.
 
-Both exist in `damage_formula.py` but are absent from `raid_simulator.py`'s
+All exist in `damage_formula.py` but are absent from `raid_simulator.py`'s
 `total_for(...)` calls. Do NOT encode a Nikke's headline effect onto one of
 these and pretend it works — verify against the "engine CONSUMES" list above
-(and `grep registry.total_for raid_simulator.py`). If a Nikke's main value is
-one of these (e.g. Naga = core damage, Blanc = damage-taken debuff), flag it to
-the user as an engine-extension opportunity (wiring is ~one line per damage
-call site, mirroring how `pierce_damage_up`/`damage_to_parts_up` are already
-wired) — an architecture decision to raise, not to make silently mid-encoding.
+(and `grep registry.total_for raid_simulator.py`). If a Nikke needs one, wiring
+is ~one line per `calculate_damage` call site (mirroring how `pierce_damage_up`
+/ `damage_to_parts_up` / `damage_taken_up` are wired). Raise it as a small
+engine-extension decision rather than making it silently mid-encoding.
 
 ## Triggers (when a SkillRule fires)
 

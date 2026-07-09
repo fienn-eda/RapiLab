@@ -88,8 +88,8 @@
 
 ### 지금/다음
 - [ ] 2·3버스트 니케 인코딩 (딜러 중심으로 후보 선정)
-- [ ] `damage_taken_up` / `other_core_damage_sources` 엔진 연결
-      — **승인 필요**: 모든 덱 수치에 영향 (현재 미소비, insights.md 참고)
+- [x] `damage_taken_up` / `other_core_damage_sources` 엔진 연결
+      — 완료. squad 스코프 적 디버프, 코어 데미지는 `core_hittable` 게이팅.
 - [ ] `NikkeSpec`에 스킬별 유저 레벨 필드 추가 → 조립 시 `levels[level-1]` 선택 일반화
       (지금은 빌더가 단일 레벨 dict만 받음)
 
@@ -109,8 +109,10 @@
 
 정확도를 위해 언젠가 다뤄야 하지만 지금은 근사/보류한 것들 (각 모듈에 주석).
 
-- **미연결 stat:** `damage_taken_up`, `other_core_damage_sources` — 공식엔 있으나
-  `raid_simulator`가 레지스트리에서 안 읽음. 연결은 엔진 확장(승인 필요), 절대 가짜로 채우지 말 것.
+- **미연결 stat(나머지):** `sustained_damage_up`, `true_damage_up`, `shield_damage_up`,
+  `projectile_explosion_damage_up`, `distributed_damage_up` 등은 공식엔 있으나 아직
+  `raid_simulator`가 안 읽음. 필요한 유닛 인코딩 시 해당 버킷만 한 줄로 연결, 가짜 금지.
+  (`damage_taken_up`·`other_core_damage_sources`는 연결 완료.)
 - **근사 처리:** `pierce_damage_up`는 모든 히트에 적용(실제 관통 히트 게이팅 X),
   스택/에스컬레이션 버프는 정상상태(최댓값) 근사.
 - **미구현 메커니즘:** 노멀어택 횟수 트리거, 위치/최고ATK 아군 타겟팅,

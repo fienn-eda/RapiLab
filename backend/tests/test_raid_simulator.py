@@ -174,6 +174,61 @@ def test_crit_damage_buff_raises_expected_damage_scaled_by_crit_rate():
     assert round(with_buff["total_damage"], 5) == round(without["total_damage"] / 1.075 * 1.225, 5)
 
 
+def test_damage_taken_up_debuff_raises_damage():
+    # An enemy "Damage Taken ▲" debuff (e.g. Blanc/Arcana) is modeled as a
+    # squad-scoped effect so every attacker's hits gain it. It sits in the
+    # formula's Damage Taken bucket and applies regardless of core hits.
+    def grant_damage_taken(context, caster_slug, time, registry):
+        registry.add(Effect("damage_taken_up", 0.4, "squad", None, "buffer"), applied_at=time)
+
+    kwargs = dict(
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    without = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    with_debuff = simulate_raid(
+        make_deck(),
+        {"buffer": [SkillRule(trigger="battle_start", action=grant_damage_taken)], "midtier": [], "attacker": []},
+        **kwargs,
+    )
+    assert without["total_damage"] == 10000.0
+    assert round(with_debuff["total_damage"], 5) == round(10000.0 * 1.4, 5)
+
+
+def test_core_damage_up_only_helps_when_core_is_hittable():
+    # "Damage dealt when attacking core ▲" (e.g. Nayuta) raises the major
+    # modifier, but only matters when the boss's core is actually hittable -
+    # gated the same way as the flat core-hit bonus.
+    def grant_core_damage(context, caster_slug, time, registry):
+        registry.add(Effect("other_core_damage_sources", 0.3, "squad", None, "buffer"), applied_at=time)
+
+    rules = {
+        "buffer": [SkillRule(trigger="battle_start", action=grant_core_damage)],
+        "midtier": [],
+        "attacker": [],
+    }
+    kwargs = dict(
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    not_core = simulate_raid(make_deck(), rules, core_hittable=False, **kwargs)
+    core = simulate_raid(make_deck(), rules, core_hittable=True, **kwargs)
+    # no core: core-damage sources inert -> plain 10000.
+    assert not_core["total_damage"] == 10000.0
+    # core hittable: major modifier = 1 + core_hit_bonus(1.0) + core_damage(0.3) = 2.3.
+    assert round(core["total_damage"], 5) == round(10000.0 * 2.3, 5)
+
+
 def test_boss_element_none_applies_no_advantage():
     rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
     result = simulate_raid(
