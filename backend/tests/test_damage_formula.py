@@ -38,10 +38,29 @@ def test_attack_coefficient_scales_flat_atk_since_it_is_inside_base_damage():
     assert calculate_damage(atk=1000, flat_atk=500, enemy_def=0, attack_coefficient=2.0) == 3000
 
 
-def test_critical_hit_applies_150_percent_major_modifier():
-    # Major modifier base is 1 + 0.5 (crit) when is_critical=True
-    damage = calculate_damage(atk=1000, enemy_def=0, is_critical=True)
+def test_guaranteed_crit_applies_50_percent_major_modifier():
+    # crit_rate=1.0 (always crits) -> major modifier gains the 0.5 base crit bonus
+    damage = calculate_damage(atk=1000, enemy_def=0, crit_rate=1.0)
     assert damage == 1500
+
+
+def test_zero_crit_rate_adds_no_crit_contribution():
+    damage = calculate_damage(atk=1000, enemy_def=0, crit_rate=0.0)
+    assert damage == 1000
+
+
+def test_crit_rate_scales_the_expected_crit_bonus():
+    # expected major = 1 + crit_rate * 0.5; at 0.15 base crit that's +7.5%
+    assert calculate_damage(atk=1000, enemy_def=0, crit_rate=0.15) == 1075
+    assert calculate_damage(atk=1000, enemy_def=0, crit_rate=0.5) == 1250
+
+
+def test_crit_damage_sources_only_count_scaled_by_crit_rate():
+    # crit damage buffs raise the crit hit's bonus but only take effect on the
+    # crit fraction of hits: expected major = 1 + crit_rate * (0.5 + sources).
+    assert calculate_damage(atk=1000, enemy_def=0, crit_rate=1.0, other_critical_damage_sources=0.2) == 1700
+    # with no chance to crit, crit damage sources are inert
+    assert calculate_damage(atk=1000, enemy_def=0, crit_rate=0.0, other_critical_damage_sources=0.2) == 1000
 
 
 def test_core_hit_applies_bonus():
@@ -86,7 +105,7 @@ def test_combined_realistic_scenario():
         atk_percent=0.5,
         enemy_def=500,
         enemy_def_percent=0.2,
-        is_critical=True,
+        crit_rate=1.0,
         core_hit_bonus=1.0,
         full_burst_bonus=1.0,
         element_multiplier=1.1,

@@ -27,18 +27,21 @@ def _base_damage(atk, atk_percent, flat_atk, enemy_def, enemy_def_percent, flat_
 
 
 def _major_modifiers(
-    is_critical,
+    crit_rate,
     other_critical_damage_sources,
     core_hit_bonus,
     other_core_damage_sources,
     full_burst_bonus,
     effective_range_bonus,
 ):
-    crit_term = 0.5 if is_critical else 0.0
+    # Expected-value crit: a hit crits with probability crit_rate, and a crit
+    # adds (0.5 base + crit damage sources) to the major modifier. Averaged over
+    # many hits that is crit_rate * (0.5 + sources). Crit damage sources are
+    # therefore inert without any crit chance, matching the game.
+    expected_crit_term = crit_rate * (0.5 + other_critical_damage_sources)
     return (
         1
-        + crit_term
-        + other_critical_damage_sources
+        + expected_crit_term
         + core_hit_bonus
         + other_core_damage_sources
         + full_burst_bonus * 0.5
@@ -55,7 +58,7 @@ def calculate_damage(
     flat_enemy_def=0.0,
     attack_coefficient=1.0,
     final_atk_modifier=0.0,
-    is_critical=False,
+    crit_rate=0.0,
     other_critical_damage_sources=0.0,
     core_hit_bonus=0.0,
     other_core_damage_sources=0.0,
@@ -82,7 +85,7 @@ def calculate_damage(
     # multiplies the whole Base Damage, i.e. AFTER defense is subtracted.
     final_atk_modifiers = attack_coefficient * (1 + final_atk_modifier)
     major_modifiers = _major_modifiers(
-        is_critical,
+        crit_rate,
         other_critical_damage_sources,
         core_hit_bonus,
         other_core_damage_sources,

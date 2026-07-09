@@ -47,6 +47,7 @@ def test_battle_start_buff_is_active_by_the_time_the_burst_fires():
         gauge_charge_time=5.0,
         fight_duration=20.0,
         mode="auto",
+        base_crit_rate=0.0,
     )
 
     assert len(result["damage_log"]) == 1
@@ -66,6 +67,7 @@ def test_core_hittable_true_doubles_burst_damage_via_200_percent_core_bonus():
         gauge_charge_time=5.0,
         fight_duration=20.0,
         mode="auto",
+        base_crit_rate=0.0,
     )
     with_core = simulate_raid(
         make_deck(),
@@ -77,6 +79,7 @@ def test_core_hittable_true_doubles_burst_damage_via_200_percent_core_bonus():
         fight_duration=20.0,
         mode="auto",
         core_hittable=True,
+        base_crit_rate=0.0,
     )
     # per Fienn's in-game tooltip check, core damage is a uniform 200% across
     # every weapon type (+1.0 to the major modifier), i.e. exactly double a
@@ -97,12 +100,78 @@ def test_boss_element_grants_advantage_bonus_to_matching_attackers():
         gauge_charge_time=5.0,
         fight_duration=20.0,
         mode="auto",
+        base_crit_rate=0.0,
     )
     neutral = simulate_raid(make_deck(), boss_element="Fire", **kwargs)
     advantaged = simulate_raid(make_deck(), boss_element="Electric", **kwargs)
 
     assert neutral["total_damage"] == 10000.0
     assert round(advantaged["total_damage"], 5) == round(10000.0 * 1.1, 5)
+
+
+def test_base_crit_rate_of_15_percent_raises_damage_by_7_5_percent():
+    rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
+    kwargs = dict(
+        rules_by_slug=rules_by_slug,
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+    )
+    no_crit = simulate_raid(make_deck(), base_crit_rate=0.0, **kwargs)
+    base_crit = simulate_raid(make_deck(), base_crit_rate=0.15, **kwargs)
+    # 15% crit chance * 50% base crit damage = +7.5% expected
+    assert round(base_crit["total_damage"], 5) == round(no_crit["total_damage"] * 1.075, 5)
+
+
+def test_crit_rate_buff_raises_expected_damage():
+    def grant_crit_rate(context, caster_slug, time, registry):
+        registry.add(Effect("crit_rate", 0.35, "squad", None, "buffer"), applied_at=time)
+
+    kwargs = dict(
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.15,
+    )
+    without = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    with_buff = simulate_raid(
+        make_deck(),
+        {"buffer": [SkillRule(trigger="battle_start", action=grant_crit_rate)], "midtier": [], "attacker": []},
+        **kwargs,
+    )
+    # crit rate 0.15 -> 0.50: expected major 1.075 -> 1.25
+    assert round(with_buff["total_damage"], 5) == round(without["total_damage"] / 1.075 * 1.25, 5)
+
+
+def test_crit_damage_buff_raises_expected_damage_scaled_by_crit_rate():
+    def grant_crit_damage(context, caster_slug, time, registry):
+        registry.add(
+            Effect("other_critical_damage_sources", 1.0, "squad", None, "buffer"), applied_at=time
+        )
+
+    kwargs = dict(
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.15,
+    )
+    without = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    with_buff = simulate_raid(
+        make_deck(),
+        {"buffer": [SkillRule(trigger="battle_start", action=grant_crit_damage)], "midtier": [], "attacker": []},
+        **kwargs,
+    )
+    # +100% crit damage at 15% crit: expected major 1 + 0.15*(0.5+1.0) = 1.225 vs 1.075
+    assert round(with_buff["total_damage"], 5) == round(without["total_damage"] / 1.075 * 1.225, 5)
 
 
 def test_boss_element_none_applies_no_advantage():
@@ -117,6 +186,7 @@ def test_boss_element_none_applies_no_advantage():
         fight_duration=20.0,
         mode="auto",
         boss_element=None,
+        base_crit_rate=0.0,
     )
     assert result["total_damage"] == 10000.0
 
@@ -132,6 +202,7 @@ def test_burst_damage_with_no_buffs_uses_plain_percent_of_atk():
         gauge_charge_time=5.0,
         fight_duration=20.0,
         mode="auto",
+        base_crit_rate=0.0,
     )
     # atk_for_hit = 2000 * 5.0 = 10000; no buffs, no enemy def -> damage == 10000
     assert result["total_damage"] == 10000.0
@@ -234,6 +305,7 @@ def test_normal_attack_damage_is_accumulated_for_magazine_weapons():
         fight_duration=1.0,
         mode="auto",
         weapon_stats=weapon_stats,
+        base_crit_rate=0.0,
     )
     # AR fires at 12/sec (Fienn's 60fps table); with a 100s reload, only the
     # first magazine's shots within the 1s fight matter: shots at t=0 and
@@ -404,6 +476,7 @@ def test_normal_attack_damage_uses_live_buffs_at_shot_time():
         fight_duration=1.0,
         mode="auto",
         weapon_stats=weapon_stats,
+        base_crit_rate=0.0,
     )
     # atk_for_hit=100, atk_percent buff of +100% (granted at battle_start,
     # active for the shot at t=0) doubles it to 200.
@@ -429,6 +502,7 @@ def test_normal_attack_damage_for_charge_weapon_applies_charge_damage_bonus():
         fight_duration=1.5,
         mode="auto",
         weapon_stats=weapon_stats,
+        base_crit_rate=0.0,
     )
     # one shot at t=1.0 (charge_time); atk_for_hit=100, charge_damage_bonus
     # = 250/100-1 = 1.5 -> charge_damage multiplier = 1+1.5 = 2.5 -> 250.

@@ -35,10 +35,16 @@ evaluated.
 damage instance from an attacker whose element beats the boss's; None means
 no element is considered (neutral for everyone).
 
-Known simplifications: all damage is computed as non-critical (crit-rate-
-to-expected-damage isn't resolved yet); a slug missing from `weapon_stats`
-contributes no normal-attack damage (e.g. while that character's weapon
-data hasn't been entered yet).
+Crit is modeled as expected value, not per-hit RNG: every hit's damage is
+scaled by 1 + crit_rate*(0.5 + crit damage sources), where crit_rate is the
+15% base plus any crit_rate buffs (capped at 100%). So crit rate AND crit
+damage buffs both raise output, which is what most Burst-1 supporters exist
+to do. base_crit_rate can be overridden (e.g. 0.0 in tests that want
+deterministic non-crit numbers).
+
+Known simplification: a slug missing from `weapon_stats` contributes no
+normal-attack damage (e.g. while that character's weapon data hasn't been
+entered yet).
 """
 from app.attack_rate import CHARGE_WEAPONS, generate_shot_times
 from app.burst_cycle import simulate_burst_cycle
@@ -48,6 +54,7 @@ from app.elements import element_multiplier
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 CORE_HIT_BONUS = 1.0
+BASE_CRIT_RATE = 0.15
 
 
 def simulate_raid(
@@ -62,6 +69,7 @@ def simulate_raid(
     core_hittable=False,
     weapon_stats=None,
     boss_element=None,
+    base_crit_rate=BASE_CRIT_RATE,
 ):
     weapon_stats = weapon_stats or {}
     context = SquadContext([SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck])
@@ -71,6 +79,9 @@ def simulate_raid(
 
     def target_for(slug):
         return {"slug": slug, "element": member_by_slug[slug]["element"]}
+
+    def crit_rate_for(target, time):
+        return min(1.0, base_crit_rate + registry.total_for("crit_rate", target, time))
 
     def element_bonus_for(slug):
         if boss_element is None:
@@ -96,6 +107,7 @@ def simulate_raid(
             flat_atk=registry.total_for("flat_atk", target, time),
             other_elemental_bonus=registry.total_for("other_elemental_bonus", target, time),
             other_critical_damage_sources=registry.total_for("other_critical_damage_sources", target, time),
+            crit_rate=crit_rate_for(target, time),
             core_hit_bonus=CORE_HIT_BONUS if core_hittable else 0.0,
             element_multiplier=element_bonus_for(slug),
             charge_damage_bonus=registry.total_for("charge_damage_bonus", target, time),
@@ -152,6 +164,7 @@ def simulate_raid(
                 other_critical_damage_sources=registry.total_for(
                     "other_critical_damage_sources", target, shot_time
                 ),
+                crit_rate=crit_rate_for(target, shot_time),
                 core_hit_bonus=CORE_HIT_BONUS if core_hittable else 0.0,
                 element_multiplier=element_bonus_for(slug),
                 charge_damage_bonus=charge_damage_bonus,
