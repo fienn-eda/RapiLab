@@ -3,10 +3,9 @@ import pytest
 from app.skill_rules.registry import ENCODED_SLUGS, build_nikke_rules
 
 
-def test_all_five_encoded_nikkes_are_registered():
-    assert set(ENCODED_SLUGS) == {
-        "anis-star", "crown", "rapi-red-hood", "helm", "privaty",
-    }
+def test_core_encoded_nikkes_are_registered():
+    assert {"anis-star", "crown", "rapi-red-hood", "helm", "privaty"} <= set(ENCODED_SLUGS)
+    assert {"liter", "volume", "miranda"} <= set(ENCODED_SLUGS)
 
 
 def test_build_returns_rules_and_burst_percent_for_an_attacker():

@@ -15,6 +15,8 @@ from app.skill_rules.helm import (
     build_fire_away_rules,
     build_frontline_command_rules,
 )
+from app.skill_rules.liter import build_liter_rules
+from app.skill_rules.miranda import build_miranda_rules
 from app.skill_rules.privaty import (
     ak_missile_burst_percent,
     build_ak_missile_rules,
@@ -24,6 +26,7 @@ from app.skill_rules.rapi_red_hood import (
     build_battlefield_assessment_rules,
     power_of_inheritance_stage3_burst_percent,
 )
+from app.skill_rules.volume import build_volume_rules
 
 
 def _build_anis_star(sv):
@@ -60,6 +63,9 @@ _BUILDERS = {
     "rapi-red-hood": _build_rapi_red_hood,
     "helm": _build_helm,
     "privaty": _build_privaty,
+    "liter": lambda sv: (build_liter_rules(sv), None),
+    "volume": lambda sv: (build_volume_rules(sv), None),
+    "miranda": lambda sv: (build_miranda_rules(sv), None),
 }
 
 ENCODED_SLUGS = tuple(_BUILDERS)
