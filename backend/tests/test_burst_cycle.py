@@ -60,17 +60,32 @@ def test_second_cycle_alternates_to_other_tier3_unit_once_first_is_on_cooldown()
     assert [e["slug"] for e in tier3_events] == ["b3_unit_a", "b3_unit_b"]
 
 
-def test_cycle_fails_without_cooldown_reduction_when_only_one_nikke_per_low_tier():
-    # tier1/tier2 only have ONE eligible Nikke each with a 20s cooldown.
-    # cycle length is 15s (5s charge + 10s full burst), but the tier1/2 Nikke's
-    # cooldown (20s) hasn't elapsed by the time the second cycle wants to fire -
-    # this is exactly why Fienn said a burst-cooldown-reduction Nikke is required.
+def test_second_cycle_waits_for_the_slowest_tiers_cooldown_instead_of_missing():
+    # tier1/tier2 only have ONE eligible Nikke each with a 20s cooldown, used
+    # at t=5. Full Burst ends at t=15, so a fixed 5s gauge-charge gap would
+    # want to fire the next cycle at t=20 - too early, since tier1/2 aren't
+    # off cooldown until t=25. Per Fienn: gauge always finishes charging
+    # before cooldowns do, so the scheduler should just wait until t=25
+    # (the true bottleneck) rather than declaring the cycle missed - a
+    # weaker deck cycles slower, it doesn't break.
     deck = make_deck()
     events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=35.0, mode="auto")
 
-    assert any(e["type"] == "full_burst_missed" for e in events)
-    # only one full cycle completes before the miss
-    assert len([e for e in events if e["type"] == "full_burst_start"]) == 1
+    assert not any(e["type"] == "full_burst_missed" for e in events)
+    starts = [e["time"] for e in events if e["type"] == "full_burst_start"]
+    assert starts == [5.0, 25.0]
+
+
+def test_missing_a_burst_tier_entirely_is_reported_as_missed():
+    # A deck with no Burst 1 member at all can never enter Full Burst no
+    # matter how long it waits - this is the one case still a real "miss".
+    deck = [
+        {"slug": "b2_unit", "burst_tier": 2, "cooldown": 20.0},
+        {"slug": "b3_unit", "burst_tier": 3, "cooldown": 40.0},
+    ]
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=35.0, mode="auto")
+
+    assert events == [{"type": "full_burst_missed", "time": 5.0}]
 
 
 def test_fight_duration_shorter_than_first_charge_produces_no_bursts():
@@ -114,10 +129,11 @@ def test_on_full_burst_enter_hook_fires_at_tier3_time():
 
 
 def test_on_full_burst_end_hook_return_value_reduces_all_cooldowns():
-    # tier1/tier2 have only one eligible Nikke each with a 20s cooldown, so
-    # without cooldown reduction the second cycle would miss (see the
-    # dedicated failure test above). A 15s reduction from the hook should be
-    # enough to let the second cycle's tier1/tier2 fire on time.
+    # Without any reduction, the second cycle waits until tier1/2's 20s
+    # cooldown clears at t=25 (see the test above). A 15s reduction applied
+    # at t=15 pulls that up to t=10, which is earlier than the 5s gauge-charge
+    # floor (t=20) - so the gauge floor becomes the new bottleneck and the
+    # second cycle starts at t=20 instead.
     deck = make_deck()
     events = simulate_burst_cycle(
         deck, gauge_charge_time=5.0, fight_duration=35.0, mode="auto",
