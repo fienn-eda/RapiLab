@@ -41,7 +41,9 @@ and by reading the relevant source; never rely on guessing.
 - Do NOT duplicate the `nikke-skill-encoding` skill: for "how to encode a Nikke"
   or the stat/trigger/scope catalog, link to
   `.claude/skills/nikke-skill-encoding/` instead of restating it. `docs/` is for
-  project decisions and cross-cutting insights, not procedures.
+  project decisions and cross-cutting insights, not procedures. In particular,
+  per-mechanic encoding notes (e.g. "Distributed Damage is a DPS buff") live in
+  that skill's `references/special-mechanics.md` — link to it, don't restate it.
 
 ## Boundaries
 

@@ -43,12 +43,18 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    (c) not DPS-relevant (heals, shields, DEF, taunts, Max HP) → skip. Use
    `references/engine-capabilities.md` for the exact catalog of stats, triggers,
    scopes, and the deferred-mechanics list. When unsure whether a mechanic is
-   representable, check that catalog before inventing anything.
+   representable, check that catalog before inventing anything. Also check
+   `references/special-mechanics.md` for mechanics that are easy to misread
+   (e.g. Distributed Damage is a DPS buff, not defensive) — and **append a new
+   entry there whenever you hit a special mechanic**, so it's captured for next
+   time.
 
 4. **Write the module** `backend/app/skill_rules/<slug_with_underscores>.py`.
-   Reuse `_helpers.buff_rule(trigger, buffs)` and
-   `_helpers.cdr_pulse_rule(trigger, seconds)` — most supporters are just
-   bundles of timed buffs plus a cooldown pulse. Each `build_*` function takes a
+   Reuse the `_helpers`: `buff_rule(trigger, buffs)` and
+   `cdr_pulse_rule(trigger, seconds)` for the common "timed buffs + cooldown
+   pulse" supporter, and `escalating_buff_rule(trigger, tiers)` for
+   "Once/Twice/Three times" ramps. For deck-composition-dependent behaviour use
+   the `deck_contains(slug)` condition. Each `build_*` function takes a
    `skill_values` dict keyed by that Nikke's sub-skill names.
 
 5. **Handle the burst skill.** If the burst is a nuke ("Deals X% of final ATK
@@ -84,9 +90,13 @@ exactly. In priority order:
   become `squad` scope. This is right when the intended beneficiary (the deck's
   attacker) still gets the buff and the over-application to low-damage
   supporters barely moves total output. Always say so in the docstring.
-- **Steady-state** for escalating/stacking effects ("previous effects trigger
-  repeatedly", "stacks up to N", status that ramps): use the max/settled value,
-  since a 3-minute raid reaches it almost immediately. Document the assumption.
+- **Cycle-aware escalation** for "Once/Twice/Three times, previous effects
+  trigger repeatedly": use `escalating_buff_rule` so each tier unlocks on its
+  activation and ramps per burst cycle. Do NOT flatten these to a steady-state
+  max — Fienn wants the real per-cycle ramp, and it composes with deck-dependent
+  behaviour (e.g. Anchor's debuff-clear letting Mast hold 3 Drunken stacks). For
+  a plain "stacks up to N" that just settles (no per-tier effects, no cross-unit
+  coupling), the settled max is still fine — document the assumption.
 - **Defer + document** when a trigger or mechanic simply doesn't exist yet
   (normal-attack-count, full-charge-count, ammo-expended counters, positional
   rows, weapon transformation, attack speed, hit rate). Do NOT approximate these

@@ -8,6 +8,7 @@ whose burst skill is buffs-only (no "X% of ATK" nuke), e.g. Crown/Anis: Star.
 Each builder takes a `skill_values` dict keyed by that Nikke's sub-skill names
 (plus caster base stats where a skill scales off them, e.g. Crown).
 """
+from app.skill_rules.anchor_innocent_maid import build_anchor_rules
 from app.skill_rules.anis_star import build_starfall_rules
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
 from app.skill_rules.d_killer_wife import build_d_killer_wife_rules, kill_the_target_burst_percent
@@ -18,6 +19,7 @@ from app.skill_rules.helm import (
 )
 from app.skill_rules.little_mermaid import build_little_mermaid_rules
 from app.skill_rules.liter import build_liter_rules
+from app.skill_rules.mast_romantic_maid import build_mast_rules
 from app.skill_rules.miranda import build_miranda_rules
 from app.skill_rules.moran import build_moran_rules
 from app.skill_rules.rouge import build_rouge_rules
@@ -66,6 +68,7 @@ def _build_privaty(sv):
 
 _BUILDERS = {
     "anis-star": _build_anis_star,
+    "anchor-innocent-maid": lambda sv: (build_anchor_rules(sv), None),
     "crown": _build_crown,
     "rapi-red-hood": _build_rapi_red_hood,
     "helm": _build_helm,
@@ -77,6 +80,7 @@ _BUILDERS = {
     "zwei": lambda sv: (build_zwei_rules(sv), None),
     "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), kill_the_target_burst_percent(sv)),
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
+    "mast-romantic-maid": lambda sv: (build_mast_rules(sv), None),
     "moran": lambda sv: (build_moran_rules(sv), None),
     "tove": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),

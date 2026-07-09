@@ -45,6 +45,13 @@ weapon) distinction, and a dump script. Read it first.
    the description text. Make clear these are one level's values and the file
    retains all of them.
 
+5. **Flag special mechanics.** Read
+   `.claude/skills/nikke-skill-encoding/references/special-mechanics.md`. If a
+   skill's wording matches a catalogued mechanic (e.g. Distributed Damage,
+   debuff-stack reduction, "Once/Twice/Three times" escalation) or looks like a
+   new one, call it out in your report so the main agent encodes it correctly.
+   You don't edit that file — just surface the match.
+
 On Windows prefix Python/pytest-style commands with `PYTHONIOENCODING=utf-8`
 (the descriptions contain Korean and arrow characters).
 
