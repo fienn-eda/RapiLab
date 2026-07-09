@@ -6,15 +6,18 @@ api.dotgg.gg's character data for these weapons (chargeTime is 0, so it
 can't be derived) - RATE_OF_FIRE_60FPS is Fienn's measured 60fps figures
 for actual (not theoretical) rate of fire.
 
-Charge weapons (RL/SR) charge for charge_time, fire one shot, then reload
-for reload_time before charging again - one shot per (charge_time +
-reload_time) cycle. This assumes every shot is a full charge (the higher-
-DPS, standard way to play these weapons); partial-charge/uncharged shots
-aren't modeled.
+Charge weapons (RL/SR) fire max_ammo full-charge shots (charge_time apart,
+one charge per shot), THEN reload for reload_time before the next batch -
+confirmed by Fienn against how maxAmmo behaves for these weapons in-game,
+not a single charge+reload per shot. Partial-charge/uncharged shots aren't
+modeled.
 
-Not modeled: reload_speed_percent and max_ammo_percent effects (several
-skills grant these) changing the schedule dynamically mid-fight - shot
-timing here uses each Nikke's base reload_time/max_ammo throughout.
+reload_speed_percent and max_ammo_percent (from overload options, which are
+permanent, or skills, which are often temporary) are threaded through as
+callables - `_at(t)` - evaluated at the moment they're needed (magazine
+size at the magazine's start time, reload speed at the moment the last
+round of that magazine fires) rather than as fixed numbers, since they can
+change mid-fight. Magazine size is rounded to the nearest whole round.
 """
 
 RATE_OF_FIRE_60FPS = {
@@ -27,44 +30,82 @@ RATE_OF_FIRE_60FPS = {
 CHARGE_WEAPONS = {"RL", "SR"}
 
 
+def _zero(_time):
+    return 0.0
+
+
 def rate_of_fire_for_weapon(weapon: str) -> float:
     return RATE_OF_FIRE_60FPS[weapon]
 
 
-def generate_magazine_shot_times(rate_of_fire, max_ammo, reload_time, fight_duration):
+def generate_magazine_shot_times(
+    rate_of_fire,
+    max_ammo,
+    reload_time,
+    fight_duration,
+    max_ammo_percent_at=_zero,
+    reload_speed_percent_at=_zero,
+):
     shot_interval = 1.0 / rate_of_fire
-    cycle_duration = max_ammo * shot_interval + reload_time
     shots = []
-    cycle_start = 0.0
+    magazine_start = 0.0
 
-    while cycle_start < fight_duration:
-        for i in range(max_ammo):
-            shot_time = cycle_start + i * shot_interval
+    while magazine_start < fight_duration:
+        magazine_size = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
+        for i in range(magazine_size):
+            shot_time = magazine_start + i * shot_interval
             if shot_time >= fight_duration:
                 return shots
             shots.append(shot_time)
-        cycle_start += cycle_duration
+        magazine_empty_at = magazine_start + magazine_size * shot_interval
+        actual_reload_time = reload_time / (1 + reload_speed_percent_at(magazine_empty_at))
+        magazine_start = magazine_empty_at + actual_reload_time
 
     return shots
 
 
-def generate_charge_shot_times(charge_time, reload_time, fight_duration):
-    cycle_duration = charge_time + reload_time
+def generate_charge_shot_times(
+    charge_time,
+    reload_time,
+    max_ammo,
+    fight_duration,
+    max_ammo_percent_at=_zero,
+    reload_speed_percent_at=_zero,
+):
     shots = []
-    i = 0
+    magazine_start = 0.0
 
-    while True:
-        shot_time = charge_time + i * cycle_duration
-        if shot_time >= fight_duration:
-            break
-        shots.append(shot_time)
-        i += 1
+    while magazine_start < fight_duration:
+        magazine_size = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
+        last_shot_time = None
+        for i in range(magazine_size):
+            shot_time = magazine_start + charge_time + i * charge_time
+            if shot_time >= fight_duration:
+                return shots
+            shots.append(shot_time)
+            last_shot_time = shot_time
+        actual_reload_time = reload_time / (1 + reload_speed_percent_at(last_shot_time))
+        magazine_start = last_shot_time + actual_reload_time
 
     return shots
 
 
-def generate_shot_times(weapon, max_ammo, reload_time, charge_time, fight_duration):
+def generate_shot_times(
+    weapon,
+    max_ammo,
+    reload_time,
+    charge_time,
+    fight_duration,
+    max_ammo_percent_at=_zero,
+    reload_speed_percent_at=_zero,
+):
     if weapon in CHARGE_WEAPONS:
-        return generate_charge_shot_times(charge_time, reload_time, fight_duration)
+        return generate_charge_shot_times(
+            charge_time, reload_time, max_ammo, fight_duration,
+            max_ammo_percent_at, reload_speed_percent_at,
+        )
     rate_of_fire = rate_of_fire_for_weapon(weapon)
-    return generate_magazine_shot_times(rate_of_fire, max_ammo, reload_time, fight_duration)
+    return generate_magazine_shot_times(
+        rate_of_fire, max_ammo, reload_time, fight_duration,
+        max_ammo_percent_at, reload_speed_percent_at,
+    )

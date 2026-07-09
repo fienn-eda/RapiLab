@@ -26,12 +26,16 @@ whole simulation (some raid bosses have an exploitable core, some don't);
 per-skill/per-shot core-hit eligibility isn't modeled, so this applies
 uniformly to every damage instance for now.
 
+reload_speed_percent and max_ammo_percent effects (from overload options or
+skills) are read live from the registry at each magazine's start/reload
+moment, so temporary buffs correctly speed up reloads or grow magazines
+only while active - see attack_rate's docstring for exactly when each is
+evaluated.
+
 Known simplifications: all damage is computed as non-critical (crit-rate-
 to-expected-damage isn't resolved yet); a slug missing from `weapon_stats`
 contributes no normal-attack damage (e.g. while that character's weapon
-data hasn't been entered yet); reload_speed_percent/max_ammo_percent
-effects don't change the normal-attack shot schedule (see attack_rate's
-docstring).
+data hasn't been entered yet).
 """
 from app.attack_rate import CHARGE_WEAPONS, generate_shot_times
 from app.burst_cycle import simulate_burst_cycle
@@ -117,6 +121,10 @@ def simulate_raid(
             weapon["reload_time"],
             weapon["charge_time"],
             fight_duration,
+            max_ammo_percent_at=lambda t, target=target: registry.total_for("max_ammo_percent", target, t),
+            reload_speed_percent_at=lambda t, target=target: registry.total_for(
+                "reload_speed_percent", target, t
+            ),
         )
         for shot_time in shot_times:
             charge_damage_bonus = registry.total_for("charge_damage_bonus", target, shot_time)

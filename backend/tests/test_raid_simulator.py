@@ -199,6 +199,52 @@ def test_normal_attack_damage_is_accumulated_for_magazine_weapons():
     assert result["total_damage"] == 200.0
 
 
+def test_normal_attack_schedule_speeds_up_after_a_reload_speed_buff():
+    # A permanent (e.g. overload-sourced) reload_speed_percent buff granted
+    # at battle_start should shorten every subsequent reload, producing more
+    # shots within the same fight_duration than the unbuffed case.
+    def grant_reload_speed(context, caster_slug, time, registry):
+        registry.add(
+            Effect("reload_speed_percent", 1.0, "self", None, "attacker"), applied_at=time
+        )
+
+    weapon_stats = {
+        "attacker": {
+            "weapon": "AR", "damage_percent": 10.0, "max_ammo": 2,
+            "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        }
+    }
+    unbuffed = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=1000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=3.0,
+        mode="auto",
+        weapon_stats=weapon_stats,
+    )
+    buffed = simulate_raid(
+        make_deck(),
+        {
+            "buffer": [SkillRule(trigger="battle_start", action=grant_reload_speed)],
+            "midtier": [],
+            "attacker": [],
+        },
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=1000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=3.0,
+        mode="auto",
+        weapon_stats=weapon_stats,
+    )
+    unbuffed_shots = [e for e in unbuffed["damage_log"] if e["source"] == "normal_attack"]
+    buffed_shots = [e for e in buffed["damage_log"] if e["source"] == "normal_attack"]
+    assert len(buffed_shots) > len(unbuffed_shots)
+
+
 def test_normal_attack_damage_uses_live_buffs_at_shot_time():
     def grant_atk_buff(context, caster_slug, time, registry):
         registry.add(Effect("atk_percent", 1.0, "self", None, "attacker"), applied_at=time)
