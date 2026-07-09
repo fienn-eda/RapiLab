@@ -64,6 +64,19 @@ def has_status(flag: str) -> Callable[[SquadContext, str], bool]:
     return check
 
 
+def own_burst_fired_this_cycle() -> Callable[[SquadContext, str], bool]:
+    """Condition: this Nikke's own burst tier already fired earlier in the
+    current cycle (e.g. Arcana's "if self is in Wheel of Fortune status" -
+    a self-status only her own burst grants). Reads
+    SquadContext.burst_used_this_cycle, which is populated before
+    own_burst_activate fires and cleared only after full_burst_end rules run."""
+
+    def check(context: SquadContext, caster_slug: str) -> bool:
+        return caster_slug in context.burst_used_this_cycle
+
+    return check
+
+
 def deck_contains(slug: str) -> Callable[[SquadContext, str], bool]:
     """Condition: another named Nikke is in the deck (e.g. Mast keys its Drunken
     stack retention off Anchor's presence)."""

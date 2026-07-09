@@ -8,6 +8,7 @@ from app.squad_engine import (
     has_status,
     no_other_burst_tier_allies,
     not_condition,
+    own_burst_fired_this_cycle,
 )
 
 
@@ -137,6 +138,15 @@ def test_activation_count_zero_before_firing_and_separate_per_trigger():
 
     assert ctx.activation_count("anchor", "full_burst_end") == 1
     assert ctx.activation_count("anchor", "own_burst_activate") == 0
+
+
+def test_own_burst_fired_this_cycle_reads_burst_used_this_cycle():
+    ctx = make_context(SquadMember("arcana", burst_tier=2, element="Electric"))
+    condition = own_burst_fired_this_cycle()
+    assert condition(ctx, "arcana") is False
+
+    ctx.burst_used_this_cycle.add("arcana")
+    assert condition(ctx, "arcana") is True
 
 
 def test_deck_contains_checks_squad_membership():

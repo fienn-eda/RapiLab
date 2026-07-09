@@ -62,5 +62,41 @@ how to encode it, and current engine status.
   `has_squad_twin`). "Same-squad ally" means a specific named unit, not any ally
   — confirm which with Fienn.
 
+## "If self is in status X" where only self's own burst grants X
+- **What:** a skill gates a bullet on "if self is in [status] status", where
+  that status is granted by the unit's OWN burst (to itself and possibly
+  others). E.g. Arcana's "Wheel of Fortune" - granted to Electric Code allies
+  including herself by her own burst (Shackles of Destiny); other bullets check
+  "if self is in Wheel of Fortune".
+- **Encode:** this is equivalent to "did this Nikke's own burst fire earlier in
+  the current cycle" - use the `own_burst_fired_this_cycle()` condition
+  (`squad_engine.py`), which reads `SquadContext.burst_used_this_cycle` (already
+  tracked by the engine, not yet cleared when `full_burst_end` rules run). No
+  new status-tracking needed. See `arcana.py`.
+
+## Targeting a per-member subset by tier + element + prior-burst
+- **What:** some bullets target a dynamic subset like "all Burst 3 Electric
+  Code allies who previously cast their Burst Skill" - a combination of tier,
+  element, AND per-member "already burst this cycle" state.
+- **Gap:** `Effect.scope` only supports `self` / `squad` / `element:X` - there's
+  no way to target an arbitrary computed list of member slugs. This is a real
+  engine gap, not a judgment call.
+- **Encode:** defer + document (do not approximate onto `squad` or
+  `element:X` - the audience is much narrower and these bullets are often large
+  numbers precisely because the audience is narrow). Flag it if the deferred
+  bullet looks central to the unit's value in a specific deck archetype. See
+  `arcana.py`'s deferred "Magician"/"Strength" bullets.
+
+## Weapon-type-scoped buffs ("all shotgun-wielding allies")
+- **What:** some buffs target allies by weapon type (e.g. "all shotgun-wielding
+  allies except self").
+- **Gap:** no weapon-type scope exists (only self/squad/element:X).
+- **Encode:** approximate as `squad` scope per the skill's standard
+  approximation pattern (intended beneficiaries still get it; over-application
+  to other weapon types is usually small). Watch for "except self" - squad
+  scope can't exclude the caster, so if the caster is also the intended
+  DPS unit, she'll incorrectly also receive the ally-only buff (document this
+  self-overstatement explicitly). See `arcana_fortune_mate.py`.
+
 ---
 *Add new mechanics above this line as they come up.*

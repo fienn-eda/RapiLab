@@ -11,6 +11,8 @@ Each builder takes a `skill_values` dict keyed by that Nikke's sub-skill names
 from app.skill_rules.ade_agent_bunny import build_ade_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
 from app.skill_rules.anis_star import build_starfall_rules
+from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
+from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
 from app.skill_rules.blanc import build_blanc_rules
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
 from app.skill_rules.d_killer_wife import build_d_killer_wife_rules, kill_the_target_burst_percent
@@ -72,6 +74,8 @@ _BUILDERS = {
     "anis-star": _build_anis_star,
     "ade-agent-bunny": lambda sv: (build_ade_rules(sv), None),
     "anchor-innocent-maid": lambda sv: (build_anchor_rules(sv), None),
+    "arcana": lambda sv: (build_arcana_rules(sv), arcana_burst_percent(sv)),
+    "arcana-fortune-mate": lambda sv: (build_fortune_mate_rules(sv), radiant_youth_burst_percent(sv)),
     "blanc": lambda sv: (build_blanc_rules(sv), None),
     "crown": _build_crown,
     "rapi-red-hood": _build_rapi_red_hood,
