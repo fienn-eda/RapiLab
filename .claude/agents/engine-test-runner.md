@@ -42,6 +42,18 @@ write noise — target the places interactions genuinely matter:
 Follow the existing test style (`backend/tests/test_*.py`), assert real values,
 and use `base_crit_rate=0.0` where a test needs deterministic non-crit numbers.
 
+## Reporting back to the main agent
+
+Keep the report terse and failure-focused — the main agent's context is
+precious, don't spend it on a wall of green.
+
+- **All green:** report only the one-line summary (`N passed in Xs`) plus, if
+  you added tests, a one-line note of what they cover. Nothing else — no
+  per-test listing.
+- **Any failures:** name only the failing tests (not the passing ones), with
+  your root-cause diagnosis for each. Include the relevant traceback snippet
+  only where it clarifies the diagnosis, not the full pytest dump.
+
 ## Boundaries
 
 Modify only files under `backend/tests/`. If the root cause of a failure is a

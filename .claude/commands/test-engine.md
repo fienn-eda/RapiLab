@@ -5,8 +5,10 @@ context: fork
 agent: engine-test-runner
 ---
 
-Run the deck-builder's full backend test suite and report the exact pass/fail
-summary line.
+Run the deck-builder's full backend test suite. If everything passes, report
+only the terse `N passed in Xs` line. If anything fails, report ONLY the
+failing test names with your diagnosis for each — do not list the passing
+tests or dump the full pytest output.
 
 Focus (may be empty): $ARGUMENTS
 
