@@ -4,11 +4,10 @@ right moments, and totals up both burst-skill damage instances and normal-
 attack damage over the fight.
 
 "Deals X% of final ATK as burst damage" (and normal attacks' own damage%)
-are modeled the way nikke.gg's Base Damage formula treats an attack's own
-inherent multiplier: the X% scales the caster's base ATK stat *before*
-additional %ATK buffs/flat bonuses are layered on top, i.e.
-atk_for_hit = base_atk * (X / 100), then that value feeds into
-calculate_damage's atk/atk_percent/flat_atk as usual.
+are passed as calculate_damage's `attack_coefficient`, NOT folded into atk:
+per nikke.gg's formula the coefficient multiplies the whole Base Damage
+(after defense subtraction and flat-ATK additions), so pre-multiplying atk
+would mis-scale defense and flat ATK. The raw summary ATK goes in as `atk`.
 
 Normal-attack damage is computed as a separate pass after the burst-cycle
 simulation finishes: burst_cycle's hooks already populate the EffectRegistry
@@ -90,7 +89,8 @@ def simulate_raid(
             return
         target = target_for(slug)
         damage = calculate_damage(
-            atk=base_stats[slug]["atk"] * (percent / 100),
+            atk=base_stats[slug]["atk"],
+            attack_coefficient=percent / 100,
             enemy_def=enemy_def,
             atk_percent=registry.total_for("atk_percent", target, time),
             flat_atk=registry.total_for("flat_atk", target, time),
@@ -143,7 +143,8 @@ def simulate_raid(
             if is_charge_weapon:
                 charge_damage_bonus += weapon["charge_damage_percent"] / 100 - 1
             damage = calculate_damage(
-                atk=base_stats[slug]["atk"] * (weapon["damage_percent"] / 100),
+                atk=base_stats[slug]["atk"],
+                attack_coefficient=weapon["damage_percent"] / 100,
                 enemy_def=enemy_def,
                 atk_percent=registry.total_for("atk_percent", target, shot_time),
                 flat_atk=registry.total_for("flat_atk", target, shot_time),

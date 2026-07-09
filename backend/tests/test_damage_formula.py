@@ -17,6 +17,27 @@ def test_enemy_defense_reduces_damage():
     assert damage == 700
 
 
+def test_attack_coefficient_scales_the_whole_base_damage():
+    # The attack/skill coefficient (e.g. normal attack 61.3% of ATK, Aegis
+    # Cannon 8236.8%) multiplies Base Damage as a whole, per nikke.gg's formula
+    # (Base Damage x Final ATK modifiers). Default 1.0 leaves damage unchanged.
+    assert calculate_damage(atk=1000, enemy_def=0, attack_coefficient=5.0) == 5000
+    assert calculate_damage(atk=1000, enemy_def=0, attack_coefficient=0.613) == 613
+
+
+def test_attack_coefficient_applies_after_defense_subtraction():
+    # This is the case that distinguishes correct from the old "fold coefficient
+    # into ATK" bug: defense is subtracted at base-ATK scale, THEN the whole
+    # (offense - defense) is multiplied by the coefficient. (1000 - 200) * 5.
+    assert calculate_damage(atk=1000, enemy_def=200, attack_coefficient=5.0) == 4000
+
+
+def test_attack_coefficient_scales_flat_atk_since_it_is_inside_base_damage():
+    # "% Caster's ATK" (flat_atk) sits inside the Base Damage parenthesis, so it
+    # is multiplied by the coefficient too: (1000 + 500) * 2.
+    assert calculate_damage(atk=1000, flat_atk=500, enemy_def=0, attack_coefficient=2.0) == 3000
+
+
 def test_critical_hit_applies_150_percent_major_modifier():
     # Major modifier base is 1 + 0.5 (crit) when is_critical=True
     damage = calculate_damage(atk=1000, enemy_def=0, is_critical=True)

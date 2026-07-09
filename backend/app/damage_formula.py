@@ -2,12 +2,21 @@
 
 Final Damage =
     Base Damage
-    x Final ATK Modifiers
+    x Final ATK Modifiers   (= attack/skill coefficient x (1 + rare buffs))
     x Major Modifiers
     x Element Bonus Damage
     x Charge Damage
     x Damage Up
     x Damage Taken
+
+Base Damage = (Base Attack x (1 + ATK%) + flat ATK) - (enemy DEF x (1 + DEF%) + flat DEF)
+
+Critically, the attack/skill coefficient (`attack_coefficient`: normal-attack
+% of ATK, or a skill's "X% of final ATK") multiplies Base Damage AS A WHOLE -
+after defense is subtracted - not the ATK stat alone. Passing `atk` already
+multiplied by the coefficient would mis-scale the defense subtraction and any
+flat ATK, so callers must pass the raw summary ATK and the coefficient
+separately.
 """
 
 
@@ -44,6 +53,7 @@ def calculate_damage(
     flat_atk=0.0,
     enemy_def_percent=0.0,
     flat_enemy_def=0.0,
+    attack_coefficient=1.0,
     final_atk_modifier=0.0,
     is_critical=False,
     other_critical_damage_sources=0.0,
@@ -67,7 +77,10 @@ def calculate_damage(
     base_damage = _base_damage(
         atk, atk_percent, flat_atk, enemy_def, enemy_def_percent, flat_enemy_def
     )
-    final_atk_modifiers = 1 + final_atk_modifier
+    # "Final ATK modifiers" = the attack/skill coefficient (Final ATK damage of
+    # Attack/Skill) x (1 + rare Final ATK modifier buffs). The coefficient
+    # multiplies the whole Base Damage, i.e. AFTER defense is subtracted.
+    final_atk_modifiers = attack_coefficient * (1 + final_atk_modifier)
     major_modifiers = _major_modifiers(
         is_critical,
         other_critical_damage_sources,
