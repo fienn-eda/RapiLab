@@ -1,4 +1,4 @@
-from app.effects import Effect, EffectRegistry
+from app.effects import Effect, EffectRegistry, Pulse
 
 
 def make_member(slug, element):
@@ -92,3 +92,36 @@ def test_total_for_unaffected_stat_is_zero():
     registry = EffectRegistry()
     anis = make_member("anis", "Iron")
     assert registry.total_for(stat="atk_percent", target=anis, now=0.0) == 0.0
+
+
+def test_drain_pulses_returns_and_clears_matching_pulses():
+    registry = EffectRegistry()
+    registry.add_pulse(
+        Pulse(stat="burst_cooldown_reduction_sec", value=7.48, scope="squad", source_slug="anis-star")
+    )
+
+    drained = registry.drain_pulses("burst_cooldown_reduction_sec")
+    assert len(drained) == 1
+    assert drained[0].value == 7.48
+
+    assert registry.drain_pulses("burst_cooldown_reduction_sec") == []
+
+
+def test_drain_pulses_only_matches_requested_stat():
+    registry = EffectRegistry()
+    registry.add_pulse(Pulse(stat="stat_a", value=1.0, scope="squad", source_slug="x"))
+    registry.add_pulse(Pulse(stat="stat_b", value=2.0, scope="squad", source_slug="x"))
+
+    drained = registry.drain_pulses("stat_a")
+    assert len(drained) == 1
+    assert drained[0].stat == "stat_a"
+    assert [p.stat for p in registry.drain_pulses("stat_b")] == ["stat_b"]
+
+
+def test_multiple_pulses_of_same_stat_all_returned():
+    registry = EffectRegistry()
+    registry.add_pulse(Pulse(stat="s", value=1.0, scope="squad", source_slug="a"))
+    registry.add_pulse(Pulse(stat="s", value=2.0, scope="squad", source_slug="b"))
+
+    drained = registry.drain_pulses("s")
+    assert sorted(p.value for p in drained) == [1.0, 2.0]

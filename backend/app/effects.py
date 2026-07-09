@@ -17,6 +17,17 @@ class Effect:
     source_slug: str
 
 
+@dataclass
+class Pulse:
+    """A one-shot instantaneous effect (e.g. an instant cooldown reduction),
+    as opposed to Effect's continuous, queryable-at-any-time buffs."""
+
+    stat: str
+    value: float
+    scope: str
+    source_slug: str
+
+
 def _matches_scope(scope: str, target: dict) -> bool:
     if scope == "self":
         return False  # handled separately via source_slug, see EffectRegistry.total_for
@@ -30,9 +41,18 @@ def _matches_scope(scope: str, target: dict) -> bool:
 class EffectRegistry:
     def __init__(self):
         self._entries: list[tuple[Effect, float]] = []
+        self._pulses: list[Pulse] = []
 
     def add(self, effect: Effect, applied_at: float) -> None:
         self._entries.append((effect, applied_at))
+
+    def add_pulse(self, pulse: Pulse) -> None:
+        self._pulses.append(pulse)
+
+    def drain_pulses(self, stat: str) -> list[Pulse]:
+        matching = [p for p in self._pulses if p.stat == stat]
+        self._pulses = [p for p in self._pulses if p.stat != stat]
+        return matching
 
     def _is_active(self, effect: Effect, applied_at: float, now: float) -> bool:
         if effect.duration is None:
