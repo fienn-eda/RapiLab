@@ -1,0 +1,132 @@
+from app.models import OverloadOption
+from app.raid_simulator import simulate_raid
+from app.roster import NikkeSpec, assemble_simulation_inputs
+
+
+def helm_spec(overload_options=None, cube=None):
+    return NikkeSpec(
+        slug="helm",
+        burst_tier=3,
+        burst_cooldown=40.0,
+        element="Water",
+        weapon="SR",
+        base_stats={"atk": 398398, "def": 52659, "max_hp": 9198954},
+        skill_values={
+            "frontline_command": {"description_value_01": "14.64", "description_value_02": "5"},
+            "fire_away": {"description_value_01": "3.08", "description_value_02": "27.87", "description_value_03": "10"},
+            "aegis_cannon": {"description_value_01": "8236.8"},
+        },
+        weapon_stats={
+            "weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
+            "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0,
+        },
+        overload_options=overload_options or [],
+        cube=cube,
+    )
+
+
+def anis_star_spec():
+    return NikkeSpec(
+        slug="anis-star",
+        burst_tier=1,
+        burst_cooldown=20.0,
+        element="Electric",
+        weapon="RL",
+        base_stats={"atk": 260890, "def": 69656, "max_hp": 10720232},
+        skill_values={
+            "starfall": {
+                "description_value_01": "1", "description_value_02": "40.01",
+                "description_value_03": "7.48", "description_value_04": "120.13", "description_value_05": "6",
+            }
+        },
+        weapon_stats={
+            "weapon": "RL", "damage_percent": 61.3, "max_ammo": 6,
+            "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0,
+        },
+    )
+
+
+def crown_spec():
+    return NikkeSpec(
+        slug="crown",
+        burst_tier=2,
+        burst_cooldown=20.0,
+        element="Iron",
+        weapon="MG",
+        base_stats={"atk": 281952, "def": 66196, "max_hp": 11621606},
+        skill_values={
+            "one_for_all": {
+                "description_value_01": "64.51", "description_value_02": "15", "description_value_03": "44.35",
+                "description_value_04": "15", "description_value_05": "37.44", "description_value_06": "15",
+                "description_value_07": "44.35", "description_value_08": "15",
+            },
+            "last_kingdom": {
+                "description_value_01": "36.24", "description_value_02": "15",
+                "description_value_03": "10.45", "description_value_04": "15",
+            },
+        },
+        weapon_stats={
+            "weapon": "MG", "damage_percent": 5.57, "max_ammo": 300,
+            "reload_time": 2.5, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        },
+    )
+
+
+def minimal_feasible_deck(helm_overload=None, helm_cube=None):
+    return [anis_star_spec(), crown_spec(), helm_spec(helm_overload, helm_cube)]
+
+
+def test_assemble_produces_deck_entries_with_scheduler_fields():
+    inputs = assemble_simulation_inputs(minimal_feasible_deck())
+    deck = inputs["deck"]
+    assert [m["slug"] for m in deck] == ["anis-star", "crown", "helm"]
+    helm = next(m for m in deck if m["slug"] == "helm")
+    assert helm["burst_tier"] == 3
+    assert helm["element"] == "Water"
+    assert helm["cooldown"] == 40.0
+
+
+def test_burst_damage_percents_only_includes_nikkes_with_a_burst_nuke():
+    inputs = assemble_simulation_inputs(minimal_feasible_deck())
+    # helm has a nuke (Aegis Cannon 8236.8%); anis-star and crown are buff bursts
+    assert inputs["burst_damage_percents"] == {"helm": 8236.8}
+
+
+def test_base_stats_and_weapon_stats_are_keyed_by_slug():
+    inputs = assemble_simulation_inputs(minimal_feasible_deck())
+    assert inputs["base_stats"]["helm"]["atk"] == 398398
+    assert inputs["weapon_stats"]["helm"]["weapon"] == "SR"
+
+
+def test_assembled_inputs_run_through_simulate_raid():
+    inputs = assemble_simulation_inputs(minimal_feasible_deck())
+    result = simulate_raid(
+        **inputs, enemy_def=0, gauge_charge_time=2.0, fight_duration=60.0, mode="manual",
+    )
+    assert result["total_damage"] > 0
+    assert any(e["source"] == "burst" for e in result["damage_log"])
+    assert any(e["source"] == "normal_attack" for e in result["damage_log"])
+
+
+def test_overload_atk_up_increases_total_damage():
+    without = assemble_simulation_inputs(minimal_feasible_deck())
+    with_ov = assemble_simulation_inputs(
+        minimal_feasible_deck(helm_overload=[OverloadOption(name="공격력 증가", value=40.20)])
+    )
+    kwargs = dict(enemy_def=0, gauge_charge_time=2.0, fight_duration=60.0, mode="manual")
+    dmg_without = simulate_raid(**without, **kwargs)["total_damage"]
+    dmg_with = simulate_raid(**with_ov, **kwargs)["total_damage"]
+    assert dmg_with > dmg_without
+
+
+def test_cube_superior_code_damage_increases_total_damage():
+    without = assemble_simulation_inputs(minimal_feasible_deck())
+    with_cube = assemble_simulation_inputs(
+        minimal_feasible_deck(
+            helm_cube={"name": "Relic Bear Cube", "reload_speed_percent": 29.69, "superior_code_damage_percent": 19.09}
+        )
+    )
+    kwargs = dict(enemy_def=0, gauge_charge_time=2.0, fight_duration=60.0, mode="manual")
+    dmg_without = simulate_raid(**without, **kwargs)["total_damage"]
+    dmg_with = simulate_raid(**with_cube, **kwargs)["total_damage"]
+    assert dmg_with > dmg_without
