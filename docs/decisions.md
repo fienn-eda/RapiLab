@@ -5,6 +5,13 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## Periodic-nuke engine capability for own-fixed-cooldown skills
+- Date: 2026-07-10
+- Context: Helm: Aquamarine's Aegis Cannon Suppression Fire is a separate active skill with its own 4-second cooldown, firing repeatedly throughout the fight independent of burst timing entirely (not gated on Full Burst, own burst, or normal-attack count) - a genuinely new mechanic shape, at 105.58% of final ATK per tick (~45 ticks over 180s) likely her primary DPS as an Attacker.
+- Decision: Add `simulate_raid(..., periodic_nukes={slug: {"cooldown": sec, "percent": float}})` - each entry ticks independently up to `fight_duration`, computed via the same `_damage_from_percent` helper as burst/instant nukes, logged with `source="periodic"`. Exposed per-Nikke through a new `registry._PERIODIC_NUKE_BUILDERS` map (kept separate from the main `_BUILDERS` dict) and `registry.get_periodic_nuke`, wired automatically by `roster.assemble_simulation_inputs`.
+- Why: Fienn approved building the capability over a thin/silent approximation, given the likely DPS weight. Kept as an additive, opt-in parameter (defaults to `{}`/no-op) so the ~25 existing encoded Nikkes are completely unaffected - no change to their builder return shape.
+- Consequences: A third category of "how a Nikke deals damage" now exists alongside burst nukes and instant-damage pulses (see `references/special-mechanics.md`). Future Nikkes with a similar own-cooldown skill reuse this directly.
+
 ## Character data source priority = lootandwaifus.com first, dotgg fallback
 - Date: 2026-07-10
 - Context: dotgg (the original data source decision below) lags roughly the last ~2 months of NIKKE releases, so newer Nikkes (e.g. Prika) have no dotgg entry. lootandwaifus.com was found and cross-verified against dotgg (Little Mermaid, all 3 skills, every value at level 10 — exact match, no discrepancies), and its character-listing page carries richer metadata (mechanic tags in CSS classes) than dotgg's summary endpoint.

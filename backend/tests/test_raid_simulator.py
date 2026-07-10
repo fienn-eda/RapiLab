@@ -374,6 +374,70 @@ def test_instant_damage_pulse_from_own_burst_activate_stacks_with_burst_nuke():
     assert instant_hits == [{"slug": "attacker", "time": 5.0, "damage": 1000.0, "source": "instant_nuke"}]
 
 
+def test_periodic_nuke_fires_repeatedly_on_its_own_fixed_cooldown():
+    # A skill on its own fixed cooldown, independent of the burst cycle (e.g.
+    # Helm: Aquamarine's Aegis Cannon Suppression Fire, cooldown 4s) - fires
+    # at t=cooldown, 2*cooldown, ... regardless of burst timing.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=10.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        periodic_nukes={"buffer": {"cooldown": 4.0, "percent": 100.0}},
+    )
+    periodic_hits = [e for e in result["damage_log"] if e["source"] == "periodic"]
+    assert [e["time"] for e in periodic_hits] == [4.0, 8.0]
+
+
+def test_periodic_nuke_uses_the_casters_own_atk_and_live_buffs():
+    def grant_atk(context, caster_slug, time, registry):
+        registry.add(Effect("atk_percent", 1.0, "self", None, caster_slug), applied_at=time)
+
+    rules = {
+        "buffer": [SkillRule(trigger="battle_start", action=grant_atk)],
+        "midtier": [],
+        "attacker": [],
+    }
+    result = simulate_raid(
+        make_deck(),
+        rules,
+        burst_damage_percents={},
+        base_stats={
+            "buffer": {"atk": 1000, "def": 0, "max_hp": 0},
+            "midtier": {"atk": 0, "def": 0, "max_hp": 0},
+            "attacker": {"atk": 0, "def": 0, "max_hp": 0},
+        },
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=5.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        periodic_nukes={"buffer": {"cooldown": 4.0, "percent": 100.0}},
+    )
+    periodic_hits = [e for e in result["damage_log"] if e["source"] == "periodic"]
+    # atk 1000 * (1 + 1.0 atk_percent buff) * 100% coefficient = 2000
+    assert periodic_hits == [{"slug": "buffer", "time": 4.0, "damage": 2000.0, "source": "periodic"}]
+
+
+def test_periodic_nukes_defaults_to_none_and_is_a_no_op():
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+    )
+    assert not any(e["source"] == "periodic" for e in result["damage_log"])
+
+
 def test_own_burst_activate_only_fires_for_the_unit_whose_tier_just_fired():
     fired = []
 

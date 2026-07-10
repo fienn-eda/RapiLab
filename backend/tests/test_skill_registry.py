@@ -1,6 +1,6 @@
 import pytest
 
-from app.skill_rules.registry import ENCODED_SLUGS, build_nikke_rules
+from app.skill_rules.registry import ENCODED_SLUGS, build_nikke_rules, get_periodic_nuke
 
 
 def test_core_encoded_nikkes_are_registered():
@@ -44,3 +44,22 @@ def test_build_returns_none_burst_percent_for_a_pure_support():
 def test_unregistered_slug_raises():
     with pytest.raises(KeyError):
         build_nikke_rules("some-unencoded-nikke", {})
+
+
+def test_get_periodic_nuke_returns_none_for_most_nikkes():
+    assert get_periodic_nuke("crown", {}) is None
+
+
+def test_get_periodic_nuke_returns_cooldown_and_percent_for_helm_aquamarine():
+    skill_values = {
+        "admire_accompaniment": {
+            "description_value_01": "131.34", "description_value_02": "1.82",
+            "description_value_03": "2.2", "description_value_04": "2.6",
+        },
+        "aegis_cannon_suppression_fire": {
+            "description_value_01": "105.58", "description_value_02": "5.64",
+            "description_value_03": "5", "description_value_04": "5",
+        },
+    }
+    spec = get_periodic_nuke("helm-aquamarine", skill_values)
+    assert spec == {"cooldown": 4.0, "percent": 105.58}

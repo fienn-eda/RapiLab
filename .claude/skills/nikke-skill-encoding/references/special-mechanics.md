@@ -204,5 +204,40 @@ how to encode it, and current engine status.
 - **Encode:** defer + document; flag to the user, since these mechanics are
   often central to the specific pairing they're designed around.
 
+## Escalating tiers on `full_burst_enter` are squad-wide, not self
+- **What:** "Once/Twice/Three times" tiers sometimes fire on
+  `full_burst_enter` rather than the caster's own burst - e.g. Helm:
+  Aquamarine's CDR tiers (1.82/2.2/2.6 sec, summing to 6.62 by cycle 3).
+- **Encode:** `context.activation_count(caster_slug, trigger)` works for ANY
+  trigger name, not just `own_burst_activate`. `escalating_buff_rule` only
+  handles `Effect`s; for an escalating **Pulse** (CDR), write the cumulative
+  logic directly (see `helm_aquamarine.py`).
+
+## Ammo pouch / stored-resource mechanics
+- **What:** some kits (e.g. Velvet) have a personal resource that fills from
+  stealing enemy ammo or a flat grant, and drains to power self-buffs.
+- **Gap:** no resource-tracking primitive exists, and the triggers that
+  spend/fill it are usually already-deferred (own full-charge-shot,
+  normal-attack-count).
+- **Encode:** defer the whole chain; note in the docstring what it gates.
+
+## Periodic/recurring skills on their own fixed cooldown - BUILT capability
+- **What:** some kits have a SEPARATE active skill with its own short
+  cooldown (e.g. Helm: Aquamarine's Aegis Cannon Suppression Fire, 4s) that
+  auto-fires repeatedly throughout the fight, independent of burst timing -
+  not gated on Full Burst, the caster's own burst, or a normal-attack count.
+- **Engine capability (Fienn-approved, 2026-07-10):**
+  `raid_simulator.simulate_raid`'s `periodic_nukes` param -
+  `{slug: {"cooldown": seconds, "percent": float}}`. Each entry ticks at
+  t=cooldown, 2*cooldown, ... up to `fight_duration`, computed the same way as
+  a burst nuke (live buffs at that instant), logged with `source="periodic"`.
+  Fully independent of burst_cycle - fires even if the deck never completes a
+  Full Burst. Exposed per-Nikke via `registry.get_periodic_nuke(slug,
+  skill_values)`, wired automatically by `roster.assemble_simulation_inputs`.
+- **Encode:** add `<name>_periodic_percent(values)` + a module-level cooldown
+  constant (the cooldown is fixed skill text, not a data slot) in the Nikke's
+  module, then register both in `registry._PERIODIC_NUKE_BUILDERS`. Do NOT
+  approximate this onto an existing trigger. See `helm_aquamarine.py`.
+
 ---
 *Add new mechanics above this line as they come up.*

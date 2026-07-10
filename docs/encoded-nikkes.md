@@ -4,7 +4,7 @@
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
 - 마지막 갱신: 2026-07-10
-- 총 **26명** (Burst 1: 11명 · Burst 2: 12명 · Burst 3: 3명)
+- 총 **28명** (Burst 1: 11명 · Burst 2: 14명 · Burst 3: 3명)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -30,7 +30,7 @@
 | Volume | `volume` | Attacker | SMG | Wind | ✅ | Freestyle(킬 트리거, 레이드엔 무의미)만 미모델 |
 | Zwei (애장품) | `zwei` | Supporter | SG | Electric | ⚠ | 라운드/노멀공격 스택 변형, 무기변형 |
 
-## Burst 2 (12명)
+## Burst 2 (14명)
 
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
@@ -46,6 +46,8 @@
 | Nayuta | `nayuta` | Supporter | SMG | Wind | ⚠ | 무기변형(Memory Incineration) + 복합트리거 넉 |
 | Mint | `mint` | Supporter | RL | Iron | 🔶 | Here I Go! 전체 보류 (본인 풀차지샷 트리거 부재) |
 | Prika | `prika` | Supporter | SR | Water | 🔶 | 대부분 보류 — 본인 풀차지샷 + **Mint 교차유닛 시너지**(그녀의 실질 핵심 가치) |
+| Helm: Aquamarine | `helm-aquamarine` | Attacker | AR | Iron | ⚠ | 노멀30회 넉, Electric속성 조건부 추가딜/디버프 (**자동발동 스킬은 엔진 확장으로 모델링됨**) |
+| Velvet | `velvet` | Supporter | SR | Wind | 🔶 | 대부분 보류(자기전용) — ammo pouch 자원 + 본인 풀차지/노멀50회 카운터 |
 
 ## Burst 3 (3명)
 
@@ -63,10 +65,16 @@
 깎아 먹고 있어 — 우선순위 후보:
 
 1. **노멀공격 횟수 카운터** ("N회 공격 후") — D: Killer Wife, Miranda, Rouge,
-   Crown, Grave, Rapi: Red Hood, Zwei, Nayuta 등 다수에 영향.
-2. **본인 풀차지샷 트리거** ("풀차지 공격 시") — Mint, Prika, 그 외 RL/SR
-   유닛 다수. 노멀어택이 별도 패스로 계산돼 `fire_trigger`를 안 거침.
+   Crown, Grave, Rapi: Red Hood, Zwei, Nayuta, Helm: Aquamarine, Velvet 등
+   다수에 영향.
+2. **본인 풀차지샷 트리거** ("풀차지 공격 시") — Mint, Prika, Velvet, 그 외
+   RL/SR 유닛 다수. 노멀어택이 별도 패스로 계산돼 `fire_trigger`를 안 거침.
 3. **교차 유닛 트리거** (다른 니케의 특정 스킬 발동을 감지) — Prika→Mint
    페어링처럼, 덱 조합 특화 시너지에 반복 등장할 가능성.
+4. **ammo pouch류 자원 메커니즘** — Velvet. 수량 기반 자원 트래킹 없음.
 
-세 항목 모두 `special-mechanics.md`에 상세 기록됨. 확장 여부는 Fienn 판단.
+네 항목 모두 `special-mechanics.md`에 상세 기록됨. 확장 여부는 Fienn 판단.
+
+**해결된 갭**: "버스트와 무관한 자체 쿨다운 반복 발동 스킬"은 2026-07-10에
+엔진 확장으로 해결됨 (`simulate_raid`의 `periodic_nukes`) — Helm: Aquamarine의
+Aegis Cannon Suppression Fire가 첫 적용 사례.

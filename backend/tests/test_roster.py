@@ -76,6 +76,32 @@ def minimal_feasible_deck(helm_overload=None, helm_cube=None):
     return [anis_star_spec(), crown_spec(), helm_spec(helm_overload, helm_cube)]
 
 
+def helm_aquamarine_spec():
+    return NikkeSpec(
+        slug="helm-aquamarine",
+        burst_tier=2,
+        burst_cooldown=20.0,
+        element="Iron",
+        weapon="AR",
+        base_stats={"atk": 300000, "def": 50000, "max_hp": 9000000},
+        skill_values={
+            "admire_accompaniment": {
+                "description_value_01": "131.34", "description_value_02": "1.82",
+                "description_value_03": "2.2", "description_value_04": "2.6",
+            },
+            "aegis_cannon_overload": {"description_value_01": "164.83"},
+            "aegis_cannon_suppression_fire": {
+                "description_value_01": "105.58", "description_value_02": "5.64",
+                "description_value_03": "5", "description_value_04": "5",
+            },
+        },
+        weapon_stats={
+            "weapon": "AR", "damage_percent": 13.65, "max_ammo": 60,
+            "reload_time": 2.0, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        },
+    )
+
+
 def test_assemble_produces_deck_entries_with_scheduler_fields():
     inputs = assemble_simulation_inputs(minimal_feasible_deck())
     deck = inputs["deck"]
@@ -117,6 +143,26 @@ def test_overload_atk_up_increases_total_damage():
     dmg_without = simulate_raid(**without, **kwargs)["total_damage"]
     dmg_with = simulate_raid(**with_ov, **kwargs)["total_damage"]
     assert dmg_with > dmg_without
+
+
+def test_periodic_nukes_only_includes_nikkes_with_one():
+    inputs = assemble_simulation_inputs(minimal_feasible_deck())
+    assert inputs["periodic_nukes"] == {}
+
+    inputs_with_aqua = assemble_simulation_inputs([anis_star_spec(), helm_aquamarine_spec()])
+    assert inputs_with_aqua["periodic_nukes"] == {
+        "helm-aquamarine": {"cooldown": 4.0, "percent": 105.58}
+    }
+
+
+def test_periodic_nukes_flow_through_simulate_raid():
+    inputs = assemble_simulation_inputs([anis_star_spec(), helm_aquamarine_spec()])
+    result = simulate_raid(
+        **inputs, enemy_def=0, gauge_charge_time=2.0, fight_duration=20.0, mode="manual",
+    )
+    periodic_hits = [e for e in result["damage_log"] if e["source"] == "periodic"]
+    assert len(periodic_hits) > 0
+    assert all(e["slug"] == "helm-aquamarine" for e in periodic_hits)
 
 
 def test_cube_superior_code_damage_increases_total_damage():

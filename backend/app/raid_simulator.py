@@ -57,6 +57,18 @@ emits an `"instant_damage_percent"` Pulse instead (see
 every trigger fire (battle_start, own_burst_activate, full_burst_enter,
 full_burst_end) and computes the damage the same way as a burst nuke, using
 the pulse's source_slug as caster. Logged with `source="instant_nuke"`.
+
+Some skills fire repeatedly on their OWN fixed cooldown, entirely independent
+of the burst cycle and every other trigger (e.g. Helm: Aquamarine's Aegis
+Cannon Suppression Fire, a "Cooldown: 4s" active skill separate from her
+Burst tab, that auto-fires throughout the whole fight). `periodic_nukes` is a
+`{slug: {"cooldown": seconds, "percent": float}}` map; each entry ticks at
+t=cooldown, 2*cooldown, ... up to fight_duration, computing damage the same
+way as a burst nuke (using the tick time to read live buffs, so it correctly
+reflects whatever's active at that instant). Logged with `source="periodic"`.
+Computed as a pass after the burst-cycle simulation completes, same as the
+normal-attack pass - order doesn't matter since it only reads the registry's
+already-populated Effects at arbitrary times, like every other post-pass here.
 """
 from app.attack_rate import CHARGE_WEAPONS, generate_shot_times
 from app.burst_cycle import simulate_burst_cycle
@@ -82,8 +94,10 @@ def simulate_raid(
     weapon_stats=None,
     boss_element=None,
     base_crit_rate=BASE_CRIT_RATE,
+    periodic_nukes=None,
 ):
     weapon_stats = weapon_stats or {}
+    periodic_nukes = periodic_nukes or {}
     context = SquadContext([SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck])
     registry = EffectRegistry()
     damage_log = []
@@ -228,6 +242,15 @@ def simulate_raid(
                 damage_taken_up=registry.total_for("damage_taken_up", target, shot_time),
             )
             damage_log.append({"slug": slug, "time": shot_time, "damage": damage, "source": "normal_attack"})
+
+    for slug, spec in periodic_nukes.items():
+        cooldown = spec["cooldown"]
+        percent = spec["percent"]
+        tick = cooldown
+        while tick < fight_duration:
+            damage = _damage_from_percent(slug, percent, tick)
+            damage_log.append({"slug": slug, "time": tick, "damage": damage, "source": "periodic"})
+            tick += cooldown
 
     return {
         "total_damage": sum(entry["damage"] for entry in damage_log),

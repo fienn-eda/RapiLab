@@ -55,6 +55,15 @@ enter", regardless of who bursts). Use `_helpers.instant_nuke_pulse_rule`;
 using the pulse's source_slug as caster, exactly like a burst nuke, logged with
 `source="instant_nuke"`.
 
+`periodic_nukes`: not a stat or Pulse — a `simulate_raid` param
+(`{slug: {"cooldown": seconds, "percent": float}}`) for a skill that fires
+repeatedly on its OWN fixed cooldown, fully independent of the burst cycle
+(e.g. Helm: Aquamarine's Aegis Cannon Suppression Fire, "Cooldown: 4s"). Ticks
+at t=cooldown, 2*cooldown, ... up to `fight_duration`, logged with
+`source="periodic"`. Expose per-Nikke via `<name>_periodic_percent(values)` +
+register in `registry._PERIODIC_NUKE_BUILDERS` (see
+`registry.get_periodic_nuke`).
+
 `EffectRegistry.truncate_open_ended(stat, source_slug, now)`: for a continuous
 (`duration=None`) buff that a LATER trigger explicitly cancels (not a timer) -
 e.g. Grave's Heat Emission ends when she reuses her burst. Add the effect

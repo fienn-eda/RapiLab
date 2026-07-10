@@ -8,8 +8,8 @@
 
 - 마지막 갱신: 2026-07-10
 - 브랜치: `wip/scaffolding`
-- 테스트: **216 passed** (마지막 전체 실행 기준)
-- 인코딩된 니케: **26명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- 테스트: **228 passed** (마지막 전체 실행 기준)
+- 인코딩된 니케: **28명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
 
@@ -29,7 +29,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (24명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (28명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ⬜ 예정 |
 | Phase 6 | 유저 데이터 입력 UI (React) | ⬜ 예정 |
@@ -62,19 +62,24 @@
 - `roster.py` — 유저 스탯 + 오버로드 + 큐브 조립.
 
 ### Phase 3 — 캐릭터 스킬 인코딩 🔄
-- 인코딩된 26명:
+- 인코딩된 28명:
   - 실전 덱 5: `anis-star`, `crown`, `rapi-red-hood`, `helm`, `privaty`
   - 버스트1 배치 10: `liter`, `little-mermaid`, `miranda`, `moran`, `rouge`,
     `d-killer-wife`, `tove`, `volume`, `zwei`, `soline-frost-ticket`
   - 버스트2 배치: `anchor-innocent-maid`, `mast-romantic-maid`,
     `ade-agent-bunny`, `blanc`, `arcana`, `arcana-fortune-mate`,
-    `grave`, `brid-silent-track`, `nayuta`, `mint`, `prika`
+    `grave`, `brid-silent-track`, `nayuta`, `mint`, `prika`,
+    `helm-aquamarine`, `velvet`
 - 각 니케 = `skill_rules/<name>.py` 빌더, `registry.py`에 등록.
 - 요청받은 버스트2 배치 전부 인코딩 완료. (Crown은 이미 인코딩됨.)
-- Mint·Prika 인코딩 중 새 엔진 갭 2건 발견 (미차단, 후속 확장 후보):
-  본인 풀차지샷 트리거 부재(Mint Here I Go!/Prika Let's Get the Show Started!),
-  교차 유닛 트리거 부재(Prika Encore Function이 Mint의 버스트를 감지해야 함).
-  `references/special-mechanics.md` 참고.
+- 니케 데이터 수집 소스가 lootandwaifus.com 우선으로 전환됨(→ 아래 Phase 0).
+- 새 엔진 갭 발견 사례들 (`references/special-mechanics.md` 참고):
+  본인 풀차지샷 트리거 부재(Mint/Prika/Velvet), 교차 유닛 트리거 부재(Prika→Mint),
+  ammo pouch 자원 메커니즘(Velvet, 자원 트래킹 없음).
+- **주기적 자동발동 스킬 엔진 확장 완료** (Fienn 승인, 2026-07-10): 버스트
+  사이클과 무관하게 자체 쿨다운으로 반복 발동하는 스킬(Helm: Aquamarine
+  Aegis Cannon Suppression Fire, 4초마다) — `simulate_raid`의 `periodic_nukes`
+  파라미터로 지원. 기존 25개 인코딩엔 영향 없음(옵트인, 기본값 `{}`).
 - **다음:** 남은 버스트2/3 유닛 계속, 또는 위 엔진 갭 확장 검토 (엔진 유용성은
   인코딩 수에 비례).
 
