@@ -64,6 +64,44 @@ at t=cooldown, 2*cooldown, ... up to `fight_duration`, logged with
 register in `registry._PERIODIC_NUKE_BUILDERS` (see
 `registry.get_periodic_nuke`).
 
+## Damage typing (which Damage-Up buff applies to which instance)
+
+Every damage instance has a `damage_type`; a type-specific Damage-Up bucket is
+read from the registry ONLY for instances of that type, so e.g. a "Sustained
+Damage +X%" buff boosts only sustained-typed damage, not every hit.
+`raid_simulator._TYPE_BUCKETS` maps type → bucket(s):
+
+| damage_type | type-gated bucket |
+|---|---|
+| `attack` (default) | (none) |
+| `sustained` | `sustained_damage_up` |
+| `distributed` | `distributed_damage_up` |
+| `true` | `true_damage_up` |
+| `projectile_explosion` | `projectile_explosion_damage_up` |
+
+The always-on buckets (`attack_damage_up`, `pierce_damage_up`,
+`damage_to_parts_up`, `damage_taken_up`) apply to EVERY instance regardless of
+type. So encoding one of the type-gated buffs is now live **only if the deck
+also produces an instance of that type** — the buff is a multiplier with nothing
+to multiply otherwise.
+
+How an instance gets a non-`attack` type:
+- **Burst nuke:** add `slug → type` to `registry._BURST_DAMAGE_TYPES` (default
+  `attack`); `roster` threads it as `burst_damage_types`. E.g. Rapi: Red Hood's
+  Power of Inheritance (a Projectile Explosion skill) → `projectile_explosion`.
+- **Periodic nuke:** add `"damage_type"` to the `periodic_nukes` entry dict.
+- **Normal attacks:** a rocket launcher's (`weapon == "RL"`) normal attacks are
+  `projectile_explosion` typed automatically. A skill can also convert a unit's
+  normal attacks for a window by registering a self-scoped
+  `Effect("normal_attacks_deal_true", 1.0, "self", <dur>, slug)` (the type is
+  encoded in the stat name; the normal-attack pass reads it at each shot time) -
+  e.g. Takina Inoue's burst "normal attacks deal true damage for 10 sec".
+- **instant nukes** are always `attack` for now (no unit needs otherwise).
+
+Provisional semantics (confirm with Fienn): `true` damage keeps the
+nikke.gg-formula DEF subtraction (NOT a DEF bypass); `attack_damage_up` stays
+global (applies to every type, not just `attack`).
+
 `EffectRegistry.truncate_open_ended(stat, source_slug, now)`: for a continuous
 (`duration=None`) buff that a LATER trigger explicitly cancels (not a timer) -
 e.g. Grave's Heat Emission ends when she reuses her burst. Add the effect
@@ -85,12 +123,14 @@ Defer these; if a Nikke's contribution is mostly these, say so — a thin
 encoding is honest.
 
 **Valid formula terms that raid_simulator just doesn't wire from the registry
-yet** — a real gap, not a dead end: `sustained_damage_up`, `true_damage_up`,
-`shield_damage_up`, `projectile_explosion_damage_up`, `distributed_damage_up`,
-and the major-modifier terms `full_burst_bonus` / `effective_range_bonus` /
-`final_atk_modifier`.
+yet** — a real gap, not a dead end: `shield_damage_up`, and the major-modifier
+terms `full_burst_bonus` / `effective_range_bonus` / `final_atk_modifier`.
+(`sustained_damage_up`, `distributed_damage_up`, `true_damage_up`, and
+`projectile_explosion_damage_up` are NOW wired but **type-gated** — see "Damage
+typing" above; they only move damage when the deck also produces an instance of
+that type.)
 
-All exist in `damage_formula.py` but are absent from `raid_simulator.py`'s
+These exist in `damage_formula.py` but are absent from `raid_simulator.py`'s
 `total_for(...)` calls. Do NOT encode a Nikke's headline effect onto one of
 these and pretend it works — verify against the "engine CONSUMES" list above
 (and `grep registry.total_for raid_simulator.py`). If a Nikke needs one, wiring

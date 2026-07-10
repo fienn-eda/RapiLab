@@ -239,5 +239,26 @@ how to encode it, and current engine status.
   module, then register both in `registry._PERIODIC_NUKE_BUILDERS`. Do NOT
   approximate this onto an existing trigger. See `helm_aquamarine.py`.
 
+## Damage-type buffs apply only to matching-type instances - BUILT capability
+- **What:** "Sustained Damage ▲", "Distributed Damage ▲", "True Damage ▲",
+  "Projectile Explosion Damage ▲" buffs raise only damage *of that type*, not
+  every hit. Easy mistake: wiring them like `attack_damage_up` (blanket), which
+  over-credits every normal attack in the deck.
+- **Engine capability (2026-07-10):** each damage instance has a `damage_type`;
+  `raid_simulator._TYPE_BUCKETS` reads the type-gated bucket only for matching
+  instances. See `engine-capabilities.md` "Damage typing" for the full table
+  and how to type burst nukes (`registry._BURST_DAMAGE_TYPES`), periodic nukes
+  (`"damage_type"` key), and normal attacks (RL weapon → `projectile_explosion`;
+  a `normal_attacks_deal_true` self effect → `true`).
+- **Consequence for encoding:** emitting one of these buffs is only non-inert if
+  the deck also produces an instance of that type. E.g. Mint's Projectile
+  Explosion Damage buff needs an RL ally (or a projectile-explosion skill nuke)
+  in the deck to matter; a Sustained Damage buff needs a sustained-damage dealer.
+  Encode the buff faithfully regardless, but say in the docstring what type of
+  dealer it needs to land.
+- **Projectile Explosion specifically:** applies to RL Nikkes' normal attacks
+  AND to skills carrying the "Projectile Explosion" keyword (e.g. Rapi: Red
+  Hood's Power of Inheritance). Confirmed by Fienn.
+
 ---
 *Add new mechanics above this line as they come up.*

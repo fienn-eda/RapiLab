@@ -9,7 +9,7 @@
 
 - 마지막 갱신: 2026-07-10
 - 브랜치: `wip/scaffolding`
-- 테스트: **232 passed** (마지막 전체 실행 기준)
+- 테스트: **241 passed** (마지막 전체 실행 기준)
 - 인코딩된 니케: **29명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
@@ -89,7 +89,13 @@
 - 데이터 수집 완료(미인코딩, 보류): Ada Wong, Ark Ranger Black, Asuka:Wille, Bready
   (오늘 분석 — 4명 모두 딜이 엔진 갭 뒤에 있어 보류) + 벌크 35유닛
   (`data/lootandwaifus/`, gitignore).
-- **다음:** `engine-gaps.md` 우선순위로 Fienn이 엔진 확장 착수 결정 → 배치 인코딩.
+- **엔진 확장 완료 — 데미지 타입 모델링 (gap #4, 2026-07-10):** sustained/
+  distributed/true/projectile_explosion 버프를 인스턴스 타입에 게이팅(블랭킷 배선의
+  과대평가 회피). Mint의 projectile explosion 버프가 RL 아군에 적용, Rapi 버스트 넉
+  태깅. Takina용 "노멀→진댐 변환" 포함. 상세 `decisions.md`·`engine-capabilities.md`.
+  (미결: true의 DEF 무시 여부 / attack_damage_up 전역 여부 — Fienn 확인 대기.)
+- **다음:** `engine-gaps.md` 우선순위로 남은 gap(#1 per-shot 트리거가 최대 ROI) 착수
+  결정 → 배치 인코딩. Takina/Rosanna 본체 인코딩은 이 타입 능력을 사용.
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.

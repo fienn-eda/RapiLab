@@ -29,7 +29,7 @@
 | 1 | **per-shot 트리거 + 발사 카운터** (노멀공격 N회 / 풀차지 N회 / "마지막 탄" / N shot마다) | ~30 (합집합) | 큼 (~100–180 loc + 테스트) | 신규 트리거 |
 | 2 | **자원/스택 트래킹** (배터리·탄약주머니·N스택 누적) | 16 | 중 (~60–100 loc) — 대개 #1에 의존 | 신규 상태 |
 | 3 | **narrow subset scope** (무기종별 / 티어+선버스트 대상) | 9 | 무기종: 소(~20 loc) / 티어부분집합: 중(~60 loc) | 신규 스코프 |
-| 4 | **sustained / distributed / true damage 스탯 배선** | 5 / 4 / 4 | 소 (각 ~1줄 + 유닛별 "이 타입 딜함" 플래그, 합 ~40 loc) | 스탯 배선 |
+| ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
 | 5 | **enemy-element 조건** (룰에서 boss_element 접근) | 1 (+기존 Brid, Helm:Aqua) | 소 (~30 loc) | 컨텍스트 확장 |
 | 6 | **periodic-during-Full-Burst 넉** (풀버스트 창 안에서만 N초마다) | 1 (Ada) | 소 (~30 loc, periodic_nukes 변형) | 타이밍 변형 |
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
@@ -100,18 +100,24 @@
 - 참고: `special-mechanics.md`의 "Weapon-type-scoped buffs", "Targeting a per-member
   subset by tier + element + prior-burst".
 
-### 4. sustained / distributed / true damage 스탯 배선
+### 4. sustained / distributed / true / projectile-explosion damage 배선 — ✅ 완료 (2026-07-10)
 
-- **무엇:** `sustained_damage_up`, `distributed_damage_up`, `true_damage_up`는
-  `damage_formula.py`엔 있으나 `raid_simulator.py`가 registry에서 안 읽어 **inert**.
-- **막힌 유닛:** sustained(5): ark-ranger-black, diesel-winter-sweets, mana,
-  mihara-bonding-chain, sakura-bloom-in-summer · distributed(4): bready,
-  milk-blooming-bunny, quency-escape-queen, scarlet-black-shadow ·
-  true(4): ada-wong, chisato-nishikigi, ein, jill-valentine
-- **필요한 확장:** 각 calculate_damage 호출부에 한 줄 배선(pierce_damage_up 배선을
-  미러). **단, 유닛별 "이 타입 딜을 실제로 함" 게이팅이 있어야** 엉뚱한 유닛에
-  적용 안 됨(예: distributed는 Scarlet:BS류만). 규모 소지만 게이팅 설계가 관건.
-- 참고: `special-mechanics.md`의 "Distributed Damage".
+- **무엇:** `sustained_damage_up`, `distributed_damage_up`, `true_damage_up`,
+  `projectile_explosion_damage_up`가 `raid_simulator`에서 inert였던 문제.
+- **해결:** "데미지 타입 모델링"으로 구현. 각 데미지 인스턴스에 타입을 부여하고
+  타입-게이팅된 버킷만 적용(블랭킷 배선의 과대평가를 피함). 게이팅이 핵심이었던 게
+  맞았음 — 단순 배선이 아니라 **타입 인스턴스 생성 기능과 묶여야** 유효했다.
+  `engine-capabilities.md` "Damage typing" 참고.
+- **막혔던 유닛 (참고):** sustained(5): ark-ranger-black, diesel-winter-sweets,
+  mana, mihara-bonding-chain, sakura-bloom-in-summer · distributed(4): bready,
+  milk-blooming-bunny, quency-escape-queen, scarlet-black-shadow · true(4):
+  ada-wong, chisato-nishikigi, ein, jill-valentine · projectile-explosion:
+  Mint(기존 emit 즉시 유효), Rapi(버스트 넉 태깅). — 엔진은 준비됐고, 각 유닛의
+  헤드라인 버프가 실제 딜을 움직이려면 **같은 덱에 해당 타입 딜러가 있어야** 함
+  (버프는 곱할 대상이 있어야 유효).
+- **잔여:** 각 딜러의 타입 인스턴스(지속 넉 등)를 실제로 인코딩하는 건 개별 유닛
+  인코딩 작업. Prika/Anis:Star의 projectile explosion 버프는 여전히 다른 갭(풀차지
+  트리거/미인코딩)에 막힘.
 
 ### 5. enemy-element 조건 (룰에서 boss_element 접근)
 
@@ -139,6 +145,8 @@
   (Brid: Silent Track). 2026-07-10.
 - **periodic_nukes**: 버스트와 무관한 자체 고정 쿨다운 반복 넉 (Helm: Aquamarine,
   4초). 2026-07-10.
+- **데미지 타입 모델링 (gap #4)**: sustained/distributed/true/projectile_explosion
+  버프를 인스턴스 타입에 게이팅. 2026-07-10.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
@@ -150,11 +158,10 @@
 
 ## 권장 착수 순서
 
+- ~~#4 데미지 타입 배선~~ — ✅ 완료 (2026-07-10, 데미지 타입 모델링).
 1. **#1 per-shot 트리거 + 카운터** — 단일 최대 ROI(~30 유닛), #2의 선행.
-2. **#4 sustained/distributed/true 배선 + 유닛별 타입 플래그** — 소규모인데 딜러
-   여럿의 헤드라인 딜을 켬. #1과 독립이라 병행 가능.
-3. **#2 자원 트래킹** — #1 위에서.
-4. **#3 무기종 스코프**(소) → 티어부분집합(중), **#5 boss_element**, **#6 FB창 periodic**
+2. **#2 자원 트래킹** — #1 위에서.
+3. **#3 무기종 스코프**(소) → 티어부분집합(중), **#5 boss_element**, **#6 FB창 periodic**
    — 수요 적고 소규모, 필요할 때.
 
 각 확장은 TDD로, 인벤토리가 증명한 최소 범위만. 착수 시 이 문서의 해당 유닛 목록으로
