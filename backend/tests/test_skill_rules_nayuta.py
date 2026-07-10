@@ -78,14 +78,14 @@ def test_impermanence_stage_buffs_activate_at_their_fixed_stack_threshold_times(
     registry = EffectRegistry()
     fire_trigger("battle_start", {"nayuta": build()}, ctx, registry, time=0.0)
 
-    # Stage 1 (exceeds 2 stacks) at t=9s, self-scoped ATK.
-    assert registry.total_for("atk_percent", NAYUTA, now=8.9) == 0.0
-    assert round(registry.total_for("atk_percent", NAYUTA, now=9.0), 4) == 0.152
-    assert registry.total_for("atk_percent", ALLY, now=9.0) == 0.0  # self-only, not squad
+    # Stage 1 (reaches 2 stacks) at t=6s, self-scoped ATK.
+    assert registry.total_for("atk_percent", NAYUTA, now=5.9) == 0.0
+    assert round(registry.total_for("atk_percent", NAYUTA, now=6.0), 4) == 0.152
+    assert registry.total_for("atk_percent", ALLY, now=6.0) == 0.0  # self-only, not squad
 
-    # Stage 2 (exceeds 10 stacks) at t=33s, self-scoped Attack Damage.
-    assert registry.total_for("attack_damage_up", NAYUTA, now=32.9) == 0.0
-    assert round(registry.total_for("attack_damage_up", NAYUTA, now=33.0), 4) == 0.2027
+    # Stage 2 (reaches 10 stacks) at t=30s, self-scoped Attack Damage.
+    assert registry.total_for("attack_damage_up", NAYUTA, now=29.9) == 0.0
+    assert round(registry.total_for("attack_damage_up", NAYUTA, now=30.0), 4) == 0.2027
 
     # Stage 3 (reaches the 30-stack cap) at t=90s, self-scoped core damage,
     # stacking on top of Hypocrisy's squad-wide core-damage share.

@@ -11,14 +11,14 @@ doesn't unlock until 90s into a 180s fight (half the raid), and steady-
 stating that away would materially overstate her early-fight value (per
 Fienn's cycle-accuracy preference).
 
-"Exceeds 30 stacks" (Stage 3) is read as "reaches the 30-stack cap" - the
-literal "exceeds" is impossible since 30 is also the max cap (`description_value_02`
-== `description_value_03` == 30). Flag this interpretation if it looks wrong.
+Per Fienn, "exceeds N stacks" here means "reaches N stacks" (>= N), not a
+strict > N - confirmed against his in-game knowledge, since the literal
+"exceeds 30" (Stage 3) would otherwise be impossible (30 is also the max cap,
+`description_value_02` == `description_value_03` == 30).
 
-Timeline (stack count reaches N+1 at t=(N+1)*3, since the first stack lands at
-t=3s; Stage 3 reaches the cap itself, not cap+1): Stage 1 (exceeds 2 stacks) at
-t=9s, Stage 2 (exceeds 10 stacks) at t=33s, Stage 3 (reaches the 30-stack cap)
-at t=90s.
+Timeline (the Nth stack lands at t=N*3, since the first stack lands at t=3s):
+Stage 1 (reaches 2 stacks) at t=6s, Stage 2 (reaches 10 stacks) at t=30s,
+Stage 3 (reaches the 30-stack cap) at t=90s.
 
 Modeled (DPS-relevant):
 - Impermanence (skills[1]): self ATK / Attack Damage / core-damage (the last
@@ -61,15 +61,17 @@ def build_nayuta_rules(values):
     hyp_atk = float(hypocrisy["description_value_05"]) / 100 * caster_atk
 
     imp_interval = float(impermanence["description_value_01"])  # 3 sec
-    stage1_threshold = float(impermanence["description_value_05"])  # exceeds 2
+    stage1_threshold = float(impermanence["description_value_05"])  # reaches 2 stacks
     stage1_atk = float(impermanence["description_value_06"]) / 100
-    stage2_threshold = float(impermanence["description_value_07"])  # exceeds 10
+    stage2_threshold = float(impermanence["description_value_07"])  # reaches 10 stacks
     stage2_attack_damage = float(impermanence["description_value_08"]) / 100
     stage3_threshold = float(impermanence["description_value_03"])  # reaches cap 30
     stage3_core_damage = float(impermanence["description_value_04"]) / 100
 
-    stage1_time = (stage1_threshold + 1) * imp_interval
-    stage2_time = (stage2_threshold + 1) * imp_interval
+    # the Nth stack lands at t=N*imp_interval - all three stages use the same
+    # "reaches N stacks" formula (see module docstring).
+    stage1_time = stage1_threshold * imp_interval
+    stage2_time = stage2_threshold * imp_interval
     stage3_time = stage3_threshold * imp_interval
 
     burst_attack_damage = float(asceticism["description_value_01"]) / 100

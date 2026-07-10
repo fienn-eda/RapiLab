@@ -140,7 +140,7 @@ how to encode it, and current engine status.
 ## Fixed-time delayed effects via a custom `applied_at`
 - **What:** some passives unlock at a fixed, deck-independent time into the
   fight - e.g. Nayuta's Impermanence stacks once every 3 sec on a pure timer,
-  unlocking self-buff tiers at stack thresholds (t=9s/33s/90s in a 180s fight).
+  unlocking self-buff tiers at stack thresholds (t=6s/30s/90s in a 180s fight).
   90s is HALF the raid - steady-stating this as "always on" would materially
   overstate her early-fight value.
 - **Encode:** no new trigger is needed. `EffectRegistry.add(effect,
