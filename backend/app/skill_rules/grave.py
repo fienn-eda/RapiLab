@@ -10,14 +10,18 @@ Modeled (DPS-relevant):
   doesn't have access to (only raid_simulator/roster do).
 - Heat Emission (skills[0]): "Activates when Prediction status ends" -
   Prediction is granted for exactly 10 sec by her own burst, and Full Burst
-  itself lasts 10 sec, so this is approximated as firing at full_burst_end IF
-  her own burst fired this cycle (`own_burst_fired_this_cycle`). The squad
-  Pierce Damage buff it grants is "continuously", removed only "under certain
-  conditions" (unclear game text) - approximated as PERMANENT from her first
-  trigger onward, applied only once (guarded by a status flag) so repeated
-  cycles don't stack duplicate copies. Her own HP regen and the Burst Gauge
-  fill-speed bonus (gauge_charge_time is a fixed sim input, not consumed) are
-  not modeled.
+  itself lasts 10 sec, so activation is approximated as firing at
+  full_burst_end IF her own burst fired this cycle (`own_burst_fired_this_cycle`).
+  Per Fienn, the "removed under certain conditions" text means Heat Emission is
+  removed exactly when Grave uses her burst skill AGAIN - so the squad Pierce
+  Damage buff is really a TOGGLE: off during each ~10s Prediction window right
+  after she bursts, on the rest of the time. Modeled with a status flag +
+  `EffectRegistry.truncate_open_ended`: the buff is added open-ended
+  (duration=None) when Heat Emission activates, and closed out (duration set to
+  the elapsed time) the next time her own burst fires - so replay queries for
+  any point in the fight see the correct on/off windows. Her own HP regen and
+  the Burst Gauge fill-speed bonus (gauge_charge_time is a fixed sim input, not
+  consumed) are not modeled.
 
 Not modeled: Overheat (skills[1]) is a normal-attack-count-based self-buff
 chain (Overheat I/II/III) - no normal-attack-count trigger exists in the engine.
@@ -57,6 +61,11 @@ def build_grave_rules(values):
             applied_at=time,
         )
 
+    def remove_heat_emission_on_reburst(context, caster_slug, time, registry):
+        if context.has_status(caster_slug, HEAT_EMISSION_STATUS):
+            registry.truncate_open_ended("pierce_damage_up", caster_slug, time)
+            context.clear_status(caster_slug, HEAT_EMISSION_STATUS)
+
     def apply_heat_emission(context, caster_slug, time, registry):
         if context.has_status(caster_slug, HEAT_EMISSION_STATUS):
             return
@@ -67,5 +76,6 @@ def build_grave_rules(values):
 
     return [
         SkillRule(trigger="own_burst_activate", action=apply_plot_spoiler),
+        SkillRule(trigger="own_burst_activate", action=remove_heat_emission_on_reburst),
         SkillRule(trigger="full_burst_end", action=apply_heat_emission, condition=own_burst_fired_this_cycle()),
     ]

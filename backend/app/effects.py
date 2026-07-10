@@ -49,6 +49,23 @@ class EffectRegistry:
     def add_pulse(self, pulse: Pulse) -> None:
         self._pulses.append(pulse)
 
+    def truncate_open_ended(self, stat: str, source_slug: str, now: float) -> None:
+        """Close out a still-open (duration=None) effect from this exact
+        (stat, source_slug), so it stops counting as active from `now` onward
+        - for a continuous buff a Nikke's own later trigger explicitly ends
+        (e.g. Grave's Heat Emission ends when she reuses her burst, rather than
+        expiring on a fixed timer). Mutates the stored Effect's duration in
+        place, so any later `total_for` query - including ones for times
+        before `now`, from raid_simulator's replay-style pass over normal-
+        attack shots - correctly respects the closed [applied_at, now) window
+        regardless of when this is called relative to the sim's own timeline.
+        No-op if there's no matching open effect. If more than one open effect
+        shares the same (stat, source_slug), all of them are closed - that
+        ambiguity hasn't come up yet."""
+        for effect, applied_at in self._entries:
+            if effect.stat == stat and effect.source_slug == source_slug and effect.duration is None:
+                effect.duration = now - applied_at
+
     def drain_pulses(self, stat: str) -> list[Pulse]:
         matching = [p for p in self._pulses if p.stat == stat]
         self._pulses = [p for p in self._pulses if p.stat != stat]

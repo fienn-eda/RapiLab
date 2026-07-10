@@ -55,6 +55,13 @@ enter", regardless of who bursts). Use `_helpers.instant_nuke_pulse_rule`;
 using the pulse's source_slug as caster, exactly like a burst nuke, logged with
 `source="instant_nuke"`.
 
+`EffectRegistry.truncate_open_ended(stat, source_slug, now)`: for a continuous
+(`duration=None`) buff that a LATER trigger explicitly cancels (not a timer) -
+e.g. Grave's Heat Emission ends when she reuses her burst. Add the effect
+open-ended when it activates; call `truncate_open_ended` in the canceling
+trigger's rule to close its duration to the elapsed time. Replay-safe (mutates
+the stored Effect, so later queries at any time see the correct window).
+
 ## Stats the engine does NOT consume (encoding is inert — defer instead)
 
 Two groups. In both, encoding an effect with these stats is silently inert —

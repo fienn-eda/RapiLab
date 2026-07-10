@@ -88,6 +88,45 @@ def test_permanent_effect_has_no_duration():
     assert registry.total_for(stat="core_hit_bonus", target=anis, now=99999) == 1.0
 
 
+def test_truncate_open_ended_closes_a_permanent_effect_at_the_given_time():
+    # For a continuous buff a Nikke's own later trigger explicitly ends (e.g.
+    # Grave's Heat Emission ends when she reuses her burst) - mutates the
+    # stored effect's duration so any later total_for query (including ones
+    # for times before the truncation, from raid_simulator's replay-style
+    # second pass over normal-attack shots) respects the closed window.
+    registry = EffectRegistry()
+    registry.add(Effect("pierce_damage_up", 0.5, "squad", None, "grave"), applied_at=10.0)
+    target = make_member("ally", "Fire")
+
+    assert registry.total_for("pierce_damage_up", target, now=50.0) == 0.5  # still open
+
+    registry.truncate_open_ended("pierce_damage_up", "grave", now=30.0)
+
+    assert registry.total_for("pierce_damage_up", target, now=29.9) == 0.5   # active before truncation
+    assert registry.total_for("pierce_damage_up", target, now=30.0) == 0.0   # inactive at truncation instant
+    assert registry.total_for("pierce_damage_up", target, now=50.0) == 0.0   # inactive after
+
+
+def test_truncate_open_ended_is_a_no_op_when_no_matching_open_effect_exists():
+    registry = EffectRegistry()
+    registry.truncate_open_ended("pierce_damage_up", "grave", now=30.0)  # should not raise
+    target = make_member("ally", "Fire")
+    assert registry.total_for("pierce_damage_up", target, now=50.0) == 0.0
+
+
+def test_truncate_open_ended_only_affects_matching_stat_and_source():
+    registry = EffectRegistry()
+    registry.add(Effect("pierce_damage_up", 0.5, "squad", None, "grave"), applied_at=10.0)
+    registry.add(Effect("pierce_damage_up", 0.3, "squad", None, "other"), applied_at=10.0)
+    registry.add(Effect("attack_damage_up", 0.2, "squad", None, "grave"), applied_at=10.0)
+
+    registry.truncate_open_ended("pierce_damage_up", "grave", now=30.0)
+
+    target = make_member("ally", "Fire")
+    assert registry.total_for("pierce_damage_up", target, now=50.0) == 0.3  # untouched (different source)
+    assert registry.total_for("attack_damage_up", target, now=50.0) == 0.2  # untouched (different stat)
+
+
 def test_total_for_unaffected_stat_is_zero():
     registry = EffectRegistry()
     anis = make_member("anis", "Iron")

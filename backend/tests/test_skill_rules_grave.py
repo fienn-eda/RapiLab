@@ -61,23 +61,50 @@ def test_heat_emission_only_triggers_if_grave_burst_this_cycle():
     assert round(registry2.total_for("pierce_damage_up", ALLY, now=15.0), 4) == 0.484
 
 
-def test_heat_emission_applies_only_once_across_multiple_cycles():
+def test_heat_emission_applies_only_once_while_still_active():
+    # If full_burst_end fires again while Heat Emission is already active
+    # (e.g. she didn't reburst that cycle but the condition still holds from a
+    # stale flag in a hand-built test), it must not double up.
     ctx = make_context()
     ctx.burst_used_this_cycle.add("grave")
     registry = EffectRegistry()
     rules = {"grave": build()}
 
     fire_trigger("full_burst_end", rules, ctx, registry, time=15.0)
-    fire_trigger("full_burst_end", rules, ctx, registry, time=45.0)  # 2nd cycle, still flagged as burst-used
+    fire_trigger("full_burst_end", rules, ctx, registry, time=45.0)
 
     # should NOT double up - still just 48.4%, not 96.8%
     assert round(registry.total_for("pierce_damage_up", ALLY, now=45.0), 4) == 0.484
 
 
-def test_heat_emission_buff_is_permanent_once_triggered():
+def test_heat_emission_is_removed_when_grave_bursts_again():
+    # Per Fienn: Heat Emission's "removed under certain conditions" means it's
+    # removed exactly when Grave uses her burst again - it's a toggle, off
+    # during each ~10s Prediction window right after she bursts, on otherwise.
     ctx = make_context()
     ctx.burst_used_this_cycle.add("grave")
     registry = EffectRegistry()
-    fire_trigger("full_burst_end", {"grave": build()}, ctx, registry, time=15.0)
+
+    fire_trigger("full_burst_end", {"grave": build()}, ctx, registry, time=15.0)  # Heat Emission activates
+    assert round(registry.total_for("pierce_damage_up", ALLY, now=39.9), 4) == 0.484
+
+    # Isolate the removal rule (build()[1]) so Plot Spoiler's own reburst buff
+    # (a separate, temporary squad Pierce Damage grant) doesn't mask whether
+    # Heat Emission specifically was closed out.
+    removal_only = {"grave": [build()[1]]}
+    fire_trigger("own_burst_activate", removal_only, ctx, registry, time=40.0)
+    assert registry.total_for("pierce_damage_up", ALLY, now=40.0) == 0.0
+    assert registry.total_for("pierce_damage_up", ALLY, now=100.0) == 0.0
+
+
+def test_heat_emission_reactivates_after_the_next_full_burst_end():
+    ctx = make_context()
+    ctx.burst_used_this_cycle.add("grave")
+    registry = EffectRegistry()
+    rules = {"grave": build()}
+
+    fire_trigger("full_burst_end", rules, ctx, registry, time=15.0)   # cycle 1: activates
+    fire_trigger("own_burst_activate", rules, ctx, registry, time=40.0)  # cycle 2 burst: removed
+    fire_trigger("full_burst_end", rules, ctx, registry, time=50.0)   # cycle 2 ends: reactivates
 
     assert round(registry.total_for("pierce_damage_up", ALLY, now=175.0), 4) == 0.484

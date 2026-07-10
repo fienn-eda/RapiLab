@@ -119,5 +119,23 @@ how to encode it, and current engine status.
   unconditionally would be wrong against non-matching bosses.
 - **Encode:** defer + document. Don't apply it unconditionally.
 
+## A continuous buff canceled by a later trigger, not a timer
+- **What:** some "continuously" buffs are removed by a specific later event
+  rather than expiring after a fixed duration - e.g. Grave's Heat Emission
+  (squad Pierce Damage) is removed exactly when she uses her burst again, not
+  after a timer. Confirmed by Fienn - the game text's "removed under certain
+  conditions" was otherwise ambiguous.
+- **Easy mistake:** reading "continuously...removed under certain conditions"
+  as effectively permanent (steady-state) and applying it once, forever - this
+  overstates uptime by however long the toggle is actually off (here, the
+  ~10s window after each reburst).
+- **Encode:** add the buff open-ended (`duration=None`) when it activates, then
+  call `EffectRegistry.truncate_open_ended(stat, source_slug, time)` in the
+  rule that fires on the canceling trigger - it closes the open effect's
+  duration to the elapsed time, so replay queries (raid_simulator's later pass
+  over normal-attack shots) still see the correct on/off windows regardless of
+  processing order. Guard activation/removal with a status flag so repeated
+  firings don't double-add or no-op incorrectly. See `grave.py`.
+
 ---
 *Add new mechanics above this line as they come up.*
