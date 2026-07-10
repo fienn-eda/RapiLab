@@ -98,5 +98,26 @@ how to encode it, and current engine status.
   DPS unit, she'll incorrectly also receive the ally-only buff (document this
   self-overstatement explicitly). See `arcana_fortune_mate.py`.
 
+## "Deals X% as damage" tied to a trigger other than the caster's own burst
+- **What:** some passives deal real damage on a trigger like "on entering Full
+  Burst" or "after N normal attacks", NOT on the caster's own burst firing.
+  E.g. Brid: Silent Track's Ignition Sequence deals 636% of final ATK whenever
+  Full Burst starts, regardless of who bursts that cycle.
+- **Easy mistake:** assuming all "Deals X% as damage" text is a burst nuke
+  (`<name>_burst_percent`, tied to `own_burst_activate`) - it isn't if the
+  trigger phrase says something else.
+- **Encode:** use `_helpers.instant_nuke_pulse_rule(trigger, percent)`, which
+  works for any of the four triggers. If the trigger is a normal-attack-count
+  ("after N normal attacks"), it's still undeployable - no such trigger exists
+  - defer that specific bullet.
+
+## Enemy-element-conditional debuffs ("if the enemy is [element] Code")
+- **What:** some debuffs only apply against enemies of a specific element, e.g.
+  Brid's Wind-Code-only Damage Taken debuff.
+- **Gap:** SkillRule actions have no access to the boss's element (only
+  `raid_simulator` does, via `boss_element`) - applying the debuff
+  unconditionally would be wrong against non-matching bosses.
+- **Encode:** defer + document. Don't apply it unconditionally.
+
 ---
 *Add new mechanics above this line as they come up.*

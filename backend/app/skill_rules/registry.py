@@ -14,8 +14,10 @@ from app.skill_rules.anis_star import build_starfall_rules
 from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
 from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
 from app.skill_rules.blanc import build_blanc_rules
+from app.skill_rules.brid_silent_track import build_brid_rules
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
 from app.skill_rules.d_killer_wife import build_d_killer_wife_rules, kill_the_target_burst_percent
+from app.skill_rules.grave import build_grave_rules
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
     build_fire_away_rules,
@@ -77,6 +79,7 @@ _BUILDERS = {
     "arcana": lambda sv: (build_arcana_rules(sv), arcana_burst_percent(sv)),
     "arcana-fortune-mate": lambda sv: (build_fortune_mate_rules(sv), radiant_youth_burst_percent(sv)),
     "blanc": lambda sv: (build_blanc_rules(sv), None),
+    "brid-silent-track": lambda sv: (build_brid_rules(sv), None),
     "crown": _build_crown,
     "rapi-red-hood": _build_rapi_red_hood,
     "helm": _build_helm,
@@ -87,6 +90,7 @@ _BUILDERS = {
     "rouge": lambda sv: (build_rouge_rules(sv), None),
     "zwei": lambda sv: (build_zwei_rules(sv), None),
     "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), kill_the_target_burst_percent(sv)),
+    "grave": lambda sv: (build_grave_rules(sv), None),
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
     "mast-romantic-maid": lambda sv: (build_mast_rules(sv), None),
     "moran": lambda sv: (build_moran_rules(sv), None),
