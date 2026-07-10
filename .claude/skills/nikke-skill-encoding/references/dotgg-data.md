@@ -65,6 +65,11 @@ descriptions break the default cp949 codec).
   the steady state (all tiers or the third value — read the wording; if
   "previous effects trigger repeatedly" and the tiers are the same stat, they
   stack/sum, if different stats they all apply).
+- **"Exceeds N stack(s)" means "reaches N stacks" (>= N), not a strict > N.**
+  Confirmed by Fienn against in-game behavior (Nayuta's Impermanence) - a
+  literal > N reading is off by one activation and can even be impossible when
+  N is also the stat's max cap. Applies generally to "exceeds/stacks" stack-
+  threshold wording, not just that one skill.
 
 ## Alternative source: lootandwaifus.com (fallback for characters missing from dotgg)
 
