@@ -17,6 +17,7 @@ never has to change for the one or two Nikkes that need this.
 """
 from app.skill_rules.ade_agent_bunny import build_ade_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
+from app.skill_rules.anis_sparkling_summer import build_anis_sparkling_summer_rules
 from app.skill_rules.anis_star import build_starfall_rules
 from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
 from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
@@ -91,6 +92,7 @@ def _build_privaty(sv):
 
 _BUILDERS = {
     "anis-star": _build_anis_star,
+    "anis-sparkling-summer": lambda sv: (build_anis_sparkling_summer_rules(sv), None),
     "ade-agent-bunny": lambda sv: (build_ade_rules(sv), None),
     "anchor-innocent-maid": lambda sv: (build_anchor_rules(sv), None),
     "arcana": lambda sv: (build_arcana_rules(sv), arcana_burst_percent(sv)),
