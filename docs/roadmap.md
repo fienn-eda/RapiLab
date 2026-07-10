@@ -9,8 +9,8 @@
 
 - 마지막 갱신: 2026-07-10
 - 브랜치: `wip/scaffolding`
-- 테스트: **241 passed** (마지막 전체 실행 기준)
-- 인코딩된 니케: **29명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- 테스트: **257 passed** (마지막 전체 실행 기준)
+- 인코딩된 니케: **31명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
 
@@ -94,8 +94,13 @@
   과대평가 회피). Mint의 projectile explosion 버프가 RL 아군에 적용, Rapi 버스트 넉
   태깅. Takina용 "노멀→진댐 변환" 포함. 상세 `decisions.md`·`engine-capabilities.md`.
   (미결: true의 DEF 무시 여부 / attack_damage_up 전역 여부 — Fienn 확인 대기.)
+- **엔진 확장 완료 — periodic 스킬 트리거 (2026-07-11):** 자체 쿨다운 있는 Skill1/2가
+  t=cd,2cd…에 버프/디버프 반복 발동(범용 전투 규칙). `simulate_raid`의 `periodic_rules`
+  (버스트 사이클 前 사전 패스 — 버프는 딜 입력이므로). Rosanna·Takina 인코딩 완료.
+- **인코딩 완료:** Rosanna: Chic Ocean, Takina Inoue (둘 다 Burst2 서포터, 데미지 타입/
+  periodic 능력 사용).
 - **다음:** `engine-gaps.md` 우선순위로 남은 gap(#1 per-shot 트리거가 최대 ROI) 착수
-  결정 → 배치 인코딩. Takina/Rosanna 본체 인코딩은 이 타입 능력을 사용.
+  결정 → 배치 인코딩.
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.

@@ -103,6 +103,20 @@ Semantics (confirmed against the nikke.gg glossary - see
 `true`-typed instance is computed with `enemy_def=0`); `attack_damage_up` is a
 general buff that **affects all damage**, so it stays global across every type.
 
+`periodic_rules`: a `simulate_raid` param
+(`{slug: [(cooldown, [SkillRule, ...]), ...]}`) for a Skill 1/2 that fires on
+its OWN cooldown - **a universal battle rule: a cooldowned Skill 1/2 first fires
+at t=cooldown (not battle start) and repeats every cooldown.** Unlike
+`periodic_nukes` (a damage OUTPUT, computed in a post-pass), these rules apply
+buffs/debuffs that are damage INPUTS, so they run as a pre-pass BEFORE the burst
+cycle (which computes nukes that must reflect them). Fired against the initial
+context, so periodic rules must be **stateless buff appliers** (no dependence on
+burst-cycle state / activation_count / status). Build with
+`buff_rule("periodic", [...])` ("periodic" is a label; these rules aren't in
+`rules_by_slug`, so `fire_trigger` never dispatches them). Expose per-Nikke via
+`registry._PERIODIC_RULE_BUILDERS` / `get_periodic_rules`; `roster` threads it.
+See `takina_inoue.py` (Battlefield Control, cd 15s).
+
 `EffectRegistry.truncate_open_ended(stat, source_slug, now)`: for a continuous
 (`duration=None`) buff that a LATER trigger explicitly cancels (not a timer) -
 e.g. Grave's Heat Emission ends when she reuses her burst. Add the effect

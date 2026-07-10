@@ -147,6 +147,9 @@
   4초). 2026-07-10.
 - **데미지 타입 모델링 (gap #4)**: sustained/distributed/true/projectile_explosion
   버프를 인스턴스 타입에 게이팅. 2026-07-10.
+- **periodic 스킬 트리거**: 자체 쿨다운 있는 Skill1/2가 t=cd,2cd…에 버프/디버프를
+  반복 발동(범용 전투 규칙). `simulate_raid`의 `periodic_rules`. 첫 소비자 Takina
+  Inoue(Battlefield Control, cd15s). 2026-07-11.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 

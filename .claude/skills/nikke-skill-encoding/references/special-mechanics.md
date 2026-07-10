@@ -260,5 +260,24 @@ how to encode it, and current engine status.
   AND to skills carrying the "Projectile Explosion" keyword (e.g. Rapi: Red
   Hood's Power of Inheritance). Confirmed by Fienn.
 
+## Cooldowned Skill 1/2 fire at t=cooldown, not battle start - BUILT capability
+- **What (universal battle rule, confirmed by Fienn):** any Skill 1 or Skill 2
+  (not the Burst) that has a **cooldown** does NOT activate at battle start - it
+  first fires at t=cooldown and then repeats every cooldown. E.g. Takina Inoue's
+  Battlefield Control (cd 15s) fires at t=15, 30, 45, ... A skill clause with a
+  `for N sec` duration but no "Activates when ..." trigger phrase is usually one
+  of these (check the skill's cooldown; lootandwaifus shows it in the S2 title,
+  e.g. "Spina di Rosa (Cooldown: 30s)").
+- **Easy mistake:** encoding it onto `battle_start` (wrong - it starts at
+  t=cooldown, and it repeats). Or guessing an event trigger.
+- **Encode:** use the `periodic_rules` capability (see
+  `engine-capabilities.md`): build the clause's buffs as
+  `buff_rule("periodic", [...])` and register `(cooldown, rules)` in
+  `registry._PERIODIC_RULE_BUILDERS`. Rules must be stateless buff appliers. If
+  the skill also deals a nuke on its cooldown, that's `periodic_nukes` (a
+  separate mechanism); a nuke with an internal duration < cooldown (duty cycle,
+  e.g. Rosanna's Spina 15s-on/15s-off in 30s) is still a gap. See
+  `takina_inoue.py`.
+
 ---
 *Add new mechanics above this line as they come up.*

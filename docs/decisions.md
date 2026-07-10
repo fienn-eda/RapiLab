@@ -5,6 +5,13 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## Periodic skill trigger: cooldowned Skill 1/2 buffs fire on their own cooldown
+- Date: 2026-07-11
+- Context: Fienn confirmed a universal battle-system rule - a Skill 1/2 (not the Burst) that has a cooldown does NOT fire at battle start; it first fires at t=cooldown and repeats. Takina Inoue's Battlefield Control (cd 15s) applies squad ally True Damage +140% and enemy Damage Taken +10% every 15s starting at t=15 - her headline support - but the engine's only triggers were the 4 burst events, and `periodic_nukes` only handles damage, not buffs.
+- Decision: Add `simulate_raid(..., periodic_rules={slug: [(cooldown, [SkillRule, ...])]})`. These fire each rule's action at t=cooldown, 2*cooldown, ... Because the buffs they apply are damage INPUTS (unlike `periodic_nukes`, an output post-pass), the pass runs BEFORE `simulate_burst_cycle` so any nuke computed during the cycle reflects them (effects are replay-safe, so pre-adding at future times is correct). Exposed via `registry._PERIODIC_RULE_BUILDERS` / `get_periodic_rules`, threaded by `roster`; rules built with `buff_rule("periodic", ...)` (a label - never dispatched by `fire_trigger`).
+- Why: Generalizes the existing periodic mechanism to buffs; a universal rule so high reuse (Rosanna's Spina di Rosa cd30s buff part could use it later). First-fire-at-t=cooldown already matched `periodic_nukes`, so no inconsistency. Additive, defaults to `{}`/no-op.
+- Consequences: Periodic rules run against the initial context, so they must be stateless buff appliers (no dependence on burst-cycle state) - documented. A periodic nuke with an internal duration shorter than its cooldown (duty cycle, e.g. Rosanna's Spina) is still an open gap. First consumer: Takina Inoue.
+
 ## Damage typing to make type-specific Damage-Up buffs non-inert
 - Date: 2026-07-10
 - Context: `sustained_damage_up` / `distributed_damage_up` / `true_damage_up` / `projectile_explosion_damage_up` exist in `damage_formula.py` but `raid_simulator` never read them, so buffs like Rosanna's "Sustained Damage +20%", Takina's "True Damage +140%", and Mint's "Projectile Explosion Damage +X%" were inert. Wiring them blanket (like `attack_damage_up`) would be wrong: they only raise damage OF that type, so a squad-wide sustained buff must not boost everyone's normal attacks. And gating them correctly is still inert unless the engine also produces instances of that type - so it's a coupled feature, not a one-line wire (correcting an earlier "~1 line each" estimate).
