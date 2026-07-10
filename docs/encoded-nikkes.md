@@ -4,7 +4,7 @@
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
 - 마지막 갱신: 2026-07-10
-- 총 **29명** (Burst 1: 11명 · Burst 2: 14명 · Burst 3: 4명)
+- 총 **30명** (Burst 1: 11명 · Burst 2: 15명 · Burst 3: 4명)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -30,7 +30,7 @@
 | Volume | `volume` | Attacker | SMG | Wind | ✅ | Freestyle(킬 트리거, 레이드엔 무의미)만 미모델 |
 | Zwei (애장품) | `zwei` | Supporter | SG | Electric | ⚠ | 라운드/노멀공격 스택 변형, 무기변형 |
 
-## Burst 2 (14명)
+## Burst 2 (15명)
 
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
@@ -48,6 +48,7 @@
 | Prika | `prika` | Supporter | SR | Water | 🔶 | 대부분 보류 — 본인 풀차지샷 + **Mint 교차유닛 시너지**(그녀의 실질 핵심 가치) |
 | Helm: Aquamarine | `helm-aquamarine` | Attacker | AR | Iron | ⚠ | 노멀30회 넉, Electric속성 조건부 추가딜/디버프 (**자동발동 스킬은 엔진 확장으로 모델링됨**) |
 | Velvet | `velvet` | Supporter | SR | Wind | 🔶 | 대부분 보류(자기전용) — ammo pouch 자원 + 본인 풀차지/노멀50회 카운터 |
+| Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 
 ## Burst 3 (4명)
 
