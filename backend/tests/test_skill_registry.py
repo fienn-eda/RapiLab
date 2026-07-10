@@ -1,6 +1,11 @@
 import pytest
 
-from app.skill_rules.registry import ENCODED_SLUGS, build_nikke_rules, get_periodic_nuke
+from app.skill_rules.registry import (
+    ENCODED_SLUGS,
+    build_nikke_rules,
+    get_burst_damage_type,
+    get_periodic_nuke,
+)
 
 
 def test_core_encoded_nikkes_are_registered():
@@ -63,3 +68,14 @@ def test_get_periodic_nuke_returns_cooldown_and_percent_for_helm_aquamarine():
     }
     spec = get_periodic_nuke("helm-aquamarine", skill_values)
     assert spec == {"cooldown": 4.0, "percent": 105.58}
+
+
+def test_get_burst_damage_type_defaults_to_attack():
+    assert get_burst_damage_type("crown") == "attack"
+    assert get_burst_damage_type("helm") == "attack"
+
+
+def test_rapi_red_hood_burst_nuke_is_projectile_explosion_typed():
+    # Power of Inheritance is a "Projectile Explosion" keyword skill, so its
+    # burst-nuke instance benefits from Projectile Explosion Damage buffs.
+    assert get_burst_damage_type("rapi-red-hood") == "projectile_explosion"

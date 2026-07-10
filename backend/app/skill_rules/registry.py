@@ -131,11 +131,27 @@ _PERIODIC_NUKE_BUILDERS = {
     },
 }
 
+# A Nikke's burst nuke is "attack"-typed unless its skill deals a specific
+# damage type (e.g. a "Projectile Explosion" keyword skill). Only overrides are
+# listed; everything else defaults to "attack". The instance's type decides
+# which type-gated Damage-Up buff applies (see raid_simulator._TYPE_BUCKETS).
+_BURST_DAMAGE_TYPES = {
+    "rapi-red-hood": "projectile_explosion",  # Power of Inheritance = Projectile Explosion skill
+}
+
 
 def build_nikke_rules(slug, skill_values):
     if slug not in _BUILDERS:
         raise KeyError(f"no encoded skill rules for slug: {slug!r}")
     return _BUILDERS[slug](skill_values)
+
+
+def get_burst_damage_type(slug):
+    """The damage type of this Nikke's burst nuke ("attack" for the vast
+    majority; an override like "projectile_explosion" for keyword skills). Only
+    matters for a slug that has a burst nuke - see raid_simulator's
+    burst_damage_types."""
+    return _BURST_DAMAGE_TYPES.get(slug, "attack")
 
 
 def get_periodic_nuke(slug, skill_values):

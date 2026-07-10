@@ -80,6 +80,21 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
+# Each damage instance has a damage_type. The type-specific Damage-Up buckets
+# below are read from the registry ONLY for instances of that type, so a buff
+# like "Sustained Damage +X%" only boosts sustained-typed damage (not every
+# hit). The always-on buckets (attack_damage_up, pierce/parts/damage_taken) are
+# applied to every instance regardless of type - see _damage_instance. "attack"
+# is the default type and adds no type-specific bucket, so untyped instances
+# are computed exactly as before.
+_TYPE_BUCKETS = {
+    "attack": [],
+    "sustained": ["sustained_damage_up"],
+    "distributed": ["distributed_damage_up"],
+    "true": ["true_damage_up"],
+    "projectile_explosion": ["projectile_explosion_damage_up"],
+}
+
 
 def simulate_raid(
     deck,
@@ -95,9 +110,11 @@ def simulate_raid(
     boss_element=None,
     base_crit_rate=BASE_CRIT_RATE,
     periodic_nukes=None,
+    burst_damage_types=None,
 ):
     weapon_stats = weapon_stats or {}
     periodic_nukes = periodic_nukes or {}
+    burst_damage_types = burst_damage_types or {}
     context = SquadContext([SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck])
     registry = EffectRegistry()
     damage_log = []
@@ -114,9 +131,9 @@ def simulate_raid(
             return 1.0
         return element_multiplier(member_by_slug[slug]["element"], boss_element)
 
-    def _damage_from_percent(slug, percent, time):
+    def _damage_instance(slug, percent, time, damage_type="attack", extra_charge_bonus=0.0):
         target = target_for(slug)
-        return calculate_damage(
+        terms = dict(
             atk=base_stats[slug]["atk"],
             attack_coefficient=percent / 100,
             enemy_def=enemy_def,
@@ -130,12 +147,26 @@ def simulate_raid(
                 registry.total_for("other_core_damage_sources", target, time) if core_hittable else 0.0
             ),
             element_multiplier=element_bonus_for(slug),
-            charge_damage_bonus=registry.total_for("charge_damage_bonus", target, time),
+            charge_damage_bonus=registry.total_for("charge_damage_bonus", target, time) + extra_charge_bonus,
             attack_damage_up=registry.total_for("attack_damage_up", target, time),
             damage_to_parts_up=registry.total_for("damage_to_parts_up", target, time),
             pierce_damage_up=registry.total_for("pierce_damage_up", target, time),
             damage_taken_up=registry.total_for("damage_taken_up", target, time),
         )
+        # Type-specific Damage-Up buckets apply only to instances of that type.
+        for bucket in _TYPE_BUCKETS[damage_type]:
+            terms[bucket] = registry.total_for(bucket, target, time)
+        return calculate_damage(**terms)
+
+    def normal_attack_type(slug, weapon, target, time):
+        # A skill can convert a unit's normal attacks to a damage type for a
+        # window (e.g. Takina Inoue's burst: "normal attacks deal true damage").
+        if registry.total_for("normal_attacks_deal_true", target, time) > 0:
+            return "true"
+        # Otherwise a rocket launcher's normal attacks are projectile explosions.
+        if weapon["weapon"] == "RL":
+            return "projectile_explosion"
+        return "attack"
 
     def drain_instant_damage(time):
         # A passive that deals damage on a trigger OTHER than the caster's own
@@ -146,8 +177,10 @@ def simulate_raid(
         # own ATK and live buffs.
         for pulse in registry.drain_pulses("instant_damage_percent"):
             slug = pulse.source_slug
-            damage = _damage_from_percent(slug, pulse.value, time)
-            damage_log.append({"slug": slug, "time": time, "damage": damage, "source": "instant_nuke"})
+            damage = _damage_instance(slug, pulse.value, time)
+            damage_log.append(
+                {"slug": slug, "time": time, "damage": damage, "source": "instant_nuke", "damage_type": "attack"}
+            )
 
     def on_battle_start(time):
         fire_trigger("battle_start", rules_by_slug, context, registry, time)
@@ -161,8 +194,11 @@ def simulate_raid(
         percent = burst_damage_percents.get(slug)
         if not percent:
             return
-        damage = _damage_from_percent(slug, percent, time)
-        damage_log.append({"slug": slug, "time": time, "damage": damage, "source": "burst"})
+        damage_type = burst_damage_types.get(slug, "attack")
+        damage = _damage_instance(slug, percent, time, damage_type=damage_type)
+        damage_log.append(
+            {"slug": slug, "time": time, "damage": damage, "source": "burst", "damage_type": damage_type}
+        )
 
     def on_full_burst_enter(time):
         fire_trigger("full_burst_enter", rules_by_slug, context, registry, time)
@@ -213,43 +249,30 @@ def simulate_raid(
                 "reload_speed_percent", target, t
             ),
         )
+        extra_charge_bonus = weapon["charge_damage_percent"] / 100 - 1 if is_charge_weapon else 0.0
         for shot_time in shot_times:
-            charge_damage_bonus = registry.total_for("charge_damage_bonus", target, shot_time)
-            if is_charge_weapon:
-                charge_damage_bonus += weapon["charge_damage_percent"] / 100 - 1
-            damage = calculate_damage(
-                atk=base_stats[slug]["atk"],
-                attack_coefficient=weapon["damage_percent"] / 100,
-                enemy_def=enemy_def,
-                atk_percent=registry.total_for("atk_percent", target, shot_time),
-                flat_atk=registry.total_for("flat_atk", target, shot_time),
-                other_elemental_bonus=registry.total_for("other_elemental_bonus", target, shot_time),
-                other_critical_damage_sources=registry.total_for(
-                    "other_critical_damage_sources", target, shot_time
-                ),
-                crit_rate=crit_rate_for(target, shot_time),
-                core_hit_bonus=CORE_HIT_BONUS if core_hittable else 0.0,
-                other_core_damage_sources=(
-                    registry.total_for("other_core_damage_sources", target, shot_time)
-                    if core_hittable
-                    else 0.0
-                ),
-                element_multiplier=element_bonus_for(slug),
-                charge_damage_bonus=charge_damage_bonus,
-                attack_damage_up=registry.total_for("attack_damage_up", target, shot_time),
-                damage_to_parts_up=registry.total_for("damage_to_parts_up", target, shot_time),
-                pierce_damage_up=registry.total_for("pierce_damage_up", target, shot_time),
-                damage_taken_up=registry.total_for("damage_taken_up", target, shot_time),
+            damage_type = normal_attack_type(slug, weapon, target, shot_time)
+            damage = _damage_instance(
+                slug,
+                weapon["damage_percent"],
+                shot_time,
+                damage_type=damage_type,
+                extra_charge_bonus=extra_charge_bonus,
             )
-            damage_log.append({"slug": slug, "time": shot_time, "damage": damage, "source": "normal_attack"})
+            damage_log.append(
+                {"slug": slug, "time": shot_time, "damage": damage, "source": "normal_attack", "damage_type": damage_type}
+            )
 
     for slug, spec in periodic_nukes.items():
         cooldown = spec["cooldown"]
         percent = spec["percent"]
+        damage_type = spec.get("damage_type", "attack")
         tick = cooldown
         while tick < fight_duration:
-            damage = _damage_from_percent(slug, percent, tick)
-            damage_log.append({"slug": slug, "time": tick, "damage": damage, "source": "periodic"})
+            damage = _damage_instance(slug, percent, tick, damage_type=damage_type)
+            damage_log.append(
+                {"slug": slug, "time": tick, "damage": damage, "source": "periodic", "damage_type": damage_type}
+            )
             tick += cooldown
 
     return {

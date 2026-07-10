@@ -52,7 +52,7 @@ def test_battle_start_buff_is_active_by_the_time_the_burst_fires():
 
     assert len(result["damage_log"]) == 1
     entry = result["damage_log"][0]
-    assert entry == {"slug": "attacker", "time": 5.0, "damage": 150000.0, "source": "burst"}
+    assert entry == {"slug": "attacker", "time": 5.0, "damage": 150000.0, "source": "burst", "damage_type": "attack"}
     assert result["total_damage"] == 150000.0
 
 
@@ -294,7 +294,7 @@ def test_instant_damage_pulse_deals_damage_at_full_burst_enter_using_casters_own
     )
     instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
     # full_burst_enter fires at t=5.0 in this deck; 2000 atk * 500% coefficient
-    assert instant_hits == [{"slug": "buffer", "time": 5.0, "damage": 10000.0, "source": "instant_nuke"}]
+    assert instant_hits == [{"slug": "buffer", "time": 5.0, "damage": 10000.0, "source": "instant_nuke", "damage_type": "attack"}]
 
 
 def test_instant_damage_pulse_deals_damage_at_battle_start():
@@ -318,7 +318,7 @@ def test_instant_damage_pulse_deals_damage_at_battle_start():
         base_crit_rate=0.0,
     )
     instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
-    assert instant_hits == [{"slug": "buffer", "time": 0.0, "damage": 500.0, "source": "instant_nuke"}]
+    assert instant_hits == [{"slug": "buffer", "time": 0.0, "damage": 500.0, "source": "instant_nuke", "damage_type": "attack"}]
 
 
 def test_instant_damage_pulse_deals_damage_at_full_burst_end():
@@ -343,7 +343,7 @@ def test_instant_damage_pulse_deals_damage_at_full_burst_end():
     )
     instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
     # full_burst_end at t=15.0 (full_burst_enter t=5.0 + FULL_BURST_DURATION 10.0)
-    assert instant_hits == [{"slug": "buffer", "time": 15.0, "damage": 2000.0, "source": "instant_nuke"}]
+    assert instant_hits == [{"slug": "buffer", "time": 15.0, "damage": 2000.0, "source": "instant_nuke", "damage_type": "attack"}]
 
 
 def test_instant_damage_pulse_from_own_burst_activate_stacks_with_burst_nuke():
@@ -370,8 +370,8 @@ def test_instant_damage_pulse_from_own_burst_activate_stacks_with_burst_nuke():
     )
     burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
     instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
-    assert burst_hits == [{"slug": "attacker", "time": 5.0, "damage": 5000.0, "source": "burst"}]
-    assert instant_hits == [{"slug": "attacker", "time": 5.0, "damage": 1000.0, "source": "instant_nuke"}]
+    assert burst_hits == [{"slug": "attacker", "time": 5.0, "damage": 5000.0, "source": "burst", "damage_type": "attack"}]
+    assert instant_hits == [{"slug": "attacker", "time": 5.0, "damage": 1000.0, "source": "instant_nuke", "damage_type": "attack"}]
 
 
 def test_periodic_nuke_fires_repeatedly_on_its_own_fixed_cooldown():
@@ -421,7 +421,163 @@ def test_periodic_nuke_uses_the_casters_own_atk_and_live_buffs():
     )
     periodic_hits = [e for e in result["damage_log"] if e["source"] == "periodic"]
     # atk 1000 * (1 + 1.0 atk_percent buff) * 100% coefficient = 2000
-    assert periodic_hits == [{"slug": "buffer", "time": 4.0, "damage": 2000.0, "source": "periodic"}]
+    assert periodic_hits == [{"slug": "buffer", "time": 4.0, "damage": 2000.0, "source": "periodic", "damage_type": "attack"}]
+
+
+def test_periodic_nuke_damage_type_gates_which_damage_up_buff_applies():
+    # A "Sustained Damage +50%" squad buff must raise ONLY sustained-typed
+    # damage, not a plain attack-typed instance in the same deck.
+    def grant_sustained(context, caster_slug, time, registry):
+        registry.add(Effect("sustained_damage_up", 0.5, "squad", None, caster_slug), applied_at=time)
+
+    rules = {"buffer": [SkillRule(trigger="battle_start", action=grant_sustained)], "midtier": [], "attacker": []}
+    result = simulate_raid(
+        make_deck(),
+        rules,
+        burst_damage_percents={},
+        base_stats={
+            "buffer": {"atk": 1000, "def": 0, "max_hp": 0},
+            "midtier": {"atk": 0, "def": 0, "max_hp": 0},
+            "attacker": {"atk": 1000, "def": 0, "max_hp": 0},
+        },
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=5.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        periodic_nukes={
+            "buffer": {"cooldown": 4.0, "percent": 100.0, "damage_type": "sustained"},
+            "attacker": {"cooldown": 4.0, "percent": 100.0},
+        },
+    )
+    hits = {e["slug"]: e for e in result["damage_log"] if e["source"] == "periodic"}
+    assert hits["buffer"]["damage"] == 1500.0  # sustained-typed: 1000 * (1 + 0.5 sustained)
+    assert hits["buffer"]["damage_type"] == "sustained"
+    assert hits["attacker"]["damage"] == 1000.0  # attack-typed: sustained buff does not apply
+
+
+def test_burst_nuke_damage_type_gates_type_specific_buff():
+    def grant_pe(context, caster_slug, time, registry):
+        registry.add(Effect("projectile_explosion_damage_up", 0.5, "squad", None, caster_slug), applied_at=time)
+
+    rules = {"buffer": [SkillRule(trigger="battle_start", action=grant_pe)], "midtier": [], "attacker": []}
+    result = simulate_raid(
+        make_deck(),
+        rules,
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        burst_damage_types={"attacker": "projectile_explosion"},
+    )
+    burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
+    assert burst_hits[0]["damage"] == 15000.0  # 10000 * 1.0 coeff * (1 + 0.5 projectile explosion)
+    assert burst_hits[0]["damage_type"] == "projectile_explosion"
+
+
+def test_true_typed_nuke_gets_true_damage_up_and_still_subtracts_defense():
+    # Decision: our nikke.gg-derived formula treats true_damage_up as a plain
+    # Damage-Up bucket with NO defense bypass. A true-typed instance still
+    # subtracts enemy DEF; only the true_damage_up buff is type-gated in.
+    def grant_true(context, caster_slug, time, registry):
+        registry.add(Effect("true_damage_up", 1.0, "squad", None, caster_slug), applied_at=time)
+
+    rules = {"buffer": [SkillRule(trigger="battle_start", action=grant_true)], "midtier": [], "attacker": []}
+    result = simulate_raid(
+        make_deck(),
+        rules,
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=2000,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        burst_damage_types={"attacker": "true"},
+    )
+    burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
+    # base = (10000 - 2000) = 8000; * coeff 1.0 * damage_up (1 + 1.0 true) = 16000
+    assert burst_hits[0]["damage"] == 16000.0
+    assert burst_hits[0]["damage_type"] == "true"
+
+
+def test_rocket_launcher_normal_attacks_are_projectile_explosion_typed():
+    # RL normal attacks are projectile explosions, so a squad Projectile
+    # Explosion Damage buff raises them (on top of the still-global attack buff).
+    def grant_pe(context, caster_slug, time, registry):
+        registry.add(Effect("projectile_explosion_damage_up", 0.5, "squad", None, caster_slug), applied_at=time)
+
+    weapon_stats = {
+        "attacker": {"weapon": "RL", "damage_percent": 100.0, "max_ammo": 3,
+                     "reload_time": 1.0, "charge_time": 1.0, "charge_damage_percent": 100.0},
+    }
+    kwargs = dict(
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000), enemy_def=0,
+        gauge_charge_time=5.0, fight_duration=20.0, mode="auto", base_crit_rate=0.0, weapon_stats=weapon_stats,
+    )
+    without = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    with_pe = simulate_raid(
+        make_deck(),
+        {"buffer": [SkillRule(trigger="battle_start", action=grant_pe)], "midtier": [], "attacker": []},
+        **kwargs,
+    )
+    na_without = [e for e in without["damage_log"] if e["source"] == "normal_attack"]
+    na_with = [e for e in with_pe["damage_log"] if e["source"] == "normal_attack"]
+    assert na_without and all(e["damage_type"] == "projectile_explosion" for e in na_without)
+    assert sum(e["damage"] for e in na_with) > sum(e["damage"] for e in na_without)
+
+
+def test_non_rocket_launcher_normal_attacks_are_attack_typed_and_ignore_pe_buff():
+    def grant_pe(context, caster_slug, time, registry):
+        registry.add(Effect("projectile_explosion_damage_up", 0.5, "squad", None, caster_slug), applied_at=time)
+
+    weapon_stats = {
+        "attacker": {"weapon": "MG", "damage_percent": 100.0, "max_ammo": 60,
+                     "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 0.0},
+    }
+    kwargs = dict(
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000), enemy_def=0,
+        gauge_charge_time=5.0, fight_duration=20.0, mode="auto", base_crit_rate=0.0, weapon_stats=weapon_stats,
+    )
+    without = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    with_pe = simulate_raid(
+        make_deck(),
+        {"buffer": [SkillRule(trigger="battle_start", action=grant_pe)], "midtier": [], "attacker": []},
+        **kwargs,
+    )
+    na_without = [e for e in without["damage_log"] if e["source"] == "normal_attack"]
+    assert na_without and all(e["damage_type"] == "attack" for e in na_without)
+    assert sum(e["damage"] for e in with_pe["damage_log"] if e["source"] == "normal_attack") == sum(
+        e["damage"] for e in na_without
+    )
+
+
+def test_normal_attacks_deal_true_conversion_types_shots_only_while_active():
+    # Takina Inoue's burst makes her normal attacks deal true damage for 10s.
+    # Modeled as a self-scoped "normal_attacks_deal_true" effect the normal-
+    # attack pass reads; only shots inside the window are true-typed.
+    def convert(context, caster_slug, time, registry):
+        registry.add(Effect("normal_attacks_deal_true", 1.0, "self", 10.0, caster_slug), applied_at=time)
+        registry.add(Effect("true_damage_up", 1.0, "squad", None, caster_slug), applied_at=time)
+
+    weapon_stats = {
+        "attacker": {"weapon": "MG", "damage_percent": 100.0, "max_ammo": 60,
+                     "reload_time": 0.5, "charge_time": 0.0, "charge_damage_percent": 0.0},
+    }
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": [SkillRule(trigger="battle_start", action=convert)]},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000), enemy_def=0,
+        gauge_charge_time=5.0, fight_duration=20.0, mode="auto", base_crit_rate=0.0, weapon_stats=weapon_stats,
+    )
+    na = [e for e in result["damage_log"] if e["source"] == "normal_attack"]
+    early = [e for e in na if e["time"] < 10.0]
+    late = [e for e in na if e["time"] >= 10.0]
+    assert early and all(e["damage_type"] == "true" and e["damage"] == 20000.0 for e in early)
+    assert late and all(e["damage_type"] == "attack" and e["damage"] == 10000.0 for e in late)
 
 
 def test_periodic_nukes_defaults_to_none_and_is_a_no_op():

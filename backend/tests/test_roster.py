@@ -46,6 +46,30 @@ def anis_star_spec():
     )
 
 
+def rapi_red_hood_spec():
+    return NikkeSpec(
+        slug="rapi-red-hood",
+        burst_tier=3,
+        burst_cooldown=40.0,
+        element="Fire",
+        weapon="MG",
+        base_stats={"atk": 300000, "def": 60000, "max_hp": 10000000},
+        skill_values={
+            "battlefield_assessment": {
+                "description_value_01": "1", "description_value_02": "7.48",
+                "description_value_03": "95.04", "description_value_04": "10",
+                "description_value_05": "48", "description_value_06": "10",
+                "description_value_07": "8.02", "description_value_08": "10",
+            },
+            "power_of_inheritance": {"description_value_05": "339.98"},
+        },
+        weapon_stats={
+            "weapon": "MG", "damage_percent": 20.0, "max_ammo": 300,
+            "reload_time": 2.0, "charge_time": 0.0, "charge_damage_percent": 0.0,
+        },
+    )
+
+
 def crown_spec():
     return NikkeSpec(
         slug="crown",
@@ -116,6 +140,13 @@ def test_burst_damage_percents_only_includes_nikkes_with_a_burst_nuke():
     inputs = assemble_simulation_inputs(minimal_feasible_deck())
     # helm has a nuke (Aegis Cannon 8236.8%); anis-star and crown are buff bursts
     assert inputs["burst_damage_percents"] == {"helm": 8236.8}
+
+
+def test_burst_damage_types_tags_projectile_explosion_nukes():
+    # Attack-typed burst nukes are omitted (default); only overrides are listed.
+    assert assemble_simulation_inputs(minimal_feasible_deck())["burst_damage_types"] == {}
+    inputs = assemble_simulation_inputs([rapi_red_hood_spec()])
+    assert inputs["burst_damage_types"] == {"rapi-red-hood": "projectile_explosion"}
 
 
 def test_base_stats_and_weapon_stats_are_keyed_by_slug():
