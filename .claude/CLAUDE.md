@@ -104,11 +104,12 @@ You always find and fix the root cause of a problem, rather than adding a workar
 
 ## Project knowledge base (docs/)
 
-Three living documents track the project. Read the relevant one before work and keep them current:
+Four living documents track the project. Read the relevant one before work and keep them current:
 
 - `docs/roadmap.md` — the big picture: phased roadmap (Phase 0–7), progress status, and a smaller-grained To-Do checklist. Fienn's at-a-glance status doc. Update the stage status / To-Do here when a piece of work lands.
 - `docs/decisions.md` — ADR-lite decision log (date · context · decision · why · consequences). Records choices that had real alternatives. Maintained via the `/document` command (docs-keeper subagent).
 - `docs/insights.md` — engine gotchas and reusable patterns, grouped by topic. Also maintained via `/document`.
+- `docs/encoded-nikkes.md` — every encoded Nikke, grouped by Burst tier, with a completeness rating (✅/⚠/🔶) and what's deferred. Update when a Nikke is encoded or added to the registry.
 
 Encoding methodology and the engine capability catalog live in the `nikke-skill-encoding` skill, not in docs/.
 

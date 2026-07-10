@@ -3,12 +3,13 @@
 우리가 뭘 만들고 있고, 어디까지 왔고, 다음에 뭘 할지 한눈에 보는 문서.
 큰 그림은 **로드맵(단계)**, 작은 단위 작업은 **To-Do**에서 관리한다.
 결정의 배경은 `docs/decisions.md`, 엔진 함정/패턴은 `docs/insights.md`,
+인코딩된 니케 목록(Burst 단계별)은 `docs/encoded-nikkes.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
 - 마지막 갱신: 2026-07-10
 - 브랜치: `wip/scaffolding`
 - 테스트: **216 passed** (마지막 전체 실행 기준)
-- 인코딩된 니케: **26명**
+- 인코딩된 니케: **26명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
 
