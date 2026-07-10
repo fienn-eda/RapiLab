@@ -58,6 +58,15 @@ every trigger fire (battle_start, own_burst_activate, full_burst_enter,
 full_burst_end) and computes the damage the same way as a burst nuke, using
 the pulse's source_slug as caster. Logged with `source="instant_nuke"`.
 
+Some skills react to a DIFFERENT unit's burst (e.g. Prika's Encore fires when
+Mint's Sing Along takes effect - i.e. when Mint bursts). After a unit's burst
+tier fires, `on_tier_fire` records the bursting slug on the context
+(`last_burst_slug`) and fires an `ally_burst_activate` trigger across every
+unit's rules, so a reacting rule can gate on `ally_bursted("mint")`. Fired after
+the burster's own own_burst_activate, so the reacting rule sees the burst's own
+effects already applied. These rules must be buff appliers (no instant nukes),
+like periodic_rules.
+
 Some skills fire repeatedly on their OWN fixed cooldown, entirely independent
 of the burst cycle and every other trigger (e.g. Helm: Aquamarine's Aegis
 Cannon Suppression Fire, a "Cooldown: 4s" active skill separate from her
@@ -202,8 +211,15 @@ def simulate_raid(
 
     def on_tier_fire(tier, slug, time):
         context.burst_used_this_cycle.add(slug)
+        context.last_burst_slug = slug
         fire_trigger("own_burst_activate", {slug: rules_by_slug.get(slug, [])}, context, registry, time)
         drain_instant_damage(time)
+        # Let other units react to THIS unit's burst (e.g. Prika's Encore firing
+        # on Mint's Sing Along). Fired across every unit's rules AFTER the
+        # burster's own own_burst_activate, so a reacting rule sees the burst's
+        # own effects already applied. ally_burst_activate rules must be buff
+        # appliers (no instant nukes), like periodic_rules.
+        fire_trigger("ally_burst_activate", rules_by_slug, context, registry, time)
 
         percent = burst_damage_percents.get(slug)
         if not percent:

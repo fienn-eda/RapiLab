@@ -305,5 +305,28 @@ how to encode it, and current engine status.
   rule and trust it reaches every damage instance active in its window,
   including burst nukes - no ordering caveat to work around.
 
+## Cross-unit reactive trigger (one unit reacts to another's burst)
+- **Signature:** a skill "activates when [another unit's named buff] takes
+  effect" — e.g. Prika's Encore fires "when Sing Along takes effect" (Sing Along
+  is Mint's burst buff, so this means "when Mint bursts").
+- **Engine capability (2026-07-11):** the `ally_burst_activate` trigger. After
+  any unit's burst tier fires, `raid_simulator` sets `context.last_burst_slug`
+  and fires `ally_burst_activate` across every unit's rules. Gate the reacting
+  rule with `ally_bursted("<other-slug>")` (and combine with more conditions via
+  `all_conditions(...)`). Buff appliers only, like `periodic_rules`. See
+  `prika.py` (Encore) for the worked example.
+- **Modeling a "status you set on the reacting unit":** the Encore also puts the
+  bursting unit into a status (Mint → Singing). Do this with
+  `context.set_status(context.last_burst_slug, "<flag>")`; the other unit's rules
+  then read that flag (Mint's per-shot Here I Go gates on `has_status("singing")`).
+- **"Extends duration of an existing buff":** don't re-add the buff on each
+  re-trigger — same-stat effects SUM, so overlapping re-adds double-count. Model
+  the maintained buff as permanent (duration None), gated on the partner being in
+  the deck via `deck_contains(...)` in the action (see Prika's Charge Damage).
+- **Per-shot state caveat:** a per-shot condition is evaluated against the FINAL
+  context (the per-shot pass runs after the burst cycle), so it can't track a
+  per-cycle-alternating status. Mint's solo Singing alternation for her per-shot
+  Here I Go is therefore deferred; it only applies when a partner pins the status.
+
 ---
 *Add new mechanics above this line as they come up.*

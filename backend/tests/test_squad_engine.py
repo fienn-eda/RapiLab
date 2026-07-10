@@ -3,6 +3,8 @@ from app.squad_engine import (
     SkillRule,
     SquadContext,
     SquadMember,
+    all_conditions,
+    ally_bursted,
     deck_contains,
     fire_trigger,
     has_status,
@@ -147,6 +149,31 @@ def test_own_burst_fired_this_cycle_reads_burst_used_this_cycle():
 
     ctx.burst_used_this_cycle.add("arcana")
     assert condition(ctx, "arcana") is True
+
+
+def test_ally_bursted_reads_last_burst_slug():
+    # An ally_burst_activate rule reacts to a SPECIFIC other unit bursting (e.g.
+    # Prika's Encore keys off Mint). last_burst_slug is set by raid_simulator
+    # before the trigger fires.
+    ctx = make_context(
+        SquadMember("mint", burst_tier=2, element="Iron"),
+        SquadMember("prika", burst_tier=2, element="Water"),
+    )
+    assert ally_bursted("mint")(ctx, "prika") is False  # nobody bursted yet
+    ctx.last_burst_slug = "mint"
+    assert ally_bursted("mint")(ctx, "prika") is True
+    ctx.last_burst_slug = "prika"
+    assert ally_bursted("mint")(ctx, "prika") is False
+
+
+def test_all_conditions_requires_every_condition():
+    ctx = make_context(SquadMember("prika", burst_tier=2, element="Water"))
+    ctx.set_status("prika", "performance")
+    ctx.last_burst_slug = "mint"
+    cond = all_conditions(ally_bursted("mint"), has_status("performance"))
+    assert cond(ctx, "prika") is True
+    ctx.clear_status("prika", "performance")
+    assert cond(ctx, "prika") is False
 
 
 def test_deck_contains_checks_squad_membership():

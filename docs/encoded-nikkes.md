@@ -3,7 +3,7 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-10
+- 마지막 갱신: 2026-07-11
 - 총 **31명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 4명)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
@@ -44,8 +44,8 @@
 | Grave | `grave` | Supporter | AR | Fire | ⚠ | Overheat(노멀공격 카운터 자버프) |
 | Brid: Silent Track | `brid-silent-track` | Supporter | SG | Fire | ⚠ | 노멀5회마다 675% 넉 모델됨(per-shot). Wind속성 조건부 디버프만 보류(boss-element 갭) |
 | Nayuta | `nayuta` | Supporter | SMG | Wind | ⚠ | 무기변형(Memory Incineration) + 복합트리거 넉 |
-| Mint | `mint` | Supporter | RL | Iron | 🔶 | Here I Go! 전체 보류 (본인 풀차지샷 트리거 부재) |
-| Prika | `prika` | Supporter | SR | Water | 🔶 | 대부분 보류 — 본인 풀차지샷 + **Mint 교차유닛 시너지**(그녀의 실질 핵심 가치) |
+| Mint | `mint` | Supporter | RL | Iron | ⚠ | Here I Go!(풀차지마다 스쿼드 ATK)는 per-shot로 모델—단 Singing 상태 게이트라 **Prika 조합 시에만** 적용(단독 Singing 교대는 per-shot 한계로 보류) |
+| Prika | `prika` | Supporter | SR | Water | ✅ | 본인 풀차지 스쿼드 버프 + **Mint Encore 교차유닛 시너지**(`ally_burst_activate`) 모델됨. Performance 지속시간/자기 CD 등 비딜 부기만 보류 |
 | Helm: Aquamarine | `helm-aquamarine` | Attacker | AR | Iron | ⚠ | 노멀30회 넉, Electric속성 조건부 추가딜/디버프 (**자동발동 스킬은 엔진 확장으로 모델링됨**) |
 | Velvet | `velvet` | Supporter | SR | Wind | 🔶 | 대부분 보류(자기전용) — ammo pouch 자원 + 본인 풀차지/노멀50회 카운터 |
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
@@ -74,8 +74,9 @@
    D: Killer Wife, Miranda, Rouge, Crown, Grave, Rapi: Red Hood, Zwei, Nayuta,
    Helm: Aquamarine, Velvet, Mint, Prika 등 다수 — 엔진은 준비됨, 각 유닛 재인코딩만
    남음(후속 배치). (본인 풀차지샷=발사 카운트로 통합. "마지막 탄"만 잔여.)
-2. **교차 유닛 트리거** (다른 니케의 특정 스킬 발동을 감지) — Prika→Mint
-   페어링처럼, 덱 조합 특화 시너지에 반복 등장할 가능성.
+2. ~~**교차 유닛 트리거** (다른 니케의 특정 스킬 발동을 감지)~~ — ✅ **해결됨
+   (2026-07-11, `ally_burst_activate`)**. Prika→Mint Encore가 첫 적용 사례
+   (Prika의 Encore가 Mint의 버스트에 반응). 다른 페어링 시너지에 재사용 가능.
 3. **ammo pouch류 자원 메커니즘** — Velvet. 수량 기반 자원 트래킹 없음.
 
 네 항목 모두 `special-mechanics.md`에 상세 기록됨. 확장 여부는 Fienn 판단.

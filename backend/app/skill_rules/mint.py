@@ -25,20 +25,29 @@ Modeled (DPS-relevant):
   so it's worth wiring if Mint (or another Nikke leaning on it) matters for a
   real deck evaluation.
 
-Not modeled: Here I Go! (skills[0]) entirely - both its bullets ("on Full
-Charge attack, while Singing: squad ATK; while Dancing: self HP regen") need
-an "own full-charge-shot" trigger that doesn't exist (normal-attack shots are
-generated in a separate pass in raid_simulator, not routed through
-fire_trigger). The Singing branch (squad ATK % of caster's ATK) is real DPS
-value and would need this trigger to model - flag to Fienn if Mint's
-evaluation looks too thin, since this is likely a meaningful chunk of her kit.
+Here I Go! (skills[0]) Singing branch is modeled via the per-shot trigger (see
+`build_here_i_go_rules`): on every Full Charge attack (Mint is an RL, every shot
+is a full charge), squad ATK % of Mint's ATK. It is gated on Mint's Singing
+STATUS - which Prika's Encore pins (see prika.py) - NOT the burst-parity Singing
+model her Skill 2 uses, because a per-shot condition is evaluated against the
+final context and can't track solo Mint's per-cycle Dancing/Singing parity. So
+solo Mint's Here I Go! remains deferred; it only applies when paired with Prika,
+who keeps her Singing. Its Dancing branch is self HP regen (survivability), not
+modeled.
 """
 from app.effects import Effect
-from app.squad_engine import SkillRule
+from app.squad_engine import SkillRule, has_status
+
+SINGING_STATUS = "singing"  # pinned by Prika's Encore (see prika.py)
 
 
 def _mint_is_singing(context, caster_slug):
-    return context.activation_count(caster_slug, "own_burst_activate") % 2 == 0
+    # Prika's Encore pins Mint into Singing continuously (status flag); absent
+    # that, she alternates Dancing/Singing each burst - her 1st use is Dancing,
+    # 2nd Singing, ... so an even, NON-ZERO burst count is Singing. Before her
+    # first burst she is unassigned (neither status), so count 0 is not Singing.
+    count = context.activation_count(caster_slug, "own_burst_activate")
+    return context.has_status(caster_slug, SINGING_STATUS) or (count > 0 and count % 2 == 0)
 
 
 def build_mint_rules(values):
@@ -97,3 +106,21 @@ def build_mint_rules(values):
         SkillRule(trigger="own_burst_activate", action=apply_burst),
         SkillRule(trigger="full_burst_enter", action=apply_fantastic_performance, condition=_mint_is_singing),
     ]
+
+
+def build_here_i_go_rules(values):
+    """Per-shot rules (see raid_simulator's `per_shot_rules`): while Singing, on
+    every Full Charge attack (Mint is an RL, every shot is a full charge), squad
+    ATK % of Mint's ATK for 3 sec. Gated on Mint's Singing STATUS (pinned by
+    Prika's Encore) - see the module docstring for why the per-shot path can't
+    use the burst-parity Singing model."""
+    singing_atk = float(values["description_value_01"]) / 100 * values["caster_atk"]
+    singing_atk_duration = float(values["description_value_02"])
+
+    def apply(context, caster_slug, time, registry):
+        registry.add(
+            Effect("flat_atk", singing_atk, "squad", singing_atk_duration, caster_slug),
+            applied_at=time,
+        )
+
+    return [(1, "every", [SkillRule(trigger="per_shot", action=apply, condition=has_status(SINGING_STATUS))])]

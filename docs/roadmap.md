@@ -75,8 +75,9 @@
 - 요청받은 버스트2 배치 전부 인코딩 완료. (Crown은 이미 인코딩됨.)
 - 니케 데이터 수집 소스가 lootandwaifus.com 우선으로 전환됨(→ 아래 Phase 0).
 - 새 엔진 갭 발견 사례들 (`references/special-mechanics.md` 참고):
-  본인 풀차지샷 트리거 부재(Mint/Prika/Velvet), 교차 유닛 트리거 부재(Prika→Mint),
-  ammo pouch 자원 메커니즘(Velvet, 자원 트래킹 없음).
+  ~~본인 풀차지샷 트리거 부재~~(해결: per_shot_rules), ~~교차 유닛 트리거
+  부재(Prika→Mint)~~(해결: ally_burst_activate), ammo pouch 자원 메커니즘
+  (Velvet, 자원 트래킹 없음 — 잔여).
 - **주기적 자동발동 스킬 엔진 확장 완료** (Fienn 승인, 2026-07-10): 버스트
   사이클과 무관하게 자체 쿨다운으로 반복 발동하는 스킬(Helm: Aquamarine
   Aegis Cannon Suppression Fire, 4초마다) — `simulate_raid`의 `periodic_nukes`
@@ -101,9 +102,15 @@
   발사 카운트 트리거(`per_shot_rules`, after/every N) + 모든 넉을 "버프 적용 후" 일괄
   계산(per-shot 스쿼드 버프가 버스트 넉까지 반영). 첫 소비자 Brid: Journey Ahead
   (5발마다 675% 넉). "마지막 탄"만 잔여.
-- **인코딩 완료:** Rosanna: Chic Ocean, Takina Inoue, Brid: Journey Ahead 승급.
-- **다음:** gap #1이 풀렸으니 **막힌 ~30명 재인코딩 배치**(데이터 수집→per-shot 룰 추가)가
-  최대 실질 가치. 남은 gap은 `engine-gaps.md` 우선순위 참고.
+- **엔진 확장 완료 — 교차 유닛 트리거 (2026-07-11, Fienn 승인):** 한 유닛이 다른
+  유닛의 버스트에 반응하는 `ally_burst_activate` 트리거(`context.last_burst_slug` +
+  `ally_bursted(slug)`/`all_conditions`). 첫 소비자 Prika Encore(Mint 버스트 시 발동).
+  Mint·Prika를 per-shot(풀차지 스쿼드 버프) + Encore 시너지까지 인코딩 완료(🔶→⚠/✅).
+  (부산물 버그픽스: Mint의 첫 버스트 前 Singing 오판정 수정 — `count>0` 게이트.)
+- **인코딩 완료:** Rosanna: Chic Ocean, Takina Inoue, Brid: Journey Ahead 승급,
+  Mint(Here I Go!), Prika(Encore + 풀차지 버프).
+- **다음:** **막힌 ~30명 재인코딩 배치**(데이터 수집→per-shot 룰 추가)가 최대 실질 가치.
+  남은 gap은 `engine-gaps.md` 우선순위 참고.
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.

@@ -2,7 +2,7 @@ from app.effects import Effect, Pulse
 from app.raid_simulator import simulate_raid
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 from app.skill_rules.privaty import build_ex_magazine_rules
-from app.squad_engine import SkillRule
+from app.squad_engine import SkillRule, ally_bursted
 
 # Real dollskills level-10 values for Privaty's EX Magazine (signature weapon
 # completed), matching test_skill_rules_privaty.py.
@@ -764,6 +764,61 @@ def test_own_burst_activate_only_fires_for_the_unit_whose_tier_just_fired():
     )
     # each unit's own_burst_activate should fire exactly once, for itself only
     assert sorted(fired) == ["attacker", "buffer", "midtier"]
+
+
+def test_ally_burst_activate_lets_a_unit_react_to_another_units_burst():
+    # A unit's rule reacts to a DIFFERENT unit bursting (e.g. Prika's Encore on
+    # Mint's Sing Along). buffer's ally_burst_activate rule keyed on
+    # ally_bursted("attacker") applies a squad debuff that, via
+    # record-then-compute, reaches attacker's own burst nuke fired that instant.
+    def apply_debuff(context, caster_slug, time, registry):
+        registry.add(Effect("damage_taken_up", 0.5, "squad", None, caster_slug), applied_at=time)
+
+    rules_by_slug = {
+        "buffer": [SkillRule(trigger="ally_burst_activate", condition=ally_bursted("attacker"), action=apply_debuff)],
+        "midtier": [],
+        "attacker": [],
+    }
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    burst = [e for e in result["damage_log"] if e["source"] == "burst"]
+    assert burst[0]["damage"] == 15000.0  # 10000 * (1 + 0.5 damage_taken)
+
+
+def test_ally_burst_activate_gates_on_which_unit_bursted():
+    # The same reacting rule keyed on ally_bursted("midtier") must fire ONLY when
+    # midtier bursts, never on any other unit's burst.
+    fired = []
+
+    def note(context, caster_slug, time, registry):
+        fired.append(context.last_burst_slug)
+
+    rules_by_slug = {
+        "buffer": [SkillRule(trigger="ally_burst_activate", condition=ally_bursted("midtier"), action=note)],
+        "midtier": [],
+        "attacker": [],
+    }
+    simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={},
+        base_stats=make_base_stats(),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+    )
+    assert fired  # fired at least once
+    assert all(slug == "midtier" for slug in fired)  # never on another unit's burst
 
 
 def test_cooldown_reduction_pulse_from_full_burst_end_enables_a_second_cycle():

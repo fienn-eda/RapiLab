@@ -183,6 +183,7 @@ engine-extension decision rather than making it silently mid-encoding.
 |---|---|
 | `battle_start` | once at t=0 (permanent passives, at-start-of-battle skills) |
 | `own_burst_activate` | when THIS Nikke's burst tier fires (its burst skill) |
+| `ally_burst_activate` | when ANY unit's burst tier fires — for a skill that reacts to another unit bursting (e.g. Prika's Encore on Mint's Sing Along). Fired across all units' rules after the burster's own `own_burst_activate`; gate with `ally_bursted("<slug>")`, which reads `context.last_burst_slug`. Buff appliers only (no instant nukes), like `periodic_rules`. |
 | `full_burst_enter` | when tier-3 fires and Full Burst begins |
 | `full_burst_end` | when the 10s Full Burst window ends |
 
@@ -206,6 +207,11 @@ For skills that branch on squad composition or a per-Nikke status flag, use
   its burst tier (e.g. Anis: Star / Rapi: Red Hood "if no other Burst 1 ally").
 - `has_status(flag)` / `not_condition(cond)` — gate on a status the skill sets
   via `context.set_status/clear_status` (e.g. "My Own Star", "Combat Assist").
+- `deck_contains(slug)` — another named Nikke is in the deck (static synergy).
+- `ally_bursted(slug)` — for an `ally_burst_activate` rule: the unit that just
+  bursted is `slug` (cross-unit reactive trigger, e.g. Prika↔Mint).
+- `all_conditions(*conds)` — logical AND of conditions (e.g. Prika's Encore needs
+  `ally_bursted("mint")` AND her own Performance `has_status`).
 - `context.burst_used_this_cycle` — which slugs have burst this cycle (Crown's
   "allies who previously cast their Burst Skill").
 

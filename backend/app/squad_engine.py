@@ -25,6 +25,10 @@ class SquadContext:
         self._status: dict[str, set[str]] = {m.slug: set() for m in members}
         self.burst_used_this_cycle: set[str] = set()
         self._activations: dict[tuple[str, str], int] = {}
+        # The slug of the unit whose burst tier most recently fired, so an
+        # ally_burst_activate rule can react to a SPECIFIC other unit bursting
+        # (e.g. Prika's Encore keys off Mint). Set by raid_simulator.
+        self.last_burst_slug: str | None = None
 
     def record_activation(self, slug: str, trigger: str) -> None:
         self._activations[(slug, trigger)] = self._activations.get((slug, trigger), 0) + 1
@@ -73,6 +77,30 @@ def own_burst_fired_this_cycle() -> Callable[[SquadContext, str], bool]:
 
     def check(context: SquadContext, caster_slug: str) -> bool:
         return caster_slug in context.burst_used_this_cycle
+
+    return check
+
+
+def ally_bursted(slug: str) -> Callable[[SquadContext, str], bool]:
+    """Condition for an `ally_burst_activate` rule: the unit whose burst just
+    fired is `slug` (e.g. Prika's Encore fires when Mint bursts). Reads
+    SquadContext.last_burst_slug, set by raid_simulator before the trigger fires."""
+
+    def check(context: SquadContext, caster_slug: str) -> bool:
+        return context.last_burst_slug == slug
+
+    return check
+
+
+def all_conditions(
+    *conditions: Callable[[SquadContext, str], bool]
+) -> Callable[[SquadContext, str], bool]:
+    """Condition that holds only when every given condition holds (logical AND),
+    e.g. Prika's Encore needs both ally_bursted("mint") AND her own Performance
+    status."""
+
+    def check(context: SquadContext, caster_slug: str) -> bool:
+        return all(condition(context, caster_slug) for condition in conditions)
 
     return check
 
