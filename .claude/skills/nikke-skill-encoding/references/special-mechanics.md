@@ -160,5 +160,49 @@ how to encode it, and current engine status.
   skimming past an explicit "Affects self" on one specific bullet.
 - **Encode:** check the scope phrase per bullet, not per skill or per Nikke.
 
+## Two-state toggle via activation-count parity
+- **What:** some skills flip between two states each time the unit's own burst
+  fires (e.g. Mint alternates "Assigned Part: Singing" / "...: Dancing" every
+  use of Let's Sing Together!, starting at Dancing on her first use).
+- **Encode:** no new status-tracking is needed - read
+  `context.activation_count(caster_slug, "own_burst_activate") % 2 == 0` as the
+  condition for "currently in the second state" (Singing here). Her own burst
+  always fires before `full_burst_enter` in the same cycle (tier 2 before tier
+  3), so the parity is already correct by the time a full_burst_enter-gated
+  bullet checks it. See `mint.py`.
+
+## "On [own] Full Charge attack" - no per-shot trigger exists
+- **What:** some passives grant a squad buff every time the unit personally
+  lands a Full Charge (charge-weapon) attack, e.g. Mint's Here I Go! and
+  Prika's Let's Get the Show Started!. For an RL/SR unit firing charge shots
+  regularly through the fight, this is a REAL, sizeable DPS source (a squad
+  ATK buff scaled by the caster's ATK, refreshed every shot).
+- **Gap:** normal-attack shots (including charge-weapon full-charge shots) are
+  generated in `raid_simulator`'s separate weapon-stats pass, not routed
+  through `fire_trigger` - there is no "own full-charge-shot" trigger a
+  SkillRule can hook. This is a bigger addition than most (would need to wire
+  the shot-generation loop into the trigger system, or a comparable
+  mechanism), not a quick one-liner.
+- **Encode:** defer + document, and flag clearly if this is a large chunk of
+  the unit's kit (it usually is, for units built around it) - don't quietly
+  leave the unit looking weak without saying why.
+
+## Cross-character triggers ("when ally X's specific buff takes effect")
+- **What:** some kits react to a NAMED OTHER Nikke's specific effect landing,
+  not just "any ally bursts" - e.g. Prika's Encore Function activates "when
+  Sing Along [Mint's burst buff bundle] takes effect while Prika is in
+  Performance status [her own burst's buff window]". lootandwaifus's own notes
+  confirm this is a real deck-pairing mechanic ("always used with Mint").
+- **Gap, and why it's bigger than `deck_contains`:** `deck_contains(slug)` (used
+  for Blanc/Rouge, Mast/Anchor) only checks static deck membership as a
+  CONDITION on a rule already tied to the unit's OWN trigger. This mechanic
+  needs Prika's rule to fire in reaction to a DIFFERENT unit's trigger event
+  (Mint's `own_burst_activate`) - but `own_burst_activate` dispatch is scoped
+  to only the firing slug's own rules (see `raid_simulator.on_tier_fire`), so
+  there's no way for one Nikke's rules to observe another's trigger firing.
+  Would need a new cross-character trigger-dispatch mechanism to model.
+- **Encode:** defer + document; flag to the user, since these mechanics are
+  often central to the specific pairing they're designed around.
+
 ---
 *Add new mechanics above this line as they come up.*

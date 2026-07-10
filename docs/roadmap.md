@@ -7,8 +7,8 @@
 
 - 마지막 갱신: 2026-07-10
 - 브랜치: `wip/scaffolding`
-- 테스트: **212 passed** (마지막 전체 실행 기준)
-- 인코딩된 니케: **24명**
+- 테스트: **216 passed** (마지막 전체 실행 기준)
+- 인코딩된 니케: **26명**
 
 ---
 
@@ -61,16 +61,21 @@
 - `roster.py` — 유저 스탯 + 오버로드 + 큐브 조립.
 
 ### Phase 3 — 캐릭터 스킬 인코딩 🔄
-- 인코딩된 17명:
+- 인코딩된 26명:
   - 실전 덱 5: `anis-star`, `crown`, `rapi-red-hood`, `helm`, `privaty`
   - 버스트1 배치 10: `liter`, `little-mermaid`, `miranda`, `moran`, `rouge`,
     `d-killer-wife`, `tove`, `volume`, `zwei`, `soline-frost-ticket`
   - 버스트2 배치: `anchor-innocent-maid`, `mast-romantic-maid`,
     `ade-agent-bunny`, `blanc`, `arcana`, `arcana-fortune-mate`,
-    `grave`, `brid-silent-track`, `nayuta`
+    `grave`, `brid-silent-track`, `nayuta`, `mint`, `prika`
 - 각 니케 = `skill_rules/<name>.py` 빌더, `registry.py`에 등록.
-- 버스트2 진행 중 (남은 요청: Mint). (Crown은 이미 인코딩됨.)
-- **다음:** Mint, 이후 남은 버스트2/3 유닛 계속 (엔진 유용성은 인코딩 수에 비례).
+- 요청받은 버스트2 배치 전부 인코딩 완료. (Crown은 이미 인코딩됨.)
+- Mint·Prika 인코딩 중 새 엔진 갭 2건 발견 (미차단, 후속 확장 후보):
+  본인 풀차지샷 트리거 부재(Mint Here I Go!/Prika Let's Get the Show Started!),
+  교차 유닛 트리거 부재(Prika Encore Function이 Mint의 버스트를 감지해야 함).
+  `references/special-mechanics.md` 참고.
+- **다음:** 남은 버스트2/3 유닛 계속, 또는 위 엔진 갭 확장 검토 (엔진 유용성은
+  인코딩 수에 비례).
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.
