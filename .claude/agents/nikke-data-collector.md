@@ -27,7 +27,11 @@ weapon) distinction, and a dump script. Read it first.
 
 1. **Resolve the slug** from a display name via
    `GET https://api.dotgg.gg/nikke/characters` (names like "Anis: Star" →
-   `anis-star`, "D: Killer Wife" → `d-killer-wife`).
+   `anis-star`, "D: Killer Wife" → `d-killer-wife`). If the character is
+   missing from dotgg (it doesn't cover roughly the last ~2 months of
+   releases), fall back to `lootandwaifus.com` per the "Alternative source"
+   section of `dotgg-data.md` (cross-verified exact match against dotgg on
+   Little Mermaid) - note in your report that you used the fallback.
 2. **Download the full character JSON** to `data/dotgg/char_<slug>.json`:
    `curl -s "https://api.dotgg.gg/nikke/character/<slug>" -o data/dotgg/char_<slug>.json`
    (create `data/dotgg/` if missing). Save it **verbatim** — the JSON already

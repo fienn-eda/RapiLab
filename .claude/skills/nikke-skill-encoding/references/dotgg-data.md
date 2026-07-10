@@ -1,7 +1,8 @@
 # dotgg.gg character data
 
 The site the deck-builder draws from (nikke.gg is a WordPress front over the
-`api.dotgg.gg` JSON API). No auth required.
+`api.dotgg.gg` JSON API). No auth required. This is the **primary** source; see
+"Alternative source" below for characters missing from dotgg.
 
 ## Endpoints
 
@@ -64,3 +65,32 @@ descriptions break the default cp949 codec).
   the steady state (all tiers or the third value — read the wording; if
   "previous effects trigger repeatedly" and the tiers are the same stat, they
   stack/sum, if different stats they all apply).
+
+## Alternative source: lootandwaifus.com (fallback for characters missing from dotgg)
+
+dotgg stops covering characters released in roughly the last ~2 months (per
+Fienn), so newer Nikkes need a fallback. `lootandwaifus.com/character/<slug>-nikke/`
+(e.g. `lootandwaifus.com/character/little-mermaid-nikke/`) was found and
+**cross-verified against dotgg on 2026-07-10**: Little Mermaid's 3 skills, all
+`description_value_NN`-equivalent numbers, at level 10, matched dotgg
+**exactly** with no discrepancies (Bubble Order's CDR/Attack-Damage/gauge-fill,
+Bubble Wave's damage-taken/nuke/barrage values, Siren's Song's attack-damage/
+reload/self-ATK all matched). Good confidence as a fallback source.
+
+Access notes:
+- **WebFetch returns HTTP 403** on this site - it blocks non-browser requests.
+  Use `curl` with a browser `User-Agent` header instead:
+  ```bash
+  curl -s -L -A "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" \
+    "https://lootandwaifus.com/character/<slug>-nikke/" -o page.html
+  ```
+- The raw HTML is server-rendered and already contains **all 10 levels'** full
+  description text per skill (not just max level) - strip tags and read
+  directly, no client-side JS rendering needed.
+- Bonus content dotgg doesn't have: skill-priority recommendations, cube/OL
+  gear build notes, and solo-raid usage-rate charts (sourced from enikk.app) -
+  not currently used by the encoding workflow, but could inform which Nikkes
+  are worth encoding first.
+- URL slug convention there is `<dotgg-slug>-nikke` (e.g. dotgg's
+  `little-mermaid` → `little-mermaid-nikke`); not yet verified for every naming
+  edge case (e.g. names with colons like "D: Killer Wife").
