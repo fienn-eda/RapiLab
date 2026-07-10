@@ -53,6 +53,10 @@
   경계)만 잔여. `engine-capabilities.md`/`special-mechanics.md` 참고.
 - **다음(후속 배치):** 아래 막힌 유닛들을 이 능력으로 재인코딩. 각 유닛 데이터 수집 후
   per-shot 룰 추가.
+- **잔여 변형:** (a) "마지막 탄"(매거진 경계) — attack_rate 마커 필요. (b) **아군 총탄
+  카운터**(스쿼드 전체 발사 누적, per-caster 아님) — 예: Little Mermaid의 Bubble
+  Barrage(아군 총탄 500마다 850%). `per_shot_rules`는 시전자 본인 발사만 세므로 미커버.
+  스쿼드 합산 카운터는 별도 확장 필요.
 - **무엇(원문):** "노멀 공격 N회 후", "풀차지 공격 N회 후 / 시", "마지막 탄 발사 시",
   "N shot마다" 처럼 **유닛의 발사 행위를 세어** 임계치마다 효과/넉을 발동하는 트리거.
 - **왜 막힘:** 노멀공격(차지샷 포함)은 `raid_simulator`의 별도 weapon-stats 패스에서

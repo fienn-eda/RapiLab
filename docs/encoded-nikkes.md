@@ -21,7 +21,7 @@
 | Anis: Star | `anis-star` | Defender | RL | Electric | ⚠ | 버스트 재진입 분기, 풀차지 보너스 대미지 |
 | D: Killer Wife | `d-killer-wife` | Supporter | SR | Fire | ⚠ | 풀차지 카운터 기반 CDR·공버프, Wipe-Out 디버프 |
 | Liter | `liter` | Supporter | SMG | Iron | ✅ | Volt Boost(자힐, 생존계)만 미모델 |
-| Little Mermaid | `little-mermaid` | Supporter | SMG | Wind | 🔶 | 아군 탄약소모 카운터 — **Bubble Wave 넉 포함** 보류 |
+| Little Mermaid | `little-mermaid` | Supporter | SMG | Wind | ⚠ | Bubble 5.05% 받댐증 모델됨. Bubble Barrage(아군총탄 카운터)·FB창 주기넉 보류 |
 | Miranda (애장품) | `miranda` | Supporter | SMG | Fire | ⚠ | 노멀공격 카운터 자버프, 최고ATK아군 크리 |
 | Moran (애장품) | `moran` | Defender | AR | Electric | ✅ | 무기변형 자해모드·생존계만 미모델 |
 | Rouge | `rouge` | Supporter | SR | Electric | ⚠ | 풀차지 카운터 CDR, 후열 포지션 버프 |

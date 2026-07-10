@@ -24,6 +24,9 @@ LM = {
         "description_value_01": "7.48", "description_value_02": "4", "description_value_03": "10",
         "description_value_04": "400", "description_value_05": "37",
     },
+    "bubble_wave": {
+        "description_value_01": "5.05",  # Bubble: enemy Damage Taken %, continuous
+    },
     "sirens_song": {
         "description_value_01": "10.13", "description_value_02": "10", "description_value_03": "33.26",
         "description_value_04": "17.28", "description_value_05": "10",
@@ -43,6 +46,16 @@ def test_little_mermaid_cdr_and_attack_damage_and_self_atk():
     assert round(reg2.total_for("attack_damage_up", ALLY, 0.0), 4) == 0.1013
     lm = {"slug": "little-mermaid", "element": "Water"}
     assert round(reg2.total_for("atk_percent", lm, 0.0), 4) == 0.1728
+
+
+def test_little_mermaid_bubble_debuff_is_a_permanent_squad_enemy_damage_taken():
+    reg = EffectRegistry()
+    rules = {"little-mermaid": build_little_mermaid_rules(LM)}
+    # "Bubble: Damage Taken +5.05% continuously" activates when the enemy
+    # appears (= battle start in a raid), permanent, squad-scoped enemy debuff.
+    fire_trigger("battle_start", rules, deck_ctx("little-mermaid"), reg, 0.0)
+    assert round(reg.total_for("damage_taken_up", ALLY, 0.0), 4) == 0.0505
+    assert round(reg.total_for("damage_taken_up", ALLY, 170.0), 4) == 0.0505  # permanent
 
 
 MORAN = {
