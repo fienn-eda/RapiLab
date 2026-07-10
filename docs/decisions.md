@@ -5,6 +5,13 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## Character data source priority = lootandwaifus.com first, dotgg fallback
+- Date: 2026-07-10
+- Context: dotgg (the original data source decision below) lags roughly the last ~2 months of NIKKE releases, so newer Nikkes (e.g. Prika) have no dotgg entry. lootandwaifus.com was found and cross-verified against dotgg (Little Mermaid, all 3 skills, every value at level 10 — exact match, no discrepancies), and its character-listing page carries richer metadata (mechanic tags in CSS classes) than dotgg's summary endpoint.
+- Decision: Use lootandwaifus.com as the primary data source for all character collection going forward (not just as a fallback for missing characters); keep dotgg as a fallback/cross-check.
+- Why: At least as current as dotgg, richer listing metadata, and validated as accurate. Reduces how often the fallback path is needed at all.
+- Consequences: `nikke-data-collector` and the encoding skill's workflow now fetch from lootandwaifus first. lootandwaifus has no `description_value_NN` placeholder structure (unlike dotgg) — slots are numbered by left-to-right order of appearance in the rendered per-level text instead. Raw pages are saved to `data/lootandwaifus/` (gitignored, same as `data/dotgg/`). See `references/character-data-sources.md` (renamed from `dotgg-data.md`).
+
 ## Instant-damage pulses for non-own-burst nukes
 - Date: 2026-07-10
 - Context: Brid: Silent Track's Ignition Sequence deals 636% of final ATK on entering Full Burst, regardless of who bursts that cycle - a real damage source, but the existing engine only computed burst-nuke damage tied to the caster's OWN burst tier firing (`own_burst_activate` + `burst_damage_percents`). Encoding Brid without it would leave her almost valueless (buff-only), understating a deck that includes her.

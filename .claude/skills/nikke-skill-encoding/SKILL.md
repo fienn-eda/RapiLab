@@ -23,20 +23,20 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
 
 ## Workflow
 
-1. **Find the slug and fetch data.** The game data lives at the public
-   `api.dotgg.gg` API (no auth). Find the slug, then pull the character:
-   ```bash
-   curl -s "https://api.dotgg.gg/nikke/characters" | python -c "import sys,json;[print(c['name'],'|',c['url'],'|',c['weapon'],'|',c['element'],'|','burst',c['burst']) for c in json.load(sys.stdin) if 'NAME' in c['name'].lower()]"
-   curl -s "https://api.dotgg.gg/nikke/character/SLUG" -o char_SLUG.json
-   ```
-   See `references/dotgg-data.md` for the response shape and the
-   `skills` vs `dollskills` (signature weapon) distinction — **ask the user
-   which the character should use** if it has a signature weapon, since that
-   changes the numbers and sometimes adds whole new effects.
+1. **Find the slug and fetch data.** Use **lootandwaifus.com first** (curl
+   with a browser User-Agent — WebFetch gets HTTP 403 there), falling back to
+   `api.dotgg.gg` (no auth) if it's unreachable. See
+   `references/character-data-sources.md` for both sites' endpoints, slug
+   conventions, and the `skills` vs `dollskills` (signature weapon)
+   distinction — **ask the user which the character should use** if it has a
+   signature weapon, since that changes the numbers and sometimes adds whole
+   new effects.
 
-2. **Dump the values you'll encode.** Print the max-level (`levels[-1]`) values
-   per skill so you can see every `description_value_NN`. Read the description
-   text alongside them to learn what each slot means.
+2. **Dump the values you'll encode.** Get the max-level values per skill (and
+   for dotgg, the raw `description_value_NN` slots + description text; for
+   lootandwaifus, number the slots yourself by left-to-right order of
+   appearance — see the reference doc). Read the description text alongside
+   them to learn what each slot means.
 
 3. **Classify every effect** into: (a) DPS-relevant AND representable by the
    engine → model it; (b) DPS-relevant but NOT representable → defer + document;

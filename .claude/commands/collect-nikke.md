@@ -1,14 +1,15 @@
 ---
-description: Fetch a NIKKE character's data from dotgg (all skill levels preserved) via the data-collector subagent
+description: Fetch a NIKKE character's data (lootandwaifus.com first, dotgg fallback; all skill levels preserved) via the data-collector subagent
 argument-hint: [character name]
 context: fork
 agent: nikke-data-collector
 ---
 
-Collect the NIKKE character "$ARGUMENTS" from api.dotgg.gg.
+Collect the NIKKE character "$ARGUMENTS" from lootandwaifus.com (primary),
+falling back to api.dotgg.gg only if lootandwaifus is unreachable.
 
-Save the full character JSON — with every skill's complete `levels` array
-preserved — under `data/dotgg/`, and report:
+Save the full raw page/JSON — with every skill's complete level data
+preserved — under `data/lootandwaifus/` or `data/dotgg/` as appropriate, and report:
 - metadata: class, weapon, element, burst, and whether a `dollskills`
   (signature-weapon) array is present (flag it if so),
 - the weapon / normal-attack stats,

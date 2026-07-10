@@ -15,8 +15,9 @@
 ## 목표
 
 유저가 보유한 니케 중에서 **솔로 레이드(3분/180초) 총 딜량을 최대화하는 덱 구성**을
-추천한다. 재료: (1) nikke.gg 데미지 공식, (2) 캐릭터별 스킬 데이터(dotgg),
-(3) 유저의 실제 투자 데이터(ShiftyPad, 초기엔 수동 입력).
+추천한다. 재료: (1) nikke.gg 데미지 공식, (2) 캐릭터별 스킬 데이터
+(lootandwaifus.com 우선, dotgg 대체), (3) 유저의 실제 투자 데이터(ShiftyPad,
+초기엔 수동 입력).
 
 ---
 
@@ -27,7 +28,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (15명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (24명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ⬜ 예정 |
 | Phase 6 | 유저 데이터 입력 UI (React) | ⬜ 예정 |
@@ -38,7 +39,8 @@
 ## 로드맵 (단계 상세)
 
 ### Phase 0 — 데이터 소스 & 인프라 ✅
-- 데이터 소스 = `api.dotgg.gg` 확정 (무인증 JSON, nikke.gg 백엔드). → `dotgg_client.py`
+- 데이터 소스 = **lootandwaifus.com 우선**, `api.dotgg.gg`(무인증 JSON, nikke.gg
+  백엔드) 대체. 최신 니케(dotgg 미등재분)는 lootandwaifus로만 수집. → `dotgg_client.py`
 - git 초기화, `wip/scaffolding` 브랜치, TDD 규칙(`.claude/CLAUDE.md`).
 - 보조 도구: `nikke-skill-encoding` 스킬, 서브에이전트 3종
   (docs-keeper / nikke-data-collector / engine-test-runner) + 슬래시 명령어

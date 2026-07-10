@@ -22,7 +22,8 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - **"Who bursts vs who buffs" = deck left-to-right order.** `burst_cycle` fires the leftmost eligible Nikke per burst tier, so the intra-tier ordering *is* the role assignment. The deck search explores those orderings. See `burst_cycle.py`.
 - **Cycle timing waits for the slowest tier's cooldown.** The next Full Burst starts when whichever burst tier's cooldown clears latest (the gauge always charges faster than cooldowns for a raid-viable deck). A cycle is only "missed" when a burst tier is structurally absent from the deck, not when cooldowns lag.
 
-## Data (dotgg)
-- **Skill values are per level; retain all levels.** Encoding builders take a single-level values dict, so the user's actual skill level selects `levels[level-1]`. Users invest to different levels (Privaty's burst was used at level 7, not 10), so data collection must keep the full `levels` array, never just max.
+## Data (lootandwaifus.com primary, dotgg fallback)
+- **lootandwaifus.com is the primary data source** (switched 2026-07-10) — at least as current as dotgg (which lags ~2 months of releases) and richer listing metadata. Cross-verified exact match against dotgg on Little Mermaid. `api.dotgg.gg` is now a fallback/cross-check. See `references/character-data-sources.md`.
+- **Skill values are per level; retain all levels.** Encoding builders take a single-level values dict, so the user's actual skill level selects `levels[level-1]`. Users invest to different levels (Privaty's burst was used at level 7, not 10), so data collection must keep the full level data, never just max.
 - **Signature weapon = `dollskills`, and it can add effects.** When `dollskills` is present the character's signature weapon is completed; it changes values and can add entirely new effects/slots, not just bigger numbers. Always check `dollskills` vs `skills`.
 - **max_ammo changes apply to base ammo and sum.** An overload ammo increase and a skill's ammo decrease (e.g. Privaty EX Magazine) both compute against BASE ammo and add — the decrease is not taken off the already-increased total. See `attack_rate`.
