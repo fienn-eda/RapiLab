@@ -1,6 +1,16 @@
 from app.effects import EffectRegistry
-from app.skill_rules.brid_silent_track import build_brid_rules
+from app.skill_rules.brid_silent_track import (
+    JOURNEY_AHEAD_NUKE_SHOT_COUNT,
+    build_brid_rules,
+    build_journey_ahead_rules,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
+
+JOURNEY_AHEAD = {
+    "description_value_01": "12.12",  # Wind Code enemy Damage Taken % (deferred, boss-element gap)
+    "description_value_02": "10",     # duration
+    "description_value_03": "675",    # nuke % of final ATK, every 5 normal attacks
+}
 
 # Real skill level 10 values from api.dotgg.gg.
 IGNITION_SEQUENCE = {
@@ -53,3 +63,20 @@ def test_full_throttle_grants_squad_atk_on_own_burst():
     # 66.52% of caster ATK 10000 = 6652, for 10 sec.
     assert registry.total_for("flat_atk", ALLY, now=5.0) == 6652.0
     assert registry.total_for("flat_atk", ALLY, now=15.1) == 0.0
+
+
+def test_journey_ahead_nuke_fires_every_5_normal_attacks():
+    rules = build_journey_ahead_rules(JOURNEY_AHEAD)
+    assert len(rules) == 1
+    threshold, mode, skill_rules = rules[0]
+    assert (threshold, mode) == (JOURNEY_AHEAD_NUKE_SHOT_COUNT, "every")
+    assert JOURNEY_AHEAD_NUKE_SHOT_COUNT == 5
+
+    ctx = make_context()
+    registry = EffectRegistry()
+    for rule in skill_rules:
+        rule.action(ctx, "brid-silent-track", 3.0, registry)
+    pulses = registry.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert pulses[0].value == 675.0
+    assert pulses[0].source_slug == "brid-silent-track"

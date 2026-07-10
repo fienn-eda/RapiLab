@@ -19,6 +19,7 @@ from app.overload_effects import overload_options_to_effects
 from app.skill_rules.registry import (
     build_nikke_rules,
     get_burst_damage_type,
+    get_per_shot_rules,
     get_periodic_nuke,
     get_periodic_rules,
 )
@@ -67,6 +68,7 @@ def assemble_simulation_inputs(ordered_deck):
     weapon_stats = {}
     periodic_nukes = {}
     periodic_rules = {}
+    per_shot_rules = {}
     burst_damage_types = {}
 
     for spec in ordered_deck:
@@ -106,6 +108,10 @@ def assemble_simulation_inputs(ordered_deck):
         if periodic_rule:
             periodic_rules[spec.slug] = periodic_rule
 
+        per_shot_rule = get_per_shot_rules(spec.slug, skill_values)
+        if per_shot_rule:
+            per_shot_rules[spec.slug] = per_shot_rule
+
     return {
         "deck": deck,
         "rules_by_slug": rules_by_slug,
@@ -114,5 +120,6 @@ def assemble_simulation_inputs(ordered_deck):
         "weapon_stats": weapon_stats,
         "periodic_nukes": periodic_nukes,
         "periodic_rules": periodic_rules,
+        "per_shot_rules": per_shot_rules,
         "burst_damage_types": burst_damage_types,
     }

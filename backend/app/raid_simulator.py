@@ -112,14 +112,23 @@ def simulate_raid(
     periodic_nukes=None,
     burst_damage_types=None,
     periodic_rules=None,
+    per_shot_rules=None,
 ):
     weapon_stats = weapon_stats or {}
     periodic_nukes = periodic_nukes or {}
     burst_damage_types = burst_damage_types or {}
     periodic_rules = periodic_rules or {}
+    per_shot_rules = per_shot_rules or {}
     context = SquadContext([SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck])
     registry = EffectRegistry()
-    damage_log = []
+    # Damage is RECORDED as events during phase 1 (buffs are applied but no
+    # damage is computed yet), then computed in a single phase-2 pass once EVERY
+    # buff/debuff is in the registry - so e.g. a per-shot squad debuff applied
+    # mid-fight correctly raises a burst nuke that fired earlier. Effects are
+    # replay-safe (added with applied_at >= their time; truncate_open_ended
+    # mutates in place), so deferring computation never changes an existing
+    # value - only lets late buffs reach instances they should have.
+    damage_events = []
     member_by_slug = {m["slug"]: m for m in deck}
 
     def target_for(slug):
@@ -172,19 +181,20 @@ def simulate_raid(
             return "projectile_explosion"
         return "attack"
 
+    def record(slug, percent, time, source, damage_type="attack", extra_charge_bonus=0.0):
+        damage_events.append({
+            "slug": slug, "percent": percent, "time": time, "source": source,
+            "damage_type": damage_type, "extra_charge_bonus": extra_charge_bonus,
+        })
+
     def drain_instant_damage(time):
         # A passive that deals damage on a trigger OTHER than the caster's own
         # burst (e.g. Brid: Silent Track's Ignition Sequence, on full_burst_enter)
         # can't use burst_damage_percents (tied to own_burst_activate). It emits
         # an "instant_damage_percent" pulse instead; drained here after every
-        # trigger fire, computed exactly like a burst nuke using the caster's
-        # own ATK and live buffs.
+        # trigger fire, recorded as a nuke computed later like a burst nuke.
         for pulse in registry.drain_pulses("instant_damage_percent"):
-            slug = pulse.source_slug
-            damage = _damage_instance(slug, pulse.value, time)
-            damage_log.append(
-                {"slug": slug, "time": time, "damage": damage, "source": "instant_nuke", "damage_type": "attack"}
-            )
+            record(pulse.source_slug, pulse.value, time, "instant_nuke")
 
     def on_battle_start(time):
         fire_trigger("battle_start", rules_by_slug, context, registry, time)
@@ -198,11 +208,7 @@ def simulate_raid(
         percent = burst_damage_percents.get(slug)
         if not percent:
             return
-        damage_type = burst_damage_types.get(slug, "attack")
-        damage = _damage_instance(slug, percent, time, damage_type=damage_type)
-        damage_log.append(
-            {"slug": slug, "time": time, "damage": damage, "source": "burst", "damage_type": damage_type}
-        )
+        record(slug, percent, time, "burst", damage_type=burst_damage_types.get(slug, "attack"))
 
     def on_full_burst_enter(time):
         fire_trigger("full_burst_enter", rules_by_slug, context, registry, time)
@@ -271,18 +277,25 @@ def simulate_raid(
             ),
         )
         extra_charge_bonus = weapon["charge_damage_percent"] / 100 - 1 if is_charge_weapon else 0.0
-        for shot_time in shot_times:
+        # Per-shot triggers count this unit's shots and fire at a threshold
+        # ("after N": once at the Nth shot; "every N": at every Nth). Their
+        # rules apply buffs to the registry (seen by phase 2 at each shot's
+        # time) or emit an instant_damage_percent pulse recorded as a per-shot
+        # nuke. Rules must be stateless and must not change shot generation
+        # (reload/ammo), which is already fixed for this unit here.
+        unit_per_shot = per_shot_rules.get(slug, [])
+        for shot_index, shot_time in enumerate(shot_times):
+            count = shot_index + 1
+            for threshold, mode, rules in unit_per_shot:
+                if (mode == "after" and count == threshold) or (mode == "every" and count % threshold == 0):
+                    for rule in rules:
+                        if rule.condition(context, slug):
+                            rule.action(context, slug, shot_time, registry)
+                    for pulse in registry.drain_pulses("instant_damage_percent"):
+                        record(pulse.source_slug, pulse.value, shot_time, "per_shot_nuke")
             damage_type = normal_attack_type(slug, weapon, target, shot_time)
-            damage = _damage_instance(
-                slug,
-                weapon["damage_percent"],
-                shot_time,
-                damage_type=damage_type,
-                extra_charge_bonus=extra_charge_bonus,
-            )
-            damage_log.append(
-                {"slug": slug, "time": shot_time, "damage": damage, "source": "normal_attack", "damage_type": damage_type}
-            )
+            record(slug, weapon["damage_percent"], shot_time, "normal_attack",
+                   damage_type=damage_type, extra_charge_bonus=extra_charge_bonus)
 
     for slug, spec in periodic_nukes.items():
         cooldown = spec["cooldown"]
@@ -290,11 +303,25 @@ def simulate_raid(
         damage_type = spec.get("damage_type", "attack")
         tick = cooldown
         while tick < fight_duration:
-            damage = _damage_instance(slug, percent, tick, damage_type=damage_type)
-            damage_log.append(
-                {"slug": slug, "time": tick, "damage": damage, "source": "periodic", "damage_type": damage_type}
-            )
+            record(slug, percent, tick, "periodic", damage_type=damage_type)
             tick += cooldown
+
+    # Phase 2: now that every buff/debuff is in the registry, compute each
+    # recorded damage event against the final registry (each read at its own
+    # time is replay-safe).
+    damage_log = [
+        {
+            "slug": ev["slug"],
+            "time": ev["time"],
+            "damage": _damage_instance(
+                ev["slug"], ev["percent"], ev["time"],
+                damage_type=ev["damage_type"], extra_charge_bonus=ev["extra_charge_bonus"],
+            ),
+            "source": ev["source"],
+            "damage_type": ev["damage_type"],
+        }
+        for ev in damage_events
+    ]
 
     return {
         "total_damage": sum(entry["damage"] for entry in damage_log),

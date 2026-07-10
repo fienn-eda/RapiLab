@@ -22,7 +22,7 @@ from app.skill_rules.anis_star import build_starfall_rules
 from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
 from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
 from app.skill_rules.blanc import build_blanc_rules
-from app.skill_rules.brid_silent_track import build_brid_rules
+from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
 from app.skill_rules.d_killer_wife import build_d_killer_wife_rules, kill_the_target_burst_percent
 from app.skill_rules.grave import build_grave_rules
@@ -165,6 +165,13 @@ _PERIODIC_RULE_BUILDERS = {
     ],
 }
 
+# A Nikke with a skill that fires after/every N of its own shots (see
+# raid_simulator's `per_shot_rules`). Each entry is a list of
+# (threshold, mode, [SkillRule]); mode is "after" or "every".
+_PER_SHOT_RULE_BUILDERS = {
+    "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
+}
+
 
 def build_nikke_rules(slug, skill_values):
     if slug not in _BUILDERS:
@@ -194,4 +201,13 @@ def get_periodic_rules(slug, skill_values):
     own cooldown (see raid_simulator's `periodic_rules`), or None for the vast
     majority of Nikkes without one."""
     builder = _PERIODIC_RULE_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_per_shot_rules(slug, skill_values):
+    """List of (threshold, mode, [SkillRule, ...]) for a Nikke with a skill that
+    fires after/every N shots (see raid_simulator's `per_shot_rules`), or None
+    for Nikkes without one. `mode` is "after" (once at the Nth shot) or "every"
+    (at every Nth shot)."""
+    builder = _PER_SHOT_RULE_BUILDERS.get(slug)
     return builder(skill_values) if builder else None

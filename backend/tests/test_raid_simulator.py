@@ -1,6 +1,6 @@
 from app.effects import Effect, Pulse
 from app.raid_simulator import simulate_raid
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 from app.skill_rules.privaty import build_ex_magazine_rules
 from app.squad_engine import SkillRule
 
@@ -651,6 +651,93 @@ def test_periodic_rules_defaults_to_none_and_is_a_no_op():
         mode="auto",
         base_crit_rate=0.0,
     )
+    assert result["total_damage"] > 0
+
+
+def _ar_weapon(**over):
+    w = {"weapon": "AR", "damage_percent": 10.0, "max_ammo": 100,
+         "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 0.0}
+    w.update(over)
+    return w
+
+
+def test_per_shot_every_n_fires_a_nuke_at_each_nth_shot():
+    # AR fires 12/s; "every 5 shots" -> nuke at counts 5 and 10 (indices 4, 9).
+    per_shot_rules = {"attacker": [(5, "every", [instant_nuke_pulse_rule("per_shot", 100.0)])]}
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules=per_shot_rules,
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert [round(e["time"], 4) for e in ps] == [round(4 / 12, 4), round(9 / 12, 4)]
+    assert all(e["damage"] == 10000.0 for e in ps)  # 100% coeff * atk 10000, no defense
+
+
+def test_per_shot_after_n_fires_a_nuke_once():
+    per_shot_rules = {"attacker": [(3, "after", [instant_nuke_pulse_rule("per_shot", 100.0)])]}
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules=per_shot_rules,
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) == 1
+    assert round(ps[0]["time"], 4) == round(2 / 12, 4)  # count 3 = index 2
+
+
+def test_per_shot_squad_buff_reaches_a_burst_nuke_computed_earlier():
+    # The record-then-compute payoff: buffer's per-shot squad debuff (applied at
+    # its 1st shot, t=0) must raise the attacker's burst nuke fired later.
+    per_shot_rules = {
+        "buffer": [(1, "after", [buff_rule("per_shot", [("damage_taken_up", 0.5, "squad", 999.0)])])],
+    }
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"buffer": _ar_weapon()},
+        per_shot_rules=per_shot_rules,
+    )
+    burst = [e for e in result["damage_log"] if e["source"] == "burst"]
+    assert burst  # attacker's burst nuke exists
+    assert burst[0]["damage"] == 15000.0  # 10000 * 1.0 * (1 + 0.5 damage_taken)
+
+
+def test_per_shot_rules_defaults_to_none_and_is_a_no_op():
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+    )
+    assert not any(e["source"] == "per_shot_nuke" for e in result["damage_log"])
     assert result["total_damage"] > 0
 
 

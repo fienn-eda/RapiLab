@@ -4,6 +4,7 @@ from app.skill_rules.registry import (
     ENCODED_SLUGS,
     build_nikke_rules,
     get_burst_damage_type,
+    get_per_shot_rules,
     get_periodic_nuke,
     get_periodic_rules,
 )
@@ -107,6 +108,20 @@ def test_get_periodic_rules_returns_battlefield_control_for_takina():
     cooldown, rules = result[0]
     assert cooldown == 15.0
     assert all(r.trigger == "periodic" for r in rules)
+
+
+def test_get_per_shot_rules_returns_none_for_most_nikkes():
+    assert get_per_shot_rules("crown", {}) is None
+
+
+def test_get_per_shot_rules_returns_journey_ahead_for_brid():
+    result = get_per_shot_rules("brid-silent-track", {
+        "journey_ahead": {"description_value_01": "12.12", "description_value_02": "10", "description_value_03": "675"},
+    })
+    assert result is not None and len(result) == 1
+    threshold, mode, rules = result[0]
+    assert (threshold, mode) == (5, "every")
+    assert all(r.trigger == "per_shot" for r in rules)
 
 
 def test_takina_event_rules_registered():
