@@ -137,5 +137,28 @@ how to encode it, and current engine status.
   processing order. Guard activation/removal with a status flag so repeated
   firings don't double-add or no-op incorrectly. See `grave.py`.
 
+## Fixed-time delayed effects via a custom `applied_at`
+- **What:** some passives unlock at a fixed, deck-independent time into the
+  fight - e.g. Nayuta's Impermanence stacks once every 3 sec on a pure timer,
+  unlocking self-buff tiers at stack thresholds (t=9s/33s/90s in a 180s fight).
+  90s is HALF the raid - steady-stating this as "always on" would materially
+  overstate her early-fight value.
+- **Encode:** no new trigger is needed. `EffectRegistry.add(effect,
+  applied_at=X)` accepts ANY `applied_at`, independent of the trigger's own
+  firing time - so from a `battle_start` action (which fires once at t=0),
+  compute the fixed unlock time(s) and pass them as `applied_at` directly, with
+  `duration=None` for a permanent-from-that-point effect. Only valid for
+  effects on a fixed, deck/RNG-independent timer (not e.g. burst-cycle-timed
+  events, which vary per deck). See `nayuta.py`.
+
+## Read "Affects self" vs "Affects all allies" literally, per bullet
+- **What:** within ONE skill, different bullets can have different scopes -
+  e.g. Nayuta's Impermanence stage buffs say "Affects self" (her own damage
+  only) while Hypocrisy's Memory-Absorption-triggered buffs on the same
+  character say "Affects all allies" (squad).
+- **Easy mistake:** assuming a supporter's buffs are squad-wide by default and
+  skimming past an explicit "Affects self" on one specific bullet.
+- **Encode:** check the scope phrase per bullet, not per skill or per Nikke.
+
 ---
 *Add new mechanics above this line as they come up.*

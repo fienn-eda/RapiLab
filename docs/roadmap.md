@@ -7,8 +7,8 @@
 
 - 마지막 갱신: 2026-07-10
 - 브랜치: `wip/scaffolding`
-- 테스트: **208 passed** (마지막 전체 실행 기준)
-- 인코딩된 니케: **23명**
+- 테스트: **212 passed** (마지막 전체 실행 기준)
+- 인코딩된 니케: **24명**
 
 ---
 
@@ -65,11 +65,10 @@
     `d-killer-wife`, `tove`, `volume`, `zwei`, `soline-frost-ticket`
   - 버스트2 배치: `anchor-innocent-maid`, `mast-romantic-maid`,
     `ade-agent-bunny`, `blanc`, `arcana`, `arcana-fortune-mate`,
-    `grave`, `brid-silent-track`
+    `grave`, `brid-silent-track`, `nayuta`
 - 각 니케 = `skill_rules/<name>.py` 빌더, `registry.py`에 등록.
-- 버스트2 진행 중 (남은 요청: Mint, Nayuta). 여러 명이 미지원 메커니즘·조건부
-  타겟팅에 의존 → 트리아지 후 개별 처리. (Crown은 이미 인코딩됨.)
-- **다음:** 남은 버스트2 유닛 계속 (엔진 유용성은 인코딩 수에 비례).
+- 버스트2 진행 중 (남은 요청: Mint). (Crown은 이미 인코딩됨.)
+- **다음:** Mint, 이후 남은 버스트2/3 유닛 계속 (엔진 유용성은 인코딩 수에 비례).
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.

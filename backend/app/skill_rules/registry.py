@@ -28,6 +28,7 @@ from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.mast_romantic_maid import build_mast_rules
 from app.skill_rules.miranda import build_miranda_rules
 from app.skill_rules.moran import build_moran_rules
+from app.skill_rules.nayuta import asceticism_burst_percent, build_nayuta_rules
 from app.skill_rules.rouge import build_rouge_rules
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules.tove import build_tove_rules
@@ -94,6 +95,7 @@ _BUILDERS = {
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
     "mast-romantic-maid": lambda sv: (build_mast_rules(sv), None),
     "moran": lambda sv: (build_moran_rules(sv), None),
+    "nayuta": lambda sv: (build_nayuta_rules(sv), asceticism_burst_percent(sv)),
     "tove": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
 }
