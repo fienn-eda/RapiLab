@@ -68,6 +68,51 @@ build notes, and solo-raid usage-rate charts (sourced from enikk.app) — not
 currently used by the encoding workflow, but could inform which Nikkes are
 worth encoding first.
 
+### Extraction recipe (verified HTML structure)
+
+The character page markup is stable enough to parse with regex — the structure
+below was verified across many characters (2026-07-10). Prefer this over
+eyeballing raw HTML.
+
+- **Skills** live in `<div id="skills">` as three tabs — `id="skill-0"`,
+  `skill-1`, `skill-2` (labeled "Skill 1", "Skill 2", "Burst" in that order).
+- **Skill name:** `<div class="skill-title-section ..."><h3 ...>NAME</h3>`.
+  There are exactly 3 per page, in skill order.
+- **Per-level description:** `<p class="level-description[ active]"
+  data-level="N" ...>…</p>`, with `N = 0..9` (Lv.1 … Lv.10). **`data-level="9"`
+  is max level.** Every skill has all 10 present in one fetch — this is how all
+  levels are preserved. The inner text uses `<br />` line breaks and
+  `<span class="highlight-nikke">…</span>` around the buffed values.
+- **Arrows/bullets:** the `▲`/`▼` and the leading bullet glyphs are valid UTF-8
+  in the file but can render as mojibake when piped through a terminal. **Read
+  the direction from the surrounding words** ("Increases / Decreases / drops to
+  0%"), never from the glyph — e.g. a "Charge Speed 300%" line under text that
+  says "Decreases Charge Speed" is a ▼.
+
+A working dump script (prints each skill's max-level text; drop `[9]`→any level):
+
+```python
+import re, html as ihtml
+def clean(t):
+    t = t.replace("<br />", "\n")
+    t = re.sub(r"<[^>]+>", "", t)
+    return re.sub(r"[ \t]+", " ", ihtml.unescape(t)).strip()
+raw = open("data/lootandwaifus/char_<slug>.html", encoding="utf-8").read()
+titles = re.findall(r'<div class="skill-title-section[^"]*"[^>]*><h3[^>]*>([^<]+)</h3>', raw)
+# The 3 skills share one page; level-9 paragraphs come out in skill order.
+# For another level, change data-level="9" to "0".."8".
+lv10 = re.findall(r'<p class="level-description[^"]*" data-level="9"[^>]*>(.*?)</p>', raw, re.S)
+for label, title, desc in zip(["Skill 1", "Skill 2", "Burst"], titles, lv10):
+    print(f"--- {label}: {title} ---\n{clean(desc)}\n")
+```
+
+On the **listing page**, the `<a>` `class` attribute value **spans multiple
+lines** (one metadata class per line), so a naive `class="([^>]*)"` on a single
+line misses most of them — read the whole attribute (DOTALL) or split the
+anchor's class bag on whitespace. Match target names to slugs on the **slug**
+(`href="/character/<slug>-nikke"`), not on `data-character-name` (that field
+carries noisy suffixes like `"Snow White sw"`).
+
 ## dotgg.gg (fallback / cross-check)
 
 `api.dotgg.gg` JSON API (nikke.gg is a WordPress front over it). No auth

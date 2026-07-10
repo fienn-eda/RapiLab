@@ -21,8 +21,14 @@ design).
 Follow the deck-builder's own skill reference:
 `.claude/skills/nikke-skill-encoding/references/character-data-sources.md`. It
 documents both sites' endpoints, slug conventions, the `skills` vs
-`dollskills` (signature weapon) distinction, and how to number lootandwaifus's
-un-templated values. Read it first.
+`dollskills` (signature weapon) distinction, how to number lootandwaifus's
+un-templated values, and — under **"Extraction recipe (verified HTML
+structure)"** — the exact lootandwaifus markup (`skill-title-section` h3 titles;
+`<p class="level-description" data-level="N">` with `N=0..9` for Lv.1..Lv.10,
+all 10 levels present in one fetch) plus a ready-to-run dump script and the
+listing-page gotcha (match on slug, not `data-character-name`; the class bag
+spans multiple lines). Read it first and reuse that recipe rather than
+re-deriving the structure.
 
 ## What to do
 

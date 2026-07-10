@@ -4,12 +4,13 @@
 큰 그림은 **로드맵(단계)**, 작은 단위 작업은 **To-Do**에서 관리한다.
 결정의 배경은 `docs/decisions.md`, 엔진 함정/패턴은 `docs/insights.md`,
 인코딩된 니케 목록(Burst 단계별)은 `docs/encoded-nikkes.md`,
+엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
 - 마지막 갱신: 2026-07-10
 - 브랜치: `wip/scaffolding`
-- 테스트: **228 passed** (마지막 전체 실행 기준)
-- 인코딩된 니케: **28명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- 테스트: **232 passed** (마지막 전체 실행 기준)
+- 인코딩된 니케: **29명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
 
@@ -80,8 +81,15 @@
   사이클과 무관하게 자체 쿨다운으로 반복 발동하는 스킬(Helm: Aquamarine
   Aegis Cannon Suppression Fire, 4초마다) — `simulate_raid`의 `periodic_nukes`
   파라미터로 지원. 기존 25개 인코딩엔 영향 없음(옵트인, 기본값 `{}`).
-- **다음:** 남은 버스트2/3 유닛 계속, 또는 위 엔진 갭 확장 검토 (엔진 유용성은
-  인코딩 수에 비례).
+- **전략 전환 (2026-07-10, Fienn):** 인코딩을 하나씩 하다 갭에 부딪히는 반응적
+  방식 대신, **데이터를 먼저 벌크 수집 → 갭을 집계 → ROI 순으로 엔진 최소 확장 →
+  풀린 유닛 배치 인코딩**. 완전 표현 가능한 서포터는 그때그때 인코딩(동결 안 함).
+  갭 집계는 [`docs/engine-gaps.md`](engine-gaps.md). 후보 44유닛 스캔 결과 **최우선
+  확장 = per-shot 트리거+발사 카운터(노멀/풀차지 카운터 ~30유닛 통합)**.
+- 데이터 수집 완료(미인코딩, 보류): Ada Wong, Ark Ranger Black, Asuka:Wille, Bready
+  (오늘 분석 — 4명 모두 딜이 엔진 갭 뒤에 있어 보류) + 벌크 35유닛
+  (`data/lootandwaifus/`, gitignore).
+- **다음:** `engine-gaps.md` 우선순위로 Fienn이 엔진 확장 착수 결정 → 배치 인코딩.
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.
