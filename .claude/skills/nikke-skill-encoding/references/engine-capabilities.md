@@ -117,6 +117,30 @@ burst-cycle state / activation_count / status). Build with
 `registry._PERIODIC_RULE_BUILDERS` / `get_periodic_rules`; `roster` threads it.
 See `takina_inoue.py` (Battlefield Control, cd 15s).
 
+`per_shot_rules`: a `simulate_raid` param
+(`{slug: [(threshold, mode, [SkillRule, ...]), ...]}`) for a skill that fires
+after/every N of the unit's own shots - "after N normal attacks", "N full charge
+attacks", "every N shots". `mode` is `"after"` (once, at the Nth shot) or
+`"every"` (at each multiple of N). The engine counts the unit's generated shots
+(a charge weapon's every shot is a full charge, so "full charge N" == "shot N";
+the encoding knows the weapon and picks N - no weapon gating in the engine). A
+firing rule either applies a buff (`buff_rule("per_shot", ...)`) or emits an
+`instant_damage_percent` pulse (`instant_nuke_pulse_rule("per_shot", pct)`)
+recorded as `source="per_shot_nuke"`. Rules must be stateless and must not
+change shot generation (reload/ammo). Expose via `registry._PER_SHOT_RULE_BUILDERS`
+/ `get_per_shot_rules`; `roster` threads it. See `brid_silent_track.py`
+(Journey Ahead: 675% every 5 normal attacks). Not yet supported: "on firing the
+last bullet" (needs magazine-boundary markers in `attack_rate`); per-shot nukes
+default to `attack` damage type.
+
+**Record-then-compute:** `simulate_raid` RECORDS every damage instance
+(burst/instant/periodic/per-shot nukes + normal attacks) as an event during
+phase 1 (which only applies buffs), then computes them all in a phase-2 pass
+against the final registry. So a buff applied late in the fight (e.g. a per-shot
+squad debuff) correctly raises a burst nuke that fired earlier. Safe because
+effects are added with `applied_at >= their time` and `truncate_open_ended`
+mutates in place, so deferring computation never changes an existing value.
+
 `EffectRegistry.truncate_open_ended(stat, source_slug, now)`: for a continuous
 (`duration=None`) buff that a LATER trigger explicitly cancels (not a timer) -
 e.g. Grave's Heat Emission ends when she reuses her burst. Add the effect

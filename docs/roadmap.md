@@ -9,7 +9,7 @@
 
 - 마지막 갱신: 2026-07-10
 - 브랜치: `wip/scaffolding`
-- 테스트: **257 passed** (마지막 전체 실행 기준)
+- 테스트: **264 passed** (마지막 전체 실행 기준)
 - 인코딩된 니케: **31명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
@@ -97,10 +97,13 @@
 - **엔진 확장 완료 — periodic 스킬 트리거 (2026-07-11):** 자체 쿨다운 있는 Skill1/2가
   t=cd,2cd…에 버프/디버프 반복 발동(범용 전투 규칙). `simulate_raid`의 `periodic_rules`
   (버스트 사이클 前 사전 패스 — 버프는 딜 입력이므로). Rosanna·Takina 인코딩 완료.
-- **인코딩 완료:** Rosanna: Chic Ocean, Takina Inoue (둘 다 Burst2 서포터, 데미지 타입/
-  periodic 능력 사용).
-- **다음:** `engine-gaps.md` 우선순위로 남은 gap(#1 per-shot 트리거가 최대 ROI) 착수
-  결정 → 배치 인코딩.
+- **엔진 확장 완료 — per-shot 트리거 + record-then-compute (gap #1, 2026-07-11):**
+  발사 카운트 트리거(`per_shot_rules`, after/every N) + 모든 넉을 "버프 적용 후" 일괄
+  계산(per-shot 스쿼드 버프가 버스트 넉까지 반영). 첫 소비자 Brid: Journey Ahead
+  (5발마다 675% 넉). "마지막 탄"만 잔여.
+- **인코딩 완료:** Rosanna: Chic Ocean, Takina Inoue, Brid: Journey Ahead 승급.
+- **다음:** gap #1이 풀렸으니 **막힌 ~30명 재인코딩 배치**(데이터 수집→per-shot 룰 추가)가
+  최대 실질 가치. 남은 gap은 `engine-gaps.md` 우선순위 참고.
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.

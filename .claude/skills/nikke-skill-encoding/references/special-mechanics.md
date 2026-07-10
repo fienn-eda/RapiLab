@@ -279,5 +279,31 @@ how to encode it, and current engine status.
   e.g. Rosanna's Spina 15s-on/15s-off in 30s) is still a gap. See
   `takina_inoue.py`.
 
+## Shot-count triggers ("after/every N normal attacks", "N full charge") - BUILT
+- **What:** a skill fires when the unit's shot count crosses a threshold -
+  "Activates after N normal attack(s)" (recurring every N unless stated once),
+  "after N full charge attacks", "every N shots". Fires a nuke (e.g. Brid's
+  Journey Ahead: 675% every 5) or a buff (e.g. Ark Ranger, Rouge, Ade).
+- **Engine capability (2026-07-11):** `per_shot_rules` (see
+  `engine-capabilities.md`). Build with `(threshold, mode, [SkillRule])`,
+  `mode` = "after"/"every"; the rule is `buff_rule("per_shot", ...)` or
+  `instant_nuke_pulse_rule("per_shot", pct)`. Register in
+  `registry._PER_SHOT_RULE_BUILDERS`. The engine counts shots regardless of
+  weapon (charge weapons: every shot is a full charge), so a "full charge N"
+  and a "normal N" both just count shots - pick N from the skill text.
+- **Still deferred:** "on firing the LAST bullet" (needs magazine-boundary
+  markers). And a shot-count trigger whose effect ALSO gates on boss element
+  (e.g. Brid's Wind-Code debuff every 10 normals) - the count part works, the
+  Wind-Code gating is the separate boss-element gap.
+
+## Record-then-compute ordering (why per-shot squad buffs reach burst nukes)
+- **What:** `simulate_raid` records all damage instances in phase 1 (applying
+  buffs only) and computes them in a phase-2 pass against the final registry.
+  This is what lets a per-shot / periodic squad buff applied mid-fight correctly
+  raise a burst nuke that fired earlier in the timeline.
+- **Encode implication:** you can emit a squad buff from a per-shot or periodic
+  rule and trust it reaches every damage instance active in its window,
+  including burst nukes - no ordering caveat to work around.
+
 ---
 *Add new mechanics above this line as they come up.*

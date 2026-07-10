@@ -42,7 +42,7 @@
 | Arcana | `arcana` | Supporter | RL | Electric | ⚠ | "이미 버스트한 버스트3 전기속성 아군" 대상 버프(수치 큼) |
 | Arcana: Fortune Mate | `arcana-fortune-mate` | Attacker | SG | Fire | 🔶 | 노멀공격 스택 체인(펠릿·Precious Moments) 대부분 보류 |
 | Grave | `grave` | Supporter | AR | Fire | ⚠ | Overheat(노멀공격 카운터 자버프) |
-| Brid: Silent Track | `brid-silent-track` | Supporter | SG | Fire | 🔶 | Wind속성 조건부 디버프 + **노멀5회마다 675% 넉** 보류 |
+| Brid: Silent Track | `brid-silent-track` | Supporter | SG | Fire | ⚠ | 노멀5회마다 675% 넉 모델됨(per-shot). Wind속성 조건부 디버프만 보류(boss-element 갭) |
 | Nayuta | `nayuta` | Supporter | SMG | Wind | ⚠ | 무기변형(Memory Incineration) + 복합트리거 넉 |
 | Mint | `mint` | Supporter | RL | Iron | 🔶 | Here I Go! 전체 보류 (본인 풀차지샷 트리거 부재) |
 | Prika | `prika` | Supporter | SR | Water | 🔶 | 대부분 보류 — 본인 풀차지샷 + **Mint 교차유닛 시너지**(그녀의 실질 핵심 가치) |
@@ -70,14 +70,13 @@
 당장 인코딩을 막는 건 아니지만, 아래 항목이 여러 니케의 실제 딜 비중을 상당히
 깎아 먹고 있어 — 우선순위 후보:
 
-1. **노멀공격 횟수 카운터** ("N회 공격 후") — D: Killer Wife, Miranda, Rouge,
-   Crown, Grave, Rapi: Red Hood, Zwei, Nayuta, Helm: Aquamarine, Velvet 등
-   다수에 영향.
-2. **본인 풀차지샷 트리거** ("풀차지 공격 시") — Mint, Prika, Velvet, 그 외
-   RL/SR 유닛 다수. 노멀어택이 별도 패스로 계산돼 `fire_trigger`를 안 거침.
-3. **교차 유닛 트리거** (다른 니케의 특정 스킬 발동을 감지) — Prika→Mint
+1. ~~**노멀공격/풀차지 횟수 카운터**~~ — ✅ **해결됨 (2026-07-11, `per_shot_rules`)**.
+   D: Killer Wife, Miranda, Rouge, Crown, Grave, Rapi: Red Hood, Zwei, Nayuta,
+   Helm: Aquamarine, Velvet, Mint, Prika 등 다수 — 엔진은 준비됨, 각 유닛 재인코딩만
+   남음(후속 배치). (본인 풀차지샷=발사 카운트로 통합. "마지막 탄"만 잔여.)
+2. **교차 유닛 트리거** (다른 니케의 특정 스킬 발동을 감지) — Prika→Mint
    페어링처럼, 덱 조합 특화 시너지에 반복 등장할 가능성.
-4. **ammo pouch류 자원 메커니즘** — Velvet. 수량 기반 자원 트래킹 없음.
+3. **ammo pouch류 자원 메커니즘** — Velvet. 수량 기반 자원 트래킹 없음.
 
 네 항목 모두 `special-mechanics.md`에 상세 기록됨. 확장 여부는 Fienn 판단.
 
