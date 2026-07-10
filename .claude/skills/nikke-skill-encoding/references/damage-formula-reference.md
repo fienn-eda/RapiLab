@@ -52,7 +52,7 @@ Element Bonus × Charge Damage × Damage Up × Damage Taken) lives in
 - A target's defense **cannot drop below 0** through DEF% debuffs.
 - If a **Rocket** hits multiple targets, only the primary target can get the Core Damage bonus; the rest take splash unaffected by that multiplier.
 - Damage to Interruption Parts normally boosts only the red/grey interrupt circles; but if a basic attack hitting an Interruption Part overlaps the boss hitbox, the boss takes extra damage by that multiplier.
-- Damage Taken and Distributed Damage are effectively the same DPS modifier, **but** a Distributed Damage debuff only affects Distributed Damage sources against enemies that have a **Damage Taken ▲** buff.
+- Damage Taken and Distributed Damage are effectively the same DPS modifier. (The page adds "a Distributed Damage debuff only affects Distributed Damage sources against enemies with a **Damage Taken ▲** buff" — but **Fienn verified in-game (2026-07-11) that a Distributed Damage buff DOES apply with no Damage Taken debuff present**. So do NOT gate `distributed_damage_up` on a Damage Taken debuff; apply it unconditionally, as the engine already does. The page's caveat is inaccurate or narrower than its wording.)
 - Damage Taken and DEF% debuffs do nothing to enemies/projectiles that take a **fixed** amount of damage (typically 1).
 - Certain Nikkes modify the base final ATK of their skills (e.g. **Bready, EVE**).
 - SG and SMG Collection Items boost the Normal Attack Damage Multiplier of Nikkes that equip them; RL/SR Collection Items (and Helm's max-Treasure Burst) boost Charge Damage by `Charge Damage Multiplier × Base Charge Damage` (other charge-damage sources not considered for that).
@@ -64,5 +64,5 @@ Element Bonus × Charge Damage × Damage Up × Damage Taken) lives in
 - **Damage typing** (`raid_simulator._TYPE_BUCKETS`) implements the "exclusive" Damage-Up buckets: Sustained / True / Projectile Explosion / Distributed apply only to matching-type instances; **Attack Damage stays global** ("affects all damage dealt"). See `engine-capabilities.md` "Damage typing".
 - **True Damage ignores DEF** — a `true`-typed instance is computed with `enemy_def=0`.
 - **Projectile Explosion** — RL normal attacks are `projectile_explosion` typed; skills explicitly confirmed here (Rapi: Red Hood, Anis: Star's burst stars) are tagged too.
-- **Distributed Damage** sits in the Damage-Taken group in the formula (as coded), with the extra real-game caveat above (only vs enemies already under Damage Taken ▲) — not yet modeled.
+- **Distributed Damage** sits in the Damage-Taken group in the formula (as coded) and is applied **unconditionally** (no Damage-Taken-debuff prerequisite — Fienn-verified, see Notes). Correctly modeled once a distributed-damage dealer is encoded (the buff is type-gated to `distributed` instances, which none are produced yet).
 - Not modeled yet (deferred): Normal Attack Damage Multiplier, Shield Damage, Damage to Interruption Parts vs boss-hitbox overlap, Effective Range / Full Burst major-modifier buffs, collection-item stat modifiers, DEF floor at 0.
