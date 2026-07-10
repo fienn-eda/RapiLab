@@ -263,6 +263,117 @@ def test_burst_damage_with_no_buffs_uses_plain_percent_of_atk():
     assert result["total_damage"] == 10000.0
 
 
+def test_instant_damage_pulse_deals_damage_at_full_burst_enter_using_casters_own_atk():
+    # Some passives (e.g. Brid: Silent Track's Ignition Sequence) deal damage
+    # on a trigger OTHER than the caster's own burst firing - not expressible
+    # via burst_damage_percents (which is tied to own_burst_activate). An
+    # "instant_damage_percent" pulse lets any trigger's action emit one, using
+    # the caster's own ATK/live buffs exactly like a burst nuke.
+    def deal_nuke(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("instant_damage_percent", 500.0, "self", caster_slug))
+
+    rules_by_slug = {
+        "buffer": [SkillRule(trigger="full_burst_enter", action=deal_nuke)],
+        "midtier": [],
+        "attacker": [],
+    }
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={},
+        base_stats={
+            "buffer": {"atk": 2000, "def": 0, "max_hp": 0},
+            "midtier": {"atk": 0, "def": 0, "max_hp": 0},
+            "attacker": {"atk": 0, "def": 0, "max_hp": 0},
+        },
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
+    # full_burst_enter fires at t=5.0 in this deck; 2000 atk * 500% coefficient
+    assert instant_hits == [{"slug": "buffer", "time": 5.0, "damage": 10000.0, "source": "instant_nuke"}]
+
+
+def test_instant_damage_pulse_deals_damage_at_battle_start():
+    def deal_nuke(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("instant_damage_percent", 100.0, "self", caster_slug))
+
+    rules_by_slug = {"buffer": [SkillRule(trigger="battle_start", action=deal_nuke)], "midtier": [], "attacker": []}
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={},
+        base_stats={
+            "buffer": {"atk": 500, "def": 0, "max_hp": 0},
+            "midtier": {"atk": 0, "def": 0, "max_hp": 0},
+            "attacker": {"atk": 0, "def": 0, "max_hp": 0},
+        },
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
+    assert instant_hits == [{"slug": "buffer", "time": 0.0, "damage": 500.0, "source": "instant_nuke"}]
+
+
+def test_instant_damage_pulse_deals_damage_at_full_burst_end():
+    def deal_nuke(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("instant_damage_percent", 200.0, "self", caster_slug))
+
+    rules_by_slug = {"buffer": [SkillRule(trigger="full_burst_end", action=deal_nuke)], "midtier": [], "attacker": []}
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={},
+        base_stats={
+            "buffer": {"atk": 1000, "def": 0, "max_hp": 0},
+            "midtier": {"atk": 0, "def": 0, "max_hp": 0},
+            "attacker": {"atk": 0, "def": 0, "max_hp": 0},
+        },
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
+    # full_burst_end at t=15.0 (full_burst_enter t=5.0 + FULL_BURST_DURATION 10.0)
+    assert instant_hits == [{"slug": "buffer", "time": 15.0, "damage": 2000.0, "source": "instant_nuke"}]
+
+
+def test_instant_damage_pulse_from_own_burst_activate_stacks_with_burst_nuke():
+    # An own_burst_activate-triggered instant-damage pulse should ADD to the
+    # tier's own burst_damage_percents nuke, not replace or conflict with it.
+    def extra_nuke(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("instant_damage_percent", 100.0, "self", caster_slug))
+
+    rules_by_slug = {
+        "buffer": [],
+        "midtier": [],
+        "attacker": [SkillRule(trigger="own_burst_activate", action=extra_nuke)],
+    }
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=1000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
+    instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
+    assert burst_hits == [{"slug": "attacker", "time": 5.0, "damage": 5000.0, "source": "burst"}]
+    assert instant_hits == [{"slug": "attacker", "time": 5.0, "damage": 1000.0, "source": "instant_nuke"}]
+
+
 def test_own_burst_activate_only_fires_for_the_unit_whose_tier_just_fired():
     fired = []
 

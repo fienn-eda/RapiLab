@@ -47,6 +47,16 @@ normal-attack damage (e.g. while that character's weapon data hasn't been
 entered yet); pierce_damage_up is applied to every hit as a general damage-up
 term (the formula's Damage Up bucket), not gated to actual pierce hits, since
 per-hit pierce flags aren't modeled.
+
+Some passives "Deal X% of final ATK as damage" on a trigger OTHER than the
+caster's own burst (e.g. Brid: Silent Track's Ignition Sequence, which fires
+on full_burst_enter regardless of who bursts) - this can't use
+`burst_damage_percents`, which is tied to `own_burst_activate`. A skill rule
+emits an `"instant_damage_percent"` Pulse instead (see
+`_helpers.instant_nuke_pulse_rule`); `drain_instant_damage` drains it after
+every trigger fire (battle_start, own_burst_activate, full_burst_enter,
+full_burst_end) and computes the damage the same way as a burst nuke, using
+the pulse's source_slug as caster. Logged with `source="instant_nuke"`.
 """
 from app.attack_rate import CHARGE_WEAPONS, generate_shot_times
 from app.burst_cycle import simulate_burst_cycle
@@ -90,18 +100,9 @@ def simulate_raid(
             return 1.0
         return element_multiplier(member_by_slug[slug]["element"], boss_element)
 
-    def on_battle_start(time):
-        fire_trigger("battle_start", rules_by_slug, context, registry, time)
-
-    def on_tier_fire(tier, slug, time):
-        context.burst_used_this_cycle.add(slug)
-        fire_trigger("own_burst_activate", {slug: rules_by_slug.get(slug, [])}, context, registry, time)
-
-        percent = burst_damage_percents.get(slug)
-        if not percent:
-            return
+    def _damage_from_percent(slug, percent, time):
         target = target_for(slug)
-        damage = calculate_damage(
+        return calculate_damage(
             atk=base_stats[slug]["atk"],
             attack_coefficient=percent / 100,
             enemy_def=enemy_def,
@@ -121,10 +122,37 @@ def simulate_raid(
             pierce_damage_up=registry.total_for("pierce_damage_up", target, time),
             damage_taken_up=registry.total_for("damage_taken_up", target, time),
         )
+
+    def drain_instant_damage(time):
+        # A passive that deals damage on a trigger OTHER than the caster's own
+        # burst (e.g. Brid: Silent Track's Ignition Sequence, on full_burst_enter)
+        # can't use burst_damage_percents (tied to own_burst_activate). It emits
+        # an "instant_damage_percent" pulse instead; drained here after every
+        # trigger fire, computed exactly like a burst nuke using the caster's
+        # own ATK and live buffs.
+        for pulse in registry.drain_pulses("instant_damage_percent"):
+            slug = pulse.source_slug
+            damage = _damage_from_percent(slug, pulse.value, time)
+            damage_log.append({"slug": slug, "time": time, "damage": damage, "source": "instant_nuke"})
+
+    def on_battle_start(time):
+        fire_trigger("battle_start", rules_by_slug, context, registry, time)
+        drain_instant_damage(0.0)
+
+    def on_tier_fire(tier, slug, time):
+        context.burst_used_this_cycle.add(slug)
+        fire_trigger("own_burst_activate", {slug: rules_by_slug.get(slug, [])}, context, registry, time)
+        drain_instant_damage(time)
+
+        percent = burst_damage_percents.get(slug)
+        if not percent:
+            return
+        damage = _damage_from_percent(slug, percent, time)
         damage_log.append({"slug": slug, "time": time, "damage": damage, "source": "burst"})
 
     def on_full_burst_enter(time):
         fire_trigger("full_burst_enter", rules_by_slug, context, registry, time)
+        drain_instant_damage(time)
 
     def cdr_targets(pulse):
         if pulse.scope == "self":
@@ -138,6 +166,7 @@ def simulate_raid(
 
     def on_full_burst_end(time):
         fire_trigger("full_burst_end", rules_by_slug, context, registry, time)
+        drain_instant_damage(time)
         context.burst_used_this_cycle.clear()
         reductions = {}
         for pulse in registry.drain_pulses("burst_cooldown_reduction_sec"):

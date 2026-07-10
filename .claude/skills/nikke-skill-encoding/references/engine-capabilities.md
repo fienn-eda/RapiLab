@@ -48,6 +48,13 @@ Scheduling stats (change the burst rotation / shot timing, not per-hit damage):
 Burst nuke: not a stat — exposed via a `<name>_burst_percent(values)` helper and
 put in the registry entry, applied as the attack coefficient of a burst hit.
 
+`instant_damage_percent`: a **Pulse**, for "Deals X% of final ATK as damage"
+tied to a trigger OTHER than the caster's own burst (e.g. "on Full Burst
+enter", regardless of who bursts). Use `_helpers.instant_nuke_pulse_rule`;
+`raid_simulator.drain_instant_damage` computes it after every trigger fire
+using the pulse's source_slug as caster, exactly like a burst nuke, logged with
+`source="instant_nuke"`.
+
 ## Stats the engine does NOT consume (encoding is inert — defer instead)
 
 Two groups. In both, encoding an effect with these stats is silently inert —
@@ -88,6 +95,11 @@ There is **no** trigger for: normal-attack counts ("after N normal attacks"),
 full-charge-shot counts ("full charge N times"), ally-ammo-expended counters,
 on-kill, HP thresholds, or "when Raptures appear". Effects gated on these must
 be deferred — or, if central, raise extending the engine with a new trigger.
+
+SkillRule actions also have **no access to the boss's element** (only
+`raid_simulator` does, via `boss_element`) - an effect gated on "if the enemy
+is [element] Code" (e.g. a Wind-Code-only debuff) can't be conditioned
+correctly and must be deferred, not applied unconditionally.
 For an always-on-in-raid condition like "when Raptures appear" you may treat it
 as active (document the assumption) since a raid always has enemies.
 

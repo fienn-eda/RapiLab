@@ -5,6 +5,13 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## Instant-damage pulses for non-own-burst nukes
+- Date: 2026-07-10
+- Context: Brid: Silent Track's Ignition Sequence deals 636% of final ATK on entering Full Burst, regardless of who bursts that cycle - a real damage source, but the existing engine only computed burst-nuke damage tied to the caster's OWN burst tier firing (`own_burst_activate` + `burst_damage_percents`). Encoding Brid without it would leave her almost valueless (buff-only), understating a deck that includes her.
+- Decision: Add an `instant_damage_percent` Pulse (`_helpers.instant_nuke_pulse_rule`) that any trigger's action can emit; `raid_simulator.drain_instant_damage` drains it after every trigger fire (battle_start, own_burst_activate, full_burst_enter, full_burst_end) and computes damage the same way as a burst nuke, using the pulse's source_slug as caster.
+- Why: Reuses the existing damage-calculation path (via a shared `_damage_from_percent` helper) rather than duplicating it; keeps the change additive (new pulse type + 4 drain calls) instead of altering the SkillRule action signature for every existing module.
+- Consequences: Damage instances from this path are logged with `source="instant_nuke"` (distinct from `"burst"`/`"normal_attack"`). Future Nikkes with the same "deal damage on trigger X, not on own burst" pattern reuse this directly.
+
 ## Crit modeled as expected value
 - Date: 2026-07-10
 - Context: Many Burst-1 supporters (Volume, Miranda, Tove, …) exist mainly to buff Critical Rate / Critical Damage, but the simulator computed every hit as non-critical, so those buffs did nothing and the recommender would rate the units useless.

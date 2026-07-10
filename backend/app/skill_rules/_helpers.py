@@ -25,6 +25,18 @@ def cdr_pulse_rule(trigger, seconds, scope="squad"):
     return SkillRule(trigger=trigger, action=action)
 
 
+def instant_nuke_pulse_rule(trigger, percent):
+    """"Deals X% of final ATK as damage" tied to a trigger OTHER than the
+    caster's own burst (e.g. Brid: Silent Track's Ignition Sequence, on
+    full_burst_enter). raid_simulator.drain_instant_damage computes it using
+    the caster's own ATK and live buffs, exactly like a burst nuke."""
+
+    def action(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("instant_damage_percent", percent, "self", caster_slug))
+
+    return SkillRule(trigger=trigger, action=action)
+
+
 def escalating_buff_rule(trigger, tiers):
     """Cumulative "Once/Twice/Three times, previous effects trigger repeatedly".
 

@@ -1,5 +1,5 @@
 from app.effects import EffectRegistry
-from app.skill_rules._helpers import buff_rule, cdr_pulse_rule, escalating_buff_rule
+from app.skill_rules._helpers import buff_rule, cdr_pulse_rule, escalating_buff_rule, instant_nuke_pulse_rule
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 
@@ -50,6 +50,18 @@ def test_escalating_buff_rule_applies_tiers_cumulatively_by_activation():
     # cycle 3: reload unlocks; flat_atk re-applied fresh (its cycle-2 window expired)
     assert registry.total_for("flat_atk", ally, now=50.0) == 100.0
     assert registry.total_for("reload_speed_percent", ally, now=50.0) == 0.4
+
+
+def test_instant_nuke_pulse_rule_emits_a_drainable_instant_damage_pulse():
+    rule = instant_nuke_pulse_rule("full_burst_enter", 636.0)
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", {"src": [rule]}, ctx(), registry, time=5.0)
+
+    pulses = registry.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert pulses[0].value == 636.0
+    assert pulses[0].scope == "self"
+    assert pulses[0].source_slug == "src"
 
 
 def test_cdr_pulse_rule_emits_a_drainable_pulse():
