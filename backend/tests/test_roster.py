@@ -70,6 +70,35 @@ def rapi_red_hood_spec():
     )
 
 
+def takina_spec():
+    return NikkeSpec(
+        slug="takina-inoue",
+        burst_tier=2,
+        burst_cooldown=20.0,
+        element="Iron",
+        weapon="SR",
+        base_stats={"atk": 280000, "def": 60000, "max_hp": 10000000},
+        skill_values={
+            "combat_support": {
+                "description_value_01": "80.04", "description_value_02": "5",
+                "description_value_03": "35.05", "description_value_04": "15",
+            },
+            "battlefield_control": {
+                "description_value_01": "10.09", "description_value_02": "5",
+                "description_value_03": "140.49", "description_value_04": "10",
+            },
+            "suppression_initiated": {
+                "description_value_01": "200.64", "description_value_02": "10",
+                "description_value_03": "6.04", "description_value_04": "5",
+            },
+        },
+        weapon_stats={
+            "weapon": "SR", "damage_percent": 69.0, "max_ammo": 6,
+            "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0,
+        },
+    )
+
+
 def crown_spec():
     return NikkeSpec(
         slug="crown",
@@ -184,6 +213,24 @@ def test_periodic_nukes_only_includes_nikkes_with_one():
     assert inputs_with_aqua["periodic_nukes"] == {
         "helm-aquamarine": {"cooldown": 4.0, "percent": 105.58}
     }
+
+
+def test_periodic_rules_only_includes_nikkes_with_one():
+    assert assemble_simulation_inputs(minimal_feasible_deck())["periodic_rules"] == {}
+
+    inputs = assemble_simulation_inputs([takina_spec()])
+    assert set(inputs["periodic_rules"]) == {"takina-inoue"}
+    cooldown, rules = inputs["periodic_rules"]["takina-inoue"][0]
+    assert cooldown == 15.0
+    assert all(r.trigger == "periodic" for r in rules)
+
+
+def test_periodic_rules_flow_through_simulate_raid():
+    inputs = assemble_simulation_inputs([takina_spec()])
+    result = simulate_raid(
+        **inputs, enemy_def=0, gauge_charge_time=2.0, fight_duration=40.0, mode="manual",
+    )
+    assert result["total_damage"] > 0
 
 
 def test_periodic_nukes_flow_through_simulate_raid():

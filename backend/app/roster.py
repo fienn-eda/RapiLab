@@ -16,7 +16,12 @@ from dataclasses import dataclass, field
 
 from app.cube_effects import cube_to_effects
 from app.overload_effects import overload_options_to_effects
-from app.skill_rules.registry import build_nikke_rules, get_burst_damage_type, get_periodic_nuke
+from app.skill_rules.registry import (
+    build_nikke_rules,
+    get_burst_damage_type,
+    get_periodic_nuke,
+    get_periodic_rules,
+)
 from app.squad_engine import SkillRule
 
 
@@ -61,6 +66,7 @@ def assemble_simulation_inputs(ordered_deck):
     base_stats = {}
     weapon_stats = {}
     periodic_nukes = {}
+    periodic_rules = {}
     burst_damage_types = {}
 
     for spec in ordered_deck:
@@ -96,6 +102,10 @@ def assemble_simulation_inputs(ordered_deck):
         if periodic_nuke is not None:
             periodic_nukes[spec.slug] = periodic_nuke
 
+        periodic_rule = get_periodic_rules(spec.slug, skill_values)
+        if periodic_rule:
+            periodic_rules[spec.slug] = periodic_rule
+
     return {
         "deck": deck,
         "rules_by_slug": rules_by_slug,
@@ -103,5 +113,6 @@ def assemble_simulation_inputs(ordered_deck):
         "base_stats": base_stats,
         "weapon_stats": weapon_stats,
         "periodic_nukes": periodic_nukes,
+        "periodic_rules": periodic_rules,
         "burst_damage_types": burst_damage_types,
     }

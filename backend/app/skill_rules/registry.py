@@ -48,6 +48,12 @@ from app.skill_rules.prika import build_prika_rules
 from app.skill_rules.rosanna_chic_ocean import build_rosanna_rules
 from app.skill_rules.rouge import build_rouge_rules
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
+from app.skill_rules.takina_inoue import (
+    BATTLEFIELD_CONTROL_COOLDOWN,
+    build_battlefield_control_rules,
+    build_combat_support_rules,
+    build_suppression_initiated_rules,
+)
 from app.skill_rules.tove import build_tove_rules
 from app.skill_rules.velvet import build_velvet_rules
 from app.skill_rules.privaty import (
@@ -91,6 +97,14 @@ def _build_privaty(sv):
     return rules, ak_missile_burst_percent(sv["ak_missile"])
 
 
+def _build_takina(sv):
+    # Battlefield Control (Skill 2) is not here - it's a periodic (own-cooldown)
+    # skill, exposed via _PERIODIC_RULE_BUILDERS / get_periodic_rules.
+    rules = build_combat_support_rules(sv["combat_support"])
+    rules += build_suppression_initiated_rules(sv["suppression_initiated"])
+    return rules, None
+
+
 _BUILDERS = {
     "anis-star": _build_anis_star,
     "anis-sparkling-summer": lambda sv: (build_anis_sparkling_summer_rules(sv), None),
@@ -122,6 +136,7 @@ _BUILDERS = {
     "tove": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
     "velvet": lambda sv: (build_velvet_rules(sv), None),
+    "takina-inoue": _build_takina,
 }
 
 ENCODED_SLUGS = tuple(_BUILDERS)
@@ -139,6 +154,15 @@ _PERIODIC_NUKE_BUILDERS = {
 # which type-gated Damage-Up buff applies (see raid_simulator._TYPE_BUCKETS).
 _BURST_DAMAGE_TYPES = {
     "rapi-red-hood": "projectile_explosion",  # Power of Inheritance = Projectile Explosion skill
+}
+
+# A Nikke with a Skill 1/2 on its own cooldown (fires at t=cooldown, 2*cooldown,
+# ... applying buffs/debuffs) - see raid_simulator's `periodic_rules`. Kept
+# separate from _BUILDERS (event-triggered rules) and _PERIODIC_NUKE_BUILDERS.
+_PERIODIC_RULE_BUILDERS = {
+    "takina-inoue": lambda sv: [
+        (BATTLEFIELD_CONTROL_COOLDOWN, build_battlefield_control_rules(sv["battlefield_control"])),
+    ],
 }
 
 
@@ -162,4 +186,12 @@ def get_periodic_nuke(slug, skill_values):
     `periodic_nukes` param), or None for the vast majority of Nikkes without
     one."""
     builder = _PERIODIC_NUKE_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_periodic_rules(slug, skill_values):
+    """List of (cooldown, [SkillRule, ...]) for a Nikke with a Skill 1/2 on its
+    own cooldown (see raid_simulator's `periodic_rules`), or None for the vast
+    majority of Nikkes without one."""
+    builder = _PERIODIC_RULE_BUILDERS.get(slug)
     return builder(skill_values) if builder else None

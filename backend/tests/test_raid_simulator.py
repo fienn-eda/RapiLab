@@ -1,5 +1,6 @@
 from app.effects import Effect, Pulse
 from app.raid_simulator import simulate_raid
+from app.skill_rules._helpers import buff_rule
 from app.skill_rules.privaty import build_ex_magazine_rules
 from app.squad_engine import SkillRule
 
@@ -608,6 +609,49 @@ def test_periodic_nukes_defaults_to_none_and_is_a_no_op():
         mode="auto",
     )
     assert not any(e["source"] == "periodic" for e in result["damage_log"])
+
+
+def test_periodic_rules_apply_buffs_on_own_cooldown_before_damage_passes():
+    # A Skill-1/2 with a cooldown first activates at t=cooldown, then repeats.
+    # The debuff it applies must be visible to damage computed at those times,
+    # so the periodic-rule pass runs before the burst cycle populates the log.
+    periodic_rules = {
+        "buffer": [(15.0, [buff_rule("periodic", [("damage_taken_up", 0.1, "squad", 5.0)])])],
+    }
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=40.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        periodic_nukes={"attacker": {"cooldown": 1.0, "percent": 100.0}},
+        periodic_rules=periodic_rules,
+    )
+    by_time = {round(e["time"], 3): e["damage"] for e in result["damage_log"] if e["source"] == "periodic"}
+    assert by_time[5.0] == 10000.0   # before first cd fire (t=15): no debuff
+    assert by_time[15.0] == 11000.0  # debuff active [15, 20): 10000 * (1 + 0.1)
+    assert by_time[19.0] == 11000.0
+    assert by_time[25.0] == 10000.0  # expired at 20; next fire at 30
+    assert by_time[30.0] == 11000.0  # second periodic firing
+
+
+def test_periodic_rules_defaults_to_none_and_is_a_no_op():
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    assert result["total_damage"] > 0
 
 
 def test_own_burst_activate_only_fires_for_the_unit_whose_tier_just_fired():

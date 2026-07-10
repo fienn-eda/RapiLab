@@ -111,10 +111,12 @@ def simulate_raid(
     base_crit_rate=BASE_CRIT_RATE,
     periodic_nukes=None,
     burst_damage_types=None,
+    periodic_rules=None,
 ):
     weapon_stats = weapon_stats or {}
     periodic_nukes = periodic_nukes or {}
     burst_damage_types = burst_damage_types or {}
+    periodic_rules = periodic_rules or {}
     context = SquadContext([SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck])
     registry = EffectRegistry()
     damage_log = []
@@ -225,6 +227,23 @@ def simulate_raid(
             for slug in cdr_targets(pulse):
                 reductions[slug] = reductions.get(slug, 0.0) + pulse.value
         return reductions
+
+    # A Skill 1/2 with its own cooldown first fires at t=cooldown and repeats
+    # (a universal battle-system rule, not at battle start). These rules apply
+    # buffs/debuffs, which are INPUTS to damage - so unlike periodic_nukes (a
+    # post-pass), they must populate the registry BEFORE the burst cycle
+    # computes any nuke that should reflect them. Effects are replay-safe, so
+    # pre-adding them at t=cooldown, 2*cooldown, ... is correct for every later
+    # read. Fired against the initial context (no burst-cycle state yet), so
+    # periodic rules must be stateless buff appliers.
+    for slug, groups in periodic_rules.items():
+        for cooldown, rules in groups:
+            tick = cooldown
+            while tick < fight_duration:
+                for rule in rules:
+                    if rule.condition(context, slug):
+                        rule.action(context, slug, tick, registry)
+                tick += cooldown
 
     events = simulate_burst_cycle(
         deck,

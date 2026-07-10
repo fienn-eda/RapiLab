@@ -5,7 +5,23 @@ from app.skill_rules.registry import (
     build_nikke_rules,
     get_burst_damage_type,
     get_periodic_nuke,
+    get_periodic_rules,
 )
+
+TAKINA_SKILL_VALUES = {
+    "combat_support": {
+        "description_value_01": "80.04", "description_value_02": "5",
+        "description_value_03": "35.05", "description_value_04": "15",
+    },
+    "battlefield_control": {
+        "description_value_01": "10.09", "description_value_02": "5",
+        "description_value_03": "140.49", "description_value_04": "10",
+    },
+    "suppression_initiated": {
+        "description_value_01": "200.64", "description_value_02": "10",
+        "description_value_03": "6.04", "description_value_04": "5",
+    },
+}
 
 
 def test_core_encoded_nikkes_are_registered():
@@ -79,3 +95,23 @@ def test_rapi_red_hood_burst_nuke_is_projectile_explosion_typed():
     # Power of Inheritance is a "Projectile Explosion" keyword skill, so its
     # burst-nuke instance benefits from Projectile Explosion Damage buffs.
     assert get_burst_damage_type("rapi-red-hood") == "projectile_explosion"
+
+
+def test_get_periodic_rules_returns_none_for_most_nikkes():
+    assert get_periodic_rules("crown", {}) is None
+
+
+def test_get_periodic_rules_returns_battlefield_control_for_takina():
+    result = get_periodic_rules("takina-inoue", TAKINA_SKILL_VALUES)
+    assert result is not None and len(result) == 1
+    cooldown, rules = result[0]
+    assert cooldown == 15.0
+    assert all(r.trigger == "periodic" for r in rules)
+
+
+def test_takina_event_rules_registered():
+    rules, burst_percent = build_nikke_rules("takina-inoue", TAKINA_SKILL_VALUES)
+    assert burst_percent is None
+    triggers = {r.trigger for r in rules}
+    assert {"battle_start", "full_burst_end", "full_burst_enter", "own_burst_activate"} <= triggers
+    assert "periodic" not in triggers  # periodic rules come via get_periodic_rules, not here
