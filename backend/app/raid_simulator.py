@@ -133,10 +133,12 @@ def simulate_raid(
 
     def _damage_instance(slug, percent, time, damage_type="attack", extra_charge_bonus=0.0):
         target = target_for(slug)
+        # True Damage ignores enemy DEF (nikke.gg glossary).
+        instance_enemy_def = 0 if damage_type == "true" else enemy_def
         terms = dict(
             atk=base_stats[slug]["atk"],
             attack_coefficient=percent / 100,
-            enemy_def=enemy_def,
+            enemy_def=instance_enemy_def,
             atk_percent=registry.total_for("atk_percent", target, time),
             flat_atk=registry.total_for("flat_atk", target, time),
             other_elemental_bonus=registry.total_for("other_elemental_bonus", target, time),

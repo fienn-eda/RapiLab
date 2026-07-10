@@ -98,9 +98,10 @@ How an instance gets a non-`attack` type:
   e.g. Takina Inoue's burst "normal attacks deal true damage for 10 sec".
 - **instant nukes** are always `attack` for now (no unit needs otherwise).
 
-Provisional semantics (confirm with Fienn): `true` damage keeps the
-nikke.gg-formula DEF subtraction (NOT a DEF bypass); `attack_damage_up` stays
-global (applies to every type, not just `attack`).
+Semantics (confirmed against the nikke.gg glossary - see
+`damage-formula-reference.md`): `true` damage **ignores enemy DEF** (a
+`true`-typed instance is computed with `enemy_def=0`); `attack_damage_up` is a
+general buff that **affects all damage**, so it stays global across every type.
 
 `EffectRegistry.truncate_open_ended(stat, source_slug, now)`: for a continuous
 (`duration=None`) buff that a LATER trigger explicitly cancels (not a timer) -

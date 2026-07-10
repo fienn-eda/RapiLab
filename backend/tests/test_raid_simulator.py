@@ -478,10 +478,9 @@ def test_burst_nuke_damage_type_gates_type_specific_buff():
     assert burst_hits[0]["damage_type"] == "projectile_explosion"
 
 
-def test_true_typed_nuke_gets_true_damage_up_and_still_subtracts_defense():
-    # Decision: our nikke.gg-derived formula treats true_damage_up as a plain
-    # Damage-Up bucket with NO defense bypass. A true-typed instance still
-    # subtracts enemy DEF; only the true_damage_up buff is type-gated in.
+def test_true_typed_nuke_ignores_enemy_defense_and_gets_true_damage_up():
+    # Per nikke.gg glossary, True Damage ignores enemy DEF. A true-typed
+    # instance subtracts no defense, and true_damage_up is type-gated in.
     def grant_true(context, caster_slug, time, registry):
         registry.add(Effect("true_damage_up", 1.0, "squad", None, caster_slug), applied_at=time)
 
@@ -499,9 +498,26 @@ def test_true_typed_nuke_gets_true_damage_up_and_still_subtracts_defense():
         burst_damage_types={"attacker": "true"},
     )
     burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
-    # base = (10000 - 2000) = 8000; * coeff 1.0 * damage_up (1 + 1.0 true) = 16000
-    assert burst_hits[0]["damage"] == 16000.0
+    # DEF ignored: base = 10000; * coeff 1.0 * damage_up (1 + 1.0 true) = 20000
+    assert burst_hits[0]["damage"] == 20000.0
     assert burst_hits[0]["damage_type"] == "true"
+
+
+def test_non_true_typed_nuke_still_subtracts_enemy_defense():
+    # Sanity: only True Damage ignores DEF; other types subtract it normally.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=2000,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
+    assert burst_hits[0]["damage"] == 8000.0  # (10000 - 2000) * 1.0 coeff, attack-typed
 
 
 def test_rocket_launcher_normal_attacks_are_projectile_explosion_typed():

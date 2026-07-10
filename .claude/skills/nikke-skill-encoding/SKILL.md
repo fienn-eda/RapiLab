@@ -47,7 +47,11 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    `references/special-mechanics.md` for mechanics that are easy to misread
    (e.g. Distributed Damage is a DPS buff, not defensive) — and **append a new
    entry there whenever you hit a special mechanic**, so it's captured for next
-   time.
+   time. For *how a buff or damage type actually applies* (which multiplier
+   group it belongs to, e.g. True Damage ignores DEF, Attack Damage affects all
+   damage, Projectile Explosion is RL-only), consult
+   `references/damage-formula-reference.md` — the authoritative nikke.gg
+   glossary/notes.
 
 4. **Write the module** `backend/app/skill_rules/<slug_with_underscores>.py`.
    Reuse the `_helpers`: `buff_rule(trigger, buffs)` and
