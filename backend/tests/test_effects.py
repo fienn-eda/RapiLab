@@ -1,8 +1,47 @@
-from app.effects import Effect, EffectRegistry, Pulse
+from app.effects import Effect, EffectRegistry, Pulse, RoundGrant
 
 
 def make_member(slug, element):
     return {"slug": slug, "element": element}
+
+
+def test_slugs_scoped_effect_applies_only_to_listed_slugs():
+    # A "slugs:a,b" scope targets exactly those units - used for "N allies with
+    # the highest final ATK" buffs, resolved to concrete slugs at application time.
+    registry = EffectRegistry()
+    registry.add(
+        Effect(stat="atk_percent", value=0.4, scope="slugs:scarlet,blast", duration=10, source_slug="miranda"),
+        applied_at=0.0,
+    )
+    scarlet = make_member("scarlet", "Fire")
+    blast = make_member("blast", "Wind")
+    liter = make_member("liter", "Iron")
+
+    assert registry.total_for(stat="atk_percent", target=scarlet, now=1.0) == 0.4
+    assert registry.total_for(stat="atk_percent", target=blast, now=1.0) == 0.4
+    assert registry.total_for(stat="atk_percent", target=liter, now=1.0) == 0.0
+
+
+def test_slugs_scoped_effect_single_slug():
+    registry = EffectRegistry()
+    registry.add(
+        Effect(stat="crit_rate", value=0.85, scope="slugs:scarlet", duration=10, source_slug="miranda"),
+        applied_at=0.0,
+    )
+    assert registry.total_for("crit_rate", make_member("scarlet", "Fire"), now=1.0) == 0.85
+    assert registry.total_for("crit_rate", make_member("blast", "Wind"), now=1.0) == 0.0
+
+
+def test_add_round_grant_and_round_grants_accessor():
+    # A RoundGrant is a pending "next-N-shots" buff, converted to a timed Effect
+    # once the affected units' shot times are known (see raid_simulator).
+    registry = EffectRegistry()
+    grant = RoundGrant(
+        stat="pierce_damage_up", value=0.2013, scope="squad",
+        source_slug="zwei", shots=1, granted_at=12.0,
+    )
+    registry.add_round_grant(grant)
+    assert registry.round_grants() == [grant]
 
 
 def test_self_scoped_effect_only_applies_to_source():

@@ -20,8 +20,12 @@ class SquadMember:
 
 
 class SquadContext:
-    def __init__(self, members: list[SquadMember]):
+    def __init__(self, members: list[SquadMember], base_atk: dict[str, float] | None = None):
         self.members = members
+        # each member's base (summary) ATK, so a rule targeting "the N allies with
+        # the highest final ATK" can rank them live (see top_atk_slugs). Injected by
+        # raid_simulator; empty for contexts that don't need ranking.
+        self.base_atk: dict[str, float] = base_atk or {}
         # flag -> the earliest time it was set (a "continuous, cannot be removed"
         # status is pinned from its first application). Callers that only care
         # whether a flag is set omit the time (defaults to 0.0).
@@ -67,6 +71,29 @@ class SquadContext:
         return [
             m for m in self.members if m.burst_tier == tier and m.slug != exclude_slug
         ]
+
+    def top_atk_slugs(self, n: int, caster_slug: str, registry, time: float) -> list[str]:
+        """The `n` allies with the highest FINAL ATK at `time`, excluding the
+        caster - but including the caster to fill remaining slots if there aren't
+        enough other allies ("except caster; including the caster if there are not
+        enough allies"). Final ATK is base ATK grown by live atk_percent buffs plus
+        flat_atk, so a buff applied earlier this cycle (e.g. Miranda's own burst
+        before her Full-Burst-enter skill) is reflected in the ranking. Ties break
+        by deck order (stable sort)."""
+        by_slug = {m.slug: m for m in self.members}
+
+        def final_atk(slug: str) -> float:
+            target = {"slug": slug, "element": by_slug[slug].element}
+            base = self.base_atk.get(slug, 0.0)
+            return base * (1 + registry.total_for("atk_percent", target, time)) + registry.total_for(
+                "flat_atk", target, time
+            )
+
+        candidates = [m.slug for m in self.members if m.slug != caster_slug]
+        if len(candidates) < n:
+            candidates = candidates + [caster_slug]
+        ranked = sorted(candidates, key=final_atk, reverse=True)
+        return ranked[:n]
 
 
 def no_other_burst_tier_allies(tier: int) -> Callable[[SquadContext, str], bool]:

@@ -4,6 +4,9 @@ Effect.scope selects which squad members an effect applies to:
     "self"            - only the Nikke that produced the effect
     "squad"           - every Nikke in the deck
     "element:<Name>"  - only Nikkes whose element matches <Name>
+    "slugs:<a,b,...>" - only the Nikkes named in the comma-separated slug list
+                        (used for "N allies with the highest final ATK" buffs,
+                        resolved to concrete slugs at application time)
 """
 from dataclasses import dataclass
 
@@ -28,6 +31,23 @@ class Pulse:
     source_slug: str
 
 
+@dataclass
+class RoundGrant:
+    """A pending "next-N-shots" (bullet-count / "for N round(s)") buff: granted
+    on a trigger, but it expires when each affected ally has fired `shots` normal
+    attacks, NOT after a fixed time. Because that boundary depends on shot timing,
+    it's recorded here and converted into a concrete timed Effect (covering exactly
+    those shots) once the shot timeline is known - see raid_simulator's shot loop.
+    `scope` selects the affected units the same way Effect.scope does."""
+
+    stat: str
+    value: float
+    scope: str
+    source_slug: str
+    shots: int
+    granted_at: float
+
+
 def _matches_scope(scope: str, target: dict) -> bool:
     if scope == "self":
         return False  # handled separately via source_slug, see EffectRegistry.total_for
@@ -35,6 +55,8 @@ def _matches_scope(scope: str, target: dict) -> bool:
         return True
     if scope.startswith("element:"):
         return target["element"] == scope.split(":", 1)[1]
+    if scope.startswith("slugs:"):
+        return target["slug"] in scope.split(":", 1)[1].split(",")
     raise ValueError(f"unknown effect scope: {scope}")
 
 
@@ -42,9 +64,16 @@ class EffectRegistry:
     def __init__(self):
         self._entries: list[tuple[Effect, float]] = []
         self._pulses: list[Pulse] = []
+        self._round_grants: list[RoundGrant] = []
 
     def add(self, effect: Effect, applied_at: float) -> None:
         self._entries.append((effect, applied_at))
+
+    def add_round_grant(self, grant: RoundGrant) -> None:
+        self._round_grants.append(grant)
+
+    def round_grants(self) -> list[RoundGrant]:
+        return self._round_grants
 
     def add_refreshing(self, effect: Effect, applied_at: float) -> None:
         """Add a buff that REFRESHES rather than stacks. Any still-active effect

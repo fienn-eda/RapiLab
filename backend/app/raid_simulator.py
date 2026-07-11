@@ -82,7 +82,7 @@ already-populated Effects at arbitrary times, like every other post-pass here.
 from app.attack_rate import CHARGE_WEAPONS, generate_shot_times
 from app.burst_cycle import simulate_burst_cycle
 from app.damage_formula import calculate_damage
-from app.effects import EffectRegistry
+from app.effects import Effect, EffectRegistry, _matches_scope
 from app.elements import element_multiplier
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
@@ -128,7 +128,10 @@ def simulate_raid(
     burst_damage_types = burst_damage_types or {}
     periodic_rules = periodic_rules or {}
     per_shot_rules = per_shot_rules or {}
-    context = SquadContext([SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck])
+    context = SquadContext(
+        [SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck],
+        base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
+    )
     registry = EffectRegistry()
     # Damage is RECORDED as events during phase 1 (buffs are applied but no
     # damage is computed yet), then computed in a single phase-2 pass once EVERY
@@ -294,6 +297,29 @@ def simulate_raid(
             ),
         )
         extra_charge_bonus = weapon["charge_damage_percent"] / 100 - 1 if is_charge_weapon else 0.0
+        # "For N round(s)" (bullet-count) buffs expire when the affected ally
+        # fires N normal attacks, not after a fixed time. Now that this unit's shot
+        # timeline is known, turn each grant that targets it into a concrete Effect
+        # whose window covers exactly its next N shots after the grant (from the
+        # first covered shot up to the next uncovered shot / fight end), so phase 2
+        # applies the buff to precisely those shots and nothing after. A squad grant
+        # is consumed independently by each ally's own shots (one Effect per unit).
+        for grant in registry.round_grants():
+            if grant.scope == "self":
+                covers_unit = grant.source_slug == slug
+            else:
+                covers_unit = _matches_scope(grant.scope, target)
+            if not covers_unit:
+                continue
+            covered = [t for t in shot_times if t >= grant.granted_at][: grant.shots]
+            if not covered:
+                continue
+            after_covered = [t for t in shot_times if t > covered[-1]]
+            window_end = after_covered[0] if after_covered else fight_duration
+            registry.add(
+                Effect(grant.stat, grant.value, f"slugs:{slug}", window_end - covered[0], grant.source_slug),
+                applied_at=covered[0],
+            )
         # Per-shot triggers count this unit's shots and fire at a threshold
         # ("after N": once at the Nth shot; "every N": at every Nth). Their
         # rules apply buffs to the registry (seen by phase 2 at each shot's

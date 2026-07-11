@@ -1,5 +1,12 @@
 from app.effects import EffectRegistry
-from app.skill_rules._helpers import buff_rule, cdr_pulse_rule, escalating_buff_rule, instant_nuke_pulse_rule
+from app.skill_rules._helpers import (
+    buff_rule,
+    cdr_pulse_rule,
+    escalating_buff_rule,
+    highest_atk_buff_rule,
+    instant_nuke_pulse_rule,
+    round_buff_rule,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 
@@ -8,6 +15,17 @@ def ctx():
         SquadMember("src", burst_tier=1, element="Iron"),
         SquadMember("ally", burst_tier=3, element="Fire"),
     ])
+
+
+def ranked_ctx():
+    return SquadContext(
+        [
+            SquadMember("miranda", burst_tier=1, element="Fire"),
+            SquadMember("scarlet", burst_tier=3, element="Fire"),
+            SquadMember("blast", burst_tier=1, element="Wind"),
+        ],
+        base_atk={"miranda": 50000, "scarlet": 80000, "blast": 70000},
+    )
 
 
 def test_buff_rule_adds_all_listed_effects_scoped_and_timed():
@@ -62,6 +80,52 @@ def test_instant_nuke_pulse_rule_emits_a_drainable_instant_damage_pulse():
     assert pulses[0].value == 636.0
     assert pulses[0].scope == "self"
     assert pulses[0].source_slug == "src"
+
+
+def test_highest_atk_buff_rule_scopes_timed_buffs_to_top_n_allies():
+    # Miranda's Powering Up: ATK/Crit Damage on the top-2 highest-final-ATK allies
+    # (except caster). Applied to exactly scarlet + blast, not miranda herself.
+    rule = highest_atk_buff_rule("own_burst_activate", 2, [
+        ("atk_percent", 0.404, 10.0),
+        ("other_critical_damage_sources", 0.5623, 10.0),
+    ])
+    registry = EffectRegistry()
+    fire_trigger("own_burst_activate", {"miranda": [rule]}, ranked_ctx(), registry, time=2.0)
+
+    scarlet = {"slug": "scarlet", "element": "Fire"}
+    blast = {"slug": "blast", "element": "Wind"}
+    miranda = {"slug": "miranda", "element": "Fire"}
+    assert registry.total_for("atk_percent", scarlet, now=2.0) == 0.404
+    assert registry.total_for("atk_percent", blast, now=2.0) == 0.404
+    assert registry.total_for("atk_percent", miranda, now=2.0) == 0.0   # caster excluded
+    assert registry.total_for("other_critical_damage_sources", scarlet, now=2.0) == 0.5623
+    assert registry.total_for("atk_percent", scarlet, now=12.1) == 0.0  # 10s expired
+
+
+def test_round_buff_rule_records_a_squad_scoped_round_grant():
+    rule = round_buff_rule("full_burst_enter", [("pierce_damage_up", 0.2013, "squad")], shots=1)
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", {"zwei": [rule]}, ctx(), registry, time=12.0)
+
+    grants = registry.round_grants()
+    assert len(grants) == 1
+    g = grants[0]
+    assert (g.stat, g.value, g.scope, g.source_slug, g.shots, g.granted_at) == (
+        "pierce_damage_up", 0.2013, "squad", "zwei", 1, 12.0,
+    )
+
+
+def test_round_buff_rule_resolves_top_atk_scope_to_slugs():
+    # Miranda's Wake Up: Crit Rate on the top-1 highest-final-ATK ally, for 1 round.
+    rule = round_buff_rule("full_burst_enter", [("crit_rate", 0.8542, ("top_atk", 1))], shots=1)
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", {"miranda": [rule]}, ranked_ctx(), registry, time=12.0)
+
+    grants = registry.round_grants()
+    assert len(grants) == 1
+    assert grants[0].scope == "slugs:scarlet"  # highest-final-ATK ally
+    assert grants[0].stat == "crit_rate"
+    assert grants[0].value == 0.8542
 
 
 def test_cdr_pulse_rule_emits_a_drainable_pulse():

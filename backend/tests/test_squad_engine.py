@@ -210,6 +210,57 @@ def test_deck_contains_checks_squad_membership():
     assert deck_contains("liter")(ctx, "mast") is False
 
 
+def test_top_atk_slugs_ranks_allies_by_base_atk_excluding_caster():
+    ctx = SquadContext(
+        [
+            SquadMember("miranda", burst_tier=1, element="Fire"),
+            SquadMember("scarlet", burst_tier=3, element="Fire"),
+            SquadMember("blast", burst_tier=1, element="Wind"),
+            SquadMember("liter", burst_tier=1, element="Iron"),
+        ],
+        base_atk={"miranda": 90000, "scarlet": 80000, "blast": 70000, "liter": 60000},
+    )
+    registry = EffectRegistry()
+    # caster (miranda) is excluded even though she has the highest base ATK.
+    assert ctx.top_atk_slugs(2, "miranda", registry, time=0.0) == ["scarlet", "blast"]
+    assert ctx.top_atk_slugs(1, "miranda", registry, time=0.0) == ["scarlet"]
+
+
+def test_top_atk_slugs_uses_live_final_atk_including_buffs():
+    ctx = SquadContext(
+        [
+            SquadMember("miranda", burst_tier=1, element="Fire"),
+            SquadMember("scarlet", burst_tier=3, element="Fire"),
+            SquadMember("blast", burst_tier=1, element="Wind"),
+        ],
+        base_atk={"miranda": 50000, "scarlet": 70000, "blast": 72000},
+    )
+    registry = EffectRegistry()
+    # base ranking would be blast (72k) > scarlet (70k); a big atk_percent on
+    # scarlet flips it - final ATK is evaluated live at `time`.
+    registry.add(Effect("atk_percent", 0.5, "slugs:scarlet", None, "buffer"), applied_at=0.0)
+    assert ctx.top_atk_slugs(1, "miranda", registry, time=1.0) == ["scarlet"]  # 70k*1.5=105k
+    # flat_atk also counts
+    registry2 = EffectRegistry()
+    registry2.add(Effect("flat_atk", 10000, "slugs:blast", None, "buffer"), applied_at=0.0)
+    assert ctx.top_atk_slugs(1, "miranda", registry2, time=1.0) == ["blast"]  # 72k+10k=82k > 70k
+
+
+def test_top_atk_slugs_includes_caster_when_not_enough_allies():
+    # "including the caster if there are not enough allies": a 2-member deck asked
+    # for top-2 non-caster allies has only 1, so the caster fills the second slot.
+    ctx = SquadContext(
+        [
+            SquadMember("miranda", burst_tier=1, element="Fire"),
+            SquadMember("scarlet", burst_tier=3, element="Fire"),
+        ],
+        base_atk={"miranda": 90000, "scarlet": 80000},
+    )
+    registry = EffectRegistry()
+    result = ctx.top_atk_slugs(2, "miranda", registry, time=0.0)
+    assert sorted(result) == ["miranda", "scarlet"]
+
+
 def test_branching_rules_pick_the_matching_branch_by_condition():
     # Models Anis: Star's Starfall: two mutually-exclusive branches keyed off
     # whether another Burst 1 ally is present.

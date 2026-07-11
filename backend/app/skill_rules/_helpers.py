@@ -4,7 +4,7 @@ Most supporters just grant a bundle of timed buffs on a trigger, or emit a
 burst-cooldown-reduction pulse. These two helpers cover that so each Nikke
 module only has to declare its stats/values, not re-implement the action.
 """
-from app.effects import Effect, Pulse
+from app.effects import Effect, Pulse, RoundGrant
 from app.squad_engine import SkillRule
 
 
@@ -45,6 +45,46 @@ def instant_nuke_pulse_rule(trigger, percent):
 
     def action(context, caster_slug, time, registry):
         registry.add_pulse(Pulse("instant_damage_percent", percent, "self", caster_slug))
+
+    return SkillRule(trigger=trigger, action=action)
+
+
+def _resolve_scope(scope_spec, context, caster_slug, registry, time):
+    """A buff's scope can be a static string ("squad", "self", "element:X") or a
+    dynamic ("top_atk", n) that resolves - at application time - to the n allies
+    with the highest final ATK, encoded as a "slugs:a,b" scope."""
+    if isinstance(scope_spec, tuple) and scope_spec[0] == "top_atk":
+        slugs = context.top_atk_slugs(scope_spec[1], caster_slug, registry, time)
+        return "slugs:" + ",".join(slugs)
+    return scope_spec
+
+
+def highest_atk_buff_rule(trigger, n, buffs):
+    """Timed buffs on the `n` allies with the highest final ATK at trigger time
+    (except the caster) - e.g. Miranda's Powering Up. buffs: (stat, value,
+    duration). The target set is ranked live, so a buff applied earlier in the
+    same cycle is reflected (see SquadContext.top_atk_slugs)."""
+
+    def action(context, caster_slug, time, registry):
+        scope = "slugs:" + ",".join(context.top_atk_slugs(n, caster_slug, registry, time))
+        for stat, value, duration in buffs:
+            registry.add(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
+
+    return SkillRule(trigger=trigger, action=action)
+
+
+def round_buff_rule(trigger, buffs, shots=1):
+    """"For N round(s)" buffs, whose duration is measured in the affected ally's
+    NEXT `shots` normal attacks (bullets), not seconds - e.g. Zwei's Pierce
+    Equation, Miranda's Wake Up crit rate. Records a RoundGrant per buff; the shot
+    loop turns each into a timed Effect covering exactly those shots. buffs:
+    (stat, value, scope_spec) where scope_spec is "squad"/"self"/"element:X" or a
+    dynamic ("top_atk", n) resolved to the top-ATK allies at grant time."""
+
+    def action(context, caster_slug, time, registry):
+        for stat, value, scope_spec in buffs:
+            scope = _resolve_scope(scope_spec, context, caster_slug, registry, time)
+            registry.add_round_grant(RoundGrant(stat, value, scope, caster_slug, shots, time))
 
     return SkillRule(trigger=trigger, action=action)
 

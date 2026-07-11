@@ -1,6 +1,11 @@
 from app.effects import Effect, Pulse
 from app.raid_simulator import simulate_raid
-from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
+from app.skill_rules._helpers import (
+    buff_rule,
+    instant_nuke_pulse_rule,
+    refreshing_buff_rule,
+    round_buff_rule,
+)
 from app.skill_rules.privaty import build_ex_magazine_rules
 from app.squad_engine import SkillRule, ally_bursted
 
@@ -775,6 +780,101 @@ def test_on_tier_fire_records_burst_times_on_the_context():
     # so all three burst times are recorded by then.
     assert seen["times"]["midtier"] == [5.0]
     assert seen["times"]["attacker"] == [5.0]
+
+
+def test_round_grant_buffs_only_the_affected_units_first_shot_after_grant():
+    # A "for 1 round" (bullet-count) buff granted at Full Burst enter is consumed
+    # by the affected ally's NEXT single shot, then gone. AR fires 12/sec, FB
+    # enters at t=5.0, so the attacker's first shot at/after 5.0 is index 60
+    # (t=5.0); it alone is buffed - the prior shot and the following shot aren't.
+    rule = round_buff_rule("full_burst_enter", [("damage_taken_up", 0.5, "squad")], shots=1)
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [rule], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=6.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+    )
+    na = {round(e["time"], 4): e["damage"] for e in result["damage_log"] if e["source"] == "normal_attack"}
+    assert na[round(5.0, 4)] == 1500.0       # covered shot: 1000 * (1 + 0.5 damage_taken)
+    assert na[round(59 / 12, 4)] == 1000.0   # shot just before the grant: unbuffed
+    assert na[round(61 / 12, 4)] == 1000.0   # next shot after the covered one: consumed, unbuffed
+
+
+def test_round_grant_re_grants_each_cycle_without_stacking():
+    # Re-granted every Full Burst; each cycle it buffs that cycle's first post-FB
+    # shot only. A 30s squad CDR forces cycles at t=5 and t=20; the mid-cycle shot
+    # at t=12 stays unbuffed (not continuous), and neither covered shot stacks.
+    grant = round_buff_rule("full_burst_enter", [("damage_taken_up", 0.5, "squad")], shots=1)
+
+    def emit_cdr(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("burst_cooldown_reduction_sec", 30.0, "squad", caster_slug))
+
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [grant, SkillRule(trigger="full_burst_end", action=emit_cdr)], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=25.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=1000)},  # no reload over 25s -> clean k/12 shots
+    )
+    na = {round(e["time"], 4): e["damage"] for e in result["damage_log"] if e["source"] == "normal_attack"}
+    assert na[round(5.0, 4)] == 1500.0        # cycle 1 covered shot
+    assert na[round(20.0, 4)] == 1500.0       # cycle 2 covered shot (first >= 20.0, index 240)
+    assert na[round(12.0, 4)] == 1000.0       # mid-cycle shot: unbuffed (not continuous)
+    assert na[round(241 / 12, 4)] == 1000.0   # shot after cycle-2 covered: consumed
+
+
+def test_round_grant_squad_scope_consumes_per_ally_first_shot():
+    # A squad "for 1 round" buff is consumed independently by EACH affected ally's
+    # own next shot. Two weapon-holders both get their first post-FB shot buffed.
+    rule = round_buff_rule("full_burst_enter", [("damage_taken_up", 0.5, "squad")], shots=1)
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [rule], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats={
+            "buffer": {"atk": 0, "def": 0, "max_hp": 0},
+            "midtier": {"atk": 10000, "def": 0, "max_hp": 0},
+            "attacker": {"atk": 10000, "def": 0, "max_hp": 0},
+        },
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=6.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"midtier": _ar_weapon(), "attacker": _ar_weapon()},
+    )
+    covered = [e for e in result["damage_log"] if e["source"] == "normal_attack" and round(e["time"], 4) == round(5.0, 4)]
+    assert {e["slug"] for e in covered} == {"midtier", "attacker"}
+    assert all(e["damage"] == 1500.0 for e in covered)  # each ally's own first shot buffed
+
+
+def test_round_grants_default_to_none_and_are_a_no_op():
+    # No round buffs -> normal attacks are computed exactly as before.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=6.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+    )
+    na = [e for e in result["damage_log"] if e["source"] == "normal_attack"]
+    assert na and all(e["damage"] == 1000.0 for e in na)
 
 
 def test_per_shot_rules_defaults_to_none_and_is_a_no_op():
