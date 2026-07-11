@@ -166,6 +166,12 @@ model: `attack_speed` / Attack Speed, `hit_rate` / Hit Rate,
 Defer these; if a Nikke's contribution is mostly these, say so — a thin
 encoding is honest.
 
+Exception: `flat_max_hp` (a Max-HP buff scaled off the caster's Max HP, e.g.
+Rouge's Game Master) is encoded but inert TODAY — Fienn wants Max-HP buffs in
+place for future units whose DAMAGE scales off Max HP. So encode Max-HP buffs as
+`flat_max_hp` (don't defer them), knowing they don't move damage until such a
+consumer + the `total_for("flat_max_hp", ...)` wiring exist.
+
 **Valid formula terms that raid_simulator just doesn't wire from the registry
 yet** — a real gap, not a dead end: `shield_damage_up`, and the major-modifier
 terms `full_burst_bonus` / `effective_range_bonus` / `final_atk_modifier`.

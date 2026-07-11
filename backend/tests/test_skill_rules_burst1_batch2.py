@@ -3,11 +3,26 @@ Wife. Values are the real max-level (dollskill for Zwei) figures from dotgg.
 """
 from app.effects import EffectRegistry
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
-from app.skill_rules.rouge import build_rouge_rules
+from app.skill_rules.rouge import build_coin_flip_rules, build_game_master_rules
 from app.skill_rules.zwei import build_zwei_rules
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 ALLY = {"slug": "ally", "element": "Fire"}
+
+# Rouge Lv.10 (lootandwaifus), slots left-to-right.
+ROUGE_COIN_FLIP = {
+    "description_value_01": "6.65",  # Sword Coin: Attack Damage %
+    "description_value_02": "30",    # Shield Coin full-charge count (deferred)
+    "description_value_03": "15.2",  # Shield Coin Damage Taken % (deferred)
+    "description_value_04": "5",     # Double Sword Coin burst count (deferred)
+    "description_value_05": "15.08", # Double Sword Coin Max HP % (deferred)
+}
+ROUGE_GAME_MASTER = {
+    "description_value_01": "15.07", "description_value_02": "10",  # squad ATK % of caster, dur
+    "description_value_03": "10.15", "description_value_04": "10",  # Sword Coin Max HP % of caster, dur
+    "description_value_05": "20.1", "description_value_06": "10",   # Shield Coin Max HP %, dur
+    "description_value_07": "30.02", "description_value_08": "10",  # Double Sword Coin Max HP %, dur
+}
 
 
 def deck_ctx(src_slug):
@@ -17,20 +32,41 @@ def deck_ctx(src_slug):
     ])
 
 
-def test_rouge_game_master_grants_caster_scaled_flat_atk_squadwide():
-    values = {
-        "game_master": {
-            "description_value_01": "15.07", "description_value_02": "10", "description_value_03": "10.15",
-            "description_value_04": "10", "description_value_05": "20.1", "description_value_06": "10",
-            "description_value_07": "30.02", "description_value_08": "10",
-        },
-        "caster_atk": 300000,
-    }
+def test_rouge_coin_flip_sword_coin_squad_attack_damage_from_battle_start():
+    # Back-row assumption -> Sword Coin active from battle start (squad approx of
+    # "self + 2 adjacent"); also sets the Sword Coin status Game Master reads.
+    ctx = deck_ctx("rouge")
     reg = EffectRegistry()
-    fire_trigger("own_burst_activate", {"rouge": build_rouge_rules(values)}, deck_ctx("rouge"), reg, 0.0)
-    # 30.02% of Rouge's 300000 ATK = 90060 flat ATK to the squad
-    assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == 90060.0
+    fire_trigger("battle_start", {"rouge": build_coin_flip_rules(ROUGE_COIN_FLIP)}, ctx, reg, 0.0)
+    assert round(reg.total_for("attack_damage_up", ALLY, 0.0), 4) == 0.0665
+    assert round(reg.total_for("attack_damage_up", ALLY, 999.0), 4) == 0.0665  # continuous
+    assert ctx.has_status("rouge", "Sword Coin") is True
+
+
+def test_rouge_game_master_squad_atk_is_caster_scaled_15_07_percent():
+    values = {**ROUGE_GAME_MASTER, "caster_atk": 300000, "caster_max_hp": 10000000}
+    reg = EffectRegistry()
+    fire_trigger("own_burst_activate", {"rouge": build_game_master_rules(values)}, deck_ctx("rouge"), reg, 0.0)
+    # 15.07% of Rouge's 300000 ATK = 45210 flat ATK to the squad (NOT 30.02%)
+    assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == 45210.0
     assert reg.total_for("flat_atk", ALLY, 10.1) == 0.0
+
+
+def test_rouge_game_master_sword_coin_max_hp_fires_only_when_sword_coin_active():
+    values = {**ROUGE_GAME_MASTER, "caster_atk": 300000, "caster_max_hp": 10000000}
+    rules = {"rouge": build_game_master_rules(values)}
+
+    # Without Sword Coin status -> no Max HP buff.
+    reg = EffectRegistry()
+    fire_trigger("own_burst_activate", rules, deck_ctx("rouge"), reg, 0.0)
+    assert reg.total_for("flat_max_hp", ALLY, 0.0) == 0.0
+
+    # With Sword Coin (set by Coin Flip) -> flat Max HP = 10.15% of caster Max HP.
+    ctx = deck_ctx("rouge")
+    ctx.set_status("rouge", "Sword Coin")
+    reg2 = EffectRegistry()
+    fire_trigger("own_burst_activate", rules, ctx, reg2, 0.0)
+    assert round(reg2.total_for("flat_max_hp", ALLY, 0.0), 2) == round(10000000 * 0.1015, 2)
 
 
 ZWEI = {

@@ -51,7 +51,7 @@ from app.skill_rules.moran import build_moran_rules
 from app.skill_rules.nayuta import asceticism_burst_percent, build_nayuta_rules
 from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika_rules
 from app.skill_rules.rosanna_chic_ocean import build_rosanna_rules
-from app.skill_rules.rouge import build_rouge_rules
+from app.skill_rules.rouge import build_coin_flip_rules, build_game_master_rules
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules.takina_inoue import (
     BATTLEFIELD_CONTROL_COOLDOWN,
@@ -72,6 +72,14 @@ from app.skill_rules.rapi_red_hood import (
 )
 from app.skill_rules.volume import build_volume_rules
 from app.skill_rules.zwei import build_zwei_rules
+
+
+def _build_rouge(sv):
+    rules = build_coin_flip_rules(sv["coin_flip"])
+    rules += build_game_master_rules({
+        **sv["game_master"], "caster_atk": sv["caster_atk"], "caster_max_hp": sv["caster_max_hp"],
+    })
+    return rules, None
 
 
 def _build_anis_star(sv):
@@ -130,7 +138,7 @@ _BUILDERS = {
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
     "miranda": lambda sv: (build_miranda_rules(sv), None),
-    "rouge": lambda sv: (build_rouge_rules(sv), None),
+    "rouge": _build_rouge,
     "zwei": lambda sv: (build_zwei_rules(sv), None),
     "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), None),  # Kill the Target (burst) deferred
     "grave": lambda sv: (build_grave_rules(sv), None),
