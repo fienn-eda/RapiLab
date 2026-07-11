@@ -27,27 +27,43 @@ Modeled (DPS-relevant):
 
 Here I Go! (skills[0]) Singing branch is modeled via the per-shot trigger (see
 `build_here_i_go_rules`): on every Full Charge attack (Mint is an RL, every shot
-is a full charge), squad ATK % of Mint's ATK. It is gated on Mint's Singing
-STATUS - which Prika's Encore pins (see prika.py) - NOT the burst-parity Singing
-model her Skill 2 uses, because a per-shot condition is evaluated against the
-final context and can't track solo Mint's per-cycle Dancing/Singing parity. So
-solo Mint's Here I Go! remains deferred; it only applies when paired with Prika,
-who keeps her Singing. Its Dancing branch is self HP regen (survivability), not
-modeled.
+is a full charge), squad ATK % of Mint's ATK. The Singing gate is time-indexed
+(`mint_singing_at`, evaluated with each shot's time), so it works BOTH solo -
+reconstructing her per-cycle Dancing/Singing parity from her recorded burst
+times - and paired with Prika, whose Encore pins Singing from a specific time
+(see prika.py). Its Dancing branch is self HP regen (survivability), not modeled.
 """
 from app.effects import Effect
-from app.squad_engine import SkillRule, has_status
+from app.squad_engine import SkillRule
 
 SINGING_STATUS = "singing"  # pinned by Prika's Encore (see prika.py)
 
 
+def _singing_by_parity(count):
+    # Mint alternates each burst - 1st use Dancing, 2nd Singing, ... - so an
+    # even, NON-ZERO burst count is Singing. Before her first burst she is
+    # unassigned (neither status), so count 0 is not Singing.
+    return count > 0 and count % 2 == 0
+
+
 def _mint_is_singing(context, caster_slug):
-    # Prika's Encore pins Mint into Singing continuously (status flag); absent
-    # that, she alternates Dancing/Singing each burst - her 1st use is Dancing,
-    # 2nd Singing, ... so an even, NON-ZERO burst count is Singing. Before her
-    # first burst she is unassigned (neither status), so count 0 is not Singing.
-    count = context.activation_count(caster_slug, "own_burst_activate")
-    return context.has_status(caster_slug, SINGING_STATUS) or (count > 0 and count % 2 == 0)
+    # Live check (Skill 2 at full_burst_enter): activation_count is the running
+    # burst count at this moment. Prika's Encore pin forces Singing regardless.
+    return context.has_status(caster_slug, SINGING_STATUS) or _singing_by_parity(
+        context.activation_count(caster_slug, "own_burst_activate")
+    )
+
+
+def mint_singing_at(context, caster_slug, time):
+    # Time-indexed check for the per-shot pass, which runs AFTER the burst cycle
+    # and evaluates against the final context (so activation_count is useless -
+    # it's the whole-fight total). Singing at `time` if Prika's Encore pinned it
+    # by then, else by parity over only the bursts at or before `time`.
+    since = context.status_since(caster_slug, SINGING_STATUS)
+    if since is not None and time >= since:
+        return True
+    n = sum(1 for t in context.burst_times.get(caster_slug, []) if t <= time)
+    return _singing_by_parity(n)
 
 
 def build_mint_rules(values):
@@ -111,16 +127,20 @@ def build_mint_rules(values):
 def build_here_i_go_rules(values):
     """Per-shot rules (see raid_simulator's `per_shot_rules`): while Singing, on
     every Full Charge attack (Mint is an RL, every shot is a full charge), squad
-    ATK % of Mint's ATK for 3 sec. Gated on Mint's Singing STATUS (pinned by
-    Prika's Encore) - see the module docstring for why the per-shot path can't
-    use the burst-parity Singing model."""
+    ATK % of Mint's ATK for 3 sec. The Singing gate is time-indexed via
+    `mint_singing_at` (inside the action, which receives the shot time), so it
+    works BOTH solo (per-cycle Dancing/Singing parity) and paired with Prika (her
+    Encore pins Singing). Refreshing buff - the game refreshes, not stacks, on
+    each full charge. The Dancing branch is self HP regen (survivability),
+    not modeled."""
     singing_atk = float(values["description_value_01"]) / 100 * values["caster_atk"]
     singing_atk_duration = float(values["description_value_02"])
 
     def apply(context, caster_slug, time, registry):
-        registry.add(
-            Effect("flat_atk", singing_atk, "squad", singing_atk_duration, caster_slug),
-            applied_at=time,
-        )
+        if mint_singing_at(context, caster_slug, time):
+            registry.add_refreshing(
+                Effect("flat_atk", singing_atk, "squad", singing_atk_duration, caster_slug),
+                applied_at=time,
+            )
 
-    return [(1, "every", [SkillRule(trigger="per_shot", action=apply, condition=has_status(SINGING_STATUS))])]
+    return [(1, "every", [SkillRule(trigger="per_shot", action=apply)])]

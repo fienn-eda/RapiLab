@@ -291,6 +291,13 @@ how to encode it, and current engine status.
   `registry._PER_SHOT_RULE_BUILDERS`. The engine counts shots regardless of
   weapon (charge weapons: every shot is a full charge), so a "full charge N"
   and a "normal N" both just count shots - pick N from the skill text.
+- **Refresh vs stack (IMPORTANT):** a per-shot buff with a multi-second duration
+  applied every shot would STACK, because `total_for` SUMS active effects - an AR
+  at 12/s with a 3s buff piles up ~36x. NIKKE refreshes these (no "stacks up to
+  N"), so use `refreshing_buff_rule("per_shot", ...)` (→ `add_refreshing`), which
+  truncates the prior same-(stat,source,scope) instance so overlaps collapse to
+  one value. Different sources still sum. Only a per-shot buff that literally
+  says "stacks up to N" should use plain `buff_rule`.
 - **Still deferred:** "on firing the LAST bullet" (needs magazine-boundary
   markers). And a shot-count trigger whose effect ALSO gates on boss element
   (e.g. Brid's Wind-Code debuff every 10 normals) - the count part works, the
@@ -316,17 +323,26 @@ how to encode it, and current engine status.
   `all_conditions(...)`). Buff appliers only, like `periodic_rules`. See
   `prika.py` (Encore) for the worked example.
 - **Modeling a "status you set on the reacting unit":** the Encore also puts the
-  bursting unit into a status (Mint → Singing). Do this with
-  `context.set_status(context.last_burst_slug, "<flag>")`; the other unit's rules
-  then read that flag (Mint's per-shot Here I Go gates on `has_status("singing")`).
+  bursting unit into a status (Mint → Singing) continuously from that moment. Set
+  it time-stamped: `context.set_status(context.last_burst_slug, "<flag>", time)`;
+  `status_since(slug, flag)` then tells the other unit's rules WHEN it began.
 - **"Extends duration of an existing buff":** don't re-add the buff on each
   re-trigger — same-stat effects SUM, so overlapping re-adds double-count. Model
   the maintained buff as permanent (duration None), gated on the partner being in
   the deck via `deck_contains(...)` in the action (see Prika's Charge Damage).
-- **Per-shot state caveat:** a per-shot condition is evaluated against the FINAL
-  context (the per-shot pass runs after the burst cycle), so it can't track a
-  per-cycle-alternating status. Mint's solo Singing alternation for her per-shot
-  Here I Go is therefore deferred; it only applies when a partner pins the status.
+
+## Per-shot status that alternates or is pinned mid-fight (time-indexed)
+- **Problem:** the per-shot pass runs AFTER the burst cycle and evaluates against
+  the FINAL context, so `activation_count` (whole-fight total) and a bare
+  `has_status` (final boolean) can't tell you the unit's status AT a given shot
+  time. Mint alternates Dancing/Singing each burst, and Prika's Encore pins her
+  Singing partway through - both need per-time answers.
+- **Fix:** reconstruct the status at each shot time inside the ACTION (which gets
+  the shot time). `context.burst_times[slug]` (recorded in `on_tier_fire`) gives
+  the unit's burst timeline for a per-cycle parity; `status_since(slug, flag)`
+  gives when a pinned status began. See `mint.py::mint_singing_at` - it returns
+  Singing if pinned by `time`, else by parity over bursts at or before `time`.
+  This models BOTH solo (alternation) and paired-with-Prika (pin) correctly.
 
 ---
 *Add new mechanics above this line as they come up.*

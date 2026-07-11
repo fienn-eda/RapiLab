@@ -124,10 +124,15 @@ attacks", "every N shots". `mode` is `"after"` (once, at the Nth shot) or
 `"every"` (at each multiple of N). The engine counts the unit's generated shots
 (a charge weapon's every shot is a full charge, so "full charge N" == "shot N";
 the encoding knows the weapon and picks N - no weapon gating in the engine). A
-firing rule either applies a buff (`buff_rule("per_shot", ...)`) or emits an
-`instant_damage_percent` pulse (`instant_nuke_pulse_rule("per_shot", pct)`)
-recorded as `source="per_shot_nuke"`. Rules must be stateless and must not
-change shot generation (reload/ammo). Expose via `registry._PER_SHOT_RULE_BUILDERS`
+firing rule either applies a buff or emits an `instant_damage_percent` pulse
+(`instant_nuke_pulse_rule("per_shot", pct)`) recorded as `source="per_shot_nuke"`.
+For a per-shot BUFF use `refreshing_buff_rule("per_shot", ...)`, NOT
+`buff_rule` - a multi-second buff applied every shot must refresh (one active
+value), not stack to the sum of overlaps (see the Helpers note on
+`add_refreshing`). Rules must not change shot generation (reload/ammo). To gate
+on a status that varies over time (alternating or pinned mid-fight), do it inside
+the action using the shot time + `context.burst_times` / `status_since` - see
+`mint.py::mint_singing_at`. Expose via `registry._PER_SHOT_RULE_BUILDERS`
 / `get_per_shot_rules`; `roster` threads it. See `brid_silent_track.py`
 (Journey Ahead: 675% every 5 normal attacks). Not yet supported: "on firing the
 last bullet" (needs magazine-boundary markers in `attack_rate`); per-shot nukes
@@ -223,6 +228,11 @@ See `rapi_red_hood.py` and `anis_star.py` for worked branching examples, and
 `app/skill_rules/_helpers.py`:
 - `buff_rule(trigger, buffs)` where `buffs` is a list of
   `(stat, value, scope, duration)` tuples.
+- `refreshing_buff_rule(trigger, buffs)` - same, but each buff REFRESHES rather
+  than stacks (`registry.add_refreshing`): a re-application from the same source
+  truncates the prior same-(stat,scope) instance so overlapping windows collapse
+  to one value. Use for per-shot buffs re-applied every shot; different sources
+  still sum.
 - `cdr_pulse_rule(trigger, seconds, scope="squad")`.
 
 Use these instead of hand-writing action closures unless the skill needs

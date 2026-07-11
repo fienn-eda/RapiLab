@@ -107,8 +107,16 @@
   `ally_bursted(slug)`/`all_conditions`). 첫 소비자 Prika Encore(Mint 버스트 시 발동).
   Mint·Prika를 per-shot(풀차지 스쿼드 버프) + Encore 시너지까지 인코딩 완료(🔶→⚠/✅).
   (부산물 버그픽스: Mint의 첫 버스트 前 Singing 오판정 수정 — `count>0` 게이트.)
+- **버그픽스 — per-shot 버프 중첩 (2026-07-11):** `total_for`가 활성 이펙트를 합산해서,
+  풀차지마다 재적용되는 다초 버프가 중첩(SR ~2배, AR ~13배)되던 문제. NIKKE는 refresh
+  (중첩 아님)이므로 `EffectRegistry.add_refreshing` + `refreshing_buff_rule` 추가(직전
+  동일 stat·source·scope 인스턴스를 새 적용 시각에서 truncate). Prika S1 커밋본 수치가
+  정확히 하향 교정됨.
+- **Mint Here I Go! 단독 구현 완료 (2026-07-11):** 시각 인덱싱(`context.burst_times`
+  패리티 + `status_since` 핀)으로 단독(Dancing/Singing 교대)과 Prika 조합(Encore 핀
+  시각) 모두 정확. 조합의 핀-이전 과대적용도 제거. → Mint ✅.
 - **인코딩 완료:** Rosanna: Chic Ocean, Takina Inoue, Brid: Journey Ahead 승급,
-  Mint(Here I Go!), Prika(Encore + 풀차지 버프).
+  Mint(Here I Go! 단독+조합), Prika(Encore + 풀차지 버프).
 - **다음:** **막힌 ~30명 재인코딩 배치**(데이터 수집→per-shot 룰 추가)가 최대 실질 가치.
   남은 gap은 `engine-gaps.md` 우선순위 참고.
 

@@ -36,7 +36,7 @@ Not modeled:
   plus her full-charge squad buffs.
 """
 from app.effects import Effect
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import refreshing_buff_rule
 from app.squad_engine import SkillRule, all_conditions, ally_bursted, deck_contains, has_status
 
 PERFORMANCE_STATUS = "performance"
@@ -72,8 +72,10 @@ def build_prika_rules(values):
             ),
             applied_at=time,
         )
-        # Effect 1: the Sing Along initiator (Mint) gains Singing, continuously.
-        context.set_status(context.last_burst_slug, SINGING_STATUS)
+        # Effect 1: the Sing Along initiator (Mint) gains Singing, continuously
+        # from this moment (time-stamped so Mint's per-shot Here I Go! only sees
+        # Singing from here on, not for shots before the pin).
+        context.set_status(context.last_burst_slug, SINGING_STATUS, time)
 
     return [
         SkillRule(trigger="own_burst_activate", action=apply_burst),
@@ -89,7 +91,8 @@ def build_lets_get_show_started_rules(values):
     """Per-shot rules (see raid_simulator's `per_shot_rules`): on every Full
     Charge attack (Prika is an SR, every shot is a full charge), squad Projectile
     Explosion Damage, Pierce Damage, and ATK % of Prika's ATK, each for 3 sec.
-    The Performance-only self healing/Pierce is survivability, not modeled."""
+    Refreshing buffs (the game refreshes, not stacks, on each full charge). The
+    Performance-only self healing/Pierce is survivability, not modeled."""
     projectile_explosion = float(values["description_value_01"]) / 100
     projectile_explosion_duration = float(values["description_value_02"])
     pierce = float(values["description_value_03"]) / 100
@@ -97,7 +100,7 @@ def build_lets_get_show_started_rules(values):
     ally_atk = float(values["description_value_05"]) / 100 * values["caster_atk"]
     ally_atk_duration = float(values["description_value_06"])
 
-    return [(1, "every", [buff_rule("per_shot", [
+    return [(1, "every", [refreshing_buff_rule("per_shot", [
         ("projectile_explosion_damage_up", projectile_explosion, "squad", projectile_explosion_duration),
         ("pierce_damage_up", pierce, "squad", pierce_duration),
         ("flat_atk", ally_atk, "squad", ally_atk_duration),

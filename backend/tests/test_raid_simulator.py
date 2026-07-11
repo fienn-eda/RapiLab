@@ -1,6 +1,6 @@
 from app.effects import Effect, Pulse
 from app.raid_simulator import simulate_raid
-from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
+from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 from app.skill_rules.privaty import build_ex_magazine_rules
 from app.squad_engine import SkillRule, ally_bursted
 
@@ -724,6 +724,57 @@ def test_per_shot_squad_buff_reaches_a_burst_nuke_computed_earlier():
     burst = [e for e in result["damage_log"] if e["source"] == "burst"]
     assert burst  # attacker's burst nuke exists
     assert burst[0]["damage"] == 15000.0  # 10000 * 1.0 * (1 + 0.5 damage_taken)
+
+
+def test_per_shot_refreshing_buff_does_not_stack_across_shots():
+    # A per-shot buff re-applied every shot must REFRESH to a single value, not
+    # stack. buffer's AR fires 12/s; a stacking 0.1 damage_taken would balloon,
+    # a refreshing one stays 0.1 -> attacker burst = 10000 * 1.1.
+    per_shot_rules = {
+        "buffer": [(1, "every", [refreshing_buff_rule("per_shot", [("damage_taken_up", 0.1, "squad", 3.0)])])],
+    }
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"buffer": _ar_weapon()},
+        per_shot_rules=per_shot_rules,
+    )
+    burst = [e for e in result["damage_log"] if e["source"] == "burst"]
+    assert burst[0]["damage"] == 11000.0  # 10000 * (1 + single 0.1), not stacked
+
+
+def test_on_tier_fire_records_burst_times_on_the_context():
+    seen = {}
+
+    def capture(context, caster_slug, time, registry):
+        seen["times"] = {slug: list(times) for slug, times in context.burst_times.items()}
+
+    rules_by_slug = {
+        "buffer": [],
+        "midtier": [],
+        "attacker": [SkillRule(trigger="own_burst_activate", action=capture)],
+    }
+    simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={},
+        base_stats=make_base_stats(),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=8.0,  # one cycle
+        mode="auto",
+    )
+    # attacker's own_burst_activate (tier 3) fires after tier 1/2 the same cycle,
+    # so all three burst times are recorded by then.
+    assert seen["times"]["midtier"] == [5.0]
+    assert seen["times"]["attacker"] == [5.0]
 
 
 def test_per_shot_rules_defaults_to_none_and_is_a_no_op():

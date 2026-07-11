@@ -127,6 +127,37 @@ def test_truncate_open_ended_only_affects_matching_stat_and_source():
     assert registry.total_for("attack_damage_up", target, now=50.0) == 0.2  # untouched (different stat)
 
 
+def test_add_refreshing_does_not_stack_same_source_reapplications():
+    # A buff re-applied every shot (same stat/source/scope) REFRESHES: the active
+    # value stays one instance, not the sum of overlapping 3s applications.
+    registry = EffectRegistry()
+    for t in (0.0, 1.0, 2.0):
+        registry.add_refreshing(Effect("flat_atk", 100.0, "squad", 3.0, "prika"), applied_at=t)
+    target = make_member("ally", "Fire")
+    assert registry.total_for("flat_atk", target, now=2.5) == 100.0   # single value, not 300
+    assert registry.total_for("flat_atk", target, now=4.9) == 100.0   # window runs to last apply + 3s
+    assert registry.total_for("flat_atk", target, now=5.1) == 0.0
+
+
+def test_add_refreshing_from_different_sources_still_sum():
+    registry = EffectRegistry()
+    registry.add_refreshing(Effect("flat_atk", 100.0, "squad", 3.0, "prika"), applied_at=0.0)
+    registry.add_refreshing(Effect("flat_atk", 50.0, "squad", 3.0, "mint"), applied_at=0.0)
+    target = make_member("ally", "Fire")
+    assert registry.total_for("flat_atk", target, now=1.0) == 150.0  # two sources still add
+
+
+def test_add_refreshing_respects_earlier_time_queries_after_truncation():
+    # Truncation is in-place, so a replay-style query for an earlier time still
+    # sees exactly one active instance, never the pre-truncation overlap.
+    registry = EffectRegistry()
+    registry.add_refreshing(Effect("flat_atk", 100.0, "squad", 3.0, "prika"), applied_at=0.0)
+    registry.add_refreshing(Effect("flat_atk", 100.0, "squad", 3.0, "prika"), applied_at=1.0)
+    target = make_member("ally", "Fire")
+    assert registry.total_for("flat_atk", target, now=0.5) == 100.0  # first instance, truncated at 1.0
+    assert registry.total_for("flat_atk", target, now=1.5) == 100.0  # second instance
+
+
 def test_total_for_unaffected_stat_is_zero():
     registry = EffectRegistry()
     anis = make_member("anis", "Iron")

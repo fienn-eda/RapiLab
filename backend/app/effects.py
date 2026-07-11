@@ -46,6 +46,25 @@ class EffectRegistry:
     def add(self, effect: Effect, applied_at: float) -> None:
         self._entries.append((effect, applied_at))
 
+    def add_refreshing(self, effect: Effect, applied_at: float) -> None:
+        """Add a buff that REFRESHES rather than stacks. Any still-active effect
+        with the same (stat, source_slug, scope) is truncated to end at
+        `applied_at`, so overlapping re-applications from ONE source collapse to a
+        single continuous window at the buff's value (not the sum of overlaps).
+        Effects from DIFFERENT sources are untouched, so cross-unit buffs still
+        add. For a buff re-applied every shot (e.g. "ATK +X% for 3 sec on every
+        Full Charge"), which the game refreshes rather than stacks. Truncation is
+        in place, so replay-style queries for earlier times also see one instance."""
+        for existing, existing_applied_at in self._entries:
+            if (
+                existing.stat == effect.stat
+                and existing.source_slug == effect.source_slug
+                and existing.scope == effect.scope
+                and self._is_active(existing, existing_applied_at, applied_at)
+            ):
+                existing.duration = applied_at - existing_applied_at
+        self._entries.append((effect, applied_at))
+
     def add_pulse(self, pulse: Pulse) -> None:
         self._pulses.append(pulse)
 

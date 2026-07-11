@@ -44,8 +44,8 @@
 | Grave | `grave` | Supporter | AR | Fire | ⚠ | Overheat(노멀공격 카운터 자버프) |
 | Brid: Silent Track | `brid-silent-track` | Supporter | SG | Fire | ⚠ | 노멀5회마다 675% 넉 모델됨(per-shot). Wind속성 조건부 디버프만 보류(boss-element 갭) |
 | Nayuta | `nayuta` | Supporter | SMG | Wind | ⚠ | 무기변형(Memory Incineration) + 복합트리거 넉 |
-| Mint | `mint` | Supporter | RL | Iron | ⚠ | Here I Go!(풀차지마다 스쿼드 ATK)는 per-shot로 모델—단 Singing 상태 게이트라 **Prika 조합 시에만** 적용(단독 Singing 교대는 per-shot 한계로 보류) |
-| Prika | `prika` | Supporter | SR | Water | ✅ | 본인 풀차지 스쿼드 버프 + **Mint Encore 교차유닛 시너지**(`ally_burst_activate`) 모델됨. Performance 지속시간/자기 CD 등 비딜 부기만 보류 |
+| Mint | `mint` | Supporter | RL | Iron | ✅ | Here I Go!(풀차지마다 스쿼드 ATK) 단독+Prika 조합 모두 모델(버스트타임 패리티/Encore 핀 시각). Dancing 자힐만 보류 |
+| Prika | `prika` | Supporter | SR | Water | ✅ | 본인 풀차지 스쿼드 버프(refresh, 중첩 아님) + **Mint Encore 교차유닛 시너지**(`ally_burst_activate`) 모델됨. Performance 지속시간/자기 CD 등 비딜 부기만 보류 |
 | Helm: Aquamarine | `helm-aquamarine` | Attacker | AR | Iron | ⚠ | 노멀30회 넉, Electric속성 조건부 추가딜/디버프 (**자동발동 스킬은 엔진 확장으로 모델링됨**) |
 | Velvet | `velvet` | Supporter | SR | Wind | 🔶 | 대부분 보류(자기전용) — ammo pouch 자원 + 본인 풀차지/노멀50회 카운터 |
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |

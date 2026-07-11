@@ -1,5 +1,5 @@
 from app.effects import EffectRegistry
-from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
+from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules, mint_singing_at
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # Real skill level 10 values, cross-verified between api.dotgg.gg and
@@ -98,22 +98,57 @@ HERE_I_GO = {
 }
 
 
-def test_here_i_go_applies_squad_atk_only_while_singing_status():
+def test_mint_singing_at_uses_burst_time_parity_when_not_pinned():
+    # Solo (no Prika pin): unassigned before 1st burst, then alternates
+    # Dancing(odd)/Singing(even) - state at time T from bursts at or before T.
+    ctx = make_context()
+    assert mint_singing_at(ctx, "mint", 3.0) is False   # no bursts yet -> unassigned
+    ctx.record_burst_time("mint", 5.0)                  # 1st -> Dancing
+    assert mint_singing_at(ctx, "mint", 6.0) is False
+    ctx.record_burst_time("mint", 25.0)                 # 2nd -> Singing
+    assert mint_singing_at(ctx, "mint", 24.0) is False  # before the 2nd burst
+    assert mint_singing_at(ctx, "mint", 26.0) is True
+    ctx.record_burst_time("mint", 45.0)                 # 3rd -> Dancing again
+    assert mint_singing_at(ctx, "mint", 46.0) is False
+
+
+def test_mint_singing_at_is_true_from_the_pin_time_onward():
+    # Prika's Encore pins Singing at a specific time; Singing only from then on.
+    ctx = make_context()
+    ctx.set_status("mint", "singing", 25.0)
+    assert mint_singing_at(ctx, "mint", 24.9) is False
+    assert mint_singing_at(ctx, "mint", 25.0) is True
+    assert mint_singing_at(ctx, "mint", 100.0) is True
+
+
+def test_here_i_go_applies_squad_atk_only_on_singing_interval_shots():
     rules = build_here_i_go_rules({**HERE_I_GO, "caster_atk": 300000})
     assert len(rules) == 1
     threshold, mode, skill_rules = rules[0]
     assert (threshold, mode) == (1, "every")  # every full charge (RL)
-
-    ctx = make_context()
-    registry = EffectRegistry()
     rule = skill_rules[0]
 
-    # Not Singing -> condition false, no buff.
-    assert rule.condition(ctx, "mint") is False
+    ctx = make_context()
+    ctx.record_burst_time("mint", 5.0)   # Dancing interval [5, 25)
+    ctx.record_burst_time("mint", 25.0)  # Singing interval [25, ...)
+    registry = EffectRegistry()
 
-    # Singing status pinned (by Prika's Encore) -> squad ATK of Mint's ATK, 3s.
-    ctx.set_status("mint", "singing")
-    assert rule.condition(ctx, "mint") is True
-    rule.action(ctx, "mint", 8.0, registry)
-    assert round(registry.total_for("flat_atk", ALLY, now=8.0), 2) == round(300000 * 0.4502, 2)
-    assert registry.total_for("flat_atk", ALLY, now=11.1) == 0.0  # 3s duration
+    rule.action(ctx, "mint", 10.0, registry)  # Dancing shot -> nothing
+    assert registry.total_for("flat_atk", ALLY, now=10.0) == 0.0
+
+    rule.action(ctx, "mint", 30.0, registry)  # Singing shot -> squad ATK of Mint's ATK, 3s
+    assert round(registry.total_for("flat_atk", ALLY, now=30.0), 2) == round(300000 * 0.4502, 2)
+    assert registry.total_for("flat_atk", ALLY, now=33.1) == 0.0
+
+
+def test_here_i_go_refreshes_not_stacks_over_singing_shots():
+    rules = build_here_i_go_rules({**HERE_I_GO, "caster_atk": 300000})
+    _, _, skill_rules = rules[0]
+    rule = skill_rules[0]
+    ctx = make_context()
+    ctx.record_burst_time("mint", 5.0)
+    ctx.record_burst_time("mint", 25.0)  # Singing from 25
+    registry = EffectRegistry()
+    for shot_time in (26.0, 27.0, 28.0):  # overlapping 3s applications
+        rule.action(ctx, "mint", shot_time, registry)
+    assert round(registry.total_for("flat_atk", ALLY, now=28.5), 2) == round(300000 * 0.4502, 2)  # not x3

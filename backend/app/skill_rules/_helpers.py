@@ -18,6 +18,18 @@ def buff_rule(trigger, buffs):
     return SkillRule(trigger=trigger, action=action)
 
 
+def refreshing_buff_rule(trigger, buffs):
+    """Like buff_rule, but each buff REFRESHES instead of stacking (see
+    EffectRegistry.add_refreshing) - for a per-shot buff re-applied every shot,
+    which the game refreshes rather than stacks."""
+
+    def action(context, caster_slug, time, registry):
+        for stat, value, scope, duration in buffs:
+            registry.add_refreshing(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
+
+    return SkillRule(trigger=trigger, action=action)
+
+
 def cdr_pulse_rule(trigger, seconds, scope="squad"):
     def action(context, caster_slug, time, registry):
         registry.add_pulse(Pulse("burst_cooldown_reduction_sec", seconds, scope, caster_slug))

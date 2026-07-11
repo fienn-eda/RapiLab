@@ -151,6 +151,31 @@ def test_own_burst_fired_this_cycle_reads_burst_used_this_cycle():
     assert condition(ctx, "arcana") is True
 
 
+def test_record_burst_time_accumulates_per_slug():
+    ctx = make_context(
+        SquadMember("mint", burst_tier=2, element="Iron"),
+        SquadMember("prika", burst_tier=2, element="Water"),
+    )
+    assert ctx.burst_times["mint"] == []
+    ctx.record_burst_time("mint", 5.0)
+    ctx.record_burst_time("mint", 25.0)
+    ctx.record_burst_time("prika", 5.0)
+    assert ctx.burst_times["mint"] == [5.0, 25.0]
+    assert ctx.burst_times["prika"] == [5.0]
+
+
+def test_set_status_keeps_earliest_time_and_status_since_reads_it():
+    ctx = make_context(SquadMember("mint", burst_tier=2, element="Iron"))
+    assert ctx.status_since("mint", "singing") is None
+    ctx.set_status("mint", "singing", 25.0)
+    ctx.set_status("mint", "singing", 40.0)  # re-applied later; earliest wins
+    assert ctx.has_status("mint", "singing") is True
+    assert ctx.status_since("mint", "singing") == 25.0
+    # default time (callers that don't care about timing) records 0.0
+    ctx.set_status("mint", "dancing")
+    assert ctx.status_since("mint", "dancing") == 0.0
+
+
 def test_ally_bursted_reads_last_burst_slug():
     # An ally_burst_activate rule reacts to a SPECIFIC other unit bursting (e.g.
     # Prika's Encore keys off Mint). last_burst_slug is set by raid_simulator

@@ -132,3 +132,18 @@ def test_lets_get_show_started_full_charge_squad_buffs():
     assert round(registry.total_for("pierce_damage_up", ALLY, now=8.0), 4) == 0.1309
     assert round(registry.total_for("flat_atk", ALLY, now=8.0), 2) == round(300000 * 0.20, 2)
     assert registry.total_for("flat_atk", ALLY, now=11.1) == 0.0  # 3s duration
+
+
+def test_lets_get_show_started_buffs_refresh_not_stack_over_shots():
+    # Applied every full charge - overlapping re-applications must REFRESH to a
+    # single value, not stack to their sum.
+    rules = build_lets_get_show_started_rules(LETS_GET_THE_SHOW_STARTED)
+    _, _, skill_rules = rules[0]
+    ctx = make_context()
+    registry = EffectRegistry()
+    for shot_time in (8.0, 9.0, 10.0):  # three overlapping 3s applications
+        for rule in skill_rules:
+            rule.action(ctx, "prika", shot_time, registry)
+
+    assert round(registry.total_for("flat_atk", ALLY, now=10.5), 2) == round(300000 * 0.20, 2)  # not x3
+    assert round(registry.total_for("projectile_explosion_damage_up", ALLY, now=10.5), 4) == 0.20

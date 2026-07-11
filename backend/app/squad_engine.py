@@ -22,13 +22,22 @@ class SquadMember:
 class SquadContext:
     def __init__(self, members: list[SquadMember]):
         self.members = members
-        self._status: dict[str, set[str]] = {m.slug: set() for m in members}
+        # flag -> the earliest time it was set (a "continuous, cannot be removed"
+        # status is pinned from its first application). Callers that only care
+        # whether a flag is set omit the time (defaults to 0.0).
+        self._status: dict[str, dict[str, float]] = {m.slug: {} for m in members}
         self.burst_used_this_cycle: set[str] = set()
         self._activations: dict[tuple[str, str], int] = {}
         # The slug of the unit whose burst tier most recently fired, so an
         # ally_burst_activate rule can react to a SPECIFIC other unit bursting
         # (e.g. Prika's Encore keys off Mint). Set by raid_simulator.
         self.last_burst_slug: str | None = None
+        # Each unit's burst-tier fire times, so a post-pass (e.g. Mint's per-shot
+        # Here I Go!) can reconstruct a per-cycle-alternating status at any time.
+        self.burst_times: dict[str, list[float]] = {m.slug: [] for m in members}
+
+    def record_burst_time(self, slug: str, time: float) -> None:
+        self.burst_times[slug].append(time)
 
     def record_activation(self, slug: str, trigger: str) -> None:
         self._activations[(slug, trigger)] = self._activations.get((slug, trigger), 0) + 1
@@ -42,11 +51,17 @@ class SquadContext:
     def has_status(self, slug: str, flag: str) -> bool:
         return flag in self._status[slug]
 
-    def set_status(self, slug: str, flag: str) -> None:
-        self._status[slug].add(flag)
+    def set_status(self, slug: str, flag: str, time: float = 0.0) -> None:
+        # Keeps the EARLIEST time the flag was set (re-applications don't move it
+        # forward), so status_since gives when a continuous status began.
+        self._status[slug].setdefault(flag, time)
 
     def clear_status(self, slug: str, flag: str) -> None:
-        self._status[slug].discard(flag)
+        self._status[slug].pop(flag, None)
+
+    def status_since(self, slug: str, flag: str) -> float | None:
+        """The time `flag` was first set on `slug`, or None if not set."""
+        return self._status[slug].get(flag)
 
     def members_with_burst_tier(self, tier: int, exclude_slug: str | None = None):
         return [

@@ -212,6 +212,7 @@ def simulate_raid(
     def on_tier_fire(tier, slug, time):
         context.burst_used_this_cycle.add(slug)
         context.last_burst_slug = slug
+        context.record_burst_time(slug, time)
         fire_trigger("own_burst_activate", {slug: rules_by_slug.get(slug, [])}, context, registry, time)
         drain_instant_damage(time)
         # Let other units react to THIS unit's burst (e.g. Prika's Encore firing
