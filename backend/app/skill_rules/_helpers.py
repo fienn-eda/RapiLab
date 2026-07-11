@@ -89,15 +89,20 @@ def round_buff_rule(trigger, buffs, shots=1):
     return SkillRule(trigger=trigger, action=action)
 
 
-def escalating_buff_rule(trigger, tiers):
+def escalating_buff_rule(trigger, tiers, refreshing=False):
     """Cumulative "Once/Twice/Three times, previous effects trigger repeatedly".
 
     tiers[k] is the list of (stat, value, scope, duration) UNLOCKED at the
     (k+1)-th activation; use an empty list for a tier with no DPS-relevant
     effect (e.g. a Hit Rate step). On the Nth activation every unlocked tier
-    (1..N) is re-applied, so each tier's duration-limited buff refreshes and the
-    bundle saturates once all tiers are unlocked. Relies on
-    SquadContext.activation_count, so it must be fired via fire_trigger.
+    (1..N) is re-applied. Relies on SquadContext.activation_count, so it must be
+    fired via fire_trigger.
+
+    `refreshing`: when a tier's duration is LONGER than the re-trigger interval
+    (so re-applications overlap - e.g. Isabel's 45s Marked Target vs 40s burst
+    cd), pass True to use `add_refreshing`, collapsing the overlap to one value
+    instead of summing it. Default False keeps the plain-add behaviour for tiers
+    whose windows never overlap.
     """
 
     def action(context, caster_slug, time, registry):
@@ -105,6 +110,10 @@ def escalating_buff_rule(trigger, tiers):
         for unlock_at, buffs in enumerate(tiers, start=1):
             if n >= unlock_at:
                 for stat, value, scope, duration in buffs:
-                    registry.add(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
+                    effect = Effect(stat, value, scope, duration, caster_slug)
+                    if refreshing:
+                        registry.add_refreshing(effect, applied_at=time)
+                    else:
+                        registry.add(effect, applied_at=time)
 
     return SkillRule(trigger=trigger, action=action)

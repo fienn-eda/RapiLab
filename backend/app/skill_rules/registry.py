@@ -42,6 +42,17 @@ from app.skill_rules.helm_aquamarine import (
     aegis_cannon_suppression_fire_percent,
     build_helm_aquamarine_rules,
 )
+from app.skill_rules.isabel import (
+    POINTED_FEATHER_COOLDOWN,
+    build_isabel_rules,
+    pointed_feather_percent,
+    sonic_chaser_burst_percent,
+)
+from app.skill_rules.liberalio import (
+    build_liberalio_per_shot_rules,
+    build_liberalio_rules,
+    submerged_world_burst_percent,
+)
 from app.skill_rules.little_mermaid import build_little_mermaid_rules
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.mast_romantic_maid import build_mast_rules
@@ -49,6 +60,7 @@ from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
 from app.skill_rules.miranda import build_health_up_rules, build_miranda_rules
 from app.skill_rules.moran import build_moran_rules
 from app.skill_rules.nayuta import asceticism_burst_percent, build_nayuta_rules
+from app.skill_rules.noir import build_noir_rules, finale_burst_percent
 from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika_rules
 from app.skill_rules.rosanna_chic_ocean import build_rosanna_rules
 from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
@@ -135,6 +147,8 @@ _BUILDERS = {
     "rapi-red-hood": _build_rapi_red_hood,
     "helm": _build_helm,
     "helm-aquamarine": lambda sv: (build_helm_aquamarine_rules(sv), aegis_cannon_overload_burst_percent(sv)),
+    "isabel": lambda sv: (build_isabel_rules(sv), sonic_chaser_burst_percent(sv)),
+    "liberalio": lambda sv: (build_liberalio_rules(sv), submerged_world_burst_percent(sv)),
     "privaty": _build_privaty,
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
@@ -148,6 +162,7 @@ _BUILDERS = {
     "mint": lambda sv: (build_mint_rules(sv), None),
     "moran": lambda sv: (build_moran_rules(sv), None),
     "nayuta": lambda sv: (build_nayuta_rules(sv), asceticism_burst_percent(sv)),
+    "noir": lambda sv: (build_noir_rules(sv), finale_burst_percent(sv)),
     "prika": lambda sv: (build_prika_rules(sv), None),
     "rosanna-chic-ocean": lambda sv: (build_rosanna_rules(sv), None),
     "tove": lambda sv: (build_tove_rules(sv), None),
@@ -162,6 +177,10 @@ _PERIODIC_NUKE_BUILDERS = {
     "helm-aquamarine": lambda sv: {
         "cooldown": AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN,
         "percent": aegis_cannon_suppression_fire_percent(sv),
+    },
+    "isabel": lambda sv: {
+        "cooldown": POINTED_FEATHER_COOLDOWN,
+        "percent": pointed_feather_percent(sv),
     },
 }
 
@@ -189,6 +208,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
+    "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
     "miranda": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
     "prika": lambda sv: build_lets_get_show_started_rules(

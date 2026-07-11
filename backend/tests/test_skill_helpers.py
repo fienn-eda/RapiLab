@@ -70,6 +70,22 @@ def test_escalating_buff_rule_applies_tiers_cumulatively_by_activation():
     assert registry.total_for("reload_speed_percent", ally, now=50.0) == 0.4
 
 
+def test_escalating_buff_rule_refreshing_does_not_stack_overlapping_reapplications():
+    # With refreshing=True, a tier re-applied while its prior window is still active
+    # collapses to one value (not the sum) - for a duration longer than the
+    # re-trigger interval, e.g. Isabel's 45s Marked Target vs her 40s burst cd.
+    rule = escalating_buff_rule("own_burst_activate", [
+        [("crit_rate", 0.0626, "self", 45.0)],
+    ], refreshing=True)
+    registry = EffectRegistry()
+    context = ctx()
+    src = {"slug": "src", "element": "Iron"}
+    fire_trigger("own_burst_activate", {"src": [rule]}, context, registry, time=0.0)
+    fire_trigger("own_burst_activate", {"src": [rule]}, context, registry, time=40.0)
+    # both 45s windows overlap at t=40; refresh -> single value, not 0.1252
+    assert round(registry.total_for("crit_rate", src, now=40.0), 4) == 0.0626
+
+
 def test_instant_nuke_pulse_rule_emits_a_drainable_instant_damage_pulse():
     rule = instant_nuke_pulse_rule("full_burst_enter", 636.0)
     registry = EffectRegistry()
