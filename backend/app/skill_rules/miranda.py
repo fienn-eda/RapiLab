@@ -2,22 +2,29 @@
 (dollskills). Fienn's Miranda has hers completed.
 
 Modeled (DPS-relevant):
-- Wake Up! (dollskills[1]): on Full Burst enter, squad Crit Damage up, plus
-  self Crit Rate and Attack Damage up.
-- Powering Up! (dollskills[2], her burst): ATK and Crit Damage up.
+- Health Up! (dollskills[0]): after every 30 normal attacks, self ATK up (via
+  per_shot_rules - see build_health_up_rules).
+- Wake Up! (dollskills[1]): on Full Burst enter, squad Crit Damage up, self Crit
+  Rate + Attack Damage up, and Crit Rate up on the single highest-final-ATK ally
+  for 1 round.
+- Powering Up! (dollskills[2], her burst): ATK + Crit Damage up on the 2 allies
+  with the highest final ATK (except caster).
 
-Approximation: Powering Up! and part of Wake Up! target "the N allies with the
-highest final ATK", which this engine's scope model (self/squad/element)
-can't express. They're applied squad-wide instead - the intended beneficiary
-(the deck's main attacker) is buffed correctly, and the extra application to
-low-damage supporters barely affects total output. This slightly over-applies
-when a deck runs two damage dealers.
+The highest-final-ATK targets are resolved live at application time
+(SquadContext.top_atk_slugs), so Powering Up (her burst, tier 1) is reflected in
+the ranking when Wake Up (Full Burst enter, tier 3) fires later that cycle. "for
+1 round" is a bullet-count duration: the buff covers exactly the target's next
+shot (see round_buff_rule / raid_simulator's round-grant handling).
 
-Not modeled: Health Up! (dollskills[0]) - Hit Rate (no DPS effect here) and a
-self ATK buff gated on a normal-attack counter, which needs the deferred
-attack-count trigger; and Wake Up!'s highest-ATK-ally per-round crit rate.
+Not modeled: Health Up!'s two Hit Rate steps - Hit Rate is not consumed by this
+engine's damage model, so encoding it would be inert.
 """
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import (
+    buff_rule,
+    highest_atk_buff_rule,
+    refreshing_buff_rule,
+    round_buff_rule,
+)
 
 
 def build_miranda_rules(values):
@@ -29,6 +36,10 @@ def build_miranda_rules(values):
     self_crit_rate_duration = float(wake["description_value_04"])
     self_attack_damage = float(wake["description_value_05"]) / 100
     self_attack_damage_duration = float(wake["description_value_06"])
+    top_crit_rate_allies = int(wake["description_value_07"])
+    top_crit_rate = float(wake["description_value_08"]) / 100
+    top_crit_rate_rounds = int(wake["description_value_09"])
+    burst_allies = int(power["description_value_01"])
     burst_atk = float(power["description_value_02"]) / 100
     burst_atk_duration = float(power["description_value_03"])
     burst_crit_damage = float(power["description_value_04"]) / 100
@@ -40,9 +51,29 @@ def build_miranda_rules(values):
             ("crit_rate", self_crit_rate, "self", self_crit_rate_duration),
             ("attack_damage_up", self_attack_damage, "self", self_attack_damage_duration),
         ]),
-        # "highest-ATK allies" approximated as squad (see module docstring)
-        buff_rule("own_burst_activate", [
-            ("atk_percent", burst_atk, "squad", burst_atk_duration),
-            ("other_critical_damage_sources", burst_crit_damage, "squad", burst_crit_damage_duration),
+        # Crit Rate on the highest-final-ATK ally, for 1 round (its next shot).
+        round_buff_rule(
+            "full_burst_enter",
+            [("crit_rate", top_crit_rate, ("top_atk", top_crit_rate_allies))],
+            shots=top_crit_rate_rounds,
+        ),
+        # Powering Up: ATK + Crit Damage on the top-N highest-final-ATK allies.
+        highest_atk_buff_rule("own_burst_activate", burst_allies, [
+            ("atk_percent", burst_atk, burst_atk_duration),
+            ("other_critical_damage_sources", burst_crit_damage, burst_crit_damage_duration),
+        ]),
+    ]
+
+
+def build_health_up_rules(values):
+    """Per-shot rules for Health Up!: after every N normal attacks, self ATK up.
+    Refreshing (re-applied each Nth shot without stacking). The skill's two Hit
+    Rate steps are omitted (inert - see module docstring)."""
+    shot_count = int(values["description_value_07"])
+    self_atk = float(values["description_value_08"]) / 100
+    self_atk_duration = float(values["description_value_09"])
+    return [
+        (shot_count, "every", [
+            refreshing_buff_rule("per_shot", [("atk_percent", self_atk, "self", self_atk_duration)]),
         ]),
     ]

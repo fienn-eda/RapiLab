@@ -46,7 +46,7 @@ from app.skill_rules.little_mermaid import build_little_mermaid_rules
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.mast_romantic_maid import build_mast_rules
 from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
-from app.skill_rules.miranda import build_miranda_rules
+from app.skill_rules.miranda import build_health_up_rules, build_miranda_rules
 from app.skill_rules.moran import build_moran_rules
 from app.skill_rules.nayuta import asceticism_burst_percent, build_nayuta_rules
 from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika_rules
@@ -189,6 +189,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
+    "miranda": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
     "prika": lambda sv: build_lets_get_show_started_rules(
         {**sv["lets_get_the_show_started"], "caster_atk": sv["caster_atk"]}

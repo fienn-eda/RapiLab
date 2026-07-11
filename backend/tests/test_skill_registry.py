@@ -124,6 +124,18 @@ def test_get_per_shot_rules_returns_journey_ahead_for_brid():
     assert all(r.trigger == "per_shot" for r in rules)
 
 
+def test_get_per_shot_rules_returns_health_up_for_miranda():
+    result = get_per_shot_rules("miranda", {
+        "health_up": {
+            "description_value_07": "30", "description_value_08": "50.06", "description_value_09": "5",
+        },
+    })
+    assert result is not None and len(result) == 1
+    threshold, mode, rules = result[0]
+    assert (threshold, mode) == (30, "every")
+    assert all(r.trigger == "per_shot" for r in rules)
+
+
 def test_takina_event_rules_registered():
     rules, burst_percent = build_nikke_rules("takina-inoue", TAKINA_SKILL_VALUES)
     assert burst_percent is None

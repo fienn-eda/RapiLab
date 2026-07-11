@@ -105,13 +105,26 @@ def test_zwei_pierce_and_crit_rate_on_full_burst_and_burst():
     reg = EffectRegistry()
     rules = {"zwei": build_zwei_rules(ZWEI)}
     fire_trigger("full_burst_enter", rules, deck_ctx("zwei"), reg, 0.0)
-    assert round(reg.total_for("pierce_damage_up", ALLY, 0.0), 4) == 0.1006
+    assert round(reg.total_for("pierce_damage_up", ALLY, 0.0), 4) == 0.1006  # 10-sec pierce
     assert round(reg.total_for("crit_rate", ALLY, 0.0), 4) == 0.1863
     fire_trigger("own_burst_activate", rules, deck_ctx("zwei"), reg, 0.0)
     # note: separate ctx above; re-fire on same reg to check burst pierce adds
     reg2 = EffectRegistry()
     fire_trigger("own_burst_activate", rules, deck_ctx("zwei"), reg2, 0.0)
     assert round(reg2.total_for("pierce_damage_up", ALLY, 0.0), 4) == 0.2503
+
+
+def test_zwei_full_burst_grants_squad_pierce_for_one_round():
+    # Pierce Equation's Pierce ▲20.13% "for 1 round" is a bullet-count grant on
+    # the whole squad (each ally's next shot), distinct from the 10-sec pierce.
+    reg = EffectRegistry()
+    rules = {"zwei": build_zwei_rules(ZWEI)}
+    fire_trigger("full_burst_enter", rules, deck_ctx("zwei"), reg, 0.0)
+    grants = [g for g in reg.round_grants() if g.stat == "pierce_damage_up"]
+    assert len(grants) == 1
+    assert grants[0].scope == "squad"
+    assert round(grants[0].value, 4) == 0.2013
+    assert grants[0].shots == 1
 
 
 DKW = {

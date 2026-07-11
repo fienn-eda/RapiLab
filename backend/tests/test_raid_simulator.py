@@ -859,6 +859,51 @@ def test_round_grant_squad_scope_consumes_per_ally_first_shot():
     assert all(e["damage"] == 1500.0 for e in covered)  # each ally's own first shot buffed
 
 
+def test_miranda_top_atk_burst_buff_reaches_the_top_two_carries_end_to_end():
+    # End-to-end: Miranda's Powering Up (highest_atk_buff_rule -> "slugs:" scope,
+    # applied at her tier-1 burst) must raise the two highest-ATK carries' own
+    # burst nukes (fired later the same cycle) via record-then-compute, and leave
+    # the caster out. Proves top-N ranking + slugs scope integrate in simulate_raid.
+    from app.skill_rules.miranda import build_miranda_rules
+
+    miranda_values = {
+        "wake_up": {
+            "description_value_01": "32.99", "description_value_02": "10", "description_value_03": "30.1",
+            "description_value_04": "10", "description_value_05": "23.7", "description_value_06": "10",
+            "description_value_07": "1", "description_value_08": "85.42", "description_value_09": "1",
+        },
+        "powering_up": {
+            "description_value_01": "2", "description_value_02": "40.4", "description_value_03": "10",
+            "description_value_04": "56.23", "description_value_05": "10",
+        },
+    }
+    deck = [
+        {"slug": "miranda", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "carry_b", "burst_tier": 2, "element": "Fire", "cooldown": 20.0},
+        {"slug": "carry_a", "burst_tier": 3, "element": "Fire", "cooldown": 40.0},
+    ]
+    base_stats = {
+        "miranda": {"atk": 40000, "def": 0, "max_hp": 0},
+        "carry_b": {"atk": 80000, "def": 0, "max_hp": 0},
+        "carry_a": {"atk": 90000, "def": 0, "max_hp": 0},
+    }
+    result = simulate_raid(
+        deck,
+        {"miranda": build_miranda_rules(miranda_values), "carry_b": [], "carry_a": []},
+        burst_damage_percents={"carry_a": 100.0, "carry_b": 100.0},
+        base_stats=base_stats,
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    burst = {e["slug"]: e["damage"] for e in result["damage_log"] if e["source"] == "burst"}
+    # both carries are the top-2 highest ATK -> ATK +40.4% on their burst nukes
+    assert round(burst["carry_a"], 2) == round(90000 * 1.404, 2)
+    assert round(burst["carry_b"], 2) == round(80000 * 1.404, 2)
+
+
 def test_round_grants_default_to_none_and_are_a_no_op():
     # No round buffs -> normal attacks are computed exactly as before.
     result = simulate_raid(
