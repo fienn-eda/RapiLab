@@ -51,7 +51,7 @@ from app.skill_rules.moran import build_moran_rules
 from app.skill_rules.nayuta import asceticism_burst_percent, build_nayuta_rules
 from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika_rules
 from app.skill_rules.rosanna_chic_ocean import build_rosanna_rules
-from app.skill_rules.rouge import build_coin_flip_rules, build_game_master_rules
+from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules.takina_inoue import (
     BATTLEFIELD_CONTROL_COOLDOWN,
@@ -75,7 +75,8 @@ from app.skill_rules.zwei import build_zwei_rules
 
 
 def _build_rouge(sv):
-    rules = build_coin_flip_rules(sv["coin_flip"])
+    rules = build_card_throw_rules(sv["card_throw"])
+    rules += build_coin_flip_rules(sv["coin_flip"])
     rules += build_game_master_rules({
         **sv["game_master"], "caster_atk": sv["caster_atk"], "caster_max_hp": sv["caster_max_hp"],
     })

@@ -19,18 +19,30 @@ Coin one fires (back-row Sword Coin is active); the Shield / Double Sword Coin
 ones are gated on statuses whose setters are deferred, so they stay dormant until
 those are built.
 
+Modeled cooldown:
+- Card Throw (skills[0]): its every-8-full-charge squad Cooldown reduction,
+  modeled as a per-CYCLE CDR pulse (on full_burst_end) rather than counting shots.
+  Rationale (Fienn): 8 full charges is met essentially every cycle (a full charge
+  ~1 sec), so applying the reduction once per cycle is a faithful approximation,
+  using the existing per-cycle CDR machinery. Its Max HP bullet is survival.
+
 Not modeled:
-- Card Throw (skills[0]) entirely: its Max HP is survival, and its Cooldown
-  reduction (every 8 full charges) is a per-shot CDR that can't reach the burst
-  rotation (the rotation is simulated before the per-shot pass runs).
 - Coin Flip's Shield Coin (a Damage Taken reduction - survival, deferred per
   Fienn; also a per-shot-30 counter) and Double Sword Coin (Max HP, survival,
   per-burst counter).
 """
 from app.effects import Effect
+from app.skill_rules._helpers import cdr_pulse_rule
 from app.squad_engine import SkillRule, has_status
 
 SWORD_COIN_STATUS = "Sword Coin"
+
+
+def build_card_throw_rules(values):
+    """Card Throw's every-8-full-charge squad Cooldown reduction as a per-cycle
+    CDR pulse (see the module docstring). Its Max HP is survival, not modeled."""
+    cdr_sec = float(values["description_value_04"])
+    return [cdr_pulse_rule("full_burst_end", cdr_sec)]
 
 
 def build_coin_flip_rules(values):

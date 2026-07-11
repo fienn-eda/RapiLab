@@ -3,7 +3,7 @@ Wife. Values are the real max-level (dollskill for Zwei) figures from dotgg.
 """
 from app.effects import EffectRegistry
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
-from app.skill_rules.rouge import build_coin_flip_rules, build_game_master_rules
+from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
 from app.skill_rules.zwei import build_zwei_rules
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
@@ -23,6 +23,12 @@ ROUGE_GAME_MASTER = {
     "description_value_05": "20.1", "description_value_06": "10",   # Shield Coin Max HP %, dur
     "description_value_07": "30.02", "description_value_08": "10",  # Double Sword Coin Max HP %, dur
 }
+ROUGE_CARD_THROW = {
+    "description_value_01": "8",   # full-charge count
+    "description_value_02": "5",   # Max HP % (survival, not modeled)
+    "description_value_03": "5",   # Max HP duration (not modeled)
+    "description_value_04": "7",   # Cooldown reduction sec
+}
 
 
 def deck_ctx(src_slug):
@@ -41,6 +47,17 @@ def test_rouge_coin_flip_sword_coin_squad_attack_damage_from_battle_start():
     assert round(reg.total_for("attack_damage_up", ALLY, 0.0), 4) == 0.0665
     assert round(reg.total_for("attack_damage_up", ALLY, 999.0), 4) == 0.0665  # continuous
     assert ctx.has_status("rouge", "Sword Coin") is True
+
+
+def test_rouge_card_throw_cdr_applied_per_cycle():
+    # Full-charge-8 CDR modeled as a per-cycle squad CDR pulse (the condition is
+    # met every cycle - a full charge ~1s, 8 within a cycle is near-certain).
+    reg = EffectRegistry()
+    fire_trigger("full_burst_end", {"rouge": build_card_throw_rules(ROUGE_CARD_THROW)}, deck_ctx("rouge"), reg, 0.0)
+    pulses = reg.drain_pulses("burst_cooldown_reduction_sec")
+    assert len(pulses) == 1
+    assert pulses[0].value == 7.0
+    assert pulses[0].scope == "squad"
 
 
 def test_rouge_game_master_squad_atk_is_caster_scaled_15_07_percent():
@@ -112,6 +129,17 @@ def test_d_killer_wife_pierce_buff_on_full_burst():
     reg = EffectRegistry()
     fire_trigger("full_burst_enter", {"d-killer-wife": build_d_killer_wife_rules(DKW)}, deck_ctx("d-killer-wife"), reg, 0.0)
     assert round(reg.total_for("pierce_damage_up", ALLY, 0.0), 4) == 0.1355
+
+
+def test_d_killer_wife_assault_formation_cdr_applied_per_cycle():
+    # Assault Formation's every-8-full-charge CDR modeled as a per-cycle squad
+    # CDR pulse (condition met each cycle).
+    reg = EffectRegistry()
+    fire_trigger("full_burst_end", {"d-killer-wife": build_d_killer_wife_rules(DKW)}, deck_ctx("d-killer-wife"), reg, 0.0)
+    pulses = reg.drain_pulses("burst_cooldown_reduction_sec")
+    assert len(pulses) == 1
+    assert pulses[0].value == 7.0
+    assert pulses[0].scope == "squad"
 
 
 def test_d_killer_wife_assault_formation_squad_attack_damage_every_5_full_charges():

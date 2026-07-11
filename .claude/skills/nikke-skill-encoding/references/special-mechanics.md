@@ -303,6 +303,23 @@ how to encode it, and current engine status.
   (e.g. Brid's Wind-Code debuff every 10 normals) - the count part works, the
   Wind-Code gating is the separate boss-element gap.
 
+## Full-charge-count CDR -> per-cycle CDR approximation
+- **Signature:** "when attacking with Full Charge for N time(s): Cooldown of
+  Burst Skill down X sec" (D: Killer Wife, Rouge, and others in the backlog).
+- **Why not per-shot:** a per-shot CDR pulse would have to feed the burst
+  rotation, but the rotation is simulated in phase 1 BEFORE the per-shot pass
+  runs, so it can never reach it. Counting shots is the wrong tool here.
+- **Model (Fienn, 2026-07-11):** apply the CDR once per cycle instead - a normal
+  `cdr_pulse_rule("full_burst_end", X)` (squad). Rationale: the "N full charges"
+  condition is met essentially every cycle (a full charge is ~1 sec, so 8 within
+  a ~13s+ cycle is near-certain), so once-per-cycle is a faithful approximation,
+  and it reuses the existing per-cycle CDR machinery that every other CDR uses.
+- **Scope of the approximation:** only for a RECURRING "every N" CDR (not a
+  one-time "after N"). Slightly generous in an already-fast rotation (if stacked
+  CDR shortens the cycle below the time to fire N full charges, the game would
+  skip it that cycle but the model still gives it) - a second-order effect,
+  acceptable for a recommender and far better than deferring the value.
+
 ## Record-then-compute ordering (why per-shot squad buffs reach burst nukes)
 - **What:** `simulate_raid` records all damage instances in phase 1 (applying
   buffs only) and computes them in a phase-2 pass against the final registry.

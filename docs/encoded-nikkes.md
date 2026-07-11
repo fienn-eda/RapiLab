@@ -19,12 +19,12 @@
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
 | Anis: Star | `anis-star` | Defender | RL | Electric | ⚠ | 풀차지 추가딜(120.13% 매 풀차지, per-shot)·Stardust 버프(ATK/PE/AD)·버스트 자버프 모델됨. 버스트 Shooting Stars(버스트창 주기딜, gap #6)·재진입 분기·게이지·Explosion Radius 보류 |
-| D: Killer Wife | `d-killer-wife` | Supporter | SR | Fire | ⚠ | Assault Formation 공버프(5풀차지마다 AD, per-shot) 모델됨. **skill3(Kill the Target 버스트) 보류**(Fienn). CDR(8풀차지)는 per-shot→로테이션 갭으로 보류 |
+| D: Killer Wife | `d-killer-wife` | Supporter | SR | Fire | ⚠ | Assault Formation 공버프(5풀차지마다 AD, per-shot) + CDR(8풀차지→7s, 매 사이클 근사) 모델됨. **skill3(Kill the Target 버스트) 보류**(Fienn) |
 | Liter | `liter` | Supporter | SMG | Iron | ✅ | Volt Boost(자힐, 생존계)만 미모델 |
 | Little Mermaid | `little-mermaid` | Supporter | SMG | Wind | ⚠ | Bubble 5.05% 받댐증 모델됨. Bubble Barrage(아군총탄 카운터)·FB창 주기넉 보류 |
 | Miranda (애장품) | `miranda` | Supporter | SMG | Fire | ⚠ | 노멀공격 카운터 자버프, 최고ATK아군 크리 |
 | Moran (애장품) | `moran` | Defender | AR | Electric | ✅ | 무기변형 자해모드·생존계만 미모델 |
-| Rouge | `rouge` | Supporter | SR | Electric | ⚠ | Sword Coin AD(후열 가정, 상시)·Game Master ATK(**15.07%로 버그수정**, 기존 30.02 오독)·Max HP 버프(flat_max_hp, 현재 inert·향후 HP스케일용) 모델됨. Card Throw(CDR)·Shield Coin 보류 |
+| Rouge | `rouge` | Supporter | SR | Electric | ⚠ | Card Throw CDR(8풀차지→7s, 매 사이클 근사)·Sword Coin AD(후열 가정, 상시)·Game Master ATK(**15.07%로 버그수정**, 기존 30.02 오독)·Max HP 버프(flat_max_hp, inert·향후 HP스케일용) 모델됨. Shield Coin(생존)만 보류 |
 | Soline: Frost Ticket | `soline-frost-ticket` | Supporter | SG | Water | ✅ | CDR만 모델링 (원래 역할이 로테이션 보조뿐) |
 | Tove (애장품) | `tove` | Supporter | AR | Water | ✅ | 공속 버프, 샷건전용 변형만 미모델 |
 | Volume | `volume` | Attacker | SMG | Wind | ✅ | Freestyle(킬 트리거, 레이드엔 무의미)만 미모델 |
