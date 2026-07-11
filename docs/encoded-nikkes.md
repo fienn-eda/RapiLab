@@ -19,7 +19,7 @@
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
 | Anis: Star | `anis-star` | Defender | RL | Electric | ⚠ | 풀차지 추가딜(120.13% 매 풀차지, per-shot)·Stardust 버프(ATK/PE/AD)·버스트 자버프 모델됨. 버스트 Shooting Stars(버스트창 주기딜, gap #6)·재진입 분기·게이지·Explosion Radius 보류 |
-| D: Killer Wife | `d-killer-wife` | Supporter | SR | Fire | ⚠ | 풀차지 카운터 기반 CDR·공버프, Wipe-Out 디버프 |
+| D: Killer Wife | `d-killer-wife` | Supporter | SR | Fire | ⚠ | Assault Formation 공버프(5풀차지마다 AD, per-shot) 모델됨. **skill3(Kill the Target 버스트) 보류**(Fienn). CDR(8풀차지)는 per-shot→로테이션 갭으로 보류 |
 | Liter | `liter` | Supporter | SMG | Iron | ✅ | Volt Boost(자힐, 생존계)만 미모델 |
 | Little Mermaid | `little-mermaid` | Supporter | SMG | Wind | ⚠ | Bubble 5.05% 받댐증 모델됨. Bubble Barrage(아군총탄 카운터)·FB창 주기넉 보류 |
 | Miranda (애장품) | `miranda` | Supporter | SMG | Fire | ⚠ | 노멀공격 카운터 자버프, 최고ATK아군 크리 |

@@ -2,7 +2,7 @@
 Wife. Values are the real max-level (dollskill for Zwei) figures from dotgg.
 """
 from app.effects import EffectRegistry
-from app.skill_rules.d_killer_wife import build_d_killer_wife_rules, kill_the_target_burst_percent
+from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
 from app.skill_rules.rouge import build_rouge_rules
 from app.skill_rules.zwei import build_zwei_rules
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
@@ -63,15 +63,29 @@ def test_zwei_pierce_and_crit_rate_on_full_burst_and_burst():
 
 DKW = {
     "calm_sniping": {"description_value_01": "3", "description_value_02": "13.55", "description_value_03": "10"},
-    "kill_the_target": {
-        "description_value_01": "269.28", "description_value_02": "16.26", "description_value_03": "10",
-        "description_value_04": "12.19", "description_value_05": "10",
+    # Assault Formation (skills[1]), Lv.10, left-to-right: CDR count/sec (deferred),
+    # then Attack Damage count/value/duration.
+    "assault_formation": {
+        "description_value_01": "8", "description_value_02": "7", "description_value_03": "5",
+        "description_value_04": "5.06", "description_value_05": "10",
     },
 }
 
 
-def test_d_killer_wife_pierce_buff_and_burst_percent():
+def test_d_killer_wife_pierce_buff_on_full_burst():
     reg = EffectRegistry()
     fire_trigger("full_burst_enter", {"d-killer-wife": build_d_killer_wife_rules(DKW)}, deck_ctx("d-killer-wife"), reg, 0.0)
     assert round(reg.total_for("pierce_damage_up", ALLY, 0.0), 4) == 0.1355
-    assert kill_the_target_burst_percent(DKW) == 269.28
+
+
+def test_d_killer_wife_assault_formation_squad_attack_damage_every_5_full_charges():
+    rules = build_assault_formation_rules(DKW["assault_formation"])
+    assert len(rules) == 1
+    threshold, mode, skill_rules = rules[0]
+    assert (threshold, mode) == (5, "every")  # every 5 full charges
+
+    reg = EffectRegistry()
+    for rule in skill_rules:
+        rule.action(deck_ctx("d-killer-wife"), "d-killer-wife", 8.0, reg)
+    assert round(reg.total_for("attack_damage_up", ALLY, 8.0), 4) == 0.0506
+    assert reg.total_for("attack_damage_up", ALLY, 18.1) == 0.0  # 10s duration

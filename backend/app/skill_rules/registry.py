@@ -29,7 +29,7 @@ from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radian
 from app.skill_rules.blanc import build_blanc_rules
 from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
-from app.skill_rules.d_killer_wife import build_d_killer_wife_rules, kill_the_target_burst_percent
+from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
 from app.skill_rules.grave import build_grave_rules
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
@@ -132,7 +132,7 @@ _BUILDERS = {
     "miranda": lambda sv: (build_miranda_rules(sv), None),
     "rouge": lambda sv: (build_rouge_rules(sv), None),
     "zwei": lambda sv: (build_zwei_rules(sv), None),
-    "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), kill_the_target_burst_percent(sv)),
+    "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), None),  # Kill the Target (burst) deferred
     "grave": lambda sv: (build_grave_rules(sv), None),
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
     "mast-romantic-maid": lambda sv: (build_mast_rules(sv), None),
@@ -179,6 +179,7 @@ _PERIODIC_RULE_BUILDERS = {
 _PER_SHOT_RULE_BUILDERS = {
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
+    "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
     "prika": lambda sv: build_lets_get_show_started_rules(
         {**sv["lets_get_the_show_started"], "caster_atk": sv["caster_atk"]}
