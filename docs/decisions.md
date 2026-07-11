@@ -5,6 +5,20 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## Full-charge-count CDR modeled as a per-cycle CDR pulse
+- Date: 2026-07-11
+- Context: A recurring "when attacking with Full Charge for N time(s): Cooldown of Burst Skill down X sec" (D: Killer Wife's Assault Formation, Rouge's Card Throw) can't be modeled by counting shots per-shot, because the burst rotation is already simulated in phase 1 before the per-shot pass runs — a per-shot CDR pulse can never feed back into a rotation that's already fixed (harder than the "buff reaches a later nuke" case the per-shot-triggers ADR below solves).
+- Decision: Approximate it as a per-CYCLE CDR pulse instead — a normal `cdr_pulse_rule("full_burst_end", X)` (squad), reusing the existing per-cycle CDR machinery every other CDR buff already uses, rather than adding shot-counting-into-rotation machinery.
+- Why: Per Fienn: N full charges (a full charge is ~1 sec) is met essentially every cycle (typically 8+ seconds), so applying the reduction once per cycle is a faithful approximation without the added complexity.
+- Consequences: Scope is limited to a RECURRING "every N" full-charge CDR — a one-time "after N" CDR would need different treatment. Slightly generous in an already-fast rotation (if stacked CDR shortens the cycle below the time to actually fire N full charges, the game would skip that cycle's reduction but the model still grants it) — a second-order effect, acceptable for a recommender. First consumers: D: Killer Wife's Assault Formation (8s → 7s) and Rouge's Card Throw (8s → 7s). See `nikke-skill-encoding/references/special-mechanics.md` ("Full-charge-count CDR → per-cycle CDR approximation") for the worked pattern and reuse for future units with the same shape.
+
+## `flat_max_hp` encoded now despite being inert, for forward compatibility
+- Date: 2026-07-11
+- Context: Max HP buffs (e.g. Rouge's Game Master, Coin-gated) are pure survivability today — `raid_simulator` has no damage-formula term that consumes Max HP, so encoding them moves no simulated output, same as any other unconsumed effect bucket (see `docs/insights.md`, Effects/stats). The general policy elsewhere is to defer stats that don't move damage rather than encode dead effects.
+- Decision: Carve out an explicit exception for `flat_max_hp`: encode Max-HP buffs (scaled off the caster's Max HP via `values["caster_max_hp"]`) as `flat_max_hp` effects even though nothing consumes them today, rather than deferring them like other survival-only stats.
+- Why: Per Fienn: NIKKE has HP-scaling attackers, so he wants Max-HP buffs already in place for when that damage-formula consumer gets built, rather than re-deriving the encoding later.
+- Consequences: `flat_max_hp` values sit in the registry inert until both a damage-formula consumer and a `total_for("flat_max_hp", ...)` read site exist — a real, tracked future gap, not a dead end (see the skill's `references/engine-capabilities.md`, "Exception: flat_max_hp"). This is a narrower exception than the general "defer unconsumed buckets" rule — don't extend it to other unconsumed stats (Hit Rate, Attack Speed, etc.) without similarly explicit direction from Fienn.
+
 ## Refreshing buffs for repeatedly re-applied per-shot buffs
 - Date: 2026-07-11
 - Context: `EffectRegistry.total_for` sums every currently-active effect. A per-shot buff with a multi-second duration that gets re-applied on every qualifying shot (Prika's Let's Get the Show Started!, Mint's Here I Go!) was being added anew each shot via `buff_rule`/`registry.add`, so overlapping windows summed instead of refreshing — inflating output roughly 2x for an SR's fire rate and ~13x for an AR's by fight's end. NIKKE refreshes these buffs (extends the duration at the same value); it does not stack them.
