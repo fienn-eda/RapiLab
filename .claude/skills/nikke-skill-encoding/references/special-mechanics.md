@@ -361,5 +361,43 @@ how to encode it, and current engine status.
   Singing if pinned by `time`, else by parity over bursts at or before `time`.
   This models BOTH solo (alternation) and paired-with-Prika (pin) correctly.
 
+## "For N round(s)" is a bullet-count duration, NOT seconds
+- **Signature:** a buff "▲ X% for N round(s)" (Zwei's Pierce Equation, Miranda's
+  Wake Up crit rate). Easy to misread as a burst-cycle / time duration.
+- **What it actually means (Fienn, 2026-07-12):** the buff is consumed by the
+  affected ally's NEXT N normal-attack shots (bullets), then gone; re-granted the
+  next cycle. So a "1 round" buff granted at Full Burst enter buffs exactly ONE
+  shot per affected ally per cycle - NOT continuous uptime, NOT the burst nuke.
+- **Model:** `round_buff_rule(trigger, [(stat, value, scope_spec)], shots=N)`.
+  It records a `RoundGrant`; `raid_simulator`'s shot loop converts each grant into
+  a real timed Effect whose window covers exactly the affected unit's next N shots
+  after the grant (from the first covered shot up to the next uncovered shot / fight
+  end), scoped `slugs:<unit>`. A squad grant is consumed independently per ally
+  (one Effect per unit), matching per-ally bullet consumption.
+- **Scope_spec:** `"squad"`/`"self"`/`"element:X"` static, or `("top_atk", n)` for
+  the highest-ATK targeting below. See `zwei.py` (squad) and `miranda.py` (top-1).
+- **Still deferred:** a round-buff that ALSO stacks per shot inside a Full-Burst
+  window (Zwei's normal-attack-during-FB pierce, up to 3) - needs an FB-window-gated
+  per-shot trigger, which doesn't exist yet.
+
+## Highest-final-ATK top-N targeting ("N allies with the highest final ATK")
+- **Signature:** "Affects N ally unit(s) with the highest final ATK (except
+  caster; including the caster if there are not enough allies)" (Miranda's Wake
+  Up / Powering Up). Do NOT approximate as `squad` - in a dual-carry deck a top-1
+  buff would wrongly hit the second carry.
+- **Model:** `SquadContext.top_atk_slugs(n, caster_slug, registry, time)` ranks the
+  deck by LIVE final ATK (base ATK grown by atk_percent + flat_atk read at `time`,
+  so a buff applied earlier the same cycle is reflected) and returns the top-n
+  slugs, excluding the caster but filling from the caster if there aren't enough
+  allies. The resulting `slugs:a,b` Effect scope targets exactly those units.
+- **Helpers:** `highest_atk_buff_rule(trigger, n, buffs)` for timed buffs;
+  `round_buff_rule(..., ("top_atk", n))` for the bullet-count variant.
+- **Why live ranking matters:** Miranda is Burst 1, so her Powering Up (own_burst,
+  tier 1) fires BEFORE Wake Up (Full Burst enter, tier 3); resolving the target at
+  application time means Wake Up ranks allies with Powering Up's ATK already on.
+- **Caveat:** ranking reads the registry at trigger time (phase 1), so per-shot
+  buffs (applied in the later shot pass) aren't seen - fine, since those are
+  self-scoped and don't change other units' ranking.
+
 ---
 *Add new mechanics above this line as they come up.*

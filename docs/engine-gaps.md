@@ -5,7 +5,7 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-11
+- 마지막 갱신: 2026-07-12
 - 목적: **ROI 순 엔진 확장 우선순위 결정.** 인코딩을 하나씩 하다 갭에 부딪혀
   단발성 확장(instant nuke, periodic nuke)을 반복하던 방식 대신, 갭을 모아
   빈도순으로 최소한만 확장한다. (Fienn 방침, 2026-07-10)
@@ -108,8 +108,12 @@
   soda-twinkling-bunny
 - **필요한 확장:** `Effect.scope`에 `weapon:<type>` 추가(멤버 무기 데이터로 매칭,
   소규모) / 임의 멤버 부분집합 스코프(중규모).
+- **부분 해결 (2026-07-12):** "N ally unit(s) with the highest final ATK" 하위 종류는
+  **완료** — `SquadContext.top_atk_slugs`(적용 시점 실시간 final ATK 랭킹) + `slugs:`
+  Effect 스코프 + `highest_atk_buff_rule`. Miranda가 첫 소비자. 무기종/티어부분집합
+  스코프는 여전히 잔여.
 - 참고: `special-mechanics.md`의 "Weapon-type-scoped buffs", "Targeting a per-member
-  subset by tier + element + prior-burst".
+  subset by tier + element + prior-burst", "Highest-final-ATK top-N targeting".
 
 ### 4. sustained / distributed / true / projectile-explosion damage 배선 — ✅ 완료 (2026-07-10)
 
@@ -164,6 +168,13 @@
 - **per-shot 트리거 + record-then-compute (gap #1)**: 발사 카운트 트리거
   (`per_shot_rules`, after/every N) + 모든 넉을 "버프 적용 후" 일괄 계산해 per-shot
   스쿼드 버프가 버스트 넉까지 반영. 첫 소비자 Brid: Journey Ahead. 2026-07-11.
+- **탄수("N round") 지속시간 버프**: "for N round(s)"는 초가 아니라 **대상 아군의
+  다음 N발**로 만료. `RoundGrant` + `round_buff_rule` → 샷 루프가 정확히 그 N발만
+  덮는 timed Effect로 변환(squad는 아군별 개별 소모). 첫 소비자 Zwei/Miranda.
+  2026-07-12.
+- **최고 final ATK top-N 타겟팅**: "N ally unit(s) with the highest final ATK"를
+  적용 시점 실시간 랭킹으로 정확 대상 지정. `SquadContext.base_atk`+`top_atk_slugs`,
+  `slugs:` 스코프, `highest_atk_buff_rule`. 첫 소비자 Miranda. 2026-07-12.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 

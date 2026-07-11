@@ -117,6 +117,12 @@
   시각) 모두 정확. 조합의 핀-이전 과대적용도 제거. → Mint ✅.
 - **인코딩 완료:** Rosanna: Chic Ocean, Takina Inoue, Brid: Journey Ahead 승급,
   Mint(Here I Go! 단독+조합), Prika(Encore + 풀차지 버프).
+- **엔진 확장 완료 — 탄수("N round") 지속시간 + 최고ATK top-N 타겟팅 (2026-07-12, Fienn 승인):**
+  "for N round(s)"는 초가 아니라 대상 아군의 다음 N발로 만료(`RoundGrant`+`round_buff_rule`
+  → 샷 루프가 정확 N발만 덮는 Effect로 변환, squad는 아군별 개별 소모). "N ally unit(s)
+  with the highest final ATK"는 적용 시점 실시간 랭킹으로 정확 대상 지정
+  (`top_atk_slugs`+`slugs:` 스코프+`highest_atk_buff_rule`). Miranda(✅ 승급: Health Up
+  자ATK per_shot·top-2 ATK/크리댐·top-1 크리율 1-round)·Zwei(1-round Pierce) 재인코딩.
 - **다음:** **막힌 ~30명 재인코딩 배치**(데이터 수집→per-shot 룰 추가)가 최대 실질 가치.
   남은 gap은 `engine-gaps.md` 우선순위 참고.
 

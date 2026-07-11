@@ -3,7 +3,7 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-11
+- 마지막 갱신: 2026-07-12
 - 총 **31명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 4명)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
@@ -22,13 +22,13 @@
 | D: Killer Wife | `d-killer-wife` | Supporter | SR | Fire | ⚠ | Assault Formation 공버프(5풀차지마다 AD, per-shot) + CDR(8풀차지→7s, 매 사이클 근사) 모델됨. **skill3(Kill the Target 버스트) 보류**(Fienn) |
 | Liter | `liter` | Supporter | SMG | Iron | ✅ | Volt Boost(자힐, 생존계)만 미모델 |
 | Little Mermaid | `little-mermaid` | Supporter | SMG | Wind | ⚠ | Bubble 5.05% 받댐증 모델됨. Bubble Barrage(아군총탄 카운터)·FB창 주기넉 보류 |
-| Miranda (애장품) | `miranda` | Supporter | SMG | Fire | ⚠ | 노멀공격 카운터 자버프, 최고ATK아군 크리 |
+| Miranda (애장품) | `miranda` | Supporter | SMG | Fire | ✅ | Health Up 자ATK(노멀30회마다, per_shot)·Wake Up 스쿼드 크리댐/자버프 + **최고ATK top-1 크리율(1 round=탄수 버프)**·Powering Up **최고ATK top-2 정확 타겟팅**(ATK/크리댐) 모델됨. Hit Rate(inert)만 보류 |
 | Moran (애장품) | `moran` | Defender | AR | Electric | ✅ | 무기변형 자해모드·생존계만 미모델 |
 | Rouge | `rouge` | Supporter | SR | Electric | ⚠ | Card Throw CDR(8풀차지→7s, 매 사이클 근사)·Sword Coin AD(후열 가정, 상시)·Game Master ATK(**15.07%로 버그수정**, 기존 30.02 오독)·Max HP 버프(flat_max_hp, inert·향후 HP스케일용) 모델됨. Shield Coin(생존)만 보류 |
 | Soline: Frost Ticket | `soline-frost-ticket` | Supporter | SG | Water | ✅ | CDR만 모델링 (원래 역할이 로테이션 보조뿐) |
 | Tove (애장품) | `tove` | Supporter | AR | Water | ✅ | 공속 버프, 샷건전용 변형만 미모델 |
 | Volume | `volume` | Attacker | SMG | Wind | ✅ | Freestyle(킬 트리거, 레이드엔 무의미)만 미모델 |
-| Zwei (애장품) | `zwei` | Supporter | SG | Electric | ⚠ | 라운드/노멀공격 스택 변형, 무기변형 |
+| Zwei (애장품) | `zwei` | Supporter | SG | Electric | ⚠ | Pierce Equation 스쿼드 Pierce(**20.13% 1 round=탄수 버프** + 10.06% 10초)·Frame Analysis 크리율·버스트 Pierce 모델됨. 풀버스트창 노멀스택 Pierce/크리·무기변형·Cover HP(생존) 보류 |
 
 ## Burst 2 (16명)
 

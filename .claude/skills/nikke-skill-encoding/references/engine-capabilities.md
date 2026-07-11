@@ -16,10 +16,15 @@ cooldown reduction).
 - `"self"` — only the Nikke that produced it (its `source_slug`).
 - `"squad"` — everyone in the deck.
 - `"element:<Name>"` — only Nikkes of that element (Fire/Water/Wind/Iron/Electric).
+- `"slugs:a,b"` — exactly the listed slugs. Not written by hand — it's produced by
+  `highest_atk_buff_rule` / `round_buff_rule` after `SquadContext.top_atk_slugs`
+  ranks the deck by live final ATK, for "N allies with the highest final ATK".
 
 There is **no positional scope** (front/back row, "allies on both sides") and
 **no weapon-conditional scope** ("SR allies", "shotgun allies"). Approximate
-weapon/positional offensive buffs as `squad` (documented), or defer.
+weapon/positional offensive buffs as `squad` (documented), or defer. But
+**"N allies with the highest final ATK" is precise now** — use the top-N helpers
+(see the `round_buff_rule` / `highest_atk_buff_rule` entries below), not `squad`.
 
 ## Stats the engine CONSUMES (encoding these affects output)
 
@@ -138,6 +143,25 @@ the action using the shot time + `context.burst_times` / `status_since` - see
 last bullet" (needs magazine-boundary markers in `attack_rate`); per-shot nukes
 default to `attack` damage type.
 
+**"For N round(s)" buffs (bullet-count duration):** a buff whose duration is the
+affected ally's next N normal-attack shots, not seconds — e.g. Zwei's Pierce
+Equation, Miranda's Wake Up. Build with `round_buff_rule(trigger, [(stat, value,
+scope_spec)], shots=N)`; it records a `RoundGrant` that `simulate_raid`'s shot
+loop turns into a real timed Effect covering exactly the next N shots per affected
+unit (squad grants are consumed per-ally). `scope_spec` is a static scope string
+or `("top_atk", n)`. No engine param to thread — `RoundGrant`s live on the
+registry. See `zwei.py` (squad) / `miranda.py` (top-1). Detail in
+`special-mechanics.md` ("For N round(s) is a bullet-count duration").
+
+**Highest-final-ATK top-N targeting:** for "N allies with the highest final ATK
+(except caster; including caster if not enough allies)". `highest_atk_buff_rule(
+trigger, n, [(stat, value, duration), ...])` applies timed buffs to the top-n;
+`round_buff_rule(..., ("top_atk", n))` does the bullet-count variant. Both resolve
+via `SquadContext.top_atk_slugs(n, caster, registry, time)`, which ranks by LIVE
+final ATK at application time (so an earlier same-cycle ATK buff is reflected) and
+emits a `slugs:` scope. `raid_simulator` injects each member's base ATK into the
+context. See `miranda.py`.
+
 **Record-then-compute:** `simulate_raid` RECORDS every damage instance
 (burst/instant/periodic/per-shot nukes + normal attacks) as an event during
 phase 1 (which only applies buffs), then computes them all in a phase-2 pass
@@ -240,6 +264,13 @@ See `rapi_red_hood.py` and `anis_star.py` for worked branching examples, and
   to one value. Use for per-shot buffs re-applied every shot; different sources
   still sum.
 - `cdr_pulse_rule(trigger, seconds, scope="squad")`.
+- `highest_atk_buff_rule(trigger, n, buffs)` where `buffs` is `(stat, value,
+  duration)` - timed buffs on the n highest-final-ATK allies (except caster).
+- `round_buff_rule(trigger, buffs, shots=1)` where `buffs` is `(stat, value,
+  scope_spec)` - a "for N round(s)" bullet-count buff; `scope_spec` is a static
+  scope string or `("top_atk", n)`.
+- `escalating_buff_rule(trigger, tiers)` / `instant_nuke_pulse_rule(trigger, pct)`
+  (see their own sections above).
 
 Use these instead of hand-writing action closures unless the skill needs
 branching/status logic (then write an explicit `SkillRule` like the branching
