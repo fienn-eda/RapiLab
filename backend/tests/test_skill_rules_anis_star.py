@@ -1,5 +1,10 @@
 from app.effects import EffectRegistry
-from app.skill_rules.anis_star import build_starfall_rules
+from app.skill_rules.anis_star import (
+    build_star_anis_burst_rules,
+    build_starfall_full_charge_nuke_rules,
+    build_starfall_rules,
+    build_stardust_rules,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # Real skill level 10 values pulled from api.dotgg.gg for anis-star's Starfall skill.
@@ -10,6 +15,24 @@ LEVEL_10_VALUES = {
     "description_value_04": "120.13",
     "description_value_05": "6",
 }
+
+# Stardust (skills[1]) and Star Anis (burst) - real Lv.10 values from
+# lootandwaifus.com, slots numbered left-to-right by appearance.
+STARDUST = {
+    "description_value_01": "35.01",  # My Own Star: squad ATK % of caster's ATK
+    "description_value_02": "10",     # duration
+    "description_value_03": "1.26",   # Everyone's Star heal % (not modeled)
+    "description_value_04": "92.03",  # squad Projectile Explosion Damage %
+    "description_value_05": "10",     # duration
+    "description_value_06": "34",     # squad Attack Damage %
+    "description_value_07": "10",     # duration
+}
+STAR_ANIS = {
+    "description_value_01": "35.2",   # My Own Star: self Attack Damage %
+    "description_value_02": "10",     # duration
+}
+ALLY = {"slug": "crown", "element": "Iron"}
+ANIS = {"slug": "anis-star", "element": "Electric"}
 
 
 def alone_context():
@@ -97,3 +120,63 @@ def test_with_ally_branch_sets_everyones_star_and_clears_my_own_star():
 
     anis = {"slug": "anis-star", "element": "Electric"}
     assert registry.total_for("atk_percent", anis, now=0.0) == 0.0
+
+
+def test_full_charge_nuke_fires_every_shot_for_final_atk_percent():
+    rules = build_starfall_full_charge_nuke_rules(LEVEL_10_VALUES)
+    assert len(rules) == 1
+    threshold, mode, skill_rules = rules[0]
+    assert (threshold, mode) == (1, "every")  # every full charge (RL)
+
+    ctx = alone_context()
+    registry = EffectRegistry()
+    for rule in skill_rules:
+        rule.action(ctx, "anis-star", 3.0, registry)
+    pulses = registry.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert pulses[0].value == 120.13
+    assert pulses[0].source_slug == "anis-star"
+
+
+def test_stardust_my_own_star_atk_is_squad_caster_scaled_only_while_my_own_star():
+    rules = {"anis-star": build_stardust_rules({**STARDUST, "caster_atk": 300000})}
+    # Not in My Own Star -> no ATK buff.
+    ctx = with_ally_context()
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", rules, ctx, registry, time=5.0)
+    assert registry.total_for("flat_atk", ALLY, now=5.0) == 0.0
+
+    # In My Own Star -> squad flat ATK = 35.01% of caster's ATK, 10s.
+    ctx2 = alone_context()
+    ctx2.set_status("anis-star", "My Own Star")
+    registry2 = EffectRegistry()
+    fire_trigger("full_burst_enter", rules, ctx2, registry2, time=5.0)
+    assert round(registry2.total_for("flat_atk", ALLY, now=5.0), 2) == round(300000 * 0.3501, 2)
+    assert registry2.total_for("flat_atk", ALLY, now=15.1) == 0.0
+
+
+def test_stardust_grants_squad_projectile_explosion_and_attack_damage():
+    rules = {"anis-star": build_stardust_rules({**STARDUST, "caster_atk": 300000})}
+    ctx = alone_context()
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", rules, ctx, registry, time=5.0)
+    assert round(registry.total_for("projectile_explosion_damage_up", ALLY, now=5.0), 4) == 0.9203
+    assert round(registry.total_for("attack_damage_up", ALLY, now=5.0), 4) == 0.34
+    assert registry.total_for("projectile_explosion_damage_up", ALLY, now=15.1) == 0.0
+
+
+def test_burst_grants_self_attack_damage_only_while_my_own_star():
+    rules = {"anis-star": build_star_anis_burst_rules(STAR_ANIS)}
+    ctx = alone_context()
+    ctx.set_status("anis-star", "My Own Star")
+    registry = EffectRegistry()
+    fire_trigger("own_burst_activate", rules, ctx, registry, time=5.0)
+    assert round(registry.total_for("attack_damage_up", ANIS, now=5.0), 4) == 0.352
+    # self-scoped -> does not reach an ally
+    assert registry.total_for("attack_damage_up", ALLY, now=5.0) == 0.0
+
+    # Not in My Own Star -> no buff.
+    ctx2 = with_ally_context()
+    registry2 = EffectRegistry()
+    fire_trigger("own_burst_activate", rules, ctx2, registry2, time=5.0)
+    assert registry2.total_for("attack_damage_up", ANIS, now=5.0) == 0.0

@@ -18,7 +18,12 @@ never has to change for the one or two Nikkes that need this.
 from app.skill_rules.ade_agent_bunny import build_ade_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
 from app.skill_rules.anis_sparkling_summer import build_anis_sparkling_summer_rules
-from app.skill_rules.anis_star import build_starfall_rules
+from app.skill_rules.anis_star import (
+    build_star_anis_burst_rules,
+    build_starfall_full_charge_nuke_rules,
+    build_starfall_rules,
+    build_stardust_rules,
+)
 from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
 from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
 from app.skill_rules.blanc import build_blanc_rules
@@ -70,7 +75,10 @@ from app.skill_rules.zwei import build_zwei_rules
 
 
 def _build_anis_star(sv):
-    return build_starfall_rules(sv["starfall"]), None
+    rules = build_starfall_rules(sv["starfall"])
+    rules += build_stardust_rules({**sv["stardust"], "caster_atk": sv["caster_atk"]})
+    rules += build_star_anis_burst_rules(sv["star_anis"])
+    return rules, None
 
 
 def _build_crown(sv):
@@ -169,6 +177,7 @@ _PERIODIC_RULE_BUILDERS = {
 # raid_simulator's `per_shot_rules`). Each entry is a list of
 # (threshold, mode, [SkillRule]); mode is "after" or "every".
 _PER_SHOT_RULE_BUILDERS = {
+    "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
     "prika": lambda sv: build_lets_get_show_started_rules(

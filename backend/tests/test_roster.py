@@ -37,7 +37,13 @@ def anis_star_spec():
             "starfall": {
                 "description_value_01": "1", "description_value_02": "40.01",
                 "description_value_03": "7.48", "description_value_04": "120.13", "description_value_05": "6",
-            }
+            },
+            "stardust": {
+                "description_value_01": "35.01", "description_value_02": "10", "description_value_03": "1.26",
+                "description_value_04": "92.03", "description_value_05": "10", "description_value_06": "34",
+                "description_value_07": "10",
+            },
+            "star_anis": {"description_value_01": "35.2", "description_value_02": "10"},
         },
         weapon_stats={
             "weapon": "RL", "damage_percent": 61.3, "max_ammo": 6,
