@@ -113,6 +113,18 @@ anchor's class bag on whitespace. Match target names to slugs on the **slug**
 (`href="/character/<slug>-nikke"`), not on `data-character-name` (that field
 carries noisy suffixes like `"Snow White sw"`).
 
+### JSON conversion (compact, machine-readable)
+
+`scripts/lootandwaifus_html_to_json.py` converts every saved
+`data/lootandwaifus/char_*.html` into a `char_*.json` next to it, mirroring the
+dotgg JSON field names (`name`, `url`, `class`, `weapon`, `element`, `burst`,
+`cooldown`, `skills`, and `dollskills` for signature-weapon units). Because
+lootandwaifus renders numbers inline (no `description_value_NN` placeholders),
+each skill carries the cleaned description TEXT for all 10 levels rather than
+value-slot dicts - you still number the slots yourself when encoding. Re-run it
+after refreshing HTML (`--dry-run` to preview, `--slug X` for one). Both the HTML
+and JSON live under the gitignored `data/` dir.
+
 ## dotgg.gg (fallback / cross-check)
 
 `api.dotgg.gg` JSON API (nikke.gg is a WordPress front over it). No auth
