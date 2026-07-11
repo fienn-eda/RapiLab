@@ -28,6 +28,9 @@ from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
 from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
 from app.skill_rules.blanc import build_blanc_rules
 from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
+from app.skill_rules.chisato_nishikigi import build_chisato_per_shot_rules, build_chisato_rules
+from app.skill_rules.jill_valentine import build_jill_rules
+from app.skill_rules.ludmilla_winter_owner import build_ludmilla_per_shot_rules, build_ludmilla_rules
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
 from app.skill_rules.grave import build_grave_rules
@@ -149,6 +152,9 @@ _BUILDERS = {
     "helm-aquamarine": lambda sv: (build_helm_aquamarine_rules(sv), aegis_cannon_overload_burst_percent(sv)),
     "isabel": lambda sv: (build_isabel_rules(sv), sonic_chaser_burst_percent(sv)),
     "liberalio": lambda sv: (build_liberalio_rules(sv), submerged_world_burst_percent(sv)),
+    "ludmilla-winter-owner": lambda sv: (build_ludmilla_rules(sv), None),
+    "chisato-nishikigi": lambda sv: (build_chisato_rules(sv), None),
+    "jill-valentine": lambda sv: (build_jill_rules(sv), None),
     "privaty": _build_privaty,
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
@@ -209,6 +215,8 @@ _PER_SHOT_RULE_BUILDERS = {
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
+    "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),
+    "chisato-nishikigi": lambda sv: build_chisato_per_shot_rules(sv),
     "miranda": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
     "prika": lambda sv: build_lets_get_show_started_rules(

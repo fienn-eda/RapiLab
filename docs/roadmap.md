@@ -146,8 +146,29 @@
 
 로드맵보다 잘게 쪼갠 실행 항목. 끝나면 `[x]`로 체크.
 
-### 지금/다음
-- [ ] 2·3버스트 니케 인코딩 (딜러 중심으로 후보 선정)
+### Burst 3 어태커 인코딩 배치 (eb) — least-blocked 우선
+
+수집된 Burst 3 니케 39명(어태커 37 + 디펜더 2, +기존 인코딩 anis:ss) 중 미인코딩
+어태커를 3명 단위 배치(eb)로 인코딩. 각 배치 전 해당 유닛 스킬을 직접 확인해 blocker
+검증. (Fienn 방침 2026-07-12.)
+
+- [x] **eb1** (2026-07-12): Noir ✅ · Isabel ✅ · Liberalio ✅
+- [x] **eb2** (2026-07-12): Ludmilla: Winter Owner ✅ · Chisato Nishikigi ✅ · Jill Valentine ⚠
+- [ ] **eb3+ 백로그 (남은 33명)** — clean well이 eb2에서 거의 소진됨. 대부분
+      **자원 게이지(gap #2)·상태머신·무기변형**에 막혀, 제대로 인코딩하려면 엔진 확장
+      선행 필요(안 하면 얇은 ⚠ 스텁). 배치 착수 전 유닛별 검증 필수.
+  - **자원 게이지/상태 스택** (gap #2 선행 권장): `neon-vision-eye`(Firepower),
+    `mana`(Metal), `rei-ayanami`·`rei-ayanami-tentative-name`(Anti A.T./Attack State),
+    `ark-ranger-black`·`asuka-shikinami-langley-wille`(배터리), `elegg-boom-and-shock`(고스트),
+    `guillotine-winter-slayer`, `julia`✱, `laplace`✱, `maiden-ice-rose`, `quency-escape-queen`,
+    `raven`, `red-hood`, `sakura-bloom-in-summer`, `soda-twinkling-bunny`, `cinderella`,
+    `cinderella-crystal-wave`, `modernia`, `mihara-bonding-chain`
+  - **상태머신/특수 트리거**: `diesel-winter-sweets`(Intro/Highlight+지속딜),
+    `bready`(Taste), `dorothy-serendipity`(펠릿 카운터), `eve`(크리티컬-히트 카운터),
+    `ada-wong`(풀버스트창 주기딜=gap #6 + True), `marciana-marine-study`(boss-element=gap #5),
+    `milk-blooming-bunny`·`scarlet-black-shadow`(distributed)
+  - **무기 변형**(버스트가 차지캐논化 = 핵심 딜, 미지원): `snow-white`, `snow-white-heavy-arms`, `maxwell`
+  - ✱ = 애장품(dollskills) 보유 → 인코딩 시 base/시그니처 버전 확인 필요: `drake`, `julia`, `laplace`
 - [x] `damage_taken_up` / `other_core_damage_sources` 엔진 연결
       — 완료. squad 스코프 적 디버프, 코어 데미지는 `core_hittable` 게이팅.
 - [ ] `NikkeSpec`에 스킬별 유저 레벨 필드 추가 → 조립 시 `levels[level-1]` 선택 일반화
