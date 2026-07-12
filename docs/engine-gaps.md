@@ -36,6 +36,7 @@
 | 6 | **periodic-during-Full-Burst 넉** (풀버스트 창 안에서만 N초마다) | 1 (Ada) | 소 (~30 loc, periodic_nukes 변형) | 타이밍 변형 |
 | 7 | **풀버스트-창 한정 per-shot 트리거** (fill이 아니라 버프/넉 직접 발동) | 1 (Soda 잔여 버프) | 소~중 | 신규 트리거 변형 |
 | 8 | **자원-fill-트리거 타 유닛 버프** (자원 소유자 아닌 아군에게 버프) | 1 (Maiden 잔여 버프) | 소~중 | 신규 트리거 |
+| 9 | **Full Burst Bonus (+50%) 완전 미배선** — 검증 대기 중, 착수 보류 | **전체 45명** (버스트 넉 전부 + FB창 내 노멀/per-shot) | 소 (~10 loc, 배선 자체는) — **선행 검증 필요** | 스탯 배선 (보류) |
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
 | — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) | **완료 (2026-07-11, `ally_burst_activate`)** | 신규 트리거 |
 | — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |
@@ -213,6 +214,39 @@
 - **필요한 확장:** 자원 fill 이벤트를 트리거로 스쿼드(또는 조건부 서브셋) 버프를
   거는 새 파라미터. 규모 소~중, 수요 확인 후 착수.
 - 참고: `maiden_ice_rose.py` docstring.
+
+### 9. Full Burst Bonus (+50%) 완전 미배선 — 검증 대기 중, 착수 보류
+
+- **무엇:** `damage_formula.calculate_damage`의 `full_burst_bonus` 파라미터(Major
+  Modifier, `+full_burst_bonus*0.5`)가 **엔진 전체에서 단 한 번도 배선되지 않음** —
+  `raid_simulator._damage_instance`의 terms dict에 아예 키가 없어 항상 기본값 0.0으로
+  계산됨. `damage-formula-reference.md`에 따르면 이건 특정 스킬 버프가 아니라
+  **"secondary buff 없이 발생하는" 범용 Major Modifier** — 즉 풀버스트 중이면 발동
+  유닛과 무관하게 모든 데미지 인스턴스에 적용되어야 하는 raid-wide 상수 보너스.
+- **왜 중요한가:** 배선되면 **인코딩된 45명 전체**의 버스트 넉(풀버스트 진입 순간
+  발동하므로 원칙상 항상 창 안)과 풀버스트 창(~10초) 동안의 노멀/per-shot 데미지가
+  전부 영향받는다 — 지금까지 나온 어떤 갭보다 파급력이 큰 단일 배선 누락.
+- **왜 아직 착수 안 함 (Fienn 2026-07-12):** 실측 결과 Maiden의 Diamond Dust(그녀의
+  버스트)는 **시전과 데미지 발생 사이 약 1초 딜레이**가 있고, 그 딜레이 때문에 실제
+  데미지가 풀버스트 진입 "이후" 발생해 Full Burst Bonus를 받는 것으로 확인됨
+  (가설: Elemental Advantage Attack Damage 31.68% + Full Burst Bonus 50% 모두 적용
+  → 실측 대미지와 약 2% 오차, 검증됨). **문제는 이 캐스트→대미지 딜레이가 스킬마다
+  제각각**이라는 것 — 어떤 유닛의 버스트 넉은 즉시 발생해 풀버스트 진입 "직전"일 수도
+  있고(Full Burst Bonus 미적용 가능성), 어떤 유닛은 Maiden처럼 지연 발생해 창 안에
+  들어갈 수도 있다. 유닛별 실측 확인 없이 "burst_time = full_burst_start와 동일 시각
+  → 창 안(inclusive start)"으로 일괄 가정하고 배선하면, 실제로는 창 밖(직전)에서
+  터지는 유닛의 넉까지 잘못 보너스를 주게 될 위험이 있다.
+- **필요한 작업 (착수 전):** 유닛별(또는 최소 대표 샘플) 버스트 스킬의 캐스트→대미지
+  딜레이를 실측/확인 → "즉시 발생"과 "지연 발생(풀버스트 진입 후)" 그룹을 구분할
+  기준 마련. 그 후에야 `_damage_instance`에 `full_burst_bonus` 배선(모든 데미지 타입
+  공통, `full_burst_windows` 체크로 게이팅) 착수.
+- **참고로, Diamond Dust 자체는 추가 정밀 모델링 불필요:** 현재 엔진은
+  `dynamic_hit_count_nuke` 이벤트를 `burst_time`(= `full_burst_start`와 동일 시각)에
+  기록하므로, inclusive-start 판정(`full_burst_start <= t`)만 쓰면 1초 딜레이를 명시
+  모델링하지 않아도 자동으로 창 안으로 분류된다(Fienn 확인, 2026-07-12) — 딜레이
+  자체는 "왜 보너스를 받는지"의 설명일 뿐, 타이밍 값을 바꿀 필요는 없음.
+- 참고: `insights.md`의 "Other Damage-Up buckets remain unconsumed pass-throughs",
+  `engine-capabilities.md`의 미소비 스탯 목록, `maiden_ice_rose.py` docstring.
 
 ---
 

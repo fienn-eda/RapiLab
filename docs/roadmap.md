@@ -182,6 +182,13 @@
       flat_atk 보너스). 신규 갭 2건 발견: **#7 FB창 한정 per-shot 트리거**(Soda 잔여
       공동발동 버프)·**#8 자원-fill-트리거 타 유닛 버프**(Maiden 잔여 MP-회복 아군 버프)
       — `engine-gaps.md` 참고.
+- [ ] **Full Burst Bonus (+50%) 검증 + 배선 (gap #9, 착수 보류)** — Maiden Diamond
+      Dust 실측(Fienn 2026-07-12)으로 확인: `full_burst_bonus`가 엔진 전체에서 미배선
+      (raid_simulator._damage_instance에 키 자체가 없음, 기본값 0.0) — 인코딩된 45명
+      전체의 버스트 넉·풀버스트창 내 노멀/per-shot 데미지에 영향. **배선 시작 전 유닛별
+      캐스트→대미지 딜레이 확인 필요**(즉시 발생 vs 지연 발생이 스킬마다 다름 — 즉시
+      발생 유닛은 풀버스트 진입 "직전"에 터져 보너스 미적용일 수 있음). `engine-gaps.md`
+      gap #9, `docs/decisions.md` 참고.
 - [ ] **eb3+ 백로그** — 대부분 **자원 유닛(gap #2 Pattern A 잔여/Pattern B)·상태머신·
       무기변형**. 배치 착수 전 유닛별 검증 필수.
   - **Pattern A 자원 유닛 (named-resource로 인코딩 가능, 잔여)**: `cinderella-crystal-wave`,
