@@ -47,6 +47,13 @@ how to encode it, and current engine status.
   isn't modeled (e.g. a Hit Rate step). **Do not flatten these to a steady-state
   max** — Fienn wants the per-cycle ramp (and it composes with deck-dependent
   behaviour like Mast's). Seen on: Anchor (both passives).
+  **Not a blanket rule against steady-state, though:** the reason NOT to flatten
+  here is that these ramp on BURST CYCLES (~8-13s apart), a meaningful fraction
+  of a 180s raid. A stack chain that ramps on a much faster cadence than its own
+  decay window (e.g. Quency's per-shot Explore Route, capping in ~2.5 real
+  seconds against a fire rate whose decay windows are 0.5-2s) IS validly
+  steady-stated — see `docs/insights.md`'s "Steady-state approximation for
+  ramping buffs" for the general rule and `quency_escape_queen.py`.
 
 ## Self-scoped, same-squad-ally-gated burst CDR
 - **What:** some units reduce **their own** Burst-Skill cooldown ("Affects self.
@@ -241,11 +248,42 @@ how to encode it, and current engine status.
   Cinderella's Beautiful, which ticks every 3 sec while her decoy is up
   (continuously, from battle start). Resolved by `raid_simulator`'s own
   `fight_duration`, no shot timeline needed.
+- **Resets (SET to a fixed value) - BUILT (2026-07-12):** a resource that gets
+  reset to a fixed value rather than only ever accumulating - e.g. Soda's Golden
+  Chip, reset to 17 when her burst consumes whatever had built up.
+  `ResourceSpec.resets` (`[{"trigger": "battle_start"|"own_burst", "value": X}]`)
+  + `SquadContext.reset_resource`/`resource_count_before_reset` (the latter
+  exposes the PRE-reset value, needed for a rule gated on "how much had built up
+  right before it was spent" rather than the post-reset value). The resolution
+  pass replays fills and resets in chronological order so each reset's
+  pre-value correctly reflects everything before it. See "resource_gated_buffs"
+  and "dynamic_hit_count_nukes" below.
+- **FB-window-gated fill kind (`("per_shot_every_during_full_burst", N)`) - BUILT
+  (2026-07-12):** like `per_shot_every` but counting only the owner's shots
+  whose time falls within a Full Burst window (Soda's "every 3 normal attacks
+  during Full Burst" - shots outside Full Burst don't count at all), computed
+  from `simulate_burst_cycle`'s own event log (`full_burst_start`/`full_burst_end`
+  pairs). **Distinct from the FB-gated per-shot TRIGGER gap below** - this only
+  covers a resource FILL, not a buff/nuke fired directly off an FB-window shot count.
+- **Squad-burst-cycle-conditional fill kind (`("squad_burst_cycle_conditional",
+  [(event_pred, gate_fn, delta), ...])`) - BUILT (2026-07-12):** a resource whose
+  fill is driven by GLOBAL burst-cycle events (any squad member's burst tier
+  firing, Full Burst entering - NOT the owner's own shots) AND conditioned on
+  the resource's OWN running value at that instant - e.g. Maiden's MP: "+1 if
+  MP==0" on any squad member's Burst Stage 1, "+1 if MP>=1" on Full Burst enter.
+  Resolved by `_resolve_squad_burst_cycle_resource`, a stateful walk over
+  `simulate_burst_cycle`'s own event log (not a flat deterministic schedule like
+  every other fill kind). Same-instant ordering between the owner's own-burst
+  reset and other events is preserved by checking the reset INLINE against each
+  event as the walk reaches it, not via a separate sort/merge step - this
+  mattered because Fienn confirmed burst1->burst2->burst3->full-burst-enter is a
+  strict, never-violated sequence, so a unit's own burst-tier fire always
+  precedes Full Burst entry in the same instant. First consumer:
+  `maiden_ice_rose.py` (see "dynamic_hit_count_nukes" below for the consequence
+  this had on Diamond Dust's actual hit count).
 - **Still deferred:** Pattern B: time-DRAINING gauges + threshold transforms (Ark
   Ranger battery, filled by part-destruction which the engine has no concept of)
-  - deferred, don't invent a part-break schedule. Multi-source fills /
-  burst-consume / status-window-gated fills (Soda, Modernia's Giant Leap ATK)
-  also await more fill sources.
+  - deferred, don't invent a part-break schedule.
 
 ## Resource-scaled / gated burst nuke (incl. repeating DoT ticks) - BUILT capability (2026-07-12)
 - **What:** a burst-fired nuke whose magnitude is gated or scaled by a named
@@ -288,6 +326,56 @@ how to encode it, and current engine status.
   a scaled data slot - hit counts don't scale with skill level.
 - **First consumers:** `cinderella.py` (Glass Slippers, 10x), `julia_signature.py`
   (Climax, 5x).
+
+## `resource_gated_buffs` (buff-side analog of resource-scaled nukes) - BUILT capability (2026-07-12)
+- **What:** a burst-fired BUFF gated on (or scaled by) a named resource's count
+  AT THE BURST'S OWN TIME - e.g. Soda's ATK +65.25%/15s, granted only if Golden
+  Chip had at least 30 stacks right before her burst reset it to 17.
+- **Why this needed a different mechanism from `resource_scaled_nukes`:** a nuke
+  can defer its percent computation to phase 2 (every damage instance in this
+  engine is already record-now/compute-later). A buff has no equivalent second
+  pass - `buff_rule`/`registry.add` mutate the registry immediately when the
+  triggering action runs, and that action (`on_tier_fire`) runs BEFORE the
+  resolution pass that populates the resource's fills/resets for the cycle - so
+  a gate check at `on_tier_fire` time would always see a stale/empty resource.
+- **Engine capability:** `resource_gated_buffs` specs (`{"resource", "cap",
+  "use_pre_reset", "gate_fn", "stat", "value", "scope", "duration"}`) are
+  processed IN the resolution pass itself, iterating `context.burst_times[slug]`
+  for each of the owner's own burst times and adding the Effect directly once
+  `gate_fn(count)` passes (`count` from `resource_count_before_reset` when
+  `use_pre_reset` is set, else `resource_count`). Wired via `raid_simulator`'s
+  `resource_gated_buffs` param, exposed per-Nikke via
+  `_RESOURCE_GATED_BUFF_BUILDERS`/`get_resource_gated_buffs`.
+- **First consumer:** `soda_twinkling_bunny.py`.
+
+## `dynamic_hit_count_nukes` (hit count itself is a resource's value) - BUILT capability (2026-07-12)
+- **What:** a burst-fired nuke whose HIT COUNT - not just its percent - is a
+  named resource's own value at burst time, e.g. Maiden's Diamond Dust ("attacks
+  repeatedly based on current MP").
+- **Engine capability:** reads the PRE-reset count via
+  `resource_count_before_reset` for each of the owner's own bursts, recording
+  that many identical damage events (each independently defense-subtracted,
+  same reasoning as `burst_hit_counts`). Spec dict: `{"resource", "base_percent",
+  "extra_flat_atk_percent_of_max_hp" (optional), "damage_type" (optional)}`;
+  wired via `raid_simulator`'s `dynamic_hit_count_nukes` param, exposed
+  per-Nikke via `_DYNAMIC_HIT_COUNT_NUKE_BUILDERS`/`get_dynamic_hit_count_nukes`.
+  Logged with `source="dynamic_hit_count_nuke"`.
+- **`extra_flat_atk` (nuke-scoped flat-ATK bonus, built alongside this):**
+  `record()`/`_damage_instance` gained an `extra_flat_atk` parameter (mirroring
+  the existing `extra_charge_bonus` parameter's precedent exactly), so a nuke
+  like Diamond Dust ("1372.8% of the sum of 10% of final Max HP and ATK") can
+  fold a percent-of-Max-HP bonus into ONLY that nuke's own flat_atk term without
+  leaking into normal attacks or any other damage instance from the same slug -
+  a plain registry `Effect("flat_atk", ...)` would leak everywhere, since
+  flat_atk is read unconditionally by every damage instance for that slug.
+- **Notable consequence (not a bug):** Maiden's Diamond Dust always hits EXACTLY
+  ONCE per cycle in this engine - her own burst provably drains MP to 0 before
+  Full Burst's "if MP>=1" fill rule can ever see a nonzero value, given the
+  engine's confirmed strict burst-tier ordering (see the
+  squad-burst-cycle-conditional fill entry above). Modeled anyway (not silently
+  dropped) for documentation honesty, with the reasoning in
+  `maiden_ice_rose.py`'s module docstring.
+- **First consumer:** `maiden_ice_rose.py`.
 
 ## "After/every N CRITICAL hits" - genuinely unrepresentable (not a to-do)
 - **What:** a fill/nuke trigger worded "after landing N critical hit(s) with
@@ -459,7 +547,8 @@ how to encode it, and current engine status.
   the highest-ATK targeting below. See `zwei.py` (squad) and `miranda.py` (top-1).
 - **Still deferred:** a round-buff that ALSO stacks per shot inside a Full-Burst
   window (Zwei's normal-attack-during-FB pierce, up to 3) - needs an FB-window-gated
-  per-shot trigger, which doesn't exist yet.
+  per-shot trigger, which doesn't exist yet (see "FB-window-gated per-shot TRIGGER"
+  below - Soda's co-fired ally buff hits the same gap).
 
 ## Highest-final-ATK top-N targeting ("N allies with the highest final ATK")
 - **Signature:** "Affects N ally unit(s) with the highest final ATK (except
@@ -479,6 +568,38 @@ how to encode it, and current engine status.
 - **Caveat:** ranking reads the registry at trigger time (phase 1), so per-shot
   buffs (applied in the later shot pass) aren't seen - fine, since those are
   self-scoped and don't change other units' ranking.
+
+## FB-window-gated per-shot TRIGGER (gap #7, distinct from FB-gated resource FILL)
+- **What:** a buff/nuke fired directly off "every N of the unit's shots, but only
+  counting shots inside the Full Burst window" - e.g. Soda's Lucky Golden Chip
+  co-fired buff ("after 3 normal attacks during Full Burst, affects self and the
+  1 ally with the highest final ATK: Attack Damage +10.51% for 2 sec").
+- **Why it's a separate gap from the FB-gated resource fill (built, see above):**
+  `("per_shot_every_during_full_burst", N)` only feeds a resource's count - it
+  has no path to fire a `per_shot_rules`-style buff/nuke action directly.
+  `per_shot_rules` itself has no Full-Burst-window filter at all.
+- **Easy mistake:** approximating it as a plain "every N shots" `per_shot_rules`
+  entry, ignoring the Full-Burst restriction. This is a REAL overcount, not a
+  minor one, whenever the shot cadence makes "every N shots" (elapsed real time)
+  comparable to or longer than the buff's own duration - e.g. Soda's SG fires
+  1.5 shots/sec, so "every 3 shots" = every 2 sec, exactly the buff's own 2-sec
+  duration, which reads as effectively PERMANENT if applied outside Full Burst
+  too, instead of only active during her ~10-sec Full Burst window each cycle.
+- **Encode:** defer + document (do not approximate). Also blocks Zwei's
+  FB-window normal-attack pierce stacking (see "For N round(s)" above).
+
+## Resource-fill-triggered squad buff (gap #8, distinct from `resource_gated_buffs`)
+- **What:** a buff granted to OTHER units (not the resource owner) triggered by
+  the resource's own fill event - e.g. Maiden's Blessings Upon You "when MP is
+  replenished" bullet (Elemental Advantage Attack Damage +40.9% / ATK +20.9% of
+  caster ATK, for 10 sec, to all other Electric Code allies).
+- **Why it's a separate gap from `resource_gated_buffs`:** `resource_gated_buffs`
+  (built 2026-07-12) only covers the resource OWNER's own burst-time gate on a
+  buff to herself - it has no path for a fill event to grant a buff to a
+  different scope (squad/element) of OTHER units.
+- **Encode:** defer + document; not built as of 2026-07-12 (only one known
+  consumer so far, Maiden - a secondary supporting bullet, not her headline
+  mechanic).
 
 ---
 *Add new mechanics above this line as they come up.*

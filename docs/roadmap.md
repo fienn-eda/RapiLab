@@ -7,10 +7,10 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-07-10
+- 마지막 갱신: 2026-07-12
 - 브랜치: `wip/scaffolding`
-- 테스트: **264 passed** (마지막 전체 실행 기준)
-- 인코딩된 니케: **31명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- 테스트: **420 passed** (2026-07-12, Quency/Soda/Maiden 배치 + 6개 신규 엔진 캐퍼빌리티 포함)
+- 인코딩된 니케: **45명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
 
@@ -30,7 +30,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (28명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (45명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ⬜ 예정 |
 | Phase 6 | 유저 데이터 입력 UI (React) | ⬜ 예정 |
@@ -123,8 +123,16 @@
   with the highest final ATK"는 적용 시점 실시간 랭킹으로 정확 대상 지정
   (`top_atk_slugs`+`slugs:` 스코프+`highest_atk_buff_rule`). Miranda(✅ 승급: Health Up
   자ATK per_shot·top-2 ATK/크리댐·top-1 크리율 1-round)·Zwei(1-round Pierce) 재인코딩.
-- **다음:** **막힌 ~30명 재인코딩 배치**(데이터 수집→per-shot 룰 추가)가 최대 실질 가치.
-  남은 gap은 `engine-gaps.md` 우선순위 참고.
+- **eb1/eb2 + 자원 primitive beachhead + count-스케일 넉 + eb3 Pattern-A 배치 완료
+  (2026-07-12):** Noir·Isabel·Liberalio·Ludmilla·Chisato·Jill·Modernia·Guillotine:
+  Winter Slayer·Julia(base+시그니처)·Cinderella·Quency·Soda·Maiden. 상세는 To-Do의
+  eb 체크리스트 참고. eb3 Pattern-A 배치에서 6개 신규 엔진 확장(자원 reset·
+  `resource_gated_buffs`·FB창 한정 fill·squad-burst-cycle-conditional fill·
+  `dynamic_hit_count_nukes`·`extra_flat_atk`) + 신규 갭 2건(#7 FB창 한정 per-shot
+  트리거, #8 자원-fill-트리거 타 유닛 버프) 발견.
+- **다음:** **eb3+ 백로그**(남은 Pattern A 자원 유닛·Pattern B 게이지·상태머신·무기변형)와
+  **막힌 ~30명 per-shot 재인코딩 배치**가 최대 실질 가치. 남은 gap은 `engine-gaps.md`
+  우선순위 참고.
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.
@@ -161,10 +169,22 @@
       Extermination Hero-Level DoT 완성. `resource_scaled_nukes`/`burst_hit_counts`/
       periodic 자원 fill 엔진 확장 + 소비자. base/시그니처 별도 slug 패턴 확정
       (Fienn 결정) — drake/laplace 인코딩 시 동일 패턴 적용.
+- [x] **eb3 Pattern-A 자원 유닛 배치** (2026-07-12): Quency: Escape Queen ✅ ·
+      Soda: Twinkling Bunny ⚠ · Maiden: Ice Rose ⚠ — 6개 신규 엔진 확장 소비자:
+      자원 **reset**(`SquadContext.reset_resource`/`resource_count_before_reset`,
+      Soda의 Golden Chip이 버스트에서 17로 리셋) · `("per_shot_every_during_full_burst",
+      N)` fill(FB창 안의 발사만 세는 자원 채우기) · `ResourceSpec.resets`를 통한 시간순
+      fill+reset 리플레이(resolution 패스) · `resource_gated_buffs`(버스트 시점 자원
+      count 게이팅 **버프**, resolution 패스 안에서 처리 — 넉과 달리 phase 2가 없음) ·
+      `_resolve_squad_burst_cycle_resource`(스쿼드 전체 버스트-사이클 이벤트 + 자원 자신의
+      값으로 조건 거는 fill, Maiden의 MP) · `dynamic_hit_count_nukes`(버스트 넉 히트수
+      자체가 자원 값, Maiden의 Diamond Dust) + `extra_flat_atk` 파라미터(넉 전용
+      flat_atk 보너스). 신규 갭 2건 발견: **#7 FB창 한정 per-shot 트리거**(Soda 잔여
+      공동발동 버프)·**#8 자원-fill-트리거 타 유닛 버프**(Maiden 잔여 MP-회복 아군 버프)
+      — `engine-gaps.md` 참고.
 - [ ] **eb3+ 백로그** — 대부분 **자원 유닛(gap #2 Pattern A 잔여/Pattern B)·상태머신·
       무기변형**. 배치 착수 전 유닛별 검증 필수.
-  - **Pattern A 자원 유닛 (named-resource로 인코딩 가능, 잔여)**: `soda-twinkling-bunny`,
-    `quency-escape-queen`, `cinderella-crystal-wave`, `maiden-ice-rose`,
+  - **Pattern A 자원 유닛 (named-resource로 인코딩 가능, 잔여)**: `cinderella-crystal-wave`,
     `asuka-shikinami-langley-wille`, `rei-ayanami`·`rei-ayanami-tentative-name`(Anti A.T.),
     `neon-vision-eye`, `mana`.
   - **Pattern B 게이지·변신 (잔여, gap #2)**: `ark-ranger-black`(배터리 시간감쇠·부위파괴

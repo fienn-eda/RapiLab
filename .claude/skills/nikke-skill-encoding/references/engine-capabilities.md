@@ -169,10 +169,19 @@ Declare a `ResourceSpec(name, fill, cap, buffs)` (in `effects.py`); wire it via
 `simulate_raid`'s `resource_specs`. `fill` is deterministic:
 `("per_shot_every", N)` = +1 stack every Nth of the owner's shots,
 `("per_shot_every_core", core_n, noncore_n)` = core_n on a core-hittable boss
-else noncore_n (Guillotine's "3 Core hits" vs "6 normals without the core"), or
+else noncore_n (Guillotine's "3 Core hits" vs "6 normals without the core"),
 `("periodic", interval)` = +1 stack every `interval` seconds regardless of shots
-(Cinderella's Beautiful, which ticks while her decoy is up from battle start).
-`buffs` are `ResourceBuff`s built with `linear_resource_buff(stat, per_stack,
+(Cinderella's Beautiful, which ticks while her decoy is up from battle start),
+`("per_shot_every_during_full_burst", N)` = like `per_shot_every` but only
+counting the owner's shots whose time falls within a Full Burst window (Soda's
+"every 3 normal attacks during Full Burst" - shots outside Full Burst don't
+count at all, computed from `simulate_burst_cycle`'s own event log rather than
+re-deriving burst timing), or `("squad_burst_cycle_conditional", [(event_pred,
+gate_fn, delta), ...])` = a stateful walk over the GLOBAL burst-cycle event log
+(not the owner's own shots), applying `delta` at each event where `event_pred`
+matches AND `gate_fn(current_count)` is true (Maiden's MP: "+1 if MP==0 on any
+squad member's Burst Stage 1", "+1 if MP>=1 on Full Burst enter" - see
+`_resolve_squad_burst_cycle_resource` below). `buffs` are `ResourceBuff`s built with `linear_resource_buff(stat, per_stack,
 scope, lifetime=None)` (value = per_stack × count) or `leveled_resource_buff(stat,
 per_level, level_fn, scope, lifetime=None)` (value = per_level × level_fn(count),
 for a Hero-Level-style tier); an arbitrary `value_fn` is allowed for a threshold
@@ -187,6 +196,59 @@ value_fn(count) at every time. First consumers: `modernia.py` (timed capped),
 `cinderella.py` (periodic fill). Pattern B time-draining gauges / transforms (Ark
 Ranger battery, blocked additionally on part-destruction fills) remain deferred.
 See `special-mechanics.md`.
+
+**Resource resets (SET to a fixed value, not incremented):** for a resource that
+gets reset to a fixed value rather than only ever accumulating - e.g. Soda's
+Golden Chip, reset to 17 when her burst consumes it. `ResourceSpec` takes an
+optional `resets` field: `[{"trigger": "battle_start"|"own_burst", "value": X},
+...]`. `SquadContext.reset_resource(slug, name, time, pre_value, post_value)`
+records the reset; `resource_count(slug, name, time, ...)` uses the LATEST reset
+at or before the query time as its baseline, discarding fills recorded before
+it. `resource_count_before_reset(slug, name, time)` exposes the value the
+resource held immediately BEFORE a reset recorded at an exact instant - needed
+for a rule gated on "how much had built up right before it was spent" (not the
+post-reset value). The resolution pass merges the flat additive fill schedule
+with reset events (sorted by time, using `context.burst_times[slug]` for
+`"own_burst"` resets) and replays them chronologically, so each reset's
+pre-value correctly reflects prior fills AND any earlier reset already applied.
+Verified to produce identical output to the pre-existing behavior when no
+`resets` are present (a regression risk since it touches the shared resolution
+pass every resource-using Nikke relies on). First consumer: `soda_twinkling_bunny.py`.
+
+**`resource_gated_buffs` (the buff-side analog of resource-scaled nukes):** a
+burst-fired BUFF gated on (or scaled by) a resource's count AT THE BURST'S OWN
+TIME. Unlike a nuke (which defers its percent computation to phase 2 via
+`resource_gate`, below), a buff has no equivalent deferred-computation stage -
+so `resource_gated_buffs` specs (`{"resource", "cap", "use_pre_reset", "gate_fn",
+"stat", "value", "scope", "duration"}`) are processed IN the resolution pass
+itself (not at `on_tier_fire`, when the burst actually fires), iterating
+`context.burst_times[slug]` for each of the owner's own burst times and adding
+the Effect directly once `gate_fn(count)` passes - using `resource_count_before_reset`
+when `use_pre_reset` is set. Wired via `raid_simulator`'s `resource_gated_buffs`
+param, exposed per-Nikke via `_RESOURCE_GATED_BUFF_BUILDERS` /
+`get_resource_gated_buffs`. First consumer: Soda's ATK +65.25%/15s (gated on
+Golden Chip's pre-reset count >= 30).
+
+**`dynamic_hit_count_nukes` (hit count itself is a resource's value):** a
+burst-fired nuke whose HIT COUNT - not just its percent - is a named resource's
+value at burst time, e.g. Maiden's Diamond Dust ("attacks repeatedly based on
+current MP"). Reads the PRE-reset count via `resource_count_before_reset` for
+each of the owner's own bursts, recording that many identical damage events
+(each independently defense-subtracted, same reasoning as `burst_hit_counts`).
+Spec dict: `{"resource", "base_percent", "extra_flat_atk_percent_of_max_hp"
+(optional), "damage_type" (optional)}`; wired via `raid_simulator`'s
+`dynamic_hit_count_nukes` param, exposed per-Nikke via
+`_DYNAMIC_HIT_COUNT_NUKE_BUILDERS` / `get_dynamic_hit_count_nukes`. Logged with
+`source="dynamic_hit_count_nuke"`. First consumer: `maiden_ice_rose.py`.
+
+**`extra_flat_atk` (nuke-scoped flat-ATK bonus):** `record()`/`_damage_instance`
+gained an `extra_flat_atk` parameter (mirroring the existing `extra_charge_bonus`
+parameter's precedent exactly), so a specific nuke can fold a percent-of-caster-
+Max-HP (or similar) bonus into ONLY that nuke's own flat_atk term - e.g. Maiden's
+Diamond Dust, "1372.8% of the sum of 10% of final Max HP and ATK" - without
+leaking into normal attacks or any other damage instance from the same slug. A
+plain registry `Effect("flat_atk", ...)` would leak everywhere, since flat_atk
+is read unconditionally by every damage instance for that slug.
 
 **Resource-scaled / gated burst nuke (incl. repeating DoT ticks):** a burst-fired
 nuke whose magnitude is gated or scaled by a named resource's count - a single

@@ -3,8 +3,8 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-12
-- 총 **42명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 15명)
+- 마지막 갱신: 2026-07-12 (eb3 Pattern-A 배치: Quency·Soda·Maiden)
+- 총 **45명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 18명)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -51,7 +51,7 @@
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (15명)
+## Burst 3 (18명)
 
 > **eb (encoding batch) 진행:** Burst 3 어태커 배치 인코딩 (least-blocked 우선).
 > eb1 = Noir · Isabel · Liberalio, eb2 = Ludmilla · Chisato · Jill (2026-07-12).
@@ -61,6 +61,12 @@
 > Julia(시그니처, 별도 slug `julia-signature`) · Cinderella — `resource_scaled_nukes`/
 > `burst_hit_counts`/periodic 자원 fill 엔진 확장의 소비자. Guillotine의 Extermination
 > Hero-Level DoT도 이때 완성.
+> **eb3 Pattern-A 자원 유닛 배치 (2026-07-12):** Quency: Escape Queen(자원 확장 불필요,
+> 정상상태 스택체인) · Soda: Twinkling Bunny(자원 **reset** + `resource_gated_buffs`
+> + `("per_shot_every_during_full_burst", N)` fill) · Maiden: Ice Rose(자원
+> **squad-burst-cycle-conditional fill** + `dynamic_hit_count_nukes`) — 여섯 개
+> 신규 엔진 확장의 소비자. 상세는 각 모듈 docstring과 `engine-capabilities.md`
+> /`special-mechanics.md` 참고.
 > **나머지 백로그는 [`roadmap.md`](roadmap.md) To-Do 참고** (대부분 남은 Pattern A
 > 자원 유닛 / Pattern B 게이지·변신 / 상태머신 / 무기변형 갭).
 
@@ -77,10 +83,13 @@
 | Julia (시그니처, 별도 slug) | `julia-signature` | Attacker | AR | Water | ⚠ | base와 별도 roster 엔트리(Fienn 결정, 2026-07-12). Decrescendo 자크리율/자ATK(periodic + 전투시작 강제시전)·Climax 5연타 버스트넉(544.5%×5, `burst_hit_counts`) 모델됨. Crescendo/Marcato(크리티컬 히트 카운터 — 기대값 크리 모델과 구조적으로 불가, 영구 defer)·노멀전용 크리율(버킷 없음)만 보류 |
 | Liberalio | `liberalio` | Attacker | SR | Wind | ✅ | eb1. 버스트넉 925%·FB 자ATK·Raging Current 공버프 231%(풀차지 per-shot 상시)·on-core 공버프·풀차지 추가딜 5회 모델됨. Gentle Current(비-보스 대상, solo N/A)·차지속도(inert) 보류 |
 | Ludmilla: Winter Owner | `ludmilla-winter-owner` | Attacker | MG | Water | ✅ | eb2. 60노멀마다 받댐 디버프+넉(per-shot)·FB 자크리율·버스트 자ATK/재장전속도 모델됨. Snowstorm 코어60넉(코어카운터 과대평가 우려로 보류)·재장전 탄약(QoL) 보류 |
+| Maiden: Ice Rose | `maiden-ice-rose` | Defender | RL | Electric | ⚠ | eb3 Pattern-A. MP 자원(squad-burst-cycle-conditional fill)+Diamond Dust 버스트(`dynamic_hit_count_nukes` — 히트수=MP, 1372.8%×(10% 최대체력+ATK))+Blessings Upon You(자속성상성공댐/자ATK 버스트버프 + 풀차지마다 547.62% per-shot 넉) 모델됨. "MP 소모" 트리거는 엔진 순서상 항상 MP=0에서 드레인되므로 Diamond Dust는 매 사이클 정확히 1회 히트(엔진 확정 버스트 순서 근거, 모듈 docstring 참고). MP 회복 시 타 아군 버프(자원-fill-트리거 아군버프, 미구현 갭)·최대체력 스택(비딜) 보류 |
 | Modernia | `modernia` | Attacker | MG | Fire | ⚠ | 자원 beachhead. High-Speed Evolution 히트당 3.05% 추가딜(per-shot)·200히트마다 Crit Dmg/Max Ammo 스택(캡5·10초 시한 자원) 모델됨. Max Ammo 스택은 자기 탄창 재생성 전 계산돼 inert·Giant Leap 상태게이팅 200히트 ATK버프(윈도 자원, 유의미·보류)·New World 버스트(Destroy Mode·무한탄·FB연장) 보류 |
 | Noir | `noir` | Attacker | SG | Wind | ✅ | eb1. 버스트넉 351.64%·Lucky Charm 스쿼드 ATK(caster 비례)·Finale 파츠딜 버프 모델됨. Rabbit Twins 탄약/재장전(QoL)·Hit Rate(inert)만 보류 |
 | Privaty (애장품) | `privaty` | Attacker | AR | Water | ⚠ | LD Assault(퍼샷 인스턴스), 지정타겟 조건부 효과 |
+| Quency: Escape Queen | `quency-escape-queen` | Attacker | SMG | Water | ✅ | eb3 Pattern-A. Explore Route(3단계 스택체인, 노멀2회마다·전단계 만캡 게이팅)+Secure Route(단계별 버프) 전부 정상상태 근사(ATK+110.3%+Distributed Damage+49.58%+Core Damage+25.25%+Crit Rate+16.73%, battle_start부터 영구 — SMG 20발/초로 스택 감쇠창보다 채우기가 압도적으로 빨라 상시 만캡)·The Great Thief 버스트(자공댐/재장전속도+1736.31% Distributed 넉) 모델됨. Hit Rate만 보류 |
 | Rapi: Red Hood | `rapi-red-hood` | Attacker | MG | Fire | ⚠ | Attachable Projectiles + 노멀카운터 기반 버스트 대미지 |
+| Soda: Twinkling Bunny | `soda-twinkling-bunny` | Attacker | SG | Iron | ⚠ | eb3 Pattern-A. Golden Chip 자원(캡50·전투시작 만캡·풀버스트 중 노멀3회마다 +1=`per_shot_every_during_full_burst`, 자신의 Critical Damage 스택 +1.32%/스택)+Onward Soda! 버스트(628.7% 넉 + 17로 **reset** + 리셋前 스택≥30 게이팅 ATK+65.25%/15s=`resource_gated_buffs`) 모델됨. Lucky Golden Chip 공동발동 최고ATK버프(FB창 한정 per-shot **트리거** 부재, FB창 한정 **fill**과는 별개 갭)·Beginner's Rewards 전체(캐스터별 FB 지속시간 연장 개념 부재)·Hit Rate(inert) 보류 |
 
 ---
 

@@ -5,7 +5,9 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-12 (count-스케일 넉 + multi-hit burst + periodic 자원 fill 완료 반영)
+- 마지막 갱신: 2026-07-12 (자원 reset·`resource_gated_buffs`·FB창 한정 fill·
+  squad-burst-cycle-conditional fill·`dynamic_hit_count_nukes` 완료 반영 —
+  eb3 Pattern-A 배치: Quency·Soda·Maiden)
 - 목적: **ROI 순 엔진 확장 우선순위 결정.** 인코딩을 하나씩 하다 갭에 부딪혀
   단발성 확장(instant nuke, periodic nuke)을 반복하던 방식 대신, 갭을 모아
   빈도순으로 최소한만 확장한다. (Fienn 방침, 2026-07-10)
@@ -32,8 +34,11 @@
 | ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
 | 5 | **enemy-element 조건** (룰에서 boss_element 접근) | 1 (+기존 Brid, Helm:Aqua) | 소 (~30 loc) | 컨텍스트 확장 |
 | 6 | **periodic-during-Full-Burst 넉** (풀버스트 창 안에서만 N초마다) | 1 (Ada) | 소 (~30 loc, periodic_nukes 변형) | 타이밍 변형 |
+| 7 | **풀버스트-창 한정 per-shot 트리거** (fill이 아니라 버프/넉 직접 발동) | 1 (Soda 잔여 버프) | 소~중 | 신규 트리거 변형 |
+| 8 | **자원-fill-트리거 타 유닛 버프** (자원 소유자 아닌 아군에게 버프) | 1 (Maiden 잔여 버프) | 소~중 | 신규 트리거 |
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
 | — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) | **완료 (2026-07-11, `ally_burst_activate`)** | 신규 트리거 |
+| — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |
 | — | attack/charge speed·hit rate (딜 아님) | 15 | **구현 안 함** (딜 개념 아님, defer 유지) | 범위 밖 |
 
 > **핵심 결론:** #1 하나가 압도적이다. 노멀공격 카운터(20명)와 풀차지 카운터(19명)는
@@ -102,10 +107,12 @@
   100%에서 변신, 1%/0.2초 감쇠), Mihara 체인. **part-destruction 이벤트에 추가로 막힘**
   (엔진에 부위 개념 없음 → 가상 스케줄 발명하지 않고 defer, Fienn 2026-07-12).
 - **Pattern A로 언블록(코어):** guillotine-winter-slayer ✅(EXP+Hero Level+Extermination
-  DoT), modernia ✅, cinderella ✅(Beautiful periodic fill + mirror 넉). 남은
-  soda-twinkling-bunny, quency-escape-queen, maiden-ice-rose, asuka-shikinami-langley-wille
-  등은 다중소스 채우기·burst-consume·스테이지 게이팅 등 잔주름이 있어 후속 인코딩
-  배치(roadmap To-Do).
+  DoT), modernia ✅, cinderella ✅(Beautiful periodic fill + mirror 넉),
+  quency-escape-queen ✅(정상상태 스택체인, 신규 확장 불필요), soda-twinkling-bunny ⚠
+  (자원 **reset** + `resource_gated_buffs` + FB창 한정 fill), maiden-ice-rose ⚠
+  (squad-burst-cycle-conditional fill + `dynamic_hit_count_nukes`) — **2026-07-12
+  전부 완료**. 남은 asuka-shikinami-langley-wille 등은 다중소스 채우기·burst-consume·
+  스테이지 게이팅 등 잔주름이 있어 후속 인코딩 배치(roadmap To-Do).
 - **count-스케일 넉 — ✅ 완료 (2026-07-12):** 버스트 시점(또는 반복 tick 시점) resource
   count로 스케일/게이팅되는 넉. `raid_simulator`의 `resource_scaled_nukes` 파라미터 —
   `record()`가 `resource_gate`를 실어 두고 phase 2에서 `context.resource_count(...)`로
@@ -181,6 +188,32 @@
 - **필요한 확장:** `periodic_nukes`에 "풀버스트 창 한정" 옵션, 또는 full_burst_enter~end
   사이만 틱. 규모 소. (수요 1명이라 후순위.)
 
+### 7. 풀버스트-창 한정 per-shot **트리거** (fill과는 별개 갭)
+
+- **무엇:** "풀버스트 중 노멀 N회마다"가 버프/넉을 발동하는 경우 — Soda의 Lucky Golden
+  Chip 공동발동 버프(최고ATK 아군 대상 Attack Damage, 3발마다·FB 중에만). #2 Pattern A로
+  만든 **FB창 한정 resource fill**(`per_shot_every_during_full_burst`)은 자원 채우기 한
+  종류만 처리하고, 일반 `per_shot_rules`엔 FB창 필터가 없어 버프/넉을 직접 발동하는
+  트리거로는 못 씀. 근사(FB 무시 "매 3발") 시도 시 실제 과대평가 위험이 큼(Soda SG는
+  1.5발/초라 "매 3발"=2초 주기인데 버프 지속도 2초라, FB 밖에서도 적용하면 사실상
+  상시 버프로 읽혀버림).
+- **막힌 유닛 (1, 확인분):** soda-twinkling-bunny (공동발동 버프만 잔여, 본체는 인코딩 완료).
+- **필요한 확장:** `per_shot_rules`에 FB창 필터 옵션 추가(자원 fill 쪽과 동일한
+  full_burst_start/end 이벤트 로그 사용). 규모 소~중.
+- 참고: `special-mechanics.md`의 관련 항목, `soda_twinkling_bunny.py` docstring.
+
+### 8. 자원-fill-트리거 타 유닛 버프 (resource_gated_buffs와 별개 갭)
+
+- **무엇:** 한 유닛의 자원이 채워지는 사건에 반응해 **다른** 유닛에게 버프를 주는
+  패턴 — Maiden의 Blessings Upon You "MP 회복 시" 아군(Electric 코드) 버프, Soda의
+  것과 유사 소비자 없음(현재는 Maiden만). `resource_gated_buffs`(2026-07-12 완료)는
+  "자원 소유자 자신의 버스트 시점 게이팅"만 처리 — fill 이벤트 자체에 반응해 스쿼드의
+  **다른** 멤버에게 버프를 주는 경로는 없음.
+- **막힌 유닛 (1, 확인분):** maiden-ice-rose (Blessings Upon You의 아군 버프만 잔여).
+- **필요한 확장:** 자원 fill 이벤트를 트리거로 스쿼드(또는 조건부 서브셋) 버프를
+  거는 새 파라미터. 규모 소~중, 수요 확인 후 착수.
+- 참고: `maiden_ice_rose.py` docstring.
+
 ---
 
 ## 이미 만든 것 (참고)
@@ -218,6 +251,37 @@
   연속 공격" 버스트가 N개 개별 히트로 기록되는 `burst_hit_counts`(디펜스가 히트당 flat
   차감이라 한 방으로 합치면 오차 발생). 첫 소비자 Cinderella(mirror 넉 + 10연타)/
   Julia-signature(5연타)/Guillotine(Extermination Hero-Level DoT). 2026-07-12.
+- **자원 reset(pre/post value) + `resource_gated_buffs` + FB창 한정 fill + squad-burst-cycle-conditional
+  fill + `dynamic_hit_count_nukes`**: eb3 Pattern-A 배치(Soda·Maiden)에서 자원
+  primitive를 여섯 방향으로 확장.
+  - `SquadContext.reset_resource`/`resource_count_before_reset`: 자원을 증분이 아니라
+    **고정값으로 SET**(Soda의 Golden Chip이 버스트에서 17로 리셋). `resource_count`는
+    조회 시각 이전 최신 reset을 베이스라인으로 씀; `resource_count_before_reset`은 reset
+    직전 값을 노출(리셋 전 스택 수 게이팅용).
+  - `("per_shot_every_during_full_burst", N)` fill: 풀버스트 창 안의 발사만 세는 자원
+    채우기 — `simulate_burst_cycle`의 이벤트 로그(`full_burst_start`/`full_burst_end`
+    페어)로 계산.
+  - `ResourceSpec.resets` + 시간순 fill+reset 리플레이: resolution 패스가 flat fill
+    스케줄과 reset 이벤트를 시각순으로 병합·재생(각 reset의 pre-value가 이전 fill/reset을
+    정확히 반영). 기존 무-reset 자원(Modernia/Guillotine/Cinderella)엔 동일 출력 확인.
+  - `resource_gated_buffs`: `resource_scaled_nukes`의 버프판 — 버스트 시점 자원 count로
+    게이팅되는 버프. 넉과 달리 버프는 "phase 2" 지연계산이 없어서, **resolution 패스
+    안에서** (`on_tier_fire` 아님) `context.burst_times[slug]`를 순회해 게이트 통과 시
+    Effect를 직접 추가. 첫 소비자 Soda(ATK+65.25%/15s, 리셋前 count≥30 게이팅).
+  - `_resolve_squad_burst_cycle_resource`: 자원 소유자 본인 발사가 아니라 **스쿼드
+    전체 버스트-사이클 이벤트**(임의 유닛의 버스트1 발동, 풀버스트 진입 등)로 채워지고
+    **자원 자신의 현재 값**에도 조건 거는 fill — `simulate_burst_cycle`의 이벤트 로그
+    위에서 진짜 상태를 순회(flat 결정론 스케줄이 아님). 동시각 이벤트 순서(자기 버스트
+    reset이 각 이벤트 처리 시 인라인으로 체크됨, 별도 정렬 단계 없음)가 burst1→2→3→FB진입의
+    **엄격한 순서**(Fienn 확인, 2026-07-12)에 의존. 첫 소비자 Maiden(MP: 임의 유닛 버스트1
+    발동 시 MP==0이면 +1, 풀버스트 진입 시 MP≥1이면 +1).
+  - `dynamic_hit_count_nukes`: 버스트 넉의 **히트 수 자체**가 자원 값인 경우 —
+    `resource_count_before_reset`으로 각 히트를 기록. `record()`/`_damage_instance`에
+    `extra_flat_atk` 파라미터 추가(기존 `extra_charge_bonus`와 동일한 선례) — 특정 넉에만
+    최대체력 비례 flat_atk를 붙여 다른 데미지 인스턴스로 새지 않게 함. 첫 소비자
+    Maiden(Diamond Dust, 히트수=MP).
+  - 2026-07-12. 상세: `engine-capabilities.md`, `special-mechanics.md`,
+    `soda_twinkling_bunny.py`/`maiden_ice_rose.py` docstring.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
@@ -234,11 +298,14 @@
 - ~~#2 자원 트래킹 (Pattern A)~~ — ✅ 완료 (2026-07-12, named-resource).
 - ~~count-스케일 넉 경로~~ — ✅ 완료 (2026-07-12, `resource_scaled_nukes` + `burst_hit_counts`
   + periodic fill; 첫 소비자 Julia/Julia-signature/Cinderella/Guillotine).
+- ~~자원 reset + resource_gated_buffs + FB창 한정 fill + squad-burst-cycle-conditional
+  fill + dynamic_hit_count_nukes~~ — ✅ 완료 (2026-07-12, eb3 Pattern-A 배치: Quency·
+  Soda·Maiden). Pattern A는 이제 (Ark Ranger류 Pattern B를 제외하면) 사실상 소진됨.
 1. **막힌 ~30명 재인코딩 배치** — #1이 풀렸으니 이제 실제 유닛들에 per-shot 룰 추가
-   (데이터 수집 → 인코딩). 가장 큰 실질 가치. Pattern A 자원 유닛(Soda·Quency·Maiden·
-   Asuka…)도 이제 이 배치에 포함.
+   (데이터 수집 → 인코딩). 가장 큰 실질 가치.
 2. **#2 Pattern B (시간감쇠 게이지·변신)** + **#3 무기종/티어부분집합 스코프** + **#5
-   boss_element** + **#6 FB창 periodic** — 수요 적고, 필요할 때.
+   boss_element** + **#6 FB창 periodic** + **#7 FB창 한정 per-shot 트리거**(Soda 잔여) +
+   **#8 자원-fill-트리거 타 유닛 버프**(Maiden 잔여) — 각 수요 1명, 필요할 때.
 
 각 확장은 TDD로, 인벤토리가 증명한 최소 범위만. 착수 시 이 문서의 해당 유닛 목록으로
 "진짜 풀리는지"를 검증하고, 풀린 유닛은 배치 인코딩한다.
