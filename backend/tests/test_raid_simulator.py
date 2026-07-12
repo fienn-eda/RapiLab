@@ -269,6 +269,45 @@ def test_burst_damage_with_no_buffs_uses_plain_percent_of_atk():
     assert result["total_damage"] == 10000.0
 
 
+def test_burst_hit_counts_repeats_the_burst_percent_n_times_at_the_same_instant():
+    # A burst that "attacks sequentially N times" (e.g. Cinderella's Glass
+    # Slippers) deals N SEPARATE hits, each independently defense-subtracted -
+    # not one hit at N*percent (defense is a flat subtraction per nikke.gg's
+    # formula, so splitting into hits changes the total when enemy_def > 0).
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=500,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        burst_hit_counts={"attacker": 3},
+    )
+    burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
+    assert len(burst_hits) == 3
+    # each hit: (2000 - 500) * 1.0 = 1500; all at the same instant.
+    assert all(h["damage"] == 1500.0 for h in burst_hits)
+    assert len({h["time"] for h in burst_hits}) == 1
+
+
+def test_burst_hit_counts_defaults_to_one_hit():
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    assert len([e for e in result["damage_log"] if e["source"] == "burst"]) == 1
+
+
 def test_instant_damage_pulse_deals_damage_at_full_burst_enter_using_casters_own_atk():
     # Some passives (e.g. Brid: Silent Track's Ignition Sequence) deal damage
     # on a trigger OTHER than the caster's own burst firing - not expressible
@@ -1469,6 +1508,123 @@ def test_resource_core_conditional_fill_adds_exactly_one_stack_per_fill():
     dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
     assert dmg[2] == 3000.0   # exactly 1 stack (would be capped 2 -> 4000 if amount were 3)
     assert dmg[5] == 4000.0   # exactly 2 stacks (cap)
+
+
+def test_resource_spec_periodic_fill_ticks_on_a_fixed_timer_independent_of_shots():
+    # A resource filled purely on a fixed timer (e.g. Cinderella's Beautiful,
+    # "every 3 sec when a decoy is present" - decoy up from battle start),
+    # independent of the owner's shot timeline. AR fires 12/s; a shot's damage
+    # reflects however many periodic fills (every 3s) have landed by its time.
+    spec = ResourceSpec(
+        name="beautiful", fill=("periodic", 3.0), cap=3,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.5 * c)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=10.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=10000)},  # no reload within 10s
+        resource_specs={"attacker": [spec]},
+    )
+    # AR fires 12/s (shot i at t=i/12); fills land exactly at t=3,6,9.
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    assert dmg[35] == 1000.0   # t=35/12=2.9167, before first fill: 0 stacks
+    assert dmg[36] == 1500.0   # t=36/12=3.0, first fill lands here: 1 stack
+    assert dmg[72] == 2000.0   # t=6.0, 2nd fill: 2 stacks
+    assert dmg[108] == 2500.0  # t=9.0, 3rd fill: 3 stacks (cap)
+
+
+def test_resource_scaled_nuke_single_hit_scaled_by_resource_count_at_burst_time():
+    # A burst-fired additional hit whose magnitude "mirrors the stack count" of
+    # a resource (e.g. Cinderella's Beautiful) - percent = base_percent *
+    # scale_fn(count), resolved from the resource's count AT THE NUKE'S OWN
+    # TIME (deferred to phase 2, since fills aren't known until the resolution
+    # pass runs, which is after the burst cycle that records this event).
+    spec = ResourceSpec(name="beautiful", fill=("periodic", 3.0), cap=12, buffs=[])
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=10.0, fight_duration=15.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [spec]},
+        resource_scaled_nukes={"attacker": [{
+            "resource": "beautiful", "cap": 12, "base_percent": 28.9,
+            "scale_fn": lambda c: c, "tick_count": 1, "tick_interval": 0.0,
+        }]},
+    )
+    # burst fires at t=10 (gauge_charge_time); by then 3 periodic fills have
+    # landed (t=3,6,9) -> count=3 -> percent = 28.9*3 = 86.7% of 10000 = 8670.
+    hits = [e for e in result["damage_log"] if e["source"] == "resource_scaled_nuke"]
+    assert len(hits) == 1
+    assert round(hits[0]["time"], 4) == 10.0
+    assert round(hits[0]["damage"], 4) == round(10000 * 0.867, 4)
+
+
+def test_resource_scaled_nuke_threshold_gate_zero_below_cap():
+    # A gate (not a scale): fires only if the resource is AT its cap - e.g.
+    # Julia's Climax additional hit, gated on Crescendo at max stacks.
+    spec = ResourceSpec(name="crescendo", fill=("periodic", 100.0), cap=5, buffs=[])
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=10.0, fight_duration=15.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [spec]},  # fill interval 100s -> never fills within the fight
+        resource_scaled_nukes={"attacker": [{
+            "resource": "crescendo", "cap": 5, "base_percent": 544.5,
+            "scale_fn": lambda c: 1.0 if c >= 5 else 0.0, "tick_count": 1, "tick_interval": 0.0,
+        }]},
+    )
+    hits = [e for e in result["damage_log"] if e["source"] == "resource_scaled_nuke"]
+    assert len(hits) == 1
+    assert hits[0]["damage"] == 0.0  # count=0 at burst time -> gate closed
+
+
+def test_resource_scaled_nuke_multi_tick_dot_reads_count_at_each_ticks_own_time():
+    # A repeating tick (e.g. Guillotine's Extermination): tick_count ticks,
+    # tick_interval apart, each independently scaled by the resource's count AT
+    # THAT TICK'S time (not frozen at burst-fire time) - so a resource still
+    # accumulating during the DoT window changes the later ticks' damage.
+    spec = ResourceSpec(name="exp", fill=("periodic", 1.0), cap=100, buffs=[])
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=2.0, fight_duration=10.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [spec]},
+        resource_scaled_nukes={"attacker": [{
+            "resource": "exp", "cap": 100, "base_percent": 10.0,
+            "scale_fn": lambda c: c, "tick_count": 3, "tick_interval": 1.0,
+            "damage_type": "sustained",
+        }]},
+    )
+    hits = sorted(
+        [e for e in result["damage_log"] if e["source"] == "resource_scaled_nuke"],
+        key=lambda e: e["time"],
+    )
+    assert len(hits) == 3
+    assert [round(h["time"], 4) for h in hits] == [2.0, 3.0, 4.0]
+    # count at t=2,3,4 (periodic fills every 1s from t=1): 2, 3, 4 stacks.
+    assert [round(h["damage"], 4) for h in hits] == [2000.0, 3000.0, 4000.0]
+    assert all(h["damage_type"] == "sustained" for h in hits)
+
+
+def test_resource_scaled_nukes_defaults_to_none_and_is_a_no_op():
+    baseline = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=5.0, mode="auto", base_crit_rate=0.0,
+    )
+    with_empty = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=5.0, mode="auto", base_crit_rate=0.0,
+        resource_scaled_nukes={},
+    )
+    assert with_empty["total_damage"] == baseline["total_damage"]
 
 
 def test_resource_specs_defaults_to_none_and_is_a_no_op():

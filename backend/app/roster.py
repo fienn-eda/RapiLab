@@ -19,9 +19,11 @@ from app.overload_effects import overload_options_to_effects
 from app.skill_rules.registry import (
     build_nikke_rules,
     get_burst_damage_type,
+    get_burst_hit_count,
     get_per_shot_rules,
     get_periodic_nuke,
     get_periodic_rules,
+    get_resource_scaled_nukes,
     get_resource_specs,
 )
 from app.squad_engine import SkillRule
@@ -72,6 +74,8 @@ def assemble_simulation_inputs(ordered_deck):
     per_shot_rules = {}
     resource_specs = {}
     burst_damage_types = {}
+    burst_hit_counts = {}
+    resource_scaled_nukes = {}
 
     for spec in ordered_deck:
         deck.append(
@@ -101,6 +105,9 @@ def assemble_simulation_inputs(ordered_deck):
             damage_type = get_burst_damage_type(spec.slug)
             if damage_type != "attack":
                 burst_damage_types[spec.slug] = damage_type
+            hit_count = get_burst_hit_count(spec.slug)
+            if hit_count != 1:
+                burst_hit_counts[spec.slug] = hit_count
 
         periodic_nuke = get_periodic_nuke(spec.slug, skill_values)
         if periodic_nuke is not None:
@@ -118,6 +125,10 @@ def assemble_simulation_inputs(ordered_deck):
         if resource_spec:
             resource_specs[spec.slug] = resource_spec
 
+        resource_scaled_nuke = get_resource_scaled_nukes(spec.slug, skill_values)
+        if resource_scaled_nuke:
+            resource_scaled_nukes[spec.slug] = resource_scaled_nuke
+
     return {
         "deck": deck,
         "rules_by_slug": rules_by_slug,
@@ -129,4 +140,6 @@ def assemble_simulation_inputs(ordered_deck):
         "per_shot_rules": per_shot_rules,
         "resource_specs": resource_specs,
         "burst_damage_types": burst_damage_types,
+        "burst_hit_counts": burst_hit_counts,
+        "resource_scaled_nukes": resource_scaled_nukes,
     }

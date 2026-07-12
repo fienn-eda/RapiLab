@@ -202,6 +202,11 @@ _BURST_DAMAGE_TYPES = {
     "rapi-red-hood": "projectile_explosion",  # Power of Inheritance = Projectile Explosion skill
 }
 
+# A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at
+# the same instant, not one hit at N*percent (see raid_simulator's
+# burst_hit_counts). Only overrides are listed; everything else defaults to 1.
+_BURST_HIT_COUNTS = {}
+
 # A Nikke with a Skill 1/2 on its own cooldown (fires at t=cooldown, 2*cooldown,
 # ... applying buffs/debuffs) - see raid_simulator's `periodic_rules`. Kept
 # separate from _BUILDERS (event-triggered rules) and _PERIODIC_NUKE_BUILDERS.
@@ -238,6 +243,14 @@ _RESOURCE_SPEC_BUILDERS = {
     "modernia": lambda sv: build_modernia_resources(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
 }
+
+# A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named
+# resource's count (e.g. a "mirrors the stack count" additional hit, or a
+# Hero-Level-scaled DoT) - see raid_simulator's `resource_scaled_nukes` param.
+# Each entry returns a list of spec dicts: {"resource", "cap", "base_percent",
+# "scale_fn", "tick_count", "tick_interval", "lifetime"(optional),
+# "damage_type"(optional)}.
+_RESOURCE_SCALED_NUKE_BUILDERS = {}
 
 
 def build_nikke_rules(slug, skill_values):
@@ -285,4 +298,18 @@ def get_resource_specs(slug, skill_values):
     raid_simulator's `resource_specs` param), or None for the vast majority
     without one."""
     builder = _RESOURCE_SPEC_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_burst_hit_count(slug):
+    """How many separate hits this Nikke's burst nuke fires (see
+    raid_simulator's `burst_hit_counts`); 1 for the vast majority."""
+    return _BURST_HIT_COUNTS.get(slug, 1)
+
+
+def get_resource_scaled_nukes(slug, skill_values):
+    """List of resource-scaled-nuke spec dicts for a Nikke with a burst-fired
+    nuke gated/scaled by a named resource's count (see raid_simulator's
+    `resource_scaled_nukes` param), or None for the vast majority without one."""
+    builder = _RESOURCE_SCALED_NUKE_BUILDERS.get(slug)
     return builder(skill_values) if builder else None

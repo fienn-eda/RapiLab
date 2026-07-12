@@ -90,22 +90,32 @@ CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
 
-def _resource_fill_times(fill, shot_times, core_hittable):
+def _resource_fill_times(fill, shot_times, core_hittable, fight_duration):
     """The times a resource gains a stack, from its fill spec and the owner's
     shot timeline. ("per_shot_every", N) fires at the owner's Nth, 2Nth, ... shot
     (count = index+1, matching per_shot_rules' "every N").
     ("per_shot_every_core", core_n, noncore_n) picks core_n on a core-hittable
     boss and noncore_n otherwise - for a skill whose fill rate differs between
-    hitting the core and not (e.g. Guillotine's EXP). Other fill sources (burst,
-    battle_start, periodic) plug in here as they're needed."""
+    hitting the core and not (e.g. Guillotine's EXP). ("periodic", interval)
+    fires at t=interval, 2*interval, ... up to fight_duration, independent of
+    the owner's shots (e.g. Cinderella's Beautiful, which ticks on a fixed timer
+    while her decoy is up from battle start)."""
     kind = fill[0]
     if kind == "per_shot_every":
         n = fill[1]
-    elif kind == "per_shot_every_core":
+        return [t for i, t in enumerate(shot_times) if (i + 1) % n == 0]
+    if kind == "per_shot_every_core":
         n = fill[1] if core_hittable else fill[2]
-    else:
-        raise ValueError(f"unknown resource fill kind: {kind}")
-    return [t for i, t in enumerate(shot_times) if (i + 1) % n == 0]
+        return [t for i, t in enumerate(shot_times) if (i + 1) % n == 0]
+    if kind == "periodic":
+        interval = fill[1]
+        ticks = []
+        tick = interval
+        while tick <= fight_duration:
+            ticks.append(tick)
+            tick += interval
+        return ticks
+    raise ValueError(f"unknown resource fill kind: {kind}")
 
 # Each damage instance has a damage_type. The type-specific Damage-Up buckets
 # below are read from the registry ONLY for instances of that type, so a buff
@@ -141,6 +151,8 @@ def simulate_raid(
     periodic_rules=None,
     per_shot_rules=None,
     resource_specs=None,
+    burst_hit_counts=None,
+    resource_scaled_nukes=None,
 ):
     weapon_stats = weapon_stats or {}
     periodic_nukes = periodic_nukes or {}
@@ -148,6 +160,8 @@ def simulate_raid(
     periodic_rules = periodic_rules or {}
     per_shot_rules = per_shot_rules or {}
     resource_specs = resource_specs or {}
+    burst_hit_counts = burst_hit_counts or {}
+    resource_scaled_nukes = resource_scaled_nukes or {}
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -213,11 +227,24 @@ def simulate_raid(
             return "projectile_explosion"
         return "attack"
 
-    def record(slug, percent, time, source, damage_type="attack", extra_charge_bonus=0.0):
+    def record(slug, percent, time, source, damage_type="attack", extra_charge_bonus=0.0, resource_gate=None):
         damage_events.append({
             "slug": slug, "percent": percent, "time": time, "source": source,
             "damage_type": damage_type, "extra_charge_bonus": extra_charge_bonus,
+            "resource_gate": resource_gate,
         })
+
+    def _resolve_percent(ev):
+        # A resource-scaled/gated nuke's recorded percent is a BASE value; its
+        # real magnitude depends on the resource's count at the event's OWN
+        # time, which isn't known until the resolution pass runs (after the
+        # burst cycle that records this event) - so it's resolved here, in
+        # phase 2, exactly like a deferred buff (see module docstring).
+        if ev["resource_gate"] is None:
+            return ev["percent"]
+        name, cap, lifetime, scale_fn = ev["resource_gate"]
+        count = context.resource_count(ev["slug"], name, ev["time"], cap, lifetime)
+        return ev["percent"] * scale_fn(count)
 
     def drain_instant_damage(time):
         # A passive that deals damage on a trigger OTHER than the caster's own
@@ -245,10 +272,30 @@ def simulate_raid(
         # appliers (no instant nukes), like periodic_rules.
         fire_trigger("ally_burst_activate", rules_by_slug, context, registry, time)
 
+        # A burst-fired nuke whose magnitude depends on a named resource's
+        # count - a single gated/scaled additional hit (tick_count=1), or a
+        # repeating tick (e.g. a Hero-Level-scaled DoT) where each tick reads
+        # the count at ITS OWN time, not frozen at burst-fire time. Independent
+        # of the plain burst_damage_percents nuke below (a unit can have
+        # either, both, or neither).
+        for spec in resource_scaled_nukes.get(slug, []):
+            for i in range(spec["tick_count"]):
+                tick_time = time + i * spec["tick_interval"]
+                record(
+                    slug, spec["base_percent"], tick_time, "resource_scaled_nuke",
+                    damage_type=spec.get("damage_type", "attack"),
+                    resource_gate=(spec["resource"], spec["cap"], spec.get("lifetime"), spec["scale_fn"]),
+                )
+
         percent = burst_damage_percents.get(slug)
         if not percent:
             return
-        record(slug, percent, time, "burst", damage_type=burst_damage_types.get(slug, "attack"))
+        # A burst that "attacks sequentially N times" deals N SEPARATE hits, not
+        # one hit at N*percent - defense is a flat per-hit subtraction (see
+        # damage_formula), so splitting into hits changes the total whenever
+        # enemy_def > 0. All N hits land at the same instant.
+        for _ in range(burst_hit_counts.get(slug, 1)):
+            record(slug, percent, time, "burst", damage_type=burst_damage_types.get(slug, "attack"))
 
     def on_full_burst_enter(time):
         fire_trigger("full_burst_enter", rules_by_slug, context, registry, time)
@@ -375,7 +422,7 @@ def simulate_raid(
     for slug, specs in resource_specs.items():
         shot_times = shot_times_by_slug.get(slug, [])
         for spec in specs:
-            fill_times = _resource_fill_times(spec.fill, shot_times, core_hittable)
+            fill_times = _resource_fill_times(spec.fill, shot_times, core_hittable, fight_duration)
             # Every per-shot fill grants exactly one stack. (A fill source that
             # grants more than one at a time - e.g. a battle-start +N - would
             # carry its own amount; none exists yet.)
@@ -413,7 +460,7 @@ def simulate_raid(
             "slug": ev["slug"],
             "time": ev["time"],
             "damage": _damage_instance(
-                ev["slug"], ev["percent"], ev["time"],
+                ev["slug"], _resolve_percent(ev), ev["time"],
                 damage_type=ev["damage_type"], extra_charge_bonus=ev["extra_charge_bonus"],
             ),
             "source": ev["source"],
