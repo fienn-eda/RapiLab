@@ -5,7 +5,7 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-12
+- 마지막 갱신: 2026-07-12 (gap #2 Pattern A 완료 반영)
 - 목적: **ROI 순 엔진 확장 우선순위 결정.** 인코딩을 하나씩 하다 갭에 부딪혀
   단발성 확장(instant nuke, periodic nuke)을 반복하던 방식 대신, 갭을 모아
   빈도순으로 최소한만 확장한다. (Fienn 방침, 2026-07-10)
@@ -27,7 +27,7 @@
 | # | 엔진 갭 | 막힌 유닛 (근사) | 확장 규모 | 성격 |
 |---|---|---:|---|---|
 | ~~1~~ | **per-shot 트리거 + 발사 카운터** (노멀공격 N회 / 풀차지 N회 / N shot마다) | ~30 (합집합) | **완료 (2026-07-11, per_shot_rules)** — "마지막 탄"만 잔여 | 신규 트리거 |
-| 2 | **자원/스택 트래킹** (배터리·탄약주머니·N스택 누적) | 16 | 중 (~60–100 loc) — 대개 #1에 의존 | 신규 상태 |
+| 2 | **자원/스택 트래킹** (배터리·탄약주머니·N스택 누적) | 16 | **Pattern A 완료 (2026-07-12, named-resource)** — Pattern B(시간감쇠 게이지·변신) 잔여 | 신규 상태 |
 | 3 | **narrow subset scope** (무기종별 / 티어+선버스트 대상) | 9 | 무기종: 소(~20 loc) / 티어부분집합: 중(~60 loc) | 신규 스코프 |
 | ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
 | 5 | **enemy-element 조건** (룰에서 boss_element 접근) | 1 (+기존 Brid, Helm:Aqua) | 소 (~30 loc) | 컨텍스트 확장 |
@@ -82,20 +82,31 @@
 - 참고: `special-mechanics.md`의 "On [own] Full Charge attack", "'Deals X%' tied to
   a trigger other than own burst"(마지막 탄/노멀 카운터 부분).
 
-### 2. 자원 / 스택 트래킹
+### 2. 자원 / 스택 트래킹 — ⚠ Pattern A 완료 (2026-07-12), Pattern B 잔여
 
-- **무엇:** 유닛 개인 자원(배터리·탄약주머니)이나 N스택 누적을 채웠다 소모하며
-  자버프·변신·넉을 켠다. 예: Ark Ranger Black 배터리, Velvet ammo pouch,
-  Anti A.T. Field 30스택.
-- **왜 막힘:** 수량 기반 자원 트래킹 프리미티브가 없다(현재는 boolean status flag뿐).
-- **막힌 유닛 (16):** ark-ranger-black, asuka-shikinami-langley-wille, cinderella,
-  guillotine-winter-slayer, helm-aquamarine, julia, laplace, maiden-ice-rose,
-  mihara-bonding-chain, modernia, quency-escape-queen, raven, red-hood,
-  sakura-bloom-in-summer, soda-twinkling-bunny, velvet
-- **필요한 확장:** `SquadContext`에 유닛별 정수 자원(fill/drain) + 임계치 조건.
-- **의존성:** 채우고/쓰는 트리거가 대개 #1(part 파괴, 풀차지 발사, 노멀 카운터)이라
-  **#1 선행 필요.** 단독으로 만들면 채울 방법이 없어 무의미한 경우가 많음.
-- 참고: `special-mechanics.md`의 "Ammo pouch / stored-resource mechanics".
+실제 16유닛 텍스트를 확인하니 단일 메커니즘이 아니라 **두 갈래**였다:
+
+- **Pattern A — 누적/캡 스택 카운터 (✅ 완료):** 이벤트마다 스택이 쌓여 캡에서 멈추고
+  버프/넉이 스택 수에 비례. 채우기는 기존 트리거(per-shot 카운터·버스트·battle_start)로
+  커버. **`ResourceSpec`/`ResourceBuff`** + `SquadContext.resource_fills`/`resource_count`
+  + `raid_simulator` resolution 패스(결정론적 fill 스케줄 → 캡 스텝-버프 방출) +
+  `linear_resource_buff`/`leveled_resource_buff`. **선형·시한·티어(레벨 파생)·core-conditional
+  fill** 지원. 첫 소비자 Modernia(시한 캡)/Guillotine: Winter Slayer(연속 누적 + Hero
+  Level 파생). "이미 만든 것" 참고.
+- **Pattern B — 시간감쇠 게이지 + 임계치 변신 (잔여):** Ark Ranger 배터리(부위파괴 +50%,
+  100%에서 변신, 1%/0.2초 감쇠), Mihara 체인. **part-destruction 이벤트에 추가로 막힘**
+  (엔진에 부위 개념 없음 → 가상 스케줄 발명하지 않고 defer, Fienn 2026-07-12).
+- **Pattern A로 언블록(코어):** guillotine-winter-slayer, modernia, soda-twinkling-bunny,
+  quency-escape-queen, cinderella, maiden-ice-rose, asuka-shikinami-langley-wille 등. 남은
+  Pattern A 유닛은 다중소스 채우기·burst-consume·스테이지 게이팅 등 잔주름이 있어 후속
+  인코딩 배치(roadmap To-Do). count-스케일 **넉**(Cinderella mirror, Julia, Guillotine
+  Extermination DoT)은 `resource_count` 조회로 가능하나 phase-ordering(버스트 시점 count)
+  처리가 필요해 그때 착수.
+- **Pattern B로 잔여(16 중):** ark-ranger-black, mihara-bonding-chain, red-hood(charge
+  speed·딜 아님), velvet(ammo pouch·풀차지 트리거), laplace(Hero Vision·풀차지),
+  raven/sakura(sustained DoT 스택·별 갭) 등.
+- 참고: `special-mechanics.md`의 "Named resource / capped stack counter",
+  `engine-capabilities.md`의 ResourceSpec.
 
 ### 3. narrow subset scope
 
@@ -175,6 +186,12 @@
 - **최고 final ATK top-N 타겟팅**: "N ally unit(s) with the highest final ATK"를
   적용 시점 실시간 랭킹으로 정확 대상 지정. `SquadContext.base_atk`+`top_atk_slugs`,
   `slugs:` 스코프, `highest_atk_buff_rule`. 첫 소비자 Miranda. 2026-07-12.
+- **이름있는 자원 / 캡 스택 카운터 (gap #2 Pattern A)**: 수량 기반 자원을 결정론적 fill
+  스케줄로 정의 → count를 시각의 함수로 계산(`resource_count`, phase-order 안전). 각
+  count-스케일 버프를 fill/만료 이벤트 위 **스텝 함수(델타 Effect)**로 방출 → `total_for`
+  누적합 = value_fn(count). 연속 누적(캡에서 정지)·시한 만료·티어(레벨 파생)·core-conditional
+  fill 지원. `ResourceSpec`/`ResourceBuff`, `linear_resource_buff`/`leveled_resource_buff`,
+  raid_simulator resolution 패스. 첫 소비자 Modernia/Guillotine: Winter Slayer. 2026-07-12.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
@@ -188,11 +205,14 @@
 
 - ~~#4 데미지 타입 배선~~ — ✅ 완료 (2026-07-10, 데미지 타입 모델링).
 - ~~#1 per-shot 트리거 + 카운터~~ — ✅ 완료 (2026-07-11, `per_shot_rules` + record-then-compute).
+- ~~#2 자원 트래킹 (Pattern A)~~ — ✅ 완료 (2026-07-12, named-resource).
 1. **막힌 ~30명 재인코딩 배치** — #1이 풀렸으니 이제 실제 유닛들에 per-shot 룰 추가
-   (데이터 수집 → 인코딩). 가장 큰 실질 가치.
-2. **#2 자원 트래킹** — #1 위에서.
-3. **#3 무기종 스코프**(소) → 티어부분집합(중), **#5 boss_element**, **#6 FB창 periodic**
-   — 수요 적고 소규모, 필요할 때.
+   (데이터 수집 → 인코딩). 가장 큰 실질 가치. Pattern A 자원 유닛(Soda·Quency·Cinderella·
+   Maiden·Asuka…)도 이제 이 배치에 포함.
+2. **count-스케일 넉 경로** — 버스트 시점 resource_count로 스케일되는 넉(Cinderella
+   mirror, Julia, Guillotine Extermination DoT). phase-ordering 처리 필요.
+3. **#2 Pattern B (시간감쇠 게이지·변신)** + **#3 무기종/티어부분집합 스코프** + **#5
+   boss_element** + **#6 FB창 periodic** — 수요 적고, 필요할 때.
 
 각 확장은 TDD로, 인벤토리가 증명한 최소 범위만. 착수 시 이 문서의 해당 유닛 목록으로
 "진짜 풀리는지"를 검증하고, 풀린 유닛은 배치 인코딩한다.

@@ -4,7 +4,7 @@
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
 - 마지막 갱신: 2026-07-12
-- 총 **37명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 10명)
+- 총 **39명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 12명)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -51,22 +51,26 @@
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (10명)
+## Burst 3 (12명)
 
 > **eb (encoding batch) 진행:** Burst 3 어태커 배치 인코딩 (least-blocked 우선).
 > eb1 = Noir · Isabel · Liberalio, eb2 = Ludmilla · Chisato · Jill (2026-07-12).
-> **eb3+ 백로그는 [`roadmap.md`](roadmap.md) To-Do 참고** (남은 ~34명, 대부분
-> 자원게이지/상태머신/무기변형 갭에 막혀 엔진 확장 선행 필요).
+> **자원 primitive beachhead (gap #2 Pattern A, 2026-07-12):** Modernia · Guillotine:
+> Winter Slayer — named-resource/캡 스택 카운터 엔진 확장의 첫 소비자.
+> **나머지 백로그는 [`roadmap.md`](roadmap.md) To-Do 참고** (대부분 남은 Pattern A
+> 자원 유닛 / Pattern B 게이지·변신 / 상태머신 / 무기변형 갭).
 
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
 | Anis: Sparkling Summer | `anis-sparkling-summer` | Supporter | SG | Electric | ⚠ | last-bullet 넉/파츠 디버프(트리거 부재), Elemental Advantage Attack Damage(버킷 불명) |
 | Chisato Nishikigi | `chisato-nishikigi` | Attacker | SMG | Iron | ✅ | eb2. Extrasensory 상시 자ATK/진댐(버스트 재충전으로 >70% 유지 근사)·버스트 자ATK/노멀진댐화·48노멀마다 진댐넉(per-shot) 모델됨. per-shot 넉이 attack타입(진댐 언더카운트)·회피/명중(inert) 보류 |
+| Guillotine: Winter Slayer | `guillotine-winter-slayer` | Attacker | AR | Water | ⚠ | 자원 beachhead. EXP 자원(자ATK ▲1.81%/스택, 캡100, 연속)·Hero Level 파생 Water 아군 버프(레벨 스케일)·core-conditional fill·Extermination Water 버프 모델됨. Extermination Hero-Level 스케일 버스트 DoT(count-스케일 넉, phase-ordering)·레벨업 리로드/힐(딜 아님) 보류 |
 | Helm (애장품) | `helm` | Attacker | SR | Water | ⚠ | 라스트불릿 트리거 + 풀차지 효과(힐/게이지/보너스딜) |
 | Isabel | `isabel` | Attacker | SG | Electric | ✅ | eb1. Marked Target 이스컬레이팅 자버프(refresh)·Pointed Feather 주기넉(cd15)·Sonic Chaser 버스트넉 + 단계별 추가딜(activation_count 게이팅, 사이클 정확)·받댐 디버프 모델됨. Full Burst Duration▲(로테 타이밍)만 보류 |
 | Jill Valentine | `jill-valentine` | Attacker | AR | Electric | ⚠ | eb2(부분). FB 자ATK·버스트 진댐/공댐/재장전속도/노멀진댐화 모델됨. Magnum(9탄 노멀배수)·Acid(재장전 지속딜 DoT)·명중(inert) 보류 |
 | Liberalio | `liberalio` | Attacker | SR | Wind | ✅ | eb1. 버스트넉 925%·FB 자ATK·Raging Current 공버프 231%(풀차지 per-shot 상시)·on-core 공버프·풀차지 추가딜 5회 모델됨. Gentle Current(비-보스 대상, solo N/A)·차지속도(inert) 보류 |
 | Ludmilla: Winter Owner | `ludmilla-winter-owner` | Attacker | MG | Water | ✅ | eb2. 60노멀마다 받댐 디버프+넉(per-shot)·FB 자크리율·버스트 자ATK/재장전속도 모델됨. Snowstorm 코어60넉(코어카운터 과대평가 우려로 보류)·재장전 탄약(QoL) 보류 |
+| Modernia | `modernia` | Attacker | MG | Fire | ⚠ | 자원 beachhead. High-Speed Evolution 히트당 3.05% 추가딜(per-shot)·200히트마다 Crit Dmg/Max Ammo 스택(캡5·10초 시한 자원) 모델됨. Max Ammo 스택은 자기 탄창 재생성 전 계산돼 inert·Giant Leap 상태게이팅 200히트 ATK버프(윈도 자원, 유의미·보류)·New World 버스트(Destroy Mode·무한탄·FB연장) 보류 |
 | Noir | `noir` | Attacker | SG | Wind | ✅ | eb1. 버스트넉 351.64%·Lucky Charm 스쿼드 ATK(caster 비례)·Finale 파츠딜 버프 모델됨. Rabbit Twins 탄약/재장전(QoL)·Hit Rate(inert)만 보류 |
 | Privaty (애장품) | `privaty` | Attacker | AR | Water | ⚠ | LD Assault(퍼샷 인스턴스), 지정타겟 조건부 효과 |
 | Rapi: Red Hood | `rapi-red-hood` | Attacker | MG | Fire | ⚠ | Attachable Projectiles + 노멀카운터 기반 버스트 대미지 |

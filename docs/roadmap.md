@@ -154,15 +154,17 @@
 
 - [x] **eb1** (2026-07-12): Noir ✅ · Isabel ✅ · Liberalio ✅
 - [x] **eb2** (2026-07-12): Ludmilla: Winter Owner ✅ · Chisato Nishikigi ✅ · Jill Valentine ⚠
-- [ ] **eb3+ 백로그 (남은 33명)** — clean well이 eb2에서 거의 소진됨. 대부분
-      **자원 게이지(gap #2)·상태머신·무기변형**에 막혀, 제대로 인코딩하려면 엔진 확장
-      선행 필요(안 하면 얇은 ⚠ 스텁). 배치 착수 전 유닛별 검증 필수.
-  - **자원 게이지/상태 스택** (gap #2 선행 권장): `neon-vision-eye`(Firepower),
-    `mana`(Metal), `rei-ayanami`·`rei-ayanami-tentative-name`(Anti A.T./Attack State),
-    `ark-ranger-black`·`asuka-shikinami-langley-wille`(배터리), `elegg-boom-and-shock`(고스트),
-    `guillotine-winter-slayer`, `julia`✱, `laplace`✱, `maiden-ice-rose`, `quency-escape-queen`,
-    `raven`, `red-hood`, `sakura-bloom-in-summer`, `soda-twinkling-bunny`, `cinderella`,
-    `cinderella-crystal-wave`, `modernia`, `mihara-bonding-chain`
+- [x] **자원 primitive beachhead** (gap #2 Pattern A, 2026-07-12): Modernia ⚠ ·
+      Guillotine: Winter Slayer ⚠ — named-resource/캡 스택 카운터 엔진 확장 + 첫 소비자.
+- [ ] **eb3+ 백로그** — clean well이 eb2에서 소진, 자원 primitive로 Pattern A 언블록.
+      대부분 **자원 유닛(gap #2)·상태머신·무기변형**. 배치 착수 전 유닛별 검증 필수.
+  - **Pattern A 자원 유닛 (이제 named-resource로 인코딩 가능)**: `soda-twinkling-bunny`,
+    `quency-escape-queen`, `cinderella`, `cinderella-crystal-wave`, `maiden-ice-rose`,
+    `asuka-shikinami-langley-wille`, `rei-ayanami`·`rei-ayanami-tentative-name`(Anti A.T.),
+    `neon-vision-eye`, `mana`. count-스케일 넉(버스트 시점 count)이 헤드라인인 유닛
+    (`julia`✱, `cinderella` mirror, Guillotine Extermination)은 count-스케일 넉 경로 선행.
+  - **Pattern B 게이지·변신 (잔여, gap #2)**: `ark-ranger-black`(배터리 시간감쇠·부위파괴
+    fill)·`mihara-bonding-chain`(체인)·`elegg-boom-and-shock`·`red-hood`(charge speed·딜 아님).
   - **상태머신/특수 트리거**: `diesel-winter-sweets`(Intro/Highlight+지속딜),
     `bready`(Taste), `dorothy-serendipity`(펠릿 카운터), `eve`(크리티컬-히트 카운터),
     `ada-wong`(풀버스트창 주기딜=gap #6 + True), `marciana-marine-study`(boss-element=gap #5),

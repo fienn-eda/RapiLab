@@ -213,13 +213,35 @@ how to encode it, and current engine status.
   handles `Effect`s; for an escalating **Pulse** (CDR), write the cumulative
   logic directly (see `helm_aquamarine.py`).
 
-## Ammo pouch / stored-resource mechanics
-- **What:** some kits (e.g. Velvet) have a personal resource that fills from
-  stealing enemy ammo or a flat grant, and drains to power self-buffs.
-- **Gap:** no resource-tracking primitive exists, and the triggers that
-  spend/fill it are usually already-deferred (own full-charge-shot,
-  normal-attack-count).
-- **Encode:** defer the whole chain; note in the docstring what it gates.
+## Named resource / capped stack counter - BUILT capability (gap #2 Pattern A)
+- **What:** a quantity-based resource (N-stack counter, EXP, Golden Chip,
+  ammo/crit stacks) that fills on a trigger, clamps to a cap, and drives buffs
+  whose magnitude scales with the current count. TWO stack lifetimes: PERMANENT
+  accumulation ("stacks continuously", ramps then plateaus at the cap - e.g.
+  Guillotine EXP, Soda Golden Chip) and TIMED ("stacks up to N, lasts X sec" -
+  e.g. Modernia's 10-sec crit stacks). Also a DERIVED LEVEL (Guillotine's Hero
+  Level = 1 + EXP//10, capped) that gates/scales further buffs.
+- **Engine capability (Fienn-approved, 2026-07-12):** `ResourceSpec(name, fill,
+  cap, buffs)` in `effects.py`, threaded via `_RESOURCE_SPEC_BUILDERS` /
+  `get_resource_specs` / `roster` into `simulate_raid`'s `resource_specs`. The
+  count is a FUNCTION OF TIME (`SquadContext.resource_count`), computed from a
+  deterministic fill schedule - never a mutable total, so it's phase-order-safe
+  (burst-cycle fills and shot-loop fills coexist). A resolution pass emits each
+  buff as a step function of delta Effects over the fill/expiry events. `fill`:
+  `("per_shot_every", N)` or `("per_shot_every_core", core_n, noncore_n)`
+  (core-hittable-dependent, resolved by the sim's own `core_hittable`). `buffs`:
+  `linear_resource_buff(stat, per_stack, scope, lifetime=None)`,
+  `leveled_resource_buff(stat, per_level, level_fn, scope, lifetime=None)`, or a
+  raw `ResourceBuff` with a threshold `value_fn`. See `engine-capabilities.md`.
+- **First consumers:** `modernia.py` (timed capped), `guillotine_winter_slayer.py`
+  (permanent + leveled + core-conditional fill).
+- **Still deferred:** count-scaled NUKES (value read at BURST time, before the
+  fill schedule is resolved - e.g. Guillotine's Extermination Hero-Level DoT,
+  Cinderella's stack-mirroring nuke, Julia). Pattern B: time-DRAINING gauges +
+  threshold transforms (Ark Ranger battery, filled by part-destruction which the
+  engine has no concept of) - deferred, don't invent a part-break schedule.
+  Multi-source fills / burst-consume / status-window-gated fills (Soda,
+  Modernia's Giant Leap ATK) also await more fill sources.
 
 ## Periodic/recurring skills on their own fixed cooldown - BUILT capability
 - **What:** some kits have a SEPARATE active skill with its own short

@@ -162,6 +162,30 @@ final ATK at application time (so an earlier same-cycle ATK buff is reflected) a
 emits a `slugs:` scope. `raid_simulator` injects each member's base ATK into the
 context. See `miranda.py`.
 
+**Named resource / capped stack counter (gap #2 Pattern A):** a quantity-based
+resource (battery / ammo pouch / N-stack counter) driving count-scaled buffs.
+Declare a `ResourceSpec(name, fill, cap, buffs)` (in `effects.py`); wire it via
+`_RESOURCE_SPEC_BUILDERS` / `get_resource_specs` and `roster` threads it into
+`simulate_raid`'s `resource_specs`. `fill` is deterministic:
+`("per_shot_every", N)` = +1 stack every Nth of the owner's shots, or
+`("per_shot_every_core", core_n, noncore_n)` = core_n on a core-hittable boss
+else noncore_n (Guillotine's "3 Core hits" vs "6 normals without the core").
+`buffs` are `ResourceBuff`s built with `linear_resource_buff(stat, per_stack,
+scope, lifetime=None)` (value = per_stack × count) or `leveled_resource_buff(stat,
+per_level, level_fn, scope, lifetime=None)` (value = per_level × level_fn(count),
+for a Hero-Level-style tier); an arbitrary `value_fn` is allowed for a threshold
+buff. `lifetime=None` = a permanent stack that accumulates (ramps then plateaus at
+the cap); a number = a timed stack that expires that many seconds after each fill.
+The count itself is a function of time — `SquadContext.resource_count(slug, name,
+time, cap, lifetime)` — never a mutable total, so it's safe across the burst-cycle
+vs shot-loop phase ordering. The resolution pass emits each buff as a STEP FUNCTION
+of delta Effects over the fill/expiry events, so `total_for`'s running sum equals
+value_fn(count) at every time. First consumers: `modernia.py` (timed capped),
+`guillotine_winter_slayer.py` (permanent + leveled + core-conditional). NOT yet
+covered: count-scaled NUKES (value read at burst time — phase-ordering), and
+Pattern B time-draining gauges / transforms (Ark Ranger battery). See
+`special-mechanics.md`.
+
 **Record-then-compute:** `simulate_raid` RECORDS every damage instance
 (burst/instant/periodic/per-shot nukes + normal attacks) as an event during
 phase 1 (which only applies buffs), then computes them all in a phase-2 pass
