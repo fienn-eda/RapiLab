@@ -84,7 +84,12 @@ from app.skill_rules.liberalio import (
     submerged_world_burst_percent,
 )
 from app.skill_rules.julia import DECRESCENDO_COOLDOWN as JULIA_DECRESCENDO_COOLDOWN
-from app.skill_rules.julia import build_decrescendo_rules, climax_burst_percent
+from app.skill_rules.julia import (
+    build_climax_resource_scaled_nuke,
+    build_crescendo_resources,
+    build_decrescendo_rules,
+    climax_burst_percent,
+)
 from app.skill_rules import julia_signature
 from app.skill_rules.little_mermaid import build_little_mermaid_rules
 from app.skill_rules.liter import build_liter_rules
@@ -217,7 +222,7 @@ _BUILDERS = {
     "helm": _build_helm,
     "helm-aquamarine": lambda sv: (build_helm_aquamarine_rules(sv), aegis_cannon_overload_burst_percent(sv)),
     "isabel": lambda sv: (build_isabel_rules(sv), sonic_chaser_burst_percent(sv)),
-    "julia": lambda sv: ([], climax_burst_percent(sv)),  # Decrescendo is periodic-only; Crescendo deferred
+    "julia": lambda sv: ([], climax_burst_percent(sv)),  # Decrescendo is periodic-only; Crescendo is a resource
     "julia-signature": lambda sv: (
         julia_signature.build_decrescendo_battle_start_rules(sv["decrescendo"]),
         julia_signature.climax_burst_percent(sv),
@@ -330,6 +335,7 @@ _PER_SHOT_RULE_BUILDERS = {
 # returns a list of ResourceSpec.
 _RESOURCE_SPEC_BUILDERS = {
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_resources(sv),
+    "julia": lambda sv: build_crescendo_resources(sv),
     "modernia": lambda sv: build_modernia_resources(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
     "cinderella": lambda sv: build_beautiful_resources(sv),
@@ -346,6 +352,7 @@ _RESOURCE_SPEC_BUILDERS = {
 _RESOURCE_SCALED_NUKE_BUILDERS = {
     "cinderella": lambda sv: build_glass_slippers_resource_scaled_nuke(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
+    "julia": lambda sv: build_climax_resource_scaled_nuke(sv),
     "mana": lambda sv: build_fatal_error_dot(sv),
 }
 
