@@ -86,10 +86,11 @@ def test_fatal_error_dot_spec_is_a_flat_396_percent_per_second_for_10_ticks():
     assert spec["tick_count"] == 10
     assert spec["tick_interval"] == 1.0
     assert spec["damage_type"] == "sustained"
+    assert spec["full_burst_bonus_eligible"] is True
     assert "resource" not in spec
 
 
-def test_mana_end_to_end_fatal_error_dot_ticks_ten_times_one_second_apart():
+def test_mana_end_to_end_fatal_error_dot_ticks_ten_times_and_gets_full_burst_bonus():
     deck = [
         {"slug": "buffer", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
         {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
@@ -117,4 +118,9 @@ def test_mana_end_to_end_fatal_error_dot_ticks_ten_times_one_second_apart():
     # tick (granted at the same instant, same-instant inclusive semantics
     # apply here since it's a self-buff boosting a LATER-computed damage type
     # bucket, not retroactively affecting cast-time damage like Maiden's).
-    assert all(round(h["damage"], 4) == round(10000 * 3.96 * 1.528, 4) for h in hits)
+    # Every tick also lands inside the Full Burst window [5.0, 15.0) that
+    # opened at the same instant as her burst, and gets the +50% Full Burst
+    # Bonus - confirmed in-game (Fienn, 2026-07-12), despite Fatal Error!'s
+    # own text saying "as sustained damage" rather than "as additional
+    # damage" (see mana.py's module docstring).
+    assert all(round(h["damage"], 4) == round(10000 * 3.96 * 1.5 * 1.528, 4) for h in hits)

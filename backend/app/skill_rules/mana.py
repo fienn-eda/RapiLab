@@ -26,7 +26,14 @@ Modeled (DPS-relevant):
   flat (non-resource-scaled) Sustained-typed DoT - 396% of final ATK per
   second, 10 ticks one second apart (`resource_scaled_nukes` with no
   "resource" key, reusing the tick_count/tick_interval machinery built for
-  Guillotine's Hero-Level DoT without a fake resource).
+  Guillotine's Hero-Level DoT without a fake resource). **Every tick also
+  gets the Full Burst Bonus** (`full_burst_bonus_eligible=True`) - confirmed
+  in-game (Fienn, 2026-07-12), even though her skill text says "as sustained
+  damage" rather than "as additional damage" (the text-signal rule from
+  `docs/decisions.md` was written around single-instant nukes; a repeating
+  DoT tick is, by construction, not "at cast time" past its first tick, and
+  her 10 ticks span exactly the same 10s the Full Burst window that opens at
+  her burst covers).
 
 Not modeled / deferred:
 - Metal gamma's heal-after-10-normal-attacks (2.04% of caster's Max HP to all
@@ -73,4 +80,7 @@ def build_fatal_error_dot(values):
     burst = values["fatal_error"]
     percent = float(burst["description_value_03"])
     tick_count = int(float(burst["description_value_04"]))
-    return [{"base_percent": percent, "tick_count": tick_count, "tick_interval": 1.0, "damage_type": "sustained"}]
+    return [{
+        "base_percent": percent, "tick_count": tick_count, "tick_interval": 1.0,
+        "damage_type": "sustained", "full_burst_bonus_eligible": True,
+    }]
