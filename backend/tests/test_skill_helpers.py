@@ -5,6 +5,8 @@ from app.skill_rules._helpers import (
     escalating_buff_rule,
     highest_atk_buff_rule,
     instant_nuke_pulse_rule,
+    leveled_resource_buff,
+    linear_resource_buff,
     round_buff_rule,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
@@ -153,3 +155,24 @@ def test_cdr_pulse_rule_emits_a_drainable_pulse():
     assert len(pulses) == 1
     assert pulses[0].value == 3.17
     assert pulses[0].scope == "squad"
+
+
+def test_linear_resource_buff_scales_value_by_stack_count():
+    buff = linear_resource_buff("atk_percent", per_stack=0.0181, scope="self", lifetime=10.0)
+    assert buff.stat == "atk_percent"
+    assert buff.scope == "self"
+    assert buff.lifetime == 10.0
+    assert buff.value_fn(0) == 0.0
+    assert round(buff.value_fn(3), 4) == round(0.0181 * 3, 4)
+
+
+def test_leveled_resource_buff_scales_value_by_derived_level():
+    # level = count // 10 (Guillotine's Hero Level rises every 10 EXP); value is
+    # per_level * level, so it steps only when the level increments.
+    buff = leveled_resource_buff(
+        "attack_damage_up", per_level=0.0116, level_fn=lambda c: c // 10, scope="element:Water"
+    )
+    assert buff.scope == "element:Water"
+    assert buff.lifetime is None
+    assert buff.value_fn(9) == 0.0        # level 0
+    assert round(buff.value_fn(25), 4) == round(0.0116 * 2, 4)  # level 2

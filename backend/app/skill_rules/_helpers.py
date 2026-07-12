@@ -4,7 +4,7 @@ Most supporters just grant a bundle of timed buffs on a trigger, or emit a
 burst-cooldown-reduction pulse. These two helpers cover that so each Nikke
 module only has to declare its stats/values, not re-implement the action.
 """
-from app.effects import Effect, Pulse, RoundGrant
+from app.effects import Effect, Pulse, ResourceBuff, RoundGrant
 from app.squad_engine import SkillRule
 
 
@@ -87,6 +87,25 @@ def round_buff_rule(trigger, buffs, shots=1):
             registry.add_round_grant(RoundGrant(stat, value, scope, caster_slug, shots, time))
 
     return SkillRule(trigger=trigger, action=action)
+
+
+def linear_resource_buff(stat, per_stack, scope, lifetime=None):
+    """A resource-derived buff whose value grows linearly with the stack count:
+    `per_stack` per stack (e.g. Guillotine's EXP: ATK +1.81% per stack; Modernia's
+    Crit Damage +14.25% per stack). lifetime None = permanent accumulation; a
+    number = each stack expires that many seconds after its fill. Build a
+    ResourceSpec around one or more of these (see effects.ResourceSpec)."""
+    return ResourceBuff(stat=stat, scope=scope, value_fn=lambda count: per_stack * count, lifetime=lifetime)
+
+
+def leveled_resource_buff(stat, per_level, level_fn, scope, lifetime=None):
+    """A resource-derived buff scaled by a LEVEL derived from the stack count,
+    not the raw count - e.g. Guillotine's Hero Level (= EXP // 10, capped),
+    granting per-level buffs. `level_fn` maps the (capped) count to the level;
+    the buff value is `per_level * level`, so it steps only when the level rises."""
+    return ResourceBuff(
+        stat=stat, scope=scope, value_fn=lambda count: per_level * level_fn(count), lifetime=lifetime
+    )
 
 
 def escalating_buff_rule(trigger, tiers, refreshing=False):

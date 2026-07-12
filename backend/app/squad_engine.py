@@ -39,9 +39,35 @@ class SquadContext:
         # Each unit's burst-tier fire times, so a post-pass (e.g. Mint's per-shot
         # Here I Go!) can reconstruct a per-cycle-alternating status at any time.
         self.burst_times: dict[str, list[float]] = {m.slug: [] for m in members}
+        # (slug, resource-name) -> list of (time, amount) fill events, so a
+        # quantity-based resource (battery/ammo pouch/N-stack counter) is DEFINED
+        # by its deterministic fill schedule and its count is COMPUTED as a
+        # function of time (see resource_count) - never a mutable running total,
+        # which would break across the burst-cycle vs shot-loop phase ordering.
+        self.resource_fills: dict[tuple[str, str], list[tuple[float, float]]] = {}
 
     def record_burst_time(self, slug: str, time: float) -> None:
         self.burst_times[slug].append(time)
+
+    def fill_resource(self, slug: str, name: str, amount: float, time: float) -> None:
+        """Record that `slug`'s resource `name` gained `amount` at `time`."""
+        self.resource_fills.setdefault((slug, name), []).append((time, amount))
+
+    def resource_count(
+        self, slug: str, name: str, time: float, cap: float, lifetime: float | None = None
+    ) -> float:
+        """`slug`'s resource `name` at `time`, clamped to `cap`. A permanent
+        resource (lifetime=None) sums every fill at or before `time`; a timed one
+        (lifetime seconds) sums only fills still active - a fill at tf is active
+        for [tf, tf+lifetime), i.e. those in (time-lifetime, time]."""
+        total = 0.0
+        for fill_time, amount in self.resource_fills.get((slug, name), []):
+            if fill_time > time:
+                continue
+            if lifetime is not None and fill_time <= time - lifetime:
+                continue
+            total += amount
+        return min(cap, total)
 
     def record_activation(self, slug: str, trigger: str) -> None:
         self._activations[(slug, trigger)] = self._activations.get((slug, trigger), 0) + 1

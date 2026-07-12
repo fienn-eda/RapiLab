@@ -89,6 +89,24 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
+
+def _resource_fill_times(fill, shot_times, core_hittable):
+    """The times a resource gains a stack, from its fill spec and the owner's
+    shot timeline. ("per_shot_every", N) fires at the owner's Nth, 2Nth, ... shot
+    (count = index+1, matching per_shot_rules' "every N").
+    ("per_shot_every_core", core_n, noncore_n) picks core_n on a core-hittable
+    boss and noncore_n otherwise - for a skill whose fill rate differs between
+    hitting the core and not (e.g. Guillotine's EXP). Other fill sources (burst,
+    battle_start, periodic) plug in here as they're needed."""
+    kind = fill[0]
+    if kind == "per_shot_every":
+        n = fill[1]
+    elif kind == "per_shot_every_core":
+        n = fill[1] if core_hittable else fill[2]
+    else:
+        raise ValueError(f"unknown resource fill kind: {kind}")
+    return [t for i, t in enumerate(shot_times) if (i + 1) % n == 0]
+
 # Each damage instance has a damage_type. The type-specific Damage-Up buckets
 # below are read from the registry ONLY for instances of that type, so a buff
 # like "Sustained Damage +X%" only boosts sustained-typed damage (not every
@@ -122,12 +140,14 @@ def simulate_raid(
     burst_damage_types=None,
     periodic_rules=None,
     per_shot_rules=None,
+    resource_specs=None,
 ):
     weapon_stats = weapon_stats or {}
     periodic_nukes = periodic_nukes or {}
     burst_damage_types = burst_damage_types or {}
     periodic_rules = periodic_rules or {}
     per_shot_rules = per_shot_rules or {}
+    resource_specs = resource_specs or {}
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -282,6 +302,7 @@ def simulate_raid(
         on_full_burst_end=on_full_burst_end,
     )
 
+    shot_times_by_slug = {}
     for slug, weapon in weapon_stats.items():
         target = target_for(slug)
         is_charge_weapon = weapon["weapon"] in CHARGE_WEAPONS
@@ -339,6 +360,41 @@ def simulate_raid(
             damage_type = normal_attack_type(slug, weapon, target, shot_time)
             record(slug, weapon["damage_percent"], shot_time, "normal_attack",
                    damage_type=damage_type, extra_charge_bonus=extra_charge_bonus)
+        shot_times_by_slug[slug] = shot_times
+
+    # Resolve quantity-based resources (battery / ammo pouch / N-stack counter).
+    # Each spec's fill schedule is deterministic (here: +amount every Nth of the
+    # owner's shots), so its count is a function of time (context.resource_count).
+    # Each derived buff is emitted as a STEP FUNCTION over the fill/expiry events:
+    # at each event we add a delta Effect (duration=None) carrying the change in
+    # value, so total_for's running sum equals value_fn(count) at every time -
+    # permanent stacks ramp up (all-positive deltas that plateau at the cap) and
+    # timed stacks also come back down (negative deltas as they expire). Runs
+    # after the shot loop so every fill is known; before phase 2, so
+    # record-then-compute lets these buffs reach damage recorded earlier.
+    for slug, specs in resource_specs.items():
+        shot_times = shot_times_by_slug.get(slug, [])
+        for spec in specs:
+            fill_times = _resource_fill_times(spec.fill, shot_times, core_hittable)
+            # Every per-shot fill grants exactly one stack. (A fill source that
+            # grants more than one at a time - e.g. a battle-start +N - would
+            # carry its own amount; none exists yet.)
+            for ft in fill_times:
+                context.fill_resource(slug, spec.name, 1, ft)
+            for buff in spec.buffs:
+                events = set(fill_times)
+                if buff.lifetime is not None:
+                    events |= {ft + buff.lifetime for ft in fill_times if ft + buff.lifetime < fight_duration}
+                prev_value = 0.0
+                for event_time in sorted(events):
+                    count = context.resource_count(slug, spec.name, event_time, spec.cap, buff.lifetime)
+                    value = buff.value_fn(count)
+                    if value != prev_value:
+                        registry.add(
+                            Effect(buff.stat, value - prev_value, buff.scope, None, slug),
+                            applied_at=event_time,
+                        )
+                        prev_value = value
 
     for slug, spec in periodic_nukes.items():
         cooldown = spec["cooldown"]

@@ -22,6 +22,7 @@ from app.skill_rules.registry import (
     get_per_shot_rules,
     get_periodic_nuke,
     get_periodic_rules,
+    get_resource_specs,
 )
 from app.squad_engine import SkillRule
 
@@ -69,6 +70,7 @@ def assemble_simulation_inputs(ordered_deck):
     periodic_nukes = {}
     periodic_rules = {}
     per_shot_rules = {}
+    resource_specs = {}
     burst_damage_types = {}
 
     for spec in ordered_deck:
@@ -112,6 +114,10 @@ def assemble_simulation_inputs(ordered_deck):
         if per_shot_rule:
             per_shot_rules[spec.slug] = per_shot_rule
 
+        resource_spec = get_resource_specs(spec.slug, skill_values)
+        if resource_spec:
+            resource_specs[spec.slug] = resource_spec
+
     return {
         "deck": deck,
         "rules_by_slug": rules_by_slug,
@@ -121,5 +127,6 @@ def assemble_simulation_inputs(ordered_deck):
         "periodic_nukes": periodic_nukes,
         "periodic_rules": periodic_rules,
         "per_shot_rules": per_shot_rules,
+        "resource_specs": resource_specs,
         "burst_damage_types": burst_damage_types,
     }

@@ -1,4 +1,4 @@
-from app.effects import Effect, Pulse
+from app.effects import Effect, Pulse, ResourceBuff, ResourceSpec
 from app.raid_simulator import simulate_raid
 from app.skill_rules._helpers import (
     buff_rule,
@@ -1323,6 +1323,171 @@ def test_normal_attack_damage_for_charge_weapon_applies_charge_damage_bonus():
     normal_hits = [e for e in result["damage_log"] if e["source"] == "normal_attack"]
     assert len(normal_hits) == 1
     assert normal_hits[0]["damage"] == 250.0
+
+
+def _normals(result, slug="attacker"):
+    return [e for e in result["damage_log"] if e["source"] == "normal_attack" and e["slug"] == slug]
+
+
+def test_resource_spec_permanent_linear_buff_steps_up_and_caps():
+    # A named resource filled every 2 shots, granting a permanent damage_taken_up
+    # of 0.5 PER stack, capped at 2 stacks. AR fires 12/s; per_shot_every 2 fires
+    # at counts 2,4,6,... = shot indices 1,3,5,... So a shot at index i sees
+    # min(2, fills-at-or-before-i) stacks -> damage 1000*(1 + 0.5*stacks).
+    spec = ResourceSpec(
+        name="evo", fill=("per_shot_every", 2), cap=2,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.5 * c)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=1.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        resource_specs={"attacker": [spec]},
+    )
+    dmg = {round(e["time"], 4): e["damage"] for e in _normals(result)}
+    assert dmg[0.0] == 1000.0                    # index 0: 0 fills
+    assert dmg[round(2 / 12, 4)] == 1500.0       # index 2: 1 fill (at index 1)
+    assert dmg[round(4 / 12, 4)] == 2000.0       # index 4: 2 fills
+    assert dmg[round(6 / 12, 4)] == 2000.0       # index 6: 3 fills, capped at 2
+
+
+def test_resource_spec_timed_stacks_expire_after_lifetime():
+    # Same fill (every 2 shots -> fills at shot indices 1,3,5,...), but each stack
+    # lasts only 0.5s. AR fires 12/s, so a shot at index i (t=i/12) sees stacks
+    # filled in (t-0.5, t] = fills at odd j with i-6 < j <= i.
+    spec = ResourceSpec(
+        name="evo", fill=("per_shot_every", 2), cap=5,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.5 * c, lifetime=0.5)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=2.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        resource_specs={"attacker": [spec]},
+    )
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    assert dmg[4] == 2000.0   # fills j=1,3 in window -> 2 stacks
+    # index 10: fills j=5,7,9 in window (1,3 expired) -> 3 stacks -> 2500. Without
+    # expiry all 5 fills (j=1,3,5,7,9) would give cap 5 -> 3500.
+    assert dmg[10] == 2500.0
+
+
+def test_resource_spec_leveled_buff_scales_by_derived_level():
+    # A tiered buff: level = stacks // 3, damage_taken_up = 0.5 per level. Fill
+    # every shot (a shot sees its own fill, matching per_shot_rules), cap 9 stacks
+    # -> max level 3. At shot index i, stacks = min(9, i+1), level = stacks // 3.
+    spec = ResourceSpec(
+        name="exp", fill=("per_shot_every", 1), cap=9,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.5 * (c // 3))],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=2.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        resource_specs={"attacker": [spec]},
+    )
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    assert dmg[2] == 1500.0   # 3 stacks -> level 1 -> +0.5
+    assert dmg[5] == 2000.0   # 6 stacks -> level 2
+    assert dmg[8] == 2500.0   # 9 stacks -> level 3 (capped)
+    assert dmg[15] == 2500.0  # count capped at 9 -> still level 3
+
+
+def test_resource_spec_buff_can_target_other_units_by_scope():
+    # A resource owned/filled by one unit can buff a DIFFERENT scope (e.g.
+    # Guillotine's Hero Level buffs Water allies). Here attacker's resource grants
+    # a squad damage_taken_up that raises midtier's... use burst nuke on attacker.
+    spec = ResourceSpec(
+        name="exp", fill=("per_shot_every", 1), cap=100,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="squad", value_fn=lambda c: 0.01 * c)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=20.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=10000)},
+        resource_specs={"attacker": [spec]},
+    )
+    # burst fires after gauge charge (~t=5); by then many fills happened, so the
+    # squad damage_taken_up is well above 0 -> burst nuke > base 10000.
+    burst = [e for e in result["damage_log"] if e["source"] == "burst"]
+    assert burst and burst[0]["damage"] > 10000.0
+
+
+def test_resource_spec_core_conditional_fill_uses_core_hittable():
+    # A fill whose rate depends on the boss: ("per_shot_every_core", 3, 6) fills
+    # every 3rd shot on a core-hittable boss (Guillotine's "hit Core 3 times"),
+    # every 6th otherwise ("6 normals without hitting the core"). damage_taken_up
+    # +1.0 per stack, cap 1 -> a shot's damage doubles once the first fill lands.
+    spec = ResourceSpec(
+        name="exp", fill=("per_shot_every_core", 3, 6), cap=1,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 1.0 * c)],
+    )
+    def run(core):
+        return simulate_raid(
+            make_deck(),
+            {"buffer": [], "midtier": [], "attacker": []},
+            burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+            enemy_def=0, gauge_charge_time=5.0, fight_duration=1.0, mode="auto", base_crit_rate=0.0,
+            core_hittable=core, weapon_stats={"attacker": _ar_weapon()},
+            resource_specs={"attacker": [spec]},
+        )
+    core_dmg = {i: e["damage"] for i, e in enumerate(_normals(run(True)))}
+    nocore_dmg = {i: e["damage"] for i, e in enumerate(_normals(run(False)))}
+    # core run: base is 2000/shot (core_hit_bonus doubles); first fill at shot
+    # index 2 (count 3) -> the +1.0 damage_taken doubles index 2 to 4000.
+    assert core_dmg[1] == 2000.0 and core_dmg[2] == 4000.0
+    # non-core run: base 1000/shot; first fill at shot index 5 (count 6).
+    assert nocore_dmg[2] == 1000.0 and nocore_dmg[5] == 2000.0
+
+
+def test_resource_core_conditional_fill_adds_exactly_one_stack_per_fill():
+    # Guards against reading the fill tuple's 3rd element (the non-core rate) as a
+    # per-fill stack amount: each fill must add exactly 1 stack. cap 2, per_stack
+    # 0.5 -> after the 1st fill (index 2) exactly 1 stack (1500), after the 2nd
+    # (index 5) exactly 2 stacks (2000), not more.
+    spec = ResourceSpec(
+        name="exp", fill=("per_shot_every_core", 3, 6), cap=2,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.5 * c)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=1.0, mode="auto", base_crit_rate=0.0,
+        core_hittable=True, weapon_stats={"attacker": _ar_weapon()},
+        resource_specs={"attacker": [spec]},
+    )
+    # attacker_atk with core doubling: base 2000. 1 stack -> *1.5 = 3000; 2 -> 4000.
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    assert dmg[2] == 3000.0   # exactly 1 stack (would be capped 2 -> 4000 if amount were 3)
+    assert dmg[5] == 4000.0   # exactly 2 stacks (cap)
+
+
+def test_resource_specs_defaults_to_none_and_is_a_no_op():
+    baseline = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=5.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+    )
+    with_empty = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=5.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        resource_specs={},
+    )
+    assert with_empty["total_damage"] == baseline["total_damage"]
 
 
 def test_slug_missing_from_weapon_stats_gets_no_normal_attack_damage():

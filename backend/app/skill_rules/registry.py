@@ -34,6 +34,8 @@ from app.skill_rules.ludmilla_winter_owner import build_ludmilla_per_shot_rules,
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
 from app.skill_rules.grave import build_grave_rules
+from app.skill_rules.guillotine_winter_slayer import build_guillotine_resources, build_guillotine_rules
+from app.skill_rules.modernia import build_modernia_per_shot_rules, build_modernia_resources
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
     build_fire_away_rules,
@@ -163,6 +165,8 @@ _BUILDERS = {
     "zwei": lambda sv: (build_zwei_rules(sv), None),
     "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), None),  # Kill the Target (burst) deferred
     "grave": lambda sv: (build_grave_rules(sv), None),
+    "guillotine-winter-slayer": lambda sv: (build_guillotine_rules(sv), None),  # Extermination DoT (Hero-Level-scaled) deferred
+    "modernia": lambda sv: ([], None),  # all modeled content is per-shot + resource; burst deferred
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
     "mast-romantic-maid": lambda sv: (build_mast_rules(sv), None),
     "mint": lambda sv: (build_mint_rules(sv), None),
@@ -212,6 +216,7 @@ _PERIODIC_RULE_BUILDERS = {
 # (threshold, mode, [SkillRule]); mode is "after" or "every".
 _PER_SHOT_RULE_BUILDERS = {
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
+    "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
@@ -222,6 +227,16 @@ _PER_SHOT_RULE_BUILDERS = {
     "prika": lambda sv: build_lets_get_show_started_rules(
         {**sv["lets_get_the_show_started"], "caster_atk": sv["caster_atk"]}
     ),
+}
+
+
+# A Nikke with a quantity-based resource (battery / ammo pouch / N-stack counter)
+# that fills deterministically and drives count-scaled buffs - see
+# raid_simulator's `resource_specs` param and effects.ResourceSpec. Each entry
+# returns a list of ResourceSpec.
+_RESOURCE_SPEC_BUILDERS = {
+    "modernia": lambda sv: build_modernia_resources(sv),
+    "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
 }
 
 
@@ -262,4 +277,12 @@ def get_per_shot_rules(slug, skill_values):
     for Nikkes without one. `mode` is "after" (once at the Nth shot) or "every"
     (at every Nth shot)."""
     builder = _PER_SHOT_RULE_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_resource_specs(slug, skill_values):
+    """List of ResourceSpec for a Nikke with a quantity-based resource (see
+    raid_simulator's `resource_specs` param), or None for the vast majority
+    without one."""
+    builder = _RESOURCE_SPEC_BUILDERS.get(slug)
     return builder(skill_values) if builder else None

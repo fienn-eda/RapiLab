@@ -8,7 +8,8 @@ Effect.scope selects which squad members an effect applies to:
                         (used for "N allies with the highest final ATK" buffs,
                         resolved to concrete slugs at application time)
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from typing import Callable
 
 
 @dataclass
@@ -46,6 +47,37 @@ class RoundGrant:
     source_slug: str
     shots: int
     granted_at: float
+
+
+@dataclass
+class ResourceBuff:
+    """One buff derived from a named resource's current stack count. `value_fn`
+    maps the resource's count (already clamped to the spec's cap) to the buff's
+    value - linear (per_stack * count) or tiered (per_level * level(count)). It's
+    emitted as a step function over the resource's fill schedule (see
+    raid_simulator's resolution pass). `lifetime` None = a permanent stack that
+    accumulates (Guillotine's EXP); a number = a timed stack that expires that
+    many seconds after each fill (Modernia's 10-sec stacks)."""
+
+    stat: str
+    scope: str
+    value_fn: Callable[[float], float]
+    lifetime: float | None = None
+
+
+@dataclass
+class ResourceSpec:
+    """A quantity-based resource (battery / ammo pouch / N-stack counter) that
+    the current status-flag primitive can't express. Filled deterministically
+    (`fill`, e.g. ("per_shot_every", N) = +1 every Nth of the owner's shots),
+    clamped to `cap`, driving one or more count-scaled `buffs`. Passed to
+    simulate_raid keyed by owner slug; its buffs are emitted in a resolution pass
+    once the owner's shot timeline is known."""
+
+    name: str
+    fill: tuple
+    cap: float
+    buffs: list[ResourceBuff] = field(default_factory=list)
 
 
 def _matches_scope(scope: str, target: dict) -> bool:

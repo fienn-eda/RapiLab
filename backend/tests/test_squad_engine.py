@@ -261,6 +261,48 @@ def test_top_atk_slugs_includes_caster_when_not_enough_allies():
     assert sorted(result) == ["miranda", "scarlet"]
 
 
+def test_resource_count_accumulates_all_fills_up_to_time_when_permanent():
+    # A permanent (lifetime=None) resource: count at `time` is the sum of every
+    # fill AT OR BEFORE that time (Guillotine's EXP, which accumulates
+    # continuously). Fills recorded out of order still sum correctly by time.
+    ctx = make_context(SquadMember("guillotine-winter-slayer", burst_tier=3, element="Water"))
+    ctx.fill_resource("guillotine-winter-slayer", "exp", 1, time=3.0)
+    ctx.fill_resource("guillotine-winter-slayer", "exp", 1, time=1.0)
+    ctx.fill_resource("guillotine-winter-slayer", "exp", 1, time=2.0)
+    count = lambda t: ctx.resource_count("guillotine-winter-slayer", "exp", t, cap=100)
+    assert count(0.5) == 0
+    assert count(1.0) == 1  # fill at exactly t counts
+    assert count(2.5) == 2
+    assert count(10.0) == 3
+
+
+def test_resource_count_clamps_to_cap():
+    ctx = make_context(SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron"))
+    ctx.fill_resource("soda-twinkling-bunny", "chip", 50, time=0.0)
+    ctx.fill_resource("soda-twinkling-bunny", "chip", 50, time=1.0)
+    # 100 raw, but capped at 50.
+    assert ctx.resource_count("soda-twinkling-bunny", "chip", 2.0, cap=50) == 50
+
+
+def test_resource_count_windowed_for_timed_stacks():
+    # A timed resource (lifetime seconds): a fill at tf is active for
+    # [tf, tf+lifetime); at query time t only fills in (t-lifetime, t] count
+    # (Modernia's stacks last 10 sec). Cap still applies to the window.
+    ctx = make_context(SquadMember("modernia", burst_tier=3, element="Fire"))
+    for tf in (0.0, 4.0, 8.0):
+        ctx.fill_resource("modernia", "evolution", 1, time=tf)
+    count = lambda t: ctx.resource_count("modernia", "evolution", t, cap=5, lifetime=10.0)
+    assert count(0.0) == 1  # only the t=0 fill
+    assert count(8.0) == 3  # all three within the last 10s
+    assert count(10.5) == 2  # t=0 fill expired (0 <= 10.5-10=0.5 is false), t=4,8 remain
+    assert count(18.5) == 0  # all expired
+
+
+def test_resource_count_zero_for_unfilled_resource():
+    ctx = make_context(SquadMember("modernia", burst_tier=3, element="Fire"))
+    assert ctx.resource_count("modernia", "evolution", 5.0, cap=5) == 0
+
+
 def test_branching_rules_pick_the_matching_branch_by_condition():
     # Models Anis: Star's Starfall: two mutually-exclusive branches keyed off
     # whether another Burst 1 ally is present.
