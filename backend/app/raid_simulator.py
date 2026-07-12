@@ -368,12 +368,19 @@ def simulate_raid(
         # of the plain burst_damage_percents nuke below (a unit can have
         # either, both, or neither).
         for spec in resource_scaled_nukes.get(slug, []):
+            # "resource" is optional: a plain repeating DoT with no resource
+            # scaling (e.g. Mana's Fatal Error!) reuses this same tick_count/
+            # tick_interval loop, just with no resource_gate to resolve later.
+            resource_gate = (
+                (spec["resource"], spec["cap"], spec.get("lifetime"), spec["scale_fn"])
+                if spec.get("resource") is not None else None
+            )
             for i in range(spec["tick_count"]):
                 tick_time = time + i * spec["tick_interval"]
                 record(
                     slug, spec["base_percent"], tick_time, "resource_scaled_nuke",
                     damage_type=spec.get("damage_type", "attack"),
-                    resource_gate=(spec["resource"], spec["cap"], spec.get("lifetime"), spec["scale_fn"]),
+                    resource_gate=resource_gate,
                 )
 
         percent = burst_damage_percents.get(slug)

@@ -1637,6 +1637,30 @@ def test_resource_scaled_nuke_multi_tick_dot_reads_count_at_each_ticks_own_time(
     assert all(h["damage_type"] == "sustained" for h in hits)
 
 
+def test_resource_scaled_nuke_without_a_resource_ticks_at_a_flat_percent():
+    # Mana's Fatal Error!: a plain repeating DoT (396%/sec for 10 ticks), not
+    # scaled by any resource - "resource" omitted means every tick fires at
+    # spec["base_percent"] unscaled, reusing the same tick_count/tick_interval
+    # machinery as a resource-scaled DoT without requiring a fake resource.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=2.0, fight_duration=10.0, mode="auto", base_crit_rate=0.0,
+        resource_scaled_nukes={"attacker": [{
+            "base_percent": 10.0, "tick_count": 3, "tick_interval": 1.0, "damage_type": "sustained",
+        }]},
+    )
+    hits = sorted(
+        [e for e in result["damage_log"] if e["source"] == "resource_scaled_nuke"],
+        key=lambda e: e["time"],
+    )
+    assert len(hits) == 3
+    assert [round(h["time"], 4) for h in hits] == [2.0, 3.0, 4.0]
+    assert all(h["damage"] == 1000.0 for h in hits)  # 10% coeff * atk 10000, no scaling
+    assert all(h["damage_type"] == "sustained" for h in hits)
+
+
 def test_resource_scaled_nukes_defaults_to_none_and_is_a_no_op():
     baseline = simulate_raid(
         make_deck(),
