@@ -162,8 +162,11 @@ speed need no new modeling here - they're not wired as shot-interval
 modifiers anywhere in this engine (see "Stats the engine does NOT consume"
 below), and even if they were, they'd change shot CADENCE, not magazine
 CAPACITY, so they wouldn't move which round empties the magazine. Consume
-via `per_shot_rules`' `"last_bullet"` mode, above. Unblocks Julia (base)'s
-Crescendo and Helm's last-bullet trigger, neither yet re-encoded.
+via `per_shot_rules`' `"last_bullet"` mode (above) for a direct buff/nuke, or
+`ResourceSpec`'s `("on_last_bullet",)` fill kind for a stack that accumulates
+per last bullet (e.g. Julia's Crescendo). First real consumers (2026-07-12):
+Julia (base)'s Crescendo/Climax, Helm's Frontline Command, Privaty's LD
+Assault.
 
 **"For N round(s)" buffs (bullet-count duration):** a buff whose duration is the
 affected ally's next N normal-attack shots, not seconds — e.g. Zwei's Pierce
@@ -204,7 +207,11 @@ OWN burst-fire times (`context.burst_times`) instead of the squad's global
 Full Burst window - for a self-status whose window starts at the owner's own
 burst and has a different length/offset than Full Burst (Asuka's Anti A.T.
 Field, "every 10 shots while in Annihilation State" - a 9s window that starts
-at HER burst, not the squad's Full Burst start), or `("squad_burst_cycle_conditional", [(event_pred,
+at HER burst, not the squad's Full Burst start), `("on_last_bullet",)` = +1
+stack every time the owner's OWN shot empties its magazine (Julia's
+Crescendo, "Activates when the last bullet hits the target" - see
+`attack_rate.last_bullet_shot_times`, not any fixed shot count or window),
+or `("squad_burst_cycle_conditional", [(event_pred,
 gate_fn, delta), ...])` = a stateful walk over the GLOBAL burst-cycle event log
 (not the owner's own shots), applying `delta` at each event where `event_pred`
 matches AND `gate_fn(current_count)` is true (Maiden's MP: "+1 if MP==0 on any

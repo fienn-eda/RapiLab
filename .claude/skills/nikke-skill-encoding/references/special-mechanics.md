@@ -546,8 +546,12 @@ how to encode it, and current engine status.
   `fight_duration` cut the fight off mid-magazine is correctly excluded -
   only a round that reaches the genuine magazine boundary counts.
   `per_shot_rules` gained a `"last_bullet"` mode (`threshold` unused) that
-  checks a shot's time against this set, computed once per unit only when
-  a `"last_bullet"` rule is actually present (skipped otherwise).
+  checks a shot's time against this set, computed once per unit whenever a
+  `"last_bullet"` per_shot_rules entry OR an `("on_last_bullet",)`
+  `ResourceSpec` fill is present (skipped otherwise, and shared between the
+  two so they see identical magazine boundaries). A STACKING (not one-shot)
+  last-bullet effect - e.g. Julia's Crescendo, "stacks up to 5 times" - uses
+  the `ResourceSpec` fill kind instead of a per_shot_rules buff/nuke.
 - **Attack/charge speed don't need modeling for this:** neither is wired as
   a shot-interval modifier anywhere in this engine (see "Stats the engine
   does NOT consume" in `engine-capabilities.md`) - and even if they were,
@@ -555,9 +559,16 @@ how to encode it, and current engine status.
   (rounds per magazine), so they wouldn't move which round is "last" anyway.
   Only `max_ammo_percent` matters here.
 - **Encode:** use `(None, "last_bullet", [rules])` in a unit's `per_shot_rules`
-  entry. Unblocks Julia (base)'s Crescendo and Helm's last-bullet trigger
-  (both flagged "매거진경계 마커 부재" in `encoded-nikkes.md` before this) -
-  neither has been re-encoded with it yet as of this capability landing.
+  entry, or `ResourceSpec(fill=("on_last_bullet",), ...)` for a stacking
+  variant. First real consumers (2026-07-12): Julia (base)'s Crescendo/Climax,
+  Helm's Frontline Command (rewired off a DEAD `on_last_bullet_hit`
+  `fire_trigger` placeholder that nothing ever actually dispatched - a
+  passing unit test that manually fires a trigger name doesn't prove
+  `raid_simulator` ever fires it for real, see `docs/insights.md`), Privaty's
+  LD Assault (a conditional-gated last-bullet nuke, additionally scaled by
+  whether the target is in a status her own burst applies - see
+  `privaty.py`'s docstring for the time-window-check pattern used since no
+  built-in TIMED status primitive exists).
 
 ## Full-charge-count CDR -> per-cycle CDR approximation
 - **Signature:** "when attacking with Full Charge for N time(s): Cooldown of
