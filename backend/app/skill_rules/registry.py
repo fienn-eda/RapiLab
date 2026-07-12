@@ -64,7 +64,7 @@ from app.skill_rules.modernia import build_modernia_per_shot_rules, build_modern
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
     build_fire_away_rules,
-    build_frontline_command_rules,
+    build_frontline_command_per_shot_rules,
 )
 from app.skill_rules.helm_aquamarine import (
     AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN,
@@ -165,8 +165,7 @@ def _build_rapi_red_hood(sv):
 
 
 def _build_helm(sv):
-    rules = build_frontline_command_rules(sv["frontline_command"])
-    rules += build_fire_away_rules(sv["fire_away"])
+    rules = build_fire_away_rules(sv["fire_away"])
     return rules, aegis_cannon_burst_percent(sv["aegis_cannon"])
 
 
@@ -316,6 +315,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
+    "helm": lambda sv: build_frontline_command_per_shot_rules(sv["frontline_command"]),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
     "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),
