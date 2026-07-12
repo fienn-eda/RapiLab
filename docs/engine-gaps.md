@@ -5,9 +5,10 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-12 (자원 reset·`resource_gated_buffs`·FB창 한정 fill·
-  squad-burst-cycle-conditional fill·`dynamic_hit_count_nukes` 완료 반영 —
-  eb3 Pattern-A 배치: Quency·Soda·Maiden)
+- 마지막 갱신: 2026-07-12 (`fire_delay`+`own_burst_delayed`·own-status-window
+  fill·`full_burst_bonus_eligible`·`resource_scaled_nukes`의 `resource` 선택화
+  완료 반영 — eb4 배치: Asuka Shikinami Langley: Wille·Mana. `cinderella-
+  crystal-wave`는 Pattern-A가 아니라 무기-모드 상태머신 유닛으로 재분류됨)
 - 목적: **ROI 순 엔진 확장 우선순위 결정.** 인코딩을 하나씩 하다 갭에 부딪혀
   단발성 확장(instant nuke, periodic nuke)을 반복하던 방식 대신, 갭을 모아
   빈도순으로 최소한만 확장한다. (Fienn 방침, 2026-07-10)
@@ -34,7 +35,7 @@
 | ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
 | 5 | **enemy-element 조건** (룰에서 boss_element 접근) | 1 (+기존 Brid, Helm:Aqua) | 소 (~30 loc) | 컨텍스트 확장 |
 | 6 | **periodic-during-Full-Burst 넉** (풀버스트 창 안에서만 N초마다) | 1 (Ada) | 소 (~30 loc, periodic_nukes 변형) | 타이밍 변형 |
-| 7 | **풀버스트-창 한정 per-shot 트리거** (fill이 아니라 버프/넉 직접 발동) | 1 (Soda 잔여 버프) | 소~중 | 신규 트리거 변형 |
+| 7 | **풀버스트/자기상태창 한정 per-shot 트리거** (fill이 아니라 버프/넉 직접 발동) | 2 (Soda·Asuka 잔여) | 소~중 | 신규 트리거 변형 |
 | 8 | **자원-fill-트리거 타 유닛 버프** (자원 소유자 아닌 아군에게 버프) | 1 (Maiden 잔여 버프) | 소~중 | 신규 트리거 |
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
 | — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) | **완료 (2026-07-11, `ally_burst_activate`)** | 신규 트리거 |
@@ -110,9 +111,13 @@
   DoT), modernia ✅, cinderella ✅(Beautiful periodic fill + mirror 넉),
   quency-escape-queen ✅(정상상태 스택체인, 신규 확장 불필요), soda-twinkling-bunny ⚠
   (자원 **reset** + `resource_gated_buffs` + FB창 한정 fill), maiden-ice-rose ⚠
-  (squad-burst-cycle-conditional fill + `dynamic_hit_count_nukes`) — **2026-07-12
-  전부 완료**. 남은 asuka-shikinami-langley-wille 등은 다중소스 채우기·burst-consume·
-  스테이지 게이팅 등 잔주름이 있어 후속 인코딩 배치(roadmap To-Do).
+  (squad-burst-cycle-conditional fill + `dynamic_hit_count_nukes`), asuka-shikinami-
+  langley-wille ⚠(`fire_delay`+`own_burst_delayed` 지연 발동 넉/리셋 + own-status-window
+  fill), mana ⚠(`resource_scaled_nukes`의 `resource` 필드 선택화 — 순수 반복틱 DoT,
+  자원 확장 불필요) — **2026-07-12 전부 완료**. `cinderella-crystal-wave`는 Pattern-A가
+  아니라 **무기-모드(MG/Snipe) 전환이 FB 넉을 게이팅하는 상태머신 유닛**으로 밝혀져
+  제외·재분류됨(eb4 검증 중, Fienn 결정) — roadmap의 무기 변형 항목 참고. 남은 Pattern-A
+  후보(rei-ayanami·rei-ayanami-tentative-name·neon-vision-eye)는 검증 전.
 - **count-스케일 넉 — ✅ 완료 (2026-07-12):** 버스트 시점(또는 반복 tick 시점) resource
   count로 스케일/게이팅되는 넉. `raid_simulator`의 `resource_scaled_nukes` 파라미터 —
   `record()`가 `resource_gate`를 실어 두고 phase 2에서 `context.resource_count(...)`로
@@ -188,19 +193,24 @@
 - **필요한 확장:** `periodic_nukes`에 "풀버스트 창 한정" 옵션, 또는 full_burst_enter~end
   사이만 틱. 규모 소. (수요 1명이라 후순위.)
 
-### 7. 풀버스트-창 한정 per-shot **트리거** (fill과는 별개 갭)
+### 7. 풀버스트/자기상태창 한정 per-shot **트리거** (fill과는 별개 갭)
 
-- **무엇:** "풀버스트 중 노멀 N회마다"가 버프/넉을 발동하는 경우 — Soda의 Lucky Golden
-  Chip 공동발동 버프(최고ATK 아군 대상 Attack Damage, 3발마다·FB 중에만). #2 Pattern A로
-  만든 **FB창 한정 resource fill**(`per_shot_every_during_full_burst`)은 자원 채우기 한
-  종류만 처리하고, 일반 `per_shot_rules`엔 FB창 필터가 없어 버프/넉을 직접 발동하는
-  트리거로는 못 씀. 근사(FB 무시 "매 3발") 시도 시 실제 과대평가 위험이 큼(Soda SG는
-  1.5발/초라 "매 3발"=2초 주기인데 버프 지속도 2초라, FB 밖에서도 적용하면 사실상
-  상시 버프로 읽혀버림).
-- **막힌 유닛 (1, 확인분):** soda-twinkling-bunny (공동발동 버프만 잔여, 본체는 인코딩 완료).
-- **필요한 확장:** `per_shot_rules`에 FB창 필터 옵션 추가(자원 fill 쪽과 동일한
-  full_burst_start/end 이벤트 로그 사용). 규모 소~중.
-- 참고: `special-mechanics.md`의 관련 항목, `soda_twinkling_bunny.py` docstring.
+- **무엇:** "풀버스트(또는 자기 상태창) 중 노멀 N회마다"가 버프/넉을 **직접 발동**하는
+  경우 — Soda의 Lucky Golden Chip 공동발동 버프(최고ATK 아군 대상 Attack Damage,
+  3발마다·FB 중에만), Asuka의 Anti A.T. Field 15.62% 상태게이팅 넉(노멀10회마다·
+  Annihilation State 중에만). #2 Pattern A로 만든 **창 한정 resource fill**
+  (`per_shot_every_during_full_burst` / `per_shot_every_during_own_status_window`,
+  2026-07-12 확장)은 자원 채우기 한 종류만 처리하고, 일반 `per_shot_rules`엔 창 필터가
+  없어 버프/넉을 직접 발동하는 트리거로는 못 씀. 근사(창 무시 "매 N발") 시도 시 실제
+  과대평가 위험이 큼(Soda SG는 1.5발/초라 "매 3발"=2초 주기인데 버프 지속도 2초라,
+  FB 밖에서도 적용하면 사실상 상시 버프로 읽혀버림).
+- **막힌 유닛 (2, 확인분):** soda-twinkling-bunny(공동발동 버프만 잔여, 본체는 인코딩
+  완료), asuka-shikinami-langley-wille(15.62% 상태게이팅 넉만 잔여, 본체는 인코딩 완료,
+  2026-07-12).
+- **필요한 확장:** `per_shot_rules`에 창 필터 옵션 추가(자원 fill 쪽과 동일한
+  이벤트 로그/own-status-window 계산 재사용). 규모 소~중.
+- 참고: `special-mechanics.md`의 관련 항목, `soda_twinkling_bunny.py`/
+  `asuka_shikinami_langley_wille.py` docstring.
 
 ### 8. 자원-fill-트리거 타 유닛 버프 (resource_gated_buffs와 별개 갭)
 
@@ -282,6 +292,31 @@
     Maiden(Diamond Dust, 히트수=MP).
   - 2026-07-12. 상세: `engine-capabilities.md`, `special-mechanics.md`,
     `soda_twinkling_bunny.py`/`maiden_ice_rose.py` docstring.
+- **`fire_delay`+`own_burst_delayed` + own-status-window fill + `full_burst_bonus_eligible`
+  + `resource_scaled_nukes`의 `resource` 선택화**: eb4 배치(Asuka·Mana)에서 자원
+  primitive를 추가로 네 방향 확장.
+  - `dynamic_hit_count_nukes`의 `fire_delay`(초) + `ResourceSpec.resets`의
+    `"own_burst_delayed"` 트리거(같은 delay): 버스트 자신의 시각이 아니라 **버스트 후
+    delay초 뒤**에 넉이 발동하고 자원이 리셋됨 — 자기 상태(예: Annihilation State)가
+    끝나는 시점에 발동하는 넉을 위함. 첫 소비자 Asuka(Annihilation, 6.62%, 9초 지연).
+  - `("per_shot_every_during_own_status_window", n, duration)` fill:
+    `per_shot_every_during_full_burst`와 같은 아이디어지만 창이 **스쿼드의 풀버스트
+    창이 아니라 소유자 본인의 버스트 시각을 앵커로 한 고정 길이 창**(`context.burst_
+    times`) — 자기 상태창이 풀버스트 창과 다른 시각/길이일 때 필요. 첫 소비자
+    Asuka(Anti A.T. Field, 노멀10회마다·9초 Annihilation State 창 한정).
+  - `full_burst_bonus_eligible`: `record()`/`_damage_instance`와 `Pulse`에 옵트인
+    플래그 추가, 이미 있는 `full_burst_windows`로 인스턴스 자신의 시각을 체크 —
+    Fienn의 "as additional damage" 텍스트 규칙(`docs/decisions.md` 참고)의 실제 배선.
+    기본값 False라 기존 47명(신규 2명 포함) 중 옵트인 안 한 인스턴스는 전부 비활성.
+    같은-순간 경계 주의: `full_burst_start`는 그걸 유발한 티어3 버스트와 **같은
+    타임스탬프**에 발동하므로, delay=0인 옵트인 넉은 경계에서 "창 안"으로 읽힐 수
+    있음(이번 배치엔 영향 없음 — Asuka의 옵트인 넉은 둘 다 지연되거나 버스트와 무관한
+    타이밍). 첫 소비자 Asuka(두 "as additional damage" 넉 모두).
+  - `resource_scaled_nukes`의 `resource` 필드 선택화: 자원 스케일링이 필요 없는 순수
+    반복틱 DoT(`resource_gate=None`)도 같은 tick_count/tick_interval 루프를 재사용 —
+    가짜 자원을 만들 필요 없음. 첫 소비자 Mana(Fatal Error!, 396%/초 10틱).
+  - 2026-07-12. 상세: `engine-capabilities.md`, `special-mechanics.md`,
+    `asuka_shikinami_langley_wille.py`/`mana.py` docstring.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
@@ -300,7 +335,11 @@
   + periodic fill; 첫 소비자 Julia/Julia-signature/Cinderella/Guillotine).
 - ~~자원 reset + resource_gated_buffs + FB창 한정 fill + squad-burst-cycle-conditional
   fill + dynamic_hit_count_nukes~~ — ✅ 완료 (2026-07-12, eb3 Pattern-A 배치: Quency·
-  Soda·Maiden). Pattern A는 이제 (Ark Ranger류 Pattern B를 제외하면) 사실상 소진됨.
+  Soda·Maiden).
+- ~~fire_delay+own_burst_delayed + own-status-window fill + full_burst_bonus_eligible
+  + resource_scaled_nukes의 resource 선택화~~ — ✅ 완료 (2026-07-12, eb4 배치: Asuka·
+  Mana). Pattern A는 이제 (Ark Ranger류 Pattern B와 소수 미검증 후보를 제외하면)
+  사실상 소진됨.
 1. **막힌 ~30명 재인코딩 배치** — #1이 풀렸으니 이제 실제 유닛들에 per-shot 룰 추가
    (데이터 수집 → 인코딩). 가장 큰 실질 가치.
 2. **#2 Pattern B (시간감쇠 게이지·변신)** + **#3 무기종/티어부분집합 스코프** + **#5

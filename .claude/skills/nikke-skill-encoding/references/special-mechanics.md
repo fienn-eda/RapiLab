@@ -377,6 +377,62 @@ how to encode it, and current engine status.
   `maiden_ice_rose.py`'s module docstring.
 - **First consumer:** `maiden_ice_rose.py`.
 
+## Delayed burst effects (`fire_delay` / `own_burst_delayed`) - BUILT capability (2026-07-12)
+- **What:** a burst effect that lands a FIXED NUMBER OF SECONDS after the burst
+  fires, not at cast time - e.g. Asuka's Annihilation, which deals damage when
+  her "Annihilation State" self-status ends, 9 seconds after her burst, not
+  when the burst itself is cast.
+- **Engine capability:** `dynamic_hit_count_nukes` spec dicts gained an optional
+  `fire_delay` (seconds); the nuke fires - and reads its resource's pre-reset
+  count via `resource_count_before_reset` - at `burst_time + fire_delay`
+  instead of exactly `burst_time`. `ResourceSpec.resets` gained a matching
+  `"own_burst_delayed"` trigger (`{"trigger": "own_burst_delayed", "delay":
+  seconds, "value": X}`) so the SAME resource resets at the identical delayed
+  instant, using the same delay value for both (guaranteeing an exact
+  floating-point match between the reset time and the nuke's lookup time,
+  since both compute `burst_time + delay` from the same inputs).
+- **First consumer:** `asuka_shikinami_langley_wille.py` (Annihilation, 6.62%,
+  9s delay).
+
+## `full_burst_bonus_eligible` (opt-in Full Burst Bonus per damage instance) - BUILT capability (2026-07-12)
+- **What:** whether a specific damage instance receives the game's Full Burst
+  Bonus (+50% Major Modifier). Fienn's resolving rule (2026-07-12, after an
+  earlier retracted per-unit-delay theory - see `docs/decisions.md`): a burst
+  skill's damage instance receives it ONLY if its own official description
+  contains the phrase "as additional damage"; otherwise the damage is computed
+  from cast-time effects only and never gets it.
+- **Engine capability:** `record()`/`_damage_instance` and `Pulse` (threaded
+  through both `drain_instant_damage` and the per-shot-nuke drain site) gained
+  an optional `full_burst_bonus_eligible` flag (default False). When True, the
+  instance's recorded time is checked against the ALREADY-EXISTING
+  `full_burst_windows` list; if it falls inside one, `full_burst_bonus=1.0` is
+  passed to `calculate_damage` (else 0.0). This is opt-in per instance, not a
+  blanket engine-wide change - every one of the 45 units encoded before this
+  batch defaults to False and is completely unaffected.
+- **Same-instant boundary edge case (not yet hit in practice):**
+  `full_burst_start` fires at the SAME timestamp as the tier-3 burst that
+  triggers it (not strictly after), so a hypothetical eligible nuke fired at
+  cast time with zero delay would still read as "inside" the window under the
+  inclusive-start check (`start <= time < end`). Watch for this if a future
+  unit's "as additional damage" nuke fires exactly at burst time with no
+  delay - it would incorrectly get the bonus under this check. Doesn't affect
+  any current consumer (Asuka's eligible nukes are either delayed 9s past
+  burst or fired on a per-shot timer unrelated to her burst).
+- **First consumer:** `asuka_shikinami_langley_wille.py` (both of her "as
+  additional damage" nukes - the unconditional 471.86% every-50-shots nuke,
+  and the delayed 6.62% Annihilation nuke).
+
+## `resource_scaled_nukes` with no resource (flat repeating DoT) - BUILT capability (2026-07-12)
+- **What:** a repeating-tick burst DoT with NO resource scaling at all - e.g.
+  Mana's Fatal Error!, a plain 396%-of-ATK-per-second DoT, 10 ticks one second
+  apart.
+- **Engine capability:** `resource_scaled_nukes` spec dicts can now omit
+  `"resource"` (along with `"cap"`/`"scale_fn"`/`"lifetime"`) entirely - the
+  tick_count/tick_interval loop still runs, but with `resource_gate=None`, so
+  every tick fires at the flat `base_percent` unscaled. Avoids inventing a
+  fake resource just to reuse the repeating-tick machinery.
+- **First consumer:** `mana.py` (Fatal Error!).
+
 ## "After/every N CRITICAL hits" - genuinely unrepresentable (not a to-do)
 - **What:** a fill/nuke trigger worded "after landing N critical hit(s) with
   normal attacks" (e.g. Julia's signature Crescendo/Marcato).
@@ -569,24 +625,30 @@ how to encode it, and current engine status.
   buffs (applied in the later shot pass) aren't seen - fine, since those are
   self-scoped and don't change other units' ranking.
 
-## FB-window-gated per-shot TRIGGER (gap #7, distinct from FB-gated resource FILL)
+## FB-window/own-status-window-gated per-shot TRIGGER (gap #7, distinct from window-gated resource FILL)
 - **What:** a buff/nuke fired directly off "every N of the unit's shots, but only
-  counting shots inside the Full Burst window" - e.g. Soda's Lucky Golden Chip
-  co-fired buff ("after 3 normal attacks during Full Burst, affects self and the
-  1 ally with the highest final ATK: Attack Damage +10.51% for 2 sec").
-- **Why it's a separate gap from the FB-gated resource fill (built, see above):**
-  `("per_shot_every_during_full_burst", N)` only feeds a resource's count - it
-  has no path to fire a `per_shot_rules`-style buff/nuke action directly.
-  `per_shot_rules` itself has no Full-Burst-window filter at all.
+  counting shots inside a window" - e.g. Soda's Lucky Golden Chip co-fired buff
+  ("after 3 normal attacks during Full Burst, affects self and the 1 ally with
+  the highest final ATK: Attack Damage +10.51% for 2 sec"), or Asuka's Anti A.T.
+  Field 15.62%-of-ATK direct-damage bullet ("every 10 shots while in Annihilation
+  State, deals 15.62% as damage" - a SEPARATE bullet from her Anti A.T. Field
+  stack-buff, which the window-gated FILL below already covers).
+- **Why it's a separate gap from the window-gated resource fill (built, see
+  above):** `("per_shot_every_during_full_burst", N)` and
+  `("per_shot_every_during_own_status_window", N, duration)` only feed a
+  resource's count - neither has a path to fire a `per_shot_rules`-style
+  buff/nuke action directly. `per_shot_rules` itself has no window filter at all.
 - **Easy mistake:** approximating it as a plain "every N shots" `per_shot_rules`
-  entry, ignoring the Full-Burst restriction. This is a REAL overcount, not a
+  entry, ignoring the window restriction. This is a REAL overcount, not a
   minor one, whenever the shot cadence makes "every N shots" (elapsed real time)
   comparable to or longer than the buff's own duration - e.g. Soda's SG fires
   1.5 shots/sec, so "every 3 shots" = every 2 sec, exactly the buff's own 2-sec
   duration, which reads as effectively PERMANENT if applied outside Full Burst
   too, instead of only active during her ~10-sec Full Burst window each cycle.
 - **Encode:** defer + document (do not approximate). Also blocks Zwei's
-  FB-window normal-attack pierce stacking (see "For N round(s)" above).
+  FB-window normal-attack pierce stacking (see "For N round(s)" above). Two
+  confirmed consumers as of 2026-07-12: Soda (Lucky Golden Chip co-fired buff),
+  Asuka (Anti A.T. Field's 15.62% nuke bullet).
 
 ## Resource-fill-triggered squad buff (gap #8, distinct from `resource_gated_buffs`)
 - **What:** a buff granted to OTHER units (not the resource owner) triggered by

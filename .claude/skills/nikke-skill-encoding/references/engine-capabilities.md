@@ -176,7 +176,13 @@ else noncore_n (Guillotine's "3 Core hits" vs "6 normals without the core"),
 counting the owner's shots whose time falls within a Full Burst window (Soda's
 "every 3 normal attacks during Full Burst" - shots outside Full Burst don't
 count at all, computed from `simulate_burst_cycle`'s own event log rather than
-re-deriving burst timing), or `("squad_burst_cycle_conditional", [(event_pred,
+re-deriving burst timing), `("per_shot_every_during_own_status_window", N,
+window_duration)` = the same idea but the window is anchored to the OWNER'S
+OWN burst-fire times (`context.burst_times`) instead of the squad's global
+Full Burst window - for a self-status whose window starts at the owner's own
+burst and has a different length/offset than Full Burst (Asuka's Anti A.T.
+Field, "every 10 shots while in Annihilation State" - a 9s window that starts
+at HER burst, not the squad's Full Burst start), or `("squad_burst_cycle_conditional", [(event_pred,
 gate_fn, delta), ...])` = a stateful walk over the GLOBAL burst-cycle event log
 (not the owner's own shots), applying `delta` at each event where `event_pred`
 matches AND `gate_fn(current_count)` is true (Maiden's MP: "+1 if MP==0 on any
@@ -200,8 +206,14 @@ See `special-mechanics.md`.
 **Resource resets (SET to a fixed value, not incremented):** for a resource that
 gets reset to a fixed value rather than only ever accumulating - e.g. Soda's
 Golden Chip, reset to 17 when her burst consumes it. `ResourceSpec` takes an
-optional `resets` field: `[{"trigger": "battle_start"|"own_burst", "value": X},
-...]`. `SquadContext.reset_resource(slug, name, time, pre_value, post_value)`
+optional `resets` field: `[{"trigger": "battle_start"|"own_burst"|
+"own_burst_delayed", "value": X, "delay": seconds (own_burst_delayed only)},
+...]`. `"own_burst_delayed"` resets `delay` seconds AFTER each own-burst fire
+instead of at the burst itself - e.g. Asuka's Anti A.T. Field, cleared when
+Annihilation State ends (9s later), not when the burst that started it fires;
+pair with `dynamic_hit_count_nukes`' matching `fire_delay` (below) so the nuke
+reads the resource at the SAME delayed instant it resets.
+`SquadContext.reset_resource(slug, name, time, pre_value, post_value)`
 records the reset; `resource_count(slug, name, time, ...)` uses the LATEST reset
 at or before the query time as its baseline, discarding fills recorded before
 it. `resource_count_before_reset(slug, name, time)` exposes the value the
@@ -236,10 +248,18 @@ current MP"). Reads the PRE-reset count via `resource_count_before_reset` for
 each of the owner's own bursts, recording that many identical damage events
 (each independently defense-subtracted, same reasoning as `burst_hit_counts`).
 Spec dict: `{"resource", "base_percent", "extra_flat_atk_percent_of_max_hp"
-(optional), "damage_type" (optional)}`; wired via `raid_simulator`'s
+(optional), "damage_type" (optional), "fire_delay" (optional, seconds),
+"full_burst_bonus_eligible" (optional, bool)}`; wired via `raid_simulator`'s
 `dynamic_hit_count_nukes` param, exposed per-Nikke via
 `_DYNAMIC_HIT_COUNT_NUKE_BUILDERS` / `get_dynamic_hit_count_nukes`. Logged with
-`source="dynamic_hit_count_nuke"`. First consumer: `maiden_ice_rose.py`.
+`source="dynamic_hit_count_nuke"`. `fire_delay` (default 0) makes the nuke fire
+- and read/reset its resource - at `burst_time + fire_delay` instead of exactly
+`burst_time`, for an effect that lands when a fixed-duration self-status ends
+rather than at cast time (Asuka's Annihilation, 6.62%, fires 9s after burst;
+pair with a matching `"own_burst_delayed"` reset, above, using the SAME delay
+value so the reset and the nuke's `resource_count_before_reset` lookup land at
+the identical instant). First consumers: `maiden_ice_rose.py` (no delay),
+`asuka_shikinami_langley_wille.py` (9s delay).
 
 **`extra_flat_atk` (nuke-scoped flat-ATK bonus):** `record()`/`_damage_instance`
 gained an `extra_flat_atk` parameter (mirroring the existing `extra_charge_bonus`
@@ -265,7 +285,12 @@ in PHASE 2**, not at record time - `_resolve_percent` calls
 `context.resource_count(slug, name, event_time, cap, lifetime)` and multiplies by
 `scale_fn(count)`, since the resource's fills aren't populated until the
 resolution pass runs (after the burst cycle that records the event). Logged with
-`source="resource_scaled_nuke"`.
+`source="resource_scaled_nuke"`. **`"resource"` is optional** - omit it (along
+with `cap`/`scale_fn`/`lifetime`) for a PLAIN repeating DoT with no resource
+scaling at all (`resource_gate=None`, every tick at the flat `base_percent`);
+this reuses the same tick_count/tick_interval loop instead of requiring a fake
+resource just to get repeating ticks. First consumer: Mana's Fatal Error!
+(396%/sec flat Sustained-typed DoT, 10 ticks).
 
 **Multi-hit burst nuke:** a burst that "attacks sequentially N times" is N
 SEPARATE damage instances at the same instant, not one instance at N×percent -
@@ -310,11 +335,17 @@ consumer + the `total_for("flat_max_hp", ...)` wiring exist.
 
 **Valid formula terms that raid_simulator just doesn't wire from the registry
 yet** — a real gap, not a dead end: `shield_damage_up`, and the major-modifier
-terms `full_burst_bonus` / `effective_range_bonus` / `final_atk_modifier`.
+terms `effective_range_bonus` / `final_atk_modifier`.
 (`sustained_damage_up`, `distributed_damage_up`, `true_damage_up`, and
 `projectile_explosion_damage_up` are NOW wired but **type-gated** — see "Damage
 typing" above; they only move damage when the deck also produces an instance of
-that type.)
+that type. `full_burst_bonus` is NOW wired too, but **opt-in per damage
+instance**, not read unconditionally from the registry like the others — see
+`full_burst_bonus_eligible` above and `docs/decisions.md` ("full_burst_bonus
+wiring is opt-in per damage instance, gated on skill-text phrase"). Pass it
+only on a `record()`/`dynamic_hit_count_nukes` call for damage whose OWN skill
+description says "as additional damage"; every other damage instance defaults
+to False and is unaffected.)
 
 These exist in `damage_formula.py` but are absent from `raid_simulator.py`'s
 `total_for(...)` calls. Do NOT encode a Nikke's headline effect onto one of

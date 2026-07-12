@@ -9,8 +9,8 @@
 
 - 마지막 갱신: 2026-07-12
 - 브랜치: `wip/scaffolding`
-- 테스트: **420 passed** (2026-07-12, Quency/Soda/Maiden 배치 + 6개 신규 엔진 캐퍼빌리티 포함)
-- 인코딩된 니케: **45명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- 테스트: **439 passed** (2026-07-12, eb4 배치: Asuka/Mana + 4개 신규 엔진 캐퍼빌리티 포함)
+- 인코딩된 니케: **47명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
 
@@ -30,7 +30,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (45명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (47명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ⬜ 예정 |
 | Phase 6 | 유저 데이터 입력 UI (React) | ⬜ 예정 |
@@ -130,7 +130,21 @@
   `resource_gated_buffs`·FB창 한정 fill·squad-burst-cycle-conditional fill·
   `dynamic_hit_count_nukes`·`extra_flat_atk`) + 신규 갭 2건(#7 FB창 한정 per-shot
   트리거, #8 자원-fill-트리거 타 유닛 버프) 발견.
-- **다음:** **eb3+ 백로그**(남은 Pattern A 자원 유닛·Pattern B 게이지·상태머신·무기변형)와
+- **eb4 배치 (2026-07-12, Fienn 승인):** Asuka Shikinami Langley: Wille ⚠ ·
+  Mana ⚠ — 4개 신규 엔진 확장: `fire_delay`+`own_burst_delayed`(버스트 후 지연
+  발동 넉/리셋, Asuka의 Annihilation이 첫 소비자) · `("per_shot_every_during_own_
+  status_window", n, duration)` fill(자기 버스트 앵커 상태창 한정 fill, Anti A.T.
+  Field가 첫 소비자) · `full_burst_bonus_eligible`(스킬 텍스트 "as additional
+  damage" 옵트인 배선 — Fienn의 새 판정 규칙: "burst skill 대미지 설명에 'as
+  additional damage' 표현이 있으면 full burst bonus 받음, 그 외엔 캐스트 시점
+  효과만 적용되며 받지 않음") · `resource_scaled_nukes`의 `resource` 필드 선택화
+  (순수 반복틱 DoT, Mana의 Fatal Error!가 첫 소비자). 배치 검증 중 `cinderella-
+  crystal-wave`가 실제로는 Pattern-A 자원 유닛이 아니라 무기-모드(MG/Snipe) 전환
+  상태머신 유닛으로 밝혀져 배치에서 제외·재분류(Fienn 결정, 교체 없이 2명 진행).
+  gap #7(FB창/자기상태창 한정 per-shot **트리거**)에 2번째 소비자(Asuka의 15.62%
+  상태게이팅 넉) 발견.
+- **다음:** **eb3+ 백로그**(남은 Pattern A 자원 유닛 rei-ayanami·rei-ayanami-
+  tentative-name·neon-vision-eye · Pattern B 게이지·상태머신·무기변형)와
   **막힌 ~30명 per-shot 재인코딩 배치**가 최대 실질 가치. 남은 gap은 `engine-gaps.md`
   우선순위 참고.
 
@@ -182,11 +196,15 @@
       flat_atk 보너스). 신규 갭 2건 발견: **#7 FB창 한정 per-shot 트리거**(Soda 잔여
       공동발동 버프)·**#8 자원-fill-트리거 타 유닛 버프**(Maiden 잔여 MP-회복 아군 버프)
       — `engine-gaps.md` 참고.
+- [x] **eb4** (2026-07-12): Asuka Shikinami Langley: Wille ⚠ · Mana ⚠ — 4개
+      신규 엔진 확장(`fire_delay`+`own_burst_delayed`·own-status-window fill·
+      `full_burst_bonus_eligible`·`resource_scaled_nukes`의 `resource` 선택화)
+      소비. `cinderella-crystal-wave`는 무기-모드 상태머신 유닛으로 재분류되어
+      배치에서 제외(아래 무기 변형 항목으로 이동).
 - [ ] **eb3+ 백로그** — 대부분 **자원 유닛(gap #2 Pattern A 잔여/Pattern B)·상태머신·
       무기변형**. 배치 착수 전 유닛별 검증 필수.
-  - **Pattern A 자원 유닛 (named-resource로 인코딩 가능, 잔여)**: `cinderella-crystal-wave`,
-    `asuka-shikinami-langley-wille`, `rei-ayanami`·`rei-ayanami-tentative-name`(Anti A.T.),
-    `neon-vision-eye`, `mana`.
+  - **Pattern A 자원 유닛 (named-resource로 인코딩 가능, 잔여)**: `rei-ayanami`·
+    `rei-ayanami-tentative-name`(Anti A.T.), `neon-vision-eye`.
   - **Pattern B 게이지·변신 (잔여, gap #2)**: `ark-ranger-black`(배터리 시간감쇠·부위파괴
     fill)·`mihara-bonding-chain`(체인)·`elegg-boom-and-shock`·`red-hood`(charge speed·딜 아님).
   - **상태머신/특수 트리거**: `diesel-winter-sweets`(Intro/Highlight+지속딜),
@@ -195,7 +213,9 @@
     가능성 높음, 착수 전 재확인),
     `ada-wong`(풀버스트창 주기딜=gap #6 + True), `marciana-marine-study`(boss-element=gap #5),
     `milk-blooming-bunny`·`scarlet-black-shadow`(distributed)
-  - **무기 변형**(버스트가 차지캐논化 = 핵심 딜, 미지원): `snow-white`, `snow-white-heavy-arms`, `maxwell`
+  - **무기 변형**(버스트/평타가 다른 무기모드로 전환 = 핵심 딜, 미지원): `snow-white`,
+    `snow-white-heavy-arms`, `maxwell`, `cinderella-crystal-wave`(MG/Snipe 모드
+    전환이 FB 넉을 게이팅 — 자원 primitive로 안 풀림, 2026-07-12 eb4 검증 중 재분류)
   - ✱ = 애장품(dollskills) 보유, base/시그니처 별도 slug로 인코딩(Julia로 확정된 패턴):
     `drake`, `laplace` (julia는 완료: `julia` + `julia-signature`)
 - [x] `damage_taken_up` / `other_core_damage_sources` 엔진 연결
