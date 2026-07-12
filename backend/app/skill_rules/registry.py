@@ -26,6 +26,13 @@ from app.skill_rules.anis_star import (
 )
 from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
 from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
+from app.skill_rules.asuka_shikinami_langley_wille import (
+    build_anti_at_field_per_shot_rules,
+    build_anti_at_field_resources,
+    build_annihilation_dynamic_hit_count_nukes,
+    build_annihilation_state_rules,
+    build_emergency_repair_rules,
+)
 from app.skill_rules.blanc import build_blanc_rules
 from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
 from app.skill_rules.chisato_nishikigi import build_chisato_per_shot_rules, build_chisato_rules
@@ -176,6 +183,12 @@ def _build_maiden(sv):
     return rules, None  # Diamond Dust is a dynamic_hit_count_nuke, not burst_damage_percents
 
 
+def _build_asuka(sv):
+    rules = build_annihilation_state_rules(sv, sv["caster_atk"])
+    rules += build_emergency_repair_rules(sv)
+    return rules, None  # Annihilation is a dynamic_hit_count_nuke, not burst_damage_percents
+
+
 _BUILDERS = {
     "anis-star": _build_anis_star,
     "anis-sparkling-summer": lambda sv: (build_anis_sparkling_summer_rules(sv), None),
@@ -200,6 +213,7 @@ _BUILDERS = {
     "ludmilla-winter-owner": lambda sv: (build_ludmilla_rules(sv), None),
     "chisato-nishikigi": lambda sv: (build_chisato_rules(sv), None),
     "maiden-ice-rose": _build_maiden,
+    "asuka-shikinami-langley-wille": _build_asuka,
     "jill-valentine": lambda sv: (build_jill_rules(sv), None),
     "privaty": _build_privaty,
     "liter": lambda sv: (build_liter_rules(sv), None),
@@ -279,6 +293,7 @@ _PERIODIC_RULE_BUILDERS = {
 # (threshold, mode, [SkillRule]); mode is "after" or "every".
 _PER_SHOT_RULE_BUILDERS = {
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
+    "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
@@ -300,6 +315,7 @@ _PER_SHOT_RULE_BUILDERS = {
 # raid_simulator's `resource_specs` param and effects.ResourceSpec. Each entry
 # returns a list of ResourceSpec.
 _RESOURCE_SPEC_BUILDERS = {
+    "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_resources(sv),
     "modernia": lambda sv: build_modernia_resources(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
     "cinderella": lambda sv: build_beautiful_resources(sv),
@@ -334,6 +350,7 @@ _RESOURCE_GATED_BUFF_BUILDERS = {
 # "damage_type"(optional)}.
 _DYNAMIC_HIT_COUNT_NUKE_BUILDERS = {
     "maiden-ice-rose": lambda sv: build_diamond_dust_dynamic_hit_count_nukes(sv),
+    "asuka-shikinami-langley-wille": lambda sv: build_annihilation_dynamic_hit_count_nukes(sv),
 }
 
 
