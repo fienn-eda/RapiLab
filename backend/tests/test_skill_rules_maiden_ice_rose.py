@@ -55,13 +55,27 @@ def test_mp_resource_fills_only_if_zero_on_squad_tier1_and_resets_on_own_burst()
     assert len(matched_fb) == 1 and matched_fb[0][1](1) is True and matched_fb[0][1](0) is False
 
 
-def test_blessings_upon_you_self_buff_on_own_burst():
+def test_blessings_upon_you_self_buff_does_not_retroactively_boost_its_own_cast():
+    # Fienn confirmed in-game (2026-07-12): Diamond Dust's damage is computed
+    # AT CAST TIME - a buff granted by that same cast (like this "MP is used"
+    # self-buff) does NOT apply to that cast's own damage, only to whatever
+    # comes after. So the buff must not be visible to a query at the EXACT
+    # instant it was granted, only strictly after.
     ctx = make_context()
     reg = EffectRegistry()
     for rule in build_blessings_upon_you_rules(MAIDEN_VALUES, caster_max_hp=50000):
         rule.action(ctx, "maiden-ice-rose", 5.0, reg)
-    assert round(reg.total_for("other_elemental_bonus", MAIDEN, now=5.0), 4) == 0.3168
-    assert round(reg.total_for("flat_atk", MAIDEN, now=5.0), 4) == round(0.032 * 50000, 4)
+    assert reg.total_for("other_elemental_bonus", MAIDEN, now=5.0) == 0.0
+    assert reg.total_for("flat_atk", MAIDEN, now=5.0) == 0.0
+
+
+def test_blessings_upon_you_self_buff_is_active_for_damage_after_the_cast():
+    ctx = make_context()
+    reg = EffectRegistry()
+    for rule in build_blessings_upon_you_rules(MAIDEN_VALUES, caster_max_hp=50000):
+        rule.action(ctx, "maiden-ice-rose", 5.0, reg)
+    assert round(reg.total_for("other_elemental_bonus", MAIDEN, now=5.1), 4) == 0.3168
+    assert round(reg.total_for("flat_atk", MAIDEN, now=5.1), 4) == round(0.032 * 50000, 4)
     assert reg.total_for("other_elemental_bonus", MAIDEN, now=15.1) == 0.0  # 10s window
 
 
@@ -118,8 +132,10 @@ def test_maiden_end_to_end_diamond_dust_hits_once_per_cycle_scaled_by_10pct_max_
     )
     hits = [e for e in result["damage_log"] if e["source"] == "dynamic_hit_count_nuke"]
     assert len(hits) == 2  # 2 burst cycles complete within 60s
-    # offense = 10000*(1+0) + (0.10*50000 formula term) + (0.032*50000 self-buff
-    # term) = 10000 + 5000 + 1600 = 16600; coefficient 13.728; Element Bonus
-    # Damage group = 1 * (1 + 0.3168) from her own Elemental Advantage buff.
-    expected = 16600 * 13.728 * 1.3168
+    # offense = 10000*(1+0) + (0.10*50000 formula term only) = 15000; the "MP
+    # is used" self-buff (Elemental Advantage + ATK-from-Max-HP) is granted BY
+    # this same burst, so per Fienn's confirmed in-game behavior it does NOT
+    # apply to this same burst's own damage - no +1600 flat_atk, no *1.3168
+    # Element Bonus Damage factor.
+    expected = 15000 * 13.728
     assert all(round(h["damage"], 4) == round(expected, 4) for h in hits)

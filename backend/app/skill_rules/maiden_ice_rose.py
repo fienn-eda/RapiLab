@@ -25,9 +25,19 @@ Modeled (DPS-relevant): an "mp" resource, capped at 12.
   self Elemental Advantage Attack Damage +31.68% and ATK +3.2% of her own
   final Max HP, both for 10 sec. Separately, every Full-Charge shot (RL is
   always full-charge) deals an extra 547.62%-of-final-ATK hit.
+  **Confirmed in-game (Fienn, 2026-07-12): this self-buff does NOT apply to
+  Diamond Dust's own damage**, even though both fire from the same burst -
+  Diamond Dust's damage is computed at cast time, and a buff the cast itself
+  grants doesn't retroactively affect it, only subsequent damage. Modeled by
+  applying the buff `_POST_CAST_DELAY` seconds after the burst fires (an
+  amount far below any real shot interval, so every OTHER consumer of the
+  buff is unaffected) rather than at the exact cast instant.
 - Diamond Dust (skills[2], her burst): deals 1372.8% of (10% of her final Max
   HP + her ATK) per hit, hitting once per point of MP she had right before
   this same burst drained it - i.e. always once per cycle here (see above).
+  The 10%-Max-HP term is inherent to Diamond Dust's own formula (folded in via
+  `extra_flat_atk_percent_of_max_hp`, bypassing the registry entirely), so it
+  is unaffected by the self-buff timing question above.
 
 Not modeled / deferred:
 - Blessings Upon You's "when MP is replenished" ally buff (Elemental
@@ -41,10 +51,17 @@ Not modeled / deferred:
   Full-Charge attack" - Max HP isn't a stat the engine's damage formula
   consumes; survivability, not DPS.
 """
-from app.effects import ResourceSpec
-from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
+from app.effects import Effect, ResourceSpec
+from app.skill_rules._helpers import instant_nuke_pulse_rule
+from app.squad_engine import SkillRule
 
 MP_CAP = 12  # skill text: "MP can be accumulated up to a maximum of 12" (fixed, not a data slot)
+# How long after her own burst fires the "MP is used" self-buff becomes
+# active - strictly greater than 0 so it doesn't retroactively boost that
+# same burst's own Diamond Dust damage (confirmed in-game, Fienn 2026-07-12),
+# but far below any real shot interval so every later consumer (per-shot
+# nuke, normal attacks) sees it exactly as if it started at burst_time.
+_POST_CAST_DELAY = 1e-6
 
 
 def _squad_tier1_fire(event):
@@ -77,12 +94,20 @@ def build_blessings_upon_you_rules(values, caster_max_hp):
     self_atk_from_max_hp = caster_max_hp * float(blessings["description_value_07"]) / 100
     self_atk_duration = float(blessings["description_value_08"])
 
-    return [
-        buff_rule("own_burst_activate", [
-            ("other_elemental_bonus", self_elem_adv, "self", self_elem_adv_duration),
-            ("flat_atk", self_atk_from_max_hp, "self", self_atk_duration),
-        ]),
-    ]
+    def action(context, caster_slug, time, registry):
+        # Applied at time + _POST_CAST_DELAY, not time itself - see the
+        # module docstring's "when MP is used" note.
+        applied_at = time + _POST_CAST_DELAY
+        registry.add(
+            Effect("other_elemental_bonus", self_elem_adv, "self", self_elem_adv_duration, caster_slug),
+            applied_at=applied_at,
+        )
+        registry.add(
+            Effect("flat_atk", self_atk_from_max_hp, "self", self_atk_duration, caster_slug),
+            applied_at=applied_at,
+        )
+
+    return [SkillRule(trigger="own_burst_activate", action=action)]
 
 
 def build_blessings_upon_you_per_shot_rules(values):
