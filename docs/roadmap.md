@@ -9,7 +9,7 @@
 
 - 마지막 갱신: 2026-07-12
 - 브랜치: `wip/scaffolding`
-- 테스트: **439 passed** (2026-07-12, eb4 배치: Asuka/Mana + 4개 신규 엔진 캐퍼빌리티 포함)
+- 테스트: **458 passed** (2026-07-12, gap #1 "마지막 탄" 잔여 해소 + Julia/Helm/Privaty 재인코딩 포함)
 - 인코딩된 니케: **47명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
@@ -143,6 +143,16 @@
   상태머신 유닛으로 밝혀져 배치에서 제외·재분류(Fienn 결정, 교체 없이 2명 진행).
   gap #7(FB창/자기상태창 한정 per-shot **트리거**)에 2번째 소비자(Asuka의 15.62%
   상태게이팅 넉) 발견.
+- **gap #1 "마지막 탄" 잔여 해소 + 재인코딩 배치 (2026-07-12, Fienn 승인):**
+  `attack_rate.py`에 `magazine_last_bullet_times`/`charge_last_bullet_times`/
+  `last_bullet_shot_times`(매거진 실제 마지막 발사 마킹, `max_ammo_percent_at`
+  라이브 재계산이라 유저의 최대 장탄 수 증가 오버로드/버프 자동 반영, attack/charge
+  speed는 매거진 용량에 무관해 모델링 불필요) + `per_shot_rules`의 `"last_bullet"`
+  모드 + `ResourceSpec`의 `("on_last_bullet",)` fill kind 완료. 즉시 재인코딩:
+  Julia(base) ✅(Crescendo 라스트불릿 자원 + Climax 게이팅 추가딜, 이 갭의 원래
+  동기 유닛) · Helm(애장품) ⚠(Frontline Command, 죽은 `on_last_bullet_hit`
+  트리거를 실제 배선으로 교체) · Privaty(애장품) ✅(LD Assault, Designated Target
+  조건부 중첩 넉 — AK Missile 버스트 시각 기준 10초 시간창 체크).
 - **다음:** **eb3+ 백로그**(남은 Pattern A 자원 유닛 rei-ayanami·rei-ayanami-
   tentative-name·neon-vision-eye · Pattern B 게이지·상태머신·무기변형)와
   **막힌 ~30명 per-shot 재인코딩 배치**가 최대 실질 가치. 남은 gap은 `engine-gaps.md`

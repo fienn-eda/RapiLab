@@ -71,8 +71,11 @@
   "간격"만 바꿀 뿐 "용량"은 안 바꾸므로 마지막 탄 위치엔 무관. `fight_duration`으로
   전투가 매거진 중간에 끊긴 마지막 발사는 (실제로 매거진을 비운 게 아니므로) 잘못
   마킹하지 않도록 처리됨. `per_shot_rules`에 새 모드 `(None, "last_bullet", rules)`로
-  배선(threshold 미사용). 첫 소비자는 아직 없음 — Julia(base)의 Crescendo·Helm(애장품)의
-  라스트불릿 트리거가 즉시 언블록된 후보.
+  배선(threshold 미사용). `ResourceSpec`에도 `("on_last_bullet",)` fill kind 추가
+  (Julia의 Crescendo — 라스트불릿마다 스택). 같은 배치에서 즉시 재인코딩: Julia(base)
+  ✅(Crescendo 자원 + Climax 게이팅 추가딜, 이 갭의 원래 동기 유닛) · Helm(애장품)
+  ⚠(Frontline Command, 죽은 `on_last_bullet_hit` 트리거 실배선으로 교체) · Privaty
+  (애장품) ✅(LD Assault, Designated Target 조건부 중첩 넉).
 - **다음(후속 배치):** 아래 막힌 유닛들을 이 능력으로 재인코딩. 각 유닛 데이터 수집 후
   per-shot 룰 추가.
 - **잔여 변형:** (a) **아군 총탄 카운터**(스쿼드 전체 발사 누적, per-caster 아님) — 예:

@@ -3,7 +3,7 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-12 (eb4 배치: Asuka Shikinami Langley: Wille·Mana)
+- 마지막 갱신: 2026-07-12 (gap #1 "마지막 탄" 잔여 해소로 Julia·Helm·Privaty 재인코딩)
 - 총 **47명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 20명)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
@@ -85,10 +85,10 @@
 | Chisato Nishikigi | `chisato-nishikigi` | Attacker | SMG | Iron | ✅ | eb2. Extrasensory 상시 자ATK/진댐(버스트 재충전으로 >70% 유지 근사)·버스트 자ATK/노멀진댐화·48노멀마다 진댐넉(per-shot) 모델됨. per-shot 넉이 attack타입(진댐 언더카운트)·회피/명중(inert) 보류 |
 | Cinderella | `cinderella` | Attacker | RL | Fire | ⚠ | Flawless Glass 자ATK(자기 최대체력 비례)+매 풀차지 136.6% 추가딜(RL 상시 풀차지, per-shot)·Beautiful 자원(periodic fill, 3초마다·캡12)·Glass Slippers 10연타 버스트넉 + Beautiful 스택수 비례 추가딜(count-스케일 넉) 모델됨. 디코이 생성(생존)·Beautiful 자체 최대체력% 증가(연결된 소비자 없음, inert)만 보류 |
 | Guillotine: Winter Slayer | `guillotine-winter-slayer` | Attacker | AR | Water | ⚠ | 자원 beachhead. EXP 자원(자ATK ▲1.81%/스택, 캡100, 연속)·Hero Level 파생 Water 아군 버프(레벨 스케일)·core-conditional fill·Extermination Water 버프 + **Hero-Level 스케일 10틱 지속딜(매 틱 자기 시각 기준 count 재조회, count-스케일 넉 + full_burst_bonus, 2026-07-12 인게임 확인 반영)** 모델됨. 레벨업 리로드/힐(딜 아님)만 보류 |
-| Helm (애장품) | `helm` | Attacker | SR | Water | ⚠ | 라스트불릿 트리거 + 풀차지 효과(힐/게이지/보너스딜) |
+| Helm (애장품) | `helm` | Attacker | SR | Water | ⚠ | Frontline Command 라스트불릿 스쿼드 크리율+14.64%/5초(`per_shot_rules`의 `"last_bullet"` 모드, refresh) 모델됨(2026-07-12, gap #1 잔여 해소) + Fire Away 스쿼드 파츠딜/공댐 모델됨. 두 스킬의 풀차지 보너스 효과(힐/게이지/추가딜)·Aegis Cannon 버스트후 차지배수(10 round) 보류 |
 | Isabel | `isabel` | Attacker | SG | Electric | ✅ | eb1. Marked Target 이스컬레이팅 자버프(refresh)·Pointed Feather 주기넉(cd15)·Sonic Chaser 버스트넉 + 단계별 추가딜(activation_count 게이팅, 사이클 정확)·받댐 디버프 모델됨. Full Burst Duration▲(로테 타이밍)만 보류 |
 | Jill Valentine | `jill-valentine` | Attacker | AR | Electric | ⚠ | eb2(부분). FB 자ATK·버스트 진댐/공댐/재장전속도/노멀진댐화 모델됨. Magnum(9탄 노멀배수)·Acid(재장전 지속딜 DoT)·명중(inert) 보류 |
-| Julia | `julia` | Attacker | AR | Water | ⚠ | Decrescendo 자크리율(periodic, cd20)·Climax 버스트넉(544.5%, 단일히트) 모델됨. Crescendo(라스트불릿 트리거, 매거진경계 마커 부재)·이에 게이팅된 Climax 추가딜 보류 |
+| Julia | `julia` | Attacker | AR | Water | ✅ | Decrescendo 자크리율(periodic, cd20)·Climax 버스트넉(544.5%, 단일히트)+Crescendo 라스트불릿 자원(캡5·15초 지속, 크리댐+24.79%/스택, `on_last_bullet` fill)+게이팅된 Climax 추가 544.5% 넉("as additional damage" → full_burst_bonus, `resource_scaled_nukes`) 모델됨(2026-07-12, gap #1 잔여 해소) |
 | Julia (시그니처, 별도 slug) | `julia-signature` | Attacker | AR | Water | ⚠ | base와 별도 roster 엔트리(Fienn 결정, 2026-07-12). Decrescendo 자크리율/자ATK(periodic + 전투시작 강제시전)·Climax 5연타 버스트넉(544.5%×5, `burst_hit_counts`) 모델됨. Crescendo/Marcato(크리티컬 히트 카운터 — 기대값 크리 모델과 구조적으로 불가, 영구 defer)·노멀전용 크리율(버킷 없음)만 보류 |
 | Liberalio | `liberalio` | Attacker | SR | Wind | ✅ | eb1. 버스트넉 925%·FB 자ATK·Raging Current 공버프 231%(풀차지 per-shot 상시)·on-core 공버프·풀차지 추가딜 5회 모델됨. Gentle Current(비-보스 대상, solo N/A)·차지속도(inert) 보류 |
 | Ludmilla: Winter Owner | `ludmilla-winter-owner` | Attacker | MG | Water | ✅ | eb2. 60노멀마다 받댐 디버프+넉(per-shot)·FB 자크리율·버스트 자ATK/재장전속도 모델됨. Snowstorm 코어60넉(코어카운터 과대평가 우려로 보류)·재장전 탄약(QoL) 보류 |
@@ -96,7 +96,7 @@
 | Maiden: Ice Rose | `maiden-ice-rose` | Defender | RL | Electric | ⚠ | eb3 Pattern-A. MP 자원(squad-burst-cycle-conditional fill)+Diamond Dust 버스트(`dynamic_hit_count_nukes` — 히트수=MP, 1372.8%×(10% 최대체력+ATK))+Blessings Upon You(자속성상성공댐/자ATK 버스트버프 + 풀차지마다 547.62% per-shot 넉) 모델됨. "MP 소모" 트리거는 엔진 순서상 항상 MP=0에서 드레인되므로 Diamond Dust는 매 사이클 정확히 1회 히트(엔진 확정 버스트 순서 근거, 모듈 docstring 참고). MP 회복 시 타 아군 버프(자원-fill-트리거 아군버프, 미구현 갭)·최대체력 스택(비딜) 보류 |
 | Modernia | `modernia` | Attacker | MG | Fire | ⚠ | 자원 beachhead. High-Speed Evolution 히트당 3.05% 추가딜(per-shot)·200히트마다 Crit Dmg/Max Ammo 스택(캡5·10초 시한 자원) 모델됨. Max Ammo 스택은 자기 탄창 재생성 전 계산돼 inert·Giant Leap 상태게이팅 200히트 ATK버프(윈도 자원, 유의미·보류)·New World 버스트(Destroy Mode·무한탄·FB연장) 보류 |
 | Noir | `noir` | Attacker | SG | Wind | ✅ | eb1. 버스트넉 351.64%·Lucky Charm 스쿼드 ATK(caster 비례)·Finale 파츠딜 버프 모델됨. Rabbit Twins 탄약/재장전(QoL)·Hit Rate(inert)만 보류 |
-| Privaty (애장품) | `privaty` | Attacker | AR | Water | ⚠ | LD Assault(퍼샷 인스턴스), 지정타겟 조건부 효과 |
+| Privaty (애장품) | `privaty` | Attacker | AR | Water | ✅ | EX Magazine 스쿼드 ATK/재장전속도/탄약감소/공댐(FB진입) 모델됨. LD Assault 라스트불릿 넉(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-12 gap #1 잔여 해소): 받댐+10.01%/10초+256.17% 추가딜("as additional damage") + Designated Target(AK Missile 자신의 버스트로부터 10초 창, `context.burst_times` 시간창 체크) 중이면 1687% 추가딜까지 중첩 발동 + AK Missile 자속성상성공댐 모델됨. Designated Target의 적 ATK 감소 디버프(생존계, 비딜)만 보류 |
 | Quency: Escape Queen | `quency-escape-queen` | Attacker | SMG | Water | ✅ | eb3 Pattern-A. Explore Route(3단계 스택체인, 노멀2회마다·전단계 만캡 게이팅)+Secure Route(단계별 버프) 전부 정상상태 근사(ATK+110.3%+Distributed Damage+49.58%+Core Damage+25.25%+Crit Rate+16.73%, battle_start부터 영구 — SMG 20발/초로 스택 감쇠창보다 채우기가 압도적으로 빨라 상시 만캡)·The Great Thief 버스트(자공댐/재장전속도+1736.31% Distributed 넉) 모델됨. Hit Rate만 보류 |
 | Rapi: Red Hood | `rapi-red-hood` | Attacker | MG | Fire | ⚠ | Attachable Projectiles + 노멀카운터 기반 버스트 대미지 |
 | Soda: Twinkling Bunny | `soda-twinkling-bunny` | Attacker | SG | Iron | ⚠ | eb3 Pattern-A. Golden Chip 자원(캡50·전투시작 만캡·풀버스트 중 노멀3회마다 +1=`per_shot_every_during_full_burst`, 자신의 Critical Damage 스택 +1.32%/스택)+Onward Soda! 버스트(628.7% 넉 + 17로 **reset** + 리셋前 스택≥30 게이팅 ATK+65.25%/15s=`resource_gated_buffs`) 모델됨. Lucky Golden Chip 공동발동 최고ATK버프(FB창 한정 per-shot **트리거** 부재, FB창 한정 **fill**과는 별개 갭)·Beginner's Rewards 전체(캐스터별 FB 지속시간 연장 개념 부재)·Hit Rate(inert) 보류 |
