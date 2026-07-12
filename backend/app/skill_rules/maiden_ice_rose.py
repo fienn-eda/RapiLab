@@ -10,16 +10,20 @@ is itself a resource's value).
 Modeled (DPS-relevant): an "mp" resource, capped at 12.
 - Meditation (skills[0]) fills it: +1 if MP is currently 0, whenever ANY squad
   member's Burst Stage 1 fires; +1 if MP is currently >=1, on entering Full
-  Burst. In practice the SECOND rule can never actually fire: the engine's
-  burst1 -> burst2 -> burst3 -> full-burst-enter sequencing (confirmed
-  strict, Fienn 2026-07-12) means Maiden's OWN burst (which drains MP to 0)
-  always completes before Full Burst formally "enters" - so by the time that
-  check runs, MP is already back to 0. Diamond Dust's hit count is therefore
-  always exactly 1 per cycle (from the tier-1 rule alone) in any raid
-  simulated here; the second rule is modeled anyway for documentation
-  honesty (it's a real skill bullet, just a provable no-op given the engine's
-  ordering) - a different burst rotation mode (e.g. genuinely simultaneous
-  tier-3-and-full-burst-enter) would need it.
+  Burst. When Maiden is the SOLE Burst-3 unit in the deck, the SECOND rule can
+  never actually fire: the engine's burst1 -> burst2 -> burst3 -> full-burst-
+  enter sequencing (confirmed strict, Fienn 2026-07-12) means her OWN burst
+  (which drains MP to 0) always completes before Full Burst formally "enters"
+  - so by the time that check runs, MP is already back to 0, and Diamond
+  Dust's hit count is exactly 1 per cycle (from the tier-1 rule alone). This
+  is scoped to solo tier-3 play, not a universal property of the fill logic:
+  sharing the Burst-3 slot with ANOTHER Burst-3 unit (e.g. a deck fielding
+  both Maiden and Asuka Shikinami Langley: Wille) breaks the invariant on any
+  cycle where the OTHER unit completes tier-3 instead of Maiden - her own
+  reset doesn't fire that cycle, so MP can climb past 1 before her next own
+  burst reads it, making the second rule genuinely contribute (verified in
+  `test_interaction_asuka_maiden_shared_burst_tier.py`, which is why the rule
+  stays modeled rather than being treated as dead code).
 - Blessings Upon You (skills[1]): "when MP is used" (i.e. on her own burst,
   which always drains SOME amount of MP even when that amount is 0) grants
   self Elemental Advantage Attack Damage +31.68% and ATK +3.2% of her own

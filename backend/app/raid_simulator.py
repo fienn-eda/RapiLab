@@ -571,11 +571,21 @@ def simulate_raid(
             reset_times = [rt for rt, _ in reset_events]
 
             for buff in spec.buffs:
-                events = set(fill_times) | set(reset_times)
+                # NOT `events` - that name holds simulate_burst_cycle's own
+                # event log (read by _resolve_squad_burst_cycle_resource for
+                # OTHER slugs' resources processed later in this same loop);
+                # shadowing it here corrupted that log for any
+                # squad_burst_cycle_conditional resource resolved afterward
+                # in the same simulate_raid call (only surfaced once a deck
+                # combined a buffed resource with one, e.g. Asuka + Maiden
+                # sharing Burst 3 - see test_interaction_asuka_maiden_shared_burst_tier.py).
+                buff_step_times = set(fill_times) | set(reset_times)
                 if buff.lifetime is not None:
-                    events |= {ft + buff.lifetime for ft in fill_times if ft + buff.lifetime < fight_duration}
+                    buff_step_times |= {
+                        ft + buff.lifetime for ft in fill_times if ft + buff.lifetime < fight_duration
+                    }
                 prev_value = 0.0
-                for event_time in sorted(events):
+                for event_time in sorted(buff_step_times):
                     count = context.resource_count(slug, spec.name, event_time, spec.cap, buff.lifetime)
                     value = buff.value_fn(count)
                     if value != prev_value:
