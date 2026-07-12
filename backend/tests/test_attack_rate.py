@@ -2,9 +2,12 @@ import pytest
 
 from app.attack_rate import (
     RATE_OF_FIRE_60FPS,
+    charge_last_bullet_times,
     generate_charge_shot_times,
     generate_magazine_shot_times,
     generate_shot_times,
+    last_bullet_shot_times,
+    magazine_last_bullet_times,
     rate_of_fire_for_weapon,
 )
 
@@ -133,3 +136,77 @@ def test_generate_shot_times_dispatches_to_charge_for_charge_weapons():
 def test_rate_of_fire_for_unknown_weapon_raises():
     with pytest.raises(KeyError):
         rate_of_fire_for_weapon("UNKNOWN")
+
+
+def test_magazine_last_bullet_times_marks_the_final_round_of_each_magazine():
+    # Same scenario as test_magazine_reloads_after_emptying_then_resumes:
+    # shots at [0, .1, .2, .3, .4, 1.5, 1.6, 1.7, 1.8, 1.9] - the round that
+    # actually empties each 5-round magazine is index 4 within it (t=0.4,
+    # t=1.9), not any other shot.
+    last_bullets = magazine_last_bullet_times(
+        rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=3.0,
+    )
+    assert last_bullets == {0.4, 1.9}
+
+
+def test_magazine_last_bullet_times_tracks_live_max_ammo_percent():
+    # Same scenario as test_magazine_ammo_up_increases_shots_per_magazine:
+    # max_ammo_percent doubles the magazine (5 -> 10 rounds), evaluated live
+    # at the magazine's start - same mechanism generate_magazine_shot_times
+    # already uses for magazine SIZE. The last bullet shifts to the 10th
+    # round (t=0.9), not the un-buffed 5th (t=0.4).
+    last_bullets = magazine_last_bullet_times(
+        rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=1.5,
+        max_ammo_percent_at=lambda t: 1.0,
+    )
+    assert last_bullets == {0.9}
+
+
+def test_magazine_last_bullet_times_does_not_mark_a_fight_duration_truncated_shot():
+    # Same scenario as test_magazine_shots_stop_at_fight_duration: the fight
+    # ends mid-magazine (3 of 5 rounds fired) - the final recorded shot is a
+    # cutoff artifact, not a genuine "magazine emptied" event, so it must NOT
+    # be marked as a last bullet.
+    last_bullets = magazine_last_bullet_times(
+        rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=0.25,
+    )
+    assert last_bullets == set()
+
+
+def test_charge_last_bullet_times_marks_the_final_round_of_each_magazine():
+    # Same scenario as test_charge_shots_fire_max_ammo_rounds_before_reloading:
+    # shots at [1, 2, 3, 6, 7, 8] - the round that empties each 3-shot
+    # magazine is the 3rd (t=3.0, t=8.0).
+    last_bullets = charge_last_bullet_times(
+        charge_time=1.0, reload_time=2.0, max_ammo=3, fight_duration=9.0,
+    )
+    assert last_bullets == {3.0, 8.0}
+
+
+def test_last_bullet_shot_times_dispatches_by_weapon_type():
+    # Magazine weapon: single magazine (huge reload keeps us in it), so the
+    # last shot generated IS the last bullet.
+    shots = generate_shot_times(
+        weapon="AR", max_ammo=5, reload_time=1000.0, charge_time=0.0, fight_duration=1.0,
+    )
+    last_bullets = last_bullet_shot_times(
+        weapon="AR", max_ammo=5, reload_time=1000.0, charge_time=0.0, fight_duration=1.0,
+    )
+    assert len(shots) == 5
+    assert last_bullets == {shots[-1]}
+
+    # Charge weapon: same scenario as test_charge_shots_fire_max_ammo_rounds_before_reloading.
+    charge_last_bullets = last_bullet_shot_times(
+        weapon="RL", max_ammo=3, reload_time=2.0, charge_time=1.0, fight_duration=9.0,
+    )
+    assert charge_last_bullets == {3.0, 8.0}
+
+
+def test_last_bullet_shot_times_is_always_a_subset_of_generate_shot_times():
+    shots = generate_shot_times(
+        weapon="MG", max_ammo=7, reload_time=0.5, charge_time=0.0, fight_duration=2.0,
+    )
+    last_bullets = last_bullet_shot_times(
+        weapon="MG", max_ammo=7, reload_time=0.5, charge_time=0.0, fight_duration=2.0,
+    )
+    assert last_bullets and last_bullets <= set(shots)
