@@ -5,10 +5,12 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-12 (`fire_delay`+`own_burst_delayed`·own-status-window
-  fill·`full_burst_bonus_eligible`·`resource_scaled_nukes`의 `resource` 선택화
-  완료 반영 — eb4 배치: Asuka Shikinami Langley: Wille·Mana. `cinderella-
-  crystal-wave`는 Pattern-A가 아니라 무기-모드 상태머신 유닛으로 재분류됨)
+- 마지막 갱신: 2026-07-12 (gap #1 잔여 변형 "마지막 탄" 완료 — `magazine_last_bullet_times`/
+  `charge_last_bullet_times`/`last_bullet_shot_times` + `per_shot_rules`의
+  `"last_bullet"` 모드. eb4 배치: Asuka Shikinami Langley: Wille·Mana도 이 날 완료
+  — `fire_delay`+`own_burst_delayed`·own-status-window fill·`full_burst_bonus_eligible`·
+  `resource_scaled_nukes`의 `resource` 선택화. `cinderella-crystal-wave`는 Pattern-A가
+  아니라 무기-모드 상태머신 유닛으로 재분류됨)
 - 목적: **ROI 순 엔진 확장 우선순위 결정.** 인코딩을 하나씩 하다 갭에 부딪혀
   단발성 확장(instant nuke, periodic nuke)을 반복하던 방식 대신, 갭을 모아
   빈도순으로 최소한만 확장한다. (Fienn 방침, 2026-07-10)
@@ -29,7 +31,7 @@
 
 | # | 엔진 갭 | 막힌 유닛 (근사) | 확장 규모 | 성격 |
 |---|---|---:|---|---|
-| ~~1~~ | **per-shot 트리거 + 발사 카운터** (노멀공격 N회 / 풀차지 N회 / N shot마다) | ~30 (합집합) | **완료 (2026-07-11, per_shot_rules)** — "마지막 탄"만 잔여 | 신규 트리거 |
+| ~~1~~ | **per-shot 트리거 + 발사 카운터** (노멀공격 N회 / 풀차지 N회 / N shot마다 / 마지막 탄) | ~30 (합집합) | **완료 (2026-07-11 `per_shot_rules`, 2026-07-12 "마지막 탄" 잔여 변형까지 완료)** | 신규 트리거 |
 | 2 | **자원/스택 트래킹** (배터리·탄약주머니·N스택 누적) | 16 | **Pattern A 완료 (2026-07-12, named-resource)** — Pattern B(시간감쇠 게이지·변신) 잔여 | 신규 상태 |
 | 3 | **narrow subset scope** (무기종별 / 티어+선버스트 대상) | 9 | 무기종: 소(~20 loc) / 티어부분집합: 중(~60 loc) | 신규 스코프 |
 | ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
@@ -56,19 +58,31 @@
 
 - **해결:** `simulate_raid`의 `per_shot_rules` — 유닛 발사를 세어 `after N`/`every N`에
   버프/넉 발동. 함께 **record-then-compute 리팩터**로 per-shot 스쿼드 버프가 버스트
-  넉까지 반영됨. 첫 소비자 Brid: Journey Ahead(5발마다 675% 넉). "마지막 탄"(매거진
-  경계)만 잔여. `engine-capabilities.md`/`special-mechanics.md` 참고.
+  넉까지 반영됨. 첫 소비자 Brid: Journey Ahead(5발마다 675% 넉). `engine-capabilities.md`/
+  `special-mechanics.md` 참고.
+- **"마지막 탄"(매거진 경계) — ✅ 완료 (2026-07-12):** `attack_rate.py`의
+  `magazine_last_bullet_times`/`charge_last_bullet_times`/`last_bullet_shot_times`가
+  `generate_{magazine,charge}_shot_times`/`generate_shot_times`와 동일한 3단 구조로
+  각 매거진을 실제로 비우는 발사(= `magazine_size - 1`번째)만 골라낸다 — 매거진
+  크기는 `max_ammo_percent_at`으로 라이브 재계산(기존 발사 생성과 동일 메커니즘)돼서
+  유저의 [최대 장탄 수 증가] 오버로드/스킬 버프가 이미 정확히 반영됨. attack/charge
+  speed는 별도 모델링 불필요 — 이 엔진 어디에도 발사 간격 수정자로 배선돼 있지 않고
+  (`engine-capabilities.md`의 "엔진이 소비하지 않는 스탯" 참고), 설령 있었어도 매거진
+  "간격"만 바꿀 뿐 "용량"은 안 바꾸므로 마지막 탄 위치엔 무관. `fight_duration`으로
+  전투가 매거진 중간에 끊긴 마지막 발사는 (실제로 매거진을 비운 게 아니므로) 잘못
+  마킹하지 않도록 처리됨. `per_shot_rules`에 새 모드 `(None, "last_bullet", rules)`로
+  배선(threshold 미사용). 첫 소비자는 아직 없음 — Julia(base)의 Crescendo·Helm(애장품)의
+  라스트불릿 트리거가 즉시 언블록된 후보.
 - **다음(후속 배치):** 아래 막힌 유닛들을 이 능력으로 재인코딩. 각 유닛 데이터 수집 후
   per-shot 룰 추가.
-- **잔여 변형:** (a) "마지막 탄"(매거진 경계) — attack_rate 마커 필요. (b) **아군 총탄
-  카운터**(스쿼드 전체 발사 누적, per-caster 아님) — 예: Little Mermaid의 Bubble
-  Barrage(아군 총탄 500마다 850%). `per_shot_rules`는 시전자 본인 발사만 세므로 미커버.
-  스쿼드 합산 카운터는 별도 확장 필요. (c) **크리티컬 히트 카운터 — 영구 defer, "만들
-  능력"이 아님(2026-07-12, Julia 시그니처 인코딩 중 발견):** "N회 크리티컬 히트 후" 트리거는
-  엔진의 기대값 기반 크리 모델(각 히트가 `crit_rate` 확률로 스케일되는 연속값 — 실제
-  per-hit RNG 안 굴림)과 구조적으로 안 맞는다. "이 샷이 실제 크리였는가"라는 이벤트
-  자체가 없어서 셀 수 없다. per-shot 카운터 확장으로도 못 푼다 — Julia(시그니처)의
-  Crescendo/Marcato가 이 사유로 영구 defer.
+- **잔여 변형:** (a) **아군 총탄 카운터**(스쿼드 전체 발사 누적, per-caster 아님) — 예:
+  Little Mermaid의 Bubble Barrage(아군 총탄 500마다 850%). `per_shot_rules`는 시전자
+  본인 발사만 세므로 미커버. 스쿼드 합산 카운터는 별도 확장 필요. (b) **크리티컬 히트
+  카운터 — 영구 defer, "만들 능력"이 아님(2026-07-12, Julia 시그니처 인코딩 중 발견):**
+  "N회 크리티컬 히트 후" 트리거는 엔진의 기대값 기반 크리 모델(각 히트가 `crit_rate`
+  확률로 스케일되는 연속값 — 실제 per-hit RNG 안 굴림)과 구조적으로 안 맞는다. "이 샷이
+  실제 크리였는가"라는 이벤트 자체가 없어서 셀 수 없다. per-shot 카운터 확장으로도 못
+  푼다 — Julia(시그니처)의 Crescendo/Marcato가 이 사유로 영구 defer.
 - **무엇(원문):** "노멀 공격 N회 후", "풀차지 공격 N회 후 / 시", "마지막 탄 발사 시",
   "N shot마다" 처럼 **유닛의 발사 행위를 세어** 임계치마다 효과/넉을 발동하는 트리거.
 - **왜 막힘:** 노멀공격(차지샷 포함)은 `raid_simulator`의 별도 weapon-stats 패스에서

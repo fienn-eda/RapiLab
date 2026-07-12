@@ -125,10 +125,14 @@ See `takina_inoue.py` (Battlefield Control, cd 15s).
 `per_shot_rules`: a `simulate_raid` param
 (`{slug: [(threshold, mode, [SkillRule, ...]), ...]}`) for a skill that fires
 after/every N of the unit's own shots - "after N normal attacks", "N full charge
-attacks", "every N shots". `mode` is `"after"` (once, at the Nth shot) or
-`"every"` (at each multiple of N). The engine counts the unit's generated shots
-(a charge weapon's every shot is a full charge, so "full charge N" == "shot N";
-the encoding knows the weapon and picks N - no weapon gating in the engine). A
+attacks", "every N shots" - or on the shot that empties its magazine ("on
+firing the last bullet"). `mode` is `"after"` (once, at the Nth shot),
+`"every"` (at each multiple of N), or `"last_bullet"` (`threshold` unused/
+`None` - fires whenever the current shot's time is in that unit's
+`last_bullet_shot_times(...)`, computed once per unit only if a `"last_bullet"`
+entry is present). The engine counts the unit's generated shots (a charge
+weapon's every shot is a full charge, so "full charge N" == "shot N"; the
+encoding knows the weapon and picks N - no weapon gating in the engine). A
 firing rule either applies a buff or emits an `instant_damage_percent` pulse
 (`instant_nuke_pulse_rule("per_shot", pct)`) recorded as `source="per_shot_nuke"`.
 For a per-shot BUFF use `refreshing_buff_rule("per_shot", ...)`, NOT
@@ -139,9 +143,27 @@ on a status that varies over time (alternating or pinned mid-fight), do it insid
 the action using the shot time + `context.burst_times` / `status_since` - see
 `mint.py::mint_singing_at`. Expose via `registry._PER_SHOT_RULE_BUILDERS`
 / `get_per_shot_rules`; `roster` threads it. See `brid_silent_track.py`
-(Journey Ahead: 675% every 5 normal attacks). Not yet supported: "on firing the
-last bullet" (needs magazine-boundary markers in `attack_rate`); per-shot nukes
-default to `attack` damage type.
+(Journey Ahead: 675% every 5 normal attacks). Per-shot nukes default to
+`attack` damage type.
+
+**"Last bullet fired" (magazine-boundary marker) - BUILT capability
+(2026-07-12):** `attack_rate.py`'s `magazine_last_bullet_times`/
+`charge_last_bullet_times`/`last_bullet_shot_times` mirror
+`generate_{magazine,charge}_shot_times`/`generate_shot_times`'s exact 3-tier
+structure (low-level raw-rate functions + a weapon-dispatching wrapper),
+marking which shot in each magazine actually empties it
+(`magazine_size - 1`, re-derived live from `max_ammo_percent_at` - so a
+user's [Max Ammo Up] overload option or a temporary ammo-boosting skill
+buff correctly shifts which round is "last", same mechanism shot generation
+itself already used). A shot that only LOOKS like the last one because
+`fight_duration` cut the fight off mid-magazine is correctly NOT marked
+(only a round that reaches the true magazine boundary counts). Attack/charge
+speed need no new modeling here - they're not wired as shot-interval
+modifiers anywhere in this engine (see "Stats the engine does NOT consume"
+below), and even if they were, they'd change shot CADENCE, not magazine
+CAPACITY, so they wouldn't move which round empties the magazine. Consume
+via `per_shot_rules`' `"last_bullet"` mode, above. Unblocks Julia (base)'s
+Crescendo and Helm's last-bullet trigger, neither yet re-encoded.
 
 **"For N round(s)" buffs (bullet-count duration):** a buff whose duration is the
 affected ally's next N normal-attack shots, not seconds — e.g. Zwei's Pierce

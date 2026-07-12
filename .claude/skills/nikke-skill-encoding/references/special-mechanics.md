@@ -523,10 +523,41 @@ how to encode it, and current engine status.
   truncates the prior same-(stat,source,scope) instance so overlaps collapse to
   one value. Different sources still sum. Only a per-shot buff that literally
   says "stacks up to N" should use plain `buff_rule`.
-- **Still deferred:** "on firing the LAST bullet" (needs magazine-boundary
-  markers). And a shot-count trigger whose effect ALSO gates on boss element
-  (e.g. Brid's Wind-Code debuff every 10 normals) - the count part works, the
-  Wind-Code gating is the separate boss-element gap.
+- **Still deferred:** a shot-count trigger whose effect ALSO gates on boss
+  element (e.g. Brid's Wind-Code debuff every 10 normals) - the count part
+  works, the Wind-Code gating is the separate boss-element gap.
+
+## "On firing the last bullet" (magazine boundary) - BUILT capability (2026-07-12)
+- **What:** a skill that fires specifically on the round that EMPTIES its
+  magazine, right before reloading - e.g. Julia (base)'s Crescendo, Helm's
+  last-bullet trigger. Distinct from a plain shot-COUNT trigger (above): the
+  magazine boundary moves whenever the user's [Max Ammo Up] overload option
+  or a temporary ammo-boosting skill buff changes magazine size, so a fixed
+  "every N shots" approximation would drift out of sync with the real
+  trigger over a fight.
+- **Engine capability:** `attack_rate.py`'s `magazine_last_bullet_times`/
+  `charge_last_bullet_times`/`last_bullet_shot_times` mirror
+  `generate_{magazine,charge}_shot_times`/`generate_shot_times`'s exact
+  3-tier structure, marking the shot at `magazine_size - 1` within each
+  magazine - `magazine_size` is re-derived live from `max_ammo_percent_at`,
+  the SAME callable (and same live-buff mechanism) shot generation itself
+  already uses, so an overload/skill ammo buff is automatically reflected
+  with no extra wiring. A shot that's merely the LAST ONE RECORDED because
+  `fight_duration` cut the fight off mid-magazine is correctly excluded -
+  only a round that reaches the genuine magazine boundary counts.
+  `per_shot_rules` gained a `"last_bullet"` mode (`threshold` unused) that
+  checks a shot's time against this set, computed once per unit only when
+  a `"last_bullet"` rule is actually present (skipped otherwise).
+- **Attack/charge speed don't need modeling for this:** neither is wired as
+  a shot-interval modifier anywhere in this engine (see "Stats the engine
+  does NOT consume" in `engine-capabilities.md`) - and even if they were,
+  they'd change shot CADENCE (time between shots), not magazine CAPACITY
+  (rounds per magazine), so they wouldn't move which round is "last" anyway.
+  Only `max_ammo_percent` matters here.
+- **Encode:** use `(None, "last_bullet", [rules])` in a unit's `per_shot_rules`
+  entry. Unblocks Julia (base)'s Crescendo and Helm's last-bullet trigger
+  (both flagged "매거진경계 마커 부재" in `encoded-nikkes.md` before this) -
+  neither has been re-encoded with it yet as of this capability landing.
 
 ## Full-charge-count CDR -> per-cycle CDR approximation
 - **Signature:** "when attacking with Full Charge for N time(s): Cooldown of
