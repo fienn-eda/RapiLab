@@ -92,6 +92,7 @@ BASE_CRIT_RATE = 0.15
 
 def _resource_fill_times(
     fill, shot_times, core_hittable, fight_duration, full_burst_windows=(), own_burst_times=(),
+    last_bullet_times=(),
 ):
     """The times a resource gains a stack, from its fill spec and the owner's
     shot timeline. ("per_shot_every", N) fires at the owner's Nth, 2Nth, ... shot
@@ -109,7 +110,11 @@ def _resource_fill_times(
     N, window_duration) is the same idea but the window is anchored to the
     OWNER'S OWN burst-fire times instead of the global Full Burst window (e.g.
     Asuka's Anti A.T. Field, "every 10 shots while in Annihilation State" - a
-    9s window that starts at HER burst, not the squad's Full Burst window)."""
+    9s window that starts at HER burst, not the squad's Full Burst window).
+    ("on_last_bullet",) fires whenever the owner's OWN shot empties its
+    magazine (e.g. Julia's Crescendo, "when the last bullet hits the target"
+    - see `attack_rate.last_bullet_shot_times`), not on any fixed shot count
+    or window."""
     kind = fill[0]
     if kind == "per_shot_every":
         n = fill[1]
@@ -134,6 +139,8 @@ def _resource_fill_times(
         windows = [(bt, bt + window_duration) for bt in own_burst_times]
         in_window = [t for t in shot_times if any(start <= t < end for start, end in windows)]
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
+    if kind == "on_last_bullet":
+        return sorted(last_bullet_times)
     raise ValueError(f"unknown resource fill kind: {kind}")
 
 
@@ -455,6 +462,7 @@ def simulate_raid(
     ))
 
     shot_times_by_slug = {}
+    last_bullet_times_by_slug = {}
     for slug, weapon in weapon_stats.items():
         target = target_for(slug)
         is_charge_weapon = weapon["weapon"] in CHARGE_WEAPONS
@@ -504,13 +512,20 @@ def simulate_raid(
         # nuke. Rules must be stateless and must not change shot generation
         # (reload/ammo), which is already fixed for this unit here.
         unit_per_shot = per_shot_rules.get(slug, [])
+        # Also needed by an "on_last_bullet" resource fill (below, resolved in
+        # a later pass) - computed once here and cached so both consumers
+        # share identical magazine boundaries.
+        needs_last_bullets = any(mode == "last_bullet" for _, mode, _ in unit_per_shot) or any(
+            spec.fill[0] == "on_last_bullet" for spec in resource_specs.get(slug, [])
+        )
         last_bullets = (
             last_bullet_shot_times(
                 weapon["weapon"], weapon["max_ammo"], weapon["reload_time"], weapon["charge_time"],
                 fight_duration, max_ammo_percent_at, reload_speed_percent_at,
             )
-            if any(mode == "last_bullet" for _, mode, _ in unit_per_shot) else set()
+            if needs_last_bullets else set()
         )
+        last_bullet_times_by_slug[slug] = last_bullets
         for shot_index, shot_time in enumerate(shot_times):
             count = shot_index + 1
             for threshold, mode, rules in unit_per_shot:
@@ -551,7 +566,7 @@ def simulate_raid(
                 continue
             fill_times = _resource_fill_times(
                 spec.fill, shot_times, core_hittable, fight_duration, full_burst_windows,
-                context.burst_times.get(slug, []),
+                context.burst_times.get(slug, []), last_bullet_times_by_slug.get(slug, set()),
             )
             # Every per-shot fill grants exactly one stack. (A fill source that
             # grants more than one at a time - e.g. a battle-start +N - would

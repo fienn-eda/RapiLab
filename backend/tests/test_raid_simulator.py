@@ -1760,6 +1760,32 @@ def test_resource_spec_fill_during_own_status_window_only_counts_in_window_shots
     assert dmg[17] == 3000.0   # 6th in-window shot: 2nd stack
 
 
+def test_resource_spec_fill_on_last_bullet_stacks_only_when_the_magazine_empties():
+    # Julia's Crescendo: "Activates when the last bullet hits the target" -
+    # +1 stack every time this unit's magazine empties, not on any fixed shot
+    # count. AR (12/s), 3-round magazine, 1s reload -> magazines empty at
+    # shot index 2 (t=2/12) and index 5 (t=1.25+2/12).
+    spec = ResourceSpec(
+        name="crescendo", fill=("on_last_bullet",), cap=5,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.1 * c, lifetime=15.0)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=2.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=3)},
+        resource_specs={"attacker": [spec]},
+    )
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    assert dmg[0] == 1000.0    # 0 stacks
+    assert dmg[1] == 1000.0    # still 0 stacks, before this magazine's last bullet
+    assert dmg[2] == 1100.0    # this shot IS the last bullet - sees its own new stack
+    assert dmg[3] == 1100.0    # next magazine, still 1 stack (15s lifetime)
+    assert dmg[4] == 1100.0
+    assert dmg[5] == 1200.0    # this magazine's own last bullet - 2nd stack
+
+
 def test_resource_spec_fill_during_full_burst_only_counts_in_window_shots():
     # A fill gated to Full Burst (e.g. Soda's Golden Chip, "every 3 normal
     # attacks during Full Burst") counts ONLY shots whose time falls within a
