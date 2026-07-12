@@ -81,6 +81,10 @@ def real_five_roster():
                 "description_value_01": "1215.69", "description_value_02": "3", "description_value_03": "4.33",
                 "description_value_04": "10", "description_value_05": "112.28", "description_value_06": "10",
             },
+            "ld_assault": {
+                "description_value_01": "8.65", "description_value_02": "10",
+                "description_value_03": "221.24", "description_value_04": "1456.96",
+            },
         },
         weapon_stats={
             "weapon": "AR", "damage_percent": 13.65, "max_ammo": 60,

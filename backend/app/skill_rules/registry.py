@@ -127,6 +127,7 @@ from app.skill_rules.privaty import (
     ak_missile_burst_percent,
     build_ak_missile_rules,
     build_ex_magazine_rules,
+    build_ld_assault_per_shot_rules,
 )
 from app.skill_rules.rapi_red_hood import (
     build_battlefield_assessment_rules,
@@ -316,6 +317,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm": lambda sv: build_frontline_command_per_shot_rules(sv["frontline_command"]),
+    "privaty": lambda sv: build_ld_assault_per_shot_rules(sv),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
     "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),

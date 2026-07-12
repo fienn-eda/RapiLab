@@ -11,14 +11,41 @@ Unlike Crown's "X% of caster's ATK", EX Magazine's ATK bonus is a plain
 "ATK UP X%" buff on the target's own ATK, so it maps directly to
 atk_percent rather than needing a caster-stat snapshot.
 
-Not modeled: "LD Assault" (skills[1]) is a pure per-shot damage instance
-gated on "last bullet hits" - deferred to the raid_simulator's damage-
-accumulation piece alongside the deferred attack-rate model. AK Missile's
-own "Deals X% of final ATK as Burst Skill damage" and its Designated-Target
-follow-up effects use ak_missile_burst_percent() instead of a SkillRule,
-same pattern as Helm's Aegis Cannon.
+"LD Assault" (skills[1]) fires "when the last bullet hits the target" -
+modeled via `per_shot_rules`' `"last_bullet"` mode (gap #1's residual
+variant, built 2026-07-12): every last bullet applies a squad Damage Taken
+debuff on the target and deals 256.17% of final ATK as additional damage
+(both "as additional damage" - `full_burst_bonus_eligible`), PLUS, if the
+target is currently in "Designated Target" status, an ADDITIONAL 1687% hit
+stacked on top (two separate pulses that instant, not either/or - the skill
+text's second bullet is a bonus layered on the first, not a replacement).
+"Designated Target" is the status Privaty's own AK Missile burst applies to
+its target for a fixed duration (`ak_missile`'s own description_value_04,
+10 sec at max level) - modeled as a live time-window check against
+`context.burst_times[caster_slug]` at the shot's own time, since this
+engine has no built-in TIMED status primitive (`has_status`/`clear_status`
+are boolean-only, no auto-expiry) and the window (10s) doesn't line up with
+any existing per-cycle shortcut like `own_burst_fired_this_cycle()`
+(Privaty's burst cooldown is 40s, so the window is a real fraction of the
+cycle, not "the whole cycle until reset"). AK Missile's own Designated
+Target ATK-down debuff on the enemy isn't modeled (reduces the BOSS's own
+attack, a survivability stat this engine's damage formula never reads).
+
+**Unconfirmed assumption (uses the engine's DEFAULT behavior, not an
+in-game-verified fact - unlike Maiden's self-buff timing, which WAS
+confirmed):** the Damage Taken debuff is added with plain `registry.add`
+(not `add_refreshing`) and applied at the same instant as its own triggering
+hit. Under this engine's default same-instant-inclusive semantics, that
+means (a) a last bullet's own damage already reflects the debuff IT just
+applied, and (b) two last bullets within the debuff's 10s window STACK
+(additive squad debuff) rather than refresh. Neither has been checked
+against real gameplay - flag for in-game verification if it matters.
+
+AK Missile's own "Deals X% of final ATK as Burst Skill damage" and its
+Designated-Target follow-up effects use ak_missile_burst_percent() instead
+of a SkillRule, same pattern as Helm's Aegis Cannon.
 """
-from app.effects import Effect
+from app.effects import Effect, Pulse
 from app.squad_engine import SkillRule
 
 
@@ -67,3 +94,26 @@ def build_ak_missile_rules(values: dict) -> list[SkillRule]:
 
 def ak_missile_burst_percent(values: dict) -> float:
     return float(values["description_value_01"])
+
+
+def build_ld_assault_per_shot_rules(values: dict) -> list:
+    assault = values["ld_assault"]
+    damage_taken = float(assault["description_value_01"]) / 100
+    debuff_duration = float(assault["description_value_02"])
+    base_percent = float(assault["description_value_03"])
+    designated_percent = float(assault["description_value_04"])
+    designated_duration = float(values["ak_missile"]["description_value_04"])
+
+    def action(context, caster_slug, time, registry):
+        registry.add(
+            Effect("damage_taken_up", damage_taken, "squad", debuff_duration, caster_slug),
+            applied_at=time,
+        )
+        registry.add_pulse(Pulse("instant_damage_percent", base_percent, "self", caster_slug, True))
+        designated = any(
+            bt <= time < bt + designated_duration for bt in context.burst_times.get(caster_slug, [])
+        )
+        if designated:
+            registry.add_pulse(Pulse("instant_damage_percent", designated_percent, "self", caster_slug, True))
+
+    return [(None, "last_bullet", [SkillRule(trigger="per_shot", action=action)])]
