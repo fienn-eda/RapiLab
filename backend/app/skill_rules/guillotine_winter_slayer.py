@@ -18,7 +18,12 @@ Modeled (DPS-relevant): one "exp" resource, capped at 100.
   10-tick sustained DoT (1 tick/sec for 10 sec) dealing 20.87% of final ATK *
   Hero Level per tick - each tick independently reads Hero Level AT ITS OWN
   TIME (`resource_scaled_nukes`), so EXP still accumulating during the DoT's
-  window correctly raises later ticks over earlier ones.
+  window correctly raises later ticks over earlier ones. Also gets the Full
+  Burst Bonus (`full_burst_bonus_eligible=True`) - confirmed in-game (Fienn,
+  2026-07-12) for repeating-tick DoTs generally (first established via
+  Mana's Fatal Error!), even without "as additional damage" in Extermination's
+  own text: every tick past the first is inherently computed after cast time,
+  landing inside the same Full Burst window her burst opens.
 
 Not modeled / deferred:
 - Hero Level Up rewards (reload / HP recovery) - not damage.
@@ -98,5 +103,5 @@ def build_guillotine_resource_scaled_nukes(values):
     return [{
         "resource": "exp", "cap": exp_cap, "base_percent": dot_percent,
         "scale_fn": _hero_level, "tick_count": tick_count, "tick_interval": 1.0,
-        "damage_type": "sustained",
+        "damage_type": "sustained", "full_burst_bonus_eligible": True,
     }]

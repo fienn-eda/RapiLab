@@ -146,6 +146,12 @@ def test_guillotine_extermination_dot_spec_ticks_ten_times_scaled_by_hero_level(
     assert (spec["tick_count"], spec["tick_interval"]) == (10, 1.0)
     assert spec["damage_type"] == "sustained"
     assert spec["scale_fn"](25) == _hero_level(25)  # Hero Level derived, not raw EXP
+    # Confirmed in-game (Fienn, 2026-07-12): a repeating-tick DoT gets the
+    # Full Burst Bonus even without "as additional damage" in its own text
+    # (first established via Mana's Fatal Error!) - each tick after the very
+    # first is inherently computed after cast time, landing inside the same
+    # Full Burst window her burst opens.
+    assert spec["full_burst_bonus_eligible"] is True
 
 
 def test_guillotine_extermination_dot_end_to_end_scales_with_hero_level_per_tick():
