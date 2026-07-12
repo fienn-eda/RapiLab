@@ -381,6 +381,7 @@ def simulate_raid(
                     slug, spec["base_percent"], tick_time, "resource_scaled_nuke",
                     damage_type=spec.get("damage_type", "attack"),
                     resource_gate=resource_gate,
+                    full_burst_bonus_eligible=spec.get("full_burst_bonus_eligible", False),
                 )
 
         percent = burst_damage_percents.get(slug)

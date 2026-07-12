@@ -1661,6 +1661,33 @@ def test_resource_scaled_nuke_without_a_resource_ticks_at_a_flat_percent():
     assert all(h["damage_type"] == "sustained" for h in hits)
 
 
+def test_resource_scaled_nuke_full_burst_bonus_eligible_applies_to_every_tick_in_window():
+    # Mana's Fatal Error!: confirmed in-game (Fienn, 2026-07-12) that every
+    # tick of her DoT gets the +50% Full Burst Bonus, even though her skill
+    # text says "as sustained damage" (not "as additional damage") - unlike a
+    # single-instant nuke, a repeating tick is inherently NOT all "at cast
+    # time": only the very first tick coincides with the burst instant, and
+    # every later tick is computed strictly after it, landing squarely inside
+    # the Full Burst window that opened at the same moment.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=2.0, fight_duration=10.0, mode="auto", base_crit_rate=0.0,
+        resource_scaled_nukes={"attacker": [{
+            "base_percent": 10.0, "tick_count": 3, "tick_interval": 1.0, "damage_type": "sustained",
+            "full_burst_bonus_eligible": True,
+        }]},
+    )
+    hits = sorted(
+        [e for e in result["damage_log"] if e["source"] == "resource_scaled_nuke"],
+        key=lambda e: e["time"],
+    )
+    assert len(hits) == 3
+    assert [round(h["time"], 4) for h in hits] == [2.0, 3.0, 4.0]  # all inside [2.0, 12.0)
+    assert all(h["damage"] == 1500.0 for h in hits)  # 1000 * (1 + full_burst_bonus*0.5)
+
+
 def test_resource_scaled_nukes_defaults_to_none_and_is_a_no_op():
     baseline = simulate_raid(
         make_deck(),
