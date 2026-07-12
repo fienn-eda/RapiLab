@@ -99,6 +99,20 @@ def test_rapi_red_hood_burst_nuke_is_projectile_explosion_typed():
     assert get_burst_damage_type("rapi-red-hood") == "projectile_explosion"
 
 
+def test_build_nikke_rules_returns_the_great_thief_burst_percent_for_quency():
+    skill_values = {
+        "secure_route": {"description_value_01": "49.58", "description_value_02": "25.25", "description_value_03": "16.73"},
+        "the_great_thief": {
+            "description_value_01": "57.08", "description_value_02": "10",
+            "description_value_03": "25.87", "description_value_04": "10",
+            "description_value_05": "1736.31",
+        },
+    }
+    rules, burst_percent = build_nikke_rules("quency-escape-queen", skill_values)
+    assert len(rules) == 2
+    assert burst_percent == 1736.31
+
+
 def test_get_periodic_rules_returns_none_for_most_nikkes():
     assert get_periodic_rules("crown", {}) is None
 

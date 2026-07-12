@@ -82,6 +82,7 @@ from app.skill_rules.moran import build_moran_rules
 from app.skill_rules.nayuta import asceticism_burst_percent, build_nayuta_rules
 from app.skill_rules.noir import build_noir_rules, finale_burst_percent
 from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika_rules
+from app.skill_rules.quency_escape_queen import build_quency_rules, the_great_thief_burst_percent
 from app.skill_rules.rosanna_chic_ocean import build_rosanna_rules
 from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
@@ -200,6 +201,7 @@ _BUILDERS = {
     "nayuta": lambda sv: (build_nayuta_rules(sv), asceticism_burst_percent(sv)),
     "noir": lambda sv: (build_noir_rules(sv), finale_burst_percent(sv)),
     "prika": lambda sv: (build_prika_rules(sv), None),
+    "quency-escape-queen": lambda sv: (build_quency_rules(sv), the_great_thief_burst_percent(sv)),
     "rosanna-chic-ocean": lambda sv: (build_rosanna_rules(sv), None),
     "tove": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
