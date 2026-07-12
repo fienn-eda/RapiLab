@@ -125,6 +125,51 @@ def _resource_fill_times(fill, shot_times, core_hittable, fight_duration, full_b
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
     raise ValueError(f"unknown resource fill kind: {kind}")
 
+
+def _resolve_squad_burst_cycle_resource(spec, slug, events, context):
+    """Fills/resets a resource driven by GLOBAL burst-cycle events (not the
+    owner's own shots), where the fill is CONDITIONAL on the resource's own
+    running value - e.g. Maiden's MP: "+1 if MP==0" whenever ANY squad
+    tier-1 fires, "+1 if MP>=1" on entering Full Burst. This can't be a flat
+    deterministic schedule (see `_resource_fill_times`) because whether a
+    fill applies depends on state that changes as events are processed, so
+    it's walked as a genuine sequential replay instead.
+
+    fill = ("squad_burst_cycle_conditional", rules), rules a list of
+    (event_matcher, condition_fn, delta): event_matcher(event) -> bool tests
+    one of simulate_burst_cycle's own events (e.g. {"type": "burst", "tier":
+    1, ...} or {"type": "full_burst_start", ...}); condition_fn(count) -> bool
+    gates the fill on the CURRENT running value.
+
+    Only `spec.resets` with trigger "own_burst" is supported (checked inline
+    against each event's own slug, at the exact point it occurs in `events` -
+    not merged in afterward) - "battle_start" is applied once before the
+    walk begins. This preserves exact same-instant ordering from `events`
+    (e.g. the owner's own burst always precedes full_burst_start, per the
+    strict burst1->burst2->burst3->full-burst rule), which a resource whose
+    fill depends on that exact ordering needs. `spec.buffs` isn't supported
+    for this fill kind (no current consumer needs a continuous buff off a
+    squad-burst-cycle-driven resource)."""
+    rules = spec.fill[1]
+    running = 0.0
+    for reset_spec in spec.resets:
+        if reset_spec["trigger"] == "battle_start":
+            context.reset_resource(slug, spec.name, 0.0, running, reset_spec["value"])
+            running = min(spec.cap, reset_spec["value"])
+    own_burst_reset_value = next(
+        (r["value"] for r in spec.resets if r["trigger"] == "own_burst"), None
+    )
+    for event in events:
+        for matcher, condition, delta in rules:
+            if matcher(event) and condition(running):
+                running = min(spec.cap, running + delta)
+                context.fill_resource(slug, spec.name, delta, event["time"])
+        if own_burst_reset_value is not None and event.get("type") == "burst" and event.get("slug") == slug:
+            pre_value = running
+            running = own_burst_reset_value
+            context.reset_resource(slug, spec.name, event["time"], pre_value, running)
+
+
 # Each damage instance has a damage_type. The type-specific Damage-Up buckets
 # below are read from the registry ONLY for instances of that type, so a buff
 # like "Sustained Damage +X%" only boosts sustained-typed damage (not every
@@ -162,6 +207,7 @@ def simulate_raid(
     burst_hit_counts=None,
     resource_scaled_nukes=None,
     resource_gated_buffs=None,
+    dynamic_hit_count_nukes=None,
 ):
     weapon_stats = weapon_stats or {}
     periodic_nukes = periodic_nukes or {}
@@ -172,6 +218,7 @@ def simulate_raid(
     burst_hit_counts = burst_hit_counts or {}
     resource_scaled_nukes = resource_scaled_nukes or {}
     resource_gated_buffs = resource_gated_buffs or {}
+    dynamic_hit_count_nukes = dynamic_hit_count_nukes or {}
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -198,7 +245,7 @@ def simulate_raid(
             return 1.0
         return element_multiplier(member_by_slug[slug]["element"], boss_element)
 
-    def _damage_instance(slug, percent, time, damage_type="attack", extra_charge_bonus=0.0):
+    def _damage_instance(slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0):
         target = target_for(slug)
         # True Damage ignores enemy DEF (nikke.gg glossary).
         instance_enemy_def = 0 if damage_type == "true" else enemy_def
@@ -207,7 +254,7 @@ def simulate_raid(
             attack_coefficient=percent / 100,
             enemy_def=instance_enemy_def,
             atk_percent=registry.total_for("atk_percent", target, time),
-            flat_atk=registry.total_for("flat_atk", target, time),
+            flat_atk=registry.total_for("flat_atk", target, time) + extra_flat_atk,
             other_elemental_bonus=registry.total_for("other_elemental_bonus", target, time),
             other_critical_damage_sources=registry.total_for("other_critical_damage_sources", target, time),
             crit_rate=crit_rate_for(target, time),
@@ -237,11 +284,14 @@ def simulate_raid(
             return "projectile_explosion"
         return "attack"
 
-    def record(slug, percent, time, source, damage_type="attack", extra_charge_bonus=0.0, resource_gate=None):
+    def record(
+        slug, percent, time, source, damage_type="attack",
+        extra_charge_bonus=0.0, resource_gate=None, extra_flat_atk=0.0,
+    ):
         damage_events.append({
             "slug": slug, "percent": percent, "time": time, "source": source,
             "damage_type": damage_type, "extra_charge_bonus": extra_charge_bonus,
-            "resource_gate": resource_gate,
+            "resource_gate": resource_gate, "extra_flat_atk": extra_flat_atk,
         })
 
     def _resolve_percent(ev):
@@ -440,6 +490,9 @@ def simulate_raid(
     for slug, specs in resource_specs.items():
         shot_times = shot_times_by_slug.get(slug, [])
         for spec in specs:
+            if spec.fill[0] == "squad_burst_cycle_conditional":
+                _resolve_squad_burst_cycle_resource(spec, slug, events, context)
+                continue
             fill_times = _resource_fill_times(
                 spec.fill, shot_times, core_hittable, fight_duration, full_burst_windows
             )
@@ -509,6 +562,27 @@ def simulate_raid(
                         applied_at=burst_time,
                     )
 
+    # A burst-fired nuke whose HIT COUNT (not just its percent) is itself a
+    # resource's value at burst time - e.g. Maiden's Diamond Dust, "attacks
+    # repeatedly based on current MP". Reads the PRE-reset count (the resource
+    # is drained by this same burst) at each of the owner's own burst times,
+    # recording that many identical damage events. `extra_flat_atk_percent_of_
+    # max_hp` (optional) adds a percentage of the owner's Max HP directly into
+    # THIS nuke's own flat_atk term (e.g. "1372.8% of the sum of 10% Max HP and
+    # ATK") without leaking into any other damage instance from the same slug.
+    for slug, specs in dynamic_hit_count_nukes.items():
+        for spec in specs:
+            extra_flat_atk = spec.get("extra_flat_atk_percent_of_max_hp", 0.0) * base_stats[slug]["max_hp"]
+            for burst_time in context.burst_times.get(slug, []):
+                hit_count = context.resource_count_before_reset(slug, spec["resource"], burst_time)
+                if hit_count is None:
+                    continue
+                for _ in range(int(hit_count)):
+                    record(
+                        slug, spec["base_percent"], burst_time, "dynamic_hit_count_nuke",
+                        damage_type=spec.get("damage_type", "attack"), extra_flat_atk=extra_flat_atk,
+                    )
+
     for slug, spec in periodic_nukes.items():
         cooldown = spec["cooldown"]
         percent = spec["percent"]
@@ -528,6 +602,7 @@ def simulate_raid(
             "damage": _damage_instance(
                 ev["slug"], _resolve_percent(ev), ev["time"],
                 damage_type=ev["damage_type"], extra_charge_bonus=ev["extra_charge_bonus"],
+                extra_flat_atk=ev["extra_flat_atk"],
             ),
             "source": ev["source"],
             "damage_type": ev["damage_type"],

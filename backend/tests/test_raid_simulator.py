@@ -1780,6 +1780,85 @@ def test_resource_gated_buffs_defaults_to_none_and_is_a_no_op():
     assert with_empty["total_damage"] == baseline["total_damage"]
 
 
+def _tier1_fire(event):
+    return event["type"] == "burst" and event["tier"] == 1
+
+
+def _full_burst_enter_event(event):
+    return event["type"] == "full_burst_start"
+
+
+def test_squad_burst_cycle_conditional_fill_and_dynamic_hit_count_nuke():
+    # Maiden's MP: +1 if MP==0 whenever ANY squad tier-1 fires; +1 if MP>=1 on
+    # entering Full Burst; her own burst drains it, and its hit count IS the
+    # pre-drain MP. The engine's strict burst1->burst2->burst3->full-burst
+    # ordering means her own burst ALWAYS fires before full_burst_start - so
+    # MP is always exactly 1 (from the tier-1 rule alone) at her burst, every
+    # cycle; the "Full Burst entry" rule can never actually contribute
+    # (by the time it checks, MP is already back to 0).
+    spec = ResourceSpec(
+        name="mp", fill=("squad_burst_cycle_conditional", [
+            (_tier1_fire, lambda count: count == 0, 1),
+            (_full_burst_enter_event, lambda count: count >= 1, 1),
+        ]), cap=12, buffs=[],
+        resets=[{"trigger": "own_burst", "value": 0}],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=60.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [spec]},
+        dynamic_hit_count_nukes={"attacker": [{"resource": "mp", "base_percent": 100.0}]},
+    )
+    hits = [e for e in result["damage_log"] if e["source"] == "dynamic_hit_count_nuke"]
+    assert len(hits) == 2  # 2 burst cycles complete within 60s (t=5.0, t=40.0)
+    assert all(h["damage"] == 10000.0 for h in hits)  # 1 hit * 100% coefficient, no buffs
+
+
+def test_dynamic_hit_count_nuke_with_extra_flat_atk_from_max_hp():
+    # Maiden's Diamond Dust: 1372.8% of (10% final Max HP + ATK) - the 10%
+    # Max HP term must boost ONLY this nuke, not her normal attacks or any
+    # other damage instance from the same slug.
+    spec = ResourceSpec(
+        name="mp", fill=("squad_burst_cycle_conditional", [(_tier1_fire, lambda c: c == 0, 1)]),
+        cap=12, buffs=[], resets=[{"trigger": "own_burst", "value": 0}],
+    )
+    base_stats = make_base_stats(attacker_atk=10000)
+    base_stats["attacker"]["max_hp"] = 50000
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=base_stats,
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=6.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [spec]},
+        dynamic_hit_count_nukes={
+            "attacker": [{"resource": "mp", "base_percent": 1372.8, "extra_flat_atk_percent_of_max_hp": 0.10}]
+        },
+    )
+    hits = [e for e in result["damage_log"] if e["source"] == "dynamic_hit_count_nuke"]
+    assert len(hits) == 1
+    # (10000 + 0.10*50000) * 13.728 = 15000 * 13.728
+    assert round(hits[0]["damage"], 4) == round(15000 * 13.728, 4)
+
+
+def test_dynamic_hit_count_nukes_defaults_to_none_and_is_a_no_op():
+    baseline = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=5.0, mode="auto", base_crit_rate=0.0,
+    )
+    with_empty = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=5.0, mode="auto", base_crit_rate=0.0,
+        dynamic_hit_count_nukes={},
+    )
+    assert with_empty["total_damage"] == baseline["total_damage"]
+
+
 def test_resource_specs_defaults_to_none_and_is_a_no_op():
     baseline = simulate_raid(
         make_deck(),

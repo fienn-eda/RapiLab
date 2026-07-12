@@ -75,6 +75,12 @@ from app.skill_rules.julia import build_decrescendo_rules, climax_burst_percent
 from app.skill_rules import julia_signature
 from app.skill_rules.little_mermaid import build_little_mermaid_rules
 from app.skill_rules.liter import build_liter_rules
+from app.skill_rules.maiden_ice_rose import (
+    build_blessings_upon_you_per_shot_rules,
+    build_blessings_upon_you_rules,
+    build_diamond_dust_dynamic_hit_count_nukes,
+    build_mp_resources,
+)
 from app.skill_rules.mast_romantic_maid import build_mast_rules
 from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
 from app.skill_rules.miranda import build_health_up_rules, build_miranda_rules
@@ -165,6 +171,11 @@ def _build_cinderella(sv):
     return rules, glass_slippers_burst_percent(sv)
 
 
+def _build_maiden(sv):
+    rules = build_blessings_upon_you_rules(sv, sv["caster_max_hp"])
+    return rules, None  # Diamond Dust is a dynamic_hit_count_nuke, not burst_damage_percents
+
+
 _BUILDERS = {
     "anis-star": _build_anis_star,
     "anis-sparkling-summer": lambda sv: (build_anis_sparkling_summer_rules(sv), None),
@@ -188,6 +199,7 @@ _BUILDERS = {
     "liberalio": lambda sv: (build_liberalio_rules(sv), submerged_world_burst_percent(sv)),
     "ludmilla-winter-owner": lambda sv: (build_ludmilla_rules(sv), None),
     "chisato-nishikigi": lambda sv: (build_chisato_rules(sv), None),
+    "maiden-ice-rose": _build_maiden,
     "jill-valentine": lambda sv: (build_jill_rules(sv), None),
     "privaty": _build_privaty,
     "liter": lambda sv: (build_liter_rules(sv), None),
@@ -274,6 +286,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
     "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),
     "chisato-nishikigi": lambda sv: build_chisato_per_shot_rules(sv),
+    "maiden-ice-rose": lambda sv: build_blessings_upon_you_per_shot_rules(sv),
     "miranda": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
     "prika": lambda sv: build_lets_get_show_started_rules(
@@ -291,6 +304,7 @@ _RESOURCE_SPEC_BUILDERS = {
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
     "cinderella": lambda sv: build_beautiful_resources(sv),
     "soda-twinkling-bunny": lambda sv: build_golden_chip_resources(sv),
+    "maiden-ice-rose": lambda sv: build_mp_resources(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named
@@ -311,6 +325,15 @@ _RESOURCE_SCALED_NUKE_BUILDERS = {
 # "scope", "duration"}.
 _RESOURCE_GATED_BUFF_BUILDERS = {
     "soda-twinkling-bunny": lambda sv: build_onward_soda_resource_gated_buffs(sv),
+}
+
+# A Nikke with a burst-fired nuke whose HIT COUNT (not just its percent) is
+# itself a resource's value at burst time - see raid_simulator's
+# `dynamic_hit_count_nukes` param. Each entry returns a list of spec dicts:
+# {"resource", "base_percent", "extra_flat_atk_percent_of_max_hp"(optional),
+# "damage_type"(optional)}.
+_DYNAMIC_HIT_COUNT_NUKE_BUILDERS = {
+    "maiden-ice-rose": lambda sv: build_diamond_dust_dynamic_hit_count_nukes(sv),
 }
 
 
@@ -381,4 +404,13 @@ def get_resource_gated_buffs(slug, skill_values):
     buff gated/scaled by a named resource's count (see raid_simulator's
     `resource_gated_buffs` param), or None for the vast majority without one."""
     builder = _RESOURCE_GATED_BUFF_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_dynamic_hit_count_nukes(slug, skill_values):
+    """List of dynamic-hit-count-nuke spec dicts for a Nikke with a burst-fired
+    nuke whose HIT COUNT is itself a resource's value (see raid_simulator's
+    `dynamic_hit_count_nukes` param), or None for the vast majority without
+    one."""
+    builder = _DYNAMIC_HIT_COUNT_NUKE_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
