@@ -167,9 +167,11 @@ resource (battery / ammo pouch / N-stack counter) driving count-scaled buffs.
 Declare a `ResourceSpec(name, fill, cap, buffs)` (in `effects.py`); wire it via
 `_RESOURCE_SPEC_BUILDERS` / `get_resource_specs` and `roster` threads it into
 `simulate_raid`'s `resource_specs`. `fill` is deterministic:
-`("per_shot_every", N)` = +1 stack every Nth of the owner's shots, or
+`("per_shot_every", N)` = +1 stack every Nth of the owner's shots,
 `("per_shot_every_core", core_n, noncore_n)` = core_n on a core-hittable boss
-else noncore_n (Guillotine's "3 Core hits" vs "6 normals without the core").
+else noncore_n (Guillotine's "3 Core hits" vs "6 normals without the core"), or
+`("periodic", interval)` = +1 stack every `interval` seconds regardless of shots
+(Cinderella's Beautiful, which ticks while her decoy is up from battle start).
 `buffs` are `ResourceBuff`s built with `linear_resource_buff(stat, per_stack,
 scope, lifetime=None)` (value = per_stack × count) or `leveled_resource_buff(stat,
 per_level, level_fn, scope, lifetime=None)` (value = per_level × level_fn(count),
@@ -181,10 +183,34 @@ time, cap, lifetime)` — never a mutable total, so it's safe across the burst-c
 vs shot-loop phase ordering. The resolution pass emits each buff as a STEP FUNCTION
 of delta Effects over the fill/expiry events, so `total_for`'s running sum equals
 value_fn(count) at every time. First consumers: `modernia.py` (timed capped),
-`guillotine_winter_slayer.py` (permanent + leveled + core-conditional). NOT yet
-covered: count-scaled NUKES (value read at burst time — phase-ordering), and
-Pattern B time-draining gauges / transforms (Ark Ranger battery). See
-`special-mechanics.md`.
+`guillotine_winter_slayer.py` (permanent + leveled + core-conditional),
+`cinderella.py` (periodic fill). Pattern B time-draining gauges / transforms (Ark
+Ranger battery, blocked additionally on part-destruction fills) remain deferred.
+See `special-mechanics.md`.
+
+**Resource-scaled / gated burst nuke (incl. repeating DoT ticks):** a burst-fired
+nuke whose magnitude is gated or scaled by a named resource's count - a single
+additional hit (Julia's Climax gated on Crescendo at max stacks; Cinderella's
+Glass Slippers additional hit scaled by Beautiful's count) or a repeating tick
+(Guillotine's Extermination, 10 ticks/1s each independently reading Hero Level at
+ITS OWN time). Declare spec dicts `{"resource", "cap", "base_percent", "scale_fn",
+"tick_count", "tick_interval", "lifetime"(optional), "damage_type"(optional)}`;
+wire via `_RESOURCE_SCALED_NUKE_BUILDERS` / `get_resource_scaled_nukes`, threaded
+by `roster` into `simulate_raid`'s `resource_scaled_nukes` param. Fired from
+`on_tier_fire` (own_burst_activate), which records `tick_count` damage events
+(`tick_interval` apart) each carrying a `resource_gate`; **the percent is resolved
+in PHASE 2**, not at record time - `_resolve_percent` calls
+`context.resource_count(slug, name, event_time, cap, lifetime)` and multiplies by
+`scale_fn(count)`, since the resource's fills aren't populated until the
+resolution pass runs (after the burst cycle that records the event). Logged with
+`source="resource_scaled_nuke"`.
+
+**Multi-hit burst nuke:** a burst that "attacks sequentially N times" is N
+SEPARATE damage instances at the same instant, not one instance at N×percent -
+defense is a flat per-hit subtraction, so pre-multiplying overcounts whenever
+`enemy_def > 0`. `burst_hit_counts={slug: N}` (default 1) wired via
+`_BURST_HIT_COUNTS`/`get_burst_hit_count`; `on_tier_fire` records N identical
+events. First consumers: Cinderella (10x), Julia-signature (5x).
 
 **Record-then-compute:** `simulate_raid` RECORDS every damage instance
 (burst/instant/periodic/per-shot nukes + normal attacks) as an event during

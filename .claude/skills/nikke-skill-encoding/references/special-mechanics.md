@@ -234,14 +234,73 @@ how to encode it, and current engine status.
   `leveled_resource_buff(stat, per_level, level_fn, scope, lifetime=None)`, or a
   raw `ResourceBuff` with a threshold `value_fn`. See `engine-capabilities.md`.
 - **First consumers:** `modernia.py` (timed capped), `guillotine_winter_slayer.py`
-  (permanent + leveled + core-conditional fill).
-- **Still deferred:** count-scaled NUKES (value read at BURST time, before the
-  fill schedule is resolved - e.g. Guillotine's Extermination Hero-Level DoT,
-  Cinderella's stack-mirroring nuke, Julia). Pattern B: time-DRAINING gauges +
-  threshold transforms (Ark Ranger battery, filled by part-destruction which the
-  engine has no concept of) - deferred, don't invent a part-break schedule.
-  Multi-source fills / burst-consume / status-window-gated fills (Soda,
-  Modernia's Giant Leap ATK) also await more fill sources.
+  (permanent + leveled + core-conditional fill), `cinderella.py` (periodic fill,
+  see the "periodic" fill kind below).
+- **Periodic fill kind (`("periodic", interval)`) - BUILT (2026-07-12):** a
+  resource that ticks on a FIXED TIMER, independent of the owner's shots - e.g.
+  Cinderella's Beautiful, which ticks every 3 sec while her decoy is up
+  (continuously, from battle start). Resolved by `raid_simulator`'s own
+  `fight_duration`, no shot timeline needed.
+- **Still deferred:** Pattern B: time-DRAINING gauges + threshold transforms (Ark
+  Ranger battery, filled by part-destruction which the engine has no concept of)
+  - deferred, don't invent a part-break schedule. Multi-source fills /
+  burst-consume / status-window-gated fills (Soda, Modernia's Giant Leap ATK)
+  also await more fill sources.
+
+## Resource-scaled / gated burst nuke (incl. repeating DoT ticks) - BUILT capability (2026-07-12)
+- **What:** a burst-fired nuke whose magnitude is gated or scaled by a named
+  resource's count - a single additional hit gated on a threshold (Julia's
+  Climax, "Activates when Crescendo is at max stacks") or scaled by the count
+  directly ("mirrors the stack count", Cinderella's Glass Slippers), or a
+  REPEATING TICK where each tick independently re-reads the count at ITS OWN
+  time (Guillotine's Extermination, "20.87% of final ATK * Hero Level every sec
+  for 10 sec" - Hero Level can rise mid-DoT as EXP keeps accumulating).
+- **Why this was hard:** the nuke is recorded during the burst cycle
+  (`on_tier_fire`), but the resource's fill schedule isn't populated until the
+  resolution pass runs, which happens AFTER the whole burst cycle - so reading
+  `resource_count` at record time would always see zero fills.
+- **Engine capability:** `record()` gained an optional `resource_gate`
+  (`resource_name, cap, lifetime, scale_fn`), NOT resolved into a concrete
+  percent until PHASE 2 (`_resolve_percent` calls `context.resource_count(slug,
+  name, event_time, cap, lifetime)` and multiplies by `scale_fn(count)`) - the
+  same "record now, compute later" trick the engine already uses for every
+  other damage instance. Wired via `raid_simulator`'s `resource_scaled_nukes`
+  param (`{slug: [spec, ...]}`, each spec a dict with `resource`, `cap`,
+  `base_percent`, `scale_fn`, `tick_count`, `tick_interval`, optional
+  `lifetime`/`damage_type`), exposed per-Nikke via `_RESOURCE_SCALED_NUKE_BUILDERS`
+  / `get_resource_scaled_nukes`. `tick_count=1, tick_interval=0.0` covers the
+  single-hit case; a repeating DoT sets both. Logged with
+  `source="resource_scaled_nuke"`.
+- **First consumers:** `julia.py`/`julia_signature.py` (Climax's threshold gate),
+  `cinderella.py` (Glass Slippers' mirrored hit), `guillotine_winter_slayer.py`
+  (Extermination's Hero-Level DoT).
+
+## Multi-hit burst nuke ("attacks sequentially N times") - BUILT capability (2026-07-12)
+- **What:** a burst nuke worded "Deals X% of final ATK as damage. Attacks
+  sequentially N times" - N SEPARATE hits, not one hit at N×X%. Defense is a
+  FLAT per-hit subtraction (`_base_damage`), so pre-multiplying the percent
+  overcounts damage whenever `enemy_def > 0` (defense would only be subtracted
+  once instead of N times).
+- **Engine capability:** `raid_simulator`'s `burst_hit_counts={slug: N}` (default
+  1); `on_tier_fire` records N identical damage events at the same instant.
+  Exposed per-Nikke via `_BURST_HIT_COUNTS`/`get_burst_hit_count`. The hit count
+  itself is treated as FIXED skill text (a module constant like a cooldown), not
+  a scaled data slot - hit counts don't scale with skill level.
+- **First consumers:** `cinderella.py` (Glass Slippers, 10x), `julia_signature.py`
+  (Climax, 5x).
+
+## "After/every N CRITICAL hits" - genuinely unrepresentable (not a to-do)
+- **What:** a fill/nuke trigger worded "after landing N critical hit(s) with
+  normal attacks" (e.g. Julia's signature Crescendo/Marcato).
+- **Why it's different from a normal per-shot counter:** the engine models crit
+  as EXPECTED VALUE (`crit_rate * (0.5 + crit_damage)` scaling every hit's
+  damage), never rolling per-hit RNG - so there is no "was this specific shot a
+  crit" event to count. `per_shot_rules`' existing shot counters (which DO work
+  for plain normal-attack / full-charge counts) can't be extended to cover
+  this - it's a structural mismatch with the crit model, not a missing trigger.
+  Discovered encoding Julia's signature build (2026-07-12); permanently
+  deferred, not queued for a future extension. `eve` likely has the same
+  mechanic - re-verify before assuming it's fixable.
 
 ## Periodic/recurring skills on their own fixed cooldown - BUILT capability
 - **What:** some kits have a SEPARATE active skill with its own short

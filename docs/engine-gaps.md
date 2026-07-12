@@ -5,7 +5,7 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-12 (gap #2 Pattern A 완료 반영)
+- 마지막 갱신: 2026-07-12 (count-스케일 넉 + multi-hit burst + periodic 자원 fill 완료 반영)
 - 목적: **ROI 순 엔진 확장 우선순위 결정.** 인코딩을 하나씩 하다 갭에 부딪혀
   단발성 확장(instant nuke, periodic nuke)을 반복하던 방식 대신, 갭을 모아
   빈도순으로 최소한만 확장한다. (Fienn 방침, 2026-07-10)
@@ -57,7 +57,12 @@
 - **잔여 변형:** (a) "마지막 탄"(매거진 경계) — attack_rate 마커 필요. (b) **아군 총탄
   카운터**(스쿼드 전체 발사 누적, per-caster 아님) — 예: Little Mermaid의 Bubble
   Barrage(아군 총탄 500마다 850%). `per_shot_rules`는 시전자 본인 발사만 세므로 미커버.
-  스쿼드 합산 카운터는 별도 확장 필요.
+  스쿼드 합산 카운터는 별도 확장 필요. (c) **크리티컬 히트 카운터 — 영구 defer, "만들
+  능력"이 아님(2026-07-12, Julia 시그니처 인코딩 중 발견):** "N회 크리티컬 히트 후" 트리거는
+  엔진의 기대값 기반 크리 모델(각 히트가 `crit_rate` 확률로 스케일되는 연속값 — 실제
+  per-hit RNG 안 굴림)과 구조적으로 안 맞는다. "이 샷이 실제 크리였는가"라는 이벤트
+  자체가 없어서 셀 수 없다. per-shot 카운터 확장으로도 못 푼다 — Julia(시그니처)의
+  Crescendo/Marcato가 이 사유로 영구 defer.
 - **무엇(원문):** "노멀 공격 N회 후", "풀차지 공격 N회 후 / 시", "마지막 탄 발사 시",
   "N shot마다" 처럼 **유닛의 발사 행위를 세어** 임계치마다 효과/넉을 발동하는 트리거.
 - **왜 막힘:** 노멀공격(차지샷 포함)은 `raid_simulator`의 별도 weapon-stats 패스에서
@@ -96,17 +101,30 @@
 - **Pattern B — 시간감쇠 게이지 + 임계치 변신 (잔여):** Ark Ranger 배터리(부위파괴 +50%,
   100%에서 변신, 1%/0.2초 감쇠), Mihara 체인. **part-destruction 이벤트에 추가로 막힘**
   (엔진에 부위 개념 없음 → 가상 스케줄 발명하지 않고 defer, Fienn 2026-07-12).
-- **Pattern A로 언블록(코어):** guillotine-winter-slayer, modernia, soda-twinkling-bunny,
-  quency-escape-queen, cinderella, maiden-ice-rose, asuka-shikinami-langley-wille 등. 남은
-  Pattern A 유닛은 다중소스 채우기·burst-consume·스테이지 게이팅 등 잔주름이 있어 후속
-  인코딩 배치(roadmap To-Do). count-스케일 **넉**(Cinderella mirror, Julia, Guillotine
-  Extermination DoT)은 `resource_count` 조회로 가능하나 phase-ordering(버스트 시점 count)
-  처리가 필요해 그때 착수.
+- **Pattern A로 언블록(코어):** guillotine-winter-slayer ✅(EXP+Hero Level+Extermination
+  DoT), modernia ✅, cinderella ✅(Beautiful periodic fill + mirror 넉). 남은
+  soda-twinkling-bunny, quency-escape-queen, maiden-ice-rose, asuka-shikinami-langley-wille
+  등은 다중소스 채우기·burst-consume·스테이지 게이팅 등 잔주름이 있어 후속 인코딩
+  배치(roadmap To-Do).
+- **count-스케일 넉 — ✅ 완료 (2026-07-12):** 버스트 시점(또는 반복 tick 시점) resource
+  count로 스케일/게이팅되는 넉. `raid_simulator`의 `resource_scaled_nukes` 파라미터 —
+  `record()`가 `resource_gate`를 실어 두고 phase 2에서 `context.resource_count(...)`로
+  퍼센트를 해석(버프와 동일한 지연 계산 패턴). 단일 게이팅 히트(Julia Climax 문턱),
+  단일 스케일 히트(Cinderella mirror), 반복 tick DoT(Guillotine Extermination, 매 tick
+  자신의 시각 기준 count 재조회) 모두 커버.
+- **multi-hit 버스트 넉 — ✅ 완료 (2026-07-12):** "attacks sequentially N times"는
+  N*percent 한 방이 아니라 **N개의 개별 히트**(디펜스가 히트당 flat 차감이라 다르게
+  나옴). `raid_simulator`의 `burst_hit_counts` 파라미터. 첫 소비자 Cinderella(10회)/
+  Julia-signature(5회).
+- **periodic 자원 fill — ✅ 완료 (2026-07-12):** `("periodic", interval)` fill kind —
+  샷과 무관하게 고정 타이머로 채워지는 자원(Cinderella의 Beautiful, decoy 상시 유지로
+  3초마다 틱).
 - **Pattern B로 잔여(16 중):** ark-ranger-black, mihara-bonding-chain, red-hood(charge
   speed·딜 아님), velvet(ammo pouch·풀차지 트리거), laplace(Hero Vision·풀차지),
   raven/sakura(sustained DoT 스택·별 갭) 등.
 - 참고: `special-mechanics.md`의 "Named resource / capped stack counter",
-  `engine-capabilities.md`의 ResourceSpec.
+  "Resource-scaled / gated burst nuke", "Multi-hit burst nuke",
+  `engine-capabilities.md`의 ResourceSpec/resource_scaled_nukes/burst_hit_counts.
 
 ### 3. narrow subset scope
 
@@ -190,8 +208,16 @@
   스케줄로 정의 → count를 시각의 함수로 계산(`resource_count`, phase-order 안전). 각
   count-스케일 버프를 fill/만료 이벤트 위 **스텝 함수(델타 Effect)**로 방출 → `total_for`
   누적합 = value_fn(count). 연속 누적(캡에서 정지)·시한 만료·티어(레벨 파생)·core-conditional
-  fill 지원. `ResourceSpec`/`ResourceBuff`, `linear_resource_buff`/`leveled_resource_buff`,
-  raid_simulator resolution 패스. 첫 소비자 Modernia/Guillotine: Winter Slayer. 2026-07-12.
+  fill·**periodic fill**(고정 타이머, 샷 무관) 지원. `ResourceSpec`/`ResourceBuff`,
+  `linear_resource_buff`/`leveled_resource_buff`, raid_simulator resolution 패스. 첫
+  소비자 Modernia/Guillotine: Winter Slayer/Cinderella. 2026-07-12.
+- **count-스케일/게이팅 넉 + multi-hit 버스트 넉**: 버스트(또는 반복 tick)에서 발동하는
+  넉이 자원 count에 따라 스케일/게이팅되는 경우(`resource_scaled_nukes` — `record()`가
+  `resource_gate`를 실어두고 phase 2에서 각 이벤트 자신의 시각으로 `resource_count`
+  재조회 후 퍼센트 해석, 반복 tick은 매 tick이 독립적으로 최신 count 반영) + "N회
+  연속 공격" 버스트가 N개 개별 히트로 기록되는 `burst_hit_counts`(디펜스가 히트당 flat
+  차감이라 한 방으로 합치면 오차 발생). 첫 소비자 Cinderella(mirror 넉 + 10연타)/
+  Julia-signature(5연타)/Guillotine(Extermination Hero-Level DoT). 2026-07-12.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
@@ -206,12 +232,12 @@
 - ~~#4 데미지 타입 배선~~ — ✅ 완료 (2026-07-10, 데미지 타입 모델링).
 - ~~#1 per-shot 트리거 + 카운터~~ — ✅ 완료 (2026-07-11, `per_shot_rules` + record-then-compute).
 - ~~#2 자원 트래킹 (Pattern A)~~ — ✅ 완료 (2026-07-12, named-resource).
+- ~~count-스케일 넉 경로~~ — ✅ 완료 (2026-07-12, `resource_scaled_nukes` + `burst_hit_counts`
+  + periodic fill; 첫 소비자 Julia/Julia-signature/Cinderella/Guillotine).
 1. **막힌 ~30명 재인코딩 배치** — #1이 풀렸으니 이제 실제 유닛들에 per-shot 룰 추가
-   (데이터 수집 → 인코딩). 가장 큰 실질 가치. Pattern A 자원 유닛(Soda·Quency·Cinderella·
-   Maiden·Asuka…)도 이제 이 배치에 포함.
-2. **count-스케일 넉 경로** — 버스트 시점 resource_count로 스케일되는 넉(Cinderella
-   mirror, Julia, Guillotine Extermination DoT). phase-ordering 처리 필요.
-3. **#2 Pattern B (시간감쇠 게이지·변신)** + **#3 무기종/티어부분집합 스코프** + **#5
+   (데이터 수집 → 인코딩). 가장 큰 실질 가치. Pattern A 자원 유닛(Soda·Quency·Maiden·
+   Asuka…)도 이제 이 배치에 포함.
+2. **#2 Pattern B (시간감쇠 게이지·변신)** + **#3 무기종/티어부분집합 스코프** + **#5
    boss_element** + **#6 FB창 periodic** — 수요 적고, 필요할 때.
 
 각 확장은 TDD로, 인벤토리가 증명한 최소 범위만. 착수 시 이 문서의 해당 유닛 목록으로

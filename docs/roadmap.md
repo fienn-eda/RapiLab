@@ -156,21 +156,28 @@
 - [x] **eb2** (2026-07-12): Ludmilla: Winter Owner ✅ · Chisato Nishikigi ✅ · Jill Valentine ⚠
 - [x] **자원 primitive beachhead** (gap #2 Pattern A, 2026-07-12): Modernia ⚠ ·
       Guillotine: Winter Slayer ⚠ — named-resource/캡 스택 카운터 엔진 확장 + 첫 소비자.
-- [ ] **eb3+ 백로그** — clean well이 eb2에서 소진, 자원 primitive로 Pattern A 언블록.
-      대부분 **자원 유닛(gap #2)·상태머신·무기변형**. 배치 착수 전 유닛별 검증 필수.
-  - **Pattern A 자원 유닛 (이제 named-resource로 인코딩 가능)**: `soda-twinkling-bunny`,
-    `quency-escape-queen`, `cinderella`, `cinderella-crystal-wave`, `maiden-ice-rose`,
+- [x] **count-스케일 넉 + multi-hit 버스트 + periodic fill** (2026-07-12): Julia ⚠ ·
+      Julia(시그니처, 별도 slug `julia-signature`) ⚠ · Cinderella ⚠ + Guillotine의
+      Extermination Hero-Level DoT 완성. `resource_scaled_nukes`/`burst_hit_counts`/
+      periodic 자원 fill 엔진 확장 + 소비자. base/시그니처 별도 slug 패턴 확정
+      (Fienn 결정) — drake/laplace 인코딩 시 동일 패턴 적용.
+- [ ] **eb3+ 백로그** — 대부분 **자원 유닛(gap #2 Pattern A 잔여/Pattern B)·상태머신·
+      무기변형**. 배치 착수 전 유닛별 검증 필수.
+  - **Pattern A 자원 유닛 (named-resource로 인코딩 가능, 잔여)**: `soda-twinkling-bunny`,
+    `quency-escape-queen`, `cinderella-crystal-wave`, `maiden-ice-rose`,
     `asuka-shikinami-langley-wille`, `rei-ayanami`·`rei-ayanami-tentative-name`(Anti A.T.),
-    `neon-vision-eye`, `mana`. count-스케일 넉(버스트 시점 count)이 헤드라인인 유닛
-    (`julia`✱, `cinderella` mirror, Guillotine Extermination)은 count-스케일 넉 경로 선행.
+    `neon-vision-eye`, `mana`.
   - **Pattern B 게이지·변신 (잔여, gap #2)**: `ark-ranger-black`(배터리 시간감쇠·부위파괴
     fill)·`mihara-bonding-chain`(체인)·`elegg-boom-and-shock`·`red-hood`(charge speed·딜 아님).
   - **상태머신/특수 트리거**: `diesel-winter-sweets`(Intro/Highlight+지속딜),
-    `bready`(Taste), `dorothy-serendipity`(펠릿 카운터), `eve`(크리티컬-히트 카운터),
+    `bready`(Taste), `dorothy-serendipity`(펠릿 카운터), `eve`(크리티컬-히트 카운터 —
+    Julia 시그니처 인코딩 중 확인됨: 기대값 크리 모델과 구조적으로 불가, **영구 defer**
+    가능성 높음, 착수 전 재확인),
     `ada-wong`(풀버스트창 주기딜=gap #6 + True), `marciana-marine-study`(boss-element=gap #5),
     `milk-blooming-bunny`·`scarlet-black-shadow`(distributed)
   - **무기 변형**(버스트가 차지캐논化 = 핵심 딜, 미지원): `snow-white`, `snow-white-heavy-arms`, `maxwell`
-  - ✱ = 애장품(dollskills) 보유 → 인코딩 시 base/시그니처 버전 확인 필요: `drake`, `julia`, `laplace`
+  - ✱ = 애장품(dollskills) 보유, base/시그니처 별도 slug로 인코딩(Julia로 확정된 패턴):
+    `drake`, `laplace` (julia는 완료: `julia` + `julia-signature`)
 - [x] `damage_taken_up` / `other_core_damage_sources` 엔진 연결
       — 완료. squad 스코프 적 디버프, 코어 데미지는 `core_hittable` 게이팅.
 - [ ] `NikkeSpec`에 스킬별 유저 레벨 필드 추가 → 조립 시 `levels[level-1]` 선택 일반화
