@@ -90,7 +90,7 @@ CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
 
-def _resource_fill_times(fill, shot_times, core_hittable, fight_duration):
+def _resource_fill_times(fill, shot_times, core_hittable, fight_duration, full_burst_windows=()):
     """The times a resource gains a stack, from its fill spec and the owner's
     shot timeline. ("per_shot_every", N) fires at the owner's Nth, 2Nth, ... shot
     (count = index+1, matching per_shot_rules' "every N").
@@ -99,7 +99,11 @@ def _resource_fill_times(fill, shot_times, core_hittable, fight_duration):
     hitting the core and not (e.g. Guillotine's EXP). ("periodic", interval)
     fires at t=interval, 2*interval, ... up to fight_duration, independent of
     the owner's shots (e.g. Cinderella's Beautiful, which ticks on a fixed timer
-    while her decoy is up from battle start)."""
+    while her decoy is up from battle start). ("per_shot_every_during_full_burst",
+    N) is like "per_shot_every" but counts only shots whose time falls within a
+    Full Burst window (e.g. Soda's Golden Chip, "every 3 normal attacks during
+    Full Burst") - shots outside any window are dropped before the "every Nth"
+    count, not just skipped in place."""
     kind = fill[0]
     if kind == "per_shot_every":
         n = fill[1]
@@ -115,6 +119,10 @@ def _resource_fill_times(fill, shot_times, core_hittable, fight_duration):
             ticks.append(tick)
             tick += interval
         return ticks
+    if kind == "per_shot_every_during_full_burst":
+        n = fill[1]
+        in_window = [t for t in shot_times if any(start <= t < end for start, end in full_burst_windows)]
+        return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
     raise ValueError(f"unknown resource fill kind: {kind}")
 
 # Each damage instance has a damage_type. The type-specific Damage-Up buckets
@@ -153,6 +161,7 @@ def simulate_raid(
     resource_specs=None,
     burst_hit_counts=None,
     resource_scaled_nukes=None,
+    resource_gated_buffs=None,
 ):
     weapon_stats = weapon_stats or {}
     periodic_nukes = periodic_nukes or {}
@@ -162,6 +171,7 @@ def simulate_raid(
     resource_specs = resource_specs or {}
     burst_hit_counts = burst_hit_counts or {}
     resource_scaled_nukes = resource_scaled_nukes or {}
+    resource_gated_buffs = resource_gated_buffs or {}
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -349,6 +359,14 @@ def simulate_raid(
         on_full_burst_end=on_full_burst_end,
     )
 
+    # Full Burst windows [start, end) from the burst-cycle's own event log, so
+    # a resource fill gated to "during Full Burst" (e.g. Soda's Golden Chip)
+    # can filter shots against them without re-deriving burst timing itself.
+    full_burst_windows = list(zip(
+        (e["time"] for e in events if e["type"] == "full_burst_start"),
+        (e["time"] for e in events if e["type"] == "full_burst_end"),
+    ))
+
     shot_times_by_slug = {}
     for slug, weapon in weapon_stats.items():
         target = target_for(slug)
@@ -422,14 +440,36 @@ def simulate_raid(
     for slug, specs in resource_specs.items():
         shot_times = shot_times_by_slug.get(slug, [])
         for spec in specs:
-            fill_times = _resource_fill_times(spec.fill, shot_times, core_hittable, fight_duration)
+            fill_times = _resource_fill_times(
+                spec.fill, shot_times, core_hittable, fight_duration, full_burst_windows
+            )
             # Every per-shot fill grants exactly one stack. (A fill source that
             # grants more than one at a time - e.g. a battle-start +N - would
             # carry its own amount; none exists yet.)
             for ft in fill_times:
                 context.fill_resource(slug, spec.name, 1, ft)
+
+            # Resets (a resource SET to a fixed value rather than incremented,
+            # e.g. Soda's Golden Chip consumed down to 17 on her own burst) are
+            # collected from every reset spec and replayed in time order, so
+            # each reset's pre-value correctly reflects fills AND any earlier
+            # reset already applied.
+            reset_events = []
+            for reset_spec in spec.resets:
+                if reset_spec["trigger"] == "battle_start":
+                    reset_events.append((0.0, reset_spec["value"]))
+                elif reset_spec["trigger"] == "own_burst":
+                    reset_events.extend((rt, reset_spec["value"]) for rt in context.burst_times.get(slug, []))
+                else:
+                    raise ValueError(f"unknown resource reset trigger: {reset_spec['trigger']}")
+            reset_events.sort(key=lambda e: e[0])
+            for reset_time, post_value in reset_events:
+                pre_value = context.resource_count(slug, spec.name, reset_time, spec.cap)
+                context.reset_resource(slug, spec.name, reset_time, pre_value, post_value)
+            reset_times = [rt for rt, _ in reset_events]
+
             for buff in spec.buffs:
-                events = set(fill_times)
+                events = set(fill_times) | set(reset_times)
                 if buff.lifetime is not None:
                     events |= {ft + buff.lifetime for ft in fill_times if ft + buff.lifetime < fight_duration}
                 prev_value = 0.0
@@ -442,6 +482,32 @@ def simulate_raid(
                             applied_at=event_time,
                         )
                         prev_value = value
+
+    # A burst-fired buff gated on (or scaled by) a named resource's count AT
+    # THE BURST'S OWN TIME - e.g. Soda's ATK+65.25%/15s if she had >=30 Golden
+    # Chip stacks right before her burst consumed it down to 17. Processed
+    # here (not at on_tier_fire, where the burst is actually recorded)
+    # because the resource's fills/resets from the loop above aren't known
+    # until now - same ordering reason as resource_scaled_nukes' deferred
+    # percent, but a buff has no "phase 2" to defer to, so it's resolved here
+    # instead, using context.burst_times (already recorded during the burst
+    # cycle) for each of the owner's own burst-fire times.
+    for slug, specs in resource_gated_buffs.items():
+        for spec in specs:
+            for burst_time in context.burst_times.get(slug, []):
+                if spec.get("use_pre_reset"):
+                    count = context.resource_count_before_reset(slug, spec["resource"], burst_time)
+                    if count is None:
+                        continue
+                else:
+                    count = context.resource_count(
+                        slug, spec["resource"], burst_time, spec["cap"], spec.get("lifetime")
+                    )
+                if spec["gate_fn"](count):
+                    registry.add(
+                        Effect(spec["stat"], spec["value"], spec["scope"], spec["duration"], slug),
+                        applied_at=burst_time,
+                    )
 
     for slug, spec in periodic_nukes.items():
         cooldown = spec["cooldown"]

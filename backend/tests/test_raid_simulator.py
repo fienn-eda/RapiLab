@@ -1627,6 +1627,159 @@ def test_resource_scaled_nukes_defaults_to_none_and_is_a_no_op():
     assert with_empty["total_damage"] == baseline["total_damage"]
 
 
+def test_resource_spec_fill_during_full_burst_only_counts_in_window_shots():
+    # A fill gated to Full Burst (e.g. Soda's Golden Chip, "every 3 normal
+    # attacks during Full Burst") counts ONLY shots whose time falls within a
+    # Full Burst window, ignoring shots before/after entirely - the "every 3rd"
+    # counter is over the FILTERED in-window shots, not the raw shot index.
+    # gauge_charge_time=1.0 -> full burst starts at t=1.0 (FULL_BURST_DURATION
+    # =10s); AR fires 12/s -> shot index 12 lands at exactly t=1.0 (in-window).
+    spec = ResourceSpec(
+        name="chip", fill=("per_shot_every_during_full_burst", 3), cap=10,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 1.0 * c)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=1.0, fight_duration=2.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        resource_specs={"attacker": [spec]},
+    )
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # shots 0-11 (t < 1.0) are pre-FB, never counted regardless of index.
+    assert dmg[11] == 1000.0
+    # in-FB shots start at index 12 (t=1.0); the 3rd in-FB shot is index 14.
+    assert dmg[13] == 1000.0   # 2nd in-FB shot: still 0 stacks
+    assert dmg[14] == 2000.0   # 3rd in-FB shot: 1 stack lands here
+    assert dmg[16] == 2000.0   # 5th in-FB shot: still 1 stack
+    assert dmg[17] == 3000.0   # 6th in-FB shot: 2nd stack
+
+
+def test_resource_spec_battle_start_reset_sets_initial_value():
+    # Soda's Golden Chip starts at 50 (the cap) from battle start, not 0 -
+    # modeled as a battle_start reset, not a fill.
+    spec = ResourceSpec(
+        name="chip", fill=("per_shot_every", 1000), cap=50,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.01 * c)],
+        resets=[{"trigger": "battle_start", "value": 50}],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=1.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        resource_specs={"attacker": [spec]},
+    )
+    # 50 stacks * 0.01 = 0.5 damage_taken_up from the very first shot.
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    assert dmg[0] == 1500.0  # 1000 * 1.5
+
+
+def test_resource_spec_own_burst_reset_replaces_the_running_count():
+    # Soda's Golden Chip resets to 17 each time her burst fires, discarding
+    # whatever it had accumulated - modeled as an own_burst reset.
+    spec = ResourceSpec(
+        name="chip", fill=("per_shot_every", 1), cap=50,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.01 * c)],
+        resets=[
+            {"trigger": "battle_start", "value": 50},
+            {"trigger": "own_burst", "value": 17},
+        ],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=6.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=10000)},
+        resource_specs={"attacker": [spec]},
+    )
+    # burst fires at t=5.0 (gauge_charge_time), resetting chip to 17 right
+    # then - the shot immediately after should reflect 17, not 50(+fills).
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    shots_before_burst = [t for t in range(60) if t / 12 < 5.0]  # AR fires 12/s
+    last_pre_burst_index = shots_before_burst[-1]
+    first_post_burst_index = last_pre_burst_index + 1
+    assert dmg[last_pre_burst_index] > dmg[first_post_burst_index]  # dropped from ~50+ to 17-ish
+    assert round(dmg[first_post_burst_index], 4) == round(1000 * (1 + 0.01 * 17), 4)
+
+
+def test_resource_gated_buff_fires_when_pre_reset_count_meets_the_gate():
+    # Soda's Golden Chip: ATK+65.25%/15s IF she had >=30 stacks right before her
+    # burst consumed it down to 17 (a buff gated on the PRE-reset count, not
+    # the post-reset value that's active going forward). Verified via a normal
+    # attack's damage right after the burst, which should reflect the buff.
+    spec = ResourceSpec(
+        name="chip", fill=("per_shot_every", 1), cap=50,
+        resets=[
+            {"trigger": "battle_start", "value": 50},
+            {"trigger": "own_burst", "value": 17},
+        ],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=6.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=10000)},
+        resource_specs={"attacker": [spec]},
+        resource_gated_buffs={"attacker": [{
+            "resource": "chip", "cap": 50, "use_pre_reset": True,
+            "gate_fn": lambda c: c >= 30,
+            "stat": "atk_percent", "value": 0.6525, "scope": "self", "duration": 15.0,
+        }]},
+    )
+    # burst fires at t=5.0; pre-reset count there is 50 (starts at cap, stays
+    # there) -> gate passes. Shot index 60 (t=5.0) reflects the buff.
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    assert round(dmg[60], 4) == round(1000 * 1.6525, 4)
+
+
+def test_resource_gated_buff_does_not_fire_when_gate_fails():
+    spec = ResourceSpec(
+        name="chip", fill=("per_shot_every", 1000), cap=50,
+        resets=[
+            {"trigger": "battle_start", "value": 10},
+            {"trigger": "own_burst", "value": 5},
+        ],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=6.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=10000)},
+        resource_specs={"attacker": [spec]},
+        resource_gated_buffs={"attacker": [{
+            "resource": "chip", "cap": 50, "use_pre_reset": True,
+            "gate_fn": lambda c: c >= 30,  # pre-reset count is 10 -> gate fails
+            "stat": "atk_percent", "value": 0.6525, "scope": "self", "duration": 15.0,
+        }]},
+    )
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    assert dmg[60] == 1000.0
+
+
+def test_resource_gated_buffs_defaults_to_none_and_is_a_no_op():
+    baseline = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=5.0, mode="auto", base_crit_rate=0.0,
+    )
+    with_empty = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 100.0}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=5.0, mode="auto", base_crit_rate=0.0,
+        resource_gated_buffs={},
+    )
+    assert with_empty["total_damage"] == baseline["total_damage"]
+
+
 def test_resource_specs_defaults_to_none_and_is_a_no_op():
     baseline = simulate_raid(
         make_deck(),

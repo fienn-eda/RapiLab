@@ -23,6 +23,7 @@ from app.skill_rules.registry import (
     get_per_shot_rules,
     get_periodic_nuke,
     get_periodic_rules,
+    get_resource_gated_buffs,
     get_resource_scaled_nukes,
     get_resource_specs,
 )
@@ -76,6 +77,7 @@ def assemble_simulation_inputs(ordered_deck):
     burst_damage_types = {}
     burst_hit_counts = {}
     resource_scaled_nukes = {}
+    resource_gated_buffs = {}
 
     for spec in ordered_deck:
         deck.append(
@@ -129,6 +131,10 @@ def assemble_simulation_inputs(ordered_deck):
         if resource_scaled_nuke:
             resource_scaled_nukes[spec.slug] = resource_scaled_nuke
 
+        resource_gated_buff = get_resource_gated_buffs(spec.slug, skill_values)
+        if resource_gated_buff:
+            resource_gated_buffs[spec.slug] = resource_gated_buff
+
     return {
         "deck": deck,
         "rules_by_slug": rules_by_slug,
@@ -142,4 +148,5 @@ def assemble_simulation_inputs(ordered_deck):
         "burst_damage_types": burst_damage_types,
         "burst_hit_counts": burst_hit_counts,
         "resource_scaled_nukes": resource_scaled_nukes,
+        "resource_gated_buffs": resource_gated_buffs,
     }

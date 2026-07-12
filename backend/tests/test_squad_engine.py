@@ -303,6 +303,42 @@ def test_resource_count_zero_for_unfilled_resource():
     assert ctx.resource_count("modernia", "evolution", 5.0, cap=5) == 0
 
 
+def test_resource_count_uses_latest_reset_as_baseline():
+    # A reset (e.g. Soda's Golden Chip resetting to 17 on her own burst) sets a
+    # new baseline - fills BEFORE the reset no longer count; fills after it add
+    # on top of the reset's post-value.
+    ctx = make_context(SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron"))
+    ctx.fill_resource("soda-twinkling-bunny", "chip", 1, time=1.0)
+    ctx.fill_resource("soda-twinkling-bunny", "chip", 1, time=2.0)
+    ctx.reset_resource("soda-twinkling-bunny", "chip", time=3.0, pre_value=50, post_value=17)
+    ctx.fill_resource("soda-twinkling-bunny", "chip", 1, time=4.0)
+    count = lambda t: ctx.resource_count("soda-twinkling-bunny", "chip", t, cap=50)
+    assert count(2.5) == 2       # before the reset: just the two early fills
+    assert count(3.0) == 17      # at the reset: the post-value applies
+    assert count(4.0) == 18      # a fill after the reset adds on top of it
+    assert count(2.9999) == 2    # confirms the reset boundary, not a fluke
+
+
+def test_resource_count_before_reset_reads_the_pre_value_at_that_exact_time():
+    ctx = make_context(SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron"))
+    ctx.reset_resource("soda-twinkling-bunny", "chip", time=3.0, pre_value=32, post_value=17)
+    assert ctx.resource_count_before_reset("soda-twinkling-bunny", "chip", 3.0) == 32
+    assert ctx.resource_count_before_reset("soda-twinkling-bunny", "chip", 3.1) is None
+    assert ctx.resource_count_before_reset("soda-twinkling-bunny", "other-resource", 3.0) is None
+
+
+def test_resource_count_handles_multiple_resets_in_sequence():
+    ctx = make_context(SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron"))
+    ctx.reset_resource("soda-twinkling-bunny", "chip", time=0.0, pre_value=0, post_value=50)
+    ctx.fill_resource("soda-twinkling-bunny", "chip", 1, time=5.0)
+    ctx.reset_resource("soda-twinkling-bunny", "chip", time=10.0, pre_value=51, post_value=17)
+    count = lambda t: ctx.resource_count("soda-twinkling-bunny", "chip", t, cap=50)
+    assert count(0.0) == 50
+    assert count(5.0) == 50  # +1 clamped at cap 50
+    assert count(10.0) == 17
+    assert count(10.1) == 17
+
+
 def test_branching_rules_pick_the_matching_branch_by_condition():
     # Models Anis: Star's Starfall: two mutually-exclusive branches keyed off
     # whether another Burst 1 ally is present.

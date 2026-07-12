@@ -85,6 +85,11 @@ from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika
 from app.skill_rules.quency_escape_queen import build_quency_rules, the_great_thief_burst_percent
 from app.skill_rules.rosanna_chic_ocean import build_rosanna_rules
 from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
+from app.skill_rules.soda_twinkling_bunny import (
+    build_golden_chip_resources,
+    build_onward_soda_resource_gated_buffs,
+    onward_soda_burst_percent,
+)
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules.takina_inoue import (
     BATTLEFIELD_CONTROL_COOLDOWN,
@@ -203,6 +208,7 @@ _BUILDERS = {
     "prika": lambda sv: (build_prika_rules(sv), None),
     "quency-escape-queen": lambda sv: (build_quency_rules(sv), the_great_thief_burst_percent(sv)),
     "rosanna-chic-ocean": lambda sv: (build_rosanna_rules(sv), None),
+    "soda-twinkling-bunny": lambda sv: ([], onward_soda_burst_percent(sv)),
     "tove": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
     "velvet": lambda sv: (build_velvet_rules(sv), None),
@@ -284,6 +290,7 @@ _RESOURCE_SPEC_BUILDERS = {
     "modernia": lambda sv: build_modernia_resources(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
     "cinderella": lambda sv: build_beautiful_resources(sv),
+    "soda-twinkling-bunny": lambda sv: build_golden_chip_resources(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named
@@ -295,6 +302,15 @@ _RESOURCE_SPEC_BUILDERS = {
 _RESOURCE_SCALED_NUKE_BUILDERS = {
     "cinderella": lambda sv: build_glass_slippers_resource_scaled_nuke(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
+}
+
+# A Nikke with a burst-fired BUFF gated/scaled by a named resource's count at
+# the burst's own time - see raid_simulator's `resource_gated_buffs` param.
+# Each entry returns a list of spec dicts: {"resource", "cap",
+# "use_pre_reset"(optional), "lifetime"(optional), "gate_fn", "stat", "value",
+# "scope", "duration"}.
+_RESOURCE_GATED_BUFF_BUILDERS = {
+    "soda-twinkling-bunny": lambda sv: build_onward_soda_resource_gated_buffs(sv),
 }
 
 
@@ -357,4 +373,12 @@ def get_resource_scaled_nukes(slug, skill_values):
     nuke gated/scaled by a named resource's count (see raid_simulator's
     `resource_scaled_nukes` param), or None for the vast majority without one."""
     builder = _RESOURCE_SCALED_NUKE_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_resource_gated_buffs(slug, skill_values):
+    """List of resource-gated-buff spec dicts for a Nikke with a burst-fired
+    buff gated/scaled by a named resource's count (see raid_simulator's
+    `resource_gated_buffs` param), or None for the vast majority without one."""
+    builder = _RESOURCE_GATED_BUFF_BUILDERS.get(slug)
     return builder(skill_values) if builder else None

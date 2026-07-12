@@ -78,6 +78,11 @@ class ResourceSpec:
     fill: tuple
     cap: float
     buffs: list[ResourceBuff] = field(default_factory=list)
+    # Optional list of {"trigger": "battle_start"|"own_burst", "value": X}: the
+    # resource is SET to X (not incremented) once at battle start, or at EACH
+    # of the owner's own burst-tier fires - e.g. Soda's Golden Chip resetting
+    # to 17 when her burst consumes it. See raid_simulator's resolution pass.
+    resets: list[dict] = field(default_factory=list)
 
 
 def _matches_scope(scope: str, target: dict) -> bool:

@@ -45,6 +45,13 @@ class SquadContext:
         # function of time (see resource_count) - never a mutable running total,
         # which would break across the burst-cycle vs shot-loop phase ordering.
         self.resource_fills: dict[tuple[str, str], list[tuple[float, float]]] = {}
+        # (slug, resource-name) -> list of (time, pre_value, post_value) resets,
+        # for a resource that's SET to a fixed value rather than incremented
+        # (e.g. Soda's Golden Chip resetting to 17 when her burst fires,
+        # consuming whatever it had built up). Fills before a reset no longer
+        # count toward the total; resource_count uses the latest reset at or
+        # before the query time as its baseline instead of 0.
+        self.resource_resets: dict[tuple[str, str], list[tuple[float, float, float]]] = {}
 
     def record_burst_time(self, slug: str, time: float) -> None:
         self.burst_times[slug].append(time)
@@ -53,21 +60,47 @@ class SquadContext:
         """Record that `slug`'s resource `name` gained `amount` at `time`."""
         self.resource_fills.setdefault((slug, name), []).append((time, amount))
 
+    def reset_resource(self, slug: str, name: str, time: float, pre_value: float, post_value: float) -> None:
+        """Record that `slug`'s resource `name` was SET to `post_value` at
+        `time` (it held `pre_value` immediately before) - e.g. a burst that
+        consumes the resource down to a fixed remainder. `pre_value` is exposed
+        via `resource_count_before_reset` for a rule that gates on how much the
+        resource held right before it was spent."""
+        self.resource_resets.setdefault((slug, name), []).append((time, pre_value, post_value))
+
     def resource_count(
         self, slug: str, name: str, time: float, cap: float, lifetime: float | None = None
     ) -> float:
         """`slug`'s resource `name` at `time`, clamped to `cap`. A permanent
         resource (lifetime=None) sums every fill at or before `time`; a timed one
         (lifetime seconds) sums only fills still active - a fill at tf is active
-        for [tf, tf+lifetime), i.e. those in (time-lifetime, time]."""
-        total = 0.0
+        for [tf, tf+lifetime), i.e. those in (time-lifetime, time]. The latest
+        reset at or before `time` (if any) replaces the running baseline with
+        its post-value; fills before that reset no longer count."""
+        baseline = 0.0
+        baseline_time = float("-inf")
+        for reset_time, _pre_value, post_value in self.resource_resets.get((slug, name), []):
+            if reset_time <= time and reset_time > baseline_time:
+                baseline_time = reset_time
+                baseline = post_value
+        total = baseline
         for fill_time, amount in self.resource_fills.get((slug, name), []):
-            if fill_time > time:
+            if fill_time > time or fill_time <= baseline_time:
                 continue
             if lifetime is not None and fill_time <= time - lifetime:
                 continue
             total += amount
         return min(cap, total)
+
+    def resource_count_before_reset(self, slug: str, name: str, time: float) -> float | None:
+        """The value `slug`'s resource `name` held immediately BEFORE a reset
+        recorded at EXACTLY `time` (e.g. gating a burst's bonus effects on how
+        much the resource held right before it was consumed) - None if no
+        reset was recorded at that exact time."""
+        for reset_time, pre_value, _post_value in self.resource_resets.get((slug, name), []):
+            if reset_time == time:
+                return pre_value
+        return None
 
     def record_activation(self, slug: str, trigger: str) -> None:
         self._activations[(slug, trigger)] = self._activations.get((slug, trigger), 0) + 1
