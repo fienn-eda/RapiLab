@@ -746,6 +746,33 @@ def test_per_shot_after_n_fires_a_nuke_once():
     assert round(ps[0]["time"], 4) == round(2 / 12, 4)  # count 3 = index 2
 
 
+def test_per_shot_nuke_full_burst_bonus_eligible_applies_when_shot_lands_in_window():
+    # Asuka's Skill 1 nuke ("after 50 normal attacks... as additional damage")
+    # is an ordinary per-shot instant nuke whose timing is unrelated to her own
+    # burst - it gets the Full Burst Bonus only on whichever shots happen to
+    # land inside a Full Burst window. gauge_charge_time=0.1 -> window
+    # [0.1, 10.1); the "after 3" shot lands at t=2/12=0.1667, inside it.
+    per_shot_rules = {
+        "attacker": [(3, "after", [instant_nuke_pulse_rule("per_shot", 100.0, full_burst_bonus_eligible=True)])]
+    }
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=0.1,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules=per_shot_rules,
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) == 1
+    assert ps[0]["damage"] == 15000.0  # 10000 * (1 + full_burst_bonus*0.5) = 10000*1.5
+
+
 def test_per_shot_squad_buff_reaches_a_burst_nuke_computed_earlier():
     # The record-then-compute payoff: buffer's per-shot squad debuff (applied at
     # its 1st shot, t=0) must raise the attacker's burst nuke fired later.
@@ -1627,6 +1654,36 @@ def test_resource_scaled_nukes_defaults_to_none_and_is_a_no_op():
     assert with_empty["total_damage"] == baseline["total_damage"]
 
 
+def test_resource_spec_fill_during_own_status_window_only_counts_in_window_shots():
+    # Asuka's Anti A.T. Field: "every 10 shots, only while in Annihilation
+    # State" - a per-shot fill gated to a FIXED-duration window anchored to
+    # the owner's OWN burst (not the global Full Burst window - Annihilation
+    # State is 9s and starts at her burst, ending well before Full Burst
+    # does). gauge_charge_time=1.0 -> her burst fires at t=1.0, window
+    # [1.0, 10.0); AR fires 12/s -> shot index 12 lands at exactly t=1.0.
+    spec = ResourceSpec(
+        name="at_field", fill=("per_shot_every_during_own_status_window", 3, 9.0), cap=10,
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 1.0 * c)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=1.0, fight_duration=2.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        resource_specs={"attacker": [spec]},
+    )
+    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # shots before t=1.0 (index < 12) are pre-window, never counted regardless
+    # of raw shot index.
+    assert dmg[11] == 1000.0
+    # in-window shots start at index 12 (t=1.0); the 3rd in-window shot is 14.
+    assert dmg[13] == 1000.0   # 2nd in-window shot: still 0 stacks
+    assert dmg[14] == 2000.0   # 3rd in-window shot: 1 stack lands here
+    assert dmg[16] == 2000.0   # 5th in-window shot: still 1 stack
+    assert dmg[17] == 3000.0   # 6th in-window shot: 2nd stack
+
+
 def test_resource_spec_fill_during_full_burst_only_counts_in_window_shots():
     # A fill gated to Full Burst (e.g. Soda's Golden Chip, "every 3 normal
     # attacks during Full Burst") counts ONLY shots whose time falls within a
@@ -1857,6 +1914,85 @@ def test_dynamic_hit_count_nukes_defaults_to_none_and_is_a_no_op():
         dynamic_hit_count_nukes={},
     )
     assert with_empty["total_damage"] == baseline["total_damage"]
+
+
+def test_dynamic_hit_count_nuke_fire_delay_fires_and_resets_at_burst_time_plus_delay():
+    # Asuka's Annihilation: fires 9s AFTER her burst (when Annihilation State
+    # ends), not at cast time - hit count is the Anti A.T. Field stack count
+    # right before THAT moment (not right before the burst itself), and the
+    # resource resets there too, not at burst time.
+    spec = ResourceSpec(
+        name="at_field", fill=("periodic", 1.0), cap=30,
+        resets=[{"trigger": "own_burst_delayed", "delay": 9.0, "value": 0}],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=1000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=20.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [spec]},
+        dynamic_hit_count_nukes={
+            "attacker": [{"resource": "at_field", "base_percent": 100.0, "fire_delay": 9.0}]
+        },
+    )
+    hits = [e for e in result["damage_log"] if e["source"] == "dynamic_hit_count_nuke"]
+    # burst fires at t=5.0; delayed fire time = 14.0. Periodic fills land at
+    # t=1..14 by then (14 stacks) - NOT the count at t=5.0 (which would be 5).
+    assert len(hits) == 14
+    assert all(round(h["time"], 4) == 14.0 for h in hits)
+    assert all(h["damage"] == 1000.0 for h in hits)  # 1000 atk * 100% coefficient, no bonuses
+
+
+def test_dynamic_hit_count_nuke_full_burst_bonus_eligible_applies_when_delay_lands_in_window():
+    # Same setup, but opted into full_burst_bonus - the delayed fire time
+    # (14.0) falls inside the Full Burst window ([5.0, 15.0), since
+    # full_burst_start fires at the same instant as the tier-3 burst and
+    # FULL_BURST_DURATION is 10s) - matching Fienn's confirmed rule that only
+    # "as additional damage" (i.e. computed after a delay, not at cast time)
+    # gets the +50% bonus.
+    spec = ResourceSpec(
+        name="at_field", fill=("periodic", 1.0), cap=30,
+        resets=[{"trigger": "own_burst_delayed", "delay": 9.0, "value": 0}],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=1000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=20.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [spec]},
+        dynamic_hit_count_nukes={
+            "attacker": [{
+                "resource": "at_field", "base_percent": 100.0, "fire_delay": 9.0,
+                "full_burst_bonus_eligible": True,
+            }]
+        },
+    )
+    hits = [e for e in result["damage_log"] if e["source"] == "dynamic_hit_count_nuke"]
+    assert len(hits) == 14
+    assert all(h["damage"] == 1500.0 for h in hits)  # 1000 * (1 + full_burst_bonus*0.5) = 1000*1.5
+
+
+def test_dynamic_hit_count_nuke_full_burst_bonus_eligible_defaults_to_false():
+    # A cast-time nuke (no delay) doesn't land inside the Full Burst window
+    # (its own burst fires strictly before full_burst_start per the engine's
+    # ordering, except for the exact boundary instant) and, more importantly,
+    # never opts in unless a unit's skill text says "as additional damage" -
+    # defaulting False keeps every existing dynamic_hit_count_nuke unaffected.
+    spec = ResourceSpec(
+        name="mp", fill=("squad_burst_cycle_conditional", [(_tier1_fire, lambda c: c == 0, 1)]),
+        cap=12, buffs=[], resets=[{"trigger": "own_burst", "value": 0}],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=1000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=6.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [spec]},
+        dynamic_hit_count_nukes={"attacker": [{"resource": "mp", "base_percent": 100.0}]},
+    )
+    hits = [e for e in result["damage_log"] if e["source"] == "dynamic_hit_count_nuke"]
+    assert len(hits) == 1
+    assert hits[0]["damage"] == 1000.0  # no full_burst_bonus applied
 
 
 def test_resource_specs_defaults_to_none_and_is_a_no_op():

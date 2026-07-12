@@ -30,6 +30,11 @@ class Pulse:
     value: float
     scope: str
     source_slug: str
+    # Opt-in per instance: only an "instant_damage_percent" pulse whose skill
+    # text says "as additional damage" sets this, so raid_simulator can pass it
+    # through to record()'s full_burst_bonus_eligible - see damage_formula's
+    # full_burst_bonus term and docs/insights.md.
+    full_burst_bonus_eligible: bool = False
 
 
 @dataclass
