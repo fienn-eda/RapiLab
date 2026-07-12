@@ -29,12 +29,24 @@ from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radian
 from app.skill_rules.blanc import build_blanc_rules
 from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
 from app.skill_rules.chisato_nishikigi import build_chisato_per_shot_rules, build_chisato_rules
+from app.skill_rules.cinderella import (
+    GLASS_SLIPPERS_HIT_COUNT,
+    build_beautiful_resources,
+    build_flawless_glass_per_shot_rules,
+    build_flawless_glass_rules,
+    build_glass_slippers_resource_scaled_nuke,
+    glass_slippers_burst_percent,
+)
 from app.skill_rules.jill_valentine import build_jill_rules
 from app.skill_rules.ludmilla_winter_owner import build_ludmilla_per_shot_rules, build_ludmilla_rules
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
 from app.skill_rules.grave import build_grave_rules
-from app.skill_rules.guillotine_winter_slayer import build_guillotine_resources, build_guillotine_rules
+from app.skill_rules.guillotine_winter_slayer import (
+    build_guillotine_resource_scaled_nukes,
+    build_guillotine_resources,
+    build_guillotine_rules,
+)
 from app.skill_rules.modernia import build_modernia_per_shot_rules, build_modernia_resources
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
@@ -58,6 +70,9 @@ from app.skill_rules.liberalio import (
     build_liberalio_rules,
     submerged_world_burst_percent,
 )
+from app.skill_rules.julia import DECRESCENDO_COOLDOWN as JULIA_DECRESCENDO_COOLDOWN
+from app.skill_rules.julia import build_decrescendo_rules, climax_burst_percent
+from app.skill_rules import julia_signature
 from app.skill_rules.little_mermaid import build_little_mermaid_rules
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.mast_romantic_maid import build_mast_rules
@@ -139,6 +154,11 @@ def _build_takina(sv):
     return rules, None
 
 
+def _build_cinderella(sv):
+    rules = build_flawless_glass_rules(sv["flawless_glass"], sv["caster_max_hp"])
+    return rules, glass_slippers_burst_percent(sv)
+
+
 _BUILDERS = {
     "anis-star": _build_anis_star,
     "anis-sparkling-summer": lambda sv: (build_anis_sparkling_summer_rules(sv), None),
@@ -148,11 +168,17 @@ _BUILDERS = {
     "arcana-fortune-mate": lambda sv: (build_fortune_mate_rules(sv), radiant_youth_burst_percent(sv)),
     "blanc": lambda sv: (build_blanc_rules(sv), None),
     "brid-silent-track": lambda sv: (build_brid_rules(sv), None),
+    "cinderella": _build_cinderella,
     "crown": _build_crown,
     "rapi-red-hood": _build_rapi_red_hood,
     "helm": _build_helm,
     "helm-aquamarine": lambda sv: (build_helm_aquamarine_rules(sv), aegis_cannon_overload_burst_percent(sv)),
     "isabel": lambda sv: (build_isabel_rules(sv), sonic_chaser_burst_percent(sv)),
+    "julia": lambda sv: ([], climax_burst_percent(sv)),  # Decrescendo is periodic-only; Crescendo deferred
+    "julia-signature": lambda sv: (
+        julia_signature.build_decrescendo_battle_start_rules(sv["decrescendo"]),
+        julia_signature.climax_burst_percent(sv),
+    ),
     "liberalio": lambda sv: (build_liberalio_rules(sv), submerged_world_burst_percent(sv)),
     "ludmilla-winter-owner": lambda sv: (build_ludmilla_rules(sv), None),
     "chisato-nishikigi": lambda sv: (build_chisato_rules(sv), None),
@@ -205,7 +231,10 @@ _BURST_DAMAGE_TYPES = {
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at
 # the same instant, not one hit at N*percent (see raid_simulator's
 # burst_hit_counts). Only overrides are listed; everything else defaults to 1.
-_BURST_HIT_COUNTS = {}
+_BURST_HIT_COUNTS = {
+    "julia-signature": julia_signature.CLIMAX_HIT_COUNT,
+    "cinderella": GLASS_SLIPPERS_HIT_COUNT,
+}
 
 # A Nikke with a Skill 1/2 on its own cooldown (fires at t=cooldown, 2*cooldown,
 # ... applying buffs/debuffs) - see raid_simulator's `periodic_rules`. Kept
@@ -214,6 +243,15 @@ _PERIODIC_RULE_BUILDERS = {
     "takina-inoue": lambda sv: [
         (BATTLEFIELD_CONTROL_COOLDOWN, build_battlefield_control_rules(sv["battlefield_control"])),
     ],
+    "julia": lambda sv: [
+        (JULIA_DECRESCENDO_COOLDOWN, build_decrescendo_rules(sv["decrescendo"])),
+    ],
+    "julia-signature": lambda sv: [
+        (
+            julia_signature.DECRESCENDO_COOLDOWN,
+            julia_signature.build_decrescendo_periodic_rules(sv["decrescendo"]),
+        ),
+    ],
 }
 
 # A Nikke with a skill that fires after/every N of its own shots (see
@@ -221,6 +259,7 @@ _PERIODIC_RULE_BUILDERS = {
 # (threshold, mode, [SkillRule]); mode is "after" or "every".
 _PER_SHOT_RULE_BUILDERS = {
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
+    "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
@@ -242,6 +281,7 @@ _PER_SHOT_RULE_BUILDERS = {
 _RESOURCE_SPEC_BUILDERS = {
     "modernia": lambda sv: build_modernia_resources(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
+    "cinderella": lambda sv: build_beautiful_resources(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named
@@ -250,7 +290,10 @@ _RESOURCE_SPEC_BUILDERS = {
 # Each entry returns a list of spec dicts: {"resource", "cap", "base_percent",
 # "scale_fn", "tick_count", "tick_interval", "lifetime"(optional),
 # "damage_type"(optional)}.
-_RESOURCE_SCALED_NUKE_BUILDERS = {}
+_RESOURCE_SCALED_NUKE_BUILDERS = {
+    "cinderella": lambda sv: build_glass_slippers_resource_scaled_nuke(sv),
+    "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
+}
 
 
 def build_nikke_rules(slug, skill_values):

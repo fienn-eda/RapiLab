@@ -4,6 +4,7 @@ from app.skill_rules.registry import (
     ENCODED_SLUGS,
     build_nikke_rules,
     get_burst_damage_type,
+    get_burst_hit_count,
     get_per_shot_rules,
     get_periodic_nuke,
     get_periodic_rules,
@@ -108,6 +109,49 @@ def test_get_periodic_rules_returns_battlefield_control_for_takina():
     cooldown, rules = result[0]
     assert cooldown == 15.0
     assert all(r.trigger == "periodic" for r in rules)
+
+
+def test_get_periodic_rules_returns_decrescendo_for_julia():
+    result = get_periodic_rules("julia", {"decrescendo": {"description_value_01": "26.04", "description_value_02": "10"}})
+    assert result is not None and len(result) == 1
+    cooldown, rules = result[0]
+    assert cooldown == 20.0
+    assert all(r.trigger == "periodic" for r in rules)
+
+
+def test_build_nikke_rules_returns_climax_burst_percent_for_julia():
+    rules, burst_percent = build_nikke_rules("julia", {"climax": {"description_value_02": "544.5"}})
+    assert rules == []
+    assert burst_percent == 544.5
+
+
+JULIA_SIGNATURE_SKILL_VALUES = {
+    "decrescendo": {
+        "description_value_01": "26.04", "description_value_02": "10",
+        "description_value_03": "20", "description_value_04": "10",
+        "description_value_05": "36.16", "description_value_06": "10",
+    },
+    "climax": {"description_value_01": "544.5", "description_value_02": "5", "description_value_03": "544.5"},
+}
+
+
+def test_get_periodic_rules_returns_decrescendo_for_julia_signature():
+    result = get_periodic_rules("julia-signature", JULIA_SIGNATURE_SKILL_VALUES)
+    assert result is not None and len(result) == 1
+    cooldown, rules = result[0]
+    assert cooldown == 20.0
+    assert all(r.trigger == "periodic" for r in rules)
+
+
+def test_build_nikke_rules_returns_battle_start_decrescendo_and_climax_for_julia_signature():
+    rules, burst_percent = build_nikke_rules("julia-signature", JULIA_SIGNATURE_SKILL_VALUES)
+    assert len(rules) == 1 and rules[0].trigger == "battle_start"
+    assert burst_percent == 544.5
+
+
+def test_get_burst_hit_count_defaults_to_one_and_is_five_for_julia_signature():
+    assert get_burst_hit_count("julia") == 1
+    assert get_burst_hit_count("julia-signature") == 5
 
 
 def test_get_per_shot_rules_returns_none_for_most_nikkes():

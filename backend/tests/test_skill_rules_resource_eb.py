@@ -7,6 +7,7 @@ from app.effects import EffectRegistry
 from app.raid_simulator import simulate_raid
 from app.skill_rules.guillotine_winter_slayer import (
     _hero_level,
+    build_guillotine_resource_scaled_nukes,
     build_guillotine_resources,
     build_guillotine_rules,
 )
@@ -133,6 +134,59 @@ def test_guillotine_burst_buffs_water_allies_attack_and_elem_for_ten_sec():
     assert round(reg.total_for("other_elemental_bonus", water, 0.0), 4) == 0.1875
     assert reg.total_for("attack_damage_up", iron, 0.0) == 0.0  # non-Water excluded
     assert reg.total_for("attack_damage_up", water, 11.0) == 0.0  # 10s expired
+
+
+def test_guillotine_extermination_dot_spec_ticks_ten_times_scaled_by_hero_level():
+    specs = build_guillotine_resource_scaled_nukes(GUILLOTINE)
+    assert len(specs) == 1
+    spec = specs[0]
+    assert spec["resource"] == "exp"
+    assert spec["cap"] == 100
+    assert spec["base_percent"] == 20.87
+    assert (spec["tick_count"], spec["tick_interval"]) == (10, 1.0)
+    assert spec["damage_type"] == "sustained"
+    assert spec["scale_fn"](25) == _hero_level(25)  # Hero Level derived, not raw EXP
+
+
+def test_guillotine_extermination_dot_end_to_end_scales_with_hero_level_per_tick():
+    # Full chain: EXP accumulates via per-shot fills while the 10-tick DoT is
+    # active, so LATER ticks (higher Hero Level) deal more than earlier ones.
+    deck = [
+        {"slug": "guillotine-winter-slayer", "burst_tier": 3, "element": "Water", "cooldown": 40.0},
+        {"slug": "midtier-ally", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "iron-ally", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+    ]
+    base_stats = {
+        "guillotine-winter-slayer": {"atk": 10000, "def": 0, "max_hp": 0},
+        "midtier-ally": {"atk": 0, "def": 0, "max_hp": 0},
+        "iron-ally": {"atk": 0, "def": 0, "max_hp": 0},
+    }
+    ar = {"weapon": "AR", "damage_percent": 10.0, "max_ammo": 10000,
+          "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 0.0}
+    result = simulate_raid(
+        deck,
+        {
+            "guillotine-winter-slayer": build_guillotine_rules(GUILLOTINE),
+            "midtier-ally": [], "iron-ally": [],
+        },
+        burst_damage_percents={}, base_stats=base_stats,
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=20.0, mode="auto", base_crit_rate=0.0,
+        core_hittable=True,  # EXP fills every 3 shots
+        weapon_stats={"guillotine-winter-slayer": ar},
+        resource_specs={"guillotine-winter-slayer": build_guillotine_resources(GUILLOTINE)},
+        resource_scaled_nukes={"guillotine-winter-slayer": build_guillotine_resource_scaled_nukes(GUILLOTINE)},
+    )
+    ticks = sorted(
+        [e for e in result["damage_log"] if e["source"] == "resource_scaled_nuke"],
+        key=lambda e: e["time"],
+    )
+    assert len(ticks) == 10
+    assert [round(t["time"], 4) for t in ticks] == [round(5.0 + i, 4) for i in range(10)]
+    assert all(t["damage_type"] == "sustained" for t in ticks)
+    # EXP keeps accumulating over the DoT's 10-sec window (AR fires 12/s, +1
+    # EXP every 3 shots) -> Hero Level rises -> later ticks deal >= earlier ones.
+    assert ticks[-1]["damage"] >= ticks[0]["damage"]
+    assert ticks[-1]["damage"] > ticks[0]["damage"]  # strictly higher given the fire rate
 
 
 def test_guillotine_exp_ramps_own_normal_attack_damage_end_to_end():
