@@ -46,6 +46,12 @@ from app.skill_rules.cinderella import (
 )
 from app.skill_rules.jill_valentine import build_jill_rules
 from app.skill_rules.ludmilla_winter_owner import build_ludmilla_per_shot_rules, build_ludmilla_rules
+from app.skill_rules.mana import (
+    build_fatal_error_dot,
+    build_fatal_error_self_buff_rules,
+    build_metal_gamma_rules,
+    build_metal_sigma_rules,
+)
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
 from app.skill_rules.grave import build_grave_rules
@@ -189,6 +195,13 @@ def _build_asuka(sv):
     return rules, None  # Annihilation is a dynamic_hit_count_nuke, not burst_damage_percents
 
 
+def _build_mana(sv):
+    rules = build_metal_gamma_rules(sv)
+    rules += build_metal_sigma_rules(sv)
+    rules += build_fatal_error_self_buff_rules(sv)
+    return rules, None  # Fatal Error! is a resource_scaled_nuke (flat DoT), not burst_damage_percents
+
+
 _BUILDERS = {
     "anis-star": _build_anis_star,
     "anis-sparkling-summer": lambda sv: (build_anis_sparkling_summer_rules(sv), None),
@@ -211,6 +224,7 @@ _BUILDERS = {
     ),
     "liberalio": lambda sv: (build_liberalio_rules(sv), submerged_world_burst_percent(sv)),
     "ludmilla-winter-owner": lambda sv: (build_ludmilla_rules(sv), None),
+    "mana": _build_mana,
     "chisato-nishikigi": lambda sv: (build_chisato_rules(sv), None),
     "maiden-ice-rose": _build_maiden,
     "asuka-shikinami-langley-wille": _build_asuka,
@@ -332,6 +346,7 @@ _RESOURCE_SPEC_BUILDERS = {
 _RESOURCE_SCALED_NUKE_BUILDERS = {
     "cinderella": lambda sv: build_glass_slippers_resource_scaled_nuke(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
+    "mana": lambda sv: build_fatal_error_dot(sv),
 }
 
 # A Nikke with a burst-fired BUFF gated/scaled by a named resource's count at
