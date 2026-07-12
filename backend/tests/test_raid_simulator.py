@@ -773,6 +773,31 @@ def test_per_shot_nuke_full_burst_bonus_eligible_applies_when_shot_lands_in_wind
     assert ps[0]["damage"] == 15000.0  # 10000 * (1 + full_burst_bonus*0.5) = 10000*1.5
 
 
+def test_per_shot_last_bullet_fires_a_nuke_when_the_magazine_empties():
+    # gap #1's residual "last bullet" trigger (e.g. Julia's Crescendo) - a
+    # "last_bullet" mode entry (threshold unused) fires on the shot that
+    # actually empties its magazine, not on a fixed count. AR (12/s), 3-round
+    # magazine, 1s reload -> magazines empty at t=2/12 and t=1.25+2/12.
+    per_shot_rules = {"attacker": [(None, "last_bullet", [instant_nuke_pulse_rule("per_shot", 100.0)])]}
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=2.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=3)},
+        per_shot_rules=per_shot_rules,
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) == 2
+    assert [round(e["time"], 4) for e in ps] == [round(2 / 12, 4), round(1.25 + 2 / 12, 4)]
+    assert all(e["damage"] == 10000.0 for e in ps)  # 100% coeff * atk 10000, no defense
+
+
 def test_per_shot_squad_buff_reaches_a_burst_nuke_computed_earlier():
     # The record-then-compute payoff: buffer's per-shot squad debuff (applied at
     # its 1st shot, t=0) must raise the attacker's burst nuke fired later.

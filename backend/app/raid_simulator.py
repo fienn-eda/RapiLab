@@ -79,7 +79,7 @@ Computed as a pass after the burst-cycle simulation completes, same as the
 normal-attack pass - order doesn't matter since it only reads the registry's
 already-populated Effects at arbitrary times, like every other post-pass here.
 """
-from app.attack_rate import CHARGE_WEAPONS, generate_shot_times
+from app.attack_rate import CHARGE_WEAPONS, generate_shot_times, last_bullet_shot_times
 from app.burst_cycle import simulate_burst_cycle
 from app.damage_formula import calculate_damage
 from app.effects import Effect, EffectRegistry, _matches_scope
@@ -458,16 +458,18 @@ def simulate_raid(
     for slug, weapon in weapon_stats.items():
         target = target_for(slug)
         is_charge_weapon = weapon["weapon"] in CHARGE_WEAPONS
+        max_ammo_percent_at = lambda t, target=target: registry.total_for("max_ammo_percent", target, t)
+        reload_speed_percent_at = lambda t, target=target: registry.total_for(
+            "reload_speed_percent", target, t
+        )
         shot_times = generate_shot_times(
             weapon["weapon"],
             weapon["max_ammo"],
             weapon["reload_time"],
             weapon["charge_time"],
             fight_duration,
-            max_ammo_percent_at=lambda t, target=target: registry.total_for("max_ammo_percent", target, t),
-            reload_speed_percent_at=lambda t, target=target: registry.total_for(
-                "reload_speed_percent", target, t
-            ),
+            max_ammo_percent_at=max_ammo_percent_at,
+            reload_speed_percent_at=reload_speed_percent_at,
         )
         extra_charge_bonus = weapon["charge_damage_percent"] / 100 - 1 if is_charge_weapon else 0.0
         # "For N round(s)" (bullet-count) buffs expire when the affected ally
@@ -494,16 +496,30 @@ def simulate_raid(
                 applied_at=covered[0],
             )
         # Per-shot triggers count this unit's shots and fire at a threshold
-        # ("after N": once at the Nth shot; "every N": at every Nth). Their
+        # ("after N": once at the Nth shot; "every N": at every Nth) or on
+        # the shot that empties its magazine ("last_bullet", threshold
+        # unused - gap #1's residual variant, e.g. Julia's Crescendo). Their
         # rules apply buffs to the registry (seen by phase 2 at each shot's
         # time) or emit an instant_damage_percent pulse recorded as a per-shot
         # nuke. Rules must be stateless and must not change shot generation
         # (reload/ammo), which is already fixed for this unit here.
         unit_per_shot = per_shot_rules.get(slug, [])
+        last_bullets = (
+            last_bullet_shot_times(
+                weapon["weapon"], weapon["max_ammo"], weapon["reload_time"], weapon["charge_time"],
+                fight_duration, max_ammo_percent_at, reload_speed_percent_at,
+            )
+            if any(mode == "last_bullet" for _, mode, _ in unit_per_shot) else set()
+        )
         for shot_index, shot_time in enumerate(shot_times):
             count = shot_index + 1
             for threshold, mode, rules in unit_per_shot:
-                if (mode == "after" and count == threshold) or (mode == "every" and count % threshold == 0):
+                fires = (
+                    (mode == "after" and count == threshold)
+                    or (mode == "every" and count % threshold == 0)
+                    or (mode == "last_bullet" and shot_time in last_bullets)
+                )
+                if fires:
                     for rule in rules:
                         if rule.condition(context, slug):
                             rule.action(context, slug, shot_time, registry)
