@@ -68,7 +68,7 @@ def test_anti_at_field_damage_taken_buff_is_per_stack_and_squad_scoped():
 
 def test_anti_at_field_per_shot_nuke_fires_every_50_shots_full_burst_bonus_eligible():
     ps = build_anti_at_field_per_shot_rules(ASUKA_VALUES)
-    assert len(ps) == 1
+    assert len(ps) == 2
     threshold, mode, rules = ps[0]
     assert (threshold, mode) == (50, "every")
     reg = EffectRegistry()
@@ -77,6 +77,21 @@ def test_anti_at_field_per_shot_nuke_fires_every_50_shots_full_burst_bonus_eligi
     assert len(pulses) == 1
     assert pulses[0].value == 471.86
     assert pulses[0].full_burst_bonus_eligible is True
+
+
+def test_anti_at_field_windowed_nuke_gated_to_annihilation_state():
+    ps = build_anti_at_field_per_shot_rules(ASUKA_VALUES)
+    threshold, mode, rules = ps[1]
+    # (N, window_duration) - every 10 shots inside her own 9s status window
+    assert threshold == (10, 9.0)
+    assert mode == "every_during_own_status_window"
+    reg = EffectRegistry()
+    rules[0].action(make_context(), "asuka-shikinami-langley-wille", 5.0, reg)
+    pulses = reg.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert pulses[0].value == 15.62
+    # "as damage", not "as additional damage" - no Full Burst Bonus
+    assert pulses[0].full_burst_bonus_eligible is False
 
 
 def test_annihilation_state_self_buffs_trigger_on_own_burst_activate():

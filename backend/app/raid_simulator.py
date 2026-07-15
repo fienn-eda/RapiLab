@@ -506,11 +506,16 @@ def simulate_raid(
         # Per-shot triggers count this unit's shots and fire at a threshold
         # ("after N": once at the Nth shot; "every N": at every Nth) or on
         # the shot that empties its magazine ("last_bullet", threshold
-        # unused - gap #1's residual variant, e.g. Julia's Crescendo). Their
-        # rules apply buffs to the registry (seen by phase 2 at each shot's
-        # time) or emit an instant_damage_percent pulse recorded as a per-shot
-        # nuke. Rules must be stateless and must not change shot generation
-        # (reload/ammo), which is already fixed for this unit here.
+        # unused - gap #1's residual variant, e.g. Julia's Crescendo). The
+        # window-gated modes ("every_during_full_burst" / "every_during_own_
+        # status_window") count only shots inside a window before the "every
+        # Nth" step, exactly like the same-named resource fills (gap #7 - a
+        # buff/nuke fired directly on the in-window count, e.g. Soda's Lucky
+        # Golden Chip, Asuka's Anti A.T. Field nuke). Their rules apply buffs
+        # to the registry (seen by phase 2 at each shot's time) or emit an
+        # instant_damage_percent pulse recorded as a per-shot nuke. Rules must
+        # be stateless and must not change shot generation (reload/ammo), which
+        # is already fixed for this unit here.
         unit_per_shot = per_shot_rules.get(slug, [])
         # Also needed by an "on_last_bullet" resource fill (below, resolved in
         # a later pass) - computed once here and cached so both consumers
@@ -526,13 +531,32 @@ def simulate_raid(
             if needs_last_bullets else set()
         )
         last_bullet_times_by_slug[slug] = last_bullets
+        # The window-gated modes fire on the same in-window shot times a
+        # matching resource fill would pick, so reuse `_resource_fill_times`'
+        # window filter. "every_during_full_burst" carries N in `threshold`;
+        # "every_during_own_status_window" carries (N, window_duration).
+        own_burst_times = context.burst_times.get(slug, [])
+        window_fire_times = {}
+        for idx, (threshold, mode, _rules) in enumerate(unit_per_shot):
+            if mode == "every_during_full_burst":
+                window_fire_times[idx] = set(_resource_fill_times(
+                    ("per_shot_every_during_full_burst", threshold), shot_times,
+                    core_hittable, fight_duration, full_burst_windows,
+                ))
+            elif mode == "every_during_own_status_window":
+                n, window_duration = threshold
+                window_fire_times[idx] = set(_resource_fill_times(
+                    ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
+                    core_hittable, fight_duration, full_burst_windows, own_burst_times,
+                ))
         for shot_index, shot_time in enumerate(shot_times):
             count = shot_index + 1
-            for threshold, mode, rules in unit_per_shot:
+            for idx, (threshold, mode, rules) in enumerate(unit_per_shot):
                 fires = (
                     (mode == "after" and count == threshold)
                     or (mode == "every" and count % threshold == 0)
                     or (mode == "last_bullet" and shot_time in last_bullets)
+                    or (idx in window_fire_times and shot_time in window_fire_times[idx])
                 )
                 if fires:
                     for rule in rules:

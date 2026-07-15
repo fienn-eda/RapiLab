@@ -41,16 +41,15 @@ debuff on the boss), capped at 30.
   cycle, so "her burst fired this cycle" is exactly "Annihilation State just
   started, still active" at the instant full_burst_enter fires.
 
-Not modeled / deferred:
 - Anti A.T. Field's OWN 15.62%-of-ATK direct-damage component ("every 10
   shots while in Annihilation State, deals 15.62% as damage" - a SEPARATE
-  bullet from the 471.86% unconditional nuke) needs a Full-Burst/own-status-
-  WINDOW-GATED PER-SHOT TRIGGER (not just a resource FILL, which
-  `per_shot_every_during_own_status_window` already covers for the stack
-  buff) - `per_shot_rules` has no window filter to directly fire a nuke.
-  Same gap as Soda's still-deferred co-fired buff (`engine-gaps.md` #7);
-  Asuka is a second, still-unbuilt consumer. Secondary to her headline
-  mechanics (a small nuke, not the stack debuff or Annihilation itself).
+  bullet from the 471.86% unconditional nuke): modeled via the window-gated
+  per-shot trigger (`per_shot_rules` mode "every_during_own_status_window",
+  gap #7, built 2026-07-15) - the same 9s own-burst-anchored window the stack
+  fill uses. "as damage" (not "as additional damage"), so NOT
+  full_burst_bonus_eligible. A small nuke, secondary to her headline mechanics.
+
+Not modeled / deferred:
 - Annihilation State's Normal Attack Damage Multiplier -40% for 9 sec: the
   engine has no way to scope a damage-up/down bucket to "normal attacks
   only" (as opposed to a `damage_type`, which normal attacks and most bursts
@@ -88,8 +87,22 @@ def build_anti_at_field_resources(values):
 
 
 def build_anti_at_field_per_shot_rules(values):
-    nuke = float(values["anti_at_field"]["description_value_01"])
-    return [(50, "every", [instant_nuke_pulse_rule("per_shot", nuke, full_burst_bonus_eligible=True)])]
+    field = values["anti_at_field"]
+    uncond_nuke = float(field["description_value_01"])
+    windowed_nuke = float(field["description_value_02"])
+    fill_every = int(float(field["description_value_07"]))
+    window_duration = float(values["annihilation_state"]["description_value_02"])
+    return [
+        (50, "every", [instant_nuke_pulse_rule("per_shot", uncond_nuke, full_burst_bonus_eligible=True)]),
+        # gap #7: every `fill_every` shots WHILE in Annihilation State (a
+        # `window_duration`-sec window anchored to her own burst). "as damage",
+        # not "as additional damage", so NOT full_burst_bonus_eligible.
+        (
+            (fill_every, window_duration),
+            "every_during_own_status_window",
+            [instant_nuke_pulse_rule("per_shot", windowed_nuke)],
+        ),
+    ]
 
 
 def build_annihilation_state_rules(values, caster_atk):

@@ -795,6 +795,58 @@ def test_per_shot_last_bullet_fires_a_nuke_when_the_magazine_empties():
     ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
     assert len(ps) == 2
     assert [round(e["time"], 4) for e in ps] == [round(2 / 12, 4), round(1.25 + 2 / 12, 4)]
+
+
+def _windowed_nuke_result(mode, threshold):
+    return simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=0.1,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules={"attacker": [(threshold, mode, [instant_nuke_pulse_rule("per_shot", 100.0)])]},
+    )
+
+
+def test_per_shot_every_during_full_burst_fires_only_on_in_window_shots():
+    # gap #7: "every 3 normal attacks during Full Burst" counts only shots
+    # inside a Full Burst window before the every-3rd step (e.g. Soda's Lucky
+    # Golden Chip). Compute the expected in-window every-3rd shots from the
+    # sim's own Full Burst window so the assertion doesn't hardcode cycle timing.
+    result = _windowed_nuke_result("every_during_full_burst", 3)
+    windows = list(zip(
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_start"),
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_end"),
+    ))
+    shots = [k / 12 for k in range(12)]  # AR 12/s, max_ammo 100 -> no reload in 1s
+    in_window = [t for t in shots if any(s <= t < e for s, e in windows)]
+    expected = [t for i, t in enumerate(in_window) if (i + 1) % 3 == 0]
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) >= 1  # the window is reached, so the mode is actually exercised
+    assert [round(e["time"], 4) for e in ps] == [round(t, 4) for t in expected]
+    assert all(any(s <= e["time"] < end for s, end in windows) for e in ps)
+
+
+def test_per_shot_every_during_own_status_window_gated_to_own_burst_window():
+    # gap #7: "every 3 shots while in <own status>" (e.g. Asuka's Anti A.T.
+    # Field nuke) anchors the window to the CASTER'S OWN burst times, not the
+    # squad Full Burst window. threshold carries (N, window_duration).
+    result = _windowed_nuke_result("every_during_own_status_window", (3, 9.0))
+    own_bursts = [
+        e["time"] for e in result["events"] if e["type"] == "burst" and e["slug"] == "attacker"
+    ]
+    windows = [(bt, bt + 9.0) for bt in own_bursts]
+    shots = [k / 12 for k in range(12)]
+    in_window = [t for t in shots if any(s <= t < e for s, e in windows)]
+    expected = [t for i, t in enumerate(in_window) if (i + 1) % 3 == 0]
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) >= 1
+    assert [round(e["time"], 4) for e in ps] == [round(t, 4) for t in expected]
     assert all(e["damage"] == 10000.0 for e in ps)  # 100% coeff * atk 10000, no defense
 
 
