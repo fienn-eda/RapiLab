@@ -57,7 +57,7 @@ from app.skill_rules.mana import (
 )
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
-from app.skill_rules.grave import build_grave_rules
+from app.skill_rules.grave import build_grave_rules, build_overheat_per_shot_rules
 from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resource_scaled_nukes,
     build_guillotine_resources,
@@ -127,7 +127,7 @@ from app.skill_rules.takina_inoue import (
     build_suppression_initiated_rules,
 )
 from app.skill_rules.tove import build_tove_rules
-from app.skill_rules.velvet import build_velvet_rules
+from app.skill_rules.velvet import build_bullets_of_love_per_shot_rules, build_velvet_rules
 from app.skill_rules.privaty import (
     ak_missile_burst_percent,
     build_ak_missile_rules,
@@ -321,7 +321,9 @@ _PER_SHOT_RULE_BUILDERS = {
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "anis-sparkling-summer": lambda sv: build_sparkling_missile_per_shot_rules(sv["sparkling_missile"]),
+    "grave": lambda sv: build_overheat_per_shot_rules(sv),
     "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
+    "velvet": lambda sv: build_bullets_of_love_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),
     "helm": lambda sv: build_frontline_command_per_shot_rules(sv["frontline_command"]),

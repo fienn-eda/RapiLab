@@ -1,5 +1,9 @@
 from app.effects import EffectRegistry
-from app.skill_rules.grave import build_grave_rules
+from app.skill_rules.grave import (
+    PREDICTION_DURATION,
+    build_grave_rules,
+    build_overheat_per_shot_rules,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # Real skill level 10 values from api.dotgg.gg.
@@ -17,6 +21,14 @@ PLOT_SPOILER = {
     "description_value_04": "39.98",  # squad Pierce Damage %
     "description_value_05": "3",      # squad Max Ammo +N rounds (not modeled)
     "description_value_06": "85.19",  # squad Critical Rate %
+}
+OVERHEAT = {
+    "description_value_01": "15",     # Overheat I threshold (reload-toggle, deferred)
+    "description_value_02": "15.48",  # Overheat I self ATK % (deferred)
+    "description_value_03": "30",     # Overheat II threshold (normals in Prediction)
+    "description_value_04": "20.66",  # Overheat II self ATK %
+    "description_value_05": "60",     # Overheat III threshold
+    "description_value_06": "30.8",   # Overheat III self Attack Damage %
 }
 
 
@@ -108,3 +120,42 @@ def test_heat_emission_reactivates_after_the_next_full_burst_end():
     fire_trigger("full_burst_end", rules, ctx, registry, time=50.0)   # cycle 2 ends: reactivates
 
     assert round(registry.total_for("pierce_damage_up", ALLY, now=175.0), 4) == 0.484
+
+
+def test_overheat_per_shot_rules_are_own_status_window_gated():
+    rules = build_overheat_per_shot_rules({"overheat": OVERHEAT})
+    assert len(rules) == 2
+    (t2, m2, _), (t3, m3, _) = rules
+    assert (t2, m2) == ((30, PREDICTION_DURATION), "every_during_own_status_window")
+    assert (t3, m3) == ((60, PREDICTION_DURATION), "every_during_own_status_window")
+
+
+def test_overheat_ii_grants_permanent_self_atk_once():
+    _, _, oh2 = build_overheat_per_shot_rules({"overheat": OVERHEAT})[0]
+    ctx = make_context()
+    registry = EffectRegistry()
+    oh2[0].action(ctx, "grave", 5.0, registry)
+    assert round(registry.total_for("atk_percent", GRAVE, now=5.0), 4) == 0.2066
+    assert round(registry.total_for("atk_percent", GRAVE, now=175.0), 4) == 0.2066  # permanent
+    # a later window firing again must not stack
+    oh2[0].action(ctx, "grave", 50.0, registry)
+    assert round(registry.total_for("atk_percent", GRAVE, now=50.0), 4) == 0.2066
+    # self-scoped: allies don't get it
+    assert registry.total_for("atk_percent", ALLY, now=50.0) == 0.0
+
+
+def test_overheat_iii_requires_overheat_ii_then_grants_permanent_attack_damage():
+    rules = build_overheat_per_shot_rules({"overheat": OVERHEAT})
+    oh2 = rules[0][2][0]
+    oh3 = rules[1][2][0]
+    ctx = make_context()
+    registry = EffectRegistry()
+
+    # Overheat III does nothing until Overheat II is active.
+    oh3.action(ctx, "grave", 5.0, registry)
+    assert registry.total_for("attack_damage_up", GRAVE, now=5.0) == 0.0
+
+    oh2.action(ctx, "grave", 6.0, registry)
+    oh3.action(ctx, "grave", 7.0, registry)
+    assert round(registry.total_for("attack_damage_up", GRAVE, now=7.0), 4) == 0.308
+    assert round(registry.total_for("attack_damage_up", GRAVE, now=175.0), 4) == 0.308  # permanent
