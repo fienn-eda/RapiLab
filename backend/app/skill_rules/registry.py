@@ -81,6 +81,7 @@ from app.skill_rules.drake import (
     drake_special_burst_percent,
 )
 from app.skill_rules.laplace import build_hero_bomber_per_shot_rules, laplace_buster_burst_percent
+from app.skill_rules.dorothy_serendipity import build_dorothy_serendipity_rules
 from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resource_scaled_nukes,
     build_guillotine_resources,
@@ -276,6 +277,7 @@ _BUILDERS = {
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
     "laplace": lambda sv: ([], laplace_buster_burst_percent(sv)),  # no ally buffs; weapon-transform + Hero Vision deferred
+    "dorothy-serendipity": lambda sv: (build_dorothy_serendipity_rules(sv), None),  # burst is buff-only (self Attack Speed + ATK)
     "guillotine-winter-slayer": lambda sv: (build_guillotine_rules(sv), None),  # Extermination DoT (Hero-Level-scaled) deferred
     "modernia": lambda sv: ([], None),  # all modeled content is per-shot + resource; burst deferred
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
