@@ -72,6 +72,14 @@ from app.skill_rules.neon_vision_eye import (
     build_firepower_explosion_per_shot_rules,
     build_neon_vision_eye_rules,
 )
+from app.skill_rules.drake import (
+    build_drake_rules,
+    build_drake_signature_rules,
+    build_thunderbolt_per_shot_rules,
+    build_thunderbolt_signature_per_shot_rules,
+    drake_signature_burst_percent,
+    drake_special_burst_percent,
+)
 from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resource_scaled_nukes,
     build_guillotine_resources,
@@ -264,6 +272,8 @@ _BUILDERS = {
     "rei-ayanami": lambda sv: (build_rei_ayanami_rules(sv), annihilation_burst_percent(sv)),
     "rei-ayanami-tentative-name": lambda sv: (build_rei_tentative_rules(sv), attack_state_burst_percent(sv)),
     "neon-vision-eye": lambda sv: (build_neon_vision_eye_rules(sv), None),  # burst is buff-only; damage is Firepower Explosion (per-shot)
+    "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
+    "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
     "guillotine-winter-slayer": lambda sv: (build_guillotine_rules(sv), None),  # Extermination DoT (Hero-Level-scaled) deferred
     "modernia": lambda sv: ([], None),  # all modeled content is per-shot + resource; burst deferred
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
@@ -342,6 +352,8 @@ _PER_SHOT_RULE_BUILDERS = {
     "rei-ayanami": lambda sv: build_preemptive_subdual_per_shot_rules(sv),
     "rei-ayanami-tentative-name": lambda sv: build_annihilation_support_per_shot_rules(sv),
     "neon-vision-eye": lambda sv: build_firepower_explosion_per_shot_rules(sv),
+    "drake": lambda sv: build_thunderbolt_per_shot_rules(sv),
+    "drake-signature": lambda sv: build_thunderbolt_signature_per_shot_rules(sv),
     "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
     "velvet": lambda sv: build_bullets_of_love_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
