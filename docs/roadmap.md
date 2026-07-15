@@ -9,12 +9,16 @@
 
 - 마지막 갱신: 2026-07-15
 - 브랜치: `wip/scaffolding`
-- 테스트: **497 passed** (2026-07-16, Grave Overheat 정정 + Arcana: Fortune Mate
-  승급[🔶→⚠] + **Phase A2 완료** 신규[Rei Ayanami·Rei Ayanami(Tentative Name)·Neon:
-  Vision Eye·Drake+Drake(Signature) 듀얼슬롯·Laplace] 포함; was 471)
-- 인코딩된 니케: **53명** (Phase A2 신규 6엔트리 +6[Drake는 base/signature 듀얼슬롯];
-  Arcana: Fortune Mate 🔶→⚠, Grave ⚠→✅ 승급/재분류) — 상세는
-  [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- 테스트: **507 passed** (2026-07-16, Phase A 완료 + **Phase S 엔진 확장**[attack_speed/
+  charge_speed, attack_rate.py 7테스트] + Dorothy: Serendipity[Phase S 첫 소비자] 포함;
+  was 471)
+- 인코딩된 니케: **54명** (Phase A2 6엔트리 + Dorothy: Serendipity[Phase S] +1;
+  Arcana: Fortune Mate 🔶→⚠, Grave ⚠→✅) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- **Phase S 진행:** attack_speed_percent/charge_speed_percent 엔진 확장 완료(매거진
+  경계 평가, 기본 `_zero`로 기존 54엔트리 타임라인 불변). Dorothy: Serendipity(자기
+  스코프 +65%) 인코딩 완료. Tove의 Attack Speed는 **SG-아군 스코프**라 무기종 스코프
+  (Phase C gap #3) 필요 — 판단 대기(squad 근사 vs Phase C 연기). Phase S 상호작용
+  테스트(attack_speed가 실제로 딜 증가) 추가 예정.
 
 ---
 
