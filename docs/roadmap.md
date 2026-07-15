@@ -9,10 +9,10 @@
 
 - 마지막 갱신: 2026-07-15
 - 브랜치: `wip/scaffolding`
-- 테스트: **495 passed** (2026-07-16, Grave Overheat 정정 + Arcana: Fortune Mate
-  승급[🔶→⚠] + Phase A2 신규[Rei Ayanami·Rei Ayanami(Tentative Name)·Neon: Vision
-  Eye·Drake+Drake(Signature) 듀얼슬롯] 포함; was 471)
-- 인코딩된 니케: **52명** (Phase A2 신규 5엔트리 +5[Drake는 base/signature 듀얼슬롯];
+- 테스트: **497 passed** (2026-07-16, Grave Overheat 정정 + Arcana: Fortune Mate
+  승급[🔶→⚠] + **Phase A2 완료** 신규[Rei Ayanami·Rei Ayanami(Tentative Name)·Neon:
+  Vision Eye·Drake+Drake(Signature) 듀얼슬롯·Laplace] 포함; was 471)
+- 인코딩된 니케: **53명** (Phase A2 신규 6엔트리 +6[Drake는 base/signature 듀얼슬롯];
   Arcana: Fortune Mate 🔶→⚠, Grave ⚠→✅ 승급/재분류) — 상세는
   [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
