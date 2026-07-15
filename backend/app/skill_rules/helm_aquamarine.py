@@ -20,10 +20,13 @@ Modeled (DPS-relevant):
   per tick (~45 ticks over a 180s fight) this is likely her primary DPS
   source as an Attacker. Exposed via `aegis_cannon_suppression_fire_percent`
   + `AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN`.
+- Admire Accompaniment (skills[0]) nuke: 131.34% of final ATK every 30 normal
+  attacks, via the per-shot trigger (`per_shot_rules`, mode "every" - "after
+  landing 30 normal attacks" repeats, matching Brid: Journey Ahead's phrasing).
+  See `build_admire_accompaniment_per_shot_rules`. A meaningful DPS lever for an
+  AR attacker (~72 hits over a 180s fight).
 
 Not modeled:
-- Admire Accompaniment's other bullet - a nuke (131.34% of final ATK) after
-  landing 30 normal attacks - the normal-attack-count trigger gap.
 - Aegis Cannon Suppression Fire's Electric-Code-conditional stacking Damage
   Taken debuff (5.64% x up to 5 stacks, 5 sec) - needs boss-element access in
   skill rules, which doesn't exist (same gap as Brid: Silent Track's
@@ -32,9 +35,11 @@ Not modeled:
   (164.83%) - same boss-element gap.
 """
 from app.effects import Pulse
+from app.skill_rules._helpers import instant_nuke_pulse_rule
 from app.squad_engine import SkillRule
 
 AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN = 4.0  # the skill text hardcodes "Cooldown: 4s"
+ADMIRE_ACCOMPANIMENT_NUKE_SHOT_COUNT = 30  # skill text: "after landing 30 normal attacks"
 
 
 def aegis_cannon_overload_burst_percent(values):
@@ -60,3 +65,12 @@ def build_helm_aquamarine_rules(values):
         registry.add_pulse(Pulse("burst_cooldown_reduction_sec", total, "squad", caster_slug))
 
     return [SkillRule(trigger="full_burst_enter", action=apply_cdr)]
+
+
+def build_admire_accompaniment_per_shot_rules(values):
+    """Per-shot rules (see raid_simulator's `per_shot_rules`): every 30 normal
+    attacks, deal 131.34% of final ATK as additional damage."""
+    nuke_percent = float(values["description_value_01"])
+    return [
+        (ADMIRE_ACCOMPANIMENT_NUKE_SHOT_COUNT, "every", [instant_nuke_pulse_rule("per_shot", nuke_percent)]),
+    ]

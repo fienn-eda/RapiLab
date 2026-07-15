@@ -17,7 +17,10 @@ never has to change for the one or two Nikkes that need this.
 """
 from app.skill_rules.ade_agent_bunny import build_ade_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
-from app.skill_rules.anis_sparkling_summer import build_anis_sparkling_summer_rules
+from app.skill_rules.anis_sparkling_summer import (
+    build_anis_sparkling_summer_rules,
+    build_sparkling_missile_per_shot_rules,
+)
 from app.skill_rules.anis_star import (
     build_star_anis_burst_rules,
     build_starfall_full_charge_nuke_rules,
@@ -70,6 +73,7 @@ from app.skill_rules.helm_aquamarine import (
     AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN,
     aegis_cannon_overload_burst_percent,
     aegis_cannon_suppression_fire_percent,
+    build_admire_accompaniment_per_shot_rules,
     build_helm_aquamarine_rules,
 )
 from app.skill_rules.isabel import (
@@ -315,7 +319,9 @@ _PER_SHOT_RULE_BUILDERS = {
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
+    "anis-sparkling-summer": lambda sv: build_sparkling_missile_per_shot_rules(sv["sparkling_missile"]),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
+    "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),
     "helm": lambda sv: build_frontline_command_per_shot_rules(sv["frontline_command"]),
     "privaty": lambda sv: build_ld_assault_per_shot_rules(sv),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),

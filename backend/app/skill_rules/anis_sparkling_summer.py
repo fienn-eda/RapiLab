@@ -9,19 +9,23 @@ Modeled (DPS-relevant):
 - Sparkling Wave (Burst, self): Max Ammunition Capacity +73.92% and Reload
   Speed +27.72% for 10 sec, self only - boosts her own shotgun uptime.
 
-Not modeled / deferred:
 - Sparkling Missile (Skill 2): "when firing the last bullet" deals 382.42% of
   final ATK to the 2 highest-ATK enemies, plus self Damage-to-Interruption-
-  Parts +6.91% for 10 sec. Both hang off a "fire the last bullet" event, which
-  is an ammo-depletion / normal-attack-count trigger - none of the four burst
-  triggers - so it can't fire. Deferred (this is a chunk of her personal
-  damage, though as a supporter that's secondary to Sparkling Boost).
+  Parts +6.91% for 10 sec. Modeled via the per-shot trigger's "last_bullet"
+  mode (`per_shot_rules`, gap #1's residual variant) - see
+  `build_sparkling_missile_per_shot_rules`. The "2 highest-ATK enemies" is a
+  single boss in solo raid, so the nuke lands once per last bullet. The parts
+  buff is a REFRESHING self buff (SG's small magazine empties faster than the
+  10s window, so repeated last bullets refresh rather than stack). A chunk of
+  her personal damage, though as a supporter that's secondary to Sparkling Boost.
+
+Not modeled / deferred:
 - Sparkling Wave's "Elemental Advantage Attack Damage +42.24% (self, 10 sec)":
   which damage bucket this maps to is ambiguous (other_elemental_bonus vs
   attack_damage_up), and it only boosts Anis's own minor shotgun damage. Left
   deferred rather than guess the wrong bucket.
 """
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 from app.squad_engine import SkillRule
 
 
@@ -49,3 +53,16 @@ def build_anis_sparkling_summer_rules(values: dict) -> list[SkillRule]:
             ("reload_speed_percent", self_reload, "self", self_reload_duration),
         ]),
     ]
+
+
+def build_sparkling_missile_per_shot_rules(values: dict) -> list:
+    """Per-shot rules (see raid_simulator's `per_shot_rules`): on firing the
+    last bullet of a magazine, deal 382.42% of final ATK and refresh a self
+    Damage-to-Interruption-Parts buff for 10 sec."""
+    nuke_percent = float(values["description_value_01"])
+    parts_up = float(values["description_value_02"]) / 100
+    parts_duration = float(values["description_value_03"])
+    return [(None, "last_bullet", [
+        instant_nuke_pulse_rule("per_shot", nuke_percent),
+        refreshing_buff_rule("per_shot", [("damage_to_parts_up", parts_up, "self", parts_duration)]),
+    ])]

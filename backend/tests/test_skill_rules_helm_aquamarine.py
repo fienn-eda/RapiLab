@@ -1,7 +1,9 @@
 from app.effects import EffectRegistry
 from app.skill_rules.helm_aquamarine import (
+    ADMIRE_ACCOMPANIMENT_NUKE_SHOT_COUNT,
     aegis_cannon_overload_burst_percent,
     aegis_cannon_suppression_fire_percent,
+    build_admire_accompaniment_per_shot_rules,
     build_helm_aquamarine_rules,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
@@ -74,3 +76,20 @@ def test_cdr_stays_capped_at_three_tiers_on_later_cycles():
         pulses = registry.drain_pulses("burst_cooldown_reduction_sec")
     # 4th cycle (t=80) should still be capped at the sum of all 3 tiers
     assert round(pulses[0].value, 4) == 6.62
+
+
+def test_admire_accompaniment_nuke_fires_every_30_normal_attacks():
+    rules = build_admire_accompaniment_per_shot_rules(ADMIRE_ACCOMPANIMENT)
+    assert len(rules) == 1
+    threshold, mode, skill_rules = rules[0]
+    assert (threshold, mode) == (ADMIRE_ACCOMPANIMENT_NUKE_SHOT_COUNT, "every")
+    assert ADMIRE_ACCOMPANIMENT_NUKE_SHOT_COUNT == 30
+
+    ctx = make_context()
+    registry = EffectRegistry()
+    for rule in skill_rules:
+        rule.action(ctx, "helm-aquamarine", 3.0, registry)
+    pulses = registry.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert pulses[0].value == 131.34
+    assert pulses[0].source_slug == "helm-aquamarine"

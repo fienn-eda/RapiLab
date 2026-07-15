@@ -1,5 +1,8 @@
 from app.effects import EffectRegistry
-from app.skill_rules.anis_sparkling_summer import build_anis_sparkling_summer_rules
+from app.skill_rules.anis_sparkling_summer import (
+    build_anis_sparkling_summer_rules,
+    build_sparkling_missile_per_shot_rules,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # Real skill level 10 values from lootandwaifus.com (Anis: Sparkling Summer).
@@ -10,6 +13,11 @@ SPARKLING_BOOST = {
     "description_value_02": "10",     # its duration
     "description_value_03": "49.28",  # Reload Speed %
     "description_value_04": "10",     # its duration
+}
+SPARKLING_MISSILE = {
+    "description_value_01": "382.42",  # last-bullet nuke % of final ATK
+    "description_value_02": "6.91",    # self Damage to Interruption Parts %
+    "description_value_03": "10",      # its duration
 }
 SPARKLING_WAVE = {
     "description_value_01": "73.92",  # Max Ammunition Capacity % (self)
@@ -77,3 +85,39 @@ def test_burst_grants_self_ammo_and_reload():
     assert round(registry.total_for("reload_speed_percent", ANIS, now=5.0), 4) == 0.2772
     # self-scoped: allies don't share it
     assert registry.total_for("max_ammo_percent", ELECTRIC_ALLY, now=5.0) == 0.0
+
+
+def test_sparkling_missile_last_bullet_nuke_and_self_parts_buff():
+    rules = build_sparkling_missile_per_shot_rules(SPARKLING_MISSILE)
+    assert len(rules) == 1
+    threshold, mode, skill_rules = rules[0]
+    assert (threshold, mode) == (None, "last_bullet")
+
+    ctx = make_context()
+    registry = EffectRegistry()
+    for rule in skill_rules:
+        rule.action(ctx, "anis-sparkling-summer", 3.0, registry)
+
+    pulses = registry.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert pulses[0].value == 382.42
+    assert pulses[0].source_slug == "anis-sparkling-summer"
+
+    # self-scoped Damage to Interruption Parts +6.91% for 10 sec
+    assert round(registry.total_for("damage_to_parts_up", ANIS, now=3.0), 4) == 0.0691
+    assert registry.total_for("damage_to_parts_up", ELECTRIC_ALLY, now=3.0) == 0.0
+    assert registry.total_for("damage_to_parts_up", ANIS, now=13.1) == 0.0
+
+
+def test_sparkling_missile_parts_buff_refreshes_not_stacks():
+    rules = build_sparkling_missile_per_shot_rules(SPARKLING_MISSILE)
+    _, _, skill_rules = rules[0]
+    ctx = make_context()
+    registry = EffectRegistry()
+    # Two last-bullets within the 10s window must refresh, not stack.
+    for rule in skill_rules:
+        rule.action(ctx, "anis-sparkling-summer", 3.0, registry)
+    for rule in skill_rules:
+        rule.action(ctx, "anis-sparkling-summer", 8.0, registry)
+    registry.drain_pulses("instant_damage_percent")
+    assert round(registry.total_for("damage_to_parts_up", ANIS, now=8.0), 4) == 0.0691
