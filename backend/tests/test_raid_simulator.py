@@ -2216,3 +2216,79 @@ def test_burst_used_this_cycle_resets_between_cycles():
     # be recorded as "used this cycle" so far - the previous cycle's usage
     # must have been cleared.
     assert seen_at_second_cycle == [{"buffer"}]
+
+
+# --- Phase S: attack speed / charge speed move damage end-to-end ---
+
+def _grant(stat, value, slug="attacker"):
+    def action(context, caster_slug, time, registry):
+        registry.add(Effect(stat, value, "self", None, slug), applied_at=time)
+    return SkillRule(trigger="battle_start", action=action)
+
+
+def test_attack_speed_buff_increases_normal_attack_shots_and_damage():
+    # AR fires 12/s; +100% attack speed -> 24/s, so ~double the shots (and damage)
+    # over a window with no reload. Proves the buff is consumed through simulate_raid.
+    kwargs = dict(
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000), enemy_def=0,
+        gauge_charge_time=5.0, fight_duration=2.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+    )
+    without = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    with_as = simulate_raid(
+        make_deck(), {"buffer": [], "midtier": [], "attacker": [_grant("attack_speed_percent", 1.0)]}, **kwargs
+    )
+    na_without = [e for e in without["damage_log"] if e["source"] == "normal_attack"]
+    na_with = [e for e in with_as["damage_log"] if e["source"] == "normal_attack"]
+    assert na_without and len(na_with) > len(na_without)
+    assert len(na_with) >= 1.8 * len(na_without)  # ~2x cadence, no reload in the window
+    assert sum(e["damage"] for e in na_with) > sum(e["damage"] for e in na_without)
+
+
+def test_attack_speed_default_leaves_normal_attacks_unchanged():
+    # Regression: no attack_speed_percent buff -> identical normal-attack timeline.
+    kwargs = dict(
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000), enemy_def=0,
+        gauge_charge_time=5.0, fight_duration=3.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+    )
+    a = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    b = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": [_grant("attack_speed_percent", 0.0)]}, **kwargs)
+    na_a = [(round(e["time"], 6), e["damage"]) for e in a["damage_log"] if e["source"] == "normal_attack"]
+    na_b = [(round(e["time"], 6), e["damage"]) for e in b["damage_log"] if e["source"] == "normal_attack"]
+    assert na_a == na_b
+
+
+def test_attack_speed_increases_per_shot_trigger_firings():
+    # Faster cadence -> more shots -> an "every 5 shots" nuke fires more often
+    # (the shot-count ripple Phase S was flagged to affect).
+    per_shot_rules = {"attacker": [(5, "every", [instant_nuke_pulse_rule("per_shot", 100.0)])]}
+    kwargs = dict(
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000), enemy_def=0,
+        gauge_charge_time=5.0, fight_duration=2.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()}, per_shot_rules=per_shot_rules,
+    )
+    without = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    with_as = simulate_raid(
+        make_deck(), {"buffer": [], "midtier": [], "attacker": [_grant("attack_speed_percent", 1.0)]}, **kwargs
+    )
+    ps_without = [e for e in without["damage_log"] if e["source"] == "per_shot_nuke"]
+    ps_with = [e for e in with_as["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert ps_without and len(ps_with) > len(ps_without)
+
+
+def test_charge_speed_buff_increases_charge_shots():
+    # RL charge weapon: +100% charge speed halves charge time -> more charged shots.
+    weapon_stats = {"attacker": {"weapon": "RL", "damage_percent": 100.0, "max_ammo": 3,
+                                 "reload_time": 1.0, "charge_time": 1.0, "charge_damage_percent": 100.0}}
+    kwargs = dict(
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000), enemy_def=0,
+        gauge_charge_time=5.0, fight_duration=5.0, mode="auto", base_crit_rate=0.0, weapon_stats=weapon_stats,
+    )
+    without = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    with_cs = simulate_raid(
+        make_deck(), {"buffer": [], "midtier": [], "attacker": [_grant("charge_speed_percent", 1.0)]}, **kwargs
+    )
+    na_without = [e for e in without["damage_log"] if e["source"] == "normal_attack"]
+    na_with = [e for e in with_cs["damage_log"] if e["source"] == "normal_attack"]
+    assert na_without and len(na_with) > len(na_without)

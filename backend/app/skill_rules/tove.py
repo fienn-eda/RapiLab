@@ -11,8 +11,14 @@ Modeled (DPS-relevant):
 Assumption: Temporary Modification is treated as fully stacked (its max, from
 Emergency-Crafted Bullets), reached quickly by Tove's own fire, so the Crit
 Rate is always on and Miracle uses the max stack multiplier. Not modeled:
-the Attack Speed buff (attack speed isn't modeled), the shotgun-only ATK
-variant (weapon-conditional scope), and the normal-attack-count ramp itself.
+- The Attack Speed buff (+42.24%) AND the ATK variant (+24.21% of caster ATK)
+  from Modification Successful / Miracle both target "shotgun allies only". The
+  engine now consumes attack_speed_percent (Phase S), but only self/squad/element
+  scopes exist - a weapon-type scope (Phase C, gap #3) is needed to apply these
+  to shotgun allies without over-crediting non-shotgun allies. Both are DEFERRED
+  to Phase C together (per Fienn, 2026-07-16); squad-approx was rejected because
+  attack-speed over-application to non-SG allies distorts the deck search.
+- The normal-attack-count ramp of Temporary Modification itself.
 """
 from app.skill_rules._helpers import buff_rule
 
