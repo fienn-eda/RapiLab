@@ -9,8 +9,9 @@
 
 - 마지막 갱신: 2026-07-15
 - 브랜치: `wip/scaffolding`
-- 테스트: **465 passed** (2026-07-15, gap #7 완료 + Soda/Asuka 잔여 재인코딩 +
-  Phase A1 두 건(Helm: Aquamarine·Anis: Sparkling Summer) 포함)
+- 테스트: **471 passed** (2026-07-15, gap #7 완료 + Soda/Asuka 잔여 재인코딩 +
+  Phase A1 두 건(Helm: Aquamarine·Anis: Sparkling Summer) + 후속 배치로 Grave/Velvet
+  재인코딩(gap #7 소비) 포함, was 465)
 - 인코딩된 니케: **47명** (변동 없음 — 이번 세션은 전부 기존 인코딩 유닛의 업그레이드/
   재분류) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
@@ -174,10 +175,20 @@
   미착수) · rapi-red-hood는 120-노멀 카운터가 버프/넉 직접 발동이 아니라 프로젝타일
   발사 후 FB진입 시 폭발하는 상태머신(+2단계 버스트)이라 gap #7·#9 어느 것으로도
   안 풀림을 확인, 보류 유지. 상세는 `engine-gaps.md`(gap #7/#9) 참고.
-- **다음:** **grave·velvet 재인코딩(gap #7 소비)** + **eb3+ 백로그**(남은 Pattern A
-  자원 유닛 rei-ayanami·rei-ayanami-tentative-name·neon-vision-eye · Pattern B
-  게이지·상태머신·무기변형) + **막힌 나머지 per-shot 유닛 재인코딩 배치**가 최대
-  실질 가치. 남은 gap은 `engine-gaps.md` 우선순위 참고.
+- **gap #7 후속 소비 배치 (2026-07-15, 같은 날):** Grave ⚠(Overheat II/III — 자기
+  버스트 상태창(Prediction) 한정 노멀30/60회마다 자ATK+20.66%/자AD+30.8%,
+  `every_during_own_status_window`; "continuously"를 언락-후-영구로 해석하는 가정
+  하나 Fienn에 플래그) · Velvet 🔶→⚠(Bullets of Love — 풀버스트 한정 풀차지마다
+  스쿼드 flat ATK/Charge Damage + 노멀50회마다 자AD+400.92% 넉,
+  `every_during_full_burst`; ammo pouch는 소모량 대비 압도적으로 커서 비제약 처리,
+  자원 모델링 불필요) 재인코딩 완료. gap #7 소비자는 이제 Soda·Asuka·Grave·Velvet
+  4명 — 남은 후보는 modernia 하나(검증 전). 새 발견: velvet의 Sticky Fingers가
+  gap #7의 거울상(not-in-Full-Burst per-shot 창 필터, 미구현)에 막혀 잔여로 남음
+  — 상세는 `engine-gaps.md`(gap #7) 참고. 471 tests pass (was 465).
+- **다음:** **eb3+ 백로그**(남은 Pattern A 자원 유닛 rei-ayanami·rei-ayanami-
+  tentative-name·neon-vision-eye · Pattern B 게이지·상태머신·무기변형) + **막힌
+  나머지 per-shot 유닛 재인코딩 배치**가 최대 실질 가치. 남은 gap은
+  `engine-gaps.md` 우선순위 참고.
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.

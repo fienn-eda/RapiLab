@@ -4,7 +4,8 @@
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
 - 마지막 갱신: 2026-07-15 (gap #7 완료로 Soda·Asuka 잔여 재인코딩 + Phase A1
-  두 건(Helm: Aquamarine·Anis: Sparkling Summer) 기존 per-shot 능력으로 인코딩)
+  두 건(Helm: Aquamarine·Anis: Sparkling Summer) 기존 per-shot 능력으로 인코딩 +
+  gap #7 두 번째 소비 배치: Grave·Velvet 재인코딩)
 - 총 **47명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 20명)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
@@ -42,13 +43,13 @@
 | Blanc | `blanc` | Defender | AR | Wind | ✅ | 거의 완전 (Rouge/Noir 조건부 자기 CDR 포함) |
 | Arcana | `arcana` | Supporter | RL | Electric | ⚠ | "이미 버스트한 버스트3 전기속성 아군" 대상 버프(수치 큼) |
 | Arcana: Fortune Mate | `arcana-fortune-mate` | Attacker | SG | Fire | 🔶 | 노멀공격 스택 체인(펠릿·Precious Moments) 대부분 보류 |
-| Grave | `grave` | Supporter | AR | Fire | ⚠ | Overheat(노멀공격 카운터 자버프) |
+| Grave | `grave` | Supporter | AR | Fire | ⚠ | Plot Spoiler(버스트 자/스쿼드 Pierce·AD·크리율)·Heat Emission(Prediction 종료 시 발동하는 스쿼드 Pierce 토글) + **Overheat II/III: 자기 버스트의 10초 상태창(Prediction) 한정 노멀30/60회마다 자ATK+20.66%/자AD+30.8%, "continuously"를 언락-후-영구로 해석(가정, Fienn 플래그)**(`per_shot_rules`의 `every_during_own_status_window` 모드, gap #7 완료·2026-07-15) 모델됨. Overheat I(재장전 시 해제되는 토글, gap #9 — Overheat II의 전제조건일 뿐이고 Prediction 중 항상 충족돼 있어 II/III는 이거 없이도 정확)·자힐(Prediction)·+3라운드 탄약 불릿(caster 기본 탄약 불명)만 보류 |
 | Brid: Silent Track | `brid-silent-track` | Supporter | SG | Fire | ⚠ | 노멀5회마다 675% 넉 모델됨(per-shot). Wind속성 조건부 디버프만 보류(boss-element 갭) |
 | Nayuta | `nayuta` | Supporter | SMG | Wind | ⚠ | 무기변형(Memory Incineration) + 복합트리거 넉 |
 | Mint | `mint` | Supporter | RL | Iron | ✅ | Here I Go!(풀차지마다 스쿼드 ATK) 단독+Prika 조합 모두 모델(버스트타임 패리티/Encore 핀 시각). Dancing 자힐만 보류 |
 | Prika | `prika` | Supporter | SR | Water | ✅ | 본인 풀차지 스쿼드 버프(refresh, 중첩 아님) + **Mint Encore 교차유닛 시너지**(`ally_burst_activate`) 모델됨. Performance 지속시간/자기 CD 등 비딜 부기만 보류 |
 | Helm: Aquamarine | `helm-aquamarine` | Attacker | AR | Iron | ⚠ | Admire Accompaniment 풀버스트 CDR 에스컬레이션 + **노멀30회마다 131.34% 넉**(per_shot, 2026-07-15 Phase A1)·Aegis Cannon Suppression Fire(자동발동, periodic_nukes) 모델됨. Electric속성 조건부 추가딜/디버프(boss-element 갭 #5)만 보류 |
-| Velvet | `velvet` | Supporter | SR | Wind | 🔶 | 대부분 보류(자기전용) — ammo pouch 자원 + 본인 풀차지/노멀50회 카운터 |
+| Velvet | `velvet` | Supporter | SR | Wind | ⚠ | Perfect Execution(버스트 자AD버프, 넉 없음) + **Bullets of Love(그녀의 실제 스쿼드 서포트): 풀버스트 중 풀차지샷마다(SR, N=1) 스쿼드 flat ATK(자ATK의 25.2%)+스쿼드 Charge Damage+100.8%(3초, refresh, Prika 선례 따라 스쿼드스코프)+풀버스트 중 노멀50회마다 자AD+15.03%/5초 + 400.92% 넉("as additional damage"→full_burst_bonus_eligible)**(`per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15) 모델됨. ammo pouch(6000, 버스트 스테이지2마다 풀리필)는 소모량 대비 압도적으로 커서 비제약으로 처리(자원 미모델링). Sticky Fingers("풀버스트 아닐 때" 풀차지 카운터 자버프 — gap #7의 거울상인 not-in-FB 창 필터 필요, 미구현, 자기전용 저가치)·Perfect Execution 무기변형딜만 보류 |
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
@@ -85,6 +86,11 @@
 > 소규모 갭(reload 후 첫 발 마커, gap #9) 필요로 확인, rapi-red-hood는 gap #7·#9
 > 어느 것으로도 안 풀리는 프로젝타일-런치 상태머신으로 확인 — 상세는
 > `engine-gaps.md` 참고.
+> **gap #7 두 번째 소비 배치 (2026-07-15):** Grave(Overheat II/III, 자기 버스트
+> 상태창 한정 노멀30/60회마다 자버프)·Velvet(Bullets of Love, 풀버스트 한정
+> 풀차지/노멀50회 카운터 — 그녀의 실제 스쿼드 서포트) 재인코딩(🔶→⚠). gap #7
+> 소비자는 이로써 Soda·Asuka·Grave·Velvet 4명. 남은 gap #7 후보는 modernia
+> (Giant Leap 상태게이팅 200히트 ATK버프) 하나뿐 — 착수 전 검증 필요.
 > **나머지 백로그는 [`roadmap.md`](roadmap.md) To-Do 참고** (대부분 남은 Pattern A
 > 자원 유닛 / Pattern B 게이지·변신 / 상태머신 / 무기변형 갭).
 
@@ -128,7 +134,9 @@
 2. ~~**교차 유닛 트리거** (다른 니케의 특정 스킬 발동을 감지)~~ — ✅ **해결됨
    (2026-07-11, `ally_burst_activate`)**. Prika→Mint Encore가 첫 적용 사례
    (Prika의 Encore가 Mint의 버스트에 반응). 다른 페어링 시너지에 재사용 가능.
-3. **ammo pouch류 자원 메커니즘** — Velvet. 수량 기반 자원 트래킹 없음.
+3. ~~**ammo pouch류 자원 메커니즘**~~ — Velvet. **비이슈로 확인 (2026-07-15):**
+   6000발이 사이클당 소모량 대비 압도적으로 커서 항상 풀 상태 — 자원 트래킹
+   없이 비제약으로 처리(모델링 불필요, 엔진 확장 대상 아님).
 
 네 항목 모두 `special-mechanics.md`에 상세 기록됨. 확장 여부는 Fienn 판단.
 

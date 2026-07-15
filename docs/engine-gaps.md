@@ -11,7 +11,9 @@
   anis-sparkling-summer)도 기존 per_shot 능력으로 인코딩, grave·velvet은 gap #7로
   언블록 가능하다고 재분류(다음 배치), jill-valentine은 신규 소규모 갭
   "reload 후 첫 발" 마커 필요로 식별(gap #9), rapi-red-hood는 프로젝타일-런치
-  상태머신이라 복잡·보류 확인)
+  상태머신이라 복잡·보류 확인). **같은 날 후속 배치:** grave(Overheat II/III)·
+  velvet(Bullets of Love)도 gap #7로 재인코딩 완료 — gap #7 소비자는 Soda·Asuka·
+  Grave·Velvet 4명. 남은 gap #7 후보는 modernia 하나(검증 전).
 - 이전 갱신: 2026-07-12 (gap #1 잔여 변형 "마지막 탄" 완료 — `magazine_last_bullet_times`/
   `charge_last_bullet_times`/`last_bullet_shot_times` + `per_shot_rules`의
   `"last_bullet"` 모드. eb4 배치: Asuka Shikinami Langley: Wille·Mana도 이 날 완료
@@ -44,7 +46,7 @@
 | ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
 | 5 | **enemy-element 조건** (룰에서 boss_element 접근) | 1 (+기존 Brid, Helm:Aqua) | 소 (~30 loc) | 컨텍스트 확장 |
 | 6 | **periodic-during-Full-Burst 넉** (풀버스트 창 안에서만 N초마다) | 1 (Ada) | 소 (~30 loc, periodic_nukes 변형) | 타이밍 변형 |
-| ~~7~~ | ~~풀버스트/자기상태창 한정 per-shot 트리거~~ (fill이 아니라 버프/넉 직접 발동) | 2 (Soda·Asuka) | **완료 (2026-07-15, `per_shot_rules`의 `every_during_full_burst`/`every_during_own_status_window` 모드)** | 신규 트리거 변형 |
+| ~~7~~ | ~~풀버스트/자기상태창 한정 per-shot 트리거~~ (fill이 아니라 버프/넉 직접 발동) | 4 (Soda·Asuka·Grave·Velvet) | **완료 (2026-07-15, `per_shot_rules`의 `every_during_full_burst`/`every_during_own_status_window` 모드)** | 신규 트리거 변형 |
 | 8 | **자원-fill-트리거 타 유닛 버프** (자원 소유자 아닌 아군에게 버프) | 1 (Maiden 잔여 버프) | 소~중 | 신규 트리거 |
 | 9 | **reload 후 첫 발("first bullet after reload") per-shot 마커** (신규, 2026-07-15) | 1 (Jill Valentine) | 소 (~30 loc, "마지막 탄" 마커의 거울상) | 신규 트리거 변형 |
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
@@ -234,7 +236,7 @@
   (threshold=`(N, window_duration)`, 후자는 자기 버스트 앵커 고정 길이 창). 매N번째
   스텝 전에 **창 안의 발사만** 세도록, `_resource_fill_times`의 창 필터 계산을 재사용.
   기존 `after`/`every`/`last_bullet` 모드와 나란한 순수 추가(회귀 없음).
-- **소비자 (2, 둘 다 기존 ⚠ 유지 — 이 갭 외 잔여 메커니즘이 남아있어서):**
+- **소비자 (4, 전부 기존 ⚠ 유지 — 이 갭 외 잔여 메커니즘이 남아있어서):**
   - **soda-twinkling-bunny:** Lucky Golden Chip 공동발동 버프("풀버스트 중 노멀3회마다
     → 자신 + 최고ATK 아군에게 Attack Damage +10.51%/2초, refresh")를
     `every_during_full_burst`로 모델링(`top_atk_slugs`는 시전자 제외). 잔여: Beginner's
@@ -244,13 +246,32 @@
     `every_during_own_status_window`(9초 자기-버스트-앵커 창, N=10)로 모델링. "as
     additional damage"가 아니라 "as damage"라 `full_burst_bonus_eligible` 미적용. 잔여:
     Normal Attack Damage 전용 디버프(노멀전용 스코프 없음), 재장전/힐.
-- **다음(재분류, 2026-07-15 확인, 아직 미착수):** grave(Overheat II/III — Prediction
-  상태창 한정 노멀 카운터, Overheat I은 재장전게이팅 토글 + I→II→III 에스컬레이션
-  체이닝. 서포터 자기전용이라 덱 DPS 영향은 작음)·velvet(Bullets of Love의 FB창 한정
-  풀차지/노멀50회 카운터, Sticky Fingers의 "FB 아닐 때" 풀차지 카운터 — 무기변형·탄약주머니
-  자원 부분은 여전히 별도 갭) 둘 다 이 갭으로 부분 언블록 가능.
+  - **grave (2026-07-15 후속 배치):** Overheat II/III — 자기 버스트의 10초 상태창
+    (Prediction) 한정 노멀30/60회마다 자ATK+20.66%/자AD+30.8%를
+    `every_during_own_status_window`로 모델링. "continuously"를 **언락-후-영구**로
+    해석(가정, Fienn 플래그 — "Overheat X 상태일 때" 절을 언락 게이트로 읽고, Prediction
+    안에서 이미 충족되므로 활성-지속-창-한정이 아니라 영구 부여). 잔여: Overheat I(재장전
+    게이팅 토글, gap #9 — II의 전제조건일 뿐이라 II/III는 이거 없이도 정확), 자힐, +3라운드
+    탄약 불릿(caster 기본 탄약 불명).
+  - **velvet (2026-07-15 후속 배치):** Bullets of Love — 풀버스트 중 풀차지샷마다(SR,
+    N=1) 스쿼드 flat ATK(자ATK의 25.2%)+스쿼드 Charge Damage+100.8%(3초, refresh,
+    Prika 선례 따라 스쿼드스코프)+풀버스트 중 노멀50회마다 자AD+15.03%/5초 + 400.92%
+    넉("as additional damage"→`full_burst_bonus_eligible`)를 `every_during_full_burst`로
+    모델링. ammo pouch(6000, 버스트 스테이지2마다 풀리필)는 소모량 대비 압도적으로 커서
+    비제약으로 처리(자원 미모델링 — gap #2 대상 아님). 잔여: Sticky Fingers의 "풀버스트
+    아닐 때" 풀차지 카운터(gap #7의 거울상인 not-in-FB 창 필터 필요, 미구현, 자기전용
+    저가치), Perfect Execution 무기변형딜.
+- **남은 후보:** modernia(Giant Leap 상태게이팅 200히트 ATK버프) — 검증 전.
 - 참고: `special-mechanics.md`의 관련 항목, `soda_twinkling_bunny.py`/
-  `asuka_shikinami_langley_wille.py` docstring.
+  `asuka_shikinami_langley_wille.py`/`grave.py`/`velvet.py` docstring.
+
+### 참고 — gap #7의 거울상: not-in-Full-Burst per-shot 창 필터 (미구현, 신규 발견)
+
+Velvet의 Sticky Fingers는 "풀버스트 **아닐 때**" 풀차지마다 자ATK/자AD 버프(각
+30.5%, 3초)를 준다 — gap #7의 `every_during_full_burst`의 정반대 필터. 현재
+`per_shot_rules`엔 이 보수 필터가 없다. 유일하게 확인된 소비자가 velvet의 이
+스킬(자기전용, 저가치)뿐이라 후순위. 착수 시엔 `every_during_full_burst`와
+나란히 `"every_outside_full_burst"` 같은 모드로 최소 확장.
 
 ### 8. 자원-fill-트리거 타 유닛 버프 (resource_gated_buffs와 별개 갭)
 
@@ -386,7 +407,9 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   발사만 세어 임계치마다 버프/넉을 **직접** 발동(자원 fill 전용이던 기존 창 한정
   경로와는 별개). `_resource_fill_times`의 창 필터 계산 재사용, 기존 after/every/
   last_bullet 모드와 나란한 순수 추가. 첫 소비자 Soda(Lucky Golden Chip 공동발동
-  버프)/Asuka(Anti A.T. Field 15.62% 상태게이팅 넉). 2026-07-15.
+  버프)/Asuka(Anti A.T. Field 15.62% 상태게이팅 넉). 2026-07-15. **후속 소비 배치
+  (같은 날):** Grave(Overheat II/III, 자기 버스트 상태창 한정 노멀30/60회마다
+  자버프)/Velvet(Bullets of Love, 풀버스트 한정 풀차지/노멀50회 카운터).
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
@@ -413,16 +436,18 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
 - ~~#7 FB창/자기상태창 한정 per-shot 트리거~~ — ✅ 완료 (2026-07-15,
   `per_shot_rules`의 `every_during_full_burst`/`every_during_own_status_window`
   모드; Soda·Asuka 잔여 소비). 같은 날 기존 per-shot 능력만으로 helm-aquamarine·
-  anis-sparkling-summer도 신규 인코딩(Phase A1). grave·velvet은 gap #7로 부분
-  언블록 가능하다고 재분류(다음 배치). jill-valentine 재검증 중 신규 소규모 갭
-  **#9 reload 후 첫 발 마커** 발견(미착수). rapi-red-hood는 gap #7·#9 어느 것으로도
-  안 풀리는 프로젝타일-런치 상태머신으로 확인, 보류.
-1. **grave·velvet 재인코딩 (gap #7 소비)** + **막힌 나머지 per-shot 유닛 재인코딩
-   배치** — 실제 유닛들에 창 한정 per-shot 룰 추가(데이터 확인 → 인코딩). 가장 큰
-   실질 가치.
+  anis-sparkling-summer도 신규 인코딩(Phase A1). **같은 날 후속 배치로 grave·velvet도
+  gap #7 소비 완료** (Overheat II/III·Bullets of Love). jill-valentine 재검증 중
+  신규 소규모 갭 **#9 reload 후 첫 발 마커** 발견(미착수). rapi-red-hood는 gap
+  #7·#9 어느 것으로도 안 풀리는 프로젝타일-런치 상태머신으로 확인, 보류.
+1. **막힌 나머지 per-shot 유닛 재인코딩 배치** — gap #7 소비자는 이제 Soda·Asuka·
+   Grave·Velvet 4명, 남은 후보는 modernia(검증 전) 하나. 이 배치의 나머지 가치는
+   gap #1/#2 잔여 per-shot 유닛(rei-ayanami류 등)에 있음 — 데이터 확인 → 인코딩.
 2. **#2 Pattern B (시간감쇠 게이지·변신)** + **#3 무기종/티어부분집합 스코프** + **#5
    boss_element** + **#6 FB창 periodic** + **#8 자원-fill-트리거 타 유닛 버프**
-   (Maiden 잔여) + **#9 reload 후 첫 발 마커**(Jill 잔여) — 각 수요 1명, 필요할 때.
+   (Maiden 잔여) + **#9 reload 후 첫 발 마커**(Jill 잔여) + **not-in-Full-Burst
+   per-shot 창 필터**(gap #7 거울상, Velvet Sticky Fingers 잔여) — 각 수요 1명,
+   필요할 때.
 
 각 확장은 TDD로, 인벤토리가 증명한 최소 범위만. 착수 시 이 문서의 해당 유닛 목록으로
 "진짜 풀리는지"를 검증하고, 풀린 유닛은 배치 인코딩한다.
