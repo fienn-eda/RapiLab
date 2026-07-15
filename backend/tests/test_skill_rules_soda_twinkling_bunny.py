@@ -1,13 +1,18 @@
 """Real max-level (base-skill) figures from lootandwaifus, slots numbered
 left-to-right per skill (stage-number references in the text are not slots).
 """
-from app.effects import ResourceSpec
+from app.effects import EffectRegistry, ResourceSpec
 from app.raid_simulator import simulate_raid
 from app.skill_rules.soda_twinkling_bunny import (
     build_golden_chip_resources,
+    build_lucky_golden_chip_per_shot_rules,
     build_onward_soda_resource_gated_buffs,
     onward_soda_burst_percent,
 )
+from app.squad_engine import SquadContext, SquadMember
+
+SODA = {"slug": "soda-twinkling-bunny", "element": "Iron"}
+TOP_ALLY = {"slug": "ally", "element": "Iron"}
 
 SODA_VALUES = {
     "lucky_golden_chip": {
@@ -25,6 +30,32 @@ SODA_VALUES = {
 
 def test_onward_soda_burst_percent():
     assert onward_soda_burst_percent(SODA_VALUES) == 628.7
+
+
+def test_lucky_golden_chip_cofired_buff_targets_self_and_top_atk_ally():
+    rules = build_lucky_golden_chip_per_shot_rules(SODA_VALUES)
+    assert len(rules) == 1
+    threshold, mode, skill_rules = rules[0]
+    assert (threshold, mode) == (3, "every_during_full_burst")
+
+    ctx = SquadContext(
+        [
+            SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron"),
+            SquadMember("ally", burst_tier=1, element="Iron"),
+        ],
+        base_atk={"soda-twinkling-bunny": 10000.0, "ally": 50000.0},
+    )
+    reg = EffectRegistry()
+    skill_rules[0].action(ctx, "soda-twinkling-bunny", 5.0, reg)
+    # self and the highest-ATK ally each get Attack Damage +10.51% for 2 sec
+    assert round(reg.total_for("attack_damage_up", SODA, now=5.0), 4) == 0.1051
+    assert round(reg.total_for("attack_damage_up", TOP_ALLY, now=5.0), 4) == 0.1051
+
+    # a second fire inside the 2s window refreshes, not stacks
+    skill_rules[0].action(ctx, "soda-twinkling-bunny", 6.0, reg)
+    assert round(reg.total_for("attack_damage_up", SODA, now=6.0), 4) == 0.1051
+    # expires 2 sec after the latest fire
+    assert reg.total_for("attack_damage_up", SODA, now=8.1) == 0.0
 
 
 def test_golden_chip_resource_starts_at_cap_and_resets_on_burst():

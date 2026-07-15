@@ -17,18 +17,16 @@ Modeled (DPS-relevant): a "chip" resource (Golden Chip), capped at 50.
   BEFORE that reset (`resource_gated_buffs`, `use_pre_reset`), grants self
   ATK +65.25% for 15 sec.
 
-Not modeled / deferred:
 - Lucky Golden Chip's co-fired buff ("after 3 normal attacks during Full
   Burst, affects self and the 1 ally with the highest final ATK: Attack
-  Damage +10.51% for 2 sec") needs an FB-window-gated PER-SHOT TRIGGER (like
-  `per_shot_rules`, but counting only in-Full-Burst shots) - a related but
-  distinct gap from the FB-gated RESOURCE FILL built for Golden Chip itself
-  (`per_shot_rules` has no Full-Burst-window filter). Approximating it as a
-  plain "every 3 shots" would be a real overcount, not a minor one: SG fires
-  1.5/s, so "every 3 shots" is every 2 sec - exactly the buff's own duration,
-  making it read as PERMANENT if fired outside Full Burst too, instead of only
-  active during her ~10-sec Full Burst window each cycle. Deferred rather than
-  approximated.
+  Damage +10.51% for 2 sec"): modeled via the FB-window-gated per-shot trigger
+  (`per_shot_rules` mode "every_during_full_burst", gap #7, built 2026-07-15) -
+  counting only in-Full-Burst shots, so it stays confined to her ~10s Full
+  Burst window each cycle. A REFRESHING buff (SG's 1.5/s cadence makes "every 3
+  shots" every 2 sec, exactly the buff's own duration, so repeated fires
+  refresh rather than stack). See `build_lucky_golden_chip_per_shot_rules`.
+
+Not modeled / deferred:
 - Beginner's Rewards (skills[1]) entirely: both bullets depend on a per-unit
   Full Burst Duration extension (+2s/+3s gated on Golden Chip stacks), which
   has no engine concept (Full Burst duration is a single global constant, not
@@ -37,12 +35,36 @@ Not modeled / deferred:
 - Onward, Soda!'s Hit Rate +38.91%/15s (gated on pre-reset stacks >=20) is
   inert - Hit Rate isn't a stat the engine consumes.
 """
-from app.effects import ResourceSpec
+from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import linear_resource_buff
+from app.squad_engine import SkillRule
 
 
 def onward_soda_burst_percent(values):
     return float(values["onward_soda"]["description_value_02"])
+
+
+def build_lucky_golden_chip_per_shot_rules(values):
+    """gap #7: Lucky Golden Chip's co-fired buff - every N normal attacks DURING
+    FULL BURST, refresh Attack Damage on self and the 1 ally with the highest
+    final ATK (`top_atk_slugs`, which excludes the caster)."""
+    chip = values["lucky_golden_chip"]
+    every = int(float(chip["description_value_05"]))
+    attack_damage = float(chip["description_value_06"]) / 100
+    duration = float(chip["description_value_07"])
+
+    def apply(context, caster_slug, time, registry):
+        registry.add_refreshing(
+            Effect("attack_damage_up", attack_damage, "self", duration, caster_slug), applied_at=time
+        )
+        top = [s for s in context.top_atk_slugs(1, caster_slug, registry, time) if s != caster_slug]
+        if top:
+            registry.add_refreshing(
+                Effect("attack_damage_up", attack_damage, "slugs:" + ",".join(top), duration, caster_slug),
+                applied_at=time,
+            )
+
+    return [(every, "every_during_full_burst", [SkillRule(trigger="per_shot", action=apply)])]
 
 
 def build_golden_chip_resources(values):

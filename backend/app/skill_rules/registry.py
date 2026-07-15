@@ -115,6 +115,7 @@ from app.skill_rules.rosanna_chic_ocean import build_rosanna_rules
 from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
 from app.skill_rules.soda_twinkling_bunny import (
     build_golden_chip_resources,
+    build_lucky_golden_chip_per_shot_rules,
     build_onward_soda_resource_gated_buffs,
     onward_soda_burst_percent,
 )
@@ -320,6 +321,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "anis-sparkling-summer": lambda sv: build_sparkling_missile_per_shot_rules(sv["sparkling_missile"]),
+    "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),
     "helm": lambda sv: build_frontline_command_per_shot_rules(sv["frontline_command"]),
