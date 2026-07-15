@@ -23,8 +23,8 @@ PLOT_SPOILER = {
     "description_value_06": "85.19",  # squad Critical Rate %
 }
 OVERHEAT = {
-    "description_value_01": "15",     # Overheat I threshold (reload-toggle, deferred)
-    "description_value_02": "15.48",  # Overheat I self ATK % (deferred)
+    "description_value_01": "15",     # Overheat I threshold (normals from battle start)
+    "description_value_02": "15.48",  # Overheat I self ATK % (permanent once unlocked)
     "description_value_03": "30",     # Overheat II threshold (normals in Prediction)
     "description_value_04": "20.66",  # Overheat II self ATK %
     "description_value_05": "60",     # Overheat III threshold
@@ -122,40 +122,84 @@ def test_heat_emission_reactivates_after_the_next_full_burst_end():
     assert round(registry.total_for("pierce_damage_up", ALLY, now=175.0), 4) == 0.484
 
 
-def test_overheat_per_shot_rules_are_own_status_window_gated():
+def test_overheat_per_shot_rules_structure():
     rules = build_overheat_per_shot_rules({"overheat": OVERHEAT})
-    assert len(rules) == 2
-    (t2, m2, _), (t3, m3, _) = rules
+    assert len(rules) == 3
+    (t1, m1, _), (t2, m2, _), (t3, m3, _) = rules
+    assert (t1, m1) == (15, "after")  # Overheat I: 15th normal from battle start
     assert (t2, m2) == ((30, PREDICTION_DURATION), "every_during_own_status_window")
     assert (t3, m3) == ((60, PREDICTION_DURATION), "every_during_own_status_window")
 
 
-def test_overheat_ii_grants_permanent_self_atk_once():
-    _, _, oh2 = build_overheat_per_shot_rules({"overheat": OVERHEAT})[0]
+def test_overheat_i_grants_permanent_self_atk_once():
+    _, _, oh1 = build_overheat_per_shot_rules({"overheat": OVERHEAT})[0]
     ctx = make_context()
     registry = EffectRegistry()
-    oh2[0].action(ctx, "grave", 5.0, registry)
-    assert round(registry.total_for("atk_percent", GRAVE, now=5.0), 4) == 0.2066
-    assert round(registry.total_for("atk_percent", GRAVE, now=175.0), 4) == 0.2066  # permanent
-    # a later window firing again must not stack
-    oh2[0].action(ctx, "grave", 50.0, registry)
-    assert round(registry.total_for("atk_percent", GRAVE, now=50.0), 4) == 0.2066
-    # self-scoped: allies don't get it
-    assert registry.total_for("atk_percent", ALLY, now=50.0) == 0.0
+    oh1[0].action(ctx, "grave", 2.0, registry)
+    assert round(registry.total_for("atk_percent", GRAVE, now=2.0), 4) == 0.1548
+    assert round(registry.total_for("atk_percent", GRAVE, now=175.0), 4) == 0.1548  # permanent
+    # firing again (e.g. via replay) must not stack
+    oh1[0].action(ctx, "grave", 50.0, registry)
+    assert round(registry.total_for("atk_percent", GRAVE, now=50.0), 4) == 0.1548
+    assert registry.total_for("atk_percent", ALLY, now=50.0) == 0.0  # self-scoped
 
 
-def test_overheat_iii_requires_overheat_ii_then_grants_permanent_attack_damage():
+def _prediction_ctx(burst_time):
+    ctx = make_context()
+    ctx.burst_times["grave"] = [burst_time]
+    ctx.set_status("grave", "overheat_i")  # Overheat I is the II/III prerequisite
+    return ctx
+
+
+def test_overheat_ii_is_active_only_within_prediction_window():
+    _, _, oh2 = build_overheat_per_shot_rules({"overheat": OVERHEAT})[1]
+    ctx = _prediction_ctx(burst_time=5.0)  # Prediction window [5.0, 15.0)
+    registry = EffectRegistry()
+    oh2[0].action(ctx, "grave", 7.5, registry)  # 30th hit lands 2.5s into the window
+
+    assert round(registry.total_for("atk_percent", GRAVE, now=7.5), 4) == 0.2066
+    assert round(registry.total_for("atk_percent", GRAVE, now=14.9), 4) == 0.2066  # still in window
+    assert registry.total_for("atk_percent", GRAVE, now=15.0) == 0.0  # fades at Prediction end
+    assert registry.total_for("atk_percent", ALLY, now=7.5) == 0.0  # self-scoped
+
+
+def test_overheat_ii_requires_overheat_i():
+    _, _, oh2 = build_overheat_per_shot_rules({"overheat": OVERHEAT})[1]
+    ctx = make_context()
+    ctx.burst_times["grave"] = [5.0]  # in a Prediction window but no Overheat I yet
+    registry = EffectRegistry()
+    oh2[0].action(ctx, "grave", 7.5, registry)
+    assert registry.total_for("atk_percent", GRAVE, now=7.5) == 0.0
+
+
+def test_overheat_ii_re_earns_each_prediction_window():
+    _, _, oh2 = build_overheat_per_shot_rules({"overheat": OVERHEAT})[1]
+    ctx = make_context()
+    ctx.set_status("grave", "overheat_i")
+    ctx.burst_times["grave"] = [5.0, 45.0]  # two Prediction windows
+    registry = EffectRegistry()
+    oh2[0].action(ctx, "grave", 7.5, registry)   # window 1
+    oh2[0].action(ctx, "grave", 47.5, registry)  # window 2
+
+    assert round(registry.total_for("atk_percent", GRAVE, now=14.9), 4) == 0.2066  # window 1
+    assert registry.total_for("atk_percent", GRAVE, now=20.0) == 0.0              # gap between windows
+    assert round(registry.total_for("atk_percent", GRAVE, now=54.9), 4) == 0.2066  # window 2
+    assert registry.total_for("atk_percent", GRAVE, now=55.0) == 0.0
+
+
+def test_overheat_iii_requires_overheat_ii_then_bounded_to_prediction():
     rules = build_overheat_per_shot_rules({"overheat": OVERHEAT})
-    oh2 = rules[0][2][0]
-    oh3 = rules[1][2][0]
-    ctx = make_context()
+    oh2 = rules[1][2][0]
+    oh3 = rules[2][2][0]
+    ctx = _prediction_ctx(burst_time=5.0)  # window [5.0, 15.0)
     registry = EffectRegistry()
 
-    # Overheat III does nothing until Overheat II is active.
-    oh3.action(ctx, "grave", 5.0, registry)
-    assert registry.total_for("attack_damage_up", GRAVE, now=5.0) == 0.0
+    # Overheat III does nothing until Overheat II has been reached.
+    oh3.action(ctx, "grave", 8.0, registry)
+    assert registry.total_for("attack_damage_up", GRAVE, now=8.0) == 0.0
 
-    oh2.action(ctx, "grave", 6.0, registry)
-    oh3.action(ctx, "grave", 7.0, registry)
-    assert round(registry.total_for("attack_damage_up", GRAVE, now=7.0), 4) == 0.308
-    assert round(registry.total_for("attack_damage_up", GRAVE, now=175.0), 4) == 0.308  # permanent
+    oh2.action(ctx, "grave", 7.5, registry)   # 30th hit -> Overheat II reached
+    oh3.action(ctx, "grave", 10.0, registry)  # 60th hit -> Overheat III
+    assert round(registry.total_for("attack_damage_up", GRAVE, now=10.0), 4) == 0.308
+    assert round(registry.total_for("attack_damage_up", GRAVE, now=14.9), 4) == 0.308  # in window
+    assert registry.total_for("attack_damage_up", GRAVE, now=15.0) == 0.0  # fades at Prediction end
