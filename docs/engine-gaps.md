@@ -246,13 +246,14 @@
     `every_during_own_status_window`(9초 자기-버스트-앵커 창, N=10)로 모델링. "as
     additional damage"가 아니라 "as damage"라 `full_burst_bonus_eligible` 미적용. 잔여:
     Normal Attack Damage 전용 디버프(노멀전용 스코프 없음), 재장전/힐.
-  - **grave (2026-07-15 후속 배치):** Overheat II/III — 자기 버스트의 10초 상태창
-    (Prediction) 한정 노멀30/60회마다 자ATK+20.66%/자AD+30.8%를
-    `every_during_own_status_window`로 모델링. "continuously"를 **언락-후-영구**로
-    해석(가정, Fienn 플래그 — "Overheat X 상태일 때" 절을 언락 게이트로 읽고, Prediction
-    안에서 이미 충족되므로 활성-지속-창-한정이 아니라 영구 부여). 잔여: Overheat I(재장전
-    게이팅 토글, gap #9 — II의 전제조건일 뿐이라 II/III는 이거 없이도 정확), 자힐, +3라운드
-    탄약 불릿(caster 기본 탄약 불명).
+  - **grave (2026-07-15 후속 배치, 2026-07-16 정정):** Overheat II/III — 자기
+    버스트의 10초 상태창(Prediction) 한정 노멀30/60회마다 자ATK+20.66%/자AD+30.8%를
+    `every_during_own_status_window`로 모델링. **Fienn 실측 확인(2026-07-16):
+    "continuously"는 언락-후-영구가 아니라 Prediction 중에만 활성** → II/III를
+    refreshing으로 현재 Prediction 창-끝까지 부여(창 끝에 소멸, 매 사이클 재획득). 이와
+    별개로 **Overheat I(노멀15회 후 자ATK+15.48%)는 언락-후-영구**로 확인돼 이제
+    `after` 모드로 모델링(전투 시작 기준 노멀 카운터, Prediction 무관, II의 전제조건).
+    잔여: 자힐(Prediction), +3라운드 탄약 불릿(caster 기본 탄약 불명).
   - **velvet (2026-07-15 후속 배치):** Bullets of Love — 풀버스트 중 풀차지샷마다(SR,
     N=1) 스쿼드 flat ATK(자ATK의 25.2%)+스쿼드 Charge Damage+100.8%(3초, refresh,
     Prika 선례 따라 스쿼드스코프)+풀버스트 중 노멀50회마다 자AD+15.03%/5초 + 400.92%

@@ -42,8 +42,8 @@
 | Mast: Romantic Maid | `mast-romantic-maid` | Supporter | MG | Water | ✅ | 거의 완전 (Anchor와의 취기 스택 시너지 포함) |
 | Blanc | `blanc` | Defender | AR | Wind | ✅ | 거의 완전 (Rouge/Noir 조건부 자기 CDR 포함) |
 | Arcana | `arcana` | Supporter | RL | Electric | ⚠ | "이미 버스트한 버스트3 전기속성 아군" 대상 버프(수치 큼) |
-| Arcana: Fortune Mate | `arcana-fortune-mate` | Attacker | SG | Fire | 🔶 | 노멀공격 스택 체인(펠릿·Precious Moments) 대부분 보류 |
-| Grave | `grave` | Supporter | AR | Fire | ⚠ | Plot Spoiler(버스트 자/스쿼드 Pierce·AD·크리율)·Heat Emission(Prediction 종료 시 발동하는 스쿼드 Pierce 토글) + **Overheat II/III: 자기 버스트의 10초 상태창(Prediction) 한정 노멀30/60회마다 자ATK+20.66%/자AD+30.8%, "continuously"를 언락-후-영구로 해석(가정, Fienn 플래그)**(`per_shot_rules`의 `every_during_own_status_window` 모드, gap #7 완료·2026-07-15) 모델됨. Overheat I(재장전 시 해제되는 토글, gap #9 — Overheat II의 전제조건일 뿐이고 Prediction 중 항상 충족돼 있어 II/III는 이거 없이도 정확)·자힐(Prediction)·+3라운드 탄약 불릿(caster 기본 탄약 불명)만 보류 |
+| Arcana: Fortune Mate | `arcana-fortune-mate` | Attacker | SG | Fire | ⚠ | Making Memories(버스트 자크리율·AD)·Memories and Moments 스쿼드 AD + **Precious Moments(자ATK+2.49%×최대3, Full Burst당 1스택 램프, `full_burst_enter`)·Keepsake Album(스쿼드(SG근사) flat ATK=caster ATK 13%×Precious Moments 스택, 15초) 모델됨(2026-07-16)**. 펠릿(Happy Memories)·Snapshots(Normal Attack Damage Multiplier)는 미지원 스탯이라 보류, SG-스코프는 squad 근사(Phase C gap #3 후보) |
+| Grave | `grave` | Supporter | AR | Fire | ✅ | Plot Spoiler(버스트 자/스쿼드 Pierce·AD·크리율)·Heat Emission(Prediction 종료 시 발동하는 스쿼드 Pierce 토글) + **Overheat I(노멀15회 후 자ATK+15.48% 영구, gap #1 `after`)·II/III(자기 버스트의 10초 상태창 Prediction 한정 노멀30/60회 자ATK+20.66%/자AD+30.8%, `every_during_own_status_window` gap #7)** 모델됨. Fienn 실측 확인(2026-07-16): I은 언락-후-영구, II/III는 Prediction 중에만 활성 → II/III는 refreshing으로 창-끝까지 부여·매 사이클 재획득. 자힐(Prediction)·+3라운드 탄약 불릿(caster 기본 탄약 불명)만 보류 |
 | Brid: Silent Track | `brid-silent-track` | Supporter | SG | Fire | ⚠ | 노멀5회마다 675% 넉 모델됨(per-shot). Wind속성 조건부 디버프만 보류(boss-element 갭) |
 | Nayuta | `nayuta` | Supporter | SMG | Wind | ⚠ | 무기변형(Memory Incineration) + 복합트리거 넉 |
 | Mint | `mint` | Supporter | RL | Iron | ✅ | Here I Go!(풀차지마다 스쿼드 ATK) 단독+Prika 조합 모두 모델(버스트타임 패리티/Encore 핀 시각). Dancing 자힐만 보류 |
