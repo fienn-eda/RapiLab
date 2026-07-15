@@ -58,6 +58,11 @@ from app.skill_rules.mana import (
 from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
 from app.skill_rules.grave import build_grave_rules, build_overheat_per_shot_rules
+from app.skill_rules.rei_ayanami import (
+    annihilation_burst_percent,
+    build_preemptive_subdual_per_shot_rules,
+    build_rei_ayanami_rules,
+)
 from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resource_scaled_nukes,
     build_guillotine_resources,
@@ -247,6 +252,7 @@ _BUILDERS = {
     "zwei": lambda sv: (build_zwei_rules(sv), None),
     "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), None),  # Kill the Target (burst) deferred
     "grave": lambda sv: (build_grave_rules(sv), None),
+    "rei-ayanami": lambda sv: (build_rei_ayanami_rules(sv), annihilation_burst_percent(sv)),
     "guillotine-winter-slayer": lambda sv: (build_guillotine_rules(sv), None),  # Extermination DoT (Hero-Level-scaled) deferred
     "modernia": lambda sv: ([], None),  # all modeled content is per-shot + resource; burst deferred
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
@@ -322,6 +328,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "anis-sparkling-summer": lambda sv: build_sparkling_missile_per_shot_rules(sv["sparkling_missile"]),
     "grave": lambda sv: build_overheat_per_shot_rules(sv),
+    "rei-ayanami": lambda sv: build_preemptive_subdual_per_shot_rules(sv),
     "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
     "velvet": lambda sv: build_bullets_of_love_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
