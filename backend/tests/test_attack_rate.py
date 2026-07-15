@@ -210,3 +210,76 @@ def test_last_bullet_shot_times_is_always_a_subset_of_generate_shot_times():
         weapon="MG", max_ammo=7, reload_time=0.5, charge_time=0.0, fight_duration=2.0,
     )
     assert last_bullets and last_bullets <= set(shots)
+
+
+# --- attack speed / charge speed (Phase S) ---
+
+def test_magazine_attack_speed_up_shortens_shot_interval():
+    # attack_speed +1.0 (double rate) -> interval 1/(10*2) = 0.05s
+    shots = generate_magazine_shot_times(
+        rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=0.3,
+        attack_speed_percent_at=lambda t: 1.0,
+    )
+    assert [round(t, 4) for t in shots] == [0.0, 0.05, 0.1, 0.15, 0.2]
+
+
+def test_magazine_attack_speed_is_evaluated_per_magazine():
+    # +1.0 for the first magazine (start t=0), 0 afterwards. First magazine's
+    # interval is 0.05s (5 rounds: 0..0.2), empties at 0.25, reload 1.0 -> next
+    # magazine at 1.25 fires at the base 0.1s interval.
+    def attack_speed(t):
+        return 1.0 if t < 1.0 else 0.0
+    shots = generate_magazine_shot_times(
+        rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=1.6,
+        attack_speed_percent_at=attack_speed,
+    )
+    assert [round(t, 4) for t in shots] == [0.0, 0.05, 0.1, 0.15, 0.2, 1.25, 1.35, 1.45, 1.55]
+
+
+def test_magazine_attack_speed_default_is_inert():
+    a = generate_magazine_shot_times(rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=3.0)
+    b = generate_magazine_shot_times(
+        rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=3.0,
+        attack_speed_percent_at=lambda t: 0.0,
+    )
+    assert a == b
+
+
+def test_charge_speed_up_shortens_charge_time():
+    # charge_speed +1.0 -> effective charge 1.0/(1+1.0) = 0.5s
+    shots = generate_charge_shot_times(
+        charge_time=1.0, reload_time=1.0, max_ammo=2, fight_duration=1.2,
+        charge_speed_percent_at=lambda t: 1.0,
+    )
+    assert [round(t, 4) for t in shots] == [0.5, 1.0]
+
+
+def test_charge_speed_default_is_inert():
+    a = generate_charge_shot_times(charge_time=1.0, reload_time=2.0, max_ammo=3, fight_duration=9.0)
+    b = generate_charge_shot_times(
+        charge_time=1.0, reload_time=2.0, max_ammo=3, fight_duration=9.0,
+        charge_speed_percent_at=lambda t: 0.0,
+    )
+    assert a == b
+
+
+def test_magazine_last_bullet_time_shifts_with_attack_speed():
+    # 5-round magazine, attack_speed +1.0 -> interval 0.05, last bullet at 0.2
+    lb = magazine_last_bullet_times(
+        rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=0.5,
+        attack_speed_percent_at=lambda t: 1.0,
+    )
+    assert {round(t, 4) for t in lb} == {0.2}
+
+
+def test_last_bullet_times_stay_a_subset_under_attack_speed():
+    # the shifted last-bullet times must still line up with the shifted shots
+    shots = generate_shot_times(
+        weapon="AR", max_ammo=10, reload_time=1.0, charge_time=0.0, fight_duration=5.0,
+        attack_speed_percent_at=lambda t: 0.5,
+    )
+    lb = last_bullet_shot_times(
+        weapon="AR", max_ammo=10, reload_time=1.0, charge_time=0.0, fight_duration=5.0,
+        attack_speed_percent_at=lambda t: 0.5,
+    )
+    assert lb and lb <= {round(t, 10) for t in shots} or lb <= set(shots)

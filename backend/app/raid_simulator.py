@@ -470,6 +470,12 @@ def simulate_raid(
         reload_speed_percent_at = lambda t, target=target: registry.total_for(
             "reload_speed_percent", target, t
         )
+        attack_speed_percent_at = lambda t, target=target: registry.total_for(
+            "attack_speed_percent", target, t
+        )
+        charge_speed_percent_at = lambda t, target=target: registry.total_for(
+            "charge_speed_percent", target, t
+        )
         shot_times = generate_shot_times(
             weapon["weapon"],
             weapon["max_ammo"],
@@ -478,6 +484,8 @@ def simulate_raid(
             fight_duration,
             max_ammo_percent_at=max_ammo_percent_at,
             reload_speed_percent_at=reload_speed_percent_at,
+            attack_speed_percent_at=attack_speed_percent_at,
+            charge_speed_percent_at=charge_speed_percent_at,
         )
         extra_charge_bonus = weapon["charge_damage_percent"] / 100 - 1 if is_charge_weapon else 0.0
         # "For N round(s)" (bullet-count) buffs expire when the affected ally
@@ -527,6 +535,7 @@ def simulate_raid(
             last_bullet_shot_times(
                 weapon["weapon"], weapon["max_ammo"], weapon["reload_time"], weapon["charge_time"],
                 fight_duration, max_ammo_percent_at, reload_speed_percent_at,
+                attack_speed_percent_at, charge_speed_percent_at,
             )
             if needs_last_bullets else set()
         )
