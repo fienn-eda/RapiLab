@@ -7,10 +7,12 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-07-12
+- 마지막 갱신: 2026-07-15
 - 브랜치: `wip/scaffolding`
-- 테스트: **458 passed** (2026-07-12, gap #1 "마지막 탄" 잔여 해소 + Julia/Helm/Privaty 재인코딩 포함)
-- 인코딩된 니케: **47명** — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- 테스트: **465 passed** (2026-07-15, gap #7 완료 + Soda/Asuka 잔여 재인코딩 +
+  Phase A1 두 건(Helm: Aquamarine·Anis: Sparkling Summer) 포함)
+- 인코딩된 니케: **47명** (변동 없음 — 이번 세션은 전부 기존 인코딩 유닛의 업그레이드/
+  재분류) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
 
@@ -153,10 +155,29 @@
   동기 유닛) · Helm(애장품) ⚠(Frontline Command, 죽은 `on_last_bullet_hit`
   트리거를 실제 배선으로 교체) · Privaty(애장품) ✅(LD Assault, Designated Target
   조건부 중첩 넉 — AK Missile 버스트 시각 기준 10초 시간창 체크).
-- **다음:** **eb3+ 백로그**(남은 Pattern A 자원 유닛 rei-ayanami·rei-ayanami-
-  tentative-name·neon-vision-eye · Pattern B 게이지·상태머신·무기변형)와
-  **막힌 ~30명 per-shot 재인코딩 배치**가 최대 실질 가치. 남은 gap은 `engine-gaps.md`
-  우선순위 참고.
+- **엔진 확장 완료 — gap #7 FB창/자기상태창 한정 per-shot 트리거 (2026-07-15):**
+  `per_shot_rules`에 창 한정 모드 `"every_during_full_burst"`/
+  `"every_during_own_status_window"` 추가(자원 fill 한정 경로와는 별개, 버프/넉을
+  직접 발동) — `raid_simulator.py`, 기존 after/every/last_bullet 모드와 나란한 순수
+  추가. 첫 소비자로 Soda: Twinkling Bunny(Lucky Golden Chip 공동발동 최고ATK버프)·
+  Asuka Shikinami Langley: Wille(Anti A.T. Field 15.62% 상태게이팅 넉) 잔여 메커니즘
+  재인코딩(둘 다 기존 ⚠ 유지 — 이 갭 외 잔여 항목 있음). 같은 날 기존 per-shot
+  능력만으로 신규 Phase A1 두 건 인코딩: Helm: Aquamarine(Admire Accompaniment
+  노멀30회마다 131.34% 넉)·Anis: Sparkling Summer(Sparkling Missile 라스트불릿
+  382.42% 넉 + 자기 부위딜 refresh). 검증 중 재분류/신규 발견: grave·velvet은
+  gap #7로 부분 언블록 가능함이 확인돼 다음 배치 후보로 이동(grave의 Overheat
+  II/III는 Prediction 상태창 한정 노멀 카운터, Overheat I은 별개의 재장전게이팅
+  토글+에스컬레이션 체이닝; velvet의 Bullets of Love/Sticky Fingers 일부는 FB창
+  안/밖 한정 카운터, 무기변형·탄약주머니 자원은 여전히 별도 갭) · jill-valentine은
+  Magnum의 "재장전으로 최대 장탄 도달 시" 트리거에 **신규 소규모 갭**이 필요함을
+  확인(기존 "마지막 탄" 마커의 거울상인 "reload 후 첫 발" 마커, gap #9로 기록,
+  미착수) · rapi-red-hood는 120-노멀 카운터가 버프/넉 직접 발동이 아니라 프로젝타일
+  발사 후 FB진입 시 폭발하는 상태머신(+2단계 버스트)이라 gap #7·#9 어느 것으로도
+  안 풀림을 확인, 보류 유지. 상세는 `engine-gaps.md`(gap #7/#9) 참고.
+- **다음:** **grave·velvet 재인코딩(gap #7 소비)** + **eb3+ 백로그**(남은 Pattern A
+  자원 유닛 rei-ayanami·rei-ayanami-tentative-name·neon-vision-eye · Pattern B
+  게이지·상태머신·무기변형) + **막힌 나머지 per-shot 유닛 재인코딩 배치**가 최대
+  실질 가치. 남은 gap은 `engine-gaps.md` 우선순위 참고.
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.

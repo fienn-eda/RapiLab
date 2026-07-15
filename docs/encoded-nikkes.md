@@ -3,7 +3,8 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-12 (gap #1 "마지막 탄" 잔여 해소로 Julia·Helm·Privaty 재인코딩)
+- 마지막 갱신: 2026-07-15 (gap #7 완료로 Soda·Asuka 잔여 재인코딩 + Phase A1
+  두 건(Helm: Aquamarine·Anis: Sparkling Summer) 기존 per-shot 능력으로 인코딩)
 - 총 **47명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 20명)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
@@ -46,7 +47,7 @@
 | Nayuta | `nayuta` | Supporter | SMG | Wind | ⚠ | 무기변형(Memory Incineration) + 복합트리거 넉 |
 | Mint | `mint` | Supporter | RL | Iron | ✅ | Here I Go!(풀차지마다 스쿼드 ATK) 단독+Prika 조합 모두 모델(버스트타임 패리티/Encore 핀 시각). Dancing 자힐만 보류 |
 | Prika | `prika` | Supporter | SR | Water | ✅ | 본인 풀차지 스쿼드 버프(refresh, 중첩 아님) + **Mint Encore 교차유닛 시너지**(`ally_burst_activate`) 모델됨. Performance 지속시간/자기 CD 등 비딜 부기만 보류 |
-| Helm: Aquamarine | `helm-aquamarine` | Attacker | AR | Iron | ⚠ | 노멀30회 넉, Electric속성 조건부 추가딜/디버프 (**자동발동 스킬은 엔진 확장으로 모델링됨**) |
+| Helm: Aquamarine | `helm-aquamarine` | Attacker | AR | Iron | ⚠ | Admire Accompaniment 풀버스트 CDR 에스컬레이션 + **노멀30회마다 131.34% 넉**(per_shot, 2026-07-15 Phase A1)·Aegis Cannon Suppression Fire(자동발동, periodic_nukes) 모델됨. Electric속성 조건부 추가딜/디버프(boss-element 갭 #5)만 보류 |
 | Velvet | `velvet` | Supporter | SR | Wind | 🔶 | 대부분 보류(자기전용) — ammo pouch 자원 + 본인 풀차지/노멀50회 카운터 |
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
@@ -75,13 +76,22 @@
 > 반복틱 DoT) — 4개 신규 엔진 확장의 소비자. Cinderella: Crystal Wave는 배치에서
 > 제외됨(Pattern-A 자원 유닛이 아니라 무기-모드 전환 상태머신 유닛으로 재분류,
 > `engine-gaps.md` 참고).
+> **gap #7 완료 + Phase A1 (2026-07-15):** `per_shot_rules`에 창 한정 모드
+> `every_during_full_burst`/`every_during_own_status_window` 추가 — Soda(공동발동
+> 최고ATK버프)·Asuka(15.62% 상태게이팅 넉) 잔여 메커니즘 재인코딩. 같은 날 기존
+> per-shot 능력만으로 신규 인코딩: Helm: Aquamarine(노멀30회마다 131.34% 넉)·
+> Anis: Sparkling Summer(라스트불릿 382.42% 넉 + 부위딜 refresh). 검증 중 재분류:
+> grave·velvet은 gap #7로 부분 언블록 가능(다음 배치), jill-valentine은 신규
+> 소규모 갭(reload 후 첫 발 마커, gap #9) 필요로 확인, rapi-red-hood는 gap #7·#9
+> 어느 것으로도 안 풀리는 프로젝타일-런치 상태머신으로 확인 — 상세는
+> `engine-gaps.md` 참고.
 > **나머지 백로그는 [`roadmap.md`](roadmap.md) To-Do 참고** (대부분 남은 Pattern A
 > 자원 유닛 / Pattern B 게이지·변신 / 상태머신 / 무기변형 갭).
 
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
-| Anis: Sparkling Summer | `anis-sparkling-summer` | Supporter | SG | Electric | ⚠ | last-bullet 넉/파츠 디버프(트리거 부재), Elemental Advantage Attack Damage(버킷 불명) |
-| Asuka Shikinami Langley: Wille | `asuka-shikinami-langley-wille` | Attacker | MG | Wind | ⚠ | eb4. Anti A.T. Field 자원(캡30·`per_shot_every_during_own_status_window`로 자기 버스트 앵커 9초창 한정 노멀10회마다 fill·스택당 받댐+0.83%/30초, squad-scope)+무조건부 노멀50회마다 471.86% 넉("as additional damage", `full_burst_bonus_eligible`)+Annihilation State 버스트 자ATK/공댐(46.8%×자ATK/36%, 9초)+Emergency Repair FB진입 공댐+30.97%/10초(`own_burst_fired_this_cycle` 게이팅)+Annihilation 지연넉(버스트 9초 후 발동, 히트수=스택수, `dynamic_hit_count_nukes`+`fire_delay`, FB보너스) 모델됨. 15.62% 상태게이팅 넉(FB창 한정 per-shot **트리거** 부재, gap #7 2번째 소비자)·Normal Attack Damage 디버프(노멀전용 스코프 없음)·재장전/힐 보류 |
+| Anis: Sparkling Summer | `anis-sparkling-summer` | Supporter | SG | Electric | ⚠ | Sparkling Boost(FB진입 시 Electric코드 아군 flat ATK/재장전속도)·Sparkling Wave(자기 최대탄약/재장전속도) 모델됨 + **Sparkling Missile: 라스트불릿마다 382.42% 넉(2 최고ATK 적) + 자기 부위딜 +6.91%/10초 refresh**(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-15 Phase A1) 모델됨. Sparkling Wave의 Elemental Advantage Attack Damage(버킷 불명)만 보류 |
+| Asuka Shikinami Langley: Wille | `asuka-shikinami-langley-wille` | Attacker | MG | Wind | ⚠ | eb4. Anti A.T. Field 자원(캡30·`per_shot_every_during_own_status_window`로 자기 버스트 앵커 9초창 한정 노멀10회마다 fill·스택당 받댐+0.83%/30초, squad-scope)+무조건부 노멀50회마다 471.86% 넉("as additional damage", `full_burst_bonus_eligible`)+**같은 자원 fill 트리거에서 15.62% 상태게이팅 넉("as damage", 9초 Annihilation State 창 한정, `per_shot_rules`의 `every_during_own_status_window` 모드, gap #7 완료·2026-07-15)**+Annihilation State 버스트 자ATK/공댐(46.8%×자ATK/36%, 9초)+Emergency Repair FB진입 공댐+30.97%/10초(`own_burst_fired_this_cycle` 게이팅)+Annihilation 지연넉(버스트 9초 후 발동, 히트수=스택수, `dynamic_hit_count_nukes`+`fire_delay`, FB보너스) 모델됨. Normal Attack Damage 디버프(노멀전용 스코프 없음)·재장전/힐만 보류 |
 | Chisato Nishikigi | `chisato-nishikigi` | Attacker | SMG | Iron | ✅ | eb2. Extrasensory 상시 자ATK/진댐(버스트 재충전으로 >70% 유지 근사)·버스트 자ATK/노멀진댐화·48노멀마다 진댐넉(per-shot) 모델됨. per-shot 넉이 attack타입(진댐 언더카운트)·회피/명중(inert) 보류 |
 | Cinderella | `cinderella` | Attacker | RL | Fire | ⚠ | Flawless Glass 자ATK(자기 최대체력 비례)+매 풀차지 136.6% 추가딜(RL 상시 풀차지, per-shot)·Beautiful 자원(periodic fill, 3초마다·캡12)·Glass Slippers 10연타 버스트넉 + Beautiful 스택수 비례 추가딜(count-스케일 넉) 모델됨. 디코이 생성(생존)·Beautiful 자체 최대체력% 증가(연결된 소비자 없음, inert)만 보류 |
 | Guillotine: Winter Slayer | `guillotine-winter-slayer` | Attacker | AR | Water | ⚠ | 자원 beachhead. EXP 자원(자ATK ▲1.81%/스택, 캡100, 연속)·Hero Level 파생 Water 아군 버프(레벨 스케일)·core-conditional fill·Extermination Water 버프 + **Hero-Level 스케일 10틱 지속딜(매 틱 자기 시각 기준 count 재조회, count-스케일 넉 + full_burst_bonus, 2026-07-12 인게임 확인 반영)** 모델됨. 레벨업 리로드/힐(딜 아님)만 보류 |
@@ -99,7 +109,7 @@
 | Privaty (애장품) | `privaty` | Attacker | AR | Water | ✅ | EX Magazine 스쿼드 ATK/재장전속도/탄약감소/공댐(FB진입) 모델됨. LD Assault 라스트불릿 넉(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-12 gap #1 잔여 해소): 받댐+10.01%/10초+256.17% 추가딜("as additional damage") + Designated Target(AK Missile 자신의 버스트로부터 10초 창, `context.burst_times` 시간창 체크) 중이면 1687% 추가딜까지 중첩 발동 + AK Missile 자속성상성공댐 모델됨. Designated Target의 적 ATK 감소 디버프(생존계, 비딜)만 보류 |
 | Quency: Escape Queen | `quency-escape-queen` | Attacker | SMG | Water | ✅ | eb3 Pattern-A. Explore Route(3단계 스택체인, 노멀2회마다·전단계 만캡 게이팅)+Secure Route(단계별 버프) 전부 정상상태 근사(ATK+110.3%+Distributed Damage+49.58%+Core Damage+25.25%+Crit Rate+16.73%, battle_start부터 영구 — SMG 20발/초로 스택 감쇠창보다 채우기가 압도적으로 빨라 상시 만캡)·The Great Thief 버스트(자공댐/재장전속도+1736.31% Distributed 넉) 모델됨. Hit Rate만 보류 |
 | Rapi: Red Hood | `rapi-red-hood` | Attacker | MG | Fire | ⚠ | Attachable Projectiles + 노멀카운터 기반 버스트 대미지 |
-| Soda: Twinkling Bunny | `soda-twinkling-bunny` | Attacker | SG | Iron | ⚠ | eb3 Pattern-A. Golden Chip 자원(캡50·전투시작 만캡·풀버스트 중 노멀3회마다 +1=`per_shot_every_during_full_burst`, 자신의 Critical Damage 스택 +1.32%/스택)+Onward Soda! 버스트(628.7% 넉 + 17로 **reset** + 리셋前 스택≥30 게이팅 ATK+65.25%/15s=`resource_gated_buffs`) 모델됨. Lucky Golden Chip 공동발동 최고ATK버프(FB창 한정 per-shot **트리거** 부재, FB창 한정 **fill**과는 별개 갭)·Beginner's Rewards 전체(캐스터별 FB 지속시간 연장 개념 부재)·Hit Rate(inert) 보류 |
+| Soda: Twinkling Bunny | `soda-twinkling-bunny` | Attacker | SG | Iron | ⚠ | eb3 Pattern-A. Golden Chip 자원(캡50·전투시작 만캡·풀버스트 중 노멀3회마다 +1=`per_shot_every_during_full_burst`, 자신의 Critical Damage 스택 +1.32%/스택)+Onward Soda! 버스트(628.7% 넉 + 17로 **reset** + 리셋前 스택≥30 게이팅 ATK+65.25%/15s=`resource_gated_buffs`)+**Lucky Golden Chip 공동발동 버프(풀버스트 중 노멀3회마다 자신+최고ATK아군 Attack Damage+10.51%/2초 refresh, `per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15)** 모델됨. Beginner's Rewards 전체(캐스터별 FB 지속시간 연장 개념 부재)·Hit Rate(inert)만 보류 |
 
 ---
 

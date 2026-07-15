@@ -5,7 +5,14 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-12 (gap #1 잔여 변형 "마지막 탄" 완료 — `magazine_last_bullet_times`/
+- 마지막 갱신: 2026-07-15 (**gap #7 완료** — `per_shot_rules`에 창 한정 모드
+  `"every_during_full_burst"`/`"every_during_own_status_window"` 추가. 첫 소비자
+  Soda·Asuka 잔여 메커니즘 재인코딩. 같은 날 Phase A1 두 건(helm-aquamarine·
+  anis-sparkling-summer)도 기존 per_shot 능력으로 인코딩, grave·velvet은 gap #7로
+  언블록 가능하다고 재분류(다음 배치), jill-valentine은 신규 소규모 갭
+  "reload 후 첫 발" 마커 필요로 식별(gap #9), rapi-red-hood는 프로젝타일-런치
+  상태머신이라 복잡·보류 확인)
+- 이전 갱신: 2026-07-12 (gap #1 잔여 변형 "마지막 탄" 완료 — `magazine_last_bullet_times`/
   `charge_last_bullet_times`/`last_bullet_shot_times` + `per_shot_rules`의
   `"last_bullet"` 모드. eb4 배치: Asuka Shikinami Langley: Wille·Mana도 이 날 완료
   — `fire_delay`+`own_burst_delayed`·own-status-window fill·`full_burst_bonus_eligible`·
@@ -37,8 +44,9 @@
 | ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
 | 5 | **enemy-element 조건** (룰에서 boss_element 접근) | 1 (+기존 Brid, Helm:Aqua) | 소 (~30 loc) | 컨텍스트 확장 |
 | 6 | **periodic-during-Full-Burst 넉** (풀버스트 창 안에서만 N초마다) | 1 (Ada) | 소 (~30 loc, periodic_nukes 변형) | 타이밍 변형 |
-| 7 | **풀버스트/자기상태창 한정 per-shot 트리거** (fill이 아니라 버프/넉 직접 발동) | 2 (Soda·Asuka 잔여) | 소~중 | 신규 트리거 변형 |
+| ~~7~~ | ~~풀버스트/자기상태창 한정 per-shot 트리거~~ (fill이 아니라 버프/넉 직접 발동) | 2 (Soda·Asuka) | **완료 (2026-07-15, `per_shot_rules`의 `every_during_full_burst`/`every_during_own_status_window` 모드)** | 신규 트리거 변형 |
 | 8 | **자원-fill-트리거 타 유닛 버프** (자원 소유자 아닌 아군에게 버프) | 1 (Maiden 잔여 버프) | 소~중 | 신규 트리거 |
+| 9 | **reload 후 첫 발("first bullet after reload") per-shot 마커** (신규, 2026-07-15) | 1 (Jill Valentine) | 소 (~30 loc, "마지막 탄" 마커의 거울상) | 신규 트리거 변형 |
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
 | — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) | **완료 (2026-07-11, `ally_burst_activate`)** | 신규 트리거 |
 | — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |
@@ -210,22 +218,37 @@
 - **필요한 확장:** `periodic_nukes`에 "풀버스트 창 한정" 옵션, 또는 full_burst_enter~end
   사이만 틱. 규모 소. (수요 1명이라 후순위.)
 
-### 7. 풀버스트/자기상태창 한정 per-shot **트리거** (fill과는 별개 갭)
+### 7. 풀버스트/자기상태창 한정 per-shot **트리거** — ✅ 완료 (2026-07-15)
 
-- **무엇:** "풀버스트(또는 자기 상태창) 중 노멀 N회마다"가 버프/넉을 **직접 발동**하는
+- **무엇이었나:** "풀버스트(또는 자기 상태창) 중 노멀 N회마다"가 버프/넉을 **직접 발동**하는
   경우 — Soda의 Lucky Golden Chip 공동발동 버프(최고ATK 아군 대상 Attack Damage,
   3발마다·FB 중에만), Asuka의 Anti A.T. Field 15.62% 상태게이팅 넉(노멀10회마다·
   Annihilation State 중에만). #2 Pattern A로 만든 **창 한정 resource fill**
   (`per_shot_every_during_full_burst` / `per_shot_every_during_own_status_window`,
   2026-07-12 확장)은 자원 채우기 한 종류만 처리하고, 일반 `per_shot_rules`엔 창 필터가
-  없어 버프/넉을 직접 발동하는 트리거로는 못 씀. 근사(창 무시 "매 N발") 시도 시 실제
-  과대평가 위험이 큼(Soda SG는 1.5발/초라 "매 3발"=2초 주기인데 버프 지속도 2초라,
+  없어 버프/넉을 직접 발동하는 트리거로는 못 썼다. 근사(창 무시 "매 N발") 시도 시 실제
+  과대평가 위험이 컸다(Soda SG는 1.5발/초라 "매 3발"=2초 주기인데 버프 지속도 2초라,
   FB 밖에서도 적용하면 사실상 상시 버프로 읽혀버림).
-- **막힌 유닛 (2, 확인분):** soda-twinkling-bunny(공동발동 버프만 잔여, 본체는 인코딩
-  완료), asuka-shikinami-langley-wille(15.62% 상태게이팅 넉만 잔여, 본체는 인코딩 완료,
-  2026-07-12).
-- **필요한 확장:** `per_shot_rules`에 창 필터 옵션 추가(자원 fill 쪽과 동일한
-  이벤트 로그/own-status-window 계산 재사용). 규모 소~중.
+- **해결:** `raid_simulator.py`의 `per_shot_rules`에 창 한정 모드 두 개 추가 —
+  `"every_during_full_burst"`(threshold=N)와 `"every_during_own_status_window"`
+  (threshold=`(N, window_duration)`, 후자는 자기 버스트 앵커 고정 길이 창). 매N번째
+  스텝 전에 **창 안의 발사만** 세도록, `_resource_fill_times`의 창 필터 계산을 재사용.
+  기존 `after`/`every`/`last_bullet` 모드와 나란한 순수 추가(회귀 없음).
+- **소비자 (2, 둘 다 기존 ⚠ 유지 — 이 갭 외 잔여 메커니즘이 남아있어서):**
+  - **soda-twinkling-bunny:** Lucky Golden Chip 공동발동 버프("풀버스트 중 노멀3회마다
+    → 자신 + 최고ATK 아군에게 Attack Damage +10.51%/2초, refresh")를
+    `every_during_full_burst`로 모델링(`top_atk_slugs`는 시전자 제외). 잔여: Beginner's
+    Rewards(캐스터별 FB창 연장, 표현 불가), Hit Rate(inert).
+  - **asuka-shikinami-langley-wille:** Anti A.T. Field의 15.62% 넉("Annihilation State
+    중 노멀10회마다, as damage" — 스택버프와는 별개 탄환)을
+    `every_during_own_status_window`(9초 자기-버스트-앵커 창, N=10)로 모델링. "as
+    additional damage"가 아니라 "as damage"라 `full_burst_bonus_eligible` 미적용. 잔여:
+    Normal Attack Damage 전용 디버프(노멀전용 스코프 없음), 재장전/힐.
+- **다음(재분류, 2026-07-15 확인, 아직 미착수):** grave(Overheat II/III — Prediction
+  상태창 한정 노멀 카운터, Overheat I은 재장전게이팅 토글 + I→II→III 에스컬레이션
+  체이닝. 서포터 자기전용이라 덱 DPS 영향은 작음)·velvet(Bullets of Love의 FB창 한정
+  풀차지/노멀50회 카운터, Sticky Fingers의 "FB 아닐 때" 풀차지 카운터 — 무기변형·탄약주머니
+  자원 부분은 여전히 별도 갭) 둘 다 이 갭으로 부분 언블록 가능.
 - 참고: `special-mechanics.md`의 관련 항목, `soda_twinkling_bunny.py`/
   `asuka_shikinami_langley_wille.py` docstring.
 
@@ -240,6 +263,29 @@
 - **필요한 확장:** 자원 fill 이벤트를 트리거로 스쿼드(또는 조건부 서브셋) 버프를
   거는 새 파라미터. 규모 소~중, 수요 확인 후 착수.
 - 참고: `maiden_ice_rose.py` docstring.
+
+### 9. reload 후 첫 발("first bullet after reload") per-shot 마커 (신규, 2026-07-15 발견)
+
+- **무엇:** Jill Valentine의 Magnum "최대 장탄으로 재장전 시" 노멀공격댐 +30%/9라운드
+  버프 트리거 — "마지막 탄"(매거진을 실제로 비우는 발사) 마커의 **거울상**으로,
+  "재장전 직후 첫 발"을 표시하는 마커가 필요한데 현재 없음. 같은 재장전 이벤트에
+  Acid Ammo(30초 지속딜 DoT, 재장전마다 겹쳐 갱신)도 걸려 있어 함께 막힘.
+- **막힌 유닛 (1, 확인분):** jill-valentine (Magnum 스택 버프 + Acid Ammo DoT). 둘 다
+  jill의 기존 인코딩(eb2, ⚠)에서 보류 중이던 항목인데, 재확인 결과 필요한 건 "코어파괴"류
+  트리거가 아니라 이 마커임이 밝혀짐.
+- **필요한 확장:** `attack_rate.py`에 매거진 "시작" 발사 시각 계산(기존
+  `magazine_last_bullet_times`/`charge_last_bullet_times`의 거울상) + `per_shot_rules`에
+  대응 모드(`"first_bullet"` 등). 규모 소(~30 loc, gap #1 "마지막 탄" 확장과 동형).
+- 참고: `jill_valentine.py` docstring.
+
+### 참고 — gap #7로 안 풀리는 사례: rapi-red-hood
+
+Rapi: Red Hood의 120-노멀 카운터는 버프/넉을 직접 발동하는 게 아니라 **프로젝타일을
+발사해 두었다가 풀버스트 진입 시 그 프로젝타일이 폭발**하는 구조(2단계: 발사 이벤트 →
+지연된 별도 트리거의 폭발). 거기에 버스트 자체도 2단계(1단계 서포트 / 3단계 2808%
+projectile_explosion 넉, "as additional damage")로 나뉘어 있어 복잡하다. 이건 단순
+per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** 갭(gap #2 Pattern B에 더
+가까움) — gap #7·#9 어느 것으로도 안 풀림. 확인만 하고 보류(2026-07-15).
 
 ---
 
@@ -334,6 +380,13 @@
     가짜 자원을 만들 필요 없음. 첫 소비자 Mana(Fatal Error!, 396%/초 10틱).
   - 2026-07-12. 상세: `engine-capabilities.md`, `special-mechanics.md`,
     `asuka_shikinami_langley_wille.py`/`mana.py` docstring.
+- **FB창/자기상태창 한정 per-shot 트리거 (gap #7)**: `per_shot_rules`에 창 한정 모드
+  두 개 추가 — `"every_during_full_burst"`(threshold=N)와
+  `"every_during_own_status_window"`(threshold=`(N, window_duration)`) — 창 안의
+  발사만 세어 임계치마다 버프/넉을 **직접** 발동(자원 fill 전용이던 기존 창 한정
+  경로와는 별개). `_resource_fill_times`의 창 필터 계산 재사용, 기존 after/every/
+  last_bullet 모드와 나란한 순수 추가. 첫 소비자 Soda(Lucky Golden Chip 공동발동
+  버프)/Asuka(Anti A.T. Field 15.62% 상태게이팅 넉). 2026-07-15.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
@@ -357,11 +410,19 @@
   + resource_scaled_nukes의 resource 선택화~~ — ✅ 완료 (2026-07-12, eb4 배치: Asuka·
   Mana). Pattern A는 이제 (Ark Ranger류 Pattern B와 소수 미검증 후보를 제외하면)
   사실상 소진됨.
-1. **막힌 ~30명 재인코딩 배치** — #1이 풀렸으니 이제 실제 유닛들에 per-shot 룰 추가
-   (데이터 수집 → 인코딩). 가장 큰 실질 가치.
+- ~~#7 FB창/자기상태창 한정 per-shot 트리거~~ — ✅ 완료 (2026-07-15,
+  `per_shot_rules`의 `every_during_full_burst`/`every_during_own_status_window`
+  모드; Soda·Asuka 잔여 소비). 같은 날 기존 per-shot 능력만으로 helm-aquamarine·
+  anis-sparkling-summer도 신규 인코딩(Phase A1). grave·velvet은 gap #7로 부분
+  언블록 가능하다고 재분류(다음 배치). jill-valentine 재검증 중 신규 소규모 갭
+  **#9 reload 후 첫 발 마커** 발견(미착수). rapi-red-hood는 gap #7·#9 어느 것으로도
+  안 풀리는 프로젝타일-런치 상태머신으로 확인, 보류.
+1. **grave·velvet 재인코딩 (gap #7 소비)** + **막힌 나머지 per-shot 유닛 재인코딩
+   배치** — 실제 유닛들에 창 한정 per-shot 룰 추가(데이터 확인 → 인코딩). 가장 큰
+   실질 가치.
 2. **#2 Pattern B (시간감쇠 게이지·변신)** + **#3 무기종/티어부분집합 스코프** + **#5
-   boss_element** + **#6 FB창 periodic** + **#7 FB창 한정 per-shot 트리거**(Soda 잔여) +
-   **#8 자원-fill-트리거 타 유닛 버프**(Maiden 잔여) — 각 수요 1명, 필요할 때.
+   boss_element** + **#6 FB창 periodic** + **#8 자원-fill-트리거 타 유닛 버프**
+   (Maiden 잔여) + **#9 reload 후 첫 발 마커**(Jill 잔여) — 각 수요 1명, 필요할 때.
 
 각 확장은 TDD로, 인벤토리가 증명한 최소 범위만. 착수 시 이 문서의 해당 유닛 목록으로
 "진짜 풀리는지"를 검증하고, 풀린 유닛은 배치 인코딩한다.
