@@ -9,11 +9,11 @@
 
 - 마지막 갱신: 2026-07-15
 - 브랜치: `wip/scaffolding`
-- 테스트: **477 passed** (2026-07-16, Grave Overheat 정정[I 영구·II/III Prediction
-  한정] + Arcana: Fortune Mate 승급[Precious Moments·Keepsake Album, 🔶→⚠] 포함;
+- 테스트: **481 passed** (2026-07-16, Grave Overheat 정정[I 영구·II/III Prediction
+  한정] + Arcana: Fortune Mate 승급[🔶→⚠] + Rei Ayanami 신규 인코딩 포함;
   was 471 — gap #7 완료 + Soda/Asuka 잔여 + Helm/Anis + Grave/Velvet)
-- 인코딩된 니케: **47명** (수 변동 없음 — Arcana: Fortune Mate 🔶→⚠, Grave ⚠→✅
-  승급/재분류) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- 인코딩된 니케: **48명** (Rei Ayanami 신규[Phase A2] +1; Arcana: Fortune Mate
+  🔶→⚠, Grave ⚠→✅ 승급/재분류) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
 

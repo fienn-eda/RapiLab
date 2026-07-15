@@ -6,7 +6,7 @@
 - 마지막 갱신: 2026-07-15 (gap #7 완료로 Soda·Asuka 잔여 재인코딩 + Phase A1
   두 건(Helm: Aquamarine·Anis: Sparkling Summer) 기존 per-shot 능력으로 인코딩 +
   gap #7 두 번째 소비 배치: Grave·Velvet 재인코딩)
-- 총 **47명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 20명)
+- 총 **48명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 21명)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -53,7 +53,7 @@
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (20명)
+## Burst 3 (21명)
 
 > **eb (encoding batch) 진행:** Burst 3 어태커 배치 인코딩 (least-blocked 우선).
 > eb1 = Noir · Isabel · Liberalio, eb2 = Ludmilla · Chisato · Jill (2026-07-12).
@@ -115,6 +115,7 @@
 | Privaty (애장품) | `privaty` | Attacker | AR | Water | ✅ | EX Magazine 스쿼드 ATK/재장전속도/탄약감소/공댐(FB진입) 모델됨. LD Assault 라스트불릿 넉(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-12 gap #1 잔여 해소): 받댐+10.01%/10초+256.17% 추가딜("as additional damage") + Designated Target(AK Missile 자신의 버스트로부터 10초 창, `context.burst_times` 시간창 체크) 중이면 1687% 추가딜까지 중첩 발동 + AK Missile 자속성상성공댐 모델됨. Designated Target의 적 ATK 감소 디버프(생존계, 비딜)만 보류 |
 | Quency: Escape Queen | `quency-escape-queen` | Attacker | SMG | Water | ✅ | eb3 Pattern-A. Explore Route(3단계 스택체인, 노멀2회마다·전단계 만캡 게이팅)+Secure Route(단계별 버프) 전부 정상상태 근사(ATK+110.3%+Distributed Damage+49.58%+Core Damage+25.25%+Crit Rate+16.73%, battle_start부터 영구 — SMG 20발/초로 스택 감쇠창보다 채우기가 압도적으로 빨라 상시 만캡)·The Great Thief 버스트(자공댐/재장전속도+1736.31% Distributed 넉) 모델됨. Hit Rate만 보류 |
 | Rapi: Red Hood | `rapi-red-hood` | Attacker | MG | Fire | ⚠ | Attachable Projectiles + 노멀카운터 기반 버스트 대미지 |
+| Rei Ayanami | `rei-ayanami` | Attacker | MG | Fire | ⚠ | (신규 2026-07-16, base) Attack Support: Fire 아군 flat ATK=caster ATK 25.03%(FB진입)·버스트: Fire 아군 AD+48.02% + 990.2% 넉·Preemptive Subdual: 노멀100회마다 112.37% 넉(gap #1 `every`). 보류: Elemental Advantage AD버프(gap #5), 실드딜/실드생성, 시그니처(dollskills) 변형 |
 | Soda: Twinkling Bunny | `soda-twinkling-bunny` | Attacker | SG | Iron | ⚠ | eb3 Pattern-A. Golden Chip 자원(캡50·전투시작 만캡·풀버스트 중 노멀3회마다 +1=`per_shot_every_during_full_burst`, 자신의 Critical Damage 스택 +1.32%/스택)+Onward Soda! 버스트(628.7% 넉 + 17로 **reset** + 리셋前 스택≥30 게이팅 ATK+65.25%/15s=`resource_gated_buffs`)+**Lucky Golden Chip 공동발동 버프(풀버스트 중 노멀3회마다 자신+최고ATK아군 Attack Damage+10.51%/2초 refresh, `per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15)** 모델됨. Beginner's Rewards 전체(캐스터별 FB 지속시간 연장 개념 부재)·Hit Rate(inert)만 보류 |
 
 ---
