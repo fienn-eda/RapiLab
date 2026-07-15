@@ -9,11 +9,12 @@
 
 - 마지막 갱신: 2026-07-15
 - 브랜치: `wip/scaffolding`
-- 테스트: **489 passed** (2026-07-16, Grave Overheat 정정 + Arcana: Fortune Mate
-  승급[🔶→⚠] + Phase A2 신규 3명[Rei Ayanami·Rei Ayanami(Tentative Name)·Neon:
-  Vision Eye] 포함; was 471 — gap #7 완료 + Soda/Asuka + Helm/Anis + Grave/Velvet)
-- 인코딩된 니케: **50명** (Phase A2 신규 3명 +3; Arcana: Fortune Mate 🔶→⚠, Grave
-  ⚠→✅ 승급/재분류) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- 테스트: **495 passed** (2026-07-16, Grave Overheat 정정 + Arcana: Fortune Mate
+  승급[🔶→⚠] + Phase A2 신규[Rei Ayanami·Rei Ayanami(Tentative Name)·Neon: Vision
+  Eye·Drake+Drake(Signature) 듀얼슬롯] 포함; was 471)
+- 인코딩된 니케: **52명** (Phase A2 신규 5엔트리 +5[Drake는 base/signature 듀얼슬롯];
+  Arcana: Fortune Mate 🔶→⚠, Grave ⚠→✅ 승급/재분류) — 상세는
+  [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 
 ---
 
