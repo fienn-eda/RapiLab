@@ -42,7 +42,7 @@
 |---|---|---:|---|---|
 | ~~1~~ | **per-shot 트리거 + 발사 카운터** (노멀공격 N회 / 풀차지 N회 / N shot마다 / 마지막 탄) | ~30 (합집합) | **완료 (2026-07-11 `per_shot_rules`, 2026-07-12 "마지막 탄" 잔여 변형까지 완료)** | 신규 트리거 |
 | 2 | **자원/스택 트래킹** (배터리·탄약주머니·N스택 누적) | 16 | **Pattern A 완료 (2026-07-12, named-resource)** — Pattern B(시간감쇠 게이지·변신) 잔여 | 신규 상태 |
-| 3 | **narrow subset scope** (무기종별 / 티어+선버스트 대상) | 9 | 무기종: 소(~20 loc) / 티어부분집합: 중(~60 loc) | 신규 스코프 |
+| 3 | **narrow subset scope** (무기종별 / 티어+선버스트 대상) | 9 (+Tove: SG-아군 Attack Speed+ATK, Phase S에서 연기) | 무기종: 소(~20 loc) / 티어부분집합: 중(~60 loc) | 신규 스코프 |
 | ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
 | 5 | **enemy-element 조건** (룰에서 boss_element 접근) | 1 (+기존 Brid, Helm:Aqua) | 소 (~30 loc) | 컨텍스트 확장 |
 | 6 | **periodic-during-Full-Burst 넉** (풀버스트 창 안에서만 N초마다) | 1 (Ada) | 소 (~30 loc, periodic_nukes 변형) | 타이밍 변형 |
@@ -52,7 +52,8 @@
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
 | — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) | **완료 (2026-07-11, `ally_burst_activate`)** | 신규 트리거 |
 | — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |
-| — | attack/charge speed·hit rate (딜 아님) | 15 | **구현 안 함** (딜 개념 아님, defer 유지) | 범위 밖 |
+| ~~—~~ | ~~attack/charge speed~~ (발사 간격 → 딜) | 2 (Dorothy·Tove) | **완료 (Phase S, 2026-07-16)** — `attack_speed_percent`/`charge_speed_percent` 배선 | 발사 타임라인 |
+| — | hit rate · Burst Gauge fill speed (딜/타이밍 아님) | 15 | **구현 안 함** (defer 유지) | 범위 밖 |
 
 > **핵심 결론:** #1 하나가 압도적이다. 노멀공격 카운터(20명)와 풀차지 카운터(19명)는
 > **같은 기반 메커니즘**(유닛의 발사를 세면서 임계치마다 룰 발동)으로 묶을 수 있어,
@@ -414,9 +415,14 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
-- **attack speed / charge speed / hit rate** (15 유닛이 언급): 엔진의 딜 공식에
-  들어가는 개념이 아니라 배선해도 inert. 이런 게 유닛 가치의 대부분이면 얇은
-  인코딩이 정직한 답. (`engine-capabilities.md`의 "Stats the engine does NOT consume".)
+- ~~**attack speed / charge speed**~~ → **모델됨 (Phase S, 2026-07-16 결정 뒤집기)**:
+  180초 고정 전투에서 발사 간격이 줄면 발사 수가 늘어 딜이 증가 → `attack_speed_percent`
+  (매거진 무기)·`charge_speed_percent`(차지 무기)를 `attack_rate.py`에 배선. 첫 소비자
+  Dorothy: Serendipity(자기 +65%). Tove는 SG-아군 스코프라 Phase C 대기(gap #3). 근거는
+  `docs/decisions.md` 참조.
+- **hit rate / Burst Gauge fill speed** (여전히 미소비): 엔진의 딜 공식/타이밍에 들어가는
+  개념이 아니라 배선해도 inert. 이런 게 유닛 가치의 대부분이면 얇은 인코딩이 정직한 답.
+  (`engine-capabilities.md`의 "Stats the engine does NOT consume".)
 
 ---
 

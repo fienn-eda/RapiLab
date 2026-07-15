@@ -9,16 +9,17 @@
 
 - 마지막 갱신: 2026-07-15
 - 브랜치: `wip/scaffolding`
-- 테스트: **507 passed** (2026-07-16, Phase A 완료 + **Phase S 엔진 확장**[attack_speed/
-  charge_speed, attack_rate.py 7테스트] + Dorothy: Serendipity[Phase S 첫 소비자] 포함;
-  was 471)
+- 테스트: **511 passed** (2026-07-16, Phase A 완료 + **Phase S 엔진 확장**[attack_speed/
+  charge_speed, attack_rate.py 7테스트 + raid-level 상호작용 4테스트] + Dorothy:
+  Serendipity[Phase S 첫 소비자] 포함; was 471)
 - 인코딩된 니케: **54명** (Phase A2 6엔트리 + Dorothy: Serendipity[Phase S] +1;
   Arcana: Fortune Mate 🔶→⚠, Grave ⚠→✅) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
-- **Phase S 진행:** attack_speed_percent/charge_speed_percent 엔진 확장 완료(매거진
-  경계 평가, 기본 `_zero`로 기존 54엔트리 타임라인 불변). Dorothy: Serendipity(자기
-  스코프 +65%) 인코딩 완료. Tove의 Attack Speed는 **SG-아군 스코프**라 무기종 스코프
-  (Phase C gap #3) 필요 — 판단 대기(squad 근사 vs Phase C 연기). Phase S 상호작용
-  테스트(attack_speed가 실제로 딜 증가) 추가 예정.
+- **Phase S 완료:** attack_speed_percent/charge_speed_percent 엔진 확장(매거진 경계
+  평가, 기본 `_zero`로 기존 타임라인 불변) + raid-level 상호작용 테스트(발사수/딜 증가,
+  per-shot 트리거 파급, 회귀). Dorothy: Serendipity(자기 스코프 +65%) 인코딩 완료.
+  **Tove의 Attack Speed(+ATK)는 SG-아군 스코프라 Phase C(gap #3 무기종 스코프)로 연기
+  확정**(Fienn 2026-07-16; squad 근사는 비-SG 아군 과대적용으로 기각). 다음: Phase B(값싼
+  갭 #5/#7[완료]/#8) 또는 Phase C.
 
 ---
 

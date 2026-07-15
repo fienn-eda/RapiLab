@@ -350,11 +350,18 @@ tests can still pass (the effect registers and `total_for` returns it), but the
 value never reaches `calculate_damage`, so it does NOT change simulated damage.
 
 **Not a damage concept at all** — no consumer will ever exist without a bigger
-model: `attack_speed` / Attack Speed, `hit_rate` / Hit Rate,
-`burst_gauge_fill_speed_percent` (gauge charge time is a fixed sim input),
-`charge_speed_percent`, `shield_amount`, and anything HP/heal/DEF/survivability.
-Defer these; if a Nikke's contribution is mostly these, say so — a thin
-encoding is honest.
+model: `hit_rate` / Hit Rate, `burst_gauge_fill_speed_percent` (gauge charge
+time is a fixed sim input), `shield_amount`, and anything HP/heal/DEF/
+survivability. Defer these; if a Nikke's contribution is mostly these, say so —
+a thin encoding is honest.
+
+**NOW consumed (Phase S, 2026-07-16):** `attack_speed_percent` (magazine weapons)
+and `charge_speed_percent` (charge weapons) DO move damage — in a fixed 180s
+fight a shorter shot interval means more shots. `attack_rate.py` scales the
+firing cadence from these (evaluated per magazine boundary), so emit them as
+`Effect("attack_speed_percent"|"charge_speed_percent", value, scope, duration)`.
+Scope must be self/squad/element — a "shotgun allies only" speed buff (e.g.
+Tove) still needs weapon-type scope (deferred). See `docs/decisions.md`.
 
 Exception: `flat_max_hp` (a Max-HP buff scaled off the caster's Max HP, e.g.
 Rouge's Game Master) is encoded but inert TODAY — Fienn wants Max-HP buffs in
