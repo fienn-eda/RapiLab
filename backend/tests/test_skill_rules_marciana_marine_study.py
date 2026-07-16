@@ -1,6 +1,5 @@
 from app.effects import EffectRegistry
 from app.skill_rules.marciana_marine_study import (
-    HIGH_RISK_DURATION,
     HIGH_RISK_NUKE_SHOT_COUNT,
     WHISTLE_CAP,
     build_marciana_per_shot_rules,
@@ -55,33 +54,39 @@ def test_whistle_steady_state_grants_self_atk_from_battle_start():
     assert round(registry.total_for("atk_percent", SELF, now=90.0), 4) == round(0.3273 * WHISTLE_CAP, 4)
 
 
-def test_elemental_advantage_attack_damage_only_against_electric_boss():
-    # "Elemental Advantage Attack Damage +20.41% continuously" - Attack Damage that
-    # only applies with elemental advantage (Iron > Electric), gated on Electric.
+def test_elemental_advantage_goes_in_element_bonus_group_only_against_electric_boss():
+    # "Elemental Advantage Attack Damage +20.41% continuously" is Element Bonus
+    # Damage (only counts with elemental advantage, Iron > Electric), so it lands
+    # in other_elemental_bonus - NOT attack_damage_up - gated on an Electric boss.
     electric = make_context(boss_element="Electric")
     registry = EffectRegistry()
     fire_trigger("battle_start", {"marciana-marine-study": build()}, electric, registry, time=0.0)
-    assert round(registry.total_for("attack_damage_up", SELF, now=90.0), 4) == 0.2041
+    assert round(registry.total_for("other_elemental_bonus", SELF, now=90.0), 4) == 0.2041
+    assert registry.total_for("attack_damage_up", SELF, now=90.0) == 0.0
 
     non_electric = make_context(boss_element="Fire")
     registry2 = EffectRegistry()
     fire_trigger("battle_start", {"marciana-marine-study": build()}, non_electric, registry2, time=0.0)
-    assert registry2.total_for("attack_damage_up", SELF, now=90.0) == 0.0
+    assert registry2.total_for("other_elemental_bonus", SELF, now=90.0) == 0.0
 
 
 def test_burst_grants_self_attack_damage_and_electric_gated_elem_advantage():
     electric = make_context(boss_element="Electric")
     registry = EffectRegistry()
     fire_trigger("own_burst_activate", {"marciana-marine-study": build()}, electric, registry, time=5.0)
-    # Attack Damage 27.45% (unconditional) + Elemental Advantage 30.97% (Electric).
-    assert round(registry.total_for("attack_damage_up", SELF, now=5.0), 4) == round(0.2745 + 0.3097, 4)
+    # Unconditional Attack Damage 27.45% (Damage-Up group); Elemental Advantage
+    # 30.97% goes in the Element Bonus group, gated on Electric.
+    assert round(registry.total_for("attack_damage_up", SELF, now=5.0), 4) == 0.2745
+    assert round(registry.total_for("other_elemental_bonus", SELF, now=5.0), 4) == 0.3097
     assert registry.total_for("attack_damage_up", SELF, now=15.1) == 0.0
+    assert registry.total_for("other_elemental_bonus", SELF, now=15.1) == 0.0
 
     non_electric = make_context(boss_element="Fire")
     registry2 = EffectRegistry()
     fire_trigger("own_burst_activate", {"marciana-marine-study": build()}, non_electric, registry2, time=5.0)
     # Only the unconditional Attack Damage against a non-Electric boss.
     assert round(registry2.total_for("attack_damage_up", SELF, now=5.0), 4) == 0.2745
+    assert registry2.total_for("other_elemental_bonus", SELF, now=5.0) == 0.0
 
 
 def test_high_risk_def_debuff_only_against_electric_boss():
@@ -117,12 +122,12 @@ def test_flagged_target_nuke_fires_on_full_burst_after_own_burst():
     assert pulses[0].full_burst_bonus_eligible is True
 
 
-def test_high_risk_20_normal_nuke_is_window_gated_and_electric_gated():
+def test_high_risk_20_normal_nuke_fires_every_20_normals_gated_on_electric():
     rules = build_marciana_per_shot_rules(SKILL_VALUES)
     assert len(rules) == 1
     threshold, mode, skill_rules = rules[0]
-    assert threshold == (HIGH_RISK_NUKE_SHOT_COUNT, HIGH_RISK_DURATION)
-    assert mode == "every_during_own_status_window"
+    assert threshold == HIGH_RISK_NUKE_SHOT_COUNT
+    assert mode == "every"
 
     electric = make_context(boss_element="Electric")
     registry = EffectRegistry()

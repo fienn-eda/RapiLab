@@ -133,15 +133,19 @@ how to encode it, and current engine status.
   when boss_element is unset. See `brid_silent_track.py`, `helm_aquamarine.py`,
   `marciana_marine_study.py`.
 
-## "Elemental Advantage Attack Damage" - Attack Damage gated on elemental advantage
+## "Elemental Advantage Attack Damage" - Element Bonus Damage, gated on advantage
 - **What:** "Elemental Advantage Attack Damage ▲ X%" (e.g. Marciana) is
-  ordinary Attack Damage that only counts when the caster HAS elemental advantage
-  over the enemy (the +10% element matchup). It is NOT a separate damage bucket
-  and NOT `other_elemental_bonus`.
-- **Encode:** map to `attack_damage_up` (general "affects all damage") gated on
+  **Element Bonus Damage** that only counts when the caster HAS elemental
+  advantage over the enemy (the +10% element matchup). Despite the word "Attack
+  Damage" in the name, it belongs to the formula's **Element Bonus Damage**
+  group (`element_multiplier + other_elemental_bonus`), NOT the Attack Damage /
+  Damage-Up group (Fienn, 2026-07-16).
+- **Encode:** map to `other_elemental_bonus` (NOT `attack_damage_up`), gated on
   the boss being the element the caster is strong against - i.e.
   `boss_is_element(<caster's advantage target>)`. Iron > Electric, so Marciana's
-  is gated on `boss_is_element("Electric")`. See `marciana_marine_study.py`.
+  is gated on `boss_is_element("Electric")`. Since it's only emitted when the boss
+  matches, it correctly adds to the element bonus only when advantage is present.
+  See `marciana_marine_study.py`.
 
 ## Enemy DEF ▼ debuff - BUILT (enemy_def_percent, 2026-07-16)
 - **What:** "DEF ▼ X%" on the enemy (e.g. Marciana's High-Risk Target
