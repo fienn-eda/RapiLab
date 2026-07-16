@@ -52,3 +52,14 @@ def test_infeasible_after_exclusion_is_422_naming_exclusions():
 def test_malformed_body_is_422():
     response = client.post("/api/recommend", json={"roster": "nope", "boss": BOSS})
     assert response.status_code == 422
+
+
+def test_unknown_overload_option_name_is_422_naming_bad_and_valid_names():
+    roster = [_nikke(slug) for slug in FEASIBLE]
+    roster[0]["overload_options"] = [{"name": "made-up-option", "value": 10.0}]
+    response = client.post("/api/recommend", json={"roster": roster, "boss": BOSS})
+    assert response.status_code == 422
+    detail = str(response.json()["detail"])
+    assert "made-up-option" in detail
+    # the valid names come from the engine's NAME_TO_STAT, surfaced to the client
+    assert "공격력 증가" in detail

@@ -13,6 +13,7 @@ from pydantic import BaseModel, Field
 
 from app.deck_search import BossProfile, find_best_decks
 from app.models import UserNikkeState
+from app.overload_effects import NAME_TO_STAT
 from app.user_roster import load_roster
 
 
@@ -51,8 +52,30 @@ app.add_middleware(
 )
 
 
+def _reject_unknown_overload_options(roster: list[UserNikkeState]) -> None:
+    """A mistyped overload option name is a client input error, not a unit to
+    silently exclude - reject it at the boundary so the deep engine ValueError
+    (overload_effects) never surfaces as a 500. Valid names come from the
+    engine's NAME_TO_STAT, so this list stays in sync automatically."""
+    invalid = sorted(
+        {option.name
+         for state in roster
+         for option in state.overload_options
+         if option.name not in NAME_TO_STAT}
+    )
+    if invalid:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                f"Unknown overload option name(s): {invalid}. "
+                f"Valid names: {sorted(NAME_TO_STAT)}."
+            ),
+        )
+
+
 @app.post("/api/recommend", response_model=RecommendResponse)
 def recommend(request: RecommendRequest) -> RecommendResponse:
+    _reject_unknown_overload_options(request.roster)
     specs, excluded = load_roster(request.roster)
     boss = BossProfile(
         element=request.boss.element,
