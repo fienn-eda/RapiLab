@@ -9,9 +9,9 @@
 
 - 마지막 갱신: 2026-07-16
 - 브랜치: `wip/scaffolding`
-- 테스트: **544 passed** (2026-07-16, **Ark Ranger Black 엔드투엔드 브래킷 테스트
-  완료** — `test_ark_ranger_bracket.py` 신규 3개(ceiling>floor·기본 보스=floor·
-  floor에 지속딜 타입 배선 확인); was 541)
+- 테스트: **545 passed** (2026-07-16, **Ark Ranger Black 완료(최종 리뷰 반영)** —
+  브래킷 e2e 3개 + Meteor/floor Collider `full_burst_bonus_eligible=True`(반복틱 DoT
+  규칙, Fienn) + D-파생 검증 테스트(하드코딩 10 배제); was 541)
 - 인코딩된 니케: **56명** (Ark Ranger Black[gap #2 Pattern B 브래킷, 신규 ⚠] +1) —
   상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 - **Ark Ranger Black floor/ceiling 브래킷 완료 (2026-07-16):** 배터리로 구동되는
