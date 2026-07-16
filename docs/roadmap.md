@@ -7,19 +7,23 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-07-15
+- 마지막 갱신: 2026-07-16
 - 브랜치: `wip/scaffolding`
-- 테스트: **511 passed** (2026-07-16, Phase A 완료 + **Phase S 엔진 확장**[attack_speed/
-  charge_speed, attack_rate.py 7테스트 + raid-level 상호작용 4테스트] + Dorothy:
-  Serendipity[Phase S 첫 소비자] 포함; was 471)
-- 인코딩된 니케: **54명** (Phase A2 6엔트리 + Dorothy: Serendipity[Phase S] +1;
-  Arcana: Fortune Mate 🔶→⚠, Grave ⚠→✅) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
-- **Phase S 완료:** attack_speed_percent/charge_speed_percent 엔진 확장(매거진 경계
-  평가, 기본 `_zero`로 기존 타임라인 불변) + raid-level 상호작용 테스트(발사수/딜 증가,
-  per-shot 트리거 파급, 회귀). Dorothy: Serendipity(자기 스코프 +65%) 인코딩 완료.
-  **Tove의 Attack Speed(+ATK)는 SG-아군 스코프라 Phase C(gap #3 무기종 스코프)로 연기
-  확정**(Fienn 2026-07-16; squad 근사는 비-SG 아군 과대적용으로 기각). 다음: Phase B(값싼
-  갭 #5/#7[완료]/#8) 또는 Phase C.
+- 테스트: **524 passed** (2026-07-16, **Phase B gap #5 완료** — `boss_is_element` 조건 +
+  `enemy_def_percent` 배선; Brid/Helm Electric·Wind 디버프 + Marciana 신규 + 상호작용/
+  회귀 테스트; was 511)
+- 인코딩된 니케: **55명** (Marciana: Marine Study[gap #5, 신규] +1;
+  Brid: Silent Track ⚠→✅, Helm: Aquamarine ⚠→✅) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- **Phase B gap #5 완료 (2026-07-16):** `SquadContext.boss_element` +
+  `boss_is_element(element)` 조건 헬퍼(+`buff_rule`/`refreshing_buff_rule`/
+  `instant_nuke_pulse_rule`에 옵셔널 condition) + `enemy_def_percent` 배선(DEF▼ 디버프,
+  기존 inert). 소비: **Brid**(Wind Damage Taken 디버프 → ✅) · **Helm: Aquamarine**
+  (Electric Damage Taken 정상상태 + Overload 추가딜, Burst2라 FB보너스 미적용 → ✅) ·
+  **Marciana: Marine Study**(신규 Iron AR B3; Fienn 가정 rapture=1/Flagged=보스/
+  High-Risk=Electric 게이팅; Whistle 자ATK·Elemental Advantage AD·DEF 디버프·Flagged
+  3789% 풀버스트 넉·High-Risk 20노멀 넉). **Phase S 완료(이전):** attack/charge speed 배선
+  + Dorothy: Serendipity. **다음:** Phase B 잔여(#8 자원-fill-트리거 타 유닛 버프[Maiden])
+  또는 Phase C(#3 arcana 대형, #6 ada, little-mermaid).
 
 ---
 
@@ -39,7 +43,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (47명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (55명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ⬜ 예정 |
 | Phase 6 | 유저 데이터 입력 UI (React) | ⬜ 예정 |
@@ -191,10 +195,23 @@
   4명 — 남은 후보는 modernia 하나(검증 전). 새 발견: velvet의 Sticky Fingers가
   gap #7의 거울상(not-in-Full-Burst per-shot 창 필터, 미구현)에 막혀 잔여로 남음
   — 상세는 `engine-gaps.md`(gap #7) 참고. 471 tests pass (was 465).
-- **다음:** **eb3+ 백로그**(남은 Pattern A 자원 유닛 rei-ayanami·rei-ayanami-
-  tentative-name·neon-vision-eye · Pattern B 게이지·상태머신·무기변형) + **막힌
-  나머지 per-shot 유닛 재인코딩 배치**가 최대 실질 가치. 남은 gap은
-  `engine-gaps.md` 우선순위 참고.
+- **엔진 확장 완료 — gap #5 enemy-element 조건 + enemy_def_percent 배선 (2026-07-16):**
+  `SquadContext.boss_element`(raid_simulator 주입) + `boss_is_element(element)` 조건
+  헬퍼로 "적이 X Code일 때만" 발동하는 디버프/추가딜을 게이팅(`buff_rule`/
+  `refreshing_buff_rule`/`instant_nuke_pulse_rule`에 옵셔널 `condition` 추가). 함께
+  `enemy_def_percent`(DEF▼ 디버프, damage_formula가 이미 지원하나 inert였음)를
+  `_damage_instance`에 한 줄 배선(squad 스코프 적 디버프, `damage_taken_up`과 동형).
+  소비: **Brid: Silent Track ⚠→✅**(Ignition/Journey Ahead Wind Damage Taken 디버프) ·
+  **Helm: Aquamarine ⚠→✅**(Suppression Fire Electric Damage Taken 정상상태 28.2% +
+  Overload Electric 추가딜 164.83%; 추가딜은 Burst2라 FB창 직전 발동으로 FB보너스
+  미적용, Fienn 판정) · **Marciana: Marine Study(신규 ⚠, Iron AR B3)** — Fienn 확정
+  솔로레이드 가정(rapture 수=1, Flagged Target=보스, High-Risk 불릿=Electric 게이팅)
+  하에 Whistle 자ATK·Elemental Advantage AD·High-Risk DEF 디버프·Flagged 3789% 풀버스트
+  넉·High-Risk 20노멀 넉을 인코딩. Flagged Target ATK(스코프 모호)·적처치 넉·6+rapture
+  넉은 defer. 엔드투엔드 스모크로 Electric/비-Electric 보스 딜 차 확인.
+- **다음:** **eb3+ 백로그**(Pattern B 게이지·상태머신·무기변형) + **막힌
+  나머지 per-shot 유닛 재인코딩 배치** + Phase B 잔여(gap #8)/Phase C가 최대 실질 가치.
+  남은 gap은 `engine-gaps.md` 우선순위 참고.
 
 ### Phase 4 — 단일 최적 덱 추천 ✅
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.

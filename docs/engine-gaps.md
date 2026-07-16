@@ -5,7 +5,12 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-15 (**gap #7 완료** — `per_shot_rules`에 창 한정 모드
+- 마지막 갱신: 2026-07-16 (**gap #5 완료** — `SquadContext.boss_element` +
+  `boss_is_element` 조건 + `enemy_def_percent` 배선. 소비: brid-silent-track ⚠→✅
+  (Wind Damage Taken 디버프)·helm-aquamarine(Electric Damage Taken + 추가딜 불릿)·
+  marciana-marine-study(신규, Fienn의 rapture=1/Flagged=보스/High-Risk=Electric 가정).
+  헬퍼 `buff_rule`/`refreshing_buff_rule`/`instant_nuke_pulse_rule`에 옵셔널 condition
+  추가. 이전 갱신: gap #7 완료 — `per_shot_rules`에 창 한정 모드
   `"every_during_full_burst"`/`"every_during_own_status_window"` 추가. 첫 소비자
   Soda·Asuka 잔여 메커니즘 재인코딩. 같은 날 Phase A1 두 건(helm-aquamarine·
   anis-sparkling-summer)도 기존 per_shot 능력으로 인코딩, grave·velvet은 gap #7로
@@ -44,7 +49,7 @@
 | 2 | **자원/스택 트래킹** (배터리·탄약주머니·N스택 누적) | 16 | **Pattern A 완료 (2026-07-12, named-resource)** — Pattern B(시간감쇠 게이지·변신) 잔여 | 신규 상태 |
 | 3 | **narrow subset scope** (무기종별 / 티어+선버스트 대상) | 9 (+Tove: SG-아군 Attack Speed+ATK, Phase S에서 연기) | 무기종: 소(~20 loc) / 티어부분집합: 중(~60 loc) | 신규 스코프 |
 | ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
-| 5 | **enemy-element 조건** (룰에서 boss_element 접근) | 1 (+기존 Brid, Helm:Aqua) | 소 (~30 loc) | 컨텍스트 확장 |
+| ~~5~~ | ~~enemy-element 조건~~ (룰에서 boss_element 접근) | 3 (Brid·Helm:Aqua·Marciana) | **완료 (2026-07-16, `boss_is_element` + enemy_def_percent 배선)** | 컨텍스트 확장 |
 | 6 | **periodic-during-Full-Burst 넉** (풀버스트 창 안에서만 N초마다) | 1 (Ada) | 소 (~30 loc, periodic_nukes 변형) | 타이밍 변형 |
 | ~~7~~ | ~~풀버스트/자기상태창 한정 per-shot 트리거~~ (fill이 아니라 버프/넉 직접 발동) | 4 (Soda·Asuka·Grave·Velvet) | **완료 (2026-07-15, `per_shot_rules`의 `every_during_full_burst`/`every_during_own_status_window` 모드)** | 신규 트리거 변형 |
 | 8 | **자원-fill-트리거 타 유닛 버프** (자원 소유자 아닌 아군에게 버프) | 1 (Maiden 잔여 버프) | 소~중 | 신규 트리거 |
@@ -203,14 +208,32 @@
   인코딩 작업. Prika/Anis:Star의 projectile explosion 버프는 여전히 다른 갭(풀차지
   트리거/미인코딩)에 막힘.
 
-### 5. enemy-element 조건 (룰에서 boss_element 접근)
+### 5. enemy-element 조건 (룰에서 boss_element 접근) — ✅ 완료 (2026-07-16)
 
-- **무엇:** "적이 X Code일 때만" 발동하는 디버프/추가딜. SkillRule 액션이 boss_element에
-  접근 불가(현재 `raid_simulator`만 앎).
-- **막힌 유닛 (신규 1):** marciana-marine-study. (기존: brid-silent-track,
-  helm-aquamarine.)
-- **필요한 확장:** 트리거 dispatch 시 boss_element를 액션 컨텍스트로 전달. 규모 소.
-- 참고: `special-mechanics.md`의 "Enemy-element-conditional debuffs".
+- **무엇이었나:** "적이 X Code일 때만" 발동하는 디버프/추가딜. SkillRule 액션이
+  boss_element에 접근 불가(당시 `raid_simulator`만 앎).
+- **해결:** `SquadContext.boss_element`(raid_simulator가 주입) + `boss_is_element(element)`
+  조건 헬퍼. `buff_rule`/`refreshing_buff_rule`/`instant_nuke_pulse_rule`에 옵셔널
+  `condition` 파라미터 추가(게이팅된 불릿이 비게이팅과 같은 빌더 재사용). 규모 소.
+- **소비자 (3):**
+  - **brid-silent-track ⚠→✅:** 두 Wind-Code Damage Taken 디버프(Ignition Sequence
+    풀버스트 진입 시 +15.12%/10s, Journey Ahead 노멀10회마다 +12.12%/10s) 모두
+    `boss_is_element("Wind")` 게이팅. 이제 잔여 없음.
+  - **helm-aquamarine ⚠(부분 해소):** Suppression Fire의 Electric Damage Taken 디버프
+    (정상상태 5스택=28.2% squad, battle_start, Electric 게이팅) + Aegis Cannon Overload의
+    Electric 추가딜 불릿(164.83%, 자기 버스트 시, **FB 보너스 미적용** — Burst 2라 FB창
+    직전 발동, Fienn 2026-07-16). Electric-Code 불릿 잔여 없음.
+  - **marciana-marine-study ⚠(신규 인코딩):** Iron AR B3. Fienn 가정(rapture=1,
+    Flagged Target=보스, High-Risk 불릿은 Electric 보스 게이팅) 하에 Elemental Advantage
+    Attack Damage·High-Risk DEF 디버프·High-Risk 20노멀 넉을 `boss_is_element("Electric")`로
+    게이팅. **enemy_def_percent 배선**(아래) 소비. 잔여: Flagged Target ATK 스코프 모호(defer),
+    적 처치 트리거 넉 사본, 6+rapture 넉.
+- **부산물 — enemy_def_percent 배선 (2026-07-16):** DEF ▼ 디버프(Marciana의 High-Risk
+  Target DEF -10.56%)를 위해 `damage_formula`가 이미 지원하던 `enemy_def_percent`를
+  `raid_simulator._damage_instance`에 한 줄 배선(`damage_taken_up`과 동형, squad 스코프
+  적 디버프). 기존엔 inert였음. DEF=0 바닥(reference)엔 아직 도달하는 유닛 없어 클램프 미도입.
+- 참고: `special-mechanics.md`의 "Enemy-element-conditional debuffs",
+  `brid_silent_track.py`/`helm_aquamarine.py`/`marciana_marine_study.py` docstring.
 
 ### 6. periodic-during-Full-Burst 넉
 
@@ -412,6 +435,14 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   버프)/Asuka(Anti A.T. Field 15.62% 상태게이팅 넉). 2026-07-15. **후속 소비 배치
   (같은 날):** Grave(Overheat II/III, 자기 버스트 상태창 한정 노멀30/60회마다
   자버프)/Velvet(Bullets of Love, 풀버스트 한정 풀차지/노멀50회 카운터).
+- **enemy-element 조건 + enemy_def_percent 배선 (gap #5)**: `SquadContext.boss_element`
+  (raid_simulator 주입) + `boss_is_element(element)` 조건 헬퍼로 "적이 X Code일 때만"
+  발동하는 디버프/추가딜을 게이팅. `buff_rule`/`refreshing_buff_rule`/
+  `instant_nuke_pulse_rule`에 옵셔널 `condition` 파라미터 추가. 함께 `enemy_def_percent`
+  (DEF ▼ 디버프, damage_formula가 이미 지원하나 inert였음)를 `_damage_instance`에 배선
+  (squad 스코프 적 디버프, `damage_taken_up`과 동형). 첫 소비자 Brid(Wind Damage
+  Taken)·Helm:Aquamarine(Electric Damage Taken + 추가딜)·Marciana(Electric 게이팅
+  + DEF 디버프). 2026-07-16.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
@@ -450,8 +481,10 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
 1. **막힌 나머지 per-shot 유닛 재인코딩 배치** — gap #7 소비자는 이제 Soda·Asuka·
    Grave·Velvet 4명, 남은 후보는 modernia(검증 전) 하나. 이 배치의 나머지 가치는
    gap #1/#2 잔여 per-shot 유닛(rei-ayanami류 등)에 있음 — 데이터 확인 → 인코딩.
-2. **#2 Pattern B (시간감쇠 게이지·변신)** + **#3 무기종/티어부분집합 스코프** + **#5
-   boss_element** + **#6 FB창 periodic** + **#8 자원-fill-트리거 타 유닛 버프**
+- ~~#5 enemy-element 조건 (boss_element)~~ — ✅ 완료 (2026-07-16,
+  `boss_is_element` + `enemy_def_percent` 배선; Brid ⚠→✅·Helm:Aqua·Marciana(신규) 소비).
+2. **#2 Pattern B (시간감쇠 게이지·변신)** + **#3 무기종/티어부분집합 스코프** +
+   **#6 FB창 periodic** + **#8 자원-fill-트리거 타 유닛 버프**
    (Maiden 잔여) + **#9 reload 후 첫 발 마커**(Jill 잔여) + **not-in-Full-Burst
    per-shot 창 필터**(gap #7 거울상, Velvet Sticky Fingers 잔여) — 각 수요 1명,
    필요할 때.
