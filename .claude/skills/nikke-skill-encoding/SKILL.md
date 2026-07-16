@@ -53,7 +53,27 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    `references/damage-formula-reference.md` — the authoritative nikke.gg
    glossary/notes.
 
-4. **Write the module** `backend/app/skill_rules/<slug_with_underscores>.py`.
+4. **Consolidate judgment calls and review in one batch (the encoding plan).**
+   Before writing any code, gather **every judgment call from step 3 into a
+   single encoding plan and present it to Fienn all at once**. Do not raise
+   ambiguities one at a time as you hit them — eliminating round-trips is the
+   whole point. The plan contains:
+   - **Per-skill classification summary**: one line per effect saying whether it
+     was handled as model / approximate / defer / skip.
+   - **Judgment-call list**: for each item that is ambiguous or needs game
+     knowledge — (a) your **recommended interpretation**, (b) a one-line
+     **rationale**, (c) **how you'll encode it** in the engine if approved — so
+     Fienn only has to approve or correct each item.
+   - If nothing is ambiguous, say so and proceed.
+
+   Do not re-ask about the clear items — state how you handled them and reserve
+   questions for the calls that genuinely fork. Fold in any decision already
+   pending from earlier steps (e.g. the signature-weapon `skills` vs
+   `dollskills` choice from step 1) so Fienn reviews everything in one pass.
+   The rule is still "ask rather than guess on unclear mechanics" — this just
+   batches those questions into one review instead of drip-feeding them.
+
+5. **Write the module** `backend/app/skill_rules/<slug_with_underscores>.py`.
    Reuse the `_helpers`: `buff_rule(trigger, buffs)` and
    `cdr_pulse_rule(trigger, seconds)` for the common "timed buffs + cooldown
    pulse" supporter, and `escalating_buff_rule(trigger, tiers)` for
@@ -61,25 +81,25 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    the `deck_contains(slug)` condition. Each `build_*` function takes a
    `skill_values` dict keyed by that Nikke's sub-skill names.
 
-5. **Handle the burst skill.** If the burst is a nuke ("Deals X% of final ATK
+6. **Handle the burst skill.** If the burst is a nuke ("Deals X% of final ATK
    as Burst Skill damage"), expose a `<name>_burst_percent(values)` helper
    returning that X. If the burst is buffs-only (most supporters), there is no
    nuke — the registry entry's burst percent is `None`.
 
-6. **Write tests** `backend/tests/test_skill_rules_<slug>.py` using the real
+7. **Write tests** `backend/tests/test_skill_rules_<slug>.py` using the real
    values, asserting the effects land on the right scope/stat/duration and that
    caster-scaled and burst-percent numbers are correct.
 
-7. **Register** the Nikke in `backend/app/skill_rules/registry.py`: import the
+8. **Register** the Nikke in `backend/app/skill_rules/registry.py`: import the
    builder(s) and add a `_BUILDERS` entry
    `lambda sv: (build_<slug>_rules(sv), <burst_percent or None>)`.
 
-8. **Document** in the module docstring: a "Modeled (DPS-relevant)" list and a
+9. **Document** in the module docstring: a "Modeled (DPS-relevant)" list and a
    "Not modeled / deferred" list naming each skipped mechanic and *why* it
    can't be represented yet. This is not optional — it's how the next person
    knows the encoding is partial and what would make it complete.
 
-9. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
+10. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
    avoids cp949 encoding errors with Korean/arrow characters on Windows). Then
    commit on the WIP branch with a message listing what's modeled and deferred.
 
