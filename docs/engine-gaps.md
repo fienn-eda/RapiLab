@@ -591,7 +591,11 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
    상태머신/무기변형(rapi-red-hood·cinderella-crystal-wave·laplace류) ·
    **아군 총탄 카운터**(스쿼드 합산 발사 누적 — Little Mermaid Bubble Barrage 잔여) ·
    **not-in-Full-Burst per-shot 창 필터**(gap #7 거울상, Velvet Sticky Fingers
-   잔여) — 각 수요 1~2명, 필요할 때.
+   잔여) ·
+   **유닛별 버스트 스케줄 정책**(사이클 스킵 — Diesel: Winter Sweets는 짝수
+   사이클에 버스트하는 게 더 강함[Fienn 2026-07-17]; `burst_cycle`은 현재 쿨 찬
+   유닛을 항상 즉시 발동시켜 "한 사이클 거르기"를 표현 못 함. Diesel 인코딩
+   시점에 착수, Phase 5 설계 문서에도 기록) — 각 수요 1~2명, 필요할 때.
 
 각 확장은 TDD로, 인벤토리가 증명한 최소 범위만. 착수 시 이 문서의 해당 유닛 목록으로
 "진짜 풀리는지"를 검증하고, 풀린 유닛은 배치 인코딩한다.
