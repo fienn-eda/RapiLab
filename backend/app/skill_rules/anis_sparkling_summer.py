@@ -29,6 +29,23 @@ Not modeled / deferred:
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 from app.squad_engine import SkillRule, boss_is_element
 
+
+SKILL_VALUE_MANIFESTS = {
+    "anis-sparkling-summer": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_anis_sparkling_summer",
+        "keys": {
+            "sparkling_boost": ("skills", 0),
+            "sparkling_missile": ("skills", 1),
+            "sparkling_wave": ("skills", 2),
+        },
+        "drop_tokens": {
+            "sparkling_missile": [0],
+        },
+    },
+}
+
+
 WATER = "Water"  # Anis is Electric; her Elemental Advantage only counts vs Water
 
 

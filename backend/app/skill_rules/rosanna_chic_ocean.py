@@ -27,6 +27,18 @@ from app.skill_rules._helpers import buff_rule
 from app.squad_engine import SkillRule
 
 
+SKILL_VALUE_MANIFESTS = {
+    "rosanna-chic-ocean": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_rosanna_chic_ocean",
+        "keys": {
+            "ferita": ("skills", 0),
+            "onda_grande": ("skills", 2),
+        },
+    },
+}
+
+
 def build_rosanna_rules(values: dict) -> list[SkillRule]:
     ferita = values["ferita"]
     parts = float(ferita["description_value_01"]) / 100
