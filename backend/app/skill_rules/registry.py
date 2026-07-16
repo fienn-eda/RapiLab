@@ -29,6 +29,7 @@ from app.skill_rules.anis_star import (
 )
 from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
 from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
+from app.skill_rules.ark_ranger_black import build_ark_ranger_black_rules
 from app.skill_rules.asuka_shikinami_langley_wille import (
     build_anti_at_field_per_shot_rules,
     build_anti_at_field_resources,
@@ -247,6 +248,7 @@ _BUILDERS = {
     "anchor-innocent-maid": lambda sv: (build_anchor_rules(sv), None),
     "arcana": lambda sv: (build_arcana_rules(sv), arcana_burst_percent(sv)),
     "arcana-fortune-mate": lambda sv: (build_fortune_mate_rules(sv), radiant_youth_burst_percent(sv)),
+    "ark-ranger-black": lambda sv: (build_ark_ranger_black_rules(sv), None),
     "blanc": lambda sv: (build_blanc_rules(sv), None),
     "brid-silent-track": lambda sv: (build_brid_rules(sv), None),
     "cinderella": _build_cinderella,
