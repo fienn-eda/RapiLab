@@ -34,6 +34,24 @@ Not modeled / deferred:
 from app.skill_rules._helpers import buff_rule
 from app.squad_engine import SkillRule
 
+
+SKILL_VALUE_MANIFESTS = {
+    "takina-inoue": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_takina_inoue",
+        "keys": {
+            "combat_support": ("skills", 0),
+            "battlefield_control": ("skills", 1),
+            "suppression_initiated": ("skills", 2),
+        },
+        "drop_tokens": {
+            "battlefield_control": [2],
+            "suppression_initiated": [2],
+        },
+    },
+}
+
+
 BATTLEFIELD_CONTROL_COOLDOWN = 15.0  # skill text: Skill 2 cooldown 15s
 
 

@@ -22,6 +22,22 @@ Modeled (DPS-relevant):
 """
 from app.skill_rules._helpers import buff_rule
 
+
+SKILL_VALUE_MANIFESTS = {
+    "quency-escape-queen": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_quency_escape_queen",
+        "keys": {
+            "secure_route": ("skills", 0),
+            "the_great_thief": ("skills", 2),
+        },
+        "drop_tokens": {
+            "secure_route": [0, 2, 4],
+        },
+    },
+}
+
+
 STEADY_STATE_ATK = 2.45 * 10 + 4.9 * 10 + 7.36 * 5  # Explore Route stages 1-3, fully stacked
 
 

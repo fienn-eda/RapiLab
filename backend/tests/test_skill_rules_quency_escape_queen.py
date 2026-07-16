@@ -61,3 +61,9 @@ def test_own_burst_self_attack_damage_and_reload_speed_for_10_sec():
     assert round(reg.total_for("attack_damage_up", QUENCY, now=5.0), 4) == 0.5708
     assert round(reg.total_for("reload_speed_percent", QUENCY, now=5.0), 4) == 0.2587
     assert reg.total_for("attack_damage_up", QUENCY, now=15.1) == 0.0  # 10s window
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+SECURE_ROUTE = QUENCY_VALUES["secure_route"]
+THE_GREAT_THIEF = QUENCY_VALUES["the_great_thief"]

@@ -24,6 +24,20 @@ Modeled (DPS-relevant):
 from app.skill_rules._helpers import buff_rule, linear_resource_buff
 from app.effects import ResourceSpec
 
+
+SKILL_VALUE_MANIFESTS = {
+    "julia": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_julia",
+        "keys": {
+            "decrescendo": ("skills", 0),
+            "crescendo": ("skills", 1),
+            "climax": ("skills", 2),
+        },
+    },
+}
+
+
 DECRESCENDO_COOLDOWN = 20.0  # skill text: Skill 1 cooldown 20s
 
 

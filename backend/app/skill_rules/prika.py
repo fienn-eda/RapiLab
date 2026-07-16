@@ -39,6 +39,30 @@ from app.effects import Effect
 from app.skill_rules._helpers import refreshing_buff_rule
 from app.squad_engine import SkillRule, all_conditions, ally_bursted, deck_contains, has_status
 
+
+SKILL_VALUE_MANIFESTS = {
+    "prika": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_prika",
+        "keys": {
+            "lets_get_the_show_started": ("skills", 0),
+            "one_more_song": ("skills", 1),
+            "get_ready_for_an_amazing_show": ("skills", 2),
+        },
+        "drop_tokens": {
+            "one_more_song": [2, 3, 5, 8],
+            "get_ready_for_an_amazing_show": [0, 2, 4],
+        },
+        # This skill's fixture bundles a non-slot caster_atk key (the builder
+        # takes caster ATK alongside the slots); point the harness at the
+        # slot-only view of it.
+        "fixtures": {
+            "lets_get_the_show_started": "LETS_GET_THE_SHOW_STARTED_SLOTS",
+        },
+    },
+}
+
+
 PERFORMANCE_STATUS = "performance"
 SINGING_STATUS = "singing"  # set on Mint; read by mint.py's Singing gate
 SING_ALONG_SOURCE = "mint"  # only Mint's burst grants Sing Along, which triggers Encore

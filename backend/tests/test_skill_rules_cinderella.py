@@ -140,3 +140,10 @@ def test_cinderella_end_to_end_burst_hits_and_mirrored_additional_hit():
     assert len(mirrored) == 1
     assert round(mirrored[0]["damage"], 4) == round(offense * (28.9 * 3 / 100), 4)
     assert len(per_shot_hits) > 0  # every full-charge shot deals the 136.6% additional hit
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+FLAWLESS_GLASS = CINDERELLA["flawless_glass"]
+DIRT_RESISTANT_MIRROR = CINDERELLA["dirt_resistant_mirror"]
+GLASS_SLIPPERS = CINDERELLA["glass_slippers"]

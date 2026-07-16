@@ -59,6 +59,23 @@ from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import instant_nuke_pulse_rule
 from app.squad_engine import SkillRule, boss_is_element
 
+
+SKILL_VALUE_MANIFESTS = {
+    "maiden-ice-rose": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_maiden_ice_rose",
+        "keys": {
+            "blessings_upon_you": ("skills", 1),
+            "diamond_dust": ("skills", 2),
+        },
+        "drop_tokens": {
+            "blessings_upon_you": [8, 9],
+            "diamond_dust": [0],
+        },
+    },
+}
+
+
 MP_CAP = 12  # skill text: "MP can be accumulated up to a maximum of 12" (fixed, not a data slot)
 # How long after her own burst fires the "MP is used" self-buff becomes
 # active - strictly greater than 0 so it doesn't retroactively boost that

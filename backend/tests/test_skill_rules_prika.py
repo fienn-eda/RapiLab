@@ -28,6 +28,12 @@ LETS_GET_THE_SHOW_STARTED = {
     "caster_atk": 300000,
 }
 
+# Slot-only view of the above (drops the bundled caster_atk) so the assembly
+# verification harness compares only the skill's description_value slots.
+LETS_GET_THE_SHOW_STARTED_SLOTS = {
+    k: v for k, v in LETS_GET_THE_SHOW_STARTED.items() if k.startswith("description_value")
+}
+
 
 def make_context():
     return SquadContext([

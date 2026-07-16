@@ -51,6 +51,24 @@ from app.skill_rules._helpers import buff_rule
 from app.squad_engine import SkillRule, own_burst_fired_this_cycle
 
 
+SKILL_VALUE_MANIFESTS = {
+    "mana": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_mana",
+        "keys": {
+            "metal_gamma": ("skills", 0),
+            "metal_sigma": ("skills", 1),
+            "fatal_error": ("skills", 2),
+        },
+        "drop_tokens": {
+            "metal_gamma": [1, 3],
+            "metal_sigma": [4, 5],
+            "fatal_error": [2, 4],
+        },
+    },
+}
+
+
 def build_metal_gamma_rules(values):
     atk = float(values["metal_gamma"]["description_value_01"]) / 100
     return [buff_rule("battle_start", [("atk_percent", atk, "self", None)])]

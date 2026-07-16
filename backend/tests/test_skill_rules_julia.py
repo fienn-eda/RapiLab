@@ -148,3 +148,10 @@ def test_julia_end_to_end_climax_additional_hit_fires_once_crescendo_hits_max_st
     assert round(gated_hits[0]["damage"], 4) == round(10000 * 5.445 * 1.5, 4)  # 544.5% * (1 + FB bonus*0.5)
     base_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
     assert base_hits[0]["damage"] == 54450.0  # base hit: no FB bonus (not "as additional damage")
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+DECRESCENDO = JULIA_VALUES["decrescendo"]
+CRESCENDO = JULIA_VALUES["crescendo"]
+CLIMAX = JULIA_VALUES["climax"]

@@ -139,3 +139,9 @@ def test_soda_end_to_end_burst_resets_chip_and_gates_the_atk_buff():
     )
     post_burst_shot = next(e for e in normals if e["time"] > 5.0)
     assert round(post_burst_shot["damage"], 4) == round(10000 * 1.6525 * 0.10, 4)
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+LUCKY_GOLDEN_CHIP = SODA_VALUES["lucky_golden_chip"]
+ONWARD_SODA = SODA_VALUES["onward_soda"]

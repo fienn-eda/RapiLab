@@ -30,6 +30,24 @@ Not modeled / deferred:
 from app.effects import ResourceSpec
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 
+
+SKILL_VALUE_MANIFESTS = {
+    "cinderella": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_cinderella",
+        "keys": {
+            "flawless_glass": ("skills", 0),
+            "dirt_resistant_mirror": ("skills", 1),
+            "glass_slippers": ("skills", 2),
+        },
+        "drop_tokens": {
+            "flawless_glass": [0],
+            "dirt_resistant_mirror": [1],
+        },
+    },
+}
+
+
 GLASS_SLIPPERS_HIT_COUNT = 10  # skill text: "Attacks sequentially for 10 time(s)" (fixed, not a data slot)
 
 

@@ -32,6 +32,20 @@ Not modeled / deferred:
 """
 from app.skill_rules._helpers import buff_rule
 
+
+SKILL_VALUE_MANIFESTS = {
+    "julia-signature": {
+        "source": "lootandwaifus",
+        "data_slug": "julia",
+        "test_module": "test_skill_rules_julia_signature",
+        "keys": {
+            "decrescendo": ("dollskills", 0),
+            "climax": ("dollskills", 2),
+        },
+    },
+}
+
+
 DECRESCENDO_COOLDOWN = 20.0  # skill text: Skill 1 cooldown 20s
 CLIMAX_HIT_COUNT = 5  # skill text: "Attacks sequentially 5 times" (fixed, not a data slot)
 

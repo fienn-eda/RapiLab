@@ -124,3 +124,10 @@ def test_mana_end_to_end_fatal_error_dot_ticks_ten_times_and_gets_full_burst_bon
     # own text saying "as sustained damage" rather than "as additional
     # damage" (see mana.py's module docstring).
     assert all(round(h["damage"], 4) == round(10000 * 3.96 * 1.5 * 1.528, 4) for h in hits)
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+METAL_GAMMA = MANA_VALUES["metal_gamma"]
+METAL_SIGMA = MANA_VALUES["metal_sigma"]
+FATAL_ERROR = MANA_VALUES["fatal_error"]

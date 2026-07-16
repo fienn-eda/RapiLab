@@ -217,3 +217,9 @@ def test_soline_frost_ticket_only_cdr():
     rules = {"soline-frost-ticket": build_soline_frost_ticket_rules({"check_ticket": {"description_value_03": "7.48"}})}
     fire_trigger("full_burst_enter", rules, deck_ctx("soline-frost-ticket"), reg, 0.0)
     assert reg.drain_pulses("burst_cooldown_reduction_sec")[0].value == 7.48
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+MODIFICATION_SUCCESSFUL = TOVE["modification_successful"]
+MIRACLE_OF_MAKESHIFTS = TOVE["miracle_of_makeshifts"]
