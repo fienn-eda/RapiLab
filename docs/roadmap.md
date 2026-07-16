@@ -9,11 +9,24 @@
 
 - 마지막 갱신: 2026-07-16
 - 브랜치: `wip/scaffolding`
-- 테스트: **545 passed** (2026-07-16, **Ark Ranger Black 완료(최종 리뷰 반영)** —
-  브래킷 e2e 3개 + Meteor/floor Collider `full_burst_bonus_eligible=True`(반복틱 DoT
-  규칙, Fienn) + D-파생 검증 테스트(하드코딩 10 배제); was 541)
+- 테스트: **589 passed** (2026-07-16, **Phase C 배치 완료** — gap #3 member-subset
+  scope·#6 during-FB periodic·#8 자원-fill-트리거 아군 버프·#9 first-bullet 마커
+  엔진 확장 4건 + 소비자 7유닛(Ark·Arcana·Tove·Ada Wong[신규]·Little Mermaid·
+  Maiden·Jill) 테스트; was 547 배치 시작 시점)
 - 인코딩된 니케: **57명** (Ada Wong[Phase C gaps #3/#6 소비, 신규 ⚠] +1) —
   상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- **Phase C 배치 완료 (2026-07-16):** 엔진 갭 #3(member-subset scope:
+  `SquadMember.weapon`+`member_subset_buff_rule`, 신규 Effect scope 없이 `slugs:`
+  해석)·#6(`periodic_nukes` `during_full_burst`/`hit_count`/`own_burst_interval`)·
+  #8(`resource_fill_triggered_buffs`)·#9(first-bullet 마커+`normal_attack_damage_
+  multiplier`+RoundGrant 2차 패스) 4건을 닫고 즉시 소비: Ark Ranger Black(Wind-AR
+  아군 지속댐)·Arcana ⚠→✅·Tove(SG 아군, 데이터 재수집)·**Ada Wong 신규 인코딩**
+  (Covert Support/Flash Grenade/Secret Agent — Special Modification은 매거진-경계
+  검증 후 net +2.75 근사)·Little Mermaid(Bubble Wave FB넉)·Maiden ⚠→✅(Blessings
+  fill-버프)·Jill Valentine ⚠→✅(Magnum/Acid). Fienn 판정 3건(Ada 차지속도 ▼300%=
+  차지시간 ×4·Flash Grenade own-burst 1초 틱·Acid refresh→정상상태 DoT) 반영.
+  **다음:** Pattern B 일반 프리미티브 / 상태머신·무기변형 / 아군 총탄 카운터 /
+  not-in-FB 창 필터 / dotgg 스탯 수집.
 - **Ark Ranger Black floor/ceiling 브래킷 완료 (2026-07-16):** 배터리로 구동되는
   Transformation 상태(딜의 대부분)를 일반 게이지 프리미티브 없이, 신규 보스 플래그
   `BossProfile.part_destructible`로 **floor**(파츠파괴 없음 — 변신은 버스트당 10초 창)
@@ -32,8 +45,7 @@
   **Marciana: Marine Study**(신규 Iron AR B3; Fienn 가정 rapture=1/Flagged=보스/
   High-Risk=Electric 게이팅; Whistle 자ATK·Elemental Advantage AD·DEF 디버프·Flagged
   3789% 풀버스트 넉·High-Risk 20노멀 넉). **Phase S 완료(이전):** attack/charge speed 배선
-  + Dorothy: Serendipity. **다음:** Phase B 잔여(#8 자원-fill-트리거 타 유닛 버프[Maiden])
-  또는 Phase C(#3 arcana 대형, #6 ada, little-mermaid).
+  + Dorothy: Serendipity. **다음(당시):** Phase C — 완료됨(아래).
 
 ---
 
@@ -300,7 +312,7 @@
     `bready`(Taste), `dorothy-serendipity`(펠릿 카운터), `eve`(크리티컬-히트 카운터 —
     Julia 시그니처 인코딩 중 확인됨: 기대값 크리 모델과 구조적으로 불가, **영구 defer**
     가능성 높음, 착수 전 재확인),
-    `ada-wong`(풀버스트창 주기딜=gap #6 + True),
+    (`ada-wong`은 2026-07-16 Phase C에서 인코딩 완료 — gap #6 during_full_burst 소비),
     `milk-blooming-bunny`·`scarlet-black-shadow`(distributed)
   - **무기 변형**(버스트/평타가 다른 무기모드로 전환 = 핵심 딜, 미지원): `snow-white`,
     `snow-white-heavy-arms`, `maxwell`, `cinderella-crystal-wave`(MG/Snipe 모드

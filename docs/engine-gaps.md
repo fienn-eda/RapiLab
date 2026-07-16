@@ -5,7 +5,19 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-16 (**Ark Ranger Black (gap #2 Pattern B) 브래킷으로 우회
+- 마지막 갱신: 2026-07-16 (**Phase C 배치 — gap #3·#6·#8·#9 완료.**
+  #3 member-subset scope: `SquadMember.weapon` + `member_subset_buff_rule`(트리거 시점
+  라이브 필터 → `slugs:` 스코프 해석, 신규 Effect scope 없음). 소비: Ark Ranger Black
+  (Wind-AR 아군 지속댐)·Arcana(Magician/Strength 선버스트 Electric B3)·Tove(SG 아군
+  공속+flat ATK, 데이터 재수집)·Ada Wong(신규, Covert Support 선버스트 B3).
+  #6 periodic-during-FB: `periodic_nukes`에 `during_full_burst`/`hit_count`/
+  `own_burst_interval`. 소비: Ada Wong(Flash Grenade 420% 진댐, 자기버스트 창 1초 틱
+  Fienn 판정)·Little Mermaid(Bubble Wave 63.36%×4). #8 자원-fill-트리거 아군 버프:
+  `resource_fill_triggered_buffs` 파라미터+레지스트리 맵. 소비: Maiden ⚠→✅.
+  #9 first-bullet 마커: `attack_rate` first-bullet 트리오 + `per_shot_rules`
+  `"first_bullet"` 모드 + RoundGrant 2차 패스 리팩터 + `normal_attack_damage_multiplier`
+  (노멀공격 전용 Final-ATK 항). 소비: Jill Valentine ⚠→✅(Magnum 9탄 배수·Acid refresh
+  정상상태 DoT, Fienn 판정). 이전 갱신: **Ark Ranger Black (gap #2 Pattern B) 브래킷으로 우회
   완료** — 시간감쇠 게이지·변신을 일반 primitive로 풀지 않고, 신규 보스 플래그
   `BossProfile.part_destructible`로 floor(변신=버스트당 10초 창)/ceiling(변신=전투
   시작부터 영구) 두 갈래를 하드코딩. 부위파괴로 게이지가 차는 메커니즘 자체는 여전히
@@ -53,13 +65,13 @@
 |---|---|---:|---|---|
 | ~~1~~ | **per-shot 트리거 + 발사 카운터** (노멀공격 N회 / 풀차지 N회 / N shot마다 / 마지막 탄) | ~30 (합집합) | **완료 (2026-07-11 `per_shot_rules`, 2026-07-12 "마지막 탄" 잔여 변형까지 완료)** | 신규 트리거 |
 | 2 | **자원/스택 트래킹** (배터리·탄약주머니·N스택 누적) | 16 | **Pattern A 완료 (2026-07-12, named-resource)** — Pattern B(시간감쇠 게이지·변신) 일반 프리미티브 잔여 (ark-ranger-black은 2026-07-16 `part_destructible` 브래킷으로 개별 우회) | 신규 상태 |
-| 3 | **narrow subset scope** (무기종별 / 티어+선버스트 대상) | 9 (+Tove: SG-아군 Attack Speed+ATK, Phase S에서 연기) | 무기종: 소(~20 loc) / 티어부분집합: 중(~60 loc) | 신규 스코프 |
+| ~~3~~ | ~~narrow subset scope~~ (무기종별 / 티어+선버스트 대상) | 9 | **완료 (2026-07-16 Phase C, `member_subset_buff_rule` — Ark·Arcana·Tove·Ada 소비)** | 신규 스코프 |
 | ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
 | ~~5~~ | ~~enemy-element 조건~~ (룰에서 boss_element 접근) | 3 (Brid·Helm:Aqua·Marciana) | **완료 (2026-07-16, `boss_is_element` + enemy_def_percent 배선)** | 컨텍스트 확장 |
-| 6 | **periodic-during-Full-Burst 넉** (풀버스트 창 안에서만 N초마다) | 1 (Ada) | 소 (~30 loc, periodic_nukes 변형) | 타이밍 변형 |
+| ~~6~~ | ~~periodic-during-Full-Burst 넉~~ (풀버스트 창 안에서만 N초마다) | 2 (Ada·Little Mermaid) | **완료 (2026-07-16 Phase C, `during_full_burst`+`hit_count`+`own_burst_interval`)** | 타이밍 변형 |
 | ~~7~~ | ~~풀버스트/자기상태창 한정 per-shot 트리거~~ (fill이 아니라 버프/넉 직접 발동) | 4 (Soda·Asuka·Grave·Velvet) | **완료 (2026-07-15, `per_shot_rules`의 `every_during_full_burst`/`every_during_own_status_window` 모드)** | 신규 트리거 변형 |
-| 8 | **자원-fill-트리거 타 유닛 버프** (자원 소유자 아닌 아군에게 버프) | 1 (Maiden 잔여 버프) | 소~중 | 신규 트리거 |
-| 9 | **reload 후 첫 발("first bullet after reload") per-shot 마커** (신규, 2026-07-15) | 1 (Jill Valentine) | 소 (~30 loc, "마지막 탄" 마커의 거울상) | 신규 트리거 변형 |
+| ~~8~~ | ~~자원-fill-트리거 타 유닛 버프~~ (자원 소유자 아닌 아군에게 버프) | 1 (Maiden) | **완료 (2026-07-16 Phase C, `resource_fill_triggered_buffs`)** | 신규 트리거 |
+| ~~9~~ | ~~reload 후 첫 발("first bullet after reload") per-shot 마커~~ | 1 (Jill Valentine) | **완료 (2026-07-16 Phase C, `first_bullet` 모드 + `normal_attack_damage_multiplier`)** | 신규 트리거 변형 |
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
 | — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) | **완료 (2026-07-11, `ally_burst_activate`)** | 신규 트리거 |
 | — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |
@@ -191,7 +203,18 @@
   "Resource-scaled / gated burst nuke", "Multi-hit burst nuke",
   `engine-capabilities.md`의 ResourceSpec/resource_scaled_nukes/burst_hit_counts.
 
-### 3. narrow subset scope
+### 3. narrow subset scope — ✅ 완료 (2026-07-16, Phase C `member_subset_buff_rule`)
+
+- **해결:** 신규 Effect scope를 만들지 않고, 트리거 시점에 라이브 필터
+  `member_filter(member, context) -> bool`로 멤버를 골라 기존 `slugs:` 스코프로
+  해석(`top_atk_slugs` 선례). `SquadMember`에 옵셔널 `weapon` 필드 추가(로스터가
+  덱 dict에 스레딩, 기본 None이라 기존 컨텍스트 불변). 무기종·티어·선버스트
+  (`burst_used_this_cycle`) 어떤 조합도 한 헬퍼로 커버.
+- **소비 (4):** ark-ranger-black(Wind-AR 아군 Sustained+77.5%)·arcana ⚠→✅
+  (Magician/Strength — 선버스트 Electric B3, Wheel of Fortune 게이팅)·tove
+  (SG 아군 공속+42.24% 상시 + flat ATK 24.21%/스택×3 — char_tove.json 재수집)·
+  ada-wong(신규 — Covert Support 선버스트 B3 flat ATK+진댐). drake-signature·
+  arcana-fortune-mate의 SG squad-근사 정밀화는 선택 후속(이번 배치 범위 아님).
 
 - **무엇:** self/squad/element:X로 표현 안 되는 대상 지정. 두 하위 종류:
   - **무기종별** ("어썰트라이플 아군", "샷건 아군 제외 자기") — 규모 소.
@@ -255,14 +278,15 @@
 - 참고: `special-mechanics.md`의 "Enemy-element-conditional debuffs",
   `brid_silent_track.py`/`helm_aquamarine.py`/`marciana_marine_study.py` docstring.
 
-### 6. periodic-during-Full-Burst 넉
+### 6. periodic-during-Full-Burst 넉 — ✅ 완료 (2026-07-16, Phase C)
 
-- **무엇:** 풀버스트 창(10초) 안에서만 N초마다 발동하는 넉. 예: Ada Wong의 Flash
-  Grenade(420% True dmg, 2초마다, 풀버스트 중). 기존 `periodic_nukes`는 **전투 내내**
-  발동이라 창 한정이 안 됨.
-- **막힌 유닛 (1):** ada-wong.
-- **필요한 확장:** `periodic_nukes`에 "풀버스트 창 한정" 옵션, 또는 full_burst_enter~end
-  사이만 틱. 규모 소. (수요 1명이라 후순위.)
+- **해결:** `periodic_nukes` 스펙에 옵셔널 필드 3개 — `"during_full_burst": True`
+  (각 FB 창 시작 앵커로 창 안에서만 틱), `"hit_count": N`(틱당 N개 개별 히트,
+  `burst_hit_counts`와 같은 사유), `"own_burst_interval": (interval, duration)`
+  (소유자 본인 버스트로 열린 창은 interval로 틱 — Ada의 "activation time condition
+  ▼1초/10초" Fienn 판정 2026-07-16). 기본값 부재 시 기존 스펙과 동일 출력.
+- **소비 (2):** ada-wong(Flash Grenade 420% 진댐 2초마다, 자기 버스트 창은 1초)·
+  little-mermaid(Bubble Wave 63.36%×4연타 1초마다).
 
 ### 7. 풀버스트/자기상태창 한정 per-shot **트리거** — ✅ 완료 (2026-07-15)
 
@@ -318,7 +342,18 @@ Velvet의 Sticky Fingers는 "풀버스트 **아닐 때**" 풀차지마다 자ATK
 스킬(자기전용, 저가치)뿐이라 후순위. 착수 시엔 `every_during_full_burst`와
 나란히 `"every_outside_full_burst"` 같은 모드로 최소 확장.
 
-### 8. 자원-fill-트리거 타 유닛 버프 (resource_gated_buffs와 별개 갭)
+### 8. 자원-fill-트리거 타 유닛 버프 — ✅ 완료 (2026-07-16, Phase C)
+
+- **해결:** `simulate_raid(..., resource_fill_triggered_buffs={owner: [spec]})` —
+  spec = `{"resource", "member_filter"(member, owner_slug), "buffs":
+  [(stat, value, duration)], "condition"(옵션)}`. (owner, resource)의 **모든 fill
+  이벤트마다** 필터된 멤버에 `slugs:` 스코프로 refreshing 적용(연속 fill은 refresh,
+  NIKKE 관례). resource_specs 해석 루프 직후(모든 fill 기록 완료 시점)·
+  resource_gated_buffs 직전 패스. 레지스트리 맵 `_RESOURCE_FILL_TRIGGERED_BUFF_
+  BUILDERS` + `get_resource_fill_triggered_buffs` + assemble 키.
+- **소비 (1):** maiden-ice-rose ⚠→✅ — Blessings Upon You "MP 회복 시" Electric
+  아군(자신 제외) 상성공댐+40.9%(Water 보스 `boss_is_element` 게이팅)·flat ATK
+  20.9%/10초 refresh.
 
 - **무엇:** 한 유닛의 자원이 채워지는 사건에 반응해 **다른** 유닛에게 버프를 주는
   패턴 — Maiden의 Blessings Upon You "MP 회복 시" 아군(Electric 코드) 버프, Soda의
@@ -330,7 +365,18 @@ Velvet의 Sticky Fingers는 "풀버스트 **아닐 때**" 풀차지마다 자ATK
   거는 새 파라미터. 규모 소~중, 수요 확인 후 착수.
 - 참고: `maiden_ice_rose.py` docstring.
 
-### 9. reload 후 첫 발("first bullet after reload") per-shot 마커 (신규, 2026-07-15 발견)
+### 9. reload 후 첫 발("first bullet after reload") per-shot 마커 — ✅ 완료 (2026-07-16, Phase C)
+
+- **해결:** `attack_rate.py`에 `magazine_first_bullet_times`/`charge_first_bullet_
+  times`/`first_bullet_shot_times`(last-bullet 트리오의 거울상, t=0 전투 개시
+  매거진 포함) + `per_shot_rules` `"first_bullet"` 모드. 함께 **RoundGrant 2차
+  패스 리팩터**(그랜트→Effect 변환을 유닛별 샷 루프 밖 2차 루프로 이동 — per-shot
+  룰이 기록한 라운드그랜트도 변환됨, 기존 Zwei/Miranda 출력 불변) +
+  **`normal_attack_damage_multiplier`**(노멀공격 전용 Final-ATK 항, phase 2에서
+  노멀 인스턴스의 coefficient만 스케일).
+- **소비 (1):** jill-valentine ⚠→✅ — Magnum(전투시작+풀재장전마다 다음 9탄 +30%)·
+  Acid(192%/1초/30초, refresh 판정[Fienn 2026-07-16]으로 전투 내내 정상상태 →
+  전체전투 주기 지속넉).
 
 - **무엇:** Jill Valentine의 Magnum "최대 장탄으로 재장전 시" 노멀공격댐 +30%/9라운드
   버프 트리거 — "마지막 탄"(매거진을 실제로 비우는 발사) 마커의 **거울상**으로,
@@ -480,6 +526,22 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   `docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`,
   `ark_ranger_black.py` docstring 참고.
 
+- **Phase C 배치 (gaps #3·#6·#8·#9), 2026-07-16:**
+  - **member-subset scope (#3):** `SquadMember.weapon`(옵셔널) + `_helpers.
+    member_subset_buff_rule(trigger, member_filter, buffs, condition, refreshing)` —
+    트리거 시점 라이브 필터를 `slugs:` 스코프로 해석(신규 Effect scope 없음,
+    top_atk_slugs 선례). 소비: Ark(Wind-AR)·Arcana(선버스트 Electric B3)·Tove(SG)·
+    Ada Wong(선버스트 B3).
+  - **periodic_nukes FB창 옵션 (#6):** `during_full_burst`(창 시작 앵커 틱)·
+    `hit_count`(틱당 N히트)·`own_burst_interval`(자기 버스트로 열린 창의 강화 틱).
+    소비: Ada Wong(Flash Grenade 진댐)·Little Mermaid(Bubble Wave).
+  - **resource_fill_triggered_buffs (#8):** 자원 fill 이벤트마다 필터된 아군
+    부분집합에 refreshing 버프. 소비: Maiden(Blessings MP-회복 아군 버프).
+  - **first-bullet 마커 + 노멀공격 배수 (#9):** `first_bullet_shot_times` 트리오 +
+    `per_shot_rules` `"first_bullet"` 모드 + RoundGrant 2차 패스 리팩터(퍼샷 룰이
+    기록한 그랜트도 변환) + `normal_attack_damage_multiplier`(노멀 전용 Final-ATK
+    항). 소비: Jill Valentine(Magnum/Acid).
+
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
 - ~~**attack speed / charge speed**~~ → **모델됨 (Phase S, 2026-07-16 결정 뒤집기)**:
@@ -522,11 +584,14 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
 - ~~ark-ranger-black (gap #2 Pattern B, 개별)~~ — ✅ 브래킷 우회로 인코딩 완료
   (2026-07-16, `part_destructible` 보스 플래그). Pattern B **일반 프리미티브**는
   여전히 미착수(아래 2번 항목).
-2. **#2 Pattern B (시간감쇠 게이지·변신, 일반 프리미티브)** + **#3 무기종/티어부분집합 스코프** +
-   **#6 FB창 periodic** + **#8 자원-fill-트리거 타 유닛 버프**
-   (Maiden 잔여) + **#9 reload 후 첫 발 마커**(Jill 잔여) + **not-in-Full-Burst
-   per-shot 창 필터**(gap #7 거울상, Velvet Sticky Fingers 잔여) — 각 수요 1명,
-   필요할 때.
+- ~~#3 무기종/티어부분집합 스코프 + #6 FB창 periodic + #8 자원-fill-트리거 타 유닛
+  버프 + #9 reload 후 첫 발 마커~~ — ✅ 완료 (2026-07-16 Phase C 배치; 소비
+  Ark·Arcana·Tove·Ada Wong(신규)·Little Mermaid·Maiden·Jill).
+2. **남은 방향:** #2 Pattern B(시간감쇠 게이지·변신, 일반 프리미티브 — Mihara류) ·
+   상태머신/무기변형(rapi-red-hood·cinderella-crystal-wave·laplace류) ·
+   **아군 총탄 카운터**(스쿼드 합산 발사 누적 — Little Mermaid Bubble Barrage 잔여) ·
+   **not-in-Full-Burst per-shot 창 필터**(gap #7 거울상, Velvet Sticky Fingers
+   잔여) — 각 수요 1~2명, 필요할 때.
 
 각 확장은 TDD로, 인벤토리가 증명한 최소 범위만. 착수 시 이 문서의 해당 유닛 목록으로
 "진짜 풀리는지"를 검증하고, 풀린 유닛은 배치 인코딩한다.
