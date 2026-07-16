@@ -12,7 +12,7 @@
 - 테스트: **545 passed** (2026-07-16, **Ark Ranger Black 완료(최종 리뷰 반영)** —
   브래킷 e2e 3개 + Meteor/floor Collider `full_burst_bonus_eligible=True`(반복틱 DoT
   규칙, Fienn) + D-파생 검증 테스트(하드코딩 10 배제); was 541)
-- 인코딩된 니케: **56명** (Ark Ranger Black[gap #2 Pattern B 브래킷, 신규 ⚠] +1) —
+- 인코딩된 니케: **57명** (Ada Wong[Phase C gaps #3/#6 소비, 신규 ⚠] +1) —
   상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 - **Ark Ranger Black floor/ceiling 브래킷 완료 (2026-07-16):** 배터리로 구동되는
   Transformation 상태(딜의 대부분)를 일반 게이지 프리미티브 없이, 신규 보스 플래그
@@ -53,7 +53,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (56명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (57명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ⬜ 예정 |
 | Phase 6 | 유저 데이터 입력 UI (React) | ⬜ 예정 |

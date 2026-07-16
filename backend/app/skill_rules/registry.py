@@ -15,6 +15,7 @@ the burst cycle (e.g. Helm: Aquamarine's Aegis Cannon Suppression Fire) - see
 separate from `_BUILDERS` so the ~25 existing builders' 2-tuple return shape
 never has to change for the one or two Nikkes that need this.
 """
+from app.skill_rules.ada_wong import build_ada_wong_rules, build_flash_grenade_periodic_nuke
 from app.skill_rules.ade_agent_bunny import build_ade_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
 from app.skill_rules.anis_sparkling_summer import (
@@ -247,6 +248,7 @@ def _build_mana(sv):
 
 
 _BUILDERS = {
+    "ada-wong": lambda sv: (build_ada_wong_rules(sv), None),  # Secret Agent is buff-only
     "anis-star": _build_anis_star,
     "anis-sparkling-summer": lambda sv: (build_anis_sparkling_summer_rules(sv), None),
     "ade-agent-bunny": lambda sv: (build_ade_rules(sv), None),
@@ -311,6 +313,7 @@ _BUILDERS = {
 ENCODED_SLUGS = tuple(_BUILDERS)
 
 _PERIODIC_NUKE_BUILDERS = {
+    "ada-wong": lambda sv: build_flash_grenade_periodic_nuke(sv),
     "ark-ranger-black": lambda sv: build_ark_ranger_ceiling_collider(sv),
     "helm-aquamarine": lambda sv: {
         "cooldown": AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN,
