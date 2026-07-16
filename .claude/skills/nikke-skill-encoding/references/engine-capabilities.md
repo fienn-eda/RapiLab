@@ -381,7 +381,9 @@ instance**, not read unconditionally from the registry like the others — see
 wiring is opt-in per damage instance, gated on skill-text phrase"). Pass it
 only on a `record()`/`dynamic_hit_count_nukes` call for damage whose OWN skill
 description says "as additional damage"; every other damage instance defaults
-to False and is unaffected.)
+to False and is unaffected. `enemy_def_percent` is NOW wired too (2026-07-16),
+read unconditionally like `damage_taken_up` - emit a "DEF ▼ X%" enemy debuff as
+`Effect("enemy_def_percent", -X/100, "squad", dur, caster)`, negative value.)
 
 These exist in `damage_formula.py` but are absent from `raid_simulator.py`'s
 `total_for(...)` calls. Do NOT encode a Nikke's headline effect onto one of

@@ -118,13 +118,41 @@ how to encode it, and current engine status.
   ("after N normal attacks"), it's still undeployable - no such trigger exists
   - defer that specific bullet.
 
-## Enemy-element-conditional debuffs ("if the enemy is [element] Code")
-- **What:** some debuffs only apply against enemies of a specific element, e.g.
-  Brid's Wind-Code-only Damage Taken debuff.
-- **Gap:** SkillRule actions have no access to the boss's element (only
-  `raid_simulator` does, via `boss_element`) - applying the debuff
-  unconditionally would be wrong against non-matching bosses.
-- **Encode:** defer + document. Don't apply it unconditionally.
+## Enemy-element-conditional debuffs ("if the enemy is [element] Code") - BUILT capability (gap #5, 2026-07-16)
+- **What:** some debuffs/bullets only apply against enemies of a specific
+  element, e.g. Brid's Wind-Code-only Damage Taken debuff, Helm: Aquamarine's
+  and Marciana's Electric-Code bullets.
+- **Engine capability:** `SquadContext.boss_element` (injected by
+  `raid_simulator`) + the `boss_is_element(element)` condition helper
+  (`squad_engine.py`), used like `ally_bursted`/`deck_contains`. The
+  `buff_rule` / `refreshing_buff_rule` / `instant_nuke_pulse_rule` helpers gained
+  an optional `condition` param, so a gated bullet reuses the same builder as an
+  ungated one (and it composes with per-shot window-gated modes - a bullet can be
+  both window-gated AND element-gated, see Marciana's High-Risk nuke).
+- **Encode:** gate the rule with `condition=boss_is_element("Wind")` etc. False
+  when boss_element is unset. See `brid_silent_track.py`, `helm_aquamarine.py`,
+  `marciana_marine_study.py`.
+
+## "Elemental Advantage Attack Damage" - Attack Damage gated on elemental advantage
+- **What:** "Elemental Advantage Attack Damage ▲ X%" (e.g. Marciana) is
+  ordinary Attack Damage that only counts when the caster HAS elemental advantage
+  over the enemy (the +10% element matchup). It is NOT a separate damage bucket
+  and NOT `other_elemental_bonus`.
+- **Encode:** map to `attack_damage_up` (general "affects all damage") gated on
+  the boss being the element the caster is strong against - i.e.
+  `boss_is_element(<caster's advantage target>)`. Iron > Electric, so Marciana's
+  is gated on `boss_is_element("Electric")`. See `marciana_marine_study.py`.
+
+## Enemy DEF ▼ debuff - BUILT (enemy_def_percent, 2026-07-16)
+- **What:** "DEF ▼ X%" on the enemy (e.g. Marciana's High-Risk Target
+  DEF −10.56%). The damage formula's `enemy_def_percent` supported it but
+  `raid_simulator` never read it, so it was silently inert.
+- **Engine capability:** `raid_simulator._damage_instance` now reads
+  `enemy_def_percent` from the registry (a squad-scope enemy debuff, exactly like
+  `damage_taken_up`). Emit `Effect("enemy_def_percent", -X/100, "squad", dur,
+  caster)` - note the NEGATIVE value for a DEF reduction. No DEF-floor-at-0 clamp
+  yet (reference says defense can't drop below 0 through DEF% debuffs; add a clamp
+  only when a unit's debuff would push a real boss DEF below 0).
 
 ## A continuous buff canceled by a later trigger, not a timer
 - **What:** some "continuously" buffs are removed by a specific later event
