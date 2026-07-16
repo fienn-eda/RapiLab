@@ -55,7 +55,13 @@ describe('RecommendPanel', () => {
 
     expect(recommendDecks).toHaveBeenCalledWith({
       roster: fullRoster,
-      boss: { element: null, core_hittable: false, enemy_def: 0, fight_duration: 180 },
+      boss: {
+        element: null,
+        core_hittable: false,
+        enemy_def: 0,
+        fight_duration: 180,
+        part_destructible: false,
+      },
     })
     expect(await screen.findByText('#1')).toBeInTheDocument()
     expect(screen.getByText('100 total dmg')).toBeInTheDocument()
@@ -89,7 +95,34 @@ describe('RecommendPanel', () => {
 
     expect(recommendDecks).toHaveBeenCalledWith({
       roster: fullRoster,
-      boss: { element: 'Fire', core_hittable: true, enemy_def: 20000, fight_duration: 180 },
+      boss: {
+        element: 'Fire',
+        core_hittable: true,
+        enemy_def: 20000,
+        fight_duration: 180,
+        part_destructible: false,
+      },
+    })
+  })
+
+  it('sends part_destructible: true when the part-destruction gimmick is toggled on', async () => {
+    const user = userEvent.setup()
+    vi.mocked(recommendDecks).mockResolvedValue({ decks: [] })
+
+    render(<RecommendPanel roster={fullRoster} />)
+    await user.click(screen.getByLabelText(/part-destruction gimmick/i))
+
+    await user.click(screen.getByRole('button', { name: /recommend decks/i }))
+
+    expect(recommendDecks).toHaveBeenCalledWith({
+      roster: fullRoster,
+      boss: {
+        element: null,
+        core_hittable: false,
+        enemy_def: 0,
+        fight_duration: 180,
+        part_destructible: true,
+      },
     })
   })
 })

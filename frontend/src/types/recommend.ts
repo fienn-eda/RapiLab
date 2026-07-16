@@ -21,6 +21,9 @@ export interface BossProfile {
   core_hittable: boolean // default false
   enemy_def: number // default 0
   fight_duration: number // seconds, default 180
+  part_destructible: boolean // default false — boss has a part-destruction gimmick;
+  // selects the ceiling (max-potential) model for units whose kit depends on
+  // part destruction (e.g. Ark Ranger Black), false = floor (lower-bound) model.
   // gauge_charge_time and mode also exist on the backend BossProfile but are
   // left to backend defaults and not surfaced here (per the README contract).
 }

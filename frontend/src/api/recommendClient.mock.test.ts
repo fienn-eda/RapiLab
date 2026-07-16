@@ -18,7 +18,13 @@ const nikke = (slug: string): UserNikkeState => ({
 
 const baseRequest = (overrides: Partial<RecommendRequest> = {}): RecommendRequest => ({
   roster: ['a', 'b', 'c', 'd', 'e'].map(nikke),
-  boss: { element: null, core_hittable: false, enemy_def: 0, fight_duration: 180 },
+  boss: {
+    element: null,
+    core_hittable: false,
+    enemy_def: 0,
+    fight_duration: 180,
+    part_destructible: false,
+  },
   ...overrides,
 })
 

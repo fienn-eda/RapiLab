@@ -6,7 +6,7 @@ import {
 } from './bossProfileDraft'
 
 describe('validateBossProfileDraft', () => {
-  it('accepts the defaults (non-elemental, DEF 0, 180s)', () => {
+  it('accepts the defaults (non-elemental, DEF 0, 180s, no part destruction)', () => {
     const { errors, value } = validateBossProfileDraft(makeDefaultBossProfileDraft())
     expect(errors).toEqual({})
     expect(value).toEqual({
@@ -14,21 +14,24 @@ describe('validateBossProfileDraft', () => {
       core_hittable: false,
       enemy_def: 0,
       fight_duration: 180,
+      part_destructible: false,
     })
   })
 
-  it('accepts an elemental, core-hittable boss with a custom DEF and duration', () => {
+  it('accepts an elemental, core-hittable, part-destructible boss with a custom DEF and duration', () => {
     const draft: BossProfileDraft = {
       element: 'Fire',
       core_hittable: true,
       enemy_def: '15000',
       fight_duration: '90',
+      part_destructible: true,
     }
     expect(validateBossProfileDraft(draft).value).toEqual({
       element: 'Fire',
       core_hittable: true,
       enemy_def: 15000,
       fight_duration: 90,
+      part_destructible: true,
     })
   })
 
