@@ -35,6 +35,9 @@ SKILL_VALUE_MANIFESTS = {
             "attack_support": ("skills", 1),
             "annihilation": ("skills", 2),
         },
+        # "Activates when entering Burst stage 3" - the encoder skipped the
+        # trigger-phrase "3" when numbering Attack Support's slots.
+        "drop_tokens": {"attack_support": [1]},
     },
 }
 
