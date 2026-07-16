@@ -34,7 +34,11 @@ ARK_RANGER_ULTIMATE = {
     "description_value_04": "135.83",  # self Sustained Damage % (burst)
     "description_value_05": "10",      # its duration
 }
-ARK_RANGER_TREMBLE = {"description_value_01": "45.87"}  # Ark Black Collider % per tick
+ARK_RANGER_TREMBLE = {
+    "description_value_01": "45.87",  # Ark Black Collider % per tick
+    "description_value_03": "77.5",   # Wind-AR ally Sustained Damage % (FB enter)
+    "description_value_04": "10",     # its duration
+}
 
 # Real level-10 Liter values, same fixture as test_skill_rules_burst1_batch1.py.
 LITER_VALUES = {

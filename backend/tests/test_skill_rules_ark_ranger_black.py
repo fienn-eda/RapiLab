@@ -24,12 +24,17 @@ ULTIMATE = {
     "description_value_04": "135.83",  # self Sustained Damage % (burst)
     "description_value_05": "10",      # its duration
 }
-TREMBLE = {"description_value_01": "45.87"}  # Ark Black Collider % per tick
+TREMBLE = {
+    "description_value_01": "45.87",  # Ark Black Collider % per tick
+    "description_value_03": "77.5",   # Wind-AR ally Sustained Damage % (FB enter)
+    "description_value_04": "10",     # its duration
+}
 
 
 def build():
     return build_ark_ranger_black_rules({
-        "transform": TRANSFORM, "ultimate": ULTIMATE, "caster_atk": 100000.0,
+        "transform": TRANSFORM, "ultimate": ULTIMATE, "tremble": TREMBLE,
+        "caster_atk": 100000.0,
     })
 
 
@@ -126,6 +131,25 @@ def test_transformation_window_derives_from_battery_values_not_hardcoded():
     fire_trigger("own_burst_activate", {"ark-ranger-black": rules}, _ctx(False), registry, time=5.0)
     assert round(registry.total_for("atk_percent", ARK, now=9.9), 4) == 1.5619
     assert registry.total_for("atk_percent", ARK, now=10.1) == 0.0  # expires after 5s, not 10s
+
+
+def test_fb_enter_sustained_buff_hits_only_wind_ar_allies():
+    # Tremble! 2nd bullet: FB enter -> all Wind Code allies with assault
+    # rifles get Sustained Damage +77.5% for 10s (member-subset scope, gap #3).
+    registry = EffectRegistry()
+    ctx = SquadContext([
+        SquadMember("ark-ranger-black", 3, "Wind", weapon="AR"),
+        SquadMember("wind-ar-ally", 3, "Wind", weapon="AR"),
+        SquadMember("wind-sg-ally", 3, "Wind", weapon="SG"),
+    ])
+    fire_trigger("full_burst_enter", {"ark-ranger-black": build()}, ctx, registry, time=5.0)
+    def total(slug, element):
+        return registry.total_for("sustained_damage_up", {"slug": slug, "element": element}, 6.0)
+    assert total("wind-ar-ally", "Wind") == 0.775
+    assert total("ark-ranger-black", "Wind") == 0.775  # Ark herself is Wind AR
+    assert total("wind-sg-ally", "Wind") == 0.0
+    # 10s duration
+    assert registry.total_for("sustained_damage_up", {"slug": "wind-ar-ally", "element": "Wind"}, 15.1) == 0.0
 
 
 def test_per_shot_sustained_buff_every_30_normals_refreshes():

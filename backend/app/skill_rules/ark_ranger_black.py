@@ -25,15 +25,17 @@ Modeled (DPS-relevant):
   same day, with the ceiling Collider as its first consumer.
 - Ultimate! (skills[2], burst): Meteor 266.69% sustained DoT x10 (both
   branches); self Sustained Damage +135.83% for 10 sec (both branches).
+- Tremble! (skills[1]) Full-Burst enter: all Wind Code allies with assault
+  rifles get Sustained Damage +77.5% for 10 sec (member-subset scope, gap #3).
+  Ark herself is Wind AR and her DoTs are sustained-typed, so it self-applies;
+  it also reaches any other Wind-AR sustained dealer in the deck.
 
 Not modeled / deferred:
 - Part-destruction battery fill (no enemy-part concept) - the reason for the
   floor/ceiling flag.
-- Skill 2 Full-Burst "Wind Code allies with assault rifles: Sustained Damage
-  +77.5%" - needs gap #3 (weapon+element scope); deferred to avoid overestimation.
 - Damage to Parts +20% (skill 1) - situational part damage, not raid DPS.
 """
-from app.skill_rules._helpers import buff_rule, refreshing_buff_rule
+from app.skill_rules._helpers import buff_rule, member_subset_buff_rule, refreshing_buff_rule
 from app.squad_engine import boss_part_destructible, not_condition
 
 
@@ -51,10 +53,13 @@ def transformation_window_seconds(values):
 def build_ark_ranger_black_rules(values):
     transform = values["transform"]
     ultimate = values["ultimate"]
+    tremble = values["tremble"]
     atk = float(transform["description_value_06"]) / 100
     window = transformation_window_seconds(values)
     self_sustained = float(ultimate["description_value_04"]) / 100
     self_sustained_duration = float(ultimate["description_value_05"])
+    squad_sustained = float(tremble["description_value_03"]) / 100
+    squad_sustained_duration = float(tremble["description_value_04"])
 
     floor = not_condition(boss_part_destructible())
     ceiling = boss_part_destructible()
@@ -66,6 +71,13 @@ def build_ark_ranger_black_rules(values):
         buff_rule("battle_start", [("atk_percent", atk, "self", None)], condition=ceiling),
         # Burst self Sustained Damage +135.83% for 10s - both branches.
         buff_rule("own_burst_activate", [("sustained_damage_up", self_sustained, "self", self_sustained_duration)]),
+        # Tremble! FB enter: Wind-AR allies (Ark included) Sustained Damage
+        # +77.5% for 10s - member-subset scope (gap #3).
+        member_subset_buff_rule(
+            "full_burst_enter",
+            lambda m, context: m.element == "Wind" and m.weapon == "AR",
+            [("sustained_damage_up", squad_sustained, squad_sustained_duration)],
+        ),
     ]
 
 
