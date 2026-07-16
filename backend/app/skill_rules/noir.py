@@ -17,6 +17,21 @@ Not modeled:
 from app.skill_rules._helpers import buff_rule
 
 
+SKILL_VALUE_MANIFESTS = {
+    "noir": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_burst3_eb1",
+        "keys": {
+            "lucky_charm": ("skills", 0),
+            "finale": ("skills", 2),
+        },
+        "drop_tokens": {
+            "lucky_charm": [0],
+        },
+    },
+}
+
+
 def finale_burst_percent(values):
     return float(values["finale"]["description_value_01"])
 

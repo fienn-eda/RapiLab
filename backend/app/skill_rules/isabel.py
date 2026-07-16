@@ -23,6 +23,24 @@ from app.effects import Pulse
 from app.skill_rules._helpers import buff_rule, escalating_buff_rule
 from app.squad_engine import SkillRule
 
+
+SKILL_VALUE_MANIFESTS = {
+    "isabel": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_burst3_eb1",
+        "keys": {
+            "marked_target": ("skills", 0),
+            "pointed_feather": ("skills", 1),
+            "sonic_chaser": ("skills", 2),
+        },
+        "drop_tokens": {
+            "marked_target": [0, 3, 6],
+            "sonic_chaser": [1, 4, 6],
+        },
+    },
+}
+
+
 POINTED_FEATHER_COOLDOWN = 15.0
 
 

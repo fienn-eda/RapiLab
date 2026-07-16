@@ -227,3 +227,10 @@ def test_guillotine_exp_ramps_own_normal_attack_damage_end_to_end():
     # are strictly higher as her self ATK ramps with accumulated EXP.
     assert normals[0] == 2000.0
     assert normals[-1] > normals[0]
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+HEROS_FATE = GUILLOTINE["heros_fate"]
+HEROS_GIFT = GUILLOTINE["heros_gift"]
+EXTERMINATION = GUILLOTINE["extermination"]

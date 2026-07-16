@@ -222,3 +222,16 @@ def test_jill_acid_ammo_ticks_whole_fight_and_scales_with_sustained_damage_up():
     buffed_ticks = [e["damage"] for e in buffed["damage_log"] if e["source"] == "periodic"]
     for base_damage, buffed_damage in zip([d for _, d, _ in ticks], buffed_ticks):
         assert round(buffed_damage, 6) == round(base_damage * 1.5, 6)
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+EXTRASENSORY = CHISATO["extrasensory"]
+AP_ROUNDS = CHISATO["ap_rounds"]
+EMERGENCY_CHARGE = CHISATO["emergency_charge"]
+MAGNUM_AMMO = JILL["magnum_ammo"]
+ACID_AMMO = JILL["acid_ammo"]
+SUPERCOP = JILL["supercop"]
+QUEENS_GAZE = LUDMILLA["queens_gaze"]
+SNOWSTORM = LUDMILLA["snowstorm"]
+GUIDING_LANTERN = LUDMILLA["guiding_lantern"]

@@ -35,6 +35,28 @@ from app.effects import Effect
 from app.skill_rules._helpers import cdr_pulse_rule
 from app.squad_engine import SkillRule, has_status
 
+
+SKILL_VALUE_MANIFESTS = {
+    "rouge": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_burst1_batch2",
+        "keys": {
+            "card_throw": ("skills", 0),
+            "coin_flip": ("skills", 1),
+            "game_master": ("skills", 2),
+        },
+        "drop_tokens": {
+            "coin_flip": [0, 3],
+        },
+        "fixtures": {
+            "card_throw": "ROUGE_CARD_THROW",
+            "coin_flip": "ROUGE_COIN_FLIP",
+            "game_master": "ROUGE_GAME_MASTER",
+        },
+    },
+}
+
+
 SWORD_COIN_STATUS = "Sword Coin"
 
 
