@@ -54,7 +54,11 @@ from app.skill_rules.cinderella import (
     build_glass_slippers_resource_scaled_nuke,
     glass_slippers_burst_percent,
 )
-from app.skill_rules.jill_valentine import build_jill_rules
+from app.skill_rules.jill_valentine import (
+    build_acid_ammo_periodic_nuke,
+    build_jill_rules,
+    build_magnum_per_shot_rules,
+)
 from app.skill_rules.marciana_marine_study import (
     build_marciana_per_shot_rules,
     build_marciana_rules,
@@ -324,6 +328,7 @@ _PERIODIC_NUKE_BUILDERS = {
         "cooldown": POINTED_FEATHER_COOLDOWN,
         "percent": pointed_feather_percent(sv),
     },
+    "jill-valentine": lambda sv: build_acid_ammo_periodic_nuke(sv),
     "little-mermaid": lambda sv: build_bubble_wave_fb_nuke(sv),
 }
 
@@ -366,6 +371,7 @@ _PERIODIC_RULE_BUILDERS = {
 # (threshold, mode, [SkillRule]); mode is "after" or "every".
 _PER_SHOT_RULE_BUILDERS = {
     "ark-ranger-black": lambda sv: build_ark_ranger_per_shot_rules(sv),
+    "jill-valentine": lambda sv: build_magnum_per_shot_rules(sv),
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),

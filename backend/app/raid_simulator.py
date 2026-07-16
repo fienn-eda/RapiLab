@@ -96,7 +96,12 @@ side of a boss-profile flag (e.g. Ark Ranger Black's floor DoT vs. ceiling
 DoT modeling the same battery-transformation state two different ways);
 absent field = always fires, matching every existing spec's behavior.
 """
-from app.attack_rate import CHARGE_WEAPONS, generate_shot_times, last_bullet_shot_times
+from app.attack_rate import (
+    CHARGE_WEAPONS,
+    first_bullet_shot_times,
+    generate_shot_times,
+    last_bullet_shot_times,
+)
 from app.burst_cycle import simulate_burst_cycle
 from app.damage_formula import calculate_damage
 from app.effects import Effect, EffectRegistry, _matches_scope
@@ -518,29 +523,6 @@ def simulate_raid(
             charge_speed_percent_at=charge_speed_percent_at,
         )
         extra_charge_bonus = weapon["charge_damage_percent"] / 100 - 1 if is_charge_weapon else 0.0
-        # "For N round(s)" (bullet-count) buffs expire when the affected ally
-        # fires N normal attacks, not after a fixed time. Now that this unit's shot
-        # timeline is known, turn each grant that targets it into a concrete Effect
-        # whose window covers exactly its next N shots after the grant (from the
-        # first covered shot up to the next uncovered shot / fight end), so phase 2
-        # applies the buff to precisely those shots and nothing after. A squad grant
-        # is consumed independently by each ally's own shots (one Effect per unit).
-        for grant in registry.round_grants():
-            if grant.scope == "self":
-                covers_unit = grant.source_slug == slug
-            else:
-                covers_unit = _matches_scope(grant.scope, target)
-            if not covers_unit:
-                continue
-            covered = [t for t in shot_times if t >= grant.granted_at][: grant.shots]
-            if not covered:
-                continue
-            after_covered = [t for t in shot_times if t > covered[-1]]
-            window_end = after_covered[0] if after_covered else fight_duration
-            registry.add(
-                Effect(grant.stat, grant.value, f"slugs:{slug}", window_end - covered[0], grant.source_slug),
-                applied_at=covered[0],
-            )
         # Per-shot triggers count this unit's shots and fire at a threshold
         # ("after N": once at the Nth shot; "every N": at every Nth) or on
         # the shot that empties its magazine ("last_bullet", threshold
@@ -570,6 +552,19 @@ def simulate_raid(
             if needs_last_bullets else set()
         )
         last_bullet_times_by_slug[slug] = last_bullets
+        # "first_bullet" mirrors "last_bullet": the round that OPENS each
+        # magazine, including the battle-opening one at t=0 - "at the start of
+        # battle and upon reloading to Max Ammunition" (gap #9, e.g. Jill
+        # Valentine's Magnum/Acid Ammo).
+        needs_first_bullets = any(mode == "first_bullet" for _, mode, _ in unit_per_shot)
+        first_bullets = (
+            first_bullet_shot_times(
+                weapon["weapon"], weapon["max_ammo"], weapon["reload_time"], weapon["charge_time"],
+                fight_duration, max_ammo_percent_at, reload_speed_percent_at,
+                attack_speed_percent_at, charge_speed_percent_at,
+            )
+            if needs_first_bullets else set()
+        )
         # The window-gated modes fire on the same in-window shot times a
         # matching resource fill would pick, so reuse `_resource_fill_times`'
         # window filter. "every_during_full_burst" carries N in `threshold`;
@@ -595,6 +590,7 @@ def simulate_raid(
                     (mode == "after" and count == threshold)
                     or (mode == "every" and count % threshold == 0)
                     or (mode == "last_bullet" and shot_time in last_bullets)
+                    or (mode == "first_bullet" and shot_time in first_bullets)
                     or (idx in window_fire_times and shot_time in window_fire_times[idx])
                 )
                 if fires:
@@ -610,6 +606,36 @@ def simulate_raid(
             record(slug, weapon["damage_percent"], shot_time, "normal_attack",
                    damage_type=damage_type, extra_charge_bonus=extra_charge_bonus)
         shot_times_by_slug[slug] = shot_times
+
+    # "For N round(s)" (bullet-count) buffs expire when the affected ally
+    # fires N normal attacks, not after a fixed time. Turn each grant that
+    # targets a unit into a concrete Effect whose window covers exactly its
+    # next N shots after the grant (from the first covered shot up to the next
+    # uncovered shot / fight end), so phase 2 applies the buff to precisely
+    # those shots and nothing after. A squad grant is consumed independently
+    # by each ally's own shots (one Effect per unit). Runs as a SECOND pass
+    # after ALL units' shot loops (gap #9 refactor), so grants recorded by
+    # per-shot rules - of this unit or a later-processed one - convert too;
+    # burst-cycle-trigger grants (Zwei, Miranda) exist before any shot loop,
+    # so their covering shots are unchanged by the move.
+    for slug, shot_times in shot_times_by_slug.items():
+        target = target_for(slug)
+        for grant in registry.round_grants():
+            if grant.scope == "self":
+                covers_unit = grant.source_slug == slug
+            else:
+                covers_unit = _matches_scope(grant.scope, target)
+            if not covers_unit:
+                continue
+            covered = [t for t in shot_times if t >= grant.granted_at][: grant.shots]
+            if not covered:
+                continue
+            after_covered = [t for t in shot_times if t > covered[-1]]
+            window_end = after_covered[0] if after_covered else fight_duration
+            registry.add(
+                Effect(grant.stat, grant.value, f"slugs:{slug}", window_end - covered[0], grant.source_slug),
+                applied_at=covered[0],
+            )
 
     # Resolve quantity-based resources (battery / ammo pouch / N-stack counter).
     # Each spec's fill schedule is deterministic (here: +amount every Nth of the
@@ -810,6 +836,16 @@ def simulate_raid(
                 _tick(tick)
                 tick += cooldown
 
+    def _normal_attack_percent(ev):
+        # Normal Attack Damage Multiplier is a Final ATK modifier on the
+        # user's NORMAL ATTACKS only (damage-formula reference) - it scales
+        # the shot's own coefficient, not any Damage-Up bucket, and touches
+        # no other damage source.
+        multiplier = 1 + registry.total_for(
+            "normal_attack_damage_multiplier", target_for(ev["slug"]), ev["time"]
+        )
+        return _resolve_percent(ev) * multiplier
+
     # Phase 2: now that every buff/debuff is in the registry, compute each
     # recorded damage event against the final registry (each read at its own
     # time is replay-safe).
@@ -818,7 +854,9 @@ def simulate_raid(
             "slug": ev["slug"],
             "time": ev["time"],
             "damage": _damage_instance(
-                ev["slug"], _resolve_percent(ev), ev["time"],
+                ev["slug"],
+                _normal_attack_percent(ev) if ev["source"] == "normal_attack" else _resolve_percent(ev),
+                ev["time"],
                 damage_type=ev["damage_type"], extra_charge_bonus=ev["extra_charge_bonus"],
                 extra_flat_atk=ev["extra_flat_atk"],
                 full_burst_bonus_eligible=ev["full_burst_bonus_eligible"],

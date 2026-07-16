@@ -203,6 +203,85 @@ def charge_last_bullet_times(
     return last_bullets
 
 
+def magazine_first_bullet_times(
+    rate_of_fire,
+    max_ammo,
+    reload_time,
+    fight_duration,
+    max_ammo_percent_at=_zero,
+    reload_speed_percent_at=_zero,
+    attack_speed_percent_at=_zero,
+):
+    """Mirror of magazine_last_bullet_times: each magazine's FIRST round,
+    INCLUDING the battle-opening magazine at t=0 (a "at the start of battle and
+    upon reloading to Max Ammunition" trigger, gap #9 - e.g. Jill Valentine's
+    Magnum/Acid Ammo). A magazine whose first shot would land at or after
+    fight_duration never fires - the while guard excludes it."""
+    first_bullets = set()
+    magazine_start = 0.0
+    while magazine_start < fight_duration:
+        first_bullets.add(magazine_start)
+        shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
+        magazine_size = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
+        magazine_empty_at = magazine_start + magazine_size * shot_interval
+        actual_reload_time = reload_time / (1 + reload_speed_percent_at(magazine_empty_at))
+        magazine_start = magazine_empty_at + actual_reload_time
+    return first_bullets
+
+
+def charge_first_bullet_times(
+    charge_time,
+    reload_time,
+    max_ammo,
+    fight_duration,
+    max_ammo_percent_at=_zero,
+    reload_speed_percent_at=_zero,
+    charge_speed_percent_at=_zero,
+):
+    """Charge-weapon mirror: the first charged shot of each magazine (lands
+    one effective charge after the magazine starts). A first shot at or after
+    fight_duration never fires, so it's checked explicitly."""
+    first_bullets = set()
+    magazine_start = 0.0
+    while magazine_start < fight_duration:
+        effective_charge = charge_time / (1 + charge_speed_percent_at(magazine_start))
+        first_shot = magazine_start + effective_charge
+        if first_shot >= fight_duration:
+            return first_bullets
+        first_bullets.add(first_shot)
+        magazine_size = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
+        last_round_time = magazine_start + effective_charge + (magazine_size - 1) * effective_charge
+        actual_reload_time = reload_time / (1 + reload_speed_percent_at(last_round_time))
+        magazine_start = last_round_time + actual_reload_time
+    return first_bullets
+
+
+def first_bullet_shot_times(
+    weapon,
+    max_ammo,
+    reload_time,
+    charge_time,
+    fight_duration,
+    max_ammo_percent_at=_zero,
+    reload_speed_percent_at=_zero,
+    attack_speed_percent_at=_zero,
+    charge_speed_percent_at=_zero,
+):
+    """Weapon-dispatching counterpart of `last_bullet_shot_times` - the subset
+    of the shot timeline that OPENS its magazine, for a "at the start of battle
+    and upon reloading to Max Ammunition" per_shot_rules trigger (gap #9)."""
+    if weapon in CHARGE_WEAPONS:
+        return charge_first_bullet_times(
+            charge_time, reload_time, max_ammo, fight_duration,
+            max_ammo_percent_at, reload_speed_percent_at, charge_speed_percent_at,
+        )
+    rate_of_fire = rate_of_fire_for_weapon(weapon)
+    return magazine_first_bullet_times(
+        rate_of_fire, max_ammo, reload_time, fight_duration,
+        max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
+    )
+
+
 def last_bullet_shot_times(
     weapon,
     max_ammo,
