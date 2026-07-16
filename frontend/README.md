@@ -83,7 +83,11 @@ Request body:
     "element": "Fire" | "Water" | "Wind" | "Iron" | "Electric" | null,  // null = non-elemental
     "core_hittable": boolean,   // default false
     "enemy_def": number,        // default 0
-    "fight_duration": number    // seconds, default 180
+    "fight_duration": number,   // seconds, default 180
+    "part_destructible": boolean // default false — boss has a part-destruction gimmick.
+                                 // Selects the ceiling (max-potential) model for units whose
+                                 // kit depends on part destruction (e.g. Ark Ranger Black);
+                                 // false = floor (lower-bound) model.
   },
   "top_n": number               // optional, default 5
 }
