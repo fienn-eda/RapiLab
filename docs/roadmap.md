@@ -9,9 +9,8 @@
 
 - 마지막 갱신: 2026-07-16
 - 브랜치: `wip/scaffolding`
-- 테스트: **524 passed** (2026-07-16, **Phase B gap #5 완료** — `boss_is_element` 조건 +
-  `enemy_def_percent` 배선; Brid/Helm Electric·Wind 디버프 + Marciana 신규 + 상호작용/
-  회귀 테스트; was 511)
+- 테스트: **525 passed** (2026-07-16, **gap #5 후속** — Anis: Sparkling Summer의
+  Elemental Advantage 버프를 `other_elemental_bonus` + Water 게이팅으로 인코딩; was 524)
 - 인코딩된 니케: **55명** (Marciana: Marine Study[gap #5, 신규] +1;
   Brid: Silent Track ⚠→✅, Helm: Aquamarine ⚠→✅) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 - **Phase B gap #5 완료 (2026-07-16):** `SquadContext.boss_element` +
@@ -292,10 +291,10 @@
 - [ ] **`rei-ayanami`**: Preemptive Subdual의 "Elemental Advantage Attack Damage
       +30.23%/3s"(노멀100회마다)가 지금은 gap #5로 defer 표시돼 있음 → 이제 인코딩 가능.
       `other_elemental_bonus`, `boss_is_element("Iron")` 게이팅(Fire>Iron)으로.
-- [ ] **`anis-sparkling-summer`**: Sparkling Wave의 "Elemental Advantage Attack
-      Damage +42.24%"가 "버킷 모호(other_elemental_bonus vs attack_damage_up)"로
-      보류 중 → Fienn 판정으로 `other_elemental_bonus`(element bonus damage)로 확정.
-      `boss_is_element("Water")` 게이팅(Electric>Water).
+- [x] **`anis-sparkling-summer`** (2026-07-16): Sparkling Wave의 "Elemental Advantage
+      Attack Damage +42.24%"를 `other_elemental_bonus`(element bonus damage) +
+      `boss_is_element("Water")` 게이팅(Electric>Water)으로 인코딩. 이 유닛의 잔여
+      deferred DPS 효과 없음(✅ 완결).
 
 ### 정리/보강
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
