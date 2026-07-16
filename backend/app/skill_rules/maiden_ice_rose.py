@@ -43,21 +43,21 @@ Modeled (DPS-relevant): an "mp" resource, capped at 12.
   `extra_flat_atk_percent_of_max_hp`, bypassing the registry entirely), so it
   is unaffected by the self-buff timing question above.
 
+- Blessings Upon You's "when MP is replenished" ally bullet: at every MP fill
+  event, all Electric Code allies EXCEPT Maiden get Elemental Advantage Attack
+  Damage +40.9% (element bonus group = other_elemental_bonus, gated on the
+  boss actually being Water - the rei-ayanami/marciana precedent) and flat ATK
+  = 20.9% of Maiden's ATK, 10 sec each, refreshing (resource_fill_triggered_
+  buffs, gap #8). See build_blessings_fill_triggered_buffs.
+
 Not modeled / deferred:
-- Blessings Upon You's "when MP is replenished" ally buff (Elemental
-  Advantage Attack Damage +40.9% and ATK +20.9% of caster ATK, both for 10
-  sec, to all OTHER Electric Code allies) needs a buff granted to OTHER
-  units triggered by a resource FILL event - a different capability from
-  `resource_gated_buffs` (which is the resource OWNER's own burst-time gate,
-  not a squad-wide fill-triggered buff). Not built; a secondary supporting
-  buff, not her headline mechanic.
 - Meditation's "Max HP +6.34% for 15 sec, stacks up to 10, on every 6th
   Full-Charge attack" - Max HP isn't a stat the engine's damage formula
   consumes; survivability, not DPS.
 """
 from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import instant_nuke_pulse_rule
-from app.squad_engine import SkillRule
+from app.squad_engine import SkillRule, boss_is_element
 
 MP_CAP = 12  # skill text: "MP can be accumulated up to a maximum of 12" (fixed, not a data slot)
 # How long after her own burst fires the "MP is used" self-buff becomes
@@ -88,6 +88,36 @@ def build_mp_resources(values):
             buffs=[],
             resets=[{"trigger": "own_burst", "value": 0}],
         )
+    ]
+
+
+def build_blessings_fill_triggered_buffs(values):
+    """Blessings Upon You, 1st bullet: when MP is replenished, all Electric
+    Code allies EXCEPT Maiden get Elemental Advantage Attack Damage +40.9%
+    (only meaningful vs a Water boss - other_elemental_bonus is gated on
+    actual advantage) and flat ATK = 20.9% of Maiden's ATK, 10 sec each."""
+    blessings = values["blessings_upon_you"]
+    caster_atk = values["caster_atk"]
+    elemental = float(blessings["description_value_01"]) / 100
+    elemental_duration = float(blessings["description_value_02"])
+    flat_atk = caster_atk * float(blessings["description_value_03"]) / 100
+    atk_duration = float(blessings["description_value_04"])
+
+    def electric_allies_except_owner(member, owner_slug):
+        return member.element == "Electric" and member.slug != owner_slug
+
+    return [
+        {
+            "resource": "mp",
+            "member_filter": electric_allies_except_owner,
+            "buffs": [("other_elemental_bonus", elemental, elemental_duration)],
+            "condition": boss_is_element("Water"),
+        },
+        {
+            "resource": "mp",
+            "member_filter": electric_allies_except_owner,
+            "buffs": [("flat_atk", flat_atk, atk_duration)],
+        },
     ]
 
 

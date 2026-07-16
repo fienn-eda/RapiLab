@@ -24,6 +24,7 @@ from app.skill_rules.registry import (
     get_periodic_nuke,
     get_dynamic_hit_count_nukes,
     get_periodic_rules,
+    get_resource_fill_triggered_buffs,
     get_resource_gated_buffs,
     get_resource_scaled_nukes,
     get_resource_specs,
@@ -80,11 +81,12 @@ def assemble_simulation_inputs(ordered_deck):
     resource_scaled_nukes = {}
     resource_gated_buffs = {}
     dynamic_hit_count_nukes = {}
+    resource_fill_triggered_buffs = {}
 
     for spec in ordered_deck:
         deck.append(
             {"slug": spec.slug, "burst_tier": spec.burst_tier, "element": spec.element,
-             "cooldown": spec.burst_cooldown}
+             "cooldown": spec.burst_cooldown, "weapon": spec.weapon}
         )
         base_stats[spec.slug] = spec.base_stats
         weapon_stats[spec.slug] = spec.weapon_stats
@@ -141,6 +143,10 @@ def assemble_simulation_inputs(ordered_deck):
         if dynamic_hit_count_nuke:
             dynamic_hit_count_nukes[spec.slug] = dynamic_hit_count_nuke
 
+        resource_fill_triggered_buff = get_resource_fill_triggered_buffs(spec.slug, skill_values)
+        if resource_fill_triggered_buff:
+            resource_fill_triggered_buffs[spec.slug] = resource_fill_triggered_buff
+
     return {
         "deck": deck,
         "rules_by_slug": rules_by_slug,
@@ -156,4 +162,5 @@ def assemble_simulation_inputs(ordered_deck):
         "resource_scaled_nukes": resource_scaled_nukes,
         "resource_gated_buffs": resource_gated_buffs,
         "dynamic_hit_count_nukes": dynamic_hit_count_nukes,
+        "resource_fill_triggered_buffs": resource_fill_triggered_buffs,
     }

@@ -25,7 +25,10 @@ LM = {
         "description_value_04": "400", "description_value_05": "37",
     },
     "bubble_wave": {
-        "description_value_01": "5.05",  # Bubble: enemy Damage Taken %, continuous
+        "description_value_01": "5.05",   # Bubble: enemy Damage Taken %, continuous
+        "description_value_05": "1",      # FB nuke: every N sec during Full Burst
+        "description_value_06": "63.36",  # FB nuke: % of final ATK per hit
+        "description_value_07": "4",      # FB nuke: sequential hit count
     },
     "sirens_song": {
         "description_value_01": "10.13", "description_value_02": "10", "description_value_03": "33.26",
@@ -82,7 +85,10 @@ def test_moran_squad_cdr_and_caster_scaled_flat_atk():
 
 TOVE = {
     "modification_successful": {"description_value_01": "10.08", "description_value_02": "42.24"},
-    "miracle_of_makeshifts": {"description_value_01": "2.32", "description_value_02": "15"},
+    "miracle_of_makeshifts": {
+        "description_value_01": "2.32", "description_value_02": "15",
+        "description_value_03": "24.21", "description_value_04": "15",
+    },
     "caster_atk": 300000,
 }
 
@@ -95,6 +101,111 @@ def test_tove_squad_crit_rate_and_stacked_flat_atk():
     fire_trigger("own_burst_activate", rules, deck_ctx("tove"), reg, 0.0)
     # 2.32% of ATK per stack * 3 max stacks = 6.96% of 300000 = 20880
     assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == round(300000 * 0.0232 * 3, 2)
+
+
+def _tove_weapon_ctx():
+    return SquadContext([
+        SquadMember("tove", burst_tier=1, element="Water", weapon="AR"),
+        SquadMember("sg-ally", burst_tier=3, element="Fire", weapon="SG"),
+        SquadMember("ar-ally", burst_tier=3, element="Fire", weapon="AR"),
+    ])
+
+
+SG_ALLY = {"slug": "sg-ally", "element": "Fire"}
+AR_ALLY = {"slug": "ar-ally", "element": "Fire"}
+
+
+def test_tove_sg_ally_attack_speed_continuous():
+    # Modification Successful 2nd bullet: SG allies Attack Speed +42.24%,
+    # continuous under the module's full-stack steady-state assumption (gap #3).
+    reg = EffectRegistry()
+    rules = {"tove": build_tove_rules(TOVE)}
+    fire_trigger("battle_start", rules, _tove_weapon_ctx(), reg, 0.0)
+    assert round(reg.total_for("attack_speed_percent", SG_ALLY, 100.0), 4) == 0.4224
+    assert reg.total_for("attack_speed_percent", AR_ALLY, 100.0) == 0.0
+
+
+def test_tove_sg_ally_burst_flat_atk():
+    # Miracle of Makeshifts 2nd bullet: SG allies ATK +24.21% of caster's ATK
+    # per stack, mirroring the 3 max Temporary Modification stacks, 15s.
+    reg = EffectRegistry()
+    rules = {"tove": build_tove_rules(TOVE)}
+    fire_trigger("own_burst_activate", rules, _tove_weapon_ctx(), reg, 5.0)
+    squad_part = 300000 * 0.0232 * 3
+    sg_part = 300000 * 0.2421 * 3
+    assert round(reg.total_for("flat_atk", SG_ALLY, 5.0), 2) == round(squad_part + sg_part, 2)
+    assert round(reg.total_for("flat_atk", AR_ALLY, 5.0), 2) == round(squad_part, 2)
+    assert reg.total_for("flat_atk", SG_ALLY, 20.1) == 0.0  # 15s duration
+
+
+def test_tove_attack_speed_raises_sg_ally_shot_count():
+    # Deck-level: the SG ally genuinely fires more shots with Tove present
+    # (attack_speed_percent is live-read per magazine, Phase S wiring).
+    from app.raid_simulator import simulate_raid
+
+    def run(rules):
+        return simulate_raid(
+            deck=[
+                {"slug": "tove", "burst_tier": 1, "element": "Water", "cooldown": 20.0, "weapon": "AR"},
+                {"slug": "sg-ally", "burst_tier": 3, "element": "Fire", "cooldown": 40.0, "weapon": "SG"},
+            ],
+            rules_by_slug={"tove": rules, "sg-ally": []},
+            burst_damage_percents={},
+            base_stats={"tove": {"atk": 300000}, "sg-ally": {"atk": 200000}},
+            enemy_def=0,
+            gauge_charge_time=5.0,
+            fight_duration=5.0,
+            base_crit_rate=0.0,
+            weapon_stats={"sg-ally": {"weapon": "SG", "damage_percent": 200.0, "max_ammo": 9,
+                                      "reload_time": 1.5, "charge_time": 0.0,
+                                      "charge_damage_percent": 100.0}},
+        )
+
+    without = run([])
+    with_tove = run(build_tove_rules(TOVE))
+    shots_without = [e for e in without["damage_log"] if e["source"] == "normal_attack"]
+    shots_with = [e for e in with_tove["damage_log"] if e["source"] == "normal_attack"]
+    assert shots_without and len(shots_with) > len(shots_without)
+
+
+def test_little_mermaid_bubble_wave_fb_nuke_spec():
+    from app.skill_rules.little_mermaid import build_bubble_wave_fb_nuke
+    spec = build_bubble_wave_fb_nuke(LM)
+    assert spec == {
+        "cooldown": 1.0, "percent": 63.36, "hit_count": 4, "during_full_burst": True,
+    }
+
+
+def test_little_mermaid_bubble_wave_ticks_only_in_fb_windows():
+    from app.raid_simulator import simulate_raid
+    from app.skill_rules.little_mermaid import build_bubble_wave_fb_nuke
+
+    deck = [
+        {"slug": "little-mermaid", "burst_tier": 1, "element": "Water", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Fire", "cooldown": 20.0},
+        {"slug": "b3", "burst_tier": 3, "element": "Fire", "cooldown": 20.0},
+    ]
+    result = simulate_raid(
+        deck=deck,
+        rules_by_slug={m["slug"]: [] for m in deck},
+        burst_damage_percents={},
+        base_stats={m["slug"]: {"atk": 10000} for m in deck},
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=30.0,
+        base_crit_rate=0.0,
+        periodic_nukes={"little-mermaid": build_bubble_wave_fb_nuke(LM)},
+    )
+    windows = list(zip(
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_start"),
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_end"),
+    ))
+    ticks = [e["time"] for e in result["damage_log"] if e["source"] == "periodic"]
+    assert ticks
+    for t in ticks:
+        assert any(start < t < end for start, end in windows)
+    start, end = windows[0]
+    assert ticks.count(start + 1.0) == 4  # 4 sequential hits per tick
 
 
 def test_soline_frost_ticket_only_cdr():

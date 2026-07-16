@@ -137,3 +137,88 @@ def test_jill_burst_true_damage_attack_damage_reload_and_conversion():
     assert round(reg.total_for("reload_speed_percent", JIL, 0.0), 4) == 0.9996
     assert reg.total_for("normal_attacks_deal_true", JIL, 0.0) == 1.0
     assert reg.total_for("normal_attacks_deal_true", JIL, 10.1) == 0.0
+
+
+def test_jill_magnum_per_shot_rules_shape():
+    from app.skill_rules.jill_valentine import build_magnum_per_shot_rules
+    rules = build_magnum_per_shot_rules(JILL)
+    assert len(rules) == 1
+    threshold, mode, subrules = rules[0]
+    assert (threshold, mode) == (None, "first_bullet")
+    # the rule records a 9-shot normal_attack_damage_multiplier grant
+    reg = EffectRegistry()
+    subrules[0].action(deck_ctx("jill-valentine", "Electric"), "jill-valentine", 0.0, reg)
+    grants = reg.round_grants()
+    assert len(grants) == 1
+    assert grants[0].stat == "normal_attack_damage_multiplier"
+    assert grants[0].value == 0.30
+    assert grants[0].shots == 9
+    assert grants[0].scope == "self"
+
+
+def test_jill_acid_ammo_periodic_nuke_spec():
+    from app.skill_rules.jill_valentine import build_acid_ammo_periodic_nuke
+    assert build_acid_ammo_periodic_nuke(JILL) == {
+        "cooldown": 1.0, "percent": 192.0, "damage_type": "sustained",
+    }
+
+
+def _jill_raid(rules, per_shot_rules=None, periodic_nukes=None, fight_duration=4.0):
+    from app.raid_simulator import simulate_raid
+    deck = [
+        {"slug": "buffer", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "jill-valentine", "burst_tier": 3, "element": "Electric", "cooldown": 40.0},
+    ]
+    return simulate_raid(
+        deck=deck,
+        rules_by_slug={"buffer": [], "midtier": [], "jill-valentine": rules},
+        burst_damage_percents={},
+        base_stats={m["slug"]: {"atk": 10000} for m in deck},
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=fight_duration,
+        base_crit_rate=0.0,
+        weapon_stats={"jill-valentine": {
+            "weapon": "AR", "damage_percent": 10.0, "max_ammo": 12,
+            "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        }},
+        per_shot_rules=per_shot_rules or {},
+        periodic_nukes=periodic_nukes or {},
+    )
+
+
+def test_jill_magnum_boosts_first_9_rounds_of_each_magazine():
+    from app.skill_rules.jill_valentine import build_magnum_per_shot_rules
+    baseline = _jill_raid([])
+    boosted = _jill_raid([], per_shot_rules={"jill-valentine": build_magnum_per_shot_rules(JILL)})
+    base = [(e["time"], e["damage"]) for e in baseline["damage_log"] if e["source"] == "normal_attack"]
+    boost = [(e["time"], e["damage"]) for e in boosted["damage_log"] if e["source"] == "normal_attack"]
+    assert [t for t, _ in base] == [t for t, _ in boost]
+    # AR 12/s, 12 ammo, 1s reload: magazines open at 0.0 and 2.0 - rounds 1-9
+    # of each magazine are 1.30x, rounds 10-12 are not.
+    index_in_magazine = {}
+    for (t, base_damage), (_, boost_damage) in zip(base, boost):
+        magazine = 0 if t < 2.0 else 1
+        idx = index_in_magazine[magazine] = index_in_magazine.get(magazine, 0) + 1
+        expected = base_damage * 1.30 if idx <= 9 else base_damage
+        assert round(boost_damage, 6) == round(expected, 6), (t, idx)
+
+
+def test_jill_acid_ammo_ticks_whole_fight_and_scales_with_sustained_damage_up():
+    from app.skill_rules._helpers import buff_rule
+    from app.skill_rules.jill_valentine import build_acid_ammo_periodic_nuke
+    spec = {"jill-valentine": build_acid_ammo_periodic_nuke(JILL)}
+    result = _jill_raid([], periodic_nukes=spec, fight_duration=6.0)
+    ticks = [(e["time"], e["damage"], e["damage_type"]) for e in result["damage_log"]
+             if e["source"] == "periodic"]
+    assert [t for t, _, _ in ticks] == [1.0, 2.0, 3.0, 4.0, 5.0]  # whole fight, 1/s
+    assert all(dt == "sustained" for _, _, dt in ticks)
+    # a sustained_damage_up buff raises the ticks
+    buffed = _jill_raid(
+        [buff_rule("battle_start", [("sustained_damage_up", 0.5, "self", None)])],
+        periodic_nukes=spec, fight_duration=6.0,
+    )
+    buffed_ticks = [e["damage"] for e in buffed["damage_log"] if e["source"] == "periodic"]
+    for base_damage, buffed_damage in zip([d for _, d, _ in ticks], buffed_ticks):
+        assert round(buffed_damage, 6) == round(base_damage * 1.5, 6)

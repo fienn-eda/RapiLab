@@ -19,16 +19,19 @@ Modeled (DPS-relevant):
 - Cycle of Destiny (skills[1]): on Full Burst end, an unconditioned squad
   Attack Damage buff, plus - only if Arcana's own burst fired this cycle -
   squad burst-cooldown reduction + squad ATK % of caster's ATK (Death).
+- "The Magician" (skills[0]) / "Strength" (skills[1]) first bullets: on Full
+  Burst end, all Burst 3 Electric Code allies who previously cast their Burst
+  Skill - if Arcana is in Wheel of Fortune status - get Attack damage +180%
+  (Magician) and ATK +180% of caster's ATK (Strength), 15 sec each
+  (member_subset_buff_rule, gap #3; burst_used_this_cycle is still populated
+  when full_burst_end rules run).
 
-Not modeled: both skills[0] and skills[1]'s first bullets ("The Magician" /
-"Strength") target "Burst 3 Electric Code allies who previously cast their
-Burst Skill" - a per-member subset (tier + element + already-burst-this-cycle)
-the engine can't target (Effect scope is only self/squad/element:X, not a
-dynamic per-member list). These are sizeable buffs (180%/90% of caster's ATK)
-for a narrow, deck-specific audience - flag to Fienn if a deck leans into
-all-Electric Burst-3 stacking, since it would materially undercount such a deck.
+Not modeled: The Magician's "Cooldown of Skill 2 -75%" - ally Skill 1/2
+cooldowns aren't simulated (only periodic_rules units have one, and none is
+Electric Burst-3 today).
 """
 from app.effects import Effect, Pulse
+from app.skill_rules._helpers import member_subset_buff_rule
 from app.squad_engine import SkillRule, own_burst_fired_this_cycle
 
 SKILL_VALUE_MANIFESTS = {
@@ -61,6 +64,11 @@ def build_arcana_rules(values):
 
     awakened_atk = float(awakened["description_value_06"]) / 100 * caster_atk
     awakened_atk_duration = float(awakened["description_value_07"])
+
+    magician_attack_damage = float(awakened["description_value_04"]) / 100
+    magician_duration = float(awakened["description_value_05"])
+    strength_atk = float(cycle["description_value_02"]) / 100 * caster_atk
+    strength_duration = float(cycle["description_value_03"])
 
     cycle_cdr_sec = float(cycle["description_value_04"])
     cycle_death_atk = float(cycle["description_value_05"]) / 100 * caster_atk
@@ -97,9 +105,27 @@ def build_arcana_rules(values):
             applied_at=time,
         )
 
+    def bursted_electric_b3(member, context):
+        return (
+            member.burst_tier == 3
+            and member.element == "Electric"
+            and member.slug in context.burst_used_this_cycle
+        )
+
     return [
         SkillRule(trigger="own_burst_activate", action=apply_shackles_buffs),
         SkillRule(trigger="full_burst_end", action=apply_awakened_squad_atk),
         SkillRule(trigger="full_burst_end", action=apply_cycle_death, condition=own_burst_fired_this_cycle()),
         SkillRule(trigger="full_burst_end", action=apply_cycle_attack_damage),
+        # The Magician / Strength: bursted Electric Burst-3 subset (gap #3).
+        member_subset_buff_rule(
+            "full_burst_end", bursted_electric_b3,
+            [("attack_damage_up", magician_attack_damage, magician_duration)],
+            condition=own_burst_fired_this_cycle(),
+        ),
+        member_subset_buff_rule(
+            "full_burst_end", bursted_electric_b3,
+            [("flat_atk", strength_atk, strength_duration)],
+            condition=own_burst_fired_this_cycle(),
+        ),
     ]

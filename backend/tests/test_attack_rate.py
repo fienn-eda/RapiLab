@@ -2,11 +2,14 @@ import pytest
 
 from app.attack_rate import (
     RATE_OF_FIRE_60FPS,
+    charge_first_bullet_times,
     charge_last_bullet_times,
+    first_bullet_shot_times,
     generate_charge_shot_times,
     generate_magazine_shot_times,
     generate_shot_times,
     last_bullet_shot_times,
+    magazine_first_bullet_times,
     magazine_last_bullet_times,
     rate_of_fire_for_weapon,
 )
@@ -210,6 +213,55 @@ def test_last_bullet_shot_times_is_always_a_subset_of_generate_shot_times():
         weapon="MG", max_ammo=7, reload_time=0.5, charge_time=0.0, fight_duration=2.0,
     )
     assert last_bullets and last_bullets <= set(shots)
+
+
+def test_magazine_first_bullet_times_marks_each_magazine_start_including_t0():
+    # Same scenario as test_magazine_last_bullet_times...: magazines start at
+    # t=0 and t=1.5. The battle-opening magazine at t=0 IS a first bullet - a
+    # "at the start of battle and upon reloading to Max Ammunition" trigger
+    # (gap #9, e.g. Jill Valentine's Magnum/Acid Ammo) fires there too.
+    first_bullets = magazine_first_bullet_times(
+        rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=3.0,
+    )
+    assert first_bullets == {0.0, 1.5}
+
+
+def test_first_bullet_shot_times_ar_marks_each_magazine_start():
+    # AR (12/s, 60 ammo, 1s reload): magazine empties at 5.0, reloads by 6.0 -
+    # first bullets at each magazine's start: 0.0, 6.0, 12.0.
+    first_bullets = first_bullet_shot_times(
+        weapon="AR", max_ammo=60, reload_time=1.0, charge_time=0.0, fight_duration=12.5,
+    )
+    assert first_bullets == {0.0, 6.0, 12.0}
+
+
+def test_charge_first_bullet_times_is_one_effective_charge_after_magazine_start():
+    # Same scenario as test_charge_last_bullet_times...: shots [1,2,3, 6,7,8] -
+    # the first charged shot of each magazine lands at 1.0 and 6.0.
+    first_bullets = charge_first_bullet_times(
+        charge_time=1.0, reload_time=2.0, max_ammo=3, fight_duration=9.0,
+    )
+    assert first_bullets == {1.0, 6.0}
+
+
+def test_charge_first_bullet_beyond_fight_duration_is_excluded():
+    # The charged first shot itself lands after the fight ends - never fires.
+    first_bullets = charge_first_bullet_times(
+        charge_time=1.0, reload_time=2.0, max_ammo=3, fight_duration=0.5,
+    )
+    assert first_bullets == set()
+
+
+def test_first_bullet_shot_times_is_always_a_subset_of_generate_shot_times():
+    kwargs = dict(weapon="MG", max_ammo=7, reload_time=0.5, charge_time=0.0, fight_duration=2.0)
+    shots = generate_shot_times(**kwargs)
+    first_bullets = first_bullet_shot_times(**kwargs)
+    assert first_bullets and first_bullets <= set(shots)
+
+    charge_kwargs = dict(weapon="RL", max_ammo=3, reload_time=2.0, charge_time=1.0, fight_duration=9.0)
+    charge_shots = generate_shot_times(**charge_kwargs)
+    charge_first = first_bullet_shot_times(**charge_kwargs)
+    assert charge_first and charge_first <= set(charge_shots)
 
 
 # --- attack speed / charge speed (Phase S) ---

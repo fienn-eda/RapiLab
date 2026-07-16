@@ -15,6 +15,7 @@ the burst cycle (e.g. Helm: Aquamarine's Aegis Cannon Suppression Fire) - see
 separate from `_BUILDERS` so the ~25 existing builders' 2-tuple return shape
 never has to change for the one or two Nikkes that need this.
 """
+from app.skill_rules.ada_wong import build_ada_wong_rules, build_flash_grenade_periodic_nuke
 from app.skill_rules.ade_agent_bunny import build_ade_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
 from app.skill_rules.anis_sparkling_summer import (
@@ -53,7 +54,11 @@ from app.skill_rules.cinderella import (
     build_glass_slippers_resource_scaled_nuke,
     glass_slippers_burst_percent,
 )
-from app.skill_rules.jill_valentine import build_jill_rules
+from app.skill_rules.jill_valentine import (
+    build_acid_ammo_periodic_nuke,
+    build_jill_rules,
+    build_magnum_per_shot_rules,
+)
 from app.skill_rules.marciana_marine_study import (
     build_marciana_per_shot_rules,
     build_marciana_rules,
@@ -129,9 +134,10 @@ from app.skill_rules.julia import (
     climax_burst_percent,
 )
 from app.skill_rules import julia_signature
-from app.skill_rules.little_mermaid import build_little_mermaid_rules
+from app.skill_rules.little_mermaid import build_bubble_wave_fb_nuke, build_little_mermaid_rules
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.maiden_ice_rose import (
+    build_blessings_fill_triggered_buffs,
     build_blessings_upon_you_per_shot_rules,
     build_blessings_upon_you_rules,
     build_diamond_dust_dynamic_hit_count_nukes,
@@ -247,6 +253,7 @@ def _build_mana(sv):
 
 
 _BUILDERS = {
+    "ada-wong": lambda sv: (build_ada_wong_rules(sv), None),  # Secret Agent is buff-only
     "anis-star": _build_anis_star,
     "anis-sparkling-summer": lambda sv: (build_anis_sparkling_summer_rules(sv), None),
     "ade-agent-bunny": lambda sv: (build_ade_rules(sv), None),
@@ -311,6 +318,7 @@ _BUILDERS = {
 ENCODED_SLUGS = tuple(_BUILDERS)
 
 _PERIODIC_NUKE_BUILDERS = {
+    "ada-wong": lambda sv: build_flash_grenade_periodic_nuke(sv),
     "ark-ranger-black": lambda sv: build_ark_ranger_ceiling_collider(sv),
     "helm-aquamarine": lambda sv: {
         "cooldown": AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN,
@@ -320,6 +328,8 @@ _PERIODIC_NUKE_BUILDERS = {
         "cooldown": POINTED_FEATHER_COOLDOWN,
         "percent": pointed_feather_percent(sv),
     },
+    "jill-valentine": lambda sv: build_acid_ammo_periodic_nuke(sv),
+    "little-mermaid": lambda sv: build_bubble_wave_fb_nuke(sv),
 }
 
 # A Nikke's burst nuke is "attack"-typed unless its skill deals a specific
@@ -361,6 +371,7 @@ _PERIODIC_RULE_BUILDERS = {
 # (threshold, mode, [SkillRule]); mode is "after" or "every".
 _PER_SHOT_RULE_BUILDERS = {
     "ark-ranger-black": lambda sv: build_ark_ranger_per_shot_rules(sv),
+    "jill-valentine": lambda sv: build_magnum_per_shot_rules(sv),
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
@@ -428,6 +439,15 @@ _RESOURCE_SCALED_NUKE_BUILDERS = {
 # "scope", "duration"}.
 _RESOURCE_GATED_BUFF_BUILDERS = {
     "soda-twinkling-bunny": lambda sv: build_onward_soda_resource_gated_buffs(sv),
+}
+
+# A Nikke with a buff triggered by a named resource's FILL events, landing on
+# a live-filtered member subset - see raid_simulator's
+# `resource_fill_triggered_buffs` param (gap #8). Each entry returns a list of
+# spec dicts: {"resource", "member_filter"(member, owner_slug) -> bool,
+# "buffs": [(stat, value, duration)], "condition"(optional)}.
+_RESOURCE_FILL_TRIGGERED_BUFF_BUILDERS = {
+    "maiden-ice-rose": lambda sv: build_blessings_fill_triggered_buffs(sv),
 }
 
 # A Nikke with a burst-fired nuke whose HIT COUNT (not just its percent) is
@@ -508,6 +528,15 @@ def get_resource_gated_buffs(slug, skill_values):
     buff gated/scaled by a named resource's count (see raid_simulator's
     `resource_gated_buffs` param), or None for the vast majority without one."""
     builder = _RESOURCE_GATED_BUFF_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_resource_fill_triggered_buffs(slug, skill_values):
+    """List of resource-fill-triggered-buff spec dicts for a Nikke with a buff
+    fired at a named resource's FILL events (see raid_simulator's
+    `resource_fill_triggered_buffs` param, gap #8), or None for the vast
+    majority without one."""
+    builder = _RESOURCE_FILL_TRIGGERED_BUFF_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
 
 
