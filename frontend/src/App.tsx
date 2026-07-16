@@ -1,19 +1,19 @@
 // ShiftyPad investment-data input: the user builds their roster by entering one
-// UserNikkeState per owned Nikke. Fully client-side — no backend calls yet.
+// UserNikkeState per owned Nikke, then requests deck recommendations against
+// a boss profile (POST /api/recommend, via RecommendPanel).
 
 import { useMemo } from 'react'
 import './App.css'
 import { useRoster } from './hooks/useRoster'
-import { validateDraft } from './types/nikkeDraft'
+import { getValidRoster } from './types/nikkeDraft'
 import { NikkeCard } from './components/NikkeCard'
+import { RecommendPanel } from './components/RecommendPanel'
 
 function App() {
   const { drafts, addNikke, updateNikke, removeNikke } = useRoster()
 
-  const readyCount = useMemo(
-    () => drafts.filter((draft) => validateDraft(draft).value).length,
-    [drafts],
-  )
+  const validRoster = useMemo(() => getValidRoster(drafts), [drafts])
+  const readyCount = validRoster.length
 
   return (
     <div className="app">
@@ -50,6 +50,8 @@ function App() {
             </button>
           </>
         )}
+
+        <RecommendPanel roster={validRoster} />
       </main>
 
       <footer className="app__footer">

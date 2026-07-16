@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  getValidRoster,
   makeEmptyDraft,
   makeOverloadRow,
   validateDraft,
@@ -142,5 +143,18 @@ describe('validateDraft', () => {
       pve_cube: { name: 'Bastion', level: '9' },
     }
     expect(validateDraft(draft).value?.pve_cube).toEqual({ name: 'Bastion', level: 9 })
+  })
+})
+
+describe('getValidRoster', () => {
+  it('keeps only drafts that parse into a valid UserNikkeState, in order', () => {
+    const good = validDraft()
+    const bad = { ...makeEmptyDraft(), character_slug: 'incomplete' }
+    const roster = getValidRoster([bad, good, bad])
+    expect(roster).toEqual([validateDraft(good).value])
+  })
+
+  it('returns an empty array when no drafts are valid', () => {
+    expect(getValidRoster([makeEmptyDraft()])).toEqual([])
   })
 })

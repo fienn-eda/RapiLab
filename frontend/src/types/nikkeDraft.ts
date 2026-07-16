@@ -184,3 +184,9 @@ export const validateDraft = (draft: NikkeDraft): ValidationResult => {
   }
   return { errors, value }
 }
+
+/** The subset of drafts that are complete and valid, parsed into UserNikkeState. */
+export const getValidRoster = (drafts: NikkeDraft[]): UserNikkeState[] =>
+  drafts
+    .map((draft) => validateDraft(draft).value)
+    .filter((value): value is UserNikkeState => value != null)
