@@ -9,7 +9,11 @@
 
 - 마지막 갱신: 2026-07-17
 - 브랜치: `wip/scaffolding`
-- 테스트: **622 passed** (2026-07-17, **프론트 3단계 + Phase C 병렬 배치 통합** —
+- 테스트: **654 passed** (2026-07-17 후속 배치 — 매니페스트 배치 2(29유닛, 45/57
+  커버) + dotgg weapon 스탯 39파일 수집 + `dotgg_slug` 브리지 + 오버로드 옵션명
+  422 검증 + 매니페스트 가드 테스트(`KNOWN_MANIFEST_EXCEPTIONS`). **API 로더블
+  42/57**. was 622 통합 직후)
+- 이전: **622 passed** (2026-07-17, **프론트 3단계 + Phase C 병렬 배치 통합** —
   Phase C: gap #3 member-subset scope·#6 during-FB periodic·#8 자원-fill-트리거
   아군 버프·#9 first-bullet 마커 엔진 확장 4건 + 소비자 7유닛(Ark·Arcana·Tove·
   Ada Wong[신규]·Little Mermaid·Maiden·Jill) / 프론트 3단계: 스킬값 조립 파서·
@@ -262,9 +266,14 @@
 - FastAPI 엔드포인트로 엔진 노출. ✅ (`POST /api/recommend`, 2026-07-16 —
   스킬값 매니페스트 + 검증 하니스 + 로스터 로더 경유; 프론트는
   `VITE_RECOMMEND_API=live` + Vite 프록시로 연결, `excluded_slugs` 표시)
-- 잔여: 매니페스트 백필 배치 2(나머지 인코딩 유닛), dotgg 스탯 수집 갭 —
-  dotgg 데이터 파일 없는 인코딩 유닛(현재 dotgg 파일은 14개뿐)은 무기 스탯이
-  없어 API 로딩에서 제외됨(excluded_slugs로 보고). 추후 수집 배치 필요.
+- 매니페스트 백필 배치 2 ✅ + dotgg weapon 스탯 수집 ✅ (2026-07-17, Opus 병렬
+  배치): 매니페스트 45/57(예외 12은 `KNOWN_MANIFEST_EXCEPTIONS` 가드 테스트 +
+  encoded-nikkes.md 예외 표기), dotgg 파일 14→53개, `dotgg_slug` 매니페스트
+  키로 소스 간 슬러그 불일치 브리지(ada-wong·chisato·jill·takina). **API 로더블
+  42/57.** 잔여: 예외 8유닛의 dotgg-소스 매니페스트 배치(crown·liter·zwei 등,
+  weapon 파일은 이미 수집됨), 픽스처 재배열 4유닛(anis-star·asuka·privaty·
+  neon-vision-eye)은 픽스처 검증 후 재작성 필요, marciana(스킨판 weapon 스탯
+  없음)·ark-ranger-black·prika(dotgg 부재)는 보류.
 - ShiftyPad 자동화는 Phase 7.
 
 ### Phase 7 — 자동화 ⬜ (후속)

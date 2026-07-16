@@ -31,6 +31,31 @@ def test_at_least_the_pilots_have_manifests():
     assert {"drake", "drake-signature", "rei-ayanami"} <= set(MANIFEST_SLUGS)
 
 
+# Units encoded without a manifest, each for a documented reason. Every OTHER
+# registry slug MUST carry a manifest - docs/encoded-nikkes.md marks only these
+# exceptions, so a new encoding that skips its manifest fails here instead of
+# silently drifting out of the docs. Shrink this set as blockers clear; never
+# grow it without recording why.
+KNOWN_MANIFEST_EXCEPTIONS = {
+    # no lootandwaifus skill JSON collected yet (dotgg weapon files exist since
+    # 2026-07-17; a dotgg-source manifest batch can clear these)
+    "crown", "helm", "liter", "miranda", "moran", "soline-frost-ticket",
+    "volume", "zwei",
+    # fixture transcribed with reordered/mismatched tokens - drop_tokens cannot
+    # reproduce it from the data (batch-2 report, 2026-07-17)
+    "anis-star", "asuka-shikinami-langley-wille", "privaty", "neon-vision-eye",
+}
+
+
+def test_every_registry_slug_has_a_manifest_or_is_a_known_exception():
+    missing = set(ENCODED_SLUGS) - set(MANIFEST_SLUGS) - KNOWN_MANIFEST_EXCEPTIONS
+    assert not missing, (
+        f"encoded without a manifest and not in KNOWN_MANIFEST_EXCEPTIONS: {sorted(missing)}"
+    )
+    stale = KNOWN_MANIFEST_EXCEPTIONS & set(MANIFEST_SLUGS)
+    assert not stale, f"now have manifests - remove from exceptions: {sorted(stale)}"
+
+
 @pytest.mark.parametrize("slug", MANIFEST_SLUGS)
 def test_assembled_max_level_values_match_fixtures(slug):
     manifest = get_skill_value_manifest(slug)

@@ -43,8 +43,10 @@ def load_nikke_spec(state: UserNikkeState, data_dir: Path = DATA_DIR) -> NikkeSp
     if manifest is None:
         return None
     data_slug = manifest.get("data_slug", slug)
+    # dotgg sometimes shortens a unit's slug (url "ada" for "ada-wong"); the
+    # optional dotgg_slug manifest key bridges that for the weapon-stats lookup.
     try:
-        dotgg = load_character_data("dotgg", data_slug, data_dir)
+        dotgg = load_character_data("dotgg", manifest.get("dotgg_slug", data_slug), data_dir)
     except FileNotFoundError:
         return None
     weapon_stats = _weapon_stats(dotgg)

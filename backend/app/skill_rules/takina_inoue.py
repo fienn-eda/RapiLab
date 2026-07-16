@@ -38,6 +38,7 @@ from app.squad_engine import SkillRule
 SKILL_VALUE_MANIFESTS = {
     "takina-inoue": {
         "source": "lootandwaifus",
+        "dotgg_slug": "takina",
         "test_module": "test_skill_rules_takina_inoue",
         "keys": {
             "combat_support": ("skills", 0),

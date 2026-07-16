@@ -29,6 +29,7 @@ from app.skill_rules._helpers import buff_rule, round_buff_rule
 SKILL_VALUE_MANIFESTS = {
     "jill-valentine": {
         "source": "lootandwaifus",
+        "dotgg_slug": "jill",
         "test_module": "test_skill_rules_burst3_eb2",
         "keys": {
             "magnum_ammo": ("skills", 0),

@@ -25,6 +25,7 @@ from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 SKILL_VALUE_MANIFESTS = {
     "chisato-nishikigi": {
         "source": "lootandwaifus",
+        "dotgg_slug": "chisato",
         "test_module": "test_skill_rules_burst3_eb2",
         "keys": {
             "extrasensory": ("skills", 0),

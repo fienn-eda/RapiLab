@@ -57,6 +57,19 @@ def test_overload_and_cube_pass_through():
     assemble_simulation_inputs([spec])
 
 
+def test_dotgg_slug_manifest_key_bridges_source_slug_mismatch():
+    # ada-wong's lootandwaifus slug is "ada-wong" but dotgg's url is "ada"
+    # (dotgg shortens collab names); the manifest's dotgg_slug key points the
+    # weapon-stats lookup at the right file while skill values stay on the
+    # lootandwaifus slug.
+    spec = load_nikke_spec(_state("ada-wong"))
+    assert spec is not None
+    assert spec.burst_tier == 3
+    assert spec.element == "Electric"
+    assert spec.weapon_stats["weapon"] == "RL"
+    assert spec.weapon_stats["max_ammo"] == 6
+
+
 def test_unloadable_units_are_excluded_not_errors():
     assert load_nikke_spec(_state("totally-unknown")) is None          # not encoded
     assert load_nikke_spec(_state("crown")) is None                    # encoded, but no manifest yet (backfill pending)

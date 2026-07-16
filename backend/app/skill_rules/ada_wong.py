@@ -32,6 +32,7 @@ from app.skill_rules._helpers import buff_rule, member_subset_buff_rule, round_b
 SKILL_VALUE_MANIFESTS = {
     "ada-wong": {
         "source": "lootandwaifus",
+        "dotgg_slug": "ada",
         "test_module": "test_skill_rules_ada_wong",
         "keys": {
             "covert_support": ("skills", 0),
