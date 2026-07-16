@@ -96,6 +96,30 @@ def highest_atk_buff_rule(trigger, n, buffs):
     return SkillRule(trigger=trigger, action=action)
 
 
+def member_subset_buff_rule(trigger, member_filter, buffs, condition=None, refreshing=False):
+    """Timed buffs on the squad members selected by `member_filter` at trigger
+    time - the narrow subsets Effect.scope can't express ("all Wind Code allies
+    with assault rifles", "all Burst 3 allies who previously used their Burst
+    Skill"). Resolved live to a "slugs:" scope like highest_atk_buff_rule, so
+    dynamic state (burst_used_this_cycle) is read at the trigger's own moment.
+    member_filter(member, context) -> bool; the caster is included when it
+    matches. buffs: (stat, value, duration)."""
+
+    def action(context, caster_slug, time, registry):
+        slugs = [m.slug for m in context.members if member_filter(m, context)]
+        if not slugs:
+            return
+        scope = "slugs:" + ",".join(slugs)
+        for stat, value, duration in buffs:
+            effect = Effect(stat, value, scope, duration, caster_slug)
+            if refreshing:
+                registry.add_refreshing(effect, applied_at=time)
+            else:
+                registry.add(effect, applied_at=time)
+
+    return _rule(trigger, action, condition)
+
+
 def round_buff_rule(trigger, buffs, shots=1):
     """"For N round(s)" buffs, whose duration is measured in the affected ally's
     NEXT `shots` normal attacks (bullets), not seconds - e.g. Zwei's Pierce

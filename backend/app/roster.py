@@ -84,7 +84,7 @@ def assemble_simulation_inputs(ordered_deck):
     for spec in ordered_deck:
         deck.append(
             {"slug": spec.slug, "burst_tier": spec.burst_tier, "element": spec.element,
-             "cooldown": spec.burst_cooldown}
+             "cooldown": spec.burst_cooldown, "weapon": spec.weapon}
         )
         base_stats[spec.slug] = spec.base_stats
         weapon_stats[spec.slug] = spec.weapon_stats

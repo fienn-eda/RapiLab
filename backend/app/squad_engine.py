@@ -17,6 +17,10 @@ class SquadMember:
     slug: str
     burst_tier: int
     element: str
+    # Weapon type ("AR"/"SG"/...), for member-subset filters like "all Wind
+    # Code allies with assault rifles" (gap #3). Optional so contexts that
+    # don't need weapon targeting (most tests) stay unchanged.
+    weapon: str | None = None
 
 
 class SquadContext:

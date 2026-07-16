@@ -250,7 +250,7 @@ def simulate_raid(
     resource_gated_buffs = resource_gated_buffs or {}
     dynamic_hit_count_nukes = dynamic_hit_count_nukes or {}
     context = SquadContext(
-        [SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck],
+        [SquadMember(m["slug"], m["burst_tier"], m["element"], m.get("weapon")) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
         boss_element=boss_element,
         part_destructible=part_destructible,
