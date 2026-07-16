@@ -80,6 +80,12 @@ tick-DoT rule (Fienn, 2026-07-16): each tick computes at its own time, so
 ticks landing inside a Full Burst window get the bonus. Absent/False keeps
 the pre-existing no-bonus behavior, so units encoded before this field are
 unchanged until deliberately flagged.
+A spec may also carry `"during_full_burst": True` (ticks only inside each
+Full Burst window, anchored to the window's start - gap #6), `"hit_count": N`
+(each tick records N separate hits, same rationale as burst_hit_counts), and
+`"own_burst_interval": (interval, duration)` (a window whose start falls
+inside [own burst, +duration) ticks at `interval` instead of `cooldown`).
+Defaults keep every existing spec identical.
 Computed as a pass after the burst-cycle simulation completes, same as the
 normal-attack pass - order doesn't matter since it only reads the registry's
 already-populated Effects at arbitrary times, like every other post-pass here.
@@ -744,13 +750,41 @@ def simulate_raid(
         cooldown = spec["cooldown"]
         percent = spec["percent"]
         damage_type = spec.get("damage_type", "attack")
-        tick = cooldown
-        while tick < fight_duration:
-            record(
-                slug, percent, tick, "periodic", damage_type=damage_type,
-                full_burst_bonus_eligible=spec.get("full_burst_bonus_eligible", False),
-            )
-            tick += cooldown
+        hit_count = spec.get("hit_count", 1)
+        eligible = spec.get("full_burst_bonus_eligible", False)
+
+        def _tick(tick_time, slug=slug, percent=percent, damage_type=damage_type,
+                  hit_count=hit_count, eligible=eligible):
+            for _ in range(hit_count):
+                record(slug, percent, tick_time, "periodic", damage_type=damage_type,
+                       full_burst_bonus_eligible=eligible)
+
+        if spec.get("during_full_burst"):
+            # Ticks only inside Full Burst windows, anchored to each window's
+            # start (gap #6 - e.g. Ada Wong's Flash Grenade "every 2 sec during
+            # Full Burst", Little Mermaid's Bubble Wave "every 1 sec only
+            # during Full Burst"). own_burst_interval=(interval, duration):
+            # a window starting inside [own burst, +duration) ticks at the
+            # enhanced interval instead (Ada's post-burst "activation time
+            # condition v 1 sec for 10 sec", Fienn 2026-07-16); her burst and
+            # the FB start share ~the same instant, hence the <= comparison.
+            own_interval = spec.get("own_burst_interval")
+            own_bursts = context.burst_times.get(slug, [])
+            for start, end in full_burst_windows:
+                interval = cooldown
+                if own_interval is not None and any(
+                    bt <= start < bt + own_interval[1] for bt in own_bursts
+                ):
+                    interval = own_interval[0]
+                tick = start + interval
+                while tick < end:
+                    _tick(tick)
+                    tick += interval
+        else:
+            tick = cooldown
+            while tick < fight_duration:
+                _tick(tick)
+                tick += cooldown
 
     # Phase 2: now that every buff/debuff is in the registry, compute each
     # recorded damage event against the final registry (each read at its own
