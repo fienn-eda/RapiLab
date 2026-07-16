@@ -3,6 +3,7 @@ from app.skill_rules.ark_ranger_black import (
     build_ark_ranger_black_rules,
     build_ark_ranger_dots,
     build_ark_ranger_ceiling_collider,
+    build_ark_ranger_per_shot_rules,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
@@ -101,3 +102,19 @@ def test_ceiling_collider_is_wholefight_periodic_sustained():
     assert spec["percent"] == 45.87
     assert spec["damage_type"] == "sustained"
     assert spec["requires_part_destructible"] is True
+
+
+def test_per_shot_sustained_buff_every_30_normals_refreshes():
+    rules = build_ark_ranger_per_shot_rules({"transform": TRANSFORM})
+    assert len(rules) == 1
+    threshold, mode, subrules = rules[0]
+    assert (threshold, mode) == (30, "every")
+
+    registry = EffectRegistry()
+    ctx = _ctx(False)
+    subrules[0].action(ctx, "ark-ranger-black", 3.0, registry)
+    assert round(registry.total_for("sustained_damage_up", ARK, now=3.0), 4) == 0.596
+    assert registry.total_for("sustained_damage_up", ARK, now=8.1) == 0.0  # 5s duration
+    # refresh (not stack): apply again within window -> still 0.596
+    subrules[0].action(ctx, "ark-ranger-black", 6.0, registry)
+    assert round(registry.total_for("sustained_damage_up", ARK, now=6.0), 4) == 0.596

@@ -33,6 +33,7 @@ from app.skill_rules.ark_ranger_black import (
     build_ark_ranger_black_rules,
     build_ark_ranger_dots,
     build_ark_ranger_ceiling_collider,
+    build_ark_ranger_per_shot_rules,
 )
 from app.skill_rules.asuka_shikinami_langley_wille import (
     build_anti_at_field_per_shot_rules,
@@ -359,6 +360,7 @@ _PERIODIC_RULE_BUILDERS = {
 # raid_simulator's `per_shot_rules`). Each entry is a list of
 # (threshold, mode, [SkillRule]); mode is "after" or "every".
 _PER_SHOT_RULE_BUILDERS = {
+    "ark-ranger-black": lambda sv: build_ark_ranger_per_shot_rules(sv),
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),

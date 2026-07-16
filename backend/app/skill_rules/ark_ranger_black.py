@@ -26,7 +26,7 @@ Not modeled / deferred:
   +77.5%" - needs gap #3 (weapon+element scope); deferred to avoid overestimation.
 - Damage to Parts +20% (skill 1) - situational part damage, not raid DPS.
 """
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import buff_rule, refreshing_buff_rule
 from app.squad_engine import boss_part_destructible, not_condition
 
 
@@ -95,3 +95,15 @@ def build_ark_ranger_ceiling_collider(values):
         "cooldown": 1.0, "percent": collider_percent, "damage_type": "sustained",
         "requires_part_destructible": True,
     }
+
+
+def build_ark_ranger_per_shot_rules(values):
+    """Skill 1: after every 30 normal attacks, self Sustained Damage +59.6% for
+    5 sec (refreshes rather than stacks). Both branches."""
+    transform = values["transform"]
+    threshold = int(float(transform["description_value_08"]))
+    sustained = float(transform["description_value_09"]) / 100
+    duration = float(transform["description_value_10"])
+    return [(threshold, "every", [
+        refreshing_buff_rule("per_shot", [("sustained_damage_up", sustained, "self", duration)]),
+    ])]
