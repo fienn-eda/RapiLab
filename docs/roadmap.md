@@ -9,8 +9,9 @@
 
 - 마지막 갱신: 2026-07-16
 - 브랜치: `wip/scaffolding`
-- 테스트: **525 passed** (2026-07-16, **gap #5 후속** — Anis: Sparkling Summer의
-  Elemental Advantage 버프를 `other_elemental_bonus` + Water 게이팅으로 인코딩; was 524)
+- 테스트: **527 passed** (2026-07-16, **gap #5 후속 완료** — Anis: Sparkling Summer +
+  Rei Ayanami의 Elemental Advantage 버프를 `other_elemental_bonus` + 보스원소 게이팅으로
+  인코딩(Rei ⚠→✅); was 524)
 - 인코딩된 니케: **55명** (Marciana: Marine Study[gap #5, 신규] +1;
   Brid: Silent Track ⚠→✅, Helm: Aquamarine ⚠→✅) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 - **Phase B gap #5 완료 (2026-07-16):** `SquadContext.boss_element` +
@@ -288,9 +289,10 @@
       (지금은 빌더가 단일 레벨 dict만 받음)
 
 ### gap #5 후속 (2026-07-16 배치 중 발견, 미착수)
-- [ ] **`rei-ayanami`**: Preemptive Subdual의 "Elemental Advantage Attack Damage
-      +30.23%/3s"(노멀100회마다)가 지금은 gap #5로 defer 표시돼 있음 → 이제 인코딩 가능.
-      `other_elemental_bonus`, `boss_is_element("Iron")` 게이팅(Fire>Iron)으로.
+- [x] **`rei-ayanami`** (2026-07-16): Preemptive Subdual의 "Elemental Advantage Attack
+      Damage +30.23%/3s"(노멀100회마다)를 `other_elemental_bonus` +
+      `boss_is_element("Iron")` 게이팅(Fire>Iron), 넉과 같은 every-100 트리거에 refresh
+      버프로 인코딩. ⚠→✅ (비-DPS 실드만 잔여).
 - [x] **`anis-sparkling-summer`** (2026-07-16): Sparkling Wave의 "Elemental Advantage
       Attack Damage +42.24%"를 `other_elemental_bonus`(element bonus damage) +
       `boss_is_element("Water")` 게이팅(Electric>Water)으로 인코딩. 이 유닛의 잔여
