@@ -16,25 +16,67 @@ ADMIRE_ACCOMPANIMENT = {
     "description_value_04": "2.6",     # Three times: CDR sec
 }
 AEGIS_CANNON_OVERLOAD = {
-    "description_value_01": "164.83",  # burst nuke % of final ATK
+    "description_value_01": "164.83",  # burst nuke % AND Electric-only additional bullet %
 }
 AEGIS_CANNON_SUPPRESSION_FIRE = {
     "description_value_01": "105.58",  # periodic nuke % of final ATK
-    "description_value_02": "5.64",    # deferred: Electric-conditional Damage Taken %
-    "description_value_03": "5",       # deferred: stack cap
-    "description_value_04": "5",       # deferred: duration
+    "description_value_02": "5.64",    # Electric-conditional Damage Taken % per stack
+    "description_value_03": "5",       # stack cap
+    "description_value_04": "5",       # duration
 }
 
 
-def make_context():
+def make_context(boss_element=None):
     return SquadContext([
         SquadMember("helm-aquamarine", burst_tier=2, element="Iron"),
         SquadMember("ally", burst_tier=3, element="Fire"),
-    ])
+    ], boss_element=boss_element)
 
 
 def build():
-    return build_helm_aquamarine_rules({"admire_accompaniment": ADMIRE_ACCOMPANIMENT})
+    return build_helm_aquamarine_rules({
+        "admire_accompaniment": ADMIRE_ACCOMPANIMENT,
+        "aegis_cannon_suppression_fire": AEGIS_CANNON_SUPPRESSION_FIRE,
+        "aegis_cannon_overload": AEGIS_CANNON_OVERLOAD,
+    })
+
+
+SQUAD_TARGET = {"slug": "ally", "element": "Fire"}
+
+
+def test_suppression_fire_electric_damage_taken_debuff_only_against_electric_boss():
+    # "when attacking an Electric Code target: Damage Taken +5.64%, up to 5 stacks,
+    # 5 sec" - her AR reaches 5 stacks in <0.5 sec and holds them, so it's modeled
+    # as a steady-state 28.2% squad debuff, gated on an Electric boss.
+    registry = EffectRegistry()
+    ctx = make_context(boss_element="Electric")
+    fire_trigger("battle_start", {"helm-aquamarine": build()}, ctx, registry, time=0.0)
+    assert round(registry.total_for("damage_taken_up", SQUAD_TARGET, now=90.0), 4) == 0.282
+
+    registry2 = EffectRegistry()
+    iron_ctx = make_context(boss_element="Iron")
+    fire_trigger("battle_start", {"helm-aquamarine": build()}, iron_ctx, registry2, time=0.0)
+    assert registry2.total_for("damage_taken_up", SQUAD_TARGET, now=90.0) == 0.0
+
+
+def test_overload_electric_additional_bullet_only_against_electric_boss():
+    # "when attacking an Electric Code target: Deals 164.83% as additional damage" -
+    # an extra burst bullet, gated on an Electric boss. Helm is Burst 2, so it fires
+    # just before the Full Burst window opens - modeled without the Full Burst bonus
+    # (Fienn, 2026-07-16).
+    registry = EffectRegistry()
+    ctx = make_context(boss_element="Electric")
+    fire_trigger("own_burst_activate", {"helm-aquamarine": build()}, ctx, registry, time=5.0)
+    pulses = registry.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert pulses[0].value == 164.83
+    assert pulses[0].full_burst_bonus_eligible is False
+    assert pulses[0].source_slug == "helm-aquamarine"
+
+    registry2 = EffectRegistry()
+    iron_ctx = make_context(boss_element="Iron")
+    fire_trigger("own_burst_activate", {"helm-aquamarine": build()}, iron_ctx, registry2, time=5.0)
+    assert registry2.drain_pulses("instant_damage_percent") == []
 
 
 def test_burst_percent_is_16483():

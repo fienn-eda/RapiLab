@@ -25,21 +25,30 @@ Modeled (DPS-relevant):
   landing 30 normal attacks" repeats, matching Brid: Journey Ahead's phrasing).
   See `build_admire_accompaniment_per_shot_rules`. A meaningful DPS lever for an
   AR attacker (~72 hits over a 180s fight).
+- Aegis Cannon Suppression Fire's Electric-Code Damage Taken debuff: "when
+  attacking an Electric Code target, Damage Taken +5.64%, up to 5 stacks, 5 sec".
+  Her AR reaches 5 stacks in well under a second and refreshes them faster than
+  they expire, so it's modeled as a steady-state 28.2% (5 x 5.64%) squad enemy
+  debuff, gated on an Electric boss (boss_is_element - gap #5) and applied from
+  battle start. The ~0.5s ramp to full stacks is ignored (documented approximation).
+- Aegis Cannon Overload's Electric-Code additional bullet: an extra 164.83% of
+  final ATK burst hit against an Electric boss (boss_is_element). Fired on her own
+  burst without the Full Burst bonus: her text says "as additional damage" (which
+  Fienn's rule would make bonus-eligible), but she is Burst 2, so the engine fires
+  her burst a moment BEFORE the Full Burst window opens - an FB-eligibility check
+  would never pass, so it's modeled without the bonus rather than as inert opt-in
+  (Fienn, 2026-07-16).
 
-Not modeled:
-- Aegis Cannon Suppression Fire's Electric-Code-conditional stacking Damage
-  Taken debuff (5.64% x up to 5 stacks, 5 sec) - needs boss-element access in
-  skill rules, which doesn't exist (same gap as Brid: Silent Track's
-  Wind-conditional debuff).
-- Aegis Cannon Overload's Electric-Code-conditional additional damage bullet
-  (164.83%) - same boss-element gap.
+Not modeled: none - both Electric-Code bullets are now representable via the
+boss_element gate.
 """
 from app.effects import Pulse
-from app.skill_rules._helpers import instant_nuke_pulse_rule
-from app.squad_engine import SkillRule
+from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
+from app.squad_engine import SkillRule, boss_is_element
 
 AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN = 4.0  # the skill text hardcodes "Cooldown: 4s"
 ADMIRE_ACCOMPANIMENT_NUKE_SHOT_COUNT = 30  # skill text: "after landing 30 normal attacks"
+ELECTRIC = "Electric"  # her Electric-Code bullets apply only against an Electric boss
 
 
 def aegis_cannon_overload_burst_percent(values):
@@ -52,6 +61,8 @@ def aegis_cannon_suppression_fire_percent(values):
 
 def build_helm_aquamarine_rules(values):
     accompaniment = values["admire_accompaniment"]
+    suppression = values["aegis_cannon_suppression_fire"]
+    overload = values["aegis_cannon_overload"]
 
     cdr_tiers = [
         float(accompaniment["description_value_02"]),  # Once
@@ -59,12 +70,29 @@ def build_helm_aquamarine_rules(values):
         float(accompaniment["description_value_04"]),  # Three times
     ]
 
+    electric_debuff = (
+        float(suppression["description_value_02"])  # Damage Taken % per stack
+        * float(suppression["description_value_03"])  # stack cap
+        / 100
+    )
+    overload_additional = float(overload["description_value_01"])
+
     def apply_cdr(context, caster_slug, time, registry):
         n = context.activation_count(caster_slug, "full_burst_enter")
         total = sum(cdr_tiers[: min(n, len(cdr_tiers))])
         registry.add_pulse(Pulse("burst_cooldown_reduction_sec", total, "squad", caster_slug))
 
-    return [SkillRule(trigger="full_burst_enter", action=apply_cdr)]
+    return [
+        SkillRule(trigger="full_burst_enter", action=apply_cdr),
+        buff_rule(
+            "battle_start",
+            [("damage_taken_up", electric_debuff, "squad", None)],
+            condition=boss_is_element(ELECTRIC),
+        ),
+        instant_nuke_pulse_rule(
+            "own_burst_activate", overload_additional, condition=boss_is_element(ELECTRIC)
+        ),
+    ]
 
 
 def build_admire_accompaniment_per_shot_rules(values):
