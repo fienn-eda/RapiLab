@@ -1,5 +1,6 @@
 // The boss profile inputs for POST /api/recommend: element, core hittable,
-// enemy DEF, and fight duration. Mirrors BossProfile in src/types/recommend.ts.
+// enemy DEF, fight duration, and part destructibility. Mirrors BossProfile in
+// src/types/recommend.ts.
 
 import { useId } from 'react'
 import type { BossProfileDraft, BossProfileDraftErrors } from '../types/bossProfileDraft'
@@ -50,6 +51,22 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
           onChange={(event) => onChange({ ...value, core_hittable: event.target.checked })}
         />
         Core is hittable
+      </label>
+
+      <label className="checkbox">
+        <input
+          type="checkbox"
+          checked={value.part_destructible}
+          onChange={(event) =>
+            onChange({ ...value, part_destructible: event.target.checked })
+          }
+        />
+        Part-destruction gimmick
+        <span className="group__hint">
+          {' '}
+          selects the max-potential model for part-dependent units (e.g. Ark Ranger
+          Black); unchecked uses the lower-bound model
+        </span>
       </label>
 
       <div className="field-row field-row--pair">

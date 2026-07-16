@@ -12,7 +12,13 @@ import { recommendDecks } from '../api/recommend'
 
 const request: RecommendRequest = {
   roster: [],
-  boss: { element: null, core_hittable: false, enemy_def: 0, fight_duration: 180 },
+  boss: {
+    element: null,
+    core_hittable: false,
+    enemy_def: 0,
+    fight_duration: 180,
+    part_destructible: false,
+  },
 }
 
 afterEach(() => {

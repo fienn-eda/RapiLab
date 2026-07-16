@@ -9,6 +9,7 @@ export interface BossProfileDraft {
   core_hittable: boolean
   enemy_def: string
   fight_duration: string
+  part_destructible: boolean
 }
 
 export const makeDefaultBossProfileDraft = (): BossProfileDraft => ({
@@ -16,6 +17,7 @@ export const makeDefaultBossProfileDraft = (): BossProfileDraft => ({
   core_hittable: false,
   enemy_def: '0',
   fight_duration: '180',
+  part_destructible: false,
 })
 
 export interface BossProfileDraftErrors {
@@ -65,6 +67,7 @@ export const validateBossProfileDraft = (
     core_hittable: draft.core_hittable,
     enemy_def: enemyDef.value!,
     fight_duration: fightDuration.value!,
+    part_destructible: draft.part_destructible,
   }
   return { errors, value }
 }
