@@ -133,6 +133,7 @@ from app.skill_rules import julia_signature
 from app.skill_rules.little_mermaid import build_bubble_wave_fb_nuke, build_little_mermaid_rules
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.maiden_ice_rose import (
+    build_blessings_fill_triggered_buffs,
     build_blessings_upon_you_per_shot_rules,
     build_blessings_upon_you_rules,
     build_diamond_dust_dynamic_hit_count_nukes,
@@ -434,6 +435,15 @@ _RESOURCE_GATED_BUFF_BUILDERS = {
     "soda-twinkling-bunny": lambda sv: build_onward_soda_resource_gated_buffs(sv),
 }
 
+# A Nikke with a buff triggered by a named resource's FILL events, landing on
+# a live-filtered member subset - see raid_simulator's
+# `resource_fill_triggered_buffs` param (gap #8). Each entry returns a list of
+# spec dicts: {"resource", "member_filter"(member, owner_slug) -> bool,
+# "buffs": [(stat, value, duration)], "condition"(optional)}.
+_RESOURCE_FILL_TRIGGERED_BUFF_BUILDERS = {
+    "maiden-ice-rose": lambda sv: build_blessings_fill_triggered_buffs(sv),
+}
+
 # A Nikke with a burst-fired nuke whose HIT COUNT (not just its percent) is
 # itself a resource's value at burst time - see raid_simulator's
 # `dynamic_hit_count_nukes` param. Each entry returns a list of spec dicts:
@@ -512,6 +522,15 @@ def get_resource_gated_buffs(slug, skill_values):
     buff gated/scaled by a named resource's count (see raid_simulator's
     `resource_gated_buffs` param), or None for the vast majority without one."""
     builder = _RESOURCE_GATED_BUFF_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_resource_fill_triggered_buffs(slug, skill_values):
+    """List of resource-fill-triggered-buff spec dicts for a Nikke with a buff
+    fired at a named resource's FILL events (see raid_simulator's
+    `resource_fill_triggered_buffs` param, gap #8), or None for the vast
+    majority without one."""
+    builder = _RESOURCE_FILL_TRIGGERED_BUFF_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
 
 

@@ -244,6 +244,7 @@ def simulate_raid(
     resource_scaled_nukes=None,
     resource_gated_buffs=None,
     dynamic_hit_count_nukes=None,
+    resource_fill_triggered_buffs=None,
 ):
     weapon_stats = weapon_stats or {}
     periodic_nukes = periodic_nukes or {}
@@ -255,6 +256,7 @@ def simulate_raid(
     resource_scaled_nukes = resource_scaled_nukes or {}
     resource_gated_buffs = resource_gated_buffs or {}
     dynamic_hit_count_nukes = dynamic_hit_count_nukes or {}
+    resource_fill_triggered_buffs = resource_fill_triggered_buffs or {}
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"], m.get("weapon")) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -687,6 +689,28 @@ def simulate_raid(
                             applied_at=event_time,
                         )
                         prev_value = value
+
+    # A buff triggered by a resource's FILL events, landing on OTHER squad
+    # members (gap #8 - e.g. Maiden's Blessings Upon You: "when MP is
+    # replenished, affects all Electric Code allies except for self").
+    # resource_gated_buffs (below) reads a count at the owner's burst; this
+    # reacts to each fill itself. Refreshing: consecutive fills within the
+    # duration refresh rather than stack (one source, NIKKE convention). Runs
+    # after the resource_specs loop, so every fill is recorded by now; the
+    # buffs are phase-2-visible like every other post-pass Effect.
+    for slug, specs in resource_fill_triggered_buffs.items():
+        for spec in specs:
+            if spec.get("condition") is not None and not spec["condition"](context, slug):
+                continue
+            targets = [m.slug for m in context.members if spec["member_filter"](m, slug)]
+            if not targets:
+                continue
+            scope = "slugs:" + ",".join(targets)
+            for fill_time, _amount in context.resource_fills.get((slug, spec["resource"]), []):
+                for stat, value, duration in spec["buffs"]:
+                    registry.add_refreshing(
+                        Effect(stat, value, scope, duration, slug), applied_at=fill_time
+                    )
 
     # A burst-fired buff gated on (or scaled by) a named resource's count AT
     # THE BURST'S OWN TIME - e.g. Soda's ATK+65.25%/15s if she had >=30 Golden

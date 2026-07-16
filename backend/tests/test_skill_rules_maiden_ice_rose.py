@@ -6,6 +6,7 @@ from app.effects import EffectRegistry
 from app.raid_simulator import simulate_raid
 from app.skill_rules.maiden_ice_rose import (
     MP_CAP,
+    build_blessings_fill_triggered_buffs,
     build_blessings_upon_you_per_shot_rules,
     build_blessings_upon_you_rules,
     build_diamond_dust_dynamic_hit_count_nukes,
@@ -102,6 +103,82 @@ def test_diamond_dust_dynamic_hit_count_nuke_spec():
     assert spec["resource"] == "mp"
     assert spec["base_percent"] == 1372.8
     assert round(spec["extra_flat_atk_percent_of_max_hp"], 4) == 0.10
+
+
+def test_blessings_fill_triggered_buff_specs():
+    specs = build_blessings_fill_triggered_buffs({**MAIDEN_VALUES, "caster_atk": 10000})
+    assert len(specs) == 2
+    elemental, atk = specs
+    assert elemental["resource"] == "mp"
+    assert elemental["buffs"] == [("other_elemental_bonus", 0.409, 10.0)]
+    assert elemental["condition"] is not None  # boss_is_element("Water") gate
+    assert atk["resource"] == "mp"
+    assert atk["buffs"] == [("flat_atk", 10000 * 0.209, 10.0)]
+    assert "condition" not in atk or atk.get("condition") is None
+    # filter: Electric allies except Maiden herself
+    electric = SquadMember("e", 2, "Electric")
+    fire = SquadMember("f", 2, "Fire")
+    maiden = SquadMember("maiden-ice-rose", 3, "Electric")
+    for spec in specs:
+        assert spec["member_filter"](electric, "maiden-ice-rose") is True
+        assert spec["member_filter"](fire, "maiden-ice-rose") is False
+        assert spec["member_filter"](maiden, "maiden-ice-rose") is False
+
+
+def _fill_buff_deck_run(boss_element):
+    deck = [
+        {"slug": "buffer", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "maiden-ice-rose", "burst_tier": 3, "element": "Electric", "cooldown": 40.0},
+        {"slug": "electric-ally", "burst_tier": 3, "element": "Electric", "cooldown": 40.0},
+        {"slug": "fire-ally", "burst_tier": 3, "element": "Fire", "cooldown": 40.0},
+    ]
+    weapon = {"weapon": "AR", "damage_percent": 10.0, "max_ammo": 10000,
+              "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 100.0}
+    return simulate_raid(
+        deck,
+        {m["slug"]: [] for m in deck},
+        burst_damage_percents={},
+        base_stats={m["slug"]: {"atk": 10000, "def": 0, "max_hp": 50000} for m in deck},
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=25.0, mode="auto", base_crit_rate=0.0,
+        boss_element=boss_element,
+        weapon_stats={"electric-ally": weapon, "fire-ally": weapon},
+        resource_specs={"maiden-ice-rose": build_mp_resources(MAIDEN_VALUES)},
+        resource_fill_triggered_buffs={
+            "maiden-ice-rose": build_blessings_fill_triggered_buffs(
+                {**MAIDEN_VALUES, "caster_atk": 10000}
+            )
+        },
+    )
+
+
+def _shots_of(result, slug):
+    return [(e["time"], e["damage"]) for e in result["damage_log"]
+            if e["source"] == "normal_attack" and e["slug"] == slug]
+
+
+def test_blessings_fill_buffs_step_up_at_mp_fill_times_vs_water_boss():
+    # MP fills at t=5 (squad tier-1, MP==0); the 10s buffs cover [5, 15).
+    # Electric ally vs Water boss: 1.1 advantage baseline; inside the window
+    # flat ATK +20.9% of Maiden's ATK and Elemental Advantage Attack Damage
+    # +40.9% (element bonus group) both apply. Fire ally: never buffed.
+    result = _fill_buff_deck_run("Water")
+    for t, damage in _shots_of(result, "electric-ally"):
+        if 5.0 <= t < 15.0:
+            expected = (10000 + 2090) * 0.1 * (1.1 + 0.409)
+        else:
+            expected = 10000 * 0.1 * 1.1
+        assert round(damage, 4) == round(expected, 4), (t, damage)
+    assert all(round(d, 4) == 1000.0 for _, d in _shots_of(result, "fire-ally"))
+
+
+def test_blessings_fill_buffs_only_flat_atk_vs_non_water_boss():
+    # Against a Fire boss the Elemental-Advantage spec is gated off (no actual
+    # advantage); only the flat ATK bullet lands.
+    result = _fill_buff_deck_run("Fire")
+    for t, damage in _shots_of(result, "electric-ally"):
+        expected = (10000 + 2090) * 0.1 if 5.0 <= t < 15.0 else 1000.0
+        assert round(damage, 4) == round(expected, 4), (t, damage)
 
 
 def test_maiden_end_to_end_diamond_dust_hits_once_per_cycle_scaled_by_10pct_max_hp():
