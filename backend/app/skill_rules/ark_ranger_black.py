@@ -60,3 +60,38 @@ def build_ark_ranger_black_rules(values):
         # Burst self Sustained Damage +135.83% for 10s - both branches.
         buff_rule("own_burst_activate", [("sustained_damage_up", self_sustained, "self", self_sustained_duration)]),
     ]
+
+
+def build_ark_ranger_dots(values):
+    """Burst-anchored sustained tick DoTs (resource_scaled_nukes shape):
+    - Meteor (skills[2]): 266.69% x10 ticks, always (both branches).
+    - Collider FLOOR (skills[1]): 45.87% for D ticks, only when NOT
+      part_destructible (transformation lasts one burst window)."""
+    ultimate = values["ultimate"]
+    tremble = values["tremble"]
+    meteor_percent = float(ultimate["description_value_02"])
+    meteor_ticks = int(float(ultimate["description_value_03"]))
+    collider_percent = float(tremble["description_value_01"])
+    window = transformation_window_seconds(values)
+    collider_ticks = int(round(window / 1.0))
+    return [
+        {  # Meteor - both branches
+            "base_percent": meteor_percent, "tick_count": meteor_ticks,
+            "tick_interval": 1.0, "damage_type": "sustained",
+        },
+        {  # Collider floor - burst-anchored window DoT
+            "base_percent": collider_percent, "tick_count": collider_ticks,
+            "tick_interval": 1.0, "damage_type": "sustained",
+            "requires_part_destructible": False,
+        },
+    ]
+
+
+def build_ark_ranger_ceiling_collider(values):
+    """Collider CEILING: permanent transformation => a whole-fight 1s periodic
+    sustained DoT, only when part_destructible."""
+    collider_percent = float(values["tremble"]["description_value_01"])
+    return {
+        "cooldown": 1.0, "percent": collider_percent, "damage_type": "sustained",
+        "requires_part_destructible": True,
+    }

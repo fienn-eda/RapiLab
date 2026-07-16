@@ -1,5 +1,9 @@
 from app.effects import EffectRegistry
-from app.skill_rules.ark_ranger_black import build_ark_ranger_black_rules
+from app.skill_rules.ark_ranger_black import (
+    build_ark_ranger_black_rules,
+    build_ark_ranger_dots,
+    build_ark_ranger_ceiling_collider,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # Real level-10 values (lootandwaifus), slots numbered by left-to-right appearance.
@@ -18,6 +22,7 @@ ULTIMATE = {
     "description_value_04": "135.83",  # self Sustained Damage % (burst)
     "description_value_05": "10",      # its duration
 }
+TREMBLE = {"description_value_01": "45.87"}  # Ark Black Collider % per tick
 
 
 def build():
@@ -69,3 +74,30 @@ def test_burst_grants_self_sustained_damage_up_both_branches():
         fire_trigger("own_burst_activate", {"ark-ranger-black": build()}, _ctx(flag), registry, time=5.0)
         assert round(registry.total_for("sustained_damage_up", ARK, now=5.0), 4) == 1.3583
         assert registry.total_for("sustained_damage_up", ARK, now=15.1) == 0.0
+
+
+def test_meteor_dot_is_10_ticks_sustained_both_branches():
+    specs = build_ark_ranger_dots({"transform": TRANSFORM, "ultimate": ULTIMATE, "tremble": TREMBLE})
+    meteor = [s for s in specs if s.get("requires_part_destructible") is None]
+    assert len(meteor) == 1
+    assert meteor[0]["base_percent"] == 266.69
+    assert meteor[0]["tick_count"] == 10
+    assert meteor[0]["tick_interval"] == 1.0
+    assert meteor[0]["damage_type"] == "sustained"
+
+
+def test_floor_collider_dot_gated_off_when_part_destructible():
+    specs = build_ark_ranger_dots({"transform": TRANSFORM, "ultimate": ULTIMATE, "tremble": TREMBLE})
+    collider = [s for s in specs if s.get("requires_part_destructible") is False]
+    assert len(collider) == 1
+    assert collider[0]["base_percent"] == 45.87
+    assert collider[0]["tick_count"] == 10       # D=10s / 1s interval
+    assert collider[0]["damage_type"] == "sustained"
+
+
+def test_ceiling_collider_is_wholefight_periodic_sustained():
+    spec = build_ark_ranger_ceiling_collider({"tremble": {"description_value_01": "45.87"}})
+    assert spec["cooldown"] == 1.0
+    assert spec["percent"] == 45.87
+    assert spec["damage_type"] == "sustained"
+    assert spec["requires_part_destructible"] is True

@@ -29,7 +29,11 @@ from app.skill_rules.anis_star import (
 )
 from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
 from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
-from app.skill_rules.ark_ranger_black import build_ark_ranger_black_rules
+from app.skill_rules.ark_ranger_black import (
+    build_ark_ranger_black_rules,
+    build_ark_ranger_dots,
+    build_ark_ranger_ceiling_collider,
+)
 from app.skill_rules.asuka_shikinami_langley_wille import (
     build_anti_at_field_per_shot_rules,
     build_anti_at_field_resources,
@@ -306,6 +310,7 @@ _BUILDERS = {
 ENCODED_SLUGS = tuple(_BUILDERS)
 
 _PERIODIC_NUKE_BUILDERS = {
+    "ark-ranger-black": lambda sv: build_ark_ranger_ceiling_collider(sv),
     "helm-aquamarine": lambda sv: {
         "cooldown": AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN,
         "percent": aegis_cannon_suppression_fire_percent(sv),
@@ -407,6 +412,7 @@ _RESOURCE_SPEC_BUILDERS = {
 # "scale_fn", "tick_count", "tick_interval", "lifetime"(optional),
 # "damage_type"(optional)}.
 _RESOURCE_SCALED_NUKE_BUILDERS = {
+    "ark-ranger-black": lambda sv: build_ark_ranger_dots(sv),
     "cinderella": lambda sv: build_glass_slippers_resource_scaled_nuke(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
     "julia": lambda sv: build_climax_resource_scaled_nuke(sv),
