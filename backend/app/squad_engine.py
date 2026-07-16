@@ -25,6 +25,7 @@ class SquadContext:
         members: list[SquadMember],
         base_atk: dict[str, float] | None = None,
         boss_element: str | None = None,
+        part_destructible: bool = False,
     ):
         self.members = members
         # each member's base (summary) ATK, so a rule targeting "the N allies with
@@ -36,6 +37,11 @@ class SquadContext:
         # Taken debuff) can read it via the boss_is_element condition. Only
         # raid_simulator knows the boss; None for element-agnostic contexts.
         self.boss_element: str | None = boss_element
+        # whether the boss has a part-destruction gimmick (BossProfile flag,
+        # threaded via raid_simulator), so a SkillRule gated on it (e.g. Ark
+        # Ranger Black's battery-driven Transformation) can read it via the
+        # boss_part_destructible condition. False when unset.
+        self.part_destructible: bool = part_destructible
         # flag -> the earliest time it was set (a "continuous, cannot be removed"
         # status is pinned from its first application). Callers that only care
         # whether a flag is set omit the time (defaults to 0.0).
@@ -213,6 +219,17 @@ def boss_is_element(element: str) -> Callable[[SquadContext, str], bool]:
         return context.boss_element == element
 
     return check
+
+
+def boss_part_destructible() -> Callable[[SquadContext, str], bool]:
+    """True when the boss has a part-destruction gimmick (BossProfile flag,
+    threaded via raid_simulator). Ark Ranger Black uses it to select her
+    permanent-transformation ceiling vs her burst-driven battery floor."""
+
+    def condition(context: "SquadContext", caster_slug: str) -> bool:
+        return context.part_destructible
+
+    return condition
 
 
 def all_conditions(

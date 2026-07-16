@@ -32,6 +32,7 @@ class BossProfile:
     fight_duration: float = 180.0
     gauge_charge_time: float = 2.0
     mode: str = "manual"
+    part_destructible: bool = False
 
 
 def feasible_orderings(roster):
@@ -61,6 +62,7 @@ def evaluate_deck(ordered_deck, boss: BossProfile):
         mode=boss.mode,
         core_hittable=boss.core_hittable,
         boss_element=boss.element,
+        part_destructible=boss.part_destructible,
     )
 
 

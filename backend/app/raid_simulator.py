@@ -216,6 +216,7 @@ def simulate_raid(
     core_hittable=False,
     weapon_stats=None,
     boss_element=None,
+    part_destructible=False,
     base_crit_rate=BASE_CRIT_RATE,
     periodic_nukes=None,
     burst_damage_types=None,
@@ -241,6 +242,7 @@ def simulate_raid(
         [SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
         boss_element=boss_element,
+        part_destructible=part_destructible,
     )
     registry = EffectRegistry()
     # Damage is RECORDED as events during phase 1 (buffs are applied but no
