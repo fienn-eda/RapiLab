@@ -1,7 +1,7 @@
 # Roster assembly layer + /api/recommend endpoint (design)
 
 - Date: 2026-07-16
-- Status: draft — pending Fienn's review
+- Status: implemented (2026-07-16 — parsers/manifests/harness/loader/endpoint/frontend wiring; manifest backfill batch 2 pending)
 - Scope: the missing glue between the web app and the engine: an automated
   `UserNikkeState[] → NikkeSpec[]` assembly layer, and the real FastAPI
   `POST /api/recommend` endpoint on top of it. Fienn chose "build the assembly

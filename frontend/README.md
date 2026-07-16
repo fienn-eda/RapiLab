@@ -64,14 +64,13 @@ that here — flag it if the UI forces the question.
 Mirrors `backend/app/deck_search.py` (`find_best_decks` / `BossProfile`) — the
 source of truth. Keep the TS request/response types in `src/api/` in sync with it.
 
-**Endpoint status:** the FastAPI endpoint is **not implemented yet** — the main
-agent owns wiring it (the `UserNikkeState[] → engine roster` assembly lives
-backend-side). Build the typed API client and the results UI against this
-contract **contract-first**: put the request/response types in `src/types/`, the
-client in `src/api/`, and back it with a **dev mock/fixture** behind the client
-so the UI is exercisable now. Do not hardcode the mock into components — when the
-real endpoint lands it must swap in at the client layer only. Flag anything the
-contract leaves ambiguous rather than inventing it.
+**Endpoint status: implemented** (`backend/app/api.py`). Run it from `backend/`
+with `uvicorn app.api:app --reload` (port 8000). The dev client fetches a
+*relative* `/api/recommend`, which `vite.config.ts` proxies to
+`http://localhost:8000` — so for live end-to-end dev run both servers and start
+Vite with `VITE_RECOMMEND_API=live npm run dev`. Without that env var the client
+uses the dev mock (`src/api/recommendClient.mock.ts`); the switch lives only in
+`src/api/recommend.ts`, so components never depend on which one is active.
 
 ### `POST /api/recommend`
 
@@ -105,11 +104,16 @@ Response `200`:
       "burst_damage": number,
       "normal_attack_damage": number
     }
-  ]                                  // ranked by total_damage desc, length <= top_n
+  ],                                 // ranked by total_damage desc, length <= top_n
+  "excluded_slugs": string[]         // submitted slugs the backend can't evaluate yet
+                                     // (not encoded / no local data); excluded from the
+                                     // search and shown as "not yet supported" — never a
+                                     // 422 by themselves
 }
 ```
-Validation failures (no feasible deck, unknown slug, out-of-range field) return
-FastAPI's default `422` error shape.
+Validation failures (malformed body, out-of-range field, or no feasible deck in
+the *usable* roster after exclusions) return FastAPI's default `422` error shape;
+the no-feasible-deck detail names the excluded slugs.
 
 ## Dev commands
 

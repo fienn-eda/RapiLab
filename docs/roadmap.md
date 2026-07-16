@@ -56,7 +56,7 @@
 | Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (56명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ⬜ 예정 |
-| Phase 6 | 유저 데이터 입력 UI (React) | ⬜ 예정 |
+| Phase 6 | 유저 데이터 입력 UI (React) | 🔄 진행 중 (입력 폼 + 결과 UI + 라이브 API 완료) |
 | Phase 7 | 자동화 (ShiftyPad 연동, 수집 파이프라인) | ⬜ 지연/후속 |
 
 ---
@@ -242,9 +242,15 @@
 ### Phase 5 — 5덱 분배 최적화 ⬜
 - 25명(5덱×5)을 골라 총합 딜을 최대화하는 조합 레이어. 단일 덱 평가기를 빌딩블록으로 사용.
 
-### Phase 6 — 유저 데이터 입력 UI ⬜
-- React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브).
-- FastAPI 엔드포인트로 엔진 노출.
+### Phase 6 — 유저 데이터 입력 UI 🔄
+- React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
+- FastAPI 엔드포인트로 엔진 노출. ✅ (`POST /api/recommend`, 2026-07-16 —
+  스킬값 매니페스트 + 검증 하니스 + 로스터 로더 경유; 프론트는
+  `VITE_RECOMMEND_API=live` + Vite 프록시로 연결, `excluded_slugs` 표시)
+- 잔여: 매니페스트 백필 배치 2(나머지 인코딩 유닛), dotgg 스탯 수집 갭 —
+  dotgg 데이터 파일 없는 인코딩 유닛(현재 dotgg 파일은 14개뿐)은 무기 스탯이
+  없어 API 로딩에서 제외됨(excluded_slugs로 보고). 추후 수집 배치 필요.
+- ShiftyPad 자동화는 Phase 7.
 
 ### Phase 7 — 자동화 ⬜ (후속)
 - ShiftyPad 로그인 세션 스크래핑 / API 리버싱, dotgg 자동 수집 파이프라인.
@@ -309,8 +315,9 @@
     `drake`, `laplace` (julia는 완료: `julia` + `julia-signature`)
 - [x] `damage_taken_up` / `other_core_damage_sources` 엔진 연결
       — 완료. squad 스코프 적 디버프, 코어 데미지는 `core_hittable` 게이팅.
-- [ ] `NikkeSpec`에 스킬별 유저 레벨 필드 추가 → 조립 시 `levels[level-1]` 선택 일반화
-      (지금은 빌더가 단일 레벨 dict만 받음)
+- [x] `NikkeSpec`에 스킬별 유저 레벨 필드 추가 → 조립 시 `levels[level-1]` 선택 일반화
+      — 로더 쪽으로 흡수 완료 (2026-07-16): `user_roster.load_nikke_spec`이
+      유저 스킬레벨로 `assemble_skill_values`를 호출해 NikkeSpec을 조립.
 
 ### gap #5 후속 (2026-07-16 배치 중 발견, 미착수)
 - [x] **`rei-ayanami`** (2026-07-16): Preemptive Subdual의 "Elemental Advantage Attack
@@ -328,8 +335,8 @@
 
 ### 나중 (Phase 5~7)
 - [ ] 5덱 25니케 분배 최적화 레이어
-- [ ] React 입력 폼 (ShiftyPad 수동 입력)
-- [ ] FastAPI 백엔드 엔드포인트
+- [x] React 입력 폼 (ShiftyPad 수동 입력)
+- [x] FastAPI 백엔드 엔드포인트 (`POST /api/recommend`, 2026-07-16)
 - [ ] ShiftyPad 연동 자동화 조사
 
 ---
