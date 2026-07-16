@@ -43,6 +43,7 @@ export interface DeckRecommendation {
 
 export interface RecommendResponse {
   decks: DeckRecommendation[] // ranked by total_damage desc, length <= top_n
+  excluded_slugs: string[] // submitted slugs the backend can't evaluate yet (not encoded / no data); shown as "not yet supported"
 }
 
 // A deck needs 5 Nikkes. This is necessary but NOT sufficient for a feasible

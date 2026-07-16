@@ -11,6 +11,7 @@ export type RecommendStatus = 'idle' | 'loading' | 'error' | 'success'
 export interface RecommendState {
   status: RecommendStatus
   decks: DeckRecommendation[]
+  excludedSlugs: string[]
   error?: string
   submit: (request: RecommendRequest) => Promise<void>
 }
@@ -18,6 +19,7 @@ export interface RecommendState {
 export const useRecommend = (): RecommendState => {
   const [status, setStatus] = useState<RecommendStatus>('idle')
   const [decks, setDecks] = useState<DeckRecommendation[]>([])
+  const [excludedSlugs, setExcludedSlugs] = useState<string[]>([])
   const [error, setError] = useState<string>()
 
   const submit = useCallback(async (request: RecommendRequest) => {
@@ -26,6 +28,7 @@ export const useRecommend = (): RecommendState => {
     try {
       const response = await recommendDecks(request)
       setDecks(response.decks)
+      setExcludedSlugs(response.excluded_slugs)
       setStatus('success')
     } catch (err) {
       setError(
@@ -37,5 +40,5 @@ export const useRecommend = (): RecommendState => {
     }
   }, [])
 
-  return { status, decks, error, submit }
+  return { status, decks, excludedSlugs, error, submit }
 }

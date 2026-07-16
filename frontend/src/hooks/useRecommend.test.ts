@@ -36,7 +36,7 @@ describe('useRecommend', () => {
     const decks = [
       { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40 },
     ]
-    vi.mocked(recommendDecks).mockResolvedValue({ decks })
+    vi.mocked(recommendDecks).mockResolvedValue({ decks, excluded_slugs: [] })
 
     const { result } = renderHook(() => useRecommend())
     act(() => {
@@ -47,6 +47,21 @@ describe('useRecommend', () => {
     await waitFor(() => expect(result.current.status).toBe('success'))
     expect(result.current.decks).toEqual(decks)
     expect(result.current.error).toBeUndefined()
+  })
+
+  it('exposes the excluded slugs the backend reports', async () => {
+    const decks = [
+      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40 },
+    ]
+    vi.mocked(recommendDecks).mockResolvedValue({ decks, excluded_slugs: ['some-slug'] })
+
+    const { result } = renderHook(() => useRecommend())
+    act(() => {
+      void result.current.submit(request)
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('success'))
+    expect(result.current.excludedSlugs).toEqual(['some-slug'])
   })
 
   it('goes loading -> error and describes a RecommendApiError', async () => {

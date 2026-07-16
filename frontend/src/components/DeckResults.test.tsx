@@ -42,4 +42,16 @@ describe('DeckResults', () => {
       'anne',
     ])
   })
+
+  it('lists excluded slugs as not yet supported when there are any', () => {
+    render(<DeckResults decks={[]} excludedSlugs={['some-slug', 'other-slug']} />)
+    expect(
+      screen.getByText('Not yet supported (excluded from search): some-slug, other-slug'),
+    ).toBeInTheDocument()
+  })
+
+  it('renders no excluded line when nothing was excluded', () => {
+    render(<DeckResults decks={[]} excludedSlugs={[]} />)
+    expect(screen.queryByText(/Not yet supported/)).not.toBeInTheDocument()
+  })
 })

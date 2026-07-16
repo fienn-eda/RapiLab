@@ -5,16 +5,30 @@ import type { DeckRecommendation } from '../types/recommend'
 
 interface DeckResultsProps {
   decks: DeckRecommendation[]
+  /** Submitted slugs the backend can't evaluate yet — shown as "not yet supported". */
+  excludedSlugs?: string[]
 }
 
 const formatDamage = (value: number): string => Math.round(value).toLocaleString()
 
-export function DeckResults({ decks }: DeckResultsProps) {
+export function DeckResults({ decks, excludedSlugs = [] }: DeckResultsProps) {
+  const excludedNote = excludedSlugs.length > 0 && (
+    <p className="deck-results__excluded">
+      Not yet supported (excluded from search): {excludedSlugs.join(', ')}
+    </p>
+  )
+
   if (decks.length === 0) {
-    return <p className="empty__text">No decks recommended yet.</p>
+    return (
+      <>
+        <p className="empty__text">No decks recommended yet.</p>
+        {excludedNote}
+      </>
+    )
   }
 
   return (
+    <>
     <ol className="deck-results">
       {decks.map((deck, index) => (
         <li key={deck.deck.join('-')} className="deck-results__item">
@@ -38,5 +52,7 @@ export function DeckResults({ decks }: DeckResultsProps) {
         </li>
       ))}
     </ol>
+    {excludedNote}
+    </>
   )
 }

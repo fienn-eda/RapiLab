@@ -54,5 +54,5 @@ export const mockRecommendDecks = (
     },
   )
 
-  return Promise.resolve({ decks })
+  return Promise.resolve({ decks, excluded_slugs: [] })
 }

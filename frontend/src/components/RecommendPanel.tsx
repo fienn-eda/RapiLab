@@ -22,7 +22,7 @@ interface RecommendPanelProps {
 export function RecommendPanel({ roster }: RecommendPanelProps) {
   const [draft, setDraft] = useState<BossProfileDraft>(makeDefaultBossProfileDraft())
   const [touched, setTouched] = useState(false)
-  const { status, decks, error, submit } = useRecommend()
+  const { status, decks, excludedSlugs, error, submit } = useRecommend()
 
   const { errors, value: bossProfile } = useMemo(
     () => validateBossProfileDraft(draft),
@@ -70,7 +70,7 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
         </p>
       )}
 
-      {status === 'success' && <DeckResults decks={decks} />}
+      {status === 'success' && <DeckResults decks={decks} excludedSlugs={excludedSlugs} />}
     </section>
   )
 }
