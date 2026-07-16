@@ -25,10 +25,14 @@ LM = {
         "description_value_04": "400", "description_value_05": "37",
     },
     "bubble_wave": {
+        # dotgg-native slot numbering (this module's established convention -
+        # dotgg reuses value_01 for Explosive Bubble, so left-to-right counting
+        # of the lootandwaifus text runs one slot ahead; caught by the
+        # assembly verification harness at Phase C integration).
         "description_value_01": "5.05",   # Bubble: enemy Damage Taken %, continuous
-        "description_value_05": "1",      # FB nuke: every N sec during Full Burst
-        "description_value_06": "63.36",  # FB nuke: % of final ATK per hit
-        "description_value_07": "4",      # FB nuke: sequential hit count
+        "description_value_04": "1",      # FB nuke: every N sec during Full Burst
+        "description_value_05": "63.36",  # FB nuke: % of final ATK per hit
+        "description_value_06": "4",      # FB nuke: sequential hit count
     },
     "sirens_song": {
         "description_value_01": "10.13", "description_value_02": "10", "description_value_03": "33.26",

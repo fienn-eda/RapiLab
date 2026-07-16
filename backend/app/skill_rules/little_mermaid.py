@@ -69,8 +69,8 @@ def build_bubble_wave_fb_nuke(values):
     final ATK x 4 sequential hits ("as damage" - no Full Burst Bonus opt-in)."""
     wave = values["bubble_wave"]
     return {
-        "cooldown": float(wave["description_value_05"]),
-        "percent": float(wave["description_value_06"]),
-        "hit_count": int(float(wave["description_value_07"])),
+        "cooldown": float(wave["description_value_04"]),
+        "percent": float(wave["description_value_05"]),
+        "hit_count": int(float(wave["description_value_06"])),
         "during_full_burst": True,
     }

@@ -7,12 +7,15 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-07-16
+- 마지막 갱신: 2026-07-17
 - 브랜치: `wip/scaffolding`
-- 테스트: **589 passed** (2026-07-16, **Phase C 배치 완료** — gap #3 member-subset
-  scope·#6 during-FB periodic·#8 자원-fill-트리거 아군 버프·#9 first-bullet 마커
-  엔진 확장 4건 + 소비자 7유닛(Ark·Arcana·Tove·Ada Wong[신규]·Little Mermaid·
-  Maiden·Jill) 테스트; was 547 배치 시작 시점)
+- 테스트: **622 passed** (2026-07-17, **프론트 3단계 + Phase C 병렬 배치 통합** —
+  Phase C: gap #3 member-subset scope·#6 during-FB periodic·#8 자원-fill-트리거
+  아군 버프·#9 first-bullet 마커 엔진 확장 4건 + 소비자 7유닛(Ark·Arcana·Tove·
+  Ada Wong[신규]·Little Mermaid·Maiden·Jill) / 프론트 3단계: 스킬값 조립 파서·
+  매니페스트 하니스·roster 로더·`POST /api/recommend`. 통합 시 하니스가
+  little-mermaid Bubble Wave 슬롯 오번호(lootandwaifus 좌→우 카운트 vs 모듈의
+  dotgg 네이티브 컨벤션) 1건을 잡아 교정함; was 547 배치 시작 시점)
 - 인코딩된 니케: **57명** (Ada Wong[Phase C gaps #3/#6 소비, 신규 ⚠] +1) —
   상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 - **Phase C 배치 완료 (2026-07-16):** 엔진 갭 #3(member-subset scope:
