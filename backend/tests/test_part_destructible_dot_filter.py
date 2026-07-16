@@ -64,3 +64,16 @@ def test_ceiling_periodic_only_fires_when_part_destructible():
     without_flag = _total(False, [], CEILING)
     assert with_flag > 0
     assert without_flag == 0
+
+
+NO_FLAG_PERIODIC = {"cooldown": 1.0, "percent": 100.0, "damage_type": "sustained"}
+
+
+def test_periodic_without_flag_fires_regardless_of_part_destructible():
+    # requires_part_destructible omitted + nonzero percent: must fire
+    # identically whether the part is destructible or not (backward
+    # compatibility with specs predating the flag).
+    with_flag = _total(True, [], NO_FLAG_PERIODIC)
+    without_flag = _total(False, [], NO_FLAG_PERIODIC)
+    assert with_flag == without_flag
+    assert with_flag > 0
