@@ -74,10 +74,14 @@ def simulate_burst_cycle(
 
         tier3_fire_time = None
         for tier in (1, 2, 3):
+            # Same arithmetic as tier_ready_time (last + cooldown vs fire_time):
+            # subtracting instead (fire_time - last >= cooldown) rounds
+            # differently and can reject the very member whose ready time
+            # defined fire_time (e.g. 51.44 - 31.44 = 19.999...996 < 20.0).
             eligible = [
                 member
                 for member in members_by_tier[tier]
-                if fire_time - last_used_at[member["slug"]] >= member["cooldown"]
+                if last_used_at[member["slug"]] + member["cooldown"] <= fire_time
             ]
             chosen = eligible[0]
             events.append({"type": "burst", "tier": tier, "slug": chosen["slug"], "time": fire_time})

@@ -149,3 +149,31 @@ def test_hooks_are_optional_and_default_to_no_op():
     # should not raise even though no hooks are supplied
     events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto")
     assert len(events) > 0
+
+
+def test_fractional_cooldown_reductions_never_strand_a_tier():
+    # Regression: fractional CDR pulses (e.g. Little Mermaid's 7.48s) push
+    # last_used_at to values where fire_time - last_used_at rounds to just
+    # under the cooldown (51.44 - 31.44 = 19.999...996 < 20.0), so the very
+    # member whose ready time DEFINED fire_time failed the eligibility check
+    # and the scheduler crashed. Eligibility must use the same arithmetic as
+    # tier_ready_time (last_used_at + cooldown <= fire_time).
+    deck = [
+        {"slug": "lm", "burst_tier": 1, "cooldown": 20.0},
+        {"slug": "arcana", "burst_tier": 2, "cooldown": 40.0},
+        {"slug": "grave", "burst_tier": 2, "cooldown": 20.0},
+        {"slug": "drake", "burst_tier": 3, "cooldown": 40.0},
+        {"slug": "modernia", "burst_tier": 3, "cooldown": 40.0},
+    ]
+    reductions = iter([13.48, 7.48, 13.48, 7.48, 13.48, 7.48, 13.48])
+
+    def cdr(time):
+        reduction = next(reductions, 0.0)
+        return {member["slug"]: reduction for member in deck}
+
+    events = simulate_burst_cycle(
+        deck, gauge_charge_time=2.0, fight_duration=180.0, mode="manual",
+        on_full_burst_end=cdr,
+    )
+    assert not any(e["type"] == "full_burst_missed" for e in events)
+    assert sum(e["type"] == "full_burst_start" for e in events) >= 5
