@@ -59,12 +59,53 @@ are already folded into `hp/atk/def` or added separately is unconfirmed. Build
 the input for what the user reads off ShiftyPad; don't encode an assumption about
 that here — flag it if the UI forces the question.
 
-## Data contract — backend API (DEFERRED)
+## Data contract — backend API
 
-**Not defined yet.** The recommendation-display components (submitting the roster,
-receiving ranked decks) depend on a FastAPI contract the main agent will add here
-before that work starts. Until it appears in this file, do not call or assume any
-endpoint — build the input UI and its types, and report the block.
+Mirrors `backend/app/deck_search.py` (`find_best_decks` / `BossProfile`) — the
+source of truth. Keep the TS request/response types in `src/api/` in sync with it.
+
+**Endpoint status:** the FastAPI endpoint is **not implemented yet** — the main
+agent owns wiring it (the `UserNikkeState[] → engine roster` assembly lives
+backend-side). Build the typed API client and the results UI against this
+contract **contract-first**: put the request/response types in `src/types/`, the
+client in `src/api/`, and back it with a **dev mock/fixture** behind the client
+so the UI is exercisable now. Do not hardcode the mock into components — when the
+real endpoint lands it must swap in at the client layer only. Flag anything the
+contract leaves ambiguous rather than inventing it.
+
+### `POST /api/recommend`
+
+Request body:
+```jsonc
+{
+  "roster": UserNikkeState[],   // the entered roster (needs a feasible 5-unit deck: burst tiers 1,2,3 all present)
+  "boss": {
+    "element": "Fire" | "Water" | "Wind" | "Iron" | "Electric" | null,  // null = non-elemental
+    "core_hittable": boolean,   // default false
+    "enemy_def": number,        // default 0
+    "fight_duration": number    // seconds, default 180
+  },
+  "top_n": number               // optional, default 5
+}
+```
+(`BossProfile` also has `gauge_charge_time` and `mode` — leave them to backend
+defaults; don't surface them in the UI yet.)
+
+Response `200`:
+```jsonc
+{
+  "decks": [
+    {
+      "deck": string[],             // 5 character slugs, ordered by burst role (B1 → B2 → B3)
+      "total_damage": number,
+      "burst_damage": number,
+      "normal_attack_damage": number
+    }
+  ]                                  // ranked by total_damage desc, length <= top_n
+}
+```
+Validation failures (no feasible deck, unknown slug, out-of-range field) return
+FastAPI's default `422` error shape.
 
 ## Dev commands
 
