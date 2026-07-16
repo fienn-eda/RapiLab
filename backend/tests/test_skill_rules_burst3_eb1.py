@@ -182,3 +182,15 @@ def test_liberalio_additional_full_charge_nuke_emits_pulse():
     for rule in ps[2][2]:  # first of the 5 additional-damage hits
         rule.action(ctx, "liberalio", 2.0, reg)
     assert [round(p.value, 2) for p in reg.drain_pulses("instant_damage_percent")] == [40.5]
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+MARKED_TARGET = ISABEL["marked_target"]
+POINTED_FEATHER = ISABEL["pointed_feather"]
+SONIC_CHASER = ISABEL["sonic_chaser"]
+CALM_DEPTHS = LIBERALIO["calm_depths"]
+STRANGE_CURRENTS = LIBERALIO["strange_currents"]
+SUBMERGED_WORLD = LIBERALIO["submerged_world"]
+FINALE = NOIR["finale"]
+LUCKY_CHARM = NOIR["lucky_charm"]

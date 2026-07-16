@@ -19,6 +19,19 @@ Not modeled / deferred:
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 
 
+SKILL_VALUE_MANIFESTS = {
+    "ludmilla-winter-owner": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_burst3_eb2",
+        "keys": {
+            "queens_gaze": ("skills", 0),
+            "snowstorm": ("skills", 1),
+            "guiding_lantern": ("skills", 2),
+        },
+    },
+}
+
+
 def build_ludmilla_rules(values):
     snowstorm = values["snowstorm"]
     guiding = values["guiding_lantern"]

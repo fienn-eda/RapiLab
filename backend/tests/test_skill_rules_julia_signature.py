@@ -72,3 +72,9 @@ def test_decrescendo_battle_start_rules_apply_same_buffs_at_t0():
         rule.action(ctx, "julia-signature", 0.0, reg)
     assert round(reg.total_for("crit_rate", JULIA, now=0.0), 4) == 0.2604
     assert round(reg.total_for("atk_percent", JULIA, now=0.0), 4) == 0.20
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+DECRESCENDO = JULIA_SIGNATURE_VALUES["decrescendo"]
+CLIMAX = JULIA_SIGNATURE_VALUES["climax"]

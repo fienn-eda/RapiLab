@@ -46,6 +46,24 @@ from app.effects import Pulse
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 from app.squad_engine import SkillRule, boss_is_element
 
+
+SKILL_VALUE_MANIFESTS = {
+    "helm-aquamarine": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_helm_aquamarine",
+        "keys": {
+            "admire_accompaniment": ("skills", 0),
+            "aegis_cannon_suppression_fire": ("skills", 1),
+            "aegis_cannon_overload": ("skills", 2),
+        },
+        "drop_tokens": {
+            "admire_accompaniment": [0],
+            "aegis_cannon_suppression_fire": [0],
+        },
+    },
+}
+
+
 AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN = 4.0  # the skill text hardcodes "Cooldown: 4s"
 ADMIRE_ACCOMPANIMENT_NUKE_SHOT_COUNT = 30  # skill text: "after landing 30 normal attacks"
 ELECTRIC = "Electric"  # her Electric-Code bullets apply only against an Electric boss

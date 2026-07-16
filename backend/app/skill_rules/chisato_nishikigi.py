@@ -22,6 +22,19 @@ Not modeled / deferred:
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 
 
+SKILL_VALUE_MANIFESTS = {
+    "chisato-nishikigi": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_burst3_eb2",
+        "keys": {
+            "extrasensory": ("skills", 0),
+            "ap_rounds": ("skills", 1),
+            "emergency_charge": ("skills", 2),
+        },
+    },
+}
+
+
 def build_chisato_rules(values):
     extra = values["extrasensory"]
     emergency = values["emergency_charge"]

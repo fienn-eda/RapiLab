@@ -29,6 +29,18 @@ Not modeled / deferred (most of her kit):
 from app.skill_rules._helpers import instant_nuke_pulse_rule
 
 
+SKILL_VALUE_MANIFESTS = {
+    "laplace": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_laplace",
+        "keys": {
+            "hero_bomber": ("skills", 1),
+            "laplace_buster": ("skills", 2),
+        },
+    },
+}
+
+
 def laplace_buster_burst_percent(values):
     return float(values["laplace_buster"]["description_value_01"])
 

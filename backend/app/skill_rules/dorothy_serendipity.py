@@ -22,6 +22,18 @@ from app.burst_cycle import FULL_BURST_DURATION
 from app.skill_rules._helpers import buff_rule
 
 
+SKILL_VALUE_MANIFESTS = {
+    "dorothy-serendipity": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_dorothy_serendipity",
+        "keys": {
+            "radiant_wings": ("skills", 1),
+            "false_salvation": ("skills", 2),
+        },
+    },
+}
+
+
 def build_dorothy_serendipity_rules(values):
     radiant_wings = values["radiant_wings"]
     false_salvation = values["false_salvation"]

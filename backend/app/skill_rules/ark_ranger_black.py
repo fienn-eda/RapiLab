@@ -39,6 +39,23 @@ from app.skill_rules._helpers import buff_rule, member_subset_buff_rule, refresh
 from app.squad_engine import boss_part_destructible, not_condition
 
 
+SKILL_VALUE_MANIFESTS = {
+    "ark-ranger-black": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_ark_ranger_black",
+        "keys": {
+            "transform": ("skills", 0),
+            "tremble": ("skills", 1),
+            "ultimate": ("skills", 2),
+        },
+        "drop_tokens": {
+            "transform": [3, 5, 7],
+            "ultimate": [1, 2, 3, 4, 5, 7],
+        },
+    },
+}
+
+
 def transformation_window_seconds(values):
     """Public: seconds a floor-branch transformation lasts, derived from the
     skill values (post-transform battery drained at decay%/interval)."""

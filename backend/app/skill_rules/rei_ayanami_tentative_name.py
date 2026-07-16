@@ -30,6 +30,20 @@ Not modeled / deferred:
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 
+
+SKILL_VALUE_MANIFESTS = {
+    "rei-ayanami-tentative-name": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_rei_ayanami_tentative_name",
+        "keys": {
+            "annihilation_support": ("skills", 0),
+            "maintenance_and_resupply": ("skills", 1),
+            "attack_state": ("skills", 2),
+        },
+    },
+}
+
+
 ATTACK_STATE_WINDOW = 10.0  # Attack State (skills[2]) lasts 10 sec from her burst
 
 

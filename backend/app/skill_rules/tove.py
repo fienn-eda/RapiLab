@@ -20,6 +20,19 @@ stack multiplier. Not modeled:
 """
 from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
 
+
+SKILL_VALUE_MANIFESTS = {
+    "tove": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_burst1_batch3",
+        "keys": {
+            "modification_successful": ("dollskills", 1),
+            "miracle_of_makeshifts": ("dollskills", 2),
+        },
+    },
+}
+
+
 MAX_TEMP_MOD_STACKS = 3  # Emergency-Crafted Bullets "stacks up to 3 times"
 
 

@@ -216,3 +216,9 @@ def test_maiden_end_to_end_diamond_dust_hits_once_per_cycle_scaled_by_10pct_max_
     # Element Bonus Damage factor.
     expected = 15000 * 13.728
     assert all(round(h["damage"], 4) == round(expected, 4) for h in hits)
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+BLESSINGS_UPON_YOU = MAIDEN_VALUES["blessings_upon_you"]
+DIAMOND_DUST = MAIDEN_VALUES["diamond_dust"]

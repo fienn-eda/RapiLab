@@ -40,6 +40,22 @@ from app.skill_rules._helpers import linear_resource_buff
 from app.squad_engine import SkillRule
 
 
+SKILL_VALUE_MANIFESTS = {
+    "soda-twinkling-bunny": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_soda_twinkling_bunny",
+        "keys": {
+            "lucky_golden_chip": ("skills", 0),
+            "onward_soda": ("skills", 2),
+        },
+        "drop_tokens": {
+            "lucky_golden_chip": [5],
+            "onward_soda": [1, 3, 7],
+        },
+    },
+}
+
+
 def onward_soda_burst_percent(values):
     return float(values["onward_soda"]["description_value_02"])
 

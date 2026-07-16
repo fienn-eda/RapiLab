@@ -27,6 +27,22 @@ hits aren't tracked per-shot), consistent with how core damage is handled global
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 
 
+SKILL_VALUE_MANIFESTS = {
+    "liberalio": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_burst3_eb1",
+        "keys": {
+            "calm_depths": ("skills", 0),
+            "strange_currents": ("skills", 1),
+            "submerged_world": ("skills", 2),
+        },
+        "drop_tokens": {
+            "calm_depths": [6, 7],
+        },
+    },
+}
+
+
 def submerged_world_burst_percent(values):
     return float(values["submerged_world"]["description_value_03"])
 

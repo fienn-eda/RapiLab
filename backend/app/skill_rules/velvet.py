@@ -35,6 +35,22 @@ from app.effects import Effect
 from app.skill_rules._helpers import instant_nuke_pulse_rule, refreshing_buff_rule
 from app.squad_engine import SkillRule
 
+
+SKILL_VALUE_MANIFESTS = {
+    "velvet": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_velvet",
+        "keys": {
+            "bullets_of_love": ("skills", 1),
+            "perfect_execution": ("skills", 2),
+        },
+        "drop_tokens": {
+            "bullets_of_love": [0, 2, 5, 9, 11, 14],
+        },
+    },
+}
+
+
 BULLETS_OF_LOVE_NUKE_SHOT_COUNT = 50  # "after landing 50 normal attacks during Full Burst"
 
 

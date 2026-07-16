@@ -166,3 +166,9 @@ def test_d_killer_wife_assault_formation_squad_attack_damage_every_5_full_charge
         rule.action(deck_ctx("d-killer-wife"), "d-killer-wife", 8.0, reg)
     assert round(reg.total_for("attack_damage_up", ALLY, 8.0), 4) == 0.0506
     assert reg.total_for("attack_damage_up", ALLY, 18.1) == 0.0  # 10s duration
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+CALM_SNIPING = DKW["calm_sniping"]
+ASSAULT_FORMATION = DKW["assault_formation"]

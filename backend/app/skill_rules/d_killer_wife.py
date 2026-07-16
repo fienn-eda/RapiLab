@@ -23,6 +23,22 @@ Not modeled:
 """
 from app.skill_rules._helpers import buff_rule, cdr_pulse_rule, refreshing_buff_rule
 
+
+SKILL_VALUE_MANIFESTS = {
+    "d-killer-wife": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_burst1_batch2",
+        "keys": {
+            "calm_sniping": ("skills", 0),
+            "assault_formation": ("skills", 1),
+        },
+        "drop_tokens": {
+            "calm_sniping": [1],
+        },
+    },
+}
+
+
 ASSAULT_FORMATION_ATTACK_DAMAGE_SHOT_COUNT = 5  # skill text: "for 5 time(s)"
 
 

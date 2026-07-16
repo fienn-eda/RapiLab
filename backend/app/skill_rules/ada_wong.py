@@ -29,6 +29,23 @@ Not modeled / deferred:
 from app.skill_rules._helpers import buff_rule, member_subset_buff_rule, round_buff_rule
 
 
+SKILL_VALUE_MANIFESTS = {
+    "ada-wong": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_ada_wong",
+        "keys": {
+            "covert_support": ("skills", 0),
+            "flash_grenade": ("skills", 1),
+            "secret_agent": ("skills", 2),
+        },
+        "drop_tokens": {
+            "covert_support": [0],
+            "secret_agent": [5, 7],
+        },
+    },
+}
+
+
 def build_ada_wong_rules(values):
     covert = values["covert_support"]
     secret = values["secret_agent"]

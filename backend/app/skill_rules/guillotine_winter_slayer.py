@@ -39,6 +39,19 @@ from app.effects import ResourceBuff, ResourceSpec
 from app.skill_rules._helpers import buff_rule, leveled_resource_buff, linear_resource_buff
 
 
+SKILL_VALUE_MANIFESTS = {
+    "guillotine-winter-slayer": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_resource_eb",
+        "keys": {
+            "heros_fate": ("skills", 0),
+            "heros_gift": ("skills", 1),
+            "extermination": ("skills", 2),
+        },
+    },
+}
+
+
 def _hero_level(exp):
     """Hero Level: 1 at 0 EXP, +1 every 10 EXP, capped at 11."""
     return min(11, 1 + int(exp) // 10)

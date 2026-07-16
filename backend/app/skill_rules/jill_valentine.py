@@ -26,6 +26,19 @@ Not modeled / deferred:
 from app.skill_rules._helpers import buff_rule, round_buff_rule
 
 
+SKILL_VALUE_MANIFESTS = {
+    "jill-valentine": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_burst3_eb2",
+        "keys": {
+            "magnum_ammo": ("skills", 0),
+            "acid_ammo": ("skills", 1),
+            "supercop": ("skills", 2),
+        },
+    },
+}
+
+
 def build_jill_rules(values):
     magnum = values["magnum_ammo"]
     acid = values["acid_ammo"]

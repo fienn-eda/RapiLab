@@ -56,6 +56,25 @@ Not modeled / deferred:
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 from app.squad_engine import boss_is_element, own_burst_fired_this_cycle
 
+
+SKILL_VALUE_MANIFESTS = {
+    "marciana-marine-study": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_marciana_marine_study",
+        "keys": {
+            "emergency_whistle": ("skills", 0),
+            "penguin_emergency_dispatch": ("skills", 1),
+            "penguin_spiral": ("skills", 2),
+        },
+        "drop_tokens": {
+            "emergency_whistle": [0, 1, 3, 5, 6, 7, 8, 9, 10, 11, 12],
+            "penguin_emergency_dispatch": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14],
+            "penguin_spiral": [1, 3],
+        },
+    },
+}
+
+
 WHISTLE_CAP = 5  # skill text: Whistle "stacks up to 5 times"
 BURST_BUFF_DURATION = 10.0  # Penguin Spiral's self buffs last 10 sec
 DEF_DEBUFF_DURATION = 20.0  # High-Risk Target DEF debuff lasts 20 sec
