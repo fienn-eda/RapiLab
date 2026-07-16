@@ -104,6 +104,12 @@ Add `part_destructible: bool = False` to `BossProfile`, thread it through
 - **Battle-start battery = 0** — confirmed in-game (Fienn). Not an assumption:
   she is not transformed at battle start; the first transformation is at her
   first burst (floor branch).
+- **Ceiling assumes transformed from battle start** (Fienn approved,
+  2026-07-16). Strictly, even with a part-destruction gimmick the battery starts
+  at 0 and needs a brief ramp-up to first reach 100%; the ceiling ignores that
+  ramp and treats her as transformed for the whole fight. This is intentional:
+  the ceiling is the theoretical maximum-potential upper bound, not an expected
+  value, so the small early-game ramp is deliberately optimistic.
 
 ## Testing strategy
 
