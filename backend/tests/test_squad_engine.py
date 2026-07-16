@@ -5,6 +5,7 @@ from app.squad_engine import (
     SquadMember,
     all_conditions,
     ally_bursted,
+    boss_is_element,
     deck_contains,
     fire_trigger,
     has_status,
@@ -189,6 +190,27 @@ def test_ally_bursted_reads_last_burst_slug():
     assert ally_bursted("mint")(ctx, "prika") is True
     ctx.last_burst_slug = "prika"
     assert ally_bursted("mint")(ctx, "prika") is False
+
+
+def test_boss_is_element_reads_context_boss_element():
+    # A boss-element-conditional debuff (e.g. Brid's Wind-Code Damage Taken)
+    # gates on the boss's element, which only raid_simulator knows - it's threaded
+    # onto SquadContext so a SkillRule condition can read it.
+    ctx = make_context(SquadMember("brid-silent-track", burst_tier=2, element="Fire"))
+    assert ctx.boss_element is None  # default when unset
+    assert boss_is_element("Wind")(ctx, "brid-silent-track") is False
+
+    ctx.boss_element = "Wind"
+    assert boss_is_element("Wind")(ctx, "brid-silent-track") is True
+    assert boss_is_element("Electric")(ctx, "brid-silent-track") is False
+
+
+def test_squad_context_stores_boss_element():
+    ctx = SquadContext(
+        [SquadMember("helm-aquamarine", burst_tier=2, element="Iron")],
+        boss_element="Electric",
+    )
+    assert ctx.boss_element == "Electric"
 
 
 def test_all_conditions_requires_every_condition():

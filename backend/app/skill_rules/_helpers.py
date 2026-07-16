@@ -8,26 +8,39 @@ from app.effects import Effect, Pulse, ResourceBuff, RoundGrant
 from app.squad_engine import SkillRule
 
 
-def buff_rule(trigger, buffs):
-    """buffs: list of (stat, value, scope, duration). duration None = permanent."""
+def _rule(trigger, action, condition):
+    """Build a SkillRule, attaching `condition` only when given (None keeps
+    SkillRule's own default of always-true) - so a gated bullet (e.g. a
+    boss-element-conditional debuff) reuses the same builder as an ungated one."""
+    rule = SkillRule(trigger=trigger, action=action)
+    if condition is not None:
+        rule.condition = condition
+    return rule
+
+
+def buff_rule(trigger, buffs, condition=None):
+    """buffs: list of (stat, value, scope, duration). duration None = permanent.
+    `condition`: optional SkillRule condition (e.g. boss_is_element("Wind")) for a
+    bullet that only applies in some sims."""
 
     def action(context, caster_slug, time, registry):
         for stat, value, scope, duration in buffs:
             registry.add(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
 
-    return SkillRule(trigger=trigger, action=action)
+    return _rule(trigger, action, condition)
 
 
-def refreshing_buff_rule(trigger, buffs):
+def refreshing_buff_rule(trigger, buffs, condition=None):
     """Like buff_rule, but each buff REFRESHES instead of stacking (see
     EffectRegistry.add_refreshing) - for a per-shot buff re-applied every shot,
-    which the game refreshes rather than stacks."""
+    which the game refreshes rather than stacks. `condition`: optional SkillRule
+    condition, as in buff_rule."""
 
     def action(context, caster_slug, time, registry):
         for stat, value, scope, duration in buffs:
             registry.add_refreshing(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
 
-    return SkillRule(trigger=trigger, action=action)
+    return _rule(trigger, action, condition)
 
 
 def cdr_pulse_rule(trigger, seconds, scope="squad"):
@@ -37,7 +50,7 @@ def cdr_pulse_rule(trigger, seconds, scope="squad"):
     return SkillRule(trigger=trigger, action=action)
 
 
-def instant_nuke_pulse_rule(trigger, percent, full_burst_bonus_eligible=False):
+def instant_nuke_pulse_rule(trigger, percent, full_burst_bonus_eligible=False, condition=None):
     """"Deals X% of final ATK as damage" tied to a trigger OTHER than the
     caster's own burst (e.g. Brid: Silent Track's Ignition Sequence, on
     full_burst_enter). raid_simulator.drain_instant_damage computes it using
@@ -46,14 +59,17 @@ def instant_nuke_pulse_rule(trigger, percent, full_burst_bonus_eligible=False):
     `full_burst_bonus_eligible`: pass True only when the skill's own damage
     text says "as additional damage" (Fienn, 2026-07-12) - e.g. Asuka's Skill 1
     per-shot nuke. raid_simulator still checks the shot's actual time against
-    the Full Burst window; this only opts the instance IN to that check."""
+    the Full Burst window; this only opts the instance IN to that check.
+
+    `condition`: optional SkillRule condition (e.g. boss_is_element("Electric"))
+    for an additional-damage bullet that only fires against a matching enemy."""
 
     def action(context, caster_slug, time, registry):
         registry.add_pulse(
             Pulse("instant_damage_percent", percent, "self", caster_slug, full_burst_bonus_eligible)
         )
 
-    return SkillRule(trigger=trigger, action=action)
+    return _rule(trigger, action, condition)
 
 
 def _resolve_scope(scope_spec, context, caster_slug, registry, time):

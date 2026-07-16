@@ -20,12 +20,22 @@ class SquadMember:
 
 
 class SquadContext:
-    def __init__(self, members: list[SquadMember], base_atk: dict[str, float] | None = None):
+    def __init__(
+        self,
+        members: list[SquadMember],
+        base_atk: dict[str, float] | None = None,
+        boss_element: str | None = None,
+    ):
         self.members = members
         # each member's base (summary) ATK, so a rule targeting "the N allies with
         # the highest final ATK" can rank them live (see top_atk_slugs). Injected by
         # raid_simulator; empty for contexts that don't need ranking.
         self.base_atk: dict[str, float] = base_atk or {}
+        # the boss's element ("Fire"/"Water"/"Wind"/"Iron"/"Electric"), so a
+        # SkillRule gated on "if the enemy is X Code" (e.g. Brid's Wind-Code Damage
+        # Taken debuff) can read it via the boss_is_element condition. Only
+        # raid_simulator knows the boss; None for element-agnostic contexts.
+        self.boss_element: str | None = boss_element
         # flag -> the earliest time it was set (a "continuous, cannot be removed"
         # status is pinned from its first application). Callers that only care
         # whether a flag is set omit the time (defaults to 0.0).
@@ -189,6 +199,18 @@ def ally_bursted(slug: str) -> Callable[[SquadContext, str], bool]:
 
     def check(context: SquadContext, caster_slug: str) -> bool:
         return context.last_burst_slug == slug
+
+    return check
+
+
+def boss_is_element(element: str) -> Callable[[SquadContext, str], bool]:
+    """Condition: the boss is `element` Code (e.g. Brid's Wind-Code Damage Taken
+    debuff, Helm: Aquamarine's Electric-Code bullets). Reads
+    SquadContext.boss_element, set by raid_simulator - False when it's unset
+    (element-agnostic sim)."""
+
+    def check(context: SquadContext, caster_slug: str) -> bool:
+        return context.boss_element == element
 
     return check
 

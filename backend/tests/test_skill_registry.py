@@ -176,10 +176,12 @@ def test_get_per_shot_rules_returns_journey_ahead_for_brid():
     result = get_per_shot_rules("brid-silent-track", {
         "journey_ahead": {"description_value_01": "12.12", "description_value_02": "10", "description_value_03": "675"},
     })
-    assert result is not None and len(result) == 1
-    threshold, mode, rules = result[0]
-    assert (threshold, mode) == (5, "every")
-    assert all(r.trigger == "per_shot" for r in rules)
+    # Two per-shot entries: the 675% nuke every 5 normals, and the Wind-Code
+    # Damage Taken debuff every 10 normals.
+    assert result is not None and len(result) == 2
+    modes = {(threshold, mode) for threshold, mode, _ in result}
+    assert modes == {(5, "every"), (10, "every")}
+    assert all(r.trigger == "per_shot" for _, _, rules in result for r in rules)
 
 
 def test_get_per_shot_rules_returns_health_up_for_miranda():

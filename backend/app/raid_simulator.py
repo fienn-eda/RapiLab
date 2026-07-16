@@ -240,6 +240,7 @@ def simulate_raid(
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"]) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
+        boss_element=boss_element,
     )
     registry = EffectRegistry()
     # Damage is RECORDED as events during phase 1 (buffs are applied but no
