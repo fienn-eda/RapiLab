@@ -276,7 +276,7 @@
     `bready`(Taste), `dorothy-serendipity`(펠릿 카운터), `eve`(크리티컬-히트 카운터 —
     Julia 시그니처 인코딩 중 확인됨: 기대값 크리 모델과 구조적으로 불가, **영구 defer**
     가능성 높음, 착수 전 재확인),
-    `ada-wong`(풀버스트창 주기딜=gap #6 + True), `marciana-marine-study`(boss-element=gap #5),
+    `ada-wong`(풀버스트창 주기딜=gap #6 + True),
     `milk-blooming-bunny`·`scarlet-black-shadow`(distributed)
   - **무기 변형**(버스트/평타가 다른 무기모드로 전환 = 핵심 딜, 미지원): `snow-white`,
     `snow-white-heavy-arms`, `maxwell`, `cinderella-crystal-wave`(MG/Snipe 모드
@@ -287,6 +287,15 @@
       — 완료. squad 스코프 적 디버프, 코어 데미지는 `core_hittable` 게이팅.
 - [ ] `NikkeSpec`에 스킬별 유저 레벨 필드 추가 → 조립 시 `levels[level-1]` 선택 일반화
       (지금은 빌더가 단일 레벨 dict만 받음)
+
+### gap #5 후속 (2026-07-16 배치 중 발견, 미착수)
+- [ ] **`rei-ayanami`**: Preemptive Subdual의 "Elemental Advantage Attack Damage
+      +30.23%/3s"(노멀100회마다)가 지금은 gap #5로 defer 표시돼 있음 → 이제 인코딩 가능.
+      `other_elemental_bonus`, `boss_is_element("Iron")` 게이팅(Fire>Iron)으로.
+- [ ] **`anis-sparkling-summer`**: Sparkling Wave의 "Elemental Advantage Attack
+      Damage +42.24%"가 "버킷 모호(other_elemental_bonus vs attack_damage_up)"로
+      보류 중 → Fienn 판정으로 `other_elemental_bonus`(element bonus damage)로 확정.
+      `boss_is_element("Water")` 게이팅(Electric>Water).
 
 ### 정리/보강
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
