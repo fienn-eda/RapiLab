@@ -105,6 +105,7 @@ def test_ceiling_collider_is_wholefight_periodic_sustained():
     assert spec["percent"] == 45.87
     assert spec["damage_type"] == "sustained"
     assert spec["requires_part_destructible"] is True
+    assert spec["full_burst_bonus_eligible"] is True  # repeating-tick-DoT rule
 
 
 def test_transformation_window_derives_from_battery_values_not_hardcoded():

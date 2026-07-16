@@ -59,12 +59,15 @@ follows.
 | Self Sustained Damage +135.83% for 10 s (skill 3 burst) | `sustained_damage_up` buff on `own_burst_activate` — **same both** | same |
 | Sustained Damage +59.6% for 5 s, every 30 normals (skill 1) | `per_shot` every-30 `sustained_damage_up` buff — **same both** | same |
 
-**Full Burst Bonus addendum (Fienn, 2026-07-16):** Meteor and the floor
-Collider are both `full_burst_bonus_eligible=True` per the repeating-tick-DoT
-rule (each tick reads live buffs at its own time, so ticks landing inside the
-Full Burst window get the bonus). The ceiling Collider (`periodic_nukes`)
-structurally lacks the flag - that loop has no FB-bonus parameter - flagged as
-an open question for a future engine extension.
+**Full Burst Bonus addendum (Fienn, 2026-07-16):** Meteor and BOTH Colliders
+are `full_burst_bonus_eligible=True` per the repeating-tick-DoT rule (each
+tick reads live buffs at its own time, so ticks landing inside the Full Burst
+window get the bonus). The `periodic_nukes` loop originally had no FB-bonus
+parameter; Fienn approved extending it the same day (optional opt-in field,
+default False, so periodic units encoded earlier are unchanged until each is
+deliberately flagged) — the ceiling Collider is the first consumer. Whether
+existing periodic units (e.g. Helm: Aquamarine's Suppression Fire) should also
+be flagged is a per-unit follow-up decision.
 
 `sustained_damage_up` is already wired (gated to sustained-typed instances,
 `raid_simulator.py:200`), and the Mana-precedent tick-DoT machinery

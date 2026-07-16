@@ -75,6 +75,11 @@ Burst tab, that auto-fires throughout the whole fight). `periodic_nukes` is a
 t=cooldown, 2*cooldown, ... up to fight_duration, computing damage the same
 way as a burst nuke (using the tick time to read live buffs, so it correctly
 reflects whatever's active at that instant). Logged with `source="periodic"`.
+A spec may opt in with `"full_burst_bonus_eligible": True` - the repeating-
+tick-DoT rule (Fienn, 2026-07-16): each tick computes at its own time, so
+ticks landing inside a Full Burst window get the bonus. Absent/False keeps
+the pre-existing no-bonus behavior, so units encoded before this field are
+unchanged until deliberately flagged.
 Computed as a pass after the burst-cycle simulation completes, same as the
 normal-attack pass - order doesn't matter since it only reads the registry's
 already-populated Effects at arbitrary times, like every other post-pass here.
@@ -741,7 +746,10 @@ def simulate_raid(
         damage_type = spec.get("damage_type", "attack")
         tick = cooldown
         while tick < fight_duration:
-            record(slug, percent, tick, "periodic", damage_type=damage_type)
+            record(
+                slug, percent, tick, "periodic", damage_type=damage_type,
+                full_burst_bonus_eligible=spec.get("full_burst_bonus_eligible", False),
+            )
             tick += cooldown
 
     # Phase 2: now that every buff/debuff is in the registry, compute each
