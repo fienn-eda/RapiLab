@@ -78,6 +78,12 @@ reflects whatever's active at that instant). Logged with `source="periodic"`.
 Computed as a pass after the burst-cycle simulation completes, same as the
 normal-attack pass - order doesn't matter since it only reads the registry's
 already-populated Effects at arbitrary times, like every other post-pass here.
+
+Both `periodic_nukes` values and `resource_scaled_nukes` specs may carry an
+optional `"requires_part_destructible": True | False` to fire only on one
+side of a boss-profile flag (e.g. Ark Ranger Black's floor DoT vs. ceiling
+DoT modeling the same battery-transformation state two different ways);
+absent field = always fires, matching every existing spec's behavior.
 """
 from app.attack_rate import CHARGE_WEAPONS, generate_shot_times, last_bullet_shot_times
 from app.burst_cycle import simulate_burst_cycle
@@ -379,6 +385,13 @@ def simulate_raid(
         # of the plain burst_damage_percents nuke below (a unit can have
         # either, both, or neither).
         for spec in resource_scaled_nukes.get(slug, []):
+            # An Ark Ranger Black-style spec may be bracketed to only one side
+            # of the boss's part_destructible flag (e.g. a burst-anchored
+            # floor DoT vs. a whole-fight ceiling DoT modeling the same
+            # transformation state differently); absent field = always fires.
+            required = spec.get("requires_part_destructible")
+            if required is not None and required != context.part_destructible:
+                continue
             # "resource" is optional: a plain repeating DoT with no resource
             # scaling (e.g. Mana's Fatal Error!) reuses this same tick_count/
             # tick_interval loop, just with no resource_gate to resolve later.
@@ -720,6 +733,9 @@ def simulate_raid(
                     )
 
     for slug, spec in periodic_nukes.items():
+        required = spec.get("requires_part_destructible")
+        if required is not None and required != context.part_destructible:
+            continue
         cooldown = spec["cooldown"]
         percent = spec["percent"]
         damage_type = spec.get("damage_type", "attack")
