@@ -29,7 +29,7 @@
 | Moran (애장품) | `moran` | Defender | AR | Electric | ✅ | 무기변형 자해모드·생존계만 미모델 |
 | Rouge | `rouge` | Supporter | SR | Electric | ⚠ | Card Throw CDR(8풀차지→7s, 매 사이클 근사)·Sword Coin AD(후열 가정, 상시)·Game Master ATK(**15.07%로 버그수정**, 기존 30.02 오독)·Max HP 버프(flat_max_hp, inert·향후 HP스케일용) 모델됨. Shield Coin(생존)만 보류 |
 | Soline: Frost Ticket | `soline-frost-ticket` | Supporter | SG | Water | ✅ | CDR만 모델링 (원래 역할이 로테이션 보조뿐) |
-| Tove (애장품) | `tove` | Supporter | AR | Water | ✅ | 공속 버프, 샷건전용 변형만 미모델 |
+| Tove (애장품) | `tove` | Supporter | AR | Water | ✅ | SG아군 공속+42.24%(상시, 라이브 리드로 실제 발수 증가)·SG아군 flat ATK(자ATK 24.21%/스택×3, 15초) member_subset_buff_rule로 모델됨(gap #3 소비 2026-07-16). 잔여: Temporary Modification 노멀카운트 램프 자체(풀스택 정상상태 가정) |
 | Volume | `volume` | Attacker | SMG | Wind | ✅ | Freestyle(킬 트리거, 레이드엔 무의미)만 미모델 |
 | Zwei (애장품) | `zwei` | Supporter | SG | Electric | ⚠ | Pierce Equation 스쿼드 Pierce(**20.13% 1 round=탄수 버프** + 10.06% 10초)·Frame Analysis 크리율·버스트 Pierce 모델됨. 풀버스트창 노멀스택 Pierce/크리·무기변형·Cover HP(생존) 보류 |
 
