@@ -206,6 +206,33 @@ def test_damage_taken_up_debuff_raises_damage():
     assert round(with_debuff["total_damage"], 5) == round(10000.0 * 1.4, 5)
 
 
+def test_enemy_def_percent_debuff_lowers_defense_and_raises_damage():
+    # An enemy "DEF ▼ X%" debuff (e.g. Marciana's High-Risk Target) is a
+    # squad-scoped effect reducing the defense subtracted from every attacker's
+    # base damage. With enemy_def=1000 and atk=2000, a burst at 500%: base goes
+    # from (2000-1000)=1000 to (2000-800)=1200 under a -20% DEF debuff.
+    def grant_def_down(context, caster_slug, time, registry):
+        registry.add(Effect("enemy_def_percent", -0.2, "squad", None, "buffer"), applied_at=time)
+
+    kwargs = dict(
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=1000,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    without = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    with_debuff = simulate_raid(
+        make_deck(),
+        {"buffer": [SkillRule(trigger="battle_start", action=grant_def_down)], "midtier": [], "attacker": []},
+        **kwargs,
+    )
+    assert without["total_damage"] == 5000.0
+    assert round(with_debuff["total_damage"], 5) == 6000.0
+
+
 def test_core_damage_up_only_helps_when_core_is_hittable():
     # "Damage dealt when attacking core ▲" (e.g. Nayuta) raises the major
     # modifier, but only matters when the boss's core is actually hittable -

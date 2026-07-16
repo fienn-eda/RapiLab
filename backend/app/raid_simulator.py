@@ -284,6 +284,7 @@ def simulate_raid(
             atk=base_stats[slug]["atk"],
             attack_coefficient=percent / 100,
             enemy_def=instance_enemy_def,
+            enemy_def_percent=registry.total_for("enemy_def_percent", target, time),
             atk_percent=registry.total_for("atk_percent", target, time),
             flat_atk=registry.total_for("flat_atk", target, time) + extra_flat_atk,
             other_elemental_bonus=registry.total_for("other_elemental_bonus", target, time),

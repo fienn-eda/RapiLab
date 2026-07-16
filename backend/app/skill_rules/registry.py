@@ -48,6 +48,10 @@ from app.skill_rules.cinderella import (
     glass_slippers_burst_percent,
 )
 from app.skill_rules.jill_valentine import build_jill_rules
+from app.skill_rules.marciana_marine_study import (
+    build_marciana_per_shot_rules,
+    build_marciana_rules,
+)
 from app.skill_rules.ludmilla_winter_owner import build_ludmilla_per_shot_rules, build_ludmilla_rules
 from app.skill_rules.mana import (
     build_fatal_error_dot,
@@ -263,6 +267,7 @@ _BUILDERS = {
     "maiden-ice-rose": _build_maiden,
     "asuka-shikinami-langley-wille": _build_asuka,
     "jill-valentine": lambda sv: (build_jill_rules(sv), None),
+    "marciana-marine-study": lambda sv: (build_marciana_rules(sv), None),  # burst is buff-only; damage is Flagged Target nukes (per-shot + full-burst)
     "privaty": _build_privaty,
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
@@ -363,6 +368,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "velvet": lambda sv: build_bullets_of_love_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),
+    "marciana-marine-study": lambda sv: build_marciana_per_shot_rules(sv),
     "helm": lambda sv: build_frontline_command_per_shot_rules(sv["frontline_command"]),
     "privaty": lambda sv: build_ld_assault_per_shot_rules(sv),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
