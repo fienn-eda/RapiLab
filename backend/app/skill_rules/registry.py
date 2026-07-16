@@ -518,3 +518,27 @@ def get_dynamic_hit_count_nukes(slug, skill_values):
     one."""
     builder = _DYNAMIC_HIT_COUNT_NUKE_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
+
+
+import importlib
+import pkgutil
+
+import app.skill_rules as _skill_rules_package
+
+_skill_value_manifest_cache = None
+
+
+def get_skill_value_manifest(slug):
+    """The colocated SKILL_VALUE_MANIFESTS entry for `slug`, or None. A module
+    without a manifest is simply not loadable from user data (excluded +
+    reported, same as a non-encoded slug) - see user_roster.load_nikke_spec."""
+    global _skill_value_manifest_cache
+    if _skill_value_manifest_cache is None:
+        merged = {}
+        for info in pkgutil.iter_modules(_skill_rules_package.__path__):
+            if info.name.startswith("_"):
+                continue
+            module = importlib.import_module(f"app.skill_rules.{info.name}")
+            merged.update(getattr(module, "SKILL_VALUE_MANIFESTS", {}))
+        _skill_value_manifest_cache = merged
+    return _skill_value_manifest_cache.get(slug)

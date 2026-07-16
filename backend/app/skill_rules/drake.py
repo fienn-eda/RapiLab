@@ -25,6 +25,33 @@ Not modeled / deferred:
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 
+SKILL_VALUE_MANIFESTS = {
+    "drake": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_drake",
+        "keys": {
+            "overcharge": ("skills", 0),
+            "thunderbolt": ("skills", 1),
+            "drake_special": ("skills", 2),
+        },
+    },
+    "drake-signature": {
+        "source": "dotgg",
+        "data_slug": "drake",
+        "test_module": "test_skill_rules_drake",
+        "keys": {
+            "overcharge": ("dollskills", 0),
+            "thunderbolt": ("dollskills", 1),
+            "drake_special": ("dollskills", 2),
+        },
+        "fixtures": {
+            "overcharge": "OVERCHARGE_SIG",
+            "thunderbolt": "THUNDERBOLT_SIG",
+            "drake_special": "DRAKE_SPECIAL_SIG",
+        },
+    },
+}
+
 
 def drake_special_burst_percent(values):
     return float(values["drake_special"]["description_value_01"])

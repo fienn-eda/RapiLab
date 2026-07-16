@@ -1,4 +1,5 @@
-from app.skill_values import dotgg_slots, extract_lootandwaifus_slots
+from app.skill_rules.registry import get_skill_value_manifest
+from app.skill_values import assemble_skill_values, dotgg_slots, extract_lootandwaifus_slots
 
 # Real Lv10 text shape from data/lootandwaifus (Ark Ranger Black, Tremble!).
 TREMBLE_TEXT = (
@@ -32,3 +33,28 @@ def test_drop_tokens_renumbers_remaining_slots():
 def test_dotgg_slots_pass_through_and_drop_empties():
     level = {"description_value_01": "1254", "description_value_02": "72.18", "description_value_03": ""}
     assert dotgg_slots(level) == {"description_value_01": "1254", "description_value_02": "72.18"}
+
+
+def test_registry_exposes_pilot_manifests():
+    manifest = get_skill_value_manifest("drake")
+    assert manifest["source"] == "dotgg"
+    assert manifest["keys"]["drake_special"] == ("skills", 2)
+    assert get_skill_value_manifest("not-a-slug") is None
+
+
+def test_assemble_drake_max_level_from_real_data_file():
+    manifest = get_skill_value_manifest("drake")
+    values = assemble_skill_values(
+        "drake", manifest, {"skill1": 10, "skill2": 10, "burst": 10}
+    )
+    # Ground truth: DRAKE_SPECIAL fixture in test_skill_rules_drake.py.
+    assert float(values["drake_special"]["description_value_01"]) == 1254.0
+
+
+def test_assemble_respects_user_skill_level():
+    manifest = get_skill_value_manifest("drake")
+    lv10 = assemble_skill_values("drake", manifest, {"skill1": 10, "skill2": 10, "burst": 10})
+    lv1 = assemble_skill_values("drake", manifest, {"skill1": 10, "skill2": 10, "burst": 1})
+    assert float(lv1["drake_special"]["description_value_01"]) < float(
+        lv10["drake_special"]["description_value_01"]
+    )

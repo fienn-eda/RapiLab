@@ -26,6 +26,18 @@ Not modeled / deferred:
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 from app.squad_engine import boss_is_element
 
+SKILL_VALUE_MANIFESTS = {
+    "rei-ayanami": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_rei_ayanami",
+        "keys": {
+            "preemptive_subdual": ("skills", 0),
+            "attack_support": ("skills", 1),
+            "annihilation": ("skills", 2),
+        },
+    },
+}
+
 PREEMPTIVE_SUBDUAL_NUKE_SHOT_COUNT = 100  # "after landing 100 normal attacks"
 IRON = "Iron"  # Rei is Fire; her Elemental Advantage only counts vs an Iron boss
 
