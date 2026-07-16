@@ -94,12 +94,25 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    builder(s) and add a `_BUILDERS` entry
    `lambda sv: (build_<slug>_rules(sv), <burst_percent or None>)`.
 
-9. **Document** in the module docstring: a "Modeled (DPS-relevant)" list and a
+9. **Declare the skill-value manifest** so the roster loader can assemble the
+   unit from local data files at any skill level: add a `SKILL_VALUE_MANIFESTS`
+   dict at the top of the module (right after the imports) mapping each
+   sub-skill key to its `("skills" | "dollskills", index)` slot, with `source`
+   (which site the slot numbering was transcribed from), `test_module` (where
+   the ground-truth fixtures live, module-level, named `KEY_NAME.upper()` or
+   listed under `fixtures`), and — only where the verification harness fails —
+   per-key `drop_tokens` (0-based token indexes the encoder skipped when
+   numbering). Then run the harness:
+   `PYTHONIOENCODING=utf-8 python -m pytest tests/test_skill_value_assembly.py -q -k <slug>`
+   and fix mismatches with `drop_tokens`, never by editing fixtures or the
+   harness. See `backend/app/skill_rules/drake.py` for the manifest shape.
+
+10. **Document** in the module docstring: a "Modeled (DPS-relevant)" list and a
    "Not modeled / deferred" list naming each skipped mechanic and *why* it
    can't be represented yet. This is not optional — it's how the next person
    knows the encoding is partial and what would make it complete.
 
-10. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
+11. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
    avoids cp949 encoding errors with Korean/arrow characters on Windows). Then
    commit on the WIP branch with a message listing what's modeled and deferred.
 

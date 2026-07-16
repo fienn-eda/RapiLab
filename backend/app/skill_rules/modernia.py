@@ -28,6 +28,16 @@ Not modeled / deferred:
 from app.effects import ResourceSpec
 from app.skill_rules._helpers import instant_nuke_pulse_rule, linear_resource_buff
 
+SKILL_VALUE_MANIFESTS = {
+    "modernia": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_resource_eb",
+        "keys": {
+            "high_speed_evolution": ("skills", 0),
+        },
+    },
+}
+
 
 def build_modernia_resources(values):
     evo = values["high_speed_evolution"]

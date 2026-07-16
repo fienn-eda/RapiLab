@@ -33,6 +33,12 @@ LM = {
     },
 }
 
+# Module-level aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+BUBBLE_ORDER = LM["bubble_order"]
+BUBBLE_WAVE = LM["bubble_wave"]
+SIRENS_SONG = LM["sirens_song"]
+
 
 def test_little_mermaid_cdr_and_attack_damage_and_self_atk():
     reg = EffectRegistry()

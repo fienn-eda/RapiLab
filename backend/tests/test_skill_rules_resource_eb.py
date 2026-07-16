@@ -32,6 +32,10 @@ MODERNIA = {
     },
 }
 
+# Module-level alias so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve the fixture by name.
+HIGH_SPEED_EVOLUTION = MODERNIA["high_speed_evolution"]
+
 
 def test_modernia_evolution_resource_is_timed_capped_crit_and_ammo():
     specs = build_modernia_resources(MODERNIA)

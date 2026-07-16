@@ -24,6 +24,18 @@ Anchor also heals (Starfish + Seaside Stroll); healing is tracked separately
 """
 from app.skill_rules._helpers import buff_rule, escalating_buff_rule
 
+SKILL_VALUE_MANIFESTS = {
+    "anchor-innocent-maid": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_anchor",
+        "keys": {
+            "starfish_omurice": ("skills", 0),
+            "sea_anemone_pasta": ("skills", 1),
+            "seaside_stroll": ("skills", 2),
+        },
+    },
+}
+
 
 def build_anchor_rules(values):
     starfish = values["starfish_omurice"]

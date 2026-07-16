@@ -45,6 +45,18 @@ from app.burst_cycle import FULL_BURST_DURATION
 from app.effects import Effect
 from app.squad_engine import SkillRule, has_status
 
+SKILL_VALUE_MANIFESTS = {
+    "arcana-fortune-mate": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_arcana_fortune_mate",
+        "keys": {
+            "keepsake_album": ("skills", 0),
+            "memories_and_moments": ("skills", 1),
+            "radiant_youth": ("skills", 2),
+        },
+    },
+}
+
 MAKING_MEMORIES_STATUS = "making_memories"
 PRECIOUS_MOMENTS_COUNTER = "precious_moments"
 

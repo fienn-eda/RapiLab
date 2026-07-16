@@ -31,6 +31,18 @@ all-Electric Burst-3 stacking, since it would materially undercount such a deck.
 from app.effects import Effect, Pulse
 from app.squad_engine import SkillRule, own_burst_fired_this_cycle
 
+SKILL_VALUE_MANIFESTS = {
+    "arcana": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_arcana",
+        "keys": {
+            "awakened_destiny": ("skills", 0),
+            "cycle_of_destiny": ("skills", 1),
+            "shackles_of_destiny": ("skills", 2),
+        },
+    },
+}
+
 
 def arcana_burst_percent(values):
     return float(values["shackles_of_destiny"]["description_value_03"])

@@ -91,8 +91,11 @@ def test_combat_assist_branch_fires_on_full_burst_enter_when_no_burst1_ally():
     assert registry.total_for("atk_percent", rapi, now=5.0) == 0.0
 
 
+# rapi-red-hood has no signature weapon (no dollskills entry), so this is the
+# base skill's level-10 value for the Stage 3 nuke. Module-level so the assembly
+# verification harness (test_skill_value_assembly.py) can resolve it by name.
+POWER_OF_INHERITANCE = {"description_value_05": "2808"}
+
+
 def test_power_of_inheritance_stage3_burst_percent_reads_the_damage_slot():
-    # rapi-red-hood has no signature weapon (no dollskills entry), so this
-    # is the base skill's level-10 value for the Stage 3 nuke.
-    values = {"description_value_05": "2808"}
-    assert power_of_inheritance_stage3_burst_percent(values) == 2808.0
+    assert power_of_inheritance_stage3_burst_percent(POWER_OF_INHERITANCE) == 2808.0

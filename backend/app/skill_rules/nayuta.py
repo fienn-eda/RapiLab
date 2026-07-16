@@ -46,6 +46,18 @@ Not modeled:
 from app.effects import Effect
 from app.squad_engine import SkillRule
 
+SKILL_VALUE_MANIFESTS = {
+    "nayuta": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_nayuta",
+        "keys": {
+            "hypocrisy": ("skills", 0),
+            "impermanence": ("skills", 1),
+            "asceticism": ("skills", 2),
+        },
+    },
+}
+
 
 def asceticism_burst_percent(values):
     return float(values["asceticism"]["description_value_05"])

@@ -17,6 +17,17 @@ Her burst has no enemy nuke.
 from app.effects import Effect, Pulse
 from app.squad_engine import SkillRule
 
+SKILL_VALUE_MANIFESTS = {
+    "blanc": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_blanc",
+        "keys": {
+            "rabbit_twins_w": ("skills", 1),
+            "showtime": ("skills", 2),
+        },
+    },
+}
+
 TWIN_SLUGS = {"rouge", "noir"}
 
 

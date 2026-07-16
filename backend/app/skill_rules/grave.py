@@ -44,6 +44,18 @@ Modeled (DPS-relevant):
 from app.effects import Effect
 from app.squad_engine import SkillRule, own_burst_fired_this_cycle
 
+SKILL_VALUE_MANIFESTS = {
+    "grave": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_grave",
+        "keys": {
+            "heat_emission": ("skills", 0),
+            "overheat": ("skills", 1),
+            "plot_spoiler": ("skills", 2),
+        },
+    },
+}
+
 PLOT_SPOILER_BUFF_DURATION = 10.0  # the skill text hardcodes "10 sec", not a data slot
 PREDICTION_DURATION = 10.0  # Plot Spoiler grants Prediction (her status window) for 10 sec
 HEAT_EMISSION_STATUS = "heat_emission_active"

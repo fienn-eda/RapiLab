@@ -19,6 +19,18 @@ and her own "gain Pierce" flag. Her burst has no enemy nuke.
 """
 from app.skill_rules._helpers import buff_rule
 
+SKILL_VALUE_MANIFESTS = {
+    "ade-agent-bunny": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_ade",
+        "keys": {
+            "agents_gaze": ("skills", 0),
+            "agents_movement": ("skills", 1),
+            "cutting_edge_equipment": ("skills", 2),
+        },
+    },
+}
+
 
 def build_ade_rules(values):
     gaze = values["agents_gaze"]

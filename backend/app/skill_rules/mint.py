@@ -36,6 +36,18 @@ times - and paired with Prika, whose Encore pins Singing from a specific time
 from app.effects import Effect
 from app.squad_engine import SkillRule
 
+SKILL_VALUE_MANIFESTS = {
+    "mint": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_mint",
+        "keys": {
+            "here_i_go": ("skills", 0),
+            "fantastic_performance": ("skills", 1),
+            "lets_sing_together": ("skills", 2),
+        },
+    },
+}
+
 SINGING_STATUS = "singing"  # pinned by Prika's Encore (see prika.py)
 
 

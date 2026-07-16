@@ -52,12 +52,11 @@ def assemble_skill_values(slug, manifest, skill_levels, data_dir=DATA_DIR):
     for key, (array, index) in manifest["keys"].items():
         level = skill_levels[_SKILL_INDEX_TO_LEVEL_KEY[index]]
         raw_level = data[array][index]["levels"][level - 1]
+        drop = manifest.get("drop_tokens", {}).get(key, ())
         if manifest["source"] == "dotgg":
-            values[key] = dotgg_slots(raw_level)
+            values[key] = dotgg_slots(raw_level, drop)
         else:
-            values[key] = extract_lootandwaifus_slots(
-                raw_level, manifest.get("drop_tokens", {}).get(key, ())
-            )
+            values[key] = extract_lootandwaifus_slots(raw_level, drop)
     return values
 
 
@@ -67,5 +66,15 @@ def extract_lootandwaifus_slots(level_text, drop_tokens=()):
     return {f"description_value_{i + 1:02d}": token for i, token in enumerate(tokens)}
 
 
-def dotgg_slots(level_dict):
-    return {key: value for key, value in level_dict.items() if value != ""}
+def dotgg_slots(level_dict, drop_tokens=()):
+    """Native slot passthrough (minus empty slots). Some encoders renumbered
+    dotgg's native slots when transcribing (skipping threshold/count slots the
+    builders don't read), so drop_tokens applies here too: drop the given
+    0-based non-empty slots and renumber the rest sequentially. Without drops,
+    native slot keys are preserved untouched."""
+    if not drop_tokens:
+        return {key: value for key, value in level_dict.items() if value != ""}
+    dropped = set(drop_tokens)
+    tokens = [v for v in level_dict.values() if v != ""]
+    kept = [t for i, t in enumerate(tokens) if i not in dropped]
+    return {f"description_value_{i + 1:02d}": token for i, token in enumerate(kept)}

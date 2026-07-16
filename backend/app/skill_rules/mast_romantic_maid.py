@@ -30,6 +30,18 @@ fire once per cycle, after the cycle's stack is gained, so both see stacks(cycle
 from app.effects import Effect
 from app.squad_engine import SkillRule
 
+SKILL_VALUE_MANIFESTS = {
+    "mast-romantic-maid": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_mast",
+        "keys": {
+            "pirates_heart": ("skills", 0),
+            "pirates_spirit": ("skills", 1),
+            "pirates_romance": ("skills", 2),
+        },
+    },
+}
+
 ANCHOR_SLUG = "anchor-innocent-maid"
 MAX_DRUNKEN_STACKS = 3
 

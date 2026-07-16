@@ -35,6 +35,22 @@ from app.effects import Effect
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 from app.squad_engine import SkillRule, boss_is_element
 
+SKILL_VALUE_MANIFESTS = {
+    "brid-silent-track": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_brid",
+        "keys": {
+            "ignition_sequence": ("skills", 0),
+            "journey_ahead": ("skills", 1),
+            "full_throttle": ("skills", 2),
+        },
+        # Journey Ahead was transcribed with the "after 10/5 normal attack(s)"
+        # thresholds and "1 enemy unit(s)" counts skipped (native slots
+        # 01/02/05/06); the builder reads the compacted 01..03 numbering.
+        "drop_tokens": {"journey_ahead": [0, 1, 4, 5]},
+    },
+}
+
 JOURNEY_AHEAD_NUKE_SHOT_COUNT = 5  # skill text: "after 5 normal attacks"
 JOURNEY_AHEAD_DEBUFF_SHOT_COUNT = 10  # skill text: "after 10 normal attacks"
 WIND = "Wind"  # both Damage Taken debuffs gate on a Wind Code boss

@@ -14,6 +14,20 @@ attack-rate and damage-accumulation pieces.
 from app.effects import Effect, Pulse
 from app.squad_engine import SkillRule, has_status, no_other_burst_tier_allies, not_condition
 
+SKILL_VALUE_MANIFESTS = {
+    "rapi-red-hood": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_rapi_red_hood",
+        "keys": {
+            "battlefield_assessment": ("skills", 0),
+            "power_of_inheritance": ("skills", 2),
+        },
+        "fixtures": {
+            "battlefield_assessment": "VALUES",
+        },
+    },
+}
+
 
 def build_battlefield_assessment_rules(values: dict) -> list[SkillRule]:
     own_burst_tier = int(values["description_value_01"])

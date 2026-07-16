@@ -24,6 +24,18 @@ Not modeled:
 """
 from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
 
+SKILL_VALUE_MANIFESTS = {
+    "little-mermaid": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_burst1_batch3",
+        "keys": {
+            "bubble_order": ("skills", 0),
+            "bubble_wave": ("skills", 1),
+            "sirens_song": ("skills", 2),
+        },
+    },
+}
+
 
 def build_little_mermaid_rules(values):
     order = values["bubble_order"]

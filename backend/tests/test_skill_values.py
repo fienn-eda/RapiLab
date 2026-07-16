@@ -35,6 +35,23 @@ def test_dotgg_slots_pass_through_and_drop_empties():
     assert dotgg_slots(level) == {"description_value_01": "1254", "description_value_02": "72.18"}
 
 
+def test_dotgg_drop_tokens_renumbers_native_slots():
+    # Some encoders renumbered dotgg's native slots when transcribing (e.g.
+    # brid's Journey Ahead skipped threshold/count slots), so drop_tokens
+    # applies to dotgg too: drop the given 0-based non-empty slots, renumber.
+    level = {
+        "description_value_01": "10", "description_value_02": "1",
+        "description_value_03": "12.12", "description_value_04": "10",
+        "description_value_05": "5", "description_value_06": "1",
+        "description_value_07": "675",
+    }
+    assert dotgg_slots(level, drop_tokens=[0, 1, 4, 5]) == {
+        "description_value_01": "12.12",
+        "description_value_02": "10",
+        "description_value_03": "675",
+    }
+
+
 def test_registry_exposes_pilot_manifests():
     manifest = get_skill_value_manifest("drake")
     assert manifest["source"] == "dotgg"
