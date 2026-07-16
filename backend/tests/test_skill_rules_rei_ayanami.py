@@ -31,12 +31,12 @@ ANNIHILATION = {
 }
 
 
-def make_context():
+def make_context(boss_element=None):
     return SquadContext([
         SquadMember("rei-ayanami", burst_tier=3, element="Fire"),
         SquadMember("fire-ally", burst_tier=1, element="Fire"),
         SquadMember("wind-ally", burst_tier=2, element="Wind"),
-    ])
+    ], boss_element=boss_element)
 
 
 def build():
@@ -90,3 +90,33 @@ def test_preemptive_subdual_nukes_every_100_normal_attacks():
     assert len(pulses) == 1
     assert pulses[0].value == 112.37
     assert pulses[0].full_burst_bonus_eligible is False  # "as damage", not "as additional damage"
+
+
+def test_preemptive_subdual_refreshes_elemental_advantage_vs_iron_boss():
+    rules = build_preemptive_subdual_per_shot_rules({"preemptive_subdual": PREEMPTIVE_SUBDUAL})
+    _, _, subrules = rules[0]
+    # nuke + the self Elemental Advantage buff now share the every-100 trigger
+    assert len(subrules) == 2
+    elem_buff = subrules[1]
+
+    # Rei is Fire; Elemental Advantage only counts against an Iron boss (Fire > Iron).
+    assert elem_buff.condition(make_context(boss_element="Iron"), "rei-ayanami") is True
+    assert elem_buff.condition(make_context(boss_element="Water"), "rei-ayanami") is False
+
+    registry = EffectRegistry()
+    elem_buff.action(make_context(boss_element="Iron"), "rei-ayanami", 5.0, registry)
+    # self-scoped Elemental Advantage Attack Damage +30.23% (other_elemental_bonus) for 3 sec
+    assert round(registry.total_for("other_elemental_bonus", REI, now=5.0), 4) == 0.3023
+    assert registry.total_for("other_elemental_bonus", REI, now=8.1) == 0.0  # 3s duration
+    assert registry.total_for("other_elemental_bonus", FIRE_ALLY, now=5.0) == 0.0  # self only
+
+
+def test_preemptive_subdual_elemental_advantage_refreshes_not_stacks():
+    rules = build_preemptive_subdual_per_shot_rules({"preemptive_subdual": PREEMPTIVE_SUBDUAL})
+    _, _, subrules = rules[0]
+    elem_buff = subrules[1]
+    registry = EffectRegistry()
+    # Two procs within the 3s window refresh, not stack (100-round condition met repeatedly).
+    elem_buff.action(make_context(boss_element="Iron"), "rei-ayanami", 5.0, registry)
+    elem_buff.action(make_context(boss_element="Iron"), "rei-ayanami", 7.0, registry)
+    assert round(registry.total_for("other_elemental_bonus", REI, now=7.0), 4) == 0.3023
