@@ -226,10 +226,10 @@ def boss_part_destructible() -> Callable[[SquadContext, str], bool]:
     threaded via raid_simulator). Ark Ranger Black uses it to select her
     permanent-transformation ceiling vs her burst-driven battery floor."""
 
-    def condition(context: "SquadContext", caster_slug: str) -> bool:
+    def check(context: SquadContext, caster_slug: str) -> bool:
         return context.part_destructible
 
-    return condition
+    return check
 
 
 def all_conditions(

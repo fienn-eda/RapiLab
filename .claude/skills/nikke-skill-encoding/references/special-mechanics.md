@@ -737,5 +737,24 @@ how to encode it, and current engine status.
   consumer so far, Maiden - a secondary supporting bullet, not her headline
   mechanic).
 
+## Sequential-hit bursts compute all hits at cast time - NOT Full-Burst-Bonus eligible
+- **What:** skills whose text says the burst "attacks **sequentially** N times"
+  (e.g. Cinderella, Sakura: Bloom in Summer) - and Maiden: Ice Rose's burst,
+  which says "repeatedly" but works identically - compute ALL hits from the
+  buffs active at activation time. They therefore CANNOT receive the Full
+  Burst bonus.
+- **Easy mistake:** "sequentially" suggests hits spread out over time (so some
+  might land inside a Full Burst window that opens partway through), but
+  mechanically it is a single cast-time computation - all N hits are recorded
+  at the same instant (see `burst_hit_counts` above), so none of them can be
+  "additional damage" past cast time.
+- **By contrast:** repeating-tick DoTs ("deals X% every 1 sec for N sec") read
+  live buffs at each tick's own time, so ticks inside the Full Burst window DO
+  get the bonus (`full_burst_bonus_eligible=True`) - the Mana/Guillotine rule,
+  in-game confirmed 2026-07-12, reaffirmed and generalized by Fienn 2026-07-16:
+  the FB bonus is a defined element of the damage formula; exceptions need a
+  mechanism-level justification like the sequential cast-time computation
+  above. See `ark_ranger_black.py` (Meteor / floor Collider DoTs).
+
 ---
 *Add new mechanics above this line as they come up.*

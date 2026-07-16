@@ -4,6 +4,7 @@ from app.skill_rules.ark_ranger_black import (
     build_ark_ranger_dots,
     build_ark_ranger_ceiling_collider,
     build_ark_ranger_per_shot_rules,
+    transformation_window_seconds,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
@@ -85,6 +86,7 @@ def test_meteor_dot_is_10_ticks_sustained_both_branches():
     assert meteor[0]["tick_count"] == 10
     assert meteor[0]["tick_interval"] == 1.0
     assert meteor[0]["damage_type"] == "sustained"
+    assert meteor[0]["full_burst_bonus_eligible"] is True
 
 
 def test_floor_collider_dot_gated_off_when_part_destructible():
@@ -94,6 +96,7 @@ def test_floor_collider_dot_gated_off_when_part_destructible():
     assert collider[0]["base_percent"] == 45.87
     assert collider[0]["tick_count"] == 10       # D=10s / 1s interval
     assert collider[0]["damage_type"] == "sustained"
+    assert collider[0]["full_burst_bonus_eligible"] is True
 
 
 def test_ceiling_collider_is_wholefight_periodic_sustained():
@@ -102,6 +105,26 @@ def test_ceiling_collider_is_wholefight_periodic_sustained():
     assert spec["percent"] == 45.87
     assert spec["damage_type"] == "sustained"
     assert spec["requires_part_destructible"] is True
+
+
+def test_transformation_window_derives_from_battery_values_not_hardcoded():
+    # Every existing fixture happens to yield D=10, which collides with two
+    # unrelated 10s elsewhere in the fixtures - a hardcoded window=10.0 would
+    # pass every other test in this file. Alter the decay interval so D must
+    # move, proving it's actually derived from the skill values.
+    altered_transform = dict(TRANSFORM, description_value_05="0.1")  # decay twice as fast
+    values = {"transform": altered_transform, "ultimate": ULTIMATE, "tremble": TREMBLE}
+    assert transformation_window_seconds(values) == 5.0  # 50 / (1/0.1)
+
+    specs = build_ark_ranger_dots(values)
+    collider = [s for s in specs if s.get("requires_part_destructible") is False]
+    assert collider[0]["tick_count"] == 5
+
+    registry = EffectRegistry()
+    rules = build_ark_ranger_black_rules(values)
+    fire_trigger("own_burst_activate", {"ark-ranger-black": rules}, _ctx(False), registry, time=5.0)
+    assert round(registry.total_for("atk_percent", ARK, now=9.9), 4) == 1.5619
+    assert registry.total_for("atk_percent", ARK, now=10.1) == 0.0  # expires after 5s, not 10s
 
 
 def test_per_shot_sustained_buff_every_30_normals_refreshes():

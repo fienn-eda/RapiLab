@@ -15,7 +15,14 @@ Modeled (DPS-relevant):
   build_ark_ranger_per_shot_rules) - both branches.
 - Ark Black Collider (skills[1]): 45.87% sustained DoT while transformed. Floor:
   burst-anchored D-tick DoT; ceiling: whole-fight periodic 1s DoT (see
-  build_ark_ranger_dots / build_ark_ranger_ceiling_collider).
+  build_ark_ranger_dots / build_ark_ranger_ceiling_collider). Meteor and the
+  floor Collider are both `full_burst_bonus_eligible=True`: repeating-tick
+  DoTs read live buffs at each tick's own time, so ticks landing inside the
+  Full Burst window get the bonus - the Mana/Guillotine rule (in-game
+  confirmed 2026-07-12), reaffirmed and generalized by Fienn 2026-07-16 (the
+  FB bonus is a defined element of the damage formula; exceptions need a
+  mechanism-level justification). The ceiling Collider (periodic_nukes) can't
+  carry the flag - that loop has no FB-bonus parameter (open question).
 - Ultimate! (skills[2], burst): Meteor 266.69% sustained DoT x10 (both
   branches); self Sustained Damage +135.83% for 10 sec (both branches).
 
@@ -78,11 +85,13 @@ def build_ark_ranger_dots(values):
         {  # Meteor - both branches
             "base_percent": meteor_percent, "tick_count": meteor_ticks,
             "tick_interval": 1.0, "damage_type": "sustained",
+            "full_burst_bonus_eligible": True,
         },
         {  # Collider floor - burst-anchored window DoT
             "base_percent": collider_percent, "tick_count": collider_ticks,
             "tick_interval": 1.0, "damage_type": "sustained",
             "requires_part_destructible": False,
+            "full_burst_bonus_eligible": True,
         },
     ]
 
