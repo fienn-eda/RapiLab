@@ -7,14 +7,15 @@ Modeled (DPS-relevant):
   It activates "when the enemy appears" (= battle start in a raid, always-on)
   and is continuous, so modeled as a permanent squad-scoped enemy debuff.
 - Siren's Song (skills[2], her burst): squad Attack Damage up + self ATK up.
+- Bubble Wave's Full-Burst-only periodic nuke: every 1 sec during Full Burst,
+  63.36% of final ATK x 4 sequential hits (periodic_nukes during_full_burst +
+  hit_count, gap #6; "as damage" - no Full Burst Bonus opt-in). See
+  build_bubble_wave_fb_nuke.
 
 Not modeled:
 - Bubble Barrage (Bubble Wave): 85% x10 hits each time ALLIES' total ammo
   expended reaches 500 - a squad-wide ammo counter, not the caster's own shots,
   so `per_shot_rules` (per-caster) doesn't cover it. Still a gap.
-- Bubble Wave's Full-Burst-only periodic nuke (63.36% x4 every 1 sec DURING
-  Full Burst) - the periodic-during-Full-Burst gap (same shape as Ada Wong),
-  distinct from `periodic_nukes` which fires the whole fight.
 - Explosive Bubble (after 50 of her own normal attacks): it removes Bubble and
   re-applies the same 5.05% Damage Taken (plus a 3s stun), so it adds no extra
   damage over the permanent Bubble already modeled - only the stun, which isn't
@@ -49,3 +50,15 @@ def build_little_mermaid_rules(values):
             ("atk_percent", self_atk, "self", self_atk_duration),
         ]),
     ]
+
+
+def build_bubble_wave_fb_nuke(values):
+    """Bubble Wave's 3rd bullet: every 1 sec only during Full Burst, 63.36% of
+    final ATK x 4 sequential hits ("as damage" - no Full Burst Bonus opt-in)."""
+    wave = values["bubble_wave"]
+    return {
+        "cooldown": float(wave["description_value_05"]),
+        "percent": float(wave["description_value_06"]),
+        "hit_count": int(float(wave["description_value_07"])),
+        "during_full_burst": True,
+    }

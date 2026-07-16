@@ -129,7 +129,7 @@ from app.skill_rules.julia import (
     climax_burst_percent,
 )
 from app.skill_rules import julia_signature
-from app.skill_rules.little_mermaid import build_little_mermaid_rules
+from app.skill_rules.little_mermaid import build_bubble_wave_fb_nuke, build_little_mermaid_rules
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.maiden_ice_rose import (
     build_blessings_upon_you_per_shot_rules,
@@ -320,6 +320,7 @@ _PERIODIC_NUKE_BUILDERS = {
         "cooldown": POINTED_FEATHER_COOLDOWN,
         "percent": pointed_feather_percent(sv),
     },
+    "little-mermaid": lambda sv: build_bubble_wave_fb_nuke(sv),
 }
 
 # A Nikke's burst nuke is "attack"-typed unless its skill deals a specific

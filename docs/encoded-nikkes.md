@@ -24,7 +24,7 @@
 | Anis: Star | `anis-star` | Defender | RL | Electric | ⚠ | 풀차지 추가딜(120.13% 매 풀차지, per-shot)·Stardust 버프(ATK/PE/AD)·버스트 자버프 모델됨. 버스트 Shooting Stars(버스트창 주기딜, gap #6)·재진입 분기·게이지·Explosion Radius 보류 |
 | D: Killer Wife | `d-killer-wife` | Supporter | SR | Fire | ⚠ | Assault Formation 공버프(5풀차지마다 AD, per-shot) + CDR(8풀차지→7s, 매 사이클 근사) 모델됨. **skill3(Kill the Target 버스트) 보류**(Fienn) |
 | Liter | `liter` | Supporter | SMG | Iron | ✅ | Volt Boost(자힐, 생존계)만 미모델 |
-| Little Mermaid | `little-mermaid` | Supporter | SMG | Wind | ⚠ | Bubble 5.05% 받댐증 모델됨. Bubble Barrage(아군총탄 카운터)·FB창 주기넉 보류 |
+| Little Mermaid | `little-mermaid` | Supporter | SMG | Wind | ⚠ | Bubble 5.05% 받댐증·FB창 주기넉(1초마다 63.36%×4연타, during_full_burst+hit_count, gap #6 소비 2026-07-16) 모델됨. Bubble Barrage(아군총탄 500 카운터)·버스트게이지 fill은 보류(스쿼드 합산 탄약 카운터는 별도 갭) |
 | Miranda (애장품) | `miranda` | Supporter | SMG | Fire | ✅ | Health Up 자ATK(노멀30회마다, per_shot)·Wake Up 스쿼드 크리댐/자버프 + **최고ATK top-1 크리율(1 round=탄수 버프)**·Powering Up **최고ATK top-2 정확 타겟팅**(ATK/크리댐) 모델됨. Hit Rate(inert)만 보류 |
 | Moran (애장품) | `moran` | Defender | AR | Electric | ✅ | 무기변형 자해모드·생존계만 미모델 |
 | Rouge | `rouge` | Supporter | SR | Electric | ⚠ | Card Throw CDR(8풀차지→7s, 매 사이클 근사)·Sword Coin AD(후열 가정, 상시)·Game Master ATK(**15.07%로 버그수정**, 기존 30.02 오독)·Max HP 버프(flat_max_hp, inert·향후 HP스케일용) 모델됨. Shield Coin(생존)만 보류 |

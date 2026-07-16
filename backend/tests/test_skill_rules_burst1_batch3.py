@@ -25,7 +25,10 @@ LM = {
         "description_value_04": "400", "description_value_05": "37",
     },
     "bubble_wave": {
-        "description_value_01": "5.05",  # Bubble: enemy Damage Taken %, continuous
+        "description_value_01": "5.05",   # Bubble: enemy Damage Taken %, continuous
+        "description_value_05": "1",      # FB nuke: every N sec during Full Burst
+        "description_value_06": "63.36",  # FB nuke: % of final ATK per hit
+        "description_value_07": "4",      # FB nuke: sequential hit count
     },
     "sirens_song": {
         "description_value_01": "10.13", "description_value_02": "10", "description_value_03": "33.26",
@@ -157,6 +160,46 @@ def test_tove_attack_speed_raises_sg_ally_shot_count():
     shots_without = [e for e in without["damage_log"] if e["source"] == "normal_attack"]
     shots_with = [e for e in with_tove["damage_log"] if e["source"] == "normal_attack"]
     assert shots_without and len(shots_with) > len(shots_without)
+
+
+def test_little_mermaid_bubble_wave_fb_nuke_spec():
+    from app.skill_rules.little_mermaid import build_bubble_wave_fb_nuke
+    spec = build_bubble_wave_fb_nuke(LM)
+    assert spec == {
+        "cooldown": 1.0, "percent": 63.36, "hit_count": 4, "during_full_burst": True,
+    }
+
+
+def test_little_mermaid_bubble_wave_ticks_only_in_fb_windows():
+    from app.raid_simulator import simulate_raid
+    from app.skill_rules.little_mermaid import build_bubble_wave_fb_nuke
+
+    deck = [
+        {"slug": "little-mermaid", "burst_tier": 1, "element": "Water", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Fire", "cooldown": 20.0},
+        {"slug": "b3", "burst_tier": 3, "element": "Fire", "cooldown": 20.0},
+    ]
+    result = simulate_raid(
+        deck=deck,
+        rules_by_slug={m["slug"]: [] for m in deck},
+        burst_damage_percents={},
+        base_stats={m["slug"]: {"atk": 10000} for m in deck},
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=30.0,
+        base_crit_rate=0.0,
+        periodic_nukes={"little-mermaid": build_bubble_wave_fb_nuke(LM)},
+    )
+    windows = list(zip(
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_start"),
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_end"),
+    ))
+    ticks = [e["time"] for e in result["damage_log"] if e["source"] == "periodic"]
+    assert ticks
+    for t in ticks:
+        assert any(start < t < end for start, end in windows)
+    start, end = windows[0]
+    assert ticks.count(start + 1.0) == 4  # 4 sequential hits per tick
 
 
 def test_soline_frost_ticket_only_cdr():
