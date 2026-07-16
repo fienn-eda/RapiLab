@@ -27,8 +27,8 @@
 | Arcana | Awakened Destiny "The Magician" | FB end, Burst-3 Electric bursted allies, if Wheel of Fortune: Attack damage ▲180% / 15s (slots 04/05; Skill-2 CDR ▼75% not modeled — ally skill cooldowns aren't simulated) |
 | Arcana | Cycle of Destiny "Strength" | same subset/condition: ATK ▲180% of caster's ATK / 15s (slots 02/03) |
 | Ada Wong | Covert Support | FB enter, Burst-3 bursted allies: ATK ▲60% of caster ATK / 10s + True Damage ▲50% / 10s (+HP recovery, 비딜) |
-| Ada Wong | Flash Grenade | during FB, every 2s: 420% final ATK as **True** damage; burst grants "activation time condition ▼1 sec for 10 sec" (defer, flag) |
-| Ada Wong | Secret Agent (burst, cd 40) | self ATK ▲40% / 10s + True Damage ▲42% / 10s; Special Modification: Charge Speed ▼300% & Charge Damage ▲1500% for 1 round (defer, flag) |
+| Ada Wong | Flash Grenade | during FB, every 2s: 420% final ATK as **True** damage; burst grants "activation time condition ▼1 sec for 10 sec" → **model: FB windows starting inside [her burst, +10s) tick at 1s** (Fienn ruling 2026-07-16) |
+| Ada Wong | Secret Agent (burst, cd 40) | self ATK ▲40% / 10s + True Damage ▲42% / 10s; Special Modification: Charge Speed ▼300% & Charge Damage ▲1500% for 1 round → **model BOTH: charge time ×(1+300/100)=×4 (i.e. `charge_speed_percent = -300/(100+300) = -0.75` under the divide-by-(1+speed) wiring) + `charge_damage_bonus` +15.0, for 1 round** (Fienn ruling 2026-07-16) |
 | Little Mermaid | Bubble Wave FB nuke | during FB, every 1s: 63.36% × 4 sequential hits ("as damage") |
 | Maiden | Blessings Upon You (MP replenish) | Electric-Code allies **except self**: Elemental Advantage Attack Damage ▲40.9% / 10s + ATK ▲20.9% of caster ATK / 10s |
 | Jill Valentine | Magnum Ammo | battle start + each reload-to-max: self Normal Attack Damage Multiplier ▲30% for 9 round(s) |
@@ -293,9 +293,9 @@ Docstring: move these from "Not modeled" to modeled; keep Magician's Skill-2 CDR
 - Test: `backend/tests/test_periodic_fb_nukes.py` (new)
 
 **Interfaces:**
-- Produces: a `periodic_nukes` spec may carry `"during_full_burst": True` (ticks only inside each Full Burst window, first tick at `window_start + cooldown`, then every `cooldown` while `< window_end`) and `"hit_count": N` (each tick records N separate hits — same rationale as `burst_hit_counts`). Defaults keep existing specs identical.
+- Produces: a `periodic_nukes` spec may carry `"during_full_burst": True` (ticks only inside each Full Burst window, first tick at `window_start + cooldown`, then every `cooldown` while `< window_end`), `"hit_count": N` (each tick records N separate hits — same rationale as `burst_hit_counts`), and `"own_burst_interval": (interval, duration)` — a FB window whose start falls inside `[own_burst_time, own_burst_time + duration)` for any of the owner's `context.burst_times` ticks at `interval` instead of `cooldown` (Ada's Flash Grenade enhancement: 1s ticks for the 10s after her own burst; her burst and the FB start share ~the same instant, so use a `<=` start comparison). Defaults keep existing specs identical.
 
-- [ ] **Step 1: Failing test** — a `simulate_raid` run with one unit and `periodic_nukes={"u": {"cooldown": 2.0, "percent": 100.0, "during_full_burst": True}}`: every `source == "periodic"` damage-log time lies inside a full-burst window (derive windows from `result["events"]`), and there are `floor((window_len - epsilon)/2)` ticks per window (10s window, 2s cd → 4 ticks at +2,+4,+6,+8). Plus a `hit_count: 4` case: 4 log entries per tick time.
+- [ ] **Step 1: Failing test** — a `simulate_raid` run with one unit and `periodic_nukes={"u": {"cooldown": 2.0, "percent": 100.0, "during_full_burst": True}}`: every `source == "periodic"` damage-log time lies inside a full-burst window (derive windows from `result["events"]`), and there are `floor((window_len - epsilon)/2)` ticks per window (10s window, 2s cd → 4 ticks at +2,+4,+6,+8). Plus a `hit_count: 4` case: 4 log entries per tick time. Plus an `own_burst_interval: (1.0, 10.0)` case: a B3 owner (whose burst opens every FB window) gets 1s ticks (9/window), while the same spec on a unit who never bursts keeps 2s ticks.
 - [ ] **Step 2: Implement** — replace the loop body:
 
 ```python
@@ -318,12 +318,22 @@ Docstring: move these from "Not modeled" to modeled; keep Magician's Skill-2 CDR
             # Ticks only inside Full Burst windows, anchored to each window's
             # start (gap #6 - e.g. Ada Wong's Flash Grenade "every 2 sec during
             # Full Burst", Little Mermaid's Bubble Wave "every 1 sec only
-            # during Full Burst").
+            # during Full Burst"). own_burst_interval=(interval, duration):
+            # a window starting inside [own burst, +duration) ticks at the
+            # enhanced interval instead (Ada's post-burst "activation time
+            # condition v 1 sec for 10 sec", Fienn 2026-07-16).
+            own_interval = spec.get("own_burst_interval")
+            own_bursts = context.burst_times.get(slug, [])
             for start, end in full_burst_windows:
-                tick = start + cooldown
+                interval = cooldown
+                if own_interval is not None and any(
+                    bt <= start < bt + own_interval[1] for bt in own_bursts
+                ):
+                    interval = own_interval[0]
+                tick = start + interval
                 while tick < end:
                     _tick(tick)
-                    tick += cooldown
+                    tick += interval
         else:
             tick = cooldown
             while tick < fight_duration:
@@ -379,10 +389,10 @@ Docstring/docs: FB창 주기넉 → modeled; Bubble Barrage(아군 총탄 500 �
 - Test: `backend/tests/test_skill_rules_ada_wong.py` (new)
 
 - [ ] **Step 1: Verify data** — `data/lootandwaifus/char_ada-wong.json` (exists), Lv10 texts as captured in the table above. Slot numbering (plain left-to-right): Covert Support 01=60, 02=10, 03=50, 04=10, 05=10(HP회복%), 06=10 · Flash Grenade 01=2, 02=420, 03=1, 04=10 · Secret Agent 01=40, 02=10, 03=42, 04=10, 05=1, 06=300, 07=1500.
-- [ ] **Step 2: Two Fienn flags before implementing (ask, don't guess):**
-  1. **Special Modification** (burst: Charge Speed ▼300% + Charge Damage ▲1500% for 1 round): the engine's charge-speed wiring divides by `(1 + charge_speed_percent)` — a −300% value is nonsensical there, and modeling the +1500% damage without the slowdown would materially overestimate. Proposed: **defer both halves together** with a docstring note; encode only if Fienn confirms the in-game semantics of "Charge Speed ▼ 300%".
-  2. **Flash Grenade enhancement** ("activation time condition ▼1 sec for 10 sec" after her burst → 1s ticks instead of 2s in windows following her own burst): proposed defer at 2s baseline (undercount, conservative); implement per-window intervals only if Fienn wants it now.
-- [ ] **Step 3: Failing tests** — burst percent is None; Covert Support hits exactly bursted B3 members at FB enter (flat ATK `0.60*caster_atk` + `true_damage_up 0.50`); own burst grants self `atk_percent 0.40` + `true_damage_up 0.42`; deck-level: `source=="periodic"` true-typed 420% ticks only inside FB windows, and (interaction) a `true_damage_up` buff raises those ticks (Ada's Flash Grenade is her own true-damage consumer).
+- [ ] **Step 2: Fienn rulings (2026-07-16, both RESOLVED — implement, don't re-ask):**
+  1. **Special Modification** (burst: Charge Speed ▼300% + Charge Damage ▲1500% for 1 round): model BOTH halves. "Charge Speed ▼ X%" = charge time ×(1+X/100), i.e. ×4 here — under the engine's divide-by-(1+speed) wiring that's `charge_speed_percent = -X/(100+X) = -0.75`. Grant `[("charge_speed_percent", -0.75, "self"), ("charge_damage_bonus", 15.0, "self")]` for 1 round via `round_buff_rule("own_burst_activate", ..., shots=1)`. **Verify in a test, don't assume:** charge speed is evaluated once per magazine boundary, so a 1-shot Effect window usually contains NO magazine start — the slowdown may be inert while the +1500% damage applies, which over-credits (the exact thing Fienn's ruling meant to avoid). If the test shows the slowdown never lands, apply the pair as a net approximation instead — e.g. keep the 1-round `charge_damage_bonus` but scale it down by the unpaid time cost (÷4, i.e. +2.75 net) — document whichever was done in the module docstring and report the deviation.
+  2. **Flash Grenade enhancement**: model via Task 5's `own_burst_interval` — spec gains `"own_burst_interval": (1.0, enhancement_duration)` (interval slot 03 = 1, duration slot 04 = 10), so FB windows opened by her own burst tick at 1s.
+- [ ] **Step 3: Failing tests** — burst percent is None; Covert Support hits exactly bursted B3 members at FB enter (flat ATK `0.60*caster_atk` + `true_damage_up 0.50`); own burst grants self `atk_percent 0.40` + `true_damage_up 0.42` and the 1-round Special Modification pair; deck-level: `source=="periodic"` true-typed 420% ticks only inside FB windows at 1s spacing when Ada bursts (2s for a never-bursting owner), and (interaction) a `true_damage_up` buff raises those ticks (Ada's Flash Grenade is her own true-damage consumer).
 - [ ] **Step 4: Implement**
 
 ```python
@@ -396,20 +406,22 @@ Modeled (DPS-relevant):
   once her burst fired.
 - Flash Grenade (skills[1]): during Full Burst, every 2 sec, 420% of final ATK
   as True Damage (periodic_nukes during_full_burst, gap #6; true-typed so
-  true_damage_up applies and enemy DEF is ignored).
+  true_damage_up applies and enemy DEF is ignored). Her burst's "activation
+  time condition v 1 sec for 10 sec" makes FB windows opened by HER OWN burst
+  tick at 1s instead (own_burst_interval, Fienn 2026-07-16).
 - Secret Agent (skills[2], her burst): self ATK ^ 40% and True Damage ^ 42%
-  for 10 sec. Buff-only burst (no burst nuke percent).
+  for 10 sec, plus Special Modification for 1 round: charge time x4
+  ("Charge Speed v 300%" = charge time x(1+3.0), Fienn 2026-07-16 - wired as
+  charge_speed_percent -0.75 under the divide-by-(1+speed) convention) and
+  Charge Damage ^ 1500%. Charge speed is evaluated per magazine boundary
+  (the engine's documented charge-speed approximation), so the slowdown lands
+  on the next magazine starting inside the 1-round window. Buff-only burst
+  (no burst nuke percent).
 
-Not modeled / deferred (flagged to Fienn 2026-07-16):
-- Special Modification (Charge Speed v 300% / Charge Damage ^ 1500% for 1
-  round): the -300% charge-speed semantics don't fit the engine's
-  divide-by-(1+speed) wiring, and taking the +1500% without the slowdown would
-  overestimate - deferred as a pair pending Fienn's in-game reading.
-- Flash Grenade's post-burst "activation time condition v 1 sec" (1s ticks for
-  10s after her burst): deferred at the conservative 2s baseline.
+Not modeled / deferred:
 - Covert Support's HP recovery (survival, not DPS).
 """
-from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
+from app.skill_rules._helpers import buff_rule, member_subset_buff_rule, round_buff_rule
 
 
 def build_ada_wong_rules(values):
@@ -425,6 +437,10 @@ def build_ada_wong_rules(values):
     self_atk_duration = float(secret["description_value_02"])
     self_true = float(secret["description_value_03"]) / 100
     self_true_duration = float(secret["description_value_04"])
+    special_mod_rounds = int(float(secret["description_value_05"]))          # 1 round
+    charge_slow_percent = float(secret["description_value_06"])              # 300 (v)
+    charge_speed = -charge_slow_percent / (100 + charge_slow_percent)        # -0.75: charge time x(1+300/100)
+    charge_damage = float(secret["description_value_07"]) / 100              # 15.0
 
     def bursted_b3(member, context):
         return member.burst_tier == 3 and member.slug in context.burst_used_this_cycle
@@ -438,6 +454,10 @@ def build_ada_wong_rules(values):
             ("atk_percent", self_atk, "self", self_atk_duration),
             ("true_damage_up", self_true, "self", self_true_duration),
         ]),
+        round_buff_rule("own_burst_activate", [
+            ("charge_speed_percent", charge_speed, "self"),
+            ("charge_damage_bonus", charge_damage, "self"),
+        ], shots=special_mod_rounds),
     ]
 
 
@@ -448,6 +468,10 @@ def build_flash_grenade_periodic_nuke(values):
         "percent": float(grenade["description_value_02"]),
         "damage_type": "true",
         "during_full_burst": True,
+        "own_burst_interval": (
+            float(grenade["description_value_03"]),   # 1 sec
+            float(grenade["description_value_04"]),   # for 10 sec
+        ),
     }
 ```
 
@@ -632,7 +656,7 @@ and in the `damage_log` comprehension use `_normal_attack_percent(ev) if ev["sou
 ### 9d. Jill Valentine re-encode
 
 - [ ] **Verify data** — Magnum Ammo / Acid Ammo Lv10 (captured above); confirm the module's existing `magnum_ammo`/`acid_ammo` fixture slot numbering (expected left-to-right: Magnum 01=30, 02=9, 03=34.99, 04=10; Acid 01=192, 02=1, 03=30, 04=40.03, 05=10).
-- [ ] **Fienn flag (ask before implementing Acid):** Acid Ammo's 30s DoT is refreshed every reload-to-max (~every 6s for her AR incl. reload), so under refresh semantics it's a continuous 192%/1s sustained DoT for the whole fight — proposed model: `periodic_nukes {"cooldown": 1.0, "percent": 192.0, "damage_type": "sustained"}` (whole-fight, NOT during_full_burst). If Fienn says overlapping applications STACK instead of refresh, this model undercounts and needs a different design — confirm first.
+- [ ] **Fienn ruling (2026-07-16, RESOLVED — implement, don't re-ask):** Acid Ammo overlapping applications REFRESH (NIKKE convention). Under refresh, the ~6s reload cadence against the 30s duration makes it a continuous 192%/1s sustained DoT for the whole fight — model as `periodic_nukes {"cooldown": 1.0, "percent": 192.0, "damage_type": "sustained"}` (whole-fight, NOT during_full_burst). Record the ruling in the module docstring.
 - [ ] **Implement**
 
 ```python
@@ -675,7 +699,7 @@ Tests: 9-shot coverage (shots 1–9 of each magazine boosted 1.30×, shot 10 not
 - [ ] `docs/engine-gaps.md`: #3(무기종+티어부분집합 통합 소비 4+명)·#6(Ada·Little Mermaid)·#8(Maiden)·#9(Jill) 완료 표기 + "이미 만든 것" 추가; 우선순위 요약 표 갱신 (남는 것: Pattern B 일반 프리미티브·상태머신·무기변형·아군 총탄 카운터·not-in-FB 창 필터).
 - [ ] `docs/encoded-nikkes.md`: Ada Wong 신규 행 + tove/ark/arcana/little-mermaid/maiden/jill 행의 완성도·보류 갱신, 총원 카운트(57).
 - [ ] `docs/roadmap.md`: Phase 3 카운터·"다음" 문단 갱신 (남은 방향: Pattern B 프리미티브 / 상태머신·무기변형 / dotgg 스탯 수집).
-- [ ] `/document`: gap #3 설계 결정(신규 Effect scope 대신 slugs: 해석), Acid Ammo 정상상태 결정(Fienn 확인 내용), Ada deferral 2건.
+- [ ] `/document`: gap #3 설계 결정(신규 Effect scope 대신 slugs: 해석), Fienn 판정 3건(Ada Special Modification "▼X% = 차지시간 ×(1+X/100)" 해석 · Flash Grenade own-burst 1s 틱 · Acid refresh→정상상태 DoT).
 - [ ] Commit — `docs: Phase C sweep (gaps #3/#6/#8/#9 closed)`.
 
 ---
@@ -684,5 +708,5 @@ Tests: 9-shot coverage (shots 1–9 of each magazine boosted 1.30×, shot 10 not
 
 - Every extension defaults inert (weapon=None, no `during_full_burst`, empty new params, multiplier stat unused elsewhere) — 기존 56명 출력 불변을 full suite로 증명.
 - Consumers per gap: #3 → ark/arcana/tove/ada (drake-signature·arcana-fortune-mate의 SG squad-근사 정밀화는 선택 후속으로 문서에만 기록, 이번 배치 범위 아님). #6 → ada/little-mermaid. #8 → maiden. #9 → jill.
-- Ask-Fienn gates are explicit steps in Tasks 7 (2건) and 9 (Acid refresh) — implementation must not proceed past them on a guess.
+- 이전 Ask-Fienn 게이트 3건(Ada Special Modification·Flash Grenade 강화·Jill Acid refresh)은 2026-07-16 Fienn 판정으로 전부 해소됨 — Tasks 7/9의 RESOLVED 지침대로 구현하고 재질문하지 않는다. 단 Special Modification의 매거진-경계 함정은 테스트로 검증(Task 7 Step 2.1).
 - Slot indexes are all marked "verify against the unit's existing fixture first" — fixtures are ground truth, plans are not.
