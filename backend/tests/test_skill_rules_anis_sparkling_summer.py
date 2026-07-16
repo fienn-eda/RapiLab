@@ -24,15 +24,17 @@ SPARKLING_WAVE = {
     "description_value_02": "10",     # its duration
     "description_value_03": "27.72",  # Reload Speed % (self)
     "description_value_04": "10",     # its duration
+    "description_value_05": "42.24",  # Elemental Advantage Attack Damage % (self)
+    "description_value_06": "10",     # its duration
 }
 
 
-def make_context():
+def make_context(boss_element=None):
     return SquadContext([
         SquadMember("anis-sparkling-summer", burst_tier=3, element="Electric"),
         SquadMember("electric-ally", burst_tier=1, element="Electric"),
         SquadMember("fire-ally", burst_tier=2, element="Fire"),
-    ])
+    ], boss_element=boss_element)
 
 
 def build():
@@ -85,6 +87,26 @@ def test_burst_grants_self_ammo_and_reload():
     assert round(registry.total_for("reload_speed_percent", ANIS, now=5.0), 4) == 0.2772
     # self-scoped: allies don't share it
     assert registry.total_for("max_ammo_percent", ELECTRIC_ALLY, now=5.0) == 0.0
+
+
+def test_burst_grants_water_gated_elemental_advantage():
+    # Anis is Electric, so her Elemental Advantage Attack Damage only counts
+    # against a Water boss (Electric > Water). It lands in the Element Bonus
+    # group (other_elemental_bonus), self-scoped, for 10 sec.
+    water = make_context(boss_element="Water")
+    registry = EffectRegistry()
+    fire_trigger("own_burst_activate", {"anis-sparkling-summer": build()}, water, registry, time=5.0)
+
+    assert round(registry.total_for("other_elemental_bonus", ANIS, now=5.0), 4) == 0.4224
+    assert registry.total_for("other_elemental_bonus", ANIS, now=15.1) == 0.0  # expires after 10s
+    # self-scoped: allies don't share it
+    assert registry.total_for("other_elemental_bonus", ELECTRIC_ALLY, now=5.0) == 0.0
+
+    # No elemental advantage against a non-Water boss.
+    non_water = make_context(boss_element="Fire")
+    registry2 = EffectRegistry()
+    fire_trigger("own_burst_activate", {"anis-sparkling-summer": build()}, non_water, registry2, time=5.0)
+    assert registry2.total_for("other_elemental_bonus", ANIS, now=5.0) == 0.0
 
 
 def test_sparkling_missile_last_bullet_nuke_and_self_parts_buff():
