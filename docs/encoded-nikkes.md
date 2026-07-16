@@ -3,10 +3,11 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-16 (gap #5 완료 배치 — boss_element 게이팅: Brid ⚠→✅
-  (Wind Damage Taken 디버프)·Helm: Aquamarine(Electric 디버프+추가딜, ⚠ 유지)·
-  Marciana: Marine Study(신규 ⚠) + enemy_def_percent 배선)
-- 총 **55명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 28명) — drake는 base/signature 듀얼슬롯 2엔트리
+- 마지막 갱신: 2026-07-16 (Ark Ranger Black 신규 ⚠ — floor/ceiling `part_destructible`
+  보스 플래그 브래킷으로 배터리/변신 메커니즘 모델링. 이전 갱신: gap #5 완료 배치 —
+  boss_element 게이팅: Brid ⚠→✅ (Wind Damage Taken 디버프)·Helm: Aquamarine(Electric
+  디버프+추가딜, ⚠ 유지)·Marciana: Marine Study(신규 ⚠) + enemy_def_percent 배선)
+- 총 **56명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 29명) — drake는 base/signature 듀얼슬롯 2엔트리
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -97,6 +98,7 @@
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
 | Anis: Sparkling Summer | `anis-sparkling-summer` | Supporter | SG | Electric | ⚠ | Sparkling Boost(FB진입 시 Electric코드 아군 flat ATK/재장전속도)·Sparkling Wave(자기 최대탄약/재장전속도) 모델됨 + **Sparkling Missile: 라스트불릿마다 382.42% 넉(2 최고ATK 적) + 자기 부위딜 +6.91%/10초 refresh**(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-15 Phase A1) 모델됨. Sparkling Wave의 Elemental Advantage Attack Damage(버킷 불명)만 보류 |
+| Ark Ranger Black | `ark-ranger-black` | Attacker | AR | Wind | ⚠ | (신규 2026-07-16) Transformation 상태에서만 나오는 지속딜 위주 배터리 게이지 유닛 — 파츠파괴로 게이지가 차는 메커니즘은 모델 불가하여 신규 보스 플래그 `part_destructible`로 **floor(파츠파괴 없음)/ceiling(파츠파괴 있음)** 두 갈래를 모델링(`docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`, gap #2 Pattern B 우회). Transform! 자ATK+156.19%(floor: 버스트당 10초 창, ceiling: 전투 시작부터 영구)·Ark Black Collider 45.87% 지속딜(floor: 버스트-앵커 10틱, ceiling: 전투 내내 1초마다)·Ultimate! Meteor 266.69%×10틱 지속딜 + 자신 Sustained Damage+135.83%/10초(양쪽 분기 공통)·노멀30회마다 자신 Sustained Damage+59.6%/5초(refresh) 모델됨. 보류: 파츠파괴로 인한 배터리 충전(이 플래그의 존재 이유)·skill2 풀버스트 "Wind코드 어썰트라이플 아군 Sustained Damage+77.5%"(무기+원소 복합 스코프, gap #3 필요 — 과대평가 방지 위해 보류)·Damage to Parts+20%(파츠딜, 레이드 DPS 무관) |
 | Asuka Shikinami Langley: Wille | `asuka-shikinami-langley-wille` | Attacker | MG | Wind | ⚠ | eb4. Anti A.T. Field 자원(캡30·`per_shot_every_during_own_status_window`로 자기 버스트 앵커 9초창 한정 노멀10회마다 fill·스택당 받댐+0.83%/30초, squad-scope)+무조건부 노멀50회마다 471.86% 넉("as additional damage", `full_burst_bonus_eligible`)+**같은 자원 fill 트리거에서 15.62% 상태게이팅 넉("as damage", 9초 Annihilation State 창 한정, `per_shot_rules`의 `every_during_own_status_window` 모드, gap #7 완료·2026-07-15)**+Annihilation State 버스트 자ATK/공댐(46.8%×자ATK/36%, 9초)+Emergency Repair FB진입 공댐+30.97%/10초(`own_burst_fired_this_cycle` 게이팅)+Annihilation 지연넉(버스트 9초 후 발동, 히트수=스택수, `dynamic_hit_count_nukes`+`fire_delay`, FB보너스) 모델됨. Normal Attack Damage 디버프(노멀전용 스코프 없음)·재장전/힐만 보류 |
 | Chisato Nishikigi | `chisato-nishikigi` | Attacker | SMG | Iron | ✅ | eb2. Extrasensory 상시 자ATK/진댐(버스트 재충전으로 >70% 유지 근사)·버스트 자ATK/노멀진댐화·48노멀마다 진댐넉(per-shot) 모델됨. per-shot 넉이 attack타입(진댐 언더카운트)·회피/명중(inert) 보류 |
 | Cinderella | `cinderella` | Attacker | RL | Fire | ⚠ | Flawless Glass 자ATK(자기 최대체력 비례)+매 풀차지 136.6% 추가딜(RL 상시 풀차지, per-shot)·Beautiful 자원(periodic fill, 3초마다·캡12)·Glass Slippers 10연타 버스트넉 + Beautiful 스택수 비례 추가딜(count-스케일 넉) 모델됨. 디코이 생성(생존)·Beautiful 자체 최대체력% 증가(연결된 소비자 없음, inert)만 보류 |

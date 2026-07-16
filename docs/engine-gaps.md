@@ -5,7 +5,13 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-16 (**gap #5 완료** — `SquadContext.boss_element` +
+- 마지막 갱신: 2026-07-16 (**Ark Ranger Black (gap #2 Pattern B) 브래킷으로 우회
+  완료** — 시간감쇠 게이지·변신을 일반 primitive로 풀지 않고, 신규 보스 플래그
+  `BossProfile.part_destructible`로 floor(변신=버스트당 10초 창)/ceiling(변신=전투
+  시작부터 영구) 두 갈래를 하드코딩. 부위파괴로 게이지가 차는 메커니즘 자체는 여전히
+  미모델(엔진에 부위 개념 없음) — 이 유닛 한정 우회일 뿐, Pattern B 일반 프리미티브는
+  아직 안 만들어짐. 상세는 `docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`
+  및 아래 gap #2 참고. 이전 갱신: gap #5 완료 — `SquadContext.boss_element` +
   `boss_is_element` 조건 + `enemy_def_percent` 배선. 소비: brid-silent-track ⚠→✅
   (Wind Damage Taken 디버프)·helm-aquamarine(Electric Damage Taken + 추가딜 불릿)·
   marciana-marine-study(신규, Fienn의 rapture=1/Flagged=보스/High-Risk=Electric 가정).
@@ -46,7 +52,7 @@
 | # | 엔진 갭 | 막힌 유닛 (근사) | 확장 규모 | 성격 |
 |---|---|---:|---|---|
 | ~~1~~ | **per-shot 트리거 + 발사 카운터** (노멀공격 N회 / 풀차지 N회 / N shot마다 / 마지막 탄) | ~30 (합집합) | **완료 (2026-07-11 `per_shot_rules`, 2026-07-12 "마지막 탄" 잔여 변형까지 완료)** | 신규 트리거 |
-| 2 | **자원/스택 트래킹** (배터리·탄약주머니·N스택 누적) | 16 | **Pattern A 완료 (2026-07-12, named-resource)** — Pattern B(시간감쇠 게이지·변신) 잔여 | 신규 상태 |
+| 2 | **자원/스택 트래킹** (배터리·탄약주머니·N스택 누적) | 16 | **Pattern A 완료 (2026-07-12, named-resource)** — Pattern B(시간감쇠 게이지·변신) 일반 프리미티브 잔여 (ark-ranger-black은 2026-07-16 `part_destructible` 브래킷으로 개별 우회) | 신규 상태 |
 | 3 | **narrow subset scope** (무기종별 / 티어+선버스트 대상) | 9 (+Tove: SG-아군 Attack Speed+ATK, Phase S에서 연기) | 무기종: 소(~20 loc) / 티어부분집합: 중(~60 loc) | 신규 스코프 |
 | ~~4~~ | ~~sustained / distributed / true / projectile-explosion damage 배선~~ | 5 / 4 / 4 / — | **완료 (2026-07-10, 데미지 타입 모델링)** | 스탯 배선 |
 | ~~5~~ | ~~enemy-element 조건~~ (룰에서 boss_element 접근) | 3 (Brid·Helm:Aqua·Marciana) | **완료 (2026-07-16, `boss_is_element` + enemy_def_percent 배선)** | 컨텍스트 확장 |
@@ -137,9 +143,21 @@
   `linear_resource_buff`/`leveled_resource_buff`. **선형·시한·티어(레벨 파생)·core-conditional
   fill** 지원. 첫 소비자 Modernia(시한 캡)/Guillotine: Winter Slayer(연속 누적 + Hero
   Level 파생). "이미 만든 것" 참고.
-- **Pattern B — 시간감쇠 게이지 + 임계치 변신 (잔여):** Ark Ranger 배터리(부위파괴 +50%,
-  100%에서 변신, 1%/0.2초 감쇠), Mihara 체인. **part-destruction 이벤트에 추가로 막힘**
-  (엔진에 부위 개념 없음 → 가상 스케줄 발명하지 않고 defer, Fienn 2026-07-12).
+- **Pattern B — 시간감쇠 게이지 + 임계치 변신 (일반 프리미티브 잔여):** Ark Ranger
+  배터리(부위파괴 +50%, 100%에서 변신, 1%/0.2초 감쇠), Mihara 체인. **part-destruction
+  이벤트에 추가로 막힘**(엔진에 부위 개념 없음 → 가상 스케줄 발명하지 않고 defer,
+  Fienn 2026-07-12).
+  - **ark-ranger-black ⚠(2026-07-16, 브래킷 우회로 인코딩 완료):** 일반 Pattern B
+    게이지 프리미티브를 만드는 대신, 배터리가 결국 "변신 ON/OFF"라는 이진 상태로만
+    딜에 영향을 준다는 점을 이용해 신규 보스 플래그 `BossProfile.part_destructible`로
+    **floor**(파츠파괴 없음 — 변신은 버스트당 10초 창만, `not_condition(boss_part_
+    destructible())`)/**ceiling**(파츠파괴 있음 — 변신 영구, `battle_start`부터)
+    두 브래킷을 하드코딩. 부위파괴 이벤트 자체(게이지가 실제로 어떻게 차는지)는
+    여전히 미모델 — 이 유닛의 답을 "알려진 상한/하한 사이"로 좁혔을 뿐, 다른 Pattern B
+    후보(Mihara 등)에 재사용 가능한 일반 게이지 primitive는 아니다. 상세는
+    `docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`,
+    `ark_ranger_black.py` docstring, `test_ark_ranger_bracket.py`(end-to-end
+    floor<ceiling 검증) 참고.
 - **Pattern A로 언블록(코어):** guillotine-winter-slayer ✅(EXP+Hero Level+Extermination
   DoT), modernia ✅, cinderella ✅(Beautiful periodic fill + mirror 넉),
   quency-escape-queen ✅(정상상태 스택체인, 신규 확장 불필요), soda-twinkling-bunny ⚠
@@ -164,9 +182,11 @@
 - **periodic 자원 fill — ✅ 완료 (2026-07-12):** `("periodic", interval)` fill kind —
   샷과 무관하게 고정 타이머로 채워지는 자원(Cinderella의 Beautiful, decoy 상시 유지로
   3초마다 틱).
-- **Pattern B로 잔여(16 중):** ark-ranger-black, mihara-bonding-chain, red-hood(charge
+- **Pattern B로 잔여(16 중):** mihara-bonding-chain, red-hood(charge
   speed·딜 아님), velvet(ammo pouch·풀차지 트리거), laplace(Hero Vision·풀차지),
-  raven/sakura(sustained DoT 스택·별 갭) 등.
+  raven/sakura(sustained DoT 스택·별 갭) 등. (ark-ranger-black은 2026-07-16
+  `part_destructible` 브래킷 우회로 인코딩 완료 — 위 참고, 일반 Pattern B 프리미티브
+  소비는 아님.)
 - 참고: `special-mechanics.md`의 "Named resource / capped stack counter",
   "Resource-scaled / gated burst nuke", "Multi-hit burst nuke",
   `engine-capabilities.md`의 ResourceSpec/resource_scaled_nukes/burst_hit_counts.
@@ -443,6 +463,22 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   (squad 스코프 적 디버프, `damage_taken_up`과 동형). 첫 소비자 Brid(Wind Damage
   Taken)·Helm:Aquamarine(Electric Damage Taken + 추가딜)·Marciana(Electric 게이팅
   + DEF 디버프). 2026-07-16.
+- **Ark Ranger Black — gap #2 Pattern B 브래킷 우회 (2026-07-16, 일반 프리미티브
+  아님):** 시간감쇠 게이지·변신을 위한 일반 primitive 대신, 배터리가 결국 "변신
+  ON/OFF" 이진 상태로만 딜에 영향을 준다는 점을 이용해 신규 보스 플래그
+  `BossProfile.part_destructible`을 `evaluate_deck`/`simulate_raid`→
+  `SquadContext.part_destructible`로 스레딩. **floor**(파츠파괴 없음 — 변신은
+  버스트당 10초 창, `own_burst_activate` + `not_condition(boss_part_destructible())`)/
+  **ceiling**(파츠파괴 있음 — 변신 영구, `battle_start`부터) 두 갈래로 Transform!
+  자ATK+156.19%와 Ark Black Collider 지속딜(45.87%×틱)을 하드코딩(DoT 스펙의 옵셔널
+  `requires_part_destructible`로 브랜치별 게이팅). Ultimate! Meteor 지속딜(266.69%×10틱)과
+  자 Sustained Damage+135.83%/10초, 노멀30회마다 자 Sustained Damage+59.6%/5초는
+  양쪽 브랜치 공통. 엔드투엔드로 ceiling total_damage > floor total_damage 검증
+  (`test_ark_ranger_bracket.py`). **부위파괴로 게이지가 실제로 차는 메커니즘 자체는
+  여전히 미모델** — 이 유닛 전용 우회일 뿐, Mihara 등 다른 Pattern B 후보에 재사용
+  가능한 일반 게이지 primitive는 아니다. 상세는
+  `docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`,
+  `ark_ranger_black.py` docstring 참고.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
@@ -483,7 +519,10 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
    gap #1/#2 잔여 per-shot 유닛(rei-ayanami류 등)에 있음 — 데이터 확인 → 인코딩.
 - ~~#5 enemy-element 조건 (boss_element)~~ — ✅ 완료 (2026-07-16,
   `boss_is_element` + `enemy_def_percent` 배선; Brid ⚠→✅·Helm:Aqua·Marciana(신규) 소비).
-2. **#2 Pattern B (시간감쇠 게이지·변신)** + **#3 무기종/티어부분집합 스코프** +
+- ~~ark-ranger-black (gap #2 Pattern B, 개별)~~ — ✅ 브래킷 우회로 인코딩 완료
+  (2026-07-16, `part_destructible` 보스 플래그). Pattern B **일반 프리미티브**는
+  여전히 미착수(아래 2번 항목).
+2. **#2 Pattern B (시간감쇠 게이지·변신, 일반 프리미티브)** + **#3 무기종/티어부분집합 스코프** +
    **#6 FB창 periodic** + **#8 자원-fill-트리거 타 유닛 버프**
    (Maiden 잔여) + **#9 reload 후 첫 발 마커**(Jill 잔여) + **not-in-Full-Burst
    per-shot 창 필터**(gap #7 거울상, Velvet Sticky Fingers 잔여) — 각 수요 1명,

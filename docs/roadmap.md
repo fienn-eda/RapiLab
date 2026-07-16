@@ -9,12 +9,22 @@
 
 - 마지막 갱신: 2026-07-16
 - 브랜치: `wip/scaffolding`
-- 테스트: **527 passed** (2026-07-16, **gap #5 후속 완료** — Anis: Sparkling Summer +
-  Rei Ayanami의 Elemental Advantage 버프를 `other_elemental_bonus` + 보스원소 게이팅으로
-  인코딩(Rei ⚠→✅); was 524)
-- 인코딩된 니케: **55명** (Marciana: Marine Study[gap #5, 신규] +1;
-  Brid: Silent Track ⚠→✅, Helm: Aquamarine ⚠→✅) — 상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
-- **Phase B gap #5 완료 (2026-07-16):** `SquadContext.boss_element` +
+- 테스트: **544 passed** (2026-07-16, **Ark Ranger Black 엔드투엔드 브래킷 테스트
+  완료** — `test_ark_ranger_bracket.py` 신규 3개(ceiling>floor·기본 보스=floor·
+  floor에 지속딜 타입 배선 확인); was 541)
+- 인코딩된 니케: **56명** (Ark Ranger Black[gap #2 Pattern B 브래킷, 신규 ⚠] +1) —
+  상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
+- **Ark Ranger Black floor/ceiling 브래킷 완료 (2026-07-16):** 배터리로 구동되는
+  Transformation 상태(딜의 대부분)를 일반 게이지 프리미티브 없이, 신규 보스 플래그
+  `BossProfile.part_destructible`로 **floor**(파츠파괴 없음 — 변신은 버스트당 10초 창)
+  /**ceiling**(파츠파괴 있음 — 변신 영구) 두 갈래로 모델링. `evaluate_deck`/
+  `simulate_raid`가 플래그를 `SquadContext.part_destructible`로 스레딩, DoT 스펙의
+  옵셔널 `requires_part_destructible`로 브랜치별 게이팅. 엔드투엔드로 ceiling
+  total_damage > floor total_damage 검증. 부위파괴 게이지 fill 자체는 여전히 미모델
+  (이 유닛 전용 우회, 일반 Pattern B 프리미티브 아님) — 상세는
+  `docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`,
+  `docs/engine-gaps.md`(gap #2) 참고.
+- **이전: Phase B gap #5 완료 (2026-07-16):** `SquadContext.boss_element` +
   `boss_is_element(element)` 조건 헬퍼(+`buff_rule`/`refreshing_buff_rule`/
   `instant_nuke_pulse_rule`에 옵셔널 condition) + `enemy_def_percent` 배선(DEF▼ 디버프,
   기존 inert). 소비: **Brid**(Wind Damage Taken 디버프 → ✅) · **Helm: Aquamarine**
@@ -43,7 +53,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (55명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (56명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ⬜ 예정 |
 | Phase 6 | 유저 데이터 입력 UI (React) | ⬜ 예정 |
@@ -209,7 +219,19 @@
   하에 Whistle 자ATK·Elemental Advantage AD·High-Risk DEF 디버프·Flagged 3789% 풀버스트
   넉·High-Risk 20노멀 넉을 인코딩. Flagged Target ATK(스코프 모호)·적처치 넉·6+rapture
   넉은 defer. 엔드투엔드 스모크로 Electric/비-Electric 보스 딜 차 확인.
-- **다음:** **eb3+ 백로그**(Pattern B 게이지·상태머신·무기변형) + **막힌
+- **엔진 확장 완료 — Ark Ranger Black floor/ceiling 브래킷 (gap #2 Pattern B, 개별
+  우회, 2026-07-16):** 신규 보스 플래그 `part_destructible`(`BossProfile`→
+  `evaluate_deck`/`simulate_raid`→`SquadContext`)로 Transformation 상태를
+  floor(파츠파괴 없음, 변신=버스트당 10초 창)/ceiling(파츠파괴 있음, 변신=영구) 두
+  갈래로 모델링. DoT 스펙에 옵셔널 `requires_part_destructible` 필드 추가. Transform!
+  자ATK+156.19%·Ark Black Collider 45.87% 지속딜(floor: 버스트-앵커 10틱 / ceiling:
+  전투 내내 1초 주기)·Ultimate! Meteor 266.69%×10틱 지속딜 + 자 Sustained
+  Damage+135.83%/10초(양쪽 공통)·노멀30회마다 자 Sustained Damage+59.6%/5초 모델됨.
+  엔드투엔드 `test_ark_ranger_bracket.py`로 ceiling>floor + 기본 보스=floor + 지속딜
+  타입 배선 검증(544 tests pass, was 541). 보류: 부위파괴 배터리 충전(플래그의 존재
+  이유, 일반 Pattern B 프리미티브는 여전히 미착수)·skill2 Wind-AR Sustained Damage
+  버프(gap #3 필요)·Damage to Parts.
+- **다음:** **eb3+ 백로그**(Pattern B 일반 프리미티브·상태머신·무기변형) + **막힌
   나머지 per-shot 유닛 재인코딩 배치** + Phase B 잔여(gap #8)/Phase C가 최대 실질 가치.
   남은 gap은 `engine-gaps.md` 우선순위 참고.
 
@@ -270,8 +292,10 @@
       무기변형**. 배치 착수 전 유닛별 검증 필수.
   - **Pattern A 자원 유닛 (named-resource로 인코딩 가능, 잔여)**: `rei-ayanami`·
     `rei-ayanami-tentative-name`(Anti A.T.), `neon-vision-eye`.
-  - **Pattern B 게이지·변신 (잔여, gap #2)**: `ark-ranger-black`(배터리 시간감쇠·부위파괴
-    fill)·`mihara-bonding-chain`(체인)·`elegg-boom-and-shock`·`red-hood`(charge speed·딜 아님).
+  - **Pattern B 게이지·변신 (일반 프리미티브 잔여, gap #2)**: `mihara-bonding-chain`
+    (체인)·`elegg-boom-and-shock`·`red-hood`(charge speed·딜 아님). (`ark-ranger-black`은
+    2026-07-16 `part_destructible` 보스 플래그 브래킷으로 개별 인코딩 완료 — 일반
+    프리미티브 소비는 아님, `engine-gaps.md` gap #2 참고.)
   - **상태머신/특수 트리거**: `diesel-winter-sweets`(Intro/Highlight+지속딜),
     `bready`(Taste), `dorothy-serendipity`(펠릿 카운터), `eve`(크리티컬-히트 카운터 —
     Julia 시그니처 인코딩 중 확인됨: 기대값 크리 모델과 구조적으로 불가, **영구 defer**
