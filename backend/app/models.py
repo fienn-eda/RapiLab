@@ -35,7 +35,10 @@ class UserNikkeState(BaseModel):
     atk: float = Field(ge=0)
     def_: float = Field(ge=0)
     skill_levels: SkillLevels
-    # Whether cube stats are already folded into hp/atk/def above or need to be
-    # added separately is unconfirmed - see project plan's open questions.
+    # hp/atk/def above ALREADY include the equipped cube's contribution: Fienn
+    # confirmed ShiftyPad reflects the cube in the displayed stats when one is
+    # equipped, and shows bare character stats when none is. Cube stats are
+    # therefore never re-added on top - the opposite of overload_options, which
+    # ShiftyPad shows separately and which ARE additive (see overload_effects).
     overload_options: list[OverloadOption] = Field(default_factory=list)
     pve_cube: PveCube | None = None
