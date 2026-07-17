@@ -30,7 +30,7 @@
 - Consumes: existing `Effect`, `EffectRegistry`, `_matches_scope`, `bisect_right` (already imported).
 - Produces: module-level `_matches_target(effect, target) -> bool`; `EffectRegistry.version` (read-only int property); `EffectRegistry.state_epoch(target: dict, now: float) -> int`. Task 2 keys memos as `(slug, state_epoch(...), version)`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Create `backend/tests/test_effects_state_epoch.py`:
 
@@ -81,12 +81,12 @@ def test_version_and_epoch_react_to_every_mutation_kind():
     assert reg.version != v2
 ```
 
-- [ ] **Step 2: Run them to verify they fail**
+- [x] **Step 2: Run them to verify they fail**
 
 Run (from `backend/`): `PYTHONIOENCODING=utf-8 python3 -m pytest tests/test_effects_state_epoch.py -q`
 Expected: FAIL — `AttributeError: 'EffectRegistry' object has no attribute 'state_epoch'` (or `version`).
 
-- [ ] **Step 3: Implement in `backend/app/effects.py`**
+- [x] **Step 3: Implement in `backend/app/effects.py`**
 
 3a. Add module-level `_matches_target` directly below `_matches_scope`:
 
@@ -152,14 +152,14 @@ with
         return bisect_right(cached[1], now)
 ```
 
-- [ ] **Step 4: Run the new tests, the parity net, then the full suite**
+- [x] **Step 4: Run the new tests, the parity net, then the full suite**
 
 Run: `PYTHONIOENCODING=utf-8 python3 -m pytest tests/test_effects_state_epoch.py tests/test_effects_parity.py -q`
 Expected: `5 passed`
 Run: `PYTHONIOENCODING=utf-8 python3 -m pytest tests/ -q`
 Expected: `659 passed` (656 + 3 new)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/effects.py backend/tests/test_effects_state_epoch.py
@@ -177,7 +177,7 @@ git commit -m "feat: EffectRegistry.state_epoch + version for caller-side bundle
 - Consumes: `registry.state_epoch(target, now)` and `registry.version` from Task 1.
 - Produces: no external interface change — `simulate_raid`'s signature and outputs are untouched (outputs bit-identical).
 
-- [ ] **Step 1: Add the bundle-stat superset constant**
+- [x] **Step 1: Add the bundle-stat superset constant**
 
 Directly below the `_TYPE_BUCKETS` dict (module level):
 
@@ -197,7 +197,7 @@ _BUNDLE_STATS = (
 )
 ```
 
-- [ ] **Step 2: Replace `crit_rate_for` with `_stat_bundle` and rewire `_damage_instance`**
+- [x] **Step 2: Replace `crit_rate_for` with `_stat_bundle` and rewire `_damage_instance`**
 
 Inside `simulate_raid`, replace the current `crit_rate_for` definition:
 
@@ -277,7 +277,7 @@ place; only the lookup mechanics change):
 (`crit_rate_for` had exactly one caller — the `crit_rate=` term above — so it
 is deleted, not kept as a wrapper.)
 
-- [ ] **Step 3: Rewire `normal_attack_type` and `_normal_attack_percent`**
+- [x] **Step 3: Rewire `normal_attack_type` and `_normal_attack_percent`**
 
 `normal_attack_type` drops its now-unused `target` parameter:
 
@@ -304,14 +304,14 @@ and drop the `target` argument at each (they all live in this file).
 
 (keep the surrounding comment; delete nothing else).
 
-- [ ] **Step 4: Run the full suite — bit-identical gate**
+- [x] **Step 4: Run the full suite — bit-identical gate**
 
 Run: `PYTHONIOENCODING=utf-8 python3 -m pytest tests/ -q`
 Expected: `659 passed`, zero failures. Any numeric divergence is a bug in this
 task (most likely a stat missing from `_BUNDLE_STATS` or an epoch/version
 keying mistake) — never adjust a test.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/app/raid_simulator.py
@@ -325,12 +325,12 @@ git commit -m "perf: memoize phase-2 stat bundles per (target, state epoch, regi
 **Files:**
 - Modify: `docs/roadmap.md` (top summary block), this plan file (completion notes)
 
-- [ ] **Step 1: Run the benchmark**
+- [x] **Step 1: Run the benchmark**
 
 Run (from the worktree root): `python3 scripts/bench_evaluate_deck.py`
 Record the printed avg line verbatim. Target: ≤50 ms. If missed, additionally run a cProfile pass (`python3 -m cProfile -s cumulative scripts/bench_evaluate_deck.py -n 3`, top ~15 lines) and record where the time goes — no further optimization in this stage either way.
 
-- [ ] **Step 2: Update the roadmap and completion notes**
+- [x] **Step 2: Update the roadmap and completion notes**
 
 `docs/roadmap.md` top test line: update the Stage 0 entry (the one recording 133.66ms) in place — replace its measured value with the new one and extend the note, e.g. `133.66ms → <새 실측값>ms (Stage 0.5 epoch memo, 2026-07-17)`, update the test count to **659 passed**, and state plainly whether the 50ms target is now met.
 
@@ -343,7 +343,7 @@ Append to the bottom of this plan file:
 - Suite: 659 passed.
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/roadmap.md docs/superpowers/plans/2026-07-17-effect-registry-stage05.md

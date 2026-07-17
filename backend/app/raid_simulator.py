@@ -305,6 +305,9 @@ def simulate_raid(
         # them once per (target, epoch); the version key drops stale bundles
         # whenever the registry mutates, which keeps replay-late effects
         # behaving exactly as per-stat queries did.
+        # Phase-2 only: do NOT call this from phase 1 - per-shot mutations
+        # churn the version there, so every call misses, rebuilds the whole
+        # bundle, and grows the memo (see the _BUNDLE_STATS note).
         target = target_for(slug)
         key = (slug, registry.state_epoch(target, time), registry.version)
         bundle = stat_bundles.get(key)
