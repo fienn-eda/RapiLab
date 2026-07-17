@@ -1,0 +1,84 @@
+"""Allocation layer: greedy peeling picks disjoint decks best-first; the
+same-tier swap pass recovers the classic greedy mistake (stacking two strong
+supporters in deck 1 when splitting them wins). All search/sim calls are
+stubbed - real sims live in the API end-to-end test."""
+from dataclasses import dataclass
+
+import app.deck_allocation as da
+from app.deck_search import BossProfile
+
+
+@dataclass(frozen=True)
+class Unit:
+    slug: str
+    burst_tier: int
+
+
+def roster_of(tiers_by_slug):
+    return [Unit(s, t) for s, t in tiers_by_slug.items()]
+
+
+def patch_scorer(monkeypatch, scorer):
+    # allocate_decks calls evaluate_deck both directly AND through
+    # search_best_decks (deck_search's own module binding) - patch both.
+    import app.deck_search as ds
+
+    def fake_evaluate(ordered_deck, boss):
+        return {"total_damage": scorer({u.slug for u in ordered_deck}),
+                "damage_log": []}
+
+    monkeypatch.setattr(ds, "evaluate_deck", fake_evaluate)
+    monkeypatch.setattr(da, "evaluate_deck", fake_evaluate)
+
+
+def test_greedy_peels_disjoint_decks_best_first(monkeypatch):
+    roster = roster_of({
+        "a1": 1, "a2": 2, "a3": 3, "a4": 3, "a5": 3,
+        "b1": 1, "b2": 2, "b3": 3, "b4": 3, "b5": 3,
+    })
+    # unambiguous optimum (no score ties): exactly the a-deck, then the b-deck
+    def score(slugs):
+        if slugs == {"a1", "a2", "a3", "a4", "a5"}:
+            return 100.0
+        if slugs == {"b1", "b2", "b3", "b4", "b5"}:
+            return 50.0
+        return 10.0
+
+    patch_scorer(monkeypatch, score)
+    out = da.allocate_decks(roster, BossProfile(), num_decks=5, time_budget_sec=0.0)
+    assert len(out["decks"]) == 2                      # 10 units -> 2 decks
+    assert sorted(out["decks"][0]["deck"]) == ["a1", "a2", "a3", "a4", "a5"]
+    used = [slug for d in out["decks"] for slug in d["deck"]]
+    assert len(used) == len(set(used))                 # disjoint
+    assert out["leftover_slugs"] == []
+
+
+def test_partial_roster_returns_fewer_decks(monkeypatch):
+    roster = roster_of({"a1": 1, "a2": 2, "a3": 3, "a4": 3, "a5": 3, "x": 3})
+    # decks containing x score lower, so the leftover is deterministically x
+    patch_scorer(monkeypatch, lambda s: 0.5 if "x" in s else 1.0)
+    out = da.allocate_decks(roster, BossProfile(), num_decks=5, time_budget_sec=0.0)
+    assert len(out["decks"]) == 1                      # only one feasible deck
+    assert out["leftover_slugs"] == ["x"]              # honest leftover report
+
+
+def test_swap_pass_fixes_a_greedy_split(monkeypatch):
+    # Two B2 buffers m/n; greedy stacks both winners into deck 1 context via
+    # (1,2,2), but the optimum puts one per deck. Scores: a deck with exactly
+    # one of {m,n} scores 100; with both, 120; with neither, 10. Greedy total
+    # = 120 + 10 = 130; swapped total = 100 + 100 = 200.
+    roster = roster_of({
+        "m": 2, "n": 2, "a1": 1, "a3": 3, "a4": 3,
+        "b1": 1, "b2": 2, "b3": 3, "b4": 3, "b5": 3,
+    })
+
+    def score(slugs):
+        both = {"m", "n"} <= slugs
+        one = bool({"m", "n"} & slugs) and not both
+        return 120.0 if both else 100.0 if one else 10.0
+
+    patch_scorer(monkeypatch, score)
+    out = da.allocate_decks(roster, BossProfile(), num_decks=2, time_budget_sec=30.0)
+    per_deck = [set(d["deck"]) & {"m", "n"} for d in out["decks"]]
+    assert all(len(x) == 1 for x in per_deck)          # one buffer per deck
+    assert sum(d["total_damage"] for d in out["decks"]) == 200.0
