@@ -27,6 +27,16 @@
      find these.
   3. Some B2 units work as **synergy sets** (Mint+Prika, Mast+Anchor; sometimes
      solo) — candidate pruning must not separate them blindly.
+     Mint+Prika rotation detail (Fienn, 2026-07-17): Prika must burst in the
+     FIRST cycle; Encore then raises her own burst cooldown (+21 s each time),
+     so Mint bursts every later cycle. The intra-tier ordering ([Prika, Mint])
+     falls out of the permutation search, but the cooldown increase is
+     currently un-encoded, so the simulator lets Prika re-burst and displace
+     Mint (undervaluing the set). **Prerequisite task**: encode Encore's self
+     burst-cooldown +21 s as a negative value through the existing
+     burst-CDR pulse path (verify negatives flow through
+     `on_full_burst_end`'s reduction map) before Stage 1 measures synergy
+     sets.
   4. **SG-themed decks**: SG B3 attackers need Tove (her buffs are SG-scoped);
      typical shape Tove + (Arcana: Fortune Mate / other B2) + SG B3 ×2 +
      (CDR unit / SG B3 / other buffer). A non-SG reference context undervalues
@@ -47,9 +57,24 @@ budget-aware search wraps it:
    ((1,1,3)/(1,2,2)/(2,1,2)) from per-tier unit lists instead of C(n,5)
    filtering.
 2. **Candidate pool cut** (only when the roster exceeds what the budget can
-   enumerate): rank units by **marginal contribution** — swap each unit into
-   fixed reference decks (one with a CDR B1, one without; ~2 sims per unit) —
-   and keep the top M per tier. Two guards:
+   enumerate): rank units by **marginal contribution** and keep the top M per
+   tier. The reference decks that provide the measurement context are
+   bootstrapped without simulation:
+   - Round-0 prior (pure arithmetic, no sims): per unit, investment-adjusted
+     base ATK × weapon DPS profile from its weapon_stats (damage% × shots/sec).
+   - Reference decks (deterministic from the prior): top-3 B3 + top-1 B2 +
+     B1 in **two variants** — (a) a burst-CDR holder (identified mechanically:
+     a unit whose rules emit `burst_cooldown_reduction_sec`), (b) the top
+     non-CDR B1 — because CDR changes cycle count and thus the relative value
+     of burst-dependent candidates.
+   - Measurement: swap each candidate into the same-tier slot, 1 sim per
+     variant (~2n sims); score = deck total with candidate − baseline.
+     Synergy sets are swapped in **as a set** (a (1,2,2)-shaped reference
+     shell for two-B2 sets). No iterative refinement of the reference deck
+     for now (add only if tests show ranking instability near the cut).
+   - Errors only matter near the M-th-place boundary: the score picks the
+     pool, full sims inside the pool pick the decks, and the guards below
+     cover the known blind spots. Two guards:
    - **Synergy sets** (curated constant: `{mint, prika}`, `{mast-romantic-maid,
      anchor-innocent-maid}`, …): if one member survives the cut, its partners
      join the pool, and sets are measured together when ranking.

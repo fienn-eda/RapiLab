@@ -353,6 +353,14 @@
       `boss_is_element("Water")` 게이팅(Electric>Water)으로 인코딩. 이 유닛의 잔여
       deferred DPS 효과 없음(✅ 완결).
 
+### Phase 5 선행 소작업 (2026-07-17, 설계 중 발견)
+- [ ] **Prika Encore 자기 버스트쿨 +21초 인코딩** — 현재 미인코딩이라 시뮬에서
+      Prika가 3사이클째 재버스트해 Mint의 버스트(→Encore)를 밀어냄 =
+      Mint+Prika 세트 과소평가. 기존 버쿨감 펄스 경로에 음수 값(−21)으로 태우면
+      `last_used_at`이 뒤로 밀려 "첫 사이클만 Prika, 이후 Mint 전담" 로테이션이
+      재현됨(Fienn 확인 2026-07-17). 음수 펄스의 `on_full_burst_end` 통과 검증 +
+      Encore 슬롯 값 추출 포함. Stage 1(한계기여도 측정) 착수 전 완료 필요.
+
 ### 정리/보강
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
       (docs-keeper 지적)
