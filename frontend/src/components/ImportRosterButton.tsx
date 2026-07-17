@@ -7,10 +7,14 @@ import {
   parseExiaExport,
   type ImportWarning,
 } from '../lib/exiaImport'
+import { parseRosterJson } from '../lib/rosterImport'
 import type { NikkeDraft } from '../types/nikkeDraft'
 
 interface ImportRosterButtonProps {
-  onImport: (drafts: NikkeDraft[]) => { added: number; updated: number }
+  onImport: (
+    drafts: NikkeDraft[],
+    source: 'exia' | 'collector',
+  ) => { added: number; updated: number }
 }
 
 const summarise = (
@@ -49,9 +53,17 @@ export function ImportRosterButton({ onImport }: ImportRosterButtonProps) {
     }
 
     try {
-      const { drafts, warnings } = parseExiaExport(raw)
-      const { added, updated } = onImport(drafts)
-      setMessage(summarise(added, updated, warnings))
+      if (raw && typeof raw === 'object' && 'units' in raw) {
+        const { drafts, warnings } = parseRosterJson(raw)
+        const { added, updated } = onImport(drafts, 'collector')
+        const parts = [`${added} added`, `${updated} updated`]
+        if (warnings.length > 0) parts.push(`${warnings.length} skipped`)
+        setMessage(parts.join(', '))
+      } else {
+        const { drafts, warnings } = parseExiaExport(raw)
+        const { added, updated } = onImport(drafts, 'exia')
+        setMessage(summarise(added, updated, warnings))
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Import failed.')
     }
@@ -60,12 +72,12 @@ export function ImportRosterButton({ onImport }: ImportRosterButtonProps) {
   return (
     <div className="import">
       <label className="btn btn--ghost">
-        Import from ExiaInvasion
+        Import roster
         <input
           type="file"
           accept="application/json,.json"
           className="import__input"
-          aria-label="Import from ExiaInvasion"
+          aria-label="Import roster"
           onChange={handleChange}
         />
       </label>

@@ -8,6 +8,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   makeEmptyDraft,
+  mergeCollectorDrafts,
   mergeRosterDrafts,
   type NikkeDraft,
 } from '../types/nikkeDraft'
@@ -17,7 +18,10 @@ export interface Roster {
   addNikke: () => void
   updateNikke: (id: string, next: NikkeDraft) => void
   removeNikke: (id: string) => void
-  importDrafts: (incoming: NikkeDraft[]) => { added: number; updated: number }
+  importDrafts: (
+    incoming: NikkeDraft[],
+    source?: 'exia' | 'collector',
+  ) => { added: number; updated: number }
 }
 
 const STORAGE_KEY = 'nikke-roster'
@@ -49,11 +53,15 @@ export const useRoster = (initial: NikkeDraft[] = []): Roster => {
     draftsRef.current = drafts
   }, [drafts])
 
-  const importDrafts = useCallback((incoming: NikkeDraft[]) => {
-    const result = mergeRosterDrafts(draftsRef.current, incoming)
-    setDrafts(result.drafts)
-    return { added: result.added, updated: result.updated }
-  }, [])
+  const importDrafts = useCallback(
+    (incoming: NikkeDraft[], source: 'exia' | 'collector' = 'exia') => {
+      const merge = source === 'collector' ? mergeCollectorDrafts : mergeRosterDrafts
+      const result = merge(draftsRef.current, incoming)
+      setDrafts(result.drafts)
+      return { added: result.added, updated: result.updated }
+    },
+    [],
+  )
 
   const addNikke = useCallback(() => {
     setDrafts((current) => [...current, makeEmptyDraft()])

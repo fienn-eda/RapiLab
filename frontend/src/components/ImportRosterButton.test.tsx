@@ -30,7 +30,7 @@ describe('ImportRosterButton', () => {
     render(<ImportRosterButton onImport={onImport} />)
 
     await userEvent.upload(
-      screen.getByLabelText(/import from exiainvasion/i),
+      screen.getByLabelText(/import roster/i),
       file(exportJson()),
     )
 
@@ -44,7 +44,7 @@ describe('ImportRosterButton', () => {
     render(<ImportRosterButton onImport={onImport} />)
 
     await userEvent.upload(
-      screen.getByLabelText(/import from exiainvasion/i),
+      screen.getByLabelText(/import roster/i),
       file('{ not json'),
     )
 
@@ -57,11 +57,32 @@ describe('ImportRosterButton', () => {
     render(<ImportRosterButton onImport={onImport} />)
 
     await userEvent.upload(
-      screen.getByLabelText(/import from exiainvasion/i),
+      screen.getByLabelText(/import roster/i),
       file('{"foo": 1}'),
     )
 
     expect(await screen.findByText(/elements/i)).toBeInTheDocument()
     expect(onImport).not.toHaveBeenCalled()
+  })
+
+  it('imports a collector roster.json (units) with raid-400 stats', async () => {
+    const onImport = vi.fn((_d: NikkeDraft[], _s: 'exia' | 'collector') => ({ added: 1, updated: 0 }))
+    render(<ImportRosterButton onImport={onImport} />)
+    const json = JSON.stringify({
+      synchroLevel: 663,
+      units: [
+        {
+          name_en: 'Rapi: Red Hood',
+          raid400: { hp: 3532402, atk: 143543, def: 20986 },
+          skill_levels: { skill1: 10, skill2: 10, burst: 10 },
+          pve_cube: null,
+        },
+      ],
+    })
+    await userEvent.upload(screen.getByLabelText(/import roster/i), file(json))
+    await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1))
+    expect(onImport.mock.calls[0][1]).toBe('collector')
+    expect(onImport.mock.calls[0][0][0].character_slug).toBe('rapi-red-hood')
+    expect(onImport.mock.calls[0][0][0].atk).toBe('143543')
   })
 })
