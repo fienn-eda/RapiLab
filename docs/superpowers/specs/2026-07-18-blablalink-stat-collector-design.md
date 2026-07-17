@@ -43,17 +43,24 @@ Phase B는 이걸 함께 바로잡는다(솔로레이드 = 400레벨 스탯 사�
   Increase Max Ammunition 173.93%, Increase Critical Rate 4.69% — **export 합산과 정확히 일치**.
 - **레벨 400 설정:** 커스텀 버튼(`-263/-10/-1/+1/+10`). synchro 663에서 `-263` 한 번이 정확히 400.
   (표준 `input[type=range]` 아님 → 버튼 조작 필요.)
-- **인증 raw API(백업 경로):** `POST api.blablalink.com/.../GetUserCharacterDetails`
+- **같은 페이지 탭 (Equipment | Skill | Collection | Cube):** 유닛 정보를 탭으로 분리.
+  - **Cube 탭: 스크랩 확인.** 장착 큐브 이름·레벨·스탯("Resilience Cube, LV.15, ATK 2780…").
+    → **`pve_cube`(이름+레벨) 자동 채우기 가능** — Phase A가 수동으로 남긴 필드를 자동화.
+  - **Collection 탭: 스크랩 확인.** 소장품 이름·등급·레벨·스탯("Shopping Commander Doll Ltd.,
+    Phase 15, SR, ATK 9688…").
+  - **Skill 탭: 클릭 미해결.** 탭 `div`가 "not visible"로 잡혀 전환 실패 — 견고한 셀렉터 필요
+    (구현 첫 스파이크). 스킬레벨은 raw API로 대체 가능(아래).
+- **인증 raw API(스킬/보유목록 폴백):** `POST api.blablalink.com/.../GetUserCharacterDetails`
   (body `{intl_open_id, nikke_area_id, name_codes:[...]}`, `credentials:include`, intl_open_id=
-  `game_openid` 쿠키값)가 `skill1_lv/skill2_lv/ulti_skill_lv`·grade/core·gear tier/lv·cube·
-  favorite item을 준다. `GetUserCharacters`가 보유 유닛 목록(name_code/lv/grade/core)을 준다.
-  **스킬레벨·보유목록의 신뢰 경로.**
+  `game_openid` 쿠키값)가 `skill1_lv/skill2_lv/ulti_skill_lv` 등을 준다.
+  `GetUserCharacters`가 보유 유닛 목록(name_code/lv/grade/core)을 준다. **Skill 탭·ShiftyPad
+  리스트가 여의치 않을 때의 신뢰 폴백.**
 - **base 스탯 테이블(이미 수집, `data/blablalink-cdn/`):** 클래스 3종(Attacker/Supporter/Defender)
   레벨 1~1200 배열, 클래스-균일. base@400 = `list[399]`(Attacker 90318 등). 스크랩값 교차검증용.
 
-**미확정(구현 중 해소):** ShiftyPad "Skill"/"Cube" 탭 스크랩 가능성(탭 전환이 이 SPA에서
-불명확 — 스킬은 raw API로 대체 가능) · ShiftyPad 리스트 뷰의 보유 유닛 목록(대안: raw API
-`GetUserCharacters`).
+**목표는 순수 ShiftyPad 스크랩**(스탯·오버로드·스킬·소장품·큐브 전부 ShiftyPad 탭에서, Fienn
+2026-07-18). raw API는 Skill 탭·보유목록이 스크랩 곤란할 때의 폴백으로만 둔다.
+**미확정(구현 중 해소):** Skill 탭 견고 셀렉터 · ShiftyPad 리스트 뷰 보유목록.
 
 ---
 
@@ -70,8 +77,10 @@ Phase B는 이걸 함께 바로잡는다(솔로레이드 = 400레벨 스탯 사�
             → 레벨 400 설정 (버튼)
             → 메인패널 스크랩: ATK/HP/DEF (실제 + 400)
             → Equipment Effects 스크랩: 합산 오버로드(영문→우리 이름)
-       → 스킬레벨: raw API GetUserCharacterDetails
-   → roster.json 출력 (유닛별: slug · 두 스탯버전 · 오버로드 · 스킬)
+            → Skill 탭: 스킬레벨 (실패 시 raw API 폴백)
+            → Cube 탭: 큐브 이름·레벨 → pve_cube 자동
+            → Collection 탭: 소장품 이름·등급·레벨
+   → roster.json 출력 (유닛별: slug · 두 스탯버전 · 오버로드 · 스킬 · 큐브 · 소장품)
 [앱] roster.json 임포트 (Phase A 병합 setter 재사용)
 ```
 
@@ -90,9 +99,10 @@ Phase B는 이걸 함께 바로잡는다(솔로레이드 = 400레벨 스탯 사�
 | **솔로레이드 스탯** hp/atk/def | ShiftyPad 메인패널 실제+델타 = **400레벨** | 덱빌더(솔로) 사용 |
 | **실제레벨 스탯** actual_hp/atk/def | ShiftyPad 메인패널 실제값 | 유니온레이드(후속)용 |
 | `overload_options` | Equipment Effects 합산(영문→한글 7종) | 이미 합산됨 |
-| `skill_levels` | raw API `skill1_lv/skill2_lv/ulti_skill_lv` | 신뢰 경로 |
-| `core_level` | (inert) raw API core, 또는 생략 | 엔진 미소비 |
-| `pve_cube` | (선택) Cube 탭/큐브 tid·lv | 큐브 효과 필요 시, 아니면 수동 |
+| `skill_levels` | ShiftyPad **Skill 탭** (폴백: raw API `skill1_lv/skill2_lv/ulti_skill_lv`) | 엔진 소비 |
+| `pve_cube` | ShiftyPad **Cube 탭** 이름·레벨 | **자동**(Phase A는 수동) — 큐브 효과 배선 |
+| 소장품(item) | ShiftyPad **Collection 탭** 이름·등급·레벨 | 스탯은 이미 메인패널 반영; 기록/후속용 |
+| `core_level` | (inert) 생략 또는 raw API core | 엔진 미소비 |
 
 **오버로드 영문→우리 매핑(백엔드 `overload_effects.py` 한글 7종):**
 Increase ATK→공격력 증가 · Increase Element Damage Dealt→우월코드 대미지 증가 ·
@@ -150,7 +160,10 @@ Increase Max Ammunition Capacity→최대 장탄 수 증가. (미매핑 라벨�
 4. **오버로드도 같은 페이지에서 수집**(Fienn 제안) — 합산·영문 라벨 그대로. cost 절감, raw API의
    option-id 해석 불필요.
 5. **솔로레이드 = 400레벨 스탯**으로 hp/atk/def 의미 재정의(정확도 교정). 실제레벨은 별도 저장.
-6. **폴백은 수동/Phase A 파일임포트** — 서드파티 의존 리스크 방어.
+6. **스킬·소장품·큐브도 ShiftyPad 탭에서 수집**(Fienn 2026-07-18) → **순수 ShiftyPad 스크랩**
+   지향(raw API는 폴백). **큐브가 Cube 탭에서 자동 채워짐**(Phase A는 수동이었음). Cube·Collection
+   탭 스크랩 확인됨, Skill 탭은 셀렉터 스파이크 필요.
+7. **폴백은 수동/Phase A 파일임포트** — 서드파티 의존 리스크 방어.
 
 ---
 
