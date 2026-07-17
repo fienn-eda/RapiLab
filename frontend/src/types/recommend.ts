@@ -53,3 +53,27 @@ export interface RecommendResponse {
 // roster size; the backend still returns 422 for a roster that has 5+ Nikkes
 // but can't cover all three burst tiers.
 export const MIN_DECK_ROSTER_SIZE = 5
+
+// POST /api/recommend-raid: splits the roster into up to num_decks DISJOINT
+// decks against one boss and maximizes their summed damage. Semantically
+// different from /api/recommend — that endpoint ranks alternatives for ONE
+// deck; this one returns a partition the player fields all at once (no Nikke
+// appears in two decks).
+export interface RecommendRaidRequest {
+  roster: UserNikkeState[]
+  boss: BossProfile
+  num_decks?: number // int, 1–5, default 5
+}
+
+export interface RecommendRaidResponse {
+  decks: DeckRecommendation[] // one entry per allocated deck, in allocation
+  // order (NOT ranked alternatives) — may be fewer than num_decks when the
+  // roster can't fill more feasible decks
+  combined_total_damage: number // sum over decks
+  excluded_slugs: string[] // same meaning as /api/recommend
+  leftover_slugs: string[] // usable units the allocation left out (sorted)
+}
+
+export const MIN_NUM_DECKS = 1
+export const MAX_NUM_DECKS = 5
+export const DEFAULT_NUM_DECKS = 5

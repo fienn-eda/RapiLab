@@ -9,7 +9,27 @@
 
 - 마지막 갱신: 2026-07-17
 - 브랜치: `wip/scaffolding`
-- 테스트: **674 passed** (2026-07-17, **Phase 5 Task 6 — `POST /api/recommend-raid`
+- 테스트: **692 passed** (2026-07-17, **ProcessPool 시뮬 병렬화 + Rapi 인코딩 완성** —
+  ① `SimPool`(지연 스폰 ProcessPoolExecutor, 워커 초기화 1회에 specs+boss 전달,
+  태스크는 슬러그 튜플, 배치 32건 미만은 인라인): `search_best_decks`(canonical
+  스코어링·순열 정련·prune 측정)·`allocate_decks`(+폴리시)의 맵 구간을 병렬화,
+  스왑 언덕오르기는 순차 유지(수락된 스왑이 다음 판단의 상태를 바꿈). 직렬 경로
+  비트 동일(패리티 테스트 3종). **실측: 로더블 50유닛 5덱 분배 97.25초**(16코어,
+  워커 15) — 42유닛 282.17초 베이스라인 대비 더 큰 로스터로 2.9×↑, **5덱 전부
+  생성**(leftover 25, 합계 31.0B, Electric 보스). 1분 예산 잔여 초과분은 순차
+  스왑 단계(≤45초 캡)가 지배 — 후속 레버는 스왑 후보 배치평가 또는 스왑 예산
+  축소(품질 트레이드오프, Fienn 판단). ② rapi-red-hood Attachable Projectiles
+  배틀스타트 상시 self 2건(PE Damage ▲100.6% + Electric 한정 원소우위 0.1)
+  인코딩, E2E로 Electric 보스에서 버스트 딜 정확히 ×1.100 확인. was 684/682.)
+- 이전: **682 passed** (2026-07-17, **매니페스트 예외 8유닛 배치** — crown·helm·
+  liter·miranda·moran·soline-frost-ticket·volume·zwei에 dotgg-소스
+  `SKILL_VALUE_MANIFESTS` 추가(전 유닛 픽스처=dotgg 네이티브 슬롯 정확 일치,
+  drop_tokens 0건) + 배치 테스트 파일 픽스처 별칭 + `KNOWN_MANIFEST_EXCEPTIONS`
+  12→4. **매니페스트 53/57, API 로더블 50/57, 로더블 B1 4→10명** — 5덱 분배가
+  3덱에서 멈추던 B1 부족이 해소됨. Fienn 결정 3건 반영(처리량 레버=ProcessPool
+  병렬화 / evaluate_deck 최적화는 103.43ms에서 중단 / 이 배치를 최우선 —
+  `decisions.md` 참고). was 674.)
+- 이전: **674 passed** (2026-07-17, **Phase 5 Task 6 — `POST /api/recommend-raid`
   + `/api/recommend`가 `search_best_decks`로 전환** — 기존 `/api/recommend` 테스트
   전부 그린 유지(회귀 없음). +1은 계획 외 회귀 테스트: 실측정(전체 57유닛 로스터
   분배) 도중 `_build_cinderella`가 이미 언랩된 `sv["flawless_glass"]`를 다시
@@ -24,7 +44,7 @@
   prika 로더블화 이후 효력. was 673 (671+2, Task 6 신규 API 테스트).)
 - 이전: **659 passed** (2026-07-17, **Stage 0 EffectRegistry 성능 패스** —
   total_for를 버전-무효화 세그먼트 테이블로 교체(비트 동일 출력, 패리티 넷 2건
-  추가). evaluate_deck 180초 시뮬 ~2410ms → 133.66ms → 103.43ms (Stage 0.5 epoch memo, 2026-07-17 — phase-1 normal_attack_type 회귀 수정: 번들 대신 직접 단일-스탯 조회로 복귀). was 656 — 목표 50ms 미달(2.1×), 잔여는 평탄한 호출 오버헤드, 추가 최적화 여부는 Fienn 결정 대기)
+  추가). evaluate_deck 180초 시뮬 ~2410ms → 133.66ms → 103.43ms (Stage 0.5 epoch memo, 2026-07-17 — phase-1 normal_attack_type 회귀 수정: 번들 대신 직접 단일-스탯 조회로 복귀). was 656 — 목표 50ms 미달(2.1×), 잔여는 평탄한 호출 오버헤드. 추가 최적화는 여기서 중단으로 결정(Fienn, 2026-07-17 — 부족분은 ProcessPool 병렬화로 흡수, `decisions.md` 참고))
 - 이전: **654 passed** (2026-07-17 후속 배치 — 매니페스트 배치 2(29유닛, 45/57
   커버) + dotgg weapon 스탯 39파일 수집 + `dotgg_slug` 브리지 + 오버로드 옵션명
   422 검증 + 매니페스트 가드 테스트(`KNOWN_MANIFEST_EXCEPTIONS`). **API 로더블
@@ -90,7 +110,7 @@
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
 | Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (57명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
-| Phase 5 | 5덱(25니케) 분배 최적화 | 🔄 백엔드 완료 — greedy+swap, `/api/recommend-raid`; 프론트 배선은 후속 소플랜 |
+| Phase 5 | 5덱(25니케) 분배 최적화 | ✅ 완료 — greedy+swap + ProcessPool 병렬화(50유닛 97초), `/api/recommend-raid`, 프론트 레이드 모드 배선까지 |
 | Phase 6 | 유저 데이터 입력 UI (React) | 🔄 진행 중 (입력 폼 + 결과 UI + 라이브 API 완료) |
 | Phase 7 | 자동화 (ShiftyPad 연동, 수집 파이프라인) | ⬜ 지연/후속 |
 
@@ -285,9 +305,26 @@
   로스터에서는 결과 불변 — 예산 컷은 로스터가 클 때만 개입). 로더블 42유닛 전량
   분배 실측(픽스 반영 재측정) **282.17초, 3덱**(leftover 27, 합계 5.18B) — 스왑
   단계 포함 수치(최초 103.92초는 스왑 미실행 탐욕 전용). 수초~1분 예산 초과가
-  실측으로 확인됨 → **처리량 레버(타이어 캡 축소 vs 시뮬 병렬화 ProcessPool)
-  결정 필요** — Fienn 대기. **다음:** 프론트 배선(결과 UI에 다중 덱 표시)은
-  후속 소플랜.
+  실측으로 확인됨 → **처리량 레버 = 시뮬 병렬화(ProcessPool)로 결정**(Fienn,
+  2026-07-17 — 타이어 캡 축소는 탐색 품질을 깎아 기각, `decisions.md` 참고).
+  3덱 원인이던 로더블 B1 부족(4명)은 매니페스트 예외 배치로 해소(B1 10명).
+- **ProcessPool 병렬화 완료 (2026-07-17):** `app/sim_pool.py`의 `SimPool` —
+  지연 스폰(배치 32건 미만 인라인, 소형 요청/테스트 무비용), 워커 초기화 1회에
+  로스터 specs+boss 전달(태스크 = 슬러그 튜플), `search_best_decks`/
+  `prune_candidate_pool`/`allocate_decks` 폴리시의 맵 구간 소비, API 두
+  엔드포인트 `workers="auto"`. 직렬 경로(기본값)는 비트 동일 + SimPool 미생성
+  (테스트 스텁 보존). **실측 50유닛 97.25초, 5덱**(합계 31.0B) — 상세는 위 요약.
+  플랜: `docs/superpowers/plans/2026-07-17-processpool-parallelism.md`.
+- **프론트 레이드 모드 배선 완료 (2026-07-17, frontend-builder):** RecommendPanel에
+  모드 스위치(단일 덱 / 레이드 분배) + `num_decks` 셀렉터(1–5), `RaidResults`가
+  분배 결과를 파티션으로 렌더(Deck 1..N 동시 편성 + 합계 + bench/제외 목록),
+  라이브 클라이언트는 무타임아웃(~1–2분 대기 안내 + 재제출 잠금), mock은 ~1초
+  지연. 공유 조각 추출(useAsyncRequestStatus·DeckCard·ExcludedSlugsNote·
+  formatDamage). Vitest 71/71 · `tsc -b` 클린 · 빌드 클린 · vite 프록시 경유
+  실백엔드 E2E 확인. 부수 픽스: 루트 tsconfig가 references 셸이라 bare
+  `tsc --noEmit`이 no-op이던 함정(README 교정 + 숨어 있던 테스트 타입에러 3건).
+  97초→1분 미만 후속 최적화(스왑 배치평가/예산 축소)는 **유저 피드백 생길 때까지
+  보류 확정**(Fienn, 2026-07-17 — `decisions.md` 참고). Phase 5 종결.
 
 ### Phase 6 — 유저 데이터 입력 UI 🔄
 - React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
@@ -298,9 +335,12 @@
   배치): 매니페스트 45/57(예외 12은 `KNOWN_MANIFEST_EXCEPTIONS` 가드 테스트 +
   encoded-nikkes.md 예외 표기), dotgg 파일 14→53개, `dotgg_slug` 매니페스트
   키로 소스 간 슬러그 불일치 브리지(ada-wong·chisato·jill·takina). **API 로더블
-  42/57.** 잔여: 예외 8유닛의 dotgg-소스 매니페스트 배치(crown·liter·zwei 등,
-  weapon 파일은 이미 수집됨), 픽스처 재배열 4유닛(anis-star·asuka·privaty·
-  neon-vision-eye)은 픽스처 검증 후 재작성 필요, marciana-marine-study·
+  42/57.**
+- 매니페스트 예외 8유닛 배치 ✅ (2026-07-17): crown·helm·liter·miranda·moran·
+  soline-frost-ticket·volume·zwei에 dotgg-소스 매니페스트(helm·miranda·moran·
+  zwei는 시그니처 완성이라 `dollskills` 배열). **매니페스트 53/57, API 로더블
+  50/57, 로더블 B1 4→10명.** 잔여: 픽스처 재배열 4유닛(anis-star·asuka·privaty·
+  neon-vision-eye)은 픽스처 검증 후 재작성 필요; marciana-marine-study·
   ark-ranger-black·prika·cinderella-crystal-wave(dotgg 부재, 2026-05 갱신
   중단)는 `scripts/collect_dotgg_weapons.py --stub`으로 수동 스텁 생성됨 —
   Fienn이 `_todo` 필드(무기 스탯 3~5개)를 채우면 로더블.

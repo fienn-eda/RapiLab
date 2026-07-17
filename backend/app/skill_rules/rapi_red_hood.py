@@ -1,18 +1,42 @@
 """SkillRule encoding of Rapi: Red Hood's "Battlefield Assessment" (skills[0])
-from api.dotgg.gg slug "rapi-red-hood".
+and "Attachable Projectiles" (skills[1], battle-start effects only) from
+api.dotgg.gg slug "rapi-red-hood".
 
 Whether she becomes a Burst-1 stand-in ("Combat Assist") depends on whether
 another Burst 1 ally is already in the deck - re-using the same
 no_other_burst_tier_allies condition Anis: Star's rules use, since combination
 search needs this evaluated per-deck, not hardcoded to one roster.
 
-Not modeled: "Attachable Projectiles" (skills[1]) and the burst-skill damage
-instances in "Power of Inheritance" (skills[2]) - both are gated on a
-normal-attack counter / are pure damage instances needing the deferred
-attack-rate and damage-accumulation pieces.
+Modeled from Attachable Projectiles (both permanent battle-start self effects):
+- Projectile Explosion Damage ▲ 100.6% continuously - boosts her
+  projectile_explosion-typed burst nuke (Power of Inheritance is a Projectile
+  Explosion keyword skill, see registry's _BURST_DAMAGE_TYPES).
+- "Applies Elemental Advantage damage to Electric Code enemies continuously" -
+  she is Fire (advantaged vs Wind only), so this is a self
+  other_elemental_bonus of ELEMENT_ADVANTAGE_BONUS gated on
+  boss_is_element("Electric"): the element bucket becomes 1.0 + 0.1, exactly
+  the multiplier natural advantage would give (damage_formula adds
+  other_elemental_bonus onto element_multiplier).
+
+Not modeled / deferred:
+- Attachable Projectiles' 120-normal-attack launcher (projectiles attach, then
+  explode on Full Burst entry - a projectile state machine no engine trigger
+  expresses; confirmed not unlockable by gap #7/#9, 2026-07-15).
+- Projectile Attachment Damage ▲ 150.72% - inert until the attachment damage
+  instances above are modeled (nothing attachment-typed exists to boost).
+- The Stage 1 branch damage of "Power of Inheritance" (skills[2]) - the Stage 3
+  branch's nuke IS modeled via power_of_inheritance_stage3_burst_percent.
 """
 from app.effects import Effect, Pulse
-from app.squad_engine import SkillRule, has_status, no_other_burst_tier_allies, not_condition
+from app.elements import ELEMENT_ADVANTAGE_BONUS
+from app.skill_rules._helpers import buff_rule
+from app.squad_engine import (
+    SkillRule,
+    boss_is_element,
+    has_status,
+    no_other_burst_tier_allies,
+    not_condition,
+)
 
 SKILL_VALUE_MANIFESTS = {
     "rapi-red-hood": {
@@ -20,6 +44,7 @@ SKILL_VALUE_MANIFESTS = {
         "test_module": "test_skill_rules_rapi_red_hood",
         "keys": {
             "battlefield_assessment": ("skills", 0),
+            "attachable_projectiles": ("skills", 1),
             "power_of_inheritance": ("skills", 2),
         },
         "fixtures": {
@@ -87,6 +112,18 @@ def build_battlefield_assessment_rules(values: dict) -> list[SkillRule]:
         SkillRule(trigger="full_burst_end", action=assess_formation),
         SkillRule(trigger="full_burst_enter", condition=in_combat_assist, action=combat_assist_branch),
         SkillRule(trigger="full_burst_enter", condition=not_in_combat_assist, action=self_buff_branch),
+    ]
+
+
+def build_attachable_projectiles_rules(values: dict) -> list[SkillRule]:
+    projectile_explosion_up = float(values["description_value_06"]) / 100
+    return [
+        buff_rule("battle_start", [
+            ("projectile_explosion_damage_up", projectile_explosion_up, "self", None),
+        ]),
+        buff_rule("battle_start", [
+            ("other_elemental_bonus", ELEMENT_ADVANTAGE_BONUS, "self", None),
+        ], condition=boss_is_element("Electric")),
     ]
 
 

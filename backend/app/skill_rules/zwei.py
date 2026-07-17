@@ -19,6 +19,20 @@ Note pierce is treated as general damage-up (see raid_simulator).
 """
 from app.skill_rules._helpers import buff_rule, round_buff_rule
 
+# Fienn's Zwei has the signature weapon completed, so the manifest reads the
+# "dollskills" array, not "skills" (see module docstring).
+SKILL_VALUE_MANIFESTS = {
+    "zwei": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_burst1_batch2",
+        "keys": {
+            "pierce_equation": ("dollskills", 0),
+            "frame_analysis": ("dollskills", 1),
+            "overcharge_formula": ("dollskills", 2),
+        },
+    },
+}
+
 
 def build_zwei_rules(values):
     pierce = values["pierce_equation"]

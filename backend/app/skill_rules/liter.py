@@ -13,6 +13,17 @@ survivability, no DPS - and is not modeled.
 """
 from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
 
+SKILL_VALUE_MANIFESTS = {
+    "liter": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_burst1_batch1",
+        "keys": {
+            "liter_boost": ("skills", 0),
+            "double_boost": ("skills", 2),
+        },
+    },
+}
+
 
 def build_liter_rules(values):
     boost = values["liter_boost"]

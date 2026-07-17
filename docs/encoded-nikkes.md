@@ -3,17 +3,15 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-17 (스킬값 매니페스트 배치 2 — 29유닛 추가로 45/57 커버 +
-  dotgg weapon 스탯 39파일 수집 + `dotgg_slug` 브리지(ada-wong·chisato·jill·takina).
-  API 로더블 42/57. 이전 갱신: Ark Ranger Black 신규 ⚠ — floor/ceiling
-  `part_destructible` 보스 플래그 브래킷으로 배터리/변신 메커니즘 모델링)
-- **스킬값 매니페스트 커버리지 — 예외만 표기:** 아래 12유닛 외 전원이
+- 마지막 갱신: 2026-07-17 (매니페스트 예외 8유닛 배치 — crown·helm·liter·
+  miranda·moran·soline-frost-ticket·volume·zwei에 dotgg-소스 매니페스트 추가,
+  53/57 커버. **API 로더블 50/57** (로더블 B1 4→10명 — 5덱 분배가 실제로 5덱을
+  채울 수 있게 됨). 이전 갱신: 매니페스트 배치 2 — 29유닛 추가로 45/57 커버 +
+  dotgg weapon 스탯 39파일 수집 + `dotgg_slug` 브리지(ada-wong·chisato·jill·takina))
+- **스킬값 매니페스트 커버리지 — 예외만 표기:** 아래 4유닛 외 전원이
   `SKILL_VALUE_MANIFESTS`를 보유(= API 조립 가능). 이 목록은
   `test_skill_value_assembly.py`의 `KNOWN_MANIFEST_EXCEPTIONS` 가드 테스트와
   거울 구조라, 매니페스트 없는 신규 인코딩은 테스트가 먼저 잡는다.
-  - lootandwaifus 스킬 JSON 미수집(8, dotgg weapon 파일은 있음 → dotgg-소스
-    매니페스트 배치로 해소 가능): `crown`, `helm`, `liter`, `miranda`, `moran`,
-    `soline-frost-ticket`, `volume`, `zwei`
   - 픽스처가 데이터 토큰과 재배열 관계라 drop_tokens로 재현 불가(4):
     `anis-star`, `asuka-shikinami-langley-wille`, `privaty`, `neon-vision-eye`
   - (매니페스트와 별개로 dotgg weapon 파일 부재로 API 제외: `ark-ranger-black`,
@@ -130,7 +128,7 @@
 | Noir | `noir` | Attacker | SG | Wind | ✅ | eb1. 버스트넉 351.64%·Lucky Charm 스쿼드 ATK(caster 비례)·Finale 파츠딜 버프 모델됨. Rabbit Twins 탄약/재장전(QoL)·Hit Rate(inert)만 보류 |
 | Privaty (애장품) | `privaty` | Attacker | AR | Water | ✅ | EX Magazine 스쿼드 ATK/재장전속도/탄약감소/공댐(FB진입) 모델됨. LD Assault 라스트불릿 넉(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-12 gap #1 잔여 해소): 받댐+10.01%/10초+256.17% 추가딜("as additional damage") + Designated Target(AK Missile 자신의 버스트로부터 10초 창, `context.burst_times` 시간창 체크) 중이면 1687% 추가딜까지 중첩 발동 + AK Missile 자속성상성공댐 모델됨. Designated Target의 적 ATK 감소 디버프(생존계, 비딜)만 보류 |
 | Quency: Escape Queen | `quency-escape-queen` | Attacker | SMG | Water | ✅ | eb3 Pattern-A. Explore Route(3단계 스택체인, 노멀2회마다·전단계 만캡 게이팅)+Secure Route(단계별 버프) 전부 정상상태 근사(ATK+110.3%+Distributed Damage+49.58%+Core Damage+25.25%+Crit Rate+16.73%, battle_start부터 영구 — SMG 20발/초로 스택 감쇠창보다 채우기가 압도적으로 빨라 상시 만캡)·The Great Thief 버스트(자공댐/재장전속도+1736.31% Distributed 넉) 모델됨. Hit Rate만 보류 |
-| Rapi: Red Hood | `rapi-red-hood` | Attacker | MG | Fire | ⚠ | Attachable Projectiles + 노멀카운터 기반 버스트 대미지 |
+| Rapi: Red Hood | `rapi-red-hood` | Attacker | MG | Fire | ⚠ | Attachable Projectiles 배틀스타트 상시 self 2건 모델됨(2026-07-17): PE Damage ▲100.6%(PE 타입 버스트 넉에 적용) + Electric 보스 한정 원소우위(`other_elemental_bonus` 0.1, `boss_is_element` 게이팅). 잔여 보류: 120노멀 프로젝타일 런처(상태머신, gap #7/#9로 안 풀림)·Attachment Damage ▲(inert)·버스트 Stage 1 브랜치 |
 | Rei Ayanami | `rei-ayanami` | Attacker | MG | Fire | ✅ | (신규 2026-07-16, base) Attack Support: Fire 아군 flat ATK=caster ATK 25.03%(FB진입)·버스트: Fire 아군 AD+48.02% + 990.2% 넉·Preemptive Subdual: 노멀100회마다 112.37% 넉(gap #1 `every`) + 자 Elemental Advantage AD+30.23%/3s(other_elemental_bonus, Iron 보스 게이팅 Fire>Iron, refresh). 보류: 실드딜/실드생성(비-DPS)만. dollskills 데이터 비어있음(시그니처 없음, base-only) |
 | Rei Ayanami (Tentative Name) | `rei-ayanami-tentative-name` | Attacker | AR | Wind | ⚠ | (신규 2026-07-16, base; `rei-ayanami`와 별개 유닛) Attack State 버스트: 자AD+35.9%+자flat ATK=caster ATK 63.36% + 990.2% 넉·Maintenance: 스쿼드 flat ATK=caster ATK 11.61%(FB진입)·Annihilation Support: Attack State 창(자버스트 10초) 중 노멀7회마다 286.37% "additional damage" 넉(gap #7). 보류: Anti A.T. Field 590.64% 페이로드+Annihilation State 아군버프(교차유닛 콜라보 상태), MG heating up speed |
 | Neon: Vision Eye | `neon-vision-eye` | Attacker | RL | Electric | ⚠ | (신규 2026-07-16, base) Firepower Gauge가 매 사이클 100 리필 → Super Firepower 매 사이클 정상상태로 근사. Maximum Firepower: 자ATK+115.09%(FB진입)·Super Firepower 버스트: 자AD+155.24%(버스트 넉 없음)·Firepower Explosion: 풀차지마다 437.98% + Super Firepower 10초 창 중 +262.79%("additional damage", gap #7). 보류: 라이브 게이지, 넉의 projectile-explosion 타이핑(pulse 경로 미지원, 자기 킷 내 inert), Explosion Radius, 생존기 |

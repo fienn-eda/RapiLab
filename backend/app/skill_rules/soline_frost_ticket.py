@@ -11,6 +11,16 @@ isn't modeled. Her value to a raid deck is purely as a burst-rotation enabler.
 """
 from app.skill_rules._helpers import cdr_pulse_rule
 
+SKILL_VALUE_MANIFESTS = {
+    "soline-frost-ticket": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_burst1_batch3",
+        "keys": {
+            "check_ticket": ("skills", 0),
+        },
+    },
+}
+
 
 def build_soline_frost_ticket_rules(values):
     check = values["check_ticket"]

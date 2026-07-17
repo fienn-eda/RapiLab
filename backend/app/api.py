@@ -16,6 +16,7 @@ from app.deck_allocation import allocate_decks
 from app.deck_search import BossProfile, search_best_decks
 from app.models import UserNikkeState
 from app.overload_effects import NAME_TO_STAT
+from app.sim_pool import SimPool
 from app.user_roster import load_roster
 
 
@@ -97,7 +98,10 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
         fight_duration=request.boss.fight_duration,
         part_destructible=request.boss.part_destructible,
     )
-    results = search_best_decks(specs, boss, top_n=request.top_n)
+    # SimPool only spawns worker processes for big batches (large rosters);
+    # small requests run inline at zero pool cost.
+    with SimPool(specs, boss, workers="auto") as pool:
+        results = search_best_decks(specs, boss, top_n=request.top_n, pool=pool)
     if not results:
         raise HTTPException(
             status_code=422,
@@ -129,7 +133,7 @@ def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
         fight_duration=request.boss.fight_duration,
         part_destructible=request.boss.part_destructible,
     )
-    result = allocate_decks(specs, boss, num_decks=request.num_decks)
+    result = allocate_decks(specs, boss, num_decks=request.num_decks, workers="auto")
     if not result["decks"]:
         raise HTTPException(
             status_code=422,
