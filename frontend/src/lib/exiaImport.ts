@@ -2,7 +2,7 @@
 // Only the fields the export carries are mapped; ATK/HP/DEF and cube stay manual.
 // The cookie/game_uid fields in the export are credentials and are never read.
 
-import type { OverloadRow } from '../types/nikkeDraft'
+import type { NikkeDraft, OverloadRow } from '../types/nikkeDraft'
 
 // name_en (short in-game name) -> our character_slug, for the cases where the
 // kebab-cased name does not already match our slug. Derived-slug keyed.
@@ -78,4 +78,84 @@ export const aggregateOverload = (
     })
   }
   return { rows, droppedTypes }
+}
+
+interface ExiaCharacter {
+  name_en?: string
+  skill1_level?: number
+  skill2_level?: number
+  skill_burst_level?: number
+  limit_break?: { grade: number | null; core: number | null } | null
+  equipments?: Record<string, ExiaOverloadLine[]>
+}
+
+interface ExiaExport {
+  synchroLevel?: number
+  elements?: Record<string, ExiaCharacter[]>
+}
+
+export type ImportWarning =
+  | { kind: 'dropped-overload'; nameEn: string; slug: string; droppedTypes: string[] }
+  | { kind: 'skipped-character'; nameEn: string; reason: string }
+
+export interface ExiaImportResult {
+  drafts: NikkeDraft[]
+  warnings: ImportWarning[]
+}
+
+export const parseExiaExport = (raw: unknown): ExiaImportResult => {
+  const data = raw as ExiaExport | null
+  if (
+    !data ||
+    typeof data !== 'object' ||
+    typeof data.elements !== 'object' ||
+    data.elements === null
+  ) {
+    throw new Error('Not an ExiaInvasion export: missing "elements".')
+  }
+
+  const level = String(data.synchroLevel ?? '')
+  const drafts: NikkeDraft[] = []
+  const warnings: ImportWarning[] = []
+
+  for (const characters of Object.values(data.elements)) {
+    if (!Array.isArray(characters)) continue
+    for (const character of characters) {
+      const nameEn = character?.name_en
+      if (!nameEn) {
+        warnings.push({
+          kind: 'skipped-character',
+          nameEn: String(nameEn),
+          reason: 'missing name_en',
+        })
+        continue
+      }
+
+      const slug = resolveSlug(nameEn)
+      const { rows, droppedTypes } = aggregateOverload(character.equipments ?? {})
+      if (droppedTypes.length > 0) {
+        warnings.push({ kind: 'dropped-overload', nameEn, slug, droppedTypes })
+      }
+
+      drafts.push({
+        id: crypto.randomUUID(),
+        character_slug: slug,
+        level,
+        core_level: String(character.limit_break?.core ?? 0),
+        hp: '',
+        atk: '',
+        def_: '',
+        skill_levels: {
+          skill1: String(character.skill1_level ?? ''),
+          skill2: String(character.skill2_level ?? ''),
+          burst: String(character.skill_burst_level ?? ''),
+        },
+        overload_options: rows,
+        hasCube: false,
+        pve_cube: { name: '', level: '' },
+      })
+    }
+  }
+
+  return { drafts, warnings }
 }

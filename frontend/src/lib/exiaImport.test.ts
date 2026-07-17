@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { deriveSlug, resolveSlug, aggregateOverload } from './exiaImport'
+import { parseExiaExport } from './exiaImport'
 
 describe('deriveSlug', () => {
   it('kebab-cases a plain name', () => {
@@ -97,5 +98,121 @@ describe('aggregateOverload', () => {
 
   it('returns nothing for empty equipments', () => {
     expect(aggregateOverload({})).toEqual({ rows: [], droppedTypes: [] })
+  })
+})
+
+const sampleExport = () => ({
+  name: 'TESTER',
+  game_uid: 'SHOULD-NOT-BE-READ',
+  synchroLevel: 663,
+  cookie: 'game_login_game=SECRET; token=SECRET',
+  elements: {
+    Electronic: [
+      {
+        name_en: 'Maiden: Ice Rose',
+        skill1_level: 10,
+        skill2_level: 9,
+        skill_burst_level: 8,
+        item_level: 15,
+        item_rare: 'SR',
+        limit_break: { grade: 3, core: 2 },
+        equipments: {
+          '0': [
+            { function_type: 'IncElementDmg', function_value: 23.56, level: 11 },
+            { function_type: 'StatDef', function_value: 5, level: 1 },
+          ],
+          '1': [{ function_type: 'IncElementDmg', function_value: 19.35, level: 8 }],
+          '2': [],
+          '3': [],
+        },
+      },
+      {
+        name_en: 'Ada',
+        skill1_level: 1,
+        skill2_level: 1,
+        skill_burst_level: 1,
+        limit_break: { grade: 0, core: 0 },
+        equipments: { '0': [], '1': [], '2': [], '3': [] },
+      },
+    ],
+    Iron: [
+      {
+        name_en: 'Naga',
+        skill1_level: 5,
+        skill2_level: 5,
+        skill_burst_level: 5,
+        limit_break: { grade: null, core: null },
+        equipments: { '0': [], '1': [], '2': [], '3': [] },
+      },
+    ],
+    Utility: [],
+  },
+})
+
+describe('parseExiaExport', () => {
+  it('maps a character: slug, synchro level, skills, core, overload — leaving stats/cube manual', () => {
+    const { drafts } = parseExiaExport(sampleExport())
+    const maiden = drafts.find((d) => d.character_slug === 'maiden-ice-rose')!
+    expect(maiden.level).toBe('663')
+    expect(maiden.core_level).toBe('2')
+    expect(maiden.skill_levels).toEqual({ skill1: '10', skill2: '9', burst: '8' })
+    expect(maiden.overload_options).toEqual([
+      { id: expect.any(String), name: '우월코드 대미지 증가', value: '42.91' },
+    ])
+    expect(maiden.hp).toBe('')
+    expect(maiden.atk).toBe('')
+    expect(maiden.def_).toBe('')
+    expect(maiden.hasCube).toBe(false)
+    expect(maiden.pve_cube).toEqual({ name: '', level: '' })
+  })
+
+  it('applies the slug alias and keeps unencoded units by their derived slug', () => {
+    const { drafts } = parseExiaExport(sampleExport())
+    expect(drafts.map((d) => d.character_slug).sort()).toEqual([
+      'ada-wong',
+      'maiden-ice-rose',
+      'naga',
+    ])
+  })
+
+  it('maps a null limit_break to core_level 0', () => {
+    const { drafts } = parseExiaExport(sampleExport())
+    expect(drafts.find((d) => d.character_slug === 'naga')!.core_level).toBe('0')
+  })
+
+  it('reports dropped overload types as a warning', () => {
+    const { warnings } = parseExiaExport(sampleExport())
+    expect(warnings).toEqual([
+      {
+        kind: 'dropped-overload',
+        nameEn: 'Maiden: Ice Rose',
+        slug: 'maiden-ice-rose',
+        droppedTypes: ['StatDef'],
+      },
+    ])
+  })
+
+  it('never surfaces cookie or game_uid anywhere in the result', () => {
+    const result = parseExiaExport(sampleExport())
+    const serialized = JSON.stringify(result)
+    expect(serialized).not.toContain('SECRET')
+    expect(serialized).not.toContain('SHOULD-NOT-BE-READ')
+  })
+
+  it('throws on input that is not an export', () => {
+    expect(() => parseExiaExport(null)).toThrow(/elements/)
+    expect(() => parseExiaExport({})).toThrow(/elements/)
+    expect(() => parseExiaExport({ elements: 'nope' })).toThrow(/elements/)
+  })
+
+  it('skips a character with no name_en and reports it', () => {
+    const bad = sampleExport()
+    // @ts-expect-error deliberately malformed
+    bad.elements.Electronic.push({ skill1_level: 1 })
+    const { drafts, warnings } = parseExiaExport(bad)
+    expect(drafts).toHaveLength(3)
+    expect(warnings).toContainEqual(
+      expect.objectContaining({ kind: 'skipped-character' }),
+    )
   })
 })
