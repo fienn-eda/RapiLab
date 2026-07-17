@@ -10,6 +10,11 @@ tuple of slugs - not as repeatedly re-pickled spec objects.
 Small batches never spawn: batches below spawn_threshold run inline, so tiny
 rosters, tests, and API smoke requests pay zero pool cost. The executor is
 created lazily on the first big batch and reused until close().
+
+Script callers beware: Windows spawn re-imports the main module in every
+worker, so a plain script that reaches a SimPool at module top level forks
+bombs itself - keep the pool-reaching code under `if __name__ == "__main__":`
+(server/pytest contexts are unaffected; their main module isn't the caller).
 """
 import os
 from concurrent.futures import ProcessPoolExecutor

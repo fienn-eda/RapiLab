@@ -9,7 +9,19 @@
 
 - 마지막 갱신: 2026-07-17
 - 브랜치: `wip/scaffolding`
-- 테스트: **682 passed** (2026-07-17, **매니페스트 예외 8유닛 배치** — crown·helm·
+- 테스트: **692 passed** (2026-07-17, **ProcessPool 시뮬 병렬화 + Rapi 인코딩 완성** —
+  ① `SimPool`(지연 스폰 ProcessPoolExecutor, 워커 초기화 1회에 specs+boss 전달,
+  태스크는 슬러그 튜플, 배치 32건 미만은 인라인): `search_best_decks`(canonical
+  스코어링·순열 정련·prune 측정)·`allocate_decks`(+폴리시)의 맵 구간을 병렬화,
+  스왑 언덕오르기는 순차 유지(수락된 스왑이 다음 판단의 상태를 바꿈). 직렬 경로
+  비트 동일(패리티 테스트 3종). **실측: 로더블 50유닛 5덱 분배 97.25초**(16코어,
+  워커 15) — 42유닛 282.17초 베이스라인 대비 더 큰 로스터로 2.9×↑, **5덱 전부
+  생성**(leftover 25, 합계 31.0B, Electric 보스). 1분 예산 잔여 초과분은 순차
+  스왑 단계(≤45초 캡)가 지배 — 후속 레버는 스왑 후보 배치평가 또는 스왑 예산
+  축소(품질 트레이드오프, Fienn 판단). ② rapi-red-hood Attachable Projectiles
+  배틀스타트 상시 self 2건(PE Damage ▲100.6% + Electric 한정 원소우위 0.1)
+  인코딩, E2E로 Electric 보스에서 버스트 딜 정확히 ×1.100 확인. was 684/682.)
+- 이전: **682 passed** (2026-07-17, **매니페스트 예외 8유닛 배치** — crown·helm·
   liter·miranda·moran·soline-frost-ticket·volume·zwei에 dotgg-소스
   `SKILL_VALUE_MANIFESTS` 추가(전 유닛 픽스처=dotgg 네이티브 슬롯 정확 일치,
   drop_tokens 0건) + 배치 테스트 파일 픽스처 별칭 + `KNOWN_MANIFEST_EXCEPTIONS`
@@ -296,7 +308,15 @@
   실측으로 확인됨 → **처리량 레버 = 시뮬 병렬화(ProcessPool)로 결정**(Fienn,
   2026-07-17 — 타이어 캡 축소는 탐색 품질을 깎아 기각, `decisions.md` 참고).
   3덱 원인이던 로더블 B1 부족(4명)은 매니페스트 예외 배치로 해소(B1 10명).
-  **다음:** ProcessPool 병렬화 → 프론트 배선(결과 UI에 다중 덱 표시) 순.
+- **ProcessPool 병렬화 완료 (2026-07-17):** `app/sim_pool.py`의 `SimPool` —
+  지연 스폰(배치 32건 미만 인라인, 소형 요청/테스트 무비용), 워커 초기화 1회에
+  로스터 specs+boss 전달(태스크 = 슬러그 튜플), `search_best_decks`/
+  `prune_candidate_pool`/`allocate_decks` 폴리시의 맵 구간 소비, API 두
+  엔드포인트 `workers="auto"`. 직렬 경로(기본값)는 비트 동일 + SimPool 미생성
+  (테스트 스텁 보존). **실측 50유닛 97.25초, 5덱**(합계 31.0B) — 상세는 위 요약.
+  플랜: `docs/superpowers/plans/2026-07-17-processpool-parallelism.md`.
+  **다음:** 프론트 배선(결과 UI에 다중 덱 표시); 97초→1분 미만이 필요하면
+  스왑 단계 배치평가/예산 축소는 Fienn 판단.
 
 ### Phase 6 — 유저 데이터 입력 UI 🔄
 - React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
