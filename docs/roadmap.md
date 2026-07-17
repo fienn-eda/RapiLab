@@ -342,8 +342,9 @@
   50/57, 로더블 B1 4→10명.** 잔여: 픽스처 재배열 4유닛(anis-star·asuka·privaty·
   neon-vision-eye)은 픽스처 검증 후 재작성 필요; marciana-marine-study·
   ark-ranger-black·prika·cinderella-crystal-wave(dotgg 부재, 2026-05 갱신
-  중단)는 `scripts/collect_dotgg_weapons.py --stub`으로 수동 스텁 생성됨 —
-  Fienn이 `_todo` 필드(무기 스탯 3~5개)를 채우면 로더블.
+  중단)는 `scripts/collect_dotgg_weapons.py --stub` 수동 스텁에 Fienn이
+  무기 스탯 기입 완료(2026-07-17) — **API 로더블 53/57** (잔여 4 = 픽스처
+  재배열 유닛).
 - dotgg 무기 스탯 수집 자동화 ✅ (2026-07-17): `scripts/collect_dotgg_weapons.py`
   — lootandwaifus 유닛 대비 누락 dotgg 파일 스캔·수집(슬러그→이름 정확 매칭),
   dotgg 부재 유닛은 `--stub`으로 수동 입력 템플릿. collect-nikke 워크플로에 편입.
