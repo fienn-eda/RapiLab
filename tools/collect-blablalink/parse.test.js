@@ -60,3 +60,20 @@ test('parseCube reads the Battle-loadout cube, null when none equipped', () => {
 test('parseSkills reads level-1 skills for an uninvested unit', () => {
   assert.deepEqual(parseSkills(doc('neon-blue-ocean')), { skill1: 1, skill2: 1, burst: 1 })
 })
+
+// Blanc is captured with the current per-tab pluck (stat rows, overload, skills, and
+// cube each plucked from their own tab and concatenated) — the format collect.js now
+// produces. It also exercises dropped labels (Hit Rate / DEF) and distinct skill levels.
+test('parses a per-tab-plucked capture (Blanc): stats, dropped overloads, skills, no cube', () => {
+  const d = doc('blanc')
+  assert.deepEqual(parseMainStats(d), {
+    actual: { hp: 10006777, atk: 240903, def: 67080 },
+    raid400: { hp: 3374236, atk: 80115, def: 22859 },
+  })
+  assert.deepEqual(parseOverload(d), [
+    { name: '최대 장탄 수 증가', value: 137.86 },
+    { name: '크리티컬 확률 증가', value: 5.71 },
+  ])
+  assert.deepEqual(parseSkills(d), { skill1: 4, skill2: 7, burst: 9 })
+  assert.equal(parseCube(d), null)
+})

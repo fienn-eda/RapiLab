@@ -73,24 +73,55 @@ const clickTab = async (page, name) => {
   return false
 }
 
-// Smallest container holding the parser anchors. Extracting it drops the page chrome
-// and the account panel (name / game_uid / token live outside this subtree). Anchors
-// are present on every unit including uninvested ones — an uninvested unit has no
-// "Equipment Effects" panel, so anchor on the stat panel (LV + ATK) plus a skill row.
-const extractDetail = (page) =>
+// Pluck the parseable surfaces present on the CURRENT tab as small HTML fragments. The
+// nikke page is a responsive Vue view whose tabs are v-if: the stat panel is a separate
+// DOM branch from the tab content, and each of overload / skills / cube renders only on
+// its own tab. So there is no single container to grab — pluck each piece by its local
+// anchor. The account panel (name / game_uid / token) is a different branch, never
+// matched here, so the plucked fragments carry no identifiers.
+const pluckSurfaces = (page) =>
   page.evaluate(() => {
-    const has = (t) => /LV\s*\d/.test(t) && /\bATK\b/.test(t) && /min/.test(t)
-    let best = null
-    for (const el of document.querySelectorAll('div')) {
-      if (has(el.textContent || '')) {
-        if (!best || el.outerHTML.length < best.outerHTML.length) best = el
+    const frags = []
+    // Stat rows: the two-<p> rows whose value cell is "<actual> <signed delta>" (the
+    // main panel). Pluck each row directly — the level element is not reliably nested
+    // with the rows in the responsive layout.
+    for (const d of document.querySelectorAll('div')) {
+      const ps = [...d.children].filter((c) => c.tagName === 'P')
+      if (ps.length !== 2) continue
+      const label = (ps[0].textContent || '').trim().toUpperCase()
+      if (!['HP', 'ATK', 'DEF'].includes(label)) continue
+      if (/^[\d,]+\s+[+-][\d,]+$/.test((ps[1].textContent || '').trim())) frags.push(d.outerHTML)
+    }
+    // Overload box (Equipment tab): the div whose header child is 'Equipment Effects'.
+    for (const d of document.querySelectorAll('div')) {
+      if ([...d.children].some((c) => (c.textContent || '').trim() === 'Equipment Effects')) {
+        frags.push(d.outerHTML)
+        break
       }
     }
-    return best ? best.outerHTML : null
+    // Skill rows (Skill tab).
+    for (const r of document.querySelectorAll('div')) {
+      if (
+        (r.className || '').toString().includes('w-40') &&
+        /\d+min/.test((r.textContent || '').replace(/\s+/g, ''))
+      ) {
+        frags.push(r.outerHTML)
+      }
+    }
+    // Cube panel (Cube tab): the compact 'Battle…Arena' div.
+    let cube = null
+    for (const d of document.querySelectorAll('div')) {
+      const t = (d.textContent || '').trim()
+      if (/^Battle/.test(t) && /Arena/.test(t) && t.length < 300) {
+        if (!cube || t.length < (cube.textContent || '').length) cube = d
+      }
+    }
+    if (cube) frags.push(cube.outerHTML)
+    return frags
   })
 
-// Safety net: even though extraction drops the account panel, never let a captured
-// fragment carry an account identifier. Pass ids when the DOM might inline them.
+// Safety net: never let a captured fragment carry an account identifier. Pluck already
+// avoids the account panel; pass ids to also scrub any inlined value.
 const scrub = (html, ids = {}) => {
   let out = html
   if (ids.gameUid) out = out.split(ids.gameUid).join('00000000')
@@ -112,9 +143,24 @@ const captureUnit = async (page, resourceId, ids = {}) => {
   await waitStableLevel(page)
   const level = await setLevel400(page)
   if (level !== 400) throw new Error(`level not 400 after stepping (got ${level})`)
-  const detail = await extractDetail(page)
-  if (!detail) throw new Error('detail container not found')
-  const html = scrub(detail, ids)
+  // Tabs are v-if, so each parsed surface lives only on its own tab: visit Equipment
+  // (overload), Skill, and Cube, accumulating the plucked fragments (the stat panel
+  // repeats on every tab — dedupe it).
+  const seen = new Set()
+  const frags = []
+  for (const tab of ['Equipment', 'Skill', 'Cube']) {
+    await clickTab(page, tab)
+    await page.waitForTimeout(500)
+    for (const f of await pluckSurfaces(page)) {
+      if (!seen.has(f)) {
+        seen.add(f)
+        frags.push(f)
+      }
+    }
+  }
+  const body = frags.join('\n')
+  if (!/>ATK</.test(body)) throw new Error('stat panel not captured')
+  const html = scrub(body, ids)
   return `<!DOCTYPE html>\n<html><head><meta charset="utf-8"></head><body>\n${html}\n</body></html>\n`
 }
 
@@ -124,7 +170,7 @@ module.exports = {
   readLevel,
   setLevel400,
   clickTab,
-  extractDetail,
+  pluckSurfaces,
   scrub,
   captureUnit,
 }

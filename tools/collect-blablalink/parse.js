@@ -7,28 +7,24 @@ const num = (s) => parseInt(String(s).replace(/[^0-9-]/g, ''), 10)
 // Stat panel: climb from the LV<n> leaf to the ancestor holding HP+ATK+DEF (< 400
 // chars). Each stat row is a div with two <p>: label and "<actual> <-delta>".
 // raid400 = actual + delta (delta is negative when the real level is above 400).
+// The main stat rows are the only two-<p> rows whose value cell is "<actual> <signed
+// delta to the slider level>" (e.g. "418862 -275319" or "5097 +89718"): a negative
+// delta when the real level is above 400 (invested unit), positive when stepped up from
+// a level-1 unit. Equipment/cube stat rows have a bare number and no delta, so the
+// delta pattern selects the main panel without depending on the level element's
+// position (the responsive layout does not always nest LV with the stat rows).
 const parseMainStats = (doc) => {
-  const lv = [...doc.querySelectorAll('*')].find(
-    (e) => e.children.length === 0 && /^LV\s*\d+/i.test((e.textContent || '').trim()),
-  )
-  let panel = lv
-  for (let i = 0; i < 10 && panel && panel.parentElement; i++) {
-    panel = panel.parentElement
-    const t = panel.textContent || ''
-    if (/\bHP\b/.test(t) && /\bATK\b/.test(t) && /\bDEF\b/.test(t) && t.length < 400) break
-  }
   const out = { actual: {}, raid400: {} }
   const key = { HP: 'hp', ATK: 'atk', DEF: 'def' }
-  for (const row of panel.querySelectorAll('div')) {
+  for (const row of doc.querySelectorAll('div')) {
     const ps = [...row.children].filter((c) => c.tagName === 'P')
     if (ps.length !== 2) continue
     const k = key[(ps[0].textContent || '').trim().toUpperCase()]
-    if (!k) continue
-    const parts = (ps[1].textContent || '').trim().split(/\s+/)
-    const actual = num(parts[0])
-    // delta to the slider level: "-N" when the real level is above 400 (invested unit),
-    // "+N" when below (uninvested unit stepped up). num() keeps the sign.
-    const delta = parts[1] && /^[+-][\d,]+$/.test(parts[1]) ? num(parts[1]) : 0
+    if (!k || k in out.actual) continue
+    const m = (ps[1].textContent || '').trim().match(/^([\d,]+)\s+([+-][\d,]+)$/)
+    if (!m) continue
+    const actual = num(m[1])
+    const delta = num(m[2])
     out.actual[k] = actual
     out.raid400[k] = actual + delta
   }
