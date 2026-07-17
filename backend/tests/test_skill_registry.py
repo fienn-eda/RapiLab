@@ -196,6 +196,26 @@ def test_get_per_shot_rules_returns_health_up_for_miranda():
     assert all(r.trigger == "per_shot" for r in rules)
 
 
+def test_build_nikke_rules_returns_flawless_glass_burst_percent_for_cinderella():
+    # Regression: _build_cinderella once passed sv["flawless_glass"] (the
+    # already-unwrapped slot dict) to build_flawless_glass_rules, which itself
+    # indexes ["flawless_glass"] again - a KeyError only a real sv-shaped dict
+    # (not a hand-picked unit test fixture) surfaces.
+    skill_values = {
+        "flawless_glass": {
+            "description_value_01": "2.71", "description_value_02": "10",
+            "description_value_03": "100", "description_value_04": "136.6",
+        },
+        "glass_slippers": {
+            "description_value_01": "1365.92", "description_value_02": "10", "description_value_03": "28.9",
+        },
+        "caster_atk": 60_000, "caster_def": 3_000, "caster_max_hp": 1_000_000,
+    }
+    rules, burst_percent = build_nikke_rules("cinderella", skill_values)
+    assert len(rules) == 1 and rules[0].trigger == "own_burst_activate"
+    assert burst_percent == 1365.92
+
+
 def test_takina_event_rules_registered():
     rules, burst_percent = build_nikke_rules("takina-inoue", TAKINA_SKILL_VALUES)
     assert burst_percent is None
