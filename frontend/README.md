@@ -115,6 +115,64 @@ Validation failures (malformed body, out-of-range field, or no feasible deck in
 the *usable* roster after exclusions) return FastAPI's default `422` error shape;
 the no-feasible-deck detail names the excluded slugs.
 
+### `POST /api/recommend-raid` (multi-deck allocation — solo raid)
+
+Splits the roster into up to `num_decks` **disjoint** decks against one boss and
+maximizes their summed damage. Semantically different from `/api/recommend`:
+that endpoint returns ranked *alternatives* for ONE deck; this one returns a
+*partition* — the player fields ALL returned decks in one raid, and no Nikke
+appears in two of them. The UI must not present these as "top N candidates".
+
+Request body: same shape as `/api/recommend` (`roster` + `boss`), plus:
+```jsonc
+{
+  "num_decks": number   // int 1–5, default 5. (top_n is inherited by the
+                        // backend model but unused — omit it.)
+}
+```
+
+Response `200`:
+```jsonc
+{
+  "decks": [ /* same DeckRecommendation shape as /api/recommend */ ],
+                                     // one entry per allocated deck, in
+                                     // allocation order (may be FEWER than
+                                     // num_decks when the roster can't fill
+                                     // more feasible decks)
+  "combined_total_damage": number,   // sum over decks
+  "excluded_slugs": string[],        // same meaning as /api/recommend
+  "leftover_slugs": string[]         // usable units the allocation left out
+                                     // (sorted; shown so the player knows who
+                                     // sat on the bench)
+}
+```
+`422` mirrors `/api/recommend` (no feasible deck at all in the usable roster).
+
+**Latency warning:** with a realistic full roster this endpoint takes **~1–2
+minutes** (the backend runs thousands of 180 s simulations; it is already
+process-pool parallelized). The client must NOT impose a request timeout, must
+show a persistent in-progress state with copy telling the user the wait is
+expected and roughly how long, and must disable re-submission while a run is in
+flight. The mock client should simulate a short (~1 s) delay so dev flows stay
+snappy.
+
+### UI scope — raid mode (current task)
+
+Extend the recommendation flow with a mode switch: **single deck** (existing
+`/api/recommend` flow, unchanged) vs **raid allocation** (`/api/recommend-raid`).
+
+- Mode switch + `num_decks` selector (1–5, default 5) live in the recommend
+  panel; the boss profile fields are shared between both modes.
+- Raid results render the decks as "Deck 1..N" (allocation order — they are
+  NOT ranked alternatives), each with the same per-deck breakdown the single
+  mode shows (total / burst / normal attack, slugs in burst-role order), plus
+  the combined total prominently, plus leftover and excluded slug lists.
+- Follow the established structure: types in `src/types/recommend.ts`, the
+  live/mock switch stays confined to `src/api/` (one module decides, callers
+  never know which is active — mirror how `recommend.ts` does it), state in a
+  hook next to `useRecommend`, display components next to `DeckResults`.
+  Reuse/extract shared pieces rather than duplicating the single-deck ones.
+
 ## Dev commands
 
 Once the project is initialized (`npm create vite@latest . -- --template react-ts`
