@@ -2,8 +2,9 @@
 behind frontend/README.md's contract (plus excluded_slugs, per the roster
 assembly design spec). Run from backend/: uvicorn app.api:app --reload
 
-Known limitation: find_best_decks is exhaustive; a 30+ unit usable roster
-makes this endpoint slow. Deliberately not optimized here (flagged to Fienn).
+Both endpoints search via the budget-aware search_best_decks (canonical-order
+scoring + top-K permutation refinement; large rosters get a candidate cut) -
+see docs/superpowers/specs/2026-07-17-five-deck-allocation-design.md.
 """
 from typing import Literal
 
