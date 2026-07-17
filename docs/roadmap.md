@@ -462,10 +462,11 @@
 - [x] **ein weapon 스탯** — 이미 `data/dotgg/char_ein.json`에 존재했음(SR·장탄6·
       재장전2.0s·차지1.0s·차지댐250%). "부재" 판정은 워크트리에 gitignore된 데이터가
       복사되지 않아 생긴 오진이었음 — 아래 함정 항목 참고.
-- [ ] **워크트리 데이터 동기화 함정** — `data/dotgg/`·`data/lootandwaifus/`가 gitignore
-      대상이라 새 워크트리엔 안 따라온다. 워크트리에서 로더블/커버리지를 측정하면
-      **거짓 음성**이 나온다. 측정 전 메인에서 `cp -n` 동기화할 것. (2026-07-17, Fienn이
-      ein 오진을 잡아내며 발견. `docs/insights.md`에도 기록.)
+- [x] **워크트리 데이터 동기화 함정** — `data/dotgg/`·`data/lootandwaifus/`가 gitignore
+      대상이라 새 워크트리엔 안 따라오고, 거기서 로더블/커버리지를 측정하면 **거짓 음성**이
+      나온다(2026-07-17, Fienn이 ein 오진을 잡아내며 발견). **`scripts/sync_worktree_data.py`로
+      자동화 완료** — 워크트리 작업 시작 시 확인 없이 바로 실행할 것(Fienn 지시).
+      메인에선 no-op, 없는 파일만 복사, 재실행 안전. `docs/insights.md`에도 기록.
 
 ### 정리/보강
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
