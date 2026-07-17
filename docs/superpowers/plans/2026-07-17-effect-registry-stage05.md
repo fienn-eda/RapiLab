@@ -349,3 +349,11 @@ Append to the bottom of this plan file:
 git add docs/roadmap.md docs/superpowers/plans/2026-07-17-effect-registry-stage05.md
 git commit -m "docs: record Stage 0.5 epoch-memo results"
 ```
+
+---
+
+## Completion notes
+
+- Measured: evaluate_deck 125.07 ms/sim (Stage 0 was 133.66 ms; target <=50 ms missed), 2026-07-17.
+- Suite: 659 passed.
+- Profile (top 15 lines): `_stat_bundle` (185485 calls, 0.478 s cumulative), `_damage_instance` (83341 calls, 0.457 s), `state_epoch` (185485 calls, 0.161 s). Remaining time distributed across import, module init, and utility functions.
