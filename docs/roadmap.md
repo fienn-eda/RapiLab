@@ -492,6 +492,22 @@
       자동화 완료** — 워크트리 작업 시작 시 확인 없이 바로 실행할 것(Fienn 지시).
       메인에선 no-op, 없는 파일만 복사, 재실행 안전. `docs/insights.md`에도 기록.
 
+### 통합 대기 — `worktree-plans-frontend3-encoding` → `wip/scaffolding` (2026-07-17)
+- [ ] **머지 필요, 브랜치가 갈라져 있음.** 이 워크트리에 커밋 8개(Ein·Raven·Sakura
+      인코딩 + `scheduled_nukes`/`shot_times` 확장 + 워크트리 동기화 스크립트·훅 +
+      decisions 기록). 그 사이 `wip/scaffolding`엔 **dotgg weapon 스탯 수집 작업**이
+      들어옴(`scripts/collect_dotgg_weapons.py` + 수동 스텁 경로 + 셧다운 대응 결정) —
+      이 워크트리가 뒤늦게 발견한 18개 dotgg 파일의 출처가 그것.
+- **충돌 예상: `docs/decisions.md` 1건뿐**(`insights.md`/`roadmap.md`는 자동 병합).
+      양쪽이 로그 맨 위에 항목을 삽입해서 생긴 위치 충돌 — 내용 충돌 아님, 양쪽 항목을
+      모두 살리면 됨.
+- **머지 후 반드시 대조할 것:** 양쪽 로드맵이 서로 다른 로더블 수치를 주장한다
+      (이쪽 **56/60**, 저쪽 **53/57**). 자동 병합되면 상충하는 두 숫자가 문서에 함께
+      남을 수 있음. 머지 후 실측으로 재확인하고 하나로 정리할 것:
+      `python3 -c` 로 `ENCODED_SLUGS` × `load_nikke_spec` 카운트(이 파일 상단 요약 참고).
+- **훅은 머지되어야 효력이 생긴다** — `.claude/settings.json`의 SessionStart 훅은
+      추적 파일이라 머지 후에야 새 워크트리에 전파된다.
+
 ### 정리/보강
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
       (docs-keeper 지적)
