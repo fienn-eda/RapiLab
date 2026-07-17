@@ -300,8 +300,13 @@
   키로 소스 간 슬러그 불일치 브리지(ada-wong·chisato·jill·takina). **API 로더블
   42/57.** 잔여: 예외 8유닛의 dotgg-소스 매니페스트 배치(crown·liter·zwei 등,
   weapon 파일은 이미 수집됨), 픽스처 재배열 4유닛(anis-star·asuka·privaty·
-  neon-vision-eye)은 픽스처 검증 후 재작성 필요, marciana(스킨판 weapon 스탯
-  없음)·ark-ranger-black·prika(dotgg 부재)는 보류.
+  neon-vision-eye)은 픽스처 검증 후 재작성 필요, marciana-marine-study·
+  ark-ranger-black·prika·cinderella-crystal-wave(dotgg 부재, 2026-05 갱신
+  중단)는 `scripts/collect_dotgg_weapons.py --stub`으로 수동 스텁 생성됨 —
+  Fienn이 `_todo` 필드(무기 스탯 3~5개)를 채우면 로더블.
+- dotgg 무기 스탯 수집 자동화 ✅ (2026-07-17): `scripts/collect_dotgg_weapons.py`
+  — lootandwaifus 유닛 대비 누락 dotgg 파일 스캔·수집(슬러그→이름 정확 매칭),
+  dotgg 부재 유닛은 `--stub`으로 수동 입력 템플릿. collect-nikke 워크플로에 편입.
 - ShiftyPad 자동화는 Phase 7.
 
 ### Phase 7 — 자동화 ⬜ (후속)
