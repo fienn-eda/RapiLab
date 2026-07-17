@@ -396,3 +396,10 @@ At the bottom of this file add:
 git add docs/roadmap.md docs/superpowers/plans/2026-07-17-effect-registry-performance.md
 git commit -m "docs: record Stage 0 perf-pass results"
 ```
+
+---
+
+## Completion notes
+
+- Measured: evaluate_deck 133.66 ms/sim (was 2410 ms baseline; spec target <=50 ms missed — residual is flat Python call overhead, no single hotspot; further optimization decision pending with Fienn), 2026-07-17.
+- Suite: 656 passed.
