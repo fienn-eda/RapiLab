@@ -231,11 +231,12 @@ def test_prune_keeps_synergy_partners_together(monkeypatch):
     roster += [FakeSpec("mint", 2), FakeSpec("prika", 2)]
 
     def scorer(ordered_deck, boss):
-        slugs = {u.slug for u in ordered_deck}
-        # the pair measured together is dominant; mint alone is weakest
-        if {"mint", "prika"} <= slugs:
+        slugs = [u.slug for u in ordered_deck]
+        # Prika must burst before Mint for Encore to fire - the pair only
+        # measures its synergy when prika precedes mint in burst order.
+        if "prika" in slugs and "mint" in slugs and slugs.index("prika") < slugs.index("mint"):
             return {"total_damage": 10_000.0, "damage_log": []}
-        if "mint" in slugs:
+        if "mint" in set(slugs):
             return {"total_damage": 1.0, "damage_log": []}
         return {"total_damage": 100.0, "damage_log": []}
 

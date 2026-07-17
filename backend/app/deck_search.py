@@ -143,16 +143,17 @@ def _reference_deck(by_tier, b1):
     return [b1, by_tier[2][0], *by_tier[3][:3]]
 
 
-def _measure_against(reference, unit, boss):
+def _measure_against(reference, unit, boss, baseline):
     # Swap the candidate into its tier slot (B3 replaces the reference's
-    # weakest B3, the last one) and score the whole deck.
+    # weakest B3, the last one) and score the marginal change over the
+    # reference's baseline. A unit already in the reference leaves the deck
+    # unchanged, so its marginal contribution is 0.0 with no re-simulation.
+    if unit.slug in {u.slug for u in reference}:
+        return 0.0
     slot = {1: 0, 2: 1, 3: 4}[unit.burst_tier]
     deck = list(reference)
-    if unit.slug in {u.slug for u in deck}:
-        deck_score = evaluate_deck(deck, boss)["total_damage"]
-        return deck_score
     deck[slot] = unit
-    return evaluate_deck(deck, boss)["total_damage"]
+    return evaluate_deck(deck, boss)["total_damage"] - baseline
 
 
 def prune_candidate_pool(roster, boss: BossProfile):
@@ -169,8 +170,9 @@ def prune_candidate_pool(roster, boss: BossProfile):
     scores = {}
     for reference_b1 in _reference_b1_variants(by_tier, boss):
         reference = _reference_deck(by_tier, reference_b1)
+        baseline = evaluate_deck(reference, boss)["total_damage"]
         for unit in roster:
-            score = _measure_against(reference, unit, boss)
+            score = _measure_against(reference, unit, boss, baseline)
             scores[unit.slug] = max(scores.get(unit.slug, 0.0), score)
 
     # Synergy sets: measured as a pair in a (1,2,2) shell; both members share it.
@@ -179,8 +181,15 @@ def prune_candidate_pool(roster, boss: BossProfile):
     for pair in SYNERGY_SETS:
         if pair <= slugs.keys():
             members = [slugs[s] for s in sorted(pair)]
-            deck = [shell_b1, *members, *shell_b3]
-            pair_score = evaluate_deck(deck, boss)["total_damage"]
+            # burst_cycle fires the LEFTMOST eligible same-tier unit, and
+            # order-dependent synergies exist (Prika must burst before Mint
+            # for Encore to ever fire) - measure both orders, keep the max.
+            # Shells assume a two-B2 pair; a future cross-tier set would need
+            # a different shell shape.
+            pair_score = max(
+                evaluate_deck([shell_b1, *ordering, *shell_b3], boss)["total_damage"]
+                for ordering in (members, members[::-1])
+            )
             for member in members:
                 scores[member.slug] = max(scores[member.slug], pair_score)
 
@@ -207,11 +216,14 @@ def prune_candidate_pool(roster, boss: BossProfile):
 def _reference_b1_variants(by_tier, boss):
     # Pass 1: prior-seeded B1. Pass 2: the B1 whose swap-in measured best
     # (usually the CDR holder - shorter cycles change everyone's value).
+    # Both candidates are scored against the same reference's baseline, so
+    # the max is a fair comparison (it wouldn't be if baselines differed).
     first = by_tier[1][0]
     yield first
     reference = _reference_deck(by_tier, first)
+    baseline = evaluate_deck(reference, boss)["total_damage"]
     best_b1 = max(by_tier[1],
-                  key=lambda u: _measure_against(reference, u, boss))
+                  key=lambda u: _measure_against(reference, u, boss, baseline))
     if best_b1.slug != first.slug:
         yield best_b1
 

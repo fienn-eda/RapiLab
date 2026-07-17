@@ -839,3 +839,11 @@ wall-clock from Step 5, note the Prika Encore CD encode under "Phase 5 선행
 git add backend/app/api.py backend/tests/test_api_recommend.py docs/roadmap.md
 git commit -m "feat: POST /api/recommend-raid five-deck allocation endpoint; recommend switches to budget-aware search"
 ```
+
+## Amendments (final review, 2026-07-17)
+
+- Synergy-pair shells are measured over BOTH intra-pair orderings (max) - the
+  plan's alphabetical shell never let Prika burst before Mint, so Encore never
+  fired in the measurement (Critical, reviewer-found).
+- Marginal scores subtract each reference pass's baseline (computed once per
+  pass); reference members score 0.0 without re-simulating.
