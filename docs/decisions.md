@@ -5,6 +5,13 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## dotgg's NIKKE data feed stopped updating (~2026-05); weapon stats for units after the cutoff are backfilled with manual stub files, not scraped
+- Date: 2026-07-17
+- Context: dotgg (`api.dotgg.gg`) stopped updating its NIKKE data around 2026-05 (confirmed by diffing its live character list against all 190 live characters). Units released after that cutoff (`ark-ranger-black`, `cinderella-crystal-wave`, `marciana-marine-study`, `prika`) have no dotgg source for weapon stats (`chargeTime` etc.) — lootandwaifus, the primary data source, only reports weapon TYPE, not the numeric stats the engine's weapon-stats loader needs.
+- Decision: Fill dotgg-less units' weapon stats via hand-authored files, not a new scraper. `data/dotgg/char_<slug>.json` is created in dotgg's own schema, marked `"source": "manual"`. `scripts/collect_dotgg_weapons.py --stub <slug>` generates the template with a `_todo` list of the fields Fienn must fill in (5 fields for charge weapons, 3 for magazine weapons); Fienn deletes `_todo` once done.
+- Why: New units land at roughly 1-2/month, so the manual burden is small. The alternative — scraping a third source (e.g. namuwiki) — was rejected as YAGNI: building and maintaining a parser costs more than occasionally hand-typing a handful of numbers.
+- Consequences: Zero engine/loader changes — the existing weapon-stats field-presence check (`backend/app/user_roster.py::_weapon_stats`) is reused as-is (see the insight below on why unfilled fields must be omitted, not blanked). The collect-nikke workflow gains one more step after data collection (run the stub script, fill it in). If manual entries accumulate to the point of being a real burden, revisit and design a scraping source then.
+
 ## Phase 5 five-deck allocation: real allocation is 282.17s (3 decks, 5.18B) against a seconds-to-a-minute budget — throughput lever decision pending
 - Date: 2026-07-17
 - Context: First full-roster measurement of `allocate_decks` against all 42 loadable units, taken after the swap-budget fix (below) and the Cinderella double-unwrap regression fix landed.
