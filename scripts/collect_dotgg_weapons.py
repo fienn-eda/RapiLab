@@ -88,3 +88,106 @@ def make_stub(lw_data, wanted_url):
         stub["chargeDamage"] = "0%"
     stub["_todo"] = todo
     return stub
+
+
+def collect(lw_dir, dotgg_dir, manifests, fetch_list, fetch_char,
+            stub_slugs=(), dry_run=False):
+    """Fetch dotgg weapon-stat files for every lootandwaifus-collected unit
+    the roster loader can't currently find, writing them under dotgg's own
+    slug (the loader matches on the url field, not the filename). Per-unit
+    failures are recorded and don't stop the run."""
+    results = {"fetched": [], "alias_needed": [], "not_on_dotgg": [],
+               "stubbed": [], "errors": []}
+    lw_files = {p.stem.removeprefix("char_"): p
+                for p in sorted(Path(lw_dir).glob("char_*.json"))}
+    wanted = wanted_dotgg_urls(lw_files, manifests)
+    existing = existing_dotgg_urls(dotgg_dir)
+    missing = {slug: url for slug, url in wanted.items() if url not in existing}
+    if not missing:
+        return results
+    try:
+        characters = fetch_list()
+    except Exception as exc:
+        results["errors"].append(("<character list>", str(exc)))
+        return results
+    for lw_slug, wanted_url in sorted(missing.items()):
+        lw_data = json.loads(lw_files[lw_slug].read_text(encoding="utf-8"))
+        entry, how = resolve_dotgg_entry(wanted_url, lw_data.get("name"), characters)
+        if entry is None:
+            results["not_on_dotgg"].append(lw_slug)
+            if lw_slug in stub_slugs and not dry_run:
+                stub_path = Path(dotgg_dir) / f"char_{wanted_url}.json"
+                stub_path.write_text(
+                    json.dumps(make_stub(lw_data, wanted_url),
+                               ensure_ascii=False, indent=1),
+                    encoding="utf-8")
+                results["stubbed"].append(lw_slug)
+            continue
+        if entry["url"] != wanted_url:
+            # The loader looks up wanted_url; this unit's manifest (current
+            # or future) needs a dotgg_slug alias pointing at entry["url"].
+            results["alias_needed"].append((lw_slug, entry["url"]))
+            if entry["url"] in existing:
+                continue
+        if not dry_run:
+            try:
+                data = fetch_char(entry["url"])
+            except Exception as exc:
+                results["errors"].append((lw_slug, str(exc)))
+                continue
+            out_path = Path(dotgg_dir) / f"char_{entry['url']}.json"
+            out_path.write_text(json.dumps(data, ensure_ascii=False),
+                                encoding="utf-8")
+        results["fetched"].append((lw_slug, entry["url"], how))
+    return results
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description="Fetch missing dotgg weapon-stat files for "
+                    "lootandwaifus-collected units.")
+    parser.add_argument("--dry-run", action="store_true",
+                        help="report what would be fetched/stubbed, write nothing")
+    parser.add_argument("--stub", nargs="+", default=(), metavar="SLUG",
+                        help="write a manual-entry template for these "
+                             "lootandwaifus slugs when dotgg doesn't have them")
+    args = parser.parse_args(argv)
+
+    from app.dotgg_client import fetch_character, fetch_character_list
+    from app.skill_rules.registry import ENCODED_SLUGS, get_skill_value_manifest
+
+    manifests = {}
+    for slug in sorted(ENCODED_SLUGS):
+        manifest = get_skill_value_manifest(slug)
+        if manifest is not None:
+            manifests[slug] = manifest
+
+    lw_slugs = {p.stem.removeprefix("char_")
+                for p in LW_DIR.glob("char_*.json")}
+    unknown = sorted(set(args.stub) - lw_slugs)
+    if unknown:
+        parser.error(f"--stub slugs without a lootandwaifus file: {unknown}")
+
+    results = collect(LW_DIR, DOTGG_DIR, manifests,
+                      fetch_character_list, fetch_character,
+                      stub_slugs=tuple(args.stub), dry_run=args.dry_run)
+
+    label = "would fetch" if args.dry_run else "fetched"
+    for lw_slug, url, how in results["fetched"]:
+        print(f"{label}: {lw_slug} -> char_{url}.json (matched by {how})")
+    for lw_slug, url in results["alias_needed"]:
+        print(f"ALIAS NEEDED: {lw_slug} -> manifest needs dotgg_slug: \"{url}\"")
+    for lw_slug in results["not_on_dotgg"]:
+        hint = "" if lw_slug in results["stubbed"] else f" (--stub {lw_slug} for a manual template)"
+        print(f"NOT ON DOTGG: {lw_slug}{hint}")
+    for lw_slug in results["stubbed"]:
+        print(f"stubbed: {lw_slug} - fill its _todo fields, then delete _todo")
+    for lw_slug, message in results["errors"]:
+        print(f"ERROR: {lw_slug}: {message}")
+    if not any(results.values()):
+        print("nothing missing - every lootandwaifus unit has dotgg weapon stats")
+    return 1 if results["errors"] else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
