@@ -39,11 +39,23 @@
   ① 슬러그 일치 → ② 이름 일치(대소문자 무시) → ③ 실패 시 "dotgg에 없음"
   으로 보고.
 - 수집: 기존 `dotgg_client.fetch_character` 재사용(디스크 캐시 포함),
-  `data/dotgg/char_<lootandwaifus슬러그>.json`으로 저장 — 로더의 기본
-  조회 경로(`data_slug` 기본값)와 일치하므로 manifest 수정이 필요 없다.
-- `--stub`: dotgg에 없는 유닛에 대해 무기 필드가 빈 수동 입력 템플릿
-  (`"source": "manual"` 포함)을 생성한다. 값이 비어 있는 스텁은 로더의
-  `_weapon_stats` 필드 검사에 걸려 자동으로 제외 상태가 유지된다.
+  `data/dotgg/char_<dotgg슬러그>.json`으로 저장. 로더는 파일명이 아니라
+  파일 안의 `url` 필드로 dotgg 데이터를 색인하므로
+  (`skill_values.py:_dotgg_path_for`), dotgg 슬러그가 lootandwaifus
+  슬러그와 달라도 `url`이 manifest의 `data_slug`(기본값 = 인코딩 슬러그)와
+  일치하면 찾는다. 다르면 스크립트가 manifest에 `dotgg_slug` 별칭이
+  필요하다고 보고한다.
+- `--stub`: dotgg에 없는 유닛에 대해 수동 입력 템플릿을 생성한다.
+  `url`·`name`·`weapon`·`"source": "manual"`은 lootandwaifus에서 프리필,
+  탄창 무기(AR/MG/SMG/SG)는 `chargeTime: 0`·`chargeDamage: "0%"`도
+  프리필한다. Fienn이 손으로 넣을 값은 차지 무기(RL/SR) 5개
+  (maxAmmo, damage, reloadTime, chargeTime, chargeDamage), 탄창 무기
+  3개(maxAmmo, damage, reloadTime)뿐이다 — 스킬·버스트·속성 등 나머지는
+  전부 lootandwaifus 파일에서 오므로 수동 입력 대상이 아니다. 미입력
+  필드는 빈 값으로 넣지 않고 **생략**한다(`"_todo"` 키에 채울 필드 목록을
+  적어둠) — 필드가 없으면 `_weapon_stats`의 존재 검사에서 None이 되어
+  깔끔하게 제외되지만, 빈 문자열이 들어 있으면 존재 검사를 통과한 뒤
+  `int("")`에서 예외가 나기 때문이다.
 - 재실행 가능(이미 있는 파일은 건너뜀), 유닛별 네트워크 오류 보고 후 계속
   진행, `--help`와 실행 결과 요약(수집/건너뜀/없음) 제공.
 
