@@ -157,7 +157,7 @@
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ✅ 완료 — greedy+swap + ProcessPool 병렬화(50유닛 97초), `/api/recommend-raid`, 프론트 레이드 모드 배선까지 |
 | Phase 6 | 유저 데이터 입력 UI (React) | 🔄 진행 중 (입력 폼 + 결과 UI + 라이브 API 완료) |
-| Phase 7 | 자동화 (ShiftyPad 연동, 수집 파이프라인) | ⬜ 지연/후속 |
+| Phase 7 | 자동화 (ShiftyPad 연동, 수집 파이프라인) | 🔄 Phase A 임포터 + Phase B 수집기 완료 (159/159 E2E) |
 
 ---
 
@@ -426,18 +426,22 @@
       분리** — blablalink CDN이 캐릭터 레벨별 기초 스탯표 + 큐브/소장품 스탯 배열을 제공함을 확인
       (공식 재구현이 아니라 **데이터 소비**로 디리스크), 잔여 발견거리는 CDN 해시 매니페스트 ·
       조립공식 1회 대조검증(→ plan §10).
-- [ ] **Phase B — blablalink/ShiftyPad 정확 스탯 수집기 (2026-07-18 설계·계획 완료, 미구현).**
-      조사 끝에 방향 전환: base/큐브/소장품은 클래스·등급별 균일(→ 매니페스트 불필요, 3+2+1 테이블
-      수집 완료 `data/blablalink-cdn/`)이나, **방어구 ATK가 export에 없고 돌파/코어는 %공식**이라
-      밑바닥 계산은 무거움. 대신 **ShiftyPad이 방어구 포함 정확 스탯을 이미 계산해 표시**하므로
-      그 값을 읽는다(공식 재구현 안 함, ShiftyPad은 공식 blablalink라 안정적). **핵심 교정:
-      솔로레이드는 레벨400 고정** → `hp/atk/def`를 400레벨 의미로 재정의(엔진 무변경), `actual_*`
-      옵셔널 추가(유니온레이드 후속). 현재 수동입력(실제레벨 663)은 솔로레이드에 부풀려진 값
-      (Rapi 418862 vs 400레벨 143543, 2.9배). 수집기 = Playwright/CDP 라이브 헬퍼가 유닛별
-      `?nikke=<resource_id>` 페이지에서 스탯 두 버전·오버로드·스킬·큐브를 스크랩(순수 ShiftyPad,
-      큐브 자동). spec/plan `docs/superpowers/{specs,plans}/2026-07-18-blablalink-stat-collector*`.
-      착수 = plan Task 1 라이브 스파이크(픽스처 캡처 + 셀렉터 확정).
-- [ ] ~~**Gate 0 / Stage 1**~~ — Stage 1 정찰·Phase A 완료로 소화됨. 다음은 Phase B 구현.
+- [x] **Phase B — blablalink/ShiftyPad 정확 스탯 수집기 구현 완료 (2026-07-18).**
+      `tools/collect-blablalink/` Node 수집기 = playwright-core로 CDP(Fienn 로그인 Chrome, 포트 9222)에
+      붙어 유닛별 `?nikke=<resource_id>` 페이지에서 **솔로레이드 400레벨 + 실제레벨** 스탯·오버로드·
+      스킬·큐브를 스크랩→`roster.json`. **핵심 교정: 솔로레이드 레벨400 고정** → `hp/atk/def`=400레벨
+      의미(엔진 무변경), `actual_*` 옵셔널 추가(유니온레이드 후속, 백엔드 `PveCube.level` cap 10→15).
+      프론트 `rosterImport.ts`가 raid400→hp/atk/def·actual→actual*로 매핑, `mergeCollectorDrafts`(Exia와
+      달리 정확 스탯을 덮어씀), `ImportRosterButton`이 `units`/`elements`로 형식 감지.
+      **E2E 전체 수집 실측: 159/159 SSR 무실패**(육성 135 + 미육성 lv1 24, Fienn "모두 수집" → 양방향
+      레벨링·양수 델타 파싱). 스파이크 산출: 유닛당 픽스처 1개로 전 surface 커버, ShiftyPad 탭은 v-if라
+      탭별 조각 추출(capture.js), 파서는 스탯행 "값 부호델타" 직접탐지(LV 위치 무관). 보유목록 = nikke
+      디렉토리 CDN(resource_id↔name_code↔영문명) × `GetUserCharacters` 조인(SSR 필터). 자격증명 미저장
+      (game_openid 쿠키는 읽기전용 API 재생만), 픽스처 정제(PII 0). spec/plan
+      `docs/superpowers/{specs,plans}/2026-07-18-blablalink-stat-collector*`.
+      **잔여(후속):** 게임명↔인코딩-slug 간극 소수(Julia→julia-signature, base vs 변형 충돌 Soline/
+      Marciana, "Rei"×2) — roster.json 데이터는 정확(name_en/resource_id 보존), name_code 키잉으로 별도
+      해결 예정(→ RECIPE.md).
 - [ ] **Stage 1: 정찰** — Fienn의 로그인된 브라우저가 자격증명 없는 유일한 정찰 표면
       (dotgg 선례는 재사용 불가: 그쪽은 무인증이라 헤드리스가 통했다). export 버튼/공유 URL
       유무만으로 사다리 대부분이 붕괴할 수 있음.
