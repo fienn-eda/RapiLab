@@ -193,3 +193,65 @@ def test_search_best_decks_respects_permutation_top_k(monkeypatch):
     # permutation_top_k=1 exactly ONE combo is refined - 4 orderings if it is
     # a (1,2,2) (2!x2!), 6 if a (1,1,3) (3!). All-refined would be 29 calls.
     assert 5 < len(calls) <= 5 + 6
+
+
+@dataclass
+class FakeSpec:
+    slug: str
+    burst_tier: int
+    weapon: str = "AR"
+    base_stats: dict = None
+    weapon_stats: dict = None
+
+    def __post_init__(self):
+        self.base_stats = self.base_stats or {"atk": 1000.0}
+        self.weapon_stats = self.weapon_stats or {"damage_percent": 100.0}
+
+
+def _big_fake_roster():
+    units = [FakeSpec(f"b1_{i}", 1) for i in range(4)]
+    units += [FakeSpec(f"b2_{i}", 2) for i in range(6)]
+    units += [FakeSpec(f"b3_{i}", 3) for i in range(12)]
+    return units
+
+
+def test_prune_candidate_pool_respects_tier_caps(monkeypatch):
+    import app.deck_search as ds
+    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({}))
+    pool = ds.prune_candidate_pool(_big_fake_roster(), BossProfile())
+    counts = {t: sum(1 for u in pool if u.burst_tier == t) for t in (1, 2, 3)}
+    assert counts[1] <= ds.PRUNED_TIER_CAPS[1]
+    assert counts[2] <= ds.PRUNED_TIER_CAPS[2]
+    assert counts[3] <= ds.PRUNED_TIER_CAPS[3]
+
+
+def test_prune_keeps_synergy_partners_together(monkeypatch):
+    import app.deck_search as ds
+    roster = _big_fake_roster()
+    roster += [FakeSpec("mint", 2), FakeSpec("prika", 2)]
+
+    def scorer(ordered_deck, boss):
+        slugs = {u.slug for u in ordered_deck}
+        # the pair measured together is dominant; mint alone is weakest
+        if {"mint", "prika"} <= slugs:
+            return {"total_damage": 10_000.0, "damage_log": []}
+        if "mint" in slugs:
+            return {"total_damage": 1.0, "damage_log": []}
+        return {"total_damage": 100.0, "damage_log": []}
+
+    monkeypatch.setattr(ds, "evaluate_deck", scorer)
+    pool_slugs = {u.slug for u in ds.prune_candidate_pool(roster, BossProfile())}
+    assert {"mint", "prika"} <= pool_slugs
+
+
+def test_prune_includes_sg_theme_around_tove(monkeypatch):
+    import app.deck_search as ds
+    roster = _big_fake_roster()  # all AR
+    roster += [FakeSpec("tove", 1, weapon="AR")]
+    roster += [FakeSpec(f"sg_{i}", 3, weapon="SG",
+                        base_stats={"atk": 1.0}) for i in range(2)]  # tiny prior
+
+    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({}))
+    pool_slugs = {u.slug for u in ds.prune_candidate_pool(roster, BossProfile())}
+    assert "tove" in pool_slugs
+    assert {"sg_0", "sg_1"} <= pool_slugs  # anchored theme survives the cut

@@ -117,8 +117,103 @@ def _intra_tier_orderings(combo):
                 yield list(o1) + list(o2) + list(o3)
 
 
-def prune_candidate_pool(roster, boss):  # implemented in the next task
-    raise NotImplementedError
+# Curated two-unit sets that only work together (Fienn, 2026-07-17): candidate
+# cuts must measure them as a pair and never separate them.
+SYNERGY_SETS = (frozenset({"mint", "prika"}),
+                frozenset({"mast-romantic-maid", "anchor-innocent-maid"}))
+
+# A weapon-scoped buffer anchors a themed sub-pool: its weapon's B3 attackers
+# are only meaningful with it in the deck (Fienn: "SG B3s need Tove"), so they
+# join the pool whenever the anchor is rostered, bypassing the mis-contextual
+# marginal cut.
+WEAPON_SYNERGY_ANCHORS = {"tove": "SG"}
+
+# Per-tier pool caps sized so shape_combinations stays a few hundred combos
+# (~103 ms/sim budget); synergy/theme guards may exceed them slightly.
+PRUNED_TIER_CAPS = {1: 2, 2: 3, 3: 6}
+
+
+def _prior(unit):
+    # Round-0 prior (no sims): investment-adjusted ATK x weapon hit percent.
+    # Only seeds the reference decks - the swap-in measurement corrects it.
+    return unit.base_stats["atk"] * unit.weapon_stats["damage_percent"]
+
+
+def _reference_deck(by_tier, b1):
+    return [b1, by_tier[2][0], *by_tier[3][:3]]
+
+
+def _measure_against(reference, unit, boss):
+    # Swap the candidate into its tier slot (B3 replaces the reference's
+    # weakest B3, the last one) and score the whole deck.
+    slot = {1: 0, 2: 1, 3: 4}[unit.burst_tier]
+    deck = list(reference)
+    if unit.slug in {u.slug for u in deck}:
+        deck_score = evaluate_deck(deck, boss)["total_damage"]
+        return deck_score
+    deck[slot] = unit
+    return evaluate_deck(deck, boss)["total_damage"]
+
+
+def prune_candidate_pool(roster, boss: BossProfile):
+    """Cut the roster to a pool the budget can enumerate. Scores are marginal
+    contributions in reference-deck context (two passes: prior-seeded B1, then
+    best-measured B1 - CDR holders change cycle count, Fienn rule 2/3), with
+    synergy sets measured as pairs and weapon-themed units pulled in around
+    their anchor rather than trusting the mis-contextual cut."""
+    by_tier = {t: sorted((u for u in roster if u.burst_tier == t),
+                         key=_prior, reverse=True) for t in (1, 2, 3)}
+    if not (by_tier[1] and by_tier[2] and len(by_tier[3]) >= 3):
+        return list(roster)  # too small to cut; search handles infeasibility
+
+    scores = {}
+    for reference_b1 in _reference_b1_variants(by_tier, boss):
+        reference = _reference_deck(by_tier, reference_b1)
+        for unit in roster:
+            score = _measure_against(reference, unit, boss)
+            scores[unit.slug] = max(scores.get(unit.slug, 0.0), score)
+
+    # Synergy sets: measured as a pair in a (1,2,2) shell; both members share it.
+    shell_b1, shell_b3 = by_tier[1][0], by_tier[3][:2]
+    slugs = {u.slug: u for u in roster}
+    for pair in SYNERGY_SETS:
+        if pair <= slugs.keys():
+            members = [slugs[s] for s in sorted(pair)]
+            deck = [shell_b1, *members, *shell_b3]
+            pair_score = evaluate_deck(deck, boss)["total_damage"]
+            for member in members:
+                scores[member.slug] = max(scores[member.slug], pair_score)
+
+    pool = []
+    for tier, cap in PRUNED_TIER_CAPS.items():
+        ranked = sorted(by_tier[tier], key=lambda u: scores[u.slug], reverse=True)
+        pool.extend(ranked[:cap])
+
+    pool_slugs = {u.slug for u in pool}
+    for pair in SYNERGY_SETS:  # companion pull-in
+        if pair & pool_slugs and pair <= slugs.keys():
+            pool.extend(slugs[s] for s in pair if s not in pool_slugs)
+            pool_slugs |= pair
+    for anchor, weapon in WEAPON_SYNERGY_ANCHORS.items():  # themed pull-in
+        if anchor in slugs:
+            themed = [u for u in roster
+                      if u.slug == anchor
+                      or (u.burst_tier == 3 and getattr(u, "weapon", None) == weapon)]
+            pool.extend(u for u in themed if u.slug not in pool_slugs)
+            pool_slugs |= {u.slug for u in themed}
+    return pool
+
+
+def _reference_b1_variants(by_tier, boss):
+    # Pass 1: prior-seeded B1. Pass 2: the B1 whose swap-in measured best
+    # (usually the CDR holder - shorter cycles change everyone's value).
+    first = by_tier[1][0]
+    yield first
+    reference = _reference_deck(by_tier, first)
+    best_b1 = max(by_tier[1],
+                  key=lambda u: _measure_against(reference, u, boss))
+    if best_b1.slug != first.slug:
+        yield best_b1
 
 
 def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200, permutation_top_k=40):
