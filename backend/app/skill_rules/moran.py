@@ -14,6 +14,19 @@ HP-threshold Perseverance effect.
 """
 from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
 
+# Fienn's Moran has the signature weapon completed, so the manifest reads the
+# "dollskills" array, not "skills" (see module docstring).
+SKILL_VALUE_MANIFESTS = {
+    "moran": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_burst1_batch3",
+        "keys": {
+            "leave_it_to_me": ("dollskills", 1),
+            "fair_and_square": ("dollskills", 2),
+        },
+    },
+}
+
 
 def build_moran_rules(values):
     leave = values["leave_it_to_me"]

@@ -9,7 +9,15 @@
 
 - 마지막 갱신: 2026-07-17
 - 브랜치: `wip/scaffolding`
-- 테스트: **674 passed** (2026-07-17, **Phase 5 Task 6 — `POST /api/recommend-raid`
+- 테스트: **682 passed** (2026-07-17, **매니페스트 예외 8유닛 배치** — crown·helm·
+  liter·miranda·moran·soline-frost-ticket·volume·zwei에 dotgg-소스
+  `SKILL_VALUE_MANIFESTS` 추가(전 유닛 픽스처=dotgg 네이티브 슬롯 정확 일치,
+  drop_tokens 0건) + 배치 테스트 파일 픽스처 별칭 + `KNOWN_MANIFEST_EXCEPTIONS`
+  12→4. **매니페스트 53/57, API 로더블 50/57, 로더블 B1 4→10명** — 5덱 분배가
+  3덱에서 멈추던 B1 부족이 해소됨. Fienn 결정 3건 반영(처리량 레버=ProcessPool
+  병렬화 / evaluate_deck 최적화는 103.43ms에서 중단 / 이 배치를 최우선 —
+  `decisions.md` 참고). was 674.)
+- 이전: **674 passed** (2026-07-17, **Phase 5 Task 6 — `POST /api/recommend-raid`
   + `/api/recommend`가 `search_best_decks`로 전환** — 기존 `/api/recommend` 테스트
   전부 그린 유지(회귀 없음). +1은 계획 외 회귀 테스트: 실측정(전체 57유닛 로스터
   분배) 도중 `_build_cinderella`가 이미 언랩된 `sv["flawless_glass"]`를 다시
@@ -24,7 +32,7 @@
   prika 로더블화 이후 효력. was 673 (671+2, Task 6 신규 API 테스트).)
 - 이전: **659 passed** (2026-07-17, **Stage 0 EffectRegistry 성능 패스** —
   total_for를 버전-무효화 세그먼트 테이블로 교체(비트 동일 출력, 패리티 넷 2건
-  추가). evaluate_deck 180초 시뮬 ~2410ms → 133.66ms → 103.43ms (Stage 0.5 epoch memo, 2026-07-17 — phase-1 normal_attack_type 회귀 수정: 번들 대신 직접 단일-스탯 조회로 복귀). was 656 — 목표 50ms 미달(2.1×), 잔여는 평탄한 호출 오버헤드, 추가 최적화 여부는 Fienn 결정 대기)
+  추가). evaluate_deck 180초 시뮬 ~2410ms → 133.66ms → 103.43ms (Stage 0.5 epoch memo, 2026-07-17 — phase-1 normal_attack_type 회귀 수정: 번들 대신 직접 단일-스탯 조회로 복귀). was 656 — 목표 50ms 미달(2.1×), 잔여는 평탄한 호출 오버헤드. 추가 최적화는 여기서 중단으로 결정(Fienn, 2026-07-17 — 부족분은 ProcessPool 병렬화로 흡수, `decisions.md` 참고))
 - 이전: **654 passed** (2026-07-17 후속 배치 — 매니페스트 배치 2(29유닛, 45/57
   커버) + dotgg weapon 스탯 39파일 수집 + `dotgg_slug` 브리지 + 오버로드 옵션명
   422 검증 + 매니페스트 가드 테스트(`KNOWN_MANIFEST_EXCEPTIONS`). **API 로더블
@@ -285,9 +293,10 @@
   로스터에서는 결과 불변 — 예산 컷은 로스터가 클 때만 개입). 로더블 42유닛 전량
   분배 실측(픽스 반영 재측정) **282.17초, 3덱**(leftover 27, 합계 5.18B) — 스왑
   단계 포함 수치(최초 103.92초는 스왑 미실행 탐욕 전용). 수초~1분 예산 초과가
-  실측으로 확인됨 → **처리량 레버(타이어 캡 축소 vs 시뮬 병렬화 ProcessPool)
-  결정 필요** — Fienn 대기. **다음:** 프론트 배선(결과 UI에 다중 덱 표시)은
-  후속 소플랜.
+  실측으로 확인됨 → **처리량 레버 = 시뮬 병렬화(ProcessPool)로 결정**(Fienn,
+  2026-07-17 — 타이어 캡 축소는 탐색 품질을 깎아 기각, `decisions.md` 참고).
+  3덱 원인이던 로더블 B1 부족(4명)은 매니페스트 예외 배치로 해소(B1 10명).
+  **다음:** ProcessPool 병렬화 → 프론트 배선(결과 UI에 다중 덱 표시) 순.
 
 ### Phase 6 — 유저 데이터 입력 UI 🔄
 - React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
@@ -298,8 +307,11 @@
   배치): 매니페스트 45/57(예외 12은 `KNOWN_MANIFEST_EXCEPTIONS` 가드 테스트 +
   encoded-nikkes.md 예외 표기), dotgg 파일 14→53개, `dotgg_slug` 매니페스트
   키로 소스 간 슬러그 불일치 브리지(ada-wong·chisato·jill·takina). **API 로더블
-  42/57.** 잔여: 예외 8유닛의 dotgg-소스 매니페스트 배치(crown·liter·zwei 등,
-  weapon 파일은 이미 수집됨), 픽스처 재배열 4유닛(anis-star·asuka·privaty·
+  42/57.**
+- 매니페스트 예외 8유닛 배치 ✅ (2026-07-17): crown·helm·liter·miranda·moran·
+  soline-frost-ticket·volume·zwei에 dotgg-소스 매니페스트(helm·miranda·moran·
+  zwei는 시그니처 완성이라 `dollskills` 배열). **매니페스트 53/57, API 로더블
+  50/57, 로더블 B1 4→10명.** 잔여: 픽스처 재배열 4유닛(anis-star·asuka·privaty·
   neon-vision-eye)은 픽스처 검증 후 재작성 필요, marciana(스킨판 weapon 스탯
   없음)·ark-ranger-black·prika(dotgg 부재)는 보류.
 - ShiftyPad 자동화는 Phase 7.

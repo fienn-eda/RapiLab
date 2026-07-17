@@ -172,3 +172,6 @@ def test_d_killer_wife_assault_formation_squad_attack_damage_every_5_full_charge
 # (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
 CALM_SNIPING = DKW["calm_sniping"]
 ASSAULT_FORMATION = DKW["assault_formation"]
+PIERCE_EQUATION = ZWEI["pierce_equation"]
+FRAME_ANALYSIS = ZWEI["frame_analysis"]
+OVERCHARGE_FORMULA = ZWEI["overcharge_formula"]

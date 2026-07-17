@@ -30,6 +30,25 @@ from app.effects import Effect
 from app.skill_rules._helpers import refreshing_buff_rule
 from app.squad_engine import SkillRule
 
+# Fienn's Helm has the signature weapon completed, so the manifest reads the
+# "dollskills" array, not "skills" (see module docstring).
+SKILL_VALUE_MANIFESTS = {
+    "helm": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_helm",
+        "keys": {
+            "frontline_command": ("dollskills", 0),
+            "fire_away": ("dollskills", 1),
+            "aegis_cannon": ("dollskills", 2),
+        },
+        "fixtures": {
+            "frontline_command": "FRONTLINE_COMMAND_VALUES",
+            "fire_away": "FIRE_AWAY_VALUES",
+            "aegis_cannon": "AEGIS_CANNON_VALUES",
+        },
+    },
+}
+
 
 def build_frontline_command_per_shot_rules(values: dict) -> list:
     crit_rate_up = float(values["description_value_01"]) / 100

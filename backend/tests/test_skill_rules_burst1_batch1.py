@@ -158,3 +158,14 @@ def test_miranda_health_up_self_atk_every_30_normal_attacks():
     assert round(reg.total_for("atk_percent", miranda, 3.0), 4) == 0.5006  # self ATK
     assert reg.total_for("atk_percent", ALLY, 3.0) == 0.0  # self-only
     assert reg.total_for("atk_percent", miranda, 8.1) == 0.0  # 5s window expired
+
+
+# Module-level fixture aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
+LITER_BOOST = LITER["liter_boost"]
+DOUBLE_BOOST = LITER["double_boost"]
+DROP_THE_BEAT = VOLUME["drop_the_beat"]
+TURN_UP = VOLUME["turn_up"]
+HEALTH_UP = MIRANDA["health_up"]
+WAKE_UP = MIRANDA["wake_up"]
+POWERING_UP = MIRANDA["powering_up"]

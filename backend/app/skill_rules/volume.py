@@ -13,6 +13,17 @@ which raid bosses don't grant, so it's not modeled.
 """
 from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
 
+SKILL_VALUE_MANIFESTS = {
+    "volume": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_burst1_batch1",
+        "keys": {
+            "drop_the_beat": ("skills", 1),
+            "turn_up": ("skills", 2),
+        },
+    },
+}
+
 
 def build_volume_rules(values):
     beat = values["drop_the_beat"]

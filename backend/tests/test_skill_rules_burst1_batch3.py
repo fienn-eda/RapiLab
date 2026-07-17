@@ -212,9 +212,12 @@ def test_little_mermaid_bubble_wave_ticks_only_in_fb_windows():
     assert ticks.count(start + 1.0) == 4  # 4 sequential hits per tick
 
 
+CHECK_TICKET = {"description_value_03": "7.48"}
+
+
 def test_soline_frost_ticket_only_cdr():
     reg = EffectRegistry()
-    rules = {"soline-frost-ticket": build_soline_frost_ticket_rules({"check_ticket": {"description_value_03": "7.48"}})}
+    rules = {"soline-frost-ticket": build_soline_frost_ticket_rules({"check_ticket": CHECK_TICKET})}
     fire_trigger("full_burst_enter", rules, deck_ctx("soline-frost-ticket"), reg, 0.0)
     assert reg.drain_pulses("burst_cooldown_reduction_sec")[0].value == 7.48
 
@@ -223,3 +226,5 @@ def test_soline_frost_ticket_only_cdr():
 # (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
 MODIFICATION_SUCCESSFUL = TOVE["modification_successful"]
 MIRACLE_OF_MAKESHIFTS = TOVE["miracle_of_makeshifts"]
+LEAVE_IT_TO_ME = MORAN["leave_it_to_me"]
+FAIR_AND_SQUARE = MORAN["fair_and_square"]

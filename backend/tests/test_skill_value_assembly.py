@@ -37,10 +37,6 @@ def test_at_least_the_pilots_have_manifests():
 # silently drifting out of the docs. Shrink this set as blockers clear; never
 # grow it without recording why.
 KNOWN_MANIFEST_EXCEPTIONS = {
-    # no lootandwaifus skill JSON collected yet (dotgg weapon files exist since
-    # 2026-07-17; a dotgg-source manifest batch can clear these)
-    "crown", "helm", "liter", "miranda", "moran", "soline-frost-ticket",
-    "volume", "zwei",
     # fixture transcribed with reordered/mismatched tokens - drop_tokens cannot
     # reproduce it from the data (batch-2 report, 2026-07-17)
     "anis-star", "asuka-shikinami-langley-wille", "privaty", "neon-vision-eye",

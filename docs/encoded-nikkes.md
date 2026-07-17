@@ -3,17 +3,15 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-17 (스킬값 매니페스트 배치 2 — 29유닛 추가로 45/57 커버 +
-  dotgg weapon 스탯 39파일 수집 + `dotgg_slug` 브리지(ada-wong·chisato·jill·takina).
-  API 로더블 42/57. 이전 갱신: Ark Ranger Black 신규 ⚠ — floor/ceiling
-  `part_destructible` 보스 플래그 브래킷으로 배터리/변신 메커니즘 모델링)
-- **스킬값 매니페스트 커버리지 — 예외만 표기:** 아래 12유닛 외 전원이
+- 마지막 갱신: 2026-07-17 (매니페스트 예외 8유닛 배치 — crown·helm·liter·
+  miranda·moran·soline-frost-ticket·volume·zwei에 dotgg-소스 매니페스트 추가,
+  53/57 커버. **API 로더블 50/57** (로더블 B1 4→10명 — 5덱 분배가 실제로 5덱을
+  채울 수 있게 됨). 이전 갱신: 매니페스트 배치 2 — 29유닛 추가로 45/57 커버 +
+  dotgg weapon 스탯 39파일 수집 + `dotgg_slug` 브리지(ada-wong·chisato·jill·takina))
+- **스킬값 매니페스트 커버리지 — 예외만 표기:** 아래 4유닛 외 전원이
   `SKILL_VALUE_MANIFESTS`를 보유(= API 조립 가능). 이 목록은
   `test_skill_value_assembly.py`의 `KNOWN_MANIFEST_EXCEPTIONS` 가드 테스트와
   거울 구조라, 매니페스트 없는 신규 인코딩은 테스트가 먼저 잡는다.
-  - lootandwaifus 스킬 JSON 미수집(8, dotgg weapon 파일은 있음 → dotgg-소스
-    매니페스트 배치로 해소 가능): `crown`, `helm`, `liter`, `miranda`, `moran`,
-    `soline-frost-ticket`, `volume`, `zwei`
   - 픽스처가 데이터 토큰과 재배열 관계라 drop_tokens로 재현 불가(4):
     `anis-star`, `asuka-shikinami-langley-wille`, `privaty`, `neon-vision-eye`
   - (매니페스트와 별개로 dotgg weapon 파일 부재로 API 제외: `ark-ranger-black`,

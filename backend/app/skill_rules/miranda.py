@@ -26,6 +26,20 @@ from app.skill_rules._helpers import (
     round_buff_rule,
 )
 
+# Fienn's Miranda has the signature weapon completed, so the manifest reads
+# the "dollskills" array, not "skills" (see module docstring).
+SKILL_VALUE_MANIFESTS = {
+    "miranda": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_burst1_batch1",
+        "keys": {
+            "health_up": ("dollskills", 0),
+            "wake_up": ("dollskills", 1),
+            "powering_up": ("dollskills", 2),
+        },
+    },
+}
+
 
 def build_miranda_rules(values):
     wake = values["wake_up"]

@@ -12,6 +12,21 @@ which needs an attack-rate model that doesn't exist yet.
 from app.effects import Effect
 from app.squad_engine import SkillRule
 
+SKILL_VALUE_MANIFESTS = {
+    "crown": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_crown",
+        "keys": {
+            "one_for_all": ("skills", 0),
+            "last_kingdom": ("skills", 2),
+        },
+        "fixtures": {
+            "one_for_all": "ONE_FOR_ALL_VALUES",
+            "last_kingdom": "LAST_KINGDOM_VALUES",
+        },
+    },
+}
+
 
 def build_one_for_all_rules(values: dict, caster_atk: float, caster_def: float) -> list[SkillRule]:
     atk_bonus = caster_atk * float(values["description_value_01"]) / 100
