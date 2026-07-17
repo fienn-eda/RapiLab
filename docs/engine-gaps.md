@@ -5,7 +5,16 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-17 (**미검증 5유닛 검증 배치 + `scheduled_nukes` 확장**.
+- 마지막 갱신: 2026-07-17 (**Raven·Sakura 인코딩 — `scheduled_nukes`에 소유자 발사
+  시각 노출**. schedule 함수가 `context.shot_times[slug]`로 자기 발사 타임라인을 읽을
+  수 있게 됨(엔진이 이미 `shot_times_by_slug`를 갖고 있어 신규 계산 없음, Ein 무영향).
+  소비: Raven(Shock Wave — 풀차지마다 68.46% 지속댐 5틱, 인스턴스 중첩). Sakura는 확장
+  없이 인코딩(Full Glory가 배틀스타트 강제발동+cd30 → 스케줄이 컨텍스트 무관).
+  **Raven 부위파괴는 Ark Ranger식 floor/ceiling 브래킷**(Single Point Attack, Fienn
+  판정) — 부위파괴 이벤트 자체는 여전히 미모델. **정정: 검증 배치의 "raven 확장 불필요"
+  판정은 틀렸음** — 스킬 텍스트만 보면 기존 프리미티브로 되는 듯했으나, 착수해보니
+  per-shot DoT를 걸 경로가 없었다. 텍스트 검증과 실제 배선 사이에 이 정도 간극이 있음.
+  이전 갱신: **미검증 5유닛 검증 배치 + `scheduled_nukes` 확장**.
   로드맵의 "미검증(풀차지/distributed)" 5유닛을 실제 텍스트로 검증한 결과:
   **ein 언블록→인코딩 완료**(아래 신규 확장) · **raven·sakura-bloom-in-summer는
   기존 프리미티브로 인코딩 가능**(부위파괴 연동만 defer, 다음 배치) ·
@@ -539,6 +548,13 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   `docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`,
   `ark_ranger_black.py` docstring 참고.
 
+- **`scheduled_nukes`의 `context.shot_times` (2026-07-17, Raven):** schedule 함수가
+  소유자의 발사 시각을 읽어 **자기 발사에서 파생되는 딜**을 만들 수 있음 —
+  `SquadContext.shot_times[slug]`(raid_simulator의 무기 패스가 채움, 무기 스탯 없으면
+  빈 리스트). 시그니처는 `(context, fight_duration)` 그대로라 기존 소비자(Ein) 무변경.
+  첫 소비자 Raven(Shock Wave: 풀차지마다 5틱 지속댐, 인스턴스가 겹쳐 쌓임 — 스택 상한
+  10은 RL 케이던스상 도달 불가라 자원 모델링 불필요). **"풀차지마다 N초 DoT" 패턴이
+  이제 일반적으로 풀림.**
 - **`scheduled_nukes` — 소환체 가변 케이던스 (2026-07-17, Ein):** `periodic_nukes`가
   고정 간격만 지원해서 막히던, **살아있는 개체 수가 공격 주기를 바꾸는 소환체** 딜을
   위한 옵트인 경로. 스케줄이 결정론적(소환 시각 = 전투 시작 + 소유자 버스트 시각,

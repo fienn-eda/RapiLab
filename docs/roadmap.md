@@ -9,7 +9,19 @@
 
 - 마지막 갱신: 2026-07-17
 - 브랜치: `worktree-plans-frontend3-encoding` (from `wip/scaffolding`)
-- 테스트: **708 passed** (2026-07-17, **미검증 5유닛 검증 배치 + Ein 인코딩** —
+- 테스트: **726 passed** (2026-07-17, **Raven·Sakura 인코딩 배치** — 검증 배치가
+  "인코딩 가능"으로 판정한 둘을 인코딩. 착수해보니 판정이 절반만 맞았음: **Sakura는
+  확장 불필요**가 맞았지만(Full Glory가 배틀스타트 강제발동+cd30이라 Sakura Petals
+  스케줄이 전투 전 확정 → `scheduled_nukes`가 그대로 맞음), **Raven은 소규모 확장 1건
+  필요**했음 — Shock Wave가 풀차지마다 DoT를 까는데 schedule 함수가 발사 시각을 볼 수
+  없었음. `context.shot_times`로 노출(엔진이 이미 `shot_times_by_slug`로 갖고 있어
+  신규 계산 없음, Ein 시그니처 무변경). Raven 실측: RL이 1초마다 풀차지라 5초 창 최대
+  동시 5스택 → **상한 10 미도달로 자원 모델링 불필요**. Single Point Attack은 부위파괴
+  트리거라 Ark Ranger식 floor/ceiling 브래킷(Fienn 판정), Vital Attack은 inert라 defer.
+  Sakura 버스트 DoT는 10연타가 각각 1스택 → 351.6%/초×10틱(Fienn 판정). E2E: Raven
+  Shock Wave 1.28억(최대 소스, ceiling 1.844억 > floor 1.809억), Sakura 총 2.397억.
+  **60명, 매니페스트 56/60, API 로더블 56/60.** was 708.)
+- 이전: **708 passed** (2026-07-17, **미검증 5유닛 검증 배치 + Ein 인코딩** —
   로드맵 백로그가 "미검증"으로 남겨둔 5명을 실제 스킬 텍스트로 검증: **ein 언블록
   → 인코딩 완료**, **raven·sakura-bloom-in-summer도 인코딩 가능**(부위파괴만 defer,
   다음 배치), **scarlet-black-shadow(gap #10)·milk-blooming-bunny(gap #11)는 신규 갭
@@ -74,7 +86,7 @@
   매니페스트 하니스·roster 로더·`POST /api/recommend`. 통합 시 하니스가
   little-mermaid Bubble Wave 슬롯 오번호(lootandwaifus 좌→우 카운트 vs 모듈의
   dotgg 네이티브 컨벤션) 1건을 잡아 교정함; was 547 배치 시작 시점)
-- 인코딩된 니케: **58명** (Ein[`scheduled_nukes` 소비, 신규 ✅] +1) —
+- 인코딩된 니케: **60명** (Raven[shot_times 확장 소비, 신규 ⚠] · Sakura: Bloom in Summer[신규 ⚠] +2) —
   상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 - **Phase C 배치 완료 (2026-07-16):** 엔진 갭 #3(member-subset scope:
   `SquadMember.weapon`+`member_subset_buff_rule`, 신규 Effect scope 없이 `slugs:`
@@ -126,7 +138,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (58명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (60명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ✅ 완료 — greedy+swap + ProcessPool 병렬화(50유닛 97초), `/api/recommend-raid`, 프론트 레이드 모드 배선까지 |
 | Phase 6 | 유저 데이터 입력 UI (React) | 🔄 진행 중 (입력 폼 + 결과 UI + 라이브 API 완료) |
@@ -458,7 +470,12 @@
 - [x] **미검증 5유닛 검증** — ein ✅(인코딩 완료) · raven·sakura-bloom-in-summer
       (인코딩 가능, 대기) · scarlet-black-shadow(gap #10) · milk-blooming-bunny(gap #11).
 - [x] **Ein 인코딩** — `scheduled_nukes` 확장 + Fienn 실측 기반 페더 스케줄.
-- [ ] **raven·sakura-bloom-in-summer 인코딩** — 다음 배치 최우선(확장 불필요).
+- [x] **raven·sakura-bloom-in-summer 인코딩** (2026-07-17) — sakura는 확장 불필요가
+      맞았고, raven은 `context.shot_times` 소규모 확장 1건 필요했음(판정 정정).
+- [ ] **다음 배치 후보** — 남은 미인코딩 13명은 전부 갭 뒤(무기변형 4·Pattern B 3·
+      상태머신 3·gap #10 scarlet·gap #11 milk). **최대 수요는 무기 변형**
+      (snow-white·snow-white-heavy-arms·maxwell·cinderella-crystal-wave + laplace·
+      velvet·rapi 잔여) — 큰 확장이라 설계 논의부터 필요.
 - [x] **ein weapon 스탯** — 이미 `data/dotgg/char_ein.json`에 존재했음(SR·장탄6·
       재장전2.0s·차지1.0s·차지댐250%). "부재" 판정은 워크트리에 gitignore된 데이터가
       복사되지 않아 생긴 오진이었음 — 아래 함정 항목 참고.

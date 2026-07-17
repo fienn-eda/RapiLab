@@ -875,6 +875,7 @@ def simulate_raid(
     # still deterministic - it falls out of the owner's burst times, which are
     # settled by now - so the unit module builds the time list and the engine
     # only emits it, keeping summon-lifetime bookkeeping out of the simulator.
+    context.shot_times = shot_times_by_slug
     for slug, specs in scheduled_nukes.items():
         for spec in specs:
             damage_type = spec.get("damage_type", "attack")

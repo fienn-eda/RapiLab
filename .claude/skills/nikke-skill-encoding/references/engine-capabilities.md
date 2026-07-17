@@ -333,7 +333,14 @@ spec dicts `{"schedule": fn(context, fight_duration) -> times, "percent",
 "damage_type"(optional), "full_burst_bonus_eligible"(optional)}`; wire via
 `_SCHEDULED_NUKE_BUILDERS` / `get_scheduled_nukes`, threaded by `roster` into
 `simulate_raid`'s `scheduled_nukes` param. Times at or past `fight_duration` are
-dropped. Logged with `source="scheduled"`. First consumer: Ein (`ein.py` - see
+dropped. Logged with `source="scheduled"`. The schedule may also read the owner's
+own firing timeline off `context.shot_times[slug]` (filled by the weapon pass;
+empty without weapon stats) - that is how "a DoT per Full Charge" is expressed
+(Raven's Shock Wave: five 1s ticks per shot, instances deliberately OVERLAPPING
+rather than refreshing, since concurrent ticks are what its "stacks up to 10"
+means). Check whether a stack cap can actually bind before reaching for a
+resource: Raven's RL takes 1s per Full Charge, so at most 5 are ever live in her
+5s window and the cap of 10 is unreachable. First consumer: Ein (`ein.py` - see
 its docstring for how a datamine + a video measurement, NOT the skill text,
 settled the mechanics; the text's "Activates when Near Feather is summoned"
 misreads as one hit per summon). Reach for this only when the cadence genuinely

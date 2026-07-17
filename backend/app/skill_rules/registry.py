@@ -87,6 +87,21 @@ from app.skill_rules.neon_vision_eye import (
     build_firepower_explosion_per_shot_rules,
     build_neon_vision_eye_rules,
 )
+from app.skill_rules.raven import (
+    build_raven_rules,
+    build_raven_scheduled_nukes,
+    tempest_burst_percent,
+)
+from app.skill_rules.sakura_bloom_in_summer import (
+    EPHEMERAL_SPENDER_HIT_COUNT,
+    FULL_GLORY_COOLDOWN,
+    build_sakura_bloom_in_summer_rules,
+    build_sakura_periodic_rules,
+    build_sakura_resource_scaled_nukes,
+    build_sakura_scheduled_nukes,
+    ephemeral_spender_burst_hit_count,
+    ephemeral_spender_burst_percent,
+)
 from app.skill_rules.ein import (
     build_ein_per_shot_rules,
     build_ein_rules,
@@ -302,6 +317,10 @@ _BUILDERS = {
     "rei-ayanami-tentative-name": lambda sv: (build_rei_tentative_rules(sv), attack_state_burst_percent(sv)),
     "neon-vision-eye": lambda sv: (build_neon_vision_eye_rules(sv), None),  # burst is buff-only; damage is Firepower Explosion (per-shot)
     "ein": lambda sv: (build_ein_rules(sv), feather_all_range_burst_percent(sv)),
+    "raven": lambda sv: (build_raven_rules(sv), tempest_burst_percent(sv)),
+    "sakura-bloom-in-summer": lambda sv: (
+        build_sakura_bloom_in_summer_rules(sv), ephemeral_spender_burst_percent(sv)
+    ),
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
     "laplace": lambda sv: ([], laplace_buster_burst_percent(sv)),  # no ally buffs; weapon-transform + Hero Vision deferred
@@ -355,6 +374,8 @@ _BURST_DAMAGE_TYPES = {
 # entities so far.
 _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
+    "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
+    "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at
@@ -363,12 +384,14 @@ _SCHEDULED_NUKE_BUILDERS = {
 _BURST_HIT_COUNTS = {
     "julia-signature": julia_signature.CLIMAX_HIT_COUNT,
     "cinderella": GLASS_SLIPPERS_HIT_COUNT,
+    "sakura-bloom-in-summer": EPHEMERAL_SPENDER_HIT_COUNT,
 }
 
 # A Nikke with a Skill 1/2 on its own cooldown (fires at t=cooldown, 2*cooldown,
 # ... applying buffs/debuffs) - see raid_simulator's `periodic_rules`. Kept
 # separate from _BUILDERS (event-triggered rules) and _PERIODIC_NUKE_BUILDERS.
 _PERIODIC_RULE_BUILDERS = {
+    "sakura-bloom-in-summer": lambda sv: build_sakura_periodic_rules(sv),
     "takina-inoue": lambda sv: [
         (BATTLEFIELD_CONTROL_COOLDOWN, build_battlefield_control_rules(sv["battlefield_control"])),
     ],
@@ -448,6 +471,7 @@ _RESOURCE_SCALED_NUKE_BUILDERS = {
     "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
     "julia": lambda sv: build_climax_resource_scaled_nuke(sv),
     "mana": lambda sv: build_fatal_error_dot(sv),
+    "sakura-bloom-in-summer": lambda sv: build_sakura_resource_scaled_nukes(sv),
 }
 
 # A Nikke with a burst-fired BUFF gated/scaled by a named resource's count at
