@@ -94,3 +94,50 @@ on it). Therefore:
 - Existing `/api/recommend` gets faster with no API change; the exhaustive
   search's combinatorial limit remains (addressed by the Phase 5 allocation
   design, separate spec).
+
+---
+
+## Stage 0.5 — per-target epoch memo (added 2026-07-17, Fienn-approved)
+
+Stage 0 measured 133.66 ms/sim (18×) but missed the ≤50 ms target. Profiling
+shows no single hotspot: the residual is flat call overhead — 255K `total_for`
+calls per sim, ~12–18 of them per damage instance with the SAME (target, time).
+Decision (Fienn, 2026-07-17): reduce the call **count**, not per-call cost.
+
+### Approach
+
+1. **`EffectRegistry.state_epoch(target, now) -> int`** (new method): bisect
+   into a per-(slug, element) **merged** boundary timeline — the union of
+   interval boundaries of every effect matching the target under ANY stat.
+   Within one epoch no matching effect starts or ends, so every stat total is
+   constant. Cached and version-invalidated exactly like the segment tables.
+   A read-only **`version` property** is also added so callers can key memos.
+2. **Shared matching**: the scope-match logic is extracted into a module-level
+   `_matches_target(effect, target)` used by both `_build_segment_table` and
+   the merged-boundary builder — one matching semantics, no duplication.
+3. **`raid_simulator` stat-bundle memo**: phase-2 damage computation resolves
+   a fixed 18-stat bundle (every registry stat `_damage_instance`,
+   `normal_attack_type` and `_normal_attack_percent` can read) once per
+   `(slug, state_epoch, registry.version)` and reads bundle entries instead of
+   calling `total_for` per stat. Per-instance non-registry terms
+   (attack_coefficient, extra_flat_atk/extra_charge_bonus, the full-burst
+   window check, element multiplier) stay per-instance.
+
+### Why outputs stay bit-identical
+
+Bundle values come from the same `total_for`; the epoch invariant guarantees a
+bundle built at any time inside the epoch reads the same per-segment constants
+as a query at any other time inside it, and the version key drops stale
+bundles whenever the registry mutates (so replay-late effects behave exactly
+as before). Verification: full suite green unchanged, parity net untouched,
+new unit tests for `state_epoch` semantics, benchmark re-measured.
+
+### Amendment to the API constraint
+
+Stage 0's "public API unchanged" becomes "existing methods unchanged; two
+additions: `state_epoch(target, now)` and the `version` property".
+
+### Stop condition
+
+Target: ≤50 ms re-measured. If missed again, stop and report where the time
+goes — no further machinery inside this stage.
