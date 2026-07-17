@@ -19,7 +19,12 @@
   (6기 상한·개체별 수명·8초 쿨에서 기수당 -16% 합연산) + **영상 실측**(FB 진입 0.8초
   후 첫 타격, 0.3초 간격, 총 31회)으로 모델 확정 — 실측 31회를 정확히 재현하는
   0.3초 스로틀을 가정으로 명시하고 회귀 테스트로 고정. 곱연산은 관측의 절반이라 배제.
-  **58명, 매니페스트 54/58, API 로더블 50/58**(ein은 dotgg weapon 부재로 제외).
+  **58명, 매니페스트 54/58, API 로더블 50→54/58** — 검증 중 ein이 로더블이 아닌 걸로
+  나왔으나 이는 **워크트리 함정**이었음: `data/dotgg/`는 gitignore 대상이라 워크트리로
+  복사되지 않아 메인(71개)보다 18개 적은 상태였고, ein·ark-ranger-black·prika·
+  marciana-marine-study의 weapon 파일이 거기 있었다(Fienn 지적, 2026-07-17). 동기화 후
+  넷 다 로더블 — **prika 로더블화로 mint+prika Encore 시너지가 덱 탐색에서 처음 효력**.
+  Ein E2E: 180초에 페더 280타 9212만(본인 평타 5101만 상회, 최대 딜 소스).
   정정: engine-gaps의 "true의 DEF 무시 여부 확인 대기"는 이미 해결·배선된 낡은 메모였고,
   이게 ein을 불필요하게 막고 있었음. was 692.)
 - 이전: **692 passed** (2026-07-17, **ProcessPool 시뮬 병렬화 + Rapi 인코딩 완성** —
@@ -53,8 +58,8 @@
   leftover 27유닛, 합계 5.18B. 최초 측정 103.92초는 데드라인 버그로 **스왑 단계가
   실행되지 않은 순수 탐욕 수치**였음 — 픽스 후 수치는 박리+스왑(≤45초)+폴리시
   전체. 수초~1분 예산을 크게 초과 — 타이어 캡 튜닝/병렬화는 Fienn 결정 대기.
-  참고: 실로스터에선 prika가 로드 불가(dotgg weapon 부재)라 mint+prika 시너지는
-  prika 로더블화 이후 효력. was 673 (671+2, Task 6 신규 API 테스트).)
+  참고: prika는 2026-07-17 dotgg weapon 파일 수집으로 로더블이 됨 — mint+prika
+  시너지가 이제 실로스터 탐색에서 효력을 가진다. was 673 (671+2, Task 6 신규 API 테스트).)
 - 이전: **659 passed** (2026-07-17, **Stage 0 EffectRegistry 성능 패스** —
   total_for를 버전-무효화 세그먼트 테이블로 교체(비트 동일 출력, 패리티 넷 2건
   추가). evaluate_deck 180초 시뮬 ~2410ms → 133.66ms → 103.43ms (Stage 0.5 epoch memo, 2026-07-17 — phase-1 normal_attack_type 회귀 수정: 번들 대신 직접 단일-스탯 조회로 복귀). was 656 — 목표 50ms 미달(2.1×), 잔여는 평탄한 호출 오버헤드. 추가 최적화는 여기서 중단으로 결정(Fienn, 2026-07-17 — 부족분은 ProcessPool 병렬화로 흡수, `decisions.md` 참고))
@@ -454,8 +459,13 @@
       (인코딩 가능, 대기) · scarlet-black-shadow(gap #10) · milk-blooming-bunny(gap #11).
 - [x] **Ein 인코딩** — `scheduled_nukes` 확장 + Fienn 실측 기반 페더 스케줄.
 - [ ] **raven·sakura-bloom-in-summer 인코딩** — 다음 배치 최우선(확장 불필요).
-- [ ] **ein weapon 스탯 확보** — dotgg 셧다운으로 수집 불가. 이게 없으면 인코딩은
-      돼 있어도 덱 탐색에 못 들어감. 대체 소스 or 수동 입력 필요 (Fienn 판단).
+- [x] **ein weapon 스탯** — 이미 `data/dotgg/char_ein.json`에 존재했음(SR·장탄6·
+      재장전2.0s·차지1.0s·차지댐250%). "부재" 판정은 워크트리에 gitignore된 데이터가
+      복사되지 않아 생긴 오진이었음 — 아래 함정 항목 참고.
+- [ ] **워크트리 데이터 동기화 함정** — `data/dotgg/`·`data/lootandwaifus/`가 gitignore
+      대상이라 새 워크트리엔 안 따라온다. 워크트리에서 로더블/커버리지를 측정하면
+      **거짓 음성**이 나온다. 측정 전 메인에서 `cp -n` 동기화할 것. (2026-07-17, Fienn이
+      ein 오진을 잡아내며 발견. `docs/insights.md`에도 기록.)
 
 ### 정리/보강
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
