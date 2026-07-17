@@ -8,9 +8,11 @@ import { useRoster } from './hooks/useRoster'
 import { getValidRoster } from './types/nikkeDraft'
 import { NikkeCard } from './components/NikkeCard'
 import { RecommendPanel } from './components/RecommendPanel'
+import { ImportRosterButton } from './components/ImportRosterButton'
 
 function App() {
-  const { drafts, addNikke, updateNikke, removeNikke } = useRoster()
+  const { drafts, addNikke, updateNikke, removeNikke, importDrafts } =
+    useRoster()
 
   const validRoster = useMemo(() => getValidRoster(drafts), [drafts])
   const readyCount = validRoster.length
@@ -25,6 +27,8 @@ function App() {
       </header>
 
       <main className="app__main">
+        <ImportRosterButton onImport={importDrafts} />
+
         {drafts.length === 0 ? (
           <div className="empty">
             <p className="empty__text">Your roster is empty.</p>
