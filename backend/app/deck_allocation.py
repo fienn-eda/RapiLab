@@ -12,6 +12,9 @@ from app.deck_search import (BossProfile, _intra_tier_orderings, _summarize,
 
 
 def allocate_decks(roster, boss: BossProfile, num_decks=5, time_budget_sec=45.0):
+    # time_budget_sec caps the swap-improvement phase ONLY: greedy peeling and
+    # the final ordering polish always run to completion, so a valid (if
+    # unimproved) allocation is returned even with a zero budget.
     deadline = time.monotonic() + time_budget_sec
     remaining = list(roster)
     decks = []  # each: ordered list of units (canonical order from the search)
