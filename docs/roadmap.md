@@ -415,8 +415,19 @@
       damage만 내보냈고 둘 다 hp/atk/def가 아니라 이미 옳았다. 다만 이제 우연이 아니라
       명시된 이유로 옳다. **가드: 큐브가 atk/def/max_hp에 기여하면 이중 계산이다.**
       → `decisions.md` · `insights.md` 기록 완료.
-- [ ] **Gate 0 (고통 재측정)** — 영속화 후에도 최초 2,000개 입력이 벽이면 Stage 1 정찰로.
-      아니면 **이 조사는 소프트 킬**.
+- [x] **Stage 1 정찰 + Phase A: ExiaInvasion 임포터 구현 완료 (2026-07-18).** 정찰 결과 진짜
+      소스는 ShiftyPad 껍데기가 아니라 **blablalink**이고, 오픈소스 확장 **ExiaInvasion**이
+      로스터를 JSON으로 export한다(→ `phase-7-sprightly-manatee.md`, spec/plan
+      `docs/superpowers/{specs,plans}/2026-07-18-exia-roster-importer*`). **Phase A** = 그 export를
+      프론트에서 파싱→로스터로 임포트(오버로드 `function_type`별 합산→한글 7종·스킬·돌파·synchro
+      레벨), **슬러그별 병합으로 수동 ATK/큐브 보존**(재임포트가 손입력 ATK를 안 지움).
+      실측 확정: export에 ATK도 캐릭터별 큐브도 없음 → 둘 다 **수동 유지**. `cookie`/`game_uid`는
+      읽지 않음. 프론트 스위트 **97/97**, `wip/scaffolding` 병합 완료. **Phase B(ATK 자동 계산)는
+      분리** — blablalink CDN이 캐릭터 레벨별 기초 스탯표 + 큐브/소장품 스탯 배열을 제공함을 확인
+      (공식 재구현이 아니라 **데이터 소비**로 디리스크), 잔여 발견거리는 CDN 해시 매니페스트 ·
+      조립공식 1회 대조검증(→ plan §10).
+- [ ] **Gate 0 (고통 재측정)** — 영속화+임포터 후에도 최초 입력(특히 수동 ATK)이 벽이면
+      Phase B(ATK 자동화)로. 아니면 **소프트 킬**.
 - [ ] **Stage 1: 정찰** — Fienn의 로그인된 브라우저가 자격증명 없는 유일한 정찰 표면
       (dotgg 선례는 재사용 불가: 그쪽은 무인증이라 헤드리스가 통했다). export 버튼/공유 URL
       유무만으로 사다리 대부분이 붕괴할 수 있음.
