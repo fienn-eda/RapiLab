@@ -8,8 +8,16 @@
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
 - 마지막 갱신: 2026-07-17
-- 브랜치: `worktree-plans-frontend3-encoding` (from `wip/scaffolding`)
-- 테스트: **730 passed** (2026-07-17, **Raven Shock Wave 모델 정정** — Fienn 지적:
+- 브랜치: `wip/scaffolding` (`worktree-plans-frontend3-encoding` 머지 완료)
+- 테스트: **746 passed** (2026-07-17, **`worktree-plans-frontend3-encoding` →
+  `wip/scaffolding` 머지** — Ein·Raven·Sakura 인코딩 + `scheduled_nukes`/`shot_times`
+  확장 + 워크트리 데이터 동기화 스크립트·훅이 dotgg weapon 스탯 수집 작업과 합류.
+  충돌은 `docs/decisions.md` 위치 충돌 1건뿐, 양쪽 항목 모두 보존. **머지 후 실측:
+  60명 인코딩, 매니페스트 56/60, API 로더블 56/60** — 상충하던 두 주장(56/60 vs
+  53/57) 중 56/60이 사실로 확인됨(53/57은 3유닛 인코딩 전의 값). 잔여 미로더블 4 =
+  픽스처 재배열 대기(anis-star·asuka-shikinami-langley-wille·neon-vision-eye·
+  privaty). was 730+16.)
+- 이전: **730 passed** (2026-07-17, **Raven Shock Wave 모델 정정** — Fienn 지적:
   스택은 풀차지마다 독립 DoT가 겹치는 게 아니라 **카운터 1개가 +1씩 누적(상한 10)**
   하고, `lasts for 5 sec`는 **카운터 수명이 풀차지마다 갱신**되는 것. 그녀의 최대 공백이
   3초(재장전)라 5초 창을 넘지 않아 **카운터가 전투 내내 안 죽고 10스택 고정** — 최초
@@ -498,21 +506,14 @@
       자동화 완료** — 워크트리 작업 시작 시 확인 없이 바로 실행할 것(Fienn 지시).
       메인에선 no-op, 없는 파일만 복사, 재실행 안전. `docs/insights.md`에도 기록.
 
-### 통합 대기 — `worktree-plans-frontend3-encoding` → `wip/scaffolding` (2026-07-17)
-- [ ] **머지 필요, 브랜치가 갈라져 있음.** 이 워크트리에 커밋 8개(Ein·Raven·Sakura
-      인코딩 + `scheduled_nukes`/`shot_times` 확장 + 워크트리 동기화 스크립트·훅 +
-      decisions 기록). 그 사이 `wip/scaffolding`엔 **dotgg weapon 스탯 수집 작업**이
-      들어옴(`scripts/collect_dotgg_weapons.py` + 수동 스텁 경로 + 셧다운 대응 결정) —
-      이 워크트리가 뒤늦게 발견한 18개 dotgg 파일의 출처가 그것.
-- **충돌 예상: `docs/decisions.md` 1건뿐**(`insights.md`/`roadmap.md`는 자동 병합).
-      양쪽이 로그 맨 위에 항목을 삽입해서 생긴 위치 충돌 — 내용 충돌 아님, 양쪽 항목을
-      모두 살리면 됨.
-- **머지 후 반드시 대조할 것:** 양쪽 로드맵이 서로 다른 로더블 수치를 주장한다
-      (이쪽 **56/60**, 저쪽 **53/57**). 자동 병합되면 상충하는 두 숫자가 문서에 함께
-      남을 수 있음. 머지 후 실측으로 재확인하고 하나로 정리할 것:
-      `python3 -c` 로 `ENCODED_SLUGS` × `load_nikke_spec` 카운트(이 파일 상단 요약 참고).
-- **훅은 머지되어야 효력이 생긴다** — `.claude/settings.json`의 SessionStart 훅은
-      추적 파일이라 머지 후에야 새 워크트리에 전파된다.
+### 통합 완료 — `worktree-plans-frontend3-encoding` → `wip/scaffolding` (2026-07-17)
+- [x] **머지 완료.** 예상대로 `docs/decisions.md` 위치 충돌 1건만 발생 — 양쪽 항목을
+      모두 살려 해결. 머지 결과에서 **746 passed**.
+- [x] **로더블 수치 실측 정리 완료** — 상충하던 56/60 vs 53/57 중 **56/60이 사실**
+      (`ENCODED_SLUGS` × `load_nikke_spec` 실측). 53/57은 Ein·Raven·Sakura 인코딩
+      이전 값이라 낡은 것이었음. 아래 과거 로그 항목의 53/57은 그 시점 기록이라 유지.
+- [x] **SessionStart 훅 전파** — `.claude/settings.json`이 머지되어 이후 새 워크트리엔
+      데이터 동기화가 자동 적용된다.
 
 ### 정리/보강
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
