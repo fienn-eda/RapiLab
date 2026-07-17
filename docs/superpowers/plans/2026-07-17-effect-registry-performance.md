@@ -31,7 +31,7 @@
 
 Note on TDD shape: this is a pure refactor, so the net passes **before and during** the rewrite; its job is to fail the moment Task 2's cache diverges from the frozen naive loop (especially after in-place mutations). That replaces the usual red step.
 
-- [ ] **Step 1: Write the parity test file**
+- [x] **Step 1: Write the parity test file**
 
 ```python
 """Parity net for the EffectRegistry segment-table rewrite (perf design spec,
@@ -125,17 +125,17 @@ def test_parity_survives_mutations_after_queries():
     assert_parity(reg)
 ```
 
-- [ ] **Step 2: Run the new tests — they pass against the current naive implementation**
+- [x] **Step 2: Run the new tests — they pass against the current naive implementation**
 
 Run (from `backend/`): `PYTHONIOENCODING=utf-8 python3 -m pytest tests/test_effects_parity.py -q`
 Expected: `2 passed`
 
-- [ ] **Step 3: Run the full suite to confirm the baseline**
+- [x] **Step 3: Run the full suite to confirm the baseline**
 
 Run: `PYTHONIOENCODING=utf-8 python3 -m pytest tests/ -q`
 Expected: `656 passed` (654 baseline + these 2)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/tests/test_effects_parity.py
@@ -154,7 +154,7 @@ git commit -m "test: parity net for the EffectRegistry segment-table rewrite"
 - Consumes: existing `Effect` dataclass, `_matches_scope`.
 - Produces: `total_for(stat: str, target: dict, now: float) -> float` — same signature, now O(log n); internal `_version: int`, `_segment_tables: dict`. No caller changes anywhere.
 
-- [ ] **Step 1: Add the import**
+- [x] **Step 1: Add the import**
 
 At the top of `backend/app/effects.py` (stdlib import before the dataclasses import):
 
@@ -162,7 +162,7 @@ At the top of `backend/app/effects.py` (stdlib import before the dataclasses imp
 from bisect import bisect_right
 ```
 
-- [ ] **Step 2: Add cache state to `__init__` and bump the version in every mutating method**
+- [x] **Step 2: Add cache state to `__init__` and bump the version in every mutating method**
 
 Replace `EffectRegistry.__init__`, `add`, `add_refreshing`, `truncate_open_ended` bodies as follows (docstrings of `add_refreshing`/`truncate_open_ended` stay exactly as they are — omitted here for brevity, do not delete them):
 
@@ -195,7 +195,7 @@ In `truncate_open_ended`, add one line at the end of the method (after the loop)
         self._version += 1
 ```
 
-- [ ] **Step 3: Replace `total_for` with the cached lookup + builder**
+- [x] **Step 3: Replace `total_for` with the cached lookup + builder**
 
 Replace the current `total_for` (keep `_is_active` — `add_refreshing` still uses it):
 
@@ -254,17 +254,17 @@ on that whole segment iff `start <= b and (end is None or b < end)` — the same
 half-open `[applied_at, applied_at + duration)` rule, including zero-length
 (`start == end` → never active) and truncated-negative windows.
 
-- [ ] **Step 4: Run the parity tests**
+- [x] **Step 4: Run the parity tests**
 
 Run: `PYTHONIOENCODING=utf-8 python3 -m pytest tests/test_effects_parity.py -q`
 Expected: `2 passed` (if `test_parity_survives_mutations_after_queries` fails, a mutating method is missing its `_version` bump)
 
-- [ ] **Step 5: Run the full suite**
+- [x] **Step 5: Run the full suite**
 
 Run: `PYTHONIOENCODING=utf-8 python3 -m pytest tests/ -q`
 Expected: `656 passed` — zero failures; any failure means an output diverged and must be fixed in `effects.py`, never in the failing test.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/app/effects.py
@@ -282,7 +282,7 @@ git commit -m "perf: serve EffectRegistry.total_for from version-invalidated seg
 - Consumes: `app.models.UserNikkeState`, `app.user_roster.load_roster`, `app.deck_search.BossProfile/evaluate_deck/feasible_orderings` (all existing).
 - Produces: a repeatable CLI benchmark; its measured ms/sim number goes into the completion notes and `docs/roadmap.md` (Task 4).
 
-- [ ] **Step 1: Write the script**
+- [x] **Step 1: Write the script**
 
 ```python
 """Benchmark one evaluate_deck call (a full 180 s raid simulation).
@@ -347,12 +347,12 @@ if __name__ == "__main__":
     main()
 ```
 
-- [ ] **Step 2: Run it and record the number**
+- [x] **Step 2: Run it and record the number**
 
 Run (from the repo/worktree root): `python3 scripts/bench_evaluate_deck.py`
 Expected: `avg evaluate_deck ... ms` at or under **50 ms** (spec target, ~50×; baseline 2410 ms). Copy the actual line into the completion notes at the bottom of this plan. If it misses 50 ms, do NOT add machinery — profile again (`cProfile`, sort by cumulative) and report where the remaining time goes; the spec makes further work a measured decision.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add scripts/bench_evaluate_deck.py
@@ -367,7 +367,7 @@ git commit -m "feat: repeatable evaluate_deck benchmark script"
 - Modify: `docs/roadmap.md` (the summary block at the top, lines ~10-20)
 - Modify: this plan file (completion notes)
 
-- [ ] **Step 1: Update the roadmap summary**
+- [x] **Step 1: Update the roadmap summary**
 
 In the top summary block of `docs/roadmap.md`, update the test line to the new count and prepend a line to the summary (keeping the existing entries as "이전:"):
 
@@ -379,7 +379,7 @@ In the top summary block of `docs/roadmap.md`, update the test line to the new c
 
 Replace `<실측값>` with the measured number from Task 3.
 
-- [ ] **Step 2: Append completion notes to this plan**
+- [x] **Step 2: Append completion notes to this plan**
 
 At the bottom of this file add:
 
@@ -390,7 +390,7 @@ At the bottom of this file add:
 - Suite: 656 passed.
 ```
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add docs/roadmap.md docs/superpowers/plans/2026-07-17-effect-registry-performance.md

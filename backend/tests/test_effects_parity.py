@@ -87,3 +87,10 @@ def test_parity_survives_mutations_after_queries():
     reg.add(Effect("crit_rate", 0.02, "self", None, "b"), applied_at=1.0)
     reg.truncate_open_ended("crit_rate", "b", now=12.0)
     assert_parity(reg)
+    # truncate_open_ended closes ALL matching open effects, including one
+    # applied after `now` - the duration goes negative (the replay-style
+    # corner its docstring documents). Must stay "never active" in both
+    # implementations.
+    reg.add(Effect("crit_rate", 0.02, "squad", None, "a"), applied_at=14.0)
+    reg.truncate_open_ended("crit_rate", "a", now=12.0)
+    assert_parity(reg)

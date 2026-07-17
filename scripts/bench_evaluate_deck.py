@@ -42,6 +42,8 @@ def main():
     if excluded:
         sys.exit(f"ERROR: benchmark roster units failed to load: {excluded}")
     orderings = list(feasible_orderings(specs))
+    if not orderings:
+        sys.exit("ERROR: benchmark roster produced no feasible deck ordering")
     boss = BossProfile(element="Water", fight_duration=180.0)
 
     evaluate_deck(orderings[0], boss)  # warmup
