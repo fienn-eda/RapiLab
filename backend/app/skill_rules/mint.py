@@ -19,11 +19,9 @@ Modeled (DPS-relevant):
 - Fantastic Performance! (skills[1]): on Full Burst enter, IF she's currently
   Singing (the parity check) - squad Critical Rate + squad Pierce Damage,
   10 sec, plus squad Projectile Explosion Damage
-  (`projectile_explosion_damage_up`), encoded faithfully but currently INERT -
-  raid_simulator doesn't consume that stat yet (see engine-capabilities.md's
-  unwired-buckets list). This is one of her two headline Singing-branch buffs,
-  so it's worth wiring if Mint (or another Nikke leaning on it) matters for a
-  real deck evaluation.
+  (`projectile_explosion_damage_up`) - consumed by every RL ally's normal
+  attacks and any projectile_explosion-typed burst nuke (gap #4 damage-type
+  wiring; see raid_simulator's normal_attack_type / _TYPE_BUCKETS).
 
 Here I Go! (skills[0]) Singing branch is modeled via the per-shot trigger (see
 `build_here_i_go_rules`): on every Full Charge attack (Mint is an RL, every shot
