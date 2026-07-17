@@ -321,6 +321,24 @@ this reuses the same tick_count/tick_interval loop instead of requiring a fake
 resource just to get repeating ticks. First consumer: Mana's Fatal Error!
 (396%/sec flat Sustained-typed DoT, 10 ticks).
 
+**Self-scheduled nuke (summoned entities):** damage on a cadence the UNIT
+computes, for when `periodic_nukes`' fixed interval can't express it - a summoned
+entity whose attack rate depends on how many of it are alive (Ein's Near
+Feathers: 6 max, per-feather lifetimes, her burst re-summons all six and resets
+their cooldowns, and each attacks every `8 * (1 - 0.16*(alive-1))` sec). The
+schedule is still deterministic - summons come from battle start plus the
+owner's burst times - so the unit module precomputes the time list and the
+engine only emits it, keeping summon bookkeeping out of the simulator. Declare
+spec dicts `{"schedule": fn(context, fight_duration) -> times, "percent",
+"damage_type"(optional), "full_burst_bonus_eligible"(optional)}`; wire via
+`_SCHEDULED_NUKE_BUILDERS` / `get_scheduled_nukes`, threaded by `roster` into
+`simulate_raid`'s `scheduled_nukes` param. Times at or past `fight_duration` are
+dropped. Logged with `source="scheduled"`. First consumer: Ein (`ein.py` - see
+its docstring for how a datamine + a video measurement, NOT the skill text,
+settled the mechanics; the text's "Activates when Near Feather is summoned"
+misreads as one hit per summon). Reach for this only when the cadence genuinely
+varies - a fixed interval is still `periodic_nukes`.
+
 **Multi-hit burst nuke:** a burst that "attacks sequentially N times" is N
 SEPARATE damage instances at the same instant, not one instance at N×percent -
 defense is a flat per-hit subtraction, so pre-multiplying overcounts whenever

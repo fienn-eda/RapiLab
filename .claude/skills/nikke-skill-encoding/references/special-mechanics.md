@@ -756,5 +756,31 @@ how to encode it, and current engine status.
   mechanism-level justification like the sequential cast-time computation
   above. See `ark_ranger_black.py` (Meteor / floor Collider DoTs).
 
+## Summoned entities ("Summons N X") — the skill text lies about the cadence
+
+- **What it looks like:** Ein's Feather Shot reads "Activates when Near Feather
+  is summoned. ... Deals 90.81% of final ATK as true damage", next to Feather
+  Standby's "Summons 4 Near Feathers". The obvious reading is ONE hit per summon
+  — 4 hits at battle start, 6 more per burst.
+- **What it actually is:** the feathers PERSIST and keep attacking on their own
+  timer, and the timer gets faster the more of them are alive. The summon count
+  is a population, not a hit count. Nothing in the text says so (2026-07-17,
+  Fienn from a client datamine).
+- **Easy mistake:** encoding the literal reading. For Ein it undercounts her main
+  damage source by more than an order of magnitude — the persistent feathers land
+  31 hits in a single Full Burst, versus 6 for "one hit per summon".
+- **Why it matters generally:** a summon skill's DPS is `population x cadence`,
+  and BOTH usually live outside the skill text (per-entity lifetimes, cadence
+  formula, re-summon/reset rules). **Treat any "Summons N ..." as unencodable
+  from the text alone and ask Fienn** — this is exactly the "ask rather than
+  guess" case. Engine support: `scheduled_nukes` (see `engine-capabilities.md`).
+- **Also worth knowing:** where a formula and a measurement disagree, prefer the
+  measurement and say so in the docstring. Ein's -16%-per-feather cooldown
+  reduction predicts a hit every 0.267s at 6 feathers; Fienn's recording shows
+  0.3s (31 hits/FB, first at +0.8s). The gap is a system throttle nobody
+  documents. Modeled as a 0.3s floor, flagged as an assumption — the additive
+  vs. multiplicative reading was settled the same way (multiplicative predicts
+  ~18 hits against 31 observed).
+
 ---
 *Add new mechanics above this line as they come up.*

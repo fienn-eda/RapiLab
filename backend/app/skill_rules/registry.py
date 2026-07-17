@@ -87,6 +87,12 @@ from app.skill_rules.neon_vision_eye import (
     build_firepower_explosion_per_shot_rules,
     build_neon_vision_eye_rules,
 )
+from app.skill_rules.ein import (
+    build_ein_per_shot_rules,
+    build_ein_rules,
+    build_ein_scheduled_nukes,
+    feather_all_range_burst_percent,
+)
 from app.skill_rules.drake import (
     build_drake_rules,
     build_drake_signature_rules,
@@ -295,6 +301,7 @@ _BUILDERS = {
     "rei-ayanami": lambda sv: (build_rei_ayanami_rules(sv), annihilation_burst_percent(sv)),
     "rei-ayanami-tentative-name": lambda sv: (build_rei_tentative_rules(sv), attack_state_burst_percent(sv)),
     "neon-vision-eye": lambda sv: (build_neon_vision_eye_rules(sv), None),  # burst is buff-only; damage is Firepower Explosion (per-shot)
+    "ein": lambda sv: (build_ein_rules(sv), feather_all_range_burst_percent(sv)),
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
     "laplace": lambda sv: ([], laplace_buster_burst_percent(sv)),  # no ally buffs; weapon-transform + Hero Vision deferred
@@ -340,6 +347,14 @@ _PERIODIC_NUKE_BUILDERS = {
 # which type-gated Damage-Up buff applies (see raid_simulator._TYPE_BUCKETS).
 _BURST_DAMAGE_TYPES = {
     "rapi-red-hood": "projectile_explosion",  # Power of Inheritance = Projectile Explosion skill
+    "ein": "true",  # Feather-All Range deals its nuke "as true damage"
+}
+
+# A Nikke whose damage lands on a cadence it computes for itself, rather than a
+# fixed interval (see raid_simulator's `scheduled_nukes`). Rare - only summoned
+# entities so far.
+_SCHEDULED_NUKE_BUILDERS = {
+    "ein": lambda sv: build_ein_scheduled_nukes(sv),
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at
@@ -378,6 +393,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
+    "ein": lambda sv: build_ein_per_shot_rules(sv),
     "anis-sparkling-summer": lambda sv: build_sparkling_missile_per_shot_rules(sv["sparkling_missile"]),
     "grave": lambda sv: build_overheat_per_shot_rules(sv),
     "rei-ayanami": lambda sv: build_preemptive_subdual_per_shot_rules(sv),
@@ -483,6 +499,13 @@ def get_periodic_nuke(slug, skill_values):
     `periodic_nukes` param), or None for the vast majority of Nikkes without
     one."""
     builder = _PERIODIC_NUKE_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_scheduled_nukes(slug, skill_values):
+    """List of specs for a Nikke whose damage lands on a self-computed schedule
+    (see raid_simulator's `scheduled_nukes`), or None for Nikkes without one."""
+    builder = _SCHEDULED_NUKE_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
 
 

@@ -28,6 +28,7 @@ from app.skill_rules.registry import (
     get_resource_gated_buffs,
     get_resource_scaled_nukes,
     get_resource_specs,
+    get_scheduled_nukes,
 )
 from app.squad_engine import SkillRule
 
@@ -82,6 +83,7 @@ def assemble_simulation_inputs(ordered_deck):
     resource_gated_buffs = {}
     dynamic_hit_count_nukes = {}
     resource_fill_triggered_buffs = {}
+    scheduled_nukes = {}
 
     for spec in ordered_deck:
         deck.append(
@@ -147,6 +149,10 @@ def assemble_simulation_inputs(ordered_deck):
         if resource_fill_triggered_buff:
             resource_fill_triggered_buffs[spec.slug] = resource_fill_triggered_buff
 
+        scheduled_nuke = get_scheduled_nukes(spec.slug, skill_values)
+        if scheduled_nuke:
+            scheduled_nukes[spec.slug] = scheduled_nuke
+
     return {
         "deck": deck,
         "rules_by_slug": rules_by_slug,
@@ -163,4 +169,5 @@ def assemble_simulation_inputs(ordered_deck):
         "resource_gated_buffs": resource_gated_buffs,
         "dynamic_hit_count_nukes": dynamic_hit_count_nukes,
         "resource_fill_triggered_buffs": resource_fill_triggered_buffs,
+        "scheduled_nukes": scheduled_nukes,
     }

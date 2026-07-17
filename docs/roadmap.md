@@ -8,8 +8,21 @@
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
 - 마지막 갱신: 2026-07-17
-- 브랜치: `wip/scaffolding`
-- 테스트: **692 passed** (2026-07-17, **ProcessPool 시뮬 병렬화 + Rapi 인코딩 완성** —
+- 브랜치: `worktree-plans-frontend3-encoding` (from `wip/scaffolding`)
+- 테스트: **708 passed** (2026-07-17, **미검증 5유닛 검증 배치 + Ein 인코딩** —
+  로드맵 백로그가 "미검증"으로 남겨둔 5명을 실제 스킬 텍스트로 검증: **ein 언블록
+  → 인코딩 완료**, **raven·sakura-bloom-in-summer도 인코딩 가능**(부위파괴만 defer,
+  다음 배치), **scarlet-black-shadow(gap #10)·milk-blooming-bunny(gap #11)는 신규 갭
+  기록**. Ein은 Near Feather 소환체가 딜의 대부분인데 개체 수가 공격 주기를 바꿔
+  `periodic_nukes`(고정 간격)로 표현 불가 → 신규 옵트인 확장 **`scheduled_nukes`**
+  (유닛이 결정론적 시각 리스트를 계산, 엔진은 방출만). Fienn의 클라 데이터마이닝
+  (6기 상한·개체별 수명·8초 쿨에서 기수당 -16% 합연산) + **영상 실측**(FB 진입 0.8초
+  후 첫 타격, 0.3초 간격, 총 31회)으로 모델 확정 — 실측 31회를 정확히 재현하는
+  0.3초 스로틀을 가정으로 명시하고 회귀 테스트로 고정. 곱연산은 관측의 절반이라 배제.
+  **58명, 매니페스트 54/58, API 로더블 50/58**(ein은 dotgg weapon 부재로 제외).
+  정정: engine-gaps의 "true의 DEF 무시 여부 확인 대기"는 이미 해결·배선된 낡은 메모였고,
+  이게 ein을 불필요하게 막고 있었음. was 692.)
+- 이전: **692 passed** (2026-07-17, **ProcessPool 시뮬 병렬화 + Rapi 인코딩 완성** —
   ① `SimPool`(지연 스폰 ProcessPoolExecutor, 워커 초기화 1회에 specs+boss 전달,
   태스크는 슬러그 튜플, 배치 32건 미만은 인라인): `search_best_decks`(canonical
   스코어링·순열 정련·prune 측정)·`allocate_decks`(+폴리시)의 맵 구간을 병렬화,
@@ -56,7 +69,7 @@
   매니페스트 하니스·roster 로더·`POST /api/recommend`. 통합 시 하니스가
   little-mermaid Bubble Wave 슬롯 오번호(lootandwaifus 좌→우 카운트 vs 모듈의
   dotgg 네이티브 컨벤션) 1건을 잡아 교정함; was 547 배치 시작 시점)
-- 인코딩된 니케: **57명** (Ada Wong[Phase C gaps #3/#6 소비, 신규 ⚠] +1) —
+- 인코딩된 니케: **58명** (Ein[`scheduled_nukes` 소비, 신규 ✅] +1) —
   상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 - **Phase C 배치 완료 (2026-07-16):** 엔진 갭 #3(member-subset scope:
   `SquadMember.weapon`+`member_subset_buff_rule`, 신규 Effect scope 없이 `slugs:`
@@ -108,7 +121,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (57명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (58명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ✅ 완료 — greedy+swap + ProcessPool 병렬화(50유닛 97초), `/api/recommend-raid`, 프론트 레이드 모드 배선까지 |
 | Phase 6 | 유저 데이터 입력 UI (React) | 🔄 진행 중 (입력 폼 + 결과 UI + 라이브 API 완료) |
@@ -388,8 +401,14 @@
       배치에서 제외(아래 무기 변형 항목으로 이동).
 - [ ] **eb3+ 백로그** — 대부분 **자원 유닛(gap #2 Pattern A 잔여/Pattern B)·상태머신·
       무기변형**. 배치 착수 전 유닛별 검증 필수.
-  - **Pattern A 자원 유닛 (named-resource로 인코딩 가능, 잔여)**: `rei-ayanami`·
-    `rei-ayanami-tentative-name`(Anti A.T.), `neon-vision-eye`.
+  - ~~**Pattern A 자원 유닛**: `rei-ayanami`·`rei-ayanami-tentative-name`·
+    `neon-vision-eye`~~ — **전부 2026-07-16에 인코딩 완료**(이 백로그가 갱신 누락된
+    상태로 남아 있었음, 2026-07-17 정정). Pattern A는 이제 소진.
+  - **검증 완료, 인코딩 대기 (2026-07-17 검증 배치)**: `raven`·`sakura-bloom-in-summer`
+    — 기존 프리미티브로 핵심 인코딩 가능, 부위파괴 연동만 defer. 다음 배치 최우선.
+  - **검증 완료, 갭 확인 (2026-07-17)**: `scarlet-black-shadow`(gap #10 — 버스트가
+    per-shot threshold를 3/6/9→1/2/3으로 변경, 소규모 확장 필요) ·
+    `milk-blooming-bunny`(gap #11 — 강제재장전/탄약제거 상태머신, 중~대).
   - **Pattern B 게이지·변신 (일반 프리미티브 잔여, gap #2)**: `mihara-bonding-chain`
     (체인)·`elegg-boom-and-shock`·`red-hood`(charge speed·딜 아님). (`ark-ranger-black`은
     2026-07-16 `part_destructible` 보스 플래그 브래킷으로 개별 인코딩 완료 — 일반
@@ -403,8 +422,9 @@
   - **무기 변형**(버스트/평타가 다른 무기모드로 전환 = 핵심 딜, 미지원): `snow-white`,
     `snow-white-heavy-arms`, `maxwell`, `cinderella-crystal-wave`(MG/Snipe 모드
     전환이 FB 넉을 게이팅 — 자원 primitive로 안 풀림, 2026-07-12 eb4 검증 중 재분류)
-  - ✱ = 애장품(dollskills) 보유, base/시그니처 별도 slug로 인코딩(Julia로 확정된 패턴):
-    `drake`, `laplace` (julia는 완료: `julia` + `julia-signature`)
+  - ~~✱ = 애장품(dollskills) 보유, base/시그니처 별도 slug: `drake`, `laplace`~~ —
+    **둘 다 2026-07-16 인코딩 완료**(drake는 base+signature 듀얼슬롯, laplace는 base만
+    — 시그니처는 더 큰 무기변형이라 듀얼슬롯 없음). 백로그 갱신 누락, 2026-07-17 정정.
 - [x] `damage_taken_up` / `other_core_damage_sources` 엔진 연결
       — 완료. squad 스코프 적 디버프, 코어 데미지는 `core_hittable` 게이팅.
 - [x] `NikkeSpec`에 스킬별 유저 레벨 필드 추가 → 조립 시 `levels[level-1]` 선택 일반화
@@ -428,6 +448,14 @@
       `last_used_at`이 뒤로 밀려 "첫 사이클만 Prika, 이후 Mint 전담" 로테이션이
       재현됨(Fienn 확인 2026-07-17). 음수 펄스의 `on_full_burst_end` 통과 검증 +
       Encore 슬롯 값 추출 포함. Stage 1(한계기여도 측정) 착수 전 완료 필요.
+
+### Phase 3 검증 배치 (2026-07-17)
+- [x] **미검증 5유닛 검증** — ein ✅(인코딩 완료) · raven·sakura-bloom-in-summer
+      (인코딩 가능, 대기) · scarlet-black-shadow(gap #10) · milk-blooming-bunny(gap #11).
+- [x] **Ein 인코딩** — `scheduled_nukes` 확장 + Fienn 실측 기반 페더 스케줄.
+- [ ] **raven·sakura-bloom-in-summer 인코딩** — 다음 배치 최우선(확장 불필요).
+- [ ] **ein weapon 스탯 확보** — dotgg 셧다운으로 수집 불가. 이게 없으면 인코딩은
+      돼 있어도 덱 탐색에 못 들어감. 대체 소스 or 수동 입력 필요 (Fienn 판단).
 
 ### 정리/보강
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강

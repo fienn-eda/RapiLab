@@ -3,7 +3,12 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-17 (매니페스트 예외 8유닛 배치 — crown·helm·liter·
+- 마지막 갱신: 2026-07-17 (**Ein 신규 인코딩** — Near Feather 소환체 스케줄을
+  신규 엔진 확장 `scheduled_nukes`로 모델(Fienn의 클라 데이터마이닝 + 영상 실측
+  기반). **58명, 매니페스트 54/58, API 로더블 50/58**(Ein은 dotgg weapon 파일
+  부재로 로더블 아님). 같은 배치에서 미검증 5유닛 검증: raven·sakura-bloom-in-summer는
+  기존 프리미티브로 인코딩 가능(다음 배치), scarlet-black-shadow·milk-blooming-bunny는
+  갭 확인(`engine-gaps.md` 참고). 이전 갱신: 매니페스트 예외 8유닛 배치 — crown·helm·liter·
   miranda·moran·soline-frost-ticket·volume·zwei에 dotgg-소스 매니페스트 추가,
   53/57 커버. **API 로더블 50/57** (로더블 B1 4→10명 — 5덱 분배가 실제로 5덱을
   채울 수 있게 됨). 이전 갱신: 매니페스트 배치 2 — 29유닛 추가로 45/57 커버 +
@@ -15,9 +20,10 @@
   - 픽스처가 데이터 토큰과 재배열 관계라 drop_tokens로 재현 불가(4):
     `anis-star`, `asuka-shikinami-langley-wille`, `privaty`, `neon-vision-eye`
   - (매니페스트와 별개로 dotgg weapon 파일 부재로 API 제외: `ark-ranger-black`,
-    `prika` — dotgg 리스팅에 없음. `marciana-marine-study`는 dotgg에 base판
+    `prika`, `ein` — dotgg 리스팅에 없음(dotgg는 2026-05 셧다운이라 신규 수집 불가;
+    weapon 스탯을 지어내지 않고 보류). `marciana-marine-study`는 dotgg에 base판
     스탯만 있어 보류 — Fienn 판단 대기)
-- 총 **57명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 30명) — drake는 base/signature 듀얼슬롯 2엔트리
+- 총 **58명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 31명) — drake는 base/signature 듀얼슬롯 2엔트리
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -132,6 +138,7 @@
 | Rei Ayanami | `rei-ayanami` | Attacker | MG | Fire | ✅ | (신규 2026-07-16, base) Attack Support: Fire 아군 flat ATK=caster ATK 25.03%(FB진입)·버스트: Fire 아군 AD+48.02% + 990.2% 넉·Preemptive Subdual: 노멀100회마다 112.37% 넉(gap #1 `every`) + 자 Elemental Advantage AD+30.23%/3s(other_elemental_bonus, Iron 보스 게이팅 Fire>Iron, refresh). 보류: 실드딜/실드생성(비-DPS)만. dollskills 데이터 비어있음(시그니처 없음, base-only) |
 | Rei Ayanami (Tentative Name) | `rei-ayanami-tentative-name` | Attacker | AR | Wind | ⚠ | (신규 2026-07-16, base; `rei-ayanami`와 별개 유닛) Attack State 버스트: 자AD+35.9%+자flat ATK=caster ATK 63.36% + 990.2% 넉·Maintenance: 스쿼드 flat ATK=caster ATK 11.61%(FB진입)·Annihilation Support: Attack State 창(자버스트 10초) 중 노멀7회마다 286.37% "additional damage" 넉(gap #7). 보류: Anti A.T. Field 590.64% 페이로드+Annihilation State 아군버프(교차유닛 콜라보 상태), MG heating up speed |
 | Neon: Vision Eye | `neon-vision-eye` | Attacker | RL | Electric | ⚠ | (신규 2026-07-16, base) Firepower Gauge가 매 사이클 100 리필 → Super Firepower 매 사이클 정상상태로 근사. Maximum Firepower: 자ATK+115.09%(FB진입)·Super Firepower 버스트: 자AD+155.24%(버스트 넉 없음)·Firepower Explosion: 풀차지마다 437.98% + Super Firepower 10초 창 중 +262.79%("additional damage", gap #7). 보류: 라이브 게이지, 넉의 projectile-explosion 타이핑(pulse 경로 미지원, 자기 킷 내 inert), Explosion Radius, 생존기 |
+| Ein | `ein` | Attacker | SR | Electric | ✅ | (신규 2026-07-17) 딜의 대부분이 Near Feather 소환체 — 신규 `scheduled_nukes` 확장으로 사전계산 스케줄에 90.81% 진댐 방출. 페더 6기 상한/개체별 수명(F1 무제한·F2 38s·F3 32s·F4 26s·F5·F6 10s)·버스트가 전 페더 재소환+쿨 초기화·공격쿨 8초에서 기수당 -16%(합연산). Feather Standby 자ATK+70.12%(자버스트)·Feather Shot 풀차지마다 자 Charge Damage+80%/1라운드·Feather-All Range 자 True Damage+55.3%/Charge Damage+140.68% + 300.02% 진댐 넉. **가정(docstring 명시): 타격 간 0.3초 스로틀**(Fienn 영상 실측 FB 31회를 정확히 재현; 공식만 쓰면 FB 21% 과대). 6기 구간 외 카운트는 공식 미검증. dotgg weapon 부재로 API 로더블 아님 |
 | Drake | `drake` | Attacker | SG | Fire | ⚠ | (신규 2026-07-16, base) Overcharge: 스쿼드 ATK+11.85%(FB진입)·Thunderbolt: 노멀10회마다 98.55% 넉(gap #1)·Drake Special 버스트: 1254% 넉 + 자 Max Ammo+72.18%. 보류: Hit Rate(inert) |
 | Drake (Signature) | `drake-signature` | Attacker | SG | Fire | ⚠ | (신규 2026-07-16, 시그니처/듀얼슬롯) base + SG아군(squad 근사) ATK+63.88%/Max Ammo+50.14% + Thunderbolt 2차 트리거(노멀5회마다 201.6%) + Drake Special 3009.6% 넉 + 자AD+31.68%. 보류: Hit Rate(inert), 무기종 스코프(squad 근사) |
 | Laplace | `laplace` | Attacker | RL | Iron | ⚠ | (신규 2026-07-16, base, 얇음) Hero Bomber: 마지막 탄 81.66% "additional" 넉(gap #1 last_bullet)·Laplace Buster First Damage 897.6%를 버스트 넉으로 모델. 보류(킷 대부분): 무기변형(5초 Buster 모드), Hero Vision(Pattern B 감쇠 스택)+맥스스택 true dmg, 파츠딜, 시그니처(더 큰 무기변형 → 듀얼슬롯 없음) |

@@ -5,7 +5,16 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-16 (**Phase C 배치 — gap #3·#6·#8·#9 완료.**
+- 마지막 갱신: 2026-07-17 (**미검증 5유닛 검증 배치 + `scheduled_nukes` 확장**.
+  로드맵의 "미검증(풀차지/distributed)" 5유닛을 실제 텍스트로 검증한 결과:
+  **ein 언블록→인코딩 완료**(아래 신규 확장) · **raven·sakura-bloom-in-summer는
+  기존 프리미티브로 인코딩 가능**(부위파괴 연동만 defer, 다음 배치) ·
+  **scarlet-black-shadow는 신규 소규모 갭**(gap #10, 창 한정 per-shot threshold
+  오버라이드) · **milk-blooming-bunny는 강제재장전/탄약제거 상태머신 갭**(gap #11).
+  **정정: "true의 DEF 무시 여부 Fienn 확인 대기"는 이미 해결됨** —
+  `raid_simulator.py`가 `true` 타입을 `enemy_def=0`으로 계산 중이고
+  `damage-formula-reference.md`도 확정. 이 낡은 메모가 ein을 불필요하게 막고 있었음.
+  이전 갱신: 2026-07-16 (**Phase C 배치 — gap #3·#6·#8·#9 완료.**
   #3 member-subset scope: `SquadMember.weapon` + `member_subset_buff_rule`(트리거 시점
   라이브 필터 → `slugs:` 스코프 해석, 신규 Effect scope 없음). 소비: Ark Ranger Black
   (Wind-AR 아군 지속댐)·Arcana(Magician/Strength 선버스트 Electric B3)·Tove(SG 아군
@@ -76,6 +85,10 @@
 | — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) | **완료 (2026-07-11, `ally_burst_activate`)** | 신규 트리거 |
 | — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |
 | ~~—~~ | ~~attack/charge speed~~ (발사 간격 → 딜) | 2 (Dorothy·Tove) | **완료 (Phase S, 2026-07-16)** — `attack_speed_percent`/`charge_speed_percent` 배선 | 발사 타임라인 |
+| ~~10~~ | ~~소환체 가변 케이던스 스케줄~~ (살아있는 개체 수가 공격 주기를 바꿈) | 1 (Ein) | **완료 (2026-07-17, `scheduled_nukes`)** | 신규 방출 경로 |
+| 10 | **창 한정 per-shot threshold 오버라이드** (버스트가 요구 카운트를 3/6/9 → 1/2/3으로 변경) | 1 (Scarlet: Black Shadow) | 미착수, 소규모 | 트리거 변형 |
+| 11 | **강제 재장전 / 탄약 제거 상태머신** (발사 타임라인 자체를 스킬이 조작) | 1 (Milk: Blooming Bunny) | 미착수, 중~대 | 신규 상태 |
+| — | **부위파괴 이벤트** (gap #2 Pattern B와 동근) | 3+ (Raven·Sakura·Mihara) | 미착수 — ark-ranger는 `part_destructible` 브래킷으로 개별 우회 | 신규 이벤트 |
 | — | hit rate · Burst Gauge fill speed (딜/타이밍 아님) | 15 | **구현 안 함** (defer 유지) | 범위 밖 |
 
 > **핵심 결론:** #1 하나가 압도적이다. 노멀공격 카운터(20명)와 풀차지 카운터(19명)는
@@ -526,6 +539,14 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   `docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`,
   `ark_ranger_black.py` docstring 참고.
 
+- **`scheduled_nukes` — 소환체 가변 케이던스 (2026-07-17, Ein):** `periodic_nukes`가
+  고정 간격만 지원해서 막히던, **살아있는 개체 수가 공격 주기를 바꾸는 소환체** 딜을
+  위한 옵트인 경로. 스케줄이 결정론적(소환 시각 = 전투 시작 + 소유자 버스트 시각,
+  수명은 고정)이라는 점을 이용해 **유닛 모듈이 시각 리스트를 계산하고 엔진은 방출만**
+  한다 — 소환체 수명 관리가 시뮬레이터로 새지 않음. spec =
+  `{"schedule": fn(context, fight_duration) -> times, "percent", "damage_type"(옵션),
+  "full_burst_bonus_eligible"(옵션)}`. `fight_duration` 이후 시각은 드롭. 첫 소비자
+  Ein(Near Feather). 기존 경로 무영향(파라미터 부재 = 아무것도 방출 안 함).
 - **Phase C 배치 (gaps #3·#6·#8·#9), 2026-07-16:**
   - **member-subset scope (#3):** `SquadMember.weapon`(옵셔널) + `_helpers.
     member_subset_buff_rule(trigger, member_filter, buffs, condition, refreshing)` —
@@ -541,6 +562,34 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
     `per_shot_rules` `"first_bullet"` 모드 + RoundGrant 2차 패스 리팩터(퍼샷 룰이
     기록한 그랜트도 변환) + `normal_attack_damage_multiplier`(노멀 전용 Final-ATK
     항). 소비: Jill Valentine(Magnum/Acid).
+
+### 10. 창 한정 per-shot threshold 오버라이드 — 미착수 (2026-07-17 발견)
+
+- **무엇:** Scarlet: Black Shadow의 Fleetly Fading Breakthrough는 풀차지 3/6/9회에
+  각기 다른 효과(283.03% 단일 / 565% distributed / 848.03% distributed, "한 번에
+  하나만")를 내는데, **버스트(Fleetly Fading Strike)가 그 요구 카운트를 10초 동안
+  1/2/3으로 바꾼다**. `per_shot_rules`의 threshold는 정적이라 표현 불가.
+- **왜 defer가 안 되나:** 이 창이 그녀 딜의 핵심이라 빼면 심하게 과소평가된다.
+  3/6/9 베이스라인만 인코딩하는 것도 같은 이유로 부정직.
+- **필요한 확장:** gap #7의 창 필터와 동형 — 창 안에서만 threshold를 대체하는 모드.
+  규모 소(~40 loc 추정). **막힌 유닛 1명이라 수요 확인 후 착수.**
+- 참고: `data/lootandwaifus/char_scarlet-black-shadow.json`.
+
+### 11. 강제 재장전 / 탄약 제거 상태머신 — 미착수 (2026-07-17 발견)
+
+- **무엇:** Milk: Blooming Bunny의 Embarrassment 루프 — 풀차지를 0.5초 이상 유지하면
+  상태 진입 → 290% Distributed + **탄약 100% 제거 + 강제 재장전**(재장전 속도 50%
+  고정) + 자ATK+118.7%/40초. 상태 중 Pierce Damage+64.7%. 버스트의 Overconfident는
+  10초간 Embarrassment 면역 + 447.7% Distributed 2초마다.
+- **왜 막힘:** 엔진에 "탄약을 강제로 비우고 재장전시킨다"는 프리미티브가 없다.
+  `attack_rate`의 발사 타임라인은 매거진 크기/공속에서 결정론적으로 생성되며,
+  스킬이 그걸 중간에 리셋하는 경로가 없음. 이게 이 유닛 킷의 심장이라 얇은 인코딩은
+  정직하지 않다.
+- **부분적으로 가능한 것:** Overconfident의 2초마다 447.7% Distributed는 이미
+  `periodic_nukes`의 `during_full_burst`/`own_burst_interval`로 표현 가능. 상태 루프가
+  풀리면 함께 인코딩.
+- **필요한 확장:** 발사 타임라인에 개입하는 재장전 이벤트. 규모 중~대.
+- 참고: `data/lootandwaifus/char_milk-blooming-bunny.json`.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
