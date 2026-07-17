@@ -5,14 +5,19 @@
 // Nikke (overload alone is up to 24), so losing it to a page reload is the
 // difference between a usable tool and an unusable one.
 
-import { useCallback, useEffect, useState } from 'react'
-import { makeEmptyDraft, type NikkeDraft } from '../types/nikkeDraft'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  makeEmptyDraft,
+  mergeRosterDrafts,
+  type NikkeDraft,
+} from '../types/nikkeDraft'
 
 export interface Roster {
   drafts: NikkeDraft[]
   addNikke: () => void
   updateNikke: (id: string, next: NikkeDraft) => void
   removeNikke: (id: string) => void
+  importDrafts: (incoming: NikkeDraft[]) => { added: number; updated: number }
 }
 
 const STORAGE_KEY = 'nikke-roster'
@@ -39,6 +44,17 @@ export const useRoster = (initial: NikkeDraft[] = []): Roster => {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(drafts))
   }, [drafts])
 
+  const draftsRef = useRef(drafts)
+  useEffect(() => {
+    draftsRef.current = drafts
+  }, [drafts])
+
+  const importDrafts = useCallback((incoming: NikkeDraft[]) => {
+    const result = mergeRosterDrafts(draftsRef.current, incoming)
+    setDrafts(result.drafts)
+    return { added: result.added, updated: result.updated }
+  }, [])
+
   const addNikke = useCallback(() => {
     setDrafts((current) => [...current, makeEmptyDraft()])
   }, [])
@@ -53,5 +69,5 @@ export const useRoster = (initial: NikkeDraft[] = []): Roster => {
     setDrafts((current) => current.filter((draft) => draft.id !== id))
   }, [])
 
-  return { drafts, addNikke, updateNikke, removeNikke }
+  return { drafts, addNikke, updateNikke, removeNikke, importDrafts }
 }
