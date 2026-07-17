@@ -103,6 +103,15 @@ def _matches_scope(scope: str, target: dict) -> bool:
     raise ValueError(f"unknown effect scope: {scope}")
 
 
+def _matches_target(effect: Effect, target: dict) -> bool:
+    """One matching semantics for both the per-stat segment tables and the
+    merged epoch timeline: "self" matches via source_slug, everything else
+    via _matches_scope."""
+    if effect.scope == "self":
+        return effect.source_slug == target["slug"]
+    return _matches_scope(effect.scope, target)
+
+
 class EffectRegistry:
     def __init__(self):
         self._entries: list[tuple[Effect, float]] = []
@@ -113,6 +122,7 @@ class EffectRegistry:
         # Mutations happen ONLY through the methods below (audited 2026-07-17).
         self._version = 0
         self._segment_tables: dict[tuple, tuple[int, list, list]] = {}
+        self._epoch_tables: dict[tuple, tuple[int, list]] = {}
 
     def add(self, effect: Effect, applied_at: float) -> None:
         self._entries.append((effect, applied_at))
@@ -198,10 +208,7 @@ class EffectRegistry:
         for effect, applied_at in self._entries:
             if effect.stat != stat:
                 continue
-            if effect.scope == "self":
-                if effect.source_slug != target["slug"]:
-                    continue
-            elif not _matches_scope(effect.scope, target):
+            if not _matches_target(effect, target):
                 continue
             end = None if effect.duration is None else applied_at + effect.duration
             intervals.append((applied_at, end, effect.value))
@@ -219,3 +226,28 @@ class EffectRegistry:
                     total += value
             totals.append(total)
         return (self._version, boundaries, totals)
+
+    @property
+    def version(self) -> int:
+        """Monotonic mutation counter - lets callers key their own memos on
+        registry state (see raid_simulator's stat-bundle memo)."""
+        return self._version
+
+    def state_epoch(self, target: dict, now: float) -> int:
+        """Index of the piecewise-constant state segment `now` falls in for
+        this target: within one epoch NO effect matching the target starts or
+        ends (under any stat), so every stat total is constant - callers may
+        resolve whole stat bundles once per (target, epoch, version)."""
+        key = (target["slug"], target.get("element"))
+        cached = self._epoch_tables.get(key)
+        if cached is None or cached[0] != self._version:
+            boundary_set = set()
+            for effect, applied_at in self._entries:
+                if not _matches_target(effect, target):
+                    continue
+                boundary_set.add(applied_at)
+                if effect.duration is not None:
+                    boundary_set.add(applied_at + effect.duration)
+            cached = (self._version, sorted(boundary_set))
+            self._epoch_tables[key] = cached
+        return bisect_right(cached[1], now)
