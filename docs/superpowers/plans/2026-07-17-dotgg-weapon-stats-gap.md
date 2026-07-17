@@ -519,13 +519,18 @@ git commit -m "feat: collect_dotgg_weapons script - fetch missing dotgg weapon s
 
 ---
 
-### Task 3: 실제 수집 실행 + 데이터 커밋
+### Task 3: 실제 수집 실행 + 산출물 반영
 
 **Files:**
 - Create: `data/dotgg/char_*.json` (스크립트 산출물 — 수집분 + 스텁 4개)
 
 **Interfaces:**
 - Consumes: Task 2의 CLI.
+
+**주의:** `data/dotgg/`·`data/lootandwaifus/`는 `.gitignore`에 있음 — git 밖
+로컬 데이터 자산이라 **커밋 불가/불필요**. 워크트리에는 메인 체크아웃에서
+복사해 둔 사본이 있고, 스크립트 산출물은 브랜치 머지와 별개로 마지막에
+메인 체크아웃 `data/dotgg/`로 복사해 전달한다.
 
 - [ ] **Step 1: dry-run으로 대상 확인**
 
@@ -558,13 +563,15 @@ Expected: `manual ['maxAmmo', 'damage', 'reloadTime']`
 Run (backend/에서): `python3 -m pytest -q`
 Expected: 전부 PASS. (스텁이 url 색인에 들어가도 `_weapon_stats` 필드 검사로 해당 유닛은 여전히 제외 — 실패하면 원인 규명 후 수정.)
 
-- [ ] **Step 5: 커밋**
+- [ ] **Step 5: 산출물 확인 (커밋 없음 — data/는 gitignore)**
 
 ```bash
-git status   # 새 data/dotgg/char_*.json 목록 확인
-git add data/dotgg
-git commit -m "data: dotgg weapon stats for lootandwaifus-only units + manual stubs for dotgg-absent 4"
+git status --short   # data/ 산출물이 untracked/ignored로 남고 추적 파일 변경이 없는지 확인
+ls data/dotgg | wc -l   # 파일 수 증가 확인 (53 + 수집분 + 스텁 4)
 ```
+
+메인 체크아웃 반영은 브랜치 마무리 단계에서 새 `char_*.json`들을
+`C:\Users\fienn\Desktop\NikkeDeckBuilder\data\dotgg\`로 복사해서 수행.
 
 ---
 
