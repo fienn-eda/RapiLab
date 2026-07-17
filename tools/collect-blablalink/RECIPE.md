@@ -64,6 +64,20 @@ Two IDs coexist: the game API uses `name_code` (Rapi = 5129); ShiftyPad's URL us
 Slugs come from the English name via Phase A `resolveSlug` (e.g. "Rapi: Red Hood" →
 `rapi-red-hood`).
 
+**Known slug limitation (E2E 2026-07-18, full 159-unit collection):** `resolveSlug`'s
+alias table was built for ExiaInvasion's *short* names, but the directory gives *full*
+names, so a few units mismatch the backend's encoded slugs and are silently excluded
+from recommendation:
+- A base unit and its variant collide when an alias maps the base to the variant's slug:
+  "Soline" + "Soline: Frost Ticket" both → `soline-frost-ticket`; likewise "Marciana".
+- Two units share a display name: both "Rei" → `rei-ayanami` (base vs tentative-name are
+  indistinguishable by name — needs `name_code`/`resource_id`).
+- The encoded slug carries info absent from the game name: game "Julia" → `julia`, but the
+  encoded character is `julia-signature`.
+The collected `roster.json` itself is correct (it stores the unambiguous `name_en` +
+`resource_id`); this is a downstream name→slug mapping gap. A robust fix keys encoded
+characters by `name_code` rather than name-derived slug — deferred as its own task.
+
 ## (e) Parser DOM structure (drives parse.js)
 
 - **Main stats** — climb from the `LV<n>` leaf to the ancestor whose textContent has

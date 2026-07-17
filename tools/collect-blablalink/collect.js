@@ -105,6 +105,11 @@ const main = async () => {
     targets.push({ resource_id: d.resource_id, name_en: name })
   }
   targets.sort((a, b) => a.resource_id - b.resource_id)
+  // No owned SSR means the roster fetch failed (bad session / API error envelope), not
+  // an empty account — fail loudly instead of writing a 0-unit roster.json.
+  if (targets.length === 0) {
+    throw new Error('no owned SSR resolved — is the blablalink session valid?')
+  }
   if (DRY) targets = targets.slice(0, 1)
   log(`owned SSR to collect: ${targets.length}${DRY ? ' (dry-run)' : ''}`)
 
