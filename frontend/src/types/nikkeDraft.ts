@@ -190,3 +190,46 @@ export const getValidRoster = (drafts: NikkeDraft[]): UserNikkeState[] =>
   drafts
     .map((draft) => validateDraft(draft).value)
     .filter((value): value is UserNikkeState => value != null)
+
+export interface RosterMergeResult {
+  drafts: NikkeDraft[]
+  added: number
+  updated: number
+}
+
+/**
+ * Merge imported drafts into the current roster by character_slug. For a slug
+ * already present, overwrite only the import-sourced fields (level, core_level,
+ * skill_levels, overload_options) and keep the manual ones (id, hp, atk, def_,
+ * hasCube, pve_cube). New slugs are appended; current drafts absent from the
+ * import are left untouched.
+ */
+export const mergeRosterDrafts = (
+  current: NikkeDraft[],
+  incoming: NikkeDraft[],
+): RosterMergeResult => {
+  const next = current.map((d) => ({ ...d }))
+  const indexBySlug = new Map(next.map((d, i) => [d.character_slug, i]))
+  let added = 0
+  let updated = 0
+
+  for (const inc of incoming) {
+    const idx = indexBySlug.get(inc.character_slug)
+    if (idx === undefined) {
+      next.push(inc)
+      indexBySlug.set(inc.character_slug, next.length - 1)
+      added += 1
+    } else {
+      next[idx] = {
+        ...next[idx],
+        level: inc.level,
+        core_level: inc.core_level,
+        skill_levels: inc.skill_levels,
+        overload_options: inc.overload_options,
+      }
+      updated += 1
+    }
+  }
+
+  return { drafts: next, added, updated }
+}
