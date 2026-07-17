@@ -556,7 +556,8 @@ Expected: `0.3 9 2` (라이브 확인값과 일치)
 ```bash
 python3 -c "import json; d=json.load(open('data/dotgg/char_prika.json', encoding='utf-8')); print(d['source'], d['_todo'])"
 ```
-Expected: `manual ['maxAmmo', 'damage', 'reloadTime']`
+Expected: `manual ['maxAmmo', 'damage', 'reloadTime', 'chargeTime', 'chargeDamage']`
+(Prika는 SR — lootandwaifus 원본 확인. 초안의 MG 가정은 오류였음.)
 
 - [ ] **Step 4: 전체 스위트 확인**
 
