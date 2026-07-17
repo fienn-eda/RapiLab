@@ -54,10 +54,12 @@ The input form collects one `UserNikkeState` per owned Nikke. This is the
 | `overload_options` | `{ name: string, value: float }[]` | aggregated across 4 gear pieces; may be empty |
 | `pve_cube` | `{ name: string, level: int(1–10) } \| null` | PVE cube only; PVP cubes out of scope |
 
-Open question carried from the backend (`models.py` comment): whether cube stats
-are already folded into `hp/atk/def` or added separately is unconfirmed. Build
-the input for what the user reads off ShiftyPad; don't encode an assumption about
-that here — flag it if the UI forces the question.
+Resolved (Fienn, 2026-07-17): ShiftyPad's displayed `hp/atk/def` **already include**
+the equipped cube — with a cube on it reflects the cube, with none it shows bare
+character stats. So the user copies those numbers in as-is and the cube is never
+added on top. Overload is the opposite: ShiftyPad shows it separately and it IS
+additive. Keep entering `pve_cube` as `{name, level}` — the backend uses it only
+for reload speed and superior code damage, which aren't part of those three stats.
 
 ## Data contract — backend API
 
