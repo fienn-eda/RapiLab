@@ -179,8 +179,10 @@ Once the project is initialized (`npm create vite@latest . -- --template react-t
 in `frontend/`, then `npm install`):
 
 ```
-npm run dev        # Vite dev server
-npm run build       # production build
-npx tsc --noEmit    # type-check
-npm run test        # Vitest (once tests exist)
+npm run dev           # Vite dev server
+npm run build         # production build
+npx tsc -b --noEmit   # type-check (must be -b: the root tsconfig is a
+                      # references-only shell with "files": [], so a bare
+                      # `tsc --noEmit` checks NOTHING and always exits 0)
+npm run test          # Vitest
 ```

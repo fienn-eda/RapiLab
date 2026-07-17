@@ -3,10 +3,10 @@
 
 import { useCallback, useState } from 'react'
 import { recommendDecks } from '../api/recommend'
-import { describeRecommendApiError, RecommendApiError } from '../api/recommendApiError'
 import type { DeckRecommendation, RecommendRequest } from '../types/recommend'
+import { useAsyncRequestStatus, type RequestStatus } from './useAsyncRequestStatus'
 
-export type RecommendStatus = 'idle' | 'loading' | 'error' | 'success'
+export type RecommendStatus = RequestStatus
 
 export interface RecommendState {
   status: RecommendStatus
@@ -17,28 +17,21 @@ export interface RecommendState {
 }
 
 export const useRecommend = (): RecommendState => {
-  const [status, setStatus] = useState<RecommendStatus>('idle')
   const [decks, setDecks] = useState<DeckRecommendation[]>([])
   const [excludedSlugs, setExcludedSlugs] = useState<string[]>([])
-  const [error, setError] = useState<string>()
+  const { status, error, run } = useAsyncRequestStatus()
 
-  const submit = useCallback(async (request: RecommendRequest) => {
-    setStatus('loading')
-    setError(undefined)
-    try {
-      const response = await recommendDecks(request)
-      setDecks(response.decks)
-      setExcludedSlugs(response.excluded_slugs)
-      setStatus('success')
-    } catch (err) {
-      setError(
-        err instanceof RecommendApiError
-          ? describeRecommendApiError(err)
-          : 'Failed to fetch deck recommendations.',
-      )
-      setStatus('error')
-    }
-  }, [])
+  const submit = useCallback(
+    (request: RecommendRequest) =>
+      run(
+        () => recommendDecks(request),
+        (response) => {
+          setDecks(response.decks)
+          setExcludedSlugs(response.excluded_slugs)
+        },
+      ),
+    [run],
+  )
 
   return { status, decks, excludedSlugs, error, submit }
 }

@@ -171,7 +171,8 @@
   color: var(--text-muted);
 }
 
-.checkbox {
+.checkbox,
+.radio {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
@@ -346,4 +347,34 @@
   gap: var(--sp-4);
   color: var(--text-muted);
   font-size: 13px;
+}
+
+.deck-results__excluded,
+.raid-results__leftover {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* Mode switch + raid results ------------------------------------------- */
+
+.mode-switch {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.recommend-form__progress {
+  background: var(--accent-soft);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-3) var(--sp-4);
+  font-size: 14px;
+}
+
+.raid-results__note {
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.raid-results__combined {
+  font-size: 16px;
 }
