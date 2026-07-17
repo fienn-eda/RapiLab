@@ -105,3 +105,40 @@ def find_best_decks(roster, boss: BossProfile, top_n=5):
     ]
     scored.sort(key=lambda entry: entry["total_damage"], reverse=True)
     return scored[:top_n]
+
+
+def _intra_tier_orderings(combo):
+    by_tier = {1: [], 2: [], 3: []}
+    for unit in combo:
+        by_tier[unit.burst_tier].append(unit)
+    for o1 in permutations(by_tier[1]):
+        for o2 in permutations(by_tier[2]):
+            for o3 in permutations(by_tier[3]):
+                yield list(o1) + list(o2) + list(o3)
+
+
+def prune_candidate_pool(roster, boss):  # implemented in the next task
+    raise NotImplementedError
+
+
+def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200, permutation_top_k=40):
+    """Budget-aware replacement for exhaustive find_best_decks: canonical
+    tier-order scores rank the shape combinations (intra-tier order only
+    decides nuker-vs-backup roles), and only the top K get their permutations
+    evaluated. When canonical enumeration alone would blow the budget, the
+    roster is first cut to a candidate pool (prune_candidate_pool)."""
+    pool = list(roster)
+    combos = list(shape_combinations(pool))
+    if len(combos) > sim_budget:
+        pool = prune_candidate_pool(roster, boss)
+        combos = list(shape_combinations(pool))
+    canonical = sorted(
+        ((evaluate_deck(combo, boss)["total_damage"], i) for i, combo in enumerate(combos)),
+        reverse=True,
+    )
+    refined = []
+    for _, i in canonical[:permutation_top_k]:
+        for ordered in _intra_tier_orderings(combos[i]):
+            refined.append(_summarize(ordered, evaluate_deck(ordered, boss)))
+    refined.sort(key=lambda entry: entry["total_damage"], reverse=True)
+    return refined[:top_n]

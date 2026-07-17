@@ -151,3 +151,45 @@ def test_shape_combinations_count_and_canonical_order():
 def test_shape_combinations_empty_when_a_tier_is_missing():
     from app.deck_search import shape_combinations
     assert list(shape_combinations(fake_roster([1, 1, 3, 3, 3]))) == []
+
+
+def _fake_scorer(scores_by_key):
+    # Stand-in for evaluate_deck: scores keyed by (frozenset of slugs, tuple of
+    # slugs) with fallbacks, so tests can rank combinations and orderings
+    # without running 103ms sims.
+    def fake_evaluate(ordered_deck, boss):
+        key_exact = tuple(u.slug for u in ordered_deck)
+        key_set = frozenset(key_exact)
+        total = scores_by_key.get(key_exact, scores_by_key.get(key_set, 1.0))
+        return {"total_damage": total, "damage_log": []}
+    return fake_evaluate
+
+
+def test_search_best_decks_refines_order_only_for_top_combos(monkeypatch):
+    import app.deck_search as ds
+    roster = fake_roster([1, 2, 2, 3, 3, 3])
+    # Canonical order of the {u1,u2} B2 pair is (u1, u2); make the swapped
+    # order strictly better so only permutation refinement can find it.
+    best_set = frozenset({"u0", "u1", "u2", "u3", "u4"})
+    scores = {best_set: 100.0, ("u0", "u2", "u1", "u3", "u4"): 130.0}
+    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer(scores))
+    results = ds.search_best_decks(roster, BossProfile(), top_n=1)
+    assert results[0]["total_damage"] == 130.0
+    assert results[0]["deck"][1:3] == ["u2", "u1"]
+
+
+def test_search_best_decks_respects_permutation_top_k(monkeypatch):
+    import app.deck_search as ds
+    roster = fake_roster([1, 2, 2, 3, 3, 3])
+    calls = []
+
+    def counting_evaluate(ordered_deck, boss):
+        calls.append(tuple(u.slug for u in ordered_deck))
+        return {"total_damage": 1.0, "damage_log": []}
+
+    monkeypatch.setattr(ds, "evaluate_deck", counting_evaluate)
+    ds.search_best_decks(roster, BossProfile(), top_n=1, permutation_top_k=1)
+    # 4 canonical combos for this roster; only ONE combo's orderings refined.
+    canonical_calls = 4
+    refined_orderings = 2  # the (1,2,2) shape's B2 pair permutes 2! ways
+    assert len(calls) <= canonical_calls + refined_orderings
