@@ -84,8 +84,12 @@ def make_stub(lw_data, wanted_url):
         todo = list(MANUAL_FIELDS_CHARGE)
     else:
         todo = list(MANUAL_FIELDS_MAGAZINE)
+        # Inert for magazine weapons (raid_simulator gates charge_damage_percent
+        # behind is_charge_weapon), but "100%" is dotgg's own "no charge
+        # multiplier" convention - and unlike "0%" it can't turn into a x0
+        # damage factor if the gate ever changes.
         stub["chargeTime"] = 0
-        stub["chargeDamage"] = "0%"
+        stub["chargeDamage"] = "100%"
     stub["_todo"] = todo
     return stub
 

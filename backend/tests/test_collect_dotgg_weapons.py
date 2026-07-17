@@ -71,7 +71,7 @@ def test_stub_for_magazine_weapon_prefills_the_charge_fields():
     lw = {"name": "Prika", "url": "prika", "weapon": "MG"}
     stub = cdw.make_stub(lw, "prika")
     assert stub["chargeTime"] == 0
-    assert stub["chargeDamage"] == "0%"
+    assert stub["chargeDamage"] == "100%"
     assert stub["_todo"] == ["maxAmmo", "damage", "reloadTime"]
 
 
