@@ -225,6 +225,20 @@ _TYPE_BUCKETS = {
     "projectile_explosion": ["projectile_explosion_damage_up"],
 }
 
+# Every registry stat phase-2 damage computation can read (_damage_instance,
+# normal_attack_type, _normal_attack_percent). All are constant within one
+# state epoch, so the whole bundle is resolved once per (target, epoch,
+# registry version) - see _stat_bundle in simulate_raid.
+_BUNDLE_STATS = (
+    "enemy_def_percent", "atk_percent", "flat_atk", "other_elemental_bonus",
+    "other_critical_damage_sources", "crit_rate", "other_core_damage_sources",
+    "charge_damage_bonus", "attack_damage_up", "damage_to_parts_up",
+    "pierce_damage_up", "damage_taken_up",
+    "sustained_damage_up", "distributed_damage_up", "true_damage_up",
+    "projectile_explosion_damage_up",
+    "normal_attacks_deal_true", "normal_attack_damage_multiplier",
+)
+
 
 def simulate_raid(
     deck,
@@ -282,8 +296,20 @@ def simulate_raid(
     def target_for(slug):
         return {"slug": slug, "element": member_by_slug[slug]["element"]}
 
-    def crit_rate_for(target, time):
-        return min(1.0, base_crit_rate + registry.total_for("crit_rate", target, time))
+    stat_bundles = {}
+
+    def _stat_bundle(slug, time):
+        # All _BUNDLE_STATS are constant within one state epoch, so resolve
+        # them once per (target, epoch); the version key drops stale bundles
+        # whenever the registry mutates, which keeps replay-late effects
+        # behaving exactly as per-stat queries did.
+        target = target_for(slug)
+        key = (slug, registry.state_epoch(target, time), registry.version)
+        bundle = stat_bundles.get(key)
+        if bundle is None:
+            bundle = {stat: registry.total_for(stat, target, time) for stat in _BUNDLE_STATS}
+            stat_bundles[key] = bundle
+        return bundle
 
     def element_bonus_for(slug):
         if boss_element is None:
@@ -294,7 +320,7 @@ def simulate_raid(
         slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0,
         full_burst_bonus_eligible=False,
     ):
-        target = target_for(slug)
+        bundle = _stat_bundle(slug, time)
         # True Damage ignores enemy DEF (nikke.gg glossary).
         instance_enemy_def = 0 if damage_type == "true" else enemy_def
         # Full Burst Bonus only applies to damage a unit's skill text describes
@@ -310,33 +336,33 @@ def simulate_raid(
             atk=base_stats[slug]["atk"],
             attack_coefficient=percent / 100,
             enemy_def=instance_enemy_def,
-            enemy_def_percent=registry.total_for("enemy_def_percent", target, time),
-            atk_percent=registry.total_for("atk_percent", target, time),
-            flat_atk=registry.total_for("flat_atk", target, time) + extra_flat_atk,
-            other_elemental_bonus=registry.total_for("other_elemental_bonus", target, time),
-            other_critical_damage_sources=registry.total_for("other_critical_damage_sources", target, time),
-            crit_rate=crit_rate_for(target, time),
+            enemy_def_percent=bundle["enemy_def_percent"],
+            atk_percent=bundle["atk_percent"],
+            flat_atk=bundle["flat_atk"] + extra_flat_atk,
+            other_elemental_bonus=bundle["other_elemental_bonus"],
+            other_critical_damage_sources=bundle["other_critical_damage_sources"],
+            crit_rate=min(1.0, base_crit_rate + bundle["crit_rate"]),
             core_hit_bonus=CORE_HIT_BONUS if core_hittable else 0.0,
             other_core_damage_sources=(
-                registry.total_for("other_core_damage_sources", target, time) if core_hittable else 0.0
+                bundle["other_core_damage_sources"] if core_hittable else 0.0
             ),
             full_burst_bonus=1.0 if in_full_burst else 0.0,
             element_multiplier=element_bonus_for(slug),
-            charge_damage_bonus=registry.total_for("charge_damage_bonus", target, time) + extra_charge_bonus,
-            attack_damage_up=registry.total_for("attack_damage_up", target, time),
-            damage_to_parts_up=registry.total_for("damage_to_parts_up", target, time),
-            pierce_damage_up=registry.total_for("pierce_damage_up", target, time),
-            damage_taken_up=registry.total_for("damage_taken_up", target, time),
+            charge_damage_bonus=bundle["charge_damage_bonus"] + extra_charge_bonus,
+            attack_damage_up=bundle["attack_damage_up"],
+            damage_to_parts_up=bundle["damage_to_parts_up"],
+            pierce_damage_up=bundle["pierce_damage_up"],
+            damage_taken_up=bundle["damage_taken_up"],
         )
         # Type-specific Damage-Up buckets apply only to instances of that type.
         for bucket in _TYPE_BUCKETS[damage_type]:
-            terms[bucket] = registry.total_for(bucket, target, time)
+            terms[bucket] = bundle[bucket]
         return calculate_damage(**terms)
 
-    def normal_attack_type(slug, weapon, target, time):
+    def normal_attack_type(slug, weapon, time):
         # A skill can convert a unit's normal attacks to a damage type for a
         # window (e.g. Takina Inoue's burst: "normal attacks deal true damage").
-        if registry.total_for("normal_attacks_deal_true", target, time) > 0:
+        if _stat_bundle(slug, time)["normal_attacks_deal_true"] > 0:
             return "true"
         # Otherwise a rocket launcher's normal attacks are projectile explosions.
         if weapon["weapon"] == "RL":
@@ -602,7 +628,7 @@ def simulate_raid(
                             pulse.source_slug, pulse.value, shot_time, "per_shot_nuke",
                             full_burst_bonus_eligible=pulse.full_burst_bonus_eligible,
                         )
-            damage_type = normal_attack_type(slug, weapon, target, shot_time)
+            damage_type = normal_attack_type(slug, weapon, shot_time)
             record(slug, weapon["damage_percent"], shot_time, "normal_attack",
                    damage_type=damage_type, extra_charge_bonus=extra_charge_bonus)
         shot_times_by_slug[slug] = shot_times
@@ -841,9 +867,7 @@ def simulate_raid(
         # user's NORMAL ATTACKS only (damage-formula reference) - it scales
         # the shot's own coefficient, not any Damage-Up bucket, and touches
         # no other damage source.
-        multiplier = 1 + registry.total_for(
-            "normal_attack_damage_multiplier", target_for(ev["slug"]), ev["time"]
-        )
+        multiplier = 1 + _stat_bundle(ev["slug"], ev["time"])["normal_attack_damage_multiplier"]
         return _resolve_percent(ev) * multiplier
 
     # Phase 2: now that every buff/debuff is in the registry, compute each
