@@ -3,7 +3,21 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-17 (매니페스트 예외 8유닛 배치 — crown·helm·liter·
+- 마지막 갱신: 2026-07-17 (**Raven·Sakura: Bloom in Summer 신규 인코딩** —
+  `scheduled_nukes`의 schedule 함수가 소유자의 발사 시각(`context.shot_times`)을
+  읽도록 확장, Raven의 Shock Wave(풀차지마다 5초 스택 DoT)가 첫 소비자. Sakura는
+  확장 없이 인코딩(Full Glory가 배틀스타트 강제발동+cd30이라 스케줄이 전투 전 확정).
+  **60명, 매니페스트 56/60, API 로더블 56/60** — 남은 4명(anis-star·asuka·privaty·
+  neon-vision-eye)은 픽스처 재배열 건으로 dotgg와 무관. **Raven Shock Wave 모델 정정
+  (Fienn, 같은 날): 스택 카운터 1개 + 풀차지마다 수명 갱신** — 최초 구현은 "풀차지마다
+  독립 5초 DoT가 겹침"으로 오독해 정상상태 5스택(실제 10스택)이 되어 그녀를 **1.9배
+  과소평가**하고 있었음(Shock Wave 1.28억→2.92억). 이전 갱신: **Ein 신규 인코딩** — Near Feather 소환체 스케줄을
+  신규 엔진 확장 `scheduled_nukes`로 모델(Fienn의 클라 데이터마이닝 + 영상 실측
+  기반). **58명, 매니페스트 54/58, API 로더블 54/58** — dotgg weapon 파일 수집으로
+  ein·ark-ranger-black·prika·marciana-marine-study가 함께 로더블이 됨(50→54).
+  같은 배치에서 미검증 5유닛 검증: raven·sakura-bloom-in-summer는
+  기존 프리미티브로 인코딩 가능(다음 배치), scarlet-black-shadow·milk-blooming-bunny는
+  갭 확인(`engine-gaps.md` 참고). 이전 갱신: 매니페스트 예외 8유닛 배치 — crown·helm·liter·
   miranda·moran·soline-frost-ticket·volume·zwei에 dotgg-소스 매니페스트 추가,
   53/57 커버. **API 로더블 50/57** (로더블 B1 4→10명 — 5덱 분배가 실제로 5덱을
   채울 수 있게 됨). 이전 갱신: 매니페스트 배치 2 — 29유닛 추가로 45/57 커버 +
@@ -14,10 +28,12 @@
   거울 구조라, 매니페스트 없는 신규 인코딩은 테스트가 먼저 잡는다.
   - 픽스처가 데이터 토큰과 재배열 관계라 drop_tokens로 재현 불가(4):
     `anis-star`, `asuka-shikinami-langley-wille`, `privaty`, `neon-vision-eye`
-  - (매니페스트와 별개로 dotgg weapon 파일 부재로 API 제외: `ark-ranger-black`,
-    `prika` — dotgg 리스팅에 없음. `marciana-marine-study`는 dotgg에 base판
-    스탯만 있어 보류 — Fienn 판단 대기)
-- 총 **57명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 30명) — drake는 base/signature 듀얼슬롯 2엔트리
+  - **(2026-07-17 해소) `ark-ranger-black`·`prika`·`marciana-marine-study`·`ein`은
+    이제 dotgg weapon 파일이 있어 전부 로더블.** 이전 "dotgg 리스팅에 없음" 기록은
+    수집 전 상태였을 뿐 — 넷 다 dotgg 셧다운(2026-05) 이전 출시라 데이터가 존재한다.
+    **prika 로더블화로 mint+prika Encore 시너지가 실제 덱 탐색에서 처음으로 효력을
+    가진다**(로드맵이 이걸 blocker로 적어두고 있었음).
+- 총 **60명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 33명) — drake는 base/signature 듀얼슬롯 2엔트리
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -64,7 +80,7 @@
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (30명)
+## Burst 3 (33명)
 
 > **eb (encoding batch) 진행:** Burst 3 어태커 배치 인코딩 (least-blocked 우선).
 > eb1 = Noir · Isabel · Liberalio, eb2 = Ludmilla · Chisato · Jill (2026-07-12).
@@ -132,6 +148,9 @@
 | Rei Ayanami | `rei-ayanami` | Attacker | MG | Fire | ✅ | (신규 2026-07-16, base) Attack Support: Fire 아군 flat ATK=caster ATK 25.03%(FB진입)·버스트: Fire 아군 AD+48.02% + 990.2% 넉·Preemptive Subdual: 노멀100회마다 112.37% 넉(gap #1 `every`) + 자 Elemental Advantage AD+30.23%/3s(other_elemental_bonus, Iron 보스 게이팅 Fire>Iron, refresh). 보류: 실드딜/실드생성(비-DPS)만. dollskills 데이터 비어있음(시그니처 없음, base-only) |
 | Rei Ayanami (Tentative Name) | `rei-ayanami-tentative-name` | Attacker | AR | Wind | ⚠ | (신규 2026-07-16, base; `rei-ayanami`와 별개 유닛) Attack State 버스트: 자AD+35.9%+자flat ATK=caster ATK 63.36% + 990.2% 넉·Maintenance: 스쿼드 flat ATK=caster ATK 11.61%(FB진입)·Annihilation Support: Attack State 창(자버스트 10초) 중 노멀7회마다 286.37% "additional damage" 넉(gap #7). 보류: Anti A.T. Field 590.64% 페이로드+Annihilation State 아군버프(교차유닛 콜라보 상태), MG heating up speed |
 | Neon: Vision Eye | `neon-vision-eye` | Attacker | RL | Electric | ⚠ | (신규 2026-07-16, base) Firepower Gauge가 매 사이클 100 리필 → Super Firepower 매 사이클 정상상태로 근사. Maximum Firepower: 자ATK+115.09%(FB진입)·Super Firepower 버스트: 자AD+155.24%(버스트 넉 없음)·Firepower Explosion: 풀차지마다 437.98% + Super Firepower 10초 창 중 +262.79%("additional damage", gap #7). 보류: 라이브 게이지, 넉의 projectile-explosion 타이핑(pulse 경로 미지원, 자기 킷 내 inert), Explosion Radius, 생존기 |
+| Raven | `raven` | Attacker | RL | Iron | ⚠ | (신규 2026-07-17) 딜의 핵심은 Shock Wave — **스택 카운터 1개**(풀차지마다 +1, 상한 10)가 초당 스택수만큼 68.46% 지속댐 틱. `lasts for 5 sec`는 **카운터의 수명이고 풀차지마다 갱신**됨(Fienn 정정 2026-07-17) — 풀차지마다 독립 DoT가 겹치는 게 아님. RL 풀차지 1초·최대 공백 3초(재장전) < 5초 갱신창이라 **카운터가 전투 내내 안 죽고 t≈12에 10스택 도달 후 고정**. 틱마다 스택수만큼 개별 인스턴스 방출(디펜스가 히트당 차감). `scheduled_nukes`+`context.shot_times`가 첫 소비자. FB진입 자 flat ATK=caster ATK 47.52%·Tempest 492.3% 넉·A.N. Mode 자 지속댐+89.44%/10초. **브래킷(Ark Ranger 선례, Fienn 판정)**: Blue Blade의 Single Point Attack(자 지속댐+47.32%)은 부위파괴 트리거라 floor(파괴 없음=미발동)/ceiling(파괴 있음=전투 내내) 두 갈래. E2E: Shock Wave 2.92억(최대 소스), floor 총 3.454억 / ceiling 3.511억. 보류: Vital Attack(Damage to Parts — 소비 경로 없어 inert) |
+| Sakura: Bloom in Summer | `sakura-bloom-in-summer` | Attacker | AR | Wind | ⚠ | (신규 2026-07-17) Bloom이 배틀스타트에 Skill2를 강제발동 → Full Glory가 **t=0,30,60,90,120,150**(t=cd 아님). Dancing Flower 자 공댐+15.64%/15초(cd30의 절반 = 50% 가동률, 정상상태로 뭉개지 않고 발동별 모델)·Sakura Petals 256%/초×15틱 지속댐(`scheduled_nukes`, 컨텍스트 불필요)·Ephemeral Spender 457.14%×10연타(`burst_hit_counts`) + 10연타가 각각 1스택을 깔아 **351.6%/초×10틱** 지속댐(Fienn 판정 2026-07-17, 연타수와 상한이 둘 다 10인 이유). E2E 총 2.397억. 보류: Bloom의 부위파괴 라이더 3건(자 지속댐+5.1%·Dancing Flower/Sakura Petals 지속시간+10.02초) — 전부 딜 증가분이라 이 인코딩은 floor |
+| Ein | `ein` | Attacker | SR | Electric | ✅ | (신규 2026-07-17) 딜의 대부분이 Near Feather 소환체 — 신규 `scheduled_nukes` 확장으로 사전계산 스케줄에 90.81% 진댐 방출. 페더 6기 상한/개체별 수명(F1 무제한·F2 38s·F3 32s·F4 26s·F5·F6 10s)·버스트가 전 페더 재소환+쿨 초기화·공격쿨 8초에서 기수당 -16%(합연산). Feather Standby 자ATK+70.12%(자버스트)·Feather Shot 풀차지마다 자 Charge Damage+80%/1라운드·Feather-All Range 자 True Damage+55.3%/Charge Damage+140.68% + 300.02% 진댐 넉. **가정(docstring 명시): 타격 간 0.3초 스로틀**(Fienn 영상 실측 FB 31회를 정확히 재현; 공식만 쓰면 FB 21% 과대). 6기 구간 외 카운트는 공식 미검증. E2E 실측: 180초에 페더 280타 9212만(본인 평타 5101만을 상회하는 최대 딜 소스) |
 | Drake | `drake` | Attacker | SG | Fire | ⚠ | (신규 2026-07-16, base) Overcharge: 스쿼드 ATK+11.85%(FB진입)·Thunderbolt: 노멀10회마다 98.55% 넉(gap #1)·Drake Special 버스트: 1254% 넉 + 자 Max Ammo+72.18%. 보류: Hit Rate(inert) |
 | Drake (Signature) | `drake-signature` | Attacker | SG | Fire | ⚠ | (신규 2026-07-16, 시그니처/듀얼슬롯) base + SG아군(squad 근사) ATK+63.88%/Max Ammo+50.14% + Thunderbolt 2차 트리거(노멀5회마다 201.6%) + Drake Special 3009.6% 넉 + 자AD+31.68%. 보류: Hit Rate(inert), 무기종 스코프(squad 근사) |
 | Laplace | `laplace` | Attacker | RL | Iron | ⚠ | (신규 2026-07-16, base, 얇음) Hero Bomber: 마지막 탄 81.66% "additional" 넉(gap #1 last_bullet)·Laplace Buster First Damage 897.6%를 버스트 넉으로 모델. 보류(킷 대부분): 무기변형(5초 Buster 모드), Hero Vision(Pattern B 감쇠 스택)+맥스스택 true dmg, 파츠딜, 시그니처(더 큰 무기변형 → 듀얼슬롯 없음) |

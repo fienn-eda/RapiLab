@@ -756,5 +756,62 @@ how to encode it, and current engine status.
   mechanism-level justification like the sequential cast-time computation
   above. See `ark_ranger_black.py` (Meteor / floor Collider DoTs).
 
+## Summoned entities ("Summons N X") — the skill text lies about the cadence
+
+- **What it looks like:** Ein's Feather Shot reads "Activates when Near Feather
+  is summoned. ... Deals 90.81% of final ATK as true damage", next to Feather
+  Standby's "Summons 4 Near Feathers". The obvious reading is ONE hit per summon
+  — 4 hits at battle start, 6 more per burst.
+- **What it actually is:** the feathers PERSIST and keep attacking on their own
+  timer, and the timer gets faster the more of them are alive. The summon count
+  is a population, not a hit count. Nothing in the text says so (2026-07-17,
+  Fienn from a client datamine).
+- **Easy mistake:** encoding the literal reading. For Ein it undercounts her main
+  damage source by more than an order of magnitude — the persistent feathers land
+  31 hits in a single Full Burst, versus 6 for "one hit per summon".
+- **Why it matters generally:** a summon skill's DPS is `population x cadence`,
+  and BOTH usually live outside the skill text (per-entity lifetimes, cadence
+  formula, re-summon/reset rules). **Treat any "Summons N ..." as unencodable
+  from the text alone and ask Fienn** — this is exactly the "ask rather than
+  guess" case. Engine support: `scheduled_nukes` (see `engine-capabilities.md`).
+- **Also worth knowing:** where a formula and a measurement disagree, prefer the
+  measurement and say so in the docstring. Ein's -16%-per-feather cooldown
+  reduction predicts a hit every 0.267s at 6 feathers; Fienn's recording shows
+  0.3s (31 hits/FB, first at +0.8s). The gap is a system throttle nobody
+  documents. Modeled as a 0.3s floor, flagged as an assumption — the additive
+  vs. multiplicative reading was settled the same way (multiplicative predicts
+  ~18 hits against 31 observed).
+
+## "Stacks up to N times and lasts for X sec" — one counter, refreshed; NOT N overlapping DoTs
+
+- **What it looks like:** Raven's Shock Wave — "Activates when performing a Full
+  Charge attack. Deals 68.46% of final ATK as sustained damage every 1 sec,
+  stacks up to 10 times and lasts for 5 sec." The natural reading is that each
+  Full Charge lays its own 5-second DoT and several run concurrently.
+- **What it actually is** (Fienn, 2026-07-17): ONE stack counter. The 1st Full
+  Charge puts it at 1 stack, the 2nd at 2, up to the cap. **"Lasts for X sec" is
+  the counter's life, and every trigger refreshes it back to X** — stacks survive
+  as long as you keep triggering inside the window, no matter how old they are.
+  Only a gap longer than X drops it back to a single fresh stack.
+- **Why the difference is huge:** under the wrong reading the stack count settles
+  at `window / trigger_interval`; under the right one it climbs to the cap and
+  stays. For Raven that is 5 vs 10 — her main damage source came out **1.9x too
+  low** (128M vs 292M over 180s) before Fienn caught it.
+- **The cap is a real constraint here, unlike Velvet's ammo pouch.** Do not reuse
+  the "it can never bind, skip the resource" shortcut without checking: with
+  refresh semantics the counter climbs to the cap and pins there, so the cap sets
+  the steady state. Check the unit's actual cadence against the window — Raven's
+  RL takes 1s per Full Charge and her longest gap is the 3s reload, so the
+  counter never expires at all.
+- **How to encode:** a `scheduled_nukes` schedule over `context.shot_times`, with
+  each tick time repeated once per live stack (one damage instance per stack, so
+  defense comes off each — same rule as a multi-hit burst). See `raven.py`'s
+  `_stack_counts` / `_shock_wave_ticks`.
+- **Boundary to decide:** when the tick interval equals the trigger interval,
+  every tick coincides with a trigger and the ordering decides everything. This
+  project resolves it the same way the rest of the engine does — a tick counts
+  the stacks standing at its OWN time (cf. `resource_scaled_nukes` re-reading its
+  count per tick).
+
 ---
 *Add new mechanics above this line as they come up.*

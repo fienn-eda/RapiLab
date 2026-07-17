@@ -8,8 +8,45 @@
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
 - 마지막 갱신: 2026-07-17
-- 브랜치: `wip/scaffolding`
-- 테스트: **692 passed** (2026-07-17, **ProcessPool 시뮬 병렬화 + Rapi 인코딩 완성** —
+- 브랜치: `worktree-plans-frontend3-encoding` (from `wip/scaffolding`)
+- 테스트: **730 passed** (2026-07-17, **Raven Shock Wave 모델 정정** — Fienn 지적:
+  스택은 풀차지마다 독립 DoT가 겹치는 게 아니라 **카운터 1개가 +1씩 누적(상한 10)**
+  하고, `lasts for 5 sec`는 **카운터 수명이 풀차지마다 갱신**되는 것. 그녀의 최대 공백이
+  3초(재장전)라 5초 창을 넘지 않아 **카운터가 전투 내내 안 죽고 10스택 고정** — 최초
+  구현의 정상상태 5스택 대비 정확히 2배. Shock Wave 1.28억→**2.92억**, 총 1.81억→
+  **3.45억(1.9배)**. 틱-발사 동시각 경계는 엔진 관례(각 틱이 자기 시각의 count 조회)로
+  통일. 회귀 테스트 4종 추가(스택 누적·캡·창 안 갱신·창 초과 리셋). was 726.)
+- 이전: **726 passed** (2026-07-17, **Raven·Sakura 인코딩 배치** — 검증 배치가
+  "인코딩 가능"으로 판정한 둘을 인코딩. 착수해보니 판정이 절반만 맞았음: **Sakura는
+  확장 불필요**가 맞았지만(Full Glory가 배틀스타트 강제발동+cd30이라 Sakura Petals
+  스케줄이 전투 전 확정 → `scheduled_nukes`가 그대로 맞음), **Raven은 소규모 확장 1건
+  필요**했음 — Shock Wave가 풀차지마다 DoT를 까는데 schedule 함수가 발사 시각을 볼 수
+  없었음. `context.shot_times`로 노출(엔진이 이미 `shot_times_by_slug`로 갖고 있어
+  신규 계산 없음, Ein 시그니처 무변경). Raven 실측: RL이 1초마다 풀차지라 5초 창 최대
+  동시 5스택 → **상한 10 미도달로 자원 모델링 불필요**. Single Point Attack은 부위파괴
+  트리거라 Ark Ranger식 floor/ceiling 브래킷(Fienn 판정), Vital Attack은 inert라 defer.
+  Sakura 버스트 DoT는 10연타가 각각 1스택 → 351.6%/초×10틱(Fienn 판정). E2E: Raven
+  Shock Wave 1.28억(최대 소스, ceiling 1.844억 > floor 1.809억), Sakura 총 2.397억.
+  **60명, 매니페스트 56/60, API 로더블 56/60.** was 708.)
+- 이전: **708 passed** (2026-07-17, **미검증 5유닛 검증 배치 + Ein 인코딩** —
+  로드맵 백로그가 "미검증"으로 남겨둔 5명을 실제 스킬 텍스트로 검증: **ein 언블록
+  → 인코딩 완료**, **raven·sakura-bloom-in-summer도 인코딩 가능**(부위파괴만 defer,
+  다음 배치), **scarlet-black-shadow(gap #10)·milk-blooming-bunny(gap #11)는 신규 갭
+  기록**. Ein은 Near Feather 소환체가 딜의 대부분인데 개체 수가 공격 주기를 바꿔
+  `periodic_nukes`(고정 간격)로 표현 불가 → 신규 옵트인 확장 **`scheduled_nukes`**
+  (유닛이 결정론적 시각 리스트를 계산, 엔진은 방출만). Fienn의 클라 데이터마이닝
+  (6기 상한·개체별 수명·8초 쿨에서 기수당 -16% 합연산) + **영상 실측**(FB 진입 0.8초
+  후 첫 타격, 0.3초 간격, 총 31회)으로 모델 확정 — 실측 31회를 정확히 재현하는
+  0.3초 스로틀을 가정으로 명시하고 회귀 테스트로 고정. 곱연산은 관측의 절반이라 배제.
+  **58명, 매니페스트 54/58, API 로더블 50→54/58** — 검증 중 ein이 로더블이 아닌 걸로
+  나왔으나 이는 **워크트리 함정**이었음: `data/dotgg/`는 gitignore 대상이라 워크트리로
+  복사되지 않아 메인(71개)보다 18개 적은 상태였고, ein·ark-ranger-black·prika·
+  marciana-marine-study의 weapon 파일이 거기 있었다(Fienn 지적, 2026-07-17). 동기화 후
+  넷 다 로더블 — **prika 로더블화로 mint+prika Encore 시너지가 덱 탐색에서 처음 효력**.
+  Ein E2E: 180초에 페더 280타 9212만(본인 평타 5101만 상회, 최대 딜 소스).
+  정정: engine-gaps의 "true의 DEF 무시 여부 확인 대기"는 이미 해결·배선된 낡은 메모였고,
+  이게 ein을 불필요하게 막고 있었음. was 692.)
+- 이전: **692 passed** (2026-07-17, **ProcessPool 시뮬 병렬화 + Rapi 인코딩 완성** —
   ① `SimPool`(지연 스폰 ProcessPoolExecutor, 워커 초기화 1회에 specs+boss 전달,
   태스크는 슬러그 튜플, 배치 32건 미만은 인라인): `search_best_decks`(canonical
   스코어링·순열 정련·prune 측정)·`allocate_decks`(+폴리시)의 맵 구간을 병렬화,
@@ -40,8 +77,8 @@
   leftover 27유닛, 합계 5.18B. 최초 측정 103.92초는 데드라인 버그로 **스왑 단계가
   실행되지 않은 순수 탐욕 수치**였음 — 픽스 후 수치는 박리+스왑(≤45초)+폴리시
   전체. 수초~1분 예산을 크게 초과 — 타이어 캡 튜닝/병렬화는 Fienn 결정 대기.
-  참고: 실로스터에선 prika가 로드 불가(dotgg weapon 부재)라 mint+prika 시너지는
-  prika 로더블화 이후 효력. was 673 (671+2, Task 6 신규 API 테스트).)
+  참고: prika는 2026-07-17 dotgg weapon 파일 수집으로 로더블이 됨 — mint+prika
+  시너지가 이제 실로스터 탐색에서 효력을 가진다. was 673 (671+2, Task 6 신규 API 테스트).)
 - 이전: **659 passed** (2026-07-17, **Stage 0 EffectRegistry 성능 패스** —
   total_for를 버전-무효화 세그먼트 테이블로 교체(비트 동일 출력, 패리티 넷 2건
   추가). evaluate_deck 180초 시뮬 ~2410ms → 133.66ms → 103.43ms (Stage 0.5 epoch memo, 2026-07-17 — phase-1 normal_attack_type 회귀 수정: 번들 대신 직접 단일-스탯 조회로 복귀). was 656 — 목표 50ms 미달(2.1×), 잔여는 평탄한 호출 오버헤드. 추가 최적화는 여기서 중단으로 결정(Fienn, 2026-07-17 — 부족분은 ProcessPool 병렬화로 흡수, `decisions.md` 참고))
@@ -56,7 +93,7 @@
   매니페스트 하니스·roster 로더·`POST /api/recommend`. 통합 시 하니스가
   little-mermaid Bubble Wave 슬롯 오번호(lootandwaifus 좌→우 카운트 vs 모듈의
   dotgg 네이티브 컨벤션) 1건을 잡아 교정함; was 547 배치 시작 시점)
-- 인코딩된 니케: **57명** (Ada Wong[Phase C gaps #3/#6 소비, 신규 ⚠] +1) —
+- 인코딩된 니케: **60명** (Raven[shot_times 확장 소비, 신규 ⚠] · Sakura: Bloom in Summer[신규 ⚠] +2) —
   상세는 [`docs/encoded-nikkes.md`](encoded-nikkes.md)
 - **Phase C 배치 완료 (2026-07-16):** 엔진 갭 #3(member-subset scope:
   `SquadMember.weapon`+`member_subset_buff_rule`, 신규 Effect scope 없이 `slugs:`
@@ -108,7 +145,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (57명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (60명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ✅ 완료 — greedy+swap + ProcessPool 병렬화(50유닛 97초), `/api/recommend-raid`, 프론트 레이드 모드 배선까지 |
 | Phase 6 | 유저 데이터 입력 UI (React) | 🔄 진행 중 (입력 폼 + 결과 UI + 라이브 API 완료) |
@@ -394,8 +431,14 @@
       배치에서 제외(아래 무기 변형 항목으로 이동).
 - [ ] **eb3+ 백로그** — 대부분 **자원 유닛(gap #2 Pattern A 잔여/Pattern B)·상태머신·
       무기변형**. 배치 착수 전 유닛별 검증 필수.
-  - **Pattern A 자원 유닛 (named-resource로 인코딩 가능, 잔여)**: `rei-ayanami`·
-    `rei-ayanami-tentative-name`(Anti A.T.), `neon-vision-eye`.
+  - ~~**Pattern A 자원 유닛**: `rei-ayanami`·`rei-ayanami-tentative-name`·
+    `neon-vision-eye`~~ — **전부 2026-07-16에 인코딩 완료**(이 백로그가 갱신 누락된
+    상태로 남아 있었음, 2026-07-17 정정). Pattern A는 이제 소진.
+  - **검증 완료, 인코딩 대기 (2026-07-17 검증 배치)**: `raven`·`sakura-bloom-in-summer`
+    — 기존 프리미티브로 핵심 인코딩 가능, 부위파괴 연동만 defer. 다음 배치 최우선.
+  - **검증 완료, 갭 확인 (2026-07-17)**: `scarlet-black-shadow`(gap #10 — 버스트가
+    per-shot threshold를 3/6/9→1/2/3으로 변경, 소규모 확장 필요) ·
+    `milk-blooming-bunny`(gap #11 — 강제재장전/탄약제거 상태머신, 중~대).
   - **Pattern B 게이지·변신 (일반 프리미티브 잔여, gap #2)**: `mihara-bonding-chain`
     (체인)·`elegg-boom-and-shock`·`red-hood`(charge speed·딜 아님). (`ark-ranger-black`은
     2026-07-16 `part_destructible` 보스 플래그 브래킷으로 개별 인코딩 완료 — 일반
@@ -409,8 +452,9 @@
   - **무기 변형**(버스트/평타가 다른 무기모드로 전환 = 핵심 딜, 미지원): `snow-white`,
     `snow-white-heavy-arms`, `maxwell`, `cinderella-crystal-wave`(MG/Snipe 모드
     전환이 FB 넉을 게이팅 — 자원 primitive로 안 풀림, 2026-07-12 eb4 검증 중 재분류)
-  - ✱ = 애장품(dollskills) 보유, base/시그니처 별도 slug로 인코딩(Julia로 확정된 패턴):
-    `drake`, `laplace` (julia는 완료: `julia` + `julia-signature`)
+  - ~~✱ = 애장품(dollskills) 보유, base/시그니처 별도 slug: `drake`, `laplace`~~ —
+    **둘 다 2026-07-16 인코딩 완료**(drake는 base+signature 듀얼슬롯, laplace는 base만
+    — 시그니처는 더 큰 무기변형이라 듀얼슬롯 없음). 백로그 갱신 누락, 2026-07-17 정정.
 - [x] `damage_taken_up` / `other_core_damage_sources` 엔진 연결
       — 완료. squad 스코프 적 디버프, 코어 데미지는 `core_hittable` 게이팅.
 - [x] `NikkeSpec`에 스킬별 유저 레벨 필드 추가 → 조립 시 `levels[level-1]` 선택 일반화
@@ -434,6 +478,41 @@
       `last_used_at`이 뒤로 밀려 "첫 사이클만 Prika, 이후 Mint 전담" 로테이션이
       재현됨(Fienn 확인 2026-07-17). 음수 펄스의 `on_full_burst_end` 통과 검증 +
       Encore 슬롯 값 추출 포함. Stage 1(한계기여도 측정) 착수 전 완료 필요.
+
+### Phase 3 검증 배치 (2026-07-17)
+- [x] **미검증 5유닛 검증** — ein ✅(인코딩 완료) · raven·sakura-bloom-in-summer
+      (인코딩 가능, 대기) · scarlet-black-shadow(gap #10) · milk-blooming-bunny(gap #11).
+- [x] **Ein 인코딩** — `scheduled_nukes` 확장 + Fienn 실측 기반 페더 스케줄.
+- [x] **raven·sakura-bloom-in-summer 인코딩** (2026-07-17) — sakura는 확장 불필요가
+      맞았고, raven은 `context.shot_times` 소규모 확장 1건 필요했음(판정 정정).
+- [ ] **다음 배치 후보** — 남은 미인코딩 13명은 전부 갭 뒤(무기변형 4·Pattern B 3·
+      상태머신 3·gap #10 scarlet·gap #11 milk). **최대 수요는 무기 변형**
+      (snow-white·snow-white-heavy-arms·maxwell·cinderella-crystal-wave + laplace·
+      velvet·rapi 잔여) — 큰 확장이라 설계 논의부터 필요.
+- [x] **ein weapon 스탯** — 이미 `data/dotgg/char_ein.json`에 존재했음(SR·장탄6·
+      재장전2.0s·차지1.0s·차지댐250%). "부재" 판정은 워크트리에 gitignore된 데이터가
+      복사되지 않아 생긴 오진이었음 — 아래 함정 항목 참고.
+- [x] **워크트리 데이터 동기화 함정** — `data/dotgg/`·`data/lootandwaifus/`가 gitignore
+      대상이라 새 워크트리엔 안 따라오고, 거기서 로더블/커버리지를 측정하면 **거짓 음성**이
+      나온다(2026-07-17, Fienn이 ein 오진을 잡아내며 발견). **`scripts/sync_worktree_data.py`로
+      자동화 완료** — 워크트리 작업 시작 시 확인 없이 바로 실행할 것(Fienn 지시).
+      메인에선 no-op, 없는 파일만 복사, 재실행 안전. `docs/insights.md`에도 기록.
+
+### 통합 대기 — `worktree-plans-frontend3-encoding` → `wip/scaffolding` (2026-07-17)
+- [ ] **머지 필요, 브랜치가 갈라져 있음.** 이 워크트리에 커밋 8개(Ein·Raven·Sakura
+      인코딩 + `scheduled_nukes`/`shot_times` 확장 + 워크트리 동기화 스크립트·훅 +
+      decisions 기록). 그 사이 `wip/scaffolding`엔 **dotgg weapon 스탯 수집 작업**이
+      들어옴(`scripts/collect_dotgg_weapons.py` + 수동 스텁 경로 + 셧다운 대응 결정) —
+      이 워크트리가 뒤늦게 발견한 18개 dotgg 파일의 출처가 그것.
+- **충돌 예상: `docs/decisions.md` 1건뿐**(`insights.md`/`roadmap.md`는 자동 병합).
+      양쪽이 로그 맨 위에 항목을 삽입해서 생긴 위치 충돌 — 내용 충돌 아님, 양쪽 항목을
+      모두 살리면 됨.
+- **머지 후 반드시 대조할 것:** 양쪽 로드맵이 서로 다른 로더블 수치를 주장한다
+      (이쪽 **56/60**, 저쪽 **53/57**). 자동 병합되면 상충하는 두 숫자가 문서에 함께
+      남을 수 있음. 머지 후 실측으로 재확인하고 하나로 정리할 것:
+      `python3 -c` 로 `ENCODED_SLUGS` × `load_nikke_spec` 카운트(이 파일 상단 요약 참고).
+- **훅은 머지되어야 효력이 생긴다** — `.claude/settings.json`의 SessionStart 훅은
+      추적 파일이라 머지 후에야 새 워크트리에 전파된다.
 
 ### 정리/보강
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강

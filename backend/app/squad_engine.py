@@ -46,6 +46,11 @@ class SquadContext:
         # Ranger Black's battery-driven Transformation) can read it via the
         # boss_part_destructible condition. False when unset.
         self.part_destructible: bool = part_destructible
+        # slug -> every time that unit fires, so a `scheduled_nukes` schedule can
+        # derive damage from its owner's own shot timeline (e.g. Raven's Shock
+        # Wave, a sustained DoT started by each Full Charge). Filled in by
+        # raid_simulator's weapon pass; empty for contexts without weapon stats.
+        self.shot_times: dict[str, list[float]] = {}
         # flag -> the earliest time it was set (a "continuous, cannot be removed"
         # status is pinned from its first application). Callers that only care
         # whether a flag is set omit the time (defaults to 0.0).

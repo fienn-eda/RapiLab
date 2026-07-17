@@ -266,6 +266,7 @@ def simulate_raid(
     resource_gated_buffs=None,
     dynamic_hit_count_nukes=None,
     resource_fill_triggered_buffs=None,
+    scheduled_nukes=None,
 ):
     weapon_stats = weapon_stats or {}
     periodic_nukes = periodic_nukes or {}
@@ -278,6 +279,7 @@ def simulate_raid(
     resource_gated_buffs = resource_gated_buffs or {}
     dynamic_hit_count_nukes = dynamic_hit_count_nukes or {}
     resource_fill_triggered_buffs = resource_fill_triggered_buffs or {}
+    scheduled_nukes = scheduled_nukes or {}
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"], m.get("weapon")) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -866,6 +868,23 @@ def simulate_raid(
             while tick < fight_duration:
                 _tick(tick)
                 tick += cooldown
+
+    # Damage on a cadence the unit computes for itself. `periodic_nukes` covers
+    # a fixed interval; a summoned entity whose attack rate depends on how many
+    # of it are alive (Ein's Near Feathers) has a varying one. The schedule is
+    # still deterministic - it falls out of the owner's burst times, which are
+    # settled by now - so the unit module builds the time list and the engine
+    # only emits it, keeping summon-lifetime bookkeeping out of the simulator.
+    context.shot_times = shot_times_by_slug
+    for slug, specs in scheduled_nukes.items():
+        for spec in specs:
+            damage_type = spec.get("damage_type", "attack")
+            eligible = spec.get("full_burst_bonus_eligible", False)
+            for hit_time in spec["schedule"](context, fight_duration):
+                if hit_time >= fight_duration:
+                    continue
+                record(slug, spec["percent"], hit_time, "scheduled",
+                       damage_type=damage_type, full_burst_bonus_eligible=eligible)
 
     def _normal_attack_percent(ev):
         # Normal Attack Damage Multiplier is a Final ATK modifier on the
