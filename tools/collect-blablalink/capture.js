@@ -27,17 +27,32 @@ const readLevel = (page) =>
     return el ? parseInt(el.innerText.replace(/[^0-9]/g, ''), 10) : null
   })
 
+// Wait until the displayed level stops changing (the SPA renders a default before the
+// user's real level lands), so we never start stepping from a transient value.
+const waitStableLevel = async (page) => {
+  let prev = null
+  for (let i = 0; i < 20; i++) {
+    const lv = await readLevel(page)
+    if (lv !== null && lv === prev) return lv
+    prev = lv
+    await page.waitForTimeout(350)
+  }
+  return prev
+}
+
 // The level control is custom buttons (-10/-1/+1/+10 inside div.upgrade-btns), not a
-// range input. Only the level row carries a "-10", so scoping by it avoids the
-// grade/core -1/+1 controls. Step down from the real level to exactly 400.
+// range input. Only the level row carries a "+10"/"-10", so scoping by it avoids the
+// grade/core -1/+1 controls. Step toward 400 in either direction: down from an invested
+// unit's real level, or up from an uninvested (level-1) unit — solo raid normalizes all
+// to 400 regardless of the unit's actual level.
 const setLevel400 = async (page) => {
-  const row = page.locator('div.upgrade-btns', { hasText: '-10' }).first()
-  const minus10 = row.getByText('-10', { exact: true })
-  const minus1 = row.getByText('-1', { exact: true })
+  const row = page.locator('div.upgrade-btns', { hasText: '+10' }).first()
+  const btn = (t) => row.getByText(t, { exact: true })
   let lv = await readLevel(page)
-  for (let guard = 0; lv > 400 && guard < 500; guard++) {
-    if (lv - 400 >= 10) await minus10.click()
-    else await minus1.click()
+  for (let guard = 0; lv !== 400 && guard < 900; guard++) {
+    const diff = 400 - lv
+    if (diff < 0) await btn(diff <= -10 ? '-10' : '-1').click()
+    else await btn(diff >= 10 ? '+10' : '+1').click()
     await page.waitForTimeout(70)
     lv = await readLevel(page)
   }
@@ -58,11 +73,13 @@ const clickTab = async (page, name) => {
   return false
 }
 
-// Smallest container holding all parser anchors. Extracting it drops the page chrome
-// and the account panel (name / game_uid / token live outside this subtree).
+// Smallest container holding the parser anchors. Extracting it drops the page chrome
+// and the account panel (name / game_uid / token live outside this subtree). Anchors
+// are present on every unit including uninvested ones — an uninvested unit has no
+// "Equipment Effects" panel, so anchor on the stat panel (LV + ATK) plus a skill row.
 const extractDetail = (page) =>
   page.evaluate(() => {
-    const has = (t) => /LV\s*\d/.test(t) && /Equipment Effects/.test(t) && /min/.test(t)
+    const has = (t) => /LV\s*\d/.test(t) && /\bATK\b/.test(t) && /min/.test(t)
     let best = null
     for (const el of document.querySelectorAll('div')) {
       if (has(el.textContent || '')) {
@@ -91,9 +108,8 @@ const captureUnit = async (page, resourceId, ids = {}) => {
       ),
     { timeout: 30000 },
   )
-  await page.waitForTimeout(1200)
   await clickTab(page, 'Equipment')
-  await page.waitForTimeout(300)
+  await waitStableLevel(page)
   const level = await setLevel400(page)
   if (level !== 400) throw new Error(`level not 400 after stepping (got ${level})`)
   const detail = await extractDetail(page)

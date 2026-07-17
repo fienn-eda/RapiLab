@@ -17,6 +17,14 @@ test('parseMainStats returns actual (real level) and level-400 stats', () => {
   assert.equal(l.raid400.atk, 106533)
 })
 
+test('parseMainStats handles an uninvested unit stepped UP to 400 (positive delta)', () => {
+  // Neon: Blue Ocean is owned at level 1; the slider is raised to 400, so the delta
+  // to the selected level is positive: raid400 = actual + (+delta).
+  const r = parseMainStats(doc('neon-blue-ocean'))
+  assert.deepEqual(r.actual, { hp: 290571, atk: 5097, def: 1842 })
+  assert.deepEqual(r.raid400, { hp: 2309238, atk: 94815, def: 13100 })
+})
+
 test('parseOverload maps English labels to the Korean stat names, summed', () => {
   const rows = parseOverload(doc('rapi-red-hood'))
   assert.deepEqual(rows, [
@@ -30,6 +38,8 @@ test('parseOverload maps English labels to the Korean stat names, summed', () =>
   assert.ok(moran.some((o) => o.name === '차지 속도 증가' && o.value === 4.92))
   assert.ok(moran.some((o) => o.name === '크리티컬 대미지 증가' && o.value === 16.44))
   assert.ok(!moran.some((o) => /명중|Hit|DEF|방어/.test(o.name)))
+  // An uninvested unit has no equipment, so no overload section.
+  assert.deepEqual(parseOverload(doc('neon-blue-ocean')), [])
 })
 
 test('parseSkills reads the three skill levels in order (skill1, skill2, burst)', () => {
@@ -44,4 +54,9 @@ test('parseCube reads the Battle-loadout cube, null when none equipped', () => {
   assert.deepEqual(parseCube(doc('moran')), { name: 'Bastion Cube', level: 15 })
   assert.equal(parseCube(doc('liter')), null)   // Battle loadout: "No data available"
   assert.equal(parseCube(doc('maxwell')), null) // no cube at all
+  assert.equal(parseCube(doc('neon-blue-ocean')), null) // uninvested, no cube
+})
+
+test('parseSkills reads level-1 skills for an uninvested unit', () => {
+  assert.deepEqual(parseSkills(doc('neon-blue-ocean')), { skill1: 1, skill2: 1, burst: 1 })
 })

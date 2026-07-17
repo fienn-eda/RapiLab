@@ -26,7 +26,9 @@ const parseMainStats = (doc) => {
     if (!k) continue
     const parts = (ps[1].textContent || '').trim().split(/\s+/)
     const actual = num(parts[0])
-    const delta = parts[1] && /^-/.test(parts[1]) ? num(parts[1]) : 0
+    // delta to the slider level: "-N" when the real level is above 400 (invested unit),
+    // "+N" when below (uninvested unit stepped up). num() keeps the sign.
+    const delta = parts[1] && /^[+-][\d,]+$/.test(parts[1]) ? num(parts[1]) : 0
     out.actual[k] = actual
     out.raid400[k] = actual + delta
   }
