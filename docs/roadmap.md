@@ -323,7 +323,8 @@
   formatDamage). Vitest 71/71 · `tsc -b` 클린 · 빌드 클린 · vite 프록시 경유
   실백엔드 E2E 확인. 부수 픽스: 루트 tsconfig가 references 셸이라 bare
   `tsc --noEmit`이 no-op이던 함정(README 교정 + 숨어 있던 테스트 타입에러 3건).
-  **다음:** 97초→1분 미만이 필요하면 스왑 단계 배치평가/예산 축소는 Fienn 판단.
+  97초→1분 미만 후속 최적화(스왑 배치평가/예산 축소)는 **유저 피드백 생길 때까지
+  보류 확정**(Fienn, 2026-07-17 — `decisions.md` 참고). Phase 5 종결.
 
 ### Phase 6 — 유저 데이터 입력 UI 🔄
 - React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
