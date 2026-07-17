@@ -79,7 +79,18 @@ class SimPool:
         )
 
     def _map(self, worker_fn, inline_fn, decks):
-        return [inline_fn(deck) for deck in decks]
+        threshold = self._spawn_threshold if self._spawn_threshold is not None else SPAWN_THRESHOLD
+        if self._workers <= 1 or len(decks) < threshold:
+            return [inline_fn(deck) for deck in decks]
+        if self._executor is None:
+            self._executor = ProcessPoolExecutor(
+                max_workers=self._workers,
+                initializer=_init_worker,
+                initargs=(self._specs, self._boss),
+            )
+        slug_tuples = [tuple(u.slug for u in deck) for deck in decks]
+        chunksize = max(1, len(slug_tuples) // (self._workers * 4))
+        return list(self._executor.map(worker_fn, slug_tuples, chunksize=chunksize))
 
     def close(self):
         if self._executor is not None:

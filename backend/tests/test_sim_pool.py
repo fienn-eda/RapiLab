@@ -45,3 +45,22 @@ def test_serial_mode_never_spawns_an_executor():
     with SimPool(roster, boss, workers=None) as pool:
         pool.score_many([list(roster)] * 40)  # over SPAWN_THRESHOLD, still serial
         assert pool._executor is None
+
+
+def test_pooled_results_match_serial_bit_for_bit():
+    roster, boss = real_five_roster(), short_boss()
+    decks = [list(roster), [roster[0], roster[1], roster[4], roster[3], roster[2]]]
+    with SimPool(roster, boss, workers=None) as serial:
+        expected_scores = serial.score_many(decks)
+        expected_summaries = serial.summarize_many(decks)
+    with SimPool(roster, boss, workers=2, spawn_threshold=1) as pooled:
+        assert pooled.score_many(decks) == expected_scores
+        assert pooled._executor is not None  # the pool really spawned
+        assert pooled.summarize_many(decks) == expected_summaries
+
+
+def test_small_batches_stay_inline_even_with_workers():
+    roster, boss = real_five_roster(), short_boss()
+    with SimPool(roster, boss, workers=2) as pool:  # default threshold 32
+        pool.score_many([list(roster)])
+        assert pool._executor is None
