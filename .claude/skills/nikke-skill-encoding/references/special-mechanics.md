@@ -782,5 +782,36 @@ how to encode it, and current engine status.
   vs. multiplicative reading was settled the same way (multiplicative predicts
   ~18 hits against 31 observed).
 
+## "Stacks up to N times and lasts for X sec" — one counter, refreshed; NOT N overlapping DoTs
+
+- **What it looks like:** Raven's Shock Wave — "Activates when performing a Full
+  Charge attack. Deals 68.46% of final ATK as sustained damage every 1 sec,
+  stacks up to 10 times and lasts for 5 sec." The natural reading is that each
+  Full Charge lays its own 5-second DoT and several run concurrently.
+- **What it actually is** (Fienn, 2026-07-17): ONE stack counter. The 1st Full
+  Charge puts it at 1 stack, the 2nd at 2, up to the cap. **"Lasts for X sec" is
+  the counter's life, and every trigger refreshes it back to X** — stacks survive
+  as long as you keep triggering inside the window, no matter how old they are.
+  Only a gap longer than X drops it back to a single fresh stack.
+- **Why the difference is huge:** under the wrong reading the stack count settles
+  at `window / trigger_interval`; under the right one it climbs to the cap and
+  stays. For Raven that is 5 vs 10 — her main damage source came out **1.9x too
+  low** (128M vs 292M over 180s) before Fienn caught it.
+- **The cap is a real constraint here, unlike Velvet's ammo pouch.** Do not reuse
+  the "it can never bind, skip the resource" shortcut without checking: with
+  refresh semantics the counter climbs to the cap and pins there, so the cap sets
+  the steady state. Check the unit's actual cadence against the window — Raven's
+  RL takes 1s per Full Charge and her longest gap is the 3s reload, so the
+  counter never expires at all.
+- **How to encode:** a `scheduled_nukes` schedule over `context.shot_times`, with
+  each tick time repeated once per live stack (one damage instance per stack, so
+  defense comes off each — same rule as a multi-hit burst). See `raven.py`'s
+  `_stack_counts` / `_shock_wave_ticks`.
+- **Boundary to decide:** when the tick interval equals the trigger interval,
+  every tick coincides with a trigger and the ordering decides everything. This
+  project resolves it the same way the rest of the engine does — a tick counts
+  the stacks standing at its OWN time (cf. `resource_scaled_nukes` re-reading its
+  count per tick).
+
 ---
 *Add new mechanics above this line as they come up.*

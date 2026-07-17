@@ -336,11 +336,10 @@ spec dicts `{"schedule": fn(context, fight_duration) -> times, "percent",
 dropped. Logged with `source="scheduled"`. The schedule may also read the owner's
 own firing timeline off `context.shot_times[slug]` (filled by the weapon pass;
 empty without weapon stats) - that is how "a DoT per Full Charge" is expressed
-(Raven's Shock Wave: five 1s ticks per shot, instances deliberately OVERLAPPING
-rather than refreshing, since concurrent ticks are what its "stacks up to 10"
-means). Check whether a stack cap can actually bind before reaching for a
-resource: Raven's RL takes 1s per Full Charge, so at most 5 are ever live in her
-5s window and the cap of 10 is unreachable. First consumer: Ein (`ein.py` - see
+(Raven's Shock Wave). A schedule can also emit the SAME time more than once -
+that is how a stacking DoT is expressed: one damage instance per live stack, so
+defense comes off each, exactly like a multi-hit burst. First consumer: Ein
+(`ein.py` - see
 its docstring for how a datamine + a video measurement, NOT the skill text,
 settled the mechanics; the text's "Activates when Near Feather is summoned"
 misreads as one hit per summon). Reach for this only when the cadence genuinely
