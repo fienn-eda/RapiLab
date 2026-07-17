@@ -226,9 +226,11 @@ _TYPE_BUCKETS = {
 }
 
 # Every registry stat phase-2 damage computation can read (_damage_instance,
-# normal_attack_type, _normal_attack_percent). All are constant within one
-# state epoch, so the whole bundle is resolved once per (target, epoch,
-# registry version) - see _stat_bundle in simulate_raid.
+# _normal_attack_percent). All are constant within one state epoch, so the
+# whole bundle is resolved once per (target, epoch, registry version) - see
+# _stat_bundle in simulate_raid. normal_attack_type reads its single stat
+# directly - it runs in phase 1 where per-shot mutations churn the version,
+# so bundle misses there cost more than they save.
 _BUNDLE_STATS = (
     "enemy_def_percent", "atk_percent", "flat_atk", "other_elemental_bonus",
     "other_critical_damage_sources", "crit_rate", "other_core_damage_sources",
@@ -236,7 +238,7 @@ _BUNDLE_STATS = (
     "pierce_damage_up", "damage_taken_up",
     "sustained_damage_up", "distributed_damage_up", "true_damage_up",
     "projectile_explosion_damage_up",
-    "normal_attacks_deal_true", "normal_attack_damage_multiplier",
+    "normal_attack_damage_multiplier",
 )
 
 
@@ -362,7 +364,7 @@ def simulate_raid(
     def normal_attack_type(slug, weapon, time):
         # A skill can convert a unit's normal attacks to a damage type for a
         # window (e.g. Takina Inoue's burst: "normal attacks deal true damage").
-        if _stat_bundle(slug, time)["normal_attacks_deal_true"] > 0:
+        if registry.total_for("normal_attacks_deal_true", target_for(slug), time) > 0:
             return "true"
         # Otherwise a rocket launcher's normal attacks are projectile explosions.
         if weapon["weapon"] == "RL":

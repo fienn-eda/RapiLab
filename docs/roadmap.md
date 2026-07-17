@@ -11,7 +11,7 @@
 - 브랜치: `wip/scaffolding`
 - 테스트: **659 passed** (2026-07-17, **Stage 0 EffectRegistry 성능 패스** —
   total_for를 버전-무효화 세그먼트 테이블로 교체(비트 동일 출력, 패리티 넷 2건
-  추가). evaluate_deck 180초 시뮬 ~2410ms → 133.66ms → 125.07ms (Stage 0.5 epoch memo, 2026-07-17). was 656 — 목표 50ms 미달(2.5×), 잔여는 평탄한 호출 오버헤드, 추가 최적화 여부는 Fienn 결정 대기)
+  추가). evaluate_deck 180초 시뮬 ~2410ms → 133.66ms → 103.43ms (Stage 0.5 epoch memo, 2026-07-17 — phase-1 normal_attack_type 회귀 수정: 번들 대신 직접 단일-스탯 조회로 복귀). was 656 — 목표 50ms 미달(2.1×), 잔여는 평탄한 호출 오버헤드, 추가 최적화 여부는 Fienn 결정 대기)
 - 이전: **654 passed** (2026-07-17 후속 배치 — 매니페스트 배치 2(29유닛, 45/57
   커버) + dotgg weapon 스탯 39파일 수집 + `dotgg_slug` 브리지 + 오버로드 옵션명
   422 검증 + 매니페스트 가드 테스트(`KNOWN_MANIFEST_EXCEPTIONS`). **API 로더블

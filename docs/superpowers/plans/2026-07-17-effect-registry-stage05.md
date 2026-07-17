@@ -354,6 +354,7 @@ git commit -m "docs: record Stage 0.5 epoch-memo results"
 
 ## Completion notes
 
-- Measured: evaluate_deck 125.07 ms/sim (Stage 0 was 133.66 ms; target <=50 ms missed), 2026-07-17.
+- Measured: evaluate_deck 103.43 ms/sim (Stage 0 was 133.66 ms; target <=50 ms missed), 2026-07-17.
 - Suite: 659 passed.
 - Profile (top 15 lines): `_stat_bundle` (185485 calls, 0.478 s cumulative), `_damage_instance` (83341 calls, 0.457 s), `state_epoch` (185485 calls, 0.161 s). Remaining time distributed across import, module init, and utility functions.
+- Post-measurement fix: normal_attack_type reverted to a direct single-stat lookup (phase-1 bundle misses were a regression eating the phase-2 win); re-measured 103.43 ms.
