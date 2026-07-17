@@ -8,6 +8,7 @@ Effect.scope selects which squad members an effect applies to:
                         (used for "N allies with the highest final ATK" buffs,
                         resolved to concrete slugs at application time)
 """
+from bisect import bisect_right
 from dataclasses import dataclass, field
 from typing import Callable
 
@@ -107,9 +108,15 @@ class EffectRegistry:
         self._entries: list[tuple[Effect, float]] = []
         self._pulses: list[Pulse] = []
         self._round_grants: list[RoundGrant] = []
+        # total_for is served from per-(stat, slug, element) segment tables;
+        # every mutation bumps _version so stale tables rebuild on next query.
+        # Mutations happen ONLY through the methods below (audited 2026-07-17).
+        self._version = 0
+        self._segment_tables: dict[tuple, tuple[int, list, list]] = {}
 
     def add(self, effect: Effect, applied_at: float) -> None:
         self._entries.append((effect, applied_at))
+        self._version += 1
 
     def add_round_grant(self, grant: RoundGrant) -> None:
         self._round_grants.append(grant)
@@ -135,6 +142,7 @@ class EffectRegistry:
             ):
                 existing.duration = applied_at - existing_applied_at
         self._entries.append((effect, applied_at))
+        self._version += 1
 
     def add_pulse(self, pulse: Pulse) -> None:
         self._pulses.append(pulse)
@@ -155,6 +163,7 @@ class EffectRegistry:
         for effect, applied_at in self._entries:
             if effect.stat == stat and effect.source_slug == source_slug and effect.duration is None:
                 effect.duration = now - applied_at
+        self._version += 1
 
     def drain_pulses(self, stat: str) -> list[Pulse]:
         matching = [p for p in self._pulses if p.stat == stat]
@@ -167,15 +176,46 @@ class EffectRegistry:
         return applied_at <= now < applied_at + effect.duration
 
     def total_for(self, stat: str, target: dict, now: float) -> float:
-        total = 0.0
+        # .get for element: the old loop only read target["element"] when an
+        # element:-scoped effect was actually present, so the cache key must
+        # not introduce a new KeyError for element-less targets.
+        key = (stat, target["slug"], target.get("element"))
+        cached = self._segment_tables.get(key)
+        if cached is None or cached[0] != self._version:
+            cached = self._build_segment_table(stat, target)
+            self._segment_tables[key] = cached
+        _, boundaries, totals = cached
+        return totals[bisect_right(boundaries, now)]
+
+    def _build_segment_table(self, stat: str, target: dict):
+        """Piecewise-constant totals for one (stat, target) query key: between
+        consecutive interval boundaries the active set is constant, so each
+        segment's total is precomputed and a query is one bisect. Each segment
+        is summed over entries in insertion order - the exact additions the
+        old linear scan performed for any time inside that segment - so
+        results are bit-identical to it, not approximately equal."""
+        intervals = []
         for effect, applied_at in self._entries:
             if effect.stat != stat:
                 continue
-            if not self._is_active(effect, applied_at, now):
-                continue
             if effect.scope == "self":
-                if effect.source_slug == target["slug"]:
-                    total += effect.value
-            elif _matches_scope(effect.scope, target):
-                total += effect.value
-        return total
+                if effect.source_slug != target["slug"]:
+                    continue
+            elif not _matches_scope(effect.scope, target):
+                continue
+            end = None if effect.duration is None else applied_at + effect.duration
+            intervals.append((applied_at, end, effect.value))
+        boundary_set = set()
+        for start, end, _ in intervals:
+            boundary_set.add(start)
+            if end is not None:
+                boundary_set.add(end)
+        boundaries = sorted(boundary_set)
+        totals = [0.0]  # the earliest boundary is the earliest start, so
+        for b in boundaries:  # queries before it see no active effect
+            total = 0.0
+            for start, end, value in intervals:
+                if start <= b and (end is None or b < end):
+                    total += value
+            totals.append(total)
+        return (self._version, boundaries, totals)
