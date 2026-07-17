@@ -82,3 +82,17 @@ def test_swap_pass_fixes_a_greedy_split(monkeypatch):
     per_deck = [set(d["deck"]) & {"m", "n"} for d in out["decks"]]
     assert all(len(x) == 1 for x in per_deck)          # one buffer per deck
     assert sum(d["total_damage"] for d in out["decks"]) == 200.0
+
+
+def test_allocate_decks_workers_parity():
+    # Real 5-spec roster (stubs can't cross the SimPool process/module
+    # boundary); time_budget_sec=0 keeps the wall-clock-capped swap phase out
+    # of the comparison.
+    from tests.test_deck_search import real_five_roster, short_boss
+
+    roster, boss = real_five_roster(), short_boss()
+    serial = da.allocate_decks(roster, boss, num_decks=2, time_budget_sec=0.0)
+    pooled = da.allocate_decks(roster, boss, num_decks=2, time_budget_sec=0.0, workers=2)
+    assert [d["deck"] for d in pooled["decks"]] == [d["deck"] for d in serial["decks"]]
+    assert [d["total_damage"] for d in pooled["decks"]] == [d["total_damage"] for d in serial["decks"]]
+    assert pooled["leftover_slugs"] == serial["leftover_slugs"]

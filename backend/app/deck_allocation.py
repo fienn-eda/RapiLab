@@ -7,33 +7,43 @@ them supports two decks better). No optimality claim - set partitioning is
 NP-hard; this is the standard practical combo."""
 import time
 
-from app.deck_search import (BossProfile, _intra_tier_orderings, _summarize,
-                             evaluate_deck, search_best_decks)
+from app.deck_search import (BossProfile, _intra_tier_orderings, _score_batch,
+                             _summarize, evaluate_deck, search_best_decks)
+from app.sim_pool import SimPool, resolve_workers
 
 
-def allocate_decks(roster, boss: BossProfile, num_decks=5, time_budget_sec=45.0):
-    remaining = list(roster)
-    decks = []  # each: ordered list of units (canonical order from the search)
-    by_slug = {u.slug: u for u in roster}
-    while len(decks) < num_decks:
-        found = search_best_decks(remaining, boss, top_n=1)
-        if not found:
-            break
-        units = [by_slug[slug] for slug in found[0]["deck"]]
-        decks.append(units)
-        used = {u.slug for u in units}
-        remaining = [u for u in remaining if u.slug not in used]
+def allocate_decks(roster, boss: BossProfile, num_decks=5, time_budget_sec=45.0, workers=None):
+    # Serial (the default) never constructs a SimPool, so the sim path stays
+    # exactly the pre-parallelism one (and test stubs of evaluate_deck keep
+    # working - SimPool holds its own module binding they can't patch).
+    pool = SimPool(roster, boss, workers=workers) if resolve_workers(workers) > 1 else None
+    try:
+        remaining = list(roster)
+        decks = []  # each: ordered list of units (canonical order from the search)
+        by_slug = {u.slug: u for u in roster}
+        while len(decks) < num_decks:
+            found = search_best_decks(remaining, boss, top_n=1, pool=pool)
+            if not found:
+                break
+            units = [by_slug[slug] for slug in found[0]["deck"]]
+            decks.append(units)
+            used = {u.slug for u in units}
+            remaining = [u for u in remaining if u.slug not in used]
 
-    # time_budget_sec caps the swap-improvement phase ONLY, starting when the
-    # swap phase itself starts: greedy peeling above and the final ordering
-    # polish below are unbudgeted, so a valid (if unimproved) allocation is
-    # returned even with a zero budget.
-    deadline = time.monotonic() + time_budget_sec
-    _swap_pass(decks, remaining, boss, deadline)
+        # time_budget_sec caps the swap-improvement phase ONLY, starting when the
+        # swap phase itself starts: greedy peeling above and the final ordering
+        # polish below are unbudgeted, so a valid (if unimproved) allocation is
+        # returned even with a zero budget. The hill-climb stays serial: each
+        # accepted swap changes the state the next candidate is judged against.
+        deadline = time.monotonic() + time_budget_sec
+        _swap_pass(decks, remaining, boss, deadline)
 
-    summaries = [_best_ordering_summary(units, boss) for units in decks]
-    return {"decks": summaries,
-            "leftover_slugs": sorted(u.slug for u in remaining)}
+        summaries = [_best_ordering_summary(units, boss, pool) for units in decks]
+        return {"decks": summaries,
+                "leftover_slugs": sorted(u.slug for u in remaining)}
+    finally:
+        if pool is not None:
+            pool.close()
 
 
 def _score(units, boss):
@@ -93,12 +103,11 @@ def _try_leftover_swaps(decks, scores, i, leftovers, boss, deadline):
     return improved
 
 
-def _best_ordering_summary(units, boss):
+def _best_ordering_summary(units, boss, pool=None):
     # Final polish: the swap pass scored canonical orders only; pick the best
     # intra-tier ordering for the finished deck (a handful of sims per deck).
-    best = None
-    for ordered in _intra_tier_orderings(units):
-        summary = _summarize(ordered, evaluate_deck(ordered, boss))
-        if best is None or summary["total_damage"] > best["total_damage"]:
-            best = summary
-    return best
+    # Batch-scored; ties keep the first ordering, like the serial `>` did.
+    orderings = list(_intra_tier_orderings(units))
+    totals = _score_batch(orderings, boss, pool)
+    best_i = max(range(len(orderings)), key=lambda i: (totals[i], -i))
+    return _summarize(orderings[best_i], evaluate_deck(orderings[best_i], boss))
