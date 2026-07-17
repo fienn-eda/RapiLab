@@ -1,4 +1,4 @@
-// The optional PVE (combat) cube: a name and a level 1–10, or none at all.
+// The optional PVE (combat) cube: a name and a level 1–15, or none at all.
 // PVP/arena cubes are out of scope.
 
 import { CONSTRAINTS } from '../types/userNikkeState'
