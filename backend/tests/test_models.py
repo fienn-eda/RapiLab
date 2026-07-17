@@ -38,6 +38,16 @@ def test_user_nikke_state_with_overload_and_cube():
     assert state.pve_cube.name == "Bastion Cube"
 
 
+def test_pve_cube_accepts_max_level_15():
+    cube = PveCube(name="Resilience Cube", level=15)
+    assert cube.level == 15
+
+
+def test_pve_cube_rejects_level_above_15():
+    with pytest.raises(ValidationError):
+        PveCube(name="Resilience Cube", level=16)
+
+
 def test_skill_levels_must_be_within_valid_range():
     with pytest.raises(ValidationError):
         SkillLevels(skill1=0, skill2=1, burst=1)

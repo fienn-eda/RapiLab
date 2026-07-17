@@ -24,7 +24,7 @@ class PveCube(BaseModel):
     """The PVE (combat) cube equipped. PVP/arena cubes are out of scope."""
 
     name: str
-    level: int = Field(ge=1, le=10)
+    level: int = Field(ge=1, le=15)
 
 
 class UserNikkeState(BaseModel):
