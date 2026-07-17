@@ -28,18 +28,28 @@ slider at 400, `level-400 value = actual + delta`.
   while `level-400 >= 10` else `-1`, re-reading after each click, until `LV400`.
   (No single "-263" jump button exists; step down. ~29 clicks from LV663.)
 
-## (b) Surfaces — one capture per unit
+## (b) Surfaces — visit each tab, pluck each surface
 
-While the **Equipment** tab is active, the character-detail container already renders
-every surface we parse in the DOM (hidden panels included). One `page.content()` /
-container capture per unit yields main stats + overload + all three skills + cube +
-collection. The tab bar is `Equipment | Skill | Collection | Cube`; switching tabs is
-**not** required for capture (jsdom sees the full subtree regardless of CSS visibility).
+The tab bar is `Equipment | Skill | Collection | Cube`, and the tabs are **`v-if`, not
+`v-show`**: only the active tab's markup is in the DOM, and the main stat panel is a
+**separate DOM branch** from all of them — there is no single container that holds
+everything. (A pre-implementation manual spike saw the tabs appear to coexist because
+the SPA caches recently-viewed tab state; that is not reproducible from a fresh load.)
+Skill markup in particular only renders after the Skill tab is actually opened.
 
-The capture is the **smallest `div` whose textContent has `LV<n>` + `Equipment
-Effects` + `min`** (a skill-row marker). Extracting it (~50-62 KB vs ~415 KB full
-page) also drops the account panel — the account name, `game_uid`/UID, and tokens all
-live outside this subtree.
+So `captureUnit` visits `Equipment` (overload), `Skill`, and `Cube` in turn and, on
+each, plucks each parseable surface by its own local anchor (`pluckSurfaces`):
+
+- stat rows — each `div` with two `<p>` children whose label is HP/ATK/DEF and whose
+  value cell is `"<actual> <signed delta>"` (the delta distinguishes the main panel
+  from equipment/cube stat displays, which are bare numbers);
+- overload — the `div` whose header child is exactly `Equipment Effects`;
+- skills — the `div.w-40…` rows matching `\d+min`;
+- cube — the compact `Battle…Arena` div.
+
+The stat-panel fragment repeats on every tab and is de-duped. The plucked fragments
+(~5–24 KB, vs ~415 KB for the full page) exclude the account panel — the account name,
+`game_uid`/UID, and tokens live in a different branch and are never matched.
 
 ## (c) Owned units + (d) resource_id
 
@@ -80,12 +90,15 @@ characters by `name_code` rather than name-derived slug — deferred as its own 
 
 ## (e) Parser DOM structure (drives parse.js)
 
-- **Main stats** — climb from the `LV<n>` leaf to the ancestor whose textContent has
-  `HP`+`ATK`+`DEF` and length < 400 (the stat panel). Each stat row is a `div` with two
-  `<p>` children: label (`HP`/`ATK`/`DEF`) and value `"<actual> <-delta>"` (e.g.
-  `"418862 -275319"`). `raid400 = actual + delta`; `actual` is the real-level value.
-  jsdom's `textContent` has **no** newlines, so split the value cell on whitespace — do
-  not rely on line splitting.
+- **Main stats** — find the stat rows directly: each is a `div` with two `<p>` children,
+  label (`HP`/`ATK`/`DEF`) and value `"<actual> <signed delta>"` (e.g. `"418862 -275319"`
+  or `"5097 +89718"`). The signed-delta value cell is what identifies the main panel
+  (equipment/cube stat displays are bare numbers), so this is LV-position-independent —
+  do **not** rely on the LV element's position (the responsive layout does not always
+  nest LV with the rows). `raid400 = actual + delta`; delta is negative when the real
+  level is above 400 and positive when a level-1 unit is stepped up; `actual` is the
+  real-level value. jsdom's `textContent` has **no** newlines and `\bATK\b` fails on
+  concatenated text like `"ATK240903"`, so match structure/label, not lexemes.
 - **Overload** — the summed block is the `div.nikkes-detail-box` whose header child is
   exactly `Equipment Effects` (per-piece blocks read `Change Equipment Effects`). Its
   second child is a flex-wrap of rows; each row text is `"<English label><NN.NN>%"`
@@ -126,7 +139,9 @@ no identifiers:
 
 ## Fixtures
 
-`__fixtures__/<slug>.page.html` — sanitized, extracted detail container, level 400.
-Captured: `rapi-red-hood` (Attacker, cube), `liter` (Supporter, no Battle cube),
-`moran` (Defender, Bastion cube, charge-speed overload), `maxwell` (Attacker, low
-investment 1/1/1 skills, no cube). Re-capture with `node capture.js <resource_id> <slug>`.
+`__fixtures__/<slug>.page.html` — sanitized, plucked surfaces, level 400. Captured:
+`rapi-red-hood` (Attacker, cube), `liter` (Supporter, no Battle cube), `moran`
+(Defender, Bastion cube, charge-speed overload), `maxwell` (Attacker, low investment
+1/1/1, no cube), `neon-blue-ocean` (uninvested lv1 stepped up → positive delta, empty
+overload), `blanc` (Defender, per-tab pluck, dropped Hit Rate/DEF overloads, distinct
+skill levels 4/7/9, no cube). Re-capture with `node capture.js <resource_id> <slug>`.
