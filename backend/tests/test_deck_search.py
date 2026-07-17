@@ -189,7 +189,7 @@ def test_search_best_decks_respects_permutation_top_k(monkeypatch):
 
     monkeypatch.setattr(ds, "evaluate_deck", counting_evaluate)
     ds.search_best_decks(roster, BossProfile(), top_n=1, permutation_top_k=1)
-    # 4 canonical combos for this roster; only ONE combo's orderings refined.
-    canonical_calls = 4
-    refined_orderings = 2  # the (1,2,2) shape's B2 pair permutes 2! ways
-    assert len(calls) <= canonical_calls + refined_orderings
+    # 5 canonical combos for this roster ((1,1,3): 2, (1,2,2): 3); with
+    # permutation_top_k=1 exactly ONE combo is refined - 4 orderings if it is
+    # a (1,2,2) (2!x2!), 6 if a (1,1,3) (3!). All-refined would be 29 calls.
+    assert 5 < len(calls) <= 5 + 6
