@@ -86,6 +86,15 @@ def evaluate_deck(ordered_deck, boss: BossProfile):
     )
 
 
+def _score_batch(decks, boss, pool):
+    """Total damage for each deck. `pool` (a SimPool, duck-typed - this module
+    must not import sim_pool, which imports evaluate_deck from here) fans the
+    batch out to worker processes; None runs inline."""
+    if pool is None:
+        return [evaluate_deck(deck, boss)["total_damage"] for deck in decks]
+    return pool.score_many(decks)
+
+
 def _summarize(ordered_deck, result):
     burst = sum(e["damage"] for e in result["damage_log"] if e["source"] == "burst")
     normal = sum(e["damage"] for e in result["damage_log"] if e["source"] == "normal_attack")
@@ -156,7 +165,7 @@ def _measure_against(reference, unit, boss, baseline):
     return evaluate_deck(deck, boss)["total_damage"] - baseline
 
 
-def prune_candidate_pool(roster, boss: BossProfile):
+def prune_candidate_pool(roster, boss: BossProfile, pool=None):
     """Cut the roster to a pool the budget can enumerate. Scores are marginal
     contributions in reference-deck context (two passes: prior-seeded B1, then
     best-measured B1 - CDR holders change cycle count, Fienn rule 2/3), with
@@ -171,9 +180,21 @@ def prune_candidate_pool(roster, boss: BossProfile):
     for reference_b1 in _reference_b1_variants(by_tier, boss):
         reference = _reference_deck(by_tier, reference_b1)
         baseline = evaluate_deck(reference, boss)["total_damage"]
+        reference_slugs = {u.slug for u in reference}
+        candidates, swapped = [], []
         for unit in roster:
-            score = _measure_against(reference, unit, boss, baseline)
-            scores[unit.slug] = max(scores.get(unit.slug, 0.0), score)
+            if unit.slug in reference_slugs:
+                # a unit already in the reference leaves the deck unchanged,
+                # so its marginal contribution is 0.0 with no re-simulation
+                scores[unit.slug] = max(scores.get(unit.slug, 0.0), 0.0)
+                continue
+            slot = {1: 0, 2: 1, 3: 4}[unit.burst_tier]
+            deck = list(reference)
+            deck[slot] = unit
+            candidates.append(unit)
+            swapped.append(deck)
+        for unit, total in zip(candidates, _score_batch(swapped, boss, pool)):
+            scores[unit.slug] = max(scores.get(unit.slug, 0.0), total - baseline)
 
     # Synergy sets: measured as a pair in a (1,2,2) shell; both members share it.
     shell_b1, shell_b3 = by_tier[1][0], by_tier[3][:2]
@@ -228,24 +249,29 @@ def _reference_b1_variants(by_tier, boss):
         yield best_b1
 
 
-def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200, permutation_top_k=40):
+def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200, permutation_top_k=40,
+                      pool=None):
     """Budget-aware replacement for exhaustive find_best_decks: canonical
     tier-order scores rank the shape combinations (intra-tier order only
     decides nuker-vs-backup roles), and only the top K get their permutations
     evaluated. When canonical enumeration alone would blow the budget, the
-    roster is first cut to a candidate pool (prune_candidate_pool)."""
-    pool = list(roster)
-    combos = list(shape_combinations(pool))
+    roster is first cut to a candidate pool (prune_candidate_pool). `pool` (a
+    SimPool or None) fans the map-shaped batches out to worker processes."""
+    candidates = list(roster)
+    combos = list(shape_combinations(candidates))
     if len(combos) > sim_budget:
-        pool = prune_candidate_pool(roster, boss)
-        combos = list(shape_combinations(pool))
+        candidates = prune_candidate_pool(roster, boss, pool)
+        combos = list(shape_combinations(candidates))
     canonical = sorted(
-        ((evaluate_deck(combo, boss)["total_damage"], i) for i, combo in enumerate(combos)),
+        ((total, i) for i, total in enumerate(_score_batch(combos, boss, pool))),
         reverse=True,
     )
-    refined = []
-    for _, i in canonical[:permutation_top_k]:
-        for ordered in _intra_tier_orderings(combos[i]):
-            refined.append(_summarize(ordered, evaluate_deck(ordered, boss)))
-    refined.sort(key=lambda entry: entry["total_damage"], reverse=True)
-    return refined[:top_n]
+    # Permutations are ranked on slim scores first; only the returned top_n get
+    # a second sim to attach the full "result" (evaluate_deck is pure, so the
+    # floats are identical to scoring the full summaries directly).
+    orderings = [ordered
+                 for _, i in canonical[:permutation_top_k]
+                 for ordered in _intra_tier_orderings(combos[i])]
+    totals = _score_batch(orderings, boss, pool)
+    ranked = sorted(zip(totals, orderings), key=lambda pair: pair[0], reverse=True)
+    return [_summarize(ordered, evaluate_deck(ordered, boss)) for _, ordered in ranked[:top_n]]

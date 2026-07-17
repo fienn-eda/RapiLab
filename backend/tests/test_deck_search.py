@@ -257,3 +257,15 @@ def test_prune_includes_sg_theme_around_tove(monkeypatch):
     pool_slugs = {u.slug for u in ds.prune_candidate_pool(roster, BossProfile())}
     assert "tove" in pool_slugs
     assert {"sg_0", "sg_1"} <= pool_slugs  # anchored theme survives the cut
+
+
+def test_search_best_decks_pool_parity():
+    from app.deck_search import search_best_decks
+    from app.sim_pool import SimPool
+    roster, boss = real_five_roster(), short_boss()
+    serial = search_best_decks(roster, boss, top_n=3)
+    with SimPool(roster, boss, workers=2, spawn_threshold=1) as pool:
+        pooled = search_best_decks(roster, boss, top_n=3, pool=pool)
+    assert [d["deck"] for d in pooled] == [d["deck"] for d in serial]
+    assert [d["total_damage"] for d in pooled] == [d["total_damage"] for d in serial]
+    assert all("result" in d for d in pooled)  # return contract kept
