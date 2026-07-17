@@ -175,6 +175,7 @@ from app.skill_rules.privaty import (
     build_ld_assault_per_shot_rules,
 )
 from app.skill_rules.rapi_red_hood import (
+    build_attachable_projectiles_rules,
     build_battlefield_assessment_rules,
     power_of_inheritance_stage3_burst_percent,
 )
@@ -206,6 +207,7 @@ def _build_crown(sv):
 
 def _build_rapi_red_hood(sv):
     rules = build_battlefield_assessment_rules(sv["battlefield_assessment"])
+    rules += build_attachable_projectiles_rules(sv["attachable_projectiles"])
     burst_percent = power_of_inheritance_stage3_burst_percent(sv["power_of_inheritance"])
     return rules, burst_percent
 

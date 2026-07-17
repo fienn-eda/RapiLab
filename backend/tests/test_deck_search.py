@@ -61,6 +61,7 @@ def real_five_roster():
                 "description_value_04": "10", "description_value_05": "48", "description_value_06": "10",
                 "description_value_07": "8.02", "description_value_08": "10",
             },
+            "attachable_projectiles": {"description_value_05": "150.72", "description_value_06": "100.6"},
             "power_of_inheritance": {"description_value_05": "2808"},
         },
         weapon_stats={
