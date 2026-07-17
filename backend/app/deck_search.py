@@ -35,6 +35,26 @@ class BossProfile:
     part_destructible: bool = False
 
 
+# Real decks come in exactly these B1/B2/B3 shapes (Fienn, 2026-07-17);
+# "at least one of each tier" also admits shapes that never occur in play.
+ALLOWED_SHAPES = ((1, 1, 3), (1, 2, 2), (2, 1, 2))
+
+
+def shape_combinations(roster):
+    """Canonical tier-ordered 5-unit combinations, restricted to the shapes
+    real play uses. Pure combinatorics on `.burst_tier` (like
+    feasible_orderings); intra-tier order is the input order."""
+    by_tier = {1: [], 2: [], 3: []}
+    for unit in roster:
+        if unit.burst_tier in by_tier:
+            by_tier[unit.burst_tier].append(unit)
+    for n1, n2, n3 in ALLOWED_SHAPES:
+        for c1 in combinations(by_tier[1], n1):
+            for c2 in combinations(by_tier[2], n2):
+                for c3 in combinations(by_tier[3], n3):
+                    yield list(c1) + list(c2) + list(c3)
+
+
 def feasible_orderings(roster):
     for combo in combinations(roster, 5):
         by_tier = {1: [], 2: [], 3: []}

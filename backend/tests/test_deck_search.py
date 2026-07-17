@@ -128,3 +128,26 @@ def test_boss_element_advantage_raises_a_decks_score():
     neutral = find_best_decks(roster, BossProfile(element=None, fight_duration=40.0), top_n=1)[0]
     advantaged = find_best_decks(roster, BossProfile(element="Fire", fight_duration=40.0), top_n=1)[0]
     assert advantaged["total_damage"] > neutral["total_damage"]
+
+
+def test_shape_combinations_yields_only_the_three_real_shapes():
+    from app.deck_search import shape_combinations
+    roster = fake_roster([1, 1, 1, 2, 2, 2, 3, 3, 3, 3])
+    shapes = {tuple(sum(1 for u in c if u.burst_tier == t) for t in (1, 2, 3))
+              for c in shape_combinations(roster)}
+    assert shapes == {(1, 1, 3), (1, 2, 2), (2, 1, 2)}
+
+
+def test_shape_combinations_count_and_canonical_order():
+    from app.deck_search import shape_combinations
+    roster = fake_roster([1, 1, 2, 2, 3, 3, 3])  # 2 B1, 2 B2, 3 B3
+    combos = list(shape_combinations(roster))
+    # (1,1,3): 2*2*C(3,3)=4 · (1,2,2): 2*1*C(3,2)=6 · (2,1,2): 1*2*3=6
+    assert len(combos) == 16
+    for combo in combos:
+        assert [u.burst_tier for u in combo] == sorted(u.burst_tier for u in combo)
+
+
+def test_shape_combinations_empty_when_a_tier_is_missing():
+    from app.deck_search import shape_combinations
+    assert list(shape_combinations(fake_roster([1, 1, 3, 3, 3]))) == []
