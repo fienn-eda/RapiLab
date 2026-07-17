@@ -15,7 +15,7 @@ ONE_MORE_SONG = {
     "description_value_03": "21",     # Performance duration extension (not modeled)
     "description_value_04": "25.01",  # Encore squad Attack Damage %
     "description_value_05": "10",     # duration
-    "description_value_06": "21",     # self Burst cooldown (not modeled)
+    "description_value_06": "21",     # Encore: self Burst cooldown increase
 }
 LETS_GET_THE_SHOW_STARTED = {
     "description_value_01": "20",     # squad Projectile Explosion Damage %
