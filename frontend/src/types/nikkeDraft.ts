@@ -24,6 +24,9 @@ export interface NikkeDraft {
   hp: string
   atk: string
   def_: string
+  actualHp: string
+  actualAtk: string
+  actualDef: string
   skill_levels: { skill1: string; skill2: string; burst: string }
   overload_options: OverloadRow[]
   hasCube: boolean
@@ -58,6 +61,9 @@ export const makeEmptyDraft = (): NikkeDraft => ({
   hp: '',
   atk: '',
   def_: '',
+  actualHp: '',
+  actualAtk: '',
+  actualDef: '',
   skill_levels: { skill1: '', skill2: '', burst: '' },
   overload_options: [],
   hasCube: false,
@@ -182,6 +188,16 @@ export const validateDraft = (draft: NikkeDraft): ValidationResult => {
     overload_options: overloadOptions,
     pve_cube: pveCube,
   }
+
+  for (const [key, raw] of [
+    ['actual_hp', draft.actualHp],
+    ['actual_atk', draft.actualAtk],
+    ['actual_def', draft.actualDef],
+  ] as const) {
+    const t = raw.trim()
+    if (t !== '' && /^\d+(\.\d+)?$/.test(t)) value[key] = Number(t)
+  }
+
   return { errors, value }
 }
 
@@ -226,6 +242,52 @@ export const mergeRosterDrafts = (
         core_level: inc.core_level,
         skill_levels: inc.skill_levels,
         overload_options: inc.overload_options,
+      }
+      updated += 1
+    }
+  }
+
+  return { drafts: next, added, updated }
+}
+
+/**
+ * Merge collector roster.json drafts into the current roster by
+ * character_slug. Unlike mergeRosterDrafts (which preserves manually-entered
+ * stats/cube because the ExiaInvasion export lacks them), the collector's
+ * roster.json is authoritative for stats, so an existing unit's stats, cube,
+ * and actual-level stats are overwritten too. core_level is NOT overwritten
+ * (the collector does not capture it — the displayed stats already bake in
+ * the real grade/core).
+ */
+export const mergeCollectorDrafts = (
+  current: NikkeDraft[],
+  incoming: NikkeDraft[],
+): RosterMergeResult => {
+  const next = current.map((d) => ({ ...d }))
+  const indexBySlug = new Map(next.map((d, i) => [d.character_slug, i]))
+  let added = 0
+  let updated = 0
+
+  for (const inc of incoming) {
+    const idx = indexBySlug.get(inc.character_slug)
+    if (idx === undefined) {
+      next.push(inc)
+      indexBySlug.set(inc.character_slug, next.length - 1)
+      added += 1
+    } else {
+      next[idx] = {
+        ...next[idx],
+        level: inc.level,
+        hp: inc.hp,
+        atk: inc.atk,
+        def_: inc.def_,
+        actualHp: inc.actualHp,
+        actualAtk: inc.actualAtk,
+        actualDef: inc.actualDef,
+        skill_levels: inc.skill_levels,
+        overload_options: inc.overload_options,
+        hasCube: inc.hasCube,
+        pve_cube: inc.pve_cube,
       }
       updated += 1
     }

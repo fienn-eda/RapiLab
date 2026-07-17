@@ -130,11 +130,11 @@ describe('validateDraft', () => {
     expect(validateDraft(validDraft()).value?.pve_cube).toBeNull()
   })
 
-  it('validates the cube name and level 1–10 when a cube is equipped', () => {
-    const draft = { ...validDraft(), hasCube: true, pve_cube: { name: '', level: '11' } }
+  it('validates the cube name and level 1–15 when a cube is equipped', () => {
+    const draft = { ...validDraft(), hasCube: true, pve_cube: { name: '', level: '16' } }
     const { errors, value } = validateDraft(draft)
     expect(value).toBeUndefined()
-    expect(errors.pve_cube).toEqual({ name: 'Required', level: 'Must be ≤ 10' })
+    expect(errors.pve_cube).toEqual({ name: 'Required', level: 'Must be ≤ 15' })
   })
 
   it('parses a valid equipped cube into the value', () => {

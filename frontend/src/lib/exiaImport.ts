@@ -145,6 +145,9 @@ export const parseExiaExport = (raw: unknown): ExiaImportResult => {
         hp: '',
         atk: '',
         def_: '',
+        actualHp: '',
+        actualAtk: '',
+        actualDef: '',
         skill_levels: {
           skill1: String(character.skill1_level ?? ''),
           skill2: String(character.skill2_level ?? ''),

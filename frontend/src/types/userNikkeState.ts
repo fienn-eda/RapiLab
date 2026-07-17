@@ -27,6 +27,9 @@ export interface UserNikkeState {
   hp: number // float, ≥ 0
   atk: number // float, ≥ 0
   def_: number // float, ≥ 0 (trailing underscore matches the Python model)
+  actual_hp?: number // float, ≥ 0 (real level, for future union raid)
+  actual_atk?: number
+  actual_def?: number
   skill_levels: SkillLevels
   overload_options: OverloadOption[] // may be empty
   pve_cube: PveCube | null // PVE cube only
@@ -41,5 +44,5 @@ export const CONSTRAINTS = {
   atk: { min: 0 },
   def_: { min: 0 },
   skill: { min: 1, max: 10 },
-  cubeLevel: { min: 1, max: 10 },
+  cubeLevel: { min: 1, max: 15 },
 } as const
