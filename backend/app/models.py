@@ -34,6 +34,9 @@ class UserNikkeState(BaseModel):
     hp: float = Field(ge=0)
     atk: float = Field(ge=0)
     def_: float = Field(ge=0)
+    actual_hp: float | None = Field(default=None, ge=0)
+    actual_atk: float | None = Field(default=None, ge=0)
+    actual_def: float | None = Field(default=None, ge=0)
     skill_levels: SkillLevels
     # hp/atk/def above ALREADY include the equipped cube's contribution: Fienn
     # confirmed ShiftyPad reflects the cube in the displayed stats when one is
