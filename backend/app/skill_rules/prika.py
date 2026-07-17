@@ -20,22 +20,27 @@ Modeled (DPS-relevant):
   Singing status so Mint's Singing-only buffs stay on (see mint.py). The
   "Performance duration +21 sec" it also grants is what keeps the burst's Charge
   Damage alive - captured by that buff being permanent (above), not re-added here.
+  Effect 4, self Burst-cooldown +21 sec, is modeled as a NEGATIVE
+  `burst_cooldown_reduction_sec` pulse: rotation bookkeeping, but DPS-relevant
+  in the sim, since without it Prika re-bursts every ~40 sec and displaces
+  Mint's tier-2 slot (Fienn's intended rotation is Mint owning it from cycle 2
+  on).
 - Let's Get the Show Started! (skills[0]): on every Full Charge attack, squad
   Projectile Explosion Damage, Pierce Damage, and ATK % of Prika's ATK for 3 sec
   - via the per-shot trigger (`per_shot_rules`). Prika is an SR (charge weapon),
   so every shot is a full charge.
 
 Not modeled:
-- Encore's Performance-duration +21 sec and self Burst-cooldown +21 sec: rotation
-  bookkeeping, not squad DPS. The Charge Damage refresh already captures the
-  outcome (Performance is maintained while Mint keeps bursting).
+- Encore's Performance-duration +21 sec: rotation bookkeeping, not squad DPS.
+  The Charge Damage refresh already captures the outcome (Performance is
+  maintained while Mint keeps bursting).
 - One More Song!'s Full-Burst self Max HP and Let's Get the Show Started!'s
   Performance-only self healing/Pierce: survivability.
 - Standalone (no Mint) Encore never fires - which is correct: without Mint there
   is no Sing Along to trigger it. Prika solo is then just her burst Charge Damage
   plus her full-charge squad buffs.
 """
-from app.effects import Effect
+from app.effects import Effect, Pulse
 from app.skill_rules._helpers import refreshing_buff_rule
 from app.squad_engine import SkillRule, all_conditions, ally_bursted, deck_contains, has_status
 
@@ -76,6 +81,7 @@ def build_prika_rules(values):
     charge_damage_duration = float(show["description_value_04"])
     encore_attack_damage = float(encore["description_value_04"]) / 100
     encore_attack_damage_duration = float(encore["description_value_05"])
+    encore_cd_increase = float(encore["description_value_06"])
 
     def apply_burst(context, caster_slug, time, registry):
         # With Mint present, Encore keeps extending Performance, so the Charge
@@ -100,6 +106,13 @@ def build_prika_rules(values):
         # from this moment (time-stamped so Mint's per-shot Here I Go! only sees
         # Singing from here on, not for shots before the pin).
         context.set_status(context.last_burst_slug, SINGING_STATUS, time)
+        # Effect 4: "Affects self. Cooldown of Burst Skill ▲ 21 sec." - a
+        # NEGATIVE value through the burst-CDR pulse path pushes Prika's own
+        # next burst later, which is what makes Mint own the tier-2 slot from
+        # cycle 2 on (each Encore outruns the ~20s cycle).
+        registry.add_pulse(
+            Pulse("burst_cooldown_reduction_sec", -encore_cd_increase, "self", caster_slug)
+        )
 
     return [
         SkillRule(trigger="own_burst_activate", action=apply_burst),

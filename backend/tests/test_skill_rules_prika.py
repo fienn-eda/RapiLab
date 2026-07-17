@@ -153,3 +153,33 @@ def test_lets_get_show_started_buffs_refresh_not_stack_over_shots():
 
     assert round(registry.total_for("flat_atk", ALLY, now=10.5), 2) == round(300000 * 0.20, 2)  # not x3
     assert round(registry.total_for("projectile_explosion_damage_up", ALLY, now=10.5), 4) == 0.20
+
+
+def test_prika_bursts_once_then_mint_owns_the_tier2_slot():
+    # Fienn (2026-07-17): Encore raises Prika's own burst cooldown +21s per
+    # trigger, so after her cycle-1 burst Mint bursts every later cycle.
+    # Encore itself only needs a deck member SLUGGED "mint" to burst (the
+    # ally_bursted gate) - Mint's own rules aren't required for rotation.
+    from app.raid_simulator import simulate_raid
+
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "element": "Fire", "cooldown": 20.0},
+        {"slug": "prika", "burst_tier": 2, "element": "Water", "cooldown": 40.0},
+        {"slug": "mint", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b3", "burst_tier": 3, "element": "Fire", "cooldown": 20.0},
+    ]
+    result = simulate_raid(
+        deck=deck,
+        rules_by_slug={"prika": build(), "b1": [], "mint": [], "b3": []},
+        burst_damage_percents={},
+        base_stats={m["slug"]: {"atk": 10000} for m in deck},
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=180.0,
+        base_crit_rate=0.0,
+    )
+    bursts = [e for e in result["events"] if e["type"] == "burst" and e["tier"] == 2]
+    prika_bursts = [e for e in bursts if e["slug"] == "prika"]
+    mint_bursts = [e for e in bursts if e["slug"] == "mint"]
+    assert len(prika_bursts) == 1 and prika_bursts[0]["time"] < 10.0
+    assert len(mint_bursts) >= 5  # every later cycle
