@@ -110,7 +110,7 @@
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
 | Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (57명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
-| Phase 5 | 5덱(25니케) 분배 최적화 | 🔄 백엔드 완료 — greedy+swap, `/api/recommend-raid`; 프론트 배선은 후속 소플랜 |
+| Phase 5 | 5덱(25니케) 분배 최적화 | ✅ 완료 — greedy+swap + ProcessPool 병렬화(50유닛 97초), `/api/recommend-raid`, 프론트 레이드 모드 배선까지 |
 | Phase 6 | 유저 데이터 입력 UI (React) | 🔄 진행 중 (입력 폼 + 결과 UI + 라이브 API 완료) |
 | Phase 7 | 자동화 (ShiftyPad 연동, 수집 파이프라인) | ⬜ 지연/후속 |
 
@@ -315,8 +315,15 @@
   엔드포인트 `workers="auto"`. 직렬 경로(기본값)는 비트 동일 + SimPool 미생성
   (테스트 스텁 보존). **실측 50유닛 97.25초, 5덱**(합계 31.0B) — 상세는 위 요약.
   플랜: `docs/superpowers/plans/2026-07-17-processpool-parallelism.md`.
-  **다음:** 프론트 배선(결과 UI에 다중 덱 표시); 97초→1분 미만이 필요하면
-  스왑 단계 배치평가/예산 축소는 Fienn 판단.
+- **프론트 레이드 모드 배선 완료 (2026-07-17, frontend-builder):** RecommendPanel에
+  모드 스위치(단일 덱 / 레이드 분배) + `num_decks` 셀렉터(1–5), `RaidResults`가
+  분배 결과를 파티션으로 렌더(Deck 1..N 동시 편성 + 합계 + bench/제외 목록),
+  라이브 클라이언트는 무타임아웃(~1–2분 대기 안내 + 재제출 잠금), mock은 ~1초
+  지연. 공유 조각 추출(useAsyncRequestStatus·DeckCard·ExcludedSlugsNote·
+  formatDamage). Vitest 71/71 · `tsc -b` 클린 · 빌드 클린 · vite 프록시 경유
+  실백엔드 E2E 확인. 부수 픽스: 루트 tsconfig가 references 셸이라 bare
+  `tsc --noEmit`이 no-op이던 함정(README 교정 + 숨어 있던 테스트 타입에러 3건).
+  **다음:** 97초→1분 미만이 필요하면 스왑 단계 배치평가/예산 축소는 Fienn 판단.
 
 ### Phase 6 — 유저 데이터 입력 UI 🔄
 - React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
