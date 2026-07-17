@@ -1,0 +1,16 @@
+{
+  "name": "collect-blablalink",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Scrapes ShiftyPad (blablalink) for a NIKKE roster's solo-raid (level 400) and actual-level stats, overload, skills, and cube via CDP against the user's logged-in Chrome.",
+  "type": "commonjs",
+  "scripts": {
+    "test": "node --test"
+  },
+  "dependencies": {
+    "playwright-core": "1.61.1"
+  },
+  "devDependencies": {
+    "jsdom": "29.1.1"
+  }
+}
