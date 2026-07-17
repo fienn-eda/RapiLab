@@ -9,7 +9,16 @@
 
 - 마지막 갱신: 2026-07-17
 - 브랜치: `wip/scaffolding`
-- 테스트: **659 passed** (2026-07-17, **Stage 0 EffectRegistry 성능 패스** —
+- 테스트: **674 passed** (2026-07-17, **Phase 5 Task 6 — `POST /api/recommend-raid`
+  + `/api/recommend`가 `search_best_decks`로 전환** — 기존 `/api/recommend` 테스트
+  전부 그린 유지(회귀 없음). +1은 계획 외 회귀 테스트: 실측정(전체 57유닛 로스터
+  분배) 도중 `_build_cinderella`가 이미 언랩된 `sv["flawless_glass"]`를 다시
+  `["flawless_glass"]`로 인덱싱하던 기존 버그(KeyError, 유닛 테스트 픽스처는
+  잡지 못함)를 발견해 즉시 수정 + 회귀 테스트 추가. 실측: 로더블 42유닛 전량을
+  `allocate_decks`로 5덱 분배 — **103.92초, 3덱 생성**(로스터 형태상 4/5번째
+  덱을 채울 티어 조합이 남지 않음), leftover 27유닛. ~90초 예산을 약 14초 초과
+  — 타이어 캡 튜닝은 Fienn 결정 대기. was 673 (671+2, Task 6 신규 API 테스트).)
+- 이전: **659 passed** (2026-07-17, **Stage 0 EffectRegistry 성능 패스** —
   total_for를 버전-무효화 세그먼트 테이블로 교체(비트 동일 출력, 패리티 넷 2건
   추가). evaluate_deck 180초 시뮬 ~2410ms → 133.66ms → 103.43ms (Stage 0.5 epoch memo, 2026-07-17 — phase-1 normal_attack_type 회귀 수정: 번들 대신 직접 단일-스탯 조회로 복귀). was 656 — 목표 50ms 미달(2.1×), 잔여는 평탄한 호출 오버헤드, 추가 최적화 여부는 Fienn 결정 대기)
 - 이전: **654 passed** (2026-07-17 후속 배치 — 매니페스트 배치 2(29유닛, 45/57
@@ -77,7 +86,7 @@
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
 | Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (57명) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
-| Phase 5 | 5덱(25니케) 분배 최적화 | ⬜ 예정 |
+| Phase 5 | 5덱(25니케) 분배 최적화 | 🔄 백엔드 완료 — greedy+swap, `/api/recommend-raid`; 프론트 배선은 후속 소플랜 |
 | Phase 6 | 유저 데이터 입력 UI (React) | 🔄 진행 중 (입력 폼 + 결과 UI + 라이브 API 완료) |
 | Phase 7 | 자동화 (ShiftyPad 연동, 수집 파이프라인) | ⬜ 지연/후속 |
 
@@ -261,8 +270,19 @@
 - `deck_search.py` — `BossProfile`, feasible_orderings, evaluate_deck, find_best_decks.
 - 덱 좌우 순서 = 버스트 역할 배정 → 같은 5인이라도 순서에 따라 딜 33% 차이 확인.
 
-### Phase 5 — 5덱 분배 최적화 ⬜
+### Phase 5 — 5덱 분배 최적화 🔄 백엔드 완료
 - 25명(5덱×5)을 골라 총합 딜을 최대화하는 조합 레이어. 단일 덱 평가기를 빌딩블록으로 사용.
+- **백엔드 완료 (2026-07-17):** `search_best_decks`(예산 인지 단일 덱 탐색 — 후보풀
+  컷 + top-K 순열 정련) + `allocate_decks`(greedy peeling으로 5덱 초기 분배 후
+  같은-티어 스왑 언덕오르기로 교정, 같은 보스라 총합=덱별 합이라는 성질 이용) +
+  `POST /api/recommend-raid`(roster/boss + 선택적 `num_decks`(기본5) → decks/
+  combined_total_damage/excluded_slugs/leftover_slugs). 기존 `POST /api/recommend`도
+  `find_best_decks`(전수조사) → `search_best_decks`로 전환(동일 인자, 소규모
+  로스터에서는 결과 불변 — 예산 컷은 로스터가 클 때만 개입). 로더블 42유닛 전량
+  분배 실측 **103.92초, 3덱**(leftover 27) — 타이어 캡이 잡은 ~90초 예산을 약
+  14초 초과, 튜닝은 Fienn 결정 대기. **다음:** 프론트 배선(결과 UI에 다중 덱
+  표시)은 후속 소플랜. **향후 처리량 레버:** 시뮬 병렬화(ProcessPool)는 품질/예산이
+  실측으로 부족할 때만 — 지금은 불필요.
 
 ### Phase 6 — 유저 데이터 입력 UI 🔄
 - React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
@@ -357,7 +377,7 @@
       deferred DPS 효과 없음(✅ 완결).
 
 ### Phase 5 선행 소작업 (2026-07-17, 설계 중 발견)
-- [ ] **Prika Encore 자기 버스트쿨 +21초 인코딩** — 현재 미인코딩이라 시뮬에서
+- [x] **Prika Encore 자기 버스트쿨 +21초 인코딩** — 현재 미인코딩이라 시뮬에서
       Prika가 3사이클째 재버스트해 Mint의 버스트(→Encore)를 밀어냄 =
       Mint+Prika 세트 과소평가. 기존 버쿨감 펄스 경로에 음수 값(−21)으로 태우면
       `last_used_at`이 뒤로 밀려 "첫 사이클만 Prika, 이후 Mint 전담" 로테이션이

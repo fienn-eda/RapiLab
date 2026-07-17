@@ -63,3 +63,26 @@ def test_unknown_overload_option_name_is_422_naming_bad_and_valid_names():
     assert "made-up-option" in detail
     # the valid names come from the engine's NAME_TO_STAT, surfaced to the client
     assert "공격력 증가" in detail
+
+
+def test_recommend_raid_partitions_roster_and_reports_leftovers():
+    roster = [_nikke(slug) for slug in FEASIBLE] + [_nikke("totally-unknown")]
+    response = client.post("/api/recommend-raid", json={"roster": roster, "boss": BOSS})
+    assert response.status_code == 200
+    body = response.json()
+    assert body["excluded_slugs"] == ["totally-unknown"]
+    assert len(body["decks"]) == 1                      # 5 loadable units -> 1 deck
+    deck = body["decks"][0]
+    assert set(deck) == {"deck", "total_damage", "burst_damage", "normal_attack_damage"}
+    assert sorted(deck["deck"]) == sorted(FEASIBLE)
+    assert body["leftover_slugs"] == []
+    assert body["combined_total_damage"] == deck["total_damage"]
+
+
+def test_recommend_raid_infeasible_is_422_naming_exclusions():
+    response = client.post(
+        "/api/recommend-raid",
+        json={"roster": [_nikke("totally-unknown")] * 5, "boss": BOSS},
+    )
+    assert response.status_code == 422
+    assert "totally-unknown" in str(response.json()["detail"])

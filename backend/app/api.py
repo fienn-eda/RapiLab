@@ -11,7 +11,8 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app.deck_search import BossProfile, find_best_decks
+from app.deck_allocation import allocate_decks
+from app.deck_search import BossProfile, search_best_decks
 from app.models import UserNikkeState
 from app.overload_effects import NAME_TO_STAT
 from app.user_roster import load_roster
@@ -41,6 +42,17 @@ class DeckRecommendation(BaseModel):
 class RecommendResponse(BaseModel):
     decks: list[DeckRecommendation]
     excluded_slugs: list[str]
+
+
+class RecommendRaidRequest(RecommendRequest):
+    num_decks: int = Field(5, ge=1, le=5)
+
+
+class RecommendRaidResponse(BaseModel):
+    decks: list[DeckRecommendation]
+    combined_total_damage: float
+    excluded_slugs: list[str]
+    leftover_slugs: list[str]
 
 
 app = FastAPI(title="NIKKE Deck Builder")
@@ -84,7 +96,7 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
         fight_duration=request.boss.fight_duration,
         part_destructible=request.boss.part_destructible,
     )
-    results = find_best_decks(specs, boss, top_n=request.top_n)
+    results = search_best_decks(specs, boss, top_n=request.top_n)
     if not results:
         raise HTTPException(
             status_code=422,
@@ -102,4 +114,35 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
             for r in results
         ],
         excluded_slugs=excluded,
+    )
+
+
+@app.post("/api/recommend-raid", response_model=RecommendRaidResponse)
+def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
+    _reject_unknown_overload_options(request.roster)
+    specs, excluded = load_roster(request.roster)
+    boss = BossProfile(
+        element=request.boss.element,
+        core_hittable=request.boss.core_hittable,
+        enemy_def=request.boss.enemy_def,
+        fight_duration=request.boss.fight_duration,
+        part_destructible=request.boss.part_destructible,
+    )
+    result = allocate_decks(specs, boss, num_decks=request.num_decks)
+    if not result["decks"]:
+        raise HTTPException(
+            status_code=422,
+            detail=f"no feasible deck from the usable roster (excluded: {excluded})",
+        )
+    return RecommendRaidResponse(
+        decks=[
+            DeckRecommendation(
+                deck=d["deck"], total_damage=d["total_damage"],
+                burst_damage=d["burst_damage"], normal_attack_damage=d["normal_attack_damage"],
+            )
+            for d in result["decks"]
+        ],
+        combined_total_damage=sum(d["total_damage"] for d in result["decks"]),
+        excluded_slugs=excluded,
+        leftover_slugs=result["leftover_slugs"],
     )
