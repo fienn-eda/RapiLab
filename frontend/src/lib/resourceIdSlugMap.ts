@@ -86,6 +86,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
 // SSR-favorite auto-detection pass (collector Collection tab -> favorite_rare) is meant
 // to populate this automatically instead of by hand.
 export const SIGNATURE_OWNED: ReadonlySet<number> = new Set([
+  100, // Laplace — Favorite Item owned (roadmap dual-slot note; transform measured on the signature build, Fienn 2026-07-19)
   101, // Drake — Favorite Item owned (Fienn, 2026-07-18)
 ])
 
