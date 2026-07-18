@@ -30,11 +30,19 @@ MODERNIA = {
         "description_value_03": "14.25", "description_value_04": "5", "description_value_05": "10",
         "description_value_06": "5.04", "description_value_07": "5", "description_value_08": "10",
     },
+    "giant_leap": {
+        "description_value_01": "8.56",   # all-ally Hit Rate % (inert, not modeled)
+        "description_value_02": "15",     # its duration
+        "description_value_03": "200",    # normal-attack-hit threshold
+        "description_value_04": "29.38",  # self ATK %
+        "description_value_05": "10",     # its duration
+    },
 }
 
-# Module-level alias so the assembly verification harness
-# (test_skill_value_assembly.py) can resolve the fixture by name.
+# Module-level aliases so the assembly verification harness
+# (test_skill_value_assembly.py) can resolve the fixtures by name.
 HIGH_SPEED_EVOLUTION = MODERNIA["high_speed_evolution"]
+GIANT_LEAP = MODERNIA["giant_leap"]
 
 
 def test_modernia_evolution_resource_is_timed_capped_crit_and_ammo():
@@ -57,13 +65,37 @@ def test_modernia_evolution_resource_is_timed_capped_crit_and_ammo():
 
 def test_modernia_per_hit_additional_damage_every_shot():
     ps = build_modernia_per_shot_rules(MODERNIA)
-    assert len(ps) == 1
+    assert len(ps) == 2
     threshold, mode, rules = ps[0]
     assert (threshold, mode) == (1, "every")
     reg = EffectRegistry()
     rules[0].action(deck_ctx("modernia", "Fire"), "modernia", 0.0, reg)
     pulses = reg.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1 and pulses[0].value == 3.05
+
+
+def test_modernia_giant_leap_self_atk_every_200_hits_from_battle_start():
+    # Giant Leap's self ATK fires on every 200th normal hit counted from
+    # battle start, NOT window-gated on the Hit Rate status (Fienn
+    # 2026-07-18, in-game behaviour overrides the skill text).
+    _, (threshold, mode, rules) = build_modernia_per_shot_rules(MODERNIA)
+    assert (threshold, mode) == (200, "every")
+    ctx = deck_ctx("modernia", "Fire")
+    reg = EffectRegistry()
+    for rule in rules:
+        rule.action(ctx, "modernia", 5.0, reg)
+
+    modernia = {"slug": "modernia", "element": "Fire"}
+    ally = {"slug": "iron-ally", "element": "Iron"}
+    assert round(reg.total_for("atk_percent", modernia, now=5.0), 4) == 0.2938
+    assert reg.total_for("atk_percent", ally, now=5.0) == 0.0  # self-only
+    assert reg.total_for("atk_percent", modernia, now=15.1) == 0.0  # 10s duration
+
+    # MG fires 60/s, so consecutive 200-hit marks land within the 10s window
+    # and must refresh, not stack.
+    for rule in rules:
+        rule.action(ctx, "modernia", 8.0, reg)
+    assert round(reg.total_for("atk_percent", modernia, now=8.0), 4) == 0.2938
 
 
 # --- Guillotine: Winter Slayer (AR/Water): permanent + count-scaled ---
