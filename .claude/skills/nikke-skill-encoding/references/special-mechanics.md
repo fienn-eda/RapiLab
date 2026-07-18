@@ -813,5 +813,28 @@ how to encode it, and current engine status.
   the stacks standing at its OWN time (cf. `resource_scaled_nukes` re-reading its
   count per tick).
 
+## Staged shot-count table whose requirements the burst rewrites (gap #10)
+
+- **What it looks like:** Scarlet: Black Shadow's Fleetly Fading Breakthrough —
+  "Effects vary according to the number of attacks. Only one effect is
+  triggered at a time. Three times: [283.03% damage]. Six times: [565%
+  Distributed]. Nine times: [848.03% Distributed]." — plus her burst: "Changes
+  Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for
+  10 sec."
+- **What it is:** ONE running full-charge counter walking a staged requirement
+  table (fire stage 1 at 3, stage 2 at 6, stage 3 at 9, then reset), where the
+  burst swaps the table to 1/2/3 for its window. Not expressible as static
+  `every N` entries — the requirement table is time-dependent.
+- **How to encode:** `per_shot_rules`' `"sequence"` mode — `threshold` is
+  `{"requirements": [...], "own_burst_window": (duration, [...])}` and the
+  rules slot holds one rule list per stage. Semantics (Fienn, 2026-07-18): the
+  count and stage CARRY OVER across the window boundary; a stage fires once
+  count >= the ACTIVE requirement for it (so progress under one table is never
+  lost under the other); at most one stage fires per shot.
+- **Typing:** the "Distributed Damage" stages are per-shot pulses — pass
+  `damage_type="distributed"` (the Pulse carries damage typing since
+  2026-07-18) so squad `distributed_damage_up` buffs apply. Vs the solo raid
+  boss, single-target and distributed stages alike land fully on the boss.
+
 ---
 *Add new mechanics above this line as they come up.*

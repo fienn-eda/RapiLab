@@ -538,9 +538,13 @@
     상태로 남아 있었음, 2026-07-17 정정). Pattern A는 이제 소진.
   - **검증 완료, 인코딩 대기 (2026-07-17 검증 배치)**: `raven`·`sakura-bloom-in-summer`
     — 기존 프리미티브로 핵심 인코딩 가능, 부위파괴 연동만 defer. 다음 배치 최우선.
-  - **검증 완료, 갭 확인 (2026-07-17)**: `scarlet-black-shadow`(gap #10 — 버스트가
-    per-shot threshold를 3/6/9→1/2/3으로 변경, 소규모 확장 필요) ·
-    `milk-blooming-bunny`(gap #11 — 강제재장전/탄약제거 상태머신, 중~대).
+  - ~~검증 완료, 갭 확인 (2026-07-17): `scarlet-black-shadow`(gap #10)~~ →
+    **인코딩 완료 (2026-07-18)** — `per_shot_rules` `"sequence"` 모드 확장 +
+    Pulse `damage_type` 배선. 같은 배치에서 velvet Sticky Fingers
+    (`every_outside_full_burst`) · modernia Giant Leap(Fienn 정정: 상태창 무관
+    전투시작 200히트 — gap #7 후보 소진) 잔여 메커니즘도 인코딩.
+    `milk-blooming-bunny`(gap #11 — 강제재장전/탄약제거 상태머신, 중~대)는 여전히
+    미착수.
   - **Pattern B 게이지·변신 (일반 프리미티브 잔여, gap #2)**: `mihara-bonding-chain`
     (체인)·`elegg-boom-and-shock`·`red-hood`(charge speed·딜 아님). (`ark-ranger-black`은
     2026-07-16 `part_destructible` 보스 플래그 브래킷으로 개별 인코딩 완료 — 일반
@@ -587,8 +591,9 @@
 - [x] **Ein 인코딩** — `scheduled_nukes` 확장 + Fienn 실측 기반 페더 스케줄.
 - [x] **raven·sakura-bloom-in-summer 인코딩** (2026-07-17) — sakura는 확장 불필요가
       맞았고, raven은 `context.shot_times` 소규모 확장 1건 필요했음(판정 정정).
-- [ ] **다음 배치 후보** — 남은 미인코딩 13명은 전부 갭 뒤(무기변형 4·Pattern B 3·
-      상태머신 3·gap #10 scarlet·gap #11 milk). **최대 수요는 무기 변형**
+- [ ] **다음 배치 후보** — 남은 미인코딩 12명은 전부 갭 뒤(무기변형 4·Pattern B 3·
+      상태머신 3·gap #11 milk). (gap #10 scarlet은 2026-07-18 인코딩 완료.)
+      **최대 수요는 무기 변형**
       (snow-white·snow-white-heavy-arms·maxwell·cinderella-crystal-wave + laplace·
       velvet·rapi 잔여) — 큰 확장이라 설계 논의부터 필요.
 - [x] **ein weapon 스탯** — 이미 `data/dotgg/char_ein.json`에 존재했음(SR·장탄6·

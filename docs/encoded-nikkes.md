@@ -3,7 +3,16 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-17 (**Raven·Sakura: Bloom in Summer 신규 인코딩** —
+- 마지막 갱신: 2026-07-18 (**Scarlet: Black Shadow 신규 인코딩 (gap #10 완료)** —
+  `per_shot_rules` 신규 `"sequence"` 모드(단일 풀차지 카운터가 3/6/9 단계 테이블을
+  걷고, 버스트가 10초간 요구치를 1/2/3으로 교체 — 카운트/스테이지는 경계를 넘어
+  이어짐, Fienn 판정). 함께 **Pulse에 damage_type 추가**(per-shot 넉의 "as
+  Distributed Damage"가 이제 `distributed_damage_up` 버킷과 실제로 곱해짐 — 기존
+  Neon 문서에 적혀 있던 펄스 경로 한계 해소). 같은 배치: **Velvet Sticky Fingers**
+  (`every_outside_full_burst` 신규 모드, gap #7의 거울상) · **Modernia Giant Leap**
+  (Fienn 정정: 상태창 무관, 전투 시작부터 노멀 200히트마다 — 기존 `every` 모드로
+  해결, 마지막 gap #7 후보 소진). **61명, 매니페스트 57/61, API 로더블 57/61**.
+  이전 갱신: 2026-07-17 (**Raven·Sakura: Bloom in Summer 신규 인코딩** —
   `scheduled_nukes`의 schedule 함수가 소유자의 발사 시각(`context.shot_times`)을
   읽도록 확장, Raven의 Shock Wave(풀차지마다 5초 스택 DoT)가 첫 소비자. Sakura는
   확장 없이 인코딩(Full Glory가 배틀스타트 강제발동+cd30이라 스케줄이 전투 전 확정).
@@ -33,7 +42,7 @@
     수집 전 상태였을 뿐 — 넷 다 dotgg 셧다운(2026-05) 이전 출시라 데이터가 존재한다.
     **prika 로더블화로 mint+prika Encore 시너지가 실제 덱 탐색에서 처음으로 효력을
     가진다**(로드맵이 이걸 blocker로 적어두고 있었음).
-- 총 **60명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 33명) — drake는 base/signature 듀얼슬롯 2엔트리
+- 총 **61명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 34명) — drake는 base/signature 듀얼슬롯 2엔트리
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -76,11 +85,11 @@
 | Mint | `mint` | Supporter | RL | Iron | ✅ | Here I Go!(풀차지마다 스쿼드 ATK) 단독+Prika 조합 모두 모델(버스트타임 패리티/Encore 핀 시각). Dancing 자힐만 보류 |
 | Prika | `prika` | Supporter | SR | Water | ✅ | 본인 풀차지 스쿼드 버프(refresh, 중첩 아님) + **Mint Encore 교차유닛 시너지**(`ally_burst_activate`) + **Encore의 자기 버스트쿨 +21초(음수 `burst_cooldown_reduction_sec` 펄스, 2026-07-17)** 모델됨 — 이게 없으면 Prika가 ~40초마다 재버스트해 Mint의 티어2 슬롯을 밀어냄; 이제 사이클 2부터 Mint가 슬롯을 전담하는 의도된 로테이션 재현. Performance 지속시간 자체는 비딜 부기만 보류 |
 | Helm: Aquamarine | `helm-aquamarine` | Attacker | AR | Iron | ✅ | Admire Accompaniment 풀버스트 CDR 에스컬레이션 + 노멀30회마다 131.34% 넉(per_shot)·Aegis Cannon Suppression Fire(자동발동, periodic_nukes) + **Electric-Code 불릿 2종**(Suppression Fire Damage Taken 정상상태 28.2% + Overload 추가딜 164.83%, `boss_is_element("Electric")`, 2026-07-16 gap #5). 추가딜은 Burst 2라 FB 보너스 미적용(Fienn). 잔여 없음 |
-| Velvet | `velvet` | Supporter | SR | Wind | ⚠ | Perfect Execution(버스트 자AD버프, 넉 없음) + **Bullets of Love(그녀의 실제 스쿼드 서포트): 풀버스트 중 풀차지샷마다(SR, N=1) 스쿼드 flat ATK(자ATK의 25.2%)+스쿼드 Charge Damage+100.8%(3초, refresh, Prika 선례 따라 스쿼드스코프)+풀버스트 중 노멀50회마다 자AD+15.03%/5초 + 400.92% 넉("as additional damage"→full_burst_bonus_eligible)**(`per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15) 모델됨. ammo pouch(6000, 버스트 스테이지2마다 풀리필)는 소모량 대비 압도적으로 커서 비제약으로 처리(자원 미모델링). Sticky Fingers("풀버스트 아닐 때" 풀차지 카운터 자버프 — gap #7의 거울상인 not-in-FB 창 필터 필요, 미구현, 자기전용 저가치)·Perfect Execution 무기변형딜만 보류 |
+| Velvet | `velvet` | Supporter | SR | Wind | ⚠ | Perfect Execution(버스트 자AD버프, 넉 없음) + **Bullets of Love(그녀의 실제 스쿼드 서포트): 풀버스트 중 풀차지샷마다(SR, N=1) 스쿼드 flat ATK(자ATK의 25.2%)+스쿼드 Charge Damage+100.8%(3초, refresh, Prika 선례 따라 스쿼드스코프)+풀버스트 중 노멀50회마다 자AD+15.03%/5초 + 400.92% 넉("as additional damage"→full_burst_bonus_eligible)**(`per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15) 모델됨. ammo pouch(6000, 버스트 스테이지2마다 풀리필)는 소모량 대비 압도적으로 커서 비제약으로 처리(자원 미모델링). **Sticky Fingers 모델됨(2026-07-18):** 풀버스트 아닐 때 풀차지마다(SR N=1) 자ATK+30.5%/자AD+30.5% 3초 refresh — 신규 `every_outside_full_burst` 모드(gap #7 거울상). Perfect Execution 무기변형딜만 보류 |
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (33명)
+## Burst 3 (34명)
 
 > **eb (encoding batch) 진행:** Burst 3 어태커 배치 인코딩 (least-blocked 우선).
 > eb1 = Noir · Isabel · Liberalio, eb2 = Ludmilla · Chisato · Jill (2026-07-12).
@@ -116,8 +125,11 @@
 > **gap #7 두 번째 소비 배치 (2026-07-15):** Grave(Overheat II/III, 자기 버스트
 > 상태창 한정 노멀30/60회마다 자버프)·Velvet(Bullets of Love, 풀버스트 한정
 > 풀차지/노멀50회 카운터 — 그녀의 실제 스쿼드 서포트) 재인코딩(🔶→⚠). gap #7
-> 소비자는 이로써 Soda·Asuka·Grave·Velvet 4명. 남은 gap #7 후보는 modernia
-> (Giant Leap 상태게이팅 200히트 ATK버프) 하나뿐 — 착수 전 검증 필요.
+> 소비자는 이로써 Soda·Asuka·Grave·Velvet 4명. ~~남은 gap #7 후보는 modernia
+> (Giant Leap 상태게이팅 200히트 ATK버프) 하나뿐 — 착수 전 검증 필요.~~ →
+> **해소 (2026-07-18, Fienn 정정):** Giant Leap은 인게임에서 상태창과 무관하게
+> 전투 시작부터 200히트마다 발동 — gap #7이 아니라 기존 `every` 모드로 인코딩
+> 완료. gap #7 후보는 소진.
 > **나머지 백로그는 [`roadmap.md`](roadmap.md) To-Do 참고** (대부분 남은 Pattern A
 > 자원 유닛 / Pattern B 게이지·변신 / 상태머신 / 무기변형 갭).
 
@@ -140,7 +152,7 @@
 | Mana | `mana` | Attacker | AR | Wind | ⚠ | eb4. Metal gamma 상시 자ATK+58.08%(전투시작, 아군 전멸 트리거 미모델로 상시 근사)+Metal sigma FB진입 공댐+21.12%/자ATK+63.36%(10초, `own_burst_fired_this_cycle`로 상태 게이팅 대체 — 엄격한 버스트 순서상 동치)+Fatal Error! 버스트(자 지속딜+52.8%/10초 + 396%/초 10틱 순수 반복DoT + full_burst_bonus, `resource_scaled_nukes`의 `resource` 필드 선택화 및 `full_burst_bonus_eligible` 첫 소비자 — 2026-07-12 인게임 확인) 모델됨. 힐/부활(아군전멸 미모델)·게이지속도(inert)·차지타임 감소(비딜+narrow scope) 보류 |
 | Maiden: Ice Rose | `maiden-ice-rose` | Defender | RL | Electric | ✅ | eb3 Pattern-A. MP 자원(squad-burst-cycle-conditional fill)+Diamond Dust 버스트(`dynamic_hit_count_nukes` — 히트수=MP, 1372.8%×(10% 최대체력+ATK))+Blessings Upon You(자속성상성공댐/자ATK 버스트버프 + 풀차지마다 547.62% per-shot 넉) 모델됨. "MP 소모" 트리거는 엔진 순서상 항상 MP=0에서 드레인되므로 Diamond Dust는 매 사이클 정확히 1회 히트(엔진 확정 버스트 순서 근거, 모듈 docstring 참고). MP 회복 시 Electric 아군(자신 제외) 버프(상성공댐+40.9%[Water 보스 게이팅]·자ATK 20.9% flat, 10초 refresh)도 `resource_fill_triggered_buffs`(gap #8 소비 2026-07-16)로 모델됨. 잔여 보류: 최대체력 스택(비딜)뿐 |
 | Marciana: Marine Study | `marciana-marine-study` | Attacker | AR | Iron | ⚠ | (신규 2026-07-16, gap #5 배치) Fienn 가정(rapture=1·Flagged Target=보스·High-Risk 불릿=Electric 보스 게이팅). Whistle 정상상태 자ATK+163.65%(5스택)·Elemental Advantage Attack Damage(연속 20.41% + 버스트 30.97%, **element bonus damage 그룹=`other_elemental_bonus`**, `boss_is_element("Electric")` 게이팅)·버스트 자AD+27.45%(attack_damage_up)·High-Risk DEF-10.56%/20초(`enemy_def_percent`, Electric)·Flagged Target 3789.25% 풀버스트 넉("additional damage", B3라 FB보너스)·High-Risk 20노멀마다 152.68% 넉(plain `every`, Electric 게이팅, 상시 유지 근사) 모델됨. 보류: Flagged Target ATK 버프(스코프 모호, defer)·적 처치 트리거 넉 사본(보스 미처치)·6+rapture Penguin Emergency Dispatch 넉 |
-| Modernia | `modernia` | Attacker | MG | Fire | ⚠ | 자원 beachhead. High-Speed Evolution 히트당 3.05% 추가딜(per-shot)·200히트마다 Crit Dmg/Max Ammo 스택(캡5·10초 시한 자원) 모델됨. Max Ammo 스택은 자기 탄창 재생성 전 계산돼 inert·Giant Leap 상태게이팅 200히트 ATK버프(윈도 자원, 유의미·보류)·New World 버스트(Destroy Mode·무한탄·FB연장) 보류 |
+| Modernia | `modernia` | Attacker | MG | Fire | ⚠ | 자원 beachhead. High-Speed Evolution 히트당 3.05% 추가딜(per-shot)·200히트마다 Crit Dmg/Max Ammo 스택(캡5·10초 시한 자원) + **Giant Leap 자ATK+29.38%/10초(2026-07-18, Fienn 정정: 상태창 무관, 전투 시작부터 노멀 200히트마다 — `every` 모드, refresh)** 모델됨. Max Ammo 스택은 자기 탄창 재생성 전 계산돼 inert·Giant Leap의 스쿼드 Hit Rate(inert)·New World 버스트(Destroy Mode·무한탄·FB연장) 보류 |
 | Noir | `noir` | Attacker | SG | Wind | ✅ | eb1. 버스트넉 351.64%·Lucky Charm 스쿼드 ATK(caster 비례)·Finale 파츠딜 버프 모델됨. Rabbit Twins 탄약/재장전(QoL)·Hit Rate(inert)만 보류 |
 | Privaty (애장품) | `privaty` | Attacker | AR | Water | ✅ | EX Magazine 스쿼드 ATK/재장전속도/탄약감소/공댐(FB진입) 모델됨. LD Assault 라스트불릿 넉(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-12 gap #1 잔여 해소): 받댐+10.01%/10초+256.17% 추가딜("as additional damage") + Designated Target(AK Missile 자신의 버스트로부터 10초 창, `context.burst_times` 시간창 체크) 중이면 1687% 추가딜까지 중첩 발동 + AK Missile 자속성상성공댐 모델됨. Designated Target의 적 ATK 감소 디버프(생존계, 비딜)만 보류 |
 | Quency: Escape Queen | `quency-escape-queen` | Attacker | SMG | Water | ✅ | eb3 Pattern-A. Explore Route(3단계 스택체인, 노멀2회마다·전단계 만캡 게이팅)+Secure Route(단계별 버프) 전부 정상상태 근사(ATK+110.3%+Distributed Damage+49.58%+Core Damage+25.25%+Crit Rate+16.73%, battle_start부터 영구 — SMG 20발/초로 스택 감쇠창보다 채우기가 압도적으로 빨라 상시 만캡)·The Great Thief 버스트(자공댐/재장전속도+1736.31% Distributed 넉) 모델됨. Hit Rate만 보류 |
@@ -149,6 +161,7 @@
 | Rei Ayanami (Tentative Name) | `rei-ayanami-tentative-name` | Attacker | AR | Wind | ⚠ | (신규 2026-07-16, base; `rei-ayanami`와 별개 유닛) Attack State 버스트: 자AD+35.9%+자flat ATK=caster ATK 63.36% + 990.2% 넉·Maintenance: 스쿼드 flat ATK=caster ATK 11.61%(FB진입)·Annihilation Support: Attack State 창(자버스트 10초) 중 노멀7회마다 286.37% "additional damage" 넉(gap #7). 보류: Anti A.T. Field 590.64% 페이로드+Annihilation State 아군버프(교차유닛 콜라보 상태), MG heating up speed |
 | Neon: Vision Eye | `neon-vision-eye` | Attacker | RL | Electric | ⚠ | (신규 2026-07-16, base) Firepower Gauge가 매 사이클 100 리필 → Super Firepower 매 사이클 정상상태로 근사. Maximum Firepower: 자ATK+115.09%(FB진입)·Super Firepower 버스트: 자AD+155.24%(버스트 넉 없음)·Firepower Explosion: 풀차지마다 437.98% + Super Firepower 10초 창 중 +262.79%("additional damage", gap #7). 보류: 라이브 게이지, 넉의 projectile-explosion 타이핑(pulse 경로 미지원, 자기 킷 내 inert), Explosion Radius, 생존기 |
 | Raven | `raven` | Attacker | RL | Iron | ⚠ | (신규 2026-07-17) 딜의 핵심은 Shock Wave — **스택 카운터 1개**(풀차지마다 +1, 상한 10)가 초당 스택수만큼 68.46% 지속댐 틱. `lasts for 5 sec`는 **카운터의 수명이고 풀차지마다 갱신**됨(Fienn 정정 2026-07-17) — 풀차지마다 독립 DoT가 겹치는 게 아님. RL 풀차지 1초·최대 공백 3초(재장전) < 5초 갱신창이라 **카운터가 전투 내내 안 죽고 t≈12에 10스택 도달 후 고정**. 틱마다 스택수만큼 개별 인스턴스 방출(디펜스가 히트당 차감). `scheduled_nukes`+`context.shot_times`가 첫 소비자. FB진입 자 flat ATK=caster ATK 47.52%·Tempest 492.3% 넉·A.N. Mode 자 지속댐+89.44%/10초. **브래킷(Ark Ranger 선례, Fienn 판정)**: Blue Blade의 Single Point Attack(자 지속댐+47.32%)은 부위파괴 트리거라 floor(파괴 없음=미발동)/ceiling(파괴 있음=전투 내내) 두 갈래. E2E: Shock Wave 2.92억(최대 소스), floor 총 3.454억 / ceiling 3.511억. 보류: Vital Attack(Damage to Parts — 소비 경로 없어 inert) |
+| Scarlet: Black Shadow | `scarlet-black-shadow` | Attacker | RL | Wind | ⚠ | (신규 2026-07-18, **gap #10 첫 소비자**) 딜의 핵심 Fleetly Fading Breakthrough — 단일 풀차지 카운터가 3/6/9 단계(283.03% 단일 attack / 565% / 848.03% **distributed** — Pulse damage_type 신규 배선으로 실제 타입 버킷 곱해짐)를 걷고 9단계 후 리셋. 버스트가 요구치를 10초간 1/2/3으로 교체(`sequence` 모드의 own_burst_window, 카운트 이어받기 — Fienn 판정) + 자ATK+115.12%/차지댐+169.63% 10초(버프 온리, burst None). Asura FB진입 자기 Max Ammo+60%/10초(라이브 매거진 반영). E2E(대표 스탯): 시퀀스 넉이 본인 딜의 ~87%, 창 안 발동밀도 창 밖의 ~3배. 보류: Asura의 FB진입 매거진 100% 즉시 재장전(발사 타임라인 개입 프리미티브 없음, gap #11 동류 — floor 인코딩) |
 | Sakura: Bloom in Summer | `sakura-bloom-in-summer` | Attacker | AR | Wind | ⚠ | (신규 2026-07-17) Bloom이 배틀스타트에 Skill2를 강제발동 → Full Glory가 **t=0,30,60,90,120,150**(t=cd 아님). Dancing Flower 자 공댐+15.64%/15초(cd30의 절반 = 50% 가동률, 정상상태로 뭉개지 않고 발동별 모델)·Sakura Petals 256%/초×15틱 지속댐(`scheduled_nukes`, 컨텍스트 불필요)·Ephemeral Spender 457.14%×10연타(`burst_hit_counts`) + 10연타가 각각 1스택을 깔아 **351.6%/초×10틱** 지속댐(Fienn 판정 2026-07-17, 연타수와 상한이 둘 다 10인 이유). E2E 총 2.397억. 보류: Bloom의 부위파괴 라이더 3건(자 지속댐+5.1%·Dancing Flower/Sakura Petals 지속시간+10.02초) — 전부 딜 증가분이라 이 인코딩은 floor |
 | Ein | `ein` | Attacker | SR | Electric | ✅ | (신규 2026-07-17) 딜의 대부분이 Near Feather 소환체 — 신규 `scheduled_nukes` 확장으로 사전계산 스케줄에 90.81% 진댐 방출. 페더 6기 상한/개체별 수명(F1 무제한·F2 38s·F3 32s·F4 26s·F5·F6 10s)·버스트가 전 페더 재소환+쿨 초기화·공격쿨 8초에서 기수당 -16%(합연산). Feather Standby 자ATK+70.12%(자버스트)·Feather Shot 풀차지마다 자 Charge Damage+80%/1라운드·Feather-All Range 자 True Damage+55.3%/Charge Damage+140.68% + 300.02% 진댐 넉. **가정(docstring 명시): 타격 간 0.3초 스로틀**(Fienn 영상 실측 FB 31회를 정확히 재현; 공식만 쓰면 FB 21% 과대). 6기 구간 외 카운트는 공식 미검증. E2E 실측: 180초에 페더 280타 9212만(본인 평타 5101만을 상회하는 최대 딜 소스) |
 | Drake | `drake` | Attacker | SG | Fire | ⚠ | (신규 2026-07-16, base) Overcharge: 스쿼드 ATK+11.85%(FB진입)·Thunderbolt: 노멀10회마다 98.55% 넉(gap #1)·Drake Special 버스트: 1254% 넉 + 자 Max Ammo+72.18%. 보류: Hit Rate(inert) |

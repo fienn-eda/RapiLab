@@ -5,7 +5,17 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-17 (**Raven·Sakura 인코딩 — `scheduled_nukes`에 소유자 발사
+- 마지막 갱신: 2026-07-18 (**gap #10 완료 — `per_shot_rules` `"sequence"` 모드,
+  Scarlet: Black Shadow 인코딩**. 단일 풀차지 카운터가 단계별 요구치 테이블(3/6/9)을
+  걷고, 자기 버스트 창(10초) 안에서는 테이블이 1/2/3으로 교체 — 카운트/스테이지는
+  경계를 넘어 이어지고(Fienn 판정), 스테이지는 `count >= 활성 요구치`면 발동이라
+  테이블 교체로 진행이 유실되지 않음. 같은 배치 부수 확장 2건: **`every_outside_
+  full_burst` 모드**(gap #7 거울상 not-in-FB 창 필터 — Velvet Sticky Fingers 소비,
+  아래 참고 섹션 해소) · **Pulse에 `damage_type`**("as Distributed Damage" per-shot
+  넉이 이제 `distributed_damage_up` 버킷과 곱해짐 — Scarlet 6/9단계 소비, Neon
+  문서의 펄스 경로 한계 해소). **modernia 검증 종결(Fienn 정정): Giant Leap은
+  상태창 무관 전투시작 기준 200히트 카운터 — gap #7 아님, 기존 `every`로 인코딩
+  완료. gap #7 후보 소진.** 이전 갱신: **Raven·Sakura 인코딩 — `scheduled_nukes`에 소유자 발사
   시각 노출**. schedule 함수가 `context.shot_times[slug]`로 자기 발사 타임라인을 읽을
   수 있게 됨(엔진이 이미 `shot_times_by_slug`를 갖고 있어 신규 계산 없음, Ein 무영향).
   소비: Raven(Shock Wave — 풀차지마다 68.46% 지속댐 5틱, 인스턴스 중첩). Sakura는 확장
@@ -95,7 +105,7 @@
 | — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |
 | ~~—~~ | ~~attack/charge speed~~ (발사 간격 → 딜) | 2 (Dorothy·Tove) | **완료 (Phase S, 2026-07-16)** — `attack_speed_percent`/`charge_speed_percent` 배선 | 발사 타임라인 |
 | ~~10~~ | ~~소환체 가변 케이던스 스케줄~~ (살아있는 개체 수가 공격 주기를 바꿈) | 1 (Ein) | **완료 (2026-07-17, `scheduled_nukes`)** | 신규 방출 경로 |
-| 10 | **창 한정 per-shot threshold 오버라이드** (버스트가 요구 카운트를 3/6/9 → 1/2/3으로 변경) | 1 (Scarlet: Black Shadow) | 미착수, 소규모 | 트리거 변형 |
+| ~~10~~ | ~~창 한정 per-shot threshold 오버라이드~~ (버스트가 요구 카운트를 3/6/9 → 1/2/3으로 변경) | 1 (Scarlet: Black Shadow) | **완료 (2026-07-18, `per_shot_rules` `"sequence"` 모드 — Scarlet 인코딩)** | 트리거 변형 |
 | 11 | **강제 재장전 / 탄약 제거 상태머신** (발사 타임라인 자체를 스킬이 조작) | 1 (Milk: Blooming Bunny) | 미착수, 중~대 | 신규 상태 |
 | — | **부위파괴 이벤트** (gap #2 Pattern B와 동근) | 3+ (Raven·Sakura·Mihara) | 미착수 — ark-ranger는 `part_destructible` 브래킷으로 개별 우회 | 신규 이벤트 |
 | — | hit rate · Burst Gauge fill speed (딜/타이밍 아님) | 15 | **구현 안 함** (defer 유지) | 범위 밖 |
@@ -352,17 +362,19 @@
     비제약으로 처리(자원 미모델링 — gap #2 대상 아님). 잔여: Sticky Fingers의 "풀버스트
     아닐 때" 풀차지 카운터(gap #7의 거울상인 not-in-FB 창 필터 필요, 미구현, 자기전용
     저가치), Perfect Execution 무기변형딜.
-- **남은 후보:** modernia(Giant Leap 상태게이팅 200히트 ATK버프) — 검증 전.
+- **남은 후보:** ~~modernia(Giant Leap 상태게이팅 200히트 ATK버프) — 검증 전.~~ →
+  **검증 종결 (2026-07-18, Fienn 정정):** 인게임에서 상태창과 무관하게 전투 시작부터
+  200히트마다 발동 — gap #7 아님, 기존 `every` 모드로 인코딩 완료. 후보 소진.
 - 참고: `special-mechanics.md`의 관련 항목, `soda_twinkling_bunny.py`/
   `asuka_shikinami_langley_wille.py`/`grave.py`/`velvet.py` docstring.
 
-### 참고 — gap #7의 거울상: not-in-Full-Burst per-shot 창 필터 (미구현, 신규 발견)
+### 참고 — gap #7의 거울상: not-in-Full-Burst per-shot 창 필터 — ✅ 완료 (2026-07-18)
 
 Velvet의 Sticky Fingers는 "풀버스트 **아닐 때**" 풀차지마다 자ATK/자AD 버프(각
-30.5%, 3초)를 준다 — gap #7의 `every_during_full_burst`의 정반대 필터. 현재
-`per_shot_rules`엔 이 보수 필터가 없다. 유일하게 확인된 소비자가 velvet의 이
-스킬(자기전용, 저가치)뿐이라 후순위. 착수 시엔 `every_during_full_burst`와
-나란히 `"every_outside_full_burst"` 같은 모드로 최소 확장.
+30.5%, 3초)를 준다 — gap #7의 `every_during_full_burst`의 정반대 필터.
+**해결:** 예정대로 `"every_outside_full_burst"` 모드로 최소 확장(FB 창 밖 발사만
+세고 every-N 스텝 적용, gap #10 배치에 동승). 소비: velvet(Sticky Fingers 재인코딩
+— 잔여는 무기변형딜뿐).
 
 ### 8. 자원-fill-트리거 타 유닛 버프 — ✅ 완료 (2026-07-16, Phase C)
 
@@ -563,6 +575,12 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   `{"schedule": fn(context, fight_duration) -> times, "percent", "damage_type"(옵션),
   "full_burst_bonus_eligible"(옵션)}`. `fight_duration` 이후 시각은 드롭. 첫 소비자
   Ein(Near Feather). 기존 경로 무영향(파라미터 부재 = 아무것도 방출 안 함).
+- **gap #10 배치 (2026-07-18):** `per_shot_rules` `"sequence"` 모드(단계별 요구치
+  테이블 + own-burst-window 교체, gap #10 상세 참고 — Scarlet) ·
+  `"every_outside_full_burst"` 모드(FB 창 밖 발사만 카운트, gap #7 거울상 —
+  Velvet Sticky Fingers) · **Pulse `damage_type`**(per-shot/instant 넉의 타입
+  버킷 게이팅 — 기본 "attack"이라 기존 소비자 출력 불변, Scarlet distributed
+  스테이지 첫 소비).
 - **Phase C 배치 (gaps #3·#6·#8·#9), 2026-07-16:**
   - **member-subset scope (#3):** `SquadMember.weapon`(옵셔널) + `_helpers.
     member_subset_buff_rule(trigger, member_filter, buffs, condition, refreshing)` —
@@ -579,17 +597,26 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
     기록한 그랜트도 변환) + `normal_attack_damage_multiplier`(노멀 전용 Final-ATK
     항). 소비: Jill Valentine(Magnum/Acid).
 
-### 10. 창 한정 per-shot threshold 오버라이드 — 미착수 (2026-07-17 발견)
+### 10. 창 한정 per-shot threshold 오버라이드 — ✅ 완료 (2026-07-18, `"sequence"` 모드)
 
-- **무엇:** Scarlet: Black Shadow의 Fleetly Fading Breakthrough는 풀차지 3/6/9회에
-  각기 다른 효과(283.03% 단일 / 565% distributed / 848.03% distributed, "한 번에
-  하나만")를 내는데, **버스트(Fleetly Fading Strike)가 그 요구 카운트를 10초 동안
-  1/2/3으로 바꾼다**. `per_shot_rules`의 threshold는 정적이라 표현 불가.
-- **왜 defer가 안 되나:** 이 창이 그녀 딜의 핵심이라 빼면 심하게 과소평가된다.
-  3/6/9 베이스라인만 인코딩하는 것도 같은 이유로 부정직.
-- **필요한 확장:** gap #7의 창 필터와 동형 — 창 안에서만 threshold를 대체하는 모드.
-  규모 소(~40 loc 추정). **막힌 유닛 1명이라 수요 확인 후 착수.**
-- 참고: `data/lootandwaifus/char_scarlet-black-shadow.json`.
+- **무엇이었나:** Scarlet: Black Shadow의 Fleetly Fading Breakthrough는 풀차지
+  3/6/9회에 각기 다른 효과(283.03% 단일 / 565% distributed / 848.03% distributed,
+  "한 번에 하나만")를 내는데, **버스트(Fleetly Fading Strike)가 그 요구 카운트를
+  10초 동안 1/2/3으로 바꾼다**. `per_shot_rules`의 threshold는 정적이라 표현 불가.
+- **해결:** `per_shot_rules`에 `"sequence"` 모드 — threshold 자리에
+  `{"requirements": [3,6,9], "own_burst_window": (10.0, [1,2,3])}`, rules 자리에
+  **스테이지별 룰 리스트**. 단일 러닝 카운터가 스테이지 요구치를 걷고(스테이지는
+  `count >= 활성 요구치`면 발동, 마지막 스테이지 후 리셋), 자기 버스트 앵커 창
+  안에서는 요구치 테이블만 교체 — **카운트/스테이지는 경계를 넘어 이어짐**(Fienn
+  판정 2026-07-18; `>=` 발동이라 창 진입 시 이미 넘어선 요구치도 다음 발사부터
+  차례로 발동, 진행 유실 없음). 샷당 최대 1스테이지("Only one effect at a time").
+  발사 타임라인을 시간순으로 한 번 걸어 `{shot_time: stage_rules}`를 사전계산
+  (`_sequence_fire_rules`).
+- **소비 (1):** scarlet-black-shadow 신규 인코딩(⚠ — Asura의 FB진입 매거진 100%
+  즉시 재장전만 gap #11 동류로 보류). 6/9단계 distributed 넉은 같은 배치의 Pulse
+  `damage_type` 확장 소비.
+- 참고: `scarlet_black_shadow.py` docstring, `special-mechanics.md`의
+  "Staged shot-count table" 항목.
 
 ### 11. 강제 재장전 / 탄약 제거 상태머신 — 미착수 (2026-07-17 발견)
 

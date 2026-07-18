@@ -127,10 +127,23 @@ See `takina_inoue.py` (Battlefield Control, cd 15s).
 after/every N of the unit's own shots - "after N normal attacks", "N full charge
 attacks", "every N shots" - or on the shot that empties its magazine ("on
 firing the last bullet"). `mode` is `"after"` (once, at the Nth shot),
-`"every"` (at each multiple of N), or `"last_bullet"` (`threshold` unused/
+`"every"` (at each multiple of N), `"last_bullet"` (`threshold` unused/
 `None` - fires whenever the current shot's time is in that unit's
 `last_bullet_shot_times(...)`, computed once per unit only if a `"last_bullet"`
-entry is present). The engine counts the unit's generated shots (a charge
+entry is present), `"first_bullet"` (its mirror: the round that OPENS each
+magazine, incl. t=0 - gap #9, Jill's Magnum), `"every_during_full_burst"`
+(threshold=N, counts only shots inside a Full Burst window - gap #7, Soda/
+Velvet), `"every_outside_full_burst"` (its complement: only shots outside
+every FB window - Velvet's Sticky Fingers), `"every_during_own_status_window"`
+(threshold=`(N, window_duration)`, window anchored at the CASTER'S OWN burst
+times - gap #7, Asuka/Grave), or `"sequence"` (gap #10, Scarlet: Black
+Shadow: `threshold` is `{"requirements": [3, 6, 9], "own_burst_window":
+(duration, [1, 2, 3])}` and the rules slot holds ONE RULE LIST PER STAGE -
+a single running counter fires stage k once count >= the ACTIVE requirement
+for it, resets after the last stage, and swaps the requirement table inside
+the caster's own-burst window with count/stage carrying over across the
+boundary; at most one stage fires per shot). The engine counts the unit's
+generated shots (a charge
 weapon's every shot is a full charge, so "full charge N" == "shot N"; the
 encoding knows the weapon and picks N - no weapon gating in the engine). A
 firing rule either applies a buff or emits an `instant_damage_percent` pulse
@@ -143,8 +156,11 @@ on a status that varies over time (alternating or pinned mid-fight), do it insid
 the action using the shot time + `context.burst_times` / `status_since` - see
 `mint.py::mint_singing_at`. Expose via `registry._PER_SHOT_RULE_BUILDERS`
 / `get_per_shot_rules`; `roster` threads it. See `brid_silent_track.py`
-(Journey Ahead: 675% every 5 normal attacks). Per-shot nukes default to
-`attack` damage type.
+(Journey Ahead: 675% every 5 normal attacks). Per-shot/instant nukes default
+to `attack` damage type; when the text names one (e.g. "as Distributed
+Damage"), pass `instant_nuke_pulse_rule(..., damage_type="distributed")` -
+the Pulse carries it to record() so the type-gated Damage-Up buckets apply
+(2026-07-18, first consumer Scarlet: Black Shadow).
 
 **"Last bullet fired" (magazine-boundary marker) - BUILT capability
 (2026-07-12):** `attack_rate.py`'s `magazine_last_bullet_times`/
