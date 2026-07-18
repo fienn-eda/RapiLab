@@ -1,0 +1,5728 @@
+{
+  "units": [
+    {
+      "name_en": "2B",
+      "class": "Defender",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 69677,
+        "actual_atk": 9865
+      }
+    },
+    {
+      "name_en": "A2",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 102287,
+        "actual_atk": 12569
+      }
+    },
+    {
+      "name_en": "Ada",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 120692,
+        "actual_atk": 30974
+      }
+    },
+    {
+      "name_en": "Ade",
+      "class": "Supporter",
+      "level": 1,
+      "grade": 2,
+      "core": 0,
+      "attractive_lv": 15,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 83135,
+        "actual_atk": 5380
+      }
+    },
+    {
+      "name_en": "Ade: Agent Bunny",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 2,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 100417,
+        "actual_atk": 301402
+      }
+    },
+    {
+      "name_en": "Admi",
+      "class": "Supporter",
+      "level": 1,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 14,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 84612,
+        "actual_atk": 5362
+      }
+    },
+    {
+      "name_en": "Alice",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 7,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 141794,
+        "actual_atk": 422029
+      }
+    },
+    {
+      "name_en": "Alice: Wonderland Bunny",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 92065,
+        "actual_atk": 301013
+      }
+    },
+    {
+      "name_en": "Anchor: Innocent Maid",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 3
+        }
+      ],
+      "measured": {
+        "raid400_atk": 110523,
+        "actual_atk": 319471
+      }
+    },
+    {
+      "name_en": "Anis: Sparkling Summer",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 103208,
+        "actual_atk": 296463
+      }
+    },
+    {
+      "name_en": "Anis: Star",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 40,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 94492,
+        "actual_atk": 261649
+      }
+    },
+    {
+      "name_en": "Arcana",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 110340,
+        "actual_atk": 319288
+      }
+    },
+    {
+      "name_en": "Arcana: Fortune Mate",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 130338,
+        "actual_atk": 376158
+      }
+    },
+    {
+      "name_en": "Aria",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 96797,
+        "actual_atk": 333341
+      }
+    },
+    {
+      "name_en": "Ark Ranger Black",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 118004,
+        "actual_atk": 354548
+      }
+    },
+    {
+      "name_en": "Asuka",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 107559,
+        "actual_atk": 17841
+      }
+    },
+    {
+      "name_en": "Asuka: WILLE",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 119926,
+        "actual_atk": 30208
+      }
+    },
+    {
+      "name_en": "Avistar",
+      "class": "Supporter",
+      "level": 1,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 81376,
+        "actual_atk": 5116
+      }
+    },
+    {
+      "name_en": "Bay",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 2,
+      "harmony_cube_lv": 6,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 88381,
+        "actual_atk": 255538
+      }
+    },
+    {
+      "name_en": "Biscuit",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 7,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 94445,
+        "actual_atk": 303393
+      }
+    },
+    {
+      "name_en": "Blanc",
+      "class": "Defender",
+      "level": 663,
+      "grade": 2,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 3
+        }
+      ],
+      "measured": {
+        "raid400_atk": 80115,
+        "actual_atk": 240903
+      }
+    },
+    {
+      "name_en": "Bready",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 1
+        }
+      ],
+      "measured": {
+        "raid400_atk": 129209,
+        "actual_atk": 379945
+      }
+    },
+    {
+      "name_en": "Brid",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 2,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 105754,
+        "actual_atk": 361407
+      }
+    },
+    {
+      "name_en": "Brid: Silent Track",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 102205,
+        "actual_atk": 295460
+      }
+    },
+    {
+      "name_en": "Centi",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 5,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 7,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 82157,
+        "actual_atk": 262425
+      }
+    },
+    {
+      "name_en": "Chime",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 84926,
+        "actual_atk": 289777
+      }
+    },
+    {
+      "name_en": "Chisato",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 107284,
+        "actual_atk": 339190
+      }
+    },
+    {
+      "name_en": "Cinderella",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 3,
+      "attractive_lv": 40,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 3
+        }
+      ],
+      "measured": {
+        "raid400_atk": 97810,
+        "actual_atk": 271522
+      }
+    },
+    {
+      "name_en": "Cinderella: Crystal Wave",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 27,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 130856,
+        "actual_atk": 376676
+      }
+    },
+    {
+      "name_en": "Clay",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 84750,
+        "actual_atk": 278005
+      }
+    },
+    {
+      "name_en": "Cocoa",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 86141,
+        "actual_atk": 290992
+      }
+    },
+    {
+      "name_en": "Crow",
+      "class": "Defender",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 64731,
+        "actual_atk": 4919
+      }
+    },
+    {
+      "name_en": "Crown",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 6,
+      "attractive_lv": 40,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 3
+        }
+      ],
+      "measured": {
+        "raid400_atk": 102021,
+        "actual_atk": 285567
+      }
+    },
+    {
+      "name_en": "Crust",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 85412,
+        "actual_atk": 278667
+      }
+    },
+    {
+      "name_en": "D",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 97382,
+        "actual_atk": 333926
+      }
+    },
+    {
+      "name_en": "D: Killer Wife",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 6,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 104824,
+        "actual_atk": 334257
+      }
+    },
+    {
+      "name_en": "Delta: Ninja Thief",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 22,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 5
+        }
+      ],
+      "measured": {
+        "raid400_atk": 75931,
+        "actual_atk": 239811
+      }
+    },
+    {
+      "name_en": "Diesel",
+      "class": "Defender",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 71051,
+        "actual_atk": 228747
+      }
+    },
+    {
+      "name_en": "Diesel: Winter Sweets",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 121061,
+        "actual_atk": 352967
+      }
+    },
+    {
+      "name_en": "Dolla",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 7,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 94445,
+        "actual_atk": 303393
+      }
+    },
+    {
+      "name_en": "Dorothy",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 89463,
+        "actual_atk": 282718
+      }
+    },
+    {
+      "name_en": "Dorothy: Serendipity",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 26,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 3
+        }
+      ],
+      "measured": {
+        "raid400_atk": 128010,
+        "actual_atk": 373830
+      }
+    },
+    {
+      "name_en": "Drake",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 7,
+      "attractive_lv": 30,
+      "favorite_item_lv": 2,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 144793,
+        "actual_atk": 425028
+      }
+    },
+    {
+      "name_en": "E.H.",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 112563,
+        "actual_atk": 358383
+      }
+    },
+    {
+      "name_en": "EVE",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 120692,
+        "actual_atk": 352598
+      }
+    },
+    {
+      "name_en": "Ein",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 131606,
+        "actual_atk": 382342
+      }
+    },
+    {
+      "name_en": "Elegg",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 3,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 96953,
+        "actual_atk": 314095
+      }
+    },
+    {
+      "name_en": "Elegg: Boom and Shock",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 125972,
+        "actual_atk": 371792
+      }
+    },
+    {
+      "name_en": "Emilia",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 6,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 106545,
+        "actual_atk": 16827
+      }
+    },
+    {
+      "name_en": "Emma",
+      "class": "Supporter",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 79851,
+        "actual_atk": 5086
+      }
+    },
+    {
+      "name_en": "Emma: Tactical Upgrade",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 88232,
+        "actual_atk": 285352
+      }
+    },
+    {
+      "name_en": "Epinel",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 104920,
+        "actual_atk": 350740
+      }
+    },
+    {
+      "name_en": "Eunhwa",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 101687,
+        "actual_atk": 6586
+      }
+    },
+    {
+      "name_en": "Eunhwa: Tactical Upgrade",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 101026,
+        "actual_atk": 332932
+      }
+    },
+    {
+      "name_en": "Exia",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 2,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 105966,
+        "actual_atk": 314914
+      }
+    },
+    {
+      "name_en": "Flora",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 93535,
+        "actual_atk": 302483
+      }
+    },
+    {
+      "name_en": "Folkwang",
+      "class": "Defender",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 66515,
+        "actual_atk": 221119
+      }
+    },
+    {
+      "name_en": "Frima",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 87662,
+        "actual_atk": 292513
+      }
+    },
+    {
+      "name_en": "Grave",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 106404,
+        "actual_atk": 303524
+      }
+    },
+    {
+      "name_en": "Guillotine",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 110879,
+        "actual_atk": 356699
+      }
+    },
+    {
+      "name_en": "Guillotine: Winter Slayer",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 100850,
+        "actual_atk": 332756
+      }
+    },
+    {
+      "name_en": "Guilty",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 95735,
+        "actual_atk": 327641
+      }
+    },
+    {
+      "name_en": "Harran",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 40,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 109912,
+        "actual_atk": 355732
+      }
+    },
+    {
+      "name_en": "Helm",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 4,
+      "attractive_lv": 30,
+      "favorite_item_lv": 2,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 136887,
+        "actual_atk": 402373
+      }
+    },
+    {
+      "name_en": "Helm: Aquamarine",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 101026,
+        "actual_atk": 332932
+      }
+    },
+    {
+      "name_en": "Isabel",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 37,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 126957,
+        "actual_atk": 372777
+      }
+    },
+    {
+      "name_en": "Jackal",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 7,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 81440,
+        "actual_atk": 248597
+      }
+    },
+    {
+      "name_en": "Julia",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 103721,
+        "actual_atk": 354457
+      }
+    },
+    {
+      "name_en": "K",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 2,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 99860,
+        "actual_atk": 341042
+      }
+    },
+    {
+      "name_en": "Kilo",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 74324,
+        "actual_atk": 238204
+      }
+    },
+    {
+      "name_en": "Label",
+      "class": "Defender",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 12,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 71124,
+        "actual_atk": 228820
+      }
+    },
+    {
+      "name_en": "Laplace",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 3,
+      "attractive_lv": 30,
+      "favorite_item_lv": 2,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 128410,
+        "actual_atk": 388979
+      }
+    },
+    {
+      "name_en": "Leona",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 90871,
+        "actual_atk": 295722
+      }
+    },
+    {
+      "name_en": "Liberalio",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 40,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 128977,
+        "actual_atk": 374797
+      }
+    },
+    {
+      "name_en": "Liter",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 7,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 109313,
+        "actual_atk": 342843
+      }
+    },
+    {
+      "name_en": "Little Mermaid",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 2,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 107789,
+        "actual_atk": 308774
+      }
+    },
+    {
+      "name_en": "Ludmilla",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 72989,
+        "actual_atk": 236869
+      }
+    },
+    {
+      "name_en": "Ludmilla: Winter Owner",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 126191,
+        "actual_atk": 372011
+      }
+    },
+    {
+      "name_en": "Maiden",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 96797,
+        "actual_atk": 333341
+      }
+    },
+    {
+      "name_en": "Maiden: Ice Rose",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 3
+        }
+      ],
+      "measured": {
+        "raid400_atk": 89852,
+        "actual_atk": 253732
+      }
+    },
+    {
+      "name_en": "Mana",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 116184,
+        "actual_atk": 366920
+      }
+    },
+    {
+      "name_en": "Marciana",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 2,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 95244,
+        "actual_atk": 308289
+      }
+    },
+    {
+      "name_en": "Marciana: Marine Study",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 4,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 117124,
+        "actual_atk": 353668
+      }
+    },
+    {
+      "name_en": "Mari",
+      "class": "Supporter",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 1,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 94644,
+        "actual_atk": 19879
+      }
+    },
+    {
+      "name_en": "Mary",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 84750,
+        "actual_atk": 278005
+      }
+    },
+    {
+      "name_en": "Mary: Bay Goddess",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 84750,
+        "actual_atk": 278005
+      }
+    },
+    {
+      "name_en": "Mast",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 6,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 86495,
+        "actual_atk": 279750
+      }
+    },
+    {
+      "name_en": "Mast: Romantic Maid",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 4,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 3
+        }
+      ],
+      "measured": {
+        "raid400_atk": 118431,
+        "actual_atk": 339670
+      }
+    },
+    {
+      "name_en": "Maxwell",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 7,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 135833,
+        "actual_atk": 416068
+      }
+    },
+    {
+      "name_en": "Mica: Snow Buddy",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 84750,
+        "actual_atk": 278005
+      }
+    },
+    {
+      "name_en": "Mihara: Bonding Chain",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 123472,
+        "actual_atk": 360016
+      }
+    },
+    {
+      "name_en": "Milk",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 94971,
+        "actual_atk": 5253
+      }
+    },
+    {
+      "name_en": "Milk: Blooming Bunny",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 5,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 137836,
+        "actual_atk": 408238
+      }
+    },
+    {
+      "name_en": "Mint",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 5
+        }
+      ],
+      "measured": {
+        "raid400_atk": 107310,
+        "actual_atk": 312161
+      }
+    },
+    {
+      "name_en": "Miranda",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 3,
+      "attractive_lv": 30,
+      "favorite_item_lv": 2,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 106641,
+        "actual_atk": 323783
+      }
+    },
+    {
+      "name_en": "Modernia",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 2,
+      "attractive_lv": 40,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 1
+        }
+      ],
+      "measured": {
+        "raid400_atk": 128006,
+        "actual_atk": 383659
+      }
+    },
+    {
+      "name_en": "Moran",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 4,
+      "attractive_lv": 30,
+      "favorite_item_lv": 2,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 98024,
+        "actual_atk": 275015
+      }
+    },
+    {
+      "name_en": "Mori",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 68792,
+        "actual_atk": 232672
+      }
+    },
+    {
+      "name_en": "Naga",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 7,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 1
+        }
+      ],
+      "measured": {
+        "raid400_atk": 114726,
+        "actual_atk": 348256
+      }
+    },
+    {
+      "name_en": "Nayuta",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 106488,
+        "actual_atk": 299743
+      }
+    },
+    {
+      "name_en": "Neon: Blue Ocean",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 8,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 94866,
+        "actual_atk": 5148
+      }
+    },
+    {
+      "name_en": "Neon: Vision Eye",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 40,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 133305,
+        "actual_atk": 384041
+      }
+    },
+    {
+      "name_en": "Nero",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 2,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 76235,
+        "actual_atk": 246670
+      }
+    },
+    {
+      "name_en": "Nihilister",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 1,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 102093,
+        "actual_atk": 12375
+      }
+    },
+    {
+      "name_en": "Noah",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 2,
+      "attractive_lv": 40,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 85113,
+        "actual_atk": 255548
+      }
+    },
+    {
+      "name_en": "Noir",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 3,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 126323,
+        "actual_atk": 386892
+      }
+    },
+    {
+      "name_en": "Noise",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 4,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 6,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 107017,
+        "actual_atk": 328256
+      }
+    },
+    {
+      "name_en": "Novel",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 74324,
+        "actual_atk": 238204
+      }
+    },
+    {
+      "name_en": "Pepper",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 6,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 94325,
+        "actual_atk": 303273
+      }
+    },
+    {
+      "name_en": "Phantom",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 2,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 111809,
+        "actual_atk": 367462
+      }
+    },
+    {
+      "name_en": "Poli",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 2,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 77093,
+        "actual_atk": 247528
+      }
+    },
+    {
+      "name_en": "Prika",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 103716,
+        "actual_atk": 300836
+      }
+    },
+    {
+      "name_en": "Privaty",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 3,
+      "attractive_lv": 30,
+      "favorite_item_lv": 2,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 135673,
+        "actual_atk": 396242
+      }
+    },
+    {
+      "name_en": "Privaty: Unkind Maid",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 3,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 123543,
+        "actual_atk": 384112
+      }
+    },
+    {
+      "name_en": "Quency",
+      "class": "Supporter",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 79851,
+        "actual_atk": 5086
+      }
+    },
+    {
+      "name_en": "Quency: Escape Queen",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 4,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 134107,
+        "actual_atk": 399593
+      }
+    },
+    {
+      "name_en": "Quiry",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 84426,
+        "actual_atk": 289277
+      }
+    },
+    {
+      "name_en": "Rapi: Red Hood",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 6,
+      "attractive_lv": 40,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 3
+        }
+      ],
+      "measured": {
+        "raid400_atk": 143543,
+        "actual_atk": 418862
+      }
+    },
+    {
+      "name_en": "Rapunzel",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 6,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 92265,
+        "actual_atk": 289385
+      }
+    },
+    {
+      "name_en": "Rapunzel: Pure Grace",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 32,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 74914,
+        "actual_atk": 238794
+      }
+    },
+    {
+      "name_en": "Raven",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 120692,
+        "actual_atk": 352598
+      }
+    },
+    {
+      "name_en": "Red Hood",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 3,
+      "attractive_lv": 40,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 135150,
+        "actual_atk": 395719
+      }
+    },
+    {
+      "name_en": "Rei",
+      "class": "Defender",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 65955,
+        "actual_atk": 223651
+      }
+    },
+    {
+      "name_en": "Rei",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 110576,
+        "actual_atk": 20858
+      }
+    },
+    {
+      "name_en": "Rei (Tentative Name)",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 120806,
+        "actual_atk": 29294
+      }
+    },
+    {
+      "name_en": "Rem",
+      "class": "Supporter",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 86070,
+        "actual_atk": 11305
+      }
+    },
+    {
+      "name_en": "Rosanna",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 109925,
+        "actual_atk": 360661
+      }
+    },
+    {
+      "name_en": "Rosanna: Chic Ocean",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 91041,
+        "actual_atk": 284296
+      }
+    },
+    {
+      "name_en": "Rouge",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 2,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 3
+        }
+      ],
+      "measured": {
+        "raid400_atk": 112232,
+        "actual_atk": 325277
+      }
+    },
+    {
+      "name_en": "Rumani",
+      "class": "Defender",
+      "level": 663,
+      "grade": 2,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 73100,
+        "actual_atk": 233888
+      }
+    },
+    {
+      "name_en": "Rupee",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 106946,
+        "actual_atk": 352766
+      }
+    },
+    {
+      "name_en": "Sakura",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 2,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 93774,
+        "actual_atk": 306819
+      }
+    },
+    {
+      "name_en": "Sakura: Bloom in Summer",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 110726,
+        "actual_atk": 342632
+      }
+    },
+    {
+      "name_en": "Scarlet",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 1,
+      "attractive_lv": 40,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 122504,
+        "actual_atk": 373240
+      }
+    },
+    {
+      "name_en": "Scarlet: Black Shadow",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 4,
+      "attractive_lv": 40,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 139988,
+        "actual_atk": 405474
+      }
+    },
+    {
+      "name_en": "Signal",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 94971,
+        "actual_atk": 5253
+      }
+    },
+    {
+      "name_en": "Sin",
+      "class": "Defender",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 66515,
+        "actual_atk": 221119
+      }
+    },
+    {
+      "name_en": "Snow White",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 122167,
+        "actual_atk": 358711
+      }
+    },
+    {
+      "name_en": "Snow White: Heavy Arms",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 4,
+      "attractive_lv": 40,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 137208,
+        "actual_atk": 402694
+      }
+    },
+    {
+      "name_en": "Snow White: Innocent Days",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 95471,
+        "actual_atk": 327377
+      }
+    },
+    {
+      "name_en": "Soda",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 83091,
+        "actual_atk": 280211
+      }
+    },
+    {
+      "name_en": "Soda: Twinkling Bunny",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 3,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 126495,
+        "actual_atk": 387064
+      }
+    },
+    {
+      "name_en": "Soline",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 2,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 111633,
+        "actual_atk": 367286
+      }
+    },
+    {
+      "name_en": "Soline: Frost Ticket",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 102167,
+        "actual_atk": 299287
+      }
+    },
+    {
+      "name_en": "Sora",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 86220,
+        "actual_atk": 279475
+      }
+    },
+    {
+      "name_en": "Sugar",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 13,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 103291,
+        "actual_atk": 349111
+      }
+    },
+    {
+      "name_en": "Takina",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 0,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 90891,
+        "actual_atk": 284146
+      }
+    },
+    {
+      "name_en": "Tia",
+      "class": "Defender",
+      "level": 663,
+      "grade": 3,
+      "core": 4,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 89730,
+        "actual_atk": 266721
+      }
+    },
+    {
+      "name_en": "Tove",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 7,
+      "attractive_lv": 30,
+      "favorite_item_lv": 2,
+      "harmony_cube_lv": 15,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 5
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 123558,
+        "actual_atk": 357088
+      }
+    },
+    {
+      "name_en": "Trina",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 20,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 88232,
+        "actual_atk": 285352
+      }
+    },
+    {
+      "name_en": "Trony",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 7,
+      "attractive_lv": 30,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 115923,
+        "actual_atk": 396158
+      }
+    },
+    {
+      "name_en": "Velvet",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 2,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 15,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 4
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 105785,
+        "actual_atk": 306770
+      }
+    },
+    {
+      "name_en": "Vesti",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 3,
+      "core": 3,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 112532,
+        "actual_atk": 11725
+      }
+    },
+    {
+      "name_en": "Vesti: Tactical Upgrade",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 2,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "torso",
+          "tier": 10,
+          "lv": 1
+        },
+        {
+          "slot": "arm",
+          "tier": 10,
+          "lv": 3
+        },
+        {
+          "slot": "leg",
+          "tier": 10,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 118676,
+        "actual_atk": 359858
+      }
+    },
+    {
+      "name_en": "Viper",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 3,
+      "core": 0,
+      "attractive_lv": 30,
+      "favorite_item_lv": 5,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 113974,
+        "actual_atk": 359794
+      }
+    },
+    {
+      "name_en": "Volume",
+      "class": "Attacker",
+      "level": 663,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 104263,
+        "actual_atk": 340807
+      }
+    },
+    {
+      "name_en": "Yulha",
+      "class": "Attacker",
+      "level": 1,
+      "grade": 1,
+      "core": 0,
+      "attractive_lv": 10,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 97385,
+        "actual_atk": 5873
+      }
+    },
+    {
+      "name_en": "Yuni",
+      "class": "Defender",
+      "level": 1,
+      "grade": 2,
+      "core": 0,
+      "attractive_lv": 16,
+      "favorite_item_lv": 0,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 0,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 0,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 67406,
+        "actual_atk": 5202
+      }
+    },
+    {
+      "name_en": "Zwei",
+      "class": "Supporter",
+      "level": 663,
+      "grade": 3,
+      "core": 5,
+      "attractive_lv": 30,
+      "favorite_item_lv": 2,
+      "harmony_cube_lv": 0,
+      "equip": [
+        {
+          "slot": "head",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "torso",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "arm",
+          "tier": 9,
+          "lv": 0
+        },
+        {
+          "slot": "leg",
+          "tier": 9,
+          "lv": 0
+        }
+      ],
+      "measured": {
+        "raid400_atk": 110060,
+        "actual_atk": 335396
+      }
+    }
+  ]
+}
