@@ -15,7 +15,9 @@
 - **신원과 투자를 섞지 않는다**: `RESOURCE_ID_TO_SLUG`는 항상 base slug. signature 승격은 `SIGNATURE_OWNED`에서만.
 - 맵 slug 값은 백엔드 `ENCODED_SLUGS`의 부분집합이어야 한다(drift 테스트가 강제).
 - 미인코딩 유닛은 draft에서 제외하지 않는다(성능 영향 0, 보유 가시성 보존).
-- 기존 프론트 스위트(97)·`tsc -b` 그린 유지. 새 백엔드 테스트 green.
+- 기존 프론트 스위트(101)·`tsc -b` 그린 유지. 새 백엔드 테스트 green.
+- 백엔드 pytest는 **anaconda 인터프리터**로 실행: `C:/Users/Fienn/anaconda3/python.exe -m pytest`
+  (`backend/` 안에서). PATH의 `python`은 3.14라 pytest가 없다.
 - 디렉토리 기반 맵 생성·검증은 **이번 범위 밖**(후속, 스펙 참고).
 
 ---
@@ -316,7 +318,7 @@ def test_every_encoded_slug_is_reachable_except_known():
 
 - [ ] **Step 2: 테스트 통과 확인** (맵은 Task 1에서 이미 존재)
 
-Run: `cd backend && python -m pytest tests/test_resource_id_slug_map.py -v`
+Run: `cd backend && "C:/Users/Fienn/anaconda3/python.exe" -m pytest tests/test_resource_id_slug_map.py -v`
 Expected: PASS (3 tests). 실패 시 diff를 보고 맵 엔트리·`DUAL_SLOT_BASES`·`KNOWN_UNMAPPED`를 교정.
 
 - [ ] **Step 3: 커밋**
@@ -483,7 +485,7 @@ git commit -m "feat: resolve collector roster by resource_id; keep unencoded uni
 - [ ] **Step 1: 프론트 전체 테스트**
 
 Run: `cd frontend && npm test`
-Expected: PASS — 기존 97 + 신규(맵 9 + rosterImport 2) 모두 green.
+Expected: PASS — 기존 101 + 신규(맵 9 + rosterImport 2) = 112 green.
 
 - [ ] **Step 2: 타입 체크**
 
@@ -492,13 +494,13 @@ Expected: 에러 없음(클린).
 
 - [ ] **Step 3: 백엔드 테스트**
 
-Run: `cd backend && python -m pytest tests/test_resource_id_slug_map.py -v`
+Run: `cd backend && "C:/Users/Fienn/anaconda3/python.exe" -m pytest tests/test_resource_id_slug_map.py -v`
 Expected: PASS (3 tests).
 
 - [ ] **Step 4: 백엔드 전체 회귀 (엔진 무변경 확인)**
 
-Run: `cd backend && python -m pytest -q`
-Expected: 기존 746 + 3 = 749 passed.
+Run: `cd backend && "C:/Users/Fienn/anaconda3/python.exe" -m pytest -q`
+Expected: 기존 750 + 3 = 753 passed.
 
 - [ ] **Step 5: 정합 커밋 (변경 없으면 생략)**
 
