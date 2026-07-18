@@ -17,7 +17,7 @@
 | maxwell | 버스트: 차지 2초 · 813.42% · 풀차지 300% · 장탄 1 · Pierce | 버스트 앵커 **단발형** |
 | laplace | 버스트: First 897.6% + 노멀 14.52% 틱 · 5초 (기존 인코딩 ⚠, 변형딜 보류분) | 버스트 앵커 지속형 |
 | velvet | 버스트: 7% 틱 · 10초 (Perfect Execution, 기존 ⚠ 보류분) | 버스트 앵커 지속형 |
-| cinderella-crystal-wave | 재장전 이벤트 구동 MG↔Snipe 토글 + 모드가 FB 넉 변종 게이팅 | **비버스트 상태머신** |
+| cinderella-crystal-wave | ~~재장전 이벤트 구동 MG↔Snipe 토글~~ → **듀얼 변형 슬러그로 재분류** (아래 참고) | 세그먼트 대상 아님 |
 | snow-white-heavy-arms | 차지 중 락온/장전 누적 → 풀차지 연속 히트, 버스트는 파라미터 변경 | 차지 루프 상태머신 (별도 검토) |
 | rapi-red-hood | 120노멀마다 프로젝타일 발사 → FB 진입 시 폭발 | 무기 프로필 교체 **아님** (별도 경로) |
 
@@ -107,11 +107,28 @@ t=0 ─[기본 AR 발사]─ 버스트(t=20) ─[대포: 5초 차지 → t=25에
 
 - 변형 창 종료 후 기본 무기는 **가득 찬 새 매거진으로 즉시** 사격 재개
   (재장전 대기 없음). 2026-07-18.
+- **cinderella-crystal-wave는 세그먼트 프리미티브 대상에서 제외** (Fienn,
+  2026-07-18 스펙 리뷰): 이 유닛의 컨셉은 유저가 보스 특성에 맞춰 모드를
+  미리 골라 전투 내내 유지하는 것이라 전투 중 전환이 매우 드물다. 따라서
+  재장전 구동 토글 상태머신 대신 **"MG로 3분" / "Snipe로 3분" 두 케이스를
+  각각 시뮬레이션**하고, 결과에 어느 모드였는지 표시한다.
+  - 구현: julia/julia-signature·drake/drake-signature 듀얼슬러그 선례 —
+    `cinderella-crystal-wave-mg` / `cinderella-crystal-wave-snipe` 두 슬러그를
+    별도 덱 후보로 등록. 모드가 고정이면 각 변형은 **정적 무기 프로필**이라
+    기존 엔진 경로 그대로 돌고, 모드 게이팅 부속 효과(FB 넉 변종 1189.66%
+    전체 vs 833.79% 코어, Destroy vs Pinpoint 상시 버프)도 변형별 정적 배선.
+    슬러그가 결과 표시를 겸한다.
+  - 소항목: 두 변형이 같은 덱에 동시 편성되지 않게 하는 상호 배제 —
+    julia/drake 선례가 로스터 레벨(투자 상태로 한쪽만 후보화)인지 탐색
+    레벨인지 구현 착수 때 확인. cinderella는 항상 둘 다 후보라 명시적
+    배제가 필요할 수 있음.
+  - Snipe 프로필 세부(장탄 15 vs 풀차지 40발 소모 등 텍스트 모호)는
+    인코딩 시 Fienn 확인.
 
 ## 미논의 (다음 섹션)
 
-- 섹션 2: 유닛별 적용 계획 — snow-white·maxwell·laplace·velvet·cinderella
-  각각의 세그먼트 스케줄 + rapi(FB 창 노출 `scheduled_nukes`)·
+- 섹션 2: 유닛별 적용 계획 — 세그먼트 소비 4명(snow-white·maxwell·laplace·
+  velvet) + cinderella 듀얼슬러그 인코딩 + rapi(FB 창 노출 `scheduled_nukes`)·
   snow-white-heavy-arms(프로필 "풀차지 N연타" 확장 여부) 별도 처리.
 - 섹션 3: 테스트 전략(TDD)·회귀 기준·red_hood 마이그레이션 여부.
 - 미해결 인게임 질문: 변형샷이 자기 노멀공격 카운터에 포함되는가(유닛별
