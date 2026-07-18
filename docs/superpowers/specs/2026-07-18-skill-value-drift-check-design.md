@@ -78,6 +78,22 @@ fold weapon stats into one file per unit.
   callable injected into the orchestration function (same pattern as
   `collect_dotgg_weapons.py` tests).
 
+## Amendments (2026-07-18, post-review, approved by Fienn)
+
+1. **Compare only description-referenced dotgg slots.** dotgg levels can
+   carry leftover slots the skill's description template never interpolates
+   (brid-silent-track Full Throttle `description_value_04` = "10" duplicates
+   the real duration slot), which produced a false DRIFT under the original
+   "all non-empty, non-\"0\" slots" rule. The lootandwaifus text is the
+   rendered description, so the apples-to-apples rule is: when the dotgg
+   skill has a `description` containing `{description_value_NN}`
+   placeholders, compare only those slots; otherwise fall back to all
+   non-filler slots.
+2. **`curl_fetch` uses `--fail` and includes stderr in its error.** Without
+   `-f`, an HTTP 403/404/5xx error page returns exit 0 with a non-empty body
+   and silently becomes "data"; with it, HTTP errors surface as fetch-failed
+   WARNs like any network failure.
+
 ## Out of scope
 
 - Migrating any manifest to lootandwaifus source (next stage, per-unit).
