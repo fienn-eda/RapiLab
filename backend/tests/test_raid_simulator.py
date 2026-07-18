@@ -2453,3 +2453,38 @@ def test_charge_speed_buff_increases_charge_shots():
     na_without = [e for e in without["damage_log"] if e["source"] == "normal_attack"]
     na_with = [e for e in with_cs["damage_log"] if e["source"] == "normal_attack"]
     assert na_without and len(na_with) > len(na_without)
+
+
+def _one_unit_deck():
+    return [{"slug": "gunner", "burst_tier": 3, "element": "Iron",
+             "cooldown": 40.0, "weapon": "SR"}]
+
+
+SR_WEAPON = {"weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
+             "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0}
+
+
+def test_weapon_mode_schedule_swaps_profile_inside_window():
+    def schedule(context, fight_duration):
+        return [{"start": 5.0, "until_shots": 1,
+                 "profile": {"weapon": "SR", "damage_percent": 499.5,
+                             "charge_damage_percent": 1000.0, "charge_time": 5.0}}]
+
+    kwargs = dict(
+        deck=_one_unit_deck(), rules_by_slug={}, burst_damage_percents={},
+        base_stats={"gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        weapon_stats={"gunner": SR_WEAPON},
+    )
+    plain = simulate_raid(**kwargs)
+    with_transform = simulate_raid(**kwargs, weapon_mode_schedules={"gunner": schedule})
+    # window (5-10s): base SR shots vanish and are replaced by one cannon shot at t=10.0
+    plain_shots = [e for e in plain["damage_log"] if e["source"] == "normal_attack"]
+    transformed = [e for e in with_transform["damage_log"] if e["source"] == "normal_attack"]
+    cannon = [e for e in transformed if e["time"] == 10.0]
+    assert len(cannon) == 1
+    assert not [e for e in transformed if 5.0 <= e["time"] < 10.0]
+    assert [e for e in plain_shots if 5.0 <= e["time"] < 10.0]
+    # cannon shot = 499.5% x (1 + 9.0 charge bonus) - compare ratio against a base shot at the same stats
+    base_shot = plain_shots[0]["damage"]          # 69.04% x (1+1.5)
+    assert cannon[0]["damage"] > base_shot * 20

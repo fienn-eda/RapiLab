@@ -96,12 +96,7 @@ side of a boss-profile flag (e.g. Ark Ranger Black's floor DoT vs. ceiling
 DoT modeling the same battery-transformation state two different ways);
 absent field = always fires, matching every existing spec's behavior.
 """
-from app.attack_rate import (
-    CHARGE_WEAPONS,
-    first_bullet_shot_times,
-    generate_shot_times,
-    last_bullet_shot_times,
-)
+from app.attack_rate import generate_segmented_shots
 from app.burst_cycle import simulate_burst_cycle
 from app.damage_formula import calculate_damage
 from app.effects import Effect, EffectRegistry, _matches_scope
@@ -305,8 +300,10 @@ def simulate_raid(
     dynamic_hit_count_nukes=None,
     resource_fill_triggered_buffs=None,
     scheduled_nukes=None,
+    weapon_mode_schedules=None,
 ):
     weapon_stats = weapon_stats or {}
+    weapon_mode_schedules = weapon_mode_schedules or {}
     periodic_nukes = periodic_nukes or {}
     burst_damage_types = burst_damage_types or {}
     periodic_rules = periodic_rules or {}
@@ -404,13 +401,13 @@ def simulate_raid(
             terms[bucket] = bundle[bucket]
         return calculate_damage(**terms)
 
-    def normal_attack_type(slug, weapon, time):
+    def normal_attack_type(slug, weapon_type, time):
         # A skill can convert a unit's normal attacks to a damage type for a
         # window (e.g. Takina Inoue's burst: "normal attacks deal true damage").
         if registry.total_for("normal_attacks_deal_true", target_for(slug), time) > 0:
             return "true"
         # Otherwise a rocket launcher's normal attacks are projectile explosions.
-        if weapon["weapon"] == "RL":
+        if weapon_type == "RL":
             return "projectile_explosion"
         return "attack"
 
@@ -572,7 +569,6 @@ def simulate_raid(
     last_bullet_times_by_slug = {}
     for slug, weapon in weapon_stats.items():
         target = target_for(slug)
-        is_charge_weapon = weapon["weapon"] in CHARGE_WEAPONS
         max_ammo_percent_at = lambda t, target=target: registry.total_for("max_ammo_percent", target, t)
         reload_speed_percent_at = lambda t, target=target: registry.total_for(
             "reload_speed_percent", target, t
@@ -583,18 +579,18 @@ def simulate_raid(
         charge_speed_percent_at = lambda t, target=target: registry.total_for(
             "charge_speed_percent", target, t
         )
-        shot_times = generate_shot_times(
-            weapon["weapon"],
-            weapon["max_ammo"],
-            weapon["reload_time"],
-            weapon["charge_time"],
-            fight_duration,
+        schedule_fn = weapon_mode_schedules.get(slug)
+        segments = schedule_fn(context, fight_duration) if schedule_fn is not None else []
+        shot_records = generate_segmented_shots(
+            weapon, segments, fight_duration,
             max_ammo_percent_at=max_ammo_percent_at,
             reload_speed_percent_at=reload_speed_percent_at,
             attack_speed_percent_at=attack_speed_percent_at,
             charge_speed_percent_at=charge_speed_percent_at,
         )
-        extra_charge_bonus = weapon["charge_damage_percent"] / 100 - 1 if is_charge_weapon else 0.0
+        shot_times = [r.time for r in shot_records]
+        last_bullets = {r.time for r in shot_records if r.is_last_bullet}
+        first_bullets = {r.time for r in shot_records if r.is_first_bullet}
         # Per-shot triggers count this unit's shots and fire at a threshold
         # ("after N": once at the Nth shot; "every N": at every Nth) or on
         # the shot that empties its magazine ("last_bullet", threshold
@@ -609,34 +605,7 @@ def simulate_raid(
         # be stateless and must not change shot generation (reload/ammo), which
         # is already fixed for this unit here.
         unit_per_shot = per_shot_rules.get(slug, [])
-        # Also needed by an "on_last_bullet" resource fill (below, resolved in
-        # a later pass) - computed once here and cached so both consumers
-        # share identical magazine boundaries.
-        needs_last_bullets = any(mode == "last_bullet" for _, mode, _ in unit_per_shot) or any(
-            spec.fill[0] == "on_last_bullet" for spec in resource_specs.get(slug, [])
-        )
-        last_bullets = (
-            last_bullet_shot_times(
-                weapon["weapon"], weapon["max_ammo"], weapon["reload_time"], weapon["charge_time"],
-                fight_duration, max_ammo_percent_at, reload_speed_percent_at,
-                attack_speed_percent_at, charge_speed_percent_at,
-            )
-            if needs_last_bullets else set()
-        )
         last_bullet_times_by_slug[slug] = last_bullets
-        # "first_bullet" mirrors "last_bullet": the round that OPENS each
-        # magazine, including the battle-opening one at t=0 - "at the start of
-        # battle and upon reloading to Max Ammunition" (gap #9, e.g. Jill
-        # Valentine's Magnum/Acid Ammo).
-        needs_first_bullets = any(mode == "first_bullet" for _, mode, _ in unit_per_shot)
-        first_bullets = (
-            first_bullet_shot_times(
-                weapon["weapon"], weapon["max_ammo"], weapon["reload_time"], weapon["charge_time"],
-                fight_duration, max_ammo_percent_at, reload_speed_percent_at,
-                attack_speed_percent_at, charge_speed_percent_at,
-            )
-            if needs_first_bullets else set()
-        )
         # The window-gated modes fire on the same in-window shot times a
         # matching resource fill would pick, so reuse `_resource_fill_times`'
         # window filter. "every_during_full_burst" carries N in `threshold`;
@@ -667,7 +636,8 @@ def simulate_raid(
                 sequence_fires[idx] = _sequence_fire_rules(
                     threshold, _rules, shot_times, own_burst_times
                 )
-        for shot_index, shot_time in enumerate(shot_times):
+        for shot_index, rec in enumerate(shot_records):
+            shot_time = rec.time
             count = shot_index + 1
             for idx, (threshold, mode, rules) in enumerate(unit_per_shot):
                 if mode == "sequence":
@@ -691,9 +661,9 @@ def simulate_raid(
                             damage_type=pulse.damage_type,
                             full_burst_bonus_eligible=pulse.full_burst_bonus_eligible,
                         )
-            damage_type = normal_attack_type(slug, weapon, shot_time)
-            record(slug, weapon["damage_percent"], shot_time, "normal_attack",
-                   damage_type=damage_type, extra_charge_bonus=extra_charge_bonus)
+            damage_type = rec.damage_type or normal_attack_type(slug, rec.weapon, shot_time)
+            record(slug, rec.damage_percent, shot_time, "normal_attack",
+                   damage_type=damage_type, extra_charge_bonus=rec.extra_charge_bonus)
         shot_times_by_slug[slug] = shot_times
 
     # "For N round(s)" (bullet-count) buffs expire when the affected ally
