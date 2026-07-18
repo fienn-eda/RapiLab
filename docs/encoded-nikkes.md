@@ -3,7 +3,19 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-19 (**Maxwell 신규 인코딩**. Straight Shot(FB진입 시 최고ATK
+- 마지막 갱신: 2026-07-19 (**Laplace Signature 신규 인코딩**, 별도 slug
+  `laplace-signature` — base `laplace`는 그대로 둠). Fienn 인게임 실측(2026-07-19):
+  변형 10초 창 = First 1회 + 노멀 93회. First Damage 1455.72%를 버스트 넉으로,
+  Normal Damage 22.2%×93틱을 `weapon_mode_schedules` 세그먼트(rate_of_fire=93/10)로
+  모델 — Hero Vision 상시 맥스스택 가정(red-hood Glaring 정상상태 선례, Fienn 승인)으로
+  틱 전부 **true** 타입 고정. 틱마다 +11.9% true 추가히트는 동일 케이던스의
+  `scheduled_nukes`(`build_buster_scheduled_nukes`)로 방출, 두 경로 모두
+  `context.burst_times` 앵커라 케이던스 일치. Hero Bomber는 base의 `last_bullet`과
+  달리 풀차지마다 발동(`every_outside_full_burst`) — 변형 창(=자기 버스트가 여는 FB 창)
+  중엔 풀차지가 없어 인게임과 정확히 일치. 프런트 `resourceIdSlugMap.ts`의
+  `DUAL_SLOT_BASES`에 `laplace` 추가(julia/drake 선례와 동일, `SIGNATURE_OWNED`는
+  미변경 — 소유 여부 미확인). **엔진 확장 없이 인코딩**. 65명, 커버리지/로더블 65/65.
+  이전 갱신: 2026-07-19 (**Maxwell 신규 인코딩**. Straight Shot(FB진입 시 최고ATK
   2인 차지속도+43.1%/ATK 버프) — **Fienn 판정(2026-07-19): 대상 2인에 Maxwell
   자신도 포함**(공유 `top_atk_slugs`/`highest_atk_buff_rule`은 항상 캐스터를
   제외하므로 그대로 못 씀 — 캐스터 포함 랭킹을 뽑는 로컬 커스텀 액션으로 모델).
@@ -197,7 +209,8 @@
 | Ein | `ein` | Attacker | SR | Electric | ✅ | (신규 2026-07-17) 딜의 대부분이 Near Feather 소환체 — 신규 `scheduled_nukes` 확장으로 사전계산 스케줄에 90.81% 진댐 방출. 페더 6기 상한/개체별 수명(F1 무제한·F2 38s·F3 32s·F4 26s·F5·F6 10s)·버스트가 전 페더 재소환+쿨 초기화·공격쿨 8초에서 기수당 -16%(합연산). Feather Standby 자ATK+70.12%(자버스트)·Feather Shot 풀차지마다 자 Charge Damage+80%/1라운드·Feather-All Range 자 True Damage+55.3%/Charge Damage+140.68% + 300.02% 진댐 넉. **가정(docstring 명시): 타격 간 0.3초 스로틀**(Fienn 영상 실측 FB 31회를 정확히 재현; 공식만 쓰면 FB 21% 과대). 6기 구간 외 카운트는 공식 미검증. E2E 실측: 180초에 페더 280타 9212만(본인 평타 5101만을 상회하는 최대 딜 소스) |
 | Drake | `drake` | Attacker | SG | Fire | ⚠ | (신규 2026-07-16, base) Overcharge: 스쿼드 ATK+11.85%(FB진입)·Thunderbolt: 노멀10회마다 98.55% 넉(gap #1)·Drake Special 버스트: 1254% 넉 + 자 Max Ammo+72.18%. 보류: Hit Rate(inert) |
 | Drake (Signature) | `drake-signature` | Attacker | SG | Fire | ⚠ | (신규 2026-07-16, 시그니처/듀얼슬롯) base + SG아군(**정확 스코프** — 2026-07-18 member_subset 정밀화, 이전 squad 근사) ATK+63.88%/Max Ammo+50.14% + Thunderbolt 2차 트리거(노멀5회마다 201.6%) + Drake Special 3009.6% 넉 + 자AD+31.68%. 보류: Hit Rate(inert) |
-| Laplace | `laplace` | Attacker | RL | Iron | ⚠ | (신규 2026-07-16, base, 얇음) Hero Bomber: 마지막 탄 81.66% "additional" 넉(gap #1 last_bullet)·Laplace Buster First Damage 897.6%를 버스트 넉으로 모델. 보류(킷 대부분): 무기변형(5초 Buster 모드), Hero Vision(Pattern B 감쇠 스택)+맥스스택 true dmg, 파츠딜, 시그니처(더 큰 무기변형 → 듀얼슬롯 없음) |
+| Laplace | `laplace` | Attacker | RL | Iron | ⚠ | (신규 2026-07-16, base, 얇음) Hero Bomber: 마지막 탄 81.66% "additional" 넉(gap #1 last_bullet)·Laplace Buster First Damage 897.6%를 버스트 넉으로 모델. 보류(킷 대부분): 무기변형(5초 Buster 모드 — 인게임 실측 없음, `laplace-signature`와 달리 미해결), Hero Vision(Pattern B 감쇠 스택)+맥스스택 true dmg, 파츠딜 |
+| Laplace (시그니처, 별도 slug) | `laplace-signature` | Attacker | RL | Iron | ⚠ | (신규 2026-07-19, 시그니처/듀얼슬롯) base와 별도 roster 엔트리(Fienn 결정, 2026-07-12). Fienn 인게임 실측(2026-07-19): 변형 10초 창 = First 1회 + 노멀 93회. Laplace Buster First Damage 1455.72%를 버스트 넉으로, Normal Damage 22.2%×93틱을 `weapon_mode_schedules` 세그먼트(rate_of_fire=93/10)로 모델 — Hero Vision 상시 맥스스택 가정(Fienn 승인, red-hood Glaring 정상상태 선례)으로 틱 전부 **true** 타입 고정. 틱마다 +11.9% true 추가히트를 동일 93틱 케이던스의 `scheduled_nukes`(`build_buster_scheduled_nukes`)로 방출 — 두 경로 모두 `context.burst_times` 앵커라 케이던스 일치. Hero Bomber는 base의 `last_bullet`과 달리 풀차지마다 발동(`every_outside_full_burst`) — 변형 창(=자기 버스트가 여는 FB 창) 중엔 풀차지 자체가 없어 인게임과 정확히 일치. 보류: Hero Vision의 맥스스택 게이트 자체(카운터 미모델, 위 가정으로 우회)·파츠딜 14.78%·Pierce 속성·base의 5초 변형(별도 슬러그, 미해결로 남음) |
 | Dorothy: Serendipity | `dorothy-serendipity` | Attacker | SG | Water | ⚠ | (신규 2026-07-16, **Phase S 소비자**) Radiant Wings: 자 Pierce+55.08% 영구·자ATK+75.24%(FB 중)·False Salvation 버스트(버프전용): 자ATK+88.12% + **자 Attack Speed+65% 15초**(Phase S 발사속도 모델). 보류: 펠릿, Hit Rate, Flash 펠릿카운터 트리거 |
 | Soda: Twinkling Bunny | `soda-twinkling-bunny` | Attacker | SG | Iron | ⚠ | eb3 Pattern-A. Golden Chip 자원(캡50·전투시작 만캡·풀버스트 중 노멀3회마다 +1=`per_shot_every_during_full_burst`, 자신의 Critical Damage 스택 +1.32%/스택)+Onward Soda! 버스트(628.7% 넉 + 17로 **reset** + 리셋前 스택≥30 게이팅 ATK+65.25%/15s=`resource_gated_buffs`)+**Lucky Golden Chip 공동발동 버프(풀버스트 중 노멀3회마다 자신+최고ATK아군 Attack Damage+10.51%/2초 refresh, `per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15)** 모델됨. Beginner's Rewards 전체(캐스터별 FB 지속시간 연장 개념 부재)·Hit Rate(inert)만 보류 |
 
