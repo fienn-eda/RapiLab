@@ -481,20 +481,27 @@
       `KNOWN_UNMAPPED`는 이제 빈 집합 — 신규 인코딩은 면제 대신 id를 조회함.
       **잔여:** ③ SSR-애장품 자동판정으로 `SIGNATURE_OWNED` 손 갱신 제거(애장품 해금 니케는
       계속 추가됨) · ④ 신규 니케 출시 시 스냅샷 재덤프 필요(미등재 id는 가드가 실패시킴).
-- [ ] **Stage 1: 정찰** — Fienn의 로그인된 브라우저가 자격증명 없는 유일한 정찰 표면
-      (dotgg 선례는 재사용 불가: 그쪽은 무인증이라 헤드리스가 통했다). export 버튼/공유 URL
-      유무만으로 사다리 대부분이 붕괴할 수 있음.
-      - **단서(2026-07-18): edenpj식 OOB 소유권 증명 패턴.** 목표 재확인 = **일반 니케
-        유저 대상 몇-클릭 sync**(Fienn). 참고 [edenpj.com/setting](https://www.edenpj.com/setting):
-        블라블라 ID + ShiftyPad URL 입력 → 서버가 인증코드 생성 → 유저가 **게임 프로필
-        자기소개란에 붙여넣기** → 서버가 프로필에서 코드 확인(소유권 증명) → 로스터 읽음.
-        **자격증명 저장·확장·로컬 스크립트 전부 없음** → Phase 7 원칙과 부합. 함의: CDP
-        수집기·ExiaInvasion 둘 다 dev/interim 도구지 일반 유저 경로 아님. **핵심 검증
-        사항**: edenpj가 "ShiftyPad URL"을 받는다는 건 **ShiftyPad에 공개 공유 빌드
-        URL이 있다**는 뜻일 수 있고, 사실이면 로드맵의 "공개 질의 불가" 가정이 뒤집혀
-        sync가 크게 단순해진다. [nikkemimir.xyz](https://nikkemimir.xyz/)도 /sync 보유
-        (SPA라 미해독, 착수 시 재정찰). resource_id 맵은 sync 경로 무관하게 재사용됨
-        (blablalink ID가 canonical).
+- [x] **Stage 1: 정찰 — 완료 (2026-07-19). "공개 질의 불가" 가정이 뒤집혔다.**
+      **핵심 결과: ShiftyPad 공개 공유 URL만으로 타 유저 로스터를 읽을 수 있다.**
+      실측 검증(Fienn 두 번째 계정 B, 공개 상태, 메인 세션 A에서 조회):
+      - 공유 URL `blablalink.com/shiftyspad?uid=<base64>`의 uid = `<shiftypad_area>-<intl_open_id>`
+        (예: `29080-8223...`). **앞자리 29080은 ShiftyPad 리전 id지 API의 `nikke_area_id`가
+        아니다** — API area는 **81**(인터내셔널 서버; A·B 모두 81, 검색 예시 uid도 29080).
+        이 함정으로 첫 조회가 `param invalid` 났다가, area 81로 고치니 통과.
+      - **크로스계정 3콜 전부 `code 0`:** `GetUserCharacters(B)` 182보유 ·
+        `GetUserCharacterDetails(B)` 육성입력(`arm_equip_*`·`attractive_lv`·`harmony_cube_*`
+        =계산기 소비 필드) · `GetUserProfileOutpostInfo(B)` 기업연구 9행. **B2 계산기(159/159)와
+        합치면 페이지 스크래핑 0회로 전 로스터 레벨400 ATK 산출** = 동기화 데이터 파이프라인 성립.
+      - **무인증(세션 없는 curl)은 `game not login`으로 거부** — 진짜 공개 API는 아니다.
+        읽으려면 **호출자 측 유효 세션**이 필요(대상 유저 자격증명은 불필요).
+      함의: edenpj식 OOB 소유권 증명(프로필에 코드 붙여넣기) **불필요** — 유저가 방패
+      토글로 로스터 공개 + 공유 URL 제공이면 끝. resource_id 맵·계산기 그대로 재사용.
+      **미해결(설계 단계로 이관):** ① 대상이 비공개(방패 off)면 조회가 막히는지 — B는 공개라
+      "공개는 읽힘"만 확인됨(비공개 게이팅이 곧 동의 메커니즘일 것) · ② **호출자 세션을
+      누가 공급하나** — 호스티드 서비스면 서비스용 blablalink 계정 세션이 필요(대상이 아닌
+      *운영자* 자격증명 저장 문제로, 별도 결정 필요) · ③ 타 리전 유저의 `nikke_area_id`
+      발견/기본값 · ④ edenpj.com은 이제 완전히 죽음(502) — "서드파티는 죽는다" 경고 실현,
+      nikkemimir.xyz는 생존하나 `/sync` 미해독(SPA).
 - **원칙:** 자격증명 저장 금지(토큰은 Fienn 공급) · 인증이 httpOnly 쿠키뿐이면 세션
   자동화는 거부하고 반수동 브리지로 강등 · **폴백은 언제나 "기존 수동 폼"**(서드파티는
   죽는다 — dotgg가 두 달 전에 그랬다).
