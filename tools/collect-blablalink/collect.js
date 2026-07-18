@@ -156,6 +156,9 @@ const trimDirectory = (dir) =>
       // Base ATK/HP are a function of (level, class), so the class is what the
       // stat calculator looks up - it cannot be derived from the other fields.
       class: d.class,
+      // Corporation research is ranked per account and adds flat ATK to that
+      // corporation's units, so a unit's corporation is part of its stat inputs.
+      corporation: d.corporation,
     }))
     .sort((a, b) => a.resource_id - b.resource_id)
 

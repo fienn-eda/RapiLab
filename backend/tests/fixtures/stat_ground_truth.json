@@ -1,8 +1,20 @@
 {
+  "account_research": {
+    "1001": 310,
+    "1101": 176,
+    "1102": 182,
+    "1103": 167,
+    "1201": 170,
+    "1202": 170,
+    "1203": 170,
+    "1204": 190,
+    "1205": 164
+  },
   "units": [
     {
       "name_en": "2B",
       "class": "Defender",
+      "corporation": "ABNORMAL",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -39,6 +51,7 @@
     {
       "name_en": "A2",
       "class": "Attacker",
+      "corporation": "ABNORMAL",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -75,6 +88,7 @@
     {
       "name_en": "Ada",
       "class": "Attacker",
+      "corporation": "ABNORMAL",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -111,6 +125,7 @@
     {
       "name_en": "Ade",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 1,
       "grade": 2,
       "core": 0,
@@ -147,6 +162,7 @@
     {
       "name_en": "Ade: Agent Bunny",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 2,
       "core": 0,
@@ -183,6 +199,7 @@
     {
       "name_en": "Admi",
       "class": "Supporter",
+      "corporation": "MISSILIS",
       "level": 1,
       "grade": 3,
       "core": 0,
@@ -219,6 +236,7 @@
     {
       "name_en": "Alice",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 7,
@@ -255,6 +273,7 @@
     {
       "name_en": "Alice: Wonderland Bunny",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -291,6 +310,7 @@
     {
       "name_en": "Anchor: Innocent Maid",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -327,6 +347,7 @@
     {
       "name_en": "Anis: Sparkling Summer",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -363,6 +384,7 @@
     {
       "name_en": "Anis: Star",
       "class": "Defender",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -399,6 +421,7 @@
     {
       "name_en": "Arcana",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -435,6 +458,7 @@
     {
       "name_en": "Arcana: Fortune Mate",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -471,6 +495,7 @@
     {
       "name_en": "Aria",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -507,6 +532,7 @@
     {
       "name_en": "Ark Ranger Black",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -543,6 +569,7 @@
     {
       "name_en": "Asuka",
       "class": "Attacker",
+      "corporation": "ABNORMAL",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -579,6 +606,7 @@
     {
       "name_en": "Asuka: WILLE",
       "class": "Attacker",
+      "corporation": "ABNORMAL",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -615,6 +643,7 @@
     {
       "name_en": "Avistar",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 1,
       "grade": 1,
       "core": 0,
@@ -651,6 +680,7 @@
     {
       "name_en": "Bay",
       "class": "Defender",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -687,6 +717,7 @@
     {
       "name_en": "Biscuit",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -723,6 +754,7 @@
     {
       "name_en": "Blanc",
       "class": "Defender",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 2,
       "core": 0,
@@ -759,6 +791,7 @@
     {
       "name_en": "Bready",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -795,6 +828,7 @@
     {
       "name_en": "Brid",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 2,
@@ -831,6 +865,7 @@
     {
       "name_en": "Brid: Silent Track",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -867,6 +902,7 @@
     {
       "name_en": "Centi",
       "class": "Defender",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 5,
@@ -903,6 +939,7 @@
     {
       "name_en": "Chime",
       "class": "Supporter",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -939,6 +976,7 @@
     {
       "name_en": "Chisato",
       "class": "Attacker",
+      "corporation": "ABNORMAL",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -975,6 +1013,7 @@
     {
       "name_en": "Cinderella",
       "class": "Defender",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 3,
@@ -1011,6 +1050,7 @@
     {
       "name_en": "Cinderella: Crystal Wave",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -1047,6 +1087,7 @@
     {
       "name_en": "Clay",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -1083,6 +1124,7 @@
     {
       "name_en": "Cocoa",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -1119,6 +1161,7 @@
     {
       "name_en": "Crow",
       "class": "Defender",
+      "corporation": "MISSILIS",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -1155,6 +1198,7 @@
     {
       "name_en": "Crown",
       "class": "Defender",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 6,
@@ -1191,6 +1235,7 @@
     {
       "name_en": "Crust",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -1227,6 +1272,7 @@
     {
       "name_en": "D",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -1263,6 +1309,7 @@
     {
       "name_en": "D: Killer Wife",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 6,
@@ -1299,6 +1346,7 @@
     {
       "name_en": "Delta: Ninja Thief",
       "class": "Defender",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -1335,6 +1383,7 @@
     {
       "name_en": "Diesel",
       "class": "Defender",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -1371,6 +1420,7 @@
     {
       "name_en": "Diesel: Winter Sweets",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -1407,6 +1457,7 @@
     {
       "name_en": "Dolla",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -1443,6 +1494,7 @@
     {
       "name_en": "Dorothy",
       "class": "Supporter",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -1479,6 +1531,7 @@
     {
       "name_en": "Dorothy: Serendipity",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -1515,6 +1568,7 @@
     {
       "name_en": "Drake",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 7,
@@ -1551,6 +1605,7 @@
     {
       "name_en": "E.H.",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -1587,6 +1642,7 @@
     {
       "name_en": "EVE",
       "class": "Attacker",
+      "corporation": "ABNORMAL",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -1623,6 +1679,7 @@
     {
       "name_en": "Ein",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -1659,6 +1716,7 @@
     {
       "name_en": "Elegg",
       "class": "Supporter",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 3,
@@ -1695,6 +1753,7 @@
     {
       "name_en": "Elegg: Boom and Shock",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -1731,6 +1790,7 @@
     {
       "name_en": "Emilia",
       "class": "Attacker",
+      "corporation": "ABNORMAL",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -1767,6 +1827,7 @@
     {
       "name_en": "Emma",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -1803,6 +1864,7 @@
     {
       "name_en": "Emma: Tactical Upgrade",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -1839,6 +1901,7 @@
     {
       "name_en": "Epinel",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -1875,6 +1938,7 @@
     {
       "name_en": "Eunhwa",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 1,
       "grade": 3,
       "core": 0,
@@ -1911,6 +1975,7 @@
     {
       "name_en": "Eunhwa: Tactical Upgrade",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -1947,6 +2012,7 @@
     {
       "name_en": "Exia",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -1983,6 +2049,7 @@
     {
       "name_en": "Flora",
       "class": "Supporter",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -2019,6 +2086,7 @@
     {
       "name_en": "Folkwang",
       "class": "Defender",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -2055,6 +2123,7 @@
     {
       "name_en": "Frima",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -2091,6 +2160,7 @@
     {
       "name_en": "Grave",
       "class": "Supporter",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -2127,6 +2197,7 @@
     {
       "name_en": "Guillotine",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -2163,6 +2234,7 @@
     {
       "name_en": "Guillotine: Winter Slayer",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -2199,6 +2271,7 @@
     {
       "name_en": "Guilty",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -2235,6 +2308,7 @@
     {
       "name_en": "Harran",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -2271,6 +2345,7 @@
     {
       "name_en": "Helm",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 4,
@@ -2307,6 +2382,7 @@
     {
       "name_en": "Helm: Aquamarine",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -2343,6 +2419,7 @@
     {
       "name_en": "Isabel",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -2379,6 +2456,7 @@
     {
       "name_en": "Jackal",
       "class": "Defender",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -2415,6 +2493,7 @@
     {
       "name_en": "Julia",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -2451,6 +2530,7 @@
     {
       "name_en": "K",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 2,
       "core": 0,
@@ -2487,6 +2567,7 @@
     {
       "name_en": "Kilo",
       "class": "Defender",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -2523,6 +2604,7 @@
     {
       "name_en": "Label",
       "class": "Defender",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -2559,6 +2641,7 @@
     {
       "name_en": "Laplace",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 3,
@@ -2595,6 +2678,7 @@
     {
       "name_en": "Leona",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -2631,6 +2715,7 @@
     {
       "name_en": "Liberalio",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -2667,6 +2752,7 @@
     {
       "name_en": "Liter",
       "class": "Supporter",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 7,
@@ -2703,6 +2789,7 @@
     {
       "name_en": "Little Mermaid",
       "class": "Supporter",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 2,
       "core": 0,
@@ -2739,6 +2826,7 @@
     {
       "name_en": "Ludmilla",
       "class": "Defender",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -2775,6 +2863,7 @@
     {
       "name_en": "Ludmilla: Winter Owner",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -2811,6 +2900,7 @@
     {
       "name_en": "Maiden",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -2847,6 +2937,7 @@
     {
       "name_en": "Maiden: Ice Rose",
       "class": "Defender",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -2883,6 +2974,7 @@
     {
       "name_en": "Mana",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -2919,6 +3011,7 @@
     {
       "name_en": "Marciana",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 2,
@@ -2955,6 +3048,7 @@
     {
       "name_en": "Marciana: Marine Study",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -2991,6 +3085,7 @@
     {
       "name_en": "Mari",
       "class": "Supporter",
+      "corporation": "ABNORMAL",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -3027,6 +3122,7 @@
     {
       "name_en": "Mary",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -3063,6 +3159,7 @@
     {
       "name_en": "Mary: Bay Goddess",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -3099,6 +3196,7 @@
     {
       "name_en": "Mast",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -3135,6 +3233,7 @@
     {
       "name_en": "Mast: Romantic Maid",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 4,
@@ -3171,6 +3270,7 @@
     {
       "name_en": "Maxwell",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 7,
@@ -3207,6 +3307,7 @@
     {
       "name_en": "Mica: Snow Buddy",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -3243,6 +3344,7 @@
     {
       "name_en": "Mihara: Bonding Chain",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -3279,6 +3381,7 @@
     {
       "name_en": "Milk",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -3315,6 +3418,7 @@
     {
       "name_en": "Milk: Blooming Bunny",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 5,
@@ -3351,6 +3455,7 @@
     {
       "name_en": "Mint",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -3387,6 +3492,7 @@
     {
       "name_en": "Miranda",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 3,
@@ -3423,6 +3529,7 @@
     {
       "name_en": "Modernia",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 2,
@@ -3459,6 +3566,7 @@
     {
       "name_en": "Moran",
       "class": "Defender",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 4,
@@ -3495,6 +3603,7 @@
     {
       "name_en": "Mori",
       "class": "Defender",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -3531,6 +3640,7 @@
     {
       "name_en": "Naga",
       "class": "Supporter",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 7,
@@ -3567,6 +3677,7 @@
     {
       "name_en": "Nayuta",
       "class": "Supporter",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -3603,6 +3714,7 @@
     {
       "name_en": "Neon: Blue Ocean",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -3639,6 +3751,7 @@
     {
       "name_en": "Neon: Vision Eye",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -3675,6 +3788,7 @@
     {
       "name_en": "Nero",
       "class": "Defender",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 2,
@@ -3711,6 +3825,7 @@
     {
       "name_en": "Nihilister",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -3747,6 +3862,7 @@
     {
       "name_en": "Noah",
       "class": "Defender",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 2,
@@ -3783,6 +3899,7 @@
     {
       "name_en": "Noir",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 3,
@@ -3819,6 +3936,7 @@
     {
       "name_en": "Noise",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 4,
@@ -3855,6 +3973,7 @@
     {
       "name_en": "Novel",
       "class": "Defender",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -3891,6 +4010,7 @@
     {
       "name_en": "Pepper",
       "class": "Supporter",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -3927,6 +4047,7 @@
     {
       "name_en": "Phantom",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 2,
@@ -3963,6 +4084,7 @@
     {
       "name_en": "Poli",
       "class": "Defender",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 2,
@@ -3999,6 +4121,7 @@
     {
       "name_en": "Prika",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -4035,6 +4158,7 @@
     {
       "name_en": "Privaty",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 3,
@@ -4071,6 +4195,7 @@
     {
       "name_en": "Privaty: Unkind Maid",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 3,
@@ -4107,6 +4232,7 @@
     {
       "name_en": "Quency",
       "class": "Supporter",
+      "corporation": "MISSILIS",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -4143,6 +4269,7 @@
     {
       "name_en": "Quency: Escape Queen",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 4,
@@ -4179,6 +4306,7 @@
     {
       "name_en": "Quiry",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -4215,6 +4343,7 @@
     {
       "name_en": "Rapi: Red Hood",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 6,
@@ -4251,6 +4380,7 @@
     {
       "name_en": "Rapunzel",
       "class": "Supporter",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -4287,6 +4417,7 @@
     {
       "name_en": "Rapunzel: Pure Grace",
       "class": "Defender",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -4323,6 +4454,7 @@
     {
       "name_en": "Raven",
       "class": "Attacker",
+      "corporation": "ABNORMAL",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -4359,6 +4491,7 @@
     {
       "name_en": "Red Hood",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 3,
@@ -4395,6 +4528,7 @@
     {
       "name_en": "Rei",
       "class": "Defender",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -4431,6 +4565,7 @@
     {
       "name_en": "Rei",
       "class": "Attacker",
+      "corporation": "ABNORMAL",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -4467,6 +4602,7 @@
     {
       "name_en": "Rei (Tentative Name)",
       "class": "Attacker",
+      "corporation": "ABNORMAL",
       "level": 1,
       "grade": 1,
       "core": 0,
@@ -4503,6 +4639,7 @@
     {
       "name_en": "Rem",
       "class": "Supporter",
+      "corporation": "ABNORMAL",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -4539,6 +4676,7 @@
     {
       "name_en": "Rosanna",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -4575,6 +4713,7 @@
     {
       "name_en": "Rosanna: Chic Ocean",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -4611,6 +4750,7 @@
     {
       "name_en": "Rouge",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 2,
@@ -4647,6 +4787,7 @@
     {
       "name_en": "Rumani",
       "class": "Defender",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 2,
       "core": 0,
@@ -4683,6 +4824,7 @@
     {
       "name_en": "Rupee",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -4719,6 +4861,7 @@
     {
       "name_en": "Sakura",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 2,
@@ -4755,6 +4898,7 @@
     {
       "name_en": "Sakura: Bloom in Summer",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -4791,6 +4935,7 @@
     {
       "name_en": "Scarlet",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 1,
@@ -4827,6 +4972,7 @@
     {
       "name_en": "Scarlet: Black Shadow",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 4,
@@ -4863,6 +5009,7 @@
     {
       "name_en": "Signal",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 1,
       "grade": 0,
       "core": 0,
@@ -4899,6 +5046,7 @@
     {
       "name_en": "Sin",
       "class": "Defender",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -4935,6 +5083,7 @@
     {
       "name_en": "Snow White",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -4971,6 +5120,7 @@
     {
       "name_en": "Snow White: Heavy Arms",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 3,
       "core": 4,
@@ -5007,6 +5157,7 @@
     {
       "name_en": "Snow White: Innocent Days",
       "class": "Attacker",
+      "corporation": "PILGRIM",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -5043,6 +5194,7 @@
     {
       "name_en": "Soda",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -5079,6 +5231,7 @@
     {
       "name_en": "Soda: Twinkling Bunny",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 3,
@@ -5115,6 +5268,7 @@
     {
       "name_en": "Soline",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 2,
@@ -5151,6 +5305,7 @@
     {
       "name_en": "Soline: Frost Ticket",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -5187,6 +5342,7 @@
     {
       "name_en": "Sora",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -5223,6 +5379,7 @@
     {
       "name_en": "Sugar",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -5259,6 +5416,7 @@
     {
       "name_en": "Takina",
       "class": "Supporter",
+      "corporation": "ABNORMAL",
       "level": 663,
       "grade": 0,
       "core": 0,
@@ -5295,6 +5453,7 @@
     {
       "name_en": "Tia",
       "class": "Defender",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 4,
@@ -5331,6 +5490,7 @@
     {
       "name_en": "Tove",
       "class": "Supporter",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 7,
@@ -5367,6 +5527,7 @@
     {
       "name_en": "Trina",
       "class": "Supporter",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -5403,6 +5564,7 @@
     {
       "name_en": "Trony",
       "class": "Attacker",
+      "corporation": "MISSILIS",
       "level": 663,
       "grade": 3,
       "core": 7,
@@ -5439,6 +5601,7 @@
     {
       "name_en": "Velvet",
       "class": "Supporter",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 2,
       "core": 0,
@@ -5475,6 +5638,7 @@
     {
       "name_en": "Vesti",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 1,
       "grade": 3,
       "core": 3,
@@ -5511,6 +5675,7 @@
     {
       "name_en": "Vesti: Tactical Upgrade",
       "class": "Attacker",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 2,
       "core": 0,
@@ -5547,6 +5712,7 @@
     {
       "name_en": "Viper",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 3,
       "core": 0,
@@ -5583,6 +5749,7 @@
     {
       "name_en": "Volume",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 663,
       "grade": 1,
       "core": 0,
@@ -5619,6 +5786,7 @@
     {
       "name_en": "Yulha",
       "class": "Attacker",
+      "corporation": "TETRA",
       "level": 1,
       "grade": 1,
       "core": 0,
@@ -5655,6 +5823,7 @@
     {
       "name_en": "Yuni",
       "class": "Defender",
+      "corporation": "MISSILIS",
       "level": 1,
       "grade": 2,
       "core": 0,
@@ -5691,6 +5860,7 @@
     {
       "name_en": "Zwei",
       "class": "Supporter",
+      "corporation": "ELYSION",
       "level": 663,
       "grade": 3,
       "core": 5,

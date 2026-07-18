@@ -10,6 +10,8 @@ from pathlib import Path
 import pytest
 
 from app.stat_assembly import (
+    affinity_atk,
+    corporation_atk,
     breakthrough_multiplier,
     base_atk,
     assemble_atk,
@@ -93,6 +95,11 @@ def ground_truth():
     return json.loads(FIXTURE.read_text(encoding="utf-8"))["units"]
 
 
+@pytest.fixture(scope="module")
+def ground_truth_ranks():
+    return json.loads(FIXTURE.read_text(encoding="utf-8"))["account_research"]
+
+
 def test_ground_truth_spans_two_levels(ground_truth):
     # The whole point of the fixture: one level cannot separate a base-scaled
     # term from a flat one, so a single-level fixture would silently pass a
@@ -142,3 +149,54 @@ def test_affinity_does_not_enter_the_multiplier(tables, ground_truth):
         assert abs(solved - breakthrough_multiplier(u["grade"], u["core"])) <= 1e-4
     # The claim is only meaningful if some group actually varies in affinity.
     assert any(len(v) > 1 for v in groups.values()), "no (grade,core) group varied in affinity"
+
+
+# --- flat term: affinity + corporation research --------------------------------
+
+
+def test_affinity_atk_is_flat_not_a_percentage(tables):
+    # The in-game popup shows 2340 ATK at affinity rank 40 for an Attacker -
+    # the table cell verbatim. Reading it as 23.4% is the misreading this pins.
+    assert affinity_atk(tables, "Attacker", 40) == 2340
+    assert affinity_atk(tables, "Supporter", 30) == 1367
+    assert affinity_atk(tables, "Defender", 40) == 1560
+    assert affinity_atk(tables, "Attacker", 1) == 0
+
+
+def test_corporation_atk_is_per_rank(tables, ground_truth_ranks):
+    # Popup: 엘리시온 RANK 170 -> 4,250 ATK, i.e. 25 per rank rather than 25 total.
+    assert corporation_atk(tables, "ELYSION", ground_truth_ranks) == 4250
+    assert corporation_atk(tables, "PILGRIM", ground_truth_ranks) == 4750
+
+
+def test_flat_model_reproduces_every_ungeared_unit(tables, ground_truth, ground_truth_ranks):
+    """With no gear/cube/collectible, measured ATK must fall out of the model.
+
+    These units isolate the terms derived so far, so an error in affinity or
+    corporation cannot hide behind an unmodelled gear contribution.
+    """
+    exact, deviating = 0, []
+    for u in ground_truth:
+        if u["favorite_item_lv"] or u["harmony_cube_lv"] or max(e["tier"] for e in u["equip"]):
+            continue
+        predicted = assemble_atk(
+            tables,
+            character_class=u["class"],
+            level=400,
+            grade=u["grade"],
+            core=u["core"],
+            extra_flat=(
+                affinity_atk(tables, u["class"], u["attractive_lv"])
+                + corporation_atk(tables, u["corporation"], ground_truth_ranks)
+            ),
+        )
+        delta = u["measured"]["raid400_atk"] - predicted
+        if abs(delta) < 1.0:
+            exact += 1
+        else:
+            deviating.append((u["name_en"], round(delta, 1)))
+    assert exact >= 20, f"only {exact} ungeared units reproduce exactly"
+    # Three Attackers at affinity 30 come out 0.08-0.52% low and the cause is not
+    # yet known. Pinned by name so the list cannot quietly grow.
+    assert sorted(n for n, _ in deviating) == ["Brid", "Julia", "Trony"], deviating
+    assert all(abs(d) < 600 for _, d in deviating), deviating

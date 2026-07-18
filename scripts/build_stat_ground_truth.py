@@ -36,6 +36,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 ROSTER = ROOT / "tools" / "collect-blablalink" / "roster.json"
 DETAILS = ROOT / "tools" / "collect-blablalink" / "details.json"
+OUTPOST = ROOT / "tools" / "collect-blablalink" / "outpost.json"
 DIRECTORY = ROOT / "tools" / "collect-blablalink" / "nikke-directory.json"
 DEFAULT_OUT = ROOT / "backend" / "tests" / "fixtures" / "stat_ground_truth.json"
 
@@ -49,7 +50,7 @@ def main() -> int:
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = ap.parse_args()
 
-    for p in (ROSTER, DETAILS, DIRECTORY):
+    for p in (ROSTER, DETAILS, DIRECTORY, OUTPOST):
         if not p.exists():
             print(f"missing {p}", file=sys.stderr)
             return 1
@@ -73,6 +74,7 @@ def main() -> int:
             {
                 "name_en": entry["name_en"],
                 "class": entry["class"],
+                "corporation": entry["corporation"],
                 "level": o["lv"],
                 "grade": d["grade"],
                 "core": d["core"],
@@ -93,7 +95,9 @@ def main() -> int:
 
     units.sort(key=lambda x: x["name_en"])
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text(json.dumps({"units": units}, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    research = json.loads(OUTPOST.read_text(encoding="utf-8"))["recycle_room_researches"]
+    payload = {"account_research": {str(r["tid"]): r["lv"] for r in research}, "units": units}
+    args.out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     levels = sorted({u["level"] for u in units})
     print(f"wrote {args.out}: {len(units)} units, levels {levels}")
     return 0

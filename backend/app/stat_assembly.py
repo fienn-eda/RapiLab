@@ -69,6 +69,53 @@ def breakthrough_multiplier(grade: int, core: int) -> float:
     return (1 + BREAKTHROUGH_STEP * grade) * (1 + BREAKTHROUGH_STEP * core)
 
 
+# Which recycle-room research row ranks each corporation. Only PILGRIM and
+# ABNORMAL are individually confirmed (their ranks differ from the rest, and
+# PILGRIM units measure exactly rank*25); ELYSION / MISSILIS / TETRA all sit at
+# the same rank on the account measured, so their tids are indistinguishable so
+# far and are assigned in table order. Revisit if two of them ever diverge.
+CORPORATION_RESEARCH_TID = {
+    "ELYSION": "1201",
+    "MISSILIS": "1202",
+    "TETRA": "1203",
+    "PILGRIM": "1204",
+    "ABNORMAL": "1205",
+}
+
+_AFFINITY_ATK_COLUMN = {
+    "Attacker": "attacker_attack_rate",
+    "Supporter": "supporter_attack_rate",
+    "Defender": "defender_attack_rate",
+}
+
+
+def affinity_atk(tables: dict[str, Any], character_class: str, affinity_level: int) -> int:
+    """Flat ATK from affinity rank.
+
+    The table column is named `..._rate` but holds a flat value, confirmed
+    against the in-game additional-stats popup (rank 40 Attacker shows 2340,
+    the cell verbatim). See capturedimages/README.md.
+    """
+    column = _AFFINITY_ATK_COLUMN[character_class]
+    for row in tables["affinity"]:
+        if row["attractive_level"] == affinity_level:
+            return row[column]
+    raise KeyError(f"no affinity row for level {affinity_level}")
+
+
+def corporation_atk(tables: dict[str, Any], corporation: str, research_ranks: dict[str, int]) -> int:
+    """Flat ATK from the account's corporation research rank.
+
+    Account-wide, not per unit: two otherwise identical units of different
+    corporations differ here. `research_ranks` maps research tid -> rank, as
+    returned by GetUserProfileOutpostInfo.recycle_room_researches.
+    """
+    tid = CORPORATION_RESEARCH_TID[corporation]
+    rank = research_ranks[tid]
+    per_rank = next(r["attack"] for r in tables["recycle_research"] if str(r["id"]) == tid)
+    return rank * per_rank
+
+
 def assemble_atk(
     tables: dict[str, Any],
     *,
