@@ -192,7 +192,7 @@ from app.skill_rules.takina_inoue import (
     build_suppression_initiated_rules,
 )
 from app.skill_rules.tove import build_tove_rules
-from app.skill_rules.velvet import build_bullets_of_love_per_shot_rules, build_velvet_rules
+from app.skill_rules.velvet import build_velvet_per_shot_rules, build_velvet_rules
 from app.skill_rules.privaty import (
     ak_missile_burst_percent,
     build_ak_missile_rules,
@@ -432,7 +432,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "laplace": lambda sv: build_hero_bomber_per_shot_rules(sv),
     "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),
     "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
-    "velvet": lambda sv: build_bullets_of_love_per_shot_rules(sv),
+    "velvet": lambda sv: build_velvet_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),
     "marciana-marine-study": lambda sv: build_marciana_per_shot_rules(sv),

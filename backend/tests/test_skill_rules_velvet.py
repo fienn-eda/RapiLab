@@ -2,6 +2,7 @@ from app.effects import EffectRegistry
 from app.skill_rules.velvet import (
     BULLETS_OF_LOVE_NUKE_SHOT_COUNT,
     build_bullets_of_love_per_shot_rules,
+    build_velvet_per_shot_rules,
     build_velvet_rules,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
@@ -13,6 +14,16 @@ PERFECT_EXECUTION = {
     "description_value_02": "10",     # deferred: its duration
     "description_value_03": "34.52",  # self Attack Damage %
     "description_value_04": "10",     # duration
+}
+STICKY_FINGERS = {
+    "description_value_01": "5",     # enemy ammo removed % (non-damage, not modeled)
+    "description_value_02": "6000",  # ammo pouch fill (non-constraint)
+    "description_value_03": "6000",  # ammo pouch cap
+    "description_value_04": "100",   # pouch rounds spent per proc (non-constraint)
+    "description_value_05": "30.5",  # self ATK %
+    "description_value_06": "3",     # its duration
+    "description_value_07": "30.5",  # self Attack Damage %
+    "description_value_08": "3",     # its duration
 }
 BULLETS_OF_LOVE = {
     "description_value_01": "300",    # ammo expend (non-constraint, not modeled)
@@ -85,6 +96,40 @@ def test_bullets_of_love_full_charge_grants_squad_atk_and_charge_damage():
     for rule in rules:
         rule.action(ctx, "velvet", 6.0, registry)
     assert round(registry.total_for("flat_atk", ALLY, now=6.0), 4) == round(0.252 * CASTER_ATK, 4)
+
+
+def _velvet_per_shot():
+    return build_velvet_per_shot_rules({
+        "bullets_of_love": BULLETS_OF_LOVE,
+        "sticky_fingers": STICKY_FINGERS,
+        "caster_atk": CASTER_ATK,
+    })
+
+
+def test_velvet_per_shot_includes_sticky_fingers_outside_full_burst():
+    entries = _velvet_per_shot()
+    assert len(entries) == 3  # two Bullets of Love entries + Sticky Fingers
+    threshold, mode, _ = entries[2]
+    # SR: every shot is a full charge, so N=1 outside the Full Burst window.
+    assert (threshold, mode) == (1, "every_outside_full_burst")
+
+
+def test_sticky_fingers_full_charge_refreshes_self_atk_and_attack_damage():
+    _, _, rules = _velvet_per_shot()[2]
+    ctx = make_context()
+    registry = EffectRegistry()
+    for rule in rules:
+        rule.action(ctx, "velvet", 5.0, registry)
+
+    assert round(registry.total_for("atk_percent", VELVET, now=5.0), 4) == 0.305
+    assert round(registry.total_for("attack_damage_up", VELVET, now=5.0), 4) == 0.305
+    assert registry.total_for("atk_percent", ALLY, now=5.0) == 0.0  # self-only
+    assert registry.total_for("atk_percent", VELVET, now=8.1) == 0.0  # 3s duration
+
+    # the next full charge refreshes, not stacks
+    for rule in rules:
+        rule.action(ctx, "velvet", 6.0, registry)
+    assert round(registry.total_for("atk_percent", VELVET, now=6.0), 4) == 0.305
 
 
 def test_bullets_of_love_50_normal_bullet_nukes_and_self_buffs():
