@@ -439,12 +439,31 @@
       디렉토리 CDN(resource_id↔name_code↔영문명) × `GetUserCharacters` 조인(SSR 필터). 자격증명 미저장
       (game_openid 쿠키는 읽기전용 API 재생만), 픽스처 정제(PII 0). spec/plan
       `docs/superpowers/{specs,plans}/2026-07-18-blablalink-stat-collector*`.
-      **잔여(후속):** 게임명↔인코딩-slug 간극 소수(Julia→julia-signature, base vs 변형 충돌 Soline/
-      Marciana, "Rei"×2) — roster.json 데이터는 정확(name_en/resource_id 보존), name_code 키잉으로 별도
-      해결 예정(→ RECIPE.md).
+      ~~**잔여(후속):** 게임명↔인코딩-slug 간극 소수 — name_code 키잉으로 별도 해결 예정.~~
+      → **해결됨 (2026-07-18, resource_id 권위 맵).** name_code가 아니라 **resource_id 키잉**으로
+      풀었다(roster.json이 이미 담고 있어 추가 수집 불필요). base vs 변형 충돌(Soline·Marciana)·
+      동명 유닛("Rei" 3개: 831 레이=`rei-ayanami` / 392 라이=별개 캐릭터 미인코딩 / 834 tentative)이
+      전부 해소. Drake/Julia의 base vs signature는 **resource_id가 같아 ID로 구분 불가**임이 밝혀져
+      신원(`RESOURCE_ID_TO_SLUG`→base)과 투자(`SIGNATURE_OWNED`)를 분리하는 구조로 해결.
+      백엔드 drift 테스트가 맵·dual-slot 페어를 `ENCODED_SLUGS`와 대조해 인코딩 확장 시 자동 감지.
+      spec/plan `docs/superpowers/{specs,plans}/2026-07-18-roster-resource-id-slug-map*`.
+      **잔여:** ① `jill-valentine`은 Fienn 미보유라 resource_id 미상(맵 공백, `KNOWN_UNMAPPED`) ·
+      ② 디렉토리 스냅샷 기반 맵 생성·검증(잘못된-but-유효 배정 차단, 다음 수집기 실행 때) ·
+      ③ SSR-애장품 자동판정으로 `SIGNATURE_OWNED` 손 갱신 제거(애장품 해금 니케는 계속 추가됨).
 - [ ] **Stage 1: 정찰** — Fienn의 로그인된 브라우저가 자격증명 없는 유일한 정찰 표면
       (dotgg 선례는 재사용 불가: 그쪽은 무인증이라 헤드리스가 통했다). export 버튼/공유 URL
       유무만으로 사다리 대부분이 붕괴할 수 있음.
+      - **단서(2026-07-18): edenpj식 OOB 소유권 증명 패턴.** 목표 재확인 = **일반 니케
+        유저 대상 몇-클릭 sync**(Fienn). 참고 [edenpj.com/setting](https://www.edenpj.com/setting):
+        블라블라 ID + ShiftyPad URL 입력 → 서버가 인증코드 생성 → 유저가 **게임 프로필
+        자기소개란에 붙여넣기** → 서버가 프로필에서 코드 확인(소유권 증명) → 로스터 읽음.
+        **자격증명 저장·확장·로컬 스크립트 전부 없음** → Phase 7 원칙과 부합. 함의: CDP
+        수집기·ExiaInvasion 둘 다 dev/interim 도구지 일반 유저 경로 아님. **핵심 검증
+        사항**: edenpj가 "ShiftyPad URL"을 받는다는 건 **ShiftyPad에 공개 공유 빌드
+        URL이 있다**는 뜻일 수 있고, 사실이면 로드맵의 "공개 질의 불가" 가정이 뒤집혀
+        sync가 크게 단순해진다. [nikkemimir.xyz](https://nikkemimir.xyz/)도 /sync 보유
+        (SPA라 미해독, 착수 시 재정찰). resource_id 맵은 sync 경로 무관하게 재사용됨
+        (blablalink ID가 canonical).
 - **원칙:** 자격증명 저장 금지(토큰은 Fienn 공급) · 인증이 httpOnly 쿠키뿐이면 세션
   자동화는 거부하고 반수동 브리지로 강등 · **폴백은 언제나 "기존 수동 폼"**(서드파티는
   죽는다 — dotgg가 두 달 전에 그랬다).

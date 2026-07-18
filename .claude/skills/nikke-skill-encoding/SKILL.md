@@ -94,6 +94,27 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    builder(s) and add a `_BUILDERS` entry
    `lambda sv: (build_<slug>_rules(sv), <burst_percent or None>)`.
 
+   **Expect `tests/test_resource_id_slug_map.py` to go red the moment you do
+   this.** That guard cross-checks `ENCODED_SLUGS` against the frontend's
+   `resource_id → slug` table (`frontend/src/lib/resourceIdSlugMap.ts`), so a
+   newly encoded slug with no entry there fails `test_every_encoded_slug_is_
+   reachable_except_known`. This is the guard working, not a broken test.
+   Resolve it one of two ways:
+   - **You know the unit's blablalink `resource_id`** (it appears in a collected
+     `roster.json`, i.e. someone owns it): add `<id>: '<slug>',` to the map with
+     a `// <name_en>` comment.
+   - **You do not know it** — the usual case, since the id is only knowable from
+     a roster where the unit is owned: add the slug to `KNOWN_UNMAPPED` in the
+     test, with a one-line reason. **Never guess a resource_id** (CLAUDE.md:
+     don't invent technical details); a wrong-but-valid id silently mis-maps a
+     real user's unit and the guard cannot catch it.
+
+   If the unit is a base/signature pair (`<slug>` **and** `<slug>-signature`
+   both encoded), `test_dual_slot_bases_match_encoded_pairs` also fails: add the
+   base to `DUAL_SLOT_BASES` in the same frontend file. The map itself must keep
+   pointing at the **base** slug — signature promotion is per-user investment and
+   lives in `SIGNATURE_OWNED`, never in the identity map.
+
 9. **Declare the skill-value manifest** so the roster loader can assemble the
    unit from local data files at any skill level: add a `SKILL_VALUE_MANIFESTS`
    dict at the top of the module (right after the imports) mapping each

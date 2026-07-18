@@ -1,11 +1,18 @@
 // Parses the blablalink collector's roster.json into editable NikkeDrafts.
 // raid400 (level 400, solo-raid baseline) stats go into hp/atk/def; actual
 // (real-level) stats go into the actual* fields for future union-raid use.
+// Slug comes from the resource_id identity map (+ signature promotion when the
+// Favorite Item is owned); unencoded owned units are kept with a raw-derived slug
+// (the backend excludes them from recommendation but they stay visible in the roster).
+// A unit with no resource_id at all (stale or hand-edited roster.json — the collector
+// always emits one) takes that same path: raw slug, reported as unsupported.
 
 import { makeEmptyDraft, type NikkeDraft } from '../types/nikkeDraft'
-import { resolveSlug } from './exiaImport'
+import { deriveSlug } from './exiaImport'
+import { resolveSlugForUnit } from './resourceIdSlugMap'
 
 interface RosterUnit {
+  resource_id?: number
   name_en: string
   raid400: { hp: number; atk: number; def: number }
   actual?: { hp: number; atk: number; def: number }
@@ -27,14 +34,17 @@ export const parseRosterJson = (
   }
   const drafts: NikkeDraft[] = []
   const warnings: string[] = []
+  const unsupported: string[] = []
   for (const u of data.units) {
     if (!u || !u.name_en || !u.raid400) {
       warnings.push('unit missing name_en/raid400')
       continue
     }
+    const mapped = resolveSlugForUnit(u.resource_id)
+    if (mapped === undefined) unsupported.push(u.name_en)
     drafts.push({
       ...makeEmptyDraft(),
-      character_slug: resolveSlug(u.name_en),
+      character_slug: mapped ?? deriveSlug(u.name_en),
       level: '400',
       core_level: '0',
       hp: String(u.raid400.hp),
@@ -58,6 +68,12 @@ export const parseRosterJson = (
         ? { name: u.pve_cube.name, level: String(u.pve_cube.level) }
         : { name: '', level: '' },
     })
+  }
+  if (unsupported.length > 0) {
+    warnings.push(
+      `${unsupported.length} owned units not yet supported (excluded from ` +
+        `recommendation): ${unsupported.join(', ')}`,
+    )
   }
   return { drafts, warnings }
 }

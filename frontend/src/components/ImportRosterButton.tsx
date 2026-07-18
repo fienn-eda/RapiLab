@@ -32,6 +32,9 @@ const summarise = (
 
 export function ImportRosterButton({ onImport }: ImportRosterButtonProps) {
   const [message, setMessage] = useState<string | null>(null)
+  // Collector-path warning lines (e.g. which owned units are not yet supported),
+  // shown verbatim so the unit names actually reach the user.
+  const [notes, setNotes] = useState<string[]>([])
   const [error, setError] = useState<string | null>(null)
 
   const handleChange = async (
@@ -43,6 +46,7 @@ export function ImportRosterButton({ onImport }: ImportRosterButtonProps) {
 
     setError(null)
     setMessage(null)
+    setNotes([])
 
     let raw: unknown
     try {
@@ -56,9 +60,8 @@ export function ImportRosterButton({ onImport }: ImportRosterButtonProps) {
       if (raw && typeof raw === 'object' && 'units' in raw) {
         const { drafts, warnings } = parseRosterJson(raw)
         const { added, updated } = onImport(drafts, 'collector')
-        const parts = [`${added} added`, `${updated} updated`]
-        if (warnings.length > 0) parts.push(`${warnings.length} skipped`)
-        setMessage(parts.join(', '))
+        setMessage(`${added} added, ${updated} updated`)
+        setNotes(warnings)
       } else {
         const { drafts, warnings } = parseExiaExport(raw)
         const { added, updated } = onImport(drafts, 'exia')
@@ -82,6 +85,11 @@ export function ImportRosterButton({ onImport }: ImportRosterButtonProps) {
         />
       </label>
       {message && <p className="import__message">{message}</p>}
+      {notes.map((note, i) => (
+        <p className="import__message" key={i}>
+          {note}
+        </p>
+      ))}
       {error && (
         <p className="import__error" role="alert">
           {error}

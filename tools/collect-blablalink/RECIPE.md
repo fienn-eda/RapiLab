@@ -74,19 +74,28 @@ Two IDs coexist: the game API uses `name_code` (Rapi = 5129); ShiftyPad's URL us
 Slugs come from the English name via Phase A `resolveSlug` (e.g. "Rapi: Red Hood" →
 `rapi-red-hood`).
 
-**Known slug limitation (E2E 2026-07-18, full 159-unit collection):** `resolveSlug`'s
-alias table was built for ExiaInvasion's *short* names, but the directory gives *full*
-names, so a few units mismatch the backend's encoded slugs and are silently excluded
-from recommendation:
-- A base unit and its variant collide when an alias maps the base to the variant's slug:
-  "Soline" + "Soline: Frost Ticket" both → `soline-frost-ticket`; likewise "Marciana".
-- Two units share a display name: both "Rei" → `rei-ayanami` (base vs tentative-name are
-  indistinguishable by name — needs `name_code`/`resource_id`).
-- The encoded slug carries info absent from the game name: game "Julia" → `julia`, but the
-  encoded character is `julia-signature`.
-The collected `roster.json` itself is correct (it stores the unambiguous `name_en` +
-`resource_id`); this is a downstream name→slug mapping gap. A robust fix keys encoded
-characters by `name_code` rather than name-derived slug — deferred as its own task.
+**Slug mapping — RESOLVED 2026-07-18 (this section previously described the gap as open).**
+The name→slug mismatches found in the 159-unit E2E (base-vs-variant collisions for
+Soline/Marciana, three units displaying as "Rei", Julia's base-vs-signature) are fixed.
+The fix keys by **`resource_id`**, not `name_code` as originally planned — `roster.json`
+already carries `resource_id`, so no extra collection was needed.
+
+Downstream owner: `frontend/src/lib/resourceIdSlugMap.ts` maps `resource_id → **base**
+encoded slug. **The collector needs no change for this** — it already emits the
+unambiguous `name_en` + `resource_id`, which is exactly what the mapping consumes.
+
+Two things worth knowing if you touch the collector's output shape:
+- **Keep emitting `resource_id` for every unit.** It is the mapping's only key; a unit
+  without one falls back to a raw name-derived slug and is reported as unsupported.
+- **`resource_id` cannot distinguish base from signature.** A unit with a Favorite Item
+  (애장품) shares ONE `resource_id` across both encoded forms — Drake is 101 either way —
+  so ownership lives in a separate `SIGNATURE_OWNED` set, not in the map. If this
+  collector ever starts capturing the **Collection tab** (it currently visits only
+  Equipment/Skill/Cube), the `favorite_rare` grade there is the intended signal for
+  populating that set automatically instead of by hand — see the design spec.
+
+Details: `docs/superpowers/specs/2026-07-18-roster-resource-id-slug-map-design.md`,
+`docs/decisions.md`.
 
 ## (e) Parser DOM structure (drives parse.js)
 
