@@ -92,3 +92,55 @@ def compare_unit(dotgg_data, lw_data, keys):
         if findings:
             drift[key] = findings
     return drift, warnings
+
+
+def refresh_lw(slugs, lw_dir, fetch_html):
+    """Re-fetch + re-parse lootandwaifus pages for the given slugs, writing
+    char_<slug>.html and char_<slug>.json into lw_dir (same layout the
+    collect workflow uses). A failed slug becomes a warning and is skipped -
+    its stale local files, if any, are left untouched. Returns warnings."""
+    lw_dir = Path(lw_dir)
+    warnings = []
+    for slug in sorted(set(slugs)):
+        try:
+            raw = fetch_html(slug)
+        except Exception as exc:
+            warnings.append(f"{slug}: fetch failed: {exc}")
+            continue
+        data, parse_warnings = parse_html(raw, slug)
+        warnings.extend(f"{slug}: {w}" for w in parse_warnings)
+        (lw_dir / f"char_{slug}.html").write_text(raw, encoding="utf-8")
+        (lw_dir / f"char_{slug}.json").write_text(
+            json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+    return warnings
+
+
+def run_check(manifests, lw_dir, data_dir, fetch_html=None):
+    """Compare each dotgg-source manifest against lootandwaifus data.
+    manifests: {slug: manifest}, pre-filtered to source == "dotgg".
+    data_dir: the data ROOT (contains dotgg/). If fetch_html is given, the
+    target lootandwaifus pages are refreshed first. Returns
+    ({slug: {"status", "drift", "warnings"}}, refresh_warnings)."""
+    from app.skill_values import load_character_data
+
+    lw_dir = Path(lw_dir)
+    refresh_warnings = []
+    if fetch_html is not None:
+        slugs = {m.get("data_slug", slug) for slug, m in manifests.items()}
+        refresh_warnings = refresh_lw(slugs, lw_dir, fetch_html)
+
+    results = {}
+    for slug, manifest in sorted(manifests.items()):
+        data_slug = manifest.get("data_slug", slug)
+        lw_path = lw_dir / f"char_{data_slug}.json"
+        if not lw_path.exists():
+            results[slug] = {"status": "WARN", "drift": {}, "warnings": [
+                f"no lootandwaifus JSON (char_{data_slug}.json)"]}
+            continue
+        dotgg_data = load_character_data("dotgg", data_slug, data_dir)
+        lw_data = json.loads(lw_path.read_text(encoding="utf-8"))
+        drift, warnings = compare_unit(dotgg_data, lw_data, manifest["keys"])
+        status = "DRIFT" if drift else ("WARN" if warnings else "OK")
+        results[slug] = {"status": status, "drift": drift,
+                         "warnings": warnings}
+    return results, refresh_warnings

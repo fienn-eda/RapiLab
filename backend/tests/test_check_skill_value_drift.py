@@ -89,3 +89,84 @@ def test_compare_unit_warns_on_level_count_mismatch():
                                          {"s1": ("skills", 0)})
     assert found == {}
     assert len(warnings) == 1 and "level count mismatch" in warnings[0]
+
+
+def _lw_page(name="Testy", values=("10.5", "20", "30")):
+    """Minimal HTML that parse_html reads warning-free: h1, character-info
+    alts, 3 skill titles, 10 level paragraphs each."""
+    info = ('<div id="character-info"><img alt="Fire"><img alt="AR">'
+            '<img alt="Attacker"><img alt="Burst 3"></div>')
+    blocks = []
+    for i, v in enumerate(values):
+        levels = "".join(
+            f'<p class="level-description" data-level="{n}">'
+            f"ATK up {v}% for 5 sec.</p>" for n in range(10))
+        blocks.append(f'<div class="skill-title-section"><h3>Skill {i}'
+                      f"</h3></div>{levels}")
+    return f"<h1>{name}</h1>{info}<div id=\"skills\">{''.join(blocks)}</div>"
+
+
+def test_refresh_lw_writes_html_and_json(tmp_path):
+    warnings = drift.refresh_lw(["testy"], tmp_path,
+                                lambda slug: _lw_page(name="Testy"))
+    assert warnings == []
+    assert (tmp_path / "char_testy.html").exists()
+    data = json.loads((tmp_path / "char_testy.json").read_text(encoding="utf-8"))
+    assert data["name"] == "Testy" and data["source"] == "lootandwaifus"
+    assert len(data["skills"][0]["levels"]) == 10
+
+
+def test_refresh_lw_fetch_failure_is_warning_not_crash(tmp_path):
+    def boom(slug):
+        raise RuntimeError("curl failed")
+    warnings = drift.refresh_lw(["testy"], tmp_path, boom)
+    assert len(warnings) == 1 and "testy" in warnings[0]
+    assert not (tmp_path / "char_testy.json").exists()
+
+
+def _data_root(tmp_path, dotgg_values, lw_values):
+    """data root with dotgg/char_x.json (url-field indexed) and
+    lootandwaifus/char_x.json for slug "x"."""
+    (tmp_path / "dotgg").mkdir(parents=True, exist_ok=True)
+    (tmp_path / "lootandwaifus").mkdir(parents=True, exist_ok=True)
+    dotgg_data, _ = _unit_data(dotgg_values)
+    dotgg_data["url"] = "x"
+    _, lw_data = _unit_data(lw_values)
+    (tmp_path / "dotgg" / "char_x.json").write_text(
+        json.dumps(dotgg_data), encoding="utf-8")
+    (tmp_path / "lootandwaifus" / "char_x.json").write_text(
+        json.dumps(lw_data), encoding="utf-8")
+    return tmp_path
+
+
+MANIFEST = {"x": {"source": "dotgg", "keys": {"s1": ("skills", 0)}}}
+
+
+def test_run_check_ok_and_drift(tmp_path):
+    root = _data_root(tmp_path, ["37.28"], ["37.28"])
+    results, refresh_warnings = drift.run_check(
+        MANIFEST, root / "lootandwaifus", root)
+    assert refresh_warnings == []
+    assert results["x"]["status"] == "OK"
+
+    drifted = _data_root(tmp_path / "b", ["37.28"], ["99.99"])
+    results, _ = drift.run_check(MANIFEST, drifted / "lootandwaifus", drifted)
+    assert results["x"]["status"] == "DRIFT"
+    assert results["x"]["drift"]["s1"][0][1] == ["37.28"]
+
+
+def test_run_check_missing_lw_json_is_warn(tmp_path):
+    root = _data_root(tmp_path, ["1"], ["1"])
+    (root / "lootandwaifus" / "char_x.json").unlink()
+    results, _ = drift.run_check(MANIFEST, root / "lootandwaifus", root)
+    assert results["x"]["status"] == "WARN"
+    assert "char_x.json" in results["x"]["warnings"][0]
+
+
+def test_run_check_refreshes_before_comparing(tmp_path):
+    root = _data_root(tmp_path, ["10.5"], ["99.99"])  # stale lw says 99.99
+    results, refresh_warnings = drift.run_check(
+        MANIFEST, root / "lootandwaifus", root,
+        fetch_html=lambda slug: _lw_page(values=("10.5", "2", "3")))
+    assert refresh_warnings == []
+    assert results["x"]["status"] == "OK"  # fresh fetch wins over stale file
