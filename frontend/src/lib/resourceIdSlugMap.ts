@@ -25,14 +25,16 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   73: 'brid-silent-track', // Brid: Silent Track
   74: 'soline-frost-ticket', // Soline: Frost Ticket (71 = base Soline, not encoded)
   82: 'liter', // Liter
-  100: 'laplace', // Laplace
+  100: 'laplace', // Laplace — dual-slot base; see SIGNATURE_OWNED
   101: 'drake', // Drake — dual-slot base; see SIGNATURE_OWNED
+  102: 'maxwell', // Maxwell
   150: 'julia', // Julia — dual-slot base; see SIGNATURE_OWNED
   170: 'privaty', // Privaty
   182: 'guillotine-winter-slayer', // Guillotine: Winter Slayer
   183: 'maiden-ice-rose', // Maiden: Ice Rose
   192: 'tove', // Tove
   194: 'ludmilla-winter-owner', // Ludmilla: Winter Owner
+  220: 'snow-white', // Snow White (224 = Snow White: Innocent Days, 471 = Snow White: Heavy Arms, neither encoded)
   223: 'nayuta', // Nayuta
   225: 'scarlet-black-shadow', // Scarlet: Black Shadow (222 = base Scarlet, not encoded)
   231: 'isabel', // Isabel
@@ -84,13 +86,14 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
 // SSR-favorite auto-detection pass (collector Collection tab -> favorite_rare) is meant
 // to populate this automatically instead of by hand.
 export const SIGNATURE_OWNED: ReadonlySet<number> = new Set([
+  100, // Laplace — Favorite Item owned (roadmap dual-slot note; transform measured on the signature build, Fienn 2026-07-19)
   101, // Drake — Favorite Item owned (Fienn, 2026-07-18)
 ])
 
 // Base slugs that have a separate "-signature" encoding. Only these can be promoted.
 // The backend drift test asserts this equals the encoded base/-signature pairs, so a
 // newly encoded dual-slot unit fails the suite until it is added here.
-export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set(['drake', 'julia'])
+export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set(['drake', 'julia', 'laplace'])
 
 // Single entry point: identity lookup, then signature promotion when owned.
 export const resolveSlugForUnit = (

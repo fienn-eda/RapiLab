@@ -306,3 +306,143 @@ def last_bullet_shot_times(
         rate_of_fire, max_ammo, reload_time, fight_duration,
         max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
     )
+
+
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class ShotRecord:
+    """One shot of a (possibly mode-switching) unit's timeline: its damage
+    parameters ride on the record because different segments fire different
+    profiles. damage_type None = derive from `weapon` (raid_simulator's
+    normal_attack_type); a segment profile may pin it (e.g. a transform whose
+    ticks are true damage)."""
+    time: float
+    weapon: str
+    damage_percent: float
+    extra_charge_bonus: float
+    is_first_bullet: bool
+    is_last_bullet: bool
+    damage_type: str | None = None
+
+
+def _base_shot_records(base, window_start, window_end,
+                       max_ammo_percent_at, reload_speed_percent_at,
+                       attack_speed_percent_at, charge_speed_percent_at):
+    """The base weapon firing over [window_start, window_end) - the same
+    arithmetic as generate_{charge,magazine}_shot_times (kept bit-identical so
+    a no-segment call reproduces the legacy timeline exactly), restarted with
+    a fresh magazine at window_start (the post-transform resume semantic,
+    Fienn 2026-07-18). A magazine cut short by window_end gets NO last-bullet
+    flag (it never actually emptied - same rule as the fight_duration cutoff)."""
+    records = []
+    if window_end <= window_start:
+        return records
+    weapon = base["weapon"]
+    if weapon in CHARGE_WEAPONS:
+        bonus = base["charge_damage_percent"] / 100 - 1
+        magazine_start = window_start
+        while magazine_start < window_end:
+            effective_charge = base["charge_time"] / (1 + charge_speed_percent_at(magazine_start))
+            magazine_size = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
+            last_shot_time = None
+            for i in range(magazine_size):
+                shot_time = magazine_start + effective_charge + i * effective_charge
+                if shot_time >= window_end:
+                    return records
+                records.append(ShotRecord(
+                    shot_time, weapon, base["damage_percent"], bonus,
+                    is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1)))
+                last_shot_time = shot_time
+            actual_reload = base["reload_time"] / (1 + reload_speed_percent_at(last_shot_time))
+            magazine_start = last_shot_time + actual_reload
+    else:
+        rate = rate_of_fire_for_weapon(weapon)
+        magazine_start = window_start
+        while magazine_start < window_end:
+            interval = 1.0 / (rate * (1 + attack_speed_percent_at(magazine_start)))
+            magazine_size = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
+            for i in range(magazine_size):
+                shot_time = magazine_start + i * interval
+                if shot_time >= window_end:
+                    return records
+                records.append(ShotRecord(
+                    shot_time, weapon, base["damage_percent"], 0.0,
+                    is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1)))
+            magazine_empty_at = magazine_start + magazine_size * interval
+            actual_reload = base["reload_time"] / (1 + reload_speed_percent_at(magazine_empty_at))
+            magazine_start = magazine_empty_at + actual_reload
+    return records
+
+
+def _segment_shot_records(seg, fight_duration, charge_speed_percent_at):
+    """Shots of one override window. Cadence: charge-style profiles
+    (charge_time) honor live charge-speed buffs; explicit rate_of_fire
+    profiles are measurement anchors and take NO cadence buffs (the measured
+    count already includes every in-game modifier). Segments never reload
+    (no v1 consumer needs it). Returns (records, segment_end): until_shots
+    windows end AT their last shot's time - the base weapon resumes at that
+    same instant with a fresh magazine. For a MAGAZINE base (AR/MG/SMG/SG)
+    that resume is itself a shot landing on that exact instant (round 0 of
+    the fresh magazine fires AT magazine_start, per `_base_shot_records`); a
+    CHARGE base (RL/SR) instead fires its first shot one charge-time later,
+    so only magazine bases coincide with the segment's final-shot time."""
+    profile = seg["profile"]
+    start = seg["start"]
+    if profile.get("charge_time"):
+        interval = profile["charge_time"] / (1 + charge_speed_percent_at(start))
+    else:
+        interval = 1.0 / profile["rate_of_fire"]
+    charge = profile.get("charge_damage_percent")
+    bonus = charge / 100 - 1 if charge is not None else 0.0
+    if "until_shots" in seg:
+        times = [start + k * interval for k in range(1, seg["until_shots"] + 1)]
+        seg_end = times[-1]
+    else:
+        seg_end = seg["end"]
+        times = []
+        k = 1
+        while start + k * interval < seg_end:
+            times.append(start + k * interval)
+            k += 1
+    records = [
+        ShotRecord(t, profile["weapon"], profile["damage_percent"], bonus,
+                   is_first_bullet=False, is_last_bullet=False,
+                   damage_type=profile.get("damage_type"))
+        for t in times if t < fight_duration
+    ]
+    return records, min(seg_end, fight_duration)
+
+
+def generate_segmented_shots(
+    base,
+    segments,
+    fight_duration,
+    max_ammo_percent_at=_zero,
+    reload_speed_percent_at=_zero,
+    attack_speed_percent_at=_zero,
+    charge_speed_percent_at=_zero,
+):
+    """Full shot-record timeline for a unit whose weapon profile changes
+    inside module-scheduled windows (weapon transforms - see
+    docs/superpowers/specs/2026-07-18-weapon-transform-design.md). With no
+    segments this reproduces generate_shot_times bit-for-bit (regression
+    anchor), plus first/last-bullet flags equal to the marker trios."""
+    records = []
+    cursor = 0.0
+    for seg in list(segments) + [None]:
+        if seg is None:
+            stretch_end = fight_duration
+        else:
+            if seg["start"] < cursor:
+                raise ValueError("weapon mode segments overlap or are unsorted")
+            stretch_end = min(seg["start"], fight_duration)
+        records.extend(_base_shot_records(
+            base, cursor, stretch_end, max_ammo_percent_at,
+            reload_speed_percent_at, attack_speed_percent_at, charge_speed_percent_at))
+        if seg is None or seg["start"] >= fight_duration:
+            break
+        seg_records, cursor = _segment_shot_records(seg, fight_duration, charge_speed_percent_at)
+        records.extend(seg_records)
+    return records

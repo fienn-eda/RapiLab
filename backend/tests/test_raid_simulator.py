@@ -2453,3 +2453,81 @@ def test_charge_speed_buff_increases_charge_shots():
     na_without = [e for e in without["damage_log"] if e["source"] == "normal_attack"]
     na_with = [e for e in with_cs["damage_log"] if e["source"] == "normal_attack"]
     assert na_without and len(na_with) > len(na_without)
+
+
+def _one_unit_deck():
+    return [{"slug": "gunner", "burst_tier": 3, "element": "Iron",
+             "cooldown": 40.0, "weapon": "SR"}]
+
+
+SR_WEAPON = {"weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
+             "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0}
+
+
+def test_weapon_mode_schedule_swaps_profile_inside_window():
+    def schedule(context, fight_duration):
+        return [{"start": 5.0, "until_shots": 1,
+                 "profile": {"weapon": "SR", "damage_percent": 499.5,
+                             "charge_damage_percent": 1000.0, "charge_time": 5.0}}]
+
+    kwargs = dict(
+        deck=_one_unit_deck(), rules_by_slug={}, burst_damage_percents={},
+        base_stats={"gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        weapon_stats={"gunner": SR_WEAPON},
+    )
+    plain = simulate_raid(**kwargs)
+    with_transform = simulate_raid(**kwargs, weapon_mode_schedules={"gunner": schedule})
+    # window (5-10s): base SR shots vanish and are replaced by one cannon shot at t=10.0
+    plain_shots = [e for e in plain["damage_log"] if e["source"] == "normal_attack"]
+    transformed = [e for e in with_transform["damage_log"] if e["source"] == "normal_attack"]
+    cannon = [e for e in transformed if e["time"] == 10.0]
+    assert len(cannon) == 1
+    assert not [e for e in transformed if 5.0 <= e["time"] < 10.0]
+    assert [e for e in plain_shots if 5.0 <= e["time"] < 10.0]
+    # cannon shot = 499.5% x (1 + 9.0 charge bonus) - compare ratio against a base shot at the same stats
+    base_shot = plain_shots[0]["damage"]          # 69.04% x (1+1.5)
+    assert cannon[0]["damage"] > base_shot * 20
+
+
+def test_per_shot_every_outside_full_burst_does_not_fire_on_a_shot_exactly_at_fb_end():
+    # Regression for the boundary leak (final-review Fix 1): a shot landing
+    # EXACTLY at a Full Burst window's end must count as "in" Full Burst, not
+    # "outside" it - mirrors laplace-signature's 93rd Buster tick nominally
+    # landing at burst+10.0 == FB end (backend/app/skill_rules/laplace_
+    # signature.py). gauge_charge_time=0.0 makes the single attacker's own
+    # burst (tier 3, all tiers present via make_deck()) fire at t=0.0, so the
+    # Full Burst window is exactly [0.0, 10.0) - and a weapon-mode segment
+    # anchored to that same burst time with rate_of_fire=1.0/until_shots=10
+    # lands its LAST tick at exactly 0.0 + 10*1.0 == 10.0 (exact float
+    # arithmetic, no rounding drift), the FB window's end instant.
+    def schedule(context, fight_duration):
+        return [
+            {"start": t, "until_shots": 10,
+             "profile": {"weapon": "RL", "damage_percent": 100.0, "rate_of_fire": 1.0}}
+            for t in context.burst_times.get("attacker", [])
+        ]
+
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=0.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": SR_WEAPON},
+        weapon_mode_schedules={"attacker": schedule},
+        per_shot_rules={"attacker": [(1, "every_outside_full_burst", [instant_nuke_pulse_rule("per_shot", 100.0)])]},
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    # The segment's 10 ticks (t=1..10) all fall inside [0.0, 10.0] - none of
+    # them, including the boundary tick at exactly t=10.0, fire the
+    # outside-Full-Burst rule.
+    assert not [e for e in ps if e["time"] <= 10.0]
+    # Positive control: the base weapon's resumed shots after the window
+    # (t>10.0) are genuinely outside Full Burst and DO fire the rule, so this
+    # isn't just "the rule never fires".
+    assert [e for e in ps if e["time"] > 10.0]

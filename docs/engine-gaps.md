@@ -5,7 +5,23 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-18 (**아군 총탄 카운터 해소 — 확장 불필요**: `scheduled_nukes`의
+- 마지막 갱신: 2026-07-19 (**weapon-mode segments v1 착지 — 무기변형 엔진
+  프리미티브 완료**: `attack_rate.generate_segmented_shots()`(세그먼트 단위 ShotRecord
+  타임라인 — 세그먼트 안에서 기본무기 침묵, 종료 시 새 매거진 즉시 재개,
+  `until_shots`/`end` 두 창 형태, `charge_time` 프로필은 라이브 차지속도 버프 반영,
+  명시적 `rate_of_fire` 프로필은 실측 앵커라 케이던스 버프 미적용, 프로필별 옵셔널
+  `damage_type`) + `simulate_raid(..., weapon_mode_schedules=)` 옵트인 배선 — **전
+  유닛이 세그먼트 생성기 경유**(빈 세그먼트 = 기존 출력과 비트 동일, SR_ODD 1.19초
+  차지 동치 테스트로 검증), first/last-bullet 마커도 레코드 플래그 기반으로 전환.
+  소비: snow-white·maxwell(신규, 버스트 단발 캐논 변형) · laplace-signature(신규
+  슬러그, 10초 창 First+93틱) · red-hood(기존 `scheduled_nukes` 근사에서 마이그레이션
+  — 정적 차감/상수 접기 제거, 덱 차지댐 버프가 변형샷에 곱해짐, 총딜 ~+1.6%). 남은
+  무기변형은 계획 2 백로그로 이월(cinderella-crystal-wave-mg/-snipe 듀얼슬러그·
+  rapi-red-hood FB창 노출·snow-white-heavy-arms 검증 패스, velvet/laplace base 변형은
+  보류 확정) — 상세는 "이미 만든 것" 및
+  `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`(상태: v1 구현 완료)
+  참고.
+  이전 갱신: 2026-07-18 (**아군 총탄 카운터 해소 — 확장 불필요**: `scheduled_nukes`의
   `context.shot_times`가 전 유닛 타임라인을 담고 있어 모듈 병합으로 스쿼드 합산
   카운터 표현 가능 — Little Mermaid Bubble Barrage ⚠→✅. 같은 날: **red-hood
   재검증 — Pattern B 아님, 확장 없이 인코딩 완료**.
@@ -613,6 +629,31 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
     `per_shot_rules` `"first_bullet"` 모드 + RoundGrant 2차 패스 리팩터(퍼샷 룰이
     기록한 그랜트도 변환) + `normal_attack_damage_multiplier`(노멀 전용 Final-ATK
     항). 소비: Jill Valentine(Magnum/Acid).
+- **weapon-mode segments (v1, 2026-07-19):** 무기 프로필 자체가 버스트/상태에 따라
+  바뀌는 유닛(무기 변형)을 위한 세그먼트 primitive. `attack_rate.
+  generate_segmented_shots()` — 유닛별 ShotRecord 타임라인을 세그먼트 단위로 생성
+  (세그먼트 안에서는 기본무기 발사를 침묵시키고, 종료 시 새 매거진으로 즉시 재개;
+  `until_shots`/`end` 두 창 형태; `charge_time` 프로필은 라이브 차지속도 버프를
+  그대로 반영, 명시적 `rate_of_fire` 프로필은 실측 앵커라 케이던스 버프 미적용;
+  프로필별 옵셔널 `damage_type`). `simulate_raid(..., weapon_mode_schedules=
+  {slug: schedule_fn})`로 옵트인 배선 — **전 유닛이 세그먼트 생성기를 경유**하도록
+  통일(빈 세그먼트 = 기존 출력과 비트 동일, SR_ODD 1.19초 차지 동치 테스트로 검증).
+  first/last-bullet 마커도 이제 레코드 플래그에서 나옴(raid_simulator가 낡은 마커
+  함수를 더 이상 호출하지 않음). 레지스트리 맵 `_WEAPON_MODE_SCHEDULE_BUILDERS` +
+  `get_weapon_mode_schedules` + roster 스레딩.
+  - **소비:** snow-white(신규, 버스트 5초 차지 499.5%×10 캐논, `until_shots: 1`) ·
+    maxwell(신규, 버스트 2초 차지 813.42%×3 캐논, `until_shots: 1`) ·
+    laplace-signature(신규 슬러그, 애장품 — 10초 고정 창, First 1회 + 노멀 93회,
+    Fienn 실측 2026-07-19) · red-hood(기존 ⚠ `scheduled_nukes` 근사에서 세그먼트로
+    마이그레이션 — 정적 차감/상수 접기 제거, 덱 차지댐 버프가 변형샷에 곱해짐,
+    총딜 ~+1.6%).
+  - **남은 백로그(계획 2)**: cinderella-crystal-wave-mg/-snipe 듀얼슬러그(세그먼트
+    비소비, 정적 프로필 2벌) · rapi-red-hood(`scheduled_nukes` context에 FB창 노출
+    필요, 세그먼트 대상 아님) · snow-white-heavy-arms 검증 패스(기존 per-shot +
+    multi-hit 프리미티브로 풀리는지) · velvet 변형딜(저가치 보류 확정) · laplace
+    base의 5초 변형(실측 없음, 보류).
+  - 상세: `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`
+    (상태: v1 구현 완료).
 
 ### 10. 창 한정 per-shot threshold 오버라이드 — ✅ 완료 (2026-07-18, `"sequence"` 모드)
 
@@ -697,7 +738,11 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   버프 + #9 reload 후 첫 발 마커~~ — ✅ 완료 (2026-07-16 Phase C 배치; 소비
   Ark·Arcana·Tove·Ada Wong(신규)·Little Mermaid·Maiden·Jill).
 2. **남은 방향:** #2 Pattern B(시간감쇠 게이지·변신, 일반 프리미티브 — Mihara류) ·
-   상태머신/무기변형(rapi-red-hood·cinderella-crystal-wave·laplace류) ·
+   상태머신(diesel-winter-sweets·bready·eve·milk-blooming-bunny[gap #11]) ·
+   ~~무기변형~~(**v1 완료, 2026-07-19** — `weapon_mode_schedules` 세그먼트 primitive,
+   snow-white·maxwell·laplace-signature·red-hood 소비; 잔여는 계획 2 백로그 —
+   cinderella-crystal-wave-mg/-snipe 듀얼슬러그·rapi-red-hood FB창 노출·
+   snow-white-heavy-arms 검증 패스, 상세는 위 "이미 만든 것" 참고) ·
    ~~아군 총탄 카운터~~(**2026-07-18 완료** — `scheduled_nukes`+`context.shot_times`
    병합으로 확장 없이 해결, Little Mermaid ⚠→✅) ·
    ~~not-in-Full-Burst per-shot 창 필터~~(**2026-07-18 완료** —
