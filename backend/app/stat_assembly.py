@@ -118,8 +118,27 @@ def corporation_atk(tables: dict[str, Any], corporation: str, research_ranks: di
 
 EQUIP_LEVEL_STEP = 0.10
 
+# Gear made by the unit's own corporation is worth 30% more. Derived from
+# measured leftovers rather than assumed: each pairing below is supported by
+# several units and none conflicts. Type 0 is generic gear, which never matches.
+CORPORATION_EQUIP_TYPE = {
+    "ELYSION": 1,
+    "MISSILIS": 2,
+    "TETRA": 3,
+    "PILGRIM": 4,
+    "ABNORMAL": 7,
+}
+CORPORATION_MATCH_BONUS = 0.30
 
-def equipment_atk(tables: dict[str, Any], equip_tid: int, equip_level: int) -> int:
+
+def equipment_atk(
+    tables: dict[str, Any],
+    equip_tid: int,
+    equip_level: int,
+    *,
+    equip_corporation_type: int = 0,
+    unit_corporation: str | None = None,
+) -> int:
     """Flat ATK from one equipped gear piece at its upgrade level.
 
     Levelling adds 10% of the piece's own base ATK per level, confirmed on the
@@ -139,6 +158,13 @@ def equipment_atk(tables: dict[str, Any], equip_tid: int, equip_level: int) -> i
     if row is None:
         return 0
     base = next((s["stat_value"] for s in row["stat"] if s["stat_type"] == "Atk"), 0)
+    if (
+        unit_corporation is not None
+        and equip_corporation_type == CORPORATION_EQUIP_TYPE.get(unit_corporation)
+    ):
+        # Observed in game: the T9 Attacker torso reads 588 in the table but 764
+        # on a unit of its own corporation, and 588 * 1.3 = 764.4.
+        base = round(base * (1 + CORPORATION_MATCH_BONUS))
     return base + round(base * EQUIP_LEVEL_STEP * equip_level)
 
 

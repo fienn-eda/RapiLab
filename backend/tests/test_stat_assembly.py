@@ -226,3 +226,60 @@ def test_equipment_atk_rounds_halves_to_even(tables):
 
 def test_equipment_atk_is_zero_for_an_unequipped_slot(tables):
     assert equipment_atk(tables, 0, 0) == 0
+
+
+def test_equipment_of_the_units_own_corporation_is_worth_30_percent_more(tables):
+    # Observed in game: the T9 Attacker torso (tid 3210901) reads 588 ATK in the
+    # table but 764 on an ELYSION unit wearing the ELYSION-made piece, and
+    # 588 * 1.3 = 764.4. Generic gear (type 0) and another corporation's gear
+    # get nothing.
+    torso_t9 = 3210901
+    assert equipment_atk(tables, torso_t9, 0) == 588
+    assert (
+        equipment_atk(tables, torso_t9, 0, equip_corporation_type=1, unit_corporation="ELYSION")
+        == 764
+    )
+    assert (
+        equipment_atk(tables, torso_t9, 0, equip_corporation_type=0, unit_corporation="ELYSION")
+        == 588
+    )
+    assert (
+        equipment_atk(tables, torso_t9, 0, equip_corporation_type=2, unit_corporation="ELYSION")
+        == 588
+    )
+
+
+def test_gear_only_units_mostly_reproduce_exactly(tables, ground_truth, ground_truth_ranks):
+    """End-to-end over every unit with gear but no cube or collectible."""
+    exact, off = 0, []
+    for u in ground_truth:
+        if u["harmony_cube_lv"] or u["favorite_item_lv"]:
+            continue
+        flat = (
+            affinity_atk(tables, u["class"], u["attractive_lv"])
+            + corporation_atk(tables, u["corporation"], ground_truth_ranks)
+            + sum(
+                equipment_atk(
+                    tables,
+                    x["tid"],
+                    x["lv"],
+                    equip_corporation_type=x["corporation_type"],
+                    unit_corporation=u["corporation"],
+                )
+                for x in u["equip"]
+            )
+        )
+        predicted = assemble_atk(
+            tables, character_class=u["class"], level=400,
+            grade=u["grade"], core=u["core"], extra_flat=flat,
+        )
+        delta = u["measured"]["raid400_atk"] - predicted
+        exact += abs(delta) < 1.0
+        if abs(delta) >= 1.0:
+            off.append((u["name_en"], round(delta, 1)))
+    assert exact >= 58, f"regression: only {exact} exact (was 58)"
+    # The remainder all come out slightly HIGH, including units wearing no gear
+    # at all, so the shortfall is not in the equipment model. Bounded so it
+    # cannot silently worsen.
+    assert all(d < 0 for _, d in off), off
+    assert all(abs(d) < 600 for _, d in off), off
