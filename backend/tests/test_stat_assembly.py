@@ -12,6 +12,7 @@ import pytest
 from app.stat_assembly import (
     affinity_atk,
     corporation_atk,
+    equipment_atk,
     breakthrough_multiplier,
     base_atk,
     assemble_atk,
@@ -200,3 +201,28 @@ def test_flat_model_reproduces_every_ungeared_unit(tables, ground_truth, ground_
     # yet known. Pinned by name so the list cannot quietly grow.
     assert sorted(n for n, _ in deviating) == ["Brid", "Julia", "Trony"], deviating
     assert all(abs(d) < 600 for _, d in deviating), deviating
+
+
+# --- equipment ----------------------------------------------------------------
+
+ATTACKER_HEAD_T10 = 3111001  # 공격력 6014 at LV.00 on the in-game level-up screen
+DEFENDER_ARM_T10 = 3321001  # Module_C, 공격력 2551 / 방어력 800 on screen
+
+
+def test_equipment_atk_matches_the_in_game_level_up_screen(tables):
+    # capturedimages/equip-stats-attacker-head-lv{0,5}.png
+    assert equipment_atk(tables, ATTACKER_HEAD_T10, 0) == 6014
+    assert equipment_atk(tables, ATTACKER_HEAD_T10, 5) == 6014 + 3007
+    # A level in the middle, cross-checked against Asuka's measured residual.
+    assert equipment_atk(tables, ATTACKER_HEAD_T10, 3) == 6014 + 1804
+
+
+def test_equipment_atk_rounds_halves_to_even(tables):
+    # capturedimages/equip-stats-defender-arm-lv5.png: 2551 -> +1276, and
+    # 2551 * 0.5 = 1275.5 lands on the even 1276 rather than truncating to 1275.
+    assert equipment_atk(tables, DEFENDER_ARM_T10, 0) == 2551
+    assert equipment_atk(tables, DEFENDER_ARM_T10, 5) == 2551 + 1276
+
+
+def test_equipment_atk_is_zero_for_an_unequipped_slot(tables):
+    assert equipment_atk(tables, 0, 0) == 0

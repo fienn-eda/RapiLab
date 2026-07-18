@@ -116,6 +116,32 @@ def corporation_atk(tables: dict[str, Any], corporation: str, research_ranks: di
     return rank * per_rank
 
 
+EQUIP_LEVEL_STEP = 0.10
+
+
+def equipment_atk(tables: dict[str, Any], equip_tid: int, equip_level: int) -> int:
+    """Flat ATK from one equipped gear piece at its upgrade level.
+
+    Levelling adds 10% of the piece's own base ATK per level, confirmed on the
+    in-game level-up screen across classes and slots (Attacker head 6014 -> +3007
+    at LV.05; Defender arm 2551 -> +1276).
+
+    The **bonus** is rounded and then added, which is not the same as rounding
+    the total: Defender arm at LV.05 shows 2551 + 1276 = 3827, whereas rounding
+    2551 * 1.5 = 3826.5 would give 3826. Halves land on the even integer
+    (1275.5 -> 1276, and the HP line's 24590.5 -> 24590), i.e. round-half-to-even,
+    which is Python's default.
+
+    The tid, not the tier, identifies the piece: a tier holds both class-specific
+    and "All"-class variants whose stats differ.
+    """
+    row = next((r for r in tables["equipment"] if r["id"] == equip_tid), None)
+    if row is None:
+        return 0
+    base = next((s["stat_value"] for s in row["stat"] if s["stat_type"] == "Atk"), 0)
+    return base + round(base * EQUIP_LEVEL_STEP * equip_level)
+
+
 def assemble_atk(
     tables: dict[str, Any],
     *,
