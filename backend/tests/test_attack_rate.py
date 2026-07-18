@@ -2,11 +2,13 @@ import pytest
 
 from app.attack_rate import (
     RATE_OF_FIRE_60FPS,
+    ShotRecord,
     charge_first_bullet_times,
     charge_last_bullet_times,
     first_bullet_shot_times,
     generate_charge_shot_times,
     generate_magazine_shot_times,
+    generate_segmented_shots,
     generate_shot_times,
     last_bullet_shot_times,
     magazine_first_bullet_times,
@@ -335,3 +337,87 @@ def test_last_bullet_times_stay_a_subset_under_attack_speed():
         attack_speed_percent_at=lambda t: 0.5,
     )
     assert lb and lb <= {round(t, 10) for t in shots} or lb <= set(shots)
+
+
+# --- generate_segmented_shots (weapon transforms) ---
+
+AR_BASE = {"weapon": "AR", "damage_percent": 14.71, "max_ammo": 60,
+           "reload_time": 1.5, "charge_time": 0.0, "charge_damage_percent": 100.0}
+SR_BASE = {"weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
+           "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0}
+CANNON = {"weapon": "SR", "damage_percent": 499.5,
+          "charge_damage_percent": 1000.0, "charge_time": 5.0}
+# rate 4.0 → interval 0.25 (이진 정확) — 부동소수점 경계 없는 카운트 단언용.
+# 실소비자(laplace 9.3)는 until_shots 형태라 경계 문제가 없다.
+TICKER = {"weapon": "SR", "damage_percent": 22.2, "rate_of_fire": 4.0}
+
+
+def test_no_segments_matches_legacy_generator_exactly():
+    for base in (AR_BASE, SR_BASE):
+        records = generate_segmented_shots(base, [], 180.0)
+        legacy = generate_shot_times(
+            base["weapon"], base["max_ammo"], base["reload_time"],
+            base["charge_time"], 180.0)
+        assert [r.time for r in records] == legacy
+        assert {r.time for r in records if r.is_last_bullet} == last_bullet_shot_times(
+            base["weapon"], base["max_ammo"], base["reload_time"], base["charge_time"], 180.0)
+        assert {r.time for r in records if r.is_first_bullet} == first_bullet_shot_times(
+            base["weapon"], base["max_ammo"], base["reload_time"], base["charge_time"], 180.0)
+        assert all(r.damage_percent == base["damage_percent"] for r in records)
+
+
+def test_fixed_window_silences_base_and_fires_profile_rate():
+    seg = {"start": 10.0, "end": 20.0, "profile": TICKER}
+    records = generate_segmented_shots(SR_BASE, [seg], 60.0)
+    inside = [r for r in records if 10.0 <= r.time < 20.0]
+    # 창 안은 전부 오버라이드 프로필(고정 rate) — 기본 SR 발사 없음
+    assert all(r.damage_percent == 22.2 for r in inside)
+    assert inside[0].time == 10.25          # start + 1/rate
+    assert len(inside) == 39                # k*0.25 < 10.0 → k <= 39
+    assert all(r.extra_charge_bonus == 0.0 for r in inside)
+
+
+def test_base_resumes_with_fresh_magazine_at_window_end():
+    seg = {"start": 10.0, "end": 20.0, "profile": TICKER}
+    records = generate_segmented_shots(SR_BASE, [seg], 60.0)
+    after = [r for r in records if r.time >= 20.0]
+    # 새 매거진 즉시: 첫 발은 20.0 + 차지 1발 시간, first_bullet 플래그
+    assert after[0].time == 20.0 + 1.0
+    assert after[0].is_first_bullet
+
+
+def test_until_shots_single_charged_shot_then_resume():
+    seg = {"start": 10.0, "until_shots": 1, "profile": CANNON}
+    records = generate_segmented_shots(SR_BASE, [seg], 60.0)
+    cannon_shots = [r for r in records if r.damage_percent == 499.5]
+    assert len(cannon_shots) == 1
+    assert cannon_shots[0].time == 15.0            # 10.0 + 차지 5초 (버프 없음)
+    assert cannon_shots[0].extra_charge_bonus == 9.0  # 1000%/100 - 1
+    # 기본 무기는 그 발사 시각부터 새 매거진으로 재개
+    resumed = [r for r in records if r.time > 15.0 and r.damage_percent == 69.04]
+    assert resumed[0].time == 15.0 + 1.0
+
+
+def test_charge_speed_callable_shortens_profile_charge():
+    seg = {"start": 10.0, "until_shots": 1, "profile": CANNON}
+    records = generate_segmented_shots(
+        SR_BASE, [seg], 60.0, charge_speed_percent_at=lambda t: 1.0)
+    cannon = [r for r in records if r.damage_percent == 499.5][0]
+    assert cannon.time == 10.0 + 5.0 / 2.0
+
+
+def test_fight_duration_clips_segment_shots():
+    seg = {"start": 178.0, "until_shots": 33,
+           "profile": {"weapon": "SR", "damage_percent": 51.46,
+                       "charge_damage_percent": 343.36, "rate_of_fire": 3.3}}
+    records = generate_segmented_shots(SR_BASE, [seg], 180.0)
+    seg_shots = [r for r in records if r.damage_percent == 51.46]
+    assert all(r.time < 180.0 for r in seg_shots)
+    assert len(seg_shots) < 33
+
+
+def test_overlapping_segments_rejected():
+    segs = [{"start": 10.0, "end": 20.0, "profile": TICKER},
+            {"start": 15.0, "end": 25.0, "profile": TICKER}]
+    with pytest.raises(ValueError):
+        generate_segmented_shots(SR_BASE, segs, 60.0)
