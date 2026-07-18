@@ -877,6 +877,36 @@ def test_per_shot_every_during_own_status_window_gated_to_own_burst_window():
     assert all(e["damage"] == 10000.0 for e in ps)  # 100% coeff * atk 10000, no defense
 
 
+def test_per_shot_nuke_damage_type_reaches_its_type_bucket_and_the_log():
+    # The pulse path carries a damage_type (default "attack"), so a per-shot
+    # nuke whose text says "as Distributed Damage" (e.g. Scarlet's 6th/9th
+    # Fleetly Fading Breakthrough stages) is boosted by distributed_damage_up
+    # and logged with its type.
+    def grant_distributed_up(context, caster_slug, time, registry):
+        registry.add(Effect("distributed_damage_up", 0.5, "squad", None, caster_slug), applied_at=time)
+
+    per_shot_rules = {
+        "attacker": [(3, "after", [instant_nuke_pulse_rule("per_shot", 100.0, damage_type="distributed")])]
+    }
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [SkillRule(trigger="battle_start", action=grant_distributed_up)], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules=per_shot_rules,
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) == 1
+    assert ps[0]["damage_type"] == "distributed"
+    assert ps[0]["damage"] == 15000.0  # 10000 * (1 + 0.5 distributed_damage_up)
+
+
 def test_per_shot_every_outside_full_burst_fires_only_on_out_of_window_shots():
     # The complement of gap #7's "every_during_full_burst" (e.g. Velvet's
     # Sticky Fingers, "when attacking with Full Charge while NOT in Full

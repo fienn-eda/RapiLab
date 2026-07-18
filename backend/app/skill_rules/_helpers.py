@@ -50,7 +50,9 @@ def cdr_pulse_rule(trigger, seconds, scope="squad"):
     return SkillRule(trigger=trigger, action=action)
 
 
-def instant_nuke_pulse_rule(trigger, percent, full_burst_bonus_eligible=False, condition=None):
+def instant_nuke_pulse_rule(
+    trigger, percent, full_burst_bonus_eligible=False, condition=None, damage_type="attack"
+):
     """"Deals X% of final ATK as damage" tied to a trigger OTHER than the
     caster's own burst (e.g. Brid: Silent Track's Ignition Sequence, on
     full_burst_enter). raid_simulator.drain_instant_damage computes it using
@@ -62,11 +64,18 @@ def instant_nuke_pulse_rule(trigger, percent, full_burst_bonus_eligible=False, c
     the Full Burst window; this only opts the instance IN to that check.
 
     `condition`: optional SkillRule condition (e.g. boss_is_element("Electric"))
-    for an additional-damage bullet that only fires against a matching enemy."""
+    for an additional-damage bullet that only fires against a matching enemy.
+
+    `damage_type`: the nuke's damage typing when its text names one (e.g.
+    "as Distributed Damage" -> "distributed"), so the type-gated Damage-Up
+    buckets apply to it. Default "attack"."""
 
     def action(context, caster_slug, time, registry):
         registry.add_pulse(
-            Pulse("instant_damage_percent", percent, "self", caster_slug, full_burst_bonus_eligible)
+            Pulse(
+                "instant_damage_percent", percent, "self", caster_slug,
+                full_burst_bonus_eligible, damage_type,
+            )
         )
 
     return _rule(trigger, action, condition)

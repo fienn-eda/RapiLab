@@ -447,6 +447,7 @@ def simulate_raid(
         for pulse in registry.drain_pulses("instant_damage_percent"):
             record(
                 pulse.source_slug, pulse.value, time, "instant_nuke",
+                damage_type=pulse.damage_type,
                 full_burst_bonus_eligible=pulse.full_burst_bonus_eligible,
             )
 
@@ -687,6 +688,7 @@ def simulate_raid(
                     for pulse in registry.drain_pulses("instant_damage_percent"):
                         record(
                             pulse.source_slug, pulse.value, shot_time, "per_shot_nuke",
+                            damage_type=pulse.damage_type,
                             full_burst_bonus_eligible=pulse.full_burst_bonus_eligible,
                         )
             damage_type = normal_attack_type(slug, weapon, shot_time)

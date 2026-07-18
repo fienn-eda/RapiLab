@@ -36,6 +36,10 @@ class Pulse:
     # through to record()'s full_burst_bonus_eligible - see damage_formula's
     # full_burst_bonus term and docs/insights.md.
     full_burst_bonus_eligible: bool = False
+    # Damage typing for "instant_damage_percent" pulses whose text names a
+    # type (e.g. "as Distributed Damage") - passed through to record() so the
+    # type-gated Damage-Up buckets apply. Other pulse stats ignore it.
+    damage_type: str = "attack"
 
 
 @dataclass
