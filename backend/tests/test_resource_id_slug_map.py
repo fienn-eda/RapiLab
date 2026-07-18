@@ -15,13 +15,12 @@ MAP_FILE = (
     / "frontend" / "src" / "lib" / "resourceIdSlugMap.ts"
 )
 
-# Encoded slugs deliberately unreachable from the identity map:
-#   jill-valentine -> not owned in the roster the map was authored from, so its
-#     resource_id is unknown locally (never guessed). Add the entry when a Jill owner
-#     syncs or a directory snapshot lands, then drop it from this set.
+# Encoded slugs deliberately unreachable from the identity map. Empty since the
+# directory snapshot landed: ids no longer depend on someone owning the unit, so a
+# new encoding looks its id up rather than being exempted here.
 # NOTE: "-signature" slugs are intentionally absent from the identity map (they are
 # reached by promotion via SIGNATURE_OWNED), so they are subtracted before comparing.
-KNOWN_UNMAPPED = {"jill-valentine"}
+KNOWN_UNMAPPED: set[str] = set()
 
 
 def _map_text() -> str:

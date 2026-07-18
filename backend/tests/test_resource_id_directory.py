@@ -26,6 +26,7 @@ SLUG_NAME_EXCEPTIONS = {
     834: "Rei (Tentative Name)",
     835: "Asuka: WILLE",
     840: "Ada",
+    841: "Jill",
     860: "Chisato",
     861: "Takina",
 }
