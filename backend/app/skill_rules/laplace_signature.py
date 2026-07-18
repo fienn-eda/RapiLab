@@ -27,8 +27,14 @@ Modeled (DPS-relevant):
   max assumption) landing alongside each Normal Damage tick: modeled as a
   `scheduled_nukes` spec (`build_buster_scheduled_nukes`) on the identical
   93-tick cadence, anchored to the same `context.burst_times["laplace-
-  signature"]` burst times as the weapon-mode segment, so the two paths never
-  drift out of sync.
+  signature"]` burst times as the weapon-mode segment. The two paths share
+  the same NOMINAL cadence but reach it by different float computations -
+  the segment's interval is 1.0/(BUSTER_SHOTS/duration) (rate_of_fire, then
+  its reciprocal), the rider's is duration/BUSTER_SHOTS directly - so they
+  can differ by sub-ULP (~4e-15s) float rounding, at most 1 ULP on the last
+  tick. No consumer (damage log timestamps, full-burst-window checks) can
+  observe a drift that small, so in practice the two paths land on the same
+  instant; this is not a claim that the two computations are bit-identical.
 - Hero Bomber (dollskills[1]): unlike base Laplace's `last_bullet` trigger,
   the signature version fires on every Full Charge hit ("Activates when
   hitting a target with Full Charge"): a 132.45% "as additional damage" nuke,
@@ -94,7 +100,11 @@ def build_hero_bomber_signature_per_shot_rules(values):
     """Hero Bomber's signature trigger: every Full Charge hit (not base
     Laplace's `last_bullet`), 132.45% of final ATK "as additional damage".
     See module docstring for why `every_outside_full_burst` matches the
-    in-game trigger exactly during the transform window."""
+    in-game trigger exactly during the transform window - this relies on
+    `_resource_fill_times`'s outside-Full-Burst filter being closed on the
+    right (a shot at exactly the FB window's end counts as inside, not
+    outside), so the 93rd Buster tick landing at burst+10.0 == FB end is
+    never misread as an outside-FB Full Charge shot."""
     hero_bomber = values["hero_bomber"]
     nuke_percent = float(hero_bomber["description_value_01"])
     return [(1, "every_outside_full_burst", [

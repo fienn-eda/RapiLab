@@ -383,7 +383,11 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at):
     count already includes every in-game modifier). Segments never reload
     (no v1 consumer needs it). Returns (records, segment_end): until_shots
     windows end AT their last shot's time - the base weapon resumes at that
-    same instant with a fresh magazine."""
+    same instant with a fresh magazine. For a MAGAZINE base (AR/MG/SMG/SG)
+    that resume is itself a shot landing on that exact instant (round 0 of
+    the fresh magazine fires AT magazine_start, per `_base_shot_records`); a
+    CHARGE base (RL/SR) instead fires its first shot one charge-time later,
+    so only magazine bases coincide with the segment's final-shot time."""
     profile = seg["profile"]
     start = seg["start"]
     if profile.get("charge_time"):

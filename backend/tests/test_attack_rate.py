@@ -423,3 +423,29 @@ def test_overlapping_segments_rejected():
             {"start": 15.0, "end": 25.0, "profile": TICKER}]
     with pytest.raises(ValueError):
         generate_segmented_shots(SR_BASE, segs, 60.0)
+
+
+def test_magazine_base_resumes_at_the_same_instant_as_a_charged_segments_final_shot():
+    # Pins the live snow-white combination: an AR (magazine) base with a
+    # until_shots=1 charge-profile segment (CANNON, same shape as her Seven
+    # Dwarves: I transform). A magazine base's fresh-magazine round 0 fires
+    # AT magazine_start (see generate_magazine_shot_times), so the resumed
+    # AR's FIRST shot lands at the SAME instant as the segment's one and
+    # only (charge) shot - not one interval later, unlike a charge base
+    # (see test_until_shots_single_charged_shot_then_resume).
+    seg = {"start": 10.0, "until_shots": 1, "profile": CANNON}
+    records = generate_segmented_shots(AR_BASE, [seg], 60.0)
+    # (a) base AR shots are silenced for the whole segment window
+    silenced = [r for r in records
+                if 10.0 <= r.time < 15.0 and r.damage_percent == AR_BASE["damage_percent"]]
+    assert silenced == []
+    # (c) the cannon record carries the segment profile's percent
+    cannon_shots = [r for r in records if r.damage_percent == CANNON["damage_percent"]]
+    assert len(cannon_shots) == 1
+    assert cannon_shots[0].time == 15.0  # 10.0 + charge_time 5.0 (no buffs)
+    # (b) the resumed AR magazine's first shot lands at that SAME instant,
+    # flagged is_first_bullet
+    resumed_first = [r for r in records
+                      if r.time == 15.0 and r.damage_percent == AR_BASE["damage_percent"]]
+    assert len(resumed_first) == 1
+    assert resumed_first[0].is_first_bullet

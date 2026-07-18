@@ -90,7 +90,7 @@
     수집 전 상태였을 뿐 — 넷 다 dotgg 셧다운(2026-05) 이전 출시라 데이터가 존재한다.
     **prika 로더블화로 mint+prika Encore 시너지가 실제 덱 탐색에서 처음으로 효력을
     가진다**(로드맵이 이걸 blocker로 적어두고 있었음).
-- 총 **64명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 37명) — drake는 base/signature 듀얼슬롯 2엔트리
+- 총 **65명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 38명) — drake는 base/signature 듀얼슬롯 2엔트리
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -137,7 +137,7 @@
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (37명)
+## Burst 3 (38명)
 
 > **eb (encoding batch) 진행:** Burst 3 어태커 배치 인코딩 (least-blocked 우선).
 > eb1 = Noir · Isabel · Liberalio, eb2 = Ludmilla · Chisato · Jill (2026-07-12).

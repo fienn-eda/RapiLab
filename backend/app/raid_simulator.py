@@ -158,8 +158,13 @@ def _resource_fill_times(
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
     if kind == "per_shot_every_outside_full_burst":
         n = fill[1]
+        # Closed on the right: a shot landing exactly at a Full Burst window's
+        # end still belongs to the burst moment, not "outside" it. Left open
+        # (< end) would make outside-FB firing depend on which side of the
+        # float boundary a coincident shot rounds to (e.g. a transform tick
+        # nominally at burst+duration == FB end).
         out_of_window = [
-            t for t in shot_times if not any(start <= t < end for start, end in full_burst_windows)
+            t for t in shot_times if not any(start <= t <= end for start, end in full_burst_windows)
         ]
         return [t for i, t in enumerate(out_of_window) if (i + 1) % n == 0]
     if kind == "on_last_bullet":

@@ -2488,3 +2488,46 @@ def test_weapon_mode_schedule_swaps_profile_inside_window():
     # cannon shot = 499.5% x (1 + 9.0 charge bonus) - compare ratio against a base shot at the same stats
     base_shot = plain_shots[0]["damage"]          # 69.04% x (1+1.5)
     assert cannon[0]["damage"] > base_shot * 20
+
+
+def test_per_shot_every_outside_full_burst_does_not_fire_on_a_shot_exactly_at_fb_end():
+    # Regression for the boundary leak (final-review Fix 1): a shot landing
+    # EXACTLY at a Full Burst window's end must count as "in" Full Burst, not
+    # "outside" it - mirrors laplace-signature's 93rd Buster tick nominally
+    # landing at burst+10.0 == FB end (backend/app/skill_rules/laplace_
+    # signature.py). gauge_charge_time=0.0 makes the single attacker's own
+    # burst (tier 3, all tiers present via make_deck()) fire at t=0.0, so the
+    # Full Burst window is exactly [0.0, 10.0) - and a weapon-mode segment
+    # anchored to that same burst time with rate_of_fire=1.0/until_shots=10
+    # lands its LAST tick at exactly 0.0 + 10*1.0 == 10.0 (exact float
+    # arithmetic, no rounding drift), the FB window's end instant.
+    def schedule(context, fight_duration):
+        return [
+            {"start": t, "until_shots": 10,
+             "profile": {"weapon": "RL", "damage_percent": 100.0, "rate_of_fire": 1.0}}
+            for t in context.burst_times.get("attacker", [])
+        ]
+
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=0.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": SR_WEAPON},
+        weapon_mode_schedules={"attacker": schedule},
+        per_shot_rules={"attacker": [(1, "every_outside_full_burst", [instant_nuke_pulse_rule("per_shot", 100.0)])]},
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    # The segment's 10 ticks (t=1..10) all fall inside [0.0, 10.0] - none of
+    # them, including the boundary tick at exactly t=10.0, fire the
+    # outside-Full-Burst rule.
+    assert not [e for e in ps if e["time"] <= 10.0]
+    # Positive control: the base weapon's resumed shots after the window
+    # (t>10.0) are genuinely outside Full Burst and DO fire the rule, so this
+    # isn't just "the rule never fires".
+    assert [e for e in ps if e["time"] > 10.0]
