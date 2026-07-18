@@ -189,6 +189,45 @@ def equipment_atk(
     return base + math.floor(base * bonus + 0.5)
 
 
+# A favorite item (애장품) is the SSR upgrade of an SR collectible and is priced
+# as "collectible at max level" regardless of its own level. Its tid is in the
+# 2xxxxx block; ordinary collectibles are 1xxxxx. This doubles as the ownership
+# signal for a unit's signature form.
+FAVORITE_ITEM_TID_BASE = 200000
+
+
+def cube_atk(tables: dict[str, Any], cube_level: int) -> int:
+    """Flat ATK from the equipped harmony cube.
+
+    Cube ATK depends only on level, not on which cube: units wearing different
+    cubes at the same level measure the same contribution.
+    """
+    if cube_level <= 0:
+        return 0
+    return tables["cube_sample"]["atk"][cube_level - 1]
+
+
+def collectible_atk(tables: dict[str, Any], item_tid: int, item_level: int) -> int:
+    """Flat ATK from the equipped collectible or favorite item."""
+    if not item_tid:
+        return 0
+    curve = tables["collectible_sample"]["atk"]
+    if item_tid >= FAVORITE_ITEM_TID_BASE:
+        # Measured: four units holding a favorite item at level 2 all contribute
+        # 9,688 - the collectible curve's top entry, not its level-2 entry.
+        return curve[-1]
+    if item_level <= 0:
+        # The curve has an entry at index 0 (3,029) but units at level 0 measure
+        # no contribution at all, so a tid without a level is an unequipped slot.
+        return 0
+    return curve[item_level]
+
+
+def owns_favorite_item(item_tid: int) -> bool:
+    """Whether this unit's collectible slot holds a favorite item (애장품)."""
+    return item_tid >= FAVORITE_ITEM_TID_BASE
+
+
 def assemble_atk(
     tables: dict[str, Any],
     *,

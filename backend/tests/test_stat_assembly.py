@@ -13,6 +13,9 @@ from app.stat_assembly import (
     affinity_atk,
     corporation_atk,
     equipment_atk,
+    cube_atk,
+    collectible_atk,
+    owns_favorite_item,
     breakthrough_multiplier,
     base_atk,
     assemble_atk,
@@ -283,3 +286,67 @@ def test_gear_only_units_mostly_reproduce_exactly(tables, ground_truth, ground_t
         "D: Killer Wife", "Poli", "Rosanna", "Vesti",
     ], off
     assert all(abs(d) < 100 for _, d in off), off
+
+
+# --- cube and collectible -----------------------------------------------------
+
+
+def test_cube_atk_reads_the_level_curve(tables):
+    assert cube_atk(tables, 0) == 0
+    assert cube_atk(tables, 6) == 790
+    assert cube_atk(tables, 15) == 2780
+
+
+def test_collectible_atk_is_indexed_by_level(tables):
+    ordinary = 100202
+    assert collectible_atk(tables, ordinary, 1) == 3370
+    assert collectible_atk(tables, ordinary, 5) == 4821
+    assert collectible_atk(tables, ordinary, 15) == 9688
+
+
+def test_an_unequipped_collectible_contributes_nothing(tables):
+    assert collectible_atk(tables, 0, 0) == 0
+    # A tid with level 0 is an empty slot: the curve has an entry at index 0
+    # (3,029) but such units measure no contribution.
+    assert collectible_atk(tables, 100202, 0) == 0
+
+
+def test_a_favorite_item_is_priced_at_the_curve_maximum(tables):
+    # Exia, Laplace, Miranda and Zwei each hold a favorite item at level 2 and
+    # each contributes 9,688 - the top of the curve, not its level-2 entry.
+    favorite = 200201
+    assert collectible_atk(tables, favorite, 2) == 9688
+    assert owns_favorite_item(favorite)
+    assert not owns_favorite_item(100202)
+
+
+def test_full_model_reproduces_most_of_the_roster(tables, ground_truth, ground_truth_ranks):
+    """Every term together, over all 159 collected units."""
+    exact, off = 0, []
+    for u in ground_truth:
+        flat = (
+            affinity_atk(tables, u["class"], u["attractive_lv"])
+            + corporation_atk(tables, u["corporation"], ground_truth_ranks)
+            + sum(
+                equipment_atk(
+                    tables, x["tid"], x["lv"],
+                    equip_corporation_type=x["corporation_type"],
+                    unit_corporation=u["corporation"],
+                )
+                for x in u["equip"]
+            )
+            + cube_atk(tables, u["harmony_cube_lv"])
+            + collectible_atk(tables, u["favorite_item_tid"], u["favorite_item_lv"])
+        )
+        predicted = assemble_atk(
+            tables, character_class=u["class"], level=400,
+            grade=u["grade"], core=u["core"], extra_flat=flat,
+        )
+        delta = u["measured"]["raid400_atk"] - predicted
+        exact += abs(delta) < 1.0
+        if abs(delta) >= 1.0:
+            off.append((u["name_en"], round(delta, 1)))
+    assert exact >= 133, f"regression: only {exact}/159 exact (was 133)"
+    # What is left is small and mostly positive - a term worth a few hundred ATK
+    # at most. Bounded so it cannot silently grow.
+    assert all(abs(d) <= 220 for _, d in off), off

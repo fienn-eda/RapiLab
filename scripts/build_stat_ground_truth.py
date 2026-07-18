@@ -80,6 +80,7 @@ def main() -> int:
                 "core": d["core"],
                 "attractive_lv": d.get("attractive_lv", 0),
                 "favorite_item_lv": d.get("favorite_item_lv", 0),
+                "favorite_item_tid": d.get("favorite_item_tid", 0),
                 "harmony_cube_lv": d.get("harmony_cube_lv", 0),
                 "equip": [
                     {
