@@ -1,6 +1,17 @@
 # 로스터 동기화 — 페치+조립 슬라이스 설계 (Phase 7)
 
-작성 2026-07-19. 상태: **설계 승인, 미구현.**
+작성 2026-07-19. 상태: **구현 완료 (2026-07-19).** 6개 TDD 태스크로 구현, 전체 백엔드
+804 passed, 최종 브랜치 리뷰(opus) "ready to merge". 계획·경과: `docs/superpowers/plans/
+2026-07-19-roster-sync-fetch-assemble.md`. 산출: `backend/app/{blablalink_api,roster_assembly,
+overload_decode}.py` + `stat_assembly.py`에 HP 추가(measured HP로 159/159 피팅) + `tables.json`에
+오버로드 값 테이블. parity: 스탯 159/159(<1.0)·오버로드 77/77(정확). **DEF=0**(시뮬레이터 미소비).
+
+**타 유저 sync 전 반드시 해결할 전제조건 (이 슬라이스는 Fienn 계정 parity만 검증):** 조립
+경로에 never-invent 원칙상 옳지만 Fienn이 안 굴린 입력에 KeyError를 내는 지점 4곳 —
+① `overload_value` 미관측 `(타입,레벨)` · ② `assemble_overload` 미등록 타입명 · ③
+`corporation_atk`/`research_hp`의 `research_ranks[tid]` 직접 인덱싱 · ④ `blablalink_api`
+outpost 직접 인덱싱. 멀티유저엔 **CDN 오버로드 1~15 전체 커브 + 완전 타입명표 + 방어적
+research lookup**이 필요(아래 "값 테이블" 소스 (b)). 서브프로젝트 3~7 사안.
 
 ## 위치와 범위
 
