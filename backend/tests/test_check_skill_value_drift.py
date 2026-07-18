@@ -224,3 +224,18 @@ def test_run_check_refreshes_before_comparing(tmp_path):
         fetch_html=lambda slug: _lw_page(values=("10.5", "2", "3")))
     assert refresh_warnings == []
     assert results["x"]["status"] == "OK"  # fresh fetch wins over stale file
+
+
+def test_run_check_fetch_failure_marks_manifest_warn(tmp_path):
+    # Comparison alone would say OK (dotgg and stale lw already agree) - a
+    # fetch failure must still surface as WARN, not a silent stale-data OK.
+    root = _data_root(tmp_path, ["37.28"], ["37.28"])
+
+    def boom(slug):
+        raise RuntimeError("curl failed")
+
+    results, refresh_warnings = drift.run_check(
+        MANIFEST, root / "lootandwaifus", root, fetch_html=boom)
+    assert results["x"]["status"] == "WARN"
+    assert any("fetch failed" in w for w in results["x"]["warnings"])
+    assert refresh_warnings == []

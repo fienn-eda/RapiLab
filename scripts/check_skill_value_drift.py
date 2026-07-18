@@ -51,7 +51,11 @@ def referenced_slots(skill):
     fall back to comparing all non-filler slots - some dotgg levels carry
     leftover slots the description never renders (brid-silent-track "Full
     Throttle" description_value_04 duplicates the real duration slot), and
-    those must not be compared against the rendered lootandwaifus text."""
+    those must not be compared against the rendered lootandwaifus text.
+    Assumes every slot the engine's skill-value builder actually consumes is
+    also description-referenced - verified true for all 22 dotgg-source
+    manifests as of 2026-07-18; a future encoding that reads an unreferenced
+    slot would silently fall outside this drift check's coverage."""
     matches = re.findall(r"\{(description_value_\d+)\}",
                           skill.get("description") or "")
     return frozenset(matches) if matches else None
@@ -73,7 +77,10 @@ def level_missing(level_dict, lw_text, referenced=None):
     the lootandwaifus level text. Multiset semantics: each match consumes its
     token, so duplicate values need duplicate tokens. Extra tokens are fine
     (trigger phrases, "1/2/3 times"). referenced restricts which dotgg slots
-    are compared - see dotgg_level_values."""
+    are compared - see dotgg_level_values. Known false-negative window: a
+    stale dotgg value that happens to equal an unrelated extra token already
+    in the new text (e.g. a stale "3" coincidentally matching "3 times")
+    passes containment and is not flagged."""
     available = Counter(float(t) for t in NUMBER.findall(lw_text))
     missing = []
     for value in dotgg_level_values(level_dict, referenced):
@@ -118,8 +125,12 @@ def compare_unit(dotgg_data, lw_data, keys):
 def refresh_lw(slugs, lw_dir, fetch_html):
     """Re-fetch + re-parse lootandwaifus pages for the given slugs, writing
     char_<slug>.html and char_<slug>.json into lw_dir (same layout the
-    collect workflow uses). A failed slug becomes a warning and is skipped -
-    its stale local files, if any, are left untouched. Returns warnings."""
+    collect workflow uses). char_<slug>.html is written as soon as it's
+    fetched, before parsing, so it's kept for inspection even if parsing then
+    fails. A failed fetch or a failed parse becomes a warning and the slug is
+    skipped - its stale char_<slug>.json, if any, is left untouched. All
+    warning strings are prefixed "{slug}: " so callers can attribute them to
+    the right manifest. Returns warnings."""
     lw_dir = Path(lw_dir)
     warnings = []
     for slug in sorted(set(slugs)):
@@ -128,9 +139,13 @@ def refresh_lw(slugs, lw_dir, fetch_html):
         except Exception as exc:
             warnings.append(f"{slug}: fetch failed: {exc}")
             continue
-        data, parse_warnings = parse_html(raw, slug)
-        warnings.extend(f"{slug}: {w}" for w in parse_warnings)
         (lw_dir / f"char_{slug}.html").write_text(raw, encoding="utf-8")
+        try:
+            data, parse_warnings = parse_html(raw, slug)
+        except Exception as exc:
+            warnings.append(f"{slug}: parse failed: {exc}")
+            continue
+        warnings.extend(f"{slug}: {w}" for w in parse_warnings)
         (lw_dir / f"char_{slug}.json").write_text(
             json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
     return warnings
@@ -140,27 +155,43 @@ def run_check(manifests, lw_dir, data_dir, fetch_html=None):
     """Compare each dotgg-source manifest against lootandwaifus data.
     manifests: {slug: manifest}, pre-filtered to source == "dotgg".
     data_dir: the data ROOT (contains dotgg/). If fetch_html is given, the
-    target lootandwaifus pages are refreshed first. Returns
-    ({slug: {"status", "drift", "warnings"}}, refresh_warnings)."""
+    target lootandwaifus pages are refreshed first, and any refresh warning
+    (fetch failure, parse failure/warning) is attributed - by its "{slug}: "
+    prefix - to every manifest sharing that data_slug, so a fetch failure
+    forces WARN status even when the stale local comparison alone would say
+    OK; a fetch failure must never silently read as OK. Returns
+    ({slug: {"status", "drift", "warnings"}}, refresh_warnings) where
+    refresh_warnings holds only warnings that couldn't be attributed to a
+    manifest (normally empty)."""
     from app.skill_values import load_character_data
 
     lw_dir = Path(lw_dir)
     refresh_warnings = []
+    attributed = {}
     if fetch_html is not None:
-        slugs = {m.get("data_slug", slug) for slug, m in manifests.items()}
-        refresh_warnings = refresh_lw(slugs, lw_dir, fetch_html)
+        target_slugs = {m.get("data_slug", slug) for slug, m in manifests.items()}
+        for warning in refresh_lw(target_slugs, lw_dir, fetch_html):
+            owner = next((s for s in target_slugs
+                         if warning.startswith(f"{s}: ")), None)
+            if owner is None:
+                refresh_warnings.append(warning)
+            else:
+                attributed.setdefault(owner, []).append(warning)
 
     results = {}
     for slug, manifest in sorted(manifests.items()):
         data_slug = manifest.get("data_slug", slug)
+        own_refresh_warnings = attributed.get(data_slug, [])
         lw_path = lw_dir / f"char_{data_slug}.json"
         if not lw_path.exists():
             results[slug] = {"status": "WARN", "drift": {}, "warnings": [
-                f"no lootandwaifus JSON (char_{data_slug}.json)"]}
+                f"no lootandwaifus JSON (char_{data_slug}.json)"]
+                + own_refresh_warnings}
             continue
         dotgg_data = load_character_data("dotgg", data_slug, data_dir)
         lw_data = json.loads(lw_path.read_text(encoding="utf-8"))
         drift, warnings = compare_unit(dotgg_data, lw_data, manifest["keys"])
+        warnings = own_refresh_warnings + warnings
         status = "DRIFT" if drift else ("WARN" if warnings else "OK")
         results[slug] = {"status": status, "drift": drift,
                          "warnings": warnings}
