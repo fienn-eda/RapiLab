@@ -7,9 +7,18 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-07-17
+- 마지막 갱신: 2026-07-18
 - 브랜치: `wip/scaffolding` (`worktree-plans-frontend3-encoding` 머지 완료)
-- 테스트: **746 passed** (2026-07-17, **`worktree-plans-frontend3-encoding` →
+- 테스트: **768 passed** (2026-07-18, **스킬 수치 드리프트 감지** —
+  `scripts/check_skill_value_drift.py`: dotgg-소스 매니페스트 22개(21유닛+
+  drake-signature)의 스킬 수치를 라이브 lootandwaifus와 대조(매 실행 전체 재수집,
+  `--offline`/`--slug` 지원, DRIFT 시 exit 1). 비교는 설명 템플릿이 참조하는
+  슬롯만(브리드 잔여 슬롯 오탐 수정, Fienn 승인) + curl `-sS --fail` + fetch 실패
+  경고를 해당 매니페스트에 귀속(낡은 파일 비교가 OK로 위장 불가). **라이브 실측:
+  22 OK, 0 DRIFT** — 현재 dotgg-소스 유닛 중 패치로 어긋난 유닛 없음. 부수 효과로
+  lootandwaifus 데이터 18유닛 신규 확보. SBS 사례(dotgg 동결로 패치 수치 미반영,
+  `insights.md`)가 계기. was 746+4(블라블라링크 수집기 배치).)
+- 이전: **746 passed** (2026-07-17, **`worktree-plans-frontend3-encoding` →
   `wip/scaffolding` 머지** — Ein·Raven·Sakura 인코딩 + `scheduled_nukes`/`shot_times`
   확장 + 워크트리 데이터 동기화 스크립트·훅이 dotgg weapon 스탯 수집 작업과 합류.
   충돌은 `docs/decisions.md` 위치 충돌 1건뿐, 양쪽 항목 모두 보존. **머지 후 실측:
@@ -393,6 +402,12 @@
 - dotgg 무기 스탯 수집 자동화 ✅ (2026-07-17): `scripts/collect_dotgg_weapons.py`
   — lootandwaifus 유닛 대비 누락 dotgg 파일 스캔·수집(슬러그→이름 정확 매칭),
   dotgg 부재 유닛은 `--stub`으로 수동 입력 템플릿. collect-nikke 워크플로에 편입.
+- 스킬 수치 드리프트 감지 ✅ (2026-07-18): `scripts/check_skill_value_drift.py`
+  — dotgg-소스 매니페스트 22개를 라이브 lootandwaifus와 대조, 밸런스 패치로
+  낡은 유닛을 자동 검출(현재 22 OK, 0 DRIFT). 게임 패치 후 실행해서 DRIFT가
+  뜨는 유닛부터 lootandwaifus 소스로 이관하는 게 후속 단계(→ `decisions.md`
+  2026-07-18 단계적 소스 이관 결정). 두 데이터 폴더의 파일 단일화는 이관 완료
+  후에만 싸게 가능(보류).
 - ShiftyPad 자동화는 Phase 7.
 
 ### Phase 7 — ShiftyPad 데이터 적재 🔄 조사 단계 (2026-07-17 재정의)
