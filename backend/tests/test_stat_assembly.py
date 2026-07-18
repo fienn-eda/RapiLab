@@ -74,7 +74,7 @@ def test_assemble_atk_reproduces_a_measured_unit(tables):
         level=400,
         grade=3,
         core=6,
-        extra_flat=35057.5,
+        extra_flat=35543.5,
     )
     assert atk == pytest.approx(RAPI_RED_HOOD_RAID400_ATK, abs=1.0)
 
@@ -196,11 +196,8 @@ def test_flat_model_reproduces_every_ungeared_unit(tables, ground_truth, ground_
             exact += 1
         else:
             deviating.append((u["name_en"], round(delta, 1)))
-    assert exact >= 20, f"only {exact} ungeared units reproduce exactly"
-    # Three Attackers at affinity 30 come out 0.08-0.52% low and the cause is not
-    # yet known. Pinned by name so the list cannot quietly grow.
-    assert sorted(n for n, _ in deviating) == ["Brid", "Julia", "Trony"], deviating
-    assert all(abs(d) < 600 for _, d in deviating), deviating
+    assert exact >= 22, f"only {exact} ungeared units reproduce exactly"
+    assert deviating == [], deviating
 
 
 # --- equipment ----------------------------------------------------------------
@@ -277,9 +274,12 @@ def test_gear_only_units_mostly_reproduce_exactly(tables, ground_truth, ground_t
         exact += abs(delta) < 1.0
         if abs(delta) >= 1.0:
             off.append((u["name_en"], round(delta, 1)))
-    assert exact >= 59, f"regression: only {exact} exact (was 59)"
-    # The remainder all come out slightly HIGH, including units wearing no gear
-    # at all, so the shortfall is not in the equipment model. Bounded so it
-    # cannot silently worsen.
-    assert all(d < 0 for _, d in off), off
-    assert all(abs(d) < 600 for _, d in off), off
+    assert exact >= 70, f"regression: only {exact} exact (was 70)"
+    # Four units still miss, and all four have cores: two Attackers behave as if
+    # their per-core flat were 94 rather than 119, and two more sit between the
+    # class values. Some sub-class factor is still unaccounted for. Pinned by
+    # name so the list cannot quietly grow.
+    assert sorted(n for n, _ in off) == [
+        "D: Killer Wife", "Poli", "Rosanna", "Vesti",
+    ], off
+    assert all(abs(d) < 100 for _, d in off), off

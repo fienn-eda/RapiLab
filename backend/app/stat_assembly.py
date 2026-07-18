@@ -73,6 +73,16 @@ def breakthrough_multiplier(grade: int, core: int) -> float:
     return (1 + BREAKTHROUGH_STEP * grade) * (1 + BREAKTHROUGH_STEP * core)
 
 
+# Flat ATK per core, on top of the 2% core step above. The stat_enhance table
+# lists core_attack = 200 for every class, but that value does not reproduce a
+# single measured unit; these do. Read off ShiftyPad's core screen, where each
+# extra core is worth a fixed amount at a fixed level: an Attacker (Brid) gains
+# 2,034 per core at level 400 and 6,950 at 663, and subtracting the 2% step
+# (base * 0.02 * 1.06) leaves 119.3 at BOTH levels - so the remainder is flat
+# and level-independent. A Supporter (Mint) leaves 113.4 the same way.
+CORE_FLAT_ATK = {"Attacker": 119, "Supporter": 113, "Defender": 91}
+
+
 # Which recycle-room research row ranks each corporation. Only PILGRIM and
 # ABNORMAL are individually confirmed (their ranks differ from the rest, and
 # PILGRIM units measure exactly rank*25); ELYSION / MISSILIS / TETRA all sit at
@@ -191,5 +201,5 @@ def assemble_atk(
     """Solo-raid ATK for one unit. `extra_flat` covers what is not yet derived."""
     enhance = tables["classes"][character_class]["stat_enhance"]
     scaled = base_atk(tables, character_class, level) * breakthrough_multiplier(grade, core)
-    flat = core * enhance["core_attack"] + grade * enhance["grade_attack"]
+    flat = core * CORE_FLAT_ATK[character_class] + grade * enhance["grade_attack"]
     return scaled + flat + extra_flat
