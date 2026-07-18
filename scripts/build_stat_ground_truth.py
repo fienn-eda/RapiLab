@@ -84,7 +84,11 @@ def main() -> int:
                 "equip": [
                     {
                         "slot": s,
+                        # The tid identifies the exact item: same tier can be a
+                        # class-specific or an "All"-class piece with different stats.
+                        "tid": d.get(f"{s}_equip_tid", 0),
                         "tier": d.get(f"{s}_equip_tier", 0),
+                        "corporation_type": d.get(f"{s}_equip_corporation_type", 0),
                         "lv": d.get(f"{s}_equip_lv", 0),
                     }
                     for s in SLOTS

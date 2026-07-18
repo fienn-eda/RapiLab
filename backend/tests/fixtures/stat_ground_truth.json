@@ -24,22 +24,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         }
       ],
@@ -61,22 +69,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         }
       ],
@@ -98,22 +114,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -135,22 +159,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -172,22 +204,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -209,22 +249,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -246,22 +294,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -283,22 +339,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -320,22 +384,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         }
       ],
@@ -357,22 +429,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -394,22 +474,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3121001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3221001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3321001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3421001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -431,22 +519,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -468,22 +564,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -505,22 +609,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -542,22 +654,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -579,22 +699,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -616,22 +744,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -653,22 +789,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -690,22 +834,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3121001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3221001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3321001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3421001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -727,22 +879,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -764,22 +924,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3121001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3221001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3321001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3421001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         }
       ],
@@ -801,22 +969,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         }
       ],
@@ -838,22 +1014,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -875,22 +1059,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -912,22 +1104,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         }
       ],
@@ -949,22 +1149,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -986,22 +1194,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         }
       ],
@@ -1023,22 +1239,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3121001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3221001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3321001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3421001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         }
       ],
@@ -1060,22 +1284,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1097,22 +1329,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         }
       ],
@@ -1134,22 +1374,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         }
       ],
@@ -1171,22 +1419,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1208,22 +1464,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3121001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3221001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3321001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3421001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         }
       ],
@@ -1245,22 +1509,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -1282,22 +1554,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1319,22 +1599,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1356,22 +1644,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 5
         }
       ],
@@ -1393,22 +1689,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -1430,22 +1734,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1467,22 +1779,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -1504,22 +1824,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1541,22 +1869,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         }
       ],
@@ -1578,22 +1914,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1615,22 +1959,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -1652,22 +2004,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1689,22 +2049,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1726,22 +2094,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         }
       ],
@@ -1763,22 +2139,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1800,22 +2184,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1837,22 +2229,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1874,22 +2274,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         }
       ],
@@ -1911,22 +2319,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1948,22 +2364,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -1985,22 +2409,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -2022,22 +2454,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2059,22 +2499,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         }
       ],
@@ -2096,22 +2544,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2133,22 +2589,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -2170,22 +2634,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2207,22 +2679,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2244,22 +2724,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -2281,22 +2769,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2318,22 +2814,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         }
       ],
@@ -2355,22 +2859,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2392,22 +2904,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -2429,22 +2949,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2466,22 +2994,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         }
       ],
@@ -2503,22 +3039,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2540,22 +3084,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2577,22 +3129,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         }
       ],
@@ -2614,22 +3174,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -2651,22 +3219,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2688,22 +3264,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -2725,22 +3309,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2762,22 +3354,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2799,22 +3399,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2836,22 +3444,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2873,22 +3489,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2910,22 +3534,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -2947,22 +3579,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3121001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3221001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3321001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3421001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         }
       ],
@@ -2984,22 +3624,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         }
       ],
@@ -3021,22 +3669,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -3058,22 +3714,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3095,22 +3759,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3132,22 +3804,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -3169,22 +3849,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -3206,22 +3894,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -3243,22 +3939,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         }
       ],
@@ -3280,22 +3984,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3317,22 +4029,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -3354,22 +4074,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3391,22 +4119,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3428,22 +4164,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3465,22 +4209,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 5
         }
       ],
@@ -3502,22 +4254,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -3539,22 +4299,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         }
       ],
@@ -3576,22 +4344,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3121001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3221001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3321001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3421001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3613,22 +4389,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3650,22 +4434,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         }
       ],
@@ -3687,22 +4479,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3724,22 +4524,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3761,22 +4569,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3798,22 +4614,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -3835,22 +4659,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -3872,22 +4704,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3121001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3221001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3321001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3421001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3909,22 +4749,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3946,22 +4794,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -3983,22 +4839,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -4020,22 +4884,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         }
       ],
@@ -4057,22 +4929,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -4094,22 +4974,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -4131,22 +5019,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -4168,22 +5064,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4205,22 +5109,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4242,22 +5154,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4279,22 +5199,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4316,22 +5244,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4353,22 +5289,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         }
       ],
@@ -4390,22 +5334,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4427,22 +5379,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         }
       ],
@@ -4464,22 +5424,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4501,22 +5469,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4538,22 +5514,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4575,22 +5559,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4612,22 +5604,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4649,22 +5649,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4686,22 +5694,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -4723,22 +5739,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -4760,22 +5784,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         }
       ],
@@ -4797,22 +5829,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3120901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3220901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3420901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -4834,22 +5874,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4871,22 +5919,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -4908,22 +5964,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4945,22 +6009,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -4982,22 +6054,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5019,22 +6099,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5056,22 +6144,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3320901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5093,22 +6189,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5130,22 +6234,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5167,22 +6279,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5204,22 +6324,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         }
       ],
@@ -5241,22 +6369,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5278,22 +6414,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         }
       ],
@@ -5315,22 +6459,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -5352,22 +6504,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
@@ -5389,22 +6549,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 4,
           "lv": 0
         }
       ],
@@ -5426,22 +6594,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         }
       ],
@@ -5463,22 +6639,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3121001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3221001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3321001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3421001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5500,22 +6684,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 5
         },
         {
           "slot": "leg",
+          "tid": 3431001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5537,22 +6729,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         }
       ],
@@ -5574,22 +6774,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5611,22 +6819,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3131001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 4
         },
         {
           "slot": "torso",
+          "tid": 3231001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3331001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -5648,22 +6864,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 7,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -5685,22 +6909,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3111001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "torso",
+          "tid": 3211001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 1
         },
         {
           "slot": "arm",
+          "tid": 3311001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 3
         },
         {
           "slot": "leg",
+          "tid": 3411001,
           "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5722,22 +6954,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -5759,22 +6999,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3110901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3310901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3410901,
           "tier": 9,
+          "corporation_type": 3,
           "lv": 0
         }
       ],
@@ -5796,22 +7044,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3210901,
           "tier": 9,
+          "corporation_type": 2,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5833,22 +7089,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 0,
           "tier": 0,
+          "corporation_type": 0,
           "lv": 0
         }
       ],
@@ -5870,22 +7134,30 @@
       "equip": [
         {
           "slot": "head",
+          "tid": 3130901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "torso",
+          "tid": 3230901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "arm",
+          "tid": 3330901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         },
         {
           "slot": "leg",
+          "tid": 3430901,
           "tier": 9,
+          "corporation_type": 1,
           "lv": 0
         }
       ],
