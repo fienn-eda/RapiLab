@@ -54,7 +54,9 @@
       ],
       "measured": {
         "raid400_atk": 69677,
-        "actual_atk": 9865
+        "actual_atk": 9865,
+        "raid400_hp": 2980903,
+        "actual_hp": 513644
       }
     },
     {
@@ -100,7 +102,9 @@
       ],
       "measured": {
         "raid400_atk": 102287,
-        "actual_atk": 12569
+        "actual_atk": 12569,
+        "raid400_hp": 2458823,
+        "actual_hp": 440156
       }
     },
     {
@@ -146,7 +150,9 @@
       ],
       "measured": {
         "raid400_atk": 120692,
-        "actual_atk": 30974
+        "actual_atk": 30974,
+        "raid400_hp": 2932980,
+        "actual_hp": 914313
       }
     },
     {
@@ -192,7 +198,9 @@
       ],
       "measured": {
         "raid400_atk": 83135,
-        "actual_atk": 5380
+        "actual_atk": 5380,
+        "raid400_hp": 2636140,
+        "actual_hp": 303459
       }
     },
     {
@@ -238,7 +246,9 @@
       ],
       "measured": {
         "raid400_atk": 100417,
-        "actual_atk": 301402
+        "actual_atk": 301402,
+        "raid400_hp": 3117363,
+        "actual_hp": 9146945
       }
     },
     {
@@ -284,7 +294,9 @@
       ],
       "measured": {
         "raid400_atk": 84612,
-        "actual_atk": 5362
+        "actual_atk": 5362,
+        "raid400_hp": 2682843,
+        "actual_hp": 305303
       }
     },
     {
@@ -330,7 +342,9 @@
       ],
       "measured": {
         "raid400_atk": 141794,
-        "actual_atk": 422029
+        "actual_atk": 422029,
+        "raid400_hp": 3437754,
+        "actual_hp": 9743073
       }
     },
     {
@@ -376,7 +390,9 @@
       ],
       "measured": {
         "raid400_atk": 92065,
-        "actual_atk": 301013
+        "actual_atk": 301013,
+        "raid400_hp": 2915862,
+        "actual_hp": 9184308
       }
     },
     {
@@ -422,7 +438,9 @@
       ],
       "measured": {
         "raid400_atk": 110523,
-        "actual_atk": 319471
+        "actual_atk": 319471,
+        "raid400_hp": 3465801,
+        "actual_hp": 9734247
       }
     },
     {
@@ -468,7 +486,9 @@
       ],
       "measured": {
         "raid400_atk": 103208,
-        "actual_atk": 296463
+        "actual_atk": 296463,
+        "raid400_hp": 3223936,
+        "actual_hp": 9021611
       }
     },
     {
@@ -514,7 +534,9 @@
       ],
       "measured": {
         "raid400_atk": 94492,
-        "actual_atk": 261649
+        "actual_atk": 261649,
+        "raid400_hp": 3855268,
+        "actual_hp": 10750559
       }
     },
     {
@@ -560,7 +582,9 @@
       ],
       "measured": {
         "raid400_atk": 110340,
-        "actual_atk": 319288
+        "actual_atk": 319288,
+        "raid400_hp": 3417985,
+        "actual_hp": 9686431
       }
     },
     {
@@ -606,7 +630,9 @@
       ],
       "measured": {
         "raid400_atk": 130338,
-        "actual_atk": 376158
+        "actual_atk": 376158,
+        "raid400_hp": 3175145,
+        "actual_hp": 8706126
       }
     },
     {
@@ -652,7 +678,9 @@
       ],
       "measured": {
         "raid400_atk": 96797,
-        "actual_atk": 333341
+        "actual_atk": 333341,
+        "raid400_hp": 2356372,
+        "actual_hp": 7678637
       }
     },
     {
@@ -698,7 +726,9 @@
       ],
       "measured": {
         "raid400_atk": 118004,
-        "actual_atk": 354548
+        "actual_atk": 354548,
+        "raid400_hp": 2917232,
+        "actual_hp": 8239497
       }
     },
     {
@@ -744,7 +774,9 @@
       ],
       "measured": {
         "raid400_atk": 107559,
-        "actual_atk": 17841
+        "actual_atk": 17841,
+        "raid400_hp": 2573391,
+        "actual_hp": 554724
       }
     },
     {
@@ -790,7 +822,9 @@
       ],
       "measured": {
         "raid400_atk": 119926,
-        "actual_atk": 30208
+        "actual_atk": 30208,
+        "raid400_hp": 2932980,
+        "actual_hp": 914313
       }
     },
     {
@@ -836,7 +870,9 @@
       ],
       "measured": {
         "raid400_atk": 81376,
-        "actual_atk": 5116
+        "actual_atk": 5116,
+        "raid400_hp": 2580941,
+        "actual_hp": 293119
       }
     },
     {
@@ -882,7 +918,9 @@
       ],
       "measured": {
         "raid400_atk": 88381,
-        "actual_atk": 255538
+        "actual_atk": 255538,
+        "raid400_hp": 3648194,
+        "actual_hp": 10543485
       }
     },
     {
@@ -928,7 +966,9 @@
       ],
       "measured": {
         "raid400_atk": 94445,
-        "actual_atk": 303393
+        "actual_atk": 303393,
+        "raid400_hp": 2980622,
+        "actual_hp": 9249068
       }
     },
     {
@@ -974,7 +1014,9 @@
       ],
       "measured": {
         "raid400_atk": 80115,
-        "actual_atk": 240903
+        "actual_atk": 240903,
+        "raid400_hp": 3374236,
+        "actual_hp": 10006777
       }
     },
     {
@@ -1020,7 +1062,9 @@
       ],
       "measured": {
         "raid400_atk": 129209,
-        "actual_atk": 379945
+        "actual_atk": 379945,
+        "raid400_hp": 3144864,
+        "actual_hp": 8786465
       }
     },
     {
@@ -1066,7 +1110,9 @@
       ],
       "measured": {
         "raid400_atk": 105754,
-        "actual_atk": 361407
+        "actual_atk": 361407,
+        "raid400_hp": 2570354,
+        "actual_hp": 8322574
       }
     },
     {
@@ -1112,7 +1158,9 @@
       ],
       "measured": {
         "raid400_atk": 102205,
-        "actual_atk": 295460
+        "actual_atk": 295460,
+        "raid400_hp": 3152896,
+        "actual_hp": 8950571
       }
     },
     {
@@ -1158,7 +1206,9 @@
       ],
       "measured": {
         "raid400_atk": 82157,
-        "actual_atk": 262425
+        "actual_atk": 262425,
+        "raid400_hp": 3496537,
+        "actual_hp": 10932636
       }
     },
     {
@@ -1204,7 +1254,9 @@
       ],
       "measured": {
         "raid400_atk": 84926,
-        "actual_atk": 289777
+        "actual_atk": 289777,
+        "raid400_hp": 2677259,
+        "actual_hp": 8822795
       }
     },
     {
@@ -1250,7 +1302,9 @@
       ],
       "measured": {
         "raid400_atk": 107284,
-        "actual_atk": 339190
+        "actual_atk": 339190,
+        "raid400_hp": 2634554,
+        "actual_hp": 7852461
       }
     },
     {
@@ -1296,7 +1350,9 @@
       ],
       "measured": {
         "raid400_atk": 97810,
-        "actual_atk": 271522
+        "actual_atk": 271522,
+        "raid400_hp": 3988078,
+        "actual_hp": 11153773
       }
     },
     {
@@ -1342,7 +1398,9 @@
       ],
       "measured": {
         "raid400_atk": 130856,
-        "actual_atk": 376676
+        "actual_atk": 376676,
+        "raid400_hp": 3202582,
+        "actual_hp": 8733563
       }
     },
     {
@@ -1388,7 +1446,9 @@
       ],
       "measured": {
         "raid400_atk": 84750,
-        "actual_atk": 278005
+        "actual_atk": 278005,
+        "raid400_hp": 2679682,
+        "actual_hp": 8477357
       }
     },
     {
@@ -1434,7 +1494,9 @@
       ],
       "measured": {
         "raid400_atk": 86141,
-        "actual_atk": 290992
+        "actual_atk": 290992,
+        "raid400_hp": 2699294,
+        "actual_hp": 8844830
       }
     },
     {
@@ -1480,7 +1542,9 @@
       ],
       "measured": {
         "raid400_atk": 64731,
-        "actual_atk": 4919
+        "actual_atk": 4919,
+        "raid400_hp": 2770835,
+        "actual_hp": 303576
       }
     },
     {
@@ -1526,7 +1590,9 @@
       ],
       "measured": {
         "raid400_atk": 102021,
-        "actual_atk": 285567
+        "actual_atk": 285567,
+        "raid400_hp": 4167006,
+        "actual_hp": 11738307
       }
     },
     {
@@ -1572,7 +1638,9 @@
       ],
       "measured": {
         "raid400_atk": 85412,
-        "actual_atk": 278667
+        "actual_atk": 278667,
+        "raid400_hp": 2714939,
+        "actual_hp": 8512614
       }
     },
     {
@@ -1618,7 +1686,9 @@
       ],
       "measured": {
         "raid400_atk": 97382,
-        "actual_atk": 333926
+        "actual_atk": 333926,
+        "raid400_hp": 2369524,
+        "actual_hp": 7691789
       }
     },
     {
@@ -1664,7 +1734,9 @@
       ],
       "measured": {
         "raid400_atk": 104824,
-        "actual_atk": 334257
+        "actual_atk": 334257,
+        "raid400_hp": 3306400,
+        "actual_hp": 10189401
       }
     },
     {
@@ -1710,7 +1782,9 @@
       ],
       "measured": {
         "raid400_atk": 75954,
-        "actual_atk": 239834
+        "actual_atk": 239834,
+        "raid400_hp": 3245561,
+        "actual_hp": 10005651
       }
     },
     {
@@ -1756,7 +1830,9 @@
       ],
       "measured": {
         "raid400_atk": 71051,
-        "actual_atk": 228747
+        "actual_atk": 228747,
+        "raid400_hp": 3033578,
+        "actual_hp": 9538570
       }
     },
     {
@@ -1802,7 +1878,9 @@
       ],
       "measured": {
         "raid400_atk": 121061,
-        "actual_atk": 352967
+        "actual_atk": 352967,
+        "raid400_hp": 2964948,
+        "actual_hp": 8182855
       }
     },
     {
@@ -1848,7 +1926,9 @@
       ],
       "measured": {
         "raid400_atk": 94445,
-        "actual_atk": 303393
+        "actual_atk": 303393,
+        "raid400_hp": 2980622,
+        "actual_hp": 9249068
       }
     },
     {
@@ -1894,7 +1974,9 @@
       ],
       "measured": {
         "raid400_atk": 89463,
-        "actual_atk": 282718
+        "actual_atk": 282718,
+        "raid400_hp": 2806013,
+        "actual_hp": 8603688
       }
     },
     {
@@ -1940,7 +2022,9 @@
       ],
       "measured": {
         "raid400_atk": 128010,
-        "actual_atk": 373830
+        "actual_atk": 373830,
+        "raid400_hp": 3128760,
+        "actual_hp": 8659741
       }
     },
     {
@@ -1986,7 +2070,9 @@
       ],
       "measured": {
         "raid400_atk": 144793,
-        "actual_atk": 425028
+        "actual_atk": 425028,
+        "raid400_hp": 3553122,
+        "actual_hp": 9858441
       }
     },
     {
@@ -2032,7 +2118,9 @@
       ],
       "measured": {
         "raid400_atk": 112563,
-        "actual_atk": 358383
+        "actual_atk": 358383,
+        "raid400_hp": 2785386,
+        "actual_hp": 8316367
       }
     },
     {
@@ -2078,7 +2166,9 @@
       ],
       "measured": {
         "raid400_atk": 120692,
-        "actual_atk": 352598
+        "actual_atk": 352598,
+        "raid400_hp": 2932980,
+        "actual_hp": 8150887
       }
     },
     {
@@ -2124,7 +2214,9 @@
       ],
       "measured": {
         "raid400_atk": 131606,
-        "actual_atk": 382342
+        "actual_atk": 382342,
+        "raid400_hp": 3224575,
+        "actual_hp": 8866176
       }
     },
     {
@@ -2170,7 +2262,9 @@
       ],
       "measured": {
         "raid400_atk": 96953,
-        "actual_atk": 314095
+        "actual_atk": 314095,
+        "raid400_hp": 3055038,
+        "actual_hp": 9569306
       }
     },
     {
@@ -2216,7 +2310,9 @@
       ],
       "measured": {
         "raid400_atk": 125972,
-        "actual_atk": 371792
+        "actual_atk": 371792,
+        "raid400_hp": 3054858,
+        "actual_hp": 8585839
       }
     },
     {
@@ -2262,7 +2358,9 @@
       ],
       "measured": {
         "raid400_atk": 106545,
-        "actual_atk": 16827
+        "actual_atk": 16827,
+        "raid400_hp": 2582337,
+        "actual_hp": 563670
       }
     },
     {
@@ -2308,7 +2406,9 @@
       ],
       "measured": {
         "raid400_atk": 79851,
-        "actual_atk": 5086
+        "actual_atk": 5086,
+        "raid400_hp": 2532782,
+        "actual_hp": 289819
       }
     },
     {
@@ -2354,7 +2454,9 @@
       ],
       "measured": {
         "raid400_atk": 88232,
-        "actual_atk": 285352
+        "actual_atk": 285352,
+        "raid400_hp": 2779914,
+        "actual_hp": 8693542
       }
     },
     {
@@ -2400,7 +2502,9 @@
       ],
       "measured": {
         "raid400_atk": 104920,
-        "actual_atk": 350740
+        "actual_atk": 350740,
+        "raid400_hp": 2497936,
+        "actual_hp": 8028917
       }
     },
     {
@@ -2446,7 +2550,9 @@
       ],
       "measured": {
         "raid400_atk": 101687,
-        "actual_atk": 6586
+        "actual_atk": 6586,
+        "raid400_hp": 2471494,
+        "actual_hp": 331707
       }
     },
     {
@@ -2492,7 +2598,9 @@
       ],
       "measured": {
         "raid400_atk": 101026,
-        "actual_atk": 332932
+        "actual_atk": 332932,
+        "raid400_hp": 2476671,
+        "actual_hp": 7694578
       }
     },
     {
@@ -2538,7 +2646,9 @@
       ],
       "measured": {
         "raid400_atk": 105966,
-        "actual_atk": 314914
+        "actual_atk": 314914,
+        "raid400_hp": 3337382,
+        "actual_hp": 9605828
       }
     },
     {
@@ -2584,7 +2694,9 @@
       ],
       "measured": {
         "raid400_atk": 93535,
-        "actual_atk": 302483
+        "actual_atk": 302483,
+        "raid400_hp": 2953322,
+        "actual_hp": 9221768
       }
     },
     {
@@ -2630,7 +2742,9 @@
       ],
       "measured": {
         "raid400_atk": 66515,
-        "actual_atk": 221119
+        "actual_atk": 221119,
+        "raid400_hp": 2770835,
+        "actual_hp": 9148278
       }
     },
     {
@@ -2676,7 +2790,9 @@
       ],
       "measured": {
         "raid400_atk": 87662,
-        "actual_atk": 292513
+        "actual_atk": 292513,
+        "raid400_hp": 2832318,
+        "actual_hp": 8977854
       }
     },
     {
@@ -2722,7 +2838,9 @@
       ],
       "measured": {
         "raid400_atk": 106404,
-        "actual_atk": 303524
+        "actual_atk": 303524,
+        "raid400_hp": 3270379,
+        "actual_hp": 9184007
       }
     },
     {
@@ -2768,7 +2886,9 @@
       ],
       "measured": {
         "raid400_atk": 110879,
-        "actual_atk": 356699
+        "actual_atk": 356699,
+        "raid400_hp": 2578777,
+        "actual_hp": 8109758
       }
     },
     {
@@ -2814,7 +2934,9 @@
       ],
       "measured": {
         "raid400_atk": 100850,
-        "actual_atk": 332756
+        "actual_atk": 332756,
+        "raid400_hp": 2450890,
+        "actual_hp": 7668797
       }
     },
     {
@@ -2860,7 +2982,9 @@
       ],
       "measured": {
         "raid400_atk": 95735,
-        "actual_atk": 327641
+        "actual_atk": 327641,
+        "raid400_hp": 2424447,
+        "actual_hp": 7642354
       }
     },
     {
@@ -2906,7 +3030,9 @@
       ],
       "measured": {
         "raid400_atk": 109912,
-        "actual_atk": 355732
+        "actual_atk": 355732,
+        "raid400_hp": 2659122,
+        "actual_hp": 8190103
       }
     },
     {
@@ -2952,7 +3078,9 @@
       ],
       "measured": {
         "raid400_atk": 136887,
-        "actual_atk": 402373
+        "actual_atk": 402373,
+        "raid400_hp": 3335978,
+        "actual_hp": 9309437
       }
     },
     {
@@ -2998,7 +3126,9 @@
       ],
       "measured": {
         "raid400_atk": 101026,
-        "actual_atk": 332932
+        "actual_atk": 332932,
+        "raid400_hp": 2476671,
+        "actual_hp": 7694578
       }
     },
     {
@@ -3044,7 +3174,9 @@
       ],
       "measured": {
         "raid400_atk": 126957,
-        "actual_atk": 372777
+        "actual_atk": 372777,
+        "raid400_hp": 3065789,
+        "actual_hp": 8596770
       }
     },
     {
@@ -3090,7 +3222,9 @@
       ],
       "measured": {
         "raid400_atk": 81440,
-        "actual_atk": 248597
+        "actual_atk": 248597,
+        "raid400_hp": 3409457,
+        "actual_hp": 10304748
       }
     },
     {
@@ -3136,7 +3270,9 @@
       ],
       "measured": {
         "raid400_atk": 103721,
-        "actual_atk": 354457
+        "actual_atk": 354457,
+        "raid400_hp": 2520924,
+        "actual_hp": 8162525
       }
     },
     {
@@ -3182,7 +3318,9 @@
       ],
       "measured": {
         "raid400_atk": 99860,
-        "actual_atk": 341042
+        "actual_atk": 341042,
+        "raid400_hp": 2427850,
+        "actual_hp": 7854473
       }
     },
     {
@@ -3228,7 +3366,9 @@
       ],
       "measured": {
         "raid400_atk": 74324,
-        "actual_atk": 238204
+        "actual_atk": 238204,
+        "raid400_hp": 3172949,
+        "actual_hp": 9933039
       }
     },
     {
@@ -3274,7 +3414,9 @@
       ],
       "measured": {
         "raid400_atk": 71124,
-        "actual_atk": 228820
+        "actual_atk": 228820,
+        "raid400_hp": 3036593,
+        "actual_hp": 9541585
       }
     },
     {
@@ -3320,7 +3462,9 @@
       ],
       "measured": {
         "raid400_atk": 128410,
-        "actual_atk": 388979
+        "actual_atk": 388979,
+        "raid400_hp": 3167492,
+        "actual_hp": 9030332
       }
     },
     {
@@ -3366,7 +3510,9 @@
       ],
       "measured": {
         "raid400_atk": 90871,
-        "actual_atk": 295722
+        "actual_atk": 295722,
+        "raid400_hp": 2861698,
+        "actual_hp": 9007234
       }
     },
     {
@@ -3412,7 +3558,9 @@
       ],
       "measured": {
         "raid400_atk": 128977,
-        "actual_atk": 374797
+        "actual_atk": 374797,
+        "raid400_hp": 3139466,
+        "actual_hp": 8670447
       }
     },
     {
@@ -3458,7 +3606,9 @@
       ],
       "measured": {
         "raid400_atk": 109313,
-        "actual_atk": 342843
+        "actual_atk": 342843,
+        "raid400_hp": 3443964,
+        "actual_hp": 10449875
       }
     },
     {
@@ -3504,7 +3654,9 @@
       ],
       "measured": {
         "raid400_atk": 107789,
-        "actual_atk": 308774
+        "actual_atk": 308774,
+        "raid400_hp": 3351182,
+        "actual_hp": 9380764
       }
     },
     {
@@ -3550,7 +3702,9 @@
       ],
       "measured": {
         "raid400_atk": 72989,
-        "actual_atk": 236869
+        "actual_atk": 236869,
+        "raid400_hp": 2970873,
+        "actual_hp": 9730963
       }
     },
     {
@@ -3596,7 +3750,9 @@
       ],
       "measured": {
         "raid400_atk": 126191,
-        "actual_atk": 372011
+        "actual_atk": 372011,
+        "raid400_hp": 3086826,
+        "actual_hp": 8617807
       }
     },
     {
@@ -3642,7 +3798,9 @@
       ],
       "measured": {
         "raid400_atk": 96797,
-        "actual_atk": 333341
+        "actual_atk": 333341,
+        "raid400_hp": 2356372,
+        "actual_hp": 7678637
       }
     },
     {
@@ -3688,7 +3846,9 @@
       ],
       "measured": {
         "raid400_atk": 89852,
-        "actual_atk": 253732
+        "actual_atk": 253732,
+        "raid400_hp": 3706497,
+        "actual_hp": 10466587
       }
     },
     {
@@ -3734,7 +3894,9 @@
       ],
       "measured": {
         "raid400_atk": 116184,
-        "actual_atk": 366920
+        "actual_atk": 366920,
+        "raid400_hp": 2836799,
+        "actual_hp": 8478400
       }
     },
     {
@@ -3780,7 +3942,9 @@
       ],
       "measured": {
         "raid400_atk": 95244,
-        "actual_atk": 308289
+        "actual_atk": 308289,
+        "raid400_hp": 3007485,
+        "actual_hp": 9398843
       }
     },
     {
@@ -3826,7 +3990,9 @@
       ],
       "measured": {
         "raid400_atk": 117124,
-        "actual_atk": 353668
+        "actual_atk": 353668,
+        "raid400_hp": 2897443,
+        "actual_hp": 8219708
       }
     },
     {
@@ -3872,7 +4038,9 @@
       ],
       "measured": {
         "raid400_atk": 94644,
-        "actual_atk": 19879
+        "actual_atk": 19879,
+        "raid400_hp": 2927057,
+        "actual_hp": 684094
       }
     },
     {
@@ -3918,7 +4086,9 @@
       ],
       "measured": {
         "raid400_atk": 84750,
-        "actual_atk": 278005
+        "actual_atk": 278005,
+        "raid400_hp": 2686293,
+        "actual_hp": 8483968
       }
     },
     {
@@ -3964,7 +4134,9 @@
       ],
       "measured": {
         "raid400_atk": 84750,
-        "actual_atk": 278005
+        "actual_atk": 278005,
+        "raid400_hp": 2686293,
+        "actual_hp": 8483968
       }
     },
     {
@@ -4010,7 +4182,9 @@
       ],
       "measured": {
         "raid400_atk": 86495,
-        "actual_atk": 279750
+        "actual_atk": 279750,
+        "raid400_hp": 2747453,
+        "actual_hp": 8545128
       }
     },
     {
@@ -4056,7 +4230,9 @@
       ],
       "measured": {
         "raid400_atk": 118431,
-        "actual_atk": 339670
+        "actual_atk": 339670,
+        "raid400_hp": 3711692,
+        "actual_hp": 10348871
       }
     },
     {
@@ -4102,7 +4278,9 @@
       ],
       "measured": {
         "raid400_atk": 135833,
-        "actual_atk": 416068
+        "actual_atk": 416068,
+        "raid400_hp": 3237952,
+        "actual_hp": 9543271
       }
     },
     {
@@ -4148,7 +4326,9 @@
       ],
       "measured": {
         "raid400_atk": 84750,
-        "actual_atk": 278005
+        "actual_atk": 278005,
+        "raid400_hp": 2686293,
+        "actual_hp": 8483968
       }
     },
     {
@@ -4194,7 +4374,9 @@
       ],
       "measured": {
         "raid400_atk": 123472,
-        "actual_atk": 360016
+        "actual_atk": 360016,
+        "raid400_hp": 3021743,
+        "actual_hp": 8344008
       }
     },
     {
@@ -4240,7 +4422,9 @@
       ],
       "measured": {
         "raid400_atk": 94971,
-        "actual_atk": 5253
+        "actual_atk": 5253,
+        "raid400_hp": 2312729,
+        "actual_hp": 294062
       }
     },
     {
@@ -4286,7 +4470,9 @@
       ],
       "measured": {
         "raid400_atk": 137836,
-        "actual_atk": 408238
+        "actual_atk": 408238,
+        "raid400_hp": 3354878,
+        "actual_hp": 9438958
       }
     },
     {
@@ -4332,7 +4518,9 @@
       ],
       "measured": {
         "raid400_atk": 107310,
-        "actual_atk": 312161
+        "actual_atk": 312161,
+        "raid400_hp": 3321514,
+        "actual_hp": 9467050
       }
     },
     {
@@ -4378,7 +4566,9 @@
       ],
       "measured": {
         "raid400_atk": 106641,
-        "actual_atk": 323783
+        "actual_atk": 323783,
+        "raid400_hp": 3363449,
+        "actual_hp": 9877717
       }
     },
     {
@@ -4424,7 +4614,9 @@
       ],
       "measured": {
         "raid400_atk": 128006,
-        "actual_atk": 383659
+        "actual_atk": 383659,
+        "raid400_hp": 3058827,
+        "actual_hp": 8811047
       }
     },
     {
@@ -4470,7 +4662,9 @@
       ],
       "measured": {
         "raid400_atk": 98024,
-        "actual_atk": 275015
+        "actual_atk": 275015,
+        "raid400_hp": 3974330,
+        "actual_hp": 11275228
       }
     },
     {
@@ -4516,7 +4710,9 @@
       ],
       "measured": {
         "raid400_atk": 68792,
-        "actual_atk": 232672
+        "actual_atk": 232672,
+        "raid400_hp": 2944934,
+        "actual_hp": 9705024
       }
     },
     {
@@ -4562,7 +4758,9 @@
       ],
       "measured": {
         "raid400_atk": 114726,
-        "actual_atk": 348256
+        "actual_atk": 348256,
+        "raid400_hp": 3621238,
+        "actual_hp": 10627149
       }
     },
     {
@@ -4608,7 +4806,9 @@
       ],
       "measured": {
         "raid400_atk": 106488,
-        "actual_atk": 299743
+        "actual_atk": 299743,
+        "raid400_hp": 3307336,
+        "actual_hp": 9105011
       }
     },
     {
@@ -4654,7 +4854,9 @@
       ],
       "measured": {
         "raid400_atk": 94866,
-        "actual_atk": 5148
+        "actual_atk": 5148,
+        "raid400_hp": 2310369,
+        "actual_hp": 291702
       }
     },
     {
@@ -4700,7 +4902,9 @@
       ],
       "measured": {
         "raid400_atk": 133305,
-        "actual_atk": 384041
+        "actual_atk": 384041,
+        "raid400_hp": 3272611,
+        "actual_hp": 8914212
       }
     },
     {
@@ -4746,7 +4950,9 @@
       ],
       "measured": {
         "raid400_atk": 76235,
-        "actual_atk": 246670
+        "actual_atk": 246670,
+        "raid400_hp": 3256082,
+        "actual_hp": 10286576
       }
     },
     {
@@ -4792,7 +4998,9 @@
       ],
       "measured": {
         "raid400_atk": 102093,
-        "actual_atk": 12375
+        "actual_atk": 12375,
+        "raid400_hp": 2469592,
+        "actual_hp": 450925
       }
     },
     {
@@ -4838,7 +5046,9 @@
       ],
       "measured": {
         "raid400_atk": 85113,
-        "actual_atk": 255548
+        "actual_atk": 255548,
+        "raid400_hp": 3551924,
+        "actual_hp": 10582418
       }
     },
     {
@@ -4884,7 +5094,9 @@
       ],
       "measured": {
         "raid400_atk": 126323,
-        "actual_atk": 386892
+        "actual_atk": 386892,
+        "raid400_hp": 3099042,
+        "actual_hp": 8961882
       }
     },
     {
@@ -4930,7 +5142,9 @@
       ],
       "measured": {
         "raid400_atk": 107017,
-        "actual_atk": 328256
+        "actual_atk": 328256,
+        "raid400_hp": 3371723,
+        "actual_hp": 10008902
       }
     },
     {
@@ -4976,7 +5190,9 @@
       ],
       "measured": {
         "raid400_atk": 74324,
-        "actual_atk": 238204
+        "actual_atk": 238204,
+        "raid400_hp": 3172949,
+        "actual_hp": 9933039
       }
     },
     {
@@ -5022,7 +5238,9 @@
       ],
       "measured": {
         "raid400_atk": 94325,
-        "actual_atk": 303273
+        "actual_atk": 303273,
+        "raid400_hp": 2970411,
+        "actual_hp": 9238857
       }
     },
     {
@@ -5068,7 +5286,9 @@
       ],
       "measured": {
         "raid400_atk": 111809,
-        "actual_atk": 367462
+        "actual_atk": 367462,
+        "raid400_hp": 2734296,
+        "actual_hp": 8486516
       }
     },
     {
@@ -5114,7 +5334,9 @@
       ],
       "measured": {
         "raid400_atk": 77093,
-        "actual_atk": 247528
+        "actual_atk": 247528,
+        "raid400_hp": 3291464,
+        "actual_hp": 10321958
       }
     },
     {
@@ -5160,7 +5382,9 @@
       ],
       "measured": {
         "raid400_atk": 103716,
-        "actual_atk": 300836
+        "actual_atk": 300836,
+        "raid400_hp": 3197864,
+        "actual_hp": 9111492
       }
     },
     {
@@ -5206,7 +5430,9 @@
       ],
       "measured": {
         "raid400_atk": 135673,
-        "actual_atk": 396242
+        "actual_atk": 396242,
+        "raid400_hp": 3323435,
+        "actual_hp": 9186275
       }
     },
     {
@@ -5252,7 +5478,9 @@
       ],
       "measured": {
         "raid400_atk": 123543,
-        "actual_atk": 384112
+        "actual_atk": 384112,
+        "raid400_hp": 3015642,
+        "actual_hp": 8878482
       }
     },
     {
@@ -5298,7 +5526,9 @@
       ],
       "measured": {
         "raid400_atk": 79851,
-        "actual_atk": 5086
+        "actual_atk": 5086,
+        "raid400_hp": 2532782,
+        "actual_hp": 289819
       }
     },
     {
@@ -5344,7 +5574,9 @@
       ],
       "measured": {
         "raid400_atk": 134107,
-        "actual_atk": 399593
+        "actual_atk": 399593,
+        "raid400_hp": 3252578,
+        "actual_hp": 9226037
       }
     },
     {
@@ -5390,7 +5622,9 @@
       ],
       "measured": {
         "raid400_atk": 84426,
-        "actual_atk": 289277
+        "actual_atk": 289277,
+        "raid400_hp": 2677259,
+        "actual_hp": 8822795
       }
     },
     {
@@ -5436,7 +5670,9 @@
       ],
       "measured": {
         "raid400_atk": 143543,
-        "actual_atk": 418862
+        "actual_atk": 418862,
+        "raid400_hp": 3532402,
+        "actual_hp": 9727100
       }
     },
     {
@@ -5482,7 +5718,9 @@
       ],
       "measured": {
         "raid400_atk": 92265,
-        "actual_atk": 289385
+        "actual_atk": 289385,
+        "raid400_hp": 2892485,
+        "actual_hp": 8806113
       }
     },
     {
@@ -5528,7 +5766,9 @@
       ],
       "measured": {
         "raid400_atk": 74914,
-        "actual_atk": 238794
+        "actual_atk": 238794,
+        "raid400_hp": 3176706,
+        "actual_hp": 9936796
       }
     },
     {
@@ -5574,7 +5814,9 @@
       ],
       "measured": {
         "raid400_atk": 120692,
-        "actual_atk": 352598
+        "actual_atk": 352598,
+        "raid400_hp": 2932980,
+        "actual_hp": 8150887
       }
     },
     {
@@ -5620,7 +5862,9 @@
       ],
       "measured": {
         "raid400_atk": 135150,
-        "actual_atk": 395719
+        "actual_atk": 395719,
+        "raid400_hp": 3288701,
+        "actual_hp": 9151541
       }
     },
     {
@@ -5666,7 +5910,9 @@
       ],
       "measured": {
         "raid400_atk": 65955,
-        "actual_atk": 223651
+        "actual_atk": 223651,
+        "raid400_hp": 2823510,
+        "actual_hp": 9328502
       }
     },
     {
@@ -5712,7 +5958,9 @@
       ],
       "measured": {
         "raid400_atk": 110576,
-        "actual_atk": 20858
+        "actual_atk": 20858,
+        "raid400_hp": 2708587,
+        "actual_hp": 689920
       }
     },
     {
@@ -5758,7 +6006,9 @@
       ],
       "measured": {
         "raid400_atk": 120806,
-        "actual_atk": 29294
+        "actual_atk": 29294,
+        "raid400_hp": 2931986,
+        "actual_hp": 872946
       }
     },
     {
@@ -5804,7 +6054,9 @@
       ],
       "measured": {
         "raid400_atk": 86070,
-        "actual_atk": 11305
+        "actual_atk": 11305,
+        "raid400_hp": 2736092,
+        "actual_hp": 493129
       }
     },
     {
@@ -5850,7 +6102,9 @@
       ],
       "measured": {
         "raid400_atk": 109925,
-        "actual_atk": 360661
+        "actual_atk": 360661,
+        "raid400_hp": 2638626,
+        "actual_hp": 8280227
       }
     },
     {
@@ -5896,7 +6150,9 @@
       ],
       "measured": {
         "raid400_atk": 91041,
-        "actual_atk": 284296
+        "actual_atk": 284296,
+        "raid400_hp": 2873703,
+        "actual_hp": 8671378
       }
     },
     {
@@ -5942,7 +6198,9 @@
       ],
       "measured": {
         "raid400_atk": 112232,
-        "actual_atk": 325277
+        "actual_atk": 325277,
+        "raid400_hp": 3519964,
+        "actual_hp": 9911322
       }
     },
     {
@@ -5988,7 +6246,9 @@
       ],
       "measured": {
         "raid400_atk": 73100,
-        "actual_atk": 233888
+        "actual_atk": 233888,
+        "raid400_hp": 3120274,
+        "actual_hp": 9752815
       }
     },
     {
@@ -6034,7 +6294,9 @@
       ],
       "measured": {
         "raid400_atk": 106946,
-        "actual_atk": 352766
+        "actual_atk": 352766,
+        "raid400_hp": 2556038,
+        "actual_hp": 8087019
       }
     },
     {
@@ -6080,7 +6342,9 @@
       ],
       "measured": {
         "raid400_atk": 93774,
-        "actual_atk": 306819
+        "actual_atk": 306819,
+        "raid400_hp": 2970025,
+        "actual_hp": 9361383
       }
     },
     {
@@ -6126,7 +6390,9 @@
       ],
       "measured": {
         "raid400_atk": 110726,
-        "actual_atk": 342632
+        "actual_atk": 342632,
+        "raid400_hp": 2708587,
+        "actual_hp": 7926494
       }
     },
     {
@@ -6172,7 +6438,9 @@
       ],
       "measured": {
         "raid400_atk": 122504,
-        "actual_atk": 373240
+        "actual_atk": 373240,
+        "raid400_hp": 2947604,
+        "actual_hp": 8589205
       }
     },
     {
@@ -6218,7 +6486,9 @@
       ],
       "measured": {
         "raid400_atk": 139988,
-        "actual_atk": 405474
+        "actual_atk": 405474,
+        "raid400_hp": 3421846,
+        "actual_hp": 9395305
       }
     },
     {
@@ -6264,7 +6534,9 @@
       ],
       "measured": {
         "raid400_atk": 94971,
-        "actual_atk": 5253
+        "actual_atk": 5253,
+        "raid400_hp": 2312729,
+        "actual_hp": 294062
       }
     },
     {
@@ -6310,7 +6582,9 @@
       ],
       "measured": {
         "raid400_atk": 66515,
-        "actual_atk": 221119
+        "actual_atk": 221119,
+        "raid400_hp": 2770835,
+        "actual_hp": 9148278
       }
     },
     {
@@ -6356,7 +6630,9 @@
       ],
       "measured": {
         "raid400_atk": 122167,
-        "actual_atk": 358711
+        "actual_atk": 358711,
+        "raid400_hp": 2952888,
+        "actual_hp": 8275153
       }
     },
     {
@@ -6402,7 +6678,9 @@
       ],
       "measured": {
         "raid400_atk": 137208,
-        "actual_atk": 402694
+        "actual_atk": 402694,
+        "raid400_hp": 3338446,
+        "actual_hp": 9311905
       }
     },
     {
@@ -6448,7 +6726,9 @@
       ],
       "measured": {
         "raid400_atk": 95471,
-        "actual_atk": 327377
+        "actual_atk": 327377,
+        "raid400_hp": 2312729,
+        "actual_hp": 7530636
       }
     },
     {
@@ -6494,7 +6774,9 @@
       ],
       "measured": {
         "raid400_atk": 83091,
-        "actual_atk": 280211
+        "actual_atk": 280211,
+        "raid400_hp": 2602976,
+        "actual_hp": 8516604
       }
     },
     {
@@ -6540,7 +6822,9 @@
       ],
       "measured": {
         "raid400_atk": 126495,
-        "actual_atk": 387064
+        "actual_atk": 387064,
+        "raid400_hp": 3030396,
+        "actual_hp": 8893236
       }
     },
     {
@@ -6586,7 +6870,9 @@
       ],
       "measured": {
         "raid400_atk": 111633,
-        "actual_atk": 367286
+        "actual_atk": 367286,
+        "raid400_hp": 2702565,
+        "actual_hp": 8454785
       }
     },
     {
@@ -6632,7 +6918,9 @@
       ],
       "measured": {
         "raid400_atk": 102167,
-        "actual_atk": 299287
+        "actual_atk": 299287,
+        "raid400_hp": 3174640,
+        "actual_hp": 9088268
       }
     },
     {
@@ -6678,7 +6966,9 @@
       ],
       "measured": {
         "raid400_atk": 86220,
-        "actual_atk": 279475
+        "actual_atk": 279475,
+        "raid400_hp": 2723753,
+        "actual_hp": 8521428
       }
     },
     {
@@ -6724,7 +7014,9 @@
       ],
       "measured": {
         "raid400_atk": 103291,
-        "actual_atk": 349111
+        "actual_atk": 349111,
+        "raid400_hp": 2467227,
+        "actual_hp": 7998208
       }
     },
     {
@@ -6770,7 +7062,9 @@
       ],
       "measured": {
         "raid400_atk": 90891,
-        "actual_atk": 284146
+        "actual_atk": 284146,
+        "raid400_hp": 2873703,
+        "actual_hp": 8671378
       }
     },
     {
@@ -6816,7 +7110,9 @@
       ],
       "measured": {
         "raid400_atk": 89730,
-        "actual_atk": 266721
+        "actual_atk": 266721,
+        "raid400_hp": 3753352,
+        "actual_hp": 11054250
       }
     },
     {
@@ -6862,7 +7158,9 @@
       ],
       "measured": {
         "raid400_atk": 123558,
-        "actual_atk": 357088
+        "actual_atk": 357088,
+        "raid400_hp": 3861887,
+        "actual_hp": 10867798
       }
     },
     {
@@ -6908,7 +7206,9 @@
       ],
       "measured": {
         "raid400_atk": 88232,
-        "actual_atk": 285352
+        "actual_atk": 285352,
+        "raid400_hp": 2786525,
+        "actual_hp": 8700153
       }
     },
     {
@@ -6954,7 +7254,9 @@
       ],
       "measured": {
         "raid400_atk": 115923,
-        "actual_atk": 396158
+        "actual_atk": 396158,
+        "raid400_hp": 2817503,
+        "actual_hp": 9122822
       }
     },
     {
@@ -7000,7 +7302,9 @@
       ],
       "measured": {
         "raid400_atk": 105785,
-        "actual_atk": 306770
+        "actual_atk": 306770,
+        "raid400_hp": 3262338,
+        "actual_hp": 9291920
       }
     },
     {
@@ -7046,7 +7350,9 @@
       ],
       "measured": {
         "raid400_atk": 112532,
-        "actual_atk": 11725
+        "actual_atk": 11725,
+        "raid400_hp": 2748271,
+        "actual_hp": 480096
       }
     },
     {
@@ -7092,7 +7398,9 @@
       ],
       "measured": {
         "raid400_atk": 118676,
-        "actual_atk": 359858
+        "actual_atk": 359858,
+        "raid400_hp": 2854446,
+        "actual_hp": 8281069
       }
     },
     {
@@ -7138,7 +7446,9 @@
       ],
       "measured": {
         "raid400_atk": 113974,
-        "actual_atk": 359794
+        "actual_atk": 359794,
+        "raid400_hp": 2767538,
+        "actual_hp": 8298519
       }
     },
     {
@@ -7184,7 +7494,9 @@
       ],
       "measured": {
         "raid400_atk": 104263,
-        "actual_atk": 340807
+        "actual_atk": 340807,
+        "raid400_hp": 2502466,
+        "actual_hp": 7824731
       }
     },
     {
@@ -7230,7 +7542,9 @@
       ],
       "measured": {
         "raid400_atk": 97385,
-        "actual_atk": 5873
+        "actual_atk": 5873,
+        "raid400_hp": 2442309,
+        "actual_hp": 383269
       }
     },
     {
@@ -7276,7 +7590,9 @@
       ],
       "measured": {
         "raid400_atk": 67406,
-        "actual_atk": 5202
+        "actual_atk": 5202,
+        "raid400_hp": 2885554,
+        "actual_hp": 319605
       }
     },
     {
@@ -7322,7 +7638,9 @@
       ],
       "measured": {
         "raid400_atk": 110060,
-        "actual_atk": 335396
+        "actual_atk": 335396,
+        "raid400_hp": 3471777,
+        "actual_hp": 10231866
       }
     }
   ]

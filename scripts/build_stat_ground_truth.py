@@ -94,7 +94,12 @@ def main() -> int:
                     }
                     for s in SLOTS
                 ],
-                "measured": {"raid400_atk": u["raid400"]["atk"], "actual_atk": u["actual"]["atk"]},
+                "measured": {
+                    "raid400_atk": u["raid400"]["atk"],
+                    "actual_atk": u["actual"]["atk"],
+                    "raid400_hp": u["raid400"]["hp"],
+                    "actual_hp": u["actual"]["hp"],
+                },
             }
         )
 

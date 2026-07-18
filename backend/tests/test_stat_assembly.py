@@ -20,6 +20,14 @@ from app.stat_assembly import (
     base_atk,
     core_flat_atk,
     assemble_atk,
+    affinity_hp,
+    research_hp,
+    equipment_hp,
+    cube_hp,
+    collectible_hp,
+    base_hp,
+    core_flat_hp,
+    assemble_hp,
     load_stat_tables,
 )
 
@@ -452,3 +460,76 @@ def test_full_model_reproduces_the_whole_roster(
             off.append((u["name_en"], round(delta, 1)))
     assert off == [], off
     assert exact == 159, f"regression: only {exact}/159 exact"
+
+
+# --- HP model -----------------------------------------------------------------
+
+
+def test_base_hp_reads_the_class_curve(tables):
+    # HP curves are class-uniform too (Quency.hp == Rapi.hp), same as ATK.
+    assert base_hp(tables, "Attacker", 1) == 13500
+    assert base_hp(tables, "Supporter", 1) == 15000
+    assert base_hp(tables, "Defender", 1) == 16500
+
+
+def test_core_flat_hp_tiers(tables):
+    # Fitted against measured HP: class default, one OVERSPEC tier that also
+    # covers Pilgrims (HP does NOT split Pilgrim from OVERSPEC the way ATK does),
+    # and three per-unit outliers.
+    assert core_flat_hp("Attacker") == pytest.approx(6347.944)
+    assert core_flat_hp("Supporter") == pytest.approx(6294.678)
+    assert core_flat_hp("Defender") == pytest.approx(6601.727)
+    assert core_flat_hp("Attacker", corporation_sub_type="OVERSPEC") == pytest.approx(6663.054)
+    assert core_flat_hp("Attacker", corporation="PILGRIM") == pytest.approx(6663.054)
+    assert core_flat_hp("Defender", corporation="PILGRIM") == pytest.approx(6986.799)
+    assert core_flat_hp("Attacker", resource_id=91) == pytest.approx(5791.386)
+
+
+def test_research_hp_is_personal_plus_class_not_corporation(tables, ground_truth_ranks):
+    # HP account research lives in the Personal (account-wide) and Class-specific
+    # rows; the Corporation rows carry ATK, not HP (their hp column is 0). So
+    # research HP depends on class, and is the same across corporations.
+    # Attacker: Personal rank 310 * 450 + Class rank 176 * 750 = 271500.
+    assert research_hp(tables, "Attacker", ground_truth_ranks) == 271500
+    assert research_hp(tables, "Defender", ground_truth_ranks) == 276000
+    assert research_hp(tables, "Supporter", ground_truth_ranks) == 264750
+
+
+def test_affinity_hp_reads_the_hp_column(tables):
+    assert affinity_hp(tables, "Attacker", 10) == 9062
+    assert affinity_hp(tables, "Defender", 10) == 11076
+    assert affinity_hp(tables, "Supporter", 10) == 10069
+    assert affinity_hp(tables, "Attacker", 1) == 0
+
+
+def test_full_hp_model_reproduces_the_whole_roster(
+    tables, ground_truth, ground_truth_ranks, identity
+):
+    """Level-400 HP for every collected unit, exactly (mirrors the ATK parity)."""
+    exact, off = 0, []
+    for u in ground_truth:
+        flat = (
+            affinity_hp(tables, u["class"], u["attractive_lv"])
+            + research_hp(tables, u["class"], ground_truth_ranks)
+            + sum(
+                equipment_hp(
+                    tables, x["tid"], x["lv"],
+                    equip_corporation_type=x["corporation_type"],
+                    unit_corporation=u["corporation"],
+                )
+                for x in u["equip"]
+            )
+            + cube_hp(tables, u["harmony_cube_lv"])
+            + collectible_hp(tables, u["favorite_item_tid"], u["favorite_item_lv"])
+        )
+        predicted = assemble_hp(
+            tables, character_class=u["class"], level=400,
+            grade=u["grade"], core=u["core"], corporation=u["corporation"],
+            **identity[u["name_en"]], extra_flat_hp=flat,
+        )
+        delta = u["measured"]["raid400_hp"] - predicted
+        exact += abs(delta) < 1.0
+        if abs(delta) >= 1.0:
+            off.append((u["name_en"], round(delta, 1)))
+    assert off == [], off
+    assert exact == 159, f"only {exact}/159 exact"
