@@ -50,7 +50,7 @@ def main() -> int:
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     args = ap.parse_args()
 
-    for p in (ROSTER, DETAILS, DIRECTORY, OUTPOST):
+    for p in (ROSTER, DETAILS, DIRECTORY):
         if not p.exists():
             print(f"missing {p}", file=sys.stderr)
             return 1
@@ -99,7 +99,15 @@ def main() -> int:
 
     units.sort(key=lambda x: x["name_en"])
     args.out.parent.mkdir(parents=True, exist_ok=True)
-    research = json.loads(OUTPOST.read_text(encoding="utf-8"))["recycle_room_researches"]
+    # `collect.js --details` writes the research ranks alongside the per-unit
+    # details; older dumps kept them in a separate outpost.json.
+    if "recycle_room_researches" in raw:
+        research = raw["recycle_room_researches"]
+    elif OUTPOST.exists():
+        research = json.loads(OUTPOST.read_text(encoding="utf-8"))["recycle_room_researches"]
+    else:
+        print(f"no research ranks: rerun `node collect.js --details`", file=sys.stderr)
+        return 1
     payload = {"account_research": {str(r["tid"]): r["lv"] for r in research}, "units": units}
     args.out.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     levels = sorted({u["level"] for u in units})

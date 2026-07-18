@@ -12,6 +12,8 @@
 //   --directory dump the public nikke directory to nikke-directory.json and stop
 //   --tables    dump the public stat tables (base curves per class, equipment,
 //               affinity) to nikke-stat-tables.json and stop
+//   --details   dump this account's investment inputs + outpost research ranks
+//               to details.json and stop (personal data; gitignored)
 // Both dump modes read only public static game data and return before the
 // account lookup, so neither needs a logged-in session.
 
@@ -24,7 +26,14 @@ const args = process.argv.slice(2)
 const DRY = args.includes('--dry-run')
 const DIRECTORY_ONLY = args.includes('--directory')
 const TABLES_ONLY = args.includes('--tables')
-const DEFAULT_OUT = DIRECTORY_ONLY ? 'nikke-directory.json' : TABLES_ONLY ? 'nikke-stat-tables.json' : 'roster.json'
+const DETAILS_ONLY = args.includes('--details')
+const DEFAULT_OUT = DIRECTORY_ONLY
+  ? 'nikke-directory.json'
+  : TABLES_ONLY
+    ? 'nikke-stat-tables.json'
+    : DETAILS_ONLY
+      ? 'details.json'
+      : 'roster.json'
 const OUT = args.includes('--out') ? args[args.indexOf('--out') + 1] : DEFAULT_OUT
 const AREA = args.includes('--area') ? parseInt(args[args.indexOf('--area') + 1], 10) : 81
 
@@ -125,6 +134,37 @@ const collectStatTables = async (page, dir) => {
   return out
 }
 
+// The investment inputs behind the stats: per-unit gear/cube/collectible/affinity
+// plus the account-wide outpost research ranks. Joined with roster.json's measured
+// stats this is the stat calculator's ground truth (scripts/build_stat_ground_truth.py).
+// Personal data - the output is gitignored.
+const collectDetails = async (page, openid, area, owned) => {
+  const call = (endpoint, body) =>
+    page.evaluate(
+      async ({ endpoint, body }) => {
+        const r = await fetch(`https://api.blablalink.com/api/game/proxy/Game/${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+          credentials: 'include',
+        })
+        const j = await r.json()
+        if (j.code !== 0) throw new Error(`${endpoint}: ${j.code} ${j.msg}`)
+        return j.data
+      },
+      { endpoint, body },
+    )
+  const base = { intl_open_id: openid, nikke_area_id: area }
+  // name_codes takes the whole roster in one request, so this is two calls total.
+  const detail = await call('GetUserCharacterDetails', { ...base, name_codes: owned.map((c) => c.name_code) })
+  const outpost = await call('GetUserProfileOutpostInfo', base)
+  return {
+    owned: owned.map((c) => ({ name_code: c.name_code, lv: c.lv, core: c.core, grade: c.grade })),
+    character_details: detail.character_details,
+    recycle_room_researches: outpost.outpost_info.recycle_room_researches,
+  }
+}
+
 const fetchOwned = (page, openid, area) =>
   page.evaluate(
     async ({ openid, area }) => {
@@ -215,6 +255,18 @@ const main = async () => {
   log('fetching owned characters…')
   const owned = await fetchOwned(page, openid, AREA)
   const synchroLevel = owned.reduce((m, c) => Math.max(m, c.lv || 0), 0)
+
+  if (DETAILS_ONLY) {
+    log('fetching investment details…')
+    const details = await collectDetails(page, openid, AREA, owned)
+    fs.writeFileSync(OUT, `${JSON.stringify(details, null, 2)}\n`)
+    log(
+      `wrote ${OUT}: ${details.character_details.length} units, ` +
+        `${details.recycle_room_researches.length} research rows`,
+    )
+    await browser.close()
+    return
+  }
 
   let targets = []
   for (const c of owned) {
