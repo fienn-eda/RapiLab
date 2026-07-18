@@ -188,6 +188,12 @@ from app.skill_rules.soda_twinkling_bunny import (
     build_onward_soda_resource_gated_buffs,
     onward_soda_burst_percent,
 )
+from app.skill_rules.snow_white import (
+    build_determination_per_shot_rules,
+    build_seven_dwarves_weapon_mode_schedule,
+    build_snow_white_rules,
+    snow_white_periodic_nuke,
+)
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules.takina_inoue import (
     BATTLEFIELD_CONTROL_COOLDOWN,
@@ -335,6 +341,7 @@ _BUILDERS = {
     ),
     "red-hood": lambda sv: (build_red_hood_rules(sv), None),  # burst is the Step 3 weapon transform (weapon-mode segment), no direct nuke
     "scarlet-black-shadow": lambda sv: (build_scarlet_black_shadow_rules(sv), None),  # burst is buff-only; damage is the Breakthrough sequence (per-shot)
+    "snow-white": lambda sv: (build_snow_white_rules(sv), None),  # burst is the weapon transform (weapon-mode segment), no direct nuke
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
     "laplace": lambda sv: ([], laplace_buster_burst_percent(sv)),  # no ally buffs; weapon-transform + Hero Vision deferred
@@ -372,6 +379,7 @@ _PERIODIC_NUKE_BUILDERS = {
     },
     "jill-valentine": lambda sv: build_acid_ammo_periodic_nuke(sv),
     "little-mermaid": lambda sv: build_bubble_wave_fb_nuke(sv),
+    "snow-white": lambda sv: snow_white_periodic_nuke(sv),
 }
 
 # A Nikke's burst nuke is "attack"-typed unless its skill deals a specific
@@ -397,6 +405,7 @@ _SCHEDULED_NUKE_BUILDERS = {
 # segments - see raid_simulator's `weapon_mode_schedules` and the design spec).
 _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "red-hood": lambda sv: build_red_wolf_weapon_mode_schedule(sv),  # Step 3 transform window, 33 measured shots
+    "snow-white": lambda sv: build_seven_dwarves_weapon_mode_schedule(sv),  # single 5s-charge cannon shot per own-burst
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at
@@ -447,6 +456,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "drake-signature": lambda sv: build_thunderbolt_signature_per_shot_rules(sv),
     "laplace": lambda sv: build_hero_bomber_per_shot_rules(sv),
     "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),
+    "snow-white": lambda sv: build_determination_per_shot_rules(sv),
     "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
     "velvet": lambda sv: build_velvet_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
