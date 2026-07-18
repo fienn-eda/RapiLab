@@ -172,7 +172,7 @@ def curl_fetch(slug):
     data-sources reference documents (lootandwaifus 403s non-browser UAs)."""
     url = f"https://lootandwaifus.com/character/{slug}-nikke/"
     result = subprocess.run(
-        ["curl", "-s", "-L", "--fail", "--max-time", "60", "-A", USER_AGENT,
+        ["curl", "-sS", "-L", "--fail", "--max-time", "60", "-A", USER_AGENT,
          url],
         capture_output=True, text=True, encoding="utf-8")
     if result.returncode != 0 or not result.stdout:
