@@ -3,1164 +3,1552 @@
     "resource_id": 10,
     "name_code": 3001,
     "name_en": "Rapi",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 11,
     "name_code": 3002,
     "name_en": "Neon",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 12,
     "name_code": 3005,
     "name_en": "Anis",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 14,
     "name_code": 5071,
     "name_en": "Neon: Blue Ocean",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 15,
     "name_code": 5097,
     "name_en": "Anis: Sparkling Summer",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 16,
     "name_code": 5129,
     "name_en": "Rapi: Red Hood",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 17,
     "name_code": 5169,
     "name_en": "Anis: Star",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 18,
     "name_code": 5170,
     "name_en": "Neon: Vision Eye",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 20,
     "name_code": 3003,
     "name_en": "Delta",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Defender",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 22,
     "name_code": 5015,
     "name_en": "Signal",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 23,
     "name_code": 5154,
     "name_en": "Delta: Ninja Thief",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 30,
     "name_code": 5016,
     "name_en": "Poli",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 32,
     "name_code": 5017,
     "name_en": "Miranda",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 33,
     "name_code": 5082,
     "name_en": "Quiry",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 40,
     "name_code": 1007,
     "name_en": "D",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 41,
     "name_code": 5141,
     "name_en": "K",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 43,
     "name_code": 5110,
     "name_en": "D: Killer Wife",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 60,
     "name_code": 3007,
     "name_en": "Belorta",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 61,
     "name_code": 3008,
     "name_en": "Mica",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 62,
     "name_code": 5104,
     "name_en": "Mica: Snow Buddy",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 70,
     "name_code": 5018,
     "name_en": "Brid",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 71,
     "name_code": 5019,
     "name_en": "Soline",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 72,
     "name_code": 5020,
     "name_en": "Diesel",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 73,
     "name_code": 5160,
     "name_en": "Brid: Silent Track",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 74,
     "name_code": 5158,
     "name_en": "Soline: Frost Ticket",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 75,
     "name_code": 5159,
     "name_en": "Diesel: Winter Sweets",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 80,
     "name_code": 5021,
     "name_en": "Centi",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 82,
     "name_code": 5011,
     "name_en": "Liter",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 90,
     "name_code": 5005,
     "name_en": "Emma",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 91,
     "name_code": 5022,
     "name_en": "Vesti",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 92,
     "name_code": 5023,
     "name_en": "Eunhwa",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 93,
     "name_code": 5147,
     "name_en": "Emma: Tactical Upgrade",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 94,
     "name_code": 5148,
     "name_en": "Vesti: Tactical Upgrade",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 95,
     "name_code": 5149,
     "name_en": "Eunhwa: Tactical Upgrade",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 100,
     "name_code": 1010,
     "name_en": "Laplace",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 101,
     "name_code": 5024,
     "name_en": "Drake",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 102,
     "name_code": 5001,
     "name_en": "Maxwell",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 110,
     "name_code": 5025,
     "name_en": "Crow",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 111,
     "name_code": 1020,
     "name_en": "Jackal",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 112,
     "name_code": 1022,
     "name_en": "Viper",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 113,
     "name_code": 5166,
     "name_en": "E.H.",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 120,
     "name_code": 3009,
     "name_en": "N102",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 121,
     "name_code": 5085,
     "name_en": "Anne: Miracle Fairy",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 130,
     "name_code": 5026,
     "name_en": "Mary",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 131,
     "name_code": 5027,
     "name_en": "Pepper",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 132,
     "name_code": 5064,
     "name_en": "Mary: Bay Goddess",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 140,
     "name_code": 5002,
     "name_en": "Sugar",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 141,
     "name_code": 5028,
     "name_en": "Milk",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 142,
     "name_code": 5010,
     "name_en": "Frima",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 143,
     "name_code": 5150,
     "name_en": "Milk: Blooming Bunny",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 150,
     "name_code": 5014,
     "name_en": "Julia",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 160,
     "name_code": 5006,
     "name_en": "Yuni",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 161,
     "name_code": 3006,
     "name_en": "Mihara",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 162,
     "name_code": 5138,
     "name_en": "Mihara: Bonding Chain",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 170,
     "name_code": 5007,
     "name_en": "Privaty",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 171,
     "name_code": 5029,
     "name_en": "Yulha",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 172,
     "name_code": 5030,
     "name_en": "Admi",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 180,
     "name_code": 5031,
     "name_en": "Guillotine",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 181,
     "name_code": 5032,
     "name_en": "Maiden",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 182,
     "name_code": 5128,
     "name_en": "Guillotine: Winter Slayer",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 183,
     "name_code": 5127,
     "name_en": "Maiden: Ice Rose",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 190,
     "name_code": 5033,
     "name_en": "Ludmilla",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 191,
     "name_code": 5004,
     "name_en": "Alice",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 192,
     "name_code": 5081,
     "name_en": "Tove",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 193,
     "name_code": 3011,
     "name_en": "Neve",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 194,
     "name_code": 5103,
     "name_en": "Ludmilla: Winter Owner",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 195,
     "name_code": 5114,
     "name_en": "Alice: Wonderland Bunny",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 200,
     "name_code": 5034,
     "name_en": "Rupee",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 201,
     "name_code": 5035,
     "name_en": "Yan",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 202,
     "name_code": 5036,
     "name_en": "Dolla",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 203,
     "name_code": 5087,
     "name_en": "Rupee: Winter Shopper",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 210,
     "name_code": 5003,
     "name_en": "Exia",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 212,
     "name_code": 5037,
     "name_en": "Novel",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 220,
     "name_code": 5012,
     "name_en": "Snow White",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 221,
     "name_code": 5040,
     "name_en": "Rapunzel",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 222,
     "name_code": 5041,
     "name_en": "Scarlet",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 223,
     "name_code": 5155,
     "name_en": "Nayuta",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 224,
     "name_code": 5102,
     "name_en": "Snow White: Innocent Days",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 225,
     "name_code": 5105,
     "name_en": "Scarlet: Black Shadow",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 226,
     "name_code": 5123,
     "name_en": "Rapunzel: Pure Grace",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 230,
     "name_code": 5042,
     "name_en": "Harran",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 231,
     "name_code": 5013,
     "name_en": "Isabel",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 232,
     "name_code": 5043,
     "name_en": "Noah",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 233,
     "name_code": 5061,
     "name_en": "Dorothy",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 234,
     "name_code": 5145,
     "name_en": "Dorothy: Serendipity",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 240,
     "name_code": 3004,
     "name_en": "Rumani",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 241,
     "name_code": 5038,
     "name_en": "Epinel",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 242,
     "name_code": 5039,
     "name_en": "Folkwang",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 260,
     "name_code": 5044,
     "name_en": "Modernia",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 261,
     "name_code": 5056,
     "name_en": "Nihilister",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 262,
     "name_code": 5156,
     "name_en": "Liberalio",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 270,
     "name_code": 5008,
     "name_en": "Blanc",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 271,
     "name_code": 5009,
     "name_en": "Noir",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 272,
     "name_code": 5049,
     "name_en": "Rouge",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 280,
     "name_code": 5045,
     "name_en": "Rosanna",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 281,
     "name_code": 1021,
     "name_en": "Moran",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 282,
     "name_code": 1012,
     "name_en": "Sakura",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 283,
     "name_code": 5116,
     "name_en": "Rosanna: Chic Ocean",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 284,
     "name_code": 5117,
     "name_en": "Sakura: Bloom in Summer",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 290,
     "name_code": 1019,
     "name_en": "Mana",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 291,
     "name_code": 3010,
     "name_en": "Ether",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Defender",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 300,
     "name_code": 1013,
     "name_en": "Soldier EG",
-    "original_rare": "R"
+    "original_rare": "R",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 301,
     "name_code": 1014,
     "name_en": "Soldier FA",
-    "original_rare": "R"
+    "original_rare": "R",
+    "class": "Defender",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 302,
     "name_code": 1015,
     "name_en": "Product 08",
-    "original_rare": "R"
+    "original_rare": "R",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 303,
     "name_code": 1016,
     "name_en": "Product 12",
-    "original_rare": "R"
+    "original_rare": "R",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 304,
     "name_code": 1017,
     "name_en": "iDoll Flower",
-    "original_rare": "R"
+    "original_rare": "R",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 305,
     "name_code": 1018,
     "name_en": "iDoll Ocean",
-    "original_rare": "R"
+    "original_rare": "R",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 306,
     "name_code": 1025,
     "name_en": "Soldier OW",
-    "original_rare": "R"
+    "original_rare": "R",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 307,
     "name_code": 1024,
     "name_en": "Product 23",
-    "original_rare": "R"
+    "original_rare": "R",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 308,
     "name_code": 1023,
     "name_en": "iDoll Sun",
-    "original_rare": "R"
+    "original_rare": "R",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 310,
     "name_code": 5046,
     "name_en": "Ade",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 311,
     "name_code": 5050,
     "name_en": "Cocoa",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 312,
     "name_code": 5051,
     "name_en": "Soda",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 313,
     "name_code": 5106,
     "name_en": "Privaty: Unkind Maid",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 314,
     "name_code": 5113,
     "name_en": "Soda: Twinkling Bunny",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 315,
     "name_code": 5151,
     "name_en": "Ade: Agent Bunny",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 316,
     "name_code": 5163,
     "name_en": "Velvet",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 321,
     "name_code": 5048,
     "name_en": "Marciana",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 322,
     "name_code": 5176,
     "name_en": "Marciana: Marine Study",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 330,
     "name_code": 5065,
     "name_en": "Crown",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 331,
     "name_code": 5157,
     "name_en": "Chime",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 350,
     "name_code": 5079,
     "name_en": "Mast",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 351,
     "name_code": 5063,
     "name_en": "Anchor",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Defender",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 352,
     "name_code": 5066,
     "name_en": "Helm",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 353,
     "name_code": 5098,
     "name_en": "Helm: Aquamarine",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 354,
     "name_code": 5130,
     "name_en": "Mast: Romantic Maid",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 355,
     "name_code": 5131,
     "name_en": "Anchor: Innocent Maid",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 361,
     "name_code": 5053,
     "name_en": "Kilo",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 380,
     "name_code": 5068,
     "name_en": "Nero",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 381,
     "name_code": 5054,
     "name_en": "Biscuit",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 382,
     "name_code": 5092,
     "name_en": "Leona",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 390,
     "name_code": 5088,
     "name_en": "Zwei",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 391,
     "name_code": 5077,
     "name_en": "Ein",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 392,
     "name_code": 5069,
     "name_en": "Rei",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 400,
     "name_code": 5055,
     "name_en": "Guilty",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 401,
     "name_code": 5059,
     "name_en": "Sin",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 402,
     "name_code": 5078,
     "name_en": "Quency",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 403,
     "name_code": 5121,
     "name_en": "Quency: Escape Queen",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 411,
     "name_code": 5126,
     "name_en": "Flora",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 412,
     "name_code": 5134,
     "name_en": "Trina",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 430,
     "name_code": 5074,
     "name_en": "Noise",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 431,
     "name_code": 5075,
     "name_en": "Volume",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 432,
     "name_code": 5070,
     "name_en": "Aria",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 441,
     "name_code": 5171,
     "name_en": "Avistar",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 450,
     "name_code": 5099,
     "name_en": "Naga",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 451,
     "name_code": 5100,
     "name_en": "Tia",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 470,
     "name_code": 5101,
     "name_en": "Red Hood",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 471,
     "name_code": 5161,
     "name_en": "Snow White: Heavy Arms",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 500,
     "name_code": 5107,
     "name_en": "Elegg",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 501,
     "name_code": 5112,
     "name_en": "Trony",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 502,
     "name_code": 5146,
     "name_en": "Elegg: Boom and Shock",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 511,
     "name_code": 5124,
     "name_en": "Cinderella",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 513,
     "name_code": 5137,
     "name_en": "Little Mermaid",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 514,
     "name_code": 5125,
     "name_en": "Grave",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 515,
     "name_code": 5175,
     "name_en": "Cinderella: Crystal Wave",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "PILGRIM"
   },
   {
     "resource_id": 520,
     "name_code": 5135,
     "name_en": "Bready",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 521,
     "name_code": 5136,
     "name_en": "Crust",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 532,
     "name_code": 5144,
     "name_en": "Sora",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 550,
     "name_code": 5111,
     "name_en": "Bay",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 551,
     "name_code": 5115,
     "name_en": "Clay",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 570,
     "name_code": 5174,
     "name_en": "Ark Ranger Black",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 580,
     "name_code": 5122,
     "name_en": "Phantom",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 581,
     "name_code": 5140,
     "name_en": "Arcana",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 582,
     "name_code": 5162,
     "name_en": "Label",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 583,
     "name_code": 5167,
     "name_en": "Arcana: Fortune Mate",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ELYSION"
   },
   {
     "resource_id": 590,
     "name_code": 5139,
     "name_en": "Mori",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 600,
     "name_code": 5172,
     "name_en": "Mint",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 601,
     "name_code": 5173,
     "name_en": "Prika",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "TETRA"
   },
   {
     "resource_id": 620,
     "name_code": 5168,
     "name_en": "Snow Crane",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "MISSILIS"
   },
   {
     "resource_id": 800,
     "name_code": 5089,
     "name_en": "Makima",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 801,
     "name_code": 5090,
     "name_en": "Power",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 802,
     "name_code": 3012,
     "name_en": "Himeno",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 810,
     "name_code": 5094,
     "name_en": "2B",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Defender",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 811,
     "name_code": 5095,
     "name_en": "A2",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 812,
     "name_code": 5096,
     "name_en": "Pascal",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 820,
     "name_code": 5108,
     "name_en": "Rem",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 821,
     "name_code": 5109,
     "name_en": "Emilia",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 822,
     "name_code": 3013,
     "name_en": "Ram",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Defender",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 830,
     "name_code": 5118,
     "name_en": "Asuka",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 831,
     "name_code": 5119,
     "name_en": "Rei",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 832,
     "name_code": 5120,
     "name_en": "Mari",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 833,
     "name_code": 3014,
     "name_en": "Misato",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 834,
     "name_code": 5132,
     "name_en": "Rei (Tentative Name)",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 835,
     "name_code": 5133,
     "name_en": "Asuka: WILLE",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 836,
     "name_code": 3015,
     "name_en": "Sakura",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 840,
     "name_code": 5152,
     "name_en": "Ada",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 841,
     "name_code": 5153,
     "name_en": "Jill",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 842,
     "name_code": 3017,
     "name_en": "Claire",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 850,
     "name_code": 5142,
     "name_en": "EVE",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 851,
     "name_code": 5143,
     "name_en": "Raven",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 852,
     "name_code": 3016,
     "name_en": "Lily",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 860,
     "name_code": 5164,
     "name_en": "Chisato",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 861,
     "name_code": 5165,
     "name_en": "Takina",
-    "original_rare": "SSR"
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL"
   },
   {
     "resource_id": 862,
     "name_code": 3018,
     "name_en": "Kurumi",
-    "original_rare": "SR"
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL"
   }
 ]

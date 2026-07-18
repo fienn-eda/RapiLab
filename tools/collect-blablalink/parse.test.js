@@ -84,12 +84,12 @@ const { trimDirectory } = require('./collect')
 
 test('trimDirectory keeps the public identity fields, sorted by resource_id', () => {
   const raw = [
-    { resource_id: 16, name_code: 5129, original_rare: 'SSR', name_localkey: { name: 'Rapi: Red Hood' }, class: 'Attacker', combat: 999, extra: 'drop me' },
-    { resource_id: 2, name_code: 1, original_rare: 'R', name_localkey: { name: 'Rapi' }, class: 'Attacker' },
+    { resource_id: 16, name_code: 5129, original_rare: 'SSR', name_localkey: { name: 'Rapi: Red Hood' }, class: 'Attacker', corporation: 'ELYSION', combat: 999, extra: 'drop me' },
+    { resource_id: 2, name_code: 1, original_rare: 'R', name_localkey: { name: 'Rapi' }, class: 'Attacker', corporation: 'ELYSION' },
   ]
   assert.deepEqual(trimDirectory(raw), [
-    { resource_id: 2, name_code: 1, name_en: 'Rapi', original_rare: 'R' },
-    { resource_id: 16, name_code: 5129, name_en: 'Rapi: Red Hood', original_rare: 'SSR' },
+    { resource_id: 2, name_code: 1, name_en: 'Rapi', original_rare: 'R', class: 'Attacker', corporation: 'ELYSION' },
+    { resource_id: 16, name_code: 5129, name_en: 'Rapi: Red Hood', original_rare: 'SSR', class: 'Attacker', corporation: 'ELYSION' },
   ])
 })
 

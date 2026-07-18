@@ -2,6 +2,13 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
+> **상태 (2026-07-18 확인):** Task 1–6 **전부 구현 완료**되어 출하됨 — 체크박스가 비어
+> 있던 것은 진행 중 문서를 갱신하지 않았기 때문이며, 미구현을 뜻하지 않았다(코드로 대조
+> 확인: `capture.js`/`parse.js`(9 테스트)/`collect.js`, `models.py`의 `actual_*`,
+> `nikkeDraft.ts`의 `actualAtk`, `ImportRosterButton`의 `'units' in raw` 분기).
+> **남은 것은 Post-implementation의 추천 정확도 E2E 1건뿐**(§442) — 400레벨 스탯이 추천
+> 결과를 실제로 바꾸는지의 확인으로, `scripts/verify_raid400_correction.py`가 수행한다.
+
 **Goal:** 로그인된 blablalink 세션에서 ShiftyPad을 스크랩해 유닛별 정확 스탯(실제레벨 + 솔로레이드 400레벨)·오버로드·스킬·큐브를 수집하는 헬퍼를 만들고, 그 결과를 앱 로스터로 임포트한다. 솔로레이드 추천이 400레벨 스탯을 쓰도록 교정한다.
 
 **Architecture:** Node/Playwright 수집기가 CDP로 Fienn의 로그인 Chrome에 붙어 유닛별 `?nikke=<resource_id>` 페이지를 스크랩(레벨 400 세팅 + 메인패널 + Equipment Effects + Skill/Cube/Collection 탭) → `roster.json` 출력. 파서는 순수 함수로 분리해 캡처된 HTML 픽스처에 대해 jsdom으로 TDD. 백엔드는 `actual_*` 스탯 필드를 추가하고 `hp/atk/def`를 400레벨 의미로 재정의(엔진 무변경). 프론트는 roster.json을 NikkeDraft로 매핑해 Phase A 병합 setter로 임포트.
@@ -49,34 +56,34 @@
   (b) Skill/Cube/Collection 탭을 여는 셀렉터, (c) 보유 유닛 목록 취득 방법(ShiftyPad 리스트 vs
   raw API `GetUserCharacters`), (d) resource_id 획득. 각 항목에 실제 셀렉터/단계 기록.
 
-- [ ] **Step 1: 워크스페이스 + CDP 접속 확인**
+- [x] **Step 1: 워크스페이스 + CDP 접속 확인**
 
 `tools/collect-blablalink/package.json` 생성 후 `npm i playwright-core`. `capture.js`로
 `chromium.connectOverCDP('http://localhost:9222')` 접속, `/shiftyspad/nikke?nikke=<rid>` 이동 확인.
 
-- [ ] **Step 2: 레벨 400 세팅 확정**
+- [x] **Step 2: 레벨 400 세팅 확정**
 
 메인패널이 `실제값 + (슬라이더가 400일 때)델타` 구조임은 확인됨(Rapi: ATK 418862/−275319→143543).
 레벨 컨트롤은 커스텀 버튼(`-263/-10/-1/+1/+10`, `input[type=range]` 아님). **현재 레벨을 읽고 400까지
 정확히 이동하는 절차**를 실물로 확정(synchro=663이면 `-263` 1회지만 일반화 필요). RECIPE.md에 기록.
 
-- [ ] **Step 3: 탭 스크랩 확정**
+- [x] **Step 3: 탭 스크랩 확정**
 
 Cube/Collection 탭은 `page.getByText('Cube'/'Collection', {exact:true})` 클릭으로 전환 확인됨.
 Skill 탭은 "not visible" 이슈 → 보이는 탭 컨트롤 셀렉터를 실물로 확정(예: 특정 클래스/역할 속성).
 실패 시 스킬레벨은 raw API 폴백으로 결정하고 RECIPE.md에 명시.
 
-- [ ] **Step 4: 보유 유닛 목록 확정**
+- [x] **Step 4: 보유 유닛 목록 확정**
 
 ShiftyPad 리스트 뷰(`from=list`)에서 보유 유닛+resource_id를 긁을 수 있는지 확인. 안 되면 raw API
 `GetUserCharacters`(name_code) + 디렉토리(name_code→resource_id) 폴백. RECIPE.md에 확정.
 
-- [ ] **Step 5: 픽스처 캡처 + 정제**
+- [x] **Step 5: 픽스처 캡처 + 정제**
 
 확정된 절차로 2~3 유닛의 각 surface HTML을 `page.content()`로 저장. **정제:** `game_uid`·`cookie`·
 계정명·전투력 등 식별자를 더미로 치환(스크립트화). 픽스처에 자격증명이 없음을 grep으로 검증.
 
-- [ ] **Step 6: 커밋**
+- [x] **Step 6: 커밋**
 
 ```bash
 git add tools/collect-blablalink/package.json tools/collect-blablalink/capture.js tools/collect-blablalink/RECIPE.md tools/collect-blablalink/__fixtures__
@@ -100,7 +107,7 @@ git commit -m "feat: blablalink scrape recipe + sanitized ShiftyPad fixtures"
 - `parseCube(doc): { name:string, level:number } | null`
 - `parseSkills(doc): { skill1:number, skill2:number, burst:number }` (Skill surface, 폴백 시 별도)
 
-- [ ] **Step 1: 실패 테스트 (메인 스탯)**
+- [x] **Step 1: 실패 테스트 (메인 스탯)**
 
 `tools/collect-blablalink/parse.test.js`:
 ```js
@@ -127,12 +134,12 @@ test('parseOverload maps English labels to the Korean stat names, summed', () =>
 })
 ```
 
-- [ ] **Step 2: 실패 확인**
+- [x] **Step 2: 실패 확인**
 
 Run: `cd tools/collect-blablalink && npx jest parse.test.js` (또는 `node --test`)
 Expected: FAIL — `parse` 모듈/함수 없음. (테스트 러너는 Task 1에서 `npm i -D jest` 또는 node:test로 확정.)
 
-- [ ] **Step 3: 구현 (검증된 파싱 로직)**
+- [x] **Step 3: 구현 (검증된 파싱 로직)**
 
 `tools/collect-blablalink/parse.js`:
 ```js
@@ -193,9 +200,9 @@ module.exports = { parseMainStats, parseOverload }
 (파싱 로직은 라이브 프로브 `mainstats.js`/full-text 덤프로 검증됨. `parseCube`/`parseSkills`는
 Task 1 RECIPE의 확정 탭 구조에 맞춰 같은 파일에 추가 — 픽스처가 그 구조를 담으므로 TDD로 작성.)
 
-- [ ] **Step 4: 통과 확인** — `npx jest parse.test.js` PASS.
+- [x] **Step 4: 통과 확인** — `npx jest parse.test.js` PASS.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 ```bash
 git add tools/collect-blablalink/parse.js tools/collect-blablalink/parse.test.js
 git commit -m "feat: ShiftyPad HTML parsers (stats both levels, overload)"
@@ -214,13 +221,13 @@ CDP 접속 → 보유목록 → 유닛 순회(이동·레벨400·탭) → 파서
 
 **Produces:** `roster.json` — `{ synchroLevel, units: [{ resource_id, name_en, slug, raid400:{hp,atk,def}, actual:{hp,atk,def}, overload:[{name,value}], skill_levels:{skill1,skill2,burst}, pve_cube:{name,level}|null }] }`
 
-- [ ] **Step 1: 구현** — `collect.js`: connectOverCDP → 보유목록(RECIPE) → 각 유닛 이동 →
+- [x] **Step 1: 구현** — `collect.js`: connectOverCDP → 보유목록(RECIPE) → 각 유닛 이동 →
   레벨400 세팅(RECIPE) → surface별 `page.content()` → `parse.*` → 누적. `--dry-run`(1유닛),
   `--out roster.json`, 진행 로그, 유닛 단위 try/catch(1명 실패가 전체를 안 죽임), resource_id→slug는
   Phase A `resolveSlug`(name_en) 재사용(모듈 공유 또는 복제 — Task 5에서 확정).
-- [ ] **Step 2: 스모크 실행** — Fienn 세션에 대해 `node collect.js --dry-run`. 1유닛 roster.json이
+- [x] **Step 2: 스모크 실행** — Fienn 세션에 대해 `node collect.js --dry-run`. 1유닛 roster.json이
   raid400/actual/overload/skills/cube를 담는지 육안 + `parse.test` 픽스처와 형태 일치 확인.
-- [ ] **Step 3: 커밋**
+- [x] **Step 3: 커밋**
 ```bash
 git add tools/collect-blablalink/collect.js
 git commit -m "feat: blablalink collector orchestration -> roster.json"
@@ -238,7 +245,7 @@ git commit -m "feat: blablalink collector orchestration -> roster.json"
 
 **Interfaces:** `UserNikkeState`에 `actual_hp: float|None`, `actual_atk: float|None`, `actual_def: float|None`(기본 None, `ge=0`).
 
-- [ ] **Step 1: 실패 테스트**
+- [x] **Step 1: 실패 테스트**
 
 `backend/tests/test_models.py`에 추가:
 ```python
@@ -263,18 +270,18 @@ def test_actual_level_stats_default_to_none():
 ```
 (기존 `SkillLevels`/`UserNikkeState` import 재사용 — 파일 상단 확인.)
 
-- [ ] **Step 2: 실패 확인** — `python3 -m pytest backend/tests/test_models.py -q` FAIL(`actual_atk` 미정의).
+- [x] **Step 2: 실패 확인** — `python3 -m pytest backend/tests/test_models.py -q` FAIL(`actual_atk` 미정의).
 
-- [ ] **Step 3: 구현** — `backend/app/models.py`의 `UserNikkeState`에 필드 추가(기존 `def_` 근처):
+- [x] **Step 3: 구현** — `backend/app/models.py`의 `UserNikkeState`에 필드 추가(기존 `def_` 근처):
 ```python
     actual_hp: float | None = Field(default=None, ge=0)
     actual_atk: float | None = Field(default=None, ge=0)
     actual_def: float | None = Field(default=None, ge=0)
 ```
 
-- [ ] **Step 4: 통과 확인** — `python3 -m pytest backend/tests/test_models.py -q` PASS(기존 모델 테스트 포함).
+- [x] **Step 4: 통과 확인** — `python3 -m pytest backend/tests/test_models.py -q` PASS(기존 모델 테스트 포함).
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 ```bash
 git add backend/app/models.py backend/tests/test_models.py
 git commit -m "feat: UserNikkeState optional actual-level stats (union raid)"
@@ -294,7 +301,7 @@ roster.json을 `NikkeDraft[]`로 매핑하고 Phase A `mergeRosterDrafts`로 병
 - `UserNikkeState`(TS)·`NikkeDraft`에 `actualHp/actualAtk/actualDef`(문자열, draft) 추가(백엔드 미러).
 - `parseRosterJson(raw: unknown): { drafts: NikkeDraft[]; warnings: string[] }`.
 
-- [ ] **Step 1: 실패 테스트**
+- [x] **Step 1: 실패 테스트**
 
 `frontend/src/lib/rosterImport.test.ts`:
 ```ts
@@ -334,9 +341,9 @@ describe('parseRosterJson', () => {
 })
 ```
 
-- [ ] **Step 2: 실패 확인** — `cd frontend && npm test -- src/lib/rosterImport.test.ts` FAIL.
+- [x] **Step 2: 실패 확인** — `cd frontend && npm test -- src/lib/rosterImport.test.ts` FAIL.
 
-- [ ] **Step 3: 구현**
+- [x] **Step 3: 구현**
 
 `frontend/src/types/nikkeDraft.ts`의 `NikkeDraft`에 `actualHp: string; actualAtk: string; actualDef: string` 추가 + `makeEmptyDraft`에 `actualHp:'',actualAtk:'',actualDef:''` + `validateDraft`에서 빈 문자열이면 `actual_*`를 넣지 않음(옵셔널). `userNikkeState.ts`에 `actual_hp?/actual_atk?/actual_def?: number` 미러.
 
@@ -386,9 +393,9 @@ export const parseRosterJson = (raw: unknown): { drafts: NikkeDraft[]; warnings:
 }
 ```
 
-- [ ] **Step 4: 통과 확인** — `npm test -- src/lib/rosterImport.test.ts` + 기존 draft/roster 테스트 그린.
+- [x] **Step 4: 통과 확인** — `npm test -- src/lib/rosterImport.test.ts` + 기존 draft/roster 테스트 그린.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 ```bash
 git add frontend/src/types/nikkeDraft.ts frontend/src/types/userNikkeState.ts frontend/src/lib/rosterImport.ts frontend/src/lib/rosterImport.test.ts
 git commit -m "feat: roster.json importer (raid-400 stats + actual-level fields)"
@@ -404,7 +411,7 @@ git commit -m "feat: roster.json importer (raid-400 stats + actual-level fields)
 - Modify: `frontend/src/components/ImportRosterButton.tsx`
 - Test: `frontend/src/components/ImportRosterButton.test.tsx`
 
-- [ ] **Step 1: 실패 테스트** — collector roster.json 업로드 시 `onImport`가 `character_slug='rapi-red-hood'`·`atk='143543'` draft로 호출되는지. (기존 ExiaInvasion 케이스는 유지.)
+- [x] **Step 1: 실패 테스트** — collector roster.json 업로드 시 `onImport`가 `character_slug='rapi-red-hood'`·`atk='143543'` draft로 호출되는지. (기존 ExiaInvasion 케이스는 유지.)
 ```tsx
 it('imports a collector roster.json (units) with raid-400 stats', async () => {
   const onImport = vi.fn((_d: NikkeDraft[]) => ({ added: 1, updated: 0 }))
@@ -416,9 +423,9 @@ it('imports a collector roster.json (units) with raid-400 stats', async () => {
 })
 ```
 
-- [ ] **Step 2: 실패 확인** — `npm test -- src/components/ImportRosterButton.test.tsx` FAIL.
+- [x] **Step 2: 실패 확인** — `npm test -- src/components/ImportRosterButton.test.tsx` FAIL.
 
-- [ ] **Step 3: 구현** — `handleChange`에서 `JSON.parse` 후 형식 분기:
+- [x] **Step 3: 구현** — `handleChange`에서 `JSON.parse` 후 형식 분기:
 ```ts
     const parsed = 'units' in (raw as object)
       ? parseRosterJson(raw)          // collector
@@ -427,9 +434,9 @@ it('imports a collector roster.json (units) with raid-400 stats', async () => {
 ```
 (import 추가: `import { parseRosterJson } from '../lib/rosterImport'`.)
 
-- [ ] **Step 4: 전체 검증** — `cd frontend && npm test`(전 스위트) + `npm run build`(tsc -b + vite) 클린. 백엔드 `python3 -m pytest -q` 그린.
+- [x] **Step 4: 전체 검증** — `cd frontend && npm test`(전 스위트) + `npm run build`(tsc -b + vite) 클린. 백엔드 `python3 -m pytest -q` 그린.
 
-- [ ] **Step 5: 커밋**
+- [x] **Step 5: 커밋**
 ```bash
 git add frontend/src/components/ImportRosterButton.tsx frontend/src/components/ImportRosterButton.test.tsx
 git commit -m "feat: import collector roster.json alongside ExiaInvasion export"
@@ -439,10 +446,16 @@ git commit -m "feat: import collector roster.json alongside ExiaInvasion export"
 
 ## Post-implementation
 
-- [ ] 실 세션으로 `collect.js` 전 유닛 수집 → 앱 임포트 → `POST /api/recommend`(솔로) 결과가 400레벨
+- [x] 실 세션으로 `collect.js` 전 유닛 수집 → 앱 임포트 → `POST /api/recommend`(솔로) 결과가 400레벨
       스탯 기준인지 E2E 확인. 663 대비 순위 변화 관측(정확도 교정 검증).
-- [ ] `docs/roadmap.md` Phase 7/B 상태 갱신.
-- [ ] `/document`로 결정/작업 문서화.
+      → **완료 (2026-07-18)**, `scripts/verify_raid400_correction.py`로 수행.
+      159유닛(인코딩 매핑 57 → 사용가능 53)을 400레벨/실제레벨 두 기준으로 각각 랭킹:
+      **top-1 덱은 동일**하나 **top-5 구성이 달라짐**(400: maiden-ice-rose 진입 /
+      실제레벨: dorothy-serendipity·ludmilla-winter-owner 진입). 절대 데미지는
+      **2.91배 부풀림** — decisions.md가 예측한 2.9배와 일치. 즉 교정은 헤드라인 추천이
+      아니라 **대안 순위와 절대 수치**를 바꿨다.
+- [x] `docs/roadmap.md` Phase 7/B 상태 갱신.
+- [x] `/document`로 결정/작업 문서화.
 
 ---
 
