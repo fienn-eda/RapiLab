@@ -1,9 +1,10 @@
 # 무기변형 (weapon-mode segments) 설계
 
 - 날짜: 2026-07-18 (갱신 2026-07-19)
-- 상태: **설계 확정** (2026-07-19) — 전 섹션 Fienn 승인. 잔여 확인 2건도
-  해소(velvet 변형딜 보류, laplace-signature 슬러그 신설). 다음 단계:
-  구현 계획(writing-plans).
+- 상태: **v1 구현 완료 (2026-07-19)** — 설계 확정(전 섹션 Fienn 승인) 후
+  `weapon_mode_schedules` 세그먼트 primitive + snow-white·maxwell·
+  laplace-signature 신규 인코딩 + red-hood 마이그레이션까지 착지. 아래
+  "구현 요약"의 FB 창 노출 항목(rapi-red-hood)은 **계획 2로 이동**.
 - 참여: Fienn · Bot
 
 ## 배경과 범위
@@ -178,14 +179,18 @@ TDD. ① `attack_rate` 세그먼트 생성기 단위 테스트(경계에서 새 
 차감 제거·버프 상호작용 추가) 마이그레이션 커밋에서 기대값 갱신을 명시적으로
 수행.
 
-## 구현 요약 (v1 범위)
+## 구현 요약 (v1 범위) — 착지 완료 2026-07-19
 
-- **엔진**: ① `attack_rate.generate_segmented_shots()`(샷 레코드 + first/last
-  플래그, 프로필에 명시적 `rate_of_fire` 허용) ② `simulate_raid(...,
-  weapon_mode_schedules=)` 옵트인 배선 ③ `scheduled_nukes` context에
-  풀버스트 창 노출(rapi용 소규모).
-- **유닛**: snow-white(신규) · maxwell(신규) · laplace-signature(신규 슬러그)
-  · red-hood(마이그레이션) · cinderella-crystal-wave-mg/-snipe(신규 듀얼,
-  세그먼트 비소비) · rapi-red-hood(신규, FB 창 노출 소비).
-- **명시적 보류**: velvet 변형딜(저가치) · laplace base 변형(5초, 실측 없음)
-  · snow-white-heavy-arms(차지 루프 — 별도 검증 패스).
+- **엔진**: ① `attack_rate.generate_segmented_shots()`(세그먼트 단위 ShotRecord
+  + first/last 플래그, 프로필에 명시적 `rate_of_fire` 허용, 전 유닛이 경유하도록
+  통일) ② `simulate_raid(..., weapon_mode_schedules=)` 옵트인 배선.
+- **유닛 (v1 실착지, 4명)**: snow-white(신규) · maxwell(신규) ·
+  laplace-signature(신규 슬러그) · red-hood(마이그레이션, 정적 차감/상수 접기
+  제거·덱 차지댐 버프 적용·총딜 ~+1.6%).
+- **계획 2로 이동 (v1 범위 밖으로 확정, 세그먼트 비소비/미착수)**:
+  ~~`scheduled_nukes` context에 풀버스트 창 노출(rapi용 소규모)~~ ·
+  cinderella-crystal-wave-mg/-snipe(신규 듀얼, 정적 프로필 2벌) ·
+  rapi-red-hood(FB 창 노출 소비) — 둘 다 이번 배치에서 미착수, 별도 계획으로
+  이월.
+- **명시적 보류**: velvet 변형딜(저가치, 보류 확정) · laplace base 변형(5초,
+  실측 없음) · snow-white-heavy-arms(차지 루프 — 별도 검증 패스).

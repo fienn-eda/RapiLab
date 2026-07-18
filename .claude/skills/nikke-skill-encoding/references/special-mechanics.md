@@ -836,5 +836,50 @@ how to encode it, and current engine status.
   2026-07-18) so squad `distributed_damage_up` buffs apply. Vs the solo raid
   boss, single-target and distributed stages alike land fully on the boss.
 
+## Weapon-mode transforms ("changes to a different weapon" burst/status skills) - BUILT capability (v1, 2026-07-19)
+
+- **What it looks like:** a burst or status skill that swaps the unit's
+  weapon entirely for a window - "Charges the weapon like a Rocket Launcher
+  for X sec... Full Charge deals Y%" (Snow White, Maxwell's Pierce Shot), or
+  a sustained high-cadence "true damage every tick while active" window
+  (Laplace's Hero Vision, `laplace-signature`). The old approach (Red Hood's
+  original 2026-07-18 encoding) approximated this with `scheduled_nukes`
+  anchored to an in-game shot-count measurement, folding the charge
+  multiplier into a flat percent and subtracting an estimate of the base
+  weapon's double-counted shots inside the window - workable, but it meant
+  deck Charge Damage / ATK / charge speed buffers couldn't touch the
+  transform's damage (baked into a constant), and the subtraction was an
+  approximation, not a real silence.
+- **Easy mistake:** reusing the `scheduled_nukes` approximation for a NEW
+  transform unit just because Red Hood set the precedent - it's a strictly
+  worse model now that segments exist (Red Hood herself was migrated off it,
+  2026-07-19); the old pattern is kept only for historical context.
+- **Encode:** use `weapon_mode_schedules` (`attack_rate.
+  generate_segmented_shots`, see `engine-capabilities.md`) instead - a
+  schedule function returns windows (`until_shots` for a single-shot burst
+  cannon, `end` for a fixed-duration sustained window) each carrying a full
+  weapon `profile`. The base weapon is genuinely silenced inside the window
+  (no subtraction needed) and resumes with a fresh magazine when it ends. A
+  real charge-weapon profile (`charge_time` set) lets deck buffs multiply the
+  transform; an explicit `rate_of_fire` profile is for a window with no
+  believable charge/magazine model of its own (a pure in-game shot-count
+  measurement, e.g. Laplace's 93-tick Hero Vision window) and deliberately
+  takes NO cadence buffs, since the measured count already reflects the real
+  game's cadence.
+- **Not every transform fits the segment primitive:**
+  `cinderella-crystal-wave`'s MG/Snipe toggle is a rare-transition,
+  held-for-the-whole-fight mode choice, not a short burst/status window -
+  modeled instead as two static-profile dual slugs (`-mg`/`-snipe`), each
+  just the existing plain weapon-stats path twice (deferred, plan 2).
+  `rapi-red-hood`'s 120-normal-attack projectile launch isn't a
+  weapon-profile swap at all (her base weapon never changes) - it needs
+  `scheduled_nukes` with Full Burst window visibility instead (deferred,
+  plan 2, see `docs/engine-gaps.md`). `snow-white-heavy-arms`'s
+  charge-lock-on loop is deferred pending a verification pass against the
+  existing per-shot + multi-hit primitives (may not need segments at all).
+- See `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`,
+  `snow_white.py`/`maxwell.py`/`laplace_signature.py`/`red_hood.py`
+  docstrings.
+
 ---
 *Add new mechanics above this line as they come up.*

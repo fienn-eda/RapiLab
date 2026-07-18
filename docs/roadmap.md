@@ -574,12 +574,25 @@
     (`ada-wong`은 2026-07-16 Phase C에서 인코딩 완료 — gap #6 during_full_burst 소비,
     `scarlet-black-shadow`는 2026-07-18 gap #10으로 인코딩 완료),
     `milk-blooming-bunny`(gap #11)
-  - **무기 변형**(버스트/평타가 다른 무기모드로 전환 = 핵심 딜, 미지원): `snow-white`,
-    `snow-white-heavy-arms`, `maxwell`, `cinderella-crystal-wave`(MG/Snipe 모드
-    전환이 FB 넉을 게이팅 — 자원 primitive로 안 풀림, 2026-07-12 eb4 검증 중 재분류)
+  - ~~**무기 변형**(버스트/평타가 다른 무기모드로 전환 = 핵심 딜, 미지원): `snow-white`,
+    `snow-white-heavy-arms`, `maxwell`, `cinderella-crystal-wave`~~ →
+    **v1 엔진 프리미티브 착지 완료 (2026-07-19, `weapon_mode_schedules` 세그먼트)**
+    — 설계 `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`(상태:
+    구현 완료). snow-white ✅·maxwell ✅ 신규 인코딩, laplace-signature 신규 슬러그
+    신설(변형 10초 창을 세그먼트로 모델), red-hood는 기존 `scheduled_nukes` 근사에서
+    세그먼트로 마이그레이션(정적 차감/상수 접기 제거, 덱 차지댐 버프가 변형샷에
+    곱해짐, 총딜 ~+1.6%). **남은 무기변형은 계획 2 백로그**: `cinderella-crystal-wave`
+    → `-mg`/`-snipe` 듀얼슬러그(정적 프로필 2벌 + 모드별 FB 넉/버프 + 덱 탐색 상호
+    배제, Snipe 프로필 세부는 인코딩 시 Fienn 확인) · `rapi-red-hood`(세그먼트 대상
+    아님 — `scheduled_nukes` context에 FB창 노출만 필요) · `snow-white-heavy-arms`
+    (차지 루프 상태머신, 기존 per-shot+multi-hit 프리미티브로 풀리는지 검증 패스
+    대기) · velvet 변형딜(저가치, 보류 확정) · laplace base의 5초 변형(실측 없음, 보류).
   - ~~✱ = 애장품(dollskills) 보유, base/시그니처 별도 slug: `drake`, `laplace`~~ —
-    **둘 다 2026-07-16 인코딩 완료**(drake는 base+signature 듀얼슬롯, laplace는 base만
-    — 시그니처는 더 큰 무기변형이라 듀얼슬롯 없음). 백로그 갱신 누락, 2026-07-17 정정.
+    **drake는 2026-07-16, laplace는 2026-07-19 완료** — drake는 base+signature
+    듀얼슬롯, laplace도 이제 듀얼슬롯(`laplace-signature`, 세그먼트 무기변형).
+    "시그니처는 무기변형이라 듀얼슬롯 없음"이라던 2026-07-17 정정은 **틀렸음** —
+    2026-07-19 세그먼트 프리미티브 착지로 뒤집힘(위 항목 참고). base laplace의
+    5초 변형은 여전히 보류(실측 없음).
 - [x] `damage_taken_up` / `other_core_damage_sources` 엔진 연결
       — 완료. squad 스코프 적 디버프, 코어 데미지는 `core_hittable` 게이팅.
 - [x] `NikkeSpec`에 스킬별 유저 레벨 필드 추가 → 조립 시 `levels[level-1]` 선택 일반화
@@ -610,12 +623,14 @@
 - [x] **Ein 인코딩** — `scheduled_nukes` 확장 + Fienn 실측 기반 페더 스케줄.
 - [x] **raven·sakura-bloom-in-summer 인코딩** (2026-07-17) — sakura는 확장 불필요가
       맞았고, raven은 `context.shot_times` 소규모 확장 1건 필요했음(판정 정정).
-- [ ] **다음 배치 후보** — 남은 미인코딩 11명은 전부 갭 뒤(무기변형 4·Pattern B 2·
-      상태머신 3·gap #11 milk). (gap #10 scarlet은 2026-07-18 인코딩 완료,
-      red-hood는 2026-07-18 재검증으로 Pattern B에서 빠져 인코딩 완료.)
-      **최대 수요는 무기 변형**
-      (snow-white·snow-white-heavy-arms·maxwell·cinderella-crystal-wave + laplace·
-      velvet·rapi 잔여) — 큰 확장이라 설계 논의부터 필요.
+- [x] **무기변형 v1 착지 (2026-07-19)** — 설계 논의 완료 후 `weapon_mode_schedules`
+      세그먼트 프리미티브 구현: snow-white ✅·maxwell ✅ 신규 인코딩, laplace-signature
+      신규 슬러그, red-hood 세그먼트 마이그레이션. **남은 미인코딩 9명**: 무기변형
+      계획 2 잔여(snow-white-heavy-arms·cinderella-crystal-wave→`-mg`/`-snipe`
+      듀얼·rapi-red-hood FB창 노출) · Pattern B 게이지(mihara-bonding-chain·
+      elegg-boom-and-shock) · 상태머신(diesel-winter-sweets·bready·eve) ·
+      gap #11(milk-blooming-bunny). (gap #10 scarlet·red-hood는 2026-07-18에
+      이미 인코딩 완료.)
 - [x] **ein weapon 스탯** — 이미 `data/dotgg/char_ein.json`에 존재했음(SR·장탄6·
       재장전2.0s·차지1.0s·차지댐250%). "부재" 판정은 워크트리에 gitignore된 데이터가
       복사되지 않아 생긴 오진이었음 — 아래 함정 항목 참고.

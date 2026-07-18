@@ -367,6 +367,46 @@ settled the mechanics; the text's "Activates when Near Feather is summoned"
 misreads as one hit per summon). Reach for this only when the cadence genuinely
 varies - a fixed interval is still `periodic_nukes`.
 
+**Weapon-mode segments (v1, 2026-07-19):** for a skill that swaps the unit's
+ENTIRE weapon profile for a window - a burst-triggered cannon transform
+(Snow White, Maxwell), a sustained buffed-cadence window (Laplace's Hero
+Vision, via the dual slug `laplace-signature`), or a migrated
+`scheduled_nukes` approximation (Red Hood's Step 3, see below).
+`attack_rate.generate_segmented_shots()` builds a per-segment ShotRecord
+timeline instead of one flat cadence: inside a segment the unit's BASE
+weapon is genuinely silenced (not just double-counted-and-subtracted) and
+shots come from the segment's own `profile` dict (same shape as a
+`weapon_stats` entry - `weapon`, `damage_percent`, `charge_damage_percent`,
+`max_ammo`, `reload_time`, `charge_time`, or an explicit `rate_of_fire` for
+a profile with no real charge/magazine model); when the segment ends (its
+`until_shots` count is reached or its `end` time passes) the base weapon
+resumes with a FRESH magazine immediately (no reload wait). A `charge_time`
+profile inside a segment still reads live `charge_speed_percent_at` etc., so
+a deck's charge speed / charge damage / ATK buffers actually multiply the
+transform's shots - an explicit `rate_of_fire` profile is a MEASUREMENT
+ANCHOR instead (its shot count already bakes in Fienn's real-game-measured
+cadence), so it takes NO cadence buffs, by contract. A profile may also
+carry its own optional `damage_type`. Wire via `simulate_raid(...,
+weapon_mode_schedules={slug: schedule_fn})` where `schedule_fn(context,
+fight_duration)` returns a list of `{"start", "until_shots" or "end",
+"profile"}` dicts (same signature family as `scheduled_nukes` - the module
+computes window anchors, e.g. `context.burst_times`, the engine only
+emits). **Every unit's weapon pass now runs through
+`generate_segmented_shots` regardless of whether it has any segments** - an
+empty schedule reproduces the pre-existing flat-cadence generator's output
+bit-for-bit (verified by an SR_ODD 1.19s-charge equivalence test), so this
+was a safe, non-opt-in unification rather than a per-unit switch.
+First/last-bullet markers for a segmented unit now come directly off the
+record's flags instead of a separate marker recomputation. Registry map
+`_WEAPON_MODE_SCHEDULE_BUILDERS` / `get_weapon_mode_schedules`; `roster`
+threads it. First consumers: `snow_white.py`/`maxwell.py` (burst
+`until_shots: 1` single-cannon-shot windows), `laplace_signature.py` (a
+fixed 10s window, First hit + 93 `rate_of_fire`-profile ticks),
+`red_hood.py` (migrated off a `scheduled_nukes` approximation that could
+not let deck buffs touch the transform - see its docstring for the
+before/after). See
+`docs/superpowers/specs/2026-07-18-weapon-transform-design.md`.
+
 **Multi-hit burst nuke:** a burst that "attacks sequentially N times" is N
 SEPARATE damage instances at the same instant, not one instance at N×percent -
 defense is a flat per-hit subtraction, so pre-multiplying overcounts whenever
