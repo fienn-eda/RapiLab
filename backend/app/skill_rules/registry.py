@@ -199,7 +199,7 @@ from app.skill_rules.tove import build_tove_rules
 from app.skill_rules.velvet import build_velvet_per_shot_rules, build_velvet_rules
 from app.skill_rules.red_hood import (
     build_red_hood_rules,
-    build_red_wolf_scheduled_nukes,
+    build_red_wolf_weapon_mode_schedule,
 )
 from app.skill_rules.privaty import (
     ak_missile_burst_percent,
@@ -333,7 +333,7 @@ _BUILDERS = {
     "sakura-bloom-in-summer": lambda sv: (
         build_sakura_bloom_in_summer_rules(sv), ephemeral_spender_burst_percent(sv)
     ),
-    "red-hood": lambda sv: (build_red_hood_rules(sv), None),  # burst is the Step 3 weapon transform (scheduled_nukes), no direct nuke
+    "red-hood": lambda sv: (build_red_hood_rules(sv), None),  # burst is the Step 3 weapon transform (weapon-mode segment), no direct nuke
     "scarlet-black-shadow": lambda sv: (build_scarlet_black_shadow_rules(sv), None),  # burst is buff-only; damage is the Breakthrough sequence (per-shot)
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
@@ -390,13 +390,14 @@ _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
     "little-mermaid": lambda sv: build_bubble_barrage_scheduled_nukes(sv),  # squad-wide 500-ammo counter
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
-    "red-hood": lambda sv: build_red_wolf_scheduled_nukes(sv),     # Step 3 transform window, 33 measured shots
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
 }
 
 # A Nikke whose burst swaps her weapon profile for a window (weapon-mode
 # segments - see raid_simulator's `weapon_mode_schedules` and the design spec).
-_WEAPON_MODE_SCHEDULE_BUILDERS = {}
+_WEAPON_MODE_SCHEDULE_BUILDERS = {
+    "red-hood": lambda sv: build_red_wolf_weapon_mode_schedule(sv),  # Step 3 transform window, 33 measured shots
+}
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at
 # the same instant, not one hit at N*percent (see raid_simulator's

@@ -1,13 +1,17 @@
 """Real max-level figures from lootandwaifus for Red Hood (slug "red-hood"),
 slots numbered left-to-right per skill (full transcription, no skips).
 """
+from types import SimpleNamespace
+
 import pytest
 
 from app.effects import EffectRegistry
+from app.raid_simulator import simulate_raid
+from app.skill_rules._helpers import buff_rule
 from app.skill_rules.red_hood import (
     TRANSFORM_SHOTS,
     build_red_hood_rules,
-    build_red_wolf_scheduled_nukes,
+    build_red_wolf_weapon_mode_schedule,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
@@ -86,51 +90,75 @@ def test_wild_tooth_red_wolf_cast_grants_self_atk():
     assert registry.total_for("atk_percent", ALLY, now=50.0) == 0.0
 
 
-def test_red_wolf_schedules_33_transform_shots_per_own_burst_window():
-    specs = build_red_wolf_scheduled_nukes(RED_HOOD_VALUES)
-    assert len(specs) == 1
-    spec = specs[0]
-    assert spec.get("damage_type", "attack") == "attack"
-    assert not spec.get("full_burst_bonus_eligible", False)
+def test_red_wolf_schedule_is_33_shot_window_per_own_burst():
+    schedule = build_red_wolf_weapon_mode_schedule(RED_HOOD_VALUES)
+    context = SimpleNamespace(burst_times={"red-hood": [20.0]})
+    segments = schedule(context, 180.0)
+    assert len(segments) == 1
+    seg = segments[0]
+    assert seg["start"] == 20.0
+    assert seg["until_shots"] == 33
+    profile = seg["profile"]
+    assert profile["rate_of_fire"] == pytest.approx(3.3)
+    assert profile["damage_percent"] == 51.46
+    # 250% full charge + 93.36%p Glaring conversion, folded into charge_damage
+    # (no subtraction - the engine genuinely silences the base SR now).
+    assert profile["charge_damage_percent"] == pytest.approx(343.36, abs=0.01)
 
-    ctx = make_context()
-    ctx.record_burst_time("red-hood", 50.0)
-    times = spec["schedule"](ctx, 180.0)
 
-    assert len(times) == TRANSFORM_SHOTS == 33
-    # evenly spaced across the 10s transform window, first hit one interval in
-    interval = 10.0 / 33
-    assert times[0] == pytest.approx(50.0 + interval)
-    assert times[-1] == pytest.approx(60.0)
-    assert all(
-        b - a == pytest.approx(interval) for a, b in zip(times, times[1:])
+SR_WEAPON = {
+    "weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
+    "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0,
+}
+
+
+def _red_wolf_sim_deck():
+    # Tiers 1/2 are inert placeholders so the burst cycle can complete (a
+    # deck missing any tier never fires) - only red-hood (tier 3) carries
+    # rules/a weapon. Cooldowns are large enough that only one cycle
+    # completes inside fight_duration, so her one burst - and its 10s
+    # transform window - lands at a known, deterministic time (t=5.0).
+    return [
+        {"slug": "b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "red-hood", "burst_tier": 3, "element": "Iron", "cooldown": 40.0},
+    ]
+
+
+def test_red_wolf_deck_charge_damage_buff_now_scales_transform_shots():
+    # End-to-end: with the old scheduled_nukes model the transform's 250%+
+    # 93.36%p was a folded constant a deck's Charge Damage buffs couldn't
+    # touch. The weapon-mode segment's charge_damage_percent now rides the
+    # same extra_charge_bonus path a normal charge-weapon shot uses, so a
+    # squad Charge Damage buff should raise the transform window's damage -
+    # locking in the fix as a regression test.
+    deck = _red_wolf_sim_deck()
+    base_stats = {m["slug"]: {"atk": 10000.0} for m in deck}
+    kwargs = dict(
+        deck=deck, burst_damage_percents={}, base_stats=base_stats,
+        enemy_def=0.0, gauge_charge_time=5.0, fight_duration=30.0,
+        weapon_stats={"red-hood": SR_WEAPON},
+        weapon_mode_schedules={"red-hood": build_red_wolf_weapon_mode_schedule(RED_HOOD_VALUES)},
     )
 
+    plain_rules = {"red-hood": build_red_hood_rules(RED_HOOD_VALUES)}
+    buffed_rules = {
+        "red-hood": build_red_hood_rules(RED_HOOD_VALUES) + [
+            buff_rule("battle_start", [("charge_damage_bonus", 0.5, "self", None)]),
+        ],
+    }
+    without = simulate_raid(rules_by_slug=plain_rules, **kwargs)
+    with_buff = simulate_raid(rules_by_slug=buffed_rules, **kwargs)
 
-def test_red_wolf_hits_past_fight_end_are_dropped():
-    specs = build_red_wolf_scheduled_nukes(RED_HOOD_VALUES)
-    ctx = make_context()
-    ctx.record_burst_time("red-hood", 175.0)
-    times = specs[0]["schedule"](ctx, 180.0)
-    assert times
-    assert max(times) < 180.0
-    assert len(times) < 33
+    # Burst fires at t=5.0 (gauge_charge_time floor, no prior cooldowns) -
+    # the transform window is [5.0, 15.0].
+    def window_sum(result):
+        return sum(
+            e["damage"] for e in result["damage_log"]
+            if e["source"] == "normal_attack" and 5.0 <= e["time"] <= 15.0
+        )
 
-
-def test_red_wolf_per_hit_percent_nets_out_the_overlapping_normal_shots():
-    spec = build_red_wolf_scheduled_nukes(RED_HOOD_VALUES)[0]
-
-    # Gross transform shot: 51.46% x (250% full charge + 93.36%p converted
-    # charge damage) - the conversion is (38.1 + 100.8 - 100) x 240%.
-    gross = 51.46 * (2.50 + (0.381 + 1.008 - 1.0) * 2.40)
-    # Static overlap subtraction: the engine's weapon pass keeps emitting her
-    # normal SR shots inside the window (charge 1.0s / +38.1% charge speed,
-    # 6-round magazine, 2.0s reload, 69.04% x 2.5 per shot).
-    effective_charge = 1.0 / 1.381
-    magazine_cycle = 6 * effective_charge + 2.0
-    overlap_shots = 10.0 * 6 / magazine_cycle
-    overlap_damage = overlap_shots * 69.04 * 2.5
-    expected = (33 * gross - overlap_damage) / 33
-
-    assert spec["percent"] == pytest.approx(expected)
-    assert spec["percent"] == pytest.approx(127.2, abs=0.1)
+    without_sum = window_sum(without)
+    with_buff_sum = window_sum(with_buff)
+    assert without_sum > 0.0
+    assert with_buff_sum > without_sum
