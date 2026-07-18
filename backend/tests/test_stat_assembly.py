@@ -277,7 +277,7 @@ def test_gear_only_units_mostly_reproduce_exactly(tables, ground_truth, ground_t
         exact += abs(delta) < 1.0
         if abs(delta) >= 1.0:
             off.append((u["name_en"], round(delta, 1)))
-    assert exact >= 58, f"regression: only {exact} exact (was 58)"
+    assert exact >= 59, f"regression: only {exact} exact (was 59)"
     # The remainder all come out slightly HIGH, including units wearing no gear
     # at all, so the shortfall is not in the equipment model. Bounded so it
     # cannot silently worsen.

@@ -6,7 +6,7 @@ it in the browser - and scraping it costs one page load per unit. Computing it
 instead is what lets a roster be read from the API alone, which is the
 precondition for syncing a roster we cannot scrape (i.e. anyone else's).
 
-WHAT IS DERIVED (measured against all 159 collected units, mismatches: 0)
+WHAT IS DERIVED (the multiplier: measured against all 159 collected units, 0 mismatches)
 
     atk = base[class][level] * (1 + 0.02*grade) * (1 + 0.02*core)
           + core*core_attack + grade*grade_attack
@@ -18,17 +18,21 @@ the game tables as "2% per step", which earlier research had recorded as
 unknown. Affinity does NOT belong to this multiplier: units sharing a grade but
 differing in affinity (4 / 10 / 12 / 20) all measure exactly 1.02.
 
+`extra_flat` is assembled by the caller from the helpers below - affinity_atk,
+corporation_atk and equipment_atk - which together reproduce 59 of the 74
+collected units that wear gear but no cube or collectible.
+
 WHAT IS NOT YET DERIVED
 
-`extra_flat` - the flat contribution of gear, cube, collectible and affinity.
-Its inputs are known (the API reports tier/level per slot, cube level,
-collectible level, affinity level) but the tables that price them could not be
-captured: ShiftyPad never requests the equipment or affinity tables in any flow
-we could reach. Callers must pass it; it is deliberately NOT defaulted to a
-guess, so an un-modelled unit reads as obviously wrong rather than plausibly
-wrong. See docs/superpowers/specs/2026-07-18-stat-assembly-calculator-design.md.
+Cube and collectible contributions (85 of the 159 collected units carry one or
+both), and a shortfall on 15 gear-only units. Those 15 all come out slightly
+HIGH and two of them wear no gear at all, so the gap is not in the equipment
+model. `extra_flat` is deliberately NOT defaulted to a guess, so an
+un-modelled unit reads as obviously wrong rather than plausibly wrong.
+See docs/superpowers/specs/2026-07-18-stat-assembly-calculator-design.md.
 """
 import json
+import math
 from pathlib import Path
 from typing import Any
 
@@ -145,11 +149,20 @@ def equipment_atk(
     in-game level-up screen across classes and slots (Attacker head 6014 -> +3007
     at LV.05; Defender arm 2551 -> +1276).
 
+    Gear made by the unit's own corporation is worth another 30%, and the two
+    bonuses ADD on the original base rather than compounding: a Defender wearing
+    own-corporation T9 arms (table 1372) at LV.05 reads 2470 in game, which is
+    1372 * 1.8, not the 1372 * 1.3 * 1.5 = 2675 that compounding would give.
+
     The **bonus** is rounded and then added, which is not the same as rounding
     the total: Defender arm at LV.05 shows 2551 + 1276 = 3827, whereas rounding
-    2551 * 1.5 = 3826.5 would give 3826. Halves land on the even integer
-    (1275.5 -> 1276, and the HP line's 24590.5 -> 24590), i.e. round-half-to-even,
-    which is Python's default.
+    2551 * 1.5 = 3826.5 would give 3826.
+
+    Halves round UP, chosen by measurement: over the collected roster half-up
+    reproduces 59 of 74 gear-only units against 55 for half-to-even, 45 for ceil
+    and 43 for floor. Note the HP line of one capture reads 24590.5 -> 24590,
+    which is not half-up; whether HP rounds differently is unresolved and does
+    not matter here, since only ATK is consumed.
 
     The tid, not the tier, identifies the piece: a tier holds both class-specific
     and "All"-class variants whose stats differ.
@@ -158,14 +171,12 @@ def equipment_atk(
     if row is None:
         return 0
     base = next((s["stat_value"] for s in row["stat"] if s["stat_type"] == "Atk"), 0)
-    if (
+    matches = (
         unit_corporation is not None
         and equip_corporation_type == CORPORATION_EQUIP_TYPE.get(unit_corporation)
-    ):
-        # Observed in game: the T9 Attacker torso reads 588 in the table but 764
-        # on a unit of its own corporation, and 588 * 1.3 = 764.4.
-        base = round(base * (1 + CORPORATION_MATCH_BONUS))
-    return base + round(base * EQUIP_LEVEL_STEP * equip_level)
+    )
+    bonus = CORPORATION_MATCH_BONUS * matches + EQUIP_LEVEL_STEP * equip_level
+    return base + math.floor(base * bonus + 0.5)
 
 
 def assemble_atk(
