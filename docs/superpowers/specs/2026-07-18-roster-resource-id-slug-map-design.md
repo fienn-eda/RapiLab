@@ -1,0 +1,113 @@
+# resource_id 권위 맵 — 수집기 로스터를 인코딩 slug로 정확히 해석
+
+- 날짜: 2026-07-18
+- 상태: 설계 (스펙 리뷰 대기)
+- 범위: 프론트 `frontend/src/lib` — blablalink 수집기 `roster.json` 임포트 경로만.
+  ExiaInvasion export 경로·백엔드·수집기는 무변경.
+
+## 문제
+
+Phase B 수집기가 `roster.json`을 뽑는 것까진 됐지만, 그 데이터가 추천기까지
+흘러가려면 게임 유닛을 백엔드의 인코딩 slug로 정확히 매핑해야 한다. 현재 두 임포트
+경로(`exiaImport`·`rosterImport`)가 **같은 이름 기반 `resolveSlug`/`SLUG_ALIASES`
+테이블을 공유**하는데, 두 경로의 이름 관례가 다르다:
+
+- ExiaInvasion export = **짧은 이름** ("Soline"). alias 테이블이 이 관례로 만들어짐.
+- blablalink `roster.json` = 디렉토리 **풀네임** ("Soline: Frost Ticket"). 여기선
+  base "Soline"도 별도 owned 유닛으로 등장한다.
+
+같은 이름 테이블로 둘을 동시에 만족시킬 수 없어 `roster.json` 경로에서 오매핑이 난다.
+Fienn 실제 로스터 기준 구체적 파손:
+
+| resource_id | 게임 이름 | 현재 결과 | 문제 |
+|---|---|---|---|
+| 71 | Soline | alias → `soline-frost-ticket` | base 미인코딩인데 variant로 오매핑 → 74와 **중복 병합** |
+| 74 | Soline: Frost Ticket | `soline-frost-ticket` | (정상) |
+| 321 | Marciana | alias → `marciana-marine-study` | 위와 동일, 322와 중복 |
+| 322 | Marciana: Marine Study | `marciana-marine-study` | (정상) |
+| 392 | Rei (KR: 라이) | → `rei-ayanami` | **별개 캐릭터**인데 이름만 같음 → 오매핑 |
+| 831 | Rei (KR: 레이) | → `rei-ayanami` | 392와 같은 slug로 감 |
+| 834 | Rei (Tentative Name) | `rei-ayanami-tentative-name` | (정상) |
+| 101 | Drake | → `drake` | 인코딩엔 `drake`+`drake-signature`, 애장품 보유 여부로 갈림 |
+| 150 | Julia | → `julia` | `julia`+`julia-signature`, 위와 동일 |
+
+중복 병합이 특히 나쁘다: `mergeImportedDrafts`가 `character_slug`를 병합 키로 쓰므로
+base Soline(오매핑)과 진짜 variant가 한 슬롯으로 뭉개져 **정확한 스탯이 base 값으로
+덮어써진다**. 이름만으로는 Rei 3중 중복(별개 캐릭터 포함)을 원천적으로 못 가른다.
+
+## 해법 — resource_id 권위 맵
+
+`roster.json`이 이미 담고 있는 안정적 게임 ID `resource_id`로 키잉해 이름 alias에서
+완전히 분리한다. (Fienn 결정 2026-07-18: "resource_id 권위 맵 전면".)
+
+### 컴포넌트
+
+**신규 `frontend/src/lib/resourceIdSlugMap.ts`**
+- `RESOURCE_ID_TO_SLUG: Record<number, string>` — 인코딩된 60 유닛의
+  `resource_id → 인코딩 slug` 권위 테이블. 유일한 진실의 소스.
+- 맵에 없는 `resource_id` = 인코딩되지 않은 유닛 = 추천 대상 아님 → 제외.
+- 테이블은 `roster.json`의 owned 유닛(159)에서 resource_id를 추출해 저술한다
+  (owned가 인코딩 60을 사실상 전부 덮음). 그 파일은 gitignore이므로 맵은 **커밋되는
+  소스 코드**로 하드코딩하되, 값의 출처를 주석으로 남긴다.
+
+**`frontend/src/lib/rosterImport.ts` 변경**
+- 지금 버리는 `u.resource_id`를 읽는다.
+- `RESOURCE_ID_TO_SLUG[u.resource_id]`로 slug 결정. **이름 파생 폴백 없음.**
+- 맵 히트 → 정상 draft. 맵 미스 → draft 생성하지 않고 제외 목록에 모은다.
+- `resolveSlug`(exiaImport) import 제거 — 이 경로는 더 이상 이름 파생을 쓰지 않는다.
+- 반환 `warnings`에 **집계 경고 1건** 추가: `"N개 owned 유닛이 미인코딩이라 제외됨:
+  <name_en 목록>"`. 유닛당 개별 경고는 노이즈(미인코딩 owned가 ~99명)라 하지 않는다.
+
+**ExiaInvasion 경로 (`exiaImport.ts`) — 무변경.** 짧은 이름 alias 테이블은 그쪽
+테스트(97/97)가 검증한 대로 유지. 두 경로가 이제 서로 다른 해석기를 쓰므로 alias
+충돌이 근본적으로 사라진다.
+
+### 모호한 엔트리 (확정값)
+
+Fienn 게임 지식으로 확정(2026-07-18):
+
+- **71 Soline · 321 Marciana** → 맵에 없음(base 미인코딩) → 제외. variant(74·322)만
+  각자 slug로.
+- **392 Rei(라이)** → 맵에 없음(별개 캐릭터, 미인코딩) → 제외.
+- **831 Rei(레이)** → `rei-ayanami`.
+- **834 Rei (Tentative Name)** → `rei-ayanami-tentative-name`.
+- **101 Drake** → `drake-signature` (Fienn 애장품 보유).
+- **150 Julia** → `julia` (미육성, 애장품 없음).
+
+drake/julia 두 엔트리는 **투자 의존**이라 현재 Fienn 로스터 기준으로 고정하고, 맵
+주석에 그 사실과 근본 해법(아래 후속)을 남긴다.
+
+## 후속으로 미룸 (이번 범위 밖)
+
+**SSR-애장품 자동 판정.** drake/julia base-vs-signature를 정책 고정 대신 실제 신호로
+읽는 근본 해법: 유닛의 장착 애장품 등급이 SSR이면 signature. 게임 메커니즘상 타당하나
+지금 안 만든다 —
+1. 수집기가 **Collection 탭을 캡처하지 않는다**(Equipment/Skill/Cube만). 확장 필요.
+2. 로컬 데이터로 "signature = SSR `favorite_rare`" 필드값을 **검증 불가**(SR 샘플
+   1개뿐, Collection 탭은 v-if라 fixture에 미포함).
+3. Fienn 로스터에서 실제로 갈리는 건 **Drake 1명**(Julia 미육성) — ROI 낮음.
+
+확정하려면 Fienn 로그인 브라우저로 signature 보유 유닛의 Collection 탭을 1개 캡처해
+`favorite_rare`/`favorite_type` 필드를 확인하면 된다. `docs/engine-gaps.md` 또는
+수집기 `RECIPE.md`에 후속 항목으로 기록.
+
+## 테스트
+
+- **맵 drift 테스트** (`resourceIdSlugMap.test.ts`): 맵의 모든 slug가 백엔드
+  `ENCODED_SLUGS`에 존재하고(오타/삭제 잡기), 모든 인코딩 slug가 맵에 정확히 1개
+  resource_id로 존재한다(누락 잡기). 인코딩 slug 목록은 테스트 픽스처로 복제하거나
+  백엔드에서 생성한 JSON을 소비 — 구현 시 결정.
+- **`rosterImport.test.ts` 확장**: (a) 맵 히트 유닛이 올바른 slug로 매핑, (b) base
+  Soline/Marciana·Rei(라이)가 제외되고 집계 경고에 이름이 뜸, (c) Drake→signature·
+  Julia→base, (d) 정확 스탯(raid400/actual)·오버로드·스킬레벨·큐브 매핑은 회귀 없음.
+- **`ImportRosterButton` 회귀**: `units` 형식 감지·병합이 그대로 동작, base+variant
+  중복 병합이 사라졌는지 확인.
+- 기존 프론트 스위트(97) 그린 유지, `tsc -b` 클린.
+
+## 열린 항목 / 가정
+
+- 맵은 owned(159)에서 저술 → 인코딩 60을 전부 덮는지 drift 테스트가 강제. owned에
+  없는 인코딩 유닛이 있으면(가능성 낮음) 디렉토리 CDN에서 그 resource_id를 별도 확보.
+- 미인코딩 owned 유닛을 draft에서 아예 빼는 것은 기존 동작 변경(현재는 파생 slug
+  draft를 만들고 백엔드 로더가 거른다). 추천 정확도엔 무영향이나 "내 보유 목록" 가시성은
+  줄어든다 — 집계 경고로 보완. Fienn 이견 없으면 이대로.
