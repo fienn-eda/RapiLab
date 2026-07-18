@@ -144,3 +144,61 @@ def run_check(manifests, lw_dir, data_dir, fetch_html=None):
         results[slug] = {"status": status, "drift": drift,
                          "warnings": warnings}
     return results, refresh_warnings
+
+
+def curl_fetch(slug):
+    """Fetch a character page with the browser-UA curl convention the
+    data-sources reference documents (lootandwaifus 403s non-browser UAs)."""
+    url = f"https://lootandwaifus.com/character/{slug}-nikke/"
+    result = subprocess.run(
+        ["curl", "-s", "-L", "--max-time", "60", "-A", USER_AGENT, url],
+        capture_output=True, text=True, encoding="utf-8")
+    if result.returncode != 0 or not result.stdout:
+        raise RuntimeError(f"curl exit {result.returncode} for {url}")
+    return result.stdout
+
+
+def main(argv=None):
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--offline", action="store_true",
+                        help="skip re-fetching; compare local files only")
+    parser.add_argument("--slug", help="check a single manifest slug")
+    args = parser.parse_args(argv)
+
+    from app.skill_rules.registry import ENCODED_SLUGS, get_skill_value_manifest
+
+    manifests = {}
+    for slug in sorted(ENCODED_SLUGS):
+        manifest = get_skill_value_manifest(slug)
+        if manifest is not None and manifest["source"] == "dotgg":
+            manifests[slug] = manifest
+    if args.slug:
+        if args.slug not in manifests:
+            parser.error(f"{args.slug!r} is not a dotgg-source manifest slug; "
+                         f"candidates: {', '.join(sorted(manifests))}")
+        manifests = {args.slug: manifests[args.slug]}
+
+    results, refresh_warnings = run_check(
+        manifests, LW_DIR, ROOT / "data",
+        fetch_html=None if args.offline else curl_fetch)
+
+    for message in refresh_warnings:
+        print(f"WARN {message}")
+    counts = Counter(r["status"] for r in results.values())
+    for slug, result in sorted(results.items()):
+        print(f"{result['status']} {slug}")
+        for key, findings in sorted(result["drift"].items()):
+            for level, missing in findings:
+                print(f"  {key} Lv{level}: dotgg {', '.join(missing)} "
+                      f"not in lootandwaifus")
+        for message in result["warnings"]:
+            print(f"  WARN {message}")
+    print(f"\n{counts['OK']} OK, {counts['DRIFT']} DRIFT, {counts['WARN']} "
+          f"WARN of {len(results)} dotgg-source manifest(s)")
+    return 1 if counts["DRIFT"] else 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
