@@ -161,9 +161,47 @@ def _resource_fill_times(
         windows = [(bt, bt + window_duration) for bt in own_burst_times]
         in_window = [t for t in shot_times if any(start <= t < end for start, end in windows)]
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
+    if kind == "per_shot_every_outside_full_burst":
+        n = fill[1]
+        out_of_window = [
+            t for t in shot_times if not any(start <= t < end for start, end in full_burst_windows)
+        ]
+        return [t for i, t in enumerate(out_of_window) if (i + 1) % n == 0]
     if kind == "on_last_bullet":
         return sorted(last_bullet_times)
     raise ValueError(f"unknown resource fill kind: {kind}")
+
+
+def _sequence_fire_rules(spec, stage_rules, shot_times, own_burst_times):
+    """gap #10 (Scarlet's Fleetly Fading Breakthrough): one running shot
+    counter walks a staged requirement table - stage k fires its rules once
+    the count reaches spec["requirements"][k], and after the last stage the
+    count resets and the cycle restarts. Inside the owner's own-burst window
+    (spec["own_burst_window"] = (duration, alt_requirements), e.g. Scarlet's
+    burst "Changes Full Charge attack count required for Skill 1 to 1/2/3 for
+    10 sec") the requirement table is swapped in place; the running count and
+    stage CARRY OVER across the boundary (Fienn 2026-07-18) - a stage fires
+    once count >= the ACTIVE requirement for it, so progress made under one
+    table is never lost under the other. At most one stage fires per shot
+    ("Only one effect is triggered at a time"). Returns {shot_time: rules}."""
+    base_reqs = spec["requirements"]
+    override = spec.get("own_burst_window")
+    windows = ()
+    override_reqs = base_reqs
+    if override:
+        duration, override_reqs = override
+        windows = [(bt, bt + duration) for bt in own_burst_times]
+    fires = {}
+    count, stage = 0, 0
+    for t in shot_times:
+        count += 1
+        reqs = override_reqs if any(start <= t < end for start, end in windows) else base_reqs
+        if count >= reqs[stage]:
+            fires[t] = stage_rules[stage]
+            stage += 1
+            if stage == len(base_reqs):
+                count, stage = 0, 0
+    return fires
 
 
 def _resolve_squad_burst_cycle_resource(spec, slug, events, context):
@@ -604,10 +642,16 @@ def simulate_raid(
         # "every_during_own_status_window" carries (N, window_duration).
         own_burst_times = context.burst_times.get(slug, [])
         window_fire_times = {}
+        sequence_fires = {}
         for idx, (threshold, mode, _rules) in enumerate(unit_per_shot):
             if mode == "every_during_full_burst":
                 window_fire_times[idx] = set(_resource_fill_times(
                     ("per_shot_every_during_full_burst", threshold), shot_times,
+                    core_hittable, fight_duration, full_burst_windows,
+                ))
+            elif mode == "every_outside_full_burst":
+                window_fire_times[idx] = set(_resource_fill_times(
+                    ("per_shot_every_outside_full_burst", threshold), shot_times,
                     core_hittable, fight_duration, full_burst_windows,
                 ))
             elif mode == "every_during_own_status_window":
@@ -616,16 +660,26 @@ def simulate_raid(
                     ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
                     core_hittable, fight_duration, full_burst_windows, own_burst_times,
                 ))
+            elif mode == "sequence":
+                # threshold carries the requirement spec; the rules slot holds
+                # one rule list PER STAGE (see _sequence_fire_rules).
+                sequence_fires[idx] = _sequence_fire_rules(
+                    threshold, _rules, shot_times, own_burst_times
+                )
         for shot_index, shot_time in enumerate(shot_times):
             count = shot_index + 1
             for idx, (threshold, mode, rules) in enumerate(unit_per_shot):
-                fires = (
-                    (mode == "after" and count == threshold)
-                    or (mode == "every" and count % threshold == 0)
-                    or (mode == "last_bullet" and shot_time in last_bullets)
-                    or (mode == "first_bullet" and shot_time in first_bullets)
-                    or (idx in window_fire_times and shot_time in window_fire_times[idx])
-                )
+                if mode == "sequence":
+                    rules = sequence_fires[idx].get(shot_time, ())
+                    fires = bool(rules)
+                else:
+                    fires = (
+                        (mode == "after" and count == threshold)
+                        or (mode == "every" and count % threshold == 0)
+                        or (mode == "last_bullet" and shot_time in last_bullets)
+                        or (mode == "first_bullet" and shot_time in first_bullets)
+                        or (idx in window_fire_times and shot_time in window_fire_times[idx])
+                    )
                 if fires:
                     for rule in rules:
                         if rule.condition(context, slug):

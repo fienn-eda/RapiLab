@@ -877,6 +877,110 @@ def test_per_shot_every_during_own_status_window_gated_to_own_burst_window():
     assert all(e["damage"] == 10000.0 for e in ps)  # 100% coeff * atk 10000, no defense
 
 
+def test_per_shot_every_outside_full_burst_fires_only_on_out_of_window_shots():
+    # The complement of gap #7's "every_during_full_burst" (e.g. Velvet's
+    # Sticky Fingers, "when attacking with Full Charge while NOT in Full
+    # Burst"): only shots OUTSIDE every Full Burst window are counted before
+    # the every-Nth step. gauge_charge_time=0.5 leaves the shots before
+    # t=0.5 outside the window, so the every-3rd step is actually reached.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=0.5,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules={"attacker": [(3, "every_outside_full_burst", [instant_nuke_pulse_rule("per_shot", 100.0)])]},
+    )
+    windows = list(zip(
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_start"),
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_end"),
+    ))
+    shots = [k / 12 for k in range(12)]  # AR 12/s, max_ammo 100 -> no reload in 1s
+    out_of_window = [t for t in shots if not any(s <= t < e for s, e in windows)]
+    expected = [t for i, t in enumerate(out_of_window) if (i + 1) % 3 == 0]
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) >= 1  # some shots do fall outside the window
+    assert [round(e["time"], 4) for e in ps] == [round(t, 4) for t in expected]
+    assert all(not any(s <= e["time"] < end for s, end in windows) for e in ps)
+
+
+def _sequence_result(spec, gauge_charge_time):
+    # Three stages with distinct percents so the damage log tells apart WHICH
+    # stage fired (100/200/300% of atk 10000 -> 10000/20000/30000).
+    stage_rules = [
+        [instant_nuke_pulse_rule("per_shot", 100.0)],
+        [instant_nuke_pulse_rule("per_shot", 200.0)],
+        [instant_nuke_pulse_rule("per_shot", 300.0)],
+    ]
+    return simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=gauge_charge_time,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules={"attacker": [(spec, "sequence", stage_rules)]},
+    )
+
+
+def test_per_shot_sequence_fires_staged_effects_on_a_repeating_cycle():
+    # gap #10 base behaviour (Scarlet's Fleetly Fading Breakthrough): a single
+    # running shot counter fires stage 1 at its 3rd shot, stage 2 at the 6th,
+    # stage 3 at the 9th, then resets and starts over. gauge_charge_time=5.0
+    # keeps every shot before the first burst, so only base requirements apply.
+    spec = {"requirements": [3, 6, 9]}
+    result = _sequence_result(spec, gauge_charge_time=5.0)
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    # AR 12/s: stages at counts 3/6/9 (t=2/12, 5/12, 8/12), then the cycle
+    # restarts and stage 1 fires again at the 12th shot (t=11/12).
+    assert [(round(e["time"], 4), e["damage"]) for e in ps] == [
+        (round(2 / 12, 4), 10000.0),
+        (round(5 / 12, 4), 20000.0),
+        (round(8 / 12, 4), 30000.0),
+        (round(11 / 12, 4), 10000.0),
+    ]
+
+
+def test_per_shot_sequence_own_burst_window_swaps_requirements_and_carries_the_count():
+    # gap #10 override (Scarlet's burst: "Changes Full Charge attack count
+    # required for Skill 1 to 1/2/3 for 10 sec"): inside the caster's own
+    # burst window the requirement table is swapped, but the running count and
+    # stage CARRY OVER across the boundary (Fienn 2026-07-18). A stage fires
+    # once count >= the active requirement for that stage; after stage 3 the
+    # count resets. Expected fires are replayed here with those exact
+    # semantics from the sim's own burst time.
+    spec = {"requirements": [3, 6, 9], "own_burst_window": (10.0, [1, 2, 3])}
+    result = _sequence_result(spec, gauge_charge_time=0.1)
+    own_bursts = [
+        e["time"] for e in result["events"] if e["type"] == "burst" and e["slug"] == "attacker"
+    ]
+    assert own_bursts  # the override window is actually exercised
+    windows = [(bt, bt + 10.0) for bt in own_bursts]
+    shots = [k / 12 for k in range(12)]
+    expected = []
+    count, stage = 0, 0
+    for t in shots:
+        count += 1
+        reqs = [1, 2, 3] if any(s <= t < e for s, e in windows) else [3, 6, 9]
+        if count >= reqs[stage]:
+            expected.append((round(t, 4), float(10000 * (stage + 1))))
+            stage += 1
+            if stage == 3:
+                count, stage = 0, 0
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) > 4  # the swapped requirements fire far more often than base
+    assert [(round(e["time"], 4), e["damage"]) for e in ps] == expected
+
+
 def test_per_shot_squad_buff_reaches_a_burst_nuke_computed_earlier():
     # The record-then-compute payoff: buffer's per-shot squad debuff (applied at
     # its 1st shot, t=0) must raise the attacker's burst nuke fired later.
