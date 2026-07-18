@@ -9,7 +9,8 @@
 
 - 마지막 갱신: 2026-07-18
 - 브랜치: `wip/scaffolding` (`worktree-plans-frontend3-encoding` 머지 완료)
-- 테스트: **768 passed** (2026-07-18, **스킬 수치 드리프트 감지** —
+- 테스트: **774 passed** (2026-07-18, **스킬 수치 드리프트 감지** — 머지 후 실측,
+  wip/roster-import 합류분 +6 포함.
   `scripts/check_skill_value_drift.py`: dotgg-소스 매니페스트 22개(21유닛+
   drake-signature)의 스킬 수치를 라이브 lootandwaifus와 대조(매 실행 전체 재수집,
   `--offline`/`--slug` 지원, DRIFT 시 exit 1). 비교는 설명 템플릿이 참조하는
