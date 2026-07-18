@@ -44,19 +44,29 @@ base Soline(오매핑)과 진짜 variant가 한 슬롯으로 뭉개져 **정확�
 
 **신규 `frontend/src/lib/resourceIdSlugMap.ts`**
 - `RESOURCE_ID_TO_SLUG: Record<number, string>` — 인코딩된 60 유닛의
-  `resource_id → 인코딩 slug` 권위 테이블. 유일한 진실의 소스.
-- 맵에 없는 `resource_id` = 인코딩되지 않은 유닛 = 추천 대상 아님 → 제외.
+  `resource_id → 인코딩 slug` 권위 테이블. 인코딩 slug 신원의 유일한 진실의 소스.
+- 맵에 없는 `resource_id` = 미인코딩 유닛 = **추천에선 제외되지만 draft엔 유지**
+  (아래 rosterImport 참조).
 - 테이블은 `roster.json`의 owned 유닛(159)에서 resource_id를 추출해 저술한다
   (owned가 인코딩 60을 사실상 전부 덮음). 그 파일은 gitignore이므로 맵은 **커밋되는
   소스 코드**로 하드코딩하되, 값의 출처를 주석으로 남긴다.
 
 **`frontend/src/lib/rosterImport.ts` 변경**
 - 지금 버리는 `u.resource_id`를 읽는다.
-- `RESOURCE_ID_TO_SLUG[u.resource_id]`로 slug 결정. **이름 파생 폴백 없음.**
-- 맵 히트 → 정상 draft. 맵 미스 → draft 생성하지 않고 제외 목록에 모은다.
-- `resolveSlug`(exiaImport) import 제거 — 이 경로는 더 이상 이름 파생을 쓰지 않는다.
-- 반환 `warnings`에 **집계 경고 1건** 추가: `"N개 owned 유닛이 미인코딩이라 제외됨:
-  <name_en 목록>"`. 유닛당 개별 경고는 노이즈(미인코딩 owned가 ~99명)라 하지 않는다.
+- `RESOURCE_ID_TO_SLUG[u.resource_id]`로 slug 결정.
+- **맵 히트** → 권위 slug로 정상 draft.
+- **맵 미스**(미인코딩 owned 유닛) → **draft는 유지하되** slug는 alias 없는
+  `deriveSlug`(raw kebab)로. 백엔드 `load_nikke_spec`이 `ENCODED_SLUGS` 밖이라
+  자연히 제외하고 `excluded_slugs`로 표시한다. **오매핑 버그의 원인이던
+  `SLUG_ALIASES`는 이 경로에서 안 쓴다** — raw 파생은 인코딩 slug와 충돌하지 않는다
+  (예: base "Soline" → `soline` ≠ 인코딩 `soline-frost-ticket`; 라이 "Rei" → `rei`
+  ≠ `rei-ayanami`).
+- 미인코딩 유닛을 draft에 남기는 비용은 사실상 0: 백엔드가 시뮬 진입 전(`load_nikke_spec`
+  첫 줄 O(1) 집합 체크)에 걸러 `specs`에 안 넣으므로 **덱 탐색 정확도·속도에 무영향**.
+  애정 캐릭 등 저기용 유닛의 "보유 가시성"을 보존한다(Fienn 2026-07-18).
+- 반환 `warnings`에 **집계 경고 1건**(선택): `"N개 owned 유닛이 아직 미지원(추천 제외):
+  <name_en 목록>"`. 유닛당 개별 경고는 노이즈(미인코딩 owned ~99명)라 하지 않는다.
+  (백엔드가 이미 `excluded_slugs`로 표시하므로 프론트 경고는 얇게 유지.)
 
 **ExiaInvasion 경로 (`exiaImport.ts`) — 무변경.** 짧은 이름 alias 테이블은 그쪽
 테스트(97/97)가 검증한 대로 유지. 두 경로가 이제 서로 다른 해석기를 쓰므로 alias
@@ -91,6 +101,16 @@ drake/julia 두 엔트리는 **투자 의존**이라 현재 Fienn 로스터 기�
 `favorite_rare`/`favorite_type` 필드를 확인하면 된다. `docs/engine-gaps.md` 또는
 수집기 `RECIPE.md`에 후속 항목으로 기록.
 
+**must-include(핀) 추천.** 유저가 "꼭 포함시킬 니케"를 지정하면 그 유닛을 포함한
+조합만 탐색하는 기능(Fienn 미래 방향 2026-07-18). 별도 후속 스펙 =
+`search_best_decks(specs, boss, must_include=[slugs])` 제약 + 프론트 핀 UI. **지금
+안 만든다(YAGNI).** 이번 설계가 그 기능의 토대와 잘 맞물린다:
+- 미인코딩 유닛을 draft에 유지 → 유저가 핀 후보를 로스터에서 볼 수 있음(핀 UI 전제).
+- resource_id 맵 → 각 유닛에 안정적 신원 → 핀을 이름이 아닌 그 신원 위에 얹으면 깔끔.
+- **핀은 인코딩된 유닛 한정**: 엔진이 시뮬 못 하는 유닛은 핀으로도 딜 계산이 안 되므로,
+  애정 캐릭을 실제로 핀하려면 그 유닛 인코딩이 선행돼야 한다(= Phase 3 커버리지가
+  이 기능의 실질 동력). 핀 UI는 loadable 유닛만 선택 가능하게 하거나 경고로 게이팅.
+
 ## 테스트
 
 - **맵 drift 테스트** (`resourceIdSlugMap.test.ts`): 맵의 모든 slug가 백엔드
@@ -108,6 +128,7 @@ drake/julia 두 엔트리는 **투자 의존**이라 현재 Fienn 로스터 기�
 
 - 맵은 owned(159)에서 저술 → 인코딩 60을 전부 덮는지 drift 테스트가 강제. owned에
   없는 인코딩 유닛이 있으면(가능성 낮음) 디렉토리 CDN에서 그 resource_id를 별도 확보.
-- 미인코딩 owned 유닛을 draft에서 아예 빼는 것은 기존 동작 변경(현재는 파생 slug
-  draft를 만들고 백엔드 로더가 거른다). 추천 정확도엔 무영향이나 "내 보유 목록" 가시성은
-  줄어든다 — 집계 경고로 보완. Fienn 이견 없으면 이대로.
+- **미인코딩 owned 유닛은 draft에 유지**(Fienn 결정 2026-07-18) — 추천 성능(정확도·
+  속도) 영향 0(백엔드가 탐색 진입 전 제외)이고 애정 캐릭 등 보유 가시성을 지킨다.
+  raw 파생 slug가 두 미인코딩 유닛에서 우연히 겹치면 병합 충돌이 가능하나(코스메틱,
+  둘 다 어차피 제외됨) 실질 무해 — 필요 시 병합 키에 resource_id 병용은 후속.
