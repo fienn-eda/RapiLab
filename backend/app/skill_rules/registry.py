@@ -159,7 +159,11 @@ from app.skill_rules.julia import (
     climax_burst_percent,
 )
 from app.skill_rules import julia_signature
-from app.skill_rules.little_mermaid import build_bubble_wave_fb_nuke, build_little_mermaid_rules
+from app.skill_rules.little_mermaid import (
+    build_bubble_barrage_scheduled_nukes,
+    build_bubble_wave_fb_nuke,
+    build_little_mermaid_rules,
+)
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.maiden_ice_rose import (
     build_blessings_fill_triggered_buffs,
@@ -384,6 +388,7 @@ _BURST_DAMAGE_TYPES = {
 # entities so far.
 _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
+    "little-mermaid": lambda sv: build_bubble_barrage_scheduled_nukes(sv),  # squad-wide 500-ammo counter
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "red-hood": lambda sv: build_red_wolf_scheduled_nukes(sv),     # Step 3 transform window, 33 measured shots
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals

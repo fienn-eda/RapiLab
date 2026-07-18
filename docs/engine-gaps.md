@@ -5,7 +5,10 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-18 (**red-hood 재검증 — Pattern B 아님, 확장 없이 인코딩 완료**.
+- 마지막 갱신: 2026-07-18 (**아군 총탄 카운터 해소 — 확장 불필요**: `scheduled_nukes`의
+  `context.shot_times`가 전 유닛 타임라인을 담고 있어 모듈 병합으로 스쿼드 합산
+  카운터 표현 가능 — Little Mermaid Bubble Barrage ⚠→✅. 같은 날: **red-hood
+  재검증 — Pattern B 아님, 확장 없이 인코딩 완료**.
   "게이지=charge speed=딜 아님" 판정은 Phase S(charge_speed_percent 배선) 이전의
   낡은 것. 무기변형 창은 Fienn 실측(10초 33발·무한탄창) 앵커 `scheduled_nukes`.
   Pattern B 잔여 후보는 mihara·elegg 2명으로 감소 — gap #2 상세 참고.
@@ -148,9 +151,12 @@
   (애장품) ✅(LD Assault, Designated Target 조건부 중첩 넉).
 - **다음(후속 배치):** 아래 막힌 유닛들을 이 능력으로 재인코딩. 각 유닛 데이터 수집 후
   per-shot 룰 추가.
-- **잔여 변형:** (a) **아군 총탄 카운터**(스쿼드 전체 발사 누적, per-caster 아님) — 예:
-  Little Mermaid의 Bubble Barrage(아군 총탄 500마다 850%). `per_shot_rules`는 시전자
-  본인 발사만 세므로 미커버. 스쿼드 합산 카운터는 별도 확장 필요. (b) **크리티컬 히트
+- **잔여 변형:** (a) ~~**아군 총탄 카운터**(스쿼드 전체 발사 누적, per-caster 아님)~~ —
+  **완료 (2026-07-18, 확장 불필요)**: Little Mermaid의 Bubble Barrage(아군 총탄
+  500마다 85%×10연타)를 `scheduled_nukes`로 해결 — schedule 함수가 받는
+  `context.shot_times`가 **전 유닛의 발사 타임라인**을 담고 있어(소유자 전용이
+  아님), 모듈이 병합·정렬 후 매 500번째 발사 시각에 히트를 방출. 신규 스쿼드
+  카운터 primitive는 만들지 않았고 필요하지도 않았음. (b) **크리티컬 히트
   카운터 — 영구 defer, "만들 능력"이 아님(2026-07-12, Julia 시그니처 인코딩 중 발견):**
   "N회 크리티컬 히트 후" 트리거는 엔진의 기대값 기반 크리 모델(각 히트가 `crit_rate`
   확률로 스케일되는 연속값 — 실제 per-hit RNG 안 굴림)과 구조적으로 안 맞는다. "이 샷이
@@ -692,9 +698,10 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   Ark·Arcana·Tove·Ada Wong(신규)·Little Mermaid·Maiden·Jill).
 2. **남은 방향:** #2 Pattern B(시간감쇠 게이지·변신, 일반 프리미티브 — Mihara류) ·
    상태머신/무기변형(rapi-red-hood·cinderella-crystal-wave·laplace류) ·
-   **아군 총탄 카운터**(스쿼드 합산 발사 누적 — Little Mermaid Bubble Barrage 잔여) ·
-   **not-in-Full-Burst per-shot 창 필터**(gap #7 거울상, Velvet Sticky Fingers
-   잔여) ·
+   ~~아군 총탄 카운터~~(**2026-07-18 완료** — `scheduled_nukes`+`context.shot_times`
+   병합으로 확장 없이 해결, Little Mermaid ⚠→✅) ·
+   ~~not-in-Full-Burst per-shot 창 필터~~(**2026-07-18 완료** —
+   `every_outside_full_burst`, Velvet Sticky Fingers 소비) ·
    **유닛별 버스트 스케줄 정책**(사이클 스킵 — Diesel: Winter Sweets는 짝수
    사이클에 버스트하는 게 더 강함[Fienn 2026-07-17]; `burst_cycle`은 현재 쿨 찬
    유닛을 항상 즉시 발동시켜 "한 사이클 거르기"를 표현 못 함. Diesel 인코딩

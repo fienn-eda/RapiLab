@@ -352,7 +352,13 @@ spec dicts `{"schedule": fn(context, fight_duration) -> times, "percent",
 dropped. Logged with `source="scheduled"`. The schedule may also read the owner's
 own firing timeline off `context.shot_times[slug]` (filled by the weapon pass;
 empty without weapon stats) - that is how "a DoT per Full Charge" is expressed
-(Raven's Shock Wave). A schedule can also emit the SAME time more than once -
+(Raven's Shock Wave). `context.shot_times` holds EVERY squad member's timeline,
+not just the owner's, so a SQUAD-WIDE bullet/ammo counter is also expressible by
+merging all members' shot times in the schedule (Little Mermaid's Bubble
+Barrage, "allies' total ammo expended reaches 500" - no engine extension
+needed). It also anchors on `context.burst_times[slug]` for own-burst-window
+schedules (Red Hood's measured 33-shot transform window). A schedule can also
+emit the SAME time more than once -
 that is how a stacking DoT is expressed: one damage instance per live stack, so
 defense comes off each, exactly like a multi-hit burst. First consumer: Ein
 (`ein.py` - see

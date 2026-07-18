@@ -537,6 +537,10 @@
       → `KNOWN_MANIFEST_EXCEPTIONS` 빈 집합, **매니페스트·API 로더블 61/61(전원)**.
       Phase 6의 "픽스처 재배열 4유닛 잔여" 기록은 이걸로 종결(그 섹션은 병렬 세션
       규칙상 이 배치에서 편집하지 않음 — 병합 후 정리).
+- [x] **정리 배치 (2026-07-18)**: SG 스코프 정밀화(drake-signature·arcana-fortune-mate
+      — squad 근사 제거, arcana의 except-self 과대적용 제거) + Little Mermaid
+      Bubble Barrage(아군 총탄 500 카운터)를 `scheduled_nukes`+전 유닛
+      `context.shot_times` 병합으로 인코딩(⚠→✅, 엔진 확장 불필요).
 - [x] **red-hood 재검증 + 인코딩** (2026-07-18): Pattern B 판정이 Phase S 이전의
       낡은 것임을 확인(charge speed는 이제 딜 스탯). Glaring Eyes 정상상태 10스택
       +38.1% 상시·초과분→차지댐 변환·Wild Tooth 자ATK·Step 3 무기변형(Fienn 실측
