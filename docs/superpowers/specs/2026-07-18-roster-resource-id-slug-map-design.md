@@ -43,18 +43,31 @@ base Soline(오매핑)과 진짜 variant가 한 슬롯으로 뭉개져 **정확�
 ### 컴포넌트
 
 **신규 `frontend/src/lib/resourceIdSlugMap.ts`**
-- `RESOURCE_ID_TO_SLUG: Record<number, string>` — 인코딩된 60 유닛의
-  `resource_id → 인코딩 slug` 권위 테이블. 인코딩 slug 신원의 유일한 진실의 소스.
+- `RESOURCE_ID_TO_SLUG: Record<number, string>` — `resource_id → **base** 인코딩 slug`
+  권위 테이블. 유닛 **신원**의 유일한 진실의 소스이며 **유저 투자와 무관**하게 불변.
 - 맵에 없는 `resource_id` = 미인코딩 유닛 = **추천에선 제외되지만 draft엔 유지**
   (아래 rosterImport 참조).
+- `SIGNATURE_OWNED: ReadonlySet<number>` — **애장품(Favorite Item)을 보유한**
+  resource_id 집합. 현재 `{101}`(Drake 보유; Julia는 미육성이라 제외).
+- `DUAL_SLOT_BASES: ReadonlySet<string>` — `-signature` 인코딩이 별도로 존재하는 base
+  slug 집합. 현재 `{'drake','julia'}` (drift 테스트가 `ENCODED_SLUGS`와 대조 검증).
+
+**왜 신원과 투자를 분리하는가 (Fienn 2026-07-18).** dual-slot 유닛은 base와 signature가
+**같은 resource_id**를 공유하므로(Drake = 101 하나) ID로는 절대 구분할 수 없고, 오직
+**애장품 보유 = 유저별·시점별 투자**만이 가른다. 따라서 `101 → drake-signature`처럼
+투자를 신원 맵에 박으면 다른 유저·미래의 같은 유저에게 틀린다. 대신 맵은 항상 base를
+가리키고, signature 승격은 `SIGNATURE_OWNED`라는 **명시적 단일 지점**에서 일어난다.
+애장품 해금 니케는 계속 추가되므로(Fienn), 이 집합이 그 성장의 유일한 갱신 지점이 되고,
+후속 SSR-애장품 자동판정이 완성되면 **손 갱신 없이 이 집합을 자동으로 채우게** 된다.
 - 테이블은 `roster.json`의 owned 유닛(159)에서 resource_id를 추출해 저술한다
   (owned가 인코딩 60을 사실상 전부 덮음). 그 파일은 gitignore이므로 맵은 **커밋되는
   소스 코드**로 하드코딩하되, 값의 출처를 주석으로 남긴다.
 
 **`frontend/src/lib/rosterImport.ts` 변경**
 - 지금 버리는 `u.resource_id`를 읽는다.
-- `RESOURCE_ID_TO_SLUG[u.resource_id]`로 slug 결정.
-- **맵 히트** → 권위 slug로 정상 draft.
+- `RESOURCE_ID_TO_SLUG[u.resource_id]`로 base slug 결정 후, `SIGNATURE_OWNED`에 그
+  resource_id가 있고 base가 `DUAL_SLOT_BASES`에 속하면 `<base>-signature`로 승격.
+- **맵 히트** → 권위 slug(필요 시 signature 승격)로 정상 draft.
 - **맵 미스**(미인코딩 owned 유닛) → **draft는 유지하되** slug는 alias 없는
   `deriveSlug`(raw kebab)로. 백엔드 `load_nikke_spec`이 `ENCODED_SLUGS` 밖이라
   자연히 제외하고 `excluded_slugs`로 표시한다. **오매핑 버그의 원인이던
@@ -81,11 +94,18 @@ Fienn 게임 지식으로 확정(2026-07-18):
 - **392 Rei(라이)** → 맵에 없음(별개 캐릭터, 미인코딩) → 제외.
 - **831 Rei(레이)** → `rei-ayanami`.
 - **834 Rei (Tentative Name)** → `rei-ayanami-tentative-name`.
-- **101 Drake** → `drake-signature` (Fienn 애장품 보유).
-- **150 Julia** → `julia` (미육성, 애장품 없음).
+- **101 Drake** → 맵은 `drake`(base). `SIGNATURE_OWNED`에 101이 있으므로 해석 결과는
+  `drake-signature` (Fienn 애장품 보유).
+- **150 Julia** → 맵은 `julia`(base). `SIGNATURE_OWNED`에 없으므로 `julia` 유지
+  (미육성, 애장품 없음).
 
-drake/julia 두 엔트리는 **투자 의존**이라 현재 Fienn 로스터 기준으로 고정하고, 맵
-주석에 그 사실과 근본 해법(아래 후속)을 남긴다.
+즉 투자 의존 정보는 맵이 아니라 `SIGNATURE_OWNED` 한 곳에만 존재한다. Fienn이 Julia
+애장품을 해금하면 `150`을 그 집합에 추가하는 **한 줄 수정**으로 끝난다.
+
+**Neon 검증(2026-07-18).** base Neon은 SR이라 애초에 수집 대상이 아니고(레이드 SSR
+전용), SSR variant 둘은 서로 다른 resource_id를 가진다: `14 Neon: Blue Ocean`(미인코딩
+→ 맵에 없음 → 제외) · `18 Neon: Vision Eye`(→ `neon-vision-eye`). variant마다 ID가
+달라 조회 시점의 base/variant 혼동은 원천적으로 불가능하다.
 
 ## 후속으로 미룸 (이번 범위 밖)
 
@@ -101,6 +121,19 @@ drake/julia 두 엔트리는 **투자 의존**이라 현재 Fienn 로스터 기�
 `favorite_rare`/`favorite_type` 필드를 확인하면 된다. `docs/engine-gaps.md` 또는
 수집기 `RECIPE.md`에 후속 항목으로 기록.
 
+**디렉토리 기반 맵 생성·검증 (우려 1의 근본 해법, Fienn 2026-07-18 후속 결정).**
+현재 맵은 손 저술이라, 잘못된 resource_id를 유효한 slug에 배정하면(예: 실수로
+`18 → anis-star`) drift 테스트가 **못 잡는다** — 18이 Neon이라는 사실을 아는 소스가
+커밋돼 있지 않기 때문이다. 근본 해법은 공개 니케 디렉토리(전 194유닛
+`resource_id·name_en·name_code·rarity`, 개인정보 없음)를 커밋하고 (a) 각 맵 엔트리의
+resource_id를 디렉토리 이름과 대조 검증하거나 (b) 아예 디렉토리 + 소규모 override에서
+맵을 **생성**하는 것. 지금 안 하는 이유: 디렉토리는 수집기가 **런타임 네트워크
+트래픽에서만** 얻고 디스크에 저장하지 않아, 스냅샷을 만들려면 수집기에 덤프를 추가하고
+Fienn이 한 번 실행해야 한다. 착수 시점 = 다음 수집기 실행 때.
+**현재의 완화책**: 57 엔트리는 전부 `roster.json`(수집기의 디렉토리-조인 출력)에서
+나온 검증된 값이고, 각 엔트리에 `name_en` 주석이 붙어 사람이 감사할 수 있으며, drift
+테스트가 누락·오타·신규 dual-slot을 잡는다.
+
 **must-include(핀) 추천.** 유저가 "꼭 포함시킬 니케"를 지정하면 그 유닛을 포함한
 조합만 탐색하는 기능(Fienn 미래 방향 2026-07-18). 별도 후속 스펙 =
 `search_best_decks(specs, boss, must_include=[slugs])` 제약 + 프론트 핀 UI. **지금
@@ -113,10 +146,15 @@ drake/julia 두 엔트리는 **투자 의존**이라 현재 Fienn 로스터 기�
 
 ## 테스트
 
-- **맵 drift 테스트** (`resourceIdSlugMap.test.ts`): 맵의 모든 slug가 백엔드
-  `ENCODED_SLUGS`에 존재하고(오타/삭제 잡기), 모든 인코딩 slug가 맵에 정확히 1개
-  resource_id로 존재한다(누락 잡기). 인코딩 slug 목록은 테스트 픽스처로 복제하거나
-  백엔드에서 생성한 JSON을 소비 — 구현 시 결정.
+- **맵 drift 테스트 (백엔드, `backend/tests/test_resource_id_slug_map.py`)**: 프론트
+  맵 파일을 정규식으로 읽어 라이브 `ENCODED_SLUGS`와 대조한다. 백엔드에 두는 이유 =
+  `ENCODED_SLUGS`가 거기 살아 있어 **단일 소스**이고, 새 유닛을 인코딩하는 즉시(백엔드
+  작업 중) 누락이 잡히며 별도 재생성 규율이 필요 없다. 세 가지 불변식:
+  1. 맵의 모든 slug ∈ `ENCODED_SLUGS` (오타/삭제 잡기)
+  2. `DUAL_SLOT_BASES` == `-signature` 형제가 인코딩된 base들의 집합 —
+     **인코딩 확장으로 새 dual-slot이 생기면 즉시 실패**(Fienn의 성장 대비 요구)
+  3. 미커버 인코딩 slug(= `ENCODED_SLUGS` − 맵 − signature 슬러그) == 알려진 예외
+     `{jill-valentine}` — 신규 인코딩 누락 감지
 - **`rosterImport.test.ts` 확장**: (a) 맵 히트 유닛이 올바른 slug로 매핑, (b) base
   Soline/Marciana·Rei(라이)가 제외되고 집계 경고에 이름이 뜸, (c) Drake→signature·
   Julia→base, (d) 정확 스탯(raid400/actual)·오버로드·스킬레벨·큐브 매핑은 회귀 없음.
@@ -126,8 +164,12 @@ drake/julia 두 엔트리는 **투자 의존**이라 현재 Fienn 로스터 기�
 
 ## 열린 항목 / 가정
 
-- 맵은 owned(159)에서 저술 → 인코딩 60을 전부 덮는지 drift 테스트가 강제. owned에
-  없는 인코딩 유닛이 있으면(가능성 낮음) 디렉토리 CDN에서 그 resource_id를 별도 확보.
+- 맵은 Fienn owned(159)에서 저술했고 인코딩 60 중 **57을 덮는다**. 미커버 3건의 성격이
+  각각 다르다: `drake-signature`·`julia-signature`는 **의도된 것**(signature는 신원
+  맵이 아니라 `SIGNATURE_OWNED` 승격으로 도달) · `jill-valentine`은 **Fienn 미보유**라
+  resource_id를 로컬에서 알 수 없어 비워둔다(추측 금지). Jill 보유 유저가 sync하거나
+  디렉토리 스냅샷을 확보할 때 추가하고 `KNOWN_UNMAPPED`에서 뺀다. 그때까지 Fienn의
+  추천에는 영향 없음.
 - **미인코딩 owned 유닛은 draft에 유지**(Fienn 결정 2026-07-18) — 추천 성능(정확도·
   속도) 영향 0(백엔드가 탐색 진입 전 제외)이고 애정 캐릭 등 보유 가시성을 지킨다.
   raw 파생 slug가 두 미인코딩 유닛에서 우연히 겹치면 병합 충돌이 가능하나(코스메틱,
