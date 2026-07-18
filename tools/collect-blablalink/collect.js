@@ -9,6 +9,8 @@
 // Usage (needs Chrome on --remote-debugging-port=9222 with a logged-in blablalink tab):
 //   node collect.js [--dry-run] [--out roster.json] [--area 81]
 //   --dry-run   collect only the first owned SSR unit (smoke test)
+//   --directory dump the public nikke directory to nikke-directory.json and stop
+//               (no roster, no ownership data — see dumpDirectory below)
 
 const fs = require('fs')
 const { JSDOM } = require('jsdom')
@@ -17,7 +19,9 @@ const { parseMainStats, parseOverload, parseSkills, parseCube } = require('./par
 
 const args = process.argv.slice(2)
 const DRY = args.includes('--dry-run')
-const OUT = args.includes('--out') ? args[args.indexOf('--out') + 1] : 'roster.json'
+const DIRECTORY_ONLY = args.includes('--directory')
+const DEFAULT_OUT = DIRECTORY_ONLY ? 'nikke-directory.json' : 'roster.json'
+const OUT = args.includes('--out') ? args[args.indexOf('--out') + 1] : DEFAULT_OUT
 const AREA = args.includes('--area') ? parseInt(args[args.indexOf('--area') + 1], 10) : 81
 
 const log = (...m) => console.error(...m)
@@ -67,6 +71,20 @@ const fetchOwned = (page, openid, area) =>
 
 const nameOf = (entry) => (entry.name_localkey && entry.name_localkey.name) || null
 
+// Reduce the raw directory to the public identity fields the repo commits as a
+// snapshot: enough to prove a resource_id names the unit its slug claims, and to
+// look one up for a not-yet-owned unit. Nothing here is account-specific.
+const trimDirectory = (dir) =>
+  dir
+    .filter((d) => nameOf(d))
+    .map((d) => ({
+      resource_id: d.resource_id,
+      name_code: d.name_code,
+      name_en: nameOf(d),
+      original_rare: d.original_rare,
+    }))
+    .sort((a, b) => a.resource_id - b.resource_id)
+
 const parseUnit = (html) => {
   const doc = new JSDOM(html).window.document
   const stats = parseMainStats(doc)
@@ -82,14 +100,25 @@ const parseUnit = (html) => {
 const main = async () => {
   const browser = await connect()
   const ctx = browser.contexts()[0]
-  const cookies = await ctx.cookies()
-  const openid = (cookies.find((c) => c.name === 'game_openid') || {}).value || null
-  if (!openid) throw new Error('no game_openid cookie — is the blablalink session logged in?')
   const page = findPage(ctx)
 
   log('resolving nikke directory…')
   const dir = await collectDirectory(page)
   if (!dir) throw new Error('nikke directory not seen in network traffic')
+
+  // The directory is public game data, so this mode needs no account at all — it is
+  // how the committed snapshot that validates the resource_id -> slug map is refreshed.
+  if (DIRECTORY_ONLY) {
+    const entries = trimDirectory(dir)
+    fs.writeFileSync(OUT, `${JSON.stringify(entries, null, 2)}\n`)
+    log(`wrote ${OUT}: ${entries.length} nikkes`)
+    await browser.close()
+    return
+  }
+
+  const cookies = await ctx.cookies()
+  const openid = (cookies.find((c) => c.name === 'game_openid') || {}).value || null
+  if (!openid) throw new Error('no game_openid cookie — is the blablalink session logged in?')
   const byCode = new Map(dir.map((d) => [d.name_code, d]))
 
   log('fetching owned characters…')
@@ -134,6 +163,10 @@ const main = async () => {
   log(`wrote ${OUT}: ${units.length} units (${failed} failed), synchroLevel=${synchroLevel}`)
   await browser.close()
 }
+
+module.exports = { trimDirectory }
+
+if (require.main !== module) return
 
 main().catch((e) => {
   console.error('COLLECT_ERROR:', e.message)
