@@ -97,6 +97,23 @@ Two things worth knowing if you touch the collector's output shape:
 Details: `docs/superpowers/specs/2026-07-18-roster-resource-id-slug-map-design.md`,
 `docs/decisions.md`.
 
+### Directory snapshot (`nikke-directory.json`)
+
+`node collect.js --directory` writes the directory's public identity fields
+(`resource_id` / `name_code` / `name_en` / `original_rare`, one entry per nikke) to
+`nikke-directory.json`, then stops — no roster, no capture. **This mode needs no
+account**: it returns before the `game_openid` lookup, so only a ShiftyPad page load
+is required, and `trimDirectory` keeps no ownership or stat fields. That is why the
+file is committed while `roster.json` is gitignored.
+
+The snapshot is the evidence `backend/tests/test_resource_id_directory.py` checks the
+slug map against: it proves each mapped `resource_id` really names the unit its slug
+claims. Without it, a *wrong-but-valid* id (Soline's base 71 in place of her Frost
+Ticket variant 74) leaves every slug encoded and mis-maps the unit silently.
+
+Refresh it when new nikkes release — a `resource_id` absent from the snapshot fails
+the guard, which is also how you look up the id for a unit nobody owns yet.
+
 ## (e) Parser DOM structure (drives parse.js)
 
 - **Main stats** — find the stat rows directly: each is a `div` with two `<p>` children,

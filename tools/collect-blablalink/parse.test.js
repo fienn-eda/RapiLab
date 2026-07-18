@@ -77,3 +77,26 @@ test('parses a per-tab-plucked capture (Blanc): stats, dropped overloads, skills
   assert.deepEqual(parseSkills(d), { skill1: 4, skill2: 7, burst: 9 })
   assert.equal(parseCube(d), null)
 })
+
+// --- directory snapshot -------------------------------------------------------
+
+const { trimDirectory } = require('./collect')
+
+test('trimDirectory keeps the public identity fields, sorted by resource_id', () => {
+  const raw = [
+    { resource_id: 16, name_code: 5129, original_rare: 'SSR', name_localkey: { name: 'Rapi: Red Hood' }, class: 'Attacker', combat: 999, extra: 'drop me' },
+    { resource_id: 2, name_code: 1, original_rare: 'R', name_localkey: { name: 'Rapi' }, class: 'Attacker' },
+  ]
+  assert.deepEqual(trimDirectory(raw), [
+    { resource_id: 2, name_code: 1, name_en: 'Rapi', original_rare: 'R' },
+    { resource_id: 16, name_code: 5129, name_en: 'Rapi: Red Hood', original_rare: 'SSR' },
+  ])
+})
+
+test('trimDirectory drops entries with no English name (unreleased placeholders)', () => {
+  const raw = [
+    { resource_id: 9, name_code: 9, original_rare: 'SSR', name_localkey: {} },
+    { resource_id: 10, name_code: 10, original_rare: 'SSR', name_localkey: { name: 'Real' } },
+  ]
+  assert.deepEqual(trimDirectory(raw).map((e) => e.resource_id), [10])
+})

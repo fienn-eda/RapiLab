@@ -103,11 +103,20 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    - **You know the unit's blablalink `resource_id`** (it appears in a collected
      `roster.json`, i.e. someone owns it): add `<id>: '<slug>',` to the map with
      a `// <name_en>` comment.
-   - **You do not know it** — the usual case, since the id is only knowable from
-     a roster where the unit is owned: add the slug to `KNOWN_UNMAPPED` in the
-     test, with a one-line reason. **Never guess a resource_id** (CLAUDE.md:
-     don't invent technical details); a wrong-but-valid id silently mis-maps a
-     real user's unit and the guard cannot catch it.
+   - **You do not know it** — look it up in
+     `tools/collect-blablalink/nikke-directory.json`, the committed snapshot of the
+     public nikke directory, which lists every unit's `resource_id` and English name
+     whether or not anyone owns it. If the unit is too new to appear, refresh the
+     snapshot (`node collect.js --directory`) or add the slug to `KNOWN_UNMAPPED` in
+     the test with a one-line reason. **Never guess a resource_id** (CLAUDE.md: don't
+     invent technical details); a wrong-but-valid id silently mis-maps a real user's
+     unit.
+
+   `tests/test_resource_id_directory.py` then checks your entry against that
+   snapshot, so a slug pointing at the wrong unit fails rather than shipping. If the
+   unit's ShiftyPad name is a short form of the slug's full name (collab units —
+   "Ada" vs `ada-wong`), add it to that test's `SLUG_NAME_EXCEPTIONS` pinned to the
+   exact directory name.
 
    If the unit is a base/signature pair (`<slug>` **and** `<slug>-signature`
    both encoded), `test_dual_slot_bases_match_encoded_pairs` also fails: add the
