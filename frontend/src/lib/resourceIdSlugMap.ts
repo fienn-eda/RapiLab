@@ -34,6 +34,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   192: 'tove', // Tove
   194: 'ludmilla-winter-owner', // Ludmilla: Winter Owner
   223: 'nayuta', // Nayuta
+  225: 'scarlet-black-shadow', // Scarlet: Black Shadow (222 = base Scarlet, not encoded)
   231: 'isabel', // Isabel
   234: 'dorothy-serendipity', // Dorothy: Serendipity
   260: 'modernia', // Modernia

@@ -92,6 +92,10 @@ from app.skill_rules.raven import (
     build_raven_scheduled_nukes,
     tempest_burst_percent,
 )
+from app.skill_rules.scarlet_black_shadow import (
+    build_breakthrough_per_shot_rules,
+    build_scarlet_black_shadow_rules,
+)
 from app.skill_rules.sakura_bloom_in_summer import (
     EPHEMERAL_SPENDER_HIT_COUNT,
     FULL_GLORY_COOLDOWN,
@@ -321,6 +325,7 @@ _BUILDERS = {
     "sakura-bloom-in-summer": lambda sv: (
         build_sakura_bloom_in_summer_rules(sv), ephemeral_spender_burst_percent(sv)
     ),
+    "scarlet-black-shadow": lambda sv: (build_scarlet_black_shadow_rules(sv), None),  # burst is buff-only; damage is the Breakthrough sequence (per-shot)
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
     "laplace": lambda sv: ([], laplace_buster_burst_percent(sv)),  # no ally buffs; weapon-transform + Hero Vision deferred
@@ -425,6 +430,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "drake": lambda sv: build_thunderbolt_per_shot_rules(sv),
     "drake-signature": lambda sv: build_thunderbolt_signature_per_shot_rules(sv),
     "laplace": lambda sv: build_hero_bomber_per_shot_rules(sv),
+    "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),
     "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
     "velvet": lambda sv: build_bullets_of_love_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
