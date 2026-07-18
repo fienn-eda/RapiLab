@@ -2,3 +2,4 @@ node_modules/
 roster.json
 details.json
 outpost.json
+*.backup-*.json
