@@ -93,6 +93,10 @@ describe('ImportRosterButton', () => {
     expect(onImport.mock.calls[0][0][0].character_slug).toBe('rapi-red-hood')
     expect(onImport.mock.calls[0][0][0].atk).toBe('143543')
     // Unencoded units are kept, and the user is told which ones are unsupported.
-    expect(await screen.findByText(/Not Encoded Unit/)).toBeInTheDocument()
+    // The count pins the map hit: if resource_id 16 stopped resolving, Rapi would
+    // fall through to deriveSlug (which coincidentally yields the same slug) and
+    // this would read "2 owned units", so the count is what makes the test honest.
+    expect(await screen.findByText(/1 owned units not yet supported/)).toBeInTheDocument()
+    expect(screen.getByText(/Not Encoded Unit/)).toBeInTheDocument()
   })
 })
