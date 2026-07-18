@@ -261,3 +261,9 @@ def test_cube_superior_code_damage_increases_total_damage():
     dmg_without = simulate_raid(**without, **kwargs)["total_damage"]
     dmg_with = simulate_raid(**with_cube, **kwargs)["total_damage"]
     assert dmg_with > dmg_without
+
+
+def test_weapon_mode_schedules_key_exists_in_assembled_inputs():
+    inputs = assemble_simulation_inputs(minimal_feasible_deck())
+    assert "weapon_mode_schedules" in inputs
+    assert inputs["weapon_mode_schedules"] == {}

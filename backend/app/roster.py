@@ -29,6 +29,7 @@ from app.skill_rules.registry import (
     get_resource_scaled_nukes,
     get_resource_specs,
     get_scheduled_nukes,
+    get_weapon_mode_schedules,
 )
 from app.squad_engine import SkillRule
 
@@ -84,6 +85,7 @@ def assemble_simulation_inputs(ordered_deck):
     dynamic_hit_count_nukes = {}
     resource_fill_triggered_buffs = {}
     scheduled_nukes = {}
+    weapon_mode_schedules = {}
 
     for spec in ordered_deck:
         deck.append(
@@ -153,6 +155,10 @@ def assemble_simulation_inputs(ordered_deck):
         if scheduled_nuke:
             scheduled_nukes[spec.slug] = scheduled_nuke
 
+        weapon_mode_schedule = get_weapon_mode_schedules(spec.slug, skill_values)
+        if weapon_mode_schedule:
+            weapon_mode_schedules[spec.slug] = weapon_mode_schedule
+
     return {
         "deck": deck,
         "rules_by_slug": rules_by_slug,
@@ -170,4 +176,5 @@ def assemble_simulation_inputs(ordered_deck):
         "dynamic_hit_count_nukes": dynamic_hit_count_nukes,
         "resource_fill_triggered_buffs": resource_fill_triggered_buffs,
         "scheduled_nukes": scheduled_nukes,
+        "weapon_mode_schedules": weapon_mode_schedules,
     }

@@ -394,6 +394,10 @@ _SCHEDULED_NUKE_BUILDERS = {
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
 }
 
+# A Nikke whose burst swaps her weapon profile for a window (weapon-mode
+# segments - see raid_simulator's `weapon_mode_schedules` and the design spec).
+_WEAPON_MODE_SCHEDULE_BUILDERS = {}
+
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at
 # the same instant, not one hit at N*percent (see raid_simulator's
 # burst_hit_counts). Only overrides are listed; everything else defaults to 1.
@@ -547,6 +551,14 @@ def get_scheduled_nukes(slug, skill_values):
     """List of specs for a Nikke whose damage lands on a self-computed schedule
     (see raid_simulator's `scheduled_nukes`), or None for Nikkes without one."""
     builder = _SCHEDULED_NUKE_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_weapon_mode_schedules(slug, skill_values):
+    """Schedule function for a Nikke whose burst swaps her weapon profile for a
+    window (see raid_simulator's `weapon_mode_schedules`), or None for Nikkes
+    without one."""
+    builder = _WEAPON_MODE_SCHEDULE_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
 
 
