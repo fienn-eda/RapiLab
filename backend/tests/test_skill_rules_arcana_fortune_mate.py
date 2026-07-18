@@ -31,8 +31,9 @@ MEMORIES_AND_MOMENTS = {
 
 def make_context():
     return SquadContext([
-        SquadMember("arcana-fortune-mate", burst_tier=2, element="Fire"),
-        SquadMember("ally", burst_tier=3, element="Wind"),
+        SquadMember("arcana-fortune-mate", burst_tier=2, element="Fire", weapon="SG"),
+        SquadMember("ally", burst_tier=3, element="Wind", weapon="AR"),
+        SquadMember("sg-ally", burst_tier=1, element="Iron", weapon="SG"),
     ])
 
 
@@ -54,6 +55,7 @@ def run_cycle(rules, ctx, registry, burst_time):
 
 SELF_TARGET = {"slug": "arcana-fortune-mate", "element": "Fire"}
 ALLY = {"slug": "ally", "element": "Wind"}
+SG_ALLY = {"slug": "sg-ally", "element": "Iron"}
 
 
 def test_burst_percent_is_5544():
@@ -77,24 +79,27 @@ def test_radiant_youth_grants_self_crit_rate_and_attack_damage():
     assert registry.total_for("crit_rate", SELF_TARGET, now=later) == 0.0
 
 
-def test_memories_and_moments_grants_squad_attack_damage_on_burst():
+def test_memories_and_moments_grants_sg_allies_attack_damage_on_burst():
     ctx = make_context()
     registry = EffectRegistry()
     fire_trigger("own_burst_activate", {"arcana-fortune-mate": [build()[1]]}, ctx, registry, time=5.0)
 
-    assert round(registry.total_for("attack_damage_up", ALLY, now=5.0), 4) == 0.55
-    assert registry.total_for("attack_damage_up", ALLY, now=15.1) == 0.0
+    # "all shotgun-wielding allies (except self)" - exact scope via the
+    # gap #3 member filter: SG ally yes, AR ally no, Fortune Mate herself no.
+    assert round(registry.total_for("attack_damage_up", SG_ALLY, now=5.0), 4) == 0.55
+    assert registry.total_for("attack_damage_up", SG_ALLY, now=15.1) == 0.0
+    assert registry.total_for("attack_damage_up", ALLY, now=5.0) == 0.0
+    assert registry.total_for("attack_damage_up", SELF_TARGET, now=5.0) == 0.0
 
 
-def test_both_own_burst_rules_stack_on_fortune_mate_herself():
-    # Documented approximation: the "except self" SG-ally buff is modeled as
-    # squad scope (no weapon-type scope exists), so Fortune Mate also receives
-    # it on top of her own Radiant Youth self buff - a small overstatement.
+def test_own_burst_grants_self_only_radiant_youth_attack_damage():
+    # The "except self" SG-ally buff no longer lands on Fortune Mate herself
+    # (was a documented squad-approx overstatement before the gap #3 filter).
     ctx = make_context()
     registry = EffectRegistry()
     fire_trigger("own_burst_activate", {"arcana-fortune-mate": build()}, ctx, registry, time=5.0)
 
-    assert round(registry.total_for("attack_damage_up", SELF_TARGET, now=5.0), 4) == 0.8499
+    assert round(registry.total_for("attack_damage_up", SELF_TARGET, now=5.0), 4) == 0.2999
 
 
 def test_precious_moments_self_atk_ramps_one_stack_per_cycle():
@@ -124,17 +129,20 @@ def test_precious_moments_requires_making_memories():
     assert registry.total_for("atk_percent", SELF_TARGET, now=6.0) == 0.0
 
 
-def test_keepsake_album_squad_atk_scales_with_precious_moments_stacks():
+def test_keepsake_album_sg_atk_scales_with_precious_moments_stacks():
     ctx = make_context()
     registry = EffectRegistry()
     rules = {"arcana-fortune-mate": build()}
 
-    # cycle 1: 1 Precious Moments stack -> flat ATK = 13% of caster ATK x 1, for 15 sec
+    # cycle 1: 1 Precious Moments stack -> flat ATK = 13% of caster ATK x 1, for
+    # 15 sec, on shotgun wielders only (Fortune Mate herself is SG and included).
     run_cycle(rules, ctx, registry, burst_time=5.0)
-    assert round(registry.total_for("flat_atk", ALLY, now=15.0), 4) == round(0.13 * CASTER_ATK, 4)
-    assert registry.total_for("flat_atk", ALLY, now=30.1) == 0.0  # 15s from full_burst_end (t=15)
+    assert round(registry.total_for("flat_atk", SG_ALLY, now=15.0), 4) == round(0.13 * CASTER_ATK, 4)
+    assert round(registry.total_for("flat_atk", SELF_TARGET, now=15.0), 4) == round(0.13 * CASTER_ATK, 4)
+    assert registry.total_for("flat_atk", ALLY, now=15.0) == 0.0  # AR ally excluded
+    assert registry.total_for("flat_atk", SG_ALLY, now=30.1) == 0.0  # 15s from full_burst_end (t=15)
 
     # cycle 3: 3 stacks -> 13% x 3
     run_cycle(rules, ctx, registry, burst_time=45.0)
     run_cycle(rules, ctx, registry, burst_time=85.0)
-    assert round(registry.total_for("flat_atk", ALLY, now=95.0), 4) == round(0.13 * CASTER_ATK * 3, 4)
+    assert round(registry.total_for("flat_atk", SG_ALLY, now=95.0), 4) == round(0.13 * CASTER_ATK * 3, 4)

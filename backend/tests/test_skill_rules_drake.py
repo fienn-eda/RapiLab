@@ -55,13 +55,15 @@ DRAKE_SPECIAL_SIG = {
 
 def make_context():
     return SquadContext([
-        SquadMember("drake", burst_tier=3, element="Fire"),
-        SquadMember("ally", burst_tier=1, element="Wind"),
+        SquadMember("drake", burst_tier=3, element="Fire", weapon="SG"),
+        SquadMember("ally", burst_tier=1, element="Wind", weapon="AR"),
+        SquadMember("sg-ally", burst_tier=2, element="Iron", weapon="SG"),
     ])
 
 
 DRAKE = {"slug": "drake", "element": "Fire"}
 ALLY = {"slug": "ally", "element": "Wind"}
+SG_ALLY = {"slug": "sg-ally", "element": "Iron"}
 
 
 def base():
@@ -102,13 +104,17 @@ def test_base_thunderbolt_nukes_every_10_normals():
     assert pulses[0].full_burst_bonus_eligible is False  # "as damage"
 
 
-def test_signature_overcharge_adds_sg_atk_and_max_ammo():
+def test_signature_overcharge_adds_sg_atk_and_max_ammo_to_sg_allies_only():
     ctx = make_context()
     registry = EffectRegistry()
     fire_trigger("full_burst_enter", {"drake": sig()}, ctx, registry, time=5.0)
-    # all-allies 11.85% + SG-allies(squad approx) 63.88% = 75.73%
-    assert round(registry.total_for("atk_percent", ALLY, now=5.0), 4) == 0.7573
-    assert round(registry.total_for("max_ammo_percent", ALLY, now=5.0), 4) == 0.5014
+    # SG allies (drake included): all-allies 11.85% + SG-allies 63.88% = 75.73%
+    assert round(registry.total_for("atk_percent", SG_ALLY, now=5.0), 4) == 0.7573
+    assert round(registry.total_for("max_ammo_percent", SG_ALLY, now=5.0), 4) == 0.5014
+    assert round(registry.total_for("atk_percent", DRAKE, now=5.0), 4) == 0.7573
+    # the AR ally gets only the all-allies portion
+    assert round(registry.total_for("atk_percent", ALLY, now=5.0), 4) == 0.1185
+    assert registry.total_for("max_ammo_percent", ALLY, now=5.0) == 0.0
 
 
 def test_signature_burst_adds_self_attack_damage():

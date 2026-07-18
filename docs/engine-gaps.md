@@ -255,7 +255,9 @@
   (Magician/Strength — 선버스트 Electric B3, Wheel of Fortune 게이팅)·tove
   (SG 아군 공속+42.24% 상시 + flat ATK 24.21%/스택×3 — char_tove.json 재수집)·
   ada-wong(신규 — Covert Support 선버스트 B3 flat ATK+진댐). drake-signature·
-  arcana-fortune-mate의 SG squad-근사 정밀화는 선택 후속(이번 배치 범위 아님).
+  arcana-fortune-mate의 SG squad-근사 정밀화는 **완료(2026-07-18)** — drake는
+  `member_subset_buff_rule`, arcana는 라이브 필터 액션(except-self/스택 판독이
+  섞여 커스텀 액션 유지). arcana 자신이 받던 except-self 과대적용도 제거됨.
 
 - **무엇:** self/squad/element:X로 표현 안 되는 대상 지정. 두 하위 종류:
   - **무기종별** ("어썰트라이플 아군", "샷건 아군 제외 자기") — 규모 소.

@@ -6,8 +6,9 @@ trigger.
 
 Modeled (DPS-relevant):
 - Overcharge (skills[0], on entering Full Burst): all allies ATK +11.85% for 10
-  sec (squad). Signature adds, for all Shotgun allies (squad approx - no
-  weapon-type scope), ATK +63.88% and Max Ammunition +50.14% for 10 sec.
+  sec (squad). Signature adds, for all Shotgun allies (exact weapon-type
+  scope via the gap #3 member filter, 2026-07-18 - was a squad approx),
+  ATK +63.88% and Max Ammunition +50.14% for 10 sec.
 - Thunderbolt (skills[1]): after every 10 normal attacks, a 98.55%-of-final-ATK
   nuke (gap #1 `every`). Signature adds a second trigger: after every 5 normal
   attacks, a 201.6% nuke. "3 / 1 enemies with lowest HP" collapses to the single
@@ -19,11 +20,11 @@ Modeled (DPS-relevant):
 Not modeled / deferred:
 - Overcharge's Hit Rate buff (+11.85% base / +20.09% signature) - Hit Rate is not
   consumed by the engine (like Attack Speed), so it's inert.
-- The shotgun-ally ("all allies with a Shotgun") scope is approximated as squad,
-  over-applying the +63.88% ATK / +50.14% Max Ammo to non-shotgun allies (small,
-  per the documented weapon-type-scope approximation).
+- (resolved 2026-07-18) The shotgun-ally scope was approximated as squad; it now
+  uses the exact SG member filter, so non-shotgun allies no longer receive the
+  +63.88% ATK / +50.14% Max Ammo.
 """
-from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
+from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, member_subset_buff_rule
 
 SKILL_VALUE_MANIFESTS = {
     "drake": {
@@ -91,11 +92,17 @@ def build_drake_signature_rules(values):
     self_attack_damage = float(drake_special["description_value_04"]) / 100
     self_attack_damage_duration = float(drake_special["description_value_05"])
 
+    sg_only = lambda m, context: m.weapon == "SG"
+
     return [
         buff_rule("full_burst_enter", [
             ("atk_percent", squad_atk, "squad", squad_atk_duration),
-            ("atk_percent", sg_atk, "squad", sg_atk_duration),                # SG allies, squad approx
-            ("max_ammo_percent", sg_max_ammo, "squad", sg_max_ammo_duration),  # SG allies, squad approx
+        ]),
+        # "all Shotgun allies" (Drake included) - exact scope via the gap #3
+        # member filter (was a squad approximation before 2026-07-18).
+        member_subset_buff_rule("full_burst_enter", sg_only, [
+            ("atk_percent", sg_atk, sg_atk_duration),
+            ("max_ammo_percent", sg_max_ammo, sg_max_ammo_duration),
         ]),
         buff_rule("own_burst_activate", [
             ("max_ammo_percent", self_max_ammo, "self", self_max_ammo_duration),
