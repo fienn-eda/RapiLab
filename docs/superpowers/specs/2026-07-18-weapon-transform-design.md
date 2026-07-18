@@ -1,8 +1,9 @@
-# 무기변형 (weapon-mode segments) 설계 — 초안 (논의 진행 중)
+# 무기변형 (weapon-mode segments) 설계
 
-- 날짜: 2026-07-18
-- 상태: **초안** — 섹션 1까지 논의됨, Fienn 승인 대기. 섹션 2(유닛별 적용)·
-  섹션 3(테스트 전략)은 미작성.
+- 날짜: 2026-07-18 (갱신 2026-07-19)
+- 상태: **설계 확정** (2026-07-19) — 전 섹션 Fienn 승인. 잔여 확인 2건도
+  해소(velvet 변형딜 보류, laplace-signature 슬러그 신설). 다음 단계:
+  구현 계획(writing-plans).
 - 참여: Fienn · Bot
 
 ## 배경과 범위
@@ -15,9 +16,9 @@
 |---|---|---|
 | snow-white | 버스트: 차지 5초 · 499.5% · 풀차지 1000% · 장탄 1 · Pierce | 버스트 앵커 **단발형** |
 | maxwell | 버스트: 차지 2초 · 813.42% · 풀차지 300% · 장탄 1 · Pierce | 버스트 앵커 **단발형** |
-| laplace | 버스트: First 897.6% + 노멀 14.52% 틱 · 5초 (기존 인코딩 ⚠, 변형딜 보류분) | 버스트 앵커 지속형 |
-| velvet | 버스트: 7% 틱 · 10초 (Perfect Execution, 기존 ⚠ 보류분) | 버스트 앵커 지속형 |
-| cinderella-crystal-wave | 재장전 이벤트 구동 MG↔Snipe 토글 + 모드가 FB 넉 변종 게이팅 | **비버스트 상태머신** |
+| laplace | 버스트: First 897.6% + 노멀 14.52% 틱 · 5초 (기존 인코딩 ⚠, 변형딜 보류분) | 버스트 앵커 지속형 → **laplace-signature 슬러그로 해소** (섹션 2) |
+| velvet | 버스트: 7% 틱 · 10초 (Perfect Execution, 기존 ⚠ 보류분) | 버스트 앵커 지속형 → **보류 확정** (섹션 2) |
+| cinderella-crystal-wave | ~~재장전 이벤트 구동 MG↔Snipe 토글~~ → **듀얼 변형 슬러그로 재분류** (아래 참고) | 세그먼트 대상 아님 |
 | snow-white-heavy-arms | 차지 중 락온/장전 누적 → 풀차지 연속 히트, 버스트는 파라미터 변경 | 차지 루프 상태머신 (별도 검토) |
 | rapi-red-hood | 120노멀마다 프로젝타일 발사 → FB 진입 시 폭발 | 무기 프로필 교체 **아님** (별도 경로) |
 
@@ -37,7 +38,7 @@
   유닛별 실측 의존.
 - C. 하이브리드(단발형만 소형 경로) — 기각: 경로 2개 유지보수.
 
-## 섹션 1 — 계약 · 세그먼트 생성기 · 배선 (승인 대기)
+## 섹션 1 — 계약 · 세그먼트 생성기 · 배선 (승인됨, 2026-07-18)
 
 ### 현재 구조 (변경 전)
 
@@ -64,7 +65,8 @@ def weapon_mode_schedule(context, fight_duration):
     ]
 ```
 
-- 고정 길이 창은 `{"start": t0, "end": t1, "profile": ...}` (laplace·velvet형).
+- 고정 길이 창은 `{"start": t0, "end": t1, "profile": ...}`
+  (laplace-signature·red-hood형).
 - `profile`은 기존 `weapon_stats` 항목과 **같은 모양** — 새 개념 없음.
 - 창 앵커는 모듈 책임(버스트형은 `context.burst_times`, cinderella는 자기
   재장전 주기에서 결정론 계산). Ein/Raven의 "모듈이 계산, 엔진은 방출" 분업의
@@ -107,12 +109,83 @@ t=0 ─[기본 AR 발사]─ 버스트(t=20) ─[대포: 5초 차지 → t=25에
 
 - 변형 창 종료 후 기본 무기는 **가득 찬 새 매거진으로 즉시** 사격 재개
   (재장전 대기 없음). 2026-07-18.
+- **cinderella-crystal-wave는 세그먼트 프리미티브 대상에서 제외** (Fienn,
+  2026-07-18 스펙 리뷰): 이 유닛의 컨셉은 유저가 보스 특성에 맞춰 모드를
+  미리 골라 전투 내내 유지하는 것이라 전투 중 전환이 매우 드물다. 따라서
+  재장전 구동 토글 상태머신 대신 **"MG로 3분" / "Snipe로 3분" 두 케이스를
+  각각 시뮬레이션**하고, 결과에 어느 모드였는지 표시한다.
+  - 구현: julia/julia-signature·drake/drake-signature 듀얼슬러그 선례 —
+    `cinderella-crystal-wave-mg` / `cinderella-crystal-wave-snipe` 두 슬러그를
+    별도 덱 후보로 등록. 모드가 고정이면 각 변형은 **정적 무기 프로필**이라
+    기존 엔진 경로 그대로 돌고, 모드 게이팅 부속 효과(FB 넉 변종 1189.66%
+    전체 vs 833.79% 코어, Destroy vs Pinpoint 상시 버프)도 변형별 정적 배선.
+    슬러그가 결과 표시를 겸한다.
+  - 소항목: 두 변형이 같은 덱에 동시 편성되지 않게 하는 상호 배제 —
+    julia/drake 선례가 로스터 레벨(투자 상태로 한쪽만 후보화)인지 탐색
+    레벨인지 구현 착수 때 확인. cinderella는 항상 둘 다 후보라 명시적
+    배제가 필요할 수 있음.
+  - Snipe 프로필 세부(장탄 15 vs 풀차지 40발 소모 등 텍스트 모호)는
+    인코딩 시 Fienn 확인.
 
-## 미논의 (다음 섹션)
+## 섹션 2 — 유닛별 적용 계획 (승인됨, 2026-07-19)
 
-- 섹션 2: 유닛별 적용 계획 — snow-white·maxwell·laplace·velvet·cinderella
-  각각의 세그먼트 스케줄 + rapi(FB 창 노출 `scheduled_nukes`)·
-  snow-white-heavy-arms(프로필 "풀차지 N연타" 확장 여부) 별도 처리.
-- 섹션 3: 테스트 전략(TDD)·회귀 기준·red_hood 마이그레이션 여부.
-- 미해결 인게임 질문: 변형샷이 자기 노멀공격 카운터에 포함되는가(유닛별
-  인코딩 시 Fienn 확인).
+**세그먼트 프리미티브 소비:**
+
+| 유닛 | 세그먼트 스케줄 | 프로필 | 비고 |
+|---|---|---|---|
+| snow-white | 버스트마다 `until_shots: 1` | 차지 5초 · 499.5% · 풀차지 1000% · 장탄 1 | 데이터 완결 |
+| maxwell | 버스트마다 `until_shots: 1` | 차지 2초 · 813.42% · 풀차지 300% · 장탄 1 | 데이터 완결 |
+| **laplace-signature (신설)** | 버스트마다 10초 고정 창 | First 1회 + 노멀 93회 (**Fienn 실측 2026-07-19, 애장품 기준**) | julia/drake 듀얼슬러그 선례. base의 5초 변형은 계속 보류 (Fienn 확정 2026-07-19) |
+| red-hood | **v1에서 마이그레이션** (Fienn 확정) | 실측 10초 33발 → rate 3.3/초 · 무한 매거진 프로필 | 기존 한계(덱 버퍼 미적용·정적 차감) 해소 |
+
+- **velvet Perfect Execution은 보류 (Fienn 확정 2026-07-19):** B2 서포터의
+  7% 틱은 덱 평가에 미미 — 변형딜은 계속 defer, 기존 버프 인코딩만 유지.
+  세그먼트 소비자에서 제외.
+
+- 지속형 케이던스는 무기종 조회 대신 프로필의 명시적 `rate_of_fire`로 입력
+  (소규모 프로필 필드 추가).
+- 미해결 인게임 질문: 변형샷이 자기 노멀공격 카운터에 포함되는가 — 유닛별
+  인코딩 시 Fienn 확인.
+
+**세그먼트 외 처리:**
+
+- **cinderella-crystal-wave**: 듀얼슬러그 정적 프로필 (위 "확정된 시맨틱").
+- **rapi-red-hood**: 프리미티브 무관. 필요한 엔진 변경은 `scheduled_nukes`
+  context에 **풀버스트 창 시각 노출** 하나뿐(무기 패스가 이미 계산하는
+  `full_burst_windows`를 컨텍스트에 싣는 소규모 확장). 모듈이 "120노멀 시점
+  부착딜 → 다음 FB 진입 시각 폭발딜"을 결정론 계산.
+- **snow-white-heavy-arms**: 이번 배치 **보류**. 핵심 딜이 차지 루프(락온
+  누적 → 풀차지 시 105.59%×장전수 연타)라 세그먼트와 결이 다르고, 고정
+  차지시간 덕에 기존 per-shot + multi-hit 프리미티브로 풀릴 가능성 — 프리미티브
+  착지 후 별도 검증 패스.
+
+**Velvet ammo pouch 시맨틱 (Fienn 2026-07-19):** pouch는 실탄이 아니라
+"탄환 소모량으로 집계되는" 시너지 자원 — velvet은 실제로 풀차지 1발을 쏘지만
+소모 탄환 수는 100발(S1)/300발(S2)로 계산된다. **파생 상호작용:** Little
+Mermaid의 Bubble Barrage(아군 총탄 500발마다)는 현재 "샷 1발=1탄" 가정으로
+`context.shot_times`를 합산하는데, velvet이 같은 덱이면 pouch 소모분이
+카운터를 크게 가속한다 — Little Mermaid 모듈에 교차 항목으로 기록, 구현
+여부는 인코딩 시 판단.
+
+## 섹션 3 — 테스트 전략 (요약)
+
+TDD. ① `attack_rate` 세그먼트 생성기 단위 테스트(경계에서 새 매거진 즉시
+재개·`until_shots` 종료·세그먼트 안 라이브 버프 콜러블 평가·fight_duration
+클리핑·세그먼트 없는 호출 = 기존 생성기와 동일 출력) → ② 무기 패스 옵트인
+배선 테스트(레코드 percent로 record, first/last 플래그 정합) → ③ 유닛별
+인코딩 테스트 → ④ engine-test-runner 전체 스위트. **미등록 유닛 출력 불변**
+이 회귀 기준. red_hood 마이그레이션은 기존 테스트의 기대값이 바뀌므로(정적
+차감 제거·버프 상호작용 추가) 마이그레이션 커밋에서 기대값 갱신을 명시적으로
+수행.
+
+## 구현 요약 (v1 범위)
+
+- **엔진**: ① `attack_rate.generate_segmented_shots()`(샷 레코드 + first/last
+  플래그, 프로필에 명시적 `rate_of_fire` 허용) ② `simulate_raid(...,
+  weapon_mode_schedules=)` 옵트인 배선 ③ `scheduled_nukes` context에
+  풀버스트 창 노출(rapi용 소규모).
+- **유닛**: snow-white(신규) · maxwell(신규) · laplace-signature(신규 슬러그)
+  · red-hood(마이그레이션) · cinderella-crystal-wave-mg/-snipe(신규 듀얼,
+  세그먼트 비소비) · rapi-red-hood(신규, FB 창 노출 소비).
+- **명시적 보류**: velvet 변형딜(저가치) · laplace base 변형(5초, 실측 없음)
+  · snow-white-heavy-arms(차지 루프 — 별도 검증 패스).
