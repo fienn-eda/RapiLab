@@ -72,8 +72,16 @@ describe('ImportRosterButton', () => {
       synchroLevel: 663,
       units: [
         {
+          resource_id: 16,
           name_en: 'Rapi: Red Hood',
           raid400: { hp: 3532402, atk: 143543, def: 20986 },
+          skill_levels: { skill1: 10, skill2: 10, burst: 10 },
+          pve_cube: null,
+        },
+        {
+          resource_id: 999999,
+          name_en: 'Not Encoded Unit',
+          raid400: { hp: 1, atk: 2, def: 3 },
           skill_levels: { skill1: 10, skill2: 10, burst: 10 },
           pve_cube: null,
         },
@@ -84,5 +92,7 @@ describe('ImportRosterButton', () => {
     expect(onImport.mock.calls[0][1]).toBe('collector')
     expect(onImport.mock.calls[0][0][0].character_slug).toBe('rapi-red-hood')
     expect(onImport.mock.calls[0][0][0].atk).toBe('143543')
+    // Unencoded units are kept, and the user is told which ones are unsupported.
+    expect(await screen.findByText(/Not Encoded Unit/)).toBeInTheDocument()
   })
 })

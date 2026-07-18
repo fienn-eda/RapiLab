@@ -4,6 +4,8 @@
 // Slug comes from the resource_id identity map (+ signature promotion when the
 // Favorite Item is owned); unencoded owned units are kept with a raw-derived slug
 // (the backend excludes them from recommendation but they stay visible in the roster).
+// A unit with no resource_id at all (stale or hand-edited roster.json — the collector
+// always emits one) takes that same path: raw slug, reported as unsupported.
 
 import { makeEmptyDraft, type NikkeDraft } from '../types/nikkeDraft'
 import { deriveSlug } from './exiaImport'

@@ -28,16 +28,25 @@ def _map_text() -> str:
     return MAP_FILE.read_text(encoding="utf-8")
 
 
+def _body_after(marker: str, end: str) -> str:
+    """Text between `marker` and the next `end`, failing loudly if the marker moved."""
+    text = _map_text()
+    assert marker in text, (
+        f"marker {marker!r} not found in {MAP_FILE}; this test parses that literal "
+        "text — update the marker to match the file."
+    )
+    return text.split(marker, 1)[1].split(end, 1)[0]
+
+
 def _mapped_slugs() -> set[str]:
-    body = _map_text().split("Record<number, string> = {", 1)[1].split("\n}", 1)[0]
+    body = _body_after("Record<number, string> = {", "\n}")
     return set(re.findall(r"\d+:\s*'([a-z0-9-]+)'", body))
 
 
 def _dual_slot_bases() -> set[str]:
     # Split on the full declaration: the bare name also appears in the file's header
     # comment, and splitting there would swallow the whole map.
-    marker = "DUAL_SLOT_BASES: ReadonlySet<string> = new Set(["
-    body = _map_text().split(marker, 1)[1].split("])", 1)[0]
+    body = _body_after("DUAL_SLOT_BASES: ReadonlySet<string> = new Set([", "])")
     return set(re.findall(r"'([a-z0-9-]+)'", body))
 
 
