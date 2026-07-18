@@ -91,6 +91,60 @@ def test_compare_unit_warns_on_level_count_mismatch():
     assert len(warnings) == 1 and "level count mismatch" in warnings[0]
 
 
+def test_compare_unit_ignores_unreferenced_leftover_slot():
+    # Reproduces brid-silent-track "Full Throttle": description interpolates
+    # only _01 and _02; the leftover _04 duplicates the duration value and
+    # must not be compared.
+    dotgg_data = {"skills": [{
+        "description": "ATK {description_value_01}% of caster's ATK for "
+                        "{description_value_02} sec.",
+        "levels": [_level(description_value_01="66.52",
+                          description_value_02="10",
+                          description_value_03="0",
+                          description_value_04="10")],
+    }]}
+    lw_data = {"skills": [{
+        "levels": ["ATK 66.52% of caster's ATK for 10 sec."]}]}
+    found, warnings = drift.compare_unit(dotgg_data, lw_data,
+                                         {"s1": ("skills", 0)})
+    assert found == {}
+    assert warnings == []
+
+
+def test_compare_unit_still_drifts_on_referenced_slot_change():
+    dotgg_data = {"skills": [{
+        "description": "ATK {description_value_01}% of caster's ATK for "
+                        "{description_value_02} sec.",
+        "levels": [_level(description_value_01="66.52",
+                          description_value_02="10",
+                          description_value_03="0",
+                          description_value_04="10")],
+    }]}
+    lw_data = {"skills": [{
+        "levels": ["ATK 99.99% of caster's ATK for 10 sec."]}]}
+    found, warnings = drift.compare_unit(dotgg_data, lw_data,
+                                         {"s1": ("skills", 0)})
+    assert found == {"s1": [(1, ["66.52"])]}
+    assert warnings == []
+
+
+def test_compare_unit_fallback_without_description_counts_all_slots():
+    # No "description" key: current all-non-filler behavior is preserved, so
+    # the same leftover-duplicate level as above still drifts.
+    dotgg_data = {"skills": [{
+        "levels": [_level(description_value_01="66.52",
+                          description_value_02="10",
+                          description_value_03="0",
+                          description_value_04="10")],
+    }]}
+    lw_data = {"skills": [{
+        "levels": ["ATK 66.52% of caster's ATK for 10 sec."]}]}
+    found, warnings = drift.compare_unit(dotgg_data, lw_data,
+                                         {"s1": ("skills", 0)})
+    assert found == {"s1": [(1, ["10"])]}
+    assert warnings == []
+
+
 def _lw_page(name="Testy", values=("10.5", "20", "30")):
     """Minimal HTML that parse_html reads warning-free: h1, character-info
     alts, 3 skill titles, 10 level paragraphs each."""
