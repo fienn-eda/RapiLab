@@ -531,6 +531,12 @@
       `full_burst_bonus_eligible`·`resource_scaled_nukes`의 `resource` 선택화)
       소비. `cinderella-crystal-wave`는 무기-모드 상태머신 유닛으로 재분류되어
       배치에서 제외(아래 무기 변형 항목으로 이동).
+- [x] **매니페스트 예외 4유닛 해소** (2026-07-18): anis-star(dotgg 소스+drop_tokens)·
+      asuka-wille(픽스처 재전사+빌더 재번호, dotgg url `asuka-wille` 브리지)·
+      privaty(dollskills 네이티브 순서로 스왑)·neon-vision-eye(전사 오류 2슬롯 교정)
+      → `KNOWN_MANIFEST_EXCEPTIONS` 빈 집합, **매니페스트·API 로더블 61/61(전원)**.
+      Phase 6의 "픽스처 재배열 4유닛 잔여" 기록은 이걸로 종결(그 섹션은 병렬 세션
+      규칙상 이 배치에서 편집하지 않음 — 병합 후 정리).
 - [ ] **eb3+ 백로그** — 대부분 **자원 유닛(gap #2 Pattern A 잔여/Pattern B)·상태머신·
       무기변형**. 배치 착수 전 유닛별 검증 필수.
   - ~~**Pattern A 자원 유닛**: `rei-ayanami`·`rei-ayanami-tentative-name`·

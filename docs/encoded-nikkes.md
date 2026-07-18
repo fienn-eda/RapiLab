@@ -3,7 +3,15 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-18 (**Scarlet: Black Shadow 신규 인코딩 (gap #10 완료)** —
+- 마지막 갱신: 2026-07-18 (**매니페스트 예외 4유닛 해소 — 커버리지/로더블 61/61 (전원)**.
+  anis-star(dotgg-소스, star_anis drop 7토큰) · asuka(lootandwaifus-소스 —
+  anti_at_field 픽스처를 데이터 순서로 재전사+빌더 재번호, 50샷 임계도 슬롯에서
+  읽음; annihilation 픽스처의 재현 불가 '1' 슬롯은 전사 잔재라 제거; dotgg url
+  `asuka-wille` 브리지로 weapon 스탯 로드) · privaty(dotgg dollskills —
+  LD Assault 픽스처를 네이티브 순서로 스왑) · neon-vision-eye(lootandwaifus-소스 —
+  healthy_body 픽스처 03/04 전사 오류 교정, ∞는 숫자 토큰이 아님).
+  `KNOWN_MANIFEST_EXCEPTIONS`는 이제 빈 집합 — 신규 인코딩은 매니페스트 필수.
+  이전 갱신: **Scarlet: Black Shadow 신규 인코딩 (gap #10 완료)** —
   `per_shot_rules` 신규 `"sequence"` 모드(단일 풀차지 카운터가 3/6/9 단계 테이블을
   걷고, 버스트가 10초간 요구치를 1/2/3으로 교체 — 카운트/스테이지는 경계를 넘어
   이어짐, Fienn 판정). 함께 **Pulse에 damage_type 추가**(per-shot 넉의 "as
@@ -31,12 +39,13 @@
   53/57 커버. **API 로더블 50/57** (로더블 B1 4→10명 — 5덱 분배가 실제로 5덱을
   채울 수 있게 됨). 이전 갱신: 매니페스트 배치 2 — 29유닛 추가로 45/57 커버 +
   dotgg weapon 스탯 39파일 수집 + `dotgg_slug` 브리지(ada-wong·chisato·jill·takina))
-- **스킬값 매니페스트 커버리지 — 예외만 표기:** 아래 4유닛 외 전원이
+- **스킬값 매니페스트 커버리지 — 예외 없음 (2026-07-18):** 전원이
   `SKILL_VALUE_MANIFESTS`를 보유(= API 조립 가능). 이 목록은
   `test_skill_value_assembly.py`의 `KNOWN_MANIFEST_EXCEPTIONS` 가드 테스트와
-  거울 구조라, 매니페스트 없는 신규 인코딩은 테스트가 먼저 잡는다.
-  - 픽스처가 데이터 토큰과 재배열 관계라 drop_tokens로 재현 불가(4):
-    `anis-star`, `asuka-shikinami-langley-wille`, `privaty`, `neon-vision-eye`
+  거울 구조(현재 빈 집합)라, 매니페스트 없는 신규 인코딩은 테스트가 먼저 잡는다.
+  - **(2026-07-18 해소)** 픽스처 재배열 4유닛(`anis-star`,
+    `asuka-shikinami-langley-wille`, `privaty`, `neon-vision-eye`) — 픽스처를
+    데이터 슬롯 순서로 재전사(또는 drop_tokens)하고 빌더 읽기를 재번호해 해결.
   - **(2026-07-17 해소) `ark-ranger-black`·`prika`·`marciana-marine-study`·`ein`은
     이제 dotgg weapon 파일이 있어 전부 로더블.** 이전 "dotgg 리스팅에 없음" 기록은
     수집 전 상태였을 뿐 — 넷 다 dotgg 셧다운(2026-05) 이전 출시라 데이터가 존재한다.

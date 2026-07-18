@@ -72,10 +72,12 @@ def test_dotgg_slug_manifest_key_bridges_source_slug_mismatch():
 
 def test_unloadable_units_are_excluded_not_errors():
     assert load_nikke_spec(_state("totally-unknown")) is None          # not encoded
-    assert load_nikke_spec(_state("privaty")) is None                  # encoded, but no manifest yet (KNOWN_MANIFEST_EXCEPTIONS)
+    # every encoded unit now carries a manifest (KNOWN_MANIFEST_EXCEPTIONS is
+    # empty) - privaty, the last holdout used here, loads.
+    assert load_nikke_spec(_state("privaty")) is not None
 
 
 def test_load_roster_partitions_specs_and_excluded():
     specs, excluded = load_roster([_state("drake"), _state("totally-unknown"), _state("privaty")])
-    assert [s.slug for s in specs] == ["drake"]
-    assert excluded == ["totally-unknown", "privaty"]
+    assert [s.slug for s in specs] == ["drake", "privaty"]
+    assert excluded == ["totally-unknown"]

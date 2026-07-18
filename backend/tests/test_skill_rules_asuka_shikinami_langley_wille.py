@@ -14,11 +14,14 @@ from app.skill_rules.asuka_shikinami_langley_wille import (
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 ASUKA_VALUES = {
+    # Full left-to-right transcription (no skips): 50-shot nuke threshold,
+    # its 471.86% damage, "2 enemy unit(s)", "every 10 shot(s)", the windowed
+    # 15.62% damage, and the 0.83%/30s/30-stack Damage Taken debuff.
     "anti_at_field": {
-        "description_value_01": "471.86", "description_value_02": "15.62",
-        "description_value_03": "0.83", "description_value_04": "30",
-        "description_value_05": "30", "description_value_06": "2",
-        "description_value_07": "10",
+        "description_value_01": "50", "description_value_02": "471.86",
+        "description_value_03": "2", "description_value_04": "10",
+        "description_value_05": "15.62", "description_value_06": "0.83",
+        "description_value_07": "30", "description_value_08": "30",
     },
     "emergency_repair": {
         "description_value_01": "30.97", "description_value_02": "10",
@@ -31,9 +34,13 @@ ASUKA_VALUES = {
         "description_value_01": "40", "description_value_02": "9",
         "description_value_03": "21", "description_value_04": "46.8",
         "description_value_05": "36", "description_value_06": "6.62",
-        "description_value_07": "1",
     },
 }
+
+# Module-level fixture names for the assembly verification harness.
+ANTI_AT_FIELD = ASUKA_VALUES["anti_at_field"]
+EMERGENCY_REPAIR = ASUKA_VALUES["emergency_repair"]
+ANNIHILATION_STATE = ASUKA_VALUES["annihilation_state"]
 
 ASUKA = {"slug": "asuka-shikinami-langley-wille", "element": "Wind"}
 ALLY = {"slug": "ally", "element": "Iron"}

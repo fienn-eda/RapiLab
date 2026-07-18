@@ -65,15 +65,37 @@ from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import instant_nuke_pulse_rule, linear_resource_buff
 from app.squad_engine import SkillRule, own_burst_fired_this_cycle
 
+SKILL_VALUE_MANIFESTS = {
+    "asuka-shikinami-langley-wille": {
+        "source": "lootandwaifus",
+        # dotgg shortens her to "asuka-wille" - bridge for the weapon-stats lookup.
+        "dotgg_slug": "asuka-wille",
+        "test_module": "test_skill_rules_asuka_shikinami_langley_wille",
+        "keys": {
+            "anti_at_field": ("skills", 0),
+            "emergency_repair": ("skills", 1),
+            "annihilation_state": ("skills", 2),
+        },
+        "drop_tokens": {
+            # "Effect 1/2/3/4" enumeration labels plus the "every 1 sec" tick
+            # interval the fixture skipped.
+            "emergency_repair": [2, 5, 7, 9, 11],
+            # The "Effect 1/2/3/4" labels plus Effect 3/4's repeated "9 sec"
+            # durations - the fixture keeps a single duration slot (02).
+            "annihilation_state": [0, 3, 5, 7, 8, 10],
+        },
+    },
+}
+
 
 def build_anti_at_field_resources(values):
     field = values["anti_at_field"]
     duration = float(values["annihilation_state"]["description_value_02"])  # Annihilation State's 9s
 
-    per_stack = float(field["description_value_03"]) / 100
-    stack_lifetime = float(field["description_value_04"])
-    cap = int(float(field["description_value_05"]))
-    fill_every = int(float(field["description_value_07"]))
+    per_stack = float(field["description_value_06"]) / 100
+    stack_lifetime = float(field["description_value_07"])
+    cap = int(float(field["description_value_08"]))
+    fill_every = int(float(field["description_value_04"]))
 
     return [
         ResourceSpec(
@@ -88,12 +110,13 @@ def build_anti_at_field_resources(values):
 
 def build_anti_at_field_per_shot_rules(values):
     field = values["anti_at_field"]
-    uncond_nuke = float(field["description_value_01"])
-    windowed_nuke = float(field["description_value_02"])
-    fill_every = int(float(field["description_value_07"]))
+    uncond_threshold = int(float(field["description_value_01"]))
+    uncond_nuke = float(field["description_value_02"])
+    windowed_nuke = float(field["description_value_05"])
+    fill_every = int(float(field["description_value_04"]))
     window_duration = float(values["annihilation_state"]["description_value_02"])
     return [
-        (50, "every", [instant_nuke_pulse_rule("per_shot", uncond_nuke, full_burst_bonus_eligible=True)]),
+        (uncond_threshold, "every", [instant_nuke_pulse_rule("per_shot", uncond_nuke, full_burst_bonus_eligible=True)]),
         # gap #7: every `fill_every` shots WHILE in Annihilation State (a
         # `window_duration`-sec window anchored to her own burst). "as damage",
         # not "as additional damage", so NOT full_burst_bonus_eligible.

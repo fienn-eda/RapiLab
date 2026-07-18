@@ -10,8 +10,8 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 HEALTHY_BODY = {
     "description_value_01": "3",       # deferred: invulnerable duration
     "description_value_02": "5",       # deferred: activations per battle
-    "description_value_03": "0",       # deferred: debuff immunity count (inf)
-    "description_value_04": "3",       # deferred: debuff immunity duration
+    "description_value_03": "3",       # deferred: debuff immunity duration (count is "∞", not a token)
+    "description_value_04": "5",       # deferred: its activations per battle
     "description_value_05": "10.26",   # deferred: Healthy Body incoming healing %
     "description_value_06": "20",      # deferred: its duration
     "description_value_07": "437.98",  # Firepower Explosion base % (every full charge)

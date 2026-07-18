@@ -21,6 +21,26 @@ from app.effects import Effect, Pulse
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 from app.squad_engine import SkillRule, has_status, no_other_burst_tier_allies, not_condition
 
+SKILL_VALUE_MANIFESTS = {
+    "anis-star": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_anis_star",
+        "keys": {
+            "starfall": ("skills", 0),
+            "stardust": ("skills", 1),
+            "star_anis": ("skills", 2),
+        },
+        "fixtures": {"starfall": "LEVEL_10_VALUES"},
+        "drop_tokens": {
+            # The fixture keeps only the modeled My Own Star Attack Damage pair
+            # (35.2 / 10s); dropped slots are the burst's unmodeled Shooting
+            # Stars auto-attack (40.01/10/100), DEF 55.01, Everyone's Star Max
+            # HP (15.02/10) and the fixed 0.7s charge time.
+            "star_anis": [0, 1, 2, 3, 6, 7, 8],
+        },
+    },
+}
+
 
 def build_starfall_rules(values: dict) -> list[SkillRule]:
     own_burst_tier = int(values["description_value_01"])
