@@ -5,7 +5,11 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-18 (**gap #10 완료 — `per_shot_rules` `"sequence"` 모드,
+- 마지막 갱신: 2026-07-18 (**red-hood 재검증 — Pattern B 아님, 확장 없이 인코딩 완료**.
+  "게이지=charge speed=딜 아님" 판정은 Phase S(charge_speed_percent 배선) 이전의
+  낡은 것. 무기변형 창은 Fienn 실측(10초 33발·무한탄창) 앵커 `scheduled_nukes`.
+  Pattern B 잔여 후보는 mihara·elegg 2명으로 감소 — gap #2 상세 참고.
+  같은 날 이전 갱신: **gap #10 완료 — `per_shot_rules` `"sequence"` 모드,
   Scarlet: Black Shadow 인코딩**. 단일 풀차지 카운터가 단계별 요구치 테이블(3/6/9)을
   걷고, 자기 버스트 창(10초) 안에서는 테이블이 1/2/3으로 교체 — 카운트/스테이지는
   경계를 넘어 이어지고(Fienn 판정), 스테이지는 `count >= 활성 요구치`면 발동이라
@@ -226,9 +230,14 @@
 - **periodic 자원 fill — ✅ 완료 (2026-07-12):** `("periodic", interval)` fill kind —
   샷과 무관하게 고정 타이머로 채워지는 자원(Cinderella의 Beautiful, decoy 상시 유지로
   3초마다 틱).
-- **Pattern B로 잔여(16 중):** mihara-bonding-chain, red-hood(charge
-  speed·딜 아님), velvet(ammo pouch·풀차지 트리거), laplace(Hero Vision·풀차지),
-  raven/sakura(sustained DoT 스택·별 갭) 등. (ark-ranger-black은 2026-07-16
+- **Pattern B로 잔여(16 중):** mihara-bonding-chain, velvet(ammo pouch·풀차지 트리거),
+  laplace(Hero Vision·풀차지), raven/sakura(sustained DoT 스택·별 갭) 등.
+  **정정(2026-07-18): red-hood는 Pattern B가 아니었음** — "charge speed·딜 아님"은
+  Phase S 배선 이전의 낡은 판정이고, 스택은 Raven식 카운터(정상상태 10스택 상시),
+  버스트 Step 1/2/3은 상태머신이 아니라 버스트 슬롯 선택(B3 고정 → Step 3만),
+  Step 3 무기변형은 Fienn 인게임 실측(10초 33발·무한탄창)을 앵커로 `scheduled_nukes`
+  33발/창(이중계상 노멀샷 정적 차감)으로 모델. **엔진 확장 없이 인코딩 완료**
+  (`red_hood.py` docstring 참고). (ark-ranger-black은 2026-07-16
   `part_destructible` 브래킷 우회로 인코딩 완료 — 위 참고, 일반 Pattern B 프리미티브
   소비는 아님.)
 - 참고: `special-mechanics.md`의 "Named resource / capped stack counter",

@@ -193,6 +193,10 @@ from app.skill_rules.takina_inoue import (
 )
 from app.skill_rules.tove import build_tove_rules
 from app.skill_rules.velvet import build_velvet_per_shot_rules, build_velvet_rules
+from app.skill_rules.red_hood import (
+    build_red_hood_rules,
+    build_red_wolf_scheduled_nukes,
+)
 from app.skill_rules.privaty import (
     ak_missile_burst_percent,
     build_ak_missile_rules,
@@ -325,6 +329,7 @@ _BUILDERS = {
     "sakura-bloom-in-summer": lambda sv: (
         build_sakura_bloom_in_summer_rules(sv), ephemeral_spender_burst_percent(sv)
     ),
+    "red-hood": lambda sv: (build_red_hood_rules(sv), None),  # burst is the Step 3 weapon transform (scheduled_nukes), no direct nuke
     "scarlet-black-shadow": lambda sv: (build_scarlet_black_shadow_rules(sv), None),  # burst is buff-only; damage is the Breakthrough sequence (per-shot)
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
@@ -380,6 +385,7 @@ _BURST_DAMAGE_TYPES = {
 _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
+    "red-hood": lambda sv: build_red_wolf_scheduled_nukes(sv),     # Step 3 transform window, 33 measured shots
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
 }
 

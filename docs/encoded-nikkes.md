@@ -3,7 +3,12 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-18 (**매니페스트 예외 4유닛 해소 — 커버리지/로더블 61/61 (전원)**.
+- 마지막 갱신: 2026-07-18 (**Red Hood 신규 인코딩 — 낡은 Pattern B 판정 정정**.
+  "게이지 보상=charge speed=딜 아님"은 Phase S(발사속도 배선) 이전 판정이었음.
+  버스트 Step 1/2/3은 상태머신이 아니라 버스트 슬롯 선택(B3 고정이라 Step 3만 유효),
+  Step 3 무기변형은 Fienn 인게임 실측(10초 33발·무한탄창) 앵커로 `scheduled_nukes`
+  모델 — **엔진 확장 없이 인코딩**(기존 프리미티브만 소비). 62명, 커버리지/로더블
+  62/62. 이전 갱신: **매니페스트 예외 4유닛 해소 — 커버리지/로더블 전원**.
   anis-star(dotgg-소스, star_anis drop 7토큰) · asuka(lootandwaifus-소스 —
   anti_at_field 픽스처를 데이터 순서로 재전사+빌더 재번호, 50샷 임계도 슬롯에서
   읽음; annihilation 픽스처의 재현 불가 '1' 슬롯은 전사 잔재라 제거; dotgg url
@@ -51,7 +56,7 @@
     수집 전 상태였을 뿐 — 넷 다 dotgg 셧다운(2026-05) 이전 출시라 데이터가 존재한다.
     **prika 로더블화로 mint+prika Encore 시너지가 실제 덱 탐색에서 처음으로 효력을
     가진다**(로드맵이 이걸 blocker로 적어두고 있었음).
-- 총 **61명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 34명) — drake는 base/signature 듀얼슬롯 2엔트리
+- 총 **62명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 35명) — drake는 base/signature 듀얼슬롯 2엔트리
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -98,7 +103,7 @@
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (34명)
+## Burst 3 (35명)
 
 > **eb (encoding batch) 진행:** Burst 3 어태커 배치 인코딩 (least-blocked 우선).
 > eb1 = Noir · Isabel · Liberalio, eb2 = Ludmilla · Chisato · Jill (2026-07-12).
@@ -171,6 +176,7 @@
 | Neon: Vision Eye | `neon-vision-eye` | Attacker | RL | Electric | ⚠ | (신규 2026-07-16, base) Firepower Gauge가 매 사이클 100 리필 → Super Firepower 매 사이클 정상상태로 근사. Maximum Firepower: 자ATK+115.09%(FB진입)·Super Firepower 버스트: 자AD+155.24%(버스트 넉 없음)·Firepower Explosion: 풀차지마다 437.98% + Super Firepower 10초 창 중 +262.79%("additional damage", gap #7). 보류: 라이브 게이지, 넉의 projectile-explosion 타이핑(pulse 경로 미지원, 자기 킷 내 inert), Explosion Radius, 생존기 |
 | Raven | `raven` | Attacker | RL | Iron | ⚠ | (신규 2026-07-17) 딜의 핵심은 Shock Wave — **스택 카운터 1개**(풀차지마다 +1, 상한 10)가 초당 스택수만큼 68.46% 지속댐 틱. `lasts for 5 sec`는 **카운터의 수명이고 풀차지마다 갱신**됨(Fienn 정정 2026-07-17) — 풀차지마다 독립 DoT가 겹치는 게 아님. RL 풀차지 1초·최대 공백 3초(재장전) < 5초 갱신창이라 **카운터가 전투 내내 안 죽고 t≈12에 10스택 도달 후 고정**. 틱마다 스택수만큼 개별 인스턴스 방출(디펜스가 히트당 차감). `scheduled_nukes`+`context.shot_times`가 첫 소비자. FB진입 자 flat ATK=caster ATK 47.52%·Tempest 492.3% 넉·A.N. Mode 자 지속댐+89.44%/10초. **브래킷(Ark Ranger 선례, Fienn 판정)**: Blue Blade의 Single Point Attack(자 지속댐+47.32%)은 부위파괴 트리거라 floor(파괴 없음=미발동)/ceiling(파괴 있음=전투 내내) 두 갈래. E2E: Shock Wave 2.92억(최대 소스), floor 총 3.454억 / ceiling 3.511억. 보류: Vital Attack(Damage to Parts — 소비 경로 없어 inert) |
 | Scarlet: Black Shadow | `scarlet-black-shadow` | Attacker | RL | Wind | ⚠ | (신규 2026-07-18, **gap #10 첫 소비자**) 딜의 핵심 Fleetly Fading Breakthrough — 단일 풀차지 카운터가 3/6/9 단계(283.03% 단일 attack / 565% / 848.03% **distributed** — Pulse damage_type 신규 배선으로 실제 타입 버킷 곱해짐)를 걷고 9단계 후 리셋. 버스트가 요구치를 10초간 1/2/3으로 교체(`sequence` 모드의 own_burst_window, 카운트 이어받기 — Fienn 판정) + 자ATK+115.12%/차지댐+169.63% 10초(버프 온리, burst None). Asura FB진입 자기 Max Ammo+60%/10초(라이브 매거진 반영). E2E(대표 스탯): 시퀀스 넉이 본인 딜의 ~87%, 창 안 발동밀도 창 밖의 ~3배. 보류: Asura의 FB진입 매거진 100% 즉시 재장전(발사 타임라인 개입 프리미티브 없음, gap #11 동류 — floor 인코딩) |
+| Red Hood | `red-hood` | Attacker | SR | Iron | ⚠ | (신규 2026-07-18, **낡은 Pattern B 판정 정정**) "게이지=charge speed라 딜 아님"은 Phase S 이전 판정 — 지금은 발사 케이던스 스탯. Glaring Eyes: 노멀마다 차지속도+3.81%×10스택(SR 케이던스상 5초 수명이 안 끊겨 **정상상태 +38.1% 상시**, Raven 카운터 선례) + **100% 초과분×240% → 차지댐 변환**(자기 소스만: 버스트 창 +100.8%와 합쳐 초과 38.9 → +93.36%p). Wild Tooth: Red Wolf 시전 시 자ATK+71.42%/10s. **버스트 "Step 1/2/3"은 상태머신이 아니라 버스트 슬롯 선택** — 엔진이 B3 고정이라 Step 3만 유효(Step 1/2와 CD-40 트릭은 도달 불가). Step 3 무기변형: **Fienn 실측(창 10초 33발·무한탄창·차지시간 0 안 됨)** 앵커로 `scheduled_nukes` 33발/창, 발당 퍼센트는 51.46%×(250%+93.36%p)에서 창 안 이중계상 노멀샷(정적 ~9.46발)을 차감한 **127.2%**. E2E(liter+crown 덱): 창 5개×33히트, 변형이 총딜 30%. 보류: 변형샷의 접힌 차지 배수에 덱 차지댐 버퍼 미반영, Pierce 속성/범위 |
 | Sakura: Bloom in Summer | `sakura-bloom-in-summer` | Attacker | AR | Wind | ⚠ | (신규 2026-07-17) Bloom이 배틀스타트에 Skill2를 강제발동 → Full Glory가 **t=0,30,60,90,120,150**(t=cd 아님). Dancing Flower 자 공댐+15.64%/15초(cd30의 절반 = 50% 가동률, 정상상태로 뭉개지 않고 발동별 모델)·Sakura Petals 256%/초×15틱 지속댐(`scheduled_nukes`, 컨텍스트 불필요)·Ephemeral Spender 457.14%×10연타(`burst_hit_counts`) + 10연타가 각각 1스택을 깔아 **351.6%/초×10틱** 지속댐(Fienn 판정 2026-07-17, 연타수와 상한이 둘 다 10인 이유). E2E 총 2.397억. 보류: Bloom의 부위파괴 라이더 3건(자 지속댐+5.1%·Dancing Flower/Sakura Petals 지속시간+10.02초) — 전부 딜 증가분이라 이 인코딩은 floor |
 | Ein | `ein` | Attacker | SR | Electric | ✅ | (신규 2026-07-17) 딜의 대부분이 Near Feather 소환체 — 신규 `scheduled_nukes` 확장으로 사전계산 스케줄에 90.81% 진댐 방출. 페더 6기 상한/개체별 수명(F1 무제한·F2 38s·F3 32s·F4 26s·F5·F6 10s)·버스트가 전 페더 재소환+쿨 초기화·공격쿨 8초에서 기수당 -16%(합연산). Feather Standby 자ATK+70.12%(자버스트)·Feather Shot 풀차지마다 자 Charge Damage+80%/1라운드·Feather-All Range 자 True Damage+55.3%/Charge Damage+140.68% + 300.02% 진댐 넉. **가정(docstring 명시): 타격 간 0.3초 스로틀**(Fienn 영상 실측 FB 31회를 정확히 재현; 공식만 쓰면 FB 21% 과대). 6기 구간 외 카운트는 공식 미검증. E2E 실측: 180초에 페더 280타 9212만(본인 평타 5101만을 상회하는 최대 딜 소스) |
 | Drake | `drake` | Attacker | SG | Fire | ⚠ | (신규 2026-07-16, base) Overcharge: 스쿼드 ATK+11.85%(FB진입)·Thunderbolt: 노멀10회마다 98.55% 넉(gap #1)·Drake Special 버스트: 1254% 넉 + 자 Max Ammo+72.18%. 보류: Hit Rate(inert) |

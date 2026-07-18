@@ -537,6 +537,11 @@
       → `KNOWN_MANIFEST_EXCEPTIONS` 빈 집합, **매니페스트·API 로더블 61/61(전원)**.
       Phase 6의 "픽스처 재배열 4유닛 잔여" 기록은 이걸로 종결(그 섹션은 병렬 세션
       규칙상 이 배치에서 편집하지 않음 — 병합 후 정리).
+- [x] **red-hood 재검증 + 인코딩** (2026-07-18): Pattern B 판정이 Phase S 이전의
+      낡은 것임을 확인(charge speed는 이제 딜 스탯). Glaring Eyes 정상상태 10스택
+      +38.1% 상시·초과분→차지댐 변환·Wild Tooth 자ATK·Step 3 무기변형(Fienn 실측
+      33발/10초·무한탄창 앵커, `scheduled_nukes` 이중계상 정적 차감) — 엔진 확장
+      없음. E2E: 변형이 본인 포함 덱 총딜의 30%.
 - [ ] **eb3+ 백로그** — 대부분 **자원 유닛(gap #2 Pattern A 잔여/Pattern B)·상태머신·
       무기변형**. 배치 착수 전 유닛별 검증 필수.
   - ~~**Pattern A 자원 유닛**: `rei-ayanami`·`rei-ayanami-tentative-name`·
@@ -552,15 +557,19 @@
     `milk-blooming-bunny`(gap #11 — 강제재장전/탄약제거 상태머신, 중~대)는 여전히
     미착수.
   - **Pattern B 게이지·변신 (일반 프리미티브 잔여, gap #2)**: `mihara-bonding-chain`
-    (체인)·`elegg-boom-and-shock`·`red-hood`(charge speed·딜 아님). (`ark-ranger-black`은
-    2026-07-16 `part_destructible` 보스 플래그 브래킷으로 개별 인코딩 완료 — 일반
-    프리미티브 소비는 아님, `engine-gaps.md` gap #2 참고.)
+    (체인)·`elegg-boom-and-shock`. (~~`red-hood`(charge speed·딜 아님)~~ →
+    **2026-07-18 재검증으로 판정 정정·인코딩 완료**: Phase S 이후 charge speed는
+    딜 스탯이고, Step 1/2/3은 버스트 슬롯 선택이라 B3 고정 시 Step 3만 유효,
+    무기변형 창은 Fienn 실측 33발 앵커 `scheduled_nukes` — 엔진 확장 없음.
+    `ark-ranger-black`은 2026-07-16 `part_destructible` 보스 플래그 브래킷으로
+    개별 인코딩 완료 — 일반 프리미티브 소비는 아님, `engine-gaps.md` gap #2 참고.)
   - **상태머신/특수 트리거**: `diesel-winter-sweets`(Intro/Highlight+지속딜),
     `bready`(Taste), `dorothy-serendipity`(펠릿 카운터), `eve`(크리티컬-히트 카운터 —
     Julia 시그니처 인코딩 중 확인됨: 기대값 크리 모델과 구조적으로 불가, **영구 defer**
     가능성 높음, 착수 전 재확인),
-    (`ada-wong`은 2026-07-16 Phase C에서 인코딩 완료 — gap #6 during_full_burst 소비),
-    `milk-blooming-bunny`·`scarlet-black-shadow`(distributed)
+    (`ada-wong`은 2026-07-16 Phase C에서 인코딩 완료 — gap #6 during_full_burst 소비,
+    `scarlet-black-shadow`는 2026-07-18 gap #10으로 인코딩 완료),
+    `milk-blooming-bunny`(gap #11)
   - **무기 변형**(버스트/평타가 다른 무기모드로 전환 = 핵심 딜, 미지원): `snow-white`,
     `snow-white-heavy-arms`, `maxwell`, `cinderella-crystal-wave`(MG/Snipe 모드
     전환이 FB 넉을 게이팅 — 자원 primitive로 안 풀림, 2026-07-12 eb4 검증 중 재분류)
@@ -597,8 +606,9 @@
 - [x] **Ein 인코딩** — `scheduled_nukes` 확장 + Fienn 실측 기반 페더 스케줄.
 - [x] **raven·sakura-bloom-in-summer 인코딩** (2026-07-17) — sakura는 확장 불필요가
       맞았고, raven은 `context.shot_times` 소규모 확장 1건 필요했음(판정 정정).
-- [ ] **다음 배치 후보** — 남은 미인코딩 12명은 전부 갭 뒤(무기변형 4·Pattern B 3·
-      상태머신 3·gap #11 milk). (gap #10 scarlet은 2026-07-18 인코딩 완료.)
+- [ ] **다음 배치 후보** — 남은 미인코딩 11명은 전부 갭 뒤(무기변형 4·Pattern B 2·
+      상태머신 3·gap #11 milk). (gap #10 scarlet은 2026-07-18 인코딩 완료,
+      red-hood는 2026-07-18 재검증으로 Pattern B에서 빠져 인코딩 완료.)
       **최대 수요는 무기 변형**
       (snow-white·snow-white-heavy-arms·maxwell·cinderella-crystal-wave + laplace·
       velvet·rapi 잔여) — 큰 확장이라 설계 논의부터 필요.

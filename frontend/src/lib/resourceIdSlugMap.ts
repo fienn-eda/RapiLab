@@ -59,6 +59,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   391: 'ein', // Ein
   403: 'quency-escape-queen', // Quency: Escape Queen
   431: 'volume', // Volume
+  470: 'red-hood', // Red Hood (16 = Rapi: Red Hood, separately encoded)
   511: 'cinderella', // Cinderella
   513: 'little-mermaid', // Little Mermaid
   514: 'grave', // Grave
