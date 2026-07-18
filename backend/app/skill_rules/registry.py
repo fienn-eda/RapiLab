@@ -63,6 +63,7 @@ from app.skill_rules.marciana_marine_study import (
     build_marciana_per_shot_rules,
     build_marciana_rules,
 )
+from app.skill_rules.maxwell import build_maxwell_rules, build_pierce_shot_weapon_mode_schedule
 from app.skill_rules.ludmilla_winter_owner import build_ludmilla_per_shot_rules, build_ludmilla_rules
 from app.skill_rules.mana import (
     build_fatal_error_dot,
@@ -323,6 +324,7 @@ _BUILDERS = {
     "asuka-shikinami-langley-wille": _build_asuka,
     "jill-valentine": lambda sv: (build_jill_rules(sv), None),
     "marciana-marine-study": lambda sv: (build_marciana_rules(sv), None),  # burst is buff-only; damage is Flagged Target nukes (per-shot + full-burst)
+    "maxwell": lambda sv: (build_maxwell_rules(sv), None),  # burst is the Pierce Shot weapon transform (weapon-mode segment), no direct nuke
     "privaty": _build_privaty,
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
@@ -406,6 +408,7 @@ _SCHEDULED_NUKE_BUILDERS = {
 _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "red-hood": lambda sv: build_red_wolf_weapon_mode_schedule(sv),  # Step 3 transform window, 33 measured shots
     "snow-white": lambda sv: build_seven_dwarves_weapon_mode_schedule(sv),  # single 5s-charge cannon shot per own-burst
+    "maxwell": lambda sv: build_pierce_shot_weapon_mode_schedule(sv),  # single 2s-charge cannon shot per own-burst
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at

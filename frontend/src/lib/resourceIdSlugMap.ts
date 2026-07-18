@@ -27,6 +27,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   82: 'liter', // Liter
   100: 'laplace', // Laplace
   101: 'drake', // Drake — dual-slot base; see SIGNATURE_OWNED
+  102: 'maxwell', // Maxwell
   150: 'julia', // Julia — dual-slot base; see SIGNATURE_OWNED
   170: 'privaty', // Privaty
   182: 'guillotine-winter-slayer', // Guillotine: Winter Slayer
