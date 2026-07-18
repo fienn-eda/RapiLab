@@ -446,8 +446,14 @@ git commit -m "feat: import collector roster.json alongside ExiaInvasion export"
 
 ## Post-implementation
 
-- [ ] 실 세션으로 `collect.js` 전 유닛 수집 → 앱 임포트 → `POST /api/recommend`(솔로) 결과가 400레벨
+- [x] 실 세션으로 `collect.js` 전 유닛 수집 → 앱 임포트 → `POST /api/recommend`(솔로) 결과가 400레벨
       스탯 기준인지 E2E 확인. 663 대비 순위 변화 관측(정확도 교정 검증).
+      → **완료 (2026-07-18)**, `scripts/verify_raid400_correction.py`로 수행.
+      159유닛(인코딩 매핑 57 → 사용가능 53)을 400레벨/실제레벨 두 기준으로 각각 랭킹:
+      **top-1 덱은 동일**하나 **top-5 구성이 달라짐**(400: maiden-ice-rose 진입 /
+      실제레벨: dorothy-serendipity·ludmilla-winter-owner 진입). 절대 데미지는
+      **2.91배 부풀림** — decisions.md가 예측한 2.9배와 일치. 즉 교정은 헤드라인 추천이
+      아니라 **대안 순위와 절대 수치**를 바꿨다.
 - [x] `docs/roadmap.md` Phase 7/B 상태 갱신.
 - [x] `/document`로 결정/작업 문서화.
 
