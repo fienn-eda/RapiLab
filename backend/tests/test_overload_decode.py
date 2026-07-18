@@ -39,7 +39,7 @@ def test_assemble_overload_reproduces_every_scraped_unit(tables):
         want = {o["name"]: round(o["value"], 2) for o in scraped}
         if got != want:
             off.append((u["name_en"], got, want))
-    assert checked >= 70
+    assert checked == 77
     assert off == [], off[:5]
 
 

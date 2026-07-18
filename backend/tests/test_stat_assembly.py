@@ -1,8 +1,8 @@
 """Ground-truth tests for the solo-raid stat calculator.
 
 Numbers here are measured, not invented: base curves come from the committed
-public table snapshot, and the expected ATK is what the collector scraped off
-ShiftyPad for Fienn's roster.
+public table snapshot, and the expected ATK and HP are what the collector scraped
+off ShiftyPad for Fienn's roster.
 """
 import json
 from pathlib import Path
