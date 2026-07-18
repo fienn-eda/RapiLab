@@ -345,6 +345,8 @@ AR_BASE = {"weapon": "AR", "damage_percent": 14.71, "max_ammo": 60,
            "reload_time": 1.5, "charge_time": 0.0, "charge_damage_percent": 100.0}
 SR_BASE = {"weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
            "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0}
+SR_ODD = {"weapon": "SR", "damage_percent": 63.11, "max_ammo": 6,
+          "reload_time": 2.33, "charge_time": 1.19, "charge_damage_percent": 250.0}
 CANNON = {"weapon": "SR", "damage_percent": 499.5,
           "charge_damage_percent": 1000.0, "charge_time": 5.0}
 # rate 4.0 → interval 0.25 (이진 정확) — 부동소수점 경계 없는 카운트 단언용.
@@ -353,7 +355,7 @@ TICKER = {"weapon": "SR", "damage_percent": 22.2, "rate_of_fire": 4.0}
 
 
 def test_no_segments_matches_legacy_generator_exactly():
-    for base in (AR_BASE, SR_BASE):
+    for base in (AR_BASE, SR_BASE, SR_ODD):
         records = generate_segmented_shots(base, [], 180.0)
         legacy = generate_shot_times(
             base["weapon"], base["max_ammo"], base["reload_time"],

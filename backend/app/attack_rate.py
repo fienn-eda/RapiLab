@@ -348,7 +348,7 @@ def _base_shot_records(base, window_start, window_end,
             magazine_size = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
             last_shot_time = None
             for i in range(magazine_size):
-                shot_time = magazine_start + (i + 1) * effective_charge
+                shot_time = magazine_start + effective_charge + i * effective_charge
                 if shot_time >= window_end:
                     return records
                 records.append(ShotRecord(
@@ -391,7 +391,7 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at):
     else:
         interval = 1.0 / profile["rate_of_fire"]
     charge = profile.get("charge_damage_percent")
-    bonus = charge / 100 - 1 if charge else 0.0
+    bonus = charge / 100 - 1 if charge is not None else 0.0
     if "until_shots" in seg:
         times = [start + k * interval for k in range(1, seg["until_shots"] + 1)]
         seg_end = times[-1]
