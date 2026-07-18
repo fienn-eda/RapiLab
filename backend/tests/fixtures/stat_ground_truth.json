@@ -1651,10 +1651,10 @@
         },
         {
           "slot": "torso",
-          "tid": 3220901,
-          "tier": 9,
-          "corporation_type": 1,
-          "lv": 5
+          "tid": 3221001,
+          "tier": 10,
+          "corporation_type": 0,
+          "lv": 0
         },
         {
           "slot": "arm",
@@ -1672,8 +1672,8 @@
         }
       ],
       "measured": {
-        "raid400_atk": 75931,
-        "actual_atk": 239811
+        "raid400_atk": 75954,
+        "actual_atk": 239834
       }
     },
     {
