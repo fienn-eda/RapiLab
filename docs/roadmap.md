@@ -445,6 +445,17 @@
 - [ ] **Stage 1: 정찰** — Fienn의 로그인된 브라우저가 자격증명 없는 유일한 정찰 표면
       (dotgg 선례는 재사용 불가: 그쪽은 무인증이라 헤드리스가 통했다). export 버튼/공유 URL
       유무만으로 사다리 대부분이 붕괴할 수 있음.
+      - **단서(2026-07-18): edenpj식 OOB 소유권 증명 패턴.** 목표 재확인 = **일반 니케
+        유저 대상 몇-클릭 sync**(Fienn). 참고 [edenpj.com/setting](https://www.edenpj.com/setting):
+        블라블라 ID + ShiftyPad URL 입력 → 서버가 인증코드 생성 → 유저가 **게임 프로필
+        자기소개란에 붙여넣기** → 서버가 프로필에서 코드 확인(소유권 증명) → 로스터 읽음.
+        **자격증명 저장·확장·로컬 스크립트 전부 없음** → Phase 7 원칙과 부합. 함의: CDP
+        수집기·ExiaInvasion 둘 다 dev/interim 도구지 일반 유저 경로 아님. **핵심 검증
+        사항**: edenpj가 "ShiftyPad URL"을 받는다는 건 **ShiftyPad에 공개 공유 빌드
+        URL이 있다**는 뜻일 수 있고, 사실이면 로드맵의 "공개 질의 불가" 가정이 뒤집혀
+        sync가 크게 단순해진다. [nikkemimir.xyz](https://nikkemimir.xyz/)도 /sync 보유
+        (SPA라 미해독, 착수 시 재정찰). resource_id 맵은 sync 경로 무관하게 재사용됨
+        (blablalink ID가 canonical).
 - **원칙:** 자격증명 저장 금지(토큰은 Fienn 공급) · 인증이 httpOnly 쿠키뿐이면 세션
   자동화는 거부하고 반수동 브리지로 강등 · **폴백은 언제나 "기존 수동 폼"**(서드파티는
   죽는다 — dotgg가 두 달 전에 그랬다).
