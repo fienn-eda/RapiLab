@@ -6,10 +6,10 @@ it in the browser - and scraping it costs one page load per unit. Computing it
 instead is what lets a roster be read from the API alone, which is the
 precondition for syncing a roster we cannot scrape (i.e. anyone else's).
 
-WHAT IS DERIVED (the multiplier: measured against all 159 collected units, 0 mismatches)
+THE MODEL (reproduces all 159 collected units exactly)
 
     atk = base[class][level] * (1 + 0.02*grade) * (1 + 0.02*core)
-          + core*core_attack + grade*grade_attack
+          + core*core_flat_atk(unit) + grade*grade_attack
           + extra_flat
 
 The two breakthrough terms MULTIPLY - grade 3 with core 1 measures 1.0812, not
@@ -19,16 +19,16 @@ unknown. Affinity does NOT belong to this multiplier: units sharing a grade but
 differing in affinity (4 / 10 / 12 / 20) all measure exactly 1.02.
 
 `extra_flat` is assembled by the caller from the helpers below - affinity_atk,
-corporation_atk and equipment_atk - which together reproduce 59 of the 74
-collected units that wear gear but no cube or collectible.
+corporation_atk, equipment_atk, cube_atk and collectible_atk. It is deliberately
+NOT defaulted to a guess, so an un-modelled unit reads as obviously wrong rather
+than plausibly wrong.
 
 WHAT IS NOT YET DERIVED
 
-Cube and collectible contributions (85 of the 159 collected units carry one or
-both), and a shortfall on 15 gear-only units. Those 15 all come out slightly
-HIGH and two of them wear no gear at all, so the gap is not in the equipment
-model. `extra_flat` is deliberately NOT defaulted to a guess, so an
-un-modelled unit reads as obviously wrong rather than plausibly wrong.
+Why the per-core flat varies between units of the same class - see
+CORE_FLAT_ATK_BY_RESOURCE_ID. Pilgrims and the awakened Counters are worth more
+per core, three further units are worth less, and the values themselves are
+measured rather than read off a game table. And HP, which no caller consumes.
 See docs/superpowers/specs/2026-07-18-stat-assembly-calculator-design.md.
 """
 import json
@@ -78,9 +78,64 @@ def breakthrough_multiplier(grade: int, core: int) -> float:
 # single measured unit; these do. Read off ShiftyPad's core screen, where each
 # extra core is worth a fixed amount at a fixed level: an Attacker (Brid) gains
 # 2,034 per core at level 400 and 6,950 at 663, and subtracting the 2% step
-# (base * 0.02 * 1.06) leaves 119.3 at BOTH levels - so the remainder is flat
-# and level-independent. A Supporter (Mint) leaves 113.4 the same way.
-CORE_FLAT_ATK = {"Attacker": 119, "Supporter": 113, "Defender": 91}
+# (base * 0.02 * 1.06) leaves ~119 at BOTH levels - so the remainder is flat and
+# level-independent. Fitted across every cored unit of the class.
+CORE_FLAT_ATK = {"Attacker": 118.95, "Supporter": 113.29, "Defender": 107.87}
+
+# Pilgrims are worth about 20% more per core than their class. Measured on eight
+# units (five Attackers, three Defenders) with no counter-example: every Pilgrim
+# in the ground truth lands here and no unit of another corporation does.
+CORE_FLAT_ATK_PILGRIM = {"Attacker": 142.90, "Defender": 127.22}
+
+# Units whose per-core flat is neither their class value nor their corporation's.
+# Keyed by resource_id because that is what identifies a unit unambiguously.
+#
+# The first three are the awakened Counters, whose character file carries
+# `corporation_sub_type: OVERSPEC` where an ordinary unit carries None - that
+# field is the mechanism, but the committed directory snapshot does not yet
+# expose it, so they are listed individually until it does.
+#
+# The last three are not explained. They share no class, corporation, rarity or
+# sub_type that separates them from the units that do measure the class value,
+# and each is a plain SSR by the directory. They are measured, not derived.
+CORE_FLAT_ATK_BY_RESOURCE_ID = {
+    16: 132.95,   # Rapi: Red Hood      OVERSPEC
+    17: 116.79,   # Anis: Star          OVERSPEC
+    18: 132.95,   # Neon: Vision Eye    OVERSPEC
+    91: 94.22,    # Vesti
+    280: 94.22,   # Rosanna
+    380: 91.15,   # Nero
+}
+
+
+def core_flat_atk(
+    character_class: str,
+    *,
+    corporation: str | None = None,
+    resource_id: int | None = None,
+) -> float:
+    """Flat ATK each core is worth for this unit.
+
+    A unit's own measured value wins over its corporation's, which wins over its
+    class's - most units only have the class value.
+    """
+    if character_class not in CORE_FLAT_ATK:
+        raise KeyError(
+            f"no core flat for class {character_class!r}; have {sorted(CORE_FLAT_ATK)}"
+        )
+    if resource_id in CORE_FLAT_ATK_BY_RESOURCE_ID:
+        return CORE_FLAT_ATK_BY_RESOURCE_ID[resource_id]
+    if corporation == "PILGRIM":
+        try:
+            return CORE_FLAT_ATK_PILGRIM[character_class]
+        except KeyError:
+            # No Pilgrim Supporter in the ground truth has a core, so this value
+            # was never measured. Falling back to the class value would be wrong
+            # by ~14 per core, so say so rather than answer plausibly.
+            raise KeyError(
+                f"core flat for a PILGRIM {character_class} was never measured"
+            ) from None
+    return CORE_FLAT_ATK[character_class]
 
 
 # Which recycle-room research row ranks each corporation. Only PILGRIM and
@@ -235,10 +290,20 @@ def assemble_atk(
     level: int,
     grade: int,
     core: int,
+    corporation: str | None = None,
+    resource_id: int | None = None,
     extra_flat: float = 0.0,
 ) -> float:
-    """Solo-raid ATK for one unit. `extra_flat` covers what is not yet derived."""
+    """Solo-raid ATK for one unit. `extra_flat` covers what is not yet derived.
+
+    `corporation` and `resource_id` only select the per-core flat, so a unit
+    without cores needs neither.
+    """
     enhance = tables["classes"][character_class]["stat_enhance"]
     scaled = base_atk(tables, character_class, level) * breakthrough_multiplier(grade, core)
-    flat = core * CORE_FLAT_ATK[character_class] + grade * enhance["grade_attack"]
+    flat = grade * enhance["grade_attack"]
+    if core:
+        flat += core * core_flat_atk(
+            character_class, corporation=corporation, resource_id=resource_id
+        )
     return scaled + flat + extra_flat
