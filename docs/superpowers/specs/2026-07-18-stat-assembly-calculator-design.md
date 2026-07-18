@@ -189,8 +189,7 @@ atk = base[class][level] × (1 + 0.02·grade) × (1 + 0.02·core)
   스탯파일을 Quency: Escape Queen과 전체 키 diff 하다 **`corporation_sub_type`이
   `OVERSPEC` vs `None`**으로 갈리는 것을 발견했다(같은 파일에서 `character_level_attack_list`
   1200개는 완전 일치 — 기초 곡선이 아니라 코어 항만 다르다는 직접 증거).
-  **다만 커밋된 `nikke-directory.json` 스냅샷에 이 필드가 없어** 지금은 resource_id로
-  나열했다. 스냅샷에 필드를 추가하면 규칙으로 승격 가능.
+  이후 스냅샷에 필드를 추가해 **규칙으로 승격했다** — 아래 후속 절 참고.
 - **미설명 3기** — Vesti(91)·Rosanna(280)·Nero(380). 클래스·기업·희귀도·sub_type
   어느 것으로도 표준 유닛과 갈리지 않는다. **측정값이지 유도값이 아니다.**
 
@@ -198,15 +197,35 @@ atk = base[class][level] × (1 + 0.02·grade) × (1 + 0.02·core)
 클래스 표준값 자체가 틀려 있었을 뿐이다(Defender 91 → 107.87, Supporter 113 → 113.29).
 Defender 91은 하필 Nero(미설명 3기 중 하나)에 맞춰져 있었다.
 
-`core_flat_atk(class, corporation=, resource_id=)`가 **유닛 > 기업 > 클래스** 순으로
-해석한다. 측정된 적 없는 조합(코어 있는 PILGRIM 서포터)은 클래스 값으로 얼버무리지
-않고 `KeyError`를 낸다 — 코어당 ~14 차이라 그럴듯하게 틀리는 편이 더 나쁘다.
+`core_flat_atk(class, corporation=, corporation_sub_type=, resource_id=)`가
+**유닛 > 기업 > OVERSPEC > 클래스** 순으로 해석한다. 측정된 적 없는 조합(코어 있는
+PILGRIM/OVERSPEC 서포터)은 클래스 값으로 얼버무리지 않고 `KeyError`를 낸다 —
+코어당 ~14~30 차이라 그럴듯하게 틀리는 편이 더 나쁘다.
+
+### OVERSPEC은 규칙으로 승격됨 (2026-07-19, 같은 세션 후속)
+
+Chrome 디버깅 포트를 띄워 CDN을 직접 조사한 결과:
+
+- **`stat_enhance_id` 가설은 반증됐다.** 코어 보유 59유닛 전수 대조에서 같은
+  id(Attacker 5105)에 94.23과 118.9가 공존한다. 코어 flat과 무관한 값이다.
+- **`corporation_sub_type: OVERSPEC`이 상위 티어를 정확히 덮는다.** 59유닛 중 11기
+  (순례자 8 + 카운터즈 3)가 OVERSPEC이고 그 외엔 하나도 없다. 순례자는 OVERSPEC 중에서도
+  더 높으므로 별도 행으로 뒀다(순례자는 `corporation`만으로도 판정되므로 sub_type을
+  모르는 호출자도 정답을 얻는다).
+- **미설명 3기는 CDN 데이터로 설명 불가임이 확정됐다.** 캐릭터 스탯 파일의 모든 범주형
+  스칼라 필드를 자동 탐색했으나 Vesti·Rosanna·Nero를 같은 클래스 동료와 가르는 필드가
+  **하나도 없다**(기초 3곡선·희귀도·sub_type 동일, `stat_enhance_id`는 표준 유닛과 공유).
+  다음 단서는 CDN 밖에 있다 — 방법론 메모대로 **인게임 코어 화면 캡처**가 유력하다.
+
+`collect.js --directory --deep`이 194유닛의 `corporation_sub_type`을 스냅샷에 담는다
+(디렉토리 payload엔 없어 유닛당 1페이지 로드 = 194회, 그래서 opt-in). 실측 194/194 무경고.
+스냅샷의 OVERSPEC은 27기 — 측정된 11기 외에 **Mihara: Bonding Chain 등 미측정 유닛까지
+포함**되므로, 하드코딩 목록이었다면 놓쳤을 유닛이 규칙으로 커버된다.
+`--deep` 없이 스냅샷을 갱신하면 필드가 조용히 사라지므로 테스트가 이를 막는다.
 
 ### 잔여 (다음 세션)
 
-1. **`corporation_sub_type`을 디렉토리 스냅샷에 추가** — `collect.js`의 `trimDirectory`에
-   한 줄. 그래야 OVERSPEC이 하드코딩이 아니라 규칙이 되고, 미보유/신규 유닛에도 적용된다.
-   Chrome을 `--remote-debugging-port=9222`로 띄우고 blablalink 로그인 탭이 필요하다.
-2. **미설명 3기의 정체** — 같은 diff 방법으로 Vesti/Rosanna/Nero 스탯파일을 표준 유닛과
-   대조하면 갈리는 필드가 나올 가능성이 높다(OVERSPEC이 그렇게 잡혔다). 위 1과 같은 수집 필요.
-3. **PILGRIM 서포터 코어 flat 미측정** — Fienn 로스터에 코어 있는 순례자 서포터가 없다.
+1. **미설명 3기(Vesti·Rosanna·Nero)** — CDN은 막혔다. 인게임 코어 화면 캡처로 접근할 것.
+2. **미측정 조합** — 코어 있는 PILGRIM/OVERSPEC 서포터가 Fienn 로스터에 없다.
+   해당 조합은 `KeyError`로 거부한다(얼버무리지 않음).
+3. **HP 미구현** · **수집기 교체 미착수.**

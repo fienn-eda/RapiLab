@@ -87,21 +87,21 @@ CORE_FLAT_ATK = {"Attacker": 118.95, "Supporter": 113.29, "Defender": 107.87}
 # in the ground truth lands here and no unit of another corporation does.
 CORE_FLAT_ATK_PILGRIM = {"Attacker": 142.90, "Defender": 127.22}
 
-# Units whose per-core flat is neither their class value nor their corporation's.
-# Keyed by resource_id because that is what identifies a unit unambiguously.
+# The awakened Counters - Rapi: Red Hood, Anis: Star and Neon: Vision Eye - land
+# between their class and a Pilgrim. What marks them is the game's own
+# `corporation_sub_type: OVERSPEC`, which the per-character stat file carries and
+# an ordinary unit leaves empty. Every Pilgrim is OVERSPEC too, and worth more
+# still, so the two are separate rows rather than one bonus.
+CORE_FLAT_ATK_OVERSPEC = {"Attacker": 132.95, "Defender": 116.79}
+
+# Units whose per-core flat is none of the above. Keyed by resource_id because
+# that is what identifies a unit unambiguously.
 #
-# The first three are the awakened Counters, whose character file carries
-# `corporation_sub_type: OVERSPEC` where an ordinary unit carries None - that
-# field is the mechanism, but the committed directory snapshot does not yet
-# expose it, so they are listed individually until it does.
-#
-# The last three are not explained. They share no class, corporation, rarity or
-# sub_type that separates them from the units that do measure the class value,
-# and each is a plain SSR by the directory. They are measured, not derived.
+# These three are NOT explained. Every scalar field of their CDN stat file was
+# compared against their class peers' and none separates them: same base curves,
+# same rarity, no sub_type, and stat_enhance_id is shared with units that measure
+# the class value. They are measured, not derived.
 CORE_FLAT_ATK_BY_RESOURCE_ID = {
-    16: 132.95,   # Rapi: Red Hood      OVERSPEC
-    17: 116.79,   # Anis: Star          OVERSPEC
-    18: 132.95,   # Neon: Vision Eye    OVERSPEC
     91: 94.22,    # Vesti
     280: 94.22,   # Rosanna
     380: 91.15,   # Nero
@@ -112,12 +112,13 @@ def core_flat_atk(
     character_class: str,
     *,
     corporation: str | None = None,
+    corporation_sub_type: str | None = None,
     resource_id: int | None = None,
 ) -> float:
     """Flat ATK each core is worth for this unit.
 
-    A unit's own measured value wins over its corporation's, which wins over its
-    class's - most units only have the class value.
+    A unit's own measured value wins over its corporation's, which wins over
+    OVERSPEC, which wins over its class's - most units only have the class value.
     """
     if character_class not in CORE_FLAT_ATK:
         raise KeyError(
@@ -125,17 +126,25 @@ def core_flat_atk(
         )
     if resource_id in CORE_FLAT_ATK_BY_RESOURCE_ID:
         return CORE_FLAT_ATK_BY_RESOURCE_ID[resource_id]
-    if corporation == "PILGRIM":
-        try:
-            return CORE_FLAT_ATK_PILGRIM[character_class]
-        except KeyError:
-            # No Pilgrim Supporter in the ground truth has a core, so this value
-            # was never measured. Falling back to the class value would be wrong
-            # by ~14 per core, so say so rather than answer plausibly.
-            raise KeyError(
-                f"core flat for a PILGRIM {character_class} was never measured"
-            ) from None
-    return CORE_FLAT_ATK[character_class]
+    # Corporation alone settles a Pilgrim: all eight measured are OVERSPEC, so a
+    # caller that does not know the sub_type still gets the right answer.
+    table = (
+        CORE_FLAT_ATK_PILGRIM
+        if corporation == "PILGRIM"
+        else CORE_FLAT_ATK_OVERSPEC
+        if corporation_sub_type == "OVERSPEC"
+        else CORE_FLAT_ATK
+    )
+    try:
+        return table[character_class]
+    except KeyError:
+        # No cored Pilgrim or OVERSPEC Supporter exists in the ground truth, so
+        # that value was never measured. Falling back to the class value would be
+        # wrong by ~14-30 per core, so say so rather than answer plausibly.
+        raise KeyError(
+            f"core flat for a {corporation or corporation_sub_type} "
+            f"{character_class} was never measured"
+        ) from None
 
 
 # Which recycle-room research row ranks each corporation. Only PILGRIM and
@@ -291,19 +300,23 @@ def assemble_atk(
     grade: int,
     core: int,
     corporation: str | None = None,
+    corporation_sub_type: str | None = None,
     resource_id: int | None = None,
     extra_flat: float = 0.0,
 ) -> float:
     """Solo-raid ATK for one unit. `extra_flat` covers what is not yet derived.
 
-    `corporation` and `resource_id` only select the per-core flat, so a unit
-    without cores needs neither.
+    The identity arguments only select the per-core flat, so a unit without cores
+    needs none of them.
     """
     enhance = tables["classes"][character_class]["stat_enhance"]
     scaled = base_atk(tables, character_class, level) * breakthrough_multiplier(grade, core)
     flat = grade * enhance["grade_attack"]
     if core:
         flat += core * core_flat_atk(
-            character_class, corporation=corporation, resource_id=resource_id
+            character_class,
+            corporation=corporation,
+            corporation_sub_type=corporation_sub_type,
+            resource_id=resource_id,
         )
     return scaled + flat + extra_flat
