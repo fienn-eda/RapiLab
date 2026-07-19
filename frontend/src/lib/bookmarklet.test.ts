@@ -39,4 +39,38 @@ describe('buildBookmarklet', () => {
   it('자격증명을 담지 않는다', () => {
     expect(source).not.toMatch(/password|token|cookie=/i)
   })
+
+  it('message 리스너가 window.open보다 먼저 등록된다 (cross-context race 방지)', () => {
+    // 열린 탭은 별도 브라우징 컨텍스트(사이트 격리 시 별도 프로세스)라 JS의
+    // 단일 스레드 순서 보장이 적용되지 않는다. window.open 전에 리스너를
+    // 등록해야 앱이 먼저 뜬 뒤 ready를 보내는 경우에도 유실되지 않는다.
+    const listenerIndex = source.indexOf("addEventListener('message'")
+    const openIndex = source.indexOf('window.open(')
+    expect(listenerIndex).toBeGreaterThan(-1)
+    expect(openIndex).toBeGreaterThan(-1)
+    expect(listenerIndex).toBeLessThan(openIndex)
+  })
+})
+
+describe('buildBookmarklet 입력 검증', () => {
+  it('openId에 숫자 아닌 문자가 섞이면 던진다', () => {
+    expect(() =>
+      buildBookmarklet("123'-alert(1)-'456", 'https://deck.example'),
+    ).toThrow()
+  })
+
+  it('appOrigin에 따옴표가 섞이면 던진다', () => {
+    expect(() =>
+      buildBookmarklet('1234567890123456789', "https://deck.example'-alert(1)-'"),
+    ).toThrow()
+  })
+
+  it('appOrigin이 http(s) origin 형태가 아니면 던진다', () => {
+    expect(() =>
+      buildBookmarklet('1234567890123456789', 'javascript:alert(1)'),
+    ).toThrow()
+    expect(() =>
+      buildBookmarklet('1234567890123456789', 'https://deck.example/path'),
+    ).toThrow()
+  })
 })
