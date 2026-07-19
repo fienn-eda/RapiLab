@@ -68,8 +68,16 @@ def rapi_red_hood_spec():
                 "description_value_07": "95.04", "description_value_08": "10",
                 "description_value_09": "48", "description_value_10": "10",
             },
-            "attachable_projectiles": {"description_value_01": "150.72", "description_value_02": "100.6"},
-            "power_of_inheritance": {"description_value_08": "339.98"},
+            "attachable_projectiles": {
+                "description_value_01": "150.72", "description_value_02": "100.6",
+                "description_value_03": "120", "description_value_04": "88.11",
+                "description_value_05": "88.11",
+            },
+            "power_of_inheritance": {
+                "description_value_08": "339.98",
+                "description_value_11": "421.2", "description_value_12": "10",
+                "description_value_14": "60", "description_value_15": "10",
+            },
         },
         weapon_stats={
             "weapon": "MG", "damage_percent": 20.0, "max_ammo": 300,

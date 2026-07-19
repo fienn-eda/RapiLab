@@ -1,6 +1,6 @@
-"""SkillRule encoding of Rapi: Red Hood's "Battlefield Assessment" (skills[0])
-and "Attachable Projectiles" (skills[1], battle-start effects only) from
-lootandwaifus.com slug "rapi-red-hood".
+"""SkillRule encoding of Rapi: Red Hood's "Battlefield Assessment" (skills[0]),
+"Attachable Projectiles" (skills[1]), and "Power of Inheritance" (skills[2])
+from lootandwaifus.com slug "rapi-red-hood".
 
 Whether she becomes a Burst-1 stand-in ("Combat Assist") depends on whether
 another Burst 1 ally is already in the deck - re-using the same
@@ -18,14 +18,21 @@ Modeled from Attachable Projectiles (both permanent battle-start self effects):
   the multiplier natural advantage would give (damage_formula adds
   other_elemental_bonus onto element_multiplier).
 
+The 120-normal-attack launcher (Attachable Projectiles' second effect) is a
+scheduled_nukes pair, not a SkillRule - see
+build_attachable_projectiles_scheduled_nukes. Fienn's confirmed semantics
+(2026-07-19): every time the shot counter reaches the requirement a
+projectile attaches (counter resets), attachments ACCUMULATE, and every
+pending attachment explodes together on the next Full Burst entry. The Stage
+3 burst (Power of Inheritance) lowers the requirement by 60 for 10s and grants
+a windowed Projectile Attachment Damage Up rider - see
+build_power_of_inheritance_rules.
+
 Not modeled / deferred:
-- Attachable Projectiles' 120-normal-attack launcher (projectiles attach, then
-  explode on Full Burst entry - a projectile state machine no engine trigger
-  expresses; confirmed not unlockable by gap #7/#9, 2026-07-15).
-- Projectile Attachment Damage ▲ 150.72% - inert until the attachment damage
-  instances above are modeled (nothing attachment-typed exists to boost).
 - The Stage 1 branch damage of "Power of Inheritance" (skills[2]) - the Stage 3
   branch's nuke IS modeled via power_of_inheritance_stage3_burst_percent.
+- Power of Inheritance's Explosion Radius buff (Stage 1 and Stage 3) - no
+  engine stat represents blast radius, so it stays deferred.
 """
 from app.effects import Effect, Pulse
 from app.elements import ELEMENT_ADVANTAGE_BONUS
@@ -116,14 +123,85 @@ def build_battlefield_assessment_rules(values: dict) -> list[SkillRule]:
 
 
 def build_attachable_projectiles_rules(values: dict) -> list[SkillRule]:
+    projectile_attachment_up = float(values["description_value_01"]) / 100
     projectile_explosion_up = float(values["description_value_02"]) / 100
     return [
         buff_rule("battle_start", [
             ("projectile_explosion_damage_up", projectile_explosion_up, "self", None),
         ]),
         buff_rule("battle_start", [
+            ("projectile_attachment_damage_up", projectile_attachment_up, "self", None),
+        ]),
+        buff_rule("battle_start", [
             ("other_elemental_bonus", ELEMENT_ADVANTAGE_BONUS, "self", None),
         ], condition=boss_is_element("Electric")),
+    ]
+
+
+def build_attachable_projectiles_scheduled_nukes(
+    values: dict, slug: str = "rapi-red-hood", stage3_requirement_cut: bool = True,
+) -> list[dict]:
+    """The 120-normal-attack projectile launcher (Fienn semantics, 2026-07-19):
+    every time the shot counter reaches the requirement it fires an attaching
+    projectile (attachment damage lands at that shot's time, counter resets),
+    attachments ACCUMULATE, and every pending attachment explodes together on
+    the next Full Burst entry (one explosion hit per attachment). The Stage 3
+    burst lowers the requirement by 60 for 10s (windows from own burst times);
+    the B1 variant bursts in Stage 1, so it passes stage3_requirement_cut=False
+    and keeps the flat 120. Attachment/explosion hits are damage-typed so the
+    matching Damage-Up stats (S2's permanent 150.72%/100.6%, the Stage 3
+    burst's windowed 421.2%) multiply them in phase 2 - nothing is folded into
+    the percents here."""
+    proj = values["attachable_projectiles"]
+    burst = values["power_of_inheritance"]
+    base_requirement = int(float(proj["description_value_03"]))
+    attach_percent = float(proj["description_value_04"])
+    explosion_percent = float(proj["description_value_05"])
+    requirement_cut = int(float(burst["description_value_14"])) if stage3_requirement_cut else 0
+    cut_duration = float(burst["description_value_15"])
+
+    def attach_times(context, fight_duration):
+        shots = context.shot_times.get(slug, [])
+        windows = [(t, t + cut_duration)
+                   for t in context.burst_times.get(slug, [])]
+        times, count = [], 0
+        for t in shots:
+            count += 1
+            requirement = base_requirement - (
+                requirement_cut if any(s <= t < e for s, e in windows) else 0)
+            if count >= requirement:
+                times.append(t)
+                count = 0
+        return times
+
+    def explosion_times(context, fight_duration):
+        entries = [start for start, _end in context.full_burst_windows]
+        times = []
+        for attached_at in attach_times(context, fight_duration):
+            next_entry = next((s for s in entries if s > attached_at), None)
+            if next_entry is not None:
+                times.append(next_entry)
+        return times
+
+    return [
+        {"schedule": attach_times, "percent": attach_percent,
+         "damage_type": "projectile_attachment"},
+        {"schedule": explosion_times, "percent": explosion_percent,
+         "damage_type": "projectile_explosion"},
+    ]
+
+
+def build_power_of_inheritance_rules(values: dict) -> list[SkillRule]:
+    """Stage 3 rider: Projectile Attachment Damage ^ 421.2% for 10s on her own
+    burst. (The requirement cut rides inside the launcher schedule above; the
+    Explosion Radius branch stays deferred - radius is not modeled.)"""
+    burst = values["power_of_inheritance"]
+    return [
+        buff_rule("own_burst_activate", [
+            ("projectile_attachment_damage_up",
+             float(burst["description_value_11"]) / 100, "self",
+             float(burst["description_value_12"])),
+        ]),
     ]
 
 

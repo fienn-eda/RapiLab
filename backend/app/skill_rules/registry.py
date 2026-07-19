@@ -217,7 +217,9 @@ from app.skill_rules.privaty import (
 )
 from app.skill_rules.rapi_red_hood import (
     build_attachable_projectiles_rules,
+    build_attachable_projectiles_scheduled_nukes,
     build_battlefield_assessment_rules,
+    build_power_of_inheritance_rules,
     power_of_inheritance_stage3_burst_percent,
 )
 from app.skill_rules.volume import build_volume_rules
@@ -249,6 +251,7 @@ def _build_crown(sv):
 def _build_rapi_red_hood(sv):
     rules = build_battlefield_assessment_rules(sv["battlefield_assessment"])
     rules += build_attachable_projectiles_rules(sv["attachable_projectiles"])
+    rules += build_power_of_inheritance_rules(sv)
     burst_percent = power_of_inheritance_stage3_burst_percent(sv["power_of_inheritance"])
     return rules, burst_percent
 
@@ -407,6 +410,7 @@ _SCHEDULED_NUKE_BUILDERS = {
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
     "laplace-signature": lambda sv: laplace_signature.build_buster_scheduled_nukes(sv),  # per-tick true-damage rider
+    "rapi-red-hood": lambda sv: build_attachable_projectiles_scheduled_nukes(sv),  # Attachable Projectiles launcher
 }
 
 # A Nikke whose burst swaps her weapon profile for a window (weapon-mode
