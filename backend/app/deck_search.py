@@ -192,7 +192,10 @@ _TIER_SLOT = {1: 0, 2: 1, 3: 4}
 
 
 def _swap_slot(reference, unit):
-    """Index in `reference` that swapping `unit` in should overwrite.
+    """Index in `reference` that swapping `unit` in should overwrite, or
+    None if no single-slot swap can seat `unit` without also seating a
+    MODE_VARIANTS sibling of it.
+
     Normally the unit's tier default (B3 replaces the reference's weakest
     B3, the last one). But if a MODE_VARIANTS sibling of `unit` already sits
     in a different reference slot (e.g. the reference's first, non-last B3
@@ -201,12 +204,32 @@ def _swap_slot(reference, unit):
     variants present at once, the exact clash _no_variant_clash forbids for
     real candidate decks. Swapping over the sibling (rather than skipping the
     unit) still gives it a real marginal score: how it performs standing in
-    for its own sibling."""
+    for its own sibling.
+
+    That sibling swap-over is only safe within `unit`'s own tier family,
+    though: VARIANT_BURST_TIERS lets one base's two variants span different
+    burst tiers (e.g. Rapi: Red Hood's B1 stand-in vs. its B3 self), and
+    every reference slot's occupant's burst_tier already IS that slot's tier
+    family (_reference_deck's fixed slot-0-tier1/slot-1-tier2/slots-2-4-tier3
+    layout) - comparing burst_tier directly, instead of a second slot->tier
+    table, can't drift out of sync with that layout. Swapping over a
+    cross-tier sibling would misplace the unit's own tier (e.g. a B3 unit
+    evicting the reference's only B1); falling back to the tier default
+    instead would leave that sibling seated too, still a two-variant clash.
+    Neither is safe, so the swap is refused."""
     base = _VARIANT_GROUP.get(unit.slug)
     if base is not None:
+        same_tier_slot, cross_tier_sibling = None, False
         for i, seated in enumerate(reference):
             if _VARIANT_GROUP.get(seated.slug) == base:
-                return i
+                if seated.burst_tier == unit.burst_tier:
+                    same_tier_slot = i
+                    break
+                cross_tier_sibling = True
+        if same_tier_slot is not None:
+            return same_tier_slot
+        if cross_tier_sibling:
+            return None
     return _TIER_SLOT[unit.burst_tier]
 
 
@@ -214,11 +237,16 @@ def _measure_against(reference, unit, boss, baseline):
     # Swap the candidate into its tier slot and score the marginal change
     # over the reference's baseline. A unit already in the reference leaves
     # the deck unchanged, so its marginal contribution is 0.0 with no
-    # re-simulation.
+    # re-simulation. A unit with no safe single-slot swap (_swap_slot
+    # returns None for a cross-tier MODE_VARIANTS sibling) can't be measured
+    # against this reference at all, so it also scores 0.0.
     if unit.slug in {u.slug for u in reference}:
         return 0.0
+    slot = _swap_slot(reference, unit)
+    if slot is None:
+        return 0.0
     deck = list(reference)
-    deck[_swap_slot(reference, unit)] = unit
+    deck[slot] = unit
     return evaluate_deck(deck, boss)["total_damage"] - baseline
 
 
@@ -245,8 +273,16 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
                 # so its marginal contribution is 0.0 with no re-simulation
                 scores[unit.slug] = max(scores.get(unit.slug, 0.0), 0.0)
                 continue
+            slot = _swap_slot(reference, unit)
+            if slot is None:
+                # no safe single-slot swap exists (cross-tier MODE_VARIANTS
+                # sibling elsewhere in the reference, _swap_slot) - still
+                # needs a scores entry so the tier-cap sort below never
+                # KeyErrors on it.
+                scores.setdefault(unit.slug, 0.0)
+                continue
             deck = list(reference)
-            deck[_swap_slot(reference, unit)] = unit
+            deck[slot] = unit
             candidates.append(unit)
             swapped.append(deck)
         for unit, total in zip(candidates, _score_batch(swapped, boss, pool)):

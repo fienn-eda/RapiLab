@@ -309,6 +309,64 @@ def test_prune_swap_in_never_measures_two_variants_together(monkeypatch):
         assert not {"unit-a-mg", "unit-a-snipe"} <= set(deck)
 
 
+def test_swap_slot_refuses_a_cross_tier_variant_sibling(monkeypatch):
+    # VARIANT_BURST_TIERS lets one base's two variants sit in different
+    # burst tiers (e.g. Rapi: Red Hood's B1 stand-in vs. its B3 self). If the
+    # tier-1 variant already seats the reference's tier-1 slot, _swap_slot
+    # must not hand back that slot for the tier-3 sibling - overwriting it
+    # would drop the reference to zero tier-1 units (deck_search.py's
+    # controller-added Task 6 item). The tier-3 default slot isn't safe
+    # either: it would leave the tier-1 sibling seated too, so no clean
+    # single-slot swap exists and _swap_slot must say so.
+    import app.deck_search as ds
+    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+                        {"unit-a-b1": "unit-a", "unit-a-b3": "unit-a"})
+    reference = [
+        FakeUnit("unit-a-b1", 1),  # tier-1 variant seated at the tier-1 slot
+        FakeUnit("b2", 2),
+        FakeUnit("b3x", 3), FakeUnit("b3y", 3), FakeUnit("b3z", 3),
+    ]
+    unit = FakeUnit("unit-a-b3", 3)  # its tier-3 sibling
+    assert ds._swap_slot(reference, unit) is None
+
+
+def test_prune_cross_tier_variant_never_breaks_shape_or_clashes(monkeypatch):
+    # Integration version of the above through the real swap-in loop:
+    # prune_candidate_pool must never hand evaluate_deck a deck that either
+    # drops below one tier-1 unit (shape violation) or seats both "unit-a"
+    # variants at once (the exact clash _no_variant_clash forbids for real
+    # candidate decks).
+    import app.deck_search as ds
+    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+                        {"unit-a-b1": "unit-a", "unit-a-b3": "unit-a"})
+    roster = [
+        FakeSpec("unit-a-b1", 1),  # sole tier-1 unit -> seats the reference's tier-1 slot
+        FakeSpec("b2", 2),
+        FakeSpec("b3c", 3, base_stats={"atk": 300.0}),
+        FakeSpec("b3d", 3, base_stats={"atk": 200.0}),
+        FakeSpec("b3e", 3, base_stats={"atk": 100.0}),
+        # lowest prior of the tier-3 group -> a swap-in candidate, not a
+        # reference occupant; its base sibling is unit-a-b1 above.
+        FakeSpec("unit-a-b3", 3, base_stats={"atk": 50.0}),
+    ]
+
+    seen_decks = []
+
+    def scorer(ordered_deck, boss):
+        seen_decks.append(list(ordered_deck))
+        return {"total_damage": 1.0, "damage_log": []}
+
+    monkeypatch.setattr(ds, "evaluate_deck", scorer)
+    ds.prune_candidate_pool(roster, BossProfile())
+
+    assert seen_decks  # sanity: at least the reference baseline was scored
+    for deck in seen_decks:
+        slugs = {u.slug for u in deck}
+        assert not {"unit-a-b1", "unit-a-b3"} <= slugs
+        tiers = [u.burst_tier for u in deck]
+        assert tiers[0] == 1 and tiers[1] == 2 and tiers[2:] == [3, 3, 3]
+
+
 def test_prune_keeps_synergy_partners_together(monkeypatch):
     import app.deck_search as ds
     roster = _big_fake_roster()
