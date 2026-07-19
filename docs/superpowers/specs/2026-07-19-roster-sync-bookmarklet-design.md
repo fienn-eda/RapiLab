@@ -81,11 +81,17 @@
 **로직을 최소로 유지하는 것이 이 컴포넌트의 설계 원칙이다.** 판단·조립·검증은 전부 서버로 미룬다.
 이유는 아래 "운영 항목"의 재설치 부담 때문이다.
 
-### ③ `/import` 수신 페이지 (프론트, 신규)
+### ③ postMessage 수신 (프론트, 신규)
 
 `event.origin`을 검증한 뒤(blablalink 출처만 허용) 원시 payload를 백엔드로 보내고, 돌아온
 `roster.json` 형태를 기존 `parseRosterJson` → `mergeCollectorDrafts` → `localStorage`에 흘린다.
 수집기 임포트 경로와 동일한 병합 규칙을 타므로, 스탯은 덮어쓰고 `id`/`core_level`은 보존된다.
+
+**별도 `/import` 라우트를 두지 않는다.** 앱에 라우터가 없는 단일 페이지 구조이므로(2026-07-19
+확인) 라우팅을 새로 도입하는 대신 앱 자체가 수신한다. 북마크릿이 `window.open(앱 origin)`으로
+앱을 열면, 앱은 마운트 시 `window.opener`에게 준비 완료(`nikke-sync-ready`)를 알리고, 북마크릿은
+그 신호를 받은 뒤에 payload(`nikke-sync-payload`)를 보낸다 — 창이 뜨기 전에 보내 유실되는 것을
+막는 핸드셰이크다.
 
 ### ④ `POST /api/assemble-roster` (백엔드, 신규)
 
