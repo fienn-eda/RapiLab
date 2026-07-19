@@ -16,7 +16,9 @@ from app.deck_allocation import allocate_decks
 from app.deck_search import BossProfile, search_best_decks
 from app.models import UserNikkeState
 from app.overload_effects import NAME_TO_STAT
+from app.roster_assembly import assemble_roster, load_directory, to_roster_json
 from app.sim_pool import SimPool
+from app.stat_assembly import load_stat_tables
 from app.user_roster import load_roster
 
 
@@ -57,6 +59,13 @@ class RecommendRaidResponse(BaseModel):
     leftover_slugs: list[str]
 
 
+class AssembleRosterRequest(BaseModel):
+    """The three raw blablalink payloads the bookmarklet collects, verbatim."""
+    owned: list[dict]
+    character_details: list[dict]
+    recycle_room_researches: list[dict]
+
+
 app = FastAPI(title="NIKKE Deck Builder")
 app.add_middleware(
     CORSMiddleware,
@@ -64,6 +73,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Reference tables are read-only and identical for every request, so load once.
+_STAT_TABLES = load_stat_tables()
+_DIRECTORY = load_directory()
 
 
 def _reject_unknown_overload_options(roster: list[UserNikkeState]) -> None:
@@ -151,3 +164,11 @@ def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
         excluded_slugs=excluded,
         leftover_slugs=result["leftover_slugs"],
     )
+
+
+@app.post("/api/assemble-roster")
+def assemble_roster_endpoint(request: AssembleRosterRequest) -> dict:
+    """Assemble a bookmarklet-collected roster. Stateless: the request body is
+    never persisted - see the privacy posture in the sub-project 4 spec."""
+    units = assemble_roster(_STAT_TABLES, _DIRECTORY, request.model_dump())
+    return to_roster_json(units)
