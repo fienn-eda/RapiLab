@@ -246,3 +246,45 @@ def test_a_delayed_unit_alone_in_its_tier_stalls_rather_than_bursting_early():
     events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=60.0, mode="auto")
 
     assert not any(e["type"] == "burst" for e in events)
+
+
+def test_min_interval_stretches_a_units_effective_cooldown():
+    # A unit held until a resource refills re-fires on the REFILL time, not
+    # its cooldown, when the refill is the slower of the two (Elegg: her
+    # burst spends 9 ghosts that come back at 6s each = 54s, against a 40s
+    # cooldown).
+    deck = make_deck()
+    deck[2]["burst_delay"] = {"not_before": 78.0, "min_interval": 54.0}
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=2.0, fight_duration=180.0, mode="auto")
+
+    fires = [e["time"] for e in events if e["type"] == "burst" and e["slug"] == "b3_unit_a"]
+    assert fires[0] >= 78.0
+    assert all(b - a >= 54.0 for a, b in zip(fires, fires[1:]))
+    assert len(fires) == 2
+
+
+def test_min_interval_below_the_cooldown_never_shortens_it():
+    deck = make_deck()
+    deck[2]["burst_delay"] = {"min_interval": 5.0}
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=180.0, mode="auto")
+
+    fires = [e["time"] for e in events if e["type"] == "burst" and e["slug"] == "b3_unit_a"]
+    assert all(b - a >= 40.0 for a, b in zip(fires, fires[1:]))
+
+
+def test_min_interval_is_measured_from_the_real_fire_time_not_a_cdr_shifted_one():
+    # Cooldown-reduction pulses rewind last_used_at, which is right for a
+    # cooldown but wrong for a min_interval: Elegg's ghosts refill on wall
+    # clock, and no ally's CDR makes them come back faster.
+    deck = make_deck()
+    deck[2]["burst_delay"] = {"min_interval": 54.0}
+
+    events = simulate_burst_cycle(
+        deck, gauge_charge_time=2.0, fight_duration=180.0, mode="auto",
+        on_full_burst_end=lambda time: {member["slug"]: 10.0 for member in deck},
+    )
+
+    fires = [e["time"] for e in events if e["type"] == "burst" and e["slug"] == "b3_unit_a"]
+    assert all(b - a >= 54.0 for a, b in zip(fires, fires[1:]))

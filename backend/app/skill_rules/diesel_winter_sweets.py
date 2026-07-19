@@ -90,7 +90,7 @@ SKILL_VALUE_MANIFESTS = {
 
 # Highlight is entered by NOT bursting into the first Full Burst, so the
 # scheduler must genuinely hold her back for it (see the module docstring).
-BURST_DELAY = {"diesel-winter-sweets-highlight": {"skip_cycles": 1}}
+HIGHLIGHT_BURST_DELAY = {"skip_cycles": 1}
 
 
 def _f(values, key, slot):

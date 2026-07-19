@@ -91,7 +91,7 @@ def assemble_simulation_inputs(ordered_deck):
     for spec in ordered_deck:
         member = {"slug": spec.slug, "burst_tier": spec.burst_tier, "element": spec.element,
                   "cooldown": spec.burst_cooldown, "weapon": spec.weapon}
-        burst_delay = get_burst_delay(spec.slug)
+        burst_delay = get_burst_delay(spec.slug, spec.skill_values)
         if burst_delay:
             member["burst_delay"] = burst_delay
         deck.append(member)

@@ -18,10 +18,12 @@ firing it the instant the cooldown allows, for units the player deliberately
 saves: `{"skip_cycles": N}` keeps it out of the opening N cycles (Diesel:
 Winter Sweets, whose locked Intro/Highlight state is decided by whether she
 bursts into the first Full Burst), `{"not_before": T}` holds it until T
-seconds (Elegg: Boom and Shock, held until her Ghosts reach the cap). The
-two forms are not interchangeable - one unit's reason is a cycle count and
-the other's is a resource's fill time, and a fight's cycle length varies
-with the deck's cooldowns.
+seconds, and `{"min_interval": S}` stretches its EFFECTIVE cooldown to S when
+the resource it waits on refills slower than the cooldown clears (Elegg: held
+until her Ghosts reach the cap, and again for each refill after her burst
+spends them). The cycle-count and the time forms are not interchangeable -
+one unit's reason is a cycle count and the other's is a resource's fill time,
+and a fight's cycle length varies with the deck's cooldowns.
 
 A deck missing any member of a burst tier can never complete a cycle at
 all - that's the one case still reported as "full_burst_missed" and ends
@@ -34,7 +36,7 @@ the caller.
 FULL_BURST_DURATION = 10.0
 
 
-def _ready_at(member, last_used_at, cycle_index):
+def _ready_at(member, last_used_at, last_fired_at, cycle_index):
     """When `member` may next burst: its plain cooldown, pushed later by any
     `burst_delay`. Returns infinity while a `skip_cycles` delay still holds,
     which drops the member out of its tier for that cycle - if it is the
@@ -46,6 +48,12 @@ def _ready_at(member, last_used_at, cycle_index):
         return ready
     if cycle_index < delay.get("skip_cycles", 0):
         return float("inf")
+    if "min_interval" in delay:
+        # Measured from when the unit ACTUALLY fired, not from the
+        # CDR-rewound last_used_at: a min_interval stands for a resource
+        # refilling on wall clock, which no ally's cooldown reduction speeds
+        # up.
+        ready = max(ready, last_fired_at[member["slug"]] + delay["min_interval"])
     return max(ready, delay.get("not_before", float("-inf")))
 
 
@@ -72,6 +80,9 @@ def simulate_burst_cycle(
     """
     gap = 0.0 if mode == "auto" else 0.1
     last_used_at = {member["slug"]: float("-inf") for member in deck}
+    # Mirrors last_used_at but is never rewound by cooldown reduction, so a
+    # burst_delay's min_interval measures real elapsed time.
+    last_fired_at = dict(last_used_at)
     members_by_tier = {
         tier: [member for member in deck if member["burst_tier"] == tier] for tier in (1, 2, 3)
     }
@@ -90,7 +101,10 @@ def simulate_burst_cycle(
             break
 
         tier_ready_time = {
-            tier: min(_ready_at(member, last_used_at, cycle_index) for member in members_by_tier[tier])
+            tier: min(
+                _ready_at(member, last_used_at, last_fired_at, cycle_index)
+                for member in members_by_tier[tier]
+            )
             for tier in (1, 2, 3)
         }
         fire_time = max(gauge_ready, *tier_ready_time.values())
@@ -107,11 +121,12 @@ def simulate_burst_cycle(
             eligible = [
                 member
                 for member in members_by_tier[tier]
-                if _ready_at(member, last_used_at, cycle_index) <= fire_time
+                if _ready_at(member, last_used_at, last_fired_at, cycle_index) <= fire_time
             ]
             chosen = eligible[0]
             events.append({"type": "burst", "tier": tier, "slug": chosen["slug"], "time": fire_time})
             last_used_at[chosen["slug"]] = fire_time
+            last_fired_at[chosen["slug"]] = fire_time
             if on_tier_fire:
                 on_tier_fire(tier, chosen["slug"], fire_time)
             if tier == 3:

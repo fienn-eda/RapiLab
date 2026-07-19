@@ -6,7 +6,7 @@ import pytest
 
 from app.effects import EffectRegistry
 from app.skill_rules.diesel_winter_sweets import (
-    BURST_DELAY,
+    HIGHLIGHT_BURST_DELAY,
     build_diesel_highlight_rules,
     build_diesel_intro_rules,
     build_diesel_burst_dot,
@@ -116,7 +116,7 @@ def test_crit_damage_does_not_restack_on_later_full_bursts():
 
 
 def test_only_highlight_carries_the_skip_a_cycle_burst_delay():
-    assert BURST_DELAY == {DIESEL_HIGHLIGHT: {"skip_cycles": 1}}
+    assert HIGHLIGHT_BURST_DELAY == {"skip_cycles": 1}
 
 
 # --- Part-destruction bracket ------------------------------------------

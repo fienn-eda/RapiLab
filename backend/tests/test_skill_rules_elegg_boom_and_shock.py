@@ -4,6 +4,7 @@
 from app.effects import EffectRegistry
 from app.skill_rules.elegg_boom_and_shock import (
     build_elegg_boom_and_shock_rules,
+    build_elegg_burst_delay,
     build_elegg_ghost_resources,
     build_ghostbuster_scheduled_nukes,
     build_thirteen_ghosts_dynamic_hit_count_nukes,
@@ -134,3 +135,48 @@ def test_burst_grants_self_atk_for_ten_seconds():
     assert registry.total_for("atk_percent", ELEGG, 19.9) == 0.40
     assert registry.total_for("atk_percent", ELEGG, 20.1) == 0.0
     assert registry.total_for("atk_percent", WATER_ALLY, 12.0) == 0.0  # self-scoped
+
+
+# --- Held until the ghost cap ------------------------------------------
+
+
+def test_her_burst_is_held_until_the_ghosts_reach_the_cap():
+    # 13 Ghosts hits 13 times at the cap and only 6 below it, so firing her
+    # the instant the cooldown allows throws away most of her burst. The
+    # delay is derived from the fill, not hardcoded: cap x capture interval.
+    delay = build_elegg_burst_delay(ELEGG_VALUES)
+
+    # cap 13 x 6s to the first cap; spend 9 x 6s to refill for each one after,
+    # which outlasts her 40s cooldown and sets her real cadence.
+    assert delay == {"not_before": 78.0, "min_interval": 54.0}
+
+
+def test_end_to_end_she_bursts_twice_and_always_at_the_ghost_cap():
+    """The point of the delay: both her bursts take the 13-hit branch. Fired
+    on cooldown instead she would burst five times over the same fight, four
+    of them on the 6-hit branch."""
+    from app.raid_simulator import simulate_raid
+    from app.roster import NikkeSpec, assemble_simulation_inputs
+    from tests.test_roster import anis_star_spec, helm_spec, takina_spec
+
+    elegg = NikkeSpec(
+        slug="elegg-boom-and-shock", burst_tier=3, burst_cooldown=40.0,
+        element="Water", weapon="MG",
+        base_stats={"atk": 350000, "def": 60000, "max_hp": 10000000},
+        skill_values={k: v for k, v in ELEGG_VALUES.items() if k != "caster_atk"},
+        weapon_stats={"weapon": "MG", "damage_percent": 10.0, "max_ammo": 300, "reload_time": 2.0},
+    )
+    deck = [anis_star_spec(), takina_spec(), elegg, helm_spec()]
+    result = simulate_raid(
+        **assemble_simulation_inputs(deck),
+        enemy_def=0, gauge_charge_time=2.0, fight_duration=180.0, mode="manual",
+    )
+
+    fires = [
+        e["time"] for e in result["events"]
+        if e["type"] == "burst" and e["slug"] == "elegg-boom-and-shock"
+    ]
+    assert len(fires) == 2
+    assert fires[0] >= 78.0
+    # 9 ghosts spent, back at 6s each: the second burst is at the cap again.
+    assert fires[1] - fires[0] >= 54.0

@@ -45,7 +45,7 @@ from app.skill_rules.asuka_shikinami_langley_wille import (
 )
 from app.skill_rules.blanc import build_blanc_rules
 from app.skill_rules.diesel_winter_sweets import (
-    BURST_DELAY as _DIESEL_BURST_DELAY,
+    HIGHLIGHT_BURST_DELAY as _DIESEL_BURST_DELAY,
     build_diesel_burst_dot,
     build_diesel_full_burst_dot,
     build_diesel_highlight_rules,
@@ -137,6 +137,7 @@ from app.skill_rules.ein import (
 )
 from app.skill_rules.elegg_boom_and_shock import (
     build_elegg_boom_and_shock_rules,
+    build_elegg_burst_delay,
     build_elegg_ghost_resources,
     build_ghostbuster_scheduled_nukes,
     build_thirteen_ghosts_dynamic_hit_count_nukes,
@@ -460,14 +461,20 @@ MODE_VARIANTS: dict[str, tuple[str, ...]] = {
 }
 
 # Units the player deliberately holds back rather than bursting the instant
-# the cooldown allows, keyed by slug (see burst_cycle's `burst_delay`).
-BURST_DELAYS: dict[str, dict] = {
-    **_DIESEL_BURST_DELAY,
+# the cooldown allows (see burst_cycle's `burst_delay`). Builders, not plain
+# specs, because a delay may be derived from the unit's own skill values -
+# Elegg waits out her ghost fill, whose length is cap x capture interval.
+_BURST_DELAY_BUILDERS = {
+    "diesel-winter-sweets-highlight": lambda sv: _DIESEL_BURST_DELAY,
+    "elegg-boom-and-shock": lambda sv: build_elegg_burst_delay(sv),
 }
 
 
-def get_burst_delay(slug):
-    return BURST_DELAYS.get(slug)
+def get_burst_delay(slug, skill_values):
+    builder = _BURST_DELAY_BUILDERS.get(slug)
+    if builder is None:
+        return None
+    return builder(skill_values)
 
 
 # A variant seated in a different burst-rotation slot than the character's

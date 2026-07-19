@@ -81,6 +81,23 @@ def _capture_interval(values):
     return _f(values, "hello_ghost", 7)
 
 
+def build_elegg_burst_delay(values):
+    """13 Ghosts hits 13 times at the ghost cap and only 6 below it, so she is
+    played by bursting AT the cap every time rather than the instant her
+    cooldown allows (Fienn, 2026-07-19: twice over a fight, once the stacks
+    are up). With the deterministic fill both halves of that fall out of the
+    same two values: the first cap is reached at `cap * capture interval`
+    (78s), and each later one takes `spend at cap * capture interval` (54s)
+    to refill - longer than her 40s cooldown, which is why her effective
+    cadence is the refill, not the cooldown."""
+    interval = _capture_interval(values)
+    spend_at_cap = _f(values, "thirteen_ghosts", 9)
+    return {
+        "not_before": ghost_cap(values) * interval,
+        "min_interval": spend_at_cap * interval,
+    }
+
+
 def build_elegg_ghost_resources(values):
     """Ghosts: +1 every capture interval (see module docstring for why the
     100-hit requirement is treated as always met), capped, spent by her burst.
