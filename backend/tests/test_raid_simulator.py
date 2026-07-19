@@ -2531,3 +2531,25 @@ def test_per_shot_every_outside_full_burst_does_not_fire_on_a_shot_exactly_at_fb
     # (t>10.0) are genuinely outside Full Burst and DO fire the rule, so this
     # isn't just "the rule never fires".
     assert [e for e in ps if e["time"] > 10.0]
+
+
+def test_scheduled_nuke_context_exposes_full_burst_windows():
+    seen = {}
+
+    def schedule(context, fight_duration):
+        seen["windows"] = list(context.full_burst_windows)
+        return []
+
+    simulate_raid(
+        deck=[{"slug": "buffer", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+               {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+               {"slug": "gunner", "burst_tier": 3, "element": "Iron", "cooldown": 40.0, "weapon": "SR"}],
+        rules_by_slug={}, burst_damage_percents={},
+        base_stats={"buffer": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+                    "midtier": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+                    "gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=60.0,
+        scheduled_nukes={"gunner": [{"schedule": schedule, "percent": 100.0}]},
+    )
+    assert seen["windows"], "full burst windows must be visible to schedules"
+    assert all(end > start for start, end in seen["windows"])

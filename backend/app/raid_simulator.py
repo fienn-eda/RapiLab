@@ -325,6 +325,7 @@ def simulate_raid(
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
         boss_element=boss_element,
         part_destructible=part_destructible,
+        core_hittable=core_hittable,
     )
     registry = EffectRegistry()
     # Damage is RECORDED as events during phase 1 (buffs are applied but no
@@ -569,6 +570,7 @@ def simulate_raid(
         (e["time"] for e in events if e["type"] == "full_burst_start"),
         (e["time"] for e in events if e["type"] == "full_burst_end"),
     ))
+    context.full_burst_windows = full_burst_windows
 
     shot_times_by_slug = {}
     last_bullet_times_by_slug = {}
