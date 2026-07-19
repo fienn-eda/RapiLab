@@ -10,8 +10,14 @@ overload_decode}.py` + `stat_assembly.py`에 HP 추가(measured HP로 159/159 �
 경로에 never-invent 원칙상 옳지만 Fienn이 안 굴린 입력에 KeyError를 내는 지점 4곳 —
 ① `overload_value` 미관측 `(타입,레벨)` · ② `assemble_overload` 미등록 타입명 · ③
 `corporation_atk`/`research_hp`의 `research_ranks[tid]` 직접 인덱싱 · ④ `blablalink_api`
-outpost 직접 인덱싱. 멀티유저엔 **CDN 오버로드 1~15 전체 커브 + 완전 타입명표 + 방어적
-research lookup**이 필요(아래 "값 테이블" 소스 (b)). 서브프로젝트 3~7 사안.
+outpost 직접 인덱싱.
+
+**해결됨 (2026-07-19, 브랜치 `wip/multiuser-preconditions`).** 이 문단이 원래 요구했던
+"CDN 오버로드 1~15 전체 커브"는 **불필요한 것으로 판명됐다** — 오버로드 값 테이블은 타입별로
+정확한 등차수열이라, 커밋된 부분 테이블의 끝점만으로 1~15가 전부 결정된다(관측 전 구간
+오차 <0.01pp, 타입 8/9의 lv15 교차검증). CDN 스냅샷은 **미관측 효과 타입의 이름표**를 얻는
+용도로만 여전히 유효하다. ②는 경고 후 해당 라인 스킵, ③④는 기본값/방어적 lookup으로 처리했다.
+근거와 결정 기록: `docs/insights.md`, `docs/decisions.md`(2026-07-19).
 
 ## 위치와 범위
 
