@@ -1,8 +1,8 @@
 """Ground-truth tests for the solo-raid stat calculator.
 
 Numbers here are measured, not invented: base curves come from the committed
-public table snapshot, and the expected ATK is what the collector scraped off
-ShiftyPad for Fienn's roster.
+public table snapshot, and the expected ATK and HP are what the collector scraped
+off ShiftyPad for Fienn's roster.
 """
 import json
 from pathlib import Path
@@ -18,12 +18,27 @@ from app.stat_assembly import (
     owns_favorite_item,
     breakthrough_multiplier,
     base_atk,
+    core_flat_atk,
     assemble_atk,
+    affinity_hp,
+    research_hp,
+    equipment_hp,
+    cube_hp,
+    collectible_hp,
+    base_hp,
+    core_flat_hp,
+    assemble_hp,
     load_stat_tables,
 )
 
 # Rapi: Red Hood - Attacker, grade 3 / core 6, measured 143,543 ATK at level 400.
 RAPI_RED_HOOD_RAID400_ATK = 143543
+# The committed public directory snapshot; the ground truth is keyed by name, and
+# resource_id is what the calculator identifies a unit by.
+DIRECTORY = (
+    Path(__file__).resolve().parents[2]
+    / "tools" / "collect-blablalink" / "nikke-directory.json"
+)
 
 
 @pytest.fixture(scope="module")
@@ -68,16 +83,17 @@ def test_breakthrough_multiplier_is_multiplicative(grade, core, expected):
 
 
 def test_assemble_atk_reproduces_a_measured_unit(tables):
-    # The flat contribution of gear/cube/collectible/affinity is not yet derived,
-    # so it is supplied here as the residual it is known to be. What this pins is
-    # the part that IS derived: the base curve and the breakthrough multiplier.
+    # Rapi: Red Hood's gear/cube/collectible/affinity contribution, supplied as
+    # the residual it is measured to be. What this pins is the part that IS
+    # derived: the base curve, the breakthrough multiplier and the core flat.
     atk = assemble_atk(
         tables,
         character_class="Attacker",
         level=400,
         grade=3,
         core=6,
-        extra_flat=35543.5,
+        corporation_sub_type="OVERSPEC",
+        extra_flat=35460,
     )
     assert atk == pytest.approx(RAPI_RED_HOOD_RAID400_ATK, abs=1.0)
 
@@ -85,8 +101,67 @@ def test_assemble_atk_reproduces_a_measured_unit(tables):
 def test_assemble_atk_without_extra_flat_undershoots_a_geared_unit(tables):
     # Guards against quietly treating the missing flat term as zero: a geared
     # unit must NOT come out right when it is omitted.
-    atk = assemble_atk(tables, character_class="Attacker", level=400, grade=3, core=6)
+    atk = assemble_atk(
+        tables, character_class="Attacker", level=400, grade=3, core=6,
+        corporation_sub_type="OVERSPEC",
+    )
     assert atk < RAPI_RED_HOOD_RAID400_ATK
+
+
+# --- per-core flat ------------------------------------------------------------
+
+
+def test_core_flat_atk_defaults_to_the_class_value():
+    assert core_flat_atk("Attacker") == pytest.approx(118.95)
+    assert core_flat_atk("Supporter") == pytest.approx(113.29)
+    assert core_flat_atk("Defender") == pytest.approx(107.87)
+
+
+def test_pilgrims_get_more_atk_per_core(tables):
+    # Scarlet and the other four Pilgrim Attackers all measure ~143 per core
+    # against the 118.95 every other SSR Attacker measures.
+    assert core_flat_atk("Attacker", corporation="PILGRIM") == pytest.approx(142.90)
+    assert core_flat_atk("Defender", corporation="PILGRIM") == pytest.approx(127.22)
+    assert core_flat_atk("Attacker", corporation="ELYSION") == pytest.approx(118.95)
+
+
+def test_overspec_units_sit_between_their_class_and_a_pilgrim():
+    # Rapi: Red Hood and the other two awakened Counters carry the game's own
+    # corporation_sub_type: OVERSPEC and measure 132.95 as ELYSION Attackers.
+    assert core_flat_atk("Attacker", corporation_sub_type="OVERSPEC") == pytest.approx(132.95)
+    assert core_flat_atk("Defender", corporation_sub_type="OVERSPEC") == pytest.approx(116.79)
+    # Every Pilgrim is OVERSPEC too, and worth more than a Counter.
+    assert core_flat_atk(
+        "Attacker", corporation="PILGRIM", corporation_sub_type="OVERSPEC"
+    ) == pytest.approx(142.90)
+
+
+def test_a_units_own_measured_core_flat_wins_over_every_rule():
+    # Vesti is a plain ELYSION Attacker by every field we can read, yet measures
+    # 94.22 rather than the class's 118.95.
+    assert core_flat_atk("Attacker", resource_id=91) == pytest.approx(94.22)
+    assert core_flat_atk("Attacker", corporation="ELYSION") == pytest.approx(118.95)
+
+
+def test_core_flat_atk_rejects_an_unknown_class():
+    with pytest.raises(KeyError):
+        core_flat_atk("Healer")
+
+
+def test_an_unmeasured_pilgrim_class_refuses_to_guess():
+    # No Pilgrim Supporter in the ground truth has a core, so its per-core flat
+    # is unknown. Answering with the class value would be wrong by ~14 per core.
+    with pytest.raises(KeyError):
+        core_flat_atk("Supporter", corporation="PILGRIM")
+
+
+def test_a_coreless_unit_needs_no_identity(tables):
+    # A unit with no cores never reaches the per-core flat, so an un-measured
+    # Pilgrim Supporter still assembles as long as it has no cores.
+    assert assemble_atk(
+        tables, character_class="Supporter", level=400, grade=3, core=0,
+        corporation="PILGRIM",
+    ) > 0
 
 
 # --- full-roster regression ---------------------------------------------------
@@ -102,6 +177,40 @@ def ground_truth():
 @pytest.fixture(scope="module")
 def ground_truth_ranks():
     return json.loads(FIXTURE.read_text(encoding="utf-8"))["account_research"]
+
+
+@pytest.fixture(scope="module")
+def identity():
+    """name -> the snapshot fields that select a unit's per-core flat."""
+    directory = json.loads(DIRECTORY.read_text(encoding="utf-8"))
+    return {
+        e["name_en"]: {
+            "resource_id": e["resource_id"],
+            "corporation_sub_type": e.get("corporation_sub_type"),
+        }
+        for e in directory
+    }
+
+
+def test_the_snapshot_carries_the_overspec_field(identity):
+    """A snapshot refreshed without `--deep` would drop corporation_sub_type.
+
+    Nothing else would fail: every OVERSPEC unit would quietly fall back to its
+    class value and read ~14-24 ATK per core low. So assert the field is there
+    and that it still marks the units it is known to mark.
+    """
+    overspec = {n for n, e in identity.items() if e["corporation_sub_type"] == "OVERSPEC"}
+    assert {"Rapi: Red Hood", "Anis: Star", "Neon: Vision Eye"} <= overspec
+    # Every Pilgrim measured is OVERSPEC, which is why corporation alone settles
+    # a Pilgrim in core_flat_atk.
+    assert {"Scarlet", "Modernia", "Red Hood", "Noah", "Crown", "Cinderella"} <= overspec
+
+
+def test_every_measured_unit_is_in_the_directory(ground_truth, identity):
+    # The join below is only sound if it is total - a missed name would silently
+    # fall back to the class default and hide a per-unit core flat.
+    missing = sorted({u["name_en"] for u in ground_truth} - set(identity))
+    assert missing == []
 
 
 def test_ground_truth_spans_two_levels(ground_truth):
@@ -173,7 +282,9 @@ def test_corporation_atk_is_per_rank(tables, ground_truth_ranks):
     assert corporation_atk(tables, "PILGRIM", ground_truth_ranks) == 4750
 
 
-def test_flat_model_reproduces_every_ungeared_unit(tables, ground_truth, ground_truth_ranks):
+def test_flat_model_reproduces_every_ungeared_unit(
+    tables, ground_truth, ground_truth_ranks, identity
+):
     """With no gear/cube/collectible, measured ATK must fall out of the model.
 
     These units isolate the terms derived so far, so an error in affinity or
@@ -189,6 +300,8 @@ def test_flat_model_reproduces_every_ungeared_unit(tables, ground_truth, ground_
             level=400,
             grade=u["grade"],
             core=u["core"],
+            corporation=u["corporation"],
+            **identity[u["name_en"]],
             extra_flat=(
                 affinity_atk(tables, u["class"], u["attractive_lv"])
                 + corporation_atk(tables, u["corporation"], ground_truth_ranks)
@@ -249,7 +362,9 @@ def test_equipment_of_the_units_own_corporation_is_worth_30_percent_more(tables)
     )
 
 
-def test_gear_only_units_mostly_reproduce_exactly(tables, ground_truth, ground_truth_ranks):
+def test_gear_only_units_reproduce_exactly(
+    tables, ground_truth, ground_truth_ranks, identity
+):
     """End-to-end over every unit with gear but no cube or collectible."""
     exact, off = 0, []
     for u in ground_truth:
@@ -271,21 +386,15 @@ def test_gear_only_units_mostly_reproduce_exactly(tables, ground_truth, ground_t
         )
         predicted = assemble_atk(
             tables, character_class=u["class"], level=400,
-            grade=u["grade"], core=u["core"], extra_flat=flat,
+            grade=u["grade"], core=u["core"], corporation=u["corporation"],
+            **identity[u["name_en"]], extra_flat=flat,
         )
         delta = u["measured"]["raid400_atk"] - predicted
         exact += abs(delta) < 1.0
         if abs(delta) >= 1.0:
             off.append((u["name_en"], round(delta, 1)))
-    assert exact >= 70, f"regression: only {exact} exact (was 70)"
-    # Four units still miss, and all four have cores: two Attackers behave as if
-    # their per-core flat were 94 rather than 119, and two more sit between the
-    # class values. Some sub-class factor is still unaccounted for. Pinned by
-    # name so the list cannot quietly grow.
-    assert sorted(n for n, _ in off) == [
-        "D: Killer Wife", "Poli", "Rosanna", "Vesti",
-    ], off
-    assert all(abs(d) < 100 for _, d in off), off
+    assert exact >= 74, f"regression: only {exact} exact (was 74)"
+    assert off == [], off
 
 
 # --- cube and collectible -----------------------------------------------------
@@ -320,7 +429,9 @@ def test_a_favorite_item_is_priced_at_the_curve_maximum(tables):
     assert not owns_favorite_item(100202)
 
 
-def test_full_model_reproduces_most_of_the_roster(tables, ground_truth, ground_truth_ranks):
+def test_full_model_reproduces_the_whole_roster(
+    tables, ground_truth, ground_truth_ranks, identity
+):
     """Every term together, over all 159 collected units."""
     exact, off = 0, []
     for u in ground_truth:
@@ -340,13 +451,85 @@ def test_full_model_reproduces_most_of_the_roster(tables, ground_truth, ground_t
         )
         predicted = assemble_atk(
             tables, character_class=u["class"], level=400,
-            grade=u["grade"], core=u["core"], extra_flat=flat,
+            grade=u["grade"], core=u["core"], corporation=u["corporation"],
+            **identity[u["name_en"]], extra_flat=flat,
         )
         delta = u["measured"]["raid400_atk"] - predicted
         exact += abs(delta) < 1.0
         if abs(delta) >= 1.0:
             off.append((u["name_en"], round(delta, 1)))
-    assert exact >= 133, f"regression: only {exact}/159 exact (was 133)"
-    # What is left is small and mostly positive - a term worth a few hundred ATK
-    # at most. Bounded so it cannot silently grow.
-    assert all(abs(d) <= 220 for _, d in off), off
+    assert off == [], off
+    assert exact == 159, f"regression: only {exact}/159 exact"
+
+
+# --- HP model -----------------------------------------------------------------
+
+
+def test_base_hp_reads_the_class_curve(tables):
+    # HP curves are class-uniform too (Quency.hp == Rapi.hp), same as ATK.
+    assert base_hp(tables, "Attacker", 1) == 13500
+    assert base_hp(tables, "Supporter", 1) == 15000
+    assert base_hp(tables, "Defender", 1) == 16500
+
+
+def test_core_flat_hp_tiers(tables):
+    # Fitted against measured HP: class default, one OVERSPEC tier that also
+    # covers Pilgrims (HP does NOT split Pilgrim from OVERSPEC the way ATK does),
+    # and three per-unit outliers.
+    assert core_flat_hp("Attacker") == pytest.approx(6347.944)
+    assert core_flat_hp("Supporter") == pytest.approx(6294.678)
+    assert core_flat_hp("Defender") == pytest.approx(6601.727)
+    assert core_flat_hp("Attacker", corporation_sub_type="OVERSPEC") == pytest.approx(6663.054)
+    assert core_flat_hp("Attacker", corporation="PILGRIM") == pytest.approx(6663.054)
+    assert core_flat_hp("Defender", corporation="PILGRIM") == pytest.approx(6986.799)
+    assert core_flat_hp("Attacker", resource_id=91) == pytest.approx(5791.386)
+
+
+def test_research_hp_is_personal_plus_class_not_corporation(tables, ground_truth_ranks):
+    # HP account research lives in the Personal (account-wide) and Class-specific
+    # rows; the Corporation rows carry ATK, not HP (their hp column is 0). So
+    # research HP depends on class, and is the same across corporations.
+    # Attacker: Personal rank 310 * 450 + Class rank 176 * 750 = 271500.
+    assert research_hp(tables, "Attacker", ground_truth_ranks) == 271500
+    assert research_hp(tables, "Defender", ground_truth_ranks) == 276000
+    assert research_hp(tables, "Supporter", ground_truth_ranks) == 264750
+
+
+def test_affinity_hp_reads_the_hp_column(tables):
+    assert affinity_hp(tables, "Attacker", 10) == 9062
+    assert affinity_hp(tables, "Defender", 10) == 11076
+    assert affinity_hp(tables, "Supporter", 10) == 10069
+    assert affinity_hp(tables, "Attacker", 1) == 0
+
+
+def test_full_hp_model_reproduces_the_whole_roster(
+    tables, ground_truth, ground_truth_ranks, identity
+):
+    """Level-400 HP for every collected unit, exactly (mirrors the ATK parity)."""
+    exact, off = 0, []
+    for u in ground_truth:
+        flat = (
+            affinity_hp(tables, u["class"], u["attractive_lv"])
+            + research_hp(tables, u["class"], ground_truth_ranks)
+            + sum(
+                equipment_hp(
+                    tables, x["tid"], x["lv"],
+                    equip_corporation_type=x["corporation_type"],
+                    unit_corporation=u["corporation"],
+                )
+                for x in u["equip"]
+            )
+            + cube_hp(tables, u["harmony_cube_lv"])
+            + collectible_hp(tables, u["favorite_item_tid"], u["favorite_item_lv"])
+        )
+        predicted = assemble_hp(
+            tables, character_class=u["class"], level=400,
+            grade=u["grade"], core=u["core"], corporation=u["corporation"],
+            **identity[u["name_en"]], extra_flat_hp=flat,
+        )
+        delta = u["measured"]["raid400_hp"] - predicted
+        exact += abs(delta) < 1.0
+        if abs(delta) >= 1.0:
+            off.append((u["name_en"], round(delta, 1)))
+    assert off == [], off
+    assert exact == 159, f"only {exact}/159 exact"

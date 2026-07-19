@@ -1,15 +1,15 @@
 """Assemble a NIKKE's solo-raid (level 400) stats from investment data.
 
 Solo raid normalizes every account to character level 400, so the deck builder
-needs level-400 ATK. blablalink does not serve that number - ShiftyPad computes
+needs level-400 ATK and HP. blablalink does not serve those - ShiftyPad computes
 it in the browser - and scraping it costs one page load per unit. Computing it
 instead is what lets a roster be read from the API alone, which is the
 precondition for syncing a roster we cannot scrape (i.e. anyone else's).
 
-WHAT IS DERIVED (the multiplier: measured against all 159 collected units, 0 mismatches)
+THE MODEL (reproduces all 159 collected units exactly)
 
     atk = base[class][level] * (1 + 0.02*grade) * (1 + 0.02*core)
-          + core*core_attack + grade*grade_attack
+          + core*core_flat_atk(unit) + grade*grade_attack
           + extra_flat
 
 The two breakthrough terms MULTIPLY - grade 3 with core 1 measures 1.0812, not
@@ -19,16 +19,17 @@ unknown. Affinity does NOT belong to this multiplier: units sharing a grade but
 differing in affinity (4 / 10 / 12 / 20) all measure exactly 1.02.
 
 `extra_flat` is assembled by the caller from the helpers below - affinity_atk,
-corporation_atk and equipment_atk - which together reproduce 59 of the 74
-collected units that wear gear but no cube or collectible.
+corporation_atk, equipment_atk, cube_atk and collectible_atk. It is deliberately
+NOT defaulted to a guess, so an un-modelled unit reads as obviously wrong rather
+than plausibly wrong.
 
 WHAT IS NOT YET DERIVED
 
-Cube and collectible contributions (85 of the 159 collected units carry one or
-both), and a shortfall on 15 gear-only units. Those 15 all come out slightly
-HIGH and two of them wear no gear at all, so the gap is not in the equipment
-model. `extra_flat` is deliberately NOT defaulted to a guess, so an
-un-modelled unit reads as obviously wrong rather than plausibly wrong.
+Why the per-core flat varies between units of the same class - see
+CORE_FLAT_ATK_BY_RESOURCE_ID. Pilgrims and the awakened Counters are worth more
+per core, three further units are worth less, and the values themselves are
+measured rather than read off a game table. HP is modelled the same way (see the
+HP section below) and also reproduces all 159; DEF is not, as no caller reads it.
 See docs/superpowers/specs/2026-07-18-stat-assembly-calculator-design.md.
 """
 import json
@@ -78,9 +79,73 @@ def breakthrough_multiplier(grade: int, core: int) -> float:
 # single measured unit; these do. Read off ShiftyPad's core screen, where each
 # extra core is worth a fixed amount at a fixed level: an Attacker (Brid) gains
 # 2,034 per core at level 400 and 6,950 at 663, and subtracting the 2% step
-# (base * 0.02 * 1.06) leaves 119.3 at BOTH levels - so the remainder is flat
-# and level-independent. A Supporter (Mint) leaves 113.4 the same way.
-CORE_FLAT_ATK = {"Attacker": 119, "Supporter": 113, "Defender": 91}
+# (base * 0.02 * 1.06) leaves ~119 at BOTH levels - so the remainder is flat and
+# level-independent. Fitted across every cored unit of the class.
+CORE_FLAT_ATK = {"Attacker": 118.95, "Supporter": 113.29, "Defender": 107.87}
+
+# Pilgrims are worth about 20% more per core than their class. Measured on eight
+# units (five Attackers, three Defenders) with no counter-example: every Pilgrim
+# in the ground truth lands here and no unit of another corporation does.
+CORE_FLAT_ATK_PILGRIM = {"Attacker": 142.90, "Defender": 127.22}
+
+# The awakened Counters - Rapi: Red Hood, Anis: Star and Neon: Vision Eye - land
+# between their class and a Pilgrim. What marks them is the game's own
+# `corporation_sub_type: OVERSPEC`, which the per-character stat file carries and
+# an ordinary unit leaves empty. Every Pilgrim is OVERSPEC too, and worth more
+# still, so the two are separate rows rather than one bonus.
+CORE_FLAT_ATK_OVERSPEC = {"Attacker": 132.95, "Defender": 116.79}
+
+# Units whose per-core flat is none of the above. Keyed by resource_id because
+# that is what identifies a unit unambiguously.
+#
+# These three are NOT explained. Every scalar field of their CDN stat file was
+# compared against their class peers' and none separates them: same base curves,
+# same rarity, no sub_type, and stat_enhance_id is shared with units that measure
+# the class value. They are measured, not derived.
+CORE_FLAT_ATK_BY_RESOURCE_ID = {
+    91: 94.22,    # Vesti
+    280: 94.22,   # Rosanna
+    380: 91.15,   # Nero
+}
+
+
+def core_flat_atk(
+    character_class: str,
+    *,
+    corporation: str | None = None,
+    corporation_sub_type: str | None = None,
+    resource_id: int | None = None,
+) -> float:
+    """Flat ATK each core is worth for this unit.
+
+    A unit's own measured value wins over its corporation's, which wins over
+    OVERSPEC, which wins over its class's - most units only have the class value.
+    """
+    if character_class not in CORE_FLAT_ATK:
+        raise KeyError(
+            f"no core flat for class {character_class!r}; have {sorted(CORE_FLAT_ATK)}"
+        )
+    if resource_id in CORE_FLAT_ATK_BY_RESOURCE_ID:
+        return CORE_FLAT_ATK_BY_RESOURCE_ID[resource_id]
+    # Corporation alone settles a Pilgrim: all eight measured are OVERSPEC, so a
+    # caller that does not know the sub_type still gets the right answer.
+    table = (
+        CORE_FLAT_ATK_PILGRIM
+        if corporation == "PILGRIM"
+        else CORE_FLAT_ATK_OVERSPEC
+        if corporation_sub_type == "OVERSPEC"
+        else CORE_FLAT_ATK
+    )
+    try:
+        return table[character_class]
+    except KeyError:
+        # No cored Pilgrim or OVERSPEC Supporter exists in the ground truth, so
+        # that value was never measured. Falling back to the class value would be
+        # wrong by ~14-30 per core, so say so rather than answer plausibly.
+        raise KeyError(
+            f"core flat for a {corporation or corporation_sub_type} "
+            f"{character_class} was never measured"
+        ) from None
 
 
 # Which recycle-room research row ranks each corporation. Only PILGRIM and
@@ -228,6 +293,219 @@ def owns_favorite_item(item_tid: int) -> bool:
     return item_tid >= FAVORITE_ITEM_TID_BASE
 
 
+# --- HP model -----------------------------------------------------------------
+#
+# HP mirrors ATK's shape - base curve * breakthrough multiplier, plus a per-grade
+# and per-core flat, plus the same assembled flat term - and every constant below
+# is DERIVED against measured raid400_hp for all 159 collected units (fit closes
+# at 159/159, worst |delta| 0.77, same tolerance the ATK model meets). Two things
+# differ from ATK and were settled by the fit, not assumed:
+#
+#   * Account research: the Corporation research rows carry ATK, not HP (their hp
+#     column is 0). HP research comes from the Personal (account-wide) and
+#     Class-specific rows instead - see research_hp. It depends on class, not
+#     corporation.
+#   * Per-core flat tiers: HP does NOT split Pilgrim from OVERSPEC the way ATK
+#     does - both measure the same per-core HP - so there is one OVERSPEC tier
+#     that also covers Pilgrims, not two rows.
+#
+# Equipment HP rounds halves UP, decisively: 70 of the collected gear pieces land
+# their HP bonus exactly on .5, and only half-up reproduces all 159 (half-even
+# closes 145, floor 121, ceil 96). The spec's earlier 24590.5 -> 24590 note was a
+# full-stat display, not this per-piece bonus.
+
+
+def base_hp(tables: dict[str, Any], character_class: str, level: int) -> int:
+    """Base HP before any investment - class and level alone, like base_atk.
+
+    Class-uniform: two Attackers' full hp curves are byte-identical, so three
+    class curves cover the roster. Level 1..1200 under classes[c]["hp"].
+    """
+    try:
+        curve = tables["classes"][character_class]["hp"]
+    except KeyError:
+        raise KeyError(
+            f"no base stat curve for class {character_class!r}; "
+            f"have {sorted(tables['classes'])}"
+        ) from None
+    if not 1 <= level <= len(curve):
+        raise ValueError(f"level {level} outside the table's 1..{len(curve)}")
+    return curve[level - 1]
+
+
+# Flat HP per core, on top of the 2% core step. Like ATK's per-core flat, the
+# stat_enhance table's core_hp = 200 does not reproduce a single unit; these,
+# fitted against measured raid400_hp across every cored unit of the tier, do.
+CORE_FLAT_HP = {"Attacker": 6347.944, "Supporter": 6294.678, "Defender": 6601.727}
+
+# The awakened Counters (corporation_sub_type: OVERSPEC) and the Pilgrims measure
+# the SAME per-core HP - unlike ATK, where Pilgrims sit above OVERSPEC. Since
+# every Pilgrim is OVERSPEC too, one row covers both. Fitted on 7 Attackers and
+# 4 Defenders against measured HP.
+CORE_FLAT_HP_OVERSPEC = {"Attacker": 6663.054, "Defender": 6986.799}
+
+# Units whose per-core HP flat is none of the above, keyed by resource_id - the
+# same three units that are ATK outliers, and unexplained here too. Measured, not
+# derived. (Vesti and Rosanna share an ATK outlier but differ slightly in HP.)
+CORE_FLAT_HP_BY_RESOURCE_ID = {
+    91: 5791.386,    # Vesti
+    280: 5791.040,   # Rosanna
+    380: 5921.039,   # Nero
+}
+
+
+def core_flat_hp(
+    character_class: str,
+    *,
+    corporation: str | None = None,
+    corporation_sub_type: str | None = None,
+    resource_id: int | None = None,
+) -> float:
+    """Flat HP each core is worth for this unit.
+
+    A unit's own measured value wins over OVERSPEC/Pilgrim, which wins over its
+    class's - most units only have the class value. Unlike core_flat_atk there is
+    a single OVERSPEC tier (Pilgrims measure the same per-core HP as Counters).
+    """
+    if character_class not in CORE_FLAT_HP:
+        raise KeyError(
+            f"no core flat for class {character_class!r}; have {sorted(CORE_FLAT_HP)}"
+        )
+    if resource_id in CORE_FLAT_HP_BY_RESOURCE_ID:
+        return CORE_FLAT_HP_BY_RESOURCE_ID[resource_id]
+    is_overspec = corporation == "PILGRIM" or corporation_sub_type == "OVERSPEC"
+    table = CORE_FLAT_HP_OVERSPEC if is_overspec else CORE_FLAT_HP
+    try:
+        return table[character_class]
+    except KeyError:
+        # No cored OVERSPEC/Pilgrim Supporter exists in the ground truth, so its
+        # per-core HP was never measured. Say so rather than answer plausibly.
+        raise KeyError(
+            f"core flat HP for a {corporation or corporation_sub_type} "
+            f"{character_class} was never measured"
+        ) from None
+
+
+# Account research that adds HP: the Personal (account-wide) row and the
+# Class-specific row. The Corporation rows carry ATK, not HP - their hp column is
+# 0 - which is why HP research keys on class where ATK keys on corporation.
+PERSONAL_RESEARCH_TID = "1001"
+CLASS_RESEARCH_TID = {"Attacker": "1101", "Defender": "1102", "Supporter": "1103"}
+
+
+def research_hp(tables: dict[str, Any], character_class: str, research_ranks: dict[str, int]) -> int:
+    """Flat HP from the account's Personal + Class research ranks.
+
+    Account-wide Personal research plus the unit's class research; both are 750/
+    450 per rank in the table and confirmed against measured HP (an ungeared,
+    coreless, grade-0 Attacker's whole HP-over-base residual is affinity + this).
+    `research_ranks` maps research tid -> rank, as returned by
+    GetUserProfileOutpostInfo.recycle_room_researches.
+    """
+    total = 0
+    for tid in (PERSONAL_RESEARCH_TID, CLASS_RESEARCH_TID[character_class]):
+        rank = research_ranks[tid]
+        per_rank = next(r["hp"] for r in tables["recycle_research"] if str(r["id"]) == tid)
+        total += rank * per_rank
+    return total
+
+
+_AFFINITY_HP_COLUMN = {
+    "Attacker": "attacker_hp_rate",
+    "Supporter": "supporter_hp_rate",
+    "Defender": "defender_hp_rate",
+}
+
+
+def affinity_hp(tables: dict[str, Any], character_class: str, affinity_level: int) -> int:
+    """Flat HP from affinity rank, the HP sibling of affinity_atk.
+
+    The column is named `..._hp_rate` but holds a flat value, the same as the ATK
+    column; confirmed by fit against measured HP.
+    """
+    column = _AFFINITY_HP_COLUMN[character_class]
+    for row in tables["affinity"]:
+        if row["attractive_level"] == affinity_level:
+            return row[column]
+    raise KeyError(f"no affinity row for level {affinity_level}")
+
+
+def equipment_hp(
+    tables: dict[str, Any],
+    equip_tid: int,
+    equip_level: int,
+    *,
+    equip_corporation_type: int = 0,
+    unit_corporation: str | None = None,
+) -> int:
+    """Flat HP from one equipped gear piece, the HP sibling of equipment_atk.
+
+    Same 10%-per-level and +30% own-corporation bonuses, added on the base rather
+    than compounded, with the bonus rounded then added. HP rounds halves UP, the
+    same rule ATK uses: of the collected roster 70 pieces land their HP bonus on
+    .5 and only half-up reproduces all 159 units.
+    """
+    row = next((r for r in tables["equipment"] if r["id"] == equip_tid), None)
+    if row is None:
+        return 0
+    base = next((s["stat_value"] for s in row["stat"] if s["stat_type"] == "Hp"), 0)
+    matches = (
+        unit_corporation is not None
+        and equip_corporation_type == CORPORATION_EQUIP_TYPE.get(unit_corporation)
+    )
+    bonus = CORPORATION_MATCH_BONUS * matches + EQUIP_LEVEL_STEP * equip_level
+    return base + math.floor(base * bonus + 0.5)
+
+
+def cube_hp(tables: dict[str, Any], cube_level: int) -> int:
+    """Flat HP from the equipped harmony cube, the HP sibling of cube_atk."""
+    if cube_level <= 0:
+        return 0
+    return tables["cube_sample"]["hp"][cube_level - 1]
+
+
+def collectible_hp(tables: dict[str, Any], item_tid: int, item_level: int) -> int:
+    """Flat HP from the equipped collectible or favorite item, HP sibling of
+    collectible_atk. A favorite item is priced at the curve maximum."""
+    if not item_tid:
+        return 0
+    curve = tables["collectible_sample"]["hp"]
+    if item_tid >= FAVORITE_ITEM_TID_BASE:
+        return curve[-1]
+    if item_level <= 0:
+        return 0
+    return curve[item_level]
+
+
+def assemble_hp(
+    tables: dict[str, Any],
+    *,
+    character_class: str,
+    level: int,
+    grade: int,
+    core: int,
+    corporation: str | None = None,
+    corporation_sub_type: str | None = None,
+    resource_id: int | None = None,
+    extra_flat_hp: float = 0.0,
+) -> float:
+    """Solo-raid HP for one unit, the HP sibling of assemble_atk. DEF is not
+    modelled - the simulator never reads it. `extra_flat_hp` is assembled by the
+    caller from affinity_hp, research_hp, equipment_hp, cube_hp, collectible_hp.
+    """
+    enhance = tables["classes"][character_class]["stat_enhance"]
+    scaled = base_hp(tables, character_class, level) * breakthrough_multiplier(grade, core)
+    flat = grade * enhance["grade_hp"]
+    if core:
+        flat += core * core_flat_hp(
+            character_class,
+            corporation=corporation,
+            corporation_sub_type=corporation_sub_type,
+            resource_id=resource_id,
+        )
+    return scaled + flat + extra_flat_hp
+
+
 def assemble_atk(
     tables: dict[str, Any],
     *,
@@ -235,10 +513,24 @@ def assemble_atk(
     level: int,
     grade: int,
     core: int,
+    corporation: str | None = None,
+    corporation_sub_type: str | None = None,
+    resource_id: int | None = None,
     extra_flat: float = 0.0,
 ) -> float:
-    """Solo-raid ATK for one unit. `extra_flat` covers what is not yet derived."""
+    """Solo-raid ATK for one unit. `extra_flat` covers what is not yet derived.
+
+    The identity arguments only select the per-core flat, so a unit without cores
+    needs none of them.
+    """
     enhance = tables["classes"][character_class]["stat_enhance"]
     scaled = base_atk(tables, character_class, level) * breakthrough_multiplier(grade, core)
-    flat = core * CORE_FLAT_ATK[character_class] + grade * enhance["grade_attack"]
+    flat = grade * enhance["grade_attack"]
+    if core:
+        flat += core * core_flat_atk(
+            character_class,
+            corporation=corporation,
+            corporation_sub_type=corporation_sub_type,
+            resource_id=resource_id,
+        )
     return scaled + flat + extra_flat

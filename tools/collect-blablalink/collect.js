@@ -10,6 +10,12 @@
 //   node collect.js [--dry-run] [--out roster.json] [--area 81]
 //   --dry-run   collect only the first owned SSR unit (smoke test)
 //   --directory dump the public nikke directory to nikke-directory.json and stop
+//   --deep      with --directory, also record each unit's corporation_sub_type,
+//               which the stat calculator needs and the directory payload lacks.
+//               Costs one page load per unit (~194), so it is opt-in.
+//   --raw       with --directory, write the CDN payload untrimmed (do NOT commit
+//               it: it is huge). For discovering which fields the directory even
+//               carries before deciding what the snapshot should keep.
 //   --tables    dump the public stat tables (base curves per class, equipment,
 //               affinity) to nikke-stat-tables.json and stop
 //   --details   dump this account's investment inputs + outpost research ranks
@@ -25,6 +31,8 @@ const { parseMainStats, parseOverload, parseSkills, parseCube } = require('./par
 const args = process.argv.slice(2)
 const DRY = args.includes('--dry-run')
 const DIRECTORY_ONLY = args.includes('--directory')
+const RAW = args.includes('--raw')
+const DEEP = args.includes('--deep')
 const TABLES_ONLY = args.includes('--tables')
 const DETAILS_ONLY = args.includes('--details')
 const DEFAULT_OUT = DIRECTORY_ONLY
@@ -36,6 +44,8 @@ const DEFAULT_OUT = DIRECTORY_ONLY
       : 'roster.json'
 const OUT = args.includes('--out') ? args[args.indexOf('--out') + 1] : DEFAULT_OUT
 const AREA = args.includes('--area') ? parseInt(args[args.indexOf('--area') + 1], 10) : 81
+
+const SHIFTYPAD = 'https://www.blablalink.com/shiftyspad/nikke?nikke='
 
 const log = (...m) => console.error(...m)
 
@@ -60,7 +70,7 @@ const collectDirectory = async (page) => {
   }
   page.on('response', onResp)
   await page
-    .goto('https://www.blablalink.com/shiftyspad/nikke?nikke=16', { waitUntil: 'networkidle', timeout: 60000 })
+    .goto(`${SHIFTYPAD}16`, { waitUntil: 'networkidle', timeout: 60000 })
     .catch(() => {})
   for (let i = 0; i < 20 && !dir; i++) await page.waitForTimeout(300)
   page.off('response', onResp)
@@ -111,7 +121,7 @@ const collectStatTables = async (page, dir) => {
     if (!entry) throw new Error(`no SSR found for class ${cls} in the directory`)
     log(`  ${cls}: sampling ${nameOf(entry)} (rid=${entry.resource_id})`)
     await page
-      .goto(`${'https://www.blablalink.com/shiftyspad/nikke?nikke='}${entry.resource_id}`, {
+      .goto(`${SHIFTYPAD}${entry.resource_id}`, {
         waitUntil: 'networkidle',
         timeout: 60000,
       })
@@ -202,6 +212,41 @@ const trimDirectory = (dir) =>
     }))
     .sort((a, b) => a.resource_id - b.resource_id)
 
+// corporation_sub_type ("OVERSPEC") decides how much flat ATK each breakthrough
+// core is worth, so the stat calculator needs it - but the directory payload does
+// not carry it. It lives in the per-character stat file, which means one page load
+// per unit. Slow, so it is opt-in: run `--directory --deep` when refreshing the
+// snapshot, and the field is otherwise carried over from the previous one.
+const collectSubTypes = async (page, entries) => {
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Network.setCacheDisabled', { cacheDisabled: true })
+  const out = new Map()
+  for (const [i, e] of entries.entries()) {
+    let seen
+    const onResp = async (r) => {
+      if (seen !== undefined || !r.url().includes('cdn') || !r.url().split('?')[0].endsWith('.json')) return
+      try {
+        const j = await r.json()
+        if (j && Array.isArray(j.character_level_attack_list) && String(j.resource_id) === String(e.resource_id)) {
+          seen = j.corporation_sub_type || null
+        }
+      } catch {
+        // not the stat file
+      }
+    }
+    page.on('response', onResp)
+    await page
+      .goto(`${SHIFTYPAD}${e.resource_id}`, { waitUntil: 'networkidle', timeout: 60000 })
+      .catch(() => {})
+    for (let k = 0; k < 20 && seen === undefined; k++) await page.waitForTimeout(300)
+    page.off('response', onResp)
+    if (seen === undefined) log(`  WARNING: no stat file for rid ${e.resource_id} (${e.name_en})`)
+    else out.set(e.resource_id, seen)
+    if ((i + 1) % 25 === 0) log(`  …${i + 1}/${entries.length}`)
+  }
+  return out
+}
+
 const parseUnit = (html) => {
   const doc = new JSDOM(html).window.document
   const stats = parseMainStats(doc)
@@ -226,7 +271,14 @@ const main = async () => {
   // The directory is public game data, so this mode needs no account at all — it is
   // how the committed snapshot that validates the resource_id -> slug map is refreshed.
   if (DIRECTORY_ONLY) {
-    const entries = trimDirectory(dir)
+    const entries = RAW ? dir : trimDirectory(dir)
+    if (DEEP && !RAW) {
+      log(`collecting corporation_sub_type for ${entries.length} units…`)
+      const subTypes = await collectSubTypes(page, entries)
+      for (const e of entries) {
+        if (subTypes.has(e.resource_id)) e.corporation_sub_type = subTypes.get(e.resource_id)
+      }
+    }
     fs.writeFileSync(OUT, `${JSON.stringify(entries, null, 2)}\n`)
     log(`wrote ${OUT}: ${entries.length} nikkes`)
     await browser.close()

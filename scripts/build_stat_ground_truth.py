@@ -40,7 +40,20 @@ OUTPOST = ROOT / "tools" / "collect-blablalink" / "outpost.json"
 DIRECTORY = ROOT / "tools" / "collect-blablalink" / "nikke-directory.json"
 DEFAULT_OUT = ROOT / "backend" / "tests" / "fixtures" / "stat_ground_truth.json"
 
-SLOTS = ("head", "torso", "arm", "leg")
+sys.path.insert(0, str(ROOT / "backend"))
+from app.roster_assembly import extract_inputs  # noqa: E402
+
+# extract_inputs() also carries resource_id/corporation_sub_type/skill levels,
+# which roster_assembly needs but the calculator fixture never has: identity
+# for the per-core flat comes from the DIRECTORY join in test_stat_assembly.py,
+# and skill levels are irrelevant to a stat calculator fixture. Drop them so
+# the committed fixture's shape (and every byte of it) is unaffected by
+# reusing the shared extractor.
+_FIXTURE_ONLY_FIELDS = (
+    "name_en", "class", "corporation", "level", "grade", "core",
+    "attractive_lv", "favorite_item_lv", "favorite_item_tid",
+    "harmony_cube_lv", "equip",
+)
 
 
 def main() -> int:
@@ -70,33 +83,14 @@ def main() -> int:
         o = owned.get(entry["name_code"])
         if d is None or o is None:
             continue
-        units.append(
-            {
-                "name_en": entry["name_en"],
-                "class": entry["class"],
-                "corporation": entry["corporation"],
-                "level": o["lv"],
-                "grade": d["grade"],
-                "core": d["core"],
-                "attractive_lv": d.get("attractive_lv", 0),
-                "favorite_item_lv": d.get("favorite_item_lv", 0),
-                "favorite_item_tid": d.get("favorite_item_tid", 0),
-                "harmony_cube_lv": d.get("harmony_cube_lv", 0),
-                "equip": [
-                    {
-                        "slot": s,
-                        # The tid identifies the exact item: same tier can be a
-                        # class-specific or an "All"-class piece with different stats.
-                        "tid": d.get(f"{s}_equip_tid", 0),
-                        "tier": d.get(f"{s}_equip_tier", 0),
-                        "corporation_type": d.get(f"{s}_equip_corporation_type", 0),
-                        "lv": d.get(f"{s}_equip_lv", 0),
-                    }
-                    for s in SLOTS
-                ],
-                "measured": {"raid400_atk": u["raid400"]["atk"], "actual_atk": u["actual"]["atk"]},
-            }
-        )
+        inp = {k: v for k, v in extract_inputs(entry, o, d).items() if k in _FIXTURE_ONLY_FIELDS}
+        inp["measured"] = {
+            "raid400_atk": u["raid400"]["atk"],
+            "actual_atk": u["actual"]["atk"],
+            "raid400_hp": u["raid400"]["hp"],
+            "actual_hp": u["actual"]["hp"],
+        }
+        units.append(inp)
 
     units.sort(key=lambda x: x["name_en"])
     args.out.parent.mkdir(parents=True, exist_ok=True)

@@ -1,0 +1,116 @@
+"""Assemble a fetched blablalink roster into the collector roster.json shape.
+
+The frontend's parseRosterJson consumes that shape, so slug mapping, signature
+promotion and merge are reused unchanged. This module only joins the three
+fetched payloads with the committed reference tables and computes each unit's
+level-400 HP/ATK and overload.
+"""
+from app import stat_assembly as sa
+from app.overload_decode import assemble_overload
+
+SLOTS = ("head", "torso", "arm", "leg")
+
+
+def extract_inputs(entry: dict, owned: dict, detail: dict) -> dict:
+    """The calculator-input record for one unit (class/corp/grade/core/investment)."""
+    return {
+        "name_en": entry["name_en"],
+        "resource_id": entry["resource_id"],
+        "class": entry["class"],
+        "corporation": entry["corporation"],
+        "corporation_sub_type": entry.get("corporation_sub_type"),
+        "level": owned["lv"],
+        "grade": detail["grade"],
+        "core": detail["core"],
+        "attractive_lv": detail.get("attractive_lv", 0),
+        "favorite_item_lv": detail.get("favorite_item_lv", 0),
+        "favorite_item_tid": detail.get("favorite_item_tid", 0),
+        "harmony_cube_lv": detail.get("harmony_cube_lv", 0),
+        "skill1_lv": detail.get("skill1_lv", 1),
+        "skill2_lv": detail.get("skill2_lv", 1),
+        "ulti_skill_lv": detail.get("ulti_skill_lv", 1),
+        "equip": [
+            {
+                "slot": s,
+                "tid": detail.get(f"{s}_equip_tid", 0),
+                "tier": detail.get(f"{s}_equip_tier", 0),
+                "corporation_type": detail.get(f"{s}_equip_corporation_type", 0),
+                "lv": detail.get(f"{s}_equip_lv", 0),
+            }
+            for s in SLOTS
+        ],
+    }
+
+
+def _extra_flat_atk(tables, inp, research):
+    return (
+        sa.affinity_atk(tables, inp["class"], inp["attractive_lv"])
+        + sa.corporation_atk(tables, inp["corporation"], research)
+        + sum(sa.equipment_atk(tables, e["tid"], e["lv"],
+                               equip_corporation_type=e["corporation_type"],
+                               unit_corporation=inp["corporation"]) for e in inp["equip"])
+        + sa.cube_atk(tables, inp["harmony_cube_lv"])
+        + sa.collectible_atk(tables, inp["favorite_item_tid"], inp["favorite_item_lv"])
+    )
+
+
+def _extra_flat_hp(tables, inp, research):
+    # HP account research is Personal+Class (research_hp), not Corporation - the
+    # Corporation research rows carry ATK only. See stat_assembly's HP section.
+    return (
+        sa.affinity_hp(tables, inp["class"], inp["attractive_lv"])
+        + sa.research_hp(tables, inp["class"], research)
+        + sum(sa.equipment_hp(tables, e["tid"], e["lv"],
+                              equip_corporation_type=e["corporation_type"],
+                              unit_corporation=inp["corporation"]) for e in inp["equip"])
+        + sa.cube_hp(tables, inp["harmony_cube_lv"])
+        + sa.collectible_hp(tables, inp["favorite_item_tid"], inp["favorite_item_lv"])
+    )
+
+
+def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict) -> dict:
+    inp = extract_inputs(entry, owned, detail)
+    ident = dict(corporation=inp["corporation"],
+                 corporation_sub_type=inp["corporation_sub_type"],
+                 resource_id=inp["resource_id"])
+    atk = sa.assemble_atk(tables, character_class=inp["class"], level=400,
+                          grade=inp["grade"], core=inp["core"],
+                          extra_flat=_extra_flat_atk(tables, inp, research), **ident)
+    hp = sa.assemble_hp(tables, character_class=inp["class"], level=400,
+                        grade=inp["grade"], core=inp["core"],
+                        extra_flat_hp=_extra_flat_hp(tables, inp, research), **ident)
+    return {
+        "name_en": inp["name_en"],
+        "resource_id": inp["resource_id"],
+        "raid400": {"hp": round(hp), "atk": round(atk), "def": 0},
+        "skill_levels": {
+            "skill1": inp["skill1_lv"],
+            "skill2": inp["skill2_lv"],
+            "burst": inp["ulti_skill_lv"],
+        },
+        "overload": assemble_overload(tables, detail),
+    }
+
+
+def assemble_roster(tables, directory: list, raw: dict) -> list[dict]:
+    by_code = {e["name_code"]: e for e in directory}
+    details = {d["name_code"]: d for d in raw["character_details"]}
+    owned = {o["name_code"]: o for o in raw["owned"]}
+    research = {str(r["tid"]): r["lv"] for r in raw["recycle_room_researches"]}
+    units = []
+    for code, o in owned.items():
+        entry, d = by_code.get(code), details.get(code)
+        if entry is None or d is None:
+            continue
+        # Raid content is SSR-only (collect.js filters the same way before
+        # scraping roster.json); the R/SR directory rows a fresh account starts
+        # with have no affinity table entry and are not real roster units.
+        if entry.get("original_rare") != "SSR":
+            continue
+        units.append(assemble_unit(tables, entry, o, d, research))
+    units.sort(key=lambda u: u["name_en"])
+    return units
+
+
+def to_roster_json(units: list[dict]) -> dict:
+    return {"units": units}
