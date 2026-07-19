@@ -325,6 +325,7 @@ class ShotRecord:
     is_first_bullet: bool
     is_last_bullet: bool
     damage_type: str | None = None
+    in_segment: bool = False
 
 
 def _base_shot_records(base, window_start, window_end,
@@ -409,7 +410,7 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at):
     records = [
         ShotRecord(t, profile["weapon"], profile["damage_percent"], bonus,
                    is_first_bullet=False, is_last_bullet=False,
-                   damage_type=profile.get("damage_type"))
+                   damage_type=profile.get("damage_type"), in_segment=True)
         for t in times if t < fight_duration
     ]
     return records, min(seg_end, fight_duration)

@@ -638,6 +638,14 @@ def simulate_raid(
                     ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
                     core_hittable, fight_duration, full_burst_windows, own_burst_times,
                 ))
+            elif mode == "every_during_segment":
+                seg_times = [r.time for r in shot_records if r.in_segment]
+                window_fire_times[idx] = {
+                    t for i, t in enumerate(seg_times) if (i + 1) % threshold == 0}
+            elif mode == "every_outside_segment":
+                base_times = [r.time for r in shot_records if not r.in_segment]
+                window_fire_times[idx] = {
+                    t for i, t in enumerate(base_times) if (i + 1) % threshold == 0}
             elif mode == "sequence":
                 # threshold carries the requirement spec; the rules slot holds
                 # one rule list PER STAGE (see _sequence_fire_rules).

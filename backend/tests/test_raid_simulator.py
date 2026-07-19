@@ -2490,6 +2490,39 @@ def test_weapon_mode_schedule_swaps_profile_inside_window():
     assert cannon[0]["damage"] > base_shot * 20
 
 
+def test_per_shot_every_during_segment_and_every_outside_segment_are_mutually_exclusive():
+    # Task 8: gates a per-shot rule to fire only on segment (transform)
+    # shots or only on base-weapon shots, off the same in_segment flag that
+    # ShotRecord now carries - so a transform's empowered attack (in-segment)
+    # and its normal attack (outside-segment) can never both count the same
+    # shot (Task 9's Snow White: Heavy Arms consumes both to avoid double-
+    # counting).
+    def schedule(context, fight_duration):
+        return [{"start": 5.0, "until_shots": 1,
+                 "profile": {"weapon": "SR", "damage_percent": 499.5,
+                             "charge_damage_percent": 1000.0, "charge_time": 5.0}}]
+
+    result = simulate_raid(
+        deck=_one_unit_deck(), rules_by_slug={}, burst_damage_percents={},
+        base_stats={"gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        mode="auto", base_crit_rate=0.0,
+        weapon_stats={"gunner": SR_WEAPON},
+        weapon_mode_schedules={"gunner": schedule},
+        per_shot_rules={"gunner": [
+            (1, "every_during_segment", [instant_nuke_pulse_rule("per_shot", 50.0)]),
+            (1, "every_outside_segment", [instant_nuke_pulse_rule("per_shot", 10.0)]),
+        ]},
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    seg_shots = [e for e in ps if e["damage"] == 500.0]   # atk 1000 * 50%
+    base_shots = [e for e in ps if e["damage"] == 100.0]  # atk 1000 * 10%
+    assert seg_shots and base_shots  # both modes actually fired
+    assert [e["time"] for e in seg_shots] == [10.0]  # the segment's one cannon shot
+    assert all(e["time"] != 10.0 for e in base_shots)
+    assert len(ps) == len(seg_shots) + len(base_shots)  # no shot fires both rules
+
+
 def test_per_shot_every_outside_full_burst_does_not_fire_on_a_shot_exactly_at_fb_end():
     # Regression for the boundary leak (final-review Fix 1): a shot landing
     # EXACTLY at a Full Burst window's end must count as "in" Full Burst, not
