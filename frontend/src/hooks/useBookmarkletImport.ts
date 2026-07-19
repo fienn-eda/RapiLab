@@ -12,6 +12,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { assembleRoster, type RawRosterPayload } from '../api/assembleRoster'
 import {
+  AssembleRosterApiError,
+  describeAssembleRosterApiError,
+} from '../api/assembleRosterApiError'
+import {
   BLABLALINK_ORIGIN,
   PAYLOAD_MESSAGE,
   READY_MESSAGE,
@@ -35,7 +39,11 @@ export const useBookmarkletImport = (onRoster: (raw: unknown) => void) => {
       onRosterRef.current(await assembleRoster(payload))
       setStatus('done')
     } catch (e) {
-      setError(String(e))
+      setError(
+        e instanceof AssembleRosterApiError
+          ? describeAssembleRosterApiError(e)
+          : String(e),
+      )
       setStatus('error')
     }
   }, [])

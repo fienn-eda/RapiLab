@@ -17,3 +17,29 @@ export class AssembleRosterApiError extends Error {
     this.detail = detail
   }
 }
+
+const extractDetailMessage = (detail: unknown): string | undefined => {
+  if (detail == null || typeof detail !== 'object') return undefined
+  const inner = (detail as Record<string, unknown>).detail
+  if (typeof inner === 'string') return inner
+  if (Array.isArray(inner)) {
+    const messages = inner
+      .map((item) =>
+        item && typeof item === 'object' && 'msg' in item
+          ? String((item as { msg: unknown }).msg)
+          : undefined,
+      )
+      .filter((msg): msg is string => msg != null)
+    if (messages.length > 0) return messages.join('; ')
+  }
+  return undefined
+}
+
+/** A user-facing message for an AssembleRosterApiError, preferring the backend's own detail. */
+export const describeAssembleRosterApiError = (err: AssembleRosterApiError): string => {
+  const detailMessage = extractDetailMessage(err.detail)
+  if (err.status === 422) {
+    return detailMessage ?? 'The blablalink payload was not in the expected shape.'
+  }
+  return detailMessage ?? `Roster sync failed (${err.status}).`
+}
