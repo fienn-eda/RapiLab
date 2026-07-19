@@ -1,10 +1,12 @@
 # 무기변형 (weapon-mode segments) 설계
 
 - 날짜: 2026-07-18 (갱신 2026-07-19)
-- 상태: **v1 구현 완료 (2026-07-19)** — 설계 확정(전 섹션 Fienn 승인) 후
+- 상태: **v1 + 계획 2 구현 완료 (2026-07-19)** — 설계 확정(전 섹션 Fienn 승인) 후
   `weapon_mode_schedules` 세그먼트 primitive + snow-white·maxwell·
-  laplace-signature 신규 인코딩 + red-hood 마이그레이션까지 착지. 아래
-  "구현 요약"의 FB 창 노출 항목(rapi-red-hood)은 **계획 2로 이동**.
+  laplace-signature 신규 인코딩 + red-hood 마이그레이션(v1)까지 착지, 이어서
+  v1이 이월했던 cinderella-crystal-wave 듀얼슬러그·rapi-red-hood FB창 노출·
+  snow-white-heavy-arms 검증 패스(계획 2)까지 전부 착지. 아래 "구현 요약
+  (계획 2 범위)" 참고.
 - 참여: Fienn · Bot
 
 ## 배경과 범위
@@ -194,3 +196,55 @@ TDD. ① `attack_rate` 세그먼트 생성기 단위 테스트(경계에서 새 
   이월.
 - **명시적 보류**: velvet 변형딜(저가치, 보류 확정) · laplace base 변형(5초,
   실측 없음) · snow-white-heavy-arms(차지 루프 — 별도 검증 패스).
+
+## 구현 요약 (계획 2 범위) — 착지 완료 2026-07-19
+
+v1이 이월한 세 항목을 전부 닫았다. 세 유닛 모두 세그먼트 primitive 자체를
+소비하지 않는다 — 세그먼트는 v1에서 이미 닫힌 범위이고, 계획 2는 v1이 남긴
+잔여 갭 세 개가 각각 다른 소규모 확장(또는 확장 없음)으로 풀린다는 걸 보여준다.
+
+- **cinderella-crystal-wave → `-mg`/`-snipe` 듀얼슬러그:** 위 "확정된 시맨틱"에
+  적힌 설계 그대로 구현. `registry.MODE_VARIANTS["cinderella-crystal-wave"] =
+  ("cinderella-crystal-wave-mg", "cinderella-crystal-wave-snipe")` — 소유 유닛
+  1개를 로스터 로더가 후보 슬러그 둘로 fan-out, 덱 탐색은 `_no_variant_clash`로
+  두 모드 동시 편성을 금지. Snipe의 SR 무기 프로필은 `_WEAPON_PROFILE_OVERRIDE_
+  BUILDERS`가 스킬값 조립 후 교체. 신규 세그먼트 소비 없음 — 두 모드 모두 기존
+  평범한(비변형) 무기 경로를 정적으로 탄다.
+- **rapi-red-hood FB창 노출:** 설계가 예상한 그대로 소규모 — 새 스케줄
+  primitive가 아니라 `SquadContext.full_burst_windows`(무기 패스가 이미 계산해
+  둔 값을 컨텍스트에 얹기만 함) + `boss_core_hittable()` 조건 헬퍼 하나. 120노멀
+  프로젝타일 발사기가 `scheduled_nukes` 두 항목(부착/폭발, 신규
+  `projectile_attachment` 타입)으로 완성. **범위 추가(설계 문서엔 없었음):**
+  착수 중 그녀의 Combat Assist(B1 대역)를 실제 B1 후보로 편성하는 신규 슬러그
+  `rapi-red-hood-b1`이 함께 들어갔다 — `VARIANT_BURST_TIERS`로 B3가 아닌 B1
+  슬롯에 앉히고, `SOLE_TIER1_SLUGS`로 진짜 B1과의 동시 편성(자기모순 —
+  Combat Assist는 다른 B1이 있으면 스스로 꺼짐)을 막는다. `MODE_VARIANTS`가
+  두 번째 소비자를 얻으며 "슬롯 재편성"이라는 세 번째 변형 축(모드 선택/
+  듀얼슬롯 투자에 이어)을 실증.
+- **snow-white-heavy-arms 검증 패스:** 설계가 남겨둔 질문("차지 루프가 기존
+  per-shot + multi-hit 프리미티브로 풀리는지")에 대한 답은 **그렇다, 그리고
+  세그먼트도 하나 더 필요했다**였다 — 신규 상태머신은 필요 없었다. 락온/장전
+  누적은 고정 차지시간 안에서 결정론적(장전수는 모드별 상수)이라 별도 자원
+  트래킹 없이 상수로 접혔고, Auto Fire(매 풀차지 발동)는 기존 `per_shot_rules`를
+  그대로 탔다. 유일한 진짜 gap은 "Fully Active 상태의 강화 Auto Fire와 평시
+  Auto Fire가 같은 풀차지 이벤트에서 이중계상되지 않게 막을 방법"이었는데,
+  이건 세그먼트 primitive(Fully Active를 3.2초 차지 2발 세그먼트로 표현)와 신규
+  `every_during_segment`/`every_outside_segment` per-shot 모드 조합으로 풀렸다 —
+  두 모드는 샷의 시각이 아니라 레코드 정체성으로 매칭돼 구조적으로 상호
+  배타적이다(세그먼트 경계에서 종료 샷과 재개 샷이 같은 시각을 가질 수 있어
+  시각 매칭은 안전하지 않았다). Fully Active 세그먼트 프로필은 자기 기본무기
+  스탯(차지 배수)을 읽어야 해서, 신규 `caster_weapon_stats` 스킬값 주입도 함께
+  들어갔다.
+- **엔진 (4개, 계획 2)**: `SquadContext.full_burst_windows`+`core_hittable`
+  노출 + `boss_core_hittable()` · `projectile_attachment` 데미지 타입/스탯 ·
+  `MODE_VARIANTS`/`VARIANT_BURST_TIERS`/`_WEAPON_PROFILE_OVERRIDE_BUILDERS`/
+  `SOLE_TIER1_SLUGS` 모드-변형 듀얼슬러그 확장(로스터 fan-out + 덱 탐색
+  양쪽 enumeration 경로·pruning 참조덱까지 배제 정합) · `every_during_segment`/
+  `every_outside_segment` per-shot 모드 + `caster_weapon_stats` 스킬값 주입.
+  상세는 `docs/engine-gaps.md`의 "이미 만든 것" 참고.
+- **유닛 (계획 2 실착지, 4슬러그)**: cinderella-crystal-wave-mg(신규) ·
+  cinderella-crystal-wave-snipe(신규) · rapi-red-hood-b1(신규, 범위 추가) ·
+  snow-white-heavy-arms(신규, 세그먼트 소비하되 세그먼트 자체는 v1 범위).
+  rapi-red-hood(base)는 기존 ⚠ 인코딩에 발사기가 더해져 갱신.
+- **여전히 보류**: velvet 변형딜(저가치, 보류 확정) · laplace base 변형(5초,
+  실측 없음, 보류) — v1 요약과 동일, 계획 2에서 변경 없음.

@@ -261,6 +261,7 @@ _TYPE_BUCKETS = {
     "distributed": ["distributed_damage_up"],
     "true": ["true_damage_up"],
     "projectile_explosion": ["projectile_explosion_damage_up"],
+    "projectile_attachment": ["projectile_attachment_damage_up"],
 }
 
 # Every registry stat phase-2 damage computation can read (_damage_instance,
@@ -275,7 +276,7 @@ _BUNDLE_STATS = (
     "charge_damage_bonus", "attack_damage_up", "damage_to_parts_up",
     "pierce_damage_up", "damage_taken_up",
     "sustained_damage_up", "distributed_damage_up", "true_damage_up",
-    "projectile_explosion_damage_up",
+    "projectile_explosion_damage_up", "projectile_attachment_damage_up",
     "normal_attack_damage_multiplier",
 )
 
@@ -325,6 +326,7 @@ def simulate_raid(
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
         boss_element=boss_element,
         part_destructible=part_destructible,
+        core_hittable=core_hittable,
     )
     registry = EffectRegistry()
     # Damage is RECORDED as events during phase 1 (buffs are applied but no
@@ -569,6 +571,7 @@ def simulate_raid(
         (e["time"] for e in events if e["type"] == "full_burst_start"),
         (e["time"] for e in events if e["type"] == "full_burst_end"),
     ))
+    context.full_burst_windows = full_burst_windows
 
     shot_times_by_slug = {}
     last_bullet_times_by_slug = {}
@@ -617,6 +620,17 @@ def simulate_raid(
         # "every_during_own_status_window" carries (N, window_duration).
         own_burst_times = context.burst_times.get(slug, [])
         window_fire_times = {}
+        # every_during_segment/every_outside_segment are keyed on record
+        # IDENTITY (shot_index), not shot_time: a magazine-type base weapon
+        # (AR/MG/SMG/SG) resumes with a fresh magazine at the exact instant
+        # an until_shots segment's last shot lands (attack_rate's documented
+        # resume semantic), so the segment's last ShotRecord (in_segment=
+        # True) and the resumed magazine's first ShotRecord (in_segment=
+        # False) can share an identical `time`. Matching by time value would
+        # make both records satisfy both modes at that instant, breaking the
+        # in_segment flag's whole purpose - a structural guarantee that one
+        # shot can never fire both (Task 8 fix).
+        window_fire_indices = {}
         sequence_fires = {}
         for idx, (threshold, mode, _rules) in enumerate(unit_per_shot):
             if mode == "every_during_full_burst":
@@ -635,6 +649,14 @@ def simulate_raid(
                     ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
                     core_hittable, fight_duration, full_burst_windows, own_burst_times,
                 ))
+            elif mode == "every_during_segment":
+                seg_indices = [i for i, r in enumerate(shot_records) if r.in_segment]
+                window_fire_indices[idx] = {
+                    i for pos, i in enumerate(seg_indices) if (pos + 1) % threshold == 0}
+            elif mode == "every_outside_segment":
+                base_indices = [i for i, r in enumerate(shot_records) if not r.in_segment]
+                window_fire_indices[idx] = {
+                    i for pos, i in enumerate(base_indices) if (pos + 1) % threshold == 0}
             elif mode == "sequence":
                 # threshold carries the requirement spec; the rules slot holds
                 # one rule list PER STAGE (see _sequence_fire_rules).
@@ -655,6 +677,7 @@ def simulate_raid(
                         or (mode == "last_bullet" and shot_time in last_bullets)
                         or (mode == "first_bullet" and shot_time in first_bullets)
                         or (idx in window_fire_times and shot_time in window_fire_times[idx])
+                        or (idx in window_fire_indices and shot_index in window_fire_indices[idx])
                     )
                 if fires:
                     for rule in rules:

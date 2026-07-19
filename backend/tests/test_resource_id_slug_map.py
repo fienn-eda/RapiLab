@@ -8,7 +8,7 @@ and every encoded slug must be reachable except a known, documented gap.
 import re
 from pathlib import Path
 
-from app.skill_rules.registry import ENCODED_SLUGS
+from app.skill_rules.registry import ENCODED_SLUGS, MODE_VARIANTS
 
 MAP_FILE = (
     Path(__file__).resolve().parents[2]
@@ -54,8 +54,18 @@ def _encoded_dual_slot_bases() -> set[str]:
     return {s for s in encoded if f"{s}-signature" in encoded}
 
 
+def _mode_variant_slugs() -> set[str]:
+    # Every candidate slug a MODE_VARIANTS base fans out to (e.g. Cinderella:
+    # Crystal Wave's -mg/-snipe) - reached via the base's map entry, so they
+    # don't need (and can't have) their own resource_id row.
+    return {variant for variants in MODE_VARIANTS.values() for variant in variants}
+
+
 def test_every_mapped_slug_is_encoded():
-    stray = _mapped_slugs() - set(ENCODED_SLUGS)
+    # A MODE_VARIANTS base (e.g. "cinderella-crystal-wave") is a legal map value
+    # even though it is never itself encoded - the backend fans it out to its
+    # variant slugs (see resourceIdSlugMap.ts's header comment).
+    stray = _mapped_slugs() - set(ENCODED_SLUGS) - set(MODE_VARIANTS)
     assert stray == set(), f"map slugs not in ENCODED_SLUGS (typo/stale): {stray}"
 
 
@@ -69,7 +79,10 @@ def test_dual_slot_bases_match_encoded_pairs():
 
 def test_every_encoded_slug_is_reachable_except_known():
     signature_slugs = {f"{b}-signature" for b in _encoded_dual_slot_bases()}
-    uncovered = set(ENCODED_SLUGS) - _mapped_slugs() - signature_slugs
+    # Mode-variant slugs are reached by loader fan-out from their (unencoded)
+    # base slug's map entry, not by their own row - subtract them the same way
+    # -signature slugs are subtracted (reached via promotion, not their own row).
+    uncovered = set(ENCODED_SLUGS) - _mapped_slugs() - signature_slugs - _mode_variant_slugs()
     assert uncovered == KNOWN_UNMAPPED, (
         "encoded slugs missing a resource_id entry changed; add the entry or update "
         f"KNOWN_UNMAPPED. diff={uncovered ^ KNOWN_UNMAPPED}"

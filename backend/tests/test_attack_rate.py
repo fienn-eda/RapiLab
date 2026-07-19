@@ -400,6 +400,12 @@ def test_until_shots_single_charged_shot_then_resume():
     assert resumed[0].time == 15.0 + 1.0
 
 
+def test_shot_records_carry_in_segment_flag():
+    seg = {"start": 10.0, "until_shots": 1, "profile": CANNON}
+    records = generate_segmented_shots(SR_BASE, [seg], 60.0)
+    assert all(r.in_segment == (r.damage_percent == 499.5) for r in records)
+
+
 def test_charge_speed_callable_shortens_profile_charge():
     seg = {"start": 10.0, "until_shots": 1, "profile": CANNON}
     records = generate_segmented_shots(

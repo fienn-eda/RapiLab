@@ -46,6 +46,13 @@ from app.skill_rules.asuka_shikinami_langley_wille import (
 from app.skill_rules.blanc import build_blanc_rules
 from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
 from app.skill_rules.chisato_nishikigi import build_chisato_per_shot_rules, build_chisato_rules
+from app.skill_rules.cinderella_crystal_wave import (
+    build_crystal_wave_mg_rules,
+    build_crystal_wave_snipe_rules,
+    build_snipe_weapon_profile,
+    crystal_wave_burst_percent,
+    crystal_wave_periodic_nuke,
+)
 from app.skill_rules.cinderella import (
     GLASS_SLIPPERS_HIT_COUNT,
     build_beautiful_resources,
@@ -196,6 +203,11 @@ from app.skill_rules.snow_white import (
     build_snow_white_rules,
     snow_white_periodic_nuke,
 )
+from app.skill_rules.snow_white_heavy_arms import (
+    build_fully_active_weapon_mode_schedule,
+    build_seven_dwarves_per_shot_rules,
+    build_snow_white_heavy_arms_rules,
+)
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules.takina_inoue import (
     BATTLEFIELD_CONTROL_COOLDOWN,
@@ -217,7 +229,10 @@ from app.skill_rules.privaty import (
 )
 from app.skill_rules.rapi_red_hood import (
     build_attachable_projectiles_rules,
+    build_attachable_projectiles_scheduled_nukes,
     build_battlefield_assessment_rules,
+    build_power_of_inheritance_rules,
+    build_power_of_inheritance_stage1_rules,
     power_of_inheritance_stage3_burst_percent,
 )
 from app.skill_rules.volume import build_volume_rules
@@ -249,8 +264,20 @@ def _build_crown(sv):
 def _build_rapi_red_hood(sv):
     rules = build_battlefield_assessment_rules(sv["battlefield_assessment"])
     rules += build_attachable_projectiles_rules(sv["attachable_projectiles"])
+    rules += build_power_of_inheritance_rules(sv)
     burst_percent = power_of_inheritance_stage3_burst_percent(sv["power_of_inheritance"])
     return rules, burst_percent
+
+
+def _build_rapi_red_hood_b1(sv):
+    # Combat Assist / B1 stand-in seat (Task 7) - Stage 1 Power of Inheritance
+    # is support-only (no damage), and does NOT get the Stage 3 rider
+    # (build_power_of_inheritance_rules): the 421.2% attachment window and the
+    # requirement cut are Stage-3-only.
+    rules = build_battlefield_assessment_rules(sv["battlefield_assessment"])
+    rules += build_attachable_projectiles_rules(sv["attachable_projectiles"])
+    rules += build_power_of_inheritance_stage1_rules(sv)
+    return rules, None  # Stage 1 use deals no damage
 
 
 def _build_helm(sv):
@@ -307,8 +334,15 @@ _BUILDERS = {
     "blanc": lambda sv: (build_blanc_rules(sv), None),
     "brid-silent-track": lambda sv: (build_brid_rules(sv), None),
     "cinderella": _build_cinderella,
+    "cinderella-crystal-wave-mg": lambda sv: (
+        build_crystal_wave_mg_rules(sv), crystal_wave_burst_percent(sv)
+    ),
+    "cinderella-crystal-wave-snipe": lambda sv: (
+        build_crystal_wave_snipe_rules(sv), crystal_wave_burst_percent(sv)
+    ),
     "crown": _build_crown,
     "rapi-red-hood": _build_rapi_red_hood,
+    "rapi-red-hood-b1": _build_rapi_red_hood_b1,
     "helm": _build_helm,
     "helm-aquamarine": lambda sv: (build_helm_aquamarine_rules(sv), aegis_cannon_overload_burst_percent(sv)),
     "isabel": lambda sv: (build_isabel_rules(sv), sonic_chaser_burst_percent(sv)),
@@ -345,6 +379,7 @@ _BUILDERS = {
     "red-hood": lambda sv: (build_red_hood_rules(sv), None),  # burst is the Step 3 weapon transform (weapon-mode segment), no direct nuke
     "scarlet-black-shadow": lambda sv: (build_scarlet_black_shadow_rules(sv), None),  # burst is buff-only; damage is the Breakthrough sequence (per-shot)
     "snow-white": lambda sv: (build_snow_white_rules(sv), None),  # burst is the weapon transform (weapon-mode segment), no direct nuke
+    "snow-white-heavy-arms": lambda sv: (build_snow_white_heavy_arms_rules(sv), None),  # burst is the Fully Active state change (weapon-mode segment), no direct nuke
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
     "laplace": lambda sv: ([], laplace_buster_burst_percent(sv)),  # no ally buffs; weapon-transform + Hero Vision deferred
@@ -373,9 +408,44 @@ _BUILDERS = {
 
 ENCODED_SLUGS = tuple(_BUILDERS)
 
+# One owned character who yields MULTIPLE deck candidates (Fienn, 2026-07-18/19):
+# a pre-battle mode choice (Cinderella: Crystal Wave MG/Snipe) or a formation
+# role choice (Rapi: Red Hood B3/B1). The tuple lists every candidate slug the
+# roster loader fans the one owned state out to (include the base slug itself
+# when it stays a candidate); deck search never seats two candidates of the
+# same base together.
+MODE_VARIANTS: dict[str, tuple[str, ...]] = {
+    "cinderella-crystal-wave": ("cinderella-crystal-wave-mg", "cinderella-crystal-wave-snipe"),
+    "rapi-red-hood": ("rapi-red-hood", "rapi-red-hood-b1"),
+}
+
+# A variant seated in a different burst-rotation slot than the character's
+# nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
+VARIANT_BURST_TIERS: dict[str, int] = {
+    "rapi-red-hood-b1": 1,
+}
+
+
+# A variant whose weapon profile differs from the character's dotgg stats
+# (e.g. a Snipe mode) registers a builder here; the roster loader swaps the
+# assembled profile in after skill values resolve.
+_WEAPON_PROFILE_OVERRIDE_BUILDERS = {
+    "cinderella-crystal-wave-snipe": build_snipe_weapon_profile,
+}
+
+
+def get_weapon_profile_override(slug, skill_values):
+    builder = _WEAPON_PROFILE_OVERRIDE_BUILDERS.get(slug)
+    if builder is None:
+        return None
+    return builder(skill_values)
+
+
 _PERIODIC_NUKE_BUILDERS = {
     "ada-wong": lambda sv: build_flash_grenade_periodic_nuke(sv),
     "ark-ranger-black": lambda sv: build_ark_ranger_ceiling_collider(sv),
+    "cinderella-crystal-wave-mg": lambda sv: crystal_wave_periodic_nuke(sv),
+    "cinderella-crystal-wave-snipe": lambda sv: crystal_wave_periodic_nuke(sv),
     "helm-aquamarine": lambda sv: {
         "cooldown": AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN,
         "percent": aegis_cannon_suppression_fire_percent(sv),
@@ -407,6 +477,9 @@ _SCHEDULED_NUKE_BUILDERS = {
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
     "laplace-signature": lambda sv: laplace_signature.build_buster_scheduled_nukes(sv),  # per-tick true-damage rider
+    "rapi-red-hood": lambda sv: build_attachable_projectiles_scheduled_nukes(sv),  # Attachable Projectiles launcher
+    "rapi-red-hood-b1": lambda sv: build_attachable_projectiles_scheduled_nukes(
+        sv, slug="rapi-red-hood-b1", stage3_requirement_cut=False),
 }
 
 # A Nikke whose burst swaps her weapon profile for a window (weapon-mode
@@ -414,6 +487,7 @@ _SCHEDULED_NUKE_BUILDERS = {
 _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "red-hood": lambda sv: build_red_wolf_weapon_mode_schedule(sv),  # Step 3 transform window, 33 measured shots
     "snow-white": lambda sv: build_seven_dwarves_weapon_mode_schedule(sv),  # single 5s-charge cannon shot per own-burst
+    "snow-white-heavy-arms": lambda sv: build_fully_active_weapon_mode_schedule(sv),  # 2-shot 3.2s-charge segment per own-burst
     "maxwell": lambda sv: build_pierce_shot_weapon_mode_schedule(sv),  # single 2s-charge cannon shot per own-burst
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
 }
@@ -468,6 +542,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "laplace-signature": lambda sv: laplace_signature.build_hero_bomber_signature_per_shot_rules(sv),
     "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),
     "snow-white": lambda sv: build_determination_per_shot_rules(sv),
+    "snow-white-heavy-arms": lambda sv: build_seven_dwarves_per_shot_rules(sv),
     "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
     "velvet": lambda sv: build_velvet_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),

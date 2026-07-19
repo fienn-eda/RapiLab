@@ -5,7 +5,32 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-19 (**weapon-mode segments v1 착지 — 무기변형 엔진
+- 마지막 갱신: 2026-07-19 (**무기변형 계획 2 착지 — v1이 이월한 잔여 3건 전부
+  해소**: cinderella-crystal-wave가 `registry.MODE_VARIANTS`(소유 유닛 1개를 후보
+  슬러그 여러 개로 로스터가 fan-out, 덱 탐색은 두 enumeration 경로 모두
+  `_no_variant_clash`로 같은 base의 변형 동시 편성을 금지, pruning 휴리스틱의
+  내부 참조덱도 정합하게 보강) 경유로 `-mg`/`-snipe` 두 정적 슬러그로 갈라짐 —
+  전투 전 모드 고정이라 상태머신이 아니라 기존 평범한 무기 경로를 두 번 타는
+  것뿐. rapi-red-hood의 120노멀 프로젝타일 발사기가 `SquadContext.
+  full_burst_windows`(FB 창 [시작,종료) 목록 노출) + `boss_core_hittable()`
+  조건 헬퍼로 완성(부착 누적 → 다음 FB 진입에서 일괄 폭발, `scheduled_nukes`
+  두 개 — 부착/폭발 — 로 표현, 신규 `projectile_attachment` 데미지 타입이
+  `projectile_explosion`과 나란히) + 신규 슬러그 `rapi-red-hood-b1`(Combat
+  Assist B1 대역을 실제 B1 후보로 편성, `VARIANT_BURST_TIERS`로 base와 다른
+  티어에 착석, `SOLE_TIER1_SLUGS`로 진짜 B1과 동시 편성 금지 — 원래 이번 배치
+  범위엔 없었으나 착수 중 추가). snow-white-heavy-arms는 검증 패스 결과 **신규
+  상태머신이 필요 없었음** — Auto Fire는 기존 per-shot 룰을 그대로 타고, Seven
+  Dwarves Fully Active는 세그먼트(3.2초 차지 2발, +528% 차지댐을 프로필의
+  `charge_damage_percent`에 접어 덱 차지댐 버프가 계속 곱해짐, 세그먼트 프로필은
+  신규 `caster_weapon_stats` 스킬값 주입으로 자기 기본무기 스탯을 읽음)이며, 신규
+  `every_during_segment`/`every_outside_segment` per-shot 모드(샷 시각이 아니라
+  레코드 정체성으로 매칭 — 세그먼트 종료와 재개 매거진의 첫 샷이 같은 시각을 가질
+  수 있어 시각 매칭은 둘 다 만족시켜버림, 구조적으로 상호 배타)가 강화/평시
+  Auto Fire의 이중계상을 막는다. 4개 신규 엔진 확장 상세는 "이미 만든 것" 참고,
+  velvet 변형딜·laplace base 5초 변형만 계속 보류 — 상세는
+  `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`(상태: 계획 2
+  착지 완료).
+  이전 갱신: 2026-07-19 (**weapon-mode segments v1 착지 — 무기변형 엔진
   프리미티브 완료**: `attack_rate.generate_segmented_shots()`(세그먼트 단위 ShotRecord
   타임라인 — 세그먼트 안에서 기본무기 침묵, 종료 시 새 매거진 즉시 재개,
   `until_shots`/`end` 두 창 형태, `charge_time` 프로필은 라이브 차지속도 버프 반영,
@@ -457,14 +482,25 @@ Velvet의 Sticky Fingers는 "풀버스트 **아닐 때**" 풀차지마다 자ATK
   대응 모드(`"first_bullet"` 등). 규모 소(~30 loc, gap #1 "마지막 탄" 확장과 동형).
 - 참고: `jill_valentine.py` docstring.
 
-### 참고 — gap #7로 안 풀리는 사례: rapi-red-hood
+### 참고 — gap #7로 안 풀리는 사례였던 rapi-red-hood — ✅ 완료 (2026-07-19, 별도의 소규모 확장)
 
 Rapi: Red Hood의 120-노멀 카운터는 버프/넉을 직접 발동하는 게 아니라 **프로젝타일을
 발사해 두었다가 풀버스트 진입 시 그 프로젝타일이 폭발**하는 구조(2단계: 발사 이벤트 →
-지연된 별도 트리거의 폭발). 거기에 버스트 자체도 2단계(1단계 서포트 / 3단계 2808%
-projectile_explosion 넉, "as additional damage")로 나뉘어 있어 복잡하다. 이건 단순
-per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** 갭(gap #2 Pattern B에 더
-가까움) — gap #7·#9 어느 것으로도 안 풀림. 확인만 하고 보류(2026-07-15).
+지연된 별도 트리거의 폭발). 2026-07-15엔 이걸 단순 per-shot 트리거가 아니라
+**무기/프로젝타일-런치 상태머신** 갭(gap #2 Pattern B에 더 가까움)으로 확인만 하고
+보류했다 — gap #7·#9 어느 것으로도 안 풀렸음.
+
+**실제로는 상태머신도 Pattern B도 필요 없었다:** 발사(부착) 스케줄은 이미
+`scheduled_nukes`가 표현할 수 있는 형태(소유자의 발사 카운터가 임계치를 넘을 때마다
+결정론적 시각을 방출)였고, 막혔던 건 오직 폭발 시각 — "다음 풀버스트 진입 시각" —
+을 계산할 방법이 없었다는 것뿐이었다. `SquadContext.full_burst_windows`(FB 창
+`[시작, 종료)` 목록, `raid_simulator`가 무기 패스 직전에 채움) 노출 하나로 해소:
+schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각보다 뒤에 오는 첫 FB 창
+시작 시각을 찾아 그 시각에 폭발을 방출한다. 두 개의 독립된 `scheduled_nukes` 항목
+(부착 = 신규 `projectile_attachment` 타입, 폭발 = 기존 `projectile_explosion` 타입)
+으로 표현되며, 상태 전이를 시뮬레이터에 새로 가르칠 필요가 없었다 — Ein/Raven이 세운
+"모듈이 스케줄 계산, 엔진은 방출만" 분업의 또 다른 소비자일 뿐. 상세는
+`rapi_red_hood.py`의 `build_attachable_projectiles_scheduled_nukes` docstring.
 
 ---
 
@@ -654,6 +690,59 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
     base의 5초 변형(실측 없음, 보류).
   - 상세: `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`
     (상태: v1 구현 완료).
+- **`SquadContext.full_burst_windows` + `core_hittable` 노출, `boss_core_hittable()`
+  조건 헬퍼 (계획 2, 2026-07-19):** 무기 패스가 이미 계산해 두고 있던 두 값 —
+  FB 창 `[시작, 종료)` 목록과 이번 시뮬의 코어 활성 여부 — 를 SkillRule/스케줄
+  함수가 읽을 수 있게 `SquadContext`에 얹었을 뿐, 새 계산은 없다.
+  `full_burst_windows`는 `raid_simulator`가 무기 패스 직전에 채우며, 모듈 계산
+  스케줄(`scheduled_nukes`)이 "다음 FB 진입 시각"을 찾는 데 쓴다(rapi-red-hood의
+  프로젝타일 폭발 앵커). `boss_core_hittable()`는 기존 `boss_part_destructible()`과
+  같은 모양의 조건 헬퍼로, `context.core_hittable`을 읽어 "코어 활성 적 한정" 넉을
+  게이팅한다(cinderella-crystal-wave MG 모드의 833.79% 코어스트라이크 넉). 첫
+  소비자: rapi-red-hood(`full_burst_windows`), cinderella-crystal-wave-mg
+  (`boss_core_hittable`).
+- **`projectile_attachment` 데미지 타입 + `projectile_attachment_damage_up` 스탯
+  (계획 2, 2026-07-19):** 기존 `projectile_explosion` 타입/스탯 페어와 나란한
+  두 번째 프로젝타일류 타입 — "부착된" 프로젝타일 자체의 데미지(폭발 데미지와는
+  별개 버킷)를 게이팅. `raid_simulator._TYPE_BUCKETS`에 한 줄 추가. 첫 소비자:
+  rapi-red-hood(Attachable Projectiles의 부착 히트 + Power of Inheritance
+  Stage 3의 421.2% 창).
+- **모드-변형 듀얼슬러그 확장 — `MODE_VARIANTS`/`VARIANT_BURST_TIERS` (계획 2,
+  2026-07-19):** 소유 유닛 1개가 여러 덱 후보 슬러그로 나뉘는 패턴 — 기존
+  `-signature` 듀얼슬롯(julia/drake/laplace, 유저의 애장품 **투자** 상태를
+  나타내고 프론트에서 해석)과는 다르게, 이건 유저의 **플레이/편성 선택**(전투 전
+  고정 무기모드, 또는 어느 버스트 슬롯에 세울지)을 나타내고 백엔드 로스터
+  로더에서 해석된다. `registry.MODE_VARIANTS: {base_slug: (variant_slug, ...)}`
+  를 `user_roster.load_roster`가 읽어 소유 상태 하나를 후보 슬러그 전부로
+  fan-out(`MODE_VARIANTS.get(character_slug) or (character_slug,)`). 변형이
+  캐릭터의 명목 버스트 티어와 다른 슬롯에 앉으면 `VARIANT_BURST_TIERS`가
+  override(rapi-red-hood-b1이 B3 대신 B1). 변형의 무기 프로필이 base와 다르면
+  `_WEAPON_PROFILE_OVERRIDE_BUILDERS`(+ `get_weapon_profile_override`)가 스킬값
+  조립 후 프로필을 교체(cinderella-crystal-wave-snipe의 SR 프로필). 덱 탐색은
+  두 enumeration 경로(조합 생성·순열 정련) 모두 `_no_variant_clash`로 같은
+  base의 변형 두 개가 동시 편성되는 걸 금지하고, pruning 휴리스틱의 내부 참조덱
+  구성(`_reference_deck`/`_variant_safe_top`/`_swap_slot`/`_cross_tier_reference`)도
+  같은 규칙으로 정합하게 보강됐다(교차 티어 변형이 참조덱 측정을 오염시키지
+  않도록 대체 참조덱으로 측정, `deck_search.py` 참고). 진짜 단독 버스트 슬롯
+  대역(예: Combat Assist가 실제 B1 옆에서는 자기모순이 되는 rapi-red-hood-b1)은
+  `SOLE_TIER1_SLUGS`로 같은 티어의 다른 유닛과도 동시 편성을 막는다. 첫 소비자:
+  cinderella-crystal-wave(-mg/-snipe), rapi-red-hood(base/-b1).
+- **세그먼트 게이팅 per-shot 모드 `every_during_segment`/`every_outside_segment`
+  + `caster_weapon_stats` 스킬값 주입 (계획 2, 2026-07-19):** weapon-mode
+  세그먼트(v1) 안/밖에서 다른 배수로 넉을 내야 하는 유닛을 위한 `per_shot_rules`
+  모드 두 개 — gap #7의 `every_during_full_burst`/`every_outside_full_burst`와
+  같은 짝 구조이지만 필터가 FB 창이 아니라 세그먼트 소속이다. **샷 "시각"이
+  아니라 레코드 "정체성"(`ShotRecord.in_segment`)으로 매칭** — 세그먼트가
+  `until_shots`로 끝나는 순간과 매거진형 기본무기가 새 매거진으로 재개하는
+  순간이 동일한 시각을 가질 수 있어(세그먼트 종료 시 즉시 재개가 v1의 확정
+  시맨틱), 시각 매칭이었다면 그 경계 샷 하나가 두 모드를 동시에 만족시켜
+  이중계상을 일으켰을 것 — 정체성 매칭은 이를 구조적으로 막는다(snow-white-
+  heavy-arms 배치 중 발견, `raid_simulator.py`의 window_fire_indices 계산부
+  주석 참고). 함께, 세그먼트 프로필이 자기 기본무기 스탯(예: 차지 배수)을 읽어야
+  하는 유닛을 위해 `roster.py`의 스킬값 조립이 `caster_weapon_stats`(조립된
+  `weapon_stats` 전체)를 다른 `caster_*` 캐스터-베이스스탯 키들과 나란히 주입.
+  첫 소비자: snow-white-heavy-arms(Auto Fire의 평시/Fully-Active 배수 분기,
+  Fully Active 세그먼트 프로필의 차지댐 조립).
 
 ### 10. 창 한정 per-shot threshold 오버라이드 — ✅ 완료 (2026-07-18, `"sequence"` 모드)
 
@@ -739,10 +828,13 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   Ark·Arcana·Tove·Ada Wong(신규)·Little Mermaid·Maiden·Jill).
 2. **남은 방향:** #2 Pattern B(시간감쇠 게이지·변신, 일반 프리미티브 — Mihara류) ·
    상태머신(diesel-winter-sweets·bready·eve·milk-blooming-bunny[gap #11]) ·
-   ~~무기변형~~(**v1 완료, 2026-07-19** — `weapon_mode_schedules` 세그먼트 primitive,
-   snow-white·maxwell·laplace-signature·red-hood 소비; 잔여는 계획 2 백로그 —
-   cinderella-crystal-wave-mg/-snipe 듀얼슬러그·rapi-red-hood FB창 노출·
-   snow-white-heavy-arms 검증 패스, 상세는 위 "이미 만든 것" 참고) ·
+   ~~무기변형~~(**v1+계획 2 완료, 2026-07-19** — `weapon_mode_schedules` 세그먼트
+   primitive, snow-white·maxwell·laplace-signature·red-hood 소비(v1) +
+   `MODE_VARIANTS` 듀얼슬러그(cinderella-crystal-wave-mg/-snipe)·
+   `full_burst_windows`+`boss_core_hittable`(rapi-red-hood 발사기 완성 + 신규
+   rapi-red-hood-b1)·`every_during_segment`/`every_outside_segment`(snow-white-
+   heavy-arms, 신규 상태머신 불필요로 판명)(계획 2) 소비; velvet 변형딜·laplace
+   base 5초 변형만 잔여(보류 확정), 상세는 위 "이미 만든 것" 참고) ·
    ~~아군 총탄 카운터~~(**2026-07-18 완료** — `scheduled_nukes`+`context.shot_times`
    병합으로 확장 없이 해결, Little Mermaid ⚠→✅) ·
    ~~not-in-Full-Burst per-shot 창 필터~~(**2026-07-18 완료** —

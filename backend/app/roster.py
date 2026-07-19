@@ -102,6 +102,7 @@ def assemble_simulation_inputs(ordered_deck):
             "caster_atk": spec.base_stats["atk"],
             "caster_def": spec.base_stats["def"],
             "caster_max_hp": spec.base_stats["max_hp"],
+            "caster_weapon_stats": spec.weapon_stats,
         }
         rules, burst_percent = build_nikke_rules(spec.slug, skill_values)
 

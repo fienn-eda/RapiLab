@@ -25,6 +25,14 @@ Not modeled:
   modeled. Deliberately not double-counted.
 - Bubble Order's "ally ammo reaches 400 -> Burst Gauge +37%" (gauge fill isn't a
   consumed stat) and Siren's Song's instant partial reload.
+
+Cross-note (2026-07-19): Bubble Barrage's squad ammo-expended counter assumes
+"1 shot = 1 round." Velvet's ammo pouch (100/300-round accounting) and
+Cinderella: Crystal Wave's Snipe mode (a full charge accounts as 40 rounds
+despite firing one shot - see cinderella_crystal_wave.py) both accelerate
+ally ammo-consumption counters past that 1-shot-1-round assumption without
+the sim modeling it. Neither is wired into Bubble Barrage's counter today -
+revisit if a proper ammo-accounting/gauge model is ever introduced.
 """
 from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
 

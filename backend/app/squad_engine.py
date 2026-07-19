@@ -30,6 +30,7 @@ class SquadContext:
         base_atk: dict[str, float] | None = None,
         boss_element: str | None = None,
         part_destructible: bool = False,
+        core_hittable: bool = False,
     ):
         self.members = members
         # each member's base (summary) ATK, so a rule targeting "the N allies with
@@ -46,6 +47,15 @@ class SquadContext:
         # Ranger Black's battery-driven Transformation) can read it via the
         # boss_part_destructible condition. False when unset.
         self.part_destructible: bool = part_destructible
+        # whether the boss's core is exploitable this sim (raid_simulator's
+        # core_hittable flag), so a rule gated on core existence (e.g.
+        # Cinderella: Crystal Wave's MG-mode core-strike nuke) can read it.
+        self.core_hittable: bool = core_hittable
+        # Full Burst [start, end) windows from the burst-cycle pass, so a
+        # scheduled_nukes schedule can anchor on FB entry (e.g. Rapi: Red
+        # Hood's projectile explosions). Filled by raid_simulator right
+        # before the weapon pass; empty for contexts without a burst cycle.
+        self.full_burst_windows: list[tuple[float, float]] = []
         # slug -> every time that unit fires, so a `scheduled_nukes` schedule can
         # derive damage from its owner's own shot timeline (e.g. Raven's Shock
         # Wave, a sustained DoT started by each Full Charge). Filled in by
@@ -239,6 +249,16 @@ def boss_part_destructible() -> Callable[[SquadContext, str], bool]:
         return context.part_destructible
 
     return check
+
+
+def boss_core_hittable() -> Callable[[SquadContext, str], bool]:
+    """True when the boss has an exploitable core (sim-level core_hittable
+    flag) - for effects whose target is "enemies with activated cores"."""
+
+    def condition(context: SquadContext, caster_slug: str) -> bool:
+        return context.core_hittable
+
+    return condition
 
 
 def all_conditions(
