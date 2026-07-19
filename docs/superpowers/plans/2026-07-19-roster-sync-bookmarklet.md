@@ -617,6 +617,9 @@ import {
 } from './bookmarklet'
 
 const code = buildBookmarklet('1234567890123456789', 'https://deck.example')
+// 본문은 encodeURIComponent로 감싸여 있어 "://" 같은 문자가 %3A%2F%2F로 바뀐다.
+// 따라서 내용 단언은 반드시 디코드한 소스에 대해 한다.
+const source = decodeURIComponent(code.replace(/^javascript:/, ''))
 
 describe('buildBookmarklet', () => {
   it('javascript: URL로 나온다', () => {
@@ -624,8 +627,8 @@ describe('buildBookmarklet', () => {
   })
 
   it('open_id와 앱 origin이 박힌다', () => {
-    expect(code).toContain('1234567890123456789')
-    expect(code).toContain('https://deck.example')
+    expect(source).toContain('1234567890123456789')
+    expect(source).toContain('https://deck.example')
   })
 
   it('세 엔드포인트를 모두 부른다', () => {
@@ -634,18 +637,18 @@ describe('buildBookmarklet', () => {
       'GetUserCharacterDetails',
       'GetUserProfileOutpostInfo',
     ]) {
-      expect(code).toContain(ep)
+      expect(source).toContain(ep)
     }
   })
 
   it('area 81과 blablalink origin 가드를 포함한다', () => {
-    expect(code).toContain('81')
-    expect(code).toContain(BLABLALINK_ORIGIN)
-    expect(code).toContain(PAYLOAD_MESSAGE)
+    expect(source).toContain('nikke_area_id:81')
+    expect(source).toContain(BLABLALINK_ORIGIN)
+    expect(source).toContain(PAYLOAD_MESSAGE)
   })
 
   it('자격증명을 담지 않는다', () => {
-    expect(code).not.toMatch(/password|token|cookie=/i)
+    expect(source).not.toMatch(/password|token|cookie=/i)
   })
 })
 ```
@@ -704,7 +707,7 @@ try{
 Run: `cd frontend && npm test -- bookmarklet`
 Expected: PASS (5개)
 
-> 참고: `encodeURIComponent` 때문에 테스트의 `toContain`은 인코딩된 문자열에 대해 동작한다. 엔드포인트명·숫자·origin은 인코딩돼도 그대로 남으므로 위 단언은 성립한다.
+> 참고: `encodeURIComponent`는 `://`를 `%3A%2F%2F`로 바꾸므로 **인코딩된 문자열에 대한 origin 단언은 반드시 실패한다**(실측 확인). 위 테스트가 디코드한 `source`에 대해 단언하는 이유다.
 
 - [ ] **Step 5: 커밋**
 
