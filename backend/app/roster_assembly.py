@@ -39,7 +39,9 @@ def extract_inputs(entry: dict, owned: dict, detail: dict) -> dict:
         "level": owned["lv"],
         "grade": detail["grade"],
         "core": detail["core"],
-        "attractive_lv": detail.get("attractive_lv", 0),
+        # The affinity table's floor is level 1 (0 bonus) - there is no level 0
+        # row, so a missing field must default to the floor, not to 0.
+        "attractive_lv": detail.get("attractive_lv", 1),
         "favorite_item_lv": detail.get("favorite_item_lv", 0),
         "favorite_item_tid": detail.get("favorite_item_tid", 0),
         "harmony_cube_lv": detail.get("harmony_cube_lv", 0),
