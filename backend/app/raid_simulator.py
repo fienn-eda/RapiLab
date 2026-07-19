@@ -620,6 +620,17 @@ def simulate_raid(
         # "every_during_own_status_window" carries (N, window_duration).
         own_burst_times = context.burst_times.get(slug, [])
         window_fire_times = {}
+        # every_during_segment/every_outside_segment are keyed on record
+        # IDENTITY (shot_index), not shot_time: a magazine-type base weapon
+        # (AR/MG/SMG/SG) resumes with a fresh magazine at the exact instant
+        # an until_shots segment's last shot lands (attack_rate's documented
+        # resume semantic), so the segment's last ShotRecord (in_segment=
+        # True) and the resumed magazine's first ShotRecord (in_segment=
+        # False) can share an identical `time`. Matching by time value would
+        # make both records satisfy both modes at that instant, breaking the
+        # in_segment flag's whole purpose - a structural guarantee that one
+        # shot can never fire both (Task 8 fix).
+        window_fire_indices = {}
         sequence_fires = {}
         for idx, (threshold, mode, _rules) in enumerate(unit_per_shot):
             if mode == "every_during_full_burst":
@@ -639,13 +650,13 @@ def simulate_raid(
                     core_hittable, fight_duration, full_burst_windows, own_burst_times,
                 ))
             elif mode == "every_during_segment":
-                seg_times = [r.time for r in shot_records if r.in_segment]
-                window_fire_times[idx] = {
-                    t for i, t in enumerate(seg_times) if (i + 1) % threshold == 0}
+                seg_indices = [i for i, r in enumerate(shot_records) if r.in_segment]
+                window_fire_indices[idx] = {
+                    i for pos, i in enumerate(seg_indices) if (pos + 1) % threshold == 0}
             elif mode == "every_outside_segment":
-                base_times = [r.time for r in shot_records if not r.in_segment]
-                window_fire_times[idx] = {
-                    t for i, t in enumerate(base_times) if (i + 1) % threshold == 0}
+                base_indices = [i for i, r in enumerate(shot_records) if not r.in_segment]
+                window_fire_indices[idx] = {
+                    i for pos, i in enumerate(base_indices) if (pos + 1) % threshold == 0}
             elif mode == "sequence":
                 # threshold carries the requirement spec; the rules slot holds
                 # one rule list PER STAGE (see _sequence_fire_rules).
@@ -666,6 +677,7 @@ def simulate_raid(
                         or (mode == "last_bullet" and shot_time in last_bullets)
                         or (mode == "first_bullet" and shot_time in first_bullets)
                         or (idx in window_fire_times and shot_time in window_fire_times[idx])
+                        or (idx in window_fire_indices and shot_index in window_fire_indices[idx])
                     )
                 if fires:
                     for rule in rules:

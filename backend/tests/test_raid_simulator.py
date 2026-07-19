@@ -2523,6 +2523,51 @@ def test_per_shot_every_during_segment_and_every_outside_segment_are_mutually_ex
     assert len(ps) == len(seg_shots) + len(base_shots)  # no shot fires both rules
 
 
+def test_per_shot_every_during_segment_and_every_outside_segment_stay_exclusive_at_a_shared_time():
+    # Fix pass (Task 8 finding): for a MAGAZINE base weapon (AR/MG/SMG/SG),
+    # an until_shots segment's last shot and the resumed base magazine's
+    # first shot land at the exact same instant - the documented resume
+    # semantic in attack_rate._base_shot_records ("a fresh magazine at
+    # window_start"). The prior SR-based exclusivity test can't exercise this
+    # because a charge weapon's resumed first shot always lands one
+    # charge-time AFTER the segment ends, never coincident with it. Here a
+    # rate_of_fire=2.0/until_shots=1 segment starting at t=0 ends its one
+    # tick at t=0.5, and the AR base's fresh magazine also fires its first
+    # round at t=0.5 - two distinct ShotRecords (in_segment=True and False)
+    # sharing time=0.5. Matching by time value (not record identity) let
+    # BOTH per-shot rules fire on BOTH records at that instant.
+    def schedule(context, fight_duration):
+        return [{"start": 0.0, "until_shots": 1,
+                 "profile": {"weapon": "AR", "damage_percent": 500.0, "rate_of_fire": 2.0}}]
+
+    weapon_stats = {
+        "attacker": {"weapon": "AR", "damage_percent": 10.0, "max_ammo": 3,
+                     "reload_time": 100.0, "charge_time": 0.0, "charge_damage_percent": 100.0},
+    }
+    result = simulate_raid(
+        make_deck(), {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=1000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=1.0,
+        mode="auto", base_crit_rate=0.0,
+        weapon_stats=weapon_stats,
+        weapon_mode_schedules={"attacker": schedule},
+        per_shot_rules={"attacker": [
+            (1, "every_during_segment", [instant_nuke_pulse_rule("per_shot", 50.0)]),
+            (1, "every_outside_segment", [instant_nuke_pulse_rule("per_shot", 10.0)]),
+        ]},
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    seg_shots = [e for e in ps if e["damage"] == 500.0]   # atk 1000 * 50%
+    base_shots = [e for e in ps if e["damage"] == 100.0]  # atk 1000 * 10%
+    assert seg_shots and base_shots  # both modes actually fired
+    assert [e["time"] for e in seg_shots] == [0.5]  # only the segment's own shot fires during_segment
+    collision = [e for e in ps if e["time"] == 0.5]
+    assert len(collision) == 2  # exactly one fire per record at the shared instant, not one each
+    assert {e["damage"] for e in collision} == {500.0, 100.0}
+    assert len(ps) == len(seg_shots) + len(base_shots)  # no shot fires both rules
+
+
 def test_per_shot_every_outside_full_burst_does_not_fire_on_a_shot_exactly_at_fb_end():
     # Regression for the boundary leak (final-review Fix 1): a shot landing
     # EXACTLY at a Full Burst window's end must count as "in" Full Burst, not
