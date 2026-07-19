@@ -1,20 +1,20 @@
-# Weapon-Transform 계획 2 (cinderella 듀얼 · rapi 발사기 · SWHA) Implementation Plan
+# Weapon-Transform 계획 2 (cinderella 듀얼 · rapi 발사기+B1 · SWHA) Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** weapon-transform 스펙의 잔여 범위 3건을 착지한다 — cinderella-crystal-wave-mg/-snipe 듀얼모드 슬러그(정적 프로필 2벌 + 탐색 상호 배제), rapi-red-hood 120노멀 프로젝타일 발사기(`scheduled_nukes` + FB 창 노출), snow-white-heavy-arms 인코딩(per-shot + 세그먼트 조합).
+**Goal:** weapon-transform 스펙의 잔여 범위를 착지한다 — cinderella-crystal-wave-mg/-snipe 듀얼모드 슬러그(정적 프로필 2벌 + 탐색 상호 배제), rapi-red-hood 120노멀 프로젝타일 발사기(`scheduled_nukes` + FB 창 노출), **rapi-red-hood-b1 변종(Combat Assist를 실제 B1 슬롯 후보로, Fienn 확정 2026-07-19)**, snow-white-heavy-arms 인코딩(per-shot + 세그먼트 조합).
 
-**Architecture:** 엔진 확장은 전부 소규모다: ① `scheduled_nukes` context에 `full_burst_windows`/`core_hittable` 노출 ② `projectile_attachment` 데미지 타입+스탯(기존 explosion과 평행) ③ 듀얼모드 로스터 확장(1 state → N spec) + 탐색 상호 배제 필터 ④ ShotRecord `in_segment` 플래그 + per-shot 세그먼트 게이팅 모드 2종. 유닛 로직은 전부 모듈이 결정론 계산하고 엔진은 방출만 한다(기존 분업 유지). 스펙: `docs/superpowers/specs/2026-07-18-weapon-transform-design.md` (v1은 2026-07-19 착지, 이 계획이 "계획 2로 이동" 항목을 소비).
+**Architecture:** 엔진 확장은 전부 소규모다: ① `scheduled_nukes` context에 `full_burst_windows`/`core_hittable` 노출 ② `projectile_attachment` 데미지 타입+스탯(기존 explosion과 평행) ③ 듀얼모드 로스터 확장(1 state → N spec) + 변종 버스트티어 오버라이드 + 탐색 상호 배제/단독B1 필터 ④ ShotRecord `in_segment` 플래그 + per-shot 세그먼트 게이팅 모드 2종. 유닛 로직은 전부 모듈이 결정론 계산하고 엔진은 방출만 한다(기존 분업 유지). rapi는 매니페스트를 dotgg→lootandwaifus로 마이그레이션(주 소스 정책 + Stage 1 CD▼20초 토큰이 dotgg 텍스트에 없음)한 뒤 확장한다. 스펙: `docs/superpowers/specs/2026-07-18-weapon-transform-design.md` (v1은 2026-07-19 착지, 이 계획이 "계획 2로 이동" 항목 + rapi B1을 소비).
 
 **Tech Stack:** Python (backend/), pytest. 테스트는 **반드시 `backend/` 디렉터리에서** `C:/Users/fienn/anaconda3/python.exe -m pytest tests -q` (레포 루트에서 돌리면 `app` 임포트 실패 — `python -m pytest`가 CWD를 sys.path에 넣는 구조라 CWD가 backend여야 함).
 
 ## Global Constraints
 
 - 작업 위치: 워크트리 `.claude/worktrees/transform-plan2` (branch `worktree-transform-plan2`, `wip/scaffolding` 96dd9b9에서 분기). `scripts/sync_worktree_data.py`는 이미 실행됨(223파일 동기화, 재실행은 no-op).
-- 베이스라인: **858 passed** (2026-07-19 확인). 태스크마다 전체 스위트 green이 회귀 기준 — 기존 유닛(세그먼트/스케줄 미등록)의 출력은 한 자리도 변하면 안 된다.
+- 베이스라인: **858 passed** (2026-07-19 확인). 태스크마다 전체 스위트 green이 회귀 기준 — 기존 유닛(세그먼트/스케줄 미등록)의 출력은 한 자리도 변하면 안 된다. 예외는 명시된 두 곳: rapi 발사기 추가(Task 4)와 rapi 마이그레이션(Task 3 — 값 불변·슬롯만 변경이라 출력은 그대로여야 함).
 - 스킬 수치 하드코딩 금지 — `SKILL_VALUE_MANIFESTS` + `description_value_NN` 슬롯(`backend/app/skill_values.py`). 이 계획의 토큰 맵은 실제 tokenizer(`extract_lootandwaifus_slots`/`dotgg_slots`)로 추출한 값이다. 어긋나면 `test_skill_value_assembly.py` 하니스가 잡는다.
 - 커밋 메시지에 따옴표(`"`) 금지 — PowerShell 인자 재구성이 깨뜨림. 필요하면 `git commit -F <파일>`.
-- 메커니즘이 모호하면 **Fienn에게 질문**하고 추측하지 않는다. 이 계획에서 이미 받은 판정(2026-07-19): ① cinderella Snipe 풀차지는 velvet처럼 **실제 1발 발사**, "40발 소모"는 탄소모 집계용 회계 ② rapi 프로젝타일은 **매 120노멀마다 부착딜 반복**, 누적분이 **FB 진입 시 일괄 폭발** ③ SWHA sequential **전탄 보스 적중** ④ SWHA 4.2% 받는피해 디버프는 **상시 근사(권장)**.
+- 메커니즘이 모호하면 **Fienn에게 질문**하고 추측하지 않는다. 이 계획에서 이미 받은 판정(2026-07-19): ① cinderella Snipe 풀차지는 velvet처럼 **실제 1발 발사**, "40발 소모"는 탄소모 집계용 회계 ② rapi 프로젝타일은 **매 120노멀마다 부착딜 반복**, 누적분이 **FB 진입 시 일괄 폭발** ③ SWHA sequential **전탄 보스 적중** ④ SWHA 4.2% 받는피해 디버프는 **상시 근사** ⑤ **rapi B1 변종 포함 + loot 마이그레이션 승인**.
 - 남은 Fienn 확인 2건은 태스크 안의 질문 스텝으로: cinderella Snipe **재장전 시간**(텍스트 부재), cinderella-crystal-wave의 **resource_id**.
 - "as additional damage" 텍스트 → `full_burst_bonus_eligible=True`, 그 외 "as damage"는 False (기존 Fienn 규칙). 이 계획의 FB진입 넉들은 전부 "as damage"라 False.
 
@@ -24,11 +24,11 @@
 
 **Files:**
 - Modify: `backend/app/squad_engine.py` (SquadContext `__init__` ~48행 부근, 조건 헬퍼 ~197행 부근)
-- Modify: `backend/app/raid_simulator.py` (context 생성 ~323행, scheduled_nukes 직전 ~909행)
+- Modify: `backend/app/raid_simulator.py` (context 생성 ~323행, 무기 패스 직전 ~573행)
 - Test: `backend/tests/test_squad_engine.py`, `backend/tests/test_raid_simulator.py` (기존 파일에 추가)
 
 **Interfaces:**
-- Produces: `context.full_burst_windows: list[tuple[float, float]]` (scheduled_nukes/weapon_mode 스케줄 평가 시점에 채워짐, 기본 `[]`) · `SquadContext(core_hittable=False)` 필드 · `squad_engine.boss_core_hittable() -> condition` (Task 3의 rapi 폭발 스케줄, Task 5의 MG 변종 FB넉이 소비)
+- Produces: `context.full_burst_windows: list[tuple[float, float]]` (무기/scheduled_nukes 스케줄 평가 시점에 채워짐, 기본 `[]`) · `SquadContext(core_hittable=False)` 필드 · `squad_engine.boss_core_hittable() -> condition` (Task 4의 rapi 폭발 스케줄, Task 6의 MG 변종 FB넉이 소비)
 
 - [ ] **Step 1: 실패하는 테스트 작성** — `backend/tests/test_raid_simulator.py`에 (기존 scheduled_nukes 테스트 스타일을 따라):
 
@@ -78,7 +78,7 @@ Expected: AttributeError (`full_burst_windows` 없음) / ImportError (`boss_core
         # Full Burst [start, end) windows from the burst-cycle pass, so a
         # scheduled_nukes schedule can anchor on FB entry (e.g. Rapi: Red
         # Hood's projectile explosions). Filled by raid_simulator right
-        # before schedules run; empty for contexts without a burst cycle.
+        # before the weapon pass; empty for contexts without a burst cycle.
         self.full_burst_windows: list[tuple[float, float]] = []
 ```
 
@@ -95,7 +95,7 @@ def boss_core_hittable() -> Callable[[SquadContext, str], bool]:
     return condition
 ```
 
-`raid_simulator.py`: ① 323행 `SquadContext(...)` 호출에 `core_hittable=core_hittable,` 추가 ② 909행 `context.shot_times = shot_times_by_slug` 바로 다음 줄에 `context.full_burst_windows = full_burst_windows` 추가. **주의:** `weapon_mode_schedules`는 568행(FB 창 계산) 뒤·무기 패스 안에서 평가되므로, FB 창을 무기 스케줄도 읽게 하려면 대입을 573행(무기 패스 시작) 앞으로 올린다 — scheduled_nukes보다 앞이므로 두 소비자 모두 커버된다.
+`raid_simulator.py`: ① 323행 `SquadContext(...)` 호출에 `core_hittable=core_hittable,` 추가 ② 573행 무기 패스 시작 직전(FB 창 계산 568행 뒤)에 `context.full_burst_windows = full_burst_windows` 추가 — scheduled_nukes(909행)보다 앞이므로 무기 스케줄·넉 스케줄 두 소비자 모두 커버된다.
 
 - [ ] **Step 4: 신규 + 전체 스위트 통과 확인**
 
@@ -119,7 +119,7 @@ git commit -m "engine: expose full_burst_windows and core_hittable on SquadConte
 - Test: `backend/tests/test_raid_simulator.py`
 
 **Interfaces:**
-- Produces: 스탯 `projectile_attachment_damage_up` — `damage_type="projectile_attachment"` 인스턴스의 damage_up 버킷에 합산 (Task 3의 부착딜 + 부착딜 버프가 소비)
+- Produces: 스탯 `projectile_attachment_damage_up` — `damage_type="projectile_attachment"` 인스턴스의 damage_up 버킷에 합산 (Task 4의 부착딜 + 부착딜 버프가 소비)
 
 - [ ] **Step 1: 실패하는 테스트 작성**:
 
@@ -165,7 +165,37 @@ git commit -m "engine: projectile_attachment damage type and damage-up stat"
 
 ---
 
-### Task 3: rapi-red-hood 프로젝타일 발사기 인코딩
+### Task 3: rapi-red-hood 매니페스트 dotgg → lootandwaifus 마이그레이션
+
+**Files:**
+- Modify: `backend/app/skill_rules/rapi_red_hood.py` (매니페스트 source + 토큰 판독 렌버링)
+- Modify: `backend/tests/test_skill_rules_rapi_red_hood.py` (값 픽스처를 loot 슬롯으로 교체)
+
+**Interfaces:**
+- Produces: rapi 매니페스트 `"source": "lootandwaifus"` + loot 번호 체계 — Task 4의 발사기와 Task 7의 b1 변종이 이 번호로 작성된다. **값은 전부 동일**(7.48/95.04/48/8.02/150.72/100.6/2808 등) — 슬롯 번호만 바뀌므로 시뮬 출력 불변이 회귀 기준.
+
+이유: lootandwaifus가 주 소스(dotgg는 2026-05 동결이라 밸런스 패치 추적 불가, 드리프트 체커도 loot 감시), 그리고 **Stage 1 버스트의 CD ▼20초 토큰이 dotgg 축약 텍스트에 없다**(tokenizer 실측) — b1 변종(Task 7)이 이 값을 읽어야 한다. Fienn 승인 2026-07-19.
+
+토큰 맵 (lootandwaifus Lv10, tokenizer 실측 — 왼쪽이 기존 dotgg 슬롯, 오른쪽이 새 loot 슬롯):
+- `battlefield_assessment`: loot 01=1(자기 티어), 02·03=1(분기 라벨), **04**=7.48(CD▼, 구 02), **05**=8.02(아군 공딜%, 구 07), **06**=10(구 08), **07**=95.04(자기 ATK%, 구 03), **08**=10(구 04), **09**=48(파츠%, 구 05), **10**=10(구 06)
+- `attachable_projectiles`: loot **01**=150.72(부착▲, 구 05), **02**=100.6(폭발▲, 구 06), **03**=120(요구 노멀 수, 구 01), **04**=88.11(부착딜%, 구 02), **05**=88.11(폭발딜%, 구 03), **06**=1(max ammo, 구 04)
+- `power_of_inheritance`: loot 01=1(Stage 1 라벨), **02=20(CD▼초 — dotgg에 없던 토큰)**, 03=100.62(반경, defer), 04=10, **05**=18.01(아군 ATK%, 구 03), **06**=10(구 04), 07=3(Stage 3 라벨), **08**=2808(넉%, 구 05), 09=100.62, 10=10, **11**=421.2(부착▲창%, 구 06), **12**=10(구 07), 13=2(라벨), **14**=60(요구치▼, 구 08), **15**=10(구 09)
+
+- [ ] **Step 1: 테스트 픽스처를 loot 슬롯으로 교체** — `test_skill_rules_rapi_red_hood.py`의 VALUES 픽스처를 위 맵대로 재작성(값 동일·키만 이동). 이 시점에 기존 테스트는 실패해야 정상(모듈이 아직 옛 슬롯을 읽음).
+- [ ] **Step 2: 실패 확인** — Run: `cd backend` 후 `C:/Users/fienn/anaconda3/python.exe -m pytest tests/test_skill_rules_rapi_red_hood.py -v`
+- [ ] **Step 3: 모듈 렌버링** — `SKILL_VALUE_MANIFESTS["rapi-red-hood"]`의 `"source"`를 `"lootandwaifus"`로 변경(keys 경로 `("skills", N)`은 동일). `build_battlefield_assessment_rules`: 02→04, 03→07, 04→08, 05→09, 06→10, 07→05, 08→06. `build_attachable_projectiles_rules`: 06→02. `power_of_inheritance_stage3_burst_percent`: 05→08. docstring의 slug 출처 문구("api.dotgg.gg slug")를 lootandwaifus로 갱신.
+- [ ] **Step 4: 하니스 + 전체 스위트** — Run: `cd backend` 후 `C:/Users/fienn/anaconda3/python.exe -m pytest tests/test_skill_value_assembly.py tests -q`
+Expected: 전부 PASS — rapi 포함 어떤 유닛의 시뮬 수치도 변하면 안 된다(값 불변 마이그레이션). 라벨 토큰(01·02·03 등)이 하니스와 어긋나면 그때만 `drop_tokens`.
+- [ ] **Step 5: 커밋**
+
+```bash
+git add backend/app/skill_rules/rapi_red_hood.py backend/tests/test_skill_rules_rapi_red_hood.py
+git commit -m "encode: migrate Rapi Red Hood manifest to lootandwaifus slots (values unchanged)"
+```
+
+---
+
+### Task 4: rapi-red-hood 프로젝타일 발사기 인코딩
 
 **Files:**
 - Modify: `backend/app/skill_rules/rapi_red_hood.py`
@@ -173,16 +203,12 @@ git commit -m "engine: projectile_attachment damage type and damage-up stat"
 - Test: `backend/tests/test_skill_rules_rapi_red_hood.py` (기존 파일 확장)
 
 **Interfaces:**
-- Consumes: Task 1 `context.full_burst_windows`, Task 2 `projectile_attachment` 타입
-- Produces: `build_attachable_projectiles_scheduled_nukes(values) -> [spec, spec]`, `build_power_of_inheritance_rules(values) -> [SkillRule]`
-
-토큰 맵 (dotgg — 기존 매니페스트 소스, 실측 덤프 완료):
-- `attachable_projectiles`: 01=120(발사 요구 노멀 수), 02=88.11(부착딜%), 03=88.11(폭발딜%), 04=1(Max Ammunition — Fienn 판정으로 누적 모델이라 미사용), 05=150.72(부착딜▲%, 기존 defer 해제), 06=100.6(폭발딜▲%, 이미 모델됨)
-- `power_of_inheritance`: 05=2808(이미 모델), 06=421.2(부착딜▲ 창%), 07=10(초), 08=60(요구치▼), 09=10(초)
+- Consumes: Task 1 `context.full_burst_windows`, Task 2 `projectile_attachment` 타입, Task 3 loot 슬롯
+- Produces: `build_attachable_projectiles_scheduled_nukes(values, slug="rapi-red-hood", stage3_requirement_cut=True) -> [spec, spec]` (slug/컷 파라미터는 Task 7의 b1 변종이 재사용), `build_power_of_inheritance_rules(values) -> [SkillRule]` (Stage 3 rider — base 슬러그 전용)
 
 확정 시맨틱 (Fienn 2026-07-19): 매 120노멀마다 부착딜 발생(카운터는 발사 시 리셋), 부착된 프로젝타일은 **누적**되어 다음 FB 진입 시 **일괄 폭발**(부착 1건당 폭발딜 1히트). 버스트(Stage 3) 후 10초는 요구치가 120−60=60.
 
-- [ ] **Step 1: 실패하는 테스트 작성** — 기존 파일의 픽스처 스타일(VALUES dict)로:
+- [ ] **Step 1: 실패하는 테스트 작성** — Task 3에서 갱신한 픽스처로:
 
 ```python
 def test_projectile_launcher_attaches_every_120_shots_and_explodes_on_fb_entry():
@@ -216,6 +242,18 @@ def test_projectile_requirement_drops_to_60_inside_own_burst_window():
     assert times[1] == 18.0    # 리셋 후 60카운트 도달 시각 12.0은 창 밖 → 120 요구 복원, 120카운트 = t=18.0
 
 
+def test_stage3_cut_disabled_uses_flat_120_requirement():
+    specs = build_attachable_projectiles_scheduled_nukes(
+        RAPI_VALUES, slug="rapi-red-hood-b1", stage3_requirement_cut=False)
+    attach = specs[0]
+    context = SimpleNamespace(
+        shot_times={"rapi-red-hood-b1": [float(i) / 10 for i in range(1, 1201)]},
+        burst_times={"rapi-red-hood-b1": [0.05]},
+        full_burst_windows=[],
+    )
+    assert attach["schedule"](context, 180.0)[0] == 12.0     # 창 무시, 120 고정
+
+
 def test_power_of_inheritance_burst_rider_buffs_attachment_window():
     rules = build_power_of_inheritance_rules(RAPI_VALUES)
     # own_burst_activate 트리거 1건: projectile_attachment_damage_up 4.212 / 10s self
@@ -228,28 +266,32 @@ Expected: ImportError
 - [ ] **Step 3: 구현** — `rapi_red_hood.py`에 추가:
 
 ```python
-def build_attachable_projectiles_scheduled_nukes(values: dict) -> list[dict]:
+def build_attachable_projectiles_scheduled_nukes(
+    values: dict, slug: str = "rapi-red-hood", stage3_requirement_cut: bool = True,
+) -> list[dict]:
     """The 120-normal-attack projectile launcher (Fienn semantics, 2026-07-19):
     every time the shot counter reaches the requirement it fires an attaching
     projectile (attachment damage lands at that shot's time, counter resets),
     attachments ACCUMULATE, and every pending attachment explodes together on
     the next Full Burst entry (one explosion hit per attachment). The Stage 3
-    burst lowers the requirement by 60 for 10s (windows from own burst times).
-    Attachment/explosion hits are damage-typed so the matching Damage-Up stats
-    (S2's permanent 150.72%/100.6%, the burst's windowed 421.2%) multiply them
-    in phase 2 - nothing is folded into the percents here."""
+    burst lowers the requirement by 60 for 10s (windows from own burst times);
+    the B1 variant bursts in Stage 1, so it passes stage3_requirement_cut=False
+    and keeps the flat 120. Attachment/explosion hits are damage-typed so the
+    matching Damage-Up stats (S2's permanent 150.72%/100.6%, the Stage 3
+    burst's windowed 421.2%) multiply them in phase 2 - nothing is folded into
+    the percents here."""
     proj = values["attachable_projectiles"]
     burst = values["power_of_inheritance"]
-    base_requirement = int(float(proj["description_value_01"]))
-    attach_percent = float(proj["description_value_02"])
-    explosion_percent = float(proj["description_value_03"])
-    requirement_cut = int(float(burst["description_value_08"]))
-    cut_duration = float(burst["description_value_09"])
+    base_requirement = int(float(proj["description_value_03"]))
+    attach_percent = float(proj["description_value_04"])
+    explosion_percent = float(proj["description_value_05"])
+    requirement_cut = int(float(burst["description_value_14"])) if stage3_requirement_cut else 0
+    cut_duration = float(burst["description_value_15"])
 
     def attach_times(context, fight_duration):
-        shots = context.shot_times.get("rapi-red-hood", [])
+        shots = context.shot_times.get(slug, [])
         windows = [(t, t + cut_duration)
-                   for t in context.burst_times.get("rapi-red-hood", [])]
+                   for t in context.burst_times.get(slug, [])]
         times, count = [], 0
         for t in shots:
             count += 1
@@ -285,8 +327,8 @@ def build_power_of_inheritance_rules(values: dict) -> list[SkillRule]:
     return [
         buff_rule("own_burst_activate", [
             ("projectile_attachment_damage_up",
-             float(burst["description_value_06"]) / 100, "self",
-             float(burst["description_value_07"])),
+             float(burst["description_value_11"]) / 100, "self",
+             float(burst["description_value_12"])),
         ]),
     ]
 ```
@@ -296,7 +338,7 @@ def build_power_of_inheritance_rules(values: dict) -> list[SkillRule]:
 ```python
         buff_rule("battle_start", [
             ("projectile_attachment_damage_up",
-             float(values["description_value_05"]) / 100, "self", None),
+             float(values["description_value_01"]) / 100, "self", None),
         ]),
 ```
 
@@ -311,21 +353,21 @@ git add backend/app/skill_rules/rapi_red_hood.py backend/app/skill_rules/registr
 git commit -m "encode: Rapi Red Hood projectile launcher - attach every 120 normals, explode on FB entry"
 ```
 
-`docs/encoded-nikkes.md`의 rapi 행 갱신(발사기 모델됨, 잔여: Explosion Radius·Interruption Parts·Stage1 브랜치 딜) 후 커밋.
+`docs/encoded-nikkes.md`의 rapi 행 갱신(발사기 모델됨, 잔여: Explosion Radius·Interruption Parts·Stage1 브랜치는 Task 7에서) 후 커밋.
 
 ---
 
-### Task 4: 듀얼모드 확장 메커니즘 (registry → roster → deck_search → frontend)
+### Task 5: 듀얼모드 확장 메커니즘 (registry → roster → deck_search → frontend)
 
 **Files:**
-- Modify: `backend/app/skill_rules/registry.py` (`MODE_VARIANTS` 맵 + `get_weapon_profile_override`)
-- Modify: `backend/app/user_roster.py` (`load_nikke_spec` slug_override + 프로필 오버라이드 적용, `load_roster` 확장 루프)
+- Modify: `backend/app/skill_rules/registry.py` (`MODE_VARIANTS` + `VARIANT_BURST_TIERS` + `get_weapon_profile_override`)
+- Modify: `backend/app/user_roster.py` (`load_nikke_spec` slug_override/티어·프로필 오버라이드, `load_roster` 확장 루프)
 - Modify: `backend/app/deck_search.py` (`shape_combinations`/`feasible_orderings` 상호 배제 필터)
 - Modify: `frontend/src/lib/resourceIdSlugMap.ts`, `backend/tests/test_resource_id_slug_map.py`
 - Test: `backend/tests/test_user_roster.py`(로스터 테스트가 있는 파일을 grep으로 확인), `backend/tests/test_deck_search.py`
 
 **Interfaces:**
-- Produces: `registry.MODE_VARIANTS = {base_slug: (variant_slug, ...)}` · `registry.get_weapon_profile_override(slug, skill_values) -> dict | None` · `load_nikke_spec(state, data_dir, slug_override=None)` · deck_search가 같은 base의 두 variant를 한 덱에 앉히지 않음. Task 5가 cinderella 항목을 채운다 — 이 태스크는 메커니즘만 (빈 `MODE_VARIANTS`로 착지, 테스트는 테스트 로컬 몽키패치/가짜 그룹으로).
+- Produces: `registry.MODE_VARIANTS = {base_slug: (candidate_slug, ...)}` (튜플이 로스터 후보 전체 — base 자신이 후보면 포함) · `registry.VARIANT_BURST_TIERS = {variant_slug: tier}` · `registry.get_weapon_profile_override(slug, skill_values) -> dict | None` · `load_nikke_spec(state, data_dir, slug_override=None)` · deck_search가 같은 base의 두 variant를 한 덱에 앉히지 않음. Task 6(cinderella)·Task 7(rapi-b1)이 항목을 채운다 — 이 태스크는 메커니즘만 (빈 맵으로 착지, 테스트는 몽키패치로).
 
 - [ ] **Step 1: 실패하는 테스트 작성** — deck_search 필터부터:
 
@@ -346,18 +388,24 @@ def test_mode_variants_never_share_a_deck(monkeypatch):
         assert not {"unit-a-mg", "unit-a-snipe"} <= slugs
 ```
 
-(`FakeUnit`은 해당 테스트 파일의 기존 slug/burst_tier 헬퍼를 재사용 — 없으면 `SimpleNamespace(slug=..., burst_tier=...)`.) 로스터 확장 테스트는 기존 로스터 테스트 파일에서 `load_roster` 픽스처를 grep해 같은 스타일로: `MODE_VARIANTS`에 항목을 몽키패치하고, state 1건이 spec 2건(variant 슬러그)으로 확장됨 + 오버라이드 없는 유닛은 기존과 동일함을 단언.
+(`FakeUnit`은 해당 테스트 파일의 기존 slug/burst_tier 헬퍼를 재사용 — 없으면 `SimpleNamespace(slug=..., burst_tier=...)`.) 로스터 확장 테스트는 기존 로스터 테스트 파일에서 `load_roster` 픽스처를 grep해 같은 스타일로: `MODE_VARIANTS`에 항목을 몽키패치하고, state 1건이 spec N건(variant 슬러그·`VARIANT_BURST_TIERS` 오버라이드 반영)으로 확장됨 + 오버라이드 없는 유닛은 기존과 동일함을 단언.
 
 - [ ] **Step 2: 실패 확인** (AttributeError: `_VARIANT_GROUP` 없음)
 
 - [ ] **Step 3: 구현** — registry.py (`ENCODED_SLUGS` 정의 근처):
 
 ```python
-# One owned character whose kit is a PRE-BATTLE mode choice held for the whole
-# fight (Fienn, 2026-07-18 spec review): each mode is its own statically-wired
-# slug. The roster loader candidates every variant from the one owned state;
-# deck search never seats two variants of the same base together.
+# One owned character who yields MULTIPLE deck candidates (Fienn, 2026-07-18/19):
+# a pre-battle mode choice (Cinderella: Crystal Wave MG/Snipe) or a formation
+# role choice (Rapi: Red Hood B3/B1). The tuple lists every candidate slug the
+# roster loader fans the one owned state out to (include the base slug itself
+# when it stays a candidate); deck search never seats two candidates of the
+# same base together.
 MODE_VARIANTS: dict[str, tuple[str, ...]] = {}
+
+# A variant seated in a different burst-rotation slot than the character's
+# nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
+VARIANT_BURST_TIERS: dict[str, int] = {}
 
 
 # A variant whose weapon profile differs from the character's dotgg stats
@@ -373,7 +421,7 @@ def get_weapon_profile_override(slug, skill_values):
     return builder(skill_values)
 ```
 
-user_roster.py: import에 `MODE_VARIANTS`, `get_weapon_profile_override` 추가(기존 registry import 줄 확장). ① `load_nikke_spec(state, data_dir=DATA_DIR, slug_override=None)` — 본문 첫 줄 `slug = slug_override or state.character_slug`; `assemble_skill_values` 뒤에:
+user_roster.py: import에 `MODE_VARIANTS`, `VARIANT_BURST_TIERS`, `get_weapon_profile_override` 추가(기존 registry import 줄 확장). ① `load_nikke_spec(state, data_dir=DATA_DIR, slug_override=None)` — 본문 첫 줄 `slug = slug_override or state.character_slug`; `assemble_skill_values` 뒤에:
 
 ```python
     override = get_weapon_profile_override(slug, skill_values)
@@ -381,7 +429,7 @@ user_roster.py: import에 `MODE_VARIANTS`, `get_weapon_profile_override` 추가(
         weapon_stats = override
 ```
 
-② `load_roster` 루프를 확장형으로:
+`burst_tier` 결정을 `burst_tier = VARIANT_BURST_TIERS.get(slug) or int(meta["burst"])`로 교체. ② `load_roster` 루프를 확장형으로:
 
 ```python
     for state in states:
@@ -417,7 +465,7 @@ def _no_variant_clash(units):
 
 `shape_combinations`의 `yield` 직전과 `feasible_orderings`의 combo 유효성 검사에 `_no_variant_clash(...)` 게이트 추가 (두 열거 경로 모두 — `find_best_decks_pruned`는 shape_combinations를 쓰므로 자동 커버).
 
-- [ ] **Step 4: 전체 스위트 통과 확인** — `MODE_VARIANTS`가 비어 있으므로 기존 출력 불변이어야 정상.
+- [ ] **Step 4: 전체 스위트 통과 확인** — 맵이 전부 비어 있으므로 기존 출력 불변이어야 정상.
 
 - [ ] **Step 5: 커밋**
 
@@ -428,7 +476,7 @@ git commit -m "engine: mode-variant dual-slug expansion - roster fan-out and dec
 
 ---
 
-### Task 5: cinderella-crystal-wave-mg / -snipe 인코딩
+### Task 6: cinderella-crystal-wave-mg / -snipe 인코딩
 
 **Files:**
 - Create: `backend/app/skill_rules/cinderella_crystal_wave.py` (한 파일에 두 슬러그 — drake.py 선례)
@@ -437,7 +485,7 @@ git commit -m "engine: mode-variant dual-slug expansion - roster fan-out and dec
 - Test: `backend/tests/test_skill_rules_cinderella_crystal_wave.py` (신규)
 
 **Interfaces:**
-- Consumes: Task 1 `boss_core_hittable`, Task 4 `MODE_VARIANTS`/오버라이드 배선
+- Consumes: Task 1 `boss_core_hittable`, Task 5 `MODE_VARIANTS`/오버라이드 배선
 - Produces: `build_crystal_wave_mg_rules(values)`, `build_crystal_wave_snipe_rules(values)`, `crystal_wave_burst_percent(values)`, `crystal_wave_periodic_nuke(values)`, `build_snipe_weapon_profile(values)`
 
 데이터: `data/lootandwaifus/char_cinderella-crystal-wave.json` + dotgg 동명 파일(MG 5.57%·300발·reload 2.5s — 수동 스텁, 존재 확인 완료). 유닛 메타: B3·Iron·MG·cd 40. 토큰 맵 (lootandwaifus Lv10, tokenizer 실측):
@@ -618,7 +666,7 @@ MG FB넉의 코어 게이팅 주석: 코어 보정은 시뮬 전역 균일 모�
 
 little_mermaid.py docstring에 교차 노트 추가: Bubble Order류 아군 탄소모 카운터는 velvet ammo pouch(100/300발 회계)·cinderella-crystal-wave Snipe(풀차지=40발 회계)로 가속되는데 현재 "1샷=1탄" 가정 — 게이지 모델 도입 시 재검토.
 
-- [ ] **Step 4: 드리프트 테스트/프론트 맵** — `test_resource_id_slug_map.py`: `MODE_VARIANTS` variant 슬러그들이 map에 직접 안 나타나도 되도록 "-signature" 차감과 동형 처리(registry의 `MODE_VARIANTS`를 import해 variant를 도달 가능으로 간주). resourceIdSlugMap.ts: Step 1의 id 답변대로 `NNN: 'cinderella-crystal-wave'` 추가(백엔드가 두 변종으로 확장 — 파일 헤더 주석에 base-slug 규약 한 줄 추가), id 미상이면 `KNOWN_UNMAPPED` 경로.
+- [ ] **Step 4: 드리프트 테스트/프론트 맵** — `test_resource_id_slug_map.py`: registry의 `MODE_VARIANTS`를 import해 ① variant 슬러그는 map에 직접 안 나타나도 도달 가능으로 간주("-signature" 차감과 동형) ② map 값으로 mode-variant **base** 슬러그(비인코딩)를 허용. resourceIdSlugMap.ts: Step 1의 id 답변대로 `NNN: 'cinderella-crystal-wave'` 추가(백엔드가 두 변종으로 확장 — 파일 헤더 주석에 base-slug 규약 한 줄 추가), id 미상이면 `KNOWN_UNMAPPED` 경로.
 
 - [ ] **Step 5: 하니스 + 전체 스위트** — Run: `cd backend` 후 `C:/Users/fienn/anaconda3/python.exe -m pytest tests/test_skill_value_assembly.py tests -q`. 라벨 토큰(05·06·08 등)이 하니스와 어긋나면 그때만 `drop_tokens` 추가.
 
@@ -631,7 +679,124 @@ git commit -m "encode: Cinderella Crystal Wave - MG and Snipe static mode slugs 
 
 ---
 
-### Task 6: per-shot 세그먼트 게이팅 (`in_segment` 플래그 + 모드 2종) + `caster_weapon_stats` 주입
+### Task 7: rapi-red-hood-b1 변종 (Combat Assist를 B1 슬롯 후보로)
+
+**Files:**
+- Modify: `backend/app/skill_rules/rapi_red_hood.py` (b1 매니페스트 + Stage 1 버스트 빌더)
+- Modify: `backend/app/skill_rules/registry.py` (b1 `_BUILDERS`·`_SCHEDULED_NUKE_BUILDERS`, `MODE_VARIANTS`, `VARIANT_BURST_TIERS`)
+- Modify: `backend/app/deck_search.py` (단독 B1 필터)
+- Test: `backend/tests/test_skill_rules_rapi_red_hood.py`, `backend/tests/test_deck_search.py`
+
+**Interfaces:**
+- Consumes: Task 3 loot 슬롯, Task 4 발사기 파라미터, Task 5 `MODE_VARIANTS`/`VARIANT_BURST_TIERS`
+- Produces: 슬러그 `rapi-red-hood-b1` (burst_tier 1, 버스트 넉 없음) · `build_power_of_inheritance_stage1_rules(values)` · deck_search `SOLE_TIER1_SLUGS`
+
+설계 근거 (Fienn 확정 2026-07-19): S1의 Combat Assist 분기 룰(`assess_formation` — 다른 B1 없으면 CA 세팅, FB 진입 시 아군 CD ▼7.48s + 공딜 ▲8.02%/10s)은 **이미 인코딩돼 있고 덱 구성에서 자동 평가**되므로, 그녀를 B1 슬롯에 앉히기만 하면 그대로 맞게 작동한다. Stage 1 버스트는 넉 없음 + 자신 CD ▼20s(`cdr_pulse_rule` self — blanc/prika 선례로 엔진 소비 확인) + 아군 flat ATK 18.01%×캐스터ATK/10s(Crown `flat_atk` 선례). **단독 B1 제약**: 다른 B1과 같은 덱이면 인게임에선 CA가 취소돼 시뮬과 어긋나므로 탐색에서 배제한다 — `(2,1,2)` 셰이프에서 그녀가 자동 제외됨.
+
+- [ ] **Step 1: 실패하는 테스트 작성**:
+
+```python
+def test_stage1_burst_is_support_only_cdr_and_caster_atk():
+    values = {**RAPI_VALUES, "caster_atk": 100000.0}
+    rules = build_power_of_inheritance_stage1_rules(values)
+    assert len(rules) == 2
+    # rules[0]: own_burst_activate cdr_pulse self 20.0
+    # rules[1]: own_burst_activate buff flat_atk 100000*0.1801 squad 10.0
+    # (_applied_buffs는 Task 6 테스트 파일과 동일 패턴의 로컬 수집 헬퍼를 이 파일에도 정의)
+    assert ("flat_atk", pytest.approx(18010.0), "squad", 10.0) in _applied_buffs(rules[1])
+
+
+def test_b1_variant_registered_as_tier1_candidate():
+    from app.skill_rules.registry import (
+        ENCODED_SLUGS, MODE_VARIANTS, VARIANT_BURST_TIERS, build_nikke_rules)
+    assert MODE_VARIANTS["rapi-red-hood"] == ("rapi-red-hood", "rapi-red-hood-b1")
+    assert VARIANT_BURST_TIERS["rapi-red-hood-b1"] == 1
+    assert "rapi-red-hood-b1" in ENCODED_SLUGS
+    rules, burst_percent = build_nikke_rules(
+        "rapi-red-hood-b1", {**RAPI_VALUES, "caster_atk": 100000.0})
+    assert burst_percent is None                       # Stage 1 use has no damage
+
+
+def test_sole_tier1_slug_rejected_next_to_another_b1():
+    from app import deck_search
+    roster = [FakeUnit("rapi-red-hood-b1", 1), FakeUnit("liter", 1),
+              FakeUnit("b2", 2), FakeUnit("d1", 3), FakeUnit("d2", 3), FakeUnit("d3", 3)]
+    for deck in deck_search.shape_combinations(roster):
+        slugs = {u.slug for u in deck}
+        assert not {"rapi-red-hood-b1", "liter"} <= slugs
+    for deck in deck_search.feasible_orderings(roster):
+        slugs = {u.slug for u in deck}
+        assert not {"rapi-red-hood-b1", "liter"} <= slugs
+```
+
+- [ ] **Step 2: 실패 확인** — ImportError / KeyError
+
+- [ ] **Step 3: 구현** — `rapi_red_hood.py`: 매니페스트 dict에 `"rapi-red-hood-b1"` 항목 추가(`"rapi-red-hood"` 항목과 동일 내용 + `"data_slug": "rapi-red-hood"`, `"dotgg_slug": "rapi-red-hood"` — 무기 스탯 로드용). 빌더:
+
+```python
+def build_power_of_inheritance_stage1_rules(values: dict) -> list[SkillRule]:
+    """Power of Inheritance used in Stage 1 (the B1-variant seat, where
+    Combat Assist holds): no damage - self burst-cooldown down 20s (so she
+    re-bursts every cycle from cycle 2 on) and all allies gain flat ATK worth
+    18.01% of HER attack for 10s (Crown's caster-ATK precedent). Explosion
+    Radius stays deferred (not modeled)."""
+    burst = values["power_of_inheritance"]
+    caster_atk = values["caster_atk"]
+    return [
+        cdr_pulse_rule("own_burst_activate",
+                       float(burst["description_value_02"]), scope="self"),
+        buff_rule("own_burst_activate", [
+            ("flat_atk", caster_atk * float(burst["description_value_05"]) / 100,
+             "squad", float(burst["description_value_06"])),
+        ]),
+    ]
+```
+
+(`cdr_pulse_rule`을 `_helpers` import에 추가.) registry.py:
+
+```python
+_BUILDERS["rapi-red-hood-b1"] = lambda sv: (
+    build_battlefield_assessment_rules(sv["battlefield_assessment"])
+    + build_attachable_projectiles_rules(sv["attachable_projectiles"])
+    + build_power_of_inheritance_stage1_rules(sv),
+    None,                       # Stage 1 use deals no damage
+)
+_SCHEDULED_NUKE_BUILDERS["rapi-red-hood-b1"] = lambda sv: build_attachable_projectiles_scheduled_nukes(
+    sv, slug="rapi-red-hood-b1", stage3_requirement_cut=False)
+MODE_VARIANTS["rapi-red-hood"] = ("rapi-red-hood", "rapi-red-hood-b1")
+VARIANT_BURST_TIERS["rapi-red-hood-b1"] = 1
+```
+
+(base 슬러그의 기존 빌더 전달 형태와 정확히 맞출 것 — Task 4에서 확인한 형태 재사용. b1은 Stage 3 rider(`build_power_of_inheritance_rules`)를 **받지 않는다** — 요구치 컷·부착▲421.2 창 모두 Stage 3 전용.) deck_search.py — `_no_variant_clash` 옆에:
+
+```python
+# Variants whose kit only holds when they are the deck's ONLY Burst-1 unit
+# (Rapi: Red Hood's Combat Assist cancels itself next to a real B1 - seating
+# her as one of two B1s would simulate a formation the game never produces).
+SOLE_TIER1_SLUGS = {"rapi-red-hood-b1"}
+
+
+def _tier1_seating_valid(units):
+    tier1 = [u for u in units if u.burst_tier == 1]
+    if len(tier1) <= 1:
+        return True
+    return not any(u.slug in SOLE_TIER1_SLUGS for u in tier1)
+```
+
+두 열거 경로의 `_no_variant_clash` 게이트에 `and _tier1_seating_valid(...)` 추가.
+
+- [ ] **Step 4: 엔드투엔드 검증 테스트** — rapi-b1을 유일 B1로 넣은 5인 덱 시뮬 1회: ① Combat Assist가 세팅되어 FB 진입 시 아군 attack_damage_up 8.02%가 damage_log에 반영(같은 덱에서 b1↔일반 B1 교체 비교) ② 그녀의 버스트가 CD ▼20으로 2사이클째부터 매 사이클 발화(events의 burst 타이밍 단언) ③ 발사기가 b1 슬러그로도 부착/폭발을 방출. 전체 스위트 green.
+
+- [ ] **Step 5: 커밋 + encoded-nikkes 갱신** (rapi 행: B1 변종 추가, Stage 1 브랜치 모델됨 — 반경만 defer)
+
+```bash
+git add backend/app/skill_rules/rapi_red_hood.py backend/app/skill_rules/registry.py backend/app/deck_search.py backend/tests docs/encoded-nikkes.md
+git commit -m "encode: Rapi Red Hood B1 variant - Combat Assist as a real tier-1 candidate"
+```
+
+---
+
+### Task 8: per-shot 세그먼트 게이팅 (`in_segment` 플래그 + 모드 2종) + `caster_weapon_stats` 주입
 
 **Files:**
 - Modify: `backend/app/attack_rate.py` (ShotRecord + `_segment_shot_records`)
@@ -640,7 +805,7 @@ git commit -m "encode: Cinderella Crystal Wave - MG and Snipe static mode slugs 
 - Test: `backend/tests/test_attack_rate.py`, `backend/tests/test_raid_simulator.py`
 
 **Interfaces:**
-- Produces: `ShotRecord.in_segment: bool = False` (세그먼트 발사만 True) · per-shot 모드 `"every_during_segment"` / `"every_outside_segment"` (threshold = N, 각각 세그먼트 안/밖 샷만 세어 N번째마다 발화) · `skill_values["caster_weapon_stats"]` (spec.weapon_stats 주입 — caster_atk 선례). Task 7의 SWHA가 세 가지 모두 소비.
+- Produces: `ShotRecord.in_segment: bool = False` (세그먼트 발사만 True) · per-shot 모드 `"every_during_segment"` / `"every_outside_segment"` (threshold = N, 각각 세그먼트 안/밖 샷만 세어 N번째마다 발화) · `skill_values["caster_weapon_stats"]` (spec.weapon_stats 주입 — caster_atk 선례). Task 9의 SWHA가 세 가지 모두 소비.
 
 - [ ] **Step 1: 실패하는 테스트 작성**:
 
@@ -668,7 +833,7 @@ raid_simulator 쪽 (Task 2에서 쓴 스타일의 최소 시뮬로): 세그먼�
                     t for i, t in enumerate(base_times) if (i + 1) % threshold == 0}
 ```
 
-roster.py 주입부(caster_atk 옆)에 `"caster_weapon_stats": spec.weapon_stats,` 추가 — 무기 프로필에서 파생되는 스케줄(Task 7)이 기본 스탯을 하드코딩 없이 읽는 경로.
+roster.py 주입부(caster_atk 옆)에 `"caster_weapon_stats": spec.weapon_stats,` 추가 — 무기 프로필에서 파생되는 스케줄(Task 9)이 기본 스탯을 하드코딩 없이 읽는 경로.
 
 - [ ] **Step 4: 전체 스위트 통과 확인** (플래그 기본 False + 신규 모드 미사용 = 기존 출력 불변)
 
@@ -681,14 +846,14 @@ git commit -m "engine: segment-gated per-shot modes and caster weapon stats inje
 
 ---
 
-### Task 7: snow-white-heavy-arms 인코딩 (per-shot + 세그먼트 조합)
+### Task 9: snow-white-heavy-arms 인코딩 (per-shot + 세그먼트 조합)
 
 **Files:**
 - Create: `backend/app/skill_rules/snow_white_heavy_arms.py` · Test: `backend/tests/test_skill_rules_snow_white_heavy_arms.py`
 - Modify: `backend/app/skill_rules/registry.py` (import, `_BUILDERS`, `_PER_SHOT_RULE_BUILDERS`, `_WEAPON_MODE_SCHEDULE_BUILDERS`), `frontend/src/lib/resourceIdSlugMap.ts` (id **471** — 기존 주석에 명시돼 있음), `docs/encoded-nikkes.md`
 
 **Interfaces:**
-- Consumes: Task 6 전부 (세그먼트 게이팅 모드, caster_weapon_stats)
+- Consumes: Task 8 전부 (세그먼트 게이팅 모드, caster_weapon_stats)
 - Produces: `build_snow_white_heavy_arms_rules(values)`, `build_seven_dwarves_per_shot_rules(values)`, `build_fully_active_weapon_mode_schedule(values)`
 
 유닛 메타: B3·Water·SR(차지 1.2s 고정 — dotgg 스탯에 이미 반영: 69.04%·장탄 6·reload 2s·풀차지 250%). 확정 시맨틱(Fienn 2026-07-19): sequential 전탄 보스 적중, 4.2% 받는피해 디버프는 상시 근사. 토큰 맵 (lootandwaifus Lv10, tokenizer 실측):
@@ -838,15 +1003,15 @@ registry 등록: `_BUILDERS["snow-white-heavy-arms"] = lambda sv: (build_snow_wh
 
 ---
 
-### Task 8: 문서 갱신 + 마무리 검증 + 머지
+### Task 10: 문서 갱신 + 마무리 검증 + 머지
 
 **Files:**
-- Modify: `docs/roadmap.md` (Phase 3 백로그 — 무기변형/상태머신 항목 소거·카운트 갱신), `docs/engine-gaps.md` ("이미 만든 것"에 컨텍스트 노출·attachment 타입·듀얼모드 확장·세그먼트 게이팅 추가, "막힌 유닛" 목록에서 cinderella-crystal-wave·rapi-red-hood·snow-white-heavy-arms 상태 갱신), `docs/superpowers/specs/2026-07-18-weapon-transform-design.md` (상태: 계획 2 착지 표기), `nikke-skill-encoding` 스킬의 `references/engine-capabilities.md`·`special-mechanics.md` (mode-variant 듀얼슬러그 패턴·프로젝타일 발사기 패턴·세그먼트 게이팅 per-shot 모드 추가)
+- Modify: `docs/roadmap.md` (Phase 3 백로그 — 무기변형/상태머신 항목 소거·카운트 갱신), `docs/engine-gaps.md` ("이미 만든 것"에 컨텍스트 노출·attachment 타입·듀얼모드 확장·세그먼트 게이팅 추가, "막힌 유닛" 목록에서 cinderella-crystal-wave·rapi-red-hood·snow-white-heavy-arms 상태 갱신), `docs/superpowers/specs/2026-07-18-weapon-transform-design.md` (상태: 계획 2 착지 표기 + rapi B1 범위 추가 기록), `nikke-skill-encoding` 스킬의 `references/engine-capabilities.md`·`special-mechanics.md` (mode-variant 듀얼슬러그 패턴·프로젝타일 발사기 패턴·세그먼트 게이팅 per-shot 모드·단독B1 제약 추가)
 
 - [ ] **Step 1: 위 문서들 갱신** (각 파일의 기존 서술 밀도·형식 유지)
 - [ ] **Step 2: engine-test-runner로 전체 스위트 최종 실행** (`/test-engine`) — 858+신규 전부 PASS 확인
-- [ ] **Step 3: 커밋** — `git commit -m "docs: weapon-transform plan 2 landed - dual-mode slugs, launcher, SWHA"`
-- [ ] **Step 4: `/document`로 결정 기록** — docs-keeper에: (1) 듀얼모드 슬러그 메커니즘(로스터 fan-out + 탐색 배제, 시그니처 승격과의 차이 — 투자 아닌 플레이 선택) (2) cinderella Snipe/velvet 탄소모 회계 시맨틱 (3) rapi 발사기 시맨틱(누적-일괄폭발, 요구치 창) (4) SWHA가 신규 상태머신 없이 세그먼트+per-shot 게이팅으로 풀린 것(스펙의 검증 패스 종결) (5) per-shot 세그먼트 게이팅 모드의 이중계상 방지 설계
+- [ ] **Step 3: 커밋** — `git commit -m "docs: weapon-transform plan 2 landed - dual-mode slugs, launcher, B1 variant, SWHA"`
+- [ ] **Step 4: `/document`로 결정 기록** — docs-keeper에: (1) 듀얼모드 슬러그 메커니즘(로스터 fan-out + 탐색 배제, 시그니처 승격과의 차이 — 투자 아닌 플레이/편성 선택) (2) cinderella Snipe/velvet 탄소모 회계 시맨틱 (3) rapi 발사기 시맨틱(누적-일괄폭발, 요구치 창) + loot 마이그레이션 사유(Stage 1 토큰 부재) (4) rapi B1 변종 설계(기존 CA 룰 재사용 + 단독 B1 제약, deck_search 명목 티어 결정의 부분 해소) (5) SWHA가 신규 상태머신 없이 세그먼트+per-shot 게이팅으로 풀린 것(스펙의 검증 패스 종결) (6) per-shot 세그먼트 게이팅 모드의 이중계상 방지 설계
 - [ ] **Step 5: `wip/scaffolding` 머지** — 메인 체크아웃이 깨끗한지 확인 후 `git -C C:/Users/fienn/Desktop/NikkeDeckBuilder merge worktree-transform-plan2`
 
 ---
@@ -855,4 +1020,4 @@ registry 등록: `_BUILDERS["snow-white-heavy-arms"] = lambda sv: (build_snow_wh
 
 - **velvet 변형딜** (보류 확정 유지, 저가치) · **laplace base 5초 변형** (실측 없음) — 스펙의 명시적 보류 항목 그대로.
 - **버스트 게이지 충전 모델** (cinderella 12%/Little Mermaid 37%/helm 등 누적 수요 — `gauge_charge_time` 고정 입력 가정을 깨는 엔진 확장, ROI 판단 필요).
-- **rapi Stage 1 (Combat Assist) 브랜치의 버스트 딜/버프** — 탐색 덱은 항상 B1을 포함해(ALLOWED_SHAPES) Combat Assist가 발동하지 않으므로 현행 defer 유지 (deck_search의 2026-07-17 명목 티어 결정).
+- **rapi Interruption Parts ▲ 48%·Explosion Radius** — 파츠 저지/반경 미모델 스탯, 수요 누적 시.
