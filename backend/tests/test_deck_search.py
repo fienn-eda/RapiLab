@@ -273,6 +273,42 @@ def test_prune_candidate_pool_respects_tier_caps(monkeypatch):
     assert counts[3] <= ds.PRUNED_TIER_CAPS[3]
 
 
+def test_prune_swap_in_never_measures_two_variants_together(monkeypatch):
+    # If the reference deck seats one mode variant in a non-last B3 slot
+    # (index 2 or 3, not the "weakest B3" slot 4 that swap-ins normally
+    # replace), swapping its sibling into slot 4 would seat both variants at
+    # once - the exact clash _variant_safe_top exists to keep out of the
+    # reference itself. Every deck the swap-in loop measures must stay clash-free.
+    import app.deck_search as ds
+    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+                        {"unit-a-mg": "unit-a", "unit-a-snipe": "unit-a"})
+    roster = [
+        FakeSpec("b1", 1),
+        FakeSpec("b2", 2),
+        # prior order (by atk, descending): unit-a-mg lands in the reference's
+        # first (non-last) B3 slot; b3d lands in the last B3 slot that
+        # swap-ins default to; unit-a-snipe ranks lowest, so it's a swap-in
+        # candidate rather than a reference pick.
+        FakeSpec("unit-a-mg", 3, base_stats={"atk": 400.0}),
+        FakeSpec("b3c", 3, base_stats={"atk": 300.0}),
+        FakeSpec("b3d", 3, base_stats={"atk": 200.0}),
+        FakeSpec("unit-a-snipe", 3, base_stats={"atk": 100.0}),
+    ]
+
+    seen_decks = []
+
+    def scorer(ordered_deck, boss):
+        seen_decks.append([u.slug for u in ordered_deck])
+        return {"total_damage": 1.0, "damage_log": []}
+
+    monkeypatch.setattr(ds, "evaluate_deck", scorer)
+    ds.prune_candidate_pool(roster, BossProfile())
+
+    assert seen_decks  # sanity: the swap-in loop actually ran
+    for deck in seen_decks:
+        assert not {"unit-a-mg", "unit-a-snipe"} <= set(deck)
+
+
 def test_prune_keeps_synergy_partners_together(monkeypatch):
     import app.deck_search as ds
     roster = _big_fake_roster()

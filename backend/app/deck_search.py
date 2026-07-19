@@ -188,16 +188,37 @@ def _variant_safe_top(units, n):
     return chosen
 
 
+_TIER_SLOT = {1: 0, 2: 1, 3: 4}
+
+
+def _swap_slot(reference, unit):
+    """Index in `reference` that swapping `unit` in should overwrite.
+    Normally the unit's tier default (B3 replaces the reference's weakest
+    B3, the last one). But if a MODE_VARIANTS sibling of `unit` already sits
+    in a different reference slot (e.g. the reference's first, non-last B3
+    slot), swap over the sibling instead of the tier default - otherwise the
+    default slot leaves the sibling seated too, measuring a deck with both
+    variants present at once, the exact clash _no_variant_clash forbids for
+    real candidate decks. Swapping over the sibling (rather than skipping the
+    unit) still gives it a real marginal score: how it performs standing in
+    for its own sibling."""
+    base = _VARIANT_GROUP.get(unit.slug)
+    if base is not None:
+        for i, seated in enumerate(reference):
+            if _VARIANT_GROUP.get(seated.slug) == base:
+                return i
+    return _TIER_SLOT[unit.burst_tier]
+
+
 def _measure_against(reference, unit, boss, baseline):
-    # Swap the candidate into its tier slot (B3 replaces the reference's
-    # weakest B3, the last one) and score the marginal change over the
-    # reference's baseline. A unit already in the reference leaves the deck
-    # unchanged, so its marginal contribution is 0.0 with no re-simulation.
+    # Swap the candidate into its tier slot and score the marginal change
+    # over the reference's baseline. A unit already in the reference leaves
+    # the deck unchanged, so its marginal contribution is 0.0 with no
+    # re-simulation.
     if unit.slug in {u.slug for u in reference}:
         return 0.0
-    slot = {1: 0, 2: 1, 3: 4}[unit.burst_tier]
     deck = list(reference)
-    deck[slot] = unit
+    deck[_swap_slot(reference, unit)] = unit
     return evaluate_deck(deck, boss)["total_damage"] - baseline
 
 
@@ -224,9 +245,8 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
                 # so its marginal contribution is 0.0 with no re-simulation
                 scores[unit.slug] = max(scores.get(unit.slug, 0.0), 0.0)
                 continue
-            slot = {1: 0, 2: 1, 3: 4}[unit.burst_tier]
             deck = list(reference)
-            deck[slot] = unit
+            deck[_swap_slot(reference, unit)] = unit
             candidates.append(unit)
             swapped.append(deck)
         for unit, total in zip(candidates, _score_batch(swapped, boss, pool)):
