@@ -34,10 +34,10 @@ AK_MISSILE_VALUES = {
 }
 
 LD_ASSAULT_VALUES = {
-    "description_value_01": "10.01",
-    "description_value_02": "10",
-    "description_value_03": "256.17",
-    "description_value_04": "1687",
+    "description_value_01": "256.17",  # last-bullet nuke % of final ATK
+    "description_value_02": "1687",    # Designated Target bonus nuke %
+    "description_value_03": "10.01",   # squad Damage Taken debuff %
+    "description_value_04": "10",      # its duration
 }
 
 PRIVATY_VALUES = {"ld_assault": LD_ASSAULT_VALUES, "ak_missile": AK_MISSILE_VALUES}

@@ -74,6 +74,7 @@ def calculate_damage(
     damage_to_parts_up=0.0,
     shield_damage_up=0.0,
     projectile_explosion_damage_up=0.0,
+    projectile_attachment_damage_up=0.0,
     damage_taken_up=0.0,
     distributed_damage_up=0.0,
 ):
@@ -102,6 +103,7 @@ def calculate_damage(
         + damage_to_parts_up
         + shield_damage_up
         + projectile_explosion_damage_up
+        + projectile_attachment_damage_up
     )
     damage_taken = 1 + damage_taken_up + distributed_damage_up
 

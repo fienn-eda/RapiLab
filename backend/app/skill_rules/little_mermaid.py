@@ -11,17 +11,28 @@ Modeled (DPS-relevant):
   63.36% of final ATK x 4 sequential hits (periodic_nukes during_full_burst +
   hit_count, gap #6; "as damage" - no Full Burst Bonus opt-in). See
   build_bubble_wave_fb_nuke.
+- Bubble Barrage (Bubble Wave, modeled 2026-07-18): 85% x10 hits each time
+  ALLIES' total ammo expended reaches 500. The squad-wide bullet counter is
+  built by merging every member's shot timeline in a `scheduled_nukes`
+  schedule function (`context.shot_times` holds ALL slugs, not just the
+  owner's) - no engine extension needed. See
+  build_bubble_barrage_scheduled_nukes.
 
 Not modeled:
-- Bubble Barrage (Bubble Wave): 85% x10 hits each time ALLIES' total ammo
-  expended reaches 500 - a squad-wide ammo counter, not the caster's own shots,
-  so `per_shot_rules` (per-caster) doesn't cover it. Still a gap.
 - Explosive Bubble (after 50 of her own normal attacks): it removes Bubble and
   re-applies the same 5.05% Damage Taken (plus a 3s stun), so it adds no extra
   damage over the permanent Bubble already modeled - only the stun, which isn't
   modeled. Deliberately not double-counted.
 - Bubble Order's "ally ammo reaches 400 -> Burst Gauge +37%" (gauge fill isn't a
   consumed stat) and Siren's Song's instant partial reload.
+
+Cross-note (2026-07-19): Bubble Barrage's squad ammo-expended counter assumes
+"1 shot = 1 round." Velvet's ammo pouch (100/300-round accounting) and
+Cinderella: Crystal Wave's Snipe mode (a full charge accounts as 40 rounds
+despite firing one shot - see cinderella_crystal_wave.py) both accelerate
+ally ammo-consumption counters past that 1-shot-1-round assumption without
+the sim modeling it. Neither is wired into Bubble Barrage's counter today -
+revisit if a proper ammo-accounting/gauge model is ever introduced.
 """
 from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
 
@@ -74,3 +85,28 @@ def build_bubble_wave_fb_nuke(values):
         "hit_count": int(float(wave["description_value_06"])),
         "during_full_burst": True,
     }
+
+
+def build_bubble_barrage_scheduled_nukes(values):
+    """Bubble Wave's 4th bullet: each time the squad's TOTAL ammo expended
+    reaches 500, Bubble Barrage deals 85% of final ATK x 10 sequential hits
+    ("as damage" - no Full Burst Bonus opt-in). The squad-wide bullet counter
+    is the merged shot timeline of every squad member (`context.shot_times`,
+    the same post-pass channel Raven reads) - one ammo per shot under this
+    engine's magazine model, caster included ("allies" includes self). Each
+    barrage records its hits at the moment the crossing bullet fires."""
+    wave = values["bubble_wave"]
+    threshold = int(float(wave["description_value_07"]))
+    percent = float(wave["description_value_08"])
+    hit_count = int(float(wave["description_value_09"]))
+
+    def schedule(context, fight_duration):
+        merged = sorted(t for times in context.shot_times.values() for t in times)
+        hits = []
+        for index in range(threshold - 1, len(merged), threshold):
+            crossing = merged[index]
+            if crossing < fight_duration:
+                hits.extend([crossing] * hit_count)
+        return hits
+
+    return [{"schedule": schedule, "percent": percent}]

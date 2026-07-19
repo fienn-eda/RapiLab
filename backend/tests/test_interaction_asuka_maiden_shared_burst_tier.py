@@ -35,16 +35,15 @@ from app.skill_rules.maiden_ice_rose import build_diamond_dust_dynamic_hit_count
 
 ASUKA_VALUES = {
     "anti_at_field": {
-        "description_value_01": "471.86", "description_value_02": "15.62",
-        "description_value_03": "0.83", "description_value_04": "30",
-        "description_value_05": "30", "description_value_06": "2",
-        "description_value_07": "10",
+        "description_value_01": "50", "description_value_02": "471.86",
+        "description_value_03": "2", "description_value_04": "10",
+        "description_value_05": "15.62", "description_value_06": "0.83",
+        "description_value_07": "30", "description_value_08": "30",
     },
     "annihilation_state": {
         "description_value_01": "40", "description_value_02": "9",
         "description_value_03": "21", "description_value_04": "46.8",
         "description_value_05": "36", "description_value_06": "6.62",
-        "description_value_07": "1",
     },
 }
 

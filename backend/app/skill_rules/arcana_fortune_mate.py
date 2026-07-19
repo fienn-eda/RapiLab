@@ -10,9 +10,8 @@ Modeled (DPS-relevant):
   gates the Precious Moments ramp below.
 - Memories and Moments (skills[1]) two mechanics:
   - On using her Burst Skill, an Attack Damage buff to "all shotgun-wielding
-    allies (except self)" - the engine has no weapon-type scope, so approximated
-    as squad (Phase C gap #3 candidate). Fortune Mate herself also picks up the
-    buff she wasn't meant to receive - a small self-only overstatement.
+    allies (except self)" - exact scope via the gap #3 live member filter
+    (2026-07-18; was a squad approximation that also over-applied to herself).
   - Precious Moments: at the 6th normal attack landed while in Making Memories,
     self ATK +2.49% (continuous, stacks up to 3). The 6th normal is reliably
     reached exactly once per Full Burst (SG fires far more than 6 shots in the
@@ -26,8 +25,8 @@ Modeled (DPS-relevant):
     Snapshots, not Precious Moments), ramping 1 -> 2 -> 3 over three cycles. The
     stack count is tracked with `record_activation("precious_moments")`.
 - Keepsake Album (skills[0]): when Full Burst ends, all shotgun-wielding allies
-  (squad approx) gain flat ATK = 13% of the caster's ATK PER Precious Moments
-  stack, for 15 sec. Reads the live stack count, so it ramps with Precious
+  (exact SG member filter, self included) gain flat ATK = 13% of the caster's
+  ATK PER Precious Moments stack, for 15 sec. Reads the live stack count, so it ramps with Precious
   Moments (13% -> 26% -> 39% of caster ATK over three cycles). Clears the
   `making_memories` status so the next cycle's burst re-arms it.
 
@@ -90,9 +89,15 @@ def build_fortune_mate_rules(values):
             applied_at=time,
         )
 
-    def apply_squad_attack_damage(context, caster_slug, time, registry):
+    def apply_sg_ally_attack_damage(context, caster_slug, time, registry):
+        # "all shotgun-wielding allies (except self)" - exact scope via the
+        # gap #3 live member filter (was a squad approximation).
+        slugs = [m.slug for m in context.members if m.weapon == "SG" and m.slug != caster_slug]
+        if not slugs:
+            return
         registry.add(
-            Effect("attack_damage_up", ally_attack_damage, "squad", ally_attack_damage_duration, caster_slug),
+            Effect("attack_damage_up", ally_attack_damage, "slugs:" + ",".join(slugs),
+                   ally_attack_damage_duration, caster_slug),
             applied_at=time,
         )
 
@@ -107,14 +112,20 @@ def build_fortune_mate_rules(values):
         stacks = context.activation_count(caster_slug, PRECIOUS_MOMENTS_COUNTER)
         if stacks == 0:
             return
+        # "all shotgun-wielding allies" (Fortune Mate herself is SG and
+        # included) - exact scope via the gap #3 live member filter.
+        slugs = [m.slug for m in context.members if m.weapon == "SG"]
+        if not slugs:
+            return
         registry.add(
-            Effect("flat_atk", keepsake_atk_per_stack * stacks, "squad", keepsake_duration, caster_slug),
+            Effect("flat_atk", keepsake_atk_per_stack * stacks, "slugs:" + ",".join(slugs),
+                   keepsake_duration, caster_slug),
             applied_at=time,
         )
 
     return [
         SkillRule(trigger="own_burst_activate", action=apply_radiant_youth),
-        SkillRule(trigger="own_burst_activate", action=apply_squad_attack_damage),
+        SkillRule(trigger="own_burst_activate", action=apply_sg_ally_attack_damage),
         SkillRule(trigger="full_burst_enter", action=gain_precious_moments,
                   condition=has_status(MAKING_MEMORIES_STATUS)),
         SkillRule(trigger="full_burst_end", action=apply_keepsake_album),

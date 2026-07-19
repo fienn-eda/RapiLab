@@ -96,12 +96,7 @@ side of a boss-profile flag (e.g. Ark Ranger Black's floor DoT vs. ceiling
 DoT modeling the same battery-transformation state two different ways);
 absent field = always fires, matching every existing spec's behavior.
 """
-from app.attack_rate import (
-    CHARGE_WEAPONS,
-    first_bullet_shot_times,
-    generate_shot_times,
-    last_bullet_shot_times,
-)
+from app.attack_rate import generate_segmented_shots
 from app.burst_cycle import simulate_burst_cycle
 from app.damage_formula import calculate_damage
 from app.effects import Effect, EffectRegistry, _matches_scope
@@ -161,9 +156,52 @@ def _resource_fill_times(
         windows = [(bt, bt + window_duration) for bt in own_burst_times]
         in_window = [t for t in shot_times if any(start <= t < end for start, end in windows)]
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
+    if kind == "per_shot_every_outside_full_burst":
+        n = fill[1]
+        # Closed on the right: a shot landing exactly at a Full Burst window's
+        # end still belongs to the burst moment, not "outside" it. Left open
+        # (< end) would make outside-FB firing depend on which side of the
+        # float boundary a coincident shot rounds to (e.g. a transform tick
+        # nominally at burst+duration == FB end).
+        out_of_window = [
+            t for t in shot_times if not any(start <= t <= end for start, end in full_burst_windows)
+        ]
+        return [t for i, t in enumerate(out_of_window) if (i + 1) % n == 0]
     if kind == "on_last_bullet":
         return sorted(last_bullet_times)
     raise ValueError(f"unknown resource fill kind: {kind}")
+
+
+def _sequence_fire_rules(spec, stage_rules, shot_times, own_burst_times):
+    """gap #10 (Scarlet's Fleetly Fading Breakthrough): one running shot
+    counter walks a staged requirement table - stage k fires its rules once
+    the count reaches spec["requirements"][k], and after the last stage the
+    count resets and the cycle restarts. Inside the owner's own-burst window
+    (spec["own_burst_window"] = (duration, alt_requirements), e.g. Scarlet's
+    burst "Changes Full Charge attack count required for Skill 1 to 1/2/3 for
+    10 sec") the requirement table is swapped in place; the running count and
+    stage CARRY OVER across the boundary (Fienn 2026-07-18) - a stage fires
+    once count >= the ACTIVE requirement for it, so progress made under one
+    table is never lost under the other. At most one stage fires per shot
+    ("Only one effect is triggered at a time"). Returns {shot_time: rules}."""
+    base_reqs = spec["requirements"]
+    override = spec.get("own_burst_window")
+    windows = ()
+    override_reqs = base_reqs
+    if override:
+        duration, override_reqs = override
+        windows = [(bt, bt + duration) for bt in own_burst_times]
+    fires = {}
+    count, stage = 0, 0
+    for t in shot_times:
+        count += 1
+        reqs = override_reqs if any(start <= t < end for start, end in windows) else base_reqs
+        if count >= reqs[stage]:
+            fires[t] = stage_rules[stage]
+            stage += 1
+            if stage == len(base_reqs):
+                count, stage = 0, 0
+    return fires
 
 
 def _resolve_squad_burst_cycle_resource(spec, slug, events, context):
@@ -223,6 +261,7 @@ _TYPE_BUCKETS = {
     "distributed": ["distributed_damage_up"],
     "true": ["true_damage_up"],
     "projectile_explosion": ["projectile_explosion_damage_up"],
+    "projectile_attachment": ["projectile_attachment_damage_up"],
 }
 
 # Every registry stat phase-2 damage computation can read (_damage_instance,
@@ -237,7 +276,7 @@ _BUNDLE_STATS = (
     "charge_damage_bonus", "attack_damage_up", "damage_to_parts_up",
     "pierce_damage_up", "damage_taken_up",
     "sustained_damage_up", "distributed_damage_up", "true_damage_up",
-    "projectile_explosion_damage_up",
+    "projectile_explosion_damage_up", "projectile_attachment_damage_up",
     "normal_attack_damage_multiplier",
 )
 
@@ -267,8 +306,10 @@ def simulate_raid(
     dynamic_hit_count_nukes=None,
     resource_fill_triggered_buffs=None,
     scheduled_nukes=None,
+    weapon_mode_schedules=None,
 ):
     weapon_stats = weapon_stats or {}
+    weapon_mode_schedules = weapon_mode_schedules or {}
     periodic_nukes = periodic_nukes or {}
     burst_damage_types = burst_damage_types or {}
     periodic_rules = periodic_rules or {}
@@ -285,6 +326,7 @@ def simulate_raid(
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
         boss_element=boss_element,
         part_destructible=part_destructible,
+        core_hittable=core_hittable,
     )
     registry = EffectRegistry()
     # Damage is RECORDED as events during phase 1 (buffs are applied but no
@@ -366,13 +408,13 @@ def simulate_raid(
             terms[bucket] = bundle[bucket]
         return calculate_damage(**terms)
 
-    def normal_attack_type(slug, weapon, time):
+    def normal_attack_type(slug, weapon_type, time):
         # A skill can convert a unit's normal attacks to a damage type for a
         # window (e.g. Takina Inoue's burst: "normal attacks deal true damage").
         if registry.total_for("normal_attacks_deal_true", target_for(slug), time) > 0:
             return "true"
         # Otherwise a rocket launcher's normal attacks are projectile explosions.
-        if weapon["weapon"] == "RL":
+        if weapon_type == "RL":
             return "projectile_explosion"
         return "attack"
 
@@ -409,6 +451,7 @@ def simulate_raid(
         for pulse in registry.drain_pulses("instant_damage_percent"):
             record(
                 pulse.source_slug, pulse.value, time, "instant_nuke",
+                damage_type=pulse.damage_type,
                 full_burst_bonus_eligible=pulse.full_burst_bonus_eligible,
             )
 
@@ -528,12 +571,12 @@ def simulate_raid(
         (e["time"] for e in events if e["type"] == "full_burst_start"),
         (e["time"] for e in events if e["type"] == "full_burst_end"),
     ))
+    context.full_burst_windows = full_burst_windows
 
     shot_times_by_slug = {}
     last_bullet_times_by_slug = {}
     for slug, weapon in weapon_stats.items():
         target = target_for(slug)
-        is_charge_weapon = weapon["weapon"] in CHARGE_WEAPONS
         max_ammo_percent_at = lambda t, target=target: registry.total_for("max_ammo_percent", target, t)
         reload_speed_percent_at = lambda t, target=target: registry.total_for(
             "reload_speed_percent", target, t
@@ -544,18 +587,18 @@ def simulate_raid(
         charge_speed_percent_at = lambda t, target=target: registry.total_for(
             "charge_speed_percent", target, t
         )
-        shot_times = generate_shot_times(
-            weapon["weapon"],
-            weapon["max_ammo"],
-            weapon["reload_time"],
-            weapon["charge_time"],
-            fight_duration,
+        schedule_fn = weapon_mode_schedules.get(slug)
+        segments = schedule_fn(context, fight_duration) if schedule_fn is not None else []
+        shot_records = generate_segmented_shots(
+            weapon, segments, fight_duration,
             max_ammo_percent_at=max_ammo_percent_at,
             reload_speed_percent_at=reload_speed_percent_at,
             attack_speed_percent_at=attack_speed_percent_at,
             charge_speed_percent_at=charge_speed_percent_at,
         )
-        extra_charge_bonus = weapon["charge_damage_percent"] / 100 - 1 if is_charge_weapon else 0.0
+        shot_times = [r.time for r in shot_records]
+        last_bullets = {r.time for r in shot_records if r.is_last_bullet}
+        first_bullets = {r.time for r in shot_records if r.is_first_bullet}
         # Per-shot triggers count this unit's shots and fire at a threshold
         # ("after N": once at the Nth shot; "every N": at every Nth) or on
         # the shot that empties its magazine ("last_bullet", threshold
@@ -570,44 +613,34 @@ def simulate_raid(
         # be stateless and must not change shot generation (reload/ammo), which
         # is already fixed for this unit here.
         unit_per_shot = per_shot_rules.get(slug, [])
-        # Also needed by an "on_last_bullet" resource fill (below, resolved in
-        # a later pass) - computed once here and cached so both consumers
-        # share identical magazine boundaries.
-        needs_last_bullets = any(mode == "last_bullet" for _, mode, _ in unit_per_shot) or any(
-            spec.fill[0] == "on_last_bullet" for spec in resource_specs.get(slug, [])
-        )
-        last_bullets = (
-            last_bullet_shot_times(
-                weapon["weapon"], weapon["max_ammo"], weapon["reload_time"], weapon["charge_time"],
-                fight_duration, max_ammo_percent_at, reload_speed_percent_at,
-                attack_speed_percent_at, charge_speed_percent_at,
-            )
-            if needs_last_bullets else set()
-        )
         last_bullet_times_by_slug[slug] = last_bullets
-        # "first_bullet" mirrors "last_bullet": the round that OPENS each
-        # magazine, including the battle-opening one at t=0 - "at the start of
-        # battle and upon reloading to Max Ammunition" (gap #9, e.g. Jill
-        # Valentine's Magnum/Acid Ammo).
-        needs_first_bullets = any(mode == "first_bullet" for _, mode, _ in unit_per_shot)
-        first_bullets = (
-            first_bullet_shot_times(
-                weapon["weapon"], weapon["max_ammo"], weapon["reload_time"], weapon["charge_time"],
-                fight_duration, max_ammo_percent_at, reload_speed_percent_at,
-                attack_speed_percent_at, charge_speed_percent_at,
-            )
-            if needs_first_bullets else set()
-        )
         # The window-gated modes fire on the same in-window shot times a
         # matching resource fill would pick, so reuse `_resource_fill_times`'
         # window filter. "every_during_full_burst" carries N in `threshold`;
         # "every_during_own_status_window" carries (N, window_duration).
         own_burst_times = context.burst_times.get(slug, [])
         window_fire_times = {}
+        # every_during_segment/every_outside_segment are keyed on record
+        # IDENTITY (shot_index), not shot_time: a magazine-type base weapon
+        # (AR/MG/SMG/SG) resumes with a fresh magazine at the exact instant
+        # an until_shots segment's last shot lands (attack_rate's documented
+        # resume semantic), so the segment's last ShotRecord (in_segment=
+        # True) and the resumed magazine's first ShotRecord (in_segment=
+        # False) can share an identical `time`. Matching by time value would
+        # make both records satisfy both modes at that instant, breaking the
+        # in_segment flag's whole purpose - a structural guarantee that one
+        # shot can never fire both (Task 8 fix).
+        window_fire_indices = {}
+        sequence_fires = {}
         for idx, (threshold, mode, _rules) in enumerate(unit_per_shot):
             if mode == "every_during_full_burst":
                 window_fire_times[idx] = set(_resource_fill_times(
                     ("per_shot_every_during_full_burst", threshold), shot_times,
+                    core_hittable, fight_duration, full_burst_windows,
+                ))
+            elif mode == "every_outside_full_burst":
+                window_fire_times[idx] = set(_resource_fill_times(
+                    ("per_shot_every_outside_full_burst", threshold), shot_times,
                     core_hittable, fight_duration, full_burst_windows,
                 ))
             elif mode == "every_during_own_status_window":
@@ -616,16 +649,36 @@ def simulate_raid(
                     ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
                     core_hittable, fight_duration, full_burst_windows, own_burst_times,
                 ))
-        for shot_index, shot_time in enumerate(shot_times):
+            elif mode == "every_during_segment":
+                seg_indices = [i for i, r in enumerate(shot_records) if r.in_segment]
+                window_fire_indices[idx] = {
+                    i for pos, i in enumerate(seg_indices) if (pos + 1) % threshold == 0}
+            elif mode == "every_outside_segment":
+                base_indices = [i for i, r in enumerate(shot_records) if not r.in_segment]
+                window_fire_indices[idx] = {
+                    i for pos, i in enumerate(base_indices) if (pos + 1) % threshold == 0}
+            elif mode == "sequence":
+                # threshold carries the requirement spec; the rules slot holds
+                # one rule list PER STAGE (see _sequence_fire_rules).
+                sequence_fires[idx] = _sequence_fire_rules(
+                    threshold, _rules, shot_times, own_burst_times
+                )
+        for shot_index, rec in enumerate(shot_records):
+            shot_time = rec.time
             count = shot_index + 1
             for idx, (threshold, mode, rules) in enumerate(unit_per_shot):
-                fires = (
-                    (mode == "after" and count == threshold)
-                    or (mode == "every" and count % threshold == 0)
-                    or (mode == "last_bullet" and shot_time in last_bullets)
-                    or (mode == "first_bullet" and shot_time in first_bullets)
-                    or (idx in window_fire_times and shot_time in window_fire_times[idx])
-                )
+                if mode == "sequence":
+                    rules = sequence_fires[idx].get(shot_time, ())
+                    fires = bool(rules)
+                else:
+                    fires = (
+                        (mode == "after" and count == threshold)
+                        or (mode == "every" and count % threshold == 0)
+                        or (mode == "last_bullet" and shot_time in last_bullets)
+                        or (mode == "first_bullet" and shot_time in first_bullets)
+                        or (idx in window_fire_times and shot_time in window_fire_times[idx])
+                        or (idx in window_fire_indices and shot_index in window_fire_indices[idx])
+                    )
                 if fires:
                     for rule in rules:
                         if rule.condition(context, slug):
@@ -633,11 +686,12 @@ def simulate_raid(
                     for pulse in registry.drain_pulses("instant_damage_percent"):
                         record(
                             pulse.source_slug, pulse.value, shot_time, "per_shot_nuke",
+                            damage_type=pulse.damage_type,
                             full_burst_bonus_eligible=pulse.full_burst_bonus_eligible,
                         )
-            damage_type = normal_attack_type(slug, weapon, shot_time)
-            record(slug, weapon["damage_percent"], shot_time, "normal_attack",
-                   damage_type=damage_type, extra_charge_bonus=extra_charge_bonus)
+            damage_type = rec.damage_type or normal_attack_type(slug, rec.weapon, shot_time)
+            record(slug, rec.damage_percent, shot_time, "normal_attack",
+                   damage_type=damage_type, extra_charge_bonus=rec.extra_charge_bonus)
         shot_times_by_slug[slug] = shot_times
 
     # "For N round(s)" (bullet-count) buffs expire when the affected ally

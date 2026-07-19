@@ -33,6 +33,9 @@ LM = {
         "description_value_04": "1",      # FB nuke: every N sec during Full Burst
         "description_value_05": "63.36",  # FB nuke: % of final ATK per hit
         "description_value_06": "4",      # FB nuke: sequential hit count
+        "description_value_07": "500",    # Bubble Barrage: allies' total ammo threshold
+        "description_value_08": "85",     # Bubble Barrage: % of final ATK per hit
+        "description_value_09": "10",     # Bubble Barrage: sequential hit count
     },
     "sirens_song": {
         "description_value_01": "10.13", "description_value_02": "10", "description_value_03": "33.26",
@@ -178,6 +181,37 @@ def test_little_mermaid_bubble_wave_fb_nuke_spec():
     assert spec == {
         "cooldown": 1.0, "percent": 63.36, "hit_count": 4, "during_full_burst": True,
     }
+
+
+def test_little_mermaid_bubble_barrage_fires_per_500_squad_bullets():
+    from app.skill_rules.little_mermaid import build_bubble_barrage_scheduled_nukes
+
+    specs = build_bubble_barrage_scheduled_nukes(LM)
+    assert len(specs) == 1
+    spec = specs[0]
+    assert spec["percent"] == 85.0
+    assert not spec.get("full_burst_bonus_eligible", False)  # "as damage"
+
+    # 600 squad-wide bullets (two units x 300): the merged timeline crosses 500
+    # once, at the moment the 500th bullet fires - 10 hits at that instant.
+    ctx = deck_ctx("little-mermaid")
+    ctx.shot_times = {
+        "little-mermaid": [t * 0.1 for t in range(1, 301)],       # 0.1..30.0
+        "ally": [t * 0.1 + 0.05 for t in range(1, 301)],          # 0.15..30.05
+    }
+    times = spec["schedule"](ctx, 180.0)
+    merged = sorted(ctx.shot_times["little-mermaid"] + ctx.shot_times["ally"])
+    assert times == [merged[499]] * 10
+
+
+def test_little_mermaid_bubble_barrage_drops_hits_past_fight_end():
+    from app.skill_rules.little_mermaid import build_bubble_barrage_scheduled_nukes
+
+    spec = build_bubble_barrage_scheduled_nukes(LM)[0]
+    ctx = deck_ctx("little-mermaid")
+    # 500th bullet lands after the fight is over -> nothing fires.
+    ctx.shot_times = {"little-mermaid": [t * 1.0 for t in range(1, 501)]}
+    assert spec["schedule"](ctx, 180.0) == []
 
 
 def test_little_mermaid_bubble_wave_ticks_only_in_fb_windows():

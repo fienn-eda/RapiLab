@@ -43,6 +43,16 @@ Damage stats (fed into `calculate_damage`, so they change damage numbers):
 | `damage_taken_up` | enemy damage-taken debuff — model as **squad** scope (all attackers share it) | "Damage Taken ▲ X%" (on enemy) |
 | `other_core_damage_sources` | core-damage buff, **gated on `core_hittable`** (inert if boss has no core) | "Damage dealt when attacking core ▲ X%" |
 
+`core_hittable` isn't only an automatic gate on the stat above - it's also exposed
+on `SquadContext` (plan-2 weapon-transform batch, 2026-07-19) via the
+`boss_core_hittable()` condition helper (`squad_engine.py`, same shape as
+`boss_part_destructible()`/`boss_is_element()`), so a SkillRule can gate an
+entire bullet on "enemies with an activated core" directly - e.g. Cinderella:
+Crystal Wave (MG mode)'s 833.79% core-strike Full Burst nuke, which the skill
+text scopes to "enemies with activated cores" and this engine's uniform
+per-instance core correction has no per-enemy distinction for, so gating the
+whole nuke is the established convention.
+
 Scheduling stats (change the burst rotation / shot timing, not per-hit damage):
 | stat | mechanism | game wording |
 |---|---|---|
@@ -83,6 +93,7 @@ Damage +X%" buff boosts only sustained-typed damage, not every hit.
 | `distributed` | `distributed_damage_up` |
 | `true` | `true_damage_up` |
 | `projectile_explosion` | `projectile_explosion_damage_up` |
+| `projectile_attachment` | `projectile_attachment_damage_up` |
 
 The always-on buckets (`attack_damage_up`, `pierce_damage_up`,
 `damage_to_parts_up`, `damage_taken_up`) apply to EVERY instance regardless of
@@ -127,10 +138,36 @@ See `takina_inoue.py` (Battlefield Control, cd 15s).
 after/every N of the unit's own shots - "after N normal attacks", "N full charge
 attacks", "every N shots" - or on the shot that empties its magazine ("on
 firing the last bullet"). `mode` is `"after"` (once, at the Nth shot),
-`"every"` (at each multiple of N), or `"last_bullet"` (`threshold` unused/
+`"every"` (at each multiple of N), `"last_bullet"` (`threshold` unused/
 `None` - fires whenever the current shot's time is in that unit's
 `last_bullet_shot_times(...)`, computed once per unit only if a `"last_bullet"`
-entry is present). The engine counts the unit's generated shots (a charge
+entry is present), `"first_bullet"` (its mirror: the round that OPENS each
+magazine, incl. t=0 - gap #9, Jill's Magnum), `"every_during_full_burst"`
+(threshold=N, counts only shots inside a Full Burst window - gap #7, Soda/
+Velvet), `"every_outside_full_burst"` (its complement: only shots outside
+every FB window - Velvet's Sticky Fingers), `"every_during_own_status_window"`
+(threshold=`(N, window_duration)`, window anchored at the CASTER'S OWN burst
+times - gap #7, Asuka/Grave), `"sequence"` (gap #10, Scarlet: Black
+Shadow: `threshold` is `{"requirements": [3, 6, 9], "own_burst_window":
+(duration, [1, 2, 3])}` and the rules slot holds ONE RULE LIST PER STAGE -
+a single running counter fires stage k once count >= the ACTIVE requirement
+for it, resets after the last stage, and swaps the requirement table inside
+the caster's own-burst window with count/stage carrying over across the
+boundary; at most one stage fires per shot), or `"every_during_segment"`/
+`"every_outside_segment"` (threshold=N, plan-2 weapon-transform batch,
+2026-07-19: counts only shots whose `ShotRecord.in_segment` is True/False -
+for a unit whose per-shot rule must fire differently inside vs. outside its
+own `weapon_mode_schedules` segment, e.g. Snow White: Heavy Arms's boosted
+Auto Fire during Fully Active vs. its plain form otherwise. Matched by
+record IDENTITY, not shot TIME - a segment's last shot (`until_shots`
+exhausted) and the resumed base weapon's first shot can share the exact same
+timestamp (v1's "resume with a fresh magazine immediately" semantic), so a
+time-based filter would let both modes fire on that one boundary shot;
+identity matching makes the two modes structurally mutually exclusive). The
+count runs across ALL segments merged, not reset per segment - a threshold
+>1 carries its count from one transform window into the next (inert today:
+the only consumer, Snow White: Heavy Arms, uses N=1). The
+engine counts the unit's generated shots (a charge
 weapon's every shot is a full charge, so "full charge N" == "shot N"; the
 encoding knows the weapon and picks N - no weapon gating in the engine). A
 firing rule either applies a buff or emits an `instant_damage_percent` pulse
@@ -143,8 +180,11 @@ on a status that varies over time (alternating or pinned mid-fight), do it insid
 the action using the shot time + `context.burst_times` / `status_since` - see
 `mint.py::mint_singing_at`. Expose via `registry._PER_SHOT_RULE_BUILDERS`
 / `get_per_shot_rules`; `roster` threads it. See `brid_silent_track.py`
-(Journey Ahead: 675% every 5 normal attacks). Per-shot nukes default to
-`attack` damage type.
+(Journey Ahead: 675% every 5 normal attacks). Per-shot/instant nukes default
+to `attack` damage type; when the text names one (e.g. "as Distributed
+Damage"), pass `instant_nuke_pulse_rule(..., damage_type="distributed")` -
+the Pulse carries it to record() so the type-gated Damage-Up buckets apply
+(2026-07-18, first consumer Scarlet: Black Shadow).
 
 **"Last bullet fired" (magazine-boundary marker) - BUILT capability
 (2026-07-12):** `attack_rate.py`'s `magazine_last_bullet_times`/
@@ -336,7 +376,21 @@ spec dicts `{"schedule": fn(context, fight_duration) -> times, "percent",
 dropped. Logged with `source="scheduled"`. The schedule may also read the owner's
 own firing timeline off `context.shot_times[slug]` (filled by the weapon pass;
 empty without weapon stats) - that is how "a DoT per Full Charge" is expressed
-(Raven's Shock Wave). A schedule can also emit the SAME time more than once -
+(Raven's Shock Wave). `context.shot_times` holds EVERY squad member's timeline,
+not just the owner's, so a SQUAD-WIDE bullet/ammo counter is also expressible by
+merging all members' shot times in the schedule (Little Mermaid's Bubble
+Barrage, "allies' total ammo expended reaches 500" - no engine extension
+needed). It also anchors on `context.burst_times[slug]` for own-burst-window
+schedules (Red Hood's measured 33-shot transform window), or on
+`context.full_burst_windows` (a `[start, end)` list, filled by `raid_simulator`
+right before the weapon pass - plan-2 weapon-transform batch, 2026-07-19) for a
+schedule that needs "the next Full Burst entry AFTER some other event," not a
+fixed window relative to the unit's own burst - e.g. Rapi: Red Hood's
+Attachable Projectiles: each attaching shot's damage lands immediately, but
+its EXPLOSION lands at the next Full Burst entry that follows it (found by
+scanning `full_burst_windows` for the first start time past the attach time),
+which could be one cycle or several away depending on when the attachment
+happened. A schedule can also emit the SAME time more than once -
 that is how a stacking DoT is expressed: one damage instance per live stack, so
 defense comes off each, exactly like a multi-hit burst. First consumer: Ein
 (`ein.py` - see
@@ -344,6 +398,112 @@ its docstring for how a datamine + a video measurement, NOT the skill text,
 settled the mechanics; the text's "Activates when Near Feather is summoned"
 misreads as one hit per summon). Reach for this only when the cadence genuinely
 varies - a fixed interval is still `periodic_nukes`.
+
+**Weapon-mode segments (v1, 2026-07-19):** for a skill that swaps the unit's
+ENTIRE weapon profile for a window - a burst-triggered cannon transform
+(Snow White, Maxwell), a sustained buffed-cadence window (Laplace's Hero
+Vision, via the dual slug `laplace-signature`), or a migrated
+`scheduled_nukes` approximation (Red Hood's Step 3, see below).
+`attack_rate.generate_segmented_shots()` builds a per-segment ShotRecord
+timeline instead of one flat cadence: inside a segment the unit's BASE
+weapon is genuinely silenced (not just double-counted-and-subtracted) and
+shots come from the segment's own `profile` dict (same shape as a
+`weapon_stats` entry - `weapon`, `damage_percent`, `charge_damage_percent`,
+`max_ammo`, `reload_time`, `charge_time`, or an explicit `rate_of_fire` for
+a profile with no real charge/magazine model); when the segment ends (its
+`until_shots` count is reached or its `end` time passes) the base weapon
+resumes with a FRESH magazine immediately (no reload wait). A `charge_time`
+profile inside a segment still reads live `charge_speed_percent_at` etc., so
+a deck's charge speed / charge damage / ATK buffers actually multiply the
+transform's shots - an explicit `rate_of_fire` profile is a MEASUREMENT
+ANCHOR instead (its shot count already bakes in Fienn's real-game-measured
+cadence), so it takes NO cadence buffs, by contract. A profile may also
+carry its own optional `damage_type`. Wire via `simulate_raid(...,
+weapon_mode_schedules={slug: schedule_fn})` where `schedule_fn(context,
+fight_duration)` returns a list of `{"start", "until_shots" or "end",
+"profile"}` dicts (same signature family as `scheduled_nukes` - the module
+computes window anchors, e.g. `context.burst_times`, the engine only
+emits). **Every unit's weapon pass now runs through
+`generate_segmented_shots` regardless of whether it has any segments** - an
+empty schedule reproduces the pre-existing flat-cadence generator's output
+bit-for-bit (verified by an SR_ODD 1.19s-charge equivalence test), so this
+was a safe, non-opt-in unification rather than a per-unit switch.
+First/last-bullet markers for a segmented unit now come directly off the
+record's flags instead of a separate marker recomputation. Registry map
+`_WEAPON_MODE_SCHEDULE_BUILDERS` / `get_weapon_mode_schedules`; `roster`
+threads it. First consumers: `snow_white.py`/`maxwell.py` (burst
+`until_shots: 1` single-cannon-shot windows), `laplace_signature.py` (a
+fixed 10s window, First hit + 93 `rate_of_fire`-profile ticks),
+`red_hood.py` (migrated off a `scheduled_nukes` approximation that could
+not let deck buffs touch the transform - see its docstring for the
+before/after). A segment profile that needs to fold in the caster's OWN
+base weapon stats (rather than an independent transform weapon) reads them
+from `caster_weapon_stats` (plan-2 batch, 2026-07-19: `roster.py`'s skill-
+value assembly injects the unit's assembled `weapon_stats` dict alongside
+the existing `caster_atk`/`caster_def`/`caster_max_hp` keys) -
+`snow_white_heavy_arms.py`'s Fully Active segment reads its own
+`charge_damage_percent` this way and adds the Fully Active bonus on top, so
+the segment is "my own charge shot, buffed" rather than a separate cannon.
+See `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`.
+
+**Not every weapon-transform kit needs the segment primitive itself - three
+plan-2 consumers resolved without touching it (2026-07-19):**
+`cinderella-crystal-wave`'s MG/Snipe choice is a pre-battle, held-for-the-
+whole-fight mode pick, not a short burst/status window - modeled as two
+static-profile dual slugs instead (see "Multiple deck candidates from one
+owned character" below). `rapi-red-hood`'s 120-normal-attack projectile
+launcher never swaps her weapon profile at all - it needed
+`SquadContext.full_burst_windows` exposure (above) for its `scheduled_nukes`
+schedule, not a segment. `snow-white-heavy-arms`'s charge-lock-on loop
+looked like it might need a new state machine but didn't - see the
+`every_during_segment`/`every_outside_segment` per-shot modes above; it DOES
+consume one segment (Fully Active, `until_shots: 2`) for the burst window
+itself, just not for the charge-loop mechanic that made it look harder.
+
+## Multiple deck candidates from one owned character (mode-variant dual slugs)
+
+Some owned characters yield more than one deck-search candidate from a
+single roster entry - a pre-battle mode choice (Cinderella: Crystal Wave's
+MG/Snipe) or a formation-role choice (Rapi: Red Hood's Combat Assist B1
+stand-in vs. her nominal Burst 3 self). Distinct from the existing
+`-signature` dual-slot pattern (Julia/Drake/Laplace base vs. signature,
+which expresses the user's ITEM INVESTMENT and is resolved in the frontend's
+roster import): a mode variant expresses a PLAY/FORMATION choice and is
+resolved in the backend roster loader.
+
+- `registry.MODE_VARIANTS: {base_slug: (candidate_slug, ...)}` - `user_roster.
+  load_roster` fans one owned `UserNikkeState` out to every candidate slug
+  (`MODE_VARIANTS.get(state.character_slug) or (state.character_slug,)`,
+  loading a `NikkeSpec` per candidate), so all candidates compete for deck
+  slots independently.
+- `registry.VARIANT_BURST_TIERS: {variant_slug: tier}` - overrides a
+  candidate's burst tier when it seats somewhere other than the character's
+  nominal slot (Rapi: Red Hood's Combat Assist stand-in seats at tier 1, not
+  her real tier 3).
+- `registry._WEAPON_PROFILE_OVERRIDE_BUILDERS` / `get_weapon_profile_
+  override(slug, skill_values)` - for a candidate whose weapon profile
+  differs from the character's assembled dotgg/lootandwaifus stats (Snipe
+  mode's SR profile); `user_roster` swaps the assembled profile after skill
+  values resolve.
+- `deck_search._no_variant_clash(units)` - deck search never seats two
+  candidates of the same base together. Both enumeration paths (combination
+  generation and permutation refinement) call it, and the pruning
+  heuristic's own internal reference-deck construction (`_reference_deck`/
+  `_variant_safe_top`/`_swap_slot`/`_cross_tier_reference`) was hardened to
+  respect the same rule for ITS candidate measurements too, not just real
+  output decks - a cross-tier variant sibling sitting in the reference deck
+  is measured against an alternate reference with that sibling swapped out,
+  rather than starved to an unmeasured 0.0 score.
+- `deck_search.SOLE_TIER1_SLUGS` - a variant whose own role is self-
+  cancelling next to a real occupant of the same tier (Rapi: Red Hood's
+  Combat Assist reads as "no other Burst 1 ally," so seating her alongside
+  an actual Burst 1 unit would simulate a formation the game can't produce).
+  Blocks that variant from co-seating with ANY other tier-1 unit, not just
+  its own MODE_VARIANTS sibling.
+
+First consumers: `cinderella-crystal-wave-mg`/`-snipe`, `rapi-red-hood`/
+`rapi-red-hood-b1`. See `docs/superpowers/specs/2026-07-18-weapon-
+transform-design.md`.
 
 **Multi-hit burst nuke:** a burst that "attacks sequentially N times" is N
 SEPARATE damage instances at the same instant, not one instance at N×percent -

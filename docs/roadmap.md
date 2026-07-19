@@ -7,9 +7,34 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-07-17
+- 마지막 갱신: 2026-07-19
 - 브랜치: `wip/scaffolding` (`worktree-plans-frontend3-encoding` 머지 완료)
-- 테스트: **746 passed** (2026-07-17, **`worktree-plans-frontend3-encoding` →
+- 테스트: **906 passed** (2026-07-19, **무기변형 계획 2 착지** — v1이 백로그로 남겨둔
+  세 항목을 전부 닫음: **cinderella-crystal-wave**가 `registry.MODE_VARIANTS`로
+  `-mg`/`-snipe` 두 정적 슬러그로 확장(로스터가 소유 유닛 1개를 후보 여러 개로
+  fan-out, 덱 탐색은 `_no_variant_clash`로 두 모드 동시 편성을 금지) · **rapi-red-hood**의
+  120노멀 프로젝타일 발사기가 `SquadContext.full_burst_windows` + `boss_core_hittable()`
+  노출로 완성(부착 누적 → 다음 FB 진입에서 일괄 폭발) + 새 슬러그 `rapi-red-hood-b1`
+  (Combat Assist를 실제 B1 후보로 편성, `VARIANT_BURST_TIERS`로 B3와 다른 티어에
+  착석) · **snow-white-heavy-arms**는 검증 결과 신규 상태머신 없이 세그먼트 +
+  `every_during_segment`/`every_outside_segment` per-shot 게이팅만으로 풀림(스펙의
+  검증 패스 종결). 신규 `projectile_attachment` 데미지 타입(projectile_explosion과
+  나란히). 상세는 `engine-gaps.md`·`docs/superpowers/specs/2026-07-18-weapon-
+  transform-design.md`(상태: 계획 2 착지 완료) 참고. was 862(계획 2 착수 직전 —
+  774 이후 gap #10 배치·아군 총탄 카운터·Ein/Raven/Sakura 인코딩·무기변형 v1·
+  red-hood 재검증 등 여러 배치가 이 로그에 반영되지 못한 채 누적돼 있었음, 그 구간
+  상세는 `encoded-nikkes.md`/`engine-gaps.md` 로그 참고).
+- 이전: **774 passed** (2026-07-18, **스킬 수치 드리프트 감지** — 머지 후 실측,
+  wip/roster-import 합류분 +6 포함.
+  `scripts/check_skill_value_drift.py`: dotgg-소스 매니페스트 22개(21유닛+
+  drake-signature)의 스킬 수치를 라이브 lootandwaifus와 대조(매 실행 전체 재수집,
+  `--offline`/`--slug` 지원, DRIFT 시 exit 1). 비교는 설명 템플릿이 참조하는
+  슬롯만(브리드 잔여 슬롯 오탐 수정, Fienn 승인) + curl `-sS --fail` + fetch 실패
+  경고를 해당 매니페스트에 귀속(낡은 파일 비교가 OK로 위장 불가). **라이브 실측:
+  22 OK, 0 DRIFT** — 현재 dotgg-소스 유닛 중 패치로 어긋난 유닛 없음. 부수 효과로
+  lootandwaifus 데이터 18유닛 신규 확보. SBS 사례(dotgg 동결로 패치 수치 미반영,
+  `insights.md`)가 계기. was 746+4(블라블라링크 수집기 배치).)
+- 이전: **746 passed** (2026-07-17, **`worktree-plans-frontend3-encoding` →
   `wip/scaffolding` 머지** — Ein·Raven·Sakura 인코딩 + `scheduled_nukes`/`shot_times`
   확장 + 워크트리 데이터 동기화 스크립트·훅이 dotgg weapon 스탯 수집 작업과 합류.
   충돌은 `docs/decisions.md` 위치 충돌 1건뿐, 양쪽 항목 모두 보존. **머지 후 실측:
@@ -153,7 +178,7 @@
 | Phase 0 | 데이터 소스 확보 + 리포 인프라 | ✅ 완료 |
 | Phase 1 | 데미지 공식 엔진 | ✅ 완료 |
 | Phase 2 | 레이드 시뮬레이터 (버스트·효과·공속) | ✅ 완료 |
-| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (60명) |
+| Phase 3 | 캐릭터 스킬 인코딩 | 🔄 진행 중 (68명, `docs/encoded-nikkes.md` 표 기준) |
 | Phase 4 | 단일 최적 덱 추천 | ✅ 완료 |
 | Phase 5 | 5덱(25니케) 분배 최적화 | ✅ 완료 — greedy+swap + ProcessPool 병렬화(50유닛 97초), `/api/recommend-raid`, 프론트 레이드 모드 배선까지 |
 | Phase 6 | 유저 데이터 입력 UI (React) | 🔄 진행 중 (입력 폼 + 결과 UI + 라이브 API 완료) |
@@ -393,6 +418,12 @@
 - dotgg 무기 스탯 수집 자동화 ✅ (2026-07-17): `scripts/collect_dotgg_weapons.py`
   — lootandwaifus 유닛 대비 누락 dotgg 파일 스캔·수집(슬러그→이름 정확 매칭),
   dotgg 부재 유닛은 `--stub`으로 수동 입력 템플릿. collect-nikke 워크플로에 편입.
+- 스킬 수치 드리프트 감지 ✅ (2026-07-18): `scripts/check_skill_value_drift.py`
+  — dotgg-소스 매니페스트 22개를 라이브 lootandwaifus와 대조, 밸런스 패치로
+  낡은 유닛을 자동 검출(현재 22 OK, 0 DRIFT). 게임 패치 후 실행해서 DRIFT가
+  뜨는 유닛부터 lootandwaifus 소스로 이관하는 게 후속 단계(→ `decisions.md`
+  2026-07-18 단계적 소스 이관 결정). 두 데이터 폴더의 파일 단일화는 이관 완료
+  후에만 싸게 가능(보류).
 - ShiftyPad 자동화는 Phase 7.
 
 ### Phase 7 — ShiftyPad 데이터 적재 🔄 조사 단계 (2026-07-17 재정의)
@@ -583,6 +614,21 @@
       `full_burst_bonus_eligible`·`resource_scaled_nukes`의 `resource` 선택화)
       소비. `cinderella-crystal-wave`는 무기-모드 상태머신 유닛으로 재분류되어
       배치에서 제외(아래 무기 변형 항목으로 이동).
+- [x] **매니페스트 예외 4유닛 해소** (2026-07-18): anis-star(dotgg 소스+drop_tokens)·
+      asuka-wille(픽스처 재전사+빌더 재번호, dotgg url `asuka-wille` 브리지)·
+      privaty(dollskills 네이티브 순서로 스왑)·neon-vision-eye(전사 오류 2슬롯 교정)
+      → `KNOWN_MANIFEST_EXCEPTIONS` 빈 집합, **매니페스트·API 로더블 61/61(전원)**.
+      Phase 6의 "픽스처 재배열 4유닛 잔여" 기록은 이걸로 종결(그 섹션은 병렬 세션
+      규칙상 이 배치에서 편집하지 않음 — 병합 후 정리).
+- [x] **정리 배치 (2026-07-18)**: SG 스코프 정밀화(drake-signature·arcana-fortune-mate
+      — squad 근사 제거, arcana의 except-self 과대적용 제거) + Little Mermaid
+      Bubble Barrage(아군 총탄 500 카운터)를 `scheduled_nukes`+전 유닛
+      `context.shot_times` 병합으로 인코딩(⚠→✅, 엔진 확장 불필요).
+- [x] **red-hood 재검증 + 인코딩** (2026-07-18): Pattern B 판정이 Phase S 이전의
+      낡은 것임을 확인(charge speed는 이제 딜 스탯). Glaring Eyes 정상상태 10스택
+      +38.1% 상시·초과분→차지댐 변환·Wild Tooth 자ATK·Step 3 무기변형(Fienn 실측
+      33발/10초·무한탄창 앵커, `scheduled_nukes` 이중계상 정적 차감) — 엔진 확장
+      없음. E2E: 변형이 본인 포함 덱 총딜의 30%.
 - [ ] **eb3+ 백로그** — 대부분 **자원 유닛(gap #2 Pattern A 잔여/Pattern B)·상태머신·
       무기변형**. 배치 착수 전 유닛별 검증 필수.
   - ~~**Pattern A 자원 유닛**: `rei-ayanami`·`rei-ayanami-tentative-name`·
@@ -590,25 +636,61 @@
     상태로 남아 있었음, 2026-07-17 정정). Pattern A는 이제 소진.
   - **검증 완료, 인코딩 대기 (2026-07-17 검증 배치)**: `raven`·`sakura-bloom-in-summer`
     — 기존 프리미티브로 핵심 인코딩 가능, 부위파괴 연동만 defer. 다음 배치 최우선.
-  - **검증 완료, 갭 확인 (2026-07-17)**: `scarlet-black-shadow`(gap #10 — 버스트가
-    per-shot threshold를 3/6/9→1/2/3으로 변경, 소규모 확장 필요) ·
-    `milk-blooming-bunny`(gap #11 — 강제재장전/탄약제거 상태머신, 중~대).
+  - ~~검증 완료, 갭 확인 (2026-07-17): `scarlet-black-shadow`(gap #10)~~ →
+    **인코딩 완료 (2026-07-18)** — `per_shot_rules` `"sequence"` 모드 확장 +
+    Pulse `damage_type` 배선. 같은 배치에서 velvet Sticky Fingers
+    (`every_outside_full_burst`) · modernia Giant Leap(Fienn 정정: 상태창 무관
+    전투시작 200히트 — gap #7 후보 소진) 잔여 메커니즘도 인코딩.
+    `milk-blooming-bunny`(gap #11 — 강제재장전/탄약제거 상태머신, 중~대)는 여전히
+    미착수.
   - **Pattern B 게이지·변신 (일반 프리미티브 잔여, gap #2)**: `mihara-bonding-chain`
-    (체인)·`elegg-boom-and-shock`·`red-hood`(charge speed·딜 아님). (`ark-ranger-black`은
-    2026-07-16 `part_destructible` 보스 플래그 브래킷으로 개별 인코딩 완료 — 일반
-    프리미티브 소비는 아님, `engine-gaps.md` gap #2 참고.)
+    (체인)·`elegg-boom-and-shock`. (~~`red-hood`(charge speed·딜 아님)~~ →
+    **2026-07-18 재검증으로 판정 정정·인코딩 완료**: Phase S 이후 charge speed는
+    딜 스탯이고, Step 1/2/3은 버스트 슬롯 선택이라 B3 고정 시 Step 3만 유효,
+    무기변형 창은 Fienn 실측 33발 앵커 `scheduled_nukes` — 엔진 확장 없음.
+    `ark-ranger-black`은 2026-07-16 `part_destructible` 보스 플래그 브래킷으로
+    개별 인코딩 완료 — 일반 프리미티브 소비는 아님, `engine-gaps.md` gap #2 참고.)
   - **상태머신/특수 트리거**: `diesel-winter-sweets`(Intro/Highlight+지속딜),
     `bready`(Taste), `dorothy-serendipity`(펠릿 카운터), `eve`(크리티컬-히트 카운터 —
     Julia 시그니처 인코딩 중 확인됨: 기대값 크리 모델과 구조적으로 불가, **영구 defer**
     가능성 높음, 착수 전 재확인),
-    (`ada-wong`은 2026-07-16 Phase C에서 인코딩 완료 — gap #6 during_full_burst 소비),
-    `milk-blooming-bunny`·`scarlet-black-shadow`(distributed)
-  - **무기 변형**(버스트/평타가 다른 무기모드로 전환 = 핵심 딜, 미지원): `snow-white`,
-    `snow-white-heavy-arms`, `maxwell`, `cinderella-crystal-wave`(MG/Snipe 모드
-    전환이 FB 넉을 게이팅 — 자원 primitive로 안 풀림, 2026-07-12 eb4 검증 중 재분류)
+    (`ada-wong`은 2026-07-16 Phase C에서 인코딩 완료 — gap #6 during_full_burst 소비,
+    `scarlet-black-shadow`는 2026-07-18 gap #10으로 인코딩 완료),
+    `milk-blooming-bunny`(gap #11)
+  - ~~**무기 변형**(버스트/평타가 다른 무기모드로 전환 = 핵심 딜, 미지원): `snow-white`,
+    `snow-white-heavy-arms`, `maxwell`, `cinderella-crystal-wave`~~ →
+    **v1 엔진 프리미티브 착지 완료 (2026-07-19, `weapon_mode_schedules` 세그먼트)**
+    — 설계 `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`(상태:
+    구현 완료). snow-white ✅·maxwell ✅ 신규 인코딩, laplace-signature 신규 슬러그
+    신설(변형 10초 창을 세그먼트로 모델), red-hood는 기존 `scheduled_nukes` 근사에서
+    세그먼트로 마이그레이션(정적 차감/상수 접기 제거, 덱 차지댐 버프가 변형샷에
+    곱해짐, 총딜 ~+1.6%). ~~**남은 무기변형은 계획 2 백로그**: `cinderella-crystal-wave`
+    → `-mg`/`-snipe` 듀얼슬러그(정적 프로필 2벌 + 모드별 FB 넉/버프 + 덱 탐색 상호
+    배제, Snipe 프로필 세부는 인코딩 시 Fienn 확인) · `rapi-red-hood`(세그먼트 대상
+    아님 — `scheduled_nukes` context에 FB창 노출만 필요) · `snow-white-heavy-arms`
+    (차지 루프 상태머신, 기존 per-shot+multi-hit 프리미티브로 풀리는지 검증 패스
+    대기)~~ → **계획 2 착지 완료 (2026-07-19).** `cinderella-crystal-wave`는
+    `registry.MODE_VARIANTS`로 `cinderella-crystal-wave-mg`/`-snipe` 두 정적 슬러그로
+    갈라짐(전투 전 모드 고정 — 상태머신 아님, 로스터가 소유 유닛 1개를 후보 여러 개로
+    fan-out, `_no_variant_clash`가 두 모드 동시 편성을 덱 탐색에서 금지). `rapi-red-hood`는
+    신규 `SquadContext.full_burst_windows` + `boss_core_hittable()` 노출로 120노멀
+    프로젝타일 발사기가 완성(부착 누적 → 다음 FB 진입에서 일괄 폭발, 신규
+    `projectile_attachment` 데미지 타입) + 신규 슬러그 `rapi-red-hood-b1`(Combat
+    Assist를 실제 B1 후보로 편성, 원래 이번 배치 범위엔 없었으나 착수 중 추가된 항목).
+    `snow-white-heavy-arms`는 검증 결과 **신규 상태머신이 필요 없었음** — Auto Fire는
+    기존 per-shot 룰을 타고, Seven Dwarves Fully Active는 세그먼트(3.2초 차지 2발,
+    +528% 차지댐을 프로필에 접어 덱 차지댐 버프가 계속 곱해짐)이며, 신규
+    `every_during_segment`/`every_outside_segment` per-shot 모드가 강화/평시 Auto
+    Fire의 이중계상을 구조적으로 막는다. velvet 변형딜(저가치, 보류 확정) · laplace
+    base의 5초 변형(실측 없음, 보류)만 잔여. 상세는 `docs/engine-gaps.md`,
+    `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`(상태: 계획 2
+    착지 완료).
   - ~~✱ = 애장품(dollskills) 보유, base/시그니처 별도 slug: `drake`, `laplace`~~ —
-    **둘 다 2026-07-16 인코딩 완료**(drake는 base+signature 듀얼슬롯, laplace는 base만
-    — 시그니처는 더 큰 무기변형이라 듀얼슬롯 없음). 백로그 갱신 누락, 2026-07-17 정정.
+    **drake는 2026-07-16, laplace는 2026-07-19 완료** — drake는 base+signature
+    듀얼슬롯, laplace도 이제 듀얼슬롯(`laplace-signature`, 세그먼트 무기변형).
+    "시그니처는 무기변형이라 듀얼슬롯 없음"이라던 2026-07-17 정정은 **틀렸음** —
+    2026-07-19 세그먼트 프리미티브 착지로 뒤집힘(위 항목 참고). base laplace의
+    5초 변형은 여전히 보류(실측 없음).
 - [x] `damage_taken_up` / `other_core_damage_sources` 엔진 연결
       — 완료. squad 스코프 적 디버프, 코어 데미지는 `core_hittable` 게이팅.
 - [x] `NikkeSpec`에 스킬별 유저 레벨 필드 추가 → 조립 시 `levels[level-1]` 선택 일반화
@@ -639,10 +721,18 @@
 - [x] **Ein 인코딩** — `scheduled_nukes` 확장 + Fienn 실측 기반 페더 스케줄.
 - [x] **raven·sakura-bloom-in-summer 인코딩** (2026-07-17) — sakura는 확장 불필요가
       맞았고, raven은 `context.shot_times` 소규모 확장 1건 필요했음(판정 정정).
-- [ ] **다음 배치 후보** — 남은 미인코딩 13명은 전부 갭 뒤(무기변형 4·Pattern B 3·
-      상태머신 3·gap #10 scarlet·gap #11 milk). **최대 수요는 무기 변형**
-      (snow-white·snow-white-heavy-arms·maxwell·cinderella-crystal-wave + laplace·
-      velvet·rapi 잔여) — 큰 확장이라 설계 논의부터 필요.
+- [x] **무기변형 v1 착지 (2026-07-19)** — 설계 논의 완료 후 `weapon_mode_schedules`
+      세그먼트 프리미티브 구현: snow-white ✅·maxwell ✅ 신규 인코딩, laplace-signature
+      신규 슬러그, red-hood 세그먼트 마이그레이션. (gap #10 scarlet·red-hood는
+      2026-07-18에 이미 인코딩 완료.)
+- [x] **무기변형 계획 2 착지 (2026-07-19)** — v1이 남긴 잔여 3건을 닫음:
+      cinderella-crystal-wave → `-mg`/`-snipe` 듀얼슬러그(`MODE_VARIANTS`) ·
+      rapi-red-hood FB창 노출(`full_burst_windows`+`boss_core_hittable`, 120노멀
+      발사기 완성) + 신규 `rapi-red-hood-b1`(Combat Assist B1 후보, 착수 중 범위
+      추가) · snow-white-heavy-arms(신규 상태머신 불필요, 세그먼트+
+      `every_during_segment`/`every_outside_segment`로 해결). **남은 미인코딩
+      6명**: Pattern B 게이지(mihara-bonding-chain·elegg-boom-and-shock) ·
+      상태머신(diesel-winter-sweets·bready·eve) · gap #11(milk-blooming-bunny).
 - [x] **ein weapon 스탯** — 이미 `data/dotgg/char_ein.json`에 존재했음(SR·장탄6·
       재장전2.0s·차지1.0s·차지댐250%). "부재" 판정은 워크트리에 gitignore된 데이터가
       복사되지 않아 생긴 오진이었음 — 아래 함정 항목 참고.

@@ -46,6 +46,13 @@ from app.skill_rules.asuka_shikinami_langley_wille import (
 from app.skill_rules.blanc import build_blanc_rules
 from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
 from app.skill_rules.chisato_nishikigi import build_chisato_per_shot_rules, build_chisato_rules
+from app.skill_rules.cinderella_crystal_wave import (
+    build_crystal_wave_mg_rules,
+    build_crystal_wave_snipe_rules,
+    build_snipe_weapon_profile,
+    crystal_wave_burst_percent,
+    crystal_wave_periodic_nuke,
+)
 from app.skill_rules.cinderella import (
     GLASS_SLIPPERS_HIT_COUNT,
     build_beautiful_resources,
@@ -63,6 +70,7 @@ from app.skill_rules.marciana_marine_study import (
     build_marciana_per_shot_rules,
     build_marciana_rules,
 )
+from app.skill_rules.maxwell import build_maxwell_rules, build_pierce_shot_weapon_mode_schedule
 from app.skill_rules.ludmilla_winter_owner import build_ludmilla_per_shot_rules, build_ludmilla_rules
 from app.skill_rules.mana import (
     build_fatal_error_dot,
@@ -92,6 +100,10 @@ from app.skill_rules.raven import (
     build_raven_scheduled_nukes,
     tempest_burst_percent,
 )
+from app.skill_rules.scarlet_black_shadow import (
+    build_breakthrough_per_shot_rules,
+    build_scarlet_black_shadow_rules,
+)
 from app.skill_rules.sakura_bloom_in_summer import (
     EPHEMERAL_SPENDER_HIT_COUNT,
     FULL_GLORY_COOLDOWN,
@@ -117,6 +129,7 @@ from app.skill_rules.drake import (
     drake_special_burst_percent,
 )
 from app.skill_rules.laplace import build_hero_bomber_per_shot_rules, laplace_buster_burst_percent
+from app.skill_rules import laplace_signature
 from app.skill_rules.dorothy_serendipity import build_dorothy_serendipity_rules
 from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resource_scaled_nukes,
@@ -155,7 +168,11 @@ from app.skill_rules.julia import (
     climax_burst_percent,
 )
 from app.skill_rules import julia_signature
-from app.skill_rules.little_mermaid import build_bubble_wave_fb_nuke, build_little_mermaid_rules
+from app.skill_rules.little_mermaid import (
+    build_bubble_barrage_scheduled_nukes,
+    build_bubble_wave_fb_nuke,
+    build_little_mermaid_rules,
+)
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.maiden_ice_rose import (
     build_blessings_fill_triggered_buffs,
@@ -180,6 +197,17 @@ from app.skill_rules.soda_twinkling_bunny import (
     build_onward_soda_resource_gated_buffs,
     onward_soda_burst_percent,
 )
+from app.skill_rules.snow_white import (
+    build_determination_per_shot_rules,
+    build_seven_dwarves_weapon_mode_schedule,
+    build_snow_white_rules,
+    snow_white_periodic_nuke,
+)
+from app.skill_rules.snow_white_heavy_arms import (
+    build_fully_active_weapon_mode_schedule,
+    build_seven_dwarves_per_shot_rules,
+    build_snow_white_heavy_arms_rules,
+)
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules.takina_inoue import (
     BATTLEFIELD_CONTROL_COOLDOWN,
@@ -188,7 +216,11 @@ from app.skill_rules.takina_inoue import (
     build_suppression_initiated_rules,
 )
 from app.skill_rules.tove import build_tove_rules
-from app.skill_rules.velvet import build_bullets_of_love_per_shot_rules, build_velvet_rules
+from app.skill_rules.velvet import build_velvet_per_shot_rules, build_velvet_rules
+from app.skill_rules.red_hood import (
+    build_red_hood_rules,
+    build_red_wolf_weapon_mode_schedule,
+)
 from app.skill_rules.privaty import (
     ak_missile_burst_percent,
     build_ak_missile_rules,
@@ -197,7 +229,10 @@ from app.skill_rules.privaty import (
 )
 from app.skill_rules.rapi_red_hood import (
     build_attachable_projectiles_rules,
+    build_attachable_projectiles_scheduled_nukes,
     build_battlefield_assessment_rules,
+    build_power_of_inheritance_rules,
+    build_power_of_inheritance_stage1_rules,
     power_of_inheritance_stage3_burst_percent,
 )
 from app.skill_rules.volume import build_volume_rules
@@ -229,8 +264,20 @@ def _build_crown(sv):
 def _build_rapi_red_hood(sv):
     rules = build_battlefield_assessment_rules(sv["battlefield_assessment"])
     rules += build_attachable_projectiles_rules(sv["attachable_projectiles"])
+    rules += build_power_of_inheritance_rules(sv)
     burst_percent = power_of_inheritance_stage3_burst_percent(sv["power_of_inheritance"])
     return rules, burst_percent
+
+
+def _build_rapi_red_hood_b1(sv):
+    # Combat Assist / B1 stand-in seat (Task 7) - Stage 1 Power of Inheritance
+    # is support-only (no damage), and does NOT get the Stage 3 rider
+    # (build_power_of_inheritance_rules): the 421.2% attachment window and the
+    # requirement cut are Stage-3-only.
+    rules = build_battlefield_assessment_rules(sv["battlefield_assessment"])
+    rules += build_attachable_projectiles_rules(sv["attachable_projectiles"])
+    rules += build_power_of_inheritance_stage1_rules(sv)
+    return rules, None  # Stage 1 use deals no damage
 
 
 def _build_helm(sv):
@@ -287,8 +334,15 @@ _BUILDERS = {
     "blanc": lambda sv: (build_blanc_rules(sv), None),
     "brid-silent-track": lambda sv: (build_brid_rules(sv), None),
     "cinderella": _build_cinderella,
+    "cinderella-crystal-wave-mg": lambda sv: (
+        build_crystal_wave_mg_rules(sv), crystal_wave_burst_percent(sv)
+    ),
+    "cinderella-crystal-wave-snipe": lambda sv: (
+        build_crystal_wave_snipe_rules(sv), crystal_wave_burst_percent(sv)
+    ),
     "crown": _build_crown,
     "rapi-red-hood": _build_rapi_red_hood,
+    "rapi-red-hood-b1": _build_rapi_red_hood_b1,
     "helm": _build_helm,
     "helm-aquamarine": lambda sv: (build_helm_aquamarine_rules(sv), aegis_cannon_overload_burst_percent(sv)),
     "isabel": lambda sv: (build_isabel_rules(sv), sonic_chaser_burst_percent(sv)),
@@ -305,6 +359,7 @@ _BUILDERS = {
     "asuka-shikinami-langley-wille": _build_asuka,
     "jill-valentine": lambda sv: (build_jill_rules(sv), None),
     "marciana-marine-study": lambda sv: (build_marciana_rules(sv), None),  # burst is buff-only; damage is Flagged Target nukes (per-shot + full-burst)
+    "maxwell": lambda sv: (build_maxwell_rules(sv), None),  # burst is the Pierce Shot weapon transform (weapon-mode segment), no direct nuke
     "privaty": _build_privaty,
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
@@ -321,9 +376,17 @@ _BUILDERS = {
     "sakura-bloom-in-summer": lambda sv: (
         build_sakura_bloom_in_summer_rules(sv), ephemeral_spender_burst_percent(sv)
     ),
+    "red-hood": lambda sv: (build_red_hood_rules(sv), None),  # burst is the Step 3 weapon transform (weapon-mode segment), no direct nuke
+    "scarlet-black-shadow": lambda sv: (build_scarlet_black_shadow_rules(sv), None),  # burst is buff-only; damage is the Breakthrough sequence (per-shot)
+    "snow-white": lambda sv: (build_snow_white_rules(sv), None),  # burst is the weapon transform (weapon-mode segment), no direct nuke
+    "snow-white-heavy-arms": lambda sv: (build_snow_white_heavy_arms_rules(sv), None),  # burst is the Fully Active state change (weapon-mode segment), no direct nuke
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
     "laplace": lambda sv: ([], laplace_buster_burst_percent(sv)),  # no ally buffs; weapon-transform + Hero Vision deferred
+    "laplace-signature": lambda sv: (
+        laplace_signature.build_laplace_signature_rules(sv),
+        laplace_signature.laplace_buster_signature_burst_percent(sv),
+    ),
     "dorothy-serendipity": lambda sv: (build_dorothy_serendipity_rules(sv), None),  # burst is buff-only (self Attack Speed + ATK)
     "guillotine-winter-slayer": lambda sv: (build_guillotine_rules(sv), None),  # Extermination DoT (Hero-Level-scaled) deferred
     "modernia": lambda sv: ([], None),  # all modeled content is per-shot + resource; burst deferred
@@ -345,9 +408,44 @@ _BUILDERS = {
 
 ENCODED_SLUGS = tuple(_BUILDERS)
 
+# One owned character who yields MULTIPLE deck candidates (Fienn, 2026-07-18/19):
+# a pre-battle mode choice (Cinderella: Crystal Wave MG/Snipe) or a formation
+# role choice (Rapi: Red Hood B3/B1). The tuple lists every candidate slug the
+# roster loader fans the one owned state out to (include the base slug itself
+# when it stays a candidate); deck search never seats two candidates of the
+# same base together.
+MODE_VARIANTS: dict[str, tuple[str, ...]] = {
+    "cinderella-crystal-wave": ("cinderella-crystal-wave-mg", "cinderella-crystal-wave-snipe"),
+    "rapi-red-hood": ("rapi-red-hood", "rapi-red-hood-b1"),
+}
+
+# A variant seated in a different burst-rotation slot than the character's
+# nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
+VARIANT_BURST_TIERS: dict[str, int] = {
+    "rapi-red-hood-b1": 1,
+}
+
+
+# A variant whose weapon profile differs from the character's dotgg stats
+# (e.g. a Snipe mode) registers a builder here; the roster loader swaps the
+# assembled profile in after skill values resolve.
+_WEAPON_PROFILE_OVERRIDE_BUILDERS = {
+    "cinderella-crystal-wave-snipe": build_snipe_weapon_profile,
+}
+
+
+def get_weapon_profile_override(slug, skill_values):
+    builder = _WEAPON_PROFILE_OVERRIDE_BUILDERS.get(slug)
+    if builder is None:
+        return None
+    return builder(skill_values)
+
+
 _PERIODIC_NUKE_BUILDERS = {
     "ada-wong": lambda sv: build_flash_grenade_periodic_nuke(sv),
     "ark-ranger-black": lambda sv: build_ark_ranger_ceiling_collider(sv),
+    "cinderella-crystal-wave-mg": lambda sv: crystal_wave_periodic_nuke(sv),
+    "cinderella-crystal-wave-snipe": lambda sv: crystal_wave_periodic_nuke(sv),
     "helm-aquamarine": lambda sv: {
         "cooldown": AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN,
         "percent": aegis_cannon_suppression_fire_percent(sv),
@@ -358,6 +456,7 @@ _PERIODIC_NUKE_BUILDERS = {
     },
     "jill-valentine": lambda sv: build_acid_ammo_periodic_nuke(sv),
     "little-mermaid": lambda sv: build_bubble_wave_fb_nuke(sv),
+    "snow-white": lambda sv: snow_white_periodic_nuke(sv),
 }
 
 # A Nikke's burst nuke is "attack"-typed unless its skill deals a specific
@@ -374,8 +473,23 @@ _BURST_DAMAGE_TYPES = {
 # entities so far.
 _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
+    "little-mermaid": lambda sv: build_bubble_barrage_scheduled_nukes(sv),  # squad-wide 500-ammo counter
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
+    "laplace-signature": lambda sv: laplace_signature.build_buster_scheduled_nukes(sv),  # per-tick true-damage rider
+    "rapi-red-hood": lambda sv: build_attachable_projectiles_scheduled_nukes(sv),  # Attachable Projectiles launcher
+    "rapi-red-hood-b1": lambda sv: build_attachable_projectiles_scheduled_nukes(
+        sv, slug="rapi-red-hood-b1", stage3_requirement_cut=False),
+}
+
+# A Nikke whose burst swaps her weapon profile for a window (weapon-mode
+# segments - see raid_simulator's `weapon_mode_schedules` and the design spec).
+_WEAPON_MODE_SCHEDULE_BUILDERS = {
+    "red-hood": lambda sv: build_red_wolf_weapon_mode_schedule(sv),  # Step 3 transform window, 33 measured shots
+    "snow-white": lambda sv: build_seven_dwarves_weapon_mode_schedule(sv),  # single 5s-charge cannon shot per own-burst
+    "snow-white-heavy-arms": lambda sv: build_fully_active_weapon_mode_schedule(sv),  # 2-shot 3.2s-charge segment per own-burst
+    "maxwell": lambda sv: build_pierce_shot_weapon_mode_schedule(sv),  # single 2s-charge cannon shot per own-burst
+    "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at
@@ -425,8 +539,12 @@ _PER_SHOT_RULE_BUILDERS = {
     "drake": lambda sv: build_thunderbolt_per_shot_rules(sv),
     "drake-signature": lambda sv: build_thunderbolt_signature_per_shot_rules(sv),
     "laplace": lambda sv: build_hero_bomber_per_shot_rules(sv),
+    "laplace-signature": lambda sv: laplace_signature.build_hero_bomber_signature_per_shot_rules(sv),
+    "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),
+    "snow-white": lambda sv: build_determination_per_shot_rules(sv),
+    "snow-white-heavy-arms": lambda sv: build_seven_dwarves_per_shot_rules(sv),
     "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
-    "velvet": lambda sv: build_bullets_of_love_per_shot_rules(sv),
+    "velvet": lambda sv: build_velvet_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),
     "marciana-marine-study": lambda sv: build_marciana_per_shot_rules(sv),
@@ -530,6 +648,14 @@ def get_scheduled_nukes(slug, skill_values):
     """List of specs for a Nikke whose damage lands on a self-computed schedule
     (see raid_simulator's `scheduled_nukes`), or None for Nikkes without one."""
     builder = _SCHEDULED_NUKE_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_weapon_mode_schedules(slug, skill_values):
+    """Schedule function for a Nikke whose burst swaps her weapon profile for a
+    window (see raid_simulator's `weapon_mode_schedules`), or None for Nikkes
+    without one."""
+    builder = _WEAPON_MODE_SCHEDULE_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
 
 

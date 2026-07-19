@@ -48,6 +48,25 @@ of a SkillRule, same pattern as Helm's Aegis Cannon.
 from app.effects import Effect, Pulse
 from app.squad_engine import SkillRule
 
+# Privaty runs with her signature weapon completed (Fienn confirmed), so the
+# manifest reads the dollskills arrays, not the base skills.
+SKILL_VALUE_MANIFESTS = {
+    "privaty": {
+        "source": "dotgg",
+        "test_module": "test_skill_rules_privaty",
+        "keys": {
+            "ex_magazine": ("dollskills", 0),
+            "ld_assault": ("dollskills", 1),
+            "ak_missile": ("dollskills", 2),
+        },
+        "fixtures": {
+            "ex_magazine": "EX_MAGAZINE_VALUES",
+            "ld_assault": "LD_ASSAULT_VALUES",
+            "ak_missile": "AK_MISSILE_VALUES",
+        },
+    },
+}
+
 
 def build_ex_magazine_rules(values: dict) -> list[SkillRule]:
     atk_up = float(values["description_value_01"]) / 100
@@ -98,10 +117,10 @@ def ak_missile_burst_percent(values: dict) -> float:
 
 def build_ld_assault_per_shot_rules(values: dict) -> list:
     assault = values["ld_assault"]
-    damage_taken = float(assault["description_value_01"]) / 100
-    debuff_duration = float(assault["description_value_02"])
-    base_percent = float(assault["description_value_03"])
-    designated_percent = float(assault["description_value_04"])
+    base_percent = float(assault["description_value_01"])
+    designated_percent = float(assault["description_value_02"])
+    damage_taken = float(assault["description_value_03"]) / 100
+    debuff_duration = float(assault["description_value_04"])
     designated_duration = float(values["ak_missile"]["description_value_04"])
 
     def action(context, caster_slug, time, registry):

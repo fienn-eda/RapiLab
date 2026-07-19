@@ -8,6 +8,11 @@ Modeled (DPS-relevant):
   of Critical Damage +14.25% AND Max Ammunition Capacity +5.04%, each stacking up
   to 5 and lasting 10 sec - modeled as one "evolution" resource (filled every 200
   shots, cap 5) driving two 10-sec linear buffs.
+- Giant Leap (skills[1]) self ATK +29.38% for 10 sec: fires on every 200th
+  normal hit counted from battle start - in-game it is NOT gated on the
+  15-sec increasing-Hit-Rate window the skill text describes (Fienn
+  2026-07-18), so it's a plain every-200 per-shot rule, refreshing (MG's
+  60 shots/s puts consecutive marks well inside the 10s duration).
 
 Not modeled / deferred:
 - The Max Ammunition Capacity stack is emitted, but Max Ammo only feeds shot
@@ -15,18 +20,18 @@ Not modeled / deferred:
   BEFORE the resource resolution pass runs - so it can't retroactively grow her
   own already-scheduled magazines. It's an inert-for-own-shots buff, kept for
   faithfulness (a future live-max-ammo consumer would read it).
-- Giant Leap (skills[1]): the all-ally Hit Rate buff is inert (not a damage
-  stat); its self ATK +29.38% is gated on a "200 hits DURING the 15-sec
-  increasing-Hit-Rate window" - a WINDOWED 200-hit counter the per-shot-every
-  fill can't express (it counts all shots, not shots within a status window).
-  Potentially meaningful; flagged.
+- Giant Leap's all-ally Hit Rate buff: inert (not a damage stat).
 - New World (skills[2], her burst): Full Burst Duration +5s, unlimited ammo, and
   Destroy Mode (auto-aim + a 2.24%-of-ATK Destroy-Mode damage over 15s) - a
   weapon/targeting mode, not a single burst nuke, so burst_percent is None.
 - Its 2.24% Destroy-Mode damage and unlimited-ammo/FB-duration effects.
 """
 from app.effects import ResourceSpec
-from app.skill_rules._helpers import instant_nuke_pulse_rule, linear_resource_buff
+from app.skill_rules._helpers import (
+    instant_nuke_pulse_rule,
+    linear_resource_buff,
+    refreshing_buff_rule,
+)
 
 SKILL_VALUE_MANIFESTS = {
     "modernia": {
@@ -34,6 +39,7 @@ SKILL_VALUE_MANIFESTS = {
         "test_module": "test_skill_rules_resource_eb",
         "keys": {
             "high_speed_evolution": ("skills", 0),
+            "giant_leap": ("skills", 1),
         },
     },
 }
@@ -64,4 +70,15 @@ def build_modernia_resources(values):
 def build_modernia_per_shot_rules(values):
     evo = values["high_speed_evolution"]
     additional = float(evo["description_value_01"])
-    return [(1, "every", [instant_nuke_pulse_rule("per_shot", additional)])]
+    leap = values["giant_leap"]
+    leap_threshold = int(leap["description_value_03"])
+    leap_atk = float(leap["description_value_04"]) / 100
+    leap_duration = float(leap["description_value_05"])
+    return [
+        (1, "every", [instant_nuke_pulse_rule("per_shot", additional)]),
+        (leap_threshold, "every", [
+            refreshing_buff_rule("per_shot", [
+                ("atk_percent", leap_atk, "self", leap_duration),
+            ]),
+        ]),
+    ]

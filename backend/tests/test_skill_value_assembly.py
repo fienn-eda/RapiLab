@@ -36,11 +36,7 @@ def test_at_least_the_pilots_have_manifests():
 # exceptions, so a new encoding that skips its manifest fails here instead of
 # silently drifting out of the docs. Shrink this set as blockers clear; never
 # grow it without recording why.
-KNOWN_MANIFEST_EXCEPTIONS = {
-    # fixture transcribed with reordered/mismatched tokens - drop_tokens cannot
-    # reproduce it from the data (batch-2 report, 2026-07-17)
-    "anis-star", "asuka-shikinami-langley-wille", "privaty", "neon-vision-eye",
-}
+KNOWN_MANIFEST_EXCEPTIONS = set()
 
 
 def test_every_registry_slug_has_a_manifest_or_is_a_known_exception():

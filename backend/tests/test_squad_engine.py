@@ -397,3 +397,11 @@ def test_branching_rules_pick_the_matching_branch_by_condition():
     fire_trigger("battle_start", rules_by_slug, ctx_with_ally, registry, time=0.0)
 
     assert fired_branches == ["alone", "with_ally"]
+
+
+def test_boss_core_hittable_condition_reads_context_flag():
+    from app.squad_engine import SquadContext, SquadMember, boss_core_hittable
+    cond = boss_core_hittable()
+    members = [SquadMember("a", 3, "Iron")]
+    assert cond(SquadContext(members, core_hittable=True), "a") is True
+    assert cond(SquadContext(members), "a") is False

@@ -5,7 +5,65 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-17 (**Raven·Sakura 인코딩 — `scheduled_nukes`에 소유자 발사
+- 마지막 갱신: 2026-07-19 (**무기변형 계획 2 착지 — v1이 이월한 잔여 3건 전부
+  해소**: cinderella-crystal-wave가 `registry.MODE_VARIANTS`(소유 유닛 1개를 후보
+  슬러그 여러 개로 로스터가 fan-out, 덱 탐색은 두 enumeration 경로 모두
+  `_no_variant_clash`로 같은 base의 변형 동시 편성을 금지, pruning 휴리스틱의
+  내부 참조덱도 정합하게 보강) 경유로 `-mg`/`-snipe` 두 정적 슬러그로 갈라짐 —
+  전투 전 모드 고정이라 상태머신이 아니라 기존 평범한 무기 경로를 두 번 타는
+  것뿐. rapi-red-hood의 120노멀 프로젝타일 발사기가 `SquadContext.
+  full_burst_windows`(FB 창 [시작,종료) 목록 노출) + `boss_core_hittable()`
+  조건 헬퍼로 완성(부착 누적 → 다음 FB 진입에서 일괄 폭발, `scheduled_nukes`
+  두 개 — 부착/폭발 — 로 표현, 신규 `projectile_attachment` 데미지 타입이
+  `projectile_explosion`과 나란히) + 신규 슬러그 `rapi-red-hood-b1`(Combat
+  Assist B1 대역을 실제 B1 후보로 편성, `VARIANT_BURST_TIERS`로 base와 다른
+  티어에 착석, `SOLE_TIER1_SLUGS`로 진짜 B1과 동시 편성 금지 — 원래 이번 배치
+  범위엔 없었으나 착수 중 추가). snow-white-heavy-arms는 검증 패스 결과 **신규
+  상태머신이 필요 없었음** — Auto Fire는 기존 per-shot 룰을 그대로 타고, Seven
+  Dwarves Fully Active는 세그먼트(3.2초 차지 2발, +528% 차지댐을 프로필의
+  `charge_damage_percent`에 접어 덱 차지댐 버프가 계속 곱해짐, 세그먼트 프로필은
+  신규 `caster_weapon_stats` 스킬값 주입으로 자기 기본무기 스탯을 읽음)이며, 신규
+  `every_during_segment`/`every_outside_segment` per-shot 모드(샷 시각이 아니라
+  레코드 정체성으로 매칭 — 세그먼트 종료와 재개 매거진의 첫 샷이 같은 시각을 가질
+  수 있어 시각 매칭은 둘 다 만족시켜버림, 구조적으로 상호 배타)가 강화/평시
+  Auto Fire의 이중계상을 막는다. 4개 신규 엔진 확장 상세는 "이미 만든 것" 참고,
+  velvet 변형딜·laplace base 5초 변형만 계속 보류 — 상세는
+  `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`(상태: 계획 2
+  착지 완료).
+  이전 갱신: 2026-07-19 (**weapon-mode segments v1 착지 — 무기변형 엔진
+  프리미티브 완료**: `attack_rate.generate_segmented_shots()`(세그먼트 단위 ShotRecord
+  타임라인 — 세그먼트 안에서 기본무기 침묵, 종료 시 새 매거진 즉시 재개,
+  `until_shots`/`end` 두 창 형태, `charge_time` 프로필은 라이브 차지속도 버프 반영,
+  명시적 `rate_of_fire` 프로필은 실측 앵커라 케이던스 버프 미적용, 프로필별 옵셔널
+  `damage_type`) + `simulate_raid(..., weapon_mode_schedules=)` 옵트인 배선 — **전
+  유닛이 세그먼트 생성기 경유**(빈 세그먼트 = 기존 출력과 비트 동일, SR_ODD 1.19초
+  차지 동치 테스트로 검증), first/last-bullet 마커도 레코드 플래그 기반으로 전환.
+  소비: snow-white·maxwell(신규, 버스트 단발 캐논 변형) · laplace-signature(신규
+  슬러그, 10초 창 First+93틱) · red-hood(기존 `scheduled_nukes` 근사에서 마이그레이션
+  — 정적 차감/상수 접기 제거, 덱 차지댐 버프가 변형샷에 곱해짐, 총딜 ~+1.6%). 남은
+  무기변형은 계획 2 백로그로 이월(cinderella-crystal-wave-mg/-snipe 듀얼슬러그·
+  rapi-red-hood FB창 노출·snow-white-heavy-arms 검증 패스, velvet/laplace base 변형은
+  보류 확정) — 상세는 "이미 만든 것" 및
+  `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`(상태: v1 구현 완료)
+  참고.
+  이전 갱신: 2026-07-18 (**아군 총탄 카운터 해소 — 확장 불필요**: `scheduled_nukes`의
+  `context.shot_times`가 전 유닛 타임라인을 담고 있어 모듈 병합으로 스쿼드 합산
+  카운터 표현 가능 — Little Mermaid Bubble Barrage ⚠→✅. 같은 날: **red-hood
+  재검증 — Pattern B 아님, 확장 없이 인코딩 완료**.
+  "게이지=charge speed=딜 아님" 판정은 Phase S(charge_speed_percent 배선) 이전의
+  낡은 것. 무기변형 창은 Fienn 실측(10초 33발·무한탄창) 앵커 `scheduled_nukes`.
+  Pattern B 잔여 후보는 mihara·elegg 2명으로 감소 — gap #2 상세 참고.
+  같은 날 이전 갱신: **gap #10 완료 — `per_shot_rules` `"sequence"` 모드,
+  Scarlet: Black Shadow 인코딩**. 단일 풀차지 카운터가 단계별 요구치 테이블(3/6/9)을
+  걷고, 자기 버스트 창(10초) 안에서는 테이블이 1/2/3으로 교체 — 카운트/스테이지는
+  경계를 넘어 이어지고(Fienn 판정), 스테이지는 `count >= 활성 요구치`면 발동이라
+  테이블 교체로 진행이 유실되지 않음. 같은 배치 부수 확장 2건: **`every_outside_
+  full_burst` 모드**(gap #7 거울상 not-in-FB 창 필터 — Velvet Sticky Fingers 소비,
+  아래 참고 섹션 해소) · **Pulse에 `damage_type`**("as Distributed Damage" per-shot
+  넉이 이제 `distributed_damage_up` 버킷과 곱해짐 — Scarlet 6/9단계 소비, Neon
+  문서의 펄스 경로 한계 해소). **modernia 검증 종결(Fienn 정정): Giant Leap은
+  상태창 무관 전투시작 기준 200히트 카운터 — gap #7 아님, 기존 `every`로 인코딩
+  완료. gap #7 후보 소진.** 이전 갱신: **Raven·Sakura 인코딩 — `scheduled_nukes`에 소유자 발사
   시각 노출**. schedule 함수가 `context.shot_times[slug]`로 자기 발사 타임라인을 읽을
   수 있게 됨(엔진이 이미 `shot_times_by_slug`를 갖고 있어 신규 계산 없음, Ein 무영향).
   소비: Raven(Shock Wave — 풀차지마다 68.46% 지속댐 5틱, 인스턴스 중첩). Sakura는 확장
@@ -95,7 +153,7 @@
 | — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |
 | ~~—~~ | ~~attack/charge speed~~ (발사 간격 → 딜) | 2 (Dorothy·Tove) | **완료 (Phase S, 2026-07-16)** — `attack_speed_percent`/`charge_speed_percent` 배선 | 발사 타임라인 |
 | ~~10~~ | ~~소환체 가변 케이던스 스케줄~~ (살아있는 개체 수가 공격 주기를 바꿈) | 1 (Ein) | **완료 (2026-07-17, `scheduled_nukes`)** | 신규 방출 경로 |
-| 10 | **창 한정 per-shot threshold 오버라이드** (버스트가 요구 카운트를 3/6/9 → 1/2/3으로 변경) | 1 (Scarlet: Black Shadow) | 미착수, 소규모 | 트리거 변형 |
+| ~~10~~ | ~~창 한정 per-shot threshold 오버라이드~~ (버스트가 요구 카운트를 3/6/9 → 1/2/3으로 변경) | 1 (Scarlet: Black Shadow) | **완료 (2026-07-18, `per_shot_rules` `"sequence"` 모드 — Scarlet 인코딩)** | 트리거 변형 |
 | 11 | **강제 재장전 / 탄약 제거 상태머신** (발사 타임라인 자체를 스킬이 조작) | 1 (Milk: Blooming Bunny) | 미착수, 중~대 | 신규 상태 |
 | — | **부위파괴 이벤트** (gap #2 Pattern B와 동근) | 3+ (Raven·Sakura·Mihara) | 미착수 — ark-ranger는 `part_destructible` 브래킷으로 개별 우회 | 신규 이벤트 |
 | — | hit rate · Burst Gauge fill speed (딜/타이밍 아님) | 15 | **구현 안 함** (defer 유지) | 범위 밖 |
@@ -134,9 +192,12 @@
   (애장품) ✅(LD Assault, Designated Target 조건부 중첩 넉).
 - **다음(후속 배치):** 아래 막힌 유닛들을 이 능력으로 재인코딩. 각 유닛 데이터 수집 후
   per-shot 룰 추가.
-- **잔여 변형:** (a) **아군 총탄 카운터**(스쿼드 전체 발사 누적, per-caster 아님) — 예:
-  Little Mermaid의 Bubble Barrage(아군 총탄 500마다 850%). `per_shot_rules`는 시전자
-  본인 발사만 세므로 미커버. 스쿼드 합산 카운터는 별도 확장 필요. (b) **크리티컬 히트
+- **잔여 변형:** (a) ~~**아군 총탄 카운터**(스쿼드 전체 발사 누적, per-caster 아님)~~ —
+  **완료 (2026-07-18, 확장 불필요)**: Little Mermaid의 Bubble Barrage(아군 총탄
+  500마다 85%×10연타)를 `scheduled_nukes`로 해결 — schedule 함수가 받는
+  `context.shot_times`가 **전 유닛의 발사 타임라인**을 담고 있어(소유자 전용이
+  아님), 모듈이 병합·정렬 후 매 500번째 발사 시각에 히트를 방출. 신규 스쿼드
+  카운터 primitive는 만들지 않았고 필요하지도 않았음. (b) **크리티컬 히트
   카운터 — 영구 defer, "만들 능력"이 아님(2026-07-12, Julia 시그니처 인코딩 중 발견):**
   "N회 크리티컬 히트 후" 트리거는 엔진의 기대값 기반 크리 모델(각 히트가 `crit_rate`
   확률로 스케일되는 연속값 — 실제 per-hit RNG 안 굴림)과 구조적으로 안 맞는다. "이 샷이
@@ -216,9 +277,14 @@
 - **periodic 자원 fill — ✅ 완료 (2026-07-12):** `("periodic", interval)` fill kind —
   샷과 무관하게 고정 타이머로 채워지는 자원(Cinderella의 Beautiful, decoy 상시 유지로
   3초마다 틱).
-- **Pattern B로 잔여(16 중):** mihara-bonding-chain, red-hood(charge
-  speed·딜 아님), velvet(ammo pouch·풀차지 트리거), laplace(Hero Vision·풀차지),
-  raven/sakura(sustained DoT 스택·별 갭) 등. (ark-ranger-black은 2026-07-16
+- **Pattern B로 잔여(16 중):** mihara-bonding-chain, velvet(ammo pouch·풀차지 트리거),
+  laplace(Hero Vision·풀차지), raven/sakura(sustained DoT 스택·별 갭) 등.
+  **정정(2026-07-18): red-hood는 Pattern B가 아니었음** — "charge speed·딜 아님"은
+  Phase S 배선 이전의 낡은 판정이고, 스택은 Raven식 카운터(정상상태 10스택 상시),
+  버스트 Step 1/2/3은 상태머신이 아니라 버스트 슬롯 선택(B3 고정 → Step 3만),
+  Step 3 무기변형은 Fienn 인게임 실측(10초 33발·무한탄창)을 앵커로 `scheduled_nukes`
+  33발/창(이중계상 노멀샷 정적 차감)으로 모델. **엔진 확장 없이 인코딩 완료**
+  (`red_hood.py` docstring 참고). (ark-ranger-black은 2026-07-16
   `part_destructible` 브래킷 우회로 인코딩 완료 — 위 참고, 일반 Pattern B 프리미티브
   소비는 아님.)
 - 참고: `special-mechanics.md`의 "Named resource / capped stack counter",
@@ -236,7 +302,9 @@
   (Magician/Strength — 선버스트 Electric B3, Wheel of Fortune 게이팅)·tove
   (SG 아군 공속+42.24% 상시 + flat ATK 24.21%/스택×3 — char_tove.json 재수집)·
   ada-wong(신규 — Covert Support 선버스트 B3 flat ATK+진댐). drake-signature·
-  arcana-fortune-mate의 SG squad-근사 정밀화는 선택 후속(이번 배치 범위 아님).
+  arcana-fortune-mate의 SG squad-근사 정밀화는 **완료(2026-07-18)** — drake는
+  `member_subset_buff_rule`, arcana는 라이브 필터 액션(except-self/스택 판독이
+  섞여 커스텀 액션 유지). arcana 자신이 받던 except-self 과대적용도 제거됨.
 
 - **무엇:** self/squad/element:X로 표현 안 되는 대상 지정. 두 하위 종류:
   - **무기종별** ("어썰트라이플 아군", "샷건 아군 제외 자기") — 규모 소.
@@ -352,17 +420,19 @@
     비제약으로 처리(자원 미모델링 — gap #2 대상 아님). 잔여: Sticky Fingers의 "풀버스트
     아닐 때" 풀차지 카운터(gap #7의 거울상인 not-in-FB 창 필터 필요, 미구현, 자기전용
     저가치), Perfect Execution 무기변형딜.
-- **남은 후보:** modernia(Giant Leap 상태게이팅 200히트 ATK버프) — 검증 전.
+- **남은 후보:** ~~modernia(Giant Leap 상태게이팅 200히트 ATK버프) — 검증 전.~~ →
+  **검증 종결 (2026-07-18, Fienn 정정):** 인게임에서 상태창과 무관하게 전투 시작부터
+  200히트마다 발동 — gap #7 아님, 기존 `every` 모드로 인코딩 완료. 후보 소진.
 - 참고: `special-mechanics.md`의 관련 항목, `soda_twinkling_bunny.py`/
   `asuka_shikinami_langley_wille.py`/`grave.py`/`velvet.py` docstring.
 
-### 참고 — gap #7의 거울상: not-in-Full-Burst per-shot 창 필터 (미구현, 신규 발견)
+### 참고 — gap #7의 거울상: not-in-Full-Burst per-shot 창 필터 — ✅ 완료 (2026-07-18)
 
 Velvet의 Sticky Fingers는 "풀버스트 **아닐 때**" 풀차지마다 자ATK/자AD 버프(각
-30.5%, 3초)를 준다 — gap #7의 `every_during_full_burst`의 정반대 필터. 현재
-`per_shot_rules`엔 이 보수 필터가 없다. 유일하게 확인된 소비자가 velvet의 이
-스킬(자기전용, 저가치)뿐이라 후순위. 착수 시엔 `every_during_full_burst`와
-나란히 `"every_outside_full_burst"` 같은 모드로 최소 확장.
+30.5%, 3초)를 준다 — gap #7의 `every_during_full_burst`의 정반대 필터.
+**해결:** 예정대로 `"every_outside_full_burst"` 모드로 최소 확장(FB 창 밖 발사만
+세고 every-N 스텝 적용, gap #10 배치에 동승). 소비: velvet(Sticky Fingers 재인코딩
+— 잔여는 무기변형딜뿐).
 
 ### 8. 자원-fill-트리거 타 유닛 버프 — ✅ 완료 (2026-07-16, Phase C)
 
@@ -412,14 +482,25 @@ Velvet의 Sticky Fingers는 "풀버스트 **아닐 때**" 풀차지마다 자ATK
   대응 모드(`"first_bullet"` 등). 규모 소(~30 loc, gap #1 "마지막 탄" 확장과 동형).
 - 참고: `jill_valentine.py` docstring.
 
-### 참고 — gap #7로 안 풀리는 사례: rapi-red-hood
+### 참고 — gap #7로 안 풀리는 사례였던 rapi-red-hood — ✅ 완료 (2026-07-19, 별도의 소규모 확장)
 
 Rapi: Red Hood의 120-노멀 카운터는 버프/넉을 직접 발동하는 게 아니라 **프로젝타일을
 발사해 두었다가 풀버스트 진입 시 그 프로젝타일이 폭발**하는 구조(2단계: 발사 이벤트 →
-지연된 별도 트리거의 폭발). 거기에 버스트 자체도 2단계(1단계 서포트 / 3단계 2808%
-projectile_explosion 넉, "as additional damage")로 나뉘어 있어 복잡하다. 이건 단순
-per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** 갭(gap #2 Pattern B에 더
-가까움) — gap #7·#9 어느 것으로도 안 풀림. 확인만 하고 보류(2026-07-15).
+지연된 별도 트리거의 폭발). 2026-07-15엔 이걸 단순 per-shot 트리거가 아니라
+**무기/프로젝타일-런치 상태머신** 갭(gap #2 Pattern B에 더 가까움)으로 확인만 하고
+보류했다 — gap #7·#9 어느 것으로도 안 풀렸음.
+
+**실제로는 상태머신도 Pattern B도 필요 없었다:** 발사(부착) 스케줄은 이미
+`scheduled_nukes`가 표현할 수 있는 형태(소유자의 발사 카운터가 임계치를 넘을 때마다
+결정론적 시각을 방출)였고, 막혔던 건 오직 폭발 시각 — "다음 풀버스트 진입 시각" —
+을 계산할 방법이 없었다는 것뿐이었다. `SquadContext.full_burst_windows`(FB 창
+`[시작, 종료)` 목록, `raid_simulator`가 무기 패스 직전에 채움) 노출 하나로 해소:
+schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각보다 뒤에 오는 첫 FB 창
+시작 시각을 찾아 그 시각에 폭발을 방출한다. 두 개의 독립된 `scheduled_nukes` 항목
+(부착 = 신규 `projectile_attachment` 타입, 폭발 = 기존 `projectile_explosion` 타입)
+으로 표현되며, 상태 전이를 시뮬레이터에 새로 가르칠 필요가 없었다 — Ein/Raven이 세운
+"모듈이 스케줄 계산, 엔진은 방출만" 분업의 또 다른 소비자일 뿐. 상세는
+`rapi_red_hood.py`의 `build_attachable_projectiles_scheduled_nukes` docstring.
 
 ---
 
@@ -563,6 +644,12 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   `{"schedule": fn(context, fight_duration) -> times, "percent", "damage_type"(옵션),
   "full_burst_bonus_eligible"(옵션)}`. `fight_duration` 이후 시각은 드롭. 첫 소비자
   Ein(Near Feather). 기존 경로 무영향(파라미터 부재 = 아무것도 방출 안 함).
+- **gap #10 배치 (2026-07-18):** `per_shot_rules` `"sequence"` 모드(단계별 요구치
+  테이블 + own-burst-window 교체, gap #10 상세 참고 — Scarlet) ·
+  `"every_outside_full_burst"` 모드(FB 창 밖 발사만 카운트, gap #7 거울상 —
+  Velvet Sticky Fingers) · **Pulse `damage_type`**(per-shot/instant 넉의 타입
+  버킷 게이팅 — 기본 "attack"이라 기존 소비자 출력 불변, Scarlet distributed
+  스테이지 첫 소비).
 - **Phase C 배치 (gaps #3·#6·#8·#9), 2026-07-16:**
   - **member-subset scope (#3):** `SquadMember.weapon`(옵셔널) + `_helpers.
     member_subset_buff_rule(trigger, member_filter, buffs, condition, refreshing)` —
@@ -578,18 +665,105 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
     `per_shot_rules` `"first_bullet"` 모드 + RoundGrant 2차 패스 리팩터(퍼샷 룰이
     기록한 그랜트도 변환) + `normal_attack_damage_multiplier`(노멀 전용 Final-ATK
     항). 소비: Jill Valentine(Magnum/Acid).
+- **weapon-mode segments (v1, 2026-07-19):** 무기 프로필 자체가 버스트/상태에 따라
+  바뀌는 유닛(무기 변형)을 위한 세그먼트 primitive. `attack_rate.
+  generate_segmented_shots()` — 유닛별 ShotRecord 타임라인을 세그먼트 단위로 생성
+  (세그먼트 안에서는 기본무기 발사를 침묵시키고, 종료 시 새 매거진으로 즉시 재개;
+  `until_shots`/`end` 두 창 형태; `charge_time` 프로필은 라이브 차지속도 버프를
+  그대로 반영, 명시적 `rate_of_fire` 프로필은 실측 앵커라 케이던스 버프 미적용;
+  프로필별 옵셔널 `damage_type`). `simulate_raid(..., weapon_mode_schedules=
+  {slug: schedule_fn})`로 옵트인 배선 — **전 유닛이 세그먼트 생성기를 경유**하도록
+  통일(빈 세그먼트 = 기존 출력과 비트 동일, SR_ODD 1.19초 차지 동치 테스트로 검증).
+  first/last-bullet 마커도 이제 레코드 플래그에서 나옴(raid_simulator가 낡은 마커
+  함수를 더 이상 호출하지 않음). 레지스트리 맵 `_WEAPON_MODE_SCHEDULE_BUILDERS` +
+  `get_weapon_mode_schedules` + roster 스레딩.
+  - **소비:** snow-white(신규, 버스트 5초 차지 499.5%×10 캐논, `until_shots: 1`) ·
+    maxwell(신규, 버스트 2초 차지 813.42%×3 캐논, `until_shots: 1`) ·
+    laplace-signature(신규 슬러그, 애장품 — 10초 고정 창, First 1회 + 노멀 93회,
+    Fienn 실측 2026-07-19) · red-hood(기존 ⚠ `scheduled_nukes` 근사에서 세그먼트로
+    마이그레이션 — 정적 차감/상수 접기 제거, 덱 차지댐 버프가 변형샷에 곱해짐,
+    총딜 ~+1.6%).
+  - **남은 백로그(계획 2)**: cinderella-crystal-wave-mg/-snipe 듀얼슬러그(세그먼트
+    비소비, 정적 프로필 2벌) · rapi-red-hood(`scheduled_nukes` context에 FB창 노출
+    필요, 세그먼트 대상 아님) · snow-white-heavy-arms 검증 패스(기존 per-shot +
+    multi-hit 프리미티브로 풀리는지) · velvet 변형딜(저가치 보류 확정) · laplace
+    base의 5초 변형(실측 없음, 보류).
+  - 상세: `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`
+    (상태: v1 구현 완료).
+- **`SquadContext.full_burst_windows` + `core_hittable` 노출, `boss_core_hittable()`
+  조건 헬퍼 (계획 2, 2026-07-19):** 무기 패스가 이미 계산해 두고 있던 두 값 —
+  FB 창 `[시작, 종료)` 목록과 이번 시뮬의 코어 활성 여부 — 를 SkillRule/스케줄
+  함수가 읽을 수 있게 `SquadContext`에 얹었을 뿐, 새 계산은 없다.
+  `full_burst_windows`는 `raid_simulator`가 무기 패스 직전에 채우며, 모듈 계산
+  스케줄(`scheduled_nukes`)이 "다음 FB 진입 시각"을 찾는 데 쓴다(rapi-red-hood의
+  프로젝타일 폭발 앵커). `boss_core_hittable()`는 기존 `boss_part_destructible()`과
+  같은 모양의 조건 헬퍼로, `context.core_hittable`을 읽어 "코어 활성 적 한정" 넉을
+  게이팅한다(cinderella-crystal-wave MG 모드의 833.79% 코어스트라이크 넉). 첫
+  소비자: rapi-red-hood(`full_burst_windows`), cinderella-crystal-wave-mg
+  (`boss_core_hittable`).
+- **`projectile_attachment` 데미지 타입 + `projectile_attachment_damage_up` 스탯
+  (계획 2, 2026-07-19):** 기존 `projectile_explosion` 타입/스탯 페어와 나란한
+  두 번째 프로젝타일류 타입 — "부착된" 프로젝타일 자체의 데미지(폭발 데미지와는
+  별개 버킷)를 게이팅. `raid_simulator._TYPE_BUCKETS`에 한 줄 추가. 첫 소비자:
+  rapi-red-hood(Attachable Projectiles의 부착 히트 + Power of Inheritance
+  Stage 3의 421.2% 창).
+- **모드-변형 듀얼슬러그 확장 — `MODE_VARIANTS`/`VARIANT_BURST_TIERS` (계획 2,
+  2026-07-19):** 소유 유닛 1개가 여러 덱 후보 슬러그로 나뉘는 패턴 — 기존
+  `-signature` 듀얼슬롯(julia/drake/laplace, 유저의 애장품 **투자** 상태를
+  나타내고 프론트에서 해석)과는 다르게, 이건 유저의 **플레이/편성 선택**(전투 전
+  고정 무기모드, 또는 어느 버스트 슬롯에 세울지)을 나타내고 백엔드 로스터
+  로더에서 해석된다. `registry.MODE_VARIANTS: {base_slug: (variant_slug, ...)}`
+  를 `user_roster.load_roster`가 읽어 소유 상태 하나를 후보 슬러그 전부로
+  fan-out(`MODE_VARIANTS.get(character_slug) or (character_slug,)`). 변형이
+  캐릭터의 명목 버스트 티어와 다른 슬롯에 앉으면 `VARIANT_BURST_TIERS`가
+  override(rapi-red-hood-b1이 B3 대신 B1). 변형의 무기 프로필이 base와 다르면
+  `_WEAPON_PROFILE_OVERRIDE_BUILDERS`(+ `get_weapon_profile_override`)가 스킬값
+  조립 후 프로필을 교체(cinderella-crystal-wave-snipe의 SR 프로필). 덱 탐색은
+  두 enumeration 경로(조합 생성·순열 정련) 모두 `_no_variant_clash`로 같은
+  base의 변형 두 개가 동시 편성되는 걸 금지하고, pruning 휴리스틱의 내부 참조덱
+  구성(`_reference_deck`/`_variant_safe_top`/`_swap_slot`/`_cross_tier_reference`)도
+  같은 규칙으로 정합하게 보강됐다(교차 티어 변형이 참조덱 측정을 오염시키지
+  않도록 대체 참조덱으로 측정, `deck_search.py` 참고). 진짜 단독 버스트 슬롯
+  대역(예: Combat Assist가 실제 B1 옆에서는 자기모순이 되는 rapi-red-hood-b1)은
+  `SOLE_TIER1_SLUGS`로 같은 티어의 다른 유닛과도 동시 편성을 막는다. 첫 소비자:
+  cinderella-crystal-wave(-mg/-snipe), rapi-red-hood(base/-b1).
+- **세그먼트 게이팅 per-shot 모드 `every_during_segment`/`every_outside_segment`
+  + `caster_weapon_stats` 스킬값 주입 (계획 2, 2026-07-19):** weapon-mode
+  세그먼트(v1) 안/밖에서 다른 배수로 넉을 내야 하는 유닛을 위한 `per_shot_rules`
+  모드 두 개 — gap #7의 `every_during_full_burst`/`every_outside_full_burst`와
+  같은 짝 구조이지만 필터가 FB 창이 아니라 세그먼트 소속이다. **샷 "시각"이
+  아니라 레코드 "정체성"(`ShotRecord.in_segment`)으로 매칭** — 세그먼트가
+  `until_shots`로 끝나는 순간과 매거진형 기본무기가 새 매거진으로 재개하는
+  순간이 동일한 시각을 가질 수 있어(세그먼트 종료 시 즉시 재개가 v1의 확정
+  시맨틱), 시각 매칭이었다면 그 경계 샷 하나가 두 모드를 동시에 만족시켜
+  이중계상을 일으켰을 것 — 정체성 매칭은 이를 구조적으로 막는다(snow-white-
+  heavy-arms 배치 중 발견, `raid_simulator.py`의 window_fire_indices 계산부
+  주석 참고). 함께, 세그먼트 프로필이 자기 기본무기 스탯(예: 차지 배수)을 읽어야
+  하는 유닛을 위해 `roster.py`의 스킬값 조립이 `caster_weapon_stats`(조립된
+  `weapon_stats` 전체)를 다른 `caster_*` 캐스터-베이스스탯 키들과 나란히 주입.
+  첫 소비자: snow-white-heavy-arms(Auto Fire의 평시/Fully-Active 배수 분기,
+  Fully Active 세그먼트 프로필의 차지댐 조립).
 
-### 10. 창 한정 per-shot threshold 오버라이드 — 미착수 (2026-07-17 발견)
+### 10. 창 한정 per-shot threshold 오버라이드 — ✅ 완료 (2026-07-18, `"sequence"` 모드)
 
-- **무엇:** Scarlet: Black Shadow의 Fleetly Fading Breakthrough는 풀차지 3/6/9회에
-  각기 다른 효과(283.03% 단일 / 565% distributed / 848.03% distributed, "한 번에
-  하나만")를 내는데, **버스트(Fleetly Fading Strike)가 그 요구 카운트를 10초 동안
-  1/2/3으로 바꾼다**. `per_shot_rules`의 threshold는 정적이라 표현 불가.
-- **왜 defer가 안 되나:** 이 창이 그녀 딜의 핵심이라 빼면 심하게 과소평가된다.
-  3/6/9 베이스라인만 인코딩하는 것도 같은 이유로 부정직.
-- **필요한 확장:** gap #7의 창 필터와 동형 — 창 안에서만 threshold를 대체하는 모드.
-  규모 소(~40 loc 추정). **막힌 유닛 1명이라 수요 확인 후 착수.**
-- 참고: `data/lootandwaifus/char_scarlet-black-shadow.json`.
+- **무엇이었나:** Scarlet: Black Shadow의 Fleetly Fading Breakthrough는 풀차지
+  3/6/9회에 각기 다른 효과(283.03% 단일 / 565% distributed / 848.03% distributed,
+  "한 번에 하나만")를 내는데, **버스트(Fleetly Fading Strike)가 그 요구 카운트를
+  10초 동안 1/2/3으로 바꾼다**. `per_shot_rules`의 threshold는 정적이라 표현 불가.
+- **해결:** `per_shot_rules`에 `"sequence"` 모드 — threshold 자리에
+  `{"requirements": [3,6,9], "own_burst_window": (10.0, [1,2,3])}`, rules 자리에
+  **스테이지별 룰 리스트**. 단일 러닝 카운터가 스테이지 요구치를 걷고(스테이지는
+  `count >= 활성 요구치`면 발동, 마지막 스테이지 후 리셋), 자기 버스트 앵커 창
+  안에서는 요구치 테이블만 교체 — **카운트/스테이지는 경계를 넘어 이어짐**(Fienn
+  판정 2026-07-18; `>=` 발동이라 창 진입 시 이미 넘어선 요구치도 다음 발사부터
+  차례로 발동, 진행 유실 없음). 샷당 최대 1스테이지("Only one effect at a time").
+  발사 타임라인을 시간순으로 한 번 걸어 `{shot_time: stage_rules}`를 사전계산
+  (`_sequence_fire_rules`).
+- **소비 (1):** scarlet-black-shadow 신규 인코딩(⚠ — Asura의 FB진입 매거진 100%
+  즉시 재장전만 gap #11 동류로 보류). 6/9단계 distributed 넉은 같은 배치의 Pulse
+  `damage_type` 확장 소비.
+- 참고: `scarlet_black_shadow.py` docstring, `special-mechanics.md`의
+  "Staged shot-count table" 항목.
 
 ### 11. 강제 재장전 / 탄약 제거 상태머신 — 미착수 (2026-07-17 발견)
 
@@ -653,10 +827,18 @@ per-shot 트리거가 아니라 **무기/프로젝타일-런치 상태머신** �
   버프 + #9 reload 후 첫 발 마커~~ — ✅ 완료 (2026-07-16 Phase C 배치; 소비
   Ark·Arcana·Tove·Ada Wong(신규)·Little Mermaid·Maiden·Jill).
 2. **남은 방향:** #2 Pattern B(시간감쇠 게이지·변신, 일반 프리미티브 — Mihara류) ·
-   상태머신/무기변형(rapi-red-hood·cinderella-crystal-wave·laplace류) ·
-   **아군 총탄 카운터**(스쿼드 합산 발사 누적 — Little Mermaid Bubble Barrage 잔여) ·
-   **not-in-Full-Burst per-shot 창 필터**(gap #7 거울상, Velvet Sticky Fingers
-   잔여) ·
+   상태머신(diesel-winter-sweets·bready·eve·milk-blooming-bunny[gap #11]) ·
+   ~~무기변형~~(**v1+계획 2 완료, 2026-07-19** — `weapon_mode_schedules` 세그먼트
+   primitive, snow-white·maxwell·laplace-signature·red-hood 소비(v1) +
+   `MODE_VARIANTS` 듀얼슬러그(cinderella-crystal-wave-mg/-snipe)·
+   `full_burst_windows`+`boss_core_hittable`(rapi-red-hood 발사기 완성 + 신규
+   rapi-red-hood-b1)·`every_during_segment`/`every_outside_segment`(snow-white-
+   heavy-arms, 신규 상태머신 불필요로 판명)(계획 2) 소비; velvet 변형딜·laplace
+   base 5초 변형만 잔여(보류 확정), 상세는 위 "이미 만든 것" 참고) ·
+   ~~아군 총탄 카운터~~(**2026-07-18 완료** — `scheduled_nukes`+`context.shot_times`
+   병합으로 확장 없이 해결, Little Mermaid ⚠→✅) ·
+   ~~not-in-Full-Burst per-shot 창 필터~~(**2026-07-18 완료** —
+   `every_outside_full_burst`, Velvet Sticky Fingers 소비) ·
    **유닛별 버스트 스케줄 정책**(사이클 스킵 — Diesel: Winter Sweets는 짝수
    사이클에 버스트하는 게 더 강함[Fienn 2026-07-17]; `burst_cycle`은 현재 쿨 찬
    유닛을 항상 즉시 발동시켜 "한 사이클 거르기"를 표현 못 함. Diesel 인코딩

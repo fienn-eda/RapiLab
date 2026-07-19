@@ -36,6 +36,23 @@ Not modeled / deferred:
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 
+SKILL_VALUE_MANIFESTS = {
+    "neon-vision-eye": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_neon_vision_eye",
+        "keys": {
+            "healthy_body": ("skills", 0),
+            "firepower_charge": ("skills", 1),
+            "super_firepower": ("skills", 2),
+        },
+        "drop_tokens": {
+            # The two gauge-branch thresholds ("charge is lower than 100" /
+            # "charge is at 100") - branch conditions, not value slots.
+            "super_firepower": [0, 3],
+        },
+    },
+}
+
 SUPER_FIREPOWER_WINDOW = 10.0  # Super Firepower status lasts 10 sec from her burst
 
 

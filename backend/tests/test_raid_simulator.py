@@ -877,6 +877,140 @@ def test_per_shot_every_during_own_status_window_gated_to_own_burst_window():
     assert all(e["damage"] == 10000.0 for e in ps)  # 100% coeff * atk 10000, no defense
 
 
+def test_per_shot_nuke_damage_type_reaches_its_type_bucket_and_the_log():
+    # The pulse path carries a damage_type (default "attack"), so a per-shot
+    # nuke whose text says "as Distributed Damage" (e.g. Scarlet's 6th/9th
+    # Fleetly Fading Breakthrough stages) is boosted by distributed_damage_up
+    # and logged with its type.
+    def grant_distributed_up(context, caster_slug, time, registry):
+        registry.add(Effect("distributed_damage_up", 0.5, "squad", None, caster_slug), applied_at=time)
+
+    per_shot_rules = {
+        "attacker": [(3, "after", [instant_nuke_pulse_rule("per_shot", 100.0, damage_type="distributed")])]
+    }
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [SkillRule(trigger="battle_start", action=grant_distributed_up)], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules=per_shot_rules,
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) == 1
+    assert ps[0]["damage_type"] == "distributed"
+    assert ps[0]["damage"] == 15000.0  # 10000 * (1 + 0.5 distributed_damage_up)
+
+
+def test_per_shot_every_outside_full_burst_fires_only_on_out_of_window_shots():
+    # The complement of gap #7's "every_during_full_burst" (e.g. Velvet's
+    # Sticky Fingers, "when attacking with Full Charge while NOT in Full
+    # Burst"): only shots OUTSIDE every Full Burst window are counted before
+    # the every-Nth step. gauge_charge_time=0.5 leaves the shots before
+    # t=0.5 outside the window, so the every-3rd step is actually reached.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=0.5,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules={"attacker": [(3, "every_outside_full_burst", [instant_nuke_pulse_rule("per_shot", 100.0)])]},
+    )
+    windows = list(zip(
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_start"),
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_end"),
+    ))
+    shots = [k / 12 for k in range(12)]  # AR 12/s, max_ammo 100 -> no reload in 1s
+    out_of_window = [t for t in shots if not any(s <= t < e for s, e in windows)]
+    expected = [t for i, t in enumerate(out_of_window) if (i + 1) % 3 == 0]
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) >= 1  # some shots do fall outside the window
+    assert [round(e["time"], 4) for e in ps] == [round(t, 4) for t in expected]
+    assert all(not any(s <= e["time"] < end for s, end in windows) for e in ps)
+
+
+def _sequence_result(spec, gauge_charge_time):
+    # Three stages with distinct percents so the damage log tells apart WHICH
+    # stage fired (100/200/300% of atk 10000 -> 10000/20000/30000).
+    stage_rules = [
+        [instant_nuke_pulse_rule("per_shot", 100.0)],
+        [instant_nuke_pulse_rule("per_shot", 200.0)],
+        [instant_nuke_pulse_rule("per_shot", 300.0)],
+    ]
+    return simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=gauge_charge_time,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules={"attacker": [(spec, "sequence", stage_rules)]},
+    )
+
+
+def test_per_shot_sequence_fires_staged_effects_on_a_repeating_cycle():
+    # gap #10 base behaviour (Scarlet's Fleetly Fading Breakthrough): a single
+    # running shot counter fires stage 1 at its 3rd shot, stage 2 at the 6th,
+    # stage 3 at the 9th, then resets and starts over. gauge_charge_time=5.0
+    # keeps every shot before the first burst, so only base requirements apply.
+    spec = {"requirements": [3, 6, 9]}
+    result = _sequence_result(spec, gauge_charge_time=5.0)
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    # AR 12/s: stages at counts 3/6/9 (t=2/12, 5/12, 8/12), then the cycle
+    # restarts and stage 1 fires again at the 12th shot (t=11/12).
+    assert [(round(e["time"], 4), e["damage"]) for e in ps] == [
+        (round(2 / 12, 4), 10000.0),
+        (round(5 / 12, 4), 20000.0),
+        (round(8 / 12, 4), 30000.0),
+        (round(11 / 12, 4), 10000.0),
+    ]
+
+
+def test_per_shot_sequence_own_burst_window_swaps_requirements_and_carries_the_count():
+    # gap #10 override (Scarlet's burst: "Changes Full Charge attack count
+    # required for Skill 1 to 1/2/3 for 10 sec"): inside the caster's own
+    # burst window the requirement table is swapped, but the running count and
+    # stage CARRY OVER across the boundary (Fienn 2026-07-18). A stage fires
+    # once count >= the active requirement for that stage; after stage 3 the
+    # count resets. Expected fires are replayed here with those exact
+    # semantics from the sim's own burst time.
+    spec = {"requirements": [3, 6, 9], "own_burst_window": (10.0, [1, 2, 3])}
+    result = _sequence_result(spec, gauge_charge_time=0.1)
+    own_bursts = [
+        e["time"] for e in result["events"] if e["type"] == "burst" and e["slug"] == "attacker"
+    ]
+    assert own_bursts  # the override window is actually exercised
+    windows = [(bt, bt + 10.0) for bt in own_bursts]
+    shots = [k / 12 for k in range(12)]
+    expected = []
+    count, stage = 0, 0
+    for t in shots:
+        count += 1
+        reqs = [1, 2, 3] if any(s <= t < e for s, e in windows) else [3, 6, 9]
+        if count >= reqs[stage]:
+            expected.append((round(t, 4), float(10000 * (stage + 1))))
+            stage += 1
+            if stage == 3:
+                count, stage = 0, 0
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert len(ps) > 4  # the swapped requirements fire far more often than base
+    assert [(round(e["time"], 4), e["damage"]) for e in ps] == expected
+
+
 def test_per_shot_squad_buff_reaches_a_burst_nuke_computed_earlier():
     # The record-then-compute payoff: buffer's per-shot squad debuff (applied at
     # its 1st shot, t=0) must raise the attacker's burst nuke fired later.
@@ -2319,3 +2453,203 @@ def test_charge_speed_buff_increases_charge_shots():
     na_without = [e for e in without["damage_log"] if e["source"] == "normal_attack"]
     na_with = [e for e in with_cs["damage_log"] if e["source"] == "normal_attack"]
     assert na_without and len(na_with) > len(na_without)
+
+
+def _one_unit_deck():
+    return [{"slug": "gunner", "burst_tier": 3, "element": "Iron",
+             "cooldown": 40.0, "weapon": "SR"}]
+
+
+SR_WEAPON = {"weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
+             "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0}
+
+
+def test_weapon_mode_schedule_swaps_profile_inside_window():
+    def schedule(context, fight_duration):
+        return [{"start": 5.0, "until_shots": 1,
+                 "profile": {"weapon": "SR", "damage_percent": 499.5,
+                             "charge_damage_percent": 1000.0, "charge_time": 5.0}}]
+
+    kwargs = dict(
+        deck=_one_unit_deck(), rules_by_slug={}, burst_damage_percents={},
+        base_stats={"gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        weapon_stats={"gunner": SR_WEAPON},
+    )
+    plain = simulate_raid(**kwargs)
+    with_transform = simulate_raid(**kwargs, weapon_mode_schedules={"gunner": schedule})
+    # window (5-10s): base SR shots vanish and are replaced by one cannon shot at t=10.0
+    plain_shots = [e for e in plain["damage_log"] if e["source"] == "normal_attack"]
+    transformed = [e for e in with_transform["damage_log"] if e["source"] == "normal_attack"]
+    cannon = [e for e in transformed if e["time"] == 10.0]
+    assert len(cannon) == 1
+    assert not [e for e in transformed if 5.0 <= e["time"] < 10.0]
+    assert [e for e in plain_shots if 5.0 <= e["time"] < 10.0]
+    # cannon shot = 499.5% x (1 + 9.0 charge bonus) - compare ratio against a base shot at the same stats
+    base_shot = plain_shots[0]["damage"]          # 69.04% x (1+1.5)
+    assert cannon[0]["damage"] > base_shot * 20
+
+
+def test_per_shot_every_during_segment_and_every_outside_segment_are_mutually_exclusive():
+    # Task 8: gates a per-shot rule to fire only on segment (transform)
+    # shots or only on base-weapon shots, off the same in_segment flag that
+    # ShotRecord now carries - so a transform's empowered attack (in-segment)
+    # and its normal attack (outside-segment) can never both count the same
+    # shot (Task 9's Snow White: Heavy Arms consumes both to avoid double-
+    # counting).
+    def schedule(context, fight_duration):
+        return [{"start": 5.0, "until_shots": 1,
+                 "profile": {"weapon": "SR", "damage_percent": 499.5,
+                             "charge_damage_percent": 1000.0, "charge_time": 5.0}}]
+
+    result = simulate_raid(
+        deck=_one_unit_deck(), rules_by_slug={}, burst_damage_percents={},
+        base_stats={"gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        mode="auto", base_crit_rate=0.0,
+        weapon_stats={"gunner": SR_WEAPON},
+        weapon_mode_schedules={"gunner": schedule},
+        per_shot_rules={"gunner": [
+            (1, "every_during_segment", [instant_nuke_pulse_rule("per_shot", 50.0)]),
+            (1, "every_outside_segment", [instant_nuke_pulse_rule("per_shot", 10.0)]),
+        ]},
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    seg_shots = [e for e in ps if e["damage"] == 500.0]   # atk 1000 * 50%
+    base_shots = [e for e in ps if e["damage"] == 100.0]  # atk 1000 * 10%
+    assert seg_shots and base_shots  # both modes actually fired
+    assert [e["time"] for e in seg_shots] == [10.0]  # the segment's one cannon shot
+    assert all(e["time"] != 10.0 for e in base_shots)
+
+
+def test_per_shot_every_during_segment_and_every_outside_segment_stay_exclusive_at_a_shared_time():
+    # Fix pass (Task 8 finding): for a MAGAZINE base weapon (AR/MG/SMG/SG),
+    # an until_shots segment's last shot and the resumed base magazine's
+    # first shot land at the exact same instant - the documented resume
+    # semantic in attack_rate._base_shot_records ("a fresh magazine at
+    # window_start"). The prior SR-based exclusivity test can't exercise this
+    # because a charge weapon's resumed first shot always lands one
+    # charge-time AFTER the segment ends, never coincident with it. Here a
+    # rate_of_fire=2.0/until_shots=1 segment starting at t=0 ends its one
+    # tick at t=0.5, and the AR base's fresh magazine also fires its first
+    # round at t=0.5 - two distinct ShotRecords (in_segment=True and False)
+    # sharing time=0.5. Matching by time value (not record identity) let
+    # BOTH per-shot rules fire on BOTH records at that instant.
+    def schedule(context, fight_duration):
+        return [{"start": 0.0, "until_shots": 1,
+                 "profile": {"weapon": "AR", "damage_percent": 500.0, "rate_of_fire": 2.0}}]
+
+    weapon_stats = {
+        "attacker": {"weapon": "AR", "damage_percent": 10.0, "max_ammo": 3,
+                     "reload_time": 100.0, "charge_time": 0.0, "charge_damage_percent": 100.0},
+    }
+    result = simulate_raid(
+        make_deck(), {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=1000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=1.0,
+        mode="auto", base_crit_rate=0.0,
+        weapon_stats=weapon_stats,
+        weapon_mode_schedules={"attacker": schedule},
+        per_shot_rules={"attacker": [
+            (1, "every_during_segment", [instant_nuke_pulse_rule("per_shot", 50.0)]),
+            (1, "every_outside_segment", [instant_nuke_pulse_rule("per_shot", 10.0)]),
+        ]},
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    seg_shots = [e for e in ps if e["damage"] == 500.0]   # atk 1000 * 50%
+    base_shots = [e for e in ps if e["damage"] == 100.0]  # atk 1000 * 10%
+    assert seg_shots and base_shots  # both modes actually fired
+    assert [e["time"] for e in seg_shots] == [0.5]  # only the segment's own shot fires during_segment
+    collision = [e for e in ps if e["time"] == 0.5]
+    assert len(collision) == 2  # exactly one fire per record at the shared instant, not one each
+    assert {e["damage"] for e in collision} == {500.0, 100.0}
+
+
+def test_per_shot_every_outside_full_burst_does_not_fire_on_a_shot_exactly_at_fb_end():
+    # Regression for the boundary leak (final-review Fix 1): a shot landing
+    # EXACTLY at a Full Burst window's end must count as "in" Full Burst, not
+    # "outside" it - mirrors laplace-signature's 93rd Buster tick nominally
+    # landing at burst+10.0 == FB end (backend/app/skill_rules/laplace_
+    # signature.py). gauge_charge_time=0.0 makes the single attacker's own
+    # burst (tier 3, all tiers present via make_deck()) fire at t=0.0, so the
+    # Full Burst window is exactly [0.0, 10.0) - and a weapon-mode segment
+    # anchored to that same burst time with rate_of_fire=1.0/until_shots=10
+    # lands its LAST tick at exactly 0.0 + 10*1.0 == 10.0 (exact float
+    # arithmetic, no rounding drift), the FB window's end instant.
+    def schedule(context, fight_duration):
+        return [
+            {"start": t, "until_shots": 10,
+             "profile": {"weapon": "RL", "damage_percent": 100.0, "rate_of_fire": 1.0}}
+            for t in context.burst_times.get("attacker", [])
+        ]
+
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=0.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": SR_WEAPON},
+        weapon_mode_schedules={"attacker": schedule},
+        per_shot_rules={"attacker": [(1, "every_outside_full_burst", [instant_nuke_pulse_rule("per_shot", 100.0)])]},
+    )
+    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    # The segment's 10 ticks (t=1..10) all fall inside [0.0, 10.0] - none of
+    # them, including the boundary tick at exactly t=10.0, fire the
+    # outside-Full-Burst rule.
+    assert not [e for e in ps if e["time"] <= 10.0]
+    # Positive control: the base weapon's resumed shots after the window
+    # (t>10.0) are genuinely outside Full Burst and DO fire the rule, so this
+    # isn't just "the rule never fires".
+    assert [e for e in ps if e["time"] > 10.0]
+
+
+def test_scheduled_nuke_context_exposes_full_burst_windows():
+    seen = {}
+
+    def schedule(context, fight_duration):
+        seen["windows"] = list(context.full_burst_windows)
+        return []
+
+    simulate_raid(
+        deck=[{"slug": "buffer", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+               {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+               {"slug": "gunner", "burst_tier": 3, "element": "Iron", "cooldown": 40.0, "weapon": "SR"}],
+        rules_by_slug={}, burst_damage_percents={},
+        base_stats={"buffer": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+                    "midtier": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+                    "gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=60.0,
+        scheduled_nukes={"gunner": [{"schedule": schedule, "percent": 100.0}]},
+    )
+    assert seen["windows"], "full burst windows must be visible to schedules"
+    assert all(end > start for start, end in seen["windows"])
+
+
+def test_projectile_attachment_damage_up_scales_attachment_typed_nuke():
+    import pytest
+
+    def grant(context, caster_slug, time, registry):
+        registry.add(Effect("projectile_attachment_damage_up", 1.5, "self", None, caster_slug),
+                     applied_at=time)
+
+    kwargs = dict(
+        deck=[{"slug": "gunner", "burst_tier": 3, "element": "Iron",
+               "cooldown": 40.0, "weapon": "SR"}],
+        burst_damage_percents={},
+        base_stats={"gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        scheduled_nukes={"gunner": [
+            {"schedule": lambda c, d: [5.0], "percent": 100.0,
+             "damage_type": "projectile_attachment"}]},
+    )
+    plain = simulate_raid(rules_by_slug={}, **kwargs)
+    buffed = simulate_raid(
+        rules_by_slug={"gunner": [SkillRule(trigger="battle_start", action=grant)]}, **kwargs)
+    nuke = lambda r: [e for e in r["damage_log"] if e["source"] == "scheduled"][0]["damage"]
+    assert nuke(buffed) == pytest.approx(nuke(plain) * 2.5)

@@ -12,7 +12,13 @@ from pathlib import Path
 
 from app.models import UserNikkeState
 from app.roster import NikkeSpec
-from app.skill_rules.registry import ENCODED_SLUGS, get_skill_value_manifest
+from app.skill_rules.registry import (
+    ENCODED_SLUGS,
+    MODE_VARIANTS,
+    VARIANT_BURST_TIERS,
+    get_skill_value_manifest,
+    get_weapon_profile_override,
+)
 from app.skill_values import DATA_DIR, assemble_skill_values, load_character_data
 
 _WEAPON_STAT_FIELDS = ("weapon", "maxAmmo", "damage", "reloadTime", "chargeTime", "chargeDamage")
@@ -35,8 +41,10 @@ def _weapon_stats(dotgg_data):
     }
 
 
-def load_nikke_spec(state: UserNikkeState, data_dir: Path = DATA_DIR) -> NikkeSpec | None:
-    slug = state.character_slug
+def load_nikke_spec(
+    state: UserNikkeState, data_dir: Path = DATA_DIR, slug_override: str | None = None
+) -> NikkeSpec | None:
+    slug = slug_override or state.character_slug
     if slug not in ENCODED_SLUGS:
         return None
     manifest = get_skill_value_manifest(slug)
@@ -60,7 +68,11 @@ def load_nikke_spec(state: UserNikkeState, data_dir: Path = DATA_DIR) -> NikkeSp
         skill_values = assemble_skill_values(
             slug, manifest, state.skill_levels.model_dump(), data_dir
         )
-        burst_tier = int(meta["burst"])
+        override = get_weapon_profile_override(slug, skill_values)
+        if override is not None:
+            weapon_stats = override
+        variant_tier = VARIANT_BURST_TIERS.get(slug)
+        burst_tier = variant_tier if variant_tier is not None else int(meta["burst"])
         burst_cooldown = float(meta.get("cooldown") or meta["skills"][2]["cooldown"])
         element, weapon = meta["element"], meta["weapon"]
     except (KeyError, IndexError, TypeError, ValueError):
@@ -84,10 +96,11 @@ def load_nikke_spec(state: UserNikkeState, data_dir: Path = DATA_DIR) -> NikkeSp
 def load_roster(states: list[UserNikkeState], data_dir: Path = DATA_DIR):
     specs, excluded, seen = [], [], set()
     for state in states:
-        spec = load_nikke_spec(state, data_dir)
-        if spec is not None:
-            specs.append(spec)
-        elif state.character_slug not in seen:
+        slugs = MODE_VARIANTS.get(state.character_slug) or (state.character_slug,)
+        loaded = [s for s in (load_nikke_spec(state, data_dir, slug_override=slug)
+                              for slug in slugs) if s is not None]
+        specs.extend(loaded)
+        if not loaded and state.character_slug not in seen:
             excluded.append(state.character_slug)
         seen.add(state.character_slug)
     return specs, excluded

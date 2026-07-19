@@ -813,5 +813,158 @@ how to encode it, and current engine status.
   the stacks standing at its OWN time (cf. `resource_scaled_nukes` re-reading its
   count per tick).
 
+## Staged shot-count table whose requirements the burst rewrites (gap #10)
+
+- **What it looks like:** Scarlet: Black Shadow's Fleetly Fading Breakthrough —
+  "Effects vary according to the number of attacks. Only one effect is
+  triggered at a time. Three times: [283.03% damage]. Six times: [565%
+  Distributed]. Nine times: [848.03% Distributed]." — plus her burst: "Changes
+  Full Charge attack count required for Skill 1 to 1 time/2 times/3 times for
+  10 sec."
+- **What it is:** ONE running full-charge counter walking a staged requirement
+  table (fire stage 1 at 3, stage 2 at 6, stage 3 at 9, then reset), where the
+  burst swaps the table to 1/2/3 for its window. Not expressible as static
+  `every N` entries — the requirement table is time-dependent.
+- **How to encode:** `per_shot_rules`' `"sequence"` mode — `threshold` is
+  `{"requirements": [...], "own_burst_window": (duration, [...])}` and the
+  rules slot holds one rule list per stage. Semantics (Fienn, 2026-07-18): the
+  count and stage CARRY OVER across the window boundary; a stage fires once
+  count >= the ACTIVE requirement for it (so progress under one table is never
+  lost under the other); at most one stage fires per shot.
+- **Typing:** the "Distributed Damage" stages are per-shot pulses — pass
+  `damage_type="distributed"` (the Pulse carries damage typing since
+  2026-07-18) so squad `distributed_damage_up` buffs apply. Vs the solo raid
+  boss, single-target and distributed stages alike land fully on the boss.
+
+## Weapon-mode transforms ("changes to a different weapon" burst/status skills) - BUILT capability (v1, 2026-07-19)
+
+- **What it looks like:** a burst or status skill that swaps the unit's
+  weapon entirely for a window - "Charges the weapon like a Rocket Launcher
+  for X sec... Full Charge deals Y%" (Snow White, Maxwell's Pierce Shot), or
+  a sustained high-cadence "true damage every tick while active" window
+  (Laplace's Hero Vision, `laplace-signature`). The old approach (Red Hood's
+  original 2026-07-18 encoding) approximated this with `scheduled_nukes`
+  anchored to an in-game shot-count measurement, folding the charge
+  multiplier into a flat percent and subtracting an estimate of the base
+  weapon's double-counted shots inside the window - workable, but it meant
+  deck Charge Damage / ATK / charge speed buffers couldn't touch the
+  transform's damage (baked into a constant), and the subtraction was an
+  approximation, not a real silence.
+- **Easy mistake:** reusing the `scheduled_nukes` approximation for a NEW
+  transform unit just because Red Hood set the precedent - it's a strictly
+  worse model now that segments exist (Red Hood herself was migrated off it,
+  2026-07-19); the old pattern is kept only for historical context.
+- **Encode:** use `weapon_mode_schedules` (`attack_rate.
+  generate_segmented_shots`, see `engine-capabilities.md`) instead - a
+  schedule function returns windows (`until_shots` for a single-shot burst
+  cannon, `end` for a fixed-duration sustained window) each carrying a full
+  weapon `profile`. The base weapon is genuinely silenced inside the window
+  (no subtraction needed) and resumes with a fresh magazine when it ends. A
+  real charge-weapon profile (`charge_time` set) lets deck buffs multiply the
+  transform; an explicit `rate_of_fire` profile is for a window with no
+  believable charge/magazine model of its own (a pure in-game shot-count
+  measurement, e.g. Laplace's 93-tick Hero Vision window) and deliberately
+  takes NO cadence buffs, since the measured count already reflects the real
+  game's cadence.
+- **Not every transform fits the segment primitive - three plan-2 consumers
+  confirmed this without ever touching the primitive (2026-07-19):**
+  `cinderella-crystal-wave`'s MG/Snipe toggle is a rare-transition,
+  held-for-the-whole-fight mode choice, not a short burst/status window -
+  modeled instead as two static-profile dual slugs (`-mg`/`-snipe`), each
+  just the existing plain weapon-stats path twice, mutually excluded from
+  deck search via `registry.MODE_VARIANTS` (see "Multiple deck candidates
+  from one owned character" in `engine-capabilities.md`). `rapi-red-hood`'s
+  120-normal-attack projectile launch isn't a weapon-profile swap at all
+  (her base weapon never changes) - it needed `scheduled_nukes` with Full
+  Burst window visibility (`SquadContext.full_burst_windows`) instead, a
+  small context-exposure extension, not a segment - see
+  "gap #7로 안 풀리는 사례였던 rapi-red-hood" in `docs/engine-gaps.md` for the
+  full resolution. `snow-white-heavy-arms`'s charge-lock-on loop turned out
+  to need NO new state machine after all: lock-on/ammo accrual is
+  deterministic within a fixed charge time (a per-mode constant, not a
+  tracked resource), Auto Fire rides the existing per-shot primitive, and
+  Fully Active - the one piece that DOES swap her weapon for a window - is
+  an ordinary segment. The only genuinely new piece was keeping the
+  segment's boosted Auto Fire and the base weapon's plain Auto Fire from
+  double-firing on the same shot - see the `every_during_segment`/
+  `every_outside_segment` entry below.
+- See `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`,
+  `snow_white.py`/`maxwell.py`/`laplace_signature.py`/`red_hood.py`/
+  `cinderella_crystal_wave.py`/`rapi_red_hood.py`/
+  `snow_white_heavy_arms.py` docstrings.
+
+## Segment-gated per-shot modes need record identity, not shot time (`every_during_segment`/`every_outside_segment`) - BUILT capability (plan-2, 2026-07-19)
+
+- **What it looks like:** a per-shot rule that must fire differently inside
+  vs. outside a `weapon_mode_schedules` segment - Snow White: Heavy Arms's
+  Auto Fire deals a plain all-enemy-hit-plus-sequential-hits nuke on every
+  full charge, but while her Fully Active segment is active the same Auto
+  Fire is boosted (more loaded ammo, a Sequential-attack-damage buff) - the
+  SAME per-shot event, two different payloads depending on segment state.
+- **Easy mistake:** filtering by comparing each shot's TIME against the
+  segment's `[start, end)` window - v1's confirmed resume semantic is that
+  the base weapon picks back up with a FRESH magazine THE INSTANT a segment
+  ends (`until_shots` exhausted or `end` reached), so the segment's last
+  shot and the resumed base weapon's first shot can land at the exact same
+  timestamp. A time-window filter would then let that one boundary shot
+  satisfy BOTH "inside" and "outside," double-firing the per-shot rule.
+- **Encode:** `per_shot_rules` modes `"every_during_segment"`/
+  `"every_outside_segment"` (threshold=N) filter by the shot's
+  `ShotRecord.in_segment` FLAG - the record's own identity, set once at
+  generation time - never by comparing times. This makes the two modes
+  structurally exclusive: a shot is one record with one `in_segment` value,
+  so it can satisfy only one of the two filters, no matter how timestamps
+  land. See `snow_white_heavy_arms.py`'s `build_seven_dwarves_per_shot_rules`
+  and `engine-capabilities.md`'s `per_shot_rules` entry.
+
+## A segment profile that reads the caster's OWN weapon stats (`caster_weapon_stats`) - BUILT capability (plan-2, 2026-07-19)
+
+- **What it looks like:** a weapon-mode segment that isn't an independent
+  transform weapon but the unit's OWN normal charge shot with a bonus folded
+  in - Snow White: Heavy Arms's Fully Active state doesn't swap to a
+  different cannon, it's her regular full-charge shot with Shades of
+  White's +528% Charge Damage added on top.
+- **Easy mistake:** hardcoding the base charge-damage percent as a literal
+  in the segment profile - it silently drifts from the character's real
+  weapon data (and duplicates a value that's already assembled elsewhere).
+- **Encode:** skill-value assembly now injects `caster_weapon_stats` (the
+  unit's fully assembled `weapon_stats` dict) into the values passed to
+  every builder, alongside the existing `caster_atk`/`caster_def`/
+  `caster_max_hp` keys (`roster.py`). A segment schedule builder reads
+  `values["caster_weapon_stats"]["charge_damage_percent"]` and adds the
+  skill's own bonus to it, rather than inventing a number. See
+  `snow_white_heavy_arms.py`'s `build_fully_active_weapon_mode_schedule`.
+
+## Play/formation choices are a DIFFERENT dual-slug pattern than item-investment dual-slots (`MODE_VARIANTS`) - BUILT capability (plan-2, 2026-07-19)
+
+- **What it looks like:** an owned character who can show up in a deck
+  candidate list more than once for a reason that has nothing to do with
+  whether the user owns an item - Cinderella: Crystal Wave's player-chosen
+  MG/Snipe mode, or Rapi: Red Hood's Combat Assist B1 stand-in vs. her
+  nominal Burst 3 self.
+- **Easy mistake:** reaching for the existing `-signature` dual-slot pattern
+  (Julia/Drake/Laplace base vs. signature). That pattern encodes whether the
+  user OWNS an item - real investment data, resolved in the frontend's
+  roster import (`DUAL_SLOT_BASES`/`SIGNATURE_OWNED`). A mode/formation
+  choice isn't investment at all - the user owns exactly one character and
+  is choosing how to PLAY her, every candidate is always available, and the
+  choice needs to be resolved where deck search actually runs (backend).
+- **Encode:** `registry.MODE_VARIANTS` (backend roster loader, not frontend)
+  - see "Multiple deck candidates from one owned character" in
+  `engine-capabilities.md` for the full mechanism (`MODE_VARIANTS`/
+  `VARIANT_BURST_TIERS`/`_WEAPON_PROFILE_OVERRIDE_BUILDERS`/
+  `_no_variant_clash`).
+- **A variant that seats itself out of a REAL occupant's way, not just its
+  own sibling's (`SOLE_TIER1_SLUGS`):** Rapi: Red Hood's Combat Assist is
+  gated on "no other Burst 1 ally in the deck" - so seating her B1 stand-in
+  next to an actual Burst 1 unit would simulate a formation where her own
+  in-game condition is false, a self-contradiction the base `_no_variant_
+  clash` check (same-base siblings only) doesn't catch, since the clash
+  here is with a DIFFERENT character entirely. `deck_search.
+  SOLE_TIER1_SLUGS` blocks that variant from co-seating with ANY other
+  tier-1 occupant. Check for this kind of "this variant's whole premise
+  requires an empty seat, not a specific rival" self-cancellation whenever
+  a mode variant re-seats into a slot it doesn't nominally occupy.
+
 ---
 *Add new mechanics above this line as they come up.*

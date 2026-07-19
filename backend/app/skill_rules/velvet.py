@@ -20,16 +20,18 @@ Modeled (DPS-relevant):
   The "ammo pouch" the skill spends from (6000 rounds, refilled to full at
   battle start and every Burst Stage 2) far exceeds per-cycle spend, so it never
   depletes and is treated as a non-constraint (not modeled as a resource).
+- Sticky Fingers (skills[0]): on each Full-Charge shot while NOT in Full Burst
+  (SR: every shot is a full charge, so N=1 out-of-window), self ATK +30.5% and
+  self Attack Damage +30.5%, both for 3 sec (refreshing) - the
+  `every_outside_full_burst` per-shot mode (the complement of gap #7's
+  FB-window filter). Its 100-round pouch spend per proc is far below the 6000
+  refilled every Burst Stage 2 - the same non-constraint as Bullets of Love.
 
 Not modeled / deferred:
 - Perfect Execution's own weapon-transformation damage (7% of final ATK per
   shot for 10 sec) - no weapon-transformation support (same gap as Nayuta's
   Memory Incineration).
-- Sticky Fingers (skills[0])'s Full-Charge self ATK/Attack Damage buff (+30.5%
-  each, 3 sec) fires "while NOT in Full Burst" - needs a not-in-Full-Burst
-  per-shot window filter (the complement of gap #7's FB-window mode), which
-  isn't built. Self-scoped on a supporter, low DPS weight. Its enemy-ammo-steal
-  and ammo-pouch fill are non-damage.
+- Sticky Fingers' enemy-ammo-steal and ammo-pouch fill (non-damage).
 """
 from app.effects import Effect
 from app.skill_rules._helpers import instant_nuke_pulse_rule, refreshing_buff_rule
@@ -41,10 +43,14 @@ SKILL_VALUE_MANIFESTS = {
         "source": "lootandwaifus",
         "test_module": "test_skill_rules_velvet",
         "keys": {
+            "sticky_fingers": ("skills", 0),
             "bullets_of_love": ("skills", 1),
             "perfect_execution": ("skills", 2),
         },
         "drop_tokens": {
+            # "Burst Stage 2" and the "Effect 1/2/3" labels are numeric tokens
+            # but not value slots.
+            "sticky_fingers": [0, 1, 3, 6, 8, 11],
             "bullets_of_love": [0, 2, 5, 9, 11, 14],
         },
     },
@@ -97,3 +103,26 @@ def build_bullets_of_love_per_shot_rules(values):
             instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True),
         ]),
     ]
+
+
+def build_sticky_fingers_per_shot_rules(values):
+    """Sticky Fingers' out-of-Full-Burst self buffs (`every_outside_full_burst`,
+    the complement of gap #7's FB-window mode): on every Full-Charge shot while
+    not in Full Burst (SR, N=1), self ATK and Attack Damage for 3 sec, refreshing."""
+    fingers = values["sticky_fingers"]
+    self_atk = float(fingers["description_value_05"]) / 100
+    self_atk_duration = float(fingers["description_value_06"])
+    self_attack_damage = float(fingers["description_value_07"]) / 100
+    self_attack_damage_duration = float(fingers["description_value_08"])
+    return [
+        (1, "every_outside_full_burst", [
+            refreshing_buff_rule("per_shot", [
+                ("atk_percent", self_atk, "self", self_atk_duration),
+                ("attack_damage_up", self_attack_damage, "self", self_attack_damage_duration),
+            ]),
+        ]),
+    ]
+
+
+def build_velvet_per_shot_rules(values):
+    return build_bullets_of_love_per_shot_rules(values) + build_sticky_fingers_per_shot_rules(values)

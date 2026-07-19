@@ -62,13 +62,22 @@ def rapi_red_hood_spec():
         base_stats={"atk": 300000, "def": 60000, "max_hp": 10000000},
         skill_values={
             "battlefield_assessment": {
-                "description_value_01": "1", "description_value_02": "7.48",
-                "description_value_03": "95.04", "description_value_04": "10",
-                "description_value_05": "48", "description_value_06": "10",
-                "description_value_07": "8.02", "description_value_08": "10",
+                "description_value_01": "1", "description_value_02": "1",
+                "description_value_03": "1", "description_value_04": "7.48",
+                "description_value_05": "8.02", "description_value_06": "10",
+                "description_value_07": "95.04", "description_value_08": "10",
+                "description_value_09": "48", "description_value_10": "10",
             },
-            "attachable_projectiles": {"description_value_05": "150.72", "description_value_06": "100.6"},
-            "power_of_inheritance": {"description_value_05": "339.98"},
+            "attachable_projectiles": {
+                "description_value_01": "150.72", "description_value_02": "100.6",
+                "description_value_03": "120", "description_value_04": "88.11",
+                "description_value_05": "88.11",
+            },
+            "power_of_inheritance": {
+                "description_value_08": "339.98",
+                "description_value_11": "421.2", "description_value_12": "10",
+                "description_value_14": "60", "description_value_15": "10",
+            },
         },
         weapon_stats={
             "weapon": "MG", "damage_percent": 20.0, "max_ammo": 300,
@@ -261,3 +270,9 @@ def test_cube_superior_code_damage_increases_total_damage():
     dmg_without = simulate_raid(**without, **kwargs)["total_damage"]
     dmg_with = simulate_raid(**with_cube, **kwargs)["total_damage"]
     assert dmg_with > dmg_without
+
+
+def test_weapon_mode_schedules_key_exists_in_assembled_inputs():
+    inputs = assemble_simulation_inputs(minimal_feasible_deck())
+    assert "weapon_mode_schedules" in inputs
+    assert inputs["weapon_mode_schedules"] == {}
