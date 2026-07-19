@@ -53,6 +53,20 @@
   "게이지=charge speed=딜 아님" 판정은 Phase S(charge_speed_percent 배선) 이전의
   낡은 것. 무기변형 창은 Fienn 실측(10초 33발·무한탄창) 앵커 `scheduled_nukes`.
   Pattern B 잔여 후보는 mihara·elegg 2명으로 감소 — gap #2 상세 참고.
+  **→ gap #2 Pattern B 소진 (2026-07-19): 남은 2명 다 Pattern B가 아니었다.**
+  착수 전 검증에서 mihara·elegg 모두 **시간감쇠 게이지도 임계치 변신도 없고**
+  결정론적 fill을 가진 평범한 자원(Pattern A) 유닛임이 확인됨 — red-hood와
+  같은 종류의 낡은 분류였다. 둘 다 인코딩 완료. 소비한 엔진 확장 4건:
+  자원 reset의 `value_fn`(post = f(pre); delta·floor·임계분기를 한 필드로 포섭) ·
+  `dynamic_hit_count_nukes`의 `hit_count_fn`(카운트→히트수 분기) ·
+  **다중 소스 fill**(`ResourceSpec.fill`이 (fill spec, amount) 리스트를 받아 한
+  자원을 서로 다른 비율/증가량으로 급유; 신규 fill kind `at_battle_start` /
+  `on_full_burst_end_after_own_burst`) · `scheduled_nukes`의 `resource_gate`
+  (전투 전체 스케줄 DoT를 스택수로 스케일 — 기존엔 버스트 앵커 `resource_scaled_nukes`뿐).
+  **교훈: '동시각 fill은 reset에 먹힌다'** — `resource_count`가
+  `fill_time <= baseline_time`인 fill을 버리므로, reset과 같은 순간에 놓인
+  재충전은 사라진다. Mihara의 방출을 창 끝 +`AFTER_WINDOW_EPSILON`에 놓아 해결
+  (스킬 텍스트도 '풀 버스트 타임 종료 **후**'라 의미상으로도 맞음).
   같은 날 이전 갱신: **gap #10 완료 — `per_shot_rules` `"sequence"` 모드,
   Scarlet: Black Shadow 인코딩**. 단일 풀차지 카운터가 단계별 요구치 테이블(3/6/9)을
   걷고, 자기 버스트 창(10초) 안에서는 테이블이 1/2/3으로 교체 — 카운트/스테이지는

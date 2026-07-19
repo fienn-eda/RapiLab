@@ -625,8 +625,12 @@
     전투시작 200히트 — gap #7 후보 소진) 잔여 메커니즘도 인코딩.
     `milk-blooming-bunny`(gap #11 — 강제재장전/탄약제거 상태머신, 중~대)는 여전히
     미착수.
-  - **Pattern B 게이지·변신 (일반 프리미티브 잔여, gap #2)**: `mihara-bonding-chain`
-    (체인)·`elegg-boom-and-shock`. (~~`red-hood`(charge speed·딜 아님)~~ →
+  - ~~**Pattern B 게이지·변신 (일반 프리미티브 잔여, gap #2)**: `mihara-bonding-chain`
+    (체인)·`elegg-boom-and-shock`.~~ → **둘 다 인코딩 완료 (2026-07-19), gap #2
+    Pattern B 소진.** 검증 결과 **애초에 Pattern B가 아니었음**(감쇠 게이지·변신 없음,
+    결정론적 fill의 Pattern A 자원 유닛 — red-hood와 같은 낡은 분류). 엔진 확장 4건
+    소비: reset `value_fn` · `hit_count_fn` · 다중 소스 fill · `scheduled_nukes`의
+    `resource_gate`. 상세는 `engine-gaps.md`/`encoded-nikkes.md` 참고. (~~`red-hood`(charge speed·딜 아님)~~ →
     **2026-07-18 재검증으로 판정 정정·인코딩 완료**: Phase S 이후 charge speed는
     딜 스탯이고, Step 1/2/3은 버스트 슬롯 선택이라 B3 고정 시 Step 3만 유효,
     무기변형 창은 Fienn 실측 33발 앵커 `scheduled_nukes` — 엔진 확장 없음.
