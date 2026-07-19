@@ -23,6 +23,15 @@ import {
 
 type Status = 'idle' | 'importing' | 'done' | 'error'
 
+// blablalink 출처를 통과한 메시지라도 payload 형태까지 보장되지는 않는다 -
+// 모양이 어긋난 값을 assembleRoster로 그대로 보내지 않도록 최소한의 형태만 확인한다.
+const isRawRosterPayload = (value: unknown): value is RawRosterPayload =>
+  !!value &&
+  typeof value === 'object' &&
+  Array.isArray((value as RawRosterPayload).owned) &&
+  Array.isArray((value as RawRosterPayload).character_details) &&
+  Array.isArray((value as RawRosterPayload).recycle_room_researches)
+
 export const useBookmarkletImport = (onRoster: (raw: unknown) => void) => {
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -51,8 +60,8 @@ export const useBookmarkletImport = (onRoster: (raw: unknown) => void) => {
   useEffect(() => {
     const listener = (event: MessageEvent) => {
       if (event.origin !== BLABLALINK_ORIGIN) return
-      const data = event.data as { type?: string; payload?: RawRosterPayload }
-      if (data?.type !== PAYLOAD_MESSAGE || !data.payload) return
+      const data = event.data as { type?: string; payload?: unknown }
+      if (data?.type !== PAYLOAD_MESSAGE || !isRawRosterPayload(data.payload)) return
       void handle(data.payload)
     }
     window.addEventListener('message', listener)

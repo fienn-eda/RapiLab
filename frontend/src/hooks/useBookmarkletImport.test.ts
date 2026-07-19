@@ -50,6 +50,30 @@ describe('useBookmarkletImport', () => {
     expect(result.current.error).toContain('boom')
   })
 
+  it('window.opener가 없으면(일반 방문) 아무 동작도 하지 않고 예외도 던지지 않는다', () => {
+    expect(window.opener).toBeFalsy()
+    const onRoster = vi.fn()
+
+    expect(() => renderHook(() => useBookmarkletImport(onRoster))).not.toThrow()
+
+    expect(assembleRoster).not.toHaveBeenCalled()
+    expect(onRoster).not.toHaveBeenCalled()
+  })
+
+  it('blablalink 출처라도 payload가 없거나 형태가 이상하면 assembleRoster를 부르지 않는다', async () => {
+    const onRoster = vi.fn()
+    renderHook(() => useBookmarkletImport(onRoster))
+
+    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE }) // payload 누락
+    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: null })
+    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: 'not-a-roster' }) // garbage
+    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: { owned: [] } }) // 필드 일부만
+
+    await new Promise((r) => setTimeout(r, 10))
+    expect(assembleRoster).not.toHaveBeenCalled()
+    expect(onRoster).not.toHaveBeenCalled()
+  })
+
   it('onRoster가 매 렌더마다 새로 생겨도 리스너/ready 신호는 마운트당 한 번만 등록한다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const opener = { postMessage: vi.fn() }
