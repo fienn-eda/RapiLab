@@ -22,14 +22,22 @@ The third trigger, entering Burst Stage 3, then always finds an empty bank
 here rather than a separate discharge.
 
 This reproduces Fienn's in-game reading (2026-07-19) that Ensnaring Chains
-sits at its 20 cap when she bursts, in the deck shape she actually plays -
-a (1,1,3) where other Burst 3 allies take some cycles. Her burst wipes the
-stacks 10s later, the discharge at that same Full Burst's end re-plants 10,
-and Tighten Up's normal-attack trickle (+1 per 40 normals during Full
-Burst, roughly +15 over a 10s window at MG fire rate) tops it off to the cap
-well before her next burst. Only in the degenerate deck where she is the
-sole Burst 3 and bursts EVERY cycle does the count sit at 10 instead of 20,
-because no intervening Full Burst feeds the trickle.
+sits at its 20 cap when she bursts. Measured end-to-end in the deck shape
+she is actually played in - a (1,1,3) whose Burst 1/2 cooldowns are short
+enough (Liter 20s + Crown 20s, ~17s cycles) that the Burst 3 slot rotates:
+she bursts at t=1.0 / 34.7 / 68.3 / 102.0 / 135.6 / 169.3 and holds exactly
+20 stacks at every one of them except the first (t=1.0 holds 10, the
+battle-start discharge alone - nothing has had time to accumulate yet).
+The loop that sustains it: her burst wipes the stacks 10s later, the
+discharge just past that same Full Burst's end re-plants 10, and Tighten
+Up's normal-attack trickle (+1 per 40 normals during Full Burst, roughly
++15 over a 10s window at MG fire rate) tops it off to the cap during the
+intervening Full Bursts she does not burst in.
+
+The count only falls short of the cap when nothing intervenes: in a deck
+where she is the sole bursting Burst 3 and fires EVERY cycle, no Full Burst
+passes without her burst wiping it, so she sits at 10. That shape needs a
+Burst 2 slower than her own cooldown (e.g. Blanc at 60s) to arise at all.
 
 Modeled (DPS-relevant):
 - Body Contact (skills[0]) chain attacks: 50.06% of final ATK per chain,
