@@ -120,6 +120,12 @@ from app.skill_rules.ein import (
     build_ein_scheduled_nukes,
     feather_all_range_burst_percent,
 )
+from app.skill_rules.elegg_boom_and_shock import (
+    build_elegg_boom_and_shock_rules,
+    build_elegg_ghost_resources,
+    build_ghostbuster_scheduled_nukes,
+    build_thirteen_ghosts_dynamic_hit_count_nukes,
+)
 from app.skill_rules.drake import (
     build_drake_rules,
     build_drake_signature_rules,
@@ -372,6 +378,8 @@ _BUILDERS = {
     "rei-ayanami-tentative-name": lambda sv: (build_rei_tentative_rules(sv), attack_state_burst_percent(sv)),
     "neon-vision-eye": lambda sv: (build_neon_vision_eye_rules(sv), None),  # burst is buff-only; damage is Firepower Explosion (per-shot)
     "ein": lambda sv: (build_ein_rules(sv), feather_all_range_burst_percent(sv)),
+    # 13 Ghosts fires via dynamic_hit_count_nukes (branching hit count), not a flat burst percent.
+    "elegg-boom-and-shock": lambda sv: (build_elegg_boom_and_shock_rules(sv), None),
     "raven": lambda sv: (build_raven_rules(sv), tempest_burst_percent(sv)),
     "sakura-bloom-in-summer": lambda sv: (
         build_sakura_bloom_in_summer_rules(sv), ephemeral_spender_burst_percent(sv)
@@ -473,6 +481,7 @@ _BURST_DAMAGE_TYPES = {
 # entities so far.
 _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
+    "elegg-boom-and-shock": lambda sv: build_ghostbuster_scheduled_nukes(sv),  # capture at the ghost cap
     "little-mermaid": lambda sv: build_bubble_barrage_scheduled_nukes(sv),  # squad-wide 500-ammo counter
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
@@ -575,6 +584,7 @@ _RESOURCE_SPEC_BUILDERS = {
     "cinderella": lambda sv: build_beautiful_resources(sv),
     "soda-twinkling-bunny": lambda sv: build_golden_chip_resources(sv),
     "maiden-ice-rose": lambda sv: build_mp_resources(sv),
+    "elegg-boom-and-shock": lambda sv: build_elegg_ghost_resources(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named
@@ -618,6 +628,7 @@ _RESOURCE_FILL_TRIGGERED_BUFF_BUILDERS = {
 _DYNAMIC_HIT_COUNT_NUKE_BUILDERS = {
     "maiden-ice-rose": lambda sv: build_diamond_dust_dynamic_hit_count_nukes(sv),
     "asuka-shikinami-langley-wille": lambda sv: build_annihilation_dynamic_hit_count_nukes(sv),
+    "elegg-boom-and-shock": lambda sv: build_thirteen_ghosts_dynamic_hit_count_nukes(sv),
 }
 
 

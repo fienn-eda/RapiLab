@@ -68,6 +68,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   431: 'volume', // Volume
   470: 'red-hood', // Red Hood (16 = Rapi: Red Hood, separately encoded)
   471: 'snow-white-heavy-arms', // Snow White: Heavy Arms
+  502: 'elegg-boom-and-shock', // Elegg: Boom and Shock
   511: 'cinderella', // Cinderella
   513: 'little-mermaid', // Little Mermaid
   514: 'grave', // Grave
