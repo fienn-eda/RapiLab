@@ -50,6 +50,32 @@ describe('buildBookmarklet', () => {
     expect(openIndex).toBeGreaterThan(-1)
     expect(listenerIndex).toBeLessThan(openIndex)
   })
+
+  it('message 리스너는 매칭 후 스스로를 제거한다 (재동기화 시 중복 리스너 방지)', () => {
+    const handlerNameMatch = source.match(/window\.addEventListener\('message',(\w+)\)/)
+    expect(handlerNameMatch).not.toBeNull()
+    const handlerName = handlerNameMatch![1]
+    expect(source).toContain(`removeEventListener('message',${handlerName})`)
+  })
+
+  it('메시지 가드가 발신 source까지 확인한다 (e.source===w)', () => {
+    expect(source).toContain('e.source===w')
+  })
+
+  it('에러 코드 매칭이 문자열 끝에 고정된다 (:1000 같은 무관한 코드가 공유 URL 분기로 새지 않게)', () => {
+    // catch 블록의 alert(...) 삼항식을 그대로 뽑아 실행해, 실제로 어떤 메시지가
+    // 뜨는지 검증한다 (문자열 포함 여부만 보면 :1000이 :1 취급되는 버그를 못 잡는다).
+    const match = source.match(/alert\((m\.indexOf\('300001'\)[\s\S]*?)\)\}\n\}\)\(\)$/)
+    expect(match).not.toBeNull()
+    const alertExprFn = new Function('m', `return (${match![1]})`)
+
+    // GetUserCharacters:1000은 코드 1이 아니라 1000이므로 공유 URL 분기를 타면 안 된다.
+    expect(alertExprFn('Error: GetUserCharacters:1000')).not.toBe('공유 URL을 다시 확인해주세요.')
+    // 1303005는 여전히 공유 URL 분기를 타야 한다 (:1$ 앵커링 후에도 살아있는 별도 체크).
+    expect(alertExprFn('Error: GetUserCharacterDetails:1303005')).toBe('공유 URL을 다시 확인해주세요.')
+    // 코드가 정확히 1이면 공유 URL 분기를 타야 한다.
+    expect(alertExprFn('Error: GetUserCharacters:1')).toBe('공유 URL을 다시 확인해주세요.')
+  })
 })
 
 describe('buildBookmarklet 입력 검증', () => {
@@ -72,5 +98,9 @@ describe('buildBookmarklet 입력 검증', () => {
     expect(() =>
       buildBookmarklet('1234567890123456789', 'https://deck.example/path'),
     ).toThrow()
+  })
+
+  it('openId가 6자리 미만이면 던진다 (shareUrl.ts의 OPEN_ID 규칙과 일치)', () => {
+    expect(() => buildBookmarklet('12345', 'https://deck.example')).toThrow()
   })
 })

@@ -10,7 +10,7 @@ export const BLABLALINK_ORIGIN = 'https://www.blablalink.com'
 export const READY_MESSAGE = 'nikke-sync-ready'
 export const PAYLOAD_MESSAGE = 'nikke-sync-payload'
 
-const OPEN_ID = /^\d+$/
+const OPEN_ID = /^\d{6,}$/
 
 // 생성된 소스에 그대로 splice되므로 따옴표가 섞이면 문법이 깨지거나 주입이 된다.
 // origin 형태(경로/쿼리/프래그먼트 없음, http(s)만)까지 확인해 http 문자열
@@ -48,14 +48,15 @@ try{
  const outpost=await call('GetUserProfileOutpostInfo',{...base});
  const payload={owned:owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]};
  let w;
- window.addEventListener('message',e=>{
-  if(w&&e.origin==='${appOrigin}'&&e.data&&e.data.type==='${READY_MESSAGE}'){
-   w.postMessage({type:'${PAYLOAD_MESSAGE}',payload:payload},'${appOrigin}')}});
+ const h=e=>{if(e.source===w&&e.origin==='${appOrigin}'&&e.data&&e.data.type==='${READY_MESSAGE}'){
+  w.postMessage({type:'${PAYLOAD_MESSAGE}',payload:payload},'${appOrigin}');
+  window.removeEventListener('message',h)}};
+ window.addEventListener('message',h);
  w=window.open('${appOrigin}');
  if(!w){alert('팝업이 차단됐어요. 차단을 해제하고 다시 눌러주세요.');return}
 }catch(err){
  const m=String(err);
- alert(m.indexOf('300001')>=0?'blablalink 로그인이 필요해요.':(m.indexOf('1303005')>=0||m.indexOf(':1')>=0)?'공유 URL을 다시 확인해주세요.':'가져오기 실패: '+m)}
+ alert(m.indexOf('300001')>=0?'blablalink 로그인이 필요해요.':(m.indexOf('1303005')>=0||/:1$/.test(m))?'공유 URL을 다시 확인해주세요.':'가져오기 실패: '+m)}
 })()`
   return 'javascript:' + encodeURIComponent(source)
 }
