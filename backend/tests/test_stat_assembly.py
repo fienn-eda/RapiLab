@@ -276,6 +276,13 @@ def test_affinity_atk_is_flat_not_a_percentage(tables):
     assert affinity_atk(tables, "Attacker", 1) == 0
 
 
+def test_affinity_atk_clamps_level_0_to_the_level_1_floor(tables):
+    """An explicit attractive_lv: 0 (seen in real blablalink payloads) must not
+    crash - there is no level-0 row, so it reads as the level-1 floor (0 bonus)."""
+    assert affinity_atk(tables, "Attacker", 0) == 0
+    assert affinity_atk(tables, "Attacker", 0) == affinity_atk(tables, "Attacker", 1)
+
+
 def test_corporation_atk_is_per_rank(tables, ground_truth_ranks):
     # Popup: 엘리시온 RANK 170 -> 4,250 ATK, i.e. 25 per rank rather than 25 total.
     assert corporation_atk(tables, "ELYSION", ground_truth_ranks) == 4250
@@ -512,6 +519,12 @@ def test_affinity_hp_reads_the_hp_column(tables):
     assert affinity_hp(tables, "Defender", 10) == 11076
     assert affinity_hp(tables, "Supporter", 10) == 10069
     assert affinity_hp(tables, "Attacker", 1) == 0
+
+
+def test_affinity_hp_clamps_level_0_to_the_level_1_floor(tables):
+    """Same clamp as affinity_atk, HP side."""
+    assert affinity_hp(tables, "Attacker", 0) == 0
+    assert affinity_hp(tables, "Attacker", 0) == affinity_hp(tables, "Attacker", 1)
 
 
 def test_full_hp_model_reproduces_the_whole_roster(

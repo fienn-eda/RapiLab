@@ -53,6 +53,11 @@ def test_a_missing_field_is_a_422_not_a_500():
 
 def test_telemetry_logs_aggregates_but_never_the_roster_or_open_id(caplog):
     """프라이버시 규율: 집계 수치만, 원시 데이터·식별자는 절대 안 남는다."""
+    # name_code 5001 is Maxwell (resource_id 102): assert the assembled unit's
+    # own identifying fields (name_en, resource_id) never reach the log, not
+    # just the input name_code - a log line of the whole roster would still
+    # omit "5001" (units carry name_en/resource_id, never name_code) and pass
+    # a check that only excludes the input identifier.
     payload = {
         "owned": [{"name_code": 5001, "lv": 400, "core": 3, "grade": 3}],
         "character_details": [{"name_code": 5001, "grade": 3, "core": 3}],
@@ -64,8 +69,14 @@ def test_telemetry_logs_aggregates_but_never_the_roster_or_open_id(caplog):
             headers={"X-Client-Id": "anon-abc"},
         )
     assert response.status_code == 200
-    text = caplog.text
+    units = response.json()["units"]
+    assert units and units[0]["resource_id"] == 102  # sanity: Maxwell assembled
+    # Only our own log line, not httpx's request trace - a raw line number like
+    # _client.py:1025 can incidentally contain "102" and would be a false positive.
+    text = "\n".join(r.getMessage() for r in caplog.records if r.name == "app.api")
     assert "roster_sync" in text
     assert "anon-abc" in text          # 익명 id는 남는다
     assert "5001" not in text          # 원시 유닛 데이터는 안 남는다
+    assert "Maxwell" not in text       # 조립된 유닛 이름도 안 남는다
+    assert "102" not in text           # resource_id도 안 남는다
     assert "intl_open_id" not in text  # open_id는 애초에 서버로 오지도 않는다

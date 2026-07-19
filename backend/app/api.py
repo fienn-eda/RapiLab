@@ -80,6 +80,7 @@ app.add_middleware(
 # Reference tables are read-only and identical for every request, so load once.
 _STAT_TABLES = load_stat_tables()
 _DIRECTORY = load_directory()
+_KNOWN_NAME_CODES = {e["name_code"] for e in _DIRECTORY}
 
 
 def _reject_unknown_overload_options(roster: list[UserNikkeState]) -> None:
@@ -177,7 +178,6 @@ def assemble_roster_endpoint(
     """Assemble a bookmarklet-collected roster. Stateless: the request body is
     never persisted - see the privacy posture in the sub-project 4 spec."""
     units = assemble_roster(_STAT_TABLES, _DIRECTORY, request.model_dump())
-    known = {e["name_code"] for e in _DIRECTORY}
     # Aggregates only. Counting unknown name_codes is how we learn the
     # directory snapshot has gone stale against a newly released Nikke.
     logger.info(
@@ -185,6 +185,6 @@ def assemble_roster_endpoint(
         x_client_id or "none",
         len(request.owned),
         len(units),
-        sum(1 for o in request.owned if o.get("name_code") not in known),
+        sum(1 for o in request.owned if o.get("name_code") not in _KNOWN_NAME_CODES),
     )
     return to_roster_json(units)

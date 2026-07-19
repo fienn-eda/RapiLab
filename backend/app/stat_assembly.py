@@ -175,6 +175,9 @@ def affinity_atk(tables: dict[str, Any], character_class: str, affinity_level: i
     against the in-game additional-stats popup (rank 40 Attacker shows 2340,
     the cell verbatim). See capturedimages/README.md.
     """
+    # The affinity table's floor is level 1, which yields a zero bonus - clamp
+    # rather than let level 0 (or a raw missing-field default of 0) crash.
+    affinity_level = max(affinity_level, 1)
     column = _AFFINITY_ATK_COLUMN[character_class]
     for row in tables["affinity"]:
         if row["attractive_level"] == affinity_level:
@@ -425,6 +428,9 @@ def affinity_hp(tables: dict[str, Any], character_class: str, affinity_level: in
     The column is named `..._hp_rate` but holds a flat value, the same as the ATK
     column; confirmed by fit against measured HP.
     """
+    # The affinity table's floor is level 1, which yields a zero bonus - clamp
+    # rather than let level 0 (or a raw missing-field default of 0) crash.
+    affinity_level = max(affinity_level, 1)
     column = _AFFINITY_HP_COLUMN[character_class]
     for row in tables["affinity"]:
         if row["attractive_level"] == affinity_level:
