@@ -15,6 +15,11 @@
 //
 // Ids absent here are units we have not encoded (or do not own) -> excluded from
 // recommendation, kept visible in the roster draft via raw deriveSlug.
+//
+// A mode-variant unit (Cinderella: Crystal Wave's MG/Snipe pre-battle choice - see
+// MODE_VARIANTS in the backend registry) maps its id to the BASE slug, not either
+// mode slug: the backend fans that one base slug out to every candidate mode slug,
+// so the base is the map's legal value even though it is never itself encoded.
 export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   15: 'anis-sparkling-summer', // Anis: Sparkling Summer
   16: 'rapi-red-hood', // Rapi: Red Hood
@@ -65,6 +70,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   511: 'cinderella', // Cinderella
   513: 'little-mermaid', // Little Mermaid
   514: 'grave', // Grave
+  515: 'cinderella-crystal-wave', // Cinderella: Crystal Wave - base slug; fans out to -mg/-snipe (MODE_VARIANTS)
   570: 'ark-ranger-black', // Ark Ranger Black
   581: 'arcana', // Arcana
   583: 'arcana-fortune-mate', // Arcana: Fortune Mate

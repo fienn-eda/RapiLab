@@ -63,6 +63,28 @@ def test_mode_variants_never_share_a_deck(monkeypatch):
         assert not {"unit-a-mg", "unit-a-snipe"} <= slugs
 
 
+def test_reference_deck_never_seats_two_variants_of_one_base(monkeypatch):
+    # prune_candidate_pool's reference-deck construction calls evaluate_deck
+    # directly and doesn't go through shape_combinations/feasible_orderings,
+    # so it never sees _no_variant_clash on its own - _reference_deck must be
+    # clash-aware itself (deck_search.py's controller-added Task 6 item).
+    import app.deck_search as ds
+    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+                        {"unit-a-mg": "unit-a", "unit-a-snipe": "unit-a"})
+    by_tier = {
+        1: [FakeUnit("b1", 1)],
+        2: [FakeUnit("b2", 2)],
+        # prior-ranked with both clashing variants ahead of the distinct picks.
+        3: [FakeUnit("unit-a-mg", 3), FakeUnit("unit-a-snipe", 3),
+            FakeUnit("b3c", 3), FakeUnit("b3d", 3)],
+    }
+    reference = ds._reference_deck(by_tier, by_tier[1][0])
+    b3_slugs = {u.slug for u in reference[2:]}
+    assert not {"unit-a-mg", "unit-a-snipe"} <= b3_slugs
+    assert len(reference) == 5  # still fills all 3 B3 slots despite the clash
+    assert b3_slugs == {"unit-a-mg", "b3c", "b3d"}  # kept the higher-prior variant
+
+
 def real_five_roster():
     # anis-star(b1), crown(b2) + three burst-3 attackers so ordering matters.
     # (rapi/privaty specs are built here to keep this test self-contained.)

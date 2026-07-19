@@ -167,7 +167,25 @@ def _prior(unit):
 
 
 def _reference_deck(by_tier, b1):
-    return [b1, by_tier[2][0], *by_tier[3][:3]]
+    return [b1, by_tier[2][0], *_variant_safe_top(by_tier[3], 3)]
+
+
+def _variant_safe_top(units, n):
+    """First `n` from a prior-ranked list, skipping any unit whose
+    MODE_VARIANTS base is already taken - _reference_deck's B3 picks otherwise
+    slice the top 3 blindly, which could seat two variants of the same base
+    (e.g. both Cinderella: Crystal Wave modes) in one "deck," the exact clash
+    _no_variant_clash forbids for real candidate decks (deck_search.py:32)."""
+    chosen, bases_seen = [], set()
+    for unit in units:
+        base = _VARIANT_GROUP.get(unit.slug, unit.slug)
+        if base in bases_seen:
+            continue
+        bases_seen.add(base)
+        chosen.append(unit)
+        if len(chosen) == n:
+            break
+    return chosen
 
 
 def _measure_against(reference, unit, boss, baseline):

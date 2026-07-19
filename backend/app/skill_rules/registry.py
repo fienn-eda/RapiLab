@@ -46,6 +46,13 @@ from app.skill_rules.asuka_shikinami_langley_wille import (
 from app.skill_rules.blanc import build_blanc_rules
 from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
 from app.skill_rules.chisato_nishikigi import build_chisato_per_shot_rules, build_chisato_rules
+from app.skill_rules.cinderella_crystal_wave import (
+    build_crystal_wave_mg_rules,
+    build_crystal_wave_snipe_rules,
+    build_snipe_weapon_profile,
+    crystal_wave_burst_percent,
+    crystal_wave_periodic_nuke,
+)
 from app.skill_rules.cinderella import (
     GLASS_SLIPPERS_HIT_COUNT,
     build_beautiful_resources,
@@ -310,6 +317,12 @@ _BUILDERS = {
     "blanc": lambda sv: (build_blanc_rules(sv), None),
     "brid-silent-track": lambda sv: (build_brid_rules(sv), None),
     "cinderella": _build_cinderella,
+    "cinderella-crystal-wave-mg": lambda sv: (
+        build_crystal_wave_mg_rules(sv), crystal_wave_burst_percent(sv)
+    ),
+    "cinderella-crystal-wave-snipe": lambda sv: (
+        build_crystal_wave_snipe_rules(sv), crystal_wave_burst_percent(sv)
+    ),
     "crown": _build_crown,
     "rapi-red-hood": _build_rapi_red_hood,
     "helm": _build_helm,
@@ -382,7 +395,9 @@ ENCODED_SLUGS = tuple(_BUILDERS)
 # roster loader fans the one owned state out to (include the base slug itself
 # when it stays a candidate); deck search never seats two candidates of the
 # same base together.
-MODE_VARIANTS: dict[str, tuple[str, ...]] = {}
+MODE_VARIANTS: dict[str, tuple[str, ...]] = {
+    "cinderella-crystal-wave": ("cinderella-crystal-wave-mg", "cinderella-crystal-wave-snipe"),
+}
 
 # A variant seated in a different burst-rotation slot than the character's
 # nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
@@ -392,7 +407,9 @@ VARIANT_BURST_TIERS: dict[str, int] = {}
 # A variant whose weapon profile differs from the character's dotgg stats
 # (e.g. a Snipe mode) registers a builder here; the roster loader swaps the
 # assembled profile in after skill values resolve.
-_WEAPON_PROFILE_OVERRIDE_BUILDERS = {}
+_WEAPON_PROFILE_OVERRIDE_BUILDERS = {
+    "cinderella-crystal-wave-snipe": build_snipe_weapon_profile,
+}
 
 
 def get_weapon_profile_override(slug, skill_values):
@@ -405,6 +422,8 @@ def get_weapon_profile_override(slug, skill_values):
 _PERIODIC_NUKE_BUILDERS = {
     "ada-wong": lambda sv: build_flash_grenade_periodic_nuke(sv),
     "ark-ranger-black": lambda sv: build_ark_ranger_ceiling_collider(sv),
+    "cinderella-crystal-wave-mg": lambda sv: crystal_wave_periodic_nuke(sv),
+    "cinderella-crystal-wave-snipe": lambda sv: crystal_wave_periodic_nuke(sv),
     "helm-aquamarine": lambda sv: {
         "cooldown": AEGIS_CANNON_SUPPRESSION_FIRE_COOLDOWN,
         "percent": aegis_cannon_suppression_fire_percent(sv),

@@ -90,7 +90,10 @@
     수집 전 상태였을 뿐 — 넷 다 dotgg 셧다운(2026-05) 이전 출시라 데이터가 존재한다.
     **prika 로더블화로 mint+prika Encore 시너지가 실제 덱 탐색에서 처음으로 효력을
     가진다**(로드맵이 이걸 blocker로 적어두고 있었음).
-- 총 **65명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 38명) — drake는 base/signature 듀얼슬롯 2엔트리
+- 총 **67명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 40명) — drake는 base/signature 듀얼슬롯 2엔트리,
+  Cinderella: Crystal Wave는 MG/Snipe 모드 듀얼슬롯 2엔트리(Task 6, 2026-07-19 —
+  `MODE_VARIANTS`로 배선된 첫 유닛; 시그니처와 달리 둘 다 정식 base 캐릭터라
+  DUAL_SLOT_BASES/SIGNATURE_OWNED 대상 아님)
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -189,6 +192,8 @@
 | Asuka Shikinami Langley: Wille | `asuka-shikinami-langley-wille` | Attacker | MG | Wind | ⚠ | eb4. Anti A.T. Field 자원(캡30·`per_shot_every_during_own_status_window`로 자기 버스트 앵커 9초창 한정 노멀10회마다 fill·스택당 받댐+0.83%/30초, squad-scope)+무조건부 노멀50회마다 471.86% 넉("as additional damage", `full_burst_bonus_eligible`)+**같은 자원 fill 트리거에서 15.62% 상태게이팅 넉("as damage", 9초 Annihilation State 창 한정, `per_shot_rules`의 `every_during_own_status_window` 모드, gap #7 완료·2026-07-15)**+Annihilation State 버스트 자ATK/공댐(46.8%×자ATK/36%, 9초)+Emergency Repair FB진입 공댐+30.97%/10초(`own_burst_fired_this_cycle` 게이팅)+Annihilation 지연넉(버스트 9초 후 발동, 히트수=스택수, `dynamic_hit_count_nukes`+`fire_delay`, FB보너스) 모델됨. Normal Attack Damage 디버프(노멀전용 스코프 없음)·재장전/힐만 보류 |
 | Chisato Nishikigi | `chisato-nishikigi` | Attacker | SMG | Iron | ✅ | eb2. Extrasensory 상시 자ATK/진댐(버스트 재충전으로 >70% 유지 근사)·버스트 자ATK/노멀진댐화·48노멀마다 진댐넉(per-shot) 모델됨. per-shot 넉이 attack타입(진댐 언더카운트)·회피/명중(inert) 보류 |
 | Cinderella | `cinderella` | Attacker | RL | Fire | ⚠ | Flawless Glass 자ATK(자기 최대체력 비례)+매 풀차지 136.6% 추가딜(RL 상시 풀차지, per-shot)·Beautiful 자원(periodic fill, 3초마다·캡12)·Glass Slippers 10연타 버스트넉 + Beautiful 스택수 비례 추가딜(count-스케일 넉) 모델됨. 디코이 생성(생존)·Beautiful 자체 최대체력% 증가(연결된 소비자 없음, inert)만 보류 |
+| Cinderella: Crystal Wave (MG) | `cinderella-crystal-wave-mg` | Attacker | MG | Iron | ⚠ | (신규 Task 6, 2026-07-19) 전투 전 MG/Snipe 모드 고정 선택(플레이어가 정하고 전투 내내 유지 — 상태머신이 아니라 정적 슬러그 2개, `MODE_VARIANTS["cinderella-crystal-wave"]`로 배선, 덱 탐색이 두 모드 동시 편성 금지). 공유 킷(양 모드 동일): 배틀스타트 자AD+24%(Beauty-Full)/자ATK+29%(Mode Swap)·버스트 자AD+92%/자ATK+65% 10초(Glass Slippers)·6000% 버스트넉·5초마다 900% 주기넉(`periodic_nukes`). MG 전용: 배틀스타트 Pinpoint 코어딜+26%(`other_core_damage_sources`)·FB진입 833.79% 코어스트라이크 넉(자기 버스트 이번 사이클 발동 AND 코어활성 게이팅 — 스킬텍스트가 "코어 활성 적 한정"이라 균일 코어보정 모델상 `core_hittable` 게이트로 관례 정합, `boss_core_hittable`+`own_burst_fired_this_cycle` 복합조건). 보류: 디코이 아바타(생존)·아군탄200발마다 버스트게이지+12%(inert)·Pierce·모드전환 자체(Preparation for Change 상태머신, 모드 고정이라 무의미) |
+| Cinderella: Crystal Wave (Snipe) | `cinderella-crystal-wave-snipe` | Attacker | MG(정체성)/SR(발사) | Iron | ⚠ | (신규 Task 6, 2026-07-19) MG와 공유 킷 동일(위 참고). Snipe 전용: 배틀스타트 Destroy 파츠딜+26.21%(`damage_to_parts_up`)·FB진입 1189.66% 넉(자기 버스트 이번 사이클 발동만 게이팅, 코어 무관 — 전체 적/부위 대상이라 코어게이트 없음). **정적 무기 프로필 override**(`_WEAPON_PROFILE_OVERRIDE_BUILDERS`, Task 5 배선 첫 실사용): SR 62.13%·15발·차지1초·풀차지딜250%·재장전 2.5초(스킬텍스트에 값 없음 — MG 기본 재장전 차용, Fienn 판정 2026-07-19). `weapon` 필드는 아군필터용으로 "MG" 유지, 발사 케이던스/타이핑만 이 프로필의 "SR"이 결정. "풀차지=40발 회계"는 소비카운트 부기일 뿐 실제 발사는 1발(Velvet 탄약주머니 선례, little_mermaid.py 교차노트) — 이 부기가 먹이는 스킬 전부 defer라 노트만 남김. 보류: MG와 동일(디코이·게이지·Pierce·모드전환) |
 | Guillotine: Winter Slayer | `guillotine-winter-slayer` | Attacker | AR | Water | ⚠ | 자원 beachhead. EXP 자원(자ATK ▲1.81%/스택, 캡100, 연속)·Hero Level 파생 Water 아군 버프(레벨 스케일)·core-conditional fill·Extermination Water 버프 + **Hero-Level 스케일 10틱 지속딜(매 틱 자기 시각 기준 count 재조회, count-스케일 넉 + full_burst_bonus, 2026-07-12 인게임 확인 반영)** 모델됨. 레벨업 리로드/힐(딜 아님)만 보류 |
 | Helm (애장품) | `helm` | Attacker | SR | Water | ⚠ | Frontline Command 라스트불릿 스쿼드 크리율+14.64%/5초(`per_shot_rules`의 `"last_bullet"` 모드, refresh) 모델됨(2026-07-12, gap #1 잔여 해소) + Fire Away 스쿼드 파츠딜/공댐 모델됨. 두 스킬의 풀차지 보너스 효과(힐/게이지/추가딜)·Aegis Cannon 버스트후 차지배수(10 round) 보류 |
 | Isabel | `isabel` | Attacker | SG | Electric | ✅ | eb1. Marked Target 이스컬레이팅 자버프(refresh)·Pointed Feather 주기넉(cd15)·Sonic Chaser 버스트넉 + 단계별 추가딜(activation_count 게이팅, 사이클 정확)·받댐 디버프 모델됨. Full Burst Duration▲(로테 타이밍)만 보류 |
