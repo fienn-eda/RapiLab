@@ -7,7 +7,7 @@ describe('describeAssembleRosterApiError', () => {
     expect(describeAssembleRosterApiError(err)).toBe('owned[3].name_code is missing.')
   })
 
-  it('joins a FastAPI validation error array into one message', () => {
+  it('joins a FastAPI validation error array into one message, naming the offending field path', () => {
     const err = new AssembleRosterApiError(422, {
       detail: [
         { loc: ['body', 'owned', 0, 'name_code'], msg: 'field required', type: 'missing' },
@@ -15,8 +15,15 @@ describe('describeAssembleRosterApiError', () => {
       ],
     })
     expect(describeAssembleRosterApiError(err)).toBe(
-      'field required; field required',
+      'owned.0.name_code: field required; character_details: field required',
     )
+  })
+
+  it('falls back to the bare msg when a validation entry has no loc', () => {
+    const err = new AssembleRosterApiError(422, {
+      detail: [{ msg: 'field required', type: 'missing' }],
+    })
+    expect(describeAssembleRosterApiError(err)).toBe('field required')
   })
 
   it('falls back to a generic 422 message when there is no parseable detail', () => {

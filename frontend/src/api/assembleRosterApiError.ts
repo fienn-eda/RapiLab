@@ -18,17 +18,25 @@ export class AssembleRosterApiError extends Error {
   }
 }
 
+// FastAPI's validation `msg` alone is generic ("field required") for every
+// field, so the part that actually tells the user what to fix is `loc` - the
+// field path. The leading 'body' element of `loc` is the request-body wrapper,
+// not part of the field path, so it's dropped.
+const formatDetailItem = (item: unknown): string | undefined => {
+  if (!item || typeof item !== 'object' || !('msg' in item)) return undefined
+  const msg = String((item as { msg: unknown }).msg)
+  const loc = (item as { loc?: unknown }).loc
+  const path = Array.isArray(loc) ? loc.slice(1).join('.') : ''
+  return path ? `${path}: ${msg}` : msg
+}
+
 const extractDetailMessage = (detail: unknown): string | undefined => {
   if (detail == null || typeof detail !== 'object') return undefined
   const inner = (detail as Record<string, unknown>).detail
   if (typeof inner === 'string') return inner
   if (Array.isArray(inner)) {
     const messages = inner
-      .map((item) =>
-        item && typeof item === 'object' && 'msg' in item
-          ? String((item as { msg: unknown }).msg)
-          : undefined,
-      )
+      .map(formatDetailItem)
       .filter((msg): msg is string => msg != null)
     if (messages.length > 0) return messages.join('; ')
   }
