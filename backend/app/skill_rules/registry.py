@@ -203,6 +203,11 @@ from app.skill_rules.snow_white import (
     build_snow_white_rules,
     snow_white_periodic_nuke,
 )
+from app.skill_rules.snow_white_heavy_arms import (
+    build_fully_active_weapon_mode_schedule,
+    build_seven_dwarves_per_shot_rules,
+    build_snow_white_heavy_arms_rules,
+)
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules.takina_inoue import (
     BATTLEFIELD_CONTROL_COOLDOWN,
@@ -372,6 +377,7 @@ _BUILDERS = {
     "red-hood": lambda sv: (build_red_hood_rules(sv), None),  # burst is the Step 3 weapon transform (weapon-mode segment), no direct nuke
     "scarlet-black-shadow": lambda sv: (build_scarlet_black_shadow_rules(sv), None),  # burst is buff-only; damage is the Breakthrough sequence (per-shot)
     "snow-white": lambda sv: (build_snow_white_rules(sv), None),  # burst is the weapon transform (weapon-mode segment), no direct nuke
+    "snow-white-heavy-arms": lambda sv: (build_snow_white_heavy_arms_rules(sv), None),  # burst is the Fully Active state change (weapon-mode segment), no direct nuke
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
     "laplace": lambda sv: ([], laplace_buster_burst_percent(sv)),  # no ally buffs; weapon-transform + Hero Vision deferred
@@ -479,6 +485,7 @@ _SCHEDULED_NUKE_BUILDERS = {
 _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "red-hood": lambda sv: build_red_wolf_weapon_mode_schedule(sv),  # Step 3 transform window, 33 measured shots
     "snow-white": lambda sv: build_seven_dwarves_weapon_mode_schedule(sv),  # single 5s-charge cannon shot per own-burst
+    "snow-white-heavy-arms": lambda sv: build_fully_active_weapon_mode_schedule(sv),  # 2-shot 3.2s-charge segment per own-burst
     "maxwell": lambda sv: build_pierce_shot_weapon_mode_schedule(sv),  # single 2s-charge cannon shot per own-burst
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
 }
@@ -533,6 +540,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "laplace-signature": lambda sv: laplace_signature.build_hero_bomber_signature_per_shot_rules(sv),
     "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),
     "snow-white": lambda sv: build_determination_per_shot_rules(sv),
+    "snow-white-heavy-arms": lambda sv: build_seven_dwarves_per_shot_rules(sv),
     "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
     "velvet": lambda sv: build_velvet_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),

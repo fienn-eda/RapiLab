@@ -1,0 +1,225 @@
+"""Snow White: Heavy Arms (slug "snow-white-heavy-arms"), real max-level
+figures from lootandwaifus, slots numbered left-to-right per skill (full
+transcription, no skips - verified against the actual tokenizer output, no
+drop_tokens needed; see test_skill_value_assembly.py).
+"""
+from types import SimpleNamespace
+
+import pytest
+
+from app.effects import EffectRegistry
+from app.raid_simulator import simulate_raid
+from app.skill_rules.snow_white_heavy_arms import (
+    SKILL_VALUE_MANIFESTS,
+    build_fully_active_weapon_mode_schedule,
+    build_seven_dwarves_per_shot_rules,
+    build_snow_white_heavy_arms_rules,
+)
+from app.squad_engine import SquadContext, SquadMember
+
+SEVEN_DWARVES = {
+    "description_value_01": "0.2",    # Lock-On/Auto Fire Ready/Damage Taken tick interval sec
+    "description_value_02": "5",      # max Lock-On targets
+    "description_value_03": "0.2",    # (repeat of the tick-interval phrase)
+    "description_value_04": "42.24",  # DEF up % while Auto Fire Ready is active (deferred)
+    "description_value_05": "5",      # base ammo loaded by Auto Fire Ready
+    "description_value_06": "0.2",    # (repeat of the tick-interval phrase)
+    "description_value_07": "4.2",    # Damage Taken up % (Lock-On targets)
+    "description_value_08": "4",      # Damage Taken up duration sec
+    "description_value_09": "1",      # "Effect 1" label
+    "description_value_10": "41.9",   # Auto Fire all-enemy hit %
+    "description_value_11": "2",      # "Effect 2" label
+    "description_value_12": "105.59",  # Auto Fire sequential (per-ammo) hit %
+    "description_value_13": "1",      # Fully Active use count decrement
+}
+SHADES_OF_WHITE = {
+    "description_value_01": "1.2",    # fixed charge time sec
+    "description_value_02": "5",      # Pierce duration sec (deferred)
+    "description_value_03": "46.84",  # self ATK up % during Full Charge
+    "description_value_04": "5",      # its duration sec
+    "description_value_05": "62.64",  # Damage to Parts up % during Full Charge
+    "description_value_06": "5",      # its duration sec
+    "description_value_07": "3",      # "Burst Stage 3" trigger-phrase digit (unused)
+    "description_value_08": "73.92",  # self ATK up % on entering Burst Stage 3
+    "description_value_09": "10",     # its duration sec
+    "description_value_10": "528",    # Charge Damage up % (Fully Active Full Charge)
+    "description_value_11": "1",      # its duration, rounds
+    "description_value_12": "158.4",  # Sequential attack damage up % (Fully Active Full Charge)
+    "description_value_13": "1",      # its duration, rounds
+}
+FULLY_ACTIVE = {
+    "description_value_01": "84.48",  # self Attack Damage up %
+    "description_value_02": "10",     # its duration sec
+    "description_value_03": "2",      # number of uses
+    "description_value_04": "1",      # "Effect 1" label
+    "description_value_05": "3.2",    # fixed charge time sec during Fully Active
+    "description_value_06": "2",      # "Effect 2" label
+    "description_value_07": "10",     # max Lock-On targets up
+    "description_value_08": "3",      # "Effect 3" label
+    "description_value_09": "10",     # max Auto Fire Ready ammo up
+    "description_value_10": "0",      # "reaches 0" removal-condition digit (unused)
+    "description_value_11": "41.9",   # destructible-projectile sweep % (deferred)
+}
+SWHA_WEAPON_STATS = {
+    "weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
+    "reload_time": 2.0, "charge_time": 1.2, "charge_damage_percent": 250.0,
+}
+SWHA_VALUES = {
+    "seven_dwarves": SEVEN_DWARVES,
+    "shades_of_white": SHADES_OF_WHITE,
+    "fully_active": FULLY_ACTIVE,
+    "caster_weapon_stats": SWHA_WEAPON_STATS,
+}
+SWHA = {"slug": "snow-white-heavy-arms", "element": "Water"}
+ALLY = {"slug": "ally", "element": "Fire"}
+
+
+def make_context():
+    return SquadContext([
+        SquadMember("snow-white-heavy-arms", burst_tier=3, element="Water"),
+        SquadMember("ally", burst_tier=1, element="Fire"),
+    ])
+
+
+class _FakeRegistry:
+    """Minimal registry stand-in exposing a bare `.added` list - follows the
+    cinderella_crystal_wave test's helper (buff_rule's action only ever calls
+    registry.add / add_refreshing)."""
+
+    def __init__(self):
+        self.added = []
+
+    def add(self, effect, applied_at):
+        self.added.append((effect.stat, effect.value, effect.scope, effect.duration))
+
+    def add_refreshing(self, effect, applied_at):
+        self.added.append((effect.stat, effect.value, effect.scope, effect.duration))
+
+
+def _applied_buffs(rule):
+    reg = _FakeRegistry()
+    rule.action(make_context(), "snow-white-heavy-arms", 0.0, reg)
+    return reg.added
+
+
+def test_battle_start_and_burst_buffs():
+    rules = build_snow_white_heavy_arms_rules(SWHA_VALUES)
+    starts = [r for r in rules if r.trigger == "battle_start"]
+    bursts = [r for r in rules if r.trigger == "own_burst_activate"]
+    assert len(starts) == 1 and len(bursts) == 1
+
+    # battle_start: Lock-On tick's Damage Taken +4.2% approximated as a
+    # permanent squad debuff (charging uptime ~100%, Fienn 2026-07-19).
+    assert ("damage_taken_up", 0.042, "squad", None) in _applied_buffs(starts[0])
+
+    # own_burst_activate: Seven Dwarves Fully Active's own Attack Damage +
+    # Shades of White's "entering Burst Stage 3" self ATK (Step 2 precedent:
+    # she IS the B3 slot, so this is her own burst - see module docstring).
+    burst_buffs = _applied_buffs(bursts[0])
+    assert ("attack_damage_up", 0.8448, "self", 10.0) in burst_buffs
+    assert ("atk_percent", 0.7392, "self", 10.0) in burst_buffs
+
+
+def test_auto_fire_pulses_base_and_fully_active_variants():
+    rules = build_seven_dwarves_per_shot_rules(SWHA_VALUES)
+    assert len(rules) == 3
+    every, outside, during = rules
+    assert every == (1, "every", every[2])
+    assert outside[0:2] == (1, "every_outside_segment")
+    assert during[0:2] == (1, "every_during_segment")
+
+    # charge-window refreshing buffs (self ATK/parts, both 5s from Shades of White)
+    charge_buffs = _applied_buffs(every[2][0])
+    atk_buff = next(b for b in charge_buffs if b[0] == "atk_percent")
+    parts_buff = next(b for b in charge_buffs if b[0] == "damage_to_parts_up")
+    assert atk_buff == ("atk_percent", pytest.approx(0.4684), "self", 5.0)
+    assert parts_buff == ("damage_to_parts_up", pytest.approx(0.6264), "self", 5.0)
+
+    # base cadence: 41.9% all-hit + 5-ammo x 105.59% sequential = 569.85%
+    reg = EffectRegistry()
+    outside[2][0].action(make_context(), "snow-white-heavy-arms", 1.0, reg)
+    base_pulses = reg.drain_pulses("instant_damage_percent")
+    assert len(base_pulses) == 1
+    assert base_pulses[0].value == pytest.approx(569.85)
+
+    # Fully Active cadence: 41.9% all-hit + 15-ammo x 105.59% x (1+158.4%)
+    reg = EffectRegistry()
+    during[2][0].action(make_context(), "snow-white-heavy-arms", 1.0, reg)
+    seg_pulses = reg.drain_pulses("instant_damage_percent")
+    assert len(seg_pulses) == 1
+    assert seg_pulses[0].value == pytest.approx(4134.5684, abs=0.001)
+
+
+def test_fully_active_segment_is_two_slow_charged_shots():
+    schedule = build_fully_active_weapon_mode_schedule(SWHA_VALUES)
+    segments = schedule(SimpleNamespace(
+        burst_times={"snow-white-heavy-arms": [20.0]}), 180.0)
+    assert segments == [{"start": 20.0, "until_shots": 2, "profile": {
+        "weapon": "SR", "damage_percent": 69.04,
+        "charge_damage_percent": pytest.approx(778.0), "charge_time": 3.2}}]
+
+
+def test_fully_active_schedule_empty_with_no_bursts():
+    schedule = build_fully_active_weapon_mode_schedule(SWHA_VALUES)
+    assert schedule(SimpleNamespace(burst_times={}), 180.0) == []
+
+
+def test_manifest_registered():
+    manifest = SKILL_VALUE_MANIFESTS["snow-white-heavy-arms"]
+    assert manifest["source"] == "lootandwaifus"
+    assert manifest["test_module"] == "test_skill_rules_snow_white_heavy_arms"
+
+
+def _swha_sim_deck():
+    # Tiers 1/2 are inert placeholders so the burst cycle can complete - only
+    # snow-white-heavy-arms (tier 3) carries rules/a weapon. Cooldowns are
+    # large enough that only one cycle completes inside fight_duration, so
+    # her burst - and its 2-shot Fully Active segment - lands at a known,
+    # deterministic time (t=5.0, the gauge_charge_time floor).
+    return [
+        {"slug": "b1", "burst_tier": 1, "element": "Water", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Water", "cooldown": 20.0},
+        {"slug": "snow-white-heavy-arms", "burst_tier": 3, "element": "Water", "cooldown": 40.0},
+    ]
+
+
+def test_e2e_burst_opens_fully_active_segment_then_resumes_base_cadence():
+    # Step 5 smoke test: her burst at t=5.0 opens a 2-shot segment at 3.2s
+    # charge cadence (each shot carrying the empowered Auto Fire pulse via
+    # every_during_segment), landing at t=8.2 and t=11.4; the base 1.2s
+    # charge cadence then resumes from t=11.4 (segment resume semantic - a
+    # charge base's first resumed shot lands one charge-time later, at 12.6).
+    from app.skill_rules.registry import build_nikke_rules, get_per_shot_rules, get_weapon_mode_schedules
+
+    slug = "snow-white-heavy-arms"
+    rules, burst_percent = build_nikke_rules(slug, SWHA_VALUES)
+    assert burst_percent is None  # burst is state-change only, no direct nuke
+
+    deck = _swha_sim_deck()
+    base_stats = {m["slug"]: {"atk": 10000.0} for m in deck}
+    result = simulate_raid(
+        deck=deck, rules_by_slug={slug: rules}, burst_damage_percents={},
+        base_stats=base_stats, enemy_def=0.0, gauge_charge_time=5.0,
+        fight_duration=30.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={slug: SWHA_WEAPON_STATS},
+        weapon_mode_schedules={slug: get_weapon_mode_schedules(slug, SWHA_VALUES)},
+        per_shot_rules={slug: get_per_shot_rules(slug, SWHA_VALUES)},
+    )
+    shots = sorted(e["time"] for e in result["damage_log"] if e["source"] == "normal_attack")
+
+    # the two Fully Active segment shots, 3.2s apart, starting one charge
+    # after burst (t=5.0 + 3.2 = 8.2)
+    assert 8.2 in shots and 11.4 in shots
+    # base cadence resumes one 1.2s charge after the segment ends (11.4)
+    assert 12.6 in shots
+    assert not [t for t in shots if 11.4 < t < 12.6]  # no leftover segment cadence
+
+    per_shot = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    segment_pulses = [e for e in per_shot if e["time"] in (8.2, 11.4)]
+    base_pulse_at_resume = [e for e in per_shot if e["time"] == 12.6]
+    assert len(segment_pulses) == 2          # both segment shots fire the empowered pulse
+    assert len(base_pulse_at_resume) == 1    # the resumed base shot fires the base pulse only
+    # the empowered pulse (41.9 + 15*105.59*2.584 ~= 4134.57%) dwarfs the base
+    # one (41.9 + 5*105.59 = 569.85%) - structurally impossible to double-count
+    # (mutually exclusive every_during_segment/every_outside_segment, Task 8).
+    assert min(p["damage"] for p in segment_pulses) > max(p["damage"] for p in base_pulse_at_resume)

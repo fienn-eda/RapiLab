@@ -39,7 +39,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   183: 'maiden-ice-rose', // Maiden: Ice Rose
   192: 'tove', // Tove
   194: 'ludmilla-winter-owner', // Ludmilla: Winter Owner
-  220: 'snow-white', // Snow White (224 = Snow White: Innocent Days, 471 = Snow White: Heavy Arms, neither encoded)
+  220: 'snow-white', // Snow White (224 = Snow White: Innocent Days, not encoded)
   223: 'nayuta', // Nayuta
   225: 'scarlet-black-shadow', // Scarlet: Black Shadow (222 = base Scarlet, not encoded)
   231: 'isabel', // Isabel
@@ -67,6 +67,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   403: 'quency-escape-queen', // Quency: Escape Queen
   431: 'volume', // Volume
   470: 'red-hood', // Red Hood (16 = Rapi: Red Hood, separately encoded)
+  471: 'snow-white-heavy-arms', // Snow White: Heavy Arms
   511: 'cinderella', // Cinderella
   513: 'little-mermaid', // Little Mermaid
   514: 'grave', // Grave
