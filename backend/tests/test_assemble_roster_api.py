@@ -6,12 +6,16 @@ privacy posture depends on.
 """
 import json
 import logging
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
 from fastapi.testclient import TestClient
 
 from app.api import app
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
 
 ROOT = Path(__file__).resolve().parents[2]
 DETAILS = ROOT / "tools" / "collect-blablalink" / "details.json"
@@ -80,3 +84,28 @@ def test_telemetry_logs_aggregates_but_never_the_roster_or_open_id(caplog):
     assert "Maxwell" not in text       # 조립된 유닛 이름도 안 남는다
     assert "102" not in text           # resource_id도 안 남는다
     assert "intl_open_id" not in text  # open_id는 애초에 서버로 오지도 않는다
+
+
+def test_telemetry_actually_emits_under_a_real_default_logging_setup():
+    """caplog.at_level(logging.INFO) forces the root logger's level for the
+    duration of the test, which is exactly what hides this bug: uvicorn never
+    touches the root logger, so a real run leaves it at the default WARNING
+    and the roster_sync line is silently dropped despite pytest going green.
+    Run the endpoint in a bare subprocess - no pytest, no caplog, no fixture
+    magic, the same "nobody configured logging" situation uvicorn hands the
+    app - and check the line actually lands on stderr.
+    """
+    script = (
+        "from fastapi.testclient import TestClient\n"
+        "from app.api import app\n"
+        "client = TestClient(app)\n"
+        "client.post('/api/assemble-roster', json={'owned': [], "
+        "'character_details': [], 'recycle_room_researches': []}, "
+        "headers={'X-Client-Id': 'subprocess-proof'})\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=BACKEND_DIR, capture_output=True, text=True, timeout=60,
+    )
+    assert "roster_sync" in result.stderr, result.stderr
+    assert "client=subprocess-proof" in result.stderr, result.stderr

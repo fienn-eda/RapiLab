@@ -23,6 +23,14 @@ from app.stat_assembly import load_stat_tables
 from app.user_roster import load_roster
 
 logger = logging.getLogger(__name__)
+# uvicorn only configures its own uvicorn.* loggers; it never touches the
+# root logger, which defaults to WARNING with no handler. Left alone, this
+# logger's INFO records (the roster_sync telemetry below) would silently
+# vanish under a real run. Configure this logger directly - not root - so
+# uvicorn's own access/error lines are untouched and nothing double-logs.
+if not logger.handlers:
+    logger.addHandler(logging.StreamHandler())
+logger.setLevel(logging.INFO)
 
 
 class BossProfileIn(BaseModel):
