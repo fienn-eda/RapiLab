@@ -2,6 +2,7 @@
 // 저장하지 않는다 (무상태) - 서브프로젝트 4 스펙의 프라이버시 규율.
 
 import { getClientId } from '../lib/clientId'
+import { AssembleRosterApiError } from './assembleRosterApiError'
 
 export interface RawRosterPayload {
   owned: unknown[]
@@ -21,7 +22,8 @@ export const assembleRoster = async (
     body: JSON.stringify(payload),
   })
   if (!response.ok) {
-    throw new Error(`assemble-roster failed: ${response.status}`)
+    const detail: unknown = await response.json().catch(() => null)
+    throw new AssembleRosterApiError(response.status, detail)
   }
   return await response.json()
 }
