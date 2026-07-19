@@ -22,6 +22,22 @@ from itertools import combinations, permutations
 
 from app.raid_simulator import simulate_raid
 from app.roster import assemble_simulation_inputs
+from app.skill_rules.registry import MODE_VARIANTS
+
+# variant slug -> its base, for the seat-exclusion check below.
+_VARIANT_GROUP = {variant: base
+                  for base, variants in MODE_VARIANTS.items() for variant in variants}
+
+
+def _no_variant_clash(units):
+    seen = set()
+    for unit in units:
+        base = _VARIANT_GROUP.get(unit.slug)
+        if base is not None:
+            if base in seen:
+                return False
+            seen.add(base)
+    return True
 
 
 @dataclass
@@ -52,7 +68,9 @@ def shape_combinations(roster):
         for c1 in combinations(by_tier[1], n1):
             for c2 in combinations(by_tier[2], n2):
                 for c3 in combinations(by_tier[3], n3):
-                    yield list(c1) + list(c2) + list(c3)
+                    deck = list(c1) + list(c2) + list(c3)
+                    if _no_variant_clash(deck):
+                        yield deck
 
 
 def feasible_orderings(roster):
@@ -64,7 +82,7 @@ def feasible_orderings(roster):
                 infeasible = True
                 break
             by_tier[unit.burst_tier].append(unit)
-        if infeasible or not all(by_tier[t] for t in (1, 2, 3)):
+        if infeasible or not all(by_tier[t] for t in (1, 2, 3)) or not _no_variant_clash(combo):
             continue
         for order1 in permutations(by_tier[1]):
             for order2 in permutations(by_tier[2]):

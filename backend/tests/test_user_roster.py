@@ -1,3 +1,4 @@
+from app import user_roster
 from app.models import OverloadOption, UserNikkeState
 from app.roster import assemble_simulation_inputs
 from app.user_roster import load_nikke_spec, load_roster
@@ -81,3 +82,30 @@ def test_load_roster_partitions_specs_and_excluded():
     specs, excluded = load_roster([_state("drake"), _state("totally-unknown"), _state("privaty")])
     assert [s.slug for s in specs] == ["drake", "privaty"]
     assert excluded == ["totally-unknown"]
+
+
+def test_load_roster_fans_out_mode_variants(monkeypatch):
+    # drake/drake-signature is a real encoded pair (normally reached via the
+    # -signature dual-slot mechanism); reused here only as a stand-in slug pair
+    # to prove the MODE_VARIANTS fan-out mechanism, monkeypatched empty in prod.
+    monkeypatch.setattr(user_roster, "MODE_VARIANTS", {"drake": ("drake", "drake-signature")})
+    monkeypatch.setattr(user_roster, "VARIANT_BURST_TIERS", {"drake-signature": 1})
+    specs, excluded = load_roster([_state("drake"), _state("privaty")])
+    assert [s.slug for s in specs] == ["drake", "drake-signature", "privaty"]
+    assert excluded == []
+    drake_base, drake_sig, privaty_spec = specs
+    assert drake_base.burst_tier == 3  # no VARIANT_BURST_TIERS entry - actual meta burst
+    assert drake_sig.burst_tier == 1  # override applied
+    # a unit with no MODE_VARIANTS entry fans out to itself only, unaffected
+    assert privaty_spec == load_nikke_spec(_state("privaty"))
+
+
+def test_load_nikke_spec_slug_override_applies_weapon_profile_override(monkeypatch):
+    sentinel = {
+        "weapon": "RL", "damage_percent": 1.0, "max_ammo": 1,
+        "reload_time": 1.0, "charge_time": 1.0, "charge_damage_percent": 1.0,
+    }
+    monkeypatch.setattr(user_roster, "get_weapon_profile_override", lambda slug, sv: sentinel)
+    spec = load_nikke_spec(_state("drake"), slug_override="drake-signature")
+    assert spec.slug == "drake-signature"
+    assert spec.weapon_stats == sentinel

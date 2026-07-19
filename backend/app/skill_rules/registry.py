@@ -376,6 +376,32 @@ _BUILDERS = {
 
 ENCODED_SLUGS = tuple(_BUILDERS)
 
+# One owned character who yields MULTIPLE deck candidates (Fienn, 2026-07-18/19):
+# a pre-battle mode choice (Cinderella: Crystal Wave MG/Snipe) or a formation
+# role choice (Rapi: Red Hood B3/B1). The tuple lists every candidate slug the
+# roster loader fans the one owned state out to (include the base slug itself
+# when it stays a candidate); deck search never seats two candidates of the
+# same base together.
+MODE_VARIANTS: dict[str, tuple[str, ...]] = {}
+
+# A variant seated in a different burst-rotation slot than the character's
+# nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
+VARIANT_BURST_TIERS: dict[str, int] = {}
+
+
+# A variant whose weapon profile differs from the character's dotgg stats
+# (e.g. a Snipe mode) registers a builder here; the roster loader swaps the
+# assembled profile in after skill values resolve.
+_WEAPON_PROFILE_OVERRIDE_BUILDERS = {}
+
+
+def get_weapon_profile_override(slug, skill_values):
+    builder = _WEAPON_PROFILE_OVERRIDE_BUILDERS.get(slug)
+    if builder is None:
+        return None
+    return builder(skill_values)
+
+
 _PERIODIC_NUKE_BUILDERS = {
     "ada-wong": lambda sv: build_flash_grenade_periodic_nuke(sv),
     "ark-ranger-black": lambda sv: build_ark_ranger_ceiling_collider(sv),

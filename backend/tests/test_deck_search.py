@@ -47,6 +47,22 @@ def test_feasible_orderings_intra_tier_order_varies():
     assert len(tier3_orders) == 6  # all permutations of the three burst-3 units
 
 
+def test_mode_variants_never_share_a_deck(monkeypatch):
+    from app import deck_search
+    monkeypatch.setattr(deck_search, "_VARIANT_GROUP",
+                        {"unit-a-mg": "unit-a", "unit-a-snipe": "unit-a"})
+    roster = [
+        FakeUnit("b1", 1), FakeUnit("b2", 2),
+        FakeUnit("unit-a-mg", 3), FakeUnit("unit-a-snipe", 3), FakeUnit("b3", 3),
+    ]
+    for deck in deck_search.shape_combinations(roster):
+        slugs = {u.slug for u in deck}
+        assert not {"unit-a-mg", "unit-a-snipe"} <= slugs
+    for deck in deck_search.feasible_orderings(roster):
+        slugs = {u.slug for u in deck}
+        assert not {"unit-a-mg", "unit-a-snipe"} <= slugs
+
+
 def real_five_roster():
     # anis-star(b1), crown(b2) + three burst-3 attackers so ordering matters.
     # (rapi/privaty specs are built here to keep this test self-contained.)
