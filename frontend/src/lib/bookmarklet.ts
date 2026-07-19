@@ -34,8 +34,18 @@ export const buildBookmarklet = (openId: string, appOrigin: string): string => {
       `buildBookmarklet: appOrigin must be a plain http(s) origin with no quotes, got ${JSON.stringify(appOrigin)}`,
     )
   }
+  // 클릭의 transient activation은 짧게 유지된다(크롬 5초, 파이어폭스는 프라미스
+  // 연속 안 window.open에 더 엄격). 세 API 호출을 먼저 기다리면 그 사이
+  // activation이 만료돼 정상 사용자도 팝업 차단을 겪는다 - 그래서 window.open과
+  // message 리스너 등록은 첫 await 전, 하나의 동기 블록 안에서 끝낸다.
   const source = `(async()=>{
 if(location.origin!=='${BLABLALINK_ORIGIN}'){alert('blablalink 페이지에서 눌러주세요.');return}
+const w=window.open('${appOrigin}');
+if(!w){alert('팝업이 차단됐어요. 차단을 해제하고 다시 눌러주세요.');return}
+let ready=false,payload=null;
+const send=()=>{if(ready&&payload){w.postMessage({type:'${PAYLOAD_MESSAGE}',payload:payload},'${appOrigin}');window.removeEventListener('message',h)}};
+const h=e=>{if(e.source===w&&e.origin==='${appOrigin}'&&e.data&&e.data.type==='${READY_MESSAGE}'){ready=true;send()}};
+window.addEventListener('message',h);
 const call=async(ep,body)=>{
  const r=await fetch('https://api.blablalink.com/api/game/proxy/Game/'+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'include'});
  const j=await r.json();
@@ -46,15 +56,10 @@ try{
  const owned=(await call('GetUserCharacters',{...base})).characters||[];
  const detail=await call('GetUserCharacterDetails',{...base,name_codes:owned.map(c=>c.name_code)});
  const outpost=await call('GetUserProfileOutpostInfo',{...base});
- const payload={owned:owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]};
- let w;
- const h=e=>{if(e.source===w&&e.origin==='${appOrigin}'&&e.data&&e.data.type==='${READY_MESSAGE}'){
-  w.postMessage({type:'${PAYLOAD_MESSAGE}',payload:payload},'${appOrigin}');
-  window.removeEventListener('message',h)}};
- window.addEventListener('message',h);
- w=window.open('${appOrigin}');
- if(!w){alert('팝업이 차단됐어요. 차단을 해제하고 다시 눌러주세요.');return}
+ payload={owned:owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]};
+ send()
 }catch(err){
+ window.removeEventListener('message',h);
  const m=String(err);
  alert(m.indexOf('300001')>=0?'blablalink 로그인이 필요해요.':(m.indexOf('1303005')>=0||/:1$/.test(m))?'공유 URL을 다시 확인해주세요.':'가져오기 실패: '+m)}
 })()`
