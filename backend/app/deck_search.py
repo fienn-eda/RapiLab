@@ -385,7 +385,9 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
     against a DIFFERENT reference deck than its same-pass peers - the deltas
     still all feed the same PRUNED_TIER_CAPS sort below, so a cross-tier
     candidate's ranking isn't produced under identical conditions to a
-    same-slot swap-in's."""
+    same-slot swap-in's. On degenerate rosters with fewer than 3 distinct
+    mode-variant bases at tier 3, the reference deck itself may seat two
+    variants of one base."""
     by_tier = {t: sorted((u for u in roster if u.burst_tier == t),
                          key=_prior, reverse=True) for t in (1, 2, 3)}
     if not (by_tier[1] and by_tier[2] and len(by_tier[3]) >= 3):
@@ -457,7 +459,9 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
             # slots, the pool's only tier-1 pair is illegal and
             # shape_combinations can never produce a (2,1,2) deck - widen
             # the cap by one per such slug so a real B1 pair also survives
-            # the cut alongside her.
+            # the cut alongside her. This single pass assumes at most one such
+            # slug reaches the ranking; a second member would require fixpoint
+            # widening to avoid reintroducing the degenerate case.
             cap += sum(1 for u in ranked[:cap] if u.slug in SOLE_TIER1_SLUGS)
         pool.extend(ranked[:cap])
 

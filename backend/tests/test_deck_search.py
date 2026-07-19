@@ -327,7 +327,9 @@ def _big_fake_roster():
     return units
 
 
-def test_prune_candidate_pool_respects_tier_caps(monkeypatch):
+def test_prune_candidate_pool_respects_tier_caps_without_sole_tier1_slug(monkeypatch):
+    # Cap invariant holds for rosters without sole-tier-1 slugs; the widened
+    # case is covered by test_prune_keeps_a_legal_tier1_pair_when_a_sole_tier1_slug_tops_the_pool.
     import app.deck_search as ds
     monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({}))
     pool = ds.prune_candidate_pool(_big_fake_roster(), BossProfile())
