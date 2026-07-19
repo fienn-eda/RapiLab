@@ -7,17 +7,20 @@ from app.skill_rules.rapi_red_hood import (
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
-# Real skill level 10 values from api.dotgg.gg for rapi-red-hood's skills[0]
-# "Battlefield Assessment".
+# Real skill level 10 values from lootandwaifus.com for rapi-red-hood's
+# skills[0] "Battlefield Assessment". 02/03 are branch labels the tokenizer
+# picks up (self tier, branch numbers) that the builder doesn't read.
 VALUES = {
     "description_value_01": "1",
-    "description_value_02": "7.48",
-    "description_value_03": "95.04",
-    "description_value_04": "10",
-    "description_value_05": "48",
+    "description_value_02": "1",
+    "description_value_03": "1",
+    "description_value_04": "7.48",
+    "description_value_05": "8.02",
     "description_value_06": "10",
-    "description_value_07": "8.02",
+    "description_value_07": "95.04",
     "description_value_08": "10",
+    "description_value_09": "48",
+    "description_value_10": "10",
 }
 
 
@@ -93,16 +96,16 @@ def test_combat_assist_branch_fires_on_full_burst_enter_when_no_burst1_ally():
     assert registry.total_for("atk_percent", rapi, now=5.0) == 0.0
 
 
-# Real skill level 10 values for skills[1] "Attachable Projectiles". v01-v04
+# Real skill level 10 values for skills[1] "Attachable Projectiles". v03-v06
 # are the deferred 120-normal projectile launcher; the builder reads only the
-# battle-start continuous buffs (v06; v05 is inert - see the module docstring).
+# battle-start continuous buffs (v02; v01 is inert - see the module docstring).
 ATTACHABLE_PROJECTILES = {
-    "description_value_01": "120",
-    "description_value_02": "88.11",
-    "description_value_03": "88.11",
-    "description_value_04": "1",
-    "description_value_05": "150.72",
-    "description_value_06": "100.6",
+    "description_value_01": "150.72",
+    "description_value_02": "100.6",
+    "description_value_03": "120",
+    "description_value_04": "88.11",
+    "description_value_05": "88.11",
+    "description_value_06": "1",
 }
 
 
@@ -143,7 +146,7 @@ def test_attachable_projectiles_elemental_advantage_only_vs_electric_boss():
 # rapi-red-hood has no signature weapon (no dollskills entry), so this is the
 # base skill's level-10 value for the Stage 3 nuke. Module-level so the assembly
 # verification harness (test_skill_value_assembly.py) can resolve it by name.
-POWER_OF_INHERITANCE = {"description_value_05": "2808"}
+POWER_OF_INHERITANCE = {"description_value_08": "2808"}
 
 
 def test_power_of_inheritance_stage3_burst_percent_reads_the_damage_slot():

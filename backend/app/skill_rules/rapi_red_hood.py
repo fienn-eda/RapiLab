@@ -1,6 +1,6 @@
 """SkillRule encoding of Rapi: Red Hood's "Battlefield Assessment" (skills[0])
 and "Attachable Projectiles" (skills[1], battle-start effects only) from
-api.dotgg.gg slug "rapi-red-hood".
+lootandwaifus.com slug "rapi-red-hood".
 
 Whether she becomes a Burst-1 stand-in ("Combat Assist") depends on whether
 another Burst 1 ally is already in the deck - re-using the same
@@ -40,7 +40,7 @@ from app.squad_engine import (
 
 SKILL_VALUE_MANIFESTS = {
     "rapi-red-hood": {
-        "source": "dotgg",
+        "source": "lootandwaifus",
         "test_module": "test_skill_rules_rapi_red_hood",
         "keys": {
             "battlefield_assessment": ("skills", 0),
@@ -56,13 +56,13 @@ SKILL_VALUE_MANIFESTS = {
 
 def build_battlefield_assessment_rules(values: dict) -> list[SkillRule]:
     own_burst_tier = int(values["description_value_01"])
-    cooldown_reduction_sec = float(values["description_value_02"])
-    self_atk_up = float(values["description_value_03"]) / 100
-    self_atk_duration = float(values["description_value_04"])
-    damage_to_parts_up = float(values["description_value_05"]) / 100
-    damage_to_parts_duration = float(values["description_value_06"])
-    squad_attack_damage_up = float(values["description_value_07"]) / 100
-    squad_attack_damage_duration = float(values["description_value_08"])
+    cooldown_reduction_sec = float(values["description_value_04"])
+    self_atk_up = float(values["description_value_07"]) / 100
+    self_atk_duration = float(values["description_value_08"])
+    damage_to_parts_up = float(values["description_value_09"]) / 100
+    damage_to_parts_duration = float(values["description_value_10"])
+    squad_attack_damage_up = float(values["description_value_05"]) / 100
+    squad_attack_damage_duration = float(values["description_value_06"])
 
     no_burst1_ally = no_other_burst_tier_allies(own_burst_tier)
 
@@ -116,7 +116,7 @@ def build_battlefield_assessment_rules(values: dict) -> list[SkillRule]:
 
 
 def build_attachable_projectiles_rules(values: dict) -> list[SkillRule]:
-    projectile_explosion_up = float(values["description_value_06"]) / 100
+    projectile_explosion_up = float(values["description_value_02"]) / 100
     return [
         buff_rule("battle_start", [
             ("projectile_explosion_damage_up", projectile_explosion_up, "self", None),
@@ -132,4 +132,4 @@ def power_of_inheritance_stage3_burst_percent(values: dict) -> float:
     only correct when NOT in Combat Assist (i.e. a Burst 1 ally is present),
     which is the case in Fienn's actual deck. Stage 1's own damage isn't
     modeled since that branch doesn't apply here."""
-    return float(values["description_value_05"])
+    return float(values["description_value_08"])

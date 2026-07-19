@@ -62,13 +62,14 @@ def rapi_red_hood_spec():
         base_stats={"atk": 300000, "def": 60000, "max_hp": 10000000},
         skill_values={
             "battlefield_assessment": {
-                "description_value_01": "1", "description_value_02": "7.48",
-                "description_value_03": "95.04", "description_value_04": "10",
-                "description_value_05": "48", "description_value_06": "10",
-                "description_value_07": "8.02", "description_value_08": "10",
+                "description_value_01": "1", "description_value_02": "1",
+                "description_value_03": "1", "description_value_04": "7.48",
+                "description_value_05": "8.02", "description_value_06": "10",
+                "description_value_07": "95.04", "description_value_08": "10",
+                "description_value_09": "48", "description_value_10": "10",
             },
-            "attachable_projectiles": {"description_value_05": "150.72", "description_value_06": "100.6"},
-            "power_of_inheritance": {"description_value_05": "339.98"},
+            "attachable_projectiles": {"description_value_01": "150.72", "description_value_02": "100.6"},
+            "power_of_inheritance": {"description_value_08": "339.98"},
         },
         weapon_stats={
             "weapon": "MG", "damage_percent": 20.0, "max_ammo": 300,
