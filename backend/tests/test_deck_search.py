@@ -367,6 +367,45 @@ def test_prune_cross_tier_variant_never_breaks_shape_or_clashes(monkeypatch):
         assert tiers[0] == 1 and tiers[1] == 2 and tiers[2:] == [3, 3, 3]
 
 
+def test_prune_measures_cross_tier_sibling_instead_of_starving_it(monkeypatch):
+    # Refusing the swap (_swap_slot -> None) must not mean "never measured".
+    # Force the single-pass path _reference_b1_variants takes when the
+    # top-prior B1 is ALSO the best-measured B1 (a constant fake scorer makes
+    # every swap-in delta 0.0, so the tie always resolves to the first/
+    # top-prior candidate and pass 2 is skipped) - the exact scenario where
+    # unit-a-b1 alone occupies the reference's tier-1 slot for the entire
+    # prune. unit-a-b3, its cross-tier sibling, can't swap into that
+    # reference at all, but it must still be handed to evaluate_deck at
+    # least once (measured against an alternate reference) rather than
+    # scored an unmeasured 0.0 that would sort it out of the pool as an
+    # artifact of measurement order, not weakness.
+    import app.deck_search as ds
+    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+                        {"unit-a-b1": "unit-a", "unit-a-b3": "unit-a"})
+    roster = [
+        FakeSpec("unit-a-b1", 1, base_stats={"atk": 500.0}),  # top-prior B1
+        FakeSpec("b1x", 1, base_stats={"atk": 100.0}),  # tier-1 alternative
+        FakeSpec("b2", 2),
+        FakeSpec("b3c", 3, base_stats={"atk": 300.0}),
+        FakeSpec("b3d", 3, base_stats={"atk": 200.0}),
+        FakeSpec("b3e", 3, base_stats={"atk": 100.0}),
+        # lowest prior of the tier-3 group -> cross-tier sibling of unit-a-b1
+        FakeSpec("unit-a-b3", 3, base_stats={"atk": 50.0}),
+    ]
+
+    seen_decks = []
+
+    def scorer(ordered_deck, boss):
+        seen_decks.append(list(ordered_deck))
+        return {"total_damage": 1.0, "damage_log": []}  # constant -> every delta is 0.0
+
+    monkeypatch.setattr(ds, "evaluate_deck", scorer)
+    ds.prune_candidate_pool(roster, BossProfile())
+
+    measured = any(u.slug == "unit-a-b3" for deck in seen_decks for u in deck)
+    assert measured, "unit-a-b3 must be simulated at least once, not scored an unmeasured 0.0"
+
+
 def test_prune_keeps_synergy_partners_together(monkeypatch):
     import app.deck_search as ds
     roster = _big_fake_roster()
