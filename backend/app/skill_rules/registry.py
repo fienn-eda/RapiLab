@@ -269,6 +269,17 @@ def _build_rapi_red_hood(sv):
     return rules, burst_percent
 
 
+def _build_rapi_red_hood_b1(sv):
+    # Combat Assist / B1 stand-in seat (Task 7) - Stage 1 Power of Inheritance
+    # is support-only (no damage), and does NOT get the Stage 3 rider
+    # (build_power_of_inheritance_rules): the 421.2% attachment window and the
+    # requirement cut are Stage-3-only.
+    rules = build_battlefield_assessment_rules(sv["battlefield_assessment"])
+    rules += build_attachable_projectiles_rules(sv["attachable_projectiles"])
+    rules += build_power_of_inheritance_stage1_rules(sv)
+    return rules, None  # Stage 1 use deals no damage
+
+
 def _build_helm(sv):
     rules = build_fire_away_rules(sv["fire_away"])
     return rules, aegis_cannon_burst_percent(sv["aegis_cannon"])
@@ -331,16 +342,7 @@ _BUILDERS = {
     ),
     "crown": _build_crown,
     "rapi-red-hood": _build_rapi_red_hood,
-    # Combat Assist / B1 stand-in seat (Task 7) - Stage 1 Power of Inheritance
-    # is support-only (no damage), and does NOT get the Stage 3 rider
-    # (build_power_of_inheritance_rules): the 421.2% attachment window and the
-    # requirement cut are Stage-3-only.
-    "rapi-red-hood-b1": lambda sv: (
-        build_battlefield_assessment_rules(sv["battlefield_assessment"])
-        + build_attachable_projectiles_rules(sv["attachable_projectiles"])
-        + build_power_of_inheritance_stage1_rules(sv),
-        None,                       # Stage 1 use deals no damage
-    ),
+    "rapi-red-hood-b1": _build_rapi_red_hood_b1,
     "helm": _build_helm,
     "helm-aquamarine": lambda sv: (build_helm_aquamarine_rules(sv), aegis_cannon_overload_burst_percent(sv)),
     "isabel": lambda sv: (build_isabel_rules(sv), sonic_chaser_burst_percent(sv)),

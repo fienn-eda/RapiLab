@@ -13,9 +13,9 @@ works on any object exposing `.burst_tier`. Scoring goes through the roster
 assembly layer + simulate_raid.
 
 Known simplification (from the plan): flexible-burst units (Anis: Star's
-re-entry, Rapi: Red Hood's Combat Assist standing in for Burst 1) are placed
-by their nominal burst_tier for feasibility; their branch effects are still
-simulated correctly, but the scheduler slots them nominally.
+re-entry) are placed by their nominal burst_tier for feasibility; their
+branch effects are still simulated correctly, but the scheduler slots them
+nominally.
 """
 from dataclasses import dataclass
 from itertools import combinations, permutations
@@ -197,7 +197,32 @@ def _reference_deck(by_tier, b1):
         # reference deck below 5 units (breaking _TIER_SLOT's fixed slot-4
         # assumption downstream).
         b3_pool = by_tier[3]
-    return [b1, by_tier[2][0], *_variant_safe_top(b3_pool, 3)]
+    b3_picks = _variant_safe_top(b3_pool, 3)
+    if len(b3_picks) < 3:
+        # _variant_safe_top's SAME-TIER dedup (two variants of one base both
+        # surviving the cross-tier filter above, e.g. Cinderella: Crystal
+        # Wave's MG/Snipe modes) can independently short the picks below 3
+        # even though b3_pool itself has 3+ units - top back up from
+        # b3_pool, accepting the clash, for the same reason the fallback
+        # above does: never short the reference deck below 5 units.
+        picked = {u.slug for u in b3_picks}
+        for unit in b3_pool:
+            if unit.slug not in picked:
+                b3_picks.append(unit)
+                picked.add(unit.slug)
+                if len(b3_picks) == 3:
+                    break
+    reference = [b1, by_tier[2][0], *b3_picks]
+    if len(reference) != 5 or [u.burst_tier for u in reference] != [1, 2, 3, 3, 3]:
+        # Loud failure, not a silent short reference: every caller downstream
+        # (_TIER_SLOT, _swap_slot, prune_candidate_pool's baseline) assumes
+        # this exact 5-unit [1,2,3,3,3] shape.
+        raise AssertionError(
+            "_reference_deck postcondition violated: expected 5 units in "
+            f"tier layout [1, 2, 3, 3, 3], got "
+            f"{[u.burst_tier for u in reference]} ({len(reference)} units)"
+        )
+    return reference
 
 
 def _variant_safe_top(units, n):
@@ -426,6 +451,14 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
     pool = []
     for tier, cap in PRUNED_TIER_CAPS.items():
         ranked = sorted(by_tier[tier], key=lambda u: scores[u.slug], reverse=True)
+        if tier == 1:
+            # A SOLE_TIER1_SLUGS member can't co-seat with any other B1
+            # (_tier1_seating_valid). If she fills one of only `cap` tier-1
+            # slots, the pool's only tier-1 pair is illegal and
+            # shape_combinations can never produce a (2,1,2) deck - widen
+            # the cap by one per such slug so a real B1 pair also survives
+            # the cut alongside her.
+            cap += sum(1 for u in ranked[:cap] if u.slug in SOLE_TIER1_SLUGS)
         pool.extend(ranked[:cap])
 
     pool_slugs = {u.slug for u in pool}
@@ -446,8 +479,11 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
 def _reference_b1_variants(by_tier, boss):
     # Pass 1: prior-seeded B1. Pass 2: the B1 whose swap-in measured best
     # (usually the CDR holder - shorter cycles change everyone's value).
-    # Both candidates are scored against the same reference's baseline, so
-    # the max is a fair comparison (it wouldn't be if baselines differed).
+    # _measure_against may score a cross-tier MODE_VARIANTS candidate against
+    # an alternate reference's baseline instead of this one's (see its
+    # docstring) - the delta is still a legitimate marginal contribution
+    # either way, so max() over the deltas is a fair comparison even though
+    # the baselines themselves can differ.
     first = by_tier[1][0]
     yield first
     reference = _reference_deck(by_tier, first)

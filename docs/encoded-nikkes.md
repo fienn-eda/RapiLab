@@ -7,8 +7,10 @@
   (docs 갱신)**. 인코딩 자체는 이전 배치(`weapon_mode_schedules` 착지)에서
   완료됨 — 기존 `scheduled_nukes` 근사(정적 이중계상 차감 + 상수로 접은 차지
   배수)를 세그먼트로 교체, 덱 Charge Damage/ATK 버프가 변형샷에 실제로 곱해짐
-  (총딜 ~+1.6%, 덱 버프 없는 스팟체크). 인코딩 수/커버리지 변화 없음(65명,
-  65/65) — 아래 red-hood 행 비고 갱신. 설계
+  (총딜 ~+1.6%, 덱 버프 없는 스팟체크). 이 변경 자체는 인코딩 수/커버리지에
+  영향 없음 — 아래 표 68명(테이블 행 수; `ENCODED_SLUGS`는 69개, B1 형태변형
+  `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함), 매니페스트·API
+  로더블 69/69 — 아래 red-hood 행 비고 갱신. 설계
   `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`(상태: v1
   구현 완료), 갭 집계는 `docs/engine-gaps.md` 참고.
   이전 갱신: 2026-07-19 (**Laplace Signature 신규 인코딩**, 별도 slug

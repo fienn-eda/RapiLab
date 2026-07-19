@@ -71,7 +71,8 @@ def load_nikke_spec(
         override = get_weapon_profile_override(slug, skill_values)
         if override is not None:
             weapon_stats = override
-        burst_tier = VARIANT_BURST_TIERS.get(slug) or int(meta["burst"])
+        variant_tier = VARIANT_BURST_TIERS.get(slug)
+        burst_tier = variant_tier if variant_tier is not None else int(meta["burst"])
         burst_cooldown = float(meta.get("cooldown") or meta["skills"][2]["cooldown"])
         element, weapon = meta["element"], meta["weapon"]
     except (KeyError, IndexError, TypeError, ValueError):

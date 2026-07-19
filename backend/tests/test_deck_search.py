@@ -129,6 +129,26 @@ def test_reference_deck_accepts_the_clash_when_no_legal_b3_pool_remains(monkeypa
     assert {u.slug for u in reference} == {"unit-a-b1", "b2", "unit-a-b3", "b3c", "b3d"}
 
 
+def test_reference_deck_tops_up_b3_when_same_tier_dedup_shorts_the_pool(monkeypatch):
+    # The len(b3_pool) < 3 fallback above only covers the CROSS-TIER filter
+    # shortening b3_pool itself. _variant_safe_top's SAME-TIER dedup (two
+    # variants of one base both surviving that filter, e.g. Cinderella:
+    # Crystal Wave's MG/Snipe modes) can independently return fewer than 3
+    # picks even though b3_pool has 3+ units - _reference_deck must top back
+    # up from b3_pool, accepting the clash, rather than return a 4-unit
+    # reference.
+    import app.deck_search as ds
+    monkeypatch.setattr(ds, "_VARIANT_GROUP", {"cw-mg": "cw", "cw-snipe": "cw"})
+    by_tier = {
+        1: [FakeUnit("b1", 1)],
+        2: [FakeUnit("b2", 2)],
+        3: [FakeUnit("cw-mg", 3), FakeUnit("cw-snipe", 3), FakeUnit("b3x", 3)],
+    }
+    reference = ds._reference_deck(by_tier, by_tier[1][0])
+    assert len(reference) == 5
+    assert [u.burst_tier for u in reference] == [1, 2, 3, 3, 3]
+
+
 def real_five_roster():
     # anis-star(b1), crown(b2) + three burst-3 attackers so ordering matters.
     # (rapi/privaty specs are built here to keep this test self-contained.)
@@ -543,6 +563,23 @@ def test_sole_tier1_slug_rejected_next_to_another_b1():
     for deck in deck_search.feasible_orderings(roster):
         slugs = {u.slug for u in deck}
         assert not {"rapi-red-hood-b1", "liter"} <= slugs
+
+
+def test_prune_keeps_a_legal_tier1_pair_when_a_sole_tier1_slug_tops_the_pool(monkeypatch):
+    # rapi-red-hood-b1 can't co-seat with any other B1 (_tier1_seating_valid,
+    # SOLE_TIER1_SLUGS). If she fills one of only PRUNED_TIER_CAPS[1]=2
+    # tier-1 slots, the pool's only tier-1 pair is illegal and
+    # shape_combinations can never produce a (2,1,2) deck - the cap must
+    # widen so a real B1 pair also survives the cut alongside her.
+    import app.deck_search as ds
+    roster = _big_fake_roster()
+    roster += [FakeSpec("rapi-red-hood-b1", 1, base_stats={"atk": 2000.0})]  # top-prior B1
+
+    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({}))
+    pool = ds.prune_candidate_pool(roster, BossProfile())
+    shapes = {tuple(sum(1 for u in c if u.burst_tier == t) for t in (1, 2, 3))
+              for c in ds.shape_combinations(pool)}
+    assert (2, 1, 2) in shapes
 
 
 def test_search_best_decks_pool_parity():

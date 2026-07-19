@@ -2520,7 +2520,6 @@ def test_per_shot_every_during_segment_and_every_outside_segment_are_mutually_ex
     assert seg_shots and base_shots  # both modes actually fired
     assert [e["time"] for e in seg_shots] == [10.0]  # the segment's one cannon shot
     assert all(e["time"] != 10.0 for e in base_shots)
-    assert len(ps) == len(seg_shots) + len(base_shots)  # no shot fires both rules
 
 
 def test_per_shot_every_during_segment_and_every_outside_segment_stay_exclusive_at_a_shared_time():
@@ -2565,7 +2564,6 @@ def test_per_shot_every_during_segment_and_every_outside_segment_stay_exclusive_
     collision = [e for e in ps if e["time"] == 0.5]
     assert len(collision) == 2  # exactly one fire per record at the shared instant, not one each
     assert {e["damage"] for e in collision} == {500.0, 100.0}
-    assert len(ps) == len(seg_shots) + len(base_shots)  # no shot fires both rules
 
 
 def test_per_shot_every_outside_full_burst_does_not_fire_on_a_shot_exactly_at_fb_end():

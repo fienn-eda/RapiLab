@@ -164,6 +164,9 @@ exhausted) and the resumed base weapon's first shot can share the exact same
 timestamp (v1's "resume with a fresh magazine immediately" semantic), so a
 time-based filter would let both modes fire on that one boundary shot;
 identity matching makes the two modes structurally mutually exclusive). The
+count runs across ALL segments merged, not reset per segment - a threshold
+>1 carries its count from one transform window into the next (inert today:
+the only consumer, Snow White: Heavy Arms, uses N=1). The
 engine counts the unit's generated shots (a charge
 weapon's every shot is a full charge, so "full charge N" == "shot N"; the
 encoding knows the weapon and picks N - no weapon gating in the engine). A
