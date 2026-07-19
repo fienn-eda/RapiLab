@@ -750,17 +750,20 @@ def simulate_raid(
             for ft in fill_times:
                 context.fill_resource(slug, spec.name, 1, ft)
 
-            # Resets (a resource SET to a fixed value rather than incremented,
+            # Resets (a resource SET to a new value rather than incremented,
             # e.g. Soda's Golden Chip consumed down to 17 on her own burst) are
             # collected from every reset spec and replayed in time order, so
             # each reset's pre-value correctly reflects fills AND any earlier
-            # reset already applied.
+            # reset already applied. Each spec carries either a fixed `value`
+            # or a `value_fn(pre_value)` for a consumption that reads the count
+            # it is spending - e.g. Elegg's ghosts, spending 9 at the 13 cap
+            # and 6 below it but never dropping under 1.
             reset_events = []
             for reset_spec in spec.resets:
                 if reset_spec["trigger"] == "battle_start":
-                    reset_events.append((0.0, reset_spec["value"]))
+                    reset_events.append((0.0, reset_spec))
                 elif reset_spec["trigger"] == "own_burst":
-                    reset_events.extend((rt, reset_spec["value"]) for rt in context.burst_times.get(slug, []))
+                    reset_events.extend((rt, reset_spec) for rt in context.burst_times.get(slug, []))
                 elif reset_spec["trigger"] == "own_burst_delayed":
                     # Resets `reset_spec["delay"]` seconds AFTER each own-burst
                     # fire, not at the burst itself - e.g. Asuka's Anti A.T.
@@ -768,13 +771,15 @@ def simulate_raid(
                     # not when the burst that started it fires.
                     delay = reset_spec["delay"]
                     reset_events.extend(
-                        (rt + delay, reset_spec["value"]) for rt in context.burst_times.get(slug, [])
+                        (rt + delay, reset_spec) for rt in context.burst_times.get(slug, [])
                     )
                 else:
                     raise ValueError(f"unknown resource reset trigger: {reset_spec['trigger']}")
             reset_events.sort(key=lambda e: e[0])
-            for reset_time, post_value in reset_events:
+            for reset_time, reset_spec in reset_events:
                 pre_value = context.resource_count(slug, spec.name, reset_time, spec.cap)
+                value_fn = reset_spec.get("value_fn")
+                post_value = value_fn(pre_value) if value_fn else reset_spec["value"]
                 context.reset_resource(slug, spec.name, reset_time, pre_value, post_value)
             reset_times = [rt for rt, _ in reset_events]
 
@@ -873,6 +878,12 @@ def simulate_raid(
                 hit_count = context.resource_count_before_reset(slug, spec["resource"], fire_time)
                 if hit_count is None:
                     continue
+                # `hit_count_fn` (optional): the count picks the hit count
+                # instead of being it - e.g. Elegg's 13 Ghosts, 13 sequential
+                # hits at the 13-ghost cap and 6 hits below it.
+                hit_count_fn = spec.get("hit_count_fn")
+                if hit_count_fn:
+                    hit_count = hit_count_fn(hit_count)
                 for _ in range(int(hit_count)):
                     record(
                         slug, spec["base_percent"], fire_time, "dynamic_hit_count_nuke",
