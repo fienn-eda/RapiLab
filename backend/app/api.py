@@ -6,9 +6,10 @@ Both endpoints search via the budget-aware search_best_decks (canonical-order
 scoring + top-K permutation refinement; large rosters get a candidate cut) -
 see docs/superpowers/specs/2026-07-17-five-deck-allocation-design.md.
 """
+import logging
 from typing import Literal
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -20,6 +21,8 @@ from app.roster_assembly import assemble_roster, load_directory, to_roster_json
 from app.sim_pool import SimPool
 from app.stat_assembly import load_stat_tables
 from app.user_roster import load_roster
+
+logger = logging.getLogger(__name__)
 
 
 class BossProfileIn(BaseModel):
@@ -167,8 +170,21 @@ def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
 
 
 @app.post("/api/assemble-roster")
-def assemble_roster_endpoint(request: AssembleRosterRequest) -> dict:
+def assemble_roster_endpoint(
+    request: AssembleRosterRequest,
+    x_client_id: str | None = Header(default=None),
+) -> dict:
     """Assemble a bookmarklet-collected roster. Stateless: the request body is
     never persisted - see the privacy posture in the sub-project 4 spec."""
     units = assemble_roster(_STAT_TABLES, _DIRECTORY, request.model_dump())
+    known = {e["name_code"] for e in _DIRECTORY}
+    # Aggregates only. Counting unknown name_codes is how we learn the
+    # directory snapshot has gone stale against a newly released Nikke.
+    logger.info(
+        "roster_sync client=%s owned=%d assembled=%d unknown_name_codes=%d",
+        x_client_id or "none",
+        len(request.owned),
+        len(units),
+        sum(1 for o in request.owned if o.get("name_code") not in known),
+    )
     return to_roster_json(units)
