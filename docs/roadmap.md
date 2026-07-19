@@ -636,7 +636,13 @@
     무기변형 창은 Fienn 실측 33발 앵커 `scheduled_nukes` — 엔진 확장 없음.
     `ark-ranger-black`은 2026-07-16 `part_destructible` 보스 플래그 브래킷으로
     개별 인코딩 완료 — 일반 프리미티브 소비는 아님, `engine-gaps.md` gap #2 참고.)
-  - **상태머신/특수 트리거**: `diesel-winter-sweets`(Intro/Highlight+지속딜),
+  - **상태머신/특수 트리거**: ~~`diesel-winter-sweets`(Intro/Highlight+지속딜)~~ →
+    **2026-07-19 완료** — `MODE_VARIANTS`로 `-intro`/`-highlight` 2슬러그. 상태가
+    첫 풀버스트에 확정되어 전투 내내 고정(Fienn 판정)이고, **엔진이 실제
+    시뮬레이션하는 버스트 스케줄로 갈리므로** Highlight에 `burst_delay
+    {"skip_cycles": 1}`을 실제로 걸었다(정적 슬러그만으론 과대평가). 같은 확장으로
+    Elegg의 캡 대기 운용도 해결 — `docs/engine-gaps.md`의 "유닛별 버스트 스케줄
+    정책" 참고.
     `bready`(Taste), `dorothy-serendipity`(펠릿 카운터), `eve`(크리티컬-히트 카운터 —
     Julia 시그니처 인코딩 중 확인됨: 기대값 크리 모델과 구조적으로 불가, **영구 defer**
     가능성 높음, 착수 전 재확인),
@@ -718,7 +724,8 @@
       추가) · snow-white-heavy-arms(신규 상태머신 불필요, 세그먼트+
       `every_during_segment`/`every_outside_segment`로 해결). **남은 미인코딩
       6명**: Pattern B 게이지(mihara-bonding-chain·elegg-boom-and-shock) ·
-      상태머신(diesel-winter-sweets·bready·eve) · gap #11(milk-blooming-bunny).
+      상태머신(~~diesel-winter-sweets~~ 2026-07-19 완료·~~bready~~ 완료·eve) ·
+      gap #11(milk-blooming-bunny). **남은 미인코딩 2명.**
 - [x] **ein weapon 스탯** — 이미 `data/dotgg/char_ein.json`에 존재했음(SR·장탄6·
       재장전2.0s·차지1.0s·차지댐250%). "부재" 판정은 워크트리에 gitignore된 데이터가
       복사되지 않아 생긴 오진이었음 — 아래 함정 항목 참고.

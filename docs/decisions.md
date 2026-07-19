@@ -5,6 +5,30 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## Elegg: Boom and Shock의 버스트를 고스트 캡까지 보류 — `burst_delay`가 `min_interval`을 갖게 됨
+- Date: 2026-07-19
+- Context: 13 Ghosts는 13스택(캡)에서 13히트, 미만이면 6히트만 나간다. 쿨마다(40초) 발동시키자 시뮬은 전투당 5번 버스트했고 그중 4번이 6히트 분기, 첫 발은 t=2에 고스트 3개뿐이었다. Fienn의 실제 플레이 서술은 "전투 중 2번, 그것도 13스택이 쌓인 후".
+- Decision: `not_before = cap × capture_interval`(= 78초, 최초 캡 도달 시각), `min_interval = spend_at_cap × capture_interval`(= 54초, 버스트로 소모된 뒤 다시 캡까지 채워지는 시간)을 그녀 자신의 스킬 값에서 유도해 `burst_delay`에 싣는다(`app/skill_rules/elegg_boom_and_shock.py::build_elegg_burst_delay`, `registry.py`의 `_BURST_DELAY_BUILDERS`). 하드코딩한 측정치가 아니라 빌더 함수 — Diesel의 지연은 고정값(`_DIESEL_BURST_DELAY`)이라 다른 이유로 `get_burst_delay`가 빌더 형태를 취함(값이 유닛 스킬값에서 유도되는 경우까지 커버).
+- Why: 54초 재충전이 40초 쿨보다 길어서 **실효 케이던스는 쿨다운이 아니라 재충전**이다. 결과: 78.2초 / 136.2초 2번 버스트, 둘 다 13스택 — Fienn의 서술과 일치.
+- 구현 세부(`burst_cycle.py::_ready_at`): `min_interval`은 CDR로 되감기는 `last_used_at`이 아니라 새로 추가한 `last_fired_at`(CDR에 영향받지 않는 실제 발동 시각 사본)에서 잰다 — 고스트는 벽시계로 차고, 아군 쿨감이 그걸 앞당기지 못하기 때문. 이걸 `last_used_at` 기준으로 뒀을 때 54초 간격이 39초로 3번 줄어드는 회귀가 있었다(고쳐서 병합).
+- Consequence: "종료 직전 1번" 같은 부가 운용은 모델링하지 않음(Fienn이 먼저 말한 "2번"이 일반형이라 YAGNI). 지연된 유닛이 자기 티어에 혼자면 그 사이클은 아예 안 뜬다(조기 발동으로 credit하는 것보다 정직 — 아래 `burst_delay` 엔진 결정과 공통).
+
+## `burst_cycle`에 유닛별 버스트 지연(`burst_delay`) 도입 — 스킵/보류/최소간격 3형태
+- Date: 2026-07-19
+- Context: 2026-07-17에 "Diesel은 짝수 사이클 버스트가 강한데 `burst_cycle`이 '한 사이클 거르기'를 표현 못 한다"로 미뤄둔 갭. Diesel 인코딩 시점에 착수하기로 했던 항목이고, 이번에 Diesel과 Elegg 두 소비자가 생겨 구현.
+- Decision: `burst_cycle`의 덱 멤버가 선택적 `burst_delay`를 가진다. 세 형태: `{"skip_cycles": N}`(앞 N사이클에서 그 유닛을 제외), `{"not_before": T}`(T초 전 발동 금지), `{"min_interval": S}`(실효 쿨다운을 S로 늘림). 세 형태 모두 멤버별 ready time을 계산하는 한 곳(`burst_cycle.py::_ready_at`)에 접혀 들어가, 티어 선택(`tier_ready_time`)과 eligibility 체크가 지금까지와 동일한 산술을 그대로 쓴다 — 기존 fractional-CDR 반올림 회귀 수정이 그대로 유지됨.
+- Why 두 축을 다 두는가: Diesel의 상태는 사이클 카운트가 근거이고(그녀가 첫 풀버스트에 참여했는지), Elegg는 자원(고스트) 충전 시간이 근거다 — 서로 환산 불가능한데, 덱 구성에 따라 사이클 길이 자체가 달라지기 때문이다.
+- Consequence: 지연된 유닛이 자기 티어에 혼자면 사이클이 아예 안 뜬다(조기 발동으로 없는 상태를 credit하는 것보다 정직) — `ALLOWED_SHAPES`가 (1,1,3)/(1,2,2)/(2,1,2)뿐이라 Burst 3 티어는 항상 2명 이상이라 실제로는 발생하지 않는다(Fienn 지적). `min_interval` 세부(측정 기준점이 `last_fired_at`이어야 하는 이유)는 아래 Elegg 항목, `skip_cycles` 세부는 아래 Diesel 항목 참고.
+
+## Diesel: Winter Sweets를 Intro/Highlight 2슬러그(`MODE_VARIANTS`)로 인코딩, Highlight는 실제로 첫 사이클을 건너뜀
+- Date: 2026-07-19
+- Context: 그녀는 첫 풀버스트에서 자기 버스트를 쐈는지(Intro) 안 쐈는지(Highlight)로 상태가 확정되고 **전투 종료까지 고정**된다(Fienn 확인 2026-07-19, 전투 중 변경 불가). Highlight의 지속딜 버프가 235.03%인 반면 Intro는 60.19% — 약 4배 차이.
+- Decision: `registry.MODE_VARIANTS`에 `diesel-winter-sweets-intro` / `diesel-winter-sweets-highlight` 2슬러그로 등록. Highlight 슬러그에는 `_BURST_DELAY_BUILDERS`를 통해 `{"skip_cycles": 1}` burst_delay를 실제로 건다.
+- Why 이게 Bready와 다른가(핵심 판단): Bready의 Taste 분기는 엔진이 시뮬레이션하지 않는 축(받는 버프의 종류)으로 갈리므로 정적 `MODE_VARIANTS` 슬러그만으로 충분하다. **Diesel의 상태는 엔진이 실제로 시뮬레이션하는 축 — 버스트 스케줄 — 으로 갈린다.** 그래서 Highlight 슬러그를 정적 버프만으로 만들면 "1사이클에 버스트하면서 Highlight 버프까지 챙기는" 상태를 만들어 과대평가하게 된다. 실제로 `skip_cycles: 1`을 걸어 그 사이클엔 그녀가 버스트하지 않도록 강제해야 정직한 결과가 나온다.
+- 결과 검증: Intro는 홀수 사이클(2.2, 27.0, 52.3…), Highlight는 짝수 사이클(14.4, 39.6, 64.9…)에 버스트하고 덱의 풀버스트 횟수는 15로 동일. 180초 총딜 기준 Highlight가 약 7.8% 우위 — Fienn의 "짝수 사이클이 확실히 강했다"는 플레이 경험과 일치.
+- 모델된 것: 상태별 영구 Critical Damage와 풀버스트당 Sustained Damage 버프; Full Charge 스택(`per_shot_every 1`, `ResourceSpec(cap=2, lifetime=3.0)` — RL은 매 발사가 풀차지이므로 별도 카운터 불필요); 풀버스트 DoT(`full_burst_windows` 앵커); 버스트의 Damage Taken 디버프와 그 9틱 DoT(전체 적 18.43% + 스테이지 타겟 181.2% 합산, 레이드=보스 1기 취급); 부위파괴 Sustained 버프는 `boss_part_destructible` 플로어/실링 브래킷으로.
+- 보류(중요 — 낙관 편향): Noise Pollution(Highlight 상태에서 아군 Hit Rate −100%/1초)과 그걸 막는 Mute 스택 둘 다 미모델 — 엔진이 `hit_rate`를 소비하지 않아 인코딩해도 inert. 실제 게임에선 Highlight의 이득이 아군 명중 페널티를 대가로 치르는데, 여기선 대가 없이 이득만 반영된다. Highlight 덱은 "Mute 관리를 제대로 하는 플레이 전제"로 읽을 것.
+
 ## Deck search now scores every intra-tier ordering per combination, not a canonical order refined for a top-K shortlist — closes a mis-scoring gap measured up to 78%
 - Date: 2026-07-19
 - Context: `search_best_decks` ranked each shape combination on ONE arbitrary ("canonical") intra-tier order, then only permuted the top 40 combinations by that canonical score (`permutation_top_k`) to find the true best order. This treated order as a tie-break — but `simulate_burst_cycle` fires the FIRST ready member of each burst tier, so order decides which tier member never bursts at all. That is a real strategy, not an artifact: a (1,1,3)'s rightmost Burst 3 commonly runs as a buffer/normal-attack unit that never bursts, Prika must burst before Mint for her Encore to hand Mint the slot, and Velvet / Helm: Aquamarine are usually seated without ever bursting (Fienn, 2026-07-19). The new measurement script `scripts/measure_intra_tier_ordering_impact.py` quantified the damage: of 56 measured (1,1,3) combinations, 9 swing over 10% between canonical and best order (worst case 78%), and the TRUE best deck for that dataset ranked #21 under canonical scoring — outside the top-40 shortlist that ever got permuted, so the old search could not have surfaced it under any budget.

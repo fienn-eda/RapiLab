@@ -228,7 +228,8 @@
   mana, marciana-marine-study, mihara-bonding-chain, quency-escape-queen, rei-ayanami,
   rei-ayanami-tentative-name, soda-twinkling-bunny, velvet
 - **막힌 유닛 (풀차지 카운터/트리거, 19):** bready, cinderella, cinderella-crystal-wave,
-  diesel-winter-sweets, ein, laplace, liberalio, maiden-ice-rose, maxwell,
+  ~~diesel-winter-sweets~~(2026-07-19 인코딩 — RL은 charge 무기라 매 발사가 풀차지,
+  `per_shot_every 1`로 해결됨), ein, laplace, liberalio, maiden-ice-rose, maxwell,
   milk-blooming-bunny, mint, neon-vision-eye, prika, raven, red-hood,
   scarlet-black-shadow, snow-white, snow-white-heavy-arms, velvet
 - **필요한 확장:** weapon-stats 패스가 유닛별 누적 발사수(및 풀차지 발사수)를
@@ -344,7 +345,7 @@
   타입-게이팅된 버킷만 적용(블랭킷 배선의 과대평가를 피함). 게이팅이 핵심이었던 게
   맞았음 — 단순 배선이 아니라 **타입 인스턴스 생성 기능과 묶여야** 유효했다.
   `engine-capabilities.md` "Damage typing" 참고.
-- **막혔던 유닛 (참고):** sustained(5): ark-ranger-black, diesel-winter-sweets,
+- **막혔던 유닛 (참고):** sustained(5): ark-ranger-black, diesel-winter-sweets(2026-07-19 인코딩),
   mana, mihara-bonding-chain, sakura-bloom-in-summer · distributed(4): bready,
   milk-blooming-bunny, quency-escape-queen, scarlet-black-shadow · true(4):
   ada-wong, chisato-nishikigi, ein, jill-valentine · projectile-explosion:
@@ -841,7 +842,8 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
   버프 + #9 reload 후 첫 발 마커~~ — ✅ 완료 (2026-07-16 Phase C 배치; 소비
   Ark·Arcana·Tove·Ada Wong(신규)·Little Mermaid·Maiden·Jill).
 2. **남은 방향:** #2 Pattern B(시간감쇠 게이지·변신, 일반 프리미티브 — Mihara류) ·
-   상태머신(diesel-winter-sweets·bready·eve·milk-blooming-bunny[gap #11]) ·
+   상태머신(~~diesel-winter-sweets~~[**2026-07-19 완료** — Intro/Highlight 2슬러그,
+   위 버스트 스케줄 정책 소비]·~~bready~~[완료]·eve·milk-blooming-bunny[gap #11]) ·
    ~~무기변형~~(**v1+계획 2 완료, 2026-07-19** — `weapon_mode_schedules` 세그먼트
    primitive, snow-white·maxwell·laplace-signature·red-hood 소비(v1) +
    `MODE_VARIANTS` 듀얼슬러그(cinderella-crystal-wave-mg/-snipe)·
@@ -853,10 +855,18 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
    병합으로 확장 없이 해결, Little Mermaid ⚠→✅) ·
    ~~not-in-Full-Burst per-shot 창 필터~~(**2026-07-18 완료** —
    `every_outside_full_burst`, Velvet Sticky Fingers 소비) ·
-   **유닛별 버스트 스케줄 정책**(사이클 스킵 — Diesel: Winter Sweets는 짝수
-   사이클에 버스트하는 게 더 강함[Fienn 2026-07-17]; `burst_cycle`은 현재 쿨 찬
-   유닛을 항상 즉시 발동시켜 "한 사이클 거르기"를 표현 못 함. Diesel 인코딩
-   시점에 착수, Phase 5 설계 문서에도 기록) — 각 수요 1~2명, 필요할 때.
+   ~~**유닛별 버스트 스케줄 정책**~~(**2026-07-19 완료** — `burst_cycle` 멤버가
+   선택적 `burst_delay`를 가짐: `{"skip_cycles": N}`(앞 N사이클 제외) ·
+   `{"not_before": T}`(T초 전 금지) · `{"min_interval": S}`(실효 쿨을 S로 연장).
+   세 형태 모두 멤버별 ready time 한 곳(`_ready_at`)에 합쳐져 티어 선택과
+   eligibility가 동일 산술을 유지한다(기존 fractional-CDR 반올림 회귀 방어 유지).
+   **소비**: diesel-winter-sweets-highlight(`skip_cycles: 1` — 1사이클을 걸러야
+   Highlight 상태가 확정되므로 정적 슬러그로는 과대평가) ·
+   elegg-boom-and-shock(`not_before` 78초 + `min_interval` 54초, 둘 다 그녀의
+   fill 값에서 유도). **함정**: `min_interval`은 CDR로 되감기는 `last_used_at`이
+   아니라 **실제 발동 시각(`last_fired_at`)** 에서 재야 한다 — 벽시계로 차는
+   자원은 아군 CDR로 빨라지지 않는다. 지연 유닛이 자기 티어에 혼자면 사이클이
+   안 뜨지만, `ALLOWED_SHAPES`상 B3는 항상 2명 이상이라 탐색에선 발생 불가).
 
 각 확장은 TDD로, 인벤토리가 증명한 최소 범위만. 착수 시 이 문서의 해당 유닛 목록으로
 "진짜 풀리는지"를 검증하고, 풀린 유닛은 배치 인코딩한다.
