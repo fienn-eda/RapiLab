@@ -44,6 +44,14 @@ from app.skill_rules.asuka_shikinami_langley_wille import (
     build_emergency_repair_rules,
 )
 from app.skill_rules.blanc import build_blanc_rules
+from app.skill_rules.diesel_winter_sweets import (
+    BURST_DELAY as _DIESEL_BURST_DELAY,
+    build_diesel_burst_dot,
+    build_diesel_full_burst_dot,
+    build_diesel_highlight_rules,
+    build_diesel_intro_rules,
+    build_diesel_resource_specs,
+)
 from app.skill_rules.bready import (
     build_aftertaste_scheduled_nukes,
     build_bready_lingering_rules,
@@ -393,6 +401,10 @@ _BUILDERS = {
     "ein": lambda sv: (build_ein_rules(sv), feather_all_range_burst_percent(sv)),
     # 13 Ghosts fires via dynamic_hit_count_nukes (branching hit count), not a flat burst percent.
     "elegg-boom-and-shock": lambda sv: (build_elegg_boom_and_shock_rules(sv), None),
+    # La La La's damage is its 9-tick DoT (see _RESOURCE_SCALED_NUKE_BUILDERS),
+    # not a flat burst nuke.
+    "diesel-winter-sweets-intro": lambda sv: (build_diesel_intro_rules(sv), None),
+    "diesel-winter-sweets-highlight": lambda sv: (build_diesel_highlight_rules(sv), None),
     # Neither Taste mode has a burst nuke - New Flavor is buffs only.
     "bready-lingering": lambda sv: (build_bready_lingering_rules(sv), None),
     "bready-recommended": lambda sv: (build_bready_recommended_rules(sv), None),
@@ -442,9 +454,21 @@ ENCODED_SLUGS = tuple(_BUILDERS)
 # same base together.
 MODE_VARIANTS: dict[str, tuple[str, ...]] = {
     "bready": ("bready-lingering", "bready-recommended"),
+    "diesel-winter-sweets": ("diesel-winter-sweets-intro", "diesel-winter-sweets-highlight"),
     "cinderella-crystal-wave": ("cinderella-crystal-wave-mg", "cinderella-crystal-wave-snipe"),
     "rapi-red-hood": ("rapi-red-hood", "rapi-red-hood-b1"),
 }
+
+# Units the player deliberately holds back rather than bursting the instant
+# the cooldown allows, keyed by slug (see burst_cycle's `burst_delay`).
+BURST_DELAYS: dict[str, dict] = {
+    **_DIESEL_BURST_DELAY,
+}
+
+
+def get_burst_delay(slug):
+    return BURST_DELAYS.get(slug)
+
 
 # A variant seated in a different burst-rotation slot than the character's
 # nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
@@ -503,6 +527,8 @@ _SCHEDULED_NUKE_BUILDERS = {
     "elegg-boom-and-shock": lambda sv: build_ghostbuster_scheduled_nukes(sv),  # capture at the ghost cap
     "mihara-bonding-chain": lambda sv: build_mihara_scheduled_nukes(sv),  # chain attacks + Ensnaring DoT
     "bready-lingering": lambda sv: build_aftertaste_scheduled_nukes(sv),  # Aftertaste DoT windows
+    "diesel-winter-sweets-intro": lambda sv: build_diesel_full_burst_dot(sv),  # per-Full-Burst DoT
+    "diesel-winter-sweets-highlight": lambda sv: build_diesel_full_burst_dot(sv),
     "little-mermaid": lambda sv: build_bubble_barrage_scheduled_nukes(sv),  # squad-wide 500-ammo counter
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
@@ -609,6 +635,8 @@ _RESOURCE_SPEC_BUILDERS = {
     "maiden-ice-rose": lambda sv: build_mp_resources(sv),
     "elegg-boom-and-shock": lambda sv: build_elegg_ghost_resources(sv),
     "mihara-bonding-chain": lambda sv: build_ensnaring_chain_resources(sv),
+    "diesel-winter-sweets-intro": lambda sv: build_diesel_resource_specs(sv),
+    "diesel-winter-sweets-highlight": lambda sv: build_diesel_resource_specs(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named
@@ -620,6 +648,8 @@ _RESOURCE_SPEC_BUILDERS = {
 _RESOURCE_SCALED_NUKE_BUILDERS = {
     "ark-ranger-black": lambda sv: build_ark_ranger_dots(sv),
     "cinderella": lambda sv: build_glass_slippers_resource_scaled_nuke(sv),
+    "diesel-winter-sweets-intro": lambda sv: build_diesel_burst_dot(sv),
+    "diesel-winter-sweets-highlight": lambda sv: build_diesel_burst_dot(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
     "julia": lambda sv: build_climax_resource_scaled_nuke(sv),
     "mana": lambda sv: build_fatal_error_dot(sv),

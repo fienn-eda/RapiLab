@@ -29,6 +29,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   43: 'd-killer-wife', // D: Killer Wife
   73: 'brid-silent-track', // Brid: Silent Track
   74: 'soline-frost-ticket', // Soline: Frost Ticket (71 = base Soline, not encoded)
+  75: 'diesel-winter-sweets', // Diesel: Winter Sweets - base slug; fans out to -intro/-highlight (MODE_VARIANTS)
   82: 'liter', // Liter
   100: 'laplace', // Laplace — dual-slot base; see SIGNATURE_OWNED
   101: 'drake', // Drake — dual-slot base; see SIGNATURE_OWNED
