@@ -261,6 +261,7 @@ _TYPE_BUCKETS = {
     "distributed": ["distributed_damage_up"],
     "true": ["true_damage_up"],
     "projectile_explosion": ["projectile_explosion_damage_up"],
+    "projectile_attachment": ["projectile_attachment_damage_up"],
 }
 
 # Every registry stat phase-2 damage computation can read (_damage_instance,
@@ -275,7 +276,7 @@ _BUNDLE_STATS = (
     "charge_damage_bonus", "attack_damage_up", "damage_to_parts_up",
     "pierce_damage_up", "damage_taken_up",
     "sustained_damage_up", "distributed_damage_up", "true_damage_up",
-    "projectile_explosion_damage_up",
+    "projectile_explosion_damage_up", "projectile_attachment_damage_up",
     "normal_attack_damage_multiplier",
 )
 

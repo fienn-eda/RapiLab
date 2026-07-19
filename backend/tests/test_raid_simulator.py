@@ -2553,3 +2553,27 @@ def test_scheduled_nuke_context_exposes_full_burst_windows():
     )
     assert seen["windows"], "full burst windows must be visible to schedules"
     assert all(end > start for start, end in seen["windows"])
+
+
+def test_projectile_attachment_damage_up_scales_attachment_typed_nuke():
+    import pytest
+
+    def grant(context, caster_slug, time, registry):
+        registry.add(Effect("projectile_attachment_damage_up", 1.5, "self", None, caster_slug),
+                     applied_at=time)
+
+    kwargs = dict(
+        deck=[{"slug": "gunner", "burst_tier": 3, "element": "Iron",
+               "cooldown": 40.0, "weapon": "SR"}],
+        burst_damage_percents={},
+        base_stats={"gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        scheduled_nukes={"gunner": [
+            {"schedule": lambda c, d: [5.0], "percent": 100.0,
+             "damage_type": "projectile_attachment"}]},
+    )
+    plain = simulate_raid(rules_by_slug={}, **kwargs)
+    buffed = simulate_raid(
+        rules_by_slug={"gunner": [SkillRule(trigger="battle_start", action=grant)]}, **kwargs)
+    nuke = lambda r: [e for e in r["damage_log"] if e["source"] == "scheduled"][0]["damage"]
+    assert nuke(buffed) == pytest.approx(nuke(plain) * 2.5)
