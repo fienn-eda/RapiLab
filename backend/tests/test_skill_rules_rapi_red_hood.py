@@ -6,10 +6,12 @@ from app.effects import EffectRegistry
 from app.elements import ELEMENT_ADVANTAGE_BONUS
 from app.raid_simulator import simulate_raid
 from app.skill_rules.rapi_red_hood import (
+    SKILL_VALUE_MANIFESTS,
     build_attachable_projectiles_rules,
     build_attachable_projectiles_scheduled_nukes,
     build_battlefield_assessment_rules,
     build_power_of_inheritance_rules,
+    build_power_of_inheritance_stage1_rules,
     power_of_inheritance_stage3_burst_percent,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
@@ -176,9 +178,28 @@ POWER_OF_INHERITANCE = {
 }
 
 RAPI_VALUES = {
+    "battlefield_assessment": VALUES,
     "attachable_projectiles": ATTACHABLE_PROJECTILES,
     "power_of_inheritance": POWER_OF_INHERITANCE,
 }
+
+
+class _FakeRegistry:
+    """Minimal registry stand-in exposing a bare `.added` list - same pattern
+    as test_skill_rules_cinderella_crystal_wave.py's helper (buff_rule's
+    action only ever calls `registry.add`)."""
+
+    def __init__(self):
+        self.added = []
+
+    def add(self, effect, applied_at):
+        self.added.append((effect.stat, effect.value, effect.scope, effect.duration))
+
+
+def _applied_buffs(rule):
+    reg = _FakeRegistry()
+    rule.action(context_without_burst1_ally(), "rapi-red-hood-b1", 0.0, reg)
+    return reg.added
 
 
 def test_power_of_inheritance_stage3_burst_percent_reads_the_damage_slot():
@@ -282,3 +303,146 @@ def test_attachment_damage_grows_inside_power_of_inheritance_burst_window():
     windowed_up = float(POWER_OF_INHERITANCE["description_value_11"]) / 100
     expected_ratio = (1 + permanent_up + windowed_up) / (1 + permanent_up)
     assert nuke(with_rider) == pytest.approx(nuke(without_rider) * expected_ratio)
+
+
+# Task 7: the B1-variant seat (Combat Assist standing in for Burst 1) uses
+# Power of Inheritance's Stage 1 branch instead of Stage 3 - no damage, just
+# a self burst-cooldown pulse and a squad flat-ATK buff off her own ATK.
+def test_stage1_burst_is_support_only_cdr_and_caster_atk():
+    values = {**RAPI_VALUES, "caster_atk": 100000.0}
+    rules = build_power_of_inheritance_stage1_rules(values)
+    assert len(rules) == 2
+    # rules[0]: own_burst_activate cdr_pulse self 20.0
+    # rules[1]: own_burst_activate buff flat_atk 100000*0.1801 squad 10.0
+    assert ("flat_atk", pytest.approx(18010.0), "squad", 10.0) in _applied_buffs(rules[1])
+
+
+def test_b1_variant_registered_as_tier1_candidate():
+    from app.skill_rules.registry import (
+        ENCODED_SLUGS, MODE_VARIANTS, VARIANT_BURST_TIERS, build_nikke_rules)
+    assert MODE_VARIANTS["rapi-red-hood"] == ("rapi-red-hood", "rapi-red-hood-b1")
+    assert VARIANT_BURST_TIERS["rapi-red-hood-b1"] == 1
+    assert "rapi-red-hood-b1" in ENCODED_SLUGS
+    rules, burst_percent = build_nikke_rules(
+        "rapi-red-hood-b1", {**RAPI_VALUES, "caster_atk": 100000.0})
+    assert burst_percent is None                       # Stage 1 use has no damage
+
+
+def test_b1_variant_manifest_carries_data_slug_for_weapon_stats_load():
+    assert SKILL_VALUE_MANIFESTS["rapi-red-hood-b1"]["data_slug"] == "rapi-red-hood"
+    assert SKILL_VALUE_MANIFESTS["rapi-red-hood-b1"]["dotgg_slug"] == "rapi-red-hood"
+
+
+# Step 4 end-to-end verification (Fienn's brief): seat the B1 variant as a
+# deck's ONLY Burst-1 unit and confirm, through simulate_raid, that the
+# already-encoded branch logic actually fires from that seat.
+def test_b1_variant_combat_assist_buff_reaches_squad_damage():
+    """(1) Combat Assist engages (no other Burst-1 ally in the deck), so her
+    battlefield_assessment combat_assist_branch fires on full_burst_enter and
+    the squad's attack_damage_up buff actually multiplies an ally's burst
+    damage - compared against the same deck with her branch absent (what
+    happens in-game once a real Burst-1 ally cancels Combat Assist, Fienn's
+    rationale for excluding her from decks with another B1). Only cycle 1's
+    damage is compared, so neither run's later-cycle CDR pulses matter here."""
+    deck = [
+        {"slug": "rapi-red-hood-b1", "burst_tier": 1, "element": "Fire", "cooldown": 40.0},
+        {"slug": "tier2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "tier3", "burst_tier": 3, "element": "Iron", "cooldown": 20.0},
+    ]
+    base_stats = {
+        "rapi-red-hood-b1": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+        "tier2": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+        "tier3": {"atk": 1000.0, "def": 0.0, "max_hp": 0.0},
+    }
+    kwargs = dict(
+        deck=deck, base_stats=base_stats, burst_damage_percents={"tier3": 1000.0},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=15.0,
+    )
+    with_ca = simulate_raid(
+        rules_by_slug={"rapi-red-hood-b1": build_battlefield_assessment_rules(VALUES)}, **kwargs)
+    without_ca = simulate_raid(rules_by_slug={"rapi-red-hood-b1": []}, **kwargs)
+
+    def tier3_burst_damage(result):
+        hits = [e["damage"] for e in result["damage_log"] if e["source"] == "burst"]
+        assert len(hits) == 1
+        return hits[0]
+
+    expected_ratio = 1 + float(VALUES["description_value_05"]) / 100
+    assert tier3_burst_damage(with_ca) == pytest.approx(
+        tier3_burst_damage(without_ca) * expected_ratio)
+
+
+def test_b1_variant_stage1_burst_cdr_speeds_up_her_own_recast_cycle():
+    """(2) Her Stage 1 burst's self CDR pulse (-20s) actually shortens HER OWN
+    burst_cycle readiness: cycle 1 always fires at gauge_charge_time (nobody
+    has a "last used" time yet), so cycle 2 is the first cycle her nominal
+    40s cooldown could gate - without the CDR it does (cycle 2 lands a full
+    40s after cycle 1); with it, she's ready again 20s sooner, so she keeps
+    pace with the rest of the squad every cycle from cycle 2 on instead of
+    every other one."""
+    values = {**RAPI_VALUES, "caster_atk": 0.0}
+    deck = [
+        {"slug": "rapi-red-hood-b1", "burst_tier": 1, "element": "Fire", "cooldown": 40.0},
+        {"slug": "tier2", "burst_tier": 2, "element": "Iron", "cooldown": 0.0},
+        {"slug": "tier3", "burst_tier": 3, "element": "Iron", "cooldown": 0.0},
+    ]
+    base_stats = {slug: {"atk": 0.0, "def": 0.0, "max_hp": 0.0}
+                  for slug in ("rapi-red-hood-b1", "tier2", "tier3")}
+    kwargs = dict(
+        deck=deck, base_stats=base_stats, burst_damage_percents={},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=60.0,
+    )
+    with_cdr = simulate_raid(
+        rules_by_slug={"rapi-red-hood-b1": build_power_of_inheritance_stage1_rules(values)},
+        **kwargs)
+    without_cdr = simulate_raid(rules_by_slug={"rapi-red-hood-b1": []}, **kwargs)
+
+    def burst_times(result):
+        return [e["time"] for e in result["events"]
+                if e["type"] == "burst" and e["slug"] == "rapi-red-hood-b1"]
+
+    cdr_seconds = float(RAPI_VALUES["power_of_inheritance"]["description_value_02"])
+    cycle1 = burst_times(without_cdr)[0]
+    assert burst_times(without_cdr)[1] == pytest.approx(cycle1 + 40.0)
+    assert burst_times(with_cdr)[0] == pytest.approx(cycle1)
+    assert burst_times(with_cdr)[1] == pytest.approx(cycle1 + 40.0 - cdr_seconds)
+
+
+def test_b1_variant_launcher_emits_through_the_real_registry_wiring():
+    """(3) With a real MG weapon firing normal attacks, the 120-shot
+    projectile launcher actually attaches and explodes for the b1 slug,
+    confirming _SCHEDULED_NUKE_BUILDERS["rapi-red-hood-b1"] (registry.py) is
+    wired correctly end to end - not just correct as a bare function call
+    (already covered by test_stage3_cut_disabled_uses_flat_120_requirement
+    above)."""
+    from app.skill_rules.registry import get_scheduled_nukes
+
+    values = {**RAPI_VALUES, "caster_atk": 0.0}
+    scheduled = get_scheduled_nukes("rapi-red-hood-b1", values)
+    assert scheduled is not None
+
+    deck = [
+        {"slug": "rapi-red-hood-b1", "burst_tier": 1, "element": "Fire", "cooldown": 40.0},
+        {"slug": "tier2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "tier3", "burst_tier": 3, "element": "Iron", "cooldown": 20.0},
+    ]
+    base_stats = {slug: {"atk": 0.0, "def": 0.0, "max_hp": 0.0}
+                  for slug in ("rapi-red-hood-b1", "tier2", "tier3")}
+    weapon_stats = {
+        "rapi-red-hood-b1": {"weapon": "MG", "damage_percent": 20.0, "max_ammo": 300,
+                              "reload_time": 2.0, "charge_time": 0.0, "charge_damage_percent": 0.0},
+    }
+    result = simulate_raid(
+        deck=deck,
+        rules_by_slug={
+            "rapi-red-hood-b1": build_attachable_projectiles_rules(ATTACHABLE_PROJECTILES),
+        },
+        burst_damage_percents={}, base_stats=base_stats, weapon_stats=weapon_stats,
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=60.0,
+        scheduled_nukes={"rapi-red-hood-b1": scheduled},
+    )
+    scheduled_hits = [e for e in result["damage_log"]
+                      if e["source"] == "scheduled" and e["slug"] == "rapi-red-hood-b1"]
+    damage_types = {e["damage_type"] for e in scheduled_hits}
+    assert "projectile_attachment" in damage_types
+    assert "projectile_explosion" in damage_types

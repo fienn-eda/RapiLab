@@ -85,6 +85,50 @@ def test_reference_deck_never_seats_two_variants_of_one_base(monkeypatch):
     assert b3_slugs == {"unit-a-mg", "b3c", "b3d"}  # kept the higher-prior variant
 
 
+def test_reference_deck_never_seats_a_cross_tier_variant_sibling(monkeypatch):
+    # _variant_safe_top only guards the B3 picks against EACH OTHER - it
+    # doesn't know the B1 slot is occupied too. A MODE_VARIANTS pair spanning
+    # tiers (VARIANT_BURST_TIERS, e.g. Rapi: Red Hood's Combat Assist B1
+    # stand-in vs. her Burst-3 self) needs the B1's own sibling filtered out
+    # of the B3 pool, or _reference_deck can seat both variants of one base
+    # at once - the exact clash _no_variant_clash forbids for real candidate
+    # decks (found by exercising this path with real Rapi data, Task 7).
+    import app.deck_search as ds
+    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+                        {"unit-a-b1": "unit-a", "unit-a-b3": "unit-a"})
+    by_tier = {
+        1: [FakeUnit("unit-a-b1", 1)],
+        2: [FakeUnit("b2", 2)],
+        # unit-a-b3 (the B1's own sibling) is prior-ranked FIRST among B3s.
+        3: [FakeUnit("unit-a-b3", 3), FakeUnit("b3c", 3),
+            FakeUnit("b3d", 3), FakeUnit("b3e", 3)],
+    }
+    reference = ds._reference_deck(by_tier, by_tier[1][0])
+    slugs = {u.slug for u in reference}
+    assert "unit-a-b3" not in slugs
+    assert len(reference) == 5
+    assert slugs == {"unit-a-b1", "b2", "b3c", "b3d", "b3e"}
+
+
+def test_reference_deck_accepts_the_clash_when_no_legal_b3_pool_remains(monkeypatch):
+    # Degenerate roster: exactly 3 total B3 units and one of them IS the B1's
+    # own sibling - there is no way to fill all 3 B3 slots without it, so
+    # _reference_deck must fall back to seating it rather than shorting the
+    # reference below 5 units (breaking _TIER_SLOT's fixed slot-4 assumption
+    # downstream).
+    import app.deck_search as ds
+    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+                        {"unit-a-b1": "unit-a", "unit-a-b3": "unit-a"})
+    by_tier = {
+        1: [FakeUnit("unit-a-b1", 1)],
+        2: [FakeUnit("b2", 2)],
+        3: [FakeUnit("unit-a-b3", 3), FakeUnit("b3c", 3), FakeUnit("b3d", 3)],
+    }
+    reference = ds._reference_deck(by_tier, by_tier[1][0])
+    assert len(reference) == 5
+    assert {u.slug for u in reference} == {"unit-a-b1", "b2", "unit-a-b3", "b3c", "b3d"}
+
+
 def real_five_roster():
     # anis-star(b1), crown(b2) + three burst-3 attackers so ordering matters.
     # (rapi/privaty specs are built here to keep this test self-contained.)
@@ -483,6 +527,22 @@ def test_prune_includes_sg_theme_around_tove(monkeypatch):
     pool_slugs = {u.slug for u in ds.prune_candidate_pool(roster, BossProfile())}
     assert "tove" in pool_slugs
     assert {"sg_0", "sg_1"} <= pool_slugs  # anchored theme survives the cut
+
+
+def test_sole_tier1_slug_rejected_next_to_another_b1():
+    # rapi-red-hood-b1's Combat Assist only holds when she is the deck's ONLY
+    # Burst-1 unit - seating her next to a real B1 (liter) simulates a
+    # formation the game never lets Combat Assist survive in, so both
+    # enumeration paths must exclude that pairing (SOLE_TIER1_SLUGS).
+    from app import deck_search
+    roster = [FakeUnit("rapi-red-hood-b1", 1), FakeUnit("liter", 1),
+              FakeUnit("b2", 2), FakeUnit("d1", 3), FakeUnit("d2", 3), FakeUnit("d3", 3)]
+    for deck in deck_search.shape_combinations(roster):
+        slugs = {u.slug for u in deck}
+        assert not {"rapi-red-hood-b1", "liter"} <= slugs
+    for deck in deck_search.feasible_orderings(roster):
+        slugs = {u.slug for u in deck}
+        assert not {"rapi-red-hood-b1", "liter"} <= slugs
 
 
 def test_search_best_decks_pool_parity():

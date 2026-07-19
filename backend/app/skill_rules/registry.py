@@ -227,6 +227,7 @@ from app.skill_rules.rapi_red_hood import (
     build_attachable_projectiles_scheduled_nukes,
     build_battlefield_assessment_rules,
     build_power_of_inheritance_rules,
+    build_power_of_inheritance_stage1_rules,
     power_of_inheritance_stage3_burst_percent,
 )
 from app.skill_rules.volume import build_volume_rules
@@ -325,6 +326,16 @@ _BUILDERS = {
     ),
     "crown": _build_crown,
     "rapi-red-hood": _build_rapi_red_hood,
+    # Combat Assist / B1 stand-in seat (Task 7) - Stage 1 Power of Inheritance
+    # is support-only (no damage), and does NOT get the Stage 3 rider
+    # (build_power_of_inheritance_rules): the 421.2% attachment window and the
+    # requirement cut are Stage-3-only.
+    "rapi-red-hood-b1": lambda sv: (
+        build_battlefield_assessment_rules(sv["battlefield_assessment"])
+        + build_attachable_projectiles_rules(sv["attachable_projectiles"])
+        + build_power_of_inheritance_stage1_rules(sv),
+        None,                       # Stage 1 use deals no damage
+    ),
     "helm": _build_helm,
     "helm-aquamarine": lambda sv: (build_helm_aquamarine_rules(sv), aegis_cannon_overload_burst_percent(sv)),
     "isabel": lambda sv: (build_isabel_rules(sv), sonic_chaser_burst_percent(sv)),
@@ -397,11 +408,14 @@ ENCODED_SLUGS = tuple(_BUILDERS)
 # same base together.
 MODE_VARIANTS: dict[str, tuple[str, ...]] = {
     "cinderella-crystal-wave": ("cinderella-crystal-wave-mg", "cinderella-crystal-wave-snipe"),
+    "rapi-red-hood": ("rapi-red-hood", "rapi-red-hood-b1"),
 }
 
 # A variant seated in a different burst-rotation slot than the character's
 # nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
-VARIANT_BURST_TIERS: dict[str, int] = {}
+VARIANT_BURST_TIERS: dict[str, int] = {
+    "rapi-red-hood-b1": 1,
+}
 
 
 # A variant whose weapon profile differs from the character's dotgg stats
@@ -456,6 +470,8 @@ _SCHEDULED_NUKE_BUILDERS = {
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
     "laplace-signature": lambda sv: laplace_signature.build_buster_scheduled_nukes(sv),  # per-tick true-damage rider
     "rapi-red-hood": lambda sv: build_attachable_projectiles_scheduled_nukes(sv),  # Attachable Projectiles launcher
+    "rapi-red-hood-b1": lambda sv: build_attachable_projectiles_scheduled_nukes(
+        sv, slug="rapi-red-hood-b1", stage3_requirement_cut=False),
 }
 
 # A Nikke whose burst swaps her weapon profile for a window (weapon-mode

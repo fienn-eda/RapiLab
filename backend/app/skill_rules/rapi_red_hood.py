@@ -28,15 +28,19 @@ pending attachment explodes together on the next Full Burst entry. The Stage
 a windowed Projectile Attachment Damage Up rider - see
 build_power_of_inheritance_rules.
 
+The Stage 1 branch (the "rapi-red-hood-b1" seat - see MODE_VARIANTS/
+VARIANT_BURST_TIERS in registry.py) deals no damage at all: her own burst
+cooldown down 20s (so she re-bursts every cycle from cycle 2 on, standing in
+for Burst 1) and a squad flat ATK buff worth 18.01% of her own ATK (Crown's
+caster-ATK precedent) - see build_power_of_inheritance_stage1_rules.
+
 Not modeled / deferred:
-- The Stage 1 branch damage of "Power of Inheritance" (skills[2]) - the Stage 3
-  branch's nuke IS modeled via power_of_inheritance_stage3_burst_percent.
 - Power of Inheritance's Explosion Radius buff (Stage 1 and Stage 3) - no
   engine stat represents blast radius, so it stays deferred.
 """
 from app.effects import Effect, Pulse
 from app.elements import ELEMENT_ADVANTAGE_BONUS
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
 from app.squad_engine import (
     SkillRule,
     boss_is_element,
@@ -45,10 +49,29 @@ from app.squad_engine import (
     not_condition,
 )
 
+# "rapi-red-hood-b1" is the same owned character seated in her Combat Assist
+# (Burst-1 stand-in) role instead of her nominal Burst 3 - see MODE_VARIANTS/
+# VARIANT_BURST_TIERS in registry.py. Its manifest is identical to the base
+# entry except data_slug/dotgg_slug, which point weapon-stat/skill-value
+# loading back at the one real character record (Fienn, 2026-07-19).
 SKILL_VALUE_MANIFESTS = {
     "rapi-red-hood": {
         "source": "lootandwaifus",
         "test_module": "test_skill_rules_rapi_red_hood",
+        "keys": {
+            "battlefield_assessment": ("skills", 0),
+            "attachable_projectiles": ("skills", 1),
+            "power_of_inheritance": ("skills", 2),
+        },
+        "fixtures": {
+            "battlefield_assessment": "VALUES",
+        },
+    },
+    "rapi-red-hood-b1": {
+        "source": "lootandwaifus",
+        "test_module": "test_skill_rules_rapi_red_hood",
+        "data_slug": "rapi-red-hood",
+        "dotgg_slug": "rapi-red-hood",
         "keys": {
             "battlefield_assessment": ("skills", 0),
             "attachable_projectiles": ("skills", 1),
@@ -201,6 +224,24 @@ def build_power_of_inheritance_rules(values: dict) -> list[SkillRule]:
             ("projectile_attachment_damage_up",
              float(burst["description_value_11"]) / 100, "self",
              float(burst["description_value_12"])),
+        ]),
+    ]
+
+
+def build_power_of_inheritance_stage1_rules(values: dict) -> list[SkillRule]:
+    """Power of Inheritance used in Stage 1 (the B1-variant seat, where
+    Combat Assist holds): no damage - self burst-cooldown down 20s (so she
+    re-bursts every cycle from cycle 2 on) and all allies gain flat ATK worth
+    18.01% of HER attack for 10s (Crown's caster-ATK precedent). Explosion
+    Radius stays deferred (not modeled)."""
+    burst = values["power_of_inheritance"]
+    caster_atk = values["caster_atk"]
+    return [
+        cdr_pulse_rule("own_burst_activate",
+                       float(burst["description_value_02"]), scope="self"),
+        buff_rule("own_burst_activate", [
+            ("flat_atk", caster_atk * float(burst["description_value_05"]) / 100,
+             "squad", float(burst["description_value_06"])),
         ]),
     ]
 

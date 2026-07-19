@@ -40,6 +40,19 @@ def _no_variant_clash(units):
     return True
 
 
+# Variants whose kit only holds when they are the deck's ONLY Burst-1 unit
+# (Rapi: Red Hood's Combat Assist cancels itself next to a real B1 - seating
+# her as one of two B1s would simulate a formation the game never produces).
+SOLE_TIER1_SLUGS = {"rapi-red-hood-b1"}
+
+
+def _tier1_seating_valid(units):
+    tier1 = [u for u in units if u.burst_tier == 1]
+    if len(tier1) <= 1:
+        return True
+    return not any(u.slug in SOLE_TIER1_SLUGS for u in tier1)
+
+
 @dataclass
 class BossProfile:
     element: str | None = None
@@ -69,7 +82,7 @@ def shape_combinations(roster):
             for c2 in combinations(by_tier[2], n2):
                 for c3 in combinations(by_tier[3], n3):
                     deck = list(c1) + list(c2) + list(c3)
-                    if _no_variant_clash(deck):
+                    if _no_variant_clash(deck) and _tier1_seating_valid(deck):
                         yield deck
 
 
@@ -82,7 +95,8 @@ def feasible_orderings(roster):
                 infeasible = True
                 break
             by_tier[unit.burst_tier].append(unit)
-        if infeasible or not all(by_tier[t] for t in (1, 2, 3)) or not _no_variant_clash(combo):
+        if (infeasible or not all(by_tier[t] for t in (1, 2, 3))
+                or not _no_variant_clash(combo) or not _tier1_seating_valid(combo)):
             continue
         for order1 in permutations(by_tier[1]):
             for order2 in permutations(by_tier[2]):
@@ -167,7 +181,23 @@ def _prior(unit):
 
 
 def _reference_deck(by_tier, b1):
-    return [b1, by_tier[2][0], *_variant_safe_top(by_tier[3], 3)]
+    # _variant_safe_top only guards against two B3 picks clashing with EACH
+    # OTHER - it doesn't know `b1` occupies a slot too, so a B1 whose
+    # MODE_VARIANTS sibling lives at tier 3 (VARIANT_BURST_TIERS, e.g. Rapi:
+    # Red Hood's Combat Assist stand-in vs. her Burst-3 self) needs that
+    # sibling filtered out of the B3 pool up front, or it could rank into the
+    # B3 picks and seat both variants in the same reference deck - the exact
+    # clash _no_variant_clash forbids for real candidate decks.
+    b1_base = _VARIANT_GROUP.get(b1.slug, b1.slug)
+    b3_pool = [u for u in by_tier[3] if _VARIANT_GROUP.get(u.slug, u.slug) != b1_base]
+    if len(b3_pool) < 3:
+        # No legal way to fill all 3 B3 slots without b1's own sibling (e.g.
+        # exactly 3 total B3 units and one of them IS the sibling) - a
+        # degenerate roster, so accept the clash rather than short the
+        # reference deck below 5 units (breaking _TIER_SLOT's fixed slot-4
+        # assumption downstream).
+        b3_pool = by_tier[3]
+    return [b1, by_tier[2][0], *_variant_safe_top(b3_pool, 3)]
 
 
 def _variant_safe_top(units, n):
