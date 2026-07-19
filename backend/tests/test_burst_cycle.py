@@ -177,3 +177,72 @@ def test_fractional_cooldown_reductions_never_strand_a_tier():
     )
     assert not any(e["type"] == "full_burst_missed" for e in events)
     assert sum(e["type"] == "full_burst_start" for e in events) >= 5
+
+
+# --- Per-unit first-burst delay ----------------------------------------
+# Some units are deliberately held back rather than fired the instant their
+# cooldown allows: Diesel: Winter Sweets must skip the opening cycle so the
+# Full Burst she does not burst into locks her into Highlight, and Elegg:
+# Boom and Shock is held until her Ghosts reach the 13 cap. Both are
+# expressed as a `burst_delay` on the deck member.
+
+
+def test_skip_cycles_holds_a_unit_out_of_the_opening_cycle():
+    deck = make_deck()
+    deck[2]["burst_delay"] = {"skip_cycles": 1}
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=60.0, mode="auto")
+
+    tier3 = [e["slug"] for e in events if e["type"] == "burst" and e["tier"] == 3]
+    assert tier3[0] != "b3_unit_a"
+    assert "b3_unit_a" in tier3
+
+
+def test_not_before_holds_a_unit_until_its_time():
+    deck = make_deck()
+    deck[2]["burst_delay"] = {"not_before": 78.0}
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=180.0, mode="auto")
+
+    fires = [e["time"] for e in events if e["type"] == "burst" and e["slug"] == "b3_unit_a"]
+    assert fires
+    assert min(fires) >= 78.0
+
+
+def test_an_undelayed_tier_mate_still_covers_the_skipped_cycle():
+    # The delay must not cost the deck a Full Burst - another member of the
+    # tier fires in its place, so every cycle still completes.
+    deck = make_deck()
+    deck[2]["burst_delay"] = {"skip_cycles": 1}
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=60.0, mode="auto")
+
+    assert not any(e["type"] == "full_burst_missed" for e in events)
+    assert sum(e["type"] == "full_burst_start" for e in events) >= 3
+
+
+def test_delay_applies_only_to_the_first_burst():
+    # Once the unit has burst, it re-fires on its plain cooldown.
+    deck = make_deck()
+    deck[2]["burst_delay"] = {"skip_cycles": 1}
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=180.0, mode="auto")
+
+    fires = [e["time"] for e in events if e["type"] == "burst" and e["slug"] == "b3_unit_a"]
+    assert len(fires) >= 2
+    assert all(b - a >= 40.0 for a, b in zip(fires, fires[1:]))
+
+
+def test_a_delayed_unit_alone_in_its_tier_stalls_rather_than_bursting_early():
+    # ALLOWED_SHAPES never builds a deck with a single Burst-3, so this only
+    # reaches a hand-built deck. Stalling is the honest outcome: firing the
+    # unit anyway would credit it a state it never entered.
+    deck = [
+        {"slug": "b1_unit", "burst_tier": 1, "cooldown": 20.0},
+        {"slug": "b2_unit", "burst_tier": 2, "cooldown": 20.0},
+        {"slug": "lone_b3", "burst_tier": 3, "cooldown": 40.0, "burst_delay": {"skip_cycles": 1}},
+    ]
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=60.0, mode="auto")
+
+    assert not any(e["type"] == "burst" for e in events)
