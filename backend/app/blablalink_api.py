@@ -24,8 +24,12 @@ def fetch_roster(caller: SessionCaller, open_id: str, area: int = 81) -> dict:
         {**base, "name_codes": [c["name_code"] for c in owned]},
     )
     outpost = caller.call("GetUserProfileOutpostInfo", dict(base))
+    # Only Fienn's account was ever observed; another user's outpost may be
+    # absent or empty, which the stat calculator reads as rank 0 everywhere.
     return {
         "owned": owned,
         "character_details": detail.get("character_details", []),
-        "recycle_room_researches": outpost["outpost_info"]["recycle_room_researches"],
+        "recycle_room_researches": (outpost.get("outpost_info") or {}).get(
+            "recycle_room_researches"
+        ) or [],
     }

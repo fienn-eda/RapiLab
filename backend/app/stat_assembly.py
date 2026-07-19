@@ -187,10 +187,11 @@ def corporation_atk(tables: dict[str, Any], corporation: str, research_ranks: di
 
     Account-wide, not per unit: two otherwise identical units of different
     corporations differ here. `research_ranks` maps research tid -> rank, as
-    returned by GetUserProfileOutpostInfo.recycle_room_researches.
+    returned by GetUserProfileOutpostInfo.recycle_room_researches. That payload
+    omits rows the account never researched, so a missing tid is rank 0.
     """
     tid = CORPORATION_RESEARCH_TID[corporation]
-    rank = research_ranks[tid]
+    rank = research_ranks.get(tid, 0)
     per_rank = next(r["attack"] for r in tables["recycle_research"] if str(r["id"]) == tid)
     return rank * per_rank
 
@@ -400,11 +401,12 @@ def research_hp(tables: dict[str, Any], character_class: str, research_ranks: di
     450 per rank in the table and confirmed against measured HP (an ungeared,
     coreless, grade-0 Attacker's whole HP-over-base residual is affinity + this).
     `research_ranks` maps research tid -> rank, as returned by
-    GetUserProfileOutpostInfo.recycle_room_researches.
+    GetUserProfileOutpostInfo.recycle_room_researches, which omits rows the
+    account never researched - a missing tid is rank 0.
     """
     total = 0
     for tid in (PERSONAL_RESEARCH_TID, CLASS_RESEARCH_TID[character_class]):
-        rank = research_ranks[tid]
+        rank = research_ranks.get(tid, 0)
         per_rank = next(r["hp"] for r in tables["recycle_research"] if str(r["id"]) == tid)
         total += rank * per_rank
     return total

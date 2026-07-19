@@ -34,3 +34,15 @@ def test_fetch_roster_makes_three_calls_and_bundles_them():
     assert out["owned"][0]["name_code"] == 5001
     assert out["character_details"][0]["name_code"] == 5001
     assert out["recycle_room_researches"] == [{"tid": 1201, "lv": 170}]
+
+
+def test_an_account_without_outpost_data_yields_no_researches():
+    """Only Fienn's account was ever observed; another user's outpost may be absent."""
+    caller = FakeCaller({
+        "GetUserCharacters": {"characters": [{"name_code": 5001, "lv": 400, "core": 3, "grade": 3}]},
+        "GetUserCharacterDetails": {"character_details": []},
+        "GetUserProfileOutpostInfo": {},
+    })
+    out = fetch_roster(caller, "OPENID", area=81)
+
+    assert out["recycle_room_researches"] == []

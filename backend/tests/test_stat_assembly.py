@@ -282,6 +282,11 @@ def test_corporation_atk_is_per_rank(tables, ground_truth_ranks):
     assert corporation_atk(tables, "PILGRIM", ground_truth_ranks) == 4750
 
 
+def test_an_unresearched_corporation_contributes_nothing(tables):
+    """Another account's outpost omits rows it never researched - that is rank 0, not a crash."""
+    assert corporation_atk(tables, "ELYSION", {}) == 0
+
+
 def test_flat_model_reproduces_every_ungeared_unit(
     tables, ground_truth, ground_truth_ranks, identity
 ):
@@ -493,6 +498,13 @@ def test_research_hp_is_personal_plus_class_not_corporation(tables, ground_truth
     assert research_hp(tables, "Attacker", ground_truth_ranks) == 271500
     assert research_hp(tables, "Defender", ground_truth_ranks) == 276000
     assert research_hp(tables, "Supporter", ground_truth_ranks) == 264750
+
+
+def test_missing_research_rows_count_as_rank_zero(tables, ground_truth_ranks):
+    """A fresh account that researched Personal but not its class still assembles."""
+    personal_only = {"1001": ground_truth_ranks["1001"]}
+    assert research_hp(tables, "Attacker", personal_only) == 310 * 450
+    assert research_hp(tables, "Attacker", {}) == 0
 
 
 def test_affinity_hp_reads_the_hp_column(tables):
