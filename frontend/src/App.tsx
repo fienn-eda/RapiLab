@@ -9,6 +9,7 @@ import { getValidRoster } from './types/nikkeDraft'
 import { NikkeCard } from './components/NikkeCard'
 import { RecommendPanel } from './components/RecommendPanel'
 import { ImportRosterButton } from './components/ImportRosterButton'
+import { SyncRosterPanel } from './components/SyncRosterPanel'
 
 function App() {
   const { drafts, addNikke, updateNikke, removeNikke, importDrafts } =
@@ -28,6 +29,7 @@ function App() {
 
       <main className="app__main">
         <ImportRosterButton onImport={importDrafts} />
+        <SyncRosterPanel onImport={importDrafts} />
 
         {drafts.length === 0 ? (
           <div className="empty">
