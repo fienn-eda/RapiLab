@@ -169,7 +169,32 @@ def _resource_fill_times(
         return [t for i, t in enumerate(out_of_window) if (i + 1) % n == 0]
     if kind == "on_last_bullet":
         return sorted(last_bullet_times)
+    if kind == "at_battle_start":
+        return [0.0]
+    if kind == "on_full_burst_enter_after_own_burst":
+        # Mihara's Restraint Chains: banked when Full Burst ends if she just
+        # burst, then spent whole at the NEXT Burst Stage 3 entry - so the
+        # discharge lands on the first Full Burst start after each of her own
+        # bursts, not on every Full Burst start.
+        starts = sorted(start for start, _ in full_burst_windows)
+        times = []
+        for burst_time in own_burst_times:
+            nxt = next((s for s in starts if s > burst_time), None)
+            if nxt is not None and nxt not in times:
+                times.append(nxt)
+        return sorted(times)
     raise ValueError(f"unknown resource fill kind: {kind}")
+
+
+def _fill_sources(fill):
+    """A resource's `fill` is either ONE fill spec (granting 1 stack a time,
+    the shape every pre-existing consumer uses) or a list of (fill spec,
+    amount) pairs for a resource fed by several sources at different rates -
+    e.g. Mihara's Ensnaring Chains, +10 per chain discharge and +1 per 40
+    normal attacks during Full Burst."""
+    if isinstance(fill, list):
+        return fill
+    return [(fill, 1)]
 
 
 def _sequence_fire_rules(spec, stage_rules, shot_times, own_burst_times):
@@ -740,15 +765,17 @@ def simulate_raid(
             if spec.fill[0] == "squad_burst_cycle_conditional":
                 _resolve_squad_burst_cycle_resource(spec, slug, events, context)
                 continue
-            fill_times = _resource_fill_times(
-                spec.fill, shot_times, core_hittable, fight_duration, full_burst_windows,
-                context.burst_times.get(slug, []), last_bullet_times_by_slug.get(slug, set()),
-            )
-            # Every per-shot fill grants exactly one stack. (A fill source that
-            # grants more than one at a time - e.g. a battle-start +N - would
-            # carry its own amount; none exists yet.)
-            for ft in fill_times:
-                context.fill_resource(slug, spec.name, 1, ft)
+            # A resource may be fed by several sources at different rates, each
+            # granting its own amount (see _fill_sources).
+            fill_times = []
+            for source, amount in _fill_sources(spec.fill):
+                source_times = _resource_fill_times(
+                    source, shot_times, core_hittable, fight_duration, full_burst_windows,
+                    context.burst_times.get(slug, []), last_bullet_times_by_slug.get(slug, set()),
+                )
+                for ft in source_times:
+                    context.fill_resource(slug, spec.name, amount, ft)
+                fill_times.extend(source_times)
 
             # Resets (a resource SET to a new value rather than incremented,
             # e.g. Soda's Golden Chip consumed down to 17 on her own burst) are
@@ -945,11 +972,18 @@ def simulate_raid(
         for spec in specs:
             damage_type = spec.get("damage_type", "attack")
             eligible = spec.get("full_burst_bonus_eligible", False)
+            # Optional `resource_gate` (same 4-tuple shape resource_scaled_nukes
+            # uses): each tick's percent is scaled by a named resource's count
+            # AT THAT TICK'S OWN TIME, resolved in phase 2. Lets a whole-fight
+            # scheduled DoT scale off a stack counter - e.g. Mihara's Ensnaring
+            # Chains, ticking every second at 25.08% PER stack.
+            resource_gate = spec.get("resource_gate")
             for hit_time in spec["schedule"](context, fight_duration):
                 if hit_time >= fight_duration:
                     continue
                 record(slug, spec["percent"], hit_time, "scheduled",
-                       damage_type=damage_type, full_burst_bonus_eligible=eligible)
+                       damage_type=damage_type, resource_gate=resource_gate,
+                       full_burst_bonus_eligible=eligible)
 
     def _normal_attack_percent(ev):
         # Normal Attack Damage Multiplier is a Final ATK modifier on the
