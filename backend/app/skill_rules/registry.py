@@ -44,6 +44,13 @@ from app.skill_rules.asuka_shikinami_langley_wille import (
     build_emergency_repair_rules,
 )
 from app.skill_rules.blanc import build_blanc_rules
+from app.skill_rules.bready import (
+    build_aftertaste_scheduled_nukes,
+    build_bready_lingering_rules,
+    build_bready_recommended_rules,
+    build_lingering_per_shot_rules,
+    build_recommended_per_shot_rules,
+)
 from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
 from app.skill_rules.chisato_nishikigi import build_chisato_per_shot_rules, build_chisato_rules
 from app.skill_rules.cinderella_crystal_wave import (
@@ -386,6 +393,9 @@ _BUILDERS = {
     "ein": lambda sv: (build_ein_rules(sv), feather_all_range_burst_percent(sv)),
     # 13 Ghosts fires via dynamic_hit_count_nukes (branching hit count), not a flat burst percent.
     "elegg-boom-and-shock": lambda sv: (build_elegg_boom_and_shock_rules(sv), None),
+    # Neither Taste mode has a burst nuke - New Flavor is buffs only.
+    "bready-lingering": lambda sv: (build_bready_lingering_rules(sv), None),
+    "bready-recommended": lambda sv: (build_bready_recommended_rules(sv), None),
     # Bonding Pain is a resource-scaled DoT, not a flat burst nuke.
     "mihara-bonding-chain": lambda sv: (build_mihara_bonding_chain_rules(sv), None),
     "raven": lambda sv: (build_raven_rules(sv), tempest_burst_percent(sv)),
@@ -431,6 +441,7 @@ ENCODED_SLUGS = tuple(_BUILDERS)
 # when it stays a candidate); deck search never seats two candidates of the
 # same base together.
 MODE_VARIANTS: dict[str, tuple[str, ...]] = {
+    "bready": ("bready-lingering", "bready-recommended"),
     "cinderella-crystal-wave": ("cinderella-crystal-wave-mg", "cinderella-crystal-wave-snipe"),
     "rapi-red-hood": ("rapi-red-hood", "rapi-red-hood-b1"),
 }
@@ -491,6 +502,7 @@ _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
     "elegg-boom-and-shock": lambda sv: build_ghostbuster_scheduled_nukes(sv),  # capture at the ghost cap
     "mihara-bonding-chain": lambda sv: build_mihara_scheduled_nukes(sv),  # chain attacks + Ensnaring DoT
+    "bready-lingering": lambda sv: build_aftertaste_scheduled_nukes(sv),  # Aftertaste DoT windows
     "little-mermaid": lambda sv: build_bubble_barrage_scheduled_nukes(sv),  # squad-wide 500-ammo counter
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
@@ -543,6 +555,8 @@ _PERIODIC_RULE_BUILDERS = {
 # (threshold, mode, [SkillRule]); mode is "after" or "every".
 _PER_SHOT_RULE_BUILDERS = {
     "ark-ranger-black": lambda sv: build_ark_ranger_per_shot_rules(sv),
+    "bready-lingering": lambda sv: build_lingering_per_shot_rules(sv),
+    "bready-recommended": lambda sv: build_recommended_per_shot_rules(sv),
     "jill-valentine": lambda sv: build_magnum_per_shot_rules(sv),
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),

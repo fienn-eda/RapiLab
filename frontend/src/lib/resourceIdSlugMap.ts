@@ -74,6 +74,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   513: 'little-mermaid', // Little Mermaid
   514: 'grave', // Grave
   515: 'cinderella-crystal-wave', // Cinderella: Crystal Wave - base slug; fans out to -mg/-snipe (MODE_VARIANTS)
+  520: 'bready', // Bready - base slug; fans out to -lingering/-recommended (MODE_VARIANTS)
   570: 'ark-ranger-black', // Ark Ranger Black
   581: 'arcana', // Arcana
   583: 'arcana-fortune-mate', // Arcana: Fortune Mate

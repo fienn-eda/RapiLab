@@ -104,8 +104,8 @@
     수집 전 상태였을 뿐 — 넷 다 dotgg 셧다운(2026-05) 이전 출시라 데이터가 존재한다.
     **prika 로더블화로 mint+prika Encore 시너지가 실제 덱 탐색에서 처음으로 효력을
     가진다**(로드맵이 이걸 blocker로 적어두고 있었음).
-- 총 **70명**(테이블 행 수; `ENCODED_SLUGS`는 71개 — B1 형태변형 `rapi-red-hood-b1`은
-  별도 행 없이 `rapi-red-hood` 행에 포함) (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 43명) — drake는 base/signature 듀얼슬롯 2엔트리,
+- 총 **72명**(테이블 행 수; `ENCODED_SLUGS`는 73개 — B1 형태변형 `rapi-red-hood-b1`은
+  별도 행 없이 `rapi-red-hood` 행에 포함) (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 45명) — drake는 base/signature 듀얼슬롯 2엔트리,
   Cinderella: Crystal Wave는 MG/Snipe 모드 듀얼슬롯 2엔트리(Task 6, 2026-07-19 —
   `MODE_VARIANTS`로 배선된 첫 유닛; 시그니처와 달리 둘 다 정식 base 캐릭터라
   DUAL_SLOT_BASES/SIGNATURE_OWNED 대상 아님)
@@ -155,7 +155,7 @@
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (43명)
+## Burst 3 (45명)
 
 > **eb (encoding batch) 진행:** Burst 3 어태커 배치 인코딩 (least-blocked 우선).
 > eb1 = Noir · Isabel · Liberalio, eb2 = Ludmilla · Chisato · Jill (2026-07-12).
@@ -205,6 +205,8 @@
 | Ark Ranger Black | `ark-ranger-black` | Attacker | AR | Wind | ⚠ | (신규 2026-07-16) Transformation 상태에서만 나오는 지속딜 위주 배터리 게이지 유닛 — 파츠파괴로 게이지가 차는 메커니즘은 모델 불가하여 신규 보스 플래그 `part_destructible`로 **floor(파츠파괴 없음)/ceiling(파츠파괴 있음)** 두 갈래를 모델링(`docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`, gap #2 Pattern B 우회). Transform! 자ATK+156.19%(floor: 버스트당 10초 창, ceiling: 전투 시작부터 영구)·Ark Black Collider 45.87% 지속딜(floor: 버스트-앵커 10틱, ceiling: 전투 내내 1초마다)·Ultimate! Meteor 266.69%×10틱 지속딜 + 자신 Sustained Damage+135.83%/10초(양쪽 분기 공통)·노멀30회마다 자신 Sustained Damage+59.6%/5초(refresh) 모델됨. skill2 풀버스트 "Wind코드 어썰트라이플 아군 Sustained Damage+77.5%/10초"(member_subset_buff_rule, gap #3 소비 2026-07-16 — Ark 자신 포함 자기적용) 모델됨. 보류: 파츠파괴로 인한 배터리 충전(이 플래그의 존재 이유)·Damage to Parts+20%(파츠딜, 레이드 DPS 무관) |
 | Ada Wong | `ada-wong` | Attacker | RL | Electric | ⚠ | (신규 2026-07-16, Phase C) Covert Support: FB진입 시 "이미 버스트한 버스트3 아군" flat ATK(자ATK 60%)+진댐+50%/10초(member_subset_buff_rule, gap #3)·Flash Grenade: FB창 동안 2초마다 420% 진댐 주기넉(during_full_burst, gap #6 — 자기 버스트로 열린 FB창은 1초 틱, own_burst_interval, Fienn 판정 2026-07-16)·Secret Agent(버스트, 버프 온리): 자ATK+40%+진댐+42%/10초 + Special Modification 1라운드(차지속도▼300%+차지딜▲1500% → 매거진-경계 함정으로 감속이 착지 불가 확인, net 근사 charge_damage_bonus +2.75/1라운드로 모델 — 모듈 docstring 참고) 모델됨. 보류: Covert Support HP 회복(비딜). SKILL_VALUE_MANIFESTS는 브랜치 병합 후 백필 예정 |
 | Asuka Shikinami Langley: Wille | `asuka-shikinami-langley-wille` | Attacker | MG | Wind | ⚠ | eb4. Anti A.T. Field 자원(캡30·`per_shot_every_during_own_status_window`로 자기 버스트 앵커 9초창 한정 노멀10회마다 fill·스택당 받댐+0.83%/30초, squad-scope)+무조건부 노멀50회마다 471.86% 넉("as additional damage", `full_burst_bonus_eligible`)+**같은 자원 fill 트리거에서 15.62% 상태게이팅 넉("as damage", 9초 Annihilation State 창 한정, `per_shot_rules`의 `every_during_own_status_window` 모드, gap #7 완료·2026-07-15)**+Annihilation State 버스트 자ATK/공댐(46.8%×자ATK/36%, 9초)+Emergency Repair FB진입 공댐+30.97%/10초(`own_burst_fired_this_cycle` 게이팅)+Annihilation 지연넉(버스트 9초 후 발동, 히트수=스택수, `dynamic_hit_count_nukes`+`fire_delay`, FB보너스) 모델됨. Normal Attack Damage 디버프(노멀전용 스코프 없음)·재장전/힐만 보류 |
+| Bready (Lingering Taste) | `bready-lingering` | Attacker | SR | Water | ✅ | (신규 2026-07-19) 지속딜 버프를 받아 진입하는 모드. **Taste 2종은 덱이 결정하는데 엔진에 '어떤 종류의 버프를 받았는가' 트리거가 없어, Cinderella: Crystal Wave 선례대로 `MODE_VARIANTS["bready"]`의 정적 2슬러그로 인코딩**(Fienn 판정 2026-07-19: 현재 분산딜 버퍼와 묶는 건 지속딜 버퍼가 약해서일 뿐이라 양쪽 다 필요). 공통: FB진입 자ATK+70.01%/10초 · Taste 자체의 **Charge Speed −20%/50초 자기 디버프**(Phase S 이후 실딜 스탯). Lingering 전용: 풀차지 3회마다 받댐+10.2%/5초 + **Aftertaste 150.04%/초 5초 지속딜**(`scheduled_nukes`가 자기 발사시각을 읽는 Raven 선례; 재설치는 스택이 아니라 **창 갱신**으로 모델 — 스킬텍스트에 스택 표기 없음) · 버스트 자AD+60.19%/10초 + **"Aftertaste Effect +349.8%"를 self 스코프 `sustained_damage_up`으로 모델**(Aftertaste가 그녀의 유일한 sustained 타입 딜이라 킷 내에서 정확히 등가). E2E: 자체딜 177M 중 Aftertaste 120M. 보류: **덱이 실제로 어느 Taste를 유발하는지 판정 불가** — 모드는 호출자의 선언이지 엔진의 도출이 아님(모듈 docstring 명시) |
+| Bready (Recommended Taste) | `bready-recommended` | Attacker | SR | Water | ✅ | (신규 2026-07-19) 분산딜 버프를 받아 진입하는 모드. 공통 킷은 위와 동일. Recommended 전용: **풀차지마다**(SR이라 매 샷) 자AD+60.01%/5초 + 전체 적 **265.07% 분산딜**(`damage_type="distributed"`라 `distributed_damage_up` 버킷과 곱해짐) · 버스트 자AD+60.19% + 자ATK+70.09%/10초. E2E: 자체딜 179M 중 분산딜 넉 109M. 보류: Lingering과 동일(모드 판정 불가) |
 | Chisato Nishikigi | `chisato-nishikigi` | Attacker | SMG | Iron | ✅ | eb2. Extrasensory 상시 자ATK/진댐(버스트 재충전으로 >70% 유지 근사)·버스트 자ATK/노멀진댐화·48노멀마다 진댐넉(per-shot) 모델됨. per-shot 넉이 attack타입(진댐 언더카운트)·회피/명중(inert) 보류 |
 | Cinderella | `cinderella` | Attacker | RL | Fire | ⚠ | Flawless Glass 자ATK(자기 최대체력 비례)+매 풀차지 136.6% 추가딜(RL 상시 풀차지, per-shot)·Beautiful 자원(periodic fill, 3초마다·캡12)·Glass Slippers 10연타 버스트넉 + Beautiful 스택수 비례 추가딜(count-스케일 넉) 모델됨. 디코이 생성(생존)·Beautiful 자체 최대체력% 증가(연결된 소비자 없음, inert)만 보류 |
 | Cinderella: Crystal Wave (MG) | `cinderella-crystal-wave-mg` | Attacker | MG | Iron | ⚠ | (신규 Task 6, 2026-07-19) 전투 전 MG/Snipe 모드 고정 선택(플레이어가 정하고 전투 내내 유지 — 상태머신이 아니라 정적 슬러그 2개, `MODE_VARIANTS["cinderella-crystal-wave"]`로 배선, 덱 탐색이 두 모드 동시 편성 금지). 공유 킷(양 모드 동일): 배틀스타트 자AD+24%(Beauty-Full)/자ATK+29%(Mode Swap)·버스트 자AD+92%/자ATK+65% 10초(Glass Slippers)·6000% 버스트넉·5초마다 900% 주기넉(`periodic_nukes`). MG 전용: 배틀스타트 Pinpoint 코어딜+26%(`other_core_damage_sources`)·FB진입 833.79% 코어스트라이크 넉(자기 버스트 이번 사이클 발동 AND 코어활성 게이팅 — 스킬텍스트가 "코어 활성 적 한정"이라 균일 코어보정 모델상 `core_hittable` 게이트로 관례 정합, `boss_core_hittable`+`own_burst_fired_this_cycle` 복합조건). 보류: 디코이 아바타(생존)·아군탄200발마다 버스트게이지+12%(inert)·Pierce·모드전환 자체(Preparation for Change 상태머신, 모드 고정이라 무의미) |
