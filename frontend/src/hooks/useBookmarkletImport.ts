@@ -51,7 +51,9 @@ export const useBookmarkletImport = (onRoster: (raw: unknown) => void) => {
       setError(
         e instanceof AssembleRosterApiError
           ? describeAssembleRosterApiError(e)
-          : String(e),
+          : e instanceof Error
+            ? e.message
+            : String(e),
       )
       setStatus('error')
     }
