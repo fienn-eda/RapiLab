@@ -406,6 +406,52 @@ def test_prune_measures_cross_tier_sibling_instead_of_starving_it(monkeypatch):
     assert measured, "unit-a-b3 must be simulated at least once, not scored an unmeasured 0.0"
 
 
+def test_cross_tier_reference_rejects_an_alternative_that_clashes_elsewhere(monkeypatch):
+    # _cross_tier_reference picks an "alternative" to swap into the sibling's
+    # slot from by_tier[sibling.burst_tier]. The old filter only excluded
+    # units already seated in `reference` and units sharing the CANDIDATE's
+    # own base - it did not check whether the alternative's OWN mode-variant
+    # sibling was already seated elsewhere in `reference` under a third,
+    # unrelated base. Two variant groups here: unit-a-b1/unit-a-b3 span tiers
+    # (forces the _cross_tier_reference path for candidate unit-a-b1, whose
+    # sibling unit-a-b3 seats a reference B3 slot), and unit-c-mg/unit-c-snipe
+    # are a same-tier B3 pair living among the alternatives themselves -
+    # unit-c-mg seats another reference B3 slot, so its unseated sibling
+    # unit-c-snipe (higher prior than the only clash-free option) is exactly
+    # the illegal pick the old filter would have accepted.
+    import app.deck_search as ds
+    monkeypatch.setattr(ds, "_VARIANT_GROUP", {
+        "unit-a-b1": "unit-a", "unit-a-b3": "unit-a",
+        "unit-c-mg": "unit-c", "unit-c-snipe": "unit-c",
+    })
+    roster = [
+        FakeSpec("b1x", 1, base_stats={"atk": 1000.0}),  # top-prior B1 -> seats the reference
+        FakeSpec("unit-a-b1", 1, base_stats={"atk": 500.0}),  # cross-tier candidate
+        FakeSpec("b2", 2),
+        FakeSpec("unit-a-b3", 3, base_stats={"atk": 500.0}),  # seats a reference B3 slot
+        FakeSpec("unit-c-mg", 3, base_stats={"atk": 400.0}),  # seats another reference B3 slot
+        FakeSpec("b3z", 3, base_stats={"atk": 300.0}),  # seats the last reference B3 slot
+        FakeSpec("unit-c-snipe", 3, base_stats={"atk": 200.0}),  # illegal alternative pick
+        FakeSpec("b3w", 3, base_stats={"atk": 100.0}),  # the only clash-free alternative
+    ]
+
+    seen_decks = []
+
+    def scorer(ordered_deck, boss):
+        seen_decks.append(list(ordered_deck))
+        return {"total_damage": 1.0, "damage_log": []}  # constant -> keeps the pass single
+
+    monkeypatch.setattr(ds, "evaluate_deck", scorer)
+    ds.prune_candidate_pool(roster, BossProfile())
+
+    assert seen_decks  # sanity: the cross-tier path actually ran
+    for deck in seen_decks:
+        slugs = {u.slug for u in deck}
+        assert not {"unit-a-b1", "unit-a-b3"} <= slugs
+        assert not {"unit-c-mg", "unit-c-snipe"} <= slugs
+        assert ds._no_variant_clash(deck)
+
+
 def test_prune_keeps_synergy_partners_together(monkeypatch):
     import app.deck_search as ds
     roster = _big_fake_roster()

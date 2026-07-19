@@ -241,20 +241,25 @@ def _cross_tier_reference(reference, unit, by_tier):
     marginal score by measuring it against a second, equally legal reference
     where the sibling is swapped out for the best other unit of the
     sibling's own tier, with `unit` then seated at its own tier-default slot
-    in THAT deck. The result keeps the (1,2,3x3) shape and stays clash-free
-    (the alternative is never seated elsewhere in `reference` and is never a
-    same-base variant of `unit`).
+    in THAT deck. The result keeps the (1,2,3x3) shape; the alternative is
+    also picked to keep `alt_reference` itself clash-free (never seated
+    elsewhere in `reference`, never a same-base variant of `unit`, and never
+    a same-base variant of any OTHER unit still seated in `reference` - the
+    alternative's own MODE_VARIANTS sibling could otherwise already occupy
+    an unrelated slot).
 
     Returns `(alt_reference, deck)`. The caller must diff `deck` against a
     freshly-evaluated baseline of `alt_reference`, NOT the original
     `reference`'s baseline - that baseline still has the sibling seated, so
     it isn't a fair basis for a deck that swapped the sibling out too.
 
-    Returns None if the sibling's tier has no alternative at all (it's the
-    only unit `by_tier[sibling.burst_tier]` has) - every legal reference
-    must then seat the sibling, so `unit` genuinely cannot be measured
-    against this reference family. Callers must not treat that None as a
-    real 0.0 score; see prune_candidate_pool and _measure_against."""
+    Returns None if the sibling's tier has no LEGAL alternative at all
+    (either it's the only unit `by_tier[sibling.burst_tier]` has, or every
+    other candidate there would clash with something else still seated in
+    `reference`) - every legal reference must then seat the sibling, so
+    `unit` genuinely cannot be measured against this reference family.
+    Callers must not treat that None as a real 0.0 score; see
+    prune_candidate_pool and _measure_against."""
     base = _VARIANT_GROUP.get(unit.slug)
     if base is None:
         return None
@@ -266,15 +271,21 @@ def _cross_tier_reference(reference, unit, by_tier):
     if sibling is None:
         return None
     seated_slugs = {u.slug for u in reference}
-    alternative = next(
-        (u for u in by_tier[sibling.burst_tier]
-         if u.slug not in seated_slugs and _VARIANT_GROUP.get(u.slug, u.slug) != base),
-        None,
-    )
-    if alternative is None:
+    alt_reference = None
+    for candidate in by_tier[sibling.burst_tier]:
+        if candidate.slug in seated_slugs or _VARIANT_GROUP.get(candidate.slug, candidate.slug) == base:
+            continue
+        trial = list(reference)
+        trial[sibling_slot] = candidate
+        # _no_variant_clash catches a candidate whose own MODE_VARIANTS
+        # sibling already sits elsewhere in `reference` under an unrelated
+        # base - the same clash rule real candidate decks are held to,
+        # reused here instead of duplicating it.
+        if _no_variant_clash(trial):
+            alt_reference = trial
+            break
+    if alt_reference is None:
         return None
-    alt_reference = list(reference)
-    alt_reference[sibling_slot] = alternative
     deck = list(alt_reference)
     deck[_TIER_SLOT[unit.burst_tier]] = unit
     return alt_reference, deck
@@ -314,7 +325,12 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
     whose MODE_VARIANTS sibling holds a cross-tier reference slot still gets
     a genuine simulated score, against an alternate reference with that
     sibling swapped out (_cross_tier_reference) - it is never scored an
-    unmeasured 0.0 purely because the primary reference couldn't seat it."""
+    unmeasured 0.0 purely because the primary reference couldn't seat it.
+    That score is a real simulation, not a fabricated one, but it is measured
+    against a DIFFERENT reference deck than its same-pass peers - the deltas
+    still all feed the same PRUNED_TIER_CAPS sort below, so a cross-tier
+    candidate's ranking isn't produced under identical conditions to a
+    same-slot swap-in's."""
     by_tier = {t: sorted((u for u in roster if u.burst_tier == t),
                          key=_prior, reverse=True) for t in (1, 2, 3)}
     if not (by_tier[1] and by_tier[2] and len(by_tier[3]) >= 3):
