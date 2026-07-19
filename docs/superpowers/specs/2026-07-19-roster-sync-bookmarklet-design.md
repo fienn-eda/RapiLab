@@ -1,6 +1,18 @@
 # 로스터 동기화 — 유저 세션 북마크릿 방식 설계 (Phase 7 서브프로젝트 4)
 
-작성 2026-07-19. 상태: **설계 승인(Fienn, 2026-07-19), 미구현.** 선행 슬라이스(서브프로젝트
+작성 2026-07-19. 상태: **구현 완료 (2026-07-19), 실계정 스모크 미실시.** 9개 TDD 태스크로 구현,
+백엔드 819 / 프론트 158 passed, tsc·lint clean. 계획·경과: `docs/superpowers/plans/
+2026-07-19-roster-sync-bookmarklet.md`. **병합 전 남은 단 하나: 실브라우저 스모크 1회** —
+아래 위험표의 팝업 차단 항목이 그것으로만 확정된다.
+
+구현 중 확정된 사실 두 가지가 이 문서의 원안을 고쳤다: ① **React 19는 JSX `href` prop으로 온
+`javascript:` URL을 하드 차단한다**(react-dom 프로덕션 번들의 `sanitizeURL`이 throw하는 스텁으로
+치환) — 그래서 링크의 `href`는 ref 콜백으로 커밋 단계에서 직접 써야 한다. ② **`window.open`은
+세 fetch보다 먼저, 어떤 `await`보다 앞에서 호출해야 한다** — 클릭이 준 transient activation이
+왕복 중 만료되면 팝업이 차단되기 때문. 리스너를 같은 동기 블록에 붙이면 경합은 생기지 않는다
+(자식의 postMessage는 이 창의 이벤트 루프에 큐잉되므로 현재 동기 블록이 끝나기 전엔 디스패치 불가).
+
+선행 슬라이스(서브프로젝트
 1+2, 페치+조립)는 구현·병합 완료 — `docs/superpowers/specs/2026-07-19-roster-sync-fetch-assemble-design.md`.
 멀티유저 전제조건(방어적 lookup)도 완료 — 브랜치 `wip/multiuser-preconditions`.
 
@@ -185,7 +197,7 @@
 
 | 항목 | 상태 |
 |---|---|
-| 팝업 차단 동작 | 미확인. 유저 제스처이므로 통상 허용 예상, 스모크에서 확인 |
+| 팝업 차단 동작 | **여전히 미확인 — 스모크로만 확정.** 단, 원래의 "유저 제스처라 통상 허용" 전제는 코드가 지키지 않고 있었다(세 fetch 뒤에 `window.open`을 불러 activation 만료 가능). `window.open`을 첫 `await` 앞으로 옮겨 구조적으로 해소함 |
 | CSP `connect-src` | postMessage 채택으로 **회피됨** (측정 불필요) |
 | 모바일 | 지원 안 함(비목표) |
 | blablalink API 변경 | 재설치 공지 필요. 수집기와 동일한 노출이며 새로 생긴 위험은 아님 |
