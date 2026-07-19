@@ -68,7 +68,8 @@
   gap: var(--sp-3);
 }
 
-.card__title {
+.card__title,
+.sync__title {
   font-size: 18px;
   font-weight: 600;
 }
@@ -236,9 +237,10 @@
   margin-top: 22px;
 }
 
-/* Import ----------------------------------------------------------------- */
+/* Import / Sync ---------------------------------------------------------- */
 
-.import {
+.import,
+.sync {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -262,14 +264,29 @@
   outline-offset: 2px;
 }
 
-.import__message {
+.import__message,
+.sync__message {
   font-size: 13px;
   color: var(--text-muted);
 }
 
-.import__error {
+.import__error,
+.sync__error {
   font-size: 13px;
   color: var(--danger);
+}
+
+.sync__bookmarklet {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
+
+.sync__hint {
+  font-size: 13px;
+  color: var(--text-muted);
+  max-width: 480px;
 }
 
 /* Pills ---------------------------------------------------------------- */
