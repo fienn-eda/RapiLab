@@ -79,7 +79,7 @@ describe('buildBookmarklet', () => {
     // removeEventListener 호출이 실제로 그 send 경로 안에 있는지 확인한다.
     const handlerNameMatch = source.match(/window\.addEventListener\('message',(\w+)\)/)
     const handlerName = handlerNameMatch![1]
-    const sendFnMatch = source.match(/const send=\(\)=>\{([\s\S]*?)\}\n/)
+    const sendFnMatch = source.match(/const send=\(\)=>\{(.*?)\};\n/)
     expect(sendFnMatch).not.toBeNull()
     const sendBody = sendFnMatch![1]
     expect(sendBody).toContain('postMessage')
