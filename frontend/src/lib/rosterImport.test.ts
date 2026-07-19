@@ -28,6 +28,25 @@ describe('parseRosterJson', () => {
     expect(d.overload_options[0]).toMatchObject({ name: '공격력 증가', value: '42.32' })
     expect(d.hasCube).toBe(true)
     expect(d.pve_cube).toEqual({ name: 'Resilience Cube', level: '15' })
+    expect(d.cubeKnown).toBe(true)
+  })
+
+  it('marks cubeKnown false when the unit carries no pve_cube key at all (bookmarklet-assembled sync payload)', () => {
+    // backend/app/roster_assembly.py's assemble_unit never emits pve_cube (no
+    // cube-tid -> name map on the backend), unlike the collector's roster.json
+    // which always emits the key (an object, or null when no cube is equipped).
+    const { drafts } = parseRosterJson({
+      units: [
+        {
+          name_en: 'Neon: Blue Ocean',
+          raid400: { hp: 2309238, atk: 94815, def: 13100 },
+          skill_levels: { skill1: 1, skill2: 1, burst: 1 },
+        },
+      ],
+    })
+    const d = drafts[0]
+    expect(d.hasCube).toBe(false)
+    expect(d.cubeKnown).toBe(false)
   })
 
   it('handles an uninvested unit (no actual/overload/cube)', () => {
@@ -47,6 +66,7 @@ describe('parseRosterJson', () => {
     expect(d.actualAtk).toBe('')
     expect(d.overload_options).toEqual([])
     expect(d.hasCube).toBe(false)
+    expect(d.cubeKnown).toBe(true) // key present as null: the source told us "no cube"
   })
 
   it('resolves encoded units by resource_id, not name, and promotes owned signatures', () => {

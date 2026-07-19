@@ -31,6 +31,12 @@ export interface NikkeDraft {
   overload_options: OverloadRow[]
   hasCube: boolean
   pve_cube: { name: string; level: string }
+  // Whether the import source actually reported cube ownership (true/false
+  // cube presence), vs simply not carrying cube data at all. The bookmarklet
+  // sync path has no cube-tid -> name map on the backend, so it never reports
+  // cube info; mergeCollectorDrafts uses this to avoid treating "no info" as
+  // "no cube" and erasing a cube entered via file-import.
+  cubeKnown: boolean
 }
 
 export interface NikkeDraftErrors {
@@ -68,6 +74,7 @@ export const makeEmptyDraft = (): NikkeDraft => ({
   overload_options: [],
   hasCube: false,
   pve_cube: { name: '', level: '' },
+  cubeKnown: true,
 })
 
 interface ParsedNumber {
@@ -258,6 +265,12 @@ export const mergeRosterDrafts = (
  * and actual-level stats are overwritten too. core_level is NOT overwritten
  * (the collector does not capture it — the displayed stats already bake in
  * the real grade/core).
+ *
+ * Cube is the one exception: the bookmarklet-assembled sync payload never
+ * carries cube data at all (the backend has no cube-tid -> name map), so
+ * incoming.cubeKnown is false for it. Overwriting hasCube/pve_cube from that
+ * "no info" signal would read as "no cube equipped" and silently erase a
+ * cube entered via file-import, so it's skipped whenever cubeKnown is false.
  */
 export const mergeCollectorDrafts = (
   current: NikkeDraft[],
@@ -286,8 +299,9 @@ export const mergeCollectorDrafts = (
         actualDef: inc.actualDef,
         skill_levels: inc.skill_levels,
         overload_options: inc.overload_options,
-        hasCube: inc.hasCube,
-        pve_cube: inc.pve_cube,
+        ...(inc.cubeKnown
+          ? { hasCube: inc.hasCube, pve_cube: inc.pve_cube }
+          : {}),
       }
       updated += 1
     }

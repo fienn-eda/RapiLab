@@ -3,6 +3,7 @@ import {
   getValidRoster,
   makeEmptyDraft,
   makeOverloadRow,
+  mergeCollectorDrafts,
   mergeRosterDrafts,
   validateDraft,
   type NikkeDraft,
@@ -222,5 +223,66 @@ describe('mergeRosterDrafts', () => {
     const incoming = draft({ character_slug: 'crown' })
     const { drafts } = mergeRosterDrafts([kept], [incoming])
     expect(drafts.find((d) => d.character_slug === 'liter')).toEqual(kept)
+  })
+})
+
+describe('mergeCollectorDrafts', () => {
+  it('overwrites hasCube/pve_cube when the incoming unit carries cube info', () => {
+    const existing = draft({
+      character_slug: 'liter',
+      hasCube: true,
+      pve_cube: { name: 'Old Cube', level: '5' },
+      cubeKnown: true,
+    })
+    const incoming = draft({
+      character_slug: 'liter',
+      hasCube: true,
+      pve_cube: { name: 'New Cube', level: '10' },
+      cubeKnown: true,
+    })
+    const { drafts, updated } = mergeCollectorDrafts([existing], [incoming])
+    expect(updated).toBe(1)
+    expect(drafts[0].hasCube).toBe(true)
+    expect(drafts[0].pve_cube).toEqual({ name: 'New Cube', level: '10' })
+  })
+
+  it('preserves hasCube/pve_cube when the incoming unit carries no cube information at all', () => {
+    // The bookmarklet-assembled sync payload never carries pve_cube (the
+    // backend has no cube-tid -> name map), so parseRosterJson marks it
+    // cubeKnown: false. A sync must not erase a cube entered via file-import.
+    const existing = draft({
+      character_slug: 'liter',
+      hasCube: true,
+      pve_cube: { name: 'Existing Cube', level: '7' },
+      cubeKnown: true,
+    })
+    const incoming = draft({
+      character_slug: 'liter',
+      atk: '77777',
+      level: '400',
+      hasCube: false,
+      pve_cube: { name: '', level: '' },
+      cubeKnown: false,
+    })
+    const { drafts, updated } = mergeCollectorDrafts([existing], [incoming])
+    expect(updated).toBe(1)
+    expect(drafts[0].hasCube).toBe(true)
+    expect(drafts[0].pve_cube).toEqual({ name: 'Existing Cube', level: '7' })
+    // Other collector-sourced fields still overwrite even when cube info is unknown.
+    expect(drafts[0].atk).toBe('77777')
+    expect(drafts[0].level).toBe('400')
+  })
+
+  it('adds a new slug with whatever cube info it carries', () => {
+    const existing = draft({ character_slug: 'liter' })
+    const incoming = draft({
+      character_slug: 'crown',
+      hasCube: true,
+      pve_cube: { name: 'New Cube', level: '3' },
+      cubeKnown: true,
+    })
+    const { drafts, added } = mergeCollectorDrafts([existing], [incoming])
+    expect(added).toBe(1)
+    expect(drafts.find((d) => d.character_slug === 'crown')?.hasCube).toBe(true)
   })
 })

@@ -67,6 +67,10 @@ export const parseRosterJson = (
       pve_cube: u.pve_cube
         ? { name: u.pve_cube.name, level: String(u.pve_cube.level) }
         : { name: '', level: '' },
+      // Key present (object or explicit null) means the source told us about
+      // cube ownership; key absent means it simply doesn't carry cube data
+      // (the bookmarklet-assembled sync payload never does). See NikkeDraft.
+      cubeKnown: 'pve_cube' in u,
     })
   }
   if (unsupported.length > 0) {

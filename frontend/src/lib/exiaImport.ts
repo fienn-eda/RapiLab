@@ -156,6 +156,7 @@ export const parseExiaExport = (raw: unknown): ExiaImportResult => {
         overload_options: rows,
         hasCube: false,
         pve_cube: { name: '', level: '' },
+        cubeKnown: false, // the ExiaInvasion export doesn't carry cube data
       })
     }
   }
