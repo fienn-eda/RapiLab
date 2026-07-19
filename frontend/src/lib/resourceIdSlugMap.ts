@@ -34,6 +34,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   101: 'drake', // Drake — dual-slot base; see SIGNATURE_OWNED
   102: 'maxwell', // Maxwell
   150: 'julia', // Julia — dual-slot base; see SIGNATURE_OWNED
+  162: 'mihara-bonding-chain', // Mihara: Bonding Chain
   170: 'privaty', // Privaty
   182: 'guillotine-winter-slayer', // Guillotine: Winter Slayer
   183: 'maiden-ice-rose', // Maiden: Ice Rose

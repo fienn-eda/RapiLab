@@ -103,6 +103,10 @@ from app.effects import Effect, EffectRegistry, _matches_scope
 from app.elements import element_multiplier
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
+# How far past a window's end an "after this window ends" event is placed, so
+# it orders after anything landing on the boundary instant itself.
+AFTER_WINDOW_EPSILON = 1e-3
+
 CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
@@ -171,17 +175,21 @@ def _resource_fill_times(
         return sorted(last_bullet_times)
     if kind == "at_battle_start":
         return [0.0]
-    if kind == "on_full_burst_enter_after_own_burst":
-        # Mihara's Restraint Chains: banked when Full Burst ends if she just
-        # burst, then spent whole at the NEXT Burst Stage 3 entry - so the
-        # discharge lands on the first Full Burst start after each of her own
-        # bursts, not on every Full Burst start.
-        starts = sorted(start for start, _ in full_burst_windows)
+    if kind == "on_full_burst_end_after_own_burst":
+        # Mihara's Restraint Chains: re-banked when Full Burst ends "if this
+        # unit has just used her Burst Skill", and spent whole just AFTER that
+        # ("풀 버스트 타임 종료 후"). The later Burst-Stage-3 discharge trigger
+        # then always finds an empty bank, so this is the only recurring
+        # discharge in a raid. The nudge past the window's end is what the
+        # skill text says AND what makes the discharge survive a resource
+        # reset landing on that same instant (Bonding Pain cancelling the
+        # stacks it just detonated) - resource_count discards fills recorded
+        # at or before its baseline reset.
         times = []
         for burst_time in own_burst_times:
-            nxt = next((s for s in starts if s > burst_time), None)
-            if nxt is not None and nxt not in times:
-                times.append(nxt)
+            end = next((e for s, e in full_burst_windows if s <= burst_time <= e), None)
+            if end is not None and end + AFTER_WINDOW_EPSILON not in times:
+                times.append(end + AFTER_WINDOW_EPSILON)
         return sorted(times)
     raise ValueError(f"unknown resource fill kind: {kind}")
 

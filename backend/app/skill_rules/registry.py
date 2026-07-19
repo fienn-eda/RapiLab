@@ -142,6 +142,12 @@ from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resources,
     build_guillotine_rules,
 )
+from app.skill_rules.mihara_bonding_chain import (
+    build_dragging_chain_resource_scaled_nukes,
+    build_ensnaring_chain_resources,
+    build_mihara_bonding_chain_rules,
+    build_mihara_scheduled_nukes,
+)
 from app.skill_rules.modernia import build_modernia_per_shot_rules, build_modernia_resources
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
@@ -380,6 +386,8 @@ _BUILDERS = {
     "ein": lambda sv: (build_ein_rules(sv), feather_all_range_burst_percent(sv)),
     # 13 Ghosts fires via dynamic_hit_count_nukes (branching hit count), not a flat burst percent.
     "elegg-boom-and-shock": lambda sv: (build_elegg_boom_and_shock_rules(sv), None),
+    # Bonding Pain is a resource-scaled DoT, not a flat burst nuke.
+    "mihara-bonding-chain": lambda sv: (build_mihara_bonding_chain_rules(sv), None),
     "raven": lambda sv: (build_raven_rules(sv), tempest_burst_percent(sv)),
     "sakura-bloom-in-summer": lambda sv: (
         build_sakura_bloom_in_summer_rules(sv), ephemeral_spender_burst_percent(sv)
@@ -482,6 +490,7 @@ _BURST_DAMAGE_TYPES = {
 _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
     "elegg-boom-and-shock": lambda sv: build_ghostbuster_scheduled_nukes(sv),  # capture at the ghost cap
+    "mihara-bonding-chain": lambda sv: build_mihara_scheduled_nukes(sv),  # chain attacks + Ensnaring DoT
     "little-mermaid": lambda sv: build_bubble_barrage_scheduled_nukes(sv),  # squad-wide 500-ammo counter
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
@@ -585,6 +594,7 @@ _RESOURCE_SPEC_BUILDERS = {
     "soda-twinkling-bunny": lambda sv: build_golden_chip_resources(sv),
     "maiden-ice-rose": lambda sv: build_mp_resources(sv),
     "elegg-boom-and-shock": lambda sv: build_elegg_ghost_resources(sv),
+    "mihara-bonding-chain": lambda sv: build_ensnaring_chain_resources(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named
@@ -599,6 +609,7 @@ _RESOURCE_SCALED_NUKE_BUILDERS = {
     "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
     "julia": lambda sv: build_climax_resource_scaled_nuke(sv),
     "mana": lambda sv: build_fatal_error_dot(sv),
+    "mihara-bonding-chain": lambda sv: build_dragging_chain_resource_scaled_nukes(sv),
     "sakura-bloom-in-summer": lambda sv: build_sakura_resource_scaled_nukes(sv),
 }
 
