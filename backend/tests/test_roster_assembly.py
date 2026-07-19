@@ -69,3 +69,15 @@ def test_assemble_roster_matches_the_collector_scrape(tables):
         if gov != wov:
             off.append((want["name_en"], "overload", gov, wov))
     assert off == [], off[:5]
+
+
+def test_load_directory_reads_the_committed_snapshot():
+    """조립에 필요한 필드가 스냅샷에 실제로 있는지 — 신규 Nikke 갱신 누락을 잡는 가드."""
+    from app.roster_assembly import load_directory
+
+    directory = load_directory()
+    assert len(directory) > 150
+    ssr = [e for e in directory if e.get("original_rare") == "SSR"]
+    assert len(ssr) > 150
+    for key in ("name_en", "resource_id", "class", "corporation", "name_code"):
+        assert all(e.get(key) not in (None, "") for e in directory), key

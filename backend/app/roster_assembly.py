@@ -5,8 +5,25 @@ promotion and merge are reused unchanged. This module only joins the three
 fetched payloads with the committed reference tables and computes each unit's
 level-400 HP/ATK and overload.
 """
+import json
+from pathlib import Path
+
 from app import stat_assembly as sa
 from app.overload_decode import assemble_overload
+
+# The committed public directory snapshot: resource_id / name_code / class /
+# corporation per unit. A Nikke released after this snapshot is absent, and
+# assemble_roster skips it silently - refresh the snapshot when that happens
+# (the sync endpoint's telemetry counts unknown name_codes for exactly this).
+DIRECTORY = (
+    Path(__file__).resolve().parents[2]
+    / "tools" / "collect-blablalink" / "nikke-directory.json"
+)
+
+
+def load_directory(path: Path = DIRECTORY) -> list[dict]:
+    """The directory snapshot assemble_roster joins owned units against."""
+    return json.loads(path.read_text(encoding="utf-8"))
 
 SLOTS = ("head", "torso", "arm", "leg")
 
