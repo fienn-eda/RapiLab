@@ -19,20 +19,28 @@ export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
   const [openId, setOpenId] = useState<string | null>(null)
   const [urlError, setUrlError] = useState<string | null>(null)
   const [summary, setSummary] = useState<string | null>(null)
+  // Parse warning lines (e.g. which owned units are not yet supported), shown
+  // verbatim like ImportRosterButton's notes so a syncing user is told too.
+  const [notes, setNotes] = useState<string[]>([])
 
   const { status, error } = useBookmarkletImport((raw) => {
-    const { drafts } = parseRosterJson(raw)
+    const { drafts, warnings } = parseRosterJson(raw)
     const { added, updated } = onImport(drafts, 'collector')
     setSummary(`${added} added, ${updated} updated`)
+    setNotes(warnings)
   })
 
   // A fresh import run supersedes whatever summary/error is on screen.
   useEffect(() => {
-    if (status === 'importing') setSummary(null)
+    if (status === 'importing') {
+      setSummary(null)
+      setNotes([])
+    }
   }, [status])
 
   const handleUrl = (value: string) => {
     setSummary(null)
+    setNotes([])
     if (!value.trim()) {
       setOpenId(null)
       setUrlError(null)
@@ -103,6 +111,11 @@ export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
       )}
       {status === 'importing' && <p className="sync__message">Importing…</p>}
       {summary && <p className="sync__message">{summary}</p>}
+      {notes.map((note, i) => (
+        <p className="sync__message" key={i}>
+          {note}
+        </p>
+      ))}
       {error && (
         <p className="sync__error" role="alert">
           {error}

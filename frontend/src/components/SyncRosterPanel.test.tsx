@@ -70,6 +70,28 @@ describe('SyncRosterPanel', () => {
     expect(screen.getByText('1 added, 0 updated')).toBeTruthy()
   })
 
+  it('surfaces parse warnings (e.g. unsupported owned units) as note paragraphs', async () => {
+    vi.mocked(assembleRoster).mockResolvedValueOnce({
+      units: [
+        {
+          resource_id: 999999, // not in RESOURCE_ID_TO_SLUG -> unsupported
+          name_en: 'Not Encoded Unit',
+          raid400: { hp: 1, atk: 2, def: 3 },
+        },
+      ],
+    })
+    const onImport = vi.fn().mockReturnValue({ added: 1, updated: 0 })
+    render(<SyncRosterPanel onImport={onImport} />)
+
+    postPayload()
+
+    await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1))
+    expect(
+      await screen.findByText(/1 owned units not yet supported/),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/Not Encoded Unit/)).toBeInTheDocument()
+  })
+
   it('clears the summary and link when the input is cleared', async () => {
     vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
     const onImport = vi.fn().mockReturnValue({ added: 0, updated: 0 })
