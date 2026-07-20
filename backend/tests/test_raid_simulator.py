@@ -116,6 +116,205 @@ def test_boss_element_grants_advantage_bonus_to_matching_attackers():
     assert round(advantaged["total_damage"], 5) == round(10000.0 * 1.1, 5)
 
 
+def test_superior_code_damage_applies_only_with_elemental_advantage():
+    # make_deck's attacker is Iron; Iron > Electric. other_elemental_bonus is
+    # the "Superior Code Damage" stat, which joins the element bonus group:
+    # it must raise damage against an Electric boss and do nothing at all
+    # against a neutral Fire boss.
+    def grant_superior_code(context, caster_slug, time, registry):
+        registry.add(
+            Effect("other_elemental_bonus", 0.5, "self", None, "attacker"),
+            applied_at=time,
+        )
+
+    rules_by_slug = {
+        "buffer": [SkillRule(trigger="battle_start", action=grant_superior_code)],
+        "midtier": [],
+        "attacker": [],
+    }
+    kwargs = dict(
+        rules_by_slug=rules_by_slug,
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    neutral = simulate_raid(make_deck(), boss_element="Fire", **kwargs)
+    advantaged = simulate_raid(make_deck(), boss_element="Electric", **kwargs)
+
+    # Neutral: element bonus group is 1.0 + nothing.
+    assert neutral["total_damage"] == 10000.0
+    # Advantaged: 1.1 from the element multiplier plus the 0.5 bonus.
+    assert round(advantaged["total_damage"], 5) == round(10000.0 * 1.6, 5)
+
+
+def test_element_advantage_grant_gives_advantage_the_unit_does_not_naturally_have():
+    # make_deck's attacker is Iron, which is neutral against an Iron boss. A skill
+    # that GRANTS elemental advantage ("applies Elemental Advantage damage to X
+    # Code enemies") sets element_advantage_grant, so the element multiplier
+    # reads 1.1 exactly as natural advantage would.
+    def grant_advantage(context, caster_slug, time, registry):
+        registry.add(
+            Effect("element_advantage_grant", 1.0, "self", None, "attacker"),
+            applied_at=time,
+        )
+
+    kwargs = dict(
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        boss_element="Iron",
+    )
+    without = simulate_raid(
+        make_deck(), rules_by_slug={"buffer": [], "midtier": [], "attacker": []}, **kwargs
+    )
+    with_grant = simulate_raid(
+        make_deck(),
+        rules_by_slug={
+            "buffer": [SkillRule(trigger="battle_start", action=grant_advantage)],
+            "midtier": [],
+            "attacker": [],
+        },
+        **kwargs,
+    )
+
+    assert without["total_damage"] == 10000.0
+    assert round(with_grant["total_damage"], 5) == round(10000.0 * 1.1, 5)
+
+
+def test_element_advantage_grant_opens_the_superior_code_damage_gate():
+    # Superior Code Damage (other_elemental_bonus) only pays out with advantage.
+    # A granted advantage is real advantage, so it must let that bonus through.
+    def grant_advantage_and_superior_code(context, caster_slug, time, registry):
+        registry.add(
+            Effect("element_advantage_grant", 1.0, "self", None, "attacker"),
+            applied_at=time,
+        )
+        registry.add(
+            Effect("other_elemental_bonus", 0.5, "self", None, "attacker"),
+            applied_at=time,
+        )
+
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug={
+            "buffer": [SkillRule(trigger="battle_start", action=grant_advantage_and_superior_code)],
+            "midtier": [],
+            "attacker": [],
+        },
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        boss_element="Iron",  # neutral for the Iron attacker: advantage is purely granted
+    )
+
+    # element bonus group = 1.1 (granted) + 0.5 (superior code)
+    assert round(result["total_damage"], 5) == round(10000.0 * 1.6, 5)
+
+
+def test_element_advantage_grant_does_not_stack_with_natural_advantage():
+    # A grant is meant to open advantage a unit does NOT naturally have. If the
+    # unit already holds natural advantage (Fire attacker vs a Wind boss - Fire
+    # beats Wind per elements.py), a grant on top must not double the element
+    # multiplier to 1.2 - it must stay at 1.1, same as natural advantage alone.
+    # Two simultaneous grants must likewise stay at 1.1, not compound further.
+    fire_deck = [
+        {"slug": "buffer", "burst_tier": 1, "element": "Fire", "cooldown": 20.0},
+        {"slug": "midtier", "burst_tier": 2, "element": "Fire", "cooldown": 20.0},
+        {"slug": "attacker", "burst_tier": 3, "element": "Fire", "cooldown": 40.0},
+    ]
+
+    def grant_advantage(context, caster_slug, time, registry):
+        registry.add(
+            Effect("element_advantage_grant", 1.0, "self", None, "attacker"),
+            applied_at=time,
+        )
+
+    def grant_advantage_twice(context, caster_slug, time, registry):
+        grant_advantage(context, caster_slug, time, registry)
+        registry.add(
+            Effect("element_advantage_grant", 1.0, "self", None, "attacker"),
+            applied_at=time,
+        )
+
+    kwargs = dict(
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        boss_element="Wind",  # Fire > Wind: attacker already has natural advantage
+    )
+    natural_only = simulate_raid(
+        fire_deck, rules_by_slug={"buffer": [], "midtier": [], "attacker": []}, **kwargs
+    )
+    natural_plus_one_grant = simulate_raid(
+        fire_deck,
+        rules_by_slug={
+            "buffer": [SkillRule(trigger="battle_start", action=grant_advantage)],
+            "midtier": [],
+            "attacker": [],
+        },
+        **kwargs,
+    )
+    natural_plus_two_grants = simulate_raid(
+        fire_deck,
+        rules_by_slug={
+            "buffer": [SkillRule(trigger="battle_start", action=grant_advantage_twice)],
+            "midtier": [],
+            "attacker": [],
+        },
+        **kwargs,
+    )
+
+    assert round(natural_only["total_damage"], 5) == round(10000.0 * 1.1, 5)
+    assert round(natural_plus_one_grant["total_damage"], 5) == round(10000.0 * 1.1, 5)
+    assert round(natural_plus_two_grants["total_damage"], 5) == round(10000.0 * 1.1, 5)
+
+
+def test_element_advantage_grant_expires_with_its_duration():
+    # A grant is a skill-scoped buff like any other - a short-duration grant
+    # that lapses before the burst fires must not still be raising the element
+    # multiplier at damage-computation time.
+    def grant_advantage_briefly(context, caster_slug, time, registry):
+        registry.add(
+            Effect("element_advantage_grant", 1.0, "self", 3.0, "attacker"),
+            applied_at=time,
+        )
+
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug={
+            "buffer": [SkillRule(trigger="battle_start", action=grant_advantage_briefly)],
+            "midtier": [],
+            "attacker": [],
+        },
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,  # burst fires at t=5.0, after the grant's 3s duration lapses
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        boss_element="Iron",  # neutral for the Iron attacker: any bonus is purely from the grant
+    )
+
+    assert result["total_damage"] == 10000.0  # grant expired at t=3.0; no bonus at t=5.0
+
+
 def test_base_crit_rate_of_15_percent_raises_damage_by_7_5_percent():
     rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
     kwargs = dict(

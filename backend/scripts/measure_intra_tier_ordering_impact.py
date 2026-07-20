@@ -47,7 +47,7 @@ DEFAULT_TIER3 = [
 
 def _state(slug, level, skill_level):
     return UserNikkeState(
-        character_slug=slug, level=level, core_level=0, hp=1_000_000.0,
+        character_slug=slug, level=level, hp=1_000_000.0,
         atk=60_000.0, def_=3_000.0,
         skill_levels={"skill1": skill_level, "skill2": skill_level, "burst": skill_level},
     )

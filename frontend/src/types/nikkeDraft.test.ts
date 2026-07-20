@@ -15,14 +15,11 @@ const validDraft = (): NikkeDraft => ({
   ...makeEmptyDraft(),
   character_slug: 'red-hood',
   level: '200',
-  core_level: '7',
   hp: '1000000.5',
   atk: '85000',
   def_: '12000',
   skill_levels: { skill1: '10', skill2: '7', burst: '4' },
   overload_options: [],
-  hasCube: false,
-  pve_cube: { name: '', level: '' },
 })
 
 describe('validateDraft', () => {
@@ -32,13 +29,11 @@ describe('validateDraft', () => {
     expect(value).toEqual({
       character_slug: 'red-hood',
       level: 200,
-      core_level: 7,
       hp: 1000000.5,
       atk: 85000,
       def_: 12000,
       skill_levels: { skill1: 10, skill2: 7, burst: 4 },
       overload_options: [],
-      pve_cube: null,
     })
   })
 
@@ -47,7 +42,6 @@ describe('validateDraft', () => {
     expect(value).toBeUndefined()
     expect(errors.character_slug).toBe('Required')
     expect(errors.level).toBe('Required')
-    expect(errors.core_level).toBe('Required')
     expect(errors.hp).toBe('Required')
     expect(errors.atk).toBe('Required')
     expect(errors.def_).toBe('Required')
@@ -62,13 +56,6 @@ describe('validateDraft', () => {
     const { errors, value } = validateDraft({ ...validDraft(), level: '0' })
     expect(errors.level).toBe('Must be ≥ 1')
     expect(value).toBeUndefined()
-  })
-
-  it('allows core_level 0 but rejects negative', () => {
-    expect(validateDraft({ ...validDraft(), core_level: '0' }).value).toBeDefined()
-    expect(validateDraft({ ...validDraft(), core_level: '-1' }).errors.core_level).toBe(
-      'Must be ≥ 0',
-    )
   })
 
   it('rejects non-integer whole-number fields', () => {
@@ -127,25 +114,6 @@ describe('validateDraft', () => {
     })
   })
 
-  it('leaves pve_cube null when no cube is equipped', () => {
-    expect(validateDraft(validDraft()).value?.pve_cube).toBeNull()
-  })
-
-  it('validates the cube name and level 1–15 when a cube is equipped', () => {
-    const draft = { ...validDraft(), hasCube: true, pve_cube: { name: '', level: '16' } }
-    const { errors, value } = validateDraft(draft)
-    expect(value).toBeUndefined()
-    expect(errors.pve_cube).toEqual({ name: 'Required', level: 'Must be ≤ 15' })
-  })
-
-  it('parses a valid equipped cube into the value', () => {
-    const draft = {
-      ...validDraft(),
-      hasCube: true,
-      pve_cube: { name: 'Bastion', level: '9' },
-    }
-    expect(validateDraft(draft).value?.pve_cube).toEqual({ name: 'Bastion', level: 9 })
-  })
 })
 
 describe('getValidRoster', () => {
@@ -173,11 +141,8 @@ describe('mergeRosterDrafts', () => {
       atk: '60000',
       hp: '120000',
       def_: '3000',
-      hasCube: true,
-      pve_cube: { name: 'Bastion Cube', level: '7' },
       skill_levels: { skill1: '1', skill2: '1', burst: '1' },
       level: '200',
-      core_level: '0',
     })
     const incoming = draft({
       character_slug: 'rapi-red-hood',
@@ -185,7 +150,6 @@ describe('mergeRosterDrafts', () => {
       hp: '',
       skill_levels: { skill1: '10', skill2: '10', burst: '10' },
       level: '663',
-      core_level: '5',
       overload_options: [{ id: 'x', name: '공격력 증가', value: '12' }],
     })
 
@@ -199,10 +163,7 @@ describe('mergeRosterDrafts', () => {
     expect(merged.atk).toBe('60000')
     expect(merged.hp).toBe('120000')
     expect(merged.def_).toBe('3000')
-    expect(merged.hasCube).toBe(true)
-    expect(merged.pve_cube).toEqual({ name: 'Bastion Cube', level: '7' })
     expect(merged.level).toBe('663')
-    expect(merged.core_level).toBe('5')
     expect(merged.skill_levels).toEqual({ skill1: '10', skill2: '10', burst: '10' })
     expect(merged.overload_options).toEqual([
       { id: 'x', name: '공격력 증가', value: '12' },
@@ -227,62 +188,83 @@ describe('mergeRosterDrafts', () => {
 })
 
 describe('mergeCollectorDrafts', () => {
-  it('overwrites hasCube/pve_cube when the incoming unit carries cube info', () => {
+  it('overwrites stats, actual-level stats, skills, and overload on a matching slug', () => {
     const existing = draft({
       character_slug: 'liter',
-      hasCube: true,
-      pve_cube: { name: 'Old Cube', level: '5' },
-      cubeKnown: true,
-    })
-    const incoming = draft({
-      character_slug: 'liter',
-      hasCube: true,
-      pve_cube: { name: 'New Cube', level: '10' },
-      cubeKnown: true,
-    })
-    const { drafts, updated } = mergeCollectorDrafts([existing], [incoming])
-    expect(updated).toBe(1)
-    expect(drafts[0].hasCube).toBe(true)
-    expect(drafts[0].pve_cube).toEqual({ name: 'New Cube', level: '10' })
-  })
-
-  it('preserves hasCube/pve_cube when the incoming unit carries no cube information at all', () => {
-    // The bookmarklet-assembled sync payload never carries pve_cube (the
-    // backend has no cube-tid -> name map), so parseRosterJson marks it
-    // cubeKnown: false. A sync must not erase a cube entered via file-import.
-    const existing = draft({
-      character_slug: 'liter',
-      hasCube: true,
-      pve_cube: { name: 'Existing Cube', level: '7' },
-      cubeKnown: true,
+      atk: '60000',
+      hp: '120000',
+      def_: '3000',
+      skill_levels: { skill1: '1', skill2: '1', burst: '1' },
     })
     const incoming = draft({
       character_slug: 'liter',
       atk: '77777',
+      hp: '88888',
+      def_: '9999',
+      actualHp: '999999',
+      actualAtk: '444444',
+      actualDef: '11111',
       level: '400',
-      hasCube: false,
-      pve_cube: { name: '', level: '' },
-      cubeKnown: false,
+      skill_levels: { skill1: '10', skill2: '10', burst: '10' },
+      overload_options: [{ id: 'x', name: '공격력 증가', value: '12' }],
     })
     const { drafts, updated } = mergeCollectorDrafts([existing], [incoming])
     expect(updated).toBe(1)
-    expect(drafts[0].hasCube).toBe(true)
-    expect(drafts[0].pve_cube).toEqual({ name: 'Existing Cube', level: '7' })
-    // Other collector-sourced fields still overwrite even when cube info is unknown.
-    expect(drafts[0].atk).toBe('77777')
-    expect(drafts[0].level).toBe('400')
+    const merged = drafts[0]
+    expect(merged.atk).toBe('77777')
+    expect(merged.hp).toBe('88888')
+    expect(merged.def_).toBe('9999')
+    expect(merged.actualHp).toBe('999999')
+    expect(merged.actualAtk).toBe('444444')
+    expect(merged.actualDef).toBe('11111')
+    expect(merged.level).toBe('400')
+    expect(merged.skill_levels).toEqual({ skill1: '10', skill2: '10', burst: '10' })
+    expect(merged.overload_options).toEqual([
+      { id: 'x', name: '공격력 증가', value: '12' },
+    ])
   })
 
-  it('adds a new slug with whatever cube info it carries', () => {
+  it('adds a new slug', () => {
     const existing = draft({ character_slug: 'liter' })
-    const incoming = draft({
-      character_slug: 'crown',
-      hasCube: true,
-      pve_cube: { name: 'New Cube', level: '3' },
-      cubeKnown: true,
-    })
+    const incoming = draft({ character_slug: 'crown', atk: '50000' })
     const { drafts, added } = mergeCollectorDrafts([existing], [incoming])
     expect(added).toBe(1)
-    expect(drafts.find((d) => d.character_slug === 'crown')?.hasCube).toBe(true)
+    expect(drafts.find((d) => d.character_slug === 'crown')?.atk).toBe('50000')
+  })
+
+  it('refreshes grade and core on a matching slug when they change on re-sync', () => {
+    const existing = draft({ character_slug: 'liter', grade: 1, core: 2 })
+    const incoming = draft({ character_slug: 'liter', grade: 3, core: 7 })
+    const { drafts } = mergeCollectorDrafts([existing], [incoming])
+    expect(drafts[0].grade).toBe(3)
+    expect(drafts[0].core).toBe(7)
+  })
+
+  it('picks up grade and core on a matching slug that had none stored (roster from before this feature existed)', () => {
+    const existing = draft({ character_slug: 'liter' })
+    expect(existing.grade).toBeUndefined()
+    expect(existing.core).toBeUndefined()
+    const incoming = draft({ character_slug: 'liter', grade: 2, core: 5 })
+    const { drafts } = mergeCollectorDrafts([existing], [incoming])
+    expect(drafts[0].grade).toBe(2)
+    expect(drafts[0].core).toBe(5)
+  })
+
+  it('preserves a stored grade/core when the incoming source (e.g. the legacy collector) carries none', () => {
+    const existing = draft({ character_slug: 'liter', grade: 3, core: 7 })
+    const incoming = draft({ character_slug: 'liter' })
+    expect(incoming.grade).toBeUndefined()
+    expect(incoming.core).toBeUndefined()
+    const { drafts } = mergeCollectorDrafts([existing], [incoming])
+    expect(drafts[0].grade).toBe(3)
+    expect(drafts[0].core).toBe(7)
+  })
+
+  it('leaves grade/core undefined (not 0) when neither side has ever stored them', () => {
+    const existing = draft({ character_slug: 'liter' })
+    const incoming = draft({ character_slug: 'liter' })
+    const { drafts } = mergeCollectorDrafts([existing], [incoming])
+    expect(drafts[0].grade).toBeUndefined()
+    expect(drafts[0].core).toBeUndefined()
   })
 })

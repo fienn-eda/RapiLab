@@ -44,10 +44,11 @@ Not modeled / deferred:
   damage term of its own.
 - "Required hit count: 100" as a real counter - see the approximation above.
 - "Elemental Advantage Attack Damage" maps to other_elemental_bonus, which the
-  engine adds on top of the elemental multiplier unconditionally - correct only
-  when the wielder has elemental advantage (the intended Water-vs-Fire-boss
-  raid setup); a neutral/disadvantaged boss would overcount it (existing
-  convention, see guillotine_winter_slayer / anis_sparkling_summer).
+  engine adds on top of the elemental multiplier ONLY when the wielder actually
+  holds elemental advantage (the intended Water-vs-Fire-boss raid setup) - so
+  against a neutral/disadvantaged boss it correctly contributes nothing, with
+  no per-unit boss gate needed here (existing convention, see
+  guillotine_winter_slayer / anis_sparkling_summer).
 
 Numbers sourced from data/lootandwaifus/char_elegg-boom-and-shock.json.
 """

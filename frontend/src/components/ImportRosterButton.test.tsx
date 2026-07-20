@@ -76,14 +76,12 @@ describe('ImportRosterButton', () => {
           name_en: 'Rapi: Red Hood',
           raid400: { hp: 3532402, atk: 143543, def: 20986 },
           skill_levels: { skill1: 10, skill2: 10, burst: 10 },
-          pve_cube: null,
         },
         {
           resource_id: 999999,
           name_en: 'Not Encoded Unit',
           raid400: { hp: 1, atk: 2, def: 3 },
           skill_levels: { skill1: 10, skill2: 10, burst: 10 },
-          pve_cube: null,
         },
       ],
     })

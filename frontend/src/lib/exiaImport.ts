@@ -1,5 +1,5 @@
 // Parses an ExiaInvasion export (blablalink roster JSON) into editable NikkeDrafts.
-// Only the fields the export carries are mapped; ATK/HP/DEF and cube stay manual.
+// Only the fields the export carries are mapped; ATK/HP/DEF stay manual.
 // The cookie/game_uid fields in the export are credentials and are never read.
 
 import type { NikkeDraft, OverloadRow } from '../types/nikkeDraft'
@@ -141,7 +141,6 @@ export const parseExiaExport = (raw: unknown): ExiaImportResult => {
         id: crypto.randomUUID(),
         character_slug: slug,
         level,
-        core_level: String(character.limit_break?.core ?? 0),
         hp: '',
         atk: '',
         def_: '',
@@ -154,9 +153,6 @@ export const parseExiaExport = (raw: unknown): ExiaImportResult => {
           burst: String(character.skill_burst_level ?? ''),
         },
         overload_options: rows,
-        hasCube: false,
-        pve_cube: { name: '', level: '' },
-        cubeKnown: false, // the ExiaInvasion export doesn't carry cube data
       })
     }
   }

@@ -583,21 +583,18 @@
 
 ### 로스터 동기화 후속 (2026-07-19 병합 직후 열림)
 
-- [ ] **하모니 큐브 효과 배선 + lv15 정규화 (다음 세션 브레인스토밍 대상).** 큐브 효과가
-      현재 전 유닛에게 미반영이라는 발견에서 출발 — `docs/engine-gaps.md` 갭 #12에 전모
-      기록(왜 죽어있는지·데이터가 어디까지 있는지·미결 쟁점). 순서: 큐브 카탈로그 수집 →
-      수치 인덱싱 인게임 대조 → 가정 모델 결정(전역 1종 / 유닛별 / 엔진이 선택) → 배선 + UI
-      가정 명시. **주의: 값 리스트 인덱싱이 미확정이라 대조 없이 구현하면 수치를 지어내게 된다.**
-- [ ] **북마크릿 탭 재사용 (Fienn 제안, 미결정).** `window.open(appOrigin, 'nikke-deck-builder')`
-      처럼 창 이름을 주면 재동기화 때 새 탭을 쌓지 않고 기존 탭을 재사용한다. 한계: 북마크릿이
-      직접 연 탭에만 통하고, 사용자가 주소창으로 따로 연 탭은 브라우징 컨텍스트 그룹이 달라
-      이름으로 찾아지지 않는다. "탭을 아예 안 열고 기존 탭만 갱신"은 구조적으로 불가능
-      (북마크릿은 blablalink 오리진에서 돌고, BroadcastChannel·localStorage는 동일 오리진 한정).
-      **하려면 지금이 가장 쌈** — 북마크릿 변경은 전 유저 재설치를 강제하는데 현재 사용자가 1명.
-- [ ] **표시 개선: `core_level`이 임포트 시 항상 0으로 보인다.** 엔진에는 무해하다(백엔드 스탯
-      계산의 입력이라 이미 raid400 ATK/HP에 접혀 있고, `models.py`에 선언만 있을 뿐 읽는 곳이
-      0건) — 하지만 코어 6개인 유닛에 0으로 표시되면 오해를 부른다. grade도 draft 필드가 아니라
-      아예 표시되지 않는다.
+- [x] **하모니 큐브 효과 배선 + lv15 정규화 — 완료 (2026-07-20).** 전원 Resilience 큐브
+      Lv.15 착용 가정(전역 1종)으로 배선 — 재장전 속도 29.69% / 우월 코드 대미지 19.09%,
+      `tables.json`에서 유도해 인게임 툴팁과 대조 완료. 미결이던 "전역 1종 / 유닛별 /
+      엔진이 선택" 쟁점은 전역 1종으로 결정, 유닛별 선택은 다음 확장으로 defer. 부수로
+      `other_elemental_bonus`(우월 코드 대미지) 원소 우위 게이팅 버그도 수정. 상세는
+      `docs/engine-gaps.md` 갭 #12, `docs/decisions.md`, `docs/superpowers/specs/
+      2026-07-20-harmony-cube-assumed-lv15-design.md` 참고.
+- [x] **북마크릿 탭 재사용 — 완료.** `window.open(appOrigin, 'nikke-deck-builder')`로 창 이름을
+      줘 재동기화 때 기존 탭을 재사용(`frontend/src/lib/bookmarklet.ts`).
+- [x] **표시 개선: `core_level`이 임포트 시 항상 0으로 보인다 — 완료.** grade/core 배지
+      (`InvestmentBadge`, Task 3)가 실제 투자 표시를 맡고, 아무도 읽지 않던 입력
+      `core_level`은 제거(Task 4, `docs/decisions.md` 참고).
 - [ ] **개인정보 처리방침** — 공개 배포 전 필요(설계 스펙에 명시, 법률 검토는 범위 밖).
 - [ ] **디렉토리 스냅샷 갱신 루틴** — 스냅샷 이후 출시된 니케는 조용히 스킵된다. 동기화
       엔드포인트의 `unknown_name_codes` 집계가 갱신 시점을 알려준다.
@@ -732,8 +729,14 @@
 ### gap #5 후속 (2026-07-16 배치 중 발견, 미착수)
 - [x] **`rei-ayanami`** (2026-07-16): Preemptive Subdual의 "Elemental Advantage Attack
       Damage +30.23%/3s"(노멀100회마다)를 `other_elemental_bonus` +
-      `boss_is_element("Iron")` 게이팅(Fire>Iron), 넉과 같은 every-100 트리거에 refresh
-      버프로 인코딩. ⚠→✅ (비-DPS 실드만 잔여).
+      ~~`boss_is_element("Iron")` 게이팅(Fire>Iron)~~, 넉과 같은 every-100 트리거에
+      refresh 버프로 인코딩. ⚠→✅ (비-DPS 실드만 잔여). **2026-07-20 정정: "Fire>Iron"은
+      틀린 원소 주장임** — `elements.py`의 순환은 Water>Fire>Wind>Iron>Electric>Water이라
+      Fire는 Iron이 아니라 Wind를 이김. 스킬 원문도 원소를 특정하지 않음. 이후 착지한
+      damage_formula의 원소우위 게이트와 이 Iron 게이팅이 상호배타적이 되어 버프가 어떤
+      보스에서도 발동 못 하는 버그로 이어짐(gap #5 자체는 정상 해소, 게이팅 로직이
+      문제). 게이팅 제거, damage_formula의 우위 게이트만으로 판정하도록 수정
+      (commit `9079710`, `rei_ayanami.py`).
 - [x] **`anis-sparkling-summer`** (2026-07-16): Sparkling Wave의 "Elemental Advantage
       Attack Damage +42.24%"를 `other_elemental_bonus`(element bonus damage) +
       `boss_is_element("Water")` 게이팅(Electric>Water)으로 인코딩. 이 유닛의 잔여

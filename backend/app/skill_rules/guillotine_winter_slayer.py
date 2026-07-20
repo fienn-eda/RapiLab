@@ -30,10 +30,11 @@ Not modeled / deferred:
 - "1 enemy unit(s) with the highest final Max HP" - a solo-boss raid has only
   one target, so the DoT is a single-target tick regardless.
 - "Elemental Advantage Attack Damage" maps to other_elemental_bonus, which the
-  engine adds on top of the elemental multiplier unconditionally - correct only
-  when the wielder has elemental advantage (the intended Water-vs-weak-boss raid
-  setup); a neutral/disadvantaged boss would overcount it (existing convention,
-  see anis_sparkling_summer).
+  engine adds on top of the elemental multiplier ONLY when the wielder actually
+  holds elemental advantage (the intended Water-vs-weak-boss raid setup) - so
+  against a neutral/disadvantaged boss it correctly contributes nothing, with
+  no per-unit boss gate needed here (existing convention, see
+  anis_sparkling_summer).
 """
 from app.effects import ResourceBuff, ResourceSpec
 from app.skill_rules._helpers import buff_rule, leveled_resource_buff, linear_resource_buff

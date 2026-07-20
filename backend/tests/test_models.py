@@ -1,14 +1,13 @@
 import pytest
 from pydantic import ValidationError
 
-from app.models import OverloadOption, PveCube, SkillLevels, UserNikkeState
+from app.models import OverloadOption, SkillLevels, UserNikkeState
 
 
 def test_user_nikke_state_minimal_construction():
     state = UserNikkeState(
         character_slug="anis",
         level=200,
-        core_level=0,
         hp=50000,
         atk=8000,
         def_=2000,
@@ -16,14 +15,12 @@ def test_user_nikke_state_minimal_construction():
     )
     assert state.character_slug == "anis"
     assert state.overload_options == []
-    assert state.pve_cube is None
 
 
-def test_user_nikke_state_with_overload_and_cube():
+def test_user_nikke_state_with_overload_options():
     state = UserNikkeState(
         character_slug="anis",
         level=200,
-        core_level=3,
         hp=60000,
         atk=9500,
         def_=2200,
@@ -32,20 +29,8 @@ def test_user_nikke_state_with_overload_and_cube():
             OverloadOption(name="Elemental Damage", value=5.58),
             OverloadOption(name="Core Hit Damage", value=20.0),
         ],
-        pve_cube=PveCube(name="Bastion Cube", level=10),
     )
     assert len(state.overload_options) == 2
-    assert state.pve_cube.name == "Bastion Cube"
-
-
-def test_pve_cube_accepts_max_level_15():
-    cube = PveCube(name="Resilience Cube", level=15)
-    assert cube.level == 15
-
-
-def test_pve_cube_rejects_level_above_15():
-    with pytest.raises(ValidationError):
-        PveCube(name="Resilience Cube", level=16)
 
 
 def test_skill_levels_must_be_within_valid_range():
@@ -61,7 +46,6 @@ def test_user_nikke_state_rejects_negative_stats():
         UserNikkeState(
             character_slug="anis",
             level=200,
-            core_level=0,
             hp=-1,
             atk=8000,
             def_=2000,
@@ -71,20 +55,20 @@ def test_user_nikke_state_rejects_negative_stats():
 
 def test_user_nikke_state_accepts_actual_level_stats():
     s = UserNikkeState(
-        character_slug="rapi-red-hood", level=400, core_level=0,
+        character_slug="rapi-red-hood", level=400,
         hp=3532402, atk=143543, def_=20986,
         actual_hp=9727100, actual_atk=418862, actual_def=55537,
         skill_levels=SkillLevels(skill1=10, skill2=10, burst=10),
-        overload_options=[], pve_cube=None,
+        overload_options=[],
     )
     assert s.actual_atk == 418862
 
 
 def test_actual_level_stats_default_to_none():
     s = UserNikkeState(
-        character_slug="liter", level=400, core_level=0,
+        character_slug="liter", level=400,
         hp=1, atk=1, def_=1,
         skill_levels=SkillLevels(skill1=1, skill2=1, burst=1),
-        overload_options=[], pve_cube=None,
+        overload_options=[],
     )
     assert s.actual_atk is None

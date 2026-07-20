@@ -33,7 +33,8 @@ Damage stats (fed into `calculate_damage`, so they change damage numbers):
 |---|---|---|
 | `atk_percent` | ATK% buff on target's own ATK | "ATK ▲ X%" |
 | `flat_atk` | additive flat ATK (usually caster-scaled) | "ATK ▲ X% of caster's ATK" |
-| `other_elemental_bonus` | superior/advantageous code damage | "Superior Code / 우월코드 대미지 ▲" |
+| `other_elemental_bonus` | superior/advantageous code damage — **advantage-gated**: only pays out when the wielder ALREADY holds elemental advantage over the boss (`damage_formula`'s element bonus group adds it to `element_multiplier` only if `element_multiplier > 1.0`) | "Elemental Advantage Attack Damage ▲ N%" (conditional buff — the overwhelming majority of this phrasing) |
+| `element_advantage_grant` | grants the wielder elemental advantage it does NOT naturally have (`raid_simulator.element_bonus_for` returns `1 + ELEMENT_ADVANTAGE_BONUS` instead of the natural multiplier when set — it does not add to `other_elemental_bonus`, so it can't double up with natural advantage, and it does not change the unit's element identity for `element:<Name>`-scoped buffs) | "Applies Elemental Advantage damage to `<X>` Code enemies" (advantage-granting skill — rare; see `rapi_red_hood.py` for the only current consumer) |
 | `other_critical_damage_sources` | crit damage buff | "Critical Damage ▲ X%" |
 | `crit_rate` | crit rate buff (base 15% is added by the sim) | "Critical Rate ▲ X%" |
 | `charge_damage_bonus` | extra charge damage | "Charge Damage ▲ X%" |

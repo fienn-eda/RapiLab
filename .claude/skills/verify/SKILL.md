@@ -22,7 +22,7 @@ cd backend
 `POST /api/recommend` body shape (see `backend/app/api.py`):
 
 ```json
-{"roster": [{"character_slug": "liter", "level": 200, "core_level": 0,
+{"roster": [{"character_slug": "liter", "level": 200,
              "hp": 1000000, "atk": 300000, "def_": 30000,
              "skill_levels": {"skill1": 10, "skill2": 10, "burst": 10}}],
  "boss": {"element": "Water", "enemy_def": 31784.0},

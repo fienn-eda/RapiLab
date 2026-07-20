@@ -26,6 +26,12 @@
   color: var(--text-muted);
 }
 
+.app__note {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
 .app__main {
   display: flex;
   flex-direction: column;
@@ -78,6 +84,17 @@
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+}
+
+.investment {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--sp-1);
+  margin-right: auto;
+}
+
+.investment__core {
+  font-variant-numeric: tabular-nums;
 }
 
 /* Fields --------------------------------------------------------------- */
@@ -133,8 +150,7 @@
   flex-wrap: wrap;
 }
 
-.field-row--overload,
-.field-row--cube {
+.field-row--overload {
   align-items: flex-start;
 }
 
@@ -232,8 +248,7 @@
   color: var(--danger);
 }
 
-.field-row--overload .btn--icon,
-.field-row--cube .btn--icon {
+.field-row--overload .btn--icon {
   margin-top: 22px;
 }
 

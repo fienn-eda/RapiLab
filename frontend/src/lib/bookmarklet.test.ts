@@ -104,6 +104,17 @@ describe('buildBookmarklet', () => {
     // 코드가 정확히 1이면 공유 URL 분기를 타야 한다.
     expect(alertExprFn('Error: GetUserCharacters:1')).toBe('공유 URL을 다시 확인해주세요.')
   })
+
+  it('window.open에 창 이름을 줘 재동기화 때 기존 탭을 재사용한다', () => {
+    // 이름 없는 window.open은 매번 새 탭을 연다. 같은 이름을 주면 브라우저가
+    // 그 탭을 재사용한다(재사용은 새로고침을 일으키지만 draft는 매 변경마다
+    // localStorage에 저장되므로 잃는 것이 없다 - useRoster.ts 참고).
+    const openCall = source.slice(
+      source.indexOf('window.open('),
+      source.indexOf('window.open(') + 80,
+    )
+    expect(openCall).toContain("'nikke-deck-builder'")
+  })
 })
 
 describe('buildBookmarklet 입력 검증', () => {

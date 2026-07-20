@@ -26,27 +26,25 @@ describe('parseRosterJson', () => {
     expect(d.actualAtk).toBe('418862') // union raid = real level
     expect(d.skill_levels).toEqual({ skill1: '10', skill2: '10', burst: '10' })
     expect(d.overload_options[0]).toMatchObject({ name: '공격력 증가', value: '42.32' })
-    expect(d.hasCube).toBe(true)
-    expect(d.pve_cube).toEqual({ name: 'Resilience Cube', level: '15' })
-    expect(d.cubeKnown).toBe(true)
   })
 
-  it('marks cubeKnown false when the unit carries no pve_cube key at all (bookmarklet-assembled sync payload)', () => {
-    // backend/app/roster_assembly.py's assemble_unit never emits pve_cube (no
-    // cube-tid -> name map on the backend), unlike the collector's roster.json
-    // which always emits the key (an object, or null when no cube is equipped).
+  it('ignores a pve_cube field in the imported roster', () => {
     const { drafts } = parseRosterJson({
       units: [
         {
-          name_en: 'Neon: Blue Ocean',
-          raid400: { hp: 2309238, atk: 94815, def: 13100 },
+          name_en: 'Rapi',
+          resource_id: 16,
+          raid400: { hp: 1, atk: 2, def: 0 },
           skill_levels: { skill1: 1, skill2: 1, burst: 1 },
+          overload: [],
+          pve_cube: { name: 'Resilience Cube', level: 15 },
         },
       ],
     })
-    const d = drafts[0]
-    expect(d.hasCube).toBe(false)
-    expect(d.cubeKnown).toBe(false)
+    expect(drafts).toHaveLength(1)
+    expect(drafts[0]).not.toHaveProperty('pve_cube')
+    expect(drafts[0]).not.toHaveProperty('hasCube')
+    expect(drafts[0]).not.toHaveProperty('cubeKnown')
   })
 
   it('handles an uninvested unit (no actual/overload/cube)', () => {
@@ -65,8 +63,6 @@ describe('parseRosterJson', () => {
     expect(d.atk).toBe('94815')
     expect(d.actualAtk).toBe('')
     expect(d.overload_options).toEqual([])
-    expect(d.hasCube).toBe(false)
-    expect(d.cubeKnown).toBe(true) // key present as null: the source told us "no cube"
   })
 
   it('resolves encoded units by resource_id, not name, and promotes owned signatures', () => {
@@ -100,5 +96,60 @@ describe('parseRosterJson', () => {
 
   it('throws on non-roster input', () => {
     expect(() => parseRosterJson({})).toThrow(/units/)
+  })
+
+  it('carries grade and core through from the payload', () => {
+    const { drafts } = parseRosterJson({
+      units: [
+        {
+          name_en: 'Rapi',
+          resource_id: 16,
+          grade: 3,
+          core: 7,
+          raid400: { hp: 1, atk: 2, def: 0 },
+          skill_levels: { skill1: 1, skill2: 1, burst: 1 },
+          overload: [],
+        },
+      ],
+    })
+    expect(drafts[0].grade).toBe(3)
+    expect(drafts[0].core).toBe(7)
+  })
+
+  it('leaves grade and core undefined when the payload omits them', () => {
+    // Absent must stay absent - filling in 0 would make the badge claim zero
+    // breakthrough for a unit whose investment we never received.
+    const { drafts } = parseRosterJson({
+      units: [
+        {
+          name_en: 'Rapi',
+          resource_id: 16,
+          raid400: { hp: 1, atk: 2, def: 0 },
+          skill_levels: { skill1: 1, skill2: 1, burst: 1 },
+          overload: [],
+        },
+      ],
+    })
+    expect(drafts[0].grade).toBeUndefined()
+    expect(drafts[0].core).toBeUndefined()
+  })
+
+  it('no longer produces a core_level field', () => {
+    // core_level was an input the backend read nowhere; the InvestmentBadge
+    // shows the real value instead.
+    const { drafts } = parseRosterJson({
+      units: [
+        {
+          name_en: 'Rapi',
+          resource_id: 16,
+          grade: 3,
+          core: 7,
+          raid400: { hp: 1, atk: 2, def: 0 },
+          skill_levels: { skill1: 1, skill2: 1, burst: 1 },
+          overload: [],
+        },
+      ],
+    })
+    expect(drafts[0]).not.toHaveProperty('core_level')
   })
 })

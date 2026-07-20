@@ -141,15 +141,50 @@ def test_attachable_projectiles_elemental_advantage_only_vs_electric_boss():
     electric_ctx = SquadContext(list(members), boss_element="Electric")
     registry = EffectRegistry()
     fire_trigger("battle_start", rules, electric_ctx, registry, time=0.0)
-    assert registry.total_for("other_elemental_bonus", rapi, now=100.0) == ELEMENT_ADVANTAGE_BONUS
+    assert registry.total_for("element_advantage_grant", rapi, now=100.0) == 1.0
 
     # non-Electric boss: no advantage grant, but the projectile-explosion buff
     # is unconditional and still lands
     wind_ctx = SquadContext(list(members), boss_element="Wind")
     registry = EffectRegistry()
     fire_trigger("battle_start", rules, wind_ctx, registry, time=0.0)
-    assert registry.total_for("other_elemental_bonus", rapi, now=100.0) == 0.0
+    assert registry.total_for("element_advantage_grant", rapi, now=100.0) == 0.0
     assert round(registry.total_for("projectile_explosion_damage_up", rapi, now=100.0), 4) == 1.006
+
+
+def test_electric_boss_advantage_actually_raises_her_damage():
+    """Regression through the DAMAGE path, not just the effect registry: her
+    "applies Elemental Advantage damage to Electric Code enemies" clause must
+    make her burst hit +10% harder against an Electric boss. Asserting only
+    that the effect is produced is what let a version slip through where the
+    effect existed but was discarded by the damage formula's advantage gate."""
+    deck = [
+        {"slug": "tier1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "tier2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "rapi-red-hood", "burst_tier": 3, "element": "Fire", "cooldown": 40.0},
+    ]
+    base_stats = {
+        "tier1": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+        "tier2": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+        "rapi-red-hood": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0},
+    }
+    kwargs = dict(
+        deck=deck, burst_damage_percents={"rapi-red-hood": 500.0}, base_stats=base_stats,
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        base_crit_rate=0.0, boss_element="Electric",
+    )
+    without = simulate_raid(rules_by_slug={"rapi-red-hood": []}, **kwargs)
+    with_advantage = simulate_raid(
+        rules_by_slug={"rapi-red-hood": build_attachable_projectiles_rules(ATTACHABLE_PROJECTILES)},
+        **kwargs,
+    )
+
+    # Fire is naturally neutral against Electric, so the baseline gets no bonus.
+    assert without["total_damage"] == 5000.0
+    assert with_advantage["total_damage"] == pytest.approx(
+        5000.0 * (1 + ELEMENT_ADVANTAGE_BONUS)
+    )
+    assert with_advantage["total_damage"] > without["total_damage"]
 
 
 # rapi-red-hood has no signature weapon (no dollskills entry), so these are

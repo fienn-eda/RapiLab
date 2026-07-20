@@ -12,7 +12,7 @@ import { NumberField } from './fields/NumberField'
 import { TextField } from './fields/TextField'
 import { SkillLevelsField } from './SkillLevelsField'
 import { OverloadOptionsField } from './OverloadOptionsField'
-import { PveCubeField } from './PveCubeField'
+import { InvestmentBadge } from './InvestmentBadge'
 
 interface NikkeCardProps {
   draft: NikkeDraft
@@ -44,6 +44,7 @@ export function NikkeCard({ draft, index, onChange, onRemove }: NikkeCardProps) 
     >
       <header className="card__header">
         <h2 className="card__title">{title}</h2>
+        <InvestmentBadge grade={draft.grade} core={draft.core} />
         <div className="card__header-right">
           {value ? (
             <span className="pill pill--ok">Ready</span>
@@ -74,7 +75,7 @@ export function NikkeCard({ draft, index, onChange, onRemove }: NikkeCardProps) 
         onChange={(character_slug) => onChange({ ...draft, character_slug })}
       />
 
-      <div className="field-row field-row--pair">
+      <div className="field-row">
         <NumberField
           label="Level"
           value={draft.level}
@@ -82,14 +83,6 @@ export function NikkeCard({ draft, index, onChange, onRemove }: NikkeCardProps) 
           min={CONSTRAINTS.level.min}
           step={1}
           onChange={(level) => onChange({ ...draft, level })}
-        />
-        <NumberField
-          label="Core level"
-          value={draft.core_level}
-          error={shownErrors.core_level}
-          min={CONSTRAINTS.core_level.min}
-          step={1}
-          onChange={(core_level) => onChange({ ...draft, core_level })}
         />
       </div>
 
@@ -129,14 +122,6 @@ export function NikkeCard({ draft, index, onChange, onRemove }: NikkeCardProps) 
         onChange={(overload_options: OverloadRow[]) =>
           onChange({ ...draft, overload_options })
         }
-      />
-
-      <PveCubeField
-        hasCube={draft.hasCube}
-        value={draft.pve_cube}
-        errors={shownErrors.pve_cube}
-        onToggle={(hasCube) => onChange({ ...draft, hasCube })}
-        onChange={(pve_cube) => onChange({ ...draft, pve_cube })}
       />
     </section>
   )

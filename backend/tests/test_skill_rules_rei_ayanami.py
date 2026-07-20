@@ -1,4 +1,5 @@
 from app.effects import EffectRegistry
+from app.raid_simulator import simulate_raid
 from app.skill_rules.rei_ayanami import (
     annihilation_burst_percent,
     build_preemptive_subdual_per_shot_rules,
@@ -92,19 +93,21 @@ def test_preemptive_subdual_nukes_every_100_normal_attacks():
     assert pulses[0].full_burst_bonus_eligible is False  # "as damage", not "as additional damage"
 
 
-def test_preemptive_subdual_refreshes_elemental_advantage_vs_iron_boss():
+def test_preemptive_subdual_elemental_advantage_is_not_boss_gated():
     rules = build_preemptive_subdual_per_shot_rules({"preemptive_subdual": PREEMPTIVE_SUBDUAL})
     _, _, subrules = rules[0]
     # nuke + the self Elemental Advantage buff now share the every-100 trigger
     assert len(subrules) == 2
     elem_buff = subrules[1]
 
-    # Rei is Fire; Elemental Advantage only counts against an Iron boss (Fire > Iron).
-    assert elem_buff.condition(make_context(boss_element="Iron"), "rei-ayanami") is True
-    assert elem_buff.condition(make_context(boss_element="Water"), "rei-ayanami") is False
+    # The skill text names no element ("Elemental Advantage Attack Damage
+    # +30.23%"), so the rule carries no boss gate of its own: damage_formula's
+    # advantage gate alone decides when it pays out (Fire > Wind).
+    for boss in ("Iron", "Water", "Wind", None):
+        assert elem_buff.condition(make_context(boss_element=boss), "rei-ayanami") is True
 
     registry = EffectRegistry()
-    elem_buff.action(make_context(boss_element="Iron"), "rei-ayanami", 5.0, registry)
+    elem_buff.action(make_context(boss_element="Wind"), "rei-ayanami", 5.0, registry)
     # self-scoped Elemental Advantage Attack Damage +30.23% (other_elemental_bonus) for 3 sec
     assert round(registry.total_for("other_elemental_bonus", REI, now=5.0), 4) == 0.3023
     assert registry.total_for("other_elemental_bonus", REI, now=8.1) == 0.0  # 3s duration
@@ -117,6 +120,63 @@ def test_preemptive_subdual_elemental_advantage_refreshes_not_stacks():
     elem_buff = subrules[1]
     registry = EffectRegistry()
     # Two procs within the 3s window refresh, not stack (100-round condition met repeatedly).
-    elem_buff.action(make_context(boss_element="Iron"), "rei-ayanami", 5.0, registry)
-    elem_buff.action(make_context(boss_element="Iron"), "rei-ayanami", 7.0, registry)
+    elem_buff.action(make_context(boss_element="Wind"), "rei-ayanami", 5.0, registry)
+    elem_buff.action(make_context(boss_element="Wind"), "rei-ayanami", 7.0, registry)
     assert round(registry.total_for("other_elemental_bonus", REI, now=7.0), 4) == 0.3023
+
+
+def _rei_solo_deck_damage(boss_element, subrules):
+    """simulate_raid with Rei as the only damage source, so total_damage is a
+    direct readout of her Elemental Advantage buff reaching the damage path."""
+    deck = [
+        {"slug": "tier1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "tier2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "rei-ayanami", "burst_tier": 3, "element": "Fire", "cooldown": 40.0},
+    ]
+    threshold, mode, _ = build_preemptive_subdual_per_shot_rules(
+        {"preemptive_subdual": PREEMPTIVE_SUBDUAL})[0]
+    return simulate_raid(
+        deck,
+        rules_by_slug={"tier1": [], "tier2": [], "rei-ayanami": []},
+        burst_damage_percents={},
+        base_stats={
+            "tier1": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+            "tier2": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+            "rei-ayanami": {"atk": 100000.0, "def": 0.0, "max_hp": 0.0},
+        },
+        enemy_def=0.0,
+        gauge_charge_time=5.0,
+        fight_duration=60.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        boss_element=boss_element,
+        weapon_stats={"rei-ayanami": {
+            "weapon": "MG", "damage_percent": 5.57, "max_ammo": 300,
+            "reload_time": 2.5, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        }},
+        per_shot_rules={"rei-ayanami": [(threshold, mode, subrules)]},
+    )["total_damage"]
+
+
+def test_preemptive_subdual_elemental_advantage_pays_out_against_a_wind_boss():
+    """Damage-path regression: Rei is Fire, so she holds advantage over WIND.
+    Her (unqualified) "Elemental Advantage Attack Damage +30.23%" must raise her
+    damage there - it was previously gated on an Iron boss, which the formula's
+    advantage gate then made unreachable under every boss."""
+    _, _, subrules = build_preemptive_subdual_per_shot_rules(
+        {"preemptive_subdual": PREEMPTIVE_SUBDUAL})[0]
+    nuke_only, with_elem_buff = subrules[:1], subrules
+
+    assert (_rei_solo_deck_damage("Wind", with_elem_buff)
+            > _rei_solo_deck_damage("Wind", nuke_only))
+
+
+def test_preemptive_subdual_elemental_advantage_is_inert_without_advantage():
+    """The same buff is Superior Code Damage: with no advantage over the boss
+    (Fire is neutral vs Water) it must contribute nothing."""
+    _, _, subrules = build_preemptive_subdual_per_shot_rules(
+        {"preemptive_subdual": PREEMPTIVE_SUBDUAL})[0]
+    nuke_only, with_elem_buff = subrules[:1], subrules
+
+    assert (_rei_solo_deck_damage("Water", with_elem_buff)
+            == _rei_solo_deck_damage("Water", nuke_only))

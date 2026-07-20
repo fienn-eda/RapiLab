@@ -1,9 +1,11 @@
+from app import roster
+from app.effects import Effect
 from app.models import OverloadOption
 from app.raid_simulator import simulate_raid
 from app.roster import NikkeSpec, assemble_simulation_inputs
 
 
-def helm_spec(overload_options=None, cube=None):
+def helm_spec(overload_options=None):
     return NikkeSpec(
         slug="helm",
         burst_tier=3,
@@ -21,7 +23,6 @@ def helm_spec(overload_options=None, cube=None):
             "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0,
         },
         overload_options=overload_options or [],
-        cube=cube,
     )
 
 
@@ -151,8 +152,8 @@ def crown_spec():
     )
 
 
-def minimal_feasible_deck(helm_overload=None, helm_cube=None):
-    return [anis_star_spec(), crown_spec(), helm_spec(helm_overload, helm_cube)]
+def minimal_feasible_deck(helm_overload=None):
+    return [anis_star_spec(), crown_spec(), helm_spec(helm_overload)]
 
 
 def helm_aquamarine_spec():
@@ -269,17 +270,30 @@ def test_periodic_nukes_flow_through_simulate_raid():
     assert all(e["slug"] == "helm-aquamarine" for e in periodic_hits)
 
 
-def test_cube_superior_code_damage_increases_total_damage():
-    without = assemble_simulation_inputs(minimal_feasible_deck())
-    with_cube = assemble_simulation_inputs(
-        minimal_feasible_deck(
-            helm_cube={"name": "Relic Bear Cube", "reload_speed_percent": 29.69, "superior_code_damage_percent": 19.09}
-        )
-    )
+def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypatch):
+    # The assumed cube's other_elemental_bonus is inert here (boss_element
+    # defaults to None, and that stat is gated on elemental advantage), so
+    # this isolates reload_speed_percent - the only cube term with an
+    # end-to-end path through normal-attack reload cadence - by swapping
+    # assumed_cube_effects for a reload-only stub vs an empty one.
     kwargs = dict(enemy_def=0, gauge_charge_time=2.0, fight_duration=60.0, mode="manual")
-    dmg_without = simulate_raid(**without, **kwargs)["total_damage"]
-    dmg_with = simulate_raid(**with_cube, **kwargs)["total_damage"]
+
+    monkeypatch.setattr(roster, "assumed_cube_effects", lambda slug: [])
+    dmg_without = simulate_raid(
+        **assemble_simulation_inputs(minimal_feasible_deck()), **kwargs
+    )["total_damage"]
+
+    monkeypatch.setattr(
+        roster,
+        "assumed_cube_effects",
+        lambda slug: [Effect("reload_speed_percent", 0.2969, "self", None, slug)],
+    )
+    dmg_with = simulate_raid(
+        **assemble_simulation_inputs(minimal_feasible_deck()), **kwargs
+    )["total_damage"]
+
     assert dmg_with > dmg_without
+    assert round(dmg_with / dmg_without, 4) == round(695102334.2073559 / 679854470.749847, 4)
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

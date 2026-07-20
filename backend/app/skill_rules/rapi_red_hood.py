@@ -12,11 +12,15 @@ Modeled from Attachable Projectiles (both permanent battle-start self effects):
   projectile_explosion-typed burst nuke (Power of Inheritance is a Projectile
   Explosion keyword skill, see registry's _BURST_DAMAGE_TYPES).
 - "Applies Elemental Advantage damage to Electric Code enemies continuously" -
-  she is Fire (advantaged vs Wind only), so this is a self
-  other_elemental_bonus of ELEMENT_ADVANTAGE_BONUS gated on
-  boss_is_element("Electric"): the element bucket becomes 1.0 + 0.1, exactly
-  the multiplier natural advantage would give (damage_formula adds
-  other_elemental_bonus onto element_multiplier).
+  she is Fire (advantaged vs Wind only), so this GRANTS her an advantage she
+  does not naturally have: a self element_advantage_grant gated on
+  boss_is_element("Electric"). raid_simulator's element_bonus_for reads that
+  stat and hands the damage formula 1.1 instead of 1.0, exactly the multiplier
+  natural advantage would give. It is deliberately NOT other_elemental_bonus
+  ("Superior Code Damage"), which the formula only pays out to a unit that
+  ALREADY has advantage - modelling the grant that way made it self-cancelling.
+  Because the grant is real advantage, any Superior Code bonus she carries
+  (e.g. an overload line) correctly applies on top of it.
 
 The 120-normal-attack launcher (Attachable Projectiles' second effect) is a
 scheduled_nukes pair, not a SkillRule - see
@@ -39,7 +43,6 @@ Not modeled / deferred:
   engine stat represents blast radius, so it stays deferred.
 """
 from app.effects import Effect, Pulse
-from app.elements import ELEMENT_ADVANTAGE_BONUS
 from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
 from app.squad_engine import (
     SkillRule,
@@ -156,7 +159,7 @@ def build_attachable_projectiles_rules(values: dict) -> list[SkillRule]:
             ("projectile_attachment_damage_up", projectile_attachment_up, "self", None),
         ]),
         buff_rule("battle_start", [
-            ("other_elemental_bonus", ELEMENT_ADVANTAGE_BONUS, "self", None),
+            ("element_advantage_grant", 1.0, "self", None),
         ], condition=boss_is_element("Electric")),
     ]
 

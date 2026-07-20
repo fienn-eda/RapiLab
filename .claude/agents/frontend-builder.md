@@ -34,8 +34,10 @@ silent on something you need, that's a contract gap: STOP and report it (see
   types, tests, and build config.
 - Mirroring backend data shapes into TypeScript types **from the source of
   truth**: `backend/app/models.py` for user-input data (`UserNikkeState`,
-  `SkillLevels`, `OverloadOption`, `PveCube`, …). Read it; keep the TS types in
-  sync with it; never edit it.
+  `SkillLevels`, `OverloadOption`, …). Read it; keep the TS types in sync with
+  it; never edit it. Note: there is no per-unit cube input — every Nikke is
+  assumed to wear a Resilience Cube Lv.15 (a backend-side constant, not
+  something the UI collects).
 - Following the project's `.claude/CLAUDE.md`: smallest reasonable changes,
   match surrounding style, commit frequently on the current WIP branch, keep
   test/type-check output pristine. Run `tsc --noEmit` and the test suite before

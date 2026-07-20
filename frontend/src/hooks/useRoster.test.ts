@@ -89,4 +89,32 @@ describe('useRoster', () => {
       second.result.current.drafts.map((d) => d.character_slug).sort(),
     ).toEqual(['crown', 'rapi-red-hood'])
   })
+
+  it('loads a stored roster saved before core_level was removed', () => {
+    // useRoster JSON.parses whatever is in localStorage; a stale extra key must
+    // be ignored, not throw or blank the roster.
+    localStorage.setItem(
+      'nikke-roster',
+      JSON.stringify([
+        {
+          id: 'a',
+          character_slug: 'rapi-red-hood',
+          core_level: '7',
+          level: '400',
+          hp: '1',
+          atk: '2',
+          def_: '0',
+          actualHp: '',
+          actualAtk: '',
+          actualDef: '',
+          skill_levels: { skill1: '1', skill2: '1', burst: '1' },
+          overload_options: [],
+        },
+      ]),
+    )
+    const { result } = renderHook(() => useRoster())
+    expect(result.current.drafts).toHaveLength(1)
+    expect(result.current.drafts[0].character_slug).toBe('rapi-red-hood')
+    localStorage.clear()
+  })
 })

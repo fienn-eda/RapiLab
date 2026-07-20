@@ -150,11 +150,10 @@ const sampleExport = () => ({
 })
 
 describe('parseExiaExport', () => {
-  it('maps a character: slug, synchro level, skills, core, overload — leaving stats/cube manual', () => {
+  it('maps a character: slug, synchro level, skills, overload — leaving stats manual', () => {
     const { drafts } = parseExiaExport(sampleExport())
     const maiden = drafts.find((d) => d.character_slug === 'maiden-ice-rose')!
     expect(maiden.level).toBe('663')
-    expect(maiden.core_level).toBe('2')
     expect(maiden.skill_levels).toEqual({ skill1: '10', skill2: '9', burst: '8' })
     expect(maiden.overload_options).toEqual([
       { id: expect.any(String), name: '우월코드 대미지 증가', value: '42.91' },
@@ -162,8 +161,6 @@ describe('parseExiaExport', () => {
     expect(maiden.hp).toBe('')
     expect(maiden.atk).toBe('')
     expect(maiden.def_).toBe('')
-    expect(maiden.hasCube).toBe(false)
-    expect(maiden.pve_cube).toEqual({ name: '', level: '' })
   })
 
   it('applies the slug alias and keeps unencoded units by their derived slug', () => {
@@ -173,11 +170,6 @@ describe('parseExiaExport', () => {
       'maiden-ice-rose',
       'naga',
     ])
-  })
-
-  it('maps a null limit_break to core_level 0', () => {
-    const { drafts } = parseExiaExport(sampleExport())
-    expect(drafts.find((d) => d.character_slug === 'naga')!.core_level).toBe('0')
   })
 
   it('reports dropped overload types as a warning', () => {

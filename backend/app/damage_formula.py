@@ -93,7 +93,13 @@ def calculate_damage(
         full_burst_bonus,
         effective_range_bonus,
     )
-    element_bonus_damage = element_multiplier + other_elemental_bonus
+    # "Superior Code Damage" only applies when the attacker actually holds
+    # elemental advantage; element_multiplier is already that indicator
+    # (1.1 with advantage, 1.0 without - see elements.py).
+    has_element_advantage = element_multiplier > 1.0
+    element_bonus_damage = element_multiplier + (
+        other_elemental_bonus if has_element_advantage else 0.0
+    )
     charge_damage = 1 + charge_damage_bonus
     damage_up = 1 + (
         attack_damage_up

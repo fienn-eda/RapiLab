@@ -25,6 +25,9 @@ function App() {
         <p className="app__subtitle">
           Enter each owned Nikke&rsquo;s investment data from ShiftyPad.
         </p>
+        <p className="app__note">
+          All Nikkes are simulated wearing a Resilience Cube Lv.15.
+        </p>
       </header>
 
       <main className="app__main">

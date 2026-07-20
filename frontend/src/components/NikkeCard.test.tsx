@@ -17,7 +17,6 @@ const filledDraft = (): NikkeDraft => ({
   ...makeEmptyDraft(),
   character_slug: 'red-hood',
   level: '200',
-  core_level: '7',
   hp: '1000000',
   atk: '85000',
   def_: '12000',
