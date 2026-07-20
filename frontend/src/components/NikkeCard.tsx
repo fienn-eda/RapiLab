@@ -12,6 +12,7 @@ import { NumberField } from './fields/NumberField'
 import { TextField } from './fields/TextField'
 import { SkillLevelsField } from './SkillLevelsField'
 import { OverloadOptionsField } from './OverloadOptionsField'
+import { InvestmentBadge } from './InvestmentBadge'
 
 interface NikkeCardProps {
   draft: NikkeDraft
@@ -43,6 +44,7 @@ export function NikkeCard({ draft, index, onChange, onRemove }: NikkeCardProps) 
     >
       <header className="card__header">
         <h2 className="card__title">{title}</h2>
+        <InvestmentBadge grade={draft.grade} core={draft.core} />
         <div className="card__header-right">
           {value ? (
             <span className="pill pill--ok">Ready</span>

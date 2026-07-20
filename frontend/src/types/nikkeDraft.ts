@@ -18,6 +18,11 @@ export interface OverloadRow {
 export interface NikkeDraft {
   id: string
   character_slug: string
+  // Breakthrough / core enhancement, display only. Optional because a
+  // manually created draft has no import to take them from; absent must not
+  // be read as zero.
+  grade?: number
+  core?: number
   level: string
   core_level: string
   hp: string

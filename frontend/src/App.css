@@ -86,6 +86,16 @@
   gap: var(--sp-3);
 }
 
+.investment {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25rem;
+}
+
+.investment__core {
+  font-variant-numeric: tabular-nums;
+}
+
 /* Fields --------------------------------------------------------------- */
 
 .field {

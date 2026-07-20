@@ -97,4 +97,40 @@ describe('parseRosterJson', () => {
   it('throws on non-roster input', () => {
     expect(() => parseRosterJson({})).toThrow(/units/)
   })
+
+  it('carries grade and core through from the payload', () => {
+    const { drafts } = parseRosterJson({
+      units: [
+        {
+          name_en: 'Rapi',
+          resource_id: 16,
+          grade: 3,
+          core: 7,
+          raid400: { hp: 1, atk: 2, def: 0 },
+          skill_levels: { skill1: 1, skill2: 1, burst: 1 },
+          overload: [],
+        },
+      ],
+    })
+    expect(drafts[0].grade).toBe(3)
+    expect(drafts[0].core).toBe(7)
+  })
+
+  it('leaves grade and core undefined when the payload omits them', () => {
+    // Absent must stay absent - filling in 0 would make the badge claim zero
+    // breakthrough for a unit whose investment we never received.
+    const { drafts } = parseRosterJson({
+      units: [
+        {
+          name_en: 'Rapi',
+          resource_id: 16,
+          raid400: { hp: 1, atk: 2, def: 0 },
+          skill_levels: { skill1: 1, skill2: 1, burst: 1 },
+          overload: [],
+        },
+      ],
+    })
+    expect(drafts[0].grade).toBeUndefined()
+    expect(drafts[0].core).toBeUndefined()
+  })
 })

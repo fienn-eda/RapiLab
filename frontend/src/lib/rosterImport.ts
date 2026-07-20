@@ -14,6 +14,8 @@ import { resolveSlugForUnit } from './resourceIdSlugMap'
 interface RosterUnit {
   resource_id?: number
   name_en: string
+  grade?: number
+  core?: number
   raid400: { hp: number; atk: number; def: number }
   actual?: { hp: number; atk: number; def: number }
   overload?: { name: string; value: number }[]
@@ -44,6 +46,8 @@ export const parseRosterJson = (
     drafts.push({
       ...makeEmptyDraft(),
       character_slug: mapped ?? deriveSlug(u.name_en),
+      grade: u.grade,
+      core: u.core,
       level: '400',
       core_level: '0',
       hp: String(u.raid400.hp),
