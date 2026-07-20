@@ -25,7 +25,10 @@ Not modeled / deferred:
   consumer (base_stats' max_hp is a fixed input, never read back from the
   registry), so this specific bullet is inert - only the STACK COUNT itself
   (read via resource_scaled_nukes) matters for damage.
-- Flawless Glass's Charge Speed +100% - not a damage stat.
+(Flawless Glass's Charge Speed +100% used to be listed here as "not a damage
+stat". That was written before Phase S wired `charge_speed_percent`; it is now
+modeled - see `flawless_glass_charge_speed`. It is one of her biggest levers,
+since every shot she fires also carries the 136.6% additional hit.)
 """
 from app.effects import ResourceSpec
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
@@ -66,6 +69,44 @@ def build_flawless_glass_per_shot_rules(values):
     fg = values["flawless_glass"]
     additional = float(fg["description_value_04"])
     return [(1, "every", [instant_nuke_pulse_rule("per_shot", additional)])]
+
+
+# Fienn's in-game measurement (2026-07-20): with Flawless Glass's Charge Speed
+# +100% up and a max-ammo overload keeping her from reloading, she fires 29-30
+# shots in 10 sec. The conservative end (29) is used, per the project's
+# floor-preferring convention.
+#
+# Why a measurement and not the formula: a Charge Speed buff of n% SHORTENS
+# charge time by n% (charge_time * (1 - n)), not charge_time / (1 + n) - so
+# +100% drives her 1.0-sec charge to ZERO, and what she actually hits is the
+# game's floor on the gap between shots. The formula cannot predict that
+# number; only the measurement gives it.
+CHARGE_INTERVAL_FLOOR_SECONDS = 10.0 / 29
+
+
+def flawless_glass_charge_speed(values, weapon_stats):
+    """Flawless Glass's Charge Speed as the value that reproduces her measured
+    cadence through THIS engine's charge model (charge_time / (1 + speed)).
+
+    The buff arms on her first Full Charge of a magazine and is "removed upon
+    reloading to max ammunition", so within each magazine shot 1 pays the full
+    base charge and the rest run at the floor. The engine samples charge speed
+    once per MAGAZINE, so the single value handed over is calibrated to the
+    whole magazine's real duration rather than to the floor alone - which would
+    have credited her that first slow shot as fast too."""
+    base_charge = float(weapon_stats["charge_time"])
+    magazine = int(weapon_stats["max_ammo"])
+    total = base_charge + (magazine - 1) * CHARGE_INTERVAL_FLOOR_SECONDS
+    effective_interval = total / magazine
+    return base_charge / effective_interval - 1
+
+
+def build_flawless_glass_charge_speed_rules(values, weapon_stats):
+    """Permanent, because she re-arms it on the first Full Charge of every
+    magazine - see `flawless_glass_charge_speed` for how the first (unbuffed)
+    shot of each magazine is folded into the value."""
+    speed = flawless_glass_charge_speed(values, weapon_stats)
+    return [buff_rule("battle_start", [("charge_speed_percent", speed, "self", None)])]
 
 
 def build_beautiful_resources(values):

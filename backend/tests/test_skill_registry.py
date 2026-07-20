@@ -210,9 +210,11 @@ def test_build_nikke_rules_returns_flawless_glass_burst_percent_for_cinderella()
             "description_value_01": "1365.92", "description_value_02": "10", "description_value_03": "28.9",
         },
         "caster_atk": 60_000, "caster_def": 3_000, "caster_max_hp": 1_000_000,
+        "caster_weapon_stats": {"charge_time": 1.0, "max_ammo": 24},
     }
     rules, burst_percent = build_nikke_rules("cinderella", skill_values)
-    assert len(rules) == 1 and rules[0].trigger == "own_burst_activate"
+    # Flawless Glass: the burst ATK buff, plus the permanent Charge Speed buff.
+    assert [r.trigger for r in rules] == ["own_burst_activate", "battle_start"]
     assert burst_percent == 1365.92
 
 
