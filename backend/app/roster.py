@@ -1,8 +1,8 @@
 """Assembles per-Nikke specs into the inputs simulate_raid expects.
 
 A NikkeSpec bundles everything that varies per owned Nikke: fixed metadata
-(from api.dotgg.gg), the user's investment (skill values, overload options,
-cube), and weapon stats. assemble_simulation_inputs turns an ordered deck of
+(from api.dotgg.gg), the user's investment (skill values, overload options),
+and weapon stats. assemble_simulation_inputs turns an ordered deck of
 these into the (deck, rules_by_slug, burst_damage_percents, base_stats,
 weapon_stats, periodic_nukes) that simulate_raid consumes - applying overload
 and cube bonuses as permanent battle-start effects, which the earlier
@@ -14,7 +14,7 @@ backup buffer among same-tier Nikkes.
 """
 from dataclasses import dataclass, field
 
-from app.cube_effects import cube_to_effects
+from app.cube_effects import assumed_cube_effects
 from app.overload_effects import overload_options_to_effects
 from app.skill_rules.registry import (
     build_nikke_rules,
@@ -46,7 +46,6 @@ class NikkeSpec:
     skill_values: dict
     weapon_stats: dict
     overload_options: list = field(default_factory=list)
-    cube: dict | None = None
 
 
 def _battle_start_effects_rule(effects):
@@ -58,15 +57,10 @@ def _battle_start_effects_rule(effects):
 
 
 def _passive_effects(spec: NikkeSpec):
-    effects = overload_options_to_effects(spec.overload_options, spec.slug)
-    if spec.cube:
-        effects += cube_to_effects(
-            name=spec.cube["name"],
-            source_slug=spec.slug,
-            reload_speed_percent=spec.cube.get("reload_speed_percent"),
-            superior_code_damage_percent=spec.cube.get("superior_code_damage_percent"),
-        )
-    return effects
+    """Overload plus the harmony cube every unit is assumed to wear."""
+    return overload_options_to_effects(spec.overload_options, spec.slug) + (
+        assumed_cube_effects(spec.slug)
+    )
 
 
 def assemble_simulation_inputs(ordered_deck):

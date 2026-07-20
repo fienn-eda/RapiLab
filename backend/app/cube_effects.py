@@ -66,21 +66,3 @@ def assumed_cube_effects(source_slug: str) -> list[Effect]:
         Effect(stat, percent / 100, "self", None, source_slug)
         for stat, percent in _assumed_percents()
     ]
-
-
-def cube_to_effects(
-    name,
-    source_slug,
-    reload_speed_percent=None,
-    superior_code_damage_percent=None,
-):
-    effects = []
-    if reload_speed_percent is not None:
-        effects.append(
-            Effect("reload_speed_percent", reload_speed_percent / 100, "self", None, source_slug)
-        )
-    if superior_code_damage_percent is not None:
-        effects.append(
-            Effect("other_elemental_bonus", superior_code_damage_percent / 100, "self", None, source_slug)
-        )
-    return effects

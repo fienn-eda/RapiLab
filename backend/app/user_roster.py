@@ -89,7 +89,6 @@ def load_nikke_spec(
         # them to overload_options_to_effects, which reads .name/.value attributes.
         overload_options=list(state.overload_options),
         weapon_stats=weapon_stats,
-        cube=state.pve_cube.model_dump() if state.pve_cube else None,
     )
 
 

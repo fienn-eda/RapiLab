@@ -20,13 +20,6 @@ class OverloadOption(BaseModel):
     value: float
 
 
-class PveCube(BaseModel):
-    """The PVE (combat) cube equipped. PVP/arena cubes are out of scope."""
-
-    name: str
-    level: int = Field(ge=1, le=15)
-
-
 class UserNikkeState(BaseModel):
     character_slug: str
     level: int = Field(ge=1)
@@ -38,10 +31,8 @@ class UserNikkeState(BaseModel):
     actual_atk: float | None = Field(default=None, ge=0)
     actual_def: float | None = Field(default=None, ge=0)
     skill_levels: SkillLevels
-    # hp/atk/def above ALREADY include the equipped cube's contribution: Fienn
-    # confirmed ShiftyPad reflects the cube in the displayed stats when one is
-    # equipped, and shows bare character stats when none is. Cube stats are
-    # therefore never re-added on top - the opposite of overload_options, which
-    # ShiftyPad shows separately and which ARE additive (see overload_effects).
+    # hp/atk/def above are the user's displayed stats. The harmony cube is NOT
+    # re-added on top of them here; cube_effects supplies its two damage stats
+    # and stat_assembly.cube_atk / cube_hp handle the flat stats on the sync
+    # path. overload_options ARE additive (see overload_effects).
     overload_options: list[OverloadOption] = Field(default_factory=list)
-    pve_cube: PveCube | None = None

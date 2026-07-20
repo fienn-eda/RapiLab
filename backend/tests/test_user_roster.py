@@ -43,18 +43,16 @@ def test_skill_levels_flow_into_assembled_values():
     )
 
 
-def test_overload_and_cube_pass_through():
+def test_overload_options_pass_through():
     # overload_options stay OverloadOption models: roster._passive_effects hands
     # them to overload_options_to_effects, which reads .name/.value attributes.
     spec = load_nikke_spec(_state(
         "drake",
         overload_options=[{"name": "공격력 증가", "value": 10.0}],
-        pve_cube={"name": "Resilience Cube", "level": 7},
     ))
     assert spec.overload_options == [OverloadOption(name="공격력 증가", value=10.0)]
-    assert spec.cube == {"name": "Resilience Cube", "level": 7}
-    # the assembled spec must survive roster assembly (cube stats resolve via
-    # .get - a name/level-only cube contributes no effects rather than raising)
+    # the assembled spec must survive roster assembly (every unit also gets
+    # the assumed harmony cube's effects - see cube_effects.assumed_cube_effects)
     assemble_simulation_inputs([spec])
 
 

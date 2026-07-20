@@ -3,7 +3,7 @@ from app.raid_simulator import simulate_raid
 from app.roster import NikkeSpec, assemble_simulation_inputs
 
 
-def helm_spec(overload_options=None, cube=None):
+def helm_spec(overload_options=None):
     return NikkeSpec(
         slug="helm",
         burst_tier=3,
@@ -21,7 +21,6 @@ def helm_spec(overload_options=None, cube=None):
             "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0,
         },
         overload_options=overload_options or [],
-        cube=cube,
     )
 
 
@@ -141,8 +140,8 @@ def crown_spec():
     )
 
 
-def minimal_feasible_deck(helm_overload=None, helm_cube=None):
-    return [anis_star_spec(), crown_spec(), helm_spec(helm_overload, helm_cube)]
+def minimal_feasible_deck(helm_overload=None):
+    return [anis_star_spec(), crown_spec(), helm_spec(helm_overload)]
 
 
 def helm_aquamarine_spec():
@@ -257,19 +256,6 @@ def test_periodic_nukes_flow_through_simulate_raid():
     periodic_hits = [e for e in result["damage_log"] if e["source"] == "periodic"]
     assert len(periodic_hits) > 0
     assert all(e["slug"] == "helm-aquamarine" for e in periodic_hits)
-
-
-def test_cube_superior_code_damage_increases_total_damage():
-    without = assemble_simulation_inputs(minimal_feasible_deck())
-    with_cube = assemble_simulation_inputs(
-        minimal_feasible_deck(
-            helm_cube={"name": "Relic Bear Cube", "reload_speed_percent": 29.69, "superior_code_damage_percent": 19.09}
-        )
-    )
-    kwargs = dict(enemy_def=0, gauge_charge_time=2.0, fight_duration=60.0, mode="manual")
-    dmg_without = simulate_raid(**without, **kwargs)["total_damage"]
-    dmg_with = simulate_raid(**with_cube, **kwargs)["total_damage"]
-    assert dmg_with > dmg_without
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():
