@@ -70,6 +70,34 @@ Chrome 실행 파일은 알려진 경로 목록을 순서대로 시도하고, �
 있으면 그것을 우선한다. 어디서도 찾지 못하면 **찾아본 경로를 모두 나열하며 실패**한다
 (조용한 실패 금지).
 
+### ①-b `corporation_sub_type` 유실 수정 — 갱신 경로의 선결 조건
+
+`trimDirectory`는 필드 6개짜리 객체를 새로 만들며 `corporation_sub_type`을 포함하지
+않는다. 이 필드는 돌파 코어당 flat ATK를 결정해 스탯 계산기가 사용하고, 현재 스냅샷의
+**27/194 엔트리**에 들어 있다. 따라서 `--deep` 없이 `--directory`를 돌리면 **27개 유닛의
+값이 조용히 사라지고 ATK가 틀어진다.**
+
+`collect.js:219`의 주석은 "the field is otherwise carried over from the previous one"
+이라고 주장하지만 **그런 코드는 존재하지 않는다** — `collect.js`는 이전 스냅샷을 읽지
+않는다(`readFileSync`/`existsSync` 없음). 주석이 사실과 다르다.
+
+이 루틴이 반드시 지나가는 길목이므로 함께 고친다:
+
+- 순수 함수를 `tools/collect-blablalink/directory.js`로 분리해 export한다
+  (`parse.js` / `parse.test.js` 쌍의 기존 관례). `collect.js`는 이를 require하는
+  오케스트레이터로 남는다.
+  - `trimDirectory(raw)` — 현재 로직 그대로.
+  - `carryOverSubTypes(entries, previous)` — 이전 스냅샷을 `resource_id`로 색인해
+    `corporation_sub_type`을 승계. 이전 스냅샷이 없으면 그대로 통과.
+- `--directory`는 기존 스냅샷이 있으면 읽어 승계한 뒤 기록한다.
+- `--deep`은 **승계로 값이 채워지지 않은 `resource_id`에만** 페이지를 연다. 신규 유닛만
+  방문하므로 갱신이 194페이지에서 신규 몇 건으로 줄어든다.
+- 사실과 다른 주석을 실제 동작에 맞게 고친다.
+
+테스트(`tools/collect-blablalink/directory.test.js`, `node --test`):
+승계됨 / 이전 스냅샷 없음 / 이전에 없던 신규 `resource_id`는 값이 비어 `--deep` 대상이
+됨 / 이전 값이 `null`인 엔트리를 되살리지 않음.
+
 ### ② `scripts/check_new_nikkes.py` — 본체
 
 `collect.js --directory --headless`를 스크래치 경로에 실행시킨 뒤, 커밋된
@@ -135,6 +163,24 @@ Chrome 실행 파일은 알려진 경로 목록을 순서대로 시도하고, �
 이것은 신호가 아니라 실패 원인을 읽기 위한 디버깅 보조물이다(신호는 토스트다).
 
 ---
+
+## 탐지 이후 — 사람이 하는 일
+
+이 스펙은 탐지까지만 자동화한다. 토스트가 뜬 뒤의 경로는 다음과 같으며, 🔴만 Fienn이
+직접 해야 하고 나머지는 위임 가능하다.
+
+1. **스냅샷 갱신** — `node collect.js --directory --headless --deep`. ①-b 수정 후
+   `--deep`은 신규 유닛만 방문한다.
+2. **데이터 수집** — `/collect-nikke <이름>`. 무기 스텁까지 생성된다.
+3. 🔴 **무기 스탯 수동 입력** — dotgg가 2026-05에 멈춰 신규 유닛은 API에 없다. 스텁의
+   `_todo`를 인게임/나무위키 값으로 채운다. MG·SMG·AR·SG는 `maxAmmo`/`damage`/
+   `reloadTime` 3개, RL·SR은 여기에 `chargeTime`/`chargeDamage`를 더한 5개.
+   채우지 않으면 로더가 유닛을 **안전하게 제외**한다(틀린 값이 들어가지 않는다).
+4. 🔴 **인코딩 판단 승인 1회** — `nikke-skill-encoding` 4단계가 애매한 항목을 한 번에
+   모아 제시한다. 시그니처 무기(`dollskills`) 사용 여부도 같은 검토에 포함된다.
+5. **슬러그 맵 등록** — 손댈 필요 없다. 인코딩 시작과 동시에
+   `test_resource_id_slug_map.py`가 실패하므로 건너뛸 수 없다.
+6. 🔴 **트렁크 머지** — 리모트가 없어 ff는 Fienn이 실행한다.
 
 ## 테스트
 
