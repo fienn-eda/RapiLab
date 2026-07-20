@@ -14,7 +14,9 @@
 - Branch: `wip/sync-polish` (already created, already carries the spec).
 - Backend tests: `PYTHONPATH=. python3 -m pytest` from `backend/`. Plain `python` on this machine has NO pytest.
 - Frontend checks from `frontend/`: `npx vitest run`, `npx tsc -b --noEmit`, `npm run lint`. Bare `tsc --noEmit` is a **no-op** here — the root tsconfig is a references shell, so `-b` is required.
-- **Baseline: backend 1015 passing, frontend 155 passing.** Nothing may break.
+- **Baseline: backend 1063 passing, frontend 155 passing.** Nothing may break.
+  (An earlier draft of this plan said 1015 — that was the count before trunk was
+  merged in and is wrong. Trust 1063.)
 - Never use bare `git stash` / `git stash pop` — the stash stack is shared with other worktrees.
 - UI copy is **English** (`App.tsx`: "Enter each owned Nikke's investment data from ShiftyPad."). Test descriptions in `frontend/src/lib/bookmarklet.test.ts` are **Korean** — match whichever file you are in.
 - The window name is exactly `nikke-deck-builder`.
@@ -177,7 +179,7 @@ Run from `backend/`:
 ```
 PYTHONPATH=. python3 -m pytest -q
 ```
-Expected: **1016 passed** (1015 baseline + 1 new; the key-set test was modified, not added). If `test_assemble_roster_matches_the_collector_scrape` fails, do NOT widen it — it compares against a real scrape and a failure there means the emitted values are wrong, not the test.
+Expected: **1064 passed** (1063 baseline + 1 new; the key-set test was modified, not added). If `test_assemble_roster_matches_the_collector_scrape` fails, do NOT widen it — it compares against a real scrape and a failure there means the emitted values are wrong, not the test.
 
 - [ ] **Step 5: Commit**
 
