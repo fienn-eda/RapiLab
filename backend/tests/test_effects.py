@@ -1,3 +1,5 @@
+import pytest
+
 from app.effects import Effect, EffectRegistry, Pulse, RoundGrant
 
 
@@ -234,3 +236,47 @@ def test_multiple_pulses_of_same_stat_all_returned():
 
     drained = registry.drain_pulses("s")
     assert sorted(p.value for p in drained) == [1.0, 2.0]
+
+
+def test_refreshing_buff_does_not_truncate_a_different_skills_same_stat_buff():
+    # Liberalio: Raging Current is a PERMANENT self attack_damage_up, and Calm
+    # Depths refreshes a SMALLER self attack_damage_up on every full charge.
+    # Keyed only by (stat, source, scope), the refresh silently truncated the
+    # permanent one to zero on the very first shot - her biggest buff destroyed
+    # by her own smaller one. Refreshing must collapse re-applications of ONE
+    # skill bullet, not everything the unit grants on that stat.
+    reg = EffectRegistry()
+    target = {"slug": "liberalio", "element": "Wind"}
+
+    permanent = Effect("attack_damage_up", 2.31, "self", None, "liberalio",
+                       refresh_group="raging_current")
+    reg.add(permanent, applied_at=1.5)
+    for shot in (1.5, 2.5, 3.5):
+        reg.add_refreshing(
+            Effect("attack_damage_up", 0.2083, "self", 60.0, "liberalio",
+                   refresh_group="on_core"),
+            applied_at=shot,
+        )
+
+    # both alive: the permanent one plus ONE copy of the refreshed one
+    assert reg.total_for("attack_damage_up", target, now=4.0) == pytest.approx(2.31 + 0.2083)
+    assert reg.total_for("attack_damage_up", target, now=100.0) == pytest.approx(2.31)
+
+
+def test_refreshing_still_collapses_repeats_of_the_same_group():
+    reg = EffectRegistry()
+    target = {"slug": "u", "element": "Iron"}
+    for shot in (1.0, 2.0, 3.0):
+        reg.add_refreshing(
+            Effect("atk_percent", 0.5, "self", 10.0, "u", refresh_group="g"),
+            applied_at=shot,
+        )
+    assert reg.total_for("atk_percent", target, now=3.5) == pytest.approx(0.5)
+
+
+def test_refreshing_effects_from_different_sources_still_both_apply():
+    reg = EffectRegistry()
+    target = {"slug": "ally", "element": "Iron"}
+    reg.add_refreshing(Effect("atk_percent", 0.3, "squad", 10.0, "a", refresh_group="g"), 1.0)
+    reg.add_refreshing(Effect("atk_percent", 0.4, "squad", 10.0, "b", refresh_group="g"), 1.0)
+    assert reg.total_for("atk_percent", target, now=2.0) == pytest.approx(0.7)

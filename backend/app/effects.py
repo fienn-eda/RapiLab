@@ -20,6 +20,14 @@ class Effect:
     scope: str
     duration: float | None  # seconds; None means it never expires
     source_slug: str
+    # Which skill bullet this came from, for add_refreshing. A unit can grant
+    # the same stat from several bullets (Liberalio's permanent Raging Current
+    # and her per-shot on-core buff are both self attack_damage_up), and only
+    # re-applications of the SAME bullet may collapse into one another - see
+    # add_refreshing. None groups with other ungrouped effects of the same
+    # (stat, source, scope), preserving the original behaviour for callers
+    # that never had a collision.
+    refresh_group: str | None = None
 
 
 @dataclass
@@ -163,11 +171,15 @@ class EffectRegistry:
 
     def add_refreshing(self, effect: Effect, applied_at: float) -> None:
         """Add a buff that REFRESHES rather than stacks. Any still-active effect
-        with the same (stat, source_slug, scope) is truncated to end at
+        with the same (stat, source_slug, scope, refresh_group) is truncated to end at
         `applied_at`, so overlapping re-applications from ONE source collapse to a
         single continuous window at the buff's value (not the sum of overlaps).
         Effects from DIFFERENT sources are untouched, so cross-unit buffs still
-        add. For a buff re-applied every shot (e.g. "ATK +X% for 3 sec on every
+        add - and so are effects from a different `refresh_group`, i.e. a
+        different skill bullet of the SAME unit. Without that last key, a
+        unit's permanent buff on a stat was silently truncated by its own
+        smaller per-shot buff on the same stat (Liberalio's Raging Current,
+        found 2026-07-21). For a buff re-applied every shot (e.g. "ATK +X% for 3 sec on every
         Full Charge"), which the game refreshes rather than stacks. Truncation is
         in place, so replay-style queries for earlier times also see one instance."""
         for existing, existing_applied_at in self._entries:
@@ -175,6 +187,7 @@ class EffectRegistry:
                 existing.stat == effect.stat
                 and existing.source_slug == effect.source_slug
                 and existing.scope == effect.scope
+                and existing.refresh_group == effect.refresh_group
                 and self._is_active(existing, existing_applied_at, applied_at)
             ):
                 existing.duration = applied_at - existing_applied_at

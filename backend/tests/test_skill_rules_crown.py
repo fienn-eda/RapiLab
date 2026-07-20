@@ -162,3 +162,22 @@ def test_royal_attire_is_not_maintained_without_another_healer():
     fire_trigger("battle_start", rules, no_healer, reg, time=0.0)
     ally = {"slug": "attacker", "element": "Iron"}
     assert reg.total_for("attack_damage_up", ally, now=1.0) == 0.0
+
+
+def test_royal_attire_does_not_cancel_last_kingdoms_squad_attack_damage():
+    # Both bullets grant squad attack_damage_up from Crown. Royal Attire
+    # refreshes; Last Kingdom does not. Keyed only by (stat, source, scope) the
+    # refresh truncated the burst buff, so adding Royal Attire silently cost
+    # every Crown deck its 36.24% - caught 2026-07-21.
+    ctx = _ctx("attacker")
+    reg = EffectRegistry()
+    ally = {"slug": "attacker", "element": "Iron"}
+
+    fire_trigger("own_burst_activate",
+                 {"crown": build_last_kingdom_rules(LAST_KINGDOM_VALUES, 1e7)},
+                 ctx, reg, time=10.0)
+    _, _, royal = build_royal_attire_per_shot_rules(ROYAL_ATTIRE_VALUES)[0]
+    for rule in royal:
+        rule.action(ctx, "crown", 11.0, reg)
+
+    assert round(reg.total_for("attack_damage_up", ally, now=11.5), 4) == 0.5723

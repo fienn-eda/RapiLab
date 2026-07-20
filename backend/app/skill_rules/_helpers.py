@@ -11,6 +11,7 @@ from app.squad_engine import SkillRule
 
 # Distinct cap-group ids for capped round_buff_rules (see round_buff_rule).
 _round_cap_group_ids = count()
+_refresh_group_ids = count()
 
 
 def _rule(trigger, action, condition):
@@ -39,11 +40,21 @@ def refreshing_buff_rule(trigger, buffs, condition=None):
     """Like buff_rule, but each buff REFRESHES instead of stacking (see
     EffectRegistry.add_refreshing) - for a per-shot buff re-applied every shot,
     which the game refreshes rather than stacks. `condition`: optional SkillRule
-    condition, as in buff_rule."""
+    condition, as in buff_rule.
+
+    Each rule instance gets its own refresh group, so re-applications of THIS
+    bullet collapse into one another while the same unit's other buffs on the
+    same stat are left alone. Without that, Liberalio's permanent Raging
+    Current (+231% self Attack Damage) was truncated to nothing by her own
+    on-core buff (+20.83%, same stat and scope) on her very first shot."""
+    group = f"refresh_{next(_refresh_group_ids)}"
 
     def action(context, caster_slug, time, registry):
         for stat, value, scope, duration in buffs:
-            registry.add_refreshing(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
+            registry.add_refreshing(
+                Effect(stat, value, scope, duration, caster_slug, refresh_group=group),
+                applied_at=time,
+            )
 
     return _rule(trigger, action, condition)
 
