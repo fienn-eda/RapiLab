@@ -222,6 +222,98 @@ def test_element_advantage_grant_opens_the_superior_code_damage_gate():
     assert round(result["total_damage"], 5) == round(10000.0 * 1.6, 5)
 
 
+def test_element_advantage_grant_does_not_stack_with_natural_advantage():
+    # A grant is meant to open advantage a unit does NOT naturally have. If the
+    # unit already holds natural advantage (Fire attacker vs a Wind boss - Fire
+    # beats Wind per elements.py), a grant on top must not double the element
+    # multiplier to 1.2 - it must stay at 1.1, same as natural advantage alone.
+    # Two simultaneous grants must likewise stay at 1.1, not compound further.
+    fire_deck = [
+        {"slug": "buffer", "burst_tier": 1, "element": "Fire", "cooldown": 20.0},
+        {"slug": "midtier", "burst_tier": 2, "element": "Fire", "cooldown": 20.0},
+        {"slug": "attacker", "burst_tier": 3, "element": "Fire", "cooldown": 40.0},
+    ]
+
+    def grant_advantage(context, caster_slug, time, registry):
+        registry.add(
+            Effect("element_advantage_grant", 1.0, "self", None, "attacker"),
+            applied_at=time,
+        )
+
+    def grant_advantage_twice(context, caster_slug, time, registry):
+        grant_advantage(context, caster_slug, time, registry)
+        registry.add(
+            Effect("element_advantage_grant", 1.0, "self", None, "attacker"),
+            applied_at=time,
+        )
+
+    kwargs = dict(
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        boss_element="Wind",  # Fire > Wind: attacker already has natural advantage
+    )
+    natural_only = simulate_raid(
+        fire_deck, rules_by_slug={"buffer": [], "midtier": [], "attacker": []}, **kwargs
+    )
+    natural_plus_one_grant = simulate_raid(
+        fire_deck,
+        rules_by_slug={
+            "buffer": [SkillRule(trigger="battle_start", action=grant_advantage)],
+            "midtier": [],
+            "attacker": [],
+        },
+        **kwargs,
+    )
+    natural_plus_two_grants = simulate_raid(
+        fire_deck,
+        rules_by_slug={
+            "buffer": [SkillRule(trigger="battle_start", action=grant_advantage_twice)],
+            "midtier": [],
+            "attacker": [],
+        },
+        **kwargs,
+    )
+
+    assert round(natural_only["total_damage"], 5) == round(10000.0 * 1.1, 5)
+    assert round(natural_plus_one_grant["total_damage"], 5) == round(10000.0 * 1.1, 5)
+    assert round(natural_plus_two_grants["total_damage"], 5) == round(10000.0 * 1.1, 5)
+
+
+def test_element_advantage_grant_expires_with_its_duration():
+    # A grant is a skill-scoped buff like any other - a short-duration grant
+    # that lapses before the burst fires must not still be raising the element
+    # multiplier at damage-computation time.
+    def grant_advantage_briefly(context, caster_slug, time, registry):
+        registry.add(
+            Effect("element_advantage_grant", 1.0, "self", 3.0, "attacker"),
+            applied_at=time,
+        )
+
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug={
+            "buffer": [SkillRule(trigger="battle_start", action=grant_advantage_briefly)],
+            "midtier": [],
+            "attacker": [],
+        },
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,  # burst fires at t=5.0, after the grant's 3s duration lapses
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        boss_element="Iron",  # neutral for the Iron attacker: any bonus is purely from the grant
+    )
+
+    assert result["total_damage"] == 10000.0  # grant expired at t=3.0; no bonus at t=5.0
+
+
 def test_base_crit_rate_of_15_percent_raises_damage_by_7_5_percent():
     rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
     kwargs = dict(
