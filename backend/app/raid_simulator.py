@@ -103,6 +103,10 @@ from app.effects import Effect, EffectRegistry, _matches_scope
 from app.elements import element_multiplier
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
+# How far past a window's end an "after this window ends" event is placed, so
+# it orders after anything landing on the boundary instant itself.
+AFTER_WINDOW_EPSILON = 1e-3
+
 CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
@@ -169,7 +173,36 @@ def _resource_fill_times(
         return [t for i, t in enumerate(out_of_window) if (i + 1) % n == 0]
     if kind == "on_last_bullet":
         return sorted(last_bullet_times)
+    if kind == "at_battle_start":
+        return [0.0]
+    if kind == "on_full_burst_end_after_own_burst":
+        # Mihara's Restraint Chains: re-banked when Full Burst ends "if this
+        # unit has just used her Burst Skill", and spent whole just AFTER that
+        # ("풀 버스트 타임 종료 후"). The later Burst-Stage-3 discharge trigger
+        # then always finds an empty bank, so this is the only recurring
+        # discharge in a raid. The nudge past the window's end is what the
+        # skill text says AND what makes the discharge survive a resource
+        # reset landing on that same instant (Bonding Pain cancelling the
+        # stacks it just detonated) - resource_count discards fills recorded
+        # at or before its baseline reset.
+        times = []
+        for burst_time in own_burst_times:
+            end = next((e for s, e in full_burst_windows if s <= burst_time <= e), None)
+            if end is not None and end + AFTER_WINDOW_EPSILON not in times:
+                times.append(end + AFTER_WINDOW_EPSILON)
+        return sorted(times)
     raise ValueError(f"unknown resource fill kind: {kind}")
+
+
+def _fill_sources(fill):
+    """A resource's `fill` is either ONE fill spec (granting 1 stack a time,
+    the shape every pre-existing consumer uses) or a list of (fill spec,
+    amount) pairs for a resource fed by several sources at different rates -
+    e.g. Mihara's Ensnaring Chains, +10 per chain discharge and +1 per 40
+    normal attacks during Full Burst."""
+    if isinstance(fill, list):
+        return fill
+    return [(fill, 1)]
 
 
 def _sequence_fire_rules(spec, stage_rules, shot_times, own_burst_times):
@@ -740,27 +773,32 @@ def simulate_raid(
             if spec.fill[0] == "squad_burst_cycle_conditional":
                 _resolve_squad_burst_cycle_resource(spec, slug, events, context)
                 continue
-            fill_times = _resource_fill_times(
-                spec.fill, shot_times, core_hittable, fight_duration, full_burst_windows,
-                context.burst_times.get(slug, []), last_bullet_times_by_slug.get(slug, set()),
-            )
-            # Every per-shot fill grants exactly one stack. (A fill source that
-            # grants more than one at a time - e.g. a battle-start +N - would
-            # carry its own amount; none exists yet.)
-            for ft in fill_times:
-                context.fill_resource(slug, spec.name, 1, ft)
+            # A resource may be fed by several sources at different rates, each
+            # granting its own amount (see _fill_sources).
+            fill_times = []
+            for source, amount in _fill_sources(spec.fill):
+                source_times = _resource_fill_times(
+                    source, shot_times, core_hittable, fight_duration, full_burst_windows,
+                    context.burst_times.get(slug, []), last_bullet_times_by_slug.get(slug, set()),
+                )
+                for ft in source_times:
+                    context.fill_resource(slug, spec.name, amount, ft)
+                fill_times.extend(source_times)
 
-            # Resets (a resource SET to a fixed value rather than incremented,
+            # Resets (a resource SET to a new value rather than incremented,
             # e.g. Soda's Golden Chip consumed down to 17 on her own burst) are
             # collected from every reset spec and replayed in time order, so
             # each reset's pre-value correctly reflects fills AND any earlier
-            # reset already applied.
+            # reset already applied. Each spec carries either a fixed `value`
+            # or a `value_fn(pre_value)` for a consumption that reads the count
+            # it is spending - e.g. Elegg's ghosts, spending 9 at the 13 cap
+            # and 6 below it but never dropping under 1.
             reset_events = []
             for reset_spec in spec.resets:
                 if reset_spec["trigger"] == "battle_start":
-                    reset_events.append((0.0, reset_spec["value"]))
+                    reset_events.append((0.0, reset_spec))
                 elif reset_spec["trigger"] == "own_burst":
-                    reset_events.extend((rt, reset_spec["value"]) for rt in context.burst_times.get(slug, []))
+                    reset_events.extend((rt, reset_spec) for rt in context.burst_times.get(slug, []))
                 elif reset_spec["trigger"] == "own_burst_delayed":
                     # Resets `reset_spec["delay"]` seconds AFTER each own-burst
                     # fire, not at the burst itself - e.g. Asuka's Anti A.T.
@@ -768,13 +806,15 @@ def simulate_raid(
                     # not when the burst that started it fires.
                     delay = reset_spec["delay"]
                     reset_events.extend(
-                        (rt + delay, reset_spec["value"]) for rt in context.burst_times.get(slug, [])
+                        (rt + delay, reset_spec) for rt in context.burst_times.get(slug, [])
                     )
                 else:
                     raise ValueError(f"unknown resource reset trigger: {reset_spec['trigger']}")
             reset_events.sort(key=lambda e: e[0])
-            for reset_time, post_value in reset_events:
+            for reset_time, reset_spec in reset_events:
                 pre_value = context.resource_count(slug, spec.name, reset_time, spec.cap)
+                value_fn = reset_spec.get("value_fn")
+                post_value = value_fn(pre_value) if value_fn else reset_spec["value"]
                 context.reset_resource(slug, spec.name, reset_time, pre_value, post_value)
             reset_times = [rt for rt, _ in reset_events]
 
@@ -873,6 +913,12 @@ def simulate_raid(
                 hit_count = context.resource_count_before_reset(slug, spec["resource"], fire_time)
                 if hit_count is None:
                     continue
+                # `hit_count_fn` (optional): the count picks the hit count
+                # instead of being it - e.g. Elegg's 13 Ghosts, 13 sequential
+                # hits at the 13-ghost cap and 6 hits below it.
+                hit_count_fn = spec.get("hit_count_fn")
+                if hit_count_fn:
+                    hit_count = hit_count_fn(hit_count)
                 for _ in range(int(hit_count)):
                     record(
                         slug, spec["base_percent"], fire_time, "dynamic_hit_count_nuke",
@@ -934,11 +980,18 @@ def simulate_raid(
         for spec in specs:
             damage_type = spec.get("damage_type", "attack")
             eligible = spec.get("full_burst_bonus_eligible", False)
+            # Optional `resource_gate` (same 4-tuple shape resource_scaled_nukes
+            # uses): each tick's percent is scaled by a named resource's count
+            # AT THAT TICK'S OWN TIME, resolved in phase 2. Lets a whole-fight
+            # scheduled DoT scale off a stack counter - e.g. Mihara's Ensnaring
+            # Chains, ticking every second at 25.08% PER stack.
+            resource_gate = spec.get("resource_gate")
             for hit_time in spec["schedule"](context, fight_duration):
                 if hit_time >= fight_duration:
                     continue
                 record(slug, spec["percent"], hit_time, "scheduled",
-                       damage_type=damage_type, full_burst_bonus_eligible=eligible)
+                       damage_type=damage_type, resource_gate=resource_gate,
+                       full_burst_bonus_eligible=eligible)
 
     def _normal_attack_percent(ev):
         # Normal Attack Damage Multiplier is a Final ATK modifier on the

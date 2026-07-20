@@ -77,6 +77,21 @@ def test_dual_slot_bases_match_encoded_pairs():
     )
 
 
+def test_every_mode_variant_base_has_a_map_row():
+    # Variant slugs are exempted from the reachability check below because they
+    # are reached by fan-out from their base's row - which only holds if the
+    # base HAS a row. Without this, a newly encoded variant pair ships wholly
+    # unreachable and the exemption hides it (caught with Bready, 2026-07-19).
+    encoded = set(ENCODED_SLUGS)
+    bases_in_use = {base for base, variants in MODE_VARIANTS.items()
+                    if any(v in encoded for v in variants)}
+    missing = bases_in_use - _mapped_slugs()
+    assert missing == set(), (
+        "MODE_VARIANTS bases whose variants are encoded but that have no "
+        f"resource_id row - their variants are unreachable: {missing}"
+    )
+
+
 def test_every_encoded_slug_is_reachable_except_known():
     signature_slugs = {f"{b}-signature" for b in _encoded_dual_slot_bases()}
     # Mode-variant slugs are reached by loader fan-out from their (unencoded)

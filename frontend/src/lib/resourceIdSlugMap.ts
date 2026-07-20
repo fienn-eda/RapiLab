@@ -29,11 +29,13 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   43: 'd-killer-wife', // D: Killer Wife
   73: 'brid-silent-track', // Brid: Silent Track
   74: 'soline-frost-ticket', // Soline: Frost Ticket (71 = base Soline, not encoded)
+  75: 'diesel-winter-sweets', // Diesel: Winter Sweets - base slug; fans out to -intro/-highlight (MODE_VARIANTS)
   82: 'liter', // Liter
   100: 'laplace', // Laplace — dual-slot base; see SIGNATURE_OWNED
   101: 'drake', // Drake — dual-slot base; see SIGNATURE_OWNED
   102: 'maxwell', // Maxwell
   150: 'julia', // Julia — dual-slot base; see SIGNATURE_OWNED
+  162: 'mihara-bonding-chain', // Mihara: Bonding Chain
   170: 'privaty', // Privaty
   182: 'guillotine-winter-slayer', // Guillotine: Winter Slayer
   183: 'maiden-ice-rose', // Maiden: Ice Rose
@@ -68,10 +70,12 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   431: 'volume', // Volume
   470: 'red-hood', // Red Hood (16 = Rapi: Red Hood, separately encoded)
   471: 'snow-white-heavy-arms', // Snow White: Heavy Arms
+  502: 'elegg-boom-and-shock', // Elegg: Boom and Shock
   511: 'cinderella', // Cinderella
   513: 'little-mermaid', // Little Mermaid
   514: 'grave', // Grave
   515: 'cinderella-crystal-wave', // Cinderella: Crystal Wave - base slug; fans out to -mg/-snipe (MODE_VARIANTS)
+  520: 'bready', // Bready - base slug; fans out to -lingering/-recommended (MODE_VARIANTS)
   570: 'ark-ranger-black', // Ark Ranger Black
   581: 'arcana', // Arcana
   583: 'arcana-fortune-mate', // Arcana: Fortune Mate

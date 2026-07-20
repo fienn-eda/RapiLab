@@ -19,6 +19,7 @@ from app.overload_effects import overload_options_to_effects
 from app.skill_rules.registry import (
     build_nikke_rules,
     get_burst_damage_type,
+    get_burst_delay,
     get_burst_hit_count,
     get_per_shot_rules,
     get_periodic_nuke,
@@ -88,10 +89,12 @@ def assemble_simulation_inputs(ordered_deck):
     weapon_mode_schedules = {}
 
     for spec in ordered_deck:
-        deck.append(
-            {"slug": spec.slug, "burst_tier": spec.burst_tier, "element": spec.element,
-             "cooldown": spec.burst_cooldown, "weapon": spec.weapon}
-        )
+        member = {"slug": spec.slug, "burst_tier": spec.burst_tier, "element": spec.element,
+                  "cooldown": spec.burst_cooldown, "weapon": spec.weapon}
+        burst_delay = get_burst_delay(spec.slug, spec.skill_values)
+        if burst_delay:
+            member["burst_delay"] = burst_delay
+        deck.append(member)
         base_stats[spec.slug] = spec.base_stats
         weapon_stats[spec.slug] = spec.weapon_stats
 
