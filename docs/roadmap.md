@@ -590,16 +590,11 @@
       `other_elemental_bonus`(우월 코드 대미지) 원소 우위 게이팅 버그도 수정. 상세는
       `docs/engine-gaps.md` 갭 #12, `docs/decisions.md`, `docs/superpowers/specs/
       2026-07-20-harmony-cube-assumed-lv15-design.md` 참고.
-- [ ] **북마크릿 탭 재사용 (Fienn 제안, 미결정).** `window.open(appOrigin, 'nikke-deck-builder')`
-      처럼 창 이름을 주면 재동기화 때 새 탭을 쌓지 않고 기존 탭을 재사용한다. 한계: 북마크릿이
-      직접 연 탭에만 통하고, 사용자가 주소창으로 따로 연 탭은 브라우징 컨텍스트 그룹이 달라
-      이름으로 찾아지지 않는다. "탭을 아예 안 열고 기존 탭만 갱신"은 구조적으로 불가능
-      (북마크릿은 blablalink 오리진에서 돌고, BroadcastChannel·localStorage는 동일 오리진 한정).
-      **하려면 지금이 가장 쌈** — 북마크릿 변경은 전 유저 재설치를 강제하는데 현재 사용자가 1명.
-- [ ] **표시 개선: `core_level`이 임포트 시 항상 0으로 보인다.** 엔진에는 무해하다(백엔드 스탯
-      계산의 입력이라 이미 raid400 ATK/HP에 접혀 있고, `models.py`에 선언만 있을 뿐 읽는 곳이
-      0건) — 하지만 코어 6개인 유닛에 0으로 표시되면 오해를 부른다. grade도 draft 필드가 아니라
-      아예 표시되지 않는다.
+- [x] **북마크릿 탭 재사용 — 완료.** `window.open(appOrigin, 'nikke-deck-builder')`로 창 이름을
+      줘 재동기화 때 기존 탭을 재사용(`frontend/src/lib/bookmarklet.ts`).
+- [x] **표시 개선: `core_level`이 임포트 시 항상 0으로 보인다 — 완료.** grade/core 배지
+      (`InvestmentBadge`, Task 3)가 실제 투자 표시를 맡고, 아무도 읽지 않던 입력
+      `core_level`은 제거(Task 4, `docs/decisions.md` 참고).
 - [ ] **개인정보 처리방침** — 공개 배포 전 필요(설계 스펙에 명시, 법률 검토는 범위 밖).
 - [ ] **디렉토리 스냅샷 갱신 루틴** — 스냅샷 이후 출시된 니케는 조용히 스킵된다. 동기화
       엔드포인트의 `unknown_name_codes` 집계가 갱신 시점을 알려준다.
