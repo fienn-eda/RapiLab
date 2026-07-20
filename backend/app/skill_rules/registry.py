@@ -244,7 +244,11 @@ from app.skill_rules.nayuta import asceticism_burst_percent, build_nayuta_rules
 from app.skill_rules.noir import build_noir_rules, finale_burst_percent
 from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika_rules
 from app.skill_rules.quency_escape_queen import build_quency_rules, the_great_thief_burst_percent
-from app.skill_rules.rosanna_chic_ocean import build_rosanna_rules
+from app.skill_rules.rosanna_chic_ocean import (
+    build_rosanna_rules,
+    build_spina_periodic_rules,
+    build_spina_scheduled_nukes,
+)
 from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
 from app.skill_rules.soda_twinkling_bunny import (
     build_golden_chip_resources,
@@ -614,6 +618,7 @@ _SCHEDULED_NUKE_BUILDERS = {
     "little-mermaid": lambda sv: build_bubble_barrage_scheduled_nukes(sv),  # squad-wide 500-ammo counter
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
+    "rosanna-chic-ocean": lambda sv: build_spina_scheduled_nukes(sv),  # Spina di Rosa, 15 ticks per cast
     "laplace-signature": lambda sv: laplace_signature.build_buster_scheduled_nukes(sv),  # per-tick true-damage rider
     "rapi-red-hood": lambda sv: build_attachable_projectiles_scheduled_nukes(sv),  # Attachable Projectiles launcher
     "rapi-red-hood-b1": lambda sv: build_attachable_projectiles_scheduled_nukes(
@@ -647,6 +652,7 @@ _BURST_HIT_COUNTS = {
 # separate from _BUILDERS (event-triggered rules) and _PERIODIC_NUKE_BUILDERS.
 _PERIODIC_RULE_BUILDERS = {
     "sakura-bloom-in-summer": lambda sv: build_sakura_periodic_rules(sv),
+    "rosanna-chic-ocean": lambda sv: build_spina_periodic_rules(sv),  # Spina di Rosa, cd 30
     "takina-inoue": lambda sv: [
         (BATTLEFIELD_CONTROL_COOLDOWN, build_battlefield_control_rules(sv["battlefield_control"])),
     ],

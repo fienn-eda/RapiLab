@@ -807,9 +807,11 @@
       (변형딜, 저가치) · `laplace` base(5초 변형, 실측 없음 — Fienn 확인 필요) ·
       `modernia`(New World Destroy Mode + 15초 무한탄창).
       **주의: 세그먼트는 재장전을 하지 않는다** — 창 길이 > 탄창 지속이면 과대평가.
-- [ ] **배치 ③ `rosanna-chic-ocean`** — Spina di Rosa 전체(약 6300%/180초)가 보류.
-      `scheduled_nukes`의 임의 스케줄 함수로 15초 on/off 듀티사이클 표현 가능.
-      그녀의 유일한 sustained 인스턴스라 **자기 sustained 버프도 함께 inert** 상태.
+- [x] **배치 ③ `rosanna-chic-ocean` (2026-07-21 완료)** — Spina di Rosa 전체 인코딩.
+      예상대로 `scheduled_nukes`의 스케줄 콜백으로 듀티사이클을 표현했고, 버프 절반은
+      `periodic_rules`. 실제 값은 약 6300%가 아니라 **5280%/180초** — 강제발동이 없어
+      첫 캐스트가 t=30이므로 5캐스트(6캐스트 아님)다. 자기 sustained 버프도 함께 실효화,
+      고정 셸 E2E **+7.87%**.
 - [x] **차지속도 공식 수정 (2026-07-20, Fienn 승인)** — `charge_time_with_speed`로
       집약, 5개 호출 지점 교체. `÷(1+속도)` → `×(1−속도)`. 감속도 같은 식으로 처리
       (bready −20%가 1.25배 → 1.2배). 버프 0이면 로스터의 모든 기본 차지시간에 대해
