@@ -1,12 +1,14 @@
-"""Per-slug damage sweep: every encoded Nikke measured in one fixed deck shell.
+"""Per-slug damage sweep: every encoded Nikke measured in a fixed deck shell.
 
 Why: engine changes (a new buff kind, a fix to how effects stack) move damage
 for reasons that unit tests don't quantify. This prints one comparable number
 per encoded slug so a change can be A/B'd end-to-end instead of argued about.
 
 Each slug is evaluated as the lone variable member of a fixed support shell, so
-the only thing differing between rows is the unit under test. Slugs that can't
-form a feasible deck in the shell (burst-tier clashes) are reported as skipped.
+the only thing differing between rows is the unit under test. The shell is
+chosen by the unit's own burst tier and contains no unit of that tier - see
+SHELLS for why that matters. Slugs that can't form a feasible deck are
+reported as skipped.
 
 Usage (any cwd):
     python3 scripts/sweep_slug_damage.py --out before.json
@@ -26,10 +28,16 @@ from app.skill_rules.registry import ENCODED_SLUGS  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
 from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # noqa: E402
 
-# Fixed support shell: four units already covering burst tiers 1/2/3, so the
-# fifth seat accepts a unit of ANY tier and every encoded slug is measurable.
-# The shell's own output is constant across rows.
-SHELL_SLUGS = ["liter", "volume", "crown", "helm"]
+# One fixed shell per burst tier, each drawn ENTIRELY from the other two tiers.
+# A shell must not contain the tier it is measuring: only one unit per tier
+# bursts each cycle, so a same-tier shell member can crowd the unit under test
+# out of the rotation entirely and its burst-triggered damage then measures as
+# zero (Zwei, against a liter+volume shell, never bursted at all).
+SHELLS = {
+    1: ["crown", "blanc", "helm", "modernia"],       # 2x B2 + 2x B3
+    2: ["liter", "volume", "helm", "modernia"],      # 2x B1 + 2x B3
+    3: ["liter", "volume", "crown", "blanc"],        # 2x B1 + 2x B2
+}
 BOSS = BossProfile(element="Water", fight_duration=180.0)
 
 
@@ -41,13 +49,19 @@ def _nikke(slug):
     })
 
 
+def _tier_of(slug):
+    specs, excluded = load_roster([_nikke(slug)])
+    return None if excluded or not specs else specs[0].burst_tier
+
+
 def measure(slug):
-    """Best total damage over the feasible orderings of shell + slug, or None
-    if the slug can't form a deck here."""
-    states = [_nikke(s) for s in SHELL_SLUGS + [slug] if s != slug or s not in SHELL_SLUGS]
-    if slug in SHELL_SLUGS:
-        return None  # shell members aren't measurable against their own shell
-    specs, excluded = load_roster(states)
+    """Best total damage over the feasible orderings of (tier-matched shell +
+    slug), or None if the slug can't be measured here."""
+    tier = _tier_of(slug)
+    shell = SHELLS.get(tier)
+    if shell is None or slug in shell:
+        return None  # unknown tier, or the slug is itself a shell member
+    specs, excluded = load_roster([_nikke(s) for s in shell + [slug]])
     if excluded:
         return None
     best = None
@@ -111,7 +125,7 @@ def main():
         print(f"  SKIP {note}")
     if args.out:
         Path(args.out).write_text(
-            json.dumps({"shell": SHELL_SLUGS, "damage": rows, "skipped": skipped}, indent=2),
+            json.dumps({"shells": SHELLS, "damage": rows, "skipped": skipped}, indent=2),
             encoding="utf-8",
         )
         print(f"\nwrote {args.out}")

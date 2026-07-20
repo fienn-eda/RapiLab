@@ -301,6 +301,7 @@ from app.skill_rules.rapi_red_hood import (
 )
 from app.skill_rules.volume import build_volume_rules
 from app.skill_rules.zwei import (
+    build_overcharge_weapon_mode_schedule,
     build_frame_analysis_resources,
     build_pierce_equation_per_shot_rules,
     build_zwei_rules,
@@ -641,6 +642,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
     "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
     "nayuta": lambda sv: build_memory_incineration_weapon_mode_schedule(sv),  # Memory Incineration, 10s
+    "zwei": lambda sv: build_overcharge_weapon_mode_schedule(sv),  # Overcharge Formula, single 1.2s-charge Pierce shot
     "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
 }
 

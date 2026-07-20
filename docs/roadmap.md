@@ -800,20 +800,29 @@
       힐러 명단 유도 스크립트 신설) · liberalio(차지속도 면역) · mana(보류 사유만 정정).
       엔진 확장 2건: `deck_contains_any` · `EffectRegistry.set_external_stat_immunity`.
       `nikke-skill-encoding` SKILL.md의 "차지속도는 inert"(Phase S 이전 기술) 정정 포함.
-- [ ] **배치 ② 무기변형 잔여 (1/7 완료)** — 2026-07-19에 `weapon_mode_schedules` 세그먼트가
+- [ ] **배치 ② 무기변형 잔여 (2/7 완료)** — 2026-07-19에 `weapon_mode_schedules` 세그먼트가
       착지했는데도 "무기변형 미지원"을 근거로 defer된 유닛들.
-      **`nayuta` 완료(2026-07-21, E2E +14.56%, ⚠→✅)** — 탄약 무한이라 세그먼트의
+      **`nayuta` 완료(2026-07-21, E2E +18.07%, ⚠→✅)** — 탄약 무한이라 세그먼트의
       no-reload 제약이 무효였고, "Fixed at 1.8 sec"은 `rate_of_fire`로 표현.
-      dotgg→lootandwaifus 소스 이관 필요했음. 남은 6명: `takina-inoue`(버스트
-      변형 200.64%) · `zwei`(Overcharge Formula 자기 변형) · `moran` · `velvet`
-      (변형딜, 저가치) · `laplace` base(5초 변형, 실측 없음 — Fienn 확인 필요) ·
-      `modernia`(New World Destroy Mode + 15초 무한탄창).
-      **주의: 세그먼트는 재장전을 하지 않는다** — 창 길이 > 탄창 지속이면 과대평가.
+      dotgg→lootandwaifus 소스 이관 필요했음.
+      **`zwei` 완료(2026-07-21, E2E +0.82%)** — "Max Ammo 1"이 곧 단발 변형이라는 뜻이라
+      Maxwell 선례 그대로 `until_shots: 1`. 지속시간이 원문에 없던 이유가 이것이었다.
+      **남은 5명은 전부 같은 이유로 막혀 있다 — 변형 무기의 발사 속도(창 안에서 몇 발 나가는지)가
+      스킬 원문에 없다.** 원문이 주는 건 데미지와 지속시간뿐이라 실측 없이는 발수를 만들어낼 수 없다
+      (red-hood 33발·laplace-signature 93틱이 전부 Fienn의 인게임 실측인 이유):
+      `takina-inoue`(200.64%, 10초, 노멀공격 true damage) · `moran`(14.7%, 10초, 무한탄약) ·
+      `velvet`(7%, 10초, 저가치) · `modernia`(Destroy Mode 2.24%, 15초, 무한탄약) ·
+      `laplace` base(First 897.6% + Normal 14.52%, 5초).
+      **`laplace` base만은 유도 가능성이 있다**: 시그니처판이 같은 Laplace Buster를
+      10초에 93틱(=9.3틱/초)으로 실측해 뒀으므로, 두 판본의 발사 속도가 같다면 5초 창은 약 46틱.
+      단 "같다"는 가정 자체가 Fienn의 확인 사항.
+      **주의: 세그먼트는 재장전을 하지 않는다** — 창 길이 > 탄창 지속이면 과대평가
+      (Nayuta·moran·modernia처럼 무한탄약이 걸린 변형은 이 함정이 없다).
 - [x] **배치 ③ `rosanna-chic-ocean` (2026-07-21 완료)** — Spina di Rosa 전체 인코딩.
       예상대로 `scheduled_nukes`의 스케줄 콜백으로 듀티사이클을 표현했고, 버프 절반은
       `periodic_rules`. 실제 값은 약 6300%가 아니라 **5280%/180초** — 강제발동이 없어
       첫 캐스트가 t=30이므로 5캐스트(6캐스트 아님)다. 자기 sustained 버프도 함께 실효화,
-      고정 셸 E2E **+7.87%**.
+      고정 셸 E2E **+7.75%**.
 - [x] **차지속도 공식 수정 (2026-07-20, Fienn 승인)** — `charge_time_with_speed`로
       집약, 5개 호출 지점 교체. `÷(1+속도)` → `×(1−속도)`. 감속도 같은 식으로 처리
       (bready −20%가 1.25배 → 1.2배). 버프 0이면 로스터의 모든 기본 차지시간에 대해

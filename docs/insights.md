@@ -47,6 +47,24 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   건드렸다는 증거다. 이 A/B는 `scripts/sweep_slug_damage.py`로 재현한다(고정 셸에
   대상 유닛 한 명씩 넣어 측정 → `--compare before.json after.json`).
 
+## E2E 딜 측정 셸은 대상 유닛과 같은 버스트 티어를 포함하면 안 된다
+
+- 발견: 2026-07-21 (Zwei 무기변형 인코딩의 영향이 **정확히 0%**로 측정됨)
+- 사이클마다 **티어당 한 명만** 버스트한다. 측정용 고정 셸에 대상과 같은 티어의 유닛이
+  있으면 그 유닛이 버스트 슬롯을 가져가고, 대상의 **버스트 발동 효과는 통째로 측정되지
+  않는다**. Zwei(B1)를 liter+volume(둘 다 B1)이 든 셸로 재니 그녀의 burst 이벤트가
+  **0회**였다 — 코드는 멀쩡한데 도구가 0을 보고한 것이다.
+- 조용한 실패다: "변화 없음"은 "영향 없음"과 구분이 안 간다. 세그먼트가 시뮬레이터까지
+  배선됐는지 확인하고 나서야 셸이 원인임이 드러났다.
+- 부분적 왜곡도 생긴다. Nayuta(B2)를 crown(B2)이 든 셸로 쟀을 때는 0%가 아니라 **과소평가**
+  였다(+14.56% → 티어 인식 셸에서 실제 **+18.07%**). 완전히 밀려나지 않고 일부 사이클만
+  뺏긴 경우다.
+- 해법: `scripts/sweep_slug_damage.py`는 이제 **대상의 티어에 따라 셸을 고르고, 그 셸은
+  나머지 두 티어에서만 뽑는다**(`SHELLS`). 부수 효과로 측정 대상이 72 → **77 슬러그**로 늘었다
+  (셸 멤버도 자기가 안 든 셸에서 측정되므로).
+- 교훈: 버스트 로테이션이 있는 시뮬레이터에서 **A/B 측정 하네스는 그 자체로 검증이 필요한
+  코드다.** "대상이 실제로 버스트했는가"를 확인하지 않은 0%는 신호가 아니라 침묵이다.
+
 ## Damage formula
 - **The attack/skill coefficient scales the whole Base Damage, not the ATK stat.** A normal attack's "% of ATK" or a skill's "X% of final ATK" multiplies Base Damage *after* defense is subtracted — pass raw summary ATK plus a separate `attack_coefficient` to `calculate_damage`. Folding the coefficient into ATK mis-scales the defense subtraction and any flat ATK (~14% overstatement against a defended boss, and unevenly across Nikkes since coefficients range from ~5% normal attacks to ~8000% bursts, which would skew deck rankings). See `damage_formula.calculate_damage`.
 

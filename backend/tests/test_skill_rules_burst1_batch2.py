@@ -5,6 +5,7 @@ from app.effects import EffectRegistry
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
 from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
 from app.skill_rules.zwei import (
+    build_overcharge_weapon_mode_schedule,
     build_frame_analysis_resources,
     build_pierce_equation_per_shot_rules,
     build_zwei_rules,
@@ -95,12 +96,22 @@ ZWEI = {
         "description_value_01": "20.13", "description_value_02": "1", "description_value_03": "10.06",
         "description_value_04": "10", "description_value_05": "24.99", "description_value_06": "3", "description_value_07": "1",
     },
+    # lootandwaifus slot order (dv05 is the "Pierce Attacks 101" name, not a value).
     "frame_analysis": {
         "description_value_01": "5", "description_value_02": "7.52", "description_value_03": "18.63",
-        "description_value_04": "10", "description_value_05": "15", "description_value_06": "3", "description_value_07": "5",
+        "description_value_04": "10", "description_value_05": "101", "description_value_06": "15",
+        "description_value_07": "5", "description_value_08": "3",
     },
+    # Migrated off dotgg, which carries no slot for the transform's charge time
+    # or Full Charge multiplier (the rapi-red-hood / nayuta precedent).
     "overcharge_formula": {
-        "description_value_01": "50.69", "description_value_02": "1", "description_value_03": "25.03", "description_value_04": "10",
+        "description_value_01": "1.2",    # transform charge time
+        "description_value_02": "50.69",  # transform damage %
+        "description_value_03": "300",    # Full Charge Damage, % of that damage
+        "description_value_04": "1",      # Max Ammunition Capacity -> one shot
+        "description_value_05": "101",    # "Pierce Attacks 101" name, not a value
+        "description_value_06": "25.03",  # squad Pierce Damage %
+        "description_value_07": "10",     # duration (also the status window)
     },
 }
 
@@ -237,3 +248,21 @@ ASSAULT_FORMATION = DKW["assault_formation"]
 PIERCE_EQUATION = ZWEI["pierce_equation"]
 FRAME_ANALYSIS = ZWEI["frame_analysis"]
 OVERCHARGE_FORMULA = ZWEI["overcharge_formula"]
+
+
+def test_overcharge_formula_transform_is_a_single_charged_pierce_shot():
+    """Max Ammunition Capacity: 1 means the window is one shot, not a duration -
+    the Maxwell Pierce Shot shape. The text says plain "Charge Time", not "fixed
+    at", so it goes in as a charge_time and stays open to Charge Speed buffs."""
+    schedule = build_overcharge_weapon_mode_schedule(ZWEI)
+    ctx = deck_ctx("zwei")
+    ctx.burst_times["zwei"] = [12.0, 52.0]
+
+    segments = schedule(ctx, 180.0)
+    assert [seg["start"] for seg in segments] == [12.0, 52.0]
+    assert all(seg["until_shots"] == 1 for seg in segments)
+
+    profile = segments[0]["profile"]
+    assert profile["charge_time"] == 1.2
+    assert profile["damage_percent"] == 50.69
+    assert profile["charge_damage_percent"] == 300
