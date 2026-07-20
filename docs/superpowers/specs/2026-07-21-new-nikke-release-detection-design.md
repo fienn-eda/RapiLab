@@ -83,22 +83,24 @@ Chrome 실행 파일은 알려진 경로 목록을 순서대로 시도하고, �
 
 이 루틴이 반드시 지나가는 길목이므로 함께 고친다:
 
-- 순수 함수를 `tools/collect-blablalink/directory.js`로 분리해 export한다
-  (`parse.js` / `parse.test.js` 쌍의 기존 관례). `collect.js`는 이를 require하는
-  오케스트레이터로 남는다.
-  - `trimDirectory(raw)` — 현재 로직 그대로.
-  - `carryOverSubTypes(entries, previous)` — 이전 스냅샷을 `resource_id`로 색인해
-    `corporation_sub_type`을 승계. 이전 스냅샷이 없으면 그대로 통과.
+- `carryOverSubTypes(entries, previous)`와 `missingSubTypeIds(entries)`를
+  `collect.js`에 추가하고 export를 확장한다. **별도 모듈로 분리하지 않는다** —
+  `collect.js`는 이미 `module.exports`와 `require.main !== module` 가드를 갖고 있고
+  `parse.test.js`가 이미 `trimDirectory`를 테스트하므로, 분리는 불필요한 재구조화다.
 - `--directory`는 기존 스냅샷이 있으면 읽어 승계한 뒤 기록한다.
-- `--deep`은 **승계로 값이 채워지지 않은 `resource_id`에만** 페이지를 연다. 신규 유닛만
-  방문하므로 갱신이 194페이지에서 신규 몇 건으로 줄어든다.
+- `--deep`은 **승계 후에도 필드가 없는 `resource_id`에만** 페이지를 연다.
 - 사실과 다른 주석을 실제 동작에 맞게 고친다.
 
-테스트(`tools/collect-blablalink/directory.test.js`, `node --test`):
-승계됨 / 이전 스냅샷 없음 / 이전에 없던 신규 `resource_id`는 값이 비어 `--deep` 대상이
-됨 / 이전 값이 `null`인 엔트리도 결정된 값으로 승계되어 `--deep` 대상에서 빠짐(`null`은
-"방문했고 sub type이 없다"는 확정 답이지, 미확인이 아니다 — 두 헬퍼 모두 값의 참/거짓이
-아니라 필드의 존재 여부로 판단한다).
+**`null`은 "미확인"이 아니라 "확인 완료, 없음"이다.** `collectSubTypes`가
+`j.corporation_sub_type || null`로 쓰므로, `null`은 그 유닛의 페이지를 방문해 sub type이
+없음을 확정한 결과다. 실측하면 커밋된 스냅샷 194개 **전부 키가 있고 27개가 값, 167개가
+명시적 `null`, 키 없음은 0개**다. 따라서 두 헬퍼 모두 값의 참/거짓이 아니라 **필드의 존재
+여부**로 판단해야 한다. 참/거짓으로 판단하면 167개가 영원히 미확인으로 분류돼 `--deep`이
+매번 재방문하고, 갱신 때마다 167줄 diff가 생겨 정작 봐야 할 한 줄을 묻는다.
+
+테스트(`parse.test.js`, `node --test`): 승계됨 / 이전 스냅샷 없음 / 이전에 키가 없던
+`resource_id`는 `--deep` 대상이 됨 / 이전 값이 `null`인 엔트리는 그 `null`을 승계하고
+`--deep` 대상에서 빠짐.
 
 ### ② `scripts/check_new_nikkes.py` — 본체
 
