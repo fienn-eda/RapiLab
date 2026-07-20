@@ -131,10 +131,17 @@ test('carryOverSubTypes passes through when there is no previous snapshot', () =
   assert.deepEqual(carryOverSubTypes(fresh, []), fresh)
 })
 
-test('carryOverSubTypes does not resurrect a null previous value', () => {
+test('carryOverSubTypes carries a previous null through as a determined answer', () => {
   const fresh = trimDirectory([dirEntry(10, 'Alpha')])
   const out = carryOverSubTypes(fresh, [{ resource_id: 10, corporation_sub_type: null }])
-  assert.equal('corporation_sub_type' in out[0], false)
+  assert.equal(out[0].corporation_sub_type, null)
+  assert.deepEqual(missingSubTypeIds(out), [])
+})
+
+test('missingSubTypeIds reports an id whose key is genuinely absent from the previous snapshot', () => {
+  const fresh = trimDirectory([dirEntry(10, 'Alpha'), dirEntry(20, 'Bravo')])
+  const out = carryOverSubTypes(fresh, [{ resource_id: 10, corporation_sub_type: null }])
+  assert.deepEqual(missingSubTypeIds(out), [20])
 })
 
 test('missingSubTypeIds lists only the ids the carry-over left empty', () => {

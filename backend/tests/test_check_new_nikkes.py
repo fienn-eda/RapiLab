@@ -2,8 +2,11 @@
 orchestration with a fake notifier - the headless dump is exercised only by
 real runs)."""
 import json
+import subprocess
 import sys
 from pathlib import Path
+
+import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 
@@ -53,6 +56,29 @@ def test_toast_body_truncates_past_three_names():
     entries = [_entry(20 + i, n) for i, n in
                enumerate(["Bravo", "Charlie", "Delta", "Echo", "Foxtrot"])]
     assert chk.toast_body(entries) == "Bravo, Charlie, Delta 외 2명"
+
+
+# --- fetch_directory's failure path -----------------------------------------
+#
+# The scheduled task has no console, so when collect.js fails (most likely
+# COLLECT_ERROR: no Chrome/Edge executable found; set CHROME_PATH), the toast
+# and last-run.log are the only place the cause can surface. Prove the child's
+# stderr actually reaches the exception fetch_directory raises.
+
+def test_fetch_directory_raises_with_the_child_process_stderr(monkeypatch, tmp_path):
+    monkeypatch.setattr(chk, "SCRATCH", tmp_path)
+
+    def _fake_run(*_args, **_kwargs):
+        return subprocess.CompletedProcess(
+            args=["node", "collect.js"], returncode=1,
+            stdout="",
+            stderr="COLLECT_ERROR: no Chrome/Edge executable found; set CHROME_PATH. "
+                   "Tried:\n  C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe\n",
+        )
+
+    monkeypatch.setattr(chk.subprocess, "run", _fake_run)
+    with pytest.raises(RuntimeError, match="no Chrome/Edge executable found"):
+        chk.fetch_directory()
 
 
 def test_run_offline_returns_zero_and_stays_silent_when_nothing_is_new(tmp_path):

@@ -11,11 +11,14 @@ scheduled check: silence means nothing was found.
 .EXAMPLE
 powershell -ExecutionPolicy Bypass -File scripts/notify_toast.ps1 -Title "신규 니케" -Body "Alpha, Bravo"
 
-.EXAMPLE
-powershell -ExecutionPolicy Bypass -File scripts/notify_toast.ps1 -Title "check failed" -Body ""
-
 Title and Body may be empty strings - this is how a bare Python exception
-(str(exception) == "") is surfaced. They must still be passed.
+(str(exception) == "") is surfaced. They must still be passed. The real
+caller (check_new_nikkes.py) is Python's subprocess.run with an argument
+list, so an empty -Body reaches this script as a genuine zero-length
+argument there. Do not test that case by pasting `-Body ""` into a console:
+a nested `powershell.exe -File ... -Body ""` invocation typed at a Windows
+PowerShell 5.1 prompt drops the empty argument from argv before this script
+ever sees it, which is a quoting quirk of that path, not of this script.
 #>
 param(
   [Parameter(Mandatory = $true)][AllowEmptyString()][string]$Title,

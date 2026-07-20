@@ -96,7 +96,9 @@ Chrome 실행 파일은 알려진 경로 목록을 순서대로 시도하고, �
 
 테스트(`tools/collect-blablalink/directory.test.js`, `node --test`):
 승계됨 / 이전 스냅샷 없음 / 이전에 없던 신규 `resource_id`는 값이 비어 `--deep` 대상이
-됨 / 이전 값이 `null`인 엔트리를 되살리지 않음.
+됨 / 이전 값이 `null`인 엔트리도 결정된 값으로 승계되어 `--deep` 대상에서 빠짐(`null`은
+"방문했고 sub type이 없다"는 확정 답이지, 미확인이 아니다 — 두 헬퍼 모두 값의 참/거짓이
+아니라 필드의 존재 여부로 판단한다).
 
 ### ② `scripts/check_new_nikkes.py` — 본체
 

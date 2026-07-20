@@ -33,8 +33,10 @@ if (-not (Test-Path $Script)) { throw "not found: $Script" }
 
 switch ($Action) {
   'register' {
-    # python3.exe (anaconda) is the interpreter that has this project's
-    # dependencies; bare `python` on this machine is a different install.
+    # check_new_nikkes.py imports only the standard library, so any Python
+    # would run it; python3.exe (anaconda) is used because bare `python` on
+    # this machine is a different install and may not exist on PATH for a
+    # task run outside an interactive shell.
     $python = (Get-Command python3).Source
     # Named $taskAction, not $action: PowerShell variable names are
     # case-insensitive, so $action would alias the -Action parameter above
@@ -42,8 +44,9 @@ switch ($Action) {
     # assignment, throwing "not a valid value for the Action variable".
     $taskAction = New-ScheduledTaskAction -Execute $python -Argument "`"$Script`"" -WorkingDirectory $Repo
     $trigger = New-ScheduledTaskTrigger -Daily -At 19:00
-    # Exit code 1 means "new nikke found", not failure, so do not let the
-    # scheduler retry or treat it as an error condition.
+    # No -RestartCount/-RestartInterval here, so the scheduler's default
+    # (RestartCount = 0) applies: it never retries on any exit code, including
+    # 1, which check_new_nikkes.py uses for "new nikke found", not failure.
     $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -DontStopIfGoingOnBatteries -AllowStartIfOnBatteries
     Register-ScheduledTask -TaskName $TaskName -Action $taskAction -Trigger $trigger `
       -Settings $settings -Description 'Daily check for newly released NIKKEs' -Force | Out-Null

@@ -10,9 +10,10 @@
 //   node collect.js [--dry-run] [--out roster.json] [--area 81]
 //   --dry-run   collect only the first owned SSR unit (smoke test)
 //   --directory dump the public nikke directory to nikke-directory.json and stop
-//   --deep      with --directory, fetch corporation_sub_type for units that do
-//               not already have one carried over from the previous snapshot
-//               (i.e. newly released units). One page load each.
+//   --deep      with --directory, fetch corporation_sub_type for units whose
+//               value was never carried over from the previous snapshot (i.e.
+//               newly released units - a carried-over `null` still counts as
+//               known). One page load each.
 //   --headless  with --directory, launch our own browser instead of attaching to
 //               yours. The directory is public game data, so this needs no
 //               account - it is what lets the scheduled check run unattended.
@@ -218,13 +219,16 @@ const trimDirectory = (dir) =>
 
 // corporation_sub_type ("OVERSPEC") decides how much flat ATK each breakthrough
 // core is worth, but the directory payload does not carry it - it lives in the
-// per-character stat file, one page load away. Carrying it over from the previous
-// snapshot is what keeps a plain --directory refresh from silently dropping it
-// from the entries that already had one.
+// per-character stat file, one page load away (collectSubTypes below). A `null`
+// is itself a determined answer ("this unit has no sub type"), not a missing
+// one, so both helpers key on presence of the field, never its truthiness:
+// carrying over a previous `null` is what keeps a plain --directory refresh
+// from silently dropping it, and only entries that were never visited at all
+// (the field absent from the previous snapshot) are newly released units.
 const carryOverSubTypes = (entries, previous) => {
   const known = new Map(
     (previous || [])
-      .filter((e) => e.corporation_sub_type)
+      .filter((e) => 'corporation_sub_type' in e)
       .map((e) => [e.resource_id, e.corporation_sub_type]),
   )
   return entries.map((e) =>
@@ -234,17 +238,13 @@ const carryOverSubTypes = (entries, previous) => {
   )
 }
 
-// Ids still without a sub type after the carry-over: newly released units, the
-// only ones --deep needs to visit.
+// Ids never visited (no carried-over answer at all, determined or not): newly
+// released units, the only ones --deep needs to visit.
 const missingSubTypeIds = (entries) =>
-  entries.filter((e) => !e.corporation_sub_type).map((e) => e.resource_id)
+  entries.filter((e) => !('corporation_sub_type' in e)).map((e) => e.resource_id)
 
-// corporation_sub_type ("OVERSPEC") decides how much flat ATK each breakthrough
-// core is worth, so the stat calculator needs it - but the directory payload does
-// not carry it. It lives in the per-character stat file, which means one page load
-// per unit. Slow, so it is opt-in: run `--directory --deep` when refreshing the
-// snapshot; carryOverSubTypes restores it for units already recorded in a
-// previous snapshot, and missingSubTypeIds finds the ones that still need it.
+// One page load per unit to read corporation_sub_type off its stat file (see
+// carryOverSubTypes above for what the field is and why it's opt-in via --deep).
 const collectSubTypes = async (page, entries) => {
   const cdp = await page.context().newCDPSession(page)
   await cdp.send('Network.setCacheDisabled', { cacheDisabled: true })
@@ -311,9 +311,9 @@ const main = async () => {
         : null
       entries = carryOverSubTypes(entries, previous)
       if (DEEP) {
-        const missing = missingSubTypeIds(entries)
-        log(`collecting corporation_sub_type for ${missing.length} unit(s) without one…`)
-        const subTypes = await collectSubTypes(page, entries.filter((e) => !e.corporation_sub_type))
+        const missingIds = new Set(missingSubTypeIds(entries))
+        log(`collecting corporation_sub_type for ${missingIds.size} unit(s) without one…`)
+        const subTypes = await collectSubTypes(page, entries.filter((e) => missingIds.has(e.resource_id)))
         entries = entries.map((e) =>
           subTypes.has(e.resource_id)
             ? { ...e, corporation_sub_type: subTypes.get(e.resource_id) }

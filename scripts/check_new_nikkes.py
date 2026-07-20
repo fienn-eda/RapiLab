@@ -85,12 +85,23 @@ def toast(title, body):
 
 def fetch_directory():
     """Dump the live public directory to the scratch path. Never writes to the
-    committed snapshot: --out points into data/cache/."""
+    committed snapshot: --out points into data/cache/.
+
+    The scheduled task has no console, so a plain check=True (whose
+    CalledProcessError carries only the exit code) would leave the toast and
+    log saying nothing about what actually broke - e.g. collect.js's own
+    COLLECT_ERROR: no Chrome/Edge executable found; set CHROME_PATH. Capture
+    the child's output and fold its stderr into the raised error so both
+    destinations say what failed."""
     SCRATCH.mkdir(parents=True, exist_ok=True)
-    subprocess.run(
+    result = subprocess.run(
         ["node", "collect.js", "--directory", "--headless", "--out", str(FRESH)],
-        cwd=str(COLLECT_DIR), check=True,
+        cwd=str(COLLECT_DIR), capture_output=True, text=True,
     )
+    if result.returncode != 0:
+        raise RuntimeError(
+            f"collect.js failed (exit {result.returncode}): {result.stderr.strip()}"
+        )
     return FRESH
 
 
