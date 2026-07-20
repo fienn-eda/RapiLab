@@ -89,7 +89,7 @@
 .investment {
   display: inline-flex;
   align-items: baseline;
-  gap: 0.25rem;
+  gap: var(--sp-1);
 }
 
 .investment__core {

@@ -238,10 +238,11 @@ export const mergeRosterDrafts = (
  * Merge collector roster.json drafts into the current roster by
  * character_slug. Unlike mergeRosterDrafts (which preserves manually-entered
  * stats because the ExiaInvasion export lacks them), the collector's
- * roster.json is authoritative for stats, so an existing unit's stats and
- * actual-level stats are overwritten too. core_level is NOT overwritten
- * (the collector does not capture it — the displayed stats already bake in
- * the real grade/core).
+ * roster.json is authoritative for stats, so an existing unit's stats,
+ * actual-level stats, and investment badge (grade/core) are overwritten too.
+ * core_level (the form input, distinct from the `core` badge field) is NOT
+ * overwritten — the collector does not capture it, and the displayed stats
+ * already bake in the real grade/core.
  */
 export const mergeCollectorDrafts = (
   current: NikkeDraft[],
@@ -268,6 +269,8 @@ export const mergeCollectorDrafts = (
         actualHp: inc.actualHp,
         actualAtk: inc.actualAtk,
         actualDef: inc.actualDef,
+        grade: inc.grade,
+        core: inc.core,
         skill_levels: inc.skill_levels,
         overload_options: inc.overload_options,
       }

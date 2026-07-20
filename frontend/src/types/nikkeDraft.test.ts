@@ -247,4 +247,22 @@ describe('mergeCollectorDrafts', () => {
     expect(added).toBe(1)
     expect(drafts.find((d) => d.character_slug === 'crown')?.atk).toBe('50000')
   })
+
+  it('refreshes grade and core on a matching slug when they change on re-sync', () => {
+    const existing = draft({ character_slug: 'liter', grade: 1, core: 2 })
+    const incoming = draft({ character_slug: 'liter', grade: 3, core: 7 })
+    const { drafts } = mergeCollectorDrafts([existing], [incoming])
+    expect(drafts[0].grade).toBe(3)
+    expect(drafts[0].core).toBe(7)
+  })
+
+  it('picks up grade and core on a matching slug that had none stored (roster from before this feature existed)', () => {
+    const existing = draft({ character_slug: 'liter' })
+    expect(existing.grade).toBeUndefined()
+    expect(existing.core).toBeUndefined()
+    const incoming = draft({ character_slug: 'liter', grade: 2, core: 5 })
+    const { drafts } = mergeCollectorDrafts([existing], [incoming])
+    expect(drafts[0].grade).toBe(2)
+    expect(drafts[0].core).toBe(5)
+  })
 })
