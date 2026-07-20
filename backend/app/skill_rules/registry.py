@@ -95,7 +95,12 @@ from app.skill_rules.mana import (
     build_metal_gamma_rules,
     build_metal_sigma_rules,
 )
-from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
+from app.skill_rules.crown import (
+    build_last_kingdom_rules,
+    build_one_for_all_rules,
+    build_royal_attire_per_shot_rules,
+    build_royal_attire_rules,
+)
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
 from app.skill_rules.grave import build_grave_rules, build_overheat_per_shot_rules
 from app.skill_rules.rei_ayanami import (
@@ -309,6 +314,7 @@ def _build_anis_star(sv):
 def _build_crown(sv):
     rules = build_one_for_all_rules(sv["one_for_all"], sv["caster_atk"], sv["caster_def"])
     rules += build_last_kingdom_rules(sv["last_kingdom"], sv["caster_max_hp"])
+    rules += build_royal_attire_rules(sv["royal_attire"])
     return rules, None
 
 
@@ -640,6 +646,7 @@ _PERIODIC_RULE_BUILDERS = {
 # (threshold, mode, [SkillRule]); mode is "after" or "every".
 _PER_SHOT_RULE_BUILDERS = {
     "ark-ranger-black": lambda sv: build_ark_ranger_per_shot_rules(sv),
+    "crown": lambda sv: build_royal_attire_per_shot_rules(sv["royal_attire"]),  # Royal Attire, 860 normals
     "bready-lingering": lambda sv: build_lingering_per_shot_rules(sv),
     "bready-recommended": lambda sv: build_recommended_per_shot_rules(sv),
     "jill-valentine": lambda sv: build_magnum_per_shot_rules(sv),

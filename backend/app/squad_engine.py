@@ -284,6 +284,19 @@ def deck_contains(slug: str) -> Callable[[SquadContext, str], bool]:
     return check
 
 
+def deck_contains_any(slugs) -> Callable[[SquadContext, str], bool]:
+    """Condition: the deck holds at least one of `slugs`, EXCLUDING the caster.
+    For "does someone else in this squad do X" questions where the engine has
+    no event for X itself - Crown's Royal Attire keys off any ally healing,
+    and the engine models no heal events, so presence is what can be asked."""
+    wanted = frozenset(slugs)
+
+    def check(context: SquadContext, caster_slug: str) -> bool:
+        return any(m.slug in wanted and m.slug != caster_slug for m in context.members)
+
+    return check
+
+
 def not_condition(
     condition: Callable[[SquadContext, str], bool]
 ) -> Callable[[SquadContext, str], bool]:

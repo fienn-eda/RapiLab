@@ -133,6 +133,12 @@ def crown_spec():
                 "description_value_04": "15", "description_value_05": "37.44", "description_value_06": "15",
                 "description_value_07": "44.35", "description_value_08": "15",
             },
+            "royal_attire": {
+                "description_value_01": "43", "description_value_02": "4.06",
+                "description_value_03": "20", "description_value_04": "5",
+                "description_value_05": "5", "description_value_06": "5.23",
+                "description_value_07": "20.99", "description_value_08": "7",
+            },
             "last_kingdom": {
                 "description_value_01": "36.24", "description_value_02": "15",
                 "description_value_03": "10.45", "description_value_04": "15",

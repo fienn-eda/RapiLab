@@ -51,6 +51,12 @@ def test_build_returns_none_burst_percent_for_a_pure_support():
             "description_value_04": "15", "description_value_05": "37.44", "description_value_06": "15",
             "description_value_07": "44.35", "description_value_08": "15",
         },
+        "royal_attire": {
+            "description_value_01": "43", "description_value_02": "4.06",
+            "description_value_03": "20", "description_value_04": "5",
+            "description_value_05": "5", "description_value_06": "5.23",
+            "description_value_07": "20.99", "description_value_08": "7",
+        },
         "last_kingdom": {
             "description_value_01": "36.24", "description_value_02": "15",
             "description_value_03": "10.45", "description_value_04": "15",
@@ -169,7 +175,8 @@ def test_get_burst_hit_count_defaults_to_one_and_is_five_for_julia_signature():
 
 
 def test_get_per_shot_rules_returns_none_for_most_nikkes():
-    assert get_per_shot_rules("crown", {}) is None
+    # Crown gained one with Royal Attire, so this uses a Nikke that has none.
+    assert get_per_shot_rules("liter", {}) is None
 
 
 def test_get_per_shot_rules_returns_journey_ahead_for_brid():

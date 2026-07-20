@@ -1,5 +1,10 @@
 from app.effects import EffectRegistry
-from app.skill_rules.crown import build_last_kingdom_rules, build_one_for_all_rules
+from app.skill_rules.crown import (
+    build_last_kingdom_rules,
+    build_one_for_all_rules,
+    build_royal_attire_per_shot_rules,
+    build_royal_attire_rules,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # Real skill level 10 values from api.dotgg.gg for crown's skills[0] "One for All"
@@ -85,3 +90,75 @@ def test_last_kingdom_applies_squad_wide_attack_damage_up_on_own_burst():
     ally = {"slug": "b3-a", "element": "Fire"}
     assert round(registry.total_for("attack_damage_up", ally, now=5.0), 4) == 0.3624
     assert round(registry.total_for("shield_amount", ally, now=5.0), 2) == 5225.0
+
+
+# Royal Attire (skills[1]). 43 normal attacks per Relax stack, 20 stacks to the
+# heal that arms the squad buff -> 860 of her own normal attacks.
+ROYAL_ATTIRE_VALUES = {
+    "description_value_01": "43",    # normal attacks per Relax stack
+    "description_value_02": "4.06",  # Relax potency (incoming healing, not DPS)
+    "description_value_03": "20",    # Relax max stacks
+    "description_value_04": "5",     # invulnerable sec
+    "description_value_05": "5",     # taunt sec
+    "description_value_06": "5.23",  # self heal % of max HP
+    "description_value_07": "20.99", # squad Attack Damage %
+    "description_value_08": "7",     # its duration
+}
+
+
+def _ctx(*slugs):
+    return SquadContext(
+        [SquadMember("crown", burst_tier=2, element="Iron")]
+        + [SquadMember(s, burst_tier=3, element="Iron") for s in slugs]
+    )
+
+
+def test_royal_attire_self_proc_fires_every_860_normal_attacks():
+    ps = build_royal_attire_per_shot_rules(ROYAL_ATTIRE_VALUES)
+    assert len(ps) == 1
+    threshold, mode, rules = ps[0]
+    assert (threshold, mode) == (860, "every")  # 43 attacks x 20 stacks
+
+    ctx = _ctx("attacker")
+    reg = EffectRegistry()
+    for rule in rules:
+        rule.action(ctx, "crown", 22.0, reg)
+
+    ally = {"slug": "attacker", "element": "Iron"}
+    assert round(reg.total_for("attack_damage_up", ally, now=22.0), 4) == 0.2099
+    assert reg.total_for("attack_damage_up", ally, now=29.1) == 0.0  # 7s window
+
+
+def test_royal_attire_self_proc_refreshes_rather_than_stacking():
+    _, _, rules = build_royal_attire_per_shot_rules(ROYAL_ATTIRE_VALUES)[0]
+    ctx = _ctx("attacker")
+    reg = EffectRegistry()
+    for rule in rules:
+        rule.action(ctx, "crown", 22.0, reg)
+        rule.action(ctx, "crown", 25.0, reg)
+    ally = {"slug": "attacker", "element": "Iron"}
+    assert round(reg.total_for("attack_damage_up", ally, now=25.0), 4) == 0.2099  # not 0.4198
+
+
+def test_royal_attire_is_maintained_when_another_ally_heals():
+    # "Activates when recovery takes effect" reads ANY ally's healing, and the
+    # engine has no heal event - so a healer in the deck means the 7s buff is
+    # kept alive (see module docstring: this is the ceiling reading).
+    rules = {"crown": build_royal_attire_rules(ROYAL_ATTIRE_VALUES)}
+
+    with_healer = _ctx("helm")  # helm heals on every Full Charge
+    reg = EffectRegistry()
+    fire_trigger("battle_start", rules, with_healer, reg, time=0.0)
+    ally = {"slug": "helm", "element": "Iron"}
+    assert round(reg.total_for("attack_damage_up", ally, now=170.0), 4) == 0.2099
+
+
+def test_royal_attire_is_not_maintained_without_another_healer():
+    # Crown heals herself, but only at the end of the 860-shot chain, so her own
+    # presence must not arm the permanent branch.
+    rules = {"crown": build_royal_attire_rules(ROYAL_ATTIRE_VALUES)}
+    no_healer = _ctx("attacker")
+    reg = EffectRegistry()
+    fire_trigger("battle_start", rules, no_healer, reg, time=0.0)
+    ally = {"slug": "attacker", "element": "Iron"}
+    assert reg.total_for("attack_damage_up", ally, now=1.0) == 0.0

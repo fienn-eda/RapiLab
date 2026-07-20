@@ -206,3 +206,28 @@ def escalating_buff_rule(trigger, tiers, refreshing=False):
                         registry.add(effect, applied_at=time)
 
     return SkillRule(trigger=trigger, action=action)
+
+
+# Nikkes whose own skills restore a unit's HP, derived from the collected skill
+# text by scripts/find_heal_providers.py (re-run it after encoding a new unit).
+# Cover-HP restores are excluded: the cover's health is not a unit receiving
+# recovery. Used only by Crown, whose Royal Attire arms on ANY ally's healing -
+# the engine has no heal event, so deck presence is what can be asked.
+HEAL_PROVIDER_SLUGS = frozenset({
+    "ada-wong",
+    "anchor-innocent-maid",
+    "anis-star",
+    "asuka-shikinami-langley-wille",
+    "blanc",
+    "crown",
+    "grave",
+    "guillotine-winter-slayer",
+    "helm",
+    "mana",
+    "mint",
+    "moran",
+    "nayuta",
+    "prika",
+    "red-hood",
+    "soline-frost-ticket",
+})
