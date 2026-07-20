@@ -800,9 +800,11 @@
       힐러 명단 유도 스크립트 신설) · liberalio(차지속도 면역) · mana(보류 사유만 정정).
       엔진 확장 2건: `deck_contains_any` · `EffectRegistry.set_external_stat_immunity`.
       `nikke-skill-encoding` SKILL.md의 "차지속도는 inert"(Phase S 이전 기술) 정정 포함.
-- [ ] **배치 ② 무기변형 잔여** — 2026-07-19에 `weapon_mode_schedules` 세그먼트가
-      착지했는데도 "무기변형 미지원"을 근거로 defer된 유닛들: `nayuta`(Memory
-      Incineration 10초 + 복합트리거 넉 530%, 임팩트 큼) · `takina-inoue`(버스트
+- [ ] **배치 ② 무기변형 잔여 (1/7 완료)** — 2026-07-19에 `weapon_mode_schedules` 세그먼트가
+      착지했는데도 "무기변형 미지원"을 근거로 defer된 유닛들.
+      **`nayuta` 완료(2026-07-21, E2E +14.56%, ⚠→✅)** — 탄약 무한이라 세그먼트의
+      no-reload 제약이 무효였고, "Fixed at 1.8 sec"은 `rate_of_fire`로 표현.
+      dotgg→lootandwaifus 소스 이관 필요했음. 남은 6명: `takina-inoue`(버스트
       변형 200.64%) · `zwei`(Overcharge Formula 자기 변형) · `moran` · `velvet`
       (변형딜, 저가치) · `laplace` base(5초 변형, 실측 없음 — Fienn 확인 필요) ·
       `modernia`(New World Destroy Mode + 15초 무한탄창).

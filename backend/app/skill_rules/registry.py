@@ -240,7 +240,12 @@ from app.skill_rules.mast_romantic_maid import build_mast_rules
 from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
 from app.skill_rules.miranda import build_health_up_rules, build_miranda_rules
 from app.skill_rules.moran import build_moran_rules
-from app.skill_rules.nayuta import asceticism_burst_percent, build_nayuta_rules
+from app.skill_rules.nayuta import (
+    asceticism_burst_percent,
+    build_memory_incineration_scheduled_nukes,
+    build_memory_incineration_weapon_mode_schedule,
+    build_nayuta_rules,
+)
 from app.skill_rules.noir import build_noir_rules, finale_burst_percent
 from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika_rules
 from app.skill_rules.quency_escape_queen import build_quency_rules, the_great_thief_burst_percent
@@ -619,6 +624,7 @@ _SCHEDULED_NUKE_BUILDERS = {
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
     "rosanna-chic-ocean": lambda sv: build_spina_scheduled_nukes(sv),  # Spina di Rosa, 15 ticks per cast
+    "nayuta": lambda sv: build_memory_incineration_scheduled_nukes(sv),  # Full Charge in Memory Incineration
     "laplace-signature": lambda sv: laplace_signature.build_buster_scheduled_nukes(sv),  # per-tick true-damage rider
     "rapi-red-hood": lambda sv: build_attachable_projectiles_scheduled_nukes(sv),  # Attachable Projectiles launcher
     "rapi-red-hood-b1": lambda sv: build_attachable_projectiles_scheduled_nukes(
@@ -634,6 +640,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "maxwell": lambda sv: build_pierce_shot_weapon_mode_schedule(sv),  # single 2s-charge cannon shot per own-burst
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
     "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
+    "nayuta": lambda sv: build_memory_incineration_weapon_mode_schedule(sv),  # Memory Incineration, 10s
     "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
 }
 
