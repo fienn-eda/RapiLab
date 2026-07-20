@@ -734,8 +734,14 @@
 ### gap #5 후속 (2026-07-16 배치 중 발견, 미착수)
 - [x] **`rei-ayanami`** (2026-07-16): Preemptive Subdual의 "Elemental Advantage Attack
       Damage +30.23%/3s"(노멀100회마다)를 `other_elemental_bonus` +
-      `boss_is_element("Iron")` 게이팅(Fire>Iron), 넉과 같은 every-100 트리거에 refresh
-      버프로 인코딩. ⚠→✅ (비-DPS 실드만 잔여).
+      ~~`boss_is_element("Iron")` 게이팅(Fire>Iron)~~, 넉과 같은 every-100 트리거에
+      refresh 버프로 인코딩. ⚠→✅ (비-DPS 실드만 잔여). **2026-07-20 정정: "Fire>Iron"은
+      틀린 원소 주장임** — `elements.py`의 순환은 Water>Fire>Wind>Iron>Electric>Water이라
+      Fire는 Iron이 아니라 Wind를 이김. 스킬 원문도 원소를 특정하지 않음. 이후 착지한
+      damage_formula의 원소우위 게이트와 이 Iron 게이팅이 상호배타적이 되어 버프가 어떤
+      보스에서도 발동 못 하는 버그로 이어짐(gap #5 자체는 정상 해소, 게이팅 로직이
+      문제). 게이팅 제거, damage_formula의 우위 게이트만으로 판정하도록 수정
+      (commit `9079710`, `rei_ayanami.py`).
 - [x] **`anis-sparkling-summer`** (2026-07-16): Sparkling Wave의 "Elemental Advantage
       Attack Damage +42.24%"를 `other_elemental_bonus`(element bonus damage) +
       `boss_is_element("Water")` 게이팅(Electric>Water)으로 인코딩. 이 유닛의 잔여
