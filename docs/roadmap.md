@@ -772,8 +772,9 @@
       추가) · snow-white-heavy-arms(신규 상태머신 불필요, 세그먼트+
       `every_during_segment`/`every_outside_segment`로 해결). **남은 미인코딩
       6명**: Pattern B 게이지(mihara-bonding-chain·elegg-boom-and-shock) ·
-      상태머신(~~diesel-winter-sweets~~ 2026-07-19 완료·~~bready~~ 완료·eve) ·
-      gap #11(milk-blooming-bunny). **남은 미인코딩 2명.**
+      상태머신(~~diesel-winter-sweets~~ 2026-07-19 완료·~~bready~~ 완료·
+      ~~eve~~ 2026-07-20 완료) · ~~gap #11(milk-blooming-bunny)~~ 2026-07-20 완료.
+      **미인코딩 0명 — 수집된 유닛 전원 인코딩 완료.**
 - [x] **ein weapon 스탯** — 이미 `data/dotgg/char_ein.json`에 존재했음(SR·장탄6·
       재장전2.0s·차지1.0s·차지댐250%). "부재" 판정은 워크트리에 gitignore된 데이터가
       복사되지 않아 생긴 오진이었음 — 아래 함정 항목 참고.

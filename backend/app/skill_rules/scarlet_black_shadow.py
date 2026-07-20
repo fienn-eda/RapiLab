@@ -22,13 +22,26 @@ Modeled (DPS-relevant):
   Ammunition Capacity +60% for 10 sec - max_ammo_percent is consumed live by
   shot generation (magazine size / reload cadence), and FB-entry effects are
   registered before the weapon pass, so her own magazines really grow.
+- Asura's "Reload 100% of the magazine(s)" on Full Burst entry: a zero-length
+  `weapon_mode_schedules` segment at each Full Burst start. A segment boundary
+  is the engine's "discard the magazine, resume with a fresh one", and a
+  segment of zero length fires nothing and consumes no time, which is exactly
+  an INSTANT full reload. The trigger is ANY Full Burst entry (the skill says
+  "when entering Full Burst", not her own burst), so it reads
+  `context.full_burst_windows`, not `burst_times`. This drives the sequence
+  counter hard: as an RL every shot is a full charge, so magazines she would
+  have spent reloading through instead keep the counter moving.
 
 Not modeled / deferred:
-- Asura's "Reload 100% of the magazine(s)" on Full Burst entry: an instant
-  mid-timeline reload - the deterministic shot timeline has no primitive for
-  a skill resetting the magazine (same family as gap #11's forced-reload
-  state machine). Skipping it slightly undercounts her in-window shots, so
-  this encoding is a floor.
+- Asura's PARTIAL reload at skill levels below 7 ("Reload 30%/60% of the
+  magazine(s)"). The segment boundary is an all-or-nothing fresh magazine, so
+  the segment is only emitted when the slot reads 100.
+
+Charge-weapon note: the base weapon's first shot of a stretch lands one charge
+time after the stretch starts, so a reset at T drops whatever charge was in
+progress and her next shot is at T + charge_time. In game she would keep that
+progress, so every modeled shot time is at or after its real one - the
+encoding stays a floor.
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 
@@ -72,6 +85,33 @@ def build_scarlet_black_shadow_rules(values):
             ("max_ammo_percent", max_ammo, "self", max_ammo_duration),
         ]),
     ]
+
+
+FULL_MAGAZINE_RELOAD_PERCENT = 100.0
+
+
+def build_scarlet_weapon_mode_schedule(values):
+    """Asura's instant "Reload 100% of the magazine(s)" on entering Full Burst,
+    as a zero-length segment at each Full Burst start: no shots, no elapsed
+    time, and the base weapon resumes there with a fresh magazine."""
+    asura = values["fleetly_fading_asura"]
+    reload_percent = float(asura["description_value_03"])
+    weapon = values["caster_weapon_stats"]["weapon"]
+
+    def schedule(context, fight_duration):
+        if reload_percent < FULL_MAGAZINE_RELOAD_PERCENT:
+            return []
+        return [
+            {
+                "start": start,
+                "end": start,
+                "profile": {"weapon": weapon, "damage_percent": 0.0, "rate_of_fire": 1.0},
+            }
+            for start, _end in context.full_burst_windows
+            if start < fight_duration
+        ]
+
+    return schedule
 
 
 def build_breakthrough_per_shot_rules(values):

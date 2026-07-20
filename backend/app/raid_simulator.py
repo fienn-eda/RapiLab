@@ -110,10 +110,45 @@ AFTER_WINDOW_EPSILON = 1e-3
 CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
+# A `burst_anchored_buffs` duration meaning "hold until this unit's next own
+# burst" (a state a burst enters and only the next burst clears), as opposed to
+# a fixed number of seconds.
+UNTIL_NEXT_OWN_BURST = "until_next_own_burst"
+
+
+def _expected_crit_positions(times, threshold, crit_rate_at):
+    """Indices into `times` where a running total of EXPECTED critical hits
+    crosses `threshold`, carrying the remainder forward.
+
+    Crit is expected value in this engine (every hit's damage is scaled by the
+    crit factor; no per-hit roll), so "after N critical hits" has no event to
+    count. It is instead converted the same way the damage path converts crit:
+    each shot contributes the unit's LIVE crit rate at that instant. Reading the
+    rate per shot rather than folding a fixed `N / crit_rate` shot count at
+    build time is what makes an ally's crit buff genuinely speed the trigger up
+    (Fienn's condition for accepting the conversion, 2026-07-20).
+
+    Shared by `per_shot_rules`' "every_n_critical_hits" mode (EVE's Unstable
+    Energy) and the "per_critical_hit_every" resource fill (Julia's signature
+    Crescendo) so the two cannot drift apart.
+
+    The `1e-9` is load-bearing, not cosmetic: summing a rate like 0.3 ten times
+    lands on 2.9999999999999996, which would push a proc a whole shot later
+    than exact arithmetic puts it.
+    """
+    positions = []
+    accumulated = 0.0
+    for index, time in enumerate(times):
+        accumulated += crit_rate_at(time)
+        if accumulated + 1e-9 >= threshold:
+            positions.append(index)
+            accumulated -= threshold
+    return positions
+
 
 def _resource_fill_times(
     fill, shot_times, core_hittable, fight_duration, full_burst_windows=(), own_burst_times=(),
-    last_bullet_times=(),
+    last_bullet_times=(), crit_rate_at=None,
 ):
     """The times a resource gains a stack, from its fill spec and the owner's
     shot timeline. ("per_shot_every", N) fires at the owner's Nth, 2Nth, ... shot
@@ -137,6 +172,13 @@ def _resource_fill_times(
     - see `attack_rate.last_bullet_shot_times`), not on any fixed shot count
     or window."""
     kind = fill[0]
+    if kind == "per_critical_hit_every":
+        # ("per_critical_hit_every", N): a stack per N EXPECTED critical hits
+        # with normal attacks - Julia's signature Crescendo. Unlike the
+        # per-shot kinds this needs the owner's live crit rate, so the caller
+        # supplies `crit_rate_at`; see `_expected_crit_positions`.
+        n = fill[1]
+        return [shot_times[i] for i in _expected_crit_positions(shot_times, n, crit_rate_at)]
     if kind == "per_shot_every":
         n = fill[1]
         return [t for i, t in enumerate(shot_times) if (i + 1) % n == 0]
@@ -203,6 +245,32 @@ def _fill_sources(fill):
     if isinstance(fill, list):
         return fill
     return [(fill, 1)]
+
+
+def _round_grant_over_cap(index, grant, start, end, windows):
+    """Whether this "for N round(s)" grant exceeds its skill's "stacks up to N
+    time(s)" cap on THIS recipient, and so must not be applied. `windows` holds
+    every grant hitting this one recipient with the shot window it resolved to,
+    in the order they were granted; a grant is over cap when `cap` OR MORE
+    grants of the same cap group overlap it and were granted later. That keeps
+    the most recent `cap` stacks of any mutually-overlapping set, matching how
+    the game pushes the oldest stack out when a new one lands on a full stack.
+    Uncapped grants (cap None - every consumer that predates the cap) never
+    match and are emitted exactly as before."""
+    if grant.cap is None:
+        return False
+    newer_overlapping = sum(
+        1
+        for other_index, (other, other_start, other_end) in enumerate(windows)
+        if other.cap_group == grant.cap_group
+        # Grants can share a granted_at (one trigger, several recipients'
+        # timelines aside, or two rules firing together), so the tie is broken
+        # by grant order - exactly one of any pair counts as newer.
+        and (other.granted_at, other_index) > (grant.granted_at, index)
+        and other_start < end
+        and start < other_end
+    )
+    return newer_overlapping >= grant.cap
 
 
 def _sequence_fire_rules(spec, stage_rules, shot_times, own_burst_times):
@@ -341,6 +409,7 @@ def simulate_raid(
     resource_fill_triggered_buffs=None,
     scheduled_nukes=None,
     weapon_mode_schedules=None,
+    burst_anchored_buffs=None,
 ):
     weapon_stats = weapon_stats or {}
     weapon_mode_schedules = weapon_mode_schedules or {}
@@ -619,6 +688,48 @@ def simulate_raid(
     ))
     context.full_burst_windows = full_burst_windows
 
+    # A buff a unit's own burst grants at an OFFSET from the burst, whose
+    # duration may run "until that unit's NEXT own burst" rather than a fixed
+    # number of seconds - Milk: Blooming Bunny's Embarrassment state, entered a
+    # few seconds after her Overconfident immunity lapses and cleared only by
+    # her next burst (Fienn, 2026-07-20).
+    #
+    # Resolved here rather than from an `own_burst_activate` rule because "until
+    # the next own burst" is unknowable while the burst-cycle walk is still
+    # running - the walk has not scheduled that burst yet. By this point
+    # `context.burst_times` is complete. Placed BEFORE the shot loop so a buff
+    # landed here is visible both to shot generation (max ammo / reload / cadence
+    # callables) and to phase 2's damage bundles, unlike the resource-driven buff
+    # passes further down which run after the timeline is already fixed.
+    for slug, specs in (burst_anchored_buffs or {}).items():
+        own_bursts = context.burst_times.get(slug, [])
+        for spec in specs:
+            offset = spec.get("offset", 0.0)
+            for index, burst_time in enumerate(own_bursts):
+                start = burst_time + offset
+                if start >= fight_duration:
+                    continue
+                duration = spec["duration"]
+                if duration == UNTIL_NEXT_OWN_BURST:
+                    # The fight ending counts as the state's end, so the last
+                    # window is trimmed rather than running past the sim.
+                    next_burst = (
+                        own_bursts[index + 1] if index + 1 < len(own_bursts) else fight_duration
+                    )
+                    duration = next_burst - start
+                    if duration <= 0:
+                        continue
+                registry.add(
+                    Effect(spec["stat"], spec["value"], spec["scope"], duration, slug),
+                    applied_at=start,
+                )
+
+    def _crit_rate_at_for(target):
+        """The owner's live crit rate at a time, clamped exactly as the damage
+        path clamps it - so an expected-crit counter can never run faster than
+        one crit per shot."""
+        return lambda t: min(1.0, base_crit_rate + registry.total_for("crit_rate", target, t))
+
     shot_times_by_slug = {}
     last_bullet_times_by_slug = {}
     for slug, weapon in weapon_stats.items():
@@ -655,7 +766,9 @@ def simulate_raid(
         # buff/nuke fired directly on the in-window count, e.g. Soda's Lucky
         # Golden Chip, Asuka's Anti A.T. Field nuke). Their rules apply buffs
         # to the registry (seen by phase 2 at each shot's time) or emit an
-        # instant_damage_percent pulse recorded as a per-shot nuke. Rules must
+        # instant_damage_percent pulse recorded as a per-shot nuke.
+        # "every_n_critical_hits" counts EXPECTED crits rather than shots (EVE's
+        # Unstable Energy) - see its branch below. Rules must
         # be stateless and must not change shot generation (reload/ammo), which
         # is already fixed for this unit here.
         unit_per_shot = per_shot_rules.get(slug, [])
@@ -703,6 +816,25 @@ def simulate_raid(
                 base_indices = [i for i, r in enumerate(shot_records) if not r.in_segment]
                 window_fire_indices[idx] = {
                     i for pos, i in enumerate(base_indices) if (pos + 1) % threshold == 0}
+            elif mode == "every_n_critical_hits":
+                # This engine never rolls crit per hit - every hit's damage is
+                # scaled by the expected crit factor - so there is no "was this
+                # shot a crit" event to count. An "after N critical hits"
+                # trigger is therefore counted in EXPECTED crits: each shot
+                # contributes the unit's live crit rate at that instant, and the
+                # rule fires each time the running total crosses N, carrying the
+                # remainder forward. Reading the rate PER SHOT rather than once
+                # at build time is the whole point - it is what lets deck crit
+                # buffs move the trigger's cadence (Fienn, 2026-07-20: an
+                # expected-value conversion is only acceptable if the deck's
+                # crit buffs count). Caveat: shot loops run per unit, so a crit
+                # buff applied by a LATER-processed ally's own per-shot rules is
+                # not visible here; burst / full-burst-triggered crit buffs are,
+                # since those rules run before any shot loop.
+                crit_rate_at = _crit_rate_at_for(target)
+                window_fire_indices[idx] = set(
+                    _expected_crit_positions(shot_times, threshold, crit_rate_at)
+                )
             elif mode == "sequence":
                 # threshold carries the requirement spec; the rules slot holds
                 # one rule list PER STAGE (see _sequence_fire_rules).
@@ -753,6 +885,7 @@ def simulate_raid(
     # so their covering shots are unchanged by the move.
     for slug, shot_times in shot_times_by_slug.items():
         target = target_for(slug)
+        windows = []  # (grant, start, end) for the grants hitting THIS unit
         for grant in registry.round_grants():
             if grant.scope == "self":
                 covers_unit = grant.source_slug == slug
@@ -765,9 +898,13 @@ def simulate_raid(
                 continue
             after_covered = [t for t in shot_times if t > covered[-1]]
             window_end = after_covered[0] if after_covered else fight_duration
+            windows.append((grant, covered[0], window_end))
+        for index, (grant, start, end) in enumerate(windows):
+            if _round_grant_over_cap(index, grant, start, end, windows):
+                continue
             registry.add(
-                Effect(grant.stat, grant.value, f"slugs:{slug}", window_end - covered[0], grant.source_slug),
-                applied_at=covered[0],
+                Effect(grant.stat, grant.value, f"slugs:{slug}", end - start, grant.source_slug),
+                applied_at=start,
             )
 
     # Resolve quantity-based resources (battery / ammo pouch / N-stack counter).
@@ -793,6 +930,7 @@ def simulate_raid(
                 source_times = _resource_fill_times(
                     source, shot_times, core_hittable, fight_duration, full_burst_windows,
                     context.burst_times.get(slug, []), last_bullet_times_by_slug.get(slug, set()),
+                    crit_rate_at=_crit_rate_at_for(target_for(slug)),
                 )
                 for ft in source_times:
                     context.fill_resource(slug, spec.name, amount, ft)

@@ -49,7 +49,13 @@ class RoundGrant:
     attacks, NOT after a fixed time. Because that boundary depends on shot timing,
     it's recorded here and converted into a concrete timed Effect (covering exactly
     those shots) once the shot timeline is known - see raid_simulator's shot loop.
-    `scope` selects the affected units the same way Effect.scope does."""
+    `scope` selects the affected units the same way Effect.scope does.
+    `cap` (opt-in) is the skill's "stacks up to N time(s)" limit: no recipient
+    ever holds more than `cap` concurrent grants sharing this grant's
+    `cap_group`, which identifies the ONE skill bullet the grants came from
+    (grants from other skills, even of the same caster and stat, cap
+    separately). Enforced per recipient in raid_simulator's conversion pass,
+    because how many grants pile up depends on the recipient's own fire rate."""
 
     stat: str
     value: float
@@ -57,6 +63,8 @@ class RoundGrant:
     source_slug: str
     shots: int
     granted_at: float
+    cap: int | None = None
+    cap_group: str | None = None
 
 
 @dataclass

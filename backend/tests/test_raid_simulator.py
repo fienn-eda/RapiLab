@@ -7,6 +7,7 @@ from app.skill_rules._helpers import (
     round_buff_rule,
 )
 from app.skill_rules.privaty import build_ex_magazine_rules
+from app.skill_rules.zwei import build_pierce_equation_per_shot_rules
 from app.squad_engine import SkillRule, ally_bursted
 
 # Real dollskills level-10 values for Privaty's EX Magazine (signature weapon
@@ -1360,6 +1361,76 @@ def test_round_grant_squad_scope_consumes_per_ally_first_shot():
     covered = [e for e in result["damage_log"] if e["source"] == "normal_attack" and round(e["time"], 4) == round(5.0, 4)]
     assert {e["slug"] for e in covered} == {"midtier", "attacker"}
     assert all(e["damage"] == 1500.0 for e in covered)  # each ally's own first shot buffed
+
+
+ZWEI_PIERCE_EQUATION = {
+    "pierce_equation": {
+        "description_value_01": "20.13", "description_value_02": "1", "description_value_03": "10.06",
+        "description_value_04": "10", "description_value_05": "24.99", "description_value_06": "3",
+        "description_value_07": "1",
+    },
+}
+
+
+def _zwei_pierce_stacks_per_sniper_shot(per_shot_rules):
+    """Zwei (SG, 1.5 shots/sec) granting Pierce Equation's "for 1 round" squad
+    pierce on each of her Full Burst normal attacks, alongside an SR ally whose
+    reload gap (5 charges, then 2 sec reload) lets grants pile up. Returns each
+    of the sniper's shot times mapped to how many 24.99% pierce stacks its
+    damage reflects."""
+    deck = [
+        {"slug": "zwei", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "sniper", "burst_tier": 3, "element": "Iron", "cooldown": 40.0},
+    ]
+    result = simulate_raid(
+        deck,
+        {"zwei": [], "midtier": [], "sniper": []},
+        burst_damage_percents={},
+        base_stats={
+            "zwei": {"atk": 0, "def": 0, "max_hp": 0},
+            "midtier": {"atk": 0, "def": 0, "max_hp": 0},
+            "sniper": {"atk": 10000, "def": 0, "max_hp": 0},
+        },
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=16.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={
+            "zwei": {"weapon": "SG", "damage_percent": 10.0, "max_ammo": 9,
+                     "reload_time": 1.5, "charge_time": 0.0, "charge_damage_percent": 0.0},
+            "sniper": {"weapon": "SR", "damage_percent": 10.0, "max_ammo": 5,
+                       "reload_time": 2.0, "charge_time": 1.5, "charge_damage_percent": 10.0},
+        },
+        per_shot_rules={"zwei": per_shot_rules},
+    )
+    shots = [e for e in result["damage_log"]
+             if e["source"] == "normal_attack" and e["slug"] == "sniper"]
+    unbuffed = min(e["damage"] for e in shots)
+    return {round(e["time"], 4): round((e["damage"] / unbuffed - 1) / 0.2499, 4) for e in shots}
+
+
+def test_uncapped_round_grants_pile_up_on_a_charge_weapon_allys_post_reload_shot():
+    # Baseline for the cap: without one, every grant Zwei made during the SR's
+    # 3.5-sec charge+reload gap lands on the single shot that ends it.
+    uncapped = round_buff_rule("per_shot", [("pierce_damage_up", 0.2499, "squad")], shots=1)
+    stacks = _zwei_pierce_stacks_per_sniper_shot([(1, "every_during_full_burst", [uncapped])])
+    assert stacks[round(11.0, 4)] == 5.0
+    assert max(stacks.values()) == 5.0
+
+
+def test_capped_round_grant_holds_a_charge_weapon_ally_to_the_skills_stack_cap():
+    # Pierce Equation "stacks up to 3 time(s)": the SR's post-reload shot must
+    # see 3 stacks, not the 5 grants that overlap it. Faster shots, which never
+    # hold more than a stack or two, are untouched by the cap.
+    stacks = _zwei_pierce_stacks_per_sniper_shot(
+        build_pierce_equation_per_shot_rules(ZWEI_PIERCE_EQUATION)
+    )
+    assert stacks[round(11.0, 4)] == 3.0
+    assert max(stacks.values()) == 3.0
+    assert stacks[round(6.0, 4)] == 1.0    # mid-magazine shot: one grant only
+    assert stacks[round(12.5, 4)] == 2.0   # 1.5-sec gap: two grants, under the cap
 
 
 def test_miranda_top_atk_burst_buff_reaches_the_top_two_carries_end_to_end():
@@ -2949,3 +3020,202 @@ def test_scheduled_nuke_resource_gate_scales_each_tick_by_the_live_count():
     assert [t["time"] for t in ticks] == [1.0, 4.0]
     assert ticks[0]["damage"] == 10 * 10000.0   # 10 stacks * 100% of 10000 ATK
     assert ticks[1]["damage"] == 20 * 10000.0   # capped at 20 after the t=3 fill
+
+
+def _crit_counter_result(threshold, base_crit_rate, attacker_rules=()):
+    """EVE's `every_n_critical_hits`: shots contribute their LIVE crit rate to a
+    running total that fires the rule each time it crosses `threshold`."""
+    return simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": list(attacker_rules)},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=base_crit_rate,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules={
+            "attacker": [
+                (threshold, "every_n_critical_hits",
+                 [instant_nuke_pulse_rule("per_shot", 100.0)])
+            ]
+        },
+    )
+
+
+def _per_shot_indices(result):
+    # AR fires 12/s from t=0, so shot index == round(time * 12).
+    return [round(e["time"] * 12) for e in result["damage_log"]
+            if e["source"] == "per_shot_nuke"]
+
+
+def test_every_n_critical_hits_converts_the_threshold_at_the_live_crit_rate():
+    # 50% crit rate, "every 2 critical hits" -> one proc per 4 shots.
+    result = _crit_counter_result(threshold=2.0, base_crit_rate=0.5)
+
+    assert _per_shot_indices(result) == [3, 7, 11]
+
+
+def test_every_n_critical_hits_speeds_up_when_the_deck_buffs_crit_rate():
+    # The whole reason the mode reads the rate per shot instead of folding a
+    # fixed shot count at build time (Fienn, 2026-07-20): a crit-rate buff must
+    # make the trigger fire genuinely more often. 50% -> 100% halves the gap.
+    unbuffed = _crit_counter_result(threshold=2.0, base_crit_rate=0.5)
+    buffed = _crit_counter_result(
+        threshold=2.0, base_crit_rate=0.5,
+        attacker_rules=[buff_rule("battle_start", [("crit_rate", 0.5, "self", None)])],
+    )
+
+    assert _per_shot_indices(unbuffed) == [3, 7, 11]
+    assert _per_shot_indices(buffed) == [1, 3, 5, 7, 9, 11]
+
+
+def test_every_n_critical_hits_carries_the_remainder_forward():
+    # 30% per shot against a threshold of 1 does not divide evenly: procs land
+    # at cumulative 1.2 / 2.1 / 3.0 (shots 4, 7, 10), not every 4th shot.
+    result = _crit_counter_result(threshold=1.0, base_crit_rate=0.3)
+
+    assert _per_shot_indices(result) == [3, 6, 9]
+
+
+def test_every_n_critical_hits_caps_the_live_rate_at_one():
+    # crit_rate is capped at 100% in the damage path; the counter uses the same
+    # cap, so an over-100% buff cannot make the trigger fire faster than 1/shot.
+    result = _crit_counter_result(
+        threshold=1.0, base_crit_rate=1.0,
+        attacker_rules=[buff_rule("battle_start", [("crit_rate", 5.0, "self", None)])],
+    )
+
+    assert _per_shot_indices(result) == list(range(12))
+
+
+def _burst_anchored_result(specs, fight_duration=120.0):
+    return simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=fight_duration,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        burst_anchored_buffs={"attacker": specs},
+    )
+
+
+def _attacker_bursts(result):
+    return [e["time"] for e in result["events"]
+            if e["type"] == "burst" and e["slug"] == "attacker"]
+
+
+def test_burst_anchored_buff_starts_at_the_offset_not_at_the_burst():
+    # Identical buff, identical duration - the only difference is when it opens.
+    # A buff delayed 15s past each burst covers strictly less of the fight than
+    # one that opens at the burst, so if the offset were ignored these would tie.
+    at_burst = _burst_anchored_result([
+        {"offset": 0.0, "stat": "atk_percent", "value": 2.0,
+         "scope": "self", "duration": 10.0},
+    ])
+    delayed = _burst_anchored_result([
+        {"offset": 15.0, "stat": "atk_percent", "value": 2.0,
+         "scope": "self", "duration": 10.0},
+    ])
+
+    # Totals alone can't show this - the shot rate is uniform, so two windows
+    # of equal length buff the same NUMBER of shots wherever they sit. The
+    # offset is only visible in WHICH shots got buffed.
+    first = _attacker_bursts(at_burst)[0]
+    just_after = lambda r: next(
+        e["damage"] for e in r["damage_log"]
+        if e["source"] == "normal_attack" and e["time"] > first + 0.5
+    )
+
+    assert just_after(at_burst) > just_after(delayed)
+    assert _attacker_bursts(at_burst) == _attacker_bursts(delayed)
+
+
+def test_burst_anchored_buff_until_next_own_burst_spans_the_whole_gap():
+    from app.raid_simulator import UNTIL_NEXT_OWN_BURST
+
+    fixed = _burst_anchored_result([
+        {"offset": 0.0, "stat": "atk_percent", "value": 1.0,
+         "scope": "self", "duration": 1.0},
+    ])
+    spanning = _burst_anchored_result([
+        {"offset": 0.0, "stat": "atk_percent", "value": 1.0,
+         "scope": "self", "duration": UNTIL_NEXT_OWN_BURST},
+    ])
+
+    # Same buff, same start times - the spanning one just never lapses between
+    # bursts, so it must strictly out-damage the 1-second version.
+    assert spanning["total_damage"] > fixed["total_damage"]
+
+
+def test_burst_anchored_buff_is_visible_to_shot_generation_not_just_damage():
+    # The pass runs BEFORE the shot loop, so a max-ammo buff placed here has to
+    # actually change the magazine (fewer reloads -> strictly more shots).
+    baseline = _burst_anchored_result([])
+    buffed = _burst_anchored_result([
+        {"offset": 0.0, "stat": "max_ammo_percent", "value": 2.0,
+         "scope": "self", "duration": 1000.0},
+    ])
+
+    shots = lambda r: sum(1 for e in r["damage_log"] if e["source"] == "normal_attack")
+    assert shots(buffed) > shots(baseline)
+
+
+def test_burst_anchored_buff_skips_an_offset_landing_past_the_fight():
+    # An offset that pushes the last burst's state past fight_duration must not
+    # emit an Effect at all (rather than one clamped to zero length).
+    result = _burst_anchored_result([
+        {"offset": 10_000.0, "stat": "atk_percent", "value": 5.0,
+         "scope": "self", "duration": 10.0},
+    ])
+    baseline = _burst_anchored_result([])
+
+    assert result["total_damage"] == baseline["total_damage"]
+
+
+def _crit_fill_result(threshold, base_crit_rate, cap=5):
+    """A resource filled by EXPECTED critical hits (Julia's signature
+    Crescendo), asserted through the damage a per-stack buff produces."""
+    return simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=base_crit_rate,
+        weapon_stats={"attacker": _ar_weapon()},
+        resource_specs={"attacker": [ResourceSpec(
+            name="crescendo",
+            fill=("per_critical_hit_every", threshold),
+            cap=cap,
+            buffs=[ResourceBuff(stat="atk_percent", scope="self",
+                                value_fn=lambda count: count)],
+        )]},
+    )
+
+
+def test_per_critical_hit_every_fill_uses_the_live_crit_rate():
+    # 50% crit rate, a stack per 2 expected crits -> a stack every 4 shots.
+    # More crit rate must fill it faster, exactly as the per-shot mode does.
+    slow = _crit_fill_result(threshold=2.0, base_crit_rate=0.5)
+    fast = _crit_fill_result(threshold=2.0, base_crit_rate=1.0)
+
+    assert fast["total_damage"] > slow["total_damage"]
+
+
+def test_per_critical_hit_every_fill_respects_the_cap():
+    uncapped = _crit_fill_result(threshold=1.0, base_crit_rate=1.0, cap=99)
+    capped = _crit_fill_result(threshold=1.0, base_crit_rate=1.0, cap=2)
+
+    # 12 shots at one stack each would blow well past a cap of 2.
+    assert uncapped["total_damage"] > capped["total_damage"]

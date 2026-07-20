@@ -18,6 +18,7 @@ from app.cube_effects import assumed_cube_effects
 from app.overload_effects import overload_options_to_effects
 from app.skill_rules.registry import (
     build_nikke_rules,
+    get_burst_anchored_buffs,
     get_burst_damage_type,
     get_burst_delay,
     get_burst_hit_count,
@@ -81,6 +82,7 @@ def assemble_simulation_inputs(ordered_deck):
     resource_fill_triggered_buffs = {}
     scheduled_nukes = {}
     weapon_mode_schedules = {}
+    burst_anchored_buffs = {}
 
     for spec in ordered_deck:
         member = {"slug": spec.slug, "burst_tier": spec.burst_tier, "element": spec.element,
@@ -157,6 +159,10 @@ def assemble_simulation_inputs(ordered_deck):
         if weapon_mode_schedule:
             weapon_mode_schedules[spec.slug] = weapon_mode_schedule
 
+        burst_anchored_buff = get_burst_anchored_buffs(spec.slug, skill_values)
+        if burst_anchored_buff:
+            burst_anchored_buffs[spec.slug] = burst_anchored_buff
+
     return {
         "deck": deck,
         "rules_by_slug": rules_by_slug,
@@ -175,4 +181,5 @@ def assemble_simulation_inputs(ordered_deck):
         "resource_fill_triggered_buffs": resource_fill_triggered_buffs,
         "scheduled_nukes": scheduled_nukes,
         "weapon_mode_schedules": weapon_mode_schedules,
+        "burst_anchored_buffs": burst_anchored_buffs,
     }
