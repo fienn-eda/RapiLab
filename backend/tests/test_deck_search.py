@@ -277,34 +277,17 @@ def _fake_scorer(scores_by_key):
     return fake_evaluate
 
 
-def test_search_best_decks_refines_order_only_for_top_combos(monkeypatch):
+def test_search_best_decks_finds_a_better_non_canonical_order(monkeypatch):
     import app.deck_search as ds
     roster = fake_roster([1, 2, 2, 3, 3, 3])
     # Canonical order of the {u1,u2} B2 pair is (u1, u2); make the swapped
-    # order strictly better so only permutation refinement can find it.
+    # order strictly better so only ordering search can find it.
     best_set = frozenset({"u0", "u1", "u2", "u3", "u4"})
     scores = {best_set: 100.0, ("u0", "u2", "u1", "u3", "u4"): 130.0}
     monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer(scores))
     results = ds.search_best_decks(roster, BossProfile(), top_n=1)
     assert results[0]["total_damage"] == 130.0
     assert results[0]["deck"][1:3] == ["u2", "u1"]
-
-
-def test_search_best_decks_respects_permutation_top_k(monkeypatch):
-    import app.deck_search as ds
-    roster = fake_roster([1, 2, 2, 3, 3, 3])
-    calls = []
-
-    def counting_evaluate(ordered_deck, boss):
-        calls.append(tuple(u.slug for u in ordered_deck))
-        return {"total_damage": 1.0, "damage_log": []}
-
-    monkeypatch.setattr(ds, "evaluate_deck", counting_evaluate)
-    ds.search_best_decks(roster, BossProfile(), top_n=1, permutation_top_k=1)
-    # 5 canonical combos for this roster ((1,1,3): 2, (1,2,2): 3); with
-    # permutation_top_k=1 exactly ONE combo is refined - 4 orderings if it is
-    # a (1,2,2) (2!x2!), 6 if a (1,1,3) (3!). All-refined would be 29 calls.
-    assert 5 < len(calls) <= 5 + 6
 
 
 @dataclass
@@ -594,3 +577,61 @@ def test_search_best_decks_pool_parity():
     assert [d["deck"] for d in pooled] == [d["deck"] for d in serial]
     assert [d["total_damage"] for d in pooled] == [d["total_damage"] for d in serial]
     assert all("result" in d for d in pooled)  # return contract kept
+
+
+def test_search_scores_every_intra_tier_ordering_of_every_combination(monkeypatch):
+    # The ordering-blind failure this replaces: a combination was ranked on ONE
+    # arbitrary intra-tier order, and only a top-K shortlist ever got permuted,
+    # so a deck that is only good in a different order could be cut before its
+    # order was tried. Measured on real data that gap reached 78%, with the
+    # true best (1,1,3) ranking #21 canonically - intra-tier order decides
+    # which member never bursts (Fienn's Mint-before-Prika / silent-Velvet
+    # cases), so no combination may be ranked on a single order.
+    import app.deck_search as ds
+    roster = fake_roster([1, 2, 2, 3, 3, 3])
+    scored = []
+
+    def recording_evaluate(ordered_deck, boss):
+        scored.append(tuple(u.slug for u in ordered_deck))
+        return {"total_damage": 1.0, "damage_log": []}
+
+    monkeypatch.setattr(ds, "evaluate_deck", recording_evaluate)
+    ds.search_best_decks(roster, BossProfile(), top_n=1)
+
+    expected = {tuple(u.slug for u in ordered)
+                for combo in ds.shape_combinations(roster)
+                for ordered in ds._intra_tier_orderings(combo)}
+    assert expected <= set(scored)
+
+
+def test_search_returns_a_winning_order_its_combination_only_reaches_when_permuted(monkeypatch):
+    import app.deck_search as ds
+    roster = fake_roster([1, 2, 2, 3, 3, 3])
+    # Every other order scores 1.0; the winner is a NON-canonical B2 order.
+    winner = ("u0", "u2", "u1", "u3", "u4")
+    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({winner: 500.0}))
+
+    results = ds.search_best_decks(roster, BossProfile(), top_n=1)
+
+    assert results[0]["total_damage"] == 500.0
+    assert tuple(results[0]["deck"]) == winner
+
+
+def test_search_budget_counts_orderings_not_just_combinations(monkeypatch):
+    # sim_budget caps SIMS, and scoring every ordering costs several sims per
+    # combination - so the budget must be compared against the ordering count,
+    # or the pool is never pruned and the budget is silently blown.
+    import app.deck_search as ds
+    roster = fake_roster([1, 2, 2, 3, 3, 3])
+    pruned = []
+
+    def fake_prune(roster_arg, boss, pool=None):
+        pruned.append(True)
+        return list(roster_arg)[:5]
+
+    monkeypatch.setattr(ds, "prune_candidate_pool", fake_prune)
+    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({}))
+    # 5 combinations but 16 orderings: a budget between the two must prune.
+    ds.search_best_decks(roster, BossProfile(), top_n=1, sim_budget=6)
+
+    assert pruned, "budget compared against combinations only, not orderings"

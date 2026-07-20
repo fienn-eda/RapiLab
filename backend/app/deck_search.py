@@ -498,29 +498,36 @@ def _reference_b1_variants(by_tier, boss):
         yield best_b1
 
 
-def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200, permutation_top_k=40,
-                      pool=None):
-    """Budget-aware replacement for exhaustive find_best_decks: canonical
-    tier-order scores rank the shape combinations (intra-tier order only
-    decides nuker-vs-backup roles), and only the top K get their permutations
-    evaluated. When canonical enumeration alone would blow the budget, the
-    roster is first cut to a candidate pool (prune_candidate_pool). `pool` (a
-    SimPool or None) fans the map-shaped batches out to worker processes."""
+def _all_intra_tier_orderings(combos):
+    return [ordered for combo in combos for ordered in _intra_tier_orderings(combo)]
+
+
+def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200, pool=None):
+    """Budget-aware replacement for exhaustive find_best_decks: every shape
+    combination is scored in EVERY intra-tier order, and when that would blow
+    the budget the roster is first cut to a candidate pool
+    (prune_candidate_pool). `pool` (a SimPool or None) fans the map-shaped
+    batches out to worker processes.
+
+    Intra-tier order is not a tie-break between equivalent decks - it decides
+    which member of a tier never bursts at all, because burst_cycle picks the
+    first ready member of each tier (see `simulate_burst_cycle`). That is a
+    real strategy, not an artifact: a (1,1,3) commonly runs its rightmost
+    Burst 3 as a buffer/normal-attack unit that never bursts, Prika must
+    burst before Mint for her Encore to hand Mint the slot, and Velvet and
+    Helm: Aquamarine are usually played without bursting at all (Fienn,
+    2026-07-19). Ranking combinations on ONE arbitrary order therefore
+    mis-scores them outright - measured at up to 78% low on real data, with
+    the true best (1,1,3) ranking #21 - so orderings are scored in full
+    rather than refined for a top-K shortlist."""
     candidates = list(roster)
-    combos = list(shape_combinations(candidates))
-    if len(combos) > sim_budget:
+    orderings = _all_intra_tier_orderings(shape_combinations(candidates))
+    if len(orderings) > sim_budget:
         candidates = prune_candidate_pool(roster, boss, pool)
-        combos = list(shape_combinations(candidates))
-    canonical = sorted(
-        ((total, i) for i, total in enumerate(_score_batch(combos, boss, pool))),
-        reverse=True,
-    )
-    # Permutations are ranked on slim scores first; only the returned top_n get
-    # a second sim to attach the full "result" (evaluate_deck is pure, so the
-    # floats are identical to scoring the full summaries directly).
-    orderings = [ordered
-                 for _, i in canonical[:permutation_top_k]
-                 for ordered in _intra_tier_orderings(combos[i])]
+        orderings = _all_intra_tier_orderings(shape_combinations(candidates))
+    # Ranked on slim scores first; only the returned top_n get a second sim to
+    # attach the full "result" (evaluate_deck is pure, so the floats are
+    # identical to scoring the full summaries directly).
     totals = _score_batch(orderings, boss, pool)
     ranked = sorted(zip(totals, orderings), key=lambda pair: pair[0], reverse=True)
     return [_summarize(ordered, evaluate_deck(ordered, boss)) for _, ordered in ranked[:top_n]]

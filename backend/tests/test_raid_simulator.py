@@ -2653,3 +2653,100 @@ def test_projectile_attachment_damage_up_scales_attachment_typed_nuke():
         rules_by_slug={"gunner": [SkillRule(trigger="battle_start", action=grant)]}, **kwargs)
     nuke = lambda r: [e for e in r["damage_log"] if e["source"] == "scheduled"][0]["damage"]
     assert nuke(buffed) == pytest.approx(nuke(plain) * 2.5)
+
+
+def _elegg_ghost_spec(interval):
+    """Elegg's ghosts: her burst spends 9 at the 13 cap and 6 below it, never
+    dropping below 1 - a consumption that reads the count itself, which a
+    fixed SET value can't express."""
+    return ResourceSpec(
+        name="ghosts", fill=("periodic", interval), cap=13, buffs=[],
+        resets=[{
+            "trigger": "own_burst",
+            "value_fn": lambda pre: max(1.0, pre - (9.0 if pre >= 13 else 6.0)),
+        }],
+    )
+
+
+def test_resource_reset_value_fn_consumes_relative_to_the_pre_reset_count():
+    # Bursts land at t=5/45/85; ghosts tick every 6s and never reach the cap
+    # here, so each burst's pre-count carries the PREVIOUS burst's floored
+    # leftover (0 -> 1, 1+7 = 8 -> 2, 2+7 = 9). A reset that SET a fixed 0
+    # would instead give 0/7/7, so the hit counts discriminate the two.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=100.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [_elegg_ghost_spec(6.0)]},
+        dynamic_hit_count_nukes={"attacker": [{"resource": "ghosts", "base_percent": 100.0}]},
+    )
+    hits = [e for e in result["damage_log"] if e["source"] == "dynamic_hit_count_nuke"]
+    assert len(hits) == 0 + 8 + 9
+
+
+def test_dynamic_hit_count_nuke_hit_count_fn_branches_on_the_resource_count():
+    # Elegg's 13 Ghosts: 13 sequential hits at the cap, 6 otherwise. Ghosts
+    # tick every 2s here, so she is capped by her second burst onward.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=100.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [_elegg_ghost_spec(2.0)]},
+        dynamic_hit_count_nukes={"attacker": [{
+            "resource": "ghosts", "base_percent": 100.0,
+            "hit_count_fn": lambda count: 13 if count >= 13 else 6,
+        }]},
+    )
+    hits = [e for e in result["damage_log"] if e["source"] == "dynamic_hit_count_nuke"]
+    assert len(hits) == 6 + 13 + 13
+
+
+def test_resource_fill_from_several_sources_grants_each_source_its_own_amount():
+    # Mihara's Ensnaring Chains: +10 per chain discharge (battle start here)
+    # and +1 per 40 normal attacks, on ONE counter capped at 20.
+    spec = ResourceSpec(
+        name="ensnaring", cap=20, buffs=[],
+        fill=[(("at_battle_start",), 10), (("per_shot_every", 40), 1)],
+        resets=[{"trigger": "own_burst", "value": 0}],  # so the nuke can read a pre-reset count
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=6.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [spec]},
+        dynamic_hit_count_nukes={"attacker": [{"resource": "ensnaring", "base_percent": 100.0}]},
+    )
+    hits = [e for e in result["damage_log"] if e["source"] == "dynamic_hit_count_nuke"]
+    # Her burst at t=5 reads the battle-start +10; no weapon stats are supplied
+    # here, so the per-shot source contributes nothing.
+    assert len(hits) == 10
+
+
+def test_scheduled_nuke_resource_gate_scales_each_tick_by_the_live_count():
+    # A whole-fight DoT ticking at 100% PER stack, with the stack count
+    # climbing 10 at battle start and 10 more at t=3.
+    spec = ResourceSpec(
+        name="ensnaring", cap=20, buffs=[],
+        fill=[(("at_battle_start",), 10), (("periodic", 3.0), 10)],
+    )
+    schedule = lambda context, fight_duration: [1.0, 4.0]
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=6.0, mode="auto", base_crit_rate=0.0,
+        resource_specs={"attacker": [spec]},
+        scheduled_nukes={"attacker": [{
+            "percent": 100.0, "schedule": schedule,
+            "resource_gate": ("ensnaring", 20, None, lambda count: count),
+        }]},
+    )
+    ticks = sorted(
+        (e for e in result["damage_log"] if e["source"] == "scheduled"), key=lambda e: e["time"]
+    )
+    assert [t["time"] for t in ticks] == [1.0, 4.0]
+    assert ticks[0]["damage"] == 10 * 10000.0   # 10 stacks * 100% of 10000 ATK
+    assert ticks[1]["damage"] == 20 * 10000.0   # capped at 20 after the t=3 fill

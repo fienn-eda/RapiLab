@@ -13,6 +13,18 @@ Burst tiers 1/2/3 then fire in order (auto-battle: back to back; manual:
 0.1s apart), triggering a 10s Full Burst window. Per-Nikke cooldowns are
 tracked from time-of-use, matching the game rule Fienn gave.
 
+A member may carry a `burst_delay` holding its FIRST burst back rather than
+firing it the instant the cooldown allows, for units the player deliberately
+saves: `{"skip_cycles": N}` keeps it out of the opening N cycles (Diesel:
+Winter Sweets, whose locked Intro/Highlight state is decided by whether she
+bursts into the first Full Burst), `{"not_before": T}` holds it until T
+seconds, and `{"min_interval": S}` stretches its EFFECTIVE cooldown to S when
+the resource it waits on refills slower than the cooldown clears (Elegg: held
+until her Ghosts reach the cap, and again for each refill after her burst
+spends them). The cycle-count and the time forms are not interchangeable -
+one unit's reason is a cycle count and the other's is a resource's fill time,
+and a fight's cycle length varies with the deck's cooldowns.
+
 A deck missing any member of a burst tier can never complete a cycle at
 all - that's the one case still reported as "full_burst_missed" and ends
 the simulation, since no amount of waiting fixes it. Attack-rate-driven
@@ -22,6 +34,27 @@ the caller.
 """
 
 FULL_BURST_DURATION = 10.0
+
+
+def _ready_at(member, last_used_at, last_fired_at, cycle_index):
+    """When `member` may next burst: its plain cooldown, pushed later by any
+    `burst_delay`. Returns infinity while a `skip_cycles` delay still holds,
+    which drops the member out of its tier for that cycle - if it is the
+    tier's only member the cycle simply doesn't fire, rather than crediting
+    the unit a burst it would not have taken."""
+    ready = last_used_at[member["slug"]] + member["cooldown"]
+    delay = member.get("burst_delay")
+    if not delay:
+        return ready
+    if cycle_index < delay.get("skip_cycles", 0):
+        return float("inf")
+    if "min_interval" in delay:
+        # Measured from when the unit ACTUALLY fired, not from the
+        # CDR-rewound last_used_at: a min_interval stands for a resource
+        # refilling on wall clock, which no ally's cooldown reduction speeds
+        # up.
+        ready = max(ready, last_fired_at[member["slug"]] + delay["min_interval"])
+    return max(ready, delay.get("not_before", float("-inf")))
 
 
 def simulate_burst_cycle(
@@ -47,11 +80,15 @@ def simulate_burst_cycle(
     """
     gap = 0.0 if mode == "auto" else 0.1
     last_used_at = {member["slug"]: float("-inf") for member in deck}
+    # Mirrors last_used_at but is never rewound by cooldown reduction, so a
+    # burst_delay's min_interval measures real elapsed time.
+    last_fired_at = dict(last_used_at)
     members_by_tier = {
         tier: [member for member in deck if member["burst_tier"] == tier] for tier in (1, 2, 3)
     }
     events = []
     time = 0.0
+    cycle_index = 0
 
     if on_battle_start:
         on_battle_start(0.0)
@@ -64,7 +101,10 @@ def simulate_burst_cycle(
             break
 
         tier_ready_time = {
-            tier: min(last_used_at[member["slug"]] + member["cooldown"] for member in members_by_tier[tier])
+            tier: min(
+                _ready_at(member, last_used_at, last_fired_at, cycle_index)
+                for member in members_by_tier[tier]
+            )
             for tier in (1, 2, 3)
         }
         fire_time = max(gauge_ready, *tier_ready_time.values())
@@ -81,11 +121,12 @@ def simulate_burst_cycle(
             eligible = [
                 member
                 for member in members_by_tier[tier]
-                if last_used_at[member["slug"]] + member["cooldown"] <= fire_time
+                if _ready_at(member, last_used_at, last_fired_at, cycle_index) <= fire_time
             ]
             chosen = eligible[0]
             events.append({"type": "burst", "tier": tier, "slug": chosen["slug"], "time": fire_time})
             last_used_at[chosen["slug"]] = fire_time
+            last_fired_at[chosen["slug"]] = fire_time
             if on_tier_fire:
                 on_tier_fire(tier, chosen["slug"], fire_time)
             if tier == 3:
@@ -105,5 +146,6 @@ def simulate_burst_cycle(
                 last_used_at[slug] -= reduction
 
         time = full_burst_end
+        cycle_index += 1
 
     return events

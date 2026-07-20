@@ -3,99 +3,23 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-19 (**무기변형 v1 착지 — red-hood 세그먼트 마이그레이션
-  (docs 갱신)**. 인코딩 자체는 이전 배치(`weapon_mode_schedules` 착지)에서
-  완료됨 — 기존 `scheduled_nukes` 근사(정적 이중계상 차감 + 상수로 접은 차지
-  배수)를 세그먼트로 교체, 덱 Charge Damage/ATK 버프가 변형샷에 실제로 곱해짐
-  (총딜 ~+1.6%, 덱 버프 없는 스팟체크). 이 변경 자체는 인코딩 수/커버리지에
-  영향 없음 — 아래 표 68명(테이블 행 수; `ENCODED_SLUGS`는 69개, B1 형태변형
-  `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함), 매니페스트·API
-  로더블 69/69 — 아래 red-hood 행 비고 갱신. 설계
-  `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`(상태: v1
-  구현 완료), 갭 집계는 `docs/engine-gaps.md` 참고.
-  이전 갱신: 2026-07-19 (**Laplace Signature 신규 인코딩**, 별도 slug
-  `laplace-signature` — base `laplace`는 그대로 둠). Fienn 인게임 실측(2026-07-19):
-  변형 10초 창 = First 1회 + 노멀 93회. First Damage 1455.72%를 버스트 넉으로,
-  Normal Damage 22.2%×93틱을 `weapon_mode_schedules` 세그먼트(rate_of_fire=93/10)로
-  모델 — Hero Vision 상시 맥스스택 가정(red-hood Glaring 정상상태 선례, Fienn 승인)으로
-  틱 전부 **true** 타입 고정. 틱마다 +11.9% true 추가히트는 동일 케이던스의
-  `scheduled_nukes`(`build_buster_scheduled_nukes`)로 방출, 두 경로 모두
-  `context.burst_times` 앵커라 케이던스 일치. Hero Bomber는 base의 `last_bullet`과
-  달리 풀차지마다 발동(`every_outside_full_burst`) — 변형 창(=자기 버스트가 여는 FB 창)
-  중엔 풀차지가 없어 인게임과 정확히 일치. 프런트 `resourceIdSlugMap.ts`의
-  `DUAL_SLOT_BASES`에 `laplace` 추가(julia/drake 선례와 동일, `SIGNATURE_OWNED`는
-  미변경 — 소유 여부 미확인). **엔진 확장 없이 인코딩**. 65명, 커버리지/로더블 65/65.
-  이전 갱신: 2026-07-19 (**Maxwell 신규 인코딩**. Straight Shot(FB진입 시 최고ATK
-  2인 차지속도+43.1%/ATK 버프) — **Fienn 판정(2026-07-19): 대상 2인에 Maxwell
-  자신도 포함**(공유 `top_atk_slugs`/`highest_atk_buff_rule`은 항상 캐스터를
-  제외하므로 그대로 못 씀 — 캐스터 포함 랭킹을 뽑는 로컬 커스텀 액션으로 모델).
-  Pierce Shot(버스트): 무기를 2초 차지·1탄 캐논으로 바꾸는 변형 — 813.42%
-  샷딜/300% 풀차지딜, `weapon_mode_schedules`의 `until_shots: 1` 세그먼트
-  (snow-white/red-hood 선례를 잇는 세 번째 소비자). Spark Shot(적 5기 초과 조건)은
-  레이드 보스 1기 상대로 항상 거짓이라 미인코딩. **엔진 확장 없이 인코딩**.
-  64명, 커버리지/로더블 64/64. 이전 갱신: 2026-07-19 (**Snow White 신규 인코딩**. 버스트가 무기를
-  5초 차지·1탄 캐논으로 바꾸는 변형 — `weapon_mode_schedules`의
-  `until_shots: 1` 세그먼트(red-hood 선례를 잇는 두 번째 소비자, 이번엔 측정
-  앵커가 아니라 실제 차지무기라 덱 차지댐/ATK 버프가 그대로 곱해짐). Seven
-  Dwarves: V & VI는 자기 쿨다운(cd15) 주기 AoE 넉(`periodic_nukes`). Determination은
-  기존 `every` 모드로 충분(노멀30회마다 넉+자버프). **엔진 확장 없이 인코딩**.
-  63명, 커버리지/로더블 63/63. 이전 갱신: 2026-07-18 (**Red Hood 신규 인코딩 — 낡은
-  Pattern B 판정 정정**. "게이지 보상=charge speed=딜 아님"은 Phase S(발사속도 배선)
-  이전 판정이었음. 버스트 Step 1/2/3은 상태머신이 아니라 버스트 슬롯 선택(B3
-  고정이라 Step 3만 유효), Step 3 무기변형은 Fienn 인게임 실측(10초 33발·무한탄창)
-  앵커로 `scheduled_nukes` 모델 — 엔진 확장 없이 인코딩(기존 프리미티브만 소비).
-  62명, 커버리지/로더블 62/62). 이전 갱신: **매니페스트 예외 4유닛 해소 — 커버리지/로더블 전원**.
-  anis-star(dotgg-소스, star_anis drop 7토큰) · asuka(lootandwaifus-소스 —
-  anti_at_field 픽스처를 데이터 순서로 재전사+빌더 재번호, 50샷 임계도 슬롯에서
-  읽음; annihilation 픽스처의 재현 불가 '1' 슬롯은 전사 잔재라 제거; dotgg url
-  `asuka-wille` 브리지로 weapon 스탯 로드) · privaty(dotgg dollskills —
-  LD Assault 픽스처를 네이티브 순서로 스왑) · neon-vision-eye(lootandwaifus-소스 —
-  healthy_body 픽스처 03/04 전사 오류 교정, ∞는 숫자 토큰이 아님).
-  `KNOWN_MANIFEST_EXCEPTIONS`는 이제 빈 집합 — 신규 인코딩은 매니페스트 필수.
-  이전 갱신: **Scarlet: Black Shadow 신규 인코딩 (gap #10 완료)** —
-  `per_shot_rules` 신규 `"sequence"` 모드(단일 풀차지 카운터가 3/6/9 단계 테이블을
-  걷고, 버스트가 10초간 요구치를 1/2/3으로 교체 — 카운트/스테이지는 경계를 넘어
-  이어짐, Fienn 판정). 함께 **Pulse에 damage_type 추가**(per-shot 넉의 "as
-  Distributed Damage"가 이제 `distributed_damage_up` 버킷과 실제로 곱해짐 — 기존
-  Neon 문서에 적혀 있던 펄스 경로 한계 해소). 같은 배치: **Velvet Sticky Fingers**
-  (`every_outside_full_burst` 신규 모드, gap #7의 거울상) · **Modernia Giant Leap**
-  (Fienn 정정: 상태창 무관, 전투 시작부터 노멀 200히트마다 — 기존 `every` 모드로
-  해결, 마지막 gap #7 후보 소진). **61명, 매니페스트 57/61, API 로더블 57/61**.
-  이전 갱신: 2026-07-17 (**Raven·Sakura: Bloom in Summer 신규 인코딩** —
-  `scheduled_nukes`의 schedule 함수가 소유자의 발사 시각(`context.shot_times`)을
-  읽도록 확장, Raven의 Shock Wave(풀차지마다 5초 스택 DoT)가 첫 소비자. Sakura는
-  확장 없이 인코딩(Full Glory가 배틀스타트 강제발동+cd30이라 스케줄이 전투 전 확정).
-  **60명, 매니페스트 56/60, API 로더블 56/60** — 남은 4명(anis-star·asuka·privaty·
-  neon-vision-eye)은 픽스처 재배열 건으로 dotgg와 무관. **Raven Shock Wave 모델 정정
-  (Fienn, 같은 날): 스택 카운터 1개 + 풀차지마다 수명 갱신** — 최초 구현은 "풀차지마다
-  독립 5초 DoT가 겹침"으로 오독해 정상상태 5스택(실제 10스택)이 되어 그녀를 **1.9배
-  과소평가**하고 있었음(Shock Wave 1.28억→2.92억). 이전 갱신: **Ein 신규 인코딩** — Near Feather 소환체 스케줄을
-  신규 엔진 확장 `scheduled_nukes`로 모델(Fienn의 클라 데이터마이닝 + 영상 실측
-  기반). **58명, 매니페스트 54/58, API 로더블 54/58** — dotgg weapon 파일 수집으로
-  ein·ark-ranger-black·prika·marciana-marine-study가 함께 로더블이 됨(50→54).
-  같은 배치에서 미검증 5유닛 검증: raven·sakura-bloom-in-summer는
-  기존 프리미티브로 인코딩 가능(다음 배치), scarlet-black-shadow·milk-blooming-bunny는
-  갭 확인(`engine-gaps.md` 참고). 이전 갱신: 매니페스트 예외 8유닛 배치 — crown·helm·liter·
-  miranda·moran·soline-frost-ticket·volume·zwei에 dotgg-소스 매니페스트 추가,
-  53/57 커버. **API 로더블 50/57** (로더블 B1 4→10명 — 5덱 분배가 실제로 5덱을
-  채울 수 있게 됨). 이전 갱신: 매니페스트 배치 2 — 29유닛 추가로 45/57 커버 +
-  dotgg weapon 스탯 39파일 수집 + `dotgg_slug` 브리지(ada-wong·chisato·jill·takina))
-- **스킬값 매니페스트 커버리지 — 예외 없음 (2026-07-18):** 전원이
-  `SKILL_VALUE_MANIFESTS`를 보유(= API 조립 가능). 이 목록은
-  `test_skill_value_assembly.py`의 `KNOWN_MANIFEST_EXCEPTIONS` 가드 테스트와
-  거울 구조(현재 빈 집합)라, 매니페스트 없는 신규 인코딩은 테스트가 먼저 잡는다.
-  - **(2026-07-18 해소)** 픽스처 재배열 4유닛(`anis-star`,
-    `asuka-shikinami-langley-wille`, `privaty`, `neon-vision-eye`) — 픽스처를
-    데이터 슬롯 순서로 재전사(또는 drop_tokens)하고 빌더 읽기를 재번호해 해결.
-  - **(2026-07-17 해소) `ark-ranger-black`·`prika`·`marciana-marine-study`·`ein`은
-    이제 dotgg weapon 파일이 있어 전부 로더블.** 이전 "dotgg 리스팅에 없음" 기록은
-    수집 전 상태였을 뿐 — 넷 다 dotgg 셧다운(2026-05) 이전 출시라 데이터가 존재한다.
-    **prika 로더블화로 mint+prika Encore 시너지가 실제 덱 탐색에서 처음으로 효력을
-    가진다**(로드맵이 이걸 blocker로 적어두고 있었음).
-- 총 **68명** (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 41명) — drake는 base/signature 듀얼슬롯 2엔트리,
-  Cinderella: Crystal Wave는 MG/Snipe 모드 듀얼슬롯 2엔트리(Task 6, 2026-07-19 —
-  `MODE_VARIANTS`로 배선된 첫 유닛; 시그니처와 달리 둘 다 정식 base 캐릭터라
-  DUAL_SLOT_BASES/SIGNATURE_OWNED 대상 아님)
+- 마지막 갱신: 2026-07-19 — **Diesel: Winter Sweets 신규 인코딩**(Intro/Highlight
+  2슬러그, 유닛별 버스트 스케줄 정책 `burst_delay` 엔진 확장 소비). 같은 확장으로
+  Elegg의 버스트도 고스트 캡까지 보류하도록 갱신. 배치별 이력은 git log와
+  [`decisions.md`](decisions.md)에, 갭 인벤토리는
+  [`engine-gaps.md`](engine-gaps.md)에 있으므로 여기엔 현재 상태만 적는다.
+- 총 **74명**(테이블 행 수) / `ENCODED_SLUGS` **75개** — B1 형태변형
+  `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함.
+  (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 47명)
+- **한 소유 캐릭터가 여러 후보 슬러그로 갈라지는 경우** — `MODE_VARIANTS`(전투 전
+  선택이라 덱 탐색이 같은 base의 두 후보를 **동시 편성 금지**): Bready(Taste 2종) ·
+  Diesel: Winter Sweets(Intro/Highlight) · Cinderella: Crystal Wave(MG/Snipe) ·
+  Rapi: Red Hood(B3/B1). 시그니처 듀얼슬롯(Julia · Drake · Laplace)은 이와 별개로
+  base와 독립된 roster 엔트리다.
+- **스킬값 매니페스트 커버리지 — 예외 없음:** 전원이 `SKILL_VALUE_MANIFESTS`를
+  보유(= API로 조립 가능). `test_skill_value_assembly.py`의
+  `KNOWN_MANIFEST_EXCEPTIONS`가 빈 집합이라, 매니페스트 없는 신규 인코딩은
+  테스트가 먼저 잡는다.
 - 완성도 범례: **✅ 대부분 모델링** (생존/힐 등 딜 무관 요소만 제외) ·
   **⚠ 일부 핵심 메커니즘 보류** (딜에 영향 있으나 부분적) ·
   **🔶 상당 부분 보류** (얇은 인코딩, 실제 딜 상당수 누락 — 덱 평가에 반영 안 됨)
@@ -142,60 +66,26 @@
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (41명)
+## Burst 3 (47명)
 
-> **eb (encoding batch) 진행:** Burst 3 어태커 배치 인코딩 (least-blocked 우선).
-> eb1 = Noir · Isabel · Liberalio, eb2 = Ludmilla · Chisato · Jill (2026-07-12).
-> **자원 primitive beachhead (gap #2 Pattern A, 2026-07-12):** Modernia · Guillotine:
-> Winter Slayer — named-resource/캡 스택 카운터 엔진 확장의 첫 소비자.
-> **count-스케일 넉 + multi-hit 버스트 + periodic fill (2026-07-12):** Julia(base) ·
-> Julia(시그니처, 별도 slug `julia-signature`) · Cinderella — `resource_scaled_nukes`/
-> `burst_hit_counts`/periodic 자원 fill 엔진 확장의 소비자. Guillotine의 Extermination
-> Hero-Level DoT도 이때 완성.
-> **eb3 Pattern-A 자원 유닛 배치 (2026-07-12):** Quency: Escape Queen(자원 확장 불필요,
-> 정상상태 스택체인) · Soda: Twinkling Bunny(자원 **reset** + `resource_gated_buffs`
-> + `("per_shot_every_during_full_burst", N)` fill) · Maiden: Ice Rose(자원
-> **squad-burst-cycle-conditional fill** + `dynamic_hit_count_nukes`) — 여섯 개
-> 신규 엔진 확장의 소비자. 상세는 각 모듈 docstring과 `engine-capabilities.md`
-> /`special-mechanics.md` 참고.
-> **eb4 배치 (2026-07-12):** Asuka Shikinami Langley: Wille · Mana — `fire_delay`
-> + `own_burst_delayed`(버스트 후 지연 발동 넉/리셋) · `("per_shot_every_during_own_
-> status_window", n, duration)` fill(자기 버스트 앵커 상태창 한정 fill) ·
-> `full_burst_bonus_eligible`(스킬 텍스트 "as additional damage" 표시 유닛만 옵트인,
-> `docs/decisions.md` 참고) · `resource_scaled_nukes`의 `resource` 필드 선택화(순수
-> 반복틱 DoT) — 4개 신규 엔진 확장의 소비자. Cinderella: Crystal Wave는 배치에서
-> 제외됨(Pattern-A 자원 유닛이 아니라 무기-모드 전환 상태머신 유닛으로 재분류,
-> `engine-gaps.md` 참고).
-> **gap #7 완료 + Phase A1 (2026-07-15):** `per_shot_rules`에 창 한정 모드
-> `every_during_full_burst`/`every_during_own_status_window` 추가 — Soda(공동발동
-> 최고ATK버프)·Asuka(15.62% 상태게이팅 넉) 잔여 메커니즘 재인코딩. 같은 날 기존
-> per-shot 능력만으로 신규 인코딩: Helm: Aquamarine(노멀30회마다 131.34% 넉)·
-> Anis: Sparkling Summer(라스트불릿 382.42% 넉 + 부위딜 refresh). 검증 중 재분류:
-> grave·velvet은 gap #7로 부분 언블록 가능(다음 배치), jill-valentine은 신규
-> 소규모 갭(reload 후 첫 발 마커, gap #9) 필요로 확인, rapi-red-hood는 gap #7·#9
-> 어느 것으로도 안 풀리는 프로젝타일-런치 상태머신으로 확인 — 상세는
-> `engine-gaps.md` 참고.
-> **gap #7 두 번째 소비 배치 (2026-07-15):** Grave(Overheat II/III, 자기 버스트
-> 상태창 한정 노멀30/60회마다 자버프)·Velvet(Bullets of Love, 풀버스트 한정
-> 풀차지/노멀50회 카운터 — 그녀의 실제 스쿼드 서포트) 재인코딩(🔶→⚠). gap #7
-> 소비자는 이로써 Soda·Asuka·Grave·Velvet 4명. ~~남은 gap #7 후보는 modernia
-> (Giant Leap 상태게이팅 200히트 ATK버프) 하나뿐 — 착수 전 검증 필요.~~ →
-> **해소 (2026-07-18, Fienn 정정):** Giant Leap은 인게임에서 상태창과 무관하게
-> 전투 시작부터 200히트마다 발동 — gap #7이 아니라 기존 `every` 모드로 인코딩
-> 완료. gap #7 후보는 소진.
-> **나머지 백로그는 [`roadmap.md`](roadmap.md) To-Do 참고** (대부분 남은 Pattern A
-> 자원 유닛 / Pattern B 게이지·변신 / 상태머신 / 무기변형 갭).
+> 배치 인코딩(eb1~eb4)과 gap #7 소비 이력은 각 행의 `(신규 날짜)` 표기와 git log
+> 참고. 남은 백로그는 [`roadmap.md`](roadmap.md) To-Do에 있다.
 
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
 | Anis: Sparkling Summer | `anis-sparkling-summer` | Supporter | SG | Electric | ⚠ | Sparkling Boost(FB진입 시 Electric코드 아군 flat ATK/재장전속도)·Sparkling Wave(자기 최대탄약/재장전속도) 모델됨 + **Sparkling Missile: 라스트불릿마다 382.42% 넉(2 최고ATK 적) + 자기 부위딜 +6.91%/10초 refresh**(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-15 Phase A1) 모델됨. Sparkling Wave의 Elemental Advantage Attack Damage(버킷 불명)만 보류 |
 | Ark Ranger Black | `ark-ranger-black` | Attacker | AR | Wind | ⚠ | (신규 2026-07-16) Transformation 상태에서만 나오는 지속딜 위주 배터리 게이지 유닛 — 파츠파괴로 게이지가 차는 메커니즘은 모델 불가하여 신규 보스 플래그 `part_destructible`로 **floor(파츠파괴 없음)/ceiling(파츠파괴 있음)** 두 갈래를 모델링(`docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`, gap #2 Pattern B 우회). Transform! 자ATK+156.19%(floor: 버스트당 10초 창, ceiling: 전투 시작부터 영구)·Ark Black Collider 45.87% 지속딜(floor: 버스트-앵커 10틱, ceiling: 전투 내내 1초마다)·Ultimate! Meteor 266.69%×10틱 지속딜 + 자신 Sustained Damage+135.83%/10초(양쪽 분기 공통)·노멀30회마다 자신 Sustained Damage+59.6%/5초(refresh) 모델됨. skill2 풀버스트 "Wind코드 어썰트라이플 아군 Sustained Damage+77.5%/10초"(member_subset_buff_rule, gap #3 소비 2026-07-16 — Ark 자신 포함 자기적용) 모델됨. 보류: 파츠파괴로 인한 배터리 충전(이 플래그의 존재 이유)·Damage to Parts+20%(파츠딜, 레이드 DPS 무관) |
-| Ada Wong | `ada-wong` | Attacker | RL | Electric | ⚠ | (신규 2026-07-16, Phase C) Covert Support: FB진입 시 "이미 버스트한 버스트3 아군" flat ATK(자ATK 60%)+진댐+50%/10초(member_subset_buff_rule, gap #3)·Flash Grenade: FB창 동안 2초마다 420% 진댐 주기넉(during_full_burst, gap #6 — 자기 버스트로 열린 FB창은 1초 틱, own_burst_interval, Fienn 판정 2026-07-16)·Secret Agent(버스트, 버프 온리): 자ATK+40%+진댐+42%/10초 + Special Modification 1라운드(차지속도▼300%+차지딜▲1500% → 매거진-경계 함정으로 감속이 착지 불가 확인, net 근사 charge_damage_bonus +2.75/1라운드로 모델 — 모듈 docstring 참고) 모델됨. 보류: Covert Support HP 회복(비딜). SKILL_VALUE_MANIFESTS는 브랜치 병합 후 백필 예정 |
+| Ada Wong | `ada-wong` | Attacker | RL | Electric | ⚠ | (신규 2026-07-16, Phase C) Covert Support: FB진입 시 "이미 버스트한 버스트3 아군" flat ATK(자ATK 60%)+진댐+50%/10초(member_subset_buff_rule, gap #3)·Flash Grenade: FB창 동안 2초마다 420% 진댐 주기넉(during_full_burst, gap #6 — 자기 버스트로 열린 FB창은 1초 틱, own_burst_interval, Fienn 판정 2026-07-16)·Secret Agent(버스트, 버프 온리): 자ATK+40%+진댐+42%/10초 + Special Modification 1라운드(차지속도▼300%+차지딜▲1500% → 매거진-경계 함정으로 감속이 착지 불가 확인, net 근사 charge_damage_bonus +2.75/1라운드로 모델 — 모듈 docstring 참고) 모델됨. 보류: Covert Support HP 회복(비딜) |
 | Asuka Shikinami Langley: Wille | `asuka-shikinami-langley-wille` | Attacker | MG | Wind | ⚠ | eb4. Anti A.T. Field 자원(캡30·`per_shot_every_during_own_status_window`로 자기 버스트 앵커 9초창 한정 노멀10회마다 fill·스택당 받댐+0.83%/30초, squad-scope)+무조건부 노멀50회마다 471.86% 넉("as additional damage", `full_burst_bonus_eligible`)+**같은 자원 fill 트리거에서 15.62% 상태게이팅 넉("as damage", 9초 Annihilation State 창 한정, `per_shot_rules`의 `every_during_own_status_window` 모드, gap #7 완료·2026-07-15)**+Annihilation State 버스트 자ATK/공댐(46.8%×자ATK/36%, 9초)+Emergency Repair FB진입 공댐+30.97%/10초(`own_burst_fired_this_cycle` 게이팅)+Annihilation 지연넉(버스트 9초 후 발동, 히트수=스택수, `dynamic_hit_count_nukes`+`fire_delay`, FB보너스) 모델됨. Normal Attack Damage 디버프(노멀전용 스코프 없음)·재장전/힐만 보류 |
+| Bready (Lingering Taste) | `bready-lingering` | Attacker | SR | Water | ✅ | (신규 2026-07-19) 지속딜 버프를 받아 진입하는 모드. **Taste 2종은 덱이 결정하는데 엔진에 '어떤 종류의 버프를 받았는가' 트리거가 없어, Cinderella: Crystal Wave 선례대로 `MODE_VARIANTS["bready"]`의 정적 2슬러그로 인코딩**(Fienn 판정 2026-07-19: 현재 분산딜 버퍼와 묶는 건 지속딜 버퍼가 약해서일 뿐이라 양쪽 다 필요). 공통: FB진입 자ATK+70.01%/10초 · Taste 자체의 **Charge Speed −20%/50초 자기 디버프**(Phase S 이후 실딜 스탯). Lingering 전용: 풀차지 3회마다 받댐+10.2%/5초 + **Aftertaste 150.04%/초 5초 지속딜**(`scheduled_nukes`가 자기 발사시각을 읽는 Raven 선례; 재설치는 스택이 아니라 **창 갱신**으로 모델 — 스킬텍스트에 스택 표기 없음) · 버스트 자AD+60.19%/10초 + **"Aftertaste Effect +349.8%"를 self 스코프 `sustained_damage_up`으로 모델**(Aftertaste가 그녀의 유일한 sustained 타입 딜이라 킷 내에서 정확히 등가). E2E: 자체딜 177M 중 Aftertaste 120M. 보류: **덱이 실제로 어느 Taste를 유발하는지 판정 불가** — 모드는 호출자의 선언이지 엔진의 도출이 아님(모듈 docstring 명시) |
+| Bready (Recommended Taste) | `bready-recommended` | Attacker | SR | Water | ✅ | (신규 2026-07-19) 분산딜 버프를 받아 진입하는 모드. 공통 킷은 위와 동일. Recommended 전용: **풀차지마다**(SR이라 매 샷) 자AD+60.01%/5초 + 전체 적 **265.07% 분산딜**(`damage_type="distributed"`라 `distributed_damage_up` 버킷과 곱해짐) · 버스트 자AD+60.19% + 자ATK+70.09%/10초. E2E: 자체딜 179M 중 분산딜 넉 109M. 보류: Lingering과 동일(모드 판정 불가) |
+| Diesel: Winter Sweets (Intro) | `diesel-winter-sweets-intro` | Attacker | RL | Fire | ⚠ | (신규 2026-07-19) 자기 버스트로 첫 풀버스트에 들어가 **Intro로 고정**된 모드(Fienn 판정 2026-07-19: 상태는 첫 FB에 확정되어 전투 종료까지 고정, 중간 변경 불가). 모델됨: 상태의 크리데미지+20.28% 영구(FB진입 시점부터, `refreshing`이라 사이클마다 재스택 안 됨)·**FB진입마다 지속딜+60.19%/10초**·풀차지마다 지속딜+318.14%/3초 2스택(RL은 charge 무기라 매 발사가 풀차지 → `ResourceSpec(per_shot_every 1, cap 2, lifetime 3.0)`가 캡·만료를 정확히 표현)·FB진입 시 최종ATK 63.33% 지속딜 DoT 9틱(`full_burst_windows` 앵커 — 자기 버스트가 아닌 **아무 풀버스트**에나 발동)·버스트 받댐+25.09%/10초 + **199.63%×9틱 DoT**(전체 적 18.43% + 스테이지 타깃 181.2% 합산 — 레이드는 단일 보스라 항상 스테이지 타깃)·파츠파괴 지속딜+68.04%는 `boss_part_destructible` floor/ceiling 브래킷(ark-ranger-black 선례). 보류: **Noise Pollution(Hit Rate −100%)과 Mute 스택 모두 미모델** — `hit_rate`를 엔진이 소비하지 않아 inert. Intro는 Highlight와 달리 이 패널티가 안 걸리므로 영향 없음 |
+| Diesel: Winter Sweets (Highlight) | `diesel-winter-sweets-highlight` | Attacker | RL | Fire | ⚠ | (신규 2026-07-19) 첫 풀버스트에 **자기 버스트를 안 써서** Highlight로 고정된 모드. 지속딜 버프가 **235.03%로 Intro(60.19%)의 약 4배** — 그녀의 핵심. 나머지 킷은 Intro와 동일. **Bready의 Taste 2슬러그와 결정적으로 다른 점**: Bready는 상태가 엔진이 시뮬레이션하지 않는 것(받는 버프 종류)으로 갈려 정적 슬러그로 충분하지만, Diesel은 **엔진이 실제 시뮬레이션하는 버스트 스케줄**로 갈린다 — 정적 슬러그만 만들면 1사이클에 버스트하면서 Highlight 버프까지 챙기는 과대평가가 된다. 그래서 신규 엔진 확장 `burst_delay = {"skip_cycles": 1}`로 **진짜로 1사이클을 거른다**(티어메이트가 대신 채움; `ALLOWED_SHAPES`가 (1,1,3)/(1,2,2)/(2,1,2)라 B3는 항상 2명 이상). E2E: Intro는 홀수 사이클(2.2/27.0/52.3…), Highlight는 **짝수 사이클**(14.4/39.6/64.9…), 덱의 풀버스트 횟수는 15로 동일하고 180초 총딜은 Highlight가 **약 +7.8%** — Fienn의 '짝수 사이클 버스트가 확실히 강했다'는 플레이 경험과 일치. 보류: **Noise Pollution(Highlight일 때 아군 Hit Rate −100%/1초)과 그걸 막는 Mute 스택 둘 다 미모델** — `hit_rate`가 inert. **이 누락은 낙관 방향 편향**이다: 실제로는 Highlight의 이득이 아군 명중 페널티를 대가로 치르는데 엔진은 이득만 본다 — Highlight 덱은 'Mute 관리를 제대로 하는 플레이 전제'로 읽을 것 |
 | Chisato Nishikigi | `chisato-nishikigi` | Attacker | SMG | Iron | ✅ | eb2. Extrasensory 상시 자ATK/진댐(버스트 재충전으로 >70% 유지 근사)·버스트 자ATK/노멀진댐화·48노멀마다 진댐넉(per-shot) 모델됨. per-shot 넉이 attack타입(진댐 언더카운트)·회피/명중(inert) 보류 |
 | Cinderella | `cinderella` | Attacker | RL | Fire | ⚠ | Flawless Glass 자ATK(자기 최대체력 비례)+매 풀차지 136.6% 추가딜(RL 상시 풀차지, per-shot)·Beautiful 자원(periodic fill, 3초마다·캡12)·Glass Slippers 10연타 버스트넉 + Beautiful 스택수 비례 추가딜(count-스케일 넉) 모델됨. 디코이 생성(생존)·Beautiful 자체 최대체력% 증가(연결된 소비자 없음, inert)만 보류 |
 | Cinderella: Crystal Wave (MG) | `cinderella-crystal-wave-mg` | Attacker | MG | Iron | ⚠ | (신규 Task 6, 2026-07-19) 전투 전 MG/Snipe 모드 고정 선택(플레이어가 정하고 전투 내내 유지 — 상태머신이 아니라 정적 슬러그 2개, `MODE_VARIANTS["cinderella-crystal-wave"]`로 배선, 덱 탐색이 두 모드 동시 편성 금지). 공유 킷(양 모드 동일): 배틀스타트 자AD+24%(Beauty-Full)/자ATK+29%(Mode Swap)·버스트 자AD+92%/자ATK+65% 10초(Glass Slippers)·6000% 버스트넉·5초마다 900% 주기넉(`periodic_nukes`). MG 전용: 배틀스타트 Pinpoint 코어딜+26%(`other_core_damage_sources`)·FB진입 833.79% 코어스트라이크 넉(자기 버스트 이번 사이클 발동 AND 코어활성 게이팅 — 스킬텍스트가 "코어 활성 적 한정"이라 균일 코어보정 모델상 `core_hittable` 게이트로 관례 정합, `boss_core_hittable`+`own_burst_fired_this_cycle` 복합조건). 보류: 디코이 아바타(생존)·아군탄200발마다 버스트게이지+12%(inert)·Pierce·모드전환 자체(Preparation for Change 상태머신, 모드 고정이라 무의미) |
 | Cinderella: Crystal Wave (Snipe) | `cinderella-crystal-wave-snipe` | Attacker | MG(정체성)/SR(발사) | Iron | ⚠ | (신규 Task 6, 2026-07-19) MG와 공유 킷 동일(위 참고). Snipe 전용: 배틀스타트 Destroy 파츠딜+26.21%(`damage_to_parts_up`)·FB진입 1189.66% 넉(자기 버스트 이번 사이클 발동만 게이팅, 코어 무관 — 전체 적/부위 대상이라 코어게이트 없음). **정적 무기 프로필 override**(`_WEAPON_PROFILE_OVERRIDE_BUILDERS`, Task 5 배선 첫 실사용): SR 62.13%·15발·차지1초·풀차지딜250%·재장전 2.5초(스킬텍스트에 값 없음 — MG 기본 재장전 차용, Fienn 판정 2026-07-19). `weapon` 필드는 아군필터용으로 "MG" 유지, 발사 케이던스/타이핑만 이 프로필의 "SR"이 결정. "풀차지=40발 회계"는 소비카운트 부기일 뿐 실제 발사는 1발(Velvet 탄약주머니 선례, little_mermaid.py 교차노트) — 이 부기가 먹이는 스킬 전부 defer라 노트만 남김. 보류: MG와 동일(디코이·게이지·Pierce·모드전환) |
+| Elegg: Boom and Shock | `elegg-boom-and-shock` | Attacker | MG | Water | ✅ | (신규 2026-07-19) **Pattern B 오분류 정정 — 감쇠 게이지/변신 없음, 결정론적 fill의 자원 유닛.** Ghosts 자원(캡13, 6초마다 +1)·유령수 임계 버프 2종(≥1: Water아군 flat ATK=자ATK 16.2% / ≥4: Elemental Advantage Attack Damage +35%, 둘 다 상시·`element:Water`라 자신 포함)·Ghostbuster 버스트 자ATK+40%/10초 + **캡에서 포획 시 1100% 오버플로 넉**(`scheduled_nukes`가 각 포획틱 직전 카운트를 읽어 캡이면 발동)·13 Ghosts 버스트 **분기**(캡13이면 800%×13연타·유령−9, 미만이면 800%×6연타·유령−6, 최소 1 유지 — 신규 `hit_count_fn`+reset `value_fn`) 모델됨. **`burst_delay`로 실제 운용 재현**: `not_before`=캡13×6초=78초, `min_interval`=캡소비9×6초=54초(둘 다 그녀 자신의 fill 값에서 유도). 재충전 54초가 쿨 40초보다 길어 **실효 케이던스가 쿨이 아니라 재충전**이다. E2E(180초): 78.2/136.2초 **2회, 둘 다 13히트 분기** — Fienn의 '전투 중 2번, 13스택 쌓인 후' 서술과 일치(`burst_delay` 이전 자연 로테이션은 5회 중 4회가 6히트 분기였다). 보류: '6초창 스쿼드 누적 100히트' 요구치는 그녀가 MG(초당 60발)라 항상 충족으로 근사(Fienn 판정) — SR/RL 위주 덱에선 이론상 미달 가능·Possession 타겟팅(보스 1기)·`other_elemental_bonus`는 보스 원소 게이팅 없음(guillotine 선례 관례) |
 | Guillotine: Winter Slayer | `guillotine-winter-slayer` | Attacker | AR | Water | ⚠ | 자원 beachhead. EXP 자원(자ATK ▲1.81%/스택, 캡100, 연속)·Hero Level 파생 Water 아군 버프(레벨 스케일)·core-conditional fill·Extermination Water 버프 + **Hero-Level 스케일 10틱 지속딜(매 틱 자기 시각 기준 count 재조회, count-스케일 넉 + full_burst_bonus, 2026-07-12 인게임 확인 반영)** 모델됨. 레벨업 리로드/힐(딜 아님)만 보류 |
 | Helm (애장품) | `helm` | Attacker | SR | Water | ⚠ | Frontline Command 라스트불릿 스쿼드 크리율+14.64%/5초(`per_shot_rules`의 `"last_bullet"` 모드, refresh) 모델됨(2026-07-12, gap #1 잔여 해소) + Fire Away 스쿼드 파츠딜/공댐 모델됨. 두 스킬의 풀차지 보너스 효과(힐/게이지/추가딜)·Aegis Cannon 버스트후 차지배수(10 round) 보류 |
 | Isabel | `isabel` | Attacker | SG | Electric | ✅ | eb1. Marked Target 이스컬레이팅 자버프(refresh)·Pointed Feather 주기넉(cd15)·Sonic Chaser 버스트넉 + 단계별 추가딜(activation_count 게이팅, 사이클 정확)·받댐 디버프 모델됨. Full Burst Duration▲(로테 타이밍)만 보류 |
@@ -208,6 +98,7 @@
 | Maiden: Ice Rose | `maiden-ice-rose` | Defender | RL | Electric | ✅ | eb3 Pattern-A. MP 자원(squad-burst-cycle-conditional fill)+Diamond Dust 버스트(`dynamic_hit_count_nukes` — 히트수=MP, 1372.8%×(10% 최대체력+ATK))+Blessings Upon You(자속성상성공댐/자ATK 버스트버프 + 풀차지마다 547.62% per-shot 넉) 모델됨. "MP 소모" 트리거는 엔진 순서상 항상 MP=0에서 드레인되므로 Diamond Dust는 매 사이클 정확히 1회 히트(엔진 확정 버스트 순서 근거, 모듈 docstring 참고). MP 회복 시 Electric 아군(자신 제외) 버프(상성공댐+40.9%[Water 보스 게이팅]·자ATK 20.9% flat, 10초 refresh)도 `resource_fill_triggered_buffs`(gap #8 소비 2026-07-16)로 모델됨. 잔여 보류: 최대체력 스택(비딜)뿐 |
 | Marciana: Marine Study | `marciana-marine-study` | Attacker | AR | Iron | ⚠ | (신규 2026-07-16, gap #5 배치) Fienn 가정(rapture=1·Flagged Target=보스·High-Risk 불릿=Electric 보스 게이팅). Whistle 정상상태 자ATK+163.65%(5스택)·Elemental Advantage Attack Damage(연속 20.41% + 버스트 30.97%, **element bonus damage 그룹=`other_elemental_bonus`**, `boss_is_element("Electric")` 게이팅)·버스트 자AD+27.45%(attack_damage_up)·High-Risk DEF-10.56%/20초(`enemy_def_percent`, Electric)·Flagged Target 3789.25% 풀버스트 넉("additional damage", B3라 FB보너스)·High-Risk 20노멀마다 152.68% 넉(plain `every`, Electric 게이팅, 상시 유지 근사) 모델됨. 보류: Flagged Target ATK 버프(스코프 모호, defer)·적 처치 트리거 넉 사본(보스 미처치)·6+rapture Penguin Emergency Dispatch 넉 |
 | Maxwell | `maxwell` | Attacker | SR | Iron | ⚠ | (신규 2026-07-19) Straight Shot: FB진입 시 최고ATK 2인 차지속도+4.48%/ATK+43.1% 10초 — **대상에 Maxwell 자신 포함(Fienn 판정 2026-07-19)**, 공유 `top_atk_slugs`(캐스터 항상 제외)와 달리 캐스터 포함 랭킹을 뽑는 로컬 커스텀 액션으로 모델. Pierce Shot(버스트): 무기를 2초 차지·1탄 캐논으로 변형 — 813.42% 샷딜/300% 풀차지딜, `weapon_mode_schedules`의 `until_shots: 1` 세그먼트(snow-white/red-hood 선례). 보류: Spark Shot(적 5기 초과 게이팅 — 레이드 보스 1기 상대로 항상 거짓)·Pierce Shot의 Pierce 속성(엔진 미지원) |
+| Mihara: Bonding Chain | `mihara-bonding-chain` | Attacker | MG | Fire | ✅ | (신규 2026-07-19) **Pattern B 오분류 정정 — 체인은 감쇠 게이지가 아니라 결정론적 2단 자원.** 포획사슬(캡10)은 자원으로 모델하지 않음(레이드에선 방출 때 항상 10이라 방출 *시각*만 유의미): 배틀스타트 + **그녀가 버스트한 풀버스트의 종료 직후** 10개를 한꺼번에 방출(Fienn: '한꺼번에 발동'), 회당 50.06% 공격 + 사슬감기 1스택. 사슬감기(캡20)는 다중소스 fill 자원(방출 +10, Tighten Up의 FB중 노멀40회마다 +1 → MG 연사로 FB창당 ~+15)이고 **전투 내내 1초마다 스택당 25.08% 지속딜**(`scheduled_nukes`+신규 `resource_gate`). Tighten Up 버스트3단계 진입 시 자Sustained Damage+59.98%/10초(**아무 B3의 진입이어도 발동**, Fienn 판정). Bonding Pain 버스트: 50.05%×10틱, **각 틱이 그 시점 스택수를 미러링**(`resource_scaled_nukes`) 후 스택 소거(+10초 `own_burst_delayed` reset). **Fienn 실측(버스트 시 20스택) 대조 검증**: 그녀가 실제 쓰는 (1,1,3)처럼 다른 B3가 일부 사이클을 가져가면 캡 20에 포화해 일치. 그녀가 유일 B3라 매 사이클 버스트하는 덱에서만 10에 머묾(모듈 docstring 명시). 보류: 행동불능 시 +20스택(사망 모델 없음)·적 처치 시 사슬+1(레이드 보스 미처치)·방출의 랜덤 타겟팅(보스 1기) |
 | Modernia | `modernia` | Attacker | MG | Fire | ⚠ | 자원 beachhead. High-Speed Evolution 히트당 3.05% 추가딜(per-shot)·200히트마다 Crit Dmg/Max Ammo 스택(캡5·10초 시한 자원) + **Giant Leap 자ATK+29.38%/10초(2026-07-18, Fienn 정정: 상태창 무관, 전투 시작부터 노멀 200히트마다 — `every` 모드, refresh)** 모델됨. Max Ammo 스택은 자기 탄창 재생성 전 계산돼 inert·Giant Leap의 스쿼드 Hit Rate(inert)·New World 버스트(Destroy Mode·무한탄·FB연장) 보류 |
 | Noir | `noir` | Attacker | SG | Wind | ✅ | eb1. 버스트넉 351.64%·Lucky Charm 스쿼드 ATK(caster 비례)·Finale 파츠딜 버프 모델됨. Rabbit Twins 탄약/재장전(QoL)·Hit Rate(inert)만 보류 |
 | Privaty (애장품) | `privaty` | Attacker | AR | Water | ✅ | EX Magazine 스쿼드 ATK/재장전속도/탄약감소/공댐(FB진입) 모델됨. LD Assault 라스트불릿 넉(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-12 gap #1 잔여 해소): 받댐+10.01%/10초+256.17% 추가딜("as additional damage") + Designated Target(AK Missile 자신의 버스트로부터 10초 창, `context.burst_times` 시간창 체크) 중이면 1687% 추가딜까지 중첩 발동 + AK Missile 자속성상성공댐 모델됨. Designated Target의 적 ATK 감소 디버프(생존계, 비딜)만 보류 |
@@ -232,27 +123,8 @@
 
 ---
 
-## 공통적으로 막힌 엔진 갭 (여러 니케에 반복 등장)
+## 엔진 갭
 
-> 전체 갭 인벤토리(수집 44유닛 스캔 기반 유닛 수 집계 + 확장 규모/우선순위)는
-> [`docs/engine-gaps.md`](engine-gaps.md) 참고. 아래는 요약.
-
-당장 인코딩을 막는 건 아니지만, 아래 항목이 여러 니케의 실제 딜 비중을 상당히
-깎아 먹고 있어 — 우선순위 후보:
-
-1. ~~**노멀공격/풀차지 횟수 카운터**~~ — ✅ **해결됨 (2026-07-11, `per_shot_rules`)**.
-   D: Killer Wife, Miranda, Rouge, Crown, Grave, Rapi: Red Hood, Zwei, Nayuta,
-   Helm: Aquamarine, Velvet, Mint, Prika 등 다수 — 엔진은 준비됨, 각 유닛 재인코딩만
-   남음(후속 배치). (본인 풀차지샷=발사 카운트로 통합. "마지막 탄"만 잔여.)
-2. ~~**교차 유닛 트리거** (다른 니케의 특정 스킬 발동을 감지)~~ — ✅ **해결됨
-   (2026-07-11, `ally_burst_activate`)**. Prika→Mint Encore가 첫 적용 사례
-   (Prika의 Encore가 Mint의 버스트에 반응). 다른 페어링 시너지에 재사용 가능.
-3. ~~**ammo pouch류 자원 메커니즘**~~ — Velvet. **비이슈로 확인 (2026-07-15):**
-   6000발이 사이클당 소모량 대비 압도적으로 커서 항상 풀 상태 — 자원 트래킹
-   없이 비제약으로 처리(모델링 불필요, 엔진 확장 대상 아님).
-
-네 항목 모두 `special-mechanics.md`에 상세 기록됨. 확장 여부는 Fienn 판단.
-
-**해결된 갭**: "버스트와 무관한 자체 쿨다운 반복 발동 스킬"은 2026-07-10에
-엔진 확장으로 해결됨 (`simulate_raid`의 `periodic_nukes`) — Helm: Aquamarine의
-Aegis Cannon Suppression Fire가 첫 적용 사례.
+갭 인벤토리(어떤 미표현 메커니즘이 어떤 유닛을 막고 있는지, 확장 규모/우선순위
+포함)는 [`engine-gaps.md`](engine-gaps.md)가 단일 출처다. 메커니즘 패턴별 정리는
+`.claude/skills/nikke-skill-encoding/references/special-mechanics.md` 참고.

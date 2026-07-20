@@ -44,6 +44,21 @@ from app.skill_rules.asuka_shikinami_langley_wille import (
     build_emergency_repair_rules,
 )
 from app.skill_rules.blanc import build_blanc_rules
+from app.skill_rules.diesel_winter_sweets import (
+    HIGHLIGHT_BURST_DELAY as _DIESEL_BURST_DELAY,
+    build_diesel_burst_dot,
+    build_diesel_full_burst_dot,
+    build_diesel_highlight_rules,
+    build_diesel_intro_rules,
+    build_diesel_resource_specs,
+)
+from app.skill_rules.bready import (
+    build_aftertaste_scheduled_nukes,
+    build_bready_lingering_rules,
+    build_bready_recommended_rules,
+    build_lingering_per_shot_rules,
+    build_recommended_per_shot_rules,
+)
 from app.skill_rules.brid_silent_track import build_brid_rules, build_journey_ahead_rules
 from app.skill_rules.chisato_nishikigi import build_chisato_per_shot_rules, build_chisato_rules
 from app.skill_rules.cinderella_crystal_wave import (
@@ -120,6 +135,13 @@ from app.skill_rules.ein import (
     build_ein_scheduled_nukes,
     feather_all_range_burst_percent,
 )
+from app.skill_rules.elegg_boom_and_shock import (
+    build_elegg_boom_and_shock_rules,
+    build_elegg_burst_delay,
+    build_elegg_ghost_resources,
+    build_ghostbuster_scheduled_nukes,
+    build_thirteen_ghosts_dynamic_hit_count_nukes,
+)
 from app.skill_rules.drake import (
     build_drake_rules,
     build_drake_signature_rules,
@@ -135,6 +157,12 @@ from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resource_scaled_nukes,
     build_guillotine_resources,
     build_guillotine_rules,
+)
+from app.skill_rules.mihara_bonding_chain import (
+    build_dragging_chain_resource_scaled_nukes,
+    build_ensnaring_chain_resources,
+    build_mihara_bonding_chain_rules,
+    build_mihara_scheduled_nukes,
 )
 from app.skill_rules.modernia import build_modernia_per_shot_rules, build_modernia_resources
 from app.skill_rules.helm import (
@@ -372,6 +400,17 @@ _BUILDERS = {
     "rei-ayanami-tentative-name": lambda sv: (build_rei_tentative_rules(sv), attack_state_burst_percent(sv)),
     "neon-vision-eye": lambda sv: (build_neon_vision_eye_rules(sv), None),  # burst is buff-only; damage is Firepower Explosion (per-shot)
     "ein": lambda sv: (build_ein_rules(sv), feather_all_range_burst_percent(sv)),
+    # 13 Ghosts fires via dynamic_hit_count_nukes (branching hit count), not a flat burst percent.
+    "elegg-boom-and-shock": lambda sv: (build_elegg_boom_and_shock_rules(sv), None),
+    # La La La's damage is its 9-tick DoT (see _RESOURCE_SCALED_NUKE_BUILDERS),
+    # not a flat burst nuke.
+    "diesel-winter-sweets-intro": lambda sv: (build_diesel_intro_rules(sv), None),
+    "diesel-winter-sweets-highlight": lambda sv: (build_diesel_highlight_rules(sv), None),
+    # Neither Taste mode has a burst nuke - New Flavor is buffs only.
+    "bready-lingering": lambda sv: (build_bready_lingering_rules(sv), None),
+    "bready-recommended": lambda sv: (build_bready_recommended_rules(sv), None),
+    # Bonding Pain is a resource-scaled DoT, not a flat burst nuke.
+    "mihara-bonding-chain": lambda sv: (build_mihara_bonding_chain_rules(sv), None),
     "raven": lambda sv: (build_raven_rules(sv), tempest_burst_percent(sv)),
     "sakura-bloom-in-summer": lambda sv: (
         build_sakura_bloom_in_summer_rules(sv), ephemeral_spender_burst_percent(sv)
@@ -415,9 +454,28 @@ ENCODED_SLUGS = tuple(_BUILDERS)
 # when it stays a candidate); deck search never seats two candidates of the
 # same base together.
 MODE_VARIANTS: dict[str, tuple[str, ...]] = {
+    "bready": ("bready-lingering", "bready-recommended"),
+    "diesel-winter-sweets": ("diesel-winter-sweets-intro", "diesel-winter-sweets-highlight"),
     "cinderella-crystal-wave": ("cinderella-crystal-wave-mg", "cinderella-crystal-wave-snipe"),
     "rapi-red-hood": ("rapi-red-hood", "rapi-red-hood-b1"),
 }
+
+# Units the player deliberately holds back rather than bursting the instant
+# the cooldown allows (see burst_cycle's `burst_delay`). Builders, not plain
+# specs, because a delay may be derived from the unit's own skill values -
+# Elegg waits out her ghost fill, whose length is cap x capture interval.
+_BURST_DELAY_BUILDERS = {
+    "diesel-winter-sweets-highlight": lambda sv: _DIESEL_BURST_DELAY,
+    "elegg-boom-and-shock": lambda sv: build_elegg_burst_delay(sv),
+}
+
+
+def get_burst_delay(slug, skill_values):
+    builder = _BURST_DELAY_BUILDERS.get(slug)
+    if builder is None:
+        return None
+    return builder(skill_values)
+
 
 # A variant seated in a different burst-rotation slot than the character's
 # nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
@@ -473,6 +531,11 @@ _BURST_DAMAGE_TYPES = {
 # entities so far.
 _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
+    "elegg-boom-and-shock": lambda sv: build_ghostbuster_scheduled_nukes(sv),  # capture at the ghost cap
+    "mihara-bonding-chain": lambda sv: build_mihara_scheduled_nukes(sv),  # chain attacks + Ensnaring DoT
+    "bready-lingering": lambda sv: build_aftertaste_scheduled_nukes(sv),  # Aftertaste DoT windows
+    "diesel-winter-sweets-intro": lambda sv: build_diesel_full_burst_dot(sv),  # per-Full-Burst DoT
+    "diesel-winter-sweets-highlight": lambda sv: build_diesel_full_burst_dot(sv),
     "little-mermaid": lambda sv: build_bubble_barrage_scheduled_nukes(sv),  # squad-wide 500-ammo counter
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
@@ -525,6 +588,8 @@ _PERIODIC_RULE_BUILDERS = {
 # (threshold, mode, [SkillRule]); mode is "after" or "every".
 _PER_SHOT_RULE_BUILDERS = {
     "ark-ranger-black": lambda sv: build_ark_ranger_per_shot_rules(sv),
+    "bready-lingering": lambda sv: build_lingering_per_shot_rules(sv),
+    "bready-recommended": lambda sv: build_recommended_per_shot_rules(sv),
     "jill-valentine": lambda sv: build_magnum_per_shot_rules(sv),
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),
@@ -575,6 +640,10 @@ _RESOURCE_SPEC_BUILDERS = {
     "cinderella": lambda sv: build_beautiful_resources(sv),
     "soda-twinkling-bunny": lambda sv: build_golden_chip_resources(sv),
     "maiden-ice-rose": lambda sv: build_mp_resources(sv),
+    "elegg-boom-and-shock": lambda sv: build_elegg_ghost_resources(sv),
+    "mihara-bonding-chain": lambda sv: build_ensnaring_chain_resources(sv),
+    "diesel-winter-sweets-intro": lambda sv: build_diesel_resource_specs(sv),
+    "diesel-winter-sweets-highlight": lambda sv: build_diesel_resource_specs(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named
@@ -586,9 +655,12 @@ _RESOURCE_SPEC_BUILDERS = {
 _RESOURCE_SCALED_NUKE_BUILDERS = {
     "ark-ranger-black": lambda sv: build_ark_ranger_dots(sv),
     "cinderella": lambda sv: build_glass_slippers_resource_scaled_nuke(sv),
+    "diesel-winter-sweets-intro": lambda sv: build_diesel_burst_dot(sv),
+    "diesel-winter-sweets-highlight": lambda sv: build_diesel_burst_dot(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
     "julia": lambda sv: build_climax_resource_scaled_nuke(sv),
     "mana": lambda sv: build_fatal_error_dot(sv),
+    "mihara-bonding-chain": lambda sv: build_dragging_chain_resource_scaled_nukes(sv),
     "sakura-bloom-in-summer": lambda sv: build_sakura_resource_scaled_nukes(sv),
 }
 
@@ -618,6 +690,7 @@ _RESOURCE_FILL_TRIGGERED_BUFF_BUILDERS = {
 _DYNAMIC_HIT_COUNT_NUKE_BUILDERS = {
     "maiden-ice-rose": lambda sv: build_diamond_dust_dynamic_hit_count_nukes(sv),
     "asuka-shikinami-langley-wille": lambda sv: build_annihilation_dynamic_hit_count_nukes(sv),
+    "elegg-boom-and-shock": lambda sv: build_thirteen_ghosts_dynamic_hit_count_nukes(sv),
 }
 
 
