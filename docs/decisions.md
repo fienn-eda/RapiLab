@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 완성도 배치: 낡은 보류 3건 정리 + Scarlet 즉시재장 + 라운드 그랜트 스택 캡
+- Date: 2026-07-20
+- Context: 미인코딩이 0명이 된 뒤, ⚠ 등급 42명의 보류 사유를 전수 조사했다. 대부분은 의도적 defer(생존/힐, `hit_rate`·Explosion Radius 같은 inert 스탯, 보스 1기라 무의미한 조건, 펠릿 카운터)였지만, **엔진이 이미 지원하는데 모듈 docstring이 낡아서 남아 있던 것**이 섞여 있었다.
+- Decision: 네 건을 처리했다. ① **Chisato·Neon** — 둘 다 docstring에 "pulse 경로엔 damage_type이 없다"고 적혀 있었으나 `instant_nuke_pulse_rule`의 `damage_type`은 2026-07-18 Scarlet 배치에서 배선됐고 bready·scarlet이 이미 쓰고 있었다. Chisato의 48노멀 넉을 `true`로(엔진이 true에 한해 `enemy_def=0`을 적용하고 `true_damage_up` 버킷을 태우므로 **이중 언더카운트**였다 — 그녀는 자기 배틀스타트 진댐+48.62%도 못 받고 있었다), Neon의 Firepower Explosion 2건을 `projectile_explosion`으로 교정. 후자는 그녀 단독으론 무영향이지만 PE를 버프하는 덱(Rapi: Red Hood)에서 저평가를 만들고 있었다. ② **Zwei** — 풀버스트 창 게이팅 per-shot 트리거가 없다는 보류였으나 `every_during_full_burst`는 2026-07-15에 들어왔다. 착수 전 "Frame Analysis는 'Pierce Attacks 101 상태' 게이팅이라 무기변형에 묶여 여전히 막혔을 것"이라고 추정했는데 **원문 확인 결과 틀렸다**: "Pierce Attacks 101"은 Overcharge Formula 두 번째 불릿의 **아군 버프 이름**이지 무기변형이 아니다. 둘 다 인코딩(E2E 스팟체크 +30.6%). ③ **Scarlet** — Asura의 "풀버스트 진입 시 매거진 100% 재장전"이 gap #11 계열로 보류돼 있었는데, 그 갭이 같은 날 해소됐다. **길이 0짜리 세그먼트**가 시간도 샷도 소비하지 않으면서 다음 구간을 새 탄창으로 시작시키므로 즉시 재장전이 된다(엔진 변경 0). 자체딜 +17.8%, 시퀀스 발동 +10.3%.
+- ④ **라운드 그랜트 스택 캡 (엔진 변경)**: Zwei의 Pierce Equation은 "stacks up to 3"인데 `RoundGrant`에 캡 개념이 없어 미적용이었다. 증상이 수신자 케이던스 의존이라 눈에 안 띄었다 — 탄창 무기 아군은 Zwei보다 빨리 쏴서 1개만 들고 있지만, **차지 무기(RL/SR) 아군은 재장전 공백 뒤 첫 샷에서 최대 5개를 한꺼번에 받는다**. 이건 과대평가이고 이 프로젝트의 floor 관례에 어긋나므로, 인코딩을 그대로 두지 않고 `RoundGrant`에 opt-in `cap`/`cap_group`을 추가해 **수신자별로** 최신 `cap`개만 남기도록 했다(가득 찬 스택에 새로 들어오면 가장 오래된 것이 밀려나는 게임 시맨틱과 일치하고, 버프가 원래보다 길게 유지되지 않는 방향).
+- Why: ①②는 "엔진이 못 한다"가 아니라 **문서가 코드보다 낡았던** 경우다. 프리미티브가 추가될 때 그것을 기다리던 기존 보류를 되짚지 않으면, 이미 가능한 일이 계속 defer로 남는다. ④는 반대 방향의 교훈 — 새 인코딩이 낙관 편향을 들여왔을 때 "그래도 없는 것보단 낫다"로 넘기지 않는다.
+- Consequences: ✅ 34 → 35명(Zwei). 캡은 opt-in이라 기존 무캡 소비자 5명(ada-wong·ein·jill-valentine·miranda·zwei의 다른 그랜트)은 타임라인이 바이트 단위로 동일함을 데미지 로그 해시 대조로 확인했다. 남은 구조적 보류는 Normal-Attack-only 버킷 · 펠릿 카운터 · 파츠 파괴 이벤트 · Pierce 키워드 — 전부 별도 설계가 필요하다.
+
 ## gap #11(강제 재장전/탄약 제거)은 신규 발사-타임라인 프리미티브 없이 해소 — 샷 0개 세그먼트 + 재장전 공식 양방향화 + `burst_anchored_buffs`
 - Date: 2026-07-20
 - Context: Milk: Blooming Bunny가 마지막 미인코딩 유닛이었고, 2026-07-17 이후 "발사 타임라인 자체를 스킬이 조작(규모 중~대)"으로 적혀 있던 gap #11에 막혀 있었다. 그녀의 Embarrassment는 진입 시 **탄약 100% 제거 + 강제 재장전(속도 50% 감소)**을 건다.

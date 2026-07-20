@@ -4,7 +4,11 @@ Wife. Values are the real max-level (dollskill for Zwei) figures from dotgg.
 from app.effects import EffectRegistry
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
 from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
-from app.skill_rules.zwei import build_zwei_rules
+from app.skill_rules.zwei import (
+    build_frame_analysis_resources,
+    build_pierce_equation_per_shot_rules,
+    build_zwei_rules,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 ALLY = {"slug": "ally", "element": "Fire"}
@@ -125,6 +129,64 @@ def test_zwei_full_burst_grants_squad_pierce_for_one_round():
     assert grants[0].scope == "squad"
     assert round(grants[0].value, 4) == 0.2013
     assert grants[0].shots == 1
+
+
+def test_zwei_pierce_equation_stacks_pierce_per_full_burst_normal_attack():
+    # Pierce Equation's second bullet: EVERY normal attack during Full Burst
+    # (slot 05 = 24.99%, slot 07 = "for 1 round"), so it rides the
+    # Full-Burst-window-gated per-shot trigger with a threshold of 1.
+    rules = build_pierce_equation_per_shot_rules(ZWEI)
+    assert len(rules) == 1
+    threshold, mode, skill_rules = rules[0]
+    assert (threshold, mode) == (1, "every_during_full_burst")
+
+    reg = EffectRegistry()
+    for rule in skill_rules:
+        rule.action(deck_ctx("zwei"), "zwei", 4.0, reg)
+    grants = reg.round_grants()
+    assert len(grants) == 1
+    assert grants[0].stat == "pierce_damage_up"
+    assert grants[0].scope == "squad"
+    assert round(grants[0].value, 4) == 0.2499
+    assert grants[0].shots == 1
+    # "stacks up to 3 time(s)" (slot 06) - an ally never holds more at once.
+    assert grants[0].cap == 3
+    assert grants[0].cap_group is not None
+
+
+def test_zwei_pierce_stack_cap_is_separate_from_her_uncapped_full_burst_grant():
+    # Both round grants are Zwei's own pierce_damage_up, but only the per-shot
+    # one caps, and its cap group must not swallow the Full Burst grant.
+    reg = EffectRegistry()
+    fire_trigger("full_burst_enter", {"zwei": build_zwei_rules(ZWEI)}, deck_ctx("zwei"), reg, 0.0)
+    for _, _, skill_rules in build_pierce_equation_per_shot_rules(ZWEI):
+        for rule in skill_rules:
+            rule.action(deck_ctx("zwei"), "zwei", 4.0, reg)
+    by_value = {round(g.value, 4): g for g in reg.round_grants()}
+    assert by_value[0.2013].cap is None       # Full Burst grant: uncapped
+    assert by_value[0.2499].cap == 3
+    assert by_value[0.2013].cap_group != by_value[0.2499].cap_group
+
+
+def test_zwei_frame_analysis_crit_stacks_are_capped_and_gated_on_pierce_attacks_101():
+    # Frame Analysis's second bullet: +15% Crit Rate (slot 05) per normal attack
+    # landed while Pierce Attacks 101 is up, 5 sec each (slot 07), capped at 3
+    # (slot 06). Pierce Attacks 101 is Overcharge Formula's all-ally buff, whose
+    # 10-sec duration (its slot 04) is the window the stacks may be gained in.
+    specs = build_frame_analysis_resources(ZWEI)
+    assert len(specs) == 1
+    spec = specs[0]
+    assert spec.name == "pierce_attacks_101"
+    assert spec.fill == ("per_shot_every_during_own_status_window", 1, 10.0)
+    assert spec.cap == 3
+    assert spec.resets == []
+
+    assert len(spec.buffs) == 1
+    buff = spec.buffs[0]
+    assert buff.stat == "crit_rate"
+    assert buff.scope == "squad"
+    assert buff.lifetime == 5.0
+    assert round(buff.value_fn(3), 4) == 0.45  # 3 stacks * 15%
 
 
 DKW = {
