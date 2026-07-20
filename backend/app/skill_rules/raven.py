@@ -173,3 +173,28 @@ def build_raven_scheduled_nukes(values):
                                  tick_interval, window, cap)
 
     return [{"schedule": schedule, "percent": percent, "damage_type": "sustained"}]
+
+
+# Fienn's in-game measurement (2026-07-21, 60fps frame-by-frame, no
+# charge-speed overload, reload buffed past 100% so reload could not intrude):
+# 5 hits across 8.11 sec, evenly spaced - one shot every 2.03 sec, against a
+# collected charge time of 1.0 sec.
+#
+# She and Scarlet: Black Shadow are the two "Rocket Launcher" units who
+# actually swing a sword, and both measure far slower than their data says
+# (Scarlet 0.73 vs 0.30). Community guides describe the same thing
+# qualitatively - Raven as "a slow girl overall (2 second reload, animation
+# lock)" and Scarlet as firing "~0.7s when left on auto" despite her listed
+# 0.3s - so the melee animation, not the charge, sets their cadence.
+#
+# Neon: Vision Eye, a real rocket launcher, measured 0.918 sec with a 9.47%
+# charge-speed overload, i.e. a ~1.0 sec base exactly as her data says. So this
+# is NOT a blanket data problem: it is per-unit, and these two need correcting
+# while ordinary RLs do not.
+MEASURED_CHARGE_INTERVAL_SEC = 8.11 / 4
+
+
+def build_raven_weapon_profile(values, weapon_stats):
+    """Her real firing cadence, measured rather than taken from the data file.
+    Everything else about the weapon is left untouched."""
+    return {**weapon_stats, "charge_time": MEASURED_CHARGE_INTERVAL_SEC}

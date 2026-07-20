@@ -120,6 +120,7 @@ from app.skill_rules.neon_vision_eye import (
 from app.skill_rules.raven import (
     build_raven_rules,
     build_raven_scheduled_nukes,
+    build_raven_weapon_profile,
     tempest_burst_percent,
 )
 from app.skill_rules.scarlet_black_shadow import (
@@ -548,9 +549,12 @@ VARIANT_BURST_TIERS: dict[str, int] = {
 # assembled profile in after skill values resolve.
 _WEAPON_PROFILE_OVERRIDE_BUILDERS = {
     "cinderella-crystal-wave-snipe": build_snipe_weapon_profile,
-    # Not a weapon SWAP - a correction. Her collected charge time disagrees
-    # with what she actually does in game; see the module's measurement note.
+    # Not weapon SWAPS - corrections. These two are the sword-wielding
+    # "Rocket Launchers", whose collected charge times disagree badly with what
+    # they actually do in game; see each module's measurement note. Ordinary
+    # RLs (verified on Neon: Vision Eye) match their data and are left alone.
     "scarlet-black-shadow": build_scarlet_weapon_profile,
+    "raven": build_raven_weapon_profile,
 }
 
 
