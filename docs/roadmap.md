@@ -785,6 +785,32 @@
 - [x] **SessionStart 훅 전파** — `.claude/settings.json`이 머지되어 이후 새 워크트리엔
       데이터 동기화가 자동 적용된다.
 
+### 완성도 배치 (2026-07-20, 2회차 감사)
+
+같은 날 1회차 배치가 "남은 구조적 보류는 4가지"라 결론냈으나 그 감사가 불완전했다.
+2회차 전수 재감사에서 **STALE 17건**(엔진이 이미 지원하는데 defer로 남은 것)을 확인.
+
+- [x] **배치 ① 프리미티브 재활용 (7유닛)** — anis-star(Shooting Stars +
+      차지시간 고정, 개인딜 +80.5%) · helm(애장품 풀차지 178.98% + Aegis 10라운드
+      차지댐, +72.9%, ⚠→✅) · ludmilla(Snowstorm 코어60넉, 코어 보스 +21.4%) ·
+      cinderella(Flawless Glass 차지속도, 발수 +144%) · crown(Royal Attire,
+      힐러 명단 유도 스크립트 신설) · liberalio(차지속도 면역) · mana(보류 사유만 정정).
+      엔진 확장 2건: `deck_contains_any` · `EffectRegistry.set_external_stat_immunity`.
+      `nikke-skill-encoding` SKILL.md의 "차지속도는 inert"(Phase S 이전 기술) 정정 포함.
+- [ ] **배치 ② 무기변형 잔여** — 2026-07-19에 `weapon_mode_schedules` 세그먼트가
+      착지했는데도 "무기변형 미지원"을 근거로 defer된 유닛들: `nayuta`(Memory
+      Incineration 10초 + 복합트리거 넉 530%, 임팩트 큼) · `takina-inoue`(버스트
+      변형 200.64%) · `zwei`(Overcharge Formula 자기 변형) · `moran` · `velvet`
+      (변형딜, 저가치) · `laplace` base(5초 변형, 실측 없음 — Fienn 확인 필요) ·
+      `modernia`(New World Destroy Mode + 15초 무한탄창).
+      **주의: 세그먼트는 재장전을 하지 않는다** — 창 길이 > 탄창 지속이면 과대평가.
+- [ ] **배치 ③ `rosanna-chic-ocean`** — Spina di Rosa 전체(약 6300%/180초)가 보류.
+      `scheduled_nukes`의 임의 스케줄 함수로 15초 on/off 듀티사이클 표현 가능.
+      그녀의 유일한 sustained 인스턴스라 **자기 sustained 버프도 함께 inert** 상태.
+- [ ] **엔진 질문: 차지속도 공식 방향** — `attack_rate`는 `차지시간÷(1+속도)`,
+      인게임은 `차지시간×(1−속도)`(Fienn, 커뮤니티 실험). 원시 퍼센트를 넘기는 기존
+      소비자 전부 과소평가. 전 덱 수치가 움직이므로 Fienn 승인 후 착수.
+
 ### 정리/보강
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
       (docs-keeper 지적)
