@@ -26,6 +26,26 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - 교훈: **새 refreshing 버프를 추가할 때, 그 유닛이 같은 (stat, scope)를 다른
   불릿에서도 주는지 반드시 확인할 것.** 안 그러면 새 인코딩이 기존 인코딩을
   조용히 무효화한다.
+- **후속 감사 (2026-07-21, 역방향 점검): 옵셔널 그룹으로는 부족했다.** 위 수정은
+  `refreshing_buff_rule` 경로만 덮었고, 손으로 쓴 `add_refreshing` 호출부는 전부
+  그룹을 안 붙여 **하나의 "무그룹" 양동이**를 계속 공유했다. 게다가 그 양동이에는
+  평범한 `registry.add`로 넣은 효과까지 들어간다 — refreshing 불릿이 절대 건드리면
+  안 되는 것들이다. **Grave가 Liberalio와 똑같은 버그를 그대로 안고 있었다**:
+  Overheat I의 영구 자버프 ATK +15.48%(`add`)를, 창(window) 한정 Overheat II의
+  refreshing ATK +20.66%가 첫 발동에서 잘라 없앴다. 기존 테스트가 못 잡은 이유는
+  **Overheat I과 II를 서로 다른 registry에서 검증**했기 때문 — 한 registry에 같이
+  넣어야만 드러난다.
+- 최종 해법: **`add_refreshing`은 이제 `refresh_group`이 없으면 `ValueError`를 던진다.**
+  한 사례를 고치는 대신 이 버그 부류 자체를 도달 불가능하게 만든 것 — 불릿 이름을
+  붙이는 게 호출자의 명시적 결정이 되고, `add`로 넣은 효과는 group `None`을 유지하므로
+  어떤 refresher도 그걸 무너뜨릴 수 없다. 유닛의 연속 버프를 자기 트리거로 **일부러**
+  끝내는 경우는 별도의 `truncate_open_ended`를 쓴다.
+- 그룹 부여 단위가 중요하다: 헬퍼는 **룰 인스턴스마다**, `escalating_buff_rule`은
+  **티어마다**(티어는 누적이므로 같은 stat을 주는 두 티어는 합쳐져야지 서로를 대체하면
+  안 된다), `raid_simulator`의 resource-fill 버프는 **spec마다**.
+- 영향: 72개 슬러그 스윕에서 **Grave 단독 +1.07%**, 나머지 71개 불변. 수정이 표적만
+  건드렸다는 증거다. 이 A/B는 `scripts/sweep_slug_damage.py`로 재현한다(고정 셸에
+  대상 유닛 한 명씩 넣어 측정 → `--compare before.json after.json`).
 
 ## Damage formula
 - **The attack/skill coefficient scales the whole Base Damage, not the ATK stat.** A normal attack's "% of ATK" or a skill's "X% of final ATK" multiplies Base Damage *after* defense is subtracted — pass raw summary ATK plus a separate `attack_coefficient` to `calculate_damage`. Folding the coefficient into ATK mis-scales the defense subtraction and any flat ATK (~14% overstatement against a defended boss, and unevenly across Nikkes since coefficients range from ~5% normal attacks to ~8000% bursts, which would skew deck rankings). See `damage_formula.calculate_damage`.
@@ -52,7 +72,7 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - **`pierce_damage_up` is a general damage-up term.** It's applied to every hit, not gated to actual pierce hits — a known simplification.
 - **Caster-scaled buffs use the base character-info ATK.** "ATK X% of caster's ATK" multiplies the caster's base ATK (gear + breakthrough + cube only; excludes overload and other skill effects), modeled as `flat_atk` via `values["caster_atk"]`, which `roster.assemble_simulation_inputs` injects.
 - **Steady-state approximation for ramping buffs.** Escalating "previous effects trigger repeatedly" or "stacks up to N" effects are encoded at their max/settled value — a 3-minute raid reaches it almost immediately. Documented per module. **Valid specifically when the fill cadence far exceeds the stack's own decay/reset window** — check the numbers, don't assume: Quency's Explore Route stage chain (3 stages, each gated on the previous being AT its cap) fills every 2 normal attacks, and her SMG fires 20/s, so each stage's ~0.1s fill cadence is far faster than any stage's own 0.5-2s decay window — once a stage first caps, it stays capped continuously for the rest of the fight, making the real ~2.5s ramp-to-full negligible against a 180s raid. See `skill_rules/quency_escape_queen.py`.
-- **A buff re-applied on every trigger (per-shot/periodic) silently STACKS unless you opt into refreshing.** `EffectRegistry.total_for` sums all active effects, and `buff_rule`/`registry.add` adds a fresh instance each time, so a multi-second-duration buff re-applied on every qualifying shot (e.g. "ATK +X% for 3s on every Full Charge") overlaps and sums — inflated a real unit's numbers ~2x (SR fire rate) to ~13x (AR fire rate) over a fight before this was caught. If the in-game wording is a duration refresh (not an actual stacking counter), use `refreshing_buff_rule` (`EffectRegistry.add_refreshing`) instead — it truncates that source's still-active same-`(stat, scope)` instance rather than stacking a new one. See `skill_rules/prika.py`, `skill_rules/mint.py`.
+- **A buff re-applied on every trigger (per-shot/periodic) silently STACKS unless you opt into refreshing.** `EffectRegistry.total_for` sums all active effects, and `buff_rule`/`registry.add` adds a fresh instance each time, so a multi-second-duration buff re-applied on every qualifying shot (e.g. "ATK +X% for 3s on every Full Charge") overlaps and sums — inflated a real unit's numbers ~2x (SR fire rate) to ~13x (AR fire rate) over a fight before this was caught. If the in-game wording is a duration refresh (not an actual stacking counter), use `refreshing_buff_rule` (`EffectRegistry.add_refreshing`) instead — it truncates that source's still-active same-`(stat, scope, refresh_group)` instance rather than stacking a new one. The `refresh_group` (one per rule instance, required) is what keeps it from also truncating the SAME unit's other buffs on that stat — see the refreshing-buff section at the top of this file. See `skill_rules/prika.py`, `skill_rules/mint.py`.
 - **"For N round(s)" is a bullet-count duration, not seconds or a burst cycle — confirm with Fienn whenever a duration unit is ambiguous.** Easy to misread as continuous uptime or a per-cycle refresh; it actually means the buff is consumed by the affected ally's next N normal-attack shots, then gone (re-granted next cycle). Modeled via `round_buff_rule`'s `RoundGrant`, not a live `Effect` — see `docs/decisions.md` ("Bullet-count round buffs...") and `nikke-skill-encoding/references/special-mechanics.md` ("For N round(s) is a bullet-count duration") for the mechanism.
 - **A skill's stated ammo/round cost can be pure ACCOUNTING for a consumption-counting synergy elsewhere, not actual magazine drain — check what the unit really fires, not what the text charges other counters for.** Cinderella: Crystal Wave's Snipe full charge reads "expends 40 rounds," but the unit fires ONE round per full charge (Fienn's ruling, 2026-07-19) — the same accounting-only pattern as Velvet's ammo pouch. `cinderella_crystal_wave.py`'s Snipe weapon profile fires a real single-round SR shot; the 40-round figure is unconsumed here (it only feeds the deferred burst-gauge-fill mechanic). Cross-check this before wiring any squad ammo-expended counter to a new source — Little Mermaid's Bubble Barrage currently assumes "one shot = one round," which an accounting-only consumer like Snipe (or Velvet's pouch) would silently inflate if ever counted. See `skill_rules/little_mermaid.py`'s cross-note.
 - **The timed-Effect-with-window-to-next-shot trick lets a shot-count buff reuse the existing seconds-based `Effect` + `total_for`, with no new duration primitive.** `applied_at` = the first covered shot's time; `duration` = (next-uncovered-shot time − applied_at), or fight end if there is no later shot. Reusable pattern for any future "expires after N shots" mechanic. See `raid_simulator`'s shot loop, `round_buff_rule`.
