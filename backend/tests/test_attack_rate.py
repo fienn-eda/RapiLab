@@ -6,6 +6,7 @@ from app.attack_rate import (
     charge_first_bullet_times,
     charge_last_bullet_times,
     first_bullet_shot_times,
+    reload_time_with_speed,
     generate_charge_shot_times,
     generate_magazine_shot_times,
     generate_segmented_shots,
@@ -455,3 +456,26 @@ def test_magazine_base_resumes_at_the_same_instant_as_a_charged_segments_final_s
                       if r.time == 15.0 and r.damage_percent == AR_BASE["damage_percent"]]
     assert len(resumed_first) == 1
     assert resumed_first[0].is_first_bullet
+
+
+def test_reload_speed_buff_shortens_the_reload_reciprocally():
+    assert reload_time_with_speed(2.0, 0.5) == pytest.approx(2.0 / 1.5)
+    assert reload_time_with_speed(2.0, 1.0) == pytest.approx(1.0)
+
+
+def test_reload_speed_reduction_lengthens_the_reload_symmetrically():
+    # Milk: Blooming Bunny's forced reload - "reload speed fixed at a 50%
+    # reduction" measures 3s against her 2s base in game (Fienn, 2026-07-20),
+    # i.e. 1.5x. Dividing by (1 + speed) would give 4s, doubling it instead.
+    assert reload_time_with_speed(2.0, -0.5) == pytest.approx(3.0)
+
+
+def test_reload_speed_directions_are_reciprocal_mirrors():
+    # +p and -p scale the reload by 1/(1+p) and (1+p) - symmetric in log space,
+    # which is what makes the two branches one formula rather than two rules.
+    for p in (0.25, 0.5, 0.8):
+        assert reload_time_with_speed(2.0, p) * reload_time_with_speed(2.0, -p) == pytest.approx(4.0)
+
+
+def test_reload_speed_zero_is_the_identity_on_both_branches():
+    assert reload_time_with_speed(2.0, 0.0) == pytest.approx(2.0)

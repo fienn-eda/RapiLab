@@ -51,6 +51,26 @@ def _zero(_time):
     return 0.0
 
 
+def reload_time_with_speed(reload_time, reload_speed_percent):
+    """Reload TIME from a reload-SPEED modifier, in both directions.
+
+    Speed and time are reciprocal, and the game's two directions are
+    symmetric: +50% speed reloads in 1/1.5 of the time, -50% speed takes 1.5x
+    as long. Plain `time / (1 + speed)` only models the first direction - at
+    speed = -0.5 it DOUBLES the reload instead of adding half. Milk: Blooming
+    Bunny's forced reload is the first negative consumer in the roster and
+    measures 3s against her 2s base, not 4s (Fienn, 2026-07-20).
+
+    The negative branch rests on that single in-game observation, so it is
+    anchored, not proven across magnitudes - revisit if a unit with a
+    different reduction ever disagrees. Every pre-existing consumer buffs
+    reload speed upward, so the positive branch is unchanged arithmetic.
+    """
+    if reload_speed_percent >= 0:
+        return reload_time / (1 + reload_speed_percent)
+    return reload_time * (1 - reload_speed_percent)
+
+
 def rate_of_fire_for_weapon(weapon: str) -> float:
     return RATE_OF_FIRE_60FPS[weapon]
 
@@ -76,7 +96,7 @@ def generate_magazine_shot_times(
                 return shots
             shots.append(shot_time)
         magazine_empty_at = magazine_start + magazine_size * shot_interval
-        actual_reload_time = reload_time / (1 + reload_speed_percent_at(magazine_empty_at))
+        actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(magazine_empty_at))
         magazine_start = magazine_empty_at + actual_reload_time
 
     return shots
@@ -104,7 +124,7 @@ def generate_charge_shot_times(
                 return shots
             shots.append(shot_time)
             last_shot_time = shot_time
-        actual_reload_time = reload_time / (1 + reload_speed_percent_at(last_shot_time))
+        actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(last_shot_time))
         magazine_start = last_shot_time + actual_reload_time
 
     return shots
@@ -168,7 +188,7 @@ def magazine_last_bullet_times(
             return last_bullets
         last_bullets.add(last_round_time)
         magazine_empty_at = magazine_start + magazine_size * shot_interval
-        actual_reload_time = reload_time / (1 + reload_speed_percent_at(magazine_empty_at))
+        actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(magazine_empty_at))
         magazine_start = magazine_empty_at + actual_reload_time
 
     return last_bullets
@@ -197,7 +217,7 @@ def charge_last_bullet_times(
         if last_round_time >= fight_duration:
             return last_bullets
         last_bullets.add(last_round_time)
-        actual_reload_time = reload_time / (1 + reload_speed_percent_at(last_round_time))
+        actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(last_round_time))
         magazine_start = last_round_time + actual_reload_time
 
     return last_bullets
@@ -224,7 +244,7 @@ def magazine_first_bullet_times(
         shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
         magazine_size = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         magazine_empty_at = magazine_start + magazine_size * shot_interval
-        actual_reload_time = reload_time / (1 + reload_speed_percent_at(magazine_empty_at))
+        actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(magazine_empty_at))
         magazine_start = magazine_empty_at + actual_reload_time
     return first_bullets
 
@@ -251,7 +271,7 @@ def charge_first_bullet_times(
         first_bullets.add(first_shot)
         magazine_size = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         last_round_time = magazine_start + effective_charge + (magazine_size - 1) * effective_charge
-        actual_reload_time = reload_time / (1 + reload_speed_percent_at(last_round_time))
+        actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(last_round_time))
         magazine_start = last_round_time + actual_reload_time
     return first_bullets
 
@@ -356,7 +376,7 @@ def _base_shot_records(base, window_start, window_end,
                     shot_time, weapon, base["damage_percent"], bonus,
                     is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1)))
                 last_shot_time = shot_time
-            actual_reload = base["reload_time"] / (1 + reload_speed_percent_at(last_shot_time))
+            actual_reload = reload_time_with_speed(base["reload_time"], reload_speed_percent_at(last_shot_time))
             magazine_start = last_shot_time + actual_reload
     else:
         rate = rate_of_fire_for_weapon(weapon)
@@ -372,7 +392,7 @@ def _base_shot_records(base, window_start, window_end,
                     shot_time, weapon, base["damage_percent"], 0.0,
                     is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1)))
             magazine_empty_at = magazine_start + magazine_size * interval
-            actual_reload = base["reload_time"] / (1 + reload_speed_percent_at(magazine_empty_at))
+            actual_reload = reload_time_with_speed(base["reload_time"], reload_speed_percent_at(magazine_empty_at))
             magazine_start = magazine_empty_at + actual_reload
     return records
 

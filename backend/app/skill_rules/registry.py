@@ -142,6 +142,18 @@ from app.skill_rules.elegg_boom_and_shock import (
     build_ghostbuster_scheduled_nukes,
     build_thirteen_ghosts_dynamic_hit_count_nukes,
 )
+from app.skill_rules.eve import (
+    COUNTER_CHAIN_HIT_COUNT,
+    build_eve_rules,
+    build_unstable_energy_per_shot_rules,
+    counter_chain_burst_percent,
+)
+from app.skill_rules.milk_blooming_bunny import (
+    build_milk_burst_anchored_buffs,
+    build_milk_rules,
+    build_milk_scheduled_nukes,
+    build_milk_weapon_mode_schedule,
+)
 from app.skill_rules.drake import (
     build_drake_rules,
     build_drake_signature_rules,
@@ -382,6 +394,9 @@ _BUILDERS = {
     "liberalio": lambda sv: (build_liberalio_rules(sv), submerged_world_burst_percent(sv)),
     "ludmilla-winter-owner": lambda sv: (build_ludmilla_rules(sv), None),
     "mana": _build_mana,
+    # Her burst deals no direct damage - Overconfident is buffs plus the
+    # Distributed ticks in _SCHEDULED_NUKE_BUILDERS.
+    "milk-blooming-bunny": lambda sv: (build_milk_rules(sv), None),
     "chisato-nishikigi": lambda sv: (build_chisato_rules(sv), None),
     "maiden-ice-rose": _build_maiden,
     "asuka-shikinami-langley-wille": _build_asuka,
@@ -400,6 +415,7 @@ _BUILDERS = {
     "rei-ayanami-tentative-name": lambda sv: (build_rei_tentative_rules(sv), attack_state_burst_percent(sv)),
     "neon-vision-eye": lambda sv: (build_neon_vision_eye_rules(sv), None),  # burst is buff-only; damage is Firepower Explosion (per-shot)
     "ein": lambda sv: (build_ein_rules(sv), feather_all_range_burst_percent(sv)),
+    "eve": lambda sv: (build_eve_rules(sv), counter_chain_burst_percent(sv)),
     # 13 Ghosts fires via dynamic_hit_count_nukes (branching hit count), not a flat burst percent.
     "elegg-boom-and-shock": lambda sv: (build_elegg_boom_and_shock_rules(sv), None),
     # La La La's damage is its 9-tick DoT (see _RESOURCE_SCALED_NUKE_BUILDERS),
@@ -470,6 +486,24 @@ _BURST_DELAY_BUILDERS = {
 }
 
 
+# A Nikke whose own burst grants a buff at an OFFSET from the burst, possibly
+# lasting until that unit's NEXT own burst rather than a fixed duration - see
+# raid_simulator's `burst_anchored_buffs` param and UNTIL_NEXT_OWN_BURST. Each
+# entry returns a list of spec dicts: {"offset", "stat", "value", "scope",
+# "duration"}.
+_BURST_ANCHORED_BUFF_BUILDERS = {
+    "milk-blooming-bunny": lambda sv: build_milk_burst_anchored_buffs(sv),
+}
+
+
+def get_burst_anchored_buffs(slug, skill_values):
+    """List of burst-anchored-buff spec dicts for a Nikke whose own burst opens
+    a state at an offset (see raid_simulator's `burst_anchored_buffs`), or None
+    for the vast majority without one."""
+    builder = _BURST_ANCHORED_BUFF_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
 def get_burst_delay(slug, skill_values):
     builder = _BURST_DELAY_BUILDERS.get(slug)
     if builder is None:
@@ -533,6 +567,7 @@ _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
     "elegg-boom-and-shock": lambda sv: build_ghostbuster_scheduled_nukes(sv),  # capture at the ghost cap
     "mihara-bonding-chain": lambda sv: build_mihara_scheduled_nukes(sv),  # chain attacks + Ensnaring DoT
+    "milk-blooming-bunny": lambda sv: build_milk_scheduled_nukes(sv),  # Embarrassment entry + Overconfident ticks
     "bready-lingering": lambda sv: build_aftertaste_scheduled_nukes(sv),  # Aftertaste DoT windows
     "diesel-winter-sweets-intro": lambda sv: build_diesel_full_burst_dot(sv),  # per-Full-Burst DoT
     "diesel-winter-sweets-highlight": lambda sv: build_diesel_full_burst_dot(sv),
@@ -553,6 +588,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "snow-white-heavy-arms": lambda sv: build_fully_active_weapon_mode_schedule(sv),  # 2-shot 3.2s-charge segment per own-burst
     "maxwell": lambda sv: build_pierce_shot_weapon_mode_schedule(sv),  # single 2s-charge cannon shot per own-burst
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
+    "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at
@@ -562,6 +598,7 @@ _BURST_HIT_COUNTS = {
     "julia-signature": julia_signature.CLIMAX_HIT_COUNT,
     "cinderella": GLASS_SLIPPERS_HIT_COUNT,
     "sakura-bloom-in-summer": EPHEMERAL_SPENDER_HIT_COUNT,
+    "eve": COUNTER_CHAIN_HIT_COUNT,
 }
 
 # A Nikke with a Skill 1/2 on its own cooldown (fires at t=cooldown, 2*cooldown,
@@ -596,6 +633,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "ein": lambda sv: build_ein_per_shot_rules(sv),
+    "eve": lambda sv: build_unstable_energy_per_shot_rules(sv),
     "anis-sparkling-summer": lambda sv: build_sparkling_missile_per_shot_rules(sv["sparkling_missile"]),
     "grave": lambda sv: build_overheat_per_shot_rules(sv),
     "rei-ayanami": lambda sv: build_preemptive_subdual_per_shot_rules(sv),
@@ -603,6 +641,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "neon-vision-eye": lambda sv: build_firepower_explosion_per_shot_rules(sv),
     "drake": lambda sv: build_thunderbolt_per_shot_rules(sv),
     "drake-signature": lambda sv: build_thunderbolt_signature_per_shot_rules(sv),
+    "julia-signature": lambda sv: julia_signature.build_marcato_per_shot_rules(sv),
     "laplace": lambda sv: build_hero_bomber_per_shot_rules(sv),
     "laplace-signature": lambda sv: laplace_signature.build_hero_bomber_signature_per_shot_rules(sv),
     "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),
@@ -635,6 +674,7 @@ _PER_SHOT_RULE_BUILDERS = {
 _RESOURCE_SPEC_BUILDERS = {
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_resources(sv),
     "julia": lambda sv: build_crescendo_resources(sv),
+    "julia-signature": lambda sv: julia_signature.build_crescendo_signature_resources(sv),
     "modernia": lambda sv: build_modernia_resources(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
     "cinderella": lambda sv: build_beautiful_resources(sv),
@@ -659,6 +699,7 @@ _RESOURCE_SCALED_NUKE_BUILDERS = {
     "diesel-winter-sweets-highlight": lambda sv: build_diesel_burst_dot(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
     "julia": lambda sv: build_climax_resource_scaled_nuke(sv),
+    "julia-signature": lambda sv: julia_signature.build_climax_signature_resource_scaled_nuke(sv),
     "mana": lambda sv: build_fatal_error_dot(sv),
     "mihara-bonding-chain": lambda sv: build_dragging_chain_resource_scaled_nukes(sv),
     "sakura-bloom-in-summer": lambda sv: build_sakura_resource_scaled_nukes(sv),

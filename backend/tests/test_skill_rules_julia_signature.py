@@ -6,8 +6,11 @@ figures from lootandwaifus, slots numbered left-to-right per skill.
 from app.effects import EffectRegistry
 from app.skill_rules.julia_signature import (
     CLIMAX_HIT_COUNT,
+    build_climax_signature_resource_scaled_nuke,
+    build_crescendo_signature_resources,
     build_decrescendo_battle_start_rules,
     build_decrescendo_periodic_rules,
+    build_marcato_per_shot_rules,
     climax_burst_percent,
 )
 from app.squad_engine import SquadContext, SquadMember
@@ -74,7 +77,52 @@ def test_decrescendo_battle_start_rules_apply_same_buffs_at_t0():
     assert round(reg.total_for("atk_percent", JULIA, now=0.0), 4) == 0.20
 
 
+def test_crescendo_fills_on_expected_crits_and_caps_at_five():
+    (spec,) = build_crescendo_signature_resources(JULIA_SIGNATURE_VALUES)
+
+    assert spec.name == "crescendo"
+    # The whole point of the 2026-07-20 reopening: a crit-count fill, not the
+    # last-bullet fill base Julia uses.
+    assert spec.fill == ("per_critical_hit_every", 6.0)
+    assert spec.cap == 5
+
+
+def test_each_crescendo_stack_is_crit_damage_for_fifteen_seconds():
+    (spec,) = build_crescendo_signature_resources(JULIA_SIGNATURE_VALUES)
+    (buff,) = spec.buffs
+
+    assert buff.stat == "other_critical_damage_sources"
+    assert buff.scope == "self"
+    assert buff.lifetime == 15.0
+    assert round(buff.value_fn(1), 4) == 0.2479
+    assert round(buff.value_fn(5), 4) == round(0.2479 * 5, 4)
+
+
+def test_marcato_fires_every_eight_expected_crits_as_additional_damage():
+    (threshold, mode, rules), = build_marcato_per_shot_rules(JULIA_SIGNATURE_VALUES)
+
+    assert (threshold, mode) == (8.0, "every_n_critical_hits")
+    ctx = make_context()
+    reg = EffectRegistry()
+    for rule in rules:
+        rule.action(ctx, "julia-signature", 30.0, reg)
+    (pulse,) = reg.drain_pulses("instant_damage_percent")
+    assert pulse.value == 88.0
+    # "as additional damage" -> opts into the Full Burst Bonus
+    assert pulse.full_burst_bonus_eligible
+
+
+def test_climax_rider_only_pays_out_at_max_crescendo_stacks():
+    (spec,) = build_climax_signature_resource_scaled_nuke(JULIA_SIGNATURE_VALUES)
+
+    assert spec["resource"] == "crescendo"
+    assert spec["base_percent"] == 544.5
+    assert spec["scale_fn"](5) == 1.0
+    assert spec["scale_fn"](4) == 0.0
+
+
 # Module-level fixture aliases so the assembly verification harness
 # (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
 DECRESCENDO = JULIA_SIGNATURE_VALUES["decrescendo"]
+CRESCENDO = JULIA_SIGNATURE_VALUES["crescendo"]
 CLIMAX = JULIA_SIGNATURE_VALUES["climax"]

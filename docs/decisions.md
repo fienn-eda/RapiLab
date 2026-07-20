@@ -5,6 +5,23 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## gap #11(강제 재장전/탄약 제거)은 신규 발사-타임라인 프리미티브 없이 해소 — 샷 0개 세그먼트 + 재장전 공식 양방향화 + `burst_anchored_buffs`
+- Date: 2026-07-20
+- Context: Milk: Blooming Bunny가 마지막 미인코딩 유닛이었고, 2026-07-17 이후 "발사 타임라인 자체를 스킬이 조작(규모 중~대)"으로 적혀 있던 gap #11에 막혀 있었다. 그녀의 Embarrassment는 진입 시 **탄약 100% 제거 + 강제 재장전(속도 50% 감소)**을 건다.
+- Alternatives considered: (a) 기록대로 발사 타임라인에 개입하는 재장전 이벤트 프리미티브를 신설. (b) Embarrassment를 통째로 defer하고 버프만 얇게 인코딩 — 그 상태가 킷의 심장이라 정직하지 않고, 재장전 다운타임을 빼면 **낙관 방향**으로 틀린다(ceiling). (c) 상태를 정적 무기 프로필(탄창 1발)로 접기 — 착수 초기에 내가 제안했다가 **Fienn 정정으로 폐기**: 그녀는 상시 루프가 아니라 자기 버스트 사이클과 교대한다. (d) 기존 프리미티브 조합.
+- Decision: (d). 세 가지 사실이 확장 규모를 무너뜨렸다. ① 진입 조건이 "상태가 아닐 때"이고 Fienn 판정(2026-07-20)상 **버스트 면역으로만 해제**되므로, 진입은 자기 버스트 1회당 정확히 1회 — 매 풀차지 루프가 아니다. ② `_base_shot_records`가 각 구간을 `window_start`에서 **새 탄창으로 재시작**하므로(무기변형 v1의 resume 시맨틱), "탄약 제거 + 강제 재장전"은 곧 **샷 0개짜리 `weapon_mode_schedules` 세그먼트**다. ③ 재장전 속도 조작은 `reload_speed_percent` 콜러블로 이미 배선돼 있었다.
+- 실제로 필요했던 소규모 확장 2건: **`reload_time_with_speed`** — 속도 감소를 시간 증가의 거울로 모델(`speed ≥ 0 → base/(1+s)`, `speed < 0 → base×(1−s)`). 기존 공식은 −50%에서 4초를 줬지만 Fienn 인게임 수치는 그녀의 2초 기본에 대해 **3초**다. 기존 소비자가 전부 +버프뿐이라 이 오류가 드러난 적이 없었다(음수 분기는 관측 한 점에만 앵커돼 있음을 docstring에 명시). **`burst_anchored_buffs`** — 버스트 시각 + 오프셋에 버프를 걸고 지속시간을 `UNTIL_NEXT_OWN_BURST`로 지정할 수 있는 소형 패스. `own_burst_activate` 규칙으로는 불가능한데, 그 규칙이 발동하는 시점엔 버스트 사이클 순회가 진행 중이라 **다음 버스트 시각이 아직 없기 때문**이다. 버스트 시각이 확정된 직후이자 샷 루프 **이전**에 배치해, 여기 놓인 버프가 데미지뿐 아니라 탄창/재장전/케이던스 콜러블에도 보이게 했다.
+- Why: 세그먼트 프로필에 `charge_time`이 아니라 `rate_of_fire`를 쓴 것도 의도적이다 — 명시 rate 프로필은 케이던스 버프를 받지 않으므로, 아군 차지속도 버프가 빈 창을 줄여 유령 샷을 흘리는 경로가 구조적으로 막힌다.
+- Consequences: **수집된 유닛 전원 인코딩 완료(미인코딩 0명).** E2E 검증: 강제재장 창에 샷 0개, 직전에 끊기고 창 종료 후 차지 1회를 거쳐 새 탄창으로 재개. Elegg·Mihara의 Pattern B 오분류와 같은 교훈이 반복됐다 — "엔진이 못 한다"를 실제 운용 빈도와 기존 프리미티브의 부수 효과에 대조하기 전에 확정하면 확장 규모를 크게 과대평가한다. 보류로 남은 건 Pierce 키워드(엔진에 per-hit pierce 플래그 없음, 기존 관례)뿐.
+
+## "N회 크리티컬 히트 후" 트리거를 기대-크리 누적기(`every_n_critical_hits`)로 해소 — 2026-07-12의 "영구 defer" 판정 철회
+- Date: 2026-07-20
+- Context: EVE의 주력 딜 Unstable Energy가 "노멀공격으로 크리티컬 44회 적중" 트리거다. 2026-07-12 Julia 시그니처(Crescendo/Marcato) 인코딩 때 이 문구를 **영구 defer**로 판정했었다 — 엔진이 크리를 기대값으로만 다루고(히트마다 `crit_rate` 배율) per-hit RNG를 굴리지 않으므로 "이 샷이 크리였나"라는 이벤트 자체가 없기 때문. 그 판정이 맞다면 EVE는 킷의 심장이 빠진 얇은 인코딩만 가능했다.
+- Alternatives considered: (a) 판정 유지, 영구 defer — Unstable Energy(240%×3연타)와 Electric 받댐 라이더를 통째로 누락. (b) 빌드시점 고정 발수 환산 — 44 / 0.75 = 59발마다. 단순하고 확장 불필요하지만 **덱의 크리율 버프를 전부 무시**한다(Miranda·Zwei·Julia 등이 있어도 발동 빈도가 그대로). (c) 샷마다 라이브 크리율을 누적하는 기대-크리 누적기. (d) 실제 per-hit 크리 RNG 도입 — 엔진의 결정론적 기대값 모델을 통째로 갈아엎는 일이라 검토만.
+- Decision (Fienn, 2026-07-20): (c). Fienn의 수용 조건이 정확히 "기대값으로 계산하는 건 합리적인데, 덱에 크리율 버프가 적용이 안 되는 건 문제"였고, 이게 (b)를 배제하고 (c)를 규정한다. `per_shot_rules`에 `every_n_critical_hits` 모드 추가(`raid_simulator.py`): 샷마다 `min(1.0, base_crit_rate + registry.total_for("crit_rate", target, shot_time))`을 누적기에 더하고, 임계 N을 넘을 때마다 발동시키며 나머지를 이월한다.
+- Why: 이벤트를 새로 만드는 게 아니라 **딜 경로가 이미 하고 있는 기대값 환산을 카운터에도 똑같이 적용**하는 것이라 엔진의 크리 철학과 일관된다. 라이브 조회라 덱 크리 버프가 자연스럽게 발동 케이던스를 바꾼다 — 엔진 테스트로 고정(50%→100% 크리율이 발동 간격을 정확히 절반으로 만든다).
+- Consequences: EVE 인코딩 가능. **Julia(시그니처)의 Crescendo/Marcato도 같은 날 인코딩 완료 — "영구 defer" 딱지가 떨어졌다. 단 per-shot 모드만으로는 부족했다: Crescendo가 캡 5 스택이라 같은 누적기를 쓰는 자원 fill `("per_critical_hit_every", N)`를 함께 추가했고, 두 경로는 `_expected_crit_positions`를 공유한다**(`docs/insights.md`의 해당 항목도 정정됨 — 그 문서에 남아 있던 "not a to-do for a future extension"은 이제 틀린 서술이었다). 알려진 한계 2건: ① 샷 루프가 유닛별로 돌기 때문에 **나중에 처리되는 아군의 per-shot 규칙이 거는 크리 버프는 안 보인다**(버스트/풀버스트 트리거 크리 버프는 모든 샷 루프보다 먼저 등록되므로 보임 — 통상적인 크리 버퍼는 대부분 여기 해당). ② 누적 비교에 `1e-9` 허용오차가 필요하다 — 0.3을 10번 더하면 2.9999999999999996이 되어 발동이 한 샷 밀린다(`burst_cycle`의 `last + cooldown` 반올림 함정과 같은 계열).
+
 ## Phase 7 sub-project 4: the caller-side session comes from the USER's own browser via a bookmarklet, not an operator account; roster storage stays client-side; sub-project 3 (ownership proof) is dissolved
 - Date: 2026-07-19
 - Context: the Stage 1 reconnaissance entry below established that a caller-side authenticated blablalink session can read any consenting public account's roster, but explicitly deferred "who supplies the caller-side session" for a hosted service. Fienn confirmed the near-term goal IS a public hosted service for other users, so this had to be answered against the project's standing "never store credentials, tokens supplied by Fienn" posture.

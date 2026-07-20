@@ -168,7 +168,7 @@
 | ~~—~~ | ~~attack/charge speed~~ (발사 간격 → 딜) | 2 (Dorothy·Tove) | **완료 (Phase S, 2026-07-16)** — `attack_speed_percent`/`charge_speed_percent` 배선 | 발사 타임라인 |
 | ~~10~~ | ~~소환체 가변 케이던스 스케줄~~ (살아있는 개체 수가 공격 주기를 바꿈) | 1 (Ein) | **완료 (2026-07-17, `scheduled_nukes`)** | 신규 방출 경로 |
 | ~~10~~ | ~~창 한정 per-shot threshold 오버라이드~~ (버스트가 요구 카운트를 3/6/9 → 1/2/3으로 변경) | 1 (Scarlet: Black Shadow) | **완료 (2026-07-18, `per_shot_rules` `"sequence"` 모드 — Scarlet 인코딩)** | 트리거 변형 |
-| 11 | **강제 재장전 / 탄약 제거 상태머신** (발사 타임라인 자체를 스킬이 조작) | 1 (Milk: Blooming Bunny) | 미착수, 중~대 | 신규 상태 |
+| ~~11~~ | ~~**강제 재장전 / 탄약 제거 상태머신**~~ | 1 (Milk: Blooming Bunny) | **완료 (2026-07-20)** — 신규 타임라인 프리미티브 불필요(샷 0개 세그먼트 + `reload_time_with_speed` 음수 분기 + `burst_anchored_buffs`) | 재분류 |
 | — | **부위파괴 이벤트** (gap #2 Pattern B와 동근) | 3+ (Raven·Sakura·Mihara) | 미착수 — ark-ranger는 `part_destructible` 브래킷으로 개별 우회 | 신규 이벤트 |
 | — | hit rate · Burst Gauge fill speed (딜/타이밍 아님) | 15 | **구현 안 함** (defer 유지) | 범위 밖 |
 
@@ -212,11 +212,20 @@
   `context.shot_times`가 **전 유닛의 발사 타임라인**을 담고 있어(소유자 전용이
   아님), 모듈이 병합·정렬 후 매 500번째 발사 시각에 히트를 방출. 신규 스쿼드
   카운터 primitive는 만들지 않았고 필요하지도 않았음. (b) **크리티컬 히트
-  카운터 — 영구 defer, "만들 능력"이 아님(2026-07-12, Julia 시그니처 인코딩 중 발견):**
+  카운터 — ✅ **해소 (2026-07-20, `every_n_critical_hits`)**. 2026-07-12 Julia 시그니처
+  인코딩 중 '영구 defer'로 판정했던 항목이나, EVE 인코딩에서 뒤집혔다:**
   "N회 크리티컬 히트 후" 트리거는 엔진의 기대값 기반 크리 모델(각 히트가 `crit_rate`
-  확률로 스케일되는 연속값 — 실제 per-hit RNG 안 굴림)과 구조적으로 안 맞는다. "이 샷이
-  실제 크리였는가"라는 이벤트 자체가 없어서 셀 수 없다. per-shot 카운터 확장으로도 못
-  푼다 — Julia(시그니처)의 Crescendo/Marcato가 이 사유로 영구 defer.
+  확률로 스케일되는 연속값 — 실제 per-hit RNG 안 굴림)과 안 맞아서 "이 샷이 실제
+  크리였는가"라는 이벤트가 없다. 해법은 이벤트를 만드는 게 아니라 **딜 경로가 이미 하는
+  기대값 환산을 카운터에도 적용**하는 것: 샷마다 그 시점의 라이브 크리율을 누적해 임계
+  N을 넘을 때마다 발동(나머지 이월). **고정 발수로 접지 않는 게 핵심** — Fienn 수용
+  조건(2026-07-20)이 '덱 크리 버프가 반영돼야 한다'였고, 빌드시점 `N / 자기크리율`은
+  아군 크리버퍼를 통째로 무시한다. 한계: 샷 루프가 유닛별로 돌아 **나중에 처리되는
+  아군의 per-shot 규칙이 거는 크리 버프는 미반영**(버스트/FB 트리거 크리 버프는 반영 —
+  통상적인 크리 버퍼는 여기 해당). 소비: EVE(per-shot 모드) · **Julia 시그니처(2026-07-20 완료)**. 후자는 Crescendo가
+  **캡 5 스택**이라 per-shot 모드로는 부족해 같은 누적기를 쓰는 자원 fill
+  `("per_critical_hit_every", N)`를 함께 추가했다 — 두 경로는
+  `_expected_crit_positions`를 공유한다.
 - **무엇(원문):** "노멀 공격 N회 후", "풀차지 공격 N회 후 / 시", "마지막 탄 발사 시",
   "N shot마다" 처럼 **유닛의 발사 행위를 세어** 임계치마다 효과/넉을 발동하는 트리거.
 - **왜 막힘:** 노멀공격(차지샷 포함)은 `raid_simulator`의 별도 weapon-stats 패스에서
@@ -780,20 +789,28 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
 - 참고: `scarlet_black_shadow.py` docstring, `special-mechanics.md`의
   "Staged shot-count table" 항목.
 
-### 11. 강제 재장전 / 탄약 제거 상태머신 — 미착수 (2026-07-17 발견)
+### 11. ~~강제 재장전 / 탄약 제거 상태머신~~ — ✅ **해소 (2026-07-20)**, 신규 발사-타임라인 프리미티브 없이
 
 - **무엇:** Milk: Blooming Bunny의 Embarrassment 루프 — 풀차지를 0.5초 이상 유지하면
   상태 진입 → 290% Distributed + **탄약 100% 제거 + 강제 재장전**(재장전 속도 50%
   고정) + 자ATK+118.7%/40초. 상태 중 Pierce Damage+64.7%. 버스트의 Overconfident는
   10초간 Embarrassment 면역 + 447.7% Distributed 2초마다.
-- **왜 막힘:** 엔진에 "탄약을 강제로 비우고 재장전시킨다"는 프리미티브가 없다.
-  `attack_rate`의 발사 타임라인은 매거진 크기/공속에서 결정론적으로 생성되며,
-  스킬이 그걸 중간에 리셋하는 경로가 없음. 이게 이 유닛 킷의 심장이라 얇은 인코딩은
-  정직하지 않다.
-- **부분적으로 가능한 것:** Overconfident의 2초마다 447.7% Distributed는 이미
-  `periodic_nukes`의 `during_full_burst`/`own_burst_interval`로 표현 가능. 상태 루프가
-  풀리면 함께 인코딩.
-- **필요한 확장:** 발사 타임라인에 개입하는 재장전 이벤트. 규모 중~대.
+- **왜 막혔다고 봤나:** "탄약을 강제로 비우고 재장전시킨다"는 프리미티브가 없고,
+  발사 타임라인은 매거진 크기/공속에서 결정론적으로 생성되므로 스킬이 중간에 리셋할
+  경로가 없다고 판단했다.
+- **왜 틀렸나 (2026-07-20):** ① 진입 조건이 "상태가 아닐 때"라 **자기 버스트 1회당
+  1회**만 진입한다(Fienn: 버스트 면역으로만 해제) — 매 풀차지 루프가 아니라 국소적
+  이벤트다. ② **세그먼트 경계가 이미 탄창을 끊는다** — `_base_shot_records`는 각 구간을
+  `window_start`에서 새 탄창으로 재시작한다(무기변형 v1의 resume 시맨틱). 즉 "탄약 100%
+  제거 + 강제 재장전"은 **샷 0개짜리 세그먼트**다. ③ 재장전 속도 조작은 이미
+  `reload_speed_percent` 콜러블로 배선돼 있었고, 감소 방향 공식만 틀려 있었다(아래).
+- **실제로 필요했던 것 2건:** `reload_time_with_speed`의 음수 분기(속도 감소를 시간
+  증가의 거울로 — 2초 기본에 −50%면 4초가 아니라 **3초**, Fienn 인게임 수치) ·
+  버스트 시각에 앵커되어 "다음 자기 버스트까지" 지속되는 버프를 위한 소형 패스
+  `burst_anchored_buffs`(`UNTIL_NEXT_OWN_BURST`). 둘 다 소규모.
+- **교훈:** Elegg·Mihara의 Pattern B 오분류와 같은 계열 — "엔진이 못 한다"는 판정을
+  실제 운용(진입 빈도)과 기존 프리미티브의 부수 효과(세그먼트 resume) 양쪽에 대조하기
+  전에 확정하면 확장 규모를 크게 과대평가하게 된다.
 - 참고: `data/lootandwaifus/char_milk-blooming-bunny.json`.
 
 ### 12. 하모니 큐브 효과 배선 — 미착수 (2026-07-19 발견, **전 유닛 영향**)
@@ -872,7 +889,8 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
   Ark·Arcana·Tove·Ada Wong(신규)·Little Mermaid·Maiden·Jill).
 2. **남은 방향:** #2 Pattern B(시간감쇠 게이지·변신, 일반 프리미티브 — Mihara류) ·
    상태머신(~~diesel-winter-sweets~~[**2026-07-19 완료** — Intro/Highlight 2슬러그,
-   위 버스트 스케줄 정책 소비]·~~bready~~[완료]·eve·milk-blooming-bunny[gap #11]) ·
+   위 버스트 스케줄 정책 소비]·~~bready~~[완료]·~~eve~~[**2026-07-20 완료** —
+   `every_n_critical_hits`]·~~milk-blooming-bunny~~[**2026-07-20 완료** — gap #11 재분류]) ·
    ~~무기변형~~(**v1+계획 2 완료, 2026-07-19** — `weapon_mode_schedules` 세그먼트
    primitive, snow-white·maxwell·laplace-signature·red-hood 소비(v1) +
    `MODE_VARIANTS` 듀얼슬러그(cinderella-crystal-wave-mg/-snipe)·
