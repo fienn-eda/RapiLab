@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 from app import stat_assembly as sa
+from app.cube_effects import ASSUMED_CUBE_LEVEL
 from app.overload_decode import assemble_overload
 
 # The committed public directory snapshot: resource_id / name_code / class /
@@ -28,7 +29,8 @@ def load_directory(path: Path = DIRECTORY) -> list[dict]:
 SLOTS = ("head", "torso", "arm", "leg")
 
 
-def extract_inputs(entry: dict, owned: dict, detail: dict) -> dict:
+def extract_inputs(entry: dict, owned: dict, detail: dict,
+                   assume_cube_level: int | None = None) -> dict:
     """The calculator-input record for one unit (class/corp/grade/core/investment)."""
     return {
         "name_en": entry["name_en"],
@@ -42,7 +44,16 @@ def extract_inputs(entry: dict, owned: dict, detail: dict) -> dict:
         "attractive_lv": detail.get("attractive_lv", 0),
         "favorite_item_lv": detail.get("favorite_item_lv", 0),
         "favorite_item_tid": detail.get("favorite_item_tid", 0),
-        "harmony_cube_lv": detail.get("harmony_cube_lv", 0),
+        # Equip state at collection time is noise - a cube type is limited to
+        # 12 wearers, but decks re-equip between fights, so every unit fights
+        # with a cube on. assume_cube_level=None keeps the collected value,
+        # which is what the collector-parity test needs to stay a real check
+        # on the stat formula.
+        "harmony_cube_lv": (
+            detail.get("harmony_cube_lv", 0)
+            if assume_cube_level is None
+            else assume_cube_level
+        ),
         "skill1_lv": detail.get("skill1_lv", 1),
         "skill2_lv": detail.get("skill2_lv", 1),
         "ulti_skill_lv": detail.get("ulti_skill_lv", 1),
@@ -85,8 +96,9 @@ def _extra_flat_hp(tables, inp, research):
     )
 
 
-def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict) -> dict:
-    inp = extract_inputs(entry, owned, detail)
+def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict,
+                  assume_cube_level: int | None = None) -> dict:
+    inp = extract_inputs(entry, owned, detail, assume_cube_level)
     ident = dict(corporation=inp["corporation"],
                  corporation_sub_type=inp["corporation_sub_type"],
                  resource_id=inp["resource_id"])
@@ -109,7 +121,8 @@ def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict
     }
 
 
-def assemble_roster(tables, directory: list, raw: dict) -> list[dict]:
+def assemble_roster(tables, directory: list, raw: dict,
+                    assume_cube_level: int | None = ASSUMED_CUBE_LEVEL) -> list[dict]:
     by_code = {e["name_code"]: e for e in directory}
     details = {d["name_code"]: d for d in raw["character_details"]}
     owned = {o["name_code"]: o for o in raw["owned"]}
@@ -124,7 +137,7 @@ def assemble_roster(tables, directory: list, raw: dict) -> list[dict]:
         # with have no affinity table entry and are not real roster units.
         if entry.get("original_rare") != "SSR":
             continue
-        units.append(assemble_unit(tables, entry, o, d, research))
+        units.append(assemble_unit(tables, entry, o, d, research, assume_cube_level))
     units.sort(key=lambda u: u["name_en"])
     return units
 

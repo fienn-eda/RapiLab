@@ -48,7 +48,10 @@ def test_assemble_roster_matches_the_collector_scrape(tables):
     raw = json.loads(DETAILS.read_text(encoding="utf-8"))
     scraped = {u["resource_id"]: u for u in json.loads(ROSTER.read_text(encoding="utf-8"))["units"]}
 
-    out = {u["resource_id"]: u for u in assemble_roster(tables, directory, raw)}
+    # Compare against what was really equipped: this test validates the stat
+    # formula, not the product's Lv.15 assumption.
+    out = {u["resource_id"]: u
+           for u in assemble_roster(tables, directory, raw, assume_cube_level=None)}
     off = []
     for rid, want in scraped.items():
         got = out.get(rid)
@@ -69,6 +72,37 @@ def test_assemble_roster_matches_the_collector_scrape(tables):
         if gov != wov:
             off.append((want["name_en"], "overload", gov, wov))
     assert off == [], off[:5]
+
+
+def test_the_assumed_cube_level_overrides_what_was_collected(tables):
+    # Collection-time equip state is noise: decks re-equip between fights, so
+    # every unit fights with a Lv.15 cube on. Assembling the same uncubed unit
+    # with and without the assumption must differ by exactly the Lv.15 rung of
+    # the cube's flat stat tables.
+    from app.cube_effects import ASSUMED_CUBE_LEVEL
+    from app.roster_assembly import assemble_roster
+
+    directory = json.loads(DIRECTORY.read_text(encoding="utf-8"))
+    raw = {
+        "owned": [{"name_code": 5129, "lv": 400, "core": 6, "grade": 3}],
+        "character_details": [{"name_code": 5129, "grade": 3, "core": 6,
+                               "attractive_lv": 40, "harmony_cube_lv": 0,
+                               "favorite_item_tid": 0, "favorite_item_lv": 0,
+                               "skill1_lv": 10, "skill2_lv": 10, "ulti_skill_lv": 10}],
+        "recycle_room_researches": [
+            {"tid": 1001, "lv": 170}, {"tid": 1101, "lv": 190}, {"tid": 1201, "lv": 150},
+        ],
+    }
+    as_collected = assemble_roster(tables, directory, raw, assume_cube_level=None)[0]
+    assumed = assemble_roster(tables, directory, raw)[0]
+
+    cube = tables["resilience_cube"]
+    assert assumed["raid400"]["atk"] - as_collected["raid400"]["atk"] == (
+        cube["atk"][ASSUMED_CUBE_LEVEL - 1]
+    )
+    assert assumed["raid400"]["hp"] - as_collected["raid400"]["hp"] == (
+        cube["hp"][ASSUMED_CUBE_LEVEL - 1]
+    )
 
 
 def test_load_directory_reads_the_committed_snapshot():
