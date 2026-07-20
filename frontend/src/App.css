@@ -90,6 +90,7 @@
   display: inline-flex;
   align-items: baseline;
   gap: var(--sp-1);
+  margin-right: auto;
 }
 
 .investment__core {
