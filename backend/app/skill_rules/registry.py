@@ -126,6 +126,7 @@ from app.skill_rules.scarlet_black_shadow import (
     build_breakthrough_per_shot_rules,
     build_scarlet_black_shadow_rules,
     build_scarlet_weapon_mode_schedule,
+    build_scarlet_weapon_profile,
 )
 from app.skill_rules.sakura_bloom_in_summer import (
     EPHEMERAL_SPENDER_HIT_COUNT,
@@ -547,14 +548,20 @@ VARIANT_BURST_TIERS: dict[str, int] = {
 # assembled profile in after skill values resolve.
 _WEAPON_PROFILE_OVERRIDE_BUILDERS = {
     "cinderella-crystal-wave-snipe": build_snipe_weapon_profile,
+    # Not a weapon SWAP - a correction. Her collected charge time disagrees
+    # with what she actually does in game; see the module's measurement note.
+    "scarlet-black-shadow": build_scarlet_weapon_profile,
 }
 
 
-def get_weapon_profile_override(slug, skill_values):
+def get_weapon_profile_override(slug, skill_values, weapon_stats=None):
+    """The unit's weapon profile when its own kit replaces or corrects the
+    collected one. `weapon_stats` is the profile read from data, so a builder
+    can override a single field instead of restating the whole thing."""
     builder = _WEAPON_PROFILE_OVERRIDE_BUILDERS.get(slug)
     if builder is None:
         return None
-    return builder(skill_values)
+    return builder(skill_values, weapon_stats)
 
 
 _PERIODIC_NUKE_BUILDERS = {

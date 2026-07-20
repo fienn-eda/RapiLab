@@ -140,3 +140,26 @@ def build_breakthrough_per_shot_rules(values):
         [instant_nuke_pulse_rule("per_shot", stage_percents[2], damage_type="distributed")],
     ]
     return [(spec, "sequence", stage_rules)]
+
+
+# Fienn's in-game measurement (2026-07-20, 60fps frame-by-frame over a Full
+# Burst window, no charge-speed buff and no charge-speed overload): 14 hits in
+# 9.52 sec, perfectly evenly spaced, i.e. one shot every 0.732 sec.
+#
+# The collected weapon data says her charge time is 0.30 sec, which would have
+# her firing 33 shots in the same window - 2.4x too fast. Since her damage is
+# almost entirely the Fleetly Fading sequence (a per-full-charge counter walking
+# 3/6/9 stages), that error inflated her more than proportionally: it is a
+# shot-count multiplier on her single biggest source.
+#
+# Whether 0.30 is simply wrong in the source data or is only the "charge"
+# portion of a longer shot cycle is unresolved - and does not matter here,
+# because the engine treats charge_time AS the shot interval, so the measured
+# interval is the value that reproduces reality.
+MEASURED_CHARGE_INTERVAL_SEC = 9.52 / 13
+
+
+def build_scarlet_weapon_profile(values, weapon_stats):
+    """Her real firing cadence, measured rather than taken from the data file.
+    Everything else about the weapon is left untouched."""
+    return {**weapon_stats, "charge_time": MEASURED_CHARGE_INTERVAL_SEC}

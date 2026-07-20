@@ -133,13 +133,14 @@ def crystal_wave_periodic_nuke(values):
             "percent": float(beauty["description_value_14"])}
 
 
-def build_snipe_weapon_profile(values):
+def build_snipe_weapon_profile(values, weapon_stats=None):
     """Snipe's static weapon profile (Beauty-Full's "Changes the weapon in
     use: Snipe Mode" block). The `weapon` field stays "MG" at the unit-identity
     level in registry/roster data (weapon-type ally filters, e.g. Tove's SG
     theme, key off the character's real gun) - firing cadence and per-shot
     typing are decided by THIS profile's "SR" weapon field once it's swapped
-    in via get_weapon_profile_override."""
+    in via get_weapon_profile_override. `weapon_stats` (the collected profile)
+    is unused: this is a full swap, not a correction."""
     beauty = values["beauty_full"]
     return {
         "weapon": "SR",

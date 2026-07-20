@@ -68,7 +68,7 @@ def load_nikke_spec(
         skill_values = assemble_skill_values(
             slug, manifest, state.skill_levels.model_dump(), data_dir
         )
-        override = get_weapon_profile_override(slug, skill_values)
+        override = get_weapon_profile_override(slug, skill_values, weapon_stats)
         if override is not None:
             weapon_stats = override
         variant_tier = VARIANT_BURST_TIERS.get(slug)

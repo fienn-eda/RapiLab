@@ -105,7 +105,8 @@ def test_load_nikke_spec_slug_override_applies_weapon_profile_override(monkeypat
         "weapon": "RL", "damage_percent": 1.0, "max_ammo": 1,
         "reload_time": 1.0, "charge_time": 1.0, "charge_damage_percent": 1.0,
     }
-    monkeypatch.setattr(user_roster, "get_weapon_profile_override", lambda slug, sv: sentinel)
+    monkeypatch.setattr(user_roster, "get_weapon_profile_override",
+                        lambda slug, sv, weapon_stats=None: sentinel)
     spec = load_nikke_spec(_state("drake"), slug_override="drake-signature")
     assert spec.slug == "drake-signature"
     assert spec.weapon_stats == sentinel
