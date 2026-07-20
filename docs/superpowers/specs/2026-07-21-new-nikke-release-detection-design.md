@@ -250,10 +250,26 @@ dotgg는 `levels[레벨][슬롯]`, ShiftyPad는 `슬롯[레벨]`로 **전치 관
 즉 ShiftyPad는 무기뿐 아니라 **스킬까지 포함해 dotgg와 lootandwaifus 양쪽을 대체할 수
 있는 1차 소스**다. 다음 스펙의 범위는 이에 맞춰 정한다.
 
+**`dollskills`는 ShiftyPad에 없다 (실측 확인).** dollskills를 가진 9유닛 중
+Julia(`resource_id` 150)로 확인했다: 캐릭터 상세 페이로드의 키 집합이 dollskills가 없는
+Ada와 **61개로 완전히 동일**하고, 페이지가 싣는 **16개 페이로드 전문을 검색해도**
+dollskill 설명 텍스트가 없다. 탭 클릭으로도 새 페이로드가 발생하지 않았다(16 → 16).
+
+이것이 중요한 이유는 dollskills가 확장 레벨이 아니라 **효과가 다른 별개 스킬**이기
+때문이다. Julia 기준 세 스킬 모두 설명과 슬롯 의미가 다르다(스킬2 "마지막 탄 명중 시"
+→ "크리티컬 N회 후", 스킬3 "DEF 최고 적" → "무작위 적"). 값 사다리로 유도할 수 없다.
+
+따라서 ShiftyPad로 전환하더라도 **dollskills를 쓰는 9유닛
+(drake · helm · julia · laplace · miranda · moran · privaty · tove · zwei)에는
+기존 소스가 계속 필요하다.** 다음 스펙은 전면 대체가 아니라 이 예외를 남기는 전환으로
+설계해야 한다.
+
+참고: 애장품 스탯 테이블 자체는 blablalink CDN에 있고 `data/blablalink-cdn/NOTES.md`에
+URL이 기록돼 있으나, 이는 `atk`/`hp`/`level1`/`level2` 사다리이지 dollskill 설명이
+아니며 **한국어**다(캐릭터 스킬이 영문인 것과 대조적).
+
 추가 미검증 항목:
 - 스킬 대조는 1유닛(Rapi: Red Hood)만. 전수 대조 필요.
-- **시그니처 무기 스킬(`dollskills`)을 ShiftyPad가 노출하는지 미확인.** 관측한
-  페이로드에는 `skill1`/`skill2`/`ulti`만 있었다.
 - `skill_cooltime`(예: 4000)과 dotgg `cooldown`의 단위 대응 미확인.
 - 설명의 `<word_group=...>` 마크업과 선두 아이콘 문자 파싱 필요.
 - 애장품(favorite item) 탭은 조사하지 않았다. 엔진이 현재 모델링하지 않는다.
