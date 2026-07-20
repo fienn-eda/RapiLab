@@ -28,10 +28,9 @@
 
 | 파일 | 책임 |
 |---|---|
-| `tools/collect-blablalink/directory.js` (신규) | 디렉토리 스냅샷 순수 변환: 트림, `corporation_sub_type` 승계, 승계 안 된 id 목록 |
-| `tools/collect-blablalink/directory.test.js` (신규) | 위의 `node --test` 단위 테스트 |
+| `tools/collect-blablalink/collect.js` (수정) | `corporation_sub_type` 승계 함수 추가, `--headless` 배선, `--deep`을 미승계 id로 한정 |
+| `tools/collect-blablalink/parse.test.js` (수정) | 승계 함수의 `node --test` 단위 테스트 (기존 `trimDirectory` 테스트 옆) |
 | `tools/collect-blablalink/capture.js` (수정) | 헤드리스 자체 실행 브라우저 `launch()` 추가 |
-| `tools/collect-blablalink/collect.js` (수정) | `--headless` 배선, 승계 적용, `--deep`을 미승계 id로 한정 |
 | `scripts/notify_toast.ps1` (신규) | WinRT 토스트 발사 |
 | `scripts/check_new_nikkes.py` (신규) | 본체: 덤프 실행 → 비교 → 토스트 → 종료 코드 |
 | `backend/tests/test_check_new_nikkes.py` (신규) | 비교 로직 + 페이크 오케스트레이션 테스트 |
@@ -39,35 +38,35 @@
 
 ---
 
-## Task 1: 디렉토리 순수 변환 모듈 분리 + `corporation_sub_type` 승계
+## Task 1: `corporation_sub_type` 승계
 
-`collect.js`는 require 시 `main()`을 실행하므로 테스트에서 import할 수 없다. `parse.js` / `parse.test.js` 쌍의 기존 관례대로 순수 함수를 별도 모듈로 뺀다.
+**기존 구조 (측정으로 확인, 2026-07-21):** `collect.js`는 이미 `module.exports = { trimDirectory }`(362행)와 `if (require.main !== module) return`(364행) 가드를 갖고 있고, `parse.test.js`가 이미 `trimDirectory`를 두 건 테스트한다(83-100행). **따라서 별도 모듈로 분리하지 않는다** — 새 함수를 `collect.js`에 더하고 export를 확장하며, 테스트는 기존 `trimDirectory` 테스트 옆에 붙인다. 가장 작은 변경이며 기존 관례 그대로다.
 
 **해결하는 결함:** `trimDirectory`는 엔트리를 필드 6개로 새로 만들며 `corporation_sub_type`을 버린다. 이 필드는 돌파 코어당 flat ATK를 결정하고 현재 스냅샷의 **27/194 엔트리**에 있다. 따라서 `--deep` 없이 갱신하면 27개 유닛의 ATK가 조용히 틀어진다. `collect.js:219`의 "the field is otherwise carried over from the previous one" 주석은 **존재하지 않는 코드를 설명한다**(`collect.js`에는 `readFileSync`도 `existsSync`도 없다).
 
 **Files:**
-- Create: `tools/collect-blablalink/directory.js`
-- Create: `tools/collect-blablalink/directory.test.js`
-- Modify: `tools/collect-blablalink/collect.js` (193-213행의 `nameOf` / `trimDirectory` 제거 후 require)
+- Modify: `tools/collect-blablalink/collect.js` (`trimDirectory` 아래에 두 함수 추가, 362행 `module.exports` 확장)
+- Modify: `tools/collect-blablalink/parse.test.js` (83행부터의 기존 `trimDirectory` 테스트 블록 뒤에 추가)
 
 **Interfaces:**
-- Produces:
-  - `nameOf(entry) -> string|null`
-  - `trimDirectory(rawDir) -> Entry[]` — `resource_id` 오름차순 정렬
+- Produces (`collect.js`의 `module.exports`에 추가):
   - `carryOverSubTypes(entries, previous) -> Entry[]` — 새 배열 반환, 입력 비변경
   - `missingSubTypeIds(entries) -> number[]`
   - `Entry = { resource_id, name_code, name_en, original_rare, class, corporation, corporation_sub_type? }`
+- 이미 존재하므로 **다시 만들지 말 것**: `trimDirectory`, `nameOf`, `module.exports`, `require.main` 가드, `trimDirectory` 테스트 2건.
 
 - [ ] **Step 1: 실패하는 테스트 작성**
 
-`tools/collect-blablalink/directory.test.js`:
+`tools/collect-blablalink/parse.test.js`의 **맨 끝에 추가**한다. 83행의 기존 `const { trimDirectory } = require('./collect')`를 다음으로 **교체**한다:
 
 ```js
-const { test } = require('node:test')
-const assert = require('node:assert/strict')
-const { trimDirectory, carryOverSubTypes, missingSubTypeIds } = require('./directory')
+const { trimDirectory, carryOverSubTypes, missingSubTypeIds } = require('./collect')
+```
 
-const raw = (id, name, extra = {}) => ({
+그리고 파일 끝에 다음 테스트를 붙인다:
+
+```js
+const dirEntry = (id, name, extra = {}) => ({
   resource_id: id,
   name_code: 3000 + id,
   name_localkey: { name },
@@ -77,21 +76,8 @@ const raw = (id, name, extra = {}) => ({
   ...extra,
 })
 
-test('trimDirectory keeps the six snapshot fields and sorts by resource_id', () => {
-  const out = trimDirectory([raw(20, 'Bravo'), raw(10, 'Alpha')])
-  assert.deepEqual(out.map((e) => e.resource_id), [10, 20])
-  assert.deepEqual(Object.keys(out[0]).sort(), [
-    'class', 'corporation', 'name_code', 'name_en', 'original_rare', 'resource_id',
-  ])
-})
-
-test('trimDirectory drops entries with no name', () => {
-  const nameless = { resource_id: 30, name_code: 3030, name_localkey: null }
-  assert.equal(trimDirectory([raw(10, 'Alpha'), nameless]).length, 1)
-})
-
 test('carryOverSubTypes restores corporation_sub_type from the previous snapshot', () => {
-  const fresh = trimDirectory([raw(10, 'Alpha'), raw(20, 'Bravo')])
+  const fresh = trimDirectory([dirEntry(10, 'Alpha'), dirEntry(20, 'Bravo')])
   const previous = [{ resource_id: 10, corporation_sub_type: 'OVERSPEC' }]
   const out = carryOverSubTypes(fresh, previous)
   assert.equal(out[0].corporation_sub_type, 'OVERSPEC')
@@ -99,25 +85,25 @@ test('carryOverSubTypes restores corporation_sub_type from the previous snapshot
 })
 
 test('carryOverSubTypes does not mutate its input', () => {
-  const fresh = trimDirectory([raw(10, 'Alpha')])
+  const fresh = trimDirectory([dirEntry(10, 'Alpha')])
   carryOverSubTypes(fresh, [{ resource_id: 10, corporation_sub_type: 'OVERSPEC' }])
   assert.equal('corporation_sub_type' in fresh[0], false)
 })
 
 test('carryOverSubTypes passes through when there is no previous snapshot', () => {
-  const fresh = trimDirectory([raw(10, 'Alpha')])
+  const fresh = trimDirectory([dirEntry(10, 'Alpha')])
   assert.deepEqual(carryOverSubTypes(fresh, null), fresh)
   assert.deepEqual(carryOverSubTypes(fresh, []), fresh)
 })
 
 test('carryOverSubTypes does not resurrect a null previous value', () => {
-  const fresh = trimDirectory([raw(10, 'Alpha')])
+  const fresh = trimDirectory([dirEntry(10, 'Alpha')])
   const out = carryOverSubTypes(fresh, [{ resource_id: 10, corporation_sub_type: null }])
   assert.equal('corporation_sub_type' in out[0], false)
 })
 
 test('missingSubTypeIds lists only the ids the carry-over left empty', () => {
-  const fresh = trimDirectory([raw(10, 'Alpha'), raw(20, 'Bravo')])
+  const fresh = trimDirectory([dirEntry(10, 'Alpha'), dirEntry(20, 'Bravo')])
   const out = carryOverSubTypes(fresh, [{ resource_id: 10, corporation_sub_type: 'OVERSPEC' }])
   assert.deepEqual(missingSubTypeIds(out), [20])
 })
@@ -125,43 +111,19 @@ test('missingSubTypeIds lists only the ids the carry-over left empty', () => {
 
 - [ ] **Step 2: 실패 확인**
 
-Run: `cd tools/collect-blablalink && node --test directory.test.js`
-Expected: FAIL — `Cannot find module './directory'`
+Run: `cd tools/collect-blablalink && node --test parse.test.js`
+Expected: FAIL — 새 테스트 5건이 `carryOverSubTypes is not a function`으로 실패. 기존 테스트는 계속 통과.
 
-- [ ] **Step 3: 모듈 구현**
+- [ ] **Step 3: 두 함수 구현**
 
-`tools/collect-blablalink/directory.js`:
+`tools/collect-blablalink/collect.js`의 `trimDirectory` 정의 **바로 아래**에 추가한다:
 
 ```js
-// Pure transforms over the public nikke directory snapshot. Split out of
-// collect.js so they can be unit-tested: requiring collect.js runs main().
-
-const nameOf = (entry) => (entry.name_localkey && entry.name_localkey.name) || null
-
-// Reduce the raw directory to the public identity fields the repo commits as a
-// snapshot: enough to prove a resource_id names the unit its slug claims, and to
-// look one up for a not-yet-owned unit. Nothing here is account-specific.
-const trimDirectory = (dir) =>
-  dir
-    .filter((d) => nameOf(d))
-    .map((d) => ({
-      resource_id: d.resource_id,
-      name_code: d.name_code,
-      name_en: nameOf(d),
-      original_rare: d.original_rare,
-      // Base ATK/HP are a function of (level, class), so the class is what the
-      // stat calculator looks up - it cannot be derived from the other fields.
-      class: d.class,
-      // Corporation research is ranked per account and adds flat ATK to that
-      // corporation's units, so a unit's corporation is part of its stat inputs.
-      corporation: d.corporation,
-    }))
-    .sort((a, b) => a.resource_id - b.resource_id)
-
 // corporation_sub_type ("OVERSPEC") decides how much flat ATK each breakthrough
 // core is worth, but the directory payload does not carry it - it lives in the
 // per-character stat file, one page load away. Carrying it over from the previous
-// snapshot is what keeps a plain --directory refresh from silently dropping it.
+// snapshot is what keeps a plain --directory refresh from silently dropping it
+// from the entries that already had one.
 const carryOverSubTypes = (entries, previous) => {
   const known = new Map(
     (previous || [])
@@ -179,41 +141,36 @@ const carryOverSubTypes = (entries, previous) => {
 // only ones --deep needs to visit.
 const missingSubTypeIds = (entries) =>
   entries.filter((e) => !e.corporation_sub_type).map((e) => e.resource_id)
-
-module.exports = { nameOf, trimDirectory, carryOverSubTypes, missingSubTypeIds }
 ```
 
-- [ ] **Step 4: 통과 확인**
+- [ ] **Step 4: export 확장**
 
-Run: `cd tools/collect-blablalink && node --test directory.test.js`
-Expected: PASS — 7 tests
-
-- [ ] **Step 5: `collect.js`에서 중복 제거**
-
-`collect.js` 193-213행의 `const nameOf = ...`와 `const trimDirectory = ...` 정의를 **삭제**하고, 28행 부근의 require 블록에 다음 줄을 추가한다:
+`collect.js` 362행을 다음으로 교체한다:
 
 ```js
-const { nameOf, trimDirectory, carryOverSubTypes, missingSubTypeIds } = require('./directory')
+module.exports = { trimDirectory, carryOverSubTypes, missingSubTypeIds }
 ```
 
-`nameOf`는 `collect.js` 120·122·327행에서도 쓰이므로 require로 계속 제공되어야 한다.
-
-- [ ] **Step 6: 회귀 확인**
+- [ ] **Step 5: 통과 확인**
 
 Run: `cd tools/collect-blablalink && node --test`
-Expected: PASS — `parse.test.js`와 `directory.test.js` 전부 통과. `node -e "require('./directory')"`가 오류 없이 끝나는지도 확인.
+Expected: PASS — 기존 9건 + 신규 5건 = 14건, 실패 0
+
+- [ ] **Step 6: 거짓 주석 수정**
+
+`collect.js`에서 `corporation_sub_type`을 설명하는 기존 주석 블록(219행 부근)의 마지막 문장 *"and the field is otherwise carried over from the previous one"* 은 이 태스크 이전까지 **존재하지 않는 코드를 설명하고 있었다.** 이제 승계가 실제로 구현되었으므로, 주석이 실제 동작과 맞는지 확인하고 어긋나면 고친다. 특히 `--deep`이 이제 **미승계 유닛만** 방문한다는 사실이 Task 2에서 반영되므로, 이 주석의 "one page load per unit (~194)" 서술은 Task 2에서 갱신한다.
 
 - [ ] **Step 7: 커밋**
 
 ```bash
-git add tools/collect-blablalink/directory.js tools/collect-blablalink/directory.test.js tools/collect-blablalink/collect.js
-git commit -m "refactor(collect): extract directory transforms and carry corporation_sub_type
+git add tools/collect-blablalink/collect.js tools/collect-blablalink/parse.test.js
+git commit -m "fix(collect): carry corporation_sub_type across directory refreshes
 
-trimDirectory rebuilt each entry from six fields and dropped
+trimDirectory rebuilds each entry from six fields and drops
 corporation_sub_type, so a --directory refresh without --deep silently
-wiped it from the 27 entries that have it. The comment claiming the field
-was carried over from the previous snapshot described code that did not
-exist."
+wiped it from the 27 entries that have it, skewing their breakthrough-core
+ATK. The comment claiming the field was carried over from the previous
+snapshot described code that did not exist."
 ```
 
 ---
@@ -227,7 +184,7 @@ exist."
 - Modify: `tools/collect-blablalink/collect.js` (인자 파싱, `main()`의 브라우저 획득과 `--directory` 분기)
 
 **Interfaces:**
-- Consumes: Task 1의 `trimDirectory` / `carryOverSubTypes` / `missingSubTypeIds`
+- Consumes: Task 1이 `collect.js`에 추가한 `carryOverSubTypes` / `missingSubTypeIds` (이미 같은 파일 안에 있으므로 별도 require 불필요)
 - Produces: `launch() -> Promise<Browser>` (capture.js), CLI 플래그 `--headless`
 
 - [ ] **Step 1: `capture.js`에 `launch` 추가**
@@ -272,6 +229,8 @@ require 줄을 다음으로 교체:
 ```js
 const { connect, launch, findPage, captureUnit } = require('./capture')
 ```
+
+`carryOverSubTypes`와 `missingSubTypeIds`는 Task 1에서 **같은 파일에 정의**했으므로 require하지 않는다.
 
 - [ ] **Step 3: 잘못된 조합 거부**
 
@@ -360,7 +319,7 @@ Expected: `wrote ...: N nikkes` (N은 실행 시점의 실제 니케 수). 로�
 - [ ] **Step 8: 승계가 실제로 값을 보존했는지 확인**
 
 ```bash
-python -c "
+python3 -c "
 import json
 a=json.load(open('tools/collect-blablalink/nikke-directory.json',encoding='utf-8'))
 b=json.load(open('data/cache/new-nikke-check/probe.json',encoding='utf-8'))
@@ -583,7 +542,7 @@ def test_dry_run_does_not_notify_but_still_reports_the_finding(tmp_path):
 
 - [ ] **Step 2: 실패 확인**
 
-Run: `cd backend && python -m pytest tests/test_check_new_nikkes.py -v`
+Run: `cd backend && python3 -m pytest tests/test_check_new_nikkes.py -v`
 Expected: FAIL — `ModuleNotFoundError: No module named 'check_new_nikkes'`
 
 - [ ] **Step 3: 스크립트 구현**
@@ -611,9 +570,9 @@ When to use: automatically, from the daily scheduled task registered by
 scripts/schedule_new_nikke_check.ps1. Run it by hand to check right now.
 
 Usage:
-    python scripts/check_new_nikkes.py                  # fetch + compare + toast
-    python scripts/check_new_nikkes.py --offline FILE    # compare FILE, no fetch
-    python scripts/check_new_nikkes.py --dry-run         # print, never toast
+    python3 scripts/check_new_nikkes.py                 # fetch + compare + toast
+    python3 scripts/check_new_nikkes.py --offline FILE   # compare FILE, no fetch
+    python3 scripts/check_new_nikkes.py --dry-run        # print, never toast
 
 Exit: 0 nothing new, 1 new SSR found, 2 the check itself failed.
 """
@@ -739,24 +698,24 @@ if __name__ == "__main__":
 
 - [ ] **Step 4: 통과 확인**
 
-Run: `cd backend && python -m pytest tests/test_check_new_nikkes.py -v`
+Run: `cd backend && python3 -m pytest tests/test_check_new_nikkes.py -v`
 Expected: PASS — 11 tests
 
 - [ ] **Step 5: 실제 실행 검증 (신규 없음 경로)**
 
-Run: `python scripts/check_new_nikkes.py --dry-run`
+Run: `python3 scripts/check_new_nikkes.py --dry-run`
 Expected: `... nikkes live, ... in the snapshot, 0 new (0 SSR)`, 종료 코드 0, 토스트 없음. `git status`로 리포지토리 미변경 확인.
 
 Run: `echo $?` (bash) — `0`
 
 - [ ] **Step 6: 실패 경로 검증**
 
-Run: `python scripts/check_new_nikkes.py --offline nonexistent.json`
+Run: `python3 scripts/check_new_nikkes.py --offline nonexistent.json`
 Expected: 토스트 "신규 니케 점검 실패"가 뜨고, `data/cache/new-nikke-check/last-run.log`에 예외가 기록되며, 종료 코드 `2`.
 
 - [ ] **Step 7: 전체 스위트 회귀**
 
-Run: `cd backend && python -m pytest -q`
+Run: `cd backend && python3 -m pytest -q`
 Expected: 기존 통과 수 + 11
 
 - [ ] **Step 8: 커밋**
@@ -822,7 +781,9 @@ if (-not (Test-Path $Script)) { throw "not found: $Script" }
 
 switch ($Action) {
   'register' {
-    $python = (Get-Command python).Source
+    # python3.exe (anaconda) is the interpreter that has this project's
+    # dependencies; bare `python` on this machine is a different install.
+    $python = (Get-Command python3).Source
     $action = New-ScheduledTaskAction -Execute $python -Argument "`"$Script`"" -WorkingDirectory $Repo
     $trigger = New-ScheduledTaskTrigger -Daily -At 19:00
     # Exit code 1 means "new nikke found", not failure, so do not let the
@@ -884,7 +845,7 @@ a full week, while a daily run costs one page load and stays silent."
 |---|---|
 | `collect.js --headless` (`--directory` 전용, 조합 거부, Chrome 경로 탐색·실패 시 나열) | Task 2 Step 1·3·4 |
 | `corporation_sub_type` 승계 + `--deep` 한정 + 거짓 주석 수정 | Task 1, Task 2 Step 5·6 |
-| `directory.js` 분리, `directory.test.js` 4가지 케이스 | Task 1 (승계됨 / 이전 없음 / 신규 미승계 / null 미부활 전부 포함) |
+| 승계 로직 테스트 4가지 케이스 | Task 1 (승계됨 / 이전 없음 / 신규 미승계 / null 미부활 전부 포함, `parse.test.js`) |
 | `check_new_nikkes.py` 스크래치 경로, 리포 미변경, 보고 필드, SSR 한정 토스트 | Task 4 |
 | 종료 코드 0/1/2 | Task 4 (테스트 3건) |
 | `--offline` / `--dry-run` | Task 4 |
