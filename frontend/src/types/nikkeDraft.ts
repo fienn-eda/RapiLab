@@ -258,8 +258,11 @@ export const mergeCollectorDrafts = (
         actualHp: inc.actualHp,
         actualAtk: inc.actualAtk,
         actualDef: inc.actualDef,
-        grade: inc.grade,
-        core: inc.core,
+        // grade/core are absent from the legacy JS collector's roster.json,
+        // so an absent incoming value must not clobber a previously-synced
+        // badge (absent means "source carries no info", not "no breakthrough").
+        grade: inc.grade ?? next[idx].grade,
+        core: inc.core ?? next[idx].core,
         skill_levels: inc.skill_levels,
         overload_options: inc.overload_options,
       }

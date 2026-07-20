@@ -249,4 +249,22 @@ describe('mergeCollectorDrafts', () => {
     expect(drafts[0].grade).toBe(2)
     expect(drafts[0].core).toBe(5)
   })
+
+  it('preserves a stored grade/core when the incoming source (e.g. the legacy collector) carries none', () => {
+    const existing = draft({ character_slug: 'liter', grade: 3, core: 7 })
+    const incoming = draft({ character_slug: 'liter' })
+    expect(incoming.grade).toBeUndefined()
+    expect(incoming.core).toBeUndefined()
+    const { drafts } = mergeCollectorDrafts([existing], [incoming])
+    expect(drafts[0].grade).toBe(3)
+    expect(drafts[0].core).toBe(7)
+  })
+
+  it('leaves grade/core undefined (not 0) when neither side has ever stored them', () => {
+    const existing = draft({ character_slug: 'liter' })
+    const incoming = draft({ character_slug: 'liter' })
+    const { drafts } = mergeCollectorDrafts([existing], [incoming])
+    expect(drafts[0].grade).toBeUndefined()
+    expect(drafts[0].core).toBeUndefined()
+  })
 })
