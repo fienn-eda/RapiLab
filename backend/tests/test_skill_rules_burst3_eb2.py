@@ -53,7 +53,7 @@ def test_ludmilla_full_burst_crit_and_burst_atk_reload():
 
 def test_ludmilla_per_shot_every_60_normal_debuff_and_nuke():
     ps = build_ludmilla_per_shot_rules(LUDMILLA)
-    assert len(ps) == 1  # Snowstorm core-60 nuke deferred (see module docstring)
+    assert len(ps) == 2  # The Queen's Gaze, plus Snowstorm's core-60 nuke.
     threshold, mode, rules = ps[0]
     assert (threshold, mode) == (60, "every")
     reg = EffectRegistry()
@@ -63,6 +63,30 @@ def test_ludmilla_per_shot_every_60_normal_debuff_and_nuke():
     assert round(reg.total_for("damage_taken_up", ALLY, 5.0), 4) == 0.1256  # squad debuff
     assert reg.total_for("damage_taken_up", ALLY, 8.1) == 0.0  # 3s expired
     assert [round(p.value, 2) for p in reg.drain_pulses("instant_damage_percent")] == [158.43]
+
+
+def test_snowstorm_core_nuke_fires_every_60_shots_only_when_the_core_is_hittable():
+    _queens, snow = build_ludmilla_per_shot_rules(LUDMILLA)
+    threshold, mode, rules = snow
+    assert (threshold, mode) == (60, "every")
+
+    # Core hittable -> the nuke lands.
+    ctx = deck_ctx("ludmilla", "Water")
+    ctx.core_hittable = True
+    reg = EffectRegistry()
+    for rule in rules:
+        if rule.condition is None or rule.condition(ctx, "ludmilla"):
+            rule.action(ctx, "ludmilla", 5.0, reg)
+    assert [round(p.value, 2) for p in reg.drain_pulses("instant_damage_percent")] == [109.64]
+
+    # No exploitable core -> "hitting the Core 60 times" never happens.
+    ctx2 = deck_ctx("ludmilla", "Water")
+    ctx2.core_hittable = False
+    reg2 = EffectRegistry()
+    for rule in rules:
+        if rule.condition is None or rule.condition(ctx2, "ludmilla"):
+            rule.action(ctx2, "ludmilla", 5.0, reg2)
+    assert reg2.drain_pulses("instant_damage_percent") == []
 
 
 # --- Chisato Nishikigi (SMG/Iron) ---

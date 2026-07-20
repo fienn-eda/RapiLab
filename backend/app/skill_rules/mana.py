@@ -43,8 +43,20 @@ Not modeled / deferred:
 - Metal sigma's Burst Gauge filling speed buff (70.4%): gauge charge time is
   a fixed simulation input, not a stat the engine consumes.
 - Metal sigma's Charge Time reduction (0.18 sec) for "1 ally with the longest
-  basic Charge Time": both a non-damage stat (charge speed) and a narrow
-  targeting scope (gap #3) the engine can't express - doubly deferred.
+  basic Charge Time". BOTH reasons this was once called "doubly deferred" have
+  since expired - charge speed became a real damage stat in Phase S
+  (`charge_speed_percent`, consumed by attack_rate), and narrow member subsets
+  became expressible via `member_subset_buff_rule` (gap #3). What still blocks
+  it is neither: the skill grants a FLAT 0.18 SECONDS, while the engine's stat
+  is a multiplier (charge_time / (1 + charge_speed)). Converting one to the
+  other needs the recipient's own base charge time, which `SquadMember` does
+  not carry (it has `weapon`, the type, not the weapon's stats).
+
+  Left deferred rather than approximated because the payoff is tiny - 0.18 sec
+  off one ally for 10 sec - and the honest fix is to thread weapon stats onto
+  SquadMember, which changes a shared structure for one small effect. If a
+  second unit ever needs a flat charge-time delta, do that instead of
+  special-casing here.
 """
 from app.effects import Effect
 from app.skill_rules._helpers import buff_rule
