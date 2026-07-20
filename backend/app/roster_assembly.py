@@ -111,6 +111,10 @@ def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict
     return {
         "name_en": inp["name_en"],
         "resource_id": inp["resource_id"],
+        # Not consumed by the simulation - already folded into raid400 - but the
+        # UI shows them so the user can confirm their roster imported correctly.
+        "grade": inp["grade"],
+        "core": inp["core"],
         "raid400": {"hp": round(hp), "atk": round(atk), "def": 0},
         "skill_levels": {
             "skill1": inp["skill1_lv"],
