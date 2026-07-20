@@ -42,21 +42,15 @@ Not modeled / deferred:
   this engine doesn't model at all.
 - Metal sigma's Burst Gauge filling speed buff (70.4%): gauge charge time is
   a fixed simulation input, not a stat the engine consumes.
-- Metal sigma's Charge Time reduction (0.18 sec) for "1 ally with the longest
-  basic Charge Time". BOTH reasons this was once called "doubly deferred" have
-  since expired - charge speed became a real damage stat in Phase S
-  (`charge_speed_percent`, consumed by attack_rate), and narrow member subsets
-  became expressible via `member_subset_buff_rule` (gap #3). What still blocks
-  it is neither: the skill grants a FLAT 0.18 SECONDS, while the engine's stat
-  is a multiplier (charge_time / (1 + charge_speed)). Converting one to the
-  other needs the recipient's own base charge time, which `SquadMember` does
-  not carry (it has `weapon`, the type, not the weapon's stats).
-
-  Left deferred rather than approximated because the payoff is tiny - 0.18 sec
-  off one ally for 10 sec - and the honest fix is to thread weapon stats onto
-  SquadMember, which changes a shared structure for one small effect. If a
-  second unit ever needs a flat charge-time delta, do that instead of
-  special-casing here.
+(Metal sigma's Charge Time -0.18 sec on "1 ally with the longest basic Charge
+Time" was deferred for three successive reasons, all now retired. "Charge speed
+isn't a damage stat" expired with Phase S; "narrow subsets aren't expressible"
+expired with gap #3; and the real one - that a FLAT 0.18 SECONDS cannot be
+written as a percent of the recipient's own charge - was resolved when
+Liberalio's caster-based buff turned out to be the same shape and earned the
+`charge_time_reduction_sec` stat. The note here predicted "if a second unit
+ever needs a flat charge-time delta, do that instead of special-casing" - which
+is exactly what happened. See `build_metal_sigma_charge_rules`.)
 """
 from app.effects import Effect
 from app.skill_rules._helpers import buff_rule
@@ -114,3 +108,30 @@ def build_fatal_error_dot(values):
         "base_percent": percent, "tick_count": tick_count, "tick_interval": 1.0,
         "damage_type": "sustained", "full_burst_bonus_eligible": True,
     }]
+
+
+def build_metal_sigma_charge_rules(values: dict) -> list[SkillRule]:
+    """Metal sigma's "Charge Time -0.18 sec" on the ally with the longest basic
+    Charge Time.
+
+    Absolute SECONDS, not a percent - which is exactly why this sat deferred:
+    the engine's `charge_speed_percent` scales the recipient's own charge, and
+    no single percent can represent a fixed 0.18 sec across allies with
+    different charges. The `charge_time_reduction_sec` stat added for
+    Liberalio's caster-based buff is the same shape, so this rides it.
+    """
+    sigma = values["metal_sigma"]
+    seconds = float(sigma["description_value_05"])
+    duration = float(sigma["description_value_06"])
+
+    def action(context, caster_slug, time, registry):
+        targets = context.longest_charge_time_slugs(1)
+        if not targets:
+            return
+        registry.add(
+            Effect("charge_time_reduction_sec", seconds,
+                   f"slugs:{','.join(targets)}", duration, caster_slug),
+            applied_at=time,
+        )
+
+    return [SkillRule(trigger="full_burst_enter", action=action)]

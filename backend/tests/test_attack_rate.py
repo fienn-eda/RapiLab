@@ -506,3 +506,49 @@ def test_reload_speed_directions_are_reciprocal_mirrors():
 
 def test_reload_speed_zero_is_the_identity_on_both_branches():
     assert reload_time_with_speed(2.0, 0.0) == pytest.approx(2.0)
+
+
+# --- charge speed: frame quantisation + caster-based flat reductions ---
+
+def test_charge_speed_reduction_is_quantised_to_whole_frames():
+    # The game reduces charge time by whole frames: community testing describes
+    # "180 frames x 10.28% = 18.5 frames". Neon: Vision Eye's 9.47% overload on
+    # a 1.0s charge measured 0.9178s, which the floored 5-frame step reproduces
+    # to 0.07 frames where the continuous value is 0.75 frames off.
+    assert charge_time_with_speed(1.0, 0.0947) == pytest.approx(1.0 - 5 / 60)
+    # 10% of 60 frames is exactly 6, so no rounding happens there.
+    assert charge_time_with_speed(1.0, 0.10) == pytest.approx(1.0 - 6 / 60)
+
+
+def test_charge_speed_percent_applies_to_the_units_own_charge_time():
+    # The percent scales the charge time it applies to, so the same buff buys
+    # less absolute time on a shorter charge.
+    assert charge_time_with_speed(1.5, 0.10) == pytest.approx(1.5 - 9 / 60)
+    assert charge_time_with_speed(0.5, 0.10) == pytest.approx(0.5 - 3 / 60)
+
+
+def test_flat_reduction_subtracts_absolute_seconds_on_top():
+    # "Caster-based" buffs (Liberalio, Mana) hand over SECONDS, computed from
+    # the caster's charge time, so they do not scale with the recipient's.
+    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=0.1911) == pytest.approx(1.0 - 0.1911)
+    assert charge_time_with_speed(1.5, 0.0, flat_reduction_sec=0.1911) == pytest.approx(1.5 - 0.1911)
+
+
+def test_liberalio_buff_reproduces_scarlets_measured_interval():
+    # Fienn measured Scarlet at 0.7323s alone and 0.5424s with Liberalio.
+    # Liberalio is an SR with a 1.5s charge, so her "12.74% caster-based"
+    # hands over 0.1274 * 1.5 = 0.1911s.
+    got = charge_time_with_speed(0.7323, 0.0, flat_reduction_sec=0.1274 * 1.5)
+    assert got == pytest.approx(0.5424, abs=1 / 60)
+
+
+def test_flat_reduction_and_percent_compose():
+    # Percent first (on the unit's own charge), then the absolute seconds.
+    assert charge_time_with_speed(1.0, 0.10, flat_reduction_sec=0.2) == pytest.approx(
+        1.0 - 6 / 60 - 0.2)
+
+
+def test_charge_floor_still_bounds_the_combination():
+    # A huge flat reduction cannot drive the interval below the unit's floor.
+    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=5.0) == pytest.approx(
+        CHARGE_INTERVAL_FLOOR_SECONDS)

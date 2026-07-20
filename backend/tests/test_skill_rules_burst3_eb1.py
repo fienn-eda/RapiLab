@@ -1,3 +1,5 @@
+import pytest
+
 """Burst-3 attacker batch eb1: Noir, Isabel, Liberalio (least engine-blocked).
 Values are the real max-level (base-skill) figures from lootandwaifus, slots
 numbered left-to-right per skill.
@@ -10,6 +12,7 @@ from app.skill_rules.isabel import (
     sonic_chaser_burst_percent,
 )
 from app.skill_rules.liberalio import (
+    build_calm_depths_charge_rules,
     build_liberalio_per_shot_rules,
     build_liberalio_rules,
     build_strange_currents_immunity_rules,
@@ -215,3 +218,74 @@ def test_strange_currents_refuses_allies_charge_speed_but_keeps_her_own():
     # Her own overload/cube (registered under her own slug) still applies.
     reg.add(Effect("charge_speed_percent", 0.12, "self", None, "liberalio"), applied_at=0.0)
     assert abs(reg.total_for("charge_speed_percent", lib, now=1.0) - 0.12) < 1e-9
+
+
+def test_calm_depths_gives_the_lowest_atk_burst3_a_flat_charge_time_cut():
+    # "12.74% of the skill user's Charge Speed" is caster-based: the percent is
+    # taken against LIBERALIO's own 1.5s charge, so allies receive a flat
+    # 0.1911 sec - not a percent of their own charge.
+    rules = {"liberalio": build_calm_depths_charge_rules(
+        LIBERALIO, {"charge_time": 1.5})}
+    ctx = SquadContext(
+        [
+            SquadMember("liberalio", burst_tier=3, element="Wind"),
+            SquadMember("scarlet-black-shadow", burst_tier=3, element="Wind"),
+            SquadMember("support", burst_tier=1, element="Iron"),
+        ],
+        base_atk={"liberalio": 400_000, "scarlet-black-shadow": 300_000, "support": 200_000},
+    )
+    reg = EffectRegistry()
+    fire_trigger("full_burst_enter", rules, ctx, reg, time=5.0)
+
+    scarlet = {"slug": "scarlet-black-shadow", "element": "Wind"}
+    assert reg.total_for("charge_time_reduction_sec", scarlet, now=5.0) == pytest.approx(0.1274 * 1.5)
+    assert reg.total_for("charge_time_reduction_sec", scarlet, now=15.1) == 0.0
+    # The lower-ATK Burst 1 is not a candidate: the skill says Burst 3 only.
+    assert reg.total_for("charge_time_reduction_sec",
+                         {"slug": "support", "element": "Iron"}, now=5.0) == 0.0
+    # Liberalio out-ATKs Scarlet here, so she does not take her own buff.
+    assert reg.total_for("charge_time_reduction_sec",
+                         {"slug": "liberalio", "element": "Wind"}, now=5.0) == 0.0
+
+
+def test_calm_depths_targets_liberalio_herself_when_she_is_the_lowest_atk_b3():
+    # She is a Burst 3 and is deliberately NOT excluded from the ranking -
+    # Korean guides frame the requirement as "Liberalio's ATK must be higher
+    # than Scarlet's" for Scarlet to receive it, which only makes sense if she
+    # is in the pool. With the lower ATK she wins her own buff, which is the
+    # deck-building mistake those guides warn about.
+    rules = {"liberalio": build_calm_depths_charge_rules(LIBERALIO, {"charge_time": 1.5})}
+    ctx = SquadContext(
+        [
+            SquadMember("liberalio", burst_tier=3, element="Wind"),
+            SquadMember("scarlet-black-shadow", burst_tier=3, element="Wind"),
+        ],
+        base_atk={"liberalio": 200_000, "scarlet-black-shadow": 400_000},
+    )
+    reg = EffectRegistry()
+    fire_trigger("full_burst_enter", rules, ctx, reg, time=5.0)
+
+    assert reg.total_for("charge_time_reduction_sec",
+                         {"slug": "scarlet-black-shadow", "element": "Wind"}, now=5.0) == 0.0
+    assert reg.total_for("charge_time_reduction_sec",
+                         {"slug": "liberalio", "element": "Wind"}, now=5.0) > 0.0
+
+
+def test_charge_speed_immunity_also_refuses_external_flat_charge_cuts():
+    # Her "immunity to Increase/Decrease Charge Speed effects" is about the
+    # concept, not one engine stat, so it has to cover the caster-based
+    # seconds form too - otherwise a Mana or a second Liberalio would speed
+    # her up through the other stat.
+    rules = {"liberalio": build_strange_currents_immunity_rules(STRANGE_CURRENTS)}
+    ctx = SquadContext([
+        SquadMember("liberalio", burst_tier=3, element="Wind"),
+        SquadMember("other", burst_tier=3, element="Wind"),
+    ])
+    reg = EffectRegistry()
+    fire_trigger("battle_start", rules, ctx, reg, time=0.0)
+
+    lib = {"slug": "liberalio", "element": "Wind"}
+    reg.add(Effect("charge_time_reduction_sec", 0.19, "squad", None, "other"), applied_at=0.0)
+    assert reg.total_for("charge_time_reduction_sec", lib, now=1.0) == 0.0
+    assert reg.total_for("charge_time_reduction_sec",
+                         {"slug": "other", "element": "Wind"}, now=1.0) == 0.19

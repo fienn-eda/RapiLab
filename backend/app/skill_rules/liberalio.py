@@ -34,6 +34,7 @@ charge-speed buffer speed her up when in game it cannot.
 Approximation: the on-core Attack Damage is applied on every Full Charge (core
 hits aren't tracked per-shot), consistent with how core damage is handled globally.
 """
+from app.effects import Effect
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 from app.squad_engine import SkillRule
 
@@ -105,6 +106,50 @@ def build_strange_currents_immunity_rules(values: dict) -> list[SkillRule]:
     apply; only other units' buffs are refused."""
 
     def action(context, caster_slug, time, registry):
+        # Both stats, because the skill grants immunity to the CONCEPT: the
+        # percent form and the caster-based seconds form are the same effect
+        # wearing different engine clothes.
         registry.set_external_stat_immunity(caster_slug, "charge_speed_percent")
+        registry.set_external_stat_immunity(caster_slug, "charge_time_reduction_sec")
 
     return [SkillRule(trigger="battle_start", action=action)]
+
+
+# Her own charge time is the basis for the buff below, so it is read from her
+# weapon stats rather than hardcoded.
+CALM_DEPTHS_TARGET_BURST_TIER = 3
+
+
+def build_calm_depths_charge_rules(values: dict, caster_weapon_stats: dict) -> list[SkillRule]:
+    """Calm Depths' "Charge Speed +X% of the skill user's Charge Speed" on the
+    lowest-final-ATK Burst 3 ally.
+
+    "Of the skill user's" (시전자 기준) is the whole mechanic: the percentage is
+    taken against LIBERALIO's charge time, not the recipient's, and the ally
+    receives the resulting ABSOLUTE seconds. She is a Sniper Rifle charging in
+    1.5 sec, so 12.74% is 0.1911 sec for whoever gets it - the figure Korean
+    community guides quote ("약 0.19초 줄어든다"), and the one that reproduces
+    Fienn's Scarlet measurement (0.7323 -> 0.5424 sec) to 0.07 frames.
+
+    Encoding it as `charge_speed_percent` would have been wrong in a way that
+    hides: the equivalent percent is 26.1% on Scarlet's 0.73 sec charge but
+    19.1% on a 1.0 sec one, so a single percent cannot be right for both.
+    """
+    calm = values["calm_depths"]
+    percent = float(calm["description_value_07"]) / 100
+    duration = float(calm["description_value_08"])
+    seconds = percent * float(caster_weapon_stats["charge_time"])
+
+    def action(context, caster_slug, time, registry):
+        targets = context.lowest_atk_slugs(
+            1, registry, time, burst_tier=CALM_DEPTHS_TARGET_BURST_TIER
+        )
+        if not targets:
+            return
+        registry.add(
+            Effect("charge_time_reduction_sec", seconds, f"slugs:{','.join(targets)}",
+                   duration, caster_slug),
+            applied_at=time,
+        )
+
+    return [SkillRule(trigger="full_burst_enter", action=action)]

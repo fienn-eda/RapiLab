@@ -87,15 +87,37 @@ def reload_time_with_speed(reload_time, reload_speed_percent):
 CHARGE_INTERVAL_FLOOR_SECONDS = 10.0 / 29
 
 
-def charge_time_with_speed(charge_time, charge_speed_percent):
-    """Charge TIME from a charge-SPEED modifier.
+FRAME_SECONDS = 1.0 / 60
 
-    Charge speed is NOT reciprocal the way reload speed is: a buff of n%
-    SHORTENS the charge by n% of its base, i.e. `charge_time * (1 - n)`, so
-    +100% reaches zero rather than merely halving (Fienn, 2026-07-20, from
-    community testing). The engine previously used `charge_time / (1 + n)`,
-    which understated every buff - at +30% it gave 0.769 sec where the game
-    gives 0.70.
+
+def charge_time_with_speed(charge_time, charge_speed_percent, flat_reduction_sec=0.0):
+    """Charge TIME from a charge-SPEED modifier and any flat-seconds cut.
+
+    Charge speed is NOT reciprocal the way reload speed is. A buff of n% cuts
+    n% OFF THE CHARGE TIME IT APPLIES TO, so +100% reaches zero rather than
+    merely halving - which is why community guides tell you to aim for "99%+
+    charge speed" on units like Alice: 100% is the point where the charge
+    disappears entirely. The engine previously used `charge_time / (1 + n)`,
+    which understated every buff (at +30% it gave 0.769 sec where the game
+    gives 0.70) and could never reach zero at all.
+
+    The cut lands in WHOLE FRAMES: community testing works it as "3 sec is 180
+    frames, 10.28% of 180 frames is ~18.5 frames". Flooring matters at the
+    precision we now measure at - Neon: Vision Eye's 9.47% overload on a 1.0
+    sec charge measured 0.9178 sec, which the floored 5-frame step reproduces
+    to 0.07 frames where the continuous value is 0.75 frames off.
+
+    `flat_reduction_sec` is for "caster-based" (시전자 기준) buffs, which are a
+    genuinely different mechanic rather than a variant of the above: the
+    percentage is taken against the CASTER's charge time and handed to the
+    ally as absolute seconds, so it does NOT scale with the recipient's own
+    charge. Liberalio is the clear case - she is a Sniper Rifle with a 1.5 sec
+    charge, so her "Charge Speed +12.74% of the skill user's" is 0.1911 sec for
+    whoever receives it. Korean community guides state the same figure ("약
+    0.19초 줄어든다"), and it reproduces Fienn's Scarlet measurement (0.7323 ->
+    0.5424 sec) to 0.07 frames. Expressing it as a percent would be wrong: the
+    equivalent percent is 26.1% on Scarlet's 0.73 sec charge but 19.1% on a
+    1.0 sec one.
 
     The same expression covers slowdowns: at -20% it returns 1.2x the base,
     which is the behaviour Bready's Taste debuff needs.
@@ -112,8 +134,12 @@ def charge_time_with_speed(charge_time, charge_speed_percent):
     would have silently slowed her down. That the two disagree is itself
     evidence the floor is not one global constant - see the note above it.
     """
+    frames = int(charge_time / FRAME_SECONDS * charge_speed_percent)
+    reduced = charge_time - frames * FRAME_SECONDS - flat_reduction_sec
+    # The floor is measured against the UNBUFFED charge, so a weapon already
+    # quicker than it (Scarlet) is bounded by its own base, not slowed to it.
     floor = min(charge_time, CHARGE_INTERVAL_FLOOR_SECONDS)
-    return max(charge_time * (1 - charge_speed_percent), floor)
+    return max(reduced, floor)
 
 
 def rate_of_fire_for_weapon(weapon: str) -> float:
@@ -155,12 +181,15 @@ def generate_charge_shot_times(
     max_ammo_percent_at=_zero,
     reload_speed_percent_at=_zero,
     charge_speed_percent_at=_zero,
+    charge_time_reduction_sec_at=_zero,
 ):
     shots = []
     magazine_start = 0.0
 
     while magazine_start < fight_duration:
-        effective_charge = charge_time_with_speed(charge_time, charge_speed_percent_at(magazine_start))
+        effective_charge = charge_time_with_speed(
+            charge_time, charge_speed_percent_at(magazine_start),
+            charge_time_reduction_sec_at(magazine_start))
         magazine_size = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         last_shot_time = None
         for i in range(magazine_size):
@@ -185,6 +214,7 @@ def generate_shot_times(
     reload_speed_percent_at=_zero,
     attack_speed_percent_at=_zero,
     charge_speed_percent_at=_zero,
+    charge_time_reduction_sec_at=_zero,
 ):
     if weapon in CHARGE_WEAPONS:
         return generate_charge_shot_times(
@@ -247,6 +277,7 @@ def charge_last_bullet_times(
     max_ammo_percent_at=_zero,
     reload_speed_percent_at=_zero,
     charge_speed_percent_at=_zero,
+    charge_time_reduction_sec_at=_zero,
 ):
     """Charge-weapon equivalent of `magazine_last_bullet_times` - the round
     that empties each `max_ammo`-shot magazine before reloading. Charge speed
@@ -256,7 +287,9 @@ def charge_last_bullet_times(
     magazine_start = 0.0
 
     while magazine_start < fight_duration:
-        effective_charge = charge_time_with_speed(charge_time, charge_speed_percent_at(magazine_start))
+        effective_charge = charge_time_with_speed(
+            charge_time, charge_speed_percent_at(magazine_start),
+            charge_time_reduction_sec_at(magazine_start))
         magazine_size = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         last_round_time = magazine_start + effective_charge + (magazine_size - 1) * effective_charge
         if last_round_time >= fight_duration:
@@ -302,6 +335,7 @@ def charge_first_bullet_times(
     max_ammo_percent_at=_zero,
     reload_speed_percent_at=_zero,
     charge_speed_percent_at=_zero,
+    charge_time_reduction_sec_at=_zero,
 ):
     """Charge-weapon mirror: the first charged shot of each magazine (lands
     one effective charge after the magazine starts). A first shot at or after
@@ -309,7 +343,9 @@ def charge_first_bullet_times(
     first_bullets = set()
     magazine_start = 0.0
     while magazine_start < fight_duration:
-        effective_charge = charge_time_with_speed(charge_time, charge_speed_percent_at(magazine_start))
+        effective_charge = charge_time_with_speed(
+            charge_time, charge_speed_percent_at(magazine_start),
+            charge_time_reduction_sec_at(magazine_start))
         first_shot = magazine_start + effective_charge
         if first_shot >= fight_duration:
             return first_bullets
@@ -331,6 +367,7 @@ def first_bullet_shot_times(
     reload_speed_percent_at=_zero,
     attack_speed_percent_at=_zero,
     charge_speed_percent_at=_zero,
+    charge_time_reduction_sec_at=_zero,
 ):
     """Weapon-dispatching counterpart of `last_bullet_shot_times` - the subset
     of the shot timeline that OPENS its magazine, for a "at the start of battle
@@ -357,6 +394,7 @@ def last_bullet_shot_times(
     reload_speed_percent_at=_zero,
     attack_speed_percent_at=_zero,
     charge_speed_percent_at=_zero,
+    charge_time_reduction_sec_at=_zero,
 ):
     """Weapon-dispatching counterpart of `generate_shot_times` - the subset
     of that same shot timeline that empties its magazine, for a "last bullet
@@ -395,7 +433,8 @@ class ShotRecord:
 
 def _base_shot_records(base, window_start, window_end,
                        max_ammo_percent_at, reload_speed_percent_at,
-                       attack_speed_percent_at, charge_speed_percent_at):
+                       attack_speed_percent_at, charge_speed_percent_at,
+                       charge_time_reduction_sec_at=_zero):
     """The base weapon firing over [window_start, window_end) - the same
     arithmetic as generate_{charge,magazine}_shot_times (kept bit-identical so
     a no-segment call reproduces the legacy timeline exactly), restarted with
@@ -410,7 +449,9 @@ def _base_shot_records(base, window_start, window_end,
         bonus = base["charge_damage_percent"] / 100 - 1
         magazine_start = window_start
         while magazine_start < window_end:
-            effective_charge = charge_time_with_speed(base["charge_time"], charge_speed_percent_at(magazine_start))
+            effective_charge = charge_time_with_speed(
+                base["charge_time"], charge_speed_percent_at(magazine_start),
+                charge_time_reduction_sec_at(magazine_start))
             magazine_size = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
             last_shot_time = None
             for i in range(magazine_size):
@@ -442,7 +483,8 @@ def _base_shot_records(base, window_start, window_end,
     return records
 
 
-def _segment_shot_records(seg, fight_duration, charge_speed_percent_at):
+def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
+                          charge_time_reduction_sec_at=_zero):
     """Shots of one override window. Cadence: charge-style profiles
     (charge_time) honor live charge-speed buffs; explicit rate_of_fire
     profiles are measurement anchors and take NO cadence buffs (the measured
@@ -457,7 +499,9 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at):
     profile = seg["profile"]
     start = seg["start"]
     if profile.get("charge_time"):
-        interval = charge_time_with_speed(profile["charge_time"], charge_speed_percent_at(start))
+        interval = charge_time_with_speed(
+            profile["charge_time"], charge_speed_percent_at(start),
+            charge_time_reduction_sec_at(start))
     else:
         interval = 1.0 / profile["rate_of_fire"]
     charge = profile.get("charge_damage_percent")
@@ -489,6 +533,7 @@ def generate_segmented_shots(
     reload_speed_percent_at=_zero,
     attack_speed_percent_at=_zero,
     charge_speed_percent_at=_zero,
+    charge_time_reduction_sec_at=_zero,
 ):
     """Full shot-record timeline for a unit whose weapon profile changes
     inside module-scheduled windows (weapon transforms - see
@@ -506,9 +551,11 @@ def generate_segmented_shots(
             stretch_end = min(seg["start"], fight_duration)
         records.extend(_base_shot_records(
             base, cursor, stretch_end, max_ammo_percent_at,
-            reload_speed_percent_at, attack_speed_percent_at, charge_speed_percent_at))
+            reload_speed_percent_at, attack_speed_percent_at, charge_speed_percent_at,
+            charge_time_reduction_sec_at))
         if seg is None or seg["start"] >= fight_duration:
             break
-        seg_records, cursor = _segment_shot_records(seg, fight_duration, charge_speed_percent_at)
+        seg_records, cursor = _segment_shot_records(
+            seg, fight_duration, charge_speed_percent_at, charge_time_reduction_sec_at)
         records.extend(seg_records)
     return records

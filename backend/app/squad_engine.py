@@ -28,6 +28,7 @@ class SquadContext:
         self,
         members: list[SquadMember],
         base_atk: dict[str, float] | None = None,
+        base_charge_time: dict[str, float] | None = None,
         boss_element: str | None = None,
         part_destructible: bool = False,
         core_hittable: bool = False,
@@ -37,6 +38,12 @@ class SquadContext:
         # the highest final ATK" can rank them live (see top_atk_slugs). Injected by
         # raid_simulator; empty for contexts that don't need ranking.
         self.base_atk: dict[str, float] = base_atk or {}
+        # each member's BASE charge time, so "the ally with the longest basic
+        # Charge Time" (Mana's Metal sigma) can be resolved. Basic = the
+        # weapon's own value, unmodified by buffs, which is what that wording
+        # asks for. Magazine weapons have 0 and never win. Empty for contexts
+        # without weapon stats.
+        self.base_charge_time: dict[str, float] = base_charge_time or {}
         # the boss's element ("Fire"/"Water"/"Wind"/"Iron"/"Electric"), so a
         # SkillRule gated on "if the enemy is X Code" (e.g. Brid's Wind-Code Damage
         # Taken debuff) can read it via the boss_is_element condition. Only
@@ -188,6 +195,47 @@ class SquadContext:
             candidates = candidates + [caster_slug]
         ranked = sorted(candidates, key=final_atk, reverse=True)
         return ranked[:n]
+
+    def longest_charge_time_slugs(self, n: int) -> list[str]:
+        """The `n` members with the longest BASIC charge time - Mana's Metal
+        sigma targets "1 ally unit(s) with the longest basic Charge Time".
+        Static, since "basic" means the weapon's own value rather than a live
+        one. Ties break by deck order (stable sort)."""
+        ranked = sorted(
+            (m.slug for m in self.members),
+            key=lambda slug: self.base_charge_time.get(slug, 0.0),
+            reverse=True,
+        )
+        return ranked[:n]
+
+    def lowest_atk_slugs(
+        self, n: int, registry, time: float, burst_tier: int | None = None
+    ) -> list[str]:
+        """The `n` members with the LOWEST final ATK at `time`, optionally
+        restricted to one burst tier - Liberalio's Calm Depths targets "the 1
+        Burst 3 ally unit(s) with the lowest final ATK".
+
+        Unlike `top_atk_slugs` this does NOT exclude the caster. Liberalio is
+        herself a Burst 3, and Korean guides describe exactly that comparison
+        ("Liberalio's ATK must be higher than Scarlet's" for Scarlet to get the
+        buff), so she is a candidate for her own buff. When she does win it the
+        effect is simply wasted, because Strange Currents makes her immune to
+        charge-speed effects - which the engine reproduces rather than
+        special-cases."""
+        by_slug = {m.slug: m for m in self.members}
+
+        def final_atk(slug: str) -> float:
+            target = {"slug": slug, "element": by_slug[slug].element}
+            base = self.base_atk.get(slug, 0.0)
+            return base * (1 + registry.total_for("atk_percent", target, time)) + registry.total_for(
+                "flat_atk", target, time
+            )
+
+        candidates = [
+            m.slug for m in self.members
+            if burst_tier is None or m.burst_tier == burst_tier
+        ]
+        return sorted(candidates, key=final_atk)[:n]
 
 
 def no_other_burst_tier_allies(tier: int) -> Callable[[SquadContext, str], bool]:

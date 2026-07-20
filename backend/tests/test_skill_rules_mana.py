@@ -1,3 +1,5 @@
+import pytest
+
 """Real max-level (base-skill) figures from lootandwaifus, slots numbered
 left-to-right per skill (fixed reference counts are not data slots).
 """
@@ -5,6 +7,7 @@ from app.effects import EffectRegistry
 from app.raid_simulator import simulate_raid
 from app.skill_rules.mana import (
     build_fatal_error_dot,
+    build_metal_sigma_charge_rules,
     build_fatal_error_self_buff_rules,
     build_metal_gamma_rules,
     build_metal_sigma_rules,
@@ -17,7 +20,9 @@ MANA_VALUES = {
     },
     "metal_sigma": {
         "description_value_01": "70.4", "description_value_02": "21.12",
-        "description_value_03": "10", "description_value_04": "63.36", "description_value_05": "0.18",
+        "description_value_03": "10", "description_value_04": "63.36",
+        "description_value_05": "0.18", "description_value_06": "10",
+        "description_value_07": "70.4",
     },
     "fatal_error": {
         "description_value_01": "52.8", "description_value_02": "10",
@@ -131,3 +136,46 @@ def test_mana_end_to_end_fatal_error_dot_ticks_ten_times_and_gets_full_burst_bon
 METAL_GAMMA = MANA_VALUES["metal_gamma"]
 METAL_SIGMA = MANA_VALUES["metal_sigma"]
 FATAL_ERROR = MANA_VALUES["fatal_error"]
+
+
+def test_metal_sigma_cuts_the_longest_basic_charge_allys_charge_time():
+    # "1 ally with the longest basic Charge Time", -0.18 sec for 10 sec. The
+    # cut is absolute seconds, which is why it needed the caster-based stat
+    # rather than charge_speed_percent - see the module docstring.
+    rules = {"mana": build_metal_sigma_charge_rules(MANA_VALUES)}
+    ctx = SquadContext(
+        [
+            SquadMember("mana", burst_tier=3, element="Wind"),
+            SquadMember("sr-ally", burst_tier=3, element="Wind"),
+            SquadMember("rl-ally", burst_tier=1, element="Iron"),
+        ],
+        base_charge_time={"mana": 0.0, "sr-ally": 1.5, "rl-ally": 1.0},
+    )
+    reg = EffectRegistry()
+    fire_trigger("full_burst_enter", rules, ctx, reg, time=5.0)
+
+    assert reg.total_for("charge_time_reduction_sec",
+                         {"slug": "sr-ally", "element": "Wind"}, now=5.0) == pytest.approx(0.18)
+    # only one ally, and the shorter-charge one is not it
+    assert reg.total_for("charge_time_reduction_sec",
+                         {"slug": "rl-ally", "element": "Iron"}, now=5.0) == 0.0
+    assert reg.total_for("charge_time_reduction_sec",
+                         {"slug": "sr-ally", "element": "Wind"}, now=15.1) == 0.0
+
+
+def test_metal_sigma_never_picks_a_magazine_weapon_ally():
+    # Magazine weapons have a 0 basic charge time, so they cannot be "the
+    # longest" unless the whole deck is magazine weapons.
+    rules = {"mana": build_metal_sigma_charge_rules(MANA_VALUES)}
+    ctx = SquadContext(
+        [
+            SquadMember("mana", burst_tier=3, element="Wind"),
+            SquadMember("ar-ally", burst_tier=1, element="Iron"),
+            SquadMember("charge-ally", burst_tier=2, element="Iron"),
+        ],
+        base_charge_time={"mana": 0.0, "ar-ally": 0.0, "charge-ally": 1.0},
+    )
+    reg = EffectRegistry()
+    fire_trigger("full_burst_enter", rules, ctx, reg, time=5.0)
+    assert reg.total_for("charge_time_reduction_sec",
+                         {"slug": "charge-ally", "element": "Iron"}, now=5.0) == pytest.approx(0.18)

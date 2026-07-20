@@ -93,6 +93,7 @@ from app.skill_rules.mana import (
     build_fatal_error_dot,
     build_fatal_error_self_buff_rules,
     build_metal_gamma_rules,
+    build_metal_sigma_charge_rules,
     build_metal_sigma_rules,
 )
 from app.skill_rules.crown import (
@@ -208,6 +209,7 @@ from app.skill_rules.isabel import (
     sonic_chaser_burst_percent,
 )
 from app.skill_rules.liberalio import (
+    build_calm_depths_charge_rules,
     build_liberalio_per_shot_rules,
     build_liberalio_rules,
     build_strange_currents_immunity_rules,
@@ -380,6 +382,7 @@ def _build_asuka(sv):
 def _build_mana(sv):
     rules = build_metal_gamma_rules(sv)
     rules += build_metal_sigma_rules(sv)
+    rules += build_metal_sigma_charge_rules(sv)
     rules += build_fatal_error_self_buff_rules(sv)
     return rules, None  # Fatal Error! is a resource_scaled_nuke (flat DoT), not burst_damage_percents
 
@@ -415,7 +418,8 @@ _BUILDERS = {
     ),
     "liberalio": lambda sv: (
         build_liberalio_rules(sv)
-        + build_strange_currents_immunity_rules(sv["strange_currents"]),
+        + build_strange_currents_immunity_rules(sv["strange_currents"])
+        + build_calm_depths_charge_rules(sv, sv["caster_weapon_stats"]),
         submerged_world_burst_percent(sv),
     ),
     "ludmilla-winter-owner": lambda sv: (build_ludmilla_rules(sv), None),

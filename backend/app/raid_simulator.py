@@ -426,6 +426,10 @@ def simulate_raid(
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"], m.get("weapon")) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
+        base_charge_time={
+            m["slug"]: (weapon_stats.get(m["slug"]) or {}).get("charge_time", 0.0)
+            for m in deck
+        },
         boss_element=boss_element,
         part_destructible=part_destructible,
         core_hittable=core_hittable,
@@ -731,6 +735,12 @@ def simulate_raid(
         charge_speed_percent_at = lambda t, target=target: registry.total_for(
             "charge_speed_percent", target, t
         )
+        # "Caster-based" charge buffs hand over absolute SECONDS rather than a
+        # percent of the recipient's own charge - see attack_rate's
+        # charge_time_with_speed. Liberalio and Mana are the consumers.
+        charge_time_reduction_sec_at = lambda t, target=target: registry.total_for(
+            "charge_time_reduction_sec", target, t
+        )
         schedule_fn = weapon_mode_schedules.get(slug)
         segments = schedule_fn(context, fight_duration) if schedule_fn is not None else []
         shot_records = generate_segmented_shots(
@@ -739,6 +749,7 @@ def simulate_raid(
             reload_speed_percent_at=reload_speed_percent_at,
             attack_speed_percent_at=attack_speed_percent_at,
             charge_speed_percent_at=charge_speed_percent_at,
+            charge_time_reduction_sec_at=charge_time_reduction_sec_at,
         )
         shot_times = [r.time for r in shot_records]
         last_bullets = {r.time for r in shot_records if r.is_last_bullet}
