@@ -293,7 +293,15 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     )["total_damage"]
 
     assert dmg_with > dmg_without
-    assert round(dmg_with / dmg_without, 4) == round(695102334.2073559 / 679854470.749847, 4)
+    # Golden pin. Re-baselined 2026-07-21: the completeness batch changed all
+    # three units in this deck (Anis: Star's Shooting Stars and fixed charge
+    # time, Helm's full-charge nuke, Crown's Royal Attire) and restored Crown's
+    # Last Kingdom via Effect.refresh_group, so the absolutes moved 680M ->
+    # 1124M. The RATIO rose too (1.0224 -> 1.0369) for a real reason rather
+    # than noise: charge speed now shortens the charge instead of dividing it,
+    # so reload downtime is a larger share of a charge weapon's cycle and a
+    # reload buff buys correspondingly more.
+    assert round(dmg_with / dmg_without, 4) == round(1165772405.6523907 / 1124280403.072149, 4)
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():
