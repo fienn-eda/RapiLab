@@ -213,10 +213,34 @@ const trimDirectory = (dir) =>
     .sort((a, b) => a.resource_id - b.resource_id)
 
 // corporation_sub_type ("OVERSPEC") decides how much flat ATK each breakthrough
+// core is worth, but the directory payload does not carry it - it lives in the
+// per-character stat file, one page load away. Carrying it over from the previous
+// snapshot is what keeps a plain --directory refresh from silently dropping it
+// from the entries that already had one.
+const carryOverSubTypes = (entries, previous) => {
+  const known = new Map(
+    (previous || [])
+      .filter((e) => e.corporation_sub_type)
+      .map((e) => [e.resource_id, e.corporation_sub_type]),
+  )
+  return entries.map((e) =>
+    known.has(e.resource_id)
+      ? { ...e, corporation_sub_type: known.get(e.resource_id) }
+      : e,
+  )
+}
+
+// Ids still without a sub type after the carry-over: newly released units, the
+// only ones --deep needs to visit.
+const missingSubTypeIds = (entries) =>
+  entries.filter((e) => !e.corporation_sub_type).map((e) => e.resource_id)
+
+// corporation_sub_type ("OVERSPEC") decides how much flat ATK each breakthrough
 // core is worth, so the stat calculator needs it - but the directory payload does
 // not carry it. It lives in the per-character stat file, which means one page load
 // per unit. Slow, so it is opt-in: run `--directory --deep` when refreshing the
-// snapshot, and the field is otherwise carried over from the previous one.
+// snapshot; carryOverSubTypes restores it for units already recorded in a
+// previous snapshot, and missingSubTypeIds finds the ones that still need it.
 const collectSubTypes = async (page, entries) => {
   const cdp = await page.context().newCDPSession(page)
   await cdp.send('Network.setCacheDisabled', { cacheDisabled: true })
@@ -359,7 +383,7 @@ const main = async () => {
   await browser.close()
 }
 
-module.exports = { trimDirectory }
+module.exports = { trimDirectory, carryOverSubTypes, missingSubTypeIds }
 
 if (require.main !== module) return
 

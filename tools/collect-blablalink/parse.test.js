@@ -80,7 +80,7 @@ test('parses a per-tab-plucked capture (Blanc): stats, dropped overloads, skills
 
 // --- directory snapshot -------------------------------------------------------
 
-const { trimDirectory } = require('./collect')
+const { trimDirectory, carryOverSubTypes, missingSubTypeIds } = require('./collect')
 
 test('trimDirectory keeps the public identity fields, sorted by resource_id', () => {
   const raw = [
@@ -99,4 +99,46 @@ test('trimDirectory drops entries with no English name (unreleased placeholders)
     { resource_id: 10, name_code: 10, original_rare: 'SSR', name_localkey: { name: 'Real' } },
   ]
   assert.deepEqual(trimDirectory(raw).map((e) => e.resource_id), [10])
+})
+
+const dirEntry = (id, name, extra = {}) => ({
+  resource_id: id,
+  name_code: 3000 + id,
+  name_localkey: { name },
+  original_rare: 'SSR',
+  class: 'Attacker',
+  corporation: 'ELYSION',
+  ...extra,
+})
+
+test('carryOverSubTypes restores corporation_sub_type from the previous snapshot', () => {
+  const fresh = trimDirectory([dirEntry(10, 'Alpha'), dirEntry(20, 'Bravo')])
+  const previous = [{ resource_id: 10, corporation_sub_type: 'OVERSPEC' }]
+  const out = carryOverSubTypes(fresh, previous)
+  assert.equal(out[0].corporation_sub_type, 'OVERSPEC')
+  assert.equal('corporation_sub_type' in out[1], false)
+})
+
+test('carryOverSubTypes does not mutate its input', () => {
+  const fresh = trimDirectory([dirEntry(10, 'Alpha')])
+  carryOverSubTypes(fresh, [{ resource_id: 10, corporation_sub_type: 'OVERSPEC' }])
+  assert.equal('corporation_sub_type' in fresh[0], false)
+})
+
+test('carryOverSubTypes passes through when there is no previous snapshot', () => {
+  const fresh = trimDirectory([dirEntry(10, 'Alpha')])
+  assert.deepEqual(carryOverSubTypes(fresh, null), fresh)
+  assert.deepEqual(carryOverSubTypes(fresh, []), fresh)
+})
+
+test('carryOverSubTypes does not resurrect a null previous value', () => {
+  const fresh = trimDirectory([dirEntry(10, 'Alpha')])
+  const out = carryOverSubTypes(fresh, [{ resource_id: 10, corporation_sub_type: null }])
+  assert.equal('corporation_sub_type' in out[0], false)
+})
+
+test('missingSubTypeIds lists only the ids the carry-over left empty', () => {
+  const fresh = trimDirectory([dirEntry(10, 'Alpha'), dirEntry(20, 'Bravo')])
+  const out = carryOverSubTypes(fresh, [{ resource_id: 10, corporation_sub_type: 'OVERSPEC' }])
+  assert.deepEqual(missingSubTypeIds(out), [20])
 })
