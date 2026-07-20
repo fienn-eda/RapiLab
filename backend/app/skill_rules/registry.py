@@ -181,6 +181,8 @@ from app.skill_rules.mihara_bonding_chain import (
 from app.skill_rules.modernia import build_modernia_per_shot_rules, build_modernia_resources
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
+    build_aegis_cannon_rules,
+    build_fire_away_per_shot_rules,
     build_fire_away_rules,
     build_frontline_command_per_shot_rules,
 )
@@ -330,6 +332,7 @@ def _build_rapi_red_hood_b1(sv):
 
 def _build_helm(sv):
     rules = build_fire_away_rules(sv["fire_away"])
+    rules += build_aegis_cannon_rules(sv["aegis_cannon"])
     return rules, aegis_cannon_burst_percent(sv["aegis_cannon"])
 
 
@@ -662,7 +665,10 @@ _PER_SHOT_RULE_BUILDERS = {
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),
     "marciana-marine-study": lambda sv: build_marciana_per_shot_rules(sv),
-    "helm": lambda sv: build_frontline_command_per_shot_rules(sv["frontline_command"]),
+    "helm": lambda sv: (
+        build_frontline_command_per_shot_rules(sv["frontline_command"])
+        + build_fire_away_per_shot_rules(sv["fire_away"])
+    ),
     "privaty": lambda sv: build_ld_assault_per_shot_rules(sv),
     "zwei": lambda sv: build_pierce_equation_per_shot_rules(sv),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),

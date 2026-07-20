@@ -18,16 +18,26 @@ via `per_shot_rules`' `"last_bullet"` mode (gap #1's residual variant, built
 empty faster than the buff's own 5s window, so repeated last-bullet hits
 must refresh, not stack - see the Prika/Mint per-shot-refresh precedent).
 
-Not modeled / deferred: both skills' "on Full Charge attack" bonus effects
-(Frontline Command's Max-HP recovery + Burst Gauge fill; Fire Away's 178.98%
-additional-damage hit) - a DIFFERENT trigger from last-bullet (every shot on
-a charge weapon is a full charge, so this is really `per_shot_rules`' plain
-"every 1" mode, not gated on the gap #1 fix - just not built in this pass).
-Aegis Cannon's post-burst Charge Damage Multiplier (+158.4% for 10 rounds)
-is also deferred (a "for N round(s)" bullet-count buff on herself).
+"Fire Away" also deals 178.98% of final ATK on every Full Charge hit - a
+DIFFERENT trigger from last-bullet, and since every shot on a charge weapon is
+a full charge it is `per_shot_rules`' plain "every 1" mode (see
+`build_fire_away_per_shot_rules`). Its text says "as additional damage", so it
+is `full_burst_bonus_eligible`.
+
+"Aegis Cannon" additionally grants herself Charge Damage Multiplier +158.4%
+for 10 ROUNDS - a bullet-count duration, not seconds, so it uses
+`round_buff_rule(shots=10)` (the Zwei/Miranda precedent).
+
+Not modeled / deferred: Frontline Command's own full-charge bonuses (Max-HP
+recovery + Burst Gauge fill - survivability and an inert stat), and Aegis
+Cannon's damage-proportional heal-over-time.
 """
 from app.effects import Effect
-from app.skill_rules._helpers import refreshing_buff_rule
+from app.skill_rules._helpers import (
+    instant_nuke_pulse_rule,
+    refreshing_buff_rule,
+    round_buff_rule,
+)
 from app.squad_engine import SkillRule
 
 # Fienn's Helm has the signature weapon completed, so the manifest reads the
@@ -81,6 +91,30 @@ def build_fire_away_rules(values: dict) -> list[SkillRule]:
     return [
         SkillRule(trigger="battle_start", action=grant_damage_to_parts),
         SkillRule(trigger="full_burst_enter", action=grant_attack_damage_up),
+    ]
+
+
+def build_fire_away_per_shot_rules(values: dict) -> list:
+    """Fire Away's "on Full Charge hit" bonus: every SR shot is a full charge,
+    so this is the plain "every 1" per-shot mode. "as additional damage" opts
+    it in to the Full Burst bonus."""
+    nuke_percent = float(values["description_value_04"])
+    return [(1, "every", [
+        instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True)
+    ])]
+
+
+def build_aegis_cannon_rules(values: dict) -> list[SkillRule]:
+    """Aegis Cannon's self Charge Damage Multiplier. "for N round(s)" is a
+    bullet-count duration - her next `shots` normal attacks - not seconds."""
+    charge_damage = float(values["description_value_04"]) / 100
+    rounds = int(float(values["description_value_05"]))
+    return [
+        round_buff_rule(
+            "own_burst_activate",
+            [("charge_damage_bonus", charge_damage, "self")],
+            shots=rounds,
+        )
     ]
 
 

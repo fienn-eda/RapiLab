@@ -1,6 +1,8 @@
 from app.effects import EffectRegistry
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
+    build_aegis_cannon_rules,
+    build_fire_away_per_shot_rules,
     build_fire_away_rules,
     build_frontline_command_per_shot_rules,
 )
@@ -20,6 +22,7 @@ FIRE_AWAY_VALUES = {
     "description_value_01": "3.08",
     "description_value_02": "27.87",
     "description_value_03": "10",
+    "description_value_04": "178.98",  # Full Charge hit: "as additional damage"
 }
 
 AEGIS_CANNON_VALUES = {
@@ -96,3 +99,39 @@ def test_fire_away_grants_squad_attack_damage_up_on_full_burst_enter():
 
 def test_aegis_cannon_burst_percent_reads_the_damage_slot():
     assert aegis_cannon_burst_percent(AEGIS_CANNON_VALUES) == 8236.8
+
+
+def test_fire_away_full_charge_nuke_fires_every_shot_and_takes_the_full_burst_bonus():
+    ps = build_fire_away_per_shot_rules(FIRE_AWAY_VALUES)
+    assert len(ps) == 1
+    threshold, mode, rules = ps[0]
+    # Every SR shot IS a full charge, so this is the plain "every 1" mode.
+    assert (threshold, mode) == (1, "every")
+
+    ctx = make_context()
+    registry = EffectRegistry()
+    for rule in rules:
+        rule.action(ctx, "helm", 3.0, registry)
+
+    pulses = registry.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert pulses[0].value == 178.98
+    assert pulses[0].source_slug == "helm"
+    # "as additional damage" -> opted in to the Full Burst bonus.
+    assert pulses[0].full_burst_bonus_eligible is True
+
+
+def test_aegis_cannon_grants_self_charge_damage_for_ten_rounds():
+    ctx = make_context()
+    registry = EffectRegistry()
+    rules = {"helm": build_aegis_cannon_rules(AEGIS_CANNON_VALUES)}
+
+    fire_trigger("own_burst_activate", rules, ctx, registry, time=5.0)
+
+    grants = registry.round_grants()
+    assert len(grants) == 1
+    grant = grants[0]
+    assert grant.stat == "charge_damage_bonus"
+    assert grant.value == 1.584
+    assert grant.shots == 10
+    assert grant.scope == "self"

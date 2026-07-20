@@ -13,8 +13,8 @@ def helm_spec(overload_options=None, cube=None):
         base_stats={"atk": 398398, "def": 52659, "max_hp": 9198954},
         skill_values={
             "frontline_command": {"description_value_01": "14.64", "description_value_02": "5"},
-            "fire_away": {"description_value_01": "3.08", "description_value_02": "27.87", "description_value_03": "10"},
-            "aegis_cannon": {"description_value_01": "8236.8"},
+            "fire_away": {"description_value_01": "3.08", "description_value_02": "27.87", "description_value_03": "10", "description_value_04": "178.98"},
+            "aegis_cannon": {"description_value_01": "8236.8", "description_value_04": "158.4", "description_value_05": "10"},
         },
         weapon_stats={
             "weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,

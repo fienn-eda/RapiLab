@@ -35,8 +35,8 @@ def test_build_returns_rules_and_burst_percent_for_an_attacker():
     # Helm: pass her skill values; expect combat rules plus a burst nuke %.
     skill_values = {
         "frontline_command": {"description_value_01": "14.64", "description_value_02": "5"},
-        "fire_away": {"description_value_01": "3.08", "description_value_02": "27.87", "description_value_03": "10"},
-        "aegis_cannon": {"description_value_01": "8236.8"},
+        "fire_away": {"description_value_01": "3.08", "description_value_02": "27.87", "description_value_03": "10", "description_value_04": "178.98"},
+        "aegis_cannon": {"description_value_01": "8236.8", "description_value_04": "158.4", "description_value_05": "10"},
     }
     rules, burst_percent = build_nikke_rules("helm", skill_values)
     assert len(rules) > 0
