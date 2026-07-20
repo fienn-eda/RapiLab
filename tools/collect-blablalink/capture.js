@@ -10,11 +10,33 @@
 // blablalink session. Nothing is persisted except the sanitized HTML written here.
 
 const { chromium } = require('playwright-core')
+const fs = require('fs')
 
 const CDP = process.env.BLABLALINK_CDP || 'http://localhost:9222'
 const SHIFTYPAD = 'https://www.blablalink.com/shiftyspad/nikke?nikke='
 
 const connect = () => chromium.connectOverCDP(CDP)
+
+// Known install locations, tried in order; CHROME_PATH overrides. The directory
+// dump is public game data and needs no account, so it can run in a browser we
+// launch ourselves instead of attaching to the user's logged-in Chrome.
+const CHROME_PATHS = [
+  process.env.CHROME_PATH,
+  'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Google\\Chrome\\Application\\chrome.exe',
+  'C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe',
+  'C:\\Program Files\\Microsoft\\Edge\\Application\\msedge.exe',
+].filter(Boolean)
+
+const launch = () => {
+  const exe = CHROME_PATHS.find((p) => fs.existsSync(p))
+  if (!exe) {
+    throw new Error(
+      `no Chrome/Edge executable found; set CHROME_PATH. Tried:\n  ${CHROME_PATHS.join('\n  ')}`,
+    )
+  }
+  return chromium.launch({ executablePath: exe, headless: true })
+}
 
 const findPage = (ctx) =>
   ctx.pages().find((p) => p.url().includes('blablalink')) || ctx.pages()[0]
@@ -166,6 +188,7 @@ const captureUnit = async (page, resourceId, ids = {}) => {
 
 module.exports = {
   connect,
+  launch,
   findPage,
   readLevel,
   setLevel400,
@@ -176,7 +199,6 @@ module.exports = {
 }
 
 if (require.main === module) {
-  const fs = require('fs')
   const path = require('path')
   const [, , rid, slug] = process.argv
   if (!rid || !slug) {

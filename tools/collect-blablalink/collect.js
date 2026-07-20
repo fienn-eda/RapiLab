@@ -10,9 +10,12 @@
 //   node collect.js [--dry-run] [--out roster.json] [--area 81]
 //   --dry-run   collect only the first owned SSR unit (smoke test)
 //   --directory dump the public nikke directory to nikke-directory.json and stop
-//   --deep      with --directory, also record each unit's corporation_sub_type,
-//               which the stat calculator needs and the directory payload lacks.
-//               Costs one page load per unit (~194), so it is opt-in.
+//   --deep      with --directory, fetch corporation_sub_type for units that do
+//               not already have one carried over from the previous snapshot
+//               (i.e. newly released units). One page load each.
+//   --headless  with --directory, launch our own browser instead of attaching to
+//               yours. The directory is public game data, so this needs no
+//               account - it is what lets the scheduled check run unattended.
 //   --raw       with --directory, write the CDN payload untrimmed (do NOT commit
 //               it: it is huge). For discovering which fields the directory even
 //               carries before deciding what the snapshot should keep.
@@ -25,7 +28,7 @@
 
 const fs = require('fs')
 const { JSDOM } = require('jsdom')
-const { connect, findPage, captureUnit } = require('./capture')
+const { connect, launch, findPage, captureUnit } = require('./capture')
 const { parseMainStats, parseOverload, parseSkills, parseCube } = require('./parse')
 
 const args = process.argv.slice(2)
@@ -33,6 +36,7 @@ const DRY = args.includes('--dry-run')
 const DIRECTORY_ONLY = args.includes('--directory')
 const RAW = args.includes('--raw')
 const DEEP = args.includes('--deep')
+const HEADLESS = args.includes('--headless')
 const TABLES_ONLY = args.includes('--tables')
 const DETAILS_ONLY = args.includes('--details')
 const DEFAULT_OUT = DIRECTORY_ONLY
@@ -284,9 +288,14 @@ const parseUnit = (html) => {
 }
 
 const main = async () => {
-  const browser = await connect()
-  const ctx = browser.contexts()[0]
-  const page = findPage(ctx)
+  if (HEADLESS && !DIRECTORY_ONLY) {
+    throw new Error('--headless only applies to --directory; the other modes need your logged-in session')
+  }
+
+  const browser = HEADLESS ? await launch() : await connect()
+  const page = HEADLESS
+    ? await browser.newPage()
+    : findPage(browser.contexts()[0])
 
   log('resolving nikke directory…')
   const dir = await collectDirectory(page)
@@ -295,12 +304,21 @@ const main = async () => {
   // The directory is public game data, so this mode needs no account at all — it is
   // how the committed snapshot that validates the resource_id -> slug map is refreshed.
   if (DIRECTORY_ONLY) {
-    const entries = RAW ? dir : trimDirectory(dir)
-    if (DEEP && !RAW) {
-      log(`collecting corporation_sub_type for ${entries.length} units…`)
-      const subTypes = await collectSubTypes(page, entries)
-      for (const e of entries) {
-        if (subTypes.has(e.resource_id)) e.corporation_sub_type = subTypes.get(e.resource_id)
+    let entries = RAW ? dir : trimDirectory(dir)
+    if (!RAW) {
+      const previous = fs.existsSync(OUT)
+        ? JSON.parse(fs.readFileSync(OUT, 'utf8'))
+        : null
+      entries = carryOverSubTypes(entries, previous)
+      if (DEEP) {
+        const missing = missingSubTypeIds(entries)
+        log(`collecting corporation_sub_type for ${missing.length} unit(s) without one…`)
+        const subTypes = await collectSubTypes(page, entries.filter((e) => !e.corporation_sub_type))
+        entries = entries.map((e) =>
+          subTypes.has(e.resource_id)
+            ? { ...e, corporation_sub_type: subTypes.get(e.resource_id) }
+            : e,
+        )
       }
     }
     fs.writeFileSync(OUT, `${JSON.stringify(entries, null, 2)}\n`)
@@ -323,7 +341,7 @@ const main = async () => {
     return
   }
 
-  const cookies = await ctx.cookies()
+  const cookies = await browser.contexts()[0].cookies()
   const openid = (cookies.find((c) => c.name === 'game_openid') || {}).value || null
   if (!openid) throw new Error('no game_openid cookie — is the blablalink session logged in?')
   const byCode = new Map(dir.map((d) => [d.name_code, d]))
