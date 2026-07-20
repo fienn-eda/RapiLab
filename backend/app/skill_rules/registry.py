@@ -148,6 +148,12 @@ from app.skill_rules.eve import (
     build_unstable_energy_per_shot_rules,
     counter_chain_burst_percent,
 )
+from app.skill_rules.milk_blooming_bunny import (
+    build_milk_burst_anchored_buffs,
+    build_milk_rules,
+    build_milk_scheduled_nukes,
+    build_milk_weapon_mode_schedule,
+)
 from app.skill_rules.drake import (
     build_drake_rules,
     build_drake_signature_rules,
@@ -388,6 +394,9 @@ _BUILDERS = {
     "liberalio": lambda sv: (build_liberalio_rules(sv), submerged_world_burst_percent(sv)),
     "ludmilla-winter-owner": lambda sv: (build_ludmilla_rules(sv), None),
     "mana": _build_mana,
+    # Her burst deals no direct damage - Overconfident is buffs plus the
+    # Distributed ticks in _SCHEDULED_NUKE_BUILDERS.
+    "milk-blooming-bunny": lambda sv: (build_milk_rules(sv), None),
     "chisato-nishikigi": lambda sv: (build_chisato_rules(sv), None),
     "maiden-ice-rose": _build_maiden,
     "asuka-shikinami-langley-wille": _build_asuka,
@@ -477,6 +486,24 @@ _BURST_DELAY_BUILDERS = {
 }
 
 
+# A Nikke whose own burst grants a buff at an OFFSET from the burst, possibly
+# lasting until that unit's NEXT own burst rather than a fixed duration - see
+# raid_simulator's `burst_anchored_buffs` param and UNTIL_NEXT_OWN_BURST. Each
+# entry returns a list of spec dicts: {"offset", "stat", "value", "scope",
+# "duration"}.
+_BURST_ANCHORED_BUFF_BUILDERS = {
+    "milk-blooming-bunny": lambda sv: build_milk_burst_anchored_buffs(sv),
+}
+
+
+def get_burst_anchored_buffs(slug, skill_values):
+    """List of burst-anchored-buff spec dicts for a Nikke whose own burst opens
+    a state at an offset (see raid_simulator's `burst_anchored_buffs`), or None
+    for the vast majority without one."""
+    builder = _BURST_ANCHORED_BUFF_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
 def get_burst_delay(slug, skill_values):
     builder = _BURST_DELAY_BUILDERS.get(slug)
     if builder is None:
@@ -540,6 +567,7 @@ _SCHEDULED_NUKE_BUILDERS = {
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
     "elegg-boom-and-shock": lambda sv: build_ghostbuster_scheduled_nukes(sv),  # capture at the ghost cap
     "mihara-bonding-chain": lambda sv: build_mihara_scheduled_nukes(sv),  # chain attacks + Ensnaring DoT
+    "milk-blooming-bunny": lambda sv: build_milk_scheduled_nukes(sv),  # Embarrassment entry + Overconfident ticks
     "bready-lingering": lambda sv: build_aftertaste_scheduled_nukes(sv),  # Aftertaste DoT windows
     "diesel-winter-sweets-intro": lambda sv: build_diesel_full_burst_dot(sv),  # per-Full-Burst DoT
     "diesel-winter-sweets-highlight": lambda sv: build_diesel_full_burst_dot(sv),
@@ -560,6 +588,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "snow-white-heavy-arms": lambda sv: build_fully_active_weapon_mode_schedule(sv),  # 2-shot 3.2s-charge segment per own-burst
     "maxwell": lambda sv: build_pierce_shot_weapon_mode_schedule(sv),  # single 2s-charge cannon shot per own-burst
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
+    "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at

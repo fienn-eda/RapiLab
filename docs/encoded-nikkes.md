@@ -3,16 +3,21 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-20 — **EVE 신규 인코딩**. "노멀공격 크리티컬 44회" 카운터를
+- 마지막 갱신: 2026-07-20 — **Milk: Blooming Bunny 신규 인코딩으로 미인코딩 0명 도달.**
+  gap #11("강제 재장전/탄약 제거 상태머신")은 신규 프리미티브 없이 해소됐다 — 세그먼트
+  경계가 이미 탄창을 끊으므로 강제 재장전은 **샷 0개짜리 세그먼트**이고, 재장전 속도
+  감소는 `reload_time_with_speed`의 음수 분기(신규)로 표현된다. 상태가 버스트 시각에
+  앵커된 채 "다음 자기 버스트까지" 지속되는 부분만 소형 엔진 패스
+  `burst_anchored_buffs`로 신설. 같은 배치: **EVE 신규 인코딩**. "노멀공격 크리티컬 44회" 카운터를
   `per_shot_rules`의 신규 `every_n_critical_hits` 모드(샷마다 라이브 크리율을 누적해
   임계 도달 시 발동)로 해소 — Julia 시그니처 때 '영구 defer'로 적었던 판정을 뒤집었다.
   Fienn 조건(2026-07-20): 기대값 환산은 **덱 크리 버프가 반영될 때만** 허용.
   배치별 이력은 git log와
   [`decisions.md`](decisions.md)에, 갭 인벤토리는
   [`engine-gaps.md`](engine-gaps.md)에 있으므로 여기엔 현재 상태만 적는다.
-- 총 **75명**(테이블 행 수) / `ENCODED_SLUGS` **76개** — B1 형태변형
+- 총 **76명**(테이블 행 수) / `ENCODED_SLUGS` **77개** — B1 형태변형
   `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함.
-  (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 48명)
+  (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 49명)
 - **한 소유 캐릭터가 여러 후보 슬러그로 갈라지는 경우** — `MODE_VARIANTS`(전투 전
   선택이라 덱 탐색이 같은 base의 두 후보를 **동시 편성 금지**): Bready(Taste 2종) ·
   Diesel: Winter Sweets(Intro/Highlight) · Cinderella: Crystal Wave(MG/Snipe) ·
@@ -68,7 +73,7 @@
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (48명)
+## Burst 3 (49명)
 
 > 배치 인코딩(eb1~eb4)과 gap #7 소비 이력은 각 행의 `(신규 날짜)` 표기와 git log
 > 참고. 남은 백로그는 [`roadmap.md`](roadmap.md) To-Do에 있다.
@@ -102,6 +107,7 @@
 | Marciana: Marine Study | `marciana-marine-study` | Attacker | AR | Iron | ⚠ | (신규 2026-07-16, gap #5 배치) Fienn 가정(rapture=1·Flagged Target=보스·High-Risk 불릿=Electric 보스 게이팅). Whistle 정상상태 자ATK+163.65%(5스택)·Elemental Advantage Attack Damage(연속 20.41% + 버스트 30.97%, **element bonus damage 그룹=`other_elemental_bonus`**, `boss_is_element("Electric")` 게이팅)·버스트 자AD+27.45%(attack_damage_up)·High-Risk DEF-10.56%/20초(`enemy_def_percent`, Electric)·Flagged Target 3789.25% 풀버스트 넉("additional damage", B3라 FB보너스)·High-Risk 20노멀마다 152.68% 넉(plain `every`, Electric 게이팅, 상시 유지 근사) 모델됨. 보류: Flagged Target ATK 버프(스코프 모호, defer)·적 처치 트리거 넉 사본(보스 미처치)·6+rapture Penguin Emergency Dispatch 넉 |
 | Maxwell | `maxwell` | Attacker | SR | Iron | ⚠ | (신규 2026-07-19) Straight Shot: FB진입 시 최고ATK 2인 차지속도+4.48%/ATK+43.1% 10초 — **대상에 Maxwell 자신 포함(Fienn 판정 2026-07-19)**, 공유 `top_atk_slugs`(캐스터 항상 제외)와 달리 캐스터 포함 랭킹을 뽑는 로컬 커스텀 액션으로 모델. Pierce Shot(버스트): 무기를 2초 차지·1탄 캐논으로 변형 — 813.42% 샷딜/300% 풀차지딜, `weapon_mode_schedules`의 `until_shots: 1` 세그먼트(snow-white/red-hood 선례). 보류: Spark Shot(적 5기 초과 게이팅 — 레이드 보스 1기 상대로 항상 거짓)·Pierce Shot의 Pierce 속성(엔진 미지원) |
 | Mihara: Bonding Chain | `mihara-bonding-chain` | Attacker | MG | Fire | ✅ | (신규 2026-07-19) **Pattern B 오분류 정정 — 체인은 감쇠 게이지가 아니라 결정론적 2단 자원.** 포획사슬(캡10)은 자원으로 모델하지 않음(레이드에선 방출 때 항상 10이라 방출 *시각*만 유의미): 배틀스타트 + **그녀가 버스트한 풀버스트의 종료 직후** 10개를 한꺼번에 방출(Fienn: '한꺼번에 발동'), 회당 50.06% 공격 + 사슬감기 1스택. 사슬감기(캡20)는 다중소스 fill 자원(방출 +10, Tighten Up의 FB중 노멀40회마다 +1 → MG 연사로 FB창당 ~+15)이고 **전투 내내 1초마다 스택당 25.08% 지속딜**(`scheduled_nukes`+신규 `resource_gate`). Tighten Up 버스트3단계 진입 시 자Sustained Damage+59.98%/10초(**아무 B3의 진입이어도 발동**, Fienn 판정). Bonding Pain 버스트: 50.05%×10틱, **각 틱이 그 시점 스택수를 미러링**(`resource_scaled_nukes`) 후 스택 소거(+10초 `own_burst_delayed` reset). **Fienn 실측(버스트 시 20스택) 대조 검증**: 그녀가 실제 쓰는 (1,1,3)처럼 다른 B3가 일부 사이클을 가져가면 캡 20에 포화해 일치. 그녀가 유일 B3라 매 사이클 버스트하는 덱에서만 10에 머묾(모듈 docstring 명시). 보류: 행동불능 시 +20스택(사망 모델 없음)·적 처치 시 사슬+1(레이드 보스 미처치)·방출의 랜덤 타겟팅(보스 1기) |
+| Milk: Blooming Bunny | `milk-blooming-bunny` | Attacker | SR | Iron | ⚠ | (신규 2026-07-20) **마지막 미인코딩 유닛 — gap #11 해소, 단 신규 발사-타임라인 프리미티브 없이.** Embarrassment 진입 조건이 '상태가 아닐 때'라 **자기 버스트 1회당 정확히 1회** 진입하고(Fienn 2026-07-20: 버스트 면역으로만 해제), '탄약 100% 제거 + 강제 재장전'은 세그먼트 경계가 이미 하는 일이다 — `_base_shot_records`가 각 구간을 새 탄창으로 재시작하므로 **샷 0개짜리 `weapon_mode_schedules` 세그먼트**가 곧 '탄창 버리고 재장전'이다. 세그먼트 프로필은 `charge_time`이 아니라 `rate_of_fire`를 쓴다(명시 rate는 케이던스 버프를 안 받으므로, 아군 차지속도 버프가 창을 줄여 유령 샷을 흘리는 걸 구조적으로 막음). 재장전 길이는 `reload_time_with_speed`의 **신규 음수 분기**로 유도(그녀 기본 2초 → 3초; Fienn 인게임 수치. 기존 공식은 4초를 줬다). 타임라인(버스트 bt 기준, 전부 슬롯/무기에서 유도): 면역 10초 → 풀차지 1초 + 유지 0.5초 → **bt+11.5 진입**, 강제재장 **bt+14.5**까지. 모델됨: 진입 시 290% 분산딜 · 진입 시 자ATK+118.7%/40초 · Outburst의 자 Pierce Damage+64.7%를 **다음 자기 버스트까지**(신규 소형 패스 `burst_anchored_buffs` + `UNTIL_NEXT_OWN_BURST`) · 버스트 Overconfident 자 Pierce Damage+117.64%/자ATK+220% 10초 + 447.7% 분산딜 2초마다 5틱(버스트 넉은 없음). E2E 확인: 강제재장 창에 샷 0개, 직전 13.0초에 끊기고 16.7초 종료 후 차지 1초를 거쳐 17.7초에 새 탄창으로 재개. 보류: 풀차지마다 'Gain Pierce 6초'는 **Pierce 키워드**(관통 능력)라 미모델 — 엔진에 per-hit pierce 플래그가 없고 `pierce_damage_up`은 전 히트에 일반 Damage Up으로 붙는 관례(그녀의 'Pierce Damage +X%' 2건은 그 버킷이라 모델됨) · 분산딜의 '전체 적' 분할(보스 1기) |
 | Modernia | `modernia` | Attacker | MG | Fire | ⚠ | 자원 beachhead. High-Speed Evolution 히트당 3.05% 추가딜(per-shot)·200히트마다 Crit Dmg/Max Ammo 스택(캡5·10초 시한 자원) + **Giant Leap 자ATK+29.38%/10초(2026-07-18, Fienn 정정: 상태창 무관, 전투 시작부터 노멀 200히트마다 — `every` 모드, refresh)** 모델됨. Max Ammo 스택은 자기 탄창 재생성 전 계산돼 inert·Giant Leap의 스쿼드 Hit Rate(inert)·New World 버스트(Destroy Mode·무한탄·FB연장) 보류 |
 | Noir | `noir` | Attacker | SG | Wind | ✅ | eb1. 버스트넉 351.64%·Lucky Charm 스쿼드 ATK(caster 비례)·Finale 파츠딜 버프 모델됨. Rabbit Twins 탄약/재장전(QoL)·Hit Rate(inert)만 보류 |
 | Privaty (애장품) | `privaty` | Attacker | AR | Water | ✅ | EX Magazine 스쿼드 ATK/재장전속도/탄약감소/공댐(FB진입) 모델됨. LD Assault 라스트불릿 넉(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-12 gap #1 잔여 해소): 받댐+10.01%/10초+256.17% 추가딜("as additional damage") + Designated Target(AK Missile 자신의 버스트로부터 10초 창, `context.burst_times` 시간창 체크) 중이면 1687% 추가딜까지 중첩 발동 + AK Missile 자속성상성공댐 모델됨. Designated Target의 적 ATK 감소 디버프(생존계, 비딜)만 보류 |

@@ -34,6 +34,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   100: 'laplace', // Laplace — dual-slot base; see SIGNATURE_OWNED
   101: 'drake', // Drake — dual-slot base; see SIGNATURE_OWNED
   102: 'maxwell', // Maxwell
+  143: 'milk-blooming-bunny', // Milk: Blooming Bunny
   150: 'julia', // Julia — dual-slot base; see SIGNATURE_OWNED
   162: 'mihara-bonding-chain', // Mihara: Bonding Chain
   170: 'privaty', // Privaty

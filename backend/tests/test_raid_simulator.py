@@ -2819,3 +2819,92 @@ def test_every_n_critical_hits_caps_the_live_rate_at_one():
     )
 
     assert _per_shot_indices(result) == list(range(12))
+
+
+def _burst_anchored_result(specs, fight_duration=120.0):
+    return simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=fight_duration,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        burst_anchored_buffs={"attacker": specs},
+    )
+
+
+def _attacker_bursts(result):
+    return [e["time"] for e in result["events"]
+            if e["type"] == "burst" and e["slug"] == "attacker"]
+
+
+def test_burst_anchored_buff_starts_at_the_offset_not_at_the_burst():
+    # Identical buff, identical duration - the only difference is when it opens.
+    # A buff delayed 15s past each burst covers strictly less of the fight than
+    # one that opens at the burst, so if the offset were ignored these would tie.
+    at_burst = _burst_anchored_result([
+        {"offset": 0.0, "stat": "atk_percent", "value": 2.0,
+         "scope": "self", "duration": 10.0},
+    ])
+    delayed = _burst_anchored_result([
+        {"offset": 15.0, "stat": "atk_percent", "value": 2.0,
+         "scope": "self", "duration": 10.0},
+    ])
+
+    # Totals alone can't show this - the shot rate is uniform, so two windows
+    # of equal length buff the same NUMBER of shots wherever they sit. The
+    # offset is only visible in WHICH shots got buffed.
+    first = _attacker_bursts(at_burst)[0]
+    just_after = lambda r: next(
+        e["damage"] for e in r["damage_log"]
+        if e["source"] == "normal_attack" and e["time"] > first + 0.5
+    )
+
+    assert just_after(at_burst) > just_after(delayed)
+    assert _attacker_bursts(at_burst) == _attacker_bursts(delayed)
+
+
+def test_burst_anchored_buff_until_next_own_burst_spans_the_whole_gap():
+    from app.raid_simulator import UNTIL_NEXT_OWN_BURST
+
+    fixed = _burst_anchored_result([
+        {"offset": 0.0, "stat": "atk_percent", "value": 1.0,
+         "scope": "self", "duration": 1.0},
+    ])
+    spanning = _burst_anchored_result([
+        {"offset": 0.0, "stat": "atk_percent", "value": 1.0,
+         "scope": "self", "duration": UNTIL_NEXT_OWN_BURST},
+    ])
+
+    # Same buff, same start times - the spanning one just never lapses between
+    # bursts, so it must strictly out-damage the 1-second version.
+    assert spanning["total_damage"] > fixed["total_damage"]
+
+
+def test_burst_anchored_buff_is_visible_to_shot_generation_not_just_damage():
+    # The pass runs BEFORE the shot loop, so a max-ammo buff placed here has to
+    # actually change the magazine (fewer reloads -> strictly more shots).
+    baseline = _burst_anchored_result([])
+    buffed = _burst_anchored_result([
+        {"offset": 0.0, "stat": "max_ammo_percent", "value": 2.0,
+         "scope": "self", "duration": 1000.0},
+    ])
+
+    shots = lambda r: sum(1 for e in r["damage_log"] if e["source"] == "normal_attack")
+    assert shots(buffed) > shots(baseline)
+
+
+def test_burst_anchored_buff_skips_an_offset_landing_past_the_fight():
+    # An offset that pushes the last burst's state past fight_duration must not
+    # emit an Effect at all (rather than one clamped to zero length).
+    result = _burst_anchored_result([
+        {"offset": 10_000.0, "stat": "atk_percent", "value": 5.0,
+         "scope": "self", "duration": 10.0},
+    ])
+    baseline = _burst_anchored_result([])
+
+    assert result["total_damage"] == baseline["total_damage"]

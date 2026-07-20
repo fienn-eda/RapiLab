@@ -110,6 +110,11 @@ AFTER_WINDOW_EPSILON = 1e-3
 CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
+# A `burst_anchored_buffs` duration meaning "hold until this unit's next own
+# burst" (a state a burst enters and only the next burst clears), as opposed to
+# a fixed number of seconds.
+UNTIL_NEXT_OWN_BURST = "until_next_own_burst"
+
 
 def _resource_fill_times(
     fill, shot_times, core_hittable, fight_duration, full_burst_windows=(), own_burst_times=(),
@@ -340,6 +345,7 @@ def simulate_raid(
     resource_fill_triggered_buffs=None,
     scheduled_nukes=None,
     weapon_mode_schedules=None,
+    burst_anchored_buffs=None,
 ):
     weapon_stats = weapon_stats or {}
     weapon_mode_schedules = weapon_mode_schedules or {}
@@ -605,6 +611,42 @@ def simulate_raid(
         (e["time"] for e in events if e["type"] == "full_burst_end"),
     ))
     context.full_burst_windows = full_burst_windows
+
+    # A buff a unit's own burst grants at an OFFSET from the burst, whose
+    # duration may run "until that unit's NEXT own burst" rather than a fixed
+    # number of seconds - Milk: Blooming Bunny's Embarrassment state, entered a
+    # few seconds after her Overconfident immunity lapses and cleared only by
+    # her next burst (Fienn, 2026-07-20).
+    #
+    # Resolved here rather than from an `own_burst_activate` rule because "until
+    # the next own burst" is unknowable while the burst-cycle walk is still
+    # running - the walk has not scheduled that burst yet. By this point
+    # `context.burst_times` is complete. Placed BEFORE the shot loop so a buff
+    # landed here is visible both to shot generation (max ammo / reload / cadence
+    # callables) and to phase 2's damage bundles, unlike the resource-driven buff
+    # passes further down which run after the timeline is already fixed.
+    for slug, specs in (burst_anchored_buffs or {}).items():
+        own_bursts = context.burst_times.get(slug, [])
+        for spec in specs:
+            offset = spec.get("offset", 0.0)
+            for index, burst_time in enumerate(own_bursts):
+                start = burst_time + offset
+                if start >= fight_duration:
+                    continue
+                duration = spec["duration"]
+                if duration == UNTIL_NEXT_OWN_BURST:
+                    # The fight ending counts as the state's end, so the last
+                    # window is trimmed rather than running past the sim.
+                    next_burst = (
+                        own_bursts[index + 1] if index + 1 < len(own_bursts) else fight_duration
+                    )
+                    duration = next_burst - start
+                    if duration <= 0:
+                        continue
+                registry.add(
+                    Effect(spec["stat"], spec["value"], spec["scope"], duration, slug),
+                    applied_at=start,
+                )
 
     shot_times_by_slug = {}
     last_bullet_times_by_slug = {}
