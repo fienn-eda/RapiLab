@@ -208,6 +208,7 @@ from app.skill_rules.isabel import (
 from app.skill_rules.liberalio import (
     build_liberalio_per_shot_rules,
     build_liberalio_rules,
+    build_strange_currents_immunity_rules,
     submerged_world_burst_percent,
 )
 from app.skill_rules.julia import DECRESCENDO_COOLDOWN as JULIA_DECRESCENDO_COOLDOWN
@@ -410,7 +411,11 @@ _BUILDERS = {
         julia_signature.build_decrescendo_battle_start_rules(sv["decrescendo"]),
         julia_signature.climax_burst_percent(sv),
     ),
-    "liberalio": lambda sv: (build_liberalio_rules(sv), submerged_world_burst_percent(sv)),
+    "liberalio": lambda sv: (
+        build_liberalio_rules(sv)
+        + build_strange_currents_immunity_rules(sv["strange_currents"]),
+        submerged_world_burst_percent(sv),
+    ),
     "ludmilla-winter-owner": lambda sv: (build_ludmilla_rules(sv), None),
     "mana": _build_mana,
     # Her burst deals no direct damage - Overconfident is buffs plus the

@@ -2,7 +2,7 @@
 Values are the real max-level (base-skill) figures from lootandwaifus, slots
 numbered left-to-right per skill.
 """
-from app.effects import EffectRegistry
+from app.effects import Effect, EffectRegistry
 from app.skill_rules.isabel import (
     POINTED_FEATHER_COOLDOWN,
     build_isabel_rules,
@@ -12,6 +12,7 @@ from app.skill_rules.isabel import (
 from app.skill_rules.liberalio import (
     build_liberalio_per_shot_rules,
     build_liberalio_rules,
+    build_strange_currents_immunity_rules,
     submerged_world_burst_percent,
 )
 from app.skill_rules.noir import build_noir_rules, finale_burst_percent
@@ -194,3 +195,23 @@ STRANGE_CURRENTS = LIBERALIO["strange_currents"]
 SUBMERGED_WORLD = LIBERALIO["submerged_world"]
 FINALE = NOIR["finale"]
 LUCKY_CHARM = NOIR["lucky_charm"]
+
+
+def test_strange_currents_refuses_allies_charge_speed_but_keeps_her_own():
+    rules = {"liberalio": build_strange_currents_immunity_rules(STRANGE_CURRENTS)}
+    ctx = SquadContext([
+        SquadMember("liberalio", burst_tier=3, element="Wind"),
+        SquadMember("buffer", burst_tier=1, element="Iron"),
+    ])
+    reg = EffectRegistry()
+    fire_trigger("battle_start", rules, ctx, reg, time=0.0)
+
+    lib = {"slug": "liberalio", "element": "Wind"}
+    # An ally's charge-speed buff does not reach her...
+    reg.add(Effect("charge_speed_percent", 0.5, "squad", None, "buffer"), applied_at=0.0)
+    assert reg.total_for("charge_speed_percent", lib, now=1.0) == 0.0
+    # ...but it still reaches everyone else.
+    assert reg.total_for("charge_speed_percent", {"slug": "buffer", "element": "Iron"}, now=1.0) == 0.5
+    # Her own overload/cube (registered under her own slug) still applies.
+    reg.add(Effect("charge_speed_percent", 0.12, "self", None, "liberalio"), applied_at=0.0)
+    assert abs(reg.total_for("charge_speed_percent", lib, now=1.0) - 0.12) < 1e-9

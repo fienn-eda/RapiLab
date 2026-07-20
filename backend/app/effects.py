@@ -135,9 +135,24 @@ class EffectRegistry:
         self._version = 0
         self._segment_tables: dict[tuple, tuple[int, list, list]] = {}
         self._epoch_tables: dict[tuple, tuple[int, list]] = {}
+        # (slug, stat) pairs where the unit ignores that stat from every source
+        # but itself - see set_external_stat_immunity.
+        self._external_immunities: set[tuple[str, str]] = set()
 
     def add(self, effect: Effect, applied_at: float) -> None:
         self._entries.append((effect, applied_at))
+        self._version += 1
+
+    def set_external_stat_immunity(self, slug: str, stat: str) -> None:
+        """`slug` stops receiving `stat` from anyone but itself - Liberalio's
+        "Gains immunity to Increase/Decrease Charge Speed effects".
+
+        Self-sourced effects still land, which is what makes this the right
+        shape: a unit's overload rolls and cube are registered with its OWN
+        slug as source (see roster._passive_effects), so her gear keeps
+        working while allies' buffs stop reaching her. That is exactly the
+        distinction Fienn specified (2026-07-20)."""
+        self._external_immunities.add((slug, stat))
         self._version += 1
 
     def add_round_grant(self, grant: RoundGrant) -> None:
@@ -216,11 +231,14 @@ class EffectRegistry:
         is summed over entries in insertion order - the exact additions the
         old linear scan performed for any time inside that segment - so
         results are bit-identical to it, not approximately equal."""
+        immune = (target["slug"], stat) in self._external_immunities
         intervals = []
         for effect, applied_at in self._entries:
             if effect.stat != stat:
                 continue
             if not _matches_target(effect, target):
+                continue
+            if immune and effect.source_slug != target["slug"]:
                 continue
             end = None if effect.duration is None else applied_at + effect.duration
             intervals.append((applied_at, end, effect.value))

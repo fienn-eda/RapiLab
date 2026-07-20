@@ -18,13 +18,24 @@ Not modeled / deferred:
 - Gentle Current (Strange Currents' non-boss-target branch): fixes charge time
   and removes Raging Current - assumed never triggered, since solo-raid fire stays
   on the boss. Its Charge-Time effect is inert anyway (attack rate not skill-driven).
-- Calm Depths' Charge Speed buff on the lowest-ATK Burst-3 ally (Charge Speed is
-  inert in this engine) and its immunity effects.
+- Calm Depths' Charge Speed buff on "the 1 Burst 3 ally with the lowest final
+  ATK". Charge Speed is no longer the blocker (Phase S made it a damage stat -
+  the note here used to say it was inert); what is missing is a LOWEST-ATK
+  ranking, the mirror of `SquadContext.top_atk_slugs`. Low value even once
+  built: it deliberately targets the weakest Burst-3 ally, i.e. not the carry.
+  Its value is also stated as "12.74% of the skill user's Charge Speed", which
+  is ambiguous enough to need Fienn before encoding.
+
+Strange Currents' charge-speed IMMUNITY is modeled (see
+`build_strange_currents_immunity_rules`) - it was skipped while charge speed
+moved nothing, but now that it does, omitting the immunity would let any deck
+charge-speed buffer speed her up when in game it cannot.
 
 Approximation: the on-core Attack Damage is applied on every Full Charge (core
 hits aren't tracked per-shot), consistent with how core damage is handled globally.
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
+from app.squad_engine import SkillRule
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -80,3 +91,20 @@ def build_liberalio_per_shot_rules(values):
     for n in range(1, additional_times + 1):
         rules.append((n, "after", [instant_nuke_pulse_rule("per_shot", additional)]))
     return rules
+
+
+def build_strange_currents_immunity_rules(values: dict) -> list[SkillRule]:
+    """Strange Currents' "Gains immunity to Increase/Decrease Charge Speed
+    effects. This effect is continuous and cannot be removed."
+
+    Inert before Phase S, when charge speed moved nothing. Now that
+    `charge_speed_percent` drives her firing cadence, leaving it out means a
+    deck with any charge-speed buffer silently speeds her up when in game it
+    does not - an over-estimate. Registered as an EXTERNAL immunity so her own
+    overload rolls and cube (registered with her own slug as source) still
+    apply; only other units' buffs are refused."""
+
+    def action(context, caster_slug, time, registry):
+        registry.set_external_stat_immunity(caster_slug, "charge_speed_percent")
+
+    return [SkillRule(trigger="battle_start", action=action)]
