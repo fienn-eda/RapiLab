@@ -129,6 +129,7 @@ def member_subset_buff_rule(trigger, member_filter, buffs, condition=None, refre
     dynamic state (burst_used_this_cycle) is read at the trigger's own moment.
     member_filter(member, context) -> bool; the caster is included when it
     matches. buffs: (stat, value, duration)."""
+    group = f"refresh_{next(_refresh_group_ids)}"
 
     def action(context, caster_slug, time, registry):
         slugs = [m.slug for m in context.members if member_filter(m, context)]
@@ -136,7 +137,8 @@ def member_subset_buff_rule(trigger, member_filter, buffs, condition=None, refre
             return
         scope = "slugs:" + ",".join(slugs)
         for stat, value, duration in buffs:
-            effect = Effect(stat, value, scope, duration, caster_slug)
+            effect = Effect(stat, value, scope, duration, caster_slug,
+                            refresh_group=group if refreshing else None)
             if refreshing:
                 registry.add_refreshing(effect, applied_at=time)
             else:
@@ -203,14 +205,19 @@ def escalating_buff_rule(trigger, tiers, refreshing=False):
     cd), pass True to use `add_refreshing`, collapsing the overlap to one value
     instead of summing it. Default False keeps the plain-add behaviour for tiers
     whose windows never overlap.
+
+    Each TIER refreshes only against itself: the tiers are cumulative, so two of
+    them granting the same stat must add rather than replace one another.
     """
+    tier_groups = [f"refresh_{next(_refresh_group_ids)}" for _ in tiers]
 
     def action(context, caster_slug, time, registry):
         n = context.activation_count(caster_slug, trigger)
         for unlock_at, buffs in enumerate(tiers, start=1):
             if n >= unlock_at:
                 for stat, value, scope, duration in buffs:
-                    effect = Effect(stat, value, scope, duration, caster_slug)
+                    effect = Effect(stat, value, scope, duration, caster_slug,
+                                    refresh_group=tier_groups[unlock_at - 1] if refreshing else None)
                     if refreshing:
                         registry.add_refreshing(effect, applied_at=time)
                     else:

@@ -71,12 +71,15 @@ def build_lucky_golden_chip_per_shot_rules(values):
 
     def apply(context, caster_slug, time, registry):
         registry.add_refreshing(
-            Effect("attack_damage_up", attack_damage, "self", duration, caster_slug), applied_at=time
+            Effect("attack_damage_up", attack_damage, "self", duration, caster_slug,
+                   refresh_group="lucky_golden_chip"),
+            applied_at=time,
         )
         top = [s for s in context.top_atk_slugs(1, caster_slug, registry, time) if s != caster_slug]
         if top:
             registry.add_refreshing(
-                Effect("attack_damage_up", attack_damage, "slugs:" + ",".join(top), duration, caster_slug),
+                Effect("attack_damage_up", attack_damage, "slugs:" + ",".join(top), duration, caster_slug,
+                       refresh_group="lucky_golden_chip"),
                 applied_at=time,
             )
 

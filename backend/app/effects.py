@@ -24,9 +24,9 @@ class Effect:
     # the same stat from several bullets (Liberalio's permanent Raging Current
     # and her per-shot on-core buff are both self attack_damage_up), and only
     # re-applications of the SAME bullet may collapse into one another - see
-    # add_refreshing. None groups with other ungrouped effects of the same
-    # (stat, source, scope), preserving the original behaviour for callers
-    # that never had a collision.
+    # add_refreshing, which requires it. None means the effect is never
+    # refreshed: plainly-added effects keep it, which is what stops a
+    # refreshing bullet from truncating a permanent one on the same stat.
     refresh_group: str | None = None
 
 
@@ -181,7 +181,19 @@ class EffectRegistry:
         smaller per-shot buff on the same stat (Liberalio's Raging Current,
         found 2026-07-21). For a buff re-applied every shot (e.g. "ATK +X% for 3 sec on every
         Full Charge"), which the game refreshes rather than stacks. Truncation is
-        in place, so replay-style queries for earlier times also see one instance."""
+        in place, so replay-style queries for earlier times also see one instance.
+
+        The group is REQUIRED: naming the bullet is the caller's decision, and
+        leaving it unset used to drop every hand-written refresher into one
+        shared bucket - together with plainly-added effects, which a refresher
+        must never touch (Grave's permanent Overheat I, deleted by her own
+        windowed Overheat II). Use `truncate_open_ended` for the separate case
+        of a unit's later trigger deliberately ending its own continuous buff."""
+        if effect.refresh_group is None:
+            raise ValueError(
+                f"add_refreshing needs a refresh_group naming the skill bullet "
+                f"({effect.source_slug}'s {effect.stat}); see EffectRegistry.add_refreshing"
+            )
         for existing, existing_applied_at in self._entries:
             if (
                 existing.stat == effect.stat

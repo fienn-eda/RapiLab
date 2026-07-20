@@ -1014,7 +1014,10 @@ def simulate_raid(
     # after the resource_specs loop, so every fill is recorded by now; the
     # buffs are phase-2-visible like every other post-pass Effect.
     for slug, specs in resource_fill_triggered_buffs.items():
-        for spec in specs:
+        for spec_index, spec in enumerate(specs):
+            # One refresh group per spec: consecutive fills of THIS bullet
+            # collapse, while the unit's other buffs on the same stat stand.
+            refresh_group = f"resource_fill_{spec['resource']}_{spec_index}"
             if spec.get("condition") is not None and not spec["condition"](context, slug):
                 continue
             targets = [m.slug for m in context.members if spec["member_filter"](m, slug)]
@@ -1024,7 +1027,8 @@ def simulate_raid(
             for fill_time, _amount in context.resource_fills.get((slug, spec["resource"]), []):
                 for stat, value, duration in spec["buffs"]:
                     registry.add_refreshing(
-                        Effect(stat, value, scope, duration, slug), applied_at=fill_time
+                        Effect(stat, value, scope, duration, slug, refresh_group=refresh_group),
+                        applied_at=fill_time,
                     )
 
     # A burst-fired buff gated on (or scaled by) a named resource's count AT

@@ -145,14 +145,19 @@ def build_overheat_per_shot_rules(values):
             return  # prerequisite: Overheat I must already be unlocked
         context.set_status(caster_slug, "overheat_ii_reached")
         duration = _current_prediction_end(context, caster_slug, time) - time
-        registry.add_refreshing(Effect("atk_percent", oh2_atk, "self", duration, caster_slug), applied_at=time)
+        registry.add_refreshing(
+            Effect("atk_percent", oh2_atk, "self", duration, caster_slug, refresh_group="overheat_ii"),
+            applied_at=time,
+        )
 
     def apply_overheat_iii(context, caster_slug, time, registry):
         if not context.has_status(caster_slug, "overheat_ii_reached"):
             return  # prerequisite: Overheat II must have been reached
         duration = _current_prediction_end(context, caster_slug, time) - time
         registry.add_refreshing(
-            Effect("attack_damage_up", oh3_attack_damage, "self", duration, caster_slug), applied_at=time
+            Effect("attack_damage_up", oh3_attack_damage, "self", duration, caster_slug,
+                   refresh_group="overheat_iii"),
+            applied_at=time,
         )
 
     return [
