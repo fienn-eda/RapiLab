@@ -1,3 +1,5 @@
+from app import roster
+from app.effects import Effect
 from app.models import OverloadOption
 from app.raid_simulator import simulate_raid
 from app.roster import NikkeSpec, assemble_simulation_inputs
@@ -256,6 +258,32 @@ def test_periodic_nukes_flow_through_simulate_raid():
     periodic_hits = [e for e in result["damage_log"] if e["source"] == "periodic"]
     assert len(periodic_hits) > 0
     assert all(e["slug"] == "helm-aquamarine" for e in periodic_hits)
+
+
+def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypatch):
+    # The assumed cube's other_elemental_bonus is inert here (boss_element
+    # defaults to None, and that stat is gated on elemental advantage), so
+    # this isolates reload_speed_percent - the only cube term with an
+    # end-to-end path through normal-attack reload cadence - by swapping
+    # assumed_cube_effects for a reload-only stub vs an empty one.
+    kwargs = dict(enemy_def=0, gauge_charge_time=2.0, fight_duration=60.0, mode="manual")
+
+    monkeypatch.setattr(roster, "assumed_cube_effects", lambda slug: [])
+    dmg_without = simulate_raid(
+        **assemble_simulation_inputs(minimal_feasible_deck()), **kwargs
+    )["total_damage"]
+
+    monkeypatch.setattr(
+        roster,
+        "assumed_cube_effects",
+        lambda slug: [Effect("reload_speed_percent", 0.2969, "self", None, slug)],
+    )
+    dmg_with = simulate_raid(
+        **assemble_simulation_inputs(minimal_feasible_deck()), **kwargs
+    )["total_damage"]
+
+    assert dmg_with > dmg_without
+    assert round(dmg_with / dmg_without, 4) == round(695102334.2073559 / 679854470.749847, 4)
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

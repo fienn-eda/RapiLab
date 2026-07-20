@@ -19,14 +19,21 @@ _BLANK_TEST_SLUGS = ("attacker", "filler-tier1", "filler-tier2")
 def _blank_test_slugs():
     # These slugs are synthetic, used only here, to isolate the cube's
     # contribution from a real Nikke's own skill effects. None has an entry
-    # in the real registry (build_nikke_rules raises for unknown slugs), so
-    # register a no-op builder for each for the duration of this module's
-    # tests.
+    # in the real registry today (build_nikke_rules raises for unknown
+    # slugs), so register a no-op builder for each for the duration of this
+    # module's tests, saving and restoring whatever was there before rather
+    # than deleting unconditionally - if a real Nikke is ever encoded under
+    # one of these slugs, this must not clobber it for the rest of the
+    # session.
+    previous = {slug: registry._BUILDERS.get(slug) for slug in _BLANK_TEST_SLUGS}
     for slug in _BLANK_TEST_SLUGS:
         registry._BUILDERS[slug] = lambda sv: ([], None)
     yield
-    for slug in _BLANK_TEST_SLUGS:
-        del registry._BUILDERS[slug]
+    for slug, builder in previous.items():
+        if builder is None:
+            del registry._BUILDERS[slug]
+        else:
+            registry._BUILDERS[slug] = builder
 
 
 def make_spec(slug, element="Iron", atk=2000, burst_tier=3):
@@ -87,7 +94,7 @@ def test_the_cube_superior_code_bonus_moves_damage_against_a_weak_boss():
         inputs["deck"], inputs["rules_by_slug"], boss_element="Electric", **kwargs
     )
     bare = simulate_raid(
-        inputs["deck"], {"attacker": []}, boss_element="Electric", **kwargs
+        inputs["deck"], {s: [] for s in inputs["rules_by_slug"]}, boss_element="Electric", **kwargs
     )
 
     assert with_cube["total_damage"] > bare["total_damage"]
