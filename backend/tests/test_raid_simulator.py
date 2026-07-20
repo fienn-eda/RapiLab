@@ -115,6 +115,41 @@ def test_boss_element_grants_advantage_bonus_to_matching_attackers():
     assert round(advantaged["total_damage"], 5) == round(10000.0 * 1.1, 5)
 
 
+def test_superior_code_damage_applies_only_with_elemental_advantage():
+    # make_deck's attacker is Iron; Iron > Electric. other_elemental_bonus is
+    # the "Superior Code Damage" stat, which joins the element bonus group:
+    # it must raise damage against an Electric boss and do nothing at all
+    # against a neutral Fire boss.
+    def grant_superior_code(context, caster_slug, time, registry):
+        registry.add(
+            Effect("other_elemental_bonus", 0.5, "self", None, "attacker"),
+            applied_at=time,
+        )
+
+    rules_by_slug = {
+        "buffer": [SkillRule(trigger="battle_start", action=grant_superior_code)],
+        "midtier": [],
+        "attacker": [],
+    }
+    kwargs = dict(
+        rules_by_slug=rules_by_slug,
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    neutral = simulate_raid(make_deck(), boss_element="Fire", **kwargs)
+    advantaged = simulate_raid(make_deck(), boss_element="Electric", **kwargs)
+
+    # Neutral: element bonus group is 1.0 + nothing.
+    assert neutral["total_damage"] == 10000.0
+    # Advantaged: 1.1 from the element multiplier plus the 0.5 bonus.
+    assert round(advantaged["total_damage"], 5) == round(10000.0 * 1.6, 5)
+
+
 def test_base_crit_rate_of_15_percent_raises_damage_by_7_5_percent():
     rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
     kwargs = dict(
