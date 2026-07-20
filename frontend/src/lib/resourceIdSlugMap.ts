@@ -86,6 +86,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   835: 'asuka-shikinami-langley-wille', // Asuka: WILLE
   840: 'ada-wong', // Ada
   841: 'jill-valentine', // Jill
+  850: 'eve', // EVE
   851: 'raven', // Raven
   860: 'chisato-nishikigi', // Chisato
   861: 'takina-inoue', // Takina

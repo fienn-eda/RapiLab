@@ -142,6 +142,12 @@ from app.skill_rules.elegg_boom_and_shock import (
     build_ghostbuster_scheduled_nukes,
     build_thirteen_ghosts_dynamic_hit_count_nukes,
 )
+from app.skill_rules.eve import (
+    COUNTER_CHAIN_HIT_COUNT,
+    build_eve_rules,
+    build_unstable_energy_per_shot_rules,
+    counter_chain_burst_percent,
+)
 from app.skill_rules.drake import (
     build_drake_rules,
     build_drake_signature_rules,
@@ -400,6 +406,7 @@ _BUILDERS = {
     "rei-ayanami-tentative-name": lambda sv: (build_rei_tentative_rules(sv), attack_state_burst_percent(sv)),
     "neon-vision-eye": lambda sv: (build_neon_vision_eye_rules(sv), None),  # burst is buff-only; damage is Firepower Explosion (per-shot)
     "ein": lambda sv: (build_ein_rules(sv), feather_all_range_burst_percent(sv)),
+    "eve": lambda sv: (build_eve_rules(sv), counter_chain_burst_percent(sv)),
     # 13 Ghosts fires via dynamic_hit_count_nukes (branching hit count), not a flat burst percent.
     "elegg-boom-and-shock": lambda sv: (build_elegg_boom_and_shock_rules(sv), None),
     # La La La's damage is its 9-tick DoT (see _RESOURCE_SCALED_NUKE_BUILDERS),
@@ -562,6 +569,7 @@ _BURST_HIT_COUNTS = {
     "julia-signature": julia_signature.CLIMAX_HIT_COUNT,
     "cinderella": GLASS_SLIPPERS_HIT_COUNT,
     "sakura-bloom-in-summer": EPHEMERAL_SPENDER_HIT_COUNT,
+    "eve": COUNTER_CHAIN_HIT_COUNT,
 }
 
 # A Nikke with a Skill 1/2 on its own cooldown (fires at t=cooldown, 2*cooldown,
@@ -596,6 +604,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "ein": lambda sv: build_ein_per_shot_rules(sv),
+    "eve": lambda sv: build_unstable_energy_per_shot_rules(sv),
     "anis-sparkling-summer": lambda sv: build_sparkling_missile_per_shot_rules(sv["sparkling_missile"]),
     "grave": lambda sv: build_overheat_per_shot_rules(sv),
     "rei-ayanami": lambda sv: build_preemptive_subdual_per_shot_rules(sv),

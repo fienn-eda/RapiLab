@@ -2750,3 +2750,72 @@ def test_scheduled_nuke_resource_gate_scales_each_tick_by_the_live_count():
     assert [t["time"] for t in ticks] == [1.0, 4.0]
     assert ticks[0]["damage"] == 10 * 10000.0   # 10 stacks * 100% of 10000 ATK
     assert ticks[1]["damage"] == 20 * 10000.0   # capped at 20 after the t=3 fill
+
+
+def _crit_counter_result(threshold, base_crit_rate, attacker_rules=()):
+    """EVE's `every_n_critical_hits`: shots contribute their LIVE crit rate to a
+    running total that fires the rule each time it crosses `threshold`."""
+    return simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": list(attacker_rules)},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=base_crit_rate,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules={
+            "attacker": [
+                (threshold, "every_n_critical_hits",
+                 [instant_nuke_pulse_rule("per_shot", 100.0)])
+            ]
+        },
+    )
+
+
+def _per_shot_indices(result):
+    # AR fires 12/s from t=0, so shot index == round(time * 12).
+    return [round(e["time"] * 12) for e in result["damage_log"]
+            if e["source"] == "per_shot_nuke"]
+
+
+def test_every_n_critical_hits_converts_the_threshold_at_the_live_crit_rate():
+    # 50% crit rate, "every 2 critical hits" -> one proc per 4 shots.
+    result = _crit_counter_result(threshold=2.0, base_crit_rate=0.5)
+
+    assert _per_shot_indices(result) == [3, 7, 11]
+
+
+def test_every_n_critical_hits_speeds_up_when_the_deck_buffs_crit_rate():
+    # The whole reason the mode reads the rate per shot instead of folding a
+    # fixed shot count at build time (Fienn, 2026-07-20): a crit-rate buff must
+    # make the trigger fire genuinely more often. 50% -> 100% halves the gap.
+    unbuffed = _crit_counter_result(threshold=2.0, base_crit_rate=0.5)
+    buffed = _crit_counter_result(
+        threshold=2.0, base_crit_rate=0.5,
+        attacker_rules=[buff_rule("battle_start", [("crit_rate", 0.5, "self", None)])],
+    )
+
+    assert _per_shot_indices(unbuffed) == [3, 7, 11]
+    assert _per_shot_indices(buffed) == [1, 3, 5, 7, 9, 11]
+
+
+def test_every_n_critical_hits_carries_the_remainder_forward():
+    # 30% per shot against a threshold of 1 does not divide evenly: procs land
+    # at cumulative 1.2 / 2.1 / 3.0 (shots 4, 7, 10), not every 4th shot.
+    result = _crit_counter_result(threshold=1.0, base_crit_rate=0.3)
+
+    assert _per_shot_indices(result) == [3, 6, 9]
+
+
+def test_every_n_critical_hits_caps_the_live_rate_at_one():
+    # crit_rate is capped at 100% in the damage path; the counter uses the same
+    # cap, so an over-100% buff cannot make the trigger fire faster than 1/shot.
+    result = _crit_counter_result(
+        threshold=1.0, base_crit_rate=1.0,
+        attacker_rules=[buff_rule("battle_start", [("crit_rate", 5.0, "self", None)])],
+    )
+
+    assert _per_shot_indices(result) == list(range(12))

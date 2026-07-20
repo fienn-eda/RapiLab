@@ -212,11 +212,18 @@
   `context.shot_times`가 **전 유닛의 발사 타임라인**을 담고 있어(소유자 전용이
   아님), 모듈이 병합·정렬 후 매 500번째 발사 시각에 히트를 방출. 신규 스쿼드
   카운터 primitive는 만들지 않았고 필요하지도 않았음. (b) **크리티컬 히트
-  카운터 — 영구 defer, "만들 능력"이 아님(2026-07-12, Julia 시그니처 인코딩 중 발견):**
+  카운터 — ✅ **해소 (2026-07-20, `every_n_critical_hits`)**. 2026-07-12 Julia 시그니처
+  인코딩 중 '영구 defer'로 판정했던 항목이나, EVE 인코딩에서 뒤집혔다:**
   "N회 크리티컬 히트 후" 트리거는 엔진의 기대값 기반 크리 모델(각 히트가 `crit_rate`
-  확률로 스케일되는 연속값 — 실제 per-hit RNG 안 굴림)과 구조적으로 안 맞는다. "이 샷이
-  실제 크리였는가"라는 이벤트 자체가 없어서 셀 수 없다. per-shot 카운터 확장으로도 못
-  푼다 — Julia(시그니처)의 Crescendo/Marcato가 이 사유로 영구 defer.
+  확률로 스케일되는 연속값 — 실제 per-hit RNG 안 굴림)과 안 맞아서 "이 샷이 실제
+  크리였는가"라는 이벤트가 없다. 해법은 이벤트를 만드는 게 아니라 **딜 경로가 이미 하는
+  기대값 환산을 카운터에도 적용**하는 것: 샷마다 그 시점의 라이브 크리율을 누적해 임계
+  N을 넘을 때마다 발동(나머지 이월). **고정 발수로 접지 않는 게 핵심** — Fienn 수용
+  조건(2026-07-20)이 '덱 크리 버프가 반영돼야 한다'였고, 빌드시점 `N / 자기크리율`은
+  아군 크리버퍼를 통째로 무시한다. 한계: 샷 루프가 유닛별로 돌아 **나중에 처리되는
+  아군의 per-shot 규칙이 거는 크리 버프는 미반영**(버스트/FB 트리거 크리 버프는 반영 —
+  통상적인 크리 버퍼는 여기 해당). 소비: EVE. **Julia(시그니처)의 Crescendo/Marcato도
+  같은 모드로 풀리므로 재방문 대상.**
 - **무엇(원문):** "노멀 공격 N회 후", "풀차지 공격 N회 후 / 시", "마지막 탄 발사 시",
   "N shot마다" 처럼 **유닛의 발사 행위를 세어** 임계치마다 효과/넉을 발동하는 트리거.
 - **왜 막힘:** 노멀공격(차지샷 포함)은 `raid_simulator`의 별도 weapon-stats 패스에서
@@ -872,7 +879,8 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
   Ark·Arcana·Tove·Ada Wong(신규)·Little Mermaid·Maiden·Jill).
 2. **남은 방향:** #2 Pattern B(시간감쇠 게이지·변신, 일반 프리미티브 — Mihara류) ·
    상태머신(~~diesel-winter-sweets~~[**2026-07-19 완료** — Intro/Highlight 2슬러그,
-   위 버스트 스케줄 정책 소비]·~~bready~~[완료]·eve·milk-blooming-bunny[gap #11]) ·
+   위 버스트 스케줄 정책 소비]·~~bready~~[완료]·~~eve~~[**2026-07-20 완료** —
+   `every_n_critical_hits`]·milk-blooming-bunny[gap #11]) ·
    ~~무기변형~~(**v1+계획 2 완료, 2026-07-19** — `weapon_mode_schedules` 세그먼트
    primitive, snow-white·maxwell·laplace-signature·red-hood 소비(v1) +
    `MODE_VARIANTS` 듀얼슬러그(cinderella-crystal-wave-mg/-snipe)·

@@ -642,7 +642,9 @@ def simulate_raid(
         # buff/nuke fired directly on the in-window count, e.g. Soda's Lucky
         # Golden Chip, Asuka's Anti A.T. Field nuke). Their rules apply buffs
         # to the registry (seen by phase 2 at each shot's time) or emit an
-        # instant_damage_percent pulse recorded as a per-shot nuke. Rules must
+        # instant_damage_percent pulse recorded as a per-shot nuke.
+        # "every_n_critical_hits" counts EXPECTED crits rather than shots (EVE's
+        # Unstable Energy) - see its branch below. Rules must
         # be stateless and must not change shot generation (reload/ammo), which
         # is already fixed for this unit here.
         unit_per_shot = per_shot_rules.get(slug, [])
@@ -690,6 +692,36 @@ def simulate_raid(
                 base_indices = [i for i, r in enumerate(shot_records) if not r.in_segment]
                 window_fire_indices[idx] = {
                     i for pos, i in enumerate(base_indices) if (pos + 1) % threshold == 0}
+            elif mode == "every_n_critical_hits":
+                # This engine never rolls crit per hit - every hit's damage is
+                # scaled by the expected crit factor - so there is no "was this
+                # shot a crit" event to count. An "after N critical hits"
+                # trigger is therefore counted in EXPECTED crits: each shot
+                # contributes the unit's live crit rate at that instant, and the
+                # rule fires each time the running total crosses N, carrying the
+                # remainder forward. Reading the rate PER SHOT rather than once
+                # at build time is the whole point - it is what lets deck crit
+                # buffs move the trigger's cadence (Fienn, 2026-07-20: an
+                # expected-value conversion is only acceptable if the deck's
+                # crit buffs count). Caveat: shot loops run per unit, so a crit
+                # buff applied by a LATER-processed ally's own per-shot rules is
+                # not visible here; burst / full-burst-triggered crit buffs are,
+                # since those rules run before any shot loop.
+                crit_fires = set()
+                expected_crits = 0.0
+                for i, crit_rec in enumerate(shot_records):
+                    expected_crits += min(
+                        1.0, base_crit_rate + registry.total_for("crit_rate", target, crit_rec.time)
+                    )
+                    # Tolerance, not cosmetics: summing a rate like 0.3 ten
+                    # times lands on 2.9999999999999996, which would silently
+                    # push a proc a whole shot later than exact arithmetic puts
+                    # it (same class of rounding trap as burst_cycle's
+                    # last + cooldown comparison).
+                    if expected_crits + 1e-9 >= threshold:
+                        crit_fires.add(i)
+                        expected_crits -= threshold
+                window_fire_indices[idx] = crit_fires
             elif mode == "sequence":
                 # threshold carries the requirement spec; the rules slot holds
                 # one rule list PER STAGE (see _sequence_fire_rules).

@@ -3,14 +3,16 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
-- 마지막 갱신: 2026-07-19 — **Diesel: Winter Sweets 신규 인코딩**(Intro/Highlight
-  2슬러그, 유닛별 버스트 스케줄 정책 `burst_delay` 엔진 확장 소비). 같은 확장으로
-  Elegg의 버스트도 고스트 캡까지 보류하도록 갱신. 배치별 이력은 git log와
+- 마지막 갱신: 2026-07-20 — **EVE 신규 인코딩**. "노멀공격 크리티컬 44회" 카운터를
+  `per_shot_rules`의 신규 `every_n_critical_hits` 모드(샷마다 라이브 크리율을 누적해
+  임계 도달 시 발동)로 해소 — Julia 시그니처 때 '영구 defer'로 적었던 판정을 뒤집었다.
+  Fienn 조건(2026-07-20): 기대값 환산은 **덱 크리 버프가 반영될 때만** 허용.
+  배치별 이력은 git log와
   [`decisions.md`](decisions.md)에, 갭 인벤토리는
   [`engine-gaps.md`](engine-gaps.md)에 있으므로 여기엔 현재 상태만 적는다.
-- 총 **74명**(테이블 행 수) / `ENCODED_SLUGS` **75개** — B1 형태변형
+- 총 **75명**(테이블 행 수) / `ENCODED_SLUGS` **76개** — B1 형태변형
   `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함.
-  (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 47명)
+  (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 48명)
 - **한 소유 캐릭터가 여러 후보 슬러그로 갈라지는 경우** — `MODE_VARIANTS`(전투 전
   선택이라 덱 탐색이 같은 base의 두 후보를 **동시 편성 금지**): Bready(Taste 2종) ·
   Diesel: Winter Sweets(Intro/Highlight) · Cinderella: Crystal Wave(MG/Snipe) ·
@@ -66,7 +68,7 @@
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | Spina di Rosa(30s 액티브, 지속딜 듀티사이클) 보류, 파츠파괴 스택 ATK 보류 |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ⚠ | 버스트 무기변형(200.64%) 보류. S2는 periodic 트리거로 모델(cd15s 아군 True Damage▲140%). 진댐 버프는 덱에 진댐 딜러 필요 |
 
-## Burst 3 (47명)
+## Burst 3 (48명)
 
 > 배치 인코딩(eb1~eb4)과 gap #7 소비 이력은 각 행의 `(신규 날짜)` 표기와 git log
 > 참고. 남은 백로그는 [`roadmap.md`](roadmap.md) To-Do에 있다.
@@ -86,6 +88,7 @@
 | Cinderella: Crystal Wave (MG) | `cinderella-crystal-wave-mg` | Attacker | MG | Iron | ⚠ | (신규 Task 6, 2026-07-19) 전투 전 MG/Snipe 모드 고정 선택(플레이어가 정하고 전투 내내 유지 — 상태머신이 아니라 정적 슬러그 2개, `MODE_VARIANTS["cinderella-crystal-wave"]`로 배선, 덱 탐색이 두 모드 동시 편성 금지). 공유 킷(양 모드 동일): 배틀스타트 자AD+24%(Beauty-Full)/자ATK+29%(Mode Swap)·버스트 자AD+92%/자ATK+65% 10초(Glass Slippers)·6000% 버스트넉·5초마다 900% 주기넉(`periodic_nukes`). MG 전용: 배틀스타트 Pinpoint 코어딜+26%(`other_core_damage_sources`)·FB진입 833.79% 코어스트라이크 넉(자기 버스트 이번 사이클 발동 AND 코어활성 게이팅 — 스킬텍스트가 "코어 활성 적 한정"이라 균일 코어보정 모델상 `core_hittable` 게이트로 관례 정합, `boss_core_hittable`+`own_burst_fired_this_cycle` 복합조건). 보류: 디코이 아바타(생존)·아군탄200발마다 버스트게이지+12%(inert)·Pierce·모드전환 자체(Preparation for Change 상태머신, 모드 고정이라 무의미) |
 | Cinderella: Crystal Wave (Snipe) | `cinderella-crystal-wave-snipe` | Attacker | MG(정체성)/SR(발사) | Iron | ⚠ | (신규 Task 6, 2026-07-19) MG와 공유 킷 동일(위 참고). Snipe 전용: 배틀스타트 Destroy 파츠딜+26.21%(`damage_to_parts_up`)·FB진입 1189.66% 넉(자기 버스트 이번 사이클 발동만 게이팅, 코어 무관 — 전체 적/부위 대상이라 코어게이트 없음). **정적 무기 프로필 override**(`_WEAPON_PROFILE_OVERRIDE_BUILDERS`, Task 5 배선 첫 실사용): SR 62.13%·15발·차지1초·풀차지딜250%·재장전 2.5초(스킬텍스트에 값 없음 — MG 기본 재장전 차용, Fienn 판정 2026-07-19). `weapon` 필드는 아군필터용으로 "MG" 유지, 발사 케이던스/타이핑만 이 프로필의 "SR"이 결정. "풀차지=40발 회계"는 소비카운트 부기일 뿐 실제 발사는 1발(Velvet 탄약주머니 선례, little_mermaid.py 교차노트) — 이 부기가 먹이는 스킬 전부 defer라 노트만 남김. 보류: MG와 동일(디코이·게이지·Pierce·모드전환) |
 | Elegg: Boom and Shock | `elegg-boom-and-shock` | Attacker | MG | Water | ✅ | (신규 2026-07-19) **Pattern B 오분류 정정 — 감쇠 게이지/변신 없음, 결정론적 fill의 자원 유닛.** Ghosts 자원(캡13, 6초마다 +1)·유령수 임계 버프 2종(≥1: Water아군 flat ATK=자ATK 16.2% / ≥4: Elemental Advantage Attack Damage +35%, 둘 다 상시·`element:Water`라 자신 포함)·Ghostbuster 버스트 자ATK+40%/10초 + **캡에서 포획 시 1100% 오버플로 넉**(`scheduled_nukes`가 각 포획틱 직전 카운트를 읽어 캡이면 발동)·13 Ghosts 버스트 **분기**(캡13이면 800%×13연타·유령−9, 미만이면 800%×6연타·유령−6, 최소 1 유지 — 신규 `hit_count_fn`+reset `value_fn`) 모델됨. **`burst_delay`로 실제 운용 재현**: `not_before`=캡13×6초=78초, `min_interval`=캡소비9×6초=54초(둘 다 그녀 자신의 fill 값에서 유도). 재충전 54초가 쿨 40초보다 길어 **실효 케이던스가 쿨이 아니라 재충전**이다. E2E(180초): 78.2/136.2초 **2회, 둘 다 13히트 분기** — Fienn의 '전투 중 2번, 13스택 쌓인 후' 서술과 일치(`burst_delay` 이전 자연 로테이션은 5회 중 4회가 6히트 분기였다). 보류: '6초창 스쿼드 누적 100히트' 요구치는 그녀가 MG(초당 60발)라 항상 충족으로 근사(Fienn 판정) — SR/RL 위주 덱에선 이론상 미달 가능·Possession 타겟팅(보스 1기)·`other_elemental_bonus`는 보스 원소 게이팅 없음(guillotine 선례 관례) |
+| EVE | `eve` | Attacker | AR | Iron | ⚠ | (신규 2026-07-20) 딜의 핵심 Unstable Energy가 **'노멀공격 크리티컬 44회'** 트리거라 막혀 있던 유닛 — 신규 `every_n_critical_hits` 모드로 해소(샷마다 라이브 크리율을 누적해 44 도달 시 발동, 나머지는 이월). **고정 발수(59발)로 접지 않은 게 핵심** — Fienn 조건(2026-07-20)이 '덱 크리 버프가 반영돼야 한다'였고, 빌드시점 환산은 아군 크리버퍼를 통째로 무시하게 된다. 모델됨: Impact 배틀스타트 크리율+60% 영구(그녀 기준 크리율 75%=버프 없을 때 ≈59발마다 1회) · Unstable Energy 240%×3연타(3발 별도 펌스라 DEF가 히트당 차감, 'as damage'라 FB보너스 비대상) · Electric 보스 한정 받댐+10%/10초(gap #5 관례) · Eagle Eye 배틀스타트 flat ATK=자ATK 50% + 최대탄약+25%(둘 다 영구, 최대탄약은 재장전 빈도를 줄여 실딜) · Counter Chain 버스트 457.14%×6연타 · **Exospine Mk2(버스트 10초)** — Unstable Energy 배율 2배(240→480%)와 Eagle Eye ATK 배율 2배(50→100% of 자ATK), 둘 다 스킬 슬롯에서 유도(하드코딩 x2 아님). Mk2의 Eagle Eye 항목은 영문이 'Damage multiplier'라 모호했으나 Fienn이 한글 텍스트로 skill2 ATK 버프임을 확정(2026-07-20). E2E(180초): Unstable Energy 74회 발동, Electric 보스에서 총딜 +21.9%. 보류: Eagle Eye의 'Electric 대상 노멀 10회마다 3발 장전' — 발사 타임라인이 per-shot 규칙 실행 전에 확정되어 개입 불가(milk의 강제재장과 동일 계열, gap #11) — 재장전 공백을 줄이는 효과라 이 인코딩은 floor · skill1의 'Previous effects trigger repeatedly'는 수집 텍스트에 횟수/조건이 없어 추측 대신 보류 |
 | Guillotine: Winter Slayer | `guillotine-winter-slayer` | Attacker | AR | Water | ⚠ | 자원 beachhead. EXP 자원(자ATK ▲1.81%/스택, 캡100, 연속)·Hero Level 파생 Water 아군 버프(레벨 스케일)·core-conditional fill·Extermination Water 버프 + **Hero-Level 스케일 10틱 지속딜(매 틱 자기 시각 기준 count 재조회, count-스케일 넉 + full_burst_bonus, 2026-07-12 인게임 확인 반영)** 모델됨. 레벨업 리로드/힐(딜 아님)만 보류 |
 | Helm (애장품) | `helm` | Attacker | SR | Water | ⚠ | Frontline Command 라스트불릿 스쿼드 크리율+14.64%/5초(`per_shot_rules`의 `"last_bullet"` 모드, refresh) 모델됨(2026-07-12, gap #1 잔여 해소) + Fire Away 스쿼드 파츠딜/공댐 모델됨. 두 스킬의 풀차지 보너스 효과(힐/게이지/추가딜)·Aegis Cannon 버스트후 차지배수(10 round) 보류 |
 | Isabel | `isabel` | Attacker | SG | Electric | ✅ | eb1. Marked Target 이스컬레이팅 자버프(refresh)·Pointed Feather 주기넉(cd15)·Sonic Chaser 버스트넉 + 단계별 추가딜(activation_count 게이팅, 사이클 정확)·받댐 디버프 모델됨. Full Burst Duration▲(로테 타이밍)만 보류 |
