@@ -116,9 +116,39 @@ BASE_CRIT_RATE = 0.15
 UNTIL_NEXT_OWN_BURST = "until_next_own_burst"
 
 
+def _expected_crit_positions(times, threshold, crit_rate_at):
+    """Indices into `times` where a running total of EXPECTED critical hits
+    crosses `threshold`, carrying the remainder forward.
+
+    Crit is expected value in this engine (every hit's damage is scaled by the
+    crit factor; no per-hit roll), so "after N critical hits" has no event to
+    count. It is instead converted the same way the damage path converts crit:
+    each shot contributes the unit's LIVE crit rate at that instant. Reading the
+    rate per shot rather than folding a fixed `N / crit_rate` shot count at
+    build time is what makes an ally's crit buff genuinely speed the trigger up
+    (Fienn's condition for accepting the conversion, 2026-07-20).
+
+    Shared by `per_shot_rules`' "every_n_critical_hits" mode (EVE's Unstable
+    Energy) and the "per_critical_hit_every" resource fill (Julia's signature
+    Crescendo) so the two cannot drift apart.
+
+    The `1e-9` is load-bearing, not cosmetic: summing a rate like 0.3 ten times
+    lands on 2.9999999999999996, which would push a proc a whole shot later
+    than exact arithmetic puts it.
+    """
+    positions = []
+    accumulated = 0.0
+    for index, time in enumerate(times):
+        accumulated += crit_rate_at(time)
+        if accumulated + 1e-9 >= threshold:
+            positions.append(index)
+            accumulated -= threshold
+    return positions
+
+
 def _resource_fill_times(
     fill, shot_times, core_hittable, fight_duration, full_burst_windows=(), own_burst_times=(),
-    last_bullet_times=(),
+    last_bullet_times=(), crit_rate_at=None,
 ):
     """The times a resource gains a stack, from its fill spec and the owner's
     shot timeline. ("per_shot_every", N) fires at the owner's Nth, 2Nth, ... shot
@@ -142,6 +172,13 @@ def _resource_fill_times(
     - see `attack_rate.last_bullet_shot_times`), not on any fixed shot count
     or window."""
     kind = fill[0]
+    if kind == "per_critical_hit_every":
+        # ("per_critical_hit_every", N): a stack per N EXPECTED critical hits
+        # with normal attacks - Julia's signature Crescendo. Unlike the
+        # per-shot kinds this needs the owner's live crit rate, so the caller
+        # supplies `crit_rate_at`; see `_expected_crit_positions`.
+        n = fill[1]
+        return [shot_times[i] for i in _expected_crit_positions(shot_times, n, crit_rate_at)]
     if kind == "per_shot_every":
         n = fill[1]
         return [t for i, t in enumerate(shot_times) if (i + 1) % n == 0]
@@ -648,6 +685,12 @@ def simulate_raid(
                     applied_at=start,
                 )
 
+    def _crit_rate_at_for(target):
+        """The owner's live crit rate at a time, clamped exactly as the damage
+        path clamps it - so an expected-crit counter can never run faster than
+        one crit per shot."""
+        return lambda t: min(1.0, base_crit_rate + registry.total_for("crit_rate", target, t))
+
     shot_times_by_slug = {}
     last_bullet_times_by_slug = {}
     for slug, weapon in weapon_stats.items():
@@ -749,21 +792,10 @@ def simulate_raid(
                 # buff applied by a LATER-processed ally's own per-shot rules is
                 # not visible here; burst / full-burst-triggered crit buffs are,
                 # since those rules run before any shot loop.
-                crit_fires = set()
-                expected_crits = 0.0
-                for i, crit_rec in enumerate(shot_records):
-                    expected_crits += min(
-                        1.0, base_crit_rate + registry.total_for("crit_rate", target, crit_rec.time)
-                    )
-                    # Tolerance, not cosmetics: summing a rate like 0.3 ten
-                    # times lands on 2.9999999999999996, which would silently
-                    # push a proc a whole shot later than exact arithmetic puts
-                    # it (same class of rounding trap as burst_cycle's
-                    # last + cooldown comparison).
-                    if expected_crits + 1e-9 >= threshold:
-                        crit_fires.add(i)
-                        expected_crits -= threshold
-                window_fire_indices[idx] = crit_fires
+                crit_rate_at = _crit_rate_at_for(target)
+                window_fire_indices[idx] = set(
+                    _expected_crit_positions(shot_times, threshold, crit_rate_at)
+                )
             elif mode == "sequence":
                 # threshold carries the requirement spec; the rules slot holds
                 # one rule list PER STAGE (see _sequence_fire_rules).
@@ -854,6 +886,7 @@ def simulate_raid(
                 source_times = _resource_fill_times(
                     source, shot_times, core_hittable, fight_duration, full_burst_windows,
                     context.burst_times.get(slug, []), last_bullet_times_by_slug.get(slug, set()),
+                    crit_rate_at=_crit_rate_at_for(target_for(slug)),
                 )
                 for ft in source_times:
                     context.fill_resource(slug, spec.name, amount, ft)

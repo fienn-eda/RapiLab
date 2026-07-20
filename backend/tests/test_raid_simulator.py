@@ -2908,3 +2908,44 @@ def test_burst_anchored_buff_skips_an_offset_landing_past_the_fight():
     baseline = _burst_anchored_result([])
 
     assert result["total_damage"] == baseline["total_damage"]
+
+
+def _crit_fill_result(threshold, base_crit_rate, cap=5):
+    """A resource filled by EXPECTED critical hits (Julia's signature
+    Crescendo), asserted through the damage a per-stack buff produces."""
+    return simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=base_crit_rate,
+        weapon_stats={"attacker": _ar_weapon()},
+        resource_specs={"attacker": [ResourceSpec(
+            name="crescendo",
+            fill=("per_critical_hit_every", threshold),
+            cap=cap,
+            buffs=[ResourceBuff(stat="atk_percent", scope="self",
+                                value_fn=lambda count: count)],
+        )]},
+    )
+
+
+def test_per_critical_hit_every_fill_uses_the_live_crit_rate():
+    # 50% crit rate, a stack per 2 expected crits -> a stack every 4 shots.
+    # More crit rate must fill it faster, exactly as the per-shot mode does.
+    slow = _crit_fill_result(threshold=2.0, base_crit_rate=0.5)
+    fast = _crit_fill_result(threshold=2.0, base_crit_rate=1.0)
+
+    assert fast["total_damage"] > slow["total_damage"]
+
+
+def test_per_critical_hit_every_fill_respects_the_cap():
+    uncapped = _crit_fill_result(threshold=1.0, base_crit_rate=1.0, cap=99)
+    capped = _crit_fill_result(threshold=1.0, base_crit_rate=1.0, cap=2)
+
+    # 12 shots at one stack each would blow well past a cap of 2.
+    assert uncapped["total_damage"] > capped["total_damage"]

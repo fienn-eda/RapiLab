@@ -641,6 +641,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "neon-vision-eye": lambda sv: build_firepower_explosion_per_shot_rules(sv),
     "drake": lambda sv: build_thunderbolt_per_shot_rules(sv),
     "drake-signature": lambda sv: build_thunderbolt_signature_per_shot_rules(sv),
+    "julia-signature": lambda sv: julia_signature.build_marcato_per_shot_rules(sv),
     "laplace": lambda sv: build_hero_bomber_per_shot_rules(sv),
     "laplace-signature": lambda sv: laplace_signature.build_hero_bomber_signature_per_shot_rules(sv),
     "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),
@@ -673,6 +674,7 @@ _PER_SHOT_RULE_BUILDERS = {
 _RESOURCE_SPEC_BUILDERS = {
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_resources(sv),
     "julia": lambda sv: build_crescendo_resources(sv),
+    "julia-signature": lambda sv: julia_signature.build_crescendo_signature_resources(sv),
     "modernia": lambda sv: build_modernia_resources(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
     "cinderella": lambda sv: build_beautiful_resources(sv),
@@ -697,6 +699,7 @@ _RESOURCE_SCALED_NUKE_BUILDERS = {
     "diesel-winter-sweets-highlight": lambda sv: build_diesel_burst_dot(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resource_scaled_nukes(sv),
     "julia": lambda sv: build_climax_resource_scaled_nuke(sv),
+    "julia-signature": lambda sv: julia_signature.build_climax_signature_resource_scaled_nuke(sv),
     "mana": lambda sv: build_fatal_error_dot(sv),
     "mihara-bonding-chain": lambda sv: build_dragging_chain_resource_scaled_nukes(sv),
     "sakura-bloom-in-summer": lambda sv: build_sakura_resource_scaled_nukes(sv),
