@@ -106,7 +106,10 @@ Chrome 실행 파일은 알려진 경로 목록을 순서대로 시도하고, �
 - 스크래치 경로: `data/cache/new-nikke-check/` (`.gitignore`에 `data/cache/` 존재)
 - **리포지토리를 수정하지 않는다.** 커밋된 스냅샷 자동 갱신은 하지 않는다 — 병렬
   세션·워크트리와 충돌하고, 갱신은 온보딩 시 diff를 보며 의도적으로 해야 한다.
-- 신규 항목마다 `resource_id` / `name_en` / `class` / `element` / `original_rare` 출력.
+- 신규 항목마다 `resource_id` / `name_en` / `class` / `corporation` / `original_rare`
+  출력. (`element`는 스냅샷에 없다 — `trimDirectory`가 남기는 필드는 `resource_id` ·
+  `name_code` · `name_en` · `original_rare` · `class` · `corporation`뿐이며, 원소는
+  RAW 페이로드에만 있다.)
 - **토스트는 신규 SSR이 있을 때만** 띄운다. 레이드는 SSR 전용이며
   (`roster_assembly.py`가 같은 기준으로 필터) 신규 R/SR은 오탐이 된다. 비SSR 신규는
   로그에만 남긴다.
