@@ -4,6 +4,29 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## refreshing 버프는 "스킬 불릿" 단위로 묶여야 한다 — 유닛 단위로 묶으면 남의 버프를 지운다
+
+- 발견: 2026-07-21 (Fienn이 Liberalio의 Raging Current 작동 여부를 점검 요청)
+- `EffectRegistry.add_refreshing`이 `(stat, source_slug, scope)`가 같은 **모든**
+  활성 효과를 truncate했다. 의도는 docstring에 적힌 대로 "한 소스의 재적용을 합치는
+  것"이었지만, 키가 **유닛**이라 **같은 유닛의 다른 스킬**까지 잡아먹었다.
+- 증상이 지독한 이유: **조용하고, 큰 쪽이 죽는다.** Liberalio는 자기
+  `attack_damage_up`을 두 불릿에서 주는데(영구 231% + 매 풀차지 refreshing 20.83%),
+  첫 샷에서 231%가 등록되자마자 같은 샷의 20.83%가 그걸 duration 0으로 잘랐다.
+  테스트는 전부 통과했다 — 각 불릿을 따로 보면 맞게 동작하기 때문이다. 유닛 단위
+  테스트로도 안 잡히고, **두 불릿이 한 시뮬에서 만나야만** 드러난다.
+- 해법: `Effect.refresh_group`(옵셔널) — `refreshing_buff_rule` 인스턴스마다 하나.
+  `RoundGrant.cap_group`(2026-07-20, Zwei 스택 캡)과 **정확히 같은 형태의 문제이고
+  같은 해법**이다. 그룹이 없으면 기존처럼 묶이므로 충돌이 없던 소비자는 불변.
+- 파급: 77 슬러그 중 **75개의 딜이 변했다**(전부 상승 — 옛 동작은 살아있어야 할
+  버프를 지우는 방향으로만 틀릴 수 있다). Liberalio +132.6%, ark-ranger-black +44%,
+  snow-white-heavy-arms +33.6%. 넓은 +4~17% 꼬리는 대부분 **Crown** 때문이다:
+  같은 날 추가한 Royal Attire(refreshing 스쿼드 AD)가 그녀 자신의 Last Kingdom
+  버스트 버프(36.24%)를 매번 지우고 있었다.
+- 교훈: **새 refreshing 버프를 추가할 때, 그 유닛이 같은 (stat, scope)를 다른
+  불릿에서도 주는지 반드시 확인할 것.** 안 그러면 새 인코딩이 기존 인코딩을
+  조용히 무효화한다.
+
 ## Damage formula
 - **The attack/skill coefficient scales the whole Base Damage, not the ATK stat.** A normal attack's "% of ATK" or a skill's "X% of final ATK" multiplies Base Damage *after* defense is subtracted — pass raw summary ATK plus a separate `attack_coefficient` to `calculate_damage`. Folding the coefficient into ATK mis-scales the defense subtraction and any flat ATK (~14% overstatement against a defended boss, and unevenly across Nikkes since coefficients range from ~5% normal attacks to ~8000% bursts, which would skew deck rankings). See `damage_formula.calculate_damage`.
 
