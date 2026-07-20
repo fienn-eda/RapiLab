@@ -8,7 +8,6 @@ def _state(slug, **overrides):
     payload = {
         "character_slug": slug,
         "level": 200,
-        "core_level": 0,
         "hp": 1_000_000.0,
         "atk": 60_000.0,
         "def_": 3_000.0,

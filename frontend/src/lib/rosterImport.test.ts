@@ -133,4 +133,23 @@ describe('parseRosterJson', () => {
     expect(drafts[0].grade).toBeUndefined()
     expect(drafts[0].core).toBeUndefined()
   })
+
+  it('no longer produces a core_level field', () => {
+    // core_level was an input the backend read nowhere; the InvestmentBadge
+    // shows the real value instead.
+    const { drafts } = parseRosterJson({
+      units: [
+        {
+          name_en: 'Rapi',
+          resource_id: 16,
+          grade: 3,
+          core: 7,
+          raid400: { hp: 1, atk: 2, def: 0 },
+          skill_levels: { skill1: 1, skill2: 1, burst: 1 },
+          overload: [],
+        },
+      ],
+    })
+    expect(drafts[0]).not.toHaveProperty('core_level')
+  })
 })

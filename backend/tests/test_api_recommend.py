@@ -9,7 +9,6 @@ def _nikke(slug, burst_tier_hint_atk=60_000.0):
     return {
         "character_slug": slug,
         "level": 200,
-        "core_level": 0,
         "hp": 1_000_000.0,
         "atk": burst_tier_hint_atk,
         "def_": 3_000.0,

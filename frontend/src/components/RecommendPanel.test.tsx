@@ -17,7 +17,6 @@ import { recommendRaidDecks } from '../api/recommendRaid'
 const nikke = (slug: string): UserNikkeState => ({
   character_slug: slug,
   level: 200,
-  core_level: 7,
   hp: 1_000_000,
   atk: 85_000,
   def_: 12_000,

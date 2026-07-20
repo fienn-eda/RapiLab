@@ -23,7 +23,6 @@ class OverloadOption(BaseModel):
 class UserNikkeState(BaseModel):
     character_slug: str
     level: int = Field(ge=1)
-    core_level: int = Field(ge=0)
     hp: float = Field(ge=0)
     atk: float = Field(ge=0)
     def_: float = Field(ge=0)

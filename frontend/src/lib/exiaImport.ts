@@ -141,7 +141,6 @@ export const parseExiaExport = (raw: unknown): ExiaImportResult => {
         id: crypto.randomUUID(),
         character_slug: slug,
         level,
-        core_level: String(character.limit_break?.core ?? 0),
         hp: '',
         atk: '',
         def_: '',

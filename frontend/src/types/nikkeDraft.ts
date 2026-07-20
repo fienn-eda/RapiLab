@@ -24,7 +24,6 @@ export interface NikkeDraft {
   grade?: number
   core?: number
   level: string
-  core_level: string
   hp: string
   atk: string
   def_: string
@@ -38,7 +37,6 @@ export interface NikkeDraft {
 export interface NikkeDraftErrors {
   character_slug?: string
   level?: string
-  core_level?: string
   hp?: string
   atk?: string
   def_?: string
@@ -58,7 +56,6 @@ export const makeEmptyDraft = (): NikkeDraft => ({
   id: newId(),
   character_slug: '',
   level: '',
-  core_level: '',
   hp: '',
   atk: '',
   def_: '',
@@ -117,9 +114,6 @@ export const validateDraft = (draft: NikkeDraft): ValidationResult => {
   const level = parseIntField(draft.level, CONSTRAINTS.level)
   if (level.error) errors.level = level.error
 
-  const coreLevel = parseIntField(draft.core_level, CONSTRAINTS.core_level)
-  if (coreLevel.error) errors.core_level = coreLevel.error
-
   const hp = parseFloatField(draft.hp, CONSTRAINTS.hp)
   if (hp.error) errors.hp = hp.error
 
@@ -161,7 +155,6 @@ export const validateDraft = (draft: NikkeDraft): ValidationResult => {
   const value: UserNikkeState = {
     character_slug: draft.character_slug.trim(),
     level: level.value!,
-    core_level: coreLevel.value!,
     hp: hp.value!,
     atk: atk.value!,
     def_: def_.value!,
@@ -199,7 +192,7 @@ export interface RosterMergeResult {
 
 /**
  * Merge imported drafts into the current roster by character_slug. For a slug
- * already present, overwrite only the import-sourced fields (level, core_level,
+ * already present, overwrite only the import-sourced fields (level,
  * skill_levels, overload_options) and keep the manual ones (id, hp, atk, def_).
  * New slugs are appended; current drafts absent from the import are left
  * untouched.
@@ -223,7 +216,6 @@ export const mergeRosterDrafts = (
       next[idx] = {
         ...next[idx],
         level: inc.level,
-        core_level: inc.core_level,
         skill_levels: inc.skill_levels,
         overload_options: inc.overload_options,
       }
@@ -240,9 +232,6 @@ export const mergeRosterDrafts = (
  * stats because the ExiaInvasion export lacks them), the collector's
  * roster.json is authoritative for stats, so an existing unit's stats,
  * actual-level stats, and investment badge (grade/core) are overwritten too.
- * core_level (the form input, distinct from the `core` badge field) is NOT
- * overwritten — the collector does not capture it, and the displayed stats
- * already bake in the real grade/core.
  */
 export const mergeCollectorDrafts = (
   current: NikkeDraft[],

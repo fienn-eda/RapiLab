@@ -17,7 +17,6 @@ export interface OverloadOption {
 export interface UserNikkeState {
   character_slug: string
   level: number // int, ≥ 1
-  core_level: number // int, ≥ 0
   hp: number // float, ≥ 0
   atk: number // float, ≥ 0
   def_: number // float, ≥ 0 (trailing underscore matches the Python model)
@@ -32,7 +31,6 @@ export interface UserNikkeState {
 // client-side validation and the backend agree on exactly one set of rules.
 export const CONSTRAINTS = {
   level: { min: 1 },
-  core_level: { min: 0 },
   hp: { min: 0 },
   atk: { min: 0 },
   def_: { min: 0 },

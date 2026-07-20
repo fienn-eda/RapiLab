@@ -15,7 +15,6 @@ const validDraft = (): NikkeDraft => ({
   ...makeEmptyDraft(),
   character_slug: 'red-hood',
   level: '200',
-  core_level: '7',
   hp: '1000000.5',
   atk: '85000',
   def_: '12000',
@@ -30,7 +29,6 @@ describe('validateDraft', () => {
     expect(value).toEqual({
       character_slug: 'red-hood',
       level: 200,
-      core_level: 7,
       hp: 1000000.5,
       atk: 85000,
       def_: 12000,
@@ -44,7 +42,6 @@ describe('validateDraft', () => {
     expect(value).toBeUndefined()
     expect(errors.character_slug).toBe('Required')
     expect(errors.level).toBe('Required')
-    expect(errors.core_level).toBe('Required')
     expect(errors.hp).toBe('Required')
     expect(errors.atk).toBe('Required')
     expect(errors.def_).toBe('Required')
@@ -59,13 +56,6 @@ describe('validateDraft', () => {
     const { errors, value } = validateDraft({ ...validDraft(), level: '0' })
     expect(errors.level).toBe('Must be ≥ 1')
     expect(value).toBeUndefined()
-  })
-
-  it('allows core_level 0 but rejects negative', () => {
-    expect(validateDraft({ ...validDraft(), core_level: '0' }).value).toBeDefined()
-    expect(validateDraft({ ...validDraft(), core_level: '-1' }).errors.core_level).toBe(
-      'Must be ≥ 0',
-    )
   })
 
   it('rejects non-integer whole-number fields', () => {
@@ -153,7 +143,6 @@ describe('mergeRosterDrafts', () => {
       def_: '3000',
       skill_levels: { skill1: '1', skill2: '1', burst: '1' },
       level: '200',
-      core_level: '0',
     })
     const incoming = draft({
       character_slug: 'rapi-red-hood',
@@ -161,7 +150,6 @@ describe('mergeRosterDrafts', () => {
       hp: '',
       skill_levels: { skill1: '10', skill2: '10', burst: '10' },
       level: '663',
-      core_level: '5',
       overload_options: [{ id: 'x', name: '공격력 증가', value: '12' }],
     })
 
@@ -176,7 +164,6 @@ describe('mergeRosterDrafts', () => {
     expect(merged.hp).toBe('120000')
     expect(merged.def_).toBe('3000')
     expect(merged.level).toBe('663')
-    expect(merged.core_level).toBe('5')
     expect(merged.skill_levels).toEqual({ skill1: '10', skill2: '10', burst: '10' })
     expect(merged.overload_options).toEqual([
       { id: 'x', name: '공격력 증가', value: '12' },
@@ -207,7 +194,6 @@ describe('mergeCollectorDrafts', () => {
       atk: '60000',
       hp: '120000',
       def_: '3000',
-      core_level: '7',
       skill_levels: { skill1: '1', skill2: '1', burst: '1' },
     })
     const incoming = draft({
@@ -232,8 +218,6 @@ describe('mergeCollectorDrafts', () => {
     expect(merged.actualAtk).toBe('444444')
     expect(merged.actualDef).toBe('11111')
     expect(merged.level).toBe('400')
-    // core_level is NOT overwritten — the collector doesn't capture it.
-    expect(merged.core_level).toBe('7')
     expect(merged.skill_levels).toEqual({ skill1: '10', skill2: '10', burst: '10' })
     expect(merged.overload_options).toEqual([
       { id: 'x', name: '공격력 증가', value: '12' },

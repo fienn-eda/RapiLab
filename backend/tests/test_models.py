@@ -8,7 +8,6 @@ def test_user_nikke_state_minimal_construction():
     state = UserNikkeState(
         character_slug="anis",
         level=200,
-        core_level=0,
         hp=50000,
         atk=8000,
         def_=2000,
@@ -22,7 +21,6 @@ def test_user_nikke_state_with_overload_options():
     state = UserNikkeState(
         character_slug="anis",
         level=200,
-        core_level=3,
         hp=60000,
         atk=9500,
         def_=2200,
@@ -48,7 +46,6 @@ def test_user_nikke_state_rejects_negative_stats():
         UserNikkeState(
             character_slug="anis",
             level=200,
-            core_level=0,
             hp=-1,
             atk=8000,
             def_=2000,
@@ -58,7 +55,7 @@ def test_user_nikke_state_rejects_negative_stats():
 
 def test_user_nikke_state_accepts_actual_level_stats():
     s = UserNikkeState(
-        character_slug="rapi-red-hood", level=400, core_level=0,
+        character_slug="rapi-red-hood", level=400,
         hp=3532402, atk=143543, def_=20986,
         actual_hp=9727100, actual_atk=418862, actual_def=55537,
         skill_levels=SkillLevels(skill1=10, skill2=10, burst=10),
@@ -69,7 +66,7 @@ def test_user_nikke_state_accepts_actual_level_stats():
 
 def test_actual_level_stats_default_to_none():
     s = UserNikkeState(
-        character_slug="liter", level=400, core_level=0,
+        character_slug="liter", level=400,
         hp=1, atk=1, def_=1,
         skill_levels=SkillLevels(skill1=1, skill2=1, burst=1),
         overload_options=[],

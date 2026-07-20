@@ -49,7 +49,6 @@ export const parseRosterJson = (
       grade: u.grade,
       core: u.core,
       level: '400',
-      core_level: '0',
       hp: String(u.raid400.hp),
       atk: String(u.raid400.atk),
       def_: String(u.raid400.def),

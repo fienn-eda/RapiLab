@@ -75,7 +75,7 @@ export function NikkeCard({ draft, index, onChange, onRemove }: NikkeCardProps) 
         onChange={(character_slug) => onChange({ ...draft, character_slug })}
       />
 
-      <div className="field-row field-row--pair">
+      <div className="field-row">
         <NumberField
           label="Level"
           value={draft.level}
@@ -83,14 +83,6 @@ export function NikkeCard({ draft, index, onChange, onRemove }: NikkeCardProps) 
           min={CONSTRAINTS.level.min}
           step={1}
           onChange={(level) => onChange({ ...draft, level })}
-        />
-        <NumberField
-          label="Core level"
-          value={draft.core_level}
-          error={shownErrors.core_level}
-          min={CONSTRAINTS.core_level.min}
-          step={1}
-          onChange={(core_level) => onChange({ ...draft, core_level })}
         />
       </div>
 
