@@ -52,14 +52,17 @@ The input form collects one `UserNikkeState` per owned Nikke. This is the
 | `def_` | float | ≥ 0 (note the trailing underscore in the Python model) |
 | `skill_levels` | `{ skill1, skill2, burst }` | each int, 1–10 |
 | `overload_options` | `{ name: string, value: float }[]` | aggregated across 4 gear pieces; may be empty |
-| `pve_cube` | `{ name: string, level: int(1–10) } \| null` | PVE cube only; PVP cubes out of scope |
+
+There is no `pve_cube` field — cube is not user input. Every Nikke is simulated
+wearing a Resilience Cube Lv.15, a backend-side assumption applied to the whole
+roster regardless of what's entered (`docs/decisions.md`, 2026-07-20). The UI
+states this assumption; it does not collect a cube.
 
 Resolved (Fienn, 2026-07-17): ShiftyPad's displayed `hp/atk/def` **already include**
 the equipped cube — with a cube on it reflects the cube, with none it shows bare
 character stats. So the user copies those numbers in as-is and the cube is never
 added on top. Overload is the opposite: ShiftyPad shows it separately and it IS
-additive. Keep entering `pve_cube` as `{name, level}` — the backend uses it only
-for reload speed and superior code damage, which aren't part of those three stats.
+additive.
 
 ## Data contract — backend API
 
