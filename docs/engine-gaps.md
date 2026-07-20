@@ -5,7 +5,27 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-20 (**gap #12 완료 — 하모니 큐브 효과 배선.** 전원 Resilience
+- 마지막 갱신: 2026-07-20 (**신규 스탯 `element_advantage_grant` — gap #12 원소 우위
+  게이팅의 부산물 버그 정리.** gap #12에서 `other_elemental_bonus`("Superior Code
+  Damage")를 원소 우위 게이팅한 게 이 스탯을 뭉뚱그려 쓰고 있던 **두 개의 서로 다른
+  케이스**를 노출시켰다 — (a) "Elemental Advantage Attack Damage ▲ N%" 조건부 버프
+  (이미 우위를 가진 유닛에게만 지급, 게이팅이 정확히 맞는 케이스, 71명 원문 스킬텍스트
+  전수 스캔 결과 110건으로 압도적 다수), (b) "Applies Elemental Advantage damage to
+  `<X>` Code enemies" 부여형 스킬(우위가 없는 유닛에게 우위 자체를 만들어줌 — 게이팅이
+  정확히 거꾸로 작동해 자기상쇄됨, 같은 스캔에서 로스터 전체 중 유일하게 Rapi: Red Hood
+  하나). Rapi는 (a)로 인코딩돼 있어서 게이트 도입 후 그녀의 보너스가 조용히 사라졌었다
+  (버프 있으나 없으나 데미지 동일 — 효과가 레지스트리에 등록되는지만 검증한 유닛 테스트는
+  그린이었음, 하모니 큐브와 같은 실패 형태). 해결: `raid_simulator.element_bonus_for`가
+  이 스탯을 가진 유닛에 자연 배율 대신 `1 + ELEMENT_ADVANTAGE_BONUS`를 반환(가산이 아닌
+  대체라 자연 우위와 중복 안 됨, 원소 정체성 자체는 안 바꿔서 다른 유닛의
+  `element:<Name>` 스코프 버프엔 여전히 무자격). 같은 배치에서 딸려나온 사전 존재 버그:
+  Rei Ayanami의 자기우위 버프가 `boss_is_element("Iron")`으로 게이팅돼 있었는데, 코멘트가
+  "Fire > Iron"으로 정당화한 것과 달리 `elements.py`의 실제 사이클은 Water>Fire>Wind>
+  Iron>Electric>Water — Fire는 Wind를 이기지 원문에 원소 명시도 없음. 게이트 도입 후 두
+  조건이 상호배타가 돼 그녀의 버프가 어떤 보스에서도 발동 불가능해졌던 것을 게이트 제거로
+  수정. 상세는 `docs/decisions.md`의 원소 우위 게이팅 ADR + amendment 참고, 스탯 카탈로그는
+  `.claude/skills/nikke-skill-encoding/references/engine-capabilities.md`.
+  이전 갱신: 2026-07-20 (**gap #12 완료 — 하모니 큐브 효과 배선.** 전원 Resilience
   큐브 Lv.15 착용을 가정(전역 1종, 유닛별 선택은 다음 확장으로 defer)하고 값을
   `tables.json`(`resilience_cube`)에서 유도해 배선 — 재장전 속도 29.69% / 우월 코드
   대미지 19.09%, 인게임 툴팁 대조 완료. 부수로 `other_elemental_bonus`(우월 코드
