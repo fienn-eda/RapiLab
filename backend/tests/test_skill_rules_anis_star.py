@@ -226,13 +226,32 @@ def test_shooting_stars_repeat_each_burst_and_are_clipped_by_fight_end():
 
 
 def test_burst_fixes_charge_time_via_an_equivalent_charge_speed_buff():
-    # Her RL charges in 1.0 sec; "fixed at 0.7 sec" is 1/0.7 - 1 of charge speed.
+    # Her RL charges in 1.0 sec. Charge speed SHORTENS by its percent (see
+    # attack_rate.charge_time_with_speed), so reaching 0.7 sec needs +30%.
     rules = {"anis-star": build_star_anis_burst_rules(BURST_VALUES)}
     ctx = alone_context()
     registry = EffectRegistry()
     fire_trigger("own_burst_activate", rules, ctx, registry, time=5.0)
 
-    assert registry.total_for("charge_speed_percent", ANIS, now=5.0) == pytest.approx(1.0 / 0.7 - 1)
+    speed = registry.total_for("charge_speed_percent", ANIS, now=5.0)
+    assert speed == pytest.approx(0.3)
+    # What matters is the resulting cadence, not the percent itself.
+    from app.attack_rate import charge_time_with_speed
+    assert charge_time_with_speed(1.0, speed) == pytest.approx(0.7)
     # self-scoped, and only for the stated window
     assert registry.total_for("charge_speed_percent", ALLY, now=5.0) == 0.0
     assert registry.total_for("charge_speed_percent", ANIS, now=15.1) == 0.0
+
+
+def test_shooting_stars_are_independent_of_her_magazine_and_reloads():
+    # The stars are summoned entities, not her gun: they keep attacking on their
+    # own 0.25-sec cadence while she reloads (Fienn, 2026-07-20). Structurally
+    # pinned here - the schedule is handed a context carrying ONLY burst_times,
+    # so it cannot come to depend on shot_times/reloads without failing.
+    (stars,) = build_shooting_stars_scheduled_nukes(STAR_ANIS)
+    context = _BurstContext([20.0])
+    assert not hasattr(context, "shot_times")
+
+    times = stars["schedule"](context, 180.0)
+    gaps = [round(b - a, 10) for a, b in zip(times, times[1:])]
+    assert set(gaps) == {0.25}  # perfectly even: no reload gap ever appears

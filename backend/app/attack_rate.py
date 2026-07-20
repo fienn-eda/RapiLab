@@ -22,8 +22,8 @@ change mid-fight. Magazine size is rounded to the nearest whole round.
 attack_speed_percent (magazine weapons) and charge_speed_percent (charge
 weapons) are threaded through the SAME `_at(t)` callable pattern and scale the
 firing cadence: shot_interval = 1 / (rate_of_fire * (1 + attack_speed)) for
-magazine weapons, effective charge_time = charge_time / (1 + charge_speed) for
-charge weapons. Like max_ammo_percent they're evaluated once per magazine (at
+magazine weapons, and `charge_time_with_speed` (which SHORTENS by the buff's
+percent rather than dividing - see that helper) for charge weapons. Like max_ammo_percent they're evaluated once per magazine (at
 its start), so a buff active for part of a magazine takes full effect from the
 next magazine boundary - a deliberate approximation matching the max_ammo/reload
 granularity. Default `_zero` leaves cadence untouched, so units with no such
@@ -71,6 +71,51 @@ def reload_time_with_speed(reload_time, reload_speed_percent):
     return reload_time * (1 - reload_speed_percent)
 
 
+# The shortest gap the game allows between charged shots. Anchored to one
+# in-game measurement (Fienn, 2026-07-20): Cinderella, whose Flawless Glass
+# gives Charge Speed +100% - enough to drive her 1.0-sec charge to zero - fires
+# 29-30 shots in 10 sec with a max-ammo overload preventing a reload. The
+# conservative 29 is used.
+#
+# Two caveats, both deliberate rather than hidden. The floor MECHANISM is
+# inferred: something bounds the cadence once charge time reaches zero, and a
+# minimum gap reproduces the observation, but the game could equally be
+# capping charge speed itself - the two are indistinguishable from one data
+# point. And the value comes from a Rocket Launcher; whether a Sniper Rifle
+# floors at the same number is untested. Only units that reach ~65%+ charge
+# speed touch it at all, so today that is Cinderella alone.
+CHARGE_INTERVAL_FLOOR_SECONDS = 10.0 / 29
+
+
+def charge_time_with_speed(charge_time, charge_speed_percent):
+    """Charge TIME from a charge-SPEED modifier.
+
+    Charge speed is NOT reciprocal the way reload speed is: a buff of n%
+    SHORTENS the charge by n% of its base, i.e. `charge_time * (1 - n)`, so
+    +100% reaches zero rather than merely halving (Fienn, 2026-07-20, from
+    community testing). The engine previously used `charge_time / (1 + n)`,
+    which understated every buff - at +30% it gave 0.769 sec where the game
+    gives 0.70.
+
+    The same expression covers slowdowns: at -20% it returns 1.2x the base,
+    which is the behaviour Bready's Taste debuff needs.
+
+    NOTE the asymmetry with `reload_time_with_speed`, which divides on its
+    positive branch. That is not an oversight here: reload's positive branch
+    has never been measured, and changing it without evidence would be
+    inventing a number. If reload is ever measured and behaves like charge,
+    the two should converge.
+
+    The floor can never make a weapon SLOWER than its own unbuffed charge:
+    Scarlet: Black Shadow's base charge is 0.3 sec, already quicker than the
+    floor measured on Cinderella's Rocket Launcher, and a blanket minimum
+    would have silently slowed her down. That the two disagree is itself
+    evidence the floor is not one global constant - see the note above it.
+    """
+    floor = min(charge_time, CHARGE_INTERVAL_FLOOR_SECONDS)
+    return max(charge_time * (1 - charge_speed_percent), floor)
+
+
 def rate_of_fire_for_weapon(weapon: str) -> float:
     return RATE_OF_FIRE_60FPS[weapon]
 
@@ -115,7 +160,7 @@ def generate_charge_shot_times(
     magazine_start = 0.0
 
     while magazine_start < fight_duration:
-        effective_charge = charge_time / (1 + charge_speed_percent_at(magazine_start))
+        effective_charge = charge_time_with_speed(charge_time, charge_speed_percent_at(magazine_start))
         magazine_size = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         last_shot_time = None
         for i in range(magazine_size):
@@ -211,7 +256,7 @@ def charge_last_bullet_times(
     magazine_start = 0.0
 
     while magazine_start < fight_duration:
-        effective_charge = charge_time / (1 + charge_speed_percent_at(magazine_start))
+        effective_charge = charge_time_with_speed(charge_time, charge_speed_percent_at(magazine_start))
         magazine_size = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         last_round_time = magazine_start + effective_charge + (magazine_size - 1) * effective_charge
         if last_round_time >= fight_duration:
@@ -264,7 +309,7 @@ def charge_first_bullet_times(
     first_bullets = set()
     magazine_start = 0.0
     while magazine_start < fight_duration:
-        effective_charge = charge_time / (1 + charge_speed_percent_at(magazine_start))
+        effective_charge = charge_time_with_speed(charge_time, charge_speed_percent_at(magazine_start))
         first_shot = magazine_start + effective_charge
         if first_shot >= fight_duration:
             return first_bullets
@@ -365,7 +410,7 @@ def _base_shot_records(base, window_start, window_end,
         bonus = base["charge_damage_percent"] / 100 - 1
         magazine_start = window_start
         while magazine_start < window_end:
-            effective_charge = base["charge_time"] / (1 + charge_speed_percent_at(magazine_start))
+            effective_charge = charge_time_with_speed(base["charge_time"], charge_speed_percent_at(magazine_start))
             magazine_size = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
             last_shot_time = None
             for i in range(magazine_size):
@@ -412,7 +457,7 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at):
     profile = seg["profile"]
     start = seg["start"]
     if profile.get("charge_time"):
-        interval = profile["charge_time"] / (1 + charge_speed_percent_at(start))
+        interval = charge_time_with_speed(profile["charge_time"], charge_speed_percent_at(start))
     else:
         interval = 1.0 / profile["rate_of_fire"]
     charge = profile.get("charge_damage_percent")

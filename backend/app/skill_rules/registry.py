@@ -360,7 +360,7 @@ def _build_takina(sv):
 
 def _build_cinderella(sv):
     rules = build_flawless_glass_rules(sv, sv["caster_max_hp"])
-    rules += build_flawless_glass_charge_speed_rules(sv, sv["caster_weapon_stats"])
+    rules += build_flawless_glass_charge_speed_rules(sv)
     return rules, glass_slippers_burst_percent(sv)
 
 

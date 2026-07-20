@@ -1,8 +1,10 @@
 import pytest
 
 from app.attack_rate import (
+    CHARGE_INTERVAL_FLOOR_SECONDS,
     RATE_OF_FIRE_60FPS,
     ShotRecord,
+    charge_time_with_speed,
     charge_first_bullet_times,
     charge_last_bullet_times,
     first_bullet_shot_times,
@@ -300,13 +302,37 @@ def test_magazine_attack_speed_default_is_inert():
     assert a == b
 
 
-def test_charge_speed_up_shortens_charge_time():
-    # charge_speed +1.0 -> effective charge 1.0/(1+1.0) = 0.5s
+def test_charge_speed_shortens_charge_by_its_own_percent():
+    # A buff of n% SHORTENS the charge by n% of base (NOT charge/(1+n)):
+    # +30% takes a 1.0s charge to 0.70s, not 0.769s.
     shots = generate_charge_shot_times(
-        charge_time=1.0, reload_time=1.0, max_ammo=2, fight_duration=1.2,
+        charge_time=1.0, reload_time=1.0, max_ammo=2, fight_duration=1.5,
+        charge_speed_percent_at=lambda t: 0.3,
+    )
+    assert [round(t, 4) for t in shots] == [0.7, 1.4]
+
+
+def test_charge_speed_at_full_shortening_lands_on_the_measured_floor():
+    # +100% drives the charge to zero, so the game's minimum gap between
+    # charged shots is what remains - anchored to Cinderella's 29 shots/10s.
+    shots = generate_charge_shot_times(
+        charge_time=1.0, reload_time=1.0, max_ammo=3, fight_duration=1.2,
         charge_speed_percent_at=lambda t: 1.0,
     )
-    assert [round(t, 4) for t in shots] == [0.5, 1.0]
+    assert [round(t, 4) for t in shots] == [
+        round(CHARGE_INTERVAL_FLOOR_SECONDS * k, 4) for k in (1, 2, 3)]
+
+
+def test_charge_speed_floor_never_slows_a_weapon_below_its_own_base():
+    # Scarlet: Black Shadow's base charge (0.3s) is already quicker than the
+    # floor measured on an RL; a blanket minimum would have slowed her down.
+    assert charge_time_with_speed(0.3, 0.0) == pytest.approx(0.3)
+    assert charge_time_with_speed(0.3, 1.0) == pytest.approx(0.3)
+
+
+def test_charge_speed_down_lengthens_the_charge():
+    # The same expression covers slowdowns: -20% is 1.2x the base.
+    assert charge_time_with_speed(1.0, -0.2) == pytest.approx(1.2)
 
 
 def test_charge_speed_default_is_inert():
@@ -412,7 +438,8 @@ def test_charge_speed_callable_shortens_profile_charge():
     records = generate_segmented_shots(
         SR_BASE, [seg], 60.0, charge_speed_percent_at=lambda t: 1.0)
     cannon = [r for r in records if r.damage_percent == 499.5][0]
-    assert cannon.time == 10.0 + 5.0 / 2.0
+    # +100% shortens the 5s cannon charge to zero, so it fires one floor-gap in.
+    assert cannon.time == pytest.approx(10.0 + CHARGE_INTERVAL_FLOOR_SECONDS)
 
 
 def test_fight_duration_clips_segment_shots():

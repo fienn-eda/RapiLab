@@ -21,8 +21,9 @@ interval is written into the skill TEXT rather than a numbered value slot (it
 does not scale with skill level), so it is a module constant, not a skill value.
 
 The window's "Charge time is fixed at 0.7 sec" is modeled as an equivalent
-self Charge Speed buff (1/0.7 - 1, derived from her weapon's own base charge
-time) rather than a `weapon_mode_schedules` segment, because segments never
+self Charge Speed buff, derived by inverting `attack_rate.charge_time_with_speed`
+against her weapon's own base charge time (so it stays pinned to the 0.7-sec
+TARGET and survives changes to that formula), rather than a `weapon_mode_schedules` segment, because segments never
 reload: a 10-sec segment would fire ~14 uninterrupted shots when her 6-round
 magazine really only manages ~11 around a reload. Two consequences of that
 choice are documented rather than hidden: charge speed is sampled once per
@@ -198,8 +199,10 @@ def build_star_anis_burst_rules(values: dict) -> list[SkillRule]:
     base_charge_time = float(values["caster_weapon_stats"]["charge_time"])
     # "Charge time is fixed at 0.7 sec" as the charge-speed buff that produces
     # that cadence on her own weapon - see the module docstring for why this is
-    # a buff and not a weapon-mode segment, and what it costs.
-    charge_speed = base_charge_time / fixed_charge_time - 1
+    # a buff and not a weapon-mode segment, and what it costs. Inverts
+    # `attack_rate.charge_time_with_speed` (which SHORTENS by the percent), so
+    # it stays anchored to the 0.7-sec target rather than to a raw percent.
+    charge_speed = 1 - fixed_charge_time / base_charge_time
 
     def apply_self_attack_damage(context, caster_slug, time, registry):
         registry.add(

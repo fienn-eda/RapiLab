@@ -153,33 +153,21 @@ DIRT_RESISTANT_MIRROR = CINDERELLA["dirt_resistant_mirror"]
 GLASS_SLIPPERS = CINDERELLA["glass_slippers"]
 
 
-def test_flawless_glass_charge_speed_reproduces_the_measured_cadence():
-    # Fienn measured 29-30 shots per 10 sec with the buff up and no reload;
-    # the conservative 29 gives a 0.3448-sec floor between shots. Within a
-    # magazine, shot 1 still pays the full 1.0-sec base charge.
-    weapon = {"charge_time": 1.0, "max_ammo": 24}
-    speed = flawless_glass_charge_speed(FLAWLESS_GLASS, weapon)
-
-    # The engine's model is charge_time / (1 + speed); the value must make that
-    # equal the magazine's real average interval.
-    effective = 1.0 / (1 + speed)
-    expected = (1.0 + 23 * (10.0 / 29)) / 24
-    assert effective == pytest.approx(expected)
-    # Sanity: that is a large but finite speed-up, not the naive +100%.
-    assert 1.5 < speed < 2.0
+def test_flawless_glass_charge_speed_is_the_raw_skill_value():
+    # No back-solving any more: attack_rate models the real shortening rule and
+    # carries the floor, so the skill's own +100% is what gets handed over.
+    assert flawless_glass_charge_speed(CINDERELLA) == pytest.approx(1.0)
 
 
-def test_flawless_glass_charge_speed_scales_with_a_bigger_magazine():
-    # A max-ammo overload means the one slow shot is amortised over more shots,
-    # so the effective speed rises toward the floor.
-    small = flawless_glass_charge_speed(FLAWLESS_GLASS, {"charge_time": 1.0, "max_ammo": 24})
-    large = flawless_glass_charge_speed(FLAWLESS_GLASS, {"charge_time": 1.0, "max_ammo": 60})
-    assert large > small
+def test_flawless_glass_reproduces_the_measured_shots_per_ten_seconds():
+    # Fienn measured 29-30 shots in 10 sec with the buff up and no reload.
+    from app.attack_rate import charge_time_with_speed
+    interval = charge_time_with_speed(1.0, flawless_glass_charge_speed(CINDERELLA))
+    assert 10.0 / interval == pytest.approx(29, abs=0.5)  # measured 29-30
 
 
 def test_flawless_glass_charge_speed_is_a_permanent_self_buff():
-    rules = {"cinderella": build_flawless_glass_charge_speed_rules(
-        FLAWLESS_GLASS, {"charge_time": 1.0, "max_ammo": 24})}
+    rules = {"cinderella": build_flawless_glass_charge_speed_rules(CINDERELLA)}
     ctx = SquadContext([
         SquadMember("cinderella", burst_tier=3, element="Fire"),
         SquadMember("ally", burst_tier=1, element="Iron"),
@@ -188,6 +176,6 @@ def test_flawless_glass_charge_speed_is_a_permanent_self_buff():
     fire_trigger("battle_start", rules, ctx, reg, time=0.0)
 
     cind = {"slug": "cinderella", "element": "Fire"}
-    assert reg.total_for("charge_speed_percent", cind, now=170.0) > 1.5
+    assert reg.total_for("charge_speed_percent", cind, now=170.0) == pytest.approx(1.0)
     # self-scoped: an ally's cadence is untouched
     assert reg.total_for("charge_speed_percent", {"slug": "ally", "element": "Iron"}, now=0.0) == 0.0
