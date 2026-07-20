@@ -26,6 +26,12 @@
   color: var(--text-muted);
 }
 
+.app__note {
+  color: var(--text-muted);
+  font-size: 13px;
+  font-style: italic;
+}
+
 .app__main {
   display: flex;
   flex-direction: column;
@@ -133,8 +139,7 @@
   flex-wrap: wrap;
 }
 
-.field-row--overload,
-.field-row--cube {
+.field-row--overload {
   align-items: flex-start;
 }
 
@@ -232,8 +237,7 @@
   color: var(--danger);
 }
 
-.field-row--overload .btn--icon,
-.field-row--cube .btn--icon {
+.field-row--overload .btn--icon {
   margin-top: 22px;
 }
 

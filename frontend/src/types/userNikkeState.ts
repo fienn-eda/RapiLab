@@ -14,12 +14,6 @@ export interface OverloadOption {
   value: number // float
 }
 
-/** The PVE (combat) cube equipped. PVP/arena cubes are out of scope. */
-export interface PveCube {
-  name: string
-  level: number // int, 1–10
-}
-
 export interface UserNikkeState {
   character_slug: string
   level: number // int, ≥ 1
@@ -32,7 +26,6 @@ export interface UserNikkeState {
   actual_def?: number
   skill_levels: SkillLevels
   overload_options: OverloadOption[] // may be empty
-  pve_cube: PveCube | null // PVE cube only
 }
 
 // Constraint bounds, mirrored from the Pydantic Field(...) declarations so the
@@ -44,5 +37,4 @@ export const CONSTRAINTS = {
   atk: { min: 0 },
   def_: { min: 0 },
   skill: { min: 1, max: 10 },
-  cubeLevel: { min: 1, max: 15 },
 } as const

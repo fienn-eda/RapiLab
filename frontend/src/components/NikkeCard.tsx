@@ -12,7 +12,6 @@ import { NumberField } from './fields/NumberField'
 import { TextField } from './fields/TextField'
 import { SkillLevelsField } from './SkillLevelsField'
 import { OverloadOptionsField } from './OverloadOptionsField'
-import { PveCubeField } from './PveCubeField'
 
 interface NikkeCardProps {
   draft: NikkeDraft
@@ -129,14 +128,6 @@ export function NikkeCard({ draft, index, onChange, onRemove }: NikkeCardProps) 
         onChange={(overload_options: OverloadRow[]) =>
           onChange({ ...draft, overload_options })
         }
-      />
-
-      <PveCubeField
-        hasCube={draft.hasCube}
-        value={draft.pve_cube}
-        errors={shownErrors.pve_cube}
-        onToggle={(hasCube) => onChange({ ...draft, hasCube })}
-        onChange={(pve_cube) => onChange({ ...draft, pve_cube })}
       />
     </section>
   )

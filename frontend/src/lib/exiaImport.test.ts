@@ -150,7 +150,7 @@ const sampleExport = () => ({
 })
 
 describe('parseExiaExport', () => {
-  it('maps a character: slug, synchro level, skills, core, overload — leaving stats/cube manual', () => {
+  it('maps a character: slug, synchro level, skills, core, overload — leaving stats manual', () => {
     const { drafts } = parseExiaExport(sampleExport())
     const maiden = drafts.find((d) => d.character_slug === 'maiden-ice-rose')!
     expect(maiden.level).toBe('663')
@@ -162,8 +162,6 @@ describe('parseExiaExport', () => {
     expect(maiden.hp).toBe('')
     expect(maiden.atk).toBe('')
     expect(maiden.def_).toBe('')
-    expect(maiden.hasCube).toBe(false)
-    expect(maiden.pve_cube).toEqual({ name: '', level: '' })
   })
 
   it('applies the slug alias and keeps unencoded units by their derived slug', () => {

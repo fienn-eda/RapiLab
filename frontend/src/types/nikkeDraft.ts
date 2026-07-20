@@ -6,7 +6,6 @@
 import {
   CONSTRAINTS,
   type OverloadOption,
-  type PveCube,
   type UserNikkeState,
 } from './userNikkeState'
 
@@ -29,14 +28,6 @@ export interface NikkeDraft {
   actualDef: string
   skill_levels: { skill1: string; skill2: string; burst: string }
   overload_options: OverloadRow[]
-  hasCube: boolean
-  pve_cube: { name: string; level: string }
-  // Whether the import source actually reported cube ownership (true/false
-  // cube presence), vs simply not carrying cube data at all. The bookmarklet
-  // sync path has no cube-tid -> name map on the backend, so it never reports
-  // cube info; mergeCollectorDrafts uses this to avoid treating "no info" as
-  // "no cube" and erasing a cube entered via file-import.
-  cubeKnown: boolean
 }
 
 export interface NikkeDraftErrors {
@@ -48,7 +39,6 @@ export interface NikkeDraftErrors {
   def_?: string
   skill_levels?: { skill1?: string; skill2?: string; burst?: string }
   overload_options?: Record<string, { name?: string; value?: string }>
-  pve_cube?: { name?: string; level?: string }
 }
 
 const newId = (): string => crypto.randomUUID()
@@ -72,9 +62,6 @@ export const makeEmptyDraft = (): NikkeDraft => ({
   actualDef: '',
   skill_levels: { skill1: '', skill2: '', burst: '' },
   overload_options: [],
-  hasCube: false,
-  pve_cube: { name: '', level: '' },
-  cubeKnown: true,
 })
 
 interface ParsedNumber {
@@ -164,20 +151,6 @@ export const validateDraft = (draft: NikkeDraft): ValidationResult => {
   if (Object.keys(overloadErrors).length > 0)
     errors.overload_options = overloadErrors
 
-  let pveCube: PveCube | null = null
-  if (draft.hasCube) {
-    const cubeErrors: { name?: string; level?: string } = {}
-    const cubeName = draft.pve_cube.name.trim()
-    if (cubeName === '') cubeErrors.name = 'Required'
-    const cubeLevel = parseIntField(draft.pve_cube.level, CONSTRAINTS.cubeLevel)
-    if (cubeLevel.error) cubeErrors.level = cubeLevel.error
-    if (Object.keys(cubeErrors).length > 0) {
-      errors.pve_cube = cubeErrors
-    } else {
-      pveCube = { name: cubeName, level: cubeLevel.value! }
-    }
-  }
-
   if (Object.keys(errors).length > 0) return { errors }
 
   const value: UserNikkeState = {
@@ -193,7 +166,6 @@ export const validateDraft = (draft: NikkeDraft): ValidationResult => {
       burst: burst.value!,
     },
     overload_options: overloadOptions,
-    pve_cube: pveCube,
   }
 
   for (const [key, raw] of [
@@ -223,9 +195,9 @@ export interface RosterMergeResult {
 /**
  * Merge imported drafts into the current roster by character_slug. For a slug
  * already present, overwrite only the import-sourced fields (level, core_level,
- * skill_levels, overload_options) and keep the manual ones (id, hp, atk, def_,
- * hasCube, pve_cube). New slugs are appended; current drafts absent from the
- * import are left untouched.
+ * skill_levels, overload_options) and keep the manual ones (id, hp, atk, def_).
+ * New slugs are appended; current drafts absent from the import are left
+ * untouched.
  */
 export const mergeRosterDrafts = (
   current: NikkeDraft[],
@@ -260,17 +232,11 @@ export const mergeRosterDrafts = (
 /**
  * Merge collector roster.json drafts into the current roster by
  * character_slug. Unlike mergeRosterDrafts (which preserves manually-entered
- * stats/cube because the ExiaInvasion export lacks them), the collector's
- * roster.json is authoritative for stats, so an existing unit's stats, cube,
- * and actual-level stats are overwritten too. core_level is NOT overwritten
+ * stats because the ExiaInvasion export lacks them), the collector's
+ * roster.json is authoritative for stats, so an existing unit's stats and
+ * actual-level stats are overwritten too. core_level is NOT overwritten
  * (the collector does not capture it — the displayed stats already bake in
  * the real grade/core).
- *
- * Cube is the one exception: the bookmarklet-assembled sync payload never
- * carries cube data at all (the backend has no cube-tid -> name map), so
- * incoming.cubeKnown is false for it. Overwriting hasCube/pve_cube from that
- * "no info" signal would read as "no cube equipped" and silently erase a
- * cube entered via file-import, so it's skipped whenever cubeKnown is false.
  */
 export const mergeCollectorDrafts = (
   current: NikkeDraft[],
@@ -299,9 +265,6 @@ export const mergeCollectorDrafts = (
         actualDef: inc.actualDef,
         skill_levels: inc.skill_levels,
         overload_options: inc.overload_options,
-        ...(inc.cubeKnown
-          ? { hasCube: inc.hasCube, pve_cube: inc.pve_cube }
-          : {}),
       }
       updated += 1
     }

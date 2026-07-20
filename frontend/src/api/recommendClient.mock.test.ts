@@ -13,7 +13,6 @@ const nikke = (slug: string): UserNikkeState => ({
   def_: 12_000,
   skill_levels: { skill1: 10, skill2: 7, burst: 4 },
   overload_options: [],
-  pve_cube: null,
 })
 
 const baseRequest = (overrides: Partial<RecommendRequest> = {}): RecommendRequest => ({
