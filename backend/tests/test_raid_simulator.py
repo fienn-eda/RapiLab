@@ -150,6 +150,78 @@ def test_superior_code_damage_applies_only_with_elemental_advantage():
     assert round(advantaged["total_damage"], 5) == round(10000.0 * 1.6, 5)
 
 
+def test_element_advantage_grant_gives_advantage_the_unit_does_not_naturally_have():
+    # make_deck's attacker is Iron, which is neutral against an Iron boss. A skill
+    # that GRANTS elemental advantage ("applies Elemental Advantage damage to X
+    # Code enemies") sets element_advantage_grant, so the element multiplier
+    # reads 1.1 exactly as natural advantage would.
+    def grant_advantage(context, caster_slug, time, registry):
+        registry.add(
+            Effect("element_advantage_grant", 1.0, "self", None, "attacker"),
+            applied_at=time,
+        )
+
+    kwargs = dict(
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        boss_element="Iron",
+    )
+    without = simulate_raid(
+        make_deck(), rules_by_slug={"buffer": [], "midtier": [], "attacker": []}, **kwargs
+    )
+    with_grant = simulate_raid(
+        make_deck(),
+        rules_by_slug={
+            "buffer": [SkillRule(trigger="battle_start", action=grant_advantage)],
+            "midtier": [],
+            "attacker": [],
+        },
+        **kwargs,
+    )
+
+    assert without["total_damage"] == 10000.0
+    assert round(with_grant["total_damage"], 5) == round(10000.0 * 1.1, 5)
+
+
+def test_element_advantage_grant_opens_the_superior_code_damage_gate():
+    # Superior Code Damage (other_elemental_bonus) only pays out with advantage.
+    # A granted advantage is real advantage, so it must let that bonus through.
+    def grant_advantage_and_superior_code(context, caster_slug, time, registry):
+        registry.add(
+            Effect("element_advantage_grant", 1.0, "self", None, "attacker"),
+            applied_at=time,
+        )
+        registry.add(
+            Effect("other_elemental_bonus", 0.5, "self", None, "attacker"),
+            applied_at=time,
+        )
+
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug={
+            "buffer": [SkillRule(trigger="battle_start", action=grant_advantage_and_superior_code)],
+            "midtier": [],
+            "attacker": [],
+        },
+        burst_damage_percents={"attacker": 500.0},
+        base_stats=make_base_stats(attacker_atk=2000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        boss_element="Iron",  # neutral for the Iron attacker: advantage is purely granted
+    )
+
+    # element bonus group = 1.1 (granted) + 0.5 (superior code)
+    assert round(result["total_damage"], 5) == round(10000.0 * 1.6, 5)
+
+
 def test_base_crit_rate_of_15_percent_raises_damage_by_7_5_percent():
     rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
     kwargs = dict(

@@ -100,7 +100,7 @@ from app.attack_rate import generate_segmented_shots
 from app.burst_cycle import simulate_burst_cycle
 from app.damage_formula import calculate_damage
 from app.effects import Effect, EffectRegistry, _matches_scope
-from app.elements import element_multiplier
+from app.elements import ELEMENT_ADVANTAGE_BONUS, element_multiplier
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # How far past a window's end an "after this window ends" event is placed, so
@@ -305,6 +305,7 @@ _TYPE_BUCKETS = {
 # so bundle misses there cost more than they save.
 _BUNDLE_STATS = (
     "enemy_def_percent", "atk_percent", "flat_atk", "other_elemental_bonus",
+    "element_advantage_grant",
     "other_critical_damage_sources", "crit_rate", "other_core_damage_sources",
     "charge_damage_bonus", "attack_damage_up", "damage_to_parts_up",
     "pierce_damage_up", "damage_taken_up",
@@ -393,9 +394,21 @@ def simulate_raid(
             stat_bundles[key] = bundle
         return bundle
 
-    def element_bonus_for(slug):
+    def element_bonus_for(slug, advantage_grant=0.0):
+        """The unit's Element Bonus multiplier: 1.1 when it holds elemental
+        advantage over the boss, else 1.0.
+
+        `advantage_grant` (> 0) is a skill that GRANTS advantage the unit does
+        not naturally have - "applies Elemental Advantage damage to <Code>
+        enemies" (Rapi: Red Hood). It is deliberately NOT the same stat as
+        other_elemental_bonus ("Superior Code Damage"), which only pays out to
+        a unit that ALREADY has advantage: a granted advantage is real
+        advantage, so it both raises this multiplier and opens damage_formula's
+        advantage gate for any Superior Code bonus the unit carries."""
         if boss_element is None:
             return 1.0
+        if advantage_grant > 0:
+            return 1 + ELEMENT_ADVANTAGE_BONUS
         return element_multiplier(member_by_slug[slug]["element"], boss_element)
 
     def _damage_instance(
@@ -429,7 +442,7 @@ def simulate_raid(
                 bundle["other_core_damage_sources"] if core_hittable else 0.0
             ),
             full_burst_bonus=1.0 if in_full_burst else 0.0,
-            element_multiplier=element_bonus_for(slug),
+            element_multiplier=element_bonus_for(slug, bundle["element_advantage_grant"]),
             charge_damage_bonus=bundle["charge_damage_bonus"] + extra_charge_bonus,
             attack_damage_up=bundle["attack_damage_up"],
             damage_to_parts_up=bundle["damage_to_parts_up"],
