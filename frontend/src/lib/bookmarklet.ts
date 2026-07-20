@@ -40,7 +40,7 @@ export const buildBookmarklet = (openId: string, appOrigin: string): string => {
   // message 리스너 등록은 첫 await 전, 하나의 동기 블록 안에서 끝낸다.
   const source = `(async()=>{
 if(location.origin!=='${BLABLALINK_ORIGIN}'){alert('blablalink 페이지에서 눌러주세요.');return}
-const w=window.open('${appOrigin}');
+const w=window.open('${appOrigin}','nikke-deck-builder');
 if(!w){alert('팝업이 차단됐어요. 차단을 해제하고 다시 눌러주세요.');return}
 let ready=false,payload=null;
 const send=()=>{if(ready&&payload){w.postMessage({type:'${PAYLOAD_MESSAGE}',payload:payload},'${appOrigin}');window.removeEventListener('message',h)}};
