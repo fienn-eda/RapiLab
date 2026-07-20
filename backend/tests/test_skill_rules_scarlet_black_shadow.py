@@ -1,8 +1,10 @@
+from app.attack_rate import generate_segmented_shots
 from app.effects import EffectRegistry
 from app.skill_rules.scarlet_black_shadow import (
     BREAKTHROUGH_BASE_REQUIREMENTS,
     build_breakthrough_per_shot_rules,
     build_scarlet_black_shadow_rules,
+    build_scarlet_weapon_mode_schedule,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
@@ -16,7 +18,12 @@ FLEETLY_FADING_BREAKTHROUGH = {
 FLEETLY_FADING_ASURA = {
     "description_value_01": "60",   # self Max Ammunition Capacity %
     "description_value_02": "10",   # its duration
-    "description_value_03": "100",  # magazine % reloaded on FB entry (deferred)
+    "description_value_03": "100",  # magazine % reloaded on FB entry
+}
+# Her real RL: data/dotgg/char_scarlet-black-shadow.json.
+SCARLET_WEAPON = {
+    "weapon": "RL", "damage_percent": 57.29, "max_ammo": 9,
+    "reload_time": 2.0, "charge_time": 0.3, "charge_damage_percent": 150.0,
 }
 FLEETLY_FADING_STRIKE = {
     "description_value_01": "1",       # overridden stage-1 requirement
@@ -33,6 +40,7 @@ VALUES = {
     "fleetly_fading_breakthrough": FLEETLY_FADING_BREAKTHROUGH,
     "fleetly_fading_asura": FLEETLY_FADING_ASURA,
     "fleetly_fading_strike": FLEETLY_FADING_STRIKE,
+    "caster_weapon_stats": SCARLET_WEAPON,
 }
 
 SCARLET = {"slug": "scarlet-black-shadow", "element": "Wind"}
@@ -67,6 +75,47 @@ def test_full_burst_entry_grants_self_max_ammo():
     assert round(registry.total_for("max_ammo_percent", SCARLET, now=5.0), 4) == 0.6
     assert registry.total_for("max_ammo_percent", ALLY, now=5.0) == 0.0  # self-only
     assert registry.total_for("max_ammo_percent", SCARLET, now=15.1) == 0.0  # 10s duration
+
+
+def _context_with_full_bursts(windows):
+    ctx = make_context()
+    ctx.full_burst_windows = windows
+    return ctx
+
+
+def test_asura_reload_is_a_zero_length_segment_at_every_full_burst_entry():
+    # "Activates when entering Full Burst" - ANY Full Burst, so the schedule
+    # reads full_burst_windows rather than only her own burst times.
+    schedule = build_scarlet_weapon_mode_schedule(VALUES)
+    segments = schedule(_context_with_full_bursts([(2.2, 12.2), (14.4, 24.4)]), 180.0)
+
+    assert [(s["start"], s["end"]) for s in segments] == [(2.2, 2.2), (14.4, 14.4)]
+    assert all(s["profile"]["weapon"] == "RL" for s in segments)
+    assert all(s["profile"]["damage_percent"] == 0.0 for s in segments)
+
+
+def test_asura_reload_is_skipped_when_the_magazine_is_only_partly_reloaded():
+    partial = dict(VALUES, fleetly_fading_asura=dict(FLEETLY_FADING_ASURA,
+                                                     description_value_03="30"))
+    schedule = build_scarlet_weapon_mode_schedule(partial)
+
+    assert schedule(_context_with_full_bursts([(2.2, 12.2)]), 180.0) == []
+
+
+def test_asura_reload_refills_the_magazine_without_spending_reload_time():
+    schedule = build_scarlet_weapon_mode_schedule(VALUES)
+    segments = schedule(_context_with_full_bursts([(2.2, 12.2)]), 30.0)
+
+    plain = [r.time for r in generate_segmented_shots(SCARLET_WEAPON, [], 30.0)]
+    reloaded = [r.time for r in generate_segmented_shots(SCARLET_WEAPON, segments, 30.0)]
+
+    # Without the reload she empties her 9-round magazine at 2.7 and spends the
+    # 2s reload idle; with it she fires straight through from 2.2 onwards.
+    assert [round(t, 2) for t in plain if 2.2 <= t < 4.95] == [2.4, 2.7]
+    assert [round(t, 2) for t in reloaded if 2.2 <= t < 4.95] == [
+        2.5, 2.8, 3.1, 3.4, 3.7, 4.0, 4.3, 4.6, 4.9,
+    ]
+    assert len(reloaded) > len(plain)
 
 
 def test_breakthrough_sequence_spec_swaps_requirements_in_her_burst_window():

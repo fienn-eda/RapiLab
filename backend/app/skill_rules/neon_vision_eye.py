@@ -20,16 +20,15 @@ Modeled (DPS-relevant), under that steady-state assumption:
   charge (RL: every shot is a full charge), plus the Super Firepower additional
   +262.79% on full charges landed within her 10s Super Firepower window (gap #7's
   `every_during_own_status_window`). "As additional damage", so both are
-  Full-Burst-Bonus eligible. See `build_firepower_explosion_per_shot_rules`.
+  Full-Burst-Bonus eligible. Both are Projectile-Explosion damage (a Rocket
+  Launcher's explosion), so a deck's Projectile-Explosion-Damage-Up buffs
+  (e.g. Rapi: Red Hood's) credit them. See
+  `build_firepower_explosion_per_shot_rules`.
 
 Not modeled / deferred:
 - The Firepower Gauge itself (approximated as steady-state Super Firepower every
   cycle, above - a live resource would matter only if some cycle failed to
   refill to 100, which the refill rates make unlikely).
-- Firepower Explosion is nominally a Rocket-Launcher explosion but is recorded as
-  a plain "attack"-type instant nuke (the pulse path has no damage_type); this is
-  inert in her own kit but would under-credit a deck pairing her with
-  projectile-explosion buffers - a deferred refinement.
 - Explosion Radius +200% (not a damage multiplier), Burst Gauge filling speed
   (not DPS), and all of Healthy Body's survivability (invulnerability, debuff
   immunity, incoming-healing) are skipped.
@@ -89,10 +88,14 @@ def build_firepower_explosion_per_shot_rules(values):
     base_percent = float(healthy_body["description_value_07"])
     super_bonus_percent = float(healthy_body["description_value_08"])
     return [
-        (1, "every", [instant_nuke_pulse_rule("per_shot", base_percent, full_burst_bonus_eligible=True)]),
+        (1, "every", [instant_nuke_pulse_rule(
+            "per_shot", base_percent, full_burst_bonus_eligible=True,
+            damage_type="projectile_explosion")]),
         (
             (1, SUPER_FIREPOWER_WINDOW),
             "every_during_own_status_window",
-            [instant_nuke_pulse_rule("per_shot", super_bonus_percent, full_burst_bonus_eligible=True)],
+            [instant_nuke_pulse_rule(
+                "per_shot", super_bonus_percent, full_burst_bonus_eligible=True,
+                damage_type="projectile_explosion")],
         ),
     ]

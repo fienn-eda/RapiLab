@@ -4,8 +4,13 @@ Most supporters just grant a bundle of timed buffs on a trigger, or emit a
 burst-cooldown-reduction pulse. These two helpers cover that so each Nikke
 module only has to declare its stats/values, not re-implement the action.
 """
+from itertools import count
+
 from app.effects import Effect, Pulse, ResourceBuff, RoundGrant
 from app.squad_engine import SkillRule
+
+# Distinct cap-group ids for capped round_buff_rules (see round_buff_rule).
+_round_cap_group_ids = count()
 
 
 def _rule(trigger, action, condition):
@@ -129,18 +134,27 @@ def member_subset_buff_rule(trigger, member_filter, buffs, condition=None, refre
     return _rule(trigger, action, condition)
 
 
-def round_buff_rule(trigger, buffs, shots=1):
+def round_buff_rule(trigger, buffs, shots=1, cap=None):
     """"For N round(s)" buffs, whose duration is measured in the affected ally's
     NEXT `shots` normal attacks (bullets), not seconds - e.g. Zwei's Pierce
     Equation, Miranda's Wake Up crit rate. Records a RoundGrant per buff; the shot
     loop turns each into a timed Effect covering exactly those shots. buffs:
     (stat, value, scope_spec) where scope_spec is "squad"/"self"/"element:X" or a
-    dynamic ("top_atk", n) resolved to the top-ATK allies at grant time."""
+    dynamic ("top_atk", n) resolved to the top-ATK allies at grant time.
+    `cap` is the skill's "stacks up to N time(s)" limit, if it has one: no
+    recipient holds more than `cap` concurrent grants from THIS rule (see
+    effects.RoundGrant). Rules built without it are uncapped as before."""
+
+    # One cap group per rule instance, so a caster's other round-grant rules -
+    # including ones granting the same stat - never share this rule's cap.
+    cap_group = f"round_grant_cap_{next(_round_cap_group_ids)}" if cap is not None else None
 
     def action(context, caster_slug, time, registry):
         for stat, value, scope_spec in buffs:
             scope = _resolve_scope(scope_spec, context, caster_slug, registry, time)
-            registry.add_round_grant(RoundGrant(stat, value, scope, caster_slug, shots, time))
+            registry.add_round_grant(
+                RoundGrant(stat, value, scope, caster_slug, shots, time, cap, cap_group)
+            )
 
     return SkillRule(trigger=trigger, action=action)
 

@@ -118,6 +118,7 @@ from app.skill_rules.raven import (
 from app.skill_rules.scarlet_black_shadow import (
     build_breakthrough_per_shot_rules,
     build_scarlet_black_shadow_rules,
+    build_scarlet_weapon_mode_schedule,
 )
 from app.skill_rules.sakura_bloom_in_summer import (
     EPHEMERAL_SPENDER_HIT_COUNT,
@@ -276,7 +277,11 @@ from app.skill_rules.rapi_red_hood import (
     power_of_inheritance_stage3_burst_percent,
 )
 from app.skill_rules.volume import build_volume_rules
-from app.skill_rules.zwei import build_zwei_rules
+from app.skill_rules.zwei import (
+    build_frame_analysis_resources,
+    build_pierce_equation_per_shot_rules,
+    build_zwei_rules,
+)
 
 
 def _build_rouge(sv):
@@ -589,6 +594,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "maxwell": lambda sv: build_pierce_shot_weapon_mode_schedule(sv),  # single 2s-charge cannon shot per own-burst
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
     "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
+    "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at
@@ -654,6 +660,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "marciana-marine-study": lambda sv: build_marciana_per_shot_rules(sv),
     "helm": lambda sv: build_frontline_command_per_shot_rules(sv["frontline_command"]),
     "privaty": lambda sv: build_ld_assault_per_shot_rules(sv),
+    "zwei": lambda sv: build_pierce_equation_per_shot_rules(sv),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
     "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),
@@ -684,6 +691,7 @@ _RESOURCE_SPEC_BUILDERS = {
     "mihara-bonding-chain": lambda sv: build_ensnaring_chain_resources(sv),
     "diesel-winter-sweets-intro": lambda sv: build_diesel_resource_specs(sv),
     "diesel-winter-sweets-highlight": lambda sv: build_diesel_resource_specs(sv),
+    "zwei": lambda sv: build_frame_analysis_resources(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named

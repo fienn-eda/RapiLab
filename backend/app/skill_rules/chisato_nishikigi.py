@@ -9,14 +9,12 @@ Modeled (DPS-relevant):
   buffs being permanently active (steady-state approximation; the >25% Hit Rate
   tier is inert).
 - AP Rounds (skills[1]): on burst, her normal attacks deal True Damage for 10s;
-  every 48 normal attacks, a 472.18%-of-final-ATK nuke.
+  every 48 normal attacks, a 472.18%-of-final-ATK nuke, itself True Damage - so it
+  ignores enemy DEF and picks up True-Damage-Up buffs (including her own +48.62%).
 - Emergency Charge (skills[2], her burst): self ATK +73.16% for 10s (also recharges
   Extrasensory - covered by the steady-state approximation above). Buffs-only burst.
 
 Not modeled / deferred:
-- The 48-normal nuke is True Damage in-game, but per-shot nukes are currently
-  attack-typed only, so it's modeled as attack damage - an undercount (it misses
-  the True-Damage buff and DEF-ignore), never an overcount.
 - Extrasensory's Invulnerable/Hit Rate tiers - survivability / inert.
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
@@ -63,5 +61,6 @@ def build_chisato_per_shot_rules(values):
     normal_count = int(ap["description_value_02"])
     nuke = float(ap["description_value_03"])
     return [
-        (normal_count, "every", [instant_nuke_pulse_rule("per_shot", nuke)]),
+        (normal_count, "every",
+         [instant_nuke_pulse_rule("per_shot", nuke, damage_type="true")]),
     ]

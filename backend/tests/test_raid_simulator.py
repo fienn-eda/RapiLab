@@ -7,6 +7,7 @@ from app.skill_rules._helpers import (
     round_buff_rule,
 )
 from app.skill_rules.privaty import build_ex_magazine_rules
+from app.skill_rules.zwei import build_pierce_equation_per_shot_rules
 from app.squad_engine import SkillRule, ally_bursted
 
 # Real dollskills level-10 values for Privaty's EX Magazine (signature weapon
@@ -1161,6 +1162,76 @@ def test_round_grant_squad_scope_consumes_per_ally_first_shot():
     covered = [e for e in result["damage_log"] if e["source"] == "normal_attack" and round(e["time"], 4) == round(5.0, 4)]
     assert {e["slug"] for e in covered} == {"midtier", "attacker"}
     assert all(e["damage"] == 1500.0 for e in covered)  # each ally's own first shot buffed
+
+
+ZWEI_PIERCE_EQUATION = {
+    "pierce_equation": {
+        "description_value_01": "20.13", "description_value_02": "1", "description_value_03": "10.06",
+        "description_value_04": "10", "description_value_05": "24.99", "description_value_06": "3",
+        "description_value_07": "1",
+    },
+}
+
+
+def _zwei_pierce_stacks_per_sniper_shot(per_shot_rules):
+    """Zwei (SG, 1.5 shots/sec) granting Pierce Equation's "for 1 round" squad
+    pierce on each of her Full Burst normal attacks, alongside an SR ally whose
+    reload gap (5 charges, then 2 sec reload) lets grants pile up. Returns each
+    of the sniper's shot times mapped to how many 24.99% pierce stacks its
+    damage reflects."""
+    deck = [
+        {"slug": "zwei", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "sniper", "burst_tier": 3, "element": "Iron", "cooldown": 40.0},
+    ]
+    result = simulate_raid(
+        deck,
+        {"zwei": [], "midtier": [], "sniper": []},
+        burst_damage_percents={},
+        base_stats={
+            "zwei": {"atk": 0, "def": 0, "max_hp": 0},
+            "midtier": {"atk": 0, "def": 0, "max_hp": 0},
+            "sniper": {"atk": 10000, "def": 0, "max_hp": 0},
+        },
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=16.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={
+            "zwei": {"weapon": "SG", "damage_percent": 10.0, "max_ammo": 9,
+                     "reload_time": 1.5, "charge_time": 0.0, "charge_damage_percent": 0.0},
+            "sniper": {"weapon": "SR", "damage_percent": 10.0, "max_ammo": 5,
+                       "reload_time": 2.0, "charge_time": 1.5, "charge_damage_percent": 10.0},
+        },
+        per_shot_rules={"zwei": per_shot_rules},
+    )
+    shots = [e for e in result["damage_log"]
+             if e["source"] == "normal_attack" and e["slug"] == "sniper"]
+    unbuffed = min(e["damage"] for e in shots)
+    return {round(e["time"], 4): round((e["damage"] / unbuffed - 1) / 0.2499, 4) for e in shots}
+
+
+def test_uncapped_round_grants_pile_up_on_a_charge_weapon_allys_post_reload_shot():
+    # Baseline for the cap: without one, every grant Zwei made during the SR's
+    # 3.5-sec charge+reload gap lands on the single shot that ends it.
+    uncapped = round_buff_rule("per_shot", [("pierce_damage_up", 0.2499, "squad")], shots=1)
+    stacks = _zwei_pierce_stacks_per_sniper_shot([(1, "every_during_full_burst", [uncapped])])
+    assert stacks[round(11.0, 4)] == 5.0
+    assert max(stacks.values()) == 5.0
+
+
+def test_capped_round_grant_holds_a_charge_weapon_ally_to_the_skills_stack_cap():
+    # Pierce Equation "stacks up to 3 time(s)": the SR's post-reload shot must
+    # see 3 stacks, not the 5 grants that overlap it. Faster shots, which never
+    # hold more than a stack or two, are untouched by the cap.
+    stacks = _zwei_pierce_stacks_per_sniper_shot(
+        build_pierce_equation_per_shot_rules(ZWEI_PIERCE_EQUATION)
+    )
+    assert stacks[round(11.0, 4)] == 3.0
+    assert max(stacks.values()) == 3.0
+    assert stacks[round(6.0, 4)] == 1.0    # mid-magazine shot: one grant only
+    assert stacks[round(12.5, 4)] == 2.0   # 1.5-sec gap: two grants, under the cap
 
 
 def test_miranda_top_atk_burst_buff_reaches_the_top_two_carries_end_to_end():

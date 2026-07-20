@@ -5,19 +5,28 @@ Modeled (DPS-relevant):
 - Pierce Equation (dollskills[0]): on Full Burst enter, squad Pierce Damage up
   for 1 round (a bullet-count grant - each ally's next shot) plus a separate
   squad Pierce Damage up for 10 sec.
+- Pierce Equation's second bullet: on EACH of her normal attacks during Full
+  Burst, squad Pierce Damage up "for 1 round" - another bullet-count grant, fired
+  through the Full-Burst-window-gated per-shot trigger (`per_shot_rules` mode
+  "every_during_full_burst"), stacking up to the skill's 3-stack cap per ally
+  (round_buff_rule's `cap`, read from the skill's own cap slot).
 - Frame Analysis (dollskills[1]): on Full Burst enter, squad Crit Rate up.
+- Frame Analysis's second bullet: on EACH of her normal attacks "while in Pierce
+  Attacks 101 status", squad Crit Rate up, 5 sec per stack, capped at 3. "Pierce
+  Attacks 101" is the NAME Overcharge Formula gives the all-ally buff it grants
+  for 10 sec, so the gate is a 10-sec window anchored on her own burst - a capped
+  resource filled by `per_shot_every_during_own_status_window`, whose window
+  duration is read from Overcharge Formula's own duration slot.
 - Overcharge Formula (dollskills[2], her burst): squad Pierce Damage up.
 
 Not modeled / deferred:
 - Frame Analysis's Cover HP recovery (survival, no DPS effect).
-- Pierce Equation's normal-attack-during-Full-Burst stacking Pierce (up to 3),
-  and Frame Analysis's "normal attack while in Pierce Attacks 101" stacking Crit
-  Rate: both need per-shot triggers gated to a Full-Burst window / a self status,
-  which isn't modeled yet.
-- Overcharge Formula's self weapon transformation (Pierce Attacks 101).
+- Overcharge Formula's self weapon transformation (charge time / damage / ammo /
+  Pierce), which needs a per-unit weapon swap the engine has no concept of.
 Note pierce is treated as general damage-up (see raid_simulator).
 """
-from app.skill_rules._helpers import buff_rule, round_buff_rule
+from app.effects import ResourceSpec
+from app.skill_rules._helpers import buff_rule, linear_resource_buff, round_buff_rule
 
 # Fienn's Zwei has the signature weapon completed, so the manifest reads the
 # "dollskills" array, not "skills" (see module docstring).
@@ -59,4 +68,40 @@ def build_zwei_rules(values):
         buff_rule("own_burst_activate", [
             ("pierce_damage_up", burst_pierce, "squad", burst_pierce_duration),
         ]),
+    ]
+
+
+def build_pierce_equation_per_shot_rules(values):
+    """Pierce Equation's second bullet: every normal attack DURING FULL BURST
+    grants the squad Pierce Damage for 1 round (each ally's next shot), stacking
+    up to slot 06 times per ally."""
+    pierce = values["pierce_equation"]
+    stack_pierce = float(pierce["description_value_05"]) / 100
+    stack_cap = int(float(pierce["description_value_06"]))
+    stack_rounds = int(float(pierce["description_value_07"]))
+
+    return [(1, "every_during_full_burst", [
+        round_buff_rule("per_shot", [("pierce_damage_up", stack_pierce, "squad")],
+                        shots=stack_rounds, cap=stack_cap),
+    ])]
+
+
+def build_frame_analysis_resources(values):
+    """Frame Analysis's second bullet: a capped Crit Rate stack, one per normal
+    attack she lands while Pierce Attacks 101 (her burst's 10-sec all-ally buff)
+    is up, each stack living 5 sec."""
+    frame = values["frame_analysis"]
+    crit_rate_per_stack = float(frame["description_value_05"]) / 100
+    cap = int(float(frame["description_value_06"]))
+    stack_lifetime = float(frame["description_value_07"])
+    status_duration = float(values["overcharge_formula"]["description_value_04"])
+
+    return [
+        ResourceSpec(
+            name="pierce_attacks_101",
+            fill=("per_shot_every_during_own_status_window", 1, status_duration),
+            cap=cap,
+            buffs=[linear_resource_buff("crit_rate", crit_rate_per_stack, "squad",
+                                        lifetime=stack_lifetime)],
+        )
     ]

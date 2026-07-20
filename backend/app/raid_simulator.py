@@ -247,6 +247,32 @@ def _fill_sources(fill):
     return [(fill, 1)]
 
 
+def _round_grant_over_cap(index, grant, start, end, windows):
+    """Whether this "for N round(s)" grant exceeds its skill's "stacks up to N
+    time(s)" cap on THIS recipient, and so must not be applied. `windows` holds
+    every grant hitting this one recipient with the shot window it resolved to,
+    in the order they were granted; a grant is over cap when `cap` OR MORE
+    grants of the same cap group overlap it and were granted later. That keeps
+    the most recent `cap` stacks of any mutually-overlapping set, matching how
+    the game pushes the oldest stack out when a new one lands on a full stack.
+    Uncapped grants (cap None - every consumer that predates the cap) never
+    match and are emitted exactly as before."""
+    if grant.cap is None:
+        return False
+    newer_overlapping = sum(
+        1
+        for other_index, (other, other_start, other_end) in enumerate(windows)
+        if other.cap_group == grant.cap_group
+        # Grants can share a granted_at (one trigger, several recipients'
+        # timelines aside, or two rules firing together), so the tie is broken
+        # by grant order - exactly one of any pair counts as newer.
+        and (other.granted_at, other_index) > (grant.granted_at, index)
+        and other_start < end
+        and start < other_end
+    )
+    return newer_overlapping >= grant.cap
+
+
 def _sequence_fire_rules(spec, stage_rules, shot_times, own_burst_times):
     """gap #10 (Scarlet's Fleetly Fading Breakthrough): one running shot
     counter walks a staged requirement table - stage k fires its rules once
@@ -846,6 +872,7 @@ def simulate_raid(
     # so their covering shots are unchanged by the move.
     for slug, shot_times in shot_times_by_slug.items():
         target = target_for(slug)
+        windows = []  # (grant, start, end) for the grants hitting THIS unit
         for grant in registry.round_grants():
             if grant.scope == "self":
                 covers_unit = grant.source_slug == slug
@@ -858,9 +885,13 @@ def simulate_raid(
                 continue
             after_covered = [t for t in shot_times if t > covered[-1]]
             window_end = after_covered[0] if after_covered else fight_duration
+            windows.append((grant, covered[0], window_end))
+        for index, (grant, start, end) in enumerate(windows):
+            if _round_grant_over_cap(index, grant, start, end, windows):
+                continue
             registry.add(
-                Effect(grant.stat, grant.value, f"slugs:{slug}", window_end - covered[0], grant.source_slug),
-                applied_at=covered[0],
+                Effect(grant.stat, grant.value, f"slugs:{slug}", end - start, grant.source_slug),
+                applied_at=start,
             )
 
     # Resolve quantity-based resources (battery / ammo pouch / N-stack counter).

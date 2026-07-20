@@ -103,7 +103,10 @@ def test_chisato_per_shot_true_nuke_every_48():
     ctx = deck_ctx("chisato-nishikigi", "Iron")
     for rule in rules:
         rule.action(ctx, "chisato-nishikigi", 5.0, reg)
-    assert [round(p.value, 2) for p in reg.drain_pulses("instant_damage_percent")] == [472.18]
+    pulses = reg.drain_pulses("instant_damage_percent")
+    assert [round(p.value, 2) for p in pulses] == [472.18]
+    # AP Rounds' nuke is True Damage: ignores enemy DEF, reads true_damage_up.
+    assert all(p.damage_type == "true" for p in pulses)
 
 
 # --- Jill Valentine (AR/Electric) ---
