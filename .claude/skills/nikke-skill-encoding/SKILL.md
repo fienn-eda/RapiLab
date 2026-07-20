@@ -194,8 +194,20 @@ silently.
   ask the caller to pass it again.
 - **Crit matters now.** Crit Rate and Crit Damage buffs feed the expected-value
   crit model, so encode them (`crit_rate`, `other_critical_damage_sources`).
-  But Attack Speed, Hit Rate, Burst Gauge fill speed, and Charge Speed are NOT
-  consumed by the engine — encoding them is inert, so defer + document instead.
+  **Attack Speed and Charge Speed are damage stats too** since Phase S
+  (2026-07-16): `attack_rate.py` scales the firing cadence from
+  `attack_speed_percent` / `charge_speed_percent`, so in a fixed-length fight
+  they mean more shots. Encode them. Only Hit Rate and Burst Gauge fill speed
+  are still inert — defer + document those.
+- **A "deferred" note is a claim about the engine on the day it was written.**
+  Before honouring one, check that the capability it names is still missing —
+  `references/engine-capabilities.md` and `docs/engine-gaps.md` are the current
+  truth; module docstrings are not. Several units carried defers long after the
+  blocking primitive shipped (Anis: Star's Shooting Stars cited gap #6, which
+  had landed; Crown's Royal Attire cited "an attack-rate model that doesn't
+  exist yet", which exists; Helm's own docstring admitted its bullet was "just
+  not built in this pass"). When you clear one, correct the docstring's reason
+  rather than only deleting the line.
 - **Match the existing style**: look at an already-encoded module of a similar
   archetype (`liter.py`, `crown.py`, `rapi_red_hood.py` for branching) and
   mirror its structure, docstring shape, and test layout.
