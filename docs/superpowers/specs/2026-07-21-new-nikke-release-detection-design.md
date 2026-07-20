@@ -230,3 +230,30 @@ ShiftyPad의 캐릭터 상세 페이로드에는 `shot_detail` 블록이 있고,
 
 부수로 `shot_detail`은 엔진이 현재 쓰지 않는 `shot_count` / `rate_of_fire` /
 `core_damage_rate` / `burst_energy_pershot`도 담고 있다.
+
+### 스킬 데이터도 같은 페이로드에 있다 (실측 확인)
+
+같은 캐릭터 상세 페이로드의 `skill1_detail` / `skill2_detail` / `ulti_skill_detail`이
+담고 있는 것:
+
+- **영문** 스킬명(`name_localkey`)과 설명(`description_localkey`) — Fienn의 브라우저
+  언어가 한국어인데도 영문으로 내려온다.
+- `{description_value_NN}` 플레이스홀더와 `<word_group=...>` 마크업 — dotgg와 같은
+  템플릿 구조.
+- **전 레벨 값 사다리**: `description_value_list[슬롯].description_value`가 레벨 1~10의
+  값 배열. 레코드의 `skill_level`은 1이지만 사다리는 전 레벨을 담는다(하모니 큐브
+  테이블과 같은 인코딩).
+
+**Rapi: Red Hood 3개 스킬 × 전 슬롯 × 전 10레벨 = 230개 값 대조, 불일치 0건.**
+dotgg는 `levels[레벨][슬롯]`, ShiftyPad는 `슬롯[레벨]`로 **전치 관계**다.
+
+즉 ShiftyPad는 무기뿐 아니라 **스킬까지 포함해 dotgg와 lootandwaifus 양쪽을 대체할 수
+있는 1차 소스**다. 다음 스펙의 범위는 이에 맞춰 정한다.
+
+추가 미검증 항목:
+- 스킬 대조는 1유닛(Rapi: Red Hood)만. 전수 대조 필요.
+- **시그니처 무기 스킬(`dollskills`)을 ShiftyPad가 노출하는지 미확인.** 관측한
+  페이로드에는 `skill1`/`skill2`/`ulti`만 있었다.
+- `skill_cooltime`(예: 4000)과 dotgg `cooldown`의 단위 대응 미확인.
+- 설명의 `<word_group=...>` 마크업과 선두 아이콘 문자 파싱 필요.
+- 애장품(favorite item) 탭은 조사하지 않았다. 엔진이 현재 모델링하지 않는다.
