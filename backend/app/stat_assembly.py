@@ -273,7 +273,7 @@ def cube_atk(tables: dict[str, Any], cube_level: int) -> int:
     """
     if cube_level <= 0:
         return 0
-    return tables["cube_sample"]["atk"][cube_level - 1]
+    return tables["resilience_cube"]["atk"][cube_level - 1]
 
 
 def collectible_atk(tables: dict[str, Any], item_tid: int, item_level: int) -> int:
@@ -469,7 +469,7 @@ def cube_hp(tables: dict[str, Any], cube_level: int) -> int:
     """Flat HP from the equipped harmony cube, the HP sibling of cube_atk."""
     if cube_level <= 0:
         return 0
-    return tables["cube_sample"]["hp"][cube_level - 1]
+    return tables["resilience_cube"]["hp"][cube_level - 1]
 
 
 def collectible_hp(tables: dict[str, Any], item_tid: int, item_level: int) -> int:

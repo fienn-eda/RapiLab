@@ -15019,7 +15019,7 @@
     "affinity": "https://sg-tools-cdn.blablalink.com/qe-66/cb6bd83fc9f961e0975612b760fbef8e.json",
     "equipment": "https://sg-tools-cdn.blablalink.com/zr-95/5711d5ea12c6c0f7852e17e922db8ca8.json",
     "recycle_research": "https://sg-tools-cdn.blablalink.com/eu-96/258f853112b1d6f69d1508e12918ff3b.json",
-    "cube_sample": "https://sg-tools-cdn.blablalink.com/cp-03/vw-39/6fd3572cf9e62ee8ded9442ca0f98682.json",
+    "resilience_cube": "https://sg-tools-cdn.blablalink.com/cp-03/vw-39/6fd3572cf9e62ee8ded9442ca0f98682.json",
     "collectible_sample": "https://sg-tools-cdn.blablalink.com/dl-61/cz-26/1d5f72120564cef28ac7889650c78a47.json"
   },
   "recycle_research": [
@@ -15168,7 +15168,7 @@
       "hp": 0
     }
   ],
-  "cube_sample": {
+  "resilience_cube": {
     "id": 1000303,
     "atk": [
       390,
