@@ -1,5 +1,8 @@
+import pytest
+
 from app.effects import EffectRegistry
 from app.skill_rules.anis_star import (
+    build_shooting_stars_scheduled_nukes,
     build_star_anis_burst_rules,
     build_starfall_full_charge_nuke_rules,
     build_starfall_rules,
@@ -27,10 +30,18 @@ STARDUST = {
     "description_value_06": "34",     # squad Attack Damage %
     "description_value_07": "10",     # duration
 }
+# Star Anis (burst), dotgg native slots after drop_tokens [2, 3, 6, 7] removes
+# Explosion Radius 100, DEF 55.01 and the Everyone's Star Max HP pair (15.02/10).
 STAR_ANIS = {
-    "description_value_01": "35.2",   # My Own Star: self Attack Damage %
-    "description_value_02": "10",     # duration
+    "description_value_01": "40.01",  # Shooting Stars damage % of final ATK
+    "description_value_02": "10",     # Shooting Stars duration (shared by the window's other effects)
+    "description_value_03": "35.2",   # My Own Star: self Attack Damage %
+    "description_value_04": "10",     # duration
+    "description_value_05": "0.7",    # charge time is fixed at this for the window
 }
+# Her RL's real base charge time (data/dotgg/char_anis-star.json), injected by
+# the assembly layer as `caster_weapon_stats` (see roster.py).
+BURST_VALUES = {**STAR_ANIS, "caster_weapon_stats": {"charge_time": 1.0}}
 ALLY = {"slug": "crown", "element": "Iron"}
 ANIS = {"slug": "anis-star", "element": "Electric"}
 
@@ -166,7 +177,7 @@ def test_stardust_grants_squad_projectile_explosion_and_attack_damage():
 
 
 def test_burst_grants_self_attack_damage_only_while_my_own_star():
-    rules = {"anis-star": build_star_anis_burst_rules(STAR_ANIS)}
+    rules = {"anis-star": build_star_anis_burst_rules(BURST_VALUES)}
     ctx = alone_context()
     ctx.set_status("anis-star", "My Own Star")
     registry = EffectRegistry()
@@ -180,3 +191,48 @@ def test_burst_grants_self_attack_damage_only_while_my_own_star():
     registry2 = EffectRegistry()
     fire_trigger("own_burst_activate", rules, ctx2, registry2, time=5.0)
     assert registry2.total_for("attack_damage_up", ANIS, now=5.0) == 0.0
+
+
+class _BurstContext:
+    def __init__(self, burst_times):
+        self.burst_times = {"anis-star": burst_times}
+
+
+def test_shooting_stars_ticks_every_quarter_second_across_the_ten_second_window():
+    (stars,) = build_shooting_stars_scheduled_nukes(STAR_ANIS)
+
+    assert stars["percent"] == pytest.approx(40.01)
+    # "as damage", not "as additional damage" -> no Full Burst bonus.
+    assert stars.get("full_burst_bonus_eligible") is not True
+
+    times = stars["schedule"](_BurstContext([20.0]), 180.0)
+    # 10 sec / 0.25 sec interval, first tick one interval after the burst.
+    assert len(times) == 40
+    assert times[0] == pytest.approx(20.25)
+    assert times[-1] == pytest.approx(30.0)
+
+
+def test_shooting_stars_repeat_each_burst_and_are_clipped_by_fight_end():
+    (stars,) = build_shooting_stars_scheduled_nukes(STAR_ANIS)
+
+    times = stars["schedule"](_BurstContext([20.0, 70.0]), 180.0)
+    assert len(times) == 80
+
+    # A burst late enough that its window runs past the fight only keeps the
+    # ticks that land inside it: 178 + 0.25k < 180 -> k = 1..7.
+    tail = stars["schedule"](_BurstContext([178.0]), 180.0)
+    assert len(tail) == 7
+    assert tail[-1] == pytest.approx(179.75)
+
+
+def test_burst_fixes_charge_time_via_an_equivalent_charge_speed_buff():
+    # Her RL charges in 1.0 sec; "fixed at 0.7 sec" is 1/0.7 - 1 of charge speed.
+    rules = {"anis-star": build_star_anis_burst_rules(BURST_VALUES)}
+    ctx = alone_context()
+    registry = EffectRegistry()
+    fire_trigger("own_burst_activate", rules, ctx, registry, time=5.0)
+
+    assert registry.total_for("charge_speed_percent", ANIS, now=5.0) == pytest.approx(1.0 / 0.7 - 1)
+    # self-scoped, and only for the stated window
+    assert registry.total_for("charge_speed_percent", ALLY, now=5.0) == 0.0
+    assert registry.total_for("charge_speed_percent", ANIS, now=15.1) == 0.0

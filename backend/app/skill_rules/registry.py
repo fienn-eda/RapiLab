@@ -23,6 +23,7 @@ from app.skill_rules.anis_sparkling_summer import (
     build_sparkling_missile_per_shot_rules,
 )
 from app.skill_rules.anis_star import (
+    build_shooting_stars_scheduled_nukes,
     build_star_anis_burst_rules,
     build_starfall_full_charge_nuke_rules,
     build_starfall_rules,
@@ -296,7 +297,9 @@ def _build_rouge(sv):
 def _build_anis_star(sv):
     rules = build_starfall_rules(sv["starfall"])
     rules += build_stardust_rules({**sv["stardust"], "caster_atk": sv["caster_atk"]})
-    rules += build_star_anis_burst_rules(sv["star_anis"])
+    rules += build_star_anis_burst_rules(
+        {**sv["star_anis"], "caster_weapon_stats": sv["caster_weapon_stats"]}
+    )
     return rules, None
 
 
@@ -569,6 +572,7 @@ _BURST_DAMAGE_TYPES = {
 # fixed interval (see raid_simulator's `scheduled_nukes`). Rare - only summoned
 # entities so far.
 _SCHEDULED_NUKE_BUILDERS = {
+    "anis-star": lambda sv: build_shooting_stars_scheduled_nukes(sv["star_anis"]),  # Shooting Stars, 40 ticks per burst
     "ein": lambda sv: build_ein_scheduled_nukes(sv),
     "elegg-boom-and-shock": lambda sv: build_ghostbuster_scheduled_nukes(sv),  # capture at the ghost cap
     "mihara-bonding-chain": lambda sv: build_mihara_scheduled_nukes(sv),  # chain attacks + Ensnaring DoT
