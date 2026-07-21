@@ -1,5 +1,7 @@
 from app.effects import EffectRegistry
 from app.skill_rules.laplace import (
+    BUSTER_RATE_OF_FIRE,
+    build_buster_weapon_mode_schedule,
     build_hero_bomber_per_shot_rules,
     laplace_buster_burst_percent,
 )
@@ -12,8 +14,8 @@ HERO_BOMBER = {
 }
 LAPLACE_BUSTER = {
     "description_value_01": "897.6",  # First Damage % of final ATK (modeled as the burst nuke)
-    "description_value_02": "14.52",  # deferred: transformed-weapon Normal Damage %
-    "description_value_03": "5",      # deferred: transform duration
+    "description_value_02": "14.52",  # transformed-weapon Normal Damage %
+    "description_value_03": "5",      # transform duration
     "description_value_04": "11.9",   # deferred: true damage at max Hero Vision stacks
 }
 
@@ -38,3 +40,22 @@ def test_hero_bomber_last_bullet_nuke():
     assert len(pulses) == 1
     assert pulses[0].value == 81.66
     assert pulses[0].full_burst_bonus_eligible is True  # "as additional damage"
+
+
+def test_buster_segment_normal_damage_over_the_five_second_window():
+    """The Buster transform's Normal Damage phase: a 5-sec segment firing at the
+    same rate Fienn measured on her signature Buster (9.3/s), so ~46 ticks. The
+    First Damage is the burst nuke, not part of this segment."""
+    schedule = build_buster_weapon_mode_schedule({"laplace_buster": LAPLACE_BUSTER})
+    ctx = make_context()
+    ctx.burst_times["laplace"] = [10.0, 60.0]
+
+    segments = schedule(ctx, 180.0)
+    assert [seg["start"] for seg in segments] == [10.0, 60.0]
+    assert [seg["end"] for seg in segments] == [15.0, 65.0]  # 5-sec window
+
+    profile = segments[0]["profile"]
+    assert profile["damage_percent"] == 14.52
+    assert profile["rate_of_fire"] == BUSTER_RATE_OF_FIRE == 9.3
+    # base build never gets the signature's max-Hero-Vision true conversion.
+    assert profile.get("damage_type") is None

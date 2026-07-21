@@ -173,7 +173,11 @@ from app.skill_rules.drake import (
     drake_signature_burst_percent,
     drake_special_burst_percent,
 )
-from app.skill_rules.laplace import build_hero_bomber_per_shot_rules, laplace_buster_burst_percent
+from app.skill_rules.laplace import (
+    build_buster_weapon_mode_schedule,
+    build_hero_bomber_per_shot_rules,
+    laplace_buster_burst_percent,
+)
 from app.skill_rules import laplace_signature
 from app.skill_rules.dorothy_serendipity import build_dorothy_serendipity_rules
 from app.skill_rules.guillotine_winter_slayer import (
@@ -643,6 +647,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
     "nayuta": lambda sv: build_memory_incineration_weapon_mode_schedule(sv),  # Memory Incineration, 10s
     "zwei": lambda sv: build_overcharge_weapon_mode_schedule(sv),  # Overcharge Formula, single 1.2s-charge Pierce shot
+    "laplace": lambda sv: build_buster_weapon_mode_schedule(sv),  # Laplace Buster Normal Damage, 5s ~46 ticks
     "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
 }
 
