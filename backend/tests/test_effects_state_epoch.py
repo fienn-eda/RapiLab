@@ -37,7 +37,7 @@ def test_version_and_epoch_react_to_every_mutation_kind():
     v1 = reg.version
     assert v1 != v0
     assert reg.state_epoch(A, 10.0) != e0            # cache rebuilt, boundary seen
-    reg.add_refreshing(Effect("atk_percent", 0.1, "squad", 3.0, "x"), applied_at=6.0)
+    reg.add_refreshing(Effect("atk_percent", 0.1, "squad", 3.0, "x", refresh_group="bullet"), applied_at=6.0)
     v2 = reg.version
     assert v2 != v1
     reg.truncate_open_ended("atk_percent", "x", now=8.0)

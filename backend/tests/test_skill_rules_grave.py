@@ -187,6 +187,26 @@ def test_overheat_ii_re_earns_each_prediction_window():
     assert registry.total_for("atk_percent", GRAVE, now=55.0) == 0.0
 
 
+def test_overheat_ii_leaves_overheat_i_standing():
+    """Overheat I's permanent self ATK and Overheat II's windowed self ATK are
+    different skill bullets, so II must add on top of I rather than replace it.
+    They share (stat, scope, source), which is all `add_refreshing` matched on
+    before refresh groups covered hand-written rules."""
+    rules = build_overheat_per_shot_rules({"overheat": OVERHEAT})
+    oh1 = rules[0][2][0]
+    oh2 = rules[1][2][0]
+    ctx = make_context()
+    ctx.burst_times["grave"] = [5.0]  # Prediction window [5.0, 15.0)
+    registry = EffectRegistry()
+
+    oh1.action(ctx, "grave", 2.0, registry)   # 15th normal -> Overheat I, permanent
+    oh2.action(ctx, "grave", 7.5, registry)   # 30th in-window hit -> Overheat II
+
+    assert round(registry.total_for("atk_percent", GRAVE, now=7.5), 4) == 0.3614   # 0.1548 + 0.2066
+    assert round(registry.total_for("atk_percent", GRAVE, now=14.9), 4) == 0.3614
+    assert round(registry.total_for("atk_percent", GRAVE, now=15.0), 4) == 0.1548  # only I survives
+
+
 def test_overheat_iii_requires_overheat_ii_then_bounded_to_prediction():
     rules = build_overheat_per_shot_rules({"overheat": OVERHEAT})
     oh2 = rules[1][2][0]

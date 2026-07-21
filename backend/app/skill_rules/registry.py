@@ -173,7 +173,11 @@ from app.skill_rules.drake import (
     drake_signature_burst_percent,
     drake_special_burst_percent,
 )
-from app.skill_rules.laplace import build_hero_bomber_per_shot_rules, laplace_buster_burst_percent
+from app.skill_rules.laplace import (
+    build_buster_weapon_mode_schedule,
+    build_hero_bomber_per_shot_rules,
+    laplace_buster_burst_percent,
+)
 from app.skill_rules import laplace_signature
 from app.skill_rules.dorothy_serendipity import build_dorothy_serendipity_rules
 from app.skill_rules.guillotine_winter_slayer import (
@@ -240,11 +244,20 @@ from app.skill_rules.mast_romantic_maid import build_mast_rules
 from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
 from app.skill_rules.miranda import build_health_up_rules, build_miranda_rules
 from app.skill_rules.moran import build_moran_rules
-from app.skill_rules.nayuta import asceticism_burst_percent, build_nayuta_rules
+from app.skill_rules.nayuta import (
+    asceticism_burst_percent,
+    build_memory_incineration_scheduled_nukes,
+    build_memory_incineration_weapon_mode_schedule,
+    build_nayuta_rules,
+)
 from app.skill_rules.noir import build_noir_rules, finale_burst_percent
 from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika_rules
 from app.skill_rules.quency_escape_queen import build_quency_rules, the_great_thief_burst_percent
-from app.skill_rules.rosanna_chic_ocean import build_rosanna_rules
+from app.skill_rules.rosanna_chic_ocean import (
+    build_rosanna_rules,
+    build_spina_periodic_rules,
+    build_spina_scheduled_nukes,
+)
 from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
 from app.skill_rules.soda_twinkling_bunny import (
     build_golden_chip_resources,
@@ -292,6 +305,7 @@ from app.skill_rules.rapi_red_hood import (
 )
 from app.skill_rules.volume import build_volume_rules
 from app.skill_rules.zwei import (
+    build_overcharge_weapon_mode_schedule,
     build_frame_analysis_resources,
     build_pierce_equation_per_shot_rules,
     build_zwei_rules,
@@ -614,6 +628,8 @@ _SCHEDULED_NUKE_BUILDERS = {
     "little-mermaid": lambda sv: build_bubble_barrage_scheduled_nukes(sv),  # squad-wide 500-ammo counter
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
+    "rosanna-chic-ocean": lambda sv: build_spina_scheduled_nukes(sv),  # Spina di Rosa, 15 ticks per cast
+    "nayuta": lambda sv: build_memory_incineration_scheduled_nukes(sv),  # Full Charge in Memory Incineration
     "laplace-signature": lambda sv: laplace_signature.build_buster_scheduled_nukes(sv),  # per-tick true-damage rider
     "rapi-red-hood": lambda sv: build_attachable_projectiles_scheduled_nukes(sv),  # Attachable Projectiles launcher
     "rapi-red-hood-b1": lambda sv: build_attachable_projectiles_scheduled_nukes(
@@ -629,6 +645,9 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "maxwell": lambda sv: build_pierce_shot_weapon_mode_schedule(sv),  # single 2s-charge cannon shot per own-burst
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
     "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
+    "nayuta": lambda sv: build_memory_incineration_weapon_mode_schedule(sv),  # Memory Incineration, 10s
+    "zwei": lambda sv: build_overcharge_weapon_mode_schedule(sv),  # Overcharge Formula, single 1.2s-charge Pierce shot
+    "laplace": lambda sv: build_buster_weapon_mode_schedule(sv),  # Laplace Buster Normal Damage, 5s ~46 ticks
     "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
 }
 
@@ -647,6 +666,7 @@ _BURST_HIT_COUNTS = {
 # separate from _BUILDERS (event-triggered rules) and _PERIODIC_NUKE_BUILDERS.
 _PERIODIC_RULE_BUILDERS = {
     "sakura-bloom-in-summer": lambda sv: build_sakura_periodic_rules(sv),
+    "rosanna-chic-ocean": lambda sv: build_spina_periodic_rules(sv),  # Spina di Rosa, cd 30
     "takina-inoue": lambda sv: [
         (BATTLEFIELD_CONTROL_COOLDOWN, build_battlefield_control_rules(sv["battlefield_control"])),
     ],

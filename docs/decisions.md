@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 쿨다운 스킬의 듀티사이클 지속딜은 `scheduled_nukes`의 스케줄 콜백으로 — 전용 프리미티브 불필요
+
+- Date: 2026-07-21
+- Context: Rosanna: Chic Ocean의 Spina di Rosa(쿨 30초 액티브: 전체 파츠딜 +24.26%/15초 + 최근접 적에게 70.4%/초×15초 지속딜)는 인코딩 시점에 통째로 보류돼 있었다. 사유는 "`periodic_nukes`가 **연속 고정 간격**을 가정하므로 15초 on / 15초 off 듀티사이클을 표현할 수 없고, 그냥 주기 누크로 모델링하면 딜이 약 2배가 된다"였다(2026-07-20 "Periodic skill trigger" 항목의 Consequences에 "아직 열린 갭"으로 명시). 그녀의 유일한 sustained 인스턴스라 **Onda Grande의 sustained 버프까지 함께 inert**였다.
+- Decision: 새 프리미티브를 만들지 않고 기존 `scheduled_nukes`를 쓴다. 이 메커니즘은 `schedule(context, fight_duration) -> [tick_times]` 콜백을 받으므로, 듀티사이클은 "캐스트 시각마다 15개 틱을 뿜는 스케줄"로 그냥 **직접 서술**된다. 버프 절반은 `periodic_rules`(2026-07-20 신설)로 간다. 첫 캐스트는 t=30 — Spina에는 배틀스타트 강제발동이 없으므로 "쿨다운 스킬은 t=쿨다운에 첫 발동" 보편 규칙이 그대로 적용된다(Sakura의 Full Glory는 Bloom이 강제발동시키는 **예외**이고, 그래서 그쪽만 t=0부터다).
+- Why: 듀티사이클은 스케줄의 한 형태일 뿐 새로운 종류의 시간 구조가 아니다. Bready의 Aftertaste가 이미 같은 콜백으로 "심기 시각들의 합집합 창"을 표현하고 있었으므로, 필요한 표현력은 진작 존재했고 보류 메모가 그 사실을 따라잡지 못한 것뿐이다(모듈 도크스트링의 보류 사유는 작성 당일의 엔진에 대한 주장이라는, 이미 기록된 교훈의 또 다른 사례).
+- Consequences: 5캐스트 × 15틱 × 70.4% = **5280%/180초**. 로드맵의 사전 추정 "약 6300%"는 6캐스트를 가정한 값이었는데, t=0 캐스트가 없으므로 실제로는 5캐스트다 — 추정치가 아니라 규칙이 옳다. 고정 셸 E2E에서 Rosanna 개인 **+7.75%**(550.5M → 593.2M), 다른 71개 슬러그는 불변. 2026-07-20 항목의 "듀티사이클은 아직 열린 갭" 서술은 이로써 **해소**됐다. 남은 보류는 Ferita의 파츠파괴 스택 ATK 하나(gap #2 Pattern B)이고, 순수 증가분이라 현재 인코딩은 floor다.
+
 ## refreshing 버프의 그룹 키를 유닛에서 스킬 불릿으로 — `Effect.refresh_group`
 - Date: 2026-07-21
 - Context: Fienn이 Liberalio의 Raging Current(자기 지속 공격피해 +231%, 스테이지 보스는 항상 대상이라 상시 발동)가 실제로 작동하는지 물었다. 확인해보니 이 버프를 제거해도 그녀의 딜이 **정확히 0%** 변했다 — 완전히 죽어 있었다.
@@ -570,7 +578,7 @@ catalog, see the `nikke-skill-encoding` skill, not here.
 - Context: Fienn confirmed a universal battle-system rule - a Skill 1/2 (not the Burst) that has a cooldown does NOT fire at battle start; it first fires at t=cooldown and repeats. Takina Inoue's Battlefield Control (cd 15s) applies squad ally True Damage +140% and enemy Damage Taken +10% every 15s starting at t=15 - her headline support - but the engine's only triggers were the 4 burst events, and `periodic_nukes` only handles damage, not buffs.
 - Decision: Add `simulate_raid(..., periodic_rules={slug: [(cooldown, [SkillRule, ...])]})`. These fire each rule's action at t=cooldown, 2*cooldown, ... Because the buffs they apply are damage INPUTS (unlike `periodic_nukes`, an output post-pass), the pass runs BEFORE `simulate_burst_cycle` so any nuke computed during the cycle reflects them (effects are replay-safe, so pre-adding at future times is correct). Exposed via `registry._PERIODIC_RULE_BUILDERS` / `get_periodic_rules`, threaded by `roster`; rules built with `buff_rule("periodic", ...)` (a label - never dispatched by `fire_trigger`).
 - Why: Generalizes the existing periodic mechanism to buffs; a universal rule so high reuse (Rosanna's Spina di Rosa cd30s buff part could use it later). First-fire-at-t=cooldown already matched `periodic_nukes`, so no inconsistency. Additive, defaults to `{}`/no-op.
-- Consequences: Periodic rules run against the initial context, so they must be stateless buff appliers (no dependence on burst-cycle state) - documented. A periodic nuke with an internal duration shorter than its cooldown (duty cycle, e.g. Rosanna's Spina) is still an open gap. First consumer: Takina Inoue.
+- Consequences: Periodic rules run against the initial context, so they must be stateless buff appliers (no dependence on burst-cycle state) - documented. A periodic nuke with an internal duration shorter than its cooldown (duty cycle, e.g. Rosanna's Spina) was still an open gap at the time — **closed 2026-07-21** via `scheduled_nukes`' schedule callback, no new primitive (see the duty-cycle entry at the top of this file). First consumer: Takina Inoue.
 
 ## Damage typing to make type-specific Damage-Up buffs non-inert
 - Date: 2026-07-10

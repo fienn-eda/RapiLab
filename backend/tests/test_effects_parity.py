@@ -41,9 +41,9 @@ def build_adversarial_registry():
     # Refreshing re-applications from one source truncate the previous window;
     # the same-timestamp one produces a zero-length window.
     for t in (3.0, 4.0, 5.0, 5.0):
-        reg.add_refreshing(Effect("flat_atk", 100.0, "squad", 3.0, "a"), applied_at=t)
+        reg.add_refreshing(Effect("flat_atk", 100.0, "squad", 3.0, "a", refresh_group="bullet"), applied_at=t)
     # A different source must stay independent of the refresh chain above.
-    reg.add_refreshing(Effect("flat_atk", 50.0, "squad", 2.0, "b"), applied_at=4.5)
+    reg.add_refreshing(Effect("flat_atk", 50.0, "squad", 2.0, "b", refresh_group="bullet"), applied_at=4.5)
     # Close the open-ended atk_percent from source "a" at t=8.
     reg.truncate_open_ended("atk_percent", "a", now=8.0)
     return reg
@@ -82,7 +82,7 @@ def test_parity_survives_mutations_after_queries():
     assert_parity(reg)
     reg.add(Effect("atk_percent", 0.2, "squad", 6.0, "b"), applied_at=9.0)
     assert_parity(reg)
-    reg.add_refreshing(Effect("flat_atk", 100.0, "squad", 3.0, "a"), applied_at=6.0)
+    reg.add_refreshing(Effect("flat_atk", 100.0, "squad", 3.0, "a", refresh_group="bullet"), applied_at=6.0)
     assert_parity(reg)
     reg.add(Effect("crit_rate", 0.02, "self", None, "b"), applied_at=1.0)
     reg.truncate_open_ended("crit_rate", "b", now=12.0)

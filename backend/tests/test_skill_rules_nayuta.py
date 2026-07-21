@@ -1,8 +1,16 @@
 from app.effects import EffectRegistry
-from app.skill_rules.nayuta import asceticism_burst_percent, build_nayuta_rules
+from app.skill_rules.nayuta import (
+    asceticism_burst_percent,
+    build_memory_incineration_scheduled_nukes,
+    build_memory_incineration_weapon_mode_schedule,
+    build_nayuta_rules,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
-# Real skill level 10 values from api.dotgg.gg.
+# Real skill level 10 values from lootandwaifus.com. Migrated off dotgg (whose
+# abbreviated text has no slot at all for Memory Incineration's charge time or
+# Full Charge multiplier - the rapi-red-hood precedent), so the slot numbering
+# below is lootandwaifus' left-to-right order.
 HYPOCRISY = {
     "description_value_01": "9",       # self Indomitability sec (not modeled)
     "description_value_02": "1",       # activation count (not modeled)
@@ -10,30 +18,34 @@ HYPOCRISY = {
     "description_value_04": "5",       # duration
     "description_value_05": "30.16",   # squad ATK % of caster's ATK
     "description_value_06": "5",       # duration
-    "description_value_07": "150",     # deferred: Full Charge nuke %
+    "description_value_07": "5",       # HP-recovery share sec (not modeled)
     "description_value_08": "25",      # self HP recovery % (not modeled)
-    "description_value_09": "0",       # unused slot
-    "description_value_10": "380.46",  # deferred: stage-target additional %
-    "description_value_11": "5",       # unused slot
+    "description_value_09": "150",     # Full-Charge-in-Memory-Incineration nuke %
+    "description_value_10": "380.46",  # stage-target additional %
 }
 IMPERMANENCE = {
     "description_value_01": "3",       # stack interval sec
-    "description_value_02": "30",      # max stacks
-    "description_value_03": "30",      # Stage 3 threshold (== cap)
-    "description_value_04": "21.05",   # Stage 3 self core-damage %
+    "description_value_02": "1.4",     # Hit Rate % (not modeled)
+    "description_value_03": "30",      # max stacks
+    "description_value_04": "1",       # "Stage 1" label, not a value
     "description_value_05": "2",       # Stage 1 threshold
     "description_value_06": "15.2",    # Stage 1 self ATK %
-    "description_value_07": "10",      # Stage 2 threshold
-    "description_value_08": "20.27",   # Stage 2 self Attack Damage %
-    "description_value_09": "1.4",     # Hit Rate % (not modeled)
+    "description_value_07": "2",       # "Stage 2" label, not a value
+    "description_value_08": "10",      # Stage 2 threshold
+    "description_value_09": "20.27",   # Stage 2 self Attack Damage %
+    "description_value_10": "3",       # "Stage 3" label, not a value
+    "description_value_11": "30",      # Stage 3 threshold (== cap)
+    "description_value_12": "21.05",   # Stage 3 self core-damage %
 }
 ASCETICISM = {
     "description_value_01": "35.45",   # squad Attack Damage %
     "description_value_02": "15",      # duration
-    "description_value_03": "275.18",  # deferred: Memory Incineration damage %
-    "description_value_04": "10",      # deferred: Memory Incineration duration
-    "description_value_05": "645.33",  # burst nuke % of final ATK
-    "description_value_06": "10",      # deferred: unlimited ammo duration
+    "description_value_03": "645.33",  # burst nuke % of final ATK
+    "description_value_04": "1.8",     # Memory Incineration charge time (fixed)
+    "description_value_05": "275.18",  # Memory Incineration damage %
+    "description_value_06": "250",     # Full Charge Damage, % of that damage
+    "description_value_07": "10",      # Memory Incineration duration
+    "description_value_08": "10",      # unlimited-ammo duration (same window)
 }
 
 
@@ -100,3 +112,45 @@ def test_asceticism_grants_squad_attack_damage_on_own_burst():
 
     assert round(registry.total_for("attack_damage_up", ALLY, now=5.0), 4) == 0.3545
     assert registry.total_for("attack_damage_up", ALLY, now=20.1) == 0.0
+
+
+def test_memory_incineration_segment_is_a_fixed_cadence_charge_window():
+    schedule = build_memory_incineration_weapon_mode_schedule({"asceticism": ASCETICISM})
+    ctx = make_context()
+    ctx.burst_times["nayuta"] = [20.0, 60.0]
+
+    segments = schedule(ctx, 180.0)
+    assert [seg["start"] for seg in segments] == [20.0, 60.0]
+    assert [seg["end"] for seg in segments] == [30.0, 70.0]  # 10 sec duration
+
+    profile = segments[0]["profile"]
+    assert profile["damage_percent"] == 275.18
+    assert profile["charge_damage_percent"] == 250  # "250% of Damage" -> 2.5x
+    # "Charge time: Fixed at 1.8 sec" - an explicit rate_of_fire takes no cadence
+    # buffs, which is what "fixed" means; a charge_time profile would let an
+    # ally's Charge Speed buff move it.
+    assert profile["rate_of_fire"] == 1 / 1.8
+    assert "charge_time" not in profile
+
+
+def test_memory_incineration_full_charge_nukes_fire_once_per_charge_in_window():
+    spec, = build_memory_incineration_scheduled_nukes(
+        {"hypocrisy": HYPOCRISY, "asceticism": ASCETICISM})
+    # 150% + 380.46% additional: the raid's only enemy IS the stage target.
+    assert round(spec["percent"], 2) == 530.46
+
+    ctx = make_context()
+    ctx.burst_times["nayuta"] = [20.0]
+    ticks = [round(t, 2) for t in spec["schedule"](ctx, 180.0)]
+
+    # Full charges land every 1.8 sec inside the 10-sec window: 5 of them.
+    assert ticks == [21.8, 23.6, 25.4, 27.2, 29.0]
+
+
+def test_memory_incineration_nukes_stop_at_the_end_of_the_fight():
+    spec, = build_memory_incineration_scheduled_nukes(
+        {"hypocrisy": HYPOCRISY, "asceticism": ASCETICISM})
+    ctx = make_context()
+    ctx.burst_times["nayuta"] = [20.0]
+
+    assert [round(t, 2) for t in spec["schedule"](ctx, 25.0)] == [21.8, 23.6]

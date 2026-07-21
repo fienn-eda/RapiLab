@@ -802,16 +802,39 @@
       힐러 명단 유도 스크립트 신설) · liberalio(차지속도 면역) · mana(보류 사유만 정정).
       엔진 확장 2건: `deck_contains_any` · `EffectRegistry.set_external_stat_immunity`.
       `nikke-skill-encoding` SKILL.md의 "차지속도는 inert"(Phase S 이전 기술) 정정 포함.
-- [ ] **배치 ② 무기변형 잔여** — 2026-07-19에 `weapon_mode_schedules` 세그먼트가
-      착지했는데도 "무기변형 미지원"을 근거로 defer된 유닛들: `nayuta`(Memory
-      Incineration 10초 + 복합트리거 넉 530%, 임팩트 큼) · `takina-inoue`(버스트
-      변형 200.64%) · `zwei`(Overcharge Formula 자기 변형) · `moran` · `velvet`
-      (변형딜, 저가치) · `laplace` base(5초 변형, 실측 없음 — Fienn 확인 필요) ·
-      `modernia`(New World Destroy Mode + 15초 무한탄창).
-      **주의: 세그먼트는 재장전을 하지 않는다** — 창 길이 > 탄창 지속이면 과대평가.
-- [ ] **배치 ③ `rosanna-chic-ocean`** — Spina di Rosa 전체(약 6300%/180초)가 보류.
-      `scheduled_nukes`의 임의 스케줄 함수로 15초 on/off 듀티사이클 표현 가능.
-      그녀의 유일한 sustained 인스턴스라 **자기 sustained 버프도 함께 inert** 상태.
+- [ ] **배치 ② 무기변형 잔여 (3/7 완료)** — 2026-07-19에 `weapon_mode_schedules` 세그먼트가
+      착지했는데도 "무기변형 미지원"을 근거로 defer된 유닛들.
+      **`nayuta` 완료(2026-07-21, E2E +18.07%, ⚠→✅)** — 탄약 무한이라 세그먼트의
+      no-reload 제약이 무효였고, "Fixed at 1.8 sec"은 `rate_of_fire`로 표현.
+      dotgg→lootandwaifus 소스 이관 필요했음.
+      **`zwei` 완료(2026-07-21, E2E +0.82%)** — "Max Ammo 1"이 곧 단발 변형이라는 뜻이라
+      Maxwell 선례 그대로 `until_shots: 1`. 지속시간이 원문에 없던 이유가 이것이었다.
+      **`laplace` base 완료(2026-07-21, E2E −0.07%)** — Fienn 확인: base Buster 발사속도 =
+      시그니처(실측 9.3/초)와 동일. 5초 창 `end` 방식 ~46틱, `BUSTER_RATE_OF_FIRE` 공유.
+      시그니처와 달리 Hero Vision 미모델이라 true 변환 안 함. base RL 5초분과 거의 동등.
+      **`modernia`는 세그먼트를 넣지 않기로 확정(Fienn 2026-07-21)** — 보스전에서 Modernia
+      버스트는 DPS 손해(Destroy Mode 평타 2.24% << base MG 7.71%, 멀티타겟 auto-aim은 단일
+      보스에서 무가치). 그래서 실전은 **버스트 미사용 평타 딜러**((1,1,3) 맨 오른쪽). 세그먼트를
+      넣으면 엔진이 버스트를 강제해 ~12% 저평가(스윕 확인). 현재 base MG 평타 유지가 오히려
+      버스트 미사용을 정확히 근사(Destroy Mode·무한탄약·FB+5s 전부 안 쓰는 버스트에서만 발동).
+      **남은 3명은 발사 속도 실측이 필요**(원문에 데미지·지속시간만, 발수 없음):
+      `takina-inoue`(200.64%, 10초, 노멀공격 true damage) · `moran`(14.7%, 10초, 무한탄약) ·
+      `velvet`(7%, 10초, 저가치).
+      **주의: 세그먼트는 재장전을 하지 않는다** — 창 길이 > 탄창 지속이면 과대평가
+      (Nayuta·moran처럼 무한탄약이 걸린 변형은 이 함정이 없다).
+- [ ] **후속: Modernia 버스트 미사용 편성** — Fienn 확인(2026-07-21): Modernia는 (1,1,3)
+      맨 오른쪽에서 버스트를 안 쓰고 평타로만 딜하는 게 정상. `burst_delay`에 `skip_cycles:
+      float("inf")`를 주면 영구 미사용이 되고, 실험상 (1,1,3) 덱에서 Modernia 버스트 0회 +
+      나머지 B3 2명이 로테이션 유지가 확인됨(B3에 항상 ≥2명이라 안전). 실질 효과: Modernia가
+      버스트 슬롯을 양보해 함께 있는 B3 딜러가 더 자주 버스트 → 덱 딜 증가(Modernia 자체 버스트는
+      이미 무효과라 손해 없음). **미착수 이유**: `sweep_slug_damage.py`의 tier3 셸은 대상이
+      유일한 B3라, Modernia가 skip이면 B3 버스트가 없어 Full Burst가 붕괴 → 측정 불가. 스윕 셸
+      재설계와 deck_search 상호작용 검토가 함께 필요한 아키텍처 작업. Fienn과 범위 논의 후 착수.
+- [x] **배치 ③ `rosanna-chic-ocean` (2026-07-21 완료)** — Spina di Rosa 전체 인코딩.
+      예상대로 `scheduled_nukes`의 스케줄 콜백으로 듀티사이클을 표현했고, 버프 절반은
+      `periodic_rules`. 실제 값은 약 6300%가 아니라 **5280%/180초** — 강제발동이 없어
+      첫 캐스트가 t=30이므로 5캐스트(6캐스트 아님)다. 자기 sustained 버프도 함께 실효화,
+      고정 셸 E2E **+7.75%**.
 - [x] **차지속도 공식 수정 (2026-07-20, Fienn 승인)** — `charge_time_with_speed`로
       집약, 5개 호출 지점 교체. `÷(1+속도)` → `×(1−속도)`. 감속도 같은 식으로 처리
       (bready −20%가 1.25배 → 1.2배). 버프 0이면 로스터의 모든 기본 차지시간에 대해

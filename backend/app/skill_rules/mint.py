@@ -149,7 +149,8 @@ def build_here_i_go_rules(values):
     def apply(context, caster_slug, time, registry):
         if mint_singing_at(context, caster_slug, time):
             registry.add_refreshing(
-                Effect("flat_atk", singing_atk, "squad", singing_atk_duration, caster_slug),
+                Effect("flat_atk", singing_atk, "squad", singing_atk_duration, caster_slug,
+                       refresh_group="here_i_go_singing"),
                 applied_at=time,
             )
 
