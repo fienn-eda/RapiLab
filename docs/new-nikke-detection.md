@@ -29,17 +29,26 @@
 
 ## 설치 (1회, 메인 체크아웃에서)
 
-작업 스케줄러에 등록하면 매일 19:00(KST)에 무인 실행된다.
+작업 스케줄러에 등록하면 매일 19:00(KST)에 무인 실행된다. **메인 체크아웃의 스크립트를
+절대 경로로 실행한다:**
 
 ```
-powershell -ExecutionPolicy Bypass -File scripts/schedule_new_nikke_check.ps1 -Action register
-powershell -ExecutionPolicy Bypass -File scripts/schedule_new_nikke_check.ps1 -Action status
+powershell -ExecutionPolicy Bypass -File C:/Users/fienn/Desktop/NikkeDeckBuilder/scripts/schedule_new_nikke_check.ps1 -Action register
+powershell -ExecutionPolicy Bypass -File C:/Users/fienn/Desktop/NikkeDeckBuilder/scripts/schedule_new_nikke_check.ps1 -Action status
 ```
 
-- **반드시 메인 체크아웃에서 등록한다.** 작업은 실행된 디렉토리 경로에 고정되는데,
-  워크트리(`.claude/worktrees/…`)는 일시적이라 삭제되면 작업이 깨진다.
+- **경로는 반드시 메인 체크아웃의 스크립트를 가리켜야 한다.** 작업은 실행된 `.ps1`
+  파일의 위치(`$PSScriptRoot`)에서 리포 경로를 잡는다 — 현재 디렉토리가 아니다. 그래서
+  절대 경로만 맞으면 어디서 실행하든 상관없지만, 워크트리(`.claude/worktrees/…`)
+  복사본을 가리키면 안 된다. 워크트리는 일시적이라 삭제되면 작업이 깨진다.
+- **경로는 슬래시(`/`)로 쓴다.** 백슬래시 경로를 따옴표 없이 셸(예: `!` 로 실행하는
+  bash)에 넣으면 `\`가 이스케이프로 먹혀 경로가 뭉개진다. PowerShell은 `-File`에
+  슬래시를 그대로 받는다. 백슬래시를 쓰려면 경로를 작은따옴표로 감싼다.
+- 성공하면 `registered '…': daily 19:00, repo C:\Users\fienn\Desktop\NikkeDeckBuilder`
+  가 출력된다 — `repo`가 메인 체크아웃을 가리키는지 확인한다.
 - `status`는 등록 상태·마지막 실행 결과·다음 실행 시각을 보여준다. `LastTaskResult`는
-  위 종료 코드와 같다(`0` 정상·무소식, `1` 신규 있음, `2` 실패).
+  위 종료 코드와 같다(`0` 정상·무소식, `1` 신규 있음, `2` 실패). 단, 아직 한 번도 안
+  돌았으면 `267011`(`0x00041303`, "미실행")이 나오는데 이는 실패가 아니다.
 - 해제: `-Action unregister`.
 
 왜 목요일이 아니라 매일인가: 패치는 2~3주 간격 목요일이지만 지연·연장될 수 있어, 목요일
