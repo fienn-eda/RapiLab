@@ -65,6 +65,25 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - 교훈: 버스트 로테이션이 있는 시뮬레이터에서 **A/B 측정 하네스는 그 자체로 검증이 필요한
   코드다.** "대상이 실제로 버스트했는가"를 확인하지 않은 0%는 신호가 아니라 침묵이다.
 
+## 버스트가 DPS 손해인 유닛이 있다 — 무기변형 세그먼트를 넣는 게 오히려 부정확할 수 있다
+
+- 발견: 2026-07-21 (Modernia의 New World Destroy Mode 세그먼트 인코딩 시도 중, Fienn 판정)
+- Modernia의 버스트(New World)는 **보스전에서 순손해**다: Destroy Mode 평타 2.24%가 base MG
+  7.71%보다 훨씬 낮고, 멀티타겟 auto-aim은 "stage target을 파츠 무관 단일 취급"이라 무가치.
+  그래서 실전 운용은 **버스트 미사용** — (1,1,3) 맨 오른쪽에 앉혀 평타로만 딜(Fienn).
+- 함정: 무기변형 프리미티브가 있다고 Destroy Mode를 세그먼트로 넣으면, 엔진이 버스트를 강제해
+  실전에 없는 Destroy Mode를 발동시킨다 → Modernia ~12% 저평가(스윕 확인). **세그먼트가
+  "정확한 무기 모델"이지만 "정확한 유닛 운용"은 아니다.**
+- 통찰: 버스트 미사용 유닛은 버스트로 발동하는 모든 것(변형·무한탄약·버프)이 실전에서 발동 안
+  하므로, **아무것도 안 넣은 base 무기 상태가 오히려 정확한 근사**다. Modernia의 버스트는 이미
+  `([], None)`(nuke·버프 전무)이라 현재 상태가 버스트 미사용 딜러에 가깝다.
+- 정확한 표현은 `burst_delay`에 `skip_cycles: float("inf")`를 줘 영구 미사용으로 만드는 것.
+  실험상 (1,1,3)에서 대상 버스트 0회 + 나머지 B3 2명 로테이션 유지가 확인됐다(B3 ≥2명 보장).
+  단 `sweep_slug_damage.py`의 tier3 셸은 대상이 유일 B3라, skip 시 B3 버스트가 없어 Full Burst가
+  붕괴 → 측정 불가. 스윕 셸 재설계가 얽힌 아키텍처 작업이라 후속으로 분리.
+- 교훈: **엔진 프리미티브가 표현 가능하다는 것과, 그 표현이 유닛의 실제 최적 운용과 맞다는 것은
+  별개다.** 무기변형을 넣기 전에 "이 유닛이 실제로 그 변형을 쓰는가"를 먼저 물어라.
+
 ## Damage formula
 - **The attack/skill coefficient scales the whole Base Damage, not the ATK stat.** A normal attack's "% of ATK" or a skill's "X% of final ATK" multiplies Base Damage *after* defense is subtracted — pass raw summary ATK plus a separate `attack_coefficient` to `calculate_damage`. Folding the coefficient into ATK mis-scales the defense subtraction and any flat ATK (~14% overstatement against a defended boss, and unevenly across Nikkes since coefficients range from ~5% normal attacks to ~8000% bursts, which would skew deck rankings). See `damage_formula.calculate_damage`.
 

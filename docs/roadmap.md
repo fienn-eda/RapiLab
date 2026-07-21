@@ -810,15 +810,24 @@
       **`laplace` base 완료(2026-07-21, E2E −0.07%)** — Fienn 확인: base Buster 발사속도 =
       시그니처(실측 9.3/초)와 동일. 5초 창 `end` 방식 ~46틱, `BUSTER_RATE_OF_FIRE` 공유.
       시그니처와 달리 Hero Vision 미모델이라 true 변환 안 함. base RL 5초분과 거의 동등.
-      **남은 4명 중 3명은 발사 속도 실측이 필요**(원문에 데미지·지속시간만, 발수 없음):
+      **`modernia`는 세그먼트를 넣지 않기로 확정(Fienn 2026-07-21)** — 보스전에서 Modernia
+      버스트는 DPS 손해(Destroy Mode 평타 2.24% << base MG 7.71%, 멀티타겟 auto-aim은 단일
+      보스에서 무가치). 그래서 실전은 **버스트 미사용 평타 딜러**((1,1,3) 맨 오른쪽). 세그먼트를
+      넣으면 엔진이 버스트를 강제해 ~12% 저평가(스윕 확인). 현재 base MG 평타 유지가 오히려
+      버스트 미사용을 정확히 근사(Destroy Mode·무한탄약·FB+5s 전부 안 쓰는 버스트에서만 발동).
+      **남은 3명은 발사 속도 실측이 필요**(원문에 데미지·지속시간만, 발수 없음):
       `takina-inoue`(200.64%, 10초, 노멀공격 true damage) · `moran`(14.7%, 10초, 무한탄약) ·
       `velvet`(7%, 10초, 저가치).
-      **`modernia`는 실측은 받았으나(Destroy Mode = MG 기본 발사속도) 판단 보류 중** — Destroy Mode
-      평타 2.24%가 base MG 7.71%보다 낮아 단일 보스에선 평타 순손해이고, 짝이 되는 Full Burst
-      Duration +5s(스쿼드 전체 이득)가 별도 프리미티브라 미모델. 세그먼트만 넣으면 Modernia가
-      부당하게 깎일 수 있어 Fienn 판단 대기(아래 별도 항목).
       **주의: 세그먼트는 재장전을 하지 않는다** — 창 길이 > 탄창 지속이면 과대평가
-      (Nayuta·moran·modernia처럼 무한탄약이 걸린 변형은 이 함정이 없다).
+      (Nayuta·moran처럼 무한탄약이 걸린 변형은 이 함정이 없다).
+- [ ] **후속: Modernia 버스트 미사용 편성** — Fienn 확인(2026-07-21): Modernia는 (1,1,3)
+      맨 오른쪽에서 버스트를 안 쓰고 평타로만 딜하는 게 정상. `burst_delay`에 `skip_cycles:
+      float("inf")`를 주면 영구 미사용이 되고, 실험상 (1,1,3) 덱에서 Modernia 버스트 0회 +
+      나머지 B3 2명이 로테이션 유지가 확인됨(B3에 항상 ≥2명이라 안전). 실질 효과: Modernia가
+      버스트 슬롯을 양보해 함께 있는 B3 딜러가 더 자주 버스트 → 덱 딜 증가(Modernia 자체 버스트는
+      이미 무효과라 손해 없음). **미착수 이유**: `sweep_slug_damage.py`의 tier3 셸은 대상이
+      유일한 B3라, Modernia가 skip이면 B3 버스트가 없어 Full Burst가 붕괴 → 측정 불가. 스윕 셸
+      재설계와 deck_search 상호작용 검토가 함께 필요한 아키텍처 작업. Fienn과 범위 논의 후 착수.
 - [x] **배치 ③ `rosanna-chic-ocean` (2026-07-21 완료)** — Spina di Rosa 전체 인코딩.
       예상대로 `scheduled_nukes`의 스케줄 콜백으로 듀티사이클을 표현했고, 버프 절반은
       `periodic_rules`. 실제 값은 약 6300%가 아니라 **5280%/180초** — 강제발동이 없어

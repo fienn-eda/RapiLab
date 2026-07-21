@@ -24,7 +24,20 @@ Not modeled / deferred:
 - New World (skills[2], her burst): Full Burst Duration +5s, unlimited ammo, and
   Destroy Mode (auto-aim + a 2.24%-of-ATK Destroy-Mode damage over 15s) - a
   weapon/targeting mode, not a single burst nuke, so burst_percent is None.
-- Its 2.24% Destroy-Mode damage and unlimited-ammo/FB-duration effects.
+- Its Destroy Mode weapon transform is deliberately NOT modeled as a
+  `weapon_mode_schedules` segment, though the primitive exists. Per Fienn
+  (2026-07-21), against a raid boss Modernia's burst is a DPS LOSS - Destroy
+  Mode's 2.24% normal shot is far below her base MG's 7.71%, and its multi-
+  target auto-aim buys nothing when "the stage target is treated as a single
+  enemy". So she is played as a burst-ABSTAINING normal-attack dealer, seated
+  rightmost in a (1,1,3) deck where her two Burst-3 allies carry the rotation.
+  Modelling the segment would force her burst and understate her by ~12% (a
+  fixed-shell sweep confirmed this). Her current base-MG normal fire is the
+  faithful picture of a unit that never enters Destroy Mode - the segment, the
+  unlimited ammo, and the Full Burst +5s all only fire on a burst she does not
+  use. Representing the abstention itself (a permanent `burst_delay` skip) is a
+  deck-rotation change with sweep/deck-search ramifications - tracked as a
+  follow-up, not encoded here.
 """
 from app.effects import ResourceSpec
 from app.skill_rules._helpers import (
