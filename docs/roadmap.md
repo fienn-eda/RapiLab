@@ -599,6 +599,7 @@
 - [x] **디렉토리 스냅샷 갱신 루틴 — 완료.** 매일 19시 작업 스케줄러가 공개 디렉토리를
       헤드리스로 받아 커밋된 스냅샷과 비교하며, 신규 SSR 또는 실패 시에만 토스트를 띄운다.
       등록은 `scripts/schedule_new_nikke_check.ps1 -Action register`(메인 체크아웃에서 실행).
+      **운영·문제 대응:** `docs/new-nikke-detection.md`.
 - [ ] **배포 인프라** — 현재 리모트도 배포도 없음. 저장 모델 A는 정적 호스팅 + 기존 API로 충분.
 
 ### Burst 3 어태커 인코딩 배치 (eb) — least-blocked 우선
