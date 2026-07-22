@@ -8,20 +8,40 @@ NP-hard; this is the standard practical combo."""
 import time
 
 from app.deck_search import (BossProfile, _intra_tier_orderings, _score_batch,
-                             _summarize, evaluate_deck, search_best_decks)
+                             _summarize, best_completions, evaluate_deck,
+                             search_best_decks)
 from app.sim_pool import SimPool, resolve_workers
 
 
-def allocate_decks(roster, boss: BossProfile, num_decks=5, time_budget_sec=45.0, workers=None):
+class InfeasibleDraft(ValueError):
+    """A draft deck's locked/placed units fit no legal deck shape, or the pool
+    is exhausted before every drafted deck can be completed."""
+
+
+def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
+                   locked=frozenset(), time_budget_sec=45.0, workers=None):
     # Serial (the default) never constructs a SimPool, so the sim path stays
     # exactly the pre-parallelism one (and test stubs of evaluate_deck keep
     # working - SimPool holds its own module binding they can't patch).
     pool = SimPool(roster, boss, workers=workers) if resolve_workers(workers) > 1 else None
     try:
-        remaining = list(roster)
-        decks = []  # each: ordered list of units (canonical order from the search)
         by_slug = {u.slug: u for u in roster}
-        while len(decks) < num_decks:
+        draft = draft or []
+        placed = {u.slug for deck in draft for u in deck}
+        remaining = [u for u in roster if u.slug not in placed]
+
+        decks = []  # each: ordered list of units (canonical order from the search)
+        for seed in draft:                       # seed decks: complete around placed units
+            found = best_completions(seed, remaining, boss, top_n=1, pool=pool)
+            if not found:
+                raise InfeasibleDraft(
+                    f"cannot complete a legal deck from {[u.slug for u in seed]}")
+            units = [by_slug[s] for s in found[0]["deck"]]
+            decks.append(units)
+            used = {u.slug for u in units} - placed   # newly-pulled fillers leave the pool
+            remaining = [u for u in remaining if u.slug not in used]
+
+        while len(decks) < num_decks:            # free decks: greedy peeling (unchanged)
             found = search_best_decks(remaining, boss, top_n=1, pool=pool)
             if not found:
                 break
@@ -36,7 +56,7 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, time_budget_sec=45.0,
         # returned even with a zero budget. The hill-climb stays serial: each
         # accepted swap changes the state the next candidate is judged against.
         deadline = time.monotonic() + time_budget_sec
-        _swap_pass(decks, remaining, boss, deadline)
+        _swap_pass(decks, remaining, boss, deadline, locked=locked)
 
         summaries = [_best_ordering_summary(units, boss, pool) for units in decks]
         return {"decks": summaries,
@@ -50,11 +70,12 @@ def _score(units, boss):
     return evaluate_deck(units, boss)["total_damage"]
 
 
-def _swap_pass(decks, leftovers, boss, deadline):
+def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset()):
     """Hill-climb: try same-tier unit swaps between two decks (and between a
     deck and the leftovers), re-scoring only the affected deck(s); keep a swap
     iff the summed total improves. Same-tier swaps preserve the deck shapes.
-    Loops until a full pass finds no improvement or the deadline passes."""
+    Loops until a full pass finds no improvement or the deadline passes.
+    `locked` slugs are never chosen as a swap source, pinning a drafted seat."""
     if not decks:
         return
     scores = [_score(units, boss) for units in decks]
@@ -63,16 +84,20 @@ def _swap_pass(decks, leftovers, boss, deadline):
         improved = False
         for i in range(len(decks)):
             for j in range(i + 1, len(decks)):
-                improved |= _try_pair_swaps(decks, scores, i, j, boss, deadline)
-            improved |= _try_leftover_swaps(decks, scores, i, leftovers, boss, deadline)
+                improved |= _try_pair_swaps(decks, scores, i, j, boss, deadline, locked)
+            improved |= _try_leftover_swaps(decks, scores, i, leftovers, boss, deadline, locked)
 
 
-def _try_pair_swaps(decks, scores, i, j, boss, deadline):
+def _try_pair_swaps(decks, scores, i, j, boss, deadline, locked=frozenset()):
     improved = False
     for a in range(5):
+        if decks[i][a].slug in locked:
+            continue
         for b in range(5):
             if time.monotonic() >= deadline:
                 return improved
+            if decks[j][b].slug in locked:
+                continue
             if decks[i][a].burst_tier != decks[j][b].burst_tier:
                 continue
             decks[i][a], decks[j][b] = decks[j][b], decks[i][a]
@@ -85,9 +110,11 @@ def _try_pair_swaps(decks, scores, i, j, boss, deadline):
     return improved
 
 
-def _try_leftover_swaps(decks, scores, i, leftovers, boss, deadline):
+def _try_leftover_swaps(decks, scores, i, leftovers, boss, deadline, locked=frozenset()):
     improved = False
     for a in range(5):
+        if decks[i][a].slug in locked:
+            continue
         for k in range(len(leftovers)):
             if time.monotonic() >= deadline:
                 return improved
