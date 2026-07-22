@@ -142,7 +142,18 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    can't be represented yet. This is not optional — it's how the next person
    knows the encoding is partial and what would make it complete.
 
-11. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
+11. **Fetch the portrait** for the palette UI: run
+   `python scripts/download_portraits.py`. It reads the now-registered slug from
+   `_BUILDERS`, pulls the portrait path out of the lootandwaifus HTML collected
+   in step 1, downloads the icon into `frontend/public/portraits/`, and rewrites
+   `manifest.json` (slug → filename). Idempotent — existing icons are skipped, so
+   it only fetches the new unit. If the Nikke is an engine-only build variant
+   with no character page of its own (e.g. `<slug>-signature`, `rapi-red-hood-b1`),
+   the script reports it as `UNMAPPED`; add one line to `SLUG_ALIASES` in the
+   script mapping it to the base character's html slug, then re-run. See
+   `frontend/public/portraits/README.md`.
+
+12. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
    avoids cp949 encoding errors with Korean/arrow characters on Windows). Then
    commit on the WIP branch with a message listing what's modeled and deferred.
 
