@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
+  bossProfileToDraft,
   makeDefaultBossProfileDraft,
   validateBossProfileDraft,
   type BossProfileDraft,
@@ -61,5 +62,27 @@ describe('validateBossProfileDraft', () => {
   it('rejects empty fields as required', () => {
     const draft = { ...makeDefaultBossProfileDraft(), fight_duration: '' }
     expect(validateBossProfileDraft(draft).errors.fight_duration).toBe('Required')
+  })
+})
+
+describe('bossProfileToDraft', () => {
+  it('round-trips through validate -> toDraft -> validate to an equal BossProfile', () => {
+    const draft: BossProfileDraft = {
+      element: 'Fire',
+      core_hittable: true,
+      enemy_def: '15000',
+      fight_duration: '90',
+      part_destructible: true,
+    }
+    const { value: boss } = validateBossProfileDraft(draft)
+    const restoredDraft = bossProfileToDraft(boss!)
+    const { value: restoredBoss } = validateBossProfileDraft(restoredDraft)
+    expect(restoredBoss).toEqual(boss)
+  })
+
+  it('round-trips the defaults', () => {
+    const { value: boss } = validateBossProfileDraft(makeDefaultBossProfileDraft())
+    const { value: restoredBoss } = validateBossProfileDraft(bossProfileToDraft(boss!))
+    expect(restoredBoss).toEqual(boss)
   })
 })

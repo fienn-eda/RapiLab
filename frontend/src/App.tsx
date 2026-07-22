@@ -6,6 +6,7 @@ import { useMemo } from 'react'
 import './App.css'
 import { useProfiles } from './hooks/useProfiles'
 import { getValidRoster } from './types/nikkeDraft'
+import { getResult } from './types/profile'
 import { NikkeCard } from './components/NikkeCard'
 import { ProfileSwitcher } from './components/ProfileSwitcher'
 import { RecommendPanel } from './components/RecommendPanel'
@@ -17,7 +18,7 @@ import type { NikkeDraft } from './types/nikkeDraft'
 const NO_ROSTER: NikkeDraft[] = []
 
 function App() {
-  const { state, activeProfile, upsertProfile, switchProfile, deleteProfile } =
+  const { state, activeProfile, upsertProfile, switchProfile, deleteProfile, saveResult } =
     useProfiles()
 
   const drafts = activeProfile?.roster ?? NO_ROSTER
@@ -62,7 +63,20 @@ function App() {
                 />
               ))}
             </div>
-            <RecommendPanel roster={validRoster} />
+            <RecommendPanel
+              roster={validRoster}
+              activeOpenId={state.activeOpenId}
+              getCached={(hash) => (activeProfile ? getResult(activeProfile, hash) : null)}
+              onResult={(args) => {
+                if (state.activeOpenId) saveResult({ openId: state.activeOpenId, ...args })
+              }}
+              restoreInputs={activeProfile?.lastInputs ?? null}
+              restoreResult={
+                activeProfile && activeProfile.lastResultHash
+                  ? getResult(activeProfile, activeProfile.lastResultHash)
+                  : null
+              }
+            />
           </>
         )}
       </main>

@@ -1,6 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useProfiles } from './useProfiles'
+import type { StoredInputs, StoredResult } from '../types/profile'
+
+const storedResult = (n: number): StoredResult => ({
+  decks: [],
+  combinedTotalDamage: n,
+  excludedSlugs: [],
+  leftoverSlugs: [],
+  withinDraft: null,
+  baselineTotalDamage: null,
+})
+
+const storedInputs: StoredInputs = {
+  mode: 'raid',
+  numDecks: 5,
+  boss: { element: null, core_hittable: false, enemy_def: 0, fight_duration: 180, part_destructible: false },
+  draft: null,
+}
 
 beforeEach(() => {
   localStorage.clear()
@@ -55,5 +72,29 @@ describe('useProfiles', () => {
 
     const third = renderHook(() => useProfiles())
     expect(Object.keys(third.result.current.state.profiles)).toEqual(['B'])
+  })
+
+  it('saveResult은 활성 프로필의 results/lastResultHash/lastInputs에 반영되고 리렌더에 살아남는다', () => {
+    const first = renderHook(() => useProfiles())
+    act(() =>
+      first.result.current.upsertProfile({ openId: 'A', nickname: '본계', roster: [] }),
+    )
+    act(() =>
+      first.result.current.saveResult({
+        openId: 'A',
+        hash: 'h1',
+        result: storedResult(180),
+        inputs: storedInputs,
+      }),
+    )
+
+    expect(first.result.current.activeProfile?.results.h1).toEqual(storedResult(180))
+    expect(first.result.current.activeProfile?.lastResultHash).toBe('h1')
+    expect(first.result.current.activeProfile?.lastInputs).toEqual(storedInputs)
+    first.unmount()
+
+    const second = renderHook(() => useProfiles())
+    expect(second.result.current.activeProfile?.results.h1).toEqual(storedResult(180))
+    expect(second.result.current.activeProfile?.lastResultHash).toBe('h1')
   })
 })

@@ -2,7 +2,9 @@ import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RecommendPanel } from './RecommendPanel'
+import { hashRecommendInputs } from '../lib/inputHash'
 import type { UserNikkeState } from '../types/userNikkeState'
+import type { StoredInputs, StoredResult } from '../types/profile'
 
 vi.mock('../api/recommend', () => ({
   recommendDecks: vi.fn(),
@@ -33,6 +35,17 @@ const nikke = (slug: string): UserNikkeState => ({
 
 const fullRoster = ['a', 'b', 'c', 'd', 'e'].map(nikke)
 
+// Every test exercises roster + boss/mode form state, not the persistence
+// wiring — inert no-op defaults for the new profile-store props keep the
+// pre-existing tests focused on what they actually check.
+const noPersistence = {
+  activeOpenId: null,
+  getCached: () => null,
+  onResult: () => {},
+  restoreInputs: null,
+  restoreResult: null,
+}
+
 beforeEach(() => {
   // Draft mode always fetches the supported-unit list (for the palette),
   // regardless of which mode a given test exercises; default to empty so
@@ -48,7 +61,7 @@ afterEach(() => {
 
 describe('RecommendPanel', () => {
   it('disables submit and shows a guard message when the roster has under 5 Nikkes', () => {
-    render(<RecommendPanel roster={fullRoster.slice(0, 2)} />)
+    render(<RecommendPanel roster={fullRoster.slice(0, 2)} {...noPersistence} />)
     expect(
       screen.getByText('Add at least 5 ready Nikkes to recommend a deck.'),
     ).toBeInTheDocument()
@@ -69,7 +82,7 @@ describe('RecommendPanel', () => {
       excluded_slugs: [],
     })
 
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByRole('button', { name: /recommend decks/i }))
 
     expect(recommendDecks).toHaveBeenCalledWith({
@@ -93,7 +106,7 @@ describe('RecommendPanel', () => {
       new RecommendApiError(422, { detail: 'No feasible 5-unit deck.' }),
     )
 
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByRole('button', { name: /recommend decks/i }))
 
     expect(await screen.findByText('No feasible 5-unit deck.')).toBeInTheDocument()
@@ -103,7 +116,7 @@ describe('RecommendPanel', () => {
     const user = userEvent.setup()
     vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
 
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.selectOptions(screen.getByLabelText('Element'), 'Fire')
     await user.click(screen.getByLabelText('Core is hittable'))
     const enemyDef = screen.getByLabelText('Enemy DEF')
@@ -128,7 +141,7 @@ describe('RecommendPanel', () => {
     const user = userEvent.setup()
     vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
 
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/part-destruction gimmick/i))
 
     await user.click(screen.getByRole('button', { name: /recommend decks/i }))
@@ -149,7 +162,7 @@ describe('RecommendPanel', () => {
 describe('RecommendPanel raid mode', () => {
   it('hides the number-of-decks selector in single-deck mode and shows it in raid mode', async () => {
     const user = userEvent.setup()
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
 
     expect(screen.queryByLabelText('Number of decks')).not.toBeInTheDocument()
 
@@ -168,7 +181,7 @@ describe('RecommendPanel raid mode', () => {
       baseline_total_damage: null,
     })
 
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/raid allocation/i))
     await user.selectOptions(screen.getByLabelText('Number of decks'), '3')
     await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
@@ -201,7 +214,7 @@ describe('RecommendPanel raid mode', () => {
       baseline_total_damage: null,
     })
 
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/raid allocation/i))
     await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
 
@@ -219,7 +232,7 @@ describe('RecommendPanel raid mode', () => {
       () => new Promise((resolve) => { resolveRequest = resolve }),
     )
 
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/raid allocation/i))
     await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
 
@@ -246,7 +259,7 @@ describe('RecommendPanel raid mode', () => {
       new RecommendApiError(422, { detail: 'No feasible deck from the usable roster.' }),
     )
 
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/raid allocation/i))
     await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
 
@@ -279,7 +292,7 @@ describe('RecommendPanel draft mode', () => {
     })
 
     const sixRoster = [...fullRoster, nikke('f')]
-    render(<RecommendPanel roster={sixRoster} />)
+    render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/draft-based/i))
 
     // Fill deck 1 (5 picks) then spill the 6th pick into deck 2, so the
@@ -324,7 +337,7 @@ describe('RecommendPanel draft mode', () => {
       new RecommendApiError(422, { detail: 'draft references unusable slug: z' }),
     )
 
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/draft-based/i))
     await user.click(screen.getByRole('button', { name: /optimize draft/i }))
 
@@ -344,7 +357,7 @@ describe('RecommendPanel draft mode', () => {
     vi.mocked(getSupportedUnits).mockResolvedValue(sixUnits)
     const sixRoster = Array.from({ length: 6 }, (_, i) => nikke(`u${i}`))
 
-    render(<RecommendPanel roster={sixRoster} />)
+    render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/draft-based/i))
 
     // Fill deck 1 (5 seats) then spill a 6th unit into deck 2, so 2 decks
@@ -375,7 +388,7 @@ describe('RecommendPanel mode switch', () => {
       baseline_total_damage: null,
     })
 
-    render(<RecommendPanel roster={fullRoster} />)
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/raid allocation/i))
     await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
     // RaidResults-specific text, distinct from DraftEditor's own "Deck N" column headers.
@@ -384,5 +397,151 @@ describe('RecommendPanel mode switch', () => {
     await user.click(screen.getByLabelText(/draft-based/i))
     expect(screen.queryByText(/Field all/)).not.toBeInTheDocument()
     expect(screen.queryByText('Combined total:', { exact: false })).not.toBeInTheDocument()
+  })
+})
+
+describe('RecommendPanel persistence', () => {
+  const defaultBoss = {
+    element: null,
+    core_hittable: false,
+    enemy_def: 0,
+    fight_duration: 180,
+    part_destructible: false,
+  }
+
+  it('restores a persisted raid result and its inputs on mount, with no network call', async () => {
+    const restoreInputs: StoredInputs = {
+      mode: 'raid',
+      numDecks: 3,
+      boss: defaultBoss,
+      draft: null,
+    }
+    const restoreResult: StoredResult = {
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          pinned_slugs: [],
+        },
+      ],
+      combinedTotalDamage: 180,
+      excludedSlugs: [],
+      leftoverSlugs: ['k'],
+      withinDraft: null,
+      baselineTotalDamage: null,
+    }
+
+    render(
+      <RecommendPanel
+        roster={fullRoster}
+        activeOpenId="A"
+        getCached={() => null}
+        onResult={() => {}}
+        restoreInputs={restoreInputs}
+        restoreResult={restoreResult}
+      />,
+    )
+
+    expect(await screen.findByText('Deck 1')).toBeInTheDocument()
+    expect(screen.getByText('180 dmg')).toBeInTheDocument()
+    expect(screen.getByText('Bench (not allocated to a deck): k')).toBeInTheDocument()
+    expect(screen.getByLabelText(/raid allocation/i)).toBeChecked()
+    expect(screen.getByLabelText('Number of decks')).toHaveValue('3')
+    expect(recommendRaidDecks).not.toHaveBeenCalled()
+  })
+
+  it('calls onResult with the submitted inputs\' hash on a successful raid submit', async () => {
+    const user = userEvent.setup()
+    const onResult = vi.fn()
+    const response = {
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          pinned_slugs: [],
+        },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+    }
+    vi.mocked(recommendRaidDecks).mockResolvedValue(response)
+
+    render(
+      <RecommendPanel
+        roster={fullRoster}
+        activeOpenId="A"
+        getCached={() => null}
+        onResult={onResult}
+        restoreInputs={null}
+        restoreResult={null}
+      />,
+    )
+    await user.click(screen.getByLabelText(/raid allocation/i))
+    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
+    await screen.findByText('Deck 1')
+
+    const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5)
+    expect(onResult).toHaveBeenCalledWith({
+      hash: expectedHash,
+      result: {
+        decks: response.decks,
+        combinedTotalDamage: response.combined_total_damage,
+        excludedSlugs: response.excluded_slugs,
+        leftoverSlugs: response.leftover_slugs,
+        withinDraft: response.within_draft,
+        baselineTotalDamage: response.baseline_total_damage,
+      },
+      inputs: {
+        mode: 'raid',
+        numDecks: 5,
+        boss: defaultBoss,
+        draft: null,
+      },
+    })
+  })
+
+  it('renders a cache hit immediately and never calls the raid client', async () => {
+    const user = userEvent.setup()
+    const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5)
+    const cached: StoredResult = {
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 999,
+          burst_damage: 600,
+          normal_attack_damage: 399,
+          pinned_slugs: [],
+        },
+      ],
+      combinedTotalDamage: 999,
+      excludedSlugs: [],
+      leftoverSlugs: [],
+      withinDraft: null,
+      baselineTotalDamage: null,
+    }
+    const getCached = vi.fn((hash: string) => (hash === expectedHash ? cached : null))
+
+    render(
+      <RecommendPanel
+        roster={fullRoster}
+        activeOpenId="A"
+        getCached={getCached}
+        onResult={() => {}}
+        restoreInputs={null}
+        restoreResult={null}
+      />,
+    )
+    await user.click(screen.getByLabelText(/raid allocation/i))
+    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
+
+    expect(await screen.findByText('999 dmg')).toBeInTheDocument()
+    expect(recommendRaidDecks).not.toHaveBeenCalled()
   })
 })

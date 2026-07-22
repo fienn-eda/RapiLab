@@ -30,6 +30,17 @@ export interface BossProfileValidationResult {
   value?: BossProfile
 }
 
+/** Inverse of validateBossProfileDraft's numeric parse - turns a stored/restored
+ * BossProfile back into editable form state (numbers as strings). Used to
+ * repopulate the boss form from a profile's lastInputs. */
+export const bossProfileToDraft = (boss: BossProfile): BossProfileDraft => ({
+  element: boss.element,
+  core_hittable: boss.core_hittable,
+  enemy_def: String(boss.enemy_def),
+  fight_duration: String(boss.fight_duration),
+  part_destructible: boss.part_destructible,
+})
+
 interface ParsedNumber {
   error?: string
   value?: number

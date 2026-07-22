@@ -5,16 +5,19 @@
 // the player's own key units via `draft` — frontend/README.md "Draft-based
 // raid recommendation"). Only one mode's request is ever in flight.
 
-import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useRecommend } from '../hooks/useRecommend'
 import { useRecommendRaid } from '../hooks/useRecommendRaid'
 import { useSupportedUnits } from '../hooks/useSupportedUnits'
+import { hashRecommendInputs } from '../lib/inputHash'
 import {
+  bossProfileToDraft,
   makeDefaultBossProfileDraft,
   validateBossProfileDraft,
   type BossProfileDraft,
 } from '../types/bossProfileDraft'
 import { makeEmptyDraft, MAX_DRAFT_SEATS_PER_DECK, type Draft } from '../types/draft'
+import type { StoredInputs, StoredResult } from '../types/profile'
 import {
   DEFAULT_NUM_DECKS,
   MAX_NUM_DECKS,
@@ -34,16 +37,55 @@ import { RaidResults } from './RaidResults'
 interface RecommendPanelProps {
   /** The validated, ready subset of the entered roster. */
   roster: UserNikkeState[]
+  /** The active profile's open_id — keys the restore effect so switching
+   * accounts (not just re-rendering) reloads that profile's form/result. */
+  activeOpenId: string | null
+  /** Looks up a cached raid/draft result by inputHash — a hit skips the
+   * network call entirely (see lib/inputHash.ts). */
+  getCached: (hash: string) => StoredResult | null
+  /** Called exactly once per raid/draft submit that actually reaches the
+   * backend, so the caller can persist it into the active profile. */
+  onResult: (args: { hash: string; result: StoredResult; inputs: StoredInputs }) => void
+  /** The active profile's last submitted raid/draft inputs, to repopulate the
+   * form - null when the profile has never submitted one. */
+  restoreInputs: StoredInputs | null
+  /** The stored result for restoreInputs' hash - null alongside it. */
+  restoreResult: StoredResult | null
 }
 
 type RecommendMode = 'single' | 'raid' | 'draft'
+
+/** Maps the useRecommendRaid hook's success fields to the cacheable shape -
+ * both raid and draft submits persist through this. */
+const toStoredResult = (raid: {
+  decks: StoredResult['decks']
+  combinedTotalDamage: number
+  excludedSlugs: string[]
+  leftoverSlugs: string[]
+  withinDraft: StoredResult['withinDraft']
+  baselineTotalDamage: number | null
+}): StoredResult => ({
+  decks: raid.decks,
+  combinedTotalDamage: raid.combinedTotalDamage,
+  excludedSlugs: raid.excludedSlugs,
+  leftoverSlugs: raid.leftoverSlugs,
+  withinDraft: raid.withinDraft,
+  baselineTotalDamage: raid.baselineTotalDamage,
+})
 
 const NUM_DECKS_OPTIONS = Array.from(
   { length: MAX_NUM_DECKS - MIN_NUM_DECKS + 1 },
   (_, i) => MIN_NUM_DECKS + i,
 )
 
-export function RecommendPanel({ roster }: RecommendPanelProps) {
+export function RecommendPanel({
+  roster,
+  activeOpenId,
+  getCached,
+  onResult,
+  restoreInputs,
+  restoreResult,
+}: RecommendPanelProps) {
   const [mode, setMode] = useState<RecommendMode>('single')
   const [numDecks, setNumDecks] = useState(DEFAULT_NUM_DECKS)
   const [draft, setDraft] = useState<BossProfileDraft>(makeDefaultBossProfileDraft())
@@ -55,12 +97,74 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
   // OTHER mode's stale success/error would render just by switching the
   // mode radio, with no resubmission. Gates raid/draft result rendering below.
   const [raidResultMode, setRaidResultMode] = useState<'raid' | 'draft' | null>(null)
+  // Unified raid/draft result display - populated either by a fresh
+  // raid.submit() success or by a cache hit / restore, so rendering doesn't
+  // care which of those produced it (see toStoredResult/getCached below).
+  const [displayResult, setDisplayResult] = useState<StoredResult | null>(null)
+  const [displayMode, setDisplayMode] = useState<'raid' | 'draft' | null>(null)
+  // Set right before a raid/draft raid.submit() call that actually reaches
+  // the backend (a cache hit never sets it), and cleared once its success is
+  // persisted via onResult - the guard that makes persistence exactly-once
+  // per submit rather than re-firing on unrelated rerenders.
+  const pendingSaveRef = useRef<{ hash: string; inputs: StoredInputs } | null>(null)
   const numDecksId = useId()
 
   const single = useRecommend()
   const raid = useRecommendRaid()
   const active = mode === 'single' ? single : raid
   const supportedUnits = useSupportedUnits()
+
+  // Restore the active profile's last raid/draft submission (form + result)
+  // whenever the ACCOUNT changes, not on every render - keyed on
+  // activeOpenId alone so it never clobbers in-progress edits mid-typing.
+  useEffect(() => {
+    if (restoreInputs && restoreResult) {
+      setMode(restoreInputs.mode)
+      setNumDecks(restoreInputs.numDecks)
+      setDraft(bossProfileToDraft(restoreInputs.boss))
+      setDraftValue(restoreInputs.draft ?? makeEmptyDraft(restoreInputs.numDecks))
+      setSubmittedDraft(restoreInputs.mode === 'draft' ? (restoreInputs.draft ?? undefined) : undefined)
+      setRaidResultMode(restoreInputs.mode)
+      setDisplayResult(restoreResult)
+      setDisplayMode(restoreInputs.mode)
+    } else {
+      setDisplayResult(null)
+      setDisplayMode(null)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeOpenId])
+
+  // Persist a raid/draft submission's success exactly once - guarded by
+  // pendingSaveRef so a rerender that doesn't follow a fresh submit (e.g. a
+  // parent passing a new onResult reference) can't re-save the same result.
+  const { status: raidStatus, decks, combinedTotalDamage, excludedSlugs, leftoverSlugs, withinDraft, baselineTotalDamage } = raid
+  useEffect(() => {
+    if (raidStatus !== 'success') return
+    const pending = pendingSaveRef.current
+    if (!pending) return
+
+    const result = toStoredResult({
+      decks,
+      combinedTotalDamage,
+      excludedSlugs,
+      leftoverSlugs,
+      withinDraft,
+      baselineTotalDamage,
+    })
+    setDisplayResult(result)
+    setDisplayMode(pending.inputs.mode)
+    onResult({ hash: pending.hash, result, inputs: pending.inputs })
+    pendingSaveRef.current = null
+  }, [
+    raidStatus,
+    decks,
+    combinedTotalDamage,
+    excludedSlugs,
+    leftoverSlugs,
+    withinDraft,
+    baselineTotalDamage,
+    onResult,
+  ])
 
   // The editor always shows exactly numDecks columns; growing/shrinking that
   // selector resizes the draft, preserving already-placed decks by index.
@@ -108,9 +212,31 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
     if (mode === 'single') {
       const request: RecommendRequest = { roster, boss: bossProfile }
       void single.submit(request)
-    } else if (mode === 'raid') {
+      return
+    }
+
+    if (mode === 'draft') setSubmittedDraft(draftValue)
+    setRaidResultMode(mode)
+
+    // Only raid/draft cache — the engine is deterministic, so identical
+    // roster/boss/draft/numDecks always reproduces the same result, and a
+    // hit means we can skip the (slow, thousands-of-simulations) request.
+    const draftForHash = mode === 'draft' ? draftValue : null
+    const hash = hashRecommendInputs(roster, bossProfile, draftForHash, numDecks)
+    const cached = getCached(hash)
+    if (cached) {
+      setDisplayResult(cached)
+      setDisplayMode(mode)
+      return
+    }
+
+    pendingSaveRef.current = {
+      hash,
+      inputs: { mode, numDecks, boss: bossProfile, draft: draftForHash },
+    }
+
+    if (mode === 'raid') {
       const request: RecommendRaidRequest = { roster, boss: bossProfile, num_decks: numDecks }
-      setRaidResultMode('raid')
       void raid.submit(request)
     } else {
       const request: RecommendRaidRequest = {
@@ -119,8 +245,6 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
         num_decks: numDecks,
         draft: toRequestDraft(draftValue),
       }
-      setSubmittedDraft(draftValue)
-      setRaidResultMode('draft')
       void raid.submit(request)
     }
   }
@@ -252,31 +376,36 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
           {single.error}
         </p>
       )}
-      {mode !== 'single' && raid.status === 'error' && raidResultMode === mode && (
-        <p className="field__error" role="alert">
-          {raid.error}
-        </p>
-      )}
+      {/* A cache hit sets displayResult without touching raid.status, so a
+          stale error from an earlier, different submit must not outrank it. */}
+      {mode !== 'single' &&
+        raid.status === 'error' &&
+        raidResultMode === mode &&
+        !(displayResult && displayMode === mode) && (
+          <p className="field__error" role="alert">
+            {raid.error}
+          </p>
+        )}
 
       {mode === 'single' && single.status === 'success' && (
         <DeckResults decks={single.decks} excludedSlugs={single.excludedSlugs} />
       )}
-      {mode === 'raid' && raid.status === 'success' && raidResultMode === 'raid' && (
+      {mode === 'raid' && displayResult && displayMode === 'raid' && (
         <RaidResults
-          decks={raid.decks}
-          combinedTotalDamage={raid.combinedTotalDamage}
-          excludedSlugs={raid.excludedSlugs}
-          leftoverSlugs={raid.leftoverSlugs}
+          decks={displayResult.decks}
+          combinedTotalDamage={displayResult.combinedTotalDamage}
+          excludedSlugs={displayResult.excludedSlugs}
+          leftoverSlugs={displayResult.leftoverSlugs}
         />
       )}
-      {mode === 'draft' && raid.status === 'success' && raidResultMode === 'draft' && (
+      {mode === 'draft' && displayResult && displayMode === 'draft' && (
         <DraftResults
-          decks={raid.decks}
-          combinedTotalDamage={raid.combinedTotalDamage}
-          excludedSlugs={raid.excludedSlugs}
-          leftoverSlugs={raid.leftoverSlugs}
-          withinDraft={raid.withinDraft}
-          baselineTotalDamage={raid.baselineTotalDamage}
+          decks={displayResult.decks}
+          combinedTotalDamage={displayResult.combinedTotalDamage}
+          excludedSlugs={displayResult.excludedSlugs}
+          leftoverSlugs={displayResult.leftoverSlugs}
+          withinDraft={displayResult.withinDraft}
+          baselineTotalDamage={displayResult.baselineTotalDamage}
           submittedDraft={submittedDraft}
         />
       )}

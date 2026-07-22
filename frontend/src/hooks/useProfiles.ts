@@ -10,10 +10,13 @@ import {
   activeProfile as computeActiveProfile,
   deleteProfile,
   emptyProfilesState,
+  saveResult as pureSaveResult,
   switchProfile,
   upsertProfile,
   type Profile,
   type ProfilesState,
+  type StoredInputs,
+  type StoredResult,
 } from '../types/profile'
 import type { NikkeDraft } from '../types/nikkeDraft'
 
@@ -27,6 +30,12 @@ export interface Profiles {
   }) => void
   switchProfile: (openId: string) => void
   deleteProfile: (openId: string) => void
+  saveResult: (args: {
+    openId: string
+    hash: string
+    result: StoredResult
+    inputs: StoredInputs
+  }) => void
 }
 
 const STORAGE_KEY = 'nikke-profiles'
@@ -75,11 +84,25 @@ export const useProfiles = (): Profiles => {
     setState((current) => deleteProfile(current, openId))
   }, [])
 
+  const save = useCallback(
+    (args: { openId: string; hash: string; result: StoredResult; inputs: StoredInputs }) => {
+      setState((current) =>
+        pureSaveResult(current, args.openId, {
+          hash: args.hash,
+          result: args.result,
+          inputs: args.inputs,
+        }),
+      )
+    },
+    [],
+  )
+
   return {
     state,
     activeProfile: computeActiveProfile(state),
     upsertProfile: upsert,
     switchProfile: switchTo,
     deleteProfile: remove,
+    saveResult: save,
   }
 }
