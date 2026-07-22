@@ -600,6 +600,12 @@
       헤드리스로 받아 커밋된 스냅샷과 비교하며, 신규 SSR 또는 실패 시에만 토스트를 띄운다.
       등록은 `scripts/schedule_new_nikke_check.ps1 -Action register`(메인 체크아웃에서 실행).
       **운영·문제 대응:** `docs/new-nikke-detection.md`.
+- [x] **무기+기본스킬 데이터원 ShiftyPad 전환 (go-forward) — 완료.** dotgg(2026-05 사망)의
+      신규 유닛 무기 스탯 수동 스텁을 없앴다. `collect.js --nikke`로 받은 ShiftyPad 상세
+      페이로드를 `normalize_shiftypad`가 dotgg 모양으로 정규화 → `source:"shiftypad"` manifest는
+      dotgg와 동일 모양이라 하위 파싱 전부 재사용. dotgg 정답지 대조 패리티 하니스(6무기타입,
+      불일치 0)로 검증. 기존 71유닛 불변. dollskills(시그니처 9유닛)·skill1/2 쿨다운은 ShiftyPad
+      미노출 → 기존 경로 유지. `docs/decisions.md`·`docs/insights.md` 참고.
 - [ ] **배포 인프라** — 현재 리모트도 배포도 없음. 저장 모델 A는 정적 호스팅 + 기존 API로 충분.
 
 ### Burst 3 어태커 인코딩 배치 (eb) — least-blocked 우선
