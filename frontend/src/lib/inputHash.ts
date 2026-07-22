@@ -53,11 +53,13 @@ export const hashRecommendInputs = (
   roster: UserNikkeState[],
   boss: BossProfile,
   draft: Draft | null,
+  numDecks: number,
 ): string => {
   const canonical = {
     roster: canonicalRoster(roster),
     boss: canonicalize(boss),
     draft: canonicalDraft(draft),
+    numDecks,
   }
   return fnv1a(JSON.stringify(canonical))
 }
