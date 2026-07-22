@@ -446,3 +446,68 @@
 .raid-results__combined {
   font-size: 16px;
 }
+
+/* Draft palette ---------------------------------------------------------- */
+
+.draft-palette {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  width: 100%;
+}
+
+.draft-palette__heading {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 var(--sp-2);
+}
+
+.draft-palette__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
+.draft-palette__unit {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  padding: var(--sp-1);
+  cursor: pointer;
+}
+
+.draft-palette__unit:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.draft-palette__portrait {
+  display: block;
+  width: 56px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.draft-palette__chip {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: var(--sp-1) var(--sp-2);
+  min-width: 96px;
+}
+
+.draft-palette__chip-name {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.draft-palette__chip-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
