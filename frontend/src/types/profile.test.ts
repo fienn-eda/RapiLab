@@ -1,6 +1,8 @@
 import { describe, it, expect } from 'vitest'
 import {
   emptyProfilesState, upsertProfile, switchProfile, deleteProfile, activeProfile,
+  saveResult, getResult, RESULTS_CAP,
+  type StoredResult, type StoredInputs,
 } from './profile'
 import type { NikkeDraft } from './nikkeDraft'
 
@@ -54,5 +56,58 @@ describe('switch/delete/active', () => {
     s = deleteProfile(s, 'A')
     expect(s.activeOpenId).toBeNull()
     expect(s.profiles).toEqual({})
+  })
+})
+
+const result = (n: number): StoredResult => ({
+  decks: [],
+  combinedTotalDamage: n,
+  excludedSlugs: [],
+  leftoverSlugs: [],
+  withinDraft: null,
+  baselineTotalDamage: null,
+})
+
+const inputs: StoredInputs = {
+  mode: 'raid',
+  numDecks: 5,
+  boss: { element: null, core_hittable: false, enemy_def: 0, fight_duration: 180, part_destructible: false },
+  draft: null,
+}
+
+describe('saveResult / getResult', () => {
+  const baseState = () =>
+    upsertProfile(emptyProfilesState(), { openId: 'A', nickname: '본계', roster: [] })
+
+  it('저장 후 getResult로 조회되고 lastResultHash/lastInputs가 갱신된다', () => {
+    let s = baseState()
+    s = saveResult(s, 'A', { hash: 'h1', result: result(1), inputs })
+    expect(getResult(s.profiles.A, 'h1')).toEqual(result(1))
+    expect(s.profiles.A.lastResultHash).toBe('h1')
+    expect(s.profiles.A.lastInputs).toEqual(inputs)
+  })
+
+  it('없는 해시는 getResult가 null을 반환한다', () => {
+    const s = baseState()
+    expect(getResult(s.profiles.A, 'missing')).toBeNull()
+  })
+
+  it('RESULTS_CAP을 초과하면 가장 오래 저장된 항목을 제거한다', () => {
+    let s = baseState()
+    for (let i = 0; i < RESULTS_CAP + 1; i++) {
+      s = saveResult(s, 'A', { hash: `h${i}`, result: result(i), inputs })
+    }
+    expect(Object.keys(s.profiles.A.results)).toHaveLength(RESULTS_CAP)
+    expect(getResult(s.profiles.A, 'h0')).toBeNull() // oldest evicted
+    expect(getResult(s.profiles.A, `h${RESULTS_CAP}`)).toEqual(result(RESULTS_CAP)) // newest kept
+  })
+
+  it('같은 해시로 재저장하면 최신 항목으로 재정렬된다(LRU)', () => {
+    let s = baseState()
+    s = saveResult(s, 'A', { hash: 'h0', result: result(0), inputs })
+    s = saveResult(s, 'A', { hash: 'h1', result: result(1), inputs })
+    s = saveResult(s, 'A', { hash: 'h0', result: result(99), inputs })
+    expect(Object.keys(s.profiles.A.results)).toEqual(['h1', 'h0'])
+    expect(getResult(s.profiles.A, 'h0')).toEqual(result(99))
   })
 })

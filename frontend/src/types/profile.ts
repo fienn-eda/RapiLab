@@ -4,16 +4,37 @@
 // shared roster/result cache is what breaks multi-account use.
 
 import type { NikkeDraft } from './nikkeDraft'
+import type { BossProfile, DraftAllocation, RaidDeck } from './recommend'
+import type { Draft } from './draft'
 
-// StoredResult/StoredInputs are defined in Task 2; unknown here is a
-// deliberate placeholder, not a modeling choice.
+/** What the player submitted for a POST /api/recommend-raid call - enough to
+ * reproduce it (restore the form) or recompute its inputHash. */
+export interface StoredInputs {
+  mode: 'raid' | 'draft'
+  numDecks: number
+  boss: BossProfile
+  draft: Draft | null
+}
+
+/** The useRecommendRaid success payload fields, cached verbatim so a repeat
+ * request (same inputHash) can be restored without calling the backend
+ * again - the engine is deterministic, so this is exact, not stale. */
+export interface StoredResult {
+  decks: RaidDeck[]
+  combinedTotalDamage: number
+  excludedSlugs: string[]
+  leftoverSlugs: string[]
+  withinDraft: DraftAllocation | null
+  baselineTotalDamage: number | null
+}
+
 export interface Profile {
   openId: string
   nickname: string
   roster: NikkeDraft[]
-  results: Record<string, unknown> // key = inputHash (Task 2)
+  results: Record<string, StoredResult> // key = inputHash (see lib/inputHash.ts)
   lastResultHash: string | null
-  lastInputs: unknown | null // Task 2 type
+  lastInputs: StoredInputs | null
 }
 
 export interface ProfilesState {
@@ -85,3 +106,44 @@ export const deleteProfile = (
 
 export const activeProfile = (state: ProfilesState): Profile | null =>
   state.activeOpenId === null ? null : (state.profiles[state.activeOpenId] ?? null)
+
+/** Cached results per profile beyond this are evicted oldest-first - a
+ * profile's roster and boss/draft choices only vary so much, so this is
+ * plenty to avoid recomputation without growing localStorage unbounded. */
+export const RESULTS_CAP = 20
+
+/**
+ * Cache one recommend-raid result under its inputHash. Re-saving an existing
+ * hash refreshes it to newest (LRU): entries beyond RESULTS_CAP are evicted
+ * oldest-first, using Record insertion order as the recency signal.
+ */
+export const saveResult = (
+  state: ProfilesState,
+  openId: string,
+  args: { hash: string; result: StoredResult; inputs: StoredInputs },
+): ProfilesState => {
+  const profile = state.profiles[openId]
+  if (!profile) return state
+
+  // Delete then reinsert so a re-saved hash moves to the end (newest) -
+  // object key order is insertion order, which is what backs the LRU here.
+  const { [args.hash]: _discard, ...withoutHash } = profile.results
+  let results: Record<string, StoredResult> = { ...withoutHash, [args.hash]: args.result }
+
+  const keys = Object.keys(results)
+  if (keys.length > RESULTS_CAP) {
+    const { [keys[0]]: _oldest, ...trimmed } = results
+    results = trimmed
+  }
+
+  const updatedProfile: Profile = {
+    ...profile,
+    results,
+    lastResultHash: args.hash,
+    lastInputs: args.inputs,
+  }
+  return { ...state, profiles: { ...state.profiles, [openId]: updatedProfile } }
+}
+
+export const getResult = (profile: Profile, hash: string): StoredResult | null =>
+  profile.results[hash] ?? null
