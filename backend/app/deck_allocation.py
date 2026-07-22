@@ -130,6 +130,55 @@ def _try_leftover_swaps(decks, scores, i, leftovers, boss, deadline, locked=froz
     return improved
 
 
+def _combined(alloc):
+    return sum(d["total_damage"] for d in alloc["decks"])
+
+
+def _is_complete(draft, num_decks):
+    return len(draft) == num_decks and all(len(deck) == 5 for deck in draft)
+
+
+def recommend_from_draft(roster, boss, num_decks=5, draft=None,
+                         locked=frozenset(), workers=None):
+    """Three-tier recommendation around a player's in-progress draft:
+    `recommended` (best over the full roster), `within_draft` (best reshuffle
+    of only the drafted units, once the draft is complete) and
+    `baseline_total_damage` (the draft's exact groupings, scored as-is) - so a
+    caller can show the player how much a reshuffle or a bench swap-in would
+    gain over what they already placed. `pinned_by_deck` echoes back which
+    locked slugs ended up in which recommended deck, for the API to attach
+    `pinned_slugs`."""
+    draft = draft or []
+    # bench-inclusive recommendation: warm-start from the draft (guarantees
+    # >= baseline) and from-scratch (explores all shapes); keep the better.
+    # With no draft, warm == scratch, so run the scratch pass ALONE - this keeps
+    # the zero-base path a single allocate_decks call, bit-identical to today.
+    scratch = allocate_decks(roster, boss, num_decks=num_decks, workers=workers)
+    if draft:
+        warm = allocate_decks(roster, boss, num_decks=num_decks, draft=draft,
+                              locked=locked, workers=workers)
+        recommended = warm if _combined(warm) >= _combined(scratch) else scratch
+    else:
+        recommended = scratch
+
+    within_draft = None
+    baseline_total = None
+    if _is_complete(draft, num_decks):
+        drafted = [u for deck in draft for u in deck]
+        w = allocate_decks(drafted, boss, num_decks=num_decks, draft=draft,
+                           locked=locked, workers=workers)
+        s = allocate_decks(drafted, boss, num_decks=num_decks, workers=workers)
+        within_draft = w if _combined(w) >= _combined(s) else s
+        baseline_total = sum(
+            _best_ordering_summary(deck, boss)["total_damage"] for deck in draft)
+
+    # locked slugs per recommended deck, for the API's pinned_slugs
+    pinned_by_deck = [[s for s in d["deck"] if s in locked]
+                      for d in recommended["decks"]]
+    return {"recommended": recommended, "within_draft": within_draft,
+            "baseline_total_damage": baseline_total, "pinned_by_deck": pinned_by_deck}
+
+
 def _best_ordering_summary(units, boss, pool=None):
     # Final polish: the swap pass scored canonical orders only; pick the best
     # intra-tier ordering for the finished deck (a handful of sims per deck).
