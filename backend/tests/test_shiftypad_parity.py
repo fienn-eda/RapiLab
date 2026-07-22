@@ -56,6 +56,9 @@ def test_meta_matches_dotgg(slug, url):
 def test_skill_ladders_match_dotgg(slug, url):
     got, truth = _normalized(slug), _dotgg(url)
     for i in range(3):
+        # zip() alone would silently pass on a truncated or dropped ladder
+        # (stops at the shorter side), so pin the level counts equal first.
+        assert len(got["skills"][i]["levels"]) == len(truth["skills"][i]["levels"])
         # dotgg keeps empty trailing slots (""); the normalizer emits exactly
         # the slots ShiftyPad carries, so compare only the slots dotgg fills.
         for lvl_got, lvl_truth in zip(got["skills"][i]["levels"], truth["skills"][i]["levels"]):
