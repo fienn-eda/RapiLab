@@ -91,6 +91,25 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - 해결: 세그먼트 프로파일에 `damage_type="true"`를 **직접 고정**한다. 변형과 변환이 같은 bullet·같은 10초라 이 샷들이 진댐인 것은 인과적으로 확실하므로, 경계에 취약한 별도 효과에 기대는 것보다 직접 서술이 정확하다. 변형이 버스트 중 평타를 전부 대체하므로(창 안에 base 샷 없음) 이제 잉여가 된 self `normal_attacks_deal_true` 효과는 제거했다 — "모델된 것처럼 보이나 소비자가 없는 효과"를 남기지 않는다.
 - 일반화: **측정 발수가 있으면 `until_shots`(정확), rate×duration 유도는 `end`**. `end` 방식은 `start + k*interval < seg_end` 조건이라 마지막 발이 경계에 딱 걸리면 드랍된다 — Takina를 `end`로 넣었으면 25발이 아니라 24발이 됐다(laplace base가 `end`를 쓴 건 실측 발수가 없어 유도값이었기 때문).
 
+## ShiftyPad 캐릭터 상세 페이로드 — 무기 필드는 고정소수점, 스킬 사다리는 전치 필요, 경로 함정 3개
+- 발견: 2026-07-21 ~ 2026-07-22 (무기+기본스킬 데이터원 ShiftyPad 전환, `backend/app/shiftypad_normalize.py`)
+- ShiftyPad 캐릭터 상세 페이로드가 엔진의 무기 필드와 전 레벨 스킬 사다리를 1차 데이터로 담는다. `shot_detail`의 `max_ammo`/`damage`/`reload_time`/`charge_time`/`full_charge_damage`는 **고정소수점** — ÷100이 dotgg 값(damage 557→"5.57%", reload_time 250→2.5, full_charge_damage 25000→"250%"). `ulti_skill_detail.skill_cooltime` ÷100 = 버스트 쿨다운 초(4000→40).
+- 스킬 값은 `description_value_list`가 **슬롯[레벨]** 구조인데 dotgg는 **레벨[슬롯]** — 전치해야 한다. 미사용 뒤쪽 슬롯은 빈 `{}`(`description_value` 키 없음)로 오므로 레벨마다 `""`를 내야 dotgg의 `""`=빈슬롯 관례와 정렬된다.
+- 경로 함정 3개:
+  1. `weapon_type`은 `directory.shot_id.element.weapon_type`에 있다(`.element` 아래로 한 단계 깊음, `shot_id.weapon_type`이 아님).
+  2. element를 ShiftyPad는 `"Electronic"`으로 부르지만 엔진(`elements.py`)·dotgg는 `"Electric"` — 반드시 리매핑해야 한다(안 하면 전기코드 유닛의 원소 우위 계산이 조용히 깨진다).
+  3. `burst`는 `"Step3"` 같은 Step-문자열이고 dotgg는 문자열 `"3"`으로 저장 — `str`로 내야 패리티가 맞는다.
+- `dollskills`(시그니처 무기 스킬)는 상세 페이로드에 없다(Julia 페이지의 16개 payload 전문 검색으로 확인). 스킬1·2 쿨다운도 없다(버스트만) — 그 값이 필요한 인코딩은 인게임 UI나 나무위키에서 직접 읽어야 한다(예: julia 스킬1 쿨다운은 dotgg 기준 20초).
+- 재사용 패턴: **제3자 페이로드를 기존 내부 포맷(dotgg 모양)으로 정규화해 하위 파싱을 통째로 재사용**하면 로더 변경이 최소화되고 패리티를 필드 단위로 대조할 수 있다.
+- 패리티 하니스 패턴: 새 데이터소스의 파서를 기존 소스 정답지에 대해 **백필 없이** 증명한다. 파서 로직이 유닛마다 같으므로 구조 다양성(6무기타입=충전 vs 탄창, 슬롯 수)을 덮는 소수 픽스처로 충분. 함정: `zip()` 기반 레벨 비교는 파서가 레벨을 적게 내면 공허하게 통과 — 비교 전에 `len==len`을 먼저 단언해야 한다(`backend/tests/test_shiftypad_parity.py`).
+- 관련 결정: `docs/decisions.md`("무기 + 기본스킬 데이터원을 신규 유닛부터 ShiftyPad로 전환").
+
+## 공개 디렉토리 점검은 계정 없이 헤드리스로 돌 수 있다; `corporation_sub_type`은 null이 "확인됨"이므로 참/거짓이 아니라 키 존재로 판단해야 한다
+- 발견: 2026-07-21 (신규 니케 출시 자동 탐지, `tools/collect-blablalink/collect.js`)
+- `collect.js --directory --headless`는 로그인 세션 없이 돈다 — 니케 디렉토리는 공개 게임 데이터라, 로그인된 브라우저에 붙는 대신 자체 헤드리스 브라우저를 띄워 blablalink 페이지가 로드하는 네트워크 응답을 엿보는 것만으로 디렉토리 JSON을 식별해낸다(URL 발견용 네트워크 스니핑, 인증 불필요).
+- `corporation_sub_type`(브레이크스루당 플랫 ATK 증가량을 결정하는 필드)은 `null`이 "확인 안 됨"이 아니라 **"방문했고 sub type이 없다는 확정 답"**이다. 이걸 참/거짓(truthiness)으로 판단하면 `null`(falsy)이 "미확인"으로 오분류되어, `--deep`이 이미 확인된 엔트리를 매번 다시 방문하고 평범한 `--directory` 갱신이 그 키를 조용히 지워버리는 회귀가 생긴다. 반드시 **필드의 존재 여부**(`'corporation_sub_type' in e`)로 판단해야 한다.
+- 운영 절차·신호 모델은 `docs/new-nikke-detection.md`에 상세. 관련 결정은 `docs/decisions.md`("신규 니케 출시를 매일 헤드리스 디렉토리 점검으로 자동 탐지").
+
 ## Damage formula
 - **The attack/skill coefficient scales the whole Base Damage, not the ATK stat.** A normal attack's "% of ATK" or a skill's "X% of final ATK" multiplies Base Damage *after* defense is subtracted — pass raw summary ATK plus a separate `attack_coefficient` to `calculate_damage`. Folding the coefficient into ATK mis-scales the defense subtraction and any flat ATK (~14% overstatement against a defended boss, and unevenly across Nikkes since coefficients range from ~5% normal attacks to ~8000% bursts, which would skew deck rankings). See `damage_formula.calculate_damage`.
 

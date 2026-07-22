@@ -5,6 +5,21 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 신규 니케 출시를 매일 헤드리스 디렉토리 점검으로 자동 탐지 — 계정 불필요, 상태파일 없이 온보딩까지 반복 알림
+- Date: 2026-07-21
+- Context: 신규 니케가 출시되면 로스터 파이프라인이 조용히 그 유닛을 버린다(디렉토리 스냅샷에 없어 `roster_assembly.py`가 건너뜀). 유일한 기존 신호는 서버 로그의 `unknown_name_codes` 카운터였는데, 아무도 안 읽고 소유한 유닛만 센다(미소유 신규 유닛은 아예 감지 못함).
+- Decision: `scripts/check_new_nikkes.py`가 매일 19시(KST) 작업 스케줄러로 무인 실행되어(`scripts/schedule_new_nikke_check.ps1`) 공개 디렉토리를 헤드리스로 점검하고, 커밋된 스냅샷에 없는 신규 `resource_id`(SSR만 대상 — 레이드는 SSR 한정)가 있으면 Windows 토스트로 알린다(`scripts/notify_toast.ps1`). 점검 자체가 실패해도 토스트를 띄운다(조용히 죽는 자동화가 없는 것보다 나쁘다는 판단). 상태 파일을 두지 않아, 스냅샷을 온보딩으로 갱신할 때까지 매일 같은 토스트가 반복된다. 소유 여부와 무관하게 공개 데이터만 본다. 점검은 리포지토리를 절대 수정하지 않는다(신선한 덤프는 gitignore된 `data/cache/`에만 씀).
+- Why: 목요일 한정 패치 주기가 지연·연장될 수 있어 요일 한정 점검은 최대 7일 사각지대를 만든다 — 매일 실행이 탐지 지연을 최대 하루로 줄이고, 무소식인 날의 비용은 페이지 한 번 로드뿐이다. 상태 파일을 안 두는 이유는 "미완료 작업은 완료할 때까지 계속 상기시킨다"는 신호 모델을 그대로 코드로 표현하기 위함 — 별도 ack/dismiss 상태를 관리하면 그 자체가 또 하나의 동기화 대상이 된다.
+- Consequences: 운영 절차·문제 대응은 `docs/new-nikke-detection.md`에 상세. 온보딩 5단계 중 무기 스탯 수동 입력·인코딩 판단·커밋은 여전히 사람이 한다(🔴 표시). 이 배치가 같은 세션에 만든 `--nikke` 헤드리스 수집 모드(아래 ShiftyPad 결정)와 맞물려, 비-시그니처 신규 유닛은 온보딩 시 무기 스탯 수동 스텁 단계 자체를 건너뛴다.
+
+## 무기 + 기본스킬 데이터원을 신규 유닛부터 ShiftyPad로 전환(go-forward) — dotgg 정지에 대한 대응, 전수 백필은 기각
+- Date: 2026-07-21 ~ 2026-07-22
+- Context: dotgg API가 2026-05에 멈춰(위 "dotgg's NIKKE data feed stopped updating" 결정 참고), 그 이후 신규 니케마다 무기 스탯 5개(maxAmmo/damage/reloadTime/chargeTime/chargeDamage)를 손으로 스텁에 입력해야 했다. 이 수작업을 없애는 것이 목표.
+- Alternatives considered: (a) 수동 스텁 관행을 계속 유지 — 신규 유닛마다 반복되는 비용을 그대로 안고 감. (b) 기존 71유닛까지 포함한 전수 백필 — churn 대비 이득이 작다(핵심 고통은 신규 유닛의 수동 입력이지 기존 데이터의 정확성이 아니다). (c) ShiftyPad 캐릭터 상세 페이로드를 **dotgg 파일과 같은 모양으로 정규화**(`normalize_shiftypad`, 순수 함수)해 하위 파싱(`dotgg_slots` 스킬 슬롯 추출, `_weapon_stats`, element/burst/cooldown 메타)을 그대로 재사용하고, 신규 유닛(go-forward)만 적용. 채택.
+- Decision: (c). manifest에 `source:"shiftypad"`인 유닛은 dotgg 유닛과 동일한 모양이 되므로, 로더 변경은 `load_character_data`의 경로 한 줄 + `assemble_skill_values`의 native-slot 분기에 shiftypad 추가 + `user_roster`의 무기/메타 소스 분기뿐. 범위는 go-forward — 기존 71유닛의 데이터·로딩·시뮬 결과는 불변(현재 어떤 manifest도 `source:"shiftypad"`를 안 씀 → 배선은 테스트로만 검증됨). 안전 검증은 패리티 하니스: 6개 무기타입 대표 유닛 × (무기 6필드/메타/스킬 사다리/버스트 쿨다운) = 24개 필드 단위 단언(hermetic pytest, `backend/tests/test_shiftypad_parity.py`)으로 불일치 0을 확인, 백필 없이 파서를 구조적으로 증명했다.
+- Why: 백필은 핵심 고통(신규 유닛의 수동 입력)을 안 줄이면서 71유닛분의 churn만 늘린다. "제3자 페이로드를 기존 내부 포맷으로 정규화해 하위 파싱을 재사용"하는 구조는 로더 변경을 최소화하면서 패리티를 필드 단위로 대조 가능하게 만든다.
+- Consequences: 받아들인 한계 — ShiftyPad는 dollskills(시그니처 무기 스킬)와 스킬1·2 쿨다운을 노출하지 않는다(버스트 쿨다운만 있음). 시그니처 무기 버전(9유닛: drake/helm/julia/laplace/miranda/moran/privaty/tove/zwei)은 기존 lootandwaifus/dotgg 경로 + 수동 스텁을 유지 — 기본 무기+기본 스킬만 ShiftyPad가 담당한다. 스펙/계획: `docs/superpowers/specs/2026-07-21-shiftypad-weapon-skill-migration-design.md`, `docs/superpowers/plans/2026-07-21-shiftypad-weapon-skill-migration.md`. 코드: `backend/app/shiftypad_normalize.py`(신규), `backend/app/skill_values.py`, `backend/app/user_roster.py`, `tools/collect-blablalink/collect.js`(`--nikke` 모드). 엔진 gotcha와 패리티 하니스 재사용 패턴은 `docs/insights.md`에 별도 기록.
+
 ## 버스트 미사용 "토템" 유닛은 deck_search의 좌석 제약으로 — shape 하드락이 아니라 마지막 좌석 고정
 
 - Date: 2026-07-22
