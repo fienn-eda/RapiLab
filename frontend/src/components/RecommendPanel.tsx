@@ -217,6 +217,14 @@ export function RecommendPanel({
 
     if (mode === 'draft') setSubmittedDraft(draftValue)
     setRaidResultMode(mode)
+    // Clear any previously displayed result up front, before the cache
+    // check - otherwise a resubmit that genuinely fails (cache miss) would
+    // leave a stale success on screen while the error banner is suppressed
+    // by the `displayResult && displayMode === mode` guard below. A cache
+    // hit re-sets both immediately after; a fresh submit leaves them null
+    // through loading and, on failure, lets the error banner show.
+    setDisplayResult(null)
+    setDisplayMode(null)
 
     // Only raid/draft cache — the engine is deterministic, so identical
     // roster/boss/draft/numDecks always reproduces the same result, and a

@@ -64,6 +64,13 @@ function App() {
               ))}
             </div>
             <RecommendPanel
+              // Keying on the active profile forces a full remount (and thus
+              // a reset of useRecommendRaid/useRecommend hook state) on
+              // profile switch. Without this, a raid/draft request that
+              // outlives a switch (1-2 min) would land against the shared
+              // hook instance and leak its result/error into whichever
+              // profile happens to be active when the response arrives.
+              key={state.activeOpenId ?? 'none'}
               roster={validRoster}
               activeOpenId={state.activeOpenId}
               getCached={(hash) => (activeProfile ? getResult(activeProfile, hash) : null)}

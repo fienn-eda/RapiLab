@@ -505,10 +505,13 @@ describe('RecommendPanel persistence', () => {
         draft: null,
       },
     })
+    // Exactly-once persistence per submit - a rerender must not re-save.
+    expect(onResult).toHaveBeenCalledTimes(1)
   })
 
-  it('renders a cache hit immediately and never calls the raid client', async () => {
+  it('renders a cache hit immediately, never calls the raid client, and never calls onResult', async () => {
     const user = userEvent.setup()
+    const onResult = vi.fn()
     const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5)
     const cached: StoredResult = {
       decks: [
@@ -533,7 +536,7 @@ describe('RecommendPanel persistence', () => {
         roster={fullRoster}
         activeOpenId="A"
         getCached={getCached}
-        onResult={() => {}}
+        onResult={onResult}
         restoreInputs={null}
         restoreResult={null}
       />,
@@ -543,5 +546,52 @@ describe('RecommendPanel persistence', () => {
 
     expect(await screen.findByText('999 dmg')).toBeInTheDocument()
     expect(recommendRaidDecks).not.toHaveBeenCalled()
+    // A cache hit is never persisted - onResult is reserved for submits that
+    // actually reached the backend (see pendingSaveRef in RecommendPanel).
+    expect(onResult).not.toHaveBeenCalled()
+  })
+
+  it('clears a stale success result when a resubmit after success genuinely fails', async () => {
+    const user = userEvent.setup()
+    vi.mocked(recommendRaidDecks).mockResolvedValueOnce({
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          pinned_slugs: [],
+        },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByLabelText(/raid allocation/i))
+    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
+    expect(await screen.findByText('100 dmg')).toBeInTheDocument()
+
+    // Change an input (num_decks) so the resubmit is a genuinely different
+    // request - noPersistence's getCached always returns null anyway, so
+    // this is a cache miss regardless - then make the backend call reject.
+    const { RecommendApiError } = await import('../api/recommendApiError')
+    vi.mocked(recommendRaidDecks).mockRejectedValueOnce(
+      new RecommendApiError(422, { detail: 'No feasible deck from the usable roster.' }),
+    )
+    await user.selectOptions(screen.getByLabelText('Number of decks'), '3')
+    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
+
+    expect(
+      await screen.findByText('No feasible deck from the usable roster.'),
+    ).toBeInTheDocument()
+    // The prior success must not linger under (or be mistaken for) the new
+    // failure - both the stale damage total and the deck-grouping heading
+    // it rendered under must be gone.
+    expect(screen.queryByText('100 dmg')).not.toBeInTheDocument()
+    expect(screen.queryByText('Deck 1')).not.toBeInTheDocument()
   })
 })
