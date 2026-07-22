@@ -243,7 +243,7 @@ from app.skill_rules.maiden_ice_rose import (
 from app.skill_rules.mast_romantic_maid import build_mast_rules
 from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
 from app.skill_rules.miranda import build_health_up_rules, build_miranda_rules
-from app.skill_rules.moran import build_moran_rules
+from app.skill_rules.moran import build_moran_rules, build_fair_and_square_weapon_mode_schedule
 from app.skill_rules.nayuta import (
     asceticism_burst_percent,
     build_memory_incineration_scheduled_nukes,
@@ -650,6 +650,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "zwei": lambda sv: build_overcharge_weapon_mode_schedule(sv),  # Overcharge Formula, single 1.2s-charge Pierce shot
     "laplace": lambda sv: build_buster_weapon_mode_schedule(sv),  # Laplace Buster Normal Damage, 5s ~46 ticks
     "takina-inoue": lambda sv: build_suppression_initiated_weapon_mode_schedule(sv),  # Suppression Initiated, 25 measured true-damage shots
+    "moran": lambda sv: build_fair_and_square_weapon_mode_schedule(sv),  # Fair and Square, unlimited-ammo SMG at canonical 20/s
     "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
 }
 
