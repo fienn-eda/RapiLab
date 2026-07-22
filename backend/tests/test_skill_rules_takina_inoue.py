@@ -1,9 +1,11 @@
 from app.effects import EffectRegistry
 from app.skill_rules.takina_inoue import (
     BATTLEFIELD_CONTROL_COOLDOWN,
+    SUPPRESSION_SHOT_COUNT,
     build_battlefield_control_rules,
     build_combat_support_rules,
     build_suppression_initiated_rules,
+    build_suppression_initiated_weapon_mode_schedule,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
@@ -83,14 +85,34 @@ def test_battlefield_control_rules_are_labeled_periodic():
     assert all(r.trigger == "periodic" for r in build_battlefield_control_rules(BATTLEFIELD_CONTROL))
 
 
-def test_suppression_initiated_burst_converts_normals_to_true_and_debuffs():
+def test_suppression_initiated_burst_debuffs_squad_for_the_window():
     ctx = make_context()
     reg = EffectRegistry()
     fire_trigger("own_burst_activate", {"takina-inoue": build_suppression_initiated_rules(SUPPRESSION_INITIATED)}, ctx, reg, time=5.0)
 
-    # normal attacks deal true damage (self, 10s)
-    assert reg.total_for("normal_attacks_deal_true", TAKINA, now=5.0) == 1.0
-    assert reg.total_for("normal_attacks_deal_true", ALLY, now=5.0) == 0.0
-    assert reg.total_for("normal_attacks_deal_true", TAKINA, now=15.1) == 0.0
     # on-hit Damage Taken, approximated squad(enemy) for the burst window
     assert round(reg.total_for("damage_taken_up", ALLY, now=5.0), 4) == 0.0604
+    assert reg.total_for("damage_taken_up", ALLY, now=15.1) == 0.0
+    # the true-conversion is no longer a self effect - it rides on the transform
+    # segment's shots (see the weapon-mode test below).
+    assert reg.total_for("normal_attacks_deal_true", TAKINA, now=5.0) == 0.0
+
+
+def test_suppression_initiated_transform_fires_25_true_damage_shots():
+    schedule = build_suppression_initiated_weapon_mode_schedule(
+        {"suppression_initiated": SUPPRESSION_INITIATED})
+    ctx = make_context()
+    ctx.burst_times["takina-inoue"] = [5.0, 50.0]
+
+    segments = schedule(ctx, 180.0)
+    assert [seg["start"] for seg in segments] == [5.0, 50.0]
+    assert all(seg["until_shots"] == SUPPRESSION_SHOT_COUNT for seg in segments)
+
+    profile = segments[0]["profile"]
+    assert profile["damage_percent"] == 200.64
+    assert profile["damage_type"] == "true"  # her True Damage buffs land on these
+    assert profile["weapon"] == "SR"
+    # 25 hits across the 10-sec window -> 2.5 shots/sec, an anchor taking no
+    # cadence buffs.
+    assert profile["rate_of_fire"] == 2.5
+    assert "charge_time" not in profile
