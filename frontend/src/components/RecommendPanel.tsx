@@ -50,6 +50,11 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
   const [touched, setTouched] = useState(false)
   const [draftValue, setDraftValue] = useState<Draft>(() => makeEmptyDraft(DEFAULT_NUM_DECKS))
   const [submittedDraft, setSubmittedDraft] = useState<Draft>()
+  // 'raid' and 'draft' share one useRecommendRaid() instance (same endpoint);
+  // without tracking which mode actually produced the current result, the
+  // OTHER mode's stale success/error would render just by switching the
+  // mode radio, with no resubmission. Gates raid/draft result rendering below.
+  const [raidResultMode, setRaidResultMode] = useState<'raid' | 'draft' | null>(null)
   const numDecksId = useId()
 
   const single = useRecommend()
@@ -77,6 +82,11 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
   const rosterTooSmall = roster.length < MIN_DECK_ROSTER_SIZE
   const canSubmit = !rosterTooSmall && !!bossProfile && active.status !== 'loading'
 
+  // Shrinking numDecks below this would silently drop already-drafted seats
+  // (the resize effect truncates draftValue.decks to numDecks) — disable
+  // those options instead of losing data with no warning.
+  const nonEmptyDeckCount = draftValue.decks.filter((seats) => seats.length > 0).length
+
   const ownedSlugs = useMemo(() => roster.map((nikke) => nikke.character_slug), [roster])
   const usedSlugs = useMemo(
     () => draftValue.decks.flatMap((seats) => seats.map((seat) => seat.slug)),
@@ -100,6 +110,7 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
       void single.submit(request)
     } else if (mode === 'raid') {
       const request: RecommendRaidRequest = { roster, boss: bossProfile, num_decks: numDecks }
+      setRaidResultMode('raid')
       void raid.submit(request)
     } else {
       const request: RecommendRaidRequest = {
@@ -109,6 +120,7 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
         draft: toRequestDraft(draftValue),
       }
       setSubmittedDraft(draftValue)
+      setRaidResultMode('draft')
       void raid.submit(request)
     }
   }
@@ -186,7 +198,7 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
                 onChange={(event) => setNumDecks(Number(event.target.value))}
               >
                 {NUM_DECKS_OPTIONS.map((n) => (
-                  <option key={n} value={n}>
+                  <option key={n} value={n} disabled={n < nonEmptyDeckCount}>
                     {n}
                   </option>
                 ))}
@@ -240,7 +252,7 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
           {single.error}
         </p>
       )}
-      {mode !== 'single' && raid.status === 'error' && (
+      {mode !== 'single' && raid.status === 'error' && raidResultMode === mode && (
         <p className="field__error" role="alert">
           {raid.error}
         </p>
@@ -249,7 +261,7 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
       {mode === 'single' && single.status === 'success' && (
         <DeckResults decks={single.decks} excludedSlugs={single.excludedSlugs} />
       )}
-      {mode === 'raid' && raid.status === 'success' && (
+      {mode === 'raid' && raid.status === 'success' && raidResultMode === 'raid' && (
         <RaidResults
           decks={raid.decks}
           combinedTotalDamage={raid.combinedTotalDamage}
@@ -257,7 +269,7 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
           leftoverSlugs={raid.leftoverSlugs}
         />
       )}
-      {mode === 'draft' && raid.status === 'success' && (
+      {mode === 'draft' && raid.status === 'success' && raidResultMode === 'draft' && (
         <DraftResults
           decks={raid.decks}
           combinedTotalDamage={raid.combinedTotalDamage}

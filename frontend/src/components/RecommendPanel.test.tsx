@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RecommendPanel } from './RecommendPanel'
 import type { UserNikkeState } from '../types/userNikkeState'
@@ -262,9 +262,13 @@ describe('RecommendPanel draft mode', () => {
     element: 'Iron' as const,
   }))
 
-  it('sends the built draft to the raid endpoint', async () => {
+  it('sends the built draft, spanning multiple decks, to the raid endpoint', async () => {
     const user = userEvent.setup()
-    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+    const sixUnits = [
+      ...supportedUnits,
+      { slug: 'f', name: 'F', burstTier: 1 as const, element: 'Iron' as const },
+    ]
+    vi.mocked(getSupportedUnits).mockResolvedValue(sixUnits)
     vi.mocked(recommendRaidDecks).mockResolvedValue({
       decks: [],
       combined_total_damage: 0,
@@ -274,15 +278,21 @@ describe('RecommendPanel draft mode', () => {
       baseline_total_damage: null,
     })
 
-    render(<RecommendPanel roster={fullRoster} />)
+    const sixRoster = [...fullRoster, nikke('f')]
+    render(<RecommendPanel roster={sixRoster} />)
     await user.click(screen.getByLabelText(/draft-based/i))
 
-    await user.click(await screen.findByRole('button', { name: /^A /i }))
-    await user.click(screen.getByRole('button', { name: /^B /i }))
+    // Fill deck 1 (5 picks) then spill the 6th pick into deck 2, so the
+    // submitted draft spans two decks — not just deck 1.
+    for (const slug of ['a', 'b', 'c', 'd', 'e', 'f']) {
+      await user.click(
+        await screen.findByRole('button', { name: new RegExp(`^${slug.toUpperCase()} `, 'i') }),
+      )
+    }
     await user.click(screen.getByRole('button', { name: /optimize draft/i }))
 
     expect(recommendRaidDecks).toHaveBeenCalledWith({
-      roster: fullRoster,
+      roster: sixRoster,
       boss: {
         element: null,
         core_hittable: false,
@@ -292,7 +302,16 @@ describe('RecommendPanel draft mode', () => {
       },
       num_decks: 5,
       draft: [
-        { units: [{ slug: 'a', locked: false }, { slug: 'b', locked: false }] },
+        {
+          units: [
+            { slug: 'a', locked: false },
+            { slug: 'b', locked: false },
+            { slug: 'c', locked: false },
+            { slug: 'd', locked: false },
+            { slug: 'e', locked: false },
+          ],
+        },
+        { units: [{ slug: 'f', locked: false }] },
       ],
     })
   })
@@ -312,5 +331,58 @@ describe('RecommendPanel draft mode', () => {
     expect(
       await screen.findByText('draft references unusable slug: z'),
     ).toBeInTheDocument()
+  })
+
+  it('disables shrinking "Number of decks" below the count of non-empty drafted decks', async () => {
+    const user = userEvent.setup()
+    const sixUnits = Array.from({ length: 6 }, (_, i) => ({
+      slug: `u${i}`,
+      name: `U${i}`,
+      burstTier: ((i % 3) + 1) as 1 | 2 | 3,
+      element: 'Iron' as const,
+    }))
+    vi.mocked(getSupportedUnits).mockResolvedValue(sixUnits)
+    const sixRoster = Array.from({ length: 6 }, (_, i) => nikke(`u${i}`))
+
+    render(<RecommendPanel roster={sixRoster} />)
+    await user.click(screen.getByLabelText(/draft-based/i))
+
+    // Fill deck 1 (5 seats) then spill a 6th unit into deck 2, so 2 decks
+    // are non-empty.
+    for (let i = 0; i < 6; i += 1) {
+      await user.click(await screen.findByRole('button', { name: new RegExp(`^U${i} `, 'i') }))
+    }
+
+    const numDecksSelect = screen.getByLabelText('Number of decks')
+    const optionOne = within(numDecksSelect).getByRole('option', { name: '1' })
+    const optionTwo = within(numDecksSelect).getByRole('option', { name: '2' })
+    expect(optionOne).toBeDisabled()
+    expect(optionTwo).not.toBeDisabled()
+  })
+})
+
+describe('RecommendPanel mode switch', () => {
+  it('does not render the previous mode\'s result after switching modes without resubmitting', async () => {
+    const user = userEvent.setup()
+    vi.mocked(recommendRaidDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, pinned_slugs: [] },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+    })
+
+    render(<RecommendPanel roster={fullRoster} />)
+    await user.click(screen.getByLabelText(/raid allocation/i))
+    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
+    // RaidResults-specific text, distinct from DraftEditor's own "Deck N" column headers.
+    expect(await screen.findByText(/Field all 1 of these decks together/)).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText(/draft-based/i))
+    expect(screen.queryByText(/Field all/)).not.toBeInTheDocument()
+    expect(screen.queryByText('Combined total:', { exact: false })).not.toBeInTheDocument()
   })
 })
