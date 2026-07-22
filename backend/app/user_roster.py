@@ -53,17 +53,27 @@ def load_nikke_spec(
     data_slug = manifest.get("data_slug", slug)
     # dotgg sometimes shortens a unit's slug (url "ada" for "ada-wong"); the
     # optional dotgg_slug manifest key bridges that for the weapon-stats lookup.
-    try:
-        dotgg = load_character_data("dotgg", manifest.get("dotgg_slug", data_slug), data_dir)
-    except FileNotFoundError:
-        return None
-    weapon_stats = _weapon_stats(dotgg)
+    # Weapon stats and meta come from the manifest's source for shiftypad units;
+    # dotgg- and lootandwaifus-source units still read weapon stats from dotgg.
+    if manifest["source"] == "shiftypad":
+        try:
+            weapon_data = load_character_data("shiftypad", data_slug, data_dir)
+        except FileNotFoundError:
+            return None
+    else:
+        try:
+            weapon_data = load_character_data(
+                "dotgg", manifest.get("dotgg_slug", data_slug), data_dir
+            )
+        except FileNotFoundError:
+            return None
+    weapon_stats = _weapon_stats(weapon_data)
     if weapon_stats is None:
         return None
     try:
         meta = load_character_data("lootandwaifus", data_slug, data_dir)
     except FileNotFoundError:
-        meta = dotgg
+        meta = weapon_data
     try:
         skill_values = assemble_skill_values(
             slug, manifest, state.skill_levels.model_dump(), data_dir

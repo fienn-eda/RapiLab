@@ -41,6 +41,8 @@ def _dotgg_path_for(data_slug, data_dir):
 def load_character_data(source, data_slug, data_dir=DATA_DIR):
     if source == "dotgg":
         path = _dotgg_path_for(data_slug, data_dir)
+    elif source == "shiftypad":
+        path = Path(data_dir) / "shiftypad" / f"{data_slug}.json"
     else:
         path = Path(data_dir) / "lootandwaifus" / f"char_{data_slug}.json"
     return json.loads(path.read_text(encoding="utf-8"))
@@ -53,7 +55,7 @@ def assemble_skill_values(slug, manifest, skill_levels, data_dir=DATA_DIR):
         level = skill_levels[_SKILL_INDEX_TO_LEVEL_KEY[index]]
         raw_level = data[array][index]["levels"][level - 1]
         drop = manifest.get("drop_tokens", {}).get(key, ())
-        if manifest["source"] == "dotgg":
+        if manifest["source"] in ("dotgg", "shiftypad"):
             values[key] = dotgg_slots(raw_level, drop)
         else:
             values[key] = extract_lootandwaifus_slots(raw_level, drop)
