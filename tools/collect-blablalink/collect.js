@@ -24,6 +24,9 @@
 //               affinity) to nikke-stat-tables.json and stop
 //   --details   dump this account's investment inputs + outpost research ranks
 //               to details.json and stop (personal data; gitignored)
+//   --nikke <rid|name>  dump one unit's raw ShiftyPad bundle (directory entry +
+//               character detail payload) to data/shiftypad/raw/<rid>.json.
+//               Public data, so combine with --headless for an unattended run.
 // Both dump modes read only public static game data and return before the
 // account lookup, so neither needs a logged-in session.
 
@@ -38,6 +41,7 @@ const DIRECTORY_ONLY = args.includes('--directory')
 const RAW = args.includes('--raw')
 const DEEP = args.includes('--deep')
 const HEADLESS = args.includes('--headless')
+const NIKKE = args.includes('--nikke') ? args[args.indexOf('--nikke') + 1] : null
 const TABLES_ONLY = args.includes('--tables')
 const DETAILS_ONLY = args.includes('--details')
 const DEFAULT_OUT = DIRECTORY_ONLY
@@ -80,6 +84,29 @@ const collectDirectory = async (page) => {
   for (let i = 0; i < 20 && !dir; i++) await page.waitForTimeout(300)
   page.off('response', onResp)
   return dir
+}
+
+// The character detail payload is the JSON response for this resource_id that
+// carries shot_detail (weapon) and skill{1,2}/ulti details. It is public data,
+// so this needs no login - same as the directory dump.
+const collectNikkeDetail = async (page, resourceId) => {
+  let hit = null
+  const onResp = async (r) => {
+    if (hit) return
+    const u = r.url()
+    if (!u.includes('blablalink.com') || !u.split('?')[0].endsWith('.json')) return
+    try {
+      const j = await r.json()
+      if (j && !Array.isArray(j) && String(j.resource_id) === String(resourceId) && j.shot_detail) hit = j
+    } catch {}
+  }
+  page.on('response', onResp)
+  await page
+    .goto(`${SHIFTYPAD}${resourceId}`, { waitUntil: 'networkidle', timeout: 60000 })
+    .catch(() => {})
+  for (let i = 0; i < 30 && !hit; i++) await page.waitForTimeout(300)
+  page.off('response', onResp)
+  return hit
 }
 
 // The public game tables the stat calculator needs. Base ATK/HP live in a
@@ -288,8 +315,8 @@ const parseUnit = (html) => {
 }
 
 const main = async () => {
-  if (HEADLESS && !DIRECTORY_ONLY) {
-    throw new Error('--headless only applies to --directory; the other modes need your logged-in session')
+  if (HEADLESS && !DIRECTORY_ONLY && !NIKKE) {
+    throw new Error('--headless applies to --directory or --nikke; other modes need your logged-in session')
   }
 
   const browser = HEADLESS ? await launch() : await connect()
@@ -323,6 +350,21 @@ const main = async () => {
     }
     fs.writeFileSync(OUT, `${JSON.stringify(entries, null, 2)}\n`)
     log(`wrote ${OUT}: ${entries.length} nikkes`)
+    await browser.close()
+    return
+  }
+
+  if (NIKKE) {
+    const entry = /^\d+$/.test(NIKKE)
+      ? dir.find((d) => String(d.resource_id) === NIKKE)
+      : dir.find((d) => nameOf(d) === NIKKE)
+    if (!entry) throw new Error(`no directory entry for --nikke ${NIKKE}`)
+    const detail = await collectNikkeDetail(page, entry.resource_id)
+    if (!detail) throw new Error(`no detail payload for resource_id ${entry.resource_id}`)
+    const out = OUT !== DEFAULT_OUT ? OUT : `../../data/shiftypad/raw/${entry.resource_id}.json`
+    fs.mkdirSync(require('path').dirname(out), { recursive: true })
+    fs.writeFileSync(out, `${JSON.stringify({ directory: entry, detail }, null, 2)}\n`)
+    log(`wrote ${out}: ${nameOf(entry)} (rid=${entry.resource_id})`)
     await browser.close()
     return
   }
