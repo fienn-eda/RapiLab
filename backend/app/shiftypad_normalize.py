@@ -10,7 +10,19 @@ centiseconds; dotgg stores "5.57%" strings and 2.5-second floats.
 
 Pure function: no I/O. The collector fetches; the parity harness proves this
 output equals the committed dotgg ground truth field for field.
+
+Only the burst skill (skills[2]) carries a `cooldown` key, matching dotgg:
+ShiftyPad's skill1_detail/skill2_detail report `skill_cooltime: None` (the
+engine's active-skill cooldowns aren't exposed via this API), and
+user_roster.py's loader only ever reads meta["skills"][2]["cooldown"] at
+load time. An encoder who needs skill1/2 cooldowns reads them from the game
+UI directly; this normalizer must not fabricate them.
 """
+
+# ShiftyPad's element names mostly match dotgg's; "Electronic" is the one
+# exception (dotgg/the engine's elements.py call it "Electric") and must be
+# mapped or element-advantage lookups silently no-op for electric-code units.
+_ELEMENT_NAMES = {"Electronic": "Electric"}
 
 
 def _pct(hundredths):
@@ -51,6 +63,7 @@ def _skill_levels(skill_detail):
 def normalize_shiftypad(bundle):
     directory, detail = bundle["directory"], bundle["detail"]
     shot = detail["shot_detail"]
+    element = directory["element_id"]["element"]["element"]
     skills = [
         {"levels": _skill_levels(detail["skill1_detail"])},
         {"levels": _skill_levels(detail["skill2_detail"])},
@@ -66,7 +79,7 @@ def normalize_shiftypad(bundle):
         "reloadTime": _sec(shot["reload_time"]),
         "chargeTime": _sec(shot["charge_time"]),
         "chargeDamage": _pct(shot["full_charge_damage"]),
-        "element": directory["element_id"]["element"]["element"],
-        "burst": int(directory["use_burst_skill"].removeprefix("Step")),
+        "element": _ELEMENT_NAMES.get(element, element),
+        "burst": str(int(directory["use_burst_skill"].removeprefix("Step"))),
         "skills": skills,
     }
