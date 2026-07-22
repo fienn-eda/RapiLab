@@ -35,12 +35,21 @@ def test_draft_none_matches_plain_allocation(monkeypatch):
 
 
 def test_locked_unit_stays_in_its_deck(monkeypatch):
-    r = _roster()
-    patch_scorer(monkeypatch, lambda slugs: sum(len(s) for s in slugs))
-    draft = [[next(u for u in r if u.slug == "b30")]]  # seed deck 0 with b30, locked
-    out = da.allocate_decks(r, BOSS, num_decks=2, draft=draft,
-                             locked={"b30"}, workers=None)
-    assert "b30" in out["decks"][0]["deck"]
+    # Built so the leftover-swap hill-climb WOULD dislodge the locked unit if
+    # the mask were missing: "weak3" is strictly the worst B3 (quality 1),
+    # z3 is a strictly better leftover (quality 5) - swapping them in is a
+    # real score improvement (21 -> 25), so only `locked` stops it. A scorer
+    # that's constant across every 5-unit deck (e.g. sum(len(slug))) can't
+    # tell this apart from a deleted mask, since no swap is ever accepted
+    # either way - see review fix, 2026-07-22.
+    r = roster_of({"solo_b1": 1, "solo_b2": 2,
+                   "weak3": 3, "z3": 3, "x3": 3, "y3": 3})
+    quality = {"weak3": 1, "z3": 5, "x3": 10, "y3": 10}
+    patch_scorer(monkeypatch, lambda slugs: sum(quality.get(s, 0) for s in slugs))
+    weak3 = next(u for u in r if u.slug == "weak3")
+    out = da.allocate_decks(r, BOSS, num_decks=1, draft=[[weak3]],
+                             locked={"weak3"}, time_budget_sec=30.0, workers=None)
+    assert "weak3" in out["decks"][0]["deck"]
 
 
 def test_infeasible_draft_raises():
