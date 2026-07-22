@@ -5,6 +5,21 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 버스트 미사용 "토템" 유닛은 deck_search의 좌석 제약으로 — shape 하드락이 아니라 마지막 좌석 고정
+
+- Date: 2026-07-22
+- Context: Modernia(버스트가 보스전 DPS 손해)와 Velvet(버스트가 buff-only, 저가치 변형)은 실전에서 버스트를 안 쓰고 평타/버프만 하는 편성으로 운용된다(각각 무기변형 배치에서 "편성상 제외"로 분류). 이 "버스트 미사용"을 엔진에서 어떻게 표현할지가 오래 열린 후속이었다. burst_cycle에는 이미 `burst_delay`(elegg/diesel 선례)가 있어 `{"skip_cycles": float("inf")}`로 영구 미사용을 걸 수 있지만, 그 방식은 (a) `sweep_slug_damage.py`의 tier3 셸(대상이 유일 B3)을 붕괴시키고, (b) tier-mate가 그 사이클에 못 쏠 때도 버스트를 강제로 막아, 약한 버스트라도 쏴서 Full Burst를 살리는 실전 fallback을 없앤다.
+- Alternatives considered:
+  - (a) `burst_delay skip_cycles=inf` — 위 두 문제. 또 Velvet은 (1,1,3)/(2,1,2)에서 **유일 B2**가 될 수 있는데, 유일 멤버가 inf면 그 tier ready=inf → 사이클 전체가 안 떠 Full Burst가 영영 안 생기고, Velvet 자신의 Bullets of Love(FB 게이팅)까지 자멸한다.
+  - (b) **shape+좌석 하드 제약** — Modernia를 (1,1,3), Velvet을 (1,2,2)에서 **마지막 좌석에만** 허용. 유효 덱에선 버스트 0회를 보장(측정 확인). 그러나 검토 중 **회귀**가 발견됐다: 필요한 shape를 못 만드는 얇은 로스터(예: modernia + B3 2명)는 그 유닛이 든 조합이 전부 거부돼, 빼면 5유닛이 안 돼 **편성 불가(422)**. API 테스트(`FEASIBLE = [...,"modernia"]`, B3 2명짜리 (1,2,2) 로스터)가 이걸 정확히 잡았다.
+  - (c) **좌석만** — 각 유닛을 자기 tier 마지막 좌석에만 고정하고 shape는 강제 안 함. 채택(Fienn 2026-07-22).
+- Decision: (c). `deck_search._BUFFER_SEAT_SLUGS = {"modernia","velvet"}` + `_buffer_seat_valid(ordered)`가 열거 경로(`_intra_tier_orderings`·`feasible_orderings`)에서 버퍼 유닛 뒤에 같은 tier 아군이 오는 순서를 걸러낸다. burst_cycle이 leftmost eligible을 쏘므로, 마지막 좌석 = tier-mate가 버스트를 가져가고 버퍼는 tier-mate가 전부 쿨다운일 때만 fallback.
+- Why:
+  - **shape 하드락 배제**: shape 강제는 "버스트 0 보장"을 주지만 얇은 로스터를 편성 불가로 만든다(422 = 최악의 UX). 좌석만 걸면 시뮬레이션이 실제 쿨다운을 반영해 리치 로스터에선 어차피 (1,1,3)/(1,2,2)를 상위로 뽑으므로(그 shape에서만 버퍼의 no-op 버스트 낭비가 없어 딜이 높다), **버스트 0회가 사실상 달성되면서도** 얇은 덱은 fallback으로 살아난다.
+  - **측정 확인**: (1,1,3) modernia 마지막 = 버스트 0회(cd40 B3 2명이 5+4=9로 매 Full Burst 커버), (1,2,2) velvet 마지막 = 버스트 0회(다른 B2가 매 사이클 커버). CDR 유무 모두 동일. 얇은 (1,2,2)에서 B3가 drake 혼자면 modernia가 4회 fallback(Full Burst를 살리는 실전 동작) — 이 덱은 시뮬 점수가 낮아 (1,1,3)이 있으면 추천 안 됨.
+  - **B3 ≥2 규칙 근거 정정(Fienn)**: 처음엔 "Modernia는 어느 shape에서든 다른 B3 1명만 있으면 토템"이라 오판했으나, B3 쿨다운이 ~40초라 1명으로는 매 사이클 못 채운다 — 그래서 `ALLOWED_SHAPES`가 B3 ≥2를 요구하고, 버퍼 B3는 커버할 2명이 더 필요해 **(1,1,3) 전용**이다((1,2,2)/(2,1,2)는 다른 B3 1명뿐이라 토템 불가). Velvet(B2)은 shape 규칙이 B2 1명을 허용 = 1명이 매 사이클 커버 가능 → 다른 B2 1명 = **(1,2,2) 전용**. 이 shape 선호는 시뮬이 알아서 반영한다.
+- Consequences: 열거 경로에 순수 프루닝(순서 필터) 추가로 백엔드 1111 passed/3 skipped, API 회귀 없음. `prune_candidate_pool`의 참조 덱(측정 스캐폴드)은 modernia를 [1,2,3,3,3]의 slot 4(마지막 B3)에 앉혀 이미 공정 측정, 손 안 댐. 미모델 주의: Modernia New World의 Full Burst +5초를 나중에 넣으면 그녀 버스트가 이득인 경우가 생겨 이 좌석 선호를 재검토해야 한다. modernia.py·velvet.py 도크스트링의 "follow-up으로 추적" 문구를 이 구현으로 정정.
+
 ## 측정 불가한 무한탄창 무기변형은 엔진 표준 무기 발사속도를 앵커로 — Moran
 
 - Date: 2026-07-22

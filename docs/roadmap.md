@@ -829,14 +829,16 @@
       "무기변형 미지원" defer 사유가 stale이었으므로 사유를 편성 결정으로 정정.
       **주의: 세그먼트는 재장전을 하지 않는다** — 창 길이 > 탄창 지속이면 과대평가
       (Nayuta·moran처럼 무한탄약이 걸린 변형은 이 함정이 없다).
-- [ ] **후속: Modernia 버스트 미사용 편성** — Fienn 확인(2026-07-21): Modernia는 (1,1,3)
-      맨 오른쪽에서 버스트를 안 쓰고 평타로만 딜하는 게 정상. `burst_delay`에 `skip_cycles:
-      float("inf")`를 주면 영구 미사용이 되고, 실험상 (1,1,3) 덱에서 Modernia 버스트 0회 +
-      나머지 B3 2명이 로테이션 유지가 확인됨(B3에 항상 ≥2명이라 안전). 실질 효과: Modernia가
-      버스트 슬롯을 양보해 함께 있는 B3 딜러가 더 자주 버스트 → 덱 딜 증가(Modernia 자체 버스트는
-      이미 무효과라 손해 없음). **미착수 이유**: `sweep_slug_damage.py`의 tier3 셸은 대상이
-      유일한 B3라, Modernia가 skip이면 B3 버스트가 없어 Full Burst가 붕괴 → 측정 불가. 스윕 셸
-      재설계와 deck_search 상호작용 검토가 함께 필요한 아키텍처 작업. Fienn과 범위 논의 후 착수.
+- [x] **후속: Modernia·Velvet 버스트 미사용 편성 (2026-07-22 완료)** — `burst_delay` skip이
+      아니라 **deck_search 좌석 제약**으로 구현. `_BUFFER_SEAT_SLUGS = {modernia, velvet}`이
+      각 유닛을 자기 tier의 **마지막 좌석**으로 고정(burst_cycle이 leftmost eligible를 쏘므로
+      tier-mate가 버스트를 가져감). shape는 하드 제약 안 함 — 검토 중 **shape 강제는 얇은
+      로스터(modernia+B3<3 등)를 편성 불가(422)로 만드는 회귀**가 발견됨(API 테스트가 잡음).
+      좌석만 걸면: 리치 로스터는 시뮬이 (1,1,3)/(1,2,2)를 상위로 뽑아 버스트 0회(측정 확인),
+      커버 불가한 얇은 덱에서만 fallback 버스트(Full Burst를 살리는 실전 동작). `skip_cycles:
+      inf`(스윕 셸 붕괴 이슈가 있던)보다 fallback을 보존해 더 충실. 상세 `docs/decisions.md`.
+      B3 항상 ≥2 규칙(cd 40초라 2명 번갈아야 매 사이클 커버) 근거는 Fienn 지적으로 정정됨 —
+      Modernia는 (1,2,2)/(2,1,2)에서 토템 불가, (1,1,3) 전용.
 - [x] **배치 ③ `rosanna-chic-ocean` (2026-07-21 완료)** — Spina di Rosa 전체 인코딩.
       예상대로 `scheduled_nukes`의 스케줄 콜백으로 듀티사이클을 표현했고, 버프 절반은
       `periodic_rules`. 실제 값은 약 6300%가 아니라 **5280%/180초** — 강제발동이 없어

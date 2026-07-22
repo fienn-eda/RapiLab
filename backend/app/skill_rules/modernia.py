@@ -35,9 +35,12 @@ Not modeled / deferred:
   fixed-shell sweep confirmed this). Her current base-MG normal fire is the
   faithful picture of a unit that never enters Destroy Mode - the segment, the
   unlimited ammo, and the Full Burst +5s all only fire on a burst she does not
-  use. Representing the abstention itself (a permanent `burst_delay` skip) is a
-  deck-rotation change with sweep/deck-search ramifications - tracked as a
-  follow-up, not encoded here.
+  use. The abstention itself is represented in the deck search, not here: she is
+  pinned to the LAST Burst-3 seat (deck_search._BUFFER_SEAT_SLUGS), so a Burst-3
+  ally is the leftmost-eligible burster every cycle and Modernia never enters
+  Destroy Mode in her best shape ((1,1,3), where two allies cover the ~40s
+  cooldown; a thinner shape can force an occasional fallback burst, which the
+  search scores lower and avoids when a (1,1,3) exists).
 """
 from app.effects import ResourceSpec
 from app.skill_rules._helpers import (

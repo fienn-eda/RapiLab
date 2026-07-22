@@ -635,3 +635,116 @@ def test_search_budget_counts_orderings_not_just_combinations(monkeypatch):
     ds.search_best_decks(roster, BossProfile(), top_n=1, sim_budget=6)
 
     assert pruned, "budget compared against combinations only, not orderings"
+
+
+# --- Non-bursting buffer ("totem") seating: Modernia and Velvet ---------------
+# Their bursts are a DPS loss / buff-only, so they yield the burst to a same-tier
+# ally. Encoded as a SEAT rule only (Fienn, 2026-07-22): they must sit LAST in
+# their tier (burst_cycle fires the leftmost eligible), so a tier-mate takes the
+# burst. The shape is NOT hard-restricted - the shape that lets them never burst
+# ((1,1,3) for Modernia, (1,2,2) for Velvet) simply scores highest, so the
+# search picks it, without making a thin roster infeasible. See
+# deck_search._BUFFER_SEAT_SLUGS.
+from collections import Counter
+
+from app.burst_cycle import simulate_burst_cycle
+from app.deck_search import (
+    _buffer_seat_valid,
+    feasible_orderings,
+)
+
+
+def test_modernia_always_seated_last_among_burst3():
+    # She may appear in any shape now, but never with a Burst-3 ally after her.
+    roster = [
+        FakeUnit("b1", 1),
+        FakeUnit("b2a", 2), FakeUnit("b2b", 2),
+        FakeUnit("b3a", 3), FakeUnit("b3b", 3), FakeUnit("modernia", 3),
+    ]
+    orderings = list(feasible_orderings(roster))
+    assert any(any(u.slug == "modernia" for u in o) for o in orderings)  # not filtered out
+    for ordered in orderings:
+        b3 = [u.slug for u in ordered if u.burst_tier == 3]
+        if "modernia" in b3:
+            assert b3[-1] == "modernia"  # last B3 seat
+
+
+def test_velvet_always_seated_last_among_burst2():
+    roster = [
+        FakeUnit("b1", 1),
+        FakeUnit("b2a", 2), FakeUnit("velvet", 2),
+        FakeUnit("b3a", 3), FakeUnit("b3b", 3), FakeUnit("b3c", 3),
+    ]
+    orderings = list(feasible_orderings(roster))
+    assert any(any(u.slug == "velvet" for u in o) for o in orderings)
+    for ordered in orderings:
+        b2 = [u.slug for u in ordered if u.burst_tier == 2]
+        if "velvet" in b2:
+            assert b2[-1] == "velvet"  # last B2 seat
+
+
+def test_buffer_unit_stays_feasible_in_a_thin_roster():
+    # Only two Burst-3s total (no (1,1,3) possible), a (1,2,2) roster. The seat
+    # rule must NOT make it infeasible - Modernia is still seatable (as the last
+    # B3), just not guaranteed never to burst without a third B3 to cover the
+    # cycle. This is the case the earlier hard shape lock turned into a 422.
+    roster = [
+        FakeUnit("b1", 1), FakeUnit("b2a", 2), FakeUnit("b2b", 2),
+        FakeUnit("b3a", 3), FakeUnit("modernia", 3),
+    ]
+    orderings = list(feasible_orderings(roster))
+    assert orderings  # a deck still forms
+    assert all(any(u.slug == "modernia" for u in o) for o in orderings)  # she's in every deck
+    for ordered in orderings:
+        b3 = [u.slug for u in ordered if u.burst_tier == 3]
+        assert b3[-1] == "modernia"  # still seated last
+
+
+def test_buffer_seat_helper_leaves_ordinary_decks_untouched():
+    plain = [FakeUnit("b1", 1), FakeUnit("b2", 2),
+             FakeUnit("b3a", 3), FakeUnit("b3b", 3), FakeUnit("b3c", 3)]
+    assert _buffer_seat_valid(plain)
+
+
+def _burst_counts(deck, cdr=None):
+    on_fb_end = (lambda t: cdr) if cdr else None
+    events = simulate_burst_cycle(
+        deck, gauge_charge_time=2.0, fight_duration=180.0, mode="manual",
+        on_full_burst_end=on_fb_end)
+    bursts = Counter(e["slug"] for e in events if e["type"] == "burst")
+    full_bursts = sum(1 for e in events if e["type"] == "full_burst_start")
+    return bursts, full_bursts
+
+
+def test_modernia_never_bursts_as_the_last_b3_of_a_113():
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "cooldown": 20.0},
+        {"slug": "b3a", "burst_tier": 3, "cooldown": 40.0},
+        {"slug": "b3b", "burst_tier": 3, "cooldown": 40.0},
+        {"slug": "modernia", "burst_tier": 3, "cooldown": 40.0},  # last B3 = buffer
+    ]
+    bursts, full_bursts = _burst_counts(deck)
+    assert bursts["modernia"] == 0            # never takes the burst
+    assert full_bursts > 0                    # deck still reaches Full Burst
+    # the two real B3s alternate to cover every cycle a B3 fires.
+    assert bursts["b3a"] + bursts["b3b"] == full_bursts
+    # holds with cooldown reduction too (more cycles, still zero Modernia bursts).
+    bursts_cdr, _ = _burst_counts(deck, cdr={m["slug"]: 6.0 for m in deck})
+    assert bursts_cdr["modernia"] == 0
+
+
+def test_velvet_never_bursts_as_the_last_b2_of_a_122():
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "cooldown": 20.0},
+        {"slug": "b2a", "burst_tier": 2, "cooldown": 20.0},
+        {"slug": "velvet", "burst_tier": 2, "cooldown": 20.0},  # last B2 = buffer
+        {"slug": "b3a", "burst_tier": 3, "cooldown": 40.0},
+        {"slug": "b3b", "burst_tier": 3, "cooldown": 40.0},
+    ]
+    bursts, full_bursts = _burst_counts(deck)
+    assert bursts["velvet"] == 0              # never takes the burst
+    assert full_bursts > 0
+    assert bursts["b2a"] == full_bursts       # the other B2 carries every cycle
+    bursts_cdr, _ = _burst_counts(deck, cdr={m["slug"]: 6.0 for m in deck})
+    assert bursts_cdr["velvet"] == 0

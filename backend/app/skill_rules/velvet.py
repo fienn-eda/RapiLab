@@ -34,9 +34,11 @@ Not modeled / deferred:
   is played as a burst-ABSTAINING totem: her value is the Skill 1/2 buffs
   modeled above (and her out-of-Full-Burst Sticky Fingers self-ramp), and she
   is not the one bursting, so her burst's transform never fires in practice.
-  The 7%-per-shot mode is also low-value even when it does. Representing the
-  abstention itself (a permanent `burst_delay` skip) is the same deck-rotation
-  follow-up tracked for Modernia, not encoded here.
+  The 7%-per-shot mode is also low-value even when it does. The abstention is
+  represented in the deck search: she is pinned to the LAST Burst-2 seat
+  (deck_search._BUFFER_SEAT_SLUGS), so a Burst-2 ally takes the burst and she
+  provides only her Skill 1/2 buffs - a totem - in her best shape ((1,2,2),
+  where the second Burst-2 covers every cycle).
 - Sticky Fingers' enemy-ammo-steal and ammo-pouch fill (non-damage).
 """
 from app.effects import Effect
