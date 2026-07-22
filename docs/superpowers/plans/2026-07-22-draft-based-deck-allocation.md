@@ -373,6 +373,14 @@ def test_incomplete_draft_has_no_baseline():
     assert out["baseline_total_damage"] is None
     assert out["within_draft"] is None
     assert out["recommended"]["decks"]
+
+def test_zero_base_recommended_matches_plain_allocation():
+    # no draft: recommended must be the single from-scratch allocation (no
+    # doubled warm pass), bit-identical to allocate_decks with no draft.
+    from app.deck_allocation import allocate_decks
+    r = _full_roster()
+    out = recommend_from_draft(r, BOSS, num_decks=2, draft=None, workers=None)
+    assert out["recommended"] == allocate_decks(r, BOSS, num_decks=2, workers=None)
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -395,10 +403,15 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
     draft = draft or []
     # bench-inclusive recommendation: warm-start from the draft (guarantees
     # >= baseline) and from-scratch (explores all shapes); keep the better.
-    warm = allocate_decks(roster, boss, num_decks=num_decks, draft=draft,
-                          locked=locked, workers=workers)
+    # With no draft, warm == scratch, so run the scratch pass ALONE - this keeps
+    # the zero-base path a single allocate_decks call, bit-identical to today.
     scratch = allocate_decks(roster, boss, num_decks=num_decks, workers=workers)
-    recommended = warm if _combined(warm) >= _combined(scratch) else scratch
+    if draft:
+        warm = allocate_decks(roster, boss, num_decks=num_decks, draft=draft,
+                              locked=locked, workers=workers)
+        recommended = warm if _combined(warm) >= _combined(scratch) else scratch
+    else:
+        recommended = scratch
 
     within_draft = None
     baseline_total = None
