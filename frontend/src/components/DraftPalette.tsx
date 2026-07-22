@@ -1,4 +1,5 @@
-// The draft-editor's unit picker: owned units (from useRoster) intersected
+// The draft-editor's unit picker: owned units (from the active profile's
+// roster) intersected
 // with engine-supported units (GET /api/supported-units), grouped under
 // B1/B2/B3 headers (frontend/README.md "UI scope — draft editor"). A unit
 // already placed in some deck ("used") renders disabled — a unit may sit in

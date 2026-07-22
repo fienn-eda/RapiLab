@@ -97,6 +97,34 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Read-only stat rows (NikkeCard) ---------------------------------------- */
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  flex: 1;
+  min-width: 0;
+}
+
+.stat__label {
+  font-size: 13px;
+  font-weight: 550;
+  color: var(--text-muted);
+}
+
+.stat__value {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Profile switcher -------------------------------------------------------- */
+
+.profile-switcher {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
 /* Fields --------------------------------------------------------------- */
 
 .field {
@@ -252,9 +280,8 @@
   margin-top: 22px;
 }
 
-/* Import / Sync ---------------------------------------------------------- */
+/* Sync ------------------------------------------------------------------- */
 
-.import,
 .sync {
   display: flex;
   flex-direction: column;
@@ -262,30 +289,11 @@
   gap: var(--sp-2);
 }
 
-.import__input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-.import label:focus-within {
-  outline: 2px solid var(--accent);
-  outline-offset: 2px;
-}
-
-.import__message,
 .sync__message {
   font-size: 13px;
   color: var(--text-muted);
 }
 
-.import__error,
 .sync__error {
   font-size: 13px;
   color: var(--danger);

@@ -1,21 +1,27 @@
-// ShiftyPad investment-data input: the user builds their roster by entering one
-// UserNikkeState per owned Nikke, then requests deck recommendations against
-// a boss profile (POST /api/recommend, via RecommendPanel).
+// ShiftyPad investment-data input: the user syncs their roster from
+// blablalink per account (profile), then requests deck recommendations
+// against a boss profile (POST /api/recommend, via RecommendPanel).
 
 import { useMemo } from 'react'
 import './App.css'
-import { useRoster } from './hooks/useRoster'
+import { useProfiles } from './hooks/useProfiles'
 import { getValidRoster } from './types/nikkeDraft'
 import { NikkeCard } from './components/NikkeCard'
+import { ProfileSwitcher } from './components/ProfileSwitcher'
 import { RecommendPanel } from './components/RecommendPanel'
 import { SyncRosterPanel } from './components/SyncRosterPanel'
+import type { NikkeDraft } from './types/nikkeDraft'
+
+// A stable reference so useMemo below doesn't see a "new" roster every render
+// when there's no active profile (a fresh `?? []` literal would).
+const NO_ROSTER: NikkeDraft[] = []
 
 function App() {
-  const { drafts, addNikke, updateNikke, removeNikke, importDrafts } =
-    useRoster()
+  const { state, activeProfile, upsertProfile, switchProfile, deleteProfile } =
+    useProfiles()
 
+  const drafts = activeProfile?.roster ?? NO_ROSTER
   const validRoster = useMemo(() => getValidRoster(drafts), [drafts])
-  const readyCount = validRoster.length
 
   return (
     <div className="app">
@@ -29,43 +35,44 @@ function App() {
         </p>
       </header>
 
-      <main className="app__main">
-        {/* TEMP: single-roster adapter until Task 6 swaps useRoster for the profile store */}
-        <SyncRosterPanel onImport={({ roster }) => { importDrafts(roster, 'collector') }} />
+      <ProfileSwitcher
+        profiles={Object.values(state.profiles)}
+        activeOpenId={state.activeOpenId}
+        onSwitch={switchProfile}
+        onDelete={deleteProfile}
+      />
 
-        {drafts.length === 0 ? (
+      <main className="app__main">
+        <SyncRosterPanel onImport={upsertProfile} />
+
+        {activeProfile === null ? (
           <div className="empty">
-            <p className="empty__text">Your roster is empty.</p>
-            <button type="button" className="btn btn--primary" onClick={addNikke}>
-              + Add your first Nikke
-            </button>
+            <p className="empty__text">
+              No synced account yet. Sync from blablalink above to get started.
+            </p>
           </div>
         ) : (
           <>
             <div className="roster">
               {drafts.map((draft, index) => (
                 <NikkeCard
-                  key={draft.id}
+                  key={draft.id ?? draft.character_slug}
                   draft={draft}
                   index={index}
-                  onChange={(next) => updateNikke(draft.id, next)}
-                  onRemove={() => removeNikke(draft.id)}
                 />
               ))}
             </div>
-            <button type="button" className="btn btn--primary" onClick={addNikke}>
-              + Add Nikke
-            </button>
+            <RecommendPanel roster={validRoster} />
           </>
         )}
-
-        <RecommendPanel roster={validRoster} />
       </main>
 
-      <footer className="app__footer">
-        {readyCount} of {drafts.length}{' '}
-        {drafts.length === 1 ? 'Nikke' : 'Nikkes'} ready
-      </footer>
+      {activeProfile !== null && (
+        <footer className="app__footer">
+          {validRoster.length} of {drafts.length}{' '}
+          {drafts.length === 1 ? 'Nikke' : 'Nikkes'} ready
+        </footer>
+      )}
     </div>
   )
 }
