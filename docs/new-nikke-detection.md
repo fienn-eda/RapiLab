@@ -72,10 +72,20 @@ powershell -ExecutionPolicy Bypass -File C:/Users/fienn/Desktop/NikkeDeckBuilder
 
 1. **스냅샷 갱신** — `cd tools/collect-blablalink && node collect.js --directory --headless --deep`.
    `--deep`은 서브타입이 아직 없는 신규 유닛만 방문한다.
-2. **데이터 수집** — `/collect-nikke <이름>`. 무기 스텁까지 생성된다.
-3. 🔴 **무기 스탯 수동 입력** — dotgg가 2026-05에 멈춰 신규 유닛은 API에 없다. 생성된
-   스텁의 `_todo`를 인게임/나무위키 값으로 채운다(MG·SMG·AR·SG 3개, RL·SR 5개).
-   채우지 않으면 로더가 유닛을 **안전하게 제외**한다(틀린 값이 들어가지 않는다).
+2. **데이터 수집** — **비-시그니처 유닛**: `cd tools/collect-blablalink && node collect.js
+   --nikke <rid|이름> --headless`로 ShiftyPad 원시 번들을 `data/shiftypad/raw/<rid>.json`에
+   받는다. 이어서 `backend/app/shiftypad_normalize.py`의 `normalize_shiftypad`(순수 함수,
+   번들 dict를 받아 dotgg 모양 dict를 반환)를 호출해 그 결과를 `data/shiftypad/<slug>.json`로
+   저장한다. 그 유닛의 manifest에는 `source: "shiftypad"`를 쓴다. 무기 스탯과 스킬1·2·버스트
+   베이스 값까지 이 경로로 채워지므로 다음 단계(무기 스탯 수동 입력)가 필요 없다.
+   **시그니처 무기(dollskills) 버전**은 ShiftyPad가 dollskills를 노출하지 않으므로 기존
+   `/collect-nikke <이름>`(lootandwaifus/dotgg) 경로 + 무기 스텁을 그대로 쓴다 — drake·helm·
+   julia·laplace·miranda·moran·privaty·tove·zwei 9유닛과 동일한 취급이다.
+3. 🔴 **무기 스탯 수동 입력 (시그니처 무기 버전만)** — dotgg가 2026-05에 멈춰 신규 유닛은
+   API에 없다. `/collect-nikke`가 생성한 스텁의 `_todo`를 인게임/나무위키 값으로 채운다
+   (MG·SMG·AR·SG 3개, RL·SR 5개). 채우지 않으면 로더가 유닛을 **안전하게 제외**한다
+   (틀린 값이 들어가지 않는다). 비-시그니처 유닛은 2단계에서 ShiftyPad로 이미 채워졌으므로
+   이 단계를 건너뛴다.
 4. 🔴 **인코딩 판단 승인 1회** — `nikke-skill-encoding` 스킬이 애매한 항목을 한 번에
    모아 제시한다.
 5. **슬러그 맵 등록** — 손댈 필요 없다. 인코딩 시작과 동시에
@@ -86,6 +96,12 @@ powershell -ExecutionPolicy Bypass -File C:/Users/fienn/Desktop/NikkeDeckBuilder
 
 > 스냅샷 갱신·수집·인코딩의 상세는 각각 `collect.js`의 help, `/collect-nikke` 명령,
 > `nikke-skill-encoding` 스킬이 권위다. 위 목록은 순서와 사람이 개입하는 지점만 정리한 것이다.
+
+> **ShiftyPad 한계 — 스킬1·2 쿨다운.** ShiftyPad는 버스트 쿨다운만 노출하고 스킬1·2
+> 쿨다운은 API에 없다(`normalize_shiftypad`는 이를 지어내지 않는다). 로더는 로드 시점에
+> 버스트 쿨다운만 읽으므로 평소엔 문제가 없지만, 스킬1·2가 쿨다운을 쓰는 유닛을 인코딩할
+> 때는 그 값을 ShiftyPad 데이터가 아니라 인게임 UI나 나무위키에서 직접 읽어야 한다(예:
+> julia는 dotgg 기준 스킬1 쿨다운이 20초).
 
 ---
 
@@ -164,3 +180,4 @@ python3 scripts/check_new_nikkes.py --offline <path-to-directory.json>
 | 스케줄 등록/해제/상태 | `scripts/schedule_new_nikke_check.ps1` (help) |
 | 토스트 헬퍼 | `scripts/notify_toast.ps1` (help) |
 | 온보딩 상세 (수집·인코딩) | `/collect-nikke` 명령 · `nikke-skill-encoding` 스킬 |
+| ShiftyPad 단건 수집·정규화 (비-시그니처 유닛) | `tools/collect-blablalink/collect.js --nikke` (help) · `backend/app/shiftypad_normalize.py` (docstring) |
