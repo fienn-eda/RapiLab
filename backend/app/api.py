@@ -203,6 +203,10 @@ def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
         fight_duration=request.boss.fight_duration,
         part_destructible=request.boss.part_destructible,
     )
+    if len(request.draft) > request.num_decks:
+        raise HTTPException(
+            422, f"draft has {len(request.draft)} decks but num_decks is {request.num_decks}")
+
     by_slug = {u.slug: u for u in specs}
     # resolve draft slugs -> specs; unknown/unsupported slug is a client error
     draft, locked = [], set()
@@ -217,7 +221,9 @@ def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
         draft.append(seat)
     seen = [u.slug for deck in draft for u in deck]
     if len(seen) != len(set(seen)):
-        raise HTTPException(422, "a unit appears in more than one draft deck")
+        dups = {s for s in seen if seen.count(s) > 1}
+        raise HTTPException(
+            422, f"slug(s) appear in more than one draft deck: {sorted(dups)}")
 
     try:
         out = recommend_from_draft(specs, boss, num_decks=request.num_decks,

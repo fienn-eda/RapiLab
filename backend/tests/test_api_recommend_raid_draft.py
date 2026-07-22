@@ -44,8 +44,18 @@ def test_draft_referencing_unusable_slug_is_422():
 def test_draft_placing_same_slug_in_two_decks_is_422():
     roster = [_nikke(slug) for slug in FEASIBLE]
     dup_slug = FEASIBLE[0]
-    body = {"roster": roster, "boss": BOSS, "num_decks": 1,
+    body = {"roster": roster, "boss": BOSS, "num_decks": 2,
             "draft": [{"units": [{"slug": dup_slug}]},
                       {"units": [{"slug": dup_slug}]}]}
+    resp = client.post("/api/recommend-raid", json=body)
+    assert resp.status_code == 422
+    assert dup_slug in resp.json()["detail"]
+
+
+def test_draft_longer_than_num_decks_is_422():
+    roster = [_nikke(slug) for slug in FEASIBLE]
+    body = {"roster": roster, "boss": BOSS, "num_decks": 1,
+            "draft": [{"units": [{"slug": FEASIBLE[0]}]},
+                      {"units": [{"slug": FEASIBLE[1]}]}]}
     resp = client.post("/api/recommend-raid", json=body)
     assert resp.status_code == 422
