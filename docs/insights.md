@@ -104,6 +104,25 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - 패리티 하니스 패턴: 새 데이터소스의 파서를 기존 소스 정답지에 대해 **백필 없이** 증명한다. 파서 로직이 유닛마다 같으므로 구조 다양성(6무기타입=충전 vs 탄창, 슬롯 수)을 덮는 소수 픽스처로 충분. 함정: `zip()` 기반 레벨 비교는 파서가 레벨을 적게 내면 공허하게 통과 — 비교 전에 `len==len`을 먼저 단언해야 한다(`backend/tests/test_shiftypad_parity.py`).
 - 관련 결정: `docs/decisions.md`("무기 + 기본스킬 데이터원을 신규 유닛부터 ShiftyPad로 전환").
 
+## `supported_units()` must resolve a slug's metadata the same way `load_nikke_spec` does
+- 발견: 2026-07-22 (draft-based deck allocation, `backend/app/supported_units.py`)
+- The palette endpoint's `supported_units()` had its own `MODE_VARIANTS`-only lookup for a slug's weapon/element/tier metadata, instead of reusing `user_roster.load_nikke_spec`'s resolution order: the skill-value manifest's `data_slug` first, then lootandwaifus, falling back to the manifest's declared dotgg/shiftypad weapon-data source when the lootandwaifus file 404s.
+- A narrower lootandwaifus-only lookup silently drops real encoded units instead of erroring — `julia-signature`, `drake-signature`, `laplace-signature` (whose `data_slug` lives in their own manifest entry, not in `MODE_VARIANTS`) and `privaty` (no lootandwaifus file exists at all; needs the dotgg fallback) all disappeared from the palette with no error, because a missing/mismatched slug just gets skipped rather than raising.
+- Fix (`5e69dce`): mirror `load_nikke_spec`'s resolution order exactly. After the fix, 0/77 `ENCODED_SLUGS` are skipped (previously 4 silently dropped).
+- 교훈: any second reader of the skill-value manifest (a palette, a listing endpoint, a report) needs to resolve metadata through the *same* fallback chain as the loader it's describing — recreating "the common case" of that chain (lootandwaifus only) reproduces the loader's happy path but not its fallbacks, and the failure mode is silent omission, not a crash.
+
+## Deck-allocation unit tests: keep fake rosters under ~1200 shape-combination orderings
+- 발견: 2026-07-22 (draft-based deck allocation, `backend/tests/test_deck_allocation.py`)
+- The allocation-layer unit tests use a fake `@dataclass(frozen=True) class Unit(slug, burst_tier)` plus a monkeypatched `evaluate_deck` (see `patch_scorer` in the test file) — deliberately not real Nikke specs, since "all search/sim calls are stubbed; real sims live in the API end-to-end test" (file docstring).
+- Gotcha: `search_best_decks(roster, boss, ..., sim_budget=1200)` (`deck_search.py`) switches to `prune_candidate_pool` once the number of legal shape-orderings exceeds `sim_budget`, and that path calls `_prior(unit)` = `unit.base_stats["atk"] * unit.weapon_stats["damage_percent"]` — fields the fake `Unit` doesn't have, so a large enough fake roster crashes with an `AttributeError` instead of a clean scoring stub call.
+- 교훈: when writing/extending deck-allocation fixtures with the fake `Unit`, keep the roster small enough that the shape-ordering count for `search_best_decks`/`best_completions` stays under the 1200 `sim_budget` guard, or the stub crashes on the pruning fast-path rather than exercising the intended allocation logic.
+
+## Raid decks are unordered — match result decks to a submitted draft by slug overlap, never by array index
+- 발견: 2026-07-22 (draft-based deck allocation, `DraftResults` per-deck diff, fixed in `68e5e8f`)
+- `recommend_from_draft` (and `allocate_decks` underneath it) picks `_better(scratch, warm)` for the `recommended` tier, and `scratch` may fully repartition the roster into decks that don't correspond 1:1 with the player's submitted deck groupings — deck labels/positions are arbitrary (same boss, same scoring either way), so "deck 1" in the result has no necessary relationship to "deck 1" in the draft.
+- 함정: a naive "per-deck diff vs. what the user submitted" that zips result decks against submitted decks by array index will compare unrelated decks whenever the optimizer reshuffles membership across deck boundaries, producing a diff that's nonsensical (e.g. showing a deck's damage change as if it kept the same 5 units when it didn't).
+- 해법: match each result deck to the submitted deck it overlaps most with by slug set intersection, not by index, before computing a per-deck diff.
+
 ## 공개 디렉토리 점검은 계정 없이 헤드리스로 돌 수 있다; `corporation_sub_type`은 null이 "확인됨"이므로 참/거짓이 아니라 키 존재로 판단해야 한다
 - 발견: 2026-07-21 (신규 니케 출시 자동 탐지, `tools/collect-blablalink/collect.js`)
 - `collect.js --directory --headless`는 로그인 세션 없이 돈다 — 니케 디렉토리는 공개 게임 데이터라, 로그인된 브라우저에 붙는 대신 자체 헤드리스 브라우저를 띄워 blablalink 페이지가 로드하는 네트워크 응답을 엿보는 것만으로 디렉토리 JSON을 식별해낸다(URL 발견용 네트워크 스니핑, 인증 불필요).
