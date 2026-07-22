@@ -53,6 +53,35 @@ def _tier1_seating_valid(units):
     return not any(u.slug in SOLE_TIER1_SLUGS for u in tier1)
 
 
+# Units the player runs as non-bursting buffers ("totems"): their burst is a
+# DPS loss (Modernia's Destroy Mode) or buff-only with no nuke (Velvet), so they
+# should yield the burst to a same-tier ally and provide only their passive /
+# Skill 1-2 value. Encoded as a SEAT rule: they must sit LAST in their tier, so
+# burst_cycle (which fires the leftmost eligible member) hands the burst to a
+# tier-mate, and they only fall back to bursting if every tier-mate is on
+# cooldown.
+#
+# The deck SHAPE is deliberately NOT hard-restricted (Fienn, 2026-07-22). The
+# shape that actually lets them never burst needs enough same-tier allies to
+# cover a burst EVERY Full-Burst cycle - one ally cannot, given the ~40s Burst
+# cooldown (the same reason ALLOWED_SHAPES requires two Burst-3s), so Modernia
+# wants three Burst-3s = (1,1,3) and Velvet two Burst-2s = (1,2,2). Those shapes
+# simply score highest for these units, so the search picks them on its own; a
+# hard shape lock would instead make a roster that cannot form the shape
+# infeasible (no recommendation at all), which is the worse failure.
+_BUFFER_SEAT_SLUGS = {"modernia", "velvet"}
+
+
+def _buffer_seat_valid(ordered_units):
+    """A buffer unit (see _BUFFER_SEAT_SLUGS) must sit LAST in its tier - no
+    same-tier ally after it - so a tier-mate is the leftmost-eligible burster."""
+    for i, unit in enumerate(ordered_units):
+        if unit.slug in _BUFFER_SEAT_SLUGS and any(
+                u.burst_tier == unit.burst_tier for u in ordered_units[i + 1:]):
+            return False
+    return True
+
+
 @dataclass
 class BossProfile:
     element: str | None = None
@@ -101,7 +130,9 @@ def feasible_orderings(roster):
         for order1 in permutations(by_tier[1]):
             for order2 in permutations(by_tier[2]):
                 for order3 in permutations(by_tier[3]):
-                    yield list(order1) + list(order2) + list(order3)
+                    ordered = list(order1) + list(order2) + list(order3)
+                    if _buffer_seat_valid(ordered):
+                        yield ordered
 
 
 def evaluate_deck(ordered_deck, boss: BossProfile):
@@ -155,7 +186,9 @@ def _intra_tier_orderings(combo):
     for o1 in permutations(by_tier[1]):
         for o2 in permutations(by_tier[2]):
             for o3 in permutations(by_tier[3]):
-                yield list(o1) + list(o2) + list(o3)
+                ordered = list(o1) + list(o2) + list(o3)
+                if _buffer_seat_valid(ordered):
+                    yield ordered
 
 
 # Curated two-unit sets that only work together (Fienn, 2026-07-17): candidate

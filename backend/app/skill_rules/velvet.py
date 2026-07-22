@@ -29,8 +29,16 @@ Modeled (DPS-relevant):
 
 Not modeled / deferred:
 - Perfect Execution's own weapon-transformation damage (7% of final ATK per
-  shot for 10 sec) - no weapon-transformation support (same gap as Nayuta's
-  Memory Incineration).
+  shot for 10 sec) - deliberately NOT encoded, though the weapon-transform
+  primitive now exists (Nayuta/Takina/Laplace). Per Fienn (2026-07-22), Velvet
+  is played as a burst-ABSTAINING totem: her value is the Skill 1/2 buffs
+  modeled above (and her out-of-Full-Burst Sticky Fingers self-ramp), and she
+  is not the one bursting, so her burst's transform never fires in practice.
+  The 7%-per-shot mode is also low-value even when it does. The abstention is
+  represented in the deck search: she is pinned to the LAST Burst-2 seat
+  (deck_search._BUFFER_SEAT_SLUGS), so a Burst-2 ally takes the burst and she
+  provides only her Skill 1/2 buffs - a totem - in her best shape ((1,2,2),
+  where the second Burst-2 covers every cycle).
 - Sticky Fingers' enemy-ammo-steal and ammo-pouch fill (non-damage).
 """
 from app.effects import Effect

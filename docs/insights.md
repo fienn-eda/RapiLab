@@ -84,6 +84,13 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - 교훈: **엔진 프리미티브가 표현 가능하다는 것과, 그 표현이 유닛의 실제 최적 운용과 맞다는 것은
   별개다.** 무기변형을 넣기 전에 "이 유닛이 실제로 그 변형을 쓰는가"를 먼저 물어라.
 
+## 같은 버스트 bullet이 변형과 데미지타입 변환을 함께 걸면, 변환은 세그먼트에 `damage_type`으로 고정하라 — 별도 효과에 의존하지 말 것
+- 발견: 2026-07-22 (Takina Inoue의 Suppression Initiated 인코딩)
+- 문제: Takina의 버스트는 한 bullet에서 (a) 무기를 200.64%/발 급사무기로 변형(10초)하고 (b) 그 10초 동안 평타를 진댐으로 변환한다. 이 변형샷이 곧 그녀의 버스트 중 평타이므로, 세그먼트 발사를 기존 self `normal_attacks_deal_true` 효과의 폴백(`normal_attack_type`)에 맡기면 논리적으로 맞아 보인다.
+- 함정: 효과 활성 구간은 **우측 배타적** `[applied_at, applied_at+duration)`(effects.py `_is_active`)이다. Fienn 실측 25발을 `until_shots: 25`로 넣으면 마지막 발이 정확히 t=burst+10(=창 끝)에 놓여 변환 창 **밖**으로 떨어진다 → 25발 중 1발이 진댐이 아닌 일반딜로 잘못 타이핑.
+- 해결: 세그먼트 프로파일에 `damage_type="true"`를 **직접 고정**한다. 변형과 변환이 같은 bullet·같은 10초라 이 샷들이 진댐인 것은 인과적으로 확실하므로, 경계에 취약한 별도 효과에 기대는 것보다 직접 서술이 정확하다. 변형이 버스트 중 평타를 전부 대체하므로(창 안에 base 샷 없음) 이제 잉여가 된 self `normal_attacks_deal_true` 효과는 제거했다 — "모델된 것처럼 보이나 소비자가 없는 효과"를 남기지 않는다.
+- 일반화: **측정 발수가 있으면 `until_shots`(정확), rate×duration 유도는 `end`**. `end` 방식은 `start + k*interval < seg_end` 조건이라 마지막 발이 경계에 딱 걸리면 드랍된다 — Takina를 `end`로 넣었으면 25발이 아니라 24발이 됐다(laplace base가 `end`를 쓴 건 실측 발수가 없어 유도값이었기 때문).
+
 ## Damage formula
 - **The attack/skill coefficient scales the whole Base Damage, not the ATK stat.** A normal attack's "% of ATK" or a skill's "X% of final ATK" multiplies Base Damage *after* defense is subtracted — pass raw summary ATK plus a separate `attack_coefficient` to `calculate_damage`. Folding the coefficient into ATK mis-scales the defense subtraction and any flat ATK (~14% overstatement against a defended boss, and unevenly across Nikkes since coefficients range from ~5% normal attacks to ~8000% bursts, which would skew deck rankings). See `damage_formula.calculate_damage`.
 

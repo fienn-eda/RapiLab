@@ -10,22 +10,21 @@ Modeled (DPS-relevant):
   first fires at t=15 and repeats - fired via the engine's `periodic_rules`
   (see raid_simulator), NOT one of the four event triggers. The rules are
   labeled trigger="periodic" (a label; they're never dispatched by fire_trigger).
-- Suppression Initiated (Burst): converts her normal attacks to True Damage for
-  10 sec (a self `normal_attacks_deal_true` effect the normal-attack pass reads
-  - see damage typing), so during her burst her SR shots benefit from the True
-  Damage buffs above. Plus an on-hit enemy Damage Taken +6.04% debuff.
+- Suppression Initiated (Burst): transforms her weapon into a rapid-fire mode
+  (200.64% of final ATK per shot, 10 sec) whose shots ARE her normal attacks,
+  which the same bullet converts to True Damage for the same 10 sec - modeled as
+  a `weapon_mode_schedules` segment with its shots pinned to True Damage (see
+  `build_suppression_initiated_weapon_mode_schedule`). Plus an on-hit enemy
+  Damage Taken +6.04% debuff. burst_percent=None (the transform is her burst
+  damage, not a single nuke).
 
 Her True Damage buffs (self 35% + squad 140%) only move damage when the deck
 produces a True-Damage instance: she herself contributes it during her 10-sec
-burst window (via the conversion), and any other true-damage dealer benefits.
+burst window (the transform shots are True), and any other true-damage dealer
+benefits.
 
 Not modeled / deferred:
 - Battlefield Control's 2-sec stun (no consumer).
-- Suppression Initiated's weapon transformation ("Changes the weapon in use.
-  Damage: 200.64% of final ATK. Duration: 10 sec") - weapon transformation isn't
-  modeled, and the text is ambiguous whether 200.64% is a one-time nuke or the
-  transformed weapon's per-shot damage, so it's deferred rather than guessed
-  (she's a supporter, so her personal damage is secondary). burst_percent=None.
 - The burst's on-hit Damage Taken +6.04% is "Affects targets hit for 5 sec";
   modeled as a squad enemy debuff for the 10-sec burst window (against a boss,
   "targets hit" is the boss, and she fires throughout the transform) - an
@@ -33,6 +32,12 @@ Not modeled / deferred:
 """
 from app.skill_rules._helpers import buff_rule
 from app.squad_engine import SkillRule
+
+
+# Fienn measured 25 hits across Suppression Initiated's 10-sec transform window
+# (2026-07-22). The count is the anchor (via `until_shots`); the cadence follows
+# from it and the window duration.
+SUPPRESSION_SHOT_COUNT = 25
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -90,9 +95,47 @@ def build_suppression_initiated_rules(values: dict) -> list[SkillRule]:
     window = float(values["description_value_02"])  # transform / true-conversion window (10s)
     on_hit_damage_taken = float(values["description_value_03"]) / 100
 
+    # The burst's "normal attacks deal True Damage" is carried by the transform
+    # segment's shots (pinned True), which ARE her burst-window normal attacks -
+    # see build_suppression_initiated_weapon_mode_schedule. Only the on-hit
+    # squad debuff is an ordinary registered effect.
     return [
         buff_rule("own_burst_activate", [
-            ("normal_attacks_deal_true", 1.0, "self", window),
             ("damage_taken_up", on_hit_damage_taken, "squad", window),
         ]),
     ]
+
+
+def build_suppression_initiated_weapon_mode_schedule(values: dict):
+    """Suppression Initiated's weapon transform: for 10 sec her Sniper Rifle
+    becomes a rapid-fire weapon dealing 200.64% of final ATK per shot. Fienn
+    measured 25 hits across the 10-sec Full Burst window (2026-07-22), so the
+    segment is anchored to that COUNT via `until_shots` - an `end`-bounded
+    window at the same 2.5-shot/sec cadence would place the 25th shot exactly at
+    t+10 and drop it (the base weapon resumes there), leaving 24.
+
+    The shots are pinned to `damage_type="true"`: the same burst bullet converts
+    her normal attacks to True Damage for the same 10 sec, and these transform
+    shots ARE her normal attacks during the window - so her own +35% and squad
+    +140% True Damage buffs land on them. Pinning states this directly rather
+    than leaning on a `normal_attacks_deal_true` effect, whose right-exclusive
+    window would drop that same final boundary shot. "SR" is only the segment's
+    charge archetype; with an explicit `rate_of_fire` the cadence takes no buffs
+    (the measured 25 already includes every in-game modifier)."""
+    suppression = values["suppression_initiated"]
+    damage_percent = float(suppression["description_value_01"])  # 200.64
+    window = float(suppression["description_value_02"])          # 10 sec
+    profile = {
+        "weapon": "SR",
+        "damage_percent": damage_percent,
+        "rate_of_fire": SUPPRESSION_SHOT_COUNT / window,
+        "damage_type": "true",
+    }
+
+    def schedule(context, fight_duration):
+        return [
+            {"start": t, "until_shots": SUPPRESSION_SHOT_COUNT, "profile": profile}
+            for t in context.burst_times.get("takina-inoue", [])
+        ]
+
+    return schedule

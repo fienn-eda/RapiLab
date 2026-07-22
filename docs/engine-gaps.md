@@ -5,7 +5,16 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-20 (**신규 스탯 `element_advantage_grant` — gap #12 원소 우위
+- 마지막 갱신: 2026-07-22 (**무기변형 defer 잔여 배치 종결.** 2026-07-19 세그먼트
+  프리미티브 착지 후에도 "무기변형 미지원"으로 defer돼 있던 유닛들을 닫았다: nayuta·
+  zwei·laplace(2026-07-21) + takina·moran(2026-07-22) 인코딩, modernia·velvet은
+  **편성상 제외**(둘 다 버스트 미사용 운용이라 변형이 발동 안 함 — 엔진 한계가 아니라
+  편성 결정). Takina는 실측 25발 `until_shots` + 변형샷 `damage_type="true"` 고정
+  (같은 bullet의 진댐 변환이 곧 이 샷들), Moran은 무한탄창이라 발수 측정 불가 →
+  엔진 표준 SMG 20/초 프록시(Fienn 승인, E2E +5.54%). 무기변형은 더 이상 열린 갭이
+  아니며, 남은 것은 modernia/velvet의 **버스트 미사용을 엔진에서 강제**(`burst_delay`
+  skip)하는 스윕 셸 재설계 후속뿐. 상세 `docs/decisions.md` 2건.
+  이전 갱신: 2026-07-20 (**신규 스탯 `element_advantage_grant` — gap #12 원소 우위
   게이팅의 부산물 버그 정리.** gap #12에서 `other_elemental_bonus`("Superior Code
   Damage")를 원소 우위 게이팅한 게 이 스탯을 뭉뚱그려 쓰고 있던 **두 개의 서로 다른
   케이스**를 노출시켰다 — (a) "Elemental Advantage Attack Damage ▲ N%" 조건부 버프

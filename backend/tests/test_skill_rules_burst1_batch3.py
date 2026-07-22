@@ -76,7 +76,12 @@ def test_little_mermaid_bubble_debuff_is_a_permanent_squad_enemy_damage_taken():
 
 MORAN = {
     "leave_it_to_me": {"description_value_10": "7.48"},
-    "fair_and_square": {"description_value_09": "42.57", "description_value_10": "10"},
+    "fair_and_square": {
+        "description_value_01": "14.7",   # weapon-transform damage % per shot
+        "description_value_04": "10",     # unlimited-ammo / transform window sec
+        "description_value_09": "42.57",  # squad ATK % of caster
+        "description_value_10": "10",     # ATK duration
+    },
     "caster_atk": 300000,
 }
 
@@ -88,6 +93,27 @@ def test_moran_squad_cdr_and_caster_scaled_flat_atk():
     assert reg.drain_pulses("burst_cooldown_reduction_sec")[0].value == 7.48
     fire_trigger("own_burst_activate", rules, deck_ctx("moran"), reg, 0.0)
     assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == round(300000 * 0.4257, 2)
+
+
+def test_moran_transform_is_an_unlimited_ammo_smg_at_canonical_rate():
+    from app.attack_rate import rate_of_fire_for_weapon
+    from app.skill_rules.moran import build_fair_and_square_weapon_mode_schedule
+
+    schedule = build_fair_and_square_weapon_mode_schedule(MORAN)
+    ctx = deck_ctx("moran")
+    ctx.burst_times["moran"] = [10.0, 60.0]
+
+    segments = schedule(ctx, 180.0)
+    assert [seg["start"] for seg in segments] == [10.0, 60.0]
+    assert [seg["end"] for seg in segments] == [20.0, 70.0]  # 10 sec window
+
+    profile = segments[0]["profile"]
+    assert profile["weapon"] == "SMG"
+    assert profile["damage_percent"] == 14.7
+    # infinite ammo -> no measured count; anchored to the canonical SMG rate.
+    assert profile["rate_of_fire"] == rate_of_fire_for_weapon("SMG") == 20.0
+    assert "until_shots" not in segments[0]  # end-bounded, not a measured count
+    assert "damage_type" not in profile      # ordinary attack damage, no true conversion
 
 
 TOVE = {
