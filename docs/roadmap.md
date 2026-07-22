@@ -800,8 +800,9 @@
       힐러 명단 유도 스크립트 신설) · liberalio(차지속도 면역) · mana(보류 사유만 정정).
       엔진 확장 2건: `deck_contains_any` · `EffectRegistry.set_external_stat_immunity`.
       `nikke-skill-encoding` SKILL.md의 "차지속도는 inert"(Phase S 이전 기술) 정정 포함.
-- [ ] **배치 ② 무기변형 잔여 (3/7 완료)** — 2026-07-19에 `weapon_mode_schedules` 세그먼트가
-      착지했는데도 "무기변형 미지원"을 근거로 defer된 유닛들.
+- [x] **배치 ② 무기변형 잔여 (완료 2026-07-22)** — 2026-07-19에 `weapon_mode_schedules` 세그먼트가
+      착지했는데도 "무기변형 미지원"을 근거로 defer된 유닛들. 인코딩 5(nayuta·zwei·laplace·
+      takina·moran) + 편성상 제외 2(modernia·velvet).
       **`nayuta` 완료(2026-07-21, E2E +18.07%, ⚠→✅)** — 탄약 무한이라 세그먼트의
       no-reload 제약이 무효였고, "Fixed at 1.8 sec"은 `rate_of_fire`로 표현.
       dotgg→lootandwaifus 소스 이관 필요했음.
@@ -815,9 +816,17 @@
       보스에서 무가치). 그래서 실전은 **버스트 미사용 평타 딜러**((1,1,3) 맨 오른쪽). 세그먼트를
       넣으면 엔진이 버스트를 강제해 ~12% 저평가(스윕 확인). 현재 base MG 평타 유지가 오히려
       버스트 미사용을 정확히 근사(Destroy Mode·무한탄약·FB+5s 전부 안 쓰는 버스트에서만 발동).
-      **남은 3명은 발사 속도 실측이 필요**(원문에 데미지·지속시간만, 발수 없음):
-      `takina-inoue`(200.64%, 10초, 노멀공격 true damage) · `moran`(14.7%, 10초, 무한탄약) ·
-      `velvet`(7%, 10초, 저가치).
+      **`takina-inoue` 완료(2026-07-22)** — Fienn 실측 FB 10초 25타 → `until_shots: 25`
+      (end 방식이면 마지막 발이 t+10 경계로 떨어져 24발). 변형샷을 `damage_type="true"`로
+      고정(같은 버스트 bullet이 평타를 진댐 변환, 이 샷들이 곧 그 평타) → 자35%·아군140%
+      진댐 버프가 여기 실림. 이제 잉여가 된 self `normal_attacks_deal_true` 제거.
+      **`moran` 완료(2026-07-22, E2E +5.54%)** — AR→무한탄창 SMG, 14.7%/발, 10초. 무한탄창이라
+      인게임 발수 측정 불가·가이드도 없음 → Fienn 승인 하에 **엔진 표준 SMG 발사속도(20/초)**를
+      앵커로(변형이 SMG이므로 실측 무기클래스 상수 재사용, 발명 아님). `end` 방식 ~200발.
+      dotgg dollskills[2]에 전 슬롯 존재해 소스 이관 불필요.
+      **`velvet`는 세그먼트를 넣지 않기로 확정(Fienn 2026-07-22)** — 실전은 버스트 미사용
+      **토템**(Skill 1/2 버프만), 버스트 변형(7%/발, 저가치)은 발동 안 함. Modernia와 동류.
+      "무기변형 미지원" defer 사유가 stale이었으므로 사유를 편성 결정으로 정정.
       **주의: 세그먼트는 재장전을 하지 않는다** — 창 길이 > 탄창 지속이면 과대평가
       (Nayuta·moran처럼 무한탄약이 걸린 변형은 이 함정이 없다).
 - [ ] **후속: Modernia 버스트 미사용 편성** — Fienn 확인(2026-07-21): Modernia는 (1,1,3)

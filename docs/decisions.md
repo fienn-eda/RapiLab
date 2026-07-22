@@ -5,6 +5,24 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 측정 불가한 무한탄창 무기변형은 엔진 표준 무기 발사속도를 앵커로 — Moran
+
+- Date: 2026-07-22
+- Context: 무기변형 잔여 배치의 마지막 3명(takina·moran·velvet)을 닫는 과정. Moran의 Fair and Square!(버스트)는 10초간 AR을 **무한탄창 SMG**로 바꿔 14.7%/발을 쏜다. 다른 모든 변형은 Fienn 실측 발수(또는 charge time·탄창캡 같은 원문 슬롯)를 앵커로 세그먼트를 만들었지만, Moran은 **탄창이 무한이라 인게임에서 발수를 세는 것 자체가 비현실적**이고(Fienn), prydwen·nikke.gg·lootandwaifus 어느 가이드도 초당 발사수를 싣지 않는다.
+- Alternatives considered: (a) 변형을 계속 defer — 측정이 원천적으로 어려운데 무기한 대기가 된다. (b) 발사속도를 임의 추정 — CLAUDE.md "기술 세부를 지어내지 말라" 위반. (c) 변형이 **실제로 SMG**라는 점을 이용해 엔진의 정규 SMG 발사속도(`RATE_OF_FIRE_60FPS["SMG"]` = 20발/초, Fienn이 60fps로 측정해둔 무기클래스 상수)를 앵커로 쓴다. 채택(Fienn 승인).
+- Decision: (c). `weapon="SMG"`, `rate_of_fire=rate_of_fire_for_weapon("SMG")`인 `end`-바운드 세그먼트(10초 창 ≈ 200발). 측정 발수가 없으므로 `until_shots`가 아니라 rate×duration 유도(laplace base 선례와 동일). 무한탄창이라 세그먼트의 no-reload 특성이 정확히 부합. dotgg dollskills[2]에 전 슬롯(value_01 변형딜·value_04 무한탄창 지속)이 이미 있어 소스 이관 불필요.
+- Why: 20발/초는 **발명한 숫자가 아니라 이미 측정된 무기클래스 상수의 재사용**이다 — 변형 무기가 SMG인 이상 표준 SMG 케이던스를 프록시로 쓰는 것은 근거 있는 근사다. 명시적 `rate_of_fire`라 케이던스 버프를 받지 않는 것도 다른 모든 측정앵커 세그먼트와 동일하며, 이미 불확실한 프록시 위에 공격속도 버프를 얹어 불확실성을 키우지 않는다. Moran은 Defender라 개인딜은 부차적이라 리스크도 낮다.
+- Consequences: 고정 셸 E2E에서 Moran 개인 **+5.54%**(603.1M → 636.6M), 나머지 76개 슬러그 불변(격리 확인). docstring에 "표준 SMG 케이던스 프록시, 실측 시 수정" 명시. 무기변형 잔여 배치는 이로써 **인코딩 5 + 편성상 제외 2로 종결**.
+
+## 버스트 미사용 편성 유닛의 무기변형은 인코딩하지 않는다 — Velvet(+ Modernia 선례 재확인)
+
+- Date: 2026-07-22
+- Context: Velvet의 Perfect Execution(버스트)에는 7%/발·10초 무기변형이 달려 있고, 모듈 도크스트링은 이를 "무기변형 미지원(Nayuta와 같은 갭)"으로 defer해 왔다. 그러나 그 사유는 이제 **stale**이다 — `weapon_mode_schedules`는 2026-07-19에 착지했고 이 배치에서 nayuta·zwei·laplace·takina·moran으로 실증됐다. Fienn: Velvet은 실전에서 **버스트를 쓰지 않고 Skill 1/2 버프만 활용하는 토템**으로 운용된다.
+- Alternatives considered: (a) 프리미티브가 있으니 그냥 변형 세그먼트를 인코딩한다 — 엔진이 그녀의 버스트를 발동시킬 때만 유효한데, 실전 편성에서 그녀는 버스트를 양보하므로 발동하지 않는 딜을 모델링하는 셈. 게다가 7%/발은 저가치. (b) defer는 유지하되 사유를 정정. 채택.
+- Decision: (b). 변형을 인코딩하지 않되, defer 사유를 "무기변형 미지원"(stale)에서 **"버스트 미사용 토템 편성이라 변형이 발동 안 함"**(Fienn 2026-07-22)으로 교체. 이는 Modernia(2026-07-21, 버스트가 DPS 손해라 (1,1,3) 맨 오른쪽 버스트 미사용)와 **정확히 같은 부류의 결정**이다 — "유닛의 충실한 모델은 그 유닛이 실제로 취하는 편성 상태"라는 원칙.
+- Why: defer 메모는 작성 당일의 엔진에 대한 주장이라는 기록된 교훈(insights)을 따라, 프리미티브가 생긴 뒤에도 남은 defer는 사유를 재검토해야 한다. Velvet의 경우 진짜 이유는 엔진 한계가 아니라 편성이므로, 그 사실을 명시하는 게 다음 사람에게 정확하다.
+- Consequences: 코드 동작 변화 없음(문서·사유만 정정). Modernia와 Velvet 둘 다 **버스트 미사용을 엔진에서 강제하는 방법**(영구 `burst_delay` skip)은 여전히 스윕 셸 재설계가 필요한 공통 후속으로 남는다(로드맵 추적). 무기변형 갭 소비자 명단에서 두 명은 "편성상 제외"로 분류.
+
 ## 쿨다운 스킬의 듀티사이클 지속딜은 `scheduled_nukes`의 스케줄 콜백으로 — 전용 프리미티브 불필요
 
 - Date: 2026-07-21
