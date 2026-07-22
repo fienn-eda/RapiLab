@@ -59,19 +59,56 @@ export const MIN_DECK_ROSTER_SIZE = 5
 // different from /api/recommend — that endpoint ranks alternatives for ONE
 // deck; this one returns a partition the player fields all at once (no Nikke
 // appears in two decks).
+// Draft-based raid seeding (frontend/README.md "Draft-based raid
+// recommendation"): the player seeds decks with key units and the engine
+// fills/optimizes the rest. Membership only — seat position is NOT burst
+// order, the engine assigns it. This is the WIRE shape POST
+// /api/recommend-raid expects; the editor's own state shape lives in
+// types/draft.ts (DraftEditor.tsx's toRequestDraft converts between them).
+export interface DraftUnit {
+  slug: string
+  locked: boolean // default false; true = engine must keep this unit in this deck
+}
+
+export interface DraftDeck {
+  units: DraftUnit[] // 0..5 units
+}
+
 export interface RecommendRaidRequest {
   roster: UserNikkeState[]
   boss: BossProfile
   num_decks?: number // int, 1–5, default 5
+  draft?: DraftDeck[] // optional; omitted or [] = zero-base behavior (no draft seeding)
+}
+
+// A raid deck additionally reports which of its slugs were pinned by the
+// caller's draft (locked units the engine kept) — a draft-only concept, not
+// part of the shared DeckRecommendation shape /api/recommend also uses.
+export interface RaidDeck extends DeckRecommendation {
+  pinned_slugs: string[]
+}
+
+// The best allocation using ONLY the drafted units (no bench) — present only
+// when the submitted draft is COMPLETE (draft.length === num_decks and every
+// drafted deck has exactly 5 units).
+export interface DraftAllocation {
+  decks: RaidDeck[]
+  combined_total_damage: number
+  leftover_slugs: string[]
 }
 
 export interface RecommendRaidResponse {
-  decks: DeckRecommendation[] // one entry per allocated deck, in allocation
+  decks: RaidDeck[] // one entry per allocated deck, in allocation
   // order (NOT ranked alternatives) — may be fewer than num_decks when the
-  // roster can't fill more feasible decks
+  // roster can't fill more feasible decks; this is the bench-inclusive
+  // RECOMMENDED tier
   combined_total_damage: number // sum over decks
   excluded_slugs: string[] // same meaning as /api/recommend
   leftover_slugs: string[] // usable units the allocation left out (sorted)
+  within_draft: DraftAllocation | null // non-null only for a COMPLETE draft
+  baseline_total_damage: number | null // the user's exact drafted groupings scored;
+  // non-null only for a COMPLETE draft. Monotone guarantee (complete draft):
+  // baseline_total_damage <= sum(within_draft.decks.total_damage) <= combined_total_damage
 }
 
 export const MIN_NUM_DECKS = 1

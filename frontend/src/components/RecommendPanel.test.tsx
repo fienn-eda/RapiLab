@@ -149,6 +149,8 @@ describe('RecommendPanel raid mode', () => {
       combined_total_damage: 0,
       excluded_slugs: [],
       leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
     })
 
     render(<RecommendPanel roster={fullRoster} />)
@@ -174,12 +176,14 @@ describe('RecommendPanel raid mode', () => {
     const user = userEvent.setup()
     vi.mocked(recommendRaidDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40 },
-        { deck: ['f', 'g', 'h', 'i', 'j'], total_damage: 80, burst_damage: 50, normal_attack_damage: 30 },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, pinned_slugs: [] },
+        { deck: ['f', 'g', 'h', 'i', 'j'], total_damage: 80, burst_damage: 50, normal_attack_damage: 30, pinned_slugs: [] },
       ],
       combined_total_damage: 180,
       excluded_slugs: [],
       leftover_slugs: ['k'],
+      within_draft: null,
+      baseline_total_damage: null,
     })
 
     render(<RecommendPanel roster={fullRoster} />)
@@ -207,7 +211,14 @@ describe('RecommendPanel raid mode', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(/1–2 minutes/)
     expect(screen.getByRole('button', { name: /allocating/i })).toBeDisabled()
 
-    resolveRequest({ decks: [], combined_total_damage: 0, excluded_slugs: [], leftover_slugs: [] })
+    resolveRequest({
+      decks: [],
+      combined_total_damage: 0,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+    })
     await waitFor(() =>
       expect(screen.queryByRole('status')).not.toBeInTheDocument(),
     )

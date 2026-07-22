@@ -3,6 +3,10 @@
 // ~1–2 minutes (thousands of 180s simulations), per frontend/README.md's
 // latency warning. Swap in via VITE_RECOMMEND_API=live; see recommendRaid.ts,
 // the only module that chooses between this and the dev mock.
+//
+// `request` is serialized as-is, so the optional `draft` field (frontend/
+// README.md "Draft-based raid recommendation") flows through automatically
+// whenever a caller includes it — no special-casing needed here.
 
 import type { RecommendRaidRequest, RecommendRaidResponse } from '../types/recommend'
 import { RecommendApiError } from './recommendApiError'

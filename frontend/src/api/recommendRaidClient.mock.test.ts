@@ -100,4 +100,62 @@ describe('mockRecommendRaidDecks', () => {
     const { decks } = await promise
     expect(decks).toHaveLength(5)
   })
+
+  it('returns null within_draft/baseline_total_damage when no draft is submitted', async () => {
+    const request = baseRequest({
+      roster: Array.from({ length: 10 }, (_, i) => nikke(`slug-${i}`)),
+      num_decks: 2,
+    })
+    const promise = mockRecommendRaidDecks(request)
+    await vi.runAllTimersAsync()
+    const { within_draft, baseline_total_damage, decks } = await promise
+    expect(within_draft).toBeNull()
+    expect(baseline_total_damage).toBeNull()
+    expect(decks.every((deck) => deck.pinned_slugs)).toBe(true)
+  })
+
+  it('returns null within_draft/baseline_total_damage for an incomplete draft', async () => {
+    const request = baseRequest({
+      roster: Array.from({ length: 10 }, (_, i) => nikke(`slug-${i}`)),
+      num_decks: 2,
+      draft: [{ units: [{ slug: 'slug-0', locked: false }] }],
+    })
+    const promise = mockRecommendRaidDecks(request)
+    await vi.runAllTimersAsync()
+    const { within_draft, baseline_total_damage } = await promise
+    expect(within_draft).toBeNull()
+    expect(baseline_total_damage).toBeNull()
+  })
+
+  it('returns non-null within_draft/baseline_total_damage for a complete draft, honoring the monotone guarantee', async () => {
+    const roster = Array.from({ length: 10 }, (_, i) => nikke(`slug-${i}`))
+    const request = baseRequest({
+      roster,
+      num_decks: 2,
+      draft: [
+        { units: roster.slice(0, 5).map((n) => ({ slug: n.character_slug, locked: false })) },
+        { units: roster.slice(5, 10).map((n) => ({ slug: n.character_slug, locked: false })) },
+      ],
+    })
+    const promise = mockRecommendRaidDecks(request)
+    await vi.runAllTimersAsync()
+    const { within_draft, baseline_total_damage, combined_total_damage } = await promise
+    expect(within_draft).not.toBeNull()
+    expect(baseline_total_damage).not.toBeNull()
+    expect(baseline_total_damage!).toBeLessThanOrEqual(within_draft!.combined_total_damage)
+    expect(within_draft!.combined_total_damage).toBeLessThanOrEqual(combined_total_damage)
+  })
+
+  it('marks a locked draft slug as pinned in the recommended decks', async () => {
+    const roster = Array.from({ length: 10 }, (_, i) => nikke(`slug-${i}`))
+    const request = baseRequest({
+      roster,
+      num_decks: 2,
+      draft: [{ units: [{ slug: 'slug-0', locked: true }] }],
+    })
+    const promise = mockRecommendRaidDecks(request)
+    await vi.runAllTimersAsync()
+    const { decks } = await promise
+    expect(decks.some((deck) => deck.pinned_slugs.includes('slug-0'))).toBe(true)
+  })
 })
