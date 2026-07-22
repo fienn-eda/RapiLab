@@ -30,6 +30,12 @@ describe('buildBookmarklet', () => {
     }
   })
 
+  it('GetUserProfileBasicInfo를 호출하고 payload에 open_id·nickname을 싣는다', () => {
+    expect(source).toContain('GetUserProfileBasicInfo')
+    expect(source).toContain('open_id:')
+    expect(source).toContain('nickname:')
+  })
+
   it('area 81과 blablalink origin 가드를 포함한다', () => {
     expect(source).toContain('nikke_area_id:81')
     expect(source).toContain(BLABLALINK_ORIGIN)

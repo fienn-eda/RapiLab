@@ -56,7 +56,9 @@ try{
  const owned=(await call('GetUserCharacters',{...base})).characters||[];
  const detail=await call('GetUserCharacterDetails',{...base,name_codes:owned.map(c=>c.name_code)});
  const outpost=await call('GetUserProfileOutpostInfo',{...base});
- payload={owned:owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]};
+ const basic=await call('GetUserProfileBasicInfo',{...base});
+ const nick=(basic&&(basic.nickname||basic.nick_name))||'';
+ payload={open_id:'${openId}',nickname:nick,owned:owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]};
  send()
 }catch(err){
  window.removeEventListener('message',h);
