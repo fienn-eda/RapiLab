@@ -395,6 +395,21 @@
   `tsc --noEmit`이 no-op이던 함정(README 교정 + 숨어 있던 테스트 타입에러 3건).
   97초→1분 미만 후속 최적화(스왑 배치평가/예산 축소)는 **유저 피드백 생길 때까지
   보류 확정**(Fienn, 2026-07-17 — `decisions.md` 참고). Phase 5 종결.
+- **초안 기반 5덱 최적화 완료 (2026-07-23):** 유저가 초안(부분/완성 편성)을 넣으면
+  엔진이 빈 자리를 채우고 순서를 교정. 유닛은 **잠금(반드시 그 덱 유지)** 또는 **유연
+  (warm-start 힌트)**. 백엔드: 완성 프리미티브 `best_completions`(고정 유닛 포함 최선의
+  덱, 전 티어·전 shape) + `allocate_decks(draft, locked)`(시드 완성 + 스왑 락 마스크,
+  `draft=None`이면 비트 동일) + `recommend_from_draft`(3단: baseline ≤ within_draft ≤
+  recommended를 **구조적으로 보장** — from-scratch도 락 존중, within_draft를 recommended
+  max에 접음) + `/api/recommend-raid`에 `draft` 배선(additive: `pinned_slugs`·
+  `within_draft`·`baseline_total_damage`, 완성 draft에서만 non-null) + `GET
+  /api/supported-units`(팔레트용, registry+manifest 조립으로 **0/77 스킵**). 프론트:
+  팔레트(보유∩지원, B1/B2/B3 그룹, 초상화/칩) + 5×5 편성기(락 토글·재사용금지) + 3단
+  결과(덱 diff는 슬러그 겹침 매칭). 초상화는 lootandwaifus `data-default-src`에서 로컬
+  다운로드(`scripts/download_portraits.py`, manifest 계약). **실측(TestClient, 실데이터):
+  단조 2.20B ≤ 2.66B ≤ 4.07B, 77/77 usable, 완성-draft 5덱 202초**(최대 4회 할당 경로).
+  `gauge_charge_time`/`mode`는 CDR-누수없음·수동 가정으로 미노출. spec/plan:
+  `docs/superpowers/{specs,plans}/2026-07-22-*draft*`. 백엔드 1182 · 프론트 Vitest 207.
 
 ### Phase 6 — 유저 데이터 입력 UI 🔄
 - React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
