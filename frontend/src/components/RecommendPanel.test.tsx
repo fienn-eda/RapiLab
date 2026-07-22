@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RecommendPanel } from './RecommendPanel'
@@ -10,9 +10,16 @@ vi.mock('../api/recommend', () => ({
 vi.mock('../api/recommendRaid', () => ({
   recommendRaidDecks: vi.fn(),
 }))
+vi.mock('../api/supportedUnits', () => ({
+  getSupportedUnits: vi.fn(),
+}))
+vi.mock('../hooks/usePortraitManifest', () => ({
+  usePortraitManifest: () => ({ portraitFor: () => null }),
+}))
 
 import { recommendDecks } from '../api/recommend'
 import { recommendRaidDecks } from '../api/recommendRaid'
+import { getSupportedUnits } from '../api/supportedUnits'
 
 const nikke = (slug: string): UserNikkeState => ({
   character_slug: slug,
@@ -26,9 +33,17 @@ const nikke = (slug: string): UserNikkeState => ({
 
 const fullRoster = ['a', 'b', 'c', 'd', 'e'].map(nikke)
 
+beforeEach(() => {
+  // Draft mode always fetches the supported-unit list (for the palette),
+  // regardless of which mode a given test exercises; default to empty so
+  // single/raid-mode tests don't need to know about it.
+  vi.mocked(getSupportedUnits).mockResolvedValue([])
+})
+
 afterEach(() => {
   vi.mocked(recommendDecks).mockReset()
   vi.mocked(recommendRaidDecks).mockReset()
+  vi.mocked(getSupportedUnits).mockReset()
 })
 
 describe('RecommendPanel', () => {
@@ -236,5 +251,66 @@ describe('RecommendPanel raid mode', () => {
     await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
 
     expect(await screen.findByText('No feasible deck from the usable roster.')).toBeInTheDocument()
+  })
+})
+
+describe('RecommendPanel draft mode', () => {
+  const supportedUnits = ['a', 'b', 'c', 'd', 'e'].map((slug, i) => ({
+    slug,
+    name: slug.toUpperCase(),
+    burstTier: ((i % 3) + 1) as 1 | 2 | 3,
+    element: 'Iron' as const,
+  }))
+
+  it('sends the built draft to the raid endpoint', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+    vi.mocked(recommendRaidDecks).mockResolvedValue({
+      decks: [],
+      combined_total_damage: 0,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+    })
+
+    render(<RecommendPanel roster={fullRoster} />)
+    await user.click(screen.getByLabelText(/draft-based/i))
+
+    await user.click(await screen.findByRole('button', { name: /^A /i }))
+    await user.click(screen.getByRole('button', { name: /^B /i }))
+    await user.click(screen.getByRole('button', { name: /optimize draft/i }))
+
+    expect(recommendRaidDecks).toHaveBeenCalledWith({
+      roster: fullRoster,
+      boss: {
+        element: null,
+        core_hittable: false,
+        enemy_def: 0,
+        fight_duration: 180,
+        part_destructible: false,
+      },
+      num_decks: 5,
+      draft: [
+        { units: [{ slug: 'a', locked: false }, { slug: 'b', locked: false }] },
+      ],
+    })
+  })
+
+  it('shows the backend error message on a failed draft submission (infeasible draft)', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+    const { RecommendApiError } = await import('../api/recommendApiError')
+    vi.mocked(recommendRaidDecks).mockRejectedValue(
+      new RecommendApiError(422, { detail: 'draft references unusable slug: z' }),
+    )
+
+    render(<RecommendPanel roster={fullRoster} />)
+    await user.click(screen.getByLabelText(/draft-based/i))
+    await user.click(screen.getByRole('button', { name: /optimize draft/i }))
+
+    expect(
+      await screen.findByText('draft references unusable slug: z'),
+    ).toBeInTheDocument()
   })
 })

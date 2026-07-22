@@ -1,16 +1,20 @@
-// Boss-profile input + "Recommend decks" action. Two modes share the same
-// boss profile: single deck (POST /api/recommend, ranked alternatives) and
-// raid allocation (POST /api/recommend-raid, a partition of disjoint decks
-// fielded together). Only one mode's request is ever in flight.
+// Boss-profile input + "Recommend decks" action. Three modes share the same
+// boss profile: single deck (POST /api/recommend, ranked alternatives), raid
+// allocation (POST /api/recommend-raid, a partition of disjoint decks fielded
+// together), and draft-based raid allocation (the same endpoint, seeded with
+// the player's own key units via `draft` — frontend/README.md "Draft-based
+// raid recommendation"). Only one mode's request is ever in flight.
 
-import { useId, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { useRecommend } from '../hooks/useRecommend'
 import { useRecommendRaid } from '../hooks/useRecommendRaid'
+import { useSupportedUnits } from '../hooks/useSupportedUnits'
 import {
   makeDefaultBossProfileDraft,
   validateBossProfileDraft,
   type BossProfileDraft,
 } from '../types/bossProfileDraft'
+import { makeEmptyDraft, MAX_DRAFT_SEATS_PER_DECK, type Draft } from '../types/draft'
 import {
   DEFAULT_NUM_DECKS,
   MAX_NUM_DECKS,
@@ -22,6 +26,9 @@ import {
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
 import { DeckResults } from './DeckResults'
+import { DraftEditor, placeUnit, toRequestDraft } from './DraftEditor'
+import { DraftPalette } from './DraftPalette'
+import { DraftResults } from './DraftResults'
 import { RaidResults } from './RaidResults'
 
 interface RecommendPanelProps {
@@ -29,7 +36,7 @@ interface RecommendPanelProps {
   roster: UserNikkeState[]
 }
 
-type RecommendMode = 'single' | 'raid'
+type RecommendMode = 'single' | 'raid' | 'draft'
 
 const NUM_DECKS_OPTIONS = Array.from(
   { length: MAX_NUM_DECKS - MIN_NUM_DECKS + 1 },
@@ -41,11 +48,22 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
   const [numDecks, setNumDecks] = useState(DEFAULT_NUM_DECKS)
   const [draft, setDraft] = useState<BossProfileDraft>(makeDefaultBossProfileDraft())
   const [touched, setTouched] = useState(false)
+  const [draftValue, setDraftValue] = useState<Draft>(() => makeEmptyDraft(DEFAULT_NUM_DECKS))
+  const [submittedDraft, setSubmittedDraft] = useState<Draft>()
   const numDecksId = useId()
 
   const single = useRecommend()
   const raid = useRecommendRaid()
   const active = mode === 'single' ? single : raid
+  const supportedUnits = useSupportedUnits()
+
+  // The editor always shows exactly numDecks columns; growing/shrinking that
+  // selector resizes the draft, preserving already-placed decks by index.
+  useEffect(() => {
+    setDraftValue((current) => ({
+      decks: Array.from({ length: numDecks }, (_, i) => current.decks[i] ?? []),
+    }))
+  }, [numDecks])
 
   const { errors, value: bossProfile } = useMemo(
     () => validateBossProfileDraft(draft),
@@ -59,6 +77,20 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
   const rosterTooSmall = roster.length < MIN_DECK_ROSTER_SIZE
   const canSubmit = !rosterTooSmall && !!bossProfile && active.status !== 'loading'
 
+  const ownedSlugs = useMemo(() => roster.map((nikke) => nikke.character_slug), [roster])
+  const usedSlugs = useMemo(
+    () => draftValue.decks.flatMap((seats) => seats.map((seat) => seat.slug)),
+    [draftValue],
+  )
+
+  const handlePick = (slug: string) => {
+    const targetDeckIndex = draftValue.decks.findIndex(
+      (seats) => seats.length < MAX_DRAFT_SEATS_PER_DECK,
+    )
+    if (targetDeckIndex === -1) return
+    setDraftValue((current) => placeUnit(current, targetDeckIndex, slug))
+  }
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setTouched(true)
@@ -66,8 +98,17 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
     if (mode === 'single') {
       const request: RecommendRequest = { roster, boss: bossProfile }
       void single.submit(request)
-    } else {
+    } else if (mode === 'raid') {
       const request: RecommendRaidRequest = { roster, boss: bossProfile, num_decks: numDecks }
+      void raid.submit(request)
+    } else {
+      const request: RecommendRaidRequest = {
+        roster,
+        boss: bossProfile,
+        num_decks: numDecks,
+        draft: toRequestDraft(draftValue),
+      }
+      setSubmittedDraft(draftValue)
       void raid.submit(request)
     }
   }
@@ -77,9 +118,13 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
       ? active.status === 'loading'
         ? 'Recommending…'
         : 'Recommend decks'
-      : active.status === 'loading'
-        ? 'Allocating…'
-        : 'Allocate raid decks'
+      : mode === 'raid'
+        ? active.status === 'loading'
+          ? 'Allocating…'
+          : 'Allocate raid decks'
+        : active.status === 'loading'
+          ? 'Optimizing…'
+          : 'Optimize draft'
 
   return (
     <section className="card" aria-label="Deck recommendation">
@@ -113,9 +158,23 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
               Raid allocation
               <span className="group__hint"> — multiple disjoint decks fielded together</span>
             </label>
+            <label className="radio">
+              <input
+                type="radio"
+                name="recommend-mode"
+                value="draft"
+                checked={mode === 'draft'}
+                onChange={() => setMode('draft')}
+              />
+              Draft-based optimization
+              <span className="group__hint">
+                {' '}
+                — seed decks with your own key units, the engine fills/optimizes the rest
+              </span>
+            </label>
           </div>
 
-          {mode === 'raid' && (
+          {mode !== 'single' && (
             <div className="field">
               <label className="field__label" htmlFor={numDecksId}>
                 Number of decks
@@ -136,6 +195,25 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
           )}
         </fieldset>
 
+        {mode === 'draft' && (
+          <fieldset className="group">
+            <legend className="group__legend">Draft</legend>
+            <p className="group__hint">
+              Seats are membership only — the engine assigns burst roles.
+              Click a unit below to place it in the next open deck; lock a
+              seat to force the engine to keep it there.
+            </p>
+            {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
+            <DraftPalette
+              ownedSlugs={ownedSlugs}
+              supportedUnits={supportedUnits.units}
+              usedSlugs={usedSlugs}
+              onPick={handlePick}
+            />
+            <DraftEditor numDecks={numDecks} value={draftValue} onChange={setDraftValue} />
+          </fieldset>
+        )}
+
         <BossProfileField value={draft} errors={touched ? errors : {}} onChange={setDraft} />
 
         {rosterTooSmall && (
@@ -149,10 +227,11 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
         </button>
       </form>
 
-      {mode === 'raid' && raid.status === 'loading' && (
+      {mode !== 'single' && raid.status === 'loading' && (
         <p className="recommend-form__progress" role="status">
-          Allocating raid decks — this runs thousands of simulations and typically takes
-          1–2 minutes. It&rsquo;s still working; the button will re-enable when it&rsquo;s done.
+          {mode === 'raid' ? 'Allocating raid decks' : 'Optimizing your draft'} — this runs
+          thousands of simulations and typically takes 1–2 minutes. It&rsquo;s still working; the
+          button will re-enable when it&rsquo;s done.
         </p>
       )}
 
@@ -161,7 +240,7 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
           {single.error}
         </p>
       )}
-      {mode === 'raid' && raid.status === 'error' && (
+      {mode !== 'single' && raid.status === 'error' && (
         <p className="field__error" role="alert">
           {raid.error}
         </p>
@@ -176,6 +255,17 @@ export function RecommendPanel({ roster }: RecommendPanelProps) {
           combinedTotalDamage={raid.combinedTotalDamage}
           excludedSlugs={raid.excludedSlugs}
           leftoverSlugs={raid.leftoverSlugs}
+        />
+      )}
+      {mode === 'draft' && raid.status === 'success' && (
+        <DraftResults
+          decks={raid.decks}
+          combinedTotalDamage={raid.combinedTotalDamage}
+          excludedSlugs={raid.excludedSlugs}
+          leftoverSlugs={raid.leftoverSlugs}
+          withinDraft={raid.withinDraft}
+          baselineTotalDamage={raid.baselineTotalDamage}
+          submittedDraft={submittedDraft}
         />
       )}
     </section>

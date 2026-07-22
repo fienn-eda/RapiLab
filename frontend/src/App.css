@@ -578,3 +578,51 @@
   font-size: 12px;
   color: var(--text-muted);
 }
+
+/* Draft results ------------------------------------------------------------ */
+
+.draft-results {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+}
+
+.draft-results__tier {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  border-top: 1px solid var(--border);
+  padding-top: var(--sp-3);
+}
+
+.draft-results__tier-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin: 0;
+}
+
+.draft-results__tier-total {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.deck-results__pin {
+  margin-left: var(--sp-2);
+}
+
+.deck-results__diff {
+  display: flex;
+  gap: var(--sp-3);
+  font-size: 12px;
+  font-family: var(--mono);
+}
+
+.deck-results__diff-added {
+  color: var(--ok);
+}
+
+.deck-results__diff-removed {
+  color: var(--danger);
+}
