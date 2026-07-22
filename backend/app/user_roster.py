@@ -6,7 +6,9 @@ A unit that can't be loaded is EXCLUDED and reported, never an error (Fienn,
 2026-07-16): not encoded; encoded but no SKILL_VALUE_MANIFESTS yet; missing a
 data file (e.g. lootandwaifus-only units have no dotgg weapon stats until
 collected). Character metadata prefers the lootandwaifus file (project source
-priority) and falls back to the dotgg file; weapon stats come from dotgg only.
+priority) and falls back to the dotgg file; weapon stats come from the
+manifest's source - dotgg for dotgg- and lootandwaifus-source units, or the
+unit's normalized data/shiftypad/<slug>.json for a shiftypad-source unit.
 """
 from pathlib import Path
 
@@ -28,16 +30,16 @@ def _percent(raw):
     return float(str(raw).rstrip("%"))
 
 
-def _weapon_stats(dotgg_data):
-    if any(field not in dotgg_data for field in _WEAPON_STAT_FIELDS):
+def _weapon_stats(weapon_data):
+    if any(field not in weapon_data for field in _WEAPON_STAT_FIELDS):
         return None
     return {
-        "weapon": dotgg_data["weapon"],
-        "damage_percent": _percent(dotgg_data["damage"]),
-        "max_ammo": int(dotgg_data["maxAmmo"]),
-        "reload_time": float(dotgg_data["reloadTime"]),
-        "charge_time": float(dotgg_data["chargeTime"]),
-        "charge_damage_percent": _percent(dotgg_data["chargeDamage"]),
+        "weapon": weapon_data["weapon"],
+        "damage_percent": _percent(weapon_data["damage"]),
+        "max_ammo": int(weapon_data["maxAmmo"]),
+        "reload_time": float(weapon_data["reloadTime"]),
+        "charge_time": float(weapon_data["chargeTime"]),
+        "charge_damage_percent": _percent(weapon_data["chargeDamage"]),
     }
 
 
