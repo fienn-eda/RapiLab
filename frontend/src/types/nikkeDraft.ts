@@ -46,12 +46,6 @@ export interface NikkeDraftErrors {
 
 const newId = (): string => crypto.randomUUID()
 
-export const makeOverloadRow = (): OverloadRow => ({
-  id: newId(),
-  name: '',
-  value: '',
-})
-
 export const makeEmptyDraft = (): NikkeDraft => ({
   id: newId(),
   character_slug: '',
@@ -183,57 +177,3 @@ export const getValidRoster = (drafts: NikkeDraft[]): UserNikkeState[] =>
   drafts
     .map((draft) => validateDraft(draft).value)
     .filter((value): value is UserNikkeState => value != null)
-
-export interface RosterMergeResult {
-  drafts: NikkeDraft[]
-  added: number
-  updated: number
-}
-
-/**
- * Merge collector roster.json drafts into the current roster by
- * character_slug. The collector's roster.json is authoritative for stats, so
- * an existing unit's stats, actual-level stats, and investment badge
- * (grade/core) are overwritten too, alongside level/skill_levels/overload.
- * New slugs are appended; current drafts absent from the import are left
- * untouched.
- */
-export const mergeCollectorDrafts = (
-  current: NikkeDraft[],
-  incoming: NikkeDraft[],
-): RosterMergeResult => {
-  const next = current.map((d) => ({ ...d }))
-  const indexBySlug = new Map(next.map((d, i) => [d.character_slug, i]))
-  let added = 0
-  let updated = 0
-
-  for (const inc of incoming) {
-    const idx = indexBySlug.get(inc.character_slug)
-    if (idx === undefined) {
-      next.push(inc)
-      indexBySlug.set(inc.character_slug, next.length - 1)
-      added += 1
-    } else {
-      next[idx] = {
-        ...next[idx],
-        level: inc.level,
-        hp: inc.hp,
-        atk: inc.atk,
-        def_: inc.def_,
-        actualHp: inc.actualHp,
-        actualAtk: inc.actualAtk,
-        actualDef: inc.actualDef,
-        // grade/core are absent from the legacy JS collector's roster.json,
-        // so an absent incoming value must not clobber a previously-synced
-        // badge (absent means "source carries no info", not "no breakthrough").
-        grade: inc.grade ?? next[idx].grade,
-        core: inc.core ?? next[idx].core,
-        skill_levels: inc.skill_levels,
-        overload_options: inc.overload_options,
-      }
-      updated += 1
-    }
-  }
-
-  return { drafts: next, added, updated }
-}

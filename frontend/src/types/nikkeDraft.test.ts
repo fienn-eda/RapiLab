@@ -2,8 +2,6 @@ import { describe, it, expect } from 'vitest'
 import {
   getValidRoster,
   makeEmptyDraft,
-  makeOverloadRow,
-  mergeCollectorDrafts,
   validateDraft,
   type NikkeDraft,
 } from './nikkeDraft'
@@ -90,8 +88,8 @@ describe('validateDraft', () => {
   it('accepts valid overload rows and includes them in the parsed value', () => {
     const draft = validDraft()
     draft.overload_options = [
-      { ...makeOverloadRow(), name: 'ATK', value: '12.5' },
-      { ...makeOverloadRow(), name: 'Elemental Damage', value: '9' },
+      { id: 'row-1', name: 'ATK', value: '12.5' },
+      { id: 'row-2', name: 'Elemental Damage', value: '9' },
     ]
     const { errors, value } = validateDraft(draft)
     expect(errors.overload_options).toBeUndefined()
@@ -102,7 +100,7 @@ describe('validateDraft', () => {
   })
 
   it('reports per-row overload errors keyed by row id', () => {
-    const bad = { ...makeOverloadRow(), name: '', value: 'x' }
+    const bad = { id: 'row-1', name: '', value: 'x' }
     const draft = validDraft()
     draft.overload_options = [bad]
     const { errors, value } = validateDraft(draft)
@@ -125,92 +123,5 @@ describe('getValidRoster', () => {
 
   it('returns an empty array when no drafts are valid', () => {
     expect(getValidRoster([makeEmptyDraft()])).toEqual([])
-  })
-})
-
-const draft = (over: Partial<ReturnType<typeof makeEmptyDraft>>) => ({
-  ...makeEmptyDraft(),
-  ...over,
-})
-
-describe('mergeCollectorDrafts', () => {
-  it('overwrites stats, actual-level stats, skills, and overload on a matching slug', () => {
-    const existing = draft({
-      character_slug: 'liter',
-      atk: '60000',
-      hp: '120000',
-      def_: '3000',
-      skill_levels: { skill1: '1', skill2: '1', burst: '1' },
-    })
-    const incoming = draft({
-      character_slug: 'liter',
-      atk: '77777',
-      hp: '88888',
-      def_: '9999',
-      actualHp: '999999',
-      actualAtk: '444444',
-      actualDef: '11111',
-      level: '400',
-      skill_levels: { skill1: '10', skill2: '10', burst: '10' },
-      overload_options: [{ id: 'x', name: '공격력 증가', value: '12' }],
-    })
-    const { drafts, updated } = mergeCollectorDrafts([existing], [incoming])
-    expect(updated).toBe(1)
-    const merged = drafts[0]
-    expect(merged.atk).toBe('77777')
-    expect(merged.hp).toBe('88888')
-    expect(merged.def_).toBe('9999')
-    expect(merged.actualHp).toBe('999999')
-    expect(merged.actualAtk).toBe('444444')
-    expect(merged.actualDef).toBe('11111')
-    expect(merged.level).toBe('400')
-    expect(merged.skill_levels).toEqual({ skill1: '10', skill2: '10', burst: '10' })
-    expect(merged.overload_options).toEqual([
-      { id: 'x', name: '공격력 증가', value: '12' },
-    ])
-  })
-
-  it('adds a new slug', () => {
-    const existing = draft({ character_slug: 'liter' })
-    const incoming = draft({ character_slug: 'crown', atk: '50000' })
-    const { drafts, added } = mergeCollectorDrafts([existing], [incoming])
-    expect(added).toBe(1)
-    expect(drafts.find((d) => d.character_slug === 'crown')?.atk).toBe('50000')
-  })
-
-  it('refreshes grade and core on a matching slug when they change on re-sync', () => {
-    const existing = draft({ character_slug: 'liter', grade: 1, core: 2 })
-    const incoming = draft({ character_slug: 'liter', grade: 3, core: 7 })
-    const { drafts } = mergeCollectorDrafts([existing], [incoming])
-    expect(drafts[0].grade).toBe(3)
-    expect(drafts[0].core).toBe(7)
-  })
-
-  it('picks up grade and core on a matching slug that had none stored (roster from before this feature existed)', () => {
-    const existing = draft({ character_slug: 'liter' })
-    expect(existing.grade).toBeUndefined()
-    expect(existing.core).toBeUndefined()
-    const incoming = draft({ character_slug: 'liter', grade: 2, core: 5 })
-    const { drafts } = mergeCollectorDrafts([existing], [incoming])
-    expect(drafts[0].grade).toBe(2)
-    expect(drafts[0].core).toBe(5)
-  })
-
-  it('preserves a stored grade/core when the incoming source (e.g. the legacy collector) carries none', () => {
-    const existing = draft({ character_slug: 'liter', grade: 3, core: 7 })
-    const incoming = draft({ character_slug: 'liter' })
-    expect(incoming.grade).toBeUndefined()
-    expect(incoming.core).toBeUndefined()
-    const { drafts } = mergeCollectorDrafts([existing], [incoming])
-    expect(drafts[0].grade).toBe(3)
-    expect(drafts[0].core).toBe(7)
-  })
-
-  it('leaves grade/core undefined (not 0) when neither side has ever stored them', () => {
-    const existing = draft({ character_slug: 'liter' })
-    const incoming = draft({ character_slug: 'liter' })
-    const { drafts } = mergeCollectorDrafts([existing], [incoming])
-    expect(drafts[0].grade).toBeUndefined()
-    expect(drafts[0].core).toBeUndefined()
   })
 })
