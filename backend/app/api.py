@@ -20,6 +20,7 @@ from app.overload_effects import NAME_TO_STAT
 from app.roster_assembly import assemble_roster, load_directory, to_roster_json
 from app.sim_pool import SimPool
 from app.stat_assembly import load_stat_tables
+from app.supported_units import supported_units as _supported_units
 from app.user_roster import load_roster
 
 logger = logging.getLogger(__name__)
@@ -68,6 +69,13 @@ class RecommendRaidResponse(BaseModel):
     combined_total_damage: float
     excluded_slugs: list[str]
     leftover_slugs: list[str]
+
+
+class SupportedUnit(BaseModel):
+    slug: str
+    name: str
+    burst_tier: int
+    element: str
 
 
 class AssembleRosterRequest(BaseModel):
@@ -176,6 +184,11 @@ def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
         excluded_slugs=excluded,
         leftover_slugs=result["leftover_slugs"],
     )
+
+
+@app.get("/api/supported-units", response_model=list[SupportedUnit])
+def supported_units_route() -> list[SupportedUnit]:
+    return [SupportedUnit(**u) for u in _supported_units()]
 
 
 @app.post("/api/assemble-roster")
