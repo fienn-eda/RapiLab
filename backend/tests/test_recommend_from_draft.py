@@ -5,6 +5,8 @@ also pull in bench units) - and keeps the no-draft path a single
 `allocate_decks` call (see `test_zero_base_recommended_matches_plain_allocation`).
 All search/sim calls are stubbed, like test_deck_allocation.py - real sims
 live in the API end-to-end test."""
+from unittest.mock import patch
+
 import app.deck_allocation as da
 from app.deck_search import BossProfile
 from tests.test_deck_allocation import Unit, roster_of, patch_scorer
@@ -113,3 +115,68 @@ def test_pinned_by_deck_reports_locked_slugs_per_recommended_deck(monkeypatch):
     # t1a is locked and must appear in exactly one deck's pinned list
     hit = [p for p in pinned if "t1a" in p]
     assert len(hit) == 1
+
+
+# Quality per slug for the locked-unit test (mirrors Task 2's
+# test_locked_unit_stays_in_its_deck, scaled to a 2-deck draft): "pweak" is
+# deliberately the WORST unit on the roster, so an unconstrained from-scratch
+# search would always bench it (it's the unique global-min, so no leftover
+# tie-break makes this test flaky) - only honoring `locked` keeps it seated.
+# "bx" is a bench unit (quality 50, undrafted) an unconstrained search would
+# rather pull in over the weak locked unit.
+LOCKED_QUALITY = {
+    "p1": 10, "q1": 10,
+    "p2": 10, "q2": 10,
+    "pweak": 1, "pz": 5,
+    "g1": 10, "g2": 10, "g3": 10, "g4": 10,
+    "bx": 50,
+}
+
+
+def _locked_score(slugs):
+    return sum(LOCKED_QUALITY.get(s, 0) for s in slugs)
+
+
+def _locked_roster():
+    return roster_of({
+        "p1": 1, "q1": 1,
+        "p2": 2, "q2": 2,
+        "pweak": 3, "pz": 3, "g1": 3, "g2": 3, "g3": 3, "g4": 3, "bx": 3,
+    })
+
+
+def _locked_draft(roster):
+    by_slug = {u.slug: u for u in roster}
+    deck0 = [by_slug["p1"], by_slug["p2"], by_slug["pweak"], by_slug["pz"], by_slug["g1"]]
+    deck1 = [by_slug["q1"], by_slug["q2"], by_slug["g2"], by_slug["g3"], by_slug["g4"]]
+    return [deck0, deck1]
+
+
+def test_locked_unit_stays_in_recommended_even_though_it_is_the_weakest(monkeypatch):
+    # Without the lock, "pweak" (quality 1, the unique roster minimum) is
+    # always the deck search's leftover - the from-scratch pass would rather
+    # seat the bench unit "bx" (quality 50). Locking "pweak" into deck 0 must
+    # keep it seated in `recommended`, even at a lower total than the
+    # unconstrained optimum, and it must show up in `pinned_by_deck`.
+    patch_scorer(monkeypatch, _locked_score)
+    r = _locked_roster()
+    draft = _locked_draft(r)
+    out = da.recommend_from_draft(r, BOSS, num_decks=2, draft=draft,
+                                  locked={"pweak"}, workers=None)
+    hit = [i for i, d in enumerate(out["recommended"]["decks"])
+           if "pweak" in d["deck"]]
+    assert len(hit) == 1, "locked unit must be seated in exactly one recommended deck"
+    assert "pweak" in out["pinned_by_deck"][hit[0]]
+
+
+def test_zero_base_makes_exactly_one_allocate_decks_call(monkeypatch):
+    # Finding 3: the zero-base short-circuit must stay a SINGLE allocate_decks
+    # call - not just bit-identical output, but one real search pass. Wraps
+    # the real function with a call counter instead of stubbing it away, so a
+    # regression back to a warm+scratch double-call would be caught here even
+    # if the two calls happened to agree on the winning allocation.
+    patch_scorer(monkeypatch, _score)
+    r = _roster()
+    with patch.object(da, "allocate_decks", wraps=da.allocate_decks) as spy:
+        da.recommend_from_draft(r, BOSS, num_decks=2, draft=None, workers=None)
+    assert spy.call_count == 1

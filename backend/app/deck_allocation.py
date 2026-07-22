@@ -138,6 +138,15 @@ def _is_complete(draft, num_decks):
     return len(draft) == num_decks and all(len(deck) == 5 for deck in draft)
 
 
+def _better(a, b):
+    return a if _combined(a) >= _combined(b) else b
+
+
+def _leftover_against(alloc, roster):
+    used = {s for d in alloc["decks"] for s in d["deck"]}
+    return sorted(u.slug for u in roster if u.slug not in used)
+
+
 def recommend_from_draft(roster, boss, num_decks=5, draft=None,
                          locked=frozenset(), workers=None):
     """Three-tier recommendation around a player's in-progress draft:
@@ -149,15 +158,17 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
     locked slugs ended up in which recommended deck, for the API to attach
     `pinned_slugs`."""
     draft = draft or []
-    # bench-inclusive recommendation: warm-start from the draft (guarantees
-    # >= baseline) and from-scratch (explores all shapes); keep the better.
-    # With no draft, warm == scratch, so run the scratch pass ALONE - this keeps
-    # the zero-base path a single allocate_decks call, bit-identical to today.
-    scratch = allocate_decks(roster, boss, num_decks=num_decks, workers=workers)
+    # from-scratch pass honors hard locks (seed ONLY the locked units, leaving
+    # flexible seats free to explore all shapes) - without this, a scratch win
+    # could drop a locked unit. Empty when there are no locks => pure from-scratch.
+    locked_seed = [[u for u in deck if u.slug in locked] for deck in draft]
+    locked_seed = [d for d in locked_seed if d]
+    scratch = allocate_decks(roster, boss, num_decks=num_decks,
+                             draft=(locked_seed or None), locked=locked, workers=workers)
     if draft:
         warm = allocate_decks(roster, boss, num_decks=num_decks, draft=draft,
                               locked=locked, workers=workers)
-        recommended = warm if _combined(warm) >= _combined(scratch) else scratch
+        recommended = _better(scratch, warm)
     else:
         recommended = scratch
 
@@ -167,12 +178,19 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
         drafted = [u for deck in draft for u in deck]
         w = allocate_decks(drafted, boss, num_decks=num_decks, draft=draft,
                            locked=locked, workers=workers)
-        s = allocate_decks(drafted, boss, num_decks=num_decks, workers=workers)
-        within_draft = w if _combined(w) >= _combined(s) else s
+        s = allocate_decks(drafted, boss, num_decks=num_decks,
+                           draft=(locked_seed or None), locked=locked, workers=workers)
+        within_draft = _better(w, s)
+        # within_draft's decks are a valid full-roster allocation (drafted units
+        # subset of roster), so fold it into recommended to guarantee
+        # recommended >= within_draft by construction; recompute its leftovers
+        # against the FULL roster (bench units belong in leftover).
+        if _combined(within_draft) > _combined(recommended):
+            recommended = {"decks": within_draft["decks"],
+                           "leftover_slugs": _leftover_against(within_draft, roster)}
         baseline_total = sum(
             _best_ordering_summary(deck, boss)["total_damage"] for deck in draft)
 
-    # locked slugs per recommended deck, for the API's pinned_slugs
     pinned_by_deck = [[s for s in d["deck"] if s in locked]
                       for d in recommended["decks"]]
     return {"recommended": recommended, "within_draft": within_draft,
