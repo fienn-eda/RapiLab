@@ -748,3 +748,49 @@ def test_velvet_never_bursts_as_the_last_b2_of_a_122():
     assert bursts["b2a"] == full_bursts       # the other B2 carries every cycle
     bursts_cdr, _ = _burst_counts(deck, cdr={m["slug"]: 6.0 for m in deck})
     assert bursts_cdr["velvet"] == 0
+
+
+def test_search_output_always_seats_modernia_last_among_b3(monkeypatch):
+    # End-to-end through search_best_decks (prune -> enumerate -> rank): every
+    # ranked deck containing Modernia seats her as the LAST Burst-3, so a
+    # tier-mate is the leftmost-eligible burster. A tie-scoring stub keeps the
+    # assertion about seating, not damage (seating is set by enumeration).
+    import app.deck_search as ds
+    roster = [
+        FakeSpec("b1", 1), FakeSpec("b2", 2),
+        FakeSpec("b3a", 3), FakeSpec("b3b", 3), FakeSpec("modernia", 3),
+    ]
+    b3_slugs = {"b3a", "b3b", "modernia"}
+    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({}))
+    results = ds.search_best_decks(roster, BossProfile(), top_n=6)
+    assert results
+    saw_modernia = False
+    for r in results:
+        deck = r["deck"]
+        if "modernia" not in deck:
+            continue
+        saw_modernia = True
+        b3_positions = [i for i, s in enumerate(deck) if s in b3_slugs]
+        assert deck[max(b3_positions)] == "modernia"  # last B3 seat
+    assert saw_modernia  # she is actually in the recommendations, not filtered out
+
+
+def test_search_output_always_seats_velvet_last_among_b2(monkeypatch):
+    import app.deck_search as ds
+    roster = [
+        FakeSpec("b1", 1), FakeSpec("b2a", 2), FakeSpec("velvet", 2),
+        FakeSpec("b3a", 3), FakeSpec("b3b", 3),
+    ]
+    b2_slugs = {"b2a", "velvet"}
+    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({}))
+    results = ds.search_best_decks(roster, BossProfile(), top_n=6)
+    assert results
+    saw_velvet = False
+    for r in results:
+        deck = r["deck"]
+        if "velvet" not in deck:
+            continue
+        saw_velvet = True
+        b2_positions = [i for i, s in enumerate(deck) if s in b2_slugs]
+        assert deck[max(b2_positions)] == "velvet"  # last B2 seat
+    assert saw_velvet
