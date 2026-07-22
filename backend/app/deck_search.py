@@ -17,6 +17,7 @@ re-entry) are placed by their nominal burst_tier for feasibility; their
 branch effects are still simulated correctly, but the scheduler slots them
 nominally.
 """
+from collections import Counter
 from dataclasses import dataclass
 from itertools import combinations, permutations
 
@@ -113,6 +114,46 @@ def shape_combinations(roster):
                     deck = list(c1) + list(c2) + list(c3)
                     if _no_variant_clash(deck) and _tier1_seating_valid(deck):
                         yield deck
+
+
+def _shape_completions(required, candidates):
+    """Yield 5-unit decks (canonical tier order) that contain every unit in
+    `required`, filling the rest from `candidates`, for every ALLOWED_SHAPES
+    compatible with required's per-tier counts. Pure combinatorics on burst_tier."""
+    req_counts = Counter(u.burst_tier for u in required)
+    if any(t not in (1, 2, 3) for t in req_counts):
+        return
+    cand_by_tier = {1: [], 2: [], 3: []}
+    for u in candidates:
+        if u.burst_tier in cand_by_tier:
+            cand_by_tier[u.burst_tier].append(u)
+    for n1, n2, n3 in ALLOWED_SHAPES:
+        need = {1: n1 - req_counts.get(1, 0),
+                2: n2 - req_counts.get(2, 0),
+                3: n3 - req_counts.get(3, 0)}
+        if any(v < 0 for v in need.values()):
+            continue  # required already exceeds this shape's tier slot
+        for f1 in combinations(cand_by_tier[1], need[1]):
+            for f2 in combinations(cand_by_tier[2], need[2]):
+                for f3 in combinations(cand_by_tier[3], need[3]):
+                    deck = list(required) + list(f1) + list(f2) + list(f3)
+                    # canonical tier order for _no_variant_clash / seating checks
+                    deck.sort(key=lambda u: u.burst_tier)
+                    if _no_variant_clash(deck) and _tier1_seating_valid(deck):
+                        yield deck
+
+
+def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None):
+    """Best `top_n` 5-unit decks that contain every unit in `required`, over
+    every ALLOWED_SHAPES-compatible completion drawn from `candidates`.
+    Returns [] when required's tier counts fit no shape or no valid
+    completion exists."""
+    orderings = _all_intra_tier_orderings(_shape_completions(required, candidates))
+    if not orderings:
+        return []
+    totals = _score_batch(orderings, boss, pool)
+    ranked = sorted(zip(totals, orderings), key=lambda pair: pair[0], reverse=True)
+    return [_summarize(ordered, evaluate_deck(ordered, boss)) for _, ordered in ranked[:top_n]]
 
 
 def feasible_orderings(roster):
