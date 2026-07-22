@@ -13,7 +13,7 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from app.deck_allocation import allocate_decks
+from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_draft
 from app.deck_search import BossProfile, search_best_decks
 from app.models import UserNikkeState
 from app.overload_effects import NAME_TO_STAT
@@ -60,15 +60,40 @@ class RecommendResponse(BaseModel):
     excluded_slugs: list[str]
 
 
+class DraftUnit(BaseModel):
+    slug: str
+    locked: bool = False
+
+
+class DraftDeck(BaseModel):
+    units: list[DraftUnit]
+
+
 class RecommendRaidRequest(RecommendRequest):
     num_decks: int = Field(5, ge=1, le=5)
+    draft: list[DraftDeck] = []
+
+
+class RaidDeck(DeckRecommendation):
+    """A raid deck additionally reports which of its slugs were pinned by the
+    caller's draft - not part of the shared DeckRecommendation shape since
+    /api/recommend has no draft concept."""
+    pinned_slugs: list[str] = []
+
+
+class DraftAllocation(BaseModel):
+    decks: list[RaidDeck]
+    combined_total_damage: float
+    leftover_slugs: list[str]
 
 
 class RecommendRaidResponse(BaseModel):
-    decks: list[DeckRecommendation]
+    decks: list[RaidDeck]
     combined_total_damage: float
     excluded_slugs: list[str]
     leftover_slugs: list[str]
+    within_draft: DraftAllocation | None = None
+    baseline_total_damage: float | None = None
 
 
 class SupportedUnit(BaseModel):
@@ -155,6 +180,18 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
     )
 
 
+def _to_recs(decks, pinned_by_deck=None):
+    pinned_by_deck = pinned_by_deck or [[] for _ in decks]
+    return [
+        RaidDeck(
+            deck=d["deck"], total_damage=d["total_damage"],
+            burst_damage=d["burst_damage"], normal_attack_damage=d["normal_attack_damage"],
+            pinned_slugs=pinned,
+        )
+        for d, pinned in zip(decks, pinned_by_deck)
+    ]
+
+
 @app.post("/api/recommend-raid", response_model=RecommendRaidResponse)
 def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
     _reject_unknown_overload_options(request.roster)
@@ -166,23 +203,50 @@ def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
         fight_duration=request.boss.fight_duration,
         part_destructible=request.boss.part_destructible,
     )
-    result = allocate_decks(specs, boss, num_decks=request.num_decks, workers="auto")
-    if not result["decks"]:
+    by_slug = {u.slug: u for u in specs}
+    # resolve draft slugs -> specs; unknown/unsupported slug is a client error
+    draft, locked = [], set()
+    for deck in request.draft:
+        seat = []
+        for u in deck.units:
+            if u.slug not in by_slug:
+                raise HTTPException(422, f"draft references unusable slug: {u.slug}")
+            seat.append(by_slug[u.slug])
+            if u.locked:
+                locked.add(u.slug)
+        draft.append(seat)
+    seen = [u.slug for deck in draft for u in deck]
+    if len(seen) != len(set(seen)):
+        raise HTTPException(422, "a unit appears in more than one draft deck")
+
+    try:
+        out = recommend_from_draft(specs, boss, num_decks=request.num_decks,
+                                   draft=draft, locked=locked, workers="auto")
+    except InfeasibleDraft as e:
+        raise HTTPException(422, str(e))
+
+    rec = out["recommended"]
+    if not rec["decks"]:
         raise HTTPException(
             status_code=422,
             detail=f"no feasible deck from the usable roster (excluded: {excluded})",
         )
+    rec_decks = _to_recs(rec["decks"], out["pinned_by_deck"])
+    within = None
+    if out["within_draft"] is not None:
+        wd = out["within_draft"]
+        within = DraftAllocation(
+            decks=_to_recs(wd["decks"]),
+            combined_total_damage=sum(d["total_damage"] for d in wd["decks"]),
+            leftover_slugs=wd["leftover_slugs"],
+        )
     return RecommendRaidResponse(
-        decks=[
-            DeckRecommendation(
-                deck=d["deck"], total_damage=d["total_damage"],
-                burst_damage=d["burst_damage"], normal_attack_damage=d["normal_attack_damage"],
-            )
-            for d in result["decks"]
-        ],
-        combined_total_damage=sum(d["total_damage"] for d in result["decks"]),
+        decks=rec_decks,
+        combined_total_damage=sum(d.total_damage for d in rec_decks),
         excluded_slugs=excluded,
-        leftover_slugs=result["leftover_slugs"],
+        leftover_slugs=rec["leftover_slugs"],
+        within_draft=within,
+        baseline_total_damage=out["baseline_total_damage"],
     )
 
 

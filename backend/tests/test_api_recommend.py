@@ -72,8 +72,9 @@ def test_recommend_raid_partitions_roster_and_reports_leftovers():
     assert body["excluded_slugs"] == ["totally-unknown"]
     assert len(body["decks"]) == 1                      # 5 loadable units -> 1 deck
     deck = body["decks"][0]
-    assert set(deck) == {"deck", "total_damage", "burst_damage", "normal_attack_damage"}
+    assert set(deck) == {"deck", "total_damage", "burst_damage", "normal_attack_damage", "pinned_slugs"}
     assert sorted(deck["deck"]) == sorted(FEASIBLE)
+    assert deck["pinned_slugs"] == []
     assert body["leftover_slugs"] == []
     assert body["combined_total_damage"] == deck["total_damage"]
 
