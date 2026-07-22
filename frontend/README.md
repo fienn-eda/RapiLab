@@ -1,8 +1,8 @@
 # NIKKE Deck Builder — Frontend
 
-The web UI for the deck builder. Lets a user enter their per-character
-investment data (from ShiftyPad) and, later, see the recommended decks the
-backend engine produces.
+The web UI for the deck builder. A user syncs their roster's per-character
+investment data from blablalink (one or more accounts) and sees the
+recommended decks the backend engine produces.
 
 This file is the **contract** the `frontend-builder` agent implements against.
 The main agent maintains it; the frontend agent follows it and reports back any
@@ -30,15 +30,75 @@ Keep the existing `src/api` and `src/components` dirs; add `src/types` and
 `src/hooks` as needed. Don't introduce a different top-level structure without
 the main agent updating this file.
 
-## Current scope (do this first)
+## Current scope
 
-**The ShiftyPad investment-data input UI.** This is fully independent of the
-backend API — it collects and validates the user's per-Nikke data client-side.
-Build it now; the recommendation-display half waits on the API contract below.
+**Roster is sync-only.** The roster comes exclusively from a blablalink sync
+(the bookmarklet flow below); there is no manual entry form and no
+ExiaInvasion file import — both were removed. The roster display (`NikkeCard`)
+is read-only. If ShiftyPad/blablalink can't supply a field the deck search
+needs, that's an engine-data gap to raise with the main agent, not something
+to patch over with a manual-input form.
+
+## Multi-account profiles
+
+The app supports **multiple blablalink accounts side by side**, each in its
+own isolated **profile**. This replaces the old single-roster `nikke-roster`
+key.
+
+- **Storage:** one `localStorage` key, `nikke-profiles`, holding
+  `{ activeOpenId, profiles: Record<openId, Profile> }`. Each `Profile` is
+  keyed by the blablalink account's `open_id` and holds that account's roster
+  plus its cached recommend-raid results (see below).
+- **Isolation invariant:** different `open_id`s are never merged. Syncing
+  account B never touches account A's roster, cache, or active-result state.
+  Switching profiles swaps the whole roster + result view; it never blends
+  two accounts' data.
+- **Sync capture, client-only:** the sync bookmarklet also calls
+  `GetUserProfileBasicInfo` to grab the account's display `nickname`, and
+  already has `open_id` from the share URL. Both are **client-only** —
+  `src/api/assembleRoster.ts` destructures them out of the payload before
+  the fetch, so `POST /api/assemble-roster` receives only roster fields.
+  The backend never learns any account's `open_id` or `nickname`. The only
+  identifier our backend ever sees, on any call, is the anonymous `clientId`
+  (`src/lib/clientId.ts`, sent as `X-Client-Id`) — unrelated to any game
+  account and never sent to blablalink.
+- **Upsert:** a sync for a new `open_id` creates and activates a profile; a
+  sync for an existing `open_id` refreshes its nickname/roster in place (and
+  switches to it). If the refreshed roster actually differs from what was
+  stored, that profile's cached results are invalidated — they no longer
+  describe the current roster.
+- **Profiles UI:** `ProfileSwitcher` lists profiles by nickname with a
+  dropdown to switch and a button to delete the active one (with a
+  confirmation, since it drops that profile's roster and cache).
+- **Migration:** the app isn't deployed yet, so a legacy `nikke-roster` key
+  (pre-profiles) is **discarded** on load, not migrated — `useProfiles.ts`.
+
+### Result persistence
+
+Raid and draft recommendation results are cached **per profile** so reopening
+the app or switching back to a profile restores the last view instantly,
+without re-running the (~1-2 minute) backend call:
+
+- **Cache key:** a deterministic hash (`src/lib/inputHash.ts`, FNV-1a over a
+  canonicalized — sorted keys, order-independent roster/draft — JSON
+  snapshot) of `(roster investment data, boss profile, draft, num_decks)`.
+  The engine has no RNG, so identical inputs always produce identical output;
+  this hash is exact, not a staleness heuristic.
+- **Storage:** each `Profile.results` is a `Record<inputHash, StoredResult>`,
+  capped at `RESULTS_CAP` (20) entries with oldest-first (LRU) eviction.
+  `Profile.lastResultHash` + `Profile.lastInputs` point at the most recent
+  run so it can be restored (form state and all) on reopen/profile-switch
+  without a re-run.
+- **Scope:** only raid and draft-mode results (`POST /api/recommend-raid`)
+  are cached this way. **Single-deck mode is not cached** — `/api/recommend`
+  is cheap enough to just re-run.
+- **Invalidation:** re-syncing a profile whose roster changed clears that
+  profile's cached results (see upsert above), since a stale result for a
+  changed roster would be wrong, not just old.
 
 ## Data contract — user input
 
-The input form collects one `UserNikkeState` per owned Nikke. This is the
+Each owned Nikke's investment data is one `UserNikkeState`. This is the
 **source of truth in `backend/app/models.py`** (Pydantic). Mirror it in
 `src/types/` and keep it in sync; never edit the Python:
 
@@ -60,7 +120,7 @@ states this assumption; it does not collect a cube.
 
 Resolved (Fienn, 2026-07-17): ShiftyPad's displayed `hp/atk/def` **already include**
 the equipped cube — with a cube on it reflects the cube, with none it shows bare
-character stats. So the user copies those numbers in as-is and the cube is never
+character stats. So the synced numbers are used as-is and the cube is never
 added on top. Overload is the opposite: ShiftyPad shows it separately and it IS
 additive.
 
@@ -251,8 +311,8 @@ presentation layer only.
 
 ### UI scope — draft editor (next task)
 
-- **Palette:** owned units (from `useRoster`) ∩ supported (`/api/supported-units`),
-  grouped B1/B2/B3, each a portrait (or chip fallback).
+- **Palette:** owned units (from the active profile's roster) ∩ supported
+  (`/api/supported-units`), grouped B1/B2/B3, each a portrait (or chip fallback).
 - **Editor:** 5 decks × 5 seats; seats are membership (order engine-assigned); a
   per-unit **lock toggle**; a unit may sit in at most one deck (enforce client-side).
 - **Submit:** build `draft` from the editor and POST to `/api/recommend-raid`.
