@@ -59,15 +59,36 @@ describe('SyncRosterPanel', () => {
         },
       ],
     })
-    const onImport = vi.fn().mockReturnValue({ added: 1, updated: 0 })
+    const onImport = vi.fn()
     render(<SyncRosterPanel onImport={onImport} />)
 
     postPayload()
 
     await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1))
-    expect(onImport.mock.calls[0][1]).toBe('collector')
-    expect(onImport.mock.calls[0][0]).toHaveLength(1)
-    expect(screen.getByText('1 added, 0 updated')).toBeTruthy()
+    expect(onImport.mock.calls[0][0].roster).toHaveLength(1)
+    expect(screen.getByText('1 units synced')).toBeTruthy()
+  })
+
+  it('separates open_id/nickname from the assembled roster when calling onImport', async () => {
+    vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
+    const onImport = vi.fn()
+    render(<SyncRosterPanel onImport={onImport} />)
+
+    act(() => {
+      window.dispatchEvent(
+        new MessageEvent('message', {
+          origin: BLABLALINK_ORIGIN,
+          data: {
+            type: PAYLOAD_MESSAGE,
+            payload: { ...RAW_PAYLOAD, open_id: 'abc123', nickname: 'Fienn' },
+          },
+        }),
+      )
+    })
+
+    await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1))
+    expect(onImport.mock.calls[0][0].openId).toBe('abc123')
+    expect(onImport.mock.calls[0][0].nickname).toBe('Fienn')
   })
 
   it('surfaces parse warnings (e.g. unsupported owned units) as note paragraphs', async () => {
@@ -80,7 +101,7 @@ describe('SyncRosterPanel', () => {
         },
       ],
     })
-    const onImport = vi.fn().mockReturnValue({ added: 1, updated: 0 })
+    const onImport = vi.fn()
     render(<SyncRosterPanel onImport={onImport} />)
 
     postPayload()
@@ -94,7 +115,7 @@ describe('SyncRosterPanel', () => {
 
   it('clears the summary and link when the input is cleared', async () => {
     vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
-    const onImport = vi.fn().mockReturnValue({ added: 0, updated: 0 })
+    const onImport = vi.fn()
     render(<SyncRosterPanel onImport={onImport} />)
     const input = screen.getByLabelText(/share url/i)
 
@@ -102,10 +123,10 @@ describe('SyncRosterPanel', () => {
     expect(screen.getByRole('link', { name: /roster/i })).toBeTruthy()
 
     postPayload()
-    await waitFor(() => expect(screen.getByText('0 added, 0 updated')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('0 units synced')).toBeTruthy())
 
     fireEvent.change(input, { target: { value: '' } })
-    expect(screen.queryByText('0 added, 0 updated')).toBeNull()
+    expect(screen.queryByText('0 units synced')).toBeNull()
     expect(screen.queryByRole('link', { name: /roster/i })).toBeNull()
   })
 

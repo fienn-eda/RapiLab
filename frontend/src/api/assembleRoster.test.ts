@@ -22,6 +22,21 @@ describe('assembleRoster', () => {
     expect(init.headers['X-Client-Id']).toBe(getClientId())
   })
 
+  it('open_id/nickname은 백엔드로 보내지 않는다 (roster 필드만 POST)', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true, json: async () => ({ units: [] }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    await assembleRoster({ ...payload, open_id: 'abc123', nickname: 'Fienn' })
+
+    const [, init] = fetchMock.mock.calls[0]
+    const body = JSON.parse(init.body)
+    expect(body).toEqual(payload)
+    expect(body.open_id).toBeUndefined()
+    expect(body.nickname).toBeUndefined()
+  })
+
   it('실패 응답은 상태와 detail을 담은 에러로 올린다', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: false,

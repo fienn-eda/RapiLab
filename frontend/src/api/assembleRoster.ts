@@ -8,18 +8,23 @@ export interface RawRosterPayload {
   owned: unknown[]
   character_details: unknown[]
   recycle_room_researches: unknown[]
+  // 클라이언트 전용 프로필 식별자 - 백엔드는 이 값들을 모른다 (아래 destructure로 배제).
+  open_id?: string
+  nickname?: string
 }
 
 export const assembleRoster = async (
   payload: RawRosterPayload,
 ): Promise<unknown> => {
+  // open_id/nickname은 여기서 분리해 버린다 - 백엔드는 roster 필드만 받는다.
+  const { open_id, nickname, ...rosterPayload } = payload
   const response = await fetch('/api/assemble-roster', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       'X-Client-Id': getClientId(),
     },
-    body: JSON.stringify(payload),
+    body: JSON.stringify(rosterPayload),
   })
   if (!response.ok) {
     const detail: unknown = await response.json().catch(() => null)

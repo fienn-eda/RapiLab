@@ -20,8 +20,19 @@ import {
   PAYLOAD_MESSAGE,
   READY_MESSAGE,
 } from '../lib/bookmarklet'
+import type { NikkeDraft } from '../types/nikkeDraft'
 
 type Status = 'idle' | 'importing' | 'done' | 'error'
+
+// open_id/nickname are client-only profile identifiers riding alongside the
+// roster payload - assembleRoster strips them before they ever reach the
+// backend, so they're re-attached here from the original payload, not from
+// assembleRoster's response.
+interface BookmarkletRoster {
+  openId: string
+  nickname: string
+  roster: NikkeDraft[]
+}
 
 // blablalink 출처를 통과한 메시지라도 payload 형태까지 보장되지는 않는다 -
 // 모양이 어긋난 값을 assembleRoster로 그대로 보내지 않도록 최소한의 형태만 확인한다.
@@ -32,7 +43,9 @@ const isRawRosterPayload = (value: unknown): value is RawRosterPayload =>
   Array.isArray((value as RawRosterPayload).character_details) &&
   Array.isArray((value as RawRosterPayload).recycle_room_researches)
 
-export const useBookmarkletImport = (onRoster: (raw: unknown) => void) => {
+export const useBookmarkletImport = (
+  onRoster: (args: BookmarkletRoster) => void,
+) => {
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
 
@@ -45,7 +58,12 @@ export const useBookmarkletImport = (onRoster: (raw: unknown) => void) => {
     setStatus('importing')
     setError(null)
     try {
-      onRosterRef.current(await assembleRoster(payload))
+      const assembled = await assembleRoster(payload)
+      onRosterRef.current({
+        openId: String(payload.open_id ?? ''),
+        nickname: String(payload.nickname ?? ''),
+        roster: assembled as NikkeDraft[],
+      })
       setStatus('done')
     } catch (e) {
       setError(

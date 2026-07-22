@@ -32,7 +32,8 @@ function App() {
 
       <main className="app__main">
         <ImportRosterButton onImport={importDrafts} />
-        <SyncRosterPanel onImport={importDrafts} />
+        {/* TEMP: single-roster adapter until Task 6 swaps useRoster for the profile store */}
+        <SyncRosterPanel onImport={({ roster }) => { importDrafts(roster, 'collector') }} />
 
         {drafts.length === 0 ? (
           <div className="empty">

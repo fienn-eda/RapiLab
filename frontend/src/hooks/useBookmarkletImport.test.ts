@@ -25,7 +25,32 @@ describe('useBookmarkletImport', () => {
 
     post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: EMPTY })
 
-    await waitFor(() => expect(onRoster).toHaveBeenCalledWith({ units: [] }))
+    await waitFor(() =>
+      expect(onRoster).toHaveBeenCalledWith({
+        openId: '',
+        nickname: '',
+        roster: { units: [] },
+      }),
+    )
+  })
+
+  it('payload의 open_id/nickname을 분리해 roster와 함께 onRoster로 넘긴다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
+    const onRoster = vi.fn()
+    renderHook(() => useBookmarkletImport(onRoster))
+
+    post(BLABLALINK_ORIGIN, {
+      type: PAYLOAD_MESSAGE,
+      payload: { ...EMPTY, open_id: 'abc123', nickname: 'Fienn' },
+    })
+
+    await waitFor(() =>
+      expect(onRoster).toHaveBeenCalledWith({
+        openId: 'abc123',
+        nickname: 'Fienn',
+        roster: { units: [] },
+      }),
+    )
   })
 
   it('다른 출처의 메시지는 무시한다', async () => {
@@ -106,7 +131,10 @@ describe('useBookmarkletImport', () => {
     post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: EMPTY })
 
     await waitFor(() =>
-      expect(received).toEqual({ tag: 4, raw: { units: [] } }),
+      expect(received).toEqual({
+        tag: 4,
+        raw: { openId: '', nickname: '', roster: { units: [] } },
+      }),
     )
 
     addSpy.mockRestore()

@@ -9,10 +9,11 @@ import { parseRosterJson } from '../lib/rosterImport'
 import type { NikkeDraft } from '../types/nikkeDraft'
 
 interface SyncRosterPanelProps {
-  onImport: (
-    drafts: NikkeDraft[],
-    source: 'exia' | 'collector',
-  ) => { added: number; updated: number }
+  onImport: (args: {
+    openId: string
+    nickname: string
+    roster: NikkeDraft[]
+  }) => void
 }
 
 export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
@@ -23,10 +24,13 @@ export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
   // verbatim like ImportRosterButton's notes so a syncing user is told too.
   const [notes, setNotes] = useState<string[]>([])
 
-  const { status, error } = useBookmarkletImport((raw) => {
-    const { drafts, warnings } = parseRosterJson(raw)
-    const { added, updated } = onImport(drafts, 'collector')
-    setSummary(`${added} added, ${updated} updated`)
+  const { status, error } = useBookmarkletImport(({ openId, nickname, roster }) => {
+    // useBookmarkletImport's `roster` is still the raw assembled response
+    // (typed as NikkeDraft[] only per its own casting convention) - parse it
+    // into real drafts here, same as before this hook carried openId/nickname.
+    const { drafts, warnings } = parseRosterJson(roster)
+    onImport({ openId, nickname, roster: drafts })
+    setSummary(`${drafts.length} units synced`)
     setNotes(warnings)
   })
 
