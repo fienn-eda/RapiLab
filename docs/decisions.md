@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 로스터 소스를 blablalink sync 하나로 확정 — ExiaInvasion 파일 import·수동 입력 폼 폐기(코드/UI 제거)
+- Date: 2026-07-23 (다계정 프로필 설계 착수 중 결정)
+- Context: 로스터 입력 경로가 셋으로 병존했다 — blablalink sync(collector, `SyncRosterPanel`/북마클릿), ExiaInvasion 파일 import(`ImportRosterButton`), 수동 입력 폼(Phase 6). 다계정 지원 설계를 시작하며, 계정 식별자 `open_id`는 blablalink sync 경로에만 존재하고(공유 URL에서 파싱) 나머지 둘은 open_id가 없어 "이 로스터가 어느 계정 것인지"를 구조적으로 알 수 없음이 드러났다. 계정마다 육성 상태가 완전히 달라 절대 섞이면 안 되는 요구와 정면으로 충돌.
+- Decision: blablalink sync를 **유일한 로스터 소스**로 확정하고, ExiaInvasion 파일 import와 수동 입력 폼은 **코드/UI까지 제거**한다. 이후 모든 로스터는 open_id를 보유하므로, 다계정 프로필은 open_id로만 식별한다.
+- Alternatives considered: (a) 세 소스를 유지하고 다계정은 유저가 직접 명명하는 수동 프로필로 폴백 — open_id 없는 로스터를 위한 별도 프로필 모델이 필요해 복잡도가 오르고, 계정 혼입 방지가 코드가 아니라 "유저가 올바른 프로필을 고른다"는 규율에 의존하게 된다(요구사항 위반 소지). (b) 소스를 open_id 보유 하나로 좁혀 폐기 — 채택.
+- Why: open_id 없는 소스는 어느 계정 것인지 구조적으로 알 수 없어 혼입을 코드로 막을 방법이 없다. 소스를 open_id 보유 하나로 좁히면 계정 격리가 **구조적으로 보장**되고, 유지보수할 입력 경로도 셋에서 하나로 준다(YAGNI). blablalink은 이미 "진짜 소스"로 확정됐고(Phase B) 정확 스탯까지 제공하므로 나머지 둘의 존재 이유가 약하다.
+- Consequences: 제거 대상 — 프론트 `ImportRosterButton`(exia 파일 import)·수동 입력 폼(Phase 6 deliverable)·`mergeRosterDrafts`(exia 병합 경로)·`rosterImport.ts`/컴포넌트의 exia 형식 감지 분기와 관련 테스트. 유지 — `SyncRosterPanel`·`useBookmarkletImport`·`mergeCollectorDrafts`(collector 경로)와 `parseRosterJson`의 collector 파싱. `useRoster`의 수동 편집 op(add/update/remove Nikke)도 수동 입력 UI와 함께 정리 대상(정확 범위는 구현 plan에서 확정). roadmap의 Phase 6(수동 입력 UI ✅)은 "폐기됨"으로 상태 갱신 필요. 이 결정은 진행 중인 다계정 프로필 설계(open_id 키잉)의 전제다.
+
 ## Draft-based deck allocation: survival is a user constraint, not a simulated axis
 - Date: 2026-07-23 (branch `wip/seeded-deck-allocation`, landed on trunk)
 - Context: solo-raid decks sometimes need a dedicated defensive/survival unit, but whether that's true is season- **and** account-dependent (a heavily-invested account survives without one; a light account needs one). The engine has no boss-attack/HP/heal data to judge this itself, and the pure-damage-maximizing recommender would otherwise bench any unit that isn't the top damage contributor — including a survival unit the player knows they need.
