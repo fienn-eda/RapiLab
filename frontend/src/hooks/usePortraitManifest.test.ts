@@ -43,4 +43,21 @@ describe('usePortraitManifest', () => {
     const { result } = renderHook(() => usePortraitManifest())
     await waitFor(() => expect(result.current.portraitFor('crown')).toBeNull())
   })
+
+  it('returns null for every slug when the manifest is malformed (no portraits key)', async () => {
+    const jsonMock = vi.fn(() => Promise.resolve({}))
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(() => Promise.resolve({ ok: true, json: jsonMock } as unknown as Response)),
+    )
+
+    const { result } = renderHook(() => usePortraitManifest())
+    // Wait for the manifest's .json() to have been consumed, then flush the
+    // remaining microtask that applies its (malformed) result to state.
+    await waitFor(() => expect(jsonMock).toHaveBeenCalled())
+    await Promise.resolve()
+
+    expect(() => result.current.portraitFor('crown')).not.toThrow()
+    expect(result.current.portraitFor('crown')).toBeNull()
+  })
 })

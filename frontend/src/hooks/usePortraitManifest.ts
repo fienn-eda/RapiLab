@@ -23,7 +23,7 @@ export const usePortraitManifest = (): PortraitManifestState => {
     fetch('/portraits/manifest.json')
       .then((response) => (response.ok ? (response.json() as Promise<PortraitManifestFile>) : null))
       .then((data) => {
-        if (!cancelled && data) setPortraits(data.portraits)
+        if (!cancelled && data) setPortraits(data.portraits ?? {})
       })
       .catch(() => {
         // No manifest available - every slug falls back to the chip display.
