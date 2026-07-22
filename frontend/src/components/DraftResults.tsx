@@ -39,6 +39,39 @@ const diffAgainstSubmitted = (
   }
 }
 
+/** Pairs each result deck with the submitted-draft deck it overlaps most.
+ * Deck INDEX alignment between a recommend_from_draft result and the
+ * submitted draft is not guaranteed: recommended/within_draft can come from
+ * either the warm-start pass (seeded in submitted order) or a from-scratch
+ * pass (backend/app/deck_allocation.py's `_better(scratch, warm)`), whose
+ * deck order has no relation to the submitted draft at all. Matching by
+ * slug overlap instead means a mere relabeling (same groupings, different
+ * deck slots) diffs as empty, and only a genuine swap shows up. Greedy:
+ * each result deck (in order) claims the highest-overlap still-unclaimed
+ * submitted deck; ties go to the lowest submitted-deck index. */
+export const matchDecksToSubmitted = (
+  resultDecks: { deck: string[] }[],
+  submittedDecks: DraftSeat[][],
+): (DraftSeat[] | undefined)[] => {
+  const claimed = new Set<number>()
+  return resultDecks.map((resultDeck) => {
+    const resultSlugs = new Set(resultDeck.deck)
+    let bestIndex = -1
+    let bestOverlap = -1
+    submittedDecks.forEach((seats, index) => {
+      if (claimed.has(index)) return
+      const overlap = seats.filter((seat) => resultSlugs.has(seat.slug)).length
+      if (overlap > bestOverlap) {
+        bestOverlap = overlap
+        bestIndex = index
+      }
+    })
+    if (bestIndex === -1) return undefined
+    claimed.add(bestIndex)
+    return submittedDecks[bestIndex]
+  })
+}
+
 export function DraftResults({
   decks,
   combinedTotalDamage,
@@ -61,6 +94,10 @@ export function DraftResults({
 
   const delta1 = withinDraft.combined_total_damage - baselineTotalDamage
   const delta2 = combinedTotalDamage - withinDraft.combined_total_damage
+
+  const submittedDecks = submittedDraft?.decks ?? []
+  const withinDraftMatches = matchDecksToSubmitted(withinDraft.decks, submittedDecks)
+  const recommendedMatches = matchDecksToSubmitted(decks, submittedDecks)
 
   return (
     <div className="draft-results">
@@ -85,7 +122,7 @@ export function DraftResults({
           {withinDraft.decks.map((deck, index) => {
             const { added, removed } = diffAgainstSubmitted(
               deck.deck,
-              submittedDraft?.decks[index],
+              withinDraftMatches[index],
             )
             return (
               <DeckCard
@@ -109,7 +146,7 @@ export function DraftResults({
           {decks.map((deck, index) => {
             const { added, removed } = diffAgainstSubmitted(
               deck.deck,
-              submittedDraft?.decks[index],
+              recommendedMatches[index],
             )
             return (
               <DeckCard
