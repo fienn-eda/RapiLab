@@ -46,7 +46,7 @@ describe('useRoster', () => {
     expect(warn.mock.calls[0][0]).toMatch(/stored roster/i)
   })
 
-  it('imports drafts, preserving manual fields on a matching slug and persisting', () => {
+  it('imports drafts via the collector merge, overwriting stats and skills, and persists', () => {
     const first = renderHook(() => useRoster())
     act(() => first.result.current.addNikke())
     act(() =>
@@ -60,27 +60,30 @@ describe('useRoster', () => {
 
     let summary = { added: -1, updated: -1 }
     act(() => {
-      summary = first.result.current.importDrafts([
-        {
-          ...first.result.current.drafts[0],
-          id: 'ignored-incoming-id',
-          atk: '',
-          skill_levels: { skill1: '10', skill2: '10', burst: '10' },
-        },
-        {
-          ...first.result.current.drafts[0],
-          id: 'new-one',
-          character_slug: 'crown',
-        },
-      ])
+      summary = first.result.current.importDrafts(
+        [
+          {
+            ...first.result.current.drafts[0],
+            id: 'ignored-incoming-id',
+            atk: '70000',
+            skill_levels: { skill1: '10', skill2: '10', burst: '10' },
+          },
+          {
+            ...first.result.current.drafts[0],
+            id: 'new-one',
+            character_slug: 'crown',
+          },
+        ],
+        'collector',
+      )
     })
 
     expect(summary).toEqual({ added: 1, updated: 1 })
     const rapi = first.result.current.drafts.find(
       (d) => d.character_slug === 'rapi-red-hood',
     )!
-    expect(rapi.atk).toBe('60000') // manual field preserved
-    expect(rapi.skill_levels.skill1).toBe('10') // import field overwritten
+    expect(rapi.atk).toBe('70000') // collector import is authoritative for stats too
+    expect(rapi.skill_levels.skill1).toBe('10')
     first.unmount()
 
     // persisted across a reload

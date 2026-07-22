@@ -191,47 +191,12 @@ export interface RosterMergeResult {
 }
 
 /**
- * Merge imported drafts into the current roster by character_slug. For a slug
- * already present, overwrite only the import-sourced fields (level,
- * skill_levels, overload_options) and keep the manual ones (id, hp, atk, def_).
+ * Merge collector roster.json drafts into the current roster by
+ * character_slug. The collector's roster.json is authoritative for stats, so
+ * an existing unit's stats, actual-level stats, and investment badge
+ * (grade/core) are overwritten too, alongside level/skill_levels/overload.
  * New slugs are appended; current drafts absent from the import are left
  * untouched.
- */
-export const mergeRosterDrafts = (
-  current: NikkeDraft[],
-  incoming: NikkeDraft[],
-): RosterMergeResult => {
-  const next = current.map((d) => ({ ...d }))
-  const indexBySlug = new Map(next.map((d, i) => [d.character_slug, i]))
-  let added = 0
-  let updated = 0
-
-  for (const inc of incoming) {
-    const idx = indexBySlug.get(inc.character_slug)
-    if (idx === undefined) {
-      next.push(inc)
-      indexBySlug.set(inc.character_slug, next.length - 1)
-      added += 1
-    } else {
-      next[idx] = {
-        ...next[idx],
-        level: inc.level,
-        skill_levels: inc.skill_levels,
-        overload_options: inc.overload_options,
-      }
-      updated += 1
-    }
-  }
-
-  return { drafts: next, added, updated }
-}
-
-/**
- * Merge collector roster.json drafts into the current roster by
- * character_slug. Unlike mergeRosterDrafts (which preserves manually-entered
- * stats because the ExiaInvasion export lacks them), the collector's
- * roster.json is authoritative for stats, so an existing unit's stats,
- * actual-level stats, and investment badge (grade/core) are overwritten too.
  */
 export const mergeCollectorDrafts = (
   current: NikkeDraft[],

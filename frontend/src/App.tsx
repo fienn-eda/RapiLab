@@ -8,7 +8,6 @@ import { useRoster } from './hooks/useRoster'
 import { getValidRoster } from './types/nikkeDraft'
 import { NikkeCard } from './components/NikkeCard'
 import { RecommendPanel } from './components/RecommendPanel'
-import { ImportRosterButton } from './components/ImportRosterButton'
 import { SyncRosterPanel } from './components/SyncRosterPanel'
 
 function App() {
@@ -31,7 +30,6 @@ function App() {
       </header>
 
       <main className="app__main">
-        <ImportRosterButton onImport={importDrafts} />
         {/* TEMP: single-roster adapter until Task 6 swaps useRoster for the profile store */}
         <SyncRosterPanel onImport={({ roster }) => { importDrafts(roster, 'collector') }} />
 

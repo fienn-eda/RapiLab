@@ -9,7 +9,6 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   makeEmptyDraft,
   mergeCollectorDrafts,
-  mergeRosterDrafts,
   type NikkeDraft,
 } from '../types/nikkeDraft'
 
@@ -54,9 +53,11 @@ export const useRoster = (initial: NikkeDraft[] = []): Roster => {
   }, [drafts])
 
   const importDrafts = useCallback(
-    (incoming: NikkeDraft[], source: 'exia' | 'collector' = 'exia') => {
-      const merge = source === 'collector' ? mergeCollectorDrafts : mergeRosterDrafts
-      const result = merge(draftsRef.current, incoming)
+    // `source` is vestigial now that exia import is gone (collector is the
+    // only source left) - it stays only because the caller passes it and
+    // useRoster itself is slated for removal in Task 6.
+    (incoming: NikkeDraft[], _source: 'exia' | 'collector' = 'collector') => {
+      const result = mergeCollectorDrafts(draftsRef.current, incoming)
       setDrafts(result.drafts)
       return { added: result.added, updated: result.updated }
     },

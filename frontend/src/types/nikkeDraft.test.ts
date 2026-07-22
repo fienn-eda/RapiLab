@@ -4,7 +4,6 @@ import {
   makeEmptyDraft,
   makeOverloadRow,
   mergeCollectorDrafts,
-  mergeRosterDrafts,
   validateDraft,
   type NikkeDraft,
 } from './nikkeDraft'
@@ -132,59 +131,6 @@ describe('getValidRoster', () => {
 const draft = (over: Partial<ReturnType<typeof makeEmptyDraft>>) => ({
   ...makeEmptyDraft(),
   ...over,
-})
-
-describe('mergeRosterDrafts', () => {
-  it('overwrites import fields on a matching slug but preserves manual fields and id', () => {
-    const existing = draft({
-      character_slug: 'rapi-red-hood',
-      atk: '60000',
-      hp: '120000',
-      def_: '3000',
-      skill_levels: { skill1: '1', skill2: '1', burst: '1' },
-      level: '200',
-    })
-    const incoming = draft({
-      character_slug: 'rapi-red-hood',
-      atk: '',
-      hp: '',
-      skill_levels: { skill1: '10', skill2: '10', burst: '10' },
-      level: '663',
-      overload_options: [{ id: 'x', name: '공격력 증가', value: '12' }],
-    })
-
-    const { drafts, added, updated } = mergeRosterDrafts([existing], [incoming])
-
-    expect(added).toBe(0)
-    expect(updated).toBe(1)
-    expect(drafts).toHaveLength(1)
-    const merged = drafts[0]
-    expect(merged.id).toBe(existing.id)
-    expect(merged.atk).toBe('60000')
-    expect(merged.hp).toBe('120000')
-    expect(merged.def_).toBe('3000')
-    expect(merged.level).toBe('663')
-    expect(merged.skill_levels).toEqual({ skill1: '10', skill2: '10', burst: '10' })
-    expect(merged.overload_options).toEqual([
-      { id: 'x', name: '공격력 증가', value: '12' },
-    ])
-  })
-
-  it('adds a new slug', () => {
-    const existing = draft({ character_slug: 'liter' })
-    const incoming = draft({ character_slug: 'crown' })
-    const { drafts, added, updated } = mergeRosterDrafts([existing], [incoming])
-    expect(added).toBe(1)
-    expect(updated).toBe(0)
-    expect(drafts.map((d) => d.character_slug)).toEqual(['liter', 'crown'])
-  })
-
-  it('leaves an existing draft untouched when the import does not include it', () => {
-    const kept = draft({ character_slug: 'liter', atk: '999' })
-    const incoming = draft({ character_slug: 'crown' })
-    const { drafts } = mergeRosterDrafts([kept], [incoming])
-    expect(drafts.find((d) => d.character_slug === 'liter')).toEqual(kept)
-  })
 })
 
 describe('mergeCollectorDrafts', () => {

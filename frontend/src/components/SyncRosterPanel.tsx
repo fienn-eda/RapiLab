@@ -21,7 +21,7 @@ export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
   const [urlError, setUrlError] = useState<string | null>(null)
   const [summary, setSummary] = useState<string | null>(null)
   // Parse warning lines (e.g. which owned units are not yet supported), shown
-  // verbatim like ImportRosterButton's notes so a syncing user is told too.
+  // verbatim so a syncing user is told too.
   const [notes, setNotes] = useState<string[]>([])
 
   const { status, error } = useBookmarkletImport(({ openId, nickname, raw }) => {
