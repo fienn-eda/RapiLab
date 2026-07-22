@@ -178,6 +178,90 @@ Extend the recommendation flow with a mode switch: **single deck** (existing
   hook next to `useRecommend`, display components next to `DeckResults`.
   Reuse/extract shared pieces rather than duplicating the single-deck ones.
 
+### Draft-based raid recommendation (`POST /api/recommend-raid` with `draft`)
+
+The raid endpoint accepts an optional **draft** — the user seeds decks with their
+own key units and the engine fills/optimizes the rest. Membership only: seat
+position is NOT burst order (the engine assigns order). Omitting `draft` (or `[]`)
+is exactly today's zero-base behavior.
+
+Request adds to the raid body:
+```jsonc
+{
+  "draft": [                     // optional; [] or omitted = zero-base
+    { "units": [
+        { "slug": string, "locked": boolean }   // locked default false
+    ] }                          // one DraftDeck per seeded deck (0..5 units each)
+  ]                              // length <= num_decks; a slug appears in at most ONE deck
+}
+```
+- `locked: true` = the engine MUST keep this unit in this deck (survival unit, etc.).
+- `locked: false`/omitted = a warm-start hint; the engine may move or replace it.
+
+Response — each deck is now a **RaidDeck** (the `/api/recommend` `DeckRecommendation`
+shape **plus** `pinned_slugs`), and two additive top-level fields appear:
+```jsonc
+{
+  "decks": [ { /* ...DeckRecommendation..., */ "pinned_slugs": string[] } ],
+                                   // = the bench-inclusive RECOMMENDED tier;
+                                   // pinned_slugs = the locked slugs the engine kept here
+  "combined_total_damage": number,
+  "excluded_slugs": string[],
+  "leftover_slugs": string[],
+  "within_draft":                  // NON-NULL only for a COMPLETE draft (see below), else null
+    { "decks": RaidDeck[], "combined_total_damage": number, "leftover_slugs": string[] }
+    | null,                        // best allocation using ONLY the drafted units (no bench)
+  "baseline_total_damage": number | null  // the user's exact drafted groupings scored
+}
+```
+- A draft is **complete** when `draft.length === num_decks` AND every drafted deck
+  has exactly 5 units. Only then are `within_draft` and `baseline_total_damage`
+  non-null; for a partial draft both are `null` and only `decks`/top-level appear.
+- **Monotone guarantee (complete draft):**
+  `baseline_total_damage ≤ sum(within_draft.decks.total_damage) ≤ combined_total_damage`.
+  The recommendation is never worse than what the user submitted. Present these as
+  three ascending tiers: *your config* → *best within your own units (+Δ1)* →
+  *bench-inclusive best (+Δ2)*.
+- `422` (in addition to the no-feasible-deck case): a draft slug not in the usable
+  roster; the same slug placed in two decks; an over-constrained draft whose locked
+  tier counts fit no legal deck shape. The `detail` names the offending slug/deck.
+
+### `GET /api/supported-units`
+
+Feeds the draft palette. Returns every engine-supported Nikke:
+```jsonc
+[ { "slug": string, "name": string,
+    "burst_tier": 1 | 2 | 3,
+    "element": "Fire" | "Water" | "Wind" | "Iron" | "Electric" } ]
+```
+Group the palette by `burst_tier` (B1/B2/B3). `name` is a display name (may be a
+humanized slug). No request body; safe to fetch once and cache.
+
+### Portraits
+
+Static, served from `frontend/public/portraits/`. The map lives at
+`/portraits/manifest.json`:
+```jsonc
+{ "source": "...", "portraits": { "<slug>": "<filename>" } }
+```
+Resolve a slug's icon as `manifest.portraits[slug]` → prefix `/portraits/`. When a
+slug has no entry, fall back to a chip (name + tier + element/class tint). The
+editor logic must work identically with or without a portrait — icons are a
+presentation layer only.
+
+### UI scope — draft editor (next task)
+
+- **Palette:** owned units (from `useRoster`) ∩ supported (`/api/supported-units`),
+  grouped B1/B2/B3, each a portrait (or chip fallback).
+- **Editor:** 5 decks × 5 seats; seats are membership (order engine-assigned); a
+  per-unit **lock toggle**; a unit may sit in at most one deck (enforce client-side).
+- **Submit:** build `draft` from the editor and POST to `/api/recommend-raid`.
+  - Complete draft with `within_draft`/`baseline_total_damage` present → render the
+    **three tiers** (baseline → within_draft +Δ1 → recommended +Δ2), a per-deck diff
+    vs the submitted draft, and `pinned_slugs` badges.
+  - Otherwise → the single recommended allocation (reuse the raid results view).
+- Keep the live/mock switch confined to `src/api/`; mirror the existing raid module.
+
 ## Dev commands
 
 Once the project is initialized (`npm create vite@latest . -- --template react-ts`
