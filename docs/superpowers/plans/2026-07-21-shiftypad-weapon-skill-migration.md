@@ -331,7 +331,7 @@ def normalize_shiftypad(bundle):
         },
     ]
     return {
-        "weapon": directory["shot_id"]["weapon_type"],
+        "weapon": directory["shot_id"]["element"]["weapon_type"],
         "maxAmmo": int(shot["max_ammo"]),
         "damage": _pct(shot["damage"]),
         "reloadTime": _sec(shot["reload_time"]),
