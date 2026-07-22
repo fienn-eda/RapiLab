@@ -32,7 +32,9 @@ describe('buildBookmarklet', () => {
 
   it('GetUserProfileBasicInfo를 호출하고 payload에 open_id·nickname을 싣는다', () => {
     expect(source).toContain('GetUserProfileBasicInfo')
-    expect(source).toContain('open_id:')
+    // base의 intl_open_id:도 'open_id:'를 부분 문자열로 포함하므로, payload
+    // 리터럴 시작(payload={open_id:) 자체를 앵커링해 그것과 구분한다.
+    expect(source).toMatch(/payload=\{open_id:/)
     expect(source).toContain('nickname:')
   })
 
