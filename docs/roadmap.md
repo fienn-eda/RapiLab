@@ -409,7 +409,14 @@
   다운로드(`scripts/download_portraits.py`, manifest 계약). **실측(TestClient, 실데이터):
   단조 2.20B ≤ 2.66B ≤ 4.07B, 77/77 usable, 완성-draft 5덱 202초**(최대 4회 할당 경로).
   `gauge_charge_time`/`mode`는 CDR-누수없음·수동 가정으로 미노출. spec/plan:
-  `docs/superpowers/{specs,plans}/2026-07-22-*draft*`. 백엔드 1182 · 프론트 Vitest 207.
+  `docs/superpowers/{specs,plans}/2026-07-22-*draft*`. 백엔드 1183 · 프론트 Vitest 208.
+  **후속(성능):** `recommend_from_draft`가 완성-draft에서 `allocate_decks`를 **최대 4회**
+  호출하며 매 호출이 **SimPool을 새로 스폰/해제**(Windows는 fork 아닌 spawn이라 워커
+  프로세스 생성이 비쌈) → 4회가 **SimPool 하나를 공유**하도록 리팩터하면 완성-draft
+  지연을 꽤 단축할 여지(측정 후 적용). 부수 후속: README의 "~1–2분" 지연 안내는
+  zero-base 기준이라 완성-draft 경로(30유닛 202초 실측, 큰 로스터면 5분+)에 맞게 갱신
+  필요. 추천 실행 중 CPU 전코어 포화는 이 병렬화의 의도된 동작(요청 시 버스트, 유휴시
+  0)이며 부하 완화가 필요하면 `workers` 축소로 벽시계와 맞바꿀 수 있음.
 
 ### Phase 6 — 유저 데이터 입력 UI 🔄
 - React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
