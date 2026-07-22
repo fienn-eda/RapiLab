@@ -24,11 +24,8 @@ export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
   // verbatim like ImportRosterButton's notes so a syncing user is told too.
   const [notes, setNotes] = useState<string[]>([])
 
-  const { status, error } = useBookmarkletImport(({ openId, nickname, roster }) => {
-    // useBookmarkletImport's `roster` is still the raw assembled response
-    // (typed as NikkeDraft[] only per its own casting convention) - parse it
-    // into real drafts here, same as before this hook carried openId/nickname.
-    const { drafts, warnings } = parseRosterJson(roster)
+  const { status, error } = useBookmarkletImport(({ openId, nickname, raw }) => {
+    const { drafts, warnings } = parseRosterJson(raw)
     onImport({ openId, nickname, roster: drafts })
     setSummary(`${drafts.length} units synced`)
     setNotes(warnings)

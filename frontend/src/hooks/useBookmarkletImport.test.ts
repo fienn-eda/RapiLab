@@ -29,12 +29,12 @@ describe('useBookmarkletImport', () => {
       expect(onRoster).toHaveBeenCalledWith({
         openId: '',
         nickname: '',
-        roster: { units: [] },
+        raw: { units: [] },
       }),
     )
   })
 
-  it('payload의 open_id/nickname을 분리해 roster와 함께 onRoster로 넘긴다', async () => {
+  it('payload의 open_id/nickname을 분리해 raw와 함께 onRoster로 넘긴다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()
     renderHook(() => useBookmarkletImport(onRoster))
@@ -48,7 +48,7 @@ describe('useBookmarkletImport', () => {
       expect(onRoster).toHaveBeenCalledWith({
         openId: 'abc123',
         nickname: 'Fienn',
-        roster: { units: [] },
+        raw: { units: [] },
       }),
     )
   })
@@ -133,7 +133,7 @@ describe('useBookmarkletImport', () => {
     await waitFor(() =>
       expect(received).toEqual({
         tag: 4,
-        raw: { openId: '', nickname: '', roster: { units: [] } },
+        raw: { openId: '', nickname: '', raw: { units: [] } },
       }),
     )
 
