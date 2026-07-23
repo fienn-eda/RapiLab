@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { DraftEditor, placeUnit, toggleLock, removeUnit, toRequestDraft } from './DraftEditor'
+import { DraftEditor, placeUnit, toggleLock, removeUnit, removeUnitBySlug, toRequestDraft } from './DraftEditor'
 import type { Draft } from '../types/draft'
 import { makeEmptyDraft } from '../types/draft'
 
@@ -45,6 +45,20 @@ describe('removeUnit', () => {
     const draft: Draft = { decks: [[{ slug: 'crown', locked: false }, { slug: 'liter', locked: true }]] }
     const next = removeUnit(draft, 0, 0)
     expect(next.decks[0]).toEqual([{ slug: 'liter', locked: true }])
+  })
+})
+
+describe('removeUnitBySlug', () => {
+  it('removes a placed slug from whichever deck holds it', () => {
+    let draft = makeEmptyDraft(2)
+    draft = placeUnit(draft, 1, 'liter')
+    const next = removeUnitBySlug(draft, 'liter')
+    expect(next.decks[1]).toEqual([])
+  })
+
+  it('returns the draft unchanged when the slug is not placed', () => {
+    const draft = placeUnit(makeEmptyDraft(2), 0, 'crown')
+    expect(removeUnitBySlug(draft, 'liter')).toBe(draft)
   })
 })
 

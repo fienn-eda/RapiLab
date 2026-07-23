@@ -43,6 +43,15 @@ export const toggleLock = (draft: Draft, deckIndex: number, seatIndex: number): 
 export const removeUnit = (draft: Draft, deckIndex: number, seatIndex: number): Draft =>
   mapDeck(draft, deckIndex, (seats) => seats.filter((_, i) => i !== seatIndex))
 
+/** Removes `slug` from whichever deck seat holds it (a slug sits in at most
+ * one deck). Returns `draft` unchanged if the slug is not placed anywhere. */
+export const removeUnitBySlug = (draft: Draft, slug: string): Draft => {
+  const deckIndex = draft.decks.findIndex((seats) => seats.some((seat) => seat.slug === slug))
+  if (deckIndex === -1) return draft
+  const seatIndex = draft.decks[deckIndex].findIndex((seat) => seat.slug === slug)
+  return removeUnit(draft, deckIndex, seatIndex)
+}
+
 /** Builds the POST /api/recommend-raid wire shape, omitting empty decks
  * (frontend/README.md "Draft-based raid recommendation": "0..5 units each"). */
 export const toRequestDraft = (draft: Draft): DraftDeck[] =>
