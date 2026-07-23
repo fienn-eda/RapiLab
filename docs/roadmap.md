@@ -416,6 +416,17 @@
   - **0. 프로파일 우선(~20 LOC).** `recommend_from_draft` 한 호출을 cProfile+구간
     타이머로 감싸 scratch/warm/greedy/swap/summary 실측 분해 — 아래 어느 걸 고르든
     잘못된 병목 최적화를 막는 선행 단계. (위 202초·97초는 구조 추정치이지 실측 분해 아님.)
+    **✅ 완료 (2026-07-23, `scripts/profile_recommend_allocation.py`, 78유닛 실 로스터,
+    workers=auto): 가설 반증.** 완성-draft **총 797초**(≠202초). 호출별: scratch(draft
+    무시, 78)=**597초**, warm(draft 시드, 78)=50초, within.warm(25)=23초,
+    within.scratch(25)=126초. **draft-무시 from-scratch 탐색이 지배(scratch=warm의 ~12배);
+    두 scratch 패스 합 723초 = 90%.** cProfile: 그 597초 = 병렬 sim 대기 ~444초(수만 후보
+    덱) + 부모측 후보 생성 핫루프(`_intra_tier_orderings` 1억 회·`_buffer_seat_valid`
+    8800만 회, `_all_intra_tier_orderings` cumtime 202초) + swap ~57초. **spawn은 무시 수준.**
+    ⇒ 아래 1(공유 SimPool)·2(메모)는 spawn/중복을 겨냥해 이제 **부차적**. 진짜 레버는
+    (a) 중복 from-scratch 패스 축소/조건부 생략(구조적, 최대·품질 트레이드), (b) from-scratch
+    탐색 내부 최적화(후보 풀 prune 강화·top-K 축소로 sim 수↓, 핫루프 가속; zero-base raid
+    모드=scratch만 597초도 직접 단축). **방향은 Fienn과 논의 필요(품질↔속도).**
   - **1. SimPool 공유(~30 LOC).** 4회 호출이 SimPool 하나를 공유(전체 로스터로 초기화
     → 30명 부분집합도 `_WORKER_SPECS[s]` 유효). spawn wave 4→1. **결과 불변.** 단
     sim 작업량 2×97초는 그대로 — spawn이 지배 비용이 아니면 체감 작음(0번이 판정).
