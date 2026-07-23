@@ -75,7 +75,15 @@ def test_complete_draft_yields_monotone_tiers(monkeypatch):
     assert within <= rec + 1e-6
     # Exact values (verified analytically): draft-as-given never co-locates
     # the synergy pair (82); reshuffling the 10 drafted units co-locates it
-    # (102); pulling in the bench unit beats that too (151).
+    # (102). `recommended` is now max(warm, within_draft) - no full-roster
+    # scratch pass. warm's seed step reproduces the draft's two decks
+    # unchanged (both already full, so best_completions has nothing to add),
+    # then its swap-improvement hill-climb (i) trades a drafted B3 seat for
+    # bench unit "t3x" against the leftover pool (t1a/t2a/t3x/t3a2/t3b2 = 90)
+    # and (ii) separately co-locates the synergy pair via a same-tier pair
+    # swap (t1b/t2b/t3b1/t3a1/t3b3 = 61), reaching the same 151 the old
+    # full-roster scratch pass found - so the value is unchanged even though
+    # the path that produces it is.
     assert base == 82.0
     assert within == 102.0
     assert rec == 151.0
@@ -153,20 +161,42 @@ def _locked_draft(roster):
 
 
 def test_locked_unit_stays_in_recommended_even_though_it_is_the_weakest(monkeypatch):
-    # Without the lock, "pweak" (quality 1, the unique roster minimum) is
-    # always the deck search's leftover - the from-scratch pass would rather
-    # seat the bench unit "bx" (quality 50). Locking "pweak" into deck 0 must
-    # keep it seated in `recommended`, even at a lower total than the
+    # For a complete draft, `recommended` is warm (or within_draft if it
+    # scores higher; it doesn't here). Without the lock, warm's leftover-swap
+    # hill-climb benches "pweak" (quality 1, the unique roster minimum) in
+    # favor of the bench unit "bx" (quality 50) - proven below, so this test
+    # has teeth rather than being a tautology. Locking "pweak" into deck 0
+    # must keep it seated in `recommended` via warm's swap mask (locked slugs
+    # are never chosen as a swap source), even at a lower total than the
     # unconstrained optimum, and it must show up in `pinned_by_deck`.
     patch_scorer(monkeypatch, _locked_score)
     r = _locked_roster()
     draft = _locked_draft(r)
+
+    unlocked = da.recommend_from_draft(r, BOSS, num_decks=2, draft=draft, workers=None)
+    assert not any("pweak" in d["deck"] for d in unlocked["recommended"]["decks"]), (
+        "test setup: without a lock, warm must bench pweak, or this test is a tautology")
+
     out = da.recommend_from_draft(r, BOSS, num_decks=2, draft=draft,
                                   locked={"pweak"}, workers=None)
     hit = [i for i, d in enumerate(out["recommended"]["decks"])
            if "pweak" in d["deck"]]
     assert len(hit) == 1, "locked unit must be seated in exactly one recommended deck"
     assert "pweak" in out["pinned_by_deck"][hit[0]]
+
+
+def test_complete_draft_makes_exactly_three_allocate_decks_calls(monkeypatch):
+    # Locks in the optimization: a complete draft must call allocate_decks
+    # exactly THREE times - warm (`recommended`) plus within_draft's `w` and
+    # `s` - NOT four. A regression back to also computing the full-roster
+    # scratch pass for `recommended` would show up here as a 4th call, even
+    # if the two candidate allocations happened to agree on the winner.
+    patch_scorer(monkeypatch, _score)
+    r = _roster()
+    draft = _complete_draft(r)
+    with patch.object(da, "allocate_decks", wraps=da.allocate_decks) as spy:
+        da.recommend_from_draft(r, BOSS, num_decks=2, draft=draft, workers=None)
+    assert spy.call_count == 3
 
 
 def test_zero_base_makes_exactly_one_allocate_decks_call(monkeypatch):

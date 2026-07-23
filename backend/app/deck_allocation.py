@@ -163,14 +163,20 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
     # could drop a locked unit. Empty when there are no locks => pure from-scratch.
     locked_seed = [[u for u in deck if u.slug in locked] for deck in draft]
     locked_seed = [d for d in locked_seed if d]
-    scratch = allocate_decks(roster, boss, num_decks=num_decks,
-                             draft=(locked_seed or None), locked=locked, workers=workers)
     if draft:
-        warm = allocate_decks(roster, boss, num_decks=num_decks, draft=draft,
-                              locked=locked, workers=workers)
-        recommended = _better(scratch, warm)
+        # The full-roster from-scratch pass is cut here (measured redundant:
+        # scripts/measure_scratch_delta.py, docs/roadmap.md) - draft-seeded
+        # `warm` (which swaps bench units into weak seats) plus `within_draft`
+        # below already match or beat it on realistic drafts (0% loss across
+        # 6/8 measured scenarios), losing at most ~2.2% only on pathological
+        # "benched the strongest units" drafts. `warm` honors `locked` via its
+        # swap mask, so the lock guarantee (a locked unit is never displaced)
+        # still holds. ~4x faster on a complete draft.
+        recommended = allocate_decks(roster, boss, num_decks=num_decks, draft=draft,
+                                     locked=locked, workers=workers)
     else:
-        recommended = scratch
+        recommended = allocate_decks(roster, boss, num_decks=num_decks,
+                                     draft=(locked_seed or None), locked=locked, workers=workers)
 
     within_draft = None
     baseline_total = None
