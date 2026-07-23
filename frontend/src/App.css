@@ -520,6 +520,23 @@
   color: var(--text-muted);
 }
 
+.draft-palette__item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.draft-palette__item--excluded .draft-palette__unit {
+  opacity: 0.35;
+  text-decoration: line-through;
+}
+
+.draft-palette__use {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
 /* Draft editor ------------------------------------------------------------ */
 
 .draft-editor {

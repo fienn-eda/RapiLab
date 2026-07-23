@@ -30,9 +30,9 @@ import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
 import { DeckResults } from './DeckResults'
 import { DraftEditor, placeUnit, toRequestDraft } from './DraftEditor'
-import { DraftPalette } from './DraftPalette'
 import { DraftResults } from './DraftResults'
 import { RaidResults } from './RaidResults'
+import { UnitPalette } from './UnitPalette'
 
 interface RecommendPanelProps {
   /** The validated, ready subset of the entered roster. */
@@ -348,11 +348,13 @@ export function RecommendPanel({
               seat to force the engine to keep it there.
             </p>
             {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
-            <DraftPalette
+            <UnitPalette
               ownedSlugs={ownedSlugs}
               supportedUnits={supportedUnits.units}
               usedSlugs={usedSlugs}
               onPick={handlePick}
+              excludedSlugs={[]}
+              onToggleExclude={() => {}}
             />
             <DraftEditor numDecks={numDecks} value={draftValue} onChange={setDraftValue} />
           </fieldset>
