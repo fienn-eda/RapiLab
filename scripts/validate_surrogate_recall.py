@@ -14,10 +14,21 @@ Usage (any cwd):
                                                  [--seed 7]
 """
 import argparse
+import os
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
+
+# Force single-threaded BLAS BEFORE importing numpy. On this Windows/anaconda
+# build, multi-threaded OpenBLAS deadlocks np.linalg.solve on the ~790x790
+# ridge system (fit_ridge spins every core forever after the sims finish).
+# Single-threaded solve is instant (0.03s) and the fit is tiny, so there is no
+# throughput loss. numpy reads these vars at import time, so they must be set
+# first.
+os.environ.setdefault("OPENBLAS_NUM_THREADS", "1")
+os.environ.setdefault("OMP_NUM_THREADS", "1")
+os.environ.setdefault("MKL_NUM_THREADS", "1")
 
 import numpy as np  # noqa: E402
 
