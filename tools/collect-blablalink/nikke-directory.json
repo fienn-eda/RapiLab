@@ -333,6 +333,24 @@
     "corporation_sub_type": null
   },
   {
+    "resource_id": 103,
+    "name_code": 5177,
+    "name_en": "Laplace: Ultimate Hero",
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "MISSILIS",
+    "corporation_sub_type": null
+  },
+  {
+    "resource_id": 105,
+    "name_code": 5178,
+    "name_en": "Maxwell: Ordinary Mechanic",
+    "original_rare": "SSR",
+    "class": "Supporter",
+    "corporation": "MISSILIS",
+    "corporation_sub_type": null
+  },
+  {
     "resource_id": 110,
     "name_code": 5025,
     "name_en": "Crow",

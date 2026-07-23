@@ -204,6 +204,7 @@
 | ~~10~~ | ~~창 한정 per-shot threshold 오버라이드~~ (버스트가 요구 카운트를 3/6/9 → 1/2/3으로 변경) | 1 (Scarlet: Black Shadow) | **완료 (2026-07-18, `per_shot_rules` `"sequence"` 모드 — Scarlet 인코딩)** | 트리거 변형 |
 | ~~11~~ | ~~**강제 재장전 / 탄약 제거 상태머신**~~ | 1 (Milk: Blooming Bunny) | **완료 (2026-07-20)** — 신규 타임라인 프리미티브 불필요(샷 0개 세그먼트 + `reload_time_with_speed` 음수 분기 + `burst_anchored_buffs`) | 재분류 |
 | — | **부위파괴 이벤트** (gap #2 Pattern B와 동근) | 3+ (Raven·Sakura·Mihara) | 미착수 — ark-ranger는 `part_destructible` 브래킷으로 개별 우회 | 신규 이벤트 |
+| 13 | **차지-카운트 트리거 무기 변환** (Warm Up 스택 → 변신 + 변환상태 카운터/단계 자원) | 1 (Laplace: Ultimate Hero) | 미착수 — 중간+ | 신규 트리거+상태 |
 | — | hit rate · Burst Gauge fill speed (딜/타이밍 아님) | 15 | **구현 안 함** (defer 유지) | 범위 밖 |
 
 > **핵심 결론:** #1 하나가 압도적이다. 노멀공격 카운터(20명)와 풀차지 카운터(19명)는
@@ -877,6 +878,29 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
   제품 결정으로 분리(`docs/decisions.md`).
 - 상세: `docs/superpowers/specs/2026-07-20-harmony-cube-assumed-lv15-design.md`,
   `docs/superpowers/plans/2026-07-20-harmony-cube-assumed-lv15.md`.
+
+### 13. 차지-카운트 트리거 무기 변환 (Warm Up 스택 → 변신) — 미착수 (2026-07-23)
+
+- **무엇:** Laplace: Ultimate Hero의 핵심 딜 루프. 풀차지마다 Warm Up +1스택(차지속도
+  +10%), 5스택에서 **스택 소모 + 무기 변환** "Electric Power, Fully Full Charge"
+  (9.45%/발 × 120발, Pierce, 탄창 소진 시 종료 → 탄약 100% 제거) → 변환 상태 일반공격
+  12회마다 Over Energy +5%(100%까지) → 100%마다 단계 상승(Max HP +2/3/7/10.5%) →
+  버스트의 934.76%×단계 추가딜을 스케일.
+- **왜 막혔나:** 변환 트리거가 **자기 발사(풀차지) 카운트의 누적 스택 임계치**다.
+  `weapon_mode_schedules`(무기변형 v1, gap #11 경로)는 세그먼트를 battle_start / 자기
+  버스트 시각에만 앵커할 수 있고, "N번째 풀차지에서 시작해 매거진 소진까지"라는
+  발사-카운트 앵커가 없다. Over Energy는 그 위에 다시 변환-상태-한정 일반공격 카운터 +
+  단계 자원을 얹는다.
+- **막힌 유닛:** 1 (Laplace: Ultimate Hero). 인코딩은 버스트 넉(2953.84%) + 자버프
+  몇 개(전투시작 ATK, 풀버스트 Attack Damage, 버스트 ATK)만 모델된 **얇은 스텁**으로
+  들어갔다 — 주력 딜이 통째로 빠져 덱서치가 과소평가한다(`laplace_ultimate_hero.py`
+  docstring의 deferred 목록).
+- **확장 방향(미확정):** ① per_shot 카운트(gap #1)로 발사 타임라인 상의 변환 시작 시각을
+  산출해 세그먼트 스케줄(`weapon_mode_schedules`)로 넘기는 결합 경로, ② 변환-상태 자원
+  (Over Energy)을 named-resource(gap #2 Pattern A)로, 단계 추가딜을
+  `resource_scaled_nuke`로. 규모 중간+ — 착수 전 실측(변환 주기·120발 케이던스)이 필요.
+- 참고: `data/shiftypad/laplace-ultimate-hero.json`,
+  `data/lootandwaifus/char_laplace-ultimate-hero-nikke.html`.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 

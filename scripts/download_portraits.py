@@ -69,6 +69,8 @@ SLUG_ALIASES = {
     "laplace-signature": "laplace",
     "privaty": "privaty-nikke",
     "rapi-red-hood-b1": "rapi-red-hood",
+    "laplace-ultimate-hero": "laplace-ultimate-hero-nikke",
+    "maxwell-ordinary-mechanic": "maxwell-ordinary-mechanic-nikke",
 }
 
 PORTRAIT_RE = re.compile(r'data-default-src="(/characters/nikke/[^"]+)"')

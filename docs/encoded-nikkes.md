@@ -3,6 +3,12 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
+- 마지막 갱신: 2026-07-23 — **신규 출시 온보딩: Maxwell: Ordinary Mechanic(✅) +
+  Laplace: Ultimate Hero(🔶).** 둘 다 ShiftyPad(blablalink 공개 데이터, `collect.js
+  --nikke`)로 수집 — 무기 스탯 + 스킬값 한 번에, 로그인 불필요. Maxwell은 팀 기여
+  전부 모델(자체 무기변환·버스트게이지·Max HP만 보류). Laplace는 차지-카운트 트리거
+  무기변환 루프(주력딜)가 현 엔진 미표현이라 **첫 🔶 얇은 스텁** — 신규 engine-gap #13
+  등록(나중에 별도 처리).
 - 마지막 갱신: 2026-07-20 — **완성도 배치 2회차: 낡은 보류 재감사.** 같은 날 1회차
   배치가 ⚠ 42명을 훑고 "남은 구조적 보류는 노멀전용 버킷·펠릿·파츠파괴·Pierce
   4가지뿐"이라 결론냈으나, **그 감사가 불완전했다**. 2회차에서 STALE(엔진이 이미
@@ -79,7 +85,7 @@
 | Volume | `volume` | Attacker | SMG | Wind | ✅ | Freestyle(킬 트리거, 레이드엔 무의미)만 미모델 |
 | Zwei (애장품) | `zwei` | Supporter | SG | Electric | ✅ | Pierce Equation 스쿼드 Pierce(**20.13% 1 round=탄수 버프** + 10.06% 10초)·풀버스트창 노멀공격 스택 Pierce(24.99%/1 round, per-shot FB 게이트)·Frame Analysis 크리율·**Pierce Attacks 101(버스트 10초 창) 노멀공격 크리율 스택 15%/5초·3중첩**(own_status_window 리소스)·스택 Pierce 3중첩 상한(round_buff_rule `cap`, 수혜자별)·버스트 Pierce 모델됨. **(갱신 2026-07-21) Overcharge Formula 무기변형 인코딩 완료** — "Max Ammunition Capacity: 1"이 창을 규정하므로 지속시간이 아니라 **버스트당 단 1발**(Maxwell Pierce Shot과 원문 형태까지 동일, `until_shots: 1`). 1.2초 차지 50.69%, 풀차지 300% = 152%. "Fixed at"이 없으므로 `rate_of_fire`가 아니라 `charge_time`(차지속도 버프를 받음). **dotgg → lootandwaifus 소스 이관** 필요(dotgg엔 차지시간·풀차지 슬롯 없음). E2E **+0.82%**. 보류: Cover HP(생존)뿐 |
 
-## Burst 2 (16명)
+## Burst 2 (17명)
 
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
@@ -99,8 +105,9 @@
 | Velvet | `velvet` | Supporter | SR | Wind | ⚠ | Perfect Execution(버스트 자AD버프, 넉 없음) + **Bullets of Love(그녀의 실제 스쿼드 서포트): 풀버스트 중 풀차지샷마다(SR, N=1) 스쿼드 flat ATK(자ATK의 25.2%)+스쿼드 Charge Damage+100.8%(3초, refresh, Prika 선례 따라 스쿼드스코프)+풀버스트 중 노멀50회마다 자AD+15.03%/5초 + 400.92% 넉("as additional damage"→full_burst_bonus_eligible)**(`per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15) 모델됨. ammo pouch(6000, 버스트 스테이지2마다 풀리필)는 소모량 대비 압도적으로 커서 비제약으로 처리(자원 미모델링). **Sticky Fingers 모델됨(2026-07-18):** 풀버스트 아닐 때 풀차지마다(SR N=1) 자ATK+30.5%/자AD+30.5% 3초 refresh — 신규 `every_outside_full_burst` 모드(gap #7 거울상). Perfect Execution 무기변형딜(7%/발, 10초)은 **편성상 제외 확정(Fienn 2026-07-22)** — 실전은 버스트 미사용 토템(Skill 1/2 버프만)이라 변형이 발동 안 함. Modernia와 동류. "무기변형 미지원" stale 사유를 편성 결정으로 정정 |
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | (갱신 2026-07-21) **Spina di Rosa 전체 인코딩 완료** — 듀티사이클은 `scheduled_nukes`의 스케줄 콜백으로 해결(캐스트당 15틱, 연속 간격 가정하는 `periodic_nukes`로는 불가). 강제발동이 없으므로 **t=30·60·90·120·150**(Sakura와 달리 t=cd 규칙 그대로) → 5캐스트×15틱×70.4% = **5280%/180초**. 버프 절반(전체 파츠딜+24.26%/15초)은 `periodic_rules`. Ferita 창[0,15)과 겹치지 않아 갱신 불필요. 그녀의 자체 sustained 소스가 생겨 **Onda Grande의 sustained 버프도 이제 실효**. 고정 셸 E2E **+7.75%**. 보류: Ferita 파츠파괴 스택 ATK(gap #2 Pattern B) — 딜 증가분이라 floor |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ✅ | 버스트 무기변형 인코딩됨(2026-07-22): Fienn 실측 FB 10초 25타 → `until_shots: 25` 세그먼트, 200.64%/발, `damage_type="true"` 고정(같은 bullet의 평타→진댐 변환이 곧 이 샷들 — 자35%·아군140% 진댐 버프 실림). S2는 periodic(cd15s 아군 True Damage▲140%). 부위딜용 stun만 미모델 |
+| Maxwell: Ordinary Mechanic | `maxwell-ordinary-mechanic` | Supporter | SR | Wind | ✅ | (신규 2026-07-23, ShiftyPad 수집) 팀 기여 전부 모델됨: FB진입 시 스쿼드 AD+10%/5초·버스트 시 스쿼드 flat ATK(자기 최종 최대HP의 1%)/15초 + 스쿼드 AD+25%/10초·Overcurrent 자ATK+30%×최대5스택(버스트당 1스택 램프, escalating refreshing). 버스트가 자체 무기변환이라 넉 없음 → `burst_percent None`. 보류(전부 자체용/inert): Max HP 스택(풀차지마다 1%×30, 딜 inert)·버스트게이지 fill 7.15%(inert)·Matis UberBuster 버스트 무기변환(자체 단발 캐논, Overcurrent 단계별 차지타임 — 서포터 자체딜 미미) |
 
-## Burst 3 (49명)
+## Burst 3 (50명)
 
 > 배치 인코딩(eb1~eb4)과 gap #7 소비 이력은 각 행의 `(신규 날짜)` 표기와 git log
 > 참고. 남은 백로그는 [`roadmap.md`](roadmap.md) To-Do에 있다.
@@ -154,6 +161,7 @@
 | Drake (Signature) | `drake-signature` | Attacker | SG | Fire | ⚠ | (신규 2026-07-16, 시그니처/듀얼슬롯) base + SG아군(**정확 스코프** — 2026-07-18 member_subset 정밀화, 이전 squad 근사) ATK+63.88%/Max Ammo+50.14% + Thunderbolt 2차 트리거(노멀5회마다 201.6%) + Drake Special 3009.6% 넉 + 자AD+31.68%. 보류: Hit Rate(inert) |
 | Laplace | `laplace` | Attacker | RL | Iron | ⚠ | (갱신 2026-07-21) Hero Bomber: 마지막 탄 81.66% "additional" 넉(gap #1 last_bullet)·Laplace Buster First Damage 897.6%를 버스트 넉으로 모델. **Buster 5초 변형 인코딩 완료** — Fienn 확인(2026-07-21): base Buster의 발사속도는 시그니처와 동일(시그니처 실측 93틱/10초 = 9.3/초). base는 5초 창이라 `end` 방식으로 ~46틱 × Normal Damage 14.52%(`weapon_mode_schedules` 세그먼트, `BUSTER_RATE_OF_FIRE`=9.3 공유). 시그니처와 달리 **true 변환 안 함** — Hero Vision 카운터가 base에선 미모델이라 맥스스택 게이트 불가, 그래서 11.9% true rider도 계속 보류. E2E **−0.07%**(base RL 5초 5발×157.8% ≈ Buster 46틱×14.52%, 발수 많고 발당 낮은 실제 동작). 보류: Hero Vision(Pattern B 감쇠 스택)+맥스스택 true dmg, 파츠딜 |
 | Laplace (시그니처, 별도 slug) | `laplace-signature` | Attacker | RL | Iron | ⚠ | (신규 2026-07-19, 시그니처/듀얼슬롯) base와 별도 roster 엔트리(Fienn 결정, 2026-07-12). Fienn 인게임 실측(2026-07-19): 변형 10초 창 = First 1회 + 노멀 93회. Laplace Buster First Damage 1455.72%를 버스트 넉으로, Normal Damage 22.2%×93틱을 `weapon_mode_schedules` 세그먼트(rate_of_fire=93/10)로 모델 — Hero Vision 상시 맥스스택 가정(Fienn 승인, red-hood Glaring 정상상태 선례)으로 틱 전부 **true** 타입 고정. 틱마다 +11.9% true 추가히트를 동일 93틱 케이던스의 `scheduled_nukes`(`build_buster_scheduled_nukes`)로 방출 — 두 경로 모두 `context.burst_times` 앵커라 케이던스 일치. Hero Bomber는 base의 `last_bullet`과 달리 풀차지마다 발동(`every_outside_full_burst`) — 변형 창(=자기 버스트가 여는 FB 창) 중엔 풀차지 자체가 없어 인게임과 정확히 일치. 보류: Hero Vision의 맥스스택 게이트 자체(카운터 미모델, 위 가정으로 우회)·파츠딜 14.78%·Pierce 속성·base의 5초 변형(별도 슬러그, 미해결로 남음) |
+| Laplace: Ultimate Hero | `laplace-ultimate-hero` | Attacker | RL | Wind | 🔶 | (신규 2026-07-23, ShiftyPad 수집) **얇은 스텁 — 핵심 딜 루프 통째로 보류(engine-gaps #13).** 모델: 전투시작 자 flat ATK(자기 최종 최대HP의 4.05%)·FB진입 자 AD+52.14%/10초·버스트 자ATK+63.36%/10초 + 버스트 넉 2953.84%. 보류: Warm Up 차지속도(5스택서 소모·리셋되어 max 유지 불가)·Electric Power Fully Full Charge **무기변환**(차지-카운트 트리거, 9.45%/발×120발 관통 = 주력딜)·Over Energy(변환상태 노멀12회 카운터 + 단계별 Max HP)·버스트의 934.76%×Over Energy 단계 추가딜. 차지-카운트 트리거 무기변환은 신규 갭 #13 |
 | Dorothy: Serendipity | `dorothy-serendipity` | Attacker | SG | Water | ⚠ | (신규 2026-07-16, **Phase S 소비자**) Radiant Wings: 자 Pierce+55.08% 영구·자ATK+75.24%(FB 중)·False Salvation 버스트(버프전용): 자ATK+88.12% + **자 Attack Speed+65% 15초**(Phase S 발사속도 모델). 보류: 펠릿, Hit Rate, Flash 펠릿카운터 트리거 |
 | Soda: Twinkling Bunny | `soda-twinkling-bunny` | Attacker | SG | Iron | ⚠ | eb3 Pattern-A. Golden Chip 자원(캡50·전투시작 만캡·풀버스트 중 노멀3회마다 +1=`per_shot_every_during_full_burst`, 자신의 Critical Damage 스택 +1.32%/스택)+Onward Soda! 버스트(628.7% 넉 + 17로 **reset** + 리셋前 스택≥30 게이팅 ATK+65.25%/15s=`resource_gated_buffs`)+**Lucky Golden Chip 공동발동 버프(풀버스트 중 노멀3회마다 자신+최고ATK아군 Attack Damage+10.51%/2초 refresh, `per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15)** 모델됨. Beginner's Rewards 전체(캐스터별 FB 지속시간 연장 개념 부재)·Hit Rate(inert)만 보류 |
 

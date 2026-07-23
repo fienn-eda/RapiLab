@@ -1,7 +1,7 @@
 {
   "source": "lootandwaifus.com",
   "base_url": "https://lootandwaifus.com",
-  "generated": "2026-07-22",
+  "generated": "2026-07-23",
   "note": "Portrait paths read from data/lootandwaifus/char_<slug>.html (data-default-src); regenerate via scripts/download_portraits.py.",
   "portraits": {
     "ada-wong": "mi_c840_00_s.png",
@@ -41,6 +41,7 @@
     "julia-signature": "mi_c150_00_s.webp",
     "laplace": "mi_c100_00_s.webp",
     "laplace-signature": "mi_c100_00_s.webp",
+    "laplace-ultimate-hero": "0laplace.webp",
     "liberalio": "mi_c262_00_s.png",
     "liter": "mi_c082_00_s.webp",
     "little-mermaid": "mi_c513_00_s.webp",
@@ -50,6 +51,7 @@
     "marciana-marine-study": "0marci.webp",
     "mast-romantic-maid": "mi_c354_00_s.webp",
     "maxwell": "mi_c102_00_s.webp",
+    "maxwell-ordinary-mechanic": "0maxwell.webp",
     "mihara-bonding-chain": "mi_c162_00_s.webp",
     "milk-blooming-bunny": "mi_c143_00_s.webp",
     "mint": "mi_c600_00_s.webp",

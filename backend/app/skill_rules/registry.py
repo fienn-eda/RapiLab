@@ -179,6 +179,11 @@ from app.skill_rules.laplace import (
     laplace_buster_burst_percent,
 )
 from app.skill_rules import laplace_signature
+from app.skill_rules.laplace_ultimate_hero import (
+    build_laplace_ultimate_hero_rules,
+    laplace_ultimate_hero_burst_percent,
+)
+from app.skill_rules.maxwell_ordinary_mechanic import build_maxwell_ordinary_mechanic_rules
 from app.skill_rules.dorothy_serendipity import build_dorothy_serendipity_rules
 from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resource_scaled_nukes,
@@ -394,6 +399,16 @@ def _build_asuka(sv):
     return rules, None  # Annihilation is a dynamic_hit_count_nuke, not burst_damage_percents
 
 
+def _build_laplace_ultimate_hero(sv):
+    rules = build_laplace_ultimate_hero_rules(sv, sv["caster_max_hp"])
+    return rules, laplace_ultimate_hero_burst_percent(sv)
+
+
+def _build_maxwell_ordinary_mechanic(sv):
+    rules = build_maxwell_ordinary_mechanic_rules(sv, sv["caster_max_hp"])
+    return rules, None  # Matis Uberbuster is a self weapon transform, not a burst nuke
+
+
 def _build_mana(sv):
     rules = build_metal_gamma_rules(sv)
     rules += build_metal_sigma_rules(sv)
@@ -448,6 +463,8 @@ _BUILDERS = {
     "jill-valentine": lambda sv: (build_jill_rules(sv), None),
     "marciana-marine-study": lambda sv: (build_marciana_rules(sv), None),  # burst is buff-only; damage is Flagged Target nukes (per-shot + full-burst)
     "maxwell": lambda sv: (build_maxwell_rules(sv), None),  # burst is the Pierce Shot weapon transform (weapon-mode segment), no direct nuke
+    "maxwell-ordinary-mechanic": _build_maxwell_ordinary_mechanic,
+    "laplace-ultimate-hero": _build_laplace_ultimate_hero,
     "privaty": _build_privaty,
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
