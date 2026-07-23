@@ -1,7 +1,8 @@
 import numpy as np
 from types import SimpleNamespace
 from app.surrogate import (ALLOWED_PAIR_TYPES, make_feature_space, featurize,
-                           build_matrix)
+                           build_matrix, sample_feasible_combinations)
+from app.deck_search import ALLOWED_SHAPES
 
 
 def _u(slug, tier):
@@ -38,3 +39,29 @@ def test_build_matrix_shape():
     fs = make_feature_space(ROSTER)
     X = build_matrix([[ROSTER[0], ROSTER[2], ROSTER[3]], ROSTER[:3]], fs)
     assert X.shape == (2, fs.n_features)
+
+
+# A roster big enough to form many feasible decks across shapes.
+BIG = ([_u(f"a{i}", 1) for i in range(3)] +
+       [_u(f"b{i}", 2) for i in range(3)] +
+       [_u(f"c{i}", 3) for i in range(6)])
+
+
+def test_sampled_combos_are_feasible_and_deterministic():
+    s1 = sample_feasible_combinations(BIG, n_samples=20, seed=7)
+    s2 = sample_feasible_combinations(BIG, n_samples=20, seed=7)
+    assert [[u.slug for u in c] for c in s1] == [[u.slug for u in c] for c in s2]
+    shapes = {(1, 1, 3), (1, 2, 2), (2, 1, 2)}
+    for combo in s1:
+        assert len(combo) == 5
+        tiers = tuple(sorted(u.burst_tier for u in combo))
+        # canonical-order combo: tiers non-decreasing
+        assert [u.burst_tier for u in combo] == sorted(u.burst_tier for u in combo)
+        counts = (tiers.count(1), tiers.count(2), tiers.count(3))
+        assert counts in shapes
+        assert len({u.slug for u in combo}) == 5  # distinct units
+
+
+def test_sample_count_capped_by_request():
+    s = sample_feasible_combinations(BIG, n_samples=5, seed=1)
+    assert len(s) == 5

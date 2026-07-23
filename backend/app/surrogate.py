@@ -8,8 +8,12 @@ surrogate-deck-search-design.md). Feasibility rules are reused from deck_search.
 """
 from dataclasses import dataclass
 from itertools import combinations
+import random
 
 import numpy as np
+
+from app.deck_search import (ALLOWED_SHAPES, _no_variant_clash,
+                             _tier1_seating_valid)
 
 # Buffer-attacker (1-3, 2-3), buffer-buffer (1-2), attacker-attacker (3-3).
 # (1-1)/(2-2) omitted: real decks rarely pair those and it curbs feature count.
@@ -52,3 +56,33 @@ def featurize(combo, fs: FeatureSpace) -> np.ndarray:
 
 def build_matrix(combos, fs: FeatureSpace) -> np.ndarray:
     return np.vstack([featurize(c, fs) for c in combos])
+
+
+def sample_feasible_combinations(roster, n_samples, seed):
+    """Up to `n_samples` distinct feasible 5-unit combinations (canonical tier
+    order), drawn uniformly over (shape, per-tier unit choice) and kept only if
+    they pass the deck_search feasibility rules. Deterministic per seed; returns
+    fewer only when the feasible space is exhausted by repeated rejection."""
+    rng = random.Random(seed)
+    by_tier = {1: [], 2: [], 3: []}
+    for u in roster:
+        if u.burst_tier in by_tier:
+            by_tier[u.burst_tier].append(u)
+    seen, out = set(), []
+    # cap attempts so a tiny/infeasible roster can't loop forever
+    attempts, max_attempts = 0, n_samples * 200 + 1000
+    while len(out) < n_samples and attempts < max_attempts:
+        attempts += 1
+        n1, n2, n3 = rng.choice(ALLOWED_SHAPES)
+        if len(by_tier[1]) < n1 or len(by_tier[2]) < n2 or len(by_tier[3]) < n3:
+            continue
+        picks = (rng.sample(by_tier[1], n1) + rng.sample(by_tier[2], n2)
+                 + rng.sample(by_tier[3], n3))
+        combo = sorted(picks, key=lambda u: u.burst_tier)
+        key = tuple(u.slug for u in combo)
+        if key in seen:
+            continue
+        if _no_variant_clash(combo) and _tier1_seating_valid(combo):
+            seen.add(key)
+            out.append(combo)
+    return out
