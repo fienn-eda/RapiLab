@@ -218,14 +218,14 @@ export function RecommendPanel({
   }
 
   const toggleExclude = (slug: string) => {
+    if (!excludedSlugs.has(slug)) {
+      // Excluding a unit also unplaces it from the draft.
+      setDraftValue((current) => removeUnitBySlug(current, slug))
+    }
     setExcludedSlugs((prev) => {
       const next = new Set(prev)
-      if (next.has(slug)) {
-        next.delete(slug)
-      } else {
-        next.add(slug)
-        setDraftValue((current) => removeUnitBySlug(current, slug))
-      }
+      if (next.has(slug)) next.delete(slug)
+      else next.add(slug)
       return next
     })
   }

@@ -645,4 +645,53 @@ describe('RecommendPanel unit-pool exclusion', () => {
     await user.click(screen.getByRole('checkbox', { name: /use a/i }))
     expect(screen.getByRole('button', { name: /allocate raid decks/i })).toBeDisabled()
   })
+
+  it('unplaces a drafted unit when it is excluded (draft mode)', async () => {
+    // poolRoster/supported/raidResponse are defined in this describe's scope.
+    const user = await renderMode(poolRoster, /draft-based/i)
+
+    // Place unit "a" into a deck, then exclude it.
+    await user.click(screen.getByRole('button', { name: /a \(b1\)/i }))
+    expect(screen.getByText('a')).toBeInTheDocument() // seat slug rendered by DraftEditor
+    await user.click(screen.getByRole('checkbox', { name: /use a/i }))
+
+    await user.click(screen.getByRole('button', { name: /optimize draft/i }))
+    await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())
+    const sent = vi.mocked(recommendRaidDecks).mock.calls[0][0]
+    const draftedSlugs = (sent.draft ?? []).flatMap((d) => d.units.map((u) => u.slug))
+    expect(draftedSlugs).not.toContain('a')
+    expect(sent.roster.map((n) => n.character_slug)).not.toContain('a')
+  })
+
+  it('resets exclusions when the active profile changes', async () => {
+    vi.mocked(getSupportedUnits).mockResolvedValue(supported)
+    const user = userEvent.setup()
+    const { rerender } = render(
+      <RecommendPanel roster={poolRoster} {...noPersistence} activeOpenId="p1" />,
+    )
+    await user.click(screen.getByRole('radio', { name: /raid allocation/i }))
+    await screen.findByRole('checkbox', { name: /use a/i })
+    await user.click(screen.getByRole('checkbox', { name: /use a/i }))
+    expect(screen.getByRole('checkbox', { name: /use a/i })).not.toBeChecked()
+    rerender(<RecommendPanel roster={poolRoster} {...noPersistence} activeOpenId="p2" />)
+    expect(screen.getByRole('checkbox', { name: /use a/i })).toBeChecked()
+  })
+
+  it('excluding a unit changes the cache hash', async () => {
+    vi.mocked(getSupportedUnits).mockResolvedValue(supported)
+    vi.mocked(recommendRaidDecks).mockResolvedValue(raidResponse)
+    const getCached = vi.fn().mockReturnValue(null)
+    const user = userEvent.setup()
+    render(<RecommendPanel roster={poolRoster} {...noPersistence} getCached={getCached} />)
+    await user.click(screen.getByRole('radio', { name: /raid allocation/i }))
+    await screen.findByRole('checkbox', { name: /use a/i })
+    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
+    await waitFor(() => expect(getCached).toHaveBeenCalledTimes(1))
+    const hashFull = getCached.mock.calls[0][0]
+    await screen.findByRole('button', { name: /allocate raid decks/i }) // loading cleared
+    await user.click(screen.getByRole('checkbox', { name: /use a/i }))
+    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
+    await waitFor(() => expect(getCached).toHaveBeenCalledTimes(2))
+    expect(getCached.mock.calls[1][0]).not.toEqual(hashFull)
+  })
 })
