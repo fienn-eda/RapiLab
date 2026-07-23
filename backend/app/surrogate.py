@@ -13,7 +13,7 @@ import random
 import numpy as np
 
 from app.deck_search import (ALLOWED_SHAPES, _no_variant_clash,
-                             _tier1_seating_valid)
+                             _tier1_seating_valid, _intra_tier_orderings)
 
 # Buffer-attacker (1-3, 2-3), buffer-buffer (1-2), attacker-attacker (3-3).
 # (1-1)/(2-2) omitted: real decks rarely pair those and it curbs feature count.
@@ -100,3 +100,16 @@ def fit_ridge(X, y, lam=1.0):
 
 def predict(X, beta):
     return np.asarray(X, dtype=float) @ np.asarray(beta, dtype=float)
+
+
+def best_ordering_damage(combos, boss, score_orderings):
+    """Each combo's max total damage over its intra-tier orderings. `boss` is
+    unused here (the injected scorer carries it) but kept for call-site clarity.
+    All orderings are scored in ONE batch, then grouped back per combo."""
+    flat, spans = [], []
+    for combo in combos:
+        orderings = list(_intra_tier_orderings(combo))
+        spans.append((len(flat), len(flat) + len(orderings)))
+        flat.extend(orderings)
+    totals = score_orderings(flat)
+    return [max(totals[a:b]) for a, b in spans]
