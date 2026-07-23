@@ -452,6 +452,13 @@
     **후속 타깃**: `s`(및 zero-base scratch)를 "선택→좁은 분할" 2단계로 바꿔 속도·품질 동시 개선.
     백엔드 1184 passed/3 skipped, 리뷰 Approved. **1(공유 SimPool)·2(evaluate 메모)는 착수 안 함
     (지배 비용이던 full-scratch 제거로 무의미해짐).**
+  - **✅ 유저 풀 선택(제외) 착지 (2026-07-23):** 세 추천 모드(single/raid/draft)에
+    "사용할 니케" 화이트리스트(기본 전체, 안 쓸 유닛만 토글 오프) 추가 — 프론트가
+    `보유∩지원−제외`로 로스터를 필터링해 요청 전 전송(백엔드 무변경). 탐색 풀을
+    근원에서 줄여 raid-from-scratch를 유저가 뺀 만큼 단축. 휘발성(프로필 전환 리셋),
+    `DraftPalette`→`UnitPalette` 일반화. spec/plan:
+    `docs/superpowers/{specs,plans}/2026-07-23-unit-pool-selection*`. **2단계 탐색
+    (선택→좁은 분할)은 실사용 속도 확인 후 재판단(여전히 백로그).**
   - **1. SimPool 공유(~30 LOC).** 4회 호출이 SimPool 하나를 공유(전체 로스터로 초기화
     → 30명 부분집합도 `_WORKER_SPECS[s]` 유효). spawn wave 4→1. **결과 불변.** 단
     sim 작업량 2×97초는 그대로 — spawn이 지배 비용이 아니면 체감 작음(0번이 판정).
