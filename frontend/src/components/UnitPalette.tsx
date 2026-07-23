@@ -82,12 +82,10 @@ export function UnitPalette({
                         {chip}
                       </button>
                     ) : (
-                      <span
-                        className="draft-palette__unit"
-                        aria-label={`${unit.name} (B${unit.burstTier})`}
-                      >
-                        {chip}
-                      </span>
+                      // No aria-label: a generic <span> can't be named, and the
+                      // visible chip text + the "Use {name}" checkbox already
+                      // name the unit. The place-button branch keeps its label.
+                      <span className="draft-palette__unit">{chip}</span>
                     )}
                     <label className="draft-palette__use checkbox">
                       <input
