@@ -24,8 +24,8 @@ import numpy as np  # noqa: E402
 from app.models import UserNikkeState  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
 from app.supported_units import supported_units  # noqa: E402
-from app.deck_search import BossProfile  # noqa: E402
-from app.sim_pool import SimPool  # noqa: E402
+from app.deck_search import BossProfile, evaluate_deck  # noqa: E402
+from app.sim_pool import SimPool, resolve_workers  # noqa: E402
 from app.surrogate import (make_feature_space, build_matrix, fit_ridge, predict,
                            sample_feasible_combinations, best_ordering_damage)  # noqa: E402
 
@@ -51,6 +51,10 @@ def main():
     p.add_argument("--holdout", type=int, default=400)
     p.add_argument("--lam", type=float, default=1.0)
     p.add_argument("--seed", type=int, default=7)
+    p.add_argument("--workers", default="1",
+                   help='"auto" (all-but-one core) or an int; default "1" = serial. '
+                        "The SimPool parallel path oversubscribes BLAS threads on "
+                        "this workload -- keep serial until that is fixed.")
     args = p.parse_args()
 
     slugs = [u["slug"] for u in supported_units()][:args.units]
@@ -74,10 +78,16 @@ def main():
               f"--fit/--holdout to fit the feasible space.", flush=True)
         sys.exit(1)
 
-    with SimPool(specs, boss, workers="auto") as pool:
-        scorer = pool.score_many
+    workers = args.workers if args.workers == "auto" else int(args.workers)
+    pool = SimPool(specs, boss, workers=workers) if resolve_workers(workers) > 1 else None
+    try:
+        scorer = (pool.score_many if pool is not None
+                  else lambda decks: [evaluate_deck(d, boss)["total_damage"] for d in decks])
         y_fit = best_ordering_damage(fit_combos, boss, scorer)
         y_hold = np.array(best_ordering_damage(hold_combos, boss, scorer))
+    finally:
+        if pool is not None:
+            pool.close()
 
     fs = make_feature_space(specs)
     if len(fit_combos) < fs.n_features:
