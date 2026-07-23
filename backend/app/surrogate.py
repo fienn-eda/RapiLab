@@ -86,3 +86,17 @@ def sample_feasible_combinations(roster, n_samples, seed):
             seen.add(key)
             out.append(combo)
     return out
+
+
+def fit_ridge(X, y, lam=1.0):
+    """Ridge coefficients; the intercept column (0) is left unpenalized."""
+    X = np.asarray(X, dtype=float)
+    y = np.asarray(y, dtype=float)
+    n_features = X.shape[1]
+    penalty = np.eye(n_features)
+    penalty[0, 0] = 0.0
+    return np.linalg.solve(X.T @ X + lam * penalty, X.T @ y)
+
+
+def predict(X, beta):
+    return np.asarray(X, dtype=float) @ np.asarray(beta, dtype=float)

@@ -65,3 +65,24 @@ def test_sampled_combos_are_feasible_and_deterministic():
 def test_sample_count_capped_by_request():
     s = sample_feasible_combinations(BIG, n_samples=5, seed=1)
     assert len(s) == 5
+
+
+def test_ridge_recovers_linear_signal_with_small_lambda():
+    from app.surrogate import fit_ridge, predict
+    rng = np.random.default_rng(0)
+    X = np.column_stack([np.ones(200), rng.normal(size=(200, 3))])
+    true_beta = np.array([2.0, 1.5, -3.0, 0.5])
+    y = X @ true_beta
+    beta = fit_ridge(X, y, lam=1e-6)
+    assert np.allclose(beta, true_beta, atol=1e-3)
+    assert np.allclose(predict(X, beta), y, atol=1e-3)
+
+
+def test_ridge_does_not_penalize_intercept():
+    from app.surrogate import fit_ridge, predict
+    # Constant target -> intercept should equal the constant, others ~0.
+    X = np.column_stack([np.ones(50), np.random.default_rng(1).normal(size=(50, 2))])
+    y = np.full(50, 7.0)
+    beta = fit_ridge(X, y, lam=10.0)
+    assert abs(beta[0] - 7.0) < 1e-6
+    assert np.allclose(beta[1:], 0.0, atol=1e-6)
