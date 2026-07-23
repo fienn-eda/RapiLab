@@ -5,6 +5,18 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 유저 주도 "사용할 니케" 풀 선택 — 탐색 알고리즘 개선 대신 탐색 공간을 유저가 직접 축소
+- Date: 2026-07-23
+- Context: Phase 5 perf 후속의 원래 다음 타깃은 greedy-peel from-scratch 탐색을 "유닛 선별 → 좁은 분할" 2단계로 바꿔 속도와 품질을 함께 개선하는 것이었다(perf 백로그, 아래 "Sub-minute five-deck allocation..." 결정 참고). 브레인스토밍 중 Fienn이 방향을 틀었다: 엔진이 "어떤 25명이 좋을까"를 추측하게 하는 대신, 유저가 육성 안 했거나 쓰기 싫은 니케를 유저 스스로 빼서 탐색 풀을 근원에서 줄이자는 제안.
+- Decision: 유저 주도 "사용할 니케" 풀 선택기(화이트리스트 프레이밍, 기본 전체 켜짐, 요청 단위 휘발성 — 프로필 전환 시 리셋)를 세 추천 모드(single/raid/draft) 모두에 추가. 프론트가 `effectiveRoster = 보유 ∩ 지원 − 제외`를 계산해 모든 추천 요청·`hashRecommendInputs`·`rosterTooSmall` 가드에 일괄 사용. 백엔드/API 계약은 무변경(순수 클라이언트 필터). 원래의 2단계 알고리즘은 실사용 속도를 확인한 뒤 재판단하는 perf 백로그로 계속 연기.
+- Alternatives considered:
+  - 2단계 알고리즘(유닛 선별 → 좁은 분할) — 대안 부결은 아니고 연기. 제외 기능이 훨씬 단순하고 유저 정렬적이다(플레이어는 자기 육성 로스터를 이미 안다). "안 쓸 유닛을 왜 굳이 탐색하나"를 직접 해소한다. YAGNI — 제외만으로 체감 속도가 충분하면 2단계는 불필요해진다.
+  - 화이트리스트 vs 블랙리스트 프레이밍 — 기본이 전체 켜짐이면 컨트롤 자체는 동치이나, 화이트리스트("사용할 니케를 고른다")가 draft 모드의 "쓸 유닛을 고른다"는 기존 멘탈모델과 일관적이라는 Fienn 판단으로 화이트리스트 채택.
+  - 클라이언트 로스터 필터 vs 백엔드 `excluded_slugs` 요청 파라미터 — 클라이언트 필터가 가장 단순하고, 응답에 이미 있는 `excluded_slugs`(미지원 자동제외) 필드와 의미가 충돌하지 않는다. API 계약도 무변경.
+  - 영속 vs 요청 단위 휘발성 — Fienn 판단으로 휘발성 채택(프로필 전환 시 리셋).
+- Why: 엔진이 자체적으로 "좋은 25명"을 추측하는 것보다, 플레이어가 자기 로스터에 대해 가진 실제 지식(누구를 육성했는지, 누구를 쓰고 싶은지)을 직접 입력받는 편이 더 정확하고 더 간단하다. 클라이언트 필터는 백엔드를 전혀 안 건드리므로 리스크가 최소다.
+- Consequences: 속도 이득은 유저가 뺀 만큼만 발생하고 하드 보장은 없다 — greedy 초반-덱 몰림 같은 품질 결함은 이 레버로는 안 고쳐진다. swap/greedy 힐클라임은 딜이 오르는 유닛만 채택하므로 약한 미육성 유닛은 애초에 결과에 안 뽑힌다 — 즉 제외의 실질 가치는 **속도와 선호**이지 결과 품질이 아니다(자세한 메커니즘은 `docs/insights.md`, "Deck search" 참고). 2단계 탐색은 여전히 연기된 perf 백로그(원 항목: 위 "Sub-minute five-deck allocation..." 결정). `ownedSlugs`(팔레트 입력)는 전체 로스터를 유지해 제외된 유닛도 dim 상태로 남고 재포함 가능하다(자세한 패턴은 `docs/insights.md`). Spec/plan: `docs/superpowers/specs/2026-07-23-unit-pool-selection-design.md`, `docs/superpowers/plans/2026-07-23-unit-pool-selection.md`. 커밋 1db4cf0..6309514 (branch `wip/simpool-optimization`).
+
 ## Client-side multi-account profiles keyed by `open_id` — no server/auth/DB
 - Date: 2026-07-23
 - Context: one user may have multiple NIKKE accounts whose investment states differ completely and must never mix. The prior decision to make blablalink sync the sole roster source (below) means every roster now carries `open_id` — the only account identifier available client-side. The app had a single `nikke-roster` localStorage key that blended whichever account was synced last into one blob.
