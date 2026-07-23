@@ -82,7 +82,11 @@ def sample_feasible_combinations(roster, n_samples, seed):
         key = tuple(u.slug for u in combo)
         if key in seen:
             continue
-        if _no_variant_clash(combo) and _tier1_seating_valid(combo):
+        # A combo with two same-tier buffer-seat units (e.g. modernia+velvet)
+        # has zero valid intra-tier orderings, which best_ordering_damage
+        # can't score (max() of an empty span) -- reject it here instead.
+        if (_no_variant_clash(combo) and _tier1_seating_valid(combo)
+                and next(_intra_tier_orderings(combo), None) is not None):
             seen.add(key)
             out.append(combo)
     return out
@@ -105,7 +109,9 @@ def predict(X, beta):
 def best_ordering_damage(combos, boss, score_orderings):
     """Each combo's max total damage over its intra-tier orderings. `boss` is
     unused here (the injected scorer carries it) but kept for call-site clarity.
-    All orderings are scored in ONE batch, then grouped back per combo."""
+    All orderings are scored in ONE batch, then grouped back per combo.
+    Precondition: each combo must have at least one valid ordering (the
+    sampler guarantees this)."""
     flat, spans = [], []
     for combo in combos:
         orderings = list(_intra_tier_orderings(combo))

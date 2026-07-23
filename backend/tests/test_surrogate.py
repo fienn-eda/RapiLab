@@ -91,18 +91,18 @@ def test_ridge_does_not_penalize_intercept():
 def test_best_ordering_damage_takes_max_per_combo():
     from app.surrogate import best_ordering_damage
 
-    combos = [BIG[:5], BIG[3:8]]  # two 5-unit combos (feasible shape irrelevant here)
-    calls = {}
+    combos = [BIG[:5], BIG[3:8]]
+    calls = {"count": 0, "n": 0}
 
     def fake_scorer(ordered_decks):
-        # score = number of orderings seen so far, so the max per combo is
-        # deterministic and grouping can be checked.
+        calls["count"] += 1
         calls["n"] = len(ordered_decks)
         return [float(i) for i in range(len(ordered_decks))]
 
     out = best_ordering_damage(combos, boss=None, score_orderings=fake_scorer)
-    assert len(out) == 2
-    # single flattened call covers every ordering of both combos
-    assert calls["n"] > 0
-    # each entry is the max score among that combo's orderings
-    assert all(isinstance(x, float) for x in out)
+    # Exactly ONE flattened call over all orderings of both combos.
+    assert calls["count"] == 1
+    # Each combo has 12 valid intra-tier orderings (3!*2!); fake scores are
+    # 0..23 in flatten order, so per-combo max = [11, 23].
+    assert calls["n"] == 24
+    assert out == [11.0, 23.0]
