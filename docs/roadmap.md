@@ -427,6 +427,18 @@
     (a) 중복 from-scratch 패스 축소/조건부 생략(구조적, 최대·품질 트레이드), (b) from-scratch
     탐색 내부 최적화(후보 풀 prune 강화·top-K 축소로 sim 수↓, 핫루프 가속; zero-base raid
     모드=scratch만 597초도 직접 단축). **방향은 Fienn과 논의 필요(품질↔속도).**
+  - **✅ scratch 품질기여 측정 (2026-07-23, `scripts/measure_scratch_delta.py`, 41유닛
+    스탯편차 seed=7, 3 draft 시나리오): full-scratch는 잉여로 판명.** scratch(전체 전역)
+    vs warm(초안+벤치 스왑): perfect −0.28% / scrambled −1.44% / weak-swap +0.79% — **세
+    시나리오 모두 warm의 ±1.5% 안, 대개 warm보다 나쁨.** 비싼 전역 탐색이 warm이 이미
+    도달하는 걸 못 넘어섬(최대 기여 +0.79%). 진짜 가치는 **within-draft `s`(warm 대비 최대
+    +5.5%, 고정 유닛의 더 나은 분할)**와 warm의 벤치 스왑(baseline +23~55% 복구)에서 나옴.
+    핵심 부산물: **`s`(25명 재탐색)=8.30B > scratch(41유닛 전역)=7.85B — greedy-peel이 큰
+    풀에서 초반 덱 결정을 나쁘게 함("greedy 고전적 실수").** ⇒ **주력 최적화: 완성-draft에서
+    full-roster scratch 패스 제거**(`recommended = max(warm, within_draft)`), **797초→~200초
+    (~4배), 품질 손실 ≤0.8%**(lock·단조보장 유지). 부차: zero-base raid(scratch만)는 greedy
+    대신 "선택→좁은 분할" 2단계로 속도·품질 동시 개선 여지. **1(공유 SimPool)·2(메모)는 폐기
+    수준**(제거할 패스가 지배비용이므로 무의미). 착수 전 seed/size 1~2개 추가 확인 권장.
   - **1. SimPool 공유(~30 LOC).** 4회 호출이 SimPool 하나를 공유(전체 로스터로 초기화
     → 30명 부분집합도 `_WORKER_SPECS[s]` 유효). spawn wave 4→1. **결과 불변.** 단
     sim 작업량 2×97초는 그대로 — spawn이 지배 비용이 아니면 체감 작음(0번이 판정).
