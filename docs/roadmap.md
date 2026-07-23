@@ -459,6 +459,12 @@
     `DraftPalette`→`UnitPalette` 일반화. spec/plan:
     `docs/superpowers/{specs,plans}/2026-07-23-unit-pool-selection*`. **2단계 탐색
     (선택→좁은 분할)은 실사용 속도 확인 후 재판단(여전히 백로그).**
+  - **🔬 캐스케이드 대리모델 Phase 1 (2026-07-23):** 프로파일이 raid-from-scratch
+    비용의 ~66%가 "모든 후보 시뮬"임을 확인 → 조사 결과 빠른 도구들은 값싼 수식으로
+    랭킹하고 top-K만 정밀평가(캐스케이드). reference-free 표본-회귀 대리모델
+    (`backend/app/surrogate.py`)과 recall 검증 하네스(`scripts/validate_surrogate_recall.py`)
+    구현. **다음: 하네스를 실 로스터로 돌려 top-K recall/Spearman 측정 → Go면 Phase 2
+    (캐스케이드 통합)**. spec/plan: `docs/superpowers/{specs,plans}/2026-07-23-cascade-surrogate*`.
   - **1. SimPool 공유(~30 LOC).** 4회 호출이 SimPool 하나를 공유(전체 로스터로 초기화
     → 30명 부분집합도 `_WORKER_SPECS[s]` 유효). spawn wave 4→1. **결과 불변.** 단
     sim 작업량 2×97초는 그대로 — spawn이 지배 비용이 아니면 체감 작음(0번이 판정).
