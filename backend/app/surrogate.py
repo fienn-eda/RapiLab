@@ -93,7 +93,15 @@ def sample_feasible_combinations(roster, n_samples, seed):
 
 
 def fit_ridge(X, y, lam=1.0):
-    """Ridge coefficients; the intercept column (0) is left unpenalized."""
+    """Ridge coefficients; the intercept column (0) is left unpenalized.
+    Requires lam > 0: every deck has exactly 5 members, so the membership
+    columns are collinear with the intercept and XᵀX is singular without it."""
+    if lam <= 0:
+        raise ValueError(
+            "fit_ridge requires lam > 0: every deck has exactly 5 members, so the "
+            "membership columns are collinear with the intercept and XᵀX is singular "
+            "without regularization."
+        )
     X = np.asarray(X, dtype=float)
     y = np.asarray(y, dtype=float)
     n_features = X.shape[1]

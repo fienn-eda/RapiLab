@@ -68,7 +68,9 @@ def main():
     if len(fit_combos) < 1 or len(hold_combos) < 5:
         print(f"\nERROR: feasible space too small for a trustworthy signal "
               f"(got {len(fit_combos)} fit + {len(hold_combos)} holdout; need "
-              f">= 1 fit and >= 5 holdout). Increase --units, or lower "
+              f">= 1 fit and >= 5 holdout, which is the minimum for DEFINED "
+              f"metrics -- for a MEANINGFUL signal use a holdout well above the "
+              f"largest K printed below). Increase --units, or lower "
               f"--fit/--holdout to fit the feasible space.", flush=True)
         sys.exit(1)
 
@@ -93,10 +95,16 @@ def main():
     print(f"\n{'K':>5} {'true-top1 in top-K':>18} {'true-top5 in top-K':>18}", flush=True)
     top1 = int(np.argmax(y_hold))
     top5 = set(np.argsort(-y_hold)[:5].tolist())
-    for k in (10, 20, 50, 100):
+    all_ks = (10, 20, 50, 100)
+    meaningful_ks = [k for k in all_ks if k < len(hold_combos)]
+    skipped_ks = [k for k in all_ks if k not in meaningful_ks]
+    for k in meaningful_ks:
         topk = set(order[:k].tolist())
         print(f"{k:>5} {str(top1 in topk):>18} "
               f"{str(len(top5 & topk)) + '/5':>18}", flush=True)
+    if skipped_ks:
+        print(f"note: skipped K >= holdout ({len(hold_combos)}) -- not meaningful: "
+              f"{', '.join(str(k) for k in skipped_ks)}", flush=True)
 
 
 if __name__ == "__main__":

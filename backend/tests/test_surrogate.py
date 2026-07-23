@@ -1,7 +1,9 @@
 import numpy as np
+import pytest
 from types import SimpleNamespace
-from app.surrogate import (ALLOWED_PAIR_TYPES, make_feature_space, featurize,
-                           build_matrix, sample_feasible_combinations)
+from app.surrogate import (make_feature_space, featurize, build_matrix,
+                           sample_feasible_combinations, fit_ridge, predict,
+                           best_ordering_damage)
 from app.deck_search import ALLOWED_SHAPES
 
 
@@ -51,7 +53,7 @@ def test_sampled_combos_are_feasible_and_deterministic():
     s1 = sample_feasible_combinations(BIG, n_samples=20, seed=7)
     s2 = sample_feasible_combinations(BIG, n_samples=20, seed=7)
     assert [[u.slug for u in c] for c in s1] == [[u.slug for u in c] for c in s2]
-    shapes = {(1, 1, 3), (1, 2, 2), (2, 1, 2)}
+    shapes = set(ALLOWED_SHAPES)
     for combo in s1:
         assert len(combo) == 5
         tiers = tuple(sorted(u.burst_tier for u in combo))
@@ -68,7 +70,6 @@ def test_sample_count_capped_by_request():
 
 
 def test_ridge_recovers_linear_signal_with_small_lambda():
-    from app.surrogate import fit_ridge, predict
     rng = np.random.default_rng(0)
     X = np.column_stack([np.ones(200), rng.normal(size=(200, 3))])
     true_beta = np.array([2.0, 1.5, -3.0, 0.5])
@@ -79,7 +80,6 @@ def test_ridge_recovers_linear_signal_with_small_lambda():
 
 
 def test_ridge_does_not_penalize_intercept():
-    from app.surrogate import fit_ridge, predict
     # Constant target -> intercept should equal the constant, others ~0.
     X = np.column_stack([np.ones(50), np.random.default_rng(1).normal(size=(50, 2))])
     y = np.full(50, 7.0)
@@ -88,9 +88,14 @@ def test_ridge_does_not_penalize_intercept():
     assert np.allclose(beta[1:], 0.0, atol=1e-6)
 
 
-def test_best_ordering_damage_takes_max_per_combo():
-    from app.surrogate import best_ordering_damage
+def test_ridge_rejects_nonpositive_lambda():
+    X = np.column_stack([np.ones(10), np.random.default_rng(2).normal(size=(10, 2))])
+    y = np.random.default_rng(3).normal(size=10)
+    with pytest.raises(ValueError):
+        fit_ridge(X, y, lam=0)
 
+
+def test_best_ordering_damage_takes_max_per_combo():
     combos = [BIG[:5], BIG[3:8]]
     calls = {"count": 0, "n": 0}
 
