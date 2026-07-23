@@ -446,6 +446,23 @@
   - 부수: README "~1–2분" 지연 안내는 zero-base 기준 → 완성-draft 경로(30유닛 202초,
     큰 로스터 5분+)에 맞게 갱신. 추천 중 CPU 전코어 포화는 의도된 동작(요청 버스트,
     유휴 0), 완화 필요 시 `workers` 축소로 벽시계와 맞바꿈.
+- **다계정 프로필 + 결과 영속(클라측) 완료 (2026-07-23):** 한 브라우저에서 여러 NIKKE
+  계정을 **`open_id`로 격리된 프로필**로 보관(localStorage `nikke-profiles`, 서로 다른
+  open_id 절대 병합 금지). 로스터 소스를 **blablalink sync 하나로 확정**하고 ExiaInvasion
+  파일 import·수동 입력 폼은 코드/UI 제거(`decisions.md` 2026-07-23). sync가 `nickname`
+  (`GetUserProfileBasicInfo`)·`open_id`를 캡처하되 **클라 전용**(어떤 백엔드 호출에도
+  미전송, 백엔드로 가는 유일 식별자는 `clientId`). 프론트: `useProfiles`(upsert/switch/
+  delete·legacy `nikke-roster` 폐기) + `ProfileSwitcher` + 읽기전용 `NikkeCard` + 결과
+  영속(`inputHash` FNV-1a 결정론 해시[로스터+boss+draft+num_decks], 프로필별 LRU 20,
+  재오픈/전환 시 `key={activeOpenId}` 리마운트로 복원·프로필 격리). raid/draft만 캐시,
+  single 미대상. 재-sync로 로스터 변경 시 그 프로필 결과 무효화. **SDD 8태스크 + opus
+  전체리뷰 "Mergeable: yes"**, 프론트 220 테스트·`tsc -b` 클린, 백엔드 무변경.
+  spec/plan: `docs/superpowers/{specs,plans}/2026-07-23-multi-account-profiles*`.
+  **배포 전 후속:** ① `GetUserProfileBasicInfo` 닉네임 응답 경로 라이브 실측+픽스처(방어적
+  fallback이라 무해하나 미확정 시 라벨이 openId), ② 프라이버시 정책에 "open_id/닉네임/
+  로스터/결과 브라우저 로컬 저장" 명시. **주의:** 위 draft-allocation 후속의 L1/L2/L3
+  "결과 영속/재활용"은 **서버측 연산 캐시**(scratch 캐시·evaluate 메모)로 SimPool 성능
+  트랙에 별도로 남아있음 — 이번 다계정 작업은 **클라측 프로필별 영속**이라 서로 다른 층.
 
 ### Phase 6 — 유저 데이터 입력 UI 🔄
 - React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
