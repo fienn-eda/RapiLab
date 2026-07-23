@@ -443,7 +443,15 @@
     "full-scratch 제거 시 recommended=max(warm,within_draft) 손실"은 **현실적 draft(perfect/
     scrambled) 8케이스 중 6개 = 0%**(warm 또는 s가 항상 scratch≥). **손실은 weak-swap(최강 유닛
     벤치)에서만 0.76%(seed7)·2.17%(seed99)**, seed42 weak-swap조차 0%. 병적 draft 한정 ~2.2%,
-    현실 0%. 4배 속도(797→~200초)와의 교환 — 정정된 최악(~2.2%) 수용 여부 Fienn 재확인 대기.
+    현실 0%. 4배 속도(797→~200초)와의 교환 — Fienn이 ~2.2% 병적-케이스 손실 수용 확인.
+  - **✅ 구현·검증 완료 (2026-07-23, 커밋 03f77ca):** `recommend_from_draft`가 draft 있을 때
+    full-roster scratch 호출 제거(`recommended = max(warm, within_draft)`), zero-base는 scratch
+    유지, within_draft의 focused `s`도 유지. 단조보장·lock 존중 유지(warm의 swap 마스크가
+    lock 존중), 완성-draft가 4콜→3콜임을 고정하는 회귀 테스트 추가. **실측 78유닛 완성-draft
+    797→215.8초 (3.7배).** 남은 최대 비용은 유지한 within `s`(25유닛 focused scratch)=139초 →
+    **후속 타깃**: `s`(및 zero-base scratch)를 "선택→좁은 분할" 2단계로 바꿔 속도·품질 동시 개선.
+    백엔드 1184 passed/3 skipped, 리뷰 Approved. **1(공유 SimPool)·2(evaluate 메모)는 착수 안 함
+    (지배 비용이던 full-scratch 제거로 무의미해짐).**
   - **1. SimPool 공유(~30 LOC).** 4회 호출이 SimPool 하나를 공유(전체 로스터로 초기화
     → 30명 부분집합도 `_WORKER_SPECS[s]` 유효). spawn wave 4→1. **결과 불변.** 단
     sim 작업량 2×97초는 그대로 — spawn이 지배 비용이 아니면 체감 작음(0번이 판정).
