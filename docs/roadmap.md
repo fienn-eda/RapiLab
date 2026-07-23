@@ -439,6 +439,11 @@
     (~4배), 품질 손실 ≤0.8%**(lock·단조보장 유지). 부차: zero-base raid(scratch만)는 greedy
     대신 "선택→좁은 분할" 2단계로 속도·품질 동시 개선 여지. **1(공유 SimPool)·2(메모)는 폐기
     수준**(제거할 패스가 지배비용이므로 무의미). 착수 전 seed/size 1~2개 추가 확인 권장.
+  - **✅ 재확인 (2026-07-23, seed 42@42u·seed 99@51u): 정정된 최악 손실 ~2.2%(≤0.8% 아님).**
+    "full-scratch 제거 시 recommended=max(warm,within_draft) 손실"은 **현실적 draft(perfect/
+    scrambled) 8케이스 중 6개 = 0%**(warm 또는 s가 항상 scratch≥). **손실은 weak-swap(최강 유닛
+    벤치)에서만 0.76%(seed7)·2.17%(seed99)**, seed42 weak-swap조차 0%. 병적 draft 한정 ~2.2%,
+    현실 0%. 4배 속도(797→~200초)와의 교환 — 정정된 최악(~2.2%) 수용 여부 Fienn 재확인 대기.
   - **1. SimPool 공유(~30 LOC).** 4회 호출이 SimPool 하나를 공유(전체 로스터로 초기화
     → 30명 부분집합도 `_WORKER_SPECS[s]` 유효). spawn wave 4→1. **결과 불변.** 단
     sim 작업량 2×97초는 그대로 — spawn이 지배 비용이 아니면 체감 작음(0번이 판정).
