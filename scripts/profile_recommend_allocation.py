@@ -83,6 +83,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--units", type=int, default=77, help="roster size (default 77 = full)")
     parser.add_argument("--no-profile", action="store_true", help="skip Phase A cProfile")
+    parser.add_argument("--phase-a-only", action="store_true",
+                        help="run only Phase A (cProfile) and skip the expensive Phase B")
     args = parser.parse_args()
 
     specs, excluded = _build_roster(args.units)
@@ -102,6 +104,9 @@ def main():
         s = io.StringIO()
         pstats.Stats(pr, stream=s).sort_stats("cumulative").print_stats(30)
         print(s.getvalue(), flush=True)
+
+    if args.phase_a_only:
+        return
 
     # ---- Phase B: complete-draft recommend_from_draft, per-call timed ----
     print("\n=== Phase B: recommend_from_draft on a COMPLETE draft (workers=auto) ===", flush=True)
