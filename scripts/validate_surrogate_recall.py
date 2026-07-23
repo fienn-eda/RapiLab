@@ -65,12 +65,22 @@ def main():
     hold_combos = combos[args.fit:]
     print(f"got {len(fit_combos)} fit + {len(hold_combos)} holdout combos", flush=True)
 
+    if len(fit_combos) < 1 or len(hold_combos) < 5:
+        print(f"\nERROR: feasible space too small for a trustworthy signal "
+              f"(got {len(fit_combos)} fit + {len(hold_combos)} holdout; need "
+              f">= 1 fit and >= 5 holdout). Increase --units, or lower "
+              f"--fit/--holdout to fit the feasible space.", flush=True)
+        sys.exit(1)
+
     with SimPool(specs, boss, workers="auto") as pool:
         scorer = pool.score_many
         y_fit = best_ordering_damage(fit_combos, boss, scorer)
         y_hold = np.array(best_ordering_damage(hold_combos, boss, scorer))
 
     fs = make_feature_space(specs)
+    if len(fit_combos) < fs.n_features:
+        print(f"NOTE: fit sample ({len(fit_combos)}) is smaller than the feature "
+              f"space ({fs.n_features}); ridge fit is underdetermined.", flush=True)
     beta = fit_ridge(build_matrix(fit_combos, fs), np.array(y_fit), lam=args.lam)
     pred_hold = predict(build_matrix(hold_combos, fs), beta)
 
