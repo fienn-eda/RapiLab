@@ -16,12 +16,12 @@ is automatic. Plan approval is the FINAL approval — it authorizes the merge.
 
 ## Phase 1 — auto (detect → collect → draft plan)
 
-1. **Isolate.** Work in a dedicated worktree/branch. Run
-   `python scripts/sync_worktree_data.py` first (data/ is gitignored; measurements
-   lie until synced).
-2. **Detect (live).** Run `python3 scripts/check_new_nikkes.py --dry-run` for a
-   fresh directory fetch that lists new SSRs without toasting. If none, stop:
-   report "신규 없음" and end.
+1. **Detect (live).** Run `python3 scripts/check_new_nikkes.py --dry-run` for a
+   fresh directory fetch that lists new SSRs without toasting (read-only, needs no
+   worktree). If none, stop: report "신규 없음" and end — before spending any setup.
+2. **Isolate.** Only once there ARE new units: work in a dedicated worktree/branch
+   and run `python scripts/sync_worktree_data.py` first (data/ is gitignored;
+   measurements lie until synced).
 3. **Refresh the committed snapshot** (the resource_id-map guard needs the new
    units in it): `cd tools/collect-blablalink && node collect.js --directory
    --headless --deep`.
