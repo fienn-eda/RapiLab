@@ -29,7 +29,7 @@ import {
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
 import { DeckResults } from './DeckResults'
-import { DraftEditor, placeUnit, toRequestDraft } from './DraftEditor'
+import { DraftEditor, placeUnit, removeUnitBySlug, toRequestDraft } from './DraftEditor'
 import { DraftResults } from './DraftResults'
 import { RaidResults } from './RaidResults'
 import { UnitPalette } from './UnitPalette'
@@ -102,6 +102,9 @@ export function RecommendPanel({
   // care which of those produced it (see toStoredResult/getCached below).
   const [displayResult, setDisplayResult] = useState<StoredResult | null>(null)
   const [displayMode, setDisplayMode] = useState<'raid' | 'draft' | null>(null)
+  // Ephemeral per-request exclusions from the search pool — NOT persisted,
+  // reset whenever the active profile changes (see the restore effect).
+  const [excludedSlugs, setExcludedSlugs] = useState<Set<string>>(new Set())
   // Set right before a raid/draft raid.submit() call that actually reaches
   // the backend (a cache hit never sets it), and cleared once its success is
   // persisted via onResult - the guard that makes persistence exactly-once
@@ -118,6 +121,7 @@ export function RecommendPanel({
   // whenever the ACCOUNT changes, not on every render - keyed on
   // activeOpenId alone so it never clobbers in-progress edits mid-typing.
   useEffect(() => {
+    setExcludedSlugs(new Set())
     if (restoreInputs && restoreResult) {
       setMode(restoreInputs.mode)
       setNumDecks(restoreInputs.numDecks)
@@ -137,7 +141,7 @@ export function RecommendPanel({
   // Persist a raid/draft submission's success exactly once - guarded by
   // pendingSaveRef so a rerender that doesn't follow a fresh submit (e.g. a
   // parent passing a new onResult reference) can't re-save the same result.
-  const { status: raidStatus, decks, combinedTotalDamage, excludedSlugs, leftoverSlugs, withinDraft, baselineTotalDamage } = raid
+  const { status: raidStatus, decks, combinedTotalDamage, excludedSlugs: raidExcludedSlugs, leftoverSlugs, withinDraft, baselineTotalDamage } = raid
   useEffect(() => {
     if (raidStatus !== 'success') return
     const pending = pendingSaveRef.current
@@ -146,7 +150,7 @@ export function RecommendPanel({
     const result = toStoredResult({
       decks,
       combinedTotalDamage,
-      excludedSlugs,
+      excludedSlugs: raidExcludedSlugs,
       leftoverSlugs,
       withinDraft,
       baselineTotalDamage,
@@ -159,7 +163,7 @@ export function RecommendPanel({
     raidStatus,
     decks,
     combinedTotalDamage,
-    excludedSlugs,
+    raidExcludedSlugs,
     leftoverSlugs,
     withinDraft,
     baselineTotalDamage,
@@ -179,11 +183,19 @@ export function RecommendPanel({
     [draft],
   )
 
+  // The roster after per-request exclusions — what actually gets sent to the
+  // engine. `ownedSlugs` below stays on the full roster so the palette can
+  // still show (and re-include) excluded units.
+  const effectiveRoster = useMemo(
+    () => roster.filter((nikke) => !excludedSlugs.has(nikke.character_slug)),
+    [roster, excludedSlugs],
+  )
+
   // Burst-tier feasibility (tiers 1/2/3 all present) can only be checked
   // backend-side, since burst_tier is looked up from character_slug there,
   // not entered here. This roster-size check is necessary but not
   // sufficient — the backend still returns 422 for an infeasible roster.
-  const rosterTooSmall = roster.length < MIN_DECK_ROSTER_SIZE
+  const rosterTooSmall = effectiveRoster.length < MIN_DECK_ROSTER_SIZE
   const canSubmit = !rosterTooSmall && !!bossProfile && active.status !== 'loading'
 
   // Shrinking numDecks below this would silently drop already-drafted seats
@@ -205,12 +217,25 @@ export function RecommendPanel({
     setDraftValue((current) => placeUnit(current, targetDeckIndex, slug))
   }
 
+  const toggleExclude = (slug: string) => {
+    setExcludedSlugs((prev) => {
+      const next = new Set(prev)
+      if (next.has(slug)) {
+        next.delete(slug)
+      } else {
+        next.add(slug)
+        setDraftValue((current) => removeUnitBySlug(current, slug))
+      }
+      return next
+    })
+  }
+
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setTouched(true)
     if (!bossProfile || rosterTooSmall) return
     if (mode === 'single') {
-      const request: RecommendRequest = { roster, boss: bossProfile }
+      const request: RecommendRequest = { roster: effectiveRoster, boss: bossProfile }
       void single.submit(request)
       return
     }
@@ -230,7 +255,7 @@ export function RecommendPanel({
     // roster/boss/draft/numDecks always reproduces the same result, and a
     // hit means we can skip the (slow, thousands-of-simulations) request.
     const draftForHash = mode === 'draft' ? draftValue : null
-    const hash = hashRecommendInputs(roster, bossProfile, draftForHash, numDecks)
+    const hash = hashRecommendInputs(effectiveRoster, bossProfile, draftForHash, numDecks)
     const cached = getCached(hash)
     if (cached) {
       setDisplayResult(cached)
@@ -244,11 +269,11 @@ export function RecommendPanel({
     }
 
     if (mode === 'raid') {
-      const request: RecommendRaidRequest = { roster, boss: bossProfile, num_decks: numDecks }
+      const request: RecommendRaidRequest = { roster: effectiveRoster, boss: bossProfile, num_decks: numDecks }
       void raid.submit(request)
     } else {
       const request: RecommendRaidRequest = {
-        roster,
+        roster: effectiveRoster,
         boss: bossProfile,
         num_decks: numDecks,
         draft: toRequestDraft(draftValue),
@@ -339,6 +364,27 @@ export function RecommendPanel({
           )}
         </fieldset>
 
+        {mode !== 'draft' && (
+          <fieldset className="group">
+            <legend className="group__legend">Units to use</legend>
+            {/* Default-expanded (discoverable) but collapsible. `open` also keeps the
+                checkboxes in the a11y tree for tests without a jsdom details toggle. */}
+            <details className="group__details" open>
+              <summary className="group__hint">
+                {effectiveRoster.length}/{roster.length} in the search pool — uncheck any you
+                won&rsquo;t field
+              </summary>
+              {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
+              <UnitPalette
+                ownedSlugs={ownedSlugs}
+                supportedUnits={supportedUnits.units}
+                excludedSlugs={[...excludedSlugs]}
+                onToggleExclude={toggleExclude}
+              />
+            </details>
+          </fieldset>
+        )}
+
         {mode === 'draft' && (
           <fieldset className="group">
             <legend className="group__legend">Draft</legend>
@@ -353,8 +399,8 @@ export function RecommendPanel({
               supportedUnits={supportedUnits.units}
               usedSlugs={usedSlugs}
               onPick={handlePick}
-              excludedSlugs={[]}
-              onToggleExclude={() => {}}
+              excludedSlugs={[...excludedSlugs]}
+              onToggleExclude={toggleExclude}
             />
             <DraftEditor numDecks={numDecks} value={draftValue} onChange={setDraftValue} />
           </fieldset>

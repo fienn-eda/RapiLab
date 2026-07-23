@@ -3,8 +3,10 @@ import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RecommendPanel } from './RecommendPanel'
 import { hashRecommendInputs } from '../lib/inputHash'
+import { MIN_DECK_ROSTER_SIZE } from '../types/recommend'
 import type { UserNikkeState } from '../types/userNikkeState'
 import type { StoredInputs, StoredResult } from '../types/profile'
+import type { SupportedUnit } from '../types/supportedUnit'
 
 vi.mock('../api/recommend', () => ({
   recommendDecks: vi.fn(),
@@ -593,5 +595,54 @@ describe('RecommendPanel persistence', () => {
     // it rendered under must be gone.
     expect(screen.queryByText('100 dmg')).not.toBeInTheDocument()
     expect(screen.queryByText('Deck 1')).not.toBeInTheDocument()
+  })
+})
+
+describe('RecommendPanel unit-pool exclusion', () => {
+  // getSupportedUnits resolves the ALREADY-MAPPED camelCase shape
+  // (SupportedUnit, `burstTier`) — the hook uses it verbatim, no re-mapping.
+  const supported: SupportedUnit[] = [
+    { slug: 'a', name: 'A', burstTier: 1, element: 'Iron' },
+    { slug: 'b', name: 'B', burstTier: 2, element: 'Fire' },
+    { slug: 'c', name: 'C', burstTier: 3, element: 'Water' },
+    { slug: 'd', name: 'D', burstTier: 3, element: 'Wind' },
+    { slug: 'e', name: 'E', burstTier: 3, element: 'Electric' },
+    { slug: 'f', name: 'F', burstTier: 2, element: 'Iron' },
+  ]
+  // Six units so excluding one still leaves >= MIN_DECK_ROSTER_SIZE (5) and the
+  // request can actually fire. `fullRoster` (top of file) is exactly 5.
+  const poolRoster = ['a', 'b', 'c', 'd', 'e', 'f'].map(nikke)
+
+  const raidResponse = {
+    decks: [], combined_total_damage: 0, excluded_slugs: [],
+    leftover_slugs: [], within_draft: null, baseline_total_damage: null,
+  }
+
+  const renderMode = async (roster: UserNikkeState[], radio: RegExp) => {
+    vi.mocked(getSupportedUnits).mockResolvedValue(supported)
+    vi.mocked(recommendRaidDecks).mockResolvedValue(raidResponse)
+    const user = userEvent.setup()
+    render(<RecommendPanel roster={roster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: radio }))
+    await screen.findByRole('checkbox', { name: /use a/i }) // palette loaded
+    return user
+  }
+
+  it('drops an unchecked unit from the raid request roster', async () => {
+    const user = await renderMode(poolRoster, /raid allocation/i)
+    await user.click(screen.getByRole('checkbox', { name: /use a/i }))
+    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
+    await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())
+    const sent = vi.mocked(recommendRaidDecks).mock.calls[0][0]
+    expect(sent.roster.map((n) => n.character_slug)).not.toContain('a')
+    expect(sent.roster.map((n) => n.character_slug)).toContain('b')
+  })
+
+  it('disables submit when exclusions drop the roster below the minimum', async () => {
+    // fullRoster is exactly MIN_DECK_ROSTER_SIZE (5); excluding one under-fills.
+    expect(fullRoster.length).toBe(MIN_DECK_ROSTER_SIZE)
+    const user = await renderMode(fullRoster, /raid allocation/i)
+    await user.click(screen.getByRole('checkbox', { name: /use a/i }))
+    expect(screen.getByRole('button', { name: /allocate raid decks/i })).toBeDisabled()
   })
 })
