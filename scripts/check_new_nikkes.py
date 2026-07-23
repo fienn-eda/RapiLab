@@ -124,10 +124,9 @@ def run(fresh_path=None, dry_run=False, notify=toast):
 
     if not ssr:
         return 0
-    print("\nOnboarding: refresh the snapshot with\n"
-          "  cd tools/collect-blablalink && node collect.js --directory --headless --deep\n"
-          "then /collect-nikke <name>, encode with the nikke-skill-encoding skill\n"
-          "(test_resource_id_slug_map.py will force the slug-map entry).")
+    print("\nOnboarding: run the /onboard-new-nikkes skill — it collects, drafts an\n"
+          "encoding plan for your approval, then implements/tests/docs/merges the\n"
+          "approved units (the only manual step is approving the plan).")
     if not dry_run:
         notify("신규 니케 감지", toast_body(ssr))
     return 1

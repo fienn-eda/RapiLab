@@ -65,6 +65,12 @@ powershell -ExecutionPolicy Bypass -File C:/Users/fienn/Desktop/NikkeDeckBuilder
 
 ## "신규 니케 감지" 토스트가 떴을 때 — 온보딩
 
+**한 줄 실행:** 토스트가 뜨면 `/onboard-new-nikkes` 스킬을 한 번 실행한다 — 감지·수집·
+인코딩 플랜 초안까지 자동으로 만들어 승인을 기다리고, 승인하면 구현·테스트·문서·머지까지
+자동으로 마무리한다(유일한 수동 단계는 플랜 승인). 설계는
+`docs/superpowers/specs/2026-07-23-new-nikke-onboarding-pipeline-design.md`. 아래는 그
+스킬이 내부적으로 밟는 단계이자, 손으로 할 때의 참고 절차다.
+
 토스트 본문에 새 SSR 이름이 실린다(3명 초과 시 앞 3명 + `외 N명`). 수동으로 점검을
 한 번 돌리면(`python3 scripts/check_new_nikkes.py`) 콘솔에 온보딩 안내가 그대로 출력된다.
 
