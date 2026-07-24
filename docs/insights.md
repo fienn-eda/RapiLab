@@ -211,6 +211,31 @@ B2 사용 → 3단계 진입 → B3 사용 → 풀버스트 10초`지만, 엔진
 첫 정정 사례: `laplace_ultimate_hero`의 Over Energy 52.14% (2026-07-24) —
 그녀는 B3라 수치는 변하지 않았고, 바뀐 것은 과대지급 방지뿐이다.
 
+**스코프가 실제 판별 기준이다** (`snow_white_heavy_arms.py` docstring이 이미
+명문화한 선례): 같은 "Burst Stage N 진입" 문구라도 —
+- **자기 스코프** → `own_burst_activate` ("그 유닛이 곧 그 티어 슬롯이므로 그
+  순간이 자기 버스트 발동"). 선례: `cinderella`(Flawless Glass),
+  `ein`(Feather Standby), `snow_white_heavy_arms`(Shades of White),
+  `laplace_ultimate_hero`(Over Energy).
+- **스쿼드 스코프** → `full_burst_enter` (아군 아무나 그 단계에 진입해도
+  발동해야 하므로). 선례: `rei_ayanami`(Attack Support),
+  `mast_romantic_maid`, `mint`(Fantastic Performance).
+
+**스윕 결과 (2026-07-24 전수):**
+- 자기 스코프 `full_burst_enter` 버프 6건(`dorothy_serendipity`,
+  `jill_valentine`, `liberalio`, `ludmilla_winter_owner`, `raven`,
+  `takina_inoue`) — 원본 스킬텍스트가 전부 "Full Burst"이지 "Burst Stage N"이
+  아니므로 **정상**.
+- 원문에 "Burst Stage N" 트리거가 있는 유닛 중 `full_burst_enter`가 등장하는
+  5건 정밀 검증: `maiden_ice_rose`는 오탐(자원 fill 이벤트 필터이지 트리거가
+  아님), `snow_white_heavy_arms`도 오탐(docstring 산문에만 등장, 코드는
+  `own_burst_activate`), `mast_romantic_maid`·`mint`는 squad 스코프라 정상.
+- **미처리 오트리거 없음.** 단 하나 남는 불일치: `mihara_bonding_chain`의
+  Tighten Up은 **자기 스코프인데 `full_burst_enter`** — 위 규칙의 예외이며,
+  Fienn의 명시 판정(2026-07-19, "아무 Burst 3 아군이 3단계에 진입해도 발동")에
+  근거한 의도된 것이다. 자기 스코프 케이스를 새로 인코딩할 때 이 예외를
+  선례로 오해하지 말 것.
+
 ## Burst rotation
 - **A state-machine unit's state must be asked "decided by WHAT" before picking a modeling trick — a static mode slug lies the moment the deciding axis is one the engine actually simulates.** If the axis is something the engine does NOT simulate (Bready's Taste: which buff TYPE she receives), a static `MODE_VARIANTS` slug is enough — nothing in the sim depends on it. If the axis IS something the engine simulates (Diesel: Winter Sweets' Intro/Highlight lock depends on whether she bursts into the FIRST Full Burst — a real burst-schedule fact), a static slug is a lie: labelling her "Highlight" while still letting her burst on cycle 1 credits her the Highlight buff (235.03% vs Intro's 60.19%, ~4x) without ever paying the cost of skipping that burst. Fixed by making the Highlight slug actually skip that cycle via `burst_delay: {"skip_cycles": 1}` (see `docs/decisions.md`, "Diesel: Winter Sweets를 Intro/Highlight 2슬러그로 인코딩"), so the state-defining action is really taken, not just claimed. Ask this question first for any future locked-state unit.
 - **A per-member burst delay (`burst_cycle.py::_ready_at`) lets a deck-search-driven sim represent a unit the player deliberately holds back, in three shapes that fold into one ready-time calculation:** `{"skip_cycles": N}` excludes the unit from the opening N cycles (returns `float("inf")` until then — Diesel, above); `{"not_before": T}` holds it until wall-clock T (Elegg: Boom and Shock, below); `{"min_interval": S}` stretches its effective cooldown to S whenever a refilling resource is slower than the cooldown itself (also Elegg). All three route through the same `_ready_at`, so tier selection and eligibility keep identical arithmetic regardless of which delay a member carries. A delayed unit left alone in its tier simply never bursts that cycle rather than firing early to "make something happen" — deliberate, since `ALLOWED_SHAPES` (`(1,1,3)`/`(1,2,2)`/`(2,1,2)`) never actually produces a lone-delayed-member tier in Burst 3 (always ≥2 members), so this can't silently zero out a real deck.
