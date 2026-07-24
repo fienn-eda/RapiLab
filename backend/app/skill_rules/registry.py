@@ -180,6 +180,8 @@ from app.skill_rules.laplace import (
 )
 from app.skill_rules import laplace_signature
 from app.skill_rules.laplace_ultimate_hero import (
+    build_laplace_stage_nukes,
+    build_laplace_transform_schedule,
     build_laplace_ultimate_hero_rules,
     laplace_ultimate_hero_burst_percent,
 )
@@ -647,6 +649,7 @@ _SCHEDULED_NUKE_BUILDERS = {
     "raven": lambda sv: build_raven_scheduled_nukes(sv),           # Shock Wave, per Full Charge
     "sakura-bloom-in-summer": lambda sv: build_sakura_scheduled_nukes(sv),  # Sakura Petals
     "rosanna-chic-ocean": lambda sv: build_spina_scheduled_nukes(sv),  # Spina di Rosa, 15 ticks per cast
+    "laplace-ultimate-hero": lambda sv: build_laplace_stage_nukes(sv),  # Mjolnir's 934.76% x Over Energy stage
     "nayuta": lambda sv: build_memory_incineration_scheduled_nukes(sv),  # Full Charge in Memory Incineration
     "laplace-signature": lambda sv: laplace_signature.build_buster_scheduled_nukes(sv),  # per-tick true-damage rider
     "rapi-red-hood": lambda sv: build_attachable_projectiles_scheduled_nukes(sv),  # Attachable Projectiles launcher
@@ -669,6 +672,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "takina-inoue": lambda sv: build_suppression_initiated_weapon_mode_schedule(sv),  # Suppression Initiated, 25 measured true-damage shots
     "moran": lambda sv: build_fair_and_square_weapon_mode_schedule(sv),  # Fair and Square, unlimited-ammo SMG at canonical 20/s
     "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
+    "laplace-ultimate-hero": lambda sv: build_laplace_transform_schedule(sv),  # Warm Up transform, magazine-length window at SMG cadence
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at

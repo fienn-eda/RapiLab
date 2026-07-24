@@ -204,7 +204,7 @@
 | ~~10~~ | ~~창 한정 per-shot threshold 오버라이드~~ (버스트가 요구 카운트를 3/6/9 → 1/2/3으로 변경) | 1 (Scarlet: Black Shadow) | **완료 (2026-07-18, `per_shot_rules` `"sequence"` 모드 — Scarlet 인코딩)** | 트리거 변형 |
 | ~~11~~ | ~~**강제 재장전 / 탄약 제거 상태머신**~~ | 1 (Milk: Blooming Bunny) | **완료 (2026-07-20)** — 신규 타임라인 프리미티브 불필요(샷 0개 세그먼트 + `reload_time_with_speed` 음수 분기 + `burst_anchored_buffs`) | 재분류 |
 | — | **부위파괴 이벤트** (gap #2 Pattern B와 동근) | 3+ (Raven·Sakura·Mihara) | 미착수 — ark-ranger는 `part_destructible` 브래킷으로 개별 우회 | 신규 이벤트 |
-| 13 | **차지-카운트 트리거 무기 변환** (Warm Up 스택 → 변신 + 변환상태 카운터/단계 자원) | 1 (Laplace: Ultimate Hero) | 미착수 — 중간+ | 신규 트리거+상태 |
+| ~~13~~ | ~~**차지-카운트 트리거 무기 변환**~~ (Warm Up 스택 → 변신 + 변환상태 카운터/단계 자원) | 1 (Laplace: Ultimate Hero) | **해소 (2026-07-24) — 프리미티브 없이 우회** | 재분류 |
 | — | hit rate · Burst Gauge fill speed (딜/타이밍 아님) | 15 | **구현 안 함** (defer 유지) | 범위 밖 |
 
 > **핵심 결론:** #1 하나가 압도적이다. 노멀공격 카운터(20명)와 풀차지 카운터(19명)는
@@ -216,6 +216,25 @@
 ---
 
 ## 갭 상세
+
+### 13. 차지-카운트 트리거 무기 변환 — ✅ 해소 (2026-07-24, 신규 프리미티브 없이)
+
+- **무엇이었나:** Laplace: Ultimate Hero의 Warm Up 5스택(풀차지 5회) → 무기 변신 →
+  변환상태 노멀 카운터 → Over Energy 단계. 일반 "차지 카운트 트리거" 프리미티브가
+  필요해 보였다.
+- **왜 안 만들었나:** 그 프리미티브는 발사 추적을 시뮬레이션 핫패스에 얹어 **모든 덱
+  평가를 무겁게** 한다. 덱 최적화가 이미 무겁다는 게 Fienn의 제약이었다.
+- **대신:** Fienn 인게임 실측(2026-07-24)을 앵커로 **기존 weapon-mode 세그먼트**에
+  얹었다(red-hood와 같은 경로). 주기는 상수가 아니라 **라이브 max ammo에서 유도** —
+  변신은 탄창을 다 비우면 끝나므로 [최대 장탄 수 증가]에 비례한다:
+  `주기 = 4.0(Warm Up 빌드) + 탄창/20(SMG 케이던스) + 재장전`. 120발·재장전 2.5s
+  기준 12.5초로 실측과 일치. Over Energy 단계는 "변신 2회당 1단계"(실측)로,
+  Mjolnir의 `934.76% × 단계`는 단계별 `scheduled_nukes` 스펙으로 표현.
+- **유일한 엔진 변경:** 스케줄 함수가 라이브 max ammo를 읽도록 `context.
+  max_ammo_percent_at`을 슬러그별로 주입하는 한 줄(핫패스 무변경).
+- **효과:** 180초 솔로레이드 셸에서 그녀의 총딜 46.4M → **125.4M (2.70배)**.
+- 상세: `laplace_ultimate_hero.py` docstring,
+  `tests/test_laplace_transform_loop.py`.
 
 ### 1. per-shot 트리거 + 발사 카운터 — ✅ 완료 (2026-07-11, `per_shot_rules`)
 

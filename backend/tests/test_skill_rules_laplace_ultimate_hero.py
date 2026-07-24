@@ -35,12 +35,21 @@ REGENERATIVE_ENERGY_ARMAMENT_MJOLNIR = {
 
 CASTER_MAX_HP = 800_000.0
 
+# Her real base weapon (ShiftyPad), injected by the roster as caster_weapon_stats.
+# Fienn confirmed the 2.5% shot coefficient is correct - her DPS lives in the
+# transformed state, not the base RL.
+CASTER_WEAPON_STATS = {
+    "weapon": "RL", "damage_percent": 2.5, "charge_damage_percent": 250.0,
+    "charge_time": 1.0, "max_ammo": 120, "reload_time": 2.5,
+}
+
 
 def values():
     return {
         "electric_power_full_full_charge": ELECTRIC_POWER_FULL_FULL_CHARGE,
         "over_energy": OVER_ENERGY,
         "regenerative_energy_armament_mjolnir": REGENERATIVE_ENERGY_ARMAMENT_MJOLNIR,
+        "caster_weapon_stats": dict(CASTER_WEAPON_STATS),
     }
 
 
