@@ -5,13 +5,20 @@
 // drops it from the search pool. In draft mode (onPick provided) an included,
 // unplaced unit is also clickable to place it into a deck; excluded or placed
 // units are not placeable.
+//
+// Each unit carries its skill levels and overload lines, because "should I
+// field this one?" is exactly the question the Use checkbox asks and a
+// portrait alone cannot answer it.
 
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import type { SupportedUnit } from '../types/supportedUnit'
+import type { UserNikkeState } from '../types/userNikkeState'
+import { OverloadLines, SkillLevels } from './InvestmentSummary'
 
 interface UnitPaletteProps {
-  /** Slugs of Nikkes in the (validated) owned roster. */
-  ownedSlugs: string[]
+  /** The owned, validated roster - membership decides what the palette shows,
+   * and each entry supplies that unit's investment display. */
+  roster: UserNikkeState[]
   supportedUnits: SupportedUnit[]
   /** Slugs the user has toggled OUT of the candidate pool. */
   excludedSlugs: string[]
@@ -26,7 +33,7 @@ interface UnitPaletteProps {
 const BURST_TIERS = [1, 2, 3] as const
 
 export function UnitPalette({
-  ownedSlugs,
+  roster,
   supportedUnits,
   excludedSlugs,
   onToggleExclude,
@@ -34,60 +41,67 @@ export function UnitPalette({
   onPick,
 }: UnitPaletteProps) {
   const { portraitFor } = usePortraitManifest()
-  const ownedSet = new Set(ownedSlugs)
+  const ownedBySlug = new Map(roster.map((nikke) => [nikke.character_slug, nikke]))
   const usedSet = new Set(usedSlugs)
   const excludedSet = new Set(excludedSlugs)
-  const shown = supportedUnits.filter((unit) => ownedSet.has(unit.slug))
+  const shown = supportedUnits.filter((unit) => ownedBySlug.has(unit.slug))
 
   return (
-    <div className="draft-palette">
+    <div className="palette">
       {BURST_TIERS.map((tier) => {
         const units = shown.filter((unit) => unit.burstTier === tier)
         if (units.length === 0) return null
         return (
-          <section key={tier} className="draft-palette__group">
-            <h4 className="draft-palette__heading">B{tier}</h4>
-            <ul className="draft-palette__list">
+          <section key={tier} className="palette__group">
+            <h4 className="palette__heading">B{tier}</h4>
+            <ul className="palette__list">
               {units.map((unit) => {
+                const owned = ownedBySlug.get(unit.slug)!
                 const isUsed = usedSet.has(unit.slug)
                 const isExcluded = excludedSet.has(unit.slug)
                 const portrait = portraitFor(unit.slug)
-                const chip = portrait ? (
-                  <img className="draft-palette__portrait" src={portrait} alt="" />
-                ) : (
-                  <span className="draft-palette__chip">
-                    <span className="draft-palette__chip-name">{unit.name}</span>
-                    <span className="draft-palette__chip-meta">
+                const face = (
+                  <>
+                    {portrait && <img className="palette__portrait" src={portrait} alt="" />}
+                    <span className="palette__name">{unit.name}</span>
+                    <span className="palette__meta">
                       B{unit.burstTier} · {unit.element}
                     </span>
-                  </span>
+                  </>
                 )
                 return (
                   <li
                     key={unit.slug}
                     className={
-                      isExcluded
-                        ? 'draft-palette__item draft-palette__item--excluded'
-                        : 'draft-palette__item'
+                      isExcluded ? 'palette__item palette__item--excluded' : 'palette__item'
                     }
                   >
                     {onPick ? (
                       <button
                         type="button"
-                        className="draft-palette__unit"
+                        className="palette__face palette__face--pickable"
                         disabled={isUsed || isExcluded}
                         aria-label={`${unit.name} (B${unit.burstTier})`}
                         onClick={() => onPick(unit.slug)}
                       >
-                        {chip}
+                        {face}
                       </button>
                     ) : (
-                      // No aria-label: a generic <span> can't be named, and the
-                      // visible chip text + the "Use {name}" checkbox already
-                      // name the unit. The place-button branch keeps its label.
-                      <span className="draft-palette__unit">{chip}</span>
+                      // No aria-label: a generic element can't be named, and the
+                      // visible text plus the "Use {name}" checkbox already name
+                      // the unit. The place-button branch keeps its label.
+                      <div className="palette__face">{face}</div>
                     )}
-                    <label className="draft-palette__use checkbox">
+
+                    <div className="palette__investment">
+                      <SkillLevels levels={owned.skill_levels} />
+                      <OverloadLines
+                        options={owned.overload_options}
+                        emptyText="No overload"
+                      />
+                    </div>
+
+                    <label className="palette__use checkbox">
                       <input
                         type="checkbox"
                         checked={!isExcluded}

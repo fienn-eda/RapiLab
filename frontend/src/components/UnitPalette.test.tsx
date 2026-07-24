@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { UnitPalette } from './UnitPalette'
 import type { SupportedUnit } from '../types/supportedUnit'
+import type { UserNikkeState } from '../types/userNikkeState'
 
 vi.mock('../hooks/usePortraitManifest', () => ({
   usePortraitManifest: () => ({ portraitFor: () => null }),
@@ -16,8 +17,22 @@ const UNITS: SupportedUnit[] = [
   { slug: 'noir', name: 'Noir', burstTier: 3, element: 'Electric' },
 ]
 
+const owned = (
+  slug: string,
+  investment: Partial<Pick<UserNikkeState, 'skill_levels' | 'overload_options'>> = {},
+): UserNikkeState => ({
+  character_slug: slug,
+  level: 400,
+  hp: 1,
+  atk: 1,
+  def_: 1,
+  skill_levels: { skill1: 10, skill2: 10, burst: 10 },
+  overload_options: [],
+  ...investment,
+})
+
 const base = {
-  ownedSlugs: ['crown', 'liter', 'blanc'],
+  roster: [owned('crown'), owned('liter'), owned('blanc')],
   supportedUnits: UNITS,
   excludedSlugs: [],
   onToggleExclude: () => {},
@@ -71,5 +86,38 @@ describe('UnitPalette', () => {
     render(<UnitPalette {...base} />)
     expect(screen.queryByRole('button', { name: /crown/i })).not.toBeInTheDocument()
     expect(screen.getByRole('checkbox', { name: /use crown/i })).toBeInTheDocument()
+  })
+
+  // The Use checkbox asks "will you field this one?", which a portrait alone
+  // cannot answer - so each unit carries the investment the answer turns on.
+  it("shows each unit's skill levels and named overload rolls", () => {
+    render(
+      <UnitPalette
+        {...base}
+        roster={[
+          owned('crown', {
+            skill_levels: { skill1: 10, skill2: 4, burst: 7 },
+            overload_options: [
+              { name: '공격력 증가', value: 40.91 },
+              { name: '우월코드 대미지 증가', value: 99.82 },
+            ],
+          }),
+        ]}
+      />,
+    )
+    expect(screen.getByText('10')).toBeInTheDocument()
+    expect(screen.getByText('4')).toBeInTheDocument()
+    expect(screen.getByText('7')).toBeInTheDocument()
+    // Named and valued, never merely counted: "공격력 40.91%" and a revive
+    // chance are both one line but not remotely the same decision.
+    expect(screen.getByText('공격력')).toBeInTheDocument()
+    expect(screen.getByText('40.91%')).toBeInTheDocument()
+    expect(screen.getByText('우월코드 대미지')).toBeInTheDocument()
+    expect(screen.getByText('99.82%')).toBeInTheDocument()
+  })
+
+  it('says so when a unit rolled no overload at all', () => {
+    render(<UnitPalette {...base} roster={[owned('crown')]} />)
+    expect(screen.getByText('No overload')).toBeInTheDocument()
   })
 })

@@ -1,83 +1,42 @@
 // Read-only display of one synced Nikke's investment data. The roster is
 // sync-only (see SyncRosterPanel) - this only ever shows what blablalink last
 // reported, it never accepts edits.
+//
+// Level and the raw HP/ATK/DEF are deliberately not shown. They are inputs the
+// engine needs, not facts the player acts on: level is pinned to the solo-raid
+// baseline of 400 for everyone, and the stats are derived from breakthrough,
+// core and gear - all of which are already visible here. What the player reads
+// a roster for is skill levels and overload, so that is what the card shows.
 
 import type { NikkeDraft } from '../types/nikkeDraft'
 import { InvestmentBadge } from './InvestmentBadge'
+import { OverloadLines, SkillLevels } from './InvestmentSummary'
 
 interface NikkeCardProps {
   draft: NikkeDraft
   index: number
+  /** Resolved portrait URL, or null to fall back to the name alone. Passed in
+   * rather than resolved here so one manifest load serves the whole roster. */
+  portrait: string | null
 }
 
-export function NikkeCard({ draft, index }: NikkeCardProps) {
+export function NikkeCard({ draft, index, portrait }: NikkeCardProps) {
   const title = draft.character_slug.trim() || `Nikke ${index + 1}`
 
   return (
-    <section className="card" aria-label={`Investment data for ${title}`}>
-      <header className="card__header">
+    <section className="card roster-card" aria-label={`Investment data for ${title}`}>
+      {portrait && <img className="roster-card__portrait" src={portrait} alt="" />}
+
+      <div className="roster-card__identity">
         <h2 className="card__title">{title}</h2>
         <InvestmentBadge grade={draft.grade} core={draft.core} />
-      </header>
-
-      <div className="field-row">
-        <div className="stat">
-          <span className="stat__label">Level</span>
-          <span className="stat__value">{draft.level}</span>
-        </div>
+        <SkillLevels levels={draft.skill_levels} />
       </div>
 
-      <div className="field-row field-row--thirds">
-        <div className="stat">
-          <span className="stat__label">HP</span>
-          <span className="stat__value">{draft.hp}</span>
-        </div>
-        <div className="stat">
-          <span className="stat__label">ATK</span>
-          <span className="stat__value">{draft.atk}</span>
-        </div>
-        <div className="stat">
-          <span className="stat__label">DEF</span>
-          <span className="stat__value">{draft.def_}</span>
-        </div>
+      <div className="roster-card__overload">
+        <h3 className="roster-card__section-title">Overload</h3>
+        <OverloadLines options={draft.overload_options} />
       </div>
-
-      <fieldset className="group">
-        <legend className="group__legend">Skill levels</legend>
-        <div className="field-row field-row--thirds">
-          <div className="stat">
-            <span className="stat__label">Skill 1</span>
-            <span className="stat__value">{draft.skill_levels.skill1}</span>
-          </div>
-          <div className="stat">
-            <span className="stat__label">Skill 2</span>
-            <span className="stat__value">{draft.skill_levels.skill2}</span>
-          </div>
-          <div className="stat">
-            <span className="stat__label">Burst</span>
-            <span className="stat__value">{draft.skill_levels.burst}</span>
-          </div>
-        </div>
-      </fieldset>
-
-      <fieldset className="group">
-        <legend className="group__legend">
-          Overload options
-          <span className="group__hint"> aggregated across 4 gear pieces</span>
-        </legend>
-        {draft.overload_options.length === 0 ? (
-          <p className="group__empty">No overload lines.</p>
-        ) : (
-          draft.overload_options.map((row) => (
-            <div key={row.id} className="field-row">
-              <div className="stat">
-                <span className="stat__label">{row.name}</span>
-                <span className="stat__value">{row.value}</span>
-              </div>
-            </div>
-          ))
-        )}
-      </fieldset>
     </section>
   )
 }

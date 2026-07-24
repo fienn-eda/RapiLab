@@ -203,7 +203,6 @@ export function RecommendPanel({
   // those options instead of losing data with no warning.
   const nonEmptyDeckCount = draftValue.decks.filter((seats) => seats.length > 0).length
 
-  const ownedSlugs = useMemo(() => roster.map((nikke) => nikke.character_slug), [roster])
   const usedSlugs = useMemo(
     () => draftValue.decks.flatMap((seats) => seats.map((seat) => seat.slug)),
     [draftValue],
@@ -376,7 +375,7 @@ export function RecommendPanel({
               </summary>
               {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
               <UnitPalette
-                ownedSlugs={ownedSlugs}
+                roster={roster}
                 supportedUnits={supportedUnits.units}
                 excludedSlugs={[...excludedSlugs]}
                 onToggleExclude={toggleExclude}
@@ -395,7 +394,7 @@ export function RecommendPanel({
             </p>
             {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
             <UnitPalette
-              ownedSlugs={ownedSlugs}
+              roster={roster}
               supportedUnits={supportedUnits.units}
               usedSlugs={usedSlugs}
               onPick={handlePick}

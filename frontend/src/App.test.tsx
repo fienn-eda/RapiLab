@@ -58,7 +58,8 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
   })
 
-  it('shows the synced roster and recommend panel once a profile is active', () => {
+  it('opens on the roster tab and reaches the recommend panel through its tab', async () => {
+    const user = userEvent.setup()
     seedProfiles({
       activeOpenId: 'acct-a',
       profiles: {
@@ -76,7 +77,12 @@ describe('App', () => {
     render(<App />)
 
     expect(screen.getByRole('heading', { name: 'red-hood' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Recommend decks' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: 'Recommend' }))
+
     expect(screen.getByRole('heading', { name: 'Recommend decks' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
   })
 
   it('switches the displayed roster when the active profile changes (isolation)', async () => {
@@ -143,6 +149,7 @@ describe('App', () => {
     })
 
     render(<App />)
+    await user.click(screen.getByRole('tab', { name: 'Recommend' }))
     await user.click(screen.getByLabelText(/raid allocation/i))
     await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
     expect(await screen.findByRole('status')).toHaveTextContent(/1–2 minutes/)
@@ -156,5 +163,41 @@ describe('App', () => {
     // remount, not just the restore effect (which never touches `mode`).
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
     expect(screen.getByLabelText(/single deck/i)).toBeChecked()
+  })
+
+  it('keeps an in-flight raid alive across a tab switch', async () => {
+    const user = userEvent.setup()
+    // A raid allocation runs 1-2 minutes. Looking at the roster mid-run is a
+    // normal thing to do, and it must not abandon the request: the panel is
+    // hidden on tab switch, never unmounted.
+    vi.mocked(recommendRaidDecks).mockImplementation(() => new Promise(() => {}))
+
+    seedProfiles({
+      activeOpenId: 'acct-a',
+      profiles: {
+        'acct-a': {
+          openId: 'acct-a',
+          nickname: '본계',
+          roster: fiveValidDrafts('a'),
+          results: {},
+          lastResultHash: null,
+          lastInputs: null,
+        },
+      },
+    })
+
+    render(<App />)
+    await user.click(screen.getByRole('tab', { name: 'Recommend' }))
+    await user.click(screen.getByLabelText(/raid allocation/i))
+    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
+    expect(await screen.findByRole('status')).toHaveTextContent(/1–2 minutes/)
+
+    await user.click(screen.getByRole('tab', { name: 'Roster' }))
+    await user.click(screen.getByRole('tab', { name: 'Recommend' }))
+
+    // Still running, and still in raid mode - a remount would have reset both.
+    expect(screen.getByRole('status')).toHaveTextContent(/1–2 minutes/)
+    expect(screen.getByLabelText(/raid allocation/i)).toBeChecked()
+    expect(vi.mocked(recommendRaidDecks)).toHaveBeenCalledTimes(1)
   })
 })
