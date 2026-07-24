@@ -221,6 +221,23 @@ def test_widened_pool_fills_remaining_seats_by_coefficient_within_tier(monkeypat
     assert "a7" in slugs
 
 
+def test_widened_pool_seats_prunes_pick_before_a_contested_coefficient_seat(monkeypatch):
+    # One more tier-1 unit than WIDE_TIER_CAPS[1] (4), so the tier-1 bucket is
+    # contested: prune's pick and the coefficient ranking can't both fully fit.
+    roster = _roster(n1=5)
+    pruned = [roster[0]]  # a0: prune's sole tier-1 pick
+    monkeypatch.setattr("app.cascade.prune_candidate_pool",
+                        lambda r, b, p=None: pruned)
+    # a0 is the worst tier-1 coefficient; a1..a4 outrank it and each other.
+    model = _FakeModel({"a0": -100.0, "a1": 10.0, "a2": 20.0, "a3": 30.0, "a4": 40.0})
+
+    out = widened_pool(roster, BOSS, model)
+    slugs = {u.slug for u in out}
+
+    assert "a0" in slugs   # prune's pick survives despite the worst coefficient
+    assert "a1" not in slugs  # the coefficient loop's weakest pick loses the contested seat to a0
+
+
 def test_widened_pool_returns_units_in_tier_order(monkeypatch):
     roster = _roster()
     monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
