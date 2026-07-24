@@ -12,8 +12,14 @@ deferred loop is built. See docs/engine-gaps.md.
 Modeled (DPS-relevant):
 - Electric Power, Full Full Charge (skills[0]), at battle start: self ATK +
   (4.05% of her final Max HP) continuously (self flat_atk, caster-Max-HP-scaled).
-- Over Energy (skills[1]), on entering Full Burst (Burst Stage 3): self Attack
-  Damage +52.14% for 10 sec.
+- Over Energy (skills[1]), on her OWN Burst-3 activation ("[Burst Stage 3
+  entry]" = after B2 fires, before B3 fires - Fienn's in-game reading,
+  2026-07-24): self Attack Damage +52.14% for 10 sec. Encoded on
+  own_burst_activate, not full_burst_enter: the two are numerically
+  identical for a B3 unit's own nuke (same timestamp, inclusive buff
+  window - see tests/test_burst_cycle_buff_timing.py), but
+  full_burst_enter would also pay out on cycles where a DIFFERENT B3 unit
+  bursts instead of her.
 - Regenerative Energy Armament: Mjolnir (skills[2], her burst):
   - self ATK +63.36% for 10 sec.
   - burst nuke: 2953.84% of final ATK (default attack type).
@@ -70,6 +76,10 @@ def build_laplace_ultimate_hero_rules(values, caster_max_hp):
 
     return [
         buff_rule("battle_start", [("flat_atk", battle_start_atk_flat, "self", None)]),
-        buff_rule("full_burst_enter", [("attack_damage_up", fb_attack_damage, "self", fb_attack_damage_dur)]),
+        # 스킬텍스트의 [버스트 3단계 진입 시] = 그녀 자신이 B3를 쏘는 순간
+        # (Fienn 실측 2026-07-24). own_burst_activate는 넉이 기록되기 전에 발동해
+        # 이 버프가 그녀의 버스트딜에 곱해지고, 그녀가 버스트하지 않은 사이클엔
+        # 지급되지 않는다 (full_burst_enter는 후자를 못 막는다).
+        buff_rule("own_burst_activate", [("attack_damage_up", fb_attack_damage, "self", fb_attack_damage_dur)]),
         buff_rule("own_burst_activate", [("atk_percent", burst_atk, "self", burst_atk_dur)]),
     ]
