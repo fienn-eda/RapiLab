@@ -25,7 +25,14 @@ export function NikkeCard({ draft, index, portrait }: NikkeCardProps) {
 
   return (
     <section className="card roster-card" aria-label={`Investment data for ${title}`}>
-      {portrait && <img className="roster-card__portrait" src={portrait} alt="" />}
+      {/* The slot is always drawn, even with no portrait to put in it: a
+          missing one would otherwise pull that whole row out of line with
+          every other card. */}
+      {portrait ? (
+        <img className="roster-card__portrait" src={portrait} alt="" />
+      ) : (
+        <span className="roster-card__portrait roster-card__portrait--missing" />
+      )}
 
       <div className="roster-card__identity">
         <h2 className="card__title">{title}</h2>

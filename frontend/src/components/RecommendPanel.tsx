@@ -8,6 +8,7 @@
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useRecommend } from '../hooks/useRecommend'
 import { useRecommendRaid } from '../hooks/useRecommendRaid'
+import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import { useSupportedUnits } from '../hooks/useSupportedUnits'
 import { hashRecommendInputs } from '../lib/inputHash'
 import {
@@ -116,6 +117,7 @@ export function RecommendPanel({
   const raid = useRecommendRaid()
   const active = mode === 'single' ? single : raid
   const supportedUnits = useSupportedUnits()
+  const { portraitFor } = usePortraitManifest()
 
   // Restore the active profile's last raid/draft submission (form + result)
   // whenever the ACCOUNT changes, not on every render - keyed on
@@ -361,6 +363,21 @@ export function RecommendPanel({
               </select>
             </div>
           )}
+
+          {/* Submit sits with the mode choice rather than after the boss
+              fields: the palette and deck grid between them run long, and the
+              player should not have to scroll past their whole roster to
+              start a run they have already configured. */}
+          <div className="recommend-form__actions">
+            <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
+              {submitLabel}
+            </button>
+            {rosterTooSmall && (
+              <p className="field__error" role="alert">
+                Add at least {MIN_DECK_ROSTER_SIZE} ready Nikkes to recommend a deck.
+              </p>
+            )}
+          </div>
         </fieldset>
 
         {mode !== 'draft' && (
@@ -387,35 +404,34 @@ export function RecommendPanel({
         {mode === 'draft' && (
           <fieldset className="group">
             <legend className="group__legend">Draft</legend>
-            <p className="group__hint">
-              Seats are membership only — the engine assigns burst roles.
-              Click a unit below to place it in the next open deck; lock a
-              seat to force the engine to keep it there.
-            </p>
+            {/* How to seat a unit is explained beside the decks themselves
+                (DraftEditor's hint), where the player is looking when they
+                need it. */}
             {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
-            <UnitPalette
-              roster={roster}
-              supportedUnits={supportedUnits.units}
-              usedSlugs={usedSlugs}
-              onPick={handlePick}
-              excludedSlugs={[...excludedSlugs]}
-              onToggleExclude={toggleExclude}
-            />
-            <DraftEditor numDecks={numDecks} value={draftValue} onChange={setDraftValue} />
+            {/* Palette left, decks right: dragging a unit into a deck only
+                works if both are on screen at once. */}
+            <div className="draft-layout">
+              <UnitPalette
+                roster={roster}
+                supportedUnits={supportedUnits.units}
+                usedSlugs={usedSlugs}
+                onPick={handlePick}
+                excludedSlugs={[...excludedSlugs]}
+                onToggleExclude={toggleExclude}
+              />
+              <div className="draft-layout__decks">
+                <DraftEditor
+                  numDecks={numDecks}
+                  value={draftValue}
+                  onChange={setDraftValue}
+                  portraitFor={portraitFor}
+                />
+              </div>
+            </div>
           </fieldset>
         )}
 
         <BossProfileField value={draft} errors={touched ? errors : {}} onChange={setDraft} />
-
-        {rosterTooSmall && (
-          <p className="field__error" role="alert">
-            Add at least {MIN_DECK_ROSTER_SIZE} ready Nikkes to recommend a deck.
-          </p>
-        )}
-
-        <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
-          {submitLabel}
-        </button>
       </form>
 
       {mode !== 'single' && raid.status === 'loading' && (

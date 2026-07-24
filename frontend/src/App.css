@@ -1,7 +1,9 @@
 /* Layout and component styles for the ShiftyPad investment-data input UI. */
 
+/* Wide enough to stand the unit grid beside the deck column in draft mode -
+   dragging only works when both are on screen at once. */
 .app {
-  max-width: 880px;
+  max-width: 1120px;
   margin: 0 auto;
   padding: var(--sp-6) var(--sp-4) var(--sp-6);
   display: flex;
@@ -153,6 +155,17 @@
   gap: var(--sp-1);
 }
 
+.skills--column {
+  flex-direction: column;
+}
+
+/* Stacked beside a portrait the pips read as a column of values, so align the
+   numbers rather than letting each pip shrink-wrap its own label. */
+.skills--column .skills__pip {
+  justify-content: space-between;
+  min-width: 46px;
+}
+
 .skills__pip {
   display: flex;
   align-items: baseline;
@@ -214,18 +227,26 @@
 
 .roster-card {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.1fr);
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, 20rem);
   align-items: start;
   gap: var(--sp-4);
   padding: var(--sp-4);
 }
 
+/* Source art is 256x512. A square crop cut the face off; anchoring the crop to
+   the top keeps it while the card stays a single compact row. */
 .roster-card__portrait {
-  width: 64px;
-  height: 64px;
+  width: 56px;
+  height: 72px;
   object-fit: cover;
+  object-position: top;
   border-radius: var(--radius-sm);
   background: var(--surface-2);
+}
+
+.roster-card__portrait--missing {
+  display: block;
+  border: 1px dashed var(--border);
 }
 
 .roster-card__identity {
@@ -517,6 +538,14 @@
   align-items: flex-start;
 }
 
+.recommend-form__actions {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+  flex-wrap: wrap;
+  margin-top: var(--sp-3);
+}
+
 .deck-results {
   list-style: none;
   margin: 0;
@@ -625,41 +654,35 @@
   gap: var(--sp-2);
 }
 
-/* Wide enough for a named overload line ("우월코드 대미지  99.82%") to sit on
-   one row - the whole reason the investment block is here is that a stat's
-   name and roll are what the Use decision turns on. */
 .palette__item {
   display: flex;
   flex-direction: column;
-  gap: var(--sp-2);
-  width: 178px;
+  gap: var(--sp-1);
   padding: var(--sp-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
 }
 
-.palette__face {
+/* Portrait beside its skill column. */
+.palette__body {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  width: 100%;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
+
+.palette__face {
+  display: block;
   padding: 0;
   border: 0;
   background: none;
   color: inherit;
   font: inherit;
-  text-align: center;
 }
 
 .palette__face--pickable {
-  cursor: pointer;
+  cursor: grab;
   border-radius: var(--radius-sm);
-}
-
-.palette__face--pickable:hover:not(:disabled) {
-  background: var(--accent-soft);
 }
 
 .palette__face--pickable:disabled {
@@ -667,12 +690,52 @@
   cursor: not-allowed;
 }
 
+/* Anchors the overload popover. */
+.palette__figure {
+  position: relative;
+  display: block;
+}
+
+/* Portraits are 256x512 source art. Squaring them off cropped away the face;
+   keeping the 1:2 ratio shows the character and still leaves ~3x the pixels
+   the box needs. */
 .palette__portrait {
   display: block;
-  width: 56px;
-  height: 56px;
+  width: 72px;
+  height: 144px;
   object-fit: cover;
   border-radius: var(--radius-sm);
+  background: var(--surface-2);
+}
+
+.palette__portrait--missing {
+  border: 1px dashed var(--border-strong);
+}
+
+/* Overload lines are part of the Use decision but there are up to four per
+   unit, which would bury the grid. Hover (or keyboard focus) the portrait.
+   Opens downward from the portrait's left edge: the chips wrap, so which
+   ones sit at the edge of a row is not knowable from the DOM, and a
+   sideways popover would flip toward the wrong side. Down always fits. */
+.palette__overload {
+  position: absolute;
+  top: calc(100% + var(--sp-1));
+  left: 0;
+  z-index: 2;
+  display: none;
+  width: max-content;
+  min-width: 100%;
+  padding: var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.palette__figure:hover .palette__overload,
+.palette__face:focus-visible .palette__overload {
+  display: block;
 }
 
 .palette__name {
@@ -683,13 +746,6 @@
 .palette__meta {
   font-size: 11px;
   color: var(--text-muted);
-}
-
-.palette__investment {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  align-items: flex-start;
 }
 
 /* Excluded units stay legible: the decision to drop one is revisited against
@@ -723,9 +779,38 @@
   margin: 0;
 }
 
-.draft-editor__decks {
+/* Palette on the left, decks on the right - a unit can only be dragged into a
+   deck that is on screen beside it. */
+.draft-layout {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 22rem);
+  gap: var(--sp-4);
+  align-items: start;
+  width: 100%;
+}
+
+/* The roster outgrows the viewport, so the decks stick rather than the palette
+   scrolling inside its own box: a scroll container would clip the overload
+   popover that opens beside a portrait, and a drag would have to chase a
+   target that scrolls away. */
+.draft-layout__decks {
+  position: sticky;
+  top: var(--sp-4);
+}
+
+@media (max-width: 900px) {
+  .draft-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .draft-layout__decks {
+    position: static;
+  }
+}
+
+.draft-editor__decks {
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-3);
 }
 
@@ -738,10 +823,35 @@
   gap: var(--sp-2);
 }
 
+.draft-editor__deck--drop-target {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 .draft-editor__deck-title {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
   font-size: 13px;
   font-weight: 600;
   margin: 0;
+}
+
+.draft-editor__deck-count {
+  font-size: 11px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+}
+
+.draft-editor__seat-portrait {
+  width: 20px;
+  height: 20px;
+  object-fit: cover;
+  object-position: top;
+  border-radius: 3px;
+  flex-shrink: 0;
 }
 
 .draft-editor__seats {

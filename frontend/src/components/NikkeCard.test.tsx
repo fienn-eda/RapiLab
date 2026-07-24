@@ -40,9 +40,9 @@ describe('NikkeCard', () => {
     expect(screen.getByText('4')).toBeInTheDocument()
   })
 
-  it('renders synced overload option lines, dropping the shared "증가" suffix', () => {
+  it('renders synced overload option lines, abbreviated', () => {
     card()
-    expect(screen.getByText('공격력')).toBeInTheDocument()
+    expect(screen.getByText('공')).toBeInTheDocument()
     expect(screen.getByText('18.2%')).toBeInTheDocument()
   })
 

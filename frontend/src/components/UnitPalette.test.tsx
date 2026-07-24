@@ -108,11 +108,12 @@ describe('UnitPalette', () => {
     expect(screen.getByText('10')).toBeInTheDocument()
     expect(screen.getByText('4')).toBeInTheDocument()
     expect(screen.getByText('7')).toBeInTheDocument()
-    // Named and valued, never merely counted: "공격력 40.91%" and a revive
-    // chance are both one line but not remotely the same decision.
-    expect(screen.getByText('공격력')).toBeInTheDocument()
+    // Named and valued, never merely counted: "공 40.91%" and a revive chance
+    // are both one line but not remotely the same decision. Names are
+    // abbreviated to the forms used at the table.
+    expect(screen.getByText('공')).toBeInTheDocument()
     expect(screen.getByText('40.91%')).toBeInTheDocument()
-    expect(screen.getByText('우월코드 대미지')).toBeInTheDocument()
+    expect(screen.getByText('우코')).toBeInTheDocument()
     expect(screen.getByText('99.82%')).toBeInTheDocument()
   })
 

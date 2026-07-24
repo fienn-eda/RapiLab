@@ -2,18 +2,26 @@
 // (active profile roster) intersected with engine-supported units
 // (GET /api/supported-units), grouped under B1/B2/B3. Each unit has a "Use"
 // checkbox for candidate-pool membership (default on); unchecking dims it and
-// drops it from the search pool. In draft mode (onPick provided) an included,
-// unplaced unit is also clickable to place it into a deck; excluded or placed
-// units are not placeable.
+// drops it from the search pool.
 //
-// Each unit carries its skill levels and overload lines, because "should I
-// field this one?" is exactly the question the Use checkbox asks and a
-// portrait alone cannot answer it.
+// In draft mode (onPick provided) an included, unplaced unit is also a way to
+// seat a unit: drag its portrait onto a deck to choose where it lands, or
+// click it to drop it in the next open deck. Click stays because dragging is
+// mouse-only and the editor has to work from the keyboard too.
+//
+// Each unit carries its skill levels, because "should I field this one?" is
+// exactly the question the Use checkbox asks and a portrait cannot answer it.
+// Overload rolls sit behind a hover on the portrait: they matter to that same
+// decision, but showing four lines per unit at once crowds out the grid.
 
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import type { SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { OverloadLines, SkillLevels } from './InvestmentSummary'
+
+/** dataTransfer key for a dragged unit. A custom type (rather than text/plain)
+ * keeps a stray drag from elsewhere in the page reading as a unit drop. */
+export const DRAG_SLUG_TYPE = 'application/x-nikke-slug'
 
 interface UnitPaletteProps {
   /** The owned, validated roster - membership decides what the palette shows,
@@ -23,7 +31,7 @@ interface UnitPaletteProps {
   /** Slugs the user has toggled OUT of the candidate pool. */
   excludedSlugs: string[]
   onToggleExclude: (slug: string) => void
-  /** Draft mode only: slugs already placed in a deck (place button disabled). */
+  /** Draft mode only: slugs already placed in a deck (not placeable again). */
   usedSlugs?: string[]
   /** Draft mode only: click an included, unplaced unit to place it. Omit for
    * single/raid, which have no placement. */
@@ -60,15 +68,24 @@ export function UnitPalette({
                 const isUsed = usedSet.has(unit.slug)
                 const isExcluded = excludedSet.has(unit.slug)
                 const portrait = portraitFor(unit.slug)
-                const face = (
-                  <>
-                    {portrait && <img className="palette__portrait" src={portrait} alt="" />}
-                    <span className="palette__name">{unit.name}</span>
-                    <span className="palette__meta">
-                      B{unit.burstTier} · {unit.element}
+                const placeable = onPick !== undefined && !isUsed && !isExcluded
+
+                const figure = (
+                  <span className="palette__figure">
+                    {portrait ? (
+                      <img className="palette__portrait" src={portrait} alt="" />
+                    ) : (
+                      <span className="palette__portrait palette__portrait--missing" />
+                    )}
+                    <span className="palette__overload" role="presentation">
+                      <OverloadLines
+                        options={owned.overload_options}
+                        emptyText="No overload"
+                      />
                     </span>
-                  </>
+                  </span>
                 )
+
                 return (
                   <li
                     key={unit.slug}
@@ -76,30 +93,37 @@ export function UnitPalette({
                       isExcluded ? 'palette__item palette__item--excluded' : 'palette__item'
                     }
                   >
-                    {onPick ? (
-                      <button
-                        type="button"
-                        className="palette__face palette__face--pickable"
-                        disabled={isUsed || isExcluded}
-                        aria-label={`${unit.name} (B${unit.burstTier})`}
-                        onClick={() => onPick(unit.slug)}
-                      >
-                        {face}
-                      </button>
-                    ) : (
-                      // No aria-label: a generic element can't be named, and the
-                      // visible text plus the "Use {name}" checkbox already name
-                      // the unit. The place-button branch keeps its label.
-                      <div className="palette__face">{face}</div>
-                    )}
-
-                    <div className="palette__investment">
-                      <SkillLevels levels={owned.skill_levels} />
-                      <OverloadLines
-                        options={owned.overload_options}
-                        emptyText="No overload"
-                      />
+                    <div className="palette__body">
+                      {onPick ? (
+                        <button
+                          type="button"
+                          className="palette__face palette__face--pickable"
+                          disabled={!placeable}
+                          draggable={placeable}
+                          aria-label={`${unit.name} (B${unit.burstTier})`}
+                          onDragStart={(event) => {
+                            event.dataTransfer.setData(DRAG_SLUG_TYPE, unit.slug)
+                            event.dataTransfer.effectAllowed = 'move'
+                          }}
+                          onClick={() => onPick(unit.slug)}
+                        >
+                          {figure}
+                        </button>
+                      ) : (
+                        // No aria-label: a generic element can't be named, and
+                        // the visible name plus the "Use {name}" checkbox
+                        // already name the unit.
+                        <div className="palette__face">{figure}</div>
+                      )}
+                      <div className="palette__investment">
+                        <SkillLevels levels={owned.skill_levels} layout="column" />
+                      </div>
                     </div>
+
+                    <span className="palette__name">{unit.name}</span>
+                    <span className="palette__meta">
+                      B{unit.burstTier} · {unit.element}
+                    </span>
 
                     <label className="palette__use checkbox">
                       <input

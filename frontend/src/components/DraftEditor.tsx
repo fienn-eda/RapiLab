@@ -5,14 +5,19 @@
 // exported placeUnit — this component renders the current value and owns
 // the per-seat lock toggle / remove action.
 
+import { useState } from 'react'
 import type { Draft, DraftSeat } from '../types/draft'
 import { MAX_DRAFT_SEATS_PER_DECK } from '../types/draft'
 import type { DraftDeck } from '../types/recommend'
+import { DRAG_SLUG_TYPE } from './UnitPalette'
 
 interface DraftEditorProps {
   numDecks: number
   value: Draft
   onChange: (next: Draft) => void
+  /** Resolves a slug's portrait, so a seat shows the same face that was
+   * dragged into it. Null for a slug with no portrait. */
+  portraitFor: (slug: string) => string | null
 }
 
 const mapDeck = (draft: Draft, deckIndex: number, fn: (seats: DraftSeat[]) => DraftSeat[]): Draft => ({
@@ -59,43 +64,86 @@ export const toRequestDraft = (draft: Draft): DraftDeck[] =>
     .filter((seats) => seats.length > 0)
     .map((seats) => ({ units: seats.map(({ slug, locked }) => ({ slug, locked })) }))
 
-export function DraftEditor({ numDecks, value, onChange }: DraftEditorProps) {
+export function DraftEditor({ numDecks, value, onChange, portraitFor }: DraftEditorProps) {
+  // Which deck the pointer is currently over during a drag, so the target
+  // reads as a target before the player commits to the drop.
+  const [dropTarget, setDropTarget] = useState<number | null>(null)
+
+  const handleDrop = (event: React.DragEvent, deckIndex: number) => {
+    const slug = event.dataTransfer.getData(DRAG_SLUG_TYPE)
+    setDropTarget(null)
+    if (!slug) return
+    event.preventDefault()
+    onChange(placeUnit(value, deckIndex, slug))
+  }
+
   return (
     <div className="draft-editor">
       <p className="draft-editor__hint">
-        Seats are membership only — the engine assigns burst roles, this order
-        doesn&rsquo;t matter.
+        Drag a unit onto a deck, or click one to drop it in the next open deck.
+        Seats are membership only — the engine assigns burst roles.
       </p>
       <div className="draft-editor__decks">
         {Array.from({ length: numDecks }, (_, deckIndex) => {
           const seats = value.decks[deckIndex] ?? []
+          const full = seats.length >= MAX_DRAFT_SEATS_PER_DECK
           return (
-            <div className="draft-editor__deck" key={deckIndex}>
-              <h4 className="draft-editor__deck-title">Deck {deckIndex + 1}</h4>
+            <div
+              className={
+                dropTarget === deckIndex
+                  ? 'draft-editor__deck draft-editor__deck--drop-target'
+                  : 'draft-editor__deck'
+              }
+              key={deckIndex}
+              // Only preventDefault for a real unit drag: the default action is
+              // what refuses the drop, and refusing is right for anything else.
+              onDragOver={(event) => {
+                if (full || !event.dataTransfer.types.includes(DRAG_SLUG_TYPE)) return
+                event.preventDefault()
+                event.dataTransfer.dropEffect = 'move'
+                setDropTarget(deckIndex)
+              }}
+              onDragLeave={() => setDropTarget((current) => (current === deckIndex ? null : current))}
+              onDrop={(event) => handleDrop(event, deckIndex)}
+            >
+              <h4 className="draft-editor__deck-title">
+                Deck {deckIndex + 1}
+                <span className="draft-editor__deck-count">
+                  {seats.length}/{MAX_DRAFT_SEATS_PER_DECK}
+                </span>
+              </h4>
               <ul className="draft-editor__seats">
-                {seats.map((seat, seatIndex) => (
-                  <li key={seat.slug} className="draft-editor__seat">
-                    <span className="draft-editor__slug">{seat.slug}</span>
-                    <label className="checkbox">
-                      <input
-                        type="checkbox"
-                        checked={seat.locked}
-                        aria-label={`Lock ${seat.slug} in deck ${deckIndex + 1}`}
-                        onChange={() => onChange(toggleLock(value, deckIndex, seatIndex))}
-                      />
-                      Lock
-                    </label>
-                    <button
-                      type="button"
-                      className="btn btn--icon"
-                      aria-label={`Remove ${seat.slug} from deck ${deckIndex + 1}`}
-                      onClick={() => onChange(removeUnit(value, deckIndex, seatIndex))}
-                    >
-                      ×
-                    </button>
-                  </li>
-                ))}
-                {seats.length === 0 && <li className="draft-editor__empty">No units drafted yet.</li>}
+                {seats.map((seat, seatIndex) => {
+                  const portrait = portraitFor(seat.slug)
+                  return (
+                    <li key={seat.slug} className="draft-editor__seat">
+                      {portrait && (
+                        <img className="draft-editor__seat-portrait" src={portrait} alt="" />
+                      )}
+                      <span className="draft-editor__slug">{seat.slug}</span>
+                      <label className="checkbox">
+                        <input
+                          type="checkbox"
+                          checked={seat.locked}
+                          aria-label={`Lock ${seat.slug} in deck ${deckIndex + 1}`}
+                          onChange={() => onChange(toggleLock(value, deckIndex, seatIndex))}
+                        />
+                        Lock
+                      </label>
+                      <button
+                        type="button"
+                        className="btn btn--icon"
+                        aria-label={`Remove ${seat.slug} from deck ${deckIndex + 1}`}
+                        onClick={() => onChange(removeUnit(value, deckIndex, seatIndex))}
+                      >
+                        ×
+                      </button>
+                    </li>
+                  )
+                })}
+                {seats.length === 0 && (
+                  <li className="draft-editor__empty">Drop a unit here.</li>
+                )}
               </ul>
             </div>
           )
