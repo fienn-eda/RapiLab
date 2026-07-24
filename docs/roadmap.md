@@ -1153,14 +1153,16 @@
       자체딜 +23.0%, 덱 총딜 +13.0%.
 
 ### 정리/보강
-- [ ] **`supported_units()`가 `weapon_source`를 무시해 애장품 4인방의 `-signature`
-      빌드가 추천기에서 안 보인다** (2026-07-25 발견). `user_roster.load_nikke_spec`은
-      `manifest.get("weapon_source", manifest["source"])`를 존중하는데
-      (`user_roster.py:63`) `supported_units._load_meta`는 `manifest["source"]`만 보고
-      (`supported_units.py:26`) 죽은 dotgg를 찾다 `FileNotFoundError` → `continue`로
-      **조용히 탈락**시킨다. `sugar/flora/rosanna/phantom-signature` 넷 다 해당.
-      `_load_meta` 독스트링이 "load_nikke_spec의 해석을 정확히 미러링"이라 주장하는데
-      더 이상 사실이 아니다. 조용한 `continue`가 이런 누락을 감추는 것 자체도 재검토 대상.
+- [x] **`supported_units()`가 `weapon_source`를 무시해 애장품 4인방의 `-signature`
+      빌드가 추천기에서 안 보이던 문제 — 수정 완료 (2026-07-25).** 두 로더가 "이 매니페스트의
+      무기 파일은 어디서 오는가"를 **각자** 판단하던 게 근본 원인이라, `weapon_source` 키가
+      추가됐을 때 `load_nikke_spec`만 배웠다. 분기를 `skill_values.load_weapon_data` 하나로
+      합쳐 드리프트 자체를 없앴다. `supported_units`는 그 파일을 여전히 **가드 없이 즉시**
+      로드한다 — 무기 데이터가 없는 유닛은 로스터에 못 들어가므로, 목록에 넣으면 팔레트에는
+      보이는데 `load_nikke_spec`이 거부하는 유닛이 생기기 때문이다. **89/93 → 93/93**,
+      넷 다 실제 로스터 적재까지 확인. 회귀 테스트는 이제 슬러그를 나열하지 않고
+      "모든 `ENCODED_SLUGS`가 추천기에 도달하는가"를 단언한다 — 이 함수가 조용히 4개씩
+      떨어뜨린 게 두 번째라, 이름을 적는 테스트는 자기를 만든 사건만 잡는다.
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
       (docs-keeper 지적, 2026-07-25 확인 — 둘 다 여전히 누락)
 - [ ] **swap 힐클라임이 정규 순서 하나로만 후보를 채점한다** (2026-07-25 발견).
