@@ -253,7 +253,11 @@ from app.skill_rules.maiden_ice_rose import (
 )
 from app.skill_rules.mast_romantic_maid import build_mast_rules
 from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
-from app.skill_rules.miranda import build_health_up_rules, build_miranda_rules
+from app.skill_rules.miranda import (
+    build_health_up_rules,
+    build_miranda_base_rules,
+    build_miranda_rules,
+)
 from app.skill_rules.moran import build_moran_rules, build_fair_and_square_weapon_mode_schedule
 from app.skill_rules.nayuta import (
     asceticism_burst_percent,
@@ -487,7 +491,8 @@ _BUILDERS = {
     "privaty": _build_privaty,
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
-    "miranda": lambda sv: (build_miranda_rules(sv), None),
+    "miranda": lambda sv: (build_miranda_base_rules(sv), None),
+    "miranda-signature": lambda sv: (build_miranda_rules(sv), None),
     "rouge": _build_rouge,
     "zwei": lambda sv: (build_zwei_rules(sv), None),
     "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), None),  # Kill the Target (burst) deferred
@@ -798,7 +803,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),
     "chisato-nishikigi": lambda sv: build_chisato_per_shot_rules(sv),
     "maiden-ice-rose": lambda sv: build_blessings_upon_you_per_shot_rules(sv),
-    "miranda": lambda sv: build_health_up_rules(sv["health_up"]),
+    "miranda-signature": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
     "prika": lambda sv: build_lets_get_show_started_rules(
         {**sv["lets_get_the_show_started"], "caster_atk": sv["caster_atk"]}

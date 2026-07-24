@@ -191,8 +191,8 @@ def test_get_per_shot_rules_returns_journey_ahead_for_brid():
     assert all(r.trigger == "per_shot" for _, _, rules in result for r in rules)
 
 
-def test_get_per_shot_rules_returns_health_up_for_miranda():
-    result = get_per_shot_rules("miranda", {
+def test_get_per_shot_rules_returns_health_up_for_mirandas_favorite_item():
+    result = get_per_shot_rules("miranda-signature", {
         "health_up": {
             "description_value_07": "30", "description_value_08": "50.06", "description_value_09": "5",
         },
@@ -201,6 +201,13 @@ def test_get_per_shot_rules_returns_health_up_for_miranda():
     threshold, mode, rules = result[0]
     assert (threshold, mode) == (30, "every")
     assert all(r.trigger == "per_shot" for r in rules)
+
+
+def test_base_miranda_has_no_per_shot_rules():
+    # Health Up! is two Hit Rate steps on the base build - inert in this damage
+    # model - so the self ATK step that makes it a per-shot rule exists only in
+    # the Favorite Item's text.
+    assert get_per_shot_rules("miranda", {"health_up": {}}) is None
 
 
 def test_build_nikke_rules_returns_flawless_glass_burst_percent_for_cinderella():
