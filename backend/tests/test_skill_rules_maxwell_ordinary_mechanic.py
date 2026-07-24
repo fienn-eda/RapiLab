@@ -89,3 +89,23 @@ def test_overcurrent_self_atk_ramps_per_burst_and_caps_at_five_stages():
     # +30% per burst, cumulative, capped at 5 stages (+150%); self-only
     assert ramp == [0.30, 0.60, 0.90, 1.20, 1.50, 1.50]
     assert registry.total_for("atk_percent", ALLY, now=105.0) == 0.0  # self-only
+
+
+def test_sequential_limit_release_grants_settled_max_hp_at_battle_start():
+    ctx = make_context()
+    registry = EffectRegistry()
+    fire_trigger("battle_start", {"maxwell-ordinary-mechanic": rules()}, ctx, registry, time=0.0)
+    # 그녀 Max HP의 1% x 30스택 = 30%, squad 스코프
+    expected = CASTER_MAX_HP * 0.30
+    assert round(registry.total_for("flat_max_hp", MAXWELL, now=0.0), 2) == round(expected, 2)
+    assert round(registry.total_for("flat_max_hp", ALLY, now=0.0), 2) == round(expected, 2)
+
+
+def test_squad_atk_uses_her_live_max_hp_including_her_own_max_hp_stacks():
+    ctx = make_context()
+    registry = EffectRegistry()
+    fire_trigger("battle_start", {"maxwell-ordinary-mechanic": rules()}, ctx, registry, time=0.0)
+    fire_trigger("own_burst_activate", {"maxwell-ordinary-mechanic": rules()}, ctx, registry, time=5.0)
+    # squad ATK = 라이브 Max HP(=1.30 x base)의 1% = 6500 (정적이면 5000)
+    expected = CASTER_MAX_HP * 1.30 * 0.01
+    assert round(registry.total_for("flat_atk", ALLY, now=5.0), 2) == round(expected, 2)
