@@ -1,3 +1,4 @@
+import app.sim_pool as sim_pool
 from app.deck_search import BossProfile, evaluate_deck
 from app.sim_pool import SimPool, resolve_workers
 from tests.test_deck_search import real_five_roster
@@ -5,6 +6,10 @@ from tests.test_deck_search import real_five_roster
 
 def short_boss():
     return BossProfile(element=None, core_hittable=False, fight_duration=20.0)
+
+
+def _inline_forbidden(deck, boss):
+    raise AssertionError("batch ran inline when a warm executor was available")
 
 
 def test_resolve_workers_serial_values():
@@ -64,3 +69,23 @@ def test_small_batches_stay_inline_even_with_workers():
     with SimPool(roster, boss, workers=2) as pool:  # default threshold 32
         pool.score_many([list(roster)])
         assert pool._executor is None
+
+
+def test_a_warm_executor_serves_batches_too_small_to_have_started_it(monkeypatch):
+    """The threshold's real cost is STARTING the executor - spawning processes
+    and pickling the roster into each. Once one is running, a task is a
+    five-slug tuple, so holding small batches back would leave the workers idle
+    for no saving. The swap hill-climb depends on this: its deck-to-deck
+    candidates come in batches of ~22, well under the threshold, and running
+    those inline left them serial."""
+    roster, boss = real_five_roster(), short_boss()
+    decks = [list(roster), [roster[0], roster[1], roster[4], roster[3], roster[2]]]
+    with SimPool(roster, boss, workers=None) as serial:
+        expected = serial.score_many(decks)
+    with SimPool(roster, boss, workers=2) as pool:
+        pool.score_many([list(roster)] * 40)      # over the threshold: starts it
+        assert pool._executor is not None
+        # Only the inline path reaches this module's own binding; the workers
+        # imported their own, so breaking it here proves where the batch ran.
+        monkeypatch.setattr(sim_pool, "evaluate_deck", _inline_forbidden)
+        assert pool.score_many(decks) == expected  # under it, but still pooled

@@ -85,7 +85,13 @@ class SimPool:
 
     def _map(self, worker_fn, inline_fn, decks):
         threshold = self._spawn_threshold if self._spawn_threshold is not None else SPAWN_THRESHOLD
-        if self._workers <= 1 or len(decks) < threshold:
+        # The threshold guards STARTING the executor - spawning processes and
+        # pickling the roster into each. Once one is running a task costs a
+        # five-slug tuple, so a batch under the threshold is still worth fanning
+        # out; holding it back only leaves the workers idle. The swap
+        # hill-climb lives on this: its deck-to-deck candidates arrive ~22 at a
+        # time and were serial for exactly this reason.
+        if self._workers <= 1 or (len(decks) < threshold and self._executor is None):
             return [inline_fn(deck) for deck in decks]
         if self._executor is None:
             self._executor = ProcessPoolExecutor(
