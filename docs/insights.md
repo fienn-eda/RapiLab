@@ -91,6 +91,36 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - 해결: 세그먼트 프로파일에 `damage_type="true"`를 **직접 고정**한다. 변형과 변환이 같은 bullet·같은 10초라 이 샷들이 진댐인 것은 인과적으로 확실하므로, 경계에 취약한 별도 효과에 기대는 것보다 직접 서술이 정확하다. 변형이 버스트 중 평타를 전부 대체하므로(창 안에 base 샷 없음) 이제 잉여가 된 self `normal_attacks_deal_true` 효과는 제거했다 — "모델된 것처럼 보이나 소비자가 없는 효과"를 남기지 않는다.
 - 일반화: **측정 발수가 있으면 `until_shots`(정확), rate×duration 유도는 `end`**. `end` 방식은 `start + k*interval < seg_end` 조건이라 마지막 발이 경계에 딱 걸리면 드랍된다 — Takina를 `end`로 넣었으면 25발이 아니라 24발이 됐다(laplace base가 `end`를 쓴 건 실측 발수가 없어 유도값이었기 때문).
 
+## 레퍼런스 문서의 "표현 불가" 서술도 낡을 수 있다 — 실제 선례 모듈로 교차 확인할 것
+
+- 발견: 2026-07-24 (Sugar 애장품 빌드의 샷건 아군 탄창버프·원소버프·Fire코드 우위부여 인코딩 중)
+- `engine-capabilities.md`가 (a) "무기조건부 스코프 없음 — shotgun allies는 squad로 근사하거나 defer", (b) Tove의 샷건 아군 속도버프는 "deferred", (c) "SkillRule은 보스 원소에 접근 불가 → defer"라고 적고 있었으나 **셋 다 낡은 서술**이었다. 실제로는 `member_subset_buff_rule`(`SquadMember.weapon`/`.element`를 읽어 live `slugs:` 스코프로 해소)과 `squad_engine.boss_is_element()`가 이미 존재했고, 각각 `tove.py`와 `rapi_red_hood.py`가 이미 쓰고 있었다.
+- 문서만 믿었다면 Sugar 애장품의 샷건 아군 탄창버프(+83.8%)와 Water/Iron 샷건 원소버프(+40.02%/+60.01%)를 squad로 근사하거나 통째로 defer했을 것이다.
+- 교훈: "모듈 docstring의 보류 사유는 작성 당일의 엔진에 대한 주장"이라는 이미 기록된 원칙이 **레퍼런스 문서 본문에도 그대로 적용**된다 — 인코딩 전에 문서의 "불가" 서술을 실제 선례 모듈(비슷한 archetype)로 교차 확인할 것. 세 서술 모두 `.claude/skills/nikke-skill-encoding/references/engine-capabilities.md`에서 정정했다(2026-07-24, 커밋 `ba13eaa`).
+
+## 애장품은 수치를 키우는 게 아니라 "엔진이 발동시킬 수 있는 트리거"를 붙여준다
+
+- 발견: 2026-07-24 (애장품 4인방 배치 결산: Sugar +9.5% · Rosanna +40.9% · Phantom +46.5% · Flora +53.9%, 고정 셸 스윕)
+- 증가폭이 큰 셋(Flora·Rosanna·Phantom)은 전부 같은 형태다: base에서 defer된 효과의 **유일한 트리거가 엔진이 모델링 안 하는 이벤트**였는데, 애장품이 그 트리거를 우회하는 별도 소스를 추가해 defer를 풀었다.
+  - Flora: 실드 콤보가 아군 피격 없이 자기완결로 돈다(힐 없는 Max HP 증가 → HP 비율 90% 하락 → 자기 실드 → ATK +45.12%) — Iris의 실드 트리거를 우회.
+  - Rosanna: "노멀 500발마다" Frenzy 소스 — base의 유일한 소스("아군 행동불능")는 엔진에서 절대 안 일어난다.
+  - Phantom: "노멀 30발마다" 대거 +1 소스 — base는 자기 Calling Card와 지속이 같아 영원히 1스택.
+- 교훈: 애장품을 인코딩할 때, base에서 defer한 항목을 애장품에서도 그대로 defer하면 안 된다. base→signature 순으로 완주하되, **base의 보류 목록을 애장품 인코딩 시작 시점에 반드시 재검토**할 것 — 애장품이 붙이는 새 불릿이 base의 막힌 트리거를 우회하는 경로인 경우가 흔하다.
+
+## 트리거가 없는 것과 조건이 엔진에서 항상 참인 것을 구분하라
+
+- 발견: 2026-07-24 (Sugar·Rosanna·Flora 애장품 인코딩 중, 공통 패턴)
+- 엔진은 아군 피격·엄폐물 파괴·아군 행동불능을 모델링하지 않는다. 같은 뿌리에서 정반대 결론이 나온다:
+  - **트리거**가 그 미모델 이벤트면 발동 시각을 만들 수 없어 defer한다 — Sugar의 "엄폐물이 공격받을 때"(`docs/decisions.md`), Rosanna의 "니케가 행동불능 상태일 때".
+  - **상태 조건**이 그 미모델 이벤트의 **부재**에 의존하면 항상 참이므로 상시로 모델한다 — Sugar의 "엄폐물이 온전한 동안", Flora의 "아군이 만피 상태일 때"(아군은 절대 피격당하지 않으므로 항상 만피).
+- 실무 규칙: 스킬 문구가 이벤트("~할 때 발동")인지 상태("~인 동안")인지 먼저 가르고, 상태 쪽이면 그 상태가 엔진에서 항상 참인지(즉 반대 이벤트가 절대 안 일어나는지) 확인할 것.
+
+## lootandwaifus 슬롯 손번호는 트리거 문구 속 숫자까지 세어야 한다
+
+- 발견: 2026-07-24 (Flora 애장품 인코딩 — 두 번 어긋남)
+- "entering Burst Stage **2**"의 2, Iris "HP **90%** 이하"의 90을 버프 값이 아니라고 판단해 슬롯 배정에서 건너뛰었으나, lootandwaifus 파서는 텍스트에 등장하는 모든 숫자를 좌→우로 순서대로 슬롯 번호에 담는다 — 트리거 문구 속 숫자도 예외 없이. `test_skill_value_assembly` 하네스가 즉시 어긋남을 잡아냈다.
+- 교훈: `drop_tokens`로 손수 우회하기 전에 **파서 출력을 먼저 덤프**해서 자연 번호를 채택하는 편이 낫다 — Flora의 경우 자연 번호가 base ShiftyPad 슬롯 번호(01=90, 04=30.97)와도 일치해, base/애장품 두 빌드가 같은 번호 체계를 공유하게 됐다. 이후 Rosanna·Phantom은 "덤프 먼저" 방식으로 한 번에 맞췄다.
+
 ## ShiftyPad 캐릭터 상세 페이로드 — 무기 필드는 고정소수점, 스킬 사다리는 전치 필요, 경로 함정 3개
 - 발견: 2026-07-21 ~ 2026-07-22 (무기+기본스킬 데이터원 ShiftyPad 전환, `backend/app/shiftypad_normalize.py`)
 - ShiftyPad 캐릭터 상세 페이로드가 엔진의 무기 필드와 전 레벨 스킬 사다리를 1차 데이터로 담는다. `shot_detail`의 `max_ammo`/`damage`/`reload_time`/`charge_time`/`full_charge_damage`는 **고정소수점** — ÷100이 dotgg 값(damage 557→"5.57%", reload_time 250→2.5, full_charge_damage 25000→"250%"). `ulti_skill_detail.skill_cooltime` ÷100 = 버스트 쿨다운 초(4000→40).
@@ -212,6 +242,17 @@ B2 사용 → 3단계 진입 → B3 사용 → 풀버스트 10초`지만, 엔진
 첫 정정 사례: `laplace_ultimate_hero`의 Over Energy 52.14% (2026-07-24) —
 그녀는 B3라 수치는 변하지 않았고, 바뀐 것은 과대지급 방지뿐이다.
 
+**2026-07-24 확장 (Flora 애장품):** 아래 "스코프가 실제 판별 기준" 규칙은
+**Stage 3 = Full Burst 진입**이라는 전제 위에 있다(`full_burst_enter`가 정확히
+tier-3 발동 시각과 같으므로 "스쿼드 스코프 → `full_burst_enter`"가 성립).
+Stage 1/2에는 대응하는 스쿼드 스코프 이벤트가 없어 이 규칙이 적용되지 않는다 —
+Flora(B2)의 Petunia 불릿("Burst Stage 2 진입 시", 스쿼드 스코프)이 그 사례다.
+`own_burst_activate`는 다른 B2가 슬롯을 가져간 사이클을 놓치고, `full_burst_enter`는
+애초에 잘못된 이벤트(Stage 2 ≠ Full Burst)라 둘 다 못 쓴다. 해법은 신규 조건
+`burst_stage_entered(tier)` + `ally_burst_activate`(모든 유닛 룰에 발동해 캐스터
+자신의 사이클도 커버) — 자세한 내용은 `docs/decisions.md`("Burst Stage N 진입"은
+own_burst_activate가 아니라...) 참고.
+
 **스코프가 실제 판별 기준이다** (`snow_white_heavy_arms.py` docstring이 이미
 명문화한 선례): 같은 "Burst Stage N 진입" 문구라도 —
 - **자기 스코프** → `own_burst_activate` ("그 유닛이 곧 그 티어 슬롯이므로 그
@@ -258,6 +299,7 @@ B2 사용 → 3단계 진입 → B3 사용 → 풀버스트 10초`지만, 엔진
 ## Backend / operations
 - **An application logger's INFO records are silently dropped under uvicorn, and pytest's `caplog` hides this from a normal test suite.** uvicorn only configures its own `uvicorn.*` loggers; the root logger keeps its default WARNING level with no handler for application loggers, so a module-level `logging.getLogger(__name__).info(...)` emits nothing in a real server run even though the request itself succeeds (uvicorn's own access log still shows `200 OK`). A test using `caplog.at_level(logging.INFO)` forces the level for the duration of the test and therefore passes regardless — the telemetry looks tested while being dead in production. Found 2026-07-19 via `logging.getLogger('app.api').getEffectiveLevel()` returning 30 (WARNING) against a real run of the roster-sync endpoint. Fix: configure the application logger's own handler + level directly (`if not logger.handlers: logger.addHandler(logging.StreamHandler()); logger.setLevel(logging.INFO)`), not root — this leaves uvicorn's own access/error loggers untouched and doesn't double-log. A regression test that would actually catch this must exercise the real default-logging path (e.g. run the endpoint in a bare subprocess, no pytest/caplog involved) rather than a `caplog.at_level`-forced one. See `backend/app/api.py`, `backend/tests/test_assemble_roster_api.py`, commit `5069dc2`.
 - **On Windows, `pkill -f` does not kill a stale server holding a port — verifying a fix against a live server first requires confirming the OLD process is actually gone.** A pre-fix server left running kept answering `200 OK` on the target port after a `pkill -f` that silently no-opped, which made a "verification" run against it look valid while testing nothing. Use `Get-NetTCPConnection -LocalPort <port> -State Listen` to find the real PID and `Stop-Process` to free the port before restarting and re-testing.
+- **`scripts/download_portraits.py`가 매니페스트를 통째로 재생성해 해소 불가 슬러그의 기존 항목을 삭제했다.** lootandwaifus HTML이 없는 유닛(ShiftyPad로 온보딩된 `laplace-ultimate-hero`, `maxwell-ordinary-mechanic`)은 포트레이트 경로를 유도할 수 없는데, 스크립트가 매니페스트를 빈 dict부터 다시 쌓다 보니 그 두 항목이 조용히 지워지고 있었다(발견: 2026-07-24, Sugar 온보딩). 새 유닛을 온보딩할 때마다(= HTML 없는 유닛이 새로 생길 때마다) 재발하는 구조적 버그다. 수정: 해소에 실패하면 기존 매니페스트에서 그 슬러그를 찾아보고, 아이콘 파일이 실제로 존재하면 보존해 `KEPT`로 로그에 남긴다(빈 dict부터 재생성하지 않고 기존 항목을 기반으로 갱신). 수정 후 diff가 sugar 2줄 추가뿐(기존 두 항목은 그대로)임을 확인해 검증했다.
 
 ## Data (lootandwaifus.com primary, dotgg fallback)
 - **"Is this stat already folded into the displayed value?" must be asked per source — ShiftyPad answers it differently for cubes vs. overload.** ShiftyPad's shown hp/atk/def already include the equipped cube's contribution (bare character stats if none is equipped), but shows overload option values SEPARATELY from those same stats, additive on top (both confirmed by Fienn — see `docs/decisions.md`, "ShiftyPad's displayed hp/atk/def already include the equipped cube"). Don't assume a UI's convention is uniform across every stat-contributing source it displays; check each one. This mattered far more for automated ingestion than manual entry: a human copying numbers by hand tends to notice something looks off, but a scraper swallows ShiftyPad's displayed numbers wholesale and would silently double-count (or drop) a source's contribution if the fold-in assumption is wrong.

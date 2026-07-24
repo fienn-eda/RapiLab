@@ -276,6 +276,26 @@ def ally_bursted(slug: str) -> Callable[[SquadContext, str], bool]:
     return check
 
 
+def burst_stage_entered(tier: int) -> Callable[[SquadContext, str], bool]:
+    """Condition for an `ally_burst_activate` rule: the burst that just fired
+    belongs to `tier`, i.e. the squad has entered Burst Stage `tier`.
+
+    "Activates when entering Burst Stage N" is about the STAGE, not about the
+    caster - so it must still fire in a cycle where a DIFFERENT ally of that
+    tier took the slot (Flora's Favorite Item Max-HP bullet). Using
+    `own_burst_activate` instead would silently drop those cycles. Because
+    `ally_burst_activate` fires across every unit's rules, the caster is covered
+    in the cycles it bursts itself."""
+
+    def check(context: SquadContext, caster_slug: str) -> bool:
+        burster = next(
+            (m for m in context.members if m.slug == context.last_burst_slug), None
+        )
+        return burster is not None and burster.burst_tier == tier
+
+    return check
+
+
 def boss_is_element(element: str) -> Callable[[SquadContext, str], bool]:
     """Condition: the boss is `element` Code (e.g. Brid's Wind-Code Damage Taken
     debuff, Helm: Aquamarine's Electric-Code bullets). Reads

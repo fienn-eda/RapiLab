@@ -36,6 +36,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   102: 'maxwell', // Maxwell
   103: 'laplace-ultimate-hero', // Laplace: Ultimate Hero
   105: 'maxwell-ordinary-mechanic', // Maxwell: Ordinary Mechanic
+  140: 'sugar', // Sugar — dual-slot base; see SIGNATURE_OWNED
   143: 'milk-blooming-bunny', // Milk: Blooming Bunny
   150: 'julia', // Julia — dual-slot base; see SIGNATURE_OWNED
   162: 'mihara-bonding-chain', // Mihara: Bonding Chain
@@ -54,6 +55,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   270: 'blanc', // Blanc
   271: 'noir', // Noir
   272: 'rouge', // Rouge
+  280: 'rosanna', // Rosanna — dual-slot base; a different unit from 283 Rosanna: Chic Ocean
   281: 'moran', // Moran
   283: 'rosanna-chic-ocean', // Rosanna: Chic Ocean
   284: 'sakura-bloom-in-summer', // Sakura: Bloom in Summer
@@ -70,6 +72,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   390: 'zwei', // Zwei
   391: 'ein', // Ein
   403: 'quency-escape-queen', // Quency: Escape Queen
+  411: 'flora', // Flora — dual-slot base; see SIGNATURE_OWNED
   431: 'volume', // Volume
   470: 'red-hood', // Red Hood (16 = Rapi: Red Hood, separately encoded)
   471: 'snow-white-heavy-arms', // Snow White: Heavy Arms
@@ -80,6 +83,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   515: 'cinderella-crystal-wave', // Cinderella: Crystal Wave - base slug; fans out to -mg/-snipe (MODE_VARIANTS)
   520: 'bready', // Bready - base slug; fans out to -lingering/-recommended (MODE_VARIANTS)
   570: 'ark-ranger-black', // Ark Ranger Black
+  580: 'phantom', // Phantom — dual-slot base; see SIGNATURE_OWNED
   581: 'arcana', // Arcana
   583: 'arcana-fortune-mate', // Arcana: Fortune Mate
   600: 'mint', // Mint
@@ -108,7 +112,9 @@ export const SIGNATURE_OWNED: ReadonlySet<number> = new Set([
 // Base slugs that have a separate "-signature" encoding. Only these can be promoted.
 // The backend drift test asserts this equals the encoded base/-signature pairs, so a
 // newly encoded dual-slot unit fails the suite until it is added here.
-export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set(['drake', 'julia', 'laplace'])
+export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set([
+  'drake', 'flora', 'julia', 'laplace', 'phantom', 'rosanna', 'sugar',
+])
 
 // Single entry point: identity lookup, then signature promotion when owned.
 export const resolveSlugForUnit = (
