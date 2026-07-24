@@ -5,6 +5,15 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## swap 힐클라임 배치 병렬화 — 보류했던 레버를 뒤집고, `auto`는 기계의 절반까지만
+- Date: 2026-07-25
+- Context: 캐스케이드가 search 비용을 K에 고정한 뒤 남은 유일한 비병렬 단계가 `_swap_pass`였다. 아래 "Sub-minute five-deck allocation ... deferred" 결정은 두 레버(배치 채점 / 예산 축소)를 **유저 불만이 나올 때까지 보류**했는데, 그 판단의 근거는 "swap이 전체의 5.0%"라는 캐스케이드 **이전** 프로파일이었다. 재측정하니 전제가 뒤집혀 있었다(`scripts/measure_swap_phase.py` 신설, 78유닛 5덱 직렬 45초 예산): swap은 합계 데미지를 **+48.6%** 끌어올리는 **품질의 주력**인데, 한 패스 후보 679개 중 **352개(52%)**만 보고 데드라인에 잘리며, **잘리는 순간에도 이득이 오르는 중**이었다(마지막 체크포인트가 41.30%→48.60%로 최대폭 점프). deck 3·4는 leftover 후보를 **한 번도** 못 봤다 — 루프가 항상 deck 0에서 시작하기 때문. 예산을 300초로 풀면 160.9초에 **+54.83%**로 수렴한다. 즉 현행 45초가 버리는 것은 총딜 **4.0%**이고, 필요한 처리량은 **7.1배**였다.
+- **원인 판정 (기각된 대안 가설):** "캐스케이드가 79유닛 중 22유닛(`WIDE_TIER_CAPS`)만 후보로 올려 부담을 swap에 떠넘긴 것 아니냐"를 먼저 검증했다(`scripts/measure_peel_quality.py` 신설, swap을 끄고 peel만 비교). 결과는 반대였다 — 캐스케이드 peel이 기존 pruned-exhaustive peel의 **105.1%**(7.36e9 vs 7.00e9, 1,835 vs 7,577 시뮬). 넓힌 풀이 오히려 더 좋은 덱을 뽑는다. swap이 버는 몫은 캐스케이드의 빚이 아니라 **greedy peel 고유의 고전적 실수**다(deck 0 = 3.50e9인데 deck 4 = 5.72e8). 따라서 풀은 건드리지 않고 swap에 처리량만 준다.
+- Decision (Fienn): **swap을 병렬화한다. 단 유저 디바이스에서 도는 코드이므로 CPU를 전부 끌어 쓰지 않는다.** 구현은 **의미 보존 배치 채점**: 현재 상태에 대한 후보군을 peel이 이미 만든 SimPool로 한 배치씩 채점해두고, **순회 순서와 채택 규칙은 직렬판 그대로**(첫 개선을 채택) 걷는다. 채택이 일어나면 그 배치의 남은 점수는 **낡은 것**(존재하지 않는 덱을 서술)이므로 다음 후보부터 **재배치**한다 — 채택률이 1% 미만이라 버리는 양은 작다. 새 프로세스는 0개(**피크 CPU 불변**). 최급강하(steepest ascent)는 기각 — 채택 1회당 후보 전체를 소모해 시뮬이 3,100 → 약 15,600으로 5배 늘고 현행과의 동치성도 잃는다. 예산 축소도 기각 — 이득이 잘리는 순간에도 오르는 중이라 품질을 직접 깎는다.
+- **1차 시도가 1.9배에 그친 이유 — `SPAWN_THRESHOLD`가 잘못된 것을 지키고 있었다.** 배치를 넣었는데 841 시뮬(1.9배)밖에 안 나왔다. 덱-덱 swap은 동일 티어 후보가 쌍당 ~11개라 배치가 22덱이고, 임계값 32 미만이라 **인라인으로 떨어진다**. 그 282번의 직렬 시뮬이 45초 예산의 ~29초를 먹는 동안, 풀로 나간 leftover 배치는 두 배 넘는 일을 ~4초에 끝냈다. 임계값이 실제로 막아야 하는 비용은 **executor 생성**(프로세스 spawn + 워커마다 로스터 피클)이지, 이미 살아 있는 풀에 5-슬러그 튜플을 던지는 비용이 아니다. 그래서 임계값은 **생성만** 지키도록 바꿨다(작은 배치는 여전히 풀을 만들지 않지만, 이미 있는 풀은 거절하지 않는다).
+- **`auto` = 코어의 절반 (Fienn 요구사항에 대한 실측 답).** 78유닛 5덱, 45초 예산에서 워커별: **15 → +54.83% / 8 → +54.83% / 4 → +54.19% / 2 → +52.20% / 1 → +48.60%.** **8워커와 15워커의 할당 데미지가 자릿수까지 동일하다**(1.511e10) — 힐클라임이 어느 쪽이든 수렴하고, 여분 7코어가 사는 건 품질이 아니라 벽시계 7초(80s vs 73s)뿐이다. 작은 기계는 절벽이 아니라 완만히 내려간다(4워커가 수렴값의 99.6%, 2워커가 98.3%). 그래서 `resolve_workers("auto")`를 `cpu_count - 1` → **`cpu_count // 2`**로 낮췄다. 절반은 타협이 아니라 **공짜**다.
+- Consequences: 78유닛 5덱 45초 예산에서 swap은 **452 → 3,734 시뮬(8.4x)**, 이득 **+48.60% → +54.83%**로 직렬 300초판의 수렴값과 **정확히 일치**한다(마지막 개선 160.9초 → 31.3초). 버려지던 총딜 4.0%가 회수됐고 예산·UX 계약은 그대로다. 할당 전체는 직렬 216초 → **프로덕션(`auto`=8) 81초**. 프로덕션 시간 분포는 이제 **swap 45초 = 56.5%**, fit 14초, prune 8초 — swap이 최대 단계인 것은 변함없지만 이제 그 안에서 **수렴**한다(남은 시간은 개선 0인 확인 패스). 코드상으로는 `_try_pair_swaps`/`_try_leftover_swaps`가 `_try_swaps` 하나로 합쳐졌다(두 경우의 유일한 차이는 파트너 리스트가 자기 점수를 갖는지 여부). 배치 폭은 워커 수에 비례한다 — 데드라인은 배치 **사이**에서만 재확인되므로 넓은 배치일수록 더 오버슈트한다. 남은 한계: (1) swap은 여전히 **정규 순서 하나로만** 채점하는데 `search_best_decks` 독스트링은 그 방식이 실측 최대 78% 낮게 나온다고 명시한다 — 교체 후보가 체계적으로 저평가돼 기각될 수 있다(별도 조사 항목). (2) 측정은 전부 **합성 로스터**(89유닛 중 앞 78개, 전원 ATK 60,000·스킬 10/10/10)라 실제 투자 편차는 반영돼 있지 않다. 커밋 `0f8e32e`..(branch `wip/simpool-optimization`).
+
 ## 캐스케이드 Phase 2 착지 — prune 안전망이 장식이 아니라 실제로 품질을 지탱한다는 것이 측정으로 드러남
 - Date: 2026-07-24
 - Context: Phase 1이 유닛 단독 대리모델의 순위 품질을 검증했고, Phase 2는 그것을 `search_best_decks`에 통합하는 작업이었다(spec: `docs/superpowers/specs/2026-07-24-cascade-surrogate-phase2-design.md`). 통합 직전 실측에서 할당 비용이 한 단계에 몰려 있음이 확인됐다(41유닛 5덱 직렬 8,071 시뮬 중 **search 91.5%**, prune 3.1%, swap 5.0%) — 즉 칠 곳은 "풀 조합의 순서 전수 시뮬" 하나였고, prune을 안전망으로 남기는 비용은 3.1%로 사실상 공짜였다.
@@ -484,6 +493,10 @@ catalog, see the `nikke-skill-encoding` skill, not here.
 - Consequences: the hook takes effect from the next session, and reaches new worktrees only once this branch merges. The same trap applies to `node_modules` / `.venv`, which the script does not cover. Recorded in `docs/insights.md` under "Data".
 
 ## Sub-minute five-deck allocation (batched swap scoring / smaller swap budget) deferred until real user feedback
+> **초과됨 (2026-07-25)** — 맨 위 "swap 힐클라임 배치 병렬화" 항목 참고. 레버 (a) 배치
+> 채점은 채택, (b) 예산 축소는 기각. 이 결정의 근거였던 "swap = 전체의 5.0%"는 캐스케이드
+> 이전 프로파일이었고, 재측정에서 swap이 품질의 주력(+48.6%)이면서 한 패스의 52%만 보고
+> 잘린다는 것이 드러나 전제가 무효가 됐다.
 - Date: 2026-07-17
 - Context: `ProcessPool` parallelism (decision below) cut five-deck allocation from 282.17s (3 decks, 42 units, serial) to 97.25s (all 5 decks, 50 units, workers=auto — commit `0b48277`). The original target was "seconds to a minute"; 97.25s is close but still over. Profiling attributed the residual overrun to the swap hill-climb phase, which stays serial (each accepted swap changes the state the next candidate is judged against, so its iterations can't be trivially fanned out) and runs under its own ≤45s budget (see the swap-phase-budget entry below) — the dominant remaining cost. Two follow-up levers were identified to close the gap: (a) batch-evaluate swap candidates instead of judging them one at a time, or (b) shrink the swap phase's time budget outright.
 - Decision (Fienn, 2026-07-17): defer both levers. Do not implement now; revisit if real user feedback indicates 97s is actually a problem in practice.
