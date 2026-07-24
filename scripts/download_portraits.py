@@ -75,6 +75,7 @@ SLUG_ALIASES = {
     "rapi-red-hood-b1": "rapi-red-hood",
     "rosanna-signature": "rosanna",
     "sugar-signature": "sugar",
+    "zwei-signature": "zwei",
     "laplace-ultimate-hero": "laplace-ultimate-hero-nikke",
     "maxwell-ordinary-mechanic": "maxwell-ordinary-mechanic-nikke",
 }

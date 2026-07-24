@@ -70,7 +70,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   353: 'helm-aquamarine', // Helm: Aquamarine
   354: 'mast-romantic-maid', // Mast: Romantic Maid
   355: 'anchor-innocent-maid', // Anchor: Innocent Maid
-  390: 'zwei', // Zwei
+  390: 'zwei', // Zwei — dual-slot base; promoted per the roster
   391: 'ein', // Ein
   403: 'quency-escape-queen', // Quency: Escape Queen
   411: 'flora', // Flora — dual-slot base; promoted per the roster
@@ -105,7 +105,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
 // newly encoded dual-slot unit fails the suite until it is added here.
 export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set([
   'drake', 'flora', 'helm', 'julia', 'laplace', 'miranda', 'phantom', 'rosanna',
-  'sugar',
+  'sugar', 'zwei',
 ])
 
 // Single entry point: identity lookup, then signature promotion when owned.

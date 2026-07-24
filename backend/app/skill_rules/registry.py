@@ -328,6 +328,7 @@ from app.skill_rules.zwei import (
     build_overcharge_weapon_mode_schedule,
     build_frame_analysis_resources,
     build_pierce_equation_per_shot_rules,
+    build_zwei_base_rules,
     build_zwei_rules,
 )
 
@@ -494,7 +495,8 @@ _BUILDERS = {
     "miranda": lambda sv: (build_miranda_base_rules(sv), None),
     "miranda-signature": lambda sv: (build_miranda_rules(sv), None),
     "rouge": _build_rouge,
-    "zwei": lambda sv: (build_zwei_rules(sv), None),
+    "zwei": lambda sv: (build_zwei_base_rules(sv), None),
+    "zwei-signature": lambda sv: (build_zwei_rules(sv), None),
     "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), None),  # Kill the Target (burst) deferred
     "grave": lambda sv: (build_grave_rules(sv), None),
     "rei-ayanami": lambda sv: (build_rei_ayanami_rules(sv), annihilation_burst_percent(sv)),
@@ -714,7 +716,10 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
     "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
     "nayuta": lambda sv: build_memory_incineration_weapon_mode_schedule(sv),  # Memory Incineration, 10s
-    "zwei": lambda sv: build_overcharge_weapon_mode_schedule(sv),  # Overcharge Formula, single 1.2s-charge Pierce shot
+    # Overcharge Formula: one charged Pierce shot per burst (1.5s base, 1.2s with
+    # the Favorite Item). Each slug anchors on its own burst times.
+    "zwei": lambda sv: build_overcharge_weapon_mode_schedule(sv),
+    "zwei-signature": lambda sv: build_overcharge_weapon_mode_schedule(sv, slug="zwei-signature"),
     "laplace": lambda sv: build_buster_weapon_mode_schedule(sv),  # Laplace Buster Normal Damage, 5s ~46 ticks
     "takina-inoue": lambda sv: build_suppression_initiated_weapon_mode_schedule(sv),  # Suppression Initiated, 25 measured true-damage shots
     "moran": lambda sv: build_fair_and_square_weapon_mode_schedule(sv),  # Fair and Square, unlimited-ammo SMG at canonical 20/s
@@ -797,7 +802,7 @@ _PER_SHOT_RULE_BUILDERS = {
         + build_fire_away_per_shot_rules(sv["fire_away"])
     ),
     "privaty": lambda sv: build_ld_assault_per_shot_rules(sv),
-    "zwei": lambda sv: build_pierce_equation_per_shot_rules(sv),
+    "zwei-signature": lambda sv: build_pierce_equation_per_shot_rules(sv),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
     "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),
@@ -828,7 +833,7 @@ _RESOURCE_SPEC_BUILDERS = {
     "mihara-bonding-chain": lambda sv: build_ensnaring_chain_resources(sv),
     "diesel-winter-sweets-intro": lambda sv: build_diesel_resource_specs(sv),
     "diesel-winter-sweets-highlight": lambda sv: build_diesel_resource_specs(sv),
-    "zwei": lambda sv: build_frame_analysis_resources(sv),
+    "zwei-signature": lambda sv: build_frame_analysis_resources(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named
