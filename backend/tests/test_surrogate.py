@@ -26,6 +26,16 @@ def test_feature_space_has_intercept_units_and_allowed_pairs():
     assert fs.n_features == 1 + 5 + len(fs.pair_col)
 
 
+def test_feature_space_without_pairs_keeps_only_intercept_and_units():
+    fs = make_feature_space(ROSTER, include_pairs=False)
+    assert fs.pair_col == {}
+    assert fs.n_features == 1 + len(ROSTER)
+    # featurize must agree with the narrowed space, not index past it
+    v = featurize([ROSTER[0], ROSTER[2], ROSTER[3]], fs)
+    assert v.shape == (fs.n_features,)
+    assert v[0] == 1.0 and v[fs.unit_col["b1a"]] == 1.0 and v[fs.unit_col["b3b"]] == 0.0
+
+
 def test_featurize_marks_intercept_membership_and_pairs():
     fs = make_feature_space(ROSTER)
     combo = [ROSTER[0], ROSTER[2], ROSTER[3]]  # b1a, b2a, b3a

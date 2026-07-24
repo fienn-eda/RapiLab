@@ -109,6 +109,13 @@ def main():
     p.add_argument("--holdout", type=int, default=400)
     p.add_argument("--lam", type=float, default=1.0)
     p.add_argument("--seed", type=int, default=7)
+    p.add_argument("--fit-subset", type=int, default=0,
+                   help="simulate and fit on only the first N of the fit sample. "
+                        "The holdout is unchanged, so a cheap fit stays directly "
+                        "comparable to a full-fit run (0 = use all)")
+    p.add_argument("--no-pairs", action="store_true",
+                   help="fit the regression on unit columns only, dropping the "
+                        "quadratically-growing pair terms - far cheaper to fit")
     p.add_argument("--surrogate", choices=("regression", "closed-form", "both"),
                    default="both",
                    help="which cheap ranker to measure; 'closed-form' needs no "
@@ -141,6 +148,10 @@ def main():
         sys.exit(1)
 
     needs_regression = args.surrogate in ("regression", "both")
+    if args.fit_subset:
+        # Drawn from the same sequence, so hold_combos above is untouched.
+        fit_combos = fit_combos[:args.fit_subset]
+        print(f"fitting on the first {len(fit_combos)} of them", flush=True)
 
     workers = args.workers if args.workers == "auto" else int(args.workers)
     pool = SimPool(specs, boss, workers=workers) if resolve_workers(workers) > 1 else None
@@ -157,12 +168,13 @@ def main():
             pool.close()
 
     if needs_regression:
-        fs = make_feature_space(specs)
+        fs = make_feature_space(specs, include_pairs=not args.no_pairs)
         if len(fit_combos) < fs.n_features:
             print(f"NOTE: fit sample ({len(fit_combos)}) is smaller than the feature "
                   f"space ({fs.n_features}); ridge fit is underdetermined.", flush=True)
         beta = fit_ridge(build_matrix(fit_combos, fs), np.array(y_fit), lam=args.lam)
-        _report(f"sample regression (fit on {len(fit_combos)} simulated decks)",
+        _report(f"sample regression, {'units only' if args.no_pairs else 'units+pairs'} "
+                f"({fs.n_features} cols, fit on {len(fit_combos)} simulated decks)",
                 predict(build_matrix(hold_combos, fs), beta), y_hold)
 
     if args.surrogate in ("closed-form", "both"):

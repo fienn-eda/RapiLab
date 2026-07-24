@@ -27,17 +27,28 @@ class FeatureSpace:
     n_features: int
 
 
-def make_feature_space(roster) -> FeatureSpace:
+def make_feature_space(roster, include_pairs=True) -> FeatureSpace:
+    """Columns for the ridge fit: an intercept, one per unit, and (by default)
+    one per synergy-bearing unit PAIR.
+
+    `include_pairs=False` drops the pair columns, which is a cost decision more
+    than a modeling one: pairs grow quadratically with the roster (790 columns
+    at 41 units, 2884 at 78), and a determined fit needs at least as many
+    SIMULATED sample decks as there are columns - so the pair terms are what
+    make fitting expensive on exactly the big rosters a cascade is meant to
+    help. A unit-only space fits from a couple hundred decks instead.
+    """
     slugs = sorted(u.slug for u in roster)
     tier = {u.slug: u.burst_tier for u in roster}
     unit_col = {slug: i + 1 for i, slug in enumerate(slugs)}  # col 0 = intercept
     pair_col = {}
     next_col = 1 + len(slugs)
-    for a, b in combinations(slugs, 2):
-        pair_type = tuple(sorted((tier[a], tier[b])))
-        if pair_type in ALLOWED_PAIR_TYPES:
-            pair_col[(a, b)] = next_col
-            next_col += 1
+    if include_pairs:
+        for a, b in combinations(slugs, 2):
+            pair_type = tuple(sorted((tier[a], tier[b])))
+            if pair_type in ALLOWED_PAIR_TYPES:
+                pair_col[(a, b)] = next_col
+                next_col += 1
     return FeatureSpace(unit_col=unit_col, pair_col=pair_col, n_features=next_col)
 
 
