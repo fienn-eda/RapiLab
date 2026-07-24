@@ -2,7 +2,6 @@
 same-tier swap pass recovers the classic greedy mistake (stacking two strong
 supporters in deck 1 when splitting them wins). All search/sim calls are
 stubbed - real sims live in the API end-to-end test."""
-import hashlib
 from dataclasses import dataclass
 
 import app.deck_allocation as da
@@ -169,7 +168,7 @@ def test_small_rosters_never_fit_a_surrogate(monkeypatch):
 
 
 from app.cascade import Cascade, fit_surrogate
-from app.deck_search import _score_batch, search_best_decks
+from app.deck_search import _score_batch, prune_candidate_pool, search_best_decks
 
 # Per-unit values plus a synergy the unit-only surrogate cannot represent, so
 # the test probes the cascade's actual failure mode rather than a model it fits
@@ -196,25 +195,49 @@ def _quality_scorer(slugs):
     return total
 
 
+# _reference_deck seeds its 3 tier-3 slots from by_tier[3], which
+# prune_candidate_pool sorts by _prior (base_stats["atk"] * damage_percent),
+# highest first, then takes the top 3 (_variant_safe_top). q3-9 is placed
+# highest so it always seeds that reference deck; q3-8 is placed LOWEST so it
+# never does. That is what makes prune's marginal-contribution measurement
+# for q1-0 see the bare +100 synergy bonus (q1-0 swapped in against a
+# reference that already contains q3-9) rather than the cancelling -100
+# penalty (which only fires when q3-8 is the one seated) - without this
+# ordering, prune could measure the wrong sign and this fixture would no
+# longer demonstrate that prune rescues q1-0 from the coefficient-ranked cut.
+# The other tier-3 ATKs, and every tier-1/tier-2 ATK, only need to be
+# distinct within their own tier (prune_candidate_pool ranks per-tier): a tie
+# would make sorted()'s stability fall back to dict-literal insertion order -
+# an accident, not a real prior - so each tier below is simply numbered in a
+# fixed, explicit, non-hash-derived order.
+_TIER3_ATK = {
+    "q3-9": 5000.0,  # highest: guarantees a reference-deck seat
+    "q3-7": 4800.0,
+    "q3-6": 4600.0,
+    "q3-5": 4400.0,
+    "q3-4": 4200.0,
+    "q3-3": 4000.0,
+    "q3-2": 3800.0,
+    "q3-1": 3600.0,
+    "q3-0": 3400.0,
+    "q3-8": 3200.0,  # lowest: guarantees NOT a reference-deck seat
+}
+_TIER1_ATK = {f"q1-{i}": 1000.0 + 50.0 * i for i in range(5)}
+_TIER2_ATK = {f"q2-{i}": 2000.0 + 50.0 * i for i in range(5)}
+
+
 def _quality_roster():
-    """5 tier-1 / 5 tier-2 / 10 tier-3 units, each with a distinct base_stats
-    ATK derived from a hash of its own slug. Distinctness matters here, not
-    the specific numbers: prune_candidate_pool's _prior heuristic ranks
-    candidates by unit.base_stats["atk"] * unit.weapon_stats["damage_percent"],
-    and if every unit in a tier tied on that score, sorted()'s stability would
-    silently fall back to insertion order - an accident of dict-literal order
-    above, not a real prior. The hash is deliberately decorrelated from both
-    _UNIT_VALUE and the synergy pair below, so which units land in prune's
-    reference deck is not hand-picked to make either test pass.
-    """
+    """5 tier-1 / 5 tier-2 / 10 tier-3 units, with explicitly assigned
+    base_stats ATK (see _TIER1_ATK / _TIER2_ATK / _TIER3_ATK above) so the
+    fixture's dependence on prune's reference-deck seating is a documented
+    fact, not an accident of whatever a hash happened to produce."""
     tiers = {f"q1-{i}": 1 for i in range(5)}
     tiers.update({f"q2-{i}": 2 for i in range(5)})
     tiers.update({f"q3-{i}": 3 for i in range(10)})
+    atk_by_slug = {**_TIER1_ATK, **_TIER2_ATK, **_TIER3_ATK}
     roster = []
     for slug, tier in tiers.items():
-        digest = int(hashlib.sha256(slug.encode()).hexdigest(), 16)
-        atk = 1000.0 + (digest % 5000)
-        roster.append(Unit(slug, tier, base_stats={"atk": atk},
+        roster.append(Unit(slug, tier, base_stats={"atk": atk_by_slug[slug]},
                            weapon_stats={"damage_percent": 1.0}))
     return roster
 
@@ -224,17 +247,34 @@ def _cascade_vs_exhaustive_ratio(monkeypatch, real_prune_on_cascade):
     to the cancelling synergy, then compare the cascade's best deck against
     the true exhaustive optimum on the same roster and scorer."""
     patch_scorer(monkeypatch, _quality_scorer)
-    # The "exhaustive" call must see the true, unpruned optimum - production's
-    # pruned-exhaustive fallback is a stronger baseline than a floor-only test
-    # needs, and pruning it here would let a cut ground truth hide a real
-    # cascade regression. This bypass is unconditional in both directions.
+    roster, boss = _quality_roster(), BossProfile()
+
+    if real_prune_on_cascade:
+        # Guard the fixture's premise before trusting the ratio assertion
+        # below: run the real, unpatched prune_candidate_pool (against the
+        # scorer just patched in above) and check q1-0 actually survives its
+        # PRUNED_TIER_CAPS[1] = 2 cut. If _quality_roster's tier-3 ATK
+        # ordering, PRUNED_TIER_CAPS, or prune_candidate_pool itself ever
+        # changes so that premise no longer holds, this fails with that exact
+        # cause instead of surfacing only as a bare ratio mismatch below.
+        pruned_pool = prune_candidate_pool(roster, boss)
+        assert "q1-0" in {u.slug for u in pruned_pool}, (
+            "fixture premise broken: prune_candidate_pool no longer keeps "
+            "q1-0 in its pool - check _quality_roster's tier-3 ATK ordering "
+            "(q3-9 must seed the reference deck, q3-8 must not)"
+        )
+
+    # The "exhaustive" call must see the true, unpruned optimum: production's
+    # pruned-exhaustive fallback is a WEAKER baseline than the true unpruned
+    # optimum this test needs, and pruning it here would let a cut ground
+    # truth hide a real cascade regression. This bypass is unconditional in
+    # both directions.
     monkeypatch.setattr("app.deck_search.prune_candidate_pool", lambda r, b, p=None: list(r))
     if not real_prune_on_cascade:
         # The historical shape of this test: the cascade's safety net
         # (widened_pool seating prune_candidate_pool's picks first) is
         # disabled, leaving only the coefficient-ranked pass.
         monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
-    roster, boss = _quality_roster(), BossProfile()
 
     exhaustive = search_best_decks(roster, boss, top_n=1)
     model = fit_surrogate(roster, boss,
