@@ -13,11 +13,19 @@ that issued it:
   swap        _swap_pass' hill-climb, which is serial and deadline-capped
   summary     the final per-deck best-ordering polish
 
-Forced serial so every call lands in this process. Run before designing a
-cascade integration, and again afterwards to confirm the phase actually shrank.
+Serial by default so every call lands in this process and the sim counts are
+complete. Run before designing a cascade integration, and again afterwards to
+confirm the phase actually shrank.
+
+`--workers` measures the production path instead. Sims issued inside SimPool
+workers are NOT counted (they run in other processes and never reach this
+module's binding), so read the per-phase SECONDS there, not the sims - which is
+the point of running it pooled: the swap phase is the only one SimPool does not
+serve, so pooling is what reveals its true share of a real request.
 
 Usage (any cwd):
     python3 scripts/measure_allocation_phase_split.py [--units 40] [--decks 5]
+                                                      [--workers auto]
 """
 import argparse
 import sys
@@ -73,12 +81,17 @@ def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--units", type=int, default=40)
     p.add_argument("--decks", type=int, default=5)
+    p.add_argument("--workers", default=1,
+                   help='1 (default, serial and fully counted) or "auto"/N to '
+                        "time the production path - see the module docstring")
     args = p.parse_args()
+    workers = args.workers if args.workers == "auto" else int(args.workers)
 
     slugs = [u["slug"] for u in supported_units()][:args.units]
     specs, _ = load_roster([_nikke(s) for s in slugs])
     boss = BossProfile(element="Water", fight_duration=180.0)
-    print(f"roster {len(specs)} units; allocating {args.decks} decks (serial)", flush=True)
+    how = "serial" if workers == 1 else f"workers={workers}"
+    print(f"roster {len(specs)} units; allocating {args.decks} decks ({how})", flush=True)
 
     counter = _PhaseCounter()
     real_evaluate = ds.evaluate_deck
@@ -99,16 +112,18 @@ def main():
     da._best_ordering_summary = counter.wrap(da._best_ordering_summary, "summary")
 
     started = time.perf_counter()
-    da.allocate_decks(specs, boss, num_decks=args.decks, workers=1)
+    da.allocate_decks(specs, boss, num_decks=args.decks, workers=workers)
     elapsed = time.perf_counter() - started
 
     total = sum(counter.counts.values())
-    print(f"\ntotal simulations {total} in {elapsed:.0f}s\n", flush=True)
-    print(f"{'phase':<10}{'sims':>9}{'share':>9}{'seconds':>10}", flush=True)
+    print(f"\ntotal simulations {total} in {elapsed:.0f}s"
+          f"{'' if workers == 1 else ' (parent-side sims only)'}\n", flush=True)
+    print(f"{'phase':<10}{'sims':>9}{'sims%':>9}{'seconds':>10}{'time%':>9}", flush=True)
     for phase in ("prune", "fit", "search", "swap", "summary"):
         sims = counter.counts.get(phase, 0)
-        print(f"{phase:<10}{sims:>9}{sims / total:>8.1%}"
-              f"{counter.seconds.get(phase, 0.0):>10.0f}", flush=True)
+        seconds = counter.seconds.get(phase, 0.0)
+        print(f"{phase:<10}{sims:>9}{sims / max(total, 1):>8.1%}"
+              f"{seconds:>10.0f}{seconds / elapsed:>8.1%}", flush=True)
 
 
 if __name__ == "__main__":
