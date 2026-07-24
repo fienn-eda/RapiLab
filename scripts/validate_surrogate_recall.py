@@ -54,6 +54,7 @@ from app.sim_pool import SimPool, resolve_workers  # noqa: E402
 from app.closed_form import score_with_diagnostics  # noqa: E402
 from app.surrogate import (make_feature_space, build_matrix, fit_ridge, predict,
                            sample_feasible_combinations, best_ordering_damage)  # noqa: E402
+from app.cascade import fit_surrogate, widened_pool  # noqa: E402
 
 
 def _nikke(slug):
@@ -116,6 +117,10 @@ def main():
     p.add_argument("--no-pairs", action="store_true",
                    help="fit the regression on unit columns only, dropping the "
                         "quadratically-growing pair terms - far cheaper to fit")
+    p.add_argument("--pool-draw", action="store_true",
+                   help="draw the holdout from the cascade's widened pool instead "
+                        "of the whole roster - the distribution the cascade "
+                        "actually ranks, where every candidate is already strong")
     p.add_argument("--surrogate", choices=("regression", "closed-form", "both"),
                    default="both",
                    help="which cheap ranker to measure; 'closed-form' needs no "
@@ -133,7 +138,22 @@ def main():
           flush=True)
 
     # Disjoint fit/holdout samples: draw fit+holdout, split.
-    combos = sample_feasible_combinations(specs, args.fit + args.holdout, seed=args.seed)
+    if args.pool_draw:
+        # Fit on the full roster exactly as the cascade does, then draw the
+        # holdout from the pool that fit produces.
+        seed_scorer = (lambda decks: [evaluate_deck(d, boss)["total_damage"]
+                                      for d in decks])
+        seed_model = fit_surrogate(specs, boss, seed_scorer)
+        if seed_model is None:
+            print("ERROR: roster too small to fit the pool-selection model.", flush=True)
+            sys.exit(1)
+        pool_units = widened_pool(specs, boss, seed_model)
+        print(f"widened pool: {len(pool_units)} units", flush=True)
+        combos = sample_feasible_combinations(
+            pool_units, args.fit + args.holdout, seed=args.seed)
+    else:
+        combos = sample_feasible_combinations(
+            specs, args.fit + args.holdout, seed=args.seed)
     fit_combos = combos[:args.fit]
     hold_combos = combos[args.fit:]
     print(f"got {len(fit_combos)} fit + {len(hold_combos)} holdout combos", flush=True)
