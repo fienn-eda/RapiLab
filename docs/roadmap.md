@@ -852,6 +852,21 @@
       `periodic_rules`. 실제 값은 약 6300%가 아니라 **5280%/180초** — 강제발동이 없어
       첫 캐스트가 t=30이므로 5캐스트(6캐스트 아님)다. 자기 sustained 버프도 함께 실효화,
       고정 셸 E2E **+7.75%**.
+- [ ] **애장품 4인방 온보딩 (Sugar · Flora · Rosanna · Phantom)** — 넷 다 미인코딩
+      상태에서 애장품이 추가돼 base + `-signature` 듀얼 슬롯으로 올린다. 설계
+      `docs/superpowers/specs/2026-07-24-favorite-item-quartet-design.md`, 계획
+      `docs/superpowers/plans/2026-07-24-favorite-item-quartet.md`.
+      **선행 배선 완료**: 매니페스트 `weapon_source` 키 — 스킬값은 lootandwaifus
+      (dollskills), 무기 스탯은 base의 ShiftyPad 파일에서 읽는다(dotgg API 사망 확인,
+      4유닛 모두 200+빈 본문). 무기 손입력 0.
+  - [x] **Sugar (2026-07-24 완료)** — `sugar` + `sugar-signature`. SG 아군 최대탄약
+        +83.8%와 Water·Iron SG 아군 원소우위딜을 `member_subset_buff_rule`로 **근사
+        없이** 모델(레퍼런스 문서가 "표현 불가"라 적고 있었으나 Tove 선례로 반증 —
+        문서 3건 정정). 애장품 전용: 엄폐물 온전 시 공격데미지 +19.98% 상시 +
+        Fire코드 상대 원소우위 부여(`boss_is_element`). 엄폐 피격 트리거는 Fienn 판단
+        으로 두 빌드 모두 defer → 신규 gap #14, 둘 다 floor.
+  - [ ] Flora (rid 411) · Rosanna (rid 280, `rosanna-chic-ocean`과 별개 유닛) ·
+        Phantom (rid 580) — 유닛별로 수집 → 판단 일괄 검토 → base → signature 순 완주.
 - [x] **차지속도 공식 수정 (2026-07-20, Fienn 승인)** — `charge_time_with_speed`로
       집약, 5개 호출 지점 교체. `÷(1+속도)` → `×(1−속도)`. 감속도 같은 식으로 처리
       (bready −20%가 1.25배 → 1.2배). 버프 0이면 로스터의 모든 기본 차지시간에 대해

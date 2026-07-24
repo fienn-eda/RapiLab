@@ -921,12 +921,34 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
 - 참고: `data/shiftypad/laplace-ultimate-hero.json`,
   `data/lootandwaifus/char_laplace-ultimate-hero-nikke.html`.
 
+### 14. "엄폐물이 공격받을 때" 트리거 — 미착수 (2026-07-24)
+
+- **무엇:** 스킬이 **자기 엄폐물이 피격당한 순간** 발동한다. Sugar의 Black Typhoon이
+  이 트리거로 자기 Critical Damage +16.39%·Reload Speed +12.12%를 10초 건다(base는
+  20% 확률, 애장품 빌드는 확률 없이 항상).
+- **왜 막혔나:** 엔진에 **적의 공격이라는 개념 자체가 없다**. 시뮬은 아군→보스 단방향
+  딜만 계산하고 피격·엄폐물 HP·엄폐물 파괴를 모델링하지 않으므로, 발동 시각을 만들
+  타임라인이 없다. gap #1(발사 카운트)처럼 아군 행동에서 유도할 수도 없다.
+- **막힌 유닛:** 2 (`sugar`, `sugar-signature`). 둘 다 이 한 스킬만 빠진 **floor**로
+  들어갔다. Fienn 판단(2026-07-24): 엄폐 피격 빈도가 보스·공격패턴·자리에 따라 너무
+  달라 "상시 발동" 근사는 거짓이 되므로 defer가 옳다.
+- **주의 — 인접하지만 다른 사안:** "엄폐물이 **온전할** 때"는 **막히지 않았다**. 엔진이
+  엄폐물 파괴를 모델링하지 않는다는 바로 그 사실 때문에 엄폐물은 항상 온전하므로,
+  Sugar 애장품의 "온전 시 공격데미지 +19.98%"는 `battle_start` 영구 버프로 정확히
+  모델된다(Fienn 승인). **트리거가 없는 것**과 **조건이 항상 참인 것**을 혼동하지 말 것.
+- **확장 방향(미확정):** 보스 공격 타임라인을 도입하는 것은 시뮬레이터의 성격을 바꾸는
+  큰 변경이다. 더 싼 대안은 Fienn 실측 기반의 **피격 주기 상수**를 받아
+  `periodic_rules`로 거는 것 — 다만 그건 근사이고, 이번에 Fienn이 명시적으로 거부했다.
+  같은 트리거를 쓰는 유닛이 더 쌓이면 재검토할 것.
+- 참고: `backend/app/skill_rules/sugar.py` · `sugar_signature.py` docstring.
+
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
 - ~~**attack speed / charge speed**~~ → **모델됨 (Phase S, 2026-07-16 결정 뒤집기)**:
   180초 고정 전투에서 발사 간격이 줄면 발사 수가 늘어 딜이 증가 → `attack_speed_percent`
   (매거진 무기)·`charge_speed_percent`(차지 무기)를 `attack_rate.py`에 배선. 첫 소비자
-  Dorothy: Serendipity(자기 +65%). Tove는 SG-아군 스코프라 Phase C 대기(gap #3). 근거는
+  Dorothy: Serendipity(자기 +65%). Tove의 SG-아군 스코프도 gap #3 완료(2026-07-16)로
+  `member_subset_buff_rule`을 타고 들어갔다 — 더 이상 대기 중이 아니다. 근거는
   `docs/decisions.md` 참조.
 - **hit rate / Burst Gauge fill speed** (여전히 미소비): 엔진의 딜 공식/타이밍에 들어가는
   개념이 아니라 배선해도 inert. 이런 게 유닛 가치의 대부분이면 얇은 인코딩이 정직한 답.

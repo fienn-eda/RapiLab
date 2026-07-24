@@ -48,14 +48,16 @@
   배치별 이력은 git log와
   [`decisions.md`](decisions.md)에, 갭 인벤토리는
   [`engine-gaps.md`](engine-gaps.md)에 있으므로 여기엔 현재 상태만 적는다.
-- 총 **76명**(테이블 행 수) / `ENCODED_SLUGS` **77개** — B1 형태변형
+- 총 **80명**(테이블 행 수) / `ENCODED_SLUGS` **81개** — B1 형태변형
   `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함.
-  (Burst 1: 11명 · Burst 2: 16명 · Burst 3: 49명)
+  (Burst 1: 11명 · Burst 2: 17명 · Burst 3: 52명 — 실제 행 수를 세어 갱신)
 - **한 소유 캐릭터가 여러 후보 슬러그로 갈라지는 경우** — `MODE_VARIANTS`(전투 전
   선택이라 덱 탐색이 같은 base의 두 후보를 **동시 편성 금지**): Bready(Taste 2종) ·
   Diesel: Winter Sweets(Intro/Highlight) · Cinderella: Crystal Wave(MG/Snipe) ·
-  Rapi: Red Hood(B3/B1). 시그니처 듀얼슬롯(Julia · Drake · Laplace)은 이와 별개로
-  base와 독립된 roster 엔트리다.
+  Rapi: Red Hood(B3/B1). 시그니처(애장품) 듀얼슬롯(Julia · Drake · Laplace ·
+  Sugar)은 이와 별개로 base와 독립된 roster 엔트리다. 어느 쪽이 로스터에 실리는지는
+  프런트 `SIGNATURE_OWNED`(보유 rid 집합)가 정한다 — Sugar는 아직 미보유라 base로
+  해소된다.
 - **스킬값 매니페스트 커버리지 — 예외 없음:** 전원이 `SKILL_VALUE_MANIFESTS`를
   보유(= API로 조립 가능). `test_skill_value_assembly.py`의
   `KNOWN_MANIFEST_EXCEPTIONS`가 빈 집합이라, 매니페스트 없는 신규 인코딩은
@@ -107,7 +109,7 @@
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ✅ | 버스트 무기변형 인코딩됨(2026-07-22): Fienn 실측 FB 10초 25타 → `until_shots: 25` 세그먼트, 200.64%/발, `damage_type="true"` 고정(같은 bullet의 평타→진댐 변환이 곧 이 샷들 — 자35%·아군140% 진댐 버프 실림). S2는 periodic(cd15s 아군 True Damage▲140%). 부위딜용 stun만 미모델 |
 | Maxwell: Ordinary Mechanic | `maxwell-ordinary-mechanic` | Supporter | SR | Wind | ✅ | (신규 2026-07-23, ShiftyPad 수집) 팀 기여 전부 모델됨: FB진입 시 스쿼드 AD+10%/5초·버스트 시 스쿼드 flat ATK(자기 최종 최대HP의 1%)/15초 + 스쿼드 AD+25%/10초·Overcurrent 자ATK+30%×최대5스택(버스트당 1스택 램프, escalating refreshing). 버스트가 자체 무기변환이라 넉 없음 → `burst_percent None`. 보류(전부 자체용/inert): Max HP 스택(풀차지마다 1%×30, 딜 inert)·버스트게이지 fill 7.15%(inert)·Matis UberBuster 버스트 무기변환(자체 단발 캐논, Overcurrent 단계별 차지타임 — 서포터 자체딜 미미) |
 
-## Burst 3 (50명)
+## Burst 3 (52명)
 
 > 배치 인코딩(eb1~eb4)과 gap #7 소비 이력은 각 행의 `(신규 날짜)` 표기와 git log
 > 참고. 남은 백로그는 [`roadmap.md`](roadmap.md) To-Do에 있다.
@@ -164,6 +166,8 @@
 | Laplace: Ultimate Hero | `laplace-ultimate-hero` | Attacker | RL | Wind | ✅ | (신규 2026-07-23, ShiftyPad 수집 / **변신 루프 완성 2026-07-24**) 모델: 전투시작 자 flat ATK(자기 **라이브** 최대HP의 4.05%, 단계마다 재적용)·자기 B3발동 시 자 AD+52.14%/10초·버스트 자ATK+63.36%/10초 + 버스트 넉 2953.84% + **무기변신 루프**(Fienn 실측 앵커, weapon-mode 세그먼트: 탄창 1개를 9.45%/발·20발/초로 비움, 차지댐 미적용, 주기=4.0+탄창/20+재장전을 **라이브 max ammo에서 유도** → 120발 기준 12.5초) + **Over Energy 단계**(변신 2회당 1단계, 캡 4, 단계별 Max HP가 위 ATK에 환류) + **Mjolnir 934.76%×그 시점 단계** 추가딜. E2E 총딜 46.4M→**125.4M(2.70배)**. 보류: Pierce 속성(엔진에 표현 없음)·변신 종료 후 재장전 공백 동안 기본무기가 계속 발사되는 근사(2.5% 샷 ~2발). 단계 Max HP 2/3/7/10.5%는 **누적**(원문 "[Each subsequent effect triggers all effects before it:]", Fienn 2026-07-24) → stage4 = +22.5% |
 | Dorothy: Serendipity | `dorothy-serendipity` | Attacker | SG | Water | ⚠ | (신규 2026-07-16, **Phase S 소비자**) Radiant Wings: 자 Pierce+55.08% 영구·자ATK+75.24%(FB 중)·False Salvation 버스트(버프전용): 자ATK+88.12% + **자 Attack Speed+65% 15초**(Phase S 발사속도 모델). 보류: 펠릿, Hit Rate, Flash 펠릿카운터 트리거 |
 | Soda: Twinkling Bunny | `soda-twinkling-bunny` | Attacker | SG | Iron | ⚠ | eb3 Pattern-A. Golden Chip 자원(캡50·전투시작 만캡·풀버스트 중 노멀3회마다 +1=`per_shot_every_during_full_burst`, 자신의 Critical Damage 스택 +1.32%/스택)+Onward Soda! 버스트(628.7% 넉 + 17로 **reset** + 리셋前 스택≥30 게이팅 ATK+65.25%/15s=`resource_gated_buffs`)+**Lucky Golden Chip 공동발동 버프(풀버스트 중 노멀3회마다 자신+최고ATK아군 Attack Damage+10.51%/2초 refresh, `per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15)** 모델됨. Beginner's Rewards 전체(캐스터별 FB 지속시간 연장 개념 부재)·Hit Rate(inert)만 보류 |
+| Sugar | `sugar` | Attacker | SG | Iron | ⚠ | (신규 2026-07-24, 애장품 배치) Noire Sensor 풀버스트 진입 시 자기 크리율+13.02%/10초 + **SG 아군 최대탄약+83.8%/10초**(`member_subset_buff_rule`, squad 근사 아님)·Trouble Shooter(버스트, 니크 없음) 자기 공속+66%/15초 모델됨. 보류: Black Typhoon 전체 — "엄폐물이 공격받을 때"(엔진에 트리거 부재)에 20% 확률까지 붙어 Fienn이 상시 근사 대신 **defer 결정**(2026-07-24) → 이 인코딩은 floor · Hit Rate(inert) |
+| Sugar (애장품) | `sugar-signature` | Attacker | SG | Iron | ⚠ | (신규 2026-07-24) 애장품이 숫자만 키우는 게 아니라 효과를 통째로 추가하는 사례. base 대비 추가: Black Typhoon **엄폐물 온전 시 공격데미지+19.98% 상시**(엔진이 엄폐물 파괴를 모델링하지 않아 항상 온전 — Fienn 승인) + **Fire코드 상대 원소우위 부여**(`element_advantage_grant` + `boss_is_element("Fire")`, Iron은 Fire에 자연우위 없음) · Noire Sensor 자ATK+25.01%/10초 + SG아군 탄약 지속 10→15초 + **Water·Iron SG아군 원소우위공격뎀+40.02%/15초** · Trouble Shooter 자ATK+20%/15초 + 같은 아군군에 +60.01%/15초. 무기 스탯은 base의 ShiftyPad 파일에서(`weapon_source`). 보류: base와 동일(엄폐 피격 트리거·Hit Rate) + 엄폐물 HP회복(비-DPS) |
 
 ---
 

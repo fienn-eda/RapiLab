@@ -20,10 +20,17 @@ cooldown reduction).
   `highest_atk_buff_rule` / `round_buff_rule` after `SquadContext.top_atk_slugs`
   ranks the deck by live final ATK, for "N allies with the highest final ATK".
 
-There is **no positional scope** (front/back row, "allies on both sides") and
-**no weapon-conditional scope** ("SR allies", "shotgun allies"). Approximate
-weapon/positional offensive buffs as `squad` (documented), or defer. But
-**"N allies with the highest final ATK" is precise now** — use the top-N helpers
+There is **no positional scope** (front/back row, "allies on both sides") —
+approximate positional offensive buffs as `squad` (documented), or defer.
+
+**Weapon- and element-conditional targeting IS precise** ("shotgun allies",
+"all Wind Code allies with assault rifles", "Water and Iron Code allies with
+shotguns"): use `member_subset_buff_rule` with a `member_filter` reading
+`SquadMember.weapon` / `.element`. It resolves to a live `slugs:` scope at
+trigger time, so do NOT approximate these as `squad`. Consumers: `tove.py`,
+`sugar.py`, `sugar_signature.py`.
+
+**"N allies with the highest final ATK" is precise too** — use the top-N helpers
 (see the `round_buff_rule` / `highest_atk_buff_rule` entries below), not `squad`.
 
 ## Stats the engine CONSUMES (encoding these affects output)
@@ -545,8 +552,9 @@ and `charge_speed_percent` (charge weapons) DO move damage — in a fixed 180s
 fight a shorter shot interval means more shots. `attack_rate.py` scales the
 firing cadence from these (evaluated per magazine boundary), so emit them as
 `Effect("attack_speed_percent"|"charge_speed_percent", value, scope, duration)`.
-Scope must be self/squad/element — a "shotgun allies only" speed buff (e.g.
-Tove) still needs weapon-type scope (deferred). See `docs/decisions.md`.
+A "shotgun allies only" speed buff is expressible — Tove's rides
+`member_subset_buff_rule`, which resolves the weapon filter to a live `slugs:`
+scope. See `docs/decisions.md`.
 
 `flat_max_hp` (a Max-HP buff, e.g. Rouge's Game Master, Maxwell's Sequential
 Limit Release) is **no longer inert** — since 2026-07-24 it feeds every
@@ -608,10 +616,12 @@ full-charge-shot counts ("full charge N times"), ally-ammo-expended counters,
 on-kill, HP thresholds, or "when Raptures appear". Effects gated on these must
 be deferred — or, if central, raise extending the engine with a new trigger.
 
-SkillRule actions also have **no access to the boss's element** (only
-`raid_simulator` does, via `boss_element`) - an effect gated on "if the enemy
-is [element] Code" (e.g. a Wind-Code-only debuff) can't be conditioned
-correctly and must be deferred, not applied unconditionally.
+A rule's ACTION has no access to the boss's element, but its **condition does**:
+gate "if the enemy is [element] Code" bullets with
+`squad_engine.boss_is_element("<Element>")`, which reads
+`SquadContext.boss_element` (False when the sim is element-agnostic). Consumers:
+`rapi_red_hood.py`'s advantage grant, `sugar_signature.py`'s Fire-Code grant.
+Never apply such a bullet unconditionally.
 For an always-on-in-raid condition like "when Raptures appear" you may treat it
 as active (document the assumption) since a raid always has enemies.
 
