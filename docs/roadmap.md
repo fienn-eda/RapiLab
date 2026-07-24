@@ -865,8 +865,14 @@
         문서 3건 정정). 애장품 전용: 엄폐물 온전 시 공격데미지 +19.98% 상시 +
         Fire코드 상대 원소우위 부여(`boss_is_element`). 엄폐 피격 트리거는 Fienn 판단
         으로 두 빌드 모두 defer → 신규 gap #14, 둘 다 floor.
-  - [ ] Flora (rid 411) · Rosanna (rid 280, `rosanna-chic-ocean`과 별개 유닛) ·
-        Phantom (rid 580) — 유닛별로 수집 → 판단 일괄 검토 → base → signature 순 완주.
+  - [x] **Flora (2026-07-24 완료)** — `flora` + `flora-signature`. 스윕 366.2M →
+        563.6M(**+53.9%**)로 배치 최대폭. 애장품이 순수 힐러를 ATK 버퍼로 바꾸는데,
+        그 핵심이 **적 공격에 의존하지 않는 자기완결 콤보**(힐 없는 Max HP 증가 →
+        HP 비율 90% 하락 → 자기 실드 → ATK +45.12%)라는 Fienn의 해석 덕에 defer를
+        면했다. 신규 조건 `burst_stage_entered(tier)` — "Burst Stage N 진입"은
+        스테이지의 속성이라 다른 동티어 아군이 슬롯을 가져간 사이클에도 발동해야 한다.
+  - [ ] Rosanna (rid 280, `rosanna-chic-ocean`과 별개 유닛) · Phantom (rid 580) —
+        유닛별로 수집 → 판단 일괄 검토 → base → signature 순 완주.
 - [x] **차지속도 공식 수정 (2026-07-20, Fienn 승인)** — `charge_time_with_speed`로
       집약, 5개 호출 지점 교체. `÷(1+속도)` → `×(1−속도)`. 감속도 같은 식으로 처리
       (bready −20%가 1.25배 → 1.2배). 버프 0이면 로스터의 모든 기본 차지시간에 대해

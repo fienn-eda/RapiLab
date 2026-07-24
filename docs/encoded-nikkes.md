@@ -48,14 +48,14 @@
   배치별 이력은 git log와
   [`decisions.md`](decisions.md)에, 갭 인벤토리는
   [`engine-gaps.md`](engine-gaps.md)에 있으므로 여기엔 현재 상태만 적는다.
-- 총 **80명**(테이블 행 수) / `ENCODED_SLUGS` **81개** — B1 형태변형
+- 총 **82명**(테이블 행 수) / `ENCODED_SLUGS` **83개** — B1 형태변형
   `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함.
-  (Burst 1: 11명 · Burst 2: 17명 · Burst 3: 52명 — 실제 행 수를 세어 갱신)
+  (Burst 1: 11명 · Burst 2: 19명 · Burst 3: 52명 — 실제 행 수를 세어 갱신)
 - **한 소유 캐릭터가 여러 후보 슬러그로 갈라지는 경우** — `MODE_VARIANTS`(전투 전
   선택이라 덱 탐색이 같은 base의 두 후보를 **동시 편성 금지**): Bready(Taste 2종) ·
   Diesel: Winter Sweets(Intro/Highlight) · Cinderella: Crystal Wave(MG/Snipe) ·
   Rapi: Red Hood(B3/B1). 시그니처(애장품) 듀얼슬롯(Julia · Drake · Laplace ·
-  Sugar)은 이와 별개로 base와 독립된 roster 엔트리다. 어느 쪽이 로스터에 실리는지는
+  Sugar · Flora)은 이와 별개로 base와 독립된 roster 엔트리다. 어느 쪽이 로스터에 실리는지는
   프런트 `SIGNATURE_OWNED`(보유 rid 집합)가 정한다 — Sugar는 아직 미보유라 base로
   해소된다.
 - **스킬값 매니페스트 커버리지 — 예외 없음:** 전원이 `SKILL_VALUE_MANIFESTS`를
@@ -87,10 +87,12 @@
 | Volume | `volume` | Attacker | SMG | Wind | ✅ | Freestyle(킬 트리거, 레이드엔 무의미)만 미모델 |
 | Zwei (애장품) | `zwei` | Supporter | SG | Electric | ✅ | Pierce Equation 스쿼드 Pierce(**20.13% 1 round=탄수 버프** + 10.06% 10초)·풀버스트창 노멀공격 스택 Pierce(24.99%/1 round, per-shot FB 게이트)·Frame Analysis 크리율·**Pierce Attacks 101(버스트 10초 창) 노멀공격 크리율 스택 15%/5초·3중첩**(own_status_window 리소스)·스택 Pierce 3중첩 상한(round_buff_rule `cap`, 수혜자별)·버스트 Pierce 모델됨. **(갱신 2026-07-21) Overcharge Formula 무기변형 인코딩 완료** — "Max Ammunition Capacity: 1"이 창을 규정하므로 지속시간이 아니라 **버스트당 단 1발**(Maxwell Pierce Shot과 원문 형태까지 동일, `until_shots: 1`). 1.2초 차지 50.69%, 풀차지 300% = 152%. "Fixed at"이 없으므로 `rate_of_fire`가 아니라 `charge_time`(차지속도 버프를 받음). **dotgg → lootandwaifus 소스 이관** 필요(dotgg엔 차지시간·풀차지 슬롯 없음). E2E **+0.82%**. 보류: Cover HP(생존)뿐 |
 
-## Burst 2 (17명)
+## Burst 2 (19명)
 
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
+| Flora | `flora` | Supporter | MG | Electric | ⚠ | (신규 2026-07-24, 애장품 배치) 힐러라 딜 기여는 True Damage뿐 — Iris 스쿼드 True Damage +30.97% **상시**(원문은 "양옆 아군이 만피가 될 때"인데 엔진은 아군을 다치게 하지 않아 항상 만피 → Fienn 판단으로 상시 모델. 그 대가로 base 5초/애장품 10초 차이가 사라짐)·Secret Garden(버스트) 스쿼드 True Damage +42.39%/10초 모델됨. 보류: Petunia의 "노멀 100회 → Electric 아군의 **스택형 버프 스택 수 +1**"(카운터는 표현 가능하나 남의 버프 스택을 증가시키는 효과 개념이 엔진에 없음) · 힐·실드·Incoming Healing 전부(비-DPS) |
+| Flora (애장품) | `flora-signature` | Supporter | MG | Electric | ⚠ | (신규 2026-07-24) **순수 힐러 → 실질 ATK 버퍼**로 바뀌는 사례, 스윕 +53.9%. Fienn이 짚어준 자기완결 콤보를 모델: Petunia 애장품 불릿이 **힐 없이** Max HP +15.01%(자기 Max HP 기준)를 걸어 아군 HP **비율**을 90% 아래로 떨어뜨림 → Iris 1번 불릿(HP 90% 이하) 실드 → 애장품 Iris 불릿(실드 깔림) **스쿼드 ATK +45.12%(자ATK)/10초**. 적 공격에 의존하지 않으므로 defer가 아니라 Burst Stage 2 진입에 물린 파생으로 인코딩. 두 불릿 모두 `ally_burst_activate` + 신규 `burst_stage_entered(2)` — "Stage N 진입"은 **스테이지**의 속성이라 다른 B2 아군이 슬롯을 가져간 사이클에도 발동해야 하기 때문(`own_burst_activate`면 그 사이클이 통째로 누락). Secret Garden은 True Damage +42.39% + 스쿼드 ATK +85.86%(자ATK)/10초. 보류: base와 동일 |
 | Crown | `crown` | Defender | MG | Iron | ✅ | **(2026-07-20) Royal Attire 인코딩** — "노멀공격 카운터엔 아직 없는 attack-rate 모델이 필요"라는 보류였는데 그 모델은 2026-07-11에 들어왔다. 체인에서 딜 관련은 마지막 고리뿐(43노멀×20스택 → 자힐 → **스쿼드 AD+20.99%/7초**); Relax는 *받는* 힐 강화, 만스택 프록은 무적·도발·힐이라 전부 생존계. 트리거가 **아군 누구의 힐이든** 잡는데(Fienn 2026-07-20) 엔진에 힐 이벤트가 없어 두 경로로 모델: ① 자기 체인 860발마다(`per_shot_rules`, MG 케이던스로 180초에 약 8회·가동률 약 31% = **floor**, 그녀가 유일 힐러일 때의 경로) ② 덱에 **다른** 힐러가 있으면 창이 유지되는 것으로 처리(**ceiling** — Helm처럼 풀차지마다 힐하는 유닛은 실제로 7초 창을 계속 살리지만 드물게 힐하는 유닛은 아니다). 힐러 명단은 손으로 적지 않고 신규 `scripts/find_heal_providers.py`가 스킬 원문에서 유도(77명 중 **16명**; Cover HP 회복은 유닛이 힐받는 게 아니라 제외 → Liter·Zwei 탈락). Crown 자신도 명단에 있어 신규 `deck_contains_any`는 **캐스터를 제외**한다(안 그러면 자기가 자기 ceiling을 켜서 floor가 무의미해짐). E2E: 덱 총딜 +1.5% — 작은 이유는 `damage_formula`에서 모든 `*_up` 버킷이 **하나의 합산 풀**이고 이 덱의 베이스라인 `damage_up`이 약 14.9라 한계 +21%가 크게 희석되기 때문(선형성 검증: +0.21→+1.41%, +1.0→+6.70%) |
 | Ade: Agent Bunny | `ade-agent-bunny` | Supporter | SR | Iron | ✅ | Spy Lens 스택 누적만 미모델(정상상태 근사) |
 | Anchor: Innocent Maid | `anchor-innocent-maid` | Supporter | RL | Water | ✅ | 분산 대미지 버프 인코딩됨(엔진 미연결로 현재 비활성) |
