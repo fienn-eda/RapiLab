@@ -5,6 +5,30 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## Phantom base의 Thief's Vision 최대스택 관련 효과 전체 defer — 엔진 한계가 아니라 스킬 자체의 구조적 교착 (Fienn 확인)
+- Date: 2026-07-24
+- Context: Phantom base의 Thief's Dagger 스택은 유일한 소스가 "Calling Card 상태가 아닌 적을 노멀공격으로 때릴 때"인데, 그 공격 자체가 대상에게 Calling Card를 5초간 건다. 대거 지속(5초)이 Calling Card 지속과 정확히 같아, 다음 스택을 얻을 수 있는 시점(대상이 다시 Calling Card 없이 노출되는 순간)에 이미 이전 스택이 만료 — 영원히 1스택에 머물고 최대스택 트리거(Thief's Vision의 84.33% 추가딜, 스택형 Distributed Damage +12.86%)는 절대 발동하지 않는다.
+- Alternatives considered: (a) 최대스택을 가정하고 인코딩 — 게임 내에서 도달 불가능한 상태를 상시로 모델링하는 것이라 과대평가. (b) 전체 defer. 채택.
+- Decision: (b). base `phantom.py`는 Thief's Dagger 관련 두 효과(추가딜·스택형 Distributed Damage) 전부 defer. 애장품(`phantom-signature`)은 "노멀 30발마다 대거 +1"이라는 별도 소스를 추가해 이 교착을 풀고(60발 카운터 — Fienn 실측 약 5초 사격분 = AR 12발/초 x 5초), 그쪽에서 인코딩한다.
+- Why: **이건 engine-gap이 아니라 유닛 설계다** — 엔진이 표현 못 하는 게 아니라, base 스킬 자체가 자기모순적으로 설계돼(유일한 스택 소스가 스택 지속과 똑같은 상태를 걺) 스스로 최대스택에 못 이른다.
+- Consequences: base Phantom은 Thief's Vision의 84.33%/12.86% 효과가 영구 0 — 다른 유닛의 defer와 달리 "언젠가 엔진이 확장되면 풀린다"는 종류가 아니라 "base 스킬 그 자체가 그렇게 설계됐다"는 종류이므로, 향후 엔진 확장 우선순위에 넣지 말 것(넣는다면 애장품이 이미 실질적으로 같은 딜 소스를 제공하므로 ROI가 낮다). `docs/engine-gaps.md`에 신규 갭으로 등록하지 않고 gap #15 옆에 "참고"로만 기록됨(커밋 `5c8bd56`).
+
+## Rosanna의 Concealment 라이더(561.6%)를 조건부 버프가 아니라 burst_percent에 합산 — 사실상 상시이고, FB 보너스 오귀속을 피한다
+- Date: 2026-07-24 (Fienn 승인)
+- Context: Vendetta(버스트)는 "Concealment 상태면" 561.6% 추가 대미지를 준다. Concealment는 전투 시작 5초 + 노멀 120발마다 10초 재갱신. 엔진 MG 케이던스(60발/초)에서 120발은 사격 2.0초(재장전 포함 약 2.7초 wall clock)만에 채워지므로, 10초 지속에 비해 훨씬 짧은 주기로 재갱신되어 t≈2초 이후 사실상 상시.
+- Alternatives considered: (a) 별도 조건부 nuke/버프로 인코딩(Concealment 상태를 실제로 추적) — 사실상 항상 참인 조건을 매 사이클 재확인하는 것뿐이라 이득 없이 코드만 복잡해진다. (b) burst_percent에 그냥 합산. 채택. Fienn이 중간에 "추가 대미지 문구니 FB 보너스를 받아야 하지 않나"를 제기했다가 검증 후 스스로 철회했는데, 검증 결과 철회가 맞았다: 그녀는 B1이라 버스트 딜은 Full Burst 시작 **이전**에 발생한다. 게다가 엔진 auto 모드는 세 티어가 같은 타임스탬프에서 발동하고 FB 창 판정이 `start <= time < end`(시작 경계 포함)라, 만약 FB 적격으로 표시했다면 실제로는 그녀의 딜이 FB보다 먼저인데도 **엔진이 오귀속으로 보너스를 얹어줬을** 상황이었다.
+- Decision: (b). `rosanna.py::vendetta_burst_percent`가 `description_value_02 + description_value_03`(기본딜 + 라이더)을 그대로 더해 반환한다. Concealment 상태·타이머를 추적하는 별도 코드는 없다.
+- Why: 합산이 "게임 사실"(사실상 상시)과 "엔진 아티팩트 회피"(B1 버스트가 FB 이전이라 FB 보너스를 받을 자격이 없는데도, auto 모드+경계포함 판정이 잘못 부여할 뻔한 상황)를 동시에 만족한다. 조건부로 인코딩해도 값 자체는 똑같이 나오지만(상시이므로), 그 경로는 FB 보너스 태그를 실수로 붙이기 쉬운 함정을 남긴다.
+- Consequences: `rosanna`/`rosanna-signature` 둘 다 이 규칙 적용(애장품 쪽은 라이더까지 동일하게 합산, `rosanna_signature.py`의 docstring이 명시). 남은 Concealment 관련 문구("직격 피격 시 해제")는 별도 defer(아군 피격을 엔진이 모델링 안 함) — 이 결정과 무관.
+
+## "Burst Stage N 진입"은 own_burst_activate가 아니라 ally_burst_activate + 신규 조건 burst_stage_entered(tier)로 — Stage 3 = Full Burst 스코프 규칙은 Stage 2에 적용되지 않는다
+- Date: 2026-07-24
+- Context: Flora 애장품(flora-signature) S1(Petunia)이 "Burst Stage 2 진입 시" 발동한다. 그녀는 Burst 2 유닛이라 `own_burst_activate`로 인코딩하는 게 자연스러워 보이지만, 덱에 B2가 둘이면 그녀가 아닌 다른 B2가 그 사이클의 슬롯을 가져갈 수 있다 — 그 사이클도 "Burst Stage 2 진입"은 일어나지만 그녀의 `own_burst_activate`는 발동하지 않아, 트리거가 캐스터 자신인지 스테이지인지에 대한 오해로 사이클 전체가 조용히 누락된다. 기존 insights.md의 "스코프가 판별 기준" 규칙(자기 스코프→`own_burst_activate`, 스쿼드 스코프→`full_burst_enter`)은 **Stage 3 = Full Burst 진입**이라는 전제 위에 서 있어서(엔진의 `full_burst_enter`가 정확히 tier-3 발동 시각과 같다), Stage 1/2에는 대응하는 스쿼드 스코프 이벤트가 없어 그대로 적용할 수 없다.
+- Alternatives considered: (a) `own_burst_activate` — 위 누락 문제. (b) `full_burst_enter` — Stage 2 ≠ Full Burst라 아예 틀린 이벤트에 건다(발동 시각 자체가 잘못됨). (c) 신규 조건 `burst_stage_entered(tier)`: 방금 버스트한 유닛(`context.last_burst_slug`)의 `burst_tier`를 조회해 `tier`와 일치하는지 판별하고, `ally_burst_activate`(모든 유닛의 룰에 발동)와 짝짓는다. 채택.
+- Decision: (c). `squad_engine.burst_stage_entered(tier)`는 `ally_burst_activate` 트리거의 condition으로 쓰인다. `ally_burst_activate`가 모든 유닛의 룰에 발동하므로 캐스터 자신이 그 티어로 버스트한 사이클도 자동으로 커버된다(캐스터 자신도 "아군"으로 취급됨). 코드: `backend/app/squad_engine.py`. 첫 소비자: Flora 애장품의 Petunia(Max HP)·Iris(shield-ATK) 두 불릿, 둘 다 `ally_burst_activate` + `burst_stage_entered(2)`.
+- Why: "Burst Stage N 진입 시"라는 문구는 캐스터가 아니라 **스테이지**의 속성을 묻는다 — 그 사이클에 어느 동티어 유닛이 버스트했는지와 무관하게 스테이지는 진입한다. `own_burst_activate`는 캐스터가 슬롯을 가져간 사이클만 잡아 그 의미를 좁히고, `full_burst_enter`는 Stage 3 전용이라 Stage 1/2에는 아예 잘못된 이벤트다. 엔진 auto 모드는 티어 간 gap=0.0이라 세 티어가 같은 타임스탬프에 발동하므로, "스테이지 진입"과 "버스트 사용" 사이에 표현 가능한 시간차는 없다 — 실제로 갈리는 것은 시점이 아니라 **누가** 버스트했는가이고, `burst_stage_entered`는 정확히 그 축을 묻는다.
+- Consequences: 기존 "스코프가 판별 기준" 규칙(`docs/insights.md`)은 이제 "Stage 3=Full Burst 진입일 때만 성립"으로 좁혀 정정했다 — Stage 1/2의 스쿼드 스코프 트리거는 `full_burst_enter`가 아니라 `ally_burst_activate` + `burst_stage_entered(tier)`를 쓴다. Flora 외에 아직 다른 소비자는 없다(전수 감사는 이 배치 범위 밖). 다음에 "Burst Stage N 진입"류 문구를 마주치면 N=3인지부터 확인할 것 — N=3이면 기존 규칙 그대로, N<3이면 이 신규 조건.
+
 ## 애장품(Favorite Item) S1의 "엄폐물이 온전할 때" 지속딜은 상시 참으로 모델 — 엔진이 엄폐물 파괴를 표현 안 함
 - Date: 2026-07-24
 - Context: Sugar 애장품(sugar-signature)의 Black Typhoon(dollskills[0])은 "엄폐물이 온전한 동안 공격피해 +19.98% 지속"을 건다. 엔진은 엄폐물 파괴 자체를 모델링하지 않으므로 이 조건은 시뮬레이션 안에서 언제나 참이다.
