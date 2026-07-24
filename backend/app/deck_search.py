@@ -576,6 +576,24 @@ def _all_intra_tier_orderings(combos):
     return [ordered for combo in combos for ordered in _intra_tier_orderings(combo)]
 
 
+def _orderings_within_budget(roster, sim_budget):
+    """Every intra-tier ordering of `roster`, or None once they exceed the budget.
+
+    Only the ANSWER to "does this fit the budget" is needed when it doesn't, so
+    the walk stops at the first ordering past it. Enumerating the full space to
+    then discard it costs real time on a large roster - a 78-unit roster has
+    millions of orderings, and the parent-side generation showed up as ~23% of a
+    profiled allocation.
+    """
+    out = []
+    for combo in shape_combinations(roster):
+        for ordered in _intra_tier_orderings(combo):
+            out.append(ordered)
+            if len(out) > sim_budget:
+                return None
+    return out
+
+
 def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200, pool=None):
     """Budget-aware replacement for exhaustive find_best_decks: every shape
     combination is scored in EVERY intra-tier order, and when that would blow
@@ -595,8 +613,8 @@ def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200, pool=
     the true best (1,1,3) ranking #21 - so orderings are scored in full
     rather than refined for a top-K shortlist."""
     candidates = list(roster)
-    orderings = _all_intra_tier_orderings(shape_combinations(candidates))
-    if len(orderings) > sim_budget:
+    orderings = _orderings_within_budget(candidates, sim_budget)
+    if orderings is None:
         candidates = prune_candidate_pool(roster, boss, pool)
         orderings = _all_intra_tier_orderings(shape_combinations(candidates))
     # Ranked on slim scores first; only the returned top_n get a second sim to

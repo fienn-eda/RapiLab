@@ -794,3 +794,30 @@ def test_search_output_always_seats_velvet_last_among_b2(monkeypatch):
         b2_positions = [i for i, s in enumerate(deck) if s in b2_slugs]
         assert deck[max(b2_positions)] == "velvet"  # last B2 seat
     assert saw_velvet
+
+
+def test_orderings_within_budget_returns_them_all_when_under():
+    from app.deck_search import _all_intra_tier_orderings, _orderings_within_budget
+    from app.deck_search import shape_combinations
+
+    roster = fake_roster([1, 2, 3, 3, 3])
+    out = _orderings_within_budget(roster, sim_budget=1000)
+    assert out == _all_intra_tier_orderings(shape_combinations(roster))
+
+
+def test_orderings_within_budget_returns_none_when_over():
+    from app.deck_search import _orderings_within_budget
+
+    roster = fake_roster([1, 2, 3, 3, 3])
+    assert _orderings_within_budget(roster, sim_budget=2) is None
+
+
+def test_orderings_within_budget_stops_early_instead_of_enumerating_everything():
+    """A budget of 1 must not walk the whole space - the point of the helper."""
+    from app.deck_search import _all_intra_tier_orderings, _orderings_within_budget
+    from app.deck_search import shape_combinations
+
+    roster = fake_roster([1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3])
+    full = len(_all_intra_tier_orderings(shape_combinations(roster)))
+    assert full > 100                       # the space really is large
+    assert _orderings_within_budget(roster, sim_budget=1) is None
