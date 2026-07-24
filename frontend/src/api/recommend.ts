@@ -1,16 +1,21 @@
-// Typed client for POST /api/recommend. Backed by a dev mock until the real
-// endpoint lands (frontend/README.md "Data contract — backend API" — the
-// FastAPI endpoint isn't implemented yet). Set VITE_RECOMMEND_API=live to
-// swap in the live fetch client; this is the only place that decides which
-// implementation runs, so callers never depend on which one is active.
+// Typed client for POST /api/recommend (frontend/README.md "Data contract —
+// backend API"). Fetches a RELATIVE path so the Vite dev server proxies it to
+// the FastAPI backend on :8000.
 
 import type { RecommendRequest, RecommendResponse } from '../types/recommend'
-import { fetchRecommendDecks } from './recommendClient.live'
-import { mockRecommendDecks } from './recommendClient.mock'
+import { RecommendApiError } from './recommendApiError'
 
-const useLiveApi = import.meta.env.VITE_RECOMMEND_API === 'live'
-
-export const recommendDecks = (
+export const recommendDecks = async (
   request: RecommendRequest,
-): Promise<RecommendResponse> =>
-  useLiveApi ? fetchRecommendDecks(request) : mockRecommendDecks(request)
+): Promise<RecommendResponse> => {
+  const response = await fetch('/api/recommend', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) {
+    const detail: unknown = await response.json().catch(() => null)
+    throw new RecommendApiError(response.status, detail)
+  }
+  return (await response.json()) as RecommendResponse
+}
