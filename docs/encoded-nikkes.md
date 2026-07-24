@@ -48,14 +48,14 @@
   배치별 이력은 git log와
   [`decisions.md`](decisions.md)에, 갭 인벤토리는
   [`engine-gaps.md`](engine-gaps.md)에 있으므로 여기엔 현재 상태만 적는다.
-- 총 **82명**(테이블 행 수) / `ENCODED_SLUGS` **83개** — B1 형태변형
+- 총 **86명**(테이블 행 수) / `ENCODED_SLUGS` **87개** — B1 형태변형
   `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함.
-  (Burst 1: 11명 · Burst 2: 19명 · Burst 3: 52명 — 실제 행 수를 세어 갱신)
+  (Burst 1: 13명 · Burst 2: 19명 · Burst 3: 54명 — 실제 행 수를 세어 갱신)
 - **한 소유 캐릭터가 여러 후보 슬러그로 갈라지는 경우** — `MODE_VARIANTS`(전투 전
   선택이라 덱 탐색이 같은 base의 두 후보를 **동시 편성 금지**): Bready(Taste 2종) ·
   Diesel: Winter Sweets(Intro/Highlight) · Cinderella: Crystal Wave(MG/Snipe) ·
   Rapi: Red Hood(B3/B1). 시그니처(애장품) 듀얼슬롯(Julia · Drake · Laplace ·
-  Sugar · Flora)은 이와 별개로 base와 독립된 roster 엔트리다. 어느 쪽이 로스터에 실리는지는
+  Sugar · Flora · Rosanna · Phantom)은 이와 별개로 base와 독립된 roster 엔트리다. 어느 쪽이 로스터에 실리는지는
   프런트 `SIGNATURE_OWNED`(보유 rid 집합)가 정한다 — Sugar는 아직 미보유라 base로
   해소된다.
 - **스킬값 매니페스트 커버리지 — 예외 없음:** 전원이 `SKILL_VALUE_MANIFESTS`를
@@ -71,10 +71,12 @@
 
 ---
 
-## Burst 1 (11명)
+## Burst 1 (13명)
 
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
+| Rosanna | `rosanna` | Attacker | MG | Electric | ⚠ | (신규 2026-07-24, 애장품 배치) `rosanna-chic-ocean`과 **별개 유닛**(rid 280 vs 283). On the Lam 120발마다 자기 크리율 +19.34%/3초 · Vendetta 버스트 **1872.0%**(=1310.4 + Concealment 라이더 561.6). 라이더를 접은 근거: 은신은 120발(MG 60발/초 → 2.0초 사격분, 재장전 포함 ~2.7초)마다 10초짜리로 재갱신돼 t≈2초 이후 상시 — Fienn 승인. B1이라 버스트 딜이 Full Burst 시작 전에 떨어지므로 FB 보너스 대상 아님(합산이 오히려 auto 모드 경계 아티팩트를 피함). 보류: Frenzy(ATK +22.61%×10스택) — 트리거가 "니케 행동불능 시"인데 엔진은 아군 사망을 모델링하지 않음(gap #15) · 버스트게이지 충전 · 적 버프 제거 |
+| Rosanna (애장품) | `rosanna-signature` | Attacker | MG | Electric | ⚠ | (신규 2026-07-24) 스윕 +40.9%(513.9M → 724.2M). 애장품이 **엔진이 실제로 발동시킬 수 있는 트리거**를 붙여주는 사례: "노멀 500발마다 Frenzy" 소스 추가로 base가 영영 못 받던 ATK 버프가 살아남(500발 ≈ 11.1초라 30초 지속 대비 **정상상태 약 2.7중첩**, 10스택 상한은 base 소스 없이는 도달 불가라 상한 미가정) · "스테이지 타겟 등장 시" 원소우위공격뎀 +20% 상시 · Water 코드 보스면 Damage Taken +29%/30초(`boss_is_element`, squad). 보류: base와 동일 |
 | Anis: Star | `anis-star` | Defender | RL | Electric | ⚠ | 풀차지 추가딜(120.13% 매 풀차지, per-shot)·Stardust 버프(ATK/PE/AD)·버스트 자버프 모델됨. **(2026-07-20) 버스트 Shooting Stars 인코딩** — "gap #6 필요"라는 보류가 낡은 것이었다(gap #6은 2026-07-16 완료, Ada Wong이 이미 소비 중). `periodic_nukes`의 `during_full_burst`가 아니라 **자기 버스트 앵커 `scheduled_nukes`**로 모델(별은 버스트가 소환하고, 그녀는 B1이라 풀버스트가 열리기 **전에** 버스트한다). 사이클당 40틱×40.01%. 0.25초 간격은 슬롯이 아니라 설명문 산문이라 모듈 상수. **같은 창의 "차지시간 0.7초 고정"도 인코딩** — 세그먼트가 아니라 등가 자기 `charge_speed_percent` 버프(1/0.7−1, 자기 무기 기본 차지시간에서 유도): **세그먼트는 재장전을 하지 않아** 10초 세그먼트가 14발을 연사하는데 그녀의 6발 탄창은 재장전을 끼고 실제 11발뿐이다. 대가 2건은 docstring에 명시 — 차지속도는 **매거진당 1회 샘플**이고, "고정"을 버프로 모델하면 아군 차지속도 버프가 얹혀 0.7초 아래로 내려간다(차지속도 버퍼가 있는 덱에 한정된 과대평가; 유닛별 버프 면역 프리미티브가 엔진에 없다 — Liberalio도 같은 게 필요). E2E(단독 B1 덱, 180초): 768M → 974M(차지시간) → **1,386M(+80.5%)**, 덱 총딜 +8.3%. 잔여 보류: 재진입 분기(다단 버스트 재진입 없음)·게이지·Explosion Radius(inert) |
 | D: Killer Wife | `d-killer-wife` | Supporter | SR | Fire | ⚠ | Assault Formation 공버프(5풀차지마다 AD, per-shot) + CDR(8풀차지→7s, 매 사이클 근사) 모델됨. **skill3(Kill the Target 버스트) 보류**(Fienn) |
 | Liter | `liter` | Supporter | SMG | Iron | ✅ | Volt Boost(자힐, 생존계)만 미모델 |
@@ -111,13 +113,15 @@
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ✅ | 버스트 무기변형 인코딩됨(2026-07-22): Fienn 실측 FB 10초 25타 → `until_shots: 25` 세그먼트, 200.64%/발, `damage_type="true"` 고정(같은 bullet의 평타→진댐 변환이 곧 이 샷들 — 자35%·아군140% 진댐 버프 실림). S2는 periodic(cd15s 아군 True Damage▲140%). 부위딜용 stun만 미모델 |
 | Maxwell: Ordinary Mechanic | `maxwell-ordinary-mechanic` | Supporter | SR | Wind | ✅ | (신규 2026-07-23, ShiftyPad 수집) 팀 기여 전부 모델됨: FB진입 시 스쿼드 AD+10%/5초·버스트 시 스쿼드 flat ATK(자기 최종 최대HP의 1%)/15초 + 스쿼드 AD+25%/10초·Overcurrent 자ATK+30%×최대5스택(버스트당 1스택 램프, escalating refreshing). 버스트가 자체 무기변환이라 넉 없음 → `burst_percent None`. 보류(전부 자체용/inert): Max HP 스택(풀차지마다 1%×30, 딜 inert)·버스트게이지 fill 7.15%(inert)·Matis UberBuster 버스트 무기변환(자체 단발 캐논, Overcurrent 단계별 차지타임 — 서포터 자체딜 미미) |
 
-## Burst 3 (52명)
+## Burst 3 (54명)
 
 > 배치 인코딩(eb1~eb4)과 gap #7 소비 이력은 각 행의 `(신규 날짜)` 표기와 git log
 > 참고. 남은 백로그는 [`roadmap.md`](roadmap.md) To-Do에 있다.
 
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
+| Phantom | `phantom` | Attacker | AR | Water | ⚠ | (신규 2026-07-24, 애장품 배치) Distributed Damage 특화. Calling Card 적 DEF −32.19% **상시**(AR 12발/초라 5초 만료 후 다음 발이 즉시 재적용, `enemy_def_percent` 음수 squad) · Calling Card 대상 평타마다 Attack Damage +75.17%(1 round 그랜트) · 노멀 10회(0.83초)마다 자ATK +85.12%/5초 + Distributed +31.92%/10초 · 버스트 1457.28%를 **`damage_type="distributed"`로 타이핑**해 자기 Distributed 버프가 실림. **보류(구조적): Thief's Dagger와 그에 걸린 Thief's Vision 전부** — 대거는 "Calling Card 상태가 아닌 적 평타"로만 쌓이는데 그 평타가 곧 Calling Card(5초, 대거와 동일 지속)를 걸어 다음 스택을 얻을 시점에 기존 스택이 만료 → **영원히 1스택**이라 최대스택 트리거가 발동 불가(Fienn 확인 2026-07-24). Hit Rate(inert) |
+| Phantom (애장품) | `phantom-signature` | Attacker | AR | Water | ⚠ | (신규 2026-07-24) 스윕 +46.5%(701.3M → **1027.1M**, 전체 87슬러그 중 최고 딜). 애장품이 추가하는 "노멀 30발마다 대거 +1" **한 줄이 S2 전체를 켜준다** — 그 소스로 최대스택이 약 5초 사격분마다 달성(Fienn 확인)돼 60발 카운터로 인코딩. 발동 시 84.33% **추가딜**("additional damage" → FB 보너스 적격, 버스트 니크와 달리 자기 시각에 계산되므로 실제로 창 안에 들어갈 수 있음) + 250% Distributed 넉 + 자기 Distributed +12.86% 스택. 버스트에 Fire 코드 한정 Damage Taken +18%/30초 · 자기 최대탄약 +50%/10초 추가. 보류: Hit Rate · 대거 스택 수 자체는 자원으로 추적하지 않고 60발 카운터가 "최대스택 도달"을 대신함 |
 | Anis: Sparkling Summer | `anis-sparkling-summer` | Supporter | SG | Electric | ⚠ | Sparkling Boost(FB진입 시 Electric코드 아군 flat ATK/재장전속도)·Sparkling Wave(자기 최대탄약/재장전속도) 모델됨 + **Sparkling Missile: 라스트불릿마다 382.42% 넉(2 최고ATK 적) + 자기 부위딜 +6.91%/10초 refresh**(`per_shot_rules`의 `"last_bullet"` 모드, 2026-07-15 Phase A1) 모델됨. Sparkling Wave의 Elemental Advantage Attack Damage(버킷 불명)만 보류 |
 | Ark Ranger Black | `ark-ranger-black` | Attacker | AR | Wind | ⚠ | (신규 2026-07-16) Transformation 상태에서만 나오는 지속딜 위주 배터리 게이지 유닛 — 파츠파괴로 게이지가 차는 메커니즘은 모델 불가하여 신규 보스 플래그 `part_destructible`로 **floor(파츠파괴 없음)/ceiling(파츠파괴 있음)** 두 갈래를 모델링(`docs/superpowers/specs/2026-07-16-ark-ranger-black-transformation-design.md`, gap #2 Pattern B 우회). Transform! 자ATK+156.19%(floor: 버스트당 10초 창, ceiling: 전투 시작부터 영구)·Ark Black Collider 45.87% 지속딜(floor: 버스트-앵커 10틱, ceiling: 전투 내내 1초마다)·Ultimate! Meteor 266.69%×10틱 지속딜 + 자신 Sustained Damage+135.83%/10초(양쪽 분기 공통)·노멀30회마다 자신 Sustained Damage+59.6%/5초(refresh) 모델됨. skill2 풀버스트 "Wind코드 어썰트라이플 아군 Sustained Damage+77.5%/10초"(member_subset_buff_rule, gap #3 소비 2026-07-16 — Ark 자신 포함 자기적용) 모델됨. 보류: 파츠파괴로 인한 배터리 충전(이 플래그의 존재 이유)·Damage to Parts+20%(파츠딜, 레이드 DPS 무관) |
 | Ada Wong | `ada-wong` | Attacker | RL | Electric | ⚠ | (신규 2026-07-16, Phase C) Covert Support: FB진입 시 "이미 버스트한 버스트3 아군" flat ATK(자ATK 60%)+진댐+50%/10초(member_subset_buff_rule, gap #3)·Flash Grenade: FB창 동안 2초마다 420% 진댐 주기넉(during_full_burst, gap #6 — 자기 버스트로 열린 FB창은 1초 틱, own_burst_interval, Fienn 판정 2026-07-16)·Secret Agent(버스트, 버프 온리): 자ATK+40%+진댐+42%/10초 + Special Modification 1라운드(차지속도▼300%+차지딜▲1500% → 매거진-경계 함정으로 감속이 착지 불가 확인, net 근사 charge_damage_bonus +2.75/1라운드로 모델 — 모듈 docstring 참고) 모델됨. 보류: Covert Support HP 회복(비딜) |

@@ -83,6 +83,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   515: 'cinderella-crystal-wave', // Cinderella: Crystal Wave - base slug; fans out to -mg/-snipe (MODE_VARIANTS)
   520: 'bready', // Bready - base slug; fans out to -lingering/-recommended (MODE_VARIANTS)
   570: 'ark-ranger-black', // Ark Ranger Black
+  580: 'phantom', // Phantom — dual-slot base; see SIGNATURE_OWNED
   581: 'arcana', // Arcana
   583: 'arcana-fortune-mate', // Arcana: Fortune Mate
   600: 'mint', // Mint
@@ -112,7 +113,7 @@ export const SIGNATURE_OWNED: ReadonlySet<number> = new Set([
 // The backend drift test asserts this equals the encoded base/-signature pairs, so a
 // newly encoded dual-slot unit fails the suite until it is added here.
 export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set([
-  'drake', 'flora', 'julia', 'laplace', 'rosanna', 'sugar',
+  'drake', 'flora', 'julia', 'laplace', 'phantom', 'rosanna', 'sugar',
 ])
 
 // Single entry point: identity lookup, then signature promotion when owned.

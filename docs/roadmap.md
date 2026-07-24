@@ -871,8 +871,18 @@
         HP 비율 90% 하락 → 자기 실드 → ATK +45.12%)라는 Fienn의 해석 덕에 defer를
         면했다. 신규 조건 `burst_stage_entered(tier)` — "Burst Stage N 진입"은
         스테이지의 속성이라 다른 동티어 아군이 슬롯을 가져간 사이클에도 발동해야 한다.
-  - [ ] Rosanna (rid 280, `rosanna-chic-ocean`과 별개 유닛) · Phantom (rid 580) —
-        유닛별로 수집 → 판단 일괄 검토 → base → signature 순 완주.
+  - [x] **Rosanna (2026-07-24 완료)** — `rosanna` + `rosanna-signature`, 스윕 +40.9%.
+        `rosanna-chic-ocean`과 별개 유닛(rid 280 vs 283). Concealment 라이더를 버스트
+        퍼센트에 합침(120발=2.0초 사격분마다 10초 재갱신 → 상시, Fienn 승인).
+  - [x] **Phantom (2026-07-24 완료)** — `phantom` + `phantom-signature`, 스윕 +46.5%
+        (701.3M → **1027.1M**, 전체 최고 딜). base는 Thief's Dagger가 자기 Calling
+        Card와 지속이 같아 **영원히 1스택**이라 S2가 통째로 발동 불가(Fienn 확인);
+        애장품의 "노멀 30발마다 대거 +1" 한 줄이 그 교착을 풀어 S2 전체를 켠다.
+- [x] **애장품 4인방 온보딩 완료 (2026-07-24)** — 8슬러그 전부 등록. 배치 결산:
+      Sugar +9.5% · Rosanna +40.9% · Phantom +46.5% · Flora +53.9%. 공통 교훈은
+      **애장품이 수치를 키우는 게 아니라 "엔진이 발동시킬 수 있는 트리거"를 붙여준다**는
+      것 — Flora(자기완결 실드 콤보) · Rosanna(500발 Frenzy 소스) · Phantom(30발 대거
+      소스)이 모두 같은 형태다. 신규 engine-gap #14(엄폐물 피격) · #15(아군 행동불능).
 - [x] **차지속도 공식 수정 (2026-07-20, Fienn 승인)** — `charge_time_with_speed`로
       집약, 5개 호출 지점 교체. `÷(1+속도)` → `×(1−속도)`. 감속도 같은 식으로 처리
       (bready −20%가 1.25배 → 1.2배). 버프 0이면 로스터의 모든 기본 차지시간에 대해

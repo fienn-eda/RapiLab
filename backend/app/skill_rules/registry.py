@@ -179,6 +179,8 @@ from app.skill_rules.laplace import (
     laplace_buster_burst_percent,
 )
 from app.skill_rules import flora_signature
+from app.skill_rules import phantom
+from app.skill_rules import phantom_signature
 from app.skill_rules import rosanna_signature
 from app.skill_rules import laplace_signature
 from app.skill_rules.laplace_ultimate_hero import (
@@ -528,6 +530,13 @@ _BUILDERS = {
     "tove": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
     "flora": lambda sv: (build_flora_rules(sv), None),  # burst is heal + buffs, no nuke
+    "phantom": lambda sv: (
+        phantom.build_phantom_rules(sv), phantom.secret_trick_burst_percent(sv),
+    ),
+    "phantom-signature": lambda sv: (
+        phantom_signature.build_phantom_signature_rules(sv),
+        phantom_signature.secret_trick_signature_burst_percent(sv),
+    ),
     "rosanna": lambda sv: (
         rosanna_base.build_rosanna_base_rules(sv),
         rosanna_base.vendetta_burst_percent(sv),
@@ -651,6 +660,8 @@ _PERIODIC_NUKE_BUILDERS = {
 # listed; everything else defaults to "attack". The instance's type decides
 # which type-gated Damage-Up buff applies (see raid_simulator._TYPE_BUCKETS).
 _BURST_DAMAGE_TYPES = {
+    "phantom": "distributed",  # Rampages of Thieves deals its nuke "as Distributed Damage"
+    "phantom-signature": "distributed",
     "rapi-red-hood": "projectile_explosion",  # Power of Inheritance = Projectile Explosion skill
     "ein": "true",  # Feather-All Range deals its nuke "as true damage"
 }
@@ -750,6 +761,8 @@ _PER_SHOT_RULE_BUILDERS = {
     "drake": lambda sv: build_thunderbolt_per_shot_rules(sv),
     "drake-signature": lambda sv: build_thunderbolt_signature_per_shot_rules(sv),
     "julia-signature": lambda sv: julia_signature.build_marcato_per_shot_rules(sv),
+    "phantom": lambda sv: phantom.build_phantom_per_shot_rules(sv),
+    "phantom-signature": lambda sv: phantom_signature.build_phantom_signature_per_shot_rules(sv),
     "rosanna": lambda sv: rosanna_base.build_rosanna_base_per_shot_rules(sv),
     "rosanna-signature": lambda sv: rosanna_signature.build_rosanna_signature_per_shot_rules(sv),
     "laplace": lambda sv: build_hero_bomber_per_shot_rules(sv),
