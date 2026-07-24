@@ -7,8 +7,9 @@ WHEN TO USE
     unit have weapon stats", the roster loader, the test suite.
 
 WHY IT EXISTS
-    data/dotgg/ and data/lootandwaifus/ are gitignored, and git populates a new
-    worktree only from TRACKED files. So a worktree starts with no data/ at all,
+    data/dotgg/, data/lootandwaifus/ and data/shiftypad/ are gitignored, and git
+    populates a new worktree only from TRACKED files. So a worktree starts with
+    no data/ at all,
     or - worse, because it looks fine - a stale subset frozen at the moment the
     worktree was cut, missing everything collected in main since.
 
@@ -32,8 +33,11 @@ import subprocess
 import sys
 from pathlib import Path
 
-# Gitignored directories that carry collected character data.
-SYNCED_DIRS = ("data/dotgg", "data/lootandwaifus")
+# Gitignored directories that carry collected character data. ShiftyPad is the
+# primary source for units released after dotgg went dark (~2026-05) and carries
+# both weapon stats and skill values, so a worktree missing it fails skill-value
+# assembly for every recent unit.
+SYNCED_DIRS = ("data/dotgg", "data/lootandwaifus", "data/shiftypad")
 
 
 def _git(*args, cwd=None):
