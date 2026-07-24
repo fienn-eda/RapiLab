@@ -1,12 +1,22 @@
 # NIKKE character data sources
 
-**Primary source: lootandwaifus.com.** Use it first for every character,
-including ones already covered by dotgg — it's at least as current (dotgg lags
-roughly the last ~2 months of releases) and its listing page carries richer
-metadata (mechanic tags) than dotgg's. Fall back to **dotgg.gg** only if
-lootandwaifus is unreachable, or use it as a cross-check when a value looks
-surprising (see "Cross-verification" below — the two sources matched exactly
-on every value checked so far).
+**dotgg's API is dead — do not plan around fetching from it.** It answers HTTP
+200 with an **empty body** (re-probed 2026-07-24 on four units). The committed
+`data/dotgg/char_*.json` files stay usable for the units that already have one,
+but no new unit can be collected there. The dotgg section below is kept for
+reading those existing files, not for fetching.
+
+**Live sources: lootandwaifus.com and ShiftyPad.** They are complementary, not
+ranked — a unit generally needs both:
+
+- **lootandwaifus** — the free-text effect descriptions (what each value slot
+  *means*), all 10 levels, and `dollskills` for Favorite Item (애장품) builds.
+  It is the ONLY source for dollskills.
+- **ShiftyPad** (blablalink, via `tools/collect-blablalink/collect.js --nikke`)
+  — weapon stats and base-skill value slots in one fetch, so no manual weapon
+  entry. Its normalized output carries **no description text**, which is why
+  lootandwaifus is still required. It does **not** expose dollskills. The
+  workflow lives in the skill's step 1, not here.
 
 ## lootandwaifus.com (primary)
 
@@ -77,7 +87,13 @@ eyeballing raw HTML.
 - **Skills** live in `<div id="skills">` as three tabs — `id="skill-0"`,
   `skill-1`, `skill-2` (labeled "Skill 1", "Skill 2", "Burst" in that order).
 - **Skill name:** `<div class="skill-title-section ..."><h3 ...>NAME</h3>`.
-  There are exactly 3 per page, in skill order.
+  **3 per page for a plain unit, 6 for a Favorite Item (애장품) unit** — the base
+  three first, then the treasure versions in the same skill order (the page's
+  "Load Favorite Item (treasures) by default" toggle swaps between them). The
+  treasure titles repeat the base names, so **position is the only signal**:
+  indices 0–2 are base, 3–5 are the dollskills.
+  `lootandwaifus_html_to_json.py` splits on exactly this and warns on any other
+  count.
 - **Per-level description:** `<p class="level-description[ active]"
   data-level="N" ...>…</p>`, with `N = 0..9` (Lv.1 … Lv.10). **`data-level="9"`
   is max level.** Every skill has all 10 present in one fetch — this is how all
@@ -99,10 +115,14 @@ def clean(t):
     return re.sub(r"[ \t]+", " ", ihtml.unescape(t)).strip()
 raw = open("data/lootandwaifus/char_<slug>.html", encoding="utf-8").read()
 titles = re.findall(r'<div class="skill-title-section[^"]*"[^>]*><h3[^>]*>([^<]+)</h3>', raw)
-# The 3 skills share one page; level-9 paragraphs come out in skill order.
+# The skills share one page; level-9 paragraphs come out in skill order.
 # For another level, change data-level="9" to "0".."8".
 lv10 = re.findall(r'<p class="level-description[^"]*" data-level="9"[^>]*>(.*?)</p>', raw, re.S)
-for label, title, desc in zip(["Skill 1", "Skill 2", "Burst"], titles, lv10):
+# 3 titles = base only; 6 = base then the Favorite Item (dollskills) versions.
+labels = ["Skill 1", "Skill 2", "Burst"]
+if len(titles) == 6:
+    labels += [f"{lbl} (doll)" for lbl in labels]
+for label, title, desc in zip(labels, titles, lv10):
     print(f"--- {label}: {title} ---\n{clean(desc)}\n")
 ```
 
@@ -125,10 +145,12 @@ value-slot dicts - you still number the slots yourself when encoding. Re-run it
 after refreshing HTML (`--dry-run` to preview, `--slug X` for one). Both the HTML
 and JSON live under the gitignored `data/` dir.
 
-## dotgg.gg (fallback / cross-check)
+## dotgg.gg (dead API — file format reference only)
 
-`api.dotgg.gg` JSON API (nikke.gg is a WordPress front over it). No auth
-required.
+`api.dotgg.gg` JSON API (nikke.gg is a WordPress front over it). No auth was
+required. **The endpoints below no longer return data**; they describe the shape
+of the `data/dotgg/char_*.json` files already collected, which the roster loader
+still reads for weapon stats on the units that have one.
 
 - `GET https://api.dotgg.gg/nikke/characters` — array of all characters:
   `name`, `url` (slug), `class`, `weapon`, `element`, `burst`, `rarity`.
@@ -159,7 +181,9 @@ required.
 
 Little Mermaid's 3 skills, every value, at level 10, were checked against
 lootandwaifus on 2026-07-10 and matched dotgg **exactly** — no discrepancies.
-Treat either source as reliable; prefer lootandwaifus per the policy above.
+That is why an existing dotgg file can be trusted as-is. Cross-checking a
+*new* value against dotgg is no longer possible (dead API); the live pairing is
+lootandwaifus text against ShiftyPad value slots.
 
 ## Value-slot conventions seen so far (apply to either source)
 
