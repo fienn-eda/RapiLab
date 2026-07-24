@@ -130,12 +130,13 @@ Mirrors `backend/app/deck_search.py` (`find_best_decks` / `BossProfile`) — the
 source of truth. Keep the TS request/response types in `src/api/` in sync with it.
 
 **Endpoint status: implemented** (`backend/app/api.py`). Run it from `backend/`
-with `uvicorn app.api:app --reload` (port 8000). The dev client fetches a
-*relative* `/api/recommend`, which `vite.config.ts` proxies to
-`http://localhost:8000` — so for live end-to-end dev run both servers and start
-Vite with `VITE_RECOMMEND_API=live npm run dev`. Without that env var the client
-uses the dev mock (`src/api/recommendClient.mock.ts`); the switch lives only in
-`src/api/recommend.ts`, so components never depend on which one is active.
+with `uvicorn app.api:app --reload` (port 8000). The client fetches a *relative*
+`/api/recommend`, which `vite.config.ts` proxies to `http://localhost:8000` — so
+dev needs **both servers running**; `npm run dev` alone will fail its API calls.
+
+**There is no dev mock.** Each `src/api/` module talks to the real backend, so
+what you see in the browser is always what the engine actually returns. Tests
+stub these modules with `vi.mock` instead (see `App.test.tsx`).
 
 ### `POST /api/recommend`
 
@@ -218,8 +219,7 @@ minutes** (the backend runs thousands of 180 s simulations; it is already
 process-pool parallelized). The client must NOT impose a request timeout, must
 show a persistent in-progress state with copy telling the user the wait is
 expected and roughly how long, and must disable re-submission while a run is in
-flight. The mock client should simulate a short (~1 s) delay so dev flows stay
-snappy.
+flight.
 
 ### UI scope — raid mode (current task)
 
@@ -233,10 +233,10 @@ Extend the recommendation flow with a mode switch: **single deck** (existing
   mode shows (total / burst / normal attack, slugs in burst-role order), plus
   the combined total prominently, plus leftover and excluded slug lists.
 - Follow the established structure: types in `src/types/recommend.ts`, the
-  live/mock switch stays confined to `src/api/` (one module decides, callers
-  never know which is active — mirror how `recommend.ts` does it), state in a
-  hook next to `useRecommend`, display components next to `DeckResults`.
-  Reuse/extract shared pieces rather than duplicating the single-deck ones.
+  fetch client in its own `src/api/` module (one per endpoint — mirror how
+  `recommend.ts` does it), state in a hook next to `useRecommend`, display
+  components next to `DeckResults`. Reuse/extract shared pieces rather than
+  duplicating the single-deck ones.
 
 ### Draft-based raid recommendation (`POST /api/recommend-raid` with `draft`)
 
@@ -320,7 +320,7 @@ presentation layer only.
     **three tiers** (baseline → within_draft +Δ1 → recommended +Δ2), a per-deck diff
     vs the submitted draft, and `pinned_slugs` badges.
   - Otherwise → the single recommended allocation (reuse the raid results view).
-- Keep the live/mock switch confined to `src/api/`; mirror the existing raid module.
+- Keep the fetch client confined to `src/api/`; mirror the existing raid module.
 
 ## Dev commands
 

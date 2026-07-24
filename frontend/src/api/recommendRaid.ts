@@ -1,15 +1,26 @@
-// Typed client for POST /api/recommend-raid. Backed by a dev mock unless
-// VITE_RECOMMEND_API=live (frontend/README.md "POST /api/recommend-raid").
-// Mirrors recommend.ts: this is the only module that decides which
-// implementation runs, so callers never depend on which one is active.
+// Typed client for POST /api/recommend-raid. Deliberately does NOT set a
+// fetch timeout/AbortController: a realistic full-roster allocation takes
+// ~1–2 minutes (thousands of 180s simulations), per frontend/README.md's
+// latency warning.
+//
+// `request` is serialized as-is, so the optional `draft` field (frontend/
+// README.md "Draft-based raid recommendation") flows through automatically
+// whenever a caller includes it — no special-casing needed here.
 
 import type { RecommendRaidRequest, RecommendRaidResponse } from '../types/recommend'
-import { fetchRecommendRaidDecks } from './recommendRaidClient.live'
-import { mockRecommendRaidDecks } from './recommendRaidClient.mock'
+import { RecommendApiError } from './recommendApiError'
 
-const useLiveApi = import.meta.env.VITE_RECOMMEND_API === 'live'
-
-export const recommendRaidDecks = (
+export const recommendRaidDecks = async (
   request: RecommendRaidRequest,
-): Promise<RecommendRaidResponse> =>
-  useLiveApi ? fetchRecommendRaidDecks(request) : mockRecommendRaidDecks(request)
+): Promise<RecommendRaidResponse> => {
+  const response = await fetch('/api/recommend-raid', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(request),
+  })
+  if (!response.ok) {
+    const detail: unknown = await response.json().catch(() => null)
+    throw new RecommendApiError(response.status, detail)
+  }
+  return (await response.json()) as RecommendRaidResponse
+}

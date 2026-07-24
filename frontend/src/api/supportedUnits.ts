@@ -1,13 +1,17 @@
-// Typed client for GET /api/supported-units. Backed by a dev mock unless
-// VITE_RECOMMEND_API=live (frontend/README.md "GET /api/supported-units").
-// Mirrors recommendRaid.ts: this is the only module that decides which
-// implementation runs, so callers never depend on which one is active.
+// Typed client for GET /api/supported-units. Feeds the unit palette
+// (frontend/README.md "GET /api/supported-units"). Maps the backend's
+// snake_case wire shape to the frontend's camelCase SupportedUnit.
 
-import type { SupportedUnit } from '../types/supportedUnit'
-import { fetchSupportedUnits } from './supportedUnitsClient.live'
-import { mockSupportedUnits } from './supportedUnitsClient.mock'
+import type { SupportedUnit, SupportedUnitWire } from '../types/supportedUnit'
+import { mapSupportedUnit } from '../types/supportedUnit'
+import { RecommendApiError } from './recommendApiError'
 
-const useLiveApi = import.meta.env.VITE_RECOMMEND_API === 'live'
-
-export const getSupportedUnits = (): Promise<SupportedUnit[]> =>
-  useLiveApi ? fetchSupportedUnits() : mockSupportedUnits()
+export const getSupportedUnits = async (): Promise<SupportedUnit[]> => {
+  const response = await fetch('/api/supported-units')
+  if (!response.ok) {
+    const detail: unknown = await response.json().catch(() => null)
+    throw new RecommendApiError(response.status, detail)
+  }
+  const wire = (await response.json()) as SupportedUnitWire[]
+  return wire.map(mapSupportedUnit)
+}
