@@ -69,6 +69,7 @@ SLUG_ALIASES = {
     "laplace-signature": "laplace",
     "privaty": "privaty-nikke",
     "rapi-red-hood-b1": "rapi-red-hood",
+    "sugar-signature": "sugar",
     "laplace-ultimate-hero": "laplace-ultimate-hero-nikke",
     "maxwell-ordinary-mechanic": "maxwell-ordinary-mechanic-nikke",
 }
@@ -120,18 +121,36 @@ def main() -> int:
     failed: list[str] = []       # download error
     to_fetch: dict[str, str] = {}  # filename -> full url (deduped)
 
+    # A slug whose portrait can't be resolved from lootandwaifus HTML may still
+    # have a hand-placed icon recorded in the existing manifest (ShiftyPad-sourced
+    # units have no character page here). Keep those entries: rebuilding the
+    # manifest from scratch would silently delete their portraits.
+    kept: dict[str, str] = {}
+    if MANIFEST.exists():
+        existing = json.loads(MANIFEST.read_text(encoding="utf-8")).get("portraits", {})
+    else:
+        existing = {}
+
     for slug in slugs:
         html_slug = SLUG_ALIASES.get(slug, slug)
         path = portrait_path_for(html_slug)
         if path is None:
-            missing.append(slug)
+            if slug in existing and (OUT_DIR / existing[slug]).exists():
+                manifest[slug] = existing[slug]
+                kept[slug] = existing[slug]
+            else:
+                missing.append(slug)
             continue
         filename = path.rsplit("/", 1)[-1]
         manifest[slug] = filename
         to_fetch.setdefault(filename, BASE_URL + path)
 
     print(f"{len(slugs)} engine slugs -> {len(manifest)} mapped, "
-          f"{len(to_fetch)} unique portraits, {len(missing)} unmapped")
+          f"{len(to_fetch)} unique portraits, {len(kept)} kept from manifest, "
+          f"{len(missing)} unmapped")
+    if kept:
+        print("  KEPT (no HTML, icon already present):",
+              ", ".join(f"{slug}={name}" for slug, name in sorted(kept.items())))
     if missing:
         print("  UNMAPPED (no portrait found):", ", ".join(missing))
 

@@ -1,7 +1,7 @@
 {
   "source": "lootandwaifus.com",
   "base_url": "https://lootandwaifus.com",
-  "generated": "2026-07-23",
+  "generated": "2026-07-24",
   "note": "Portrait paths read from data/lootandwaifus/char_<slug>.html (data-default-src); regenerate via scripts/download_portraits.py.",
   "portraits": {
     "ada-wong": "mi_c840_00_s.png",
@@ -78,6 +78,8 @@
     "snow-white-heavy-arms": "mi_c471_00_s.webp",
     "soda-twinkling-bunny": "mi_c314_00_s.webp",
     "soline-frost-ticket": "mi_c074_00_s.png",
+    "sugar": "mi_c140_00_s.webp",
+    "sugar-signature": "mi_c140_00_s.webp",
     "takina-inoue": "mi_c861_00_s.webp",
     "tove": "mi_c192_00_s.webp",
     "velvet": "mi_c316_00_s.webp",
