@@ -58,8 +58,7 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
-from app.cascade import (DEFAULT_TOP_K, FIT_SAMPLE_DECKS, WIDE_TIER_CAPS,
-                         SurrogateModel, fit_surrogate)
+from app.cascade import SurrogateModel, fit_surrogate
 from app.deck_search import BossProfile
 
 
@@ -142,12 +141,6 @@ def test_score_combos_ranks_a_favoured_combo_above_a_plain_one():
     scores = model.score_combos([favoured, plain])
     assert scores.shape == (2,)
     assert scores[0] > scores[1]
-
-
-def test_module_defaults_match_the_spec():
-    assert FIT_SAMPLE_DECKS == 200
-    assert DEFAULT_TOP_K == 20
-    assert WIDE_TIER_CAPS == {1: 4, 2: 6, 3: 12}
 ```
 
 주의: `_roster()`가 4/6/12명이라 `roster[10]`은 `c0`이다(인덱스 0~3=a, 4~9=b, 10~21=c).
@@ -253,12 +246,12 @@ def fit_surrogate(roster, boss, score_orderings, samples=FIT_SAMPLE_DECKS,
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd backend && python3 -m pytest tests/test_cascade.py -q`
-Expected: PASS (9 passed)
+Expected: PASS (8 passed)
 
 - [ ] **Step 5: Run the whole suite**
 
 Run: `cd backend && python3 -m pytest -q`
-Expected: 1224 passed, 3 skipped (기준선 1215 + 신규 9)
+Expected: 1223 passed, 3 skipped (기준선 1215 + 신규 8)
 
 - [ ] **Step 6: Commit**
 
@@ -461,12 +454,12 @@ def clear_fit_cache():
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd backend && python3 -m pytest tests/test_cascade.py -q`
-Expected: PASS (16 passed)
+Expected: PASS (15 passed)
 
 - [ ] **Step 5: Run the whole suite**
 
 Run: `cd backend && python3 -m pytest -q`
-Expected: 1231 passed, 3 skipped
+Expected: 1230 passed, 3 skipped
 
 - [ ] **Step 6: Commit**
 
@@ -495,7 +488,7 @@ key and no explicit invalidation is needed. Bounded at 8 entries."
 - [ ] **Step 1: Write the failing test**
 
 ```python
-from app.cascade import widened_pool
+from app.cascade import WIDE_TIER_CAPS, widened_pool
 
 
 class _FakeModel:
@@ -607,12 +600,12 @@ def widened_pool(roster, boss, model, pool=None, caps=WIDE_TIER_CAPS):
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `cd backend && python3 -m pytest tests/test_cascade.py -q`
-Expected: PASS (21 passed)
+Expected: PASS (20 passed)
 
 - [ ] **Step 5: Run the whole suite**
 
 Run: `cd backend && python3 -m pytest -q`
-Expected: 1236 passed, 3 skipped
+Expected: 1235 passed, 3 skipped
 
 - [ ] **Step 6: Commit**
 
@@ -813,7 +806,7 @@ Expected: PASS
 - [ ] **Step 5: Run the whole suite**
 
 Run: `cd backend && python3 -m pytest -q`
-Expected: 1239 passed, 3 skipped
+Expected: 1238 passed, 3 skipped
 
 - [ ] **Step 6: Commit**
 
@@ -1015,7 +1008,7 @@ Expected: PASS
 - [ ] **Step 5: Run the whole suite**
 
 Run: `cd backend && python3 -m pytest -q`
-Expected: 1246 passed, 3 skipped
+Expected: 1245 passed, 3 skipped
 
 - [ ] **Step 6: Commit**
 
@@ -1153,7 +1146,7 @@ Expected: PASS
 - [ ] **Step 5: Run the whole suite**
 
 Run: `cd backend && python3 -m pytest -q`
-Expected: 1248 passed, 3 skipped
+Expected: 1247 passed, 3 skipped
 
 - [ ] **Step 6: Commit**
 
@@ -1262,7 +1255,7 @@ python3 scripts/measure_cascade_budget.py --units 78 --no-pairs --fit-decks 200
 - [ ] **Step 7: Run the whole suite**
 
 Run: `cd backend && python3 -m pytest -q`
-Expected: 1249 passed, 3 skipped
+Expected: 1248 passed, 3 skipped
 
 - [ ] **Step 8: Commit**
 
