@@ -42,9 +42,21 @@ SLUG_MAP_TS = REPO / "frontend" / "src" / "lib" / "resourceIdSlugMap.ts"
 
 ACTIONABLE = ("baked", "unencoded-fi")
 
+# Units the data cannot answer for but a human has. Both are ShiftyPad-sourced
+# (that schema has no "dollskills" key) with no lootandwaifus file under the same
+# slug, so the audit would report them undecidable forever.
+#
+# Fienn, 2026-07-24: neither has shipped a Favorite Item in the game.
+# Remove an entry the moment one is released - a stale ruling here would hide a
+# real gap that the data itself never sees.
+NO_FAVORITE_ITEM_RELEASED = {
+    "laplace-ultimate-hero",
+    "maxwell-ordinary-mechanic",
+}
+
 
 def parse_slug_map(path=SLUG_MAP_TS):
-    """The frontend's identity map and its two ownership tables.
+    """The frontend's identity map and its dual-slot table.
 
     Parsed with regexes rather than imported (it is TypeScript); the backend
     drift test test_resource_id_slug_map.py parses the same literals, so a
@@ -62,20 +74,13 @@ def parse_slug_map(path=SLUG_MAP_TS):
             r"(\d+):\s*'([a-z0-9-]+)'", between("Record<number, string> = {", "\n}")
         )
     }
-    owned = {
-        int(i)
-        for i in re.findall(
-            r"^\s*(\d+),", between("SIGNATURE_OWNED: ReadonlySet<number> = new Set([", "])"),
-            re.M,
-        )
-    }
     dual = set(
         re.findall(
             r"'([a-z0-9-]+)'",
             between("DUAL_SLOT_BASES: ReadonlySet<string> = new Set([", "])"),
         )
     )
-    return id_to_slug, owned, dual
+    return id_to_slug, dual
 
 
 def reads_dollskills(slug):
@@ -97,6 +102,8 @@ def has_favorite_item(slug, data_dir):
     present but null means the source modelled it and found none. Collapsing
     those two would silently declare 21 units Favorite-Item-free on no evidence.
     """
+    if slug in NO_FAVORITE_ITEM_RELEASED:
+        return False
     manifest = get_skill_value_manifest(slug)
     if manifest is None:
         return None
@@ -131,7 +138,7 @@ def _lootandwaifus_favorite_item(slug, data_dir):
 def audit(data_dir=DATA_DIR):
     """One record per base unit, sorted by verdict severity then slug."""
     encoded = set(ENCODED_SLUGS)
-    id_to_slug, owned_ids, dual_bases = parse_slug_map()
+    id_to_slug, dual_bases = parse_slug_map()
     slug_to_id = {slug: rid for rid, slug in id_to_slug.items()}
 
     bases = sorted(s for s in encoded if not s.endswith("-signature"))
@@ -161,7 +168,6 @@ def audit(data_dir=DATA_DIR):
                 "resource_id": rid,
                 "mapped": rid is not None,
                 "in_dual_slot_bases": base in dual_bases,
-                "signature_owned": rid in owned_ids if rid is not None else False,
                 "base_reads_dollskills": base_fi,
                 "has_favorite_item": favorite,
             }
@@ -197,10 +203,8 @@ def format_report(records):
             flags = []
             if not r["mapped"]:
                 flags.append("맵미등록")
-            if verdict == "paired":
-                if not r["in_dual_slot_bases"]:
-                    flags.append("DUAL_SLOT_BASES누락")
-                flags.append("소유=" + ("O" if r["signature_owned"] else "X"))
+            if verdict == "paired" and not r["in_dual_slot_bases"]:
+                flags.append("DUAL_SLOT_BASES누락")
             suffix = ("  " + " ".join(flags)) if flags else ""
             lines.append(f"  {r['slug']:<34} id={rid!s:<5}{suffix}")
 

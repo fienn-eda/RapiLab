@@ -9,9 +9,9 @@ catalog, see the `nikke-skill-encoding` skill, not here.
 - Date: 2026-07-24
 - Context: 듀얼 슬롯 유닛이 base로 싸울지 `-signature`로 싸울지는 **유저별 투자**인데, `resolveSlugForUnit`은 프론트엔드 상수 `SIGNATURE_OWNED`(개발자 계정의 Laplace·Drake 2개)로 답하고 있었다. 공개 서비스로 가면 모든 유저가 그 둘을 애장품 보유로 승격받고, 나머지 듀얼 슬롯 5쌍은 도달 불가였다. 한편 블라블라링크 페이로드는 이미 유닛별 `favorite_item_tid`를 싣고 있었고 `roster_assembly`가 그걸 스탯 계산에 쓰고 있었다 — **진짜 데이터가 파이프라인 안에 있는데 슬러그 결정에만 안 쓰이는** 상태.
 - Alternatives considered: (a) `SIGNATURE_OWNED`에 유저별 id를 계속 손으로 추가 — 공개 서비스에서 성립하지 않음. (b) 수집기(collect.js)가 애장품을 스크레이프하도록 확장 — ShiftyPad 페이지는 수집품 슬롯을 노출하지 않아 불가. (c) 백엔드가 이미 가진 `favorite_item_tid`를 소유 플래그로 함께 내보내고 프론트가 따른다. 채택.
-- Decision: (c). `assemble_unit`이 `favorite_item: owns_favorite_item(tid)`를 roster.json에 싣고, `resolveSlugForUnit(resourceId, ownsFavoriteItem?)`이 그걸 우선한다. `SIGNATURE_OWNED`는 **소유를 보고할 수 없는 로스터 전용 폴백**(수집기 스크레이프, 필드 이전 roster.json)으로 남는다.
-- Why: 플래그가 `undefined`일 때만 폴백을 본다. 명시적 `false`는 반드시 강등시켜야 한다 — 그러지 않으면 폴백 목록(개발자 계정)이 그 유닛을 소유하지 않은 모든 유저의 추천에 샌다.
-- Consequences: 싱크 경로는 유저 로스터대로 7쌍 전부 자동 판정된다. 파일 임포트 경로는 폴백 그대로. **이 결정으로 해결되지 않는 것**: `helm`·`miranda`·`moran`·`privaty`·`tove`·`zwei` 6유닛은 매니페스트가 base 슬러그 아래에서 `dollskills`를 읽어 애장품 빌드를 박아넣었고, 승격할 `-signature` 슬러그가 없어 자동 판정이 무력하다(애장품 미보유 유저 과대평가). `scripts/audit_favorite_item_encodings.py`가 이 현황을 감시한다.
+- Decision: (c). `assemble_unit`이 `favorite_item: owns_favorite_item(tid)`를 roster.json에 싣고, `resolveSlugForUnit(resourceId, ownsFavoriteItem = false)`이 그걸 **유일한 승격 근거**로 쓴다. `SIGNATURE_OWNED`는 **완전히 삭제**했다(Fienn 결정 2026-07-24: 손관리 폐기). 로스터가 침묵하면 base다.
+- Why: 침묵을 "미보유"로 기본값 잡는 게 비대칭적으로 안전하다 — 잘못 승격하면 보유하지도 않은 투자를 추천에 반영해 딜을 부풀리지만, 승격을 놓치면 저평가에 그치고 슬러그가 UI에서 편집 가능해 손으로 복구된다. 폴백을 남겼다면 개발자 계정의 Laplace·Drake가 계속 코드에 박혀 그걸 소유하지 않은 모든 유저의 추천에 샜을 것이다.
+- Consequences: 싱크 경로는 유저 로스터대로 7쌍 전부 자동 판정된다. **수집기 스크레이프 경로는 승격이 아예 불가** — ShiftyPad 페이지는 수집품 **이름**("Coffee Commander Doll Ltd.")만 노출하고 등급을 안 보여줘 애장품 여부를 만들 수 없다(이름→등급 표를 새로 만드는 건 근거 없는 추측). Collection 탭(`favorite_rare`) 캡처가 그 갭의 해법으로 남는다. **이 결정으로 해결되지 않는 것**: `helm`·`miranda`·`moran`·`privaty`·`tove`·`zwei` 6유닛은 매니페스트가 base 슬러그 아래에서 `dollskills`를 읽어 애장품 빌드를 박아넣었고, 승격할 `-signature` 슬러그가 없어 자동 판정이 무력하다(애장품 미보유 유저 과대평가). Fienn이 분리를 지시(2026-07-24). `scripts/audit_favorite_item_encodings.py`가 현황을 감시한다.
 
 ## Phantom base의 Thief's Vision 최대스택 관련 효과 전체 defer — 엔진 한계가 아니라 스킬 자체의 구조적 교착 (Fienn 확인)
 - Date: 2026-07-24

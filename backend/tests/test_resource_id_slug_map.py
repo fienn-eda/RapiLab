@@ -19,7 +19,8 @@ MAP_FILE = (
 # directory snapshot landed: ids no longer depend on someone owning the unit, so a
 # new encoding looks its id up rather than being exempted here.
 # NOTE: "-signature" slugs are intentionally absent from the identity map (they are
-# reached by promotion via SIGNATURE_OWNED), so they are subtracted before comparing.
+# reached by promotion from the roster's per-unit favorite_item flag), so they are
+# subtracted before comparing.
 KNOWN_UNMAPPED: set[str] = set()
 
 

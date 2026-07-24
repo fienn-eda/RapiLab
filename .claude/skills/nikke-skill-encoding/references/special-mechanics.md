@@ -945,7 +945,7 @@ how to encode it, and current engine status.
 - **Easy mistake:** reaching for the existing `-signature` dual-slot pattern
   (Julia/Drake/Laplace base vs. signature). That pattern encodes whether the
   user OWNS an item - real investment data, resolved in the frontend's
-  roster import (`DUAL_SLOT_BASES`/`SIGNATURE_OWNED`). A mode/formation
+  roster import (`DUAL_SLOT_BASES` + the roster's `favorite_item` flag). A mode/formation
   choice isn't investment at all - the user owns exactly one character and
   is choosing how to PLAY her, every candidate is always available, and the
   choice needs to be resolved where deck search actually runs (backend).

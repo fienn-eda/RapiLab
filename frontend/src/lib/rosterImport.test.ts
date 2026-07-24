@@ -69,8 +69,10 @@ describe('parseRosterJson', () => {
     const { drafts } = parseRosterJson({
       units: [
         { resource_id: 831, name_en: 'Rei', raid400: { hp: 1, atk: 1, def: 1 } },
-        { resource_id: 101, name_en: 'Drake', raid400: { hp: 1, atk: 1, def: 1 } },
-        { resource_id: 150, name_en: 'Julia', raid400: { hp: 1, atk: 1, def: 1 } },
+        { resource_id: 101, name_en: 'Drake', favorite_item: true,
+          raid400: { hp: 1, atk: 1, def: 1 } },
+        { resource_id: 150, name_en: 'Julia', favorite_item: false,
+          raid400: { hp: 1, atk: 1, def: 1 } },
       ],
     })
     expect(drafts.map((d) => d.character_slug)).toEqual([
@@ -80,24 +82,35 @@ describe('parseRosterJson', () => {
     ])
   })
 
-  it("follows each unit's own favorite_item flag over the fallback list", () => {
-    // A synced roster answers for the requesting user, so it must both promote
-    // units the fallback list never heard of and demote the ones it names.
+  it("promotes per each unit's own favorite_item flag", () => {
     const { drafts } = parseRosterJson({
       units: [
         { resource_id: 140, name_en: 'Sugar', favorite_item: true,
           raid400: { hp: 1, atk: 1, def: 1 } },
         { resource_id: 101, name_en: 'Drake', favorite_item: false,
           raid400: { hp: 1, atk: 1, def: 1 } },
-        { resource_id: 280, name_en: 'Rosanna', favorite_item: false,
+        { resource_id: 411, name_en: 'Flora', favorite_item: true,
           raid400: { hp: 1, atk: 1, def: 1 } },
       ],
     })
     expect(drafts.map((d) => d.character_slug)).toEqual([
-      'sugar-signature', // owned per the roster, absent from SIGNATURE_OWNED
-      'drake', // on SIGNATURE_OWNED, but this user does not own it
-      'rosanna',
+      'sugar-signature',
+      'drake',
+      'flora-signature',
     ])
+  })
+
+  it('leaves dual-slot units on their base slug when the roster omits the flag', () => {
+    // A collector scrape cannot report ownership, so nothing may be promoted
+    // from it - the recommendation would otherwise credit investment the user
+    // may not have.
+    const { drafts } = parseRosterJson({
+      units: [
+        { resource_id: 101, name_en: 'Drake', raid400: { hp: 1, atk: 1, def: 1 } },
+        { resource_id: 100, name_en: 'Laplace', raid400: { hp: 1, atk: 1, def: 1 } },
+      ],
+    })
+    expect(drafts.map((d) => d.character_slug)).toEqual(['drake', 'laplace'])
   })
 
   it('keeps unencoded owned units (raw slug) and warns in aggregate', () => {

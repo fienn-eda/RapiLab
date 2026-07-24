@@ -7,7 +7,8 @@
 //   RESOURCE_ID_TO_SLUG holds the *base* slug and never encodes user investment.
 //   A dual-slot unit (base + "-signature" encodings) shares ONE resource_id between
 //   both forms — Drake is resource_id 101 whether or not his Favorite Item is owned —
-//   so no id-keyed table can distinguish them. Ownership lives in SIGNATURE_OWNED.
+//   so no id-keyed table can distinguish them. Ownership comes from the roster
+//   (each unit's `favorite_item` flag), never from this table.
 //
 // Values are a subset of the backend's ENCODED_SLUGS, and DUAL_SLOT_BASES must match
 // the encoded base/-signature pairs; both are enforced by the backend test
@@ -31,14 +32,14 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   74: 'soline-frost-ticket', // Soline: Frost Ticket (71 = base Soline, not encoded)
   75: 'diesel-winter-sweets', // Diesel: Winter Sweets - base slug; fans out to -intro/-highlight (MODE_VARIANTS)
   82: 'liter', // Liter
-  100: 'laplace', // Laplace — dual-slot base; see SIGNATURE_OWNED
-  101: 'drake', // Drake — dual-slot base; see SIGNATURE_OWNED
+  100: 'laplace', // Laplace — dual-slot base; promoted per the roster
+  101: 'drake', // Drake — dual-slot base; promoted per the roster
   102: 'maxwell', // Maxwell
   103: 'laplace-ultimate-hero', // Laplace: Ultimate Hero
   105: 'maxwell-ordinary-mechanic', // Maxwell: Ordinary Mechanic
-  140: 'sugar', // Sugar — dual-slot base; see SIGNATURE_OWNED
+  140: 'sugar', // Sugar — dual-slot base; promoted per the roster
   143: 'milk-blooming-bunny', // Milk: Blooming Bunny
-  150: 'julia', // Julia — dual-slot base; see SIGNATURE_OWNED
+  150: 'julia', // Julia — dual-slot base; promoted per the roster
   162: 'mihara-bonding-chain', // Mihara: Bonding Chain
   170: 'privaty', // Privaty
   182: 'guillotine-winter-slayer', // Guillotine: Winter Slayer
@@ -72,7 +73,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   390: 'zwei', // Zwei
   391: 'ein', // Ein
   403: 'quency-escape-queen', // Quency: Escape Queen
-  411: 'flora', // Flora — dual-slot base; see SIGNATURE_OWNED
+  411: 'flora', // Flora — dual-slot base; promoted per the roster
   431: 'volume', // Volume
   470: 'red-hood', // Red Hood (16 = Rapi: Red Hood, separately encoded)
   471: 'snow-white-heavy-arms', // Snow White: Heavy Arms
@@ -83,7 +84,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   515: 'cinderella-crystal-wave', // Cinderella: Crystal Wave - base slug; fans out to -mg/-snipe (MODE_VARIANTS)
   520: 'bready', // Bready - base slug; fans out to -lingering/-recommended (MODE_VARIANTS)
   570: 'ark-ranger-black', // Ark Ranger Black
-  580: 'phantom', // Phantom — dual-slot base; see SIGNATURE_OWNED
+  580: 'phantom', // Phantom — dual-slot base; promoted per the roster
   581: 'arcana', // Arcana
   583: 'arcana-fortune-mate', // Arcana: Fortune Mate
   600: 'mint', // Mint
@@ -99,19 +100,6 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   861: 'takina-inoue', // Takina
 }
 
-// Fallback ownership for rosters that cannot report it themselves. The blablalink
-// sync path carries a per-unit `favorite_item` flag derived from the account's real
-// collectible slot, and that always wins; this list only answers for a roster.json
-// that predates the flag or was hand-edited, and for the collector's scrape (it reads
-// ShiftyPad pages, which do not expose the collectible slot).
-//
-// It records THIS developer's account, so it must never be the answer for a
-// requesting user — see resolveSlugForUnit.
-export const SIGNATURE_OWNED: ReadonlySet<number> = new Set([
-  100, // Laplace — Favorite Item owned (roadmap dual-slot note; transform measured on the signature build, Fienn 2026-07-19)
-  101, // Drake — Favorite Item owned (Fienn, 2026-07-18)
-])
-
 // Base slugs that have a separate "-signature" encoding. Only these can be promoted.
 // The backend drift test asserts this equals the encoded base/-signature pairs, so a
 // newly encoded dual-slot unit fails the suite until it is added here.
@@ -121,21 +109,21 @@ export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set([
 
 // Single entry point: identity lookup, then signature promotion when owned.
 //
-// `ownsFavoriteItem` is the roster's own answer. Only `undefined` — the roster did
-// not say — falls back to SIGNATURE_OWNED; an explicit `false` must demote, because
-// the fallback list belongs to this developer's account and would otherwise promote
-// units for every user who does not own the item.
+// `ownsFavoriteItem` comes from the roster itself and is the only thing that can
+// promote. A roster that does not say defaults to NOT owned, which yields the base
+// encoding: the conservative answer, since promoting a unit the user has not invested
+// in inflates its recommendation, while a missed promotion merely undersells it. The
+// slug is editable in the UI, so that case is recoverable by hand.
 export const resolveSlugForUnit = (
   resourceId: number | undefined,
-  ownsFavoriteItem?: boolean,
+  ownsFavoriteItem = false,
 ): string | undefined => {
   if (resourceId === undefined) return undefined
   const base = RESOURCE_ID_TO_SLUG[resourceId]
   if (base === undefined) return undefined
-  const owned = ownsFavoriteItem ?? SIGNATURE_OWNED.has(resourceId)
   // Any unit can hold a Favorite Item; only a dual-slot base has a second
   // encoding to promote to.
-  if (owned && DUAL_SLOT_BASES.has(base)) {
+  if (ownsFavoriteItem && DUAL_SLOT_BASES.has(base)) {
     return `${base}-signature`
   }
   return base

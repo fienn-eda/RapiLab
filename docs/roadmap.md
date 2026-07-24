@@ -602,10 +602,11 @@
       sugar)은 도달 불가였다. 블라블라링크 페이로드가 이미 유닛별 `favorite_item_tid`를
       싣고 `roster_assembly`가 스탯에 쓰고 있었으므로, `assemble_unit`이
       `owns_favorite_item()`을 `favorite_item` 플래그로 함께 내보내고 프론트가 그걸
-      따른다. `SIGNATURE_OWNED`는 **소유를 보고할 수 없는 로스터 전용 폴백**으로 남는다
-      (수집기 스크레이프는 ShiftyPad 페이지를 읽어 수집품 슬롯을 못 본다). 플래그가
-      **없을 때만** 폴백을 보고, 명시적 `false`는 강등시킨다 — 안 그러면 개발자 계정이
-      모든 유저의 추천에 샌다.
+      따른다. **`SIGNATURE_OWNED`는 완전히 삭제**(Fienn 결정 2026-07-24: 손관리 폐기) —
+      로스터가 침묵하면 base로 두는 게 기본값이다. 잘못 승격하면 추천이 부풀지만
+      승격을 놓치면 저평가에 그치고, 슬러그는 UI에서 직접 고칠 수 있다. 수집기
+      스크레이프 경로는 ShiftyPad가 수집품 **이름**만 보여주고 등급은 안 보여줘
+      플래그를 못 만든다 — Collection 탭(`favorite_rare`) 캡처가 그 갭의 해법.
 - [ ] **애장품 빌드가 base 슬러그에 박힌 6유닛 분리** — `helm` · `miranda` · `moran` ·
       `privaty` · `tove` · `zwei`. 매니페스트가 base 슬러그 아래에서 `dollskills`를 읽어
       **애장품 없는 유저를 과대평가**한다(근거 주석이 전부 "Fienn's X has hers
@@ -613,10 +614,11 @@
       없기 때문. 각 유닛을 base(`skills`) + `-signature`(`dollskills`) 쌍으로 쪼개야
       하며, base 쪽은 사실상 신규 인코딩이다. 현황 확인:
       `python scripts/audit_favorite_item_encodings.py` (조치 필요 시 종료코드 1).
-- [ ] **애장품 판정 불가 2유닛** — `laplace-ultimate-hero` · `maxwell-ordinary-mechanic`.
-      둘 다 ShiftyPad 소스인데 그 스키마엔 `dollskills` 키가 아예 없고, 동일 슬러그의
-      lootandwaifus 파일도 없어 애장품 유무를 **데이터로 답할 수 없다**(부재 증거 아님).
-      lootandwaifus에서 재수집하면 해소된다.
+- [x] **애장품 판정 불가 2유닛 — 해소 (2026-07-24).** `laplace-ultimate-hero` ·
+      `maxwell-ordinary-mechanic`은 ShiftyPad 소스라 `dollskills` 키가 없고 동일
+      슬러그의 lootandwaifus 파일도 없어 데이터로는 답할 수 없었다. **Fienn 룰링:
+      둘 다 게임에 애장품이 출시되지 않았다** → 감사 스크립트의
+      `NO_FAVORITE_ITEM_RELEASED`에 근거와 함께 기록. 출시되면 항목을 지워야 한다.
 - [ ] **개인정보 처리방침** — 공개 배포 전 필요(설계 스펙에 명시, 법률 검토는 범위 밖).
 - [x] **디렉토리 스냅샷 갱신 루틴 — 완료.** 매일 19시 작업 스케줄러가 공개 디렉토리를
       헤드리스로 받아 커밋된 스냅샷과 비교하며, 신규 SSR 또는 실패 시에만 토스트를 띄운다.

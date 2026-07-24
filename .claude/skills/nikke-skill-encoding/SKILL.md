@@ -135,7 +135,9 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    both encoded), `test_dual_slot_bases_match_encoded_pairs` also fails: add the
    base to `DUAL_SLOT_BASES` in the same frontend file. The map itself must keep
    pointing at the **base** slug — signature promotion is per-user investment and
-   lives in `SIGNATURE_OWNED`, never in the identity map.
+   comes from the roster's per-unit `favorite_item` flag, never from the identity
+   map. Nothing else may promote: a roster that cannot report ownership stays on
+   the base slug.
 
 9. **Declare the skill-value manifest** so the roster loader can assemble the
    unit from local data files at any skill level: add a `SKILL_VALUE_MANIFESTS`
