@@ -548,11 +548,26 @@ firing cadence from these (evaluated per magazine boundary), so emit them as
 Scope must be self/squad/element — a "shotgun allies only" speed buff (e.g.
 Tove) still needs weapon-type scope (deferred). See `docs/decisions.md`.
 
-Exception: `flat_max_hp` (a Max-HP buff scaled off the caster's Max HP, e.g.
-Rouge's Game Master) is encoded but inert TODAY — Fienn wants Max-HP buffs in
-place for future units whose DAMAGE scales off Max HP. So encode Max-HP buffs as
-`flat_max_hp` (don't defer them), knowing they don't move damage until such a
-consumer + the `total_for("flat_max_hp", ...)` wiring exist.
+`flat_max_hp` (a Max-HP buff, e.g. Rouge's Game Master, Maxwell's Sequential
+Limit Release) is **no longer inert** — since 2026-07-24 it feeds every
+"ATK ▲ X% of the caster's Max HP" conversion. Encode Max-HP buffs as
+`flat_max_hp` (don't defer them); they now move damage whenever the deck holds
+a Max-HP-scaled ATK consumer.
+
+The consumer side is `_helpers.max_hp_scaled_atk_rule(trigger, percent, scope,
+duration, base_max_hp, condition=None, refreshing=False)` — use it instead of
+multiplying the static `values["caster_max_hp"]` at build time. It resolves
+`base_max_hp + total_for("flat_max_hp", caster, time)` when the rule FIRES and
+registers the result as `flat_atk`.
+
+**Semantics are a snapshot**, deliberately: the conversion happens once per
+trigger, so a Max-HP buff that lands AFTER the ATK buff does not retroactively
+grow it. A unit whose Max HP keeps rising mid-fight must re-fire the rule at
+each change. This keeps the damage hot path (`_stat_bundle` / `total_for`'s
+segment tables) untouched — not making deck search heavier is a hard constraint
+(Fienn). Consumers: `laplace_ultimate_hero`, `maxwell_ordinary_mechanic`,
+`cinderella`, `maiden_ice_rose` (the last inlines the same conversion because
+its bullet lands at a delayed instant).
 
 **Valid formula terms that raid_simulator just doesn't wire from the registry
 yet** — a real gap, not a dead end: `shield_damage_up`, and the major-modifier
