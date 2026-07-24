@@ -99,11 +99,14 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   861: 'takina-inoue', // Takina
 }
 
-// resource_ids whose Favorite Item (애장품) the user owns. THIS is the per-user,
-// per-point-in-time investment record — the single place to update as the user unlocks
-// more Favorite Items (the unlocked roster grows with each game update). A future
-// SSR-favorite auto-detection pass (collector Collection tab -> favorite_rare) is meant
-// to populate this automatically instead of by hand.
+// Fallback ownership for rosters that cannot report it themselves. The blablalink
+// sync path carries a per-unit `favorite_item` flag derived from the account's real
+// collectible slot, and that always wins; this list only answers for a roster.json
+// that predates the flag or was hand-edited, and for the collector's scrape (it reads
+// ShiftyPad pages, which do not expose the collectible slot).
+//
+// It records THIS developer's account, so it must never be the answer for a
+// requesting user — see resolveSlugForUnit.
 export const SIGNATURE_OWNED: ReadonlySet<number> = new Set([
   100, // Laplace — Favorite Item owned (roadmap dual-slot note; transform measured on the signature build, Fienn 2026-07-19)
   101, // Drake — Favorite Item owned (Fienn, 2026-07-18)
@@ -117,13 +120,22 @@ export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set([
 ])
 
 // Single entry point: identity lookup, then signature promotion when owned.
+//
+// `ownsFavoriteItem` is the roster's own answer. Only `undefined` — the roster did
+// not say — falls back to SIGNATURE_OWNED; an explicit `false` must demote, because
+// the fallback list belongs to this developer's account and would otherwise promote
+// units for every user who does not own the item.
 export const resolveSlugForUnit = (
   resourceId: number | undefined,
+  ownsFavoriteItem?: boolean,
 ): string | undefined => {
   if (resourceId === undefined) return undefined
   const base = RESOURCE_ID_TO_SLUG[resourceId]
   if (base === undefined) return undefined
-  if (SIGNATURE_OWNED.has(resourceId) && DUAL_SLOT_BASES.has(base)) {
+  const owned = ownsFavoriteItem ?? SIGNATURE_OWNED.has(resourceId)
+  // Any unit can hold a Favorite Item; only a dual-slot base has a second
+  // encoding to promote to.
+  if (owned && DUAL_SLOT_BASES.has(base)) {
     return `${base}-signature`
   }
   return base

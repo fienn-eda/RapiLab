@@ -80,6 +80,26 @@ describe('parseRosterJson', () => {
     ])
   })
 
+  it("follows each unit's own favorite_item flag over the fallback list", () => {
+    // A synced roster answers for the requesting user, so it must both promote
+    // units the fallback list never heard of and demote the ones it names.
+    const { drafts } = parseRosterJson({
+      units: [
+        { resource_id: 140, name_en: 'Sugar', favorite_item: true,
+          raid400: { hp: 1, atk: 1, def: 1 } },
+        { resource_id: 101, name_en: 'Drake', favorite_item: false,
+          raid400: { hp: 1, atk: 1, def: 1 } },
+        { resource_id: 280, name_en: 'Rosanna', favorite_item: false,
+          raid400: { hp: 1, atk: 1, def: 1 } },
+      ],
+    })
+    expect(drafts.map((d) => d.character_slug)).toEqual([
+      'sugar-signature', // owned per the roster, absent from SIGNATURE_OWNED
+      'drake', // on SIGNATURE_OWNED, but this user does not own it
+      'rosanna',
+    ])
+  })
+
   it('keeps unencoded owned units (raw slug) and warns in aggregate', () => {
     const { drafts, warnings } = parseRosterJson({
       units: [

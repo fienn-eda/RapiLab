@@ -115,6 +115,11 @@ def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict
         # UI shows them so the user can confirm their roster imported correctly.
         "grade": inp["grade"],
         "core": inp["core"],
+        # Ownership, not a stat: a dual-slot unit's Favorite Item swaps in a
+        # different skill encoding ("-signature"), so the frontend needs to know
+        # per user rather than consult a hand-maintained list. The stat effect
+        # of the item is already folded into raid400 above.
+        "favorite_item": sa.owns_favorite_item(inp["favorite_item_tid"]),
         "raid400": {"hp": round(hp), "atk": round(atk), "def": 0},
         "skill_levels": {
             "skill1": inp["skill1_lv"],

@@ -56,3 +56,29 @@ describe('resolveSlugForUnit (identity + investment)', () => {
     expect(resolveSlugForUnit(undefined)).toBeUndefined()
   })
 })
+
+describe('resolveSlugForUnit with roster-reported ownership', () => {
+  it("promotes on the roster's say-so for a unit absent from SIGNATURE_OWNED", () => {
+    expect(SIGNATURE_OWNED.has(140)).toBe(false) // Sugar: not on the fallback list
+    expect(resolveSlugForUnit(140, true)).toBe('sugar-signature')
+  })
+
+  it('demotes when the roster reports the Favorite Item is NOT owned', () => {
+    // The fallback list is this account's, not the requesting user's: a false
+    // from the roster must win, or every user inherits these promotions.
+    expect(SIGNATURE_OWNED.has(101)).toBe(true) // Drake: on the fallback list
+    expect(resolveSlugForUnit(101, false)).toBe('drake')
+  })
+
+  it('falls back to SIGNATURE_OWNED only when the roster is silent', () => {
+    expect(resolveSlugForUnit(101, undefined)).toBe('drake-signature')
+    expect(resolveSlugForUnit(140, undefined)).toBe('sugar')
+  })
+
+  it('never promotes a non-dual-slot unit the roster reports as owning one', () => {
+    // Every unit can hold a Favorite Item; only some have a "-signature"
+    // encoding to promote to.
+    expect(DUAL_SLOT_BASES.has('rapi-red-hood')).toBe(false)
+    expect(resolveSlugForUnit(16, true)).toBe('rapi-red-hood')
+  })
+})
