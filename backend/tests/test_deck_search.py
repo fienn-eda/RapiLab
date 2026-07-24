@@ -821,3 +821,34 @@ def test_orderings_within_budget_stops_early_instead_of_enumerating_everything()
     full = len(_all_intra_tier_orderings(shape_combinations(roster)))
     assert full > 100                       # the space really is large
     assert _orderings_within_budget(roster, sim_budget=1) is None
+
+
+def test_orderings_within_budget_never_pulls_the_full_generator(monkeypatch):
+    # The other budget tests only check the RETURN VALUE, which an eager
+    # implementation (enumerate everything, then compare len() to the budget)
+    # would also satisfy. This test guards the actual point of the helper -
+    # that it stops pulling from the ordering generator at the budget instead
+    # of walking the whole space - by counting items as they're pulled
+    # through a lazy wrapper (never materialized into a list, which would
+    # destroy the very laziness being tested).
+    import app.deck_search as ds
+
+    roster = fake_roster([1, 1, 1, 2, 2, 2, 3, 3, 3, 3, 3, 3, 3, 3])
+    full = len(ds._all_intra_tier_orderings(ds.shape_combinations(roster)))
+    assert full > 1000  # the full space really does dwarf the budget below
+
+    pulled = 0
+    real_intra_tier_orderings = ds._intra_tier_orderings
+
+    def counting_intra_tier_orderings(combo):
+        nonlocal pulled
+        for ordered in real_intra_tier_orderings(combo):
+            pulled += 1
+            yield ordered
+
+    monkeypatch.setattr(ds, "_intra_tier_orderings", counting_intra_tier_orderings)
+    sim_budget = 5
+    assert ds._orderings_within_budget(roster, sim_budget=sim_budget) is None
+
+    assert pulled == sim_budget + 1  # stopped the instant the budget was crossed
+    assert pulled < full
