@@ -92,6 +92,13 @@ def main():
     p.add_argument("--sample-decks", type=int, default=200,
                    help="decks sampled just to average orderings-per-deck")
     p.add_argument("--seed", type=int, default=7)
+    p.add_argument("--fit-decks", type=int, default=0,
+                   help="budget an explicitly chosen fit size instead of the "
+                        "column-derived one - use the size recall was actually "
+                        "validated at, so the budget matches a measured accuracy")
+    p.add_argument("--no-pairs", action="store_true",
+                   help="budget a unit-only feature space (columns grow linearly "
+                        "with the roster instead of quadratically)")
     p.add_argument("--skip-current", action="store_true",
                    help="skip the (slow) real allocate_decks count")
     args = p.parse_args()
@@ -101,9 +108,9 @@ def main():
     boss = BossProfile(element="Water", fight_duration=180.0)
     print(f"roster {len(specs)} units", flush=True)
 
-    features = make_feature_space(specs).n_features
+    features = make_feature_space(specs, include_pairs=not args.no_pairs).n_features
     per_deck, sampled = _orderings_per_deck(specs, args.sample_decks, args.seed)
-    fit_decks = int(features * FIT_SAMPLES_PER_FEATURE)
+    fit_decks = args.fit_decks or int(features * FIT_SAMPLES_PER_FEATURE)
     fit_sims = int(fit_decks * per_deck)
     # The cascade still simulates its shortlist, once per allocated deck slot.
     topk_sims = int(args.top_k * per_deck * 5)
