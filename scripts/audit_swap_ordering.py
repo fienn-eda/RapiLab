@@ -102,6 +102,11 @@ def main():
     p.add_argument("--workers", default="auto")
     p.add_argument("--units", type=int, default=None)
     p.add_argument("--synthetic", action="store_true")
+    # The answer is one number on one landscape, so vary the boss before
+    # trusting it: element decides who has elemental advantage and duration
+    # decides how many burst cycles a deck gets, which is what reorders decks.
+    p.add_argument("--element", default="Water")
+    p.add_argument("--duration", type=float, default=180.0)
     args = p.parse_args()
     workers = args.workers if args.workers == "auto" else int(args.workers)
 
@@ -111,10 +116,10 @@ def main():
         states = synthetic_roster(args.units, supported_units())
         source = "synthetic (uniform investment)"
     specs, _ = load_roster(states)
-    boss = BossProfile(element="Water", fight_duration=180.0)
+    boss = BossProfile(element=args.element, fight_duration=args.duration)
     print(f"roster {len(specs)} loadable of {len(states)} ({source}); "
-          f"{args.decks} decks; swap budget {args.budget:.0f}s; workers={workers}",
-          flush=True)
+          f"{args.decks} decks; boss {args.element}/{args.duration:.0f}s; "
+          f"swap budget {args.budget:.0f}s; workers={workers}", flush=True)
 
     results = {}
     for label, by_ordering in (("canonical", False), ("by-ordering", True)):
