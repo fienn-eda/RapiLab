@@ -1,8 +1,6 @@
 from types import SimpleNamespace
-from dataclasses import replace as _dc_replace
 
 import numpy as np
-import pytest
 
 from app.cascade import (FIT_CACHE_SIZE, WIDE_TIER_CAPS, Cascade,
                          SurrogateModel, cached_fit_surrogate, clear_fit_cache,
@@ -197,13 +195,37 @@ def test_widened_pool_keeps_every_pruned_unit(monkeypatch):
 
 def test_widened_pool_respects_the_tier_caps(monkeypatch):
     roster = _roster(n1=8, n2=10, n3=20)
-    monkeypatch.setattr("app.cascade.prune_candidate_pool",
-                        lambda r, b, p=None: list(r)[:5])
+    # prune's picks fit within their tiers' caps here (2 per tier), so this
+    # exercises the coefficient pass topping up to the cap in the ordinary
+    # case; a tier where prune's own picks exceed the cap is covered by
+    # test_widened_pool_keeps_every_pruned_unit_past_its_tier_cap below.
+    monkeypatch.setattr(
+        "app.cascade.prune_candidate_pool",
+        lambda r, b, p=None: list(r)[:2] + list(r)[8:10] + list(r)[18:20])
 
     out = widened_pool(roster, BOSS, _FakeModel({}))
 
     counts = {t: sum(1 for u in out if u.burst_tier == t) for t in (1, 2, 3)}
     assert counts == WIDE_TIER_CAPS
+
+
+def test_widened_pool_keeps_every_pruned_unit_past_its_tier_cap(monkeypatch):
+    # caps are a FLOOR on prune's output, not a ceiling: a tier prune fills
+    # past its cap (e.g. a synergy pull-in) must keep every one of those
+    # picks, or the safety net silently drops exactly the units it exists to
+    # protect - see widened_pool's docstring.
+    roster = _roster(n1=8, n2=10, n3=20)
+    over_cap = list(roster)[18:31]  # 13 tier-3 units; cap[3] is 12
+    assert len(over_cap) > WIDE_TIER_CAPS[3]
+    monkeypatch.setattr("app.cascade.prune_candidate_pool",
+                        lambda r, b, p=None: over_cap)
+
+    out = widened_pool(roster, BOSS, _FakeModel({}))
+    slugs = {u.slug for u in out}
+
+    assert {u.slug for u in over_cap} <= slugs
+    tier3_count = sum(1 for u in out if u.burst_tier == 3)
+    assert tier3_count == len(over_cap)  # the coefficient pass added nothing
 
 
 def test_widened_pool_fills_remaining_seats_by_coefficient_within_tier(monkeypatch):

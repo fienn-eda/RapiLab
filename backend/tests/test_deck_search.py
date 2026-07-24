@@ -856,7 +856,10 @@ def test_orderings_within_budget_returns_none_when_over():
 
 
 def test_orderings_within_budget_stops_early_instead_of_enumerating_everything():
-    """A budget of 1 must not walk the whole space - the point of the helper."""
+    """A tiny budget against a large ordering space still returns None (over
+    budget), not a partial/incorrect list - the actual early-exit mechanics
+    (that the generator stops being pulled) are verified separately by
+    test_orderings_within_budget_never_pulls_the_full_generator below."""
     from app.deck_search import _all_intra_tier_orderings, _orderings_within_budget
     from app.deck_search import shape_combinations
 

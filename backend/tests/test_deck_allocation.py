@@ -167,6 +167,31 @@ def test_small_rosters_never_fit_a_surrogate(monkeypatch):
     assert fits["n"] == 0
 
 
+def test_complete_draft_never_fits_a_surrogate(monkeypatch):
+    """A draft that already supplies every requested deck never reaches the
+    greedy-peel loop, so the (would-be ~940-simulation) fit must never run -
+    fitting here would score nothing, since no search ever consults it."""
+    clear_fit_cache()
+    patch_scorer(monkeypatch, lambda slugs: float(len(slugs)))
+    fits = {"n": 0}
+    monkeypatch.setattr(da, "cached_fit_surrogate",
+                        lambda *a, **k: fits.__setitem__("n", fits["n"] + 1))
+
+    roster = _wide_roster()  # big enough to blow the search budget if reached
+    by_slug = {u.slug: u for u in roster}
+    draft = [
+        [by_slug["w1-0"], by_slug["w2-0"], by_slug["w3-0"], by_slug["w3-1"], by_slug["w3-2"]],
+        [by_slug["w1-1"], by_slug["w2-1"], by_slug["w3-3"], by_slug["w3-4"], by_slug["w3-5"]],
+        [by_slug["w1-2"], by_slug["w2-2"], by_slug["w3-6"], by_slug["w3-7"], by_slug["w3-8"]],
+    ]
+
+    out = da.allocate_decks(roster, BossProfile(), num_decks=3, draft=draft,
+                            time_budget_sec=0.0)
+
+    assert len(out["decks"]) == 3
+    assert fits["n"] == 0
+
+
 from app.cascade import Cascade, fit_surrogate
 from app.deck_search import _score_batch, prune_candidate_pool, search_best_decks
 

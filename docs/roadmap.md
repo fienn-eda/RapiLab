@@ -475,6 +475,8 @@
     이득이 **41유닛 5.2x → 78유닛 37x**(같은 78유닛에서 페어는 2.5x). top-20 시뮬로
     4/5 시드에서 최적 100%(1개는 95.7%).
     · **"시뮬 없는 즉시 모드"는 불가** — 대리모델 1픽의 실제 데미지가 시드별 44~100%.
+    결정 근거는 `docs/decisions.md`, spec/plan:
+    `docs/superpowers/{specs,plans}/2026-07-23-cascade-surrogate*`.
   - **✅ 캐스케이드 Phase 2 착지 (2026-07-24):** 유닛 단독 대리모델을 `search_best_decks`에
     통합. `prune` ∪ 계수 상위로 넓힌 풀(`WIDE_TIER_CAPS`)을 대리모델이 랭킹하고 **top-20만
     진짜 시뮬**한다. `deck_search`는 `cascade`를 임포트하지 않고 주입받는다(순환 회피).
@@ -488,8 +490,7 @@
     뛰었는데(8,071→49,891) 이제 1.15배(2,146→2,464). 최대 비용인 fit이 고정비이기 때문.
     · **핵심 발견:** prune 안전망을 빼면 최적의 **90.6%**, 넣으면 **100%** — 안전망이
     장식이 아님이 실측됨. 자세한 근거는 `docs/decisions.md`·`docs/insights.md`.
-    spec/plan: `docs/superpowers/{specs,plans}/2026-07-24-cascade-surrogate-phase2*`. 결정 근거는 `docs/decisions.md`, spec/plan:
-    `docs/superpowers/{specs,plans}/2026-07-23-cascade-surrogate*`.
+    spec/plan: `docs/superpowers/{specs,plans}/2026-07-24-cascade-surrogate-phase2*`.
   - **1. SimPool 공유(~30 LOC).** 4회 호출이 SimPool 하나를 공유(전체 로스터로 초기화
     → 30명 부분집합도 `_WORKER_SPECS[s]` 유효). spawn wave 4→1. **결과 불변.** 단
     sim 작업량 2×97초는 그대로 — spawn이 지배 비용이 아니면 체감 작음(0번이 판정).

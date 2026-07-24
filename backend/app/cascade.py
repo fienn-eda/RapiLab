@@ -143,7 +143,6 @@ def cached_fit_surrogate(roster, boss, score_orderings):
         return _fit_cache[key]
     model = fit_surrogate(roster, boss, score_orderings)
     _fit_cache[key] = model
-    _fit_cache.move_to_end(key)
     while len(_fit_cache) > FIT_CACHE_SIZE:
         _fit_cache.popitem(last=False)
     return model
@@ -161,23 +160,38 @@ def widened_pool(roster, boss, model, pool=None, caps=WIDE_TIER_CAPS):
     coefficient - so the two filters' blind spots do not coincide. That is the
     safety net: a deck the surrogate undervalues can still reach the shortlist.
 
+    `caps` is a FLOOR on prune's output, not a ceiling: every pick prune
+    returns is seated unconditionally (skipping only duplicates and tiers
+    absent from `caps`, matching shape_combinations, which ignores such
+    tiers too), even past that tier's cap. The coefficient pass then tops
+    each tier up to max(cap, prune's count) - it can widen a tier prune left
+    short of the cap, but never narrows one prune already filled past it. On
+    today's 77-unit roster prune already fills all 12 tier-3 seats, so the
+    coefficient pass currently only widens tiers 1 (2->4) and 2 (3->6); a
+    roster where prune's tier-3 picks exceed 12 keeps every one of them too,
+    at the cost of a larger matrix multiply and zero extra simulations.
+
     Seats are filled PER TIER. A legal deck needs all three burst tiers, so a
     tier-blind sort by coefficient could starve one of them entirely.
     """
     chosen = {tier: [] for tier in caps}
     taken = set()
 
-    def offer(unit):
+    for unit in prune_candidate_pool(roster, boss, pool):
         bucket = chosen.get(unit.burst_tier)
-        if bucket is None or unit.slug in taken or len(bucket) >= caps[unit.burst_tier]:
-            return
+        if bucket is None or unit.slug in taken:
+            continue
         bucket.append(unit)
         taken.add(unit.slug)
 
-    for unit in prune_candidate_pool(roster, boss, pool):
-        offer(unit)
+    limits = {tier: max(caps[tier], len(chosen[tier])) for tier in caps}
     for unit in sorted(roster, key=lambda u: model.coefficient(u.slug), reverse=True):
-        offer(unit)
+        bucket = chosen.get(unit.burst_tier)
+        if bucket is None or unit.slug in taken or len(bucket) >= limits[unit.burst_tier]:
+            continue
+        bucket.append(unit)
+        taken.add(unit.slug)
+
     return [unit for tier in sorted(chosen) for unit in chosen[tier]]
 
 

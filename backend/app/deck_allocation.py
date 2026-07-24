@@ -32,17 +32,6 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
         placed = {u.slug for deck in draft for u in deck}
         remaining = [u for u in roster if u.slug not in placed]
 
-        # One fit serves the whole peel: the surrogate is additive over unit
-        # membership, so coefficients learned on the full roster score any
-        # subset of it. Only rosters that would actually blow the search budget
-        # pay for a fit - everything smaller keeps the exhaustive path.
-        cascade = None
-        if _orderings_within_budget(roster, SEARCH_SIM_BUDGET) is None:
-            model = cached_fit_surrogate(
-                roster, boss, lambda decks: _score_batch(decks, boss, pool))
-            if model is not None:
-                cascade = Cascade(model)
-
         decks = []  # each: ordered list of units (canonical order from the search)
         for seed in draft:                       # seed decks: complete around placed units
             found = best_completions(seed, remaining, boss, top_n=1, pool=pool)
@@ -54,7 +43,23 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
             used = {u.slug for u in units} - placed   # newly-pulled fillers leave the pool
             remaining = [u for u in remaining if u.slug not in used]
 
+        # One fit serves the whole peel: the surrogate is additive over unit
+        # membership, so coefficients learned on the full roster score any
+        # subset of it. Deferred to the first peel iteration (and probed
+        # against `remaining`, not `roster`) so a draft the seed loop already
+        # completes - or a small leftover pool - never pays for a fit nothing
+        # will use; `probed` still bounds the cost to one fit for the whole
+        # peel, same as before.
+        cascade = None
+        probed = False
         while len(decks) < num_decks:            # free decks: greedy peeling (unchanged)
+            if not probed:
+                probed = True
+                if _orderings_within_budget(remaining, SEARCH_SIM_BUDGET) is None:
+                    model = cached_fit_surrogate(
+                        roster, boss, lambda decks: _score_batch(decks, boss, pool))
+                    if model is not None:
+                        cascade = Cascade(model)
             found = search_best_decks(remaining, boss, top_n=1, pool=pool,
                                       cascade=cascade)
             if not found:
