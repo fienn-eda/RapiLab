@@ -594,8 +594,13 @@ def _orderings_within_budget(roster, sim_budget):
     return out
 
 
-def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200,
-                      pool=None, cascade=None):
+# search_best_decks' default ordering budget, exported so callers can ask the
+# same question the search will ask.
+SEARCH_SIM_BUDGET = 1200
+
+
+def search_best_decks(roster, boss: BossProfile, top_n=5,
+                      sim_budget=SEARCH_SIM_BUDGET, pool=None, cascade=None):
     """Budget-aware replacement for exhaustive find_best_decks: every shape
     combination is scored in EVERY intra-tier order, and when that would blow
     the budget the roster is first cut to a candidate pool

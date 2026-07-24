@@ -96,3 +96,59 @@ def test_allocate_decks_workers_parity():
     assert [d["deck"] for d in pooled["decks"]] == [d["deck"] for d in serial["decks"]]
     assert [d["total_damage"] for d in pooled["decks"]] == [d["total_damage"] for d in serial["decks"]]
     assert pooled["leftover_slugs"] == serial["leftover_slugs"]
+
+
+from app.cascade import clear_fit_cache
+
+
+def _wide_roster():
+    """Big enough that search_best_decks blows its ordering budget."""
+    tiers = {}
+    for i in range(6):
+        tiers[f"w1-{i}"] = 1
+    for i in range(6):
+        tiers[f"w2-{i}"] = 2
+    for i in range(12):
+        tiers[f"w3-{i}"] = 3
+    return roster_of(tiers)
+
+
+def test_allocation_fits_the_surrogate_once_for_the_whole_peel(monkeypatch):
+    """One fit must serve every greedy-peel iteration - the additive model is
+    what makes that valid, and refitting per iteration would erase the saving."""
+    clear_fit_cache()
+    patch_scorer(monkeypatch, lambda slugs: float(len(slugs)))
+    # prune_candidate_pool ranks candidates by real base_stats/weapon_stats
+    # (_prior), which this file's bare Unit(slug, burst_tier) fixture doesn't
+    # carry (see test_deck_search.py's own note on the same limitation).
+    # widened_pool's coefficient-ranked pass needs no such attributes, so an
+    # empty prune result still lets the cascade produce a real shortlist.
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    fits = {"n": 0}
+    real_fit = da.cached_fit_surrogate
+
+    def counting_fit(roster, boss, score_orderings):
+        fits["n"] += 1
+        return real_fit(roster, boss, score_orderings)
+
+    monkeypatch.setattr(da, "cached_fit_surrogate", counting_fit)
+
+    da.allocate_decks(_wide_roster(), BossProfile(), num_decks=3,
+                      time_budget_sec=0.0)
+
+    assert fits["n"] == 1
+
+
+def test_small_rosters_never_fit_a_surrogate(monkeypatch):
+    """Existing tests use tiny rosters and stub evaluate_deck; they must keep
+    taking the untouched exhaustive path."""
+    clear_fit_cache()
+    patch_scorer(monkeypatch, lambda slugs: float(len(slugs)))
+    fits = {"n": 0}
+    monkeypatch.setattr(da, "cached_fit_surrogate",
+                        lambda *a, **k: fits.__setitem__("n", fits["n"] + 1))
+
+    da.allocate_decks(roster_of({"a1": 1, "a2": 2, "a3": 3, "a4": 3, "a5": 3}),
+                      BossProfile(), num_decks=1, time_budget_sec=0.0)
+
+    assert fits["n"] == 0

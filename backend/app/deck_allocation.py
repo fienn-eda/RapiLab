@@ -7,9 +7,11 @@ them supports two decks better). No optimality claim - set partitioning is
 NP-hard; this is the standard practical combo."""
 import time
 
-from app.deck_search import (BossProfile, _intra_tier_orderings, _score_batch,
-                             _summarize, best_completions, evaluate_deck,
-                             search_best_decks)
+from app.cascade import Cascade, cached_fit_surrogate
+from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
+                             _intra_tier_orderings, _orderings_within_budget,
+                             _score_batch, _summarize, best_completions,
+                             evaluate_deck, search_best_decks)
 from app.sim_pool import SimPool, resolve_workers
 
 
@@ -30,6 +32,17 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
         placed = {u.slug for deck in draft for u in deck}
         remaining = [u for u in roster if u.slug not in placed]
 
+        # One fit serves the whole peel: the surrogate is additive over unit
+        # membership, so coefficients learned on the full roster score any
+        # subset of it. Only rosters that would actually blow the search budget
+        # pay for a fit - everything smaller keeps the exhaustive path.
+        cascade = None
+        if _orderings_within_budget(roster, SEARCH_SIM_BUDGET) is None:
+            model = cached_fit_surrogate(
+                roster, boss, lambda decks: _score_batch(decks, boss, pool))
+            if model is not None:
+                cascade = Cascade(model)
+
         decks = []  # each: ordered list of units (canonical order from the search)
         for seed in draft:                       # seed decks: complete around placed units
             found = best_completions(seed, remaining, boss, top_n=1, pool=pool)
@@ -42,7 +55,8 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
             remaining = [u for u in remaining if u.slug not in used]
 
         while len(decks) < num_decks:            # free decks: greedy peeling (unchanged)
-            found = search_best_decks(remaining, boss, top_n=1, pool=pool)
+            found = search_best_decks(remaining, boss, top_n=1, pool=pool,
+                                      cascade=cascade)
             if not found:
                 break
             units = [by_slug[slug] for slug in found[0]["deck"]]
