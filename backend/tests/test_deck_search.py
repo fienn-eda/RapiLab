@@ -637,6 +637,47 @@ def test_search_budget_counts_orderings_not_just_combinations(monkeypatch):
     assert pruned, "budget compared against combinations only, not orderings"
 
 
+# --- Cascade injection: search_best_decks never imports app.cascade (see its
+# module docstring) -- these stand in for a real Cascade via duck typing.
+# prune_candidate_pool needs real base_stats/weapon_stats to rank on (_prior),
+# so these use FakeSpec (like the prune tests above), not fake_roster's bare
+# FakeUnit.
+def _cascade_test_roster():
+    return [FakeSpec(f"u{i}", t) for i, t in enumerate([1, 1, 2, 2, 3, 3, 3, 3])]
+
+
+def test_search_best_decks_uses_the_cascade_when_over_budget(monkeypatch):
+    """The cascade's shortlist must be what gets simulated, not the pruned pool."""
+    import app.deck_search as ds
+    roster = _cascade_test_roster()
+    chosen = [[roster[0], roster[2], roster[4], roster[5], roster[6]]]
+    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({}))
+
+    class _StubCascade:
+        def shortlist(self, r, b, pool=None):
+            return chosen
+
+    found = ds.search_best_decks(roster, BossProfile(element="Water"), top_n=1,
+                                 sim_budget=1, cascade=_StubCascade())
+
+    assert {u.slug for u in chosen[0]} == set(found[0]["deck"])
+
+
+def test_search_best_decks_falls_back_when_the_cascade_declines(monkeypatch):
+    import app.deck_search as ds
+    roster = _cascade_test_roster()
+    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({}))
+
+    class _DecliningCascade:
+        def shortlist(self, r, b, pool=None):
+            return None
+
+    found = ds.search_best_decks(roster, BossProfile(element="Water"), top_n=1,
+                                 sim_budget=1, cascade=_DecliningCascade())
+
+    assert len(found) == 1          # the exhaustive path still produced a deck
+
+
 # --- Non-bursting buffer ("totem") seating: Modernia and Velvet ---------------
 # Their bursts are a DPS loss / buff-only, so they yield the burst to a same-tier
 # ally. Encoded as a SEAT rule only (Fienn, 2026-07-22): they must sit LAST in

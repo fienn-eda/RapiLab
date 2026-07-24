@@ -594,7 +594,8 @@ def _orderings_within_budget(roster, sim_budget):
     return out
 
 
-def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200, pool=None):
+def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200,
+                      pool=None, cascade=None):
     """Budget-aware replacement for exhaustive find_best_decks: every shape
     combination is scored in EVERY intra-tier order, and when that would blow
     the budget the roster is first cut to a candidate pool
@@ -611,12 +612,21 @@ def search_best_decks(roster, boss: BossProfile, top_n=5, sim_budget=1200, pool=
     2026-07-19). Ranking combinations on ONE arbitrary order therefore
     mis-scores them outright - measured at up to 78% low on real data, with
     the true best (1,1,3) ranking #21 - so orderings are scored in full
-    rather than refined for a top-K shortlist."""
+    rather than refined for a top-K shortlist.
+
+    `cascade` (duck-typed, see app.cascade.Cascade) is consulted when the
+    budget is blown: its shortlist replaces the exhaustive scoring of the
+    pruned pool. It may decline by returning None, in which case the pruned
+    exhaustive path runs unchanged. This module never imports the cascade -
+    surrogate.py already imports this one.
+    """
     candidates = list(roster)
     orderings = _orderings_within_budget(candidates, sim_budget)
     if orderings is None:
-        candidates = prune_candidate_pool(roster, boss, pool)
-        orderings = _all_intra_tier_orderings(shape_combinations(candidates))
+        combos = cascade.shortlist(roster, boss, pool) if cascade is not None else None
+        if combos is None:
+            combos = shape_combinations(prune_candidate_pool(roster, boss, pool))
+        orderings = _all_intra_tier_orderings(combos)
     # Ranked on slim scores first; only the returned top_n get a second sim to
     # attach the full "result" (evaluate_deck is pure, so the floats are
     # identical to scoring the full summaries directly).

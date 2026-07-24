@@ -32,7 +32,7 @@ import numpy as np
 from app.surrogate import (best_ordering_damage, build_matrix, fit_ridge,
                            make_feature_space, predict,
                            sample_feasible_combinations)
-from app.deck_search import prune_candidate_pool
+from app.deck_search import prune_candidate_pool, shape_combinations
 
 # Decks sampled and truly simulated to fit the model. 200 comfortably exceeds
 # the 79 unit columns a full 78-unit roster produces, which is what a
@@ -179,3 +179,30 @@ def widened_pool(roster, boss, model, pool=None, caps=WIDE_TIER_CAPS):
     for unit in sorted(roster, key=lambda u: model.coefficient(u.slug), reverse=True):
         offer(unit)
     return [unit for tier in sorted(chosen) for unit in chosen[tier]]
+
+
+@dataclass
+class Cascade:
+    """Ranks a roster's combinations and hands back only the top-K to simulate.
+
+    Injected into search_best_decks rather than imported by it: surrogate.py
+    already imports deck_search, so a deck_search -> cascade edge would be a
+    cycle. This mirrors how `pool` is threaded in.
+    """
+
+    model: SurrogateModel
+    top_k: int = DEFAULT_TOP_K
+    caps: dict = None
+
+    def shortlist(self, roster, boss, pool=None):
+        """The combinations worth simulating, or None to defer to the caller's
+        own (exhaustive) path."""
+        if not self.model.covers(roster):
+            return None
+        units = widened_pool(roster, boss, self.model, pool,
+                             self.caps or WIDE_TIER_CAPS)
+        combos = list(shape_combinations(units))
+        if not combos:
+            return None
+        ranking = np.argsort(-self.model.score_combos(combos))[:self.top_k]
+        return [combos[i] for i in ranking]

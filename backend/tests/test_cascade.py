@@ -4,9 +4,9 @@ from dataclasses import replace as _dc_replace
 import numpy as np
 import pytest
 
-from app.cascade import (FIT_CACHE_SIZE, WIDE_TIER_CAPS, SurrogateModel,
-                         cached_fit_surrogate, clear_fit_cache, fit_surrogate,
-                         roster_fingerprint, widened_pool)
+from app.cascade import (FIT_CACHE_SIZE, WIDE_TIER_CAPS, Cascade,
+                         SurrogateModel, cached_fit_surrogate, clear_fit_cache,
+                         fit_surrogate, roster_fingerprint, widened_pool)
 from app.deck_search import BossProfile
 
 
@@ -251,3 +251,54 @@ def test_widened_pool_handles_a_roster_smaller_than_the_caps(monkeypatch):
     monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
     out = widened_pool(roster, BOSS, _FakeModel({}))
     assert len(out) == 5
+
+
+def test_shortlist_returns_top_k_combinations(monkeypatch):
+    roster = _roster()
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    model = fit_surrogate(roster, BOSS, _scorer_favouring({"c0"})[0], samples=120)
+
+    combos = Cascade(model, top_k=7).shortlist(roster, BOSS)
+
+    assert len(combos) == 7
+    assert all(len(c) == 5 for c in combos)
+
+
+def test_shortlist_is_ordered_by_predicted_score(monkeypatch):
+    roster = _roster()
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    model = fit_surrogate(roster, BOSS, _scorer_favouring({"c0", "b0"})[0], samples=120)
+
+    combos = Cascade(model, top_k=10).shortlist(roster, BOSS)
+    scores = model.score_combos(combos)
+
+    assert list(scores) == sorted(scores, reverse=True)
+
+
+def test_shortlist_declines_a_roster_the_model_does_not_cover(monkeypatch):
+    roster = _roster()
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    model = fit_surrogate(roster, BOSS, _scorer_favouring({"c0"})[0], samples=120)
+
+    assert Cascade(model).shortlist(roster + [_u("stranger", 3)], BOSS) is None
+
+
+def test_shortlist_declines_when_no_legal_combination_exists(monkeypatch):
+    roster = _roster()
+    model = fit_surrogate(roster, BOSS, _scorer_favouring({"c0"})[0], samples=120)
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    # a subset with no tier-2 unit can form no legal deck
+    tierless = [u for u in roster if u.burst_tier != 2]
+
+    assert Cascade(model).shortlist(tierless, BOSS) is None
+
+
+def test_shortlist_returns_everything_when_k_exceeds_the_pool(monkeypatch):
+    roster = _roster(n1=1, n2=1, n3=3)
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    model = _FakeModel({})
+    model.covers = lambda r: True
+    model.score_combos = lambda combos: np.zeros(len(combos))
+
+    combos = Cascade(model, top_k=1000).shortlist(roster, BOSS)
+    assert len(combos) == 1
