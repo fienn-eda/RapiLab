@@ -48,6 +48,29 @@ def load_character_data(source, data_slug, data_dir=DATA_DIR):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def load_weapon_data(manifest, slug, data_dir=DATA_DIR):
+    """The character file a manifest's WEAPON stats come from.
+
+    Weapon stats follow the manifest's `weapon_source`, which defaults to its
+    `source`. A Favorite Item slug overrides it: its skill values are dollskills
+    (lootandwaifus only) while its weapon is the base unit's ShiftyPad file,
+    since ShiftyPad exposes no dollskills and dotgg can no longer be collected.
+    dotgg also sometimes shortens a slug (url "ada" for "ada-wong"), which the
+    optional `dotgg_slug` key bridges.
+
+    Every caller that decides whether a unit is loadable must ask THIS function
+    rather than re-deriving the branch: `supported_units` and
+    `user_roster.load_nikke_spec` each had their own copy, and when
+    `weapon_source` was added only one of them learned about it - the four
+    Favorite Item `-signature` builds stayed encoded but invisible to the
+    recommender until a test counted them.
+    """
+    data_slug = manifest.get("data_slug", slug)
+    if manifest.get("weapon_source", manifest["source"]) == "shiftypad":
+        return load_character_data("shiftypad", data_slug, data_dir)
+    return load_character_data("dotgg", manifest.get("dotgg_slug", data_slug), data_dir)
+
+
 def assemble_skill_values(slug, manifest, skill_levels, data_dir=DATA_DIR):
     data = load_character_data(manifest["source"], manifest.get("data_slug", slug), data_dir)
     values = {}

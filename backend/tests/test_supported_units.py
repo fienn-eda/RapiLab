@@ -1,6 +1,18 @@
 from fastapi.testclient import TestClient
 from app.api import app
+from app.skill_rules.registry import ENCODED_SLUGS
 from app.supported_units import supported_units
+
+
+def test_every_encoded_slug_reaches_the_recommender():
+    """An encoded unit the recommender cannot see is encoding work thrown away,
+    and `supported_units` drops one SILENTLY (a bare `continue` on any load
+    error) - it has now done so twice, for four units each time. The test below
+    lists the first four by name; this one needs no list, so the next manifest
+    key that only one of the two loaders learns about fails here instead of
+    going unnoticed until someone counts."""
+    missing = sorted(set(ENCODED_SLUGS) - {u["slug"] for u in supported_units()})
+    assert not missing, f"encoded but invisible to the recommender: {missing}"
 
 
 def test_supported_units_have_required_fields():
