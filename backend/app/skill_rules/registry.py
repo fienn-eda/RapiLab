@@ -284,6 +284,7 @@ from app.skill_rules.snow_white_heavy_arms import (
     build_snow_white_heavy_arms_rules,
 )
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
+from app.skill_rules import sugar_signature
 from app.skill_rules.sugar import build_sugar_rules
 from app.skill_rules.takina_inoue import (
     BATTLEFIELD_CONTROL_COOLDOWN,
@@ -523,6 +524,9 @@ _BUILDERS = {
     "tove": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
     "sugar": lambda sv: (build_sugar_rules(sv), None),  # burst is buffs-only, no nuke
+    "sugar-signature": lambda sv: (
+        sugar_signature.build_sugar_signature_rules(sv), None,
+    ),
     "velvet": lambda sv: (build_velvet_rules(sv), None),
     "takina-inoue": _build_takina,
 }
