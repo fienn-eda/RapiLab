@@ -252,7 +252,8 @@ HEAL_PROVIDER_SLUGS = frozenset({
 
 
 def max_hp_scaled_atk_rule(
-    trigger, percent, scope, duration, base_max_hp, condition=None, refreshing=False
+    trigger, percent, scope, duration, base_max_hp, condition=None, refreshing=False,
+    refresh_group=None,
 ):
     """"ATK 캐스터 Max HP의 X%"를 캐스터의 LIVE Max HP로 환산해 flat_atk를 건다.
 
@@ -274,7 +275,7 @@ def max_hp_scaled_atk_rule(
         by_slug = {m.slug: m for m in context.members}
         target = {"slug": caster_slug, "element": by_slug[caster_slug].element}
         live_max_hp = base_max_hp + registry.total_for("flat_max_hp", target, time)
-        effect = Effect("flat_atk", live_max_hp * percent, scope, duration, caster_slug)
+        effect = Effect("flat_atk", live_max_hp * percent, scope, duration, caster_slug, refresh_group)
         if refreshing:
             registry.add_refreshing(effect, applied_at=time)
         else:
