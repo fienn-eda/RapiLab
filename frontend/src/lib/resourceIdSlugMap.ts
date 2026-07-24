@@ -41,7 +41,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   143: 'milk-blooming-bunny', // Milk: Blooming Bunny
   150: 'julia', // Julia — dual-slot base; promoted per the roster
   162: 'mihara-bonding-chain', // Mihara: Bonding Chain
-  170: 'privaty', // Privaty
+  170: 'privaty', // Privaty — dual-slot base; promoted per the roster
   182: 'guillotine-winter-slayer', // Guillotine: Winter Slayer
   183: 'maiden-ice-rose', // Maiden: Ice Rose
   192: 'tove', // Tove
@@ -104,7 +104,8 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
 // The backend drift test asserts this equals the encoded base/-signature pairs, so a
 // newly encoded dual-slot unit fails the suite until it is added here.
 export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set([
-  'drake', 'flora', 'helm', 'julia', 'laplace', 'miranda', 'phantom', 'rosanna',
+  'drake', 'flora', 'helm', 'julia', 'laplace', 'miranda', 'phantom', 'privaty',
+  'rosanna',
   'sugar', 'zwei',
 ])
 

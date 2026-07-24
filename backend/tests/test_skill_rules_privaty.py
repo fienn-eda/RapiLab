@@ -1,6 +1,8 @@
 from app.effects import EffectRegistry
 from app.raid_simulator import simulate_raid
 from app.skill_rules.privaty import (
+    build_ex_magazine_base_rules,
+    build_ld_assault_base_per_shot_rules,
     ak_missile_burst_percent,
     build_ak_missile_rules,
     build_ex_magazine_rules,
@@ -13,6 +15,22 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 # cherished-weapon version applies. It adds a 4th effect to EX Magazine
 # (Attack Damage up) that the base skill doesn't have at all, and roughly
 # triples AK Missile's burst damage percent (457.87% base -> 1407.64%).
+# Base ("skills") level-10 values - slug "privaty". EX Magazine stops at slot 06
+# and LD Assault at slot 02 (its second slot is the Stunned rider, deferred).
+EX_MAGAZINE_BASE = {
+    "description_value_01": "23.61", "description_value_02": "10",
+    "description_value_03": "51.16", "description_value_04": "10",
+    "description_value_05": "50.66", "description_value_06": "10",
+}
+LD_ASSAULT_BASE = {
+    "description_value_01": "85.79",
+    "description_value_02": "1089",  # "if Stunned" - deferred, bosses never are
+}
+AK_MISSILE_BASE = {
+    "description_value_01": "457.87", "description_value_02": "3",
+}
+PRIVATY_BASE = {"ld_assault": LD_ASSAULT_BASE, "ak_missile": AK_MISSILE_BASE}
+
 EX_MAGAZINE_VALUES = {
     "description_value_01": "23.61",
     "description_value_02": "10",
@@ -193,3 +211,40 @@ def test_privaty_end_to_end_ld_assault_fires_on_last_bullet():
     # plain add - not refreshing) stack additively, per squad-debuff
     # convention - 256.17% * (1 + 2*0.1001).
     assert round(hits[1]["damage"], 4) == round(10000 * 2.5617 * (1 + 2 * 0.1001), 4)
+
+
+def test_base_ex_magazine_keeps_the_ammo_cost_and_omits_the_attack_damage_step():
+    ctx = make_context()
+    registry = EffectRegistry()
+    rules = {"privaty": build_ex_magazine_base_rules(EX_MAGAZINE_BASE)}
+
+    fire_trigger("full_burst_enter", rules, ctx, registry, time=0.0)
+
+    ally = {"slug": "ally", "element": "Iron"}
+    assert round(registry.total_for("atk_percent", ally, 0.0), 4) == 0.2361
+    assert round(registry.total_for("reload_speed_percent", ally, 0.0), 4) == 0.5116
+    # The downside is squad-wide and belongs in the model too.
+    assert round(registry.total_for("max_ammo_percent", ally, 0.0), 4) == -0.5066
+    # Attack Damage is text only the Favorite Item has.
+    assert registry.total_for("attack_damage_up", ally, 0.0) == 0.0
+
+
+def test_base_ld_assault_fires_one_nuke_and_defers_the_stun_rider():
+    # Raid bosses cannot be stunned, so the 1089% second bullet must not be
+    # credited - exactly one pulse, and no Damage Taken debuff (that is the
+    # Favorite Item's text).
+    ps = build_ld_assault_base_per_shot_rules(PRIVATY_BASE)
+    assert len(ps) == 1
+    threshold, mode, rules = ps[0]
+    assert (threshold, mode) == (None, "last_bullet")
+
+    ctx = make_context()
+    registry = EffectRegistry()
+    for rule in rules:
+        rule.action(ctx, "privaty", 3.0, registry)
+
+    pulses = registry.drain_pulses("instant_damage_percent")
+    assert [p.value for p in pulses] == [85.79]
+    assert pulses[0].full_burst_bonus_eligible is True
+    ally = {"slug": "ally", "element": "Iron"}
+    assert registry.total_for("damage_taken_up", ally, 3.0) == 0.0

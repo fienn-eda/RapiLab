@@ -310,6 +310,8 @@ from app.skill_rules.red_hood import (
     build_red_wolf_weapon_mode_schedule,
 )
 from app.skill_rules.privaty import (
+    build_ex_magazine_base_rules,
+    build_ld_assault_base_per_shot_rules,
     ak_missile_burst_percent,
     build_ak_missile_rules,
     build_ex_magazine_rules,
@@ -392,6 +394,14 @@ def _build_helm_signature(sv):
 
 
 def _build_privaty(sv):
+    # AK Missile's self elemental bonus (slots 05/06) is the Favorite Item's
+    # text; the base burst is a plain nuke plus an inert stun.
+    return build_ex_magazine_base_rules(sv["ex_magazine"]), ak_missile_burst_percent(
+        sv["ak_missile"]
+    )
+
+
+def _build_privaty_signature(sv):
     rules = build_ex_magazine_rules(sv["ex_magazine"])
     rules += build_ak_missile_rules(sv["ak_missile"])
     return rules, ak_missile_burst_percent(sv["ak_missile"])
@@ -490,6 +500,7 @@ _BUILDERS = {
     "maxwell-ordinary-mechanic": _build_maxwell_ordinary_mechanic,
     "laplace-ultimate-hero": _build_laplace_ultimate_hero,
     "privaty": _build_privaty,
+    "privaty-signature": _build_privaty_signature,
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
     "miranda": lambda sv: (build_miranda_base_rules(sv), None),
@@ -801,7 +812,8 @@ _PER_SHOT_RULE_BUILDERS = {
         build_frontline_command_per_shot_rules(sv["frontline_command"])
         + build_fire_away_per_shot_rules(sv["fire_away"])
     ),
-    "privaty": lambda sv: build_ld_assault_per_shot_rules(sv),
+    "privaty": lambda sv: build_ld_assault_base_per_shot_rules(sv),
+    "privaty-signature": lambda sv: build_ld_assault_per_shot_rules(sv),
     "zwei-signature": lambda sv: build_pierce_equation_per_shot_rules(sv),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
