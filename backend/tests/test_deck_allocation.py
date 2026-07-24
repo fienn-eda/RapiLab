@@ -152,3 +152,53 @@ def test_small_rosters_never_fit_a_surrogate(monkeypatch):
                       BossProfile(), num_decks=1, time_budget_sec=0.0)
 
     assert fits["n"] == 0
+
+
+from app.cascade import Cascade, fit_surrogate
+from app.deck_search import _score_batch, search_best_decks
+
+# Per-unit values plus a synergy the unit-only surrogate cannot represent, so
+# the test probes the cascade's actual failure mode rather than a model it fits
+# perfectly.
+_UNIT_VALUE = {f"q3-{i}": 100.0 + 10 * i for i in range(10)}
+_UNIT_VALUE.update({f"q2-{i}": 50.0 + 5 * i for i in range(5)})
+_UNIT_VALUE.update({f"q1-{i}": 30.0 + 3 * i for i in range(5)})
+_SYNERGY = frozenset({"q1-0", "q3-9"})
+
+
+def _quality_scorer(slugs):
+    total = sum(_UNIT_VALUE.get(s, 0.0) for s in slugs)
+    return total + (40.0 if _SYNERGY <= set(slugs) else 0.0)
+
+
+def _quality_roster():
+    tiers = {f"q1-{i}": 1 for i in range(5)}
+    tiers.update({f"q2-{i}": 2 for i in range(5)})
+    tiers.update({f"q3-{i}": 3 for i in range(10)})
+    return roster_of(tiers)
+
+
+def test_cascade_search_stays_within_five_percent_of_exhaustive(monkeypatch):
+    """The cascade must not cost real damage. 95% is the same bar the recall
+    gate held K to, so the test and the gate cannot drift apart."""
+    patch_scorer(monkeypatch, _quality_scorer)
+    # prune_candidate_pool ranks on base_stats/weapon_stats (_prior), which this
+    # file's bare Unit(slug, burst_tier) fixture doesn't carry (same gap noted
+    # on test_allocation_fits_the_surrogate_once_for_the_whole_peel above).
+    # Bypass it on both call paths: the exhaustive call sees the unpruned
+    # roster (a stronger baseline than production's pruned-exhaustive, never a
+    # weaker one), and the cascade call falls entirely to widened_pool's
+    # coefficient-ranked pass - the exact mechanism this test probes.
+    monkeypatch.setattr("app.deck_search.prune_candidate_pool", lambda r, b, p=None: list(r))
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    roster, boss = _quality_roster(), BossProfile()
+
+    exhaustive = search_best_decks(roster, boss, top_n=1)
+    model = fit_surrogate(roster, boss,
+                          lambda decks: _score_batch(decks, boss, None),
+                          samples=150)
+    assert model is not None, "roster too small to fit - widen _quality_roster"
+    cascaded = search_best_decks(roster, boss, top_n=1, sim_budget=1,
+                                 cascade=Cascade(model))
+
+    assert cascaded[0]["total_damage"] >= 0.95 * exhaustive[0]["total_damage"]
