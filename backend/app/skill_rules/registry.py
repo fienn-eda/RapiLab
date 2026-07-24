@@ -561,6 +561,7 @@ _BUILDERS = {
     "rosanna-chic-ocean": lambda sv: (build_rosanna_rules(sv), None),
     "soda-twinkling-bunny": lambda sv: ([], onward_soda_burst_percent(sv)),
     "tove": lambda sv: (build_tove_rules(sv), None),
+    "tove-signature": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
     "flora": lambda sv: (build_flora_rules(sv), None),  # burst is heal + buffs, no nuke
     "phantom": lambda sv: (

@@ -151,8 +151,31 @@ def test_moran_transform_is_an_unlimited_ammo_smg_at_canonical_rate():
     assert "damage_type" not in profile      # ordinary attack damage, no true conversion
 
 
+# Base ("skills") level-10 values - slug "tove". Same slot MEANINGS as the
+# Favorite Item, only smaller numbers, so one builder serves both.
+TOVE_BASE_MODIFICATION_SUCCESSFUL = {
+    "description_value_01": "3.32", "description_value_02": "42.24",
+}
+TOVE_BASE_MIRACLE_OF_MAKESHIFTS = {
+    "description_value_01": "2.32", "description_value_02": "10",
+    "description_value_03": "24.21", "description_value_04": "10",
+}
+TOVE_BASE = {
+    "modification_successful": TOVE_BASE_MODIFICATION_SUCCESSFUL,
+    "miracle_of_makeshifts": TOVE_BASE_MIRACLE_OF_MAKESHIFTS,
+    "caster_atk": 300000,
+}
+
+TOVE_SIG_MODIFICATION_SUCCESSFUL = {
+    "description_value_01": "10.08", "description_value_02": "42.24",
+}
+TOVE_SIG_MIRACLE_OF_MAKESHIFTS = {
+    "description_value_01": "2.32", "description_value_02": "15",
+    "description_value_03": "24.21", "description_value_04": "15",
+}
+
 TOVE = {
-    "modification_successful": {"description_value_01": "10.08", "description_value_02": "42.24"},
+    "modification_successful": TOVE_SIG_MODIFICATION_SUCCESSFUL,
     "miracle_of_makeshifts": {
         "description_value_01": "2.32", "description_value_02": "15",
         "description_value_03": "24.21", "description_value_04": "15",
@@ -363,3 +386,25 @@ def test_moran_transform_schedule_anchors_on_the_slug_it_is_built_for():
     ctx.burst_times["moran"] = [10.0]
     ctx.burst_times["moran-signature"] = [20.0]
     assert [w["start"] for w in schedule(ctx, 120.0)] == [20.0]
+
+
+def test_tove_base_crit_rate_is_a_third_of_the_favorite_items():
+    # Same builder, same slots - only the numbers differ between the builds.
+    reg = EffectRegistry()
+    fire_trigger("battle_start", {"tove": build_tove_rules(TOVE_BASE)},
+                 deck_ctx("tove"), reg, 0.0)
+    assert round(reg.total_for("crit_rate", ALLY, 0.0), 4) == 0.0332
+
+    reg_sig = EffectRegistry()
+    fire_trigger("battle_start", {"tove": build_tove_rules(TOVE)},
+                 deck_ctx("tove"), reg_sig, 0.0)
+    assert round(reg_sig.total_for("crit_rate", ALLY, 0.0), 4) == 0.1008
+
+
+def test_tove_base_burst_atk_window_is_ten_seconds_not_fifteen():
+    reg = EffectRegistry()
+    fire_trigger("own_burst_activate", {"tove": build_tove_rules(TOVE_BASE)},
+                 deck_ctx("tove"), reg, 0.0)
+    # 2.32% of caster ATK per stack, x3 stacks (the derived full-stack steady state).
+    assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == round(300000 * 0.0232 * 3, 2)
+    assert reg.total_for("flat_atk", ALLY, 10.1) == 0.0

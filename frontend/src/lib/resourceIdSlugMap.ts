@@ -44,7 +44,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   170: 'privaty', // Privaty — dual-slot base; promoted per the roster
   182: 'guillotine-winter-slayer', // Guillotine: Winter Slayer
   183: 'maiden-ice-rose', // Maiden: Ice Rose
-  192: 'tove', // Tove
+  192: 'tove', // Tove — dual-slot base; promoted per the roster
   194: 'ludmilla-winter-owner', // Ludmilla: Winter Owner
   220: 'snow-white', // Snow White (224 = Snow White: Innocent Days, not encoded)
   223: 'nayuta', // Nayuta
@@ -106,7 +106,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
 export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set([
   'drake', 'flora', 'helm', 'julia', 'laplace', 'miranda', 'moran', 'phantom', 'privaty',
   'rosanna',
-  'sugar', 'zwei',
+  'sugar', 'tove', 'zwei',
 ])
 
 // Single entry point: identity lookup, then signature promotion when owned.
