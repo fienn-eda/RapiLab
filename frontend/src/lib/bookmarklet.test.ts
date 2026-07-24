@@ -38,6 +38,89 @@ describe('buildBookmarklet', () => {
     expect(source).toContain('nickname:')
   })
 
+  // 소스에 'nickname:'이 있는지 보는 문자열 단언은 응답에서 값을 꺼내는 경로가
+  // 틀려도 통과한다 - 실제로 `data.basic_info.nickname`을 `data.nickname`으로
+  // 한 단계 얕게 읽던 버그가 그 단언들을 모두 통과했다. 그래서 여기서는 북마크릿을
+  // 실측 응답 형태에 대고 실행해 payload에 실린 값 자체를 검증한다.
+  describe('실행 결과', () => {
+    const NICKNAME = 'FIENN'
+
+    const responseFor = (endpoint: string): unknown => {
+      if (endpoint.endsWith('GetUserCharacters'))
+        return { characters: [{ name_code: 5101, combat: 461955 }] }
+      if (endpoint.endsWith('GetUserCharacterDetails'))
+        return { character_details: [{ name_code: 5101 }] }
+      if (endpoint.endsWith('GetUserProfileOutpostInfo'))
+        return { outpost_info: { recycle_room_researches: [{ tid: 1, lv: 2 }] } }
+      // 2026-07-25 실측 형태: 닉네임은 basic_info 아래 한 단계 더 들어가 있다.
+      return { basic_info: { nickname: NICKNAME, role_name: NICKNAME } }
+    }
+
+    /** 북마크릿을 가짜 blablalink 창에서 돌리고, 앱 창으로 간 payload를 돌려준다. */
+    const runBookmarklet = async (
+      fetchImpl: (url: string) => Promise<{ json: () => Promise<unknown> }>,
+    ): Promise<Record<string, unknown> | null> => {
+      let sent: Record<string, unknown> | null = null
+      const appWindow = {
+        postMessage: (message: { type: string; payload: Record<string, unknown> }) => {
+          if (message.type === PAYLOAD_MESSAGE) sent = message.payload
+        },
+      }
+      const listeners: ((event: unknown) => void)[] = []
+      const fakeWindow = {
+        open: () => appWindow,
+        addEventListener: (_type: string, handler: (event: unknown) => void) =>
+          listeners.push(handler),
+        removeEventListener: () => {},
+      }
+      const run = new Function(
+        'window',
+        'location',
+        'fetch',
+        'alert',
+        `return ${source}`,
+      )
+      const finished = run(
+        fakeWindow,
+        { origin: BLABLALINK_ORIGIN },
+        fetchImpl,
+        () => {},
+      )
+      // 북마크릿은 앱 창이 ready를 알린 뒤에야 payload를 보낸다.
+      for (const handler of listeners) {
+        handler({ source: appWindow, origin: 'https://deck.example', data: { type: 'nikke-sync-ready' } })
+      }
+      await finished
+      return sent
+    }
+
+    const okFetch = (url: string) =>
+      Promise.resolve({ json: () => Promise.resolve({ code: 0, data: responseFor(url) }) })
+
+    it('basic_info 아래의 nickname을 payload에 싣는다', async () => {
+      const payload = await runBookmarklet(okFetch)
+      expect(payload?.nickname).toBe(NICKNAME)
+    })
+
+    it('프로필 조회가 실패해도 로스터 싱크는 살아남는다', async () => {
+      // code 1303005("user has not bind role_id")가 실측된 적 있다. 닉네임은
+      // 표시용이므로 그 실패가 로스터 전체를 날려선 안 된다.
+      const payload = await runBookmarklet((url) =>
+        Promise.resolve({
+          json: () =>
+            Promise.resolve(
+              url.endsWith('GetUserProfileBasicInfo')
+                ? { code: 1303005, msg: 'user has not bind role_id', data: null }
+                : { code: 0, data: responseFor(url) },
+            ),
+        }),
+      )
+      expect(payload).not.toBeNull()
+      expect(payload?.nickname).toBe('')
+      expect(payload?.owned).toHaveLength(1)
+    })
+  })
+
   it('area 81과 blablalink origin 가드를 포함한다', () => {
     expect(source).toContain('nikke_area_id:81')
     expect(source).toContain(BLABLALINK_ORIGIN)

@@ -1,6 +1,12 @@
-// 유저의 blablalink 세션으로 3개 API를 호출해 원시 payload를 우리 앱에 넘기는
+// 유저의 blablalink 세션으로 4개 API를 호출해 원시 payload를 우리 앱에 넘기는
 // 북마크릿. blablalink 페이지 컨텍스트에서 도는 것이 전제다 - 거기서만
 // credentials:'include' fetch가 CORS를 통과한다(2026-07-19 실측).
+//
+// 계정 닉네임은 GetUserProfileBasicInfo의 `data.basic_info.nickname`에 있다
+// (2026-07-25 실측; `role_name`도 같은 값을 담는다). 한 단계 얕게 `data.nickname`을
+// 읽으면 항상 undefined라 화면이 UID로 폴백한다. 이 호출만은 실패해도 삼킨다 -
+// 닉네임은 표시용 부가 정보인데, 이 엔드포인트가 code 1303005("user has not bind
+// role_id")로 떨어지는 것이 관측된 이상 그 실패가 로스터 싱크 전체를 죽여선 안 된다.
 //
 // 외부 스크립트 로딩은 blablalink CSP의 script-src에 막힐 공산이 커서 로직이
 // 인라인으로 강제되고, 따라서 이 코드를 바꾸면 전 유저가 북마크를 다시 깔아야
@@ -56,8 +62,9 @@ try{
  const owned=(await call('GetUserCharacters',{...base})).characters||[];
  const detail=await call('GetUserCharacterDetails',{...base,name_codes:owned.map(c=>c.name_code)});
  const outpost=await call('GetUserProfileOutpostInfo',{...base});
- const basic=await call('GetUserProfileBasicInfo',{...base});
- const nick=(basic&&(basic.nickname||basic.nick_name))||'';
+ const basic=await call('GetUserProfileBasicInfo',{...base}).catch(()=>null);
+ const bi=(basic&&basic.basic_info)||{};
+ const nick=bi.nickname||bi.role_name||'';
  payload={open_id:'${openId}',nickname:nick,owned:owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]};
  send()
 }catch(err){
