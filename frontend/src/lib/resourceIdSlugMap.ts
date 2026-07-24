@@ -55,6 +55,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   270: 'blanc', // Blanc
   271: 'noir', // Noir
   272: 'rouge', // Rouge
+  280: 'rosanna', // Rosanna — dual-slot base; a different unit from 283 Rosanna: Chic Ocean
   281: 'moran', // Moran
   283: 'rosanna-chic-ocean', // Rosanna: Chic Ocean
   284: 'sakura-bloom-in-summer', // Sakura: Bloom in Summer
@@ -111,7 +112,7 @@ export const SIGNATURE_OWNED: ReadonlySet<number> = new Set([
 // The backend drift test asserts this equals the encoded base/-signature pairs, so a
 // newly encoded dual-slot unit fails the suite until it is added here.
 export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set([
-  'drake', 'flora', 'julia', 'laplace', 'sugar',
+  'drake', 'flora', 'julia', 'laplace', 'rosanna', 'sugar',
 ])
 
 // Single entry point: identity lookup, then signature promotion when owned.

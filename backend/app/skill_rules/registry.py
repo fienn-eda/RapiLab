@@ -179,6 +179,7 @@ from app.skill_rules.laplace import (
     laplace_buster_burst_percent,
 )
 from app.skill_rules import flora_signature
+from app.skill_rules import rosanna_signature
 from app.skill_rules import laplace_signature
 from app.skill_rules.laplace_ultimate_hero import (
     build_laplace_stage_nukes,
@@ -285,6 +286,7 @@ from app.skill_rules.snow_white_heavy_arms import (
     build_snow_white_heavy_arms_rules,
 )
 from app.skill_rules.flora import build_flora_rules
+from app.skill_rules import rosanna as rosanna_base
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules import sugar_signature
 from app.skill_rules.sugar import build_sugar_rules
@@ -526,6 +528,14 @@ _BUILDERS = {
     "tove": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
     "flora": lambda sv: (build_flora_rules(sv), None),  # burst is heal + buffs, no nuke
+    "rosanna": lambda sv: (
+        rosanna_base.build_rosanna_base_rules(sv),
+        rosanna_base.vendetta_burst_percent(sv),
+    ),
+    "rosanna-signature": lambda sv: (
+        rosanna_signature.build_rosanna_signature_rules(sv),
+        rosanna_signature.vendetta_signature_burst_percent(sv),
+    ),
     "flora-signature": lambda sv: (
         flora_signature.build_flora_signature_rules(sv), None,
     ),
@@ -740,6 +750,8 @@ _PER_SHOT_RULE_BUILDERS = {
     "drake": lambda sv: build_thunderbolt_per_shot_rules(sv),
     "drake-signature": lambda sv: build_thunderbolt_signature_per_shot_rules(sv),
     "julia-signature": lambda sv: julia_signature.build_marcato_per_shot_rules(sv),
+    "rosanna": lambda sv: rosanna_base.build_rosanna_base_per_shot_rules(sv),
+    "rosanna-signature": lambda sv: rosanna_signature.build_rosanna_signature_per_shot_rules(sv),
     "laplace": lambda sv: build_hero_bomber_per_shot_rules(sv),
     "laplace-signature": lambda sv: laplace_signature.build_hero_bomber_signature_per_shot_rules(sv),
     "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),

@@ -69,6 +69,7 @@ SLUG_ALIASES = {
     "julia-signature": "julia",
     "laplace-signature": "laplace",
     "privaty": "privaty-nikke",
+    "rosanna-signature": "rosanna",
     "rapi-red-hood-b1": "rapi-red-hood",
     "sugar-signature": "sugar",
     "laplace-ultimate-hero": "laplace-ultimate-hero-nikke",
