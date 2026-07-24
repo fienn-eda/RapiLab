@@ -51,11 +51,20 @@ def _summarize_slugs(slugs):
 
 
 def resolve_workers(workers):
-    """None/0/1 -> serial; "auto" -> leave one core for the event loop."""
+    """None/0/1 -> serial; "auto" -> half the machine, never more.
+
+    This runs on the player's own device, not a server we own, so a
+    recommendation must not take the whole machine for a minute. Half is not a
+    compromise on results: measured on a 78-unit roster, 8 workers and 15 reach
+    exactly the same allocation damage - the swap hill-climb converges either
+    way, and the extra cores only shave wall clock (80s vs 73s). Below that the
+    phase degrades gently rather than breaking (4 workers keep 99.6% of the
+    converged damage, 2 keep 98.3%). See docs/decisions.md.
+    """
     if workers in (None, 0, 1):
         return 1
     if workers == "auto":
-        return max(1, (os.cpu_count() or 2) - 1)
+        return max(1, (os.cpu_count() or 2) // 2)
     return int(workers)
 
 

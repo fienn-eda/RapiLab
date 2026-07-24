@@ -20,6 +20,15 @@ def test_resolve_workers_serial_values():
     assert resolve_workers("auto") >= 1
 
 
+def test_auto_leaves_the_machine_half_free(monkeypatch):
+    """This runs on the player's own device, so "auto" may not take the machine
+    over. Half the cores is enough to converge: measured on 78 units, 8 workers
+    reach exactly the same allocation damage as 15 (docs/decisions.md)."""
+    for cores, expected in ((16, 8), (8, 4), (4, 2), (2, 1), (1, 1)):
+        monkeypatch.setattr(sim_pool.os, "cpu_count", lambda c=cores: c)
+        assert resolve_workers("auto") == expected
+
+
 def test_serial_score_many_matches_direct_evaluate_deck():
     roster, boss = real_five_roster(), short_boss()
     deck_a, deck_b = list(roster), [roster[0], roster[1], roster[4], roster[3], roster[2]]
