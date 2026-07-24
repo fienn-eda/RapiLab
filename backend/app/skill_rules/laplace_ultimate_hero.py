@@ -24,8 +24,11 @@ Modeled (DPS-relevant):
   measurement anchor, so it takes no cadence buffs.
 - Over Energy (skills[1]): one stage per TWO transforms (2 magazines = 240
   transformed normals = 100% Over Energy - Fienn), capped at 4 stages, each
-  granting Max HP (+2/+3/+7/+10.5%). The stage Max HP feeds Electric Power's
-  ATK below, which is re-applied at each stage.
+  granting Max HP (+2/+3/+7/+10.5%). The stages are CUMULATIVE - the skill
+  says "[Each subsequent effect triggers all effects before it:]", so stage 2
+  holds 1+2 and stage 4 holds 1+2+3+4 = +22.5% Max HP (Fienn, 2026-07-24).
+  That Max HP feeds Electric Power's ATK above, which is re-applied at each
+  stage so the growth is actually reflected.
 - Mjolnir's stage bonus (skills[2]): 934.76% of final ATK x the Over Energy
   stage AT THAT BURST, as additional damage (full-burst-bonus eligible). One
   `scheduled_nukes` spec per stage, since a spec carries a single percent.
@@ -60,10 +63,6 @@ Not modeled / deferred:
   ~2 extra base shots during the 2.5s reload the real cycle spends. At 2.5% a
   shot this is a rounding error against the transform, and the reload IS
   counted in the cycle period, which is what actually matters.
-- ASSUMPTION (worth confirming): the Over Energy stage Max HP values
-  2/3/7/10.5% are read as the value AT each stage, REPLACING the previous one
-  (escalating tier), not as a cumulative sum. If the original text is
-  cumulative, only the value handed to the refreshing effect changes.
 """
 from app.effects import Effect
 from app.skill_rules._helpers import buff_rule, max_hp_scaled_atk_rule
@@ -212,8 +211,12 @@ def _over_energy_stage_rule(values, caster_max_hp):
             OVER_ENERGY_MAX_STAGE * OVER_ENERGY_TRANSFORMS_PER_STAGE
         )
         for stage, at in _stage_times(period, window, horizon):
+            # 누적: 스킬 원문의 "[Each subsequent effect triggers all effects
+            # before it:]" - stage 2는 1+2, stage 4는 1+2+3+4를 받는다
+            # (Fienn 2026-07-24). refreshing이라 앞 단계 효과를 대체하되,
+            # 값 자체가 그 단계까지의 합이다.
             registry.add_refreshing(
-                Effect("flat_max_hp", caster_max_hp * stage_max_hp_pcts[stage - 1],
+                Effect("flat_max_hp", caster_max_hp * sum(stage_max_hp_pcts[:stage]),
                        "self", None, caster_slug, _OVER_ENERGY_GROUP),
                 applied_at=at,
             )

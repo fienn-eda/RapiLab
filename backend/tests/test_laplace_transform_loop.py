@@ -82,7 +82,9 @@ def _fire_stage_rule(ctx, registry, at=5.0):
     fire_trigger("full_burst_enter", {"laplace-ultimate-hero": rules}, ctx, registry, time=at)
 
 
-def test_over_energy_stage_grants_max_hp_every_two_transforms():
+def test_over_energy_stages_are_cumulative_every_two_transforms():
+    """스킬 원문 "[Each subsequent effect triggers all effects before it:]" —
+    stage 2는 1+2, stage 4는 1+2+3+4를 받는다(Fienn 2026-07-24)."""
     ctx = make_context()
     registry = EffectRegistry()
     _fire_stage_rule(ctx, registry)
@@ -90,10 +92,12 @@ def test_over_energy_stage_grants_max_hp_every_two_transforms():
     # stage 1 = 2번째 변신 창이 끝나는 순간 = 16.5 + 6.0 = 22.5
     assert registry.total_for("flat_max_hp", LAPLACE, now=22.4) == 0.0
     assert round(registry.total_for("flat_max_hp", LAPLACE, now=22.5), 2) == round(CASTER_MAX_HP * 0.02, 2)
-    # stage 2 = 4번째 창 끝 = 41.5 + 6.0 = 47.5, 값이 교체된다(누적 아님)
-    assert round(registry.total_for("flat_max_hp", LAPLACE, now=47.5), 2) == round(CASTER_MAX_HP * 0.03, 2)
-    # stage 4 = 8번째 창 끝 = 91.5 + 6.0 = 97.5
-    assert round(registry.total_for("flat_max_hp", LAPLACE, now=97.5), 2) == round(CASTER_MAX_HP * 0.105, 2)
+    # stage 2 = 4번째 창 끝 = 47.5 → 2 + 3 = 5%
+    assert round(registry.total_for("flat_max_hp", LAPLACE, now=47.5), 2) == round(CASTER_MAX_HP * 0.05, 2)
+    # stage 3 = 6번째 창 끝 = 72.5 → 2 + 3 + 7 = 12%
+    assert round(registry.total_for("flat_max_hp", LAPLACE, now=72.5), 2) == round(CASTER_MAX_HP * 0.12, 2)
+    # stage 4 = 8번째 창 끝 = 97.5 → 2 + 3 + 7 + 10.5 = 22.5%
+    assert round(registry.total_for("flat_max_hp", LAPLACE, now=97.5), 2) == round(CASTER_MAX_HP * 0.225, 2)
 
 
 def test_electric_power_atk_is_reapplied_with_the_bigger_max_hp():
@@ -103,10 +107,10 @@ def test_electric_power_atk_is_reapplied_with_the_bigger_max_hp():
 
     # 초기: 4.05% of 800000 = 32400
     assert round(registry.total_for("flat_atk", LAPLACE, now=0.0), 2) == 32400.0
-    # stage 1부터: (800000 * 1.02) * 4.05% = 33048 - 합산이 아니라 교체
+    # stage 1: (800000 * 1.02) * 4.05% = 33048 - 합산이 아니라 교체(값 자체가 누적합)
     assert round(registry.total_for("flat_atk", LAPLACE, now=22.5), 2) == 33048.0
-    # stage 4: (800000 * 1.105) * 4.05% = 35802
-    assert round(registry.total_for("flat_atk", LAPLACE, now=97.5), 2) == 35802.0
+    # stage 4: (800000 * 1.225) * 4.05% = 39690
+    assert round(registry.total_for("flat_atk", LAPLACE, now=97.5), 2) == 39690.0
 
 
 def test_mjolnir_stage_nukes_use_the_stage_at_each_burst():
