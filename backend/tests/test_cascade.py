@@ -1,9 +1,11 @@
 from types import SimpleNamespace
+from dataclasses import replace as _dc_replace
 
 import numpy as np
 import pytest
 
-from app.cascade import SurrogateModel, fit_surrogate
+from app.cascade import (FIT_CACHE_SIZE, SurrogateModel, cached_fit_surrogate,
+                         clear_fit_cache, fit_surrogate, roster_fingerprint)
 from app.deck_search import BossProfile
 
 
@@ -86,3 +88,86 @@ def test_score_combos_ranks_a_favoured_combo_above_a_plain_one():
     scores = model.score_combos([favoured, plain])
     assert scores.shape == (2,)
     assert scores[0] > scores[1]
+
+
+def _investable(slug, tier):
+    """A roster unit carrying the investment fields the fingerprint reads."""
+    return SimpleNamespace(
+        slug=slug, burst_tier=tier, burst_cooldown=20.0, element="Water",
+        weapon="AR", base_stats={"atk": 60000.0, "def": 3000.0, "max_hp": 1e6},
+        skill_values={"s": {"description_value_01": "10"}},
+        weapon_stats={"weapon": "AR", "damage_percent": 100.0},
+        overload_options=[])
+
+
+def _investable_roster():
+    return ([_investable(f"a{i}", 1) for i in range(4)]
+            + [_investable(f"b{i}", 2) for i in range(6)]
+            + [_investable(f"c{i}", 3) for i in range(12)])
+
+
+def test_fingerprint_is_stable_across_roster_order():
+    roster = _investable_roster()
+    assert roster_fingerprint(roster, BOSS) == roster_fingerprint(roster[::-1], BOSS)
+
+
+def test_fingerprint_changes_when_investment_changes():
+    roster = _investable_roster()
+    before = roster_fingerprint(roster, BOSS)
+    roster[0].skill_values = {"s": {"description_value_01": "11"}}
+    assert roster_fingerprint(roster, BOSS) != before
+
+
+def test_fingerprint_changes_when_overload_changes():
+    roster = _investable_roster()
+    before = roster_fingerprint(roster, BOSS)
+    roster[0].overload_options = [{"stat": "atk_percent", "value": 0.1}]
+    assert roster_fingerprint(roster, BOSS) != before
+
+
+def test_fingerprint_changes_with_the_boss():
+    roster = _investable_roster()
+    assert (roster_fingerprint(roster, BOSS)
+            != roster_fingerprint(roster, BossProfile(element="Fire")))
+
+
+def test_cached_fit_reuses_the_model_for_the_same_roster_and_boss():
+    clear_fit_cache()
+    roster = _investable_roster()
+    score, calls = _scorer_favouring({"c0"})
+
+    first = cached_fit_surrogate(roster, BOSS, score)
+    decks_after_first = calls["decks"]
+    second = cached_fit_surrogate(roster, BOSS, score)
+
+    assert second is first                      # same object, not an equal one
+    assert calls["decks"] == decks_after_first  # no second round of simulation
+
+
+def test_cached_fit_refits_when_a_skill_level_changes():
+    clear_fit_cache()
+    roster = _investable_roster()
+    score, calls = _scorer_favouring({"c0"})
+
+    cached_fit_surrogate(roster, BOSS, score)
+    decks_after_first = calls["decks"]
+    roster[0].skill_values = {"s": {"description_value_01": "11"}}
+    cached_fit_surrogate(roster, BOSS, score)
+
+    assert calls["decks"] > decks_after_first
+
+
+def test_cache_evicts_the_oldest_entry_past_its_bound():
+    clear_fit_cache()
+    score, _ = _scorer_favouring({"c0"})
+    rosters = []
+    for i in range(FIT_CACHE_SIZE + 1):
+        roster = _investable_roster()
+        roster[0].slug = f"a0-variant{i}"      # a distinct fingerprint each time
+        rosters.append(roster)
+        cached_fit_surrogate(roster, BOSS, score)
+
+    # the first roster fell out, so asking again re-simulates
+    score2, calls2 = _scorer_favouring({"c0"})
+    cached_fit_surrogate(rosters[0], BOSS, score2)
+    assert calls2["decks"] > 0

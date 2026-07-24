@@ -22,7 +22,10 @@ This module may import deck_search; deck_search must NOT import this one
 cycle). search_best_decks receives a Cascade by injection instead - the same
 shape as its duck-typed `pool` argument.
 """
-from dataclasses import dataclass
+from collections import OrderedDict
+from dataclasses import astuple, dataclass
+import hashlib
+import json
 
 import numpy as np
 
@@ -84,3 +87,61 @@ def fit_surrogate(roster, boss, score_orderings, samples=FIT_SAMPLE_DECKS,
     y = best_ordering_damage(combos, boss, score_orderings)
     beta = fit_ridge(build_matrix(combos, feature_space), np.array(y), lam=lam)
     return SurrogateModel(feature_space=feature_space, beta=beta)
+
+
+# Fits are keyed by content, so nothing ever needs explicit invalidation - a
+# changed skill level or overload simply produces a different key. Bounded so a
+# long-lived server process cannot grow without limit.
+FIT_CACHE_SIZE = 8
+
+_fit_cache = OrderedDict()
+
+
+def roster_fingerprint(roster, boss):
+    """A stable digest of everything that changes a deck's damage.
+
+    Cube effects are assumed uniform per slug (roster._passive_effects), so the
+    slug covers them. Sorted by slug and dumped with sorted keys, so the digest
+    does not depend on roster order or dict insertion order.
+    """
+    units = [
+        {
+            "slug": unit.slug,
+            "burst_tier": unit.burst_tier,
+            "burst_cooldown": getattr(unit, "burst_cooldown", None),
+            "element": getattr(unit, "element", None),
+            "weapon": getattr(unit, "weapon", None),
+            "base_stats": getattr(unit, "base_stats", None),
+            "skill_values": getattr(unit, "skill_values", None),
+            "weapon_stats": getattr(unit, "weapon_stats", None),
+            "overload_options": getattr(unit, "overload_options", None),
+        }
+        for unit in sorted(roster, key=lambda u: u.slug)
+    ]
+    payload = json.dumps({"units": units, "boss": astuple(boss)},
+                         sort_keys=True, default=str)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def cached_fit_surrogate(roster, boss, score_orderings):
+    """fit_surrogate, reusing a previous fit for the same roster state and boss.
+
+    Safe on two counts: the engine has no RNG, so an identical key with a fixed
+    sample seed yields an identical fit; and the model only chooses WHICH decks
+    to simulate, so even a wrong hit would cost ranking quality, never the
+    correctness of a reported damage number.
+    """
+    key = roster_fingerprint(roster, boss)
+    if key in _fit_cache:
+        _fit_cache.move_to_end(key)
+        return _fit_cache[key]
+    model = fit_surrogate(roster, boss, score_orderings)
+    _fit_cache[key] = model
+    _fit_cache.move_to_end(key)
+    while len(_fit_cache) > FIT_CACHE_SIZE:
+        _fit_cache.popitem(last=False)
+    return model
+
+
+def clear_fit_cache():
+    _fit_cache.clear()
