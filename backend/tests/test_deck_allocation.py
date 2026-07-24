@@ -208,8 +208,7 @@ def _quality_scorer(slugs):
 # The other tier-3 ATKs, and every tier-1/tier-2 ATK, only need to be
 # distinct within their own tier (prune_candidate_pool ranks per-tier): a tie
 # would make sorted()'s stability fall back to dict-literal insertion order -
-# an accident, not a real prior - so each tier below is simply numbered in a
-# fixed, explicit, non-hash-derived order.
+# an accident, not a real prior - so each tier below is numbered explicitly.
 _TIER3_ATK = {
     "q3-9": 5000.0,  # highest: guarantees a reference-deck seat
     "q3-7": 4800.0,
@@ -227,10 +226,9 @@ _TIER2_ATK = {f"q2-{i}": 2000.0 + 50.0 * i for i in range(5)}
 
 
 def _quality_roster():
-    """5 tier-1 / 5 tier-2 / 10 tier-3 units, with explicitly assigned
-    base_stats ATK (see _TIER1_ATK / _TIER2_ATK / _TIER3_ATK above) so the
-    fixture's dependence on prune's reference-deck seating is a documented
-    fact, not an accident of whatever a hash happened to produce."""
+    """5 tier-1 / 5 tier-2 / 10 tier-3 units, carrying the base_stats ATK that
+    prune_candidate_pool ranks by (see _TIER1_ATK / _TIER2_ATK / _TIER3_ATK
+    above, where the seating this fixture depends on is spelled out)."""
     tiers = {f"q1-{i}": 1 for i in range(5)}
     tiers.update({f"q2-{i}": 2 for i in range(5)})
     tiers.update({f"q3-{i}": 3 for i in range(10)})

@@ -4,9 +4,12 @@ The cascade can only pay off if it is wired into the phase that dominates. This
 attributes every evaluate_deck call in a zero-base `allocate_decks` to the phase
 that issued it:
 
-  prune       prune_candidate_pool's marginal-contribution passes (itself a
-              reference-deck surrogate - the cascade would replace or precede it)
-  search      scoring the intra-tier orderings of the pruned pool
+  prune       prune_candidate_pool's marginal-contribution passes (a
+              reference-deck surrogate, and the cascade's safety net - it seats
+              its picks first in the widened pool)
+  fit         fitting the cascade's surrogate: sampled decks simulated once per
+              allocation, then reused across every greedy-peel iteration
+  search      scoring the intra-tier orderings the search actually judges
   swap        _swap_pass' hill-climb, which is serial and deadline-capped
   summary     the final per-deck best-ordering polish
 
@@ -23,6 +26,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 
+import app.cascade as cascade  # noqa: E402
 import app.deck_allocation as da  # noqa: E402
 import app.deck_search as ds  # noqa: E402
 from app.deck_search import BossProfile  # noqa: E402
@@ -87,6 +91,10 @@ def main():
     # deck_allocation imported these by value, so both bindings must be replaced.
     da.evaluate_deck = counting_evaluate
     ds.prune_candidate_pool = counter.wrap(ds.prune_candidate_pool, "prune")
+    # cascade imported prune by value too, and widened_pool calls it through
+    # that binding - without this the safety net's cost lands under "search".
+    cascade.prune_candidate_pool = counter.wrap(cascade.prune_candidate_pool, "prune")
+    da.cached_fit_surrogate = counter.wrap(da.cached_fit_surrogate, "fit")
     da._swap_pass = counter.wrap(da._swap_pass, "swap")
     da._best_ordering_summary = counter.wrap(da._best_ordering_summary, "summary")
 
@@ -97,7 +105,7 @@ def main():
     total = sum(counter.counts.values())
     print(f"\ntotal simulations {total} in {elapsed:.0f}s\n", flush=True)
     print(f"{'phase':<10}{'sims':>9}{'share':>9}{'seconds':>10}", flush=True)
-    for phase in ("prune", "search", "swap", "summary"):
+    for phase in ("prune", "fit", "search", "swap", "summary"):
         sims = counter.counts.get(phase, 0)
         print(f"{phase:<10}{sims:>9}{sims / total:>8.1%}"
               f"{counter.seconds.get(phase, 0.0):>10.0f}", flush=True)
