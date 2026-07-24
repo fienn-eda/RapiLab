@@ -258,7 +258,12 @@ from app.skill_rules.miranda import (
     build_miranda_base_rules,
     build_miranda_rules,
 )
-from app.skill_rules.moran import build_moran_rules, build_fair_and_square_weapon_mode_schedule
+from app.skill_rules.moran import (
+    build_bring_it_on_per_shot_rules,
+    build_fair_and_square_weapon_mode_schedule,
+    build_moran_base_rules,
+    build_moran_rules,
+)
 from app.skill_rules.nayuta import (
     asceticism_burst_percent,
     build_memory_incineration_scheduled_nukes,
@@ -547,7 +552,8 @@ _BUILDERS = {
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
     "mast-romantic-maid": lambda sv: (build_mast_rules(sv), None),
     "mint": lambda sv: (build_mint_rules(sv), None),
-    "moran": lambda sv: (build_moran_rules(sv), None),
+    "moran": lambda sv: (build_moran_base_rules(sv), None),
+    "moran-signature": lambda sv: (build_moran_rules(sv), None),
     "nayuta": lambda sv: (build_nayuta_rules(sv), asceticism_burst_percent(sv)),
     "noir": lambda sv: (build_noir_rules(sv), finale_burst_percent(sv)),
     "prika": lambda sv: (build_prika_rules(sv), None),
@@ -733,7 +739,10 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "zwei-signature": lambda sv: build_overcharge_weapon_mode_schedule(sv, slug="zwei-signature"),
     "laplace": lambda sv: build_buster_weapon_mode_schedule(sv),  # Laplace Buster Normal Damage, 5s ~46 ticks
     "takina-inoue": lambda sv: build_suppression_initiated_weapon_mode_schedule(sv),  # Suppression Initiated, 25 measured true-damage shots
-    "moran": lambda sv: build_fair_and_square_weapon_mode_schedule(sv),  # Fair and Square, unlimited-ammo SMG at canonical 20/s
+    # Fair and Square: unlimited-ammo SMG at the canonical 20/s. Each slug
+    # anchors on its own burst times.
+    "moran": lambda sv: build_fair_and_square_weapon_mode_schedule(sv),
+    "moran-signature": lambda sv: build_fair_and_square_weapon_mode_schedule(sv, slug="moran-signature"),
     "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
     "laplace-ultimate-hero": lambda sv: build_laplace_transform_schedule(sv),  # Warm Up transform, magazine-length window at SMG cadence
 }
@@ -812,6 +821,8 @@ _PER_SHOT_RULE_BUILDERS = {
         build_frontline_command_per_shot_rules(sv["frontline_command"])
         + build_fire_away_per_shot_rules(sv["fire_away"])
     ),
+    "moran": lambda sv: build_bring_it_on_per_shot_rules(sv),
+    "moran-signature": lambda sv: build_bring_it_on_per_shot_rules(sv),
     "privaty": lambda sv: build_ld_assault_base_per_shot_rules(sv),
     "privaty-signature": lambda sv: build_ld_assault_per_shot_rules(sv),
     "zwei-signature": lambda sv: build_pierce_equation_per_shot_rules(sv),

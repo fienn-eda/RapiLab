@@ -70,6 +70,7 @@ SLUG_ALIASES = {
     "julia-signature": "julia",
     "laplace-signature": "laplace",
     "miranda-signature": "miranda",
+    "moran-signature": "moran",
     "phantom-signature": "phantom",
     "privaty": "privaty-nikke",
     "privaty-signature": "privaty-nikke",
