@@ -4,8 +4,9 @@ from dataclasses import replace as _dc_replace
 import numpy as np
 import pytest
 
-from app.cascade import (FIT_CACHE_SIZE, SurrogateModel, cached_fit_surrogate,
-                         clear_fit_cache, fit_surrogate, roster_fingerprint)
+from app.cascade import (FIT_CACHE_SIZE, WIDE_TIER_CAPS, SurrogateModel,
+                         cached_fit_surrogate, clear_fit_cache, fit_surrogate,
+                         roster_fingerprint, widened_pool)
 from app.deck_search import BossProfile
 
 
@@ -171,3 +172,65 @@ def test_cache_evicts_the_oldest_entry_past_its_bound():
     score2, calls2 = _scorer_favouring({"c0"})
     cached_fit_surrogate(rosters[0], BOSS, score2)
     assert calls2["decks"] > 0
+
+
+class _FakeModel:
+    """Coefficients straight from a dict, so pool tests don't need a real fit."""
+
+    def __init__(self, values):
+        self.values = values
+
+    def coefficient(self, slug):
+        return self.values.get(slug, 0.0)
+
+
+def test_widened_pool_keeps_every_pruned_unit(monkeypatch):
+    roster = _roster()
+    pruned = [roster[0], roster[4], roster[10], roster[11], roster[12]]
+    monkeypatch.setattr("app.cascade.prune_candidate_pool",
+                        lambda r, b, p=None: pruned)
+
+    out = widened_pool(roster, BOSS, _FakeModel({}))
+
+    assert set(u.slug for u in pruned) <= set(u.slug for u in out)
+
+
+def test_widened_pool_respects_the_tier_caps(monkeypatch):
+    roster = _roster(n1=8, n2=10, n3=20)
+    monkeypatch.setattr("app.cascade.prune_candidate_pool",
+                        lambda r, b, p=None: list(r)[:5])
+
+    out = widened_pool(roster, BOSS, _FakeModel({}))
+
+    counts = {t: sum(1 for u in out if u.burst_tier == t) for t in (1, 2, 3)}
+    assert counts == WIDE_TIER_CAPS
+
+
+def test_widened_pool_fills_remaining_seats_by_coefficient_within_tier(monkeypatch):
+    roster = _roster(n1=8, n2=10, n3=20)
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    # c19 is the best tier-3 unit; a7 the best tier-1. Both must be picked even
+    # though a tier-blind sort by coefficient would fill up on tier 3 alone.
+    model = _FakeModel({f"c{i}": i for i in range(20)} | {"a7": 1000.0})
+
+    out = widened_pool(roster, BOSS, model)
+    slugs = {u.slug for u in out}
+
+    assert "c19" in slugs and "c8" in slugs   # top 12 of tier 3
+    assert "c7" not in slugs                  # 13th, cut
+    assert "a7" in slugs
+
+
+def test_widened_pool_returns_units_in_tier_order(monkeypatch):
+    roster = _roster()
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    out = widened_pool(roster, BOSS, _FakeModel({}))
+    tiers = [u.burst_tier for u in out]
+    assert tiers == sorted(tiers)
+
+
+def test_widened_pool_handles_a_roster_smaller_than_the_caps(monkeypatch):
+    roster = _roster(n1=1, n2=1, n3=3)
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    out = widened_pool(roster, BOSS, _FakeModel({}))
+    assert len(out) == 5

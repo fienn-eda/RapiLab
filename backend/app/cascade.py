@@ -32,6 +32,7 @@ import numpy as np
 from app.surrogate import (best_ordering_damage, build_matrix, fit_ridge,
                            make_feature_space, predict,
                            sample_feasible_combinations)
+from app.deck_search import prune_candidate_pool
 
 # Decks sampled and truly simulated to fit the model. 200 comfortably exceeds
 # the 79 unit columns a full 78-unit roster produces, which is what a
@@ -145,3 +146,31 @@ def cached_fit_surrogate(roster, boss, score_orderings):
 
 def clear_fit_cache():
     _fit_cache.clear()
+
+
+def widened_pool(roster, boss, model, pool=None, caps=WIDE_TIER_CAPS):
+    """The cascade's candidate pool: prune's picks, widened by coefficient.
+
+    prune_candidate_pool goes in first because it is a genuinely different
+    heuristic - marginal contribution measured in a reference deck, not a fitted
+    coefficient - so the two filters' blind spots do not coincide. That is the
+    safety net: a deck the surrogate undervalues can still reach the shortlist.
+
+    Seats are filled PER TIER. A legal deck needs all three burst tiers, so a
+    tier-blind sort by coefficient could starve one of them entirely.
+    """
+    chosen = {tier: [] for tier in caps}
+    taken = set()
+
+    def offer(unit):
+        bucket = chosen.get(unit.burst_tier)
+        if bucket is None or unit.slug in taken or len(bucket) >= caps[unit.burst_tier]:
+            return
+        bucket.append(unit)
+        taken.add(unit.slug)
+
+    for unit in prune_candidate_pool(roster, boss, pool):
+        offer(unit)
+    for unit in sorted(roster, key=lambda u: model.coefficient(u.slug), reverse=True):
+        offer(unit)
+    return [unit for tier in sorted(chosen) for unit in chosen[tier]]
