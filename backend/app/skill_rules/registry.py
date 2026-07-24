@@ -178,6 +178,7 @@ from app.skill_rules.laplace import (
     build_hero_bomber_per_shot_rules,
     laplace_buster_burst_percent,
 )
+from app.skill_rules import flora_signature
 from app.skill_rules import laplace_signature
 from app.skill_rules.laplace_ultimate_hero import (
     build_laplace_stage_nukes,
@@ -283,6 +284,7 @@ from app.skill_rules.snow_white_heavy_arms import (
     build_seven_dwarves_per_shot_rules,
     build_snow_white_heavy_arms_rules,
 )
+from app.skill_rules.flora import build_flora_rules
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules import sugar_signature
 from app.skill_rules.sugar import build_sugar_rules
@@ -523,6 +525,10 @@ _BUILDERS = {
     "soda-twinkling-bunny": lambda sv: ([], onward_soda_burst_percent(sv)),
     "tove": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
+    "flora": lambda sv: (build_flora_rules(sv), None),  # burst is heal + buffs, no nuke
+    "flora-signature": lambda sv: (
+        flora_signature.build_flora_signature_rules(sv), None,
+    ),
     "sugar": lambda sv: (build_sugar_rules(sv), None),  # burst is buffs-only, no nuke
     "sugar-signature": lambda sv: (
         sugar_signature.build_sugar_signature_rules(sv), None,

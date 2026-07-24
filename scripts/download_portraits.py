@@ -65,6 +65,7 @@ SLUG_ALIASES = {
     "diesel-winter-sweets-highlight": "diesel-winter-sweets",
     "diesel-winter-sweets-intro": "diesel-winter-sweets",
     "drake-signature": "drake",
+    "flora-signature": "flora",
     "julia-signature": "julia",
     "laplace-signature": "laplace",
     "privaty": "privaty-nikke",

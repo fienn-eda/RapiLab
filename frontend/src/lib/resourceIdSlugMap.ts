@@ -71,6 +71,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   390: 'zwei', // Zwei
   391: 'ein', // Ein
   403: 'quency-escape-queen', // Quency: Escape Queen
+  411: 'flora', // Flora — dual-slot base; see SIGNATURE_OWNED
   431: 'volume', // Volume
   470: 'red-hood', // Red Hood (16 = Rapi: Red Hood, separately encoded)
   471: 'snow-white-heavy-arms', // Snow White: Heavy Arms
@@ -109,7 +110,9 @@ export const SIGNATURE_OWNED: ReadonlySet<number> = new Set([
 // Base slugs that have a separate "-signature" encoding. Only these can be promoted.
 // The backend drift test asserts this equals the encoded base/-signature pairs, so a
 // newly encoded dual-slot unit fails the suite until it is added here.
-export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set(['drake', 'julia', 'laplace', 'sugar'])
+export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set([
+  'drake', 'flora', 'julia', 'laplace', 'sugar',
+])
 
 // Single entry point: identity lookup, then signature promotion when owned.
 export const resolveSlugForUnit = (

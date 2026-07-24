@@ -1,0 +1,102 @@
+"""Flora's Favorite Item (애장품) build, slug "flora-signature" - a SEPARATE
+roster entry from base Flora (slug "flora"), per the dual-slot convention
+(2026-07-12). The Favorite Item turns a pure healer into a real ATK buffer via a
+combo that is entirely self-contained - it needs no incoming enemy damage.
+
+**The combo** (Fienn's reading of the kit, 2026-07-24), all anchored to Burst
+Stage 2 entry:
+1. Petunia's Favorite Item bullet raises allies' Max HP by 15.01% of Flora's own
+   Max HP **without restoring HP**, so their CURRENT HP is unchanged.
+2. That drops every affected ally's HP RATIO below 90%, which is exactly Iris's
+   first bullet's trigger ("an adjacent ally's HP drops to 90% or below").
+3. Iris places a shield, which is the trigger of the Favorite Item's own Iris
+   bullet: ATK +45.12% of Flora's ATK for 10 sec.
+
+So the ATK buff is neither "always on" nor unreachable - it rides the same
+per-cycle schedule as the Max-HP bullet, and is encoded on that trigger.
+
+Weapon stats come from base Flora's ShiftyPad file via the manifest's
+`weapon_source`, since ShiftyPad exposes no dollskills and dotgg is dead.
+
+Modeled (DPS-relevant):
+- Iris (dollskills[1]): squad True Damage +30.97%, permanent - same ruling as the
+  base build (allies are always at max HP in the sim, Fienn 2026-07-24).
+- Petunia (dollskills[0]): squad Max HP +15.01% of Flora's Max HP for 2 sec on
+  entering Burst Stage 2. `flat_max_hp` stopped being inert on 2026-07-24 - it
+  feeds every "ATK ▲ X% of the caster's Max HP" conversion - so this pays out
+  whenever the deck holds such a consumer.
+- Iris (dollskills[1]), the shield bullet: squad ATK +45.12% of Flora's ATK for
+  10 sec, on the same Burst Stage 2 entry per the combo above.
+- Secret Garden (dollskills[2], her burst, cd 40): squad True Damage +42.39%
+  AND squad ATK +85.86% of Flora's ATK, both 10 sec. No damage, burst percent
+  is None.
+
+Both Stage-2 bullets use `ally_burst_activate` + `burst_stage_entered(2)`, not
+`own_burst_activate`: entering Burst Stage 2 is a property of the STAGE, so the
+bullets must still fire in a cycle where another Burst-2 ally takes the slot.
+(In the engine's auto-mode cycle all three tiers fire at the same instant, so
+there is no representable gap between "stage entered" and "burst used" - the
+distinction that matters is WHO bursts, not when.)
+
+"Allies in the Peace of Mind state" is Petunia's self + both adjacent allies;
+positional targeting has no scope model, so these land as `squad` (Rouge's
+precedent).
+
+Not modeled / skipped:
+- Every heal, shield and Incoming Healing bullet - survivability, not damage.
+  The shield is still *causally* modeled: it is the link in the combo above,
+  it just contributes no shield_amount effect of its own.
+- Petunia's "after landing 100 normal attacks, all Electric Code allies:
+  Increases the stack count of stackable buffs by 1" - the engine has no notion
+  of incrementing another unit's stackable-buff count. Same defer as the base.
+"""
+from app.skill_rules._helpers import buff_rule
+from app.squad_engine import burst_stage_entered
+
+
+SKILL_VALUE_MANIFESTS = {
+    "flora-signature": {
+        "source": "lootandwaifus",
+        "weapon_source": "shiftypad",
+        "data_slug": "flora",
+        "test_module": "test_skill_rules_flora_signature",
+        "keys": {
+            "petunia": ("dollskills", 0),
+            "iris": ("dollskills", 1),
+            "secret_garden": ("dollskills", 2),
+        },
+    },
+}
+
+BURST_STAGE = 2  # she is Burst 2; her Petunia bullet keys off entering that stage
+
+
+def build_flora_signature_rules(values):
+    petunia = values["petunia"]
+    iris = values["iris"]
+    garden = values["secret_garden"]
+    caster_atk = values["caster_atk"]
+    caster_max_hp = values["caster_max_hp"]
+    max_hp_bonus = caster_max_hp * float(petunia["description_value_07"]) / 100
+    max_hp_duration = float(petunia["description_value_08"])
+    iris_true_damage = float(iris["description_value_04"]) / 100
+    shield_atk = caster_atk * float(iris["description_value_06"]) / 100
+    shield_atk_duration = float(iris["description_value_07"])
+    burst_true_damage = float(garden["description_value_02"]) / 100
+    burst_true_duration = float(garden["description_value_03"])
+    burst_atk = caster_atk * float(garden["description_value_04"]) / 100
+    burst_atk_duration = float(garden["description_value_05"])
+    stage_two = burst_stage_entered(BURST_STAGE)
+    return [
+        buff_rule("battle_start", [
+            ("true_damage_up", iris_true_damage, "squad", None),
+        ]),
+        buff_rule("ally_burst_activate", [
+            ("flat_max_hp", max_hp_bonus, "squad", max_hp_duration),
+            ("flat_atk", shield_atk, "squad", shield_atk_duration),
+        ], condition=stage_two),
+        buff_rule("own_burst_activate", [
+            ("true_damage_up", burst_true_damage, "squad", burst_true_duration),
+            ("flat_atk", burst_atk, "squad", burst_atk_duration),
+        ]),
+    ]
