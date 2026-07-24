@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 애장품 소유는 로스터가 답한다 — `SIGNATURE_OWNED`는 폴백으로 강등
+- Date: 2026-07-24
+- Context: 듀얼 슬롯 유닛이 base로 싸울지 `-signature`로 싸울지는 **유저별 투자**인데, `resolveSlugForUnit`은 프론트엔드 상수 `SIGNATURE_OWNED`(개발자 계정의 Laplace·Drake 2개)로 답하고 있었다. 공개 서비스로 가면 모든 유저가 그 둘을 애장품 보유로 승격받고, 나머지 듀얼 슬롯 5쌍은 도달 불가였다. 한편 블라블라링크 페이로드는 이미 유닛별 `favorite_item_tid`를 싣고 있었고 `roster_assembly`가 그걸 스탯 계산에 쓰고 있었다 — **진짜 데이터가 파이프라인 안에 있는데 슬러그 결정에만 안 쓰이는** 상태.
+- Alternatives considered: (a) `SIGNATURE_OWNED`에 유저별 id를 계속 손으로 추가 — 공개 서비스에서 성립하지 않음. (b) 수집기(collect.js)가 애장품을 스크레이프하도록 확장 — ShiftyPad 페이지는 수집품 슬롯을 노출하지 않아 불가. (c) 백엔드가 이미 가진 `favorite_item_tid`를 소유 플래그로 함께 내보내고 프론트가 따른다. 채택.
+- Decision: (c). `assemble_unit`이 `favorite_item: owns_favorite_item(tid)`를 roster.json에 싣고, `resolveSlugForUnit(resourceId, ownsFavoriteItem?)`이 그걸 우선한다. `SIGNATURE_OWNED`는 **소유를 보고할 수 없는 로스터 전용 폴백**(수집기 스크레이프, 필드 이전 roster.json)으로 남는다.
+- Why: 플래그가 `undefined`일 때만 폴백을 본다. 명시적 `false`는 반드시 강등시켜야 한다 — 그러지 않으면 폴백 목록(개발자 계정)이 그 유닛을 소유하지 않은 모든 유저의 추천에 샌다.
+- Consequences: 싱크 경로는 유저 로스터대로 7쌍 전부 자동 판정된다. 파일 임포트 경로는 폴백 그대로. **이 결정으로 해결되지 않는 것**: `helm`·`miranda`·`moran`·`privaty`·`tove`·`zwei` 6유닛은 매니페스트가 base 슬러그 아래에서 `dollskills`를 읽어 애장품 빌드를 박아넣었고, 승격할 `-signature` 슬러그가 없어 자동 판정이 무력하다(애장품 미보유 유저 과대평가). `scripts/audit_favorite_item_encodings.py`가 이 현황을 감시한다.
+
 ## Phantom base의 Thief's Vision 최대스택 관련 효과 전체 defer — 엔진 한계가 아니라 스킬 자체의 구조적 교착 (Fienn 확인)
 - Date: 2026-07-24
 - Context: Phantom base의 Thief's Dagger 스택은 유일한 소스가 "Calling Card 상태가 아닌 적을 노멀공격으로 때릴 때"인데, 그 공격 자체가 대상에게 Calling Card를 5초간 건다. 대거 지속(5초)이 Calling Card 지속과 정확히 같아, 다음 스택을 얻을 수 있는 시점(대상이 다시 Calling Card 없이 노출되는 순간)에 이미 이전 스택이 만료 — 영원히 1스택에 머물고 최대스택 트리거(Thief's Vision의 84.33% 추가딜, 스택형 Distributed Damage +12.86%)는 절대 발동하지 않는다.

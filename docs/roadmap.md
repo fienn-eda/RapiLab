@@ -595,6 +595,28 @@
 - [x] **표시 개선: `core_level`이 임포트 시 항상 0으로 보인다 — 완료.** grade/core 배지
       (`InvestmentBadge`, Task 3)가 실제 투자 표시를 맡고, 아무도 읽지 않던 입력
       `core_level`은 제거(Task 4, `docs/decisions.md` 참고).
+- [x] **애장품 소유 자동 판정 — 완료 (2026-07-24).** 듀얼 슬롯 유닛이 base로 싸울지
+      `-signature`로 싸울지는 유저별 투자인데, `resolveSlugForUnit`이 개발자 계정을 담은
+      손관리 상수 `SIGNATURE_OWNED`(Laplace·Drake 2개)로 답하고 있었다. 모든 유저가 그
+      둘을 애장품 보유로 승격받고, 나머지 듀얼 슬롯 5쌍(flora·julia·phantom·rosanna·
+      sugar)은 도달 불가였다. 블라블라링크 페이로드가 이미 유닛별 `favorite_item_tid`를
+      싣고 `roster_assembly`가 스탯에 쓰고 있었으므로, `assemble_unit`이
+      `owns_favorite_item()`을 `favorite_item` 플래그로 함께 내보내고 프론트가 그걸
+      따른다. `SIGNATURE_OWNED`는 **소유를 보고할 수 없는 로스터 전용 폴백**으로 남는다
+      (수집기 스크레이프는 ShiftyPad 페이지를 읽어 수집품 슬롯을 못 본다). 플래그가
+      **없을 때만** 폴백을 보고, 명시적 `false`는 강등시킨다 — 안 그러면 개발자 계정이
+      모든 유저의 추천에 샌다.
+- [ ] **애장품 빌드가 base 슬러그에 박힌 6유닛 분리** — `helm` · `miranda` · `moran` ·
+      `privaty` · `tove` · `zwei`. 매니페스트가 base 슬러그 아래에서 `dollskills`를 읽어
+      **애장품 없는 유저를 과대평가**한다(근거 주석이 전부 "Fienn's X has hers
+      completed"). 위 자동 판정은 이들에게 무력하다 — 승격할 `-signature` 슬러그 자체가
+      없기 때문. 각 유닛을 base(`skills`) + `-signature`(`dollskills`) 쌍으로 쪼개야
+      하며, base 쪽은 사실상 신규 인코딩이다. 현황 확인:
+      `python scripts/audit_favorite_item_encodings.py` (조치 필요 시 종료코드 1).
+- [ ] **애장품 판정 불가 2유닛** — `laplace-ultimate-hero` · `maxwell-ordinary-mechanic`.
+      둘 다 ShiftyPad 소스인데 그 스키마엔 `dollskills` 키가 아예 없고, 동일 슬러그의
+      lootandwaifus 파일도 없어 애장품 유무를 **데이터로 답할 수 없다**(부재 증거 아님).
+      lootandwaifus에서 재수집하면 해소된다.
 - [ ] **개인정보 처리방침** — 공개 배포 전 필요(설계 스펙에 명시, 법률 검토는 범위 밖).
 - [x] **디렉토리 스냅샷 갱신 루틴 — 완료.** 매일 19시 작업 스케줄러가 공개 디렉토리를
       헤드리스로 받아 커밋된 스냅샷과 비교하며, 신규 SSR 또는 실패 시에만 토스트를 띄운다.
