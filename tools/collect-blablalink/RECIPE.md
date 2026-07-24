@@ -89,10 +89,12 @@ Two things worth knowing if you touch the collector's output shape:
   without one falls back to a raw name-derived slug and is reported as unsupported.
 - **`resource_id` cannot distinguish base from signature.** A unit with a Favorite Item
   (애장품) shares ONE `resource_id` across both encoded forms — Drake is 101 either way —
-  so ownership lives in a separate `SIGNATURE_OWNED` set, not in the map. If this
-  collector ever starts capturing the **Collection tab** (it currently visits only
-  Equipment/Skill/Cube), the `favorite_rare` grade there is the intended signal for
-  populating that set automatically instead of by hand — see the design spec.
+  so ownership travels as a per-unit `favorite_item` flag, not in the map. The sync
+  endpoint derives that flag from `favorite_item_tid` (2xxxxx = 애장품). **This
+  collector cannot**: it reads ShiftyPad pages, which show the collectible's name but
+  not its grade, so a scraped roster.json omits the flag and every dual-slot unit
+  stays on its base slug. Capturing the **Collection tab** (`favorite_rare`) would
+  close that gap; until then, scrape users edit the slug by hand.
 
 Details: `docs/superpowers/specs/2026-07-18-roster-resource-id-slug-map-design.md`,
 `docs/decisions.md`.

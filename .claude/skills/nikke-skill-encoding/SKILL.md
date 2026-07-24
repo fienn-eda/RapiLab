@@ -23,14 +23,27 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
 
 ## Workflow
 
-1. **Find the slug and fetch data.** Use **lootandwaifus.com first** (curl
-   with a browser User-Agent — WebFetch gets HTTP 403 there), falling back to
-   `api.dotgg.gg` (no auth) if it's unreachable. See
-   `references/character-data-sources.md` for both sites' endpoints, slug
-   conventions, and the `skills` vs `dollskills` (signature weapon)
-   distinction — **ask the user which the character should use** if it has a
-   signature weapon, since that changes the numbers and sometimes adds whole
-   new effects.
+1. **Find the slug and fetch data.**
+   - **Non-signature units (`skills`, no dollskills) — ShiftyPad first.** This is
+     the canonical source for a unit the roster loader must also assemble
+     (weapon stats + skill base values in one fetch, so no manual weapon entry;
+     dotgg is dead for anything released after 2026-05). Run
+     `cd tools/collect-blablalink && node collect.js --nikke <rid|name> --headless`
+     (public data, no login — it bundles playwright-core), then normalize with
+     `python scripts/normalize_shiftypad_raw.py <rid>:<slug>` →
+     `data/shiftypad/<slug>.json`. The manifest (step 9) then declares
+     `source: "shiftypad"`. See `docs/new-nikke-detection.md`.
+   - **Still fetch lootandwaifus for the effect text.** ShiftyPad's normalized
+     output is value slots; the free-text descriptions that tell you what each
+     slot *means* (and the portrait for step 11) come from lootandwaifus. Fetch
+     the character page with curl + a browser User-Agent (WebFetch gets HTTP 403).
+   - **Signature (`dollskills`) builds** stay on the lootandwaifus/dotgg path +
+     weapon stub (ShiftyPad doesn't expose dollskills) — **ask the user which
+     build** when a unit has a signature weapon, since it changes the numbers and
+     sometimes adds whole new effects.
+
+   See `references/character-data-sources.md` for both sites' endpoints, slug
+   conventions, and the `skills` vs `dollskills` distinction.
 
 2. **Dump the values you'll encode.** Get the max-level values per skill (and
    for dotgg, the raw `description_value_NN` slots + description text; for
@@ -122,7 +135,9 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    both encoded), `test_dual_slot_bases_match_encoded_pairs` also fails: add the
    base to `DUAL_SLOT_BASES` in the same frontend file. The map itself must keep
    pointing at the **base** slug — signature promotion is per-user investment and
-   lives in `SIGNATURE_OWNED`, never in the identity map.
+   comes from the roster's per-unit `favorite_item` flag, never from the identity
+   map. Nothing else may promote: a roster that cannot report ownership stays on
+   the base slug.
 
 9. **Declare the skill-value manifest** so the roster loader can assemble the
    unit from local data files at any skill level: add a `SKILL_VALUE_MANIFESTS`

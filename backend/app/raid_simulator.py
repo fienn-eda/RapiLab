@@ -754,6 +754,11 @@ def simulate_raid(
         charge_time_reduction_sec_at = lambda t, target=target: registry.total_for(
             "charge_time_reduction_sec", target, t
         )
+        # 스케줄 함수가 라이브 최대 장탄을 읽을 수 있게 이 슬러그용 조회를 노출한다
+        # (Laplace: Ultimate Hero의 변신 창은 탄창을 다 비우는 시간이라 [최대 장탄
+        # 수 증가]에 비례한다 - 상수로 박으면 육성 상태가 다른 유저에게 틀린 주기가
+        # 나온다). 슬러그마다 덮어쓰므로 스케줄 함수 안에서만 유효하다.
+        context.max_ammo_percent_at = max_ammo_percent_at
         schedule_fn = weapon_mode_schedules.get(slug)
         segments = schedule_fn(context, fight_duration) if schedule_fn is not None else []
         shot_records = generate_segmented_shots(

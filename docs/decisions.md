@@ -31,6 +31,70 @@ catalog, see the `nikke-skill-encoding` skill, not here.
   - **속도 이득(37x)과 품질(recall)의 측정 지점이 다르다.** 37x는 78유닛에서의 *시뮬 예산 비율* 실측이지만, recall(top-20이 최적을 회수하는지)은 41유닛에서만 5시드로 검증했다. 78유닛은 조합 공간이 훨씬 넓어 같은 K=20이 통할지는 **미검증**이다 — Phase 2 착수 시 78유닛 recall 재확인이 첫 과제.
   - 산출물: `backend/app/closed_form.py`(+21 테스트), `backend/app/surrogate.py`의 `include_pairs`, `scripts/validate_surrogate_recall.py`(`--surrogate`/`--no-pairs`/`--fit-subset`, 데미지 회수 지표), `scripts/measure_cascade_budget.py`, `scripts/measure_unmodeled_damage_share.py`. 자세한 엔진 관찰은 `docs/insights.md`("Deck search"). 커밋 8de1199.. (branch `wip/simpool-optimization`).
 
+## 애장품 빌드를 base 슬러그에서 분리 — 6유닛, 그리고 "base가 훨씬 약하다"는 사실
+- Date: 2026-07-24
+- Context: `helm`·`miranda`·`moran`·`privaty`·`tove`·`zwei` 여섯 유닛은 매니페스트가 **base 슬러그 아래에서 `dollskills`(애장품 배열)를 읽고** 있었다. 근거 주석은 전부 "Fienn's X has hers completed" — 인코딩한 사람의 계정에는 맞지만 다른 모든 유저에게는 틀렸다. [[애장품 소유는 로스터가 답한다]]로 자동 판정을 넣어도 이들은 승격할 `-signature` 슬러그 자체가 없어 무력했다.
+- Alternatives considered: (a) 그대로 두고 애장품 보유를 기본 가정 — 공개 서비스에서 성립하지 않음. (b) base 값으로 덮어쓰기(단일 슬러그 유지) — 애장품 보유 유저를 과소평가하고, 이미 인코딩된 애장품 지식을 버림. (c) 여섯 유닛 모두 base + `-signature` 듀얼 슬롯으로 분리. 채택.
+- Decision: (c). 유닛당 모듈 하나가 매니페스트 2개를 갖는 `drake.py` 패턴. 소스는 현행 유지(dotgg 4 / lootandwaifus 2)라 슬롯 재전사 위험 0. 감사 스크립트 BAKED 6 → 0, PAIRED 7 → 13.
+- Why it mattered more than expected: 차이가 숫자 몇 %가 아니었다. Helm의 버스트는 base 1237.5% vs 애장품 8236.8%(**6.7배**), Privaty는 457.87% vs 1407.64%, Moran은 **버퍼 역할 전체**(버스트 쿨감 + 스쿼드 flat ATK)가 애장품 전용, Miranda의 Health Up!은 base에서 **전부 Hit Rate(inert)**라 per-shot 룰이 아예 없다. 즉 애장품은 "수치 강화"가 아니라 **역할을 바꾸는 업그레이드**이고, 그걸 base에 박아두면 추천이 근본적으로 왜곡된다.
+- 재사용 가능 여부는 유닛마다 갈렸다 — 슬롯 **의미**가 같으면 빌더를 공유하고(Tove는 전부 동일, Helm은 01–03만 동일), 어긋나면 전용 빌더를 썼다. Zwei가 함정이었다: lootandwaifus는 값을 렌더 텍스트 좌→우로 번호 매기는데 애장품 Overcharge Formula만 상태 이름 "Pierce Attacks 101"을 말해서 **리터럴 101이 슬롯 05를 먹고** 스쿼드 Pierce를 06/07로 민다. base는 05/06이라, 고정 인덱스로 공유했으면 버프 대신 지속시간을 읽었을 것이다.
+- Consequences: 무기변형 스케줄 2건(`zwei`, `moran`)이 `context.burst_times.get("<slug>")`를 하드코딩하고 있어 슬러그 파라미터로 바꿨다 — 안 고쳤으면 signature 빌드가 자기 버스트 시각을 못 찾아 **변형이 조용히 사라진다**(`laplace_signature` 선례). Moran의 Bring It On! 라이더는 이번에 신규 인코딩했다(`every_during_segment`). 큐브 재장전 골든핀은 그 덱에 Helm이 있어 재기준선(1124M → 859M). **남은 갭(분리 이전부터 존재, 문서화만):** Moran 애장품의 "Fervor: 버스트 쿨 ▼20초 상시" 미모델, Tove의 Emergency-Crafted Bullets 전체 미모델.
+
+## 애장품 소유는 로스터가 답한다 — `SIGNATURE_OWNED`는 폴백으로 강등
+- Date: 2026-07-24
+- Context: 듀얼 슬롯 유닛이 base로 싸울지 `-signature`로 싸울지는 **유저별 투자**인데, `resolveSlugForUnit`은 프론트엔드 상수 `SIGNATURE_OWNED`(개발자 계정의 Laplace·Drake 2개)로 답하고 있었다. 공개 서비스로 가면 모든 유저가 그 둘을 애장품 보유로 승격받고, 나머지 듀얼 슬롯 5쌍은 도달 불가였다. 한편 블라블라링크 페이로드는 이미 유닛별 `favorite_item_tid`를 싣고 있었고 `roster_assembly`가 그걸 스탯 계산에 쓰고 있었다 — **진짜 데이터가 파이프라인 안에 있는데 슬러그 결정에만 안 쓰이는** 상태.
+- Alternatives considered: (a) `SIGNATURE_OWNED`에 유저별 id를 계속 손으로 추가 — 공개 서비스에서 성립하지 않음. (b) 수집기(collect.js)가 애장품을 스크레이프하도록 확장 — ShiftyPad 페이지는 수집품 슬롯을 노출하지 않아 불가. (c) 백엔드가 이미 가진 `favorite_item_tid`를 소유 플래그로 함께 내보내고 프론트가 따른다. 채택.
+- Decision: (c). `assemble_unit`이 `favorite_item: owns_favorite_item(tid)`를 roster.json에 싣고, `resolveSlugForUnit(resourceId, ownsFavoriteItem = false)`이 그걸 **유일한 승격 근거**로 쓴다. `SIGNATURE_OWNED`는 **완전히 삭제**했다(Fienn 결정 2026-07-24: 손관리 폐기). 로스터가 침묵하면 base다.
+- Why: 침묵을 "미보유"로 기본값 잡는 게 비대칭적으로 안전하다 — 잘못 승격하면 보유하지도 않은 투자를 추천에 반영해 딜을 부풀리지만, 승격을 놓치면 저평가에 그치고 슬러그가 UI에서 편집 가능해 손으로 복구된다. 폴백을 남겼다면 개발자 계정의 Laplace·Drake가 계속 코드에 박혀 그걸 소유하지 않은 모든 유저의 추천에 샜을 것이다.
+- Consequences: 싱크 경로는 유저 로스터대로 7쌍 전부 자동 판정된다. **수집기 스크레이프 경로는 승격이 아예 불가** — ShiftyPad 페이지는 수집품 **이름**("Coffee Commander Doll Ltd.")만 노출하고 등급을 안 보여줘 애장품 여부를 만들 수 없다(이름→등급 표를 새로 만드는 건 근거 없는 추측). Collection 탭(`favorite_rare`) 캡처가 그 갭의 해법으로 남는다. **이 결정으로 해결되지 않는 것**: `helm`·`miranda`·`moran`·`privaty`·`tove`·`zwei` 6유닛은 매니페스트가 base 슬러그 아래에서 `dollskills`를 읽어 애장품 빌드를 박아넣었고, 승격할 `-signature` 슬러그가 없어 자동 판정이 무력하다(애장품 미보유 유저 과대평가). Fienn이 분리를 지시(2026-07-24). `scripts/audit_favorite_item_encodings.py`가 현황을 감시한다.
+
+## Phantom base의 Thief's Vision 최대스택 관련 효과 전체 defer — 엔진 한계가 아니라 스킬 자체의 구조적 교착 (Fienn 확인)
+- Date: 2026-07-24
+- Context: Phantom base의 Thief's Dagger 스택은 유일한 소스가 "Calling Card 상태가 아닌 적을 노멀공격으로 때릴 때"인데, 그 공격 자체가 대상에게 Calling Card를 5초간 건다. 대거 지속(5초)이 Calling Card 지속과 정확히 같아, 다음 스택을 얻을 수 있는 시점(대상이 다시 Calling Card 없이 노출되는 순간)에 이미 이전 스택이 만료 — 영원히 1스택에 머물고 최대스택 트리거(Thief's Vision의 84.33% 추가딜, 스택형 Distributed Damage +12.86%)는 절대 발동하지 않는다.
+- Alternatives considered: (a) 최대스택을 가정하고 인코딩 — 게임 내에서 도달 불가능한 상태를 상시로 모델링하는 것이라 과대평가. (b) 전체 defer. 채택.
+- Decision: (b). base `phantom.py`는 Thief's Dagger 관련 두 효과(추가딜·스택형 Distributed Damage) 전부 defer. 애장품(`phantom-signature`)은 "노멀 30발마다 대거 +1"이라는 별도 소스를 추가해 이 교착을 풀고(60발 카운터 — Fienn 실측 약 5초 사격분 = AR 12발/초 x 5초), 그쪽에서 인코딩한다.
+- Why: **이건 engine-gap이 아니라 유닛 설계다** — 엔진이 표현 못 하는 게 아니라, base 스킬 자체가 자기모순적으로 설계돼(유일한 스택 소스가 스택 지속과 똑같은 상태를 걺) 스스로 최대스택에 못 이른다.
+- Consequences: base Phantom은 Thief's Vision의 84.33%/12.86% 효과가 영구 0 — 다른 유닛의 defer와 달리 "언젠가 엔진이 확장되면 풀린다"는 종류가 아니라 "base 스킬 그 자체가 그렇게 설계됐다"는 종류이므로, 향후 엔진 확장 우선순위에 넣지 말 것(넣는다면 애장품이 이미 실질적으로 같은 딜 소스를 제공하므로 ROI가 낮다). `docs/engine-gaps.md`에 신규 갭으로 등록하지 않고 gap #15 옆에 "참고"로만 기록됨(커밋 `5c8bd56`).
+
+## Rosanna의 Concealment 라이더(561.6%)를 조건부 버프가 아니라 burst_percent에 합산 — 사실상 상시이고, FB 보너스 오귀속을 피한다
+- Date: 2026-07-24 (Fienn 승인)
+- Context: Vendetta(버스트)는 "Concealment 상태면" 561.6% 추가 대미지를 준다. Concealment는 전투 시작 5초 + 노멀 120발마다 10초 재갱신. 엔진 MG 케이던스(60발/초)에서 120발은 사격 2.0초(재장전 포함 약 2.7초 wall clock)만에 채워지므로, 10초 지속에 비해 훨씬 짧은 주기로 재갱신되어 t≈2초 이후 사실상 상시.
+- Alternatives considered: (a) 별도 조건부 nuke/버프로 인코딩(Concealment 상태를 실제로 추적) — 사실상 항상 참인 조건을 매 사이클 재확인하는 것뿐이라 이득 없이 코드만 복잡해진다. (b) burst_percent에 그냥 합산. 채택. Fienn이 중간에 "추가 대미지 문구니 FB 보너스를 받아야 하지 않나"를 제기했다가 검증 후 스스로 철회했는데, 검증 결과 철회가 맞았다: 그녀는 B1이라 버스트 딜은 Full Burst 시작 **이전**에 발생한다. 게다가 엔진 auto 모드는 세 티어가 같은 타임스탬프에서 발동하고 FB 창 판정이 `start <= time < end`(시작 경계 포함)라, 만약 FB 적격으로 표시했다면 실제로는 그녀의 딜이 FB보다 먼저인데도 **엔진이 오귀속으로 보너스를 얹어줬을** 상황이었다.
+- Decision: (b). `rosanna.py::vendetta_burst_percent`가 `description_value_02 + description_value_03`(기본딜 + 라이더)을 그대로 더해 반환한다. Concealment 상태·타이머를 추적하는 별도 코드는 없다.
+- Why: 합산이 "게임 사실"(사실상 상시)과 "엔진 아티팩트 회피"(B1 버스트가 FB 이전이라 FB 보너스를 받을 자격이 없는데도, auto 모드+경계포함 판정이 잘못 부여할 뻔한 상황)를 동시에 만족한다. 조건부로 인코딩해도 값 자체는 똑같이 나오지만(상시이므로), 그 경로는 FB 보너스 태그를 실수로 붙이기 쉬운 함정을 남긴다.
+- Consequences: `rosanna`/`rosanna-signature` 둘 다 이 규칙 적용(애장품 쪽은 라이더까지 동일하게 합산, `rosanna_signature.py`의 docstring이 명시). 남은 Concealment 관련 문구("직격 피격 시 해제")는 별도 defer(아군 피격을 엔진이 모델링 안 함) — 이 결정과 무관.
+
+## "Burst Stage N 진입"은 own_burst_activate가 아니라 ally_burst_activate + 신규 조건 burst_stage_entered(tier)로 — Stage 3 = Full Burst 스코프 규칙은 Stage 2에 적용되지 않는다
+- Date: 2026-07-24
+- Context: Flora 애장품(flora-signature) S1(Petunia)이 "Burst Stage 2 진입 시" 발동한다. 그녀는 Burst 2 유닛이라 `own_burst_activate`로 인코딩하는 게 자연스러워 보이지만, 덱에 B2가 둘이면 그녀가 아닌 다른 B2가 그 사이클의 슬롯을 가져갈 수 있다 — 그 사이클도 "Burst Stage 2 진입"은 일어나지만 그녀의 `own_burst_activate`는 발동하지 않아, 트리거가 캐스터 자신인지 스테이지인지에 대한 오해로 사이클 전체가 조용히 누락된다. 기존 insights.md의 "스코프가 판별 기준" 규칙(자기 스코프→`own_burst_activate`, 스쿼드 스코프→`full_burst_enter`)은 **Stage 3 = Full Burst 진입**이라는 전제 위에 서 있어서(엔진의 `full_burst_enter`가 정확히 tier-3 발동 시각과 같다), Stage 1/2에는 대응하는 스쿼드 스코프 이벤트가 없어 그대로 적용할 수 없다.
+- Alternatives considered: (a) `own_burst_activate` — 위 누락 문제. (b) `full_burst_enter` — Stage 2 ≠ Full Burst라 아예 틀린 이벤트에 건다(발동 시각 자체가 잘못됨). (c) 신규 조건 `burst_stage_entered(tier)`: 방금 버스트한 유닛(`context.last_burst_slug`)의 `burst_tier`를 조회해 `tier`와 일치하는지 판별하고, `ally_burst_activate`(모든 유닛의 룰에 발동)와 짝짓는다. 채택.
+- Decision: (c). `squad_engine.burst_stage_entered(tier)`는 `ally_burst_activate` 트리거의 condition으로 쓰인다. `ally_burst_activate`가 모든 유닛의 룰에 발동하므로 캐스터 자신이 그 티어로 버스트한 사이클도 자동으로 커버된다(캐스터 자신도 "아군"으로 취급됨). 코드: `backend/app/squad_engine.py`. 첫 소비자: Flora 애장품의 Petunia(Max HP)·Iris(shield-ATK) 두 불릿, 둘 다 `ally_burst_activate` + `burst_stage_entered(2)`.
+- Why: "Burst Stage N 진입 시"라는 문구는 캐스터가 아니라 **스테이지**의 속성을 묻는다 — 그 사이클에 어느 동티어 유닛이 버스트했는지와 무관하게 스테이지는 진입한다. `own_burst_activate`는 캐스터가 슬롯을 가져간 사이클만 잡아 그 의미를 좁히고, `full_burst_enter`는 Stage 3 전용이라 Stage 1/2에는 아예 잘못된 이벤트다. 엔진 auto 모드는 티어 간 gap=0.0이라 세 티어가 같은 타임스탬프에 발동하므로, "스테이지 진입"과 "버스트 사용" 사이에 표현 가능한 시간차는 없다 — 실제로 갈리는 것은 시점이 아니라 **누가** 버스트했는가이고, `burst_stage_entered`는 정확히 그 축을 묻는다.
+- Consequences: 기존 "스코프가 판별 기준" 규칙(`docs/insights.md`)은 이제 "Stage 3=Full Burst 진입일 때만 성립"으로 좁혀 정정했다 — Stage 1/2의 스쿼드 스코프 트리거는 `full_burst_enter`가 아니라 `ally_burst_activate` + `burst_stage_entered(tier)`를 쓴다. Flora 외에 아직 다른 소비자는 없다(전수 감사는 이 배치 범위 밖). 다음에 "Burst Stage N 진입"류 문구를 마주치면 N=3인지부터 확인할 것 — N=3이면 기존 규칙 그대로, N<3이면 이 신규 조건.
+
+## 애장품(Favorite Item) S1의 "엄폐물이 온전할 때" 지속딜은 상시 참으로 모델 — 엔진이 엄폐물 파괴를 표현 안 함
+- Date: 2026-07-24
+- Context: Sugar 애장품(sugar-signature)의 Black Typhoon(dollskills[0])은 "엄폐물이 온전한 동안 공격피해 +19.98% 지속"을 건다. 엔진은 엄폐물 파괴 자체를 모델링하지 않으므로 이 조건은 시뮬레이션 안에서 언제나 참이다.
+- Decision: `battle_start` 영구 self `attack_damage_up`으로 인코딩하고, 이 가정("엔진에 엄폐물 파괴 모델이 없어 항상 온전으로 취급")을 `sugar_signature.py` docstring에 명시.
+- Why: 엔진이 표현 가능한 유일한 값이 "항상 참"이고, 그것이 정확히 게임 내 기본 상태(전투 시작 시 엄폐물은 온전)와 일치한다 — 근사가 아니라 엔진의 실제 세계 모델과 스킬 조건이 우연히 일치하는 경우.
+- Consequences: 아래 "Sugar의 '엄폐물이 공격받을 때' 트리거는 두 빌드 모두 defer" 결정과 대조된다 — 이쪽은 **조건이 엔진에서 항상 참이라 모델**, 저쪽은 **트리거 자체가 엔진에 없어 defer**. 같은 "엄폐물" 소재라도 갈리는 판단 기준을 이 두 항목이 짝으로 보여준다.
+
+## Sugar의 "엄폐물이 공격받을 때" 트리거는 두 빌드(base/애장품) 모두 defer — 상시 발동 근사는 기각
+- Date: 2026-07-24
+- Context: Black Typhoon(base `sugar` skills[0] / 애장품 `sugar-signature` dollskills[0])의 Crit DMG +16.39% · 재장전속도 +12.12%(10초)가 "엄폐물이 공격받을 때"에 걸려 있다. base 빌드는 그 위에 20% 확률 판정까지 얹는다. 엔진에는 이 트리거에 대응하는 개념이 없다.
+- Alternatives considered: (a) 상시 발동으로 근사(레이드에선 보스가 계속 때리므로 "엄폐물 피격"도 거의 항상 일어난다고 볼 수 있다). (b) defer.
+- Decision: Fienn이 두 빌드 모두 (b) defer를 선택.
+- Why: 엄폐물 피격 빈도는 보스·공격 패턴·유닛 위치에 따라 실제로 크게 갈려서, 상시로 근사하면 거짓이 되는 경우가 드물지 않다 — 이 프로젝트의 floor 선호 관례와도 맞다(불확실한 상시 근사보다 보류가 안전).
+- Consequences: `sugar` / `sugar-signature` 인코딩은 둘 다 이 버프분만큼 FLOOR다. "엄폐물이 공격받을 때"라는 트리거 자체는 신규 engine-gap 후보 — 표현하려면 엄폐물 피격 이벤트/빈도 모델이 필요하다(향후 `docs/engine-gaps.md`에 반영할지는 별도 판단).
+
+## SKILL_VALUE_MANIFESTS에 선택적 `weapon_source` 키 도입 — 애장품 슬러그는 무기와 스킬값을 서로 다른 소스에서 가져온다
+- Date: 2026-07-24
+- Context: 애장품(dollskills) 슬러그의 스킬값은 lootandwaifus에서만 얻을 수 있다(ShiftyPad는 dollskills를 노출 안 함). 그런데 `load_nikke_spec`은 lootandwaifus 소스 유닛의 무기 스탯을 항상 dotgg에서 읽고 있었다. dotgg API는 죽었다 — 2026-07-24 재측정에서 sugar/flora/rosanna/phantom 4유닛 모두 HTTP 200 + 빈 본문을 반환했다. Sugar는 dotgg 파일이 애초에 없어서, `weapon_stats`가 `None`이 되어 유닛이 **에러 없이 로스터에서 조용히 제외**됐다(`load_nikke_spec`이 `None` 반환).
+- Alternatives considered: (a) dotgg 모양 무기 스텁을 손으로 작성 — ShiftyPad 전환(2026-07-21~22)이 없애려던 바로 그 수작업이 애장품 유닛마다 부활한다. (b) manifest에 옵셔널 `weapon_source` 키를 둬 무기 소스와 스킬값 소스를 분리.
+- Decision: (b). `manifest.get("weapon_source", manifest["source"])`로 결정 — 기본값이 기존 `source`와 동일해 기존 77슬러그는 무영향. 애장품 슬러그는 `source: "lootandwaifus"` + `weapon_source: "shiftypad"` + `data_slug: <base 슬러그>`로 base 유닛의 ShiftyPad 무기 파일을 공유한다(애장품은 무기 자체를 바꾸지 않으므로 base와 같은 무기 스탯을 쓰는 게 옳다). 코드: `backend/app/user_roster.py`.
+- Why: (a)는 이미 한 번 없앤 수작업을 되살리고, 신규 애장품 유닛마다 반복된다. (b)는 무기 소스와 스킬값 소스라는 **서로 독립인 두 개념을 매니페스트에서 분리**해, 기본값을 통해 하위호환을 공짜로 얻는다.
+- Consequences: 애장품 유닛의 무기 스탯 손입력이 0이 됐다. 부수적으로 드러난 사실: 기존 시그니처 3인방(julia/drake/laplace)의 무기 소스는 여전히 dotgg 경로(둘 다 `weapon_source` 미지정, base `source`가 lootandwaifus라 dotgg fallback)이고, 이들이 지금까지 멀쩡했던 건 경로 설계가 애장품과 달라서가 아니라 **`data/dotgg`에 이 세 유닛의 파일이 우연히 아직 남아 있기 때문**이다 — dotgg가 죽은 지금 이 파일들이 사라지면(예: 캐시 정리) 같은 문제가 재발한다. `data/`는 gitignore 대상이라 워크트리 간 동기화 실수로도 사라질 수 있음(`scripts/sync_worktree_data.py` 필요, 기록된 교훈 참고).
+
 ## 유저 주도 "사용할 니케" 풀 선택 — 탐색 알고리즘 개선 대신 탐색 공간을 유저가 직접 축소
 - Date: 2026-07-23
 - Context: Phase 5 perf 후속의 원래 다음 타깃은 greedy-peel from-scratch 탐색을 "유닛 선별 → 좁은 분할" 2단계로 바꿔 속도와 품질을 함께 개선하는 것이었다(perf 백로그, 아래 "Sub-minute five-deck allocation..." 결정 참고). 브레인스토밍 중 Fienn이 방향을 틀었다: 엔진이 "어떤 25명이 좋을까"를 추측하게 하는 대신, 유저가 육성 안 했거나 쓰기 싫은 니케를 유저 스스로 빼서 탐색 풀을 근원에서 줄이자는 제안.
@@ -93,6 +157,7 @@ catalog, see the `nikke-skill-encoding` skill, not here.
 - Alternatives considered: computing `recommended` as `max(scratch, warm)` alone without folding in `within_draft` — this was the first cut and a review caught that it doesn't actually guarantee `recommended >= within_draft` (`within_draft` searches a differently-scoped pool and can beat both `scratch` and `warm` in edge cases); fixed in commit `09b208e`.
 - Why: a recommender that can regress below the user's own baseline is worse than no recommender — the ordering guarantee has to hold for every draft, not just the common case, so it has to be structural (provable from how each tier is computed) rather than empirical (hoping the search happens to find something at least as good).
 - Consequences: `backend/tests/test_recommend_from_draft.py` pins this with an adversarial case (a locked unique-minimum-value unit vs. a better bench unit) that fails if the lock-honoring fix in `09b208e` is reverted, plus a call-counting spy confirming the zero-base path makes exactly one `allocate_decks` call (no wasted work when there's nothing to warm-start from).
+
 
 ## 신규 니케 출시를 매일 헤드리스 디렉토리 점검으로 자동 탐지 — 계정 불필요, 상태파일 없이 온보딩까지 반복 알림
 - Date: 2026-07-21

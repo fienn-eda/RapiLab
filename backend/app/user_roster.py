@@ -7,8 +7,9 @@ A unit that can't be loaded is EXCLUDED and reported, never an error (Fienn,
 data file (e.g. lootandwaifus-only units have no dotgg weapon stats until
 collected). Character metadata prefers the lootandwaifus file (project source
 priority) and falls back to the dotgg file; weapon stats come from the
-manifest's source - dotgg for dotgg- and lootandwaifus-source units, or the
-unit's normalized data/shiftypad/<slug>.json for a shiftypad-source unit.
+manifest's `weapon_source`, defaulting to its `source` - dotgg for dotgg- and
+lootandwaifus-source units, or the unit's normalized data/shiftypad/<slug>.json
+when the source (or the override) is shiftypad.
 """
 from pathlib import Path
 
@@ -55,9 +56,11 @@ def load_nikke_spec(
     data_slug = manifest.get("data_slug", slug)
     # dotgg sometimes shortens a unit's slug (url "ada" for "ada-wong"); the
     # optional dotgg_slug manifest key bridges that for the weapon-stats lookup.
-    # Weapon stats and meta come from the manifest's source for shiftypad units;
-    # dotgg- and lootandwaifus-source units still read weapon stats from dotgg.
-    if manifest["source"] == "shiftypad":
+    # Weapon stats come from the manifest's weapon_source, which defaults to its
+    # source. A Favorite Item slug overrides it: its skill values are dollskills
+    # (lootandwaifus only) while its weapon is the base unit's ShiftyPad file,
+    # since ShiftyPad exposes no dollskills and dotgg can no longer be collected.
+    if manifest.get("weapon_source", manifest["source"]) == "shiftypad":
         try:
             weapon_data = load_character_data("shiftypad", data_slug, data_dir)
         except FileNotFoundError:

@@ -1,7 +1,7 @@
 """Cinderella (slug "cinderella"), a Burst-3 Fire Rocket Launcher attacker.
 Base skills. PARTIAL - decoy creation (survival) is deferred; Beautiful's own
-Max HP growth is inert (no live max_hp stat consumer), only its stack COUNT
-feeds the burst's mirrored additional hit.
+Max HP growth is never granted as a buff, so only its stack COUNT feeds the
+burst's mirrored additional hit.
 
 Modeled (DPS-relevant):
 - Flawless Glass (skills[0]): on entering Burst Stage 3 (her own burst), self
@@ -21,17 +21,18 @@ Modeled (DPS-relevant):
 Not modeled / deferred:
 - Decoy creation (both the battle-start and burst-tier-3-entry copies) - pure
   survivability (an HP-sponge clone), no damage-output consumer.
-- Beautiful's own "Max HP +1.6% per stack": the engine has no live max_hp stat
-  consumer (base_stats' max_hp is a fixed input, never read back from the
-  registry), so this specific bullet is inert - only the STACK COUNT itself
-  (read via resource_scaled_nukes) matters for damage.
+- Beautiful's own "Max HP +1.6% per stack": Max HP itself is no longer a dead
+  stat (Phase B, 2026-07-24 - Flawless Glass above reads LIVE Max HP through
+  `max_hp_scaled_atk_rule`), but this bullet still never GRANTS the Max HP, so
+  only the STACK COUNT (read via resource_scaled_nukes) matters today. Encoding
+  the grant as a `flat_max_hp` buff would now actually feed her own ATK.
 (Flawless Glass's Charge Speed +100% used to be listed here as "not a damage
 stat". That was written before Phase S wired `charge_speed_percent`; it is now
 modeled - see `flawless_glass_charge_speed`. It is one of her biggest levers,
 since every shot she fires also carries the 136.6% additional hit.)
 """
 from app.effects import ResourceSpec
-from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
+from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, max_hp_scaled_atk_rule
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -60,9 +61,9 @@ def glass_slippers_burst_percent(values):
 
 def build_flawless_glass_rules(values, caster_max_hp):
     fg = values["flawless_glass"]
-    atk_from_max_hp = caster_max_hp * float(fg["description_value_01"]) / 100
+    atk_pct_of_max_hp = float(fg["description_value_01"]) / 100
     duration = float(fg["description_value_02"])
-    return [buff_rule("own_burst_activate", [("flat_atk", atk_from_max_hp, "self", duration)])]
+    return [max_hp_scaled_atk_rule("own_burst_activate", atk_pct_of_max_hp, "self", duration, caster_max_hp)]
 
 
 def build_flawless_glass_per_shot_rules(values):

@@ -20,10 +20,17 @@ cooldown reduction).
   `highest_atk_buff_rule` / `round_buff_rule` after `SquadContext.top_atk_slugs`
   ranks the deck by live final ATK, for "N allies with the highest final ATK".
 
-There is **no positional scope** (front/back row, "allies on both sides") and
-**no weapon-conditional scope** ("SR allies", "shotgun allies"). Approximate
-weapon/positional offensive buffs as `squad` (documented), or defer. But
-**"N allies with the highest final ATK" is precise now** — use the top-N helpers
+There is **no positional scope** (front/back row, "allies on both sides") —
+approximate positional offensive buffs as `squad` (documented), or defer.
+
+**Weapon- and element-conditional targeting IS precise** ("shotgun allies",
+"all Wind Code allies with assault rifles", "Water and Iron Code allies with
+shotguns"): use `member_subset_buff_rule` with a `member_filter` reading
+`SquadMember.weapon` / `.element`. It resolves to a live `slugs:` scope at
+trigger time, so do NOT approximate these as `squad`. Consumers: `tove.py`,
+`sugar.py`, `sugar_signature.py`.
+
+**"N allies with the highest final ATK" is precise too** — use the top-N helpers
 (see the `round_buff_rule` / `highest_atk_buff_rule` entries below), not `squad`.
 
 ## Stats the engine CONSUMES (encoding these affects output)
@@ -545,14 +552,30 @@ and `charge_speed_percent` (charge weapons) DO move damage — in a fixed 180s
 fight a shorter shot interval means more shots. `attack_rate.py` scales the
 firing cadence from these (evaluated per magazine boundary), so emit them as
 `Effect("attack_speed_percent"|"charge_speed_percent", value, scope, duration)`.
-Scope must be self/squad/element — a "shotgun allies only" speed buff (e.g.
-Tove) still needs weapon-type scope (deferred). See `docs/decisions.md`.
+A "shotgun allies only" speed buff is expressible — Tove's rides
+`member_subset_buff_rule`, which resolves the weapon filter to a live `slugs:`
+scope. See `docs/decisions.md`.
 
-Exception: `flat_max_hp` (a Max-HP buff scaled off the caster's Max HP, e.g.
-Rouge's Game Master) is encoded but inert TODAY — Fienn wants Max-HP buffs in
-place for future units whose DAMAGE scales off Max HP. So encode Max-HP buffs as
-`flat_max_hp` (don't defer them), knowing they don't move damage until such a
-consumer + the `total_for("flat_max_hp", ...)` wiring exist.
+`flat_max_hp` (a Max-HP buff, e.g. Rouge's Game Master, Maxwell's Sequential
+Limit Release) is **no longer inert** — since 2026-07-24 it feeds every
+"ATK ▲ X% of the caster's Max HP" conversion. Encode Max-HP buffs as
+`flat_max_hp` (don't defer them); they now move damage whenever the deck holds
+a Max-HP-scaled ATK consumer.
+
+The consumer side is `_helpers.max_hp_scaled_atk_rule(trigger, percent, scope,
+duration, base_max_hp, condition=None, refreshing=False)` — use it instead of
+multiplying the static `values["caster_max_hp"]` at build time. It resolves
+`base_max_hp + total_for("flat_max_hp", caster, time)` when the rule FIRES and
+registers the result as `flat_atk`.
+
+**Semantics are a snapshot**, deliberately: the conversion happens once per
+trigger, so a Max-HP buff that lands AFTER the ATK buff does not retroactively
+grow it. A unit whose Max HP keeps rising mid-fight must re-fire the rule at
+each change. This keeps the damage hot path (`_stat_bundle` / `total_for`'s
+segment tables) untouched — not making deck search heavier is a hard constraint
+(Fienn). Consumers: `laplace_ultimate_hero`, `maxwell_ordinary_mechanic`,
+`cinderella`, `maiden_ice_rose` (the last inlines the same conversion because
+its bullet lands at a delayed instant).
 
 **Valid formula terms that raid_simulator just doesn't wire from the registry
 yet** — a real gap, not a dead end: `shield_damage_up`, and the major-modifier
@@ -593,10 +616,12 @@ full-charge-shot counts ("full charge N times"), ally-ammo-expended counters,
 on-kill, HP thresholds, or "when Raptures appear". Effects gated on these must
 be deferred — or, if central, raise extending the engine with a new trigger.
 
-SkillRule actions also have **no access to the boss's element** (only
-`raid_simulator` does, via `boss_element`) - an effect gated on "if the enemy
-is [element] Code" (e.g. a Wind-Code-only debuff) can't be conditioned
-correctly and must be deferred, not applied unconditionally.
+A rule's ACTION has no access to the boss's element, but its **condition does**:
+gate "if the enemy is [element] Code" bullets with
+`squad_engine.boss_is_element("<Element>")`, which reads
+`SquadContext.boss_element` (False when the sim is element-agnostic). Consumers:
+`rapi_red_hood.py`'s advantage grant, `sugar_signature.py`'s Fire-Code grant.
+Never apply such a bullet unconditionally.
 For an always-on-in-raid condition like "when Raptures appear" you may treat it
 as active (document the assumption) since a raid always has enemies.
 

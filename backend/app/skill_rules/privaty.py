@@ -1,11 +1,22 @@
-"""SkillRule encoding of Privaty's "EX Magazine" (skills[0]) and "AK Missile"
-(skills[2], her burst skill) from api.dotgg.gg slug "privaty".
+"""Privaty (slug "privaty") and her Favorite Item build (slug
+"privaty-signature"), from api.dotgg.gg.
 
-Fienn's Privaty has her signature weapon completed, so callers must build
-these rules from the "dollskills" array's values, not "skills" - the
-cherished-weapon version adds a whole 4th effect to EX Magazine (Attack
-Damage up) that the base skill lacks entirely, and roughly triples AK
-Missile's burst damage percent.
+The two builds are separate deck candidates (dual-slot); which one a user fights
+with comes from their roster's per-unit `favorite_item` flag.
+
+The Favorite Item adds a whole 4th effect to EX Magazine (Attack Damage up) that
+the base skill lacks entirely, replaces LD Assault's Stunned rider with a
+Designated-Target one and adds a Damage Taken debuff, and takes AK Missile's
+burst 457.87% -> 1407.64%.
+
+Base modeled: EX Magazine's three squad effects (ATK, Reload Speed, and the
+Max Ammo REDUCTION - her own downside, encoded rather than quietly dropped), LD
+Assault's 85.79% last-bullet nuke, and the 457.87% burst.
+
+Base deferred: LD Assault's "1089% if the target is Stunned". Raid bosses cannot
+be stunned (Fienn, 2026-07-24), so the rider never fires in the content this
+recommender simulates - and AK Missile's own 3-sec stun is inert for the same
+reason. Encoding either would credit damage that cannot happen.
 
 Unlike Crown's "X% of caster's ATK", EX Magazine's ATK bonus is a plain
 "ATK UP X%" buff on the target's own ATK, so it maps directly to
@@ -55,6 +66,21 @@ SKILL_VALUE_MANIFESTS = {
         "source": "dotgg",
         "test_module": "test_skill_rules_privaty",
         "keys": {
+            "ex_magazine": ("skills", 0),
+            "ld_assault": ("skills", 1),
+            "ak_missile": ("skills", 2),
+        },
+        "fixtures": {
+            "ex_magazine": "EX_MAGAZINE_BASE",
+            "ld_assault": "LD_ASSAULT_BASE",
+            "ak_missile": "AK_MISSILE_BASE",
+        },
+    },
+    "privaty-signature": {
+        "source": "dotgg",
+        "data_slug": "privaty",
+        "test_module": "test_skill_rules_privaty",
+        "keys": {
             "ex_magazine": ("dollskills", 0),
             "ld_assault": ("dollskills", 1),
             "ak_missile": ("dollskills", 2),
@@ -66,6 +92,49 @@ SKILL_VALUE_MANIFESTS = {
         },
     },
 }
+
+
+def build_ex_magazine_base_rules(values: dict) -> list[SkillRule]:
+    """EX Magazine without the Favorite Item: the same three squad effects, but
+    the array stops at slot 06 - the Attack Damage step (slots 07/08) is text the
+    Favorite Item adds, so the shared builder's reads would KeyError here."""
+    atk_up = float(values["description_value_01"]) / 100
+    atk_duration = float(values["description_value_02"])
+    reload_speed_up = float(values["description_value_03"]) / 100
+    reload_duration = float(values["description_value_04"])
+    max_ammo_reduction = float(values["description_value_05"]) / 100
+    ammo_duration = float(values["description_value_06"])
+
+    def action(context, caster_slug, time, registry):
+        registry.add(Effect("atk_percent", atk_up, "squad", atk_duration, caster_slug), applied_at=time)
+        registry.add(
+            Effect("reload_speed_percent", reload_speed_up, "squad", reload_duration, caster_slug),
+            applied_at=time,
+        )
+        # Her own downside, and it is squad-wide: encode the cost, not just the buff.
+        registry.add(
+            Effect("max_ammo_percent", -max_ammo_reduction, "squad", ammo_duration, caster_slug),
+            applied_at=time,
+        )
+
+    return [SkillRule(trigger="full_burst_enter", action=action)]
+
+
+def build_ld_assault_base_per_shot_rules(values: dict) -> list:
+    """LD Assault without the Favorite Item: one last-bullet nuke.
+
+    The skill's second bullet ("1089% if the target is Stunned") is DEFERRED, not
+    approximated: raid bosses cannot be stunned (Fienn, 2026-07-24), so the rider
+    never fires in the content this recommender simulates. Her own AK Missile stun
+    is inert for the same reason. The Favorite Item replaces that bullet with a
+    Designated-Target gate, which DOES fire - see build_ld_assault_per_shot_rules.
+    """
+    base_percent = float(values["ld_assault"]["description_value_01"])
+
+    def action(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("instant_damage_percent", base_percent, "self", caster_slug, True))
+
+    return [(None, "last_bullet", [SkillRule(trigger="per_shot", action=action)])]
 
 
 def build_ex_magazine_rules(values: dict) -> list[SkillRule]:

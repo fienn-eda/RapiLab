@@ -204,6 +204,7 @@
 | ~~10~~ | ~~창 한정 per-shot threshold 오버라이드~~ (버스트가 요구 카운트를 3/6/9 → 1/2/3으로 변경) | 1 (Scarlet: Black Shadow) | **완료 (2026-07-18, `per_shot_rules` `"sequence"` 모드 — Scarlet 인코딩)** | 트리거 변형 |
 | ~~11~~ | ~~**강제 재장전 / 탄약 제거 상태머신**~~ | 1 (Milk: Blooming Bunny) | **완료 (2026-07-20)** — 신규 타임라인 프리미티브 불필요(샷 0개 세그먼트 + `reload_time_with_speed` 음수 분기 + `burst_anchored_buffs`) | 재분류 |
 | — | **부위파괴 이벤트** (gap #2 Pattern B와 동근) | 3+ (Raven·Sakura·Mihara) | 미착수 — ark-ranger는 `part_destructible` 브래킷으로 개별 우회 | 신규 이벤트 |
+| ~~13~~ | ~~**차지-카운트 트리거 무기 변환**~~ (Warm Up 스택 → 변신 + 변환상태 카운터/단계 자원) | 1 (Laplace: Ultimate Hero) | **해소 (2026-07-24) — 프리미티브 없이 우회** | 재분류 |
 | — | hit rate · Burst Gauge fill speed (딜/타이밍 아님) | 15 | **구현 안 함** (defer 유지) | 범위 밖 |
 
 > **핵심 결론:** #1 하나가 압도적이다. 노멀공격 카운터(20명)와 풀차지 카운터(19명)는
@@ -215,6 +216,25 @@
 ---
 
 ## 갭 상세
+
+### 13. 차지-카운트 트리거 무기 변환 — ✅ 해소 (2026-07-24, 신규 프리미티브 없이)
+
+- **무엇이었나:** Laplace: Ultimate Hero의 Warm Up 5스택(풀차지 5회) → 무기 변신 →
+  변환상태 노멀 카운터 → Over Energy 단계. 일반 "차지 카운트 트리거" 프리미티브가
+  필요해 보였다.
+- **왜 안 만들었나:** 그 프리미티브는 발사 추적을 시뮬레이션 핫패스에 얹어 **모든 덱
+  평가를 무겁게** 한다. 덱 최적화가 이미 무겁다는 게 Fienn의 제약이었다.
+- **대신:** Fienn 인게임 실측(2026-07-24)을 앵커로 **기존 weapon-mode 세그먼트**에
+  얹었다(red-hood와 같은 경로). 주기는 상수가 아니라 **라이브 max ammo에서 유도** —
+  변신은 탄창을 다 비우면 끝나므로 [최대 장탄 수 증가]에 비례한다:
+  `주기 = 4.0(Warm Up 빌드) + 탄창/20(SMG 케이던스) + 재장전`. 120발·재장전 2.5s
+  기준 12.5초로 실측과 일치. Over Energy 단계는 "변신 2회당 1단계"(실측)이고 효과가 **누적**(stage4 = Max HP +22.5%)이며,
+  Mjolnir의 `934.76% × 단계`는 단계별 `scheduled_nukes` 스펙으로 표현.
+- **유일한 엔진 변경:** 스케줄 함수가 라이브 max ammo를 읽도록 `context.
+  max_ammo_percent_at`을 슬러그별로 주입하는 한 줄(핫패스 무변경).
+- **효과:** 180초 솔로레이드 셸에서 그녀의 총딜 46.4M → **125.4M (2.70배)**.
+- 상세: `laplace_ultimate_hero.py` docstring,
+  `tests/test_laplace_transform_loop.py`.
 
 ### 1. per-shot 트리거 + 발사 카운터 — ✅ 완료 (2026-07-11, `per_shot_rules`)
 
@@ -878,12 +898,78 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
 - 상세: `docs/superpowers/specs/2026-07-20-harmony-cube-assumed-lv15-design.md`,
   `docs/superpowers/plans/2026-07-20-harmony-cube-assumed-lv15.md`.
 
+### 13. 차지-카운트 트리거 무기 변환 (Warm Up 스택 → 변신) — 미착수 (2026-07-23)
+
+- **무엇:** Laplace: Ultimate Hero의 핵심 딜 루프. 풀차지마다 Warm Up +1스택(차지속도
+  +10%), 5스택에서 **스택 소모 + 무기 변환** "Electric Power, Fully Full Charge"
+  (9.45%/발 × 120발, Pierce, 탄창 소진 시 종료 → 탄약 100% 제거) → 변환 상태 일반공격
+  12회마다 Over Energy +5%(100%까지) → 100%마다 단계 상승(Max HP +2/3/7/10.5%) →
+  버스트의 934.76%×단계 추가딜을 스케일.
+- **왜 막혔나:** 변환 트리거가 **자기 발사(풀차지) 카운트의 누적 스택 임계치**다.
+  `weapon_mode_schedules`(무기변형 v1, gap #11 경로)는 세그먼트를 battle_start / 자기
+  버스트 시각에만 앵커할 수 있고, "N번째 풀차지에서 시작해 매거진 소진까지"라는
+  발사-카운트 앵커가 없다. Over Energy는 그 위에 다시 변환-상태-한정 일반공격 카운터 +
+  단계 자원을 얹는다.
+- **막힌 유닛:** 1 (Laplace: Ultimate Hero). 인코딩은 버스트 넉(2953.84%) + 자버프
+  몇 개(전투시작 ATK, 풀버스트 Attack Damage, 버스트 ATK)만 모델된 **얇은 스텁**으로
+  들어갔다 — 주력 딜이 통째로 빠져 덱서치가 과소평가한다(`laplace_ultimate_hero.py`
+  docstring의 deferred 목록).
+- **확장 방향(미확정):** ① per_shot 카운트(gap #1)로 발사 타임라인 상의 변환 시작 시각을
+  산출해 세그먼트 스케줄(`weapon_mode_schedules`)로 넘기는 결합 경로, ② 변환-상태 자원
+  (Over Energy)을 named-resource(gap #2 Pattern A)로, 단계 추가딜을
+  `resource_scaled_nuke`로. 규모 중간+ — 착수 전 실측(변환 주기·120발 케이던스)이 필요.
+- 참고: `data/shiftypad/laplace-ultimate-hero.json`,
+  `data/lootandwaifus/char_laplace-ultimate-hero-nikke.html`.
+
+### 14. "엄폐물이 공격받을 때" 트리거 — 미착수 (2026-07-24)
+
+- **무엇:** 스킬이 **자기 엄폐물이 피격당한 순간** 발동한다. Sugar의 Black Typhoon이
+  이 트리거로 자기 Critical Damage +16.39%·Reload Speed +12.12%를 10초 건다(base는
+  20% 확률, 애장품 빌드는 확률 없이 항상).
+- **왜 막혔나:** 엔진에 **적의 공격이라는 개념 자체가 없다**. 시뮬은 아군→보스 단방향
+  딜만 계산하고 피격·엄폐물 HP·엄폐물 파괴를 모델링하지 않으므로, 발동 시각을 만들
+  타임라인이 없다. gap #1(발사 카운트)처럼 아군 행동에서 유도할 수도 없다.
+- **막힌 유닛:** 2 (`sugar`, `sugar-signature`). 둘 다 이 한 스킬만 빠진 **floor**로
+  들어갔다. Fienn 판단(2026-07-24): 엄폐 피격 빈도가 보스·공격패턴·자리에 따라 너무
+  달라 "상시 발동" 근사는 거짓이 되므로 defer가 옳다.
+- **주의 — 인접하지만 다른 사안:** "엄폐물이 **온전할** 때"는 **막히지 않았다**. 엔진이
+  엄폐물 파괴를 모델링하지 않는다는 바로 그 사실 때문에 엄폐물은 항상 온전하므로,
+  Sugar 애장품의 "온전 시 공격데미지 +19.98%"는 `battle_start` 영구 버프로 정확히
+  모델된다(Fienn 승인). **트리거가 없는 것**과 **조건이 항상 참인 것**을 혼동하지 말 것.
+- **확장 방향(미확정):** 보스 공격 타임라인을 도입하는 것은 시뮬레이터의 성격을 바꾸는
+  큰 변경이다. 더 싼 대안은 Fienn 실측 기반의 **피격 주기 상수**를 받아
+  `periodic_rules`로 거는 것 — 다만 그건 근사이고, 이번에 Fienn이 명시적으로 거부했다.
+  같은 트리거를 쓰는 유닛이 더 쌓이면 재검토할 것.
+- 참고: `backend/app/skill_rules/sugar.py` · `sugar_signature.py` docstring.
+
+### 15. "아군 니케 행동불능" 트리거 — 미착수 (2026-07-24)
+
+- **무엇:** 스킬이 **아군 니케가 전투불능이 될 때** 발동한다. Rosanna의 Frenzy
+  (자기 ATK +22.61%, 10스택, 30초)와 애장품의 400% 넉이 이 트리거다.
+- **왜 막혔나:** 시뮬은 아군의 HP·피격·사망을 전혀 모델링하지 않는다(레이드 시뮬의
+  전제: 아군→보스 단방향 딜). gap #14와 같은 뿌리다.
+- **막힌 유닛:** 2 (`rosanna`, `rosanna-signature`). 다만 **애장품 빌드는 같은 Frenzy를
+  "노멀 500발마다"라는 셀 수 있는 소스로도 얻으므로 실질 피해가 작다** — base만 이
+  갭 때문에 ATK 버프를 통째로 잃는다.
+- **확장 방향(미확정):** 아군 생존 모델은 시뮬레이터 성격을 바꾸는 큰 변경이다.
+  같은 트리거를 쓰는 유닛이 쌓이면 재검토할 것.
+
+### 참고 — 다중 소스 스택 자원 (Phantom의 Thief's Dagger)
+
+갭으로 등록하지 않고 기록만 남긴다. Phantom의 대거는 **서로 다른 두 소스**(상태
+조건부 평타 + 노멀 30발 카운터)에서 스택을 얻고 5초 뒤 개별 만료되며, 최대스택
+도달이 별도 효과의 트리거가 된다. 현재는 named-resource(gap #2)로 이 조합을 표현할
+수 없어서, 애장품 인코딩은 Fienn 실측 주기(약 5초 사격분 = 60발)를 카운터로 대신
+쓴다. base는 아예 스택이 1을 못 넘겨(자기 Calling Card와 지속이 같음) 관련 효과를
+전부 defer했다 — 이건 엔진 한계가 아니라 **스킬 자체의 구조**다.
+
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
 - ~~**attack speed / charge speed**~~ → **모델됨 (Phase S, 2026-07-16 결정 뒤집기)**:
   180초 고정 전투에서 발사 간격이 줄면 발사 수가 늘어 딜이 증가 → `attack_speed_percent`
   (매거진 무기)·`charge_speed_percent`(차지 무기)를 `attack_rate.py`에 배선. 첫 소비자
-  Dorothy: Serendipity(자기 +65%). Tove는 SG-아군 스코프라 Phase C 대기(gap #3). 근거는
+  Dorothy: Serendipity(자기 +65%). Tove의 SG-아군 스코프도 gap #3 완료(2026-07-16)로
+  `member_subset_buff_rule`을 타고 들어갔다 — 더 이상 대기 중이 아니다. 근거는
   `docs/decisions.md` 참조.
 - **hit rate / Burst Gauge fill speed** (여전히 미소비): 엔진의 딜 공식/타이밍에 들어가는
   개념이 아니라 배선해도 inert. 이런 게 유닛 가치의 대부분이면 얇은 인코딩이 정직한 답.

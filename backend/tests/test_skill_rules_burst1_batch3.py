@@ -4,7 +4,7 @@ Moran/Tove) figures from dotgg.
 """
 from app.effects import EffectRegistry
 from app.skill_rules.little_mermaid import build_little_mermaid_rules
-from app.skill_rules.moran import build_moran_rules
+from app.skill_rules.moran import build_bring_it_on_per_shot_rules, build_moran_rules
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules.tove import build_tove_rules
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
@@ -74,7 +74,42 @@ def test_little_mermaid_bubble_debuff_is_a_permanent_squad_enemy_damage_taken():
     assert round(reg.total_for("damage_taken_up", ALLY, 170.0), 4) == 0.0505  # permanent
 
 
+# Base ("skills") level-10 values - slug "moran". Leave It To Me! has no slot 10
+# (the burst-cooldown cut) and Fair and Square! no slots 09/10 (the squad ATK):
+# both are text the Favorite Item adds, which is why base Moran has no SkillRules.
+MORAN_BASE_BRING_IT_ON = {
+    "description_value_01": "3.51",   # DEF per 1% HP lost (survivability, skipped)
+    "description_value_02": "47.18",  # additional damage %
+    "description_value_03": "5",      # normal attacks, while weapon is changed
+}
+MORAN_BASE_LEAVE_IT_TO_ME = {
+    "description_value_01": "91", "description_value_02": "3",
+    "description_value_03": "69.84", "description_value_04": "3",
+    "description_value_05": "51.09", "description_value_06": "3",
+    "description_value_07": "3", "description_value_08": "4", "description_value_09": "20",
+}
+MORAN_BASE_FAIR_AND_SQUARE = {
+    "description_value_01": "14.7", "description_value_02": "36.14",
+    "description_value_03": "10", "description_value_04": "10",
+    "description_value_05": "35.14", "description_value_06": "10",
+    "description_value_07": "14.85", "description_value_08": "10",
+}
+MORAN_BASE = {
+    "bring_it_on": MORAN_BASE_BRING_IT_ON,
+    "leave_it_to_me": MORAN_BASE_LEAVE_IT_TO_ME,
+    "fair_and_square": MORAN_BASE_FAIR_AND_SQUARE,
+    "caster_atk": 300000,
+}
+
+# Favorite Item ("dollskills") - slug "moran-signature".
+MORAN_SIG_BRING_IT_ON = dict(MORAN_BASE_BRING_IT_ON, description_value_04="20")
+MORAN_SIG_LEAVE_IT_TO_ME = dict(MORAN_BASE_LEAVE_IT_TO_ME, description_value_10="7.48")
+MORAN_SIG_FAIR_AND_SQUARE = dict(
+    MORAN_BASE_FAIR_AND_SQUARE, description_value_09="42.57", description_value_10="10"
+)
+
 MORAN = {
+    "bring_it_on": MORAN_SIG_BRING_IT_ON,
     "leave_it_to_me": {"description_value_10": "7.48"},
     "fair_and_square": {
         "description_value_01": "14.7",   # weapon-transform damage % per shot
@@ -116,8 +151,31 @@ def test_moran_transform_is_an_unlimited_ammo_smg_at_canonical_rate():
     assert "damage_type" not in profile      # ordinary attack damage, no true conversion
 
 
+# Base ("skills") level-10 values - slug "tove". Same slot MEANINGS as the
+# Favorite Item, only smaller numbers, so one builder serves both.
+TOVE_BASE_MODIFICATION_SUCCESSFUL = {
+    "description_value_01": "3.32", "description_value_02": "42.24",
+}
+TOVE_BASE_MIRACLE_OF_MAKESHIFTS = {
+    "description_value_01": "2.32", "description_value_02": "10",
+    "description_value_03": "24.21", "description_value_04": "10",
+}
+TOVE_BASE = {
+    "modification_successful": TOVE_BASE_MODIFICATION_SUCCESSFUL,
+    "miracle_of_makeshifts": TOVE_BASE_MIRACLE_OF_MAKESHIFTS,
+    "caster_atk": 300000,
+}
+
+TOVE_SIG_MODIFICATION_SUCCESSFUL = {
+    "description_value_01": "10.08", "description_value_02": "42.24",
+}
+TOVE_SIG_MIRACLE_OF_MAKESHIFTS = {
+    "description_value_01": "2.32", "description_value_02": "15",
+    "description_value_03": "24.21", "description_value_04": "15",
+}
+
 TOVE = {
-    "modification_successful": {"description_value_01": "10.08", "description_value_02": "42.24"},
+    "modification_successful": TOVE_SIG_MODIFICATION_SUCCESSFUL,
     "miracle_of_makeshifts": {
         "description_value_01": "2.32", "description_value_02": "15",
         "description_value_03": "24.21", "description_value_04": "15",
@@ -288,3 +346,65 @@ MODIFICATION_SUCCESSFUL = TOVE["modification_successful"]
 MIRACLE_OF_MAKESHIFTS = TOVE["miracle_of_makeshifts"]
 LEAVE_IT_TO_ME = MORAN["leave_it_to_me"]
 FAIR_AND_SQUARE = MORAN["fair_and_square"]
+
+
+def test_moran_bring_it_on_rider_only_counts_shots_inside_the_transform():
+    # "While weapon is changed" is her own transform window, so the rider rides
+    # the weapon-mode segment rather than her ordinary AR fire. Identical text in
+    # both builds, so one builder serves both slugs.
+    ps = build_bring_it_on_per_shot_rules(MORAN_BASE)
+    assert len(ps) == 1
+    threshold, mode, rules = ps[0]
+    assert (threshold, mode) == (5, "every_during_segment")
+
+    reg = EffectRegistry()
+    for rule in rules:
+        rule.action(deck_ctx("moran"), "moran", 3.0, reg)
+
+    pulses = reg.drain_pulses("instant_damage_percent")
+    assert [p.value for p in pulses] == [47.18]
+    # "as additional damage" -> eligible for the Full Burst bonus.
+    assert pulses[0].full_burst_bonus_eligible is True
+
+
+def test_base_moran_registers_no_skill_rules():
+    # Everything base Moran does outside the transform is survivability or an
+    # ally-side Damage Taken cut. Her buffer role - the burst-cooldown cut and
+    # the squad flat ATK - is entirely the Favorite Item's text.
+    from app.skill_rules.registry import build_nikke_rules
+
+    rules, burst_percent = build_nikke_rules("moran", MORAN_BASE)
+    assert rules == []
+    assert burst_percent is None
+
+
+def test_moran_transform_schedule_anchors_on_the_slug_it_is_built_for():
+    from app.skill_rules.moran import build_fair_and_square_weapon_mode_schedule
+
+    schedule = build_fair_and_square_weapon_mode_schedule(MORAN, slug="moran-signature")
+    ctx = deck_ctx("moran")
+    ctx.burst_times["moran"] = [10.0]
+    ctx.burst_times["moran-signature"] = [20.0]
+    assert [w["start"] for w in schedule(ctx, 120.0)] == [20.0]
+
+
+def test_tove_base_crit_rate_is_a_third_of_the_favorite_items():
+    # Same builder, same slots - only the numbers differ between the builds.
+    reg = EffectRegistry()
+    fire_trigger("battle_start", {"tove": build_tove_rules(TOVE_BASE)},
+                 deck_ctx("tove"), reg, 0.0)
+    assert round(reg.total_for("crit_rate", ALLY, 0.0), 4) == 0.0332
+
+    reg_sig = EffectRegistry()
+    fire_trigger("battle_start", {"tove": build_tove_rules(TOVE)},
+                 deck_ctx("tove"), reg_sig, 0.0)
+    assert round(reg_sig.total_for("crit_rate", ALLY, 0.0), 4) == 0.1008
+
+
+def test_tove_base_burst_atk_window_is_ten_seconds_not_fifteen():
+    reg = EffectRegistry()
+    fire_trigger("own_burst_activate", {"tove": build_tove_rules(TOVE_BASE)},
+                 deck_ctx("tove"), reg, 0.0)
+    # 2.32% of caster ATK per stack, x3 stacks (the derived full-stack steady state).
+    assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == round(300000 * 0.0232 * 3, 2)
+    assert reg.total_for("flat_atk", ALLY, 10.1) == 0.0

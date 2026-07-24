@@ -142,7 +142,7 @@ def build_blessings_upon_you_rules(values, caster_max_hp):
     blessings = values["blessings_upon_you"]
     self_elem_adv = float(blessings["description_value_05"]) / 100
     self_elem_adv_duration = float(blessings["description_value_06"])
-    self_atk_from_max_hp = caster_max_hp * float(blessings["description_value_07"]) / 100
+    self_atk_pct_of_max_hp = float(blessings["description_value_07"]) / 100
     self_atk_duration = float(blessings["description_value_08"])
 
     def action(context, caster_slug, time, registry):
@@ -153,8 +153,14 @@ def build_blessings_upon_you_rules(values, caster_max_hp):
             Effect("other_elemental_bonus", self_elem_adv, "self", self_elem_adv_duration, caster_slug),
             applied_at=applied_at,
         )
+        # Live Max HP (base + flat_max_hp buffs) rather than the static
+        # character-info value - same conversion max_hp_scaled_atk_rule does,
+        # inlined here because this bullet lands at the delayed instant.
+        by_slug = {m.slug: m for m in context.members}
+        target = {"slug": caster_slug, "element": by_slug[caster_slug].element}
+        live_max_hp = caster_max_hp + registry.total_for("flat_max_hp", target, applied_at)
         registry.add(
-            Effect("flat_atk", self_atk_from_max_hp, "self", self_atk_duration, caster_slug),
+            Effect("flat_atk", live_max_hp * self_atk_pct_of_max_hp, "self", self_atk_duration, caster_slug),
             applied_at=applied_at,
         )
 

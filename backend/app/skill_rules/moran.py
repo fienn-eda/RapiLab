@@ -1,7 +1,24 @@
-"""Moran (slug "moran"), a Burst-1 AR Defender, signature weapon done
-(dollskills). Fienn's Moran has hers completed.
+"""Moran (slug "moran") and her Favorite Item build (slug "moran-signature"), a
+Burst-1 AR Defender. Collected from api.dotgg.gg.
 
-Modeled (DPS-relevant):
+The two builds are separate deck candidates (dual-slot); which one a user fights
+with comes from their roster's per-unit `favorite_item` flag.
+
+Base modeled (DPS-relevant): Bring It On!'s second bullet and the weapon
+transform - and nothing else. Every other base effect is survivability (DEF
+scaling, Perseverance, the heal, taunts) or an ally-side Damage Taken reduction,
+so base Moran registers NO SkillRules at all. What the Favorite Item adds is her
+entire buffer role: Leave It To Me!'s burst-cooldown reduction (slot 10) and Fair
+and Square!'s squad flat ATK (slots 09/10) exist only in the dollskills array.
+
+Bring It On!'s second bullet is identical in both builds: every 5 normal attacks
+"while weapon is changed" deal 47.18% of final ATK as additional damage. "While
+weapon is changed" is exactly her own transform window, so it is the
+`every_during_segment` per-shot mode (the Snow White: Heavy Arms precedent),
+which counts shots inside a weapon-mode segment. "As additional damage" makes it
+`full_burst_bonus_eligible`.
+
+Favorite Item modeled (DPS-relevant):
 - Leave It To Me! (dollskills[1]): on Full Burst enter while in Fervor, squad
   burst-cooldown reduction.
 - Fair and Square! (dollskills[2], her burst): squad ATK up as a flat bonus
@@ -21,22 +38,80 @@ active in a raid. Not modeled: DEF / damage-taken / Max-HP survivability buffs
 (the squad "Damage Taken +" line reads as an ally-side effect, not an enemy
 DPS debuff), taunts, the HP-recovery on the transform, and the HP-threshold
 Perseverance effect.
+
+Also not modeled, Favorite Item only: Bring It On!'s third bullet, "Fervor:
+Cooldown of Burst Skill -20 sec continuously" (dollskills[0] slot 04). It was
+already absent before the base/signature split - the modeled cooldown reduction
+comes from Leave It To Me! - and wiring a permanent 20-sec burst-cooldown cut
+would move every deck this unit appears in, so it stays a documented gap rather
+than a silent one.
 """
 from app.attack_rate import rate_of_fire_for_weapon
-from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
+from app.skill_rules._helpers import (
+    buff_rule,
+    cdr_pulse_rule,
+    instant_nuke_pulse_rule,
+)
 
-# Fienn's Moran has the signature weapon completed, so the manifest reads the
-# "dollskills" array, not "skills" (see module docstring).
 SKILL_VALUE_MANIFESTS = {
     "moran": {
         "source": "dotgg",
         "test_module": "test_skill_rules_burst1_batch3",
         "keys": {
+            "bring_it_on": ("skills", 0),
+            "leave_it_to_me": ("skills", 1),
+            "fair_and_square": ("skills", 2),
+        },
+        "fixtures": {
+            "bring_it_on": "MORAN_BASE_BRING_IT_ON",
+            "leave_it_to_me": "MORAN_BASE_LEAVE_IT_TO_ME",
+            "fair_and_square": "MORAN_BASE_FAIR_AND_SQUARE",
+        },
+    },
+    "moran-signature": {
+        "source": "dotgg",
+        "data_slug": "moran",
+        "test_module": "test_skill_rules_burst1_batch3",
+        "keys": {
+            "bring_it_on": ("dollskills", 0),
             "leave_it_to_me": ("dollskills", 1),
             "fair_and_square": ("dollskills", 2),
         },
+        "fixtures": {
+            "bring_it_on": "MORAN_SIG_BRING_IT_ON",
+            "leave_it_to_me": "MORAN_SIG_LEAVE_IT_TO_ME",
+            "fair_and_square": "MORAN_SIG_FAIR_AND_SQUARE",
+        },
     },
 }
+
+
+def build_bring_it_on_per_shot_rules(values):
+    """Bring It On!'s second bullet, identical in both builds: every Nth normal
+    attack landed WHILE THE WEAPON IS CHANGED deals a flat percentage of final
+    ATK as additional damage.
+
+    "While weapon is changed" is her own transform, so this is
+    `every_during_segment` - the mode counts only shots inside a weapon-mode
+    segment, so the rider cannot leak into her ordinary AR fire."""
+    bring = values["bring_it_on"]
+    nuke_percent = float(bring["description_value_02"])
+    shots = int(float(bring["description_value_03"]))
+    return [(shots, "every_during_segment", [
+        instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True),
+    ])]
+
+
+def build_moran_base_rules(values):
+    """Base Moran registers no combat SkillRules at all.
+
+    Her damage comes from the transform segment and the Bring It On! rider, both
+    wired outside _BUILDERS. Everything else the base kit does is survivability
+    or an ally-side Damage Taken cut; the burst-cooldown reduction and the squad
+    flat ATK that make her a buffer are the Favorite Item's text. Returned as an
+    explicit empty list so the registry entry reads as a decision, not an
+    oversight."""
+    return []
 
 
 def build_moran_rules(values):
@@ -53,7 +128,7 @@ def build_moran_rules(values):
     ]
 
 
-def build_fair_and_square_weapon_mode_schedule(values):
+def build_fair_and_square_weapon_mode_schedule(values, slug="moran"):
     """Fair and Square!'s weapon transform: for 10 sec her AR becomes an
     unlimited-ammo SMG dealing 14.7% of final ATK per shot.
 
@@ -82,7 +157,7 @@ def build_fair_and_square_weapon_mode_schedule(values):
     def schedule(context, fight_duration):
         return [
             {"start": t, "end": t + window, "profile": profile}
-            for t in context.burst_times.get("moran", [])
+            for t in context.burst_times.get(slug, [])
         ]
 
     return schedule

@@ -1,8 +1,9 @@
 // Parses the blablalink collector's roster.json into editable NikkeDrafts.
 // raid400 (level 400, solo-raid baseline) stats go into hp/atk/def; actual
 // (real-level) stats go into the actual* fields for future union-raid use.
-// Slug comes from the resource_id identity map (+ signature promotion when the
-// Favorite Item is owned); unencoded owned units are kept with a raw-derived slug
+// Slug comes from the resource_id identity map, promoted to the "-signature"
+// encoding when the unit's own `favorite_item` flag says the Favorite Item is
+// owned; unencoded owned units are kept with a raw-derived slug
 // (the backend excludes them from recommendation but they stay visible in the roster).
 // A unit with no resource_id at all (stale or hand-edited roster.json — the collector
 // always emits one) takes that same path: raw slug, reported as unsupported.
@@ -16,6 +17,10 @@ interface RosterUnit {
   name_en: string
   grade?: number
   core?: number
+  // Whether this unit's collectible slot holds a Favorite Item. Absent on a
+  // collector scrape and on rosters predating the field; see resolveSlugForUnit
+  // for what answers in that case.
+  favorite_item?: boolean
   raid400: { hp: number; atk: number; def: number }
   actual?: { hp: number; atk: number; def: number }
   overload?: { name: string; value: number }[]
@@ -41,7 +46,7 @@ export const parseRosterJson = (
       warnings.push('unit missing name_en/raid400')
       continue
     }
-    const mapped = resolveSlugForUnit(u.resource_id)
+    const mapped = resolveSlugForUnit(u.resource_id, u.favorite_item)
     if (mapped === undefined) unsupported.push(u.name_en)
     drafts.push({
       ...makeEmptyDraft(),

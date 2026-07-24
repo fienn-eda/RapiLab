@@ -36,7 +36,7 @@ def test_fetch_then_assemble_end_to_end(tables):
     units = assemble_roster(tables, directory, raw)
     u = units[0]
     assert set(u) == {"name_en", "resource_id", "raid400", "skill_levels",
-                      "overload", "grade", "core"}
+                      "overload", "grade", "core", "favorite_item"}
     assert set(u["raid400"]) == {"hp", "atk", "def"}
     assert set(u["skill_levels"]) == {"skill1", "skill2", "burst"}
     assert u["raid400"]["def"] == 0
@@ -60,6 +60,35 @@ def test_assembled_units_carry_the_breakthrough_and_core_they_were_built_from(ta
     u = assemble_roster(tables, directory, raw)[0]
     assert u["grade"] == 3
     assert u["core"] == 6
+
+
+def _roster_with_collectible(item_tid, item_lv):
+    """The end-to-end payload, varying only the unit's collectible slot."""
+    return {
+        "owned": [{"name_code": 5129, "lv": 400, "core": 6, "grade": 3}],
+        "character_details": [{"name_code": 5129, "grade": 3, "core": 6,
+                               "attractive_lv": 40, "harmony_cube_lv": 0,
+                               "favorite_item_tid": item_tid,
+                               "favorite_item_lv": item_lv,
+                               "skill1_lv": 10, "skill2_lv": 10, "ulti_skill_lv": 10}],
+        "recycle_room_researches": [
+            {"tid": 1001, "lv": 170}, {"tid": 1101, "lv": 190}, {"tid": 1201, "lv": 150},
+        ],
+    }
+
+
+@pytest.mark.parametrize("item_tid,item_lv,owned", [
+    (201301, 2, True),    # 2xxxxx block = a favorite item (애장품)
+    (100302, 5, False),   # 1xxxxx block = an ordinary SR collectible
+    (0, 0, False),        # empty collectible slot
+])
+def test_assembled_units_report_favorite_item_ownership(tables, item_tid, item_lv, owned):
+    # Which encoding a dual-slot unit fights with is per-user investment, so the
+    # assembled roster must carry ownership out to the frontend instead of the
+    # frontend guessing from a hand-maintained list.
+    directory = json.loads(DIRECTORY.read_text(encoding="utf-8"))
+    u = assemble_roster(tables, directory, _roster_with_collectible(item_tid, item_lv))[0]
+    assert u["favorite_item"] is owned
 
 
 def test_assemble_roster_matches_the_collector_scrape(tables):

@@ -738,6 +738,42 @@
 - [x] **표시 개선: `core_level`이 임포트 시 항상 0으로 보인다 — 완료.** grade/core 배지
       (`InvestmentBadge`, Task 3)가 실제 투자 표시를 맡고, 아무도 읽지 않던 입력
       `core_level`은 제거(Task 4, `docs/decisions.md` 참고).
+- [x] **애장품 소유 자동 판정 — 완료 (2026-07-24).** 듀얼 슬롯 유닛이 base로 싸울지
+      `-signature`로 싸울지는 유저별 투자인데, `resolveSlugForUnit`이 개발자 계정을 담은
+      손관리 상수 `SIGNATURE_OWNED`(Laplace·Drake 2개)로 답하고 있었다. 모든 유저가 그
+      둘을 애장품 보유로 승격받고, 나머지 듀얼 슬롯 5쌍(flora·julia·phantom·rosanna·
+      sugar)은 도달 불가였다. 블라블라링크 페이로드가 이미 유닛별 `favorite_item_tid`를
+      싣고 `roster_assembly`가 스탯에 쓰고 있었으므로, `assemble_unit`이
+      `owns_favorite_item()`을 `favorite_item` 플래그로 함께 내보내고 프론트가 그걸
+      따른다. **`SIGNATURE_OWNED`는 완전히 삭제**(Fienn 결정 2026-07-24: 손관리 폐기) —
+      로스터가 침묵하면 base로 두는 게 기본값이다. 잘못 승격하면 추천이 부풀지만
+      승격을 놓치면 저평가에 그치고, 슬러그는 UI에서 직접 고칠 수 있다. 수집기
+      스크레이프 경로는 ShiftyPad가 수집품 **이름**만 보여주고 등급은 안 보여줘
+      플래그를 못 만든다 — Collection 탭(`favorite_rare`) 캡처가 그 갭의 해법.
+- [x] **애장품 빌드가 base 슬러그에 박힌 6유닛 분리 — 완료 (2026-07-24).** `helm` ·
+      `miranda` · `moran` · `privaty` · `tove` · `zwei` 전부 base + `-signature`
+      쌍으로 분리. 감사 스크립트 BAKED 6 → **0**, PAIRED 7 → **13**, 종료코드 0.
+      각 유닛이 애장품 미보유 유저에게 잘못 주던 것: Helm 버스트 8236.8%(base
+      1237.5%, 6.7배) + 풀차지 넉 + 차지댐 라이더 · Miranda의 Wake Up! 자버프
+      전체와 top-2 버스트(base는 top-1) · Zwei의 스택형 Pierce와 10초 크리창(base
+      5초) · Privaty의 Designated Target 1687%와 버스트 1407.64%(base 457.87%) ·
+      Moran의 버퍼 역할 전체(버스트 쿨감 + 스쿼드 flat ATK) · Tove의 크리율
+      10.08%(base 3.32%)와 15초 창(base 10초).
+      **부수 성과:** Moran의 Bring It On! 라이더를 신규 인코딩(`every_during_segment`
+      — "무기 변경 중 노멀 5회마다", Snow White: Heavy Arms 선례) · 무기변형 스케줄
+      2건이 슬러그를 하드코딩하고 있던 것을 파라미터화(안 고쳤으면 signature 빌드가
+      버스트 시각을 못 찾아 변형이 조용히 사라짐) · lootandwaifus 소스의 애장품
+      스킬 제목 오류 수정(Tove).
+      **Fienn 룰링(2026-07-24):** 보스는 스턴 불가 → Privaty의 "Stun 시 1089%"는
+      defer · Tove의 5% 확률 트리거는 기대값(20발마다 1스택, 60발≈5초에 만렙)으로
+      풀스택 가정을 유도 · flat 최대탄약은 프리미티브 부재로 defer.
+      **남은 갭(분리 이전부터 있던 것, 문서화만):** Moran 애장품의 "Fervor: 버스트
+      쿨 ▼20초 상시" 미모델 · Tove의 Emergency-Crafted Bullets 전체 미모델.
+- [x] **애장품 판정 불가 2유닛 — 해소 (2026-07-24).** `laplace-ultimate-hero` ·
+      `maxwell-ordinary-mechanic`은 ShiftyPad 소스라 `dollskills` 키가 없고 동일
+      슬러그의 lootandwaifus 파일도 없어 데이터로는 답할 수 없었다. **Fienn 룰링:
+      둘 다 게임에 애장품이 출시되지 않았다** → 감사 스크립트의
+      `NO_FAVORITE_ITEM_RELEASED`에 근거와 함께 기록. 출시되면 항목을 지워야 한다.
 - [ ] **개인정보 처리방침** — 공개 배포 전 필요(설계 스펙에 명시, 법률 검토는 범위 밖).
 - [x] **디렉토리 스냅샷 갱신 루틴 — 완료.** 매일 19시 작업 스케줄러가 공개 디렉토리를
       헤드리스로 받아 커밋된 스냅샷과 비교하며, 신규 SSR 또는 실패 시에만 토스트를 띄운다.
@@ -995,6 +1031,37 @@
       `periodic_rules`. 실제 값은 약 6300%가 아니라 **5280%/180초** — 강제발동이 없어
       첫 캐스트가 t=30이므로 5캐스트(6캐스트 아님)다. 자기 sustained 버프도 함께 실효화,
       고정 셸 E2E **+7.75%**.
+- [ ] **애장품 4인방 온보딩 (Sugar · Flora · Rosanna · Phantom)** — 넷 다 미인코딩
+      상태에서 애장품이 추가돼 base + `-signature` 듀얼 슬롯으로 올린다. 설계
+      `docs/superpowers/specs/2026-07-24-favorite-item-quartet-design.md`, 계획
+      `docs/superpowers/plans/2026-07-24-favorite-item-quartet.md`.
+      **선행 배선 완료**: 매니페스트 `weapon_source` 키 — 스킬값은 lootandwaifus
+      (dollskills), 무기 스탯은 base의 ShiftyPad 파일에서 읽는다(dotgg API 사망 확인,
+      4유닛 모두 200+빈 본문). 무기 손입력 0.
+  - [x] **Sugar (2026-07-24 완료)** — `sugar` + `sugar-signature`. SG 아군 최대탄약
+        +83.8%와 Water·Iron SG 아군 원소우위딜을 `member_subset_buff_rule`로 **근사
+        없이** 모델(레퍼런스 문서가 "표현 불가"라 적고 있었으나 Tove 선례로 반증 —
+        문서 3건 정정). 애장품 전용: 엄폐물 온전 시 공격데미지 +19.98% 상시 +
+        Fire코드 상대 원소우위 부여(`boss_is_element`). 엄폐 피격 트리거는 Fienn 판단
+        으로 두 빌드 모두 defer → 신규 gap #14, 둘 다 floor.
+  - [x] **Flora (2026-07-24 완료)** — `flora` + `flora-signature`. 스윕 366.2M →
+        563.6M(**+53.9%**)로 배치 최대폭. 애장품이 순수 힐러를 ATK 버퍼로 바꾸는데,
+        그 핵심이 **적 공격에 의존하지 않는 자기완결 콤보**(힐 없는 Max HP 증가 →
+        HP 비율 90% 하락 → 자기 실드 → ATK +45.12%)라는 Fienn의 해석 덕에 defer를
+        면했다. 신규 조건 `burst_stage_entered(tier)` — "Burst Stage N 진입"은
+        스테이지의 속성이라 다른 동티어 아군이 슬롯을 가져간 사이클에도 발동해야 한다.
+  - [x] **Rosanna (2026-07-24 완료)** — `rosanna` + `rosanna-signature`, 스윕 +40.9%.
+        `rosanna-chic-ocean`과 별개 유닛(rid 280 vs 283). Concealment 라이더를 버스트
+        퍼센트에 합침(120발=2.0초 사격분마다 10초 재갱신 → 상시, Fienn 승인).
+  - [x] **Phantom (2026-07-24 완료)** — `phantom` + `phantom-signature`, 스윕 +46.5%
+        (701.3M → **1027.1M**, 전체 최고 딜). base는 Thief's Dagger가 자기 Calling
+        Card와 지속이 같아 **영원히 1스택**이라 S2가 통째로 발동 불가(Fienn 확인);
+        애장품의 "노멀 30발마다 대거 +1" 한 줄이 그 교착을 풀어 S2 전체를 켠다.
+- [x] **애장품 4인방 온보딩 완료 (2026-07-24)** — 8슬러그 전부 등록. 배치 결산:
+      Sugar +9.5% · Rosanna +40.9% · Phantom +46.5% · Flora +53.9%. 공통 교훈은
+      **애장품이 수치를 키우는 게 아니라 "엔진이 발동시킬 수 있는 트리거"를 붙여준다**는
+      것 — Flora(자기완결 실드 콤보) · Rosanna(500발 Frenzy 소스) · Phantom(30발 대거
+      소스)이 모두 같은 형태다. 신규 engine-gap #14(엄폐물 피격) · #15(아군 행동불능).
 - [x] **차지속도 공식 수정 (2026-07-20, Fienn 승인)** — `charge_time_with_speed`로
       집약, 5개 호출 지점 교체. `÷(1+속도)` → `×(1−속도)`. 감속도 같은 식으로 처리
       (bready −20%가 1.25배 → 1.2배). 버프 0이면 로스터의 모든 기본 차지시간에 대해
