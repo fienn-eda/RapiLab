@@ -373,6 +373,14 @@ def _build_rapi_red_hood_b1(sv):
 
 
 def _build_helm(sv):
+    # Base Helm has no Charge Damage rider - that effect exists only in the
+    # Favorite Item's text (and the base array's slots 04/05 mean something else).
+    return build_fire_away_rules(sv["fire_away"]), aegis_cannon_burst_percent(
+        sv["aegis_cannon"]
+    )
+
+
+def _build_helm_signature(sv):
     rules = build_fire_away_rules(sv["fire_away"])
     rules += build_aegis_cannon_rules(sv["aegis_cannon"])
     return rules, aegis_cannon_burst_percent(sv["aegis_cannon"])
@@ -449,6 +457,7 @@ _BUILDERS = {
     "rapi-red-hood": _build_rapi_red_hood,
     "rapi-red-hood-b1": _build_rapi_red_hood_b1,
     "helm": _build_helm,
+    "helm-signature": _build_helm_signature,
     "helm-aquamarine": lambda sv: (build_helm_aquamarine_rules(sv), aegis_cannon_overload_burst_percent(sv)),
     "isabel": lambda sv: (build_isabel_rules(sv), sonic_chaser_burst_percent(sv)),
     "julia": lambda sv: ([], climax_burst_percent(sv)),  # Decrescendo is periodic-only; Crescendo is a resource
@@ -775,7 +784,10 @@ _PER_SHOT_RULE_BUILDERS = {
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),
     "marciana-marine-study": lambda sv: build_marciana_per_shot_rules(sv),
-    "helm": lambda sv: (
+    # Base Helm keeps only the last-bullet crit rate; the full-charge nuke is
+    # text the Favorite Item adds.
+    "helm": lambda sv: build_frontline_command_per_shot_rules(sv["frontline_command"]),
+    "helm-signature": lambda sv: (
         build_frontline_command_per_shot_rules(sv["frontline_command"])
         + build_fire_away_per_shot_rules(sv["fire_away"])
     ),

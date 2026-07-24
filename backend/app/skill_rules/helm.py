@@ -1,11 +1,19 @@
-"""SkillRule encoding of Helm's "Frontline Command" (skills[0]) and "Fire
-Away" (skills[1]) from api.dotgg.gg slug "helm".
+"""Helm (slug "helm") and her Favorite Item build (slug "helm-signature"), a
+Burst-3 Water SR attacker. Collected from api.dotgg.gg.
 
-Fienn's Helm has her signature weapon completed, so callers must build these
-rules from the "dollskills" array's values, not "skills" - the cherished-
-weapon version changes more than numbers (e.g. Frontline Command gains an
-entirely new full-charge-hit effect) even where a stat's own value carries
-over unchanged (e.g. the crit rate on Frontline Command is the same in both).
+The two builds are separate deck candidates (dual-slot, like drake/julia), and
+which one a user fights with comes from their roster's per-unit `favorite_item`
+flag - never assumed here. Slots 01-03 carry the same meaning in both arrays, so
+the shared builders below take either set; the Favorite Item's extra effects
+read slots the base array does not have, and their builders are signature-only.
+
+What the Favorite Item changes (it is not a numbers-only upgrade):
+- Aegis Cannon's burst goes 1237.5% -> 8236.8% (6.7x).
+- Fire Away's Full-Burst Attack Damage goes 11.85% -> 27.87%, and it GAINS a
+  178.98% full-charge nuke the base skill has no text for at all.
+- Aegis Cannon GAINS a self Charge Damage Multiplier rider. The base array's
+  slots 04/05 are 30/30 and mean something else entirely, so
+  build_aegis_cannon_rules must never be handed base values.
 
 "Aegis Cannon" (skills[2]/dollskills[2], her burst skill) is mostly a pure
 damage instance - use aegis_cannon_burst_percent() for the "X% of final ATK"
@@ -18,19 +26,22 @@ via `per_shot_rules`' `"last_bullet"` mode (gap #1's residual variant, built
 empty faster than the buff's own 5s window, so repeated last-bullet hits
 must refresh, not stack - see the Prika/Mint per-shot-refresh precedent).
 
-"Fire Away" also deals 178.98% of final ATK on every Full Charge hit - a
-DIFFERENT trigger from last-bullet, and since every shot on a charge weapon is
-a full charge it is `per_shot_rules`' plain "every 1" mode (see
+Signature only - "Fire Away" also deals 178.98% of final ATK on every Full
+Charge hit - a DIFFERENT trigger from last-bullet, and since every shot on a
+charge weapon is a full charge it is `per_shot_rules`' plain "every 1" mode (see
 `build_fire_away_per_shot_rules`). Its text says "as additional damage", so it
 is `full_burst_bonus_eligible`.
 
-"Aegis Cannon" additionally grants herself Charge Damage Multiplier +158.4%
-for 10 ROUNDS - a bullet-count duration, not seconds, so it uses
-`round_buff_rule(shots=10)` (the Zwei/Miranda precedent).
+Signature only - "Aegis Cannon" additionally grants herself Charge Damage
+Multiplier +158.4% for 10 ROUNDS - a bullet-count duration, not seconds, so it
+uses `round_buff_rule(shots=10)` (the Zwei/Miranda precedent).
 
-Not modeled / deferred: Frontline Command's own full-charge bonuses (Max-HP
-recovery + Burst Gauge fill - survivability and an inert stat), and Aegis
-Cannon's damage-proportional heal-over-time.
+Not modeled / deferred (both builds): Frontline Command's own full-charge
+bonuses (Max-HP recovery + Burst Gauge fill - survivability and an inert stat),
+and Aegis Cannon's damage-proportional heal-over-time. Frontline Command's crit
+rate reads "Critical Rate of normal attack"; the engine has no normal-attack-only
+crit bucket, so it is encoded as plain `crit_rate` - a slight overcredit on burst
+damage, unchanged from the pre-split encoding.
 """
 from app.effects import Effect
 from app.skill_rules._helpers import (
@@ -40,11 +51,24 @@ from app.skill_rules._helpers import (
 )
 from app.squad_engine import SkillRule
 
-# Fienn's Helm has the signature weapon completed, so the manifest reads the
-# "dollskills" array, not "skills" (see module docstring).
 SKILL_VALUE_MANIFESTS = {
     "helm": {
         "source": "dotgg",
+        "test_module": "test_skill_rules_helm",
+        "keys": {
+            "frontline_command": ("skills", 0),
+            "fire_away": ("skills", 1),
+            "aegis_cannon": ("skills", 2),
+        },
+        "fixtures": {
+            "frontline_command": "FRONTLINE_COMMAND_VALUES",
+            "fire_away": "FIRE_AWAY_VALUES",
+            "aegis_cannon": "AEGIS_CANNON_VALUES",
+        },
+    },
+    "helm-signature": {
+        "source": "dotgg",
+        "data_slug": "helm",
         "test_module": "test_skill_rules_helm",
         "keys": {
             "frontline_command": ("dollskills", 0),
@@ -52,9 +76,9 @@ SKILL_VALUE_MANIFESTS = {
             "aegis_cannon": ("dollskills", 2),
         },
         "fixtures": {
-            "frontline_command": "FRONTLINE_COMMAND_VALUES",
-            "fire_away": "FIRE_AWAY_VALUES",
-            "aegis_cannon": "AEGIS_CANNON_VALUES",
+            "frontline_command": "FRONTLINE_COMMAND_SIG",
+            "fire_away": "FIRE_AWAY_SIG",
+            "aegis_cannon": "AEGIS_CANNON_SIG",
         },
     },
 }

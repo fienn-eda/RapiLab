@@ -8,11 +8,10 @@ from app.skill_rules.helm import (
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
-# Helm has her signature weapon ("dollskills" in api.dotgg.gg) completed, so
-# these are the dollskills level-10 values, not the base skills - Fienn
-# confirmed the cherished-weapon version applies. It changes more than just
-# numbers: Fire Away's full-burst Attack Damage bonus is 27.87% here vs
-# 11.85% on the base (non-cherished) skill.
+# Base ("skills") level-10 values - slug "helm", the Nikke without her Favorite
+# Item. Slots 01-03 mean the same thing in both builds, which is why the shared
+# builders below take either set; the Favorite Item's extra effects live in slots
+# the base simply does not have.
 FRONTLINE_COMMAND_VALUES = {
     "description_value_01": "14.64",
     "description_value_02": "5",
@@ -20,12 +19,36 @@ FRONTLINE_COMMAND_VALUES = {
 
 FIRE_AWAY_VALUES = {
     "description_value_01": "3.08",
+    "description_value_02": "11.85",
+    "description_value_03": "10",
+}
+
+AEGIS_CANNON_VALUES = {
+    "description_value_01": "1237.5",
+    "description_value_02": "54.45",
+    "description_value_03": "10",
+    # Base slots 04/05 are 30/30 and are NOT the Favorite Item's Charge Damage
+    # rider - build_aegis_cannon_rules must never be called with these.
+    "description_value_04": "30",
+    "description_value_05": "30",
+}
+
+# Favorite Item ("dollskills") level-10 values - slug "helm-signature". The
+# upgrade changes more than numbers: it adds a full-charge nuke to Fire Away and
+# a Charge Damage rider to Aegis Cannon, and multiplies the burst by 6.7x.
+FRONTLINE_COMMAND_SIG = {
+    "description_value_01": "14.64",
+    "description_value_02": "5",
+}
+
+FIRE_AWAY_SIG = {
+    "description_value_01": "3.08",
     "description_value_02": "27.87",
     "description_value_03": "10",
     "description_value_04": "178.98",  # Full Charge hit: "as additional damage"
 }
 
-AEGIS_CANNON_VALUES = {
+AEGIS_CANNON_SIG = {
     "description_value_01": "8236.8",
     "description_value_02": "54.45",
     "description_value_03": "10",
@@ -93,16 +116,22 @@ def test_fire_away_grants_squad_attack_damage_up_on_full_burst_enter():
     fire_trigger("full_burst_enter", rules, ctx, registry, time=5.0)
 
     ally = {"slug": "ally", "element": "Iron"}
-    assert round(registry.total_for("attack_damage_up", ally, now=5.0), 4) == 0.2787
+    assert round(registry.total_for("attack_damage_up", ally, now=5.0), 4) == 0.1185
     assert registry.total_for("attack_damage_up", ally, now=15.1) == 0.0
 
 
 def test_aegis_cannon_burst_percent_reads_the_damage_slot():
-    assert aegis_cannon_burst_percent(AEGIS_CANNON_VALUES) == 8236.8
+    assert aegis_cannon_burst_percent(AEGIS_CANNON_VALUES) == 1237.5
+
+
+def test_the_favorite_item_multiplies_the_burst_rather_than_only_adding_effects():
+    # 6.7x, confirmed against both lootandwaifus and the dotgg capture. This is
+    # the single biggest reason a baked encoding overestimated non-owners.
+    assert aegis_cannon_burst_percent(AEGIS_CANNON_SIG) == 8236.8
 
 
 def test_fire_away_full_charge_nuke_fires_every_shot_and_takes_the_full_burst_bonus():
-    ps = build_fire_away_per_shot_rules(FIRE_AWAY_VALUES)
+    ps = build_fire_away_per_shot_rules(FIRE_AWAY_SIG)
     assert len(ps) == 1
     threshold, mode, rules = ps[0]
     # Every SR shot IS a full charge, so this is the plain "every 1" mode.
@@ -124,7 +153,7 @@ def test_fire_away_full_charge_nuke_fires_every_shot_and_takes_the_full_burst_bo
 def test_aegis_cannon_grants_self_charge_damage_for_ten_rounds():
     ctx = make_context()
     registry = EffectRegistry()
-    rules = {"helm": build_aegis_cannon_rules(AEGIS_CANNON_VALUES)}
+    rules = {"helm-signature": build_aegis_cannon_rules(AEGIS_CANNON_SIG)}
 
     fire_trigger("own_burst_activate", rules, ctx, registry, time=5.0)
 
