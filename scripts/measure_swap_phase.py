@@ -13,10 +13,13 @@ numbers decide what to do about it, and none of them are in the phase split:
               deadline argue the phase is starved and needs batching/parallelism
   split       how the sims divide between deck-to-deck and leftover swaps
 
-Run before changing the swap phase, and again afterwards.
+Run before changing the swap phase, and again afterwards. Sims are counted
+where the batch is BUILT, in this process, so the counts stay honest under
+`--workers` - unlike the phase split, which can only time a pooled run.
 
 Usage (any cwd):
     python3 scripts/measure_swap_phase.py [--units 78] [--decks 5] [--budget 45]
+                                          [--workers auto]
 """
 import argparse
 import sys
@@ -56,20 +59,25 @@ class _SwapTrace:
     def since_start(self):
         return time.perf_counter() - self.started
 
-    def wrap_score(self, func):
-        def wrapped(units, boss):
+    def wrap_score_batch(self, func):
+        """Count the decks each batch actually simulates. Batches issued
+        outside a _try_swaps call (the swap phase's own opening scores, and the
+        final ordering polish) are not the hill-climb's cost and are skipped."""
+        def wrapped(decks, boss, pool):
             if self.kind is not None:
-                self.sims[self.kind] += 1
-            return func(units, boss)
+                self.sims[self.kind] += len(decks)
+            return func(decks, boss, pool)
         return wrapped
 
-    def wrap_try(self, func, kind):
-        """Attribute the sims a _try_* call issues, and checkpoint its result."""
-        def wrapped(decks, scores, *args, **kwargs):
+    def wrap_try(self, func):
+        """Attribute a _try_swaps call's sims to the kind of swap it tries
+        (`j is None` means the partner is the leftover bench), and checkpoint
+        the summed score it leaves behind."""
+        def wrapped(decks, scores, i, partner, j, *args, **kwargs):
             before = list(scores)
-            self.kind = kind
+            self.kind = "leftover" if j is None else "pair"
             try:
-                return func(decks, scores, *args, **kwargs)
+                return func(decks, scores, i, partner, j, *args, **kwargs)
             finally:
                 self.kind = None
                 self.accepted += sum(1 for b, a in zip(before, scores) if a != b)
@@ -112,23 +120,26 @@ def main():
     p.add_argument("--decks", type=int, default=5)
     p.add_argument("--budget", type=float, default=45.0,
                    help="swap phase time budget in seconds (default: production's 45)")
+    p.add_argument("--workers", default=1,
+                   help='1 (default) or "auto"/N to run the pooled path')
     args = p.parse_args()
+    workers = args.workers if args.workers == "auto" else int(args.workers)
 
     slugs = [u["slug"] for u in supported_units()][:args.units]
     specs, _ = load_roster([_nikke(s) for s in slugs])
     boss = BossProfile(element="Water", fight_duration=180.0)
     print(f"roster {len(specs)} units; {args.decks} decks; "
-          f"swap budget {args.budget:.0f}s (serial)", flush=True)
+          f"swap budget {args.budget:.0f}s "
+          f"({'serial' if workers == 1 else f'workers={workers}'})", flush=True)
 
     trace = _SwapTrace()
-    da._score = trace.wrap_score(da._score)
-    da._try_pair_swaps = trace.wrap_try(da._try_pair_swaps, "pair")
-    da._try_leftover_swaps = trace.wrap_try(da._try_leftover_swaps, "leftover")
+    da._score_batch = trace.wrap_score_batch(da._score_batch)
+    da._try_swaps = trace.wrap_try(da._try_swaps)
     da._swap_pass = trace.wrap_pass(da._swap_pass, args.budget)
 
     started = time.perf_counter()
     da.allocate_decks(specs, boss, num_decks=args.decks,
-                      time_budget_sec=args.budget, workers=1)
+                      time_budget_sec=args.budget, workers=workers)
     total_elapsed = time.perf_counter() - started
 
     sims = trace.sims["pair"] + trace.sims["leftover"]
