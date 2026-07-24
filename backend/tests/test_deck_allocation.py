@@ -168,7 +168,7 @@ _SYNERGY = frozenset({"q1-0", "q3-9"})
 
 def _quality_scorer(slugs):
     total = sum(_UNIT_VALUE.get(s, 0.0) for s in slugs)
-    return total + (40.0 if _SYNERGY <= set(slugs) else 0.0)
+    return total + (100.0 if _SYNERGY <= set(slugs) else 0.0)
 
 
 def _quality_roster():
