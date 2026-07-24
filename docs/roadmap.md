@@ -459,12 +459,23 @@
     `DraftPalette`→`UnitPalette` 일반화. spec/plan:
     `docs/superpowers/{specs,plans}/2026-07-23-unit-pool-selection*`. **2단계 탐색
     (선택→좁은 분할)은 실사용 속도 확인 후 재판단(여전히 백로그).**
-  - **🔬 캐스케이드 대리모델 Phase 1 (2026-07-23):** 프로파일이 raid-from-scratch
-    비용의 ~66%가 "모든 후보 시뮬"임을 확인 → 조사 결과 빠른 도구들은 값싼 수식으로
-    랭킹하고 top-K만 정밀평가(캐스케이드). reference-free 표본-회귀 대리모델
-    (`backend/app/surrogate.py`)과 recall 검증 하네스(`scripts/validate_surrogate_recall.py`)
-    구현. **다음: 하네스를 실 로스터로 돌려 top-K recall/Spearman 측정 → Go면 Phase 2
-    (캐스케이드 통합)**. spec/plan: `docs/superpowers/{specs,plans}/2026-07-23-cascade-surrogate*`.
+  - **✅ 캐스케이드 대리모델 Phase 1 측정 완료 (2026-07-24):** 프로파일이
+    raid-from-scratch 비용의 ~66%가 "모든 후보 시뮬"임을 확인 → 값싼 필터로 랭킹하고
+    top-K만 정밀평가하는 캐스케이드가 채택 가능한지 실측했다(41유닛, holdout 300, 5시드).
+    **결론: 캐스케이드는 유효하되 "유닛 단독 피처 + top-K 실시뮬" 형태로만.**
+    · **닫힌 수식 기각** — `backend/app/closed_form.py`(fit 0, 덱당 0.79ms, 시뮬 대비
+    140x)는 Spearman 0.54에 그치고 top-100까지 시뮬해도 최적을 못 찾는다. 원인 실측:
+    정적 스코어러가 값을 매길 수 있는 건 데미지의 60%뿐이고 못 보는 40%가 덱마다
+    6~62%로 요동(`scripts/measure_unmodeled_damage_share.py`).
+    · **페어 피처 기각** — recall 최고(top-20 전 시드 100%)지만 fit 비용이 대체 대상과
+    맞먹는다: 41유닛 오늘 **7,659 시뮬** vs 페어 캐스케이드 **6,257** = **1.22x**
+    (`scripts/measure_cascade_budget.py`).
+    · **유닛 단독 채택** — 예산이 로스터 크기와 거의 무관(41/61/78유닛 1,461/1,434/1,348)
+    해 41유닛 **5.2x**, top-20 시뮬로 4/5 시드에서 최적 100%(1개는 95.7%).
+    · **"시뮬 없는 즉시 모드"는 불가** — 대리모델 1픽의 실제 데미지가 시드별 44~100%.
+    **다음: Phase 2(캐스케이드 통합) 착수 여부는 Fienn 판단 — 착수 시 78유닛에서 재확인
+    필요.** 결정 근거는 `docs/decisions.md`, spec/plan:
+    `docs/superpowers/{specs,plans}/2026-07-23-cascade-surrogate*`.
   - **1. SimPool 공유(~30 LOC).** 4회 호출이 SimPool 하나를 공유(전체 로스터로 초기화
     → 30명 부분집합도 `_WORKER_SPECS[s]` 유효). spawn wave 4→1. **결과 불변.** 단
     sim 작업량 2×97초는 그대로 — spawn이 지배 비용이 아니면 체감 작음(0번이 판정).
