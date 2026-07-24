@@ -11,7 +11,10 @@ deferred loop is built. See docs/engine-gaps.md.
 
 Modeled (DPS-relevant):
 - Electric Power, Full Full Charge (skills[0]), at battle start: self ATK +
-  (4.05% of her final Max HP) continuously (self flat_atk, caster-Max-HP-scaled).
+  (4.05% of her LIVE Max HP) continuously - resolved through
+  max_hp_scaled_atk_rule, so ally/self Max HP buffs feed it. Snapshot at
+  battle start: her own Over Energy stages raise Max HP later in the fight
+  and must re-apply this buff to be reflected (see the deferred list).
 - Over Energy (skills[1]), on her OWN Burst-3 activation ("[Burst Stage 3
   entry]" = after B2 fires, before B3 fires - Fienn's in-game reading,
   2026-07-24): self Attack Damage +52.14% for 10 sec. Encoded on
@@ -41,7 +44,7 @@ Not modeled / deferred (handle later, needs engine work):
   additional damage" to the nearest enemy. Scales with the deferred Over Energy
   stage, so it is 0 without the loop. Deferred.
 """
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import buff_rule, max_hp_scaled_atk_rule
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -66,7 +69,7 @@ def build_laplace_ultimate_hero_rules(values, caster_max_hp):
     s2 = values["over_energy"]
     burst = values["regenerative_energy_armament_mjolnir"]
 
-    battle_start_atk_flat = caster_max_hp * float(s1["description_value_01"]) / 100  # 4.05% of Max HP
+    battle_start_atk_pct = float(s1["description_value_01"]) / 100  # Max HP의 4.05%
 
     fb_attack_damage = float(s2["description_value_06"]) / 100  # 52.14%
     fb_attack_damage_dur = float(s2["description_value_07"])     # 10 sec
@@ -75,7 +78,7 @@ def build_laplace_ultimate_hero_rules(values, caster_max_hp):
     burst_atk_dur = float(burst["description_value_02"])     # 10 sec
 
     return [
-        buff_rule("battle_start", [("flat_atk", battle_start_atk_flat, "self", None)]),
+        max_hp_scaled_atk_rule("battle_start", battle_start_atk_pct, "self", None, caster_max_hp),
         # 스킬텍스트의 [버스트 3단계 진입 시] = 그녀 자신이 B3를 쏘는 순간
         # (Fienn 실측 2026-07-24). own_burst_activate는 넉이 기록되기 전에 발동해
         # 이 버프가 그녀의 버스트딜에 곱해지고, 그녀가 버스트하지 않은 사이클엔

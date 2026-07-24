@@ -100,3 +100,14 @@ def test_burst_self_atk():
     assert round(registry.total_for("atk_percent", LAPLACE, now=5.0), 4) == 0.6336
     assert registry.total_for("atk_percent", LAPLACE, now=15.1) == 0.0  # 10 sec window
     assert registry.total_for("atk_percent", ALLY, now=5.0) == 0.0  # self-only
+
+
+def test_battle_start_atk_uses_live_max_hp_when_a_max_hp_buff_is_active():
+    from app.effects import Effect
+
+    ctx = make_context()
+    registry = EffectRegistry()
+    registry.add(Effect("flat_max_hp", 200_000.0, "self", None, "laplace-ultimate-hero"), applied_at=0.0)
+    fire_trigger("battle_start", {"laplace-ultimate-hero": rules()}, ctx, registry, time=0.0)
+    # (800000 + 200000) * 4.05% = 40500 (정적이면 32400에 머문다)
+    assert round(registry.total_for("flat_atk", LAPLACE, now=0.0), 2) == 40500.0
