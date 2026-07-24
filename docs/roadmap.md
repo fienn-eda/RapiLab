@@ -436,8 +436,8 @@
     핵심 부산물: **`s`(25명 재탐색)=8.30B > scratch(41유닛 전역)=7.85B — greedy-peel이 큰
     풀에서 초반 덱 결정을 나쁘게 함("greedy 고전적 실수").** ⇒ **주력 최적화: 완성-draft에서
     full-roster scratch 패스 제거**(`recommended = max(warm, within_draft)`), **797초→~200초
-    (~4배), 품질 손실 ≤0.8%**(lock·단조보장 유지). 부차: zero-base raid(scratch만)는 greedy
-    대신 "선택→좁은 분할" 2단계로 속도·품질 동시 개선 여지. **1(공유 SimPool)·2(메모)는 폐기
+    (~4배), 품질 손실 ≤0.8%**(lock·단조보장 유지). 부차(당시): zero-base raid는 "선택→좁은
+    분할" 2단계 여지 — **캐스케이드로 대체됨**. **1(공유 SimPool)·2(메모)는 폐기
     수준**(제거할 패스가 지배비용이므로 무의미). 착수 전 seed/size 1~2개 추가 확인 권장.
   - **✅ 재확인 (2026-07-23, seed 42@42u·seed 99@51u): 정정된 최악 손실 ~2.2%(≤0.8% 아님).**
     "full-scratch 제거 시 recommended=max(warm,within_draft) 손실"은 **현실적 draft(perfect/
@@ -449,7 +449,7 @@
     유지, within_draft의 focused `s`도 유지. 단조보장·lock 존중 유지(warm의 swap 마스크가
     lock 존중), 완성-draft가 4콜→3콜임을 고정하는 회귀 테스트 추가. **실측 78유닛 완성-draft
     797→215.8초 (3.7배).** 남은 최대 비용은 유지한 within `s`(25유닛 focused scratch)=139초 →
-    **후속 타깃**: `s`(및 zero-base scratch)를 "선택→좁은 분할" 2단계로 바꿔 속도·품질 동시 개선.
+    **후속 타깃**(당시): `s`·zero-base scratch를 "선택→좁은 분할" 2단계로 — **캐스케이드로 대체됨**.
     백엔드 1184 passed/3 skipped, 리뷰 Approved. **1(공유 SimPool)·2(evaluate 메모)는 착수 안 함
     (지배 비용이던 full-scratch 제거로 무의미해짐).**
   - **✅ 유저 풀 선택(제외) 착지 (2026-07-23):** 세 추천 모드(single/raid/draft)에
@@ -458,7 +458,8 @@
     근원에서 줄여 raid-from-scratch를 유저가 뺀 만큼 단축. 휘발성(프로필 전환 리셋),
     `DraftPalette`→`UnitPalette` 일반화. spec/plan:
     `docs/superpowers/{specs,plans}/2026-07-23-unit-pool-selection*`. **2단계 탐색
-    (선택→좁은 분할)은 실사용 속도 확인 후 재판단(여전히 백로그).**
+    (선택→좁은 분할)은 백로그에서 제거(2026-07-25)** — 캐스케이드가 같은 목적(후보를
+    값싸게 좁히기)을 달성했다(아래 Phase 2 항목, 78유닛 20.2배).
   - **✅ 캐스케이드 대리모델 Phase 1 측정 완료 (2026-07-24):** 프로파일이
     raid-from-scratch 비용의 ~66%가 "모든 후보 시뮬"임을 확인 → 값싼 필터로 랭킹하고
     top-K만 정밀평가하는 캐스케이드가 채택 가능한지 실측했다(41유닛, holdout 300, 5시드).
@@ -840,8 +841,8 @@
   - ~~**Pattern A 자원 유닛**: `rei-ayanami`·`rei-ayanami-tentative-name`·
     `neon-vision-eye`~~ — **전부 2026-07-16에 인코딩 완료**(이 백로그가 갱신 누락된
     상태로 남아 있었음, 2026-07-17 정정). Pattern A는 이제 소진.
-  - **검증 완료, 인코딩 대기 (2026-07-17 검증 배치)**: `raven`·`sakura-bloom-in-summer`
-    — 기존 프리미티브로 핵심 인코딩 가능, 부위파괴 연동만 defer. 다음 배치 최우선.
+  - ~~**검증 완료, 인코딩 대기 (2026-07-17 검증 배치)**: `raven`·`sakura-bloom-in-summer`~~
+    → **둘 다 인코딩 완료**(2026-07-25 확인, 이 줄이 갱신 누락된 채 남아 있었음).
   - ~~검증 완료, 갭 확인 (2026-07-17): `scarlet-black-shadow`(gap #10)~~ →
     **인코딩 완료 (2026-07-18)** — `per_shot_rules` `"sequence"` 모드 확장 +
     Pulse `damage_type` 배선. 같은 배치에서 velvet Sticky Fingers
@@ -1031,8 +1032,9 @@
       `periodic_rules`. 실제 값은 약 6300%가 아니라 **5280%/180초** — 강제발동이 없어
       첫 캐스트가 t=30이므로 5캐스트(6캐스트 아님)다. 자기 sustained 버프도 함께 실효화,
       고정 셸 E2E **+7.75%**.
-- [ ] **애장품 4인방 온보딩 (Sugar · Flora · Rosanna · Phantom)** — 넷 다 미인코딩
-      상태에서 애장품이 추가돼 base + `-signature` 듀얼 슬롯으로 올린다. 설계
+- [x] **애장품 4인방 온보딩 (Sugar · Flora · Rosanna · Phantom) — 인코딩 완료(2026-07-24).**
+      넷 다 base + `-signature` 듀얼 슬롯으로 올라갔고 레지스트리·테스트까지 들어갔다.
+      **단, 네 `-signature` 슬러그는 아직 추천기에 노출되지 않는다 — 아래 노출 버그 항목 참고.** 설계
       `docs/superpowers/specs/2026-07-24-favorite-item-quartet-design.md`, 계획
       `docs/superpowers/plans/2026-07-24-favorite-item-quartet.md`.
       **선행 배선 완료**: 매니페스트 `weapon_source` 키 — 스킬값은 lootandwaifus
@@ -1134,16 +1136,25 @@
       자체딜 +23.0%, 덱 총딜 +13.0%.
 
 ### 정리/보강
+- [ ] **`supported_units()`가 `weapon_source`를 무시해 애장품 4인방의 `-signature`
+      빌드가 추천기에서 안 보인다** (2026-07-25 발견). `user_roster.load_nikke_spec`은
+      `manifest.get("weapon_source", manifest["source"])`를 존중하는데
+      (`user_roster.py:63`) `supported_units._load_meta`는 `manifest["source"]`만 보고
+      (`supported_units.py:26`) 죽은 dotgg를 찾다 `FileNotFoundError` → `continue`로
+      **조용히 탈락**시킨다. `sugar/flora/rosanna/phantom-signature` 넷 다 해당.
+      `_load_meta` 독스트링이 "load_nikke_spec의 해석을 정확히 미러링"이라 주장하는데
+      더 이상 사실이 아니다. 조용한 `continue`가 이런 누락을 감추는 것 자체도 재검토 대상.
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
-      (docs-keeper 지적)
+      (docs-keeper 지적, 2026-07-25 확인 — 둘 다 여전히 누락)
 
 ### 나중 (Phase 5~7)
-- [ ] 5덱 25니케 분배 최적화 레이어
+- [x] 5덱 25니케 분배 최적화 레이어 (Phase 5에서 착지 — `allocate_decks`의 greedy-peel +
+      same-tier swap 힐클라임 + draft/lock, 2026-07-24 캐스케이드로 78유닛 20.2배 가속)
 - [x] React 입력 폼 (ShiftyPad 수동 입력)
 - [x] FastAPI 백엔드 엔드포인트 (`POST /api/recommend`, 2026-07-16)
 - [x] 로스터 영속화 (localStorage, 2026-07-17) — 새로고침에 2,000개 값이 증발하던 문제
-- [ ] ShiftyPad 연동 자동화 조사 — 재정의됨, Phase 7 섹션 참고(Stage 0-a 큐브 질문 →
-      Gate 0 고통 재측정 → Stage 1 Fienn 정찰)
+- [x] ShiftyPad 연동 자동화 조사 — **종결**: Phase 7이 blablalink sync를 유일한 로스터
+      소스로 확정하며 대체됨(`docs/decisions.md`, "로스터 소스를 blablalink sync 하나로 확정").
 
 ---
 
