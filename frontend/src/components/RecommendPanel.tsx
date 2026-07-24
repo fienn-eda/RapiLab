@@ -17,7 +17,7 @@ import {
   validateBossProfileDraft,
   type BossProfileDraft,
 } from '../types/bossProfileDraft'
-import { makeEmptyDraft, MAX_DRAFT_SEATS_PER_DECK, type Draft } from '../types/draft'
+import { makeEmptyDraft, type Draft } from '../types/draft'
 import type { StoredInputs, StoredResult } from '../types/profile'
 import {
   DEFAULT_NUM_DECKS,
@@ -30,7 +30,7 @@ import {
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
 import { DeckResults } from './DeckResults'
-import { DraftEditor, placeUnit, removeUnitBySlug, toRequestDraft } from './DraftEditor'
+import { DraftEditor, removeUnitBySlug, toRequestDraft } from './DraftEditor'
 import { DraftResults } from './DraftResults'
 import { RaidResults } from './RaidResults'
 import { UnitPalette } from './UnitPalette'
@@ -210,14 +210,6 @@ export function RecommendPanel({
     [draftValue],
   )
 
-  const handlePick = (slug: string) => {
-    const targetDeckIndex = draftValue.decks.findIndex(
-      (seats) => seats.length < MAX_DRAFT_SEATS_PER_DECK,
-    )
-    if (targetDeckIndex === -1) return
-    setDraftValue((current) => placeUnit(current, targetDeckIndex, slug))
-  }
-
   const toggleExclude = (slug: string) => {
     if (!excludedSlugs.has(slug)) {
       // Excluding a unit also unplaces it from the draft.
@@ -384,11 +376,11 @@ export function RecommendPanel({
           <fieldset className="group">
             <legend className="group__legend">Units to use</legend>
             {/* Default-expanded (discoverable) but collapsible. `open` also keeps the
-                checkboxes in the a11y tree for tests without a jsdom details toggle. */}
+                unit toggles in the a11y tree for tests without a jsdom details toggle. */}
             <details className="group__details" open>
               <summary className="group__hint">
-                {effectiveRoster.length}/{roster.length} in the search pool — uncheck any you
-                won&rsquo;t field
+                {effectiveRoster.length}/{roster.length} in the search pool — click any you
+                won&rsquo;t field to drop it
               </summary>
               {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
               <UnitPalette
@@ -415,7 +407,7 @@ export function RecommendPanel({
                 roster={roster}
                 supportedUnits={supportedUnits.units}
                 usedSlugs={usedSlugs}
-                onPick={handlePick}
+                draggable
                 excludedSlugs={[...excludedSlugs]}
                 onToggleExclude={toggleExclude}
               />

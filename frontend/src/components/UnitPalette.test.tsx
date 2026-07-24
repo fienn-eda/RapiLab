@@ -39,57 +39,58 @@ const base = {
 }
 
 describe('UnitPalette', () => {
+  const unitButton = (name: RegExp) => screen.getByRole('button', { name })
+
   it('groups owned-and-supported units under B1/B2/B3, excluding unowned', () => {
-    render(<UnitPalette {...base} onPick={() => {}} usedSlugs={[]} />)
+    render(<UnitPalette {...base} draggable usedSlugs={[]} />)
     expect(screen.getByRole('heading', { name: 'B1' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'B2' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: 'B3' })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /crown/i })).toBeInTheDocument()
+    expect(unitButton(/crown/i)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /anne/i })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /noir/i })).not.toBeInTheDocument()
   })
 
-  it('renders a placed (used) unit as disabled for placement', () => {
-    render(<UnitPalette {...base} onPick={() => {}} usedSlugs={['crown']} />)
-    expect(screen.getByRole('button', { name: /crown/i })).toBeDisabled()
-    expect(screen.getByRole('button', { name: /liter/i })).not.toBeDisabled()
+  // The chip is a portrait and its skill pips; the name, tier and element it
+  // used to print are on the hover card, and the button carries the name for
+  // anyone not looking at pixels.
+  it('names each unit through its button rather than visible chip text', () => {
+    render(<UnitPalette {...base} />)
+    expect(unitButton(/use crown/i)).toBeInTheDocument()
+    expect(unitButton(/use liter/i)).toBeInTheDocument()
   })
 
-  it('calls onPick when a free, included unit is clicked (draft mode)', async () => {
-    const user = userEvent.setup()
-    const onPick = vi.fn()
-    render(<UnitPalette {...base} onPick={onPick} usedSlugs={[]} />)
-    await user.click(screen.getByRole('button', { name: /liter/i }))
-    expect(onPick).toHaveBeenCalledWith('liter')
-  })
-
-  it('shows a checked Use checkbox per included unit; unchecked when excluded', () => {
+  it('reports pool membership as the pressed state of the portrait toggle', () => {
     render(<UnitPalette {...base} excludedSlugs={['liter']} />)
-    expect(screen.getByRole('checkbox', { name: /use crown/i })).toBeChecked()
-    expect(screen.getByRole('checkbox', { name: /use liter/i })).not.toBeChecked()
+    expect(unitButton(/use crown/i)).toHaveAttribute('aria-pressed', 'true')
+    expect(unitButton(/use liter/i)).toHaveAttribute('aria-pressed', 'false')
   })
 
-  it('calls onToggleExclude when a Use checkbox is toggled', async () => {
+  it('toggles a unit out of the pool when its portrait is clicked', async () => {
     const user = userEvent.setup()
     const onToggleExclude = vi.fn()
     render(<UnitPalette {...base} onToggleExclude={onToggleExclude} />)
-    await user.click(screen.getByRole('checkbox', { name: /use crown/i }))
+    await user.click(unitButton(/use crown/i))
     expect(onToggleExclude).toHaveBeenCalledWith('crown')
   })
 
-  it('disables the place button for an excluded unit (draft mode)', () => {
-    render(<UnitPalette {...base} onPick={() => {}} usedSlugs={[]} excludedSlugs={['blanc']} />)
-    expect(screen.getByRole('button', { name: /blanc/i })).toBeDisabled()
+  it('only lets an included, unseated unit be dragged in draft mode', () => {
+    render(<UnitPalette {...base} draggable usedSlugs={['crown']} excludedSlugs={['blanc']} />)
+    expect(unitButton(/use liter/i)).toHaveAttribute('draggable', 'true')
+    // Already in a deck, so there is nothing left to seat.
+    expect(unitButton(/use crown/i)).toHaveAttribute('draggable', 'false')
+    // Out of the pool entirely.
+    expect(unitButton(/use blanc/i)).toHaveAttribute('draggable', 'false')
   })
 
-  it('renders no place button when onPick is omitted (single/raid mode)', () => {
+  it('drags nothing outside draft mode', () => {
     render(<UnitPalette {...base} />)
-    expect(screen.queryByRole('button', { name: /crown/i })).not.toBeInTheDocument()
-    expect(screen.getByRole('checkbox', { name: /use crown/i })).toBeInTheDocument()
+    expect(unitButton(/use liter/i)).toHaveAttribute('draggable', 'false')
   })
 
-  // The Use checkbox asks "will you field this one?", which a portrait alone
-  // cannot answer - so each unit carries the investment the answer turns on.
+  // Clicking a portrait asks "will you field this one?", which the portrait
+  // alone cannot answer - so skill levels sit on the chip, and the hover card
+  // carries the unit's identity and what it rolled.
   it("shows each unit's skill levels and named overload rolls", () => {
     render(
       <UnitPalette

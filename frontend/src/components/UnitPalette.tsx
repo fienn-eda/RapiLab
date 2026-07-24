@@ -1,18 +1,16 @@
 // The player's unit grid, shared by all three recommend modes. Owned units
 // (active profile roster) intersected with engine-supported units
-// (GET /api/supported-units), grouped under B1/B2/B3. Each unit has a "Use"
-// checkbox for candidate-pool membership (default on); unchecking dims it and
-// drops it from the search pool.
+// (GET /api/supported-units), grouped under B1/B2/B3.
 //
-// In draft mode (onPick provided) an included, unplaced unit is also a way to
-// seat a unit: drag its portrait onto a deck to choose where it lands, or
-// click it to drop it in the next open deck. Click stays because dragging is
-// mouse-only and the editor has to work from the keyboard too.
+// A chip is its portrait and its skill levels, nothing else. Clicking the
+// portrait toggles whether that unit is in the candidate pool (default in);
+// an excluded one greys out. Everything a chip used to spell out - name,
+// burst tier, element, overload rolls - is on the hover card instead, so the
+// grid stays dense enough to scan a whole roster at once.
 //
-// Each unit carries its skill levels, because "should I field this one?" is
-// exactly the question the Use checkbox asks and a portrait cannot answer it.
-// Overload rolls sit behind a hover on the portrait: they matter to that same
-// decision, but showing four lines per unit at once crowds out the grid.
+// In draft mode (draggable) a portrait can also be dragged onto a deck to
+// seat it there. Dragging is the only way to seat a unit, so draft editing is
+// mouse-only; the Use toggle and everything else works from the keyboard.
 
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import type { SupportedUnit } from '../types/supportedUnit'
@@ -31,11 +29,10 @@ interface UnitPaletteProps {
   /** Slugs the user has toggled OUT of the candidate pool. */
   excludedSlugs: string[]
   onToggleExclude: (slug: string) => void
-  /** Draft mode only: slugs already placed in a deck (not placeable again). */
+  /** Draft mode only: slugs already seated in a deck. */
   usedSlugs?: string[]
-  /** Draft mode only: click an included, unplaced unit to place it. Omit for
-   * single/raid, which have no placement. */
-  onPick?: (slug: string) => void
+  /** Draft mode only: lets an included, unseated unit be dragged onto a deck. */
+  draggable?: boolean
 }
 
 const BURST_TIERS = [1, 2, 3] as const
@@ -46,7 +43,7 @@ export function UnitPalette({
   excludedSlugs,
   onToggleExclude,
   usedSlugs = [],
-  onPick,
+  draggable = false,
 }: UnitPaletteProps) {
   const { portraitFor } = usePortraitManifest()
   const ownedBySlug = new Map(roster.map((nikke) => [nikke.character_slug, nikke]))
@@ -68,72 +65,50 @@ export function UnitPalette({
                 const isUsed = usedSet.has(unit.slug)
                 const isExcluded = excludedSet.has(unit.slug)
                 const portrait = portraitFor(unit.slug)
-                const placeable = onPick !== undefined && !isUsed && !isExcluded
-
-                const figure = (
-                  <span className="palette__figure">
-                    {portrait ? (
-                      <img className="palette__portrait" src={portrait} alt="" />
-                    ) : (
-                      <span className="palette__portrait palette__portrait--missing" />
-                    )}
-                    <span className="palette__overload" role="presentation">
-                      <OverloadLines
-                        options={owned.overload_options}
-                        emptyText="No overload"
-                      />
-                    </span>
-                  </span>
-                )
+                const classes = ['palette__item']
+                if (isExcluded) classes.push('palette__item--excluded')
+                if (isUsed) classes.push('palette__item--seated')
 
                 return (
-                  <li
-                    key={unit.slug}
-                    className={
-                      isExcluded ? 'palette__item palette__item--excluded' : 'palette__item'
-                    }
-                  >
-                    <div className="palette__body">
-                      {onPick ? (
-                        <button
-                          type="button"
-                          className="palette__face palette__face--pickable"
-                          disabled={!placeable}
-                          draggable={placeable}
-                          aria-label={`${unit.name} (B${unit.burstTier})`}
-                          onDragStart={(event) => {
-                            event.dataTransfer.setData(DRAG_SLUG_TYPE, unit.slug)
-                            event.dataTransfer.effectAllowed = 'move'
-                          }}
-                          onClick={() => onPick(unit.slug)}
-                        >
-                          {figure}
-                        </button>
-                      ) : (
-                        // No aria-label: a generic element can't be named, and
-                        // the visible name plus the "Use {name}" checkbox
-                        // already name the unit.
-                        <div className="palette__face">{figure}</div>
-                      )}
-                      <div className="palette__investment">
-                        <SkillLevels levels={owned.skill_levels} layout="column" />
-                      </div>
-                    </div>
+                  <li key={unit.slug} className={classes.join(' ')}>
+                    <button
+                      type="button"
+                      className="palette__face"
+                      // A toggle, so it reports its state rather than pretending
+                      // each press is a fresh action. The name has to live here:
+                      // the chip itself no longer shows any text.
+                      aria-pressed={!isExcluded}
+                      aria-label={`Use ${unit.name}`}
+                      draggable={draggable && !isExcluded && !isUsed}
+                      onDragStart={(event) => {
+                        event.dataTransfer.setData(DRAG_SLUG_TYPE, unit.slug)
+                        event.dataTransfer.effectAllowed = 'move'
+                      }}
+                      onClick={() => onToggleExclude(unit.slug)}
+                    >
+                      <span className="palette__figure">
+                        {portrait ? (
+                          <img className="palette__portrait" src={portrait} alt="" />
+                        ) : (
+                          <span className="palette__portrait palette__portrait--missing" />
+                        )}
+                        {/* Everything the chip stopped showing. Presentational:
+                            the button is already named, and this would other-
+                            wise read back as a second copy of the same unit. */}
+                        <span className="palette__details" role="presentation">
+                          <span className="palette__name">{unit.name}</span>
+                          <span className="palette__meta">
+                            B{unit.burstTier} · {unit.element}
+                          </span>
+                          <OverloadLines
+                            options={owned.overload_options}
+                            emptyText="No overload"
+                          />
+                        </span>
+                      </span>
+                    </button>
 
-                    <span className="palette__name">{unit.name}</span>
-                    <span className="palette__meta">
-                      B{unit.burstTier} · {unit.element}
-                    </span>
-
-                    <label className="palette__use checkbox">
-                      <input
-                        type="checkbox"
-                        checked={!isExcluded}
-                        aria-label={`Use ${unit.name}`}
-                        onChange={() => onToggleExclude(unit.slug)}
-                      />
-                      Use
-                    </label>
+                    <SkillLevels levels={owned.skill_levels} layout="column" />
                   </li>
                 )
               })}

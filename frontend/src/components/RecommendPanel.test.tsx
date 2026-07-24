@@ -1,7 +1,21 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RecommendPanel } from './RecommendPanel'
+import { DRAG_SLUG_TYPE } from './UnitPalette'
+
+/** Seats `slug` in deck `deckNumber` (1-based) the way the UI does: by drop.
+ * jsdom implements no drag, so hand the handler the slug a real drag would
+ * have carried. */
+const dropOnDeck = (deckNumber: number, slug: string) => {
+  const deck = screen.getByRole('heading', { name: new RegExp(`Deck ${deckNumber}`) })
+  fireEvent.drop(deck.closest('div')!, {
+    dataTransfer: {
+      types: [DRAG_SLUG_TYPE],
+      getData: (type: string) => (type === DRAG_SLUG_TYPE ? slug : ''),
+    },
+  })
+}
 import { hashRecommendInputs } from '../lib/inputHash'
 import { MIN_DECK_ROSTER_SIZE } from '../types/recommend'
 import type { UserNikkeState } from '../types/userNikkeState'
@@ -297,13 +311,12 @@ describe('RecommendPanel draft mode', () => {
     render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/draft-based/i))
 
-    // Fill deck 1 (5 picks) then spill the 6th pick into deck 2, so the
-    // submitted draft spans two decks — not just deck 1.
-    for (const slug of ['a', 'b', 'c', 'd', 'e', 'f']) {
-      await user.click(
-        await screen.findByRole('button', { name: new RegExp(`^${slug.toUpperCase()} `, 'i') }),
-      )
-    }
+    await screen.findByRole('button', { name: /use a/i }) // palette loaded
+
+    // Fill deck 1 (5 seats) and put the 6th in deck 2, so the submitted draft
+    // spans two decks — not just deck 1.
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+    dropOnDeck(2, 'f')
     await user.click(screen.getByRole('button', { name: /optimize draft/i }))
 
     expect(recommendRaidDecks).toHaveBeenCalledWith({
@@ -362,11 +375,12 @@ describe('RecommendPanel draft mode', () => {
     render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/draft-based/i))
 
-    // Fill deck 1 (5 seats) then spill a 6th unit into deck 2, so 2 decks
-    // are non-empty.
-    for (let i = 0; i < 6; i += 1) {
-      await user.click(await screen.findByRole('button', { name: new RegExp(`^U${i} `, 'i') }))
-    }
+    await screen.findByRole('button', { name: /use u0/i }) // palette loaded
+
+    // Fill deck 1 (5 seats) and put the 6th in deck 2, so 2 decks are
+    // non-empty.
+    for (let i = 0; i < 5; i += 1) dropOnDeck(1, `u${i}`)
+    dropOnDeck(2, 'u5')
 
     const numDecksSelect = screen.getByLabelText('Number of decks')
     const optionOne = within(numDecksSelect).getByRole('option', { name: '1' })
@@ -624,13 +638,13 @@ describe('RecommendPanel unit-pool exclusion', () => {
     const user = userEvent.setup()
     render(<RecommendPanel roster={roster} {...noPersistence} />)
     await user.click(screen.getByRole('radio', { name: radio }))
-    await screen.findByRole('checkbox', { name: /use a/i }) // palette loaded
+    await screen.findByRole('button', { name: /use a/i }) // palette loaded
     return user
   }
 
   it('drops an unchecked unit from the raid request roster', async () => {
     const user = await renderMode(poolRoster, /raid allocation/i)
-    await user.click(screen.getByRole('checkbox', { name: /use a/i }))
+    await user.click(screen.getByRole('button', { name: /use a/i }))
     await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
     await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())
     const sent = vi.mocked(recommendRaidDecks).mock.calls[0][0]
@@ -642,7 +656,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
     // fullRoster is exactly MIN_DECK_ROSTER_SIZE (5); excluding one under-fills.
     expect(fullRoster.length).toBe(MIN_DECK_ROSTER_SIZE)
     const user = await renderMode(fullRoster, /raid allocation/i)
-    await user.click(screen.getByRole('checkbox', { name: /use a/i }))
+    await user.click(screen.getByRole('button', { name: /use a/i }))
     expect(screen.getByRole('button', { name: /allocate raid decks/i })).toBeDisabled()
   })
 
@@ -650,10 +664,10 @@ describe('RecommendPanel unit-pool exclusion', () => {
     // poolRoster/supported/raidResponse are defined in this describe's scope.
     const user = await renderMode(poolRoster, /draft-based/i)
 
-    // Place unit "a" into a deck, then exclude it.
-    await user.click(screen.getByRole('button', { name: /a \(b1\)/i }))
+    // Seat unit "a" by dropping it on Deck 1, then exclude it.
+    dropOnDeck(1, 'a')
     expect(screen.getByText('a')).toBeInTheDocument() // seat slug rendered by DraftEditor
-    await user.click(screen.getByRole('checkbox', { name: /use a/i }))
+    await user.click(screen.getByRole('button', { name: /use a/i }))
 
     await user.click(screen.getByRole('button', { name: /optimize draft/i }))
     await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())
@@ -670,11 +684,11 @@ describe('RecommendPanel unit-pool exclusion', () => {
       <RecommendPanel roster={poolRoster} {...noPersistence} activeOpenId="p1" />,
     )
     await user.click(screen.getByRole('radio', { name: /raid allocation/i }))
-    await screen.findByRole('checkbox', { name: /use a/i })
-    await user.click(screen.getByRole('checkbox', { name: /use a/i }))
-    expect(screen.getByRole('checkbox', { name: /use a/i })).not.toBeChecked()
+    await screen.findByRole('button', { name: /use a/i })
+    await user.click(screen.getByRole('button', { name: /use a/i }))
+    expect(screen.getByRole('button', { name: /use a/i })).toHaveAttribute('aria-pressed', 'false')
     rerender(<RecommendPanel roster={poolRoster} {...noPersistence} activeOpenId="p2" />)
-    expect(screen.getByRole('checkbox', { name: /use a/i })).toBeChecked()
+    expect(screen.getByRole('button', { name: /use a/i })).toHaveAttribute('aria-pressed', 'true')
   })
 
   it('excluding a unit changes the cache hash', async () => {
@@ -684,12 +698,12 @@ describe('RecommendPanel unit-pool exclusion', () => {
     const user = userEvent.setup()
     render(<RecommendPanel roster={poolRoster} {...noPersistence} getCached={getCached} />)
     await user.click(screen.getByRole('radio', { name: /raid allocation/i }))
-    await screen.findByRole('checkbox', { name: /use a/i })
+    await screen.findByRole('button', { name: /use a/i })
     await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
     await waitFor(() => expect(getCached).toHaveBeenCalledTimes(1))
     const hashFull = getCached.mock.calls[0][0]
     await screen.findByRole('button', { name: /allocate raid decks/i }) // loading cleared
-    await user.click(screen.getByRole('checkbox', { name: /use a/i }))
+    await user.click(screen.getByRole('button', { name: /use a/i }))
     await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
     await waitFor(() => expect(getCached).toHaveBeenCalledTimes(2))
     expect(getCached.mock.calls[1][0]).not.toEqual(hashFull)

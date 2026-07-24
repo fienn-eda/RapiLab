@@ -654,40 +654,28 @@
   gap: var(--sp-2);
 }
 
+/* A chip is a portrait and its skill pips - no name, tier or element text.
+   Those are on the hover card, which keeps the grid dense enough to take in a
+   whole roster at a glance. */
 .palette__item {
   display: flex;
-  flex-direction: column;
+  align-items: flex-start;
   gap: var(--sp-1);
-  padding: var(--sp-2);
+  padding: var(--sp-1);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
-}
-
-/* Portrait beside its skill column. */
-.palette__body {
-  display: flex;
-  align-items: flex-start;
-  gap: var(--sp-2);
 }
 
 .palette__face {
   display: block;
   padding: 0;
   border: 0;
+  border-radius: var(--radius-sm);
   background: none;
   color: inherit;
   font: inherit;
-}
-
-.palette__face--pickable {
-  cursor: grab;
-  border-radius: var(--radius-sm);
-}
-
-.palette__face--pickable:disabled {
-  opacity: 0.4;
-  cursor: not-allowed;
+  cursor: pointer;
 }
 
 /* Anchors the overload popover. */
@@ -712,17 +700,18 @@
   border: 1px dashed var(--border-strong);
 }
 
-/* Overload lines are part of the Use decision but there are up to four per
-   unit, which would bury the grid. Hover (or keyboard focus) the portrait.
+/* Who this is and what it rolled - everything the chip stopped showing.
    Opens downward from the portrait's left edge: the chips wrap, so which
    ones sit at the edge of a row is not knowable from the DOM, and a
-   sideways popover would flip toward the wrong side. Down always fits. */
-.palette__overload {
+   sideways card would flip toward the wrong side. Down always fits. */
+.palette__details {
   position: absolute;
   top: calc(100% + var(--sp-1));
   left: 0;
   z-index: 2;
   display: none;
+  flex-direction: column;
+  gap: 2px;
   width: max-content;
   min-width: 100%;
   padding: var(--sp-2);
@@ -733,9 +722,9 @@
   text-align: left;
 }
 
-.palette__figure:hover .palette__overload,
-.palette__face:focus-visible .palette__overload {
-  display: block;
+.palette__figure:hover .palette__details,
+.palette__face:focus-visible .palette__details {
+  display: flex;
 }
 
 .palette__name {
@@ -746,21 +735,27 @@
 .palette__meta {
   font-size: 11px;
   color: var(--text-muted);
+  margin-bottom: var(--sp-1);
 }
 
-/* Excluded units stay legible: the decision to drop one is revisited against
-   the same numbers that prompted it, so dim the card without hiding them. */
+/* With the Use checkbox gone, being out of the pool has to read off the chip
+   itself: drain the portrait's colour and mute the whole card. Excluded units
+   stay legible - the decision to drop one gets revisited against the same
+   numbers that prompted it. */
 .palette__item--excluded {
-  opacity: 0.45;
+  opacity: 0.5;
+  border-style: dashed;
 }
 
-/* Units roll a different number of overload lines, so pin the checkbox to the
-   bottom - a row of Use boxes at matching heights is what makes the pool
-   scannable. */
-.palette__use {
-  margin-top: auto;
-  font-size: 11px;
-  color: var(--text-muted);
+.palette__item--excluded .palette__portrait {
+  filter: grayscale(1);
+}
+
+/* Already seated in a deck: still in the pool, just not available to drag
+   again. Distinct from excluded, which is a choice about the whole run. */
+.palette__item--seated .palette__portrait {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
 }
 
 /* Draft editor ------------------------------------------------------------ */

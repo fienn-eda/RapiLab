@@ -80,8 +80,8 @@ export function DraftEditor({ numDecks, value, onChange, portraitFor }: DraftEdi
   return (
     <div className="draft-editor">
       <p className="draft-editor__hint">
-        Drag a unit onto a deck, or click one to drop it in the next open deck.
-        Seats are membership only — the engine assigns burst roles.
+        Drag a unit onto a deck to seat it. Seats are membership only — the
+        engine assigns burst roles.
       </p>
       <div className="draft-editor__decks">
         {Array.from({ length: numDecks }, (_, deckIndex) => {
