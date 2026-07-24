@@ -123,6 +123,7 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - **Crit is expected value, not per-hit RNG.** The major modifier gains `crit_rate*(0.5 + crit_damage_sources)`. Base crit rate is 15%, base crit damage +50%; both buff types are additive. Crit-damage buffs are inert with no crit chance. See `damage_formula._major_modifiers` and `raid_simulator.BASE_CRIT_RATE` (overridable via `base_crit_rate`, set 0.0 for deterministic tests).
 
 ## Effects / stats
+- **Max HP는 2026-07-24부터 살아있는 딜 스탯이다 — 단 "적용 시점 스냅샷"이다.** `flat_max_hp`는 오래 부여만 되고(Rouge의 Game Master) 아무도 소비하지 않는 죽은 스탯이었고, "ATK ▲ 캐스터 Max HP의 X%" 버프들은 전부 정적 캐릭터정보 Max HP를 빌드 시점에 곱하고 있었다. `_helpers.max_hp_scaled_atk_rule`이 이 환산을 **룰 발동 시점**으로 옮겨 `base_max_hp + total_for("flat_max_hp", caster, time)`을 읽는다. 딜 계산 핫패스(`_stat_bundle`/`total_for`의 세그먼트 테이블)는 **의도적으로 건드리지 않았다** — 덱 최적화 비용을 늘리지 않는 것이 Fienn의 제약이었고, 환산은 트리거당 한 번이면 충분하기 때문이다. **대가는 스냅샷 의미론**: ATK 버프가 걸린 뒤 도착한 Max HP 버프는 그것을 소급해 키우지 않으므로, 전투 중 Max HP가 자라는 유닛은 Max HP가 바뀌는 시점마다 ATK 룰을 재발동시켜야 한다. 소비자: `laplace_ultimate_hero`, `maxwell_ordinary_mechanic`(자기 Max HP 스택을 자기 squad ATK로 먹이는 첫 유닛 — 500k 기준 squad flat ATK 5000→6500), `cinderella`, `maiden_ice_rose`(지연 적용이라 같은 환산을 인라인). 아직 남은 정적 경로 하나: `dynamic_hit_count_nukes`의 `extra_flat_atk_percent_of_max_hp`는 `raid_simulator`가 `base_stats`에서 직접 읽어 정적이다(넉 전용 좁은 경로).
 - **`damage_taken_up` and `other_core_damage_sources` are now wired.** `raid_simulator` reads both from the registry at each damage instance. Model an enemy "Damage Taken ▲" debuff as a **squad-scoped** effect so every attacker gains it (the debuff is on the boss, so all allies share the same value). **Core-damage sources are gated on `core_hittable`** — like the flat core-hit bonus, "Damage dealt when attacking core ▲" contributes nothing when the boss has no hittable core.
 - **"Activates when the enemy appears" = `battle_start`, permanent.** A skill worded that way (e.g. Little Mermaid's Bubble Wave, "Bubble: Damage Taken +5.05% continuously") is always-on for the whole raid — the boss is present from t=0 — so encode it as a permanent squad-scoped enemy-debuff effect fired on `battle_start`, not as a target-state effect gated on some other condition. See `skill_rules/little_mermaid.py`.
 - **Other Damage-Up buckets remain unconsumed pass-throughs.** `damage_formula` also accepts `sustained_damage_up`, `true_damage_up`, `shield_damage_up`, `projectile_explosion_damage_up`, `distributed_damage_up`, plus `full_burst_bonus`/`effective_range_bonus`/`final_atk_modifier` — but `raid_simulator` does not read them yet. Encoding an effect with one passes tests yet moves no simulated damage. Wire the specific bucket a unit needs (one line at each `calculate_damage` call site) rather than faking it. (Cross-check the "engine CONSUMES" list in the skill's `references/engine-capabilities.md` and `grep registry.total_for raid_simulator.py`.)
@@ -179,6 +180,62 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
 - **"Every 1 sec for N sec" is N ticks, not N+1** — the established convention (mana's `drop_tokens`/`resource_scaled_nukes` batching) applies unchanged to a repeating DoT elsewhere in the kit: Diesel: Winter Sweets' "63.33% of final ATK every 1 sec for 9 sec" DoT and her burst's 9-tick 1s DoT (`skill_rules/diesel_winter_sweets.py`) are both `tick_count=9`, not 10.
 - **A charge weapon (RL/SR) fires a full charge on EVERY shot, so a "on full charge" trigger needs no separate full-charge counter — it's just `per_shot_every 1`.** Diesel's "Full Charge stacks (3s, cap 2)" buff is `("per_shot_every", 1)` feeding a `ResourceSpec(cap=2, lifetime=3.0)`, since every RL shot already IS a full charge. And a stack with both a CAP and a LIFETIME needs `ResourceSpec` specifically — `buff_rule` (infinite stacking) has no cap, `refreshing_buff_rule` (1-stack refresh) has no cap above 1, so any capped-stack mechanic (here: her 1s charge time holds both stacks inside one magazine, and the 2s reload lets one expire) should reach for `ResourceSpec` rather than either buff-rule helper.
+
+## 버스트 사이클에는 "N단계 진입"이라는 별도 이벤트가 없다 — `[버스트 N단계 진입 시]`는 그 티어 유닛의 `own_burst_activate`다
+
+Fienn의 정본 로테이션은 `게이지 충전 → 1단계 진입 → B1 사용 → 2단계 진입 →
+B2 사용 → 3단계 진입 → B3 사용 → 풀버스트 10초`지만, 엔진(`burst_cycle.py`)은
+"진입"과 "사용"을 하나로 접는다 — `on_tier_fire(tier, slug, time)`이 곧 "BN
+사용"이고, 그 뒤 `on_full_burst_enter(tier3_fire_time)`이 호출된다. 즉
+**`full_burst_enter` 시각 == tier-3 발동 시각 == B3 버스트 넉 시각**이다.
+
+버프가 넉에 닿는지는 두 가지가 결정한다:
+1. `effects.py`의 active-window는 **시작 포함**(`applied_at <= now < applied_at
+   + duration`).
+2. `raid_simulator`는 record-then-compute라, 넉 데미지는 2단계에서 **넉 시각
+   기준 라이브 버프**를 읽는다 — 워크 도중의 등록 *순서*는 무관하고 오직
+   버프 시작 시각 vs 넉 시각만 중요하다.
+
+따라서 (`tests/test_burst_cycle_buff_timing.py`가 고정한 결과):
+- **B3 유닛의 자기 버스트 넉**: `full_burst_enter` 버프도 `own_burst_activate`
+  버프도 **둘 다 닿는다**(동시각 + 시작 포함). 수치적으로 동등.
+- **B1/B2 유닛의 자기 버스트 넉**: `auto` 모드는 티어 간 gap이 0이라 동시각 →
+  `full_burst_enter` 버프가 닿지만, **`manual` 모드는 티어 간 0.1초 간격이라
+  B1 넉이 `full_burst_enter`보다 0.2초 먼저 발생 → 못 닿는다.**
+
+**인코딩 규칙:** 스킬텍스트가 `[버스트 N단계 진입 시]`라고 말하면
+`full_burst_enter`가 아니라 **그 유닛의 `own_burst_activate`로 인코딩하라.**
+이유는 두 가지다 — (a) B1/B2에서는 manual 모드에서 자기 버스트딜을 놓치고,
+(b) 어느 티어든 `full_burst_enter`는 **그 유닛이 버스트하지 않은 사이클에도**
+발동해 버프를 과대 지급한다(같은 티어의 다른 유닛이 대신 버스트한 경우).
+`full_burst_enter`는 진짜로 "풀버스트 창 진입"이 조건인 효과에만 쓴다.
+첫 정정 사례: `laplace_ultimate_hero`의 Over Energy 52.14% (2026-07-24) —
+그녀는 B3라 수치는 변하지 않았고, 바뀐 것은 과대지급 방지뿐이다.
+
+**스코프가 실제 판별 기준이다** (`snow_white_heavy_arms.py` docstring이 이미
+명문화한 선례): 같은 "Burst Stage N 진입" 문구라도 —
+- **자기 스코프** → `own_burst_activate` ("그 유닛이 곧 그 티어 슬롯이므로 그
+  순간이 자기 버스트 발동"). 선례: `cinderella`(Flawless Glass),
+  `ein`(Feather Standby), `snow_white_heavy_arms`(Shades of White),
+  `laplace_ultimate_hero`(Over Energy).
+- **스쿼드 스코프** → `full_burst_enter` (아군 아무나 그 단계에 진입해도
+  발동해야 하므로). 선례: `rei_ayanami`(Attack Support),
+  `mast_romantic_maid`, `mint`(Fantastic Performance).
+
+**스윕 결과 (2026-07-24 전수):**
+- 자기 스코프 `full_burst_enter` 버프 6건(`dorothy_serendipity`,
+  `jill_valentine`, `liberalio`, `ludmilla_winter_owner`, `raven`,
+  `takina_inoue`) — 원본 스킬텍스트가 전부 "Full Burst"이지 "Burst Stage N"이
+  아니므로 **정상**.
+- 원문에 "Burst Stage N" 트리거가 있는 유닛 중 `full_burst_enter`가 등장하는
+  5건 정밀 검증: `maiden_ice_rose`는 오탐(자원 fill 이벤트 필터이지 트리거가
+  아님), `snow_white_heavy_arms`도 오탐(docstring 산문에만 등장, 코드는
+  `own_burst_activate`), `mast_romantic_maid`·`mint`는 squad 스코프라 정상.
+- **미처리 오트리거 없음.** 단 하나 남는 불일치: `mihara_bonding_chain`의
+  Tighten Up은 **자기 스코프인데 `full_burst_enter`** — 위 규칙의 예외이며,
+  Fienn의 명시 판정(2026-07-19, "아무 Burst 3 아군이 3단계에 진입해도 발동")에
+  근거한 의도된 것이다. 자기 스코프 케이스를 새로 인코딩할 때 이 예외를
+  선례로 오해하지 말 것.
 
 ## Burst rotation
 - **A state-machine unit's state must be asked "decided by WHAT" before picking a modeling trick — a static mode slug lies the moment the deciding axis is one the engine actually simulates.** If the axis is something the engine does NOT simulate (Bready's Taste: which buff TYPE she receives), a static `MODE_VARIANTS` slug is enough — nothing in the sim depends on it. If the axis IS something the engine simulates (Diesel: Winter Sweets' Intro/Highlight lock depends on whether she bursts into the FIRST Full Burst — a real burst-schedule fact), a static slug is a lie: labelling her "Highlight" while still letting her burst on cycle 1 credits her the Highlight buff (235.03% vs Intro's 60.19%, ~4x) without ever paying the cost of skipping that burst. Fixed by making the Highlight slug actually skip that cycle via `burst_delay: {"skip_cycles": 1}` (see `docs/decisions.md`, "Diesel: Winter Sweets를 Intro/Highlight 2슬러그로 인코딩"), so the state-defining action is really taken, not just claimed. Ask this question first for any future locked-state unit.

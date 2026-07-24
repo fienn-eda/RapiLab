@@ -249,3 +249,36 @@ HEAL_PROVIDER_SLUGS = frozenset({
     "red-hood",
     "soline-frost-ticket",
 })
+
+
+def max_hp_scaled_atk_rule(
+    trigger, percent, scope, duration, base_max_hp, condition=None, refreshing=False,
+    refresh_group=None,
+):
+    """"ATK 캐스터 Max HP의 X%"를 캐스터의 LIVE Max HP로 환산해 flat_atk를 건다.
+
+    라이브 = 캐릭터정보 Max HP(`base_max_hp`) + 발동 시점에 활성인 `flat_max_hp`
+    버프 총합. 정적 `caster_max_hp`만 쓰던 기존 인코딩은 아군/자기 Max HP 버프를
+    통째로 무시했다 (Rouge의 Game Master가 유일한 부여자였고 소비자가 없어
+    죽은 스탯이었다).
+
+    의미론은 스냅샷이다 - 값은 이 룰이 발동하는 순간 고정된다. 발동 이후 도착한
+    Max HP 버프는 이미 걸린 flat_atk를 소급해 키우지 않으므로, 전투 중 Max HP가
+    계속 자라는 유닛은 Max HP가 바뀌는 시점마다 이 룰을 다시 발동시켜야 한다
+    (Laplace의 Over Energy 단계). 딜 계산 핫패스(_stat_bundle / total_for의
+    세그먼트 테이블)를 건드리지 않으려는 의도적 트레이드오프다 - 환산은
+    트리거당 한 번만 일어난다.
+
+    `percent`는 소수 비율(4.05% -> 0.0405)."""
+
+    def action(context, caster_slug, time, registry):
+        by_slug = {m.slug: m for m in context.members}
+        target = {"slug": caster_slug, "element": by_slug[caster_slug].element}
+        live_max_hp = base_max_hp + registry.total_for("flat_max_hp", target, time)
+        effect = Effect("flat_atk", live_max_hp * percent, scope, duration, caster_slug, refresh_group)
+        if refreshing:
+            registry.add_refreshing(effect, applied_at=time)
+        else:
+            registry.add(effect, applied_at=time)
+
+    return _rule(trigger, action, condition)
