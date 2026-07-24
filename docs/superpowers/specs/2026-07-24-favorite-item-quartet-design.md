@@ -21,9 +21,12 @@ base(resource_id 280) 쪽이다.
 - **dotgg는 죽었다.** `api.dotgg.gg/cgfw/getcharacter`가 네 유닛 모두 HTTP 200에
   **빈 본문**을 준다. 무기 스탯을 dotgg에서 받을 길은 없다.
 - **`load_nikke_spec`은 lootandwaifus 소스 유닛의 무기 스탯을 dotgg에서만 읽는다.**
-  따라서 시그니처 슬러그를 `source: "lootandwaifus"`로 두면 무기 파일이 없어
-  `None`을 반환하고 유닛이 **조용히 로스터에서 제외**된다. 이것이 이번 작업의
-  유일한 엔진 변경 지점이다.
+  (트렁크 `659e1fa` 기준 재확인.) 따라서 시그니처 슬러그를 `source: "lootandwaifus"`로
+  두면 무기 파일이 없어 `None`을 반환하고 유닛이 **조용히 로스터에서 제외**된다.
+  기존 시그니처 3인방이 멀쩡한 것은 `data/dotgg/`에 `char_julia.json` ·
+  `char_drake-nikke.json` · `char_laplace.json`이 **실제로 있기 때문**이지 경로가
+  옳아서가 아니다. 네 유닛은 그 파일이 없고 dotgg에서 새로 받을 수도 없다.
+  이것이 이번 작업의 유일한 엔진 변경 지점이다.
 - **듀얼 슬롯 기계는 이미 완성돼 있다.** `resourceIdSlugMap.ts`의
   `RESOURCE_ID_TO_SLUG` → base, `SIGNATURE_OWNED`(보유 rid 집합) ∩
   `DUAL_SLOT_BASES`일 때만 `-signature`로 승격. 백엔드 드리프트 테스트가
@@ -70,15 +73,21 @@ Fienn은 넷 다 애장품 제작 계획은 있으나 **지금은 불가능**하
 
 ## Phase 1 — 수집 (유닛당)
 
-1. **ShiftyPad** (무기 6필드 + base 스킬 사다리 + element/burst/burst-cooldown):
-   `node tools/collect-blablalink/collect.js --nikke <rid> --headless` →
+**수집은 메인 체크아웃에서 돌리고 워크트리로 동기화한다.** `collect.js`의
+`node_modules`가 메인 체크아웃에만 있어 워크트리에서 실행하면 `MODULE_NOT_FOUND`로
+죽는다. 수집 후 워크트리에서 `python scripts/sync_worktree_data.py`
+(`data/dotgg` · `data/lootandwaifus` · `data/shiftypad`를 가져온다 — shiftypad 누락은
+`659e1fa`에서 수정됨).
+
+1. **lootandwaifus** (base 스킬 텍스트 + dollskills): 참조 문서의 `curl -A`
+   (WebFetch는 403) 로 `data/lootandwaifus/char_<slug>.html` 저장 → `python
+   scripts/lootandwaifus_html_to_json.py --slug <slug>` → `skills` + `dollskills`.
+2. **ShiftyPad** (무기 6필드 + 스킬 값 슬롯 + element/burst/burst-cooldown):
+   `cd tools/collect-blablalink && node collect.js --nikke <rid> --headless` →
    `data/shiftypad/raw/<rid>.json` → `python scripts/normalize_shiftypad_raw.py
    140:sugar` (스크립트는 `<rid>:<slug>` 쌍을 명시적으로 받으므로 프런트의 슬러그
    맵보다 먼저 돌 수 있다) → `data/shiftypad/<slug>.json`.
    **무기 스탯 수동 입력 없음.**
-2. **lootandwaifus** (dollskills): 데이터소스 참조 문서의 `curl -A` 로
-   `data/lootandwaifus/char_<slug>.html` 저장 → `python
-   scripts/lootandwaifus_html_to_json.py --slug <slug>`.
 3. **포트레이트**: `python scripts/download_portraits.py`.
 
 ## Phase 2 — 인코딩 (유닛별 완주: base → signature → 다음 유닛)
@@ -96,6 +105,16 @@ Fienn은 넷 다 애장품 제작 계획은 있으나 **지금은 불가능**하
 
 엔진이 표현 못 하는 기전은 스킬 규칙대로 모듈 docstring에 보류로 적고
 `docs/engine-gaps.md`에 집계한다. 기전이 불명확하면 추측하지 않고 Fienn에게 묻는다.
+
+**두 소스를 함께 읽는다 — 어느 한쪽만으로는 인코딩할 수 없다.**
+
+- **ShiftyPad 정규화 출력의 스킬 description은 비어 있다** (값 슬롯만 있고 문장이
+  없다). 각 슬롯이 무슨 효과인지는 **반드시 lootandwaifus 텍스트로 확인**한다.
+  애장품 유닛만의 문제가 아니라 shiftypad 소스 유닛 전반에 해당한다.
+- **lootandwaifus에는 `description_value_NN`이 없다** — 숫자가 문장에 인라인으로
+  렌더된다. 슬롯 번호는 그 스킬 텍스트의 **좌→우 등장 순서**로 직접 매기고, 소스 간
+  번호가 어긋나면 매니페스트의 `drop_tokens`로 보정한다. 어긋남은
+  `test_skill_value_assembly.py` 하네스가 잡아준다.
 
 ## Phase 3 — 로스터 배선
 
