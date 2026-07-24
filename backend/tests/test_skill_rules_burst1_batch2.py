@@ -8,6 +8,7 @@ from app.skill_rules.zwei import (
     build_overcharge_weapon_mode_schedule,
     build_frame_analysis_resources,
     build_pierce_equation_per_shot_rules,
+    build_zwei_base_rules,
     build_zwei_rules,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
@@ -90,6 +91,31 @@ def test_rouge_game_master_sword_coin_max_hp_fires_only_when_sword_coin_active()
     fire_trigger("own_burst_activate", rules, ctx, reg2, 0.0)
     assert round(reg2.total_for("flat_max_hp", ALLY, 0.0), 2) == round(10000000 * 0.1015, 2)
 
+
+# Base ("skills") level-10 values - slug "zwei". Note Overcharge Formula's squad
+# Pierce sits at slots 05/06 here: the base text never says "Pierce Attacks 101",
+# so no literal 101 consumes a slot and shifts the rest along.
+ZWEI_BASE_PIERCE_EQUATION = {
+    "description_value_01": "20.13", "description_value_02": "1",
+    "description_value_03": "10.06", "description_value_04": "10",
+}
+ZWEI_BASE_FRAME_ANALYSIS = {
+    "description_value_01": "5", "description_value_02": "7.52",
+    "description_value_03": "18.63", "description_value_04": "5",  # 5 sec, not 10
+}
+ZWEI_BASE_OVERCHARGE_FORMULA = {
+    "description_value_01": "1.5",    # transform charge time (1.2 with the item)
+    "description_value_02": "50.69",
+    "description_value_03": "300",
+    "description_value_04": "1",
+    "description_value_05": "15.48",  # squad Pierce Damage %
+    "description_value_06": "10",     # duration
+}
+ZWEI_BASE = {
+    "pierce_equation": ZWEI_BASE_PIERCE_EQUATION,
+    "frame_analysis": ZWEI_BASE_FRAME_ANALYSIS,
+    "overcharge_formula": ZWEI_BASE_OVERCHARGE_FORMULA,
+}
 
 ZWEI = {
     "pierce_equation": {
@@ -245,6 +271,10 @@ def test_d_killer_wife_assault_formation_squad_attack_damage_every_5_full_charge
 # (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
 CALM_SNIPING = DKW["calm_sniping"]
 ASSAULT_FORMATION = DKW["assault_formation"]
+ZWEI_SIG_PIERCE_EQUATION = ZWEI["pierce_equation"]
+ZWEI_SIG_FRAME_ANALYSIS = ZWEI["frame_analysis"]
+ZWEI_SIG_OVERCHARGE_FORMULA = ZWEI["overcharge_formula"]
+
 PIERCE_EQUATION = ZWEI["pierce_equation"]
 FRAME_ANALYSIS = ZWEI["frame_analysis"]
 OVERCHARGE_FORMULA = ZWEI["overcharge_formula"]
@@ -266,3 +296,44 @@ def test_overcharge_formula_transform_is_a_single_charged_pierce_shot():
     assert profile["charge_time"] == 1.2
     assert profile["damage_percent"] == 50.69
     assert profile["charge_damage_percent"] == 300
+
+
+def test_zwei_base_reads_the_burst_pierce_from_its_own_slot():
+    # The Favorite Item's text names "Pierce Attacks 101", so the literal 101
+    # eats slot 05 and shifts its squad Pierce to 06. The base has no such name,
+    # so its Pierce is at 05 - reading the signature indices here would pick up
+    # the duration instead of the buff.
+    ctx = deck_ctx("zwei")
+    reg = EffectRegistry()
+    rules = {"zwei": build_zwei_base_rules(ZWEI_BASE)}
+
+    fire_trigger("own_burst_activate", rules, ctx, reg, time=0.0)
+
+    ally = {"slug": "ally", "element": "Iron"}
+    assert round(reg.total_for("pierce_damage_up", ally, 0.0), 4) == 0.1548
+    assert reg.total_for("pierce_damage_up", ally, 10.1) == 0.0
+
+
+def test_zwei_base_full_burst_crit_rate_lasts_five_seconds_not_ten():
+    ctx = deck_ctx("zwei")
+    reg = EffectRegistry()
+    rules = {"zwei": build_zwei_base_rules(ZWEI_BASE)}
+
+    fire_trigger("full_burst_enter", rules, ctx, reg, time=0.0)
+
+    ally = {"slug": "ally", "element": "Iron"}
+    assert round(reg.total_for("crit_rate", ally, 0.0), 4) == 0.1863
+    assert reg.total_for("crit_rate", ally, 5.1) == 0.0  # the item doubles this window
+
+
+def test_zwei_transform_schedule_anchors_on_the_slug_it_is_built_for():
+    # Both builds transform; each must follow its OWN burst times, or the
+    # signature slug would find none and silently never transform.
+    schedule = build_overcharge_weapon_mode_schedule(ZWEI, slug="zwei-signature")
+
+    class Ctx:
+        burst_times = {"zwei": [5.0], "zwei-signature": [7.0]}
+
+    windows = schedule(Ctx(), 60.0)
+    assert [w["start"] for w in windows] == [7.0]
+    assert windows[0]["profile"]["charge_time"] == 1.2

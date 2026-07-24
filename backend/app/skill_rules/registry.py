@@ -253,8 +253,17 @@ from app.skill_rules.maiden_ice_rose import (
 )
 from app.skill_rules.mast_romantic_maid import build_mast_rules
 from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
-from app.skill_rules.miranda import build_health_up_rules, build_miranda_rules
-from app.skill_rules.moran import build_moran_rules, build_fair_and_square_weapon_mode_schedule
+from app.skill_rules.miranda import (
+    build_health_up_rules,
+    build_miranda_base_rules,
+    build_miranda_rules,
+)
+from app.skill_rules.moran import (
+    build_bring_it_on_per_shot_rules,
+    build_fair_and_square_weapon_mode_schedule,
+    build_moran_base_rules,
+    build_moran_rules,
+)
 from app.skill_rules.nayuta import (
     asceticism_burst_percent,
     build_memory_incineration_scheduled_nukes,
@@ -306,6 +315,8 @@ from app.skill_rules.red_hood import (
     build_red_wolf_weapon_mode_schedule,
 )
 from app.skill_rules.privaty import (
+    build_ex_magazine_base_rules,
+    build_ld_assault_base_per_shot_rules,
     ak_missile_burst_percent,
     build_ak_missile_rules,
     build_ex_magazine_rules,
@@ -324,6 +335,7 @@ from app.skill_rules.zwei import (
     build_overcharge_weapon_mode_schedule,
     build_frame_analysis_resources,
     build_pierce_equation_per_shot_rules,
+    build_zwei_base_rules,
     build_zwei_rules,
 )
 
@@ -373,12 +385,28 @@ def _build_rapi_red_hood_b1(sv):
 
 
 def _build_helm(sv):
+    # Base Helm has no Charge Damage rider - that effect exists only in the
+    # Favorite Item's text (and the base array's slots 04/05 mean something else).
+    return build_fire_away_rules(sv["fire_away"]), aegis_cannon_burst_percent(
+        sv["aegis_cannon"]
+    )
+
+
+def _build_helm_signature(sv):
     rules = build_fire_away_rules(sv["fire_away"])
     rules += build_aegis_cannon_rules(sv["aegis_cannon"])
     return rules, aegis_cannon_burst_percent(sv["aegis_cannon"])
 
 
 def _build_privaty(sv):
+    # AK Missile's self elemental bonus (slots 05/06) is the Favorite Item's
+    # text; the base burst is a plain nuke plus an inert stun.
+    return build_ex_magazine_base_rules(sv["ex_magazine"]), ak_missile_burst_percent(
+        sv["ak_missile"]
+    )
+
+
+def _build_privaty_signature(sv):
     rules = build_ex_magazine_rules(sv["ex_magazine"])
     rules += build_ak_missile_rules(sv["ak_missile"])
     return rules, ak_missile_burst_percent(sv["ak_missile"])
@@ -449,6 +477,7 @@ _BUILDERS = {
     "rapi-red-hood": _build_rapi_red_hood,
     "rapi-red-hood-b1": _build_rapi_red_hood_b1,
     "helm": _build_helm,
+    "helm-signature": _build_helm_signature,
     "helm-aquamarine": lambda sv: (build_helm_aquamarine_rules(sv), aegis_cannon_overload_burst_percent(sv)),
     "isabel": lambda sv: (build_isabel_rules(sv), sonic_chaser_burst_percent(sv)),
     "julia": lambda sv: ([], climax_burst_percent(sv)),  # Decrescendo is periodic-only; Crescendo is a resource
@@ -476,11 +505,14 @@ _BUILDERS = {
     "maxwell-ordinary-mechanic": _build_maxwell_ordinary_mechanic,
     "laplace-ultimate-hero": _build_laplace_ultimate_hero,
     "privaty": _build_privaty,
+    "privaty-signature": _build_privaty_signature,
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
-    "miranda": lambda sv: (build_miranda_rules(sv), None),
+    "miranda": lambda sv: (build_miranda_base_rules(sv), None),
+    "miranda-signature": lambda sv: (build_miranda_rules(sv), None),
     "rouge": _build_rouge,
-    "zwei": lambda sv: (build_zwei_rules(sv), None),
+    "zwei": lambda sv: (build_zwei_base_rules(sv), None),
+    "zwei-signature": lambda sv: (build_zwei_rules(sv), None),
     "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), None),  # Kill the Target (burst) deferred
     "grave": lambda sv: (build_grave_rules(sv), None),
     "rei-ayanami": lambda sv: (build_rei_ayanami_rules(sv), annihilation_burst_percent(sv)),
@@ -520,7 +552,8 @@ _BUILDERS = {
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
     "mast-romantic-maid": lambda sv: (build_mast_rules(sv), None),
     "mint": lambda sv: (build_mint_rules(sv), None),
-    "moran": lambda sv: (build_moran_rules(sv), None),
+    "moran": lambda sv: (build_moran_base_rules(sv), None),
+    "moran-signature": lambda sv: (build_moran_rules(sv), None),
     "nayuta": lambda sv: (build_nayuta_rules(sv), asceticism_burst_percent(sv)),
     "noir": lambda sv: (build_noir_rules(sv), finale_burst_percent(sv)),
     "prika": lambda sv: (build_prika_rules(sv), None),
@@ -528,6 +561,7 @@ _BUILDERS = {
     "rosanna-chic-ocean": lambda sv: (build_rosanna_rules(sv), None),
     "soda-twinkling-bunny": lambda sv: ([], onward_soda_burst_percent(sv)),
     "tove": lambda sv: (build_tove_rules(sv), None),
+    "tove-signature": lambda sv: (build_tove_rules(sv), None),
     "soline-frost-ticket": lambda sv: (build_soline_frost_ticket_rules(sv), None),
     "flora": lambda sv: (build_flora_rules(sv), None),  # burst is heal + buffs, no nuke
     "phantom": lambda sv: (
@@ -700,10 +734,16 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
     "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
     "nayuta": lambda sv: build_memory_incineration_weapon_mode_schedule(sv),  # Memory Incineration, 10s
-    "zwei": lambda sv: build_overcharge_weapon_mode_schedule(sv),  # Overcharge Formula, single 1.2s-charge Pierce shot
+    # Overcharge Formula: one charged Pierce shot per burst (1.5s base, 1.2s with
+    # the Favorite Item). Each slug anchors on its own burst times.
+    "zwei": lambda sv: build_overcharge_weapon_mode_schedule(sv),
+    "zwei-signature": lambda sv: build_overcharge_weapon_mode_schedule(sv, slug="zwei-signature"),
     "laplace": lambda sv: build_buster_weapon_mode_schedule(sv),  # Laplace Buster Normal Damage, 5s ~46 ticks
     "takina-inoue": lambda sv: build_suppression_initiated_weapon_mode_schedule(sv),  # Suppression Initiated, 25 measured true-damage shots
-    "moran": lambda sv: build_fair_and_square_weapon_mode_schedule(sv),  # Fair and Square, unlimited-ammo SMG at canonical 20/s
+    # Fair and Square: unlimited-ammo SMG at the canonical 20/s. Each slug
+    # anchors on its own burst times.
+    "moran": lambda sv: build_fair_and_square_weapon_mode_schedule(sv),
+    "moran-signature": lambda sv: build_fair_and_square_weapon_mode_schedule(sv, slug="moran-signature"),
     "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
     "laplace-ultimate-hero": lambda sv: build_laplace_transform_schedule(sv),  # Warm Up transform, magazine-length window at SMG cadence
 }
@@ -775,18 +815,24 @@ _PER_SHOT_RULE_BUILDERS = {
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),
     "marciana-marine-study": lambda sv: build_marciana_per_shot_rules(sv),
-    "helm": lambda sv: (
+    # Base Helm keeps only the last-bullet crit rate; the full-charge nuke is
+    # text the Favorite Item adds.
+    "helm": lambda sv: build_frontline_command_per_shot_rules(sv["frontline_command"]),
+    "helm-signature": lambda sv: (
         build_frontline_command_per_shot_rules(sv["frontline_command"])
         + build_fire_away_per_shot_rules(sv["fire_away"])
     ),
-    "privaty": lambda sv: build_ld_assault_per_shot_rules(sv),
-    "zwei": lambda sv: build_pierce_equation_per_shot_rules(sv),
+    "moran": lambda sv: build_bring_it_on_per_shot_rules(sv),
+    "moran-signature": lambda sv: build_bring_it_on_per_shot_rules(sv),
+    "privaty": lambda sv: build_ld_assault_base_per_shot_rules(sv),
+    "privaty-signature": lambda sv: build_ld_assault_per_shot_rules(sv),
+    "zwei-signature": lambda sv: build_pierce_equation_per_shot_rules(sv),
     "d-killer-wife": lambda sv: build_assault_formation_rules(sv["assault_formation"]),
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
     "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),
     "chisato-nishikigi": lambda sv: build_chisato_per_shot_rules(sv),
     "maiden-ice-rose": lambda sv: build_blessings_upon_you_per_shot_rules(sv),
-    "miranda": lambda sv: build_health_up_rules(sv["health_up"]),
+    "miranda-signature": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
     "prika": lambda sv: build_lets_get_show_started_rules(
         {**sv["lets_get_the_show_started"], "caster_atk": sv["caster_atk"]}
@@ -811,7 +857,7 @@ _RESOURCE_SPEC_BUILDERS = {
     "mihara-bonding-chain": lambda sv: build_ensnaring_chain_resources(sv),
     "diesel-winter-sweets-intro": lambda sv: build_diesel_resource_specs(sv),
     "diesel-winter-sweets-highlight": lambda sv: build_diesel_resource_specs(sv),
-    "zwei": lambda sv: build_frame_analysis_resources(sv),
+    "zwei-signature": lambda sv: build_frame_analysis_resources(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named

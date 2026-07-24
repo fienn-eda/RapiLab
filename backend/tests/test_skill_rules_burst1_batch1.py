@@ -3,7 +3,11 @@ Values are the real max-level (dollskill for Miranda) figures from dotgg.
 """
 from app.effects import EffectRegistry
 from app.skill_rules.liter import build_liter_rules
-from app.skill_rules.miranda import build_health_up_rules, build_miranda_rules
+from app.skill_rules.miranda import (
+    build_health_up_rules,
+    build_miranda_base_rules,
+    build_miranda_rules,
+)
 from app.skill_rules.volume import build_volume_rules
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
@@ -79,21 +83,45 @@ def test_volume_stacks_three_crit_damage_tiers_and_grants_crit_rate():
     assert round(reg.total_for("crit_rate", ALLY, 0.0), 4) == 0.319
 
 
+# Base ("skills") level-10 values - slug "miranda". Health Up! stops at slot 06
+# (both steps are Hit Rate) and Wake Up! stops at slot 02, so the base build has
+# no per-shot rule and no self buffs at all.
+MIRANDA_BASE_HEALTH_UP = {
+    "description_value_01": "30", "description_value_02": "5.44", "description_value_03": "5",
+    "description_value_04": "30", "description_value_05": "3.79", "description_value_06": "5",
+}
+MIRANDA_BASE_WAKE_UP = {
+    "description_value_01": "32.99", "description_value_02": "10",
+}
+MIRANDA_BASE_POWERING_UP = {
+    "description_value_01": "1", "description_value_02": "40.4", "description_value_03": "10",
+    "description_value_04": "56.23", "description_value_05": "10",
+}
+MIRANDA_BASE = {
+    "health_up": MIRANDA_BASE_HEALTH_UP,
+    "wake_up": MIRANDA_BASE_WAKE_UP,
+    "powering_up": MIRANDA_BASE_POWERING_UP,
+}
+
+# Favorite Item ("dollskills") level-10 values - slug "miranda-signature".
+MIRANDA_SIG_HEALTH_UP = {
+    "description_value_01": "30", "description_value_02": "5.44", "description_value_03": "5",
+    "description_value_04": "30", "description_value_05": "3.79", "description_value_06": "5",
+    "description_value_07": "30", "description_value_08": "50.06", "description_value_09": "5",
+}
+MIRANDA_SIG_WAKE_UP = {
+    "description_value_01": "32.99", "description_value_02": "10", "description_value_03": "30.1",
+    "description_value_04": "10", "description_value_05": "23.7", "description_value_06": "10",
+    "description_value_07": "1", "description_value_08": "85.42", "description_value_09": "1",
+}
+MIRANDA_SIG_POWERING_UP = {
+    "description_value_01": "2", "description_value_02": "40.4", "description_value_03": "10",
+    "description_value_04": "56.23", "description_value_05": "10",
+}
 MIRANDA = {
-    "health_up": {
-        "description_value_01": "30", "description_value_02": "5.44", "description_value_03": "5",
-        "description_value_04": "30", "description_value_05": "3.79", "description_value_06": "5",
-        "description_value_07": "30", "description_value_08": "50.06", "description_value_09": "5",
-    },
-    "wake_up": {
-        "description_value_01": "32.99", "description_value_02": "10", "description_value_03": "30.1",
-        "description_value_04": "10", "description_value_05": "23.7", "description_value_06": "10",
-        "description_value_07": "1", "description_value_08": "85.42", "description_value_09": "1",
-    },
-    "powering_up": {
-        "description_value_01": "2", "description_value_02": "40.4", "description_value_03": "10",
-        "description_value_04": "56.23", "description_value_05": "10",
-    },
+    "health_up": MIRANDA_SIG_HEALTH_UP,
+    "wake_up": MIRANDA_SIG_WAKE_UP,
+    "powering_up": MIRANDA_SIG_POWERING_UP,
 }
 
 
@@ -169,3 +197,32 @@ TURN_UP = VOLUME["turn_up"]
 HEALTH_UP = MIRANDA["health_up"]
 WAKE_UP = MIRANDA["wake_up"]
 POWERING_UP = MIRANDA["powering_up"]
+
+
+def test_miranda_base_grants_only_squad_crit_damage_on_full_burst():
+    # Without the Favorite Item, Wake Up! is one bullet. The self Crit Rate and
+    # Attack Damage the baked encoding used to credit every user do not exist.
+    ctx = ranked_deck_ctx()
+    reg = EffectRegistry()
+    rules = {"miranda": build_miranda_base_rules(MIRANDA_BASE)}
+
+    fire_trigger("full_burst_enter", rules, ctx, reg, time=0.0)
+
+    miranda = {"slug": "miranda", "element": "Iron"}
+    assert round(reg.total_for("other_critical_damage_sources", miranda, 0.0), 4) == 0.3299
+    assert reg.total_for("crit_rate", miranda, 0.0) == 0.0
+    assert reg.total_for("attack_damage_up", miranda, 0.0) == 0.0
+
+
+def test_miranda_base_burst_buffs_only_the_single_highest_atk_ally():
+    # Slot 01 is the ally count: 1 on the base build, 2 with the Favorite Item.
+    ctx = ranked_deck_ctx()
+    reg = EffectRegistry()
+    rules = {"miranda": build_miranda_base_rules(MIRANDA_BASE)}
+
+    fire_trigger("own_burst_activate", rules, ctx, reg, time=0.0)
+
+    carry_a = {"slug": "carry_a", "element": "Fire"}
+    carry_b = {"slug": "carry_b", "element": "Fire"}
+    assert round(reg.total_for("atk_percent", carry_a, 0.0), 4) == 0.404
+    assert reg.total_for("atk_percent", carry_b, 0.0) == 0.0  # second carry misses out

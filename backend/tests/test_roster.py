@@ -293,15 +293,20 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     )["total_damage"]
 
     assert dmg_with > dmg_without
-    # Golden pin. Re-baselined 2026-07-21: the completeness batch changed all
-    # three units in this deck (Anis: Star's Shooting Stars and fixed charge
-    # time, Helm's full-charge nuke, Crown's Royal Attire) and restored Crown's
-    # Last Kingdom via Effect.refresh_group, so the absolutes moved 680M ->
-    # 1124M. The RATIO rose too (1.0224 -> 1.0369) for a real reason rather
-    # than noise: charge speed now shortens the charge instead of dividing it,
-    # so reload downtime is a larger share of a charge weapon's cycle and a
-    # reload buff buys correspondingly more.
-    assert round(dmg_with / dmg_without, 4) == round(1165772405.6523907 / 1124280403.072149, 4)
+    # Golden pin. Re-baselined 2026-07-24: "helm" now means the Nikke WITHOUT
+    # her Favorite Item (the build is chosen from the user's roster, and the
+    # Favorite Item lives at "helm-signature"), which drops her 178.98%
+    # full-charge nuke and shrinks her burst 8236.8% -> 1237.5%. Absolutes moved
+    # 1124M -> 859M. The RATIO fell (1.0369 -> 1.0343) for a real reason rather
+    # than noise: the full-charge nuke fired once per shot, so it was pure
+    # leverage on the extra shots a reload buff buys; without it the same reload
+    # saving converts to less damage.
+    #
+    # Re-baselined 2026-07-21 before that: the completeness batch changed all
+    # three units in this deck and restored Crown's Last Kingdom via
+    # Effect.refresh_group (680M -> 1124M, ratio 1.0224 -> 1.0369, because charge
+    # speed began shortening the charge instead of dividing it).
+    assert round(dmg_with / dmg_without, 4) == round(888629616.020819 / 859120013.7690431, 4)
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import {
   RESOURCE_ID_TO_SLUG,
-  SIGNATURE_OWNED,
   DUAL_SLOT_BASES,
   resolveSlugForUnit,
 } from './resourceIdSlugMap'
@@ -36,19 +35,29 @@ describe('RESOURCE_ID_TO_SLUG (identity, investment-free)', () => {
 })
 
 describe('resolveSlugForUnit (identity + investment)', () => {
-  it('promotes a dual-slot base to -signature when the Favorite Item is owned', () => {
-    expect(SIGNATURE_OWNED.has(101)).toBe(true) // Drake: owned
-    expect(resolveSlugForUnit(101)).toBe('drake-signature')
+  it('promotes a dual-slot base to -signature when the roster owns the Favorite Item', () => {
+    expect(resolveSlugForUnit(101, true)).toBe('drake-signature')
+    expect(resolveSlugForUnit(140, true)).toBe('sugar-signature')
   })
 
-  it('leaves a dual-slot base alone when the Favorite Item is not owned', () => {
-    expect(SIGNATURE_OWNED.has(150)).toBe(false) // Julia: uninvested
-    expect(resolveSlugForUnit(150)).toBe('julia')
+  it('leaves a dual-slot base alone when the roster does not own it', () => {
+    expect(resolveSlugForUnit(150, false)).toBe('julia')
+    expect(resolveSlugForUnit(101, false)).toBe('drake')
   })
 
-  it('never promotes a non-dual-slot unit even if flagged owned', () => {
+  it('defaults to the base encoding when the roster does not say', () => {
+    // No ownership record can promote on its own: a roster that cannot report
+    // (collector scrape, hand-written file) must not inherit anyone else's
+    // investment. Under-selling a unit is recoverable; inflating it is not.
+    expect(resolveSlugForUnit(101)).toBe('drake')
+    expect(resolveSlugForUnit(100)).toBe('laplace')
+  })
+
+  it('never promotes a non-dual-slot unit even when the roster owns an item', () => {
+    // Every unit can hold a Favorite Item; only some have a "-signature"
+    // encoding to promote to.
     expect(DUAL_SLOT_BASES.has('rapi-red-hood')).toBe(false)
-    expect(resolveSlugForUnit(16)).toBe('rapi-red-hood')
+    expect(resolveSlugForUnit(16, true)).toBe('rapi-red-hood')
   })
 
   it('returns undefined for unmapped or missing ids', () => {

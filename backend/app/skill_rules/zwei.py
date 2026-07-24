@@ -1,7 +1,26 @@
-"""Zwei (slug "zwei"), a Burst-1 SG supporter, signature weapon done
-(dollskills). Fienn's Zwei has hers completed.
+"""Zwei (slug "zwei") and her Favorite Item build (slug "zwei-signature"), a
+Burst-1 SG supporter. Collected from lootandwaifus.
 
-Modeled (DPS-relevant):
+The two builds are separate deck candidates (dual-slot); which one a user fights
+with comes from their roster's per-unit `favorite_item` flag.
+
+Base modeled (DPS-relevant): the Full-Burst squad Pierce (1 round + 10 sec), the
+Full-Burst squad Crit Rate (18.63% for 5 sec - the Favorite Item doubles that
+window to 10 sec), her burst's squad Pierce, and the same weapon transform with a
+1.5-sec charge (the Favorite Item shortens it to 1.2 sec).
+
+Base has NO per-shot rules and NO resource: the stacking Pierce and the "Pierce
+Attacks 101" crit-rate stack are text only the Favorite Item adds.
+
+**Slot numbering differs between the two arrays** and that is the trap here.
+lootandwaifus values are numbered left-to-right over the rendered text, and the
+Favorite Item's Overcharge Formula mentions the status NAME "Pierce Attacks 101"
+- so the literal 101 consumes slot 05 and pushes the squad Pierce/duration to
+slots 06/07, where the base build has them at 05/06. A shared builder reading
+fixed indices would silently read the wrong numbers, which is why the base has
+its own.
+
+Favorite Item modeled (DPS-relevant):
 - Pierce Equation (dollskills[0]): on Full Burst enter, squad Pierce Damage up
   for 1 round (a bullet-count grant - each ally's next shot) plus a separate
   squad Pierce Damage up for 10 sec.
@@ -28,19 +47,66 @@ Note pierce is treated as general damage-up (see raid_simulator).
 from app.effects import ResourceSpec
 from app.skill_rules._helpers import buff_rule, linear_resource_buff, round_buff_rule
 
-# Fienn's Zwei has the signature weapon completed, so the manifest reads the
-# "dollskills" array, not "skills" (see module docstring).
 SKILL_VALUE_MANIFESTS = {
     "zwei": {
         "source": "lootandwaifus",
+        "test_module": "test_skill_rules_burst1_batch2",
+        "keys": {
+            "pierce_equation": ("skills", 0),
+            "frame_analysis": ("skills", 1),
+            "overcharge_formula": ("skills", 2),
+        },
+        "fixtures": {
+            "pierce_equation": "ZWEI_BASE_PIERCE_EQUATION",
+            "frame_analysis": "ZWEI_BASE_FRAME_ANALYSIS",
+            "overcharge_formula": "ZWEI_BASE_OVERCHARGE_FORMULA",
+        },
+    },
+    "zwei-signature": {
+        "source": "lootandwaifus",
+        "data_slug": "zwei",
         "test_module": "test_skill_rules_burst1_batch2",
         "keys": {
             "pierce_equation": ("dollskills", 0),
             "frame_analysis": ("dollskills", 1),
             "overcharge_formula": ("dollskills", 2),
         },
+        "fixtures": {
+            "pierce_equation": "ZWEI_SIG_PIERCE_EQUATION",
+            "frame_analysis": "ZWEI_SIG_FRAME_ANALYSIS",
+            "overcharge_formula": "ZWEI_SIG_OVERCHARGE_FORMULA",
+        },
     },
 }
+
+
+def build_zwei_base_rules(values):
+    """Zwei without her Favorite Item. Overcharge Formula's squad Pierce sits at
+    slots 05/06 here, not 06/07 - see the module docstring on slot numbering."""
+    pierce = values["pierce_equation"]
+    frame = values["frame_analysis"]
+    overcharge = values["overcharge_formula"]
+    round_pierce = float(pierce["description_value_01"]) / 100
+    round_pierce_rounds = int(float(pierce["description_value_02"]))
+    fb_pierce = float(pierce["description_value_03"]) / 100
+    fb_pierce_duration = float(pierce["description_value_04"])
+    fb_crit_rate = float(frame["description_value_03"]) / 100
+    fb_crit_rate_duration = float(frame["description_value_04"])
+    burst_pierce = float(overcharge["description_value_05"]) / 100
+    burst_pierce_duration = float(overcharge["description_value_06"])
+
+    return [
+        buff_rule("full_burst_enter", [
+            ("pierce_damage_up", fb_pierce, "squad", fb_pierce_duration),
+            ("crit_rate", fb_crit_rate, "squad", fb_crit_rate_duration),
+        ]),
+        round_buff_rule("full_burst_enter",
+                        [("pierce_damage_up", round_pierce, "squad")],
+                        shots=round_pierce_rounds),
+        buff_rule("own_burst_activate", [
+            ("pierce_damage_up", burst_pierce, "squad", burst_pierce_duration),
+        ]),
+    ]
 
 
 def build_zwei_rules(values):
@@ -107,9 +173,13 @@ def build_frame_analysis_resources(values):
     ]
 
 
-def build_overcharge_weapon_mode_schedule(values):
-    """Overcharge Formula's self weapon transform: a 1.2-sec charged Pierce shot
-    at 50.69% of final ATK, 300% of that on Full Charge.
+def build_overcharge_weapon_mode_schedule(values, slug="zwei"):
+    """Overcharge Formula's self weapon transform: a charged Pierce shot at 50.69%
+    of final ATK, 300% of that on Full Charge. The charge is 1.5 sec on the base
+    build and 1.2 sec with the Favorite Item; both read slot 01.
+
+    `slug` keys the burst schedule, so the signature build anchors on its own
+    burst times rather than the base slug's (the laplace-signature precedent).
 
     "Max Ammunition Capacity: 1" is what bounds the window - the transformed
     weapon holds one round, so the transform is ONE shot per burst, not a
@@ -130,6 +200,6 @@ def build_overcharge_weapon_mode_schedule(values):
 
     def schedule(context, fight_duration):
         return [{"start": t, "until_shots": 1, "profile": profile}
-                for t in context.burst_times.get("zwei", [])]
+                for t in context.burst_times.get(slug, [])]
 
     return schedule

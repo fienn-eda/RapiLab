@@ -37,6 +37,7 @@
     "guillotine-winter-slayer": "mi_c182_00_s.webp",
     "helm": "mi_c352_00_s.webp",
     "helm-aquamarine": "mi_c353_00_s.webp",
+    "helm-signature": "mi_c352_00_s.webp",
     "isabel": "mi_c231_00_s.webp",
     "jill-valentine": "mi_c841_00_s.webp",
     "julia": "mi_c150_00_s.webp",
@@ -58,8 +59,10 @@
     "milk-blooming-bunny": "mi_c143_00_s.webp",
     "mint": "mi_c600_00_s.webp",
     "miranda": "mi_c032_00_s.webp",
+    "miranda-signature": "mi_c032_00_s.webp",
     "modernia": "mi_c260_00_s.webp",
     "moran": "mi_c281_00_s.webp",
+    "moran-signature": "mi_c281_00_s.webp",
     "nayuta": "mi_c223_00_s.webp",
     "neon-vision-eye": "mi_c018_00_s.webp",
     "noir": "mi_c271_00_s.webp",
@@ -67,6 +70,7 @@
     "phantom-signature": "mi_c580_00_s.webp",
     "prika": "mi_c601_00_s.webp",
     "privaty": "mi_c170_00_s.webp",
+    "privaty-signature": "mi_c170_00_s.webp",
     "quency-escape-queen": "mi_c403_00_s.webp",
     "rapi-red-hood": "mi_c016_00_s.webp",
     "rapi-red-hood-b1": "mi_c016_00_s.webp",
@@ -88,8 +92,10 @@
     "sugar-signature": "mi_c140_00_s.webp",
     "takina-inoue": "mi_c861_00_s.webp",
     "tove": "mi_c192_00_s.webp",
+    "tove-signature": "mi_c192_00_s.webp",
     "velvet": "mi_c316_00_s.webp",
     "volume": "mi_c431_00_s.webp",
-    "zwei": "mi_c390_00_s.webp"
+    "zwei": "mi_c390_00_s.webp",
+    "zwei-signature": "mi_c390_00_s.webp"
   }
 }

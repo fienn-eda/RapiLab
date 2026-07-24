@@ -5,6 +5,23 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 애장품 빌드를 base 슬러그에서 분리 — 6유닛, 그리고 "base가 훨씬 약하다"는 사실
+- Date: 2026-07-24
+- Context: `helm`·`miranda`·`moran`·`privaty`·`tove`·`zwei` 여섯 유닛은 매니페스트가 **base 슬러그 아래에서 `dollskills`(애장품 배열)를 읽고** 있었다. 근거 주석은 전부 "Fienn's X has hers completed" — 인코딩한 사람의 계정에는 맞지만 다른 모든 유저에게는 틀렸다. [[애장품 소유는 로스터가 답한다]]로 자동 판정을 넣어도 이들은 승격할 `-signature` 슬러그 자체가 없어 무력했다.
+- Alternatives considered: (a) 그대로 두고 애장품 보유를 기본 가정 — 공개 서비스에서 성립하지 않음. (b) base 값으로 덮어쓰기(단일 슬러그 유지) — 애장품 보유 유저를 과소평가하고, 이미 인코딩된 애장품 지식을 버림. (c) 여섯 유닛 모두 base + `-signature` 듀얼 슬롯으로 분리. 채택.
+- Decision: (c). 유닛당 모듈 하나가 매니페스트 2개를 갖는 `drake.py` 패턴. 소스는 현행 유지(dotgg 4 / lootandwaifus 2)라 슬롯 재전사 위험 0. 감사 스크립트 BAKED 6 → 0, PAIRED 7 → 13.
+- Why it mattered more than expected: 차이가 숫자 몇 %가 아니었다. Helm의 버스트는 base 1237.5% vs 애장품 8236.8%(**6.7배**), Privaty는 457.87% vs 1407.64%, Moran은 **버퍼 역할 전체**(버스트 쿨감 + 스쿼드 flat ATK)가 애장품 전용, Miranda의 Health Up!은 base에서 **전부 Hit Rate(inert)**라 per-shot 룰이 아예 없다. 즉 애장품은 "수치 강화"가 아니라 **역할을 바꾸는 업그레이드**이고, 그걸 base에 박아두면 추천이 근본적으로 왜곡된다.
+- 재사용 가능 여부는 유닛마다 갈렸다 — 슬롯 **의미**가 같으면 빌더를 공유하고(Tove는 전부 동일, Helm은 01–03만 동일), 어긋나면 전용 빌더를 썼다. Zwei가 함정이었다: lootandwaifus는 값을 렌더 텍스트 좌→우로 번호 매기는데 애장품 Overcharge Formula만 상태 이름 "Pierce Attacks 101"을 말해서 **리터럴 101이 슬롯 05를 먹고** 스쿼드 Pierce를 06/07로 민다. base는 05/06이라, 고정 인덱스로 공유했으면 버프 대신 지속시간을 읽었을 것이다.
+- Consequences: 무기변형 스케줄 2건(`zwei`, `moran`)이 `context.burst_times.get("<slug>")`를 하드코딩하고 있어 슬러그 파라미터로 바꿨다 — 안 고쳤으면 signature 빌드가 자기 버스트 시각을 못 찾아 **변형이 조용히 사라진다**(`laplace_signature` 선례). Moran의 Bring It On! 라이더는 이번에 신규 인코딩했다(`every_during_segment`). 큐브 재장전 골든핀은 그 덱에 Helm이 있어 재기준선(1124M → 859M). **남은 갭(분리 이전부터 존재, 문서화만):** Moran 애장품의 "Fervor: 버스트 쿨 ▼20초 상시" 미모델, Tove의 Emergency-Crafted Bullets 전체 미모델.
+
+## 애장품 소유는 로스터가 답한다 — `SIGNATURE_OWNED`는 폴백으로 강등
+- Date: 2026-07-24
+- Context: 듀얼 슬롯 유닛이 base로 싸울지 `-signature`로 싸울지는 **유저별 투자**인데, `resolveSlugForUnit`은 프론트엔드 상수 `SIGNATURE_OWNED`(개발자 계정의 Laplace·Drake 2개)로 답하고 있었다. 공개 서비스로 가면 모든 유저가 그 둘을 애장품 보유로 승격받고, 나머지 듀얼 슬롯 5쌍은 도달 불가였다. 한편 블라블라링크 페이로드는 이미 유닛별 `favorite_item_tid`를 싣고 있었고 `roster_assembly`가 그걸 스탯 계산에 쓰고 있었다 — **진짜 데이터가 파이프라인 안에 있는데 슬러그 결정에만 안 쓰이는** 상태.
+- Alternatives considered: (a) `SIGNATURE_OWNED`에 유저별 id를 계속 손으로 추가 — 공개 서비스에서 성립하지 않음. (b) 수집기(collect.js)가 애장품을 스크레이프하도록 확장 — ShiftyPad 페이지는 수집품 슬롯을 노출하지 않아 불가. (c) 백엔드가 이미 가진 `favorite_item_tid`를 소유 플래그로 함께 내보내고 프론트가 따른다. 채택.
+- Decision: (c). `assemble_unit`이 `favorite_item: owns_favorite_item(tid)`를 roster.json에 싣고, `resolveSlugForUnit(resourceId, ownsFavoriteItem = false)`이 그걸 **유일한 승격 근거**로 쓴다. `SIGNATURE_OWNED`는 **완전히 삭제**했다(Fienn 결정 2026-07-24: 손관리 폐기). 로스터가 침묵하면 base다.
+- Why: 침묵을 "미보유"로 기본값 잡는 게 비대칭적으로 안전하다 — 잘못 승격하면 보유하지도 않은 투자를 추천에 반영해 딜을 부풀리지만, 승격을 놓치면 저평가에 그치고 슬러그가 UI에서 편집 가능해 손으로 복구된다. 폴백을 남겼다면 개발자 계정의 Laplace·Drake가 계속 코드에 박혀 그걸 소유하지 않은 모든 유저의 추천에 샜을 것이다.
+- Consequences: 싱크 경로는 유저 로스터대로 7쌍 전부 자동 판정된다. **수집기 스크레이프 경로는 승격이 아예 불가** — ShiftyPad 페이지는 수집품 **이름**("Coffee Commander Doll Ltd.")만 노출하고 등급을 안 보여줘 애장품 여부를 만들 수 없다(이름→등급 표를 새로 만드는 건 근거 없는 추측). Collection 탭(`favorite_rare`) 캡처가 그 갭의 해법으로 남는다. **이 결정으로 해결되지 않는 것**: `helm`·`miranda`·`moran`·`privaty`·`tove`·`zwei` 6유닛은 매니페스트가 base 슬러그 아래에서 `dollskills`를 읽어 애장품 빌드를 박아넣었고, 승격할 `-signature` 슬러그가 없어 자동 판정이 무력하다(애장품 미보유 유저 과대평가). Fienn이 분리를 지시(2026-07-24). `scripts/audit_favorite_item_encodings.py`가 현황을 감시한다.
+
 ## Phantom base의 Thief's Vision 최대스택 관련 효과 전체 defer — 엔진 한계가 아니라 스킬 자체의 구조적 교착 (Fienn 확인)
 - Date: 2026-07-24
 - Context: Phantom base의 Thief's Dagger 스택은 유일한 소스가 "Calling Card 상태가 아닌 적을 노멀공격으로 때릴 때"인데, 그 공격 자체가 대상에게 Calling Card를 5초간 건다. 대거 지속(5초)이 Calling Card 지속과 정확히 같아, 다음 스택을 얻을 수 있는 시점(대상이 다시 Calling Card 없이 노출되는 순간)에 이미 이전 스택이 만료 — 영원히 1스택에 머물고 최대스택 트리거(Thief's Vision의 84.33% 추가딜, 스택형 Distributed Damage +12.86%)는 절대 발동하지 않는다.

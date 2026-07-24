@@ -114,6 +114,21 @@ def parse_html(raw: str, slug: str) -> tuple[dict, list[str]]:
     all_skills = [make_skill(i) for i in range(len(titles))]
     skills = all_skills[:3]
     dollskills = all_skills[3:6] if len(titles) == 6 else None
+
+    # A Favorite Item skill is the SAME skill upgraded, so its title mirrors the
+    # base skill's - true for every doll unit collected so far. Tove's page breaks
+    # that: its 4th title reads "Miracle of Makeshifts" (her burst) while the body
+    # under it is Emergency-Crafted Bullets. The body is what encoders read and it
+    # is correct, so this only repairs the label - and warns, so a genuine rename
+    # upstream surfaces instead of being silently overwritten.
+    if dollskills:
+        for base, doll in zip(skills, dollskills):
+            if doll["name"] != base["name"]:
+                warnings.append(
+                    f"doll skill titled {doll['name']!r} under base {base['name']!r}"
+                    " - source label mismatch, using the base title"
+                )
+                doll["name"] = base["name"]
     burst_cooldown = skills[2]["cooldown"] if len(skills) == 3 else None
 
     data = {

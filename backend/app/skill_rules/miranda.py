@@ -1,7 +1,24 @@
-"""Miranda (slug "miranda"), a Burst-1 SMG supporter, signature weapon done
-(dollskills). Fienn's Miranda has hers completed.
+"""Miranda (slug "miranda") and her Favorite Item build (slug
+"miranda-signature"), a Burst-1 SMG supporter. Collected from api.dotgg.gg.
 
-Modeled (DPS-relevant):
+The two builds are separate deck candidates (dual-slot); which one a user fights
+with comes from their roster's per-unit `favorite_item` flag.
+
+Base modeled (DPS-relevant):
+- Wake Up! (skills[1]): on Full Burst enter, squad Crit Damage up. That is the
+  WHOLE skill on the base build - the self Crit Rate / Attack Damage steps and
+  the top-ATK round grant are text the Favorite Item adds (slots 03-09 simply do
+  not exist in the base array).
+- Powering Up! (skills[2], her burst): ATK + Crit Damage up on the **1** ally
+  with the highest final ATK. The Favorite Item widens this to 2 allies (slot 01
+  is the ally count: 1 vs 2) and changes nothing else.
+
+Base NOT modeled: Health Up! (skills[0]) in its entirety - both of its steps are
+Hit Rate, which this engine's damage model does not consume. The base build
+therefore has no per-shot rules at all; the Favorite Item is what gives that
+skill a DPS effect (the self ATK step at slots 07-09).
+
+Favorite Item modeled (DPS-relevant):
 - Health Up! (dollskills[0]): after every 30 normal attacks, self ATK up (via
   per_shot_rules - see build_health_up_rules).
 - Wake Up! (dollskills[1]): on Full Burst enter, squad Crit Damage up, self Crit
@@ -16,8 +33,8 @@ the ranking when Wake Up (Full Burst enter, tier 3) fires later that cycle. "for
 1 round" is a bullet-count duration: the buff covers exactly the target's next
 shot (see round_buff_rule / raid_simulator's round-grant handling).
 
-Not modeled: Health Up!'s two Hit Rate steps - Hit Rate is not consumed by this
-engine's damage model, so encoding it would be inert.
+Not modeled (both builds): Health Up!'s two Hit Rate steps - Hit Rate is not
+consumed by this engine's damage model, so encoding it would be inert.
 """
 from app.skill_rules._helpers import (
     buff_rule,
@@ -26,19 +43,63 @@ from app.skill_rules._helpers import (
     round_buff_rule,
 )
 
-# Fienn's Miranda has the signature weapon completed, so the manifest reads
-# the "dollskills" array, not "skills" (see module docstring).
 SKILL_VALUE_MANIFESTS = {
     "miranda": {
         "source": "dotgg",
+        "test_module": "test_skill_rules_burst1_batch1",
+        "keys": {
+            "health_up": ("skills", 0),
+            "wake_up": ("skills", 1),
+            "powering_up": ("skills", 2),
+        },
+        "fixtures": {
+            "health_up": "MIRANDA_BASE_HEALTH_UP",
+            "wake_up": "MIRANDA_BASE_WAKE_UP",
+            "powering_up": "MIRANDA_BASE_POWERING_UP",
+        },
+    },
+    "miranda-signature": {
+        "source": "dotgg",
+        "data_slug": "miranda",
         "test_module": "test_skill_rules_burst1_batch1",
         "keys": {
             "health_up": ("dollskills", 0),
             "wake_up": ("dollskills", 1),
             "powering_up": ("dollskills", 2),
         },
+        "fixtures": {
+            "health_up": "MIRANDA_SIG_HEALTH_UP",
+            "wake_up": "MIRANDA_SIG_WAKE_UP",
+            "powering_up": "MIRANDA_SIG_POWERING_UP",
+        },
     },
 }
+
+
+def build_miranda_base_rules(values):
+    """Miranda without her Favorite Item: one squad Crit Damage buff and a
+    top-1-ATK burst. Deliberately not written as a special case of
+    build_miranda_rules - the base array stops at slot 02 of Wake Up!, so the
+    shared function's slot reads would KeyError rather than degrade."""
+    wake = values["wake_up"]
+    power = values["powering_up"]
+    squad_crit_damage = float(wake["description_value_01"]) / 100
+    crit_damage_duration = float(wake["description_value_02"])
+    burst_allies = int(power["description_value_01"])
+    burst_atk = float(power["description_value_02"]) / 100
+    burst_atk_duration = float(power["description_value_03"])
+    burst_crit_damage = float(power["description_value_04"]) / 100
+    burst_crit_damage_duration = float(power["description_value_05"])
+
+    return [
+        buff_rule("full_burst_enter", [
+            ("other_critical_damage_sources", squad_crit_damage, "squad", crit_damage_duration),
+        ]),
+        highest_atk_buff_rule("own_burst_activate", burst_allies, [
+            ("atk_percent", burst_atk, burst_atk_duration),
+            ("other_critical_damage_sources", burst_crit_damage, burst_crit_damage_duration),
+        ]),
+    ]
 
 
 def build_miranda_rules(values):
