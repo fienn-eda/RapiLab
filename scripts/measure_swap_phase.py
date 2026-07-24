@@ -17,9 +17,12 @@ Run before changing the swap phase, and again afterwards. Sims are counted
 where the batch is BUILT, in this process, so the counts stay honest under
 `--workers` - unlike the phase split, which can only time a pooled run.
 
+Runs against the real synced roster by default (see roster_fixture.py for why
+the uniform-investment stand-in flatters the hill-climb).
+
 Usage (any cwd):
-    python3 scripts/measure_swap_phase.py [--units 78] [--decks 5] [--budget 45]
-                                          [--workers auto]
+    python3 scripts/measure_swap_phase.py [--decks 5] [--budget 45]
+                                          [--workers auto] [--units N] [--synthetic]
 """
 import argparse
 import sys
@@ -30,17 +33,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 
 import app.deck_allocation as da  # noqa: E402
 from app.deck_search import BossProfile  # noqa: E402
-from app.models import UserNikkeState  # noqa: E402
 from app.supported_units import supported_units  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
-
-
-def _nikke(slug):
-    return UserNikkeState.model_validate({
-        "character_slug": slug, "level": 200, "core_level": 0,
-        "hp": 1_000_000.0, "atk": 60_000.0, "def_": 3_000.0,
-        "skill_levels": {"skill1": 10, "skill2": 10, "burst": 10},
-    })
+from roster_fixture import real_roster, synthetic_roster  # noqa: E402
 
 
 class _SwapTrace:
@@ -116,20 +111,29 @@ def _full_pass_candidates(decks, leftovers):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    p.add_argument("--units", type=int, default=78)
+    p.add_argument("--units", type=int, default=None,
+                   help="cap the roster size (default: the whole synced roster)")
     p.add_argument("--decks", type=int, default=5)
     p.add_argument("--budget", type=float, default=45.0,
                    help="swap phase time budget in seconds (default: production's 45)")
     p.add_argument("--workers", default=1,
                    help='1 (default) or "auto"/N to run the pooled path')
+    p.add_argument("--synthetic", action="store_true",
+                   help="uniform-investment stand-in instead of the synced roster "
+                        "- only for comparing against pre-2026-07-25 numbers")
     args = p.parse_args()
     workers = args.workers if args.workers == "auto" else int(args.workers)
 
-    slugs = [u["slug"] for u in supported_units()][:args.units]
-    specs, _ = load_roster([_nikke(s) for s in slugs])
+    states = None if args.synthetic else real_roster(limit=args.units)
+    source = "real synced roster"
+    if states is None:
+        states = synthetic_roster(args.units, supported_units())
+        source = ("synthetic (uniform investment)" if args.synthetic
+                  else "synthetic - NO synced roster saved, see roster_fixture.py")
+    specs, _ = load_roster(states)
     boss = BossProfile(element="Water", fight_duration=180.0)
-    print(f"roster {len(specs)} units; {args.decks} decks; "
-          f"swap budget {args.budget:.0f}s "
+    print(f"roster {len(specs)} loadable of {len(states)} ({source}); "
+          f"{args.decks} decks; swap budget {args.budget:.0f}s "
           f"({'serial' if workers == 1 else f'workers={workers}'})", flush=True)
 
     trace = _SwapTrace()
