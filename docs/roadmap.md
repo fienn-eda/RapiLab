@@ -607,13 +607,25 @@
       승격을 놓치면 저평가에 그치고, 슬러그는 UI에서 직접 고칠 수 있다. 수집기
       스크레이프 경로는 ShiftyPad가 수집품 **이름**만 보여주고 등급은 안 보여줘
       플래그를 못 만든다 — Collection 탭(`favorite_rare`) 캡처가 그 갭의 해법.
-- [ ] **애장품 빌드가 base 슬러그에 박힌 6유닛 분리** — `helm` · `miranda` · `moran` ·
-      `privaty` · `tove` · `zwei`. 매니페스트가 base 슬러그 아래에서 `dollskills`를 읽어
-      **애장품 없는 유저를 과대평가**한다(근거 주석이 전부 "Fienn's X has hers
-      completed"). 위 자동 판정은 이들에게 무력하다 — 승격할 `-signature` 슬러그 자체가
-      없기 때문. 각 유닛을 base(`skills`) + `-signature`(`dollskills`) 쌍으로 쪼개야
-      하며, base 쪽은 사실상 신규 인코딩이다. 현황 확인:
-      `python scripts/audit_favorite_item_encodings.py` (조치 필요 시 종료코드 1).
+- [x] **애장품 빌드가 base 슬러그에 박힌 6유닛 분리 — 완료 (2026-07-24).** `helm` ·
+      `miranda` · `moran` · `privaty` · `tove` · `zwei` 전부 base + `-signature`
+      쌍으로 분리. 감사 스크립트 BAKED 6 → **0**, PAIRED 7 → **13**, 종료코드 0.
+      각 유닛이 애장품 미보유 유저에게 잘못 주던 것: Helm 버스트 8236.8%(base
+      1237.5%, 6.7배) + 풀차지 넉 + 차지댐 라이더 · Miranda의 Wake Up! 자버프
+      전체와 top-2 버스트(base는 top-1) · Zwei의 스택형 Pierce와 10초 크리창(base
+      5초) · Privaty의 Designated Target 1687%와 버스트 1407.64%(base 457.87%) ·
+      Moran의 버퍼 역할 전체(버스트 쿨감 + 스쿼드 flat ATK) · Tove의 크리율
+      10.08%(base 3.32%)와 15초 창(base 10초).
+      **부수 성과:** Moran의 Bring It On! 라이더를 신규 인코딩(`every_during_segment`
+      — "무기 변경 중 노멀 5회마다", Snow White: Heavy Arms 선례) · 무기변형 스케줄
+      2건이 슬러그를 하드코딩하고 있던 것을 파라미터화(안 고쳤으면 signature 빌드가
+      버스트 시각을 못 찾아 변형이 조용히 사라짐) · lootandwaifus 소스의 애장품
+      스킬 제목 오류 수정(Tove).
+      **Fienn 룰링(2026-07-24):** 보스는 스턴 불가 → Privaty의 "Stun 시 1089%"는
+      defer · Tove의 5% 확률 트리거는 기대값(20발마다 1스택, 60발≈5초에 만렙)으로
+      풀스택 가정을 유도 · flat 최대탄약은 프리미티브 부재로 defer.
+      **남은 갭(분리 이전부터 있던 것, 문서화만):** Moran 애장품의 "Fervor: 버스트
+      쿨 ▼20초 상시" 미모델 · Tove의 Emergency-Crafted Bullets 전체 미모델.
 - [x] **애장품 판정 불가 2유닛 — 해소 (2026-07-24).** `laplace-ultimate-hero` ·
       `maxwell-ordinary-mechanic`은 ShiftyPad 소스라 `dollskills` 키가 없고 동일
       슬러그의 lootandwaifus 파일도 없어 데이터로는 답할 수 없었다. **Fienn 룰링:
