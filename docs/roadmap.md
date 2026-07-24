@@ -492,6 +492,23 @@
     · **핵심 발견:** prune 안전망을 빼면 최적의 **90.6%**, 넣으면 **100%** — 안전망이
     장식이 아님이 실측됨. 자세한 근거는 `docs/decisions.md`·`docs/insights.md`.
     spec/plan: `docs/superpowers/{specs,plans}/2026-07-24-cascade-surrogate-phase2*`.
+  - **✅ swap 힐클라임 배치 병렬화 착지 (2026-07-25):** 캐스케이드 이후 유일한 비병렬
+    단계였던 `_swap_pass`를 재측정하니 전제가 뒤집혀 있었다 — swap은 합계 데미지를
+    **+48.6%** 올리는 **품질의 주력**인데 한 패스 후보 679개 중 **52%만 보고 잘리고**,
+    잘리는 순간에도 이득이 오르는 중이었다(deck 3·4는 leftover 후보를 한 번도 못 봄).
+    예산 300초면 160.9초에 +54.83%로 수렴 ⇒ **45초가 버리던 총딜 4.0%**.
+    · **원인 판정:** "캐스케이드가 풀을 좁혀 swap에 떠넘긴 것" 가설을 실측 기각 —
+    캐스케이드 peel이 기존 pruned-exhaustive peel의 **105.1%**(`measure_peel_quality.py`).
+    범인은 greedy peel 고유의 고전적 실수. 풀은 안 건드림.
+    · **구현:** 의미 보존 배치 채점(순회 순서·채택 규칙 불변, 채택 시 재배치). 새
+    프로세스 0개 — peel이 만든 SimPool 재사용이라 **피크 CPU 불변**.
+    · **1차 시도가 1.9배에 그친 함정:** `SPAWN_THRESHOLD=32`가 executor 재사용까지
+    막아 덱-덱 배치(~22덱)가 인라인으로 떨어졌다 → 임계값이 **생성만** 지키도록 수정.
+    · **결과:** swap 452 → **3,734 시뮬(8.4x)**, +48.60% → **+54.83%**(직렬 300초판
+    수렴값과 자릿수까지 일치). 할당 전체 직렬 216초 → **프로덕션 81초**.
+    · **`auto` = `cpu_count // 2`로 하향** (유저 디바이스 배려, Fienn 요구). 8워커와
+    15워커의 데미지가 **동일** — 절반은 타협이 아니라 공짜(4워커 99.6%, 2워커 98.3%).
+    신설 계측: `scripts/measure_swap_phase.py`, `scripts/measure_peel_quality.py`.
   - **1. SimPool 공유(~30 LOC).** 4회 호출이 SimPool 하나를 공유(전체 로스터로 초기화
     → 30명 부분집합도 `_WORKER_SPECS[s]` 유효). spawn wave 4→1. **결과 불변.** 단
     sim 작업량 2×97초는 그대로 — spawn이 지배 비용이 아니면 체감 작음(0번이 판정).
@@ -1136,16 +1153,30 @@
       자체딜 +23.0%, 덱 총딜 +13.0%.
 
 ### 정리/보강
-- [ ] **`supported_units()`가 `weapon_source`를 무시해 애장품 4인방의 `-signature`
-      빌드가 추천기에서 안 보인다** (2026-07-25 발견). `user_roster.load_nikke_spec`은
-      `manifest.get("weapon_source", manifest["source"])`를 존중하는데
-      (`user_roster.py:63`) `supported_units._load_meta`는 `manifest["source"]`만 보고
-      (`supported_units.py:26`) 죽은 dotgg를 찾다 `FileNotFoundError` → `continue`로
-      **조용히 탈락**시킨다. `sugar/flora/rosanna/phantom-signature` 넷 다 해당.
-      `_load_meta` 독스트링이 "load_nikke_spec의 해석을 정확히 미러링"이라 주장하는데
-      더 이상 사실이 아니다. 조용한 `continue`가 이런 누락을 감추는 것 자체도 재검토 대상.
+- [x] **`supported_units()`가 `weapon_source`를 무시해 애장품 4인방의 `-signature`
+      빌드가 추천기에서 안 보이던 문제 — 수정 완료 (2026-07-25).** 두 로더가 "이 매니페스트의
+      무기 파일은 어디서 오는가"를 **각자** 판단하던 게 근본 원인이라, `weapon_source` 키가
+      추가됐을 때 `load_nikke_spec`만 배웠다. 분기를 `skill_values.load_weapon_data` 하나로
+      합쳐 드리프트 자체를 없앴다. `supported_units`는 그 파일을 여전히 **가드 없이 즉시**
+      로드한다 — 무기 데이터가 없는 유닛은 로스터에 못 들어가므로, 목록에 넣으면 팔레트에는
+      보이는데 `load_nikke_spec`이 거부하는 유닛이 생기기 때문이다. **89/93 → 93/93**,
+      넷 다 실제 로스터 적재까지 확인. 회귀 테스트는 이제 슬러그를 나열하지 않고
+      "모든 `ENCODED_SLUGS`가 추천기에 도달하는가"를 단언한다 — 이 함수가 조용히 4개씩
+      떨어뜨린 게 두 번째라, 이름을 적는 테스트는 자기를 만든 사건만 잡는다.
 - [ ] `docs/decisions.md`의 "180s", "tech stack" 항목에 `Consequences:` 필드 보강
       (docs-keeper 지적, 2026-07-25 확인 — 둘 다 여전히 누락)
+- [x] ~~**swap 힐클라임이 정규 순서 하나로만 후보를 채점한다**~~ → **측정 후 기각(고치지 않음),
+      2026-07-25 발견·같은 날 종결.** 메커니즘은 실재한다: `search_best_decks` 독스트링이
+      그 방식을 실측 최대 78% 낮다고 명시하고, `_swap_pass`에 들어오는 덱은 이미 최적 순서라
+      **교체 후보만 불리하게** 채점된다(오차가 상쇄되지 않음). 그런데 **결과 가치는 거의
+      안 바뀐다.** 실제 로스터 77유닛에서 후보를 전 intra-tier 순서로 채점한 힐클라임과
+      현행을 끝까지 비교(`scripts/audit_swap_ordering.py`): **Water/180s +0.02%,
+      Fire/180s +0.47%, Electric/90s +0.14%** — 상한 0.5%를 위해 할당 전체가 3.3~5.4배
+      느려진다(94→503s, 104→348s, 62→170s). 2단계 설계로 비용을 깎아도 얻을 천장이 0.5%다.
+      **이유**: 목적함수가 최적 근처에서 평평하다 — Water 실행에서 두 방식의 덱 구성이
+      **완전히 달랐는데** 총딜은 0.02% 차이였다. 순서 저평가는 판정을 뒤집지만, 뒤집힌 쪽도
+      거의 같은 값의 다른 국소 최적이다. 재검토 조건: 셸 규모가 커지거나(덱당 순서 수 증가)
+      시너지 구조가 순서에 훨씬 민감해지면 다시 재라.
 
 ### 나중 (Phase 5~7)
 - [x] 5덱 25니케 분배 최적화 레이어 (Phase 5에서 착지 — `allocate_decks`의 greedy-peel +

@@ -1,5 +1,9 @@
 node_modules/
 roster.json
+# The app's own synced roster, lifted out of localStorage as NikkeDraft[] -
+# already slug-resolved (Favorite Item builds included), which roster.json is
+# not. Personal investment data: local only, same as roster.json.
+roster-drafts.json
 details.json
 outpost.json
 *.backup-*.json

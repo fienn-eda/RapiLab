@@ -15,6 +15,17 @@ from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
 from app.sim_pool import SimPool, resolve_workers
 
 
+# Swap candidates scored per batch, per worker. The batch is what SimPool fans
+# out, so it has to be wide enough to fill the pool - but every candidate in a
+# batch is scored before the deadline is checked again, so a wider batch also
+# overshoots the deadline further. Scaling with the worker count holds that
+# overshoot near-constant (~a second at today's ~100 ms simulation) whatever the
+# machine, and the floor keeps the serial path's granularity close to the
+# one-candidate-at-a-time walk this replaced.
+SWAP_BATCH_PER_WORKER = 4
+_MIN_SWAP_BATCH = 4
+
+
 class InfeasibleDraft(ValueError):
     """A draft deck's locked/placed units fit no legal deck shape, or the pool
     is exhausted before every drafted deck can be completed."""
@@ -25,7 +36,8 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
     # Serial (the default) never constructs a SimPool, so the sim path stays
     # exactly the pre-parallelism one (and test stubs of evaluate_deck keep
     # working - SimPool holds its own module binding they can't patch).
-    pool = SimPool(roster, boss, workers=workers) if resolve_workers(workers) > 1 else None
+    worker_count = resolve_workers(workers)
+    pool = SimPool(roster, boss, workers=workers) if worker_count > 1 else None
     try:
         by_slug = {u.slug: u for u in roster}
         draft = draft or []
@@ -72,10 +84,14 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
         # time_budget_sec caps the swap-improvement phase ONLY, starting when the
         # swap phase itself starts: greedy peeling above and the final ordering
         # polish below are unbudgeted, so a valid (if unimproved) allocation is
-        # returned even with a zero budget. The hill-climb stays serial: each
-        # accepted swap changes the state the next candidate is judged against.
+        # returned even with a zero budget. The hill-climb's DECISIONS stay
+        # sequential - each accepted swap changes the state the next candidate is
+        # judged against - but the candidates it judges are scored in batches
+        # through the same pool the peel used, which is what lets the phase reach
+        # a local optimum inside the budget instead of being cut off mid-climb.
         deadline = time.monotonic() + time_budget_sec
-        _swap_pass(decks, remaining, boss, deadline, locked=locked)
+        _swap_pass(decks, remaining, boss, deadline, locked=locked, pool=pool,
+                   batch=max(_MIN_SWAP_BATCH, worker_count * SWAP_BATCH_PER_WORKER))
 
         summaries = [_best_ordering_summary(units, boss, pool) for units in decks]
         return {"decks": summaries,
@@ -85,11 +101,8 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
             pool.close()
 
 
-def _score(units, boss):
-    return evaluate_deck(units, boss)["total_damage"]
-
-
-def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset()):
+def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
+               batch=_MIN_SWAP_BATCH):
     """Hill-climb: try same-tier unit swaps between two decks (and between a
     deck and the leftovers), re-scoring only the affected deck(s); keep a swap
     iff the summed total improves. Same-tier swaps preserve the deck shapes.
@@ -97,55 +110,73 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset()):
     `locked` slugs are never chosen as a swap source, pinning a drafted seat."""
     if not decks:
         return
-    scores = [_score(units, boss) for units in decks]
+    scores = _score_batch(decks, boss, pool)
     improved = True
     while improved and time.monotonic() < deadline:
         improved = False
         for i in range(len(decks)):
             for j in range(i + 1, len(decks)):
-                improved |= _try_pair_swaps(decks, scores, i, j, boss, deadline, locked)
-            improved |= _try_leftover_swaps(decks, scores, i, leftovers, boss, deadline, locked)
+                improved |= _try_swaps(decks, scores, i, decks[j], j, boss,
+                                       deadline, locked, pool, batch)
+            improved |= _try_swaps(decks, scores, i, leftovers, None, boss,
+                                   deadline, locked, pool, batch)
 
 
-def _try_pair_swaps(decks, scores, i, j, boss, deadline, locked=frozenset()):
+def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch):
+    """Same-tier swaps between deck `i` and `partner` - either another deck
+    (`j` is its index, so its score counts toward the improvement too) or the
+    leftover bench (`j` is None, and a benched unit contributes nothing).
+
+    Candidates are scored a batch at a time so a SimPool can fan them out. The
+    walk over a scored batch keeps the serial rule exactly: accept the FIRST
+    candidate that improves, in this order. An acceptance makes the rest of that
+    batch stale - those scores describe a deck that no longer exists - so the
+    loop re-batches from the next candidate instead of trusting them. Wasted
+    scoring is bounded by the batch and rare in practice: measured on a 78-unit
+    roster, under 1% of candidates are ever accepted.
+
+    The candidate LIST, unlike the scores, never goes stale. A same-tier swap
+    leaves both seats' tiers unchanged and never moves a locked unit, so neither
+    filter can flip as swaps are accepted - which is what makes scoring a
+    candidate before reaching it safe in the first place.
+    """
+    candidates = [(a, k)
+                  for a in range(5) if decks[i][a].slug not in locked
+                  for k in range(len(partner))
+                  if partner[k].slug not in locked
+                  and decks[i][a].burst_tier == partner[k].burst_tier]
+    width = 1 if j is None else 2      # decks re-scored per candidate
     improved = False
-    for a in range(5):
-        if decks[i][a].slug in locked:
-            continue
-        for b in range(5):
-            if time.monotonic() >= deadline:
-                return improved
-            if decks[j][b].slug in locked:
-                continue
-            if decks[i][a].burst_tier != decks[j][b].burst_tier:
-                continue
-            decks[i][a], decks[j][b] = decks[j][b], decks[i][a]
-            new_i, new_j = _score(decks[i], boss), _score(decks[j], boss)
-            if new_i + new_j > scores[i] + scores[j]:
-                scores[i], scores[j] = new_i, new_j
-                improved = True
-            else:
-                decks[i][a], decks[j][b] = decks[j][b], decks[i][a]
-    return improved
+    start = 0
+    while start < len(candidates):
+        if time.monotonic() >= deadline:
+            return improved
+        chunk = candidates[start:start + batch]
+        trials = []
+        for a, k in chunk:
+            deck_i = list(decks[i])
+            deck_i[a] = partner[k]
+            trials.append(deck_i)
+            if j is not None:
+                deck_j = list(partner)
+                deck_j[k] = decks[i][a]
+                trials.append(deck_j)
+        totals = _score_batch(trials, boss, pool)
 
-
-def _try_leftover_swaps(decks, scores, i, leftovers, boss, deadline, locked=frozenset()):
-    improved = False
-    for a in range(5):
-        if decks[i][a].slug in locked:
+        baseline = scores[i] + (0.0 if j is None else scores[j])
+        accepted = next((n for n in range(len(chunk))
+                         if sum(totals[n * width:(n + 1) * width]) > baseline),
+                        None)
+        if accepted is None:
+            start += len(chunk)
             continue
-        for k in range(len(leftovers)):
-            if time.monotonic() >= deadline:
-                return improved
-            if decks[i][a].burst_tier != leftovers[k].burst_tier:
-                continue
-            decks[i][a], leftovers[k] = leftovers[k], decks[i][a]
-            new_i = _score(decks[i], boss)
-            if new_i > scores[i]:
-                scores[i] = new_i
-                improved = True
-            else:
-                decks[i][a], leftovers[k] = leftovers[k], decks[i][a]
+        a, k = chunk[accepted]
+        decks[i][a], partner[k] = partner[k], decks[i][a]
+        scores[i] = totals[accepted * width]
+        if j is not None:
+            scores[j] = totals[accepted * width + 1]
+        improved = True
+        start += accepted + 1
     return improved
 
 

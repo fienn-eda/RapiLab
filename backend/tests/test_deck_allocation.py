@@ -3,6 +3,7 @@ same-tier swap pass recovers the classic greedy mistake (stacking two strong
 supporters in deck 1 when splitting them wins). All search/sim calls are
 stubbed - real sims live in the API end-to-end test."""
 from dataclasses import dataclass
+import time
 
 import app.deck_allocation as da
 from app.deck_search import BossProfile
@@ -95,6 +96,67 @@ def test_swap_pass_fixes_a_greedy_split(monkeypatch):
     per_deck = [set(d["deck"]) & {"m", "n"} for d in out["decks"]]
     assert all(len(x) == 1 for x in per_deck)          # one buffer per deck
     assert sum(d["total_damage"] for d in out["decks"]) == 200.0
+
+
+def _swap_fixture():
+    """One deck plus a two-unit bench, where both bench units improve the deck
+    but only the better one should end up seated."""
+    deck = roster_of({"x1": 1, "x2": 2, "x3": 3, "x4": 3, "x5": 3})
+    return deck, [Unit("y", 3), Unit("z", 3)]
+
+
+def _bench_scorer(slugs):
+    # y is worth more than z, and z beats the deck it would replace x3 in - so
+    # z improves on the ORIGINAL deck but not on the one y produces.
+    if "y" in slugs:
+        return 120.0
+    if "z" in slugs:
+        return 110.0
+    return 100.0
+
+
+def test_an_accepted_swap_invalidates_the_rest_of_its_batch(monkeypatch):
+    """Candidates are scored a batch ahead of the walk that judges them, so an
+    accepted swap leaves the rest of that batch scored against a deck that no
+    longer exists. Here z improves on the original deck (110 > 100) but not on
+    the one y just produced (110 < 120): trusting the stale score would seat
+    the worse unit."""
+    deck, bench = _swap_fixture()
+    patch_scorer(monkeypatch, _bench_scorer)
+
+    da._swap_pass([deck], bench, BossProfile(),
+                  time.monotonic() + 30.0, batch=8)
+
+    assert {u.slug for u in deck} == {"x1", "x2", "y", "x4", "x5"}
+    assert sorted(u.slug for u in bench) == ["x3", "z"]
+
+
+def test_batch_width_never_changes_the_outcome(monkeypatch):
+    """Batching decides only how many candidates are scored at once; the accept
+    rule and the candidate order stay the serial ones. batch=1 IS the old
+    one-at-a-time walk, so it must agree with a batch wide enough to span every
+    candidate at once."""
+    outcomes = []
+    for batch in (1, 2, 3, 64):
+        deck, bench = _swap_fixture()
+        patch_scorer(monkeypatch, _bench_scorer)
+        da._swap_pass([deck], bench, BossProfile(),
+                      time.monotonic() + 30.0, batch=batch)
+        outcomes.append(([u.slug for u in deck], [u.slug for u in bench]))
+
+    assert len(set(map(str, outcomes))) == 1, outcomes
+
+
+def test_swap_pass_respects_an_expired_deadline(monkeypatch):
+    """A budget of zero must leave the decks untouched - allocate_decks relies
+    on this to return a valid (if unimproved) allocation with no budget."""
+    deck, bench = _swap_fixture()
+    before = [u.slug for u in deck]
+    patch_scorer(monkeypatch, _bench_scorer)
+
+    da._swap_pass([deck], bench, BossProfile(), time.monotonic() - 1.0)
+
+    assert [u.slug for u in deck] == before
 
 
 def test_allocate_decks_workers_parity():

@@ -22,7 +22,8 @@ from app.skill_rules.registry import (
     get_skill_value_manifest,
     get_weapon_profile_override,
 )
-from app.skill_values import DATA_DIR, assemble_skill_values, load_character_data
+from app.skill_values import (DATA_DIR, assemble_skill_values,
+                              load_character_data, load_weapon_data)
 
 _WEAPON_STAT_FIELDS = ("weapon", "maxAmmo", "damage", "reloadTime", "chargeTime", "chargeDamage")
 
@@ -54,24 +55,13 @@ def load_nikke_spec(
     if manifest is None:
         return None
     data_slug = manifest.get("data_slug", slug)
-    # dotgg sometimes shortens a unit's slug (url "ada" for "ada-wong"); the
-    # optional dotgg_slug manifest key bridges that for the weapon-stats lookup.
-    # Weapon stats come from the manifest's weapon_source, which defaults to its
-    # source. A Favorite Item slug overrides it: its skill values are dollskills
-    # (lootandwaifus only) while its weapon is the base unit's ShiftyPad file,
-    # since ShiftyPad exposes no dollskills and dotgg can no longer be collected.
-    if manifest.get("weapon_source", manifest["source"]) == "shiftypad":
-        try:
-            weapon_data = load_character_data("shiftypad", data_slug, data_dir)
-        except FileNotFoundError:
-            return None
-    else:
-        try:
-            weapon_data = load_character_data(
-                "dotgg", manifest.get("dotgg_slug", data_slug), data_dir
-            )
-        except FileNotFoundError:
-            return None
+    # Which file the weapon stats come from is load_weapon_data's call, shared
+    # with supported_units so a unit can never be loadable to one and invisible
+    # to the other (see its docstring for what that cost once).
+    try:
+        weapon_data = load_weapon_data(manifest, slug, data_dir)
+    except FileNotFoundError:
+        return None
     weapon_stats = _weapon_stats(weapon_data)
     if weapon_stats is None:
         return None

@@ -51,11 +51,20 @@ def _summarize_slugs(slugs):
 
 
 def resolve_workers(workers):
-    """None/0/1 -> serial; "auto" -> leave one core for the event loop."""
+    """None/0/1 -> serial; "auto" -> half the machine, never more.
+
+    This runs on the player's own device, not a server we own, so a
+    recommendation must not take the whole machine for a minute. Half is not a
+    compromise on results: measured on a 78-unit roster, 8 workers and 15 reach
+    exactly the same allocation damage - the swap hill-climb converges either
+    way, and the extra cores only shave wall clock (80s vs 73s). Below that the
+    phase degrades gently rather than breaking (4 workers keep 99.6% of the
+    converged damage, 2 keep 98.3%). See docs/decisions.md.
+    """
     if workers in (None, 0, 1):
         return 1
     if workers == "auto":
-        return max(1, (os.cpu_count() or 2) - 1)
+        return max(1, (os.cpu_count() or 2) // 2)
     return int(workers)
 
 
@@ -85,7 +94,13 @@ class SimPool:
 
     def _map(self, worker_fn, inline_fn, decks):
         threshold = self._spawn_threshold if self._spawn_threshold is not None else SPAWN_THRESHOLD
-        if self._workers <= 1 or len(decks) < threshold:
+        # The threshold guards STARTING the executor - spawning processes and
+        # pickling the roster into each. Once one is running a task costs a
+        # five-slug tuple, so a batch under the threshold is still worth fanning
+        # out; holding it back only leaves the workers idle. The swap
+        # hill-climb lives on this: its deck-to-deck candidates arrive ~22 at a
+        # time and were serial for exactly this reason.
+        if self._workers <= 1 or (len(decks) < threshold and self._executor is None):
             return [inline_fn(deck) for deck in decks]
         if self._executor is None:
             self._executor = ProcessPoolExecutor(

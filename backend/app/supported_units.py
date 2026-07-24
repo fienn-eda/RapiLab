@@ -3,7 +3,7 @@ so the frontend draft palette can group units by burst tier without the
 frontend needing to know the skill-value manifest / registry internals.
 """
 from app.skill_rules.registry import ENCODED_SLUGS, VARIANT_BURST_TIERS, get_skill_value_manifest
-from app.skill_values import DATA_DIR, load_character_data
+from app.skill_values import DATA_DIR, load_character_data, load_weapon_data
 
 
 def _humanize(slug):
@@ -16,20 +16,21 @@ def _load_meta(slug, data_dir):
     load_nikke_spec uses - covers both MODE_VARIANTS siblings like
     cinderella-crystal-wave-mg and signature-weapon builds like
     julia-signature) looked up in lootandwaifus, falling back to the
-    manifest's own dotgg/shiftypad weapon-data source when there's no
-    lootandwaifus file (e.g. Privaty)."""
+    manifest's own weapon-data source when there's no lootandwaifus file
+    (e.g. Privaty).
+
+    The weapon file is loaded even when lootandwaifus supplies the metadata,
+    and is deliberately NOT guarded: a unit whose weapon data is missing cannot
+    be loaded into a roster at all, so listing it here would put a unit in the
+    palette that load_nikke_spec then refuses. Both callers resolve that file
+    through load_weapon_data, so the two can no longer drift apart."""
     manifest = get_skill_value_manifest(slug)
     if manifest is None:
         raise FileNotFoundError(f"no skill-value manifest for {slug!r}")
-    data_slug = manifest.get("data_slug", slug)
-    if manifest["source"] == "shiftypad":
-        weapon_data = load_character_data("shiftypad", data_slug, data_dir)
-    else:
-        weapon_data = load_character_data(
-            "dotgg", manifest.get("dotgg_slug", data_slug), data_dir
-        )
+    weapon_data = load_weapon_data(manifest, slug, data_dir)
     try:
-        return load_character_data("lootandwaifus", data_slug, data_dir)
+        return load_character_data(
+            "lootandwaifus", manifest.get("data_slug", slug), data_dir)
     except FileNotFoundError:
         return weapon_data
 
