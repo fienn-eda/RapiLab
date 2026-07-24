@@ -77,16 +77,25 @@ def _report(name, pred_hold, y_hold):
     top5 = set(np.argsort(-y_hold)[:5].tolist())
     rank_of_true_best = int(np.where(order == top1)[0][0])
 
+    best = float(y_hold.max())
+
     print(f"\n=== {name} ===", flush=True)
     print(f"Spearman(surrogate, true) = {_spearman(pred_hold, y_hold):.3f}", flush=True)
     print(f"true-best surrogate rank = {rank_of_true_best} (of {len(y_hold)})", flush=True)
-    print(f"\n{'K':>5} {'true-top1 in top-K':>18} {'true-top5 in top-K':>18}", flush=True)
+    # Rank alone overstates a miss when the damage spread is narrow: what a user
+    # loses is DAMAGE, so report the surrogate's own pick as a share of the best.
+    print(f"surrogate top-1 damage    = {float(y_hold[order[0]]) / best:.1%} of best "
+          f"(a random pick averages {float(y_hold.mean()) / best:.1%})", flush=True)
+    print(f"\n{'K':>5} {'true-top1 in top-K':>18} {'true-top5 in top-K':>18} "
+          f"{'best-of-top-K damage':>21}", flush=True)
     all_ks = (10, 20, 50, 100)
     meaningful_ks = [k for k in all_ks if k < len(y_hold)]
     for k in meaningful_ks:
         topk = set(order[:k].tolist())
+        # What a cascade that simulated only these K would actually return.
+        achieved = float(y_hold[order[:k]].max()) / best
         print(f"{k:>5} {str(top1 in topk):>18} "
-              f"{str(len(top5 & topk)) + '/5':>18}", flush=True)
+              f"{str(len(top5 & topk)) + '/5':>18} {achieved:>20.1%}", flush=True)
     skipped_ks = [k for k in all_ks if k not in meaningful_ks]
     if skipped_ks:
         print(f"note: skipped K >= holdout ({len(y_hold)}) -- not meaningful: "
@@ -157,15 +166,25 @@ def main():
                 predict(build_matrix(hold_combos, fs), beta), y_hold)
 
     if args.surrogate in ("closed-form", "both"):
+        skipped = []
+
+        def score_orderings(decks):
+            scores = []
+            for deck in decks:
+                score, failures = score_with_diagnostics(list(deck), boss)
+                skipped.extend(failures)
+                scores.append(score)
+            return scores
+
         started = time.perf_counter()
-        scored = [score_with_diagnostics(list(combo), boss) for combo in hold_combos]
+        # Same best-of-orderings target the ground truth uses, so the two are
+        # measuring the same quantity - deck order decides who bursts.
+        pred_hold = np.array(best_ordering_damage(hold_combos, boss, score_orderings))
         elapsed = time.perf_counter() - started
-        skipped = sum(len(failures) for _, failures in scored)
         print(f"\nclosed-form scored {len(hold_combos)} combos in {elapsed:.2f}s "
               f"({elapsed / len(hold_combos) * 1000:.2f} ms/combo); "
-              f"{skipped} skill bullets skipped", flush=True)
-        _report("closed-form (no fit, no simulation)",
-                np.array([score for score, _ in scored]), y_hold)
+              f"{len(skipped)} skill bullets skipped", flush=True)
+        _report("closed-form (no fit, no simulation)", pred_hold, y_hold)
 
 
 if __name__ == "__main__":
