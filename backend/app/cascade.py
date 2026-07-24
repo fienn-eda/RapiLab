@@ -41,8 +41,13 @@ FIT_SAMPLE_DECKS = 200
 FIT_SEED = 20260724
 FIT_LAMBDA = 1.0
 
-# Combinations handed to the real simulator. Set by the Phase 2 recall gate
-# (see docs/superpowers/plans/2026-07-24-cascade-surrogate-phase2.md, Task 4).
+# Combinations handed to the real simulator. The Phase 2 recall gate measured
+# a 78-unit roster across 5 seeds, drawing combinations from the widened pool
+# (the distribution this ranking actually faces): the truly best deck landed at
+# rank 0-4 every time, so K=10 already recovered 100% of its damage on all five.
+# 20 is deliberately double that floor - the extra ~220 simulations are ~0.4% of
+# what the exhaustive search they replace spends, which buys headroom for
+# rosters and bosses the five seeds did not cover.
 DEFAULT_TOP_K = 20
 
 # The cascade's candidate pool, wider than deck_search.PRUNED_TIER_CAPS. The
