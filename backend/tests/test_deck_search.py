@@ -676,6 +676,8 @@ def test_search_best_decks_falls_back_when_the_cascade_declines(monkeypatch):
                                  sim_budget=1, cascade=_DecliningCascade())
 
     assert len(found) == 1          # the exhaustive path still produced a deck
+    assert len(found[0]["deck"]) == 5  # deck has exactly 5 units
+    assert set(found[0]["deck"]) <= {u.slug for u in roster}  # all slugs come from the roster
 
 
 # --- Non-bursting buffer ("totem") seating: Modernia and Velvet ---------------
