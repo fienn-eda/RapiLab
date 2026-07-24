@@ -6,6 +6,7 @@ from app.squad_engine import (
     all_conditions,
     ally_bursted,
     boss_is_element,
+    burst_stage_entered,
     deck_contains,
     fire_trigger,
     has_status,
@@ -190,6 +191,27 @@ def test_ally_bursted_reads_last_burst_slug():
     assert ally_bursted("mint")(ctx, "prika") is True
     ctx.last_burst_slug = "prika"
     assert ally_bursted("mint")(ctx, "prika") is False
+
+
+def test_burst_stage_entered_keys_off_the_burster_tier_not_its_slug():
+    # "Activates when entering Burst Stage 2" is about the STAGE, not about the
+    # caster bursting: Flora's Favorite Item bullet must fire even in the cycle
+    # where a different Burst-2 ally takes the tier-2 slot.
+    ctx = make_context(
+        SquadMember("flora-signature", burst_tier=2, element="Electric"),
+        SquadMember("other-b2", burst_tier=2, element="Water"),
+        SquadMember("some-b3", burst_tier=3, element="Fire"),
+    )
+    assert burst_stage_entered(2)(ctx, "flora-signature") is False  # nobody bursted yet
+    ctx.last_burst_slug = "flora-signature"
+    assert burst_stage_entered(2)(ctx, "flora-signature") is True  # she took the slot
+    ctx.last_burst_slug = "other-b2"
+    assert burst_stage_entered(2)(ctx, "flora-signature") is True  # stage 2 entered anyway
+    ctx.last_burst_slug = "some-b3"
+    assert burst_stage_entered(2)(ctx, "flora-signature") is False
+    # An unknown slug must not raise - it simply isn't a stage-2 entry.
+    ctx.last_burst_slug = "not-in-deck"
+    assert burst_stage_entered(2)(ctx, "flora-signature") is False
 
 
 def test_boss_is_element_reads_context_boss_element():
