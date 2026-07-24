@@ -2,6 +2,7 @@
 same-tier swap pass recovers the classic greedy mistake (stacking two strong
 supporters in deck 1 when splitting them wins). All search/sim calls are
 stubbed - real sims live in the API end-to-end test."""
+import hashlib
 from dataclasses import dataclass
 
 import app.deck_allocation as da
@@ -12,6 +13,19 @@ from app.deck_search import BossProfile
 class Unit:
     slug: str
     burst_tier: int
+    # prune_candidate_pool's _prior heuristic reads these (unit.base_stats["atk"]
+    # * unit.weapon_stats["damage_percent"]) to seed its reference deck. Most of
+    # this file's tests stub prune_candidate_pool away and never touch these, so
+    # a uniform default keeps roster_of's bare-unit fixture working unchanged;
+    # only the units that let prune run for real need them to differ.
+    base_stats: dict = None
+    weapon_stats: dict = None
+
+    def __post_init__(self):
+        if self.base_stats is None:
+            object.__setattr__(self, "base_stats", {"atk": 1000.0})
+        if self.weapon_stats is None:
+            object.__setattr__(self, "weapon_stats", {"damage_percent": 1.0})
 
 
 def roster_of(tiers_by_slug):
@@ -159,38 +173,67 @@ from app.deck_search import _score_batch, search_best_decks
 
 # Per-unit values plus a synergy the unit-only surrogate cannot represent, so
 # the test probes the cascade's actual failure mode rather than a model it fits
-# perfectly.
+# perfectly. A single fixed-partner bonus ("q1-0 + q3-9 is good") is *not*
+# such a synergy: it's representable by an additive model, since q1-0 always
+# co-occurs with the bonus and ridge just folds it into q1-0's coefficient.
+# Using a cancelling pair on the same unit - q1-0 good with q3-9, bad with
+# q3-8 - denies the model that escape hatch: q1-0 appears in both high- and
+# low-damage decks in roughly equal measure, so no per-unit coefficient can
+# encode which partner it actually needs.
 _UNIT_VALUE = {f"q3-{i}": 100.0 + 10 * i for i in range(10)}
 _UNIT_VALUE.update({f"q2-{i}": 50.0 + 5 * i for i in range(5)})
 _UNIT_VALUE.update({f"q1-{i}": 30.0 + 3 * i for i in range(5)})
-_SYNERGY = frozenset({"q1-0", "q3-9"})
+_SYNERGY_BONUS = frozenset({"q1-0", "q3-9"})
+_SYNERGY_PENALTY = frozenset({"q1-0", "q3-8"})
 
 
 def _quality_scorer(slugs):
     total = sum(_UNIT_VALUE.get(s, 0.0) for s in slugs)
-    return total + (100.0 if _SYNERGY <= set(slugs) else 0.0)
+    if _SYNERGY_BONUS <= set(slugs):
+        total += 100.0
+    if _SYNERGY_PENALTY <= set(slugs):
+        total -= 100.0
+    return total
 
 
 def _quality_roster():
+    """5 tier-1 / 5 tier-2 / 10 tier-3 units, each with a distinct base_stats
+    ATK derived from a hash of its own slug. Distinctness matters here, not
+    the specific numbers: prune_candidate_pool's _prior heuristic ranks
+    candidates by unit.base_stats["atk"] * unit.weapon_stats["damage_percent"],
+    and if every unit in a tier tied on that score, sorted()'s stability would
+    silently fall back to insertion order - an accident of dict-literal order
+    above, not a real prior. The hash is deliberately decorrelated from both
+    _UNIT_VALUE and the synergy pair below, so which units land in prune's
+    reference deck is not hand-picked to make either test pass.
+    """
     tiers = {f"q1-{i}": 1 for i in range(5)}
     tiers.update({f"q2-{i}": 2 for i in range(5)})
     tiers.update({f"q3-{i}": 3 for i in range(10)})
-    return roster_of(tiers)
+    roster = []
+    for slug, tier in tiers.items():
+        digest = int(hashlib.sha256(slug.encode()).hexdigest(), 16)
+        atk = 1000.0 + (digest % 5000)
+        roster.append(Unit(slug, tier, base_stats={"atk": atk},
+                           weapon_stats={"damage_percent": 1.0}))
+    return roster
 
 
-def test_cascade_search_stays_within_five_percent_of_exhaustive(monkeypatch):
-    """The cascade must not cost real damage. 95% is the same bar the recall
-    gate held K to, so the test and the gate cannot drift apart."""
+def _cascade_vs_exhaustive_ratio(monkeypatch, real_prune_on_cascade):
+    """Shared setup for the two safety-net tests below: fit a surrogate blind
+    to the cancelling synergy, then compare the cascade's best deck against
+    the true exhaustive optimum on the same roster and scorer."""
     patch_scorer(monkeypatch, _quality_scorer)
-    # prune_candidate_pool ranks on base_stats/weapon_stats (_prior), which this
-    # file's bare Unit(slug, burst_tier) fixture doesn't carry (same gap noted
-    # on test_allocation_fits_the_surrogate_once_for_the_whole_peel above).
-    # Bypass it on both call paths: the exhaustive call sees the unpruned
-    # roster (a stronger baseline than production's pruned-exhaustive, never a
-    # weaker one), and the cascade call falls entirely to widened_pool's
-    # coefficient-ranked pass - the exact mechanism this test probes.
+    # The "exhaustive" call must see the true, unpruned optimum - production's
+    # pruned-exhaustive fallback is a stronger baseline than a floor-only test
+    # needs, and pruning it here would let a cut ground truth hide a real
+    # cascade regression. This bypass is unconditional in both directions.
     monkeypatch.setattr("app.deck_search.prune_candidate_pool", lambda r, b, p=None: list(r))
-    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    if not real_prune_on_cascade:
+        # The historical shape of this test: the cascade's safety net
+        # (widened_pool seating prune_candidate_pool's picks first) is
+        # disabled, leaving only the coefficient-ranked pass.
+        monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
     roster, boss = _quality_roster(), BossProfile()
 
     exhaustive = search_best_decks(roster, boss, top_n=1)
@@ -201,4 +244,27 @@ def test_cascade_search_stays_within_five_percent_of_exhaustive(monkeypatch):
     cascaded = search_best_decks(roster, boss, top_n=1, sim_budget=1,
                                  cascade=Cascade(model))
 
-    assert cascaded[0]["total_damage"] >= 0.95 * exhaustive[0]["total_damage"]
+    return cascaded[0]["total_damage"] / exhaustive[0]["total_damage"]
+
+
+def test_cascade_with_prune_safety_net_stays_within_five_percent_of_exhaustive(monkeypatch):
+    """The fitted surrogate cannot represent the cancelling q1-0/q3-9/q3-8
+    synergy (see _quality_scorer), so widened_pool's coefficient-ranked pass
+    alone would drop q1-0 - it is tier 1's cheapest unit by design, and the
+    tier-1 cap (4 of 5) cuts exactly the cheapest. prune_candidate_pool is the
+    production safety net for this: it measures marginal contribution by
+    actually simulating decks, so it can see the synergy the surrogate can't.
+    95% is the same bar the recall gate held K to, so the test and the gate
+    cannot drift apart."""
+    ratio = _cascade_vs_exhaustive_ratio(monkeypatch, real_prune_on_cascade=True)
+    assert ratio >= 0.95
+
+
+def test_cascade_without_prune_safety_net_falls_short_of_five_percent(monkeypatch):
+    """Documents that the safety net above is load-bearing, not decorative:
+    with prune_candidate_pool stubbed out of the cascade path (the historical
+    shape of this test), widened_pool falls entirely to the coefficient-ranked
+    pass, which cannot see the cancelling synergy and drops q1-0 - so the
+    cascade misses the true optimum and falls short of the 95% floor."""
+    ratio = _cascade_vs_exhaustive_ratio(monkeypatch, real_prune_on_cascade=False)
+    assert ratio < 0.95
