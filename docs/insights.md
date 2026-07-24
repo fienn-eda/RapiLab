@@ -180,6 +180,37 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - **"Every 1 sec for N sec" is N ticks, not N+1** — the established convention (mana's `drop_tokens`/`resource_scaled_nukes` batching) applies unchanged to a repeating DoT elsewhere in the kit: Diesel: Winter Sweets' "63.33% of final ATK every 1 sec for 9 sec" DoT and her burst's 9-tick 1s DoT (`skill_rules/diesel_winter_sweets.py`) are both `tick_count=9`, not 10.
 - **A charge weapon (RL/SR) fires a full charge on EVERY shot, so a "on full charge" trigger needs no separate full-charge counter — it's just `per_shot_every 1`.** Diesel's "Full Charge stacks (3s, cap 2)" buff is `("per_shot_every", 1)` feeding a `ResourceSpec(cap=2, lifetime=3.0)`, since every RL shot already IS a full charge. And a stack with both a CAP and a LIFETIME needs `ResourceSpec` specifically — `buff_rule` (infinite stacking) has no cap, `refreshing_buff_rule` (1-stack refresh) has no cap above 1, so any capped-stack mechanic (here: her 1s charge time holds both stacks inside one magazine, and the 2s reload lets one expire) should reach for `ResourceSpec` rather than either buff-rule helper.
 
+## 버스트 사이클에는 "N단계 진입"이라는 별도 이벤트가 없다 — `[버스트 N단계 진입 시]`는 그 티어 유닛의 `own_burst_activate`다
+
+Fienn의 정본 로테이션은 `게이지 충전 → 1단계 진입 → B1 사용 → 2단계 진입 →
+B2 사용 → 3단계 진입 → B3 사용 → 풀버스트 10초`지만, 엔진(`burst_cycle.py`)은
+"진입"과 "사용"을 하나로 접는다 — `on_tier_fire(tier, slug, time)`이 곧 "BN
+사용"이고, 그 뒤 `on_full_burst_enter(tier3_fire_time)`이 호출된다. 즉
+**`full_burst_enter` 시각 == tier-3 발동 시각 == B3 버스트 넉 시각**이다.
+
+버프가 넉에 닿는지는 두 가지가 결정한다:
+1. `effects.py`의 active-window는 **시작 포함**(`applied_at <= now < applied_at
+   + duration`).
+2. `raid_simulator`는 record-then-compute라, 넉 데미지는 2단계에서 **넉 시각
+   기준 라이브 버프**를 읽는다 — 워크 도중의 등록 *순서*는 무관하고 오직
+   버프 시작 시각 vs 넉 시각만 중요하다.
+
+따라서 (`tests/test_burst_cycle_buff_timing.py`가 고정한 결과):
+- **B3 유닛의 자기 버스트 넉**: `full_burst_enter` 버프도 `own_burst_activate`
+  버프도 **둘 다 닿는다**(동시각 + 시작 포함). 수치적으로 동등.
+- **B1/B2 유닛의 자기 버스트 넉**: `auto` 모드는 티어 간 gap이 0이라 동시각 →
+  `full_burst_enter` 버프가 닿지만, **`manual` 모드는 티어 간 0.1초 간격이라
+  B1 넉이 `full_burst_enter`보다 0.2초 먼저 발생 → 못 닿는다.**
+
+**인코딩 규칙:** 스킬텍스트가 `[버스트 N단계 진입 시]`라고 말하면
+`full_burst_enter`가 아니라 **그 유닛의 `own_burst_activate`로 인코딩하라.**
+이유는 두 가지다 — (a) B1/B2에서는 manual 모드에서 자기 버스트딜을 놓치고,
+(b) 어느 티어든 `full_burst_enter`는 **그 유닛이 버스트하지 않은 사이클에도**
+발동해 버프를 과대 지급한다(같은 티어의 다른 유닛이 대신 버스트한 경우).
+`full_burst_enter`는 진짜로 "풀버스트 창 진입"이 조건인 효과에만 쓴다.
+첫 정정 사례: `laplace_ultimate_hero`의 Over Energy 52.14% (2026-07-24) —
+그녀는 B3라 수치는 변하지 않았고, 바뀐 것은 과대지급 방지뿐이다.
+
 ## Burst rotation
 - **A state-machine unit's state must be asked "decided by WHAT" before picking a modeling trick — a static mode slug lies the moment the deciding axis is one the engine actually simulates.** If the axis is something the engine does NOT simulate (Bready's Taste: which buff TYPE she receives), a static `MODE_VARIANTS` slug is enough — nothing in the sim depends on it. If the axis IS something the engine simulates (Diesel: Winter Sweets' Intro/Highlight lock depends on whether she bursts into the FIRST Full Burst — a real burst-schedule fact), a static slug is a lie: labelling her "Highlight" while still letting her burst on cycle 1 credits her the Highlight buff (235.03% vs Intro's 60.19%, ~4x) without ever paying the cost of skipping that burst. Fixed by making the Highlight slug actually skip that cycle via `burst_delay: {"skip_cycles": 1}` (see `docs/decisions.md`, "Diesel: Winter Sweets를 Intro/Highlight 2슬러그로 인코딩"), so the state-defining action is really taken, not just claimed. Ask this question first for any future locked-state unit.
 - **A per-member burst delay (`burst_cycle.py::_ready_at`) lets a deck-search-driven sim represent a unit the player deliberately holds back, in three shapes that fold into one ready-time calculation:** `{"skip_cycles": N}` excludes the unit from the opening N cycles (returns `float("inf")` until then — Diesel, above); `{"not_before": T}` holds it until wall-clock T (Elegg: Boom and Shock, below); `{"min_interval": S}` stretches its effective cooldown to S whenever a refilling resource is slower than the cooldown itself (also Elegg). All three route through the same `_ready_at`, so tier selection and eligibility keep identical arithmetic regardless of which delay a member carries. A delayed unit left alone in its tier simply never bursts that cycle rather than firing early to "make something happen" — deliberate, since `ALLOWED_SHAPES` (`(1,1,3)`/`(1,2,2)`/`(2,1,2)`) never actually produces a lone-delayed-member tier in Burst 3 (always ≥2 members), so this can't silently zero out a real deck.
