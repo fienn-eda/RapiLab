@@ -818,15 +818,17 @@
       `GetUserProfileBasicInfo`를 `.catch(()=>null)`로 감싸므로 그 호출만 실패하면 닉네임이
       빈 값인 채 싱크가 성공한다. `SyncRosterPanel`이 이미 경고 줄을 파싱하니("N owned units
       not yet supported") 같은 자리에 "계정 이름을 읽지 못했습니다"를 띄우면 된다.
-- [ ] **드래프트 좌석이 적으면 사실상 응답이 안 온다 — `best_completions`에 예산이 없다.**
-      (2026-07-25 라이브 확인 중 발견, **기존 문제**로 이번 변경과 무관.)
-      `_shape_completions`(`deck_search.py:131`)는 프루닝도 예산도 없이 shape 호환 완성을
-      전수 생성하고 `best_completions`가 그 **모든 intra-tier 순서**를 시뮬레이션한다.
-      1유닛만 드래프트하면 남은 76유닛에서 4자리를 채우므로 (1,1,3) 한 shape만으로도
-      B1 12 × B2 15 × C(B3 50, 2)=1225 → 22만 덱, 순서까지 곱하면 **130만 시뮬레이션**이다.
-      8워커로도 시간 단위. 유저가 칩 하나만 끌어놓으면 바로 걸리는 경로이고, 프론트는
-      "1~2분" 안내만 띄운 채 무한정 기다린다. `search_best_decks`처럼 캐스케이드/예산을
-      물리거나, 좌석이 임계치 미만이면 UI에서 막아야 한다.
+- [x] **드래프트 좌석이 적으면 사실상 응답이 안 온다 — 완료 (2026-07-25).**
+      `best_completions`가 `SEARCH_SIM_BUDGET`(1200)을 받고, 초과하면 `search_best_decks`와
+      **같은 2단 축소**(캐스케이드 shortlist → 실패 시 `prune_candidate_pool`)를 탄다.
+      실측(실제 77유닛 로스터, `scripts/measure_thin_draft.py`): 좌석 1개 완성이
+      **1,830,670 순서(8워커 ~6.5시간, 사실상 무응답) → 86.2초**. 좌석 2개 126,513 → 69.6초,
+      좌석 3개 10,835 → 70.0초. **캐스케이드가 필수였다** — prune만 붙인 1차 구현은
+      좌석 1개에서 총딜 36.73B로, **제약이 더 많은** 좌석 2개(42.99B)보다 14.6% 낮았다
+      (좌석이 적을수록 완성 유닛 4/5를 축소 풀에서 뽑으므로 recall 오차 노출이 커진다).
+      캐스케이드 적용 후 **43.06B**로 단조성 회복(zero-base 43.51B ≥ 좌석1 43.06B ≥ 좌석2 42.99B).
+      surrogate 적합은 예산을 실제로 초과한 seed가 있을 때만 지불하며 seed·peel이 1회를
+      공유한다. 백엔드 **1371 → 1382 passed / 3 skipped**. `decisions.md`·`insights.md` 참고.
 - [ ] **표시 이름이 변형을 구분하지 못한다.** `displayName`이 `-b1`/`-mg`/`-snipe`/
       `-lingering`/`-recommended`를 버려 벤치에 "Bready, Bready"가 나란히 나온다.
       `supported-units`의 `candidates`가 이미 후보→소유 캐릭터 관계를 담고 있으니 그걸
