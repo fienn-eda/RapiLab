@@ -796,12 +796,32 @@
       전용 예외 `UnmeasuredStat`를 두고 `assemble_roster`가 그 유닛만 빼고
       `unmeasured: [{name_en, reason}]`로 보고한다(프론트는 경고 줄로 표시).
       백엔드 1367 → **1369 passed**, 프론트 272 → **274 passed**.
-- [ ] **PILGRIM/OVERSPEC Supporter의 코어당 플랫 ATK·HP 측정 필요 (데이터 공백).**
+- [ ] **PILGRIM/OVERSPEC Supporter의 코어당 플랫 ATK·HP — 측정 진행 중, 유닛 3기 더 필요.**
       `CORE_FLAT_ATK_PILGRIM`·`CORE_FLAT_HP_OVERSPEC`에 Attacker·Defender만 있고
-      **Supporter가 없다**. 폴백은 코어당 14~30 틀리므로 금지 — 실측이 유일한 답이다.
-      영향 유닛 6기: **Chime · Dorothy · Grave · Little Mermaid · Nayuta · Rapunzel**
-      (PILGRIM∩OVERSPEC Supporter). 코어 1 이상인 이들 중 하나를 가진 계정은 그 유닛이
-      추천에서 빠진다. 측정법은 기존 값들과 동일(같은 등급·코어 차이만 두고 ATK/HP 대조).
+      **Supporter가 없다**. 영향 유닛 6기: **Chime · Dorothy · Grave · Little Mermaid ·
+      Nayuta · Rapunzel**. 측정은 `scripts/solve_core_flat.py`(ShiftyPad에서 코어만 바꿔
+      레벨 400 ATK/HP를 읽으면 장비·연구·호감도가 소거된다).
+
+      **2026-07-25 실측 결과 — 두 유닛이 서로 다르다:**
+
+      | 유닛 | 스팬 | ATK/코어 | HP/코어 |
+      |---|---|---|---|
+      | Grave (호감도 40) | 0→1, 0→2, 0→3 **전부 일치** | **122.382** | **6240.184** |
+      | Dorothy (호감도 36) | 0→1 (±2) | **117.382** | **6097.184** |
+
+      Grave가 세 스팬에서 완전히 선형이므로 `breakthrough_multiplier`의
+      `(1+0.02×코어)` 구조와 판독 신뢰성은 확인됐다. 두 값의 오차 구간은 겹치지 않는다
+      (±0.67 vs ±2.00). **기각된 가설**: 배수가 base+호감도를 스케일한다는 설 —
+      참이면 현행 모델이 Alice(코어 7)에서 243 ATK, Crown에서 198 ATK 틀려야 하는데
+      패리티가 정확히 맞는다. 호감도는 배수 밖이다.
+
+      → 남은 결론은 **둘 중 하나가 유닛 고유값**(`CORE_FLAT_*_BY_RESOURCE_ID`,
+      선례 Vesti·Rosanna·Nero)이라는 것. PILGRIM Attacker/Defender 값은 **코어 있는 8기의
+      일치**로 확정됐으므로, 다수결을 낼 세 번째·네 번째 유닛이 필요하다.
+      **다음 측정**: ① Dorothy를 코어 3까지 올려 읽어 ±2를 ±0.67로 좁힌다
+      ② Chime/Little Mermaid/Nayuta/Rapunzel 중 둘을 코어 0·3으로 읽는다.
+      ShiftyPad는 계산기라 인게임 코어가 0인 유닛도 올려서 관찰할 수 있다(기준선 159기가
+      그렇게 측정됐다).
 - [ ] **닉네임을 못 읽은 싱크가 조용히 성공한다.** 북마클릿이
       `GetUserProfileBasicInfo`를 `.catch(()=>null)`로 감싸므로 그 호출만 실패하면 닉네임이
       빈 값인 채 싱크가 성공한다. `SyncRosterPanel`이 이미 경고 줄을 파싱하니("N owned units
