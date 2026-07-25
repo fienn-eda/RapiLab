@@ -356,82 +356,92 @@ export function RecommendPanel({
       </header>
 
       <form onSubmit={handleSubmit} className="recommend-form">
-        <fieldset className="group">
-          <legend className="group__legend">Mode</legend>
-          <div className="mode-switch">
-            <label className="radio">
-              <input
-                type="radio"
-                name="recommend-mode"
-                value="single"
-                checked={mode === 'single'}
-                onChange={() => setMode('single')}
-              />
-              Single deck
-              <span className="group__hint"> — ranked alternatives for one deck</span>
-            </label>
-            <label className="radio">
-              <input
-                type="radio"
-                name="recommend-mode"
-                value="raid"
-                checked={mode === 'raid'}
-                onChange={() => setMode('raid')}
-              />
-              Raid allocation
-              <span className="group__hint"> — multiple disjoint decks fielded together</span>
-            </label>
-            <label className="radio">
-              <input
-                type="radio"
-                name="recommend-mode"
-                value="draft"
-                checked={mode === 'draft'}
-                onChange={() => setMode('draft')}
-              />
-              Draft-based optimization
-              <span className="group__hint">
-                {' '}
-                — seed decks with your own key units, the engine fills/optimizes the rest
-              </span>
-            </label>
-          </div>
+        {/* Everything needed to START a run sits in one row: the boss on the
+            left, the mode choice and Submit on the right. The boss fields used
+            to close the form instead, 2040px below the button that acts on
+            them with the whole 70-chip palette in between - so the input that
+            moves the answer most (Element) was the one a player never scrolled
+            to, and a minute of simulation ran against a default nobody chose. */}
+        <div className="recommend-form__setup">
+          <BossProfileField value={draft} errors={touched ? errors : {}} onChange={setDraft} />
 
-          {mode !== 'single' && (
-            <div className="field">
-              <label className="field__label" htmlFor={numDecksId}>
-                Number of decks
+          <fieldset className="group">
+            <legend className="group__legend">Mode</legend>
+            <div className="mode-switch">
+              <label className="radio">
+                <input
+                  type="radio"
+                  name="recommend-mode"
+                  value="single"
+                  checked={mode === 'single'}
+                  onChange={() => setMode('single')}
+                />
+                Single deck
+                <span className="group__hint"> — ranked alternatives for one deck</span>
               </label>
-              <select
-                id={numDecksId}
-                className="field__input"
-                value={numDecks}
-                onChange={(event) => setNumDecks(Number(event.target.value))}
-              >
-                {NUM_DECKS_OPTIONS.map((n) => (
-                  <option key={n} value={n} disabled={n < nonEmptyDeckCount}>
-                    {n}
-                  </option>
-                ))}
-              </select>
+              <label className="radio">
+                <input
+                  type="radio"
+                  name="recommend-mode"
+                  value="raid"
+                  checked={mode === 'raid'}
+                  onChange={() => setMode('raid')}
+                />
+                Raid allocation
+                <span className="group__hint"> — multiple disjoint decks fielded together</span>
+              </label>
+              <label className="radio">
+                <input
+                  type="radio"
+                  name="recommend-mode"
+                  value="draft"
+                  checked={mode === 'draft'}
+                  onChange={() => setMode('draft')}
+                />
+                Draft-based optimization
+                <span className="group__hint">
+                  {' '}
+                  — seed decks with your own key units, the engine fills/optimizes the rest
+                </span>
+              </label>
             </div>
-          )}
 
-          {/* Submit sits with the mode choice rather than after the boss
-              fields: the palette and deck grid between them run long, and the
-              player should not have to scroll past their whole roster to
-              start a run they have already configured. */}
-          <div className="recommend-form__actions">
-            <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
-              {submitLabel}
-            </button>
-            {rosterTooSmall && (
-              <p className="field__error" role="alert">
-                Add at least {MIN_DECK_ROSTER_SIZE} ready Nikkes to recommend a deck.
-              </p>
+            {mode !== 'single' && (
+              <div className="field">
+                <label className="field__label" htmlFor={numDecksId}>
+                  Number of decks
+                </label>
+                <select
+                  id={numDecksId}
+                  className="field__input"
+                  value={numDecks}
+                  onChange={(event) => setNumDecks(Number(event.target.value))}
+                >
+                  {NUM_DECKS_OPTIONS.map((n) => (
+                    <option key={n} value={n} disabled={n < nonEmptyDeckCount}>
+                      {n}
+                    </option>
+                  ))}
+                </select>
+              </div>
             )}
-          </div>
-        </fieldset>
+
+            {/* Submit sits with the mode choice rather than after the boss
+                fields: the palette and deck grid between them run long, and the
+                player should not have to scroll past their whole roster to
+                start a run they have already configured. */}
+            <div className="recommend-form__actions">
+              <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
+                {submitLabel}
+              </button>
+              {rosterTooSmall && (
+                <p className="field__error" role="alert">
+                  Add at least {MIN_DECK_ROSTER_SIZE} ready Nikkes to recommend a deck.
+                </p>
+              )}
+            </div>
+          </fieldset>
+        </div>
 
         {mode !== 'draft' && (
           <fieldset className="group">
@@ -491,8 +501,6 @@ export function RecommendPanel({
             </div>
           </fieldset>
         )}
-
-        <BossProfileField value={draft} errors={touched ? errors : {}} onChange={setDraft} />
       </form>
 
       {mode !== 'single' && raid.status === 'loading' && (

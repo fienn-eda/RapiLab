@@ -84,6 +84,28 @@ describe('RecommendPanel', () => {
     expect(screen.getByRole('button', { name: /recommend decks/i })).toBeDisabled()
   })
 
+  // The boss profile used to sit at the very END of the form, past the whole
+  // 70-chip palette - 2040px below the button that acts on it, so the input
+  // that changes the answer most (Element) was the one nobody scrolled to.
+  it('puts the boss profile beside the mode choice, with no palette between them', () => {
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+
+    const boss = screen.getByRole('group', { name: /boss profile/i })
+    const mode = screen.getByRole('group', { name: /^mode$/i })
+    const submit = screen.getByRole('button', { name: /recommend decks/i })
+    const palette = screen.getByRole('group', { name: /units to use/i })
+
+    // Same row: one wrapper holds the boss fields and the mode+submit block.
+    const setup = boss.parentElement!
+    expect(setup).toBe(mode.parentElement)
+    expect(setup.contains(submit)).toBe(true)
+    expect(setup.contains(palette)).toBe(false)
+
+    // ...and that row comes before the palette in the document.
+    expect(setup.compareDocumentPosition(palette) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy()
+  })
+
   it('submits the roster and boss profile, and renders the ranked results', async () => {
     const user = userEvent.setup()
     vi.mocked(recommendDecks).mockResolvedValue({
