@@ -22,14 +22,22 @@ THE TRICK
     That is why this needs no equipment or research transcription at all - only
     grade, the two core values, and the two level-400 numbers ShiftyPad shows.
 
-USAGE
-    python scripts/solve_core_flat.py --class Supporter --grade 3 \
-        --core 2 --atk 91234 --hp 2612345 \
-        --core-baseline 0 --atk-baseline 90000 --hp-baseline 2600000
+    Give THREE OR MORE readings when the unit's core allows it. Every span
+    against the lowest core must imply the same value; a value that drifts with
+    the span means the core term is not linear the way the model assumes, which
+    matters more than the number itself. With only two readings there is nothing
+    to check that against.
 
-    Repeat for a second unit of the same class/corporation; the two answers must
-    agree. Put the result in CORE_FLAT_ATK_PILGRIM / CORE_FLAT_HP_OVERSPEC and
-    the parity suite becomes the regression test.
+USAGE
+    python scripts/solve_core_flat.py --class Supporter --grade 3 --label Grave \
+        --reading 0,110022,3398025 \
+        --reading 1,111740,3452200 \
+        --reading 3,115175,3560351
+
+    A reading is `core,atk,hp` (hp optional: `core,atk`). Repeat for a second
+    unit of the same class/corporation; the two answers must agree, or the value
+    is unit-specific and belongs in CORE_FLAT_*_BY_RESOURCE_ID rather than in the
+    class/corporation table. Either way the parity suite is the regression test.
 """
 import argparse
 import sys
@@ -52,46 +60,63 @@ def solve(tables, character_class, grade, base_fn, flat_key,
     return (stat_a - stat_b - scaled_delta) / (core_a - core_b), base, scaled_delta
 
 
+def _reading(text):
+    """`core,atk[,hp]` -> (core, atk, hp|None)."""
+    parts = text.split(",")
+    if len(parts) not in (2, 3):
+        raise argparse.ArgumentTypeError(f"expected core,atk[,hp] - got {text!r}")
+    core, atk, *rest = parts
+    return int(core), float(atk), float(rest[0]) if rest else None
+
+
+def _report(tables, label, character_class, grade, readings, stat, base_fn,
+            class_table, corp_tables):
+    values = [(c, v) for c, v, in readings if v is not None]
+    if len(values) < 2:
+        print(f"  {stat}: need two readings")
+        return
+    lo_core, lo_stat = min(values)
+    print(f"  {stat}:")
+    for core, value in sorted(values):
+        if core == lo_core:
+            continue
+        flat, base, scaled = solve(tables, character_class, grade, base_fn, stat,
+                                   core, value, lo_core, lo_stat)
+        print(f"    core {lo_core}->{core} (span {core - lo_core}): "
+              f"d={value - lo_stat:>12,.0f}  scaled={scaled:>12,.2f}  "
+              f"-> {flat:.4f}")
+    print(f"    measured elsewhere: class={class_table[character_class]}, "
+          + ", ".join(f"{n}={t.get(character_class, '-')}"
+                      for n, t in corp_tables.items()))
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[1],
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--class", dest="character_class", required=True,
                    choices=("Attacker", "Supporter", "Defender"))
-    p.add_argument("--grade", type=int, required=True, help="돌파 (0-3), same in both readings")
-    p.add_argument("--core", type=int, required=True, help="core of the FIRST reading")
-    p.add_argument("--atk", type=float, required=True, help="level-400 ATK at --core")
-    p.add_argument("--hp", type=float, help="level-400 HP at --core")
-    p.add_argument("--core-baseline", type=int, required=True,
-                   help="core of the SECOND reading (anything different, 0 is easiest)")
-    p.add_argument("--atk-baseline", type=float, required=True)
-    p.add_argument("--hp-baseline", type=float)
+    p.add_argument("--grade", type=int, required=True,
+                   help="돌파 (0-3), the SAME in every reading")
+    p.add_argument("--reading", type=_reading, action="append", required=True,
+                   metavar="CORE,ATK[,HP]",
+                   help="one level-400 reading; repeat (2 minimum, 3+ to check linearity)")
     p.add_argument("--label", default="unit")
     args = p.parse_args()
 
     tables = load_stat_tables()
+    cores = [r[0] for r in args.reading]
+    if len(set(cores)) != len(cores):
+        p.error(f"two readings share a core value: {cores}")
     print(f"{args.label}: class={args.character_class} grade={args.grade} "
-          f"core {args.core_baseline} -> {args.core}")
+          f"cores {sorted(cores)}")
 
-    flat, base, scaled = solve(tables, args.character_class, args.grade,
-                               sa.base_atk, "atk",
-                               args.core, args.atk,
-                               args.core_baseline, args.atk_baseline)
-    print(f"  ATK: base={base:,.0f} scaled_delta={scaled:,.2f} "
-          f"-> core_flat_atk = {flat:.4f}")
-    print(f"       compare CORE_FLAT_ATK={sa.CORE_FLAT_ATK[args.character_class]}, "
-          f"PILGRIM={sa.CORE_FLAT_ATK_PILGRIM}, OVERSPEC={sa.CORE_FLAT_ATK_OVERSPEC}")
-
-    if args.hp is not None and args.hp_baseline is not None:
-        flat, base, scaled = solve(tables, args.character_class, args.grade,
-                                   sa.base_hp, "hp",
-                                   args.core, args.hp,
-                                   args.core_baseline, args.hp_baseline)
-        print(f"  HP:  base={base:,.0f} scaled_delta={scaled:,.2f} "
-              f"-> core_flat_hp = {flat:.4f}")
-        print(f"       compare CORE_FLAT_HP={sa.CORE_FLAT_HP[args.character_class]}, "
-              f"OVERSPEC={sa.CORE_FLAT_HP_OVERSPEC}")
-    else:
-        print("  HP:  skipped (pass --hp and --hp-baseline)")
+    _report(tables, args.label, args.character_class, args.grade,
+            [(c, a) for c, a, _ in args.reading], "ATK", sa.base_atk,
+            sa.CORE_FLAT_ATK,
+            {"PILGRIM": sa.CORE_FLAT_ATK_PILGRIM, "OVERSPEC": sa.CORE_FLAT_ATK_OVERSPEC})
+    _report(tables, args.label, args.character_class, args.grade,
+            [(c, h) for c, _, h in args.reading], "HP", sa.base_hp,
+            sa.CORE_FLAT_HP, {"OVERSPEC": sa.CORE_FLAT_HP_OVERSPEC})
     return 0
 
 
