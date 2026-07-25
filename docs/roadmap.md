@@ -796,32 +796,23 @@
       전용 예외 `UnmeasuredStat`를 두고 `assemble_roster`가 그 유닛만 빼고
       `unmeasured: [{name_en, reason}]`로 보고한다(프론트는 경고 줄로 표시).
       백엔드 1367 → **1369 passed**, 프론트 272 → **274 passed**.
-- [ ] **PILGRIM/OVERSPEC Supporter의 코어당 플랫 ATK·HP — 측정 진행 중, 유닛 3기 더 필요.**
-      `CORE_FLAT_ATK_PILGRIM`·`CORE_FLAT_HP_OVERSPEC`에 Attacker·Defender만 있고
-      **Supporter가 없다**. 영향 유닛 6기: **Chime · Dorothy · Grave · Little Mermaid ·
-      Nayuta · Rapunzel**. 측정은 `scripts/solve_core_flat.py`(ShiftyPad에서 코어만 바꿔
-      레벨 400 ATK/HP를 읽으면 장비·연구·호감도가 소거된다).
+- [x] **PILGRIM/OVERSPEC Supporter의 코어당 플랫 ATK·HP — 측정 완료 (2026-07-25).**
+      `CORE_FLAT_ATK_PILGRIM["Supporter"] = 122.382`,
+      `CORE_FLAT_HP_OVERSPEC["Supporter"] = 6240.184`. 근거: Grave가 코어당
+      **ATK 1718 / HP 54,109**를 세 스팬(0→1, 0→2, 0→3)에서 일치시키고 Little Mermaid가
+      같은 증분을 자릿수까지 재현. 백엔드 **1371 passed / 3 skipped**, 코어 3인 PILGRIM
+      Supporter 6기 전원 조립 확인.
 
-      **2026-07-25 실측 결과 — 두 유닛이 서로 다르다:**
+      **Dorothy·Nayuta 판독은 각각 4.67 / 22.33 낮게 나왔는데, 원인이 값이 아니라 레벨이다**:
+      두 유닛의 ATK 부족분과 HP 부족분이 **독립적으로 같은 레벨 칸 수**를 가리킨다
+      (0.94/0.90칸, 4.28/4.26칸 — 레벨 1칸은 코어당 ATK 5.30 / HP 159.00). core_flat이
+      달랐다면 두 스탯이 같은 레벨 오프셋에 수렴할 이유가 없다. 재판독으로 닫으면 좋지만
+      움직일 수 있는 잔차는 코어당 5 ATK, 해당 유닛 총 ATK의 **0.015%**다.
 
-      | 유닛 | 스팬 | ATK/코어 | HP/코어 |
-      |---|---|---|---|
-      | Grave (호감도 40) | 0→1, 0→2, 0→3 **전부 일치** | **122.382** | **6240.184** |
-      | Dorothy (호감도 36) | 0→1 (±2) | **117.382** | **6097.184** |
-
-      Grave가 세 스팬에서 완전히 선형이므로 `breakthrough_multiplier`의
-      `(1+0.02×코어)` 구조와 판독 신뢰성은 확인됐다. 두 값의 오차 구간은 겹치지 않는다
-      (±0.67 vs ±2.00). **기각된 가설**: 배수가 base+호감도를 스케일한다는 설 —
-      참이면 현행 모델이 Alice(코어 7)에서 243 ATK, Crown에서 198 ATK 틀려야 하는데
-      패리티가 정확히 맞는다. 호감도는 배수 밖이다.
-
-      → 남은 결론은 **둘 중 하나가 유닛 고유값**(`CORE_FLAT_*_BY_RESOURCE_ID`,
-      선례 Vesti·Rosanna·Nero)이라는 것. PILGRIM Attacker/Defender 값은 **코어 있는 8기의
-      일치**로 확정됐으므로, 다수결을 낼 세 번째·네 번째 유닛이 필요하다.
-      **다음 측정**: ① Dorothy를 코어 3까지 올려 읽어 ±2를 ±0.67로 좁힌다
-      ② Chime/Little Mermaid/Nayuta/Rapunzel 중 둘을 코어 0·3으로 읽는다.
-      ShiftyPad는 계산기라 인게임 코어가 0인 유닛도 올려서 관찰할 수 있다(기준선 159기가
-      그렇게 측정됐다).
+      기각된 가설: 배수가 base+호감도를 스케일한다는 설(두 ATK를 0.02까지 화해시켜
+      매력적이었지만, 참이면 현행 모델이 Alice 코어7에서 243 ATK·Crown에서 198 ATK
+      틀려야 하고 159기 전수 패리티가 정확히 맞는다). 호감도는 배수 밖이다.
+      **ShiftyPad는 로그인이 필요해 에이전트가 직접 조작할 수 없다**(`?uid=`도 동일).
 - [ ] **닉네임을 못 읽은 싱크가 조용히 성공한다.** 북마클릿이
       `GetUserProfileBasicInfo`를 `.catch(()=>null)`로 감싸므로 그 호출만 실패하면 닉네임이
       빈 값인 채 싱크가 성공한다. `SyncRosterPanel`이 이미 경고 줄을 파싱하니("N owned units

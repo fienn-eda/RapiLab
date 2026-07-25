@@ -86,7 +86,24 @@ CORE_FLAT_ATK = {"Attacker": 118.95, "Supporter": 113.29, "Defender": 107.87}
 # Pilgrims are worth about 20% more per core than their class. Measured on eight
 # units (five Attackers, three Defenders) with no counter-example: every Pilgrim
 # in the ground truth lands here and no unit of another corporation does.
-CORE_FLAT_ATK_PILGRIM = {"Attacker": 142.90, "Defender": 127.22}
+#
+# Supporter came later and from a different source (2026-07-25): no cored Pilgrim
+# Supporter exists in the ground truth, so it was read off ShiftyPad by holding a
+# unit at level 400 / grade 3 and stepping ONLY the core, which cancels affinity,
+# equipment, cube, favorite item and research (scripts/solve_core_flat.py).
+# Grave measures 1718 ATK per core across three independent spans (core 0->1,
+# 0->2, 0->3) and Little Mermaid reproduces that delta to the digit, which is
+# what 122.382 is: 1718 - base(Supporter, 400) * 0.02 * 1.06.
+#
+# Dorothy and Nayuta read 4.67 and 22.33 per core LOWER, and the reason is
+# visible rather than guessed: their ATK and HP deficits independently correspond
+# to the same offset in LEVEL steps (0.94/0.90 and 4.28/4.26 steps, where one
+# level is worth 5.30 ATK and 159.00 HP per core). A differing per-core flat has
+# no reason to make two stats agree on a level offset - so those two readings sat
+# below level 400, not on a different value. Worth rereading to close it out; the
+# residual it could move is 5 ATK per core, 0.015% of such a unit's ATK.
+CORE_FLAT_ATK_PILGRIM = {"Attacker": 142.90, "Defender": 127.22,
+                         "Supporter": 122.382}
 
 # The awakened Counters - Rapi: Red Hood, Anis: Star and Neon: Vision Eye - land
 # between their class and a Pilgrim. What marks them is the game's own
@@ -358,7 +375,15 @@ CORE_FLAT_HP = {"Attacker": 6347.944, "Supporter": 6294.678, "Defender": 6601.72
 # the SAME per-core HP - unlike ATK, where Pilgrims sit above OVERSPEC. Since
 # every Pilgrim is OVERSPEC too, one row covers both. Fitted on 7 Attackers and
 # 4 Defenders against measured HP.
-CORE_FLAT_HP_OVERSPEC = {"Attacker": 6663.054, "Defender": 6986.799}
+#
+# Supporter comes from the same ShiftyPad reading as CORE_FLAT_ATK_PILGRIM's:
+# 54,109 HP per core on Grave, matched to the digit by Little Mermaid, less
+# base(Supporter, 400) * 0.02 * 1.06. Every PILGRIM Supporter is OVERSPEC and
+# every OVERSPEC Supporter is PILGRIM (Chime, Dorothy, Grave, Little Mermaid,
+# Nayuta, Rapunzel are the same six units either way), so this one row is the
+# whole Supporter story - no PILGRIM/OVERSPEC split can arise for them.
+CORE_FLAT_HP_OVERSPEC = {"Attacker": 6663.054, "Defender": 6986.799,
+                         "Supporter": 6240.184}
 
 # Units whose per-core HP flat is none of the above, keyed by resource_id - the
 # same three units that are ATK outliers, and unexplained here too. Measured, not

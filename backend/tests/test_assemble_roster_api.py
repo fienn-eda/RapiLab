@@ -60,20 +60,37 @@ def _bare_detail(name_code, **over):
     return d | over
 
 
-def _pilgrim(character_class):
+def _directory():
     from app.api import _DIRECTORY
-    return next(e for e in _DIRECTORY
+    return _DIRECTORY
+
+
+def _pilgrim(character_class):
+    return next(e for e in _directory()
                 if e.get("corporation") == "PILGRIM"
                 and e.get("class") == character_class
                 and e.get("original_rare") == "SSR")
 
 
-def test_a_unit_whose_stat_was_never_measured_is_named_not_a_500():
-    """A cored PILGRIM Supporter has no measured per-core flat ATK or HP, and
-    stat_assembly refuses to answer plausibly. That refusal used to raise out of
-    the endpoint, so ONE such unit made a whole account unsyncable - which is how
-    a sub-account's first sync failed with a 500. Now that unit alone is dropped
-    and named, and the rest of the roster still assembles."""
+@pytest.fixture
+def supporter_core_flat_unmeasured(monkeypatch):
+    """Put back the gap that broke a sub-account's first sync.
+
+    A cored PILGRIM Supporter had no measured per-core flat, stat_assembly
+    refused to answer plausibly, and the refusal rose out of the endpoint - so
+    ONE such unit made a whole account unsyncable. The measurement has since
+    landed, and with it no REAL unit can reach that path any more (every OVERSPEC
+    Supporter is a Pilgrim). The drop-and-name behaviour is the safety net for the
+    next combination nobody has measured, so the gap is recreated here rather than
+    left untested."""
+    import app.stat_assembly as sa
+    monkeypatch.delitem(sa.CORE_FLAT_ATK_PILGRIM, "Supporter")
+    monkeypatch.delitem(sa.CORE_FLAT_HP_OVERSPEC, "Supporter")
+
+
+def test_a_unit_whose_stat_was_never_measured_is_named_not_a_500(
+    supporter_core_flat_unmeasured,
+):
     supporter, attacker = _pilgrim("Supporter"), _pilgrim("Attacker")
     response = client.post("/api/assemble-roster", json={
         "owned": [{"name_code": supporter["name_code"], "lv": 1},
@@ -90,9 +107,11 @@ def test_a_unit_whose_stat_was_never_measured_is_named_not_a_500():
     assert "never measured" in body["unmeasured"][0]["reason"]
 
 
-def test_the_same_unit_without_cores_assembles_normally():
-    """The gap is per-CORE flat only, so an uncored PILGRIM Supporter is fine -
-    which is why the main account synced all along and only a sub-account broke."""
+def test_an_uncored_unit_never_needs_the_missing_flat(
+    supporter_core_flat_unmeasured,
+):
+    """`assemble_atk` guards the per-core flat behind `if core:`, which is why the
+    main account synced all along while owning the same Nikkes uncored."""
     supporter = _pilgrim("Supporter")
     response = client.post("/api/assemble-roster", json={
         "owned": [{"name_code": supporter["name_code"], "lv": 1}],
@@ -102,6 +121,24 @@ def test_the_same_unit_without_cores_assembles_normally():
     assert response.status_code == 200
     assert [u["name_en"] for u in response.json()["units"]] == [supporter["name_en"]]
     assert response.json()["unmeasured"] == []
+
+
+def test_a_cored_pilgrim_supporter_now_assembles():
+    """The measurement itself: all six are cored and none is dropped."""
+    supporters = [e for e in _directory()
+                  if e.get("corporation") == "PILGRIM"
+                  and e.get("class") == "Supporter"
+                  and e.get("original_rare") == "SSR"]
+    response = client.post("/api/assemble-roster", json={
+        "owned": [{"name_code": e["name_code"], "lv": 400} for e in supporters],
+        "character_details": [_bare_detail(e["name_code"], core=3) for e in supporters],
+        "recycle_room_researches": [],
+    })
+    assert response.status_code == 200
+    body = response.json()
+    assert body["unmeasured"] == []
+    assert len(body["units"]) == len(supporters)
+    assert all(u["raid400"]["atk"] > 0 and u["raid400"]["hp"] > 0 for u in body["units"])
 
 
 def test_a_missing_field_is_a_422_not_a_500():

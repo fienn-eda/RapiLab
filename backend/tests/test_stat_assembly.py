@@ -19,6 +19,7 @@ from app.stat_assembly import (
     breakthrough_multiplier,
     base_atk,
     core_flat_atk,
+    UnmeasuredStat,
     assemble_atk,
     affinity_hp,
     research_hp,
@@ -148,11 +149,21 @@ def test_core_flat_atk_rejects_an_unknown_class():
         core_flat_atk("Healer")
 
 
-def test_an_unmeasured_pilgrim_class_refuses_to_guess():
-    # No Pilgrim Supporter in the ground truth has a core, so its per-core flat
-    # is unknown. Answering with the class value would be wrong by ~14 per core.
-    with pytest.raises(KeyError):
-        core_flat_atk("Supporter", corporation="PILGRIM")
+def test_a_pilgrim_supporter_is_measured_from_shiftypad():
+    # No cored Pilgrim Supporter exists in the ground truth, so this one was read
+    # off ShiftyPad by stepping only the core: Grave measures 1718 ATK / 54,109 HP
+    # per core across three spans and Little Mermaid matches to the digit.
+    assert core_flat_atk("Supporter", corporation="PILGRIM") == pytest.approx(122.382)
+    assert core_flat_hp("Supporter", corporation="PILGRIM") == pytest.approx(6240.184)
+
+
+def test_an_unmeasured_combination_still_refuses_to_guess():
+    # An OVERSPEC Supporter that is not a Pilgrim does not exist today, so ATK has
+    # no row for it - and must say so rather than fall back to the class value.
+    # This is the guard that turned a sub-account's first sync into a 500 until
+    # assemble_roster learned to drop just that unit.
+    with pytest.raises(UnmeasuredStat):
+        core_flat_atk("Supporter", corporation_sub_type="OVERSPEC")
 
 
 def test_a_coreless_unit_needs_no_identity(tables):
