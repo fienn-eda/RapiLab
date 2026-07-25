@@ -15,14 +15,16 @@
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import type { SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
+import { FavoriteItemBadge } from './FavoriteItemBadge'
 import { OverloadLines, SkillPip } from './InvestmentSummary'
 
-/** Breakthrough and core for one unit. They live on NikkeDraft, not on the
- * wire-shaped UserNikkeState the engine takes, so they arrive alongside the
- * roster rather than inside it. */
+/** Breakthrough, core and Favorite Item for one unit. They live on NikkeDraft,
+ * not on the wire-shaped UserNikkeState the engine takes, so they arrive
+ * alongside the roster rather than inside it. */
 export interface UnitInvestment {
   grade?: number
   core?: number
+  favoriteItem?: boolean
 }
 
 const STAR_SLOTS = 3
@@ -81,7 +83,7 @@ export function UnitPalette({
                 const isUsed = usedSet.has(unit.slug)
                 const isExcluded = excludedSet.has(unit.slug)
                 const portrait = portraitFor(unit.slug)
-                const { grade, core } = investmentFor(unit.slug)
+                const { grade, core, favoriteItem } = investmentFor(unit.slug)
                 const classes = ['palette__item']
                 if (isExcluded) classes.push('palette__item--excluded')
                 if (isUsed) classes.push('palette__item--seated')
@@ -115,6 +117,9 @@ export function UnitPalette({
                         ) : (
                           <span className="palette__portrait palette__portrait--missing" />
                         )}
+                        {/* On the art, like the roster card's - the chip shows
+                            no text of its own to hang it off. */}
+                        <FavoriteItemBadge equipped={favoriteItem} />
                         {/* Everything the chip stopped showing. Presentational:
                             the button is already named, and this would other-
                             wise read back as a second copy of the same unit. */}

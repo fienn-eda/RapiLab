@@ -18,3 +18,13 @@ export const nameFromSlug = (slug: string): string =>
 /** The backend's name for a supported slug, else one derived from the slug. */
 export const displayName = (slug: string, names: ReadonlyMap<string, string>): string =>
   names.get(slug) ?? nameFromSlug(slug)
+
+/** The name with a Favorite Item (애장품) heart appended.
+ *
+ * For the text-only places a badge cannot go: deck rosters, the bench line and
+ * the per-deck diff all join names into a single string, so the marker has to
+ * BE part of the name there. Where a portrait is drawn - the roster card, the
+ * palette chip - FavoriteItemBadge sits on the art instead, and the name is
+ * left plain so the heart is not shown twice. */
+export const withFavoriteItem = (name: string, equipped?: boolean): string =>
+  equipped ? `${name} ♥` : name

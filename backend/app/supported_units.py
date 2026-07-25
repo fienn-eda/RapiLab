@@ -12,6 +12,7 @@ the recommender was fielding her all along. So both are listed: an owned slug
 that stands for several candidates carries `candidates` naming them, and every
 other entry is its own single candidate.
 """
+from app.display_names import DISPLAY_NAMES
 from app.skill_rules.registry import (ENCODED_SLUGS, MODE_VARIANTS,
                                       VARIANT_BURST_TIERS,
                                       get_skill_value_manifest)
@@ -48,11 +49,17 @@ def _load_meta(slug, data_dir):
 
 
 def _entry(slug, data_dir):
-    """One catalog entry, or None if this slug's data can't be resolved."""
+    """One catalog entry, or None if this slug's data can't be resolved.
+
+    The name is the hand-written Korean one when the table has it. An empty or
+    absent entry means "not translated yet" and falls back to the source data's
+    English name, so display_names.py can be filled one unit at a time without
+    ever blanking a label."""
     try:
         meta = _load_meta(slug, data_dir)
         return {"slug": slug,
-                "name": meta.get("name") or _humanize(slug),
+                "name": (DISPLAY_NAMES.get(slug)
+                         or meta.get("name") or _humanize(slug)),
                 "burst_tier": VARIANT_BURST_TIERS.get(slug, int(meta["burst"])),
                 "element": meta["element"]}
     except (FileNotFoundError, KeyError, TypeError, ValueError):
@@ -73,10 +80,19 @@ def supported_units(data_dir=DATA_DIR):
         loadable = [v for v in variants if v in by_slug]
         if not loadable:
             continue
-        # The candidates are the same character, so name/element/burst tier
-        # agree and the first one describes her; test_supported_units pins that
+        # The candidates are the same character, so element/burst tier agree
+        # and the first one describes her; test_supported_units pins that
         # agreement, since a base whose candidates disagreed on burst tier
         # could not be drawn as one palette chip and would need a decision
         # rather than a silent guess.
-        out.append({**by_slug[loadable[0]], "slug": base, "candidates": loadable})
+        #
+        # The NAME no longer agrees, though - that is the point of the table.
+        # The base is the character herself, so she takes her own entry; only
+        # an untranslated base still borrows a candidate's name, and then the
+        # duplicate it creates is what test_display_names' uniqueness check
+        # reports.
+        merged = {**by_slug[loadable[0]], "slug": base, "candidates": loadable}
+        if DISPLAY_NAMES.get(base):
+            merged["name"] = DISPLAY_NAMES[base]
+        out.append(merged)
     return out

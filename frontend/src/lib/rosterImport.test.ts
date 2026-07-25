@@ -100,6 +100,23 @@ describe('parseRosterJson', () => {
     ])
   })
 
+  it('keeps each unit\'s favorite_item flag, not just the slug it promoted', () => {
+    // Only 13 units have a distinct "-signature" encoding, so the promoted slug
+    // cannot answer "is this unit running her Favorite Item?" for everyone
+    // else - Sugar below owns hers and still sits on a plain slug. The UI draws
+    // a heart from the flag itself, so the flag has to survive the import.
+    const { drafts } = parseRosterJson({
+      units: [
+        { resource_id: 101, name_en: 'Drake', favorite_item: true,
+          raid400: { hp: 1, atk: 1, def: 1 } },
+        { resource_id: 150, name_en: 'Julia', favorite_item: false,
+          raid400: { hp: 1, atk: 1, def: 1 } },
+        { resource_id: 831, name_en: 'Rei', raid400: { hp: 1, atk: 1, def: 1 } },
+      ],
+    })
+    expect(drafts.map((d) => d.favorite_item)).toEqual([true, false, undefined])
+  })
+
   it('leaves dual-slot units on their base slug when the roster omits the flag', () => {
     // A collector scrape cannot report ownership, so nothing may be promoted
     // from it - the recommendation would otherwise credit investment the user
