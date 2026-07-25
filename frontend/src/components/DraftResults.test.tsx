@@ -53,8 +53,8 @@ describe('DraftResults', () => {
     expect(screen.getByText('130 dmg')).toBeInTheDocument()
 
     // Per-deck diff vs the submitted draft: recommended swapped 'e' for 'z'
-    expect(screen.getByText(/\+ z/)).toBeInTheDocument()
-    expect(screen.getByText(/- e/)).toBeInTheDocument()
+    expect(screen.getByText(/\+ Z/)).toBeInTheDocument()
+    expect(screen.getByText(/- E/)).toBeInTheDocument()
 
     // pinned_slugs badge on the recommended tier
     expect(screen.getByText('pinned')).toBeInTheDocument()
@@ -75,7 +75,7 @@ describe('DraftResults', () => {
     expect(screen.queryByText(/Best within your draft/)).not.toBeInTheDocument()
     expect(screen.getByText('Deck 1')).toBeInTheDocument()
     expect(screen.getByText('130 dmg')).toBeInTheDocument()
-    expect(screen.getByText('Bench (not allocated to a deck): bench-unit')).toBeInTheDocument()
+    expect(screen.getByText('Bench (not allocated to a deck): Bench Unit')).toBeInTheDocument()
   })
 
   // The backend's recommended tier can come from a from-scratch pass whose
@@ -127,8 +127,8 @@ describe('DraftResults', () => {
     const removed = screen.getAllByText(/^-/)
     expect(added).toHaveLength(2) // one in the within-draft tier, one in the recommended tier
     expect(removed).toHaveLength(2)
-    added.forEach((el) => expect(el).toHaveTextContent('+ z'))
-    removed.forEach((el) => expect(el).toHaveTextContent('- e'))
+    added.forEach((el) => expect(el).toHaveTextContent('+ Z'))
+    removed.forEach((el) => expect(el).toHaveTextContent('- E'))
   })
 })
 

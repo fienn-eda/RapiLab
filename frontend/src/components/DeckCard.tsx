@@ -1,12 +1,27 @@
-// A single deck's slugs (in burst order) and damage breakdown. Shared by
+// A single deck's units (in burst order) and damage breakdown. Shared by
 // DeckResults (ranked #N alternatives), RaidResults (allocation-order
 // "Deck N" partitions), and DraftResults (draft tiers) — only the label,
 // and DraftResults' optional pinned/diff annotations, differ.
+//
+// The deck is drawn as a row of faces, the same language the palette and the
+// draft slots use: a recommendation is only useful once you can tell who is
+// in it, and a column of slugs made the answer the least legible screen in
+// the app.
 
 import type { DeckRecommendation } from '../types/recommend'
+import { nameFromSlug } from '../lib/unitName'
 import { formatDamage } from './formatDamage'
 
-interface DeckCardProps {
+/** How a result view turns a slug into something a player can recognise.
+ * Threaded down from RecommendPanel, which owns both sources. */
+export interface UnitLookups {
+  /** Defaults leave a deck readable without a portrait manifest or the
+   * supported-unit list, which is also what the unit tests render against. */
+  portraitFor?: (slug: string) => string | null
+  nameFor?: (slug: string) => string
+}
+
+interface DeckCardProps extends UnitLookups {
   label: string
   deck: DeckRecommendation
   /** Locked draft slugs the engine kept in this deck (RaidDeck.pinned_slugs). */
@@ -23,6 +38,8 @@ export function DeckCard({
   pinnedSlugs = [],
   addedSlugs = [],
   removedSlugs = [],
+  portraitFor = () => null,
+  nameFor = nameFromSlug,
 }: DeckCardProps) {
   return (
     <li className="deck-results__item">
@@ -32,15 +49,29 @@ export function DeckCard({
           {formatDamage(deck.total_damage)} total dmg
         </span>
       </div>
-      <ol className="deck-results__slugs">
-        {deck.deck.map((slug, slot) => (
-          <li key={`${slug}-${slot}`} className="deck-results__slug">
-            {slug}
-            {pinnedSlugs.includes(slug) && (
-              <span className="pill pill--ok deck-results__pin">pinned</span>
-            )}
-          </li>
-        ))}
+      <ol className="deck-results__units">
+        {deck.deck.map((slug, slot) => {
+          const portrait = portraitFor(slug)
+          const name = nameFor(slug)
+          return (
+            <li key={`${slug}-${slot}`} className="deck-results__unit">
+              <span className="deck-results__figure">
+                {portrait ? (
+                  <img className="deck-results__portrait" src={portrait} alt="" />
+                ) : (
+                  <span className="deck-results__portrait deck-results__portrait--missing" />
+                )}
+                {pinnedSlugs.includes(slug) && (
+                  <span className="deck-results__pin" title="Kept here because you locked it">
+                    <span aria-hidden="true">📌</span>
+                    <span className="visually-hidden">pinned</span>
+                  </span>
+                )}
+              </span>
+              <span className="deck-results__unit-name">{name}</span>
+            </li>
+          )
+        })}
       </ol>
       <div className="deck-results__breakdown">
         <span>Burst: {formatDamage(deck.burst_damage)}</span>
@@ -49,10 +80,14 @@ export function DeckCard({
       {(addedSlugs.length > 0 || removedSlugs.length > 0) && (
         <div className="deck-results__diff">
           {addedSlugs.length > 0 && (
-            <span className="deck-results__diff-added">+ {addedSlugs.join(', ')}</span>
+            <span className="deck-results__diff-added">
+              + {addedSlugs.map(nameFor).join(', ')}
+            </span>
           )}
           {removedSlugs.length > 0 && (
-            <span className="deck-results__diff-removed">- {removedSlugs.join(', ')}</span>
+            <span className="deck-results__diff-removed">
+              - {removedSlugs.map(nameFor).join(', ')}
+            </span>
           )}
         </div>
       )}

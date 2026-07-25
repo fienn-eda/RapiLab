@@ -47,7 +47,7 @@ describe('RaidResults', () => {
       { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40 },
     ]
     render(<RaidResults decks={decks} combinedTotalDamage={100} leftoverSlugs={['f', 'g']} />)
-    expect(screen.getByText('Bench (not allocated to a deck): f, g')).toBeInTheDocument()
+    expect(screen.getByText('Bench (not allocated to a deck): F, G')).toBeInTheDocument()
   })
 
   it('renders no bench line when nothing is leftover', () => {
@@ -61,7 +61,7 @@ describe('RaidResults', () => {
   it('lists excluded slugs as not yet supported when there are any', () => {
     render(<RaidResults decks={[]} combinedTotalDamage={0} excludedSlugs={['some-slug']} />)
     expect(
-      screen.getByText('Not yet supported (excluded from search): some-slug'),
+      screen.getByText('Not yet supported (excluded from search): Some Slug'),
     ).toBeInTheDocument()
   })
 })

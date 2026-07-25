@@ -11,12 +11,13 @@
 
 import type { Draft, DraftSeat } from '../types/draft'
 import type { DraftAllocation, RaidDeck } from '../types/recommend'
-import { DeckCard } from './DeckCard'
+import { DeckCard, type UnitLookups } from './DeckCard'
 import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
+import { nameFromSlug } from '../lib/unitName'
 import { RaidResults } from './RaidResults'
 
-interface DraftResultsProps {
+interface DraftResultsProps extends UnitLookups {
   decks: RaidDeck[]
   combinedTotalDamage: number
   excludedSlugs?: string[]
@@ -80,7 +81,10 @@ export function DraftResults({
   withinDraft = null,
   baselineTotalDamage = null,
   submittedDraft,
+  ...lookups
 }: DraftResultsProps) {
+  const nameFor = lookups.nameFor ?? nameFromSlug
+
   if (withinDraft == null || baselineTotalDamage == null) {
     return (
       <RaidResults
@@ -88,6 +92,7 @@ export function DraftResults({
         combinedTotalDamage={combinedTotalDamage}
         excludedSlugs={excludedSlugs}
         leftoverSlugs={leftoverSlugs}
+        {...lookups}
       />
     )
   }
@@ -131,6 +136,7 @@ export function DraftResults({
                 deck={deck}
                 addedSlugs={added}
                 removedSlugs={removed}
+                {...lookups}
               />
             )
           })}
@@ -156,6 +162,7 @@ export function DraftResults({
                 pinnedSlugs={deck.pinned_slugs}
                 addedSlugs={added}
                 removedSlugs={removed}
+                {...lookups}
               />
             )
           })}
@@ -164,7 +171,7 @@ export function DraftResults({
 
       {leftoverSlugs.length > 0 && (
         <p className="raid-results__leftover">
-          Bench (not allocated to a deck): {leftoverSlugs.join(', ')}
+          Bench (not allocated to a deck): {leftoverSlugs.map(nameFor).join(', ')}
         </p>
       )}
       <ExcludedSlugsNote excludedSlugs={excludedSlugs} />

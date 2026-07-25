@@ -9,7 +9,7 @@ describe('DeckResults', () => {
     expect(screen.getByText('No decks recommended yet.')).toBeInTheDocument()
   })
 
-  it('renders each deck ranked, with its slugs in order and a damage breakdown', () => {
+  it('renders each deck ranked, with its units in order and a damage breakdown', () => {
     const decks: DeckRecommendation[] = [
       {
         deck: ['red-hood', 'liter', 'blanc', 'noir', 'anne'],
@@ -32,21 +32,22 @@ describe('DeckResults', () => {
     expect(screen.getByText('Burst: 3,000,000')).toBeInTheDocument()
     expect(screen.getByText('Normal: 2,000,000')).toBeInTheDocument()
 
-    const firstDeckSlugs = screen.getAllByText(/red-hood|liter|blanc|noir|anne/)
-    expect(firstDeckSlugs).toHaveLength(5)
-    expect(firstDeckSlugs.map((el) => el.textContent)).toEqual([
-      'red-hood',
-      'liter',
-      'blanc',
-      'noir',
-      'anne',
+    // Names, not slugs: a deck is only a recommendation once you can tell
+    // who is in it.
+    const firstDeckUnits = screen.getAllByText(/Red Hood|Liter|Blanc|Noir|Anne/)
+    expect(firstDeckUnits.map((el) => el.textContent)).toEqual([
+      'Red Hood',
+      'Liter',
+      'Blanc',
+      'Noir',
+      'Anne',
     ])
   })
 
   it('lists excluded slugs as not yet supported when there are any', () => {
     render(<DeckResults decks={[]} excludedSlugs={['some-slug', 'other-slug']} />)
     expect(
-      screen.getByText('Not yet supported (excluded from search): some-slug, other-slug'),
+      screen.getByText('Not yet supported (excluded from search): Some Slug, Other Slug'),
     ).toBeInTheDocument()
   })
 

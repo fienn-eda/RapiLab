@@ -238,7 +238,7 @@ describe('RecommendPanel raid mode', () => {
     expect(screen.getByText('Deck 2')).toBeInTheDocument()
     expect(screen.queryByText('#1')).not.toBeInTheDocument()
     expect(screen.getByText('180 dmg')).toBeInTheDocument()
-    expect(screen.getByText('Bench (not allocated to a deck): k')).toBeInTheDocument()
+    expect(screen.getByText('Bench (not allocated to a deck): K')).toBeInTheDocument()
   })
 
   it('shows a persistent in-progress message and disables the button while a raid request is in flight', async () => {
@@ -462,7 +462,7 @@ describe('RecommendPanel persistence', () => {
 
     expect(await screen.findByText('Deck 1')).toBeInTheDocument()
     expect(screen.getByText('180 dmg')).toBeInTheDocument()
-    expect(screen.getByText('Bench (not allocated to a deck): k')).toBeInTheDocument()
+    expect(screen.getByText('Bench (not allocated to a deck): K')).toBeInTheDocument()
     expect(screen.getByLabelText(/raid allocation/i)).toBeChecked()
     expect(screen.getByLabelText('Number of decks')).toHaveValue('3')
     expect(recommendRaidDecks).not.toHaveBeenCalled()

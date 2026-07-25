@@ -491,7 +491,12 @@ export function RecommendPanel({
         )}
 
       {mode === 'single' && single.status === 'success' && (
-        <DeckResults decks={single.decks} excludedSlugs={single.excludedSlugs} />
+        <DeckResults
+          decks={single.decks}
+          excludedSlugs={single.excludedSlugs}
+          portraitFor={portraitFor}
+          nameFor={nameFor}
+        />
       )}
       {mode === 'raid' && displayResult && displayMode === 'raid' && (
         <RaidResults
@@ -499,6 +504,8 @@ export function RecommendPanel({
           combinedTotalDamage={displayResult.combinedTotalDamage}
           excludedSlugs={displayResult.excludedSlugs}
           leftoverSlugs={displayResult.leftoverSlugs}
+          portraitFor={portraitFor}
+          nameFor={nameFor}
         />
       )}
       {mode === 'draft' && displayResult && displayMode === 'draft' && (
@@ -510,6 +517,8 @@ export function RecommendPanel({
           withinDraft={displayResult.withinDraft}
           baselineTotalDamage={displayResult.baselineTotalDamage}
           submittedDraft={submittedDraft}
+          portraitFor={portraitFor}
+          nameFor={nameFor}
         />
       )}
     </section>
