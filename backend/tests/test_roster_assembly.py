@@ -33,7 +33,7 @@ def test_fetch_then_assemble_end_to_end(tables):
             {"tid": 1001, "lv": 170}, {"tid": 1101, "lv": 190}, {"tid": 1201, "lv": 150},
         ],
     }
-    units = assemble_roster(tables, directory, raw)
+    units, _ = assemble_roster(tables, directory, raw)
     u = units[0]
     assert set(u) == {"name_en", "resource_id", "raid400", "skill_levels",
                       "overload", "grade", "core", "favorite_item"}
@@ -57,7 +57,7 @@ def test_assembled_units_carry_the_breakthrough_and_core_they_were_built_from(ta
             {"tid": 1001, "lv": 170}, {"tid": 1101, "lv": 190}, {"tid": 1201, "lv": 150},
         ],
     }
-    u = assemble_roster(tables, directory, raw)[0]
+    u = assemble_roster(tables, directory, raw)[0][0]
     assert u["grade"] == 3
     assert u["core"] == 6
 
@@ -87,7 +87,7 @@ def test_assembled_units_report_favorite_item_ownership(tables, item_tid, item_l
     # assembled roster must carry ownership out to the frontend instead of the
     # frontend guessing from a hand-maintained list.
     directory = json.loads(DIRECTORY.read_text(encoding="utf-8"))
-    u = assemble_roster(tables, directory, _roster_with_collectible(item_tid, item_lv))[0]
+    u = assemble_roster(tables, directory, _roster_with_collectible(item_tid, item_lv))[0][0]
     assert u["favorite_item"] is owned
 
 
@@ -101,7 +101,7 @@ def test_assemble_roster_matches_the_collector_scrape(tables):
     # Compare against what was really equipped: this test validates the stat
     # formula, not the product's Lv.15 assumption.
     out = {u["resource_id"]: u
-           for u in assemble_roster(tables, directory, raw, assume_cube_level=None)}
+           for u in assemble_roster(tables, directory, raw, assume_cube_level=None)[0]}
     off = []
     for rid, want in scraped.items():
         got = out.get(rid)
@@ -143,8 +143,8 @@ def test_the_assumed_cube_level_overrides_what_was_collected(tables):
             {"tid": 1001, "lv": 170}, {"tid": 1101, "lv": 190}, {"tid": 1201, "lv": 150},
         ],
     }
-    as_collected = assemble_roster(tables, directory, raw, assume_cube_level=None)[0]
-    assumed = assemble_roster(tables, directory, raw)[0]
+    as_collected = assemble_roster(tables, directory, raw, assume_cube_level=None)[0][0]
+    assumed = assemble_roster(tables, directory, raw)[0][0]
 
     cube = tables["resilience_cube"]
     assert assumed["raid400"]["atk"] - as_collected["raid400"]["atk"] == (

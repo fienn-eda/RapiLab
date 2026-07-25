@@ -186,3 +186,27 @@ describe('parseRosterJson', () => {
     expect(drafts[0]).not.toHaveProperty('core_level')
   })
 })
+
+describe('parseRosterJson unmeasured units', () => {
+  it('warns by name and reason when the backend had to drop a unit', () => {
+    // The backend drops a unit whose level-400 stats have no measured value (a
+    // cored PILGRIM Supporter). It IS encoded and would be fielded, so leaving
+    // the drop silent would read as the Nikke having simply vanished.
+    const { drafts, warnings } = parseRosterJson({
+      ...sample(),
+      unmeasured: [
+        { name_en: 'Rapunzel', reason: 'core flat ATK for a PILGRIM Supporter was never measured' },
+      ],
+    })
+    expect(drafts).toHaveLength(1) // the rest of the roster still imports
+    expect(warnings).toHaveLength(1)
+    expect(warnings[0]).toContain('Rapunzel')
+    expect(warnings[0]).toContain('never measured')
+  })
+
+  it('says nothing when the backend dropped nothing', () => {
+    // Also covers a collector scrape, which has no `unmeasured` key at all.
+    expect(parseRosterJson(sample()).warnings).toEqual([])
+    expect(parseRosterJson({ ...sample(), unmeasured: [] }).warnings).toEqual([])
+  })
+})

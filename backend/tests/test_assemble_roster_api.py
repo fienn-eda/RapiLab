@@ -47,7 +47,61 @@ def test_an_account_with_no_research_rows_still_assembles():
         "owned": [], "character_details": [], "recycle_room_researches": [],
     })
     assert response.status_code == 200
-    assert response.json() == {"units": []}
+    assert response.json() == {"units": [], "unmeasured": []}
+
+
+def _bare_detail(name_code, **over):
+    d = {"name_code": name_code, "grade": 3, "core": 0, "attractive_lv": 0,
+         "favorite_item_lv": 0, "favorite_item_tid": 0, "harmony_cube_lv": 0,
+         "skill1_lv": 1, "skill2_lv": 1, "ulti_skill_lv": 1}
+    for slot in ("head", "torso", "arm", "leg"):
+        d |= {f"{slot}_equip_tid": 0, f"{slot}_equip_tier": 0,
+              f"{slot}_equip_corporation_type": 0, f"{slot}_equip_lv": 0}
+    return d | over
+
+
+def _pilgrim(character_class):
+    from app.api import _DIRECTORY
+    return next(e for e in _DIRECTORY
+                if e.get("corporation") == "PILGRIM"
+                and e.get("class") == character_class
+                and e.get("original_rare") == "SSR")
+
+
+def test_a_unit_whose_stat_was_never_measured_is_named_not_a_500():
+    """A cored PILGRIM Supporter has no measured per-core flat ATK or HP, and
+    stat_assembly refuses to answer plausibly. That refusal used to raise out of
+    the endpoint, so ONE such unit made a whole account unsyncable - which is how
+    a sub-account's first sync failed with a 500. Now that unit alone is dropped
+    and named, and the rest of the roster still assembles."""
+    supporter, attacker = _pilgrim("Supporter"), _pilgrim("Attacker")
+    response = client.post("/api/assemble-roster", json={
+        "owned": [{"name_code": supporter["name_code"], "lv": 1},
+                  {"name_code": attacker["name_code"], "lv": 1}],
+        "character_details": [_bare_detail(supporter["name_code"], core=2),
+                              _bare_detail(attacker["name_code"], core=2)],
+        "recycle_room_researches": [],
+    })
+
+    assert response.status_code == 200
+    body = response.json()
+    assert [u["name_en"] for u in body["units"]] == [attacker["name_en"]]
+    assert [u["name_en"] for u in body["unmeasured"]] == [supporter["name_en"]]
+    assert "never measured" in body["unmeasured"][0]["reason"]
+
+
+def test_the_same_unit_without_cores_assembles_normally():
+    """The gap is per-CORE flat only, so an uncored PILGRIM Supporter is fine -
+    which is why the main account synced all along and only a sub-account broke."""
+    supporter = _pilgrim("Supporter")
+    response = client.post("/api/assemble-roster", json={
+        "owned": [{"name_code": supporter["name_code"], "lv": 1}],
+        "character_details": [_bare_detail(supporter["name_code"], core=0)],
+        "recycle_room_researches": [],
+    })
+    assert response.status_code == 200
+    assert [u["name_en"] for u in response.json()["units"]] == [supporter["name_en"]]
+    assert response.json()["unmeasured"] == []
 
 
 def test_a_missing_field_is_a_422_not_a_500():

@@ -131,12 +131,23 @@ def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict
 
 
 def assemble_roster(tables, directory: list, raw: dict,
-                    assume_cube_level: int | None = ASSUMED_CUBE_LEVEL) -> list[dict]:
+                    assume_cube_level: int | None = ASSUMED_CUBE_LEVEL,
+                    ) -> tuple[list[dict], list[dict]]:
+    """`(units, unmeasured)` for one collected account.
+
+    `unmeasured` names the units dropped because the ground truth has no honest
+    value for them - today, a cored PILGRIM/OVERSPEC Supporter, whose per-core
+    flat ATK and HP nobody has measured (stat_assembly's `UnmeasuredStat`). One
+    such unit used to raise straight out of the endpoint, so a single gap made a
+    whole ACCOUNT unsyncable; dropping just that unit keeps the other ~150
+    usable, and naming it here is what keeps the drop from looking like the
+    Nikke simply vanished.
+    """
     by_code = {e["name_code"]: e for e in directory}
     details = {d["name_code"]: d for d in raw["character_details"]}
     owned = {o["name_code"]: o for o in raw["owned"]}
     research = {str(r["tid"]): r["lv"] for r in raw["recycle_room_researches"]}
-    units = []
+    units, unmeasured = [], []
     for code, o in owned.items():
         entry, d = by_code.get(code), details.get(code)
         if entry is None or d is None:
@@ -146,10 +157,14 @@ def assemble_roster(tables, directory: list, raw: dict,
         # with have no affinity table entry and are not real roster units.
         if entry.get("original_rare") != "SSR":
             continue
-        units.append(assemble_unit(tables, entry, o, d, research, assume_cube_level))
+        try:
+            units.append(assemble_unit(tables, entry, o, d, research, assume_cube_level))
+        except sa.UnmeasuredStat as gap:
+            unmeasured.append({"name_en": entry["name_en"], "reason": str(gap.args[0])})
     units.sort(key=lambda u: u["name_en"])
-    return units
+    unmeasured.sort(key=lambda u: u["name_en"])
+    return units, unmeasured
 
 
-def to_roster_json(units: list[dict]) -> dict:
-    return {"units": units}
+def to_roster_json(units: list[dict], unmeasured: list[dict] | None = None) -> dict:
+    return {"units": units, "unmeasured": unmeasured or []}

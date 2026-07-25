@@ -292,14 +292,19 @@ def assemble_roster_endpoint(
 ) -> dict:
     """Assemble a bookmarklet-collected roster. Stateless: the request body is
     never persisted - see the privacy posture in the sub-project 4 spec."""
-    units = assemble_roster(_STAT_TABLES, _DIRECTORY, request.model_dump())
+    units, unmeasured = assemble_roster(_STAT_TABLES, _DIRECTORY,
+                                        request.model_dump())
     # Aggregates only. Counting unknown name_codes is how we learn the
-    # directory snapshot has gone stale against a newly released Nikke.
+    # directory snapshot has gone stale against a newly released Nikke, and
+    # counting unmeasured units is how we learn an account owns a combination
+    # the ground truth never covered - one used to fail the whole request.
     logger.info(
-        "roster_sync client=%s owned=%d assembled=%d unknown_name_codes=%d",
+        "roster_sync client=%s owned=%d assembled=%d unknown_name_codes=%d "
+        "unmeasured=%d",
         x_client_id or "none",
         len(request.owned),
         len(units),
         sum(1 for o in request.owned if o.get("name_code") not in _KNOWN_NAME_CODES),
+        len(unmeasured),
     )
-    return to_roster_json(units)
+    return to_roster_json(units, unmeasured)

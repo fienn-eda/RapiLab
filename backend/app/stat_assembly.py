@@ -109,6 +109,18 @@ CORE_FLAT_ATK_BY_RESOURCE_ID = {
 }
 
 
+class UnmeasuredStat(KeyError):
+    """A stat this account needs was never measured, so no honest value exists.
+
+    Distinct from the KeyErrors that mean "the caller passed something bogus":
+    this one is a gap in the ground truth, and the only account that can trigger
+    it is one that happens to own a unit nobody has measured. A caller assembling
+    a whole roster catches it to drop that ONE unit rather than fail the sync -
+    see roster_assembly.assemble_roster. Subclasses KeyError so existing handlers
+    keep working.
+    """
+
+
 def core_flat_atk(
     character_class: str,
     *,
@@ -142,8 +154,8 @@ def core_flat_atk(
         # No cored Pilgrim or OVERSPEC Supporter exists in the ground truth, so
         # that value was never measured. Falling back to the class value would be
         # wrong by ~14-30 per core, so say so rather than answer plausibly.
-        raise KeyError(
-            f"core flat for a {corporation or corporation_sub_type} "
+        raise UnmeasuredStat(
+            f"core flat ATK for a {corporation or corporation_sub_type} "
             f"{character_class} was never measured"
         ) from None
 
@@ -384,7 +396,7 @@ def core_flat_hp(
     except KeyError:
         # No cored OVERSPEC/Pilgrim Supporter exists in the ground truth, so its
         # per-core HP was never measured. Say so rather than answer plausibly.
-        raise KeyError(
+        raise UnmeasuredStat(
             f"core flat HP for a {corporation or corporation_sub_type} "
             f"{character_class} was never measured"
         ) from None

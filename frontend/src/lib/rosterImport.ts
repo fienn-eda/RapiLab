@@ -29,6 +29,10 @@ interface RosterUnit {
 interface RosterJson {
   synchroLevel?: number
   units?: RosterUnit[]
+  /** Units the backend had to drop because no honest level-400 stat exists for
+   * them (a cored PILGRIM Supporter's per-core flat was never measured). Absent
+   * from a collector scrape, which never assembled stats in the first place. */
+  unmeasured?: { name_en: string; reason: string }[]
 }
 
 export const parseRosterJson = (
@@ -76,6 +80,16 @@ export const parseRosterJson = (
     warnings.push(
       `${unsupported.length} owned units not yet supported (excluded from ` +
         `recommendation): ${unsupported.join(', ')}`,
+    )
+  }
+  // A dropped unit is worth a louder line than an unsupported one: it IS
+  // encoded and would be fielded, and the only reason it is missing is a hole in
+  // the measured data that a different account happens to expose.
+  if (data.unmeasured && data.unmeasured.length > 0) {
+    warnings.push(
+      `${data.unmeasured.length} owned units left out — their level-400 stats ` +
+        `were never measured: ` +
+        data.unmeasured.map((u) => `${u.name_en} (${u.reason})`).join('; '),
     )
   }
   return { drafts, warnings }

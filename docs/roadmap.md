@@ -790,6 +790,18 @@
       이제 빈 닉네임은 저장된 값을 유지한다(`nickname: args.nickname || existing.nickname`).
       **이미 비어버린 프로필은 앱에서 북마클릿을 새로 받아 한 번 싱크해야 복구된다** —
       북마크바에 저장된 복사본은 `50176df`(닉네임을 `basic_info`에서 읽기) 이전 버전일 수 있다.
+- [x] **부계정 싱크가 500으로 죽던 원인 — 완료 (2026-07-25).** 코어를 올린 PILGRIM
+      Supporter의 코어당 플랫이 측정된 적이 없어 `core_flat_atk`가 (의도적으로) 예외를
+      던지고, 그게 엔드포인트까지 올라가 **유닛 1기의 공백이 계정 전체를 못 쓰게** 했다.
+      전용 예외 `UnmeasuredStat`를 두고 `assemble_roster`가 그 유닛만 빼고
+      `unmeasured: [{name_en, reason}]`로 보고한다(프론트는 경고 줄로 표시).
+      백엔드 1367 → **1369 passed**, 프론트 272 → **274 passed**.
+- [ ] **PILGRIM/OVERSPEC Supporter의 코어당 플랫 ATK·HP 측정 필요 (데이터 공백).**
+      `CORE_FLAT_ATK_PILGRIM`·`CORE_FLAT_HP_OVERSPEC`에 Attacker·Defender만 있고
+      **Supporter가 없다**. 폴백은 코어당 14~30 틀리므로 금지 — 실측이 유일한 답이다.
+      영향 유닛 6기: **Chime · Dorothy · Grave · Little Mermaid · Nayuta · Rapunzel**
+      (PILGRIM∩OVERSPEC Supporter). 코어 1 이상인 이들 중 하나를 가진 계정은 그 유닛이
+      추천에서 빠진다. 측정법은 기존 값들과 동일(같은 등급·코어 차이만 두고 ATK/HP 대조).
 - [ ] **닉네임을 못 읽은 싱크가 조용히 성공한다.** 북마클릿이
       `GetUserProfileBasicInfo`를 `.catch(()=>null)`로 감싸므로 그 호출만 실패하면 닉네임이
       빈 값인 채 싱크가 성공한다. `SyncRosterPanel`이 이미 경고 줄을 파싱하니("N owned units

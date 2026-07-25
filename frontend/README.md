@@ -67,6 +67,15 @@ key.
   identifier our backend ever sees, on any call, is the anonymous `clientId`
   (`src/lib/clientId.ts`, sent as `X-Client-Id`) — unrelated to any game
   account and never sent to blablalink.
+- **Dropped units:** the assemble response carries
+  `unmeasured: [{ name_en, reason }]` alongside `units` — owned Nikkes the
+  backend could not give level-400 stats because nobody has measured them (a
+  cored PILGRIM/OVERSPEC Supporter's per-core flat). `parseRosterJson` turns
+  that into a warning line; never drop it silently, since these units ARE
+  encoded and would otherwise look like they simply vanished from the roster.
+- **A blank nickname never overwrites a stored one.** It comes from a separate
+  blablalink call whose failure the bookmarklet swallows, so `''` means "this
+  sync could not read it" — see `types/profile.ts`'s `upsertProfile`.
 - **Upsert:** a sync for a new `open_id` creates and activates a profile; a
   sync for an existing `open_id` refreshes its nickname/roster in place (and
   switches to it). If the refreshed roster actually differs from what was
