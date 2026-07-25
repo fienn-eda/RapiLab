@@ -206,7 +206,8 @@
 
 /* Stacked beside a portrait the pips read as a column of values, so align the
    numbers rather than letting each pip shrink-wrap its own label. */
-.skills--column .skills__pip {
+.skills--column .skills__pip,
+.palette__stats .skills__pip {
   justify-content: space-between;
   min-width: 46px;
 }
@@ -786,10 +787,34 @@
   --element: var(--el-electric);
 }
 
-/* Spread the pips over the portrait's height rather than stacking them at the
-   top - the chip is as tall as the art either way. */
-.palette__item .skills--column {
+/* Five rows beside the art, top to bottom: breakthrough, core, S1, S2, B.
+   Spread over the portrait's height rather than stacked at the top - the chip
+   is as tall as the art either way. */
+.palette__stats {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
   justify-content: space-between;
+  gap: 2px;
+}
+
+/* Same cell shape as a skill pip, but one value instead of a label/value
+   pair, so it centres rather than splitting to the edges. */
+.palette__stats .palette__stat--grade,
+.palette__stats .palette__stat--core {
+  justify-content: center;
+}
+
+.palette__stats .investment__stars {
+  font-size: 10px;
+  letter-spacing: 0;
+}
+
+.palette__stats .investment__core {
+  font-size: 11px;
+  color: var(--text);
 }
 
 .palette__face {

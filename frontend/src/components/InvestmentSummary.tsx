@@ -12,6 +12,18 @@ interface SkillLevelsProps {
   layout?: 'row' | 'column'
 }
 
+/** One labelled cell in a stat column. An `<li>`, so whatever lists it lives
+ * in owns the column - the palette's runs to five rows, the roster card's to
+ * three, and neither should have to restate what a pip looks like. */
+export function SkillPip({ label, level }: { label: string; level: Displayable }) {
+  return (
+    <li className="skills__pip">
+      <span className="skills__label">{label}</span>
+      <span className="skills__level">{level === '' ? '—' : level}</span>
+    </li>
+  )
+}
+
 /** Skill levels as three labelled pips. Order matches the game's skill list. */
 export function SkillLevels({ levels, layout = 'row' }: SkillLevelsProps) {
   const pips: [string, Displayable][] = [
@@ -22,10 +34,7 @@ export function SkillLevels({ levels, layout = 'row' }: SkillLevelsProps) {
   return (
     <ul className={layout === 'column' ? 'skills skills--column' : 'skills'}>
       {pips.map(([label, level]) => (
-        <li key={label} className="skills__pip">
-          <span className="skills__label">{label}</span>
-          <span className="skills__level">{level === '' ? '—' : level}</span>
-        </li>
+        <SkillPip key={label} label={label} level={level} />
       ))}
     </ul>
   )

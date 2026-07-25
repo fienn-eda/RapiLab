@@ -15,7 +15,17 @@
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import type { SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
-import { OverloadLines, SkillLevels } from './InvestmentSummary'
+import { OverloadLines, SkillPip } from './InvestmentSummary'
+
+/** Breakthrough and core for one unit. They live on NikkeDraft, not on the
+ * wire-shaped UserNikkeState the engine takes, so they arrive alongside the
+ * roster rather than inside it. */
+export interface UnitInvestment {
+  grade?: number
+  core?: number
+}
+
+const STAR_SLOTS = 3
 
 /** dataTransfer key for a dragged unit. A custom type (rather than text/plain)
  * keeps a stray drag from elsewhere in the page reading as a unit drop. */
@@ -33,9 +43,14 @@ interface UnitPaletteProps {
   usedSlugs?: string[]
   /** Draft mode only: lets an included, unseated unit be dragged onto a deck. */
   draggable?: boolean
+  /** Breakthrough/core per slug. Defaults to unknown, which draws the two
+   * cells as dashes rather than claiming a unit has none. */
+  investmentFor?: (slug: string) => UnitInvestment
 }
 
 const BURST_TIERS = [1, 2, 3] as const
+
+const NO_INVESTMENT: UnitInvestment = {}
 
 export function UnitPalette({
   roster,
@@ -44,6 +59,7 @@ export function UnitPalette({
   onToggleExclude,
   usedSlugs = [],
   draggable = false,
+  investmentFor = () => NO_INVESTMENT,
 }: UnitPaletteProps) {
   const { portraitFor } = usePortraitManifest()
   const ownedBySlug = new Map(roster.map((nikke) => [nikke.character_slug, nikke]))
@@ -65,6 +81,7 @@ export function UnitPalette({
                 const isUsed = usedSet.has(unit.slug)
                 const isExcluded = excludedSet.has(unit.slug)
                 const portrait = portraitFor(unit.slug)
+                const { grade, core } = investmentFor(unit.slug)
                 const classes = ['palette__item']
                 if (isExcluded) classes.push('palette__item--excluded')
                 if (isUsed) classes.push('palette__item--seated')
@@ -114,7 +131,25 @@ export function UnitPalette({
                       </span>
                     </button>
 
-                    <SkillLevels levels={owned.skill_levels} layout="column" />
+                    {/* Five rows top to bottom: breakthrough, core, then the
+                        three skill levels. Breakthrough and core get a cell
+                        each here (unlike the roster card's single badge) so
+                        the column lines up across every chip in the grid. */}
+                    <ul className="palette__stats">
+                      <li className="skills__pip palette__stat--grade">
+                        <span className="investment__stars">
+                          {grade === undefined
+                            ? '—'
+                            : '★'.repeat(grade) + '☆'.repeat(Math.max(0, STAR_SLOTS - grade))}
+                        </span>
+                      </li>
+                      <li className="skills__pip palette__stat--core">
+                        <span className="investment__core">{core ? `+${core}` : '—'}</span>
+                      </li>
+                      <SkillPip label="S1" level={owned.skill_levels.skill1} />
+                      <SkillPip label="S2" level={owned.skill_levels.skill2} />
+                      <SkillPip label="B" level={owned.skill_levels.burst} />
+                    </ul>
                   </li>
                 )
               })}

@@ -122,4 +122,47 @@ describe('UnitPalette', () => {
     render(<UnitPalette {...base} roster={[owned('crown')]} />)
     expect(screen.getByText('No overload')).toBeInTheDocument()
   })
+
+  // Five rows top to bottom - breakthrough, core, S1, S2, B - so the column
+  // lines up across every chip in the grid.
+  describe('the stat column beside the portrait', () => {
+    const chip = (investment: { grade?: number; core?: number }) =>
+      render(
+        <UnitPalette
+          {...base}
+          roster={[owned('crown', { skill_levels: { skill1: 10, skill2: 4, burst: 7 } })]}
+          investmentFor={() => investment}
+        />,
+      )
+
+    it('leads with breakthrough and core, then the three skill levels', () => {
+      const { container } = chip({ grade: 2, core: 4 })
+      const cells = [...container.querySelectorAll('.palette__stats > li')]
+      expect(cells.map((cell) => cell.textContent)).toEqual([
+        '★★☆',
+        '+4',
+        'S110',
+        'S24',
+        'B7',
+      ])
+    })
+
+    it('keeps breakthrough and core in cells of their own', () => {
+      const { container } = chip({ grade: 3, core: 2 })
+      expect(container.querySelectorAll('.palette__stat--grade')).toHaveLength(1)
+      expect(container.querySelectorAll('.palette__stat--core')).toHaveLength(1)
+    })
+
+    // A dash, not "+0" or an empty cell: the row still has to hold its place
+    // in the column, and there is nothing to report in it.
+    it('dashes an uncored unit rather than claiming a zero', () => {
+      const { container } = chip({ grade: 3, core: 0 })
+      expect(container.querySelector('.palette__stat--core')).toHaveTextContent('—')
+    })
+
+    it('dashes breakthrough when the unit carries no grade at all', () => {
+      const { container } = chip({})
+      expect(container.querySelector('.palette__stat--grade')).toHaveTextContent('—')
+    })
+  })
 })

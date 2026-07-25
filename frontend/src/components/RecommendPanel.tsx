@@ -34,7 +34,7 @@ import { DeckResults } from './DeckResults'
 import { DraftEditor, removeUnitBySlug, toRequestDraft } from './DraftEditor'
 import { DraftResults } from './DraftResults'
 import { RaidResults } from './RaidResults'
-import { UnitPalette } from './UnitPalette'
+import { UnitPalette, type UnitInvestment } from './UnitPalette'
 
 interface RecommendPanelProps {
   /** The validated, ready subset of the entered roster. */
@@ -53,6 +53,9 @@ interface RecommendPanelProps {
   restoreInputs: StoredInputs | null
   /** The stored result for restoreInputs' hash - null alongside it. */
   restoreResult: StoredResult | null
+  /** Breakthrough/core per slug, for the palette chips. Not part of the
+   * roster: UserNikkeState mirrors the backend model, which has neither. */
+  investmentFor?: (slug: string) => UnitInvestment
 }
 
 type RecommendMode = 'single' | 'raid' | 'draft'
@@ -87,6 +90,7 @@ export function RecommendPanel({
   onResult,
   restoreInputs,
   restoreResult,
+  investmentFor,
 }: RecommendPanelProps) {
   const [mode, setMode] = useState<RecommendMode>('single')
   const [numDecks, setNumDecks] = useState(DEFAULT_NUM_DECKS)
@@ -426,6 +430,7 @@ export function RecommendPanel({
                 supportedUnits={supportedUnits.units}
                 excludedSlugs={[...excludedSlugs]}
                 onToggleExclude={toggleExclude}
+                investmentFor={investmentFor}
               />
             </details>
           </fieldset>
@@ -448,6 +453,7 @@ export function RecommendPanel({
                 draggable
                 excludedSlugs={[...excludedSlugs]}
                 onToggleExclude={toggleExclude}
+                investmentFor={investmentFor}
               />
               <div className="draft-layout__decks">
                 <DraftEditor

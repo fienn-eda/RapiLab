@@ -40,6 +40,16 @@ function App() {
   const drafts = activeProfile?.roster ?? NO_ROSTER
   const validRoster = useMemo(() => getValidRoster(drafts), [drafts])
 
+  // Breakthrough/core for the palette chips. It rides alongside the roster
+  // rather than in it: validRoster is UserNikkeState, which mirrors the
+  // backend model, and neither field exists there.
+  const investmentFor = useMemo(() => {
+    const bySlug = new Map(
+      drafts.map((draft) => [draft.character_slug, { grade: draft.grade, core: draft.core }]),
+    )
+    return (slug: string) => bySlug.get(slug) ?? {}
+  }, [drafts])
+
   return (
     <div className="app">
       <header className="app__header">
@@ -124,6 +134,7 @@ function App() {
                 // profile happens to be active when the response arrives.
                 key={state.activeOpenId ?? 'none'}
                 roster={validRoster}
+                investmentFor={investmentFor}
                 activeOpenId={state.activeOpenId}
                 getCached={(hash) => (activeProfile ? getResult(activeProfile, hash) : null)}
                 onResult={(args) => {
