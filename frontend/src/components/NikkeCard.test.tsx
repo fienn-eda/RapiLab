@@ -16,17 +16,27 @@ const filledDraft = (): NikkeDraft => ({
   overload_options: [{ id: '1', name: '공격력 증가', value: '18.2' }],
 })
 
-const card = (draft: NikkeDraft = filledDraft(), portrait: string | null = null) =>
-  render(<NikkeCard draft={draft} index={0} portrait={portrait} />)
+const card = (
+  draft: NikkeDraft = filledDraft(),
+  portrait: string | null = null,
+  name = 'Red Hood',
+) => render(<NikkeCard draft={draft} index={0} name={name} element="Fire" portrait={portrait} />)
 
 describe('NikkeCard', () => {
-  it('falls back to a positional title when no slug is set', () => {
-    card(makeEmptyDraft())
+  it('falls back to a positional title when there is neither name nor slug', () => {
+    card(makeEmptyDraft(), null, '')
     expect(screen.getByRole('heading', { name: 'Nikke 1' })).toBeInTheDocument()
   })
 
-  it('uses the character slug as the title once synced', () => {
+  // The slug identifies the unit; the name is what a player reads.
+  it('titles the card with the unit name, not its slug', () => {
     card()
+    expect(screen.getByRole('heading', { name: 'Red Hood' })).toBeInTheDocument()
+    expect(screen.queryByText('red-hood')).not.toBeInTheDocument()
+  })
+
+  it('falls back to the slug when no name was resolved', () => {
+    card(filledDraft(), null, '')
     expect(screen.getByRole('heading', { name: 'red-hood' })).toBeInTheDocument()
   })
 

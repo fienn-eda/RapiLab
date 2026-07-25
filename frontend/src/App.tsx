@@ -8,8 +8,9 @@ import { useProfiles } from './hooks/useProfiles'
 import { usePortraitManifest } from './hooks/usePortraitManifest'
 import { getValidRoster } from './types/nikkeDraft'
 import { getResult } from './types/profile'
-import { NikkeCard } from './components/NikkeCard'
+import { useSupportedUnits } from './hooks/useSupportedUnits'
 import { ProfileSwitcher } from './components/ProfileSwitcher'
+import { RosterGrid } from './components/RosterGrid'
 import { RecommendPanel } from './components/RecommendPanel'
 import { SyncRosterPanel } from './components/SyncRosterPanel'
 import type { NikkeDraft } from './types/nikkeDraft'
@@ -29,6 +30,11 @@ function App() {
   const { state, activeProfile, upsertProfile, switchProfile, deleteProfile, saveResult } =
     useProfiles()
   const { portraitFor } = usePortraitManifest()
+  // The Roster tab needs names, elements and the supported/unsupported split.
+  // RecommendPanel loads the same list for itself: making it a prop instead
+  // would rewrite 22 of its test's render sites to save one GET of a small
+  // static endpoint.
+  const supportedUnits = useSupportedUnits()
   const [tab, setTab] = useState<Tab>('roster')
 
   const drafts = activeProfile?.roster ?? NO_ROSTER
@@ -39,7 +45,8 @@ function App() {
       <header className="app__header">
         <h1 className="app__title">NIKKE Deck Builder</h1>
         <p className="app__subtitle">
-          Enter each owned Nikke&rsquo;s investment data from ShiftyPad.
+          Sync your roster from blablalink, then have the engine build decks
+          from it.
         </p>
         <p className="app__note">
           All Nikkes are simulated wearing a Resilience Cube Lv.15.
@@ -93,16 +100,12 @@ function App() {
               className="panel"
             >
               <SyncRosterPanel onImport={upsertProfile} />
-              <div className="roster">
-                {drafts.map((draft, index) => (
-                  <NikkeCard
-                    key={draft.id ?? draft.character_slug}
-                    draft={draft}
-                    index={index}
-                    portrait={portraitFor(draft.character_slug)}
-                  />
-                ))}
-              </div>
+              {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
+              <RosterGrid
+                drafts={drafts}
+                supportedUnits={supportedUnits.units}
+                portraitFor={portraitFor}
+              />
             </div>
 
             <div

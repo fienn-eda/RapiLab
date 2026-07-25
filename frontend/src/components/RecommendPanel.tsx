@@ -219,6 +219,28 @@ export function RecommendPanel({
     () => new Map(supportedUnits.units.map((unit) => [unit.slug, unit])),
     [supportedUnits.units],
   )
+  // What the palette actually draws, and therefore what the search really
+  // ranges over: owned AND engine-supported. Counting the whole roster claimed
+  // 159 units were in the pool while showing 70 chips. The unsupported ones
+  // are still sent - the backend drops them and names them in excluded_slugs -
+  // so this corrects the claim without changing the request.
+  const poolTotal = useMemo(
+    () => roster.filter((nikke) => unitIndex.has(nikke.character_slug)).length,
+    [roster, unitIndex],
+  )
+  const poolIncluded = useMemo(
+    () =>
+      roster.filter(
+        (nikke) =>
+          unitIndex.has(nikke.character_slug) && !excludedSlugs.has(nikke.character_slug),
+      ).length,
+    [roster, unitIndex, excludedSlugs],
+  )
+  // Before the list arrives (or if it never does) there is no intersection to
+  // report, so fall back to the roster rather than claiming a pool of zero.
+  const poolKnown = unitIndex.size > 0
+  const unsupportedCount = roster.length - poolTotal
+
   const nameFor = (slug: string) => unitIndex.get(slug)?.name ?? nameFromSlug(slug)
   const burstTierFor = (slug: string) => unitIndex.get(slug)?.burstTier ?? null
 
@@ -391,8 +413,12 @@ export function RecommendPanel({
                 unit toggles in the a11y tree for tests without a jsdom details toggle. */}
             <details className="group__details" open>
               <summary className="group__hint">
-                {effectiveRoster.length}/{roster.length} in the search pool — click any you
+                {poolKnown ? poolIncluded : effectiveRoster.length}/
+                {poolKnown ? poolTotal : roster.length} in the search pool — click any you
                 won&rsquo;t field to drop it
+                {poolKnown && unsupportedCount > 0 && (
+                  <> ({unsupportedCount} owned but not yet supported)</>
+                )}
               </summary>
               {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
               <UnitPalette

@@ -55,7 +55,37 @@
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: var(--sp-4);
+  gap: var(--sp-5);
+}
+
+/* Auto-fill rather than a fixed column count: a tile is as wide as its
+   overload lines need and the row reflows to the window. */
+.roster__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+  gap: var(--sp-3);
+}
+
+.roster__unsupported {
+  border-top: 1px solid var(--border);
+  padding-top: var(--sp-3);
+}
+
+.roster__unsupported-summary {
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.roster__unsupported-list {
+  list-style: none;
+  margin: var(--sp-3) 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: var(--sp-1) var(--sp-3);
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .card {
@@ -226,61 +256,66 @@
 /* Roster card ------------------------------------------------------------- */
 
 .roster-card {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(0, 20rem);
-  align-items: start;
-  gap: var(--sp-4);
-  padding: var(--sp-4);
+  gap: var(--sp-2);
+  padding: var(--sp-2);
+  border-top: 3px solid var(--element, var(--border));
 }
 
-/* Source art is 256x512. A square crop cut the face off; anchoring the crop to
-   the top keeps it while the card stays a single compact row. */
-.roster-card__portrait {
-  width: 56px;
-  height: 72px;
-  object-fit: cover;
-  object-position: top;
+.roster-card[data-element='Fire'] {
+  --element: var(--el-fire);
+}
+.roster-card[data-element='Water'] {
+  --element: var(--el-water);
+}
+.roster-card[data-element='Wind'] {
+  --element: var(--el-wind);
+}
+.roster-card[data-element='Iron'] {
+  --element: var(--el-iron);
+}
+.roster-card[data-element='Electric'] {
+  --element: var(--el-electric);
+}
+
+/* Anchors the breakthrough overlay. */
+.roster-card__figure {
+  position: relative;
   border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-2);
+}
+
+.roster-card__portrait {
+  display: block;
+  width: 100%;
+  aspect-ratio: 1;
   background: var(--surface-2);
 }
 
 .roster-card__portrait--missing {
-  display: block;
   border: 1px dashed var(--border);
 }
 
-.roster-card__identity {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--sp-2);
-  min-width: 0;
+/* Over the art, so it needs a scrim of its own rather than whatever colour
+   happens to be behind it. */
+.roster-card__grade {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1px var(--sp-1);
+  font-size: 12px;
+  color: #fff;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
 }
 
-.roster-card__overload {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-2);
-  min-width: 0;
-}
-
-.roster-card__section-title {
-  margin: 0;
-  font-size: 11px;
+.roster-card__name {
+  font-size: 13px;
   font-weight: 600;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-@media (max-width: 620px) {
-  .roster-card {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .roster-card__overload {
-    grid-column: 1 / -1;
-  }
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* Profile switcher -------------------------------------------------------- */
@@ -918,15 +953,20 @@
   cursor: grabbing;
 }
 
-/* Source art is 256x512 full-body. On a square box `cover` renders it W x 2W
+/* THE FACE CROP, shared by every square portrait.
+   Source art is 256x512 full-body. On a square box `cover` renders it W x 2W
    and hides W (= 256 image rows); starting 48 of those rows down keeps the
    whole head and the chin, which is the crop the game's own slots use. */
+.draft-editor__slot-portrait,
+.roster-card__portrait {
+  object-fit: cover;
+  object-position: center 18.75%;
+}
+
 .draft-editor__slot-portrait {
   display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 18.75%;
 }
 
 .draft-editor__slot-portrait--missing {

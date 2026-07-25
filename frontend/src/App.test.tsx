@@ -58,8 +58,16 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
   })
 
+  // The roster grid cards a unit only once /api/supported-units confirms the
+  // engine can simulate it, so these have to wait for that list to land.
+  const SUPPORTED = [
+    { slug: 'red-hood', name: 'Red Hood', burstTier: 1, element: 'Fire' },
+    { slug: 'privaty', name: 'Privaty', burstTier: 2, element: 'Water' },
+  ] as const
+
   it('opens on the roster tab and reaches the recommend panel through its tab', async () => {
     const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
     seedProfiles({
       activeOpenId: 'acct-a',
       profiles: {
@@ -76,17 +84,18 @@ describe('App', () => {
 
     render(<App />)
 
-    expect(screen.getByRole('heading', { name: 'red-hood' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Red Hood' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Recommend decks' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: 'Recommend' }))
 
     expect(screen.getByRole('heading', { name: 'Recommend decks' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
   })
 
   it('switches the displayed roster when the active profile changes (isolation)', async () => {
     const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
     seedProfiles({
       activeOpenId: 'acct-a',
       profiles: {
@@ -110,13 +119,13 @@ describe('App', () => {
     })
 
     render(<App />)
-    expect(screen.getByRole('heading', { name: 'red-hood' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'privaty' })).not.toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Red Hood' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Privaty' })).not.toBeInTheDocument()
 
     await user.selectOptions(screen.getByLabelText('Account'), '부계')
 
-    expect(screen.getByRole('heading', { name: 'privaty' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: 'Privaty' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
   })
 
   it('resets in-flight raid state and form mode when switching profiles (RecommendPanel is remounted per profile)', async () => {
