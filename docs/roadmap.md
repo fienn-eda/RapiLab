@@ -796,23 +796,24 @@
       전용 예외 `UnmeasuredStat`를 두고 `assemble_roster`가 그 유닛만 빼고
       `unmeasured: [{name_en, reason}]`로 보고한다(프론트는 경고 줄로 표시).
       백엔드 1367 → **1369 passed**, 프론트 272 → **274 passed**.
-- [x] **PILGRIM/OVERSPEC Supporter의 코어당 플랫 ATK·HP — 측정 완료 (2026-07-25).**
-      `CORE_FLAT_ATK_PILGRIM["Supporter"] = 122.382`,
-      `CORE_FLAT_HP_OVERSPEC["Supporter"] = 6240.184`. 근거: Grave가 코어당
-      **ATK 1718 / HP 54,109**를 세 스팬(0→1, 0→2, 0→3)에서 일치시키고 Little Mermaid가
-      같은 증분을 자릿수까지 재현. 백엔드 **1371 passed / 3 skipped**, 코어 3인 PILGRIM
-      Supporter 6기 전원 조립 확인.
-
-      **Dorothy·Nayuta 판독은 각각 4.67 / 22.33 낮게 나왔는데, 원인이 값이 아니라 레벨이다**:
-      두 유닛의 ATK 부족분과 HP 부족분이 **독립적으로 같은 레벨 칸 수**를 가리킨다
-      (0.94/0.90칸, 4.28/4.26칸 — 레벨 1칸은 코어당 ATK 5.30 / HP 159.00). core_flat이
-      달랐다면 두 스탯이 같은 레벨 오프셋에 수렴할 이유가 없다. 재판독으로 닫으면 좋지만
-      움직일 수 있는 잔차는 코어당 5 ATK, 해당 유닛 총 ATK의 **0.015%**다.
-
-      기각된 가설: 배수가 base+호감도를 스케일한다는 설(두 ATK를 0.02까지 화해시켜
-      매력적이었지만, 참이면 현행 모델이 Alice 코어7에서 243 ATK·Crown에서 198 ATK
-      틀려야 하고 159기 전수 패리티가 정확히 맞는다). 호감도는 배수 밖이다.
-      **ShiftyPad는 로그인이 필요해 에이전트가 직접 조작할 수 없다**(`?uid=`도 동일).
+- [x] **PILGRIM Supporter 코어당 플랫 + 스탯 모델 수정 — 완료 (2026-07-25).**
+      측정하러 들어갔다가 **모델 버그를 찾았다**: 호감도 기여가 `(1 + 0.02×코어)`로
+      스케일되는데 배수 밖에 더해지고 있었다. 그 효과가 적합값에 흡수돼 있었던 이유는
+      코어 있는 유닛이 적합 그룹마다 호감도가 단일했기 때문(class 30, PILGRIM/OVERSPEC 40).
+      **부수 효과가 순수한 단순화다** — 삭제: `CORE_FLAT_*_BY_RESOURCE_ID`(유닛별 예외
+      3기, "설명 안 됨"이라 적혀 있던 Vesti·Rosanna·Nero가 호감도 10 유닛이었다),
+      `CORE_FLAT_ATK_OVERSPEC`, `CORE_FLAT_HP_OVERSPEC`(**OVERSPEC 계층은 존재하지
+      않았다**), `core_flat_*`의 `resource_id`·`corporation_sub_type` 인자.
+      HP는 클래스만으로 159/159(최대 0.87), ATK는 PILGRIM 행 하나만 남아 159/159(최대 0.90).
+      **PILGRIM은 Supporter에게 아무것도 주지 않는다**(같은 방식으로 읽은 Supporter 4기가
+      0.67 폭에 모임, Attacker는 +9.95). 백엔드 **1371 passed / 3 skipped**, 코어 3
+      PILGRIM Supporter 6기 전원 조립. `decisions.md`("호감도는 코어 단계 안에 있다...") 참고.
+      계측 도구: `scripts/solve_core_flat.py`.
+- [ ] **what-if 판독이 실측 적합보다 코어당 3.241 ATK 낮다 (원인 미상).** ShiftyPad에서
+      코어만 바꿔 읽은 값이, 같은 유닛(Naga — 159기 기준값에 코어 7로 존재)의 기준값
+      유도치보다 일정하게 낮다. 오프셋의 HP:ATK 비가 125로 base(30)도 core_flat(55)도 아니다.
+      표 값은 159기 실측 적합에서 오므로 **현재 영향 없음**. 앞으로 what-if 판독으로
+      절대값을 정하려 할 때만 문제가 된다 — 그때는 이 오프셋을 먼저 규명할 것.
 - [ ] **닉네임을 못 읽은 싱크가 조용히 성공한다.** 북마클릿이
       `GetUserProfileBasicInfo`를 `.catch(()=>null)`로 감싸므로 그 호출만 실패하면 닉네임이
       빈 값인 채 싱크가 성공한다. `SyncRosterPanel`이 이미 경고 줄을 파싱하니("N owned units

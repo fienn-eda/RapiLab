@@ -5,6 +5,16 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 호감도는 코어 단계 안에 있다 — 스탯 모델의 "설명 안 됨" 3건과 OVERSPEC 계층이 같은 착각이었다
+- Date: 2026-07-25
+- Context: 부계정 싱크 500(코어 올린 PILGRIM Supporter의 미측정 수치)을 닫으려고 ShiftyPad에서 코어만 바꿔 값을 읽었는데, 같은 클래스·같은 돌파인 유닛들이 코어당 최대 **22 ATK**까지 어긋났다. 레벨 슬립을 의심했지만 Fienn의 재측정이 **완전히 동일**하게 나와 기각. 결정적 단서는 Nayuta의 호감도가 20이라는 정보였다 — Grave 40 / Dorothy 36 / Nayuta 20으로 두고 두 점만 적합해 나머지 한 점을 예측하니 **오차 1.11**(현행 모델은 22.3 어긋남). 그리고 코어 있는 유닛을 적합 그룹별로 묶어보니, 호감도가 다양한 그룹은 단 둘(class Attacker·Defender)이고 그 안의 호감도 10 유닛이 **정확히 `CORE_FLAT_*_BY_RESOURCE_ID`의 "설명 안 됨" 3기**(Vesti·Rosanna·Nero)였다. 나머지 그룹은 호감도가 단일(class 30, PILGRIM/OVERSPEC 40)이라 효과가 적합값에 흡수돼 159기 패리티가 통과하고 있었던 것이다.
+- Decision: **호감도 기여를 `(1 + 0.02×코어)`로 스케일한다.** 돌파 단계는 아니다(같은 돌파·다른 호감도 유닛이 정확히 1.02를 측정한다는 기존 관찰은 유효). `assemble_atk`/`assemble_hp`가 `affinity_flat`을 별도 인자로 받아 `core_scale(core)`를 곱하고, 호감도는 `extra_flat`에서 빠진다. 표는 기준값으로 재적합했다.
+- Alternatives considered:
+  - **배수가 base+호감도를 함께 스케일**(즉 돌파분까지) — 기각. 예외 3기를 6% 과대 설명하고, 인자를 `0.02`(코어분만)로 두면 오차가 0.01~0.27로 떨어진다.
+  - **PILGRIM Supporter를 유닛 고유값으로 등록** — 기각. 값이 호감도에 따라 변하는 것이 원인이므로 유닛별 등록은 증상 처리다.
+  - **ATK를 2개(PILGRIM 여부)로 축소** — 기각. 159기를 통과하지만 최대 오차 **0.99**로 임계값에 붙어 새 유닛 하나에 깨진다. 클래스는 유지한다.
+- Consequences: **삭제된 것** — `CORE_FLAT_ATK_BY_RESOURCE_ID`·`CORE_FLAT_HP_BY_RESOURCE_ID`(유닛별 예외 메커니즘 전체), `CORE_FLAT_ATK_OVERSPEC`, `CORE_FLAT_HP_OVERSPEC`, 그리고 `core_flat_*`의 `resource_id`·`corporation_sub_type` 인자. **OVERSPEC 계층은 존재하지 않았다** — 코어 있는 OVERSPEC 유닛이 전부 호감도 40이고 class 행이 30에서 적합됐을 뿐이다(재적합하면 OVERSPEC Attacker 86.119 vs 그 외 86.152, 같은 행). **HP는 제조사 행이 아예 필요 없다**(클래스만으로 159/159, 최대 0.87). ATK는 PILGRIM 행 하나만 남는다(159/159, 최대 0.90). 새 표: ATK class {86.152/85.992/85.968} + PILGRIM {96.151/96.022}, HP {5610.022/5474.792/5699.796}. **PILGRIM은 Supporter에게 아무것도 주지 않는다** — 같은 방식으로 읽은 Supporter 4기(PILGRIM 3기 + MISSILIS Naga)가 0.67 폭 안에 모인다(Attacker는 +9.95). 백엔드 **1371 passed / 3 skipped**. **남은 미스터리**: what-if 판독이 실측 적합보다 코어당 3.241 ATK 낮다(Naga로 대조) — 표 값은 159기 실측에서 오므로 영향받지 않는다.
+
 ## 드래프트도 소유 슬러그로 받는다 — 모드는 엔진이 "덱을 후보별로 완성해보고" 고른다
 - Date: 2026-07-25
 - Context: 바로 아래 항목에서 `supported-units`가 소유 슬러그를 노출하게 만들면서, 드래프트 팔레트에서는 그 3명을 **의도적으로 걸러냈다** — `api.py`가 드래프트 좌석을 구체적 spec으로만 해석해 `bready`에 422를 주기 때문이었다. 그 판단이 틀렸다는 것이 라이브에서 드러났다: 드래프트 모드에서는 **풀 팔레트("Units to use")가 아예 렌더되지 않으므로**(`mode !== 'draft'` 조건), 걸러내면 그 3명은 드래프트 모드에서 **보이지도, 제외하지도, 앉히지도** 못한다. "현행과 동일하니 회귀 없음"은 raid 모드 기준이었고 드래프트 모드에서는 제외 수단까지 사라졌다. Fienn 보고로 확인.

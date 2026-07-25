@@ -79,13 +79,12 @@ def supporter_core_flat_unmeasured(monkeypatch):
     A cored PILGRIM Supporter had no measured per-core flat, stat_assembly
     refused to answer plausibly, and the refusal rose out of the endpoint - so
     ONE such unit made a whole account unsyncable. The measurement has since
-    landed, and with it no REAL unit can reach that path any more (every OVERSPEC
-    Supporter is a Pilgrim). The drop-and-name behaviour is the safety net for the
+    landed, and with it no REAL unit can reach that path any more - every class is
+    covered for both tiers. The drop-and-name behaviour is the safety net for the
     next combination nobody has measured, so the gap is recreated here rather than
     left untested."""
     import app.stat_assembly as sa
     monkeypatch.delitem(sa.CORE_FLAT_ATK_PILGRIM, "Supporter")
-    monkeypatch.delitem(sa.CORE_FLAT_HP_OVERSPEC, "Supporter")
 
 
 def test_a_unit_whose_stat_was_never_measured_is_named_not_a_500(

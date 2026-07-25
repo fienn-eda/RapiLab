@@ -71,9 +71,10 @@ def extract_inputs(entry: dict, owned: dict, detail: dict,
 
 
 def _extra_flat_atk(tables, inp, research):
+    # Affinity is deliberately absent: it scales with the core step, so it travels
+    # separately to assemble_atk (see stat_assembly's `core_scale`).
     return (
-        sa.affinity_atk(tables, inp["class"], inp["attractive_lv"])
-        + sa.corporation_atk(tables, inp["corporation"], research)
+        sa.corporation_atk(tables, inp["corporation"], research)
         + sum(sa.equipment_atk(tables, e["tid"], e["lv"],
                                equip_corporation_type=e["corporation_type"],
                                unit_corporation=inp["corporation"]) for e in inp["equip"])
@@ -86,8 +87,7 @@ def _extra_flat_hp(tables, inp, research):
     # HP account research is Personal+Class (research_hp), not Corporation - the
     # Corporation research rows carry ATK only. See stat_assembly's HP section.
     return (
-        sa.affinity_hp(tables, inp["class"], inp["attractive_lv"])
-        + sa.research_hp(tables, inp["class"], research)
+        sa.research_hp(tables, inp["class"], research)
         + sum(sa.equipment_hp(tables, e["tid"], e["lv"],
                               equip_corporation_type=e["corporation_type"],
                               unit_corporation=inp["corporation"]) for e in inp["equip"])
@@ -99,15 +99,17 @@ def _extra_flat_hp(tables, inp, research):
 def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict,
                   assume_cube_level: int | None = None) -> dict:
     inp = extract_inputs(entry, owned, detail, assume_cube_level)
-    ident = dict(corporation=inp["corporation"],
-                 corporation_sub_type=inp["corporation_sub_type"],
-                 resource_id=inp["resource_id"])
     atk = sa.assemble_atk(tables, character_class=inp["class"], level=400,
                           grade=inp["grade"], core=inp["core"],
-                          extra_flat=_extra_flat_atk(tables, inp, research), **ident)
+                          corporation=inp["corporation"],
+                          affinity_flat=sa.affinity_atk(
+                              tables, inp["class"], inp["attractive_lv"]),
+                          extra_flat=_extra_flat_atk(tables, inp, research))
     hp = sa.assemble_hp(tables, character_class=inp["class"], level=400,
                         grade=inp["grade"], core=inp["core"],
-                        extra_flat_hp=_extra_flat_hp(tables, inp, research), **ident)
+                        affinity_flat_hp=sa.affinity_hp(
+                            tables, inp["class"], inp["attractive_lv"]),
+                        extra_flat_hp=_extra_flat_hp(tables, inp, research))
     return {
         "name_en": inp["name_en"],
         "resource_id": inp["resource_id"],
