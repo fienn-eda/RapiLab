@@ -389,7 +389,8 @@
   모드 스위치(단일 덱 / 레이드 분배) + `num_decks` 셀렉터(1–5), `RaidResults`가
   분배 결과를 파티션으로 렌더(Deck 1..N 동시 편성 + 합계 + bench/제외 목록),
   라이브 클라이언트는 무타임아웃(~1–2분 대기 안내 + 재제출 잠금), mock은 ~1초
-  지연. 공유 조각 추출(useAsyncRequestStatus·DeckCard·ExcludedSlugsNote·
+  지연(**mock은 2026-07-24에 삭제됨** — 아래 Phase 6 항목 참조).
+  공유 조각 추출(useAsyncRequestStatus·DeckCard·ExcludedSlugsNote·
   formatDamage). Vitest 71/71 · `tsc -b` 클린 · 빌드 클린 · vite 프록시 경유
   실백엔드 E2E 확인. 부수 픽스: 루트 tsconfig가 references 셸이라 bare
   `tsc --noEmit`이 no-op이던 함정(README 교정 + 숨어 있던 테스트 타입에러 3건).
@@ -570,12 +571,19 @@
   ③ **Roster 탭 그리드** — 보유 159 중 엔진 지원 70만 카드, 나머지 89는 접힌 목록.
   이름은 `/api/supported-units`, 미지원은 `lib/unitName`이 슬러그에서 유도.
   ④ **결과 화면 초상화 로우** — 모노스페이스 슬러그 목록 → 얼굴 5개 + 이름.
-  정직성 수정 2건: 낡은 헤더 문구(수기 입력 → 싱크 전용), 팔레트 `159/159 in the
-  search pool`(실제 칩 70개) → 보유∩지원 교집합 기준. **프론트 234 → 256 passed.**
-- React 폼으로 ShiftyPad 투자 데이터 수동 입력 (돌파/스킬레벨/오버로드/큐브). ✅
+  이어서 ⑤ **오버로드 표시 순서 고정**(우코·공·장탄·차속·크댐·크확·차댐, Fienn 지정;
+  모르는 효과는 뒤에 붙고 들어온 순서 유지), ⑥ **돌파/코어 가시성** — 로스터는
+  `[★★★ +4]` 단일 불투명 배지(별 금색), 팔레트 칩은 초상화 오른쪽 열을 **5칸**
+  (돌파·코어·S1·S2·B)으로. 정직성 수정 2건: 낡은 헤더 문구(수기 입력 → 싱크 전용),
+  팔레트 `159/159 in the search pool`(실제 칩 70개) → 보유∩지원 교집합 기준.
+  **프론트 234 → 264 passed**, 백엔드 무변경. 결정·함정은 `decisions.md` /
+  `insights.md`(Frontend) 참조.
+- ~~React 폼으로 ShiftyPad 투자 데이터 수동 입력~~ → **철회**: 로스터는
+  blablalink 싱크 전용, 수동 입력 폼은 코드/UI에서 제거됨(`decisions.md` 2026-07-23).
 - FastAPI 엔드포인트로 엔진 노출. ✅ (`POST /api/recommend`, 2026-07-16 —
-  스킬값 매니페스트 + 검증 하니스 + 로스터 로더 경유; 프론트는
-  `VITE_RECOMMEND_API=live` + Vite 프록시로 연결, `excluded_slugs` 표시)
+  스킬값 매니페스트 + 검증 하니스 + 로스터 로더 경유; 프론트는 Vite 프록시로 연결,
+  `excluded_slugs` 표시). **`VITE_RECOMMEND_API` 스위치는 없어졌다** — dev mock을
+  통째로 삭제해서 `src/api/`의 각 모듈이 곧 fetch 클라이언트다(2026-07-24).
 - 매니페스트 백필 배치 2 ✅ + dotgg weapon 스탯 수집 ✅ (2026-07-17, Opus 병렬
   배치): 매니페스트 45/57(예외 12은 `KNOWN_MANIFEST_EXCEPTIONS` 가드 테스트 +
   encoded-nikkes.md 예외 표기), dotgg 파일 14→53개, `dotgg_slug` 매니페스트
@@ -806,6 +814,14 @@
       슬러그의 lootandwaifus 파일도 없어 데이터로는 답할 수 없었다. **Fienn 룰링:
       둘 다 게임에 애장품이 출시되지 않았다** → 감사 스크립트의
       `NO_FAVORITE_ITEM_RELEASED`에 근거와 함께 기록. 출시되면 항목을 지워야 한다.
+- [x] **UI 시각적 완성도 — 완료 (2026-07-25).** 다크 단일 테마, Roster 얼굴 그리드
+      (지원 70 + 접힌 미지원 89), 덱 슬롯을 게임 스쿼드 슬롯처럼(정사각 얼굴 5칸,
+      덱 간 드래그 이동), 결과 화면 얼굴 로우, 오버로드 순서 고정, 돌파/코어 배지.
+      프론트 234 → 264 passed. `decisions.md`·`insights.md`(Frontend)·
+      `docs/superpowers/specs/2026-07-25-ui-visual-completeness-design.md`.
+- [ ] **draft 배치가 마우스 전용** — 초상화 클릭이 Use 토글이라 키보드로는 유닛을 덱에
+      앉힐 수 없다(2026-07-24 칩 축소의 부작용). 잠금·제거·풀 토글은 키보드로 되므로
+      막힌 것은 배치 하나. Fienn 판단 대기.
 - [ ] **개인정보 처리방침** — 공개 배포 전 필요(설계 스펙에 명시, 법률 검토는 범위 밖).
 - [x] **디렉토리 스냅샷 갱신 루틴 — 완료.** 매일 19시 작업 스케줄러가 공개 디렉토리를
       헤드리스로 받아 커밋된 스냅샷과 비교하며, 신규 SSR 또는 실패 시에만 토스트를 띄운다.

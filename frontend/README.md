@@ -19,10 +19,11 @@ gap rather than inventing structure or API shapes.
 ```
 frontend/
   src/
-    api/          # backend client — one module per endpoint group (deferred; see below)
+    api/          # backend client — one module per endpoint group
     components/   # React components
     types/        # TypeScript mirrors of backend data shapes
     hooks/        # shared React hooks
+    lib/          # framework-free helpers (bookmarklet, inputHash, unitName)
   README.md       # this contract
 ```
 
@@ -34,10 +35,14 @@ the main agent updating this file.
 
 **Roster is sync-only.** The roster comes exclusively from a blablalink sync
 (the bookmarklet flow below); there is no manual entry form and no
-ExiaInvasion file import — both were removed. The roster display (`NikkeCard`)
-is read-only. If ShiftyPad/blablalink can't supply a field the deck search
-needs, that's an engine-data gap to raise with the main agent, not something
-to patch over with a manual-input form.
+ExiaInvasion file import — both were removed. The roster display
+(`RosterGrid` / `NikkeCard`) is read-only. If ShiftyPad/blablalink can't supply
+a field the deck search needs, that's an engine-data gap to raise with the main
+agent, not something to patch over with a manual-input form.
+
+The app is **two tabs**, Roster and Recommend. Both panels stay mounted and only
+toggle `hidden`: a raid run takes 1–2 minutes, and unmounting the recommend
+panel to switch tabs would abandon a request already in flight.
 
 ## Multi-account profiles
 
@@ -221,17 +226,18 @@ show a persistent in-progress state with copy telling the user the wait is
 expected and roughly how long, and must disable re-submission while a run is in
 flight.
 
-### UI scope — raid mode (current task)
+### UI scope — raid mode (built)
 
-Extend the recommendation flow with a mode switch: **single deck** (existing
-`/api/recommend` flow, unchanged) vs **raid allocation** (`/api/recommend-raid`).
+The recommendation flow carries a mode switch: **single deck**
+(`/api/recommend`) vs **raid allocation** (`/api/recommend-raid`) vs
+**draft-based** (the same raid endpoint, seeded).
 
 - Mode switch + `num_decks` selector (1–5, default 5) live in the recommend
-  panel; the boss profile fields are shared between both modes.
+  panel; the boss profile fields are shared across modes.
 - Raid results render the decks as "Deck 1..N" (allocation order — they are
   NOT ranked alternatives), each with the same per-deck breakdown the single
-  mode shows (total / burst / normal attack, slugs in burst-role order), plus
-  the combined total prominently, plus leftover and excluded slug lists.
+  mode shows (total / burst / normal attack), plus the combined total
+  prominently, plus leftover and excluded lists.
 - Follow the established structure: types in `src/types/recommend.ts`, the
   fetch client in its own `src/api/` module (one per endpoint — mirror how
   `recommend.ts` does it), state in a hook next to `useRecommend`, display
@@ -304,23 +310,47 @@ Static, served from `frontend/public/portraits/`. The map lives at
 ```jsonc
 { "source": "...", "portraits": { "<slug>": "<filename>" } }
 ```
-Resolve a slug's icon as `manifest.portraits[slug]` → prefix `/portraits/`. When a
-slug has no entry, fall back to a chip (name + tier + element/class tint). The
-editor logic must work identically with or without a portrait — icons are a
-presentation layer only.
+Resolve a slug's icon as `manifest.portraits[slug]` → prefix `/portraits/`. A slug
+with no entry gets an empty placeholder of the same size, so a row or grid stays
+aligned. Every view must work identically with or without a portrait — icons are
+a presentation layer only.
 
-### UI scope — draft editor (next task)
+The art is **256×512 full-body**, and it is the only size there is (probed:
+`si_`/`ci_`/`fi_`/`icon_` prefixes, `.png`, and `/assets/nikke/` all 404). The
+square face crop the deck slots, roster tiles and result rows use is pure CSS —
+`object-fit: cover` with `object-position: center 18.75%` on a square box. See
+`docs/insights.md` for why that number.
+
+### UI scope — draft editor (built)
 
 - **Palette:** owned units (from the active profile's roster) ∩ supported
-  (`/api/supported-units`), grouped B1/B2/B3, each a portrait (or chip fallback).
-- **Editor:** 5 decks × 5 seats; seats are membership (order engine-assigned); a
-  per-unit **lock toggle**; a unit may sit in at most one deck (enforce client-side).
+  (`/api/supported-units`), grouped B1/B2/B3. A chip is a portrait plus a
+  five-row stat column (breakthrough, core, S1, S2, B); name, tier, element and
+  overload are on a hover card. Clicking the portrait toggles the unit in or out
+  of the search pool.
+- **Editor:** 5 decks × 5 square slots, always drawn (an open slot shows `+`).
+  Slots are membership (order engine-assigned) with a per-unit **lock toggle**;
+  a unit may sit in at most one deck (enforce client-side). A slot is both a
+  drop target and a drag source, so a misplaced unit is **moved** between decks
+  rather than removed and re-added.
 - **Submit:** build `draft` from the editor and POST to `/api/recommend-raid`.
   - Complete draft with `within_draft`/`baseline_total_damage` present → render the
     **three tiers** (baseline → within_draft +Δ1 → recommended +Δ2), a per-deck diff
     vs the submitted draft, and `pinned_slugs` badges.
   - Otherwise → the single recommended allocation (reuse the raid results view).
 - Keep the fetch client confined to `src/api/`; mirror the existing raid module.
+
+### UI conventions
+
+- **Dark theme only.** `src/index.css` holds the tokens; there is no light set
+  and no `prefers-color-scheme` split. Never hardcode a colour that a token
+  covers.
+- **Units are shown as faces, never as slugs.** A slug is an identifier. Names
+  come from `/api/supported-units`; anything it does not know (a unit the engine
+  cannot simulate yet) derives a name from its slug via `src/lib/unitName.ts`.
+- **Overload lines are sorted, never in arrival order** — see `sortOverload` in
+  `components/InvestmentSummary.tsx`. A fixed order is what lets two units be
+  compared down the column.
 
 ## Dev commands
 
