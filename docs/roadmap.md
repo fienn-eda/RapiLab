@@ -784,6 +784,16 @@
       (`_seed_choices`). 잠금·pinned·결과 diff·덱 매칭을 모두 소유 캐릭터 키로 옮겼다.
       백엔드 1365 → **1367 passed**, 프론트 268 → **270 passed**, 드래프트 팔레트
       70 → **73칩**. `decisions.md`("드래프트도 소유 슬러그로 받는다...") 참고.
+- [x] **Account 드롭다운이 닉네임 대신 uid로 되돌아가던 원인 — 완료 (2026-07-25).**
+      코드 회귀가 아니었다(`ProfileSwitcher`의 `nickname || openId`는 멀쩡). `upsertProfile`이
+      재싱크 닉네임을 무조건 덮어써서, 닉네임을 못 읽은 싱크 한 번이 저장된 값을 지웠다.
+      이제 빈 닉네임은 저장된 값을 유지한다(`nickname: args.nickname || existing.nickname`).
+      **이미 비어버린 프로필은 앱에서 북마클릿을 새로 받아 한 번 싱크해야 복구된다** —
+      북마크바에 저장된 복사본은 `50176df`(닉네임을 `basic_info`에서 읽기) 이전 버전일 수 있다.
+- [ ] **닉네임을 못 읽은 싱크가 조용히 성공한다.** 북마클릿이
+      `GetUserProfileBasicInfo`를 `.catch(()=>null)`로 감싸므로 그 호출만 실패하면 닉네임이
+      빈 값인 채 싱크가 성공한다. `SyncRosterPanel`이 이미 경고 줄을 파싱하니("N owned units
+      not yet supported") 같은 자리에 "계정 이름을 읽지 못했습니다"를 띄우면 된다.
 - [ ] **드래프트 좌석이 적으면 사실상 응답이 안 온다 — `best_completions`에 예산이 없다.**
       (2026-07-25 라이브 확인 중 발견, **기존 문제**로 이번 변경과 무관.)
       `_shape_completions`(`deck_search.py:131`)는 프루닝도 예산도 없이 shape 호환 완성을

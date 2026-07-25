@@ -52,6 +52,14 @@ export const emptyProfilesState = (): ProfilesState => ({
  * active. An existing openId has its nickname/roster refreshed; if the
  * roster actually changed, cached results are invalidated since they no
  * longer describe the current roster.
+ *
+ * A resync that arrives with a BLANK nickname keeps the stored one. The
+ * bookmarklet reads the nickname from a separate blablalink call than the
+ * roster (`GetUserProfileBasicInfo`) and swallows that call's failure, so an
+ * empty string means "this sync could not read it", never "the account is now
+ * nameless" - and overwriting on that used to silently demote the account
+ * dropdown back to the raw open_id, with no way to get the name back short of a
+ * luckier resync.
  */
 export const upsertProfile = (
   state: ProfilesState,
@@ -65,7 +73,7 @@ export const upsertProfile = (
   const profile: Profile = existing
     ? {
         ...existing,
-        nickname: args.nickname,
+        nickname: args.nickname || existing.nickname,
         roster: args.roster,
         ...(rosterChanged
           ? { results: {}, lastResultHash: null, lastInputs: null }

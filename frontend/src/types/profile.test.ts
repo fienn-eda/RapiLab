@@ -27,6 +27,24 @@ describe('upsertProfile', () => {
     expect(s.profiles.B.roster.map((d) => d.character_slug)).toEqual(['crown'])
   })
 
+  it('재sync가 빈 닉네임으로 와도 저장된 닉네임을 지우지 않는다', () => {
+    // 북마클릿은 닉네임을 로스터와 다른 blablalink 호출(GetUserProfileBasicInfo)에서
+    // 읽고 그 실패를 삼킨다. 그래서 빈 문자열은 "계정 이름이 없어졌다"가 아니라
+    // "이번 싱크가 못 읽었다"는 뜻이고, 덮어쓰면 Account 드롭다운이 원래 uid로
+    // 되돌아간 뒤 다음 싱크가 운 좋기만 기다려야 한다.
+    let s = upsertProfile(emptyProfilesState(), { openId: 'A', nickname: '본계', roster: [draft('liter')] })
+    s = upsertProfile(s, { openId: 'A', nickname: '', roster: [draft('liter'), draft('crown')] })
+    expect(s.profiles.A.nickname).toBe('본계')
+    // 로스터는 정상적으로 갱신된다 - 닉네임만 보존하는 것이다.
+    expect(s.profiles.A.roster.map((d) => d.character_slug)).toEqual(['liter', 'crown'])
+  })
+
+  it('닉네임이 실제로 바뀌면 갱신한다', () => {
+    let s = upsertProfile(emptyProfilesState(), { openId: 'A', nickname: '본계', roster: [draft('liter')] })
+    s = upsertProfile(s, { openId: 'A', nickname: '개명', roster: [draft('liter')] })
+    expect(s.profiles.A.nickname).toBe('개명')
+  })
+
   it('기존 open_id 재sync: 로스터가 바뀌면 results를 클리어한다', () => {
     let s = upsertProfile(emptyProfilesState(), { openId: 'A', nickname: '본계', roster: [draft('liter')] })
     s = { ...s, profiles: { ...s.profiles, A: { ...s.profiles.A, results: { h1: {} as never }, lastResultHash: 'h1' } } }
