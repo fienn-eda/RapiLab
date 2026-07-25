@@ -8,6 +8,7 @@ internal consistency and the lookup's precedence, never its coverage.
 """
 import app.supported_units as su
 from app.display_names import DISPLAY_NAMES
+from app.skill_rules.registry import MODE_VARIANTS
 from app.supported_units import supported_units
 
 
@@ -19,19 +20,43 @@ def test_every_table_key_is_a_slug_the_catalog_lists():
     assert not strangers, f"display names for slugs the catalog does not list: {strangers}"
 
 
-def test_filled_names_are_unique():
-    """The whole point of the table is to end the 17 colliding names. Two
-    slugs sharing a filled name means a mode variant went in undistinguished -
-    e.g. both Bready candidates typed as plain '브레디'."""
-    seen = {}
-    collisions = {}
+def test_a_characters_mode_candidates_are_named_apart():
+    """A character the engine fans into several candidates has them ALL in the
+    roster at once - measured: every MODE_VARIANTS base does - so two of them
+    can land on the bench together. That is the "Bready, Bready" this table
+    exists to end, and only distinct names end it."""
+    for base, variants in MODE_VARIANTS.items():
+        named = [(v, DISPLAY_NAMES.get(v)) for v in variants if DISPLAY_NAMES.get(v)]
+        names = [n for _, n in named]
+        assert len(names) == len(set(names)), \
+            f"{base}'s candidates share a name: {named}"
+
+
+def _owned_character(slug):
+    """The one owned character a slug stands for - the mirror of the roster's
+    own resolution. A MODE_VARIANTS candidate stands for its base, and a
+    Favorite Item build stands for the unit that equips it."""
+    for base, variants in MODE_VARIANTS.items():
+        if slug in variants:
+            return base
+    return slug.removesuffix("-signature")
+
+
+def test_two_different_characters_never_share_a_name():
+    """Uniqueness is scoped to the character, NOT global. A base and its
+    "-signature" build never appear together (the roster resolves to one or the
+    other - measured: no roster holds both), so naming both '헬름' is right:
+    the heart, not the name, says which build is in play. Two DIFFERENT
+    characters sharing a name is still a typo worth catching."""
+    by_name = {}
     for slug, name in DISPLAY_NAMES.items():
-        if not name:
-            continue
-        if name in seen:
-            collisions.setdefault(name, [seen[name]]).append(slug)
-        seen[name] = slug
-    assert not collisions, f"one name on several slugs: {collisions}"
+        if name:
+            by_name.setdefault(name, []).append(slug)
+    crossed = {
+        name: slugs for name, slugs in by_name.items()
+        if len({_owned_character(s) for s in slugs}) > 1
+    }
+    assert not crossed, f"one name across different characters: {crossed}"
 
 
 def test_the_catalog_prefers_the_table_over_the_source_name(monkeypatch):
