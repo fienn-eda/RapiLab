@@ -1,5 +1,8 @@
 """Splits a roster into up to five disjoint decks against ONE boss profile,
-maximizing summed damage (Phase 5). Same boss => total = sum of independent
+maximizing summed damage (Phase 5). Disjoint by OWNED CHARACTER, not by slug:
+the decks are fielded simultaneously, so a character encoded as several
+MODE_VARIANTS candidates still holds at most one seat in the whole allocation
+(see deck_search's `variant_base`). Same boss => total = sum of independent
 deck scores, so: greedy peeling (best deck on the remaining roster, repeat)
 lands near the optimum, and a budget-bounded same-tier swap hill-climb
 recovers its classic mistake (stacking synergy cores in deck 1 when splitting
@@ -11,7 +14,7 @@ from app.cascade import Cascade, cached_fit_surrogate
 from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
                              _intra_tier_orderings, _orderings_within_budget,
                              _score_batch, _summarize, best_completions,
-                             evaluate_deck, search_best_decks)
+                             evaluate_deck, search_best_decks, variant_base)
 from app.sim_pool import SimPool, resolve_workers
 
 
@@ -27,8 +30,9 @@ _MIN_SWAP_BATCH = 4
 
 
 class InfeasibleDraft(ValueError):
-    """A draft deck's locked/placed units fit no legal deck shape, or the pool
-    is exhausted before every drafted deck can be completed."""
+    """A draft deck's locked/placed units fit no legal deck shape, the pool is
+    exhausted before every drafted deck can be completed, or the draft spends one
+    owned character on two decks (two MODE_VARIANTS candidates of one base)."""
 
 
 def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
@@ -41,8 +45,18 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
     try:
         by_slug = {u.slug: u for u in roster}
         draft = draft or []
-        placed = {u.slug for deck in draft for u in deck}
-        remaining = [u for u in roster if u.slug not in placed]
+        # Pooling is per OWNED CHARACTER, not per slug: the player fields all of
+        # these decks simultaneously, so seating one MODE_VARIANTS candidate
+        # spends the character and retires her other candidates too. Keying on
+        # the slug instead let one Rapi: Red Hood hold a seat in deck 2 as B3 and
+        # another in deck 4 as B1 - a formation the game cannot produce.
+        drafted = [variant_base(u.slug) for deck in draft for u in deck]
+        placed = set(drafted)
+        if len(drafted) != len(placed):
+            twice = sorted({b for b in placed if drafted.count(b) > 1})
+            raise InfeasibleDraft(
+                f"one owned character drafted into more than one deck: {twice}")
+        remaining = [u for u in roster if variant_base(u.slug) not in placed]
 
         decks = []  # each: ordered list of units (canonical order from the search)
         for seed in draft:                       # seed decks: complete around placed units
@@ -52,8 +66,9 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
                     f"cannot complete a legal deck from {[u.slug for u in seed]}")
             units = [by_slug[s] for s in found[0]["deck"]]
             decks.append(units)
-            used = {u.slug for u in units} - placed   # newly-pulled fillers leave the pool
-            remaining = [u for u in remaining if u.slug not in used]
+            # newly-pulled fillers leave the pool
+            used = {variant_base(u.slug) for u in units} - placed
+            remaining = [u for u in remaining if variant_base(u.slug) not in used]
 
         # One fit serves the whole peel: the surrogate is additive over unit
         # membership, so coefficients learned on the full roster score any
@@ -78,8 +93,8 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
                 break
             units = [by_slug[slug] for slug in found[0]["deck"]]
             decks.append(units)
-            used = {u.slug for u in units}
-            remaining = [u for u in remaining if u.slug not in used]
+            used = {variant_base(u.slug) for u in units}
+            remaining = [u for u in remaining if variant_base(u.slug) not in used]
 
         # time_budget_sec caps the swap-improvement phase ONLY, starting when the
         # swap phase itself starts: greedy peeling above and the final ordering
@@ -135,16 +150,29 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
     scoring is bounded by the batch and rare in practice: measured on a 78-unit
     roster, under 1% of candidates are ever accepted.
 
-    The candidate LIST, unlike the scores, never goes stale. A same-tier swap
-    leaves both seats' tiers unchanged and never moves a locked unit, so neither
-    filter can flip as swaps are accepted - which is what makes scoring a
-    candidate before reaching it safe in the first place.
+    Tier and lock, the filters that decide which pairs are candidates at all,
+    never go stale: a same-tier swap leaves both seats' tiers unchanged and never
+    moves a locked unit. That is what makes scoring a candidate before reaching
+    it safe in the first place.
+
+    The one filter that CAN flip is `seated`, which upholds the one-owned-
+    character rule across the whole allocation. Bringing a bench unit in spends
+    that character, so any other candidate offering one of her remaining
+    MODE_VARIANTS slugs stops being legal the moment a swap is accepted - the
+    unscanned tail is pruned there rather than trusted. Deck-to-deck swaps need
+    no such filter: both units are already seated, so exchanging them cannot
+    make a character appear twice.
     """
+    # Bench swaps only: the incoming character must not already hold a seat -
+    # in THIS deck or any other, since the player fields all of them at once.
+    seated = None if j is not None else {variant_base(u.slug)
+                                         for deck in decks for u in deck}
     candidates = [(a, k)
                   for a in range(5) if decks[i][a].slug not in locked
                   for k in range(len(partner))
                   if partner[k].slug not in locked
-                  and decks[i][a].burst_tier == partner[k].burst_tier]
+                  and decks[i][a].burst_tier == partner[k].burst_tier
+                  and (seated is None or variant_base(partner[k].slug) not in seated)]
     width = 1 if j is None else 2      # decks re-scored per candidate
     improved = False
     start = 0
@@ -177,6 +205,15 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
             scores[j] = totals[accepted * width + 1]
         improved = True
         start += accepted + 1
+        if seated is not None:
+            # `partner[k]` now holds the unit that LEFT deck i, and the character
+            # who came in occupies decks[i][a]. Drop the unscanned candidates
+            # that would seat her a second time.
+            seated.discard(variant_base(partner[k].slug))
+            seated.add(variant_base(decks[i][a].slug))
+            candidates = candidates[:start] + [
+                (a2, k2) for a2, k2 in candidates[start:]
+                if variant_base(partner[k2].slug) not in seated]
     return improved
 
 
@@ -193,8 +230,11 @@ def _better(a, b):
 
 
 def _leftover_against(alloc, roster):
-    used = {s for d in alloc["decks"] for s in d["deck"]}
-    return sorted(u.slug for u in roster if u.slug not in used)
+    # Base-keyed like the peel: a seated character's OTHER candidate slugs are
+    # not benched units the player could still field, so they never reach the
+    # bench (which the UI reads as "not allocated to a deck").
+    used = {variant_base(s) for d in alloc["decks"] for s in d["deck"]}
+    return sorted(u.slug for u in roster if variant_base(u.slug) not in used)
 
 
 def recommend_from_draft(roster, boss, num_decks=5, draft=None,

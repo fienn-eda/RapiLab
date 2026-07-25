@@ -159,6 +159,89 @@ def test_swap_pass_respects_an_expired_deadline(monkeypatch):
     assert [u.slug for u in deck] == before
 
 
+# One owned character, several candidate slugs (registry's MODE_VARIANTS). The
+# real slugs are used rather than a stubbed mapping, since the mapping IS what
+# these tests check; Bready's pair carries no extra seating rule (unlike
+# rapi-red-hood-b1's SOLE_TIER1_SLUGS), so it isolates the character rule.
+LINGERING, RECOMMENDED = "bready-lingering", "bready-recommended"
+
+
+def test_peeling_never_spends_one_character_on_two_decks(monkeypatch):
+    """The decks are fielded simultaneously, so two MODE_VARIANTS candidates of
+    one base cannot each hold a seat - the player owns one Bready. Slug-keyed
+    peeling used to allow it: here the a-deck wants her Lingering candidate and
+    the b-deck her Recommended one, and both scored best-in-pool at the time
+    they were picked."""
+    roster = roster_of({
+        "a1": 1, "a2": 2, "a3": 3, "a4": 3,
+        "b1": 1, "b2": 2, "b3": 3, "b4": 3, "b5": 3,
+        LINGERING: 3, RECOMMENDED: 3,
+    })
+
+    def score(slugs):
+        if slugs == {"a1", "a2", "a3", "a4", LINGERING}:
+            return 100.0
+        if slugs == {"b1", "b2", "b3", "b4", RECOMMENDED}:
+            return 90.0
+        return 10.0
+
+    patch_scorer(monkeypatch, score)
+    out = da.allocate_decks(roster, BossProfile(), num_decks=2, time_budget_sec=0.0)
+
+    seated = [slug for d in out["decks"] for slug in d["deck"]]
+    assert LINGERING in seated                       # the 100-point deck still wins
+    assert RECOMMENDED not in seated
+    # ...and her other candidate is not a benched unit either: Bready IS fielded,
+    # so listing her among the leftovers would offer the player a unit she has
+    # already committed.
+    assert RECOMMENDED not in out["leftover_slugs"]
+
+
+def test_a_bench_swap_never_seats_a_character_already_holding_a_seat(monkeypatch):
+    """The peel leaves a character entirely benched when neither candidate makes
+    a deck; the hill-climb can then pull one into each deck one bench swap at a
+    time. Deck 2 would gain 50 by seating the Recommended candidate, and takes it
+    only if the rule is not enforced per swap as well as per peel."""
+    deck_a = roster_of({"x1": 1, "x2": 2, "x3": 3, "x4": 3, "x5": 3})
+    deck_b = roster_of({"w1": 1, "w2": 2, "w3": 3, "w4": 3, "w5": 3})
+    bench = [Unit(LINGERING, 3), Unit(RECOMMENDED, 3)]
+
+    def score(slugs):
+        if LINGERING in slugs:
+            return 200.0
+        if RECOMMENDED in slugs:
+            return 150.0
+        return 100.0
+
+    patch_scorer(monkeypatch, score)
+    da._swap_pass([deck_a, deck_b], bench, BossProfile(),
+                  time.monotonic() + 30.0, batch=8)
+
+    seated = [u.slug for u in deck_a] + [u.slug for u in deck_b]
+    assert LINGERING in seated                       # deck 1 takes the better one
+    assert RECOMMENDED not in seated
+    assert RECOMMENDED in [u.slug for u in bench]
+
+
+def test_a_draft_spending_one_character_twice_is_infeasible(monkeypatch):
+    """A player CAN drag both candidates onto different decks - both are listed
+    by /api/supported-units - so the request has to be rejected rather than
+    silently answered with a formation the game cannot field."""
+    import pytest
+
+    by_slug = {u.slug: u for u in roster_of({
+        "a1": 1, "a2": 2, "a3": 3, "a4": 3,
+        "b1": 1, "b2": 2, "b3": 3, "b4": 3,
+        LINGERING: 3, RECOMMENDED: 3,
+    })}
+    draft = [[by_slug[s] for s in ("a1", "a2", "a3", "a4", LINGERING)],
+             [by_slug[s] for s in ("b1", "b2", "b3", "b4", RECOMMENDED)]]
+
+    with pytest.raises(da.InfeasibleDraft, match="bready"):
+        da.allocate_decks(list(by_slug.values()), BossProfile(), num_decks=2,
+                          draft=draft, time_budget_sec=0.0)
+
+
 def test_allocate_decks_workers_parity():
     # Real 5-spec roster (stubs can't cross the SimPool process/module
     # boundary); time_budget_sec=0 keeps the wall-clock-capped swap phase out

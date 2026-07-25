@@ -5,6 +5,17 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 레이드 할당의 배타 단위를 슬러그에서 "소유 캐릭터"로 — 한 니케의 두 모드가 두 덱에 동시 출전하던 버그
+- Date: 2026-07-25
+- Context: 실제 로스터(159기)로 5덱 레이드 할당을 브라우저에서 돌려 화면 이름이 아니라 **슬러그**로 결과를 열어보니, Deck 2에 `rapi-red-hood`·Deck 4에 `rapi-red-hood-b1`이, Deck 2에 `cinderella-crystal-wave-mg`·Deck 4에 `cinderella-crystal-wave-snipe`가 앉아 있었다. `registry.py`의 `MODE_VARIANTS` 주석은 이들을 "**One owned character** who yields MULTIPLE deck candidates"로 정의하고 "deck search never seats two candidates of the same base together"라고 명시하는데, 그 규칙은 `_no_variant_clash`로 **덱 하나 안**에서만 강제되고 있었다. 레이드는 5덱을 **동시** 출전시키므로 라피 한 명이 2덱과 4덱에 함께 있는 편성은 게임에서 만들 수 없다 — 추천 결과를 그대로 쓸 수 없고 합계 데미지도 과대평가였다. `deck_allocation.py`에는 variant라는 단어가 **한 번도 나오지 않았고** 배타 조건이 `u.slug not in placed`뿐이었다. 화면에서는 이름이 변형 접미사를 버려 "Rapi: Red Hood"가 두 덱에, "Bready, Bready"가 벤치에, "Diesel: Winter Sweets"가 Deck 3과 벤치에 동시에 보이는 증상으로 드러났다.
+- Decision: 할당의 배타 단위를 슬러그가 아니라 **소유 캐릭터**로 바꾼다. `deck_search.variant_base(slug)`를 단일 정의로 두고(변형→base, 그 외는 자기 자신) peel·벤치·힐클라임이 전부 이 키로 판단한다. ① peel이 유닛을 앉히면 그 캐릭터의 **다른 후보 슬러그도 풀에서 함께 빠진다** ② 벤치(`leftover_slugs`)에 좌석을 얻은 캐릭터의 다른 후보가 실리지 않는다 ③ 벤치 스왑은 이미 좌석이 있는 캐릭터를 들이지 않고, 스왑이 채택되면 **아직 안 본 후보 꼬리**에서 그 캐릭터의 나머지 후보를 즉시 걷어낸다 ④ 유저가 드래프트로 한 캐릭터를 두 덱에 넣으면 `InfeasibleDraft`(이미 HTTP 422로 매핑됨)로 거절한다 — 두 후보 모두 `/api/supported-units`에 있으므로 UI에서 실제로 가능한 조작이다.
+- Alternatives considered:
+  - **덱 간 검사만 추가하고 힐클라임은 그대로 두기** — 기각. 두 후보가 **모두 벤치에 남는** 경우가 실측으로 존재하고(`bready-lingering`·`bready-recommended` 동시 벤치), 그때는 스왑이 하나씩 서로 다른 덱으로 끌어올려 같은 버그를 재생산한다.
+  - **스왑 시작 전에 벤치를 base별 하나로 잘라내기** — `_try_swaps`의 "후보 목록은 절대 낡지 않는다" 불변식을 건드리지 않아 코드가 가장 적어지지만 기각. 어느 모드를 남길지 고를 근거가 없어 임의 선택이 되고, 그 캐릭터가 다른 모드로 들어가야 이득인 경우를 영구히 놓친다.
+  - **채택마다 후보 목록 전체 재계산** — 기각. 스캔 위치가 바뀌어 "첫 개선을 채택한다"는 직렬 규칙이 달라진다(병렬화 때 지킨 성질). 대신 **꼬리만** 걷어내 순서를 보존했다.
+  - **`variant_base`를 `deck_allocation`에 따로 두기** — 기각. 같은 분기를 두 곳에 복제하면 한쪽만 갱신된다는 선례가 이미 있다(`supported_units`/`user_roster`의 `weapon_source` 사고).
+- Consequences: 백엔드 **1358 → 1361 passed / 3 skipped**. 실제 로스터 실측(Non-elemental/180s/5덱/workers=auto): 풀 77유닛이 **소유 캐릭터 73명**으로 정확히 집계되고(4명이 후보 2개씩), 두 번 앉은 캐릭터 **없음**, 좌석을 가진 캐릭터가 벤치에 다시 실리는 경우 **없음**. 합계는 수정 전 30,053,518,155 → 수정 후 **29,288,448,140**(약 −2.5%)인데, **두 수치는 엄밀한 비교 대상이 아니다** — swap 단계가 시간 제한이라 실행마다 결과가 다르다. 다만 방향은 맞다: 수정 전 총딜은 라피와 신데렐라를 두 번 세고 있었다. **한계**: 이제 좌석에 앉은 캐릭터의 **모드만 바꿔보는** 탐색은 없다(peel이 모드를 고르면 다른 후보가 풀에서 빠지므로 힐클라임은 그 모드로 고정된다). **범위 밖으로 남은 것**: 프론트와 백엔드가 base 슬러그를 두고 어긋난다 — `/api/supported-units`에 `bready`·`cinderella-crystal-wave`·`diesel-winter-sweets`가 없어 팔레트는 이 3명을 "미지원 89"로 분류해 접힌 목록에 묻는데, 백엔드는 6개 변형으로 확장해 실제로 출전시킨다. 그래서 "70/70 in the search pool"·"89 owned but not yet supported"·"159 of 159 Nikkes ready"가 전부 틀리고, 유저는 이 3명을 풀에서 **제외할 수도 없다**.
+
 ## UI를 게임 툴 쪽으로 확정 — 다크 단일, 유닛은 슬러그가 아니라 얼굴, 못 쓰는 유닛은 지우지 않고 강등
 - Date: 2026-07-25
 - Context: 전날 구조 개편(2탭 분리·팔레트 칩 축소·드래그앤드롭, 트렁크 `501a26f`)이 끝나고 남은 것은 "시각적 완성도"였는데, 실제 로스터(159기)로 띄워 계측하니 외형만의 문제가 아니었다. Roster 탭은 **159장을 전부 전체너비 한 줄씩** 쌓아 문서 높이가 수천 px이었고, 그중 **89기(56%)는 엔진 미지원**이라 초상화도 오버로드도 없는데 쓸 수 있는 유닛과 **같은 크기·무게**로 그려지고 있었다. 이름은 전부 슬러그(`ada-wong`, `alice-wonderland-bunny`)였고, 팔레트는 전부 초상화인데 **결과 화면만 모노스페이스 슬러그 목록**이었다. spec: `docs/superpowers/specs/2026-07-25-ui-visual-completeness-design.md`.

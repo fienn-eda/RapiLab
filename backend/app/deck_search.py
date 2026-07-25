@@ -30,6 +30,18 @@ _VARIANT_GROUP = {variant: base
                   for base, variants in MODE_VARIANTS.items() for variant in variants}
 
 
+def variant_base(slug):
+    """The single OWNED CHARACTER a candidate slug stands for - a MODE_VARIANTS
+    variant maps to its base, and every other slug is its own character.
+
+    Anything that must not spend one owned character twice keys on this rather
+    than on the slug: a deck's seats (`_no_variant_clash` below) and, because
+    the player fields all of a raid's decks at once, the whole allocation
+    (deck_allocation's peel, bench and hill-climb).
+    """
+    return _VARIANT_GROUP.get(slug, slug)
+
+
 def _no_variant_clash(units):
     seen = set()
     for unit in units:
