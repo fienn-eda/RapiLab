@@ -192,6 +192,32 @@ def test_assemble_produces_deck_entries_with_scheduler_fields():
     assert helm["cooldown"] == 40.0
 
 
+def test_assemble_applies_a_permanent_self_burst_cooldown_cut_to_the_scheduler():
+    # Moran's Favorite Item cuts her OWN burst cooldown continuously, so the
+    # scheduler must see the reduced number rather than her nominal 40 sec.
+    spec = NikkeSpec(
+        slug="moran-signature",
+        burst_tier=1,
+        burst_cooldown=40.0,
+        element="Electric",
+        weapon="AR",
+        base_stats={"atk": 100000, "def": 50000, "max_hp": 5000000},
+        skill_values={
+            "bring_it_on": {"description_value_01": "3.51", "description_value_02": "47.18",
+                            "description_value_03": "5", "description_value_04": "20"},
+            "leave_it_to_me": {"description_value_10": "7.48"},
+            "fair_and_square": {"description_value_01": "14.7", "description_value_04": "10",
+                                "description_value_09": "42.57", "description_value_10": "10"},
+        },
+        weapon_stats={
+            "weapon": "AR", "damage_percent": 13.65, "max_ammo": 60,
+            "reload_time": 1.5, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        },
+    )
+    member = assemble_simulation_inputs([spec])["deck"][0]
+    assert member["cooldown"] == 20.0
+
+
 def test_burst_damage_percents_only_includes_nikkes_with_a_burst_nuke():
     inputs = assemble_simulation_inputs(minimal_feasible_deck())
     # helm has a nuke (Aegis Cannon 8236.8%); anis-star and crown are buff bursts

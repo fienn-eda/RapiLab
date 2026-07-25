@@ -121,6 +121,17 @@ MORAN = {
 }
 
 
+def test_moran_fervor_permanently_cuts_her_own_burst_cooldown():
+    from app.skill_rules.registry import get_burst_cooldown_reduction
+
+    # Favorite Item only: "Fervor: Cooldown of Burst Skill -20 sec
+    # continuously", self-scoped, so it belongs to her cooldown rather than to
+    # the per-cycle squad pulse Leave It To Me! emits.
+    assert get_burst_cooldown_reduction("moran-signature", MORAN) == 20.0
+    assert get_burst_cooldown_reduction("moran", MORAN_BASE) == 0.0
+    assert get_burst_cooldown_reduction("liter", {}) == 0.0
+
+
 def test_moran_squad_cdr_and_caster_scaled_flat_atk():
     reg = EffectRegistry()
     rules = {"moran": build_moran_rules(MORAN)}

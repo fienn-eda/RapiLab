@@ -21,9 +21,11 @@ with no other modifiers) across every weapon type, per Fienn's direct
 in-game/ShiftyPad tooltip check - this corrects an earlier "1/1.5" figure
 pulled from a summarized fetch of the nikke.gg formula page, which turned
 out to be an unreliable paraphrase. `core_hittable` toggles it for the
-whole simulation (some raid bosses have an exploitable core, some don't);
-per-skill/per-shot core-hit eligibility isn't modeled, so this applies
-uniformly to every damage instance for now.
+whole simulation (some raid bosses have an exploitable core, some don't),
+and `core_eligible` decides which instances inside such a fight collect it:
+NORMAL ATTACKS only, never skill damage, and never Sustained / Distributed
+damage. What is still not modeled is how OFTEN a real player lands the core
+- an eligible hit here always does.
 
 reload_speed_percent and max_ammo_percent effects (from overload options or
 skills) are read live from the registry at each magazine's start/reload
@@ -109,6 +111,21 @@ AFTER_WINDOW_EPSILON = 1e-3
 
 CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
+
+# Damage types that can never hit a core, whatever fired them.
+NON_CORE_DAMAGE_TYPES = frozenset({"sustained", "distributed"})
+
+
+def core_eligible(source, damage_type):
+    """Whether a damage instance can collect the Core Damage bonus.
+
+    Core Damage is a NORMAL-ATTACK-only modifier: skill damage - burst nukes,
+    per-shot riders, DoTs, scheduled ticks - never collects it, and Sustained /
+    Distributed damage cannot hit a core at all even when it IS the unit's
+    normal attack (Fienn, in-game, 2026-07-26). Every source in the damage log
+    other than "normal_attack" is skill damage.
+    """
+    return source == "normal_attack" and damage_type not in NON_CORE_DAMAGE_TYPES
 
 # A `burst_anchored_buffs` duration meaning "hold until this unit's next own
 # burst" (a state a burst enters and only the next burst clears), as opposed to
@@ -486,7 +503,7 @@ def simulate_raid(
 
     def _damage_instance(
         slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0,
-        full_burst_bonus_eligible=False,
+        full_burst_bonus_eligible=False, hits_core=False,
     ):
         bundle = _stat_bundle(slug, time)
         # True Damage ignores enemy DEF (nikke.gg glossary).
@@ -510,9 +527,9 @@ def simulate_raid(
             other_elemental_bonus=bundle["other_elemental_bonus"],
             other_critical_damage_sources=bundle["other_critical_damage_sources"],
             crit_rate=min(1.0, base_crit_rate + bundle["crit_rate"]),
-            core_hit_bonus=CORE_HIT_BONUS if core_hittable else 0.0,
+            core_hit_bonus=CORE_HIT_BONUS if hits_core else 0.0,
             other_core_damage_sources=(
-                bundle["other_core_damage_sources"] if core_hittable else 0.0
+                bundle["other_core_damage_sources"] if hits_core else 0.0
             ),
             full_burst_bonus=1.0 if in_full_burst else 0.0,
             element_multiplier=element_bonus_for(slug, bundle["element_advantage_grant"]),
@@ -1186,6 +1203,7 @@ def simulate_raid(
                 damage_type=ev["damage_type"], extra_charge_bonus=ev["extra_charge_bonus"],
                 extra_flat_atk=ev["extra_flat_atk"],
                 full_burst_bonus_eligible=ev["full_burst_bonus_eligible"],
+                hits_core=core_hittable and core_eligible(ev["source"], ev["damage_type"]),
             ),
             "source": ev["source"],
             "damage_type": ev["damage_type"],
