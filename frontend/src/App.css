@@ -659,12 +659,38 @@
    whole roster at a glance. */
 .palette__item {
   display: flex;
-  align-items: flex-start;
+  /* Stretch, not flex-start: the pip column is shorter than the portrait, and
+     top-aligning it left a dead quarter in every chip. */
+  align-items: stretch;
   gap: var(--sp-1);
   padding: var(--sp-1);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
   background: var(--surface);
+  /* Set per element below; the neutral border is the fallback. */
+  border-left: 3px solid var(--element, var(--border));
+}
+
+.palette__item[data-element='Fire'] {
+  --element: var(--el-fire);
+}
+.palette__item[data-element='Water'] {
+  --element: var(--el-water);
+}
+.palette__item[data-element='Wind'] {
+  --element: var(--el-wind);
+}
+.palette__item[data-element='Iron'] {
+  --element: var(--el-iron);
+}
+.palette__item[data-element='Electric'] {
+  --element: var(--el-electric);
+}
+
+/* Spread the pips over the portrait's height rather than stacking them at the
+   top - the chip is as tall as the art either way. */
+.palette__item .skills--column {
+  justify-content: space-between;
 }
 
 .palette__face {

@@ -70,7 +70,13 @@ export function UnitPalette({
                 if (isUsed) classes.push('palette__item--seated')
 
                 return (
-                  <li key={unit.slug} className={classes.join(' ')}>
+                  <li
+                    key={unit.slug}
+                    className={classes.join(' ')}
+                    // Element drives a colour, not a word: the chip has no room
+                    // to spell it and the hover card already does.
+                    data-element={unit.element}
+                  >
                     <button
                       type="button"
                       className="palette__face"
