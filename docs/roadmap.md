@@ -771,17 +771,18 @@
       이 키로 판단하고, 드래프트가 한 캐릭터를 두 덱에 넣으면 422로 거절. 백엔드
       1358 → **1361 passed / 3 skipped**. 실측: 풀 77유닛 = 소유 캐릭터 73명, 두 번 앉은
       캐릭터 없음. `decisions.md`("레이드 할당의 배타 단위를...") 참고.
-- [ ] **프론트/백엔드가 base 슬러그를 두고 어긋난다.** `/api/supported-units`(93)에
-      `bready`·`cinderella-crystal-wave`·`diesel-winter-sweets`가 없어 팔레트는 이 3명을
-      "미지원 89"로 분류해 접힌 목록에 묻는데, 백엔드는 6개 변형으로 확장해 실제로
-      출전시킨다. 결과: **"70/70 in the search pool"·"89 owned but not yet supported"·
-      "159 of 159 Nikkes ready" 세 숫자가 전부 틀리고**(실제 풀은 77유닛/73캐릭터),
-      유저가 이 3명을 풀에서 제외할 방법이 없다. 산술: 25(배치)+52(벤치)+86(제외)=163
-      =159+확장 증가분 4. 선택지 — ① `supported-units`가 base를 대표로 노출하고 변형은
-      내부 구현으로 감춤 ② 변형을 유저에게 드러내 직접 고르게 함.
+- [x] **프론트/백엔드가 base 슬러그를 두고 어긋나던 문제 — 완료 (2026-07-25).**
+      `/api/supported-units`가 소유 슬러그 엔트리를 추가로 반환하도록(93 → 96,
+      `candidates` 필드) 하고 초상화 매니페스트도 두 어휘로 키를 갖게 했다. 라이브 확인:
+      팔레트 **`73/73 (86 owned but not yet supported)`**, Roster 타일 70 → 73, 접힌 목록
+      89 → 86(백엔드 `excluded_slugs`와 일치). 백엔드 1361 → **1365 passed**, 프론트
+      264 → **268 passed**. `decisions.md`("`supported-units`가 두 어휘를...") 참고.
+      남은 것: 드래프트로 이 3명을 특정 덱에 고정하는 건 여전히 불가(엔진이 모드를
+      고르는 구조라 seed 완성 루프 변경이 필요).
 - [ ] **표시 이름이 변형을 구분하지 못한다.** `displayName`이 `-b1`/`-mg`/`-snipe`/
-      `-lingering`/`-recommended`를 버려 벤치에 "Bready, Bready"가 나란히 나온다. 위
-      항목과 함께 설계해야 함.
+      `-lingering`/`-recommended`를 버려 벤치에 "Bready, Bready"가 나란히 나온다.
+      `supported-units`의 `candidates`가 이미 후보→소유 캐릭터 관계를 담고 있으니 그걸
+      읽어 모드를 덧붙이면 된다.
 - [ ] **덱 데미지 내역이 총합의 22~72%만 설명한다.** 화면은 `burst`·`normal_attack`만
       보여주는데 시뮬레이터는 `periodic`·`scheduled`·`instant_nuke`도 기록한다. 실측 비율
       Deck1 25.1% / Deck2 72.3% / Deck3 22.4% / Deck4 58.6% / Deck5 28.4%, Deck5는

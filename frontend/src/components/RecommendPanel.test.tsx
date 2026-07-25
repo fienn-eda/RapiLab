@@ -344,6 +344,33 @@ describe('RecommendPanel draft mode', () => {
     })
   })
 
+  it('offers a multi-candidate unit in the pool but never as a draft seat', async () => {
+    // Bready is one owned character the engine fans out into two mode
+    // candidates, so she belongs in the candidate pool - dropping her is a real
+    // choice - but a draft cannot pin her: the backend resolves a drafted seat
+    // to a concrete spec and answers 422 for her base slug, and picking a mode
+    // for the player would invent a choice they never made.
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue([
+      ...supportedUnits,
+      {
+        slug: 'bready',
+        name: 'Bready',
+        burstTier: 3 as const,
+        element: 'Water' as const,
+        candidates: ['bready-lingering', 'bready-recommended'],
+      },
+    ])
+
+    render(<RecommendPanel roster={[...fullRoster, nikke('bready')]} {...noPersistence} />)
+
+    expect(await screen.findByRole('button', { name: /use bready/i })).toBeInTheDocument()
+
+    await user.click(screen.getByLabelText(/draft-based/i))
+    await screen.findByRole('button', { name: /use a/i }) // draft palette loaded
+    expect(screen.queryByRole('button', { name: /use bready/i })).not.toBeInTheDocument()
+  })
+
   it('shows the backend error message on a failed draft submission (infeasible draft)', async () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)

@@ -5,6 +5,17 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## `supported-units`가 두 어휘를 다 말하게 — 소유 슬러그와 엔진 후보 슬러그
+- Date: 2026-07-25
+- Context: 위 항목(배타 단위 수정)을 고치던 중, 프론트와 백엔드가 **3명의 캐릭터를 두고 정반대로 말하고** 있는 것이 드러났다. `/api/supported-units`는 `ENCODED_SLUGS`(엔진 **후보** 슬러그)만 반환하는데, blablalink에서 동기화된 로스터는 플레이어가 **소유한** 캐릭터를 이름한다 — MODE_VARIANTS 캐릭터의 소유 슬러그는 base(`bready`)이고 후보(`bready-lingering`/`-recommended`)가 아니다. 프론트는 로스터를 이 목록과 교집합해 팔레트·로스터 그리드를 만들므로 `bready`·`cinderella-crystal-wave`·`diesel-winter-sweets` 3명이 탈락했고, "미지원 89"에 담겨 접힌 목록에 묻혔다. 그런데 백엔드는 이 3명을 6개 후보로 확장해 **실제로 출전시키고 있었다** — 화면이 "아직 지원 안 됨"이라 말한 Diesel: Winter Sweets가 Deck 3에 앉아 있었다. 결과적으로 `70/70 in the search pool`과 `89 owned but not yet supported`가 둘 다 틀렸고(실제 77유닛/73캐릭터), **유저는 이 3명을 풀에서 제외할 수단이 없었다**(팔레트 칩이 없으므로). 초상화 매니페스트도 같은 이유로 후보 93개만 키를 갖고 있었다.
+- Decision: 카탈로그가 **두 어휘를 모두** 말한다. 후보 엔트리는 그대로 두고(결과 덱이 후보를 이름하므로 초상화·티어 조회에 필요하다), 그 위에 **소유 슬러그 엔트리**를 추가해 `candidates`(대표하는 후보 슬러그들)를 달았다 — 93 → 96 엔트리. 메타데이터는 첫 로더블 후보에서 가져오며(같은 캐릭터라 name·element·burst_tier가 일치), base 자체가 후보인 경우(`rapi-red-hood`)는 이미 등재돼 있으므로 병합 엔트리를 만들지 않는다. 초상화 매니페스트도 두 어휘로 키를 갖도록 `download_portraits.py`가 MODE_VARIANTS base를 포함한다. **드래프트 팔레트만** `candidates`가 있는 유닛을 제외한다(`canSeatInDeck`) — 백엔드는 드래프트 좌석을 구체적 spec으로 해석하고 base 슬러그에는 422를 주므로, 걸러내지 않으면 내 수정이 새 버그를 만든다.
+- Alternatives considered:
+  - **후보 엔트리를 base 엔트리로 대체**(93 → 90) — 기각. 결과 덱이 후보 슬러그를 이름하므로 결과 화면이 초상화와 이름을 잃는다.
+  - **`draftable: boolean` 플래그** — 기각. UI 전용 불리언보다 `candidates`가 실제 정보를 담고, C(표시 이름)에서 모드를 구분할 때도 그대로 쓰인다.
+  - **드래프트에서 base 슬러그를 받아 엔진이 모드를 고르게 하기** — 더 나은 최종 형태지만 이번 범위에서 기각. seed 완성 루프가 구체적 유닛을 받는 구조라 엔진 변경이 필요하다. 지금은 드래프트 팔레트에서 빼는 것이 현행 동작과 동일하므로 회귀가 없다.
+  - **프론트에서 변형 접미사를 벗겨 매칭** — 기각. `MODE_VARIANTS` 지식이 프론트로 복제되고, 접미사 규칙이 없는 base(`bready` ← `bready-lingering`)는 문자열로 유도할 수 없다.
+- Consequences: 백엔드 **1361 → 1365 passed / 3 skipped**, 프론트 **264 → 268 passed**. 라이브 확인(고친 백엔드를 별도 포트에 띄워 앱의 API를 그쪽으로 돌림): 팔레트가 **`73/73 in the search pool (86 owned but not yet supported)`**, 칩 73개에 Bready·Diesel: Winter Sweets·Cinderella: Crystal Wave 포함, Roster 탭 타일 **70 → 73**, 접힌 목록 **89 → 86**. 86은 백엔드의 `excluded_slugs` 개수와 정확히 일치한다. **프론트엔드 변경은 사실상 필요 없었다** — 팔레트·그리드·카운트가 모두 같은 교집합에서 파생되므로 카탈로그를 고치자 함께 맞았다. 손댄 것은 타입에 `candidates` 추가와 드래프트 팔레트 필터뿐이다. **남은 한계**: 드래프트로 이 3명을 특정 덱에 고정할 수 없다(현행과 동일). 벤치에 "Bready, Bready"가 나란히 나오는 것은 별건(표시 이름)으로 남았다.
+
 ## 레이드 할당의 배타 단위를 슬러그에서 "소유 캐릭터"로 — 한 니케의 두 모드가 두 덱에 동시 출전하던 버그
 - Date: 2026-07-25
 - Context: 실제 로스터(159기)로 5덱 레이드 할당을 브라우저에서 돌려 화면 이름이 아니라 **슬러그**로 결과를 열어보니, Deck 2에 `rapi-red-hood`·Deck 4에 `rapi-red-hood-b1`이, Deck 2에 `cinderella-crystal-wave-mg`·Deck 4에 `cinderella-crystal-wave-snipe`가 앉아 있었다. `registry.py`의 `MODE_VARIANTS` 주석은 이들을 "**One owned character** who yields MULTIPLE deck candidates"로 정의하고 "deck search never seats two candidates of the same base together"라고 명시하는데, 그 규칙은 `_no_variant_clash`로 **덱 하나 안**에서만 강제되고 있었다. 레이드는 5덱을 **동시** 출전시키므로 라피 한 명이 2덱과 4덱에 함께 있는 편성은 게임에서 만들 수 없다 — 추천 결과를 그대로 쓸 수 없고 합계 데미지도 과대평가였다. `deck_allocation.py`에는 variant라는 단어가 **한 번도 나오지 않았고** 배타 조건이 `u.slug not in placed`뿐이었다. 화면에서는 이름이 변형 접미사를 버려 "Rapi: Red Hood"가 두 덱에, "Bready, Bready"가 벤치에, "Diesel: Winter Sweets"가 Deck 3과 벤치에 동시에 보이는 증상으로 드러났다.

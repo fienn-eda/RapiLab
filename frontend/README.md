@@ -294,14 +294,30 @@ shape **plus** `pinned_slugs`), and two additive top-level fields appear:
 
 ### `GET /api/supported-units`
 
-Feeds the draft palette. Returns every engine-supported Nikke:
+Feeds the palettes and every place a slug has to be named or drawn:
 ```jsonc
 [ { "slug": string, "name": string,
     "burst_tier": 1 | 2 | 3,
-    "element": "Fire" | "Water" | "Wind" | "Iron" | "Electric" } ]
+    "element": "Fire" | "Water" | "Wind" | "Iron" | "Electric",
+    "candidates": string[] | null } ]
 ```
 Group the palette by `burst_tier` (B1/B2/B3). `name` is a display name (may be a
 humanized slug). No request body; safe to fetch once and cache.
+
+**Two vocabularies live in this list, and intersecting the roster with the wrong
+one hides owned Nikkes.** A roster entry names the character the player *owns*;
+a result deck names an engine *candidate*. They usually coincide, but a character
+the engine models in several modes appears as both — one entry for the owned slug
+(`bready`), carrying `candidates: ["bready-lingering", "bready-recommended"]`,
+plus one entry per candidate. So:
+
+- **Owned-vs-supported checks** (palette membership, the roster grid, pool
+  counts) match on the roster's `character_slug`, which is the owned entry.
+- **Naming or drawing a result deck** looks up the candidate slug directly.
+- **Seating a draft** only works for a unit with no `candidates` — the engine
+  picks the mode, and `/api/recommend-raid` answers 422 for an owned slug that
+  is not a concrete spec. `canSeatInDeck` in `types/supportedUnit.ts` is that
+  check; the draft palette filters by it while the pool palette does not.
 
 ### Portraits
 
@@ -314,6 +330,12 @@ Resolve a slug's icon as `manifest.portraits[slug]` → prefix `/portraits/`. A 
 with no entry gets an empty placeholder of the same size, so a row or grid stays
 aligned. Every view must work identically with or without a portrait — icons are
 a presentation layer only.
+
+The manifest is keyed by **both** vocabularies above (owned slugs and engine
+candidates), since the palette asks for one and a result row asks for the other;
+a character's candidates all resolve to her single portrait file. Regenerate with
+`python scripts/download_portraits.py` after adding a slug — keying it on one
+vocabulary only leaves the other drawing empty boxes.
 
 The art is **256×512 full-body**, and it is the only size there is (probed:
 `si_`/`ci_`/`fi_`/`icon_` prefixes, `.png`, and `/assets/nikke/` all 404). The

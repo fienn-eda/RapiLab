@@ -101,6 +101,12 @@ class SupportedUnit(BaseModel):
     name: str
     burst_tier: int
     element: str
+    # Present only on an OWNED slug that the roster loader fans out into several
+    # engine candidates (MODE_VARIANTS): the candidate slugs it stands for. A
+    # deck in a result names candidates, never this slug, and a draft can only
+    # seat a candidate - so a client that has to pick one concrete unit reads
+    # this to know the choice is the engine's, not the player's.
+    candidates: list[str] | None = None
 
 
 class AssembleRosterRequest(BaseModel):

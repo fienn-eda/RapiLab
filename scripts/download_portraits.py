@@ -87,11 +87,20 @@ PORTRAIT_RE = re.compile(r'data-default-src="(/characters/nikke/[^"]+)"')
 
 
 def registry_slugs() -> list[str]:
-    """Authoritative list of engine-supported slugs, from the registry."""
+    """Every slug the frontend may ask a portrait for, from the registry.
+
+    That is the engine's candidate slugs PLUS the OWNED slug of a character the
+    roster loader fans out into several of them (MODE_VARIANTS). The palette
+    keys on what the player owns (`bready`), while results name candidates
+    (`bready-lingering`) - the same two vocabularies app/supported_units.py
+    serves, and a manifest covering only one of them leaves the other drawing
+    an empty portrait box.
+    """
     sys.path.insert(0, str(REPO / "backend"))
     from app.skill_rules import registry  # noqa: E402
 
-    return sorted(registry._BUILDERS.keys())
+    slugs = set(registry._BUILDERS) | set(registry.MODE_VARIANTS)
+    return sorted(slugs)
 
 
 def portrait_path_for(html_slug: str) -> str | None:

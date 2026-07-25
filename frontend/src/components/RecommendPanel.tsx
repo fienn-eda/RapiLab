@@ -11,6 +11,7 @@ import { useRecommendRaid } from '../hooks/useRecommendRaid'
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import { useSupportedUnits } from '../hooks/useSupportedUnits'
 import { nameFromSlug } from '../lib/unitName'
+import { canSeatInDeck } from '../types/supportedUnit'
 import { hashRecommendInputs } from '../lib/inputHash'
 import {
   bossProfileToDraft,
@@ -245,6 +246,14 @@ export function RecommendPanel({
   const poolKnown = unitIndex.size > 0
   const unsupportedCount = roster.length - poolTotal
 
+  // The draft palette offers fewer units than the pool palette: a unit standing
+  // for several engine candidates belongs in the pool (the engine picks her
+  // mode) but cannot be pinned to a deck, and dragging her in would earn a 422.
+  const seatableUnits = useMemo(
+    () => supportedUnits.units.filter(canSeatInDeck),
+    [supportedUnits.units],
+  )
+
   const nameFor = (slug: string) => unitIndex.get(slug)?.name ?? nameFromSlug(slug)
   const burstTierFor = (slug: string) => unitIndex.get(slug)?.burstTier ?? null
 
@@ -448,7 +457,7 @@ export function RecommendPanel({
             <div className="draft-layout">
               <UnitPalette
                 roster={roster}
-                supportedUnits={supportedUnits.units}
+                supportedUnits={seatableUnits}
                 usedSlugs={usedSlugs}
                 draggable
                 excludedSlugs={[...excludedSlugs]}
