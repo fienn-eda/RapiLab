@@ -10,6 +10,7 @@ import { useRecommend } from '../hooks/useRecommend'
 import { useRecommendRaid } from '../hooks/useRecommendRaid'
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import { useSupportedUnits } from '../hooks/useSupportedUnits'
+import { nameFromSlug } from '../lib/unitName'
 import { hashRecommendInputs } from '../lib/inputHash'
 import {
   bossProfileToDraft,
@@ -209,6 +210,17 @@ export function RecommendPanel({
     () => draftValue.decks.flatMap((seats) => seats.map((seat) => seat.slug)),
     [draftValue],
   )
+
+  // Deck slots show a face and nothing else, so what a slot IS comes from
+  // here: the name labels its controls, the burst tier is the one badge it
+  // draws. Both degrade to the slug / no badge when /api/supported-units is
+  // unavailable, which is the same fallback the palette already makes.
+  const unitIndex = useMemo(
+    () => new Map(supportedUnits.units.map((unit) => [unit.slug, unit])),
+    [supportedUnits.units],
+  )
+  const nameFor = (slug: string) => unitIndex.get(slug)?.name ?? nameFromSlug(slug)
+  const burstTierFor = (slug: string) => unitIndex.get(slug)?.burstTier ?? null
 
   const toggleExclude = (slug: string) => {
     if (!excludedSlugs.has(slug)) {
@@ -417,6 +429,8 @@ export function RecommendPanel({
                   value={draftValue}
                   onChange={setDraftValue}
                   portraitFor={portraitFor}
+                  nameFor={nameFor}
+                  burstTierFor={burstTierFor}
                 />
               </div>
             </div>

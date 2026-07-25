@@ -666,7 +666,8 @@ describe('RecommendPanel unit-pool exclusion', () => {
 
     // Seat unit "a" by dropping it on Deck 1, then exclude it.
     dropOnDeck(1, 'a')
-    expect(screen.getByText('a')).toBeInTheDocument() // seat slug rendered by DraftEditor
+    // A slot renders a face, not a name — its controls are what say who is in it.
+    expect(screen.getByRole('button', { name: 'Remove A from deck 1' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /use a/i }))
 
     await user.click(screen.getByRole('button', { name: /optimize draft/i }))

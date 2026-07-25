@@ -778,7 +778,7 @@
    deck that is on screen beside it. */
 .draft-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 22rem);
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 24rem);
   gap: var(--sp-4);
   align-items: start;
   width: 100%;
@@ -840,43 +840,148 @@
   color: var(--text-muted);
 }
 
-.draft-editor__seat-portrait {
-  width: 20px;
-  height: 20px;
-  object-fit: cover;
-  object-position: top;
-  border-radius: 3px;
-  flex-shrink: 0;
+.draft-editor__deck-warning {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--warn);
+  margin-right: auto;
+  margin-left: var(--sp-2);
 }
 
-.draft-editor__seats {
+/* A deck is its five slots, drawn like the game's squad row: always five, so
+   the drop target is the whole row and remaining capacity needs no counting. */
+.draft-editor__slots {
   list-style: none;
   margin: 0;
   padding: 0;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
   gap: var(--sp-1);
 }
 
-.draft-editor__seat {
+.draft-editor__slot {
+  position: relative;
+  aspect-ratio: 1;
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+}
+
+/* An open slot reads as an invitation, not as a unit that failed to load. */
+.draft-editor__slot--open {
+  border-style: dashed;
   display: flex;
   align-items: center;
-  gap: var(--sp-2);
-  font-size: 13px;
+  justify-content: center;
 }
 
-.draft-editor__slug {
-  font-family: var(--mono);
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.draft-editor__empty {
-  font-size: 12px;
+.draft-editor__slot-plus {
+  font-size: 20px;
+  line-height: 1;
   color: var(--text-muted);
+}
+
+.draft-editor__slot-grip {
+  position: absolute;
+  inset: 0;
+  cursor: grab;
+}
+
+.draft-editor__slot-grip:active {
+  cursor: grabbing;
+}
+
+/* Source art is 256x512 full-body. On a square box `cover` renders it W x 2W
+   and hides W (= 256 image rows); starting 48 of those rows down keeps the
+   whole head and the chin, which is the crop the game's own slots use. */
+.draft-editor__slot-portrait {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 18.75%;
+}
+
+.draft-editor__slot-portrait--missing {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--sp-1);
+  font-size: 10px;
+  text-align: center;
+  color: var(--text-muted);
+  overflow: hidden;
+}
+
+/* Badges sit ON the art, so each carries its own scrim rather than trusting
+   whatever colour happens to be behind it. */
+.draft-editor__slot-tier {
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.62);
+  border-bottom-right-radius: var(--radius-sm);
+  pointer-events: none;
+}
+
+.draft-editor__slot-lock,
+.draft-editor__slot-remove {
+  position: absolute;
+  padding: 0;
+  border: 0;
+  line-height: 1;
+  font-size: 11px;
+  cursor: pointer;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.62);
+  color: #fff;
+  width: 18px;
+  height: 18px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* A locked unit shows its padlock always — that is state the player has to be
+   able to see. An unlocked one shows nothing, so an untouched deck reads as
+   five clean faces; the control is still there when reached for. */
+.draft-editor__slot-lock {
+  bottom: 2px;
+  left: 2px;
+  opacity: 0;
+}
+
+.draft-editor__slot-lock[aria-pressed='true'] {
+  opacity: 1;
+  background: var(--accent);
+  color: var(--accent-contrast);
+}
+
+/* Removing is destructive and rarely wanted now that a slot can be dragged
+   somewhere else, so it stays out of the way until reached for. */
+.draft-editor__slot-remove {
+  top: 2px;
+  right: 2px;
+  opacity: 0;
+}
+
+.draft-editor__slot:hover .draft-editor__slot-lock,
+.draft-editor__slot:hover .draft-editor__slot-remove,
+.draft-editor__slot-lock:focus-visible,
+.draft-editor__slot-remove:focus-visible {
+  opacity: 1;
+}
+
+.draft-editor__slot-lock:focus-visible,
+.draft-editor__slot-remove:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* Draft results ------------------------------------------------------------ */

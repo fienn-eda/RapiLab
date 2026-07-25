@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# A real synced roster dropped into public/ to seed localStorage while
+# checking layout in a browser. Personal investment data - local only.
+public/__dev-roster.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
