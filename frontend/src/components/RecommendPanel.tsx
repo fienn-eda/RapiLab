@@ -434,6 +434,15 @@ export function RecommendPanel({
               <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
                 {submitLabel}
               </button>
+              {/* Only while something is actually running - a permanent Cancel
+                  next to Submit would read as a choice between two actions.
+                  `type="button"` matters: inside a form, a bare button submits,
+                  which would start a second run instead of stopping the first. */}
+              {active.status === 'loading' && (
+                <button type="button" className="btn" onClick={active.cancel}>
+                  Cancel
+                </button>
+              )}
               {rosterTooSmall && (
                 <p className="field__error" role="alert">
                   Add at least {MIN_DECK_ROSTER_SIZE} ready Nikkes to recommend a deck.
