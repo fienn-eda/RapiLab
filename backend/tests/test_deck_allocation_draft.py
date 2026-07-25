@@ -126,3 +126,93 @@ def test_infeasible_draft_raises():
     r = roster_of({"b10": 1, "b11": 1, "b12": 1})
     with pytest.raises(da.InfeasibleDraft):
         da.allocate_decks(r, BOSS, num_decks=1, draft=[r], locked=set(), workers=None)
+
+
+def _cancel_after(n_calls, token):
+    """Trip `token` once the search has scored `n_calls` batches - a stand-in
+    for the user pressing Cancel partway through."""
+    calls = {"n": 0}
+
+    def scorer(slugs):
+        calls["n"] += 1
+        if calls["n"] >= n_calls:
+            token.cancel()
+        return 1.0
+
+    return scorer, calls
+
+
+def test_a_cancelled_allocation_stops_instead_of_finishing(monkeypatch):
+    """Cancel has to reach the search, not just the response: the point is that
+    the work stops, so allocate_decks abandons the run rather than returning a
+    result nobody is waiting for.
+
+    Coarse here on purpose. A serial run has no pool, so it can only be asked
+    BETWEEN batches and the batch already in flight still finishes. The parallel
+    path the API actually uses is folded mid-batch by SimPool.cancel instead -
+    see test_sim_pool's cancelled-batch tests.
+    """
+    from app.cancellation import CancelToken, Cancelled
+
+    r = _wide_roster()
+    full = {"n": 0}
+    patch_scorer(monkeypatch, lambda slugs: full.__setitem__("n", full["n"] + 1) or 1.0)
+    da.allocate_decks(r, BOSS, num_decks=3, workers=None)
+
+    token = CancelToken()
+    scorer, calls = _cancel_after(1, token)
+    patch_scorer(monkeypatch, scorer)
+
+    with pytest.raises(Cancelled):
+        da.allocate_decks(r, BOSS, num_decks=3, workers=None, cancel=token)
+
+    assert calls["n"] < full["n"], (
+        f"cancelled run scored {calls['n']} decks, a full one {full['n']}")
+
+
+def test_an_uncancelled_allocation_is_unchanged(monkeypatch):
+    """The token defaults to a do-nothing one, so every existing caller - and
+    every test above - keeps the exact behaviour it had."""
+    r = _roster()
+    patch_scorer(monkeypatch, lambda slugs: sum(len(s) for s in slugs))
+
+    with_token = da.allocate_decks(r, BOSS, num_decks=2, workers=None,
+                                   cancel=None)
+    plain = da.allocate_decks(r, BOSS, num_decks=2, workers=None)
+
+    assert with_token == plain
+
+
+def test_the_pool_is_attached_so_a_cancel_reaches_the_workers(monkeypatch):
+    """The loops can be asked between iterations, but the workers are blocked
+    inside a batch. They only stop if the pool itself is registered with the
+    token - so allocate_decks must hand its pool over as soon as it builds one.
+    """
+    from app.cancellation import CancelToken
+
+    class _FakePool:
+        def __init__(self, *a, **kw):
+            self.cancelled = 0
+
+        def score_many(self, decks):
+            # Stands in for the process pool; the scores themselves are not
+            # what this test is about.
+            return [1.0 for _ in decks]
+
+        def cancel(self):
+            self.cancelled += 1
+
+        def close(self):
+            pass
+
+    built = []
+    monkeypatch.setattr(da, "SimPool", lambda *a, **kw: built.append(_FakePool()) or built[-1])
+    monkeypatch.setattr(da, "resolve_workers", lambda w: 2)
+    patch_scorer(monkeypatch, lambda slugs: 1.0)
+    token = CancelToken()
+
+    da.allocate_decks(_roster(), BOSS, num_decks=1, workers=2, cancel=token,
+                      time_budget_sec=0.0)
+    token.cancel()
+
+    assert built and built[0].cancelled == 1, "the pool was never registered"

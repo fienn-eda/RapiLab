@@ -84,6 +84,62 @@ describe('RecommendPanel', () => {
     expect(screen.getByRole('button', { name: /recommend decks/i })).toBeDisabled()
   })
 
+  // The boss profile used to sit at the very END of the form, past the whole
+  // 70-chip palette - 2040px below the button that acts on it, so the input
+  // that changes the answer most (Element) was the one nobody scrolled to.
+  it('puts the boss profile beside the mode choice, with no palette between them', () => {
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+
+    const boss = screen.getByRole('group', { name: /boss profile/i })
+    const mode = screen.getByRole('group', { name: /^mode$/i })
+    const submit = screen.getByRole('button', { name: /recommend decks/i })
+    const palette = screen.getByRole('group', { name: /units to use/i })
+
+    // Same row: one wrapper holds the boss fields and the mode+submit block.
+    const setup = boss.parentElement!
+    expect(setup).toBe(mode.parentElement)
+    expect(setup.contains(submit)).toBe(true)
+    expect(setup.contains(palette)).toBe(false)
+
+    // ...and that row comes before the palette in the document.
+    expect(setup.compareDocumentPosition(palette) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy()
+  })
+
+  it('offers Cancel only while a run is in flight, and aborts it', async () => {
+    // A run takes one to two minutes. Started by mistake, it used to be
+    // unstoppable: no button, and a reload freed only the screen while the
+    // server kept eight workers busy to completion.
+    const user = userEvent.setup()
+    let abortSignal: AbortSignal | undefined
+    vi.mocked(recommendDecks).mockImplementation(
+      (_req: unknown, signal?: AbortSignal) =>
+        new Promise((_resolve, reject) => {
+          abortSignal = signal
+          signal?.addEventListener('abort', () => {
+            const err = new Error('aborted')
+            err.name = 'AbortError'
+            reject(err)
+          })
+        }),
+    )
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+
+    expect(screen.queryByRole('button', { name: /^cancel$/i })).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /recommend decks/i }))
+
+    const cancel = await screen.findByRole('button', { name: /^cancel$/i })
+    await user.click(cancel)
+
+    expect(abortSignal?.aborted).toBe(true)
+    // Back to the form, with no error: the user asked for this.
+    await waitFor(() =>
+      expect(screen.queryByRole('button', { name: /^cancel$/i })).not.toBeInTheDocument(),
+    )
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /recommend decks/i })).toBeEnabled()
+  })
+
   it('submits the roster and boss profile, and renders the ranked results', async () => {
     const user = userEvent.setup()
     vi.mocked(recommendDecks).mockResolvedValue({
@@ -110,7 +166,7 @@ describe('RecommendPanel', () => {
         fight_duration: 180,
         part_destructible: false,
       },
-    })
+    }, expect.any(AbortSignal))
     expect(await screen.findByText('#1')).toBeInTheDocument()
     expect(screen.getByText('100 total dmg')).toBeInTheDocument()
   })
@@ -150,7 +206,7 @@ describe('RecommendPanel', () => {
         fight_duration: 180,
         part_destructible: false,
       },
-    })
+    }, expect.any(AbortSignal))
   })
 
   it('sends part_destructible: true when the part-destruction gimmick is toggled on', async () => {
@@ -171,7 +227,7 @@ describe('RecommendPanel', () => {
         fight_duration: 180,
         part_destructible: true,
       },
-    })
+    }, expect.any(AbortSignal))
   })
 })
 
@@ -212,7 +268,7 @@ describe('RecommendPanel raid mode', () => {
         part_destructible: false,
       },
       num_decks: 3,
-    })
+    }, expect.any(AbortSignal))
     expect(recommendDecks).not.toHaveBeenCalled()
   })
 
@@ -341,7 +397,7 @@ describe('RecommendPanel draft mode', () => {
         },
         { units: [{ slug: 'f', locked: false }] },
       ],
-    })
+    }, expect.any(AbortSignal))
   })
 
   it('drafts a multi-candidate unit under the slug the player owns', async () => {
@@ -381,6 +437,7 @@ describe('RecommendPanel draft mode', () => {
       expect.objectContaining({
         draft: [{ units: [{ slug: 'bready', locked: false }] }],
       }),
+      expect.any(AbortSignal),
     )
   })
 

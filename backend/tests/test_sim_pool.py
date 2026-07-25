@@ -98,3 +98,73 @@ def test_a_warm_executor_serves_batches_too_small_to_have_started_it(monkeypatch
         # imported their own, so breaking it here proves where the batch ran.
         monkeypatch.setattr(sim_pool, "evaluate_deck", _inline_forbidden)
         assert pool.score_many(decks) == expected  # under it, but still pooled
+
+
+class _FakeExecutor:
+    """Records how it was shut down. A real ProcessPoolExecutor would need real
+    workers to prove anything about cancel_futures."""
+
+    def __init__(self):
+        self.shutdowns = []
+
+    def map(self, fn, items, chunksize=None):
+        return iter([])
+
+    def shutdown(self, wait=True, cancel_futures=False):
+        self.shutdowns.append({"wait": wait, "cancel_futures": cancel_futures})
+
+
+def test_cancel_drops_queued_work_without_waiting():
+    """Workers are blocked inside executor.map and cannot be asked to stop, so
+    cancel has to fold the pool from outside. Waiting would defeat the point -
+    the caller is cancelling BECAUSE the batch is long."""
+    pool = SimPool([], short_boss(), workers=4)
+    executor = _FakeExecutor()
+    pool._executor = executor
+
+    pool.cancel()
+
+    assert executor.shutdowns == [{"wait": False, "cancel_futures": True}]
+
+
+def test_cancel_is_safe_when_no_executor_was_ever_started():
+    # Small batches never spawn one; cancelling such a run must not explode.
+    SimPool([], short_boss(), workers=4).cancel()
+
+
+def test_close_after_cancel_does_not_shut_down_twice():
+    pool = SimPool([], short_boss(), workers=4)
+    executor = _FakeExecutor()
+    pool._executor = executor
+
+    pool.cancel()
+    pool.close()
+
+    assert len(executor.shutdowns) == 1
+
+
+def test_a_cancelled_batch_reports_cancellation_not_a_pool_error():
+    """When queued futures are dropped, `executor.map`'s iterator raises
+    CancelledError as it is consumed. The search above should see the domain
+    exception, not a concurrent.futures internal."""
+    from concurrent.futures import CancelledError
+
+    from app.cancellation import Cancelled
+
+    class _CancelledMap(_FakeExecutor):
+        def map(self, fn, items, chunksize=None):
+            def gen():
+                raise CancelledError()
+                yield  # pragma: no cover - generator marker
+            return gen()
+
+    pool = SimPool([], short_boss(), workers=4)
+    pool._executor = _CancelledMap()
+
+    from types import SimpleNamespace
+
+    import pytest
+
+    deck = [SimpleNamespace(slug="a")]
+    with pytest.raises(Cancelled):
+        pool.score_many([deck, deck])

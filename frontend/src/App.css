@@ -608,6 +608,37 @@
   align-items: flex-start;
 }
 
+/* Boss profile beside the mode choice, so a run's whole setup is one row and
+   Submit is never scrolled away from the fields it acts on. The boss column is
+   the narrower one: its inputs are fixed-width, while the mode radios carry
+   sentence-long hints that want the room. */
+.recommend-form__setup {
+  display: grid;
+  grid-template-columns: minmax(260px, 22rem) minmax(0, 1fr);
+  gap: var(--sp-4);
+  align-items: start;
+  width: 100%;
+}
+
+/* A checkbox row is `display: flex`, so a trailing hint competes with its own
+   label for the line. That was fine across the full form width; in the boss
+   column it broke "Part-destruction gimmick" across three lines. Drop the hint
+   to its own line, indented past the box, and the label gets the width back. */
+.recommend-form__setup .checkbox {
+  flex-wrap: wrap;
+}
+
+.recommend-form__setup .checkbox > .group__hint {
+  flex: 1 0 100%;
+  margin-left: calc(13px + var(--sp-2));
+}
+
+@media (max-width: 900px) {
+  .recommend-form__setup {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 .recommend-form__actions {
   display: flex;
   align-items: center;

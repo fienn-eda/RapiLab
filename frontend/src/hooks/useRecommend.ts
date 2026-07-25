@@ -13,18 +13,19 @@ export interface RecommendState {
   decks: DeckRecommendation[]
   excludedSlugs: string[]
   error?: string
+  cancel: () => void
   submit: (request: RecommendRequest) => Promise<void>
 }
 
 export const useRecommend = (): RecommendState => {
   const [decks, setDecks] = useState<DeckRecommendation[]>([])
   const [excludedSlugs, setExcludedSlugs] = useState<string[]>([])
-  const { status, error, run } = useAsyncRequestStatus()
+  const { status, error, run, cancel } = useAsyncRequestStatus()
 
   const submit = useCallback(
     (request: RecommendRequest) =>
       run(
-        () => recommendDecks(request),
+        (signal) => recommendDecks(request, signal),
         (response) => {
           setDecks(response.decks)
           setExcludedSlugs(response.excluded_slugs)
@@ -33,5 +34,5 @@ export const useRecommend = (): RecommendState => {
     [run],
   )
 
-  return { status, decks, excludedSlugs, error, submit }
+  return { status, decks, excludedSlugs, error, submit, cancel }
 }

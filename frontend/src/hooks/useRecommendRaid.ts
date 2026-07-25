@@ -20,6 +20,8 @@ export interface RecommendRaidState {
   withinDraft: DraftAllocation | null
   baselineTotalDamage: number | null
   error?: string
+  /** Aborts a run in flight; the backend stops with it. */
+  cancel: () => void
   submit: (request: RecommendRaidRequest) => Promise<void>
 }
 
@@ -32,12 +34,12 @@ export const useRecommendRaid = (): RecommendRaidState => {
   const [leftoverSlugs, setLeftoverSlugs] = useState<string[]>([])
   const [withinDraft, setWithinDraft] = useState<DraftAllocation | null>(null)
   const [baselineTotalDamage, setBaselineTotalDamage] = useState<number | null>(null)
-  const { status, error, run } = useAsyncRequestStatus()
+  const { status, error, run, cancel } = useAsyncRequestStatus()
 
   const submit = useCallback(
     (request: RecommendRaidRequest) =>
       run(
-        () => recommendRaidDecks(request),
+        (signal) => recommendRaidDecks(request, signal),
         (response) => {
           setDecks(response.decks)
           setCombinedTotalDamage(response.combined_total_damage)
@@ -60,6 +62,7 @@ export const useRecommendRaid = (): RecommendRaidState => {
     withinDraft,
     baselineTotalDamage,
     error,
+    cancel,
     submit,
   }
 }
