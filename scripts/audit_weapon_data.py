@@ -98,17 +98,26 @@ def compare(local: dict, live: dict, fields: tuple[str, ...]) -> dict[str, tuple
     return diffs
 
 
-def burst_cooldown(manifest: dict, slug: str, weapon_data: dict, data_dir: Path):
+def meta_source(manifest: dict, slug: str, weapon_data: dict, data_dir: Path) -> dict:
+    """The file the loader reads element/burst/cooldown from, per load_nikke_spec.
+
+    Not the same file as the weapon stats: a lootandwaifus-sourced unit takes its
+    weapon from dotgg but its meta from lootandwaifus. Comparing the weapon file's
+    meta would report differences the engine never sees - dotgg records Red Hood's
+    burst as "p" while lootandwaifus (what the engine reads) says "3".
+    """
+    try:
+        return load_character_data("lootandwaifus", manifest.get("data_slug", slug), data_dir)
+    except FileNotFoundError:
+        return weapon_data
+
+
+def burst_cooldown(meta: dict):
     """The burst cooldown the loader would use, resolved exactly as load_nikke_spec does.
 
     Not a weapon field, but it comes free with the same payload and a wrong value
     distorts every simulated rotation, so the audit reports it alongside.
     """
-    data_slug = manifest.get("data_slug", slug)
-    try:
-        meta = load_character_data("lootandwaifus", data_slug, data_dir)
-    except FileNotFoundError:
-        meta = weapon_data
     try:
         return float(meta.get("cooldown") or meta["skills"][2]["cooldown"])
     except (KeyError, IndexError, TypeError, ValueError):
@@ -116,22 +125,11 @@ def burst_cooldown(manifest: dict, slug: str, weapon_data: dict, data_dir: Path)
 
 
 def load_live(raw_dir: Path) -> dict[int, dict]:
-    """resource_id -> normalized ShiftyPad character data, for every collected bundle.
-
-    An "AllStep" unit (Red Hood) has no single burst tier, and `normalize_shiftypad`
-    raises on it. The weapon fields are still perfectly readable, so stand a
-    placeholder tier in and flag the row instead of dropping the unit from the audit.
-    """
+    """resource_id -> normalized ShiftyPad character data, for every collected bundle."""
     live = {}
     for path in sorted(raw_dir.glob("*.json")):
         bundle = json.loads(path.read_text(encoding="utf-8"))
-        step = str(bundle["directory"].get("use_burst_skill", ""))
-        unmapped_burst = not re.fullmatch(r"Step\d+", step)
-        if unmapped_burst:
-            bundle = {**bundle, "directory": {**bundle["directory"], "use_burst_skill": "Step0"}}
-        normalized = normalize_shiftypad(bundle)
-        normalized["_burst_unmapped"] = step if unmapped_burst else None
-        live[int(path.stem)] = normalized
+        live[int(path.stem)] = normalize_shiftypad(bundle)
     return live
 
 
@@ -171,11 +169,9 @@ def audit(raw_dir: Path, data_dir: Path = DATA_DIR) -> list[dict]:
             rows.append({**row, "verdict": "no-live"})
             continue
         weapon_diffs = compare(local, live, WEAPON_FIELDS)
-        meta_fields = tuple(f for f in META_FIELDS if not (f == "burst" and live["_burst_unmapped"]))
-        meta_diffs = compare(local, live, meta_fields)
-        if live["_burst_unmapped"]:
-            row["burst_unmapped"] = live["_burst_unmapped"]
-        ours_cd = burst_cooldown(manifest, slug, local, data_dir)
+        meta = meta_source(manifest, slug, local, data_dir)
+        meta_diffs = compare(meta, live, META_FIELDS)
+        ours_cd = burst_cooldown(meta)
         live_cd = live["skills"][2].get("cooldown") if len(live.get("skills", [])) > 2 else None
         cooldown_diff = (
             (ours_cd, live_cd)

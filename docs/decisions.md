@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## "AllStep" 버스트는 그 유닛이 실제로 쓰이는 단계로 접는다 — Red Hood = B3
+- Date: 2026-07-26
+- Context: ShiftyPad는 전 단계 버스트 유닛의 `use_burst_skill`을 tier가 아니라 `"AllStep"`으로 준다. `normalize_shiftypad`는 `int("AllStep")`에서 죽었고, 그래서 그런 유닛은 ShiftyPad를 소스로 온보딩할 수 없었다. 라이브 디렉토리 196기 전수 확인 결과 해당 유닛은 **Red Hood 하나뿐**(Step1 54 / Step2 64 / Step3 77 / AllStep 1). 엔진은 유닛을 **정확히 한 tier**에 앉히므로 "전 단계"를 그대로 담을 자리가 없다.
+- Alternatives considered: (a) 엔진이 다중 tier 유닛을 표현하도록 확장 — 좌석 배정·버스트 사이클 전반을 건드리는 큰 변경인데, 지금 이득을 보는 유닛이 1기다. (b) 유닛별 수동 오버라이드(`VARIANT_BURST_TIERS`) 강제 — 정규화가 여전히 죽으므로 온보딩이 막히는 문제는 그대로. (c) 정규화 단계에서 **실제 운용 단계로 접는다**. 채택.
+- Decision: (c). `_BURST_TIERS = {"AllStep": "3"}`. 근거는 스킬 제약이다 — **Red Hood는 전 단계에서 버스트를 쓸 수 있지만 1·2단계 사용에는 제약이 있고 3단계는 제약이 없어, 대부분의 유저가 B3로 쓴다**(Fienn, 2026-07-26). lootandwaifus도 같은 이유로 `'3'`으로 적어 두므로 패리티 하니스가 계속 유의미하다(dotgg만 `'p'`라는 자기 표기를 쓰는데, 엔진은 그 파일의 메타를 읽지 않는다).
+- Why: 테이블이지 폴백이 아니다 — **모르는 버스트 문자열은 계속 예외를 던진다**. 폴백을 뒀다면 새 표기가 등장했을 때 아무도 고르지 않은 tier에 유닛을 조용히 앉히고, 추천은 그 사실을 말해주지 않는다.
+- Consequences: Red Hood의 현재 동작은 불변(그녀는 lootandwaifus 소스라 이미 B3였다). 1·2단계 운용을 굳이 모델링하고 싶어지면 이미 있는 패턴을 쓰면 된다 — 변형 슬러그 + `VARIANT_BURST_TIERS`(`rapi-red-hood-b1: 1`이 그 예), 단 제약 자체는 엔진이 표현할 수 있어야 한다. 코드: `backend/app/shiftypad_normalize.py`, 테스트 `backend/tests/test_shiftypad_parity.py`.
+
 ## 코어 데미지는 평타 전용이다 — 실측 대조가 "총량 1.46배 과대"보다 "덱별 0.93~2.00배 편차"를 문제로 지목했다
 - Date: 2026-07-26
 - Context: Fienn이 추천 결과를 보고 "실제 플레이 경험과 다르다"고 지적했고, 두 시즌 전 솔로레이드(애니힐리오: 철갑=Wind 약점, 코어 히트 가능, 파츠 파괴 가능, 유저 실측 방어력 31,784)의 **본인 5덱 실기록**을 기준점으로 내놨다(합계 34.77B). 그 5덱을 그대로 시뮬에 넣으니 **합계 50.75B = 1.46배**였고, 덱별로는 **0.93x ~ 2.00x**로 흩어졌다. 총량 편향은 순위에서 상쇄되지만 이 정도 편차는 상쇄되지 않는다 — 당시 추천이 주장하던 우위(+9.9%)보다 오차 폭이 컸으므로 **추천 순위 자체가 자기 오차 안에 묻혀 있었다**.

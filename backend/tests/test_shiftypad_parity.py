@@ -70,3 +70,23 @@ def test_skill_ladders_match_dotgg(slug, url):
 def test_burst_cooldown_matches_dotgg(slug, url):
     got, truth = _normalized(slug), _dotgg(url)
     assert got["skills"][2]["cooldown"] == float(truth["skills"][2]["cooldown"])
+
+
+def _with_burst(slug, use_burst_skill):
+    bundle = json.loads((FIXTURES / f"{slug}.json").read_text(encoding="utf-8"))
+    bundle["directory"]["use_burst_skill"] = use_burst_skill
+    return bundle
+
+
+def test_allstep_normalizes_to_the_tier_the_unit_is_played_at():
+    """Red Hood (the only AllStep unit) can burst at any stage, but Steps 1 and 2
+    are conditional and Step 3 is not, so she is played as a B3 - which is also
+    how dotgg and lootandwaifus record her."""
+    assert normalize_shiftypad(_with_burst("rapi-red-hood", "AllStep"))["burst"] == "3"
+
+
+def test_unknown_burst_string_raises_rather_than_being_guessed():
+    # A new burst encoding must fail loudly: a silent fallback would seat the
+    # unit at a tier nobody chose, and the recommender would never say so.
+    with pytest.raises(ValueError):
+        normalize_shiftypad(_with_burst("rapi-red-hood", "StepFinal"))

@@ -146,7 +146,8 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - dotgg 피드는 2026-05에 멈췄지만 **그 데이터가 낡았다는 증거는 없었다** — 아무도 게임과
   대조해본 적이 없었을 뿐이다. ShiftyPad 상세 페이로드를 76개 `resource_id` 전부 수집해
   엔진이 실제로 읽는 무기 6필드(`weapon`/`maxAmmo`/`damage`/`reloadTime`/`chargeTime`/
-  `chargeDamage`)를 슬러그별로 대조한 결과 **불일치 0**, 덤으로 대조한 **버스트 쿨다운도 0**.
+  `chargeDamage`)를 슬러그별로 대조한 결과 **불일치 0**. 같이 대조한 **element·버스트 tier·
+  버스트 쿨다운도 93/93 일치**.
   손으로 채운 무기 스텁 4개(ark-ranger-black · cinderella-crystal-wave · marciana-marine-study
   · prika)까지 전부 정확했다. 2026-07-21의 "전수 백필 기각" 결정은 **정확성 측면에서 옳았고,
   이제 가정이 아니라 측정된 사실이다**.
@@ -155,11 +156,15 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   양쪽에 실제로 존재해 비교됐는지 카운트하고, (b) 데이터 사본에 오류 3건을 주입해
   `-signature` 파생까지 5행이 MISMATCH로 잡히는지 확인한 뒤에야 결과를 믿었다.
   이 성질은 `backend/tests/test_audit_weapon_data.py`가 지킨다.
-- **함정: `normalize_shiftypad`는 `use_burst_skill: "AllStep"`에서 죽는다**(`int("AllStep")`
-  ValueError). 현재 해당 유닛은 Red Hood(rid=470) 하나뿐이고, 그녀는 lootandwaifus 경로라
-  실사용에는 영향이 없다 — 하지만 **ShiftyPad를 소스로 온보딩하려는 순간 막힌다**. 전 단계
-  버스트를 하나의 tier 숫자로 접을 수 없다는 게 원인이라 컨벤션 결정이 필요하다
-  (lootandwaifus/dotgg는 Red Hood를 `'3'`으로 적어둔다).
+- **함정이었던 것: `normalize_shiftypad`가 `use_burst_skill: "AllStep"`에서 죽었다**
+  (`int("AllStep")` ValueError). 해당 유닛은 Red Hood(rid=470) 하나뿐 — 라이브 디렉토리
+  196기 전수 확인(Step1 54 / Step2 64 / Step3 77 / AllStep 1). 2026-07-26에
+  `_BURST_TIERS = {"AllStep": "3"}`로 해결(아래 결정 참조).
+- **메타는 무기 파일이 아니라 로더가 실제로 읽는 파일과 대조해야 한다.** lootandwaifus
+  유닛은 무기를 dotgg에서, element/burst/cooldown은 lootandwaifus에서 가져온다. 감사가
+  처음엔 무기 파일 쪽 메타를 봤고, 그래서 **엔진이 읽지도 않는 dotgg의 Red Hood
+  `burst: 'p'`**(lootandwaifus는 `'3'`)를 불일치로 올렸다. `audit_weapon_data.meta_source()`가
+  `load_nikke_spec`과 같은 순서로 해소한다.
 - 수집은 계정이 필요 없다: `node collect.js --nikke <rid,rid,...> --headless`가 브라우저
   1회로 리스트 전체를 받아 `data/shiftypad/raw/<rid>.json`에 쓴다(76유닛 한 번에 확인).
 

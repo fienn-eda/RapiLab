@@ -24,6 +24,18 @@ UI directly; this normalizer must not fabricate them.
 # mapped or element-advantage lookups silently no-op for electric-code units.
 _ELEMENT_NAMES = {"Electronic": "Electric"}
 
+# ShiftyPad reports an all-stage unit's burst as "AllStep" instead of a tier.
+# The engine seats a unit at exactly one tier, so the tier to record is the one
+# the unit is actually played at. Red Hood - the only AllStep unit among all 196
+# released nikkes (checked against the live directory 2026-07-26) - can burst at
+# any stage, but Steps 1 and 2 come with conditions and Step 3 does not, so she
+# is used as a B3 (Fienn, 2026-07-26). dotgg and lootandwaifus both record her
+# as "3" for the same reason, which keeps the parity harness meaningful.
+#
+# Deliberately a table, not a fallback: an unrecognised burst string still
+# raises rather than being guessed into a tier.
+_BURST_TIERS = {"AllStep": "3"}
+
 
 def _pct(hundredths):
     """6130 -> "61.3%" (dotgg's percent-string convention)."""
@@ -33,6 +45,13 @@ def _pct(hundredths):
 def _sec(centiseconds):
     """250 -> 2.5 (dotgg's seconds float)."""
     return centiseconds / 100
+
+
+def _burst_tier(use_burst_skill):
+    """"Step3" -> "3", "AllStep" -> the tier that unit is actually played at."""
+    if use_burst_skill in _BURST_TIERS:
+        return _BURST_TIERS[use_burst_skill]
+    return str(int(use_burst_skill.removeprefix("Step")))
 
 
 def _skill_levels(skill_detail):
@@ -80,6 +99,6 @@ def normalize_shiftypad(bundle):
         "chargeTime": _sec(shot["charge_time"]),
         "chargeDamage": _pct(shot["full_charge_damage"]),
         "element": _ELEMENT_NAMES.get(element, element),
-        "burst": str(int(directory["use_burst_skill"].removeprefix("Step"))),
+        "burst": _burst_tier(directory["use_burst_skill"]),
         "skills": skills,
     }
