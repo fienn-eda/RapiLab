@@ -11,7 +11,7 @@ import { useRecommendRaid } from '../hooks/useRecommendRaid'
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import { useSupportedUnits } from '../hooks/useSupportedUnits'
 import { nameFromSlug } from '../lib/unitName'
-import { canSeatInDeck } from '../types/supportedUnit'
+import { ownedSlugFor, ownedSlugIndex } from '../types/supportedUnit'
 import { hashRecommendInputs } from '../lib/inputHash'
 import {
   bossProfileToDraft,
@@ -246,12 +246,16 @@ export function RecommendPanel({
   const poolKnown = unitIndex.size > 0
   const unsupportedCount = roster.length - poolTotal
 
-  // The draft palette offers fewer units than the pool palette: a unit standing
-  // for several engine candidates belongs in the pool (the engine picks her
-  // mode) but cannot be pinned to a deck, and dragging her in would earn a 422.
-  const seatableUnits = useMemo(
-    () => supportedUnits.units.filter(canSeatInDeck),
+  // A drafted character whose mode the engine picks comes back under a
+  // different slug (`bready` -> `bready-lingering`), so reconciling the
+  // submitted draft with the result has to compare owned characters.
+  const ownedSlugs = useMemo(
+    () => ownedSlugIndex(supportedUnits.units),
     [supportedUnits.units],
+  )
+  const ownedSlugResolver = useMemo(
+    () => (slug: string) => ownedSlugFor(slug, ownedSlugs),
+    [ownedSlugs],
   )
 
   const nameFor = (slug: string) => unitIndex.get(slug)?.name ?? nameFromSlug(slug)
@@ -457,7 +461,7 @@ export function RecommendPanel({
             <div className="draft-layout">
               <UnitPalette
                 roster={roster}
-                supportedUnits={seatableUnits}
+                supportedUnits={supportedUnits.units}
                 usedSlugs={usedSlugs}
                 draggable
                 excludedSlugs={[...excludedSlugs]}
@@ -532,6 +536,7 @@ export function RecommendPanel({
           withinDraft={displayResult.withinDraft}
           baselineTotalDamage={displayResult.baselineTotalDamage}
           submittedDraft={submittedDraft}
+          ownedSlugFor={ownedSlugResolver}
           portraitFor={portraitFor}
           nameFor={nameFor}
         />

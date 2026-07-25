@@ -344,12 +344,11 @@ describe('RecommendPanel draft mode', () => {
     })
   })
 
-  it('offers a multi-candidate unit in the pool but never as a draft seat', async () => {
-    // Bready is one owned character the engine fans out into two mode
-    // candidates, so she belongs in the candidate pool - dropping her is a real
-    // choice - but a draft cannot pin her: the backend resolves a drafted seat
-    // to a concrete spec and answers 422 for her base slug, and picking a mode
-    // for the player would invent a choice they never made.
+  it('drafts a multi-candidate unit under the slug the player owns', async () => {
+    // Bready is one owned character the engine models in two modes. Which mode
+    // she runs in is the engine's call, so the palette offers the OWNED slug and
+    // the request carries it - the backend resolves the mode by completing the
+    // deck each way (deck_allocation's `_seed_choices`).
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue([
       ...supportedUnits,
@@ -361,14 +360,28 @@ describe('RecommendPanel draft mode', () => {
         candidates: ['bready-lingering', 'bready-recommended'],
       },
     ])
+    vi.mocked(recommendRaidDecks).mockResolvedValue({
+      decks: [],
+      combined_total_damage: 0,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+    })
 
-    render(<RecommendPanel roster={[...fullRoster, nikke('bready')]} {...noPersistence} />)
-
-    expect(await screen.findByRole('button', { name: /use bready/i })).toBeInTheDocument()
-
+    const roster = [...fullRoster, nikke('bready')]
+    render(<RecommendPanel roster={roster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/draft-based/i))
-    await screen.findByRole('button', { name: /use a/i }) // draft palette loaded
-    expect(screen.queryByRole('button', { name: /use bready/i })).not.toBeInTheDocument()
+    await screen.findByRole('button', { name: /use bready/i }) // draft palette has her
+
+    dropOnDeck(1, 'bready')
+    await user.click(screen.getByRole('button', { name: /optimize draft/i }))
+
+    expect(recommendRaidDecks).toHaveBeenCalledWith(
+      expect.objectContaining({
+        draft: [{ units: [{ slug: 'bready', locked: false }] }],
+      }),
+    )
   })
 
   it('shows the backend error message on a failed draft submission (infeasible draft)', async () => {

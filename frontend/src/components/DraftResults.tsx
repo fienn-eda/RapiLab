@@ -26,17 +26,30 @@ interface DraftResultsProps extends UnitLookups {
   baselineTotalDamage?: number | null
   /** The draft as submitted, for the per-deck diff. Diffs are omitted without it. */
   submittedDraft?: Draft
+  /** Maps a result slug to the owned slug the player drafted (`ownedSlugFor`).
+   * Both the deck matching and the diff compare through it, since a drafted
+   * character whose mode the engine picks comes back under a different slug.
+   * Defaults to identity, which is right for every unit with one mode. */
+  ownedSlugFor?: (slug: string) => string
 }
+
+const identity = (slug: string) => slug
 
 const diffAgainstSubmitted = (
   recommendedSlugs: string[],
   submitted?: DraftSeat[],
+  ownedSlugFor: (slug: string) => string = identity,
 ): { added: string[]; removed: string[] } => {
   if (!submitted) return { added: [], removed: [] }
-  const submittedSlugs = submitted.map((seat) => seat.slug)
+  const submittedOwned = submitted.map((seat) => ownedSlugFor(seat.slug))
+  const recommendedOwned = recommendedSlugs.map(ownedSlugFor)
   return {
-    added: recommendedSlugs.filter((slug) => !submittedSlugs.includes(slug)),
-    removed: submittedSlugs.filter((slug) => !recommendedSlugs.includes(slug)),
+    added: recommendedSlugs.filter(
+      (slug) => !submittedOwned.includes(ownedSlugFor(slug)),
+    ),
+    removed: submitted
+      .map((seat) => seat.slug)
+      .filter((slug) => !recommendedOwned.includes(ownedSlugFor(slug))),
   }
 }
 
@@ -53,15 +66,16 @@ const diffAgainstSubmitted = (
 export const matchDecksToSubmitted = (
   resultDecks: { deck: string[] }[],
   submittedDecks: DraftSeat[][],
+  ownedSlugFor: (slug: string) => string = identity,
 ): (DraftSeat[] | undefined)[] => {
   const claimed = new Set<number>()
   return resultDecks.map((resultDeck) => {
-    const resultSlugs = new Set(resultDeck.deck)
+    const resultSlugs = new Set(resultDeck.deck.map(ownedSlugFor))
     let bestIndex = -1
     let bestOverlap = -1
     submittedDecks.forEach((seats, index) => {
       if (claimed.has(index)) return
-      const overlap = seats.filter((seat) => resultSlugs.has(seat.slug)).length
+      const overlap = seats.filter((seat) => resultSlugs.has(ownedSlugFor(seat.slug))).length
       if (overlap > bestOverlap) {
         bestOverlap = overlap
         bestIndex = index
@@ -81,6 +95,9 @@ export function DraftResults({
   withinDraft = null,
   baselineTotalDamage = null,
   submittedDraft,
+  // Destructured, not left in `lookups`: DeckCard and RaidResults take unit
+  // lookups only, and this is a submitted-vs-returned reconciliation.
+  ownedSlugFor = identity,
   ...lookups
 }: DraftResultsProps) {
   const nameFor = lookups.nameFor ?? nameFromSlug
@@ -101,8 +118,8 @@ export function DraftResults({
   const delta2 = combinedTotalDamage - withinDraft.combined_total_damage
 
   const submittedDecks = submittedDraft?.decks ?? []
-  const withinDraftMatches = matchDecksToSubmitted(withinDraft.decks, submittedDecks)
-  const recommendedMatches = matchDecksToSubmitted(decks, submittedDecks)
+  const withinDraftMatches = matchDecksToSubmitted(withinDraft.decks, submittedDecks, ownedSlugFor)
+  const recommendedMatches = matchDecksToSubmitted(decks, submittedDecks, ownedSlugFor)
 
   return (
     <div className="draft-results">
@@ -128,6 +145,7 @@ export function DraftResults({
             const { added, removed } = diffAgainstSubmitted(
               deck.deck,
               withinDraftMatches[index],
+              ownedSlugFor,
             )
             return (
               <DeckCard
@@ -153,6 +171,7 @@ export function DraftResults({
             const { added, removed } = diffAgainstSubmitted(
               deck.deck,
               recommendedMatches[index],
+              ownedSlugFor,
             )
             return (
               <DeckCard

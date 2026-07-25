@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { canSeatInDeck, mapSupportedUnit } from './supportedUnit'
+import { mapSupportedUnit, ownedSlugFor, ownedSlugIndex } from './supportedUnit'
 
 describe('mapSupportedUnit', () => {
   it('maps the backend snake_case wire shape to the camelCase frontend shape', () => {
@@ -22,30 +22,36 @@ describe('mapSupportedUnit', () => {
 
   it('treats a null or single-entry candidate list as no choice at all', () => {
     // The backend sends null for the vast majority; a one-entry list would say
-    // the same thing. Neither should leave a `candidates` key behind, since
-    // that key is what marks a unit as un-seatable.
+    // the same thing. Neither should leave a `candidates` key behind.
     for (const candidates of [null, undefined, ['crown']]) {
       const unit = mapSupportedUnit({
         slug: 'crown', name: 'Crown', burst_tier: 1, element: 'Iron', candidates,
       })
       expect(unit.candidates).toBeUndefined()
-      expect(canSeatInDeck(unit)).toBe(true)
     }
   })
 })
 
-describe('canSeatInDeck', () => {
-  it('refuses a unit standing for several engine candidates', () => {
-    // Which mode gets fielded is the engine's pick, and the backend answers 422
-    // for a drafted slug that is not a concrete spec - so the draft palette must
-    // not offer her at all.
-    const bready = mapSupportedUnit({
-      slug: 'bready',
-      name: 'Bready',
-      burst_tier: 3,
-      element: 'Water',
+describe('ownedSlugFor', () => {
+  const units = [
+    mapSupportedUnit({ slug: 'crown', name: 'Crown', burst_tier: 1, element: 'Iron' }),
+    mapSupportedUnit({
+      slug: 'bready', name: 'Bready', burst_tier: 3, element: 'Water',
       candidates: ['bready-lingering', 'bready-recommended'],
-    })
-    expect(canSeatInDeck(bready)).toBe(false)
+    }),
+  ]
+  const index = ownedSlugIndex(units)
+
+  it('maps every candidate back to the slug the player owns', () => {
+    expect(ownedSlugFor('bready-lingering', index)).toBe('bready')
+    expect(ownedSlugFor('bready-recommended', index)).toBe('bready')
+  })
+
+  it('leaves a slug that is its own character alone', () => {
+    expect(ownedSlugFor('crown', index)).toBe('crown')
+    // Including the owned slug itself, and one the catalog has never heard of -
+    // a stale cached result must not resolve to undefined.
+    expect(ownedSlugFor('bready', index)).toBe('bready')
+    expect(ownedSlugFor('who-dis', index)).toBe('who-dis')
   })
 })

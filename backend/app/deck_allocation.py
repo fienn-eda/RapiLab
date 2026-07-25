@@ -35,8 +35,29 @@ class InfeasibleDraft(ValueError):
     owned character on two decks (two MODE_VARIANTS candidates of one base)."""
 
 
+def _seed_choices(seed, alternatives):
+    """Every concrete reading of one drafted deck.
+
+    A drafted seat can name an owned character the engine models in several
+    modes (MODE_VARIANTS). Which mode she runs in is the ENGINE's call, not the
+    player's - Bready's is decided by the buffers sharing her deck - so the seat
+    arrives as a representative spec plus `alternatives`, and the caller picks by
+    completing the deck each way and keeping the best. Seats with no alternative
+    contribute one reading, so a draft without ambiguity yields exactly the seed
+    it was given and pays nothing.
+    """
+    if not alternatives:
+        return [seed]
+    readings = [[]]
+    for unit in seed:
+        options = alternatives.get(unit.slug, (unit,))
+        readings = [reading + [option] for reading in readings for option in options]
+    return readings
+
+
 def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
-                   locked=frozenset(), time_budget_sec=45.0, workers=None):
+                   locked=frozenset(), time_budget_sec=45.0, workers=None,
+                   alternatives=None):
     # Serial (the default) never constructs a SimPool, so the sim path stays
     # exactly the pre-parallelism one (and test stubs of evaluate_deck keep
     # working - SimPool holds its own module binding they can't patch).
@@ -60,11 +81,18 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
 
         decks = []  # each: ordered list of units (canonical order from the search)
         for seed in draft:                       # seed decks: complete around placed units
-            found = best_completions(seed, remaining, boss, top_n=1, pool=pool)
-            if not found:
+            # One completion per concrete reading of the seed; the best wins, so
+            # a drafted character's mode is chosen by what her finished deck
+            # actually scores rather than by declaration order.
+            found = max(
+                (c for reading in _seed_choices(seed, alternatives)
+                 for c in best_completions(reading, remaining, boss, top_n=1,
+                                           pool=pool)),
+                key=lambda c: c["total_damage"], default=None)
+            if found is None:
                 raise InfeasibleDraft(
                     f"cannot complete a legal deck from {[u.slug for u in seed]}")
-            units = [by_slug[s] for s in found[0]["deck"]]
+            units = [by_slug[s] for s in found["deck"]]
             decks.append(units)
             # newly-pulled fillers leave the pool
             used = {variant_base(u.slug) for u in units} - placed
@@ -125,6 +153,10 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
     `locked` slugs are never chosen as a swap source, pinning a drafted seat."""
     if not decks:
         return
+    # Read locks per OWNED CHARACTER: a drafted seat may name a character whose
+    # MODE_VARIANTS candidate the engine chose, so locking `bready` has to hold
+    # whichever of her candidates ended up seated.
+    locked = {variant_base(slug) for slug in locked}
     scores = _score_batch(decks, boss, pool)
     improved = True
     while improved and time.monotonic() < deadline:
@@ -167,10 +199,11 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
     # in THIS deck or any other, since the player fields all of them at once.
     seated = None if j is not None else {variant_base(u.slug)
                                          for deck in decks for u in deck}
+    # `locked` arrives already keyed by owned character (see _swap_pass).
     candidates = [(a, k)
-                  for a in range(5) if decks[i][a].slug not in locked
+                  for a in range(5) if variant_base(decks[i][a].slug) not in locked
                   for k in range(len(partner))
-                  if partner[k].slug not in locked
+                  if variant_base(partner[k].slug) not in locked
                   and decks[i][a].burst_tier == partner[k].burst_tier
                   and (seated is None or variant_base(partner[k].slug) not in seated)]
     width = 1 if j is None else 2      # decks re-scored per candidate
@@ -238,7 +271,7 @@ def _leftover_against(alloc, roster):
 
 
 def recommend_from_draft(roster, boss, num_decks=5, draft=None,
-                         locked=frozenset(), workers=None):
+                         locked=frozenset(), workers=None, alternatives=None):
     """Three-tier recommendation around a player's in-progress draft:
     `recommended` (best over the full roster), `within_draft` (best reshuffle
     of only the drafted units, once the draft is complete) and
@@ -246,12 +279,19 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
     caller can show the player how much a reshuffle or a bench swap-in would
     gain over what they already placed. `pinned_by_deck` echoes back which
     locked slugs ended up in which recommended deck, for the API to attach
-    `pinned_slugs`."""
+    `pinned_slugs` - the slug the deck actually holds, which for a drafted
+    MODE_VARIANTS character is the candidate the engine chose, not the owned slug
+    the caller sent. `alternatives` carries the other candidates of such a seat
+    (see `_seed_choices`)."""
     draft = draft or []
+    # Locks are per owned character, so a lock on `bready` still holds after the
+    # engine settles on one of her candidates.
+    locked = {variant_base(slug) for slug in locked}
     # from-scratch pass honors hard locks (seed ONLY the locked units, leaving
     # flexible seats free to explore all shapes) - without this, a scratch win
     # could drop a locked unit. Empty when there are no locks => pure from-scratch.
-    locked_seed = [[u for u in deck if u.slug in locked] for deck in draft]
+    locked_seed = [[u for u in deck if variant_base(u.slug) in locked]
+                   for deck in draft]
     locked_seed = [d for d in locked_seed if d]
     if draft:
         # The full-roster from-scratch pass is cut here (measured redundant:
@@ -263,19 +303,27 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
         # swap mask, so the lock guarantee (a locked unit is never displaced)
         # still holds. ~4x faster on a complete draft.
         recommended = allocate_decks(roster, boss, num_decks=num_decks, draft=draft,
-                                     locked=locked, workers=workers)
+                                     locked=locked, workers=workers,
+                                     alternatives=alternatives)
     else:
         recommended = allocate_decks(roster, boss, num_decks=num_decks,
-                                     draft=(locked_seed or None), locked=locked, workers=workers)
+                                     draft=(locked_seed or None), locked=locked,
+                                     workers=workers, alternatives=alternatives)
 
     within_draft = None
     baseline_total = None
     if _is_complete(draft, num_decks):
-        drafted = [u for deck in draft for u in deck]
+        # Every candidate of a drafted character joins the within-draft pool, or
+        # a reshuffle of the drafted units alone could not reach the mode the
+        # full-roster pass just chose.
+        drafted = [option
+                   for deck in draft for u in deck
+                   for option in (alternatives or {}).get(u.slug, (u,))]
         w = allocate_decks(drafted, boss, num_decks=num_decks, draft=draft,
-                           locked=locked, workers=workers)
+                           locked=locked, workers=workers, alternatives=alternatives)
         s = allocate_decks(drafted, boss, num_decks=num_decks,
-                           draft=(locked_seed or None), locked=locked, workers=workers)
+                           draft=(locked_seed or None), locked=locked,
+                           workers=workers, alternatives=alternatives)
         within_draft = _better(w, s)
         # within_draft's decks are a valid full-roster allocation (drafted units
         # subset of roster), so fold it into recommended to guarantee
@@ -284,10 +332,16 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
         if _combined(within_draft) > _combined(recommended):
             recommended = {"decks": within_draft["decks"],
                            "leftover_slugs": _leftover_against(within_draft, roster)}
+        # "The draft's exact groupings, scored as-is" has no single reading for a
+        # seat whose mode the engine picks, so score the best one - the same
+        # standard the recommendation itself is held to, which keeps the gain the
+        # UI reports from being inflated by a mode the player never chose.
         baseline_total = sum(
-            _best_ordering_summary(deck, boss)["total_damage"] for deck in draft)
+            max(_best_ordering_summary(reading, boss)["total_damage"]
+                for reading in _seed_choices(deck, alternatives))
+            for deck in draft)
 
-    pinned_by_deck = [[s for s in d["deck"] if s in locked]
+    pinned_by_deck = [[s for s in d["deck"] if variant_base(s) in locked]
                       for d in recommended["decks"]]
     return {"recommended": recommended, "within_draft": within_draft,
             "baseline_total_damage": baseline_total, "pinned_by_deck": pinned_by_deck}

@@ -314,10 +314,17 @@ plus one entry per candidate. So:
 - **Owned-vs-supported checks** (palette membership, the roster grid, pool
   counts) match on the roster's `character_slug`, which is the owned entry.
 - **Naming or drawing a result deck** looks up the candidate slug directly.
-- **Seating a draft** only works for a unit with no `candidates` — the engine
-  picks the mode, and `/api/recommend-raid` answers 422 for an owned slug that
-  is not a concrete spec. `canSeatInDeck` in `types/supportedUnit.ts` is that
-  check; the draft palette filters by it while the pool palette does not.
+- **A draft sends the owned slug**, same as the palette shows. The backend
+  resolves the mode itself, by completing that deck once per candidate and
+  keeping the best — the player never picks a mode, because for some characters
+  (Bready) it is not theirs to pick.
+- **Reconciling what was sent against what came back** — the per-deck diff and
+  the deck matching in `DraftResults` — must map result slugs through
+  `ownedSlugFor` (`types/supportedUnit.ts`, built from `candidates`). A drafted
+  `bready` returns as `bready-lingering`; comparing raw slugs reads that as the
+  engine dropping one unit and adding another, and can fail to pair the deck at
+  all. `pinned_slugs` needs no mapping: it already names the seated candidate,
+  which is what a result row draws.
 
 ### Portraits
 

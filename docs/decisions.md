@@ -5,6 +5,16 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 드래프트도 소유 슬러그로 받는다 — 모드는 엔진이 "덱을 후보별로 완성해보고" 고른다
+- Date: 2026-07-25
+- Context: 바로 아래 항목에서 `supported-units`가 소유 슬러그를 노출하게 만들면서, 드래프트 팔레트에서는 그 3명을 **의도적으로 걸러냈다** — `api.py`가 드래프트 좌석을 구체적 spec으로만 해석해 `bready`에 422를 주기 때문이었다. 그 판단이 틀렸다는 것이 라이브에서 드러났다: 드래프트 모드에서는 **풀 팔레트("Units to use")가 아예 렌더되지 않으므로**(`mode !== 'draft'` 조건), 걸러내면 그 3명은 드래프트 모드에서 **보이지도, 제외하지도, 앉히지도** 못한다. "현행과 동일하니 회귀 없음"은 raid 모드 기준이었고 드래프트 모드에서는 제외 수단까지 사라졌다. Fienn 보고로 확인.
+- Decision (Fienn, 세 선택지 중): **드래프트도 소유 슬러그를 그대로 받고, 모드는 엔진이 고른다.** 좌석은 대표 후보 spec 하나 + `alternatives`로 이동하고, `allocate_decks`의 seed 루프가 `_seed_choices`로 후보별 읽기를 만들어 **각각 `best_completions`를 돌려 점수 높은 쪽을 채택**한다. 비용은 그 덱의 seed 완성이 1회 → 후보 수만큼(현재 2회)이고 전체 할당 재실행이 아니다. 부수로 **잠금과 대조를 소유 캐릭터 단위로** 바꿨다: `locked`는 base 키로 비교해야 `bready` 잠금이 실제로 앉은 후보에 걸리고, `pinned_slugs`는 좌석에 앉은 후보를 그대로 echo해 프론트 배지가 맞는 초상화에 붙는다.
+- Alternatives considered:
+  - **칩은 보이되 드래그만 막기** — 기각(Fienn). 보기·제외는 되살아나지만 그 3명은 영구히 덱에 고정할 수 없다.
+  - **모드별 칩 2개를 노출해 유저가 고르게** — 기각. **모드가 누구의 선택인지가 캐릭터마다 다르다**: Cinderella의 MG/Snipe와 Diesel의 버스트 타이밍은 플레이어가 실제로 고르지만 **Bready의 모드는 덱의 버퍼가 결정**한다(`bready.py` docstring). 유저에게 고르게 하면 Bready에서 거짓이 된다. 게다가 드래프트 팔레트 칩은 제외 토글도 겸하는데, 변형 슬러그로 토글하면 로스터(`character_slug`=base)와 매칭되지 않아 **조용히 아무 일도 안 일어난다**.
+  - **후보 조합마다 `recommend_from_draft` 전체를 재실행** — 기각. 70초짜리 실행이 후보 수만큼 곱해진다. 분기는 seed 완성에만 두면 충분하다.
+- Consequences: 백엔드 **1365 → 1367 passed / 3 skipped**, 프론트 **268 → 270 passed**. 드래프트 팔레트 70 → **73칩**. `within_draft` 풀에는 드래프트된 캐릭터의 **모든 후보**를 넣는다(안 넣으면 드래프트 유닛만의 재배치가 방금 고른 모드에 도달할 수 없다). `baseline_total_damage`("드래프트 그대로의 점수")는 모드가 미정인 좌석에 단일 해석이 없으므로 **최선 읽기**로 계산한다 — 그래야 UI가 보고하는 이득이 플레이어가 고르지 않은 모드로 부풀지 않는다. **프론트에서 반드시 따라온 것**: `DraftResults`의 덱 매칭과 per-deck diff가 결과 슬러그를 `ownedSlugFor`로 사상해야 한다. 드래프트한 `bready`가 `bready-lingering`으로 돌아오면 원시 슬러그 비교는 "유닛 하나 빼고 하나 넣음"으로 읽고, 슬러그 겹침으로 덱을 짝짓는 로직은 **그 덱을 아예 못 짝지을 수 있다**. **남은 한계**: 힐클라임은 peel이 고른 모드로 고정된다(다른 후보가 풀에서 빠지므로).
+
 ## `supported-units`가 두 어휘를 다 말하게 — 소유 슬러그와 엔진 후보 슬러그
 - Date: 2026-07-25
 - Context: 위 항목(배타 단위 수정)을 고치던 중, 프론트와 백엔드가 **3명의 캐릭터를 두고 정반대로 말하고** 있는 것이 드러났다. `/api/supported-units`는 `ENCODED_SLUGS`(엔진 **후보** 슬러그)만 반환하는데, blablalink에서 동기화된 로스터는 플레이어가 **소유한** 캐릭터를 이름한다 — MODE_VARIANTS 캐릭터의 소유 슬러그는 base(`bready`)이고 후보(`bready-lingering`/`-recommended`)가 아니다. 프론트는 로스터를 이 목록과 교집합해 팔레트·로스터 그리드를 만들므로 `bready`·`cinderella-crystal-wave`·`diesel-winter-sweets` 3명이 탈락했고, "미지원 89"에 담겨 접힌 목록에 묻혔다. 그런데 백엔드는 이 3명을 6개 후보로 확장해 **실제로 출전시키고 있었다** — 화면이 "아직 지원 안 됨"이라 말한 Diesel: Winter Sweets가 Deck 3에 앉아 있었다. 결과적으로 `70/70 in the search pool`과 `89 owned but not yet supported`가 둘 다 틀렸고(실제 77유닛/73캐릭터), **유저는 이 3명을 풀에서 제외할 수단이 없었다**(팔레트 칩이 없으므로). 초상화 매니페스트도 같은 이유로 후보 93개만 키를 갖고 있었다.

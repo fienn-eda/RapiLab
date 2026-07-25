@@ -130,6 +130,41 @@ describe('DraftResults', () => {
     added.forEach((el) => expect(el).toHaveTextContent('+ Z'))
     removed.forEach((el) => expect(el).toHaveTextContent('- E'))
   })
+
+  it('shows no diff when a drafted character comes back as the mode the engine chose', () => {
+    // The player drafts `bready`; the engine settles on `bready-lingering`. Raw
+    // slug comparison reads that as "dropped one unit, added another" - and the
+    // deck matching, which pairs by slug overlap, could also fail to pair the
+    // deck at all. Both compare through ownedSlugFor instead.
+    const ownedSlugFor = (slug: string) =>
+      slug.startsWith('bready') ? 'bready' : slug
+    const resolvedDecks: RaidDeck[] = [
+      { deck: ['bready-lingering', 'b', 'c', 'd', 'e'], total_damage: 70, burst_damage: 45, normal_attack_damage: 25, pinned_slugs: ['bready-lingering'] },
+    ]
+    const drafted: Draft = {
+      decks: [
+        [
+          { slug: 'bready', locked: true },
+          { slug: 'b', locked: false },
+          { slug: 'c', locked: false },
+          { slug: 'd', locked: false },
+          { slug: 'e', locked: false },
+        ],
+      ],
+    }
+    render(
+      <DraftResults
+        decks={resolvedDecks}
+        combinedTotalDamage={70}
+        withinDraft={{ decks: resolvedDecks, combined_total_damage: 70, leftover_slugs: [] }}
+        baselineTotalDamage={65}
+        submittedDraft={drafted}
+        ownedSlugFor={ownedSlugFor}
+      />,
+    )
+    expect(screen.queryByText(/^\+/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/^-/)).not.toBeInTheDocument()
+  })
 })
 
 describe('matchDecksToSubmitted', () => {

@@ -23,9 +23,9 @@ export interface SupportedUnit {
   burstTier: 1 | 2 | 3
   element: NikkeElement
   /** Set only on an OWNED slug the engine fans out into several candidates
-   * (one character, several modes). Which mode gets fielded is the engine's
-   * pick, so such a unit belongs in the candidate pool but cannot be seated in
-   * a specific deck — see `canSeatInDeck`. */
+   * (one character, several modes). She can be pooled and drafted like anyone
+   * else; what differs is that a RESULT deck names whichever candidate the
+   * engine chose, not this slug — see `ownedSlugFor`. */
   candidates?: string[]
 }
 
@@ -39,9 +39,20 @@ export const mapSupportedUnit = (wire: SupportedUnitWire): SupportedUnit => ({
     : {}),
 })
 
-/** Whether a draft can pin this unit to a deck. A slug standing for several
- * engine candidates cannot: the backend resolves a drafted seat to a concrete
- * spec and answers 422 for anything else, and picking a mode on the player's
- * behalf would be inventing a choice they never made. */
-export const canSeatInDeck = (unit: SupportedUnit): boolean =>
-  unit.candidates === undefined
+/** candidate slug → the owned slug it stands for. Derived from `candidates`, so
+ * the frontend needs no copy of the engine's variant table. */
+export const ownedSlugIndex = (units: SupportedUnit[]): Map<string, string> =>
+  new Map(
+    units.flatMap((unit) =>
+      (unit.candidates ?? []).map((candidate) => [candidate, unit.slug] as const),
+    ),
+  )
+
+/** The owned slug a result slug belongs to — itself for the vast majority.
+ *
+ * Anything comparing what the player SENT against what came BACK has to go
+ * through this: a drafted `bready` comes back as `bready-lingering`, and a raw
+ * slug comparison reads that as the engine having dropped one unit and added
+ * another. */
+export const ownedSlugFor = (slug: string, index: Map<string, string>): string =>
+  index.get(slug) ?? slug

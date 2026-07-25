@@ -19,6 +19,7 @@ from app.models import UserNikkeState
 from app.overload_effects import NAME_TO_STAT
 from app.roster_assembly import assemble_roster, load_directory, to_roster_json
 from app.sim_pool import SimPool
+from app.skill_rules.registry import MODE_VARIANTS
 from app.stat_assembly import load_stat_tables
 from app.supported_units import supported_units as _supported_units
 from app.user_roster import load_roster
@@ -214,26 +215,43 @@ def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
             422, f"draft has {len(request.draft)} decks but num_decks is {request.num_decks}")
 
     by_slug = {u.slug: u for u in specs}
+    # A drafted seat may name an OWNED slug the engine models as several mode
+    # candidates (MODE_VARIANTS) rather than a spec of its own - that is what the
+    # palette offers, since it is what the roster owns. Such a seat travels as one
+    # representative spec plus its alternatives, and the engine settles the mode
+    # by completing the deck each way (deck_allocation's `_seed_choices`).
+    alternatives = {}
+    for base, variants in MODE_VARIANTS.items():
+        loadable = tuple(by_slug[v] for v in variants if v in by_slug)
+        if base not in by_slug and loadable:
+            alternatives[base] = loadable
+
     # resolve draft slugs -> specs; unknown/unsupported slug is a client error
-    draft, locked = [], set()
+    draft, locked, requested = [], set(), []
     for deck in request.draft:
         seat = []
         for u in deck.units:
-            if u.slug not in by_slug:
+            options = alternatives.get(u.slug)
+            if options is None and u.slug not in by_slug:
                 raise HTTPException(422, f"draft references unusable slug: {u.slug}")
-            seat.append(by_slug[u.slug])
+            seat.append(options[0] if options else by_slug[u.slug])
+            requested.append(u.slug)
             if u.locked:
                 locked.add(u.slug)
         draft.append(seat)
-    seen = [u.slug for deck in draft for u in deck]
-    if len(seen) != len(set(seen)):
-        dups = {s for s in seen if seen.count(s) > 1}
+    # Keyed by the representative spec, which is what the draft now holds.
+    alternatives = {options[0].slug: options for options in alternatives.values()}
+    # Reported against what the CLIENT sent, not the resolved representative -
+    # naming a slug the caller never used would be a riddle.
+    if len(requested) != len(set(requested)):
+        dups = {s for s in requested if requested.count(s) > 1}
         raise HTTPException(
             422, f"slug(s) appear in more than one draft deck: {sorted(dups)}")
 
     try:
         out = recommend_from_draft(specs, boss, num_decks=request.num_decks,
-                                   draft=draft, locked=locked, workers="auto")
+                                   draft=draft, locked=locked, workers="auto",
+                                   alternatives=alternatives)
     except InfeasibleDraft as e:
         raise HTTPException(422, str(e))
 

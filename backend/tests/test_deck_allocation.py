@@ -223,6 +223,51 @@ def test_a_bench_swap_never_seats_a_character_already_holding_a_seat(monkeypatch
     assert RECOMMENDED in [u.slug for u in bench]
 
 
+def test_a_drafted_character_is_seated_in_the_mode_that_scores_best(monkeypatch):
+    """A drafted seat can name a character the engine models in several modes;
+    which one she runs in is the ENGINE's call. The seat arrives as one
+    representative candidate plus `alternatives`, and the deck is completed each
+    way - so the representative loses when the other mode is worth more."""
+    by_slug = {u.slug: u for u in roster_of({
+        "a1": 1, "a2": 2, "a3": 3, "a4": 3,
+        LINGERING: 3, RECOMMENDED: 3,
+    })}
+    seed = [by_slug[s] for s in ("a1", "a2", "a3", "a4", LINGERING)]
+
+    def score(slugs):
+        return 200.0 if RECOMMENDED in slugs else 100.0
+
+    patch_scorer(monkeypatch, score)
+    out = da.allocate_decks(
+        list(by_slug.values()), BossProfile(), num_decks=1, draft=[seed],
+        alternatives={LINGERING: (by_slug[LINGERING], by_slug[RECOMMENDED])},
+        time_budget_sec=0.0)
+
+    seated = out["decks"][0]["deck"]
+    assert RECOMMENDED in seated                     # the better mode won
+    assert LINGERING not in seated                   # ...and only one mode is seated
+    assert out["decks"][0]["total_damage"] == 200.0
+
+
+def test_a_lock_on_a_drafted_character_holds_whichever_mode_was_chosen(monkeypatch):
+    """The player locks the slug they own (`bready`); the seat ends up holding a
+    candidate slug. Comparing locks by slug would silently unpin her."""
+    # Her seat is the deck's ONLY Burst-3 one, so the bench unit y (also B3) can
+    # swap in nowhere else - the lock is the single thing standing between them.
+    deck = roster_of({"x1": 1, "x2": 2, RECOMMENDED: 3, "x4": 1, "x5": 2})
+    bench = [Unit("y", 3)]
+
+    def score(slugs):
+        return 500.0 if "y" in slugs else 100.0
+
+    patch_scorer(monkeypatch, score)
+    da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0,
+                  locked=frozenset({"bready"}), batch=8)
+
+    assert RECOMMENDED in [u.slug for u in deck]      # the lock held
+    assert [u.slug for u in bench] == ["y"]
+
+
 def test_a_draft_spending_one_character_twice_is_infeasible(monkeypatch):
     """A player CAN drag both candidates onto different decks - both are listed
     by /api/supported-units - so the request has to be rejected rather than
