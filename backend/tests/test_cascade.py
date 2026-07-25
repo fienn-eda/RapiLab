@@ -324,3 +324,50 @@ def test_shortlist_returns_everything_when_k_exceeds_the_pool(monkeypatch):
 
     combos = Cascade(model, top_k=1000).shortlist(roster, BOSS)
     assert len(combos) == 1
+
+
+def test_shortlist_completions_seats_every_drafted_unit(monkeypatch):
+    roster = _roster()
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    model = fit_surrogate(roster, BOSS, _scorer_favouring({"c0"})[0], samples=120)
+    required = [u for u in roster if u.slug == "c5"]
+    candidates = [u for u in roster if u.slug != "c5"]
+
+    combos = Cascade(model, top_k=7).shortlist_completions(required, candidates, BOSS)
+
+    assert len(combos) == 7
+    assert all(len(c) == 5 for c in combos)
+    assert all("c5" in {u.slug for u in c} for c in combos)
+
+
+def test_shortlist_completions_is_ordered_by_predicted_score(monkeypatch):
+    roster = _roster()
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    model = fit_surrogate(roster, BOSS, _scorer_favouring({"c0", "b0"})[0], samples=120)
+    required = [u for u in roster if u.slug == "c5"]
+    candidates = [u for u in roster if u.slug != "c5"]
+
+    combos = Cascade(model, top_k=10).shortlist_completions(required, candidates, BOSS)
+    scores = model.score_combos(combos)
+
+    assert list(scores) == sorted(scores, reverse=True)
+
+
+def test_shortlist_completions_declines_a_drafted_unit_the_model_never_saw(monkeypatch):
+    # The drafted units are scored as deck members, not just honored as a
+    # constraint, so a unit with no column would KeyError in featurize.
+    roster = _roster()
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    model = fit_surrogate(roster, BOSS, _scorer_favouring({"c0"})[0], samples=120)
+
+    assert Cascade(model).shortlist_completions([_u("stranger", 3)], roster, BOSS) is None
+
+
+def test_shortlist_completions_declines_when_the_draft_fits_no_shape(monkeypatch):
+    # three Burst-1s exceed every ALLOWED_SHAPES tier-1 slot count
+    roster = _roster()
+    monkeypatch.setattr("app.cascade.prune_candidate_pool", lambda r, b, p=None: [])
+    model = fit_surrogate(roster, BOSS, _scorer_favouring({"c0"})[0], samples=120)
+    required = [u for u in roster if u.slug in ("a0", "a1", "a2")]
+
+    assert Cascade(model).shortlist_completions(required, roster, BOSS) is None

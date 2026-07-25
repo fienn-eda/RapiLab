@@ -23,6 +23,12 @@ export interface NikkeDraft {
   // be read as zero.
   grade?: number
   core?: number
+  // Whether the player has this unit's Favorite Item equipped, display only.
+  // The promoted slug cannot stand in for it: only 13 units have a distinct
+  // "-signature" encoding, so everyone else keeps a plain slug whether or not
+  // the item is equipped. Optional for the same reason grade is - absent means
+  // "the import never said", which is not the same as false.
+  favorite_item?: boolean
   level: string
   hp: string
   atk: string

@@ -14,7 +14,8 @@ from app.cascade import Cascade, cached_fit_surrogate
 from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
                              _intra_tier_orderings, _orderings_within_budget,
                              _score_batch, _summarize, best_completions,
-                             evaluate_deck, search_best_decks, variant_base)
+                             completions_fit_budget, evaluate_deck,
+                             search_best_decks, variant_base)
 from app.sim_pool import SimPool, resolve_workers
 
 
@@ -79,15 +80,37 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
                 f"one owned character drafted into more than one deck: {twice}")
         remaining = [u for u in roster if variant_base(u.slug) not in placed]
 
+        # One fit serves the whole allocation: the surrogate is additive over
+        # unit membership, so coefficients learned on the full roster score any
+        # subset of it - the same fit ranks a seeded deck's completions and
+        # every peeled deck after it. Fitted on first demand and at most once,
+        # so an allocation whose searches all fit their budget never pays for
+        # it; `roster` (not `remaining`) keys the shared cache entry.
+        fitted = {}
+
+        def ranker():
+            if "cascade" not in fitted:
+                model = cached_fit_surrogate(
+                    roster, boss, lambda decks: _score_batch(decks, boss, pool))
+                fitted["cascade"] = Cascade(model) if model is not None else None
+            return fitted["cascade"]
+
         decks = []  # each: ordered list of units (canonical order from the search)
         for seed in draft:                       # seed decks: complete around placed units
             # One completion per concrete reading of the seed; the best wins, so
             # a drafted character's mode is chosen by what her finished deck
             # actually scores rather than by declaration order.
+            readings = _seed_choices(seed, alternatives)
+            # Ask for the ranker only once a reading has actually blown the
+            # completion budget - the probe stops at the first ordering past it,
+            # so asking costs nothing when the answer is no.
+            cascade = None if all(
+                completions_fit_budget(reading, remaining) for reading in readings
+            ) else ranker()
             found = max(
-                (c for reading in _seed_choices(seed, alternatives)
+                (c for reading in readings
                  for c in best_completions(reading, remaining, boss, top_n=1,
-                                           pool=pool)),
+                                           pool=pool, cascade=cascade)),
                 key=lambda c: c["total_damage"], default=None)
             if found is None:
                 raise InfeasibleDraft(
@@ -98,23 +121,16 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
             used = {variant_base(u.slug) for u in units} - placed
             remaining = [u for u in remaining if variant_base(u.slug) not in used]
 
-        # One fit serves the whole peel: the surrogate is additive over unit
-        # membership, so coefficients learned on the full roster score any
-        # subset of it. Deferred to the first peel iteration (and probed
-        # against `remaining`, not `roster`) so a draft the seed loop already
-        # completes - or a small leftover pool - never pays for a fit nothing
-        # will use; `probed` still bounds the cost to one fit for the whole
-        # peel, same as before.
+        # Probed against `remaining`, not `roster`, so a small leftover pool
+        # never pays for a fit nothing will use; `probed` bounds the question to
+        # once for the whole peel.
         cascade = None
         probed = False
         while len(decks) < num_decks:            # free decks: greedy peeling (unchanged)
             if not probed:
                 probed = True
                 if _orderings_within_budget(remaining, SEARCH_SIM_BUDGET) is None:
-                    model = cached_fit_surrogate(
-                        roster, boss, lambda decks: _score_batch(decks, boss, pool))
-                    if model is not None:
-                        cascade = Cascade(model)
+                    cascade = ranker()
             found = search_best_decks(remaining, boss, top_n=1, pool=pool,
                                       cascade=cascade)
             if not found:

@@ -31,7 +31,7 @@ def test_a_mode_variant_character_is_listed_once_with_her_candidates():
     units = {u["slug"]: u for u in supported_units()}
     bready = units["bready"]
     assert bready["candidates"] == ["bready-lingering", "bready-recommended"]
-    assert bready["name"] == "Bready"
+    assert bready["name"], "a listed unit always has some name to draw"
     # Her candidates stay listed too: a result deck names THOSE, so the client
     # still has to be able to look one up for a portrait and a burst tier.
     assert {"bready-lingering", "bready-recommended"} <= set(units)
@@ -47,18 +47,24 @@ def test_a_base_slug_that_is_itself_a_candidate_carries_no_candidate_list():
 
 
 def test_a_merged_entry_describes_candidates_that_actually_agree():
-    """A merged entry takes its name/element/burst tier from the FIRST loadable
+    """A merged entry takes its element/burst tier from the FIRST loadable
     candidate. That is only honest while a character's candidates agree, and
     burst tier is the one they could plausibly differ on (VARIANT_BURST_TIERS,
     as rapi-red-hood does). If a future MODE_VARIANTS base spans tiers AND is
     not a candidate itself, it cannot be drawn as one palette chip - fail here
-    so that gets decided rather than silently mis-grouped."""
+    so that gets decided rather than silently mis-grouped.
+
+    `name` is deliberately NOT checked: display_names.py exists precisely so a
+    character's candidates read differently ("브레디 (잔류)" vs "브레디 (권장)"),
+    and requiring agreement here would forbid the thing that fixes the bench's
+    duplicate labels. Their names are held apart by test_display_names.py
+    instead."""
     units = {u["slug"]: u for u in supported_units()}
     for base, variants in MODE_VARIANTS.items():
         if base in variants:
             continue                      # listed on its own terms
         described = [units[v] for v in variants if v in units]
-        for field in ("name", "element", "burst_tier"):
+        for field in ("element", "burst_tier"):
             values = {u[field] for u in described}
             assert len(values) == 1, f"{base} candidates disagree on {field}: {values}"
 

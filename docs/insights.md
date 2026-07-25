@@ -143,6 +143,13 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - **테스트도 같은 방식으로 실패했다.** 2026-07-22의 회귀 테스트는 그때 사라진 슬러그 4개를 **이름으로** 단언했는데, 그런 테스트는 자기를 만든 사건만 잡고 다음 드리프트는 못 잡는다. 지금 테스트는 목록이 없다 — `set(ENCODED_SLUGS) - {supported_units()의 슬러그}`가 비어 있는지만 본다.
 - 교훈: 같은 파생 규칙을 두 곳에서 읽는다면, "둘을 똑같이 유지하라"는 규율이 아니라 **한 곳에서만 정의되게 하라**. 그리고 조용한 누락(`except: continue`)을 감시하는 회귀 테스트는 개별 사례가 아니라 **전수 불변식**으로 쓸 것 — 실패 모드가 크래시가 아니라 침묵이라 아무도 세어보기 전까지 드러나지 않는다.
 
+## 드래프트 완성 비용은 좌석 수에 반비례한다 — 그리고 축소 품질을 검증하는 잣대는 "제약이 적을수록 좋아야 한다"이다
+- 발견: 2026-07-25 (`best_completions` 예산화, `backend/app/deck_search.py`)
+- **직관과 반대다.** 드래프트가 덜 찰수록 완성 방법이 많아지므로 탐색이 **비싸진다**. 실제 77유닛 로스터(B1 13/B2 17/B3 47) 실측: 좌석 5개 = 4순서, 4개 = 372, 3개 = 10,835, 2개 = 126,513, **1개 = 1,830,670**(8워커 ~6.5시간). 완성 드래프트를 기준으로 성능을 재면 가장 싼 케이스만 보게 되고, 유저가 가장 먼저 닿는 "칩 하나" 경로가 무응답이라는 것을 못 본다. **드래프트 경로 성능은 가장 얇은 드래프트로 재라**(`scripts/measure_thin_draft.py`).
+- **축소(프루닝/캐스케이드) 품질을 검증하는 잣대: 드래프트는 제약이므로 좌석이 적을수록 결과가 좋거나 같아야 한다.** 좌석 N개의 답은 좌석 N-1개 문제의 유효한 해이기도 하므로, 좌석 1개가 좌석 2개보다 낮게 나오면 그건 제약의 대가가 아니라 **탐색 결함**이다. `prune_candidate_pool`만 붙였을 때 정확히 이 위반이 나왔다(좌석1 36.73B < 좌석2 42.99B, 14.6% 낮음). 총딜 절대값만 보면 "드래프트를 지켰으니 그럴 수 있다"로 넘어가기 쉽다 — 좌석 수를 늘려가며 단조성을 보는 것이 결함을 드러낸다.
+- 왜 얇은 드래프트가 축소에 더 취약한가: 좌석이 적을수록 완성 유닛 5개 중 더 많은 수(좌석 1개면 4개)를 축소 풀에서 뽑는다. `prune_candidate_pool`은 **드래프트가 없는 레퍼런스 덱**에서 한계 기여만 재므로 그 recall 오차에 그만큼 더 노출된다. 캐스케이드(더 넓은 풀 + 덱 전체 랭킹)는 이 노출을 상쇄한다 — 자유 덱에서는 선택이던 것이 완성 경로에서는 필수가 되는 이유.
+- 함정: 축소 풀이 **완성을 하나도 못 만들 수 있다**(어떤 티어에 남은 후보가 전부 드래프트된 유닛의 MODE_VARIANTS 형제인 경우 등). 이때 빈 결과를 그대로 반환하면 `allocate_decks`가 `InfeasibleDraft`를 던져 **플레이어가 실제로 낼 수 있는 편성을 "불가능"이라 말한다**. 전수 경로로 되돌아가는 것이 맞다 — 느린 것이 틀린 것보다 낫다.
+
 ## Deck-allocation unit tests: keep fake rosters under ~1200 shape-combination orderings
 - 발견: 2026-07-22 (draft-based deck allocation, `backend/tests/test_deck_allocation.py`)
 - The allocation-layer unit tests use a fake `@dataclass(frozen=True) class Unit(slug, burst_tier)` plus a monkeypatched `evaluate_deck` (see `patch_scorer` in the test file) — deliberately not real Nikke specs, since "all search/sim calls are stubbed; real sims live in the API end-to-end test" (file docstring).

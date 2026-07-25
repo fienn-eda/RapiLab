@@ -52,6 +52,72 @@ def test_locked_unit_stays_in_its_deck(monkeypatch):
     assert "weak3" in out["decks"][0]["deck"]
 
 
+def _wide_roster():
+    """Big enough that completing a one-seat draft blows SEARCH_SIM_BUDGET -
+    the shape of draft a player produces by dropping a single chip."""
+    tiers = {f"b1{i}": 1 for i in range(4)}
+    tiers |= {f"b2{i}": 2 for i in range(6)}
+    tiers |= {f"b3{i}": 3 for i in range(14)}
+    return roster_of(tiers)
+
+
+def _spy_on_completions(monkeypatch):
+    """Record the `cascade` each best_completions call receives, returning a
+    completion built by hand (the real search would need investment fields the
+    stub Unit lacks)."""
+    seen = []
+
+    def fake(required, candidates, boss, top_n=1, pool=None, cascade=None, **kw):
+        seen.append(cascade)
+        by_tier = {t: [u for u in candidates if u.burst_tier == t] for t in (1, 2, 3)}
+        held = {u.burst_tier for u in required}
+        fill = ([by_tier[1][0]] if 1 not in held else []) \
+            + ([by_tier[2][0]] if 2 not in held else [])
+        deck = list(required) + fill
+        deck += [u for u in by_tier[3] if u not in deck][:5 - len(deck)]
+        return [{"deck": [u.slug for u in deck], "total_damage": 1.0,
+                 "burst_damage": 0.0, "normal_attack_damage": 0.0,
+                 "result": {"total_damage": 1.0, "damage_log": []}}]
+
+    monkeypatch.setattr(da, "best_completions", fake)
+    return seen
+
+
+def test_a_thin_seed_is_completed_with_the_cascade(monkeypatch):
+    """A one-seat draft blows the completion budget, so the seed must be
+    completed against the ranked shortlist rather than prune's cut alone -
+    otherwise the thinnest draft, the one a player reaches first, gets the
+    worst recommendation."""
+    r = _wide_roster()
+    patch_scorer(monkeypatch, lambda slugs: 1.0)
+    monkeypatch.setattr(da, "cached_fit_surrogate", lambda *a, **kw: object())
+    seen = _spy_on_completions(monkeypatch)
+    seed = [next(u for u in r if u.slug == "b30")]
+
+    da.allocate_decks(r, BOSS, num_decks=1, draft=[seed], workers=None,
+                      time_budget_sec=0.0)
+
+    assert seen and all(c is not None for c in seen)
+
+
+def test_a_seed_within_budget_never_pays_for_a_fit(monkeypatch):
+    """The ranker is a budget escape hatch: a draft whose completions are
+    cheap to enumerate must not trigger a 200-deck surrogate fit."""
+    r = _roster()
+    patch_scorer(monkeypatch, lambda slugs: 1.0)
+    fits = []
+    monkeypatch.setattr(da, "cached_fit_surrogate",
+                        lambda *a, **kw: fits.append(1) or object())
+    seen = _spy_on_completions(monkeypatch)
+    seed = [next(u for u in r if u.slug == "b30")]
+
+    da.allocate_decks(r, BOSS, num_decks=1, draft=[seed], workers=None,
+                      time_budget_sec=0.0)
+
+    assert seen == [None]
+    assert fits == []
+
+
 def test_infeasible_draft_raises():
     # 3 tier-1 units: no ALLOWED_SHAPES has n1 > 2, so no completion exists.
     # best_completions rejects this on tier counts alone, before touching

@@ -144,6 +144,30 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Favorite Item ----------------------------------------------------------- */
+
+.favorite-item {
+  color: var(--favorite-item);
+  font-size: 13px;
+  line-height: 1;
+  /* The heart sits ON portrait art, whose brightness we do not control. */
+  text-shadow: 0 1px 2px rgba(6, 5, 10, 0.9);
+}
+
+/* The roster card already has a badge row over the art; the heart joins it. */
+.roster-card__grade .favorite-item {
+  margin-left: var(--sp-1);
+}
+
+/* A palette chip has no such row - its stats are a column BELOW the art - so
+   the heart takes the art's top corner instead. */
+.palette__figure > .favorite-item {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 12px;
+}
+
 /* Tabs -------------------------------------------------------------------- */
 
 .tabs {

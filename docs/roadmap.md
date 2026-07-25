@@ -818,19 +818,49 @@
       `GetUserProfileBasicInfo`를 `.catch(()=>null)`로 감싸므로 그 호출만 실패하면 닉네임이
       빈 값인 채 싱크가 성공한다. `SyncRosterPanel`이 이미 경고 줄을 파싱하니("N owned units
       not yet supported") 같은 자리에 "계정 이름을 읽지 못했습니다"를 띄우면 된다.
-- [ ] **드래프트 좌석이 적으면 사실상 응답이 안 온다 — `best_completions`에 예산이 없다.**
-      (2026-07-25 라이브 확인 중 발견, **기존 문제**로 이번 변경과 무관.)
-      `_shape_completions`(`deck_search.py:131`)는 프루닝도 예산도 없이 shape 호환 완성을
-      전수 생성하고 `best_completions`가 그 **모든 intra-tier 순서**를 시뮬레이션한다.
-      1유닛만 드래프트하면 남은 76유닛에서 4자리를 채우므로 (1,1,3) 한 shape만으로도
-      B1 12 × B2 15 × C(B3 50, 2)=1225 → 22만 덱, 순서까지 곱하면 **130만 시뮬레이션**이다.
-      8워커로도 시간 단위. 유저가 칩 하나만 끌어놓으면 바로 걸리는 경로이고, 프론트는
-      "1~2분" 안내만 띄운 채 무한정 기다린다. `search_best_decks`처럼 캐스케이드/예산을
-      물리거나, 좌석이 임계치 미만이면 UI에서 막아야 한다.
-- [ ] **표시 이름이 변형을 구분하지 못한다.** `displayName`이 `-b1`/`-mg`/`-snipe`/
-      `-lingering`/`-recommended`를 버려 벤치에 "Bready, Bready"가 나란히 나온다.
-      `supported-units`의 `candidates`가 이미 후보→소유 캐릭터 관계를 담고 있으니 그걸
-      읽어 모드를 덧붙이면 된다.
+- [x] **드래프트 좌석이 적으면 사실상 응답이 안 온다 — 완료 (2026-07-25).**
+      `best_completions`가 `SEARCH_SIM_BUDGET`(1200)을 받고, 초과하면 `search_best_decks`와
+      **같은 2단 축소**(캐스케이드 shortlist → 실패 시 `prune_candidate_pool`)를 탄다.
+      실측(실제 77유닛 로스터, `scripts/measure_thin_draft.py`): 좌석 1개 완성이
+      **1,830,670 순서(8워커 ~6.5시간, 사실상 무응답) → 86.2초**. 좌석 2개 126,513 → 69.6초,
+      좌석 3개 10,835 → 70.0초. **캐스케이드가 필수였다** — prune만 붙인 1차 구현은
+      좌석 1개에서 총딜 36.73B로, **제약이 더 많은** 좌석 2개(42.99B)보다 14.6% 낮았다
+      (좌석이 적을수록 완성 유닛 4/5를 축소 풀에서 뽑으므로 recall 오차 노출이 커진다).
+      캐스케이드 적용 후 **43.06B**로 단조성 회복(zero-base 43.51B ≥ 좌석1 43.06B ≥ 좌석2 42.99B).
+      surrogate 적합은 예산을 실제로 초과한 seed가 있을 때만 지불하며 seed·peel이 1회를
+      공유한다. 백엔드 **1371 → 1382 passed / 3 skipped**. `decisions.md`·`insights.md` 참고.
+- [ ] **표시 이름 한글화 — 구조 완료(2026-07-25), 남은 건 표 채우기(Fienn).**
+      `backend/app/display_names.py`에 96개 슬러그가 빈 값으로 들어가 있다. **채우는 만큼
+      한글이 되고, 빈 줄은 영문으로 떨어진다**(회귀 없음). 모드 변형은 접미사 파생 없이
+      표에 통째로 다르게 쓴다(예: "브레디 (잔류)"/"브레디 (권장)"). **애장품은 base와
+      같은 이름으로 쓴다** — 로스터가 둘 중 하나로만 해석해 함께 뜨지 않으므로
+      `helm`·`helm-signature` 둘 다 "헬름"이 맞고, 빌드 구분은 하트가 한다. 유일성은
+      캐릭터 단위로만 요구된다(`test_display_names.py`).
+      조사에서 드러난 것: 겹치는 이름은 **17건**이고 원래 To-Do가 제안한 `candidates`
+      해법으로는 3건밖에 못 고친다(`rapi-red-hood-b1`은 base가 곧 후보라 `candidates`가
+      없고, `-signature` 13쌍은 MODE_VARIANTS가 아니다). blablalink에는 **한글 이름이
+      없다**(디렉토리·캐릭터 데이터 전부 영문, Accept-Language·쿠키·`/ko/` 경로 모두 196행
+      영문) — 자동 수입 경로가 없어 손으로 쓴다.
+      애장품은 이름이 아니라 **주황 하트**로 표시(초상화 뱃지 + 텍스트 목록엔 이름 뒤
+      하트). 대상은 `-signature` 13기가 아니라 **실제로 장착한 유닛**이라 `favorite_item`
+      플래그를 `NikkeDraft`까지 보존했다(`grade`/`core`와 같은 패턴, 와이어 타입은 불변).
+      백엔드 **1387 passed / 3 skipped**, 프론트 **282 passed**. 라이브 확인 완료.
+      스펙: `docs/superpowers/specs/2026-07-25-korean-display-names-design.md`.
+- [ ] **한글화 후속 ①: 엔진 미지원 ~86기.** `supported-units`에 없어 위 경로로 안 덮인다.
+      로스터 그리드에만 보이고 지금은 슬러그에서 유도한 영문이 뜬다. 96개는 채워졌으므로
+      착수 가능.
+      **이름 규칙(Fienn, 2026-07-26): 한국 서버 공식 표기를 따른다 — 음차가 아니다.**
+      대부분은 음차와 같지만(드레이크·라플라스·프리바티) 아닌 경우가 있다: `moran`은
+      "모란"이 아니라 **"목단"**이다. 영문명에서 유추하지 말고 공식 표기를 확인할 것.
+- [ ] **한글화 후속 ②: UI 크롬.** "Boss profile"·"Recommend decks"·"Units to use" 등
+      화면 문구가 영어다. 언어 전환 구조는 만들지 않기로 했다(한글 고정).
+- [ ] **추천 요청을 취소할 수 없다.** (2026-07-25 Fienn 보고 — 실수로 눌렀는데 무를 방법이
+      없음.) `api/recommendRaid.ts`가 AbortController를 의도적으로 안 쓰고(1~2분 걸리는
+      호출이라 타임아웃을 두지 않음) `useRecommendRaid`에도 cancel이 없다. 지금 할 수 있는
+      건 새로고침(프로필이 localStorage에 있어 드래프트는 보존)뿐이고, 그건 **화면만**
+      푼다 — 핸들러가 동기 `def`(`api.py:202`)라 서버는 SimPool 워커까지 끝까지 돈다.
+      프론트에 Cancel 버튼 + AbortController를 붙이는 것만으로는 CPU가 안 풀리므로,
+      제대로 하려면 백엔드에도 취소 처리가 필요하다(연결 끊김 감지 또는 작업 핸들).
 - [ ] **덱 데미지 내역이 총합의 22~72%만 설명한다.** 화면은 `burst`·`normal_attack`만
       보여주는데 시뮬레이터는 `periodic`·`scheduled`·`instant_nuke`도 기록한다. 실측 비율
       Deck1 25.1% / Deck2 72.3% / Deck3 22.4% / Deck4 58.6% / Deck5 28.4%, Deck5는

@@ -5,6 +5,15 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 드래프트 완성도 예산을 받는다 — 그리고 거기서는 캐스케이드가 선택이 아니라 필수다
+- Date: 2026-07-25
+- Context: `best_completions`(드래프트된 좌석 주위로 덱을 완성하는 경로)만 프루닝도 예산도 없이 shape 호환 완성을 **전수 시뮬레이션**하고 있었다. 비용이 좌석 수에 **반비례**한다는 것이 핵심이다 — 실제 77유닛 로스터에서 좌석 5개는 4순서지만 좌석 1개는 **1,830,670순서**(8워커 ~6.5시간)다. 즉 유저가 칩을 하나만 끌어놓는, 기능의 주 용도이자 가장 먼저 닿는 경로가 가장 비쌌고 프론트는 "1~2분" 안내만 띄운 채 무한정 기다렸다.
+- Decision: `best_completions`가 `SEARCH_SIM_BUDGET`을 받고, 초과하면 `search_best_decks`와 **동일한 2단 축소**를 탄다 — `Cascade.shortlist_completions`(새로 추가; `widened_pool` + surrogate 랭킹을 `_shape_completions`에 건 것) 우선, 거절하면 `prune_candidate_pool`. `allocate_decks`는 **예산을 실제로 초과한 seed가 있을 때만** surrogate를 적합하고(`completions_fit_budget` 프로브는 첫 초과 순서에서 멈추므로 사실상 공짜), seed 루프와 peel 루프가 그 적합 1회를 공유한다.
+- Alternatives considered:
+  - **좌석이 임계치 미만이면 UI에서 막기**(roadmap의 대안) — 기각. "칩 하나 놓고 나머지를 추천받는다"가 이 기능의 주 용도인데 그걸 없앤다. 게다가 좌석 2개도 126,513순서(~27분)라 임계치를 어디에 두든 근본 해결이 아니다.
+  - **`prune_candidate_pool`만 붙이기**(YAGNI 관점의 1차 구현) — **측정으로 기각.** 좌석 1개 총딜 **36.73B**로, 제약이 더 많은 좌석 2개(42.99B)보다 14.6% 낮았다. 드래프트는 제약이므로 제약이 적을수록 결과가 나빠지면 안 된다. 원인은 구조적이다: 좌석이 적을수록 완성 유닛 4/5를 축소 풀에서 뽑으므로, 드래프트가 부재한 레퍼런스 덱에서 한계 기여만 재는 prune의 recall 오차에 그만큼 더 노출된다. 캐스케이드(22유닛 widened pool + 덱 전체 랭킹) 적용 후 **43.06B**로 회복.
+- Consequences: 실측 좌석 1개 **86.2초**(좌석 2개 69.6초, 3개 70.0초), 단조성 회복(zero-base 43.51B ≥ 좌석1 43.06B ≥ 좌석2 42.99B). 축소 풀이 완성을 못 만들면(드래프트 유닛의 MODE_VARIANTS 형제만 남은 티어 등) **전수 경로로 되돌아간다** — 멀쩡한 드래프트를 `InfeasibleDraft`로 오판하는 것이 느린 것보다 나쁘다. `SEARCH_SIM_BUDGET`은 두 탐색이 공유하므로 모듈 상단으로 올렸고, `_orderings_within_budget`의 조기 종료 워크는 `_bounded_orderings`로 뽑아 두 경로가 함께 쓴다. 계측 도구: `scripts/measure_thin_draft.py`. 백엔드 **1371 → 1382 passed / 3 skipped**.
+
 ## 호감도는 코어 단계 안에 있다 — 스탯 모델의 "설명 안 됨" 3건과 OVERSPEC 계층이 같은 착각이었다
 - Date: 2026-07-25
 - Context: 부계정 싱크 500(코어 올린 PILGRIM Supporter의 미측정 수치)을 닫으려고 ShiftyPad에서 코어만 바꿔 값을 읽었는데, 같은 클래스·같은 돌파인 유닛들이 코어당 최대 **22 ATK**까지 어긋났다. 레벨 슬립을 의심했지만 Fienn의 재측정이 **완전히 동일**하게 나와 기각. 결정적 단서는 Nayuta의 호감도가 20이라는 정보였다 — Grave 40 / Dorothy 36 / Nayuta 20으로 두고 두 점만 적합해 나머지 한 점을 예측하니 **오차 1.11**(현행 모델은 22.3 어긋남). 그리고 코어 있는 유닛을 적합 그룹별로 묶어보니, 호감도가 다양한 그룹은 단 둘(class Attacker·Defender)이고 그 안의 호감도 10 유닛이 **정확히 `CORE_FLAT_*_BY_RESOURCE_ID`의 "설명 안 됨" 3기**(Vesti·Rosanna·Nero)였다. 나머지 그룹은 호감도가 단일(class 30, PILGRIM/OVERSPEC 40)이라 효과가 적합값에 흡수돼 159기 패리티가 통과하고 있었던 것이다.

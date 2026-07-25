@@ -32,7 +32,8 @@ import numpy as np
 from app.surrogate import (best_ordering_damage, build_matrix, fit_ridge,
                            make_feature_space, predict,
                            sample_feasible_combinations)
-from app.deck_search import prune_candidate_pool, shape_combinations
+from app.deck_search import (_shape_completions, prune_candidate_pool,
+                             shape_combinations)
 
 # Decks sampled and truly simulated to fit the model. 200 comfortably exceeds
 # the 79 unit columns a full 78-unit roster produces, which is what a
@@ -213,9 +214,28 @@ class Cascade:
         own (exhaustive) path."""
         if not self.model.covers(roster):
             return None
-        units = widened_pool(roster, boss, self.model, pool,
-                             self.caps or WIDE_TIER_CAPS)
-        combos = list(shape_combinations(units))
+        return self._rank(shape_combinations(self._pool(roster, boss, pool)))
+
+    def shortlist_completions(self, required, candidates, boss, pool=None):
+        """The same ranking, restricted to decks that seat every unit in
+        `required` - the drafted seats a completion search must honor.
+
+        The widened pool is drawn from `candidates` alone (the drafted units
+        already hold their seats), but the model has to cover the drafted units
+        too: they are scored as deck MEMBERS, not merely honored as a
+        constraint, and a unit without a column would KeyError in featurize.
+        """
+        if not (self.model.covers(candidates) and self.model.covers(required)):
+            return None
+        units = self._pool(candidates, boss, pool)
+        return self._rank(_shape_completions(required, units))
+
+    def _pool(self, roster, boss, pool):
+        return widened_pool(roster, boss, self.model, pool,
+                            self.caps or WIDE_TIER_CAPS)
+
+    def _rank(self, combos):
+        combos = list(combos)
         if not combos:
             return None
         ranking = np.argsort(-self.model.score_combos(combos))[:self.top_k]

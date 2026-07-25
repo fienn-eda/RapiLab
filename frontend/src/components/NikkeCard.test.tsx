@@ -35,6 +35,16 @@ describe('NikkeCard', () => {
     expect(screen.queryByText('red-hood')).not.toBeInTheDocument()
   })
 
+  it('hearts a unit whose Favorite Item is equipped', () => {
+    card({ ...filledDraft(), favorite_item: true })
+    expect(screen.getByTitle('애장품 장착')).toBeInTheDocument()
+  })
+
+  it('leaves the portrait unhearted when no Favorite Item is equipped', () => {
+    card({ ...filledDraft(), favorite_item: false })
+    expect(screen.queryByTitle('애장품 장착')).not.toBeInTheDocument()
+  })
+
   it('falls back to the slug when no name was resolved', () => {
     card(filledDraft(), null, '')
     expect(screen.getByRole('heading', { name: 'red-hood' })).toBeInTheDocument()

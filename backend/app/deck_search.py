@@ -110,6 +110,13 @@ class BossProfile:
 # "at least one of each tier" also admits shapes that never occur in play.
 ALLOWED_SHAPES = ((1, 1, 3), (1, 2, 2), (2, 1, 2))
 
+# How many orderings either search will simulate before it cuts the pool
+# instead. Shared by search_best_decks (a free deck) and best_completions (a
+# drafted one) - the same simulator at the same ~100 ms answers both, so the
+# point where enumeration stops being affordable is the same too. Exported so
+# callers can ask the question the search will ask.
+SEARCH_SIM_BUDGET = 1200
+
 
 def shape_combinations(roster):
     """Canonical tier-ordered 5-unit combinations, restricted to the shapes
@@ -155,12 +162,41 @@ def _shape_completions(required, candidates):
                         yield deck
 
 
-def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None):
+def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None,
+                     sim_budget=SEARCH_SIM_BUDGET, cascade=None):
     """Best `top_n` 5-unit decks that contain every unit in `required`, over
     every ALLOWED_SHAPES-compatible completion drawn from `candidates`.
     Returns [] when required's tier counts fit no shape or no valid
-    completion exists."""
-    orderings = _all_intra_tier_orderings(_shape_completions(required, candidates))
+    completion exists.
+
+    Budget-aware for the same reason search_best_decks is, and more urgently:
+    the fewer seats a draft fills, the MORE completions there are. One drafted
+    seat on a 77-unit roster leaves 1.8M orderings - hours of simulation for a
+    single deck, on the path a player reaches by dropping one chip - while a
+    complete 5-seat draft leaves 4.
+
+    Over the budget the search is cut, `cascade` first (duck-typed, see
+    app.cascade.Cascade) and prune_candidate_pool's picks if it declines - the
+    same two-step search_best_decks takes. Which one runs matters here more
+    than it does for a free deck: the fewer seats a draft fills, the more of
+    the answer comes out of the cut pool, so on a one-seat draft prune's
+    marginal-contribution cut alone measured 14.6% below the ranked shortlist.
+    """
+    orderings = _bounded_orderings(_shape_completions(required, candidates), sim_budget)
+    if orderings is None:
+        combos = (cascade.shortlist_completions(required, candidates, boss, pool)
+                  if cascade is not None else None)
+        if combos is None:
+            cut = prune_candidate_pool(candidates, boss, pool)
+            combos = _shape_completions(required, cut)
+        orderings = _all_intra_tier_orderings(combos)
+        if not orderings:
+            # The cut pool cannot complete this draft even though the full one
+            # can (every candidate left at some tier is a MODE_VARIANTS sibling
+            # of a drafted unit, say). Reporting the draft infeasible would be
+            # wrong, so pay the exhaustive search rather than refuse a deck the
+            # player can actually field.
+            orderings = _all_intra_tier_orderings(_shape_completions(required, candidates))
     if not orderings:
         return []
     totals = _score_batch(orderings, boss, pool)
@@ -588,8 +624,8 @@ def _all_intra_tier_orderings(combos):
     return [ordered for combo in combos for ordered in _intra_tier_orderings(combo)]
 
 
-def _orderings_within_budget(roster, sim_budget):
-    """Every intra-tier ordering of `roster`, or None once they exceed the budget.
+def _bounded_orderings(combos, sim_budget):
+    """Every intra-tier ordering of `combos`, or None once they exceed the budget.
 
     Only the ANSWER to "does this fit the budget" is needed when it doesn't, so
     the walk stops at the first ordering past it. Enumerating the full space to
@@ -598,7 +634,7 @@ def _orderings_within_budget(roster, sim_budget):
     profiled allocation.
     """
     out = []
-    for combo in shape_combinations(roster):
+    for combo in combos:
         for ordered in _intra_tier_orderings(combo):
             out.append(ordered)
             if len(out) > sim_budget:
@@ -606,9 +642,20 @@ def _orderings_within_budget(roster, sim_budget):
     return out
 
 
-# search_best_decks' default ordering budget, exported so callers can ask the
-# same question the search will ask.
-SEARCH_SIM_BUDGET = 1200
+def _orderings_within_budget(roster, sim_budget):
+    """_bounded_orderings over every deck `roster` can form (no draft to honor)."""
+    return _bounded_orderings(shape_combinations(roster), sim_budget)
+
+
+def completions_fit_budget(required, candidates, sim_budget=SEARCH_SIM_BUDGET):
+    """Whether best_completions can enumerate this draft's completions outright.
+
+    Exported so a caller can decide UP FRONT whether to pay for something only
+    the over-budget path needs (allocate_decks fits a surrogate). Asking is
+    nearly free: the walk stops at the first ordering past the budget.
+    """
+    return _bounded_orderings(_shape_completions(required, candidates),
+                              sim_budget) is not None
 
 
 def search_best_decks(roster, boss: BossProfile, top_n=5,

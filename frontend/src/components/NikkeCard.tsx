@@ -10,6 +10,7 @@
 
 import type { NikkeDraft } from '../types/nikkeDraft'
 import type { NikkeElement } from '../types/supportedUnit'
+import { FavoriteItemBadge } from './FavoriteItemBadge'
 import { InvestmentBadge } from './InvestmentBadge'
 import { OverloadLines, SkillLevels } from './InvestmentSummary'
 
@@ -39,9 +40,11 @@ export function NikkeCard({ draft, index, name, element, portrait }: NikkeCardPr
           <span className="roster-card__portrait roster-card__portrait--missing" />
         )}
         {/* Breakthrough and core sit ON the art the way the game shows them,
-            which keeps the tile's text column to name and investment. */}
+            which keeps the tile's text column to name and investment. The
+            Favorite Item heart joins them for the same reason. */}
         <span className="roster-card__grade">
           <InvestmentBadge grade={draft.grade} core={draft.core} />
+          <FavoriteItemBadge equipped={draft.favorite_item} />
         </span>
       </div>
 

@@ -57,6 +57,7 @@ export const parseRosterJson = (
       character_slug: mapped ?? deriveSlug(u.name_en),
       grade: u.grade,
       core: u.core,
+      favorite_item: u.favorite_item,
       level: '400',
       hp: String(u.raid400.hp),
       atk: String(u.raid400.atk),

@@ -40,12 +40,16 @@ function App() {
   const drafts = activeProfile?.roster ?? NO_ROSTER
   const validRoster = useMemo(() => getValidRoster(drafts), [drafts])
 
-  // Breakthrough/core for the palette chips. It rides alongside the roster
-  // rather than in it: validRoster is UserNikkeState, which mirrors the
-  // backend model, and neither field exists there.
+  // Breakthrough/core and the Favorite Item heart, for the palette chips and
+  // the names in a result. It rides alongside the roster rather than in it:
+  // validRoster is UserNikkeState, which mirrors the backend model, and none
+  // of these fields exist there.
   const investmentFor = useMemo(() => {
     const bySlug = new Map(
-      drafts.map((draft) => [draft.character_slug, { grade: draft.grade, core: draft.core }]),
+      drafts.map((draft) => [
+        draft.character_slug,
+        { grade: draft.grade, core: draft.core, favoriteItem: draft.favorite_item },
+      ]),
     )
     return (slug: string) => bySlug.get(slug) ?? {}
   }, [drafts])

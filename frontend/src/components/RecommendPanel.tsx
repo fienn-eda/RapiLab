@@ -10,7 +10,7 @@ import { useRecommend } from '../hooks/useRecommend'
 import { useRecommendRaid } from '../hooks/useRecommendRaid'
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import { useSupportedUnits } from '../hooks/useSupportedUnits'
-import { nameFromSlug } from '../lib/unitName'
+import { nameFromSlug, withFavoriteItem } from '../lib/unitName'
 import { ownedSlugFor, ownedSlugIndex } from '../types/supportedUnit'
 import { hashRecommendInputs } from '../lib/inputHash'
 import {
@@ -258,7 +258,17 @@ export function RecommendPanel({
     [ownedSlugs],
   )
 
-  const nameFor = (slug: string) => unitIndex.get(slug)?.name ?? nameFromSlug(slug)
+  // A result names ENGINE slugs, so the Favorite Item flag - which rides on the
+  // roster, keyed by the slug the player owns - is looked up through
+  // ownedSlugResolver (bready-lingering -> bready; helm-signature is already
+  // the owned slug and passes through). Everywhere this name lands is text-only
+  // (deck rosters, the bench line, a draft seat), so the heart is part of the
+  // string; where there is art to put it on, FavoriteItemBadge does it instead.
+  const nameFor = (slug: string) =>
+    withFavoriteItem(
+      unitIndex.get(slug)?.name ?? nameFromSlug(slug),
+      investmentFor?.(ownedSlugResolver(slug))?.favoriteItem,
+    )
   const burstTierFor = (slug: string) => unitIndex.get(slug)?.burstTier ?? null
 
   const toggleExclude = (slug: string) => {
