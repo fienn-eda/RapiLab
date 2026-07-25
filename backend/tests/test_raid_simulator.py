@@ -63,12 +63,11 @@ def test_battle_start_buff_is_active_by_the_time_the_burst_fires():
     assert result["total_damage"] == 150000.0
 
 
-def test_core_hittable_true_doubles_burst_damage_via_200_percent_core_bonus():
-    rules_by_slug = {"buffer": [], "midtier": [], "attacker": []}
-    without_core = simulate_raid(
-        make_deck(),
-        rules_by_slug,
-        burst_damage_percents={"attacker": 500.0},
+def _core_pair(**over):
+    """The same fight with and without an exploitable core."""
+    kwargs = dict(
+        rules_by_slug={"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
         base_stats=make_base_stats(attacker_atk=2000),
         enemy_def=0,
         gauge_charge_time=5.0,
@@ -76,23 +75,64 @@ def test_core_hittable_true_doubles_burst_damage_via_200_percent_core_bonus():
         mode="auto",
         base_crit_rate=0.0,
     )
-    with_core = simulate_raid(
-        make_deck(),
-        rules_by_slug,
-        burst_damage_percents={"attacker": 500.0},
-        base_stats=make_base_stats(attacker_atk=2000),
-        enemy_def=0,
-        gauge_charge_time=5.0,
-        fight_duration=20.0,
-        mode="auto",
-        core_hittable=True,
-        base_crit_rate=0.0,
-    )
+    kwargs.update(over)
+    return (simulate_raid(make_deck(), core_hittable=False, **kwargs),
+            simulate_raid(make_deck(), core_hittable=True, **kwargs))
+
+
+def test_core_hittable_true_doubles_normal_attack_damage():
+    without_core, with_core = _core_pair(weapon_stats={"attacker": _ar_weapon()})
     # per Fienn's in-game tooltip check, core damage is a uniform 200% across
     # every weapon type (+1.0 to the major modifier), i.e. exactly double a
     # hit with no other modifiers active.
     assert with_core["total_damage"] == without_core["total_damage"] * 2
+    assert without_core["total_damage"] > 0
+
+
+def test_core_bonus_does_not_reach_burst_damage():
+    # Core Damage is a normal-attack-only modifier - skill damage never
+    # collects it (Fienn, in-game, 2026-07-26).
+    without_core, with_core = _core_pair(burst_damage_percents={"attacker": 500.0})
     assert without_core["total_damage"] == 10000.0
+    assert with_core["total_damage"] == without_core["total_damage"]
+
+
+def test_core_bonus_does_not_reach_per_shot_or_periodic_skill_damage():
+    without_core, with_core = _core_pair(
+        weapon_stats={"attacker": _ar_weapon(damage_percent=0.0)},
+        per_shot_rules={"attacker": [(5, "every", [instant_nuke_pulse_rule("per_shot", 100.0)])]},
+        periodic_nukes={"attacker": {"cooldown": 1.0, "percent": 100.0}},
+    )
+    # the weapon itself deals nothing, so every point here is skill damage
+    assert without_core["total_damage"] > 0
+    assert with_core["total_damage"] == without_core["total_damage"]
+
+
+def test_sustained_and_distributed_normal_attacks_never_collect_the_core_bonus():
+    # Sustained / Distributed damage cannot hit a core at all, so a normal
+    # attack a transform pins to one of those types stays flat, even though
+    # ordinary normal attacks in the same fight do get the bonus (Fienn,
+    # 2026-07-26).
+    for damage_type in ("sustained", "distributed"):
+        profile = {"weapon": "AR", "damage_percent": 10.0, "rate_of_fire": 2.0,
+                   "damage_type": damage_type}
+
+        def schedule(context, fight_duration, profile=profile):
+            return [{"start": 5.0, "end": 15.0, "profile": profile}]
+
+        without_core, with_core = _core_pair(
+            weapon_stats={"attacker": _ar_weapon()},
+            weapon_mode_schedules={"attacker": schedule},
+        )
+        in_window = [
+            sum(e["damage"] for e in r["damage_log"] if 5.0 <= e["time"] < 15.0)
+            for r in (without_core, with_core)
+        ]
+        assert in_window[0] > 0, damage_type
+        assert in_window[1] == in_window[0], damage_type
+        # the untyped shots outside the transform still double, so the fight is
+        # genuinely core-hittable
+        assert with_core["total_damage"] > without_core["total_damage"], damage_type
 
 
 def test_boss_element_grants_advantage_bonus_to_matching_attackers():
@@ -445,21 +485,23 @@ def test_core_damage_up_only_helps_when_core_is_hittable():
         "midtier": [],
         "attacker": [],
     }
+    # Carried by normal attacks, the only instances that can collect a core
+    # bonus at all - a burst nuke would stay flat either way.
     kwargs = dict(
-        burst_damage_percents={"attacker": 500.0},
+        burst_damage_percents={},
         base_stats=make_base_stats(attacker_atk=2000),
         enemy_def=0,
         gauge_charge_time=5.0,
         fight_duration=20.0,
         mode="auto",
         base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
     )
     not_core = simulate_raid(make_deck(), rules, core_hittable=False, **kwargs)
     core = simulate_raid(make_deck(), rules, core_hittable=True, **kwargs)
-    # no core: core-damage sources inert -> plain 10000.
-    assert not_core["total_damage"] == 10000.0
     # core hittable: major modifier = 1 + core_hit_bonus(1.0) + core_damage(0.3) = 2.3.
-    assert round(core["total_damage"], 5) == round(10000.0 * 2.3, 5)
+    assert not_core["total_damage"] > 0
+    assert round(core["total_damage"], 5) == round(not_core["total_damage"] * 2.3, 5)
 
 
 def test_boss_element_none_applies_no_advantage():

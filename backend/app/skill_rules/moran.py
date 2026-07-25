@@ -19,6 +19,11 @@ which counts shots inside a weapon-mode segment. "As additional damage" makes it
 `full_burst_bonus_eligible`.
 
 Favorite Item modeled (DPS-relevant):
+- Bring It On!'s Fervor bullet (dollskills[0] slot 04): "Cooldown of Burst Skill
+  -20 sec continuously", affecting self - a standing cut to her own cooldown,
+  so it goes through `get_burst_cooldown_reduction` rather than the per-cycle
+  pulse. With Leave It To Me! on top her 40-sec burst comes back every ~12.5
+  sec, which is the cycle Fienn measures in game (2026-07-26).
 - Leave It To Me! (dollskills[1]): on Full Burst enter while in Fervor, squad
   burst-cooldown reduction.
 - Fair and Square! (dollskills[2], her burst): squad ATK up as a flat bonus
@@ -39,12 +44,6 @@ active in a raid. Not modeled: DEF / damage-taken / Max-HP survivability buffs
 DPS debuff), taunts, the HP-recovery on the transform, and the HP-threshold
 Perseverance effect.
 
-Also not modeled, Favorite Item only: Bring It On!'s third bullet, "Fervor:
-Cooldown of Burst Skill -20 sec continuously" (dollskills[0] slot 04). It was
-already absent before the base/signature split - the modeled cooldown reduction
-comes from Leave It To Me! - and wiring a permanent 20-sec burst-cooldown cut
-would move every deck this unit appears in, so it stays a documented gap rather
-than a silent one.
 """
 from app.attack_rate import rate_of_fire_for_weapon
 from app.skill_rules._helpers import (
@@ -112,6 +111,20 @@ def build_moran_base_rules(values):
     explicit empty list so the registry entry reads as a decision, not an
     oversight."""
     return []
+
+
+def build_moran_fervor_cooldown_reduction(values):
+    """Bring It On!'s Fervor bullet (Favorite Item only): "Cooldown of Burst
+    Skill -20 sec continuously", affecting SELF.
+
+    Self-scoped and permanent, so it is her cooldown rather than a per-cycle
+    pulse - `registry.get_burst_cooldown_reduction`, which the scheduler reads
+    before the fight starts. Leave It To Me!'s cut is the other half and stays
+    a pulse: that one is squad-scoped and gated on entering Full Burst.
+
+    Fervor itself is assumed always active in a raid ("Activates when Raptures
+    appear"), the same assumption the rest of this module runs on."""
+    return float(values["bring_it_on"]["description_value_04"])
 
 
 def build_moran_rules(values):

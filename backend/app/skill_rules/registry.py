@@ -262,6 +262,7 @@ from app.skill_rules.moran import (
     build_bring_it_on_per_shot_rules,
     build_fair_and_square_weapon_mode_schedule,
     build_moran_base_rules,
+    build_moran_fervor_cooldown_reduction,
     build_moran_rules,
 )
 from app.skill_rules.nayuta import (
@@ -638,6 +639,22 @@ def get_burst_delay(slug, skill_values):
     if builder is None:
         return None
     return builder(skill_values)
+
+
+# A Nikke whose own kit cuts her OWN burst cooldown CONTINUOUSLY, as a standing
+# property rather than a per-cycle pulse - so it belongs to the number the
+# scheduler starts from, not to `burst_cooldown_reduction_sec` (which rewinds
+# one cycle at a time and is how the squad-scoped, trigger-gated cuts work).
+_BURST_COOLDOWN_REDUCTION_BUILDERS = {
+    "moran-signature": lambda sv: build_moran_fervor_cooldown_reduction(sv),
+}
+
+
+def get_burst_cooldown_reduction(slug, skill_values):
+    """Seconds permanently off this Nikke's own burst cooldown (0.0 for the
+    vast majority, which have no such effect)."""
+    builder = _BURST_COOLDOWN_REDUCTION_BUILDERS.get(slug)
+    return builder(skill_values) if builder else 0.0
 
 
 # A variant seated in a different burst-rotation slot than the character's

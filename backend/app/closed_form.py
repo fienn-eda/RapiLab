@@ -43,7 +43,8 @@ from app.attack_rate import CHARGE_WEAPONS, generate_shot_times
 from app.damage_formula import calculate_damage
 from app.effects import EffectRegistry, _matches_target
 from app.elements import element_multiplier
-from app.raid_simulator import BASE_CRIT_RATE, CORE_HIT_BONUS, _TYPE_BUCKETS
+from app.raid_simulator import (BASE_CRIT_RATE, CORE_HIT_BONUS, _TYPE_BUCKETS,
+                                core_eligible)
 from app.roster import assemble_simulation_inputs
 from app.squad_engine import SquadContext, SquadMember
 
@@ -222,6 +223,19 @@ def _terms(slug, element, inputs, registry, boss, cycle):
     }
 
 
+def _apply_core_eligibility(terms, source, damage_type, boss):
+    """Zero the Core Damage terms for an instance that cannot collect them.
+
+    `_terms` sets them once for the whole member; which of that member's two
+    damage streams actually keeps them is `raid_simulator.core_eligible`'s
+    call, shared so the cheap scorer can never drift from the simulator it
+    filters for."""
+    if boss.core_hittable and core_eligible(source, damage_type):
+        return
+    terms["core_hit_bonus"] = 0.0
+    terms["other_core_damage_sources"] = 0.0
+
+
 def _typed(terms, registry, slug, element, damage_type, cycle):
     """Add the Damage-Up bucket that only this damage type collects."""
     typed = dict(terms)
@@ -261,6 +275,7 @@ def score_with_diagnostics(ordered_deck, boss):
         weapon = weapon_stats["weapon"]
         normal_type = "projectile_explosion" if weapon == "RL" else "attack"
         normal_terms = _typed(terms, registry, slug, element, normal_type, cycle)
+        _apply_core_eligibility(normal_terms, "normal_attack", normal_type, boss)
         normal_terms["attack_coefficient"] = weapon_stats["damage_percent"] / 100
         # Full Burst covers only part of the cycle, so the stream collects the
         # bonus fractionally - the formula's term is linear in it.
@@ -275,6 +290,7 @@ def score_with_diagnostics(ordered_deck, boss):
         if burst_percent and slug in burster_slugs:
             burst_type = inputs["burst_damage_types"].get(slug, "attack")
             burst_terms = _typed(terms, registry, slug, element, burst_type, cycle)
+            _apply_core_eligibility(burst_terms, "burst", burst_type, boss)
             burst_terms["attack_coefficient"] = burst_percent / 100
             burst_terms["full_burst_bonus"] = 1.0
             hits = inputs["burst_hit_counts"].get(slug, 1)
