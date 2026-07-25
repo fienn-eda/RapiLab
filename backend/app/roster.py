@@ -19,6 +19,7 @@ from app.overload_effects import overload_options_to_effects
 from app.skill_rules.registry import (
     build_nikke_rules,
     get_burst_anchored_buffs,
+    get_burst_cooldown_reduction,
     get_burst_damage_type,
     get_burst_delay,
     get_burst_hit_count,
@@ -85,8 +86,14 @@ def assemble_simulation_inputs(ordered_deck):
     burst_anchored_buffs = {}
 
     for spec in ordered_deck:
+        # A standing self-scoped cut to the unit's own burst cooldown (Moran's
+        # Fervor) is part of the number the scheduler starts from, unlike the
+        # trigger-gated pulses that rewind it one cycle at a time.
+        cooldown = max(
+            0.0, spec.burst_cooldown - get_burst_cooldown_reduction(spec.slug, spec.skill_values)
+        )
         member = {"slug": spec.slug, "burst_tier": spec.burst_tier, "element": spec.element,
-                  "cooldown": spec.burst_cooldown, "weapon": spec.weapon}
+                  "cooldown": cooldown, "weapon": spec.weapon}
         burst_delay = get_burst_delay(spec.slug, spec.skill_values)
         if burst_delay:
             member["burst_delay"] = burst_delay
