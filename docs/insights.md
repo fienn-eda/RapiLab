@@ -134,6 +134,28 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - 패리티 하니스 패턴: 새 데이터소스의 파서를 기존 소스 정답지에 대해 **백필 없이** 증명한다. 파서 로직이 유닛마다 같으므로 구조 다양성(6무기타입=충전 vs 탄창, 슬롯 수)을 덮는 소수 픽스처로 충분. 함정: `zip()` 기반 레벨 비교는 파서가 레벨을 적게 내면 공허하게 통과 — 비교 전에 `len==len`을 먼저 단언해야 한다(`backend/tests/test_shiftypad_parity.py`).
 - 관련 결정: `docs/decisions.md`("무기 + 기본스킬 데이터원을 신규 유닛부터 ShiftyPad로 전환").
 
+## 무기 데이터 전수 대조 — 93/93 일치, "죽은 dotgg = 틀린 데이터"는 사실이 아니었다
+- 발견: 2026-07-26 (`scripts/audit_weapon_data.py`, 인코딩된 93슬러그 전수)
+- dotgg 피드는 2026-05에 멈췄지만 **그 데이터가 낡았다는 증거는 없었다** — 아무도 게임과
+  대조해본 적이 없었을 뿐이다. ShiftyPad 상세 페이로드를 76개 `resource_id` 전부 수집해
+  엔진이 실제로 읽는 무기 6필드(`weapon`/`maxAmmo`/`damage`/`reloadTime`/`chargeTime`/
+  `chargeDamage`)를 슬러그별로 대조한 결과 **불일치 0**, 덤으로 대조한 **버스트 쿨다운도 0**.
+  손으로 채운 무기 스텁 4개(ark-ranger-black · cinderella-crystal-wave · marciana-marine-study
+  · prika)까지 전부 정확했다. 2026-07-21의 "전수 백필 기각" 결정은 **정확성 측면에서 옳았고,
+  이제 가정이 아니라 측정된 사실이다**.
+- **"전부 통과"는 그 자체로는 증거가 아니다 — 감사 하네스를 먼저 감사하라.** 비교 함수가
+  필드를 조용히 건너뛰면 로스터는 영원히 깨끗해 보인다. 여기서는 (a) 6필드 × 93슬러그가
+  양쪽에 실제로 존재해 비교됐는지 카운트하고, (b) 데이터 사본에 오류 3건을 주입해
+  `-signature` 파생까지 5행이 MISMATCH로 잡히는지 확인한 뒤에야 결과를 믿었다.
+  이 성질은 `backend/tests/test_audit_weapon_data.py`가 지킨다.
+- **함정: `normalize_shiftypad`는 `use_burst_skill: "AllStep"`에서 죽는다**(`int("AllStep")`
+  ValueError). 현재 해당 유닛은 Red Hood(rid=470) 하나뿐이고, 그녀는 lootandwaifus 경로라
+  실사용에는 영향이 없다 — 하지만 **ShiftyPad를 소스로 온보딩하려는 순간 막힌다**. 전 단계
+  버스트를 하나의 tier 숫자로 접을 수 없다는 게 원인이라 컨벤션 결정이 필요하다
+  (lootandwaifus/dotgg는 Red Hood를 `'3'`으로 적어둔다).
+- 수집은 계정이 필요 없다: `node collect.js --nikke <rid,rid,...> --headless`가 브라우저
+  1회로 리스트 전체를 받아 `data/shiftypad/raw/<rid>.json`에 쓴다(76유닛 한 번에 확인).
+
 ## `supported_units()` must resolve a slug's metadata the same way `load_nikke_spec` does
 - 발견: 2026-07-22 (draft-based deck allocation, `backend/app/supported_units.py`)
 - The palette endpoint's `supported_units()` had its own `MODE_VARIANTS`-only lookup for a slug's weapon/element/tier metadata, instead of reusing `user_roster.load_nikke_spec`'s resolution order: the skill-value manifest's `data_slug` first, then lootandwaifus, falling back to the manifest's declared dotgg/shiftypad weapon-data source when the lootandwaifus file 404s.

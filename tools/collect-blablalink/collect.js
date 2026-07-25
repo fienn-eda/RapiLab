@@ -24,8 +24,10 @@
 //               affinity) to nikke-stat-tables.json and stop
 //   --details   dump this account's investment inputs + outpost research ranks
 //               to details.json and stop (personal data; gitignored)
-//   --nikke <rid|name>  dump one unit's raw ShiftyPad bundle (directory entry +
-//               character detail payload) to data/shiftypad/raw/<rid>.json.
+//   --nikke <rid|name>[,<rid|name>...]  dump each unit's raw ShiftyPad bundle
+//               (directory entry + character detail payload) to
+//               data/shiftypad/raw/<rid>.json. A list reuses one browser and one
+//               directory resolve; with a list, --out names the output DIRECTORY.
 //               Public data, so combine with --headless for an unattended run.
 // Both dump modes read only public static game data and return before the
 // account lookup, so neither needs a logged-in session.
@@ -355,16 +357,26 @@ const main = async () => {
   }
 
   if (NIKKE) {
-    const entry = /^\d+$/.test(NIKKE)
-      ? dir.find((d) => String(d.resource_id) === NIKKE)
-      : dir.find((d) => nameOf(d) === NIKKE)
-    if (!entry) throw new Error(`no directory entry for --nikke ${NIKKE}`)
-    const detail = await collectNikkeDetail(page, entry.resource_id)
-    if (!detail) throw new Error(`no detail payload for resource_id ${entry.resource_id}`)
-    const out = OUT !== DEFAULT_OUT ? OUT : `../../data/shiftypad/raw/${entry.resource_id}.json`
-    fs.mkdirSync(require('path').dirname(out), { recursive: true })
-    fs.writeFileSync(out, `${JSON.stringify({ directory: entry, detail }, null, 2)}\n`)
-    log(`wrote ${out}: ${nameOf(entry)} (rid=${entry.resource_id})`)
+    // A comma-separated list reuses one browser and one directory resolve, which is
+    // what makes a whole-roster weapon audit (~76 units) practical; --out then names
+    // a directory instead of a file, or is left at the default raw/ location.
+    const wanted = NIKKE.split(',').map((s) => s.trim()).filter(Boolean)
+    const entries = wanted.map((want) => {
+      const entry = /^\d+$/.test(want)
+        ? dir.find((d) => String(d.resource_id) === want)
+        : dir.find((d) => nameOf(d) === want)
+      if (!entry) throw new Error(`no directory entry for --nikke ${want}`)
+      return entry
+    })
+    const dest = OUT !== DEFAULT_OUT ? OUT : '../../data/shiftypad/raw'
+    fs.mkdirSync(dest, { recursive: true })
+    for (const [i, entry] of entries.entries()) {
+      const detail = await collectNikkeDetail(page, entry.resource_id)
+      if (!detail) throw new Error(`no detail payload for resource_id ${entry.resource_id}`)
+      const out = `${dest}/${entry.resource_id}.json`
+      fs.writeFileSync(out, `${JSON.stringify({ directory: entry, detail }, null, 2)}\n`)
+      log(`[${i + 1}/${entries.length}] wrote ${out}: ${nameOf(entry)} (rid=${entry.resource_id})`)
+    }
     await browser.close()
     return
   }
