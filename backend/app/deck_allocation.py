@@ -10,6 +10,7 @@ them supports two decks better). No optimality claim - set partitioning is
 NP-hard; this is the standard practical combo."""
 import time
 
+from app.cancellation import NEVER
 from app.cascade import Cascade, cached_fit_surrogate
 from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
                              _intra_tier_orderings, _orderings_within_budget,
@@ -58,13 +59,24 @@ def _seed_choices(seed, alternatives):
 
 def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
                    locked=frozenset(), time_budget_sec=45.0, workers=None,
-                   alternatives=None):
+                   alternatives=None, cancel=None):
+    """`cancel` (see app.cancellation) stops a run whose caller went away.
+
+    It reaches the search two ways, because the search has two kinds of waiting
+    in it: the loops below ask it between iterations, and the pool registers
+    itself so a cancel arriving mid-batch folds the worker processes rather
+    than waiting out a batch that can run tens of seconds.
+    """
+    cancel = cancel or NEVER
     # Serial (the default) never constructs a SimPool, so the sim path stays
     # exactly the pre-parallelism one (and test stubs of evaluate_deck keep
     # working - SimPool holds its own module binding they can't patch).
     worker_count = resolve_workers(workers)
     pool = SimPool(roster, boss, workers=workers) if worker_count > 1 else None
     try:
+        if pool is not None:
+            cancel.attach(pool)
+        cancel.check()
         by_slug = {u.slug: u for u in roster}
         draft = draft or []
         # Pooling is per OWNED CHARACTER, not per slug: the player fields all of
@@ -97,6 +109,7 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
 
         decks = []  # each: ordered list of units (canonical order from the search)
         for seed in draft:                       # seed decks: complete around placed units
+            cancel.check()
             # One completion per concrete reading of the seed; the best wins, so
             # a drafted character's mode is chosen by what her finished deck
             # actually scores rather than by declaration order.
@@ -127,6 +140,7 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
         cascade = None
         probed = False
         while len(decks) < num_decks:            # free decks: greedy peeling (unchanged)
+            cancel.check()
             if not probed:
                 probed = True
                 if _orderings_within_budget(remaining, SEARCH_SIM_BUDGET) is None:
@@ -149,8 +163,10 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
         # through the same pool the peel used, which is what lets the phase reach
         # a local optimum inside the budget instead of being cut off mid-climb.
         deadline = time.monotonic() + time_budget_sec
+        cancel.check()
         _swap_pass(decks, remaining, boss, deadline, locked=locked, pool=pool,
-                   batch=max(_MIN_SWAP_BATCH, worker_count * SWAP_BATCH_PER_WORKER))
+                   batch=max(_MIN_SWAP_BATCH, worker_count * SWAP_BATCH_PER_WORKER),
+                   cancel=cancel)
 
         summaries = [_best_ordering_summary(units, boss, pool) for units in decks]
         return {"decks": summaries,
@@ -161,7 +177,7 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
 
 
 def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
-               batch=_MIN_SWAP_BATCH):
+               batch=_MIN_SWAP_BATCH, cancel=None):
     """Hill-climb: try same-tier unit swaps between two decks (and between a
     deck and the leftovers), re-scoring only the affected deck(s); keep a swap
     iff the summed total improves. Same-tier swaps preserve the deck shapes.
@@ -173,11 +189,16 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
     # MODE_VARIANTS candidate the engine chose, so locking `bready` has to hold
     # whichever of her candidates ended up seated.
     locked = {variant_base(slug) for slug in locked}
+    cancel = cancel or NEVER
     scores = _score_batch(decks, boss, pool)
     improved = True
     while improved and time.monotonic() < deadline:
         improved = False
         for i in range(len(decks)):
+            # The longest phase in the run - it climbs until it converges or the
+            # 45s budget runs out - so it is asked once per deck rather than only
+            # once per pass.
+            cancel.check()
             for j in range(i + 1, len(decks)):
                 improved |= _try_swaps(decks, scores, i, decks[j], j, boss,
                                        deadline, locked, pool, batch)
@@ -287,7 +308,8 @@ def _leftover_against(alloc, roster):
 
 
 def recommend_from_draft(roster, boss, num_decks=5, draft=None,
-                         locked=frozenset(), workers=None, alternatives=None):
+                         locked=frozenset(), workers=None, alternatives=None,
+                         cancel=None):
     """Three-tier recommendation around a player's in-progress draft:
     `recommended` (best over the full roster), `within_draft` (best reshuffle
     of only the drafted units, once the draft is complete) and
@@ -320,11 +342,12 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
         # still holds. ~4x faster on a complete draft.
         recommended = allocate_decks(roster, boss, num_decks=num_decks, draft=draft,
                                      locked=locked, workers=workers,
-                                     alternatives=alternatives)
+                                     alternatives=alternatives, cancel=cancel)
     else:
         recommended = allocate_decks(roster, boss, num_decks=num_decks,
                                      draft=(locked_seed or None), locked=locked,
-                                     workers=workers, alternatives=alternatives)
+                                     workers=workers, alternatives=alternatives,
+                                     cancel=cancel)
 
     within_draft = None
     baseline_total = None
@@ -336,10 +359,12 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
                    for deck in draft for u in deck
                    for option in (alternatives or {}).get(u.slug, (u,))]
         w = allocate_decks(drafted, boss, num_decks=num_decks, draft=draft,
-                           locked=locked, workers=workers, alternatives=alternatives)
+                           locked=locked, workers=workers,
+                           alternatives=alternatives, cancel=cancel)
         s = allocate_decks(drafted, boss, num_decks=num_decks,
                            draft=(locked_seed or None), locked=locked,
-                           workers=workers, alternatives=alternatives)
+                           workers=workers, alternatives=alternatives,
+                           cancel=cancel)
         within_draft = _better(w, s)
         # within_draft's decks are a valid full-roster allocation (drafted units
         # subset of roster), so fold it into recommended to guarantee

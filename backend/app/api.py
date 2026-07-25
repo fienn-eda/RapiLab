@@ -6,13 +6,16 @@ Both endpoints search via the budget-aware search_best_decks (canonical-order
 scoring + top-K permutation refinement; large rosters get a candidate cut) -
 see docs/superpowers/specs/2026-07-17-five-deck-allocation-design.md.
 """
+import asyncio
 import logging
 from typing import Literal
 
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
+from starlette.concurrency import run_in_threadpool
 
+from app.cancellation import CancelToken, Cancelled
 from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_draft
 from app.deck_search import BossProfile, search_best_decks
 from app.models import UserNikkeState
@@ -152,8 +155,8 @@ def _reject_unknown_overload_options(roster: list[UserNikkeState]) -> None:
         )
 
 
-@app.post("/api/recommend", response_model=RecommendResponse)
-def recommend(request: RecommendRequest) -> RecommendResponse:
+
+def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
     _reject_unknown_overload_options(request.roster)
     specs, excluded = load_roster(request.roster)
     boss = BossProfile(
@@ -166,6 +169,9 @@ def recommend(request: RecommendRequest) -> RecommendResponse:
     # SimPool only spawns worker processes for big batches (large rosters);
     # small requests run inline at zero pool cost.
     with SimPool(specs, boss, workers="auto") as pool:
+        # search_best_decks takes no token; folding its pool is what stops it,
+        # so the pool is registered before any batch starts.
+        cancel.attach(pool)
         results = search_best_decks(specs, boss, top_n=request.top_n, pool=pool)
     if not results:
         raise HTTPException(
@@ -199,8 +205,8 @@ def _to_recs(decks, pinned_by_deck=None):
     ]
 
 
-@app.post("/api/recommend-raid", response_model=RecommendRaidResponse)
-def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
+
+def _recommend_raid_sync(request: RecommendRaidRequest, cancel) -> RecommendRaidResponse:
     _reject_unknown_overload_options(request.roster)
     specs, excluded = load_roster(request.roster)
     boss = BossProfile(
@@ -251,7 +257,7 @@ def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
     try:
         out = recommend_from_draft(specs, boss, num_decks=request.num_decks,
                                    draft=draft, locked=locked, workers="auto",
-                                   alternatives=alternatives)
+                                   alternatives=alternatives, cancel=cancel)
     except InfeasibleDraft as e:
         raise HTTPException(422, str(e))
 
@@ -278,6 +284,57 @@ def recommend_raid(request: RecommendRaidRequest) -> RecommendRaidResponse:
         within_draft=within,
         baseline_total_damage=out["baseline_total_damage"],
     )
+
+
+# How often the loop asks whether the client is still there. The search runs
+# one to two minutes, so half a second is far finer than it needs to be and
+# costs nothing; what it buys is that a cancel lands within a batch rather than
+# after one.
+DISCONNECT_POLL_SEC = 0.5
+
+# Nginx's code for "client closed the request". Nothing reads this response -
+# the socket is gone by definition - but a status says what happened in the
+# access log, where a 200 would claim work that never finished.
+CLIENT_CLOSED_REQUEST = 499
+
+
+async def _cancel_when_client_leaves(http_request: Request, cancel: CancelToken):
+    try:
+        while not await http_request.is_disconnected():
+            await asyncio.sleep(DISCONNECT_POLL_SEC)
+        cancel.cancel()
+    except asyncio.CancelledError:
+        pass
+
+
+async def _run_cancellable(http_request: Request, work, *args):
+    """Run a search in a worker thread while the loop watches the connection.
+
+    The searches are ordinary blocking code, so they cannot be asked to stop
+    the way async code can - they take a token instead, and the pool they build
+    registers with it. Measured before this existed: a disconnected request kept
+    eight workers busy to completion.
+    """
+    cancel = CancelToken()
+    watcher = asyncio.ensure_future(_cancel_when_client_leaves(http_request, cancel))
+    try:
+        return await run_in_threadpool(work, *args, cancel)
+    except Cancelled:
+        raise HTTPException(CLIENT_CLOSED_REQUEST, "client closed the request")
+    finally:
+        watcher.cancel()
+
+
+@app.post("/api/recommend", response_model=RecommendResponse)
+async def recommend(request: RecommendRequest, http_request: Request) -> RecommendResponse:
+    return await _run_cancellable(http_request, _recommend_sync, request)
+
+
+@app.post("/api/recommend-raid", response_model=RecommendRaidResponse)
+async def recommend_raid(
+    request: RecommendRaidRequest, http_request: Request
+) -> RecommendRaidResponse:
+    return await _run_cancellable(http_request, _recommend_raid_sync, request)
 
 
 @app.get("/api/supported-units", response_model=list[SupportedUnit])

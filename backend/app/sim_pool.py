@@ -17,11 +17,21 @@ bombs itself - keep the pool-reaching code under `if __name__ == "__main__":`
 (server/pytest contexts are unaffected; their main module isn't the caller).
 """
 import os
-from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import CancelledError, ProcessPoolExecutor
 
+from app.cancellation import Cancelled
 from app.deck_search import evaluate_deck
 
 SPAWN_THRESHOLD = 32
+
+# Ceiling on how much work one dispatch hands a worker. Chunking exists to
+# amortize dispatch over a ~100 ms simulation, and eight of them (~0.8 s) is
+# already far more than enough for that - but a chunk, once started, is what
+# cancel CANNOT drop. Uncapped, a big batch handed each worker ~60 decks and a
+# cancelled run kept them busy 7.8 s; capped, 1.5 s. Measured free: the
+# real-roster three-seat draft ran 83.4/83.3 s capped vs 84.1/84.1 s uncapped,
+# same damage (scripts/measure_thin_draft.py).
+MAX_CHUNK = 8
 
 _WORKER_SPECS = None
 _WORKER_BOSS = None
@@ -109,8 +119,29 @@ class SimPool:
                 initargs=(self._specs, self._boss),
             )
         slug_tuples = [tuple(u.slug for u in deck) for deck in decks]
-        chunksize = max(1, len(slug_tuples) // (self._workers * 4))
-        return list(self._executor.map(worker_fn, slug_tuples, chunksize=chunksize))
+        chunksize = max(1, min(len(slug_tuples) // (self._workers * 4), MAX_CHUNK))
+        # Bound to a local: cancel() clears self._executor from another thread,
+        # and a batch already in flight has to keep talking to its own pool.
+        executor = self._executor
+        try:
+            return list(executor.map(worker_fn, slug_tuples, chunksize=chunksize))
+        except CancelledError:
+            # cancel() dropped the queued futures; consuming the iterator is how
+            # this thread finds out. Report it as the domain event the search
+            # understands rather than a concurrent.futures internal.
+            raise Cancelled()
+
+    def cancel(self):
+        """Fold the pool now, dropping work nobody is waiting for.
+
+        The workers are blocked inside evaluate_deck and cannot be asked to
+        stop, so the queue is dropped instead: whatever is mid-simulation
+        finishes (~100 ms each) and everything behind it is cancelled. Never
+        waits - the caller is cancelling BECAUSE the batch is long.
+        """
+        executor, self._executor = self._executor, None
+        if executor is not None:
+            executor.shutdown(wait=False, cancel_futures=True)
 
     def close(self):
         if self._executor is not None:
