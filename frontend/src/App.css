@@ -118,14 +118,29 @@
   gap: var(--sp-3);
 }
 
+/* One badge, opaque enough to survive whatever the portrait puts behind it -
+   a translucent wash let a light costume swallow the stars entirely. */
 .investment {
   display: inline-flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--sp-1);
-  margin-right: auto;
+  padding: 1px var(--sp-2) 2px;
+  border-radius: 999px;
+  background: rgba(6, 5, 10, 0.85);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  line-height: 1;
+}
+
+.investment__stars {
+  color: var(--star);
+  font-size: 12px;
+  letter-spacing: 0.5px;
 }
 
 .investment__core {
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
 }
 
@@ -296,17 +311,12 @@
   border: 1px dashed var(--border);
 }
 
-/* Over the art, so it needs a scrim of its own rather than whatever colour
-   happens to be behind it. */
+/* Pinned to a corner as a discrete badge rather than stretched across the
+   bottom: a full-width gradient read as part of the artwork. */
 .roster-card__grade {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  padding: 1px var(--sp-1);
-  font-size: 12px;
-  color: #fff;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.75), transparent);
+  left: var(--sp-1);
+  bottom: var(--sp-1);
 }
 
 .roster-card__name {

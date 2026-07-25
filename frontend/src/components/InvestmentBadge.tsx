@@ -18,6 +18,10 @@ export function InvestmentBadge({ grade, core }: InvestmentBadgeProps) {
   const filled = '★'.repeat(grade)
   const empty = '☆'.repeat(Math.max(0, STAR_SLOTS - grade))
 
+  // Breakthrough and core read as one fact ("how far is this unit built?"), so
+  // they share one badge. Both star glyphs are gold: an unfilled slot is an
+  // outline, which is already the difference - splitting the colours would
+  // mean splitting the string into elements that each duplicate the whole.
   return (
     <span className="investment" title="Breakthrough and core enhancement">
       <span className="investment__stars">{filled + empty}</span>

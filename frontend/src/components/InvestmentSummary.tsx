@@ -53,6 +53,22 @@ export const abbreviateOverload = (name: string): string => {
   return ABBREVIATIONS[stripped] ?? stripped
 }
 
+// The order Fienn reads them in (2026-07-25), not the order blablalink happens
+// to return. A fixed order is what lets two units be compared down the column
+// instead of line by line.
+const DISPLAY_ORDER = ['우코', '공', '장탄', '차속', '크댐', '크확', '차댐']
+
+/** Sorts overload lines into DISPLAY_ORDER. An unrecognised effect sorts after
+ * all the known ones, keeping its incoming order among its peers - a new type
+ * should appear, not disappear or displace a known one. */
+export const sortOverload = <T extends { name: string }>(options: T[]): T[] => {
+  const rank = (option: T) => {
+    const index = DISPLAY_ORDER.indexOf(abbreviateOverload(option.name))
+    return index === -1 ? DISPLAY_ORDER.length : index
+  }
+  return [...options].sort((a, b) => rank(a) - rank(b))
+}
+
 interface OverloadLinesProps {
   options: { name: string; value: Displayable }[]
   /** Copy shown when a unit rolled no overload at all. */
@@ -66,7 +82,7 @@ export function OverloadLines({ options, emptyText = 'No overload lines.' }: Ove
   if (options.length === 0) return <p className="overload__empty">{emptyText}</p>
   return (
     <ul className="overload">
-      {options.map((option) => (
+      {sortOverload(options).map((option) => (
         <li key={option.name} className="overload__line">
           <span className="overload__name">{abbreviateOverload(option.name)}</span>
           <span className="overload__value">{option.value}%</span>
