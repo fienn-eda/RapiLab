@@ -5,6 +5,20 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 동기화 도움말 패널 펼침 방식 — `<details>`가 아니라 state 토글 + `hidden` 속성
+- Date: 2026-07-27
+- Context: `SyncRosterPanel`에 인라인 도움말을 붙이면서 코드베이스 선례인 `<details>`(`RosterGrid.tsx`, `RecommendPanel.tsx`)를 따를지 검토했다. 원하는 배치는 "제목(`<h2>`) 옆에 토글 버튼, 그 아래 전체 폭으로 펼침"인데 `<details>`는 `<summary>`가 펼쳐지는 내용의 **첫 자식**이어야 해서 이 배치가 CSS 억지 없이는 성립하지 않는다. 활성 프로필 유무에 따라 기본 펼침 상태를 다르게 줘야 해서 어차피 React state가 필요하기도 했다.
+- Decision: `useState` 토글(`aria-expanded`/`aria-controls`)로 펼침을 관리한다. 도움말 본문(`SyncHelp`)은 조건부 렌더가 아니라 **항상 렌더 + `hidden={!helpOpen}`**으로 감춘다.
+- Why: `<details>`를 쓰면 "제목 옆 버튼" 배치가 안 된다. 조건부 렌더 대신 `hidden` 속성을 쓰는 이유는 `aria-controls`가 가리키는 id를 가진 요소가 접힌 동안에도 DOM에 남아 있어야 그 참조가 항상 해석되기 때문이다 — `App.tsx`의 탭 패널이 이미 쓰는 패턴이라 일관적이다.
+- Consequences: "펼침/접힘 상태를 컴포넌트 밖(제목 행 등)에서, 위치 제약을 받으며 제어해야 하는" 도움말류는 앞으로 state+`hidden` 패턴을 쓴다. `<details>`는 위치 제약이 없는 단순 펼침·접힘에만 남겨둔다. 관련: 스펙 `docs/superpowers/specs/2026-07-26-sync-help-panel-design.md` 결정 3번, 커밋 `bf89d55`.
+
+## 동기화 도움말의 다계정 안내는 "계정마다 로그인"으로만 한정 — 비공개 계정 미검증 경로는 안내하지 않는다
+- Date: 2026-07-27
+- Context: 아래 "Phase 7 Stage 1 reconnaissance" 항목은 아무 인증 세션에서든 남의 `open_id`로 로스터를 읽을 수 있다고 기록했지만, 그 실험의 대상 계정은 로스터 공개(방패 on) 상태였다 — **비공개 계정도 같은 방식으로 읽히는지는 그 항목이 명시적으로 남긴 미해결 질문**이다. 도움말 UX만 보면 "한 계정으로 로그인해서 여러 북마크를 다 누르면 된다"처럼 편의성 있게 쓰고 싶어지는 문구다.
+- Decision: 다계정 안내는 검증된 경로만 쓴다 — "각 계정으로 로그인한 상태에서 그 계정의 북마크를 누른다"(자기 데이터를 자기 세션으로 읽는 것이므로 반례가 없다). "한 번 로그인으로 다 된다"는 문구는 쓰지 않는다.
+- Why: 편의를 위해 미검증 경로를 안내하면 비공개 계정 유저가 그대로 따라 하다 조용히 실패할 수 있다. 부수 효과로 유저에게 로스터를 공개(방패 on)로 바꾸라고 권할 필요도 없어진다 — 안내가 이미 각 계정 로그인 전제라 방패 설정과 무관하다.
+- Consequences: 로스터 공개(방패) 설정을 도와주는 안내는 이번 범위에서 제외됐다. 비공개 계정의 크로스세션 읽기 가능 여부가 나중에 검증되면 안내를 "한 번 로그인"으로 단순화할 수 있다 — 그전까지는 이 제한이 유효하다. 관련: 스펙 `docs/superpowers/specs/2026-07-26-sync-help-panel-design.md` 결정 6번.
+
 ## "AllStep" 버스트는 그 유닛이 실제로 쓰이는 단계로 접는다 — Red Hood = B3
 - Date: 2026-07-26
 - Context: ShiftyPad는 전 단계 버스트 유닛의 `use_burst_skill`을 tier가 아니라 `"AllStep"`으로 준다. `normalize_shiftypad`는 `int("AllStep")`에서 죽었고, 그래서 그런 유닛은 ShiftyPad를 소스로 온보딩할 수 없었다. 라이브 디렉토리 196기 전수 확인 결과 해당 유닛은 **Red Hood 하나뿐**(Step1 54 / Step2 64 / Step3 77 / AllStep 1). 엔진은 유닛을 **정확히 한 tier**에 앉히므로 "전 단계"를 그대로 담을 자리가 없다.
