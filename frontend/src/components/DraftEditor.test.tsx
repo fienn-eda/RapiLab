@@ -164,9 +164,9 @@ describe('DraftEditor', () => {
   it('names a seated unit through its slot controls rather than visible text', () => {
     const value: Draft = { decks: [[{ slug: 'crown', locked: false }], []] }
     editor(2, value)
-    expect(screen.getByRole('heading', { name: /Deck 1/ })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /Deck 2/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Remove Crown from deck 1' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /덱 1/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /덱 2/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '덱 1에서 Crown 제거' })).toBeInTheDocument()
     expect(screen.queryByText('crown')).not.toBeInTheDocument()
   })
 
@@ -184,13 +184,13 @@ describe('DraftEditor', () => {
 
   it('warns on the deck title when a burst tier is unrepresented', () => {
     editor(1, { decks: [[{ slug: 'crown', locked: false }]] })
-    expect(screen.getByRole('heading', { name: /no B2, B3/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /B2, B3 없음/ })).toBeInTheDocument()
   })
 
   it('says nothing about burst tiers for a deck with all three', () => {
     const seats = ['crown', 'liter', 'blanc'].map((slug) => ({ slug, locked: false }))
     editor(1, { decks: [seats] })
-    expect(screen.queryByText(/^no B/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/없음$/)).not.toBeInTheDocument()
   })
 
   it('flips a seat\'s lock via its toggle and reports the change through onChange', async () => {
@@ -199,7 +199,7 @@ describe('DraftEditor', () => {
     const onChange = vi.fn()
     editor(1, value, onChange)
 
-    const lock = screen.getByRole('button', { name: 'Lock Crown in deck 1' })
+    const lock = screen.getByRole('button', { name: '덱 1에서 Crown 고정' })
     expect(lock).toHaveAttribute('aria-pressed', 'false')
     await user.click(lock)
     expect(onChange).toHaveBeenCalledWith({ decks: [[{ slug: 'crown', locked: true }]] })
@@ -211,7 +211,7 @@ describe('DraftEditor', () => {
     const onChange = vi.fn()
     editor(1, value, onChange)
 
-    await user.click(screen.getByRole('button', { name: 'Remove Crown from deck 1' }))
+    await user.click(screen.getByRole('button', { name: '덱 1에서 Crown 제거' }))
     expect(onChange).toHaveBeenCalledWith({ decks: [[]] })
   })
 
@@ -227,7 +227,7 @@ describe('DraftEditor', () => {
     })
 
     const deckAt = (index: number) =>
-      screen.getByRole('heading', { name: new RegExp(`Deck ${index + 1}`) }).closest('div')!
+      screen.getByRole('heading', { name: new RegExp(`덱 ${index + 1}`) }).closest('div')!
 
     it('seats a dragged unit in the deck it was dropped on', () => {
       const onChange = vi.fn()
