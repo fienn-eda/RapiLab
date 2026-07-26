@@ -93,10 +93,9 @@ def test_volume_burst_cooldown_reduction_escalates_the_same_way():
     reg = EffectRegistry()
     rules = {"volume": build_volume_rules(VOLUME)}
 
-    # Escalates to the tier unlocked so far. Whether a later tier REPLACES the
-    # earlier ones or ADDS to them is undetermined by the measurement (they
-    # agree at activation 1) - see volume.CDR_TIERS_ARE_CUMULATIVE.
-    for want in (2.34, 2.7, 3.17, 3.17):
+    # Cumulative, like the crit half: every unlocked tier fires and they add
+    # (Fienn, 2026-07-27).
+    for want in (2.34, 2.34 + 2.7, 2.34 + 2.7 + 3.17, 2.34 + 2.7 + 3.17):
         fire_trigger("full_burst_enter", rules, ctx, reg, time=0.0)
         assert round(sum(p.value for p in reg.drain_pulses("burst_cooldown_reduction_sec")), 4) == round(want, 4)
 

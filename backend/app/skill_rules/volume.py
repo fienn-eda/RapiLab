@@ -37,32 +37,24 @@ SKILL_VALUE_MANIFESTS = {
 }
 
 
-# Whether an escalated tier REPLACES the ones before it or ADDS to them. The
-# range measurement proves the tiers escalate (the first activation is tier 1,
-# not the maximum) but cannot separate these two readings - at activation 1 they
-# are identical. Kept at the conservative reading, which preserves the
-# steady-state value the calibration was built on; flipping it is one line.
-#   cumulative CDR measured 2026-07-27: deck 4 1.24x -> 1.53x, 11 -> 14 Full
-#   Bursts in 180 sec. Large and unverified, so not adopted. See docs/roadmap.md.
-CDR_TIERS_ARE_CUMULATIVE = False
-
-
 def _escalating_cdr_rule(trigger, tier_seconds):
     """The cooldown-reduction half of an escalating bullet.
 
     `escalating_buff_rule` covers the registry-effect case; a burst-cooldown
     reduction is a Pulse instead, so it needs its own accumulator. On the Nth
-    activation the tiers unlocked so far apply - summed or superseded per
-    CDR_TIERS_ARE_CUMULATIVE.
+    activation every tier unlocked so far fires and they ADD - 2.34, then 5.04,
+    then 8.21 sec (Fienn, 2026-07-27). The range measurement could only prove
+    the tiers escalate, since cumulative and superseding agree on activation 1;
+    Fienn settled which.
     """
 
     def action(context, caster_slug, time, registry):
         n = context.activation_count(caster_slug, trigger)
-        unlocked = [value for unlock_at, value in enumerate(tier_seconds, start=1) if n >= unlock_at]
-        if not unlocked:
-            return
-        seconds = sum(unlocked) if CDR_TIERS_ARE_CUMULATIVE else unlocked[-1]
-        registry.add_pulse(Pulse("burst_cooldown_reduction_sec", seconds, "squad", caster_slug))
+        seconds = sum(
+            value for unlock_at, value in enumerate(tier_seconds, start=1) if n >= unlock_at
+        )
+        if seconds:
+            registry.add_pulse(Pulse("burst_cooldown_reduction_sec", seconds, "squad", caster_slug))
 
     return SkillRule(trigger=trigger, action=action)
 
