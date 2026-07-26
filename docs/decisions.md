@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 버스트 넉도 Full Burst 보너스를 받는다 — 판정은 2026-07-12에 있었는데 배선이 없었다
+- Date: 2026-07-26
+- Context: Fienn이 Liberalio 버스트 검증을 요청하며 두 가지를 물었다 — ① 925%가 자기 +50% Attack Damage를 **적용받은 뒤에** 계산되는가 ② Full Burst 보너스를 받는가. ①은 정상이었다(버스트 인스턴스의 `attack_damage_up`=3.3583, 그 +50%만 떼면 버스트 딜 535.8M → 474.3M이고 비율 1.1297이 (1+3.3583)/(1+2.8583)=1.1296과 일치 — `on_tier_fire`가 `own_burst_activate`를 먼저 쏘고 같은 시각에 넉을 기록하며 레지스트리가 `applied_at`부터 센다). ②가 **0.0이었다**.
+- 원인: `full_burst_bonus_eligible` 옵트인이 per-shot·periodic·resource-scaled 넉에는 전부 붙었는데 **평범한 `burst_damage_percents` 경로에만 안 넘어가고 있었다**. 그런데 2026-07-12 판정문은 문자 그대로 **버스트 스킬**에 대한 것이다: "burst skill 대미지 설명에 'as additional damage' 표현이 있으면 full burst bonus 받음". 즉 규칙이 겨냥한 바로 그 경로에 구현이 없었다.
+- Decision: `registry._BURST_FULL_BURST_BONUS_ELIGIBLE` 집합을 두고 `roster` → `simulate_raid(burst_full_burst_bonus_eligible=...)`로 스레딩한다(기존 `burst_damage_types`와 같은 모양). 대상은 **`liberalio`·`rapi-red-hood` 둘뿐**이다.
+- Alternatives considered: **"as additional damage"가 있는 9유닛 전부 넣기** — 기각. 원문을 하나씩 읽으니 **평범한 넉이 그 불릿인 유닛은 2명뿐**이었다. Julia(최대 Crescendo 히트)·Isabel(Marked Target 2/3)·Cinderella(Beautiful 미러)·Helm: Aquamarine(Electric 게이팅)은 "additional damage" 불릿이 **별도의 자원 게이팅 넉**이고 이미 자기 플래그를 갖고 있으며, 그 옆의 평범한 넉은 `as damage`/`as Burst Skill damage`다. 유닛 수로 세면 틀리고 **불릿 단위로 읽어야** 맞는다.
+- Consequences: Liberalio 버스트 535.8M → **763.7M(+42.5%)**, 그녀 총딜 3.177B → **3.405B**, 덱1 11.92B → **12.15B(0.96x → 0.98x)**. 실기록 대비 홍련:Liberalio 비율 3.52 → **2.14**(실기록 1.68). **B1·B2는 구조적으로 못 받는다** — `burst_cycle`이 manual 모드에서 세 캐스트를 0.1초씩 벌리므로 B1·B2는 `full_burst_start` 이전이다. 단 **auto 모드에서는 gap이 0.0이라 셋이 창 시작과 겹친다** — 지금은 B1 슬러그가 플래그돼 있지 않아 무해하지만 회귀 테스트 도크스트링에 명시해 뒀다(이 성질을 모르고 쓴 첫 테스트가 auto 픽스처를 써서 실패했고, 그게 이 사실을 드러냈다). 백엔드 1416 → **1421 passed / 3 skipped**.
+
 ## "Activates N times"에 "per battle"이 없으면 전투당 N회가 아니라 **발동당 N타**다
 - Date: 2026-07-26
 - Context: 실기록 5덱 중 **유일하게 과소평가**된 덱1(0.87x)을 추적하다 나왔다. Fienn이 유닛별 실기록을 주면서 범인이 즉시 좁혀졌다 — 홍련:흑영은 7.30B로 실기록 6.5B 대비 **과대(+12%)**인데 **Liberalio가 2.08B로 실기록 3.86B 대비 −46%**였다. 그녀 한 명의 부족분 1.78B가 덱 부족분 1.63B를 그대로 설명한다.

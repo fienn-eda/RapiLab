@@ -416,6 +416,7 @@ def simulate_raid(
     base_crit_rate=BASE_CRIT_RATE,
     periodic_nukes=None,
     burst_damage_types=None,
+    burst_full_burst_bonus_eligible=None,
     periodic_rules=None,
     per_shot_rules=None,
     resource_specs=None,
@@ -432,6 +433,7 @@ def simulate_raid(
     weapon_mode_schedules = weapon_mode_schedules or {}
     periodic_nukes = periodic_nukes or {}
     burst_damage_types = burst_damage_types or {}
+    burst_full_burst_bonus_eligible = burst_full_burst_bonus_eligible or set()
     periodic_rules = periodic_rules or {}
     per_shot_rules = per_shot_rules or {}
     resource_specs = resource_specs or {}
@@ -646,7 +648,14 @@ def simulate_raid(
         # damage_formula), so splitting into hits changes the total whenever
         # enemy_def > 0. All N hits land at the same instant.
         for _ in range(burst_hit_counts.get(slug, 1)):
-            record(slug, percent, time, "burst", damage_type=burst_damage_types.get(slug, "attack"))
+            record(
+                slug, percent, time, "burst",
+                damage_type=burst_damage_types.get(slug, "attack"),
+                # "as additional damage" bursts compute later than cast time, so
+                # they can take the Full Burst bonus - which in practice only a
+                # Burst 3 collects, since 1 and 2 fire before the window opens.
+                full_burst_bonus_eligible=slug in burst_full_burst_bonus_eligible,
+            )
 
     def on_full_burst_enter(time):
         fire_trigger("full_burst_enter", rules_by_slug, context, registry, time)

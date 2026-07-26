@@ -21,6 +21,7 @@ from app.skill_rules.registry import (
     get_burst_anchored_buffs,
     get_burst_cooldown_reduction,
     get_burst_damage_type,
+    get_burst_full_burst_bonus_eligible,
     get_burst_delay,
     get_burst_hit_count,
     get_per_shot_rules,
@@ -76,6 +77,7 @@ def assemble_simulation_inputs(ordered_deck):
     per_shot_rules = {}
     resource_specs = {}
     burst_damage_types = {}
+    burst_full_burst_bonus_eligible = set()
     burst_hit_counts = {}
     resource_scaled_nukes = {}
     resource_gated_buffs = {}
@@ -122,6 +124,8 @@ def assemble_simulation_inputs(ordered_deck):
             damage_type = get_burst_damage_type(spec.slug)
             if damage_type != "attack":
                 burst_damage_types[spec.slug] = damage_type
+            if get_burst_full_burst_bonus_eligible(spec.slug):
+                burst_full_burst_bonus_eligible.add(spec.slug)
             hit_count = get_burst_hit_count(spec.slug)
             if hit_count != 1:
                 burst_hit_counts[spec.slug] = hit_count
@@ -181,6 +185,7 @@ def assemble_simulation_inputs(ordered_deck):
         "per_shot_rules": per_shot_rules,
         "resource_specs": resource_specs,
         "burst_damage_types": burst_damage_types,
+        "burst_full_burst_bonus_eligible": burst_full_burst_bonus_eligible,
         "burst_hit_counts": burst_hit_counts,
         "resource_scaled_nukes": resource_scaled_nukes,
         "resource_gated_buffs": resource_gated_buffs,

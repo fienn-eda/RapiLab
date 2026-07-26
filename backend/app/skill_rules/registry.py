@@ -710,6 +710,24 @@ _PERIODIC_NUKE_BUILDERS = {
 # damage type (e.g. a "Projectile Explosion" keyword skill). Only overrides are
 # listed; everything else defaults to "attack". The instance's type decides
 # which type-gated Damage-Up buff applies (see raid_simulator._TYPE_BUCKETS).
+# A burst whose PLAIN nuke (the `burst_damage_percents` one) is worded "as
+# additional damage" - computed later than cast time, so it can land inside the
+# Full Burst window and take the bonus (Fienn, 2026-07-12). Membership is read
+# off the collected skill text, and it is deliberately narrow: several units
+# have an "as additional damage" bullet that is NOT their plain nuke (Julia's
+# max-Crescendo hit, Isabel's Marked Target tiers, Cinderella's Beautiful
+# mirror, Helm: Aquamarine's Electric-gated hit) - those are separate
+# resource-gated nukes that already carry their own eligibility flag, while the
+# plain nuke beside them reads "as damage" / "as Burst Skill damage".
+#
+# Only a Burst 3 can actually collect it: Burst 1 and 2 cast before
+# full_burst_start, so the window test in _damage_instance excludes them on
+# timing (Fienn, 2026-07-26).
+_BURST_FULL_BURST_BONUS_ELIGIBLE = {
+    "liberalio",       # Submerged World: "Deals 925% of final ATK as additional damage."
+    "rapi-red-hood",   # Stage 3: "Deals 2808% of final ATK as additional damage."
+}
+
 _BURST_DAMAGE_TYPES = {
     "phantom": "distributed",  # Rampages of Thieves deals its nuke "as Distributed Damage"
     "phantom-signature": "distributed",
@@ -938,6 +956,13 @@ def get_burst_damage_type(slug):
     matters for a slug that has a burst nuke - see raid_simulator's
     burst_damage_types."""
     return _BURST_DAMAGE_TYPES.get(slug, "attack")
+
+
+def get_burst_full_burst_bonus_eligible(slug):
+    """Whether this Nikke's burst nuke collects the Full Burst bonus - see
+    `_BURST_FULL_BURST_BONUS_ELIGIBLE`. False for the vast majority, whose
+    burst damage is dealt at cast time."""
+    return slug in _BURST_FULL_BURST_BONUS_ELIGIBLE
 
 
 def get_periodic_nuke(slug, skill_values):

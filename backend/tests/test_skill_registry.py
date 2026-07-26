@@ -4,6 +4,7 @@ from app.skill_rules.registry import (
     ENCODED_SLUGS,
     build_nikke_rules,
     get_burst_damage_type,
+    get_burst_full_burst_bonus_eligible,
     get_burst_hit_count,
     get_per_shot_rules,
     get_periodic_nuke,
@@ -103,6 +104,27 @@ def test_rapi_red_hood_burst_nuke_is_projectile_explosion_typed():
     # Power of Inheritance is a "Projectile Explosion" keyword skill, so its
     # burst-nuke instance benefits from Projectile Explosion Damage buffs.
     assert get_burst_damage_type("rapi-red-hood") == "projectile_explosion"
+
+
+def test_a_burst_nuke_worded_as_additional_damage_takes_the_full_burst_bonus():
+    # Fienn's rule (2026-07-12): a burst skill whose damage is described "as
+    # additional damage" is computed later than cast time, so it can land
+    # inside the Full Burst window and take the bonus. Liberalio's Submerged
+    # World and Red Hood's Stage 3 are the two whose PLAIN burst nuke is
+    # worded that way.
+    assert get_burst_full_burst_bonus_eligible("liberalio") is True
+    assert get_burst_full_burst_bonus_eligible("rapi-red-hood") is True
+
+
+def test_a_burst_nuke_worded_as_plain_damage_does_not_take_the_bonus():
+    # These units DO have an "as additional damage" bullet, but it is a
+    # separate resource-gated nuke that carries its own eligibility flag -
+    # their plain burst percent is the "as damage" / "as Burst Skill damage"
+    # bullet, which is cast-time damage.
+    assert get_burst_full_burst_bonus_eligible("rosanna") is False       # "as damage"
+    assert get_burst_full_burst_bonus_eligible("isabel") is False        # "as Burst Skill damage"
+    assert get_burst_full_burst_bonus_eligible("helm-aquamarine") is False
+    assert get_burst_full_burst_bonus_eligible("crown") is False         # no burst nuke at all
 
 
 def test_build_nikke_rules_returns_the_great_thief_burst_percent_for_quency():
