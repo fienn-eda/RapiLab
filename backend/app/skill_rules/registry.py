@@ -71,6 +71,7 @@ from app.skill_rules.cinderella_crystal_wave import (
 )
 from app.skill_rules.cinderella import (
     GLASS_SLIPPERS_HIT_COUNT,
+    build_beautiful_max_hp_rules,
     build_beautiful_resources,
     build_flawless_glass_charge_speed_rules,
     build_flawless_glass_per_shot_rules,
@@ -425,6 +426,7 @@ def _build_takina(sv):
 def _build_cinderella(sv):
     rules = build_flawless_glass_rules(sv, sv["caster_max_hp"])
     rules += build_flawless_glass_charge_speed_rules(sv)
+    rules += build_beautiful_max_hp_rules(sv, sv["caster_max_hp"])
     return rules, glass_slippers_burst_percent(sv)
 
 

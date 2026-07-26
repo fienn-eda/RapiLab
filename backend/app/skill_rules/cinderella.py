@@ -1,17 +1,18 @@
-"""Cinderella (slug "cinderella"), a Burst-3 Fire Rocket Launcher attacker.
-Base skills. PARTIAL - decoy creation (survival) is deferred; Beautiful's own
-Max HP growth is never granted as a buff, so only its stack COUNT feeds the
-burst's mirrored additional hit.
+"""Cinderella (slug "cinderella"), a Burst-3 Electric Rocket Launcher defender.
+Base skills. PARTIAL - decoy creation (survival) is deferred.
 
 Modeled (DPS-relevant):
-- Flawless Glass (skills[0]): on entering Burst Stage 3 (her own burst), self
-  ATK += 2.71% of her final Max HP for 10 sec. Every shot she fires deals an
-  extra 136.6%-of-final-ATK hit - RL is a charge weapon, so EVERY normal attack
-  IS a full-charge attack (see `attack_rate`), modeled as a per-shot instant
-  nuke firing on every shot.
-- Dirt-Resistant Mirror (skills[1]): Beautiful, a named resource that ticks
-  every 3 sec (her decoy is up continuously from battle start), capped at 12
-  stacks - feeds Glass Slippers' mirrored additional hit below.
+- Flawless Glass (skills[0]): on entering Burst Stage 3 - the STAGE, so also in
+  the cycles an allied Burst 3 takes the slot - self ATK += 2.71% of her final
+  Max HP for 10 sec. Every shot she fires deals an extra 136.6%-of-final-ATK
+  hit - RL is a charge weapon, so EVERY normal attack IS a full-charge attack
+  (see `attack_rate`), modeled as a per-shot instant nuke firing on every shot
+  and eligible for the Full Burst bonus ("as additional damage").
+- Dirt-Resistant Mirror (skills[1]): Beautiful, which is TWO things. Its stack
+  COUNT is a named resource ticking every 3 sec (her decoy is up continuously
+  from battle start), capped at 12, feeding Glass Slippers' mirrored additional
+  hit below. Its Max HP +1.6% per stack is a separate battle-start ramp, which
+  Flawless Glass's ATK above then reads live off.
 - Glass Slippers, Full Contact. (skills[2], her burst): deals 1365.92% of final
   ATK as damage, attacking sequentially 10 times - 10 separate hits
   (`burst_hit_counts`, each independently defense-subtracted). While in
@@ -21,18 +22,16 @@ Modeled (DPS-relevant):
 Not modeled / deferred:
 - Decoy creation (both the battle-start and burst-tier-3-entry copies) - pure
   survivability (an HP-sponge clone), no damage-output consumer.
-- Beautiful's own "Max HP +1.6% per stack": Max HP itself is no longer a dead
-  stat (Phase B, 2026-07-24 - Flawless Glass above reads LIVE Max HP through
-  `max_hp_scaled_atk_rule`), but this bullet still never GRANTS the Max HP, so
-  only the STACK COUNT (read via resource_scaled_nukes) matters today. Encoding
-  the grant as a `flat_max_hp` buff would now actually feed her own ATK.
 (Flawless Glass's Charge Speed +100% used to be listed here as "not a damage
 stat". That was written before Phase S wired `charge_speed_percent`; it is now
 modeled - see `flawless_glass_charge_speed`. It is one of her biggest levers,
 since every shot she fires also carries the 136.6% additional hit.)
 """
-from app.effects import ResourceSpec
+from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, max_hp_scaled_atk_rule
+from app.squad_engine import SkillRule, burst_stage_entered
+
+BURST_STAGE = 3  # skill text: "entering Burst Stage 3" (a fixed reference, not a data slot)
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -60,16 +59,27 @@ def glass_slippers_burst_percent(values):
 
 
 def build_flawless_glass_rules(values, caster_max_hp):
+    """"Activates when entering Burst Stage 3" is about the STAGE, not about
+    her - so it fires in every cycle a Burst 3 takes the slot, including the
+    ones an ALLIED Burst 3 takes. `own_burst_activate` would silently drop
+    those cycles (see squad_engine.burst_stage_entered)."""
     fg = values["flawless_glass"]
     atk_pct_of_max_hp = float(fg["description_value_01"]) / 100
     duration = float(fg["description_value_02"])
-    return [max_hp_scaled_atk_rule("own_burst_activate", atk_pct_of_max_hp, "self", duration, caster_max_hp)]
+    return [max_hp_scaled_atk_rule(
+        "ally_burst_activate", atk_pct_of_max_hp, "self", duration, caster_max_hp,
+        condition=burst_stage_entered(BURST_STAGE),
+    )]
 
 
 def build_flawless_glass_per_shot_rules(values):
+    """Full-burst-bonus eligible: the bullet's own text says "as additional
+    damage", and each shot computes at its own time, so the simulator checks
+    the shot against the Full Burst window rather than approximating."""
     fg = values["flawless_glass"]
     additional = float(fg["description_value_04"])
-    return [(1, "every", [instant_nuke_pulse_rule("per_shot", additional)])]
+    return [(1, "every", [instant_nuke_pulse_rule("per_shot", additional,
+                                                  full_burst_bonus_eligible=True)])]
 
 
 def flawless_glass_charge_speed(values):
@@ -96,10 +106,41 @@ def build_flawless_glass_charge_speed_rules(values):
 
 
 def build_beautiful_resources(values):
+    """The stack COUNT only - Glass Slippers' mirrored hit reads it. Beautiful's
+    own Max HP per stack cannot ride this spec's `buffs` (see
+    `build_beautiful_max_hp_rules`)."""
     dm = values["dirt_resistant_mirror"]
     interval = float(dm["description_value_03"])
     cap = int(float(dm["description_value_05"]))
     return [ResourceSpec(name="beautiful", fill=("periodic", interval), cap=cap, buffs=[])]
+
+
+def build_beautiful_max_hp_rules(values, caster_max_hp):
+    """Beautiful's "Max HP +1.6% continuously, stacks up to 12 times", which
+    Flawless Glass's ATK then reads off her LIVE Max HP.
+
+    Laid down at battle start as the whole ramp - one permanent effect per
+    stack, each with the `applied_at` its stack really arrives at. The decoy is
+    up from battle start and never drops, so the schedule is fully determined
+    and pre-adding it is exact (the same reason periodic_rules may pre-add).
+
+    Why not the `beautiful` ResourceSpec's own `buffs`: the simulator resolves
+    resource buffs AFTER the shot loop, while max_hp_scaled_atk_rule reads
+    flat_max_hp DURING it, at the instant her burst fires. A ResourceBuff here
+    measures as exactly zero (verified 2026-07-27) - the resource can express
+    the count for a nuke, but not a stat another rule has to see live.
+    """
+    dm = values["dirt_resistant_mirror"]
+    interval = float(dm["description_value_03"])
+    per_stack = float(dm["description_value_04"]) / 100 * caster_max_hp
+    cap = int(float(dm["description_value_05"]))
+
+    def action(context, caster_slug, time, registry):
+        for stack in range(1, cap + 1):
+            registry.add(Effect("flat_max_hp", per_stack, "self", None, caster_slug),
+                         applied_at=time + interval * stack)
+
+    return [SkillRule(trigger="battle_start", action=action)]
 
 
 def build_glass_slippers_resource_scaled_nuke(values):
