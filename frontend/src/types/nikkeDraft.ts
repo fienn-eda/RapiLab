@@ -76,12 +76,12 @@ const parseIntField = (
   bounds: { min: number; max?: number },
 ): ParsedNumber => {
   const trimmed = raw.trim()
-  if (trimmed === '') return { error: 'Required' }
-  if (!/^-?\d+$/.test(trimmed)) return { error: 'Must be a whole number' }
+  if (trimmed === '') return { error: '필수 입력이에요' }
+  if (!/^-?\d+$/.test(trimmed)) return { error: '정수를 입력하세요' }
   const value = Number(trimmed)
-  if (value < bounds.min) return { error: `Must be ≥ ${bounds.min}` }
+  if (value < bounds.min) return { error: `${bounds.min} 이상이어야 해요` }
   if (bounds.max !== undefined && value > bounds.max)
-    return { error: `Must be ≤ ${bounds.max}` }
+    return { error: `${bounds.max} 이하여야 해요` }
   return { value }
 }
 
@@ -90,10 +90,10 @@ const parseFloatField = (
   bounds: { min: number },
 ): ParsedNumber => {
   const trimmed = raw.trim()
-  if (trimmed === '') return { error: 'Required' }
+  if (trimmed === '') return { error: '필수 입력이에요' }
   const value = Number(trimmed)
-  if (!Number.isFinite(value)) return { error: 'Must be a number' }
-  if (value < bounds.min) return { error: `Must be ≥ ${bounds.min}` }
+  if (!Number.isFinite(value)) return { error: '숫자를 입력하세요' }
+  if (value < bounds.min) return { error: `${bounds.min} 이상이어야 해요` }
   return { value }
 }
 
@@ -109,7 +109,7 @@ export interface ValidationResult {
 export const validateDraft = (draft: NikkeDraft): ValidationResult => {
   const errors: NikkeDraftErrors = {}
 
-  if (draft.character_slug.trim() === '') errors.character_slug = 'Required'
+  if (draft.character_slug.trim() === '') errors.character_slug = '필수 입력이에요'
 
   const level = parseIntField(draft.level, CONSTRAINTS.level)
   if (level.error) errors.level = level.error
@@ -138,7 +138,7 @@ export const validateDraft = (draft: NikkeDraft): ValidationResult => {
   for (const row of draft.overload_options) {
     const rowErrors: { name?: string; value?: string } = {}
     const name = row.name.trim()
-    if (name === '') rowErrors.name = 'Required'
+    if (name === '') rowErrors.name = '필수 입력이에요'
     const parsedValue = parseFloatField(row.value, { min: -Infinity })
     if (parsedValue.error) rowErrors.value = parsedValue.error
     if (Object.keys(rowErrors).length > 0) {
