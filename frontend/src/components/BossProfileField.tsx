@@ -66,7 +66,7 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
         <span className="group__hint">
           {' '}
           부위파괴에 의존하는 유닛(예: 아크레인저 블랙)의 최대 잠재력 모델을
-          선택합니다. 체크 해제 시 하한 모델을 사용합니다.
+          선택해요. 체크 해제 시 하한 모델을 사용해요.
         </span>
       </label>
 

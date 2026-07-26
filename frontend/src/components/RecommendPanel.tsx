@@ -402,7 +402,7 @@ export function RecommendPanel({
                 <span className="group__hint">
                   {' '}
                   — 직접 고른 핵심 유닛으로 덱을 시드하면, 엔진이 나머지를 채우고
-                  최적화
+                  최적화해요
                 </span>
               </label>
             </div>
