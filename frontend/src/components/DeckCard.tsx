@@ -1,7 +1,11 @@
-// A single deck's units (in burst order) and damage breakdown. Shared by
+// A single deck's units (in burst order) and its total damage. Shared by
 // DeckResults (ranked #N alternatives), RaidResults (allocation-order
 // "Deck N" partitions), and DraftResults (draft tiers) — only the label,
 // and DraftResults' optional pinned/diff annotations, differ.
+//
+// The per-source split (burst / normal / skill) rides along on the response
+// and is not drawn: what a deck is worth is the total, and three more numbers
+// per card cost more attention than they return (Fienn, 2026-07-26).
 //
 // The deck is drawn as a row of faces, the same language the palette and the
 // draft slots use: a recommendation is only useful once you can tell who is
@@ -73,11 +77,6 @@ export function DeckCard({
           )
         })}
       </ol>
-      <div className="deck-results__breakdown">
-        <span>Burst: {formatDamage(deck.burst_damage)}</span>
-        <span>Normal: {formatDamage(deck.normal_attack_damage)}</span>
-        <span>Skill: {formatDamage(deck.skill_damage)}</span>
-      </div>
       {(addedSlugs.length > 0 || removedSlugs.length > 0) && (
         <div className="deck-results__diff">
           {addedSlugs.length > 0 && (

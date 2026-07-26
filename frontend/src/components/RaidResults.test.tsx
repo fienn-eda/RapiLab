@@ -32,8 +32,6 @@ describe('RaidResults', () => {
     expect(screen.getByText('Deck 2')).toBeInTheDocument()
     expect(screen.queryByText('#1')).not.toBeInTheDocument()
     expect(screen.getByText('5,000,000 total dmg')).toBeInTheDocument()
-    expect(screen.getByText('Burst: 3,000,000')).toBeInTheDocument()
-    expect(screen.getByText('Normal: 2,000,000')).toBeInTheDocument()
   })
 
   it('shows the combined total prominently', () => {

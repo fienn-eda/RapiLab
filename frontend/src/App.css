@@ -747,13 +747,6 @@
   white-space: nowrap;
 }
 
-.deck-results__breakdown {
-  display: flex;
-  gap: var(--sp-4);
-  color: var(--text-muted);
-  font-size: 13px;
-}
-
 .deck-results__excluded,
 .raid-results__leftover {
   font-size: 13px;

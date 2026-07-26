@@ -5,15 +5,17 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
-## 덱 카드의 내역은 여덟 소스를 셋으로 접되, **합이 총합과 같아야 한다**
+## 데미지 내역은 완결시키되, 덱 카드는 총합만 그린다
 - Date: 2026-07-26
-- Context: 결과 카드가 `Burst`·`Normal` 두 줄만 보여줬는데 시뮬레이터는 **여덟 소스**를 기록한다(`normal_attack`·`burst`·`per_shot_nuke`·`periodic`·`scheduled`·`instant_nuke`·`resource_scaled_nuke`·`dynamic_hit_count_nuke`). 두 줄이 설명하는 비율은 덱마다 22~72%로 흩어졌고, 버스트 넉이 없는 덱은 **"Burst: 0"** 이라 고장난 화면처럼 읽혔다. 캘리브레이션 후 실측(실제 로스터·철갑 보스·DEF 31,784)으로 다시 재면 **37% / 38% / 50% / 86% / 39%** — 즉 대부분의 덱에서 **화면에 없는 항목이 최대 딜 소스**였다(덱1: 스킬 7.65B vs 평타 4.43B vs 버스트 0.10B).
-- Decision: 세 줄 — `Burst` · `Normal` · **`Skill`**(나머지 여섯 소스의 합). `deck_search._summarize`가 소스별로 합산한 뒤 burst/normal을 꺼내고 남은 것을 `skill_damage`로 내보내므로, **소스가 늘어나도 자동으로 Skill에 들어간다**. 세 값의 합이 `total_damage`와 같다는 것이 계약이고 백엔드·API 양쪽에 테스트로 고정돼 있다.
+- Context: 결과 카드가 `Burst`·`Normal` 두 줄을 보여줬는데 시뮬레이터는 **여덟 소스**를 기록한다(`normal_attack`·`burst`·`per_shot_nuke`·`periodic`·`scheduled`·`instant_nuke`·`resource_scaled_nuke`·`dynamic_hit_count_nuke`). 두 줄이 설명하는 비율은 덱마다 흩어졌고, 버스트 넉이 없는 덱은 **"Burst: 0"** 이라 고장난 화면처럼 읽혔다. 캘리브레이션 후 실측(실제 로스터·철갑 보스·DEF 31,784)으로 재면 **37% / 38% / 50% / 86% / 39%** — 즉 대부분의 덱에서 **화면에 없는 항목이 최대 딜 소스**였다(덱1: 스킬 7.65B vs 평타 4.43B vs 버스트 0.10B).
+- Decision: **두 갈래로 갈랐다.** ① 백엔드는 내역을 완결시킨다 — `skill_damage`(나머지 여섯 소스의 합)를 추가해 **세 값의 합 = `total_damage`** 를 계약으로 고정하고 백엔드·API 양쪽 테스트로 잠갔다. ② **프론트는 그 셋을 그리지 않는다**(Fienn, 2026-07-26). 덱 카드는 총합만 보여준다.
+- Why: 처음엔 세 줄을 그렸는데, 고쳐 놓고 보니 **화면에 필요한 답이 아니었다.** 카드가 대답하는 질문은 "이 덱이 얼마짜리인가"이고 다섯 장이 나란히 서는 자리라 줄 하나가 비싸다. 소스별 분해는 **시뮬레이터를 의심할 때** 필요한 것이지 덱을 고를 때 필요한 게 아니다 — 그건 계측 스크립트의 자리다. 그래도 백엔드를 되돌리지 않은 이유는 **합=총합이 엔진 불변식**이기 때문이다: 새 데미지 소스가 어디에도 안 잡히고 새면 그 테스트가 잡는다. 화면에 안 뜨는 것과 계산되지 않는 것은 다르다.
 - Alternatives considered:
-  - **여덟 소스를 그대로 나열** — 기각. `resource_scaled_nuke`와 `dynamic_hit_count_nuke`의 차이는 엔진 내부 구현 구분이지 플레이어의 어휘가 아니다. 카드는 다섯 덱이 나란히 서는 자리라 줄 수도 비싸다.
-  - **유닛별 기여도로 쪼개기** — 더 유용하지만 다른 기능이다(누가 딜하는가 ≠ 무엇이 딜하는가). 이 To-Do가 지목한 것은 **총합이 설명되지 않는다**는 것이므로 범위를 넓히지 않았다.
+  - **여덟 소스를 그대로 나열** — 기각(표시하기로 했더라도). `resource_scaled_nuke`와 `dynamic_hit_count_nuke`의 차이는 엔진 내부 구분이지 플레이어의 어휘가 아니다.
+  - **유닛별 기여도로 쪼개기** — 더 유용하지만 다른 기능이다(누가 딜하는가 ≠ 무엇이 딜하는가). 미착수.
   - **`total − burst − normal`로 뺄셈** — 기각. 값은 같지만 `damage_log`에 새 소스가 생겼을 때 그것이 Skill에 들어간 건지 어딘가 새는 건지 구분할 수 없다. 남은 소스를 실제로 합산하면 테스트가 그 차이를 본다.
-- Consequences: 세 덱 모두 **100.0%** 설명. `Burst: 0`은 여전히 뜨지만 이제 그 옆에 Skill이 있어 "버스트 넉이 없는 덱"으로 읽힌다 — 고장이 아니다. 필드는 `DeckRecommendation`에 있으므로 `RaidDeck`(상속)과 세 결과 뷰(단일/레이드/드래프트)가 함께 얻는다. 프론트 픽스처 20여 개가 새 필수 필드를 받았고 전부 `total = burst + normal`이었으므로 `skill_damage: 0`이 참값이다. 백엔드 1413 → **1415 passed / 3 skipped**, 프론트 **289 passed**.
+  - **백엔드까지 되돌리기** — 기각. 위의 불변식을 잃고, 다시 띄우고 싶어지면 API를 또 건드려야 한다.
+- Consequences: 다섯 덱 모두 내역이 **100.0%** 를 설명하지만 화면에는 총합만 뜬다. 필드는 `DeckRecommendation`에 있으므로 `RaidDeck`(상속)과 세 결과 뷰가 함께 얻고, TS 타입은 와이어를 그대로 반영한다(안 그리는 것과 안 오는 것은 다르다). 프론트 픽스처 20여 개가 새 필수 필드를 받았고 전부 `total = burst + normal`이었으므로 `skill_damage: 0`이 참값이다. `.deck-results__breakdown` CSS는 삭제됐다. 백엔드 1413 → **1415 passed / 3 skipped**, 프론트 **289 passed**.
 
 ## "AllStep" 버스트는 그 유닛이 실제로 쓰이는 단계로 접는다 — Red Hood = B3
 - Date: 2026-07-26

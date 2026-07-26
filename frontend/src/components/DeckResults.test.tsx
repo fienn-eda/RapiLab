@@ -9,7 +9,7 @@ describe('DeckResults', () => {
     expect(screen.getByText('No decks recommended yet.')).toBeInTheDocument()
   })
 
-  it('renders each deck ranked, with its units in order and a damage breakdown', () => {
+  it('renders each deck ranked, with its units in order and its total damage', () => {
     const decks: DeckRecommendation[] = [
       {
         deck: ['red-hood', 'liter', 'blanc', 'noir', 'anne'],
@@ -31,11 +31,9 @@ describe('DeckResults', () => {
     expect(screen.getByText('#1')).toBeInTheDocument()
     expect(screen.getByText('#2')).toBeInTheDocument()
     expect(screen.getByText('5,000,000 total dmg')).toBeInTheDocument()
-    expect(screen.getByText('Burst: 3,000,000')).toBeInTheDocument()
-    expect(screen.getByText('Normal: 1,200,000')).toBeInTheDocument()
-    // Without this line the three-quarters of a deck's damage that is neither
-    // a burst nor a normal attack simply vanished from the card.
-    expect(screen.getByText('Skill: 800,000')).toBeInTheDocument()
+    // The per-source split rides along on the response but is deliberately
+    // not drawn - the card answers "what is this deck worth", nothing else.
+    expect(screen.queryByText(/^(Burst|Normal|Skill):/)).not.toBeInTheDocument()
 
     // Names, not slugs: a deck is only a recommendation once you can tell
     // who is in it.
