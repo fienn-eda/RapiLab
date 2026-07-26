@@ -46,7 +46,7 @@ export function DeckCard({
       <div className="deck-results__header">
         <span className="deck-results__rank">{label}</span>
         <span className="deck-results__total">
-          {formatDamage(deck.total_damage)} total dmg
+          {formatDamage(deck.total_damage)} 총딜
         </span>
       </div>
       <ol className="deck-results__units">
@@ -62,9 +62,9 @@ export function DeckCard({
                   <span className="deck-results__portrait deck-results__portrait--missing" />
                 )}
                 {pinnedSlugs.includes(slug) && (
-                  <span className="deck-results__pin" title="Kept here because you locked it">
+                  <span className="deck-results__pin" title="고정해서 여기 유지됨">
                     <span aria-hidden="true">📌</span>
-                    <span className="visually-hidden">pinned</span>
+                    <span className="visually-hidden">고정됨</span>
                   </span>
                 )}
               </span>
@@ -74,8 +74,8 @@ export function DeckCard({
         })}
       </ol>
       <div className="deck-results__breakdown">
-        <span>Burst: {formatDamage(deck.burst_damage)}</span>
-        <span>Normal: {formatDamage(deck.normal_attack_damage)}</span>
+        <span>버스트: {formatDamage(deck.burst_damage)}</span>
+        <span>평타: {formatDamage(deck.normal_attack_damage)}</span>
       </div>
       {(addedSlugs.length > 0 || removedSlugs.length > 0) && (
         <div className="deck-results__diff">

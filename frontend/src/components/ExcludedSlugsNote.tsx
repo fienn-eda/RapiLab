@@ -13,7 +13,7 @@ export function ExcludedSlugsNote({ excludedSlugs }: ExcludedSlugsNoteProps) {
   // name to look up - deriving one from the slug is all there is.
   return (
     <p className="deck-results__excluded">
-      Not yet supported (excluded from search): {excludedSlugs.map(nameFromSlug).join(', ')}
+      아직 미지원 (탐색에서 제외됨): {excludedSlugs.map(nameFromSlug).join(', ')}
     </p>
   )
 }
