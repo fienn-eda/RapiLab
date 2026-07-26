@@ -149,7 +149,7 @@ def build_ein_rules(values):
         buff_rule("own_burst_activate", [
             ("atk_percent", self_atk, "self", self_atk_duration),
             ("true_damage_up", true_damage, "self", true_damage_duration),
-            ("charge_damage_up", charge_damage, "self", charge_damage_duration),
+            ("charge_damage_bonus", charge_damage, "self", charge_damage_duration),
         ]),
     ]
 
@@ -161,7 +161,7 @@ def build_ein_per_shot_rules(values):
     charge_damage = float(shot["description_value_03"]) / 100
     rounds = int(float(shot["description_value_04"]))
     return [(1, "every", [
-        round_buff_rule("per_shot", [("charge_damage_up", charge_damage, "self")], shots=rounds),
+        round_buff_rule("per_shot", [("charge_damage_bonus", charge_damage, "self")], shots=rounds),
     ])]
 
 

@@ -5,6 +5,15 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 죽은 인코딩은 유닛별 실기록 없이도 잡을 수 있다 — 스탯 이름 대조
+- Date: 2026-07-26
+- Context: 덱1은 Fienn의 **유닛별 실기록**이 있어서 한 번에 풀렸다. 덱2~5는 총합만 있어 같은 방법을 못 쓴다. 그래서 반대로 갔다 — **지금까지 나온 버그 유형 자체를 전 유닛에 훑는다**. 유형은 셋이었다: ① 등록되지만 엔진이 안 읽는 스탯(앵커 주석이 주장하던 것·하모니 큐브) ② 등록되지만 다른 효과에 잘려 죽는 버프(Liberalio의 Raging Current) ③ 스킬 텍스트 오독(Activates 5 times).
+- Decision: ①은 **정적 대조로 잡는다** — 인코딩이 쓰는 스탯 리터럴 집합과 엔진이 읽는 집합을 diff한다. 실기록도, 시뮬 실행도 필요 없다.
+- 결과 ①: 46개 중 11개가 걸렸고 9개는 오탐(스킬값 매니페스트 키·`refresh_group` 이름·스코프 헬퍼), **진짜가 1건**이었다 — **Ein이 `charge_damage_up`을 쓴다. 엔진이 읽는 이름은 `charge_damage_bonus`이고, 다른 모든 인코딩은 그 이름을 쓴다.** 그녀의 차지 대미지 버프 **2개(버스트 +140.68%/10초, 풀차지마다 +80%/1라운드)가 통째로 죽어 있었다.** 그녀는 SR이라 차지 대미지가 모든 평타에 곱해진다 — 고치니 **0.347B → 0.682B(+96.5%)**, 그 덱 +8.1%. 남은 1건 `burst_gauge_fill_speed_percent`(Anis: Star)는 **의도된 미구현**이다(사이클이 게이지 시간을 `BossProfile.gauge_charge_time` 고정 입력에서 받으므로 어떤 버프도 못 움직인다) — 등록 지점에 그렇게 적어 뒀다.
+- 결과 ②: **구조적으로 닫혀 있다.** `add_refreshing`은 `refresh_group`을 **필수**로 요구해(없으면 `ValueError`) 각 refreshing 규칙이 고유 그룹을 받고, 평범하게 `add`된 효과는 `refresh_group=None`이라 절대 매칭되지 않는다. 같은 스탯을 refreshing/plain 양쪽으로 주는 유닛이 5개 있지만(ark-ranger-black·bready·brid·liberalio·miranda) 전부 설계상 안전하다.
+- Why: 이 형태의 버그는 **테스트가 전부 그린인 채로 산다** — 룰은 존재하고, 발동하고, 레지스트리에 효과를 넣는다. 유닛 테스트가 "효과가 등록되는가"만 보면 통과한다. Ein의 기존 테스트 2개가 정확히 그랬다(구조만 확인). 그래서 새 회귀 테스트는 **엔진이 읽는 이름으로** 조회한다.
+- Consequences: 백엔드 1421 → **1422 passed / 3 skipped**. 이 대조는 재실행 가능하므로 새 인코딩이 들어올 때마다 돌릴 값어치가 있다(스크립트화는 미착수). ③(텍스트 오독)은 정적으로 못 잡는다 — 원문을 읽어야 하고, 지금까지 유일하게 잡힌 단서는 "같은 표현을 쓰는 다른 유닛과의 대조"였다.
+
 ## 버스트 넉도 Full Burst 보너스를 받는다 — 판정은 2026-07-12에 있었는데 배선이 없었다
 - Date: 2026-07-26
 - Context: Fienn이 Liberalio 버스트 검증을 요청하며 두 가지를 물었다 — ① 925%가 자기 +50% Attack Damage를 **적용받은 뒤에** 계산되는가 ② Full Burst 보너스를 받는가. ①은 정상이었다(버스트 인스턴스의 `attack_damage_up`=3.3583, 그 +50%만 떼면 버스트 딜 535.8M → 474.3M이고 비율 1.1297이 (1+3.3583)/(1+2.8583)=1.1296과 일치 — `on_tier_fire`가 `own_burst_activate`를 먼저 쏘고 같은 시각에 넉을 기록하며 레지스트리가 `applied_at`부터 센다). ②가 **0.0이었다**.

@@ -73,6 +73,11 @@ def build_starfall_rules(values: dict) -> list[SkillRule]:
     gauge_fill_speed = float(values["description_value_05"]) / 100
 
     def grant_gauge_fill_speed(context, caster_slug, time, registry):
+        # INERT BY DESIGN. Nothing reads `burst_gauge_fill_speed_percent`: the
+        # cycle takes its gauge time from BossProfile.gauge_charge_time, a fixed
+        # input no buff can move (see docs/engine-gaps.md, "Burst Gauge fill
+        # speed - 구현 안 함"). Registered anyway so it starts counting the day
+        # the cycle reads the registry, but do not expect it to move damage.
         if context.has_status(caster_slug, "Starfall Gauge Buff Granted"):
             return
         context.set_status(caster_slug, "Starfall Gauge Buff Granted")

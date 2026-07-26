@@ -8,6 +8,7 @@ Burst, first at +0.8s, ~0.3s apart.
 """
 import pytest
 
+from app.effects import EffectRegistry
 from app.skill_rules.ein import (
     _attack_cooldown,
     _feather_count_at,
@@ -18,6 +19,7 @@ from app.skill_rules.ein import (
     build_ein_scheduled_nukes,
     feather_all_range_burst_percent,
 )
+from app.squad_engine import SquadContext, SquadMember
 
 FEATHER_STANDBY = {
     "description_value_01": "4",      # Near Feathers summoned at battle start
@@ -123,3 +125,24 @@ def test_full_charge_grants_one_round_of_charge_damage():
     threshold, mode, shot_rules = rules[0]
     assert (threshold, mode) == (1, "every")
     assert shot_rules[0].trigger == "per_shot"
+
+
+def test_her_charge_damage_lands_under_the_name_the_engine_reads():
+    """Both of her Charge Damage buffs must register as `charge_damage_bonus`.
+
+    Structure-only tests let this one hide: the rules existed, fired, and put
+    an Effect in the registry - under `charge_damage_up`, which nothing in the
+    damage path ever queries (`damage_formula` takes `charge_damage_bonus`, and
+    every other encoding writes that). She is an SR, so charge damage is a
+    multiplier on every normal attack she takes.
+    """
+    reg = EffectRegistry()
+    ctx = SquadContext([
+        SquadMember("ein", burst_tier=3, element="Electric"),
+        SquadMember("ally", burst_tier=1, element="Iron"),
+    ])
+    ein = {"slug": "ein", "element": "Electric"}
+    for rule in build_ein_rules(VALUES):
+        rule.action(ctx, "ein", 2.0, reg)
+    assert reg.total_for("charge_damage_bonus", ein, 5.0) == pytest.approx(1.4068)
+    assert reg.total_for("charge_damage_up", ein, 5.0) == 0.0
