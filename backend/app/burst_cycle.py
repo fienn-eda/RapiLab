@@ -35,6 +35,16 @@ the caller.
 
 FULL_BURST_DURATION = 10.0
 
+# Full Burst opens AFTER the Burst 3's cast resolves: the cycle is
+# [stage 3 entered -> B3 uses its burst -> Full Burst starts], so the B3's own
+# burst damage is settled before the window exists (Fienn, in-game range
+# measurement 2026-07-27 - see docs/decisions.md). This constant carries that
+# ORDERING, not a duration: the real gap is below measurement resolution, but
+# the order is certain. Keeping the two instants distinct is what stops a
+# `full_burst_enter` buff - and the Full Burst bonus itself - from leaking
+# backwards into the cast that opened the window.
+FULL_BURST_OPEN_DELAY = 1e-6
+
 
 def _ready_at(member, last_used_at, last_fired_at, cycle_index):
     """When `member` may next burst: its plain cooldown, pushed later by any
@@ -133,11 +143,12 @@ def simulate_burst_cycle(
                 tier3_fire_time = fire_time
             fire_time += gap
 
+        full_burst_start = tier3_fire_time + FULL_BURST_OPEN_DELAY
         if on_full_burst_enter:
-            on_full_burst_enter(tier3_fire_time)
+            on_full_burst_enter(full_burst_start)
 
-        full_burst_end = tier3_fire_time + FULL_BURST_DURATION
-        events.append({"type": "full_burst_start", "time": tier3_fire_time})
+        full_burst_end = full_burst_start + FULL_BURST_DURATION
+        events.append({"type": "full_burst_start", "time": full_burst_start})
         events.append({"type": "full_burst_end", "time": full_burst_end})
 
         cooldown_reduction = on_full_burst_end(full_burst_end) if on_full_burst_end else None

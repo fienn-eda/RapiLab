@@ -374,11 +374,15 @@ def test_b1_variant_manifest_carries_data_slug_for_weapon_stats_load():
 def test_b1_variant_combat_assist_buff_reaches_squad_damage():
     """(1) Combat Assist engages (no other Burst-1 ally in the deck), so her
     battlefield_assessment combat_assist_branch fires on full_burst_enter and
-    the squad's attack_damage_up buff actually multiplies an ally's burst
-    damage - compared against the same deck with her branch absent (what
-    happens in-game once a real Burst-1 ally cancels Combat Assist, Fienn's
-    rationale for excluding her from decks with another B1). Only cycle 1's
-    damage is compared, so neither run's later-cycle CDR pulses matter here."""
+    the squad's attack_damage_up buff actually multiplies an ally's damage -
+    compared against the same deck with her branch absent (what happens in-game
+    once a real Burst-1 ally cancels Combat Assist, Fienn's rationale for
+    excluding her from decks with another B1).
+
+    Measured on the tier-3's NORMAL ATTACKS, not on its burst: Full Burst opens
+    a beat after the tier-3's cast, so a full_burst_enter buff cannot reach that
+    cast's own burst damage (burst_cycle.FULL_BURST_OPEN_DELAY). Shots landing
+    inside the window are exactly what the buff is there to raise."""
     deck = [
         {"slug": "rapi-red-hood-b1", "burst_tier": 1, "element": "Fire", "cooldown": 40.0},
         {"slug": "tier2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
@@ -392,19 +396,33 @@ def test_b1_variant_combat_assist_buff_reaches_squad_damage():
     kwargs = dict(
         deck=deck, base_stats=base_stats, burst_damage_percents={"tier3": 1000.0},
         enemy_def=0.0, gauge_charge_time=2.0, fight_duration=15.0,
+        weapon_stats={"tier3": {"weapon": "AR", "damage_percent": 10.0, "max_ammo": 1000,
+                                "reload_time": 1.0, "charge_time": 0.0,
+                                "charge_damage_percent": 0.0}},
     )
     with_ca = simulate_raid(
         rules_by_slug={"rapi-red-hood-b1": build_battlefield_assessment_rules(VALUES)}, **kwargs)
     without_ca = simulate_raid(rules_by_slug={"rapi-red-hood-b1": []}, **kwargs)
 
+    def tier3_first_window_shot(result):
+        """The tier-3's first normal attack strictly after Full Burst opens."""
+        start = min(e["time"] for e in result["events"] if e["type"] == "full_burst_start")
+        shots = sorted((e for e in result["damage_log"]
+                        if e["source"] == "normal_attack" and e["time"] >= start),
+                       key=lambda e: e["time"])
+        assert shots
+        return shots[0]["damage"]
+
     def tier3_burst_damage(result):
         hits = [e["damage"] for e in result["damage_log"] if e["source"] == "burst"]
-        assert len(hits) == 1
+        assert hits
         return hits[0]
 
     expected_ratio = 1 + float(VALUES["description_value_05"]) / 100
-    assert tier3_burst_damage(with_ca) == pytest.approx(
-        tier3_burst_damage(without_ca) * expected_ratio)
+    assert tier3_first_window_shot(with_ca) == pytest.approx(
+        tier3_first_window_shot(without_ca) * expected_ratio)
+    # ...and it does NOT reach the cast that opened that window.
+    assert tier3_burst_damage(with_ca) == pytest.approx(tier3_burst_damage(without_ca))
 
 
 def test_b1_variant_stage1_burst_cdr_speeds_up_her_own_recast_cycle():

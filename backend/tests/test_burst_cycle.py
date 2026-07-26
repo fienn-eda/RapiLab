@@ -1,4 +1,6 @@
-from app.burst_cycle import simulate_burst_cycle
+import pytest
+
+from app.burst_cycle import FULL_BURST_OPEN_DELAY, simulate_burst_cycle
 
 
 def make_deck():
@@ -22,13 +24,15 @@ def test_first_cycle_fires_all_three_tiers_in_order():
 
 
 def test_full_burst_window_lasts_ten_seconds_after_tier3():
+    # It OPENS one ordering step after the tier-3 cast, not at it - the Burst 3
+    # fires, then Full Burst starts (see FULL_BURST_OPEN_DELAY).
     deck = make_deck()
     events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto")
 
     start = next(e for e in events if e["type"] == "full_burst_start")
     end = next(e for e in events if e["type"] == "full_burst_end")
-    assert start["time"] == 5.0
-    assert end["time"] == 15.0
+    assert start["time"] == 5.0 + FULL_BURST_OPEN_DELAY
+    assert end["time"] == pytest.approx(15.0 + FULL_BURST_OPEN_DELAY)
 
 
 def test_manual_mode_adds_gap_between_tiers():
@@ -73,7 +77,7 @@ def test_second_cycle_waits_for_the_slowest_tiers_cooldown_instead_of_missing():
 
     assert not any(e["type"] == "full_burst_missed" for e in events)
     starts = [e["time"] for e in events if e["type"] == "full_burst_start"]
-    assert starts == [5.0, 25.0]
+    assert starts == [5.0 + FULL_BURST_OPEN_DELAY, 25.0 + FULL_BURST_OPEN_DELAY]
 
 
 def test_missing_a_burst_tier_entirely_is_reported_as_missed():
@@ -125,7 +129,7 @@ def test_on_full_burst_enter_hook_fires_at_tier3_time():
         deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto",
         on_full_burst_enter=lambda time: calls.append(time),
     )
-    assert calls == [5.0]
+    assert calls == [5.0 + FULL_BURST_OPEN_DELAY]
 
 
 def test_on_full_burst_end_hook_return_value_reduces_all_cooldowns():
@@ -139,8 +143,11 @@ def test_on_full_burst_end_hook_return_value_reduces_all_cooldowns():
         deck, gauge_charge_time=5.0, fight_duration=35.0, mode="auto",
         on_full_burst_end=lambda time: {member["slug"]: 15.0 for member in deck},
     )
-    assert events.count({"type": "full_burst_start", "time": 5.0}) == 1
-    assert any(e["type"] == "full_burst_start" and e["time"] == 20.0 for e in events)
+    assert events.count({"type": "full_burst_start",
+                         "time": 5.0 + FULL_BURST_OPEN_DELAY}) == 1
+    assert any(e["type"] == "full_burst_start"
+               and e["time"] == pytest.approx(20.0 + FULL_BURST_OPEN_DELAY)
+               for e in events)
     assert not any(e["type"] == "full_burst_missed" for e in events)
 
 

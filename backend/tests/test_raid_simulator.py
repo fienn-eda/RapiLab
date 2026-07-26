@@ -1,3 +1,5 @@
+import pytest
+
 from app.effects import Effect, Pulse, ResourceBuff, ResourceSpec
 from app.raid_simulator import simulate_raid
 from app.skill_rules._helpers import (
@@ -608,7 +610,12 @@ def test_instant_damage_pulse_deals_damage_at_full_burst_enter_using_casters_own
     )
     instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
     # full_burst_enter fires at t=5.0 in this deck; 2000 atk * 500% coefficient
-    assert instant_hits == [{"slug": "buffer", "time": 5.0, "damage": 10000.0, "source": "instant_nuke", "damage_type": "attack"}]
+    # Fires at the instant Full Burst opens, a beat after the tier-3 cast.
+    assert len(instant_hits) == 1
+    assert instant_hits[0]["time"] == pytest.approx(5.0)
+    assert {k: v for k, v in instant_hits[0].items() if k != "time"} == {
+        "slug": "buffer", "damage": 10000.0, "source": "instant_nuke",
+        "damage_type": "attack"}
 
 
 def test_instant_damage_pulse_deals_damage_at_battle_start():
@@ -657,7 +664,11 @@ def test_instant_damage_pulse_deals_damage_at_full_burst_end():
     )
     instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
     # full_burst_end at t=15.0 (full_burst_enter t=5.0 + FULL_BURST_DURATION 10.0)
-    assert instant_hits == [{"slug": "buffer", "time": 15.0, "damage": 2000.0, "source": "instant_nuke", "damage_type": "attack"}]
+    assert len(instant_hits) == 1
+    assert instant_hits[0]["time"] == pytest.approx(15.0)
+    assert {k: v for k, v in instant_hits[0].items() if k != "time"} == {
+        "slug": "buffer", "damage": 2000.0, "source": "instant_nuke",
+        "damage_type": "attack"}
 
 
 def test_instant_damage_pulse_from_own_burst_activate_stacks_with_burst_nuke():
@@ -1359,9 +1370,11 @@ def test_round_grant_buffs_only_the_affected_units_first_shot_after_grant():
         weapon_stats={"attacker": _ar_weapon()},
     )
     na = {round(e["time"], 4): e["damage"] for e in result["damage_log"] if e["source"] == "normal_attack"}
-    assert na[round(5.0, 4)] == 1500.0       # covered shot: 1000 * (1 + 0.5 damage_taken)
-    assert na[round(59 / 12, 4)] == 1000.0   # shot just before the grant: unbuffed
-    assert na[round(61 / 12, 4)] == 1000.0   # next shot after the covered one: consumed, unbuffed
+    # Full Burst opens just AFTER the tier-3 cast at 5.0, so the shot landing
+    # exactly at 5.0 is still pre-window; the covered shot is the next one.
+    assert na[round(5.0, 4)] == 1000.0       # shot at the cast instant: unbuffed
+    assert na[round(61 / 12, 4)] == 1500.0   # covered shot: 1000 * (1 + 0.5 damage_taken)
+    assert na[round(62 / 12, 4)] == 1000.0   # next shot after the covered one: consumed
 
 
 def test_round_grant_re_grants_each_cycle_without_stacking():
@@ -1386,10 +1399,12 @@ def test_round_grant_re_grants_each_cycle_without_stacking():
         weapon_stats={"attacker": _ar_weapon(max_ammo=1000)},  # no reload over 25s -> clean k/12 shots
     )
     na = {round(e["time"], 4): e["damage"] for e in result["damage_log"] if e["source"] == "normal_attack"}
-    assert na[round(5.0, 4)] == 1500.0        # cycle 1 covered shot
-    assert na[round(20.0, 4)] == 1500.0       # cycle 2 covered shot (first >= 20.0, index 240)
+    # Each cycle's covered shot is the first one strictly after Full Burst
+    # opens, which is a beat after the tier-3 cast at 5.0 / 20.0.
+    assert na[round(61 / 12, 4)] == 1500.0    # cycle 1 covered shot
+    assert na[round(241 / 12, 4)] == 1500.0   # cycle 2 covered shot
     assert na[round(12.0, 4)] == 1000.0       # mid-cycle shot: unbuffed (not continuous)
-    assert na[round(241 / 12, 4)] == 1000.0   # shot after cycle-2 covered: consumed
+    assert na[round(242 / 12, 4)] == 1000.0   # shot after cycle-2 covered: consumed
 
 
 def test_round_grant_squad_scope_consumes_per_ally_first_shot():
@@ -1412,7 +1427,9 @@ def test_round_grant_squad_scope_consumes_per_ally_first_shot():
         base_crit_rate=0.0,
         weapon_stats={"midtier": _ar_weapon(), "attacker": _ar_weapon()},
     )
-    covered = [e for e in result["damage_log"] if e["source"] == "normal_attack" and round(e["time"], 4) == round(5.0, 4)]
+    # First shot strictly after Full Burst opens (a beat past the 5.0 cast).
+    covered = [e for e in result["damage_log"]
+               if e["source"] == "normal_attack" and round(e["time"], 4) == round(61 / 12, 4)]
     assert {e["slug"] for e in covered} == {"midtier", "attacker"}
     assert all(e["damage"] == 1500.0 for e in covered)  # each ally's own first shot buffed
 
@@ -1673,7 +1690,9 @@ def test_cooldown_reduction_pulse_from_full_burst_end_enables_a_second_cycle():
     # (20s cooldown, needs >=5s reduction) AND attacker (40s cooldown, needs
     # >=25s reduction) all eligible again by t=20.
     attacker_hits = [e for e in result["damage_log"] if e["slug"] == "attacker"]
-    assert [e["time"] for e in attacker_hits] == [5.0, 20.0]
+    # The second cycle starts one FULL_BURST_OPEN_DELAY later than the first,
+    # since each Full Burst now opens a beat after the cast that triggers it.
+    assert [e["time"] for e in attacker_hits] == pytest.approx([5.0, 20.0])
 
 
 def test_self_scoped_cdr_only_reduces_the_casters_cooldown():
@@ -1703,7 +1722,7 @@ def test_self_scoped_cdr_only_reduces_the_casters_cooldown():
         mode="auto",
     )
     starts = [e["time"] for e in result["events"] if e["type"] == "full_burst_start"]
-    assert starts == [5.0, 45.0]
+    assert starts == pytest.approx([5.0, 45.0])
 
 
 def test_full_burst_enter_and_full_burst_end_triggers_fire_for_all_members():
@@ -1728,8 +1747,11 @@ def test_full_burst_enter_and_full_burst_end_triggers_fire_for_all_members():
         fight_duration=20.0,
         mode="auto",
     )
-    assert enter_calls == [("buffer", 5.0)]
-    assert end_calls == [("buffer", 15.0)]
+    assert [c[0] for c in enter_calls] == ["buffer"]
+    assert [c[0] for c in end_calls] == ["buffer"]
+    # Full Burst opens just after the tier-3 cast at 5.0, and runs 10 sec.
+    assert enter_calls[0][1] == pytest.approx(5.0)
+    assert end_calls[0][1] == pytest.approx(15.0)
 
 
 def test_normal_attack_damage_is_accumulated_for_magazine_weapons():
@@ -2346,13 +2368,14 @@ def test_resource_spec_fill_during_full_burst_only_counts_in_window_shots():
         resource_specs={"attacker": [spec]},
     )
     dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
-    # shots 0-11 (t < 1.0) are pre-FB, never counted regardless of index.
-    assert dmg[11] == 1000.0
-    # in-FB shots start at index 12 (t=1.0); the 3rd in-FB shot is index 14.
-    assert dmg[13] == 1000.0   # 2nd in-FB shot: still 0 stacks
-    assert dmg[14] == 2000.0   # 3rd in-FB shot: 1 stack lands here
-    assert dmg[16] == 2000.0   # 5th in-FB shot: still 1 stack
-    assert dmg[17] == 3000.0   # 6th in-FB shot: 2nd stack
+    # Shots 0-12 are pre-FB: Full Burst opens a beat AFTER the tier-3 cast at
+    # t=1.0, so even the shot landing exactly at 1.0 (index 12) is outside.
+    assert dmg[12] == 1000.0
+    # in-FB shots start at index 13; the 3rd in-FB shot is index 15.
+    assert dmg[14] == 1000.0   # 2nd in-FB shot: still 0 stacks
+    assert dmg[15] == 2000.0   # 3rd in-FB shot: 1 stack lands here
+    assert dmg[17] == 2000.0   # 5th in-FB shot: still 1 stack
+    assert dmg[18] == 3000.0   # 6th in-FB shot: 2nd stack
 
 
 def test_resource_spec_battle_start_reset_sets_initial_value():
@@ -3276,3 +3299,49 @@ def test_per_critical_hit_every_fill_respects_the_cap():
 
     # 12 shots at one stack each would blow well past a cap of 2.
     assert uncapped["total_damage"] > capped["total_damage"]
+
+
+def _burst_three_damage_with_full_burst_enter_buff(mode):
+    """The Burst 3's own burst nuke, in a deck whose Burst 1 hands out a big
+    self-ATK buff the moment Full Burst opens."""
+    def grant_on_full_burst(context, caster_slug, time, registry):
+        registry.add(Effect("atk_percent", 1.0, "self", None, "attacker"), applied_at=time)
+
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [SkillRule(trigger="full_burst_enter", action=grant_on_full_burst)],
+         "midtier": [], "attacker": []},
+        burst_damage_percents={"attacker": 1000.0},
+        base_stats=make_base_stats(),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=20.0, mode=mode,
+        base_crit_rate=0.0,
+    )
+    return next(e["damage"] for e in result["damage_log"] if e["source"] == "burst")
+
+
+def test_burst_three_cast_does_not_see_buffs_that_land_when_full_burst_opens():
+    # The cycle is [stage 3 entered -> B3 casts -> Full Burst opens], so the
+    # Burst 3's own burst damage is settled before any full_burst_enter buff
+    # exists (Fienn, in-game range measurement 2026-07-27).
+    for mode in ("manual", "auto"):
+        assert _burst_three_damage_with_full_burst_enter_buff(mode) == 10000 * 10.0
+
+
+def test_burst_three_cast_is_outside_the_full_burst_window():
+    # Same fact seen through the Full Burst bonus rather than through a buff:
+    # an eligible instance recorded at the Burst 3's own cast is NOT inside.
+    def nuke_at_own_burst(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("instant_damage_percent", 1000.0, "self",
+                                 "attacker", True, "attack"))
+
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [],
+         "attacker": [SkillRule(trigger="own_burst_activate", action=nuke_at_own_burst)]},
+        burst_damage_percents={},
+        base_stats=make_base_stats(),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=20.0, mode="auto",
+        base_crit_rate=0.0,
+    )
+    nuke = next(e for e in result["damage_log"] if e["source"] == "instant_nuke")
+    assert nuke["damage"] == 10000 * 10.0  # no +0.5 Full Burst bonus

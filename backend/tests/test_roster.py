@@ -319,7 +319,14 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     )["total_damage"]
 
     assert dmg_with > dmg_without
-    # Golden pin. Re-baselined 2026-07-26: "Damage to Parts ▲ X%" no longer
+    # Golden pin. Re-baselined 2026-07-27 (latest): Full Burst now opens a beat
+    # AFTER the tier-3 cast, so a Burst 3's own burst nuke no longer collects
+    # any full_burst_enter buff (burst_cycle.FULL_BURST_OPEN_DELAY). Both
+    # absolutes fell 902.0M -> 666.9M and 872.8M -> 637.7M, but the reload
+    # DELTA is untouched at 29.24M - only burst damage moved - so the RATIO
+    # rose 1.0335 -> 1.0458 purely because the base shrank.
+    #
+    # Re-baselined 2026-07-26: "Damage to Parts ▲ X%" no longer
     # rides the general Damage-Up bucket (it raises damage dealt to PARTS, and
     # this engine models one boss with none - Fienn, 2026-07-26). Helm's Fire
     # Re-baselined 2026-07-27: Anis: Star's Shooting Stars became
@@ -347,7 +354,7 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # three units in this deck and restored Crown's Last Kingdom via
     # Effect.refresh_group (680M -> 1124M, ratio 1.0224 -> 1.0369, because charge
     # speed began shortening the charge instead of dividing it).
-    assert round(dmg_with / dmg_without, 4) == round(902000776.9030598 / 872764477.8943629, 4)
+    assert round(dmg_with / dmg_without, 4) == round(666938934.1753864 / 637702635.1666895, 4)
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

@@ -9,6 +9,8 @@ that still burst in cycle 1 would be collecting a four-times-larger Sustained
 Damage buff on top of a burst it never gave up, which is exactly the
 over-count the delay exists to prevent.
 """
+import pytest
+
 from app.roster import NikkeSpec, assemble_simulation_inputs
 from app.raid_simulator import simulate_raid
 from tests.test_roster import anis_star_spec, helm_spec, takina_spec
@@ -54,7 +56,9 @@ def test_intro_diesel_bursts_in_the_opening_cycle():
     first_full_burst = min(
         e["time"] for e in result["events"] if e["type"] == "full_burst_start"
     )
-    assert fires[0] == first_full_burst
+    # Her cast OPENS that Full Burst, so it lands one FULL_BURST_OPEN_DELAY
+    # before the window's own start rather than exactly on it.
+    assert fires[0] == pytest.approx(first_full_burst)
 
 
 def test_highlight_diesel_is_held_out_of_the_opening_cycle():

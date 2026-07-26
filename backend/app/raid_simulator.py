@@ -103,7 +103,7 @@ DoT modeling the same battery-transformation state two different ways);
 absent field = always fires, matching every existing spec's behavior.
 """
 from app.attack_rate import CHARGE_WEAPONS, generate_segmented_shots
-from app.burst_cycle import simulate_burst_cycle
+from app.burst_cycle import FULL_BURST_OPEN_DELAY, simulate_burst_cycle
 from app.damage_formula import calculate_damage
 from app.effects import Effect, EffectRegistry, _matches_scope
 from app.elements import ELEMENT_ADVANTAGE_BONUS, element_multiplier
@@ -678,13 +678,20 @@ def simulate_raid(
                 (spec["resource"], spec["cap"], spec.get("lifetime"), spec["scale_fn"])
                 if spec.get("resource") is not None else None
             )
+            # Same rule as the burst bullet below: a spec that opts into the
+            # Full Burst bonus is one that resolves AFTER the cast, so its
+            # ticks are anchored a beat later - which for a Burst 3 is the
+            # instant Full Burst opens, putting even the first tick inside the
+            # window (Mana's Fatal Error!, confirmed in-game).
+            eligible_ticks = spec.get("full_burst_bonus_eligible", False)
+            tick_base = time + FULL_BURST_OPEN_DELAY if eligible_ticks else time
             for i in range(spec["tick_count"]):
-                tick_time = time + i * spec["tick_interval"]
+                tick_time = tick_base + i * spec["tick_interval"]
                 record(
                     slug, spec["base_percent"], tick_time, "resource_scaled_nuke",
                     damage_type=spec.get("damage_type", "attack"),
                     resource_gate=resource_gate,
-                    full_burst_bonus_eligible=spec.get("full_burst_bonus_eligible", False),
+                    full_burst_bonus_eligible=eligible_ticks,
                 )
 
         percent = burst_damage_percents.get(slug)
@@ -694,14 +701,18 @@ def simulate_raid(
         # one hit at N*percent - defense is a flat per-hit subtraction (see
         # damage_formula), so splitting into hits changes the total whenever
         # enemy_def > 0. All N hits land at the same instant.
+        # "as additional damage" is the text signal that the bullet resolves
+        # AFTER the cast rather than at it, so it is recorded a beat later -
+        # which for a Burst 3 is exactly the instant Full Burst opens, and is
+        # what lets it collect the bonus (and any full_burst_enter buff). An
+        # ordinary burst bullet stays at cast time, before the window exists.
+        eligible = slug in burst_full_burst_bonus_eligible
+        burst_time = time + FULL_BURST_OPEN_DELAY if eligible else time
         for _ in range(burst_hit_counts.get(slug, 1)):
             record(
-                slug, percent, time, "burst",
+                slug, percent, burst_time, "burst",
                 damage_type=burst_damage_types.get(slug, "attack"),
-                # "as additional damage" bursts compute later than cast time, so
-                # they can take the Full Burst bonus - which in practice only a
-                # Burst 3 collects, since 1 and 2 fire before the window opens.
-                full_burst_bonus_eligible=slug in burst_full_burst_bonus_eligible,
+                full_burst_bonus_eligible=eligible,
             )
 
     def on_full_burst_enter(time):
