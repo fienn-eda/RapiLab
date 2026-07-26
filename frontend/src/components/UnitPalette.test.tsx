@@ -58,6 +58,8 @@ describe('UnitPalette', () => {
     render(<UnitPalette {...base} />)
     expect(unitButton(/crown 사용/i)).toBeInTheDocument()
     expect(unitButton(/liter 사용/i)).toBeInTheDocument()
+    // Element renders as its Korean label in the chip's meta line, not the raw name.
+    expect(screen.getByText(/B1 · 철갑/)).toBeInTheDocument()
   })
 
   it('reports pool membership as the pressed state of the portrait toggle', () => {

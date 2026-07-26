@@ -81,13 +81,13 @@ export const sortOverload = <T extends { name: string }>(options: T[]): T[] => {
 interface OverloadLinesProps {
   options: { name: string; value: Displayable }[]
   /** Copy shown when a unit rolled no overload at all. */
-  emptyText?: string
+  emptyText: string
 }
 
 /** Overload lines as name/value pairs. Which stat rolled and how high is the
  * whole point - a count would say nothing about whether a unit is worth
  * fielding - so every line is named, never summarised. */
-export function OverloadLines({ options, emptyText = '오버로드 없음.' }: OverloadLinesProps) {
+export function OverloadLines({ options, emptyText }: OverloadLinesProps) {
   if (options.length === 0) return <p className="overload__empty">{emptyText}</p>
   return (
     <ul className="overload">

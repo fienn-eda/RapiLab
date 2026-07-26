@@ -8,7 +8,7 @@
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
 - 마지막 갱신: 2026-07-26
-- 브랜치: `ui-korean-localization` 워크트리(`wip/scaffolding` 906 passed 기준에서 분기, 이 항목 시점에 트렁크 미병합)
+- 브랜치: `ui-korean-localization` 워크트리(`wip/scaffolding` 1413 passed, 3 skipped 기준에서 분기, 이 항목 시점에 트렁크 미병합)
 - 프론트: **294 passed** (2026-07-26, **UI 크롬 한글화 완료** — 2026-07-25 "유닛 표시
   이름 한글화" 스펙(`docs/superpowers/specs/2026-07-25-korean-display-names-design.md`,
   유닛 이름·애장품 하트 담당)이 별도 작업으로 미뤄뒀던 "UI 크롬 한글화(Boss profile,
@@ -41,7 +41,7 @@
   해결하고, 그 작업이 이미 바뀐 텍스트를 다시 diff하지 않도록 주의. 커밋 범위
   `b21cfff..b3bd244`(작업 9~14, 9개 커밋), 브랜치 전체는 `wip/scaffolding` 대비 25
   커밋(설계/계획 문서 2건 + 작업 1~14 포함).)
-- 이전(백엔드 테스트, 이 워크트리 분기 시점 상태): **906 passed** (2026-07-19,
+- 이전(백엔드 테스트, 이 워크트리 분기 시점 상태): **1413 passed, 3 skipped** (2026-07-19,
   **무기변형 계획 2 착지** — v1이 백로그로 남겨둔
   세 항목을 전부 닫음: **cinderella-crystal-wave**가 `registry.MODE_VARIANTS`로
   `-mg`/`-snipe` 두 정적 슬러그로 확장(로스터가 소유 유닛 1개를 후보 여러 개로

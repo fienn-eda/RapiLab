@@ -190,6 +190,7 @@ describe('RecommendPanel', () => {
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.selectOptions(screen.getByLabelText('속성'), 'Fire')
+    expect(within(screen.getByLabelText('속성')).getByRole('option', { name: '작열' })).toBeInTheDocument()
     await user.click(screen.getByLabelText('코어 피격 가능'))
     const enemyDef = screen.getByLabelText('적 방어력')
     await user.clear(enemyDef)
