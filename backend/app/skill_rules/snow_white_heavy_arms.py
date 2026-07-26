@@ -65,6 +65,9 @@ multi-target bookkeeping (single raid boss collapses "up to 5/10 targets" to
 one target, same as every other multi-target Lock-On kit in this engine).
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
+from app.squad_engine import burst_stage_entered
+
+SHADES_BURST_STAGE = 3  # skill text: "when entering Burst Stage 3" (fixed, not a data slot)
 
 SKILL_VALUE_MANIFESTS = {
     "snow-white-heavy-arms": {
@@ -87,14 +90,18 @@ def build_snow_white_heavy_arms_rules(values):
         buff_rule("battle_start", [
             ("damage_taken_up", float(dwarves["description_value_07"]) / 100, "squad", None),
         ]),
+        # Fully Active is her OWN burst skill's buff, so it rides her own cast.
         buff_rule("own_burst_activate", [
             ("attack_damage_up", float(burst["description_value_01"]) / 100, "self",
              float(burst["description_value_02"])),
-            # Shades of White's "entering Burst Stage 3" self ATK - see the
-            # Step 2 precedent note in the module docstring.
+        ]),
+        # Shades of White's self ATK says "when entering Burst Stage 3" - the
+        # STAGE, so it also fires in cycles an allied Burst 3 takes the slot,
+        # and it lands one beat before that cast settles.
+        buff_rule("ally_burst_activate", [
             ("atk_percent", float(shades["description_value_08"]) / 100, "self",
              float(shades["description_value_09"])),
-        ]),
+        ], condition=burst_stage_entered(SHADES_BURST_STAGE)),
     ]
 
 

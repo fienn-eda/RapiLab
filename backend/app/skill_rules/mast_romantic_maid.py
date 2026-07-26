@@ -31,7 +31,7 @@ activations: the stack is a squad-cycle event, and she does not burst every
 cycle when another Burst 2 shares the slot.
 """
 from app.effects import Effect
-from app.squad_engine import SkillRule
+from app.squad_engine import SkillRule, burst_stage_entered
 
 SKILL_VALUE_MANIFESTS = {
     "mast-romantic-maid": {
@@ -47,6 +47,21 @@ SKILL_VALUE_MANIFESTS = {
 
 ANCHOR_SLUG = "anchor-innocent-maid"
 MAX_DRUNKEN_STACKS = 3
+DRUNKEN_BURST_STAGE = 1   # "when entering Burst stage 1"
+SPIRIT_BURST_STAGE = 3    # "when entering Burst Stage 3 while in Drunken status"
+
+
+def _burst_stage_one_entries(context, time):
+    """How many times the squad has entered Burst Stage 1 by `time`. Raw and
+    uncapped - `_drunken_stacks` wraps this, so a "first time only" gate has to
+    read the raw count or it re-fires when the wrap comes back around to 1."""
+    return sum(
+        1
+        for member in context.members
+        if member.burst_tier == 1
+        for t in context.burst_times.get(member.slug, ())
+        if t <= time
+    )
 
 
 def _drunken_stacks(context, time):
@@ -57,13 +72,7 @@ def _drunken_stacks(context, time):
     deck 1 she alternates the Burst-2 slot with Anchor, so her burst fired on
     cycles 2/4/6/... while reading stack counts 1/2/3/... - one short until the
     cap hid it."""
-    cycle = sum(
-        1
-        for member in context.members
-        if member.burst_tier == 1
-        for t in context.burst_times.get(member.slug, ())
-        if t <= time
-    )
+    cycle = _burst_stage_one_entries(context, time)
     anchor_present = any(m.slug == ANCHOR_SLUG for m in context.members)
     if anchor_present:
         return min(cycle, MAX_DRUNKEN_STACKS)
@@ -92,7 +101,11 @@ def build_mast_rules(values):
     romance_atk_duration = float(romance["description_value_06"])
 
     def apply_drunken_continuous(context, caster_slug, time, registry):
-        if context.activation_count(caster_slug, "full_burst_enter") != 1:
+        # These two are "continuous while in Drunken status", and Drunken is
+        # first gained at the squad's FIRST Burst Stage 1 entry - so they start
+        # there and never lapse. Applied once, on the raw first entry (the
+        # capped stack count wraps, see _burst_stage_one_entries).
+        if _burst_stage_one_entries(context, time) != 1:
             return
         registry.add(Effect("crit_rate", drunken_crit_rate, "squad", None, caster_slug), applied_at=time)
         registry.add(Effect("flat_atk", drunken_atk, "squad", None, caster_slug), applied_at=time)
@@ -133,7 +146,9 @@ def build_mast_rules(values):
         )
 
     return [
-        SkillRule(trigger="full_burst_enter", action=apply_drunken_continuous),
-        SkillRule(trigger="full_burst_enter", action=apply_spirit),
+        SkillRule(trigger="ally_burst_activate", action=apply_drunken_continuous,
+                  condition=burst_stage_entered(DRUNKEN_BURST_STAGE)),
+        SkillRule(trigger="ally_burst_activate", action=apply_spirit,
+                  condition=burst_stage_entered(SPIRIT_BURST_STAGE)),
         SkillRule(trigger="own_burst_activate", action=apply_romance_burst),
     ]

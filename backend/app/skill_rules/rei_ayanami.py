@@ -26,6 +26,9 @@ Not modeled / deferred:
   separate dual-slug entry, like drake/drake-signature).
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
+from app.squad_engine import burst_stage_entered
+
+ATTACK_SUPPORT_BURST_STAGE = 3  # skill text: "when entering Burst stage 3" (fixed, not a data slot)
 
 SKILL_VALUE_MANIFESTS = {
     "rei-ayanami": {
@@ -60,7 +63,13 @@ def build_rei_ayanami_rules(values):
     fire_attack_damage_duration = float(annihilation["description_value_04"])
 
     return [
-        buff_rule("full_burst_enter", [("flat_atk", fire_atk, "element:Fire", fire_atk_duration)]),
+        # "When entering Burst stage 3" - the stage, so ANY Burst 3 taking the
+        # slot arms it, and it lands one beat BEFORE that cast settles, reaching
+        # the cast's own damage. `full_burst_enter` stood in for this while the
+        # two instants shared a timestamp (burst_cycle.FULL_BURST_OPEN_DELAY).
+        buff_rule("ally_burst_activate",
+                  [("flat_atk", fire_atk, "element:Fire", fire_atk_duration)],
+                  condition=burst_stage_entered(ATTACK_SUPPORT_BURST_STAGE)),
         buff_rule(
             "own_burst_activate",
             [("attack_damage_up", fire_attack_damage, "element:Fire", fire_attack_damage_duration)],

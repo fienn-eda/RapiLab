@@ -57,16 +57,27 @@ def test_burst_percent_is_9902():
     assert annihilation_burst_percent({"annihilation": ANNIHILATION}) == 990.2
 
 
-def test_attack_support_grants_fire_allies_flat_atk_on_full_burst_enter():
+def test_attack_support_grants_fire_allies_flat_atk_on_burst_stage_three_entry():
+    # "Entering Burst stage 3" - the stage, one beat BEFORE that Burst 3's cast
+    # settles, so it reaches the cast's own damage too.
     ctx = make_context()
     registry = EffectRegistry()
-    fire_trigger("full_burst_enter", {"rei-ayanami": build()}, ctx, registry, time=5.0)
+    ctx.last_burst_slug = "rei-ayanami"
+    fire_trigger("ally_burst_activate", {"rei-ayanami": build()}, ctx, registry, time=5.0)
 
     expected = round(0.2503 * CASTER_ATK, 4)
     assert round(registry.total_for("flat_atk", REI, now=5.0), 4) == expected
     assert round(registry.total_for("flat_atk", FIRE_ALLY, now=5.0), 4) == expected
     assert registry.total_for("flat_atk", WIND_ALLY, now=5.0) == 0.0  # Fire Code only
     assert registry.total_for("flat_atk", FIRE_ALLY, now=15.1) == 0.0  # 10s duration
+
+
+def test_attack_support_ignores_burst_stages_one_and_two():
+    ctx = make_context()
+    registry = EffectRegistry()
+    ctx.last_burst_slug = "fire-ally"  # Burst 1
+    fire_trigger("ally_burst_activate", {"rei-ayanami": build()}, ctx, registry, time=5.0)
+    assert registry.total_for("flat_atk", FIRE_ALLY, now=5.0) == 0.0
 
 
 def test_annihilation_grants_fire_allies_attack_damage_on_burst():

@@ -125,8 +125,33 @@ def test_burst_stage_three_entry_grants_self_sustained_damage():
     registry = EffectRegistry()
     rules = {"mihara-bonding-chain": build_mihara_bonding_chain_rules(MIHARA_VALUES)}
 
-    fire_trigger("full_burst_enter", rules, context, registry, 20.0)
+    # "Entering Burst Stage 3" = a Burst 3 taking the slot, one beat BEFORE its
+    # own cast settles - so it reaches that cast's damage.
+    context.last_burst_slug = "mihara-bonding-chain"
+    fire_trigger("ally_burst_activate", rules, context, registry, 20.0)
 
     assert registry.total_for("sustained_damage_up", MIHARA, 29.9) == 0.5998
     assert registry.total_for("sustained_damage_up", MIHARA, 30.1) == 0.0
     assert registry.total_for("sustained_damage_up", ALLY, 25.0) == 0.0  # self-scoped
+
+
+def test_tighten_up_also_fires_when_an_allied_burst_three_takes_the_stage():
+    # The stage, not the caster: she still gets it in cycles she does not burst.
+    context = make_context()
+    registry = EffectRegistry()
+    rules = {"mihara-bonding-chain": build_mihara_bonding_chain_rules(MIHARA_VALUES)}
+
+    context.last_burst_slug = "other-b3"
+    context.members.append(SquadMember("other-b3", burst_tier=3, element="Water"))
+    fire_trigger("ally_burst_activate", rules, context, registry, 20.0)
+    assert registry.total_for("sustained_damage_up", MIHARA, 25.0) == 0.5998
+
+
+def test_tighten_up_does_not_fire_on_a_lower_stage():
+    context = make_context()
+    registry = EffectRegistry()
+    rules = {"mihara-bonding-chain": build_mihara_bonding_chain_rules(MIHARA_VALUES)}
+
+    context.last_burst_slug = "ally"  # Burst 1
+    fire_trigger("ally_burst_activate", rules, context, registry, 20.0)
+    assert registry.total_for("sustained_damage_up", MIHARA, 25.0) == 0.0

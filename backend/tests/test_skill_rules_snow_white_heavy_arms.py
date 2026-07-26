@@ -112,12 +112,17 @@ def test_battle_start_and_burst_buffs():
     # permanent squad debuff (charging uptime ~100%, Fienn 2026-07-19).
     assert ("damage_taken_up", 0.042, "squad", None) in _applied_buffs(starts[0])
 
-    # own_burst_activate: Seven Dwarves Fully Active's own Attack Damage +
-    # Shades of White's "entering Burst Stage 3" self ATK (Step 2 precedent:
-    # she IS the B3 slot, so this is her own burst - see module docstring).
+    # own_burst_activate carries ONLY Seven Dwarves Fully Active, her own burst
+    # skill's buff. Shades of White's ATK says "entering Burst Stage 3" - the
+    # stage, not her cast - so it rides ally_burst_activate instead and still
+    # fires in cycles another Burst 3 takes the slot.
     burst_buffs = _applied_buffs(bursts[0])
     assert ("attack_damage_up", 0.8448, "self", 10.0) in burst_buffs
-    assert ("atk_percent", 0.7392, "self", 10.0) in burst_buffs
+    assert ("atk_percent", 0.7392, "self", 10.0) not in burst_buffs
+
+    stage_three = [r for r in rules if r.trigger == "ally_burst_activate"]
+    assert len(stage_three) == 1
+    assert ("atk_percent", 0.7392, "self", 10.0) in _applied_buffs(stage_three[0])
 
 
 def test_auto_fire_pulses_base_and_fully_active_variants():

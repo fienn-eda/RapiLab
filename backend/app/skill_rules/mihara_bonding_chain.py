@@ -74,7 +74,7 @@ Numbers sourced from data/lootandwaifus/char_mihara-bonding-chain.json.
 """
 from app.effects import Effect, ResourceSpec
 from app.raid_simulator import AFTER_WINDOW_EPSILON
-from app.squad_engine import SkillRule
+from app.squad_engine import SkillRule, burst_stage_entered
 
 SKILL_VALUE_MANIFESTS = {
     "mihara-bonding-chain": {
@@ -196,9 +196,18 @@ def build_dragging_chain_resource_scaled_nukes(values):
     }]
 
 
+TIGHTEN_UP_BURST_STAGE = 3  # skill text: "when entering Burst Stage 3" (fixed, not a data slot)
+
+
 def build_mihara_bonding_chain_rules(values):
     """Tighten Up's Burst Stage 3 self-buff (any Burst 3 ally entering the
-    stage, per Fienn 2026-07-19)."""
+    stage, per Fienn 2026-07-19).
+
+    The stage is entered BEFORE that Burst 3 casts, so this reaches the cast's
+    own damage - including hers when she is the one bursting. `full_burst_enter`
+    used to stand in for it, which was equivalent only while the two instants
+    shared a timestamp (see burst_cycle.FULL_BURST_OPEN_DELAY).
+    """
     def grant_sustained_damage(context, caster_slug, time, registry):
         registry.add(
             Effect("sustained_damage_up", _f(values, "tighten_up", 7) / 100, "self",
@@ -206,4 +215,5 @@ def build_mihara_bonding_chain_rules(values):
             applied_at=time,
         )
 
-    return [SkillRule(trigger="full_burst_enter", action=grant_sustained_damage)]
+    return [SkillRule(trigger="ally_burst_activate", action=grant_sustained_damage,
+                      condition=burst_stage_entered(TIGHTEN_UP_BURST_STAGE))]

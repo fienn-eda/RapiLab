@@ -62,10 +62,20 @@ def enter_stage_one(ctx, time):
     ctx.record_burst_time("b1", time)
 
 
+def _run_cycle(rules, ctx, registry, time):
+    """One burst cycle: Stage 1 entered a second earlier (A Pirate's Heart),
+    then Stage 3 entered at `time` (A Pirate's Spirit). Both are STAGE events,
+    fired as ally_burst_activate with the tier's burster."""
+    enter_stage_one(ctx, time - 1.0)
+    ctx.last_burst_slug = "b1"
+    fire_trigger("ally_burst_activate", {"mast-romantic-maid": rules}, ctx, registry, time=time - 1.0)
+    ctx.last_burst_slug = "dealer"
+    fire_trigger("ally_burst_activate", {"mast-romantic-maid": rules}, ctx, registry, time=time)
+
+
 def _fire_enter_cycles(rules, ctx, registry, times):
     for t in times:
-        enter_stage_one(ctx, t - 1.0)
-        fire_trigger("full_burst_enter", {"mast-romantic-maid": rules}, ctx, registry, time=t)
+        _run_cycle(rules, ctx, registry, t)
 
 
 def test_spirit_reload_cycles_when_mast_is_solo():
@@ -77,8 +87,7 @@ def test_spirit_reload_cycles_when_mast_is_solo():
     times = [15.0, 35.0, 55.0, 75.0]  # >10s apart so only the current cycle's buff is live
     expected = [0.1504, 0.3008, 0.4512, 0.1504]
     for t, want in zip(times, expected):
-        enter_stage_one(ctx, t - 1.0)
-        fire_trigger("full_burst_enter", {"mast-romantic-maid": rules}, ctx, registry, time=t)
+        _run_cycle(rules, ctx, registry, t)
         assert round(registry.total_for("reload_speed_percent", DEALER, now=t), 4) == want
 
 
@@ -90,8 +99,7 @@ def test_spirit_reload_holds_at_three_stacks_with_anchor():
     times = [15.0, 35.0, 55.0, 75.0]
     expected = [0.1504, 0.3008, 0.4512, 0.4512]
     for t, want in zip(times, expected):
-        enter_stage_one(ctx, t - 1.0)
-        fire_trigger("full_burst_enter", {"mast-romantic-maid": rules}, ctx, registry, time=t)
+        _run_cycle(rules, ctx, registry, t)
         assert round(registry.total_for("reload_speed_percent", DEALER, now=t), 4) == want
 
 
@@ -140,8 +148,7 @@ def test_spirit_grants_stack_scaled_distributed_damage():
     registry = EffectRegistry()
     rules = build()
     for t, want in zip([15.0, 35.0, 55.0, 75.0], [0.1503, 0.3006, 0.4509, 0.4509]):
-        enter_stage_one(ctx, t - 1.0)
-        fire_trigger("full_burst_enter", {"mast-romantic-maid": rules}, ctx, registry, time=t)
+        _run_cycle(rules, ctx, registry, t)
         assert round(registry.total_for("distributed_damage_up", DEALER, now=t), 4) == want
 
 

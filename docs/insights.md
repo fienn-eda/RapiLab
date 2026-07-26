@@ -141,11 +141,22 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   동시각이라 stage-N 불릿도 **우연히 맞았다**. 창을 옮기자 그 우연이 사라지면서
   잘못된 배선이 노출됐다. **수정이 다른 결함을 드러내는 것은 진전이다.**
 - **전수 대조 결과** (원문 표기 ↔ 배선): "at the start of Full Burst"를 쓰는 인코딩
-  유닛은 **크라운 하나뿐**이고 올바르게 배선돼 있다. 반면 **"entering Burst Stage N"
-  표기인데 `full_burst_enter`로 배선된 유닛이 6기**다 — `mint`(**수정 완료**) ·
-  `maiden-ice-rose` · `mast-romantic-maid` · **`mihara-bonding-chain`** ·
-  `rei-ayanami` · `snow-white-heavy-arms`. (미하라는 캘리브레이션 표에서 0.70x로
-  미달 2위였다 — 유력한 후보다.) 유닛마다 **불릿 단위** 확인이 필요하다.
+  유닛은 **크라운 하나뿐**이고 올바르게 배선돼 있다. "entering Burst Stage N" 쪽은
+  **5기가 틀려 있었고 전부 수정했다**(2026-07-27) — `mint` · `mihara-bonding-chain` ·
+  `rei-ayanami` · `snow-white-heavy-arms` · `mast-romantic-maid`(2건).
+- **불릿 단위로 봐야 한다는 규칙에 내 스크립트가 걸렸다.** `maiden-ice-rose`는
+  파일 단위 grep이 잡은 **오탐**이었다 — 걸린 것은 룰이 아니라 `_full_burst_enter`라는
+  **헬퍼 함수 이름**이었고, 그녀의 MP는 SkillRule이 아니라 자원 시스템이 처리하며
+  원문도 "entering **Full Burst**"라 현행이 맞다. **정적 grep은 후보 목록일 뿐이다.**
+- **한 룰에 두 불릿이 묶여 있으면 트리거를 갈아끼울 수 없다.**
+  `snow_white_heavy_arms`는 Fully Active(자기 버스트 스킬)와 Shades of White(3단계
+  진입)를 **하나의 `own_burst_activate` 룰**에 담고 있었다. 두 순간이 같았을 때는
+  무해했지만, 갈라지자 분리 없이는 어느 쪽도 옳게 만들 수 없었다. **트리거가 다른
+  불릿은 처음부터 룰을 나눠 둘 것.**
+- **순환하는 카운터를 "최초 1회" 게이트로 쓰지 말 것.** 마스트의 Drunken 스택은
+  앵커가 없으면 `((cycle−1) % 3) + 1`로 **순환**한다. 상시 버프를 "스택이 1일 때
+  한 번만"으로 걸면 4번째 사이클에 다시 1이 되어 **영구 버프가 중복 적립**된다.
+  원시 카운터(`_burst_stage_one_entries`)를 따로 두고 그쪽을 읽어야 한다.
 - **닿는 이유(엔진):** `on_tier_fire`가 `own_burst_activate` → `ally_burst_activate`를
   먼저 쏘고 **그 다음에** 버스트 넉을 기록한다. 셋 다 같은 타임스탬프이고 레지스트리는
   `applied_at <= time`으로 걷으므로, stage-N 버프는 그 캐스트의 버스트 대미지에 들어간다.
