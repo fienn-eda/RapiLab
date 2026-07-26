@@ -574,17 +574,21 @@
   outline-offset: 2px;
 }
 
+/* 패널이 뷰포트를 넘으면 3단계가 가리키는 URL 입력칸이 접힌 부분 아래로
+   밀려나므로, 높이를 제한하고 내부에서 스크롤한다. */
 .sync-help {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
   max-width: 480px;
+  max-height: 55vh;
   padding: var(--sp-3);
   border: 1px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
   font-size: 13px;
   color: var(--text-muted);
+  overflow-y: auto;
 }
 
 /* 위 클래스의 `display`가 `hidden` 속성의 UA 규칙을 이기므로, .panel[hidden]과
