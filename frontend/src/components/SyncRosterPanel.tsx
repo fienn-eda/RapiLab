@@ -27,7 +27,7 @@ export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
   const { status, error } = useBookmarkletImport(({ openId, nickname, raw }) => {
     const { drafts, warnings } = parseRosterJson(raw)
     onImport({ openId, nickname, roster: drafts })
-    setSummary(`${drafts.length} units synced`)
+    setSummary(`${drafts.length}기 동기화됨`)
     setNotes(warnings)
   })
 
@@ -58,10 +58,10 @@ export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
 
   return (
     <section className="sync">
-      <h2 className="sync__title">Sync from blablalink</h2>
+      <h2 className="sync__title">blablalink에서 동기화</h2>
       <div className="field">
         <label className="field__label" htmlFor="share-url">
-          ShiftyPad share URL
+          ShiftyPad 공유 URL
         </label>
         <input
           id="share-url"
@@ -79,9 +79,9 @@ export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
       {openId && (
         <div className="sync__bookmarklet">
           <p className="sync__hint">
-            Drag this link to your bookmarks bar, then click it while logged in
-            to blablalink. Your roster opens in a new tab, so this tab
-            won&rsquo;t update until you reload it.
+            이 링크를 북마크 바로 드래그한 다음, blablalink에 로그인한 상태에서
+            클릭하세요. 로스터가 새 탭에서 열리므로, 이 탭은 새로고침해야
+            갱신돼요.
           </p>
           <a
             className="btn btn--ghost"
@@ -106,11 +106,11 @@ export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
               }
             }}
           >
-            Sync NIKKE roster
+            니케 로스터 동기화
           </a>
         </div>
       )}
-      {status === 'importing' && <p className="sync__message">Importing…</p>}
+      {status === 'importing' && <p className="sync__message">가져오는 중…</p>}
       {summary && <p className="sync__message">{summary}</p>}
       {notes.map((note, i) => (
         <p className="sync__message" key={i}>

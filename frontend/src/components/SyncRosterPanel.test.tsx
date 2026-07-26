@@ -33,21 +33,21 @@ afterEach(() => vi.mocked(assembleRoster).mockReset())
 describe('SyncRosterPanel', () => {
   it('공유 URL을 넣으면 북마크릿 링크가 나온다', () => {
     render(<SyncRosterPanel onImport={vi.fn()} />)
-    fireEvent.change(screen.getByLabelText(/share url/i), {
+    fireEvent.change(screen.getByLabelText(/공유 url/i), {
       target: { value: shareUrl },
     })
-    const link = screen.getByRole('link', { name: /roster/i })
+    const link = screen.getByRole('link', { name: /로스터/i })
     expect(link.getAttribute('href')).toContain('javascript:')
     expect(link.getAttribute('href')).toContain('1234567890123456789')
   })
 
   it('잘못된 URL은 에러를 보여주고 링크를 만들지 않는다', () => {
     render(<SyncRosterPanel onImport={vi.fn()} />)
-    fireEvent.change(screen.getByLabelText(/share url/i), {
+    fireEvent.change(screen.getByLabelText(/공유 url/i), {
       target: { value: 'https://example.com' },
     })
     expect(screen.getByRole('alert')).toBeTruthy()
-    expect(screen.queryByRole('link', { name: /roster/i })).toBeNull()
+    expect(screen.queryByRole('link', { name: /로스터/i })).toBeNull()
   })
 
   it('delivers a payload through parseRosterJson to onImport and shows the summary', async () => {
@@ -66,7 +66,7 @@ describe('SyncRosterPanel', () => {
 
     await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1))
     expect(onImport.mock.calls[0][0].roster).toHaveLength(1)
-    expect(screen.getByText('1 units synced')).toBeTruthy()
+    expect(screen.getByText('1기 동기화됨')).toBeTruthy()
   })
 
   it('separates open_id/nickname from the assembled roster when calling onImport', async () => {
@@ -108,7 +108,7 @@ describe('SyncRosterPanel', () => {
 
     await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1))
     expect(
-      await screen.findByText(/1 owned units not yet supported/),
+      await screen.findByText(/보유 유닛 중 1기가 아직 미지원/),
     ).toBeInTheDocument()
     expect(screen.getByText(/Not Encoded Unit/)).toBeInTheDocument()
   })
@@ -117,29 +117,29 @@ describe('SyncRosterPanel', () => {
     vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
     const onImport = vi.fn()
     render(<SyncRosterPanel onImport={onImport} />)
-    const input = screen.getByLabelText(/share url/i)
+    const input = screen.getByLabelText(/공유 url/i)
 
     fireEvent.change(input, { target: { value: shareUrl } })
-    expect(screen.getByRole('link', { name: /roster/i })).toBeTruthy()
+    expect(screen.getByRole('link', { name: /로스터/i })).toBeTruthy()
 
     postPayload()
-    await waitFor(() => expect(screen.getByText('0 units synced')).toBeTruthy())
+    await waitFor(() => expect(screen.getByText('0기 동기화됨')).toBeTruthy())
 
     fireEvent.change(input, { target: { value: '' } })
-    expect(screen.queryByText('0 units synced')).toBeNull()
-    expect(screen.queryByRole('link', { name: /roster/i })).toBeNull()
+    expect(screen.queryByText('0기 동기화됨')).toBeNull()
+    expect(screen.queryByRole('link', { name: /로스터/i })).toBeNull()
   })
 
   it('regenerates the bookmarklet link with the new open id when a different share URL is pasted', () => {
     render(<SyncRosterPanel onImport={vi.fn()} />)
-    const input = screen.getByLabelText(/share url/i)
+    const input = screen.getByLabelText(/공유 url/i)
 
     fireEvent.change(input, { target: { value: shareUrl } })
-    const firstHref = screen.getByRole('link', { name: /roster/i }).getAttribute('href')
+    const firstHref = screen.getByRole('link', { name: /로스터/i }).getAttribute('href')
     expect(firstHref).toContain('1234567890123456789')
 
     fireEvent.change(input, { target: { value: shareUrl2 } })
-    const secondHref = screen.getByRole('link', { name: /roster/i }).getAttribute('href')
+    const secondHref = screen.getByRole('link', { name: /로스터/i }).getAttribute('href')
     expect(secondHref).toContain('1111111111111111111')
     expect(secondHref).not.toContain('1234567890123456789')
   })

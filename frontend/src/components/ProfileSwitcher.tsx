@@ -25,7 +25,7 @@ export function ProfileSwitcher({
 
   const handleDelete = () => {
     if (!activeOpenId) return
-    if (window.confirm(`Delete profile "${activeLabel}"? This removes its synced roster and cached results.`)) {
+    if (window.confirm(`"${activeLabel}" 프로필을 삭제할까요? 동기화된 로스터와 캐시된 결과가 함께 삭제돼요.`)) {
       onDelete(activeOpenId)
     }
   }
@@ -33,7 +33,7 @@ export function ProfileSwitcher({
   return (
     <div className="profile-switcher">
       <label className="field__label" htmlFor="profile-select">
-        Account
+        계정
       </label>
       <select
         id="profile-select"
@@ -50,10 +50,10 @@ export function ProfileSwitcher({
       <button
         type="button"
         className="btn btn--icon"
-        aria-label={`Delete profile ${activeLabel}`}
+        aria-label={`${activeLabel} 프로필 삭제`}
         onClick={handleDelete}
       >
-        Delete
+        삭제
       </button>
     </div>
   )

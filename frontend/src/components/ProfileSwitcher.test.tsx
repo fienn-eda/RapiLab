@@ -94,7 +94,7 @@ describe('ProfileSwitcher', () => {
         onDelete={onDelete}
       />,
     )
-    await user.click(screen.getByRole('button', { name: /delete/i }))
+    await user.click(screen.getByRole('button', { name: /삭제/i }))
     expect(window.confirm).toHaveBeenCalledOnce()
     expect(onDelete).toHaveBeenCalledWith('a')
   })
@@ -112,7 +112,7 @@ describe('ProfileSwitcher', () => {
         onDelete={onDelete}
       />,
     )
-    await user.click(screen.getByRole('button', { name: /delete/i }))
+    await user.click(screen.getByRole('button', { name: /삭제/i }))
     expect(onDelete).not.toHaveBeenCalled()
   })
 })

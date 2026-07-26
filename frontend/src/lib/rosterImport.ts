@@ -79,8 +79,7 @@ export const parseRosterJson = (
   }
   if (unsupported.length > 0) {
     warnings.push(
-      `${unsupported.length} owned units not yet supported (excluded from ` +
-        `recommendation): ${unsupported.join(', ')}`,
+      `보유 유닛 중 ${unsupported.length}기가 아직 미지원 (추천에서 제외됨): ${unsupported.join(', ')}`,
     )
   }
   // A dropped unit is worth a louder line than an unsupported one: it IS
@@ -88,8 +87,7 @@ export const parseRosterJson = (
   // the measured data that a different account happens to expose.
   if (data.unmeasured && data.unmeasured.length > 0) {
     warnings.push(
-      `${data.unmeasured.length} owned units left out — their level-400 stats ` +
-        `were never measured: ` +
+      `보유 유닛 중 ${data.unmeasured.length}기가 제외됨 — 레벨 400 스탯이 측정되지 않음: ` +
         data.unmeasured.map((u) => `${u.name_en} (${u.reason})`).join('; '),
     )
   }
