@@ -62,7 +62,7 @@ export function DeckCard({
                   <span className="deck-results__portrait deck-results__portrait--missing" />
                 )}
                 {pinnedSlugs.includes(slug) && (
-                  <span className="deck-results__pin" title="고정해서 여기 유지됨">
+                  <span className="deck-results__pin" title="고정해서 여기 유지돼요">
                     <span aria-hidden="true">📌</span>
                     <span className="visually-hidden">고정됨</span>
                   </span>
