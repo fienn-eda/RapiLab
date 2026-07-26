@@ -87,7 +87,7 @@ interface OverloadLinesProps {
 /** Overload lines as name/value pairs. Which stat rolled and how high is the
  * whole point - a count would say nothing about whether a unit is worth
  * fielding - so every line is named, never summarised. */
-export function OverloadLines({ options, emptyText = 'No overload lines.' }: OverloadLinesProps) {
+export function OverloadLines({ options, emptyText = '오버로드 없음.' }: OverloadLinesProps) {
   if (options.length === 0) return <p className="overload__empty">{emptyText}</p>
   return (
     <ul className="overload">
