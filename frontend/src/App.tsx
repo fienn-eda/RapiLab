@@ -75,7 +75,7 @@ function App() {
 
       {activeProfile === null ? (
         <main className="app__main">
-          <SyncRosterPanel onImport={upsertProfile} />
+          <SyncRosterPanel onImport={upsertProfile} defaultHelpOpen />
           <div className="empty">
             <p className="empty__text">
               아직 동기화된 계정이 없어요. 위에서 blablalink 동기화를

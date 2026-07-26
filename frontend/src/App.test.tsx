@@ -209,4 +209,33 @@ describe('App', () => {
     expect(screen.getByLabelText(/레이드 배분/i)).toBeChecked()
     expect(vi.mocked(recommendRaidDecks)).toHaveBeenCalledTimes(1)
   })
+
+  it('활성 프로필이 없는 화면에서는 동기화 도움말이 펼쳐져 있다', () => {
+    render(<App />)
+    expect(screen.getByRole('button', { name: '동기화 방법' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+  })
+
+  it('이미 동기화한 계정이 있으면 로스터 탭의 도움말은 접혀 있다', () => {
+    seedProfiles({
+      activeOpenId: 'open-1',
+      profiles: {
+        'open-1': {
+          openId: 'open-1',
+          nickname: 'Fienn',
+          roster: [],
+          results: {},
+          lastResultHash: null,
+          lastInputs: null,
+        },
+      },
+    })
+    render(<App />)
+    expect(screen.getByRole('button', { name: '동기화 방법' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+  })
 })
