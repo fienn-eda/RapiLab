@@ -5,6 +5,16 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 차지 대미지가 스킬 넉에 붙는가 — 문서와 실기록이 정면으로 충돌한다 (미결)
+- Date: 2026-07-27
+- Context: 홍련 조사에서 그녀의 단계 넉(283.03% / 565% / 848.03%)이 자기 버스트의 [차지 대미지 ▲169.63%]를 받고 있는 것을 발견했다. 넉 딜은 그녀 전체의 **75%** 이고 차지 배수는 평균 **2.27배**라, 이 한 항이 그녀 숫자의 절반을 만든다. Fienn이 웹 근거를 요청했다.
+- **문서 쪽 (A는 거짓)**: nikke.gg/damage-formula — 이 엔진이 구현하는 바로 그 참조 문서 — 는 `Charge Damage*`에 별표를 달고 **"Modifiers with an asterisk (*) are exclusive to Normal Attacks only"** 라고 명시한다. 용어집도 "Damage bonus available to Charge weapons' **normal attacks** ... Charge Damage Sources include buffs from the unit or allies". 프로젝트 자체 레퍼런스(`references/damage-formula-reference.md:32`)도 이미 "Charge weapons' **normal attacks only**"라고 적어 두었다. 같은 별표가 붙은 항목은 관통·파츠·저지부위·실드·투사체폭발·유효사거리다.
+- **실기록 쪽 (A는 참)**: 넉에서 차지 대미지를 빼고 5덱을 재측정하면 **세 유닛이 동시에 무너진다** — 홍련 1.12x → **0.62x**, 신데렐라 0.88x → **0.61x**, liberalio 0.88x → **0.80x**. 셋 다 풀차지가 촉발하는 스킬 넉이 딜의 대부분인 유닛이다. 합계 0.950x → **0.83x**, 덱1 0.976x → **0.688x**. 개선된 쪽도 있었다(스노우화이트 1.12→0.97 · 네온 1.25→1.18 · 헬름 1.52→1.46)지만 규모가 비교가 안 된다.
+- Decision: **적용하지 않고 되돌렸다.** 유일한 검증 기준인 실기록이 40% 어긋나는 변경을 문서 한 줄로 밀어붙일 수 없다. 변경 자체는 `git stash` 태그 `charge-normal-attack-only-2026-07-27`에 보관돼 있다(엔진 2파일 + 테스트 3파일, 회귀 테스트 포함).
+- **함께 발견한 것 — 홍련의 실기록은 지금과 다른 게임에서 나왔다.** 2026-06-23 04:59:59에 **분배 대미지 이슈로 솔로 레이드가 중단**되었고, 개발자 노트는 원인을 "**홍련·일레그를 마스트: 로맨틱 메이드 같은 분배 버퍼와 함께 쓸 때** 분배와 평타 판정이 동시에 일어나며 추가 대미지가 발생(30FPS에서 특히), **최대 약 6.8% 비정상 상승**"이라고 밝혔다. **Fienn의 덱1은 홍련과 마스트: 로맨틱 메이드를 함께 쓴다.** 이어 7월 2일 수정에서 홍련 스킬1 계수가 **상향**됐다: 250.47 → 283.03 / 500 → 565 / 750.47 → 848.03(합 1500.94 → 1696.06, **+13%**). 수집 데이터는 **수정 후 값**이다.
+- 즉 그의 기록은 (a) **13% 낮은 계수**로, (b) **최대 6.8% 부풀려진 분배 대미지**가 있는 상태에서 나왔다. (a)만으로도 시뮬이 그녀를 높게 읽는 것이 설명된다 — 옛 계수를 적용하면 현행 모델은 6.67B / 6.50B = **1.03x**로 거의 정확해진다.
+- 남은 질문 (Fienn): 문서가 맞다면 홍련·신데렐라·liberalio가 왜 동시에 0.6~0.8로 떨어지는가. 실기록이 맞다면 nikke.gg의 별표를 어떻게 읽어야 하는가. **그리고 홍련의 6.5B는 이제 캘리브레이션 기준으로 쓸 수 있는가?**
+
 ## 관통 대미지 증가는 **관통을 가진 유닛에게만** 붙는다 — 버킷이 아니라 속성이다
 - Date: 2026-07-26
 - Context: 덱5가 1.14x로 유일하게 크게 초과하는 덱이었다. 원인은 **에이드: 에이전트 바니**가 스쿼드 전체에 관통 대미지 증가를 상시로 주는데, 덱5에서 **관통 속성을 실제로 가진 유닛은 에이드 본인뿐**이라는 것이었다. 엔진은 `pierce_damage_up`을 `damage_up` 일반 버킷에 무조건 합산했다 — 오늘 걷어낸 `damage_to_parts_up`과 **똑같은 관례**이고, 여러 유닛 독스트링이 스스로 "the pierce PROPERTY has no engine representation (`pierce_damage_up` is a damage bucket, not the property)"라고 적어 둔, 알고도 남겨둔 부채였다.
