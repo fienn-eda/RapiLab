@@ -375,6 +375,7 @@
   font-size: 13px;
   font-weight: 550;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .field__hint {
@@ -469,6 +470,7 @@
   border: 1px solid transparent;
   padding: var(--sp-2) var(--sp-4);
   transition: background 0.12s ease, border-color 0.12s ease;
+  white-space: nowrap;
 }
 
 .btn:focus-visible {
