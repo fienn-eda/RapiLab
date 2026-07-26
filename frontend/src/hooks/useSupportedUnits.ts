@@ -13,7 +13,7 @@ export interface SupportedUnitsState {
   error?: string
 }
 
-const FALLBACK_ERROR_MESSAGE = 'Failed to load supported units.'
+const FALLBACK_ERROR_MESSAGE = '지원 유닛 목록을 불러오지 못했어요.'
 
 export const useSupportedUnits = (): SupportedUnitsState => {
   const [units, setUnits] = useState<SupportedUnit[]>([])

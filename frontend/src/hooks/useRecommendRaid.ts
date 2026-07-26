@@ -25,7 +25,7 @@ export interface RecommendRaidState {
   submit: (request: RecommendRaidRequest) => Promise<void>
 }
 
-const FALLBACK_ERROR_MESSAGE = 'Failed to fetch raid deck allocation.'
+const FALLBACK_ERROR_MESSAGE = '레이드 덱 배분을 가져오지 못했어요.'
 
 export const useRecommendRaid = (): RecommendRaidState => {
   const [decks, setDecks] = useState<RaidDeck[]>([])

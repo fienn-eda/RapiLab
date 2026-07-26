@@ -27,7 +27,7 @@ export interface AsyncRequestStatus {
   cancel: () => void
 }
 
-const DEFAULT_FALLBACK_ERROR_MESSAGE = 'Failed to fetch deck recommendations.'
+const DEFAULT_FALLBACK_ERROR_MESSAGE = '덱 추천을 가져오지 못했어요.'
 
 const isAbort = (err: unknown): boolean =>
   err instanceof DOMException ? err.name === 'AbortError' : (err as Error)?.name === 'AbortError'

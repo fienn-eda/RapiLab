@@ -136,6 +136,6 @@ describe('useRecommendRaid', () => {
     })
 
     await waitFor(() => expect(result.current.status).toBe('error'))
-    expect(result.current.error).toBe('Failed to fetch raid deck allocation.')
+    expect(result.current.error).toBe('레이드 덱 배분을 가져오지 못했어요.')
   })
 })
