@@ -586,10 +586,31 @@ typing" above; they only move damage when the deck also produces an instance of
 that type. `full_burst_bonus` is NOW wired too, but **opt-in per damage
 instance**, not read unconditionally from the registry like the others — see
 `full_burst_bonus_eligible` above and `docs/decisions.md` ("full_burst_bonus
-wiring is opt-in per damage instance, gated on skill-text phrase"). Pass it
-only on a `record()`/`dynamic_hit_count_nukes` call for damage whose OWN skill
-description says "as additional damage"; every other damage instance defaults
-to False and is unaffected. `enemy_def_percent` is NOW wired too (2026-07-16),
+wiring is opt-in per damage instance, gated on skill-text phrase").
+
+**Decide it by COMPUTATION TIME, not by the phrase** (Fienn, 2026-07-26/27 —
+this frames the older phrase rule rather than replacing it). The bonus applies
+when the instance is *computed* inside a Full Burst window; "as additional
+damage" was only ever a textual proxy for "computed some delay after the cast".
+So:
+
+1. **If you can tell when it is computed, ignore the phrase.** A per-shot
+   nuke, a summon's ticks, a DoT tick, anything anchored to a concrete later
+   time -> pass `full_burst_bonus_eligible=True` and let the engine's own
+   window test (`start <= time < end`, against that instance's OWN time)
+   decide. The flag only ENABLES the check, so instances outside the window
+   still get nothing - this is exact, not an approximation.
+2. **Keep the phrase check only for a single-instant nuke** whose timing is
+   genuinely ambiguous from text alone.
+3. Timing fact that still holds: a Burst 1/2 unit's instance fired at its OWN
+   burst time is strictly BEFORE `full_burst_start`, so marking it eligible is
+   dead code (Helm: Aquamarine). A Burst 3's lands at that same instant and
+   does collect it.
+
+Applied this way to Nayuta's Full-Charge nuke, Scarlet: Black Shadow's staged
+nukes and Anis: Star's Shooting Stars - all three read "as damage" and all
+three were wrong to be excluded. Every other damage instance defaults to False
+and is unaffected. `enemy_def_percent` is NOW wired too (2026-07-16),
 read unconditionally like `damage_taken_up` - emit a "DEF ▼ X%" enemy debuff as
 `Effect("enemy_def_percent", -X/100, "squad", dur, caster)`, negative value.)
 
