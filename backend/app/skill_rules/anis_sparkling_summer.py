@@ -91,5 +91,7 @@ def build_sparkling_missile_per_shot_rules(values: dict) -> list:
     parts_duration = float(values["description_value_03"])
     return [(None, "last_bullet", [
         instant_nuke_pulse_rule("per_shot", nuke_percent),
-        refreshing_buff_rule("per_shot", [("damage_to_parts_up", parts_up, "self", parts_duration)]),
+        refreshing_buff_rule("per_shot", [
+            ("damage_to_interruption_parts_up", parts_up, "self", parts_duration),
+        ]),
     ])]

@@ -6,8 +6,9 @@ Modeled (DPS-relevant):
 - Finale (skills[2], her burst): burst nuke 351.64% of final ATK, plus squad
   Damage-to-Interruption-Parts up (23.23% for 10s + 19.36% for 30s). The "Shotgun
   allies" / "ally from the same squad on the battlefield" scopes are approximated
-  as squad. Like pierce, damage_to_parts_up is applied as a general Damage-Up term
-  (not gated to actual parts hits) - the engine's existing convention.
+  as squad. "Interruption Parts" (저지 부위) is the zone an interruption gimmick
+  makes you hit - NOT a destructible part - so it goes to its own stat and,
+  like Damage to Parts, never reaches body damage.
 
 Not modeled:
 - Rabbit Twins B (skills[1]): Max Ammo +5 rounds (flat, not a %) and an instant
@@ -49,7 +50,7 @@ def build_noir_rules(values):
     return [
         buff_rule("battle_start", [("flat_atk", squad_atk, "squad", None)]),
         buff_rule("own_burst_activate", [
-            ("damage_to_parts_up", parts_1, "squad", parts_1_duration),
-            ("damage_to_parts_up", parts_2, "squad", parts_2_duration),
+            ("damage_to_interruption_parts_up", parts_1, "squad", parts_1_duration),
+            ("damage_to_interruption_parts_up", parts_2, "squad", parts_2_duration),
         ]),
     ]

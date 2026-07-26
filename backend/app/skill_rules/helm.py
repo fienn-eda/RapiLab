@@ -93,7 +93,9 @@ def build_frontline_command_per_shot_rules(values: dict) -> list:
 
 
 def build_fire_away_rules(values: dict) -> list[SkillRule]:
-    damage_to_parts_up = float(values["description_value_01"]) / 100
+    # "저지 부위 공격 대미지" = Damage to Interruption Parts: the zone a gimmick
+    # makes you hit, NOT a destructible part. See test_parts_vs_interruption_parts.
+    interruption_parts_up = float(values["description_value_01"]) / 100
     attack_damage_up = float(values["description_value_02"]) / 100
     attack_damage_duration = float(values["description_value_03"])
 
@@ -102,7 +104,8 @@ def build_fire_away_rules(values: dict) -> list[SkillRule]:
             return
         context.set_status(caster_slug, "Fire Away Granted")
         registry.add(
-            Effect("damage_to_parts_up", damage_to_parts_up, "squad", None, caster_slug),
+            Effect("damage_to_interruption_parts_up", interruption_parts_up,
+                   "squad", None, caster_slug),
             applied_at=time,
         )
 

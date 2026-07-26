@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 저지 부위와 파괴 가능 파츠는 다른 스탯으로 가른다
+- Date: 2026-07-26
+- Context: Fienn이 helm 스킬2 "포문 개방"의 한글 원문을 읽다가 지적했다 — 1번 불릿의 "아군 전체에게 **저지 부위 공격 대미지** 3.08% 증가"는 영문으로 `Damage to Interruption Parts`이고, 이것은 **기믹 수행 시 타격해야 하는 구역**이지 파괴 가능 파츠가 아니다. 엔진은 여덟 유닛을 전부 `damage_to_parts_up` 하나에 써넣고 있었다.
+- 원문 전수 대조 결과 정확히 반반이었다: **저지 부위** = helm·noir·anis-sparkling-summer·rapi-red-hood / **파괴 가능 파츠** = rosanna-chic-ocean·cinderella-crystal-wave·snow-white-heavy-arms·raven(defer).
+- Decision: 스탯을 분리한다 — `damage_to_interruption_parts_up` 신설, 저지 부위 4유닛을 이쪽으로 옮긴다. **수치는 전혀 안 변한다**(같은 날 판정으로 둘 다 몸통 딜에 안 붙는다). 가치는 전적으로 인코딩의 정직함에 있다.
+- Alternatives considered: **주석으로만 문서화** — 기각. 오독을 유발하는 것은 문장이 아니라 **스탯 이름 자체**다. 이름이 그대로면 다음 사람이 다시 합친다. Fienn이 "오독 유발 가능성이 높은 문구니까 꼭 문서화해야 한다"고 한 이유가 그것이다.
+- Consequences: 백엔드 1424 → **1427 passed / 3 skipped**(회귀 테스트 3건 신설, 기존 단언 9건은 각 유닛의 진짜 대상으로 재조준). 새 스탯은 **의도된 orphan**이다 — 죽은-스탯 감사가 앞으로 이걸 잡으면 `burst_gauge_fill_speed_percent`와 같은 분류다. 일반 교훈은 `docs/insights.md`에 적었다: **값이 아니라 대상이 의심스러울 때는 한국 서버 원문을 볼 것** — 한글은 "저지 부위"/"파츠"로 확실히 갈리는데 영문은 `Interruption` 한 단어 차이라, 영문 데이터만 보고 인코딩하면 구분이 통째로 사라진다.
+
 ## "Damage to Parts"는 몸통 딜에 안 붙는다 — 관례가 천장 가정이었다
 - Date: 2026-07-26
 - Context: 유닛별 대조에서 **스노우화이트: 헤비암즈가 1.44x**(실기록 1.68B 대비 2.42B)로 절대 초과가 가장 컸다. 그녀는 Shades of White의 "Damage to Parts ▲62.64%/5초"를 **매 샷 갱신**으로 들고 있다. 엔진은 이 스탯을 `damage_up` 버킷에 넣어 **모든 데미지 인스턴스**에 더하고 있었다 — `noir.py`가 "Like pierce, damage_to_parts_up is applied as a general Damage-Up term (not gated to actual parts hits) - the engine's existing convention"이라고 명시해 둔, 의도된 관례였다.

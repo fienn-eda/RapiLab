@@ -92,7 +92,9 @@ def build_battlefield_assessment_rules(values: dict) -> list[SkillRule]:
     cooldown_reduction_sec = float(values["description_value_04"])
     self_atk_up = float(values["description_value_07"]) / 100
     self_atk_duration = float(values["description_value_08"])
-    damage_to_parts_up = float(values["description_value_09"]) / 100
+    # "Damage to Interruption Parts", not Damage to Parts - a gimmick zone, not
+    # a destructible part. See test_parts_vs_interruption_parts.
+    interruption_parts_up = float(values["description_value_09"]) / 100
     damage_to_parts_duration = float(values["description_value_10"])
     squad_attack_damage_up = float(values["description_value_05"]) / 100
     squad_attack_damage_duration = float(values["description_value_06"])
@@ -132,7 +134,8 @@ def build_battlefield_assessment_rules(values: dict) -> list[SkillRule]:
         )
         registry.add(
             Effect(
-                "damage_to_parts_up", damage_to_parts_up, "self", damage_to_parts_duration, caster_slug
+                "damage_to_interruption_parts_up", interruption_parts_up, "self",
+                damage_to_parts_duration, caster_slug
             ),
             applied_at=time,
         )

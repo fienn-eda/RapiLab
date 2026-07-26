@@ -54,9 +54,9 @@ def test_noir_finale_burst_parts_buffs_stack_then_expire():
     reg = EffectRegistry()
     fire_trigger("own_burst_activate", {"noir": build_noir_rules(NOIR)}, deck_ctx("noir"), reg, 0.0)
     # both parts buffs active in the first 10s -> sum
-    assert round(reg.total_for("damage_to_parts_up", ALLY, 0.0), 4) == round(0.2323 + 0.1936, 4)
-    assert round(reg.total_for("damage_to_parts_up", ALLY, 11.0), 4) == 0.1936  # 10s one expired
-    assert reg.total_for("damage_to_parts_up", ALLY, 31.0) == 0.0  # 30s one expired
+    assert round(reg.total_for("damage_to_interruption_parts_up", ALLY, 0.0), 4) == round(0.2323 + 0.1936, 4)
+    assert round(reg.total_for("damage_to_interruption_parts_up", ALLY, 11.0), 4) == 0.1936  # 10s one expired
+    assert reg.total_for("damage_to_interruption_parts_up", ALLY, 31.0) == 0.0  # 30s one expired
 
 
 def test_noir_finale_burst_percent():

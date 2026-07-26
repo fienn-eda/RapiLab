@@ -105,7 +105,7 @@ def test_fire_away_grants_permanent_squad_damage_to_parts():
     fire_trigger("battle_start", rules, ctx, registry, time=0.0)
 
     ally = {"slug": "ally", "element": "Iron"}
-    assert round(registry.total_for("damage_to_parts_up", ally, now=99999), 4) == 0.0308
+    assert round(registry.total_for("damage_to_interruption_parts_up", ally, now=99999), 4) == 0.0308
 
 
 def test_fire_away_grants_squad_attack_damage_up_on_full_burst_enter():

@@ -4,6 +4,32 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## "Damage to Parts"와 "Damage to Interruption Parts"는 **다른 대상**이다 — 이름이 거의 같아서 반드시 오독된다
+
+- 발견: 2026-07-26 (Fienn이 helm 스킬2 "포문 개방"의 한글 원문을 읽다가 지적)
+- **"저지 부위 공격 대미지"(Damage to Interruption Parts)** 는 **기믹 수행 시 타격해야 하는
+  구역**의 딜을 올린다. **"파츠 대미지"(Damage to Parts)** 는 **파괴 가능 파츠**의 딜을
+  올린다. 이름이 거의 같지만 **가리키는 타겟이 아예 다르다.** 한글 표기는 확실히
+  구분되는데("저지 부위" vs "파츠") 영문은 `Interruption`이라는 단어 하나 차이라,
+  영문 데이터만 보고 인코딩하면 거의 확실히 뭉개진다 — 실제로 뭉개져 있었다.
+- 로스터를 원문으로 갈라보면 정확히 반반이다:
+  - **Interruption Parts (저지 부위)**: `helm`(Fire Away, 스쿼드 상시) ·
+    `noir`(Finale, 스쿼드 10s+30s) · `anis-sparkling-summer`(자기, 10s) ·
+    `rapi-red-hood`(자기, 10s)
+  - **Parts (파괴 가능 파츠)**: `rosanna-chic-ocean` · `cinderella-crystal-wave`(Destroy
+    모드) · `snow-white-heavy-arms` · `raven`(Vital Attack, defer 중)
+- 이 오독이 왜 조용했나: 여덟 유닛이 **전부 같은 스탯 `damage_to_parts_up`에 써넣고**
+  있었고, 엔진은 그걸 일반 Damage-Up 버킷에 넣어 모든 타격에 곱했다. 두 개념을
+  구분하든 안 하든 수치가 같으니 아무도 볼 이유가 없었다. **몸통 딜에서 이 항을
+  뺀 뒤에야**(같은 날의 별도 판정) 두 스탯이 서로 다른 미래를 갖게 됐다.
+- 해법: 스탯을 분리한다(`damage_to_interruption_parts_up` 신설). **둘 다 몸통 딜에는
+  안 붙으므로 지금 수치는 1도 안 변한다** — 이 작업의 가치는 전적으로 "다음 사람이
+  파츠를 실제 타겟으로 모델링할 때 잘못된 네 유닛을 합치지 않게 하는 것"이다.
+  회귀 테스트 `test_parts_vs_interruption_parts.py`가 유닛별로 어느 쪽인지 고정한다.
+- 일반화: **한글 표기가 영문보다 구분이 명확한 경우가 있다.** 인코딩 근거를 영문
+  데이터에서만 뽑으면 이런 구분이 통째로 사라진다 — 값이 아니라 **대상**이 의심스러울
+  때는 한국 서버 원문을 확인할 것([[korean-service-naming]]와 같은 이유).
+
 ## 시뮬레이터를 실측에 대조할 때 판정 기준은 배율이 아니라 배율의 **편차**다 — 그리고 "함의된 파라미터" 역산이 캘리브레이션과 모델 오차를 갈라준다
 - Fienn의 두 시즌 전 솔로레이드 실기록 5덱을 그대로 시뮬에 넣었더니 합계 **1.46배 과대**였다. 여기서 "1.46로 나누면 되겠다"로 가면 안 된다 — **덱별 배율이 0.93x~2.00x로 흩어져 있었고**, 순위는 편차만 보기 때문이다. 당시 추천이 주장하던 우위는 +9.9%로 **오차 폭보다 작았다**. 총량 편향은 랭킹에서 상쇄되고 편차는 랭킹을 파괴한다는 것은 `scripts/measure_unmodeled_damage_share.py`가 이미 세워둔 잣대와 같은 원리다.
 - **캘리브레이션 오차와 모델 오차를 가르는 방법: 의심되는 파라미터가 데미지에 선형으로 들어간다면 역산하라.** 코어 히트 보너스는 major modifier에 가산되므로 총딜이 코어 히트 비율 f에 선형이다(`total(f) = off + f*(on-off)`). 그래서 각 덱의 실기록이 함의하는 f를 풀 수 있었고 결과는 **52% / 10% / 28% / 2% / 117%**였다. **하나가 100%를 넘는 순간 "전역 노브" 가설은 죽는다** — 어떤 값을 넣어도 다섯 덱이 동시에 맞지 않으므로, 남은 것은 모델 자체가 덱마다 다르게 틀렸다는 결론이다. 노브를 UI에 다는 것은 모델 오차를 유저 입력으로 위장하는 짓이다.

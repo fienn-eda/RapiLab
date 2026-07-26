@@ -81,7 +81,7 @@ def test_self_buff_branch_fires_on_full_burst_enter_when_not_in_combat_assist():
 
     rapi = {"slug": "rapi-red-hood", "element": "Fire"}
     assert round(registry.total_for("atk_percent", rapi, now=5.0), 4) == 0.9504
-    assert round(registry.total_for("damage_to_parts_up", rapi, now=5.0), 4) == 0.48
+    assert round(registry.total_for("damage_to_interruption_parts_up", rapi, now=5.0), 4) == 0.48
     # this branch should NOT emit a squad-wide burst cooldown reduction
     assert registry.drain_pulses("burst_cooldown_reduction_sec") == []
 

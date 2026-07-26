@@ -126,9 +126,9 @@ def test_sparkling_missile_last_bullet_nuke_and_self_parts_buff():
     assert pulses[0].source_slug == "anis-sparkling-summer"
 
     # self-scoped Damage to Interruption Parts +6.91% for 10 sec
-    assert round(registry.total_for("damage_to_parts_up", ANIS, now=3.0), 4) == 0.0691
-    assert registry.total_for("damage_to_parts_up", ELECTRIC_ALLY, now=3.0) == 0.0
-    assert registry.total_for("damage_to_parts_up", ANIS, now=13.1) == 0.0
+    assert round(registry.total_for("damage_to_interruption_parts_up", ANIS, now=3.0), 4) == 0.0691
+    assert registry.total_for("damage_to_interruption_parts_up", ELECTRIC_ALLY, now=3.0) == 0.0
+    assert registry.total_for("damage_to_interruption_parts_up", ANIS, now=13.1) == 0.0
 
 
 def test_sparkling_missile_parts_buff_refreshes_not_stacks():
@@ -142,4 +142,4 @@ def test_sparkling_missile_parts_buff_refreshes_not_stacks():
     for rule in skill_rules:
         rule.action(ctx, "anis-sparkling-summer", 8.0, registry)
     registry.drain_pulses("instant_damage_percent")
-    assert round(registry.total_for("damage_to_parts_up", ANIS, now=8.0), 4) == 0.0691
+    assert round(registry.total_for("damage_to_interruption_parts_up", ANIS, now=8.0), 4) == 0.0691
