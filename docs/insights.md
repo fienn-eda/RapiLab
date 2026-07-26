@@ -21,7 +21,13 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   3. 여전히 유효한 타이밍 사실: B1/B2가 **자기 버스트 시각에** 터뜨리는 인스턴스는
      `full_burst_start` **이전**이라 자격을 줘도 죽은 코드다(헬름: 아쿠아마린 사례).
      B3는 `full_burst_start`와 같은 순간이라 받는다.
-- **이 원칙으로 이번 세션에 고친 네 곳** — 모두 문구 규칙이 놓치던 자리다:
+- **보너스의 크기는 +0.5다** (Fienn 확인, 2026-07-27). `full_burst_bonus`는 **크기가
+  아니라 플래그**다 — `raid_simulator`가 창 안이면 `1.0`을, 밖이면 `0.0`을 넘기고
+  `damage_formula._major_modifiers`가 **`full_burst_bonus * 0.5`** 로 major modifier
+  버킷에 더한다. **호출부의 `1.0`만 보고 "+100%"로 읽지 말 것** — 실제로 이 착각이
+  한 번 나왔다. 크리티컬(`0.5 + 크리 대미지원`)·코어와 **같은 버킷**이라 서로 가산이지
+  곱셈이 아니다.
+- **이 원칙으로 고친 다섯 곳** — 모두 문구 규칙이 놓치던 자리다:
   - **나유타** Hypocrisy 풀차지 넉(530.46%): 트리거가 풀차지(1.8초)이고 그건 그녀의
     버스트 이후에만 일어난다 → 전부 창 안. 0.79x → 0.85x.
   - **홍련** 단계 넉(283.03/565/848.03%): 각 단계가 **자기 샷의 시각**에 연산된다.
@@ -29,8 +35,48 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   - **아니스: 스타** Shooting Stars(40틱): 버스트→FB 발동 **0.2초**, 틱 간격 **0.25초**
     → 첫 틱부터 창 안. 0.748B → 0.816B.
   - **반복 틱 DoT 일반**(기존 Mana 사례): 첫 틱 이후는 구성상 캐스트 이후 → 기본 True.
-- **함정:** 문구 규칙을 그대로 믿고 "as damage니까 자격 없음"으로 적어둔 독스트링이
+  - **신데렐라** Flawless Glass 퍼샷 넉(136.6%, 2026-07-27 추가): 풀차지 명중마다
+    발동하므로 샷의 시각을 안다. 486발 중 **160발(33%)이 창 안**이고 그 창이 이 소스
+    딜의 61%를 갖는다. 넉 +27.9%.
+- **함정 1:** 문구 규칙을 그대로 믿고 "as damage니까 자격 없음"으로 적어둔 독스트링이
   여럿 있었다(홍련·아니스). **"보수적 해석"이라 적혀 있으면 대개 미검증 가정이다.**
+- **함정 2 — 감사는 유닛이 아니라 불릿 단위로 돌려야 한다.** 2026-07-26의 FB 감사는
+  **버스트 넉 경로만** 훑으면서 신데렐라를 "그녀의 additional damage 불릿은 Beautiful
+  미러(자원 게이팅 넉)"라며 **유닛 단위로** 기각했다. 그런데 Flawless Glass에 **두
+  번째 그런 불릿**(평범한 퍼샷 넉)이 있었고 그것이 1년치 딜의 22~29%였다. 그 감사문
+  자신이 남긴 결론이 "유닛 수로 세면 틀리고 불릿 단위로 읽어야 맞는다"였는데, 정작
+  그 감사가 유닛 단위로 끝났다. **경로별로 훑을 때는 다른 경로에 같은 문구의 불릿이
+  남아 있는지 반드시 되짚을 것.**
+
+## "버스트 N단계 진입 시"를 `own_burst_activate`로 인코딩하면 좌석을 나눌 때 조용히 샌다
+
+- 확립: 2026-07-27 (신데렐라 검증 중 발견). 마스트 취기(1단계)에서 나온 판정과 **같은
+  규칙**인데, 그때는 스택 카운터였고 이번엔 트리거 자체다.
+- **원칙:** "Activates when entering Burst Stage N"은 **단계**에 대한 서술이지 시전자에
+  대한 서술이 아니다. 그 사이클에 **누가** 그 티어 슬롯을 가져가든 일어난다. 따라서
+  `ally_burst_activate` + `burst_stage_entered(N)`으로 걸어야 한다. 엔진의
+  `squad_engine.burst_stage_entered` 독스트링이 이미 이 문장을 그대로 담고 있다 —
+  "Using `own_burst_activate` instead would silently drop those cycles."
+- **왜 오래 안 들켰나 — 틀린 근거가 코드에 명시돼 있었다.** `snow_white_heavy_arms.py`가
+  선례 검토까지 적어두고 이렇게 결론냈다: *"her Burst Skill is fixed at position 3
+  (a game attribute, not a deck-configurable seat), that's every cycle she reaches
+  Full Burst."* **이 문장이 틀렸다.** 버스트 위치가 고정인 것과 그 사이클에 그녀가
+  실제로 쏘는 것은 다른 얘기다 — **B3를 2기 앉히면 둘이 번갈아 쏜다.** 실측: 신데렐라 +
+  스노우화이트:헤비암즈 편성에서 11사이클이 **6/5로 갈린다**.
+- **증상의 서명:** B3 단독 편성에서는 **정확히 무변화(1.0000x)**, 좌석을 나누면 커진다
+  (신데렐라 1.0727x). 그래서 단일-B3 셸로만 A/B하면 **영원히 안 보인다** —
+  `sweep_slug_damage.py`의 tier3 셸이 바로 그 모양이다.
+- **잔존(2026-07-27 기준, 신데렐라만 수정됨):** 원문에 이 표현을 쓰면서 아직
+  `own_burst_activate`인 유닛 **6기** — `ein`(Feather Standby) · `maiden-ice-rose` ·
+  `mast-romantic-maid`(**3단계** 불릿, 1단계 스택 카운터는 별건으로 이미 수정됨) ·
+  `mint` · `rei-ayanami` · `snow-white-heavy-arms`(Shades of White). 정상 처리된
+  선례는 `flora-signature`(`burst_stage_entered` 사용)와 `rei-ayanami`의 Attack
+  Support(스쿼드 범위라 `full_burst_enter`로 처리 — **범위가 self가 아니면 답이
+  다르다**). 유닛마다 **불릿 단위로** 확인이 필요하다: 같은 파일의
+  `own_burst_activate`가 전부 이 표현인 것은 아니다.
+- **찾는 법:** 수집 데이터에서 `Activates when entering Burst (Skill )?Stage (\d)`를
+  훑고, 걸린 슬러그의 모듈에 `burst_stage_entered`가 없는데 `own_burst_activate`가
+  있으면 후보다(현재 9기 적중, 인코딩된 것 7기).
 
 ## 홍련(스칼렛: 블랙 섀도우)의 미해결 가정 두 개는 **실기록이 지지한다**
 
@@ -363,6 +409,7 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - **"Superior Code Damage" and "grants elemental advantage" are two semantically different things that got encoded onto the same stat until 2026-07-20 — tell them apart from the skill text, not from a plausible-sounding comment.** `other_elemental_bonus` is a *conditional* buff: it only pays out when the wielder ALREADY holds advantage (see `damage_formula`'s advantage gate, `docs/decisions.md`). A skill that instead GRANTS advantage the wielder doesn't naturally have needs `element_advantage_grant` — using `other_elemental_bonus` for a grant makes it self-cancelling (the gate discards exactly the thing meant to open it). The text tells them apart: "Elemental Advantage Attack Damage ▲ N%" is the conditional buff (a roster sweep found 110 instances); "Applies Elemental Advantage damage to `<X>` Code enemies" is the grant (found exactly once — Rapi: Red Hood, `rapi_red_hood.py`). Rapi had been encoded as the conditional case; after the gate landed her bonus was silently discarded, damage identical with/without the buff. Also caught in the same sweep: Rei Ayanami's advantage self-buff was gated on `boss_is_element("Iron")`, justified in a comment as "(Fire > Iron)" — `elements.py`'s real cycle is Water>Fire>Wind>Iron>Electric>Water, so Fire beats WIND, not Iron, and her raw skill text carries no element qualifier at all. **A comment justifying an encoding with an element-cycle claim is worth checking against `elements.py` directly, not trusting** — this exact kind of plausible-sounding note produced the bug. See `docs/decisions.md` for the gate/amendment ADRs; `.claude/skills/nikke-skill-encoding/references/engine-capabilities.md` for the stat catalog entries.
 - **A unit test asserting an effect is PRODUCED cannot catch the damage formula silently DISCARDING it — the assertion has to go through the damage path.** Rapi: Red Hood's `element_advantage_grant` bug (above) had a green unit test the whole time: it asserted `other_elemental_bonus` was registered, never that it reached `calculate_damage`. This is the second instance of that exact failure shape in two days — the harmony-cube effects (see the entry above) were dead for the entire roster behind an equally green "effect is granted" test. Worth treating as a pattern, not a one-off: when reviewing a new stat wiring, check whether ANY test actually exercises the stat through `simulate_raid`'s damage output, not just through `registry.total_for`/`registry.add`. Mutation-testing the stat to inert (as both fixes did) is the cheap way to check.
 - **[2026-07-27: 이 문구 규칙은 이제 "연산 시점" 원칙의 특수 사례다 — 위의 전용 섹션을 먼저 읽을 것.]**
+- **⚠ SUPERSEDED (2026-07-26~27) — see "Full Burst 보너스의 기준은 **연산 시점**이다" at the top of this file.** The text phrase is a PROXY for the timing fact, not the rule itself: an instance whose computed time falls inside a Full Burst window takes the bonus regardless of wording. Keep the phrase check only for a single-instant nuke whose time is genuinely ambiguous from text alone. The magnitude is **+0.5**, not +1.0 (`full_burst_bonus` is a flag; `damage_formula` multiplies it by 0.5). The original 2026-07-12 note follows, for the history of how the rule was reached — do not apply its "otherwise ... never gets it" clause as written.
 - **"As additional damage" in a burst skill's damage description is the text signal for `full_burst_bonus`.** Fienn resolved the ambiguity (after the retracted Maiden cast-delay theory below) with a general rule: if a burst skill's own damage description contains the phrase "as additional damage," that specific damage instance receives `full_burst_bonus`; otherwise the damage is computed from cast-time effects only and never gets it. This turns "wire `full_burst_bonus`" from a per-unit-verification problem into a well-defined, opt-in-per-damage-instance decision — pass it on that specific `record()`/`_damage_instance` call, mirroring the existing `extra_charge_bonus`/`extra_flat_atk` precedent, not a blanket change touching all 45 existing units. See `docs/decisions.md` ("full_burst_bonus wiring is opt-in per damage instance, gated on skill-text phrase").
 - **`distributed_damage_up` is a DPS synergy buff, not a defensive stat.** "Distributed Damage ▲ X%" raises the output of Distributed-Damage dealers (e.g. Scarlet: Black Shadow). It's one of the unconsumed buckets above and additionally needs per-unit gating (only distributed-damage units benefit). Encode it (squad scope) but know it's inert until wired. Easy-to-misread mechanics like this are catalogued in the skill's `references/special-mechanics.md`.
 - **`pierce_damage_up` is a general damage-up term.** It's applied to every hit, not gated to actual pierce hits — a known simplification.
