@@ -1,6 +1,11 @@
 import pytest
 
-from app.burst_cycle import FULL_BURST_OPEN_DELAY, simulate_burst_cycle
+from app.deck_search import BossProfile
+from app.burst_cycle import (
+    FULL_BURST_DURATION,
+    FULL_BURST_OPEN_DELAY,
+    simulate_burst_cycle,
+)
 
 
 def make_deck():
@@ -295,3 +300,35 @@ def test_min_interval_is_measured_from_the_real_fire_time_not_a_cdr_shifted_one(
 
     fires = [e["time"] for e in events if e["type"] == "burst" and e["slug"] == "b3_unit_a"]
     assert all(b - a >= 54.0 for a, b in zip(fires, fires[1:]))
+
+
+def test_the_gauge_sets_the_steady_cycle_once_cooldowns_outrun_it():
+    """Fienn's range run of Volume/Prika/Mint/Snow White: Heavy Arms/Cinderella
+    (2026-07-27): 14 Full Bursts in 180 sec with the 14th at 2:57. Volume's
+    cumulative cooldown reduction (up to 8.21 sec/cycle) outruns the gauge, so
+    the rotation settles at `FULL_BURST_DURATION + gauge_charge_time + tier gap`
+    and those two observations pin gauge_charge_time - a tight fit, since at
+    2.9 sec the 14th burst no longer lands inside the fight.
+
+    Here that law is exercised directly: cooldowns short enough to never bind,
+    so every cycle is gauge-bound.
+    """
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "cooldown": 1.0},
+        {"slug": "b2", "burst_tier": 2, "cooldown": 1.0},
+        {"slug": "b3", "burst_tier": 3, "cooldown": 1.0},
+    ]
+    gauge = BossProfile.gauge_charge_time
+    events = simulate_burst_cycle(deck, gauge_charge_time=gauge,
+                                  fight_duration=100.0, mode="manual")
+    starts = [e["time"] for e in events if e["type"] == "full_burst_start"]
+    gaps = [b - a for a, b in zip(starts, starts[1:])]
+    assert gaps, "expected more than one cycle"
+    assert all(g == pytest.approx(FULL_BURST_DURATION + gauge + 0.2) for g in gaps)
+
+
+def test_gauge_charge_time_is_the_measured_value_not_a_guess():
+    # It stopped being inert once it became the binding constraint, so it now
+    # scales every unit's damage - pinned so a casual edit has to argue with
+    # the measurement above.
+    assert BossProfile.gauge_charge_time == 2.65

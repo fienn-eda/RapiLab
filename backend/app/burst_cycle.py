@@ -1,13 +1,19 @@
 """Schedules burst-skill activations and Full Burst windows over a fight.
 
-Models the rotation Fienn described: gauge charge is fast enough that a
-raid-viable deck always finishes charging before the next burst tier's
-cooldown clears, so the real bottleneck on when the next Full Burst starts
-is whichever tier's cooldown comes off latest - burst skills fire the
-instant their cooldown allows, not on a fixed delay. `gauge_charge_time` is
-kept only as a floor (the minimum time after Full Burst ends before the
-next cycle can even begin), matching "gauge finishes charging before the
-cooldown does" rather than gating the cycle on its own.
+Models the rotation Fienn described: burst skills fire the instant their
+cooldown allows, not on a fixed delay, and `gauge_charge_time` is the minimum
+time after Full Burst ends before the next cycle can even begin.
+
+That floor USED to be inert - the original note here said gauge charge always
+finishes before the next tier's cooldown clears, so the cooldown was the only
+bottleneck. **That is no longer true.** Once Volume's Drop the Beat was read
+correctly as cumulative (up to 8.21 sec off every ally's cooldown from the
+third Full Burst on), cooldowns clear faster than the gauge fills and the
+steady-state cycle becomes exactly `FULL_BURST_DURATION + gauge_charge_time +
+tier gap`. The floor is now what sets the rotation's rate, so it scales every
+unit's damage - see BossProfile.gauge_charge_time for the measurement behind
+its value, and docs/roadmap.md for the caveat that the real gauge fills from
+damage dealt and is therefore deck-dependent, not a constant.
 
 Burst tiers 1/2/3 then fire in order (auto-battle: back to back; manual:
 0.1s apart), triggering a 10s Full Burst window. Per-Nikke cooldowns are

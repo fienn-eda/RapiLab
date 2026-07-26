@@ -101,7 +101,12 @@ class BossProfile:
     core_hittable: bool = False
     enemy_def: float = 0.0
     fight_duration: float = 180.0
-    gauge_charge_time: float = 2.0
+    # Measured, not assumed: Fienn counted 14 Full Bursts in a 180-sec range
+    # run of the Volume/Prika/Mint/Snow White: Heavy Arms/Cinderella deck with
+    # the 14th at 2:57, and only 2.65 reproduces both (2026-07-27). It used to
+    # be a 2.0 guess that never bound anything - see burst_cycle's note on why
+    # it now does.
+    gauge_charge_time: float = 2.65
     mode: str = "manual"
     part_destructible: bool = False
 
