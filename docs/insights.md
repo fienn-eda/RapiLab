@@ -121,6 +121,35 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   따라서 오차는 **불릿1의 계수 하나**에 있다 — 실측이 함의하는 히트당 값은
   **1,074.3%** 이고 스킬 표기는 **1365.92%** 다(비 0.7865). 미해결.
 
+## **"버스트 N단계 진입 시" ≠ "풀버스트 시작 시"** — 한 사이클 안에서 서로 다른 순간이다
+
+- 확립: 2026-07-27 (Fienn 지적). 위 "★ 진짜 원인" 수정을 넣자 **그것이 가리고 있던 두
+  번째 오독이 드러났다** — 이 프로젝트에서 반복된 그 패턴이다.
+- **두 표현은 B3 캐스트를 사이에 두고 갈라진다:**
+
+  ```
+  1단계 진입 → B1 → 2단계 진입 → B2 → [3단계 진입] → B3 사용 → [풀버스트 시작]
+                                            ↑                          ↑
+                                    캐스트 前 = B3 버스트에 닿음   캐스트 後 = 안 닿음
+  ```
+- **판별은 오직 원문이다.** 크라운 One for All = *"Activates **at the start of Full
+  Burst**"* → `full_burst_enter`(안 닿는다, 정상). 민트 Fantastic Performance =
+  *"Activates when **entering Burst Stage 3**"* → `ally_burst_activate` +
+  `burst_stage_entered(3)`(닿는다). **엔진은 이 둘을 오래 `full_burst_enter` 하나로
+  뭉뚱그려 놨고**, 두 순간이 같은 타임스탬프였을 때는 그 오류가 보이지 않았다.
+- **왜 지금 드러났나:** 창을 한 순간 뒤로 밀기 전에는 `full_burst_enter`가 B3 캐스트와
+  동시각이라 stage-N 불릿도 **우연히 맞았다**. 창을 옮기자 그 우연이 사라지면서
+  잘못된 배선이 노출됐다. **수정이 다른 결함을 드러내는 것은 진전이다.**
+- **전수 대조 결과** (원문 표기 ↔ 배선): "at the start of Full Burst"를 쓰는 인코딩
+  유닛은 **크라운 하나뿐**이고 올바르게 배선돼 있다. 반면 **"entering Burst Stage N"
+  표기인데 `full_burst_enter`로 배선된 유닛이 6기**다 — `mint`(**수정 완료**) ·
+  `maiden-ice-rose` · `mast-romantic-maid` · **`mihara-bonding-chain`** ·
+  `rei-ayanami` · `snow-white-heavy-arms`. (미하라는 캘리브레이션 표에서 0.70x로
+  미달 2위였다 — 유력한 후보다.) 유닛마다 **불릿 단위** 확인이 필요하다.
+- **닿는 이유(엔진):** `on_tier_fire`가 `own_burst_activate` → `ally_burst_activate`를
+  먼저 쏘고 **그 다음에** 버스트 넉을 기록한다. 셋 다 같은 타임스탬프이고 레지스트리는
+  `applied_at <= time`으로 걷으므로, stage-N 버프는 그 캐스트의 버스트 대미지에 들어간다.
+
 ## "버스트 N단계 진입 시"를 `own_burst_activate`로 인코딩하면 좌석을 나눌 때 조용히 샌다
 
 - 확립: 2026-07-27 (신데렐라 검증 중 발견). 마스트 취기(1단계)에서 나온 판정과 **같은

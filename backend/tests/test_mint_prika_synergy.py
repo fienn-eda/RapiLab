@@ -73,13 +73,13 @@ def test_encore_squad_attack_damage_reaches_the_attacker_burst_through_the_pipel
     # because Encore pins Mint Singing - Mint's Fantastic Performance Crit Rate
     # +19.94% reach the attacker's burst.
     #
-    # Two things do NOT reach it:
-    #   - Mint's Pierce +32.72%: Pierce Damage Up credits only a unit that
-    #     actually has Pierce, and this bare attacker never gains it.
-    #   - Mint's Fantastic Performance Crit Rate +19.94%: that bullet fires on
-    #     `full_burst_enter`, and Full Burst opens AFTER the Burst 3's cast has
-    #     already settled its damage (see burst_cycle.FULL_BURST_OPEN_DELAY).
-    #     Sing Along and Encore still land, since both ride ally_burst_activate.
+    # Mint's Fantastic Performance Crit Rate +19.94% DOES reach it: its text is
+    # "when entering Burst Stage 3", which is the beat BEFORE the Burst 3 casts
+    # - unlike "at the start of Full Burst", which is the beat after.
+    #
+    # Mint's Pierce +32.72% does NOT: Pierce Damage Up credits only a unit that
+    # actually has Pierce, and this bare attacker never gains it.
+    #   (1 + AD 0.5503) * (1 + 0.1994*(0.5 + 0.4505))
     assert round(attacker_bursts[25.0], 4) == round(
-        10000 * (1 + 0.3002 + 0.2501), 4
-    )  # 15503.0
+        10000 * (1 + 0.3002 + 0.2501) * (1 + 0.1994 * (0.5 + 0.4505)), 4
+    )  # 18441.279

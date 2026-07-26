@@ -29,6 +29,13 @@ def make_context():
     ])
 
 
+def _enter_stage_three(rules, ctx, registry, time):
+    """The squad entering Burst Stage 3 - which is the Burst-3 ally taking the
+    slot, one beat BEFORE its own cast settles (see burst_stage_entered)."""
+    ctx.last_burst_slug = "ally"
+    fire_trigger("ally_burst_activate", rules, ctx, registry, time)
+
+
 def build():
     return build_mint_rules({
         "lets_sing_together": LETS_SING_TOGETHER,
@@ -57,12 +64,12 @@ def test_fantastic_performance_only_applies_while_singing():
     registry = EffectRegistry()
     rules = {"mint": build()}
     fire_trigger("own_burst_activate", rules, ctx, registry, time=5.0)
-    fire_trigger("full_burst_enter", rules, ctx, registry, time=5.0)
+    _enter_stage_three(rules, ctx, registry, time=5.0)
     assert registry.total_for("crit_rate", ALLY, now=5.0) == 0.0
 
     # 2nd burst use -> Singing (even count); Fantastic Performance applies.
     fire_trigger("own_burst_activate", rules, ctx, registry, time=30.0)
-    fire_trigger("full_burst_enter", rules, ctx, registry, time=30.0)
+    _enter_stage_three(rules, ctx, registry, time=30.0)
     assert round(registry.total_for("crit_rate", ALLY, now=30.0), 4) == 0.1994
     assert round(registry.total_for("projectile_explosion_damage_up", ALLY, now=30.0), 4) == 0.50
     assert round(registry.total_for("pierce_damage_up", ALLY, now=30.0), 4) == 0.3272
@@ -74,7 +81,7 @@ def test_fantastic_performance_alternates_off_again_on_the_third_use():
     rules = {"mint": build()}
     for t in (5.0, 30.0, 55.0):
         fire_trigger("own_burst_activate", rules, ctx, registry, time=t)
-        fire_trigger("full_burst_enter", rules, ctx, registry, time=t)
+        _enter_stage_three(rules, ctx, registry, time=t)
     # 3rd use -> Dancing again (odd count 3); no fresh buff at t=55, and the
     # one added at t=30 (10s duration) has already expired.
     assert registry.total_for("crit_rate", ALLY, now=55.0) == 0.0
@@ -88,7 +95,7 @@ def test_fantastic_performance_applies_when_singing_status_is_pinned():
     registry = EffectRegistry()
     rules = {"mint": build()}
     fire_trigger("own_burst_activate", rules, ctx, registry, time=5.0)
-    fire_trigger("full_burst_enter", rules, ctx, registry, time=5.0)
+    _enter_stage_three(rules, ctx, registry, time=5.0)
     assert round(registry.total_for("crit_rate", ALLY, now=5.0), 4) == 0.1994
 
 

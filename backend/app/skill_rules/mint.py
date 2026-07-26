@@ -7,17 +7,19 @@ first use ("if in Dancing, become Singing; if not in Dancing [including
 never-assigned], become Dancing"). Modeled without a separate status flag by
 reading `context.activation_count(caster_slug, "own_burst_activate") % 2 == 0`
 - an even count means she's currently Singing (1st use -> Dancing/count 1 odd,
-2nd -> Singing/count 2 even, ...). Her own burst always fires before
-full_burst_enter in the same cycle, so the parity is already correct by the
-time Fantastic Performance's full_burst_enter rule checks it.
+2nd -> Singing/count 2 even, ...). She is Burst 2, so her own burst always
+fires before Burst Stage 3 is entered in the same cycle, and the parity is
+already correct by the time Fantastic Performance's rule checks it.
 
 Modeled (DPS-relevant):
 - Let's Sing Together! (skills[2], her burst): toggles her Assigned Part (see
   above - no separate effect needed, just the parity read elsewhere); squad
   Attack Damage + Max Ammo % + Critical Damage, all 10 sec. No enemy nuke
   (buff-only burst).
-- Fantastic Performance! (skills[1]): on Full Burst enter, IF she's currently
-  Singing (the parity check) - squad Critical Rate + squad Pierce Damage,
+- Fantastic Performance! (skills[1]): on entering Burst Stage 3 - the beat
+  BEFORE the Burst 3 casts, so this reaches that cast's own burst damage
+  (contrast Crown's "at the start of Full Burst", which lands after it) - IF
+  she's currently Singing (the parity check) - squad Critical Rate + squad Pierce Damage,
   10 sec, plus squad Projectile Explosion Damage
   (`projectile_explosion_damage_up`) - consumed by every RL ally's normal
   attacks and any projectile_explosion-typed burst nuke (gap #4 damage-type
@@ -32,7 +34,7 @@ times - and paired with Prika, whose Encore pins Singing from a specific time
 (see prika.py). Its Dancing branch is self HP regen (survivability), not modeled.
 """
 from app.effects import Effect
-from app.squad_engine import SkillRule
+from app.squad_engine import SkillRule, burst_stage_entered
 
 SKILL_VALUE_MANIFESTS = {
     "mint": {
@@ -56,11 +58,28 @@ def _singing_by_parity(count):
     return count > 0 and count % 2 == 0
 
 
+FANTASTIC_BURST_STAGE = 3  # skill text: "when entering Burst Stage 3" (fixed, not a data slot)
+
+
 def _mint_is_singing(context, caster_slug):
-    # Live check (Skill 2 at full_burst_enter): activation_count is the running
+    # Live check (Skill 2 at Burst Stage 3 entry): activation_count is the running
     # burst count at this moment. Prika's Encore pin forces Singing regardless.
     return context.has_status(caster_slug, SINGING_STATUS) or _singing_by_parity(
         context.activation_count(caster_slug, "own_burst_activate")
+    )
+
+
+def _stage_three_while_singing(context, caster_slug):
+    """Fantastic Performance's gate: the squad has just entered Burst Stage 3
+    AND Mint is Singing.
+
+    Burst Stage 3 is entered BEFORE the Burst 3 casts, so this buff reaches
+    that cast's own burst damage - unlike a "at the start of Full Burst" bullet
+    (Crown's One for All), which lands after it. Mint is Burst 2, so her own
+    burst has already fired this cycle and the Singing parity read is settled.
+    """
+    return burst_stage_entered(FANTASTIC_BURST_STAGE)(context, caster_slug) and _mint_is_singing(
+        context, caster_slug
     )
 
 
@@ -130,7 +149,8 @@ def build_mint_rules(values):
 
     return [
         SkillRule(trigger="own_burst_activate", action=apply_burst),
-        SkillRule(trigger="full_burst_enter", action=apply_fantastic_performance, condition=_mint_is_singing),
+        SkillRule(trigger="ally_burst_activate", action=apply_fantastic_performance,
+                  condition=_stage_three_while_singing),
     ]
 
 
