@@ -48,13 +48,13 @@ afterEach(() => {
 describe('App', () => {
   it('states the harmony cube assumption', () => {
     render(<App />)
-    expect(screen.getByText(/Resilience Cube Lv\.15/i)).toBeInTheDocument()
+    expect(screen.getByText(/Resilience 큐브 Lv\.15/i)).toBeInTheDocument()
   })
 
   it('prompts to sync and hides the roster/recommend panel when there is no active profile', () => {
     render(<App />)
-    expect(screen.getByText(/no synced account yet/i)).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Recommend decks' })).not.toBeInTheDocument()
+    expect(screen.getByText(/동기화된 계정이 없어요/i)).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '덱 추천' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
   })
 
@@ -85,11 +85,11 @@ describe('App', () => {
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Red Hood' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: 'Recommend decks' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '덱 추천' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('tab', { name: 'Recommend' }))
+    await user.click(screen.getByRole('tab', { name: '추천' }))
 
-    expect(screen.getByRole('heading', { name: 'Recommend decks' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '덱 추천' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
   })
 
@@ -122,7 +122,7 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Red Hood' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Privaty' })).not.toBeInTheDocument()
 
-    await user.selectOptions(screen.getByLabelText('Account'), '부계')
+    await user.selectOptions(screen.getByLabelText('계정'), '부계')
 
     expect(screen.getByRole('heading', { name: 'Privaty' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
@@ -158,20 +158,20 @@ describe('App', () => {
     })
 
     render(<App />)
-    await user.click(screen.getByRole('tab', { name: 'Recommend' }))
-    await user.click(screen.getByLabelText(/raid allocation/i))
-    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
-    expect(await screen.findByRole('status')).toHaveTextContent(/1–2 minutes/)
-    expect(screen.getByLabelText(/raid allocation/i)).toBeChecked()
+    await user.click(screen.getByRole('tab', { name: '추천' }))
+    await user.click(screen.getByLabelText(/레이드 배분/i))
+    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
+    expect(screen.getByLabelText(/레이드 배분/i)).toBeChecked()
 
-    await user.selectOptions(screen.getByLabelText('Account'), '부계')
+    await user.selectOptions(screen.getByLabelText('계정'), '부계')
 
     // A fresh RecommendPanel instance: no in-flight status banner (a new
     // useRecommendRaid, not the one A's never-resolving promise still
     // targets) and mode reset to its 'single' default - proof of a full
     // remount, not just the restore effect (which never touches `mode`).
     expect(screen.queryByRole('status')).not.toBeInTheDocument()
-    expect(screen.getByLabelText(/single deck/i)).toBeChecked()
+    expect(screen.getByLabelText(/단일 덱/i)).toBeChecked()
   })
 
   it('keeps an in-flight raid alive across a tab switch', async () => {
@@ -196,17 +196,17 @@ describe('App', () => {
     })
 
     render(<App />)
-    await user.click(screen.getByRole('tab', { name: 'Recommend' }))
-    await user.click(screen.getByLabelText(/raid allocation/i))
-    await user.click(screen.getByRole('button', { name: /allocate raid decks/i }))
-    expect(await screen.findByRole('status')).toHaveTextContent(/1–2 minutes/)
+    await user.click(screen.getByRole('tab', { name: '추천' }))
+    await user.click(screen.getByLabelText(/레이드 배분/i))
+    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
 
-    await user.click(screen.getByRole('tab', { name: 'Roster' }))
-    await user.click(screen.getByRole('tab', { name: 'Recommend' }))
+    await user.click(screen.getByRole('tab', { name: '로스터' }))
+    await user.click(screen.getByRole('tab', { name: '추천' }))
 
     // Still running, and still in raid mode - a remount would have reset both.
-    expect(screen.getByRole('status')).toHaveTextContent(/1–2 minutes/)
-    expect(screen.getByLabelText(/raid allocation/i)).toBeChecked()
+    expect(screen.getByRole('status')).toHaveTextContent(/1~2분/)
+    expect(screen.getByLabelText(/레이드 배분/i)).toBeChecked()
     expect(vi.mocked(recommendRaidDecks)).toHaveBeenCalledTimes(1)
   })
 })

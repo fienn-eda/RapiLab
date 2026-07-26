@@ -22,8 +22,8 @@ const NO_ROSTER: NikkeDraft[] = []
 type Tab = 'roster' | 'recommend'
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'roster', label: 'Roster' },
-  { id: 'recommend', label: 'Recommend' },
+  { id: 'roster', label: '로스터' },
+  { id: 'recommend', label: '추천' },
 ]
 
 function App() {
@@ -57,13 +57,12 @@ function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <h1 className="app__title">NIKKE Deck Builder</h1>
+        <h1 className="app__title">NIKKE 덱 빌더</h1>
         <p className="app__subtitle">
-          Sync your roster from blablalink, then have the engine build decks
-          from it.
+          blablalink에서 로스터를 동기화하면 엔진이 덱을 구성해줘요.
         </p>
         <p className="app__note">
-          All Nikkes are simulated wearing a Resilience Cube Lv.15.
+          모든 니케가 Resilience 큐브 Lv.15를 착용한 것으로 계산합니다.
         </p>
       </header>
 
@@ -79,13 +78,14 @@ function App() {
           <SyncRosterPanel onImport={upsertProfile} />
           <div className="empty">
             <p className="empty__text">
-              No synced account yet. Sync from blablalink above to get started.
+              아직 동기화된 계정이 없어요. 위에서 blablalink 동기화를
+              시작해보세요.
             </p>
           </div>
         </main>
       ) : (
         <>
-          <div className="tabs" role="tablist" aria-label="Sections">
+          <div className="tabs" role="tablist" aria-label="섹션">
             {TABS.map(({ id, label }) => (
               <button
                 key={id}
@@ -158,8 +158,7 @@ function App() {
 
       {activeProfile !== null && (
         <footer className="app__footer">
-          {validRoster.length} of {drafts.length}{' '}
-          {drafts.length === 1 ? 'Nikke' : 'Nikkes'} ready
+          니케 {validRoster.length}/{drafts.length}기 준비 완료
         </footer>
       )}
     </div>
