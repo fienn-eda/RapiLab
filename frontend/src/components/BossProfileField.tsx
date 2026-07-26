@@ -3,6 +3,7 @@
 // src/types/recommend.ts.
 
 import { useId } from 'react'
+import { elementLabel } from '../lib/elementName'
 import type { BossProfileDraft, BossProfileDraftErrors } from '../types/bossProfileDraft'
 import { BOSS_ELEMENTS, type BossElement } from '../types/recommend'
 import { NumberField } from './fields/NumberField'
@@ -18,11 +19,11 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
 
   return (
     <fieldset className="group">
-      <legend className="group__legend">Boss profile</legend>
+      <legend className="group__legend">보스 설정</legend>
 
       <div className="field">
         <label className="field__label" htmlFor={elementId}>
-          Element
+          속성
         </label>
         <select
           id={elementId}
@@ -35,10 +36,10 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
             })
           }
         >
-          <option value="">Non-elemental</option>
+          <option value="">무속성</option>
           {BOSS_ELEMENTS.map((element) => (
             <option key={element} value={element}>
-              {element}
+              {elementLabel(element)}
             </option>
           ))}
         </select>
@@ -50,7 +51,7 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
           checked={value.core_hittable}
           onChange={(event) => onChange({ ...value, core_hittable: event.target.checked })}
         />
-        Core is hittable
+        코어 피격 가능
       </label>
 
       <label className="checkbox">
@@ -61,25 +62,25 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
             onChange({ ...value, part_destructible: event.target.checked })
           }
         />
-        Part-destruction gimmick
+        부위파괴 기믹
         <span className="group__hint">
           {' '}
-          selects the max-potential model for part-dependent units (e.g. Ark Ranger
-          Black); unchecked uses the lower-bound model
+          부위파괴에 의존하는 유닛(예: 아크레인저 블랙)의 최대 잠재력 모델을
+          선택합니다. 체크 해제 시 하한 모델을 사용합니다.
         </span>
       </label>
 
       <div className="field-row field-row--pair">
         <NumberField
-          label="Enemy DEF"
+          label="적 방어력"
           value={value.enemy_def}
           error={errors?.enemy_def}
           min={0}
           onChange={(enemy_def) => onChange({ ...value, enemy_def })}
         />
         <NumberField
-          label="Fight duration"
-          hint="seconds"
+          label="전투 시간"
+          hint="초"
           value={value.fight_duration}
           error={errors?.fight_duration}
           min={0}

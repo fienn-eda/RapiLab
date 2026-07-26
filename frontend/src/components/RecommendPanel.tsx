@@ -339,20 +339,20 @@ export function RecommendPanel({
   const submitLabel =
     mode === 'single'
       ? active.status === 'loading'
-        ? 'Recommending…'
-        : 'Recommend decks'
+        ? '추천 중…'
+        : '덱 추천'
       : mode === 'raid'
         ? active.status === 'loading'
-          ? 'Allocating…'
-          : 'Allocate raid decks'
+          ? '배분 중…'
+          : '레이드 덱 배분'
         : active.status === 'loading'
-          ? 'Optimizing…'
-          : 'Optimize draft'
+          ? '최적화 중…'
+          : '드래프트 최적화'
 
   return (
-    <section className="card" aria-label="Deck recommendation">
+    <section className="card" aria-label="덱 추천">
       <header className="card__header">
-        <h2 className="card__title">Recommend decks</h2>
+        <h2 className="card__title">덱 추천</h2>
       </header>
 
       <form onSubmit={handleSubmit} className="recommend-form">
@@ -366,7 +366,7 @@ export function RecommendPanel({
           <BossProfileField value={draft} errors={touched ? errors : {}} onChange={setDraft} />
 
           <fieldset className="group">
-            <legend className="group__legend">Mode</legend>
+            <legend className="group__legend">모드</legend>
             <div className="mode-switch">
               <label className="radio">
                 <input
@@ -376,8 +376,8 @@ export function RecommendPanel({
                   checked={mode === 'single'}
                   onChange={() => setMode('single')}
                 />
-                Single deck
-                <span className="group__hint"> — ranked alternatives for one deck</span>
+                단일 덱
+                <span className="group__hint"> — 덱 하나의 순위별 대안</span>
               </label>
               <label className="radio">
                 <input
@@ -387,8 +387,8 @@ export function RecommendPanel({
                   checked={mode === 'raid'}
                   onChange={() => setMode('raid')}
                 />
-                Raid allocation
-                <span className="group__hint"> — multiple disjoint decks fielded together</span>
+                레이드 배분
+                <span className="group__hint"> — 여러 개의 겹치지 않는 덱을 동시에 편성</span>
               </label>
               <label className="radio">
                 <input
@@ -398,10 +398,11 @@ export function RecommendPanel({
                   checked={mode === 'draft'}
                   onChange={() => setMode('draft')}
                 />
-                Draft-based optimization
+                드래프트 기반 최적화
                 <span className="group__hint">
                   {' '}
-                  — seed decks with your own key units, the engine fills/optimizes the rest
+                  — 직접 고른 핵심 유닛으로 덱을 시드하면, 엔진이 나머지를 채우고
+                  최적화
                 </span>
               </label>
             </div>
@@ -409,7 +410,7 @@ export function RecommendPanel({
             {mode !== 'single' && (
               <div className="field">
                 <label className="field__label" htmlFor={numDecksId}>
-                  Number of decks
+                  덱 개수
                 </label>
                 <select
                   id={numDecksId}
@@ -440,12 +441,12 @@ export function RecommendPanel({
                   which would start a second run instead of stopping the first. */}
               {active.status === 'loading' && (
                 <button type="button" className="btn" onClick={active.cancel}>
-                  Cancel
+                  취소
                 </button>
               )}
               {rosterTooSmall && (
                 <p className="field__error" role="alert">
-                  Add at least {MIN_DECK_ROSTER_SIZE} ready Nikkes to recommend a deck.
+                  덱을 추천하려면 준비된 니케가 최소 {MIN_DECK_ROSTER_SIZE}기 필요해요.
                 </p>
               )}
             </div>
@@ -454,16 +455,16 @@ export function RecommendPanel({
 
         {mode !== 'draft' && (
           <fieldset className="group">
-            <legend className="group__legend">Units to use</legend>
+            <legend className="group__legend">사용할 유닛</legend>
             {/* Default-expanded (discoverable) but collapsible. `open` also keeps the
                 unit toggles in the a11y tree for tests without a jsdom details toggle. */}
             <details className="group__details" open>
               <summary className="group__hint">
                 {poolKnown ? poolIncluded : effectiveRoster.length}/
-                {poolKnown ? poolTotal : roster.length} in the search pool — click any you
-                won&rsquo;t field to drop it
+                {poolKnown ? poolTotal : roster.length} 탐색 풀에 포함됨 — 편성하지
+                않을 유닛을 클릭하면 제외돼요
                 {poolKnown && unsupportedCount > 0 && (
-                  <> ({unsupportedCount} owned but not yet supported)</>
+                  <> (보유 중이나 아직 미지원 {unsupportedCount}기)</>
                 )}
               </summary>
               {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
@@ -480,7 +481,7 @@ export function RecommendPanel({
 
         {mode === 'draft' && (
           <fieldset className="group">
-            <legend className="group__legend">Draft</legend>
+            <legend className="group__legend">드래프트</legend>
             {/* How to seat a unit is explained beside the decks themselves
                 (DraftEditor's hint), where the player is looking when they
                 need it. */}
@@ -514,9 +515,9 @@ export function RecommendPanel({
 
       {mode !== 'single' && raid.status === 'loading' && (
         <p className="recommend-form__progress" role="status">
-          {mode === 'raid' ? 'Allocating raid decks' : 'Optimizing your draft'} — this runs
-          thousands of simulations and typically takes 1–2 minutes. It&rsquo;s still working; the
-          button will re-enable when it&rsquo;s done.
+          {mode === 'raid' ? '레이드 덱 배분 중' : '드래프트 최적화 중'} — 수천 번의
+          시뮬레이션을 실행하며 보통 1~2분이 걸려요. 아직 진행 중이니 완료되면
+          버튼이 다시 활성화돼요.
         </p>
       )}
 
