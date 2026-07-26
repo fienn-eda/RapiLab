@@ -42,7 +42,8 @@ Modeled (DPS-relevant):
 - Hypocrisy's Full-Charge-during-Memory-Incineration nuke: 150% + 380.46%
   against the stage target, which in a raid is the only enemy, so both always
   apply. Five charges land per window, driven off the same fixed 1.8-sec cadence
-  as the segment itself.
+  as the segment itself, and every one is computed inside Full Burst - so the
+  whole hit is `full_burst_bonus_eligible` (see the builder).
 
 Not modeled:
 - Unchanging Heart (self Indomitability), Impermanence's Hit Rate, and the two
@@ -174,18 +175,21 @@ def build_memory_incineration_scheduled_nukes(values):
     against the stage target - which in a raid is the only enemy, so both
     always apply on the same charge.
 
-    They are two SEPARATE hits, not one summed hit: the 150% reads "as damage"
-    and the 380.46% reads "as additional damage", which is the text signal for
-    the Full Burst bonus. Summing them silently denied the bonus to the half
-    that earns it, and that half is the larger one.
+    BOTH halves collect the Full Burst bonus. The "as additional damage" phrase
+    is a proxy for a TIMING fact - that phrasing marks damage computed some
+    delay after the cast, which is what lands it inside the Full Burst window
+    (Fienn, 2026-07-26). Here the timing is known outright and needs no proxy:
+    the trigger is a Full Charge, the charge takes 1.8 sec, and it can only
+    happen after her burst - so every one of these hits is computed inside Full
+    Burst regardless of which half's wording you read.
 
     The charge times are derived from the same fixed 1.8-sec cadence the weapon
     segment uses, so the two stay in lockstep by construction.
     """
     hypocrisy = values["hypocrisy"]
     interval, duration = _memory_incineration_window(values["asceticism"])
-    plain_percent = float(hypocrisy["description_value_09"])
-    additional_percent = float(hypocrisy["description_value_10"])
+    percent = (float(hypocrisy["description_value_09"])
+               + float(hypocrisy["description_value_10"]))
 
     def schedule(context, fight_duration):
         ticks = []
@@ -196,8 +200,5 @@ def build_memory_incineration_scheduled_nukes(values):
                 k += 1
         return ticks
 
-    return [
-        {"schedule": schedule, "percent": plain_percent},
-        {"schedule": schedule, "percent": additional_percent,
-         "full_burst_bonus_eligible": True},
-    ]
+    return [{"schedule": schedule, "percent": percent,
+             "full_burst_bonus_eligible": True}]

@@ -5,12 +5,13 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
-## 합쳐진 두 불릿은 Full Burst 보너스를 함께 잃는다 — 나유타의 530.46%
+## Full Burst 보너스의 기준은 문구가 아니라 **연산 시점**이다 — "추가 대미지"는 그 대리 지표였을 뿐
 - Date: 2026-07-26
-- Context: 덱2 잔여 조사 중 나유타의 Memory Incineration 풀차지 넉이 `5.3046` 계수 하나로 잡혀 있는 걸 발견했다. 원문은 **두 불릿**이다 — "Deals **150%** of final ATK **as damage**" + "Affects the enemy if the enemy is the stage target. Deals **380.46%** of final ATK **as additional damage**". 레이드에는 적이 하나뿐이고 그게 스테이지 타겟이라 둘 다 항상 적용되므로, 인코딩은 이를 하나로 합산해 두었다.
-- 문제: 2026-07-12 판정에 따르면 **"as additional damage"가 Full Burst 보너스의 텍스트 신호**다. 합산하면 플래그도 하나뿐이라, 보너스를 받아야 할 **더 큰 쪽(380.46%)이 조용히 자격을 잃는다**. 이 넉은 그녀의 버스트 이후 1.8초 간격으로 터져 전부 Full Burst 창 안에 떨어지므로 자격 검사는 통과한다.
-- Decision: 두 개의 `scheduled_nukes` 스펙으로 **분리**한다. 스케줄 함수는 공유하고(같은 풀차지에 함께 터지므로 구성상 동기), 150%는 플래그 없음, 380.46%는 `full_burst_bonus_eligible=True`.
-- Consequences: **나유타 0.79x → 0.84x**(2.00B → 2.12B), 덱2 0.83x → **0.84x**. 백엔드 **1435 passed / 3 skipped**(기존 단언 2건은 합산 530.46을 핀으로 박고 있어서 재조준). 일반 교훈: **수치가 같다고 합치면 안 되는 것이 있다** — 두 불릿의 계수는 더할 수 있어도 **자격 플래그는 못 더한다.** 합산은 "레이드에선 둘 다 항상 적용된다"는 참인 관찰에서 나왔지만, 참인 이유가 **적용 여부**였을 뿐 **배수**는 아니었다.
+- Context: 나유타 스킬1의 풀차지 넉(530.46%)이 원문상 150%("as damage") + 380.46%("as **additional** damage") 두 불릿인 걸 발견하고, 2026-07-12 문구 규칙대로 뒤쪽만 자격을 주도록 분리했다(나유타 0.79x → 0.84x).
+- Ruling (Fienn, 2026-07-26): **분리할 필요가 없다.** B3 유닛에게 "추가 대미지"/"대미지"를 구분한 이유는 **"추가 대미지"가 스킬 사용 이후 일정 딜레이를 두고 들어가서 FB 구간에 걸리기 때문**이다. 즉 문구는 **시점의 대리 지표**였다. 대미지가 연산되는 타이밍이 FB 구간 안이면 문구와 무관하게 보너스를 받는다.
+- 나유타의 이 넉은 시점이 **대리 지표 없이 직접 알려져 있다**: 트리거가 풀차지이고, 차지에 1.8초가 걸리며, 그것은 그녀의 버스트 이후에만 일어난다. 따라서 다섯 발 전부 FB 구간 안에서 연산된다.
+- Decision: 다시 하나의 넉(530.46%)으로 합치되 **`full_burst_bonus_eligible=True`** 를 준다. 분리는 되돌린다 — 두 반쪽의 자격이 같으므로 나눌 이유가 없다.
+- Consequences: **나유타 0.79x → 0.85x**(2.00B → 2.16B), 덱2 0.83x → **0.85x**. 백엔드 **1435 passed / 3 skipped**. `docs/insights.md`가 이미 같은 방향을 적어두고 있었다("the phrase check is specifically a single-instant-nuke heuristic ... 반복 틱 DoT는 구성상 캐스트 이후라 기본 True") — 이번 판정은 그 예외를 **일반 원칙으로 승격**한다: **넉의 연산 시점을 알 수 있으면 문구를 볼 필요가 없다.** 문구 검사는 시점이 텍스트만으로 모호한 단일 순간 넉에만 남는다.
 
 ## 탄약 소모량 카운터는 총알이 아니라 **라운드**를 센다
 - Date: 2026-07-26

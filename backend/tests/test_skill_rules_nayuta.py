@@ -134,17 +134,15 @@ def test_memory_incineration_segment_is_a_fixed_cadence_charge_window():
 
 
 def test_memory_incineration_full_charge_nukes_fire_once_per_charge_in_window():
-    plain, additional = build_memory_incineration_scheduled_nukes(
+    spec, = build_memory_incineration_scheduled_nukes(
         {"hypocrisy": HYPOCRISY, "asceticism": ASCETICISM})
-    # Two hits, not one sum: the raid's only enemy IS the stage target, so both
-    # always land - but only the 380.46% reads "as additional damage", the text
-    # signal for the Full Burst bonus.
-    assert round(plain["percent"], 2) == 150.0
-    assert not plain.get("full_burst_bonus_eligible", False)
-    assert round(additional["percent"], 2) == 380.46
-    assert additional["full_burst_bonus_eligible"] is True
+    # 150% + 380.46% additional: the raid's only enemy IS the stage target.
+    assert round(spec["percent"], 2) == 530.46
+    # The trigger is a Full Charge that takes 1.8 sec and can only happen after
+    # her burst, so the hit is always computed inside Full Burst - both halves
+    # collect the bonus, whatever their wording (Fienn, 2026-07-26).
+    assert spec["full_burst_bonus_eligible"] is True
 
-    spec = plain
     ctx = make_context()
     ctx.burst_times["nayuta"] = [20.0]
     ticks = [round(t, 2) for t in spec["schedule"](ctx, 180.0)]
@@ -154,11 +152,9 @@ def test_memory_incineration_full_charge_nukes_fire_once_per_charge_in_window():
 
 
 def test_memory_incineration_nukes_stop_at_the_end_of_the_fight():
-    specs = build_memory_incineration_scheduled_nukes(
+    spec, = build_memory_incineration_scheduled_nukes(
         {"hypocrisy": HYPOCRISY, "asceticism": ASCETICISM})
     ctx = make_context()
     ctx.burst_times["nayuta"] = [20.0]
 
-    # Both halves ride the same schedule, so both stop together.
-    for spec in specs:
-        assert [round(t, 2) for t in spec["schedule"](ctx, 25.0)] == [21.8, 23.6]
+    assert [round(t, 2) for t in spec["schedule"](ctx, 25.0)] == [21.8, 23.6]
