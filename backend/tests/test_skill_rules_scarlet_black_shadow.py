@@ -141,5 +141,9 @@ def test_breakthrough_stage_nukes_have_real_percents_and_distributed_typing():
         assert len(pulses) == 1
         assert pulses[0].value == percent
         assert pulses[0].damage_type == damage_type
-        # "as damage" / "as Distributed Damage", never "as additional damage"
-        assert pulses[0].full_burst_bonus_eligible is False
+        # Eligible despite reading "as damage" / "as Distributed Damage": the
+        # phrase is only a proxy for WHEN the damage is computed, and each
+        # stage is computed at its own shot's time (Fienn, 2026-07-26). The
+        # engine still checks that time against the Full Burst window, so
+        # stages landing outside it collect nothing.
+        assert pulses[0].full_burst_bonus_eligible is True

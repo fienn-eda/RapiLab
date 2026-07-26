@@ -134,10 +134,20 @@ def build_breakthrough_per_shot_rules(values):
         "requirements": list(BREAKTHROUGH_BASE_REQUIREMENTS),
         "own_burst_window": (window_duration, override_requirements),
     }
+    # Every stage is computed at its own SHOT's time, not at a cast, so the
+    # Full Burst window test decides per hit - the timing fact the "as
+    # additional damage" phrase is only a proxy for (Fienn, 2026-07-26). Her
+    # burst rewrites the requirement table, so most stages land inside Full
+    # Burst and collect the bonus; the ones outside it still do not.
     stage_rules = [
-        [instant_nuke_pulse_rule("per_shot", stage_percents[0])],
-        [instant_nuke_pulse_rule("per_shot", stage_percents[1], damage_type="distributed")],
-        [instant_nuke_pulse_rule("per_shot", stage_percents[2], damage_type="distributed")],
+        [instant_nuke_pulse_rule("per_shot", stage_percents[0],
+                                 full_burst_bonus_eligible=True)],
+        [instant_nuke_pulse_rule("per_shot", stage_percents[1],
+                                 full_burst_bonus_eligible=True,
+                                 damage_type="distributed")],
+        [instant_nuke_pulse_rule("per_shot", stage_percents[2],
+                                 full_burst_bonus_eligible=True,
+                                 damage_type="distributed")],
     ]
     return [(spec, "sequence", stage_rules)]
 

@@ -1223,34 +1223,46 @@ def test_per_shot_sequence_fires_staged_effects_on_a_repeating_cycle():
 
 
 def test_per_shot_sequence_own_burst_window_swaps_requirements_and_carries_the_count():
-    # gap #10 override (Scarlet's burst: "Changes Full Charge attack count
-    # required for Skill 1 to 1/2/3 for 10 sec"): inside the caster's own
-    # burst window the requirement table is swapped, but the running count and
-    # stage CARRY OVER across the boundary (Fienn 2026-07-18). A stage fires
-    # once count >= the active requirement for that stage; after stage 3 the
-    # count resets. Expected fires are replayed here with those exact
-    # semantics from the sim's own burst time.
+    """Fienn's scenario (2026-07-27), stated in his own words: Scarlet satisfies
+    Skill 1's "6 times" condition just before bursting, and then her very NEXT
+    normal attack satisfies the "9 times" condition, because the burst rewrote
+    the requirement table to 1/2/3 while the running count carried over.
+
+    Expectations are hardcoded rather than replayed from the same algorithm -
+    a test that recomputes what it is checking cannot catch the boundary being
+    wrong, which is exactly the boundary in question.
+    """
+    from app.raid_simulator import _sequence_fire_rules
+
     spec = {"requirements": [3, 6, 9], "own_burst_window": (10.0, [1, 2, 3])}
-    result = _sequence_result(spec, gauge_charge_time=0.1)
-    own_bursts = [
-        e["time"] for e in result["events"] if e["type"] == "burst" and e["slug"] == "attacker"
+    stages = ["stage-1", "stage-2", "stage-3"]
+    shots = [float(t) for t in range(1, 13)]
+    fires = _sequence_fire_rules(spec, stages, shots, own_burst_times=[6.5])
+
+    assert [fires.get(t) for t in shots] == [
+        None, None, "stage-1",      # base table: 3rd shot
+        None, None, "stage-2",      # base table: 6th shot - then she bursts
+        "stage-3",                  # count 7 vs the window's 3 -> fires at once
+        "stage-1", "stage-2", "stage-3",   # and every shot fires from here
+        "stage-1", "stage-2",
     ]
-    assert own_bursts  # the override window is actually exercised
-    windows = [(bt, bt + 10.0) for bt in own_bursts]
-    shots = [k / 12 for k in range(12)]
-    expected = []
-    count, stage = 0, 0
-    for t in shots:
-        count += 1
-        reqs = [1, 2, 3] if any(s <= t < e for s, e in windows) else [3, 6, 9]
-        if count >= reqs[stage]:
-            expected.append((round(t, 4), float(10000 * (stage + 1))))
-            stage += 1
-            if stage == 3:
-                count, stage = 0, 0
-    ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
-    assert len(ps) > 4  # the swapped requirements fire far more often than base
-    assert [(round(e["time"], 4), e["damage"]) for e in ps] == expected
+
+
+def test_per_shot_sequence_carries_progress_back_out_of_the_burst_window():
+    # The complement: progress made under the 1/2/3 table is not lost when the
+    # window closes - stage 2 still needs the BASE requirement of 6 after it.
+    from app.raid_simulator import _sequence_fire_rules
+
+    spec = {"requirements": [3, 6, 9], "own_burst_window": (2.5, [1, 2, 3])}
+    stages = ["stage-1", "stage-2", "stage-3"]
+    shots = [float(t) for t in range(1, 9)]
+    fires = _sequence_fire_rules(spec, stages, shots, own_burst_times=[0.5])
+
+    assert [fires.get(t) for t in shots] == [
+        "stage-1", "stage-2",       # inside the window: counts 1 and 2
+        None, None, None,           # window shut at 3.0; stage 3 now needs 9
+        None, None, None,
+    ]
 
 
 def test_per_shot_squad_buff_reaches_a_burst_nuke_computed_earlier():

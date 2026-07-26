@@ -53,10 +53,9 @@ def test_encore_squad_attack_damage_reaches_the_attacker_burst_through_the_pipel
         fight_duration=30.0,
         mode="auto",
         base_crit_rate=0.0,
-        # The attacker has to hold a CHARGE weapon for Prika's Charge Damage to
-        # mean anything - it multiplies a fully-charged shot and does nothing
-        # for an SMG/MG/AR/SG bearer (Fienn, 2026-07-26). A charge-weapon ally
-        # is who that buff is for, so that is who this pipeline test uses.
+        # An SR attacker, so the deck reads like a real one. Prika's Charge
+        # Damage still does not reach these BURST nukes: Charge Damage is a
+        # normal-attack-only modifier (nikke.gg damage formula).
         weapon_stats={"attacker": {
             "weapon": "SR", "damage_percent": 0.0, "max_ammo": 6,
             "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 100.0,
@@ -64,10 +63,10 @@ def test_encore_squad_attack_damage_reaches_the_attacker_burst_through_the_pipel
     )
 
     attacker_bursts = {round(e["time"], 1): e["damage"] for e in result["damage_log"] if e["source"] == "burst"}
-    # Cycle 1 (t=5): Prika bursts (leftmost B2). Only her Charge Damage (+25%,
-    # permanent since Mint is in the deck) reaches the attacker; Mint has not
-    # bursted so she is not Singing and grants nothing yet.
-    assert attacker_bursts[5.0] == 10000 * 1.25  # 12500.0
+    # Cycle 1 (t=5): Prika bursts (leftmost B2). Nothing reaches the attacker's
+    # burst nuke - Mint has not bursted so she is not Singing, and Prika's
+    # Charge Damage is normal-attack-only.
+    assert attacker_bursts[5.0] == 10000.0
     # Cycle 2 (t=25): Prika on cooldown, so Mint bursts. Via ally_burst_activate,
     # Prika's Encore fires (she is in Performance): Encore Attack Damage +25.01%,
     # Mint's Sing Along Attack Damage +30.02% and Crit Damage +45.05%, and -
@@ -76,7 +75,7 @@ def test_encore_squad_attack_damage_reaches_the_attacker_burst_through_the_pipel
     #
     # Mint's Pierce +32.72% does NOT: Pierce Damage Up credits only a unit that
     # actually has Pierce, and this bare attacker never gains it.
-    #   Charge 1.25 * (1 + AD 0.5503) * (1 + 0.1994*(0.5 + 0.4505))
+    #   (1 + AD 0.5503) * (1 + 0.1994*(0.5 + 0.4505))
     assert round(attacker_bursts[25.0], 4) == round(
-        10000 * 1.25 * (1 + 0.3002 + 0.2501) * (1 + 0.1994 * (0.5 + 0.4505)), 4
-    )  # 23051.5987
+        10000 * (1 + 0.3002 + 0.2501) * (1 + 0.1994 * (0.5 + 0.4505)), 4
+    )  # 18441.279

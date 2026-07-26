@@ -278,13 +278,13 @@ def score_with_diagnostics(ordered_deck, boss):
 
         weapon_stats = inputs["weapon_stats"][slug]
         weapon = weapon_stats["weapon"]
-        # Charge Damage multiplies a fully-charged shot, so a non-charge bearer
-        # collects none of the squad's Charge Damage buffs (Fienn, 2026-07-26).
-        # The surrogate reads the BASE weapon only - it has no weapon-transform
-        # timeline, so it under-credits a unit whose burst turns her into a
-        # charge attacker (Nayuta). That is the safe direction for a filter.
-        if weapon not in CHARGE_WEAPONS:
-            terms["charge_damage_bonus"] = 0.0
+        # Charge Damage is a normal-attack-only modifier (nikke.gg damage
+        # formula's asterisk), so it is dropped from the shared term entirely
+        # and re-added below for the normal-attack stream alone - and only for
+        # a charge bearer. The surrogate reads the BASE weapon only: it has no
+        # weapon-transform timeline, so it under-credits a unit whose burst
+        # turns her into a charge attacker (Nayuta). Safe direction for a filter.
+        terms["charge_damage_bonus"] = 0.0
         normal_type = "projectile_explosion" if weapon == "RL" else "attack"
         normal_terms = _typed(terms, registry, slug, element, normal_type, cycle)
         _apply_core_eligibility(normal_terms, "normal_attack", normal_type, boss)
@@ -293,8 +293,11 @@ def score_with_diagnostics(ordered_deck, boss):
         # bonus fractionally - the formula's term is linear in it.
         normal_terms["full_burst_bonus"] = full_burst_uptime
         if weapon in CHARGE_WEAPONS:
-            normal_terms["charge_damage_bonus"] += (
-                weapon_stats["charge_damage_percent"] / 100 - 1
+            normal_terms["charge_damage_bonus"] = (
+                registry.uptime_weighted_total(
+                    "charge_damage_bonus", {"slug": slug, "element": element}, cycle
+                )
+                + weapon_stats["charge_damage_percent"] / 100 - 1
             )
         total += _shot_count(weapon_stats, boss.fight_duration) * calculate_damage(**normal_terms)
 

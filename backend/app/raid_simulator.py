@@ -554,15 +554,26 @@ def simulate_raid(
             ),
             full_burst_bonus=1.0 if in_full_burst else 0.0,
             element_multiplier=element_bonus_for(slug, bundle["element_advantage_grant"]),
-            # Charge Damage multiplies a fully-charged shot, so a Charge Damage
-            # buff does nothing for an SMG/MG/AR/SG bearer (Fienn, 2026-07-26).
-            # A normal attack answers per shot, because a weapon transform can
-            # flip it mid-fight - Nayuta's burst turns her SMG into a charge
-            # attack for 10 sec. Anything else answers by her base weapon.
+            # Charge Damage multiplies a fully-charged SHOT and nothing else.
+            # It is one of the damage formula's asterisked terms - "Modifiers
+            # with an asterisk (*) are exclusive to Normal Attacks only", and
+            # its glossary entry reads "Damage bonus available to Charge
+            # weapons' normal attacks ... Charge Damage Sources include buffs
+            # from the unit or allies" (nikke.gg/damage-formula, the reference
+            # this module implements; the project's own
+            # references/damage-formula-reference.md says the same).
+            #
+            # So a skill that fires ON a Full Charge - Scarlet's staged nukes,
+            # Velvet's Bullets of Love, Neon's Firepower Explosion - is a
+            # separate damage instance and collects none of it, however
+            # charged the shot that triggered it was.
+            #
+            # Only the normal-attack path passes on_charge_weapon, and it
+            # answers per shot because a weapon transform can flip mid-fight
+            # (Nayuta's burst turns her SMG into a charge attack for 10 sec).
             charge_damage_bonus=(
                 bundle["charge_damage_bonus"] + extra_charge_bonus
-                if (on_charge_weapon if on_charge_weapon is not None
-                    else weapon_stats.get(slug, {}).get("weapon") in CHARGE_WEAPONS)
+                if on_charge_weapon
                 else 0.0
             ),
             attack_damage_up=bundle["attack_damage_up"],

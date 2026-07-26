@@ -85,11 +85,11 @@ def test_combo_here_i_go_excludes_shots_before_prikas_encore_pins_singing():
         fight_duration=30.0,
         mode="auto",
         base_crit_rate=0.0,
-        # The attacker holds a charge weapon: Prika's Charge Damage multiplies a
-        # fully-charged shot and does nothing for an SMG/MG/AR/SG bearer (Fienn,
-        # 2026-07-26), so a charge-weapon ally is what makes the +25% observable.
         weapon_stats={"mint": _rl_weapon(), "attacker": _rl_weapon()},
         per_shot_rules={"mint": build_here_i_go_rules(HERE_I_GO)},
     )
     attacker_bursts = {round(e["time"], 1): e["damage"] for e in result["damage_log"] if e["source"] == "burst"}
-    assert attacker_bursts[5.0] == 12500.0  # Prika charge +25% only; no Mint flat_atk before the pin
+    # Bare: Mint's flat_atk has not landed (her shots precede the Singing pin),
+    # and Prika's Charge Damage never reaches a BURST nuke - Charge Damage is a
+    # normal-attack-only modifier, whatever weapon the caster holds.
+    assert attacker_bursts[5.0] == 10000.0
