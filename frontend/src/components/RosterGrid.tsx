@@ -45,7 +45,7 @@ export function RosterGrid({ drafts, supportedUnits, portraitFor }: RosterGridPr
       {unsupported.length > 0 && (
         <details className="roster__unsupported">
           <summary className="roster__unsupported-summary">
-            Not yet supported by the engine ({unsupported.length})
+            엔진 미지원 ({unsupported.length}기)
           </summary>
           <ul className="roster__unsupported-list">
             {unsupported.map((draft) => (

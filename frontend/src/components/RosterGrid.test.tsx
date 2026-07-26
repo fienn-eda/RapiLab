@@ -43,7 +43,7 @@ describe('RosterGrid', () => {
   it('demotes owned units the engine cannot simulate to a collapsed list', () => {
     const { container } = grid(['crown', '2b', 'alice-wonderland-bunny'])
 
-    expect(screen.getByText('Not yet supported by the engine (2)')).toBeInTheDocument()
+    expect(screen.getByText('엔진 미지원 (2기)')).toBeInTheDocument()
     expect(container.querySelectorAll('.roster-card')).toHaveLength(1)
 
     const details = container.querySelector('details')!
@@ -66,7 +66,7 @@ describe('RosterGrid', () => {
   // vanishing.
   it('keeps every unit reachable while the supported list is still empty', () => {
     grid(['crown', 'liter'], [])
-    expect(screen.getByText('Not yet supported by the engine (2)')).toBeInTheDocument()
+    expect(screen.getByText('엔진 미지원 (2기)')).toBeInTheDocument()
     expect(screen.getByText('Crown')).toBeInTheDocument()
   })
 })

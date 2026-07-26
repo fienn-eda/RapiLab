@@ -56,36 +56,36 @@ describe('UnitPalette', () => {
   // anyone not looking at pixels.
   it('names each unit through its button rather than visible chip text', () => {
     render(<UnitPalette {...base} />)
-    expect(unitButton(/use crown/i)).toBeInTheDocument()
-    expect(unitButton(/use liter/i)).toBeInTheDocument()
+    expect(unitButton(/crown 사용/i)).toBeInTheDocument()
+    expect(unitButton(/liter 사용/i)).toBeInTheDocument()
   })
 
   it('reports pool membership as the pressed state of the portrait toggle', () => {
     render(<UnitPalette {...base} excludedSlugs={['liter']} />)
-    expect(unitButton(/use crown/i)).toHaveAttribute('aria-pressed', 'true')
-    expect(unitButton(/use liter/i)).toHaveAttribute('aria-pressed', 'false')
+    expect(unitButton(/crown 사용/i)).toHaveAttribute('aria-pressed', 'true')
+    expect(unitButton(/liter 사용/i)).toHaveAttribute('aria-pressed', 'false')
   })
 
   it('toggles a unit out of the pool when its portrait is clicked', async () => {
     const user = userEvent.setup()
     const onToggleExclude = vi.fn()
     render(<UnitPalette {...base} onToggleExclude={onToggleExclude} />)
-    await user.click(unitButton(/use crown/i))
+    await user.click(unitButton(/crown 사용/i))
     expect(onToggleExclude).toHaveBeenCalledWith('crown')
   })
 
   it('only lets an included, unseated unit be dragged in draft mode', () => {
     render(<UnitPalette {...base} draggable usedSlugs={['crown']} excludedSlugs={['blanc']} />)
-    expect(unitButton(/use liter/i)).toHaveAttribute('draggable', 'true')
+    expect(unitButton(/liter 사용/i)).toHaveAttribute('draggable', 'true')
     // Already in a deck, so there is nothing left to seat.
-    expect(unitButton(/use crown/i)).toHaveAttribute('draggable', 'false')
+    expect(unitButton(/crown 사용/i)).toHaveAttribute('draggable', 'false')
     // Out of the pool entirely.
-    expect(unitButton(/use blanc/i)).toHaveAttribute('draggable', 'false')
+    expect(unitButton(/blanc 사용/i)).toHaveAttribute('draggable', 'false')
   })
 
   it('drags nothing outside draft mode', () => {
     render(<UnitPalette {...base} />)
-    expect(unitButton(/use liter/i)).toHaveAttribute('draggable', 'false')
+    expect(unitButton(/liter 사용/i)).toHaveAttribute('draggable', 'false')
   })
 
   // Clicking a portrait asks "will you field this one?", which the portrait
@@ -120,7 +120,7 @@ describe('UnitPalette', () => {
 
   it('says so when a unit rolled no overload at all', () => {
     render(<UnitPalette {...base} roster={[owned('crown')]} />)
-    expect(screen.getByText('No overload')).toBeInTheDocument()
+    expect(screen.getByText('오버로드 없음')).toBeInTheDocument()
   })
 
   // Five rows top to bottom - breakthrough, core, S1, S2, B - so the column
