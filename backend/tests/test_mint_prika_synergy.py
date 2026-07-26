@@ -53,6 +53,14 @@ def test_encore_squad_attack_damage_reaches_the_attacker_burst_through_the_pipel
         fight_duration=30.0,
         mode="auto",
         base_crit_rate=0.0,
+        # The attacker has to hold a CHARGE weapon for Prika's Charge Damage to
+        # mean anything - it multiplies a fully-charged shot and does nothing
+        # for an SMG/MG/AR/SG bearer (Fienn, 2026-07-26). A charge-weapon ally
+        # is who that buff is for, so that is who this pipeline test uses.
+        weapon_stats={"attacker": {
+            "weapon": "SR", "damage_percent": 0.0, "max_ammo": 6,
+            "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 100.0,
+        }},
     )
 
     attacker_bursts = {round(e["time"], 1): e["damage"] for e in result["damage_log"] if e["source"] == "burst"}

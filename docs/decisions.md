@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 차지 대미지는 그 순간 차지 무기를 든 유닛에게만 붙는다 — 무기가 아니라 **창**의 문제다
+- Date: 2026-07-26
+- Context: 유닛별 대조에서 신데렐라 MG(1.31x)를 파다가 그녀의 MG 평타에 `charge_damage_bonus = 1.0768`이 곱해지는 걸 발견했다. 1.008은 **벨벳의 스쿼드 Charge Damage +100.8%** 다. 덱2의 비차지 유닛 전원이 이 버프로 평타가 거의 **2배**가 되고 있었다(리틀머메이드 SMG 1.008 · 나유타 SMG 1.0768 · 프리바티 AR 1.2583). `velvet.py`는 이미 알고 있었다 — "the engine applies charge_damage_bonus squad-wide; **charge-weapon allies are the real beneficiaries**".
+- Ruling (Fienn, 2026-07-26): **차지 대미지는 차지 무기에만 적용된다.** 다만 **나유타는 버스트에 무기 변경이 있어 그동안 평타가 차지 형식이 된다** — 그래서 이것은 무기 종류로 한 번 판정할 문제가 아니라 **시점**의 문제다.
+- Decision: 평타는 **자기 샷 레코드의 무기**로 판정한다(`ShotRecord.weapon`이 세그먼트 프로필의 무기를 이미 들고 있다). 그 외 인스턴스는 기본 무기로 판정한다. 이 한 줄이 나유타의 10초 SR 변형 창을 자동으로 맞춘다 — 창 계산을 따로 만들 필요가 없었다.
+- Alternatives considered: **세그먼트에서 창을 계산** — 착수했다가 기각. 세그먼트는 `end` 대신 `until_shots`를 쓰는 것도 있어 종료 시각이 `attack_rate` 내부에서만 정해지고, 그걸 밖에서 재현하면 로직이 이중화된다. 샷 레코드는 이미 정답을 들고 있다.
+- Consequences: **프리바티 2.01x → 0.97x**(비율 최대 이상치가 실기록에 정확히 안착). 그런데 이 수정은 **가려져 있던 결함을 드러냈다** — **리틀 머메이드 0.99x → 0.55x**, **나유타 0.96x → 0.79x**(그녀는 변형 창이 절반을 되찾아 준다), 신데렐라 MG 1.31x → 0.84x. 즉 이 세 유닛은 원래 2배 가까이 **과소** 모델링돼 있었고 버그가 그걸 상쇄하고 있었다. 덱2 1.17x → **0.77x**, 합계 1.06x → **0.96x**. `closed_form`도 같이 게이팅했다(기본 무기만 보므로 나유타를 과소평가하지만, 필터로서는 안전한 방향). 백엔드 1427 → **1430 passed / 3 skipped**. 교훈: **상쇄되는 두 오류는 총합에서 안 보인다** — 하나를 고치면 다른 하나가 드러나고, 그 순간 수치가 나빠 보이는 것은 진전이다.
+
 ## 저지 부위와 파괴 가능 파츠는 다른 스탯으로 가른다
 - Date: 2026-07-26
 - Context: Fienn이 helm 스킬2 "포문 개방"의 한글 원문을 읽다가 지적했다 — 1번 불릿의 "아군 전체에게 **저지 부위 공격 대미지** 3.08% 증가"는 영문으로 `Damage to Interruption Parts`이고, 이것은 **기믹 수행 시 타격해야 하는 구역**이지 파괴 가능 파츠가 아니다. 엔진은 여덟 유닛을 전부 `damage_to_parts_up` 하나에 써넣고 있었다.

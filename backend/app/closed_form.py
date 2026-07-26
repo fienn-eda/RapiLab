@@ -273,6 +273,13 @@ def score_with_diagnostics(ordered_deck, boss):
 
         weapon_stats = inputs["weapon_stats"][slug]
         weapon = weapon_stats["weapon"]
+        # Charge Damage multiplies a fully-charged shot, so a non-charge bearer
+        # collects none of the squad's Charge Damage buffs (Fienn, 2026-07-26).
+        # The surrogate reads the BASE weapon only - it has no weapon-transform
+        # timeline, so it under-credits a unit whose burst turns her into a
+        # charge attacker (Nayuta). That is the safe direction for a filter.
+        if weapon not in CHARGE_WEAPONS:
+            terms["charge_damage_bonus"] = 0.0
         normal_type = "projectile_explosion" if weapon == "RL" else "attack"
         normal_terms = _typed(terms, registry, slug, element, normal_type, cycle)
         _apply_core_eligibility(normal_terms, "normal_attack", normal_type, boss)

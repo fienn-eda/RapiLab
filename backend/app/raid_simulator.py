@@ -98,7 +98,7 @@ side of a boss-profile flag (e.g. Ark Ranger Black's floor DoT vs. ceiling
 DoT modeling the same battery-transformation state two different ways);
 absent field = always fires, matching every existing spec's behavior.
 """
-from app.attack_rate import generate_segmented_shots
+from app.attack_rate import CHARGE_WEAPONS, generate_segmented_shots
 from app.burst_cycle import simulate_burst_cycle
 from app.damage_formula import calculate_damage
 from app.effects import Effect, EffectRegistry, _matches_scope
@@ -505,7 +505,7 @@ def simulate_raid(
 
     def _damage_instance(
         slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0,
-        full_burst_bonus_eligible=False, hits_core=False,
+        full_burst_bonus_eligible=False, hits_core=False, on_charge_weapon=None,
     ):
         bundle = _stat_bundle(slug, time)
         # True Damage ignores enemy DEF (nikke.gg glossary).
@@ -535,7 +535,17 @@ def simulate_raid(
             ),
             full_burst_bonus=1.0 if in_full_burst else 0.0,
             element_multiplier=element_bonus_for(slug, bundle["element_advantage_grant"]),
-            charge_damage_bonus=bundle["charge_damage_bonus"] + extra_charge_bonus,
+            # Charge Damage multiplies a fully-charged shot, so a Charge Damage
+            # buff does nothing for an SMG/MG/AR/SG bearer (Fienn, 2026-07-26).
+            # A normal attack answers per shot, because a weapon transform can
+            # flip it mid-fight - Nayuta's burst turns her SMG into a charge
+            # attack for 10 sec. Anything else answers by her base weapon.
+            charge_damage_bonus=(
+                bundle["charge_damage_bonus"] + extra_charge_bonus
+                if (on_charge_weapon if on_charge_weapon is not None
+                    else weapon_stats.get(slug, {}).get("weapon") in CHARGE_WEAPONS)
+                else 0.0
+            ),
             attack_damage_up=bundle["attack_damage_up"],
             damage_to_parts_up=bundle["damage_to_parts_up"],
             pierce_damage_up=bundle["pierce_damage_up"],
@@ -559,13 +569,16 @@ def simulate_raid(
     def record(
         slug, percent, time, source, damage_type="attack",
         extra_charge_bonus=0.0, resource_gate=None, extra_flat_atk=0.0,
-        full_burst_bonus_eligible=False,
+        full_burst_bonus_eligible=False, on_charge_weapon=None,
     ):
         damage_events.append({
             "slug": slug, "percent": percent, "time": time, "source": source,
             "damage_type": damage_type, "extra_charge_bonus": extra_charge_bonus,
             "resource_gate": resource_gate, "extra_flat_atk": extra_flat_atk,
             "full_burst_bonus_eligible": full_burst_bonus_eligible,
+            # None = decide from the unit's base weapon; a normal attack pins
+            # the weapon its own shot record actually fired.
+            "on_charge_weapon": on_charge_weapon,
         })
 
     def _resolve_percent(ev):
@@ -911,7 +924,8 @@ def simulate_raid(
                         )
             damage_type = rec.damage_type or normal_attack_type(slug, rec.weapon, shot_time)
             record(slug, rec.damage_percent, shot_time, "normal_attack",
-                   damage_type=damage_type, extra_charge_bonus=rec.extra_charge_bonus)
+                   damage_type=damage_type, extra_charge_bonus=rec.extra_charge_bonus,
+                   on_charge_weapon=rec.weapon in CHARGE_WEAPONS)
         shot_times_by_slug[slug] = shot_times
 
     # "For N round(s)" (bullet-count) buffs expire when the affected ally
@@ -1213,6 +1227,7 @@ def simulate_raid(
                 extra_flat_atk=ev["extra_flat_atk"],
                 full_burst_bonus_eligible=ev["full_burst_bonus_eligible"],
                 hits_core=core_hittable and core_eligible(ev["source"], ev["damage_type"]),
+                on_charge_weapon=ev["on_charge_weapon"],
             ),
             "source": ev["source"],
             "damage_type": ev["damage_type"],
