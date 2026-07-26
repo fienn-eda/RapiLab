@@ -17,11 +17,11 @@ describe('parseShareUrl', () => {
 
   it('uid가 없으면 거부한다', () => {
     expect(() => parseShareUrl('https://www.blablalink.com/shiftyspad'))
-      .toThrow(/share URL/i)
+      .toThrow(/공유 URL/i)
   })
 
   it('디코드 결과가 예상 형태가 아니면 거부한다', () => {
     expect(() => parseShareUrl(`https://www.blablalink.com/shiftyspad?uid=${btoa('junk')}`))
-      .toThrow(/share URL/i)
+      .toThrow(/공유 URL/i)
   })
 })
