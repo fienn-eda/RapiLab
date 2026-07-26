@@ -322,6 +322,14 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # Golden pin. Re-baselined 2026-07-26: "Damage to Parts ▲ X%" no longer
     # rides the general Damage-Up bucket (it raises damage dealt to PARTS, and
     # this engine models one boss with none - Fienn, 2026-07-26). Helm's Fire
+    # Re-baselined 2026-07-27: Anis: Star's Shooting Stars became
+    # full_burst_bonus_eligible - her burst opens Full Burst 0.2 sec before the
+    # first tick lands, so every tick is computed inside the window. Absolutes
+    # rose 876.1M -> 902.0M and 846.9M -> 872.8M. The RATIO fell 1.0345 ->
+    # 1.0335: the stars are a fixed 40 ticks per cycle, so a reload buff buys
+    # no more of them, and growing them dilutes the share of damage that a
+    # reload saving can move.
+    #
     # Away grants it squad-wide, so both absolutes fell: 888.6M -> 876.1M and
     # 859.1M -> 846.9M. The RATIO barely moved (1.0343 -> 1.0345) because the
     # term was a flat multiplier on both sides of the comparison.
@@ -339,7 +347,7 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # three units in this deck and restored Crown's Last Kingdom via
     # Effect.refresh_group (680M -> 1124M, ratio 1.0224 -> 1.0369, because charge
     # speed began shortening the charge instead of dividing it).
-    assert round(dmg_with / dmg_without, 4) == round(876051420.9457647 / 846868743.5399501, 4)
+    assert round(dmg_with / dmg_without, 4) == round(902000776.9030598 / 872764477.8943629, 4)
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

@@ -15,10 +15,13 @@ Modeled (DPS-relevant):
   see `build_shooting_stars_scheduled_nukes`); and the window's fixed 0.7-sec
   charge time (see `build_star_anis_burst_rules`).
 
-Shooting Stars is "Damage: X% of final ATK", not "additional damage", so it is
-NOT `full_burst_bonus_eligible` - the conservative reading. Its 0.25-sec attack
-interval is written into the skill TEXT rather than a numbered value slot (it
-does not scale with skill level), so it is a module constant, not a skill value.
+Shooting Stars IS `full_burst_bonus_eligible`. It carries no "as additional
+damage" phrase at all - it is a summon that attacks - and the phrase was only
+ever a proxy for WHEN the damage is computed (Fienn, 2026-07-26). Her burst
+opens Full Burst 0.2 sec later while the first tick lands 0.25 sec after it,
+so every tick is computed inside the window (Fienn, 2026-07-27). Its 0.25-sec
+attack interval is written into the skill TEXT rather than a numbered value
+slot (it does not scale with skill level), so it is a module constant.
 
 The window's "Charge time is fixed at 0.7 sec" is modeled as an equivalent
 self Charge Speed buff, derived by inverting `attack_rate.charge_time_with_speed`
@@ -178,7 +181,15 @@ def build_shooting_stars_scheduled_nukes(values: dict):
     of final ATK every 0.25 sec across the burst's `description_value_02`-sec
     window. Anchored to her own burst times (a `scheduled_nukes` schedule, the
     Milk/Raven precedent) rather than the Full Burst window - the stars are
-    summoned BY the burst, and as a Burst 1 she fires before Full Burst opens."""
+    summoned BY the burst, and as a Burst 1 she fires before Full Burst opens.
+
+    Every tick is `full_burst_bonus_eligible`: the bonus is decided by WHEN a
+    damage instance is computed, not by any text phrase (Fienn, 2026-07-26),
+    and a summon's ticks are computed strictly after the cast by construction.
+    Her burst opens Full Burst 0.2 sec later (B1 -> B2 -> B3) while the first
+    tick lands 0.25 sec after it, so every tick falls inside the window - and
+    the engine still tests each tick's own time, so this stays exact rather
+    than an approximation (Fienn, 2026-07-27)."""
     percent = float(values["description_value_01"])
     duration = float(values["description_value_02"])
     ticks = int(round(duration / SHOOTING_STARS_INTERVAL))
@@ -193,7 +204,8 @@ def build_shooting_stars_scheduled_nukes(values: dict):
             )
         return times
 
-    return [{"schedule": schedule, "percent": percent}]
+    return [{"schedule": schedule, "percent": percent,
+             "full_burst_bonus_eligible": True}]
 
 
 def build_star_anis_burst_rules(values: dict) -> list[SkillRule]:
