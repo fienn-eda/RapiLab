@@ -5,6 +5,16 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 덱 카드의 내역은 여덟 소스를 셋으로 접되, **합이 총합과 같아야 한다**
+- Date: 2026-07-26
+- Context: 결과 카드가 `Burst`·`Normal` 두 줄만 보여줬는데 시뮬레이터는 **여덟 소스**를 기록한다(`normal_attack`·`burst`·`per_shot_nuke`·`periodic`·`scheduled`·`instant_nuke`·`resource_scaled_nuke`·`dynamic_hit_count_nuke`). 두 줄이 설명하는 비율은 덱마다 22~72%로 흩어졌고, 버스트 넉이 없는 덱은 **"Burst: 0"** 이라 고장난 화면처럼 읽혔다. 캘리브레이션 후 실측(실제 로스터·철갑 보스·DEF 31,784)으로 다시 재면 **37% / 38% / 50% / 86% / 39%** — 즉 대부분의 덱에서 **화면에 없는 항목이 최대 딜 소스**였다(덱1: 스킬 7.65B vs 평타 4.43B vs 버스트 0.10B).
+- Decision: 세 줄 — `Burst` · `Normal` · **`Skill`**(나머지 여섯 소스의 합). `deck_search._summarize`가 소스별로 합산한 뒤 burst/normal을 꺼내고 남은 것을 `skill_damage`로 내보내므로, **소스가 늘어나도 자동으로 Skill에 들어간다**. 세 값의 합이 `total_damage`와 같다는 것이 계약이고 백엔드·API 양쪽에 테스트로 고정돼 있다.
+- Alternatives considered:
+  - **여덟 소스를 그대로 나열** — 기각. `resource_scaled_nuke`와 `dynamic_hit_count_nuke`의 차이는 엔진 내부 구현 구분이지 플레이어의 어휘가 아니다. 카드는 다섯 덱이 나란히 서는 자리라 줄 수도 비싸다.
+  - **유닛별 기여도로 쪼개기** — 더 유용하지만 다른 기능이다(누가 딜하는가 ≠ 무엇이 딜하는가). 이 To-Do가 지목한 것은 **총합이 설명되지 않는다**는 것이므로 범위를 넓히지 않았다.
+  - **`total − burst − normal`로 뺄셈** — 기각. 값은 같지만 `damage_log`에 새 소스가 생겼을 때 그것이 Skill에 들어간 건지 어딘가 새는 건지 구분할 수 없다. 남은 소스를 실제로 합산하면 테스트가 그 차이를 본다.
+- Consequences: 세 덱 모두 **100.0%** 설명. `Burst: 0`은 여전히 뜨지만 이제 그 옆에 Skill이 있어 "버스트 넉이 없는 덱"으로 읽힌다 — 고장이 아니다. 필드는 `DeckRecommendation`에 있으므로 `RaidDeck`(상속)과 세 결과 뷰(단일/레이드/드래프트)가 함께 얻는다. 프론트 픽스처 20여 개가 새 필수 필드를 받았고 전부 `total = burst + normal`이었으므로 `skill_damage: 0`이 참값이다. 백엔드 1413 → **1415 passed / 3 skipped**, 프론트 **289 passed**.
+
 ## "AllStep" 버스트는 그 유닛이 실제로 쓰이는 단계로 접는다 — Red Hood = B3
 - Date: 2026-07-26
 - Context: ShiftyPad는 전 단계 버스트 유닛의 `use_burst_skill`을 tier가 아니라 `"AllStep"`으로 준다. `normalize_shiftypad`는 `int("AllStep")`에서 죽었고, 그래서 그런 유닛은 ShiftyPad를 소스로 온보딩할 수 없었다. 라이브 디렉토리 196기 전수 확인 결과 해당 유닛은 **Red Hood 하나뿐**(Step1 54 / Step2 64 / Step3 77 / AllStep 1). 엔진은 유닛을 **정확히 한 tier**에 앉히므로 "전 단계"를 그대로 담을 자리가 없다.

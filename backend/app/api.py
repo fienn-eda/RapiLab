@@ -57,6 +57,9 @@ class DeckRecommendation(BaseModel):
     total_damage: float
     burst_damage: float
     normal_attack_damage: float
+    # Everything that was neither a burst nor a normal attack - DoTs, per-shot
+    # riders, self-cooldowned procs. The three add up to total_damage.
+    skill_damage: float
 
 
 class RecommendResponse(BaseModel):
@@ -186,6 +189,7 @@ def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
             DeckRecommendation(
                 deck=r["deck"], total_damage=r["total_damage"],
                 burst_damage=r["burst_damage"], normal_attack_damage=r["normal_attack_damage"],
+                skill_damage=r["skill_damage"],
             )
             for r in results
         ],
@@ -199,6 +203,7 @@ def _to_recs(decks, pinned_by_deck=None):
         RaidDeck(
             deck=d["deck"], total_damage=d["total_damage"],
             burst_damage=d["burst_damage"], normal_attack_damage=d["normal_attack_damage"],
+            skill_damage=d["skill_damage"],
             pinned_slugs=pinned,
         )
         for d, pinned in zip(decks, pinned_by_deck)

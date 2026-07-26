@@ -1,5 +1,7 @@
 from dataclasses import dataclass
 
+import pytest
+
 from app.deck_search import BossProfile, feasible_orderings, find_best_decks
 from tests.test_roster import anis_star_spec, crown_spec, helm_spec
 
@@ -232,6 +234,25 @@ def test_find_best_decks_returns_deck_slug_order_and_breakdown():
     assert len(best["deck"]) == 5
     assert best["deck"][0] == "anis-star"  # burst 1 always leftmost (canonical)
     assert "burst_damage" in best and "normal_attack_damage" in best
+
+
+def test_breakdown_accounts_for_every_point_of_the_total():
+    # A breakdown that only names two of the simulator's eight damage sources
+    # leaves most of a deck's damage unexplained, which reads as a broken
+    # number on screen rather than as an incomplete one.
+    best = find_best_decks(real_five_roster(), short_boss(), top_n=1)[0]
+    parts = best["burst_damage"] + best["normal_attack_damage"] + best["skill_damage"]
+    assert parts == pytest.approx(best["total_damage"])
+
+
+def test_skill_damage_collects_the_sources_that_are_neither_burst_nor_normal():
+    best = find_best_decks(real_five_roster(), short_boss(), top_n=1)[0]
+    other = sum(
+        e["damage"] for e in best["result"]["damage_log"]
+        if e["source"] not in ("burst", "normal_attack")
+    )
+    assert best["skill_damage"] == pytest.approx(other)
+    assert best["skill_damage"] > 0  # this roster's DoTs/periodics are real damage
 
 
 def test_boss_element_advantage_raises_a_decks_score():

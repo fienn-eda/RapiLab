@@ -76,6 +76,7 @@ export function DeckCard({
       <div className="deck-results__breakdown">
         <span>Burst: {formatDamage(deck.burst_damage)}</span>
         <span>Normal: {formatDamage(deck.normal_attack_damage)}</span>
+        <span>Skill: {formatDamage(deck.skill_damage)}</span>
       </div>
       {(addedSlugs.length > 0 || removedSlugs.length > 0) && (
         <div className="deck-results__diff">

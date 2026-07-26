@@ -1,3 +1,4 @@
+import pytest
 from fastapi.testclient import TestClient
 
 from app.api import app
@@ -35,8 +36,12 @@ def test_feasible_roster_returns_ranked_decks_and_exclusions():
     totals = [d["total_damage"] for d in body["decks"]]
     assert totals == sorted(totals, reverse=True)
     first = body["decks"][0]
-    assert set(first) == {"deck", "total_damage", "burst_damage", "normal_attack_damage"}
+    assert set(first) == {
+        "deck", "total_damage", "burst_damage", "normal_attack_damage", "skill_damage",
+    }
     assert len(first["deck"]) == 5
+    parts = first["burst_damage"] + first["normal_attack_damage"] + first["skill_damage"]
+    assert parts == pytest.approx(first["total_damage"])
 
 
 def test_infeasible_after_exclusion_is_422_naming_exclusions():
@@ -72,7 +77,10 @@ def test_recommend_raid_partitions_roster_and_reports_leftovers():
     assert body["excluded_slugs"] == ["totally-unknown"]
     assert len(body["decks"]) == 1                      # 5 loadable units -> 1 deck
     deck = body["decks"][0]
-    assert set(deck) == {"deck", "total_damage", "burst_damage", "normal_attack_damage", "pinned_slugs"}
+    assert set(deck) == {
+        "deck", "total_damage", "burst_damage", "normal_attack_damage", "skill_damage",
+        "pinned_slugs",
+    }
     assert sorted(deck["deck"]) == sorted(FEASIBLE)
     assert deck["pinned_slugs"] == []
     assert body["leftover_slugs"] == []

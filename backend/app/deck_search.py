@@ -17,7 +17,7 @@ re-entry) are placed by their nominal burst_tier for feasibility; their
 branch effects are still simulated correctly, but the scheduler slots them
 nominally.
 """
-from collections import Counter
+from collections import Counter, defaultdict
 from dataclasses import dataclass
 from itertools import combinations, permutations
 
@@ -248,13 +248,22 @@ def _score_batch(decks, boss, pool):
 
 
 def _summarize(ordered_deck, result):
-    burst = sum(e["damage"] for e in result["damage_log"] if e["source"] == "burst")
-    normal = sum(e["damage"] for e in result["damage_log"] if e["source"] == "normal_attack")
+    # The simulator logs eight damage sources; a player thinks in three. Burst
+    # skills and normal attacks keep their own line, and everything else - the
+    # DoTs, the per-shot riders, the self-cooldowned procs - is "skill damage".
+    # The three must add up to the total: a breakdown that leaves most of a
+    # deck's damage unnamed reads as a broken number, not an incomplete one.
+    by_source = defaultdict(float)
+    for e in result["damage_log"]:
+        by_source[e["source"]] += e["damage"]
+    burst = by_source.pop("burst", 0.0)
+    normal = by_source.pop("normal_attack", 0.0)
     return {
         "deck": [spec.slug for spec in ordered_deck],
         "total_damage": result["total_damage"],
         "burst_damage": burst,
         "normal_attack_damage": normal,
+        "skill_damage": sum(by_source.values()),
         "result": result,
     }
 

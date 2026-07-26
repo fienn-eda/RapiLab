@@ -149,6 +149,7 @@ describe('RecommendPanel', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
+          skill_damage: 0,
         },
       ],
       excluded_slugs: [],
@@ -276,8 +277,8 @@ describe('RecommendPanel raid mode', () => {
     const user = userEvent.setup()
     vi.mocked(recommendRaidDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, pinned_slugs: [] },
-        { deck: ['f', 'g', 'h', 'i', 'j'], total_damage: 80, burst_damage: 50, normal_attack_damage: 30, pinned_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, pinned_slugs: [] },
+        { deck: ['f', 'g', 'h', 'i', 'j'], total_damage: 80, burst_damage: 50, normal_attack_damage: 30, skill_damage: 0, pinned_slugs: [] },
       ],
       combined_total_damage: 180,
       excluded_slugs: [],
@@ -492,7 +493,7 @@ describe('RecommendPanel mode switch', () => {
     const user = userEvent.setup()
     vi.mocked(recommendRaidDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, pinned_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, pinned_slugs: [] },
       ],
       combined_total_damage: 100,
       excluded_slugs: [],
@@ -536,6 +537,7 @@ describe('RecommendPanel persistence', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
+          skill_damage: 0,
           pinned_slugs: [],
         },
       ],
@@ -575,6 +577,7 @@ describe('RecommendPanel persistence', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
+          skill_damage: 0,
           pinned_slugs: [],
         },
       ],
@@ -633,6 +636,7 @@ describe('RecommendPanel persistence', () => {
           total_damage: 999,
           burst_damage: 600,
           normal_attack_damage: 399,
+          skill_damage: 0,
           pinned_slugs: [],
         },
       ],
@@ -673,6 +677,7 @@ describe('RecommendPanel persistence', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
+          skill_damage: 0,
           pinned_slugs: [],
         },
       ],

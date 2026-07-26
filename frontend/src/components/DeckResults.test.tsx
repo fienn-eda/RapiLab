@@ -15,13 +15,15 @@ describe('DeckResults', () => {
         deck: ['red-hood', 'liter', 'blanc', 'noir', 'anne'],
         total_damage: 5_000_000,
         burst_damage: 3_000_000,
-        normal_attack_damage: 2_000_000,
+        normal_attack_damage: 1_200_000,
+        skill_damage: 800_000,
       },
       {
         deck: ['mast', 'privaty', 'drake', 'grave', 'crown'],
         total_damage: 4_000_000,
         burst_damage: 2_500_000,
         normal_attack_damage: 1_500_000,
+        skill_damage: 0,
       },
     ]
     render(<DeckResults decks={decks} />)
@@ -30,7 +32,10 @@ describe('DeckResults', () => {
     expect(screen.getByText('#2')).toBeInTheDocument()
     expect(screen.getByText('5,000,000 total dmg')).toBeInTheDocument()
     expect(screen.getByText('Burst: 3,000,000')).toBeInTheDocument()
-    expect(screen.getByText('Normal: 2,000,000')).toBeInTheDocument()
+    expect(screen.getByText('Normal: 1,200,000')).toBeInTheDocument()
+    // Without this line the three-quarters of a deck's damage that is neither
+    // a burst nor a normal attack simply vanished from the card.
+    expect(screen.getByText('Skill: 800,000')).toBeInTheDocument()
 
     // Names, not slugs: a deck is only a recommendation once you can tell
     // who is in it.

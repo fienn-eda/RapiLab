@@ -39,6 +39,9 @@ export interface DeckRecommendation {
   total_damage: number
   burst_damage: number
   normal_attack_damage: number
+  // Everything that was neither a burst nor a normal attack — DoTs, per-shot
+  // riders, self-cooldowned procs. The three add up to total_damage.
+  skill_damage: number
 }
 
 export interface RecommendResponse {
