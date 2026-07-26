@@ -67,3 +67,12 @@ def test_own_burst_self_attack_damage_and_reload_speed_for_10_sec():
 # (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
 SECURE_ROUTE = QUENCY_VALUES["secure_route"]
 THE_GREAT_THIEF = QUENCY_VALUES["the_great_thief"]
+
+
+def test_the_great_thief_burst_is_typed_distributed():
+    # "Deals 1736.31% of final ATK as Distributed Damage" - without the typing
+    # her own Secure Route Stage-1 buff (+49.58% Distributed Damage), and every
+    # ally's, would miss the one instance they exist to multiply.
+    from app.skill_rules.registry import get_burst_damage_type
+
+    assert get_burst_damage_type("quency-escape-queen") == "distributed"

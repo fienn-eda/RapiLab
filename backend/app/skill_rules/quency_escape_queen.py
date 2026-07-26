@@ -17,8 +17,9 @@ Modeled (DPS-relevant):
   modeled.
 - The Great Thief (skills[2], her burst): self Attack Damage +57.08% and
   Reload Speed +25.87% for 10 sec, plus a 1736.31%-of-final-ATK burst nuke
-  dealing Distributed Damage (gated by `distributed_damage_up`, which her own
-  Secure Route Stage-1 buff feeds).
+  dealing Distributed Damage - typed "distributed" in the registry's
+  _BURST_DAMAGE_TYPES, which is what lets `distributed_damage_up` reach it
+  (her own Secure Route Stage-1 buff feeds it, as do Mast's and Anchor's).
 """
 from app.skill_rules._helpers import buff_rule
 

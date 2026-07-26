@@ -16,13 +16,23 @@ how to encode it, and current engine status.
   is not defensive.
 - **Encode:** emit it as a `squad` effect (the buffer buffs the whole squad's
   distributed damage; only distributed-damage units actually have any to boost).
-- **Engine status:** `distributed_damage_up` exists in `damage_formula.py` but
-  `raid_simulator.py` does not consume it yet, and proper support needs per-unit
-  gating so only distributed-damage units benefit. So it is currently **inert** —
-  encode it faithfully (so it starts counting once wired) but know it moves no
-  damage until (a) the stat is wired and (b) a distributed-damage dealer is
-  encoded with a "has distributed damage" flag. Seen on: Anchor: Innocent Maid
-  (Starfish Omurice, Twice tier).
+- **Engine status (2026-07-27): fully wired.** `distributed_damage_up` is
+  consumed in the Damage-Taken group and is **type-gated** — it multiplies only
+  damage instances typed `distributed`, so the "only distributed-damage units
+  benefit" requirement falls out of the typing rather than needing a per-unit
+  flag. Applied unconditionally (no Damage-Taken-debuff prerequisite,
+  Fienn-verified 2026-07-11).
+- **Both halves must be encoded or the buff is silently dead:**
+  - **Dealers** (nuke must carry `damage_type="distributed"`): Scarlet: Black
+    Shadow (6th/9th stages) · Phantom (+signature, burst) · Quency: Escape
+    Queen (burst) · Bready (Recommended Taste full-charge hit) · Milk: Blooming
+    Bunny (Embarrassment entry + Overconfident ticks).
+  - **Buffers** (`distributed_damage_up`): Anchor: Innocent Maid · Mast:
+    Romantic Maid (per Drunken stack) · Phantom (self) · Quency (self).
+- Both failure modes have actually happened here: Mast's buff was filed as
+  "survivability, not modeled" and left out, and Quency's burst was left untyped
+  so her own buff could not reach it (both fixed 2026-07-27). The "Easy mistake"
+  above is not hypothetical - check BOTH sides when touching a distributed unit.
 
 ## Debuff-stack reduction enabling stack retention
 - **What:** some supporters reduce an ally-side debuff stack count ("Stack count

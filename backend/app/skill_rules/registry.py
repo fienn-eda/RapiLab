@@ -751,6 +751,10 @@ _AMMO_ROUNDS_PER_SHOT = {
 _BURST_DAMAGE_TYPES = {
     "phantom": "distributed",  # Rampages of Thieves deals its nuke "as Distributed Damage"
     "phantom-signature": "distributed",
+    # The Great Thief: "Deals 1736.31% of final ATK as Distributed Damage" -
+    # her whole burst, and the one her own Secure Route Stage-1 buff
+    # (+49.58% Distributed Damage) exists to multiply.
+    "quency-escape-queen": "distributed",
     "rapi-red-hood": "projectile_explosion",  # Power of Inheritance = Projectile Explosion skill
     "ein": "true",  # Feather-All Range deals its nuke "as true damage"
 }
