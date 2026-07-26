@@ -299,6 +299,31 @@ def test_little_mermaid_bubble_barrage_fires_per_500_squad_bullets():
     assert times == [merged[499]] * 10
 
 
+def test_little_mermaid_bubble_barrage_counts_pouch_rounds_not_bullets():
+    from app.skill_rules.little_mermaid import build_bubble_barrage_scheduled_nukes
+
+    # An ally spending from an ammo pouch fires ONE bullet and books 300
+    # rounds (Velvet's Bullets of Love). Two such shots cross 500 - a counter
+    # that saw only bullets would need 500 of them.
+    spec = build_bubble_barrage_scheduled_nukes(LM)[0]
+    ctx = deck_ctx("little-mermaid")
+    ctx.shot_times = {"pouch-ally": [1.0, 2.0, 3.0]}
+    ctx.shot_ammo_rounds = {"pouch-ally": [300.0, 300.0, 300.0]}
+    assert spec["schedule"](ctx, 180.0) == [2.0] * 10
+
+
+def test_little_mermaid_bubble_barrage_crosses_several_thresholds_on_one_shot():
+    from app.skill_rules.little_mermaid import build_bubble_barrage_scheduled_nukes
+
+    # 1200 rounds booked by a single shot is two full 500-round barrages, both
+    # landing at that shot's own time; the 200 left over carries forward.
+    spec = build_bubble_barrage_scheduled_nukes(LM)[0]
+    ctx = deck_ctx("little-mermaid")
+    ctx.shot_times = {"pouch-ally": [4.0, 9.0]}
+    ctx.shot_ammo_rounds = {"pouch-ally": [1200.0, 300.0]}
+    assert spec["schedule"](ctx, 180.0) == [4.0] * 20 + [9.0] * 10
+
+
 def test_little_mermaid_bubble_barrage_drops_hits_past_fight_end():
     from app.skill_rules.little_mermaid import build_bubble_barrage_scheduled_nukes
 

@@ -728,6 +728,25 @@ _BURST_FULL_BURST_BONUS_ELIGIBLE = {
     "rapi-red-hood",   # Stage 3: "Deals 2808% of final ATK as additional damage."
 }
 
+# How many rounds a unit's ONE shot accounts for toward the squad's
+# "total ammo expended by allies" counters, as (in Full Burst, outside it).
+# Absent = 1 round per shot, the ordinary magazine case.
+#
+# A skill that "expends N rounds from the ammo pouch" fires one real bullet;
+# the N is ammo ACCOUNTING that exists to feed consumption-counting synergies
+# (Fienn, 2026-07-19), which is exactly what these counters are. Little
+# Mermaid's Bubble Barrage (every 500) and Bubble Order's gauge fill (every
+# 400) are the consumers.
+_AMMO_ROUNDS_PER_SHOT = {
+    # Bullets of Love spends 300 per Full-Charge shot during Full Burst;
+    # Sticky Fingers spends 100 per Full-Charge shot outside it. An SR full
+    # charge is one shot, so each shot is exactly one proc.
+    "velvet": (300.0, 100.0),
+    # Snipe mode's full charge "expends 40 rounds" off the same accounting.
+    # MG mode is an ordinary magazine and stays at 1.
+    "cinderella-crystal-wave-snipe": (40.0, 40.0),
+}
+
 _BURST_DAMAGE_TYPES = {
     "phantom": "distributed",  # Rampages of Thieves deals its nuke "as Distributed Damage"
     "phantom-signature": "distributed",
@@ -963,6 +982,13 @@ def get_burst_full_burst_bonus_eligible(slug):
     `_BURST_FULL_BURST_BONUS_ELIGIBLE`. False for the vast majority, whose
     burst damage is dealt at cast time."""
     return slug in _BURST_FULL_BURST_BONUS_ELIGIBLE
+
+
+def get_ammo_rounds_per_shot(slug):
+    """(rounds in Full Burst, rounds outside) that one of this Nikke's shots
+    accounts for toward squad ammo-expended counters - see
+    `_AMMO_ROUNDS_PER_SHOT`. (1.0, 1.0) for everyone with a plain magazine."""
+    return _AMMO_ROUNDS_PER_SHOT.get(slug, (1.0, 1.0))
 
 
 def get_periodic_nuke(slug, skill_values):

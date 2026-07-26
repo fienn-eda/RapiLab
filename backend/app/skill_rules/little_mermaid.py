@@ -92,21 +92,31 @@ def build_bubble_barrage_scheduled_nukes(values):
     reaches 500, Bubble Barrage deals 85% of final ATK x 10 sequential hits
     ("as damage" - no Full Burst Bonus opt-in). The squad-wide bullet counter
     is the merged shot timeline of every squad member (`context.shot_times`,
-    the same post-pass channel Raven reads) - one ammo per shot under this
-    engine's magazine model, caster included ("allies" includes self). Each
-    barrage records its hits at the moment the crossing bullet fires."""
+    the same post-pass channel Raven reads), caster included ("allies"
+    includes self). A shot books what `context.shot_ammo_rounds` says it
+    accounts for - one round for an ordinary magazine, hundreds for an ally
+    spending from an ammo pouch. Each barrage records its hits at the moment
+    the crossing bullet fires."""
     wave = values["bubble_wave"]
-    threshold = int(float(wave["description_value_07"]))
+    threshold = float(wave["description_value_07"])
     percent = float(wave["description_value_08"])
     hit_count = int(float(wave["description_value_09"]))
 
     def schedule(context, fight_duration):
-        merged = sorted(t for times in context.shot_times.values() for t in times)
-        hits = []
-        for index in range(threshold - 1, len(merged), threshold):
-            crossing = merged[index]
-            if crossing < fight_duration:
-                hits.extend([crossing] * hit_count)
+        merged = sorted(
+            (t, rounds)
+            for slug, times in context.shot_times.items()
+            for t, rounds in zip(times, context.shot_ammo_rounds.get(slug, [1.0] * len(times)))
+        )
+        hits, expended, next_barrage = [], 0.0, threshold
+        for time, rounds in merged:
+            expended += rounds
+            # One shot can cross several thresholds at once: a 300-round pouch
+            # spend books more than one 500-round barrage's worth over time.
+            while expended >= next_barrage:
+                if time < fight_duration:
+                    hits.extend([time] * hit_count)
+                next_barrage += threshold
         return hits
 
     return [{"schedule": schedule, "percent": percent}]

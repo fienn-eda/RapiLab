@@ -18,6 +18,7 @@ from app.cube_effects import assumed_cube_effects
 from app.overload_effects import overload_options_to_effects
 from app.skill_rules.registry import (
     build_nikke_rules,
+    get_ammo_rounds_per_shot,
     get_burst_anchored_buffs,
     get_burst_cooldown_reduction,
     get_burst_damage_type,
@@ -78,6 +79,7 @@ def assemble_simulation_inputs(ordered_deck):
     resource_specs = {}
     burst_damage_types = {}
     burst_full_burst_bonus_eligible = set()
+    ammo_rounds_per_shot = {}
     burst_hit_counts = {}
     resource_scaled_nukes = {}
     resource_gated_buffs = {}
@@ -102,6 +104,9 @@ def assemble_simulation_inputs(ordered_deck):
         deck.append(member)
         base_stats[spec.slug] = spec.base_stats
         weapon_stats[spec.slug] = spec.weapon_stats
+        rounds = get_ammo_rounds_per_shot(spec.slug)
+        if rounds != (1.0, 1.0):
+            ammo_rounds_per_shot[spec.slug] = rounds
 
         # inject caster base stats so skills that scale off them (e.g. Crown's
         # "X% of caster's ATK") resolve without the caller duplicating them
@@ -186,6 +191,7 @@ def assemble_simulation_inputs(ordered_deck):
         "resource_specs": resource_specs,
         "burst_damage_types": burst_damage_types,
         "burst_full_burst_bonus_eligible": burst_full_burst_bonus_eligible,
+        "ammo_rounds_per_shot": ammo_rounds_per_shot,
         "burst_hit_counts": burst_hit_counts,
         "resource_scaled_nukes": resource_scaled_nukes,
         "resource_gated_buffs": resource_gated_buffs,

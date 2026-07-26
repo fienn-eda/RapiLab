@@ -428,6 +428,7 @@ def simulate_raid(
     scheduled_nukes=None,
     weapon_mode_schedules=None,
     burst_anchored_buffs=None,
+    ammo_rounds_per_shot=None,
 ):
     weapon_stats = weapon_stats or {}
     weapon_mode_schedules = weapon_mode_schedules or {}
@@ -443,6 +444,7 @@ def simulate_raid(
     dynamic_hit_count_nukes = dynamic_hit_count_nukes or {}
     resource_fill_triggered_buffs = resource_fill_triggered_buffs or {}
     scheduled_nukes = scheduled_nukes or {}
+    ammo_rounds_per_shot = ammo_rounds_per_shot or {}
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"], m.get("weapon")) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -774,7 +776,12 @@ def simulate_raid(
         return lambda t: min(1.0, base_crit_rate + registry.total_for("crit_rate", target, t))
 
     shot_times_by_slug = {}
+    ammo_rounds_by_slug = {}
     last_bullet_times_by_slug = {}
+
+    def in_full_burst(time):
+        return any(start <= time < end for start, end in full_burst_windows)
+
     for slug, weapon in weapon_stats.items():
         target = target_for(slug)
         max_ammo_percent_at = lambda t, target=target: registry.total_for("max_ammo_percent", target, t)
@@ -809,6 +816,13 @@ def simulate_raid(
             charge_time_reduction_sec_at=charge_time_reduction_sec_at,
         )
         shot_times = [r.time for r in shot_records]
+        # What each shot ACCOUNTS for toward squad ammo-expended counters. A
+        # pouch skill fires one bullet and books hundreds of rounds, and which
+        # pouch skill is doing the spending depends on the Full Burst window.
+        in_fb_rounds, outside_fb_rounds = ammo_rounds_per_shot.get(slug, (1.0, 1.0))
+        ammo_rounds_by_slug[slug] = [
+            in_fb_rounds if in_full_burst(t) else outside_fb_rounds for t in shot_times
+        ]
         last_bullets = {r.time for r in shot_records if r.is_last_bullet}
         first_bullets = {r.time for r in shot_records if r.is_first_bullet}
         # Per-shot triggers count this unit's shots and fire at a threshold
@@ -1187,6 +1201,7 @@ def simulate_raid(
     # settled by now - so the unit module builds the time list and the engine
     # only emits it, keeping summon-lifetime bookkeeping out of the simulator.
     context.shot_times = shot_times_by_slug
+    context.shot_ammo_rounds = ammo_rounds_by_slug
     for slug, specs in scheduled_nukes.items():
         for spec in specs:
             damage_type = spec.get("damage_type", "attack")

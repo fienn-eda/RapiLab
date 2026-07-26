@@ -68,6 +68,12 @@ class SquadContext:
         # Wave, a sustained DoT started by each Full Charge). Filled in by
         # raid_simulator's weapon pass; empty for contexts without weapon stats.
         self.shot_times: dict[str, list[float]] = {}
+        # slug -> how many rounds each of those shots ACCOUNTS for toward a
+        # squad "total ammo expended by allies" counter (Little Mermaid's
+        # Bubble Barrage). Parallel to shot_times, one entry per shot. A pouch
+        # skill fires one bullet but spends hundreds of rounds, so the two
+        # lists are not interchangeable.
+        self.shot_ammo_rounds: dict[str, list[float]] = {}
         # flag -> the earliest time it was set (a "continuous, cannot be removed"
         # status is pinned from its first application). Callers that only care
         # whether a flag is set omit the time (defaults to 0.0).

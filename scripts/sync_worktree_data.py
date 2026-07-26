@@ -39,6 +39,12 @@ from pathlib import Path
 # assembly for every recent unit.
 SYNCED_DIRS = ("data/dotgg", "data/lootandwaifus", "data/shiftypad")
 
+# The synced roster (personal investment data). Every measurement that compares
+# against Fienn's real recorded runs goes through scripts/roster_fixture.py,
+# which silently falls back to None when this file is absent - so a worktree
+# without it doesn't fail loudly, it just can't measure.
+SYNCED_FILES = ("tools/collect-blablalink/roster-drafts.json",)
+
 
 def _git(*args, cwd=None):
     result = subprocess.run(
@@ -88,6 +94,14 @@ def plan_copies(worktree_root, main_root):
             dest = worktree_root / rel / source.name
             if not dest.exists():
                 copies.append((source, dest))
+    for rel in SYNCED_FILES:
+        source = main_root / rel
+        if not source.is_file():
+            missing_sources.append(rel)
+            continue
+        dest = worktree_root / rel
+        if not dest.exists():
+            copies.append((source, dest))
     return copies, missing_sources
 
 
