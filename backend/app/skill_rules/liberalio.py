@@ -6,8 +6,11 @@ modeled via per-shot rules (see build_liberalio_per_shot_rules).
 
 Modeled (DPS-relevant):
 - Calm Depths (skills[0]): on Full Burst enter, self ATK +160% for 3s; on every
-  Full Charge on the core, self Attack Damage +20.83% for 60s (refreshing);
-  the first 5 Full Charges each deal 40.5% of final ATK as additional damage.
+  Full Charge on the core, self Attack Damage +20.83% for 60s (refreshing, NOT
+  stacking - the text says no "stacks up to", Fienn 2026-07-26); every Full
+  Charge deals 40.5% of final ATK as additional damage, five times.
+- Calm Depths' Charge Speed on "the 1 Burst 3 ally with the lowest final ATK"
+  (see build_calm_depths_charge_rules).
 - Strange Currents (skills[1]): the first Full Charge on the boss grants Raging
   Current - self Attack Damage +231% continuously (permanent; only removed by
   Gentle Current, which requires hitting a non-boss Rapture - see deferred).
@@ -18,14 +21,6 @@ Not modeled / deferred:
 - Gentle Current (Strange Currents' non-boss-target branch): fixes charge time
   and removes Raging Current - assumed never triggered, since solo-raid fire stays
   on the boss. Its Charge-Time effect is inert anyway (attack rate not skill-driven).
-- Calm Depths' Charge Speed buff on "the 1 Burst 3 ally with the lowest final
-  ATK". Charge Speed is no longer the blocker (Phase S made it a damage stat -
-  the note here used to say it was inert); what is missing is a LOWEST-ATK
-  ranking, the mirror of `SquadContext.top_atk_slugs`. Low value even once
-  built: it deliberately targets the weakest Burst-3 ally, i.e. not the carry.
-  Its value is also stated as "12.74% of the skill user's Charge Speed", which
-  is ambiguous enough to need Fienn before encoding.
-
 Strange Currents' charge-speed IMMUNITY is modeled (see
 `build_strange_currents_immunity_rules`) - it was skipped while charge speed
 moved nothing, but now that it does, omitting the immunity would let any deck
@@ -88,9 +83,13 @@ def build_liberalio_per_shot_rules(values):
         # On-core Attack Damage: every Full Charge, refreshing its 60s window.
         (1, "every", [refreshing_buff_rule("per_shot", [("attack_damage_up", on_core_attack_damage, "self", on_core_duration)])]),
     ]
-    # The first N Full Charges each deal additional damage (one "after n" per hit).
-    for n in range(1, additional_times + 1):
-        rules.append((n, "after", [instant_nuke_pulse_rule("per_shot", additional)]))
+    # "Activates N times" with no per-battle qualifier: N hits on EVERY Full
+    # Charge. Every other collected unit whose effect is battery-limited says
+    # so in words - Neon: Vision Eye "Activates 5 time(s) per battle", Nayuta
+    # "1 time(s) during battle", Rosanna "1 time(s) per battle" - and this
+    # bullet carries none of them.
+    for _ in range(additional_times):
+        rules.append((1, "every", [instant_nuke_pulse_rule("per_shot", additional)]))
     return rules
 
 

@@ -157,7 +157,25 @@ def test_liberalio_per_shot_structure():
     assert len(ps) == 7
     assert ps[0][:2] == (1, "after")   # Raging Current
     assert ps[1][:2] == (1, "every")   # on-core attack damage
-    assert [x[:2] for x in ps[2:]] == [(n, "after") for n in range(1, 6)]  # 5 additional-damage hits
+    # "Activates 5 times" = five hits on EVERY Full Charge, not the first five
+    # Full Charges - see test below for why the text says so.
+    assert [x[:2] for x in ps[2:]] == [(1, "every")] * 5
+
+
+def test_liberalios_additional_damage_fires_on_every_full_charge_not_just_five():
+    """Her bullet reads "Deals 40.5% of final ATK as additional damage.
+    Activates 5 times." with no per-battle qualifier.
+
+    Every other collected unit whose effect really is battery-limited spells
+    that out - Neon: Vision Eye "Activates 5 time(s) per battle", Nayuta
+    "1 time(s) during battle", Rosanna "1 time(s) per battle". Liberalio's
+    carries no such words, so the five are hits per activation. Read the other
+    way she fires it five times in a three-minute raid, which measured as 0.4%
+    of her damage and left her 46% below Fienn's recorded 3.86B.
+    """
+    ps = build_liberalio_per_shot_rules(LIBERALIO)
+    additional = ps[2:]
+    assert all(threshold == 1 and mode == "every" for threshold, mode, _ in additional)
 
 
 def test_liberalio_raging_current_is_permanent_attack_damage():

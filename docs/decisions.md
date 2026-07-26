@@ -5,6 +5,16 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## "Activates N times"에 "per battle"이 없으면 전투당 N회가 아니라 **발동당 N타**다
+- Date: 2026-07-26
+- Context: 실기록 5덱 중 **유일하게 과소평가**된 덱1(0.87x)을 추적하다 나왔다. Fienn이 유닛별 실기록을 주면서 범인이 즉시 좁혀졌다 — 홍련:흑영은 7.30B로 실기록 6.5B 대비 **과대(+12%)**인데 **Liberalio가 2.08B로 실기록 3.86B 대비 −46%**였다. 그녀 한 명의 부족분 1.78B가 덱 부족분 1.63B를 그대로 설명한다.
+- 배제한 것(전부 실측): 앵커의 분산 대미지 버프는 살아 있다(모듈 주석만 "엔진 미연결"이라 낡았음, 0으로 만들면 덱 −9.62%) · 버스트 로테이션은 B3 둘 다 쿨 40초·사이클 12.58초라 8/7 교대가 **구조적으로 강제** · 차지속도 면역은 스킬 원문 그대로(`■ Activates at the start of battle... immunity to Increase/Decrease Charge Speed`)라 117발이 맞음 · 데미지 포뮬러 입력 전부 정상(차지댐 1.7152 = 무기 250% + 오버로드 21.52%, 원소 1.1, 코어 1.0, 우월코드 1.1891) · Raging Current 231%도 살아 있음(제거 시 −56%).
+- Decision: Calm Depths 3번 불릿 "Deals 40.5% of final ATK as additional damage. **Activates 5 times.**"를 **풀차지마다 5타**로 해석한다(기존: 전투 통틀어 첫 5발). 근거는 수집 데이터 전수 대조다 — 같은 표현을 쓰는 다른 유닛은 **전부 한정어를 명시**한다: Neon: Vision Eye `Activates 5 time(s) **per battle**`, Nayuta `1 time(s) **during battle**`, Rosanna `1 time(s) **per battle**`. Liberalio의 불릿에만 그 말이 없다.
+- Alternatives considered:
+  - **온코어 Attack Damage +20.83%/60초를 누적으로** — 수치는 맞출 수 있었다(무제한 누적 5.415B, ~18스택 3.755B로 실기록 3.86B 사이에 실기록이 놓임). **Fienn이 기각**: 원문에 `stacks up to`가 없으면 중첩이 아니다(2026-07-26). 수치가 맞는다는 것이 모델이 옳다는 증거가 아니라는 사례로 남긴다.
+  - **풀차지마다 1타** — 2.289B(0.59x)로 부족하고, "5 times"를 설명하지 못한다.
+- Consequences: Liberalio **2.076B → 3.177B**(0.54x → 0.82x), 덱1 **10.82B → 11.92B**(0.87x → **0.96x**). **다섯 덱 중 과소평가가 사라졌다** — 편차 0.87~1.18x → **0.96~1.18x**로 전부 같은 방향(과대)이 됐고, 실기록이 **여러 번 시도한 최고 기록**(Fienn 확인)이라는 점을 감안하면 방향이 맞다. 잔차: Liberalio는 여전히 실기록 대비 −18%, 홍련은 +12%. 백엔드 1415 → **1416 passed / 3 skipped**. 같은 배치에서 낡은 주석 2건 정리(앵커의 "엔진 미연결" · Liberalio의 최저ATK 차지속도 "미모델" — 후자는 실제로 구현돼 홍련에게 가고 있었다).
+
 ## 데미지 내역은 완결시키되, 덱 카드는 총합만 그린다
 - Date: 2026-07-26
 - Context: 결과 카드가 `Burst`·`Normal` 두 줄을 보여줬는데 시뮬레이터는 **여덟 소스**를 기록한다(`normal_attack`·`burst`·`per_shot_nuke`·`periodic`·`scheduled`·`instant_nuke`·`resource_scaled_nuke`·`dynamic_hit_count_nuke`). 두 줄이 설명하는 비율은 덱마다 흩어졌고, 버스트 넉이 없는 덱은 **"Burst: 0"** 이라 고장난 화면처럼 읽혔다. 캘리브레이션 후 실측(실제 로스터·철갑 보스·DEF 31,784)으로 재면 **37% / 38% / 50% / 86% / 39%** — 즉 대부분의 덱에서 **화면에 없는 항목이 최대 딜 소스**였다(덱1: 스킬 7.65B vs 평타 4.43B vs 버스트 0.10B).

@@ -15,9 +15,10 @@ Modeled (DPS-relevant):
   own burst (the storage/heal parts are survivability, not modeled).
 
 The Distributed Damage buff uses `distributed_damage_up`, which raid_simulator
-does not consume yet (and would need per-unit gating so only Distributed-Damage
-units benefit) - so it is currently inert, but encoded faithfully so it starts
-counting once a Distributed-Damage dealer is encoded and the stat is wired.
+has consumed since the damage-type work (gap #4, 2026-07-10): `_TYPE_BUCKETS`
+reads it for Distributed instances only, so it lifts Scarlet: Black Shadow's
+848% tier and nothing else. Measured live on Fienn's recorded deck 1 - zeroing
+it costs that deck 9.62%.
 
 Anchor also heals (Starfish + Seaside Stroll); healing is tracked separately
 (has-heal flag), not as a damage effect.
@@ -55,7 +56,7 @@ def build_anchor_rules(values):
     return [
         escalating_buff_rule("full_burst_enter", [
             [],  # Once: Potency of HP - survivability, not modeled
-            # Twice: Distributed Damage ▲ (currently inert; see module docstring)
+            # Twice: Distributed Damage ▲ (see module docstring)
             [("distributed_damage_up", starfish_distributed, "squad", starfish_distributed_duration)],
             [],  # Three times: debuff stack ▼1 - enables Mast's stacks (handled in Mast)
         ]),
