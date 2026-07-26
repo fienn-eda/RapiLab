@@ -31,7 +31,7 @@ export function RaidResults({
   if (decks.length === 0) {
     return (
       <>
-        <p className="empty__text">No raid decks allocated yet.</p>
+        <p className="empty__text">아직 배분된 레이드 덱이 없어요.</p>
         <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
       </>
     )
@@ -40,17 +40,17 @@ export function RaidResults({
   return (
     <>
       <p className="raid-results__note">
-        Field all {decks.length} of these decks together — each Nikke is allocated to exactly
-        one deck. This is a partition, not a ranked list of alternatives.
+        이 {decks.length}개 덱을 모두 함께 편성하세요 — 각 니케는 정확히 하나의 덱에만
+        배정돼요. 이것은 순위별 대안이 아니라 하나의 분할이에요.
       </p>
       <p className="raid-results__combined">
-        Combined total: <strong>{formatDamage(combinedTotalDamage)} dmg</strong>
+        총합: <strong>{formatDamage(combinedTotalDamage)} 딜</strong>
       </p>
       <ol className="deck-results">
         {decks.map((deck, index) => (
           <DeckCard
             key={deck.deck.join('-')}
-            label={`Deck ${index + 1}`}
+            label={`덱 ${index + 1}`}
             deck={deck}
             {...lookups}
           />
@@ -58,7 +58,7 @@ export function RaidResults({
       </ol>
       {leftoverSlugs.length > 0 && (
         <p className="raid-results__leftover">
-          Bench (not allocated to a deck): {leftoverSlugs.map(nameFor).join(', ')}
+          벤치 (덱에 배정되지 않음): {leftoverSlugs.map(nameFor).join(', ')}
         </p>
       )}
       <ExcludedSlugsNote excludedSlugs={excludedSlugs} />

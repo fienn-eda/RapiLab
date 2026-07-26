@@ -6,7 +6,7 @@ import type { DeckRecommendation } from '../types/recommend'
 describe('DeckResults', () => {
   it('shows an empty message when there are no decks', () => {
     render(<DeckResults decks={[]} />)
-    expect(screen.getByText('No decks recommended yet.')).toBeInTheDocument()
+    expect(screen.getByText('아직 추천된 덱이 없어요.')).toBeInTheDocument()
   })
 
   it('renders each deck ranked, with its units in order and a damage breakdown', () => {
@@ -28,9 +28,9 @@ describe('DeckResults', () => {
 
     expect(screen.getByText('#1')).toBeInTheDocument()
     expect(screen.getByText('#2')).toBeInTheDocument()
-    expect(screen.getByText('5,000,000 total dmg')).toBeInTheDocument()
-    expect(screen.getByText('Burst: 3,000,000')).toBeInTheDocument()
-    expect(screen.getByText('Normal: 2,000,000')).toBeInTheDocument()
+    expect(screen.getByText('5,000,000 총딜')).toBeInTheDocument()
+    expect(screen.getByText('버스트: 3,000,000')).toBeInTheDocument()
+    expect(screen.getByText('평타: 2,000,000')).toBeInTheDocument()
 
     // Names, not slugs: a deck is only a recommendation once you can tell
     // who is in it.
@@ -47,12 +47,12 @@ describe('DeckResults', () => {
   it('lists excluded slugs as not yet supported when there are any', () => {
     render(<DeckResults decks={[]} excludedSlugs={['some-slug', 'other-slug']} />)
     expect(
-      screen.getByText('Not yet supported (excluded from search): Some Slug, Other Slug'),
+      screen.getByText('아직 미지원 (탐색에서 제외됨): Some Slug, Other Slug'),
     ).toBeInTheDocument()
   })
 
   it('renders no excluded line when nothing was excluded', () => {
     render(<DeckResults decks={[]} excludedSlugs={[]} />)
-    expect(screen.queryByText(/Not yet supported/)).not.toBeInTheDocument()
+    expect(screen.queryByText(/아직 미지원/)).not.toBeInTheDocument()
   })
 })
