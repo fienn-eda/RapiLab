@@ -101,12 +101,20 @@ def calculate_damage(
         other_elemental_bonus if has_element_advantage else 0.0
     )
     charge_damage = 1 + charge_damage_bonus
+    # `damage_to_parts_up` is deliberately absent. It raises damage dealt to
+    # PARTS, and this engine models one boss target with no parts, so on body
+    # damage it contributes nothing. Riding the general bucket meant treating
+    # every hit as a parts hit - a ceiling Fienn's recorded run disproves:
+    # Snow White: Heavy Arms holds +62.64% of it refreshed every shot and read
+    # 1.44x of her recorded number, and even removing it outright leaves her at
+    # 1.12x, in line with the rest of the roster (Fienn, 2026-07-26). The
+    # parameter stays so the encodings that faithfully record the buff keep
+    # working the day parts become real targets.
     damage_up = 1 + (
         attack_damage_up
         + sustained_damage_up
         + true_damage_up
         + pierce_damage_up
-        + damage_to_parts_up
         + shield_damage_up
         + projectile_explosion_damage_up
         + projectile_attachment_damage_up

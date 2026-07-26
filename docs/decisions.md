@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## "Damage to Parts"는 몸통 딜에 안 붙는다 — 관례가 천장 가정이었다
+- Date: 2026-07-26
+- Context: 유닛별 대조에서 **스노우화이트: 헤비암즈가 1.44x**(실기록 1.68B 대비 2.42B)로 절대 초과가 가장 컸다. 그녀는 Shades of White의 "Damage to Parts ▲62.64%/5초"를 **매 샷 갱신**으로 들고 있다. 엔진은 이 스탯을 `damage_up` 버킷에 넣어 **모든 데미지 인스턴스**에 더하고 있었다 — `noir.py`가 "Like pierce, damage_to_parts_up is applied as a general Damage-Up term (not gated to actual parts hits) - the engine's existing convention"이라고 명시해 둔, 의도된 관례였다.
+- 그런데 이 관례는 **모든 타격이 파츠를 맞혔다고 치는 천장**이고, 실기록이 그것을 직접 반증한다: 항을 **완전히 제거해도** 그녀는 1.88B로 **실기록 1.68B보다 여전히 높다**. 즉 참값은 "몸통에 0" 이하다. (`decisions.md`의 2026-07-17 항목이 "Damage to Parts has no consumer in the engine, so wiring it would be inert"라 적어둔 것도 이미 낡은 주장이었다 — 그 사이에 배선됐다.)
+- Decision (Fienn, 2026-07-26): **몸통 딜에는 붙지 않는다.** `damage_formula`의 `damage_up` 합에서 `damage_to_parts_up`을 뺀다. **파라미터와 인코딩은 남긴다** — 파츠가 실제 타겟이 되는 날 바로 살아나야 하고, 버프를 충실히 기록해 둔 8유닛의 인코딩을 지울 이유가 없다.
+- Alternatives considered: **일부 비율만 적용** — 정확하지만 비율을 정할 근거가 없어 새 캘리브레이션 노브가 된다(코어 히트율 노브를 기각한 것과 같은 이유). **`part_destructible`로 브래킷**(Raven의 Vital Attack 선례) — 이 보스는 파츠 파괴 가능인데도 실기록이 더 낮으므로 도움이 안 된다.
+- Consequences: 스노우화이트 2.42B → **1.88B(1.44x → 1.12x)**, 덱4 **1.14x → 1.02x**, 덱3 1.10x → 1.09x, 합계 1.08x → **1.06x**. 다른 덱은 안 움직인다. 영향 유닛 8기(helm·noir·rosanna-chic-ocean·anis-sparkling-summer·cinderella-crystal-wave·rapi-red-hood·snow-white-heavy-arms). 기존 유닛 테스트는 전부 **레지스트리 내용**만 확인해서 그대로 그린이고, 움직인 것은 `test_roster.py`의 골든 핀 하나(helm이 스쿼드에 이 버프를 줘서 절대값 888.6M → 876.1M / 859.1M → 846.9M, 비율은 1.0343 → 1.0345로 거의 불변 — 양변에 곱해지던 항이라). 백엔드 1423 → **1424 passed / 3 skipped**.
+
 ## 적 디버프가 중첩되면 덱 전원이 부풀어 오른다 — Privaty의 LD Assault
 - Date: 2026-07-26
 - Context: Fienn이 덱2~5의 **유닛별 실기록**과 운용 세부(신데렐라:크리스탈 웨이브 = **MG 모드**, 덱별 실제 버스트 사용자, 파츠 파괴 보너스가 덱 총합에 별도 가산됨)를 줬다. 덱1에서 배운 대로 유닛별로 펼치니 덱2가 특이했다 — **다섯 명 전원이 1.10x 이상**(신데렐라 1.51 · 나유타 1.10 · 리틀머메이드 1.13 · 프리바티 2.38 · 벨벳 1.15). 한 명의 오류가 아니라 **덱 전체를 드는 무언가**의 서명이다.

@@ -319,7 +319,14 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     )["total_damage"]
 
     assert dmg_with > dmg_without
-    # Golden pin. Re-baselined 2026-07-24: "helm" now means the Nikke WITHOUT
+    # Golden pin. Re-baselined 2026-07-26: "Damage to Parts ▲ X%" no longer
+    # rides the general Damage-Up bucket (it raises damage dealt to PARTS, and
+    # this engine models one boss with none - Fienn, 2026-07-26). Helm's Fire
+    # Away grants it squad-wide, so both absolutes fell: 888.6M -> 876.1M and
+    # 859.1M -> 846.9M. The RATIO barely moved (1.0343 -> 1.0345) because the
+    # term was a flat multiplier on both sides of the comparison.
+    #
+    # Re-baselined 2026-07-24 before that: "helm" now means the Nikke WITHOUT
     # her Favorite Item (the build is chosen from the user's roster, and the
     # Favorite Item lives at "helm-signature"), which drops her 178.98%
     # full-charge nuke and shrinks her burst 8236.8% -> 1237.5%. Absolutes moved
@@ -332,7 +339,7 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # three units in this deck and restored Crown's Last Kingdom via
     # Effect.refresh_group (680M -> 1124M, ratio 1.0224 -> 1.0369, because charge
     # speed began shortening the charge instead of dividing it).
-    assert round(dmg_with / dmg_without, 4) == round(888629616.020819 / 859120013.7690431, 4)
+    assert round(dmg_with / dmg_without, 4) == round(876051420.9457647 / 846868743.5399501, 4)
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

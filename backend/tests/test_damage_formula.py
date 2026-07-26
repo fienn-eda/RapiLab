@@ -92,6 +92,22 @@ def test_damage_up_sources_stack_additively():
     assert round(damage, 5) == 1300
 
 
+def test_damage_to_parts_does_not_boost_damage_dealt_to_the_body():
+    """"Damage to Parts ▲ X%" raises damage dealt to PARTS, and this engine
+    has no parts - it models one boss target.
+
+    It used to ride the general Damage-Up bucket, i.e. every hit was treated as
+    a parts hit. Fienn's recorded run disproves that ceiling directly: Snow
+    White: Heavy Arms carries +62.64% of it refreshed on every shot and read
+    1.44x against her recorded 1.68B, while removing the term entirely still
+    leaves her at 1.12x - so the true contribution is at or below zero-on-body.
+    Ruling: it never applies to body damage (Fienn, 2026-07-26).
+    """
+    assert calculate_damage(atk=1000, enemy_def=0, damage_to_parts_up=0.5) == (
+        calculate_damage(atk=1000, enemy_def=0)
+    )
+
+
 def test_damage_taken_debuff_multiplies_final_damage():
     damage = calculate_damage(atk=1000, enemy_def=0, damage_taken_up=0.3)
     assert round(damage, 5) == 1300
