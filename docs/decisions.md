@@ -5,6 +5,18 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## "버스트 N단계 진입 시"는 좌석이 아니라 단계다 — 신데렐라 결함 3건
+- Date: 2026-07-27
+- Context: 잔여 편차 1위였던 신데렐라(0.61x) 검증. 원문과 인코딩을 **불릿 단위로** 대조해 결함 3건이 나왔다. 셋 다 이미 프로젝트가 세워 둔 원칙을 그 유닛에만 적용하지 않은 것이지, 새 원칙이 필요한 사안이 아니었다.
+- 결함 ① **Flawless Glass의 단계-3 ATK 버프가 `own_burst_activate`**였다. 원문은 "Activates when entering Burst Stage 3" — `squad_engine.burst_stage_entered`의 독스트링이 **정확히 이 표현을 지목해** "단계에 대한 것이지 시전자에 대한 것이 아니며, `own_burst_activate`를 쓰면 그 사이클들을 조용히 잃는다"고 경고하고 있었다. 실측: B3 2인 편성에서 그녀는 11사이클 중 **6번만** 버스트한다.
+- 결함 ② **퍼샷 넉이 Full Burst 보너스를 못 받았다**. 원문이 "as additional damage"인데도다. 2026-07-26의 FB 감사는 **버스트 넉 경로만** 훑었고 신데렐라를 "그녀의 additional damage 불릿은 Beautiful 미러"라며 유닛 단위로 기각했는데, Flawless Glass에 **두 번째 그런 불릿**(평범한 퍼샷 넉)이 있다. 그 감사문 자신이 남긴 교훈이 "유닛 수로 세면 틀리고 불릿 단위로 읽어야 맞는다"였다.
+- 결함 ③ **Beautiful의 "Max HP ▲1.6%/스택, 12중첩"이 아예 부여되지 않았다**. 그래서 Flawless Glass의 라이브 Max HP 읽기가 기본값만 봤다.
+- Decision(③의 방법): `beautiful` ResourceSpec의 `buffs`가 **아니라** battle_start 램프로 건다. 시뮬레이터는 자원 버프를 **샷 루프 이후** 해소하는데 `max_hp_scaled_atk_rule`은 **그 안에서** 버스트 시각에 `flat_max_hp`를 읽으므로, 자원 버프로 넣으면 **정확히 0으로 측정된다**(2026-07-27 실측 1.0000x). 데코이가 전투 시작부터 안 꺼지므로 충전 스케줄이 완전히 결정적이라, 스택별 영구 Effect를 각자의 `applied_at`으로 미리 깔면 근사가 아니라 정확하다.
+- Alternatives considered: `ResourceBuff(stat="flat_max_hp")` — 기각(위 실측). `cinderella.py` 독스트링은 "flat_max_hp 버프로 인코딩하면 이제 자기 ATK를 먹인다"고 적고 있었는데 **자원 경로에서는 거짓**이었다.
+- Consequences: 실제 로스터 실측(Water · DEF 31,784 · 180초) 신데렐라 **B3 단독 +9.8% · B3 공유 +22.1%**. 백엔드 1447 → **1452 passed / 3 skipped**. 기존 테스트 **2개가 결함을 고정하고 있었다**(`..._trigger_on_own_burst_activate` · `spec.buffs == []`을 "inert"로 읽던 주석) — 행동 테스트로 교체했고 구버전에서 빨간 것을 확인했다.
+- 남는 것: 세 수정을 합쳐도 0.61x가 1.0x에 닿지 않는다. **덱4 편성과 그녀의 유닛별 실기록이 저장소에 없어 비율 자체를 재현할 수 없다** — 그래서 이번에 `scripts/measure_deck_breakdown.py`(덱을 이름으로 지정, 유닛별·소스별 분해)를 남겼다. 캘리브레이션 세션마다 손으로 다시 만들고 버린 하네스다.
+- 파생 발견: "Activates when entering Burst Stage N" 표현을 쓰면서 `own_burst_activate`로 인코딩된 유닛이 **6기 더** 있다(ein · maiden-ice-rose · mast-romantic-maid(3단계) · mint · rei-ayanami · snow-white-heavy-arms). `snow_white_heavy_arms.py`에 **근거가 명시돼 있고 그 근거가 틀렸다** — "그녀의 버스트는 3번 위치 고정이니 풀버스트에 닿는 매 사이클 발동"인데, B3를 2기 앉히면 갈라진다(실측 6/5). rei-ayanami는 스쿼드 범위라 `full_burst_enter`로 이미 다르게 처리돼 있다.
+
 ## 스택은 스쿼드 사이클 이벤트다 — 시전자 자신의 발동 횟수로 세면 안 된다
 - Date: 2026-07-27
 - Context: Fienn이 덱1에서 마스트: 로맨틱 메이드의 취기(Drunken) 스택이 1,2,3,3,3으로 도는지, 그리고 2스킬·버스트 버프가 스택 수만큼 적용되는지 확인을 요청했다. 두 가지 결함이 나왔다.
