@@ -184,6 +184,9 @@ def ak_missile_burst_percent(values: dict) -> float:
     return float(values["description_value_01"])
 
 
+_LD_ASSAULT_DAMAGE_TAKEN = "ld_assault_damage_taken"
+
+
 def build_ld_assault_per_shot_rules(values: dict) -> list:
     assault = values["ld_assault"]
     base_percent = float(assault["description_value_01"])
@@ -193,8 +196,14 @@ def build_ld_assault_per_shot_rules(values: dict) -> list:
     designated_duration = float(values["ak_missile"]["description_value_04"])
 
     def action(context, caster_slug, time, registry):
-        registry.add(
-            Effect("damage_taken_up", damage_taken, "squad", debuff_duration, caster_slug),
+        # Refreshes, not stacks: the text carries no "stacks up to" (Fienn,
+        # 2026-07-26). It matters far beyond Privaty - Damage Taken is an enemy
+        # debuff every ally multiplies by, so stacking it lifted her whole
+        # squad, and against Fienn's recorded deck 2 that showed as Nayuta
+        # 1.10x, Little Mermaid 1.13x and Velvet 1.15x.
+        registry.add_refreshing(
+            Effect("damage_taken_up", damage_taken, "squad", debuff_duration, caster_slug,
+                   refresh_group=_LD_ASSAULT_DAMAGE_TAKEN),
             applied_at=time,
         )
         registry.add_pulse(Pulse("instant_damage_percent", base_percent, "self", caster_slug, True))

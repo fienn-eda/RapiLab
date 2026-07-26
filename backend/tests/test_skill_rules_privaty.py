@@ -144,6 +144,29 @@ def test_ld_assault_last_bullet_grants_debuff_and_base_hit_when_not_designated()
     assert pulses[0].full_burst_bonus_eligible is True
 
 
+def test_ld_assault_damage_taken_refreshes_instead_of_stacking():
+    """Two last bullets inside the 10s window leave ONE debuff, not two.
+
+    The skill text has no "stacks up to", so it refreshes like every other
+    NIKKE buff (Fienn, 2026-07-26). Stacking it inflated the whole SQUAD,
+    since Damage Taken is an enemy debuff every ally multiplies by: against
+    Fienn's recorded deck 2 it pushed Nayuta to 1.10x, Little Mermaid 1.13x
+    and Velvet 1.15x, all three of which land on 0.96-1.00x once it refreshes.
+    """
+    ps = build_ld_assault_per_shot_rules(PRIVATY_VALUES)
+    _, _, rules = ps[0]
+    ctx = make_context()
+    registry = EffectRegistry()
+    rules[0].action(ctx, "privaty", 3.0, registry)
+    rules[0].action(ctx, "privaty", 6.0, registry)
+
+    privaty = {"slug": "privaty", "element": "Water"}
+    assert round(registry.total_for("damage_taken_up", privaty, now=6.0), 4) == 0.1001
+    # the refreshed window runs from the LATER application
+    assert round(registry.total_for("damage_taken_up", privaty, now=13.0), 4) == 0.1001
+    assert registry.total_for("damage_taken_up", privaty, now=16.1) == 0.0
+
+
 def test_ld_assault_last_bullet_adds_designated_target_hit_within_ak_missiles_window():
     ps = build_ld_assault_per_shot_rules(PRIVATY_VALUES)
     _, _, rules = ps[0]
@@ -206,11 +229,12 @@ def test_privaty_end_to_end_ld_assault_fires_on_last_bullet():
     # instant) already boosts this same hit under the engine's default
     # same-instant-inclusive semantics - 256.17% * (1 + 0.1001).
     assert round(hits[0]["damage"], 4) == round(10000 * 2.5617 * 1.1001, 4)
-    # 2nd hit (1.25s later, well within the 1st debuff's 10s window): TWO
-    # active Damage Taken instances now (both squad-scoped, same source,
-    # plain add - not refreshing) stack additively, per squad-debuff
-    # convention - 256.17% * (1 + 2*0.1001).
-    assert round(hits[1]["damage"], 4) == round(10000 * 2.5617 * (1 + 2 * 0.1001), 4)
+    # 2nd hit (1.25s later, well within the 1st debuff's 10s window): the
+    # debuff REFRESHES rather than stacking, so this hit sees the same 10.01%
+    # the first one did. This assertion used to read 1 + 2*0.1001 - the
+    # stacking reading, flagged in privaty.py as unverified, which Fienn's
+    # recorded deck 2 disproved (it lifted the whole squad ~13%).
+    assert round(hits[1]["damage"], 4) == round(10000 * 2.5617 * 1.1001, 4)
 
 
 def test_base_ex_magazine_keeps_the_ammo_cost_and_omits_the_attack_damage_step():

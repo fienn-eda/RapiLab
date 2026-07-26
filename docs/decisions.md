@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 적 디버프가 중첩되면 덱 전원이 부풀어 오른다 — Privaty의 LD Assault
+- Date: 2026-07-26
+- Context: Fienn이 덱2~5의 **유닛별 실기록**과 운용 세부(신데렐라:크리스탈 웨이브 = **MG 모드**, 덱별 실제 버스트 사용자, 파츠 파괴 보너스가 덱 총합에 별도 가산됨)를 줬다. 덱1에서 배운 대로 유닛별로 펼치니 덱2가 특이했다 — **다섯 명 전원이 1.10x 이상**(신데렐라 1.51 · 나유타 1.10 · 리틀머메이드 1.13 · 프리바티 2.38 · 벨벳 1.15). 한 명의 오류가 아니라 **덱 전체를 드는 무언가**의 서명이다.
+- 원인: `privaty.py`가 스스로 "**Unconfirmed assumption**"으로 플래그해 둔 자리였다. LD Assault의 마지막-탄 Damage Taken 디버프를 `add_refreshing`이 아니라 평범한 `registry.add`로 넣어, 10초 창 안의 마지막 탄이 여러 발 들어가면 **디버프가 additive로 중첩**됐다. Damage Taken은 **적 디버프라 아군 전원이 곱하는 항**이므로 그 오류가 스쿼드 전체에 퍼진다.
+- Decision: 갱신한다(`add_refreshing` + `refresh_group`). 원문에 `stacks up to`가 없다 — Liberalio 온코어 버프에 적용한 것과 **같은 판정 규칙**(Fienn, 2026-07-26).
+- Consequences: 덱2의 나머지 셋이 실기록에 정확히 내려앉았다 — **나유타 1.10 → 0.96 · 리틀머메이드 1.13 → 0.99 · 벨벳 1.15 → 1.00**. 덱2 총합 1.35x → **1.17x**(MG 모드 기준). 이 유닛들에 다른 결함이 없다는 뜻이기도 하다. 남은 덱2 이상치는 프리바티 본인 2.01x와 신데렐라 MG 1.31x. 기존 E2E 테스트 하나가 **중첩 동작을 고정하고 있었다** — 미검증 가정이 테스트로 굳으면 그 테스트가 버그를 지킨다는 사례다. 백엔드 1422 → **1423 passed / 3 skipped**.
+- 부수 확정: **덱2의 신데렐라는 MG 모드**였다(로드맵에 열려 있던 "대조 픽스처에 모드 못박기" 항목 해소). 스나이프로 재면 덱2가 1.02x로 나오지만 그건 Fienn이 쓰지 않은 편성이다.
+
 ## 죽은 인코딩은 유닛별 실기록 없이도 잡을 수 있다 — 스탯 이름 대조
 - Date: 2026-07-26
 - Context: 덱1은 Fienn의 **유닛별 실기록**이 있어서 한 번에 풀렸다. 덱2~5는 총합만 있어 같은 방법을 못 쓴다. 그래서 반대로 갔다 — **지금까지 나온 버그 유형 자체를 전 유닛에 훑는다**. 유형은 셋이었다: ① 등록되지만 엔진이 안 읽는 스탯(앵커 주석이 주장하던 것·하모니 큐브) ② 등록되지만 다른 효과에 잘려 죽는 버프(Liberalio의 Raging Current) ③ 스킬 텍스트 오독(Activates 5 times).
