@@ -172,15 +172,20 @@ def build_memory_incineration_scheduled_nukes(values):
     """Hypocrisy's compound trigger: "when attacking with Full Charge while in
     Memory Incineration status", 150% of final ATK, plus 380.46% additional
     against the stage target - which in a raid is the only enemy, so both
-    always apply and are summed into one per-charge hit.
+    always apply on the same charge.
+
+    They are two SEPARATE hits, not one summed hit: the 150% reads "as damage"
+    and the 380.46% reads "as additional damage", which is the text signal for
+    the Full Burst bonus. Summing them silently denied the bonus to the half
+    that earns it, and that half is the larger one.
 
     The charge times are derived from the same fixed 1.8-sec cadence the weapon
     segment uses, so the two stay in lockstep by construction.
     """
     hypocrisy = values["hypocrisy"]
     interval, duration = _memory_incineration_window(values["asceticism"])
-    percent = (float(hypocrisy["description_value_09"])
-               + float(hypocrisy["description_value_10"]))
+    plain_percent = float(hypocrisy["description_value_09"])
+    additional_percent = float(hypocrisy["description_value_10"])
 
     def schedule(context, fight_duration):
         ticks = []
@@ -191,4 +196,8 @@ def build_memory_incineration_scheduled_nukes(values):
                 k += 1
         return ticks
 
-    return [{"schedule": schedule, "percent": percent}]
+    return [
+        {"schedule": schedule, "percent": plain_percent},
+        {"schedule": schedule, "percent": additional_percent,
+         "full_burst_bonus_eligible": True},
+    ]

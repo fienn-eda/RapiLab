@@ -5,6 +5,13 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 합쳐진 두 불릿은 Full Burst 보너스를 함께 잃는다 — 나유타의 530.46%
+- Date: 2026-07-26
+- Context: 덱2 잔여 조사 중 나유타의 Memory Incineration 풀차지 넉이 `5.3046` 계수 하나로 잡혀 있는 걸 발견했다. 원문은 **두 불릿**이다 — "Deals **150%** of final ATK **as damage**" + "Affects the enemy if the enemy is the stage target. Deals **380.46%** of final ATK **as additional damage**". 레이드에는 적이 하나뿐이고 그게 스테이지 타겟이라 둘 다 항상 적용되므로, 인코딩은 이를 하나로 합산해 두었다.
+- 문제: 2026-07-12 판정에 따르면 **"as additional damage"가 Full Burst 보너스의 텍스트 신호**다. 합산하면 플래그도 하나뿐이라, 보너스를 받아야 할 **더 큰 쪽(380.46%)이 조용히 자격을 잃는다**. 이 넉은 그녀의 버스트 이후 1.8초 간격으로 터져 전부 Full Burst 창 안에 떨어지므로 자격 검사는 통과한다.
+- Decision: 두 개의 `scheduled_nukes` 스펙으로 **분리**한다. 스케줄 함수는 공유하고(같은 풀차지에 함께 터지므로 구성상 동기), 150%는 플래그 없음, 380.46%는 `full_burst_bonus_eligible=True`.
+- Consequences: **나유타 0.79x → 0.84x**(2.00B → 2.12B), 덱2 0.83x → **0.84x**. 백엔드 **1435 passed / 3 skipped**(기존 단언 2건은 합산 530.46을 핀으로 박고 있어서 재조준). 일반 교훈: **수치가 같다고 합치면 안 되는 것이 있다** — 두 불릿의 계수는 더할 수 있어도 **자격 플래그는 못 더한다.** 합산은 "레이드에선 둘 다 항상 적용된다"는 참인 관찰에서 나왔지만, 참인 이유가 **적용 여부**였을 뿐 **배수**는 아니었다.
+
 ## 탄약 소모량 카운터는 총알이 아니라 **라운드**를 센다
 - Date: 2026-07-26
 - Context: 차지 게이팅이 리틀 머메이드의 과소 모델링을 드러냈다(0.99x → 0.55x). 발동 횟수는 정상이었다 — 배러지 28회, 풀버스트 지속 135초/188초 — 그래서 문제는 1히트당 크기가 아니라 **카운터가 세는 단위**였다. `little_mermaid.py`의 교차 노트가 이미 지목하고 있었다: "Velvet's ammo pouch and Cinderella: Crystal Wave's Snipe mode both accelerate ally ammo-consumption counters past that 1-shot-1-round assumption. **Neither is wired into Bubble Barrage's counter today.**"
