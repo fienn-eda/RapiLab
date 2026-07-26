@@ -890,6 +890,16 @@
       쪼개지던 것도 같이 고쳤다(힌트를 아랫줄로).
       **남은 것**: Element 기본값 "Non-elemental"은 그대로다(저장된 입력·결과 캐시 해시와
       얽혀 범위가 커져 분리). 완료 후 결과로 스크롤 이동도 미착수.
+- [ ] **UI 크롬 한글화 스펙 리뷰 중 나온 백로그 3건 (2026-07-26, 아직 미설계 — 범위 밖,
+      캡처만).** `docs/superpowers/specs/2026-07-26-ui-chrome-korean-localization-design.md`
+      리뷰 중 Fienn이 별도 세션감으로 떠올린 것들:
+      - 니케 검색/정렬/필터 기능 — 지금 로스터에 검색·정렬·필터 UI가 전혀 없다
+        (`RosterGrid.tsx`/`UnitPalette.tsx` 영향 예상).
+      - "Sync from blablalink" 옆 도움말 버튼 — 최초 싱크·재싱크 가이드를 보여줄 자리가
+        없다(`SyncRosterPanel.tsx`).
+      - Roster/Recommend/Sync를 사이드바 탭으로 재구성 — 지금은 `App.tsx`에 "Roster"·
+        "Recommend" 탭 2개뿐이고 Sync 패널은 Roster 탭 안에 얹혀 있다. 이건 네비게이션/
+        레이아웃 구조 변경.
 
 ### 로스터 동기화 후속 (2026-07-19 병합 직후 열림)
 
