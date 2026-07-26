@@ -4,6 +4,41 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## "탄약 N발 소모"는 탄창이 아니라 **장부**다 — 실탄은 1발만 나간다
+
+- 발견: 2026-07-19 (신데렐라 스나이프 모드) / 배선: 2026-07-26 (리틀 머메이드 캘리브레이션)
+- 벨벳 "파우치에서 300발 소모", 신데렐라 스나이프 "40발 소모" — **실제로 발사되는
+  총알은 1발**이다. N은 **소모량 연동 시너지를 먹이기 위한 회계 수치**다. 이걸
+  탄창 소모로 읽으면 발사 속도가 틀리고, 반대로 **무시하면 소모량 카운터가 굶는다.**
+- 이 장부를 먹는 소비자는 실재한다: 리틀 머메이드 버블 배러지(아군 총 500발마다
+  85%×10히트) · 버블 오더(400발마다 버스트 게이지 37%) · 신데렐라 크리스탈 웨이브
+  (200발마다 게이지 12%). 즉 **한 유닛의 회계 표기가 다른 유닛의 딜을 결정한다.**
+- 규모: 벨벳은 188초에 **129발**밖에 안 쏘지만 장부에는 **약 31,500라운드**를 올린다.
+  총알로 세면 카운터에 0.9% 기여, 라운드로 세면 **약 70%** 기여다. 배러지 28회 → 89회.
+- 배선 방법: 슬러그 → `(풀버스트 중 라운드, 풀버스트 밖 라운드)` 2튜플
+  (`registry._AMMO_ROUNDS_PER_SHOT`). 시뮬레이터가 `context.shot_ammo_rounds`를
+  `context.shot_times`와 **평행한 리스트**로 채운다. 창별로 갈리는 이유는 벨벳의
+  **파우치 스킬이 두 개**여서다 — 풀버스트 안은 Bullets of Love(300), 밖은
+  Sticky Fingers(100). 스칼라 하나로는 표현이 안 된다.
+- 함정: 한 샷이 **여러 임계값을 동시에 넘을 수 있다**(1,200라운드 = 500짜리 배러지 2회).
+  `while expended >= next_barrage` 루프여야 하고, `for i in range(threshold-1, n, threshold)`
+  같은 인덱스 스텝은 총알 카운터에서만 맞는다.
+- 전수 조사: 수집된 로스터에서 "expends ... round(s)" 표기를 가진 유닛은
+  **벨벳과 신데렐라: 크리스탈 웨이브 둘뿐**이다. 새 유닛을 인코딩할 때 이 문구가
+  보이면 레지스트리 테이블에 추가할 것.
+
+## 워크트리에는 `roster-drafts.json`이 없으면 측정이 **조용히** 틀린다
+
+- 발견: 2026-07-26
+- `scripts/sync_worktree_data.py`는 `data/`만 동기화했고 로스터 파일
+  `tools/collect-blablalink/roster-drafts.json`은 빠져 있었다. 그런데
+  `scripts/roster_fixture.real_roster()`는 파일이 없으면 **예외가 아니라 `None`을
+  반환한다**(싱크 안 한 머신에서 합성 로스터로 폴백하라고 그렇게 만들었다).
+  그래서 실기록 대조 스크립트는 죽지 않고 **틀린 로스터로 조용히 돌아간다.**
+- 해법: 싱크 스크립트에 `SYNCED_FILES`를 추가했다. 워크트리에서 측정을 시작하기 전에
+  `python3 scripts/sync_worktree_data.py`를 먼저 돌릴 것 — `--check`는 exit 1로 알려준다.
+- 일반 교훈: **폴백은 편의를 위해 만들지만, 측정 스크립트에서는 침묵하는 오류가 된다.**
+
 ## "Damage to Parts"와 "Damage to Interruption Parts"는 **다른 대상**이다 — 이름이 거의 같아서 반드시 오독된다
 
 - 발견: 2026-07-26 (Fienn이 helm 스킬2 "포문 개방"의 한글 원문을 읽다가 지적)

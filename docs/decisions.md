@@ -5,6 +5,14 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 탄약 소모량 카운터는 총알이 아니라 **라운드**를 센다
+- Date: 2026-07-26
+- Context: 차지 게이팅이 리틀 머메이드의 과소 모델링을 드러냈다(0.99x → 0.55x). 발동 횟수는 정상이었다 — 배러지 28회, 풀버스트 지속 135초/188초 — 그래서 문제는 1히트당 크기가 아니라 **카운터가 세는 단위**였다. `little_mermaid.py`의 교차 노트가 이미 지목하고 있었다: "Velvet's ammo pouch and Cinderella: Crystal Wave's Snipe mode both accelerate ally ammo-consumption counters past that 1-shot-1-round assumption. **Neither is wired into Bubble Barrage's counter today.**"
+- 결정적 근거는 추측이 아니라 **Fienn의 이전 판정**이었고 코드에 이미 적혀 있었다(`cinderella_crystal_wave.py`, 2026-07-19): "a full charge actually FIRES ONE round — the 'expends 40 rounds' text is ammo **ACCOUNTING for consumption-counting synergies**, not magazine drain." 즉 그 표기는 **바로 이런 카운터를 먹이려고** 존재한다. 당시 노트는 "그 장부가 먹이는 스킬은 어차피 defer 대상"이라 적었지만, 버블 배러지는 defer가 아니라 **모델링된** 소비자다.
+- Decision: 슬러그별 **샷 1발당 장부 라운드 수**를 `(풀버스트 중, 밖)` 2튜플로 레지스트리에 두고(`_AMMO_ROUNDS_PER_SHOT`), 시뮬레이터가 `context.shot_ammo_rounds`를 `shot_times`와 **평행한 리스트**로 채운다. 벨벳 (300, 100) — Bullets of Love가 풀버스트 중 300, Sticky Fingers가 밖에서 100을 쓰고 SR 풀차지 1샷 = 정확히 1프록이다. 신데렐라 스나이프 (40, 40). 나머지 전원 (1, 1).
+- Alternatives considered: **슬러그당 스칼라 하나** — 기각. 벨벳의 소모량은 **어느 파우치 스킬이 쓰는가**에 따라 갈리고 그건 풀버스트 창이 정한다. **탄약 파우치를 자원으로 모델링** — 불필요. 사이클당 소모 ~1,800발이 버스트 2단계마다 채워지는 6,000발에 한참 못 미쳐 절대 고갈되지 않는다(기존 인코딩의 판단 그대로).
+- Consequences: **리틀 머메이드 0.55x → 0.76x**(배러지 28회 → 89회, 0.219B → 0.648B), 덱2 0.76x → **0.82x**, 5덱 합계 **33.68B / 34.77B = 0.97x**. 수집 데이터 전수 조사 결과 "expends ... round(s)" 표기 유닛은 **벨벳과 신데렐라: 크리스탈 웨이브 둘뿐**이라 테이블은 현재 로스터 기준 완전하다. 백엔드 1430 → **1435 passed / 3 skipped**. 교훈: **인코딩 주석이 남긴 "아직 배선 안 됨"은 부채 목록이다** — 캘리브레이션이 막혔을 때 새 가설을 세우기 전에 먼저 읽을 곳이고, 이번엔 답이 다른 유닛 파일에 이미 판정문으로 적혀 있었다.
+
 ## 차지 대미지는 그 순간 차지 무기를 든 유닛에게만 붙는다 — 무기가 아니라 **창**의 문제다
 - Date: 2026-07-26
 - Context: 유닛별 대조에서 신데렐라 MG(1.31x)를 파다가 그녀의 MG 평타에 `charge_damage_bonus = 1.0768`이 곱해지는 걸 발견했다. 1.008은 **벨벳의 스쿼드 Charge Damage +100.8%** 다. 덱2의 비차지 유닛 전원이 이 버프로 평타가 거의 **2배**가 되고 있었다(리틀머메이드 SMG 1.008 · 나유타 SMG 1.0768 · 프리바티 AR 1.2583). `velvet.py`는 이미 알고 있었다 — "the engine applies charge_damage_bonus squad-wide; **charge-weapon allies are the real beneficiaries**".
