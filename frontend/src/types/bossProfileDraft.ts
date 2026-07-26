@@ -48,10 +48,10 @@ interface ParsedNumber {
 
 const parseFloatField = (raw: string, bounds: { min: number }): ParsedNumber => {
   const trimmed = raw.trim()
-  if (trimmed === '') return { error: 'Required' }
+  if (trimmed === '') return { error: '필수 입력이에요' }
   const value = Number(trimmed)
-  if (!Number.isFinite(value)) return { error: 'Must be a number' }
-  if (value < bounds.min) return { error: `Must be ≥ ${bounds.min}` }
+  if (!Number.isFinite(value)) return { error: '숫자를 입력하세요' }
+  if (value < bounds.min) return { error: `${bounds.min} 이상이어야 해요` }
   return { value }
 }
 
@@ -69,7 +69,7 @@ export const validateBossProfileDraft = (
 
   const fightDuration = parseFloatField(draft.fight_duration, { min: 0 })
   if (fightDuration.error) errors.fight_duration = fightDuration.error
-  else if (fightDuration.value === 0) errors.fight_duration = 'Must be > 0'
+  else if (fightDuration.value === 0) errors.fight_duration = '0보다 커야 해요'
 
   if (Object.keys(errors).length > 0) return { errors }
 

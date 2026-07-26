@@ -39,7 +39,7 @@ describe('validateBossProfileDraft', () => {
   it('rejects a negative enemy_def', () => {
     const draft = { ...makeDefaultBossProfileDraft(), enemy_def: '-1' }
     const { errors, value } = validateBossProfileDraft(draft)
-    expect(errors.enemy_def).toBe('Must be ≥ 0')
+    expect(errors.enemy_def).toBe('0 이상이어야 해요')
     expect(value).toBeUndefined()
   })
 
@@ -47,21 +47,21 @@ describe('validateBossProfileDraft', () => {
     expect(
       validateBossProfileDraft({ ...makeDefaultBossProfileDraft(), fight_duration: '0' })
         .errors.fight_duration,
-    ).toBe('Must be > 0')
+    ).toBe('0보다 커야 해요')
     expect(
       validateBossProfileDraft({ ...makeDefaultBossProfileDraft(), fight_duration: '-5' })
         .errors.fight_duration,
-    ).toBe('Must be ≥ 0')
+    ).toBe('0 이상이어야 해요')
   })
 
   it('rejects non-numeric fields', () => {
     const draft = { ...makeDefaultBossProfileDraft(), enemy_def: 'abc' }
-    expect(validateBossProfileDraft(draft).errors.enemy_def).toBe('Must be a number')
+    expect(validateBossProfileDraft(draft).errors.enemy_def).toBe('숫자를 입력하세요')
   })
 
   it('rejects empty fields as required', () => {
     const draft = { ...makeDefaultBossProfileDraft(), fight_duration: '' }
-    expect(validateBossProfileDraft(draft).errors.fight_duration).toBe('Required')
+    expect(validateBossProfileDraft(draft).errors.fight_duration).toBe('필수 입력이에요')
   })
 })
 
