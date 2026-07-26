@@ -614,7 +614,7 @@
 
 .sync-help__shot {
   display: block;
-  max-width: 100%;
+  max-width: min(300px, 100%);
   margin-top: var(--sp-2);
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);

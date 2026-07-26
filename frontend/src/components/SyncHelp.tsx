@@ -22,6 +22,8 @@ export function SyncHelp({ id, hidden }: SyncHelpProps) {
             className="sync-help__shot"
             src="/help/shiftypad-share-button.png"
             alt="SHIFTYPAD 페이지 우측 상단, 방패와 물음표 아이콘 오른쪽에 있는 공유 아이콘"
+            width={748}
+            height={193}
           />
         </li>
         <li>
@@ -30,16 +32,19 @@ export function SyncHelp({ id, hidden }: SyncHelpProps) {
             className="sync-help__shot"
             src="/help/shiftypad-copy-link.png"
             alt="공유하기 창에서 Facebook·Twitter·Naver·whatsApp 오른쪽에 있는 링크 복사하기 버튼"
+            width={626}
+            height={211}
           />
         </li>
         <li>복사한 URL을 아래 칸에 붙여넣어요.</li>
         <li>
           나타나는 <strong>니케 로스터 동기화</strong> 링크를 브라우저 북마크 바로
-          드래그해요. 북마크 바가 안 보이면 Ctrl+Shift+B로 켤 수 있어요.
+          드래그해요. 북마크 바가 안 보이면 Ctrl+Shift+B(맥은 Cmd+Shift+B)로 켤 수
+          있어요.
         </li>
         <li>
-          blablalink에 로그인한 상태에서 그 북마크를 눌러요. 로스터가 새 탭에서
-          열려요.
+          blablalink 페이지를 열고 로그인한 상태에서 그 북마크를 눌러요. 로스터가
+          새 탭에서 열려요.
         </li>
       </ol>
 
@@ -61,8 +66,8 @@ export function SyncHelp({ id, hidden }: SyncHelpProps) {
           바꿔두면 헷갈리지 않아요.
         </li>
         <li>
-          <strong>그 계정으로 blablalink에 로그인한 상태에서</strong> 해당 북마크를
-          눌러요.
+          <strong>그 계정으로 로그인한 채 blablalink 페이지에서</strong> 해당
+          북마크를 눌러요.
         </li>
       </ol>
       <p className="sync-help__text">

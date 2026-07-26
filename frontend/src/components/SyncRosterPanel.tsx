@@ -96,8 +96,9 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
       {openId && (
         <div className="sync__bookmarklet">
           <p className="sync__hint">
-            이 링크를 북마크 바로 드래그한 다음, blablalink에 로그인한 상태에서
-            눌러요. 로스터가 새 탭에서 열리므로, 이 탭은 새로고침해야 갱신돼요.
+            이 링크를 북마크 바로 드래그한 다음, blablalink 페이지를 열고
+            로그인한 상태에서 눌러요. 로스터가 새 탭에서 열리므로, 이 탭은
+            새로고침해야 갱신돼요.
           </p>
           <a
             className="btn btn--ghost"
