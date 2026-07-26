@@ -46,9 +46,13 @@ deterministic non-crit numbers).
 
 Known simplifications: a slug missing from `weapon_stats` contributes no
 normal-attack damage (e.g. while that character's weapon data hasn't been
-entered yet); pierce_damage_up is applied to every hit as a general damage-up
-term (the formula's Damage Up bucket), not gated to actual pierce hits, since
-per-hit pierce flags aren't modeled.
+entered yet).
+
+Pierce Damage Up only credits a unit that actually HAS Pierce - the skill-text
+marker is [관통 특화] / "Gain Pierce" (Fienn, 2026-07-26). Pierce is carried as
+its own registry stat `has_pierce`, so a unit that gains it for 5 sec is
+credited for exactly those 5 sec, and a squad-wide Pierce Damage buff does
+nothing for allies who never gain the property.
 
 Some passives "Deal X% of final ATK as damage" on a trigger OTHER than the
 caster's own burst (e.g. Brid: Silent Track's Ignition Sequence, which fires
@@ -406,7 +410,7 @@ _BUNDLE_STATS = (
     "element_advantage_grant",
     "other_critical_damage_sources", "crit_rate", "other_core_damage_sources",
     "charge_damage_bonus", "attack_damage_up", "damage_to_parts_up",
-    "pierce_damage_up", "damage_taken_up",
+    "pierce_damage_up", "has_pierce", "damage_taken_up",
     "sustained_damage_up", "distributed_damage_up", "true_damage_up",
     "projectile_explosion_damage_up", "projectile_attachment_damage_up",
     "normal_attack_damage_multiplier",
@@ -563,7 +567,11 @@ def simulate_raid(
             ),
             attack_damage_up=bundle["attack_damage_up"],
             damage_to_parts_up=bundle["damage_to_parts_up"],
-            pierce_damage_up=bundle["pierce_damage_up"],
+            # Pierce Damage Up is worthless to a unit without Pierce, however
+            # generously an ally buffs it - see the module docstring.
+            pierce_damage_up=(
+                bundle["pierce_damage_up"] if bundle["has_pierce"] > 0 else 0.0
+            ),
             damage_taken_up=bundle["damage_taken_up"],
         )
         # Type-specific Damage-Up buckets apply only to instances of that type.

@@ -176,6 +176,7 @@ from app.skill_rules.drake import (
 from app.skill_rules.laplace import (
     build_buster_weapon_mode_schedule,
     build_hero_bomber_per_shot_rules,
+    build_laplace_rules,
     laplace_buster_burst_percent,
 )
 from app.skill_rules import flora_signature
@@ -542,7 +543,7 @@ _BUILDERS = {
     "snow-white-heavy-arms": lambda sv: (build_snow_white_heavy_arms_rules(sv), None),  # burst is the Fully Active state change (weapon-mode segment), no direct nuke
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
-    "laplace": lambda sv: ([], laplace_buster_burst_percent(sv)),  # no ally buffs; weapon-transform + Hero Vision deferred
+    "laplace": lambda sv: (build_laplace_rules(sv), laplace_buster_burst_percent(sv)),  # no ally buffs; Hero Vision deferred
     "laplace-signature": lambda sv: (
         laplace_signature.build_laplace_signature_rules(sv),
         laplace_signature.laplace_buster_signature_burst_percent(sv),

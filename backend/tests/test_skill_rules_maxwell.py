@@ -45,9 +45,9 @@ def make_context(base_atk):
 
 
 def test_straight_shot_rule_is_single_full_burst_enter_rule():
+    # Straight Shot plus Pierce shot's one-round Pierce grant on her burst.
     rules = build_maxwell_rules(MAXWELL_VALUES)
-    assert len(rules) == 1
-    assert rules[0].trigger == "full_burst_enter"
+    assert [r.trigger for r in rules] == ["full_burst_enter", "own_burst_activate"]
 
 
 def test_straight_shot_buffs_maxwell_when_she_ranks_top_2_including_herself():

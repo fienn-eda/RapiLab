@@ -218,7 +218,12 @@ def _terms(slug, element, inputs, registry, boss, cycle):
         "charge_damage_bonus": stat("charge_damage_bonus"),
         "attack_damage_up": stat("attack_damage_up"),
         "damage_to_parts_up": stat("damage_to_parts_up"),
-        "pierce_damage_up": stat("pierce_damage_up"),
+        # Pierce Damage Up credits only a unit that actually has Pierce, the
+        # same gate raid_simulator applies - here off the surrogate's own
+        # steady-state stat totals.
+        "pierce_damage_up": (
+            stat("pierce_damage_up") if stat("has_pierce") > 0 else 0.0
+        ),
         "damage_taken_up": stat("damage_taken_up"),
     }
 

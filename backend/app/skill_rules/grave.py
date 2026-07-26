@@ -76,6 +76,12 @@ def build_grave_rules(values):
             Effect("pierce_damage_up", self_pierce, "self", PLOT_SPOILER_BUFF_DURATION, caster_slug),
             applied_at=time,
         )
+        # "Gain Pierce for 10 sec" - the property, without which the Pierce
+        # Damage above would credit nothing.
+        registry.add(
+            Effect("has_pierce", 1.0, "self", PLOT_SPOILER_BUFF_DURATION, caster_slug),
+            applied_at=time,
+        )
         registry.add(
             Effect("attack_damage_up", squad_attack_damage, "squad", PLOT_SPOILER_BUFF_DURATION, caster_slug),
             applied_at=time,

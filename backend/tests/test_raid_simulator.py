@@ -1427,7 +1427,10 @@ def _zwei_pierce_stacks_per_sniper_shot(per_shot_rules):
     ]
     result = simulate_raid(
         deck,
-        {"zwei": [], "midtier": [], "sniper": []},
+        # Pierce Damage Up credits only a unit that HAS Pierce, so the sniper
+        # this test measures has to hold the property for the grants to show.
+        {"zwei": [], "midtier": [],
+         "sniper": [buff_rule("battle_start", [("has_pierce", 1.0, "self", None)])]},
         burst_damage_percents={},
         base_stats={
             "zwei": {"atk": 0, "def": 0, "max_hp": 0},

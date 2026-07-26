@@ -38,6 +38,7 @@ damage, 6 rounds, 2.0s reload, 1.0s charge) confirms she has no signature
 weapon, unused directly here since the transform profile is self-contained.
 """
 from app.effects import Effect
+from app.skill_rules._helpers import round_buff_rule
 from app.squad_engine import SkillRule
 
 SKILL_VALUE_MANIFESTS = {
@@ -96,6 +97,9 @@ def build_maxwell_rules(values):
             ("charge_speed_percent", charge_speed, charge_speed_duration),
             ("atk_percent", atk, atk_duration),
         ]),
+        # Pierce shot's "Additional Effect: Pierce" - the transform is one
+        # charged shot, so the property covers exactly that round.
+        round_buff_rule("own_burst_activate", [("has_pierce", 1.0, "self")], shots=1),
     ]
 
 

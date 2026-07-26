@@ -56,14 +56,14 @@ Not modeled / deferred (same as base Laplace, plus signature-specific):
   itself stays unmodeled.
 - Hero Bomber's parts-hit 14.78% additional damage: needs a Parts-hit
   trigger the engine lacks (same as base Laplace).
-- Laplace Buster's "Gains Pierce" (Additional Effect 1): the pierce property
-  has no engine representation (same as every other transform's Pierce
-  rider - Red Hood, Snow White, Maxwell).
+- Laplace Buster's "Gains Pierce" (Additional Effect 1) IS modeled, as the
+  `has_pierce` property for the transform's duration: Pierce Damage Up only
+  credits a unit that holds Pierce (Fienn, 2026-07-26).
 - Base Laplace's own weapon-transform kit stays deferred on the "laplace"
   slug (untouched by this module) - it never got an in-game tick-count
   measurement, unlike this signature build.
 """
-from app.skill_rules._helpers import instant_nuke_pulse_rule
+from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 
 SKILL_VALUE_MANIFESTS = {
     "laplace-signature": {
@@ -92,8 +92,11 @@ def laplace_buster_signature_burst_percent(values):
 
 def build_laplace_signature_rules(values):
     # No ally buffs - all of her signature's DPS lives in the burst nuke, the
-    # weapon-mode segment, and the scheduled-nuke rider.
-    return []
+    # weapon-mode segment, and the scheduled-nuke rider. The one self effect is
+    # Laplace Buster's "Additional Effect 1: Gains Pierce", held for the
+    # transform's own stated duration.
+    duration = float(values["laplace_buster"]["description_value_03"])
+    return [buff_rule("own_burst_activate", [("has_pierce", 1.0, "self", duration)])]
 
 
 def build_hero_bomber_signature_per_shot_rules(values):

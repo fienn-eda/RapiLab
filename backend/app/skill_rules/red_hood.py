@@ -40,7 +40,7 @@ Modeled (DPS-relevant):
 
 Not modeled / deferred:
 - Wild Tooth's "Gain Pierce continuously": the pierce property itself has no
-  engine representation (pierce_damage_up is a damage bucket, not the
+  engine representation until 2026-07-26 (pierce_damage_up is a damage bucket, not the
   property); Beast Cage squad DEF and Last Howl healing are survival stats
   on unreachable branches anyway.
 - Red Wolf's "Expand Pierce range by 100%": no pierce/range model.
@@ -80,7 +80,12 @@ def build_red_hood_rules(values):
     red_wolf_atk_duration = float(wild_tooth["description_value_06"])
 
     return [
-        buff_rule("battle_start", [("charge_speed_percent", steady, "self", None)]),
+        buff_rule("battle_start", [
+            ("charge_speed_percent", steady, "self", None),
+            # Wild Tooth: "Gain Pierce continuously" - the property, which is
+            # what makes any Pierce Damage buff worth anything to her.
+            ("has_pierce", 1.0, "self", None),
+        ]),
         buff_rule("own_burst_activate", [("atk_percent", red_wolf_atk, "self", red_wolf_atk_duration)]),
     ]
 

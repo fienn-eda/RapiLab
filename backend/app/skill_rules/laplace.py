@@ -32,7 +32,7 @@ Modeled (weapon transform, 2026-07-21):
   for the same weapon-transform / Pattern B reasons, so there is no dual-slug
   `laplace-signature` (an unrepresentable signature can't be a deck candidate).
 """
-from app.skill_rules._helpers import instant_nuke_pulse_rule
+from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 
 # Fienn (2026-07-21): base Laplace's Buster fires at the same rate as her
 # signature's, which he measured in-game at 93 ticks over its 10-sec window.
@@ -49,6 +49,14 @@ SKILL_VALUE_MANIFESTS = {
         },
     },
 }
+
+
+def build_laplace_rules(values):
+    """Laplace Buster's "Additional Effect: Gains Pierce" - held for the
+    transform's own stated duration, the same window the weapon-mode segment
+    uses."""
+    duration = float(values["laplace_buster"]["description_value_03"])
+    return [buff_rule("own_burst_activate", [("has_pierce", 1.0, "self", duration)])]
 
 
 def laplace_buster_burst_percent(values):

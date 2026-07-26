@@ -118,6 +118,11 @@ def build_milk_rules(values):
             ("atk_percent", _f(values, "embarrassment_explosion", 4) / 100, "self",
              _f(values, "embarrassment_explosion", 5)),
         ]),
+        # Embarrassment Suppression: "Gain Pierce for 6 sec" on every Full
+        # Charge. Her every shot IS a full charge, so the window never lapses
+        # - permanent from battle start is the same outcome, and it is what
+        # makes the Pierce Damage above (and Bunny allies' buffs) count.
+        buff_rule("battle_start", [("has_pierce", 1.0, "self", None)]),
     ]
 
 

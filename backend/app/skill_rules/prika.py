@@ -92,6 +92,9 @@ def build_prika_rules(values):
             Effect("charge_damage_bonus", charge_damage, "squad", duration, caster_slug),
             applied_at=time,
         )
+        registry.add(
+            Effect("has_pierce", 1.0, "self", None, caster_slug), applied_at=time,
+        )
         context.set_status(caster_slug, PERFORMANCE_STATUS)
 
     def apply_encore(context, caster_slug, time, registry):

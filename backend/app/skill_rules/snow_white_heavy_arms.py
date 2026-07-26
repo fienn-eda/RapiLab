@@ -112,6 +112,9 @@ def build_seven_dwarves_per_shot_rules(values):
          float(shades["description_value_04"])),
         ("damage_to_parts_up", float(shades["description_value_05"]) / 100, "self",
          float(shades["description_value_06"])),
+        # "Gains Pierce for 5 sec" from the same Full-Charge bullet: her
+        # charge is fixed at 1.2 sec, so refreshing per shot holds it open.
+        ("has_pierce", 1.0, "self", float(shades["description_value_04"])),
     ])
     return [
         (1, "every", [charge_window_buffs]),

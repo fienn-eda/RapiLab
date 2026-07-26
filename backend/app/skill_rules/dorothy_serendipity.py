@@ -46,7 +46,13 @@ def build_dorothy_serendipity_rules(values):
     burst_atk_duration = float(false_salvation["description_value_04"])
 
     return [
-        buff_rule("battle_start", [("pierce_damage_up", self_pierce, "self", None)]),
+        buff_rule("battle_start", [
+            ("pierce_damage_up", self_pierce, "self", None),
+            # Flash grants Pierce for 3 round(s) after 80 pellets, which her
+            # shotgun re-earns continuously; held permanent alongside the
+            # Pierce Damage the same kit gives her.
+            ("has_pierce", 1.0, "self", None),
+        ]),
         buff_rule("full_burst_enter", [("atk_percent", fb_atk, "self", FULL_BURST_DURATION)]),
         buff_rule("own_burst_activate", [
             ("atk_percent", burst_atk, "self", burst_atk_duration),

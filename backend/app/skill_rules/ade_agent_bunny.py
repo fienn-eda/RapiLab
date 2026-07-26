@@ -51,6 +51,11 @@ def build_ade_rules(values):
             ("flat_atk", gaze_atk, "squad", None),
             ("pierce_damage_up", movement_pierce, "squad", None),
             ("atk_percent", movement_self_atk, "self", None),
+            # Same Spy-Lens-at-max bullet grants "Gains Pierce. This effect is
+            # continuous", modeled permanent alongside its ATK. She is the only
+            # unit her own squad-wide Pierce Damage buff can actually credit
+            # unless an ally brings Pierce too.
+            ("has_pierce", 1.0, "self", None),
         ]),
         buff_rule("own_burst_activate", [
             ("attack_damage_up", burst_attack_damage, "squad", burst_attack_damage_duration),

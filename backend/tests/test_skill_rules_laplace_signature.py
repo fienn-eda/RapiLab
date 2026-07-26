@@ -53,10 +53,12 @@ def test_burst_percent_is_first_damage():
     assert laplace_buster_signature_burst_percent(LAPLACE_SIGNATURE_VALUES) == 1455.72
 
 
-def test_build_laplace_signature_rules_is_empty():
+def test_build_laplace_signature_rules_grants_only_the_transforms_pierce():
     # No ally buffs - all DPS lives in the burst nuke, the weapon-mode segment,
-    # and the scheduled-nuke rider.
-    assert build_laplace_signature_rules(LAPLACE_SIGNATURE_VALUES) == []
+    # and the scheduled-nuke rider. The one self effect is Laplace Buster's
+    # "Additional Effect 1: Gains Pierce", for the transform's own duration.
+    rule, = build_laplace_signature_rules(LAPLACE_SIGNATURE_VALUES)
+    assert rule.trigger == "own_burst_activate"
 
 
 def test_hero_bomber_fires_every_full_charge_outside_full_burst():

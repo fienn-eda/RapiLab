@@ -106,6 +106,10 @@ def build_zwei_base_rules(values):
         buff_rule("own_burst_activate", [
             ("pierce_damage_up", burst_pierce, "squad", burst_pierce_duration),
         ]),
+        # Overcharge Formula's "Additional Effect: Pierce" - the transform is
+        # one charged shot, so the property covers exactly that round. Her
+        # squad Pierce Damage buffs credit only allies who have Pierce too.
+        round_buff_rule("own_burst_activate", [("has_pierce", 1.0, "self")], shots=1),
     ]
 
 
@@ -134,6 +138,10 @@ def build_zwei_rules(values):
         buff_rule("own_burst_activate", [
             ("pierce_damage_up", burst_pierce, "squad", burst_pierce_duration),
         ]),
+        # Overcharge Formula's "Additional Effect: Pierce" - the transform is
+        # one charged shot, so the property covers exactly that round. Her
+        # squad Pierce Damage buffs credit only allies who have Pierce too.
+        round_buff_rule("own_burst_activate", [("has_pierce", 1.0, "self")], shots=1),
     ]
 
 

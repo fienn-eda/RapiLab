@@ -48,10 +48,12 @@ def make_context():
     ])
 
 
-def test_snow_white_rules_are_empty_burst_is_weapon_transform_only():
-    # Burst is entirely the weapon-mode transform (Seven Dwarves: I) - no
-    # buffs, no direct nuke.
-    assert build_snow_white_rules(SNOW_WHITE_VALUES) == []
+def test_snow_white_burst_grants_only_pierce_for_its_one_transform_shot():
+    # Burst is the weapon-mode transform (Seven Dwarves: I) - no buffs and no
+    # direct nuke. Its one non-weapon effect is "Additional Effect: Pierce",
+    # the property, and the transform is a single charged shot.
+    rule, = build_snow_white_rules(SNOW_WHITE_VALUES)
+    assert rule.trigger == "own_burst_activate"
 
 
 def test_determination_fires_every_30_shots_with_additional_damage():

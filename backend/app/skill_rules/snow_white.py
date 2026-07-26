@@ -28,7 +28,8 @@ Not modeled / deferred:
   Full Burst.
 - Seven Dwarves: I's "Additional Effect: Pierce": the pierce property has no
   engine representation (same as Red Hood's Wild Tooth/Red Wolf Pierce -
-  pierce_damage_up is a damage bucket, not the property itself).
+  pierce_damage_up is a damage bucket, not the property itself; the property
+  is now carried as `has_pierce`).
 - Whether the transform's single shot counts toward Determination's own
   30-hit normal-attack counter: the spec's open question - this engine's
   per-shot loop counts EVERY shot on a unit's unified timeline (including
@@ -41,7 +42,7 @@ and dotgg (AR weapon: 14.71% damage, 60 rounds, 1.5s reload - unused directly
 here since the transform profile is self-contained, but confirms she has no
 signature weapon).
 """
-from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
+from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, round_buff_rule
 
 SEVEN_DWARVES_V_VI_COOLDOWN = 15.0
 
@@ -60,8 +61,10 @@ SKILL_VALUE_MANIFESTS = {
 
 def build_snow_white_rules(values):
     # Burst is entirely the weapon-mode transform (Seven Dwarves: I) - no
-    # buffs, no direct nuke.
-    return []
+    # buffs, no direct nuke. Its "Additional Effect: Pierce" is the property,
+    # and the transform is one charged shot, so it is a one-round grant.
+    return [round_buff_rule("own_burst_activate",
+                            [("has_pierce", 1.0, "self")], shots=1)]
 
 
 def build_determination_per_shot_rules(values):

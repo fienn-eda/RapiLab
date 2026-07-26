@@ -55,9 +55,9 @@ Not modeled / deferred:
   (1.0 + 0.9 + 0.8 + 0.7 + 0.6) is the ramp itself. Encoding it as a live
   charge-speed buff on top would double-count it, and it never holds max
   anyway (5 stacks are consumed to fire the transform).
-- Pierce on the transformed weapon: the pierce PROPERTY has no engine
-  representation (`pierce_damage_up` is a damage bucket, not the property) -
-  same limitation red-hood carries.
+- Pierce on the transformed weapon IS modeled, as the `has_pierce` property
+  over the transform window: Pierce Damage Up only credits a unit that holds
+  Pierce (Fienn, 2026-07-26).
 - The reload gap after a transform: `generate_segmented_shots` resumes the base
   weapon at the segment's end with a fresh magazine and no reload, so she fires
   ~2 extra base shots during the 2.5s reload the real cycle spends. At 2.5% a
@@ -173,6 +173,8 @@ def build_laplace_ultimate_hero_rules(values, caster_max_hp):
         # 지급되지 않는다 (full_burst_enter는 후자를 못 막는다).
         buff_rule("own_burst_activate", [("attack_damage_up", fb_attack_damage, "self", fb_attack_damage_dur)]),
         buff_rule("own_burst_activate", [("atk_percent", burst_atk, "self", burst_atk_dur)]),
+        # Mjolnir's transformed weapon gains Pierce for the transform window.
+        buff_rule("own_burst_activate", [("has_pierce", 1.0, "self", burst_atk_dur)]),
     ]
 
 

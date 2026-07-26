@@ -255,8 +255,10 @@ def test_d_killer_wife_assault_formation_cdr_applied_per_cycle():
 
 
 def test_d_killer_wife_assault_formation_squad_attack_damage_every_5_full_charges():
+    # Two per-shot rules share this builder: Assault Formation every 5 full
+    # charges, and Calm Sniping's one-round Pierce grant every 3.
     rules = build_assault_formation_rules(DKW["assault_formation"])
-    assert len(rules) == 1
+    assert [(t, m) for t, m, _ in rules] == [(5, "every"), (3, "every")]
     threshold, mode, skill_rules = rules[0]
     assert (threshold, mode) == (5, "every")  # every 5 full charges
 

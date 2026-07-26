@@ -5,6 +5,15 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 관통 대미지 증가는 **관통을 가진 유닛에게만** 붙는다 — 버킷이 아니라 속성이다
+- Date: 2026-07-26
+- Context: 덱5가 1.14x로 유일하게 크게 초과하는 덱이었다. 원인은 **에이드: 에이전트 바니**가 스쿼드 전체에 관통 대미지 증가를 상시로 주는데, 덱5에서 **관통 속성을 실제로 가진 유닛은 에이드 본인뿐**이라는 것이었다. 엔진은 `pierce_damage_up`을 `damage_up` 일반 버킷에 무조건 합산했다 — 오늘 걷어낸 `damage_to_parts_up`과 **똑같은 관례**이고, 여러 유닛 독스트링이 스스로 "the pierce PROPERTY has no engine representation (`pierce_damage_up` is a damage bucket, not the property)"라고 적어 둔, 알고도 남겨둔 부채였다.
+- Ruling (Fienn, 2026-07-26): **관통은 관통 속성을 가진 유닛에게만 적용된다.** 판별 기준은 스킬 설명의 **[관통 특화] / "Gain Pierce"** 문구다.
+- Decision: 속성을 **자체 스탯 `has_pierce`** 로 만든다(정적 슬러그 목록이 아니라 **효과 창**). `_damage_instance`가 `has_pierce > 0`일 때만 `pierce_damage_up`을 넘긴다. 이렇게 하면 "5초간 관통 획득"이 정확히 5초만 인정되고, 스쿼드 관통 버프는 속성 없는 아군에게 아무것도 안 준다. `closed_form`도 같은 게이트를 건다.
+- Alternatives considered: **정적 보유자 슬러그 집합** — 기각. 로스터 15기 중 상당수가 **시간 한정**이다(스노우화이트: 헤비암즈 5초, 그레이브 10초, 밀크 6초, D: 킬러 와이프 **1발**, 도로시 3발, 스노우화이트·맥스웰·츠바이는 변형 1발). 정적 집합은 이들을 전부 상시로 만든다.
+- 인코딩한 보유자 15기: red-hood · ade-agent-bunny · dorothy-serendipity · prika(퍼포먼스 중 상시) · snow-white-heavy-arms(풀차지 5초, 차지 1.2초 고정이라 갱신으로 유지) · grave(10초) · cinderella-crystal-wave-**snipe**(모드가 슬러그라 상시) · milk-blooming-bunny · d-killer-wife(3발마다 1발, `round_buff_rule`) · snow-white · maxwell · zwei(base/signature 둘 다) · laplace · laplace-signature · laplace-ultimate-hero. **전부 self 범위** — 관통 속성을 남에게 주는 유닛은 없다.
+- Consequences: **덱5 1.14x → 1.03x**(네온 1.38→1.25 · 아크레인저 1.18→1.08), **덱4 1.01x → 0.90x**(민트 1.19→**1.00** · 볼륨 1.17→0.93 · 신데렐라 0.88→0.70). 덱1·2·3은 관통 제공자가 없어 무변동. 합계 0.977x → **0.950x**. 즉 **총합은 나빠지고 초과 유닛은 정확해졌다** — 차지 대미지 때와 같은 모양이다: 가짜 버프가 걷히자 그 아래에 깔려 있던 계통적 과소 모델링이 드러났다. 백엔드 **1439 passed / 3 skipped**(게이트 회귀 3건 신설, 기존 6건 재조준).
+
 ## "코어 명중 대미지"는 스킬 딜인데도 코어 보너스를 받는다 — 코어 판정의 유일한 예외
 - Date: 2026-07-26
 - Context: 같은 날 "코어 대미지는 평타 전용"이라는 판정을 넣은 뒤, 신데렐라: 크리스탈 웨이브 MG 모드의 833.79% 넉이 원문에 **"as core strike damage"**(코어 명중 대미지)라고 명시돼 있는데도 보너스를 하나도 못 받는 게 드러났다.

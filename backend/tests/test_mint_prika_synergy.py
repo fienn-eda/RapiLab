@@ -72,8 +72,11 @@ def test_encore_squad_attack_damage_reaches_the_attacker_burst_through_the_pipel
     # Prika's Encore fires (she is in Performance): Encore Attack Damage +25.01%,
     # Mint's Sing Along Attack Damage +30.02% and Crit Damage +45.05%, and -
     # because Encore pins Mint Singing - Mint's Fantastic Performance Crit Rate
-    # +19.94% and Pierce +32.72% all reach the attacker's burst.
-    #   Charge 1.25 * (1 + AD 0.5503 + Pierce 0.3272) * (1 + 0.1994*(0.5 + 0.4505))
+    # +19.94% reach the attacker's burst.
+    #
+    # Mint's Pierce +32.72% does NOT: Pierce Damage Up credits only a unit that
+    # actually has Pierce, and this bare attacker never gains it.
+    #   Charge 1.25 * (1 + AD 0.5503) * (1 + 0.1994*(0.5 + 0.4505))
     assert round(attacker_bursts[25.0], 4) == round(
-        10000 * 1.25 * (1 + 0.3002 + 0.2501 + 0.3272) * (1 + 0.1994 * (0.5 + 0.4505)), 4
-    )  # 27916.7751
+        10000 * 1.25 * (1 + 0.3002 + 0.2501) * (1 + 0.1994 * (0.5 + 0.4505)), 4
+    )  # 23051.5987

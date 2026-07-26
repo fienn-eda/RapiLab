@@ -21,7 +21,12 @@ Not modeled:
   target allies hit (positional/target-state, unrepresentable). Her burst
   currently contributes no modeled damage.
 """
-from app.skill_rules._helpers import buff_rule, cdr_pulse_rule, refreshing_buff_rule
+from app.skill_rules._helpers import (
+    buff_rule,
+    cdr_pulse_rule,
+    refreshing_buff_rule,
+    round_buff_rule,
+)
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -40,6 +45,7 @@ SKILL_VALUE_MANIFESTS = {
 
 
 ASSAULT_FORMATION_ATTACK_DAMAGE_SHOT_COUNT = 5  # skill text: "for 5 time(s)"
+CALM_SNIPING_PIERCE_SHOT_COUNT = 3  # skill text: "for 3 time(s)"
 
 
 def build_d_killer_wife_rules(values):
@@ -62,6 +68,19 @@ def build_assault_formation_rules(values):
     Refreshing buff (the game refreshes, not stacks)."""
     attack_damage = float(values["description_value_04"]) / 100
     attack_damage_duration = float(values["description_value_05"])
-    return [(ASSAULT_FORMATION_ATTACK_DAMAGE_SHOT_COUNT, "every", [refreshing_buff_rule("per_shot", [
-        ("attack_damage_up", attack_damage, "squad", attack_damage_duration),
-    ])])]
+    return [
+        (ASSAULT_FORMATION_ATTACK_DAMAGE_SHOT_COUNT, "every", [refreshing_buff_rule("per_shot", [
+            ("attack_damage_up", attack_damage, "squad", attack_damage_duration),
+        ])]),
+        # Calm Sniping: "attacking with Full Charge for 3 time(s) -> Gain Pierce
+        # for 1 shot". An SR's every shot is a full charge, so it lands on every
+        # third and covers exactly the next bullet - the round-grant path, not a
+        # seconds-based window. She therefore holds Pierce for one shot in three,
+        # which is what her own squad Pierce Damage buff credits on her.
+        (CALM_SNIPING_PIERCE_SHOT_COUNT, "every", [
+            round_buff_rule("per_shot", [("has_pierce", 1.0, "self")], shots=1),
+        ]),
+    ]
+
+
+

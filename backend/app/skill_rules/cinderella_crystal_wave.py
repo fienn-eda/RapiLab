@@ -122,6 +122,9 @@ def build_crystal_wave_snipe_rules(values):
         buff_rule("battle_start", [
             ("damage_to_parts_up", float(mode_swap["description_value_03"]) / 100,
              "self", None),                                   # Destroy
+            # Snipe Mode's "Additional Effect 1: Gains Pierce" - permanent
+            # here because this slug holds Snipe for the whole fight.
+            ("has_pierce", 1.0, "self", None),
         ]),
         instant_nuke_pulse_rule(
             "full_burst_enter", float(mode_swap["description_value_06"]),
