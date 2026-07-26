@@ -327,8 +327,9 @@ def test_the_gauge_sets_the_steady_cycle_once_cooldowns_outrun_it():
     assert all(g == pytest.approx(FULL_BURST_DURATION + gauge + 0.2) for g in gaps)
 
 
-def test_gauge_charge_time_is_the_measured_value_not_a_guess():
-    # It stopped being inert once it became the binding constraint, so it now
-    # scales every unit's damage - pinned so a casual edit has to argue with
-    # the measurement above.
-    assert BossProfile.gauge_charge_time == 2.65
+def test_gauge_charge_time_stays_low_enough_to_rarely_bind():
+    # It is a per-DECK quantity modelled as one constant, so it is set where it
+    # invents the fewest constraints rather than where any one deck measures
+    # (Fienn: most compositions fill the gauge faster than cooldowns clear).
+    # Raising it slows every CDR-heavy deck, so a change needs an argument.
+    assert BossProfile.gauge_charge_time == 2.0

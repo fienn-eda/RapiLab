@@ -4,16 +4,18 @@ Models the rotation Fienn described: burst skills fire the instant their
 cooldown allows, not on a fixed delay, and `gauge_charge_time` is the minimum
 time after Full Burst ends before the next cycle can even begin.
 
-That floor USED to be inert - the original note here said gauge charge always
-finishes before the next tier's cooldown clears, so the cooldown was the only
-bottleneck. **That is no longer true.** Once Volume's Drop the Beat was read
-correctly as cumulative (up to 8.21 sec off every ally's cooldown from the
-third Full Burst on), cooldowns clear faster than the gauge fills and the
-steady-state cycle becomes exactly `FULL_BURST_DURATION + gauge_charge_time +
-tier gap`. The floor is now what sets the rotation's rate, so it scales every
-unit's damage - see BossProfile.gauge_charge_time for the measurement behind
-its value, and docs/roadmap.md for the caveat that the real gauge fills from
-damage dealt and is therefore deck-dependent, not a constant.
+That floor is inert in MOST decks - gauge charge finishes before the next
+tier's cooldown clears, so the cooldown is the only bottleneck. It stops being
+inert where a deck's own cooldown reduction is large enough to outrun the
+gauge: with Volume's Drop the Beat read correctly as cumulative (up to 8.21 sec
+off every ally's cooldown from the third Full Burst on), the steady-state cycle
+becomes exactly `FULL_BURST_DURATION + gauge_charge_time + tier gap` and this
+floor sets the rotation's rate, scaling every unit's damage.
+
+The real gauge fills from damage dealt, so it is a property of the DECK, not
+the boss, and no single constant is right for both regimes. See
+BossProfile.gauge_charge_time for why the default is set low, and
+docs/roadmap.md for the measured error that leaves.
 
 Burst tiers 1/2/3 then fire in order (auto-battle: back to back; manual:
 0.1s apart), triggering a 10s Full Burst window. Per-Nikke cooldowns are
