@@ -124,21 +124,21 @@ export function DraftResults({
   return (
     <div className="draft-results">
       <p className="raid-results__note">
-        Three ascending tiers: your submitted draft, the best allocation using
-        only your drafted units, and the bench-inclusive recommendation.
+        세 단계로 올라갑니다: 제출한 드래프트, 드래프트한 유닛만으로 만든
+        최선의 배분, 벤치까지 포함한 추천.
       </p>
 
-      <section className="draft-results__tier" aria-label="Your draft">
-        <h3 className="draft-results__tier-title">Your draft</h3>
-        <p className="draft-results__tier-total">{formatDamage(baselineTotalDamage)} dmg</p>
+      <section className="draft-results__tier" aria-label="내 드래프트">
+        <h3 className="draft-results__tier-title">내 드래프트</h3>
+        <p className="draft-results__tier-total">{formatDamage(baselineTotalDamage)} 딜</p>
       </section>
 
-      <section className="draft-results__tier" aria-label="Best within your draft">
+      <section className="draft-results__tier" aria-label="드래프트 내 최선">
         <h3 className="draft-results__tier-title">
-          Best within your draft (+{formatDamage(delta1)})
+          드래프트 내 최선 (+{formatDamage(delta1)})
         </h3>
         <p className="draft-results__tier-total">
-          {formatDamage(withinDraft.combined_total_damage)} dmg
+          {formatDamage(withinDraft.combined_total_damage)} 딜
         </p>
         <ol className="deck-results">
           {withinDraft.decks.map((deck, index) => {
@@ -150,7 +150,7 @@ export function DraftResults({
             return (
               <DeckCard
                 key={`within-draft-${index}`}
-                label={`Deck ${index + 1}`}
+                label={`덱 ${index + 1}`}
                 deck={deck}
                 addedSlugs={added}
                 removedSlugs={removed}
@@ -161,11 +161,11 @@ export function DraftResults({
         </ol>
       </section>
 
-      <section className="draft-results__tier" aria-label="Recommended">
+      <section className="draft-results__tier" aria-label="추천">
         <h3 className="draft-results__tier-title">
-          Recommended, bench-inclusive (+{formatDamage(delta2)})
+          추천 (벤치 포함, +{formatDamage(delta2)})
         </h3>
-        <p className="draft-results__tier-total">{formatDamage(combinedTotalDamage)} dmg</p>
+        <p className="draft-results__tier-total">{formatDamage(combinedTotalDamage)} 딜</p>
         <ol className="deck-results">
           {decks.map((deck, index) => {
             const { added, removed } = diffAgainstSubmitted(
@@ -176,7 +176,7 @@ export function DraftResults({
             return (
               <DeckCard
                 key={`recommended-${index}`}
-                label={`Deck ${index + 1}`}
+                label={`덱 ${index + 1}`}
                 deck={deck}
                 pinnedSlugs={deck.pinned_slugs}
                 addedSlugs={added}
@@ -190,7 +190,7 @@ export function DraftResults({
 
       {leftoverSlugs.length > 0 && (
         <p className="raid-results__leftover">
-          Bench (not allocated to a deck): {leftoverSlugs.map(nameFor).join(', ')}
+          벤치 (덱에 배정되지 않음): {leftoverSlugs.map(nameFor).join(', ')}
         </p>
       )}
       <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
