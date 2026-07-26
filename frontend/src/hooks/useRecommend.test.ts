@@ -88,6 +88,6 @@ describe('useRecommend', () => {
     })
 
     await waitFor(() => expect(result.current.status).toBe('error'))
-    expect(result.current.error).toBe('Failed to fetch deck recommendations.')
+    expect(result.current.error).toBe('덱 추천을 가져오지 못했어요.')
   })
 })
