@@ -10,7 +10,7 @@ PIRATES_HEART = {
     "description_value_04": "35.02",  # while Drunken: squad ATK % of caster's ATK
 }
 PIRATES_SPIRIT = {
-    "description_value_01": "15.03",  # Distributed Damage per stack (not modeled)
+    "description_value_01": "15.03",  # squad Distributed Damage % per stack
     "description_value_02": "10",
     "description_value_03": "15.04",  # Reloading Speed % per stack
     "description_value_04": "10",
@@ -37,8 +37,12 @@ def build(caster_atk=10000):
     })
 
 
+# Drunken is gained "when entering Burst stage 1", so every context needs a
+# Burst 1 whose bursts can be counted - that squad event, not Mast's own
+# activations, is what advances the stack.
 def solo_context():
     return SquadContext([
+        SquadMember("b1", burst_tier=1, element="Water"),
         SquadMember("mast-romantic-maid", burst_tier=2, element="Water"),
         SquadMember("dealer", burst_tier=3, element="Fire"),
     ])
@@ -46,14 +50,21 @@ def solo_context():
 
 def anchor_context():
     return SquadContext([
+        SquadMember("b1", burst_tier=1, element="Water"),
         SquadMember("mast-romantic-maid", burst_tier=2, element="Water"),
         SquadMember("anchor-innocent-maid", burst_tier=2, element="Water"),
         SquadMember("dealer", burst_tier=3, element="Fire"),
     ])
 
 
+def enter_stage_one(ctx, time):
+    """The squad enters Burst Stage 1 at `time` - one Drunken stack."""
+    ctx.record_burst_time("b1", time)
+
+
 def _fire_enter_cycles(rules, ctx, registry, times):
     for t in times:
+        enter_stage_one(ctx, t - 1.0)
         fire_trigger("full_burst_enter", {"mast-romantic-maid": rules}, ctx, registry, time=t)
 
 
@@ -66,6 +77,7 @@ def test_spirit_reload_cycles_when_mast_is_solo():
     times = [15.0, 35.0, 55.0, 75.0]  # >10s apart so only the current cycle's buff is live
     expected = [0.1504, 0.3008, 0.4512, 0.1504]
     for t, want in zip(times, expected):
+        enter_stage_one(ctx, t - 1.0)
         fire_trigger("full_burst_enter", {"mast-romantic-maid": rules}, ctx, registry, time=t)
         assert round(registry.total_for("reload_speed_percent", DEALER, now=t), 4) == want
 
@@ -78,6 +90,7 @@ def test_spirit_reload_holds_at_three_stacks_with_anchor():
     times = [15.0, 35.0, 55.0, 75.0]
     expected = [0.1504, 0.3008, 0.4512, 0.4512]
     for t, want in zip(times, expected):
+        enter_stage_one(ctx, t - 1.0)
         fire_trigger("full_burst_enter", {"mast-romantic-maid": rules}, ctx, registry, time=t)
         assert round(registry.total_for("reload_speed_percent", DEALER, now=t), 4) == want
 
@@ -106,6 +119,7 @@ def test_romance_burst_applies_flat_buffs_and_stack_scaled_atk():
     registry = EffectRegistry()
     rules = build()
 
+    enter_stage_one(ctx, 4.0)
     fire_trigger("own_burst_activate", {"mast-romantic-maid": rules}, ctx, registry, time=5.0)
     assert round(registry.total_for("other_critical_damage_sources", DEALER, now=5.0), 4) == 0.4004
     assert round(registry.total_for("attack_damage_up", DEALER, now=5.0), 4) == 0.1504
@@ -113,5 +127,33 @@ def test_romance_burst_applies_flat_buffs_and_stack_scaled_atk():
     assert registry.total_for("flat_atk", DEALER, now=5.0) == 2006.0
 
     # cycle 2 stacks = 2 -> 4012 (previous 10s window has expired by t=25)
+    enter_stage_one(ctx, 24.0)
     fire_trigger("own_burst_activate", {"mast-romantic-maid": rules}, ctx, registry, time=25.0)
     assert registry.total_for("flat_atk", DEALER, now=25.0) == 4012.0
+
+
+def test_spirit_grants_stack_scaled_distributed_damage():
+    # The Distributed Damage half of A Pirate's Spirit is offensive - it
+    # multiplies allies' Distributed damage instances (Scarlet: Black Shadow's
+    # 6th/9th stages in Fienn's deck 1) - and scales with the stack count.
+    ctx = anchor_context()
+    registry = EffectRegistry()
+    rules = build()
+    for t, want in zip([15.0, 35.0, 55.0, 75.0], [0.1503, 0.3006, 0.4509, 0.4509]):
+        enter_stage_one(ctx, t - 1.0)
+        fire_trigger("full_burst_enter", {"mast-romantic-maid": rules}, ctx, registry, time=t)
+        assert round(registry.total_for("distributed_damage_up", DEALER, now=t), 4) == want
+
+
+def test_stacks_count_squad_stage_one_entries_not_masts_own_bursts():
+    # She shares the Burst-2 slot with Anchor, so she bursts every OTHER cycle.
+    # The stack still advances every cycle: her FIRST burst lands on cycle 2 and
+    # must read 2 stacks, not 1. Counting her own activations gave 1.
+    ctx = anchor_context()
+    registry = EffectRegistry()
+    rules = build()
+
+    enter_stage_one(ctx, 1.0)    # cycle 1 - Anchor takes the slot
+    enter_stage_one(ctx, 21.0)   # cycle 2 - Mast bursts
+    fire_trigger("own_burst_activate", {"mast-romantic-maid": rules}, ctx, registry, time=22.0)
+    assert registry.total_for("flat_atk", DEALER, now=22.0) == 4012.0  # 20.06% x 2 stacks

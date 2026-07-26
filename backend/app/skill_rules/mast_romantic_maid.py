@@ -19,13 +19,16 @@ Modeled (DPS-relevant):
   applied once from cycle 1 and kept for the fight (she is Drunken almost the
   whole time; the brief solo post-stun gap is ignored).
 - A Pirate's Spirit (skills[1]): on entering full burst (Burst stage 3) while
-  Drunken, squad Reloading Speed ▲ per-stack * stacks for 10s (its Distributed
-  Damage part is survivability, not modeled).
+  Drunken, squad Distributed Damage ▲ and Reloading Speed ▲, both per-stack *
+  stacks, for 10s. The Distributed Damage half is offensive - it multiplies
+  allies' Distributed damage instances (Scarlet: Black Shadow's 6th/9th
+  stages) - and was missing until 2026-07-27.
 - A Pirate's Romance (skills[2], her burst): squad Critical Damage + Attack
   Damage (flat, 10s), plus ATK ▲ per-stack * stacks of caster's ATK for 10s.
 
-The stack count is read at both full_burst_enter and own_burst_activate; both
-fire once per cycle, after the cycle's stack is gained, so both see stacks(cycle).
+The stack count is derived from Burst-Stage-1 entries, not from Mast's own
+activations: the stack is a squad-cycle event, and she does not burst every
+cycle when another Burst 2 shares the slot.
 """
 from app.effects import Effect
 from app.squad_engine import SkillRule
@@ -46,12 +49,25 @@ ANCHOR_SLUG = "anchor-innocent-maid"
 MAX_DRUNKEN_STACKS = 3
 
 
-def _drunken_stacks(context, caster_slug, trigger):
-    cycle = context.activation_count(caster_slug, trigger)
+def _drunken_stacks(context, time):
+    """Stacks held at `time`. Drunken is gained "when entering Burst stage 1",
+    which is a SQUAD event - it happens every cycle whoever takes the slot, and
+    whether or not Mast bursts that cycle. Counting her own activations of some
+    trigger instead silently undercounts every cycle she sits out: in Fienn's
+    deck 1 she alternates the Burst-2 slot with Anchor, so her burst fired on
+    cycles 2/4/6/... while reading stack counts 1/2/3/... - one short until the
+    cap hid it."""
+    cycle = sum(
+        1
+        for member in context.members
+        if member.burst_tier == 1
+        for t in context.burst_times.get(member.slug, ())
+        if t <= time
+    )
     anchor_present = any(m.slug == ANCHOR_SLUG for m in context.members)
     if anchor_present:
         return min(cycle, MAX_DRUNKEN_STACKS)
-    return ((cycle - 1) % MAX_DRUNKEN_STACKS) + 1
+    return ((cycle - 1) % MAX_DRUNKEN_STACKS) + 1 if cycle else 0
 
 
 def build_mast_rules(values):
@@ -63,6 +79,8 @@ def build_mast_rules(values):
     drunken_crit_rate = float(heart["description_value_03"]) / 100
     drunken_atk = float(heart["description_value_04"]) / 100 * caster_atk
 
+    spirit_distributed_per_stack = float(spirit["description_value_01"]) / 100
+    spirit_distributed_duration = float(spirit["description_value_02"])
     spirit_reload_per_stack = float(spirit["description_value_03"]) / 100
     spirit_reload_duration = float(spirit["description_value_04"])
 
@@ -79,8 +97,17 @@ def build_mast_rules(values):
         registry.add(Effect("crit_rate", drunken_crit_rate, "squad", None, caster_slug), applied_at=time)
         registry.add(Effect("flat_atk", drunken_atk, "squad", None, caster_slug), applied_at=time)
 
-    def apply_spirit_reload(context, caster_slug, time, registry):
-        stacks = _drunken_stacks(context, caster_slug, "full_burst_enter")
+    def apply_spirit(context, caster_slug, time, registry):
+        stacks = _drunken_stacks(context, time)
+        # "Distributed Damage - 15.03% x number of Drunken stacks" is an
+        # OFFENSIVE buff on the Distributed damage type, not survivability -
+        # and in Fienn's deck 1 it lands on Scarlet: Black Shadow, who deals
+        # two of her three staged effects as Distributed Damage.
+        registry.add(
+            Effect("distributed_damage_up", spirit_distributed_per_stack * stacks, "squad",
+                   spirit_distributed_duration, caster_slug),
+            applied_at=time,
+        )
         registry.add(
             Effect("reload_speed_percent", spirit_reload_per_stack * stacks, "squad",
                    spirit_reload_duration, caster_slug),
@@ -98,7 +125,7 @@ def build_mast_rules(values):
                    romance_attack_damage_duration, caster_slug),
             applied_at=time,
         )
-        stacks = _drunken_stacks(context, caster_slug, "own_burst_activate")
+        stacks = _drunken_stacks(context, time)
         registry.add(
             Effect("flat_atk", romance_atk_per_stack * stacks * caster_atk, "squad",
                    romance_atk_duration, caster_slug),
@@ -107,6 +134,6 @@ def build_mast_rules(values):
 
     return [
         SkillRule(trigger="full_burst_enter", action=apply_drunken_continuous),
-        SkillRule(trigger="full_burst_enter", action=apply_spirit_reload),
+        SkillRule(trigger="full_burst_enter", action=apply_spirit),
         SkillRule(trigger="own_burst_activate", action=apply_romance_burst),
     ]
