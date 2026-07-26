@@ -104,9 +104,15 @@ def build_crystal_wave_mg_rules(values):
         # model (CORE_HIT_BONUS, no per-enemy distinction), so gating the whole
         # nuke on core_hittable is the established convention for a
         # core-activated-enemies-only effect.
+        #
+        # "core strike damage" (코어 명중 대미지) collects the core bonus
+        # multiplier and every Core Damage up/down effect, even though it is
+        # skill damage and strikes the body rather than a real core part - see
+        # raid_simulator.core_eligible. Her own Pinpoint (+26%) is one of the
+        # effects it therefore picks up.
         instant_nuke_pulse_rule(
             "full_burst_enter", float(mode_swap["description_value_08"]),
-            condition=own_burst_and_core),
+            condition=own_burst_and_core, damage_type="core_strike"),
     ]
 
 

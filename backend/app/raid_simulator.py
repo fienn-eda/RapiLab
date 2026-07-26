@@ -124,7 +124,17 @@ def core_eligible(source, damage_type):
     Distributed damage cannot hit a core at all even when it IS the unit's
     normal attack (Fienn, in-game, 2026-07-26). Every source in the damage log
     other than "normal_attack" is skill damage.
+
+    "Core strike damage" (코어 명중 대미지) is the named exception, and it is a
+    skill damage type by construction. Its in-game tooltip: it strikes the
+    target's BODY rather than a real core part, but "is displayed as core
+    damage, and the core bonus multiplier and core-damage up/down effects
+    apply" - so it collects exactly what a core hit collects. The same tooltip
+    says it does NOT fire "on core hit" conditions; nothing to guard, as this
+    engine has no core-hit trigger (Fienn, 2026-07-26).
     """
+    if damage_type == "core_strike":
+        return True
     return source == "normal_attack" and damage_type not in NON_CORE_DAMAGE_TYPES
 
 # A `burst_anchored_buffs` duration meaning "hold until this unit's next own
@@ -375,6 +385,9 @@ def _resolve_squad_burst_cycle_resource(spec, slug, events, context):
 # are computed exactly as before.
 _TYPE_BUCKETS = {
     "attack": [],
+    # Core strike carries no Damage-Up bucket of its own; what makes it
+    # different is the core bonus it collects - see core_eligible.
+    "core_strike": [],
     "sustained": ["sustained_damage_up"],
     "distributed": ["distributed_damage_up"],
     "true": ["true_damage_up"],
