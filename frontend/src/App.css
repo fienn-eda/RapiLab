@@ -550,6 +550,76 @@
   max-width: 480px;
 }
 
+/* 제목과 도움말 토글을 한 줄에. 도움말 본문은 이 행이 아니라 패널 아래로
+   전체 폭으로 펼쳐진다. */
+.sync__header {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-3);
+}
+
+.sync__help-toggle {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 13px;
+  color: var(--accent);
+  cursor: pointer;
+  text-decoration: underline;
+}
+
+.sync__help-toggle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.sync-help {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-width: 480px;
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* 위 클래스의 `display`가 `hidden` 속성의 UA 규칙을 이기므로, .panel[hidden]과
+   같은 이유로 감추기를 여기서 다시 말해야 한다. */
+.sync-help[hidden] {
+  display: none;
+}
+
+.sync-help__steps {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding-left: var(--sp-4);
+}
+
+.sync-help__heading {
+  margin: var(--sp-2) 0 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.sync-help__text {
+  margin: 0;
+}
+
+.sync-help__shot {
+  display: block;
+  max-width: 100%;
+  margin-top: var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
 /* Pills ---------------------------------------------------------------- */
 
 .pill {

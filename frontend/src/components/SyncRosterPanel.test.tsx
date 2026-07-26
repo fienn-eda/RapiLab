@@ -143,4 +143,35 @@ describe('SyncRosterPanel', () => {
     expect(secondHref).toContain('1111111111111111111')
     expect(secondHref).not.toContain('1234567890123456789')
   })
+
+  it('도움말은 기본으로 접혀 있다', () => {
+    render(<SyncRosterPanel onImport={vi.fn()} />)
+    expect(screen.getByRole('button', { name: '동기화 방법' })).toHaveAttribute(
+      'aria-expanded',
+      'false',
+    )
+    expect(screen.getByText(/복사한 URL을 아래 칸에 붙여넣어요/)).not.toBeVisible()
+  })
+
+  it('동기화 방법 버튼을 누르면 도움말이 펼쳐진다', () => {
+    render(<SyncRosterPanel onImport={vi.fn()} />)
+    const toggle = screen.getByRole('button', { name: '동기화 방법' })
+
+    fireEvent.click(toggle)
+
+    expect(toggle).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByText(/복사한 URL을 아래 칸에 붙여넣어요/)).toBeVisible()
+    // 라벨 없는 아이콘 두 개를 지목하는 것이 이 도움말의 존재 이유다.
+    expect(screen.getByAltText(/공유 아이콘/)).toBeVisible()
+    expect(screen.getByAltText(/링크 복사하기/)).toBeVisible()
+  })
+
+  it('defaultHelpOpen이면 처음부터 펼쳐져 있다', () => {
+    render(<SyncRosterPanel onImport={vi.fn()} defaultHelpOpen />)
+    expect(screen.getByRole('button', { name: '동기화 방법' })).toHaveAttribute(
+      'aria-expanded',
+      'true',
+    )
+    expect(screen.getByText(/계정마다 북마크가 따로 필요해요/)).toBeVisible()
+  })
 })

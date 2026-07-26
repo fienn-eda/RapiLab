@@ -7,6 +7,7 @@ import { buildBookmarklet } from '../lib/bookmarklet'
 import { useBookmarkletImport } from '../hooks/useBookmarkletImport'
 import { parseRosterJson } from '../lib/rosterImport'
 import type { NikkeDraft } from '../types/nikkeDraft'
+import { SyncHelp } from './SyncHelp'
 
 interface SyncRosterPanelProps {
   onImport: (args: {
@@ -14,9 +15,13 @@ interface SyncRosterPanelProps {
     nickname: string
     roster: NikkeDraft[]
   }) => void
+  /** 활성 프로필이 없는 화면에서는 도움말이 펼쳐진 채로 시작한다 - 아직 아무것도
+   * 동기화하지 못한 유저가 토글을 "발견"할 필요가 없어야 한다. */
+  defaultHelpOpen?: boolean
 }
 
-export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
+export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRosterPanelProps) {
+  const [helpOpen, setHelpOpen] = useState(defaultHelpOpen)
   const [openId, setOpenId] = useState<string | null>(null)
   const [urlError, setUrlError] = useState<string | null>(null)
   const [summary, setSummary] = useState<string | null>(null)
@@ -58,7 +63,19 @@ export function SyncRosterPanel({ onImport }: SyncRosterPanelProps) {
 
   return (
     <section className="sync">
-      <h2 className="sync__title">blablalink에서 동기화</h2>
+      <div className="sync__header">
+        <h2 className="sync__title">blablalink에서 동기화</h2>
+        <button
+          type="button"
+          className="sync__help-toggle"
+          aria-expanded={helpOpen}
+          aria-controls="sync-help"
+          onClick={() => setHelpOpen((open) => !open)}
+        >
+          동기화 방법
+        </button>
+      </div>
+      <SyncHelp id="sync-help" hidden={!helpOpen} />
       <div className="field">
         <label className="field__label" htmlFor="share-url">
           ShiftyPad 공유 URL
