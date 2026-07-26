@@ -69,18 +69,36 @@ VOLUME = {
 }
 
 
-def test_volume_stacks_three_crit_damage_tiers_and_grants_crit_rate():
+def test_volume_crit_damage_tiers_unlock_one_per_burst_use():
+    # "Effects vary according to the number of uses. Each subsequent effect
+    # triggers all effects before it" - so the sum is the STEADY state, reached
+    # on the third use, not the opening value. Fienn's range measurement pinned
+    # the first use at tier 1 alone (2026-07-27).
     ctx = deck_ctx("volume")
     reg = EffectRegistry()
     rules = {"volume": build_volume_rules(VOLUME)}
 
-    fire_trigger("full_burst_enter", rules, ctx, reg, time=0.0)
-    assert reg.drain_pulses("burst_cooldown_reduction_sec")[0].value == 3.17
+    # 20s apart, so each use's 5-sec windows have lapsed before the next.
+    for use, (time, want) in enumerate(
+        [(0.0, 0.1077), (20.0, 0.1077 + 0.1246), (40.0, 0.3765), (60.0, 0.3765)], start=1
+    ):
+        fire_trigger("own_burst_activate", rules, ctx, reg, time=time)
+        assert round(reg.total_for("other_critical_damage_sources", ALLY, time), 4) == round(want, 4), use
+    assert round(reg.total_for("crit_rate", ALLY, 60.0), 4) == 0.319
 
-    fire_trigger("own_burst_activate", rules, ctx, reg, time=0.0)
-    # crit damage tiers 10.77 + 12.46 + 14.42 = 37.65% stacked
-    assert round(reg.total_for("other_critical_damage_sources", ALLY, 0.0), 4) == 0.3765
-    assert round(reg.total_for("crit_rate", ALLY, 0.0), 4) == 0.319
+
+def test_volume_burst_cooldown_reduction_escalates_the_same_way():
+    # Same bullet shape, same wording, on the Full Burst counter instead.
+    ctx = deck_ctx("volume")
+    reg = EffectRegistry()
+    rules = {"volume": build_volume_rules(VOLUME)}
+
+    # Escalates to the tier unlocked so far. Whether a later tier REPLACES the
+    # earlier ones or ADDS to them is undetermined by the measurement (they
+    # agree at activation 1) - see volume.CDR_TIERS_ARE_CUMULATIVE.
+    for want in (2.34, 2.7, 3.17, 3.17):
+        fire_trigger("full_burst_enter", rules, ctx, reg, time=0.0)
+        assert round(sum(p.value for p in reg.drain_pulses("burst_cooldown_reduction_sec")), 4) == round(want, 4)
 
 
 # Base ("skills") level-10 values - slug "miranda". Health Up! stops at slot 06

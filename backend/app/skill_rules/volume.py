@@ -5,13 +5,25 @@ Modeled (DPS-relevant):
   reduction; on her own burst, squad Crit Damage up.
 - Turn up the volume! (skills[2], her burst): squad Crit Rate up.
 
-Simplification: both Drop the Beat effects escalate over the first three
-activations ("previous effects trigger repeatedly"); the crit-damage tiers
-stack, so the steady-state value is the sum of all three, and the CDR uses
-the third-activation value. Freestyle (skills[0]) is a self ATK buff on kill,
-which raid bosses don't grant, so it's not modeled.
+Both halves of Drop the Beat ESCALATE: "Effects vary according to the number of
+[uses / times entered]. Each subsequent effect triggers all effects before it."
+The Nth activation applies every tier unlocked so far - tier 1 alone on the
+first, tiers 1+2 on the second, all three from the third on. The sum is the
+STEADY state, not the opening value; the old encoding handed the squad its
+end-state Crit Damage from the very first cycle (and, inconsistently, used only
+the third tier's CDR rather than the running sum).
+
+Fienn's in-game range measurement (2026-07-27) settled it: on the opening burst
+her squad Crit Damage contribution was tier 1 alone - 7.74% at skill 7, matching
+`description_value_04` exactly, against the 28.45% the old encoding applied.
+See docs/decisions.md.
+
+Freestyle (skills[0]) is a self ATK buff on kill, which raid bosses don't grant,
+so it's not modeled.
 """
-from app.skill_rules._helpers import buff_rule, cdr_pulse_rule
+from app.effects import Pulse
+from app.skill_rules._helpers import buff_rule, escalating_buff_rule
+from app.squad_engine import SkillRule
 
 SKILL_VALUE_MANIFESTS = {
     "volume": {
@@ -25,23 +37,55 @@ SKILL_VALUE_MANIFESTS = {
 }
 
 
+# Whether an escalated tier REPLACES the ones before it or ADDS to them. The
+# range measurement proves the tiers escalate (the first activation is tier 1,
+# not the maximum) but cannot separate these two readings - at activation 1 they
+# are identical. Kept at the conservative reading, which preserves the
+# steady-state value the calibration was built on; flipping it is one line.
+#   cumulative CDR measured 2026-07-27: deck 4 1.24x -> 1.53x, 11 -> 14 Full
+#   Bursts in 180 sec. Large and unverified, so not adopted. See docs/roadmap.md.
+CDR_TIERS_ARE_CUMULATIVE = False
+
+
+def _escalating_cdr_rule(trigger, tier_seconds):
+    """The cooldown-reduction half of an escalating bullet.
+
+    `escalating_buff_rule` covers the registry-effect case; a burst-cooldown
+    reduction is a Pulse instead, so it needs its own accumulator. On the Nth
+    activation the tiers unlocked so far apply - summed or superseded per
+    CDR_TIERS_ARE_CUMULATIVE.
+    """
+
+    def action(context, caster_slug, time, registry):
+        n = context.activation_count(caster_slug, trigger)
+        unlocked = [value for unlock_at, value in enumerate(tier_seconds, start=1) if n >= unlock_at]
+        if not unlocked:
+            return
+        seconds = sum(unlocked) if CDR_TIERS_ARE_CUMULATIVE else unlocked[-1]
+        registry.add_pulse(Pulse("burst_cooldown_reduction_sec", seconds, "squad", caster_slug))
+
+    return SkillRule(trigger=trigger, action=action)
+
+
 def build_volume_rules(values):
     beat = values["drop_the_beat"]
     turn_up = values["turn_up"]
-    cdr_sec = float(beat["description_value_03"])  # steady-state (3rd) CDR
-    crit_damage = (
-        float(beat["description_value_04"])
-        + float(beat["description_value_06"])
-        + float(beat["description_value_08"])
-    ) / 100  # three crit-damage tiers stack at steady state
-    crit_damage_duration = float(beat["description_value_09"])
+    cdr_tiers = [float(beat[f"description_value_0{slot}"]) for slot in (1, 2, 3)]
+    crit_damage_tiers = [
+        (float(beat["description_value_04"]) / 100, float(beat["description_value_05"])),
+        (float(beat["description_value_06"]) / 100, float(beat["description_value_07"])),
+        (float(beat["description_value_08"]) / 100, float(beat["description_value_09"])),
+    ]
     crit_rate = float(turn_up["description_value_01"]) / 100
     crit_rate_duration = float(turn_up["description_value_02"])
 
     return [
-        cdr_pulse_rule("full_burst_enter", cdr_sec),
-        buff_rule("own_burst_activate", [
-            ("other_critical_damage_sources", crit_damage, "squad", crit_damage_duration),
+        _escalating_cdr_rule("full_burst_enter", cdr_tiers),
+        # Each tier's 5-sec window is far shorter than her burst cooldown, so
+        # re-applications never overlap and plain adds are correct.
+        escalating_buff_rule("own_burst_activate", [
+            [("other_critical_damage_sources", value, "squad", duration)]
+            for value, duration in crit_damage_tiers
         ]),
         buff_rule("own_burst_activate", [
             ("crit_rate", crit_rate, "squad", crit_rate_duration),
