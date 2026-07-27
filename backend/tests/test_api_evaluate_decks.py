@@ -1,0 +1,122 @@
+"""POST /api/evaluate-decks - 탐색 없는 평가 전용 경로. 실제 시뮬을 돌린다
+(스텁 없음): 이 엔드포인트가 추천 경로와 같은 프리미티브를 쓴다는 주장은
+스텁으로는 검증되지 않는다."""
+import pytest
+from fastapi.testclient import TestClient
+
+from app.api import app
+from app.deck_evaluation import InfeasibleDeck
+from app.engine_version import engine_version
+from tests.test_api_recommend import _nikke
+
+client = TestClient(app)
+
+# B1/B2/B3를 모두 덮는 실제 로더블 유닛 5명. 확인:
+#   python -c "from app.supported_units import supported_units as s; \
+#              print(sorted((u['burst_tier'], u['slug']) for u in s()))"
+DECK = ["liter", "blanc", "crown", "modernia", "privaty"]
+ROSTER = [_nikke(s) for s in DECK]
+
+
+def _request(decks, roster=None):
+    return {"roster": roster if roster is not None else ROSTER, "decks": decks}
+
+
+def test_evaluates_one_deck_and_reports_the_engine_version():
+    response = client.post("/api/evaluate-decks",
+                           json=_request([{"units": DECK, "boss": {}}]))
+
+    assert response.status_code == 200
+    body = response.json()
+    assert len(body["decks"]) == 1
+    deck = body["decks"][0]
+    assert sorted(deck["deck"]) == sorted(DECK)
+    assert deck["total_damage"] > 0
+    # _summarize의 계약: 세 갈래가 총딜을 남김없이 덮는다. 시뮬레이터가 total과
+    # 갈래별 합을 서로 다른 덧셈 순서로 누적하므로 부동소수 오차만큼은 approx로
+    # 눈감아준다 - 같은 계약을 검증하는 test_api_recommend.py도 approx를 쓴다.
+    assert (deck["burst_damage"] + deck["normal_attack_damage"]
+            + deck["skill_damage"]) == pytest.approx(deck["total_damage"])
+    assert body["combined_total_damage"] == deck["total_damage"]
+    assert body["excluded_slugs"] == []
+    assert body["engine_version"] == engine_version()
+
+
+def test_matches_the_draft_baseline_for_the_same_deck_and_boss():
+    """같은 편성·같은 보스라면 평가 경로와 추천 경로의 baseline은 같은
+    프리미티브를 통과하므로 정확히 같은 값이어야 한다. 두 경로가 갈라지면
+    이 테스트가 먼저 터진다."""
+    boss = {"element": "Iron"}
+    evaluated = client.post(
+        "/api/evaluate-decks",
+        json=_request([{"units": DECK, "boss": boss}])).json()
+    drafted = client.post("/api/recommend-raid", json={
+        "roster": ROSTER, "boss": boss, "num_decks": 1,
+        "draft": [{"units": [{"slug": s} for s in DECK]}],
+    }).json()
+
+    assert evaluated["combined_total_damage"] == drafted["baseline_total_damage"]
+
+
+def test_boss_element_changes_the_result():
+    iron = client.post("/api/evaluate-decks",
+                       json=_request([{"units": DECK, "boss": {"element": "Iron"}}])).json()
+    none = client.post("/api/evaluate-decks",
+                       json=_request([{"units": DECK, "boss": {}}])).json()
+
+    assert iron["combined_total_damage"] != none["combined_total_damage"]
+
+
+def test_rejects_an_empty_deck_list():
+    response = client.post("/api/evaluate-decks", json=_request([]))
+    assert response.status_code == 422
+
+
+def test_rejects_a_deck_that_is_not_five_units():
+    response = client.post("/api/evaluate-decks",
+                           json=_request([{"units": DECK[:4], "boss": {}}]))
+    assert response.status_code == 422
+    assert "1번" in response.json()["detail"]
+
+
+def test_rejects_a_slug_used_in_two_decks():
+    extra = ["rouge", "volume", "mint", "grave", "noir"]
+    roster = [_nikke(s) for s in DECK + extra]
+    second = ["liter", "rouge", "volume", "mint", "grave"]
+    response = client.post("/api/evaluate-decks", json=_request(
+        [{"units": DECK, "boss": {}}, {"units": second, "boss": {}}], roster=roster))
+
+    assert response.status_code == 422
+    assert "liter" in response.json()["detail"]
+
+
+def test_rejects_a_slug_the_engine_cannot_use():
+    response = client.post("/api/evaluate-decks", json=_request(
+        [{"units": ["not-a-nikke"] + DECK[1:], "boss": {}}]))
+
+    assert response.status_code == 422
+    assert "not-a-nikke" in response.json()["detail"]
+
+
+def test_rejects_a_deck_with_no_feasible_burst_ordering(monkeypatch):
+    """평가 경로도 InfeasibleDeck을 422로 번역해야 한다.
+
+    실제 로스터로는 이 예외를 재현할 수 없어 배선만 목으로 검증한다:
+    deck_evaluation.evaluate_decks는 티어 구성(1/2/3 전원 필요)을 검사하지
+    않고(_intra_tier_orderings에 ALLOWED_SHAPES 체크가 없음), 유일하게 실제로
+    InfeasibleDeck을 일으키는 경로(_buffer_seat_valid - 버퍼 좌석 두 명이 같은
+    티어에 있을 때)는 등록된 버퍼 슬러그가 modernia(B3)·velvet(B2) 둘뿐이라
+    실제 티어가 이미 달라 실유닛 조합으로는 절대 같은 티어에 모이지 않는다
+    (Task 4 보고서 `task-4-report.md`에서도 같은 사실을 검증함). 그래서 이
+    테스트는 라우트의 예외 변환 코드를 직접 겨냥해 목으로 짚는다."""
+    import app.api as api_module
+
+    def _raise_infeasible(decks, bosses, alternatives=None):
+        raise InfeasibleDeck(0)
+
+    monkeypatch.setattr(api_module, "evaluate_decks", _raise_infeasible)
+    response = client.post("/api/evaluate-decks",
+                           json=_request([{"units": DECK, "boss": {}}]))
+
+    assert response.status_code == 422
+    assert "1번" in response.json()["detail"]

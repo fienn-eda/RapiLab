@@ -17,6 +17,7 @@ from starlette.concurrency import run_in_threadpool
 
 from app.cancellation import CancelToken, Cancelled
 from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_draft
+from app.deck_evaluation import InfeasibleDeck, evaluate_decks
 from app.deck_search import BossProfile, search_best_decks
 from app.engine_version import engine_version
 from app.models import UserNikkeState
@@ -105,6 +106,30 @@ class RecommendRaidResponse(BaseModel):
     leftover_slugs: list[str]
     within_draft: DraftAllocation | None = None
     baseline_total_damage: float | None = None
+    engine_version: str
+
+
+class EvaluateDeckIn(BaseModel):
+    """평가할 고정 편성 하나와 그 덱이 맞설 보스.
+
+    보스가 덱 안에 있는 이유는 유니온 레이드다 - 3회 전투의 보스 속성을 유저가
+    전투마다 고른다. 필드를 다시 선언하지 않고 BossProfileIn을 그대로 품어서,
+    엔진이 보스 플래그를 늘려도 고칠 곳이 한 군데로 남는다."""
+    units: list[str]
+    boss: BossProfileIn
+
+
+class EvaluateDecksRequest(BaseModel):
+    roster: list[UserNikkeState]
+    decks: list[EvaluateDeckIn]
+
+
+class EvaluateDecksResponse(BaseModel):
+    # pinned_slugs도 leftover_slugs도 없다: 잠금은 최적화의 개념이고, 안 고른
+    # 유닛은 클라이언트가 이미 아는 것이라 배분 결과와 달리 알려줄 것이 없다.
+    decks: list[DeckRecommendation]
+    combined_total_damage: float
+    excluded_slugs: list[str]
     engine_version: str
 
 
@@ -298,6 +323,72 @@ def _recommend_raid_sync(request: RecommendRaidRequest, cancel) -> RecommendRaid
     )
 
 
+def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecksResponse:
+    # 평가는 탐색이 없어 수 초에 끝난다. SimPool을 만들지 않으므로 토큰에
+    # 접을 풀도 없다 - 인자는 _run_cancellable의 계약을 맞추기 위한 것.
+    _reject_unknown_overload_options(request.roster)
+    specs, excluded = load_roster(request.roster)
+    if not request.decks:
+        raise HTTPException(422, "평가할 덱이 없어요.")
+
+    by_slug = {u.slug: u for u in specs}
+    alternatives = {}
+    for base, variants in MODE_VARIANTS.items():
+        loadable = tuple(by_slug[v] for v in variants if v in by_slug)
+        if base not in by_slug and loadable:
+            alternatives[base] = loadable
+
+    decks, bosses, requested = [], [], []
+    for index, deck_in in enumerate(request.decks, start=1):
+        if len(deck_in.units) != DECK_SIZE:
+            raise HTTPException(
+                422, f"{index}번 덱은 {len(deck_in.units)}명이에요. 덱마다 정확히 "
+                     f"{DECK_SIZE}명이어야 해요.")
+        seat = []
+        for slug in deck_in.units:
+            options = alternatives.get(slug)
+            if options is None and slug not in by_slug:
+                raise HTTPException(422, f"엔진이 쓸 수 없는 슬러그예요: {slug}")
+            seat.append(options[0] if options else by_slug[slug])
+            requested.append(slug)
+        decks.append(seat)
+        bosses.append(BossProfile(
+            element=deck_in.boss.element,
+            core_hittable=deck_in.boss.core_hittable,
+            enemy_def=deck_in.boss.enemy_def,
+            fight_duration=deck_in.boss.fight_duration,
+            part_destructible=deck_in.boss.part_destructible,
+        ))
+
+    # 클라가 보낸 슬러그로 보고한다 - 해석된 대표 슬러그를 들이대면 유저가
+    # 자기가 안 쓴 이름을 보게 된다.
+    if len(requested) != len(set(requested)):
+        dups = sorted({s for s in requested if requested.count(s) > 1})
+        raise HTTPException(422, f"여러 덱에 겹쳐 들어간 니케가 있어요: {dups}")
+
+    alternatives = {options[0].slug: options for options in alternatives.values()}
+    try:
+        out = evaluate_decks(decks, bosses, alternatives=alternatives)
+    except InfeasibleDeck as e:
+        raise HTTPException(
+            422, f"{e.deck_index + 1}번 덱은 버스트 단계 조합이 성립하지 않아요 "
+                 f"(1·2·3단계가 모두 필요해요).")
+
+    return EvaluateDecksResponse(
+        decks=[DeckRecommendation(
+            deck=d["deck"], total_damage=d["total_damage"],
+            burst_damage=d["burst_damage"],
+            normal_attack_damage=d["normal_attack_damage"],
+            skill_damage=d["skill_damage"]) for d in out["decks"]],
+        combined_total_damage=out["combined_total_damage"],
+        excluded_slugs=excluded,
+        engine_version=engine_version(),
+    )
+
+
+# 니케 한 덱은 5명 - 엔진의 고정 덱 크기.
+DECK_SIZE = 5
+
 # How often the loop asks whether the client is still there. The search runs
 # one to two minutes, so half a second is far finer than it needs to be and
 # costs nothing; what it buys is that a cancel lands within a batch rather than
@@ -347,6 +438,13 @@ async def recommend_raid(
     request: RecommendRaidRequest, http_request: Request
 ) -> RecommendRaidResponse:
     return await _run_cancellable(http_request, _recommend_raid_sync, request)
+
+
+@app.post("/api/evaluate-decks", response_model=EvaluateDecksResponse)
+async def evaluate_decks_route(
+    request: EvaluateDecksRequest, http_request: Request
+) -> EvaluateDecksResponse:
+    return await _run_cancellable(http_request, _evaluate_decks_sync, request)
 
 
 @app.get("/api/supported-units", response_model=list[SupportedUnit])
