@@ -87,7 +87,7 @@ def load_nikke_spec(
     # rather than in the buff registry - and after any mode override, so a unit
     # whose weapon profile swaps mid-kit still carries it.
     weapon_multipliers, _ = collectible_modifiers(
-        state.collectible_tid, state.collectible_level, slug)
+        state.collectible_tid, state.collectible_level, slug, weapon)
     if weapon_multipliers:
         weapon_stats = dict(weapon_stats)
         for stat, factor in weapon_multipliers.items():

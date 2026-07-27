@@ -68,7 +68,7 @@ def _passive_effects(spec: NikkeSpec):
     collectible this unit actually has equipped. The collectible's 배율 stats
     are NOT here - they scale weapon stats and are applied in user_roster."""
     _, collectible = collectible_modifiers(
-        spec.collectible_tid, spec.collectible_level, spec.slug)
+        spec.collectible_tid, spec.collectible_level, spec.slug, spec.weapon)
     return (
         overload_options_to_effects(spec.overload_options, spec.slug)
         + assumed_cube_effects(spec.slug)

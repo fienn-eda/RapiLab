@@ -25,6 +25,13 @@ at level 15; the favorite item's own level gates the unit's skill unlocks
 instead. Fienn verified this by promoting Flora, who reports the MG ladder's
 top 9.5% while sitting at SSR level 5. `stat_assembly.collectible_atk` had
 already inferred the same rule from measurement; this is why it holds.
+
+A favorite item's OWN tid is never a key in `tables.json["collectibles"]` -
+promotion consumes the SR collectible, it doesn't mint a new tid-keyed record
+- so `collectible_modifiers` resolves it by WEAPON GROUP instead, at the
+SR-rarity record that record's promotion required. Looking it up by tid (as
+an earlier version of this module did) always misses, silently contributing
+nothing to every favorite-item holder.
 """
 import logging
 from functools import lru_cache
@@ -108,27 +115,49 @@ def _collectibles_table() -> dict[str, Any]:
     return load_stat_tables().get("collectibles", {})
 
 
-def collectible_modifiers(tid: int, level: int, source_slug: str
+def _favorite_item_record(weapon: str) -> dict[str, Any] | None:
+    """The SR-rarity collectible record a favorite item of this weapon group
+    was promoted from - a favorite item's own tid is never a table key."""
+    for record in _collectibles_table().values():
+        if record.get("weapon_type") == weapon and record.get("favorite_rare") == "SR":
+            return record
+    return None
+
+
+@lru_cache(maxsize=None)
+def _warn_missing_record_once(tid: int) -> None:
+    """Log a miss exactly once per tid - `collectible_modifiers` sits on
+    `deck_search.feasible_orderings`' permutation loop (once per unit per
+    candidate ordering), so an unconditional `logger.warning` here would emit
+    hundreds of thousands of lines per search once real rosters carry
+    collectibles. `lru_cache` makes "once" free to express: the second call
+    with the same tid is a cache hit and never reaches the log call.
+    """
+    logger.warning("no collectible record for tid %r - contributing nothing", tid)
+
+
+def collectible_modifiers(tid: int, level: int, source_slug: str, weapon: str
                           ) -> tuple[dict[str, float], list[Effect]]:
     """`(weapon-stat multipliers, permanent self effects)` for one unit.
 
-    An empty slot, or a tid the committed table does not know, contributes
-    nothing - a roster collected before the field existed must not silently
-    change anyone's damage.
+    An empty slot, a favorite item whose weapon group has no committed
+    record, or an ordinary tid the committed table does not know, all
+    contribute nothing - a roster collected before the field existed must not
+    silently change anyone's damage.
     """
     if not tid:
         return {}, []
-    record = _collectibles_table().get(str(tid))
+    is_favorite = tid >= FAVORITE_ITEM_TID_BASE
+    record = (_favorite_item_record(weapon) if is_favorite
+              else _collectibles_table().get(str(tid)))
     if record is None:
-        logger.warning("no collectible record for tid %r - contributing nothing", tid)
+        _warn_missing_record_once(tid)
         return {}, []
-    weapon: dict[str, float] = {}
+    weapon_multipliers: dict[str, float] = {}
     effects: list[Effect] = []
-    for (stat, placement), percent in skill_percents(
-        record, level, tid >= FAVORITE_ITEM_TID_BASE
-    ).items():
+    for (stat, placement), percent in skill_percents(record, level, is_favorite).items():
         if placement == "weapon":
-            weapon[stat] = weapon.get(stat, 1.0) * (1 + percent / 100)
+            weapon_multipliers[stat] = weapon_multipliers.get(stat, 1.0) * (1 + percent / 100)
         else:
             effects.append(Effect(stat, percent / 100, "self", None, source_slug))
-    return weapon, effects
+    return weapon_multipliers, effects
