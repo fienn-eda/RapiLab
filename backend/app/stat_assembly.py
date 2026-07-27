@@ -319,8 +319,17 @@ def collectible_atk(tables: dict[str, Any], item_tid: int, item_level: int) -> i
         # value across all three of their levels.
         return curve[-1]
     if item_level <= 0:
-        # The curve has an entry at index 0 (3,029) but units at level 0 measure
-        # no contribution at all, so a tid without a level is an unequipped slot.
+        # A LEVEL-0 COLLECTIBLE IS EQUIPPED - it just carries no stat yet. Its
+        # SKILL is already active (Fienn read all nine of his level-0 holders
+        # in-game, 2026-07-27: Helm: Aquamarine's +10.22% core damage and the
+        # rest, exactly the ladder's first rung), while its ATK/HP start at
+        # level 1. The curve does have an entry at index 0, and crediting it
+        # breaks 31 of the 159 measured units by exactly that entry (3,029 for
+        # SR, 638 for R) - so the array's index 0 is not a level-0 stat.
+        #
+        # Equipped-vs-empty is answered by the TID, never by the level: an empty
+        # slot reports tid 0. `collectible_effects` keys on the tid for that
+        # reason; the two functions differ because the two axes really differ.
         return 0
     return curve[item_level]
 

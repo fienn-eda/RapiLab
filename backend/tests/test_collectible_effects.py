@@ -187,6 +187,36 @@ def test_a_favorite_item_holder_reads_the_top_rung_through_collectible_modifiers
     assert [(e.stat, round(e.value, 5)) for e in effects] == [("max_ammo_percent", 0.095)]
 
 
+def test_level_zero_gives_the_skill_but_no_stat_and_the_tid_is_what_says_equipped():
+    """레벨 0 소장품은 **착용된 상태**다 - 스킬은 나오고 스탯만 아직 0이다.
+
+    두 함수가 서로 다른 축으로 판정하는 것이 우연이 아님을 한 자리에 못 박는다.
+    한쪽을 다른 쪽에 '맞추려는' 수정이 이 테스트를 깨야 한다.
+
+    - 스킬: Fienn이 레벨 0 보유 9유닛을 인게임에서 전수 확인했다(2026-07-27) -
+      헬름: 아쿠아마린 코어 대미지 +10.22%, 볼륨·리터 평타 배율 4.73%,
+      D: 킬러 와이프 차지 배율 4.74%, R등급 코어 +5.67% / 최대 장탄 +1.56%.
+      전부 사다리 **1단**이고 전부 **적용 중**이었다.
+    - 스탯: 레벨 0에 커브 index 0을 주면 159 측정 유닛 중 **31기**가 정확히 그
+      값만큼(SR 3,029 · R 638) 어긋난다. 배열의 index 0은 레벨 0의 스탯이 아니다.
+    - 착용 여부를 말하는 것은 **tid**다. 빈 슬롯은 tid가 0이다.
+    """
+    from app.stat_assembly import collectible_atk, load_stat_tables
+
+    tables = load_stat_tables()
+    # 헬름: 아쿠아마린과 같은 상태: SR 등급 AR 소장품, 레벨 0.
+    weapon, effects = collectible_modifiers(100102, 0, "helm-aquamarine", weapon="AR")
+    assert weapon == {}
+    assert [(e.stat, round(e.value, 5)) for e in effects] == [
+        ("other_core_damage_sources", 0.1022)]
+    # 같은 슬롯이 스탯은 아직 0이다.
+    assert collectible_atk(tables, 100102, 0) == 0
+    # 그런데 빈 슬롯과는 다르다 - 스킬이 나온다.
+    assert collectible_modifiers(0, 0, "helm-aquamarine", weapon="AR") == ({}, [])
+    # 레벨 1부터 스탯이 붙는다.
+    assert collectible_atk(tables, 100102, 1) > 0
+
+
 def test_a_favorite_item_holder_with_no_record_for_their_weapon_group_degrades_safely():
     """무기군을 못 찾으면 예외가 아니라 무효로 떨어져야 한다 - 모르는 평범한
     tid와 같은 처리다. 여섯 무기군이 전부 커밋된 지금은 게임이 새 무기군을
