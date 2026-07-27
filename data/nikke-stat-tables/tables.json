@@ -15020,7 +15020,8 @@
     "equipment": "https://sg-tools-cdn.blablalink.com/zr-95/5711d5ea12c6c0f7852e17e922db8ca8.json",
     "recycle_research": "https://sg-tools-cdn.blablalink.com/eu-96/258f853112b1d6f69d1508e12918ff3b.json",
     "resilience_cube": "https://sg-tools-cdn.blablalink.com/cp-03/vw-39/6fd3572cf9e62ee8ded9442ca0f98682.json",
-    "collectible_sample": "https://sg-tools-cdn.blablalink.com/dl-61/cz-26/1d5f72120564cef28ac7889650c78a47.json"
+    "collectible_sample": "https://sg-tools-cdn.blablalink.com/dl-61/cz-26/1d5f72120564cef28ac7889650c78a47.json",
+    "collectibles": "fallback: collect.js --collectibles could not connect (no logged-in blablalink Chrome session in this environment); MG reused from collectible_sample (real), SR/SG/AR hand-built from documented ladders (see task-1-report.md); SMG/RL absent (no known values)"
   },
   "recycle_research": [
     {
@@ -15719,5 +15720,400 @@
       6,
       13
     ]
+  },
+  "collectibles": {
+    "100202": {
+      "id": 100202,
+      "atk": [
+        3029,
+        3370,
+        3712,
+        4053,
+        4395,
+        4821,
+        5248,
+        5675,
+        6102,
+        6529,
+        7041,
+        7554,
+        8066,
+        8578,
+        9090,
+        9688
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "hp": [
+        94000,
+        104650,
+        115300,
+        125950,
+        136600,
+        149950,
+        163250,
+        176600,
+        189900,
+        203200,
+        219200,
+        235200,
+        251150,
+        267150,
+        283150,
+        301800
+      ],
+      "def": [
+        638,
+        711,
+        783,
+        856,
+        929,
+        1020,
+        1111,
+        1202,
+        1293,
+        1384,
+        1494,
+        1603,
+        1712,
+        1821,
+        1931,
+        2058
+      ],
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "level2": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "powers": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "name_localkey": "쇼핑 지휘관 인형 Ltd.",
+      "description_localkey": "지휘관이 쇼핑을 마쳤나 봅니다. 혹시 당신을 위한 선물도 들어있지 않을까요? 기대를 해봐도 좋을 것 같네요.",
+      "icon_resource_id": "si_favoriteitem_mg_00",
+      "img_resource_id": "favoriteitem_mg_00",
+      "prop_resource_id": "favoriteitem_common_prop_01",
+      "favorite_rare": "SR",
+      "favorite_type": "Collection",
+      "weapon_type": "MG",
+      "name_code": 0,
+      "max_level": 15,
+      "level_enhance_id": 100202,
+      "collection_skill_group_data": [
+        {
+          "id": 71240101,
+          "group_id": 712401,
+          "skill_level": 1,
+          "next_level_id": 71240102,
+          "level_up_cost_id": 0,
+          "icon": "icn_skill_atkup_01",
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[최대 장탄 수 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "info_description_localkey": "버스트 스킬",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.32",
+                "7.91",
+                "9.5"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "id": 71200201,
+          "group_id": 712002,
+          "skill_level": 1,
+          "next_level_id": 71200202,
+          "level_up_cost_id": 0,
+          "icon": "icn_skill_stathp_01",
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "info_description_localkey": "버스트 스킬",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ],
+      "favoriteitem_skill_group_data": []
+    },
+    "900001": {
+      "id": 900001,
+      "weapon_type": "SR",
+      "favorite_rare": "SR",
+      "max_level": 15,
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "level2": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 900101,
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.31",
+                "7.89",
+                "9.47"
+              ]
+            }
+          ]
+        }
+      ],
+      "source": "fallback: Ade lv5 (6.31) + Helm favorite-item max (9.47); charge damage percent, is a 배율"
+    },
+    "900002": {
+      "id": 900002,
+      "weapon_type": "SG",
+      "favorite_rare": "SR",
+      "max_level": 15,
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "level2": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 900102,
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.73",
+                "6.31",
+                "7.88",
+                "9.46"
+              ]
+            }
+          ]
+        }
+      ],
+      "source": "fallback: Zwei favorite-item max (9.46); lower rungs derived via max/6*[3,4,5,6]; normal attack damage percent, is a 배율"
+    },
+    "900003": {
+      "id": 900003,
+      "weapon_type": "AR",
+      "favorite_rare": "SR",
+      "max_level": 15,
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "level2": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 900103,
+          "description_value_list": [
+            {
+              "description_value": [
+                "8.52",
+                "11.36",
+                "14.20",
+                "17.04"
+              ]
+            }
+          ]
+        }
+      ],
+      "source": "fallback: Tove favorite-item max (17.04); lower rungs derived via max/6*[3,4,5,6]; core damage percent, NOT a 배율"
+    }
   }
 }

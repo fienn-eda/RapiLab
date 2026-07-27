@@ -22,6 +22,8 @@
 //               carries before deciding what the snapshot should keep.
 //   --tables    dump the public stat tables (base curves per class, equipment,
 //               affinity) to nikke-stat-tables.json and stop
+//   --collectibles  dump one collectible record per weapon group (AR/SMG/SG/RL/
+//               SR/MG) to collectibles.json and stop
 //   --details   dump this account's investment inputs + outpost research ranks
 //               to details.json and stop (personal data; gitignored)
 //   --nikke <rid|name>[,<rid|name>...]  dump each unit's raw ShiftyPad bundle
@@ -45,6 +47,7 @@ const DEEP = args.includes('--deep')
 const HEADLESS = args.includes('--headless')
 const NIKKE = args.includes('--nikke') ? args[args.indexOf('--nikke') + 1] : null
 const TABLES_ONLY = args.includes('--tables')
+const COLLECTIBLES_ONLY = args.includes('--collectibles')
 const DETAILS_ONLY = args.includes('--details')
 const DEFAULT_OUT = DIRECTORY_ONLY
   ? 'nikke-directory.json'
@@ -57,6 +60,11 @@ const OUT = args.includes('--out') ? args[args.indexOf('--out') + 1] : DEFAULT_O
 const AREA = args.includes('--area') ? parseInt(args[args.indexOf('--area') + 1], 10) : 81
 
 const SHIFTYPAD = 'https://www.blablalink.com/shiftyspad/nikke?nikke='
+
+// One resource_id per weapon group (AR/SMG/SG/RL/SR/MG), chosen so --collectibles
+// can capture all six collection_skill_group_data ladders in one run. Picked by
+// finding, for each weapon group, an encoded roster unit that carries it.
+const COLLECTIBLE_SAMPLE_RIDS = [570, 860, 15, 840, 315, 835]
 
 const log = (...m) => console.error(...m)
 
@@ -304,6 +312,44 @@ const collectSubTypes = async (page, entries) => {
   return out
 }
 
+// 소장품(collectible) 레코드: 무기군마다 다른 스킬을 담고 있고, 그 스킬 효과는
+// 엔진이 여태 못 보던 대미지 소스다(docs/engine-gaps.md #15). 레코드는 유닛
+// 페이지를 여는 것만으로 CDN에서 흘러나오므로 stat 파일과 같은 방식으로 줍는다.
+// 등급·무기군을 미리 가정하지 않고 보이는 것을 전부 id로 키잉해 담는다 - R 등급이
+// 섞여 들어와도 그대로 저장한다.
+const collectCollectibles = async (page, entries) => {
+  const cdp = await page.context().newCDPSession(page)
+  await cdp.send('Network.setCacheDisabled', { cacheDisabled: true })
+  const out = {}
+  const onResp = async (r) => {
+    if (!r.url().includes('cdn') || !r.url().split('?')[0].endsWith('.json')) return
+    let j
+    try {
+      j = await r.json()
+    } catch {
+      return
+    }
+    if (j && j.id && j.weapon_type && Array.isArray(j.collection_skill_group_data)) {
+      out[String(j.id)] = j
+    }
+  }
+  page.on('response', onResp)
+  for (const e of entries) {
+    log(`  collectibles: visiting ${e.name_en} (rid=${e.resource_id})`)
+    await page
+      .goto(`${SHIFTYPAD}${e.resource_id}`, { waitUntil: 'networkidle', timeout: 60000 })
+      .catch(() => {})
+    await page.waitForTimeout(2500)
+  }
+  page.off('response', onResp)
+  const groups = new Set(Object.values(out).map((c) => c.weapon_type))
+  for (const w of ['AR', 'SMG', 'SG', 'RL', 'SR', 'MG']) {
+    if (!groups.has(w)) log(`  WARNING: no collectible captured for weapon group ${w}`)
+  }
+  log(`  captured ${Object.keys(out).length} collectible records: ${[...groups].join(',')}`)
+  return out
+}
+
 const parseUnit = (html) => {
   const doc = new JSDOM(html).window.document
   const stats = parseMainStats(doc)
@@ -391,6 +437,19 @@ const main = async () => {
       `wrote ${OUT}: classes=${Object.keys(tables.classes).join(',')} ` +
         `equipment=${count(tables.equipment)} affinity=${count(tables.affinity)}`,
     )
+    await browser.close()
+    return
+  }
+
+  // Also account-free: collectible records are static game data.
+  if (COLLECTIBLES_ONLY) {
+    log('collecting collectible records…')
+    const picks = COLLECTIBLE_SAMPLE_RIDS.map((rid) =>
+      dir.find((d) => String(d.resource_id) === String(rid)),
+    ).filter(Boolean)
+    const collectibles = await collectCollectibles(page, picks)
+    fs.writeFileSync('collectibles.json', `${JSON.stringify(collectibles, null, 2)}\n`)
+    log(`wrote collectibles.json: ${Object.keys(collectibles).length} records`)
     await browser.close()
     return
   }
