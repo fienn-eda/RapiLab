@@ -124,16 +124,41 @@ def main():
         for slug, ratio in sorted(ratios.items(), key=lambda kv: -abs(kv[1] - 1)):
             flag = "  <--" if abs(ratio - 1) >= 0.25 else ""
             print(f"      {slug:<34} {ratio:>6.3f}x{flag}")
-            all_ratios.append((ratio, slug))
+            all_ratios.append((ratio, slug, RECORD_DECKS[name][slug]))
         print()
 
     if record_sum:
         print(f"combined   {sim_sum / record_sum:.3f}x   "
               f"over {len(all_ratios)} units")
         worst = sorted(all_ratios, key=lambda r: -abs(r[0] - 1))[:5]
-        print("worst units: " + ", ".join(f"{s} {r:.2f}x" for r, s in worst))
-        within = sum(1 for r, _ in all_ratios if abs(r - 1) < 0.15)
+        print("worst by ratio: " + ", ".join(f"{s} {r:.2f}x" for r, s, _ in worst))
+        within = sum(1 for r, _, _ in all_ratios if abs(r - 1) < 0.15)
         print(f"within +-15%: {within}/{len(all_ratios)}")
+        _print_absolute_errors(all_ratios, record_sum)
+
+
+def _print_absolute_errors(all_ratios, record_sum):
+    """Units ranked by how much damage the miss is WORTH, not by its ratio.
+
+    A ratio divides by the unit's own recorded damage, so it makes the roster's
+    smallest contributors look like its worst problems: Ade reads 1.63x - the
+    worst ratio there is - on 0.102B, which is +0.064B, less than a quarter of
+    what the median row here is worth. Ranking by ratio therefore sends every
+    calibration session after the cheapest rows on the board. Sorting by
+    absolute error is what puts the expensive ones first, and it is the order
+    Fienn asked to work in (2026-07-27). See docs/insights.md for why the two
+    orders disagree so violently (ratio correlates with recorded damage at
+    r = -0.56).
+    """
+    errors = [(ratio * record - record, slug, record, ratio)
+              for ratio, slug, record in all_ratios]
+    print("\nby absolute error (sim - record), the order to work in:")
+    for delta, slug, record, ratio in sorted(errors, key=lambda e: -abs(e[0]))[:10]:
+        print(f"      {slug:<34} {delta / 1e9:>+7.3f}B   "
+              f"({ratio:.3f}x of {record / 1e9:.3f}B, {abs(delta) / record_sum:>5.1%} of the run)")
+    under = sum(d for d, _, _, _ in errors if d < 0)
+    over = sum(d for d, _, _, _ in errors if d > 0)
+    print(f"      {'':<34} 미달 합계 {under / 1e9:+.3f}B · 과대 합계 {over / 1e9:+.3f}B")
 
 
 if __name__ == "__main__":
