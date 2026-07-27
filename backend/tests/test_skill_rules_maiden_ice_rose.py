@@ -153,7 +153,18 @@ def _fill_buff_deck_run(boss_element):
 
 
 def _shots_of(result, slug):
-    return [(e["time"], e["damage"]) for e in result["damage_log"]
+    """(time, damage) per normal attack, Full Burst bonus divided back out.
+
+    A normal attack inside a Full Burst window carries +0.5 in the major
+    modifier (measured 2026-07-28), which would otherwise multiply the very
+    ATK steps these tests read off each shot.
+    """
+    starts = [e["time"] for e in result["events"] if e["type"] == "full_burst_start"]
+    ends = [e["time"] for e in result["events"] if e["type"] == "full_burst_end"]
+    windows = list(zip(starts, ends))
+    return [(e["time"],
+             e["damage"] / (1.5 if any(s <= e["time"] < x for s, x in windows) else 1.0))
+            for e in result["damage_log"]
             if e["source"] == "normal_attack" and e["slug"] == slug]
 
 

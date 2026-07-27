@@ -38,6 +38,32 @@ def make_base_stats(attacker_atk=10000):
     }
 
 
+def _first_normal_attack(result):
+    """The fight's first normal attack - always well before Full Burst opens,
+    so it carries only the modifiers a test puts on it."""
+    return next(e for e in result["damage_log"] if e["source"] == "normal_attack")
+
+
+def full_burst_windows(result):
+    """The fight's Full Burst windows, read off its own event log."""
+    starts = [e["time"] for e in result["events"] if e["type"] == "full_burst_start"]
+    ends = [e["time"] for e in result["events"] if e["type"] == "full_burst_end"]
+    return list(zip(starts, ends))
+
+
+def fb_factor(result, time):
+    """What a normal attack's damage is multiplied by for landing at `time`.
+
+    A normal attack inside a Full Burst window collects +0.5 in the major
+    modifier, so a hit carrying no other major modifier is worth 1.5x there
+    (measured 2026-07-28 - see the normal-attack record() call in
+    raid_simulator). These fixtures run 20-sec fights whose window opens around
+    5 sec, so most of them straddle the boundary; asserting a flat number would
+    quietly assert the bonus away.
+    """
+    return 1.5 if any(s <= time < e for s, e in full_burst_windows(result)) else 1.0
+
+
 def test_battle_start_buff_is_active_by_the_time_the_burst_fires():
     def grant_atk_buff(context, caster_slug, time, registry):
         registry.add(Effect("atk_percent", 0.5, "self", None, "attacker"), applied_at=time)
@@ -86,8 +112,14 @@ def test_core_hittable_true_doubles_normal_attack_damage():
     without_core, with_core = _core_pair(weapon_stats={"attacker": _ar_weapon()})
     # per Fienn's in-game tooltip check, core damage is a uniform 200% across
     # every weapon type (+1.0 to the major modifier), i.e. exactly double a
-    # hit with no other modifiers active.
-    assert with_core["total_damage"] == without_core["total_damage"] * 2
+    # hit with no other modifiers active. Compared on the FIRST shot rather
+    # than the fight total: core and the Full Burst bonus share one additive
+    # bucket, so inside a window the pair is 2.5/1.5 and "double" is only true
+    # of a hit that carries neither.
+    first_without = _first_normal_attack(without_core)
+    first_with = _first_normal_attack(with_core)
+    assert fb_factor(without_core, first_without["time"]) == 1.0
+    assert first_with["damage"] == first_without["damage"] * 2
     assert without_core["total_damage"] > 0
 
 
@@ -502,8 +534,14 @@ def test_core_damage_up_only_helps_when_core_is_hittable():
     not_core = simulate_raid(make_deck(), rules, core_hittable=False, **kwargs)
     core = simulate_raid(make_deck(), rules, core_hittable=True, **kwargs)
     # core hittable: major modifier = 1 + core_hit_bonus(1.0) + core_damage(0.3) = 2.3.
+    # Read off the first shot, which is outside the Full Burst window - the
+    # bonus lands in this same additive bucket, so a fight total would mix
+    # 2.3/1.0 shots with 2.8/1.5 ones.
+    first_not_core = _first_normal_attack(not_core)
+    first_core = _first_normal_attack(core)
+    assert fb_factor(not_core, first_not_core["time"]) == 1.0
     assert not_core["total_damage"] > 0
-    assert round(core["total_damage"], 5) == round(not_core["total_damage"] * 2.3, 5)
+    assert round(first_core["damage"], 5) == round(first_not_core["damage"] * 2.3, 5)
 
 
 def test_boss_element_none_applies_no_advantage():
@@ -917,8 +955,12 @@ def test_normal_attacks_deal_true_conversion_types_shots_only_while_active():
     na = [e for e in result["damage_log"] if e["source"] == "normal_attack"]
     early = [e for e in na if e["time"] < 10.0]
     late = [e for e in na if e["time"] >= 10.0]
-    assert early and all(e["damage_type"] == "true" and e["damage"] == 20000.0 for e in early)
-    assert late and all(e["damage_type"] == "attack" and e["damage"] == 10000.0 for e in late)
+    assert early and all(e["damage_type"] == "true"
+                        and e["damage"] == 20000.0 * fb_factor(result, e["time"])
+                        for e in early)
+    assert late and all(e["damage_type"] == "attack"
+                       and e["damage"] == 10000.0 * fb_factor(result, e["time"])
+                       for e in late)
 
 
 def test_periodic_nukes_defaults_to_none_and_is_a_no_op():
@@ -1370,11 +1412,14 @@ def test_round_grant_buffs_only_the_affected_units_first_shot_after_grant():
         weapon_stats={"attacker": _ar_weapon()},
     )
     na = {round(e["time"], 4): e["damage"] for e in result["damage_log"] if e["source"] == "normal_attack"}
+    fb = lambda time: fb_factor(result, time)
     # Full Burst opens just AFTER the tier-3 cast at 5.0, so the shot landing
     # exactly at 5.0 is still pre-window; the covered shot is the next one.
-    assert na[round(5.0, 4)] == 1000.0       # shot at the cast instant: unbuffed
-    assert na[round(61 / 12, 4)] == 1500.0   # covered shot: 1000 * (1 + 0.5 damage_taken)
-    assert na[round(62 / 12, 4)] == 1000.0   # next shot after the covered one: consumed
+    # Every expectation carries its own Full Burst factor, so what is being
+    # asserted is the round grant's 1.5x and nothing else.
+    assert na[round(5.0, 4)] == 1000.0 * fb(5.0)          # cast instant: unbuffed, pre-window
+    assert na[round(61 / 12, 4)] == 1500.0 * fb(61 / 12)  # covered: 1000 * (1 + 0.5 damage_taken)
+    assert na[round(62 / 12, 4)] == 1000.0 * fb(62 / 12)  # next shot: grant consumed
 
 
 def test_round_grant_re_grants_each_cycle_without_stacking():
@@ -1401,10 +1446,11 @@ def test_round_grant_re_grants_each_cycle_without_stacking():
     na = {round(e["time"], 4): e["damage"] for e in result["damage_log"] if e["source"] == "normal_attack"}
     # Each cycle's covered shot is the first one strictly after Full Burst
     # opens, which is a beat after the tier-3 cast at 5.0 / 20.0.
-    assert na[round(61 / 12, 4)] == 1500.0    # cycle 1 covered shot
-    assert na[round(241 / 12, 4)] == 1500.0   # cycle 2 covered shot
-    assert na[round(12.0, 4)] == 1000.0       # mid-cycle shot: unbuffed (not continuous)
-    assert na[round(242 / 12, 4)] == 1000.0   # shot after cycle-2 covered: consumed
+    fb = lambda time: fb_factor(result, time)
+    assert na[round(61 / 12, 4)] == 1500.0 * fb(61 / 12)     # cycle 1 covered shot
+    assert na[round(241 / 12, 4)] == 1500.0 * fb(241 / 12)   # cycle 2 covered shot
+    assert na[round(12.0, 4)] == 1000.0 * fb(12.0)           # mid-cycle: unbuffed (not continuous)
+    assert na[round(242 / 12, 4)] == 1000.0 * fb(242 / 12)   # after cycle-2 covered: consumed
 
 
 def test_round_grant_squad_scope_consumes_per_ally_first_shot():
@@ -1431,7 +1477,8 @@ def test_round_grant_squad_scope_consumes_per_ally_first_shot():
     covered = [e for e in result["damage_log"]
                if e["source"] == "normal_attack" and round(e["time"], 4) == round(61 / 12, 4)]
     assert {e["slug"] for e in covered} == {"midtier", "attacker"}
-    assert all(e["damage"] == 1500.0 for e in covered)  # each ally's own first shot buffed
+    # each ally's own first shot buffed; inside the window, so also x1.5
+    assert all(e["damage"] == 2250.0 for e in covered)
 
 
 ZWEI_PIERCE_EQUATION = {
@@ -1481,8 +1528,13 @@ def _zwei_pierce_stacks_per_sniper_shot(per_shot_rules):
     )
     shots = [e for e in result["damage_log"]
              if e["source"] == "normal_attack" and e["slug"] == "sniper"]
-    unbuffed = min(e["damage"] for e in shots)
-    return {round(e["time"], 4): round((e["damage"] / unbuffed - 1) / 0.2499, 4) for e in shots}
+    # Divide the Full Burst bonus back out before counting stacks: it is a
+    # major modifier, so it multiplies a shot's damage alongside the pierce
+    # stacks this helper is trying to read, and every sniper shot here lands
+    # inside a window while the unbuffed baseline need not.
+    plain = {round(e["time"], 4): e["damage"] / fb_factor(result, e["time"]) for e in shots}
+    unbuffed = min(plain.values())
+    return {time: round((damage / unbuffed - 1) / 0.2499, 4) for time, damage in plain.items()}
 
 
 def test_uncapped_round_grants_pile_up_on_a_charge_weapon_allys_post_reload_shot():
@@ -1567,7 +1619,7 @@ def test_round_grants_default_to_none_and_are_a_no_op():
         weapon_stats={"attacker": _ar_weapon()},
     )
     na = [e for e in result["damage_log"] if e["source"] == "normal_attack"]
-    assert na and all(e["damage"] == 1000.0 for e in na)
+    assert na and all(e["damage"] == 1000.0 * fb_factor(result, e["time"]) for e in na)
 
 
 def test_per_shot_rules_defaults_to_none_and_is_a_no_op():
@@ -2022,7 +2074,10 @@ def test_resource_spec_timed_stacks_expire_after_lifetime():
         weapon_stats={"attacker": _ar_weapon()},
         resource_specs={"attacker": [spec]},
     )
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     assert dmg[4] == 2000.0   # fills j=1,3 in window -> 2 stacks
     # index 10: fills j=5,7,9 in window (1,3 expired) -> 3 stacks -> 2500. Without
     # expiry all 5 fills (j=1,3,5,7,9) would give cap 5 -> 3500.
@@ -2045,7 +2100,10 @@ def test_resource_spec_leveled_buff_scales_by_derived_level():
         weapon_stats={"attacker": _ar_weapon()},
         resource_specs={"attacker": [spec]},
     )
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     assert dmg[2] == 1500.0   # 3 stacks -> level 1 -> +0.5
     assert dmg[5] == 2000.0   # 6 stacks -> level 2
     assert dmg[8] == 2500.0   # 9 stacks -> level 3 (capped)
@@ -2119,7 +2177,10 @@ def test_resource_core_conditional_fill_adds_exactly_one_stack_per_fill():
         resource_specs={"attacker": [spec]},
     )
     # attacker_atk with core doubling: base 2000. 1 stack -> *1.5 = 3000; 2 -> 4000.
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     assert dmg[2] == 3000.0   # exactly 1 stack (would be capped 2 -> 4000 if amount were 3)
     assert dmg[5] == 4000.0   # exactly 2 stacks (cap)
 
@@ -2142,7 +2203,10 @@ def test_resource_spec_periodic_fill_ticks_on_a_fixed_timer_independent_of_shots
         resource_specs={"attacker": [spec]},
     )
     # AR fires 12/s (shot i at t=i/12); fills land exactly at t=3,6,9.
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     assert dmg[35] == 1000.0   # t=35/12=2.9167, before first fill: 0 stacks
     assert dmg[36] == 1500.0   # t=36/12=3.0, first fill lands here: 1 stack
     assert dmg[72] == 2000.0   # t=6.0, 2nd fill: 2 stacks
@@ -2311,7 +2375,10 @@ def test_resource_spec_fill_during_own_status_window_only_counts_in_window_shots
         weapon_stats={"attacker": _ar_weapon()},
         resource_specs={"attacker": [spec]},
     )
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     # shots before t=1.0 (index < 12) are pre-window, never counted regardless
     # of raw shot index.
     assert dmg[11] == 1000.0
@@ -2339,7 +2406,10 @@ def test_resource_spec_fill_on_last_bullet_stacks_only_when_the_magazine_empties
         weapon_stats={"attacker": _ar_weapon(max_ammo=3)},
         resource_specs={"attacker": [spec]},
     )
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     assert dmg[0] == 1000.0    # 0 stacks
     assert dmg[1] == 1000.0    # still 0 stacks, before this magazine's last bullet
     assert dmg[2] == 1100.0    # this shot IS the last bullet - sees its own new stack
@@ -2367,7 +2437,10 @@ def test_resource_spec_fill_during_full_burst_only_counts_in_window_shots():
         weapon_stats={"attacker": _ar_weapon()},
         resource_specs={"attacker": [spec]},
     )
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     # Shots 0-12 are pre-FB: Full Burst opens a beat AFTER the tier-3 cast at
     # t=1.0, so even the shot landing exactly at 1.0 (index 12) is outside.
     assert dmg[12] == 1000.0
@@ -2395,7 +2468,10 @@ def test_resource_spec_battle_start_reset_sets_initial_value():
         resource_specs={"attacker": [spec]},
     )
     # 50 stacks * 0.01 = 0.5 damage_taken_up from the very first shot.
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     assert dmg[0] == 1500.0  # 1000 * 1.5
 
 
@@ -2421,7 +2497,10 @@ def test_resource_spec_own_burst_reset_replaces_the_running_count():
     )
     # burst fires at t=5.0 (gauge_charge_time), resetting chip to 17 right
     # then - the shot immediately after should reflect 17, not 50(+fills).
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     shots_before_burst = [t for t in range(60) if t / 12 < 5.0]  # AR fires 12/s
     last_pre_burst_index = shots_before_burst[-1]
     first_post_burst_index = last_pre_burst_index + 1
@@ -2456,7 +2535,10 @@ def test_resource_gated_buff_fires_when_pre_reset_count_meets_the_gate():
     )
     # burst fires at t=5.0; pre-reset count there is 50 (starts at cap, stays
     # there) -> gate passes. Shot index 60 (t=5.0) reflects the buff.
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     assert round(dmg[60], 4) == round(1000 * 1.6525, 4)
 
 
@@ -2481,7 +2563,10 @@ def test_resource_gated_buff_does_not_fire_when_gate_fails():
             "stat": "atk_percent", "value": 0.6525, "scope": "self", "duration": 15.0,
         }]},
     )
-    dmg = {i: e["damage"] for i, e in enumerate(_normals(result))}
+    # Full Burst divided back out: these expectations encode STACK COUNTS,
+    # and the bonus multiplies the same shot alongside them.
+    dmg = {i: e["damage"] / fb_factor(result, e["time"])
+           for i, e in enumerate(_normals(result))}
     assert dmg[60] == 1000.0
 
 
