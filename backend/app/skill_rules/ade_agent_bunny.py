@@ -13,9 +13,19 @@ Modeled (DPS-relevant):
 - Cutting-Edge Agent Equipment (skills[2], her burst): squad Attack Damage +
   Pierce Damage on her own burst.
 
-Not modeled: Spy Lens / Minimum Effective Range stacking and the effective-range
-damage bonus (an SR positioning mechanic; effective_range_bonus isn't consumed),
-and her own "gain Pierce" flag. Her burst has no enemy nuke.
+Verified against Fienn's in-game range test (2026-07-27, solo, ATK 305,667,
+skills 10/7/10, target DEF 100). Seven readings across crit on/off, in/out of
+effective range, and Spy Lens below/at max all match this model to within 1e-4
+of one another - every buff, value and gate above is right, including the
+`has_pierce` gate discarding her Pierce Damage while Spy Lens is below max.
+They sit a uniform 1.06x below the model, in a bucket that has to be the
+attack coefficient or charge damage (both weapon properties); source
+unresolved, see docs/engine-gaps.md #15 and test_damage_formula.py.
+
+Not modeled: Spy Lens / Minimum Effective Range STACKING (the 4.44%-per-stack
+ramp to max - approximated as permanently maxed) and the effective-range damage
+bonus itself, which the measurement puts at exactly +0.30 in the major modifier
+but `raid_simulator` never sets (gap #14). Her burst has no enemy nuke.
 """
 from app.skill_rules._helpers import buff_rule
 

@@ -189,3 +189,70 @@ def test_crit_and_effective_range_stack_additively_in_the_major_bucket():
     crit = _major(crit_rate=1.0, core_hit_bonus=1.0, effective_range_bonus=1.0)
     assert round(non_crit, 9) == 2.3
     assert round(crit / non_crit, 6) == round(ADE_CRIT_RATIO_IN_RANGE, 6)
+
+
+# The same range test, solved in ABSOLUTE terms. Fienn supplied the missing
+# inputs on 2026-07-27: target DEF 100, ATK 305,667 EXCLUDING overload, skill
+# levels 10/7/10, and no burst. Skill 2 sitting at level 7 is what makes her
+# numbers 13.78% ATK / 15.29% Pierce Damage rather than the level-10 16% /
+# 18.36% - reading a measurement against max-level skill values is its own way
+# to be quietly wrong.
+ADE_READINGS = {
+    #                       Spy Lens maxed, in effective range, crit  -> damage
+    (False, False, False): 1309593,
+    (False, False, True): 1636991,
+    (False, True, False): 1506032,
+    (True, True, False): 2186467,
+    (True, True, True): 2661786,
+    (True, False, False): 1901276,
+    (True, False, True): 2376594,
+}
+ADE_ATK = 305667.0
+ADE_UNMODELED_FACTOR = 1.06027  # see the test below - NOT a fudge, a receipt
+
+
+def _ade_shot(spy_maxed, in_range, crit):
+    """Ade's full-charge core hit under the engine's model of her kit."""
+    return calculate_damage(
+        atk=ADE_ATK,
+        enemy_def=100.0,
+        atk_percent=0.1181 + (0.1378 if spy_maxed else 0.0),  # overload + Spy Lens
+        flat_atk=0.152 * ADE_ATK if spy_maxed else 0.0,       # Agent's Gaze
+        pierce_damage_up=0.1529 if spy_maxed else 0.0,        # gated on having Pierce
+        attack_coefficient=0.6904,                            # SR damage 69.04%
+        charge_damage_bonus=1.5 + 0.1181,                     # SR 250% + overload
+        core_hit_bonus=1.0,
+        effective_range_bonus=1.0 if in_range else 0.0,
+        crit_rate=1.0 if crit else 0.0,
+        element_multiplier=1.0,
+    )
+
+
+def test_ade_range_readings_differ_from_the_model_by_ONE_constant_factor():
+    """The structural claim, and the one worth defending.
+
+    Seven readings span crit on/off, in/out of effective range, and Spy Lens
+    below/at max - which switch three different buckets independently. The
+    model reproduces every one of them to within 1e-4 of the SAME ratio. That
+    is only possible if each bucket is individually right: a wrong core bonus
+    or crit source breaks the in-range rows against the out-of-range ones, a
+    wrong ATK term breaks the Spy-Lens rows (its flat_atk only exists there),
+    and a wrong damage-up term breaks them too (pierce_damage_up shares that
+    bucket). All three were checked and all three break uniformity.
+
+    So exactly one multiplicative factor is missing, and it can only live in a
+    bucket that is constant across all seven - the attack coefficient or the
+    charge-damage multiplier, both weapon properties. Its source is unresolved
+    (2026-07-27): dotgg reports her SR as 69.04% / 250% and 13 of the roster's
+    14 SRs carry those same two numbers, so a per-unit weapon value or a
+    harmony cube the engine does not model are the open candidates. See
+    docs/engine-gaps.md.
+
+    This test pins the UNIFORMITY, not the factor. If someone finds the missing
+    term, this fails loudly and the constant goes to 1.0 - which is exactly the
+    signal wanted, rather than a silent 6%.
+    """
+    ratios = {key: _ade_shot(*key) / measured for key, measured in ADE_READINGS.items()}
+    assert max(ratios.values()) - min(ratios.values()) < 1e-4, ratios
+    for key, ratio in ratios.items():
+        assert round(ratio * ADE_UNMODELED_FACTOR, 3) == 1.0, (key, ratio)
