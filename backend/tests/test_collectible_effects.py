@@ -17,8 +17,13 @@ MG_RECORD = {
     "level2": [1, 1, 1, 1, 1, 2, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4],
     "collection_skill_group_data": [
         {"group_id": 712401, "description_value_list": [
-            {"description_value": ["4.74", "6.32", "7.91", "9.5"]},   # 최대 장탄 수
-            {"description_value": ["30", "32", "35", "37"]},          # 방어력 (미매핑)
+            # 사다리가 5칸이지만 도달 가능한 스킬레벨은 4까지뿐이다(위 level1의
+            # 최댓값) - ladder[-1]과 ladder[skill_level - 1]이 갈라지게 일부러
+            # 벌려 놓았다. 큐브의 사다리도 자기 상한을 넘어 이어지는 전례가
+            # 있다(docs/insights.md) - 이 격차가 없으면 이 픽스처는 모듈
+            # docstring이 경고하는 ladder[-1] 버그를 못 잡는다.
+            {"description_value": ["4.74", "6.32", "7.91", "9.5", "11.09"]},   # 최대 장탄 수
+            {"description_value": ["30", "32", "35", "37", "40"]},            # 방어력 (미매핑)
         ]},
         {"group_id": 712002, "description_value_list": [              # 둘 다 방어 스탯
             {"description_value": ["10", "12", "14", "17"]},
@@ -58,7 +63,7 @@ def test_unknown_skill_group_is_skipped_not_guessed(caplog):
 
 
 def test_no_collectible_equipped_contributes_nothing():
-    assert collectible_modifiers(0, 0, "ade-agent-bunny") == ({}, [])
+    assert collectible_modifiers(0, 0, "ade-agent-bunny", weapon="MG") == ({}, [])
 
 
 def test_the_spec_carries_the_collectible_identity_from_the_state():
@@ -92,13 +97,24 @@ def test_a_roster_without_the_field_defaults_to_no_collectible():
     assert state.collectible_level == 0
 
 
-def _tid_for(weapon_type, rare):
-    """The committed table's collectible for one weapon group and rarity."""
+# Pinned rather than discovered by weapon_type/favorite_rare scan: a scan
+# returns whichever record happens to come first, so once a REAL SR record is
+# captured alongside the fabricated 190001 it would silently decide what the
+# 265.775 acceptance test below reads. Pinning also means a renumber or
+# deletion of either record fails the presence check below LOUDLY, rather
+# than skip-green like the scan-and-skip helper this replaced.
+MG_COLLECTIBLE_TID = 100202   # real capture, in-game verified (Flora)
+SR_COLLECTIBLE_TID = 190001   # fabricated fallback (see its "source" field)
+
+
+def test_the_pinned_collectible_tids_are_still_in_the_committed_table():
+    """If either pinned tid above is renumbered or removed, this must fail -
+    not skip - so the acceptance tests below can't quietly go green-by-skip."""
     from app.stat_assembly import load_stat_tables
-    for tid, record in load_stat_tables().get("collectibles", {}).items():
-        if record["weapon_type"] == weapon_type and record["favorite_rare"] == rare:
-            return int(tid)
-    pytest.skip(f"no {rare} collectible collected for {weapon_type}")
+
+    table = load_stat_tables()["collectibles"]
+    assert table[str(MG_COLLECTIBLE_TID)]["weapon_type"] == "MG"
+    assert table[str(SR_COLLECTIBLE_TID)]["weapon_type"] == "SR"
 
 
 def test_ades_charge_damage_matches_her_range_test():
@@ -107,12 +123,11 @@ def test_ades_charge_damage_matches_her_range_test():
     from app.models import UserNikkeState
     from app.user_roster import load_roster
 
-    tid = _tid_for("SR", "SR")
     state = UserNikkeState.model_validate({
         "character_slug": "ade-agent-bunny", "level": 200,
         "hp": 1_000_000.0, "atk": 305_667.0, "def_": 3_000.0,
         "skill_levels": {"skill1": 10, "skill2": 7, "burst": 10},
-        "collectible_tid": tid, "collectible_level": 5,
+        "collectible_tid": SR_COLLECTIBLE_TID, "collectible_level": 5,
     })
     specs, _ = load_roster([state])
     assert specs[0].weapon_stats["charge_damage_percent"] == pytest.approx(265.775, abs=0.01)
@@ -122,10 +137,37 @@ def test_a_maxed_mg_collectible_grants_max_ammo_as_a_plain_effect():
     """평범한 %는 무기 스탯이 아니라 버프로 간다. Flora의 MG 최대치 9.5%."""
     from app.collectible_effects import collectible_modifiers
 
-    tid = _tid_for("MG", "SR")
-    weapon, effects = collectible_modifiers(tid, 15, "flora")
+    weapon, effects = collectible_modifiers(MG_COLLECTIBLE_TID, 15, "flora", weapon="MG")
     assert weapon == {}
     assert [(e.stat, round(e.value, 5)) for e in effects] == [("max_ammo_percent", 0.095)]
+
+
+def test_a_favorite_item_holder_reads_the_top_rung_through_collectible_modifiers():
+    """Finding 1 regression: the two tests above (and
+    test_a_favorite_item_reads_the_top_reachable_rung_whatever_its_own_level)
+    all drive is_favorite=True straight into skill_percents, which never
+    exercises the tid lookup that actually breaks in production - a promoted
+    unit's tid is >= FAVORITE_ITEM_TID_BASE and tables.json["collectibles"]
+    has no key that high, so `collectible_modifiers` must resolve a favorite
+    item by WEAPON GROUP instead of by tid. Any tid >= the threshold works
+    here - resolution no longer depends on the specific value."""
+    from app.stat_assembly import FAVORITE_ITEM_TID_BASE
+
+    weapon, effects = collectible_modifiers(
+        FAVORITE_ITEM_TID_BASE + 34567, 5, "flora", weapon="MG")
+    assert weapon == {}
+    assert [(e.stat, round(e.value, 5)) for e in effects] == [("max_ammo_percent", 0.095)]
+
+
+def test_a_favorite_item_holder_with_no_record_for_their_weapon_group_degrades_safely():
+    """SMG and RL have no committed collectible record at all
+    (docs/engine-gaps.md #15) - a favorite-item holder in one of those groups
+    must fall through to nothing, not raise, same as an unrecognized ordinary
+    tid."""
+    from app.stat_assembly import FAVORITE_ITEM_TID_BASE
+
+    assert collectible_modifiers(
+        FAVORITE_ITEM_TID_BASE + 1, 5, "some-smg-unit", weapon="SMG") == ({}, [])
 
 
 def test_a_mode_variant_spec_still_carries_the_weapon_multiplier():
@@ -138,7 +180,6 @@ def test_a_mode_variant_spec_still_carries_the_weapon_multiplier():
     from app.models import UserNikkeState
     from app.user_roster import load_roster
 
-    tid = _tid_for("SR", "SR")
     base_state = {
         "character_slug": "cinderella-crystal-wave", "level": 200,
         "hp": 1_000_000.0, "atk": 300_000.0, "def_": 3_000.0,
@@ -147,7 +188,7 @@ def test_a_mode_variant_spec_still_carries_the_weapon_multiplier():
     bare_specs, excluded = load_roster(
         [UserNikkeState.model_validate(base_state)])
     equipped_specs, excluded_equipped = load_roster([UserNikkeState.model_validate(
-        {**base_state, "collectible_tid": tid, "collectible_level": 5})])
+        {**base_state, "collectible_tid": SR_COLLECTIBLE_TID, "collectible_level": 5})])
     assert not excluded and not excluded_equipped
     bare_by_slug = {spec.slug: spec for spec in bare_specs}
     equipped_by_slug = {spec.slug: spec for spec in equipped_specs}
@@ -177,8 +218,8 @@ def test_the_stat_table_is_parsed_once_across_many_lookups(monkeypatch):
         return real_loader(*args, **kwargs)
 
     monkeypatch.setattr(collectible_effects, "load_stat_tables", counting_loader)
-    tid = _tid_for("SR", "SR")
     for _ in range(5):
-        collectible_effects.collectible_modifiers(tid, 5, "ade-agent-bunny")
+        collectible_effects.collectible_modifiers(
+            SR_COLLECTIBLE_TID, 5, "ade-agent-bunny", weapon="SR")
     assert len(calls) == 1
     collectible_effects._collectibles_table.cache_clear()
