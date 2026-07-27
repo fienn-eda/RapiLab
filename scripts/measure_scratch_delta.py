@@ -59,7 +59,7 @@ def _atk_of(unit):
 
 
 def _combined_baseline(decks, boss):
-    return sum(da._best_ordering_summary(deck, boss)["total_damage"] for deck in decks)
+    return sum(da.best_ordering_summary(deck, boss)["total_damage"] for deck in decks)
 
 
 def _scramble(decks):

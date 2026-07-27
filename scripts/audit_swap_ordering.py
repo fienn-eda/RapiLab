@@ -6,7 +6,7 @@ to 78% low, which is why the search scores every intra-tier ordering of every
 combination. The hill-climb never got the same treatment, and the error is not
 symmetric: decks arrive from the search already at their BEST ordering, while a
 unit swapped into a seat may want a different one. So challengers are scored
-low and get rejected. The final `_best_ordering_summary` re-optimizes ordering,
+low and get rejected. The final `best_ordering_summary` re-optimizes ordering,
 which makes the REPORTED damage honest while the DECISIONS behind it were made
 on understated numbers.
 
@@ -17,7 +17,7 @@ allocation twice against the same roster and boss:
   by-ordering  the hill-climb judges each candidate on its BEST intra-tier
                ordering (the same standard the search holds combinations to)
 
-Both report through `_best_ordering_summary`, so both totals already include
+Both report through `best_ordering_summary`, so both totals already include
 optimal ordering - the only difference is which decks the hill-climb chose. The
 gap is what canonical-order judging leaves on the table, and it decides whether
 the fix is worth building at all.
