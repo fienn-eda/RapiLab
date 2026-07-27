@@ -253,20 +253,22 @@ def test_ade_range_readings_are_reproduced_exactly():
 
 
 def test_without_the_collectible_every_reading_is_uniformly_six_percent_low():
-    """What the engine computes today, and why the error is invisible.
+    """What dropping the collectible term looks like, and why the gap it pins
+    went unnoticed for so long.
 
-    Dropping the collectible term leaves all seven readings low by the SAME
-    1.0603 - a uniform factor is indistinguishable from a mis-set weapon or a
-    missing buff, which is exactly how it went unnoticed. It cannot hide in the
-    major bucket (that would break in-range against out-of-range), on the ATK
-    side (Agent's Gaze's flat_atk exists only in the Spy Lens rows), or in
-    damage-up (pierce_damage_up shares it) - all three were tried.
+    This is the engine's pre-2026-07-27 output. All seven readings sit low by
+    the SAME 1.0603, and a uniform factor is indistinguishable from a mis-set
+    weapon or a missing buff - it cannot hide in the major bucket (that would
+    break in-range against out-of-range), on the ATK side (Agent's Gaze's
+    flat_atk exists only in the Spy Lens rows), or in damage-up
+    (pierce_damage_up shares it) - all three were tried and ruled out.
 
-    The engine has no representation for collectible skill effects at all:
-    `stat_assembly` reads only the atk/hp curves out of `collectible_sample`,
-    `UserNikkeState` carries no item tid or level, and the stat table holds one
-    weapon group's sample (MG) whose `favoriteitem_skill_group_data` is empty.
-    See docs/engine-gaps.md #15.
+    `collectible_effects` now supplies this term for real (see
+    `test_ade_range_readings_are_reproduced_exactly` and
+    `test_ades_charge_damage_matches_her_range_test` in
+    test_collectible_effects.py). This test pins what removing it again would
+    look like, so a silently broken wire shows up here alongside its partner
+    rather than as a uniform, easy-to-miss drift.
     """
     ratios = [_ade_shot(*key, collectible=False) / measured
               for key, measured in ADE_READINGS.items()]

@@ -90,3 +90,70 @@ def test_a_roster_without_the_field_defaults_to_no_collectible():
     })
     assert state.collectible_tid == 0
     assert state.collectible_level == 0
+
+
+def _tid_for(weapon_type, rare):
+    """The committed table's collectible for one weapon group and rarity."""
+    from app.stat_assembly import load_stat_tables
+    for tid, record in load_stat_tables().get("collectibles", {}).items():
+        if record["weapon_type"] == weapon_type and record["favorite_rare"] == rare:
+            return int(tid)
+    pytest.skip(f"no {rare} collectible collected for {weapon_type}")
+
+
+def test_ades_charge_damage_matches_her_range_test():
+    """사격장 실측: SR 소장품 5단계가 차지 대미지 6.31% 배율을 준다. 「배율」은
+    무기 기본 250%에 비례하므로 265.775%가 되어야 한다 - 256.31%가 아니다."""
+    from app.models import UserNikkeState
+    from app.user_roster import load_roster
+
+    tid = _tid_for("SR", "SR")
+    state = UserNikkeState.model_validate({
+        "character_slug": "ade-agent-bunny", "level": 200,
+        "hp": 1_000_000.0, "atk": 305_667.0, "def_": 3_000.0,
+        "skill_levels": {"skill1": 10, "skill2": 7, "burst": 10},
+        "collectible_tid": tid, "collectible_level": 5,
+    })
+    specs, _ = load_roster([state])
+    assert specs[0].weapon_stats["charge_damage_percent"] == pytest.approx(265.775, abs=0.01)
+
+
+def test_a_maxed_mg_collectible_grants_max_ammo_as_a_plain_effect():
+    """평범한 %는 무기 스탯이 아니라 버프로 간다. Flora의 MG 최대치 9.5%."""
+    from app.collectible_effects import collectible_modifiers
+
+    tid = _tid_for("MG", "SR")
+    weapon, effects = collectible_modifiers(tid, 15, "flora")
+    assert weapon == {}
+    assert [(e.stat, round(e.value, 5)) for e in effects] == [("max_ammo_percent", 0.095)]
+
+
+def test_a_mode_variant_spec_still_carries_the_weapon_multiplier():
+    """cinderella-crystal-wave-snipe swaps its whole weapon_stats profile via
+    get_weapon_profile_override (an SR profile at that). The collectible
+    multiplier must land AFTER that swap, on both variant specs the loader
+    produces, not just the MG-default one - a differential against the same
+    roster with no collectible equipped, so a silently-skipped multiply shows
+    up as a ratio of 1.0 instead of 1.0631."""
+    from app.models import UserNikkeState
+    from app.user_roster import load_roster
+
+    tid = _tid_for("SR", "SR")
+    base_state = {
+        "character_slug": "cinderella-crystal-wave", "level": 200,
+        "hp": 1_000_000.0, "atk": 300_000.0, "def_": 3_000.0,
+        "skill_levels": {"skill1": 10, "skill2": 10, "burst": 10},
+    }
+    bare_specs, excluded = load_roster(
+        [UserNikkeState.model_validate(base_state)])
+    equipped_specs, excluded_equipped = load_roster([UserNikkeState.model_validate(
+        {**base_state, "collectible_tid": tid, "collectible_level": 5})])
+    assert not excluded and not excluded_equipped
+    bare_by_slug = {spec.slug: spec for spec in bare_specs}
+    equipped_by_slug = {spec.slug: spec for spec in equipped_specs}
+    assert set(bare_by_slug) == set(equipped_by_slug) == {
+        "cinderella-crystal-wave-mg", "cinderella-crystal-wave-snipe"}
+    for slug in bare_by_slug:
+        bare = bare_by_slug[slug].weapon_stats["charge_damage_percent"]
+        equipped = equipped_by_slug[slug].weapon_stats["charge_damage_percent"]
+        assert equipped / bare == pytest.approx(1.0631, abs=1e-4), slug

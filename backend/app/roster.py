@@ -14,6 +14,7 @@ backup buffer among same-tier Nikkes.
 """
 from dataclasses import dataclass, field
 
+from app.collectible_effects import collectible_modifiers
 from app.cube_effects import assumed_cube_effects
 from app.overload_effects import overload_options_to_effects
 from app.skill_rules.registry import (
@@ -63,9 +64,15 @@ def _battle_start_effects_rule(effects):
 
 
 def _passive_effects(spec: NikkeSpec):
-    """Overload plus the harmony cube every unit is assumed to wear."""
-    return overload_options_to_effects(spec.overload_options, spec.slug) + (
-        assumed_cube_effects(spec.slug)
+    """Overload, the harmony cube every unit is assumed to wear, and the
+    collectible this unit actually has equipped. The collectible's 배율 stats
+    are NOT here - they scale weapon stats and are applied in user_roster."""
+    _, collectible = collectible_modifiers(
+        spec.collectible_tid, spec.collectible_level, spec.slug)
+    return (
+        overload_options_to_effects(spec.overload_options, spec.slug)
+        + assumed_cube_effects(spec.slug)
+        + collectible
     )
 
 

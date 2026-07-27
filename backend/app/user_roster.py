@@ -13,6 +13,7 @@ when the source (or the override) is shiftypad.
 """
 from pathlib import Path
 
+from app.collectible_effects import collectible_modifiers
 from app.models import UserNikkeState
 from app.roster import NikkeSpec
 from app.skill_rules.registry import (
@@ -82,6 +83,15 @@ def load_nikke_spec(
         element, weapon = meta["element"], meta["weapon"]
     except (KeyError, IndexError, TypeError, ValueError):
         return None
+    # A collectible's 배율 scales the WEAPON's own base stat, so it lands here
+    # rather than in the buff registry - and after any mode override, so a unit
+    # whose weapon profile swaps mid-kit still carries it.
+    weapon_multipliers, _ = collectible_modifiers(
+        state.collectible_tid, state.collectible_level, slug)
+    if weapon_multipliers:
+        weapon_stats = dict(weapon_stats)
+        for stat, factor in weapon_multipliers.items():
+            weapon_stats[stat] = weapon_stats[stat] * factor
     return NikkeSpec(
         slug=slug,
         burst_tier=burst_tier,
