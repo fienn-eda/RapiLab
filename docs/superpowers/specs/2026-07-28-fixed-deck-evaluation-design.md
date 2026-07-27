@@ -1,7 +1,7 @@
 # 고정 편성 평가 · 유니온 레이드 — 설계
 
 - Date: 2026-07-28
-- Status: 초안 (Fienn 리뷰 대기)
+- Status: 승인됨 (Fienn, 2026-07-28)
 - 관련: `docs/roadmap.md` Phase 5(5덱 분배) · Phase 6(입력 UI),
   `docs/superpowers/specs/2026-07-22-draft-based-allocation-design.md`(드래프트 모드)
 
