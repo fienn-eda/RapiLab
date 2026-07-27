@@ -157,3 +157,28 @@ def test_a_mode_variant_spec_still_carries_the_weapon_multiplier():
         bare = bare_by_slug[slug].weapon_stats["charge_damage_percent"]
         equipped = equipped_by_slug[slug].weapon_stats["charge_damage_percent"]
         assert equipped / bare == pytest.approx(1.0631, abs=1e-4), slug
+
+
+def test_the_stat_table_is_parsed_once_across_many_lookups(monkeypatch):
+    """`collectible_modifiers` sits on deck_search's combinatorial ordering
+    loop (`feasible_orderings` calls `roster._passive_effects` once per unit
+    per candidate ordering) - the identical hot path `cube_effects` already
+    solved for the harmony cube via `@lru_cache` on the parsed table. A
+    regression here would reparse the ~369KB stat table per unit per
+    ordering instead of once."""
+    from app import collectible_effects
+
+    collectible_effects._collectibles_table.cache_clear()
+    real_loader = collectible_effects.load_stat_tables
+    calls = []
+
+    def counting_loader(*args, **kwargs):
+        calls.append(1)
+        return real_loader(*args, **kwargs)
+
+    monkeypatch.setattr(collectible_effects, "load_stat_tables", counting_loader)
+    tid = _tid_for("SR", "SR")
+    for _ in range(5):
+        collectible_effects.collectible_modifiers(tid, 5, "ade-agent-bunny")
+    assert len(calls) == 1
+    collectible_effects._collectibles_table.cache_clear()

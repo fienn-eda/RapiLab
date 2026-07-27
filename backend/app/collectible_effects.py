@@ -27,6 +27,7 @@ top 9.5% while sitting at SSR level 5. `stat_assembly.collectible_atk` had
 already inferred the same rule from measurement; this is why it holds.
 """
 import logging
+from functools import lru_cache
 from typing import Any
 
 from app.effects import Effect
@@ -93,6 +94,20 @@ def skill_percents(record: dict[str, Any], item_level: int,
     return percents
 
 
+@lru_cache(maxsize=1)
+def _collectibles_table() -> dict[str, Any]:
+    """The `collectibles` slice of the stat table, parsed once.
+
+    `collectible_modifiers` is called from `roster._passive_effects`, which
+    `deck_search.feasible_orderings` runs once per unit per candidate
+    ordering - a combinatorial hot path. `cube_effects._assumed_percents`
+    already hit this exact problem for the harmony cube and fixed it the same
+    way: cache the parsed table, not the per-call result, since the result
+    here varies by tid/level/source_slug but the table itself does not.
+    """
+    return load_stat_tables().get("collectibles", {})
+
+
 def collectible_modifiers(tid: int, level: int, source_slug: str
                           ) -> tuple[dict[str, float], list[Effect]]:
     """`(weapon-stat multipliers, permanent self effects)` for one unit.
@@ -103,7 +118,7 @@ def collectible_modifiers(tid: int, level: int, source_slug: str
     """
     if not tid:
         return {}, []
-    record = load_stat_tables().get("collectibles", {}).get(str(tid))
+    record = _collectibles_table().get(str(tid))
     if record is None:
         logger.warning("no collectible record for tid %r - contributing nothing", tid)
         return {}, []
