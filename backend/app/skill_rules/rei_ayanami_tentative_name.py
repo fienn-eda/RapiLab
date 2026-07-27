@@ -82,5 +82,5 @@ def build_annihilation_support_per_shot_rules(values):
     return [(
         (threshold, ATTACK_STATE_WINDOW),
         "every_during_own_status_window",
-        [instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True)],
+        [instant_nuke_pulse_rule("per_shot", nuke_percent)],
     )]

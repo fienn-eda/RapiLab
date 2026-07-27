@@ -124,8 +124,7 @@ def build_phantom_signature_per_shot_rules(values):
             ]),
         ]),
         (VISION_PROC_SHOTS, "every", [
-            # "as additional damage" -> Full-Burst-Bonus eligible.
-            instant_nuke_pulse_rule("per_shot", additional, full_burst_bonus_eligible=True),
+            instant_nuke_pulse_rule("per_shot", additional),
             instant_nuke_pulse_rule("per_shot", max_stack_nuke, damage_type="distributed"),
             buff_rule("per_shot", [
                 ("distributed_damage_up", stack_distributed, "self", VISION_STACK_DURATION),

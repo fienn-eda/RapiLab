@@ -5,8 +5,9 @@ only a thin representable subset is modeled; the bulk of her kit is deferred.
 Modeled (DPS-relevant):
 - Laplace Buster's First Damage (897.6% of final ATK) is the burst nuke, above.
 - Hero Bomber (skills[1]): when the last bullet hits the target, 81.66% of final
-  ATK as additional damage (gap #1 `last_bullet` mode). "As additional damage",
-  so Full-Burst-Bonus eligible. See `build_hero_bomber_per_shot_rules`.
+  ATK as additional damage (gap #1 `last_bullet` mode) - fired off her own
+  shots, so it takes the Full Burst bonus on whichever land inside a window.
+  See `build_hero_bomber_per_shot_rules`.
 - Laplace Buster (skills[2], her burst): her "First Damage" (897.6% of final ATK)
   is modeled as the burst nuke (`laplace_buster_burst_percent`).
 
@@ -68,7 +69,7 @@ def build_hero_bomber_per_shot_rules(values):
     last bullet of a magazine hits the target."""
     hero_bomber = values["hero_bomber"]
     nuke_percent = float(hero_bomber["description_value_01"])
-    return [(None, "last_bullet", [instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True)])]
+    return [(None, "last_bullet", [instant_nuke_pulse_rule("per_shot", nuke_percent)])]
 
 
 def build_buster_weapon_mode_schedule(values):

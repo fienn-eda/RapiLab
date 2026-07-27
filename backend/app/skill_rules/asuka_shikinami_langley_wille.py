@@ -3,10 +3,9 @@ Burst-3 Wind Machine Gun attacker. Base skills. PARTIAL - see below.
 
 First consumer of the delayed dynamic_hit_count_nuke (`fire_delay` +
 `own_burst_delayed` resets - a burst effect that lands after a fixed delay,
-not at cast time) and of `full_burst_bonus_eligible` (Fienn's "as additional
-damage" text rule, 2026-07-12: a burst skill's damage instance gets the Full
-Burst Bonus only if its own description uses that phrase - see
-docs/insights.md).
+not at cast time), which is also the clearest illustration of why the Full
+Burst bonus is decided by TIME: the same burst produces damage at the cast
+(no bonus, the window has not opened) and damage 9 sec later (inside it).
 
 Modeled (DPS-relevant): an "anti_at_field" resource (Anti A.T. Field, a stack
 debuff on the boss), capped at 30.
@@ -50,8 +49,10 @@ debuff on the boss), capped at 30.
   bullet from the 471.86% unconditional nuke): modeled via the window-gated
   per-shot trigger (`per_shot_rules` mode "every_during_own_status_window",
   gap #7, built 2026-07-15) - the same 9s own-burst-anchored window the stack
-  fill uses. "as damage" (not "as additional damage"), so NOT
-  full_burst_bonus_eligible. A small nuke, secondary to her headline mechanics.
+  fill uses. It fires on her own shots, so like every other per-shot instance
+  it takes the Full Burst bonus on whichever of them land inside a window - no
+  reading of its wording involved. A small nuke, secondary to her headline
+  mechanics.
 
 Not modeled / deferred:
 - Annihilation State's 21% magazine reload and Emergency Repair's heating
@@ -114,10 +115,9 @@ def build_anti_at_field_per_shot_rules(values):
     fill_every = int(float(field["description_value_04"]))
     window_duration = float(values["annihilation_state"]["description_value_02"])
     return [
-        (uncond_threshold, "every", [instant_nuke_pulse_rule("per_shot", uncond_nuke, full_burst_bonus_eligible=True)]),
+        (uncond_threshold, "every", [instant_nuke_pulse_rule("per_shot", uncond_nuke)]),
         # gap #7: every `fill_every` shots WHILE in Annihilation State (a
-        # `window_duration`-sec window anchored to her own burst). "as damage",
-        # not "as additional damage", so NOT full_burst_bonus_eligible.
+        # `window_duration`-sec window anchored to her own burst).
         (
             (fill_every, window_duration),
             "every_during_own_status_window",
@@ -162,5 +162,4 @@ def build_annihilation_dynamic_hit_count_nukes(values):
     nuke = float(annihilation["description_value_06"])
     return [{
         "resource": "anti_at_field", "base_percent": nuke, "fire_delay": duration,
-        "full_burst_bonus_eligible": True,
     }]

@@ -117,5 +117,5 @@ def build_guillotine_resource_scaled_nukes(values):
     return [{
         "resource": "exp", "cap": exp_cap, "base_percent": dot_percent,
         "scale_fn": _hero_level, "tick_count": tick_count, "tick_interval": 1.0,
-        "damage_type": "sustained", "full_burst_bonus_eligible": True,
+        "damage_type": "sustained", "resolves_after_cast": True,
     }]

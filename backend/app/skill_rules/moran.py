@@ -97,7 +97,7 @@ def build_bring_it_on_per_shot_rules(values):
     nuke_percent = float(bring["description_value_02"])
     shots = int(float(bring["description_value_03"]))
     return [(shots, "every_during_segment", [
-        instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True),
+        instant_nuke_pulse_rule("per_shot", nuke_percent),
     ])]
 
 

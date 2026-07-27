@@ -140,13 +140,10 @@ def build_breakthrough_per_shot_rules(values):
     # burst rewrites the requirement table, so most stages land inside Full
     # Burst and collect the bonus; the ones outside it still do not.
     stage_rules = [
-        [instant_nuke_pulse_rule("per_shot", stage_percents[0],
-                                 full_burst_bonus_eligible=True)],
+        [instant_nuke_pulse_rule("per_shot", stage_percents[0])],
         [instant_nuke_pulse_rule("per_shot", stage_percents[1],
-                                 full_burst_bonus_eligible=True,
                                  damage_type="distributed")],
         [instant_nuke_pulse_rule("per_shot", stage_percents[2],
-                                 full_burst_bonus_eligible=True,
                                  damage_type="distributed")],
     ]
     return [(spec, "sequence", stage_rules)]

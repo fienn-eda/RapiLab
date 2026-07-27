@@ -26,8 +26,9 @@ Modeled (DPS-relevant):
 - Feather-All Range (her burst): self True Damage +55.3% and Charge Damage
   +140.68% for 10 sec, plus a 300.02% true-damage nuke. "10 enemy units with the
   highest final DEF" collapses to the single raid boss, so it lands once. The
-  text says "as true damage", not "as additional damage", so it is NOT
-  Full-Burst-Bonus eligible (Fienn's text rule).
+  It fires on her own burst cast, one beat BEFORE Full Burst opens, so it takes
+  no bonus - the timing, not the wording (the "as additional damage" text rule
+  was deleted 2026-07-28).
 
 Assumptions (documented, not from the skill text):
 - ATTACK THROTTLE. With 6 feathers the formula demands a hit every 0.267s, but

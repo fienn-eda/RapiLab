@@ -200,5 +200,4 @@ def build_memory_incineration_scheduled_nukes(values):
                 k += 1
         return ticks
 
-    return [{"schedule": schedule, "percent": percent,
-             "full_burst_bonus_eligible": True}]
+    return [{"schedule": schedule, "percent": percent}]

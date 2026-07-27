@@ -187,7 +187,7 @@ def test_guillotine_extermination_dot_spec_ticks_ten_times_scaled_by_hero_level(
     # (first established via Mana's Fatal Error!) - each tick after the very
     # first is inherently computed after cast time, landing inside the same
     # Full Burst window her burst opens.
-    assert spec["full_burst_bonus_eligible"] is True
+    assert spec["resolves_after_cast"] is True
 
 
 def test_guillotine_extermination_dot_end_to_end_scales_with_hero_level_per_tick():

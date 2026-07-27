@@ -22,7 +22,8 @@ Modeled (DPS-relevant):
 - Unstable Energy (skills[0]): 240% of final ATK, 3 sequential hits, every 44
   expected crits. Emitted as 3 separate pulses at the same instant, not one
   720% hit, so enemy DEF is subtracted per hit like every other multi-hit nuke.
-  "As damage" (not "as additional damage"), so NOT Full-Burst-Bonus eligible.
+  Fired off her own shots, so the Full Burst bonus follows whichever of them
+  land inside a window.
 - Unstable Energy's rider: "when Unstable Energy hits an Electric Code target",
   Damage Taken +10% for 10 sec - gated on an Electric boss (engine gap #5
   convention, as with Brid / Helm: Aquamarine / Marciana).

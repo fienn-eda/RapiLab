@@ -96,4 +96,3 @@ def test_annihilation_support_nukes_every_7_in_attack_state_window():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 286.37
-    assert pulses[0].full_burst_bonus_eligible is True  # "as additional damage"

@@ -30,7 +30,7 @@ Modeled (DPS-relevant):
   That Max HP feeds Electric Power's ATK above, which is re-applied at each
   stage so the growth is actually reflected.
 - Mjolnir's stage bonus (skills[2]): 934.76% of final ATK x the Over Energy
-  stage AT THAT BURST, as additional damage (full-burst-bonus eligible). One
+  stage AT THAT BURST. One
   `scheduled_nukes` spec per stage, since a spec carries a single percent.
 - Electric Power, Full Full Charge (skills[0]), at battle start: self ATK +
   (4.05% of her LIVE Max HP) continuously - resolved through
@@ -270,8 +270,7 @@ def build_laplace_stage_nukes(values):
     schedule returns only the bursts where the stage is exactly that value.
     Stages and transform times are both deterministic, so every burst gets the
     stage it actually had at that instant (Fienn's call, 2026-07-24) rather
-    than a settled approximation. "as additional damage" -> full-burst-bonus
-    eligible (Velvet precedent).
+    than a settled approximation.
     """
     per_stage = float(values["regenerative_energy_armament_mjolnir"]["description_value_04"])
     weapon = values["caster_weapon_stats"]
@@ -293,7 +292,6 @@ def build_laplace_stage_nukes(values):
         {
             "percent": per_stage * stage,
             "schedule": make_schedule(stage),
-            "full_burst_bonus_eligible": True,
         }
         for stage in range(1, OVER_ENERGY_MAX_STAGE + 1)
     ]

@@ -112,7 +112,7 @@ def build_liberalio_per_shot_rules(values):
     # "1 time(s) during battle", Rosanna "1 time(s) per battle" - and this
     # bullet carries none of them.
     for _ in range(additional_times):
-        rules.append((1, "every", [instant_nuke_pulse_rule("per_shot", additional, full_burst_bonus_eligible=True)]))
+        rules.append((1, "every", [instant_nuke_pulse_rule("per_shot", additional)]))
     return rules
 
 

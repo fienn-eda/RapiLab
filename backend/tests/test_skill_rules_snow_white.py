@@ -73,7 +73,6 @@ def test_determination_fires_every_30_shots_with_additional_damage():
     assert len(pulses) == 1
     assert pulses[0].value == 82.8
     # "as additional damage" -> opts in to the Full Burst bonus check.
-    assert pulses[0].full_burst_bonus_eligible is True
     assert pulses[0].damage_type == "attack"
 
     assert round(registry.total_for("atk_percent", SNOW_WHITE, now=5.0), 4) == 0.0828

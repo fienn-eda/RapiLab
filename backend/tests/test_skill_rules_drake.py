@@ -101,7 +101,6 @@ def test_base_thunderbolt_nukes_every_10_normals():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 98.55
-    assert pulses[0].full_burst_bonus_eligible is False  # "as damage"
 
 
 def test_signature_overcharge_adds_sg_atk_and_max_ammo_to_sg_allies_only():

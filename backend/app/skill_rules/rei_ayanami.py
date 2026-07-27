@@ -10,8 +10,9 @@ Modeled (DPS-relevant):
   gain Attack Damage +48.02% for 10 sec, plus the burst nuke, 990.2% of final
   ATK (`annihilation_burst_percent`).
 - Preemptive Subdual (skills[0]): every 100 normal attacks, a 112.37%-of-final-
-  ATK nuke on the nearest enemy (gap #1 per_shot `every` mode). "As damage", so
-  NOT Full-Burst-Bonus eligible. On the same every-100 trigger, a self Elemental
+  ATK nuke on the nearest enemy (gap #1 per_shot `every` mode); it rides her own
+  shots, so it takes the Full Burst bonus on whichever land inside a window.
+  On the same every-100 trigger, a self Elemental
   Advantage Attack Damage +30.23% for 3 sec: modeled as a REFRESHING
   other_elemental_bonus buff with NO boss gate - the skill text names no
   element, and damage_formula only pays out that group to a unit that already

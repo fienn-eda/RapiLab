@@ -29,8 +29,8 @@ must refresh, not stack - see the Prika/Mint per-shot-refresh precedent).
 Signature only - "Fire Away" also deals 178.98% of final ATK on every Full
 Charge hit - a DIFFERENT trigger from last-bullet, and since every shot on a
 charge weapon is a full charge it is `per_shot_rules`' plain "every 1" mode (see
-`build_fire_away_per_shot_rules`). Its text says "as additional damage", so it
-is `full_burst_bonus_eligible`.
+`build_fire_away_per_shot_rules`), which means it collects the Full Burst bonus
+on whichever of her shots land inside a window.
 
 Signature only - "Aegis Cannon" additionally grants herself Charge Damage
 Multiplier +158.4% for 10 ROUNDS - a bullet-count duration, not seconds, so it
@@ -123,11 +123,10 @@ def build_fire_away_rules(values: dict) -> list[SkillRule]:
 
 def build_fire_away_per_shot_rules(values: dict) -> list:
     """Fire Away's "on Full Charge hit" bonus: every SR shot is a full charge,
-    so this is the plain "every 1" per-shot mode. "as additional damage" opts
-    it in to the Full Burst bonus."""
+    so this is the plain "every 1" per-shot mode."""
     nuke_percent = float(values["description_value_04"])
     return [(1, "every", [
-        instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True)
+        instant_nuke_pulse_rule("per_shot", nuke_percent)
     ])]
 
 

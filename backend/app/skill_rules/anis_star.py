@@ -202,7 +202,7 @@ def build_starfall_full_charge_nuke_rules(values: dict):
     additional damage (`description_value_04`% of final ATK) on every Full Charge
     attack - an RL's every shot is a full charge, so it fires each shot."""
     nuke_percent = float(values["description_value_04"])
-    return [(1, "every", [instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True)])]
+    return [(1, "every", [instant_nuke_pulse_rule("per_shot", nuke_percent)])]
 
 
 def build_stardust_rules(values: dict) -> list[SkillRule]:
@@ -267,8 +267,7 @@ def build_shooting_stars_scheduled_nukes(values: dict):
             )
         return times
 
-    return [{"schedule": schedule, "percent": percent,
-             "full_burst_bonus_eligible": True}]
+    return [{"schedule": schedule, "percent": percent}]
 
 
 def build_star_anis_burst_rules(values: dict) -> list[SkillRule]:

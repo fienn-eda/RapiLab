@@ -147,8 +147,3 @@ def test_overconfident_ticks_five_times_across_the_ten_second_status():
         pytest.approx(t) for t in (22.0, 24.0, 26.0, 28.0, 30.0)
     ]
 
-
-def test_neither_distributed_source_opts_into_the_full_burst_bonus():
-    # Both read "as Distributed Damage", not "as additional damage".
-    for spec in build_milk_scheduled_nukes(VALUES):
-        assert not spec.get("full_burst_bonus_eligible", False)

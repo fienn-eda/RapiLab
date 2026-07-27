@@ -29,8 +29,8 @@ Modeled (DPS-relevant):
   Guillotine's Hero-Level DoT without a fake resource). **Every tick also
   gets the Full Burst Bonus** (`full_burst_bonus_eligible=True`) - confirmed
   in-game (Fienn, 2026-07-12), even though her skill text says "as sustained
-  damage" rather than "as additional damage" (the text-signal rule from
-  `docs/decisions.md` was written around single-instant nukes; a repeating
+  damage" rather than "as additional damage" - the phrase never decided this
+  (that rule was deleted 2026-07-28); a repeating
   DoT tick is, by construction, not "at cast time" past its first tick, and
   her 10 ticks span exactly the same 10s the Full Burst window that opens at
   her burst covers).
@@ -106,7 +106,7 @@ def build_fatal_error_dot(values):
     tick_count = int(float(burst["description_value_04"]))
     return [{
         "base_percent": percent, "tick_count": tick_count, "tick_interval": 1.0,
-        "damage_type": "sustained", "full_burst_bonus_eligible": True,
+        "damage_type": "sustained", "resolves_after_cast": True,
     }]
 
 

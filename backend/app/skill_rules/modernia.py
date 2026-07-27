@@ -91,7 +91,7 @@ def build_modernia_per_shot_rules(values):
     leap_atk = float(leap["description_value_04"]) / 100
     leap_duration = float(leap["description_value_05"])
     return [
-        (1, "every", [instant_nuke_pulse_rule("per_shot", additional, full_burst_bonus_eligible=True)]),
+        (1, "every", [instant_nuke_pulse_rule("per_shot", additional)]),
         (leap_threshold, "every", [
             refreshing_buff_rule("per_shot", [
                 ("atk_percent", leap_atk, "self", leap_duration),

@@ -85,10 +85,8 @@ def test_vision_proc_emits_both_nukes_with_the_right_typing():
     by_percent = {p.value: p for p in pulses}
     assert sorted(by_percent) == [84.33, 250.0]
     # "as additional damage" -> opted into the Full Burst Bonus check.
-    assert by_percent[84.33].full_burst_bonus_eligible is True
     # "as Distributed Damage" -> typed so her Distributed Damage buffs apply.
     assert by_percent[250.0].damage_type == "distributed"
-    assert by_percent[250.0].full_burst_bonus_eligible is False
 
 
 def test_vision_proc_also_stacks_self_distributed_damage():

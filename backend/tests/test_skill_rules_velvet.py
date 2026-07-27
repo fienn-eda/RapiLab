@@ -144,4 +144,3 @@ def test_bullets_of_love_50_normal_bullet_nukes_and_self_buffs():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 400.92
-    assert pulses[0].full_burst_bonus_eligible is True  # "as additional damage"

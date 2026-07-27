@@ -39,7 +39,6 @@ def test_hero_bomber_last_bullet_nuke():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 81.66
-    assert pulses[0].full_burst_bonus_eligible is True  # "as additional damage"
 
 
 def test_buster_segment_normal_damage_over_the_five_second_window():

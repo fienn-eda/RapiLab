@@ -101,7 +101,6 @@ def test_preemptive_subdual_nukes_every_100_normal_attacks():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 112.37
-    assert pulses[0].full_burst_bonus_eligible is False  # "as damage", not "as additional damage"
 
 
 def test_preemptive_subdual_elemental_advantage_is_not_boss_gated():

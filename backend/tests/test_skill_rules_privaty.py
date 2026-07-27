@@ -141,7 +141,6 @@ def test_ld_assault_last_bullet_grants_debuff_and_base_hit_when_not_designated()
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 256.17
-    assert pulses[0].full_burst_bonus_eligible is True
 
 
 def test_ld_assault_damage_taken_refreshes_instead_of_stacking():
@@ -178,7 +177,6 @@ def test_ld_assault_last_bullet_adds_designated_target_hit_within_ak_missiles_wi
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 2
     assert {round(p.value, 2) for p in pulses} == {256.17, 1687.0}
-    assert all(p.full_burst_bonus_eligible for p in pulses)
 
 
 def test_ld_assault_last_bullet_no_designated_hit_after_ak_missiles_window_closes():
@@ -269,6 +267,5 @@ def test_base_ld_assault_fires_one_nuke_and_defers_the_stun_rider():
 
     pulses = registry.drain_pulses("instant_damage_percent")
     assert [p.value for p in pulses] == [85.79]
-    assert pulses[0].full_burst_bonus_eligible is True
     ally = {"slug": "ally", "element": "Iron"}
     assert registry.total_for("damage_taken_up", ally, 3.0) == 0.0

@@ -15,8 +15,8 @@ Modeled (DPS-relevant):
     per the Prika precedent (the engine applies charge_damage_bonus squad-wide;
     charge-weapon allies are the real beneficiaries).
   - After 50 normal attacks during Full Burst: self Attack Damage +15.03% for
-    5 sec and a 400.92%-of-final-ATK nuke ("as additional damage", so
-    full_burst_bonus_eligible - and it always lands inside Full Burst).
+    5 sec and a 400.92%-of-final-ATK nuke - which always takes the Full Burst
+    bonus, since its own trigger is "during Full Burst".
   The "ammo pouch" the skill spends from (6000 rounds, refilled to full at
   battle start and every Burst Stage 2) far exceeds per-cycle spend, so it never
   depletes and is treated as a non-constraint (not modeled as a resource).
@@ -108,7 +108,7 @@ def build_bullets_of_love_per_shot_rules(values):
             refreshing_buff_rule("per_shot", [
                 ("attack_damage_up", self_attack_damage, "self", self_attack_damage_duration),
             ]),
-            instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True),
+            instant_nuke_pulse_rule("per_shot", nuke_percent),
         ]),
     ]
 
