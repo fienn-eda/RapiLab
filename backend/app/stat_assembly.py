@@ -292,14 +292,31 @@ def cube_atk(tables: dict[str, Any], cube_level: int) -> int:
     return tables["resilience_cube"]["atk"][cube_level - 1]
 
 
+def _collectible_curve(tables: dict[str, Any], item_tid: int, stat: str) -> list[int]:
+    """The stat curve of THIS collectible, not of collectibles in general.
+
+    An R collectible is worth less than half an SR one at the same level (4,736
+    vs 9,688 ATK at the top), so reading one curve for every tid over-credits
+    every R holder. `collectible_sample` is the SR curve and stays the fallback
+    for a tid the committed table does not know - the same shape the effect
+    resolver uses, and the value the model was fitted against.
+    """
+    record = tables.get("collectibles", {}).get(str(item_tid))
+    if record is None:
+        return tables["collectible_sample"][stat]
+    return record[stat]
+
+
 def collectible_atk(tables: dict[str, Any], item_tid: int, item_level: int) -> int:
     """Flat ATK from the equipped collectible or favorite item."""
     if not item_tid:
         return 0
-    curve = tables["collectible_sample"]["atk"]
+    curve = _collectible_curve(tables, item_tid, "atk")
     if item_tid >= FAVORITE_ITEM_TID_BASE:
         # Measured: four units holding a favorite item at level 2 all contribute
-        # 9,688 - the collectible curve's top entry, not its level-2 entry.
+        # 9,688 - the collectible curve's top entry, not its level-2 entry. The
+        # game's own favorite-item records agree: their curve is flat at that
+        # value across all three of their levels.
         return curve[-1]
     if item_level <= 0:
         # The curve has an entry at index 0 (3,029) but units at level 0 measure
@@ -466,7 +483,7 @@ def collectible_hp(tables: dict[str, Any], item_tid: int, item_level: int) -> in
     collectible_atk. A favorite item is priced at the curve maximum."""
     if not item_tid:
         return 0
-    curve = tables["collectible_sample"]["hp"]
+    curve = _collectible_curve(tables, item_tid, "hp")
     if item_tid >= FAVORITE_ITEM_TID_BASE:
         return curve[-1]
     if item_level <= 0:

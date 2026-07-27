@@ -98,23 +98,51 @@ def test_a_roster_without_the_field_defaults_to_no_collectible():
 
 
 # Pinned rather than discovered by weapon_type/favorite_rare scan: a scan
-# returns whichever record happens to come first, so once a REAL SR record is
-# captured alongside the fabricated 190001 it would silently decide what the
-# 265.775 acceptance test below reads. Pinning also means a renumber or
-# deletion of either record fails the presence check below LOUDLY, rather
-# than skip-green like the scan-and-skip helper this replaced.
-MG_COLLECTIBLE_TID = 100202   # real capture, in-game verified (Flora)
-SR_COLLECTIBLE_TID = 190001   # fabricated fallback (see its "source" field)
+# returns whichever record happens to come first, and both rarities of a weapon
+# group answer the same scan, so it would silently decide what the 265.775
+# acceptance test below reads. Pinning also means a renumber or deletion of
+# either record fails the presence check below LOUDLY, rather than skip-green
+# like the scan-and-skip helper this replaced.
+MG_COLLECTIBLE_TID = 100202   # SR rarity, MG group - in-game verified (Flora)
+SR_COLLECTIBLE_TID = 100602   # SR rarity, SR group - in-game verified (에이드)
+R_SR_COLLECTIBLE_TID = 100601  # R rarity, SR group
 
 
 def test_the_pinned_collectible_tids_are_still_in_the_committed_table():
-    """If either pinned tid above is renumbered or removed, this must fail -
+    """If any pinned tid above is renumbered or removed, this must fail -
     not skip - so the acceptance tests below can't quietly go green-by-skip."""
     from app.stat_assembly import load_stat_tables
 
     table = load_stat_tables()["collectibles"]
     assert table[str(MG_COLLECTIBLE_TID)]["weapon_type"] == "MG"
     assert table[str(SR_COLLECTIBLE_TID)]["weapon_type"] == "SR"
+    assert table[str(MG_COLLECTIBLE_TID)]["favorite_rare"] == "SR"
+    assert table[str(R_SR_COLLECTIBLE_TID)]["favorite_rare"] == "R"
+
+
+def test_every_weapon_group_has_both_rarities_committed():
+    """소장품은 무기군 6 x 등급 2다. 하나라도 비면 그 무기군을 쓰는 유닛이
+    조용히 아무 효과도 못 받는다 - 이것이 gap #17의 원래 상태였다."""
+    from app.stat_assembly import load_stat_tables
+
+    table = load_stat_tables()["collectibles"]
+    committed = {(r["favorite_rare"], r["weapon_type"]) for r in table.values()}
+    for weapon in ("AR", "SMG", "SG", "RL", "SR", "MG"):
+        assert ("R", weapon) in committed, weapon
+        assert ("SR", weapon) in committed, weapon
+
+
+def test_every_committed_skill_group_has_a_mapping():
+    """새 레코드를 넣고 COLLECTIBLE_SKILL_STATS 매핑을 빠뜨리면 경고 한 줄만
+    찍고 조용히 건너뛴다 - 그 침묵을 여기서 깨뜨린다."""
+    from app.collectible_effects import COLLECTIBLE_SKILL_STATS
+    from app.stat_assembly import load_stat_tables
+
+    for record in load_stat_tables()["collectibles"].values():
+        for group in record["collection_skill_group_data"]:
+            assert group["group_id"] in COLLECTIBLE_SKILL_STATS, (
+                f"{record['id']} ({record['favorite_rare']} {record['weapon_type']})"
+                f" 의 그룹 {group['group_id']}")
 
 
 def test_ades_charge_damage_matches_her_range_test():
@@ -160,14 +188,42 @@ def test_a_favorite_item_holder_reads_the_top_rung_through_collectible_modifiers
 
 
 def test_a_favorite_item_holder_with_no_record_for_their_weapon_group_degrades_safely():
-    """SMG and RL have no committed collectible record at all
-    (docs/engine-gaps.md #17) - a favorite-item holder in one of those groups
-    must fall through to nothing, not raise, same as an unrecognized ordinary
-    tid."""
+    """무기군을 못 찾으면 예외가 아니라 무효로 떨어져야 한다 - 모르는 평범한
+    tid와 같은 처리다. 여섯 무기군이 전부 커밋된 지금은 게임이 새 무기군을
+    내놓는 경우가 이 경로다."""
     from app.stat_assembly import FAVORITE_ITEM_TID_BASE
 
     assert collectible_modifiers(
-        FAVORITE_ITEM_TID_BASE + 1, 5, "some-smg-unit", weapon="SMG") == ({}, [])
+        FAVORITE_ITEM_TID_BASE + 1, 5, "some-future-unit", weapon="BOW") == ({}, [])
+
+
+def test_a_real_favorite_item_tid_resolves_to_its_own_record():
+    """애장품 tid(2xxxxx)도 이제 테이블의 키다. 무기군 폴백과 같은 값이 나와야
+    한다 - 애장품 레코드는 자기 무기군 SR의 스킬 그룹을 그대로 싣고 사다리가
+    최상단에 고정돼 있기 때문이다."""
+    from app.stat_assembly import FAVORITE_ITEM_TID_BASE, load_stat_tables
+
+    table = load_stat_tables()["collectibles"]
+    mg_favorite = next(int(tid) for tid, r in table.items()
+                       if r["favorite_rare"] == "SSR" and r["weapon_type"] == "MG")
+    assert mg_favorite >= FAVORITE_ITEM_TID_BASE
+    by_tid = collectible_modifiers(mg_favorite, 2, "flora", weapon="MG")
+    by_weapon_group = collectible_modifiers(
+        FAVORITE_ITEM_TID_BASE + 34567, 2, "flora", weapon="MG")
+    assert [(e.stat, e.value) for e in by_tid[1]] == [
+        (e.stat, e.value) for e in by_weapon_group[1]]
+    assert by_tid[0] == by_weapon_group[0]
+
+
+def test_the_r_rarity_ladder_is_weaker_than_the_sr_one():
+    """R과 SR은 같은 스탯을 다른 사다리로 준다. 등급을 무시하고 한 사다리만
+    읽으면 R 보유자가 과대평가된다."""
+    r_weapon, _ = collectible_modifiers(R_SR_COLLECTIBLE_TID, 15, "ade-agent-bunny",
+                                        weapon="SR")
+    sr_weapon, _ = collectible_modifiers(SR_COLLECTIBLE_TID, 15, "ade-agent-bunny",
+                                         weapon="SR")
+    assert r_weapon["charge_damage_percent"] == pytest.approx(1.0631, abs=1e-4)
+    assert sr_weapon["charge_damage_percent"] == pytest.approx(1.0947, abs=1e-4)
 
 
 def test_a_mode_variant_spec_still_carries_the_weapon_multiplier():

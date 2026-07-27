@@ -14,16 +14,19 @@
 //               value was never carried over from the previous snapshot (i.e.
 //               newly released units - a carried-over `null` still counts as
 //               known). One page load each.
-//   --headless  with --directory, launch our own browser instead of attaching to
-//               yours. The directory is public game data, so this needs no
+//   --headless  with any public dump mode (--directory, --nikke, --tables,
+//               --collectibles), launch our own browser instead of attaching to
+//               yours. Those modes read public game data, so they need no
 //               account - it is what lets the scheduled check run unattended.
 //   --raw       with --directory, write the CDN payload untrimmed (do NOT commit
 //               it: it is huge). For discovering which fields the directory even
 //               carries before deciding what the snapshot should keep.
 //   --tables    dump the public stat tables (base curves per class, equipment,
 //               affinity) to nikke-stat-tables.json and stop
-//   --collectibles  dump one collectible record per weapon group (AR/SMG/SG/RL/
-//               SR/MG) to collectibles.json and stop
+//   --collectibles  dump every 소장품/애장품 record (R and SR per weapon group,
+//               plus each SSR favorite item) to collectibles.json and stop. Reads
+//               the CDN directly, so it opens no browser and needs no session;
+//               --locale <ko|en> picks the language of the embedded text.
 //   --details   dump this account's investment inputs + outpost research ranks
 //               to details.json and stop (personal data; gitignored)
 //   --nikke <rid|name>[,<rid|name>...]  dump each unit's raw ShiftyPad bundle
@@ -38,6 +41,7 @@ const fs = require('fs')
 const { JSDOM } = require('jsdom')
 const { connect, launch, findPage, captureUnit } = require('./capture')
 const { parseMainStats, parseOverload, parseSkills, parseCube } = require('./parse')
+const { fetchResource } = require('./resource-url')
 
 const args = process.argv.slice(2)
 const DRY = args.includes('--dry-run')
@@ -53,18 +57,18 @@ const DEFAULT_OUT = DIRECTORY_ONLY
   ? 'nikke-directory.json'
   : TABLES_ONLY
     ? 'nikke-stat-tables.json'
-    : DETAILS_ONLY
-      ? 'details.json'
-      : 'roster.json'
+    : COLLECTIBLES_ONLY
+      ? 'collectibles.json'
+      : DETAILS_ONLY
+        ? 'details.json'
+        : 'roster.json'
 const OUT = args.includes('--out') ? args[args.indexOf('--out') + 1] : DEFAULT_OUT
 const AREA = args.includes('--area') ? parseInt(args[args.indexOf('--area') + 1], 10) : 81
+// Only the collectible records carry localized text; the values are identical
+// across locales. Korean is what this project's UI and docs quote.
+const LOCALE = args.includes('--locale') ? args[args.indexOf('--locale') + 1] : 'ko'
 
 const SHIFTYPAD = 'https://www.blablalink.com/shiftyspad/nikke?nikke='
-
-// One resource_id per weapon group (AR/SMG/SG/RL/SR/MG), chosen so --collectibles
-// can capture all six collection_skill_group_data ladders in one run. Picked by
-// finding, for each weapon group, an encoded roster unit that carries it.
-const COLLECTIBLE_SAMPLE_RIDS = [570, 860, 15, 840, 315, 835]
 
 const log = (...m) => console.error(...m)
 
@@ -312,41 +316,32 @@ const collectSubTypes = async (page, entries) => {
   return out
 }
 
-// 소장품(collectible) 레코드: 무기군마다 다른 스킬을 담고 있고, 그 스킬 효과는
-// 엔진이 여태 못 보던 대미지 소스다(docs/engine-gaps.md #15). 레코드는 유닛
-// 페이지를 여는 것만으로 CDN에서 흘러나오므로 stat 파일과 같은 방식으로 줍는다.
-// 등급·무기군을 미리 가정하지 않고 보이는 것을 전부 id로 키잉해 담는다 - R 등급이
-// 섞여 들어와도 그대로 저장한다.
-const collectCollectibles = async (page, entries) => {
-  const cdp = await page.context().newCDPSession(page)
-  await cdp.send('Network.setCacheDisabled', { cacheDisabled: true })
+// 소장품(collectible)·애장품(favorite item) 레코드: 무기군마다 다른 스킬을 담고
+// 있고, 그 스킬 효과는 엔진의 대미지 소스다(docs/engine-gaps.md #17).
+//
+// 브라우저를 쓰지 않는다. 이 테이블은 로그인한 Collection 화면에서만 요청되므로
+// 페이지 트래픽을 가로채는 방식은 빈손으로 끝난다 - 대신 CDN 경로를 직접 계산해
+// 받는다(resource-url.js). favorite_rare_map.json이 등급별 id 목록(R 6 · SR 6 ·
+// SSR 21)을 주고, 각 id마다 레코드 파일이 하나씩 있다.
+const collectCollectibles = async (locale) => {
+  const rareMap = await fetchResource('/equip/favorite_rare_map.json')
   const out = {}
-  const onResp = async (r) => {
-    if (!r.url().includes('cdn') || !r.url().split('?')[0].endsWith('.json')) return
-    let j
-    try {
-      j = await r.json()
-    } catch {
-      return
-    }
-    if (j && j.id && j.weapon_type && Array.isArray(j.collection_skill_group_data)) {
-      out[String(j.id)] = j
+  for (const [rare, ids] of Object.entries(rareMap)) {
+    for (const id of ids) {
+      const record = await fetchResource(`/equip/${locale}/favorite_${id}.json`)
+      out[String(record.id)] = record
+      log(`  ${rare} ${record.id}: ${record.weapon_type} (${record.favorite_type})`)
     }
   }
-  page.on('response', onResp)
-  for (const e of entries) {
-    log(`  collectibles: visiting ${e.name_en} (rid=${e.resource_id})`)
-    await page
-      .goto(`${SHIFTYPAD}${e.resource_id}`, { waitUntil: 'networkidle', timeout: 60000 })
-      .catch(() => {})
-    await page.waitForTimeout(2500)
+  // 등급 x 무기군은 6개씩이어야 한다. 하나라도 비면 게임 쪽 id 목록이 바뀐 것이니
+  // 조용히 반쪽짜리 테이블을 쓰지 말고 알린다.
+  for (const rare of ['R', 'SR']) {
+    const groups = new Set(
+      Object.values(out).filter((c) => c.favorite_rare === rare).map((c) => c.weapon_type))
+    for (const w of ['AR', 'SMG', 'SG', 'RL', 'SR', 'MG']) {
+      if (!groups.has(w)) log(`  WARNING: no ${rare} collectible for weapon group ${w}`)
+    }
   }
-  page.off('response', onResp)
-  const groups = new Set(Object.values(out).map((c) => c.weapon_type))
-  for (const w of ['AR', 'SMG', 'SG', 'RL', 'SR', 'MG']) {
-    if (!groups.has(w)) log(`  WARNING: no collectible captured for weapon group ${w}`)
-  }
-  log(`  captured ${Object.keys(out).length} collectible records: ${[...groups].join(',')}`)
   return out
 }
 
@@ -362,9 +357,23 @@ const parseUnit = (html) => {
   }
 }
 
+// The modes that return before the account lookup: they read only public static
+// game data, so they can run in a browser we launch ourselves.
+const PUBLIC_MODE = DIRECTORY_ONLY || Boolean(NIKKE) || TABLES_ONLY || COLLECTIBLES_ONLY
+
 const main = async () => {
-  if (HEADLESS && !DIRECTORY_ONLY && !NIKKE) {
-    throw new Error('--headless applies to --directory or --nikke; other modes need your logged-in session')
+  if (HEADLESS && !PUBLIC_MODE) {
+    throw new Error('--headless applies to the public dump modes (--directory, --nikke, --tables, --collectibles); other modes need your logged-in session')
+  }
+
+  // Fetched straight off the CDN, so this mode opens no browser at all - it runs
+  // anywhere `fetch` does and is the reason --collectibles needs no session.
+  if (COLLECTIBLES_ONLY) {
+    log(`collecting collectible records (locale=${LOCALE})…`)
+    const collectibles = await collectCollectibles(LOCALE)
+    fs.writeFileSync(OUT, `${JSON.stringify(collectibles, null, 2)}\n`)
+    log(`wrote ${OUT}: ${Object.keys(collectibles).length} records`)
+    return
   }
 
   const browser = HEADLESS ? await launch() : await connect()
@@ -437,19 +446,6 @@ const main = async () => {
       `wrote ${OUT}: classes=${Object.keys(tables.classes).join(',')} ` +
         `equipment=${count(tables.equipment)} affinity=${count(tables.affinity)}`,
     )
-    await browser.close()
-    return
-  }
-
-  // Also account-free: collectible records are static game data.
-  if (COLLECTIBLES_ONLY) {
-    log('collecting collectible records…')
-    const picks = COLLECTIBLE_SAMPLE_RIDS.map((rid) =>
-      dir.find((d) => String(d.resource_id) === String(rid)),
-    ).filter(Boolean)
-    const collectibles = await collectCollectibles(page, picks)
-    fs.writeFileSync('collectibles.json', `${JSON.stringify(collectibles, null, 2)}\n`)
-    log(`wrote collectibles.json: ${Object.keys(collectibles).length} records`)
     await browser.close()
     return
   }
