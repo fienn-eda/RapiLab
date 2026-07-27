@@ -15941,8 +15941,8 @@
       ],
       "favoriteitem_skill_group_data": []
     },
-    "900001": {
-      "id": 900001,
+    "190001": {
+      "id": 190001,
       "weapon_type": "SR",
       "favorite_rare": "SR",
       "max_level": 15,
@@ -15997,10 +15997,10 @@
           ]
         }
       ],
-      "source": "fallback: Ade lv5 (6.31) + Helm favorite-item max (9.47); charge damage percent, is a 배율"
+      "source": "fallback: Ade lv5 (6.31) + Helm favorite-item max (9.47); charge damage percent, is a 배율. id kept below FAVORITE_ITEM_TID_BASE (200000) - this is an ordinary SR collectible, not a favorite item, and 900001 was misread as one"
     },
-    "900002": {
-      "id": 900002,
+    "190002": {
+      "id": 190002,
       "weapon_type": "SG",
       "favorite_rare": "SR",
       "max_level": 15,
@@ -16055,10 +16055,10 @@
           ]
         }
       ],
-      "source": "fallback: Zwei favorite-item max (9.46); lower rungs derived via max/6*[3,4,5,6]; normal attack damage percent, is a 배율"
+      "source": "fallback: Zwei favorite-item max (9.46); lower rungs derived via max/6*[3,4,5,6]; normal attack damage percent, is a 배율. id kept below FAVORITE_ITEM_TID_BASE (200000), same reason as 190001"
     },
-    "900003": {
-      "id": 900003,
+    "190003": {
+      "id": 190003,
       "weapon_type": "AR",
       "favorite_rare": "SR",
       "max_level": 15,
