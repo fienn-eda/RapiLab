@@ -48,7 +48,7 @@ export function NikkeCard({ draft, index, name, element, portrait }: NikkeCardPr
         </span>
       </div>
 
-      <h2 className="roster-card__name">{title}</h2>
+      <h3 className="roster-card__name">{title}</h3>
       <SkillLevels levels={draft.skill_levels} />
       <OverloadLines options={draft.overload_options} emptyText="오버로드 없음" />
     </section>

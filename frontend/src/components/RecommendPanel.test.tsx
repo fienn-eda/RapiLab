@@ -190,8 +190,11 @@ describe('RecommendPanel', () => {
     vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.selectOptions(screen.getByLabelText('속성'), 'Fire')
-    expect(within(screen.getByLabelText('속성')).getByRole('option', { name: '작열' })).toBeInTheDocument()
+    // Labelled '보스 속성', distinct from the palette's own '속성'
+    // element-chip group, so a plain label lookup is unambiguous.
+    const element = screen.getByLabelText('보스 속성')
+    await user.selectOptions(element, 'Fire')
+    expect(within(element).getByRole('option', { name: '작열' })).toBeInTheDocument()
     await user.click(screen.getByLabelText('코어 피격 가능'))
     const enemyDef = screen.getByLabelText('적 방어력')
     await user.clear(enemyDef)
@@ -811,5 +814,80 @@ describe('RecommendPanel unit-pool exclusion', () => {
     await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
     await waitFor(() => expect(getCached).toHaveBeenCalledTimes(2))
     expect(getCached.mock.calls[1][0]).not.toEqual(hashFull)
+  })
+
+  // The palette filter narrows what is DRAWN. If it ever narrowed the request
+  // too, a player would silently run a one-to-two-minute allocation against a
+  // roster they never chose to shrink - and the pool count in the summary
+  // would be the only place that said so.
+  describe('the palette filter and the search pool', () => {
+    // Six, not five: the third test excludes one unit, and MIN_DECK_ROSTER_SIZE
+    // is 5 - on a five-unit roster the exclusion would disable Submit and the
+    // test would be asserting against a button it never actually pressed.
+    const paletteUnits: SupportedUnit[] = [
+      { slug: 'a', name: 'Crown', burstTier: 1, element: 'Iron' },
+      { slug: 'b', name: 'Anne', burstTier: 1, element: 'Fire' },
+      { slug: 'c', name: 'Liter', burstTier: 2, element: 'Water' },
+      { slug: 'd', name: 'Blanc', burstTier: 3, element: 'Wind' },
+      { slug: 'e', name: 'Noir', burstTier: 3, element: 'Electric' },
+      { slug: 'f', name: 'Dorothy', burstTier: 2, element: 'Iron' },
+    ]
+    const sixRoster = [...fullRoster, nikke('f')]
+
+    it('sends the whole roster even while the palette shows one unit', async () => {
+      const user = userEvent.setup()
+      vi.mocked(getSupportedUnits).mockResolvedValue(paletteUnits)
+      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
+
+      render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
+      await screen.findByRole('button', { name: /Crown 사용/i })
+
+      await user.click(screen.getByRole('button', { name: '작열' }))
+      expect(screen.getByRole('button', { name: /Anne 사용/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Crown 사용/i })).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: /덱 추천/i }))
+
+      expect(recommendDecks).toHaveBeenCalledWith(
+        expect.objectContaining({ roster: sixRoster }),
+        expect.any(AbortSignal),
+      )
+    })
+
+    it('keeps the pool count on the full roster while a filter hides units', async () => {
+      const user = userEvent.setup()
+      vi.mocked(getSupportedUnits).mockResolvedValue(paletteUnits)
+
+      render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
+      await screen.findByRole('button', { name: /Crown 사용/i })
+      expect(screen.getByText(/6\/6 탐색 풀에 포함됨/)).toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: '작열' }))
+      expect(screen.queryByRole('button', { name: /Crown 사용/i })).not.toBeInTheDocument()
+      expect(screen.getByText(/6\/6 탐색 풀에 포함됨/)).toBeInTheDocument()
+    })
+
+    // Excluding is the pool control; filtering is not. A unit excluded before
+    // a filter hid it must still be excluded after.
+    it('leaves an exclusion intact across a filter that hides that unit', async () => {
+      const user = userEvent.setup()
+      vi.mocked(getSupportedUnits).mockResolvedValue(paletteUnits)
+      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
+
+      render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
+      await screen.findByRole('button', { name: /Anne 사용/i })
+
+      await user.click(screen.getByRole('button', { name: /Anne 사용/i }))
+      await user.click(screen.getByRole('button', { name: '철갑' }))
+      expect(screen.queryByRole('button', { name: /Anne 사용/i })).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: /덱 추천/i }))
+      expect(recommendDecks).toHaveBeenCalledWith(
+        expect.objectContaining({
+          roster: sixRoster.filter((nikke) => nikke.character_slug !== 'b'),
+        }),
+        expect.any(AbortSignal),
+      )
+    })
   })
 })

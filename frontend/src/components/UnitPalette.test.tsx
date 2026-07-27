@@ -114,9 +114,11 @@ describe('UnitPalette', () => {
     // Named and valued, never merely counted: "공 40.91%" and a revive chance
     // are both one line but not remotely the same decision. Names are
     // abbreviated to the forms used at the table.
-    expect(screen.getByText('공')).toBeInTheDocument()
+    // Scoped to the overload line itself: the filter toolbar's sort <select>
+    // offers the same abbreviations as option text.
+    expect(screen.getByText('공', { selector: '.overload__name' })).toBeInTheDocument()
     expect(screen.getByText('40.91%')).toBeInTheDocument()
-    expect(screen.getByText('우코')).toBeInTheDocument()
+    expect(screen.getByText('우코', { selector: '.overload__name' })).toBeInTheDocument()
     expect(screen.getByText('99.82%')).toBeInTheDocument()
   })
 
@@ -165,6 +167,86 @@ describe('UnitPalette', () => {
     it('dashes breakthrough when the unit carries no grade at all', () => {
       const { container } = chip({})
       expect(container.querySelector('.palette__stat--grade')).toHaveTextContent('—')
+    })
+  })
+
+  describe('the filter toolbar', () => {
+    const filtered = () =>
+      render(
+        <UnitPalette
+          {...base}
+          roster={[
+            owned('crown', { overload_options: [{ name: '공격력 증가', value: 10 }] }),
+            owned('liter', { overload_options: [{ name: '공격력 증가', value: 50 }] }),
+            owned('blanc'),
+          ]}
+        />,
+      )
+
+    it('hides the units a name search does not match', async () => {
+      const user = userEvent.setup()
+      filtered()
+      await user.type(screen.getByLabelText('이름 검색'), 'cro')
+      expect(unitButton(/crown 사용/i)).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /liter 사용/i })).not.toBeInTheDocument()
+    })
+
+    it('drops a burst heading once its last unit is filtered away', async () => {
+      const user = userEvent.setup()
+      filtered()
+      await user.click(screen.getByRole('button', { name: '철갑' }))
+      expect(screen.getByRole('heading', { name: 'B1' })).toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'B2' })).not.toBeInTheDocument()
+      expect(screen.queryByRole('heading', { name: 'B3' })).not.toBeInTheDocument()
+    })
+
+    // Sorting reorders inside each burst group; it never merges them, because
+    // a deck is always built tier by tier.
+    it('sorts within a burst group without dissolving the groups', async () => {
+      const user = userEvent.setup()
+      render(
+        <UnitPalette
+          {...base}
+          roster={[
+            owned('crown', { overload_options: [{ name: '공격력 증가', value: 10 }] }),
+            owned('anne', { overload_options: [{ name: '공격력 증가', value: 90 }] }),
+            owned('liter'),
+          ]}
+        />,
+      )
+      await user.selectOptions(screen.getByLabelText('정렬'), '공')
+      await user.selectOptions(screen.getByLabelText('정렬 방향'), 'desc')
+
+      expect(screen.getByRole('heading', { name: 'B1' })).toBeInTheDocument()
+      expect(screen.getByRole('heading', { name: 'B2' })).toBeInTheDocument()
+      const b1 = screen.getByRole('heading', { name: 'B1' }).closest('section')!
+      const names = [...b1.querySelectorAll('.palette__name')].map((n) => n.textContent)
+      expect(names).toEqual(['Anne', 'Crown'])
+    })
+
+    // The load-bearing invariant: the filter narrows the view, and the pool is
+    // a separate decision the user made per unit.
+    it('keeps a hidden unit excluded, and hands it back on clearing the filter', async () => {
+      const user = userEvent.setup()
+      render(<UnitPalette {...base} excludedSlugs={['liter']} />)
+      await user.click(screen.getByRole('button', { name: '철갑' }))
+      expect(screen.queryByRole('button', { name: /liter 사용/i })).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: '필터 해제' }))
+      expect(unitButton(/liter 사용/i)).toHaveAttribute('aria-pressed', 'false')
+    })
+
+    it('counts against the units it draws, not the whole roster', async () => {
+      const user = userEvent.setup()
+      filtered()
+      await user.click(screen.getByRole('button', { name: '철갑' }))
+      expect(screen.getByText('3기 중 1기 표시 중')).toBeInTheDocument()
+    })
+
+    // A bordered toolbar with nothing to filter reads as a bug, not a feature.
+    it('does not draw the filter toolbar when the roster owns no supported unit', () => {
+      render(<UnitPalette {...base} roster={[]} />)
+      expect(screen.queryByLabelText('이름 검색')).not.toBeInTheDocument()
     })
   })
 })

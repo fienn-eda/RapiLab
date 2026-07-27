@@ -7,11 +7,17 @@
 
 export type NikkeElement = 'Fire' | 'Water' | 'Wind' | 'Iron' | 'Electric'
 
+export type BurstTier = 1 | 2 | 3
+
+/** 화면이 버스트 그룹을 그리는 순서. 팔레트와 로스터 그리드 두 화면이 같은
+ * 분류를 그리므로, 한 곳에서만 정의한다. */
+export const BURST_TIERS: readonly BurstTier[] = [1, 2, 3]
+
 /** Raw wire shape returned by the backend. */
 export interface SupportedUnitWire {
   slug: string
   name: string
-  burst_tier: 1 | 2 | 3
+  burst_tier: BurstTier
   element: NikkeElement
   candidates?: string[] | null
 }
@@ -20,7 +26,7 @@ export interface SupportedUnitWire {
 export interface SupportedUnit {
   slug: string
   name: string
-  burstTier: 1 | 2 | 3
+  burstTier: BurstTier
   element: NikkeElement
   /** Set only on an OWNED slug the engine fans out into several candidates
    * (one character, several modes). She can be pooled and drafted like anyone

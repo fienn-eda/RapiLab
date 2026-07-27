@@ -23,7 +23,7 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
 
       <div className="field">
         <label className="field__label" htmlFor={elementId}>
-          속성
+          보스 속성
         </label>
         <select
           id={elementId}

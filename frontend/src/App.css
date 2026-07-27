@@ -58,12 +58,166 @@
   gap: var(--sp-5);
 }
 
+/* One burst tier's worth of the roster. The heading is what makes the grid
+   readable as three answers instead of one long wall. */
+.roster__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.roster__heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 /* Auto-fill rather than a fixed column count: a tile is as wide as its
    overload lines need and the row reflows to the window. */
 .roster__grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
   gap: var(--sp-3);
+}
+
+/* Unit filter toolbar ----------------------------------------------------- */
+
+/* Sits above a unit grid in both tabs. Wraps rather than scrolls: the roster
+   tab has the width for one row and the recommend palette does not, and a
+   toolbar that scrolls sideways hides the controls it exists to offer. */
+.unit-filter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  padding: var(--sp-2) var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+}
+
+.unit-filter__row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-1) var(--sp-2);
+}
+
+.unit-filter__label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.unit-filter__search {
+  flex: 1 1 160px;
+  min-width: 120px;
+  padding: 2px var(--sp-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.unit-filter__search:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.unit-filter__select {
+  padding: 2px var(--sp-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+}
+
+.unit-filter__select:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: var(--accent);
+}
+
+.unit-filter__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-1);
+}
+
+.unit-filter__chip {
+  padding: 1px var(--sp-2) 2px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.unit-filter__chip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Lit by the same element token the portrait borders use, so "작열" in the
+   toolbar and a 작열 unit's edge are recognisably the same colour. */
+.unit-filter__chip[aria-pressed='true'] {
+  border-color: var(--element, var(--accent));
+  color: var(--text);
+  background: var(--surface);
+}
+
+.unit-filter__chip[data-element='Fire'] {
+  --element: var(--el-fire);
+}
+.unit-filter__chip[data-element='Water'] {
+  --element: var(--el-water);
+}
+.unit-filter__chip[data-element='Wind'] {
+  --element: var(--el-wind);
+}
+.unit-filter__chip[data-element='Iron'] {
+  --element: var(--el-iron);
+}
+.unit-filter__chip[data-element='Electric'] {
+  --element: var(--el-electric);
+}
+
+.unit-filter__status {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-2);
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.unit-filter__clear {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.unit-filter__clear:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.unit-filter__empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .roster__unsupported {
