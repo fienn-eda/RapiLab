@@ -1227,13 +1227,40 @@
       떨어지기 때문이다. 회귀가 아니라 **배선이 소장품 미보유 유닛에 정확히 무해하다는
       확인**. 백엔드 1479 passed / 3 skipped, 프론트 291 passed 유지. 상세
       `docs/decisions.md` ADR, `docs/engine-gaps.md` gap #17.
+- [x] **소장품 데이터 부채 종결 — 전 등급(R/SR/SSR) 실데이터 (2026-07-27).**
+      "SMG·RL 없음 · SR/SG/AR은 툴팁 유도 · R 사다리 미상"이 전부 닫혔다. 막고
+      있던 것은 로그인이 아니라 **요청 자체**였다 — 소장품 테이블은 로그인한
+      Collection 화면에서만 요청되므로 헤드리스로 돌려도 가로채기는 빈손이다.
+      ShiftyPad의 CDN 경로 난독화가 **경로의 순수 함수**(djb2 + md5)임을 앱 번들에서
+      옮겨 적어(`tools/collect-blablalink/resource-url.js`) 테이블을 **브라우저·세션
+      없이 평범한 HTTP GET**으로 받는다. 33개 레코드 전량 커밋(R 6 · SR 6 · 애장품
+      SSR 21), 갱신은 `node collect.js --collectibles` → `python3
+      scripts/update_collectible_table.py`. **툴팁 유도값이 옳았음이 확인됐다** —
+      SR 무기군 사다리 `[4.74, 6.31, 7.89, 9.47]`에서 에이드 5단계 = 6.31.
+      부수로 잡은 결함: R과 SR은 스탯 커브가 갈리는데(최대 ATK 4,736 vs 9,688)
+      `stat_assembly`가 커브 하나만 읽어 R 보유자를 2배 넘게 과대평가하고 있었다.
+      백엔드 **1486 passed / 3 skipped**. 상세 `docs/decisions.md` ADR 2건,
+      `docs/engine-gaps.md` gap #17.
 - [ ] **To-Do: 소장품 배선을 실제로 검증하려면 Fienn의 로스터 재동기화가 필요하다.**
-      `roster-drafts.json`에 `collectible_tid`/`collectible_level`이 실리기 전까지는
-      위 배선이 캘리브레이션 수치를 전혀 움직이지 않는다 — 재동기화 후
-      `python3 scripts/measure_record_calibration.py`를 다시 돌려 아니스:스타·미하라·
-      리틀머메이드 같은 미달 유닛이 실제로 오르는지 확인할 것. 그 시점에 골든 핀
-      (`backend/tests/test_roster.py`)을 다시 볼 필요가 있으면, 각 변경을 **왜 그
-      수치가 바뀌었는지 한 줄로 설명할 수 있을 때만** 갱신한다.
+      데이터와 배선은 이제 전부 갖춰졌고 — `roster_fixture._state_from_draft`가
+      드래프트의 소장품 필드를 버리던 마지막 끊김도 고쳤다 — 남은 것은 실제 드래프트에
+      값이 실리는 것뿐이다. 재동기화 후 `python3 scripts/audit_collectible_coverage.py`
+      로 커버리지를 먼저 확인하고(현재 실계정 기준 착용 108 중 72유닛이 움직이고
+      "착용했는데 0"은 없음), 그다음 `python3 scripts/measure_record_calibration.py`
+      를 돌려 아니스:스타·미하라·리틀머메이드 같은 미달 유닛이 실제로 오르는지 볼 것.
+      그 시점에 골든 핀(`backend/tests/test_roster.py`)을 다시 볼 필요가 있으면, 각
+      변경을 **왜 그 수치가 바뀌었는지 한 줄로 설명할 수 있을 때만** 갱신한다.
+- [x] **소장품 레벨 0의 의미 확정 — 엔진은 이미 맞게 하고 있었다 (2026-07-27).**
+      Fienn이 레벨 0 보유 유닛을 인게임에서 전수 확인: **스킬은 레벨 0부터 나오고**
+      값도 엔진이 내던 것과 정확히 같다(헬름: 아쿠아마린 코어 +10.22% · 볼륨·리터
+      평타 배율 4.73% · D: 킬러 와이프 차지 4.74% · R등급 코어 +5.67% / 장탄 +1.56%).
+      **스탯(ATK/HP)만 레벨 1부터** 붙는데 이건 실측이 결정적이다 — 레벨 0에 커브
+      index 0을 주면 159 측정 유닛 중 **정확히 31기**(레벨 0 착용자 전원)가 그
+      값만큼 어긋난다(SR 3,029 · R 638). 자기모순이 아니라 **축이 두 개**였고,
+      미착용/0단계착용은 **`favorite_item_tid`로 완전히 구분된다**(빈 슬롯 = tid 0,
+      실계정 51유닛). 두 반쪽을 한 테스트로 묶었다 —
+      `test_level_zero_gives_the_skill_but_no_stat_and_the_tid_is_what_says_equipped`.
+      코드 변경 없음(주석의 잘못된 근거만 정정). 백엔드 **1487 passed / 3 skipped**.
 - [ ] **⚠ 폐기: 이전 캘리브레이션 표 — 잘못된 보스에서 측정됐다.** 아래 덱별/유닛별
       숫자는 Electric 약점 보스 기준이라 **못 쓴다**(특히 Electric·Wind 유닛).
       사격장 단발 측정들은 표적이 "우월코드 미적용"이라 **영향 없다**.

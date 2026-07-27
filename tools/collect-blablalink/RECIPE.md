@@ -99,6 +99,36 @@ Two things worth knowing if you touch the collector's output shape:
 Details: `docs/superpowers/specs/2026-07-18-roster-resource-id-slug-map-design.md`,
 `docs/decisions.md`.
 
+### Static game tables — computed CDN paths, not interception (`resource-url.js`)
+
+ShiftyPad serves its static tables from `sg-tools-cdn.blablalink.com` under obfuscated
+paths, but the obfuscation is a **pure function of the logical path**, not a rotating
+manifest: djb2 (a different prime per directory depth) names the directory segments,
+md5 of the whole path names the file. `resource-url.js` transcribes it from the app
+bundle, so any table is a plain HTTP GET — **no browser, no session**:
+
+```js
+const { fetchResource } = require('./resource-url')
+await fetchResource('/equip/favorite_rare_map.json')
+```
+
+Logical paths are string literals in the bundle (search it for `getGameJsonResource`).
+
+**Prefer this to response interception.** Interception waits for the SPA to request a
+file, so it cannot reach one the SPA only requests behind a logged-in view — that is
+why the collectible table came back empty even with `--headless` (the browser launched
+and the directory resolved; the record was simply never requested). Only `spine/`
+paths use a different scheme; the resolver refuses them rather than mis-hashing.
+
+### Collectibles (`node collect.js --collectibles`)
+
+Writes every 소장품/애장품 record to `collectibles.json` (gitignored scratch): R and SR
+per weapon group, plus one SSR favorite item per unit that has one — 33 today.
+`/equip/favorite_rare_map.json` names the ids, `/equip/{ko|en}/favorite_<id>.json` is
+each record. Opens no browser. Merge into the committed table with
+`python3 scripts/update_collectible_table.py`, which keeps only what the engine reads
+(the raw records are 272 KB, larger than all of `tables.json`).
+
 ### Directory snapshot (`nikke-directory.json`)
 
 `node collect.js --directory` writes the directory's public identity fields

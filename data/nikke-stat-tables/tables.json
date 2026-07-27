@@ -15722,25 +15722,66 @@
     ]
   },
   "collectibles": {
-    "100202": {
-      "id": 100202,
+    "100101": {
+      "id": 100101,
+      "favorite_rare": "R",
+      "favorite_type": "Collection",
+      "weapon_type": "AR",
+      "name_code": 0,
+      "max_level": 15,
       "atk": [
-        3029,
-        3370,
-        3712,
-        4053,
-        4395,
-        4821,
-        5248,
-        5675,
-        6102,
-        6529,
-        7041,
-        7554,
-        8066,
-        8578,
-        9090,
-        9688
+        638,
+        809,
+        980,
+        1150,
+        1321,
+        1577,
+        1833,
+        2089,
+        2346,
+        2602,
+        2943,
+        3285,
+        3626,
+        3968,
+        4309,
+        4736
+      ],
+      "hp": [
+        19400,
+        24750,
+        30050,
+        35400,
+        40700,
+        48700,
+        56700,
+        64700,
+        72700,
+        80650,
+        91350,
+        102000,
+        112650,
+        123300,
+        133950,
+        147250
+      ],
+      "def": [
+        128,
+        164,
+        201,
+        237,
+        274,
+        328,
+        383,
+        438,
+        492,
+        547,
+        620,
+        692,
+        765,
+        838,
+        911,
+        1002
       ],
       "grade": [
         0,
@@ -15759,6 +15800,84 @@
         2,
         2,
         3
+      ],
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 711101,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[코어 대미지 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "5.67",
+                "7.94",
+                "10.22",
+                "12.49"
+              ]
+            },
+            {
+              "description_value": [
+                "25",
+                "28",
+                "30",
+                "32"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "100102": {
+      "id": 100102,
+      "favorite_rare": "SR",
+      "favorite_type": "Collection",
+      "weapon_type": "AR",
+      "name_code": 0,
+      "max_level": 15,
+      "atk": [
+        3029,
+        3370,
+        3712,
+        4053,
+        4395,
+        4821,
+        5248,
+        5675,
+        6102,
+        6529,
+        7041,
+        7554,
+        8066,
+        8578,
+        9090,
+        9688
       ],
       "hp": [
         94000,
@@ -15796,6 +15915,24 @@
         1931,
         2058
       ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
       "level1": [
         1,
         1,
@@ -15832,46 +15969,325 @@
         3,
         4
       ],
-      "powers": [
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0,
-        0
+      "collection_skill_group_data": [
+        {
+          "group_id": 712101,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[코어 대미지 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10.22",
+                "12.49",
+                "14.77",
+                "17.04"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "100201": {
+      "id": 100201,
+      "favorite_rare": "R",
+      "favorite_type": "Collection",
+      "weapon_type": "MG",
+      "name_code": 0,
+      "max_level": 15,
+      "atk": [
+        638,
+        809,
+        980,
+        1150,
+        1321,
+        1577,
+        1833,
+        2089,
+        2346,
+        2602,
+        2943,
+        3285,
+        3626,
+        3968,
+        4309,
+        4736
       ],
-      "name_localkey": "쇼핑 지휘관 인형 Ltd.",
-      "description_localkey": "지휘관이 쇼핑을 마쳤나 봅니다. 혹시 당신을 위한 선물도 들어있지 않을까요? 기대를 해봐도 좋을 것 같네요.",
-      "icon_resource_id": "si_favoriteitem_mg_00",
-      "img_resource_id": "favoriteitem_mg_00",
-      "prop_resource_id": "favoriteitem_common_prop_01",
+      "hp": [
+        19400,
+        24750,
+        30050,
+        35400,
+        40700,
+        48700,
+        56700,
+        64700,
+        72700,
+        80650,
+        91350,
+        102000,
+        112650,
+        123300,
+        133950,
+        147250
+      ],
+      "def": [
+        128,
+        164,
+        201,
+        237,
+        274,
+        328,
+        383,
+        438,
+        492,
+        547,
+        620,
+        692,
+        765,
+        838,
+        911,
+        1002
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 711401,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[최대 장탄 수 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "1.56",
+                "3.15",
+                "4.74",
+                "6.32"
+              ]
+            },
+            {
+              "description_value": [
+                "25",
+                "28",
+                "30",
+                "32"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "100202": {
+      "id": 100202,
       "favorite_rare": "SR",
       "favorite_type": "Collection",
       "weapon_type": "MG",
       "name_code": 0,
       "max_level": 15,
-      "level_enhance_id": 100202,
+      "atk": [
+        3029,
+        3370,
+        3712,
+        4053,
+        4395,
+        4821,
+        5248,
+        5675,
+        6102,
+        6529,
+        7041,
+        7554,
+        8066,
+        8578,
+        9090,
+        9688
+      ],
+      "hp": [
+        94000,
+        104650,
+        115300,
+        125950,
+        136600,
+        149950,
+        163250,
+        176600,
+        189900,
+        203200,
+        219200,
+        235200,
+        251150,
+        267150,
+        283150,
+        301800
+      ],
+      "def": [
+        638,
+        711,
+        783,
+        856,
+        929,
+        1020,
+        1111,
+        1202,
+        1293,
+        1384,
+        1494,
+        1603,
+        1712,
+        1821,
+        1931,
+        2058
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "level2": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
       "collection_skill_group_data": [
         {
-          "id": 71240101,
           "group_id": 712401,
-          "skill_level": 1,
-          "next_level_id": 71240102,
-          "level_up_cost_id": 0,
-          "icon": "icn_skill_atkup_01",
           "name_localkey": "용기를 주는 시선",
           "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[최대 장탄 수 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
-          "info_description_localkey": "버스트 스킬",
           "description_value_list": [
             {
               "description_value": [
@@ -15901,15 +16317,9 @@
           ]
         },
         {
-          "id": 71200201,
           "group_id": 712002,
-          "skill_level": 1,
-          "next_level_id": 71200202,
-          "level_up_cost_id": 0,
-          "icon": "icn_skill_stathp_01",
           "name_localkey": "마음의 버팀목",
           "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
-          "info_description_localkey": "버스트 스킬",
           "description_value_list": [
             {
               "description_value": [
@@ -15938,14 +16348,219 @@
             {}
           ]
         }
-      ],
-      "favoriteitem_skill_group_data": []
+      ]
     },
-    "190001": {
-      "id": 190001,
-      "weapon_type": "SR",
-      "favorite_rare": "SR",
+    "100301": {
+      "id": 100301,
+      "favorite_rare": "R",
+      "favorite_type": "Collection",
+      "weapon_type": "RL",
+      "name_code": 0,
       "max_level": 15,
+      "atk": [
+        638,
+        809,
+        980,
+        1150,
+        1321,
+        1577,
+        1833,
+        2089,
+        2346,
+        2602,
+        2943,
+        3285,
+        3626,
+        3968,
+        4309,
+        4736
+      ],
+      "hp": [
+        19400,
+        24750,
+        30050,
+        35400,
+        40700,
+        48700,
+        56700,
+        64700,
+        72700,
+        80650,
+        91350,
+        102000,
+        112650,
+        123300,
+        133950,
+        147250
+      ],
+      "def": [
+        128,
+        164,
+        201,
+        237,
+        274,
+        328,
+        383,
+        438,
+        492,
+        547,
+        620,
+        692,
+        765,
+        838,
+        911,
+        1002
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 711301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "1.58",
+                "3.16",
+                "4.74",
+                "6.31"
+              ]
+            },
+            {
+              "description_value": [
+                "25",
+                "28",
+                "30",
+                "32"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "100302": {
+      "id": 100302,
+      "favorite_rare": "SR",
+      "favorite_type": "Collection",
+      "weapon_type": "RL",
+      "name_code": 0,
+      "max_level": 15,
+      "atk": [
+        3029,
+        3370,
+        3712,
+        4053,
+        4395,
+        4821,
+        5248,
+        5675,
+        6102,
+        6529,
+        7041,
+        7554,
+        8066,
+        8578,
+        9090,
+        9688
+      ],
+      "hp": [
+        94000,
+        104650,
+        115300,
+        125950,
+        136600,
+        149950,
+        163250,
+        176600,
+        189900,
+        203200,
+        219200,
+        235200,
+        251150,
+        267150,
+        283150,
+        301800
+      ],
+      "def": [
+        638,
+        711,
+        783,
+        856,
+        929,
+        1020,
+        1111,
+        1202,
+        1293,
+        1384,
+        1494,
+        1603,
+        1712,
+        1821,
+        1931,
+        2058
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
       "level1": [
         1,
         1,
@@ -15984,7 +16599,9 @@
       ],
       "collection_skill_group_data": [
         {
-          "group_id": 900101,
+          "group_id": 712301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
           "description_value_list": [
             {
               "description_value": [
@@ -15993,17 +16610,271 @@
                 "7.89",
                 "9.47"
               ]
-            }
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
           ]
         }
-      ],
-      "source": "fallback: Ade lv5 (6.31) + Helm favorite-item max (9.47); charge damage percent, is a 배율. id kept below FAVORITE_ITEM_TID_BASE (200000) - this is an ordinary SR collectible, not a favorite item, and 900001 was misread as one"
+      ]
     },
-    "190002": {
-      "id": 190002,
+    "100401": {
+      "id": 100401,
+      "favorite_rare": "R",
+      "favorite_type": "Collection",
       "weapon_type": "SG",
-      "favorite_rare": "SR",
+      "name_code": 0,
       "max_level": 15,
+      "atk": [
+        638,
+        809,
+        980,
+        1150,
+        1321,
+        1577,
+        1833,
+        2089,
+        2346,
+        2602,
+        2943,
+        3285,
+        3626,
+        3968,
+        4309,
+        4736
+      ],
+      "hp": [
+        19400,
+        24750,
+        30050,
+        35400,
+        40700,
+        48700,
+        56700,
+        64700,
+        72700,
+        80650,
+        91350,
+        102000,
+        112650,
+        123300,
+        133950,
+        147250
+      ],
+      "def": [
+        128,
+        164,
+        201,
+        237,
+        274,
+        328,
+        383,
+        438,
+        492,
+        547,
+        620,
+        692,
+        765,
+        838,
+        911,
+        1002
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 711501,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[일반 공격 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "1.57",
+                "3.15",
+                "4.73",
+                "6.3"
+              ]
+            },
+            {
+              "description_value": [
+                "25",
+                "28",
+                "30",
+                "32"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "100402": {
+      "id": 100402,
+      "favorite_rare": "SR",
+      "favorite_type": "Collection",
+      "weapon_type": "SG",
+      "name_code": 0,
+      "max_level": 15,
+      "atk": [
+        3029,
+        3370,
+        3712,
+        4053,
+        4395,
+        4821,
+        5248,
+        5675,
+        6102,
+        6529,
+        7041,
+        7554,
+        8066,
+        8578,
+        9090,
+        9688
+      ],
+      "hp": [
+        94000,
+        104650,
+        115300,
+        125950,
+        136600,
+        149950,
+        163250,
+        176600,
+        189900,
+        203200,
+        219200,
+        235200,
+        251150,
+        267150,
+        283150,
+        301800
+      ],
+      "def": [
+        638,
+        711,
+        783,
+        856,
+        929,
+        1020,
+        1111,
+        1202,
+        1293,
+        1384,
+        1494,
+        1603,
+        1712,
+        1821,
+        1931,
+        2058
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
       "level1": [
         1,
         1,
@@ -16042,26 +16913,282 @@
       ],
       "collection_skill_group_data": [
         {
-          "group_id": 900102,
+          "group_id": 712501,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[일반 공격 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
           "description_value_list": [
             {
               "description_value": [
                 "4.73",
-                "6.31",
+                "6.3",
                 "7.88",
                 "9.46"
               ]
-            }
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
           ]
         }
-      ],
-      "source": "fallback: Zwei favorite-item max (9.46); lower rungs derived via max/6*[3,4,5,6]; normal attack damage percent, is a 배율. id kept below FAVORITE_ITEM_TID_BASE (200000), same reason as 190001"
+      ]
     },
-    "190003": {
-      "id": 190003,
-      "weapon_type": "AR",
-      "favorite_rare": "SR",
+    "100501": {
+      "id": 100501,
+      "favorite_rare": "R",
+      "favorite_type": "Collection",
+      "weapon_type": "SMG",
+      "name_code": 0,
       "max_level": 15,
+      "atk": [
+        638,
+        809,
+        980,
+        1150,
+        1321,
+        1577,
+        1833,
+        2089,
+        2346,
+        2602,
+        2943,
+        3285,
+        3626,
+        3968,
+        4309,
+        4736
+      ],
+      "hp": [
+        19400,
+        24750,
+        30050,
+        35400,
+        40700,
+        48700,
+        56700,
+        64700,
+        72700,
+        80650,
+        91350,
+        102000,
+        112650,
+        123300,
+        133950,
+        147250
+      ],
+      "def": [
+        128,
+        164,
+        201,
+        237,
+        274,
+        328,
+        383,
+        438,
+        492,
+        547,
+        620,
+        692,
+        765,
+        838,
+        911,
+        1002
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 711901,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[일반 공격 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "1.57",
+                "3.15",
+                "4.73",
+                "6.3"
+              ]
+            },
+            {
+              "description_value": [
+                "25",
+                "28",
+                "30",
+                "32"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "100502": {
+      "id": 100502,
+      "favorite_rare": "SR",
+      "favorite_type": "Collection",
+      "weapon_type": "SMG",
+      "name_code": 0,
+      "max_level": 15,
+      "atk": [
+        3029,
+        3370,
+        3712,
+        4053,
+        4395,
+        4821,
+        5248,
+        5675,
+        6102,
+        6529,
+        7041,
+        7554,
+        8066,
+        8578,
+        9090,
+        9688
+      ],
+      "hp": [
+        94000,
+        104650,
+        115300,
+        125950,
+        136600,
+        149950,
+        163250,
+        176600,
+        189900,
+        203200,
+        219200,
+        235200,
+        251150,
+        267150,
+        283150,
+        301800
+      ],
+      "def": [
+        638,
+        711,
+        783,
+        856,
+        929,
+        1020,
+        1111,
+        1202,
+        1293,
+        1384,
+        1494,
+        1603,
+        1712,
+        1821,
+        1931,
+        2058
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
       "level1": [
         1,
         1,
@@ -16100,20 +17227,2568 @@
       ],
       "collection_skill_group_data": [
         {
-          "group_id": 900103,
+          "group_id": 712901,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[일반 공격 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
           "description_value_list": [
             {
               "description_value": [
-                "8.52",
-                "11.36",
-                "14.20",
-                "17.04"
+                "4.73",
+                "6.3",
+                "7.88",
+                "9.46"
               ]
-            }
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
           ]
         }
+      ]
+    },
+    "100601": {
+      "id": 100601,
+      "favorite_rare": "R",
+      "favorite_type": "Collection",
+      "weapon_type": "SR",
+      "name_code": 0,
+      "max_level": 15,
+      "atk": [
+        638,
+        809,
+        980,
+        1150,
+        1321,
+        1577,
+        1833,
+        2089,
+        2346,
+        2602,
+        2943,
+        3285,
+        3626,
+        3968,
+        4309,
+        4736
       ],
-      "source": "fallback: Tove favorite-item max (17.04); lower rungs derived via max/6*[3,4,5,6]; core damage percent, NOT a 배율"
+      "hp": [
+        19400,
+        24750,
+        30050,
+        35400,
+        40700,
+        48700,
+        56700,
+        64700,
+        72700,
+        80650,
+        91350,
+        102000,
+        112650,
+        123300,
+        133950,
+        147250
+      ],
+      "def": [
+        128,
+        164,
+        201,
+        237,
+        274,
+        328,
+        383,
+        438,
+        492,
+        547,
+        620,
+        692,
+        765,
+        838,
+        911,
+        1002
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 711301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "1.58",
+                "3.16",
+                "4.74",
+                "6.31"
+              ]
+            },
+            {
+              "description_value": [
+                "25",
+                "28",
+                "30",
+                "32"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "100602": {
+      "id": 100602,
+      "favorite_rare": "SR",
+      "favorite_type": "Collection",
+      "weapon_type": "SR",
+      "name_code": 0,
+      "max_level": 15,
+      "atk": [
+        3029,
+        3370,
+        3712,
+        4053,
+        4395,
+        4821,
+        5248,
+        5675,
+        6102,
+        6529,
+        7041,
+        7554,
+        8066,
+        8578,
+        9090,
+        9688
+      ],
+      "hp": [
+        94000,
+        104650,
+        115300,
+        125950,
+        136600,
+        149950,
+        163250,
+        176600,
+        189900,
+        203200,
+        219200,
+        235200,
+        251150,
+        267150,
+        283150,
+        301800
+      ],
+      "def": [
+        638,
+        711,
+        783,
+        856,
+        929,
+        1020,
+        1111,
+        1202,
+        1293,
+        1384,
+        1494,
+        1603,
+        1712,
+        1821,
+        1931,
+        2058
+      ],
+      "grade": [
+        0,
+        0,
+        0,
+        0,
+        0,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3
+      ],
+      "level1": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "level2": [
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3,
+        3,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.31",
+                "7.89",
+                "9.47"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "200101": {
+      "id": 200101,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "MG",
+      "name_code": 5020,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712401,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[최대 장탄 수 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.32",
+                "7.91",
+                "9.5"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "200201": {
+      "id": 200201,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "SR",
+      "name_code": 5003,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.31",
+                "7.89",
+                "9.47"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "200301": {
+      "id": 200301,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "SR",
+      "name_code": 5010,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.31",
+                "7.89",
+                "9.47"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "200401": {
+      "id": 200401,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "RL",
+      "name_code": 1010,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.31",
+                "7.89",
+                "9.47"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "200501": {
+      "id": 200501,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "SG",
+      "name_code": 1022,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712501,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[일반 공격 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.73",
+                "6.3",
+                "7.88",
+                "9.46"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "200601": {
+      "id": 200601,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "SMG",
+      "name_code": 5017,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712901,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[일반 공격 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.73",
+                "6.3",
+                "7.88",
+                "9.46"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "200701": {
+      "id": 200701,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "SR",
+      "name_code": 5066,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.31",
+                "7.89",
+                "9.47"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "200801": {
+      "id": 200801,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "SG",
+      "name_code": 5024,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712501,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[일반 공격 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.73",
+                "6.3",
+                "7.88",
+                "9.46"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "200901": {
+      "id": 200901,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "SR",
+      "name_code": 5028,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.31",
+                "7.89",
+                "9.47"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "201001": {
+      "id": 201001,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "SG",
+      "name_code": 5016,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712501,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[일반 공격 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.73",
+                "6.3",
+                "7.88",
+                "9.46"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "201101": {
+      "id": 201101,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "AR",
+      "name_code": 5081,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712101,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[코어 대미지 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10.22",
+                "12.49",
+                "14.77",
+                "17.04"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "201201": {
+      "id": 201201,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "AR",
+      "name_code": 5014,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712101,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[코어 대미지 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10.22",
+                "12.49",
+                "14.77",
+                "17.04"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "201301": {
+      "id": 201301,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "RL",
+      "name_code": 5111,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.31",
+                "7.89",
+                "9.47"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "201401": {
+      "id": 201401,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "AR",
+      "name_code": 5007,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712101,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[코어 대미지 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10.22",
+                "12.49",
+                "14.77",
+                "17.04"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "201501": {
+      "id": 201501,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "SG",
+      "name_code": 5088,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712501,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[일반 공격 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.73",
+                "6.3",
+                "7.88",
+                "9.46"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "201601": {
+      "id": 201601,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "RL",
+      "name_code": 5021,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712301,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[차지 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.31",
+                "7.89",
+                "9.47"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "201701": {
+      "id": 201701,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "AR",
+      "name_code": 1021,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712101,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[코어 대미지 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10.22",
+                "12.49",
+                "14.77",
+                "17.04"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "201801": {
+      "id": 201801,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "AR",
+      "name_code": 5122,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712101,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[코어 대미지 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10.22",
+                "12.49",
+                "14.77",
+                "17.04"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "201901": {
+      "id": 201901,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "MG",
+      "name_code": 5126,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712401,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[최대 장탄 수 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.32",
+                "7.91",
+                "9.5"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "202001": {
+      "id": 202001,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "MG",
+      "name_code": 5045,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712401,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[최대 장탄 수 {description_value_01}% ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.74",
+                "6.32",
+                "7.91",
+                "9.5"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
+    },
+    "202101": {
+      "id": 202101,
+      "favorite_rare": "SSR",
+      "favorite_type": "Favorite",
+      "weapon_type": "SG",
+      "name_code": 5002,
+      "max_level": 2,
+      "atk": [
+        9688,
+        9688,
+        9688
+      ],
+      "hp": [
+        301800,
+        301800,
+        301800
+      ],
+      "def": [
+        2058,
+        2058,
+        2058
+      ],
+      "grade": [
+        1,
+        2,
+        3
+      ],
+      "level1": [
+        4,
+        4,
+        4
+      ],
+      "level2": [
+        4,
+        4,
+        4
+      ],
+      "collection_skill_group_data": [
+        {
+          "group_id": 712501,
+          "name_localkey": "용기를 주는 시선",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[일반 공격 대미지 {description_value_01}% <word_group=10029>배율</word_group> ▲]</color>\n<color=#00AEFF>[방어력 {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "4.73",
+                "6.3",
+                "7.88",
+                "9.46"
+              ]
+            },
+            {
+              "description_value": [
+                "30",
+                "32",
+                "35",
+                "37"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        },
+        {
+          "group_id": 712002,
+          "name_localkey": "마음의 버팀목",
+          "description_localkey": "■ 전투 시작 시\n<color=#00AEFF>[받는 대미지 {description_value_01}% ▼]</color>\n<color=#00AEFF>[<word_group=10033>엄폐물 최대 체력</word_group> {description_value_02}% ▲]</color>",
+          "description_value_list": [
+            {
+              "description_value": [
+                "10",
+                "12",
+                "14",
+                "17"
+              ]
+            },
+            {
+              "description_value": [
+                "12",
+                "18",
+                "24",
+                "30"
+              ]
+            },
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {},
+            {}
+          ]
+        }
+      ]
     }
   }
 }

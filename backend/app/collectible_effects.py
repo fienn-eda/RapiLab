@@ -26,12 +26,12 @@ instead. Fienn verified this by promoting Flora, who reports the MG ladder's
 top 9.5% while sitting at SSR level 5. `stat_assembly.collectible_atk` had
 already inferred the same rule from measurement; this is why it holds.
 
-A favorite item's OWN tid is never a key in `tables.json["collectibles"]` -
-promotion consumes the SR collectible, it doesn't mint a new tid-keyed record
-- so `collectible_modifiers` resolves it by WEAPON GROUP instead, at the
-SR-rarity record that record's promotion required. Looking it up by tid (as
-an earlier version of this module did) always misses, silently contributing
-nothing to every favorite-item holder.
+Every rarity is in the table: R and SR per weapon group (tid 1xxxxx) and one
+SSR favorite item per unit that has one (tid 2xxxxx). A favorite item's record
+repeats its weapon group's `collection_skill_group_data` verbatim and pins its
+level ladder at the top rung, so resolving by tid and the weapon-group fallback
+below agree - the fallback is only what covers a favorite item released after
+the table was last refreshed.
 """
 import logging
 from functools import lru_cache
@@ -59,16 +59,24 @@ logger = logging.getLogger(__name__)
 # text: the description is display markup, and each group only needs deciding
 # once. An unmapped group_id is logged and skipped, never guessed.
 #
-# 900101/900102/900103 are the SR/SG/AR entries fabricated for Task 1 (see each
-# record's "source" field in tables.json) - their values are provisional until
-# a real in-game reading replaces them, but the STAT they map to is not in
-# doubt (each record's own description names it).
+# There are eleven groups, not twelve: RL and SR share one group per rarity
+# (both are charge weapons), and so do SG and SMG. The R and SR rarities carry
+# the same stat per weapon group and differ only in the ladder's values; the
+# extra 712002 slot is what SR adds, and it is entirely defensive.
 COLLECTIBLE_SKILL_STATS: dict[int, list[tuple[str, str] | None]] = {
-    712401: [("max_ammo_percent", "effect"), None],  # 최대 장탄 수 / 방어력 (MG)
-    712002: [None, None],                            # 받는 대미지 / 엄폐물 체력 (MG)
-    900101: [("charge_damage_percent", "weapon")],   # 차지 대미지 배율 (SR, provisional)
-    900102: [("damage_percent", "weapon")],          # 일반 공격 대미지 배율 (SG, provisional)
-    900103: [("other_core_damage_sources", "effect")],  # 코어 대미지 % (AR, provisional)
+    # R 등급 - 슬롯 하나, 두 번째 값은 항상 방어력.
+    711101: [("other_core_damage_sources", "effect"), None],  # 코어 대미지 (AR)
+    711301: [("charge_damage_percent", "weapon"), None],      # 차지 대미지 배율 (RL·SR)
+    711401: [("max_ammo_percent", "effect"), None],           # 최대 장탄 수 (MG)
+    711501: [("damage_percent", "weapon"), None],             # 일반 공격 대미지 배율 (SG)
+    711901: [("damage_percent", "weapon"), None],             # 일반 공격 대미지 배율 (SMG)
+    # SR 등급 - 무기군 슬롯 + 공용 방어 슬롯.
+    712101: [("other_core_damage_sources", "effect"), None],  # 코어 대미지 (AR)
+    712301: [("charge_damage_percent", "weapon"), None],      # 차지 대미지 배율 (RL·SR)
+    712401: [("max_ammo_percent", "effect"), None],           # 최대 장탄 수 (MG)
+    712501: [("damage_percent", "weapon"), None],             # 일반 공격 대미지 배율 (SG)
+    712901: [("damage_percent", "weapon"), None],             # 일반 공격 대미지 배율 (SMG)
+    712002: [None, None],                                     # 받는 대미지 / 엄폐물 체력
 }
 
 
@@ -116,8 +124,14 @@ def _collectibles_table() -> dict[str, Any]:
 
 
 def _favorite_item_record(weapon: str) -> dict[str, Any] | None:
-    """The SR-rarity collectible record a favorite item of this weapon group
-    was promoted from - a favorite item's own tid is never a table key."""
+    """The SR-rarity collectible record a favorite item of this weapon group was
+    promoted from - the stand-in for a favorite item the table does not know.
+
+    Every favorite item carries the same `collection_skill_group_data` as its
+    weapon group's SR collectible, so this reads the same ladder its own record
+    would. It is what keeps a newly released favorite item contributing its
+    weapon-group skill before anyone refreshes the table.
+    """
     for record in _collectibles_table().values():
         if record.get("weapon_type") == weapon and record.get("favorite_rare") == "SR":
             return record
@@ -148,8 +162,9 @@ def collectible_modifiers(tid: int, level: int, source_slug: str, weapon: str
     if not tid:
         return {}, []
     is_favorite = tid >= FAVORITE_ITEM_TID_BASE
-    record = (_favorite_item_record(weapon) if is_favorite
-              else _collectibles_table().get(str(tid)))
+    record = _collectibles_table().get(str(tid))
+    if record is None and is_favorite:
+        record = _favorite_item_record(weapon)
     if record is None:
         _warn_missing_record_once(tid)
         return {}, []

@@ -29,7 +29,12 @@ REAL_ROSTER_JSON = (Path(__file__).resolve().parent.parent
 
 
 def _state_from_draft(draft):
-    """One NikkeDraft (the frontend's string-typed form state) as a UserNikkeState."""
+    """One NikkeDraft (the frontend's string-typed form state) as a UserNikkeState.
+
+    The collectible fields are optional because a draft saved before the sync
+    carried them has neither - such a roster measures as if nobody had one
+    equipped, which is what it was measured as all along. A re-sync fills them.
+    """
     return UserNikkeState.model_validate({
         "character_slug": draft["character_slug"],
         "level": int(draft["level"]),
@@ -39,6 +44,8 @@ def _state_from_draft(draft):
         "skill_levels": {k: int(v) for k, v in draft["skill_levels"].items()},
         "overload_options": [{"name": row["name"], "value": float(row["value"])}
                              for row in draft.get("overload_options", [])],
+        "collectible_tid": int(draft.get("collectible_tid") or 0),
+        "collectible_level": int(draft.get("collectible_level") or 0),
     })
 
 

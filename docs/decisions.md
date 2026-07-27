@@ -5,6 +5,26 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 게임 테이블은 브라우저로 긁지 않고 CDN 경로를 계산해서 받는다
+- Date: 2026-07-27
+- Context: 소장품 데이터 부채(gap #17 — SMG·RL 없음, SR/SG/AR은 툴팁 유도, R 등급 미상)를 닫으려면 `collection_skill_group_data`를 담은 게임 테이블이 필요했다. 기존 `collect.js --collectibles`는 유닛 페이지를 열고 **CDN 응답을 가로채는** 방식이었고, 한 번도 성공한 적이 없다. 앞선 세션은 실패 원인을 "로그인된 Chrome이 없음(`connectOverCDP: ECONNREFUSED`)"으로 진단했다.
+- **진단이 절반만 맞았다.** `--headless`(자기 브라우저를 띄우는 경로)를 `--collectibles`로 확장해 돌려 보니 브라우저는 뜨고 nikke 디렉터리도 해석되는데(= 공개 데이터 접근은 문제없음) **레코드는 0건**이었다. 원인은 세션이 아니라 **요청 자체가 안 일어나는 것**이다 — 소장품 테이블은 로그인한 Collection 화면이 렌더될 때만 요청된다. 가로채기는 앱이 요청해 주기를 기다리는 방식이라, 앱이 요청하지 않는 파일에는 원리적으로 도달할 수 없다.
+- Decision: **가로채기를 버리고 경로를 계산한다.** ShiftyPad의 정적 테이블은 `/equip/favorite_rare_map.json` 같은 논리 경로를 `/yb-61/<md5>.json`으로 난독화해 서빙하는데, 이 매핑은 **회전하는 매니페스트가 아니라 경로 문자열의 순수 함수**다 — 디렉터리 세그먼트는 djb2 해시(깊이마다 다른 소수), 파일명은 경로 전체의 md5. 앱 번들(`index-*.js`의 `obfuscatedPath`/`createNormalObfuscatedPath`/`getDjb2Mod`)에서 그대로 옮겨 적어 `tools/collect-blablalink/resource-url.js`로 두었다. 결과적으로 테이블 하나를 받는 데 **브라우저도 세션도 필요 없다.**
+- 근거(추측이 아니라 대조): 실제로 흐른 URL 4개(`AttractiveLevelTable`·`RecycleResearchStatTable`·`CharacterLevelTable`·`favorite_100202`)와 재계산 결과가 일치한다. `resource-url.test.js`가 그 쌍을 고정한다 — 코드에서 재유도한 값이 아니라 **관측된 URL**이라 스킴 전체에 대한 진짜 검증이다.
+- 옮겨 적을 때 틀리기 쉬운 두 곳: (a) djb2 누산기의 `& 0xFFFFFFFF`는 JS에서 **부호 있는 32비트 변환**이라 음수가 나오고, 뒤따르는 `((h % p) + p) % p`가 그걸 되돌린다 — 둘 다 그대로 옮겨야 한다. (b) 각 세그먼트는 **자기 세그먼트가 아니라 경로 전체**를 해시한다(깊이별로 다른 소수를 쓸 뿐).
+- Alternatives considered: (a) **Fienn에게 로그인된 Chrome을 켜 달라고 요청** — 사람 손이 필요하고, 자동화(스케줄 갱신)가 불가능해진다. 기각. (b) **Collection 화면을 실제로 렌더시켜 가로채기** — 로그인이 필요하고, UI 변경에 취약하다. 기각. (c) **툴팁 유도값을 그대로 유지** — 부채를 남긴다. 기각.
+- Consequences: 소장품 33개 레코드(R 6 · SR 6 · 애장품 SSR 21)가 전량 커밋됐고, `--collectibles`는 이제 브라우저를 아예 열지 않는다. **툴팁에서 손으로 유도했던 값이 옳았음이 확인됐다** — SR 무기군 사다리 `[4.74, 6.31, 7.89, 9.47]`에서 에이드의 인게임 5단계가 정확히 6.31이고, 그녀의 사격장 수용 기준 7개가 이제 **실데이터로** 0.002% 안에서 재현된다. 부수 효과로 이 리졸버는 소장품 말고 **어떤 게임 테이블에도** 쓸 수 있는 도구가 됐다. 위험: 게임이 난독화 스킴을 바꾸면 조용히 404가 되는데, 리졸버가 예외를 던지므로 조용하지는 않다.
+
+## 소장품 등급별 스탯 커브 — 하나로 뭉뚱그리면 R 보유자가 2배 과대평가된다
+- Date: 2026-07-27
+- Context: 전 등급 레코드를 받고 나서야 R과 SR의 **스탯 커브가 다르다**는 것이 보였다: 최대 ATK **4,736 vs 9,688**, 최대 HP 147,250 vs 301,800. `stat_assembly.collectible_atk`/`collectible_hp`는 tid와 무관하게 `tables["collectible_sample"]`(= SR MG 레코드) 커브 **하나만** 읽고 있었다.
+- 왜 여태 안 드러났나: 스탯 모델은 159유닛 실측에 대해 최악 편차 0.77로 닫혀 있다. 그런데 그 159유닛 중 R 소장품 보유자는 **전부 레벨 0**이고, 레벨 0은 기여 0으로 처리되므로(아래 열린 질문 참조) 잘못된 커브를 읽을 기회 자체가 없었다. **잠재 결함**이었지 관측된 회귀가 아니다.
+- Decision: `_collectible_curve(tables, tid, stat)`가 그 tid의 **자기 레코드** 커브를 읽고, 테이블이 모르는 tid만 종전대로 `collectible_sample`로 폴백한다.
+- 안전성 근거: 등급별로 커브가 **정확히 하나씩**이고(R 6개 레코드가 같은 커브, SR 6개가 같은 커브, SSR 21개가 SR과 동일), **SR 커브는 `collectible_sample`과 완전히 동일**하다. 따라서 159/159 피팅은 한 유닛도 안 움직인다 — 움직이는 것은 R 보유자뿐이고, 그 방향은 과대 → 정확이다.
+- **✅ 닫힘 — 레벨 0은 "착용됐지만 스탯은 아직 0"이고, 미착용과는 tid로 구분된다 (Fienn 인게임 전수 확인, 2026-07-27).** 열린 질문이었던 "레벨 0이 스킬을 주는가"의 답은 **준다**이며 값도 엔진이 내던 것과 정확히 일치했다(헬름: 아쿠아마린 코어 +10.22% · 볼륨·리터 평타 배율 4.73% · D: 킬러 와이프 차지 4.74% · 기요틴·율리아·팬텀 코어 +5.67% · 로잔나 장탄 +1.56%). **자기모순이 아니라 축이 두 개였다** — 스킬은 레벨 0부터, 스탯(ATK/HP)은 레벨 1부터. 후자는 실측이 결정적이다: 레벨 0에 커브 index 0을 주면 159 측정 유닛 중 **정확히 31기**(= 레벨 0 착용자 전원)가 그 값만큼 어긋난다(SR 3,029 · R 638). 즉 배열의 index 0은 레벨 0의 스탯이 아니다. **착용 여부를 말하는 것은 레벨이 아니라 `favorite_item_tid`다**(빈 슬롯 = 0, 실계정 51유닛 / 레벨 0 착용 = 100xxx, 31유닛) — `collectible_effects`가 tid로, `stat_assembly`가 레벨로 판정하는 것이 우연이 아닌 이유다. **코드 동작은 그대로 두고**(둘 다 이미 맞았다) `collectible_atk`의 잘못된 근거 주석("a tid without a level is an unequipped slot")만 정정했으며, 두 반쪽을 `test_level_zero_gives_the_skill_but_no_stat_and_the_tid_is_what_says_equipped` 하나로 묶어 한쪽을 다른 쪽에 맞추려는 수정이 실패하게 했다.
+- **부수 관찰: 애장품의 인게임 단계와 API `favorite_item_lv`는 다른 축이다.** 인게임 플로라는 SSR 10단계인데 애장품 레코드의 `max_level`은 2이고 실계정 애장품 10개가 전부 `lv=2`로 온다. 엔진은 영향받지 않는다 — 애장품 레코드의 사다리가 `level1 = [4, 4, 4]`라 **어느 축의 어느 값이든 최상단**이기 때문이다(플로라가 SSR에서 MG 최대 장탄 9.5%를 보고하는 것이 확인). 애장품이 더 주는 「유닛 스킬 2개 강화」는 `favoriteitem_skill_group_data` 쪽이고 `-signature` 슬러그로 손 인코딩하는 영역이라 이 테이블의 소비자가 아니다.
+- Consequences: R 등급 소장품이 이제 자기 값으로 계산된다. 실계정 감사(`scripts/audit_collectible_coverage.py`)는 착용 108유닛 중 72유닛이 실제로 움직이고 "착용했는데 아무것도 못 받는" 유닛이 0임을 확인한다 — 그 0이 깨지면 종료 코드 1이다. 백엔드 **1486 passed / 3 skipped**.
+
 ## 소장품 스킬 효과를 유닛별 입력으로 배선 — 큐브처럼 전역 가정하지 않는다
 - Date: 2026-07-27
 - Context: gap #17(에이드의 SR 소장품 「차지대미지 6.31% 배율」이 사격장 균일 편차 0.94315x의 원인)를 배선하는 5개 태스크(테이블 수집 → 리졸버 → 유닛별 배선 → 데미지 적용 → 프론트 페이로드)를 마친 뒤, 마지막 태스크로 실제 캘리브레이션에 어떤 영향이 있었는지 측정하고 그 과정에서 정리된 모델링 규칙 두 가지를 기록한다.
