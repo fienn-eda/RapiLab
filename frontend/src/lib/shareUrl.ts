@@ -15,17 +15,17 @@ export const parseShareUrl = (input: string): string => {
       return null
     }
   })()
-  if (!uid) throw new Error('Not a ShiftyPad share URL: no uid parameter.')
+  if (!uid) throw new Error('ShiftyPad 공유 URL이 아니에요: uid 파라미터가 없어요.')
 
   let decoded: string
   try {
     decoded = atob(uid)
   } catch {
-    throw new Error('Not a ShiftyPad share URL: uid is not base64.')
+    throw new Error('ShiftyPad 공유 URL이 아니에요: uid가 base64 형식이 아니에요.')
   }
   const openId = decoded.split('-').at(-1) ?? ''
   if (!OPEN_ID.test(openId)) {
-    throw new Error('Not a ShiftyPad share URL: no open id inside uid.')
+    throw new Error('ShiftyPad 공유 URL이 아니에요: uid 안에 open id가 없어요.')
   }
   return openId
 }

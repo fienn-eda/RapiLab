@@ -15,7 +15,7 @@ export function DeckResults({ decks, excludedSlugs = [], ...lookups }: DeckResul
   if (decks.length === 0) {
     return (
       <>
-        <p className="empty__text">No decks recommended yet.</p>
+        <p className="empty__text">아직 추천된 덱이 없어요.</p>
         <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
       </>
     )

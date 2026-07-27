@@ -15,6 +15,7 @@
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import type { SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
+import { elementLabel } from '../lib/elementName'
 import { FavoriteItemBadge } from './FavoriteItemBadge'
 import { OverloadLines, SkillPip } from './InvestmentSummary'
 
@@ -103,7 +104,7 @@ export function UnitPalette({
                       // each press is a fresh action. The name has to live here:
                       // the chip itself no longer shows any text.
                       aria-pressed={!isExcluded}
-                      aria-label={`Use ${unit.name}`}
+                      aria-label={`${unit.name} 사용`}
                       draggable={draggable && !isExcluded && !isUsed}
                       onDragStart={(event) => {
                         event.dataTransfer.setData(DRAG_SLUG_TYPE, unit.slug)
@@ -126,11 +127,11 @@ export function UnitPalette({
                         <span className="palette__details" role="presentation">
                           <span className="palette__name">{unit.name}</span>
                           <span className="palette__meta">
-                            B{unit.burstTier} · {unit.element}
+                            B{unit.burstTier} · {elementLabel(unit.element)}
                           </span>
                           <OverloadLines
                             options={owned.overload_options}
-                            emptyText="No overload"
+                            emptyText="오버로드 없음"
                           />
                         </span>
                       </span>

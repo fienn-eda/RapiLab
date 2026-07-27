@@ -47,7 +47,7 @@ const extractDetailMessage = (detail: unknown): string | undefined => {
 export const describeAssembleRosterApiError = (err: AssembleRosterApiError): string => {
   const detailMessage = extractDetailMessage(err.detail)
   if (err.status === 422) {
-    return detailMessage ?? 'The blablalink payload was not in the expected shape.'
+    return detailMessage ?? 'blablalink 응답 형식이 예상과 달라요.'
   }
-  return detailMessage ?? `Roster sync failed (${err.status}).`
+  return detailMessage ?? `로스터 동기화가 실패했어요 (${err.status}).`
 }

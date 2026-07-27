@@ -40,7 +40,7 @@ describe('useAsyncRequestStatus', () => {
   })
 
   // A cancel is something the user did, not something that went wrong. Showing
-  // "Failed to fetch deck recommendations" for it would read as a bug in the
+  // "덱 추천을 가져오지 못했어요." for it would read as a bug in the
   // app and send them looking for a problem that does not exist.
   it('treats an aborted request as idle, not as a failure', async () => {
     const { result } = renderHook(() => useAsyncRequestStatus())

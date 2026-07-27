@@ -37,37 +37,37 @@ describe('validateDraft', () => {
   it('reports every required field on an empty draft and yields no value', () => {
     const { errors, value } = validateDraft(makeEmptyDraft())
     expect(value).toBeUndefined()
-    expect(errors.character_slug).toBe('Required')
-    expect(errors.level).toBe('Required')
-    expect(errors.hp).toBe('Required')
-    expect(errors.atk).toBe('Required')
-    expect(errors.def_).toBe('Required')
+    expect(errors.character_slug).toBe('필수 입력이에요')
+    expect(errors.level).toBe('필수 입력이에요')
+    expect(errors.hp).toBe('필수 입력이에요')
+    expect(errors.atk).toBe('필수 입력이에요')
+    expect(errors.def_).toBe('필수 입력이에요')
     expect(errors.skill_levels).toEqual({
-      skill1: 'Required',
-      skill2: 'Required',
-      burst: 'Required',
+      skill1: '필수 입력이에요',
+      skill2: '필수 입력이에요',
+      burst: '필수 입력이에요',
     })
   })
 
   it('enforces level >= 1', () => {
     const { errors, value } = validateDraft({ ...validDraft(), level: '0' })
-    expect(errors.level).toBe('Must be ≥ 1')
+    expect(errors.level).toBe('1 이상이어야 해요')
     expect(value).toBeUndefined()
   })
 
   it('rejects non-integer whole-number fields', () => {
     expect(validateDraft({ ...validDraft(), level: '10.5' }).errors.level).toBe(
-      'Must be a whole number',
+      '정수를 입력하세요',
     )
   })
 
   it('rejects negative stats', () => {
-    expect(validateDraft({ ...validDraft(), hp: '-1' }).errors.hp).toBe('Must be ≥ 0')
+    expect(validateDraft({ ...validDraft(), hp: '-1' }).errors.hp).toBe('0 이상이어야 해요')
   })
 
   it('rejects non-numeric stats', () => {
     expect(validateDraft({ ...validDraft(), atk: 'abc' }).errors.atk).toBe(
-      'Must be a number',
+      '숫자를 입력하세요',
     )
   })
 
@@ -76,13 +76,13 @@ describe('validateDraft', () => {
       ...validDraft(),
       skill_levels: { skill1: '0', skill2: '5', burst: '5' },
     })
-    expect(low.errors.skill_levels).toEqual({ skill1: 'Must be ≥ 1' })
+    expect(low.errors.skill_levels).toEqual({ skill1: '1 이상이어야 해요' })
 
     const high = validateDraft({
       ...validDraft(),
       skill_levels: { skill1: '5', skill2: '5', burst: '11' },
     })
-    expect(high.errors.skill_levels).toEqual({ burst: 'Must be ≤ 10' })
+    expect(high.errors.skill_levels).toEqual({ burst: '10 이하여야 해요' })
   })
 
   it('accepts valid overload rows and includes them in the parsed value', () => {
@@ -106,8 +106,8 @@ describe('validateDraft', () => {
     const { errors, value } = validateDraft(draft)
     expect(value).toBeUndefined()
     expect(errors.overload_options?.[bad.id]).toEqual({
-      name: 'Required',
-      value: 'Must be a number',
+      name: '필수 입력이에요',
+      value: '숫자를 입력하세요',
     })
   })
 

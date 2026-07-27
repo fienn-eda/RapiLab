@@ -42,23 +42,23 @@ describe('DraftResults', () => {
     )
 
     // Tier 1: baseline (the submitted draft, scored as-is)
-    expect(screen.getByText('Your draft')).toBeInTheDocument()
-    expect(screen.getByText('100 dmg')).toBeInTheDocument()
+    expect(screen.getByText('내 드래프트')).toBeInTheDocument()
+    expect(screen.getByText('100 딜')).toBeInTheDocument()
 
     // Tier 2: best within the drafted units only (+delta1 = 10)
-    expect(screen.getByText(/Best within your draft/)).toHaveTextContent('+10')
-    expect(screen.getByText('110 dmg')).toBeInTheDocument()
+    expect(screen.getByText(/드래프트 내 최선/)).toHaveTextContent('+10')
+    expect(screen.getByText('110 딜')).toBeInTheDocument()
 
     // Tier 3: bench-inclusive recommendation (+delta2 = 20)
-    expect(screen.getByText(/Recommended/)).toHaveTextContent('+20')
-    expect(screen.getByText('130 dmg')).toBeInTheDocument()
+    expect(screen.getByText(/추천\s*\(/)).toHaveTextContent('+20')
+    expect(screen.getByText('130 딜')).toBeInTheDocument()
 
     // Per-deck diff vs the submitted draft: recommended swapped 'e' for 'z'
     expect(screen.getByText(/\+ Z/)).toBeInTheDocument()
     expect(screen.getByText(/- E/)).toBeInTheDocument()
 
     // pinned_slugs badge on the recommended tier
-    expect(screen.getByText('pinned')).toBeInTheDocument()
+    expect(screen.getByText('고정됨')).toBeInTheDocument()
   })
 
   it('renders the single recommended allocation when within_draft/baseline_total_damage are null', () => {
@@ -72,11 +72,11 @@ describe('DraftResults', () => {
       />,
     )
 
-    expect(screen.queryByText('Your draft')).not.toBeInTheDocument()
-    expect(screen.queryByText(/Best within your draft/)).not.toBeInTheDocument()
-    expect(screen.getByText('Deck 1')).toBeInTheDocument()
-    expect(screen.getByText('130 dmg')).toBeInTheDocument()
-    expect(screen.getByText('Bench (not allocated to a deck): Bench Unit')).toBeInTheDocument()
+    expect(screen.queryByText('내 드래프트')).not.toBeInTheDocument()
+    expect(screen.queryByText(/드래프트 내 최선/)).not.toBeInTheDocument()
+    expect(screen.getByText('덱 1')).toBeInTheDocument()
+    expect(screen.getByText('130 딜')).toBeInTheDocument()
+    expect(screen.getByText('벤치 (덱에 배정되지 않음): Bench Unit')).toBeInTheDocument()
   })
 
   // The backend's recommended tier can come from a from-scratch pass whose

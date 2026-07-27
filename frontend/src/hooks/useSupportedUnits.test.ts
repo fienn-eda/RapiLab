@@ -34,6 +34,6 @@ describe('useSupportedUnits', () => {
 
     await waitFor(() => expect(result.current.loading).toBe(false))
     expect(result.current.units).toEqual([])
-    expect(result.current.error).toBe('Failed to load supported units.')
+    expect(result.current.error).toBe('지원 유닛 목록을 불러오지 못했어요.')
   })
 })

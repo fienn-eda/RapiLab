@@ -33,11 +33,11 @@ const isPlainHttpOrigin = (value: string): boolean => {
 
 export const buildBookmarklet = (openId: string, appOrigin: string): string => {
   if (!OPEN_ID.test(openId)) {
-    throw new Error(`buildBookmarklet: openId must be digits only, got ${JSON.stringify(openId)}`)
+    throw new Error(`open ID(${JSON.stringify(openId)})는 숫자로만 이뤄져야 해요.`)
   }
   if (!isPlainHttpOrigin(appOrigin)) {
     throw new Error(
-      `buildBookmarklet: appOrigin must be a plain http(s) origin with no quotes, got ${JSON.stringify(appOrigin)}`,
+      `앱 주소(${JSON.stringify(appOrigin)})가 따옴표 없는 올바른 http(s) 주소가 아니에요.`,
     )
   }
   // 클릭의 transient activation은 짧게 유지된다(크롬 5초, 파이어폭스는 프라미스

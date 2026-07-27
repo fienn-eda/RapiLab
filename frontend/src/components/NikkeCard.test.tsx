@@ -25,7 +25,7 @@ const card = (
 describe('NikkeCard', () => {
   it('falls back to a positional title when there is neither name nor slug', () => {
     card(makeEmptyDraft(), null, '')
-    expect(screen.getByRole('heading', { name: 'Nikke 1' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '니케 1' })).toBeInTheDocument()
   })
 
   // The slug identifies the unit; the name is what a player reads.

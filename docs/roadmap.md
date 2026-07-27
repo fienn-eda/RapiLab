@@ -7,9 +7,42 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-07-19
-- 브랜치: `wip/scaffolding` (`worktree-plans-frontend3-encoding` 머지 완료)
-- 테스트: **906 passed** (2026-07-19, **무기변형 계획 2 착지** — v1이 백로그로 남겨둔
+- 마지막 갱신: 2026-07-26
+- 브랜치: `ui-korean-localization` 워크트리(`wip/scaffolding` 1413 passed, 3 skipped 기준에서 분기, 이 항목 시점에 트렁크 미병합)
+- 프론트: **294 passed** (2026-07-26, **UI 크롬 한글화 완료** — 2026-07-25 "유닛 표시
+  이름 한글화" 스펙(`docs/superpowers/specs/2026-07-25-korean-display-names-design.md`,
+  유닛 이름·애장품 하트 담당)이 별도 작업으로 미뤄뒀던 "UI 크롬 한글화(Boss profile,
+  Recommend decks 등)"를 마무리. 헤딩·라벨·버튼·힌트·빈 상태 메시지·aria-label·title·
+  폴백 에러/검증 메시지까지 `frontend/src/` 전역의 하드코딩 영문 UI 문자열을 한글로
+  교체(i18n 라이브러리 없이 직접 치환 — 한국 서비스 전용이라 그걸로 충분, Fienn 판단).
+  스펙: `docs/superpowers/specs/2026-07-26-ui-chrome-korean-localization-design.md`,
+  계획: `docs/superpowers/plans/2026-07-26-ui-chrome-korean-localization.md`(15개
+  계획 작업 + 실행 중 발견한 갭픽스 3건, 서브에이전트 기반 개발로 각 작업 개별 리뷰).
+  범위: 컴포넌트 ~15개(App.tsx·BossProfileField·RecommendPanel·SyncRosterPanel·
+  ProfileSwitcher·DraftEditor·DraftResults·RaidResults·DeckCard·DeckResults·
+  RosterGrid·ExcludedSlugsNote·InvestmentBadge·InvestmentSummary·NikkeCard·
+  UnitPalette) + 훅/API 5개(useAsyncRequestStatus·useRecommendRaid·useSupportedUnits·
+  recommendApiError·assembleRosterApiError) + `lib/rosterImport.ts`·`lib/shareUrl.ts`·
+  `types/bossProfileDraft.ts`·`types/nikkeDraft.ts`(죽은 코드지만 일관성 위해 함께
+  번역). 신규 공용 모듈 `frontend/src/lib/elementName.ts`(`elementLabel()` — Fire=작열/
+  Water=수냉/Wind=풍압/Iron=철갑/Electric=전격, Fienn 확정 표기). **범위 제외**(스펙에
+  명시): 백엔드 FastAPI/Pydantic 검증 메시지 원문 그대로 통과되는 것·이미 한글인
+  `lib/bookmarklet.ts`·게임 표준 코드(S1/S2/B, B1/B2/B3)·SyncRosterPanel의 예시
+  URL 플레이스홀더. 기준선 289 passed → **294 passed, 0 failed**(+5는 신규
+  `elementName.test.ts`로 인한 정상 증가, 회귀 아님). `tsc -b --noEmit`·`npm run build`
+  클린. 과정 통찰 2건은 `docs/insights.md`(Frontend 섹션 CJK 줄바꿈 항목) 및 아래
+  참고: (1) 계획이 작성한 한글 문장 3곳(BossProfileField·DraftResults·RecommendPanel)이
+  프로젝트의 확립된 캐주얼-정중체(~해요/~돼요, `lib/bookmarklet.ts` 기준) 대신
+  격식체(~됨/~습니다/~ㅂ니다)로 새 나온 걸 세 차례 독립 리뷰가 각각 잡아냄 — 같은
+  결함 종류가 반복 발견됐다는 것 자체가 "전체 문장형 문자열은 톤을 따로 검사해야
+  한다"는 신호. (2) 계획 순서 버그 1건: `SyncRosterPanel.test.tsx`의 단언이
+  `lib/rosterImport.ts` 경고 문구가 이미 한글이라고 가정했는데, 그 파일의 번역은
+  계획상 **더 나중** 작업으로 배치돼 있었음 — 나중 작업의 확정 문구를 앞당겨
+  해결하고, 그 작업이 이미 바뀐 텍스트를 다시 diff하지 않도록 주의. 커밋 범위
+  `b21cfff..b3bd244`(작업 9~14, 9개 커밋), 브랜치 전체는 `wip/scaffolding` 대비 25
+  커밋(설계/계획 문서 2건 + 작업 1~14 포함).)
+- 이전(백엔드 테스트, 이 워크트리 분기 시점 상태): **1413 passed, 3 skipped** (2026-07-19,
+  **무기변형 계획 2 착지** — v1이 백로그로 남겨둔
   세 항목을 전부 닫음: **cinderella-crystal-wave**가 `registry.MODE_VARIANTS`로
   `-mg`/`-snipe` 두 정적 슬러그로 확장(로스터가 소유 유닛 1개를 후보 여러 개로
   fan-out, 덱 탐색은 `_no_variant_clash`로 두 모드 동시 편성을 금지) · **rapi-red-hood**의
@@ -1246,6 +1279,21 @@
       쪼개지던 것도 같이 고쳤다(힌트를 아랫줄로).
       **남은 것**: Element 기본값 "Non-elemental"은 그대로다(저장된 입력·결과 캐시 해시와
       얽혀 범위가 커져 분리). 완료 후 결과로 스크롤 이동도 미착수.
+- [ ] **UI 크롬 한글화 스펙 리뷰 중 나온 백로그 2건 (2026-07-26, 아직 미설계 — 범위 밖,
+      캡처만).** `docs/superpowers/specs/2026-07-26-ui-chrome-korean-localization-design.md`
+      리뷰 중 Fienn이 별도 세션감으로 떠올린 것들:
+      - 니케 검색/정렬/필터 기능 — 지금 로스터에 검색·정렬·필터 UI가 전혀 없다
+        (`RosterGrid.tsx`/`UnitPalette.tsx` 영향 예상).
+      - Roster/Recommend/Sync를 사이드바 탭으로 재구성 — 지금은 `App.tsx`에 "Roster"·
+        "Recommend" 탭 2개뿐이고 Sync 패널은 Roster 탭 안에 얹혀 있다. 이건 네비게이션/
+        레이아웃 구조 변경.
+- [x] **동기화 도움말 패널 — 완료 (2026-07-27).** 제목 옆 "동기화 방법" 토글이 공유
+      URL 획득(스크린샷 2장)부터 북마크 설치·재싱크·다계정 운용까지를 인라인으로
+      펼친다. 활성 프로필이 없는 화면에서는 기본 펼침, 로스터 탭에서는 접힘. 최종
+      리뷰가 잡은 것: 도움말이 "로그인한 상태"라고 했지만 북마크릿의 실제 관문은
+      **출처(origin)** 검사라 우리 탭에서 눌러도 조건을 만족한 것처럼 보였다 —
+      문구를 "blablalink 페이지를 열고"로 정정. 프론트 **294 → 299 passed**. 스펙:
+      `docs/superpowers/specs/2026-07-26-sync-help-panel-design.md`.
 
 ### 로스터 동기화 후속 (2026-07-19 병합 직후 열림)
 

@@ -23,7 +23,7 @@ export function InvestmentBadge({ grade, core }: InvestmentBadgeProps) {
   // outline, which is already the difference - splitting the colours would
   // mean splitting the string into elements that each duplicate the whole.
   return (
-    <span className="investment" title="Breakthrough and core enhancement">
+    <span className="investment" title="돌파 및 코어 강화">
       <span className="investment__stars">{filled + empty}</span>
       {core !== undefined && core > 0 && (
         <span className="investment__core">+{core}</span>

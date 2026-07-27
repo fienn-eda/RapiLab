@@ -22,13 +22,13 @@ describe('describeRecommendApiError', () => {
   it('falls back to a generic 422 message when there is no parseable detail', () => {
     const err = new RecommendApiError(422, null)
     expect(describeRecommendApiError(err)).toBe(
-      'The roster or boss profile is invalid for a deck recommendation.',
+      '로스터 또는 보스 설정이 덱 추천에 유효하지 않아요.',
     )
   })
 
   it('falls back to a generic status message for non-422 errors without detail', () => {
     const err = new RecommendApiError(500, null)
-    expect(describeRecommendApiError(err)).toBe('Deck recommendation request failed (500).')
+    expect(describeRecommendApiError(err)).toBe('덱 추천 요청이 실패했어요 (500).')
   })
 
   it('prefers a string detail even for a non-422 status', () => {

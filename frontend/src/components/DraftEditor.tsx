@@ -138,8 +138,8 @@ export function DraftEditor({
   return (
     <div className="draft-editor">
       <p className="draft-editor__hint">
-        Drag a unit onto a deck to seat it, or from one deck to another to move
-        it. Slots are membership only — the engine assigns burst roles.
+        유닛을 덱 위로 드래그하면 배치돼요. 다른 덱으로 옮기려면 그쪽으로
+        드래그하세요. 슬롯은 소속만 나타내며, 버스트 순서는 엔진이 정해요.
       </p>
       <div className="draft-editor__decks">
         {Array.from({ length: numDecks }, (_, deckIndex) => {
@@ -166,10 +166,10 @@ export function DraftEditor({
               onDrop={(event) => handleDrop(event, deckIndex)}
             >
               <h4 className="draft-editor__deck-title">
-                Deck {deckIndex + 1}
+                덱 {deckIndex + 1}
                 {missing.length > 0 && (
                   <span className="draft-editor__deck-warning">
-                    no {missing.map((tier) => `B${tier}`).join(', ')}
+                    {missing.map((tier) => `B${tier}`).join(', ')} 없음
                   </span>
                 )}
                 <span className="draft-editor__deck-count">
@@ -181,7 +181,7 @@ export function DraftEditor({
                   const portrait = portraitFor(seat.slug)
                   const name = nameFor(seat.slug)
                   const tier = burstTierFor(seat.slug)
-                  const where = `deck ${deckIndex + 1}`
+                  const where = `덱 ${deckIndex + 1}`
                   return (
                     <li key={seat.slug} className="draft-editor__slot">
                       <div
@@ -209,7 +209,7 @@ export function DraftEditor({
                         type="button"
                         className="draft-editor__slot-lock"
                         aria-pressed={seat.locked}
-                        aria-label={`Lock ${name} in ${where}`}
+                        aria-label={`${where}에서 ${name} 고정`}
                         onClick={() => onChange(toggleLock(value, deckIndex, seatIndex))}
                       >
                         <LockGlyph />
@@ -217,7 +217,7 @@ export function DraftEditor({
                       <button
                         type="button"
                         className="draft-editor__slot-remove"
-                        aria-label={`Remove ${name} from ${where}`}
+                        aria-label={`${where}에서 ${name} 제거`}
                         onClick={() => onChange(removeUnit(value, deckIndex, seatIndex))}
                       >
                         <span aria-hidden="true">×</span>

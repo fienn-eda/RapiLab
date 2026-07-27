@@ -29,13 +29,13 @@ describe('describeAssembleRosterApiError', () => {
   it('falls back to a generic 422 message when there is no parseable detail', () => {
     const err = new AssembleRosterApiError(422, null)
     expect(describeAssembleRosterApiError(err)).toBe(
-      'The blablalink payload was not in the expected shape.',
+      'blablalink 응답 형식이 예상과 달라요.',
     )
   })
 
   it('falls back to a generic status message for non-422 errors without detail', () => {
     const err = new AssembleRosterApiError(500, null)
-    expect(describeAssembleRosterApiError(err)).toBe('Roster sync failed (500).')
+    expect(describeAssembleRosterApiError(err)).toBe('로스터 동기화가 실패했어요 (500).')
   })
 
   it('prefers a string detail even for a non-422 status', () => {

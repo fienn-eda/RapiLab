@@ -38,8 +38,8 @@ export const describeRecommendApiError = (err: RecommendApiError): string => {
   if (err.status === 422) {
     return (
       detailMessage ??
-      'The roster or boss profile is invalid for a deck recommendation.'
+      '로스터 또는 보스 설정이 덱 추천에 유효하지 않아요.'
     )
   }
-  return detailMessage ?? `Deck recommendation request failed (${err.status}).`
+  return detailMessage ?? `덱 추천 요청이 실패했어요 (${err.status}).`
 }

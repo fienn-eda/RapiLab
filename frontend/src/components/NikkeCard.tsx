@@ -27,10 +27,10 @@ interface NikkeCardProps {
 }
 
 export function NikkeCard({ draft, index, name, element, portrait }: NikkeCardProps) {
-  const title = name || draft.character_slug.trim() || `Nikke ${index + 1}`
+  const title = name || draft.character_slug.trim() || `니케 ${index + 1}`
 
   return (
-    <section className="card roster-card" data-element={element} aria-label={`Investment data for ${title}`}>
+    <section className="card roster-card" data-element={element} aria-label={`${title} 투자 정보`}>
       {/* The slot is always drawn, even with no portrait to put in it: a
           missing one would otherwise shorten that tile against its row. */}
       <div className="roster-card__figure">
@@ -50,7 +50,7 @@ export function NikkeCard({ draft, index, name, element, portrait }: NikkeCardPr
 
       <h2 className="roster-card__name">{title}</h2>
       <SkillLevels levels={draft.skill_levels} />
-      <OverloadLines options={draft.overload_options} emptyText="No overload" />
+      <OverloadLines options={draft.overload_options} emptyText="오버로드 없음" />
     </section>
   )
 }

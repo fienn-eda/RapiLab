@@ -43,14 +43,14 @@ export const parseRosterJson = (
 ): { drafts: NikkeDraft[]; warnings: string[] } => {
   const data = raw as RosterJson
   if (!data || typeof data !== 'object' || !Array.isArray(data.units)) {
-    throw new Error('Not a collector roster: missing "units".')
+    throw new Error('수집기 로스터 형식이 아니에요: "units" 필드가 없어요.')
   }
   const drafts: NikkeDraft[] = []
   const warnings: string[] = []
   const unsupported: string[] = []
   for (const u of data.units) {
     if (!u || !u.name_en || !u.raid400) {
-      warnings.push('unit missing name_en/raid400')
+      warnings.push('유닛에 name_en/raid400이 없어요')
       continue
     }
     const mapped = resolveSlugForUnit(u.resource_id, u.favorite_item)
@@ -84,8 +84,8 @@ export const parseRosterJson = (
   }
   if (unsupported.length > 0) {
     warnings.push(
-      `${unsupported.length} owned units not yet supported (excluded from ` +
-        `recommendation): ${unsupported.join(', ')}`,
+      `보유 유닛 중 ${unsupported.length}기가 아직 미지원이라 추천에서 ` +
+        `제외돼요: ${unsupported.join(', ')}`,
     )
   }
   // A dropped unit is worth a louder line than an unsupported one: it IS
@@ -93,8 +93,8 @@ export const parseRosterJson = (
   // the measured data that a different account happens to expose.
   if (data.unmeasured && data.unmeasured.length > 0) {
     warnings.push(
-      `${data.unmeasured.length} owned units left out — their level-400 stats ` +
-        `were never measured: ` +
+      `보유 유닛 중 ${data.unmeasured.length}기가 제외됐어요 — 레벨 400 ` +
+        `스탯이 측정된 적이 없어요: ` +
         data.unmeasured.map((u) => `${u.name_en} (${u.reason})`).join('; '),
     )
   }
