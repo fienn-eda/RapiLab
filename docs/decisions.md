@@ -5,6 +5,18 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 대조 하네스가 **엉뚱한 보스**와 싸우고 있었다 — 기록 보스는 철갑(Iron)이다
+- Date: 2026-07-27
+- Context: 신데렐라 과대(덱4 1.875x)와 볼륨 미달(0.784x)의 원인을 찾던 중, `scripts/measure_deck_breakdown.py`의 `RECORD_BOSS`가 `element="Water"`로 박혀 있고 독스트링이 그것을 "Water element so **Wind** attackers get advantage"라고 정당화하고 있는 것을 발견했다. 이 문장은 **원소 순환을 거꾸로 읽은 것**이다.
+- **핵심 구분:** `element` 필드는 **보스 자신의 코드**이지 "보스를 카운터하는 코드"가 아니다. `elements.py`의 순환은 Water>Fire>Wind>Iron>Electric>Water이므로 **Wind는 Iron을 이긴다**. 따라서 "Wind 약점 보스"는 `element="Iron"`이고, `"Water"`는 **Electric 약점 보스**가 된다.
+- 근거: 실기록 원문이 이미 명시하고 있었다 — "애니힐리오: **철갑**=Wind 약점"(이 파일, 2026-07-26 항목). 철갑 = Iron. 아무도 대조하지 않았을 뿐이다.
+- 영향의 크기: 잘못된 보스에서 신데렐라(Electric)는 우위를 얻어 `element_multiplier` 1.1 **에 더해** 조건부 버프인 `other_elemental_bonus` 0.979(Superior Code)까지 열리므로 원소 배수가 **1.0 → 2.079 (2.08배)** 가 된다. 반대로 볼륨(Wind)은 실제로 가진 우위를 빼앗긴다. 이 한 필드가 두 이상치를 **동시에** 만들고 있었다.
+- 검증: 다섯 원소를 전부 스윕했다. Iron만이 전 유닛을 좁은 띠에 넣는다(0.88~1.32x). Water는 신데렐라 1.875 · 볼륨 0.784, Fire는 스노우화이트 3.010, Electric은 민트 1.808으로 각각 이상치를 만든다. **결정적 증거는 볼륨이다** — 조사 대상이 아닌 유닛인데 Iron에서만 자기 기록에 **1.012x**로 안착한다(Wind로 두면 0.784x). 즉 조사 중이던 유닛에 맞춘 게 아니다.
+- Decision: `RECORD_BOSS`를 `element="Iron"`으로 정정하고, `backend/tests/test_elements.py`에 **상수 자체를 고정하는 테스트**를 넣었다(`RECORD_BOSS["element"] == "Iron"` + Wind가 우위 · Electric이 비우위임을 `element_multiplier`로 재확인). `.claude/skills/verify/SKILL.md`의 샘플 페이로드도 같이 정정했다 — 기록 DEF 31,784와 짝지어져 있어 오류가 전파되던 자리다.
+- Alternatives considered: **`element`를 "보스를 카운터하는 코드"로 재해석**(즉 필드 의미를 바꾸기) — 기각. 엔진 전체(`BossProfile`·API·`boss_is_element` 조건 헬퍼 30여 곳)가 이미 "보스 자신의 코드"로 일관되게 쓰고 있고, 틀린 것은 하네스 상수 하나뿐이다.
+- Consequences: 덱4 합계 **1.533x → 1.081x**, 유닛별 편차 **0.78~1.88x → 0.90~1.29x**로 좁혀졌다. 그러나 **이 세션에서 하네스로 뽑은 모든 수치가 잘못된 보스에서 나온 것**이므로, Electric·Wind 유닛이 낀 대조는 전부 재측정 대상이다. 사격장 단발 측정들은 **영향 없다** — 표적이 "우월코드 미적용"이었다. 백엔드 **1461 passed / 3 skipped**.
+- **재발 방지 관점:** 이것으로 원소 순환을 산문으로 주장했다가 틀린 사례가 **세 번째**다(rei_ayanami의 "(Fire > Iron)" 주석, `other_elemental_bonus`/`element_advantage_grant` 혼동, 그리고 이번 하네스). `docs/insights.md`가 이미 "원소 순환을 주장하는 주석은 `elements.py`에 직접 대조하라"고 적어 뒀는데, **그 교훈을 적은 프로젝트가 자기 대조 하네스에서 같은 실수를 했다.** 테스트로 못 박은 이유다.
+
 ## B3의 버스트는 풀버스트가 열리기 **전**에 연산된다 — 창을 한 순간 뒤로 민다
 - Date: 2026-07-27
 - Context: 신데렐라 과대(사격장 불릿1 1.2714x)를 쫓다가 Fienn이 원인을 지목했다. 버스트 사이클은 [1단계 진입 → B1 사용 → 2단계 진입 → B2 사용 → **3단계 진입 → B3 사용** → **풀버스트 시작**] 순이므로, **B3의 버스트 스킬 대미지는 자기 캐스팅 시점에 확정되고 그 시점은 창이 열리기 직전**이다. 따라서 B3의 버스트 넉은 FB 보너스도, `full_burst_enter`로 도착하는 어떤 버프도 받지 못한다.

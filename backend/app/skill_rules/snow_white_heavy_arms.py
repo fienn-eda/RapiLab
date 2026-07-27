@@ -17,24 +17,18 @@ The lock-on "Damage Taken up 4.2% for 4s" tick is approximated as a permanent
 squad-scope debuff (charging uptime is ~100%, 4s duration >> 0.2s tick -
 Fienn, 2026-07-19).
 
-Step 2 precedent check - "Activates when entering Burst Stage 3" (Shades of
-White's self ATK +73.92%/10s, skills[1], not her burst skill): the same
-phrase appears verbatim in cinderella.py's Flawless Glass (skills[0]) and
-ein.py's Feather Standby (skills[0]), both self-scoped and both modeled as
-`own_burst_activate` with the reasoning "she IS the Burst-3 slot, so that
-instant is her own burst activation" (ein.py). rei_ayanami.py's Attack
-Support uses the SAME phrase but is modeled as `full_burst_enter` instead -
-its buff scope is squad-wide (all Fire Code allies), not self, so it has to
-fire on ANY unit's Burst Stage 3 entry, not just Rei's own. Snow White: Heavy
-Arms's B3-entry buff is self-scoped like Cinderella's/Ein's, so it follows
-their precedent: `own_burst_activate`. (nayuta.py's "stage3" naming, also
-turned up by the grep, is an unrelated internal resource-tier mechanic - her
-own 30-stack Memory Absorption counter - not the Burst-Stage-3 cascade, so
-it isn't a real precedent for this trigger despite the name collision.)
-Approximation implication: this buff only fires on cycles where she actually
-casts her own burst - since her Burst Skill is fixed at position 3 (a game
-attribute, not a deck-configurable seat), that's every cycle she reaches
-Full Burst, same as any other own_burst_activate bullet in this kit.
+"Activates when entering Burst Stage 3" (Shades of White's self ATK
++73.92%/10s, skills[1], not her burst skill) is about the STAGE, not about
+her: it fires in every cycle a Burst 3 takes the slot, including the cycles an
+ALLIED Burst 3 takes. Hence `ally_burst_activate` + `burst_stage_entered(3)`
+rather than `own_burst_activate`, which would silently drop those cycles - in
+a deck where she alternates the B3 seat with another Burst 3 (e.g. Cinderella)
+that is half of them. Scope is irrelevant to this choice: a self-scoped buff
+on a stage event is still a stage event, it just lands on one unit. Her burst
+skill's OWN buff (Fully Active, skills[2]) is a different instant and stays on
+`own_burst_activate` - the two bullets were wired to one rule until 2026-07-27
+and had to be split. See docs/insights.md for the general trigger rule and the
+five units it corrected.
 
 Modeled (DPS-relevant):
 - Seven Dwarves V+VI (skills[0]): battle-start squad Damage Taken +4.2%
