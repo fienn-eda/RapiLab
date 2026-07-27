@@ -12,12 +12,15 @@
 // seat it there. Dragging is the only way to seat a unit, so draft editing is
 // mouse-only; the Use toggle and everything else works from the keyboard.
 
+import { useState } from 'react'
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import { BURST_TIERS, type SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { elementLabel } from '../lib/elementName'
+import { EMPTY_FILTER, filterAndSort, type UnitFacets, type UnitFilterState } from '../lib/unitFilter'
 import { FavoriteItemBadge } from './FavoriteItemBadge'
 import { OverloadLines, SkillPip } from './InvestmentSummary'
+import { UnitFilterBar } from './UnitFilterBar'
 
 /** Breakthrough, core and Favorite Item for one unit. They live on NikkeDraft,
  * not on the wire-shaped UserNikkeState the engine takes, so they arrive
@@ -68,10 +71,34 @@ export function UnitPalette({
   const excludedSet = new Set(excludedSlugs)
   const shown = supportedUnits.filter((unit) => ownedBySlug.has(unit.slug))
 
+  // Owned by the palette rather than by RecommendPanel: nothing outside this
+  // component may read the filter, precisely because reading it would invite
+  // narrowing the request to match. Mode switching remounts the palette and so
+  // resets the filter, which is the accepted cost of keeping it local.
+  const [filter, setFilter] = useState<UnitFilterState>(EMPTY_FILTER)
+
+  const facetsFor = (unit: SupportedUnit): UnitFacets => ({
+    name: unit.name,
+    element: unit.element,
+    burstTier: unit.burstTier,
+    overload: ownedBySlug.get(unit.slug)!.overload_options,
+  })
+
+  // Sorted across the whole palette, then partitioned by tier below - a
+  // partition preserves relative order, so each group comes out in sort order
+  // without sorting three times.
+  const visible = filterAndSort(shown, facetsFor, filter)
+
   return (
     <div className="palette">
+      <UnitFilterBar
+        value={filter}
+        onChange={setFilter}
+        shown={visible.length}
+        total={shown.length}
+      />
       {BURST_TIERS.map((tier) => {
-        const units = shown.filter((unit) => unit.burstTier === tier)
+        const units = visible.filter((unit) => unit.burstTier === tier)
         if (units.length === 0) return null
         return (
           <section key={tier} className="palette__group">
