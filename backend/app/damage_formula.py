@@ -66,6 +66,7 @@ def calculate_damage(
     effective_range_bonus=0.0,
     element_multiplier=1.0,
     other_elemental_bonus=0.0,
+    sequential_attack_damage_up=0.0,
     charge_damage_bonus=0.0,
     attack_damage_up=0.0,
     sustained_damage_up=0.0,
@@ -118,6 +119,13 @@ def calculate_damage(
         + shield_damage_up
         + projectile_explosion_damage_up
         + projectile_attachment_damage_up
+        # "Sequential attack damage" (Snow White: Heavy Arms' Fully Active
+        # bullet) sits in THIS bucket, not on the hit's own coefficient.
+        # Measured 2026-07-28: her Fully Active Auto Fire reads 4.26515x its own
+        # 41.9% sweep where the bare coefficients are 2.52005x, so the bullet is
+        # worth 1 + 1.584 / (1 + bucket) = 1.69249 against the engine's live
+        # bucket of 1.2874 - not the 2.584 a coefficient multiplier would give.
+        + sequential_attack_damage_up
     )
     damage_taken = 1 + damage_taken_up + distributed_damage_up
 

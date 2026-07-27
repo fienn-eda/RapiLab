@@ -397,6 +397,10 @@ _TYPE_BUCKETS = {
     "true": ["true_damage_up"],
     "projectile_explosion": ["projectile_explosion_damage_up"],
     "projectile_attachment": ["projectile_attachment_damage_up"],
+    # A multi-hit "attacks sequentially" volley (Snow White: Heavy Arms' Auto
+    # Fire). Only the sequential hits carry it - the same skill's all-enemy
+    # sweep rides the plain "attack" type.
+    "sequential": ["sequential_attack_damage_up"],
 }
 
 # Every registry stat phase-2 damage computation can read (_damage_instance,
@@ -413,6 +417,7 @@ _BUNDLE_STATS = (
     "pierce_damage_up", "has_pierce", "damage_taken_up",
     "sustained_damage_up", "distributed_damage_up", "true_damage_up",
     "projectile_explosion_damage_up", "projectile_attachment_damage_up",
+    "sequential_attack_damage_up",
     "normal_attack_damage_multiplier",
 )
 
