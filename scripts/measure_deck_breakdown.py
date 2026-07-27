@@ -12,9 +12,9 @@ the simulator is scored on the composition Fienn actually played rather than on
 one it chose for itself. Investment comes from the synced roster by default,
 because per-unit ratios are meaningless against uniform stats.
 
-The boss defaults to the recorded Annihilio solo raid (Water element so Wind
-attackers get advantage, core hittable, parts destructible, DEF 31,784,
-180 sec) - see docs/decisions.md for the record itself.
+The boss defaults to the recorded Annihilio solo raid (Iron element, core
+hittable, parts destructible, DEF 31,784, 180 sec) - see docs/decisions.md for
+the record itself.
 
 Usage (any cwd):
     python3 scripts/measure_deck_breakdown.py --deck liter,volume,cinderella,mint,snow-white
@@ -34,8 +34,20 @@ from app.models import UserNikkeState  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
 from roster_fixture import real_roster  # noqa: E402
 
-# The recorded solo raid Fienn's damage log came from (2026-07-06).
-RECORD_BOSS = dict(element="Water", core_hittable=True, part_destructible=True,
+# The recorded solo raid Fienn's damage log came from (2026-07-06). Annihilio
+# is IRON code - "철갑=Wind 약점" in the record itself (docs/decisions.md).
+#
+# `element` names the boss's OWN code, not the code that counters it, and
+# `elements.py`'s cycle is Water>Fire>Wind>Iron>Electric>Water: Wind beats
+# IRON. This constant read "Water" until 2026-07-27, justified in the docstring
+# as "Water element so Wind attackers get advantage" - which reads the cycle
+# backwards, and instead made the boss ELECTRIC-weak. That handed Cinderella
+# (Electric) a 2.08x element bonus she never had and denied Volume (Wind) the
+# advantage she did have, which is the whole of their 1.88x / 0.78x residuals.
+# Resolve a boss element against `elements.py`, never from prose - this is the
+# third time a plausible-sounding element-cycle claim in a comment has been
+# wrong here (see rei_ayanami, docs/insights.md).
+RECORD_BOSS = dict(element="Iron", core_hittable=True, part_destructible=True,
                    enemy_def=31784.0, fight_duration=180.0)
 
 

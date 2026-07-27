@@ -25,12 +25,14 @@ cd backend
 {"roster": [{"character_slug": "liter", "level": 200,
              "hp": 1000000, "atk": 300000, "def_": 30000,
              "skill_levels": {"skill1": 10, "skill2": 10, "burst": 10}}],
- "boss": {"element": "Water", "enemy_def": 31784.0},
+ "boss": {"element": "Iron", "enemy_def": 31784.0},
  "top_n": 3}
 ```
 
 - `boss.enemy_def` should be 31784.0 for realistic solo-raid numbers (defaults
-  to 0.0).
+  to 0.0). `element` is the boss's OWN code - `"Iron"` pairs with that DEF as
+  the recorded Annihilio raid. Resolve which attackers that favours against
+  `backend/app/elements.py`, never from prose.
 - `POST /api/recommend-raid` takes the same body plus `num_decks` (1–5). Each
   deck needs a valid B1/B2/B3 shape — include at least `num_decks` B1 units.
 - Unloadable slugs come back in `excluded_slugs` (never an error); bad field

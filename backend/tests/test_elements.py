@@ -1,6 +1,11 @@
+import sys
+from pathlib import Path
+
 import pytest
 
 from app.elements import ELEMENT_ADVANTAGE_BONUS, element_multiplier
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 
 
 def test_advantageous_matchups_return_the_bonus_multiplier():
@@ -40,3 +45,22 @@ def test_bonus_constant_is_ten_percent():
 def test_unknown_element_raises():
     with pytest.raises(KeyError):
         element_multiplier("Plasma", "Fire")
+
+
+def test_record_boss_is_the_iron_annihilio_the_record_describes():
+    """The calibration harness's boss must stay the boss Fienn actually fought.
+
+    The record says "애니힐리오: 철갑=Wind 약점" (docs/decisions.md) - Annihilio is
+    IRON code and Wind attackers counter it. `element` names the boss's OWN
+    code, and reading that field as "the code that counters it" is the mistake
+    that made this constant "Water" until 2026-07-27: that spelling made the
+    boss ELECTRIC-weak, inflating Cinderella (Electric) to 1.88x of her
+    recorded damage and deflating Volume (Wind) to 0.78x of hers. Every
+    calibration ratio measured through the harness rides on this one field, and
+    nothing else pinned it.
+    """
+    from measure_deck_breakdown import RECORD_BOSS
+
+    assert RECORD_BOSS["element"] == "Iron"
+    assert element_multiplier("Wind", RECORD_BOSS["element"]) == 1.1
+    assert element_multiplier("Electric", RECORD_BOSS["element"]) == 1.0
