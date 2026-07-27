@@ -7,3 +7,8 @@ roster-drafts.json
 details.json
 outpost.json
 *.backup-*.json
+# --collectibles capture output. Scratch/working data, not the committed
+# table (that's data/nikke-stat-tables/tables.json["collectibles"]) - keeping
+# this tracked risks a stale capture (e.g. the pre-rename 900001-3 ids) later
+# getting re-merged over the committed table's current 190001-3 numbering.
+collectibles.json
