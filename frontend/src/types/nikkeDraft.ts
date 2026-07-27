@@ -29,8 +29,9 @@ export interface NikkeDraft {
   // the item is equipped. Optional for the same reason grade is - absent means
   // "the import never said", which is not the same as false.
   favorite_item?: boolean
-  // The equipped collectible (소장품), display only. Optional for the same
-  // reason favorite_item is - absent means "the import never said".
+  // The equipped collectible (소장품)'s identity, sent to the backend as flat
+  // fields (not nested) so it can apply that collectible's weapon-group skill
+  // as real damage. Optional: absent means "the import never said".
   collectible_tid?: number
   collectible_level?: number
   level: string
