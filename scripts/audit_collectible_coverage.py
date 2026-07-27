@@ -8,10 +8,19 @@
 언제: 로스터를 재동기화한 뒤, 소장품 테이블을 갱신한 뒤
 (`scripts/update_collectible_table.py`), 그리고 새 무기군·등급이 나왔을 때.
 
-무엇을: 실계정의 소장품 상태(`backend/tests/fixtures/stat_ground_truth.json` -
-GetUserCharacterDetails의 favorite_item_tid/lv)를 유닛별 슬러그로 조인해
-`load_roster`를 소장품 있음/없음 두 번 태우고 무기 스탯 차이를 본다. 프로덕션
-경로를 그대로 통과하므로 "테이블엔 있는데 엔진이 안 읽더라"를 잡아낸다.
+무엇을: 실계정의 소장품 상태를 유닛별로 `load_roster`에 소장품 있음/없음 두 번
+태우고 차이를 본다. 프로덕션 경로를 그대로 통과하므로 "테이블엔 있는데 엔진이 안
+읽더라"를 잡아낸다.
+
+**어느 로스터를 읽는가 (순서가 중요하다):**
+1. `tools/collect-blablalink/roster-drafts.json` — 앱이 동기화한 **현재** 로스터.
+   있으면 이쪽을 쓴다. 재동기화가 실제로 반영됐는지 확인하려면 이것이어야 한다.
+2. 없으면 `backend/tests/fixtures/stat_ground_truth.json` — 커밋된 픽스처.
+   **예전 동기화 시점의 스냅샷이라 지금 계정과 다를 수 있다.**
+
+이 구분이 실제로 물렸다: 드래프트가 갱신됐는데도 픽스처만 읽던 시절에는 재동기화
+전후 출력이 완전히 같아서, "반영됐다"와 "이 스크립트가 새 데이터를 안 본다"를
+구별할 수 없었다. 어느 쪽을 읽었는지 항상 첫 줄에 출력한다.
 
 종료 코드는 소장품을 착용했는데 아무것도 못 받는 유닛이 있으면 1이다.
 """
@@ -30,6 +39,7 @@ from app.stat_assembly import FAVORITE_ITEM_TID_BASE, load_stat_tables  # noqa: 
 from app.user_roster import load_roster  # noqa: E402
 
 GROUND_TRUTH = REPO / "backend" / "tests" / "fixtures" / "stat_ground_truth.json"
+DRAFTS = REPO / "tools" / "collect-blablalink" / "roster-drafts.json"
 DIRECTORY = REPO / "tools" / "collect-blablalink" / "nikke-directory.json"
 SLUG_MAP_TS = REPO / "frontend" / "src" / "lib" / "resourceIdSlugMap.ts"
 
@@ -49,8 +59,21 @@ def derive_slug(name_en: str) -> str:
     return "-".join(lowered.split())
 
 
-def account_units() -> list[dict]:
-    """실계정 유닛: 슬러그 + 소장품 상태."""
+def _units_from_drafts() -> list[dict]:
+    """앱이 동기화한 현재 로스터. 드래프트는 이미 슬러그가 해석돼 있다."""
+    drafts = json.loads(DRAFTS.read_text(encoding="utf-8"))
+    return [{
+        "name_en": d["character_slug"],
+        "slug": d["character_slug"],
+        "atk": float(d["atk"]),
+        "hp": float(d["hp"]),
+        "tid": int(d.get("collectible_tid") or 0),
+        "level": int(d.get("collectible_level") or 0),
+    } for d in drafts]
+
+
+def _units_from_fixture() -> list[dict]:
+    """커밋된 픽스처. 이름 -> resource_id -> 슬러그로 조인해야 한다."""
     directory = json.loads(DIRECTORY.read_text(encoding="utf-8"))
     rid_by_name = {e["name_en"]: e["resource_id"] for e in directory}
     slugs = slug_by_resource_id()
@@ -69,6 +92,17 @@ def account_units() -> list[dict]:
             "level": unit["favorite_item_lv"],
         })
     return units
+
+
+def account_units() -> tuple[list[dict], str]:
+    """실계정 유닛(슬러그 + 소장품 상태)과 그 출처.
+
+    동기화된 드래프트를 먼저 본다 - 픽스처는 예전 스냅샷이라 재동기화가 반영됐는지
+    를 물으면 항상 옛 답을 준다(모듈 docstring 참고).
+    """
+    if DRAFTS.is_file():
+        return _units_from_drafts(), f"동기화된 로스터 ({DRAFTS.name})"
+    return _units_from_fixture(), f"커밋된 픽스처 ({GROUND_TRUTH.name}) - 예전 스냅샷"
 
 
 def _state(unit: dict, *, equipped: bool) -> dict:
@@ -97,8 +131,9 @@ def main() -> int:
     args = parser.parse_args()
 
     table = load_stat_tables()["collectibles"]
-    units = account_units()
-    print(f"실계정 {len(units)}유닛 (슬러그 해석된 것만)")
+    units, source = account_units()
+    print(f"출처: {source}")
+    print(f"실계정 {len(units)}유닛")
 
     rarities = Counter(rarity_of(u["tid"], table) for u in units)
     print("소장품 등급 분포: " + " · ".join(f"{k} {v}" for k, v in rarities.most_common()))

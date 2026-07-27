@@ -99,6 +99,32 @@ Two things worth knowing if you touch the collector's output shape:
 Details: `docs/superpowers/specs/2026-07-18-roster-resource-id-slug-map-design.md`,
 `docs/decisions.md`.
 
+### Exporting the app's synced roster (`roster-drafts.json`)
+
+The measurement scripts (`scripts/measure_record_calibration.py`,
+`scripts/audit_collectible_coverage.py`, everything through
+`scripts/roster_fixture.py`) read `roster-drafts.json` — the app's own synced
+roster, already slug-resolved. **Syncing in the app does not write this file**:
+the sync lands in the browser's localStorage, and the file is lifted out of it by
+hand. A sync without this step leaves every script reading the previous snapshot,
+which looks exactly like "the change had no effect".
+
+In the browser console (F12) with the app open:
+
+```js
+const s = JSON.parse(localStorage.getItem('nikke-profiles'))
+copy(JSON.stringify(s.profiles[s.activeOpenId].roster, null, 2))
+```
+
+`copy()` puts it on the clipboard; paste over `tools/collect-blablalink/roster-drafts.json`.
+Confirm the new fields actually arrived before measuring anything:
+
+```
+python3 -c "import json; d=json.load(open('tools/collect-blablalink/roster-drafts.json',encoding='utf-8')); print(sum(1 for x in d if x.get('collectible_tid')), '/', len(d), 'with a collectible')"
+```
+
+Gitignored — personal investment data, local only.
+
 ### Static game tables — computed CDN paths, not interception (`resource-url.js`)
 
 ShiftyPad serves its static tables from `sg-tools-cdn.blablalink.com` under obfuscated

@@ -373,7 +373,7 @@ tid와 무관하게 `collectible_sample`(= SR MG 레코드) 커브 하나만 읽
 (SR 3,029 · R 638). 즉 **배열의 index 0은 레벨 0의 스탯이 아니다.**
 
 **착용 여부를 말하는 것은 레벨이 아니라 `favorite_item_tid`다.** 빈 슬롯은 tid가 0
-(실계정 51유닛), 레벨 0 착용은 tid가 100xxx(31유닛) — 두 상태는 **완전히 구분된다.**
+(실계정 50유닛), 레벨 0 착용은 tid가 100xxx(31유닛) — 두 상태는 **완전히 구분된다.**
 `collectible_effects`가 tid로(`if not tid`), `stat_assembly`가 레벨로
 (`if item_level <= 0`) 판정하는 것은 그래서 우연이 아니다.
 `test_level_zero_gives_the_skill_but_no_stat_and_the_tid_is_what_says_equipped`가
