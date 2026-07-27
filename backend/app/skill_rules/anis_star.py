@@ -42,6 +42,26 @@ Not modeled: Starfall's Burst Gauge filling speed (inert stat) and the
 Everyone's Star "Re-enters Burst / Stage" branch (no multi-stage burst
 re-entry); the burst's Explosion Radius (inert) and DEF, and all heal / Max HP
 (survival).
+
+She reads 0.627x of her recorded raid damage - the LOWEST ratio of all 25
+measured units - and needs +59% to reach it, which is a different order of miss
+from the rest of her deck (+20% / +9% / +7% / -15%). An audit on 2026-07-27
+found the modelled parts right: her Projectile Explosion Damage +92.03% does
+reach her own shots (all 201 of her normal attacks carry damage_type
+"projectile_explosion"), the burst's 0.7-sec charge fix shows up as 128 of her
+~180 shot intervals, her cooldown reduction applies to herself (20 - 7.48 =
+12.52 sec, matching her 15 bursts), and her 88.61% Superior Code overload is
+correctly discarded because Electric holds no advantage over an Iron boss.
+
+The open question is SHOOTING STARS, and it is a reading of the skill text, not
+a bug: "Generates starS ... Attack Interval: 0.25 sec" is modelled as ONE stream
+of 40 ticks per burst (10 sec / 0.25 sec), which makes it 24% of her damage -
+while this module's own summary calls it "by far her largest damage source". If
+the summon is instead N stars each ticking every 0.25 sec, her damage scales
+almost linearly in N: 2 stars puts her at 0.778x, 3 at 0.929x, ~3.5 at 1.00x.
+Nothing in the data settles it - there is no count slot, and the 0.25-sec
+interval lives in the text rather than a numbered value - so it needs an
+in-game reading before anyone changes the constant.
 """
 from app.effects import Effect, Pulse
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
