@@ -32,23 +32,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # noqa: E402
 from app.models import UserNikkeState  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
+from raid_record import RECORD_BOSS  # noqa: E402  (the record's single source of truth)
 from roster_fixture import real_roster  # noqa: E402
-
-# The recorded solo raid Fienn's damage log came from (2026-07-06). Annihilio
-# is IRON code - "철갑=Wind 약점" in the record itself (docs/decisions.md).
-#
-# `element` names the boss's OWN code, not the code that counters it, and
-# `elements.py`'s cycle is Water>Fire>Wind>Iron>Electric>Water: Wind beats
-# IRON. This constant read "Water" until 2026-07-27, justified in the docstring
-# as "Water element so Wind attackers get advantage" - which reads the cycle
-# backwards, and instead made the boss ELECTRIC-weak. That handed Cinderella
-# (Electric) a 2.08x element bonus she never had and denied Volume (Wind) the
-# advantage she did have, which is the whole of their 1.88x / 0.78x residuals.
-# Resolve a boss element against `elements.py`, never from prose - this is the
-# third time a plausible-sounding element-cycle claim in a comment has been
-# wrong here (see rei_ayanami, docs/insights.md).
-RECORD_BOSS = dict(element="Iron", core_hittable=True, part_destructible=True,
-                   enemy_def=31784.0, fight_duration=180.0)
 
 
 def _synthetic(slug):

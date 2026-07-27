@@ -59,8 +59,38 @@ def test_record_boss_is_the_iron_annihilio_the_record_describes():
     calibration ratio measured through the harness rides on this one field, and
     nothing else pinned it.
     """
-    from measure_deck_breakdown import RECORD_BOSS
+    from raid_record import RECORD_BOSS
 
     assert RECORD_BOSS["element"] == "Iron"
     assert element_multiplier("Wind", RECORD_BOSS["element"]) == 1.1
     assert element_multiplier("Electric", RECORD_BOSS["element"]) == 1.0
+
+
+def test_the_harness_reads_the_record_rather_than_its_own_copy():
+    """One boss definition, not two that can drift apart.
+
+    `measure_deck_breakdown` used to declare its own RECORD_BOSS; a second copy
+    is how a constant gets corrected in one place and left wrong in the other.
+    """
+    import measure_deck_breakdown
+    import raid_record
+
+    assert measure_deck_breakdown.RECORD_BOSS is raid_record.RECORD_BOSS
+
+
+def test_every_recorded_deck_is_a_five_unit_deck_with_positive_damage():
+    """Guards the record fixture itself against a typo'd edit.
+
+    The record is ground truth for every calibration claim this project makes,
+    and it is hand-transcribed from a damage log, so it gets the same shape
+    check any other input would.
+    """
+    from raid_record import RECORD_DECKS, deck_total
+
+    assert len(RECORD_DECKS) == 5
+    for name, deck in RECORD_DECKS.items():
+        assert len(deck) == 5, f"{name} has {len(deck)} units"
+        assert all(damage > 0 for damage in deck.values()), name
+        assert deck_total(name) == sum(deck.values())
+    seated = [slug for deck in RECORD_DECKS.values() for slug in deck]
+    assert len(seated) == len(set(seated)), "a unit is seated in two decks"
