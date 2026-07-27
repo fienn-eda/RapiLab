@@ -131,3 +131,61 @@ def test_combined_realistic_scenario():
     major_modifier = 1 + 0.5 + 1.0 + 1.0 * 0.5
     expected = base_damage * major_modifier * 1.1 * 1.1
     assert round(damage, 5) == round(expected, 5)
+
+
+# Fienn's in-game range test of Ade: Agent Bunny (2026-07-27), solo, ATK
+# 305,667, overload ATK +11.81% / Charge Damage +11.81%, every reading a
+# full-charge CORE hit. Recorded damage, by Spy Lens stacks:
+#
+#   0-9 stacks   1,309,593 non-crit | 1,636,991 crit | 1,506,032 non-crit in range
+#   10 stacks    1,901,276 non-crit | 2,376,594 crit            (out of range)
+#                2,186,467 non-crit | 2,661,786 crit            (in range)
+#
+# The absolute numbers depend on terms the test target's DEF hides, but the
+# RATIOS isolate the major-modifier bucket exactly - which is the whole reason
+# range measurements beat the 180s record (see docs/insights.md).
+ADE_CRIT_RATIO = 1636991 / 1309593           # 1.250000
+ADE_CRIT_RATIO_IN_RANGE = 2661786 / 2186467  # 1.217391
+ADE_RANGE_RATIO = 1506032 / 1309593          # 1.150000
+
+
+def _major(**terms):
+    """The major-modifier bucket alone, via a damage instance with every other
+    multiplier neutral - base 1 ATK, no DEF, coefficient 1."""
+    return calculate_damage(atk=1.0, enemy_def=0.0, **terms)
+
+
+def test_core_hit_bonus_is_one_measured_against_ades_crit_pair():
+    """A crit adds (0.5 + crit damage sources) to the major bucket, so a
+    crit/non-crit pair on the SAME hit divides out everything else and solves
+    the bucket. Ade's pair is 1.250000, and 0.5 / (1.25 - 1) = 2.0 - which is
+    exactly 1 (base) + 1.0 (core hit) with no crit-damage sources, the state
+    she was measured in.
+    """
+    non_crit = _major(crit_rate=0.0, core_hit_bonus=1.0)
+    crit = _major(crit_rate=1.0, core_hit_bonus=1.0)
+    assert round(non_crit, 9) == 2.0
+    assert round(crit / non_crit, 6) == round(ADE_CRIT_RATIO, 6)
+
+
+def test_effective_range_bonus_is_thirty_percent_of_base():
+    """Being within effective range moved her core hit by exactly 1.150000,
+    i.e. +0.30 on a bucket of 2.0. `effective_range_bonus` is a FLAG times
+    0.3, the same shape as `full_burst_bonus` times 0.5 - this pins the 0.3.
+    """
+    out_of_range = _major(crit_rate=0.0, core_hit_bonus=1.0)
+    in_range = _major(crit_rate=0.0, core_hit_bonus=1.0, effective_range_bonus=1.0)
+    assert round(in_range / out_of_range, 6) == round(ADE_RANGE_RATIO, 6)
+    assert round(in_range - out_of_range, 9) == 0.3
+
+
+def test_crit_and_effective_range_stack_additively_in_the_major_bucket():
+    """Her fourth reading is the cross-check: crit AND in range at once. If the
+    two stacked multiplicatively the crit ratio would stay 1.25 in range; it
+    measures 1.217391 instead, because 0.5 is added to a bucket that range has
+    already grown to 2.3. Both terms live in the same additive bucket.
+    """
+    non_crit = _major(crit_rate=0.0, core_hit_bonus=1.0, effective_range_bonus=1.0)
+    crit = _major(crit_rate=1.0, core_hit_bonus=1.0, effective_range_bonus=1.0)
+    assert round(non_crit, 9) == 2.3
+    assert round(crit / non_crit, 6) == round(ADE_CRIT_RATIO_IN_RANGE, 6)
