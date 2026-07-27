@@ -37,8 +37,10 @@
   --danger: #f87171;
 
   /* Element identity, so a portrait can state its element without a label.
+     Fire is a deep red (Fienn, 2026-07-28) rather than the orange it was:
+     next to Iron's gold on a dark surface the two used to read alike.
      Electric leans magenta to stay distinct from the purple accent. */
-  --el-fire: #f0603c;
+  --el-fire: #dd3333;
   --el-water: #3fa9f5;
   --el-wind: #46c96b;
   --el-iron: #f2b53b;
