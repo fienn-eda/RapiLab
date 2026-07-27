@@ -80,6 +80,31 @@ Explosion question - Stardust's +92.03% is Full-Burst-gated.
 So her 0.627x sits entirely ABOVE the per-hit layer, in counts, uptime or deck
 context - the same signature Ade: Agent Bunny showed. Do not look for it in the
 coefficients again.
+
+AUDIT, 2026-07-28. She reads 0.739x now (0.627 -> 0.703 from the normal-attack
+Full Burst fix, -> 0.739 from Starfall's, below). The deck-context layer was
+re-derived from the sim's own log and every piece of it checks out, so the
+remaining -0.358B is NOT in any of these:
+
+- The three sources decompose exactly against their bare coefficients. Read
+  inside one window (t~39.7, so all buffs match): normal attack 4,293,059.88
+  for 61.3 x 2.73675, a star tick 443,724.05 for 40.01, Starfall 973,376.55 for
+  120.13. Per 1% that is 25,589.5 / 11,090.3 / 8,102.6, and the three gaps are
+  exactly the three modifiers that differ - Starfall vs star tick = 1.3687, the
+  Full Burst bonus alone; star tick vs normal = core 1.5388 x the projectile-
+  explosion bucket 1.4994. Nothing unaccounted for.
+- Her element is NOT costing her anything: `elements.py` returns 1.0 for a
+  disadvantaged attacker, not a penalty (Iron beats Electric, and NIKKE has no
+  reverse malus).
+- 15 bursts, 12.52/12.72 sec apart, 15 Full Burst windows covering 141.6 of 180
+  sec. 94.6% of her normal-attack damage and 100% of her star ticks land inside
+  one.
+
+What IS still under-modeled here is small and named: her shot intervals read
+128 at 0.70 sec against 50 at 1.00, i.e. 71.9% at the burst-fixed cadence where
+her burst covers 79.9% of the fight. That is the once-per-MAGAZINE charge-speed
+sampling this module already documents, and closing it is worth about +5% of
+her normal attack and Starfall - roughly +0.038B against a -0.358B gap.
 """
 from app.effects import Effect, Pulse
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
@@ -177,7 +202,7 @@ def build_starfall_full_charge_nuke_rules(values: dict):
     additional damage (`description_value_04`% of final ATK) on every Full Charge
     attack - an RL's every shot is a full charge, so it fires each shot."""
     nuke_percent = float(values["description_value_04"])
-    return [(1, "every", [instant_nuke_pulse_rule("per_shot", nuke_percent)])]
+    return [(1, "every", [instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True)])]
 
 
 def build_stardust_rules(values: dict) -> list[SkillRule]:

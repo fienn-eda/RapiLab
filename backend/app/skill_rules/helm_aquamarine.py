@@ -118,5 +118,5 @@ def build_admire_accompaniment_per_shot_rules(values):
     attacks, deal 131.34% of final ATK as additional damage."""
     nuke_percent = float(values["description_value_01"])
     return [
-        (ADMIRE_ACCOMPANIMENT_NUKE_SHOT_COUNT, "every", [instant_nuke_pulse_rule("per_shot", nuke_percent)]),
+        (ADMIRE_ACCOMPANIMENT_NUKE_SHOT_COUNT, "every", [instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True)]),
     ]

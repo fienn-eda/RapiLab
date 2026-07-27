@@ -79,13 +79,14 @@ def build_ludmilla_per_shot_rules(values):
     return [
         (normal_count, "every", [
             refreshing_buff_rule("per_shot", [("damage_taken_up", damage_taken, "squad", damage_taken_duration)]),
-            instant_nuke_pulse_rule("per_shot", nuke),
+            instant_nuke_pulse_rule("per_shot", nuke, full_burst_bonus_eligible=True),
         ]),
         # Snowstorm counts CORE hits, which the engine has no discrete event for
         # (core damage is a uniform coefficient). Gated on the boss actually
         # having an exploitable core and then counted off her real shot
         # timeline, per Fienn 2026-07-20 - see the module docstring.
         (core_count, "every", [
-            instant_nuke_pulse_rule("per_shot", core_nuke, condition=boss_core_hittable()),
+            instant_nuke_pulse_rule("per_shot", core_nuke, full_burst_bonus_eligible=True,
+                                    condition=boss_core_hittable()),
         ]),
     ]

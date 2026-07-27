@@ -74,10 +74,32 @@ def instant_nuke_pulse_rule(
     full_burst_enter). raid_simulator.drain_instant_damage computes it using
     the caster's own ATK and live buffs, exactly like a burst nuke.
 
-    `full_burst_bonus_eligible`: pass True only when the skill's own damage
-    text says "as additional damage" (Fienn, 2026-07-12) - e.g. Asuka's Skill 1
-    per-shot nuke. raid_simulator still checks the shot's actual time against
-    the Full Burst window; this only opts the instance IN to that check.
+    `full_burst_bonus_eligible`: opts the instance in to raid_simulator's own
+    test of the shot's actual time against the Full Burst window - it never
+    grants the bonus by itself.
+
+    WHEN TO PASS TRUE, and the open question. The original rule (Fienn,
+    2026-07-12) was textual: True only when the skill's own damage line says
+    "as ADDITIONAL damage". That rule was reframed on 2026-07-26 into "the
+    bonus is decided by WHEN the instance is computed", which is what settled
+    normal attacks on 2026-07-28 - and by that reframing EVERY `per_shot` nuke
+    qualifies, since all of them are computed at a shot's time, strictly after
+    any cast.
+
+    The two rules disagree on per-shot nukes whose text says plain "as damage",
+    and the disagreement is NOT settled:
+    - Applying the computation-time rule to all of them moves the recorded run
+      to 1.025x but pushes Snow White: Heavy Arms to 1.386x, far outside where
+      her range-measured per-hit model puts her.
+    - Yet Fienn's own Snow White reading argues the textual rule is wrong for
+      her: her Auto Fire sweep ("as damage") reads 0.07570x her normal attack
+      INSIDE a Full Burst window, exactly the bare coefficient ratio
+      0.419 / (0.6904 x 8.01675). If the normal attack collected the bonus and
+      the sweep did not, that ratio could not equal the bare one.
+
+    So True is passed today only where BOTH rules agree - the text says "as
+    additional damage" - and the plain-"as damage" per-shot nukes are left
+    alone pending a measurement that separates the two (see docs/insights.md).
 
     `condition`: optional SkillRule condition (e.g. boss_is_element("Electric"))
     for an additional-damage bullet that only fires against a matching enemy.
