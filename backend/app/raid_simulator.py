@@ -233,6 +233,29 @@ def _resource_fill_times(
         windows = [(bt, bt + window_duration) for bt in own_burst_times]
         in_window = [t for t in shot_times if any(start <= t < end for start, end in windows)]
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
+    if kind == "per_shot_cycle_in_own_status_window":
+        # ("per_shot_cycle_in_own_status_window", first, period, window_duration):
+        # fires at the `first`-th shot of the status window and every `period`
+        # after, with the count RESTARTED IN EACH WINDOW. That restart is the
+        # whole difference from "per_shot_every_during_own_status_window", which
+        # concatenates every window's shots before counting - fine for a status
+        # whose own stacks reset anyway, wrong for a phase rotation, where a
+        # window holding a non-multiple of `period` shots would drag the phase
+        # into the next window and never line up again.
+        #
+        # Arcana: Fortune Mate's Memories and Moments is the shape this exists
+        # for: while Making Memories is up, every 2nd normal attack triggers ONE
+        # of three effects in rotation (2 reload, 4 Happy Memories, 6 Precious
+        # Moments, then 8/10/12, ...), and the count resets when the status is
+        # removed. Each effect is one (first, period) pair on the same rotation.
+        first, period, window_duration = fill[1], fill[2], fill[3]
+        times = []
+        for burst_time in own_burst_times:
+            start, end = burst_time, burst_time + window_duration
+            in_window = [t for t in shot_times if start <= t < end]
+            times.extend(t for i, t in enumerate(in_window)
+                         if i + 1 >= first and (i + 1 - first) % period == 0)
+        return sorted(times)
     if kind == "per_shot_every_outside_full_burst":
         n = fill[1]
         # Closed on the right: a shot landing exactly at a Full Burst window's
@@ -925,6 +948,12 @@ def simulate_raid(
                     ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
                     core_hittable, fight_duration, full_burst_windows, own_burst_times,
                 ))
+            elif mode == "cycle_in_own_status_window":
+                first, period, window_duration = threshold
+                window_fire_times[idx] = set(_resource_fill_times(
+                    ("per_shot_cycle_in_own_status_window", first, period, window_duration),
+                    shot_times, core_hittable, fight_duration, full_burst_windows, own_burst_times,
+                ))
             elif mode == "every_during_segment":
                 seg_indices = [i for i, r in enumerate(shot_records) if r.in_segment]
                 window_fire_indices[idx] = {
@@ -1086,6 +1115,14 @@ def simulate_raid(
                     reset_events.extend(
                         (rt + delay, reset_spec) for rt in context.burst_times.get(slug, [])
                     )
+                elif reset_spec["trigger"] == "full_burst_end":
+                    # Cleared when the squad's Full Burst ends, whoever opened
+                    # it - e.g. Arcana: Fortune Mate's Happy Memories, removed
+                    # there by Keepsake Album's own third bullet. Distinct from
+                    # "own_burst_delayed" with a 10 sec delay, which lands one
+                    # burst-ordering beat early and would cut the window's last
+                    # shots short.
+                    reset_events.extend((end, reset_spec) for _start, end in full_burst_windows)
                 else:
                     raise ValueError(f"unknown resource reset trigger: {reset_spec['trigger']}")
             reset_events.sort(key=lambda e: e[0])
@@ -1158,20 +1195,50 @@ def simulate_raid(
     # cycle) for each of the owner's own burst-fire times.
     for slug, specs in resource_gated_buffs.items():
         for spec in specs:
-            for burst_time in context.burst_times.get(slug, []):
+            # Default read point is each of the owner's own burst fires. `"at":
+            # "full_burst_end"` reads at every Full Burst's end instead - for a
+            # buff whose skill text fires THERE while scaling off a resource
+            # only the shot loop above could have filled (Arcana: Fortune Mate's
+            # Keepsake Album, "when Full Burst ends ... x stack count of
+            # Precious Moments"). A `full_burst_end` SkillRule cannot serve it:
+            # those run inside the burst-cycle walk, long before any shot exists.
+            if spec.get("at") == "full_burst_end":
+                read_times = [end for _start, end in full_burst_windows]
+            else:
+                read_times = context.burst_times.get(slug, [])
+            # `member_filter` resolves the scope against the LIVE squad (gap #3)
+            # for a buff that names a weapon/element class rather than a fixed
+            # target; `scope` stays for the fixed-target majority.
+            if spec.get("member_filter") is not None:
+                targets = [m.slug for m in context.members if spec["member_filter"](m, slug)]
+                if not targets:
+                    continue
+                scope = "slugs:" + ",".join(targets)
+            else:
+                scope = spec["scope"]
+            for read_time in read_times:
                 if spec.get("use_pre_reset"):
-                    count = context.resource_count_before_reset(slug, spec["resource"], burst_time)
+                    count = context.resource_count_before_reset(slug, spec["resource"], read_time)
                     if count is None:
                         continue
                 else:
                     count = context.resource_count(
-                        slug, spec["resource"], burst_time, spec["cap"], spec.get("lifetime")
+                        slug, spec["resource"], read_time, spec["cap"], spec.get("lifetime")
                     )
-                if spec["gate_fn"](count):
-                    registry.add(
-                        Effect(spec["stat"], spec["value"], spec["scope"], spec["duration"], slug),
-                        applied_at=burst_time,
-                    )
+                # `value_per_stack` scales with the count instead of gating on
+                # it; a zero count then simply grants nothing.
+                if spec.get("value_per_stack") is not None:
+                    if count <= 0:
+                        continue
+                    value = spec["value_per_stack"] * count
+                elif spec["gate_fn"](count):
+                    value = spec["value"]
+                else:
+                    continue
+                registry.add(
+                    Effect(spec["stat"], value, scope, spec["duration"], slug),
+                    applied_at=read_time,
+                )
 
     # A burst-fired nuke whose HIT COUNT (not just its percent) is itself a
     # resource's value at burst time - e.g. Maiden's Diamond Dust, "attacks

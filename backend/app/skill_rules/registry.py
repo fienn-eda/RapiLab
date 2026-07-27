@@ -30,7 +30,12 @@ from app.skill_rules.anis_star import (
     build_stardust_rules,
 )
 from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
-from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
+from app.skill_rules.arcana_fortune_mate import (
+    build_fortune_mate_rules,
+    build_keepsake_album_resource_gated_buffs,
+    build_memories_and_moments_resources,
+    radiant_youth_burst_percent,
+)
 from app.skill_rules.ark_ranger_black import (
     build_ark_ranger_black_rules,
     build_ark_ranger_dots,
@@ -906,6 +911,7 @@ _PER_SHOT_RULE_BUILDERS = {
 # raid_simulator's `resource_specs` param and effects.ResourceSpec. Each entry
 # returns a list of ResourceSpec.
 _RESOURCE_SPEC_BUILDERS = {
+    "arcana-fortune-mate": lambda sv: build_memories_and_moments_resources(sv),
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_resources(sv),
     "julia": lambda sv: build_crescendo_resources(sv),
     "julia-signature": lambda sv: julia_signature.build_crescendo_signature_resources(sv),
@@ -940,12 +946,14 @@ _RESOURCE_SCALED_NUKE_BUILDERS = {
     "sakura-bloom-in-summer": lambda sv: build_sakura_resource_scaled_nukes(sv),
 }
 
-# A Nikke with a burst-fired BUFF gated/scaled by a named resource's count at
-# the burst's own time - see raid_simulator's `resource_gated_buffs` param.
-# Each entry returns a list of spec dicts: {"resource", "cap",
-# "use_pre_reset"(optional), "lifetime"(optional), "gate_fn", "stat", "value",
-# "scope", "duration"}.
+# A Nikke with a BUFF gated/scaled by a named resource's count, read at the
+# owner's own burst times by default - see raid_simulator's
+# `resource_gated_buffs` param. Each entry returns a list of spec dicts:
+# {"resource", "cap", "use_pre_reset"(optional), "lifetime"(optional),
+# "gate_fn"+"value" OR "value_per_stack", "scope" OR "member_filter",
+# "at"(optional, "full_burst_end"), "stat", "duration"}.
 _RESOURCE_GATED_BUFF_BUILDERS = {
+    "arcana-fortune-mate": lambda sv: build_keepsake_album_resource_gated_buffs(sv),
     "soda-twinkling-bunny": lambda sv: build_onward_soda_resource_gated_buffs(sv),
 }
 
