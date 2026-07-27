@@ -4,6 +4,8 @@
 // card renders an editable-form draft (strings), the palette a validated
 // UserNikkeState (numbers) - so both accept either.
 
+import { abbreviateOverload, sortOverload } from '../lib/overload'
+
 type Displayable = string | number
 
 interface SkillLevelsProps {
@@ -38,44 +40,6 @@ export function SkillLevels({ levels, layout = 'row' }: SkillLevelsProps) {
       ))}
     </ul>
   )
-}
-
-// Overload names are long enough to set the width of anything they sit in
-// ("우월코드 대미지 증가"), and there are only seven of them, so the player
-// reads them as symbols rather than sentences. Abbreviate to the forms used at
-// the table (Fienn, 2026-07-25). The trailing "증가" is dropped first: every
-// type carries it, so it distinguishes nothing.
-const ABBREVIATIONS: Record<string, string> = {
-  '우월코드 대미지': '우코',
-  '최대 장탄 수': '장탄',
-  공격력: '공',
-  '차지 대미지': '차댐',
-  '차지 속도': '차속',
-  '크리티컬 확률': '크확',
-  '크리티컬 대미지': '크댐',
-}
-
-/** Short label for an overload line. An unrecognised name (a new effect type,
- * or another locale) keeps its full text rather than being mangled. */
-export const abbreviateOverload = (name: string): string => {
-  const stripped = name.replace(/\s*증가$/, '')
-  return ABBREVIATIONS[stripped] ?? stripped
-}
-
-// The order Fienn reads them in (2026-07-25), not the order blablalink happens
-// to return. A fixed order is what lets two units be compared down the column
-// instead of line by line.
-const DISPLAY_ORDER = ['우코', '공', '장탄', '차속', '크댐', '크확', '차댐']
-
-/** Sorts overload lines into DISPLAY_ORDER. An unrecognised effect sorts after
- * all the known ones, keeping its incoming order among its peers - a new type
- * should appear, not disappear or displace a known one. */
-export const sortOverload = <T extends { name: string }>(options: T[]): T[] => {
-  const rank = (option: T) => {
-    const index = DISPLAY_ORDER.indexOf(abbreviateOverload(option.name))
-    return index === -1 ? DISPLAY_ORDER.length : index
-  }
-  return [...options].sort((a, b) => rank(a) - rank(b))
 }
 
 interface OverloadLinesProps {

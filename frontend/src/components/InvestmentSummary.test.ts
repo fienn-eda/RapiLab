@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { abbreviateOverload, sortOverload } from './InvestmentSummary'
+import { abbreviateOverload, sortOverload } from '../lib/overload'
 
 describe('abbreviateOverload', () => {
   // The seven effect types backend/app/overload_decode.py can emit, in the

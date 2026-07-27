@@ -13,7 +13,7 @@
 // mouse-only; the Use toggle and everything else works from the keyboard.
 
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
-import type { SupportedUnit } from '../types/supportedUnit'
+import { BURST_TIERS, type SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { elementLabel } from '../lib/elementName'
 import { FavoriteItemBadge } from './FavoriteItemBadge'
@@ -50,8 +50,6 @@ interface UnitPaletteProps {
    * cells as dashes rather than claiming a unit has none. */
   investmentFor?: (slug: string) => UnitInvestment
 }
-
-const BURST_TIERS = [1, 2, 3] as const
 
 const NO_INVESTMENT: UnitInvestment = {}
 
