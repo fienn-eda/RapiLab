@@ -58,6 +58,21 @@
   gap: var(--sp-5);
 }
 
+/* One burst tier's worth of the roster. The heading is what makes the grid
+   readable as three answers instead of one long wall. */
+.roster__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.roster__heading {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 /* Auto-fill rather than a fixed column count: a tile is as wide as its
    overload lines need and the row reflows to the window. */
 .roster__grid {

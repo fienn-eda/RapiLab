@@ -6,11 +6,23 @@
 // tab units that can never enter a deck, at the same size and weight as the
 // ones that can. The supported units get the grid; the rest get a collapsed
 // list, present so a missing Nikke is explained rather than simply absent.
+//
+// The supported half is grouped by burst tier, the way the recommend palette
+// groups it - a roster is read to answer "what can I field", and that
+// question is always asked one tier at a time.
 
+import { useState } from 'react'
 import type { NikkeDraft } from '../types/nikkeDraft'
-import type { SupportedUnit } from '../types/supportedUnit'
+import { BURST_TIERS, type SupportedUnit } from '../types/supportedUnit'
 import { displayName } from '../lib/unitName'
+import {
+  EMPTY_FILTER,
+  filterAndSort,
+  type UnitFacets,
+  type UnitFilterState,
+} from '../lib/unitFilter'
 import { NikkeCard } from './NikkeCard'
+import { UnitFilterBar } from './UnitFilterBar'
 
 interface RosterGridProps {
   drafts: NikkeDraft[]
@@ -24,23 +36,61 @@ export function RosterGrid({ drafts, supportedUnits, portraitFor }: RosterGridPr
   const unsupported = drafts.filter((draft) => !bySlug.has(draft.character_slug))
   const names = new Map(supportedUnits.map((unit) => [unit.slug, unit.name]))
 
+  const [filter, setFilter] = useState<UnitFilterState>(EMPTY_FILTER)
+
+  // Only the supported half has an element and a burst tier to filter on; the
+  // unsupported list is not in `supportedUnits` at all, so a half-applied
+  // toolbar would just look broken there.
+  const facetsFor = (draft: NikkeDraft): UnitFacets => {
+    const unit = bySlug.get(draft.character_slug)!
+    return {
+      name: unit.name,
+      element: unit.element,
+      burstTier: unit.burstTier,
+      overload: draft.overload_options,
+    }
+  }
+
+  // Sorted once across the whole roster, then partitioned by tier - a
+  // partition preserves relative order, so each group is already in sort
+  // order.
+  const visible = filterAndSort(supported, facetsFor, filter)
+
   return (
     <div className="roster">
-      <div className="roster__grid">
-        {supported.map((draft, index) => {
-          const unit = bySlug.get(draft.character_slug)!
-          return (
-            <NikkeCard
-              key={draft.id ?? draft.character_slug}
-              draft={draft}
-              index={index}
-              name={unit.name}
-              element={unit.element}
-              portrait={portraitFor(draft.character_slug)}
-            />
-          )
-        })}
-      </div>
+      <UnitFilterBar
+        value={filter}
+        onChange={setFilter}
+        shown={visible.length}
+        total={supported.length}
+      />
+
+      {BURST_TIERS.map((tier) => {
+        const units = visible.filter(
+          (draft) => bySlug.get(draft.character_slug)!.burstTier === tier,
+        )
+        if (units.length === 0) return null
+        return (
+          <section key={tier} className="roster__group">
+            <h2 className="roster__heading">B{tier}</h2>
+            <div className="roster__grid">
+              {units.map((draft, index) => {
+                const unit = bySlug.get(draft.character_slug)!
+                return (
+                  <NikkeCard
+                    key={draft.id ?? draft.character_slug}
+                    draft={draft}
+                    index={index}
+                    name={unit.name}
+                    element={unit.element}
+                    portrait={portraitFor(draft.character_slug)}
+                  />
+                )
+              })}
+            </div>
+          </section>
+        )
+      })}
 
       {unsupported.length > 0 && (
         <details className="roster__unsupported">
