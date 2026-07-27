@@ -204,6 +204,34 @@ describe('parseRosterJson', () => {
   })
 })
 
+describe('parseRosterJson collectible', () => {
+  it('carries the equipped collectible through to the draft', () => {
+    const { drafts } = parseRosterJson({
+      units: [{
+        resource_id: 531,
+        name_en: 'Ade: Agent Bunny',
+        raid400: { hp: 1000000, atk: 305667, def: 0 },
+        skill_levels: { skill1: 10, skill2: 7, burst: 10 },
+        collectible: { tid: 100202, level: 5 },
+      }],
+    })
+    expect(drafts[0].collectible_tid).toBe(100202)
+    expect(drafts[0].collectible_level).toBe(5)
+  })
+
+  it('treats a roster without the collectible field as no collectible', () => {
+    const { drafts } = parseRosterJson({
+      units: [{
+        resource_id: 531,
+        name_en: 'Ade: Agent Bunny',
+        raid400: { hp: 1000000, atk: 305667, def: 0 },
+        skill_levels: { skill1: 10, skill2: 7, burst: 10 },
+      }],
+    })
+    expect(drafts[0].collectible_tid).toBeUndefined()
+  })
+})
+
 describe('parseRosterJson unmeasured units', () => {
   it('warns by name and reason when the backend had to drop a unit', () => {
     // The backend drops a unit whose level-400 stats have no measured value (a

@@ -29,6 +29,10 @@ export interface NikkeDraft {
   // the item is equipped. Optional for the same reason grade is - absent means
   // "the import never said", which is not the same as false.
   favorite_item?: boolean
+  // The equipped collectible (소장품), display only. Optional for the same
+  // reason favorite_item is - absent means "the import never said".
+  collectible_tid?: number
+  collectible_level?: number
   level: string
   hp: string
   atk: string
@@ -164,6 +168,10 @@ export const validateDraft = (draft: NikkeDraft): ValidationResult => {
       burst: burst.value!,
     },
     overload_options: overloadOptions,
+    ...(draft.collectible_tid != null && {
+      collectible_tid: draft.collectible_tid,
+      collectible_level: draft.collectible_level ?? 0,
+    }),
   }
 
   for (const [key, raw] of [

@@ -25,6 +25,8 @@ export interface UserNikkeState {
   actual_def?: number
   skill_levels: SkillLevels
   overload_options: OverloadOption[] // may be empty
+  collectible_tid?: number // int, ≥ 0 (equipped collectible's weapon-group skill)
+  collectible_level?: number // int, ≥ 0
 }
 
 // Constraint bounds, mirrored from the Pydantic Field(...) declarations so the

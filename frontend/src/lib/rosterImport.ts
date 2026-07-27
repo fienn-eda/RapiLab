@@ -21,6 +21,9 @@ interface RosterUnit {
   // collector scrape and on rosters predating the field; see resolveSlugForUnit
   // for what answers in that case.
   favorite_item?: boolean
+  // The equipped collectible (소장품). Its weapon-group skill is a damage
+  // source the backend reads per unit; absent on rosters predating the field.
+  collectible?: { tid: number; level: number }
   raid400: { hp: number; atk: number; def: number }
   actual?: { hp: number; atk: number; def: number }
   overload?: { name: string; value: number }[]
@@ -58,6 +61,8 @@ export const parseRosterJson = (
       grade: u.grade,
       core: u.core,
       favorite_item: u.favorite_item,
+      collectible_tid: u.collectible?.tid,
+      collectible_level: u.collectible?.level,
       level: '400',
       hp: String(u.raid400.hp),
       atk: String(u.raid400.atk),
