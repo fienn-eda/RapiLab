@@ -35,3 +35,9 @@ class UserNikkeState(BaseModel):
     # and stat_assembly.cube_atk / cube_hp handle the flat stats on the sync
     # path. overload_options ARE additive (see overload_effects).
     overload_options: list[OverloadOption] = Field(default_factory=list)
+    # The equipped collectible (소장품). Named for what it is rather than for
+    # blablalink's `favorite_item_*`, which carries ordinary R/SR collectibles
+    # too - the rarity is read off the tid, not the field name. Its weapon-group
+    # skill is a real damage source; see collectible_effects.
+    collectible_tid: int = Field(default=0, ge=0)
+    collectible_level: int = Field(default=0, ge=0)

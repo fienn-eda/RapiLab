@@ -122,6 +122,14 @@ def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict
         # per user rather than consult a hand-maintained list. The stat effect
         # of the item is already folded into raid400 above.
         "favorite_item": sa.owns_favorite_item(inp["favorite_item_tid"]),
+        # The item's flat ATK/HP is already folded into raid400 above; this is
+        # its SKILL, which is a separate damage source the engine reads per unit
+        # (collectible_effects). `favorite_item` above stays - it answers a
+        # different question, namely which skill encoding to use.
+        "collectible": {
+            "tid": inp["favorite_item_tid"],
+            "level": inp["favorite_item_lv"],
+        },
         "raid400": {"hp": round(hp), "atk": round(atk), "def": 0},
         "skill_levels": {
             "skill1": inp["skill1_lv"],

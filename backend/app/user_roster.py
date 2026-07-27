@@ -94,6 +94,8 @@ def load_nikke_spec(
         # them to overload_options_to_effects, which reads .name/.value attributes.
         overload_options=list(state.overload_options),
         weapon_stats=weapon_stats,
+        collectible_tid=state.collectible_tid,
+        collectible_level=state.collectible_level,
     )
 
 

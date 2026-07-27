@@ -59,3 +59,34 @@ def test_unknown_skill_group_is_skipped_not_guessed(caplog):
 
 def test_no_collectible_equipped_contributes_nothing():
     assert collectible_modifiers(0, 0, "ade-agent-bunny") == ({}, [])
+
+
+def test_the_spec_carries_the_collectible_identity_from_the_state():
+    """소장품은 유닛별 투자다 - 큐브처럼 전역 가정으로 뭉갤 수 없다.
+    에이드가 5단계인 것이 반례고, 그 5단계가 사격장 실측의 근거다."""
+    from app.models import UserNikkeState
+    from app.user_roster import load_roster
+
+    state = UserNikkeState.model_validate({
+        "character_slug": "ade-agent-bunny", "level": 200,
+        "hp": 1_000_000.0, "atk": 305_667.0, "def_": 3_000.0,
+        "skill_levels": {"skill1": 10, "skill2": 7, "burst": 10},
+        "collectible_tid": 100202, "collectible_level": 5,
+    })
+    specs, excluded = load_roster([state])
+    assert not excluded
+    assert specs[0].collectible_tid == 100202
+    assert specs[0].collectible_level == 5
+
+
+def test_a_roster_without_the_field_defaults_to_no_collectible():
+    """필드가 없던 시절의 roster.json을 읽어도 아무도 안 변한다."""
+    from app.models import UserNikkeState
+
+    state = UserNikkeState.model_validate({
+        "character_slug": "ade-agent-bunny", "level": 200,
+        "hp": 1_000_000.0, "atk": 305_667.0, "def_": 3_000.0,
+        "skill_levels": {"skill1": 10, "skill2": 7, "burst": 10},
+    })
+    assert state.collectible_tid == 0
+    assert state.collectible_level == 0

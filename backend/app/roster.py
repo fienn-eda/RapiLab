@@ -50,6 +50,8 @@ class NikkeSpec:
     skill_values: dict
     weapon_stats: dict
     overload_options: list = field(default_factory=list)
+    collectible_tid: int = 0
+    collectible_level: int = 0
 
 
 def _battle_start_effects_rule(effects):

@@ -36,7 +36,7 @@ def test_fetch_then_assemble_end_to_end(tables):
     units, _ = assemble_roster(tables, directory, raw)
     u = units[0]
     assert set(u) == {"name_en", "resource_id", "raid400", "skill_levels",
-                      "overload", "grade", "core", "favorite_item"}
+                      "overload", "grade", "core", "favorite_item", "collectible"}
     assert set(u["raid400"]) == {"hp", "atk", "def"}
     assert set(u["skill_levels"]) == {"skill1", "skill2", "burst"}
     assert u["raid400"]["def"] == 0
