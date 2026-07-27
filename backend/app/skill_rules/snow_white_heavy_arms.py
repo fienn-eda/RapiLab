@@ -57,6 +57,36 @@ Red Hood/Snow White's Pierce bullets - no engine representation), the 41.9%
 destructible-projectile sweep (no destructible projectiles modeled), Lock-On
 multi-target bookkeeping (single raid boss collapses "up to 5/10 targets" to
 one target, same as every other multi-target Lock-On kit in this engine).
+
+SHE IS THE RUN'S LARGEST ABSOLUTE MISS (+0.694B, 1.412x of a recorded 1.683B)
+and where it sits is narrow (audited 2026-07-28). Auto Fire is 70% of her
+damage, so ~65% of her total rests on ONE reading of Effect 2: that "attacks
+sequentially based on the amount of ammo loaded" means the boss takes all five
+sequential hits, giving 41.9 + 5 x 105.59 = 569.85% per full charge. That
+reading is load-bearing and untested - the ratio moves almost linearly in the
+hit count:
+
+    sequential hits   1      2      3      4      5 (current)
+    her ratio         0.58   0.77   0.96   1.15   1.35
+
+The alternative reading the skill text permits is that ammo is spent one per
+Lock-On target ("Max Lock-On targets: 5" pairs with "Max ammo: 5"), which
+against a single boss would leave one hit. Fienn resolved it as all-five on
+2026-07-19; the record now argues with that, and three would land her on 0.96x.
+
+A range test settles it in one full charge: count the Auto Fire damage numbers
+on the boss and read one. The engine predicts SIX numbers (one 41.9% sweep plus
+five 105.59% sequential), and against her own non-core non-crit normal attack
+each sequential hit should read 0.5588x and the sweep 0.2218x - her normal
+attack's coefficient is 0.6904 x 2.73675 = 1.88945, collectible included. Note
+Auto Fire does NOT core-hit in this engine (per-shot nukes never do), so compare
+against a non-core normal attack.
+
+Second-largest untested choice, worth a reading in the same session: the Fully
+Active bullet's "Sequential attack damage 158.4%" is folded into the segment
+pulse's coefficient (15 ammo x 105.59% x 2.584), which makes 14 shots carry 48%
+of her damage. Whether that 158.4% multiplies the sequential hits or adds into
+the shared damage-up bucket changes those 14 shots by a factor of ~1.4.
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 from app.squad_engine import burst_stage_entered
