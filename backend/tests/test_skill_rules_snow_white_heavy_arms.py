@@ -171,7 +171,11 @@ def test_fully_active_segment_is_two_slow_charged_shots():
     schedule = build_fully_active_weapon_mode_schedule(SWHA_VALUES)
     segments = schedule(SimpleNamespace(
         burst_times={"snow-white-heavy-arms": [20.0]}), 180.0)
-    assert segments == [{"start": 20.0, "until_shots": 2, "profile": {
+    # `shares_magazine` is the part that makes this NOT a weapon transform:
+    # Fully Active re-times her own charge and keeps firing her own rounds
+    # (Fienn, in game, 2026-07-28).
+    assert segments == [{"start": 20.0, "until_shots": 2, "shares_magazine": True,
+                         "profile": {
         "weapon": "SR", "damage_percent": 69.04,
         "charge_damage_percent": pytest.approx(778.0), "charge_time": 3.2}}]
 
@@ -200,12 +204,14 @@ def _swha_sim_deck():
     ]
 
 
-def test_e2e_burst_opens_fully_active_segment_then_resumes_base_cadence():
-    # Step 5 smoke test: her burst at t=5.0 opens a 2-shot segment at 3.2s
-    # charge cadence (each shot carrying the empowered Auto Fire pulse via
-    # every_during_segment), landing at t=8.2 and t=11.4; the base 1.2s
-    # charge cadence then resumes from t=11.4 (segment resume semantic - a
-    # charge base's first resumed shot lands one charge-time later, at 12.6).
+def test_e2e_burst_opens_fully_active_segment_which_spends_her_own_magazine():
+    # Her burst at t=5.0 opens a 2-shot segment at 3.2s charge cadence (each
+    # shot carrying the empowered Auto Fire pulse via every_during_segment),
+    # landing at t=8.2 and t=11.4. Those two shots come out of the SAME 6-round
+    # magazine as her base cadence, which is the whole point of
+    # `shares_magazine`: rounds 1-4 fire at 1.2/2.4/3.6/4.8, the segment spends
+    # rounds 5 and 6, and the second Fully Active shot EMPTIES the magazine -
+    # so she reloads instead of resuming one charge later.
     from app.skill_rules.registry import build_nikke_rules, get_per_shot_rules, get_weapon_mode_schedules
 
     slug = "snow-white-heavy-arms"
@@ -226,14 +232,21 @@ def test_e2e_burst_opens_fully_active_segment_then_resumes_base_cadence():
 
     # the two Fully Active segment shots, 3.2s apart, starting one charge
     # after burst (t=5.0 + 3.2 = 8.2)
-    assert 8.2 in shots and 11.4 in shots
-    # base cadence resumes one 1.2s charge after the segment ends (11.4)
-    assert 12.6 in shots
-    assert not [t for t in shots if 11.4 < t < 12.6]  # no leftover segment cadence
+    # The shared-magazine walk accumulates from one shot to the next (it has to
+    # - a reload shifts everything after it), so segment times carry ordinary
+    # float drift where the fresh-magazine path recomputed start + k*interval.
+    seg_shots = [t for t in shots if 5.0 < t < 12.0]
+    assert seg_shots == [pytest.approx(8.2), pytest.approx(11.4)]
+    # Four base rounds before the burst interrupts the fifth charge.
+    assert [t for t in shots if t < 5.0] == [1.2, 2.4, pytest.approx(3.6), 4.8]
+    # Magazine empty at 11.4 -> reload (2.0s) then one 1.2s charge = 14.6.
+    # Under the old fresh-magazine resume this shot landed at 12.6.
+    assert min(t for t in shots if t > 12.0) == pytest.approx(14.6)
 
     per_shot = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
-    segment_pulses = [e for e in per_shot if e["time"] in (8.2, 11.4)]
-    base_pulse_at_resume = [e for e in per_shot if e["time"] == 12.6]
+    segment_pulses = [e for e in per_shot if e["time"] in seg_shots]
+    resume = min(t for t in shots if t > 12.0)
+    base_pulse_at_resume = [e for e in per_shot if e["time"] == resume]
     # Two pulses per shot now (sweep + sequential volley), so the segment's two
     # shots are four entries and the resumed base shot is two.
     assert len(segment_pulses) == 4

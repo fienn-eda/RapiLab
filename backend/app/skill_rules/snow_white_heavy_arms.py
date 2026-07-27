@@ -52,6 +52,31 @@ Modeled (DPS-relevant):
   (1 + 158.4% Sequential attack damage) - `every_during_segment` /
   `every_outside_segment` (Task 8) keep these mutually exclusive per shot.
 
+AUDITED, 2026-07-28, and the per-hit layer is exonerated a second time. In the
+recorded deck 4 the engine reproduces Fienn's own range ratio to five decimals
+(a base charge's 5-hit volley reads 12.60024x its 41.9% sweep against her
+measured 12.60025), every term of one shot's damage formula reproduces by hand,
+and the burst cadence is corroborated by CINDERELLA - same deck, same shared
+buffs, 0.971x. A squad-wide over-count would have moved her too.
+
+Three readings of the kit that could each have carried the residual were put to
+Fienn and came back confirming the model (2026-07-28): Auto Fire fires 15 hits
+per Fully Active SHOT (not 15 across the burst), and BOTH Fully Active shots
+carry the +528% Charge Damage and +158.4% Sequential attack damage - so "for 1
+round(s)" does not mean only one of them. The third did not: Fully Active
+SHARES her magazine with the normal state, which the engine had wrong (see
+`shares_magazine` in build_fully_active_weapon_mode_schedule). Fixing it took
+her 1.386x -> 1.320x.
+
+She is still the run's largest single error at +0.539B, and the sensitivity is
+recorded here so the next session does not re-derive it. Zeroing one bullet at
+a time, against her 1.320x: Burst-Stage-3 ATK +73.92% -> 1.039x, boosted ammo
+15->5 -> 1.069x, Full-Charge ATK +46.84% -> 1.153x, burst Attack Damage +84.48%
+-> 1.194x, Sequential +158.4% -> 1.211x, Fully Active Charge +528% -> 1.283x.
+The last four are range-measured and the ammo is counted in game, so the
+remaining suspect list is short - and 46.5% of her damage comes from just 14
+Fully Active shots, which is why anything about that block moves her so far.
+
 Deferred: DEF up 42.24% (defensive, inert), Pierce (convention, same as
 Red Hood/Snow White's Pierce bullets - no engine representation), the 41.9%
 destructible-projectile sweep (no destructible projectiles modeled), Lock-On
@@ -189,7 +214,13 @@ def build_fully_active_weapon_mode_schedule(values):
     uses = int(float(burst["description_value_03"]))
 
     def schedule(context, fight_duration):
-        return [{"start": t, "until_shots": uses, "profile": profile}
+        # Fully Active is not a weapon swap - it only re-times her own charge
+        # and widens Auto Fire - so its shots come out of the SAME magazine as
+        # her normal state (Fienn, in game, 2026-07-28). Without that, she was
+        # firing two free rounds per burst AND restarting full afterwards,
+        # which left her reloading once in a 180-sec fight.
+        return [{"start": t, "until_shots": uses, "profile": profile,
+                 "shares_magazine": True}
                 for t in context.burst_times.get("snow-white-heavy-arms", [])]
 
     return schedule
