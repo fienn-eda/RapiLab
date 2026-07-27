@@ -53,15 +53,33 @@ reach her own shots (all 201 of her normal attacks carry damage_type
 12.52 sec, matching her 15 bursts), and her 88.61% Superior Code overload is
 correctly discarded because Electric holds no advantage over an Iron boss.
 
-The open question is SHOOTING STARS, and it is a reading of the skill text, not
-a bug: "Generates starS ... Attack Interval: 0.25 sec" is modelled as ONE stream
-of 40 ticks per burst (10 sec / 0.25 sec), which makes it 24% of her damage -
-while this module's own summary calls it "by far her largest damage source". If
-the summon is instead N stars each ticking every 0.25 sec, her damage scales
-almost linearly in N: 2 stars puts her at 0.778x, 3 at 0.929x, ~3.5 at 1.00x.
-Nothing in the data settles it - there is no count slot, and the 0.25-sec
-interval lives in the text rather than a numbered value - so it needs an
-in-game reading before anyone changes the constant.
+Both readings that could have explained it are now settled AGAINST changing
+anything here (Fienn, 2026-07-28):
+
+- Shooting Stars fires ONE star every 0.25 sec, measured in game. The 40-tick
+  stream is right; "generates starS" is flavour. (Had it been N streams her
+  damage would scale nearly linearly in N - 2 gives 0.778x, 3 gives 0.929x -
+  which is why it was worth measuring.)
+- Shooting Stars does NOT take Projectile Explosion Damage. The in-game tooltip
+  scopes that stat to "로켓 런쳐의 폭발과 부착형 발사체의 폭발" - a rocket
+  launcher's own explosion and an attached projectile's - and a summon's
+  auto-attack is neither. Her RL NORMAL attacks are in scope and already carry
+  the type. Typing the ticks projectile_explosion would add +0.108B (her 0.627x
+  -> 0.706x, deck1 0.867x -> 0.876x); that damage would be fictional.
+
+Her per-hit damage is EXACT. Ten range-test readings (solo, target DEF 100,
+crit/non-crit x core/non-core x before/after her own burst) reproduce from a
+single anchor within 0.002%, which is the game's integer display rounding:
+the normal attack's 0.613 x 2.73675, Starfall's 1.2013 with NO charge
+multiplier, a tick's 0.4001, core exactly +1.0, crit 0.5 + her 11.54% overload,
+and her burst's +35.2% Attack Damage as the ONLY thing that changes across it.
+That last point doubles as proof the solo test never entered Full Burst (no
++0.5, no Stardust buffs), which is also why it cannot test the Projectile
+Explosion question - Stardust's +92.03% is Full-Burst-gated.
+
+So her 0.627x sits entirely ABOVE the per-hit layer, in counts, uptime or deck
+context - the same signature Ade: Agent Bunny showed. Do not look for it in the
+coefficients again.
 """
 from app.effects import Effect, Pulse
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
