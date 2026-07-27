@@ -22,7 +22,11 @@ debuff on the boss), capped at 30.
   whichever Full Burst window (if any) the shot's own time happens to fall
   in, since this trigger runs independently of her burst.
 - Annihilation State (her burst): grants self ATK +46.8% of her own ATK and
-  Attack Damage +36%, both for 9 sec. Separately, "Annihilation" fires 9 sec
+  Attack Damage +36%, and cuts her own Normal Attack Damage Multiplier by
+  40%, all three for 9 sec. That cut is the state's price and it is not a
+  small one: her burst opens the Full Burst window, so the 9 sec cover her
+  most valuable shots - 62% of her normal-attack damage in the recorded deck
+  3. Separately, "Annihilation" fires 9 sec
   LATER (when Annihilation State ends, not at cast time) - deals 6.62% of
   final ATK as additional damage, once per Anti A.T. Field stack accumulated
   right before that moment (`dynamic_hit_count_nukes` + `fire_delay`), and
@@ -50,12 +54,6 @@ debuff on the boss), capped at 30.
   full_burst_bonus_eligible. A small nuke, secondary to her headline mechanics.
 
 Not modeled / deferred:
-- Annihilation State's Normal Attack Damage Multiplier -40% for 9 sec: the
-  engine has no way to scope a damage-up/down bucket to "normal attacks
-  only" (as opposed to a `damage_type`, which normal attacks and most bursts
-  share) - would need a new source-based gate, a real but undiscussed
-  engine capability. A self-DEBUFF, smaller in DPS impact than her positive
-  headline mechanics.
 - Annihilation State's 21% magazine reload and Emergency Repair's heating
   speed / ammo removal / HP recovery / reload speed effects: all
   reload/ammo/HP mechanics, not damage - not consumed by the engine (see
@@ -131,10 +129,16 @@ def build_anti_at_field_per_shot_rules(values):
 def build_annihilation_state_rules(values, caster_atk):
     annihilation = values["annihilation_state"]
     duration = float(annihilation["description_value_02"])
+    # Effect 1 is the price of the state: her normal attacks are cut while the
+    # other two effects raise everything else. Negative, because it is the
+    # DOWN direction of the same Final ATK modifier.
+    normal_attack_multiplier = -float(annihilation["description_value_01"]) / 100
     atk_from_caster_atk = caster_atk * float(annihilation["description_value_04"]) / 100
     attack_damage = float(annihilation["description_value_05"]) / 100
 
     def action(context, caster_slug, time, registry):
+        registry.add(Effect("normal_attack_damage_multiplier", normal_attack_multiplier,
+                            "self", duration, caster_slug), applied_at=time)
         registry.add(Effect("flat_atk", atk_from_caster_atk, "self", duration, caster_slug), applied_at=time)
         registry.add(Effect("attack_damage_up", attack_damage, "self", duration, caster_slug), applied_at=time)
 

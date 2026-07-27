@@ -35,8 +35,13 @@ Not modeled / deferred:
   +1, stacks up to 3" - the engine has no per-pellet SG damage concept, so a
   pellet-count buff can't be represented. This is a real part of her SG DPS.
 - Snapshots of Youth (Keepsake Album, triggered by Happy Memories): Normal
-  Attack Damage Multiplier +10% (stacks up to 3) - Normal Attack Damage
-  Multiplier is a deferred stat (see damage-formula-reference.md).
+  Attack Damage Multiplier +10% (stacks up to 3). NOT blocked by the stat -
+  `normal_attack_damage_multiplier` has been live since gap #9 (Jill
+  Valentine). What is unsettled is the STACK COUNT: Snapshots is wiped when
+  Full Burst ends, so reaching 3 needs Happy Memories to take effect three
+  times inside one window, and whether the normal-attack phase counter
+  restarts after its 6th step (or simply stops) is not stated in the skill
+  text. Ask Fienn before encoding - guessing picks between 1x and 3x.
 - Memories and Moments' 2nd/4th-normal reload phases (reload/pellet) - reload
   isn't DPS-modeled and pellets are deferred as above.
 """

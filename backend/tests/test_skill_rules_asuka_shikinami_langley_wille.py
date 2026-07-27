@@ -112,6 +112,20 @@ def test_annihilation_state_self_buffs_trigger_on_own_burst_activate():
     assert reg.total_for("flat_atk", ASUKA, now=14.1) == 0.0  # 9s duration
 
 
+def test_annihilation_state_cuts_her_own_normal_attack_damage():
+    # Effect 1 is a self-DEBUFF - "Normal Attack Damage Multiplier v 40% for
+    # 9 sec" - the negative branch of the same Final ATK modifier Jill
+    # Valentine buffs upward, so it scales her normal attacks' own coefficient
+    # and nothing else. It rides the same own_burst_activate cast and the same
+    # 9s duration as her two positive buffs.
+    ctx = make_context()
+    reg = EffectRegistry()
+    for rule in build_annihilation_state_rules(ASUKA_VALUES, caster_atk=10000):
+        rule.action(ctx, "asuka-shikinami-langley-wille", 5.0, reg)
+    assert round(reg.total_for("normal_attack_damage_multiplier", ASUKA, now=5.0), 4) == -0.40
+    assert reg.total_for("normal_attack_damage_multiplier", ASUKA, now=14.1) == 0.0
+
+
 def test_emergency_repair_buff_only_fires_if_own_burst_fired_this_cycle():
     ctx = make_context()
     rules = build_emergency_repair_rules(ASUKA_VALUES)

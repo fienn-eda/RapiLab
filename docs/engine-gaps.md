@@ -5,7 +5,14 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-28 (**엔진 결함 2건 수정 — 실기록 합계 0.936x → 1.011x.**
+- 마지막 갱신: 2026-07-28 (**아스카의 자기 디버프 배선 — 합계 1.011x → 1.000x,
+  ±15% 이내 11/25.** Annihilation State의 「평타 대미지 배율 ▼40%/9초」가 빠져 있었다.
+  막고 있던 것은 엔진이 아니라 **낡은 보류 사유**였다 — `normal_attack_damage_multiplier`는
+  gap #9에서 이미 만들어져 있었고, 필요한 건 그 스탯의 음수 값 한 줄이었다.
+  9초는 전투의 5%지만 그녀 버스트가 곧 풀버스트 시작점이라 그 창이 그녀 평타 데미지의
+  **62.1%**를 덮는다 → 1.192x → **1.055x**. **교훈: gap을 닫으면 그 gap을 사유로 든
+  독스트링을 되짚어라**(같은 사유가 아르카나에도 남아 있었다). `docs/insights.md` 참조.
+  이전 갱신: 2026-07-28 (**엔진 결함 2건 수정 — 실기록 합계 0.936x → 1.011x.**
   둘 다 절대 오차 순 감사에서 나왔고 둘 다 **사격장 측정으로 확정한 뒤에만** 고쳤다.
   (1) **gap #18 해소 — 평타가 Full Burst 보너스를 못 받고 있었다.** 옵트인 플래그가
   스킬 넉에만 달려 있었고 평타 `record()`는 아예 안 넘기고 있어, 2026-07-26/27에
@@ -229,7 +236,7 @@
 | ~~6~~ | ~~periodic-during-Full-Burst 넉~~ (풀버스트 창 안에서만 N초마다) | 2 (Ada·Little Mermaid) | **완료 (2026-07-16 Phase C, `during_full_burst`+`hit_count`+`own_burst_interval`)** | 타이밍 변형 |
 | ~~7~~ | ~~풀버스트/자기상태창 한정 per-shot 트리거~~ (fill이 아니라 버프/넉 직접 발동) | 4 (Soda·Asuka·Grave·Velvet) | **완료 (2026-07-15, `per_shot_rules`의 `every_during_full_burst`/`every_during_own_status_window` 모드)** | 신규 트리거 변형 |
 | ~~8~~ | ~~자원-fill-트리거 타 유닛 버프~~ (자원 소유자 아닌 아군에게 버프) | 1 (Maiden) | **완료 (2026-07-16 Phase C, `resource_fill_triggered_buffs`)** | 신규 트리거 |
-| ~~9~~ | ~~reload 후 첫 발("first bullet after reload") per-shot 마커~~ | 1 (Jill Valentine) | **완료 (2026-07-16 Phase C, `first_bullet` 모드 + `normal_attack_damage_multiplier`)** | 신규 트리거 변형 |
+| ~~9~~ | ~~reload 후 첫 발("first bullet after reload") per-shot 마커~~ | 1 (Jill Valentine) → **실제 3** | **완료 (2026-07-16 Phase C, `first_bullet` 모드 + `normal_attack_damage_multiplier`)**. **후행 소비 (2026-07-28): asuka-shikinami-langley-wille** — 이 gap이 닫힌 뒤에도 "엔진에 수단이 없다"는 낡은 사유로 2주간 보류돼 있었다(그녀 1.192x의 정체). **arcana-fortune-mate**(Snapshots of Youth)도 같은 사유가 남아 있었고 스택 수만 미확인. → **gap을 닫을 때 그 사유를 인용한 독스트링을 반드시 grep할 것** | 신규 트리거 변형 |
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
 | — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) | **완료 (2026-07-11, `ally_burst_activate`)** | 신규 트리거 |
 | — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |
