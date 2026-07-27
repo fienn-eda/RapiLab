@@ -1227,13 +1227,35 @@
       떨어지기 때문이다. 회귀가 아니라 **배선이 소장품 미보유 유닛에 정확히 무해하다는
       확인**. 백엔드 1479 passed / 3 skipped, 프론트 291 passed 유지. 상세
       `docs/decisions.md` ADR, `docs/engine-gaps.md` gap #17.
+- [x] **소장품 데이터 부채 종결 — 전 등급(R/SR/SSR) 실데이터 (2026-07-27).**
+      "SMG·RL 없음 · SR/SG/AR은 툴팁 유도 · R 사다리 미상"이 전부 닫혔다. 막고
+      있던 것은 로그인이 아니라 **요청 자체**였다 — 소장품 테이블은 로그인한
+      Collection 화면에서만 요청되므로 헤드리스로 돌려도 가로채기는 빈손이다.
+      ShiftyPad의 CDN 경로 난독화가 **경로의 순수 함수**(djb2 + md5)임을 앱 번들에서
+      옮겨 적어(`tools/collect-blablalink/resource-url.js`) 테이블을 **브라우저·세션
+      없이 평범한 HTTP GET**으로 받는다. 33개 레코드 전량 커밋(R 6 · SR 6 · 애장품
+      SSR 21), 갱신은 `node collect.js --collectibles` → `python3
+      scripts/update_collectible_table.py`. **툴팁 유도값이 옳았음이 확인됐다** —
+      SR 무기군 사다리 `[4.74, 6.31, 7.89, 9.47]`에서 에이드 5단계 = 6.31.
+      부수로 잡은 결함: R과 SR은 스탯 커브가 갈리는데(최대 ATK 4,736 vs 9,688)
+      `stat_assembly`가 커브 하나만 읽어 R 보유자를 2배 넘게 과대평가하고 있었다.
+      백엔드 **1486 passed / 3 skipped**. 상세 `docs/decisions.md` ADR 2건,
+      `docs/engine-gaps.md` gap #17.
 - [ ] **To-Do: 소장품 배선을 실제로 검증하려면 Fienn의 로스터 재동기화가 필요하다.**
-      `roster-drafts.json`에 `collectible_tid`/`collectible_level`이 실리기 전까지는
-      위 배선이 캘리브레이션 수치를 전혀 움직이지 않는다 — 재동기화 후
-      `python3 scripts/measure_record_calibration.py`를 다시 돌려 아니스:스타·미하라·
-      리틀머메이드 같은 미달 유닛이 실제로 오르는지 확인할 것. 그 시점에 골든 핀
-      (`backend/tests/test_roster.py`)을 다시 볼 필요가 있으면, 각 변경을 **왜 그
-      수치가 바뀌었는지 한 줄로 설명할 수 있을 때만** 갱신한다.
+      데이터와 배선은 이제 전부 갖춰졌고 — `roster_fixture._state_from_draft`가
+      드래프트의 소장품 필드를 버리던 마지막 끊김도 고쳤다 — 남은 것은 실제 드래프트에
+      값이 실리는 것뿐이다. 재동기화 후 `python3 scripts/audit_collectible_coverage.py`
+      로 커버리지를 먼저 확인하고(현재 실계정 기준 착용 108 중 72유닛이 움직이고
+      "착용했는데 0"은 없음), 그다음 `python3 scripts/measure_record_calibration.py`
+      를 돌려 아니스:스타·미하라·리틀머메이드 같은 미달 유닛이 실제로 오르는지 볼 것.
+      그 시점에 골든 핀(`backend/tests/test_roster.py`)을 다시 볼 필요가 있으면, 각
+      변경을 **왜 그 수치가 바뀌었는지 한 줄로 설명할 수 있을 때만** 갱신한다.
+- [ ] **To-Do (Fienn 확인 필요): 소장품 레벨 0은 스킬을 주는가?** 엔진이 지금
+      자기모순이다 — 스탯 쪽은 레벨 0을 '미착용'으로 보고 0을 주는데(실측 근거),
+      스킬 쪽은 사다리 1단을 준다. 게임 클라이언트 번들도 `atk.at(0)`·`level1.at(0)`을
+      그대로 읽어서 **읽어서는 못 가린다**. 실계정 9유닛이 해당하고 값은 작다
+      (1.56~1.58%). 인게임에서 레벨 0 소장품의 스킬 줄이 활성으로 보이는지 확인하면
+      닫힌다. 그 전까지 현재 동작 유지.
 - [ ] **⚠ 폐기: 이전 캘리브레이션 표 — 잘못된 보스에서 측정됐다.** 아래 덱별/유닛별
       숫자는 Electric 약점 보스 기준이라 **못 쓴다**(특히 Electric·Wind 유닛).
       사격장 단발 측정들은 표적이 "우월코드 미적용"이라 **영향 없다**.
