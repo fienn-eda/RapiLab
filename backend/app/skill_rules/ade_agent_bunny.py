@@ -18,9 +18,10 @@ skills 10/7/10, target DEF 100). Seven readings across crit on/off, in/out of
 effective range, and Spy Lens below/at max all match this model to within 1e-4
 of one another - every buff, value and gate above is right, including the
 `has_pierce` gate discarding her Pierce Damage while Spy Lens is below max.
-They sit a uniform 1.06x below the model, in a bucket that has to be the
-attack coefficient or charge damage (both weapon properties); source
-unresolved, see docs/engine-gaps.md #15 and test_damage_formula.py.
+They sit a uniform 1.06x below the model, and the cause is her COLLECTIBLE
+(소장품, SR weapon group Lv5, "차지대미지 6.31% 배율"), which scales the
+weapon's own 250% full charge to 265.775%. Nothing in the engine models
+collectible skill effects - see docs/engine-gaps.md #15.
 
 Not modeled: Spy Lens / Minimum Effective Range STACKING (the 4.44%-per-stack
 ramp to max - approximated as permanently maxed) and the effective-range damage

@@ -208,11 +208,18 @@ ADE_READINGS = {
     (True, False, True): 2376594,
 }
 ADE_ATK = 305667.0
-ADE_UNMODELED_FACTOR = 1.06027  # see the test below - NOT a fudge, a receipt
+# Her collectible (소장품): SR weapon group, in-game level 5, granting
+# "차지대미지 6.31% 배율". The 배율 tooltip reads "기본 스탯 값에 스킬 계수의
+# 비율만큼 계산되어 더해짐" - a proportion OF THE BASE STAT, so it scales the
+# weapon's own 250% full-charge damage rather than adding 6.31 points to it:
+# 250% x 1.0631 = 265.775%. Nothing in the engine models this (see below).
+ADE_COLLECTIBLE_CHARGE_MULT = 0.0631
 
 
-def _ade_shot(spy_maxed, in_range, crit):
-    """Ade's full-charge core hit under the engine's model of her kit."""
+def _ade_shot(spy_maxed, in_range, crit, collectible=True):
+    """Ade's full-charge core hit. `collectible=False` is what the engine
+    actually computes today, since it has no collectible skill effects."""
+    base_charge = 2.50 * (1 + ADE_COLLECTIBLE_CHARGE_MULT if collectible else 1)
     return calculate_damage(
         atk=ADE_ATK,
         enemy_def=100.0,
@@ -220,39 +227,48 @@ def _ade_shot(spy_maxed, in_range, crit):
         flat_atk=0.152 * ADE_ATK if spy_maxed else 0.0,       # Agent's Gaze
         pierce_damage_up=0.1529 if spy_maxed else 0.0,        # gated on having Pierce
         attack_coefficient=0.6904,                            # SR damage 69.04%
-        charge_damage_bonus=1.5 + 0.1181,                     # SR 250% + overload
-        core_hit_bonus=1.0,
+        charge_damage_bonus=(base_charge - 1) + 0.1181,       # + overload charge
+        core_hit_bonus=1.0,                                   # weapon 코어 대미지 200%
         effective_range_bonus=1.0 if in_range else 0.0,
         crit_rate=1.0 if crit else 0.0,
         element_multiplier=1.0,
     )
 
 
-def test_ade_range_readings_differ_from_the_model_by_ONE_constant_factor():
-    """The structural claim, and the one worth defending.
+def test_ade_range_readings_are_reproduced_exactly():
+    """Every one of the seven readings, to 0.002% - i.e. to the rounding of the
+    integers the game displayed.
 
     Seven readings span crit on/off, in/out of effective range, and Spy Lens
-    below/at max - which switch three different buckets independently. The
-    model reproduces every one of them to within 1e-4 of the SAME ratio. That
-    is only possible if each bucket is individually right: a wrong core bonus
-    or crit source breaks the in-range rows against the out-of-range ones, a
-    wrong ATK term breaks the Spy-Lens rows (its flat_atk only exists there),
-    and a wrong damage-up term breaks them too (pierce_damage_up shares that
-    bucket). All three were checked and all three break uniformity.
-
-    So exactly one multiplicative factor is missing, and it can only live in a
-    bucket that is constant across all seven - the attack coefficient or the
-    charge-damage multiplier, both weapon properties. Its source is unresolved
-    (2026-07-27): dotgg reports her SR as 69.04% / 250% and 13 of the roster's
-    14 SRs carry those same two numbers, so a per-unit weapon value or a
-    harmony cube the engine does not model are the open candidates. See
-    docs/engine-gaps.md.
-
-    This test pins the UNIFORMITY, not the factor. If someone finds the missing
-    term, this fails loudly and the constant goes to 1.0 - which is exactly the
-    signal wanted, rather than a silent 6%.
+    below/at max, which switch three independent buckets, so this is a much
+    stronger statement than any single hit matching. It settles, together:
+    core hit = +1.0 (the weapon's 코어 대미지 200%), crit = +0.5 with no other
+    sources, effective range = +0.30, the pierce gate correctly discarding her
+    Pierce Damage below max Spy Lens, and skill 2 sitting at level 7 (13.78%
+    ATK / 15.29% Pierce, NOT the level-10 16% / 18.36% - reading a measurement
+    against max-level skill values is its own way to be quietly wrong).
     """
-    ratios = {key: _ade_shot(*key) / measured for key, measured in ADE_READINGS.items()}
-    assert max(ratios.values()) - min(ratios.values()) < 1e-4, ratios
-    for key, ratio in ratios.items():
-        assert round(ratio * ADE_UNMODELED_FACTOR, 3) == 1.0, (key, ratio)
+    for key, measured in ADE_READINGS.items():
+        assert abs(_ade_shot(*key) / measured - 1) < 1e-4, (key, measured)
+
+
+def test_without_the_collectible_every_reading_is_uniformly_six_percent_low():
+    """What the engine computes today, and why the error is invisible.
+
+    Dropping the collectible term leaves all seven readings low by the SAME
+    1.0603 - a uniform factor is indistinguishable from a mis-set weapon or a
+    missing buff, which is exactly how it went unnoticed. It cannot hide in the
+    major bucket (that would break in-range against out-of-range), on the ATK
+    side (Agent's Gaze's flat_atk exists only in the Spy Lens rows), or in
+    damage-up (pierce_damage_up shares it) - all three were tried.
+
+    The engine has no representation for collectible skill effects at all:
+    `stat_assembly` reads only the atk/hp curves out of `collectible_sample`,
+    `UserNikkeState` carries no item tid or level, and the stat table holds one
+    weapon group's sample (MG) whose `favoriteitem_skill_group_data` is empty.
+    See docs/engine-gaps.md #15.
+    """
+    ratios = [_ade_shot(*key, collectible=False) / measured
+              for key, measured in ADE_READINGS.items()]
+    assert max(ratios) - min(ratios) < 1e-4, ratios
+    assert all(round(1 / r, 3) == 1.060 for r in ratios), ratios
