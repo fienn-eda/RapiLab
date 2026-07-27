@@ -290,6 +290,14 @@ major 버킷 · ATK 쪽 · damage-up 버킷을 전부 기각했고, 남은 곳�
   로스터 임포트·프론트 드래프트를 왕복한다(Task 3, 5).
 - 에이드의 SR 소장품(레벨 5, 「차지대미지 6.31% 배율」)로 수용 기준 7개 전부가
   **0.002% 안**에서 재현된다(`test_ades_charge_damage_matches_her_range_test`).
+- **최종 리뷰에서 애장품(SSR) 경로 자체가 프로덕션에서 미작동임을 발견, 수정함
+  (2026-07-27).** 승급된 유닛의 tid(2xxxxx, `FAVORITE_ITEM_TID_BASE` 이상)는
+  `tables.json["collectibles"]`의 어떤 키와도 일치하지 않아 `collectible_modifiers`가
+  항상 미스하고 `({}, [])`를 반환했다 — Helm·Zwei·Tove·Flora 등 애장품 보유
+  유닛 전원이 이 배선의 혜택을 전혀 못 받고 있었다. 이제 애장품 tid는
+  **유닛의 무기군**으로 SR 레코드(`favorite_rare == "SR"`)를 찾아 해석한다
+  (`_favorite_item_record`) — 승급이 요구하는 바로 그 레코드다. 상세는
+  `docs/decisions.md`의 관련 ADR.
 
 **남은 데이터 갭 (엔진 결함이 아니라 명시적으로 남긴 공백):**
 - **SMG·RL 무기군은 데이터가 전혀 없다.** `tables.json["collectibles"]`에 항목 자체가
