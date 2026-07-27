@@ -168,7 +168,7 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
                    batch=max(_MIN_SWAP_BATCH, worker_count * SWAP_BATCH_PER_WORKER),
                    cancel=cancel)
 
-        summaries = [_best_ordering_summary(units, boss, pool) for units in decks]
+        summaries = [best_ordering_summary(units, boss, pool) for units in decks]
         return {"decks": summaries,
                 "leftover_slugs": sorted(u.slug for u in remaining)}
     finally:
@@ -378,7 +378,7 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
         # standard the recommendation itself is held to, which keeps the gain the
         # UI reports from being inflated by a mode the player never chose.
         baseline_total = sum(
-            max(_best_ordering_summary(reading, boss)["total_damage"]
+            max(best_ordering_summary(reading, boss)["total_damage"]
                 for reading in _seed_choices(deck, alternatives))
             for deck in draft)
 
@@ -388,7 +388,7 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
             "baseline_total_damage": baseline_total, "pinned_by_deck": pinned_by_deck}
 
 
-def _best_ordering_summary(units, boss, pool=None):
+def best_ordering_summary(units, boss, pool=None):
     # Final polish: the swap pass scored canonical orders only; pick the best
     # intra-tier ordering for the finished deck (a handful of sims per deck).
     # Batch-scored; ties keep the first ordering, like the serial `>` did.
