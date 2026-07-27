@@ -1182,6 +1182,25 @@
       **미달 3기**: 아니스:스타 **0.594** · 미하라 **0.697** · 리틀머메이드 0.759
       이제 **미달과 과대가 양쪽에 있다** — 이전의 "미달 쪽에 몰려 있다"는 관측은
       잘못된 보스가 만든 것이었다.
+- [x] **소장품 스킬 효과 배선 완료, 캘리브레이션은 아직 무변동 (2026-07-27).**
+      gap #15(에이드의 사격장 균일 편차 0.94315x = SR 소장품 「차지대미지 6.31%
+      배율」 누락)를 5개 태스크로 배선 — 데이터 테이블 → 리졸버 → 유닛별 배선
+      (`UserNikkeState`/`NikkeSpec`) → 데미지 적용 → 프론트 페이로드. 배선 후
+      `python3 scripts/measure_record_calibration.py`를 재실행해 배선 전과 대조한
+      결과 **수치가 완전히 동일**하다(합계 0.914x, 덱별 0.842/0.838/0.966/1.081/1.016,
+      ±15% 이내 12/25) — 실제 로스터(`tools/collect-blablalink/roster-drafts.json`)가
+      `NikkeDraft[]` 형태라 `collectible_tid` 필드 자체가 없고
+      `scripts/roster_fixture.py::_state_from_draft`도 그 필드를 안 읽어 전원 미보유로
+      떨어지기 때문이다. 회귀가 아니라 **배선이 소장품 미보유 유닛에 정확히 무해하다는
+      확인**. 백엔드 1479 passed / 3 skipped, 프론트 291 passed 유지. 상세
+      `docs/decisions.md` ADR, `docs/engine-gaps.md` gap #15.
+- [ ] **To-Do: 소장품 배선을 실제로 검증하려면 Fienn의 로스터 재동기화가 필요하다.**
+      `roster-drafts.json`에 `collectible_tid`/`collectible_level`이 실리기 전까지는
+      위 배선이 캘리브레이션 수치를 전혀 움직이지 않는다 — 재동기화 후
+      `python3 scripts/measure_record_calibration.py`를 다시 돌려 아니스:스타·미하라·
+      리틀머메이드 같은 미달 유닛이 실제로 오르는지 확인할 것. 그 시점에 골든 핀
+      (`backend/tests/test_roster.py`)을 다시 볼 필요가 있으면, 각 변경을 **왜 그
+      수치가 바뀌었는지 한 줄로 설명할 수 있을 때만** 갱신한다.
 - [ ] **⚠ 폐기: 이전 캘리브레이션 표 — 잘못된 보스에서 측정됐다.** 아래 덱별/유닛별
       숫자는 Electric 약점 보스 기준이라 **못 쓴다**(특히 Electric·Wind 유닛).
       사격장 단발 측정들은 표적이 "우월코드 미적용"이라 **영향 없다**.

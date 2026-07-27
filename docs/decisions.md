@@ -5,6 +5,15 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 소장품 스킬 효과를 유닛별 입력으로 배선 — 큐브처럼 전역 가정하지 않는다
+- Date: 2026-07-27
+- Context: gap #15(에이드의 SR 소장품 「차지대미지 6.31% 배율」이 사격장 균일 편차 0.94315x의 원인)를 배선하는 5개 태스크(테이블 수집 → 리졸버 → 유닛별 배선 → 데미지 적용 → 프론트 페이로드)를 마친 뒤, 마지막 태스크로 실제 캘리브레이션에 어떤 영향이 있었는지 측정하고 그 과정에서 정리된 모델링 규칙 두 가지를 기록한다.
+- **「배율」의 의미:** 인게임 툴팁 원문은 *"기본 스탯 값에 스킬 계수의 비율만큼 계산되어 더해짐"* — 즉 퍼센트 포인트를 어느 버프 버킷에 더하는 게 아니라, **무기 자신의 기본 스탯에 그 비율만큼 곱해서 얹는다.** 에이드의 SR 소장품(레벨 5)은 무기의 기본 차지대미지 250%에 대해 `250% × 1.0631 = 265.775%`가 되는 것이지, `250% + 6.31% = 256.31%`가 되는 게 아니다. 이 구분을 놓치면 배율이 큰 무기일수록(가산 대비) 조용히 과소평가된다. 배선은 `weapon_stats[stat] *= factor` 형태로 두어 이 곱셈 의미를 그대로 반영했고, mode-swap 오버라이드(`get_weapon_profile_override`) **이후**에 적용해 신데렐라:크리스탈 웨이브의 스나이프 변형처럼 무기 프로필 전체가 교체되는 유닛에서도 배율이 살아남는다(`test_a_mode_variant_spec_still_carries_the_weapon_multiplier`로 확인).
+- **왜 유닛별 입력이지, 하모니 큐브 같은 전역 가정이 아닌가:** 큐브의 착용 상태는 잡음이다 — 큐브 하나는 최대 12명까지만 낄 수 있고 덱은 전투마다 재장착되므로, 수집 시점의 장착 여부는 실제 전투 중 장착 여부와 무관하다(2026-07-20 ADR). 반면 소장품은 **유닛별 영구 투자**다 — 레벨을 올리는 데 재화가 들고, 유닛마다 다른 레벨에 멈춰 있다. 실제로 이 갭 자체가 에이드는 레벨 5, 다른 유닛들은 최대치라는 **불균일한 투자 상태**에서 발견됐다 — 만약 큐브처럼 "전원 레벨 X 가정"으로 전역화했다면 그 가정 자체가 이 기능이 나온 실측(에이드의 사격장 7회 측정)과 모순됐을 것이다. 그래서 `UserNikkeState`/`NikkeSpec`에 `collectible_tid`/`collectible_level`을 유닛별로 실어 보내는 쪽을 택했다(Task 3, 5).
+- **애장품(SSR)은 항상 사다리 최상단을 읽는다 — 우연이 아니라 승급 조건에서 나온다.** 애장품의 자기 레벨과 무관하게 스킬 그룹의 마지막 rung(`levels[-1]`)을 읽도록 인코딩했다(`test_a_favorite_item_reads_the_top_reachable_rung_whatever_its_own_level`). 이는 **애장품으로 승급하려면 SR 소장품이 레벨 15(사다리 최상단)여야 한다**는 게임 규칙에서 그대로 따라 나온다 — 애장품 자체의 레벨은 스킬 계수가 아니라 그 유닛의 스킬 레벨 해금을 게이팅한다. Fienn이 Flora를 실제로 승급시켜 검증했다: SSR 레벨 5인데도 MG 사다리의 최상단(9.5%)을 그대로 보고한다. 이 규칙은 사실 이번에 새로 발견된 게 아니라 — `stat_assembly.collectible_atk`가 이미 같은 패턴을 실측(애장품 레벨 2인 유닛 넷이 전부 사다리 레벨-2 항목이 아니라 최상단 9,688을 기여)에서 독립적으로 추론해 두고 있었다. 이번 스킬-효과 배선은 그 규칙이 **왜** 맞는지를 처음으로 설명한다.
+- Alternatives considered: (a) 소장품도 큐브처럼 전역 가정(예: "전원 SR 레벨 15 착용") — 기각. 위 이유대로 개별 투자량이 실측에서 이미 불균일함이 드러나 있어 전역화가 이 기능의 존재 이유와 직접 모순된다. (b) 애장품 레벨을 그대로 스킬 계수 인덱스로 사용 — 기각. Flora 검증이 반증한다.
+- Consequences: 엔진은 소장품 스킬 효과를 **과소평가하는 방향으로는 덜 하게** 됐다(에이드류 유닛의 사거리·차지대미지 배율이 반영됨). 그러나 **실제 로스터에는 아직 반영되지 않는다** — `tools/collect-blablalink/roster-drafts.json`은 `NikkeDraft[]` 형태이며 `collectible_tid` 필드가 아예 없고, `scripts/roster_fixture.py::_state_from_draft`도 그 필드를 참조하지 않으므로 pydantic 기본값 0으로 떨어진다. `python3 scripts/measure_record_calibration.py`로 확인: 배선 전후 수치가 **완전히 동일**(합계 0.914x, 덱별 0.842/0.838/0.966/1.081/1.016, ±15% 이내 12/25) — 이는 회귀가 아니라 이 경로가 소장품 미보유 유닛에는 정확히 무해하다는 확인이다. 실제 수치 변화는 Fienn의 로스터 재동기화 이후에나 관측된다(`docs/roadmap.md` To-Do). 백엔드 1479 passed / 3 skipped, 프론트 291 passed 유지.
+
 ## 대조 하네스가 **엉뚱한 보스**와 싸우고 있었다 — 기록 보스는 철갑(Iron)이다
 - Date: 2026-07-27
 - Context: 신데렐라 과대(덱4 1.875x)와 볼륨 미달(0.784x)의 원인을 찾던 중, `scripts/measure_deck_breakdown.py`의 `RECORD_BOSS`가 `element="Water"`로 박혀 있고 독스트링이 그것을 "Water element so **Wind** attackers get advantage"라고 정당화하고 있는 것을 발견했다. 이 문장은 **원소 순환을 거꾸로 읽은 것**이다.
