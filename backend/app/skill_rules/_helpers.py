@@ -67,17 +67,96 @@ def cdr_pulse_rule(trigger, seconds, scope="squad"):
 
 
 def instant_nuke_pulse_rule(
-    trigger, percent, full_burst_bonus_eligible=False, condition=None, damage_type="attack"
+    trigger, percent, condition=None, damage_type="attack"
 ):
     """"Deals X% of final ATK as damage" tied to a trigger OTHER than the
     caster's own burst (e.g. Brid: Silent Track's Ignition Sequence, on
     full_burst_enter). raid_simulator.drain_instant_damage computes it using
     the caster's own ATK and live buffs, exactly like a burst nuke.
 
-    `full_burst_bonus_eligible`: pass True only when the skill's own damage
-    text says "as additional damage" (Fienn, 2026-07-12) - e.g. Asuka's Skill 1
-    per-shot nuke. raid_simulator still checks the shot's actual time against
-    the Full Burst window; this only opts the instance IN to that check.
+    There is NO Full Burst eligibility parameter, deliberately. A pulse emitted
+    here is recorded at the time its trigger fires, and the engine gives it the
+    bonus if and only if that time falls inside a Full Burst window. Passing an
+    opt-in used to be required, keyed on whether the skill said "as ADDITIONAL
+    damage"; that rule was deleted on 2026-07-28 (Fienn) once its origin was
+    clear - a Burst 3's instant "as damage" bullets resolve AT the cast, one
+    beat before the window opens, so the phrase only ever CORRELATED with the
+    timing and was never the cause. See `_damage_instance` in raid_simulator.
+
+    `condition`: optional SkillRule condition (e.g. boss_is_element("Wind")) for a
+    bullet that only applies in some sims."""
+
+    def action(context, caster_slug, time, registry):
+        for stat, value, scope, duration in buffs:
+            registry.add(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
+
+    return _rule(trigger, action, condition)
+
+
+def refreshing_buff_rule(trigger, buffs, condition=None):
+    """Like buff_rule, but each buff REFRESHES instead of stacking (see
+    EffectRegistry.add_refreshing) - for a per-shot buff re-applied every shot,
+    which the game refreshes rather than stacks. `condition`: optional SkillRule
+    condition, as in buff_rule.
+
+    Each rule instance gets its own refresh group, so re-applications of THIS
+    bullet collapse into one another while the same unit's other buffs on the
+    same stat are left alone. Without that, Liberalio's permanent Raging
+    Current (+231% self Attack Damage) was truncated to nothing by her own
+    on-core buff (+20.83%, same stat and scope) on her very first shot."""
+    group = f"refresh_{next(_refresh_group_ids)}"
+
+    def action(context, caster_slug, time, registry):
+        for stat, value, scope, duration in buffs:
+            registry.add_refreshing(
+                Effect(stat, value, scope, duration, caster_slug, refresh_group=group),
+                applied_at=time,
+            )
+
+    return _rule(trigger, action, condition)
+
+
+def cdr_pulse_rule(trigger, seconds, scope="squad"):
+    def action(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("burst_cooldown_reduction_sec", seconds, scope, caster_slug))
+
+    return SkillRule(trigger=trigger, action=action)
+
+
+def instant_nuke_pulse_rule(
+    trigger, percent, condition=None, damage_type="attack"
+):
+    """"Deals X% of final ATK as damage" tied to a trigger OTHER than the
+    caster's own burst (e.g. Brid: Silent Track's Ignition Sequence, on
+    full_burst_enter). raid_simulator.drain_instant_damage computes it using
+    the caster's own ATK and live buffs, exactly like a burst nuke.
+
+    `full_burst_bonus_eligible`: opts the instance in to raid_simulator's own
+    test of the shot's actual time against the Full Burst window - it never
+    grants the bonus by itself.
+
+    WHEN TO PASS TRUE, and the open question. The original rule (Fienn,
+    2026-07-12) was textual: True only when the skill's own damage line says
+    "as ADDITIONAL damage". That rule was reframed on 2026-07-26 into "the
+    bonus is decided by WHEN the instance is computed", which is what settled
+    normal attacks on 2026-07-28 - and by that reframing EVERY `per_shot` nuke
+    qualifies, since all of them are computed at a shot's time, strictly after
+    any cast.
+
+    The two rules disagree on per-shot nukes whose text says plain "as damage",
+    and the disagreement is NOT settled:
+    - Applying the computation-time rule to all of them moves the recorded run
+      to 1.025x but pushes Snow White: Heavy Arms to 1.386x, far outside where
+      her range-measured per-hit model puts her.
+    - Yet Fienn's own Snow White reading argues the textual rule is wrong for
+      her: her Auto Fire sweep ("as damage") reads 0.07570x her normal attack
+      INSIDE a Full Burst window, exactly the bare coefficient ratio
+      0.419 / (0.6904 x 8.01675). If the normal attack collected the bonus and
+      the sweep did not, that ratio could not equal the bare one.
+
+    So True is passed today only where BOTH rules agree - the text says "as
+    additional damage" - and the plain-"as damage" per-shot nukes are left
+    alone pending a measurement that separates the two (see docs/insights.md).
 
     `condition`: optional SkillRule condition (e.g. boss_is_element("Electric"))
     for an additional-damage bullet that only fires against a matching enemy.
@@ -90,7 +169,7 @@ def instant_nuke_pulse_rule(
         registry.add_pulse(
             Pulse(
                 "instant_damage_percent", percent, "self", caster_slug,
-                full_burst_bonus_eligible, damage_type,
+                damage_type,
             )
         )
 

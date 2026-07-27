@@ -205,7 +205,6 @@ def test_shooting_stars_ticks_every_quarter_second_across_the_ten_second_window(
     # A summon's ticks are computed after the cast, and her burst opens Full
     # Burst 0.2 sec before the first tick at 0.25 sec - so every tick lands
     # inside the window. The engine still checks each tick's own time.
-    assert stars["full_burst_bonus_eligible"] is True
 
     times = stars["schedule"](_BurstContext([20.0]), 180.0)
     # 10 sec / 0.25 sec interval, first tick one interval after the burst.

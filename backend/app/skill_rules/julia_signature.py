@@ -126,7 +126,7 @@ def build_marcato_per_shot_rules(values):
         float(cres["description_value_05"]),
         "every_n_critical_hits",
         [instant_nuke_pulse_rule(
-            "per_shot", float(cres["description_value_06"]), full_burst_bonus_eligible=True
+            "per_shot", float(cres["description_value_06"])
         )],
     )]
 
@@ -139,6 +139,5 @@ def build_climax_signature_resource_scaled_nuke(values):
         "resource": CRESCENDO, "cap": cap,
         "base_percent": float(values["climax"]["description_value_03"]),
         "scale_fn": lambda count, cap=cap: 1.0 if count >= cap else 0.0,
-        "tick_count": 1, "tick_interval": 0.0,
-        "full_burst_bonus_eligible": True,
+        "tick_count": 1, "tick_interval": 0.0, "resolves_after_cast": True,
     }]

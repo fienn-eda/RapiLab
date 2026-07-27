@@ -109,7 +109,6 @@ def test_marcato_fires_every_eight_expected_crits_as_additional_damage():
     (pulse,) = reg.drain_pulses("instant_damage_percent")
     assert pulse.value == 88.0
     # "as additional damage" -> opts into the Full Burst Bonus
-    assert pulse.full_burst_bonus_eligible
 
 
 def test_climax_rider_only_pays_out_at_max_crescendo_stacks():

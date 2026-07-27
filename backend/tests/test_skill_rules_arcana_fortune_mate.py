@@ -1,6 +1,16 @@
 from app.burst_cycle import FULL_BURST_DURATION
 from app.effects import EffectRegistry
-from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
+from app.raid_simulator import _resource_fill_times, simulate_raid
+from app.skill_rules.arcana_fortune_mate import (
+    HAPPY_MEMORIES_DAMAGE_PER_STACK,
+    HAPPY_MEMORIES_FIRST,
+    PRECIOUS_MOMENTS_FIRST,
+    ROTATION_PERIOD,
+    build_fortune_mate_rules,
+    build_keepsake_album_resource_gated_buffs,
+    build_memories_and_moments_resources,
+    radiant_youth_burst_percent,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 CASTER_ATK = 80000.0
@@ -102,47 +112,143 @@ def test_own_burst_grants_self_only_radiant_youth_attack_damage():
     assert round(registry.total_for("attack_damage_up", SELF_TARGET, now=5.0), 4) == 0.2999
 
 
-def test_precious_moments_self_atk_ramps_one_stack_per_cycle():
-    ctx = make_context()
-    registry = EffectRegistry()
-    rules = {"arcana-fortune-mate": build()}
+# --- the phase rotation (Fienn's in-game observation, 2026-07-28) -------------
+# Every 2nd normal attack while in Making Memories fires ONE of three effects
+# in rotation - 2 reload, 4 Happy Memories, 6 Precious Moments, then 8/10/12 -
+# and the count restarts when Making Memories is removed (each Full Burst).
 
-    run_cycle(rules, ctx, registry, burst_time=5.0)
-    assert round(registry.total_for("atk_percent", SELF_TARGET, now=6.0), 4) == 0.0249  # 1 stack
-    run_cycle(rules, ctx, registry, burst_time=45.0)
-    assert round(registry.total_for("atk_percent", SELF_TARGET, now=46.0), 4) == 0.0498  # 2 stacks
-    run_cycle(rules, ctx, registry, burst_time=85.0)
-    assert round(registry.total_for("atk_percent", SELF_TARGET, now=86.0), 4) == 0.0747  # 3 stacks
-    # caps at 3: a fourth cycle adds nothing
-    run_cycle(rules, ctx, registry, burst_time=125.0)
-    assert round(registry.total_for("atk_percent", SELF_TARGET, now=126.0), 4) == 0.0747
-    # self-scoped: allies never get Precious Moments
-    assert registry.total_for("atk_percent", ALLY, now=126.0) == 0.0
+def rotation_times(first, shot_times, own_burst_times, window=FULL_BURST_DURATION):
+    return _resource_fill_times(
+        ("per_shot_cycle_in_own_status_window", first, ROTATION_PERIOD, window),
+        shot_times, core_hittable=False, fight_duration=1000.0,
+        own_burst_times=own_burst_times,
+    )
 
 
-def test_precious_moments_requires_making_memories():
-    # No burst this cycle -> no Making Memories -> Full Burst enter grants no stack.
-    ctx = make_context()
-    registry = EffectRegistry()
-    rules = {"arcana-fortune-mate": build()}
-    fire_trigger("full_burst_enter", rules, ctx, registry, time=6.0)
-    assert registry.total_for("atk_percent", SELF_TARGET, now=6.0) == 0.0
+def test_rotation_places_each_effect_on_its_own_step():
+    # 24 shots, one per second, inside a single 30s window: Happy Memories lands
+    # on the 4th/10th/16th/22nd normal and Precious Moments on the 6th/12th/18th
+    # /24th. Neither ever coincides with the other, which is the "only one
+    # effect is triggered at a time" Fienn confirmed at the 12th normal.
+    shots = [float(i) for i in range(24)]  # shot n is at t = n-1
+    happy = rotation_times(HAPPY_MEMORIES_FIRST, shots, [0.0], window=30.0)
+    precious = rotation_times(PRECIOUS_MOMENTS_FIRST, shots, [0.0], window=30.0)
+    assert happy == [3.0, 9.0, 15.0, 21.0]
+    assert precious == [5.0, 11.0, 17.0, 23.0]
+    assert not set(happy) & set(precious)
 
 
-def test_keepsake_album_sg_atk_scales_with_precious_moments_stacks():
-    ctx = make_context()
-    registry = EffectRegistry()
-    rules = {"arcana-fortune-mate": build()}
+def test_rotation_restarts_in_every_window():
+    # Two windows holding 8 shots each - a non-multiple of the period, so a
+    # counter that ran straight through would put the second window's Happy
+    # Memories on its 2nd and 8th shot instead of its 4th. Both windows must
+    # look identical.
+    shots = [float(i) for i in range(8)] + [100.0 + i for i in range(8)]
+    happy = rotation_times(HAPPY_MEMORIES_FIRST, shots, [0.0, 100.0])
+    assert happy == [3.0, 103.0]
 
-    # cycle 1: 1 Precious Moments stack -> flat ATK = 13% of caster ATK x 1, for
-    # 15 sec, on shotgun wielders only (Fortune Mate herself is SG and included).
-    run_cycle(rules, ctx, registry, burst_time=5.0)
-    assert round(registry.total_for("flat_atk", SG_ALLY, now=15.0), 4) == round(0.13 * CASTER_ATK, 4)
-    assert round(registry.total_for("flat_atk", SELF_TARGET, now=15.0), 4) == round(0.13 * CASTER_ATK, 4)
-    assert registry.total_for("flat_atk", ALLY, now=15.0) == 0.0  # AR ally excluded
-    assert registry.total_for("flat_atk", SG_ALLY, now=30.1) == 0.0  # 15s from full_burst_end (t=15)
 
-    # cycle 3: 3 stacks -> 13% x 3
-    run_cycle(rules, ctx, registry, burst_time=45.0)
-    run_cycle(rules, ctx, registry, burst_time=85.0)
-    assert round(registry.total_for("flat_atk", SG_ALLY, now=95.0), 4) == round(0.13 * CASTER_ATK * 3, 4)
+def test_rotation_ignores_shots_outside_the_status_window():
+    # She fires all fight; only the shots inside Making Memories advance the
+    # rotation, so out-of-window shots must not shift the phase.
+    shots = [float(i) for i in range(40)]
+    happy = rotation_times(HAPPY_MEMORIES_FIRST, shots, [20.0])
+    assert happy == [23.0, 29.0]
+
+
+# --- end to end: the rotation driven by a real shot timeline ------------------
+
+def arcana_deck_result(fight_duration=40.0):
+    """Fortune Mate (Burst 2) between two filler allies, her SG carrying enough
+    ammo to fire without a reload gap so the rotation is bounded by the Full
+    Burst window rather than by her magazine. Base ATK is CASTER_ATK and enemy
+    DEF is 0, so a shot's damage divided by the opening shot's is exactly her
+    final-ATK ratio - which is what makes the assertions below plain arithmetic."""
+    deck = [
+        {"slug": "ally-b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0, "weapon": "AR"},
+        {"slug": "arcana-fortune-mate", "burst_tier": 2, "element": "Fire", "cooldown": 20.0,
+         "weapon": "SG"},
+        {"slug": "sg-ally", "burst_tier": 3, "element": "Iron", "cooldown": 20.0, "weapon": "SG"},
+    ]
+    values = {"radiant_youth": RADIANT_YOUTH, "memories_and_moments": MEMORIES_AND_MOMENTS,
+              "keepsake_album": KEEPSAKE_ALBUM, "caster_atk": CASTER_ATK}
+    return simulate_raid(
+        deck,
+        {"ally-b1": [], "sg-ally": [], "arcana-fortune-mate": build_fortune_mate_rules(values)},
+        burst_damage_percents={},
+        base_stats={m["slug"]: {"atk": CASTER_ATK if m["slug"] == "arcana-fortune-mate" else 0,
+                                "def": 0, "max_hp": 0} for m in deck},
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=fight_duration, mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"arcana-fortune-mate": {
+            "weapon": "SG", "damage_percent": 100.0, "max_ammo": 200,
+            "reload_time": 2.33, "charge_time": 0.0, "charge_damage_percent": 0.0}},
+        resource_specs={"arcana-fortune-mate": build_memories_and_moments_resources(values)},
+        resource_gated_buffs={
+            "arcana-fortune-mate": build_keepsake_album_resource_gated_buffs(values)},
+    )
+
+
+def her_normal_attacks(result):
+    return [e for e in result["damage_log"]
+            if e["slug"] == "arcana-fortune-mate" and e["source"] == "normal_attack"]
+
+
+def test_rotation_steps_land_on_their_own_normals_through_a_real_timeline():
+    in_window = [e for e in her_normal_attacks(arcana_deck_result())
+                 if 5.0 <= e["time"] < 15.0]
+    h, p = HAPPY_MEMORIES_DAMAGE_PER_STACK, 0.0249
+
+    def step(n):  # the nth in-window normal against the one before it
+        return round(in_window[n - 1]["damage"] / in_window[n - 2]["damage"], 6)
+
+    # Happy Memories on the 4th and 10th, Precious Moments on the 6th and 12th.
+    assert step(4) == round((1 + h) / 1, 6)
+    assert step(6) == round((1 + p) / 1, 6)
+    assert step(10) == round((1 + 2 * h) / (1 + h), 6)
+    assert step(12) == round((1 + 2 * p) / (1 + p), 6)
+    # Nothing lands on the odd normals, nor on the reload steps 2 and 8.
+    assert [n for n in (2, 3, 5, 7, 8, 9, 11) if step(n) != 1.0] == []
+    # SG at 1.5/s puts 15 shots in the window, so the rotation stops at its 12th
+    # normal - a 3rd stack needs the attack speed Fienn measured at 22 shots.
+    assert len(in_window) == 15
+
+
+def test_keepsake_album_reads_the_live_stack_count_and_happy_memories_is_wiped():
+    shots = her_normal_attacks(arcana_deck_result(fight_duration=80.0))
+    base = shots[0]["damage"]  # opening shot: no burst, no stacks
+
+    # Final ATK is base_atk x (1 + atk%) + flat_atk, and both are expressed in
+    # units of base_atk here, so a post-window shot reads (1 + 2.49% x stacks)
+    # + 13% x stacks exactly. A leaked Happy Memories stack would show up as a
+    # further x1.0914, and the old per-cycle model as 13% x 1 instead of x 2.
+    after_first = next(e for e in shots if e["time"] > 15.0)
+    assert round(after_first["damage"] / base, 6) == round((1 + 2 * 0.0249) + 0.13 * 2, 6)
+
+    # Window 1 reaches the rotation's 6th and 12th normal (2 stacks), window 2
+    # its 6th (the 3rd), and the cap holds from there.
+    after_second = next(e for e in shots if e["time"] > 35.0)
+    assert round(after_second["damage"] / base, 6) == round((1 + 3 * 0.0249) + 0.13 * 3, 6)
+    after_third = next(e for e in shots if e["time"] > 55.0)
+    assert round(after_third["damage"] / base, 6) == round((1 + 3 * 0.0249) + 0.13 * 3, 6)
+
+
+def test_happy_memories_carries_the_cap_and_the_full_burst_end_reset():
+    happy = next(s for s in build_memories_and_moments_resources({
+        "memories_and_moments": MEMORIES_AND_MOMENTS, "keepsake_album": KEEPSAKE_ALBUM,
+    }) if s.name == "happy_memories")
+    # Cap and reset are what stop the 4th rotation step (the 22nd normal, which
+    # Fienn reached with Tove seated) from becoming a 4th stack, and what clear
+    # the counter between windows.
+    assert happy.cap == 3
+    assert happy.resets == [{"trigger": "full_burst_end", "value": 0}]
+    assert happy.fill == ("per_shot_cycle_in_own_status_window", 4, 6, FULL_BURST_DURATION)
+    assert round(happy.buffs[0].value_fn(3), 6) == round(3 * HAPPY_MEMORIES_DAMAGE_PER_STACK, 6)
+
+    precious = next(s for s in build_memories_and_moments_resources({
+        "memories_and_moments": MEMORIES_AND_MOMENTS, "keepsake_album": KEEPSAKE_ALBUM,
+    }) if s.name == "precious_moments")
+    # Precious Moments is NOT reset - Keepsake Album removes Making Memories and
+    # Snapshots of Youth, not this.
+    assert precious.resets == []
+    assert precious.fill == ("per_shot_cycle_in_own_status_window", 6, 6, FULL_BURST_DURATION)

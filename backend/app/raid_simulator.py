@@ -81,11 +81,9 @@ Burst tab, that auto-fires throughout the whole fight). `periodic_nukes` is a
 t=cooldown, 2*cooldown, ... up to fight_duration, computing damage the same
 way as a burst nuke (using the tick time to read live buffs, so it correctly
 reflects whatever's active at that instant). Logged with `source="periodic"`.
-A spec may opt in with `"full_burst_bonus_eligible": True` - the repeating-
-tick-DoT rule (Fienn, 2026-07-16): each tick computes at its own time, so
-ticks landing inside a Full Burst window get the bonus. Absent/False keeps
-the pre-existing no-bonus behavior, so units encoded before this field are
-unchanged until deliberately flagged.
+Every tick computes at its OWN time, so a tick landing inside a Full Burst
+window collects the bonus and one outside does not - no per-spec opt-in, see
+`_damage_instance`.
 A spec may also carry `"during_full_burst": True` (ticks only inside each
 Full Burst window, anchored to the window's start - gap #6), `"hit_count": N`
 (each tick records N separate hits, same rationale as burst_hit_counts), and
@@ -233,6 +231,29 @@ def _resource_fill_times(
         windows = [(bt, bt + window_duration) for bt in own_burst_times]
         in_window = [t for t in shot_times if any(start <= t < end for start, end in windows)]
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
+    if kind == "per_shot_cycle_in_own_status_window":
+        # ("per_shot_cycle_in_own_status_window", first, period, window_duration):
+        # fires at the `first`-th shot of the status window and every `period`
+        # after, with the count RESTARTED IN EACH WINDOW. That restart is the
+        # whole difference from "per_shot_every_during_own_status_window", which
+        # concatenates every window's shots before counting - fine for a status
+        # whose own stacks reset anyway, wrong for a phase rotation, where a
+        # window holding a non-multiple of `period` shots would drag the phase
+        # into the next window and never line up again.
+        #
+        # Arcana: Fortune Mate's Memories and Moments is the shape this exists
+        # for: while Making Memories is up, every 2nd normal attack triggers ONE
+        # of three effects in rotation (2 reload, 4 Happy Memories, 6 Precious
+        # Moments, then 8/10/12, ...), and the count resets when the status is
+        # removed. Each effect is one (first, period) pair on the same rotation.
+        first, period, window_duration = fill[1], fill[2], fill[3]
+        times = []
+        for burst_time in own_burst_times:
+            start, end = burst_time, burst_time + window_duration
+            in_window = [t for t in shot_times if start <= t < end]
+            times.extend(t for i, t in enumerate(in_window)
+                         if i + 1 >= first and (i + 1 - first) % period == 0)
+        return sorted(times)
     if kind == "per_shot_every_outside_full_burst":
         n = fill[1]
         # Closed on the right: a shot landing exactly at a Full Burst window's
@@ -438,7 +459,7 @@ def simulate_raid(
     base_crit_rate=BASE_CRIT_RATE,
     periodic_nukes=None,
     burst_damage_types=None,
-    burst_full_burst_bonus_eligible=None,
+    burst_resolves_after_cast=None,
     periodic_rules=None,
     per_shot_rules=None,
     resource_specs=None,
@@ -456,7 +477,7 @@ def simulate_raid(
     weapon_mode_schedules = weapon_mode_schedules or {}
     periodic_nukes = periodic_nukes or {}
     burst_damage_types = burst_damage_types or {}
-    burst_full_burst_bonus_eligible = burst_full_burst_bonus_eligible or set()
+    burst_resolves_after_cast = burst_resolves_after_cast or set()
     periodic_rules = periodic_rules or {}
     per_shot_rules = per_shot_rules or {}
     resource_specs = resource_specs or {}
@@ -529,18 +550,22 @@ def simulate_raid(
 
     def _damage_instance(
         slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0,
-        full_burst_bonus_eligible=False, hits_core=False, on_charge_weapon=None,
+        hits_core=False, on_charge_weapon=None,
     ):
         bundle = _stat_bundle(slug, time)
         # True Damage ignores enemy DEF (nikke.gg glossary).
         instance_enemy_def = 0 if damage_type == "true" else enemy_def
-        # Full Burst Bonus only applies to damage a unit's skill text describes
-        # as "additional damage" (Fienn, 2026-07-12) - i.e. damage actually
-        # computed later than cast time, which can land inside a Full Burst
-        # window. `full_burst_bonus_eligible` is an explicit per-instance opt-in
-        # (set by the caller from that skill-text signal); ordinary cast-time
-        # damage never sets it, so this stays inert for every other unit.
-        in_full_burst = full_burst_bonus_eligible and any(
+        # The Full Burst Bonus is decided by WHEN this instance's damage is
+        # computed - if that moment falls inside a Full Burst window, it gets
+        # the bonus (Fienn, 2026-07-28). There is nothing else to it, and in
+        # particular no skill-text test: an earlier rule read "as additional
+        # damage" out of the description, which only ever correlated because a
+        # Burst 3's instant "as damage" bullets resolve at the cast, one beat
+        # BEFORE the window opens. Now that cast time and Full Burst entry are
+        # separate instants, the time answers it directly - so what a caller
+        # must get right is the instance's TIME (see `resolves_after_cast`),
+        # not some eligibility flag.
+        in_full_burst = any(
             start <= time < end for start, end in full_burst_windows
         )
         terms = dict(
@@ -608,13 +633,12 @@ def simulate_raid(
     def record(
         slug, percent, time, source, damage_type="attack",
         extra_charge_bonus=0.0, resource_gate=None, extra_flat_atk=0.0,
-        full_burst_bonus_eligible=False, on_charge_weapon=None,
+        on_charge_weapon=None,
     ):
         damage_events.append({
             "slug": slug, "percent": percent, "time": time, "source": source,
             "damage_type": damage_type, "extra_charge_bonus": extra_charge_bonus,
             "resource_gate": resource_gate, "extra_flat_atk": extra_flat_atk,
-            "full_burst_bonus_eligible": full_burst_bonus_eligible,
             # None = decide from the unit's base weapon; a normal attack pins
             # the weapon its own shot record actually fired.
             "on_charge_weapon": on_charge_weapon,
@@ -642,7 +666,6 @@ def simulate_raid(
             record(
                 pulse.source_slug, pulse.value, time, "instant_nuke",
                 damage_type=pulse.damage_type,
-                full_burst_bonus_eligible=pulse.full_burst_bonus_eligible,
             )
 
     def on_battle_start(time):
@@ -688,15 +711,14 @@ def simulate_raid(
             # ticks are anchored a beat later - which for a Burst 3 is the
             # instant Full Burst opens, putting even the first tick inside the
             # window (Mana's Fatal Error!, confirmed in-game).
-            eligible_ticks = spec.get("full_burst_bonus_eligible", False)
-            tick_base = time + FULL_BURST_OPEN_DELAY if eligible_ticks else time
+            after_cast = spec.get("resolves_after_cast", False)
+            tick_base = time + FULL_BURST_OPEN_DELAY if after_cast else time
             for i in range(spec["tick_count"]):
                 tick_time = tick_base + i * spec["tick_interval"]
                 record(
                     slug, spec["base_percent"], tick_time, "resource_scaled_nuke",
                     damage_type=spec.get("damage_type", "attack"),
                     resource_gate=resource_gate,
-                    full_burst_bonus_eligible=eligible_ticks,
                 )
 
         percent = burst_damage_percents.get(slug)
@@ -706,18 +728,19 @@ def simulate_raid(
         # one hit at N*percent - defense is a flat per-hit subtraction (see
         # damage_formula), so splitting into hits changes the total whenever
         # enemy_def > 0. All N hits land at the same instant.
-        # "as additional damage" is the text signal that the bullet resolves
-        # AFTER the cast rather than at it, so it is recorded a beat later -
-        # which for a Burst 3 is exactly the instant Full Burst opens, and is
-        # what lets it collect the bonus (and any full_burst_enter buff). An
-        # ordinary burst bullet stays at cast time, before the window exists.
-        eligible = slug in burst_full_burst_bonus_eligible
-        burst_time = time + FULL_BURST_OPEN_DELAY if eligible else time
+        # `burst_resolves_after_cast` names the one thing a caller has to get
+        # right: whether this burst's damage lands AT the cast or a beat later.
+        # For a Burst 3 that beat is exactly when Full Burst opens, so a bullet
+        # marked here is recorded inside the window (and sees any
+        # full_burst_enter buff); an ordinary burst bullet stays at cast time,
+        # before the window exists, and collects nothing. Which of the two a
+        # unit gets is a reading of its skill, not of any one phrase in it.
+        after_cast = slug in burst_resolves_after_cast
+        burst_time = time + FULL_BURST_OPEN_DELAY if after_cast else time
         for _ in range(burst_hit_counts.get(slug, 1)):
             record(
                 slug, percent, burst_time, "burst",
                 damage_type=burst_damage_types.get(slug, "attack"),
-                full_burst_bonus_eligible=eligible,
             )
 
     def on_full_burst_enter(time):
@@ -925,6 +948,12 @@ def simulate_raid(
                     ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
                     core_hittable, fight_duration, full_burst_windows, own_burst_times,
                 ))
+            elif mode == "cycle_in_own_status_window":
+                first, period, window_duration = threshold
+                window_fire_times[idx] = set(_resource_fill_times(
+                    ("per_shot_cycle_in_own_status_window", first, period, window_duration),
+                    shot_times, core_hittable, fight_duration, full_burst_windows, own_burst_times,
+                ))
             elif mode == "every_during_segment":
                 seg_indices = [i for i, r in enumerate(shot_records) if r.in_segment]
                 window_fire_indices[idx] = {
@@ -982,7 +1011,6 @@ def simulate_raid(
                         record(
                             pulse.source_slug, pulse.value, shot_time, "per_shot_nuke",
                             damage_type=pulse.damage_type,
-                            full_burst_bonus_eligible=pulse.full_burst_bonus_eligible,
                         )
             damage_type = rec.damage_type or normal_attack_type(slug, rec.weapon, shot_time)
             # A normal attack IS Full-Burst-Bonus eligible: its shot time is the
@@ -995,7 +1023,6 @@ def simulate_raid(
             # measurement lands on the +0.5 branch to 0.00003%.
             record(slug, rec.damage_percent, shot_time, "normal_attack",
                    damage_type=damage_type, extra_charge_bonus=rec.extra_charge_bonus,
-                   full_burst_bonus_eligible=True,
                    on_charge_weapon=rec.weapon in CHARGE_WEAPONS)
         shot_times_by_slug[slug] = shot_times
 
@@ -1086,6 +1113,14 @@ def simulate_raid(
                     reset_events.extend(
                         (rt + delay, reset_spec) for rt in context.burst_times.get(slug, [])
                     )
+                elif reset_spec["trigger"] == "full_burst_end":
+                    # Cleared when the squad's Full Burst ends, whoever opened
+                    # it - e.g. Arcana: Fortune Mate's Happy Memories, removed
+                    # there by Keepsake Album's own third bullet. Distinct from
+                    # "own_burst_delayed" with a 10 sec delay, which lands one
+                    # burst-ordering beat early and would cut the window's last
+                    # shots short.
+                    reset_events.extend((end, reset_spec) for _start, end in full_burst_windows)
                 else:
                     raise ValueError(f"unknown resource reset trigger: {reset_spec['trigger']}")
             reset_events.sort(key=lambda e: e[0])
@@ -1158,20 +1193,50 @@ def simulate_raid(
     # cycle) for each of the owner's own burst-fire times.
     for slug, specs in resource_gated_buffs.items():
         for spec in specs:
-            for burst_time in context.burst_times.get(slug, []):
+            # Default read point is each of the owner's own burst fires. `"at":
+            # "full_burst_end"` reads at every Full Burst's end instead - for a
+            # buff whose skill text fires THERE while scaling off a resource
+            # only the shot loop above could have filled (Arcana: Fortune Mate's
+            # Keepsake Album, "when Full Burst ends ... x stack count of
+            # Precious Moments"). A `full_burst_end` SkillRule cannot serve it:
+            # those run inside the burst-cycle walk, long before any shot exists.
+            if spec.get("at") == "full_burst_end":
+                read_times = [end for _start, end in full_burst_windows]
+            else:
+                read_times = context.burst_times.get(slug, [])
+            # `member_filter` resolves the scope against the LIVE squad (gap #3)
+            # for a buff that names a weapon/element class rather than a fixed
+            # target; `scope` stays for the fixed-target majority.
+            if spec.get("member_filter") is not None:
+                targets = [m.slug for m in context.members if spec["member_filter"](m, slug)]
+                if not targets:
+                    continue
+                scope = "slugs:" + ",".join(targets)
+            else:
+                scope = spec["scope"]
+            for read_time in read_times:
                 if spec.get("use_pre_reset"):
-                    count = context.resource_count_before_reset(slug, spec["resource"], burst_time)
+                    count = context.resource_count_before_reset(slug, spec["resource"], read_time)
                     if count is None:
                         continue
                 else:
                     count = context.resource_count(
-                        slug, spec["resource"], burst_time, spec["cap"], spec.get("lifetime")
+                        slug, spec["resource"], read_time, spec["cap"], spec.get("lifetime")
                     )
-                if spec["gate_fn"](count):
-                    registry.add(
-                        Effect(spec["stat"], spec["value"], spec["scope"], spec["duration"], slug),
-                        applied_at=burst_time,
-                    )
+                # `value_per_stack` scales with the count instead of gating on
+                # it; a zero count then simply grants nothing.
+                if spec.get("value_per_stack") is not None:
+                    if count <= 0:
+                        continue
+                    value = spec["value_per_stack"] * count
+                elif spec["gate_fn"](count):
+                    value = spec["value"]
+                else:
+                    continue
+                registry.add(
+                    Effect(spec["stat"], value, scope, spec["duration"], slug),
+                    applied_at=read_time,
+                )
 
     # A burst-fired nuke whose HIT COUNT (not just its percent) is itself a
     # resource's value at burst time - e.g. Maiden's Diamond Dust, "attacks
@@ -1205,7 +1270,6 @@ def simulate_raid(
                     record(
                         slug, spec["base_percent"], fire_time, "dynamic_hit_count_nuke",
                         damage_type=spec.get("damage_type", "attack"), extra_flat_atk=extra_flat_atk,
-                        full_burst_bonus_eligible=spec.get("full_burst_bonus_eligible", False),
                     )
 
     for slug, spec in periodic_nukes.items():
@@ -1216,13 +1280,11 @@ def simulate_raid(
         percent = spec["percent"]
         damage_type = spec.get("damage_type", "attack")
         hit_count = spec.get("hit_count", 1)
-        eligible = spec.get("full_burst_bonus_eligible", False)
 
         def _tick(tick_time, slug=slug, percent=percent, damage_type=damage_type,
-                  hit_count=hit_count, eligible=eligible):
+                  hit_count=hit_count):
             for _ in range(hit_count):
-                record(slug, percent, tick_time, "periodic", damage_type=damage_type,
-                       full_burst_bonus_eligible=eligible)
+                record(slug, percent, tick_time, "periodic", damage_type=damage_type)
 
         if spec.get("during_full_burst"):
             # Ticks only inside Full Burst windows, anchored to each window's
@@ -1262,7 +1324,6 @@ def simulate_raid(
     for slug, specs in scheduled_nukes.items():
         for spec in specs:
             damage_type = spec.get("damage_type", "attack")
-            eligible = spec.get("full_burst_bonus_eligible", False)
             # Optional `resource_gate` (same 4-tuple shape resource_scaled_nukes
             # uses): each tick's percent is scaled by a named resource's count
             # AT THAT TICK'S OWN TIME, resolved in phase 2. Lets a whole-fight
@@ -1273,8 +1334,7 @@ def simulate_raid(
                 if hit_time >= fight_duration:
                     continue
                 record(slug, spec["percent"], hit_time, "scheduled",
-                       damage_type=damage_type, resource_gate=resource_gate,
-                       full_burst_bonus_eligible=eligible)
+                       damage_type=damage_type, resource_gate=resource_gate)
 
     def _normal_attack_percent(ev):
         # Normal Attack Damage Multiplier is a Final ATK modifier on the
@@ -1297,7 +1357,6 @@ def simulate_raid(
                 ev["time"],
                 damage_type=ev["damage_type"], extra_charge_bonus=ev["extra_charge_bonus"],
                 extra_flat_atk=ev["extra_flat_atk"],
-                full_burst_bonus_eligible=ev["full_burst_bonus_eligible"],
                 hits_core=core_hittable and core_eligible(ev["source"], ev["damage_type"]),
                 on_charge_weapon=ev["on_charge_weapon"],
             ),

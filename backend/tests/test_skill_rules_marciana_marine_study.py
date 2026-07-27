@@ -119,7 +119,6 @@ def test_flagged_target_nuke_fires_on_full_burst_after_own_burst():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 3789.25
-    assert pulses[0].full_burst_bonus_eligible is True
 
 
 def test_high_risk_20_normal_nuke_fires_every_20_normals_gated_on_electric():
@@ -137,7 +136,6 @@ def test_high_risk_20_normal_nuke_fires_every_20_normals_gated_on_electric():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 152.68
-    assert pulses[0].full_burst_bonus_eligible is True
 
     non_electric = make_context(boss_element="Water")
     registry2 = EffectRegistry()

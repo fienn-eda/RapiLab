@@ -91,7 +91,7 @@ def test_fatal_error_dot_spec_is_a_flat_396_percent_per_second_for_10_ticks():
     assert spec["tick_count"] == 10
     assert spec["tick_interval"] == 1.0
     assert spec["damage_type"] == "sustained"
-    assert spec["full_burst_bonus_eligible"] is True
+    assert spec["resolves_after_cast"] is True
     assert "resource" not in spec
 
 

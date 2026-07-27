@@ -17,9 +17,10 @@ Modeled (DPS-relevant):
   enemy unit(s) with the highest final DEF (in a solo-boss raid, a single
   hit) - plus, "when Crescendo is at max stacks," an ADDITIONAL 544.5% hit
   (`resource_scaled_nukes`, gated on Crescendo's count at burst time via
-  `scale_fn`). Only the additional hit's text says "as additional damage"
-  (the base hit says plain "as damage"), so only the additional hit opts
-  into `full_burst_bonus_eligible`.
+  `scale_fn`). The additional hit is marked `resolves_after_cast`, so it lands a
+  beat later - inside the window her own burst opens - while the base hit stays
+  at cast time, outside it. That timing split is the whole difference; their
+  wordings ("as additional damage" vs plain "as damage") merely track it.
 """
 from app.skill_rules._helpers import buff_rule, linear_resource_buff
 from app.effects import ResourceSpec
@@ -72,6 +73,5 @@ def build_climax_resource_scaled_nuke(values):
     return [{
         "resource": "crescendo", "cap": cap, "base_percent": additional_percent,
         "scale_fn": lambda count, cap=cap: 1.0 if count >= cap else 0.0,
-        "tick_count": 1, "tick_interval": 0.0,
-        "full_burst_bonus_eligible": True,
+        "tick_count": 1, "tick_interval": 0.0, "resolves_after_cast": True,
     }]

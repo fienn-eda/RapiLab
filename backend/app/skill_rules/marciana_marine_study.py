@@ -118,7 +118,6 @@ def build_marciana_rules(values):
         instant_nuke_pulse_rule(
             "full_burst_enter",
             flagged_nuke,
-            full_burst_bonus_eligible=True,
             condition=own_burst_fired_this_cycle(),
         ),
     ]
@@ -137,7 +136,7 @@ def build_marciana_per_shot_rules(values):
             HIGH_RISK_NUKE_SHOT_COUNT,
             "every",
             [instant_nuke_pulse_rule(
-                "per_shot", high_risk_nuke, full_burst_bonus_eligible=True,
+                "per_shot", high_risk_nuke,
                 condition=boss_is_element(ELECTRIC),
             )],
         ),

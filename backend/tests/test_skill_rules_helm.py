@@ -147,7 +147,6 @@ def test_fire_away_full_charge_nuke_fires_every_shot_and_takes_the_full_burst_bo
     assert pulses[0].value == 178.98
     assert pulses[0].source_slug == "helm"
     # "as additional damage" -> opted in to the Full Burst bonus.
-    assert pulses[0].full_burst_bonus_eligible is True
 
 
 def test_aegis_cannon_grants_self_charge_damage_for_ten_rounds():

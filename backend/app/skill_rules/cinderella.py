@@ -7,7 +7,7 @@ Modeled (DPS-relevant):
   Max HP for 10 sec. Every shot she fires deals an extra 136.6%-of-final-ATK
   hit - RL is a charge weapon, so EVERY normal attack IS a full-charge attack
   (see `attack_rate`), modeled as a per-shot instant nuke firing on every shot
-  and eligible for the Full Burst bonus ("as additional damage").
+  - so it takes the Full Burst bonus on whichever shots land inside a window.
 - Dirt-Resistant Mirror (skills[1]): Beautiful, which is TWO things. Its stack
   COUNT is a named resource ticking every 3 sec (her decoy is up continuously
   from battle start), capped at 12, feeding Glass Slippers' mirrored additional
@@ -78,8 +78,7 @@ def build_flawless_glass_per_shot_rules(values):
     the shot against the Full Burst window rather than approximating."""
     fg = values["flawless_glass"]
     additional = float(fg["description_value_04"])
-    return [(1, "every", [instant_nuke_pulse_rule("per_shot", additional,
-                                                  full_burst_bonus_eligible=True)])]
+    return [(1, "every", [instant_nuke_pulse_rule("per_shot", additional)])]
 
 
 def flawless_glass_charge_speed(values):

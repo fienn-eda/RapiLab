@@ -3,10 +3,9 @@ Burst-3 Wind Machine Gun attacker. Base skills. PARTIAL - see below.
 
 First consumer of the delayed dynamic_hit_count_nuke (`fire_delay` +
 `own_burst_delayed` resets - a burst effect that lands after a fixed delay,
-not at cast time) and of `full_burst_bonus_eligible` (Fienn's "as additional
-damage" text rule, 2026-07-12: a burst skill's damage instance gets the Full
-Burst Bonus only if its own description uses that phrase - see
-docs/insights.md).
+not at cast time), which is also the clearest illustration of why the Full
+Burst bonus is decided by TIME: the same burst produces damage at the cast
+(no bonus, the window has not opened) and damage 9 sec later (inside it).
 
 Modeled (DPS-relevant): an "anti_at_field" resource (Anti A.T. Field, a stack
 debuff on the boss), capped at 30.
@@ -22,7 +21,11 @@ debuff on the boss), capped at 30.
   whichever Full Burst window (if any) the shot's own time happens to fall
   in, since this trigger runs independently of her burst.
 - Annihilation State (her burst): grants self ATK +46.8% of her own ATK and
-  Attack Damage +36%, both for 9 sec. Separately, "Annihilation" fires 9 sec
+  Attack Damage +36%, and cuts her own Normal Attack Damage Multiplier by
+  40%, all three for 9 sec. That cut is the state's price and it is not a
+  small one: her burst opens the Full Burst window, so the 9 sec cover her
+  most valuable shots - 62% of her normal-attack damage in the recorded deck
+  3. Separately, "Annihilation" fires 9 sec
   LATER (when Annihilation State ends, not at cast time) - deals 6.62% of
   final ATK as additional damage, once per Anti A.T. Field stack accumulated
   right before that moment (`dynamic_hit_count_nukes` + `fire_delay`), and
@@ -46,16 +49,12 @@ debuff on the boss), capped at 30.
   bullet from the 471.86% unconditional nuke): modeled via the window-gated
   per-shot trigger (`per_shot_rules` mode "every_during_own_status_window",
   gap #7, built 2026-07-15) - the same 9s own-burst-anchored window the stack
-  fill uses. "as damage" (not "as additional damage"), so NOT
-  full_burst_bonus_eligible. A small nuke, secondary to her headline mechanics.
+  fill uses. It fires on her own shots, so like every other per-shot instance
+  it takes the Full Burst bonus on whichever of them land inside a window - no
+  reading of its wording involved. A small nuke, secondary to her headline
+  mechanics.
 
 Not modeled / deferred:
-- Annihilation State's Normal Attack Damage Multiplier -40% for 9 sec: the
-  engine has no way to scope a damage-up/down bucket to "normal attacks
-  only" (as opposed to a `damage_type`, which normal attacks and most bursts
-  share) - would need a new source-based gate, a real but undiscussed
-  engine capability. A self-DEBUFF, smaller in DPS impact than her positive
-  headline mechanics.
 - Annihilation State's 21% magazine reload and Emergency Repair's heating
   speed / ammo removal / HP recovery / reload speed effects: all
   reload/ammo/HP mechanics, not damage - not consumed by the engine (see
@@ -116,10 +115,9 @@ def build_anti_at_field_per_shot_rules(values):
     fill_every = int(float(field["description_value_04"]))
     window_duration = float(values["annihilation_state"]["description_value_02"])
     return [
-        (uncond_threshold, "every", [instant_nuke_pulse_rule("per_shot", uncond_nuke, full_burst_bonus_eligible=True)]),
+        (uncond_threshold, "every", [instant_nuke_pulse_rule("per_shot", uncond_nuke)]),
         # gap #7: every `fill_every` shots WHILE in Annihilation State (a
-        # `window_duration`-sec window anchored to her own burst). "as damage",
-        # not "as additional damage", so NOT full_burst_bonus_eligible.
+        # `window_duration`-sec window anchored to her own burst).
         (
             (fill_every, window_duration),
             "every_during_own_status_window",
@@ -131,10 +129,16 @@ def build_anti_at_field_per_shot_rules(values):
 def build_annihilation_state_rules(values, caster_atk):
     annihilation = values["annihilation_state"]
     duration = float(annihilation["description_value_02"])
+    # Effect 1 is the price of the state: her normal attacks are cut while the
+    # other two effects raise everything else. Negative, because it is the
+    # DOWN direction of the same Final ATK modifier.
+    normal_attack_multiplier = -float(annihilation["description_value_01"]) / 100
     atk_from_caster_atk = caster_atk * float(annihilation["description_value_04"]) / 100
     attack_damage = float(annihilation["description_value_05"]) / 100
 
     def action(context, caster_slug, time, registry):
+        registry.add(Effect("normal_attack_damage_multiplier", normal_attack_multiplier,
+                            "self", duration, caster_slug), applied_at=time)
         registry.add(Effect("flat_atk", atk_from_caster_atk, "self", duration, caster_slug), applied_at=time)
         registry.add(Effect("attack_damage_up", attack_damage, "self", duration, caster_slug), applied_at=time)
 
@@ -158,5 +162,4 @@ def build_annihilation_dynamic_hit_count_nukes(values):
     nuke = float(annihilation["description_value_06"])
     return [{
         "resource": "anti_at_field", "base_percent": nuke, "fire_delay": duration,
-        "full_burst_bonus_eligible": True,
     }]

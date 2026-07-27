@@ -141,7 +141,6 @@ def test_memory_incineration_full_charge_nukes_fire_once_per_charge_in_window():
     # The trigger is a Full Charge that takes 1.8 sec and can only happen after
     # her burst, so the hit is always computed inside Full Burst - both halves
     # collect the bonus, whatever their wording (Fienn, 2026-07-26).
-    assert spec["full_burst_bonus_eligible"] is True
 
     ctx = make_context()
     ctx.burst_times["nayuta"] = [20.0]

@@ -114,13 +114,13 @@ def build_ark_ranger_dots(values):
         {  # Meteor - both branches
             "base_percent": meteor_percent, "tick_count": meteor_ticks,
             "tick_interval": 1.0, "damage_type": "sustained",
-            "full_burst_bonus_eligible": True,
+            "resolves_after_cast": True,
         },
         {  # Collider floor - burst-anchored window DoT
             "base_percent": collider_percent, "tick_count": collider_ticks,
             "tick_interval": 1.0, "damage_type": "sustained",
+            "resolves_after_cast": True,
             "requires_part_destructible": False,
-            "full_burst_bonus_eligible": True,
         },
     ]
 
@@ -132,7 +132,6 @@ def build_ark_ranger_ceiling_collider(values):
     return {
         "cooldown": 1.0, "percent": collider_percent, "damage_type": "sustained",
         "requires_part_destructible": True,
-        "full_burst_bonus_eligible": True,
     }
 
 

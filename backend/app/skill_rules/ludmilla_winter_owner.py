@@ -86,6 +86,7 @@ def build_ludmilla_per_shot_rules(values):
         # having an exploitable core and then counted off her real shot
         # timeline, per Fienn 2026-07-20 - see the module docstring.
         (core_count, "every", [
-            instant_nuke_pulse_rule("per_shot", core_nuke, condition=boss_core_hittable()),
+            instant_nuke_pulse_rule("per_shot", core_nuke,
+                                    condition=boss_core_hittable()),
         ]),
     ]

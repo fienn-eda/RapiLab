@@ -26,7 +26,8 @@ atk_percent rather than needing a caster-stat snapshot.
 modeled via `per_shot_rules`' `"last_bullet"` mode (gap #1's residual
 variant, built 2026-07-12): every last bullet applies a squad Damage Taken
 debuff on the target and deals 256.17% of final ATK as additional damage
-(both "as additional damage" - `full_burst_bonus_eligible`), PLUS, if the
+(both fired off her own shots, so both take the Full Burst bonus on whichever
+land inside a window), PLUS, if the
 target is currently in "Designated Target" status, an ADDITIONAL 1687% hit
 stacked on top (two separate pulses that instant, not either/or - the skill
 text's second bullet is a bonus layered on the first, not a replacement).
@@ -132,7 +133,7 @@ def build_ld_assault_base_per_shot_rules(values: dict) -> list:
     base_percent = float(values["ld_assault"]["description_value_01"])
 
     def action(context, caster_slug, time, registry):
-        registry.add_pulse(Pulse("instant_damage_percent", base_percent, "self", caster_slug, True))
+        registry.add_pulse(Pulse("instant_damage_percent", base_percent, "self", caster_slug))
 
     return [(None, "last_bullet", [SkillRule(trigger="per_shot", action=action)])]
 
@@ -206,11 +207,11 @@ def build_ld_assault_per_shot_rules(values: dict) -> list:
                    refresh_group=_LD_ASSAULT_DAMAGE_TAKEN),
             applied_at=time,
         )
-        registry.add_pulse(Pulse("instant_damage_percent", base_percent, "self", caster_slug, True))
+        registry.add_pulse(Pulse("instant_damage_percent", base_percent, "self", caster_slug))
         designated = any(
             bt <= time < bt + designated_duration for bt in context.burst_times.get(caster_slug, [])
         )
         if designated:
-            registry.add_pulse(Pulse("instant_damage_percent", designated_percent, "self", caster_slug, True))
+            registry.add_pulse(Pulse("instant_damage_percent", designated_percent, "self", caster_slug))
 
     return [(None, "last_bullet", [SkillRule(trigger="per_shot", action=action)])]

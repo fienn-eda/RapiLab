@@ -91,7 +91,7 @@ def test_meteor_dot_is_10_ticks_sustained_both_branches():
     assert meteor[0]["tick_count"] == 10
     assert meteor[0]["tick_interval"] == 1.0
     assert meteor[0]["damage_type"] == "sustained"
-    assert meteor[0]["full_burst_bonus_eligible"] is True
+    assert meteor[0]["resolves_after_cast"] is True
 
 
 def test_floor_collider_dot_gated_off_when_part_destructible():
@@ -101,7 +101,7 @@ def test_floor_collider_dot_gated_off_when_part_destructible():
     assert collider[0]["base_percent"] == 45.87
     assert collider[0]["tick_count"] == 10       # D=10s / 1s interval
     assert collider[0]["damage_type"] == "sustained"
-    assert collider[0]["full_burst_bonus_eligible"] is True
+    assert collider[0]["resolves_after_cast"] is True
 
 
 def test_ceiling_collider_is_wholefight_periodic_sustained():
@@ -110,7 +110,6 @@ def test_ceiling_collider_is_wholefight_periodic_sustained():
     assert spec["percent"] == 45.87
     assert spec["damage_type"] == "sustained"
     assert spec["requires_part_destructible"] is True
-    assert spec["full_burst_bonus_eligible"] is True  # repeating-tick-DoT rule
 
 
 def test_transformation_window_derives_from_battery_values_not_hardcoded():

@@ -46,7 +46,7 @@ def _burst_damage(slug, eligible_slugs):
         fight_duration=40.0,
         mode="manual",
         base_crit_rate=0.0,
-        burst_full_burst_bonus_eligible=eligible_slugs,
+        burst_resolves_after_cast=eligible_slugs,
     )
     return sum(e["damage"] for e in result["damage_log"] if e["source"] == "burst")
 

@@ -72,7 +72,6 @@ def test_hero_bomber_fires_every_full_charge_outside_full_burst():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 132.45
-    assert pulses[0].full_burst_bonus_eligible is True  # "as additional damage"
 
 
 def test_buster_weapon_mode_schedule_shape():

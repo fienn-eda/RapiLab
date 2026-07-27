@@ -39,11 +39,6 @@ class Pulse:
     value: float
     scope: str
     source_slug: str
-    # Opt-in per instance: only an "instant_damage_percent" pulse whose skill
-    # text says "as additional damage" sets this, so raid_simulator can pass it
-    # through to record()'s full_burst_bonus_eligible - see damage_formula's
-    # full_burst_bonus term and docs/insights.md.
-    full_burst_bonus_eligible: bool = False
     # Damage typing for "instant_damage_percent" pulses whose text names a
     # type (e.g. "as Distributed Damage") - passed through to record() so the
     # type-gated Damage-Up buckets apply. Other pulse stats ignore it.
@@ -104,10 +99,12 @@ class ResourceSpec:
     fill: tuple
     cap: float
     buffs: list[ResourceBuff] = field(default_factory=list)
-    # Optional list of {"trigger": "battle_start"|"own_burst", "value": X}: the
-    # resource is SET to X (not incremented) once at battle start, or at EACH
-    # of the owner's own burst-tier fires - e.g. Soda's Golden Chip resetting
-    # to 17 when her burst consumes it. See raid_simulator's resolution pass.
+    # Optional list of {"trigger": "battle_start"|"own_burst"|
+    # "own_burst_delayed"|"full_burst_end", "value": X}: the resource is SET to
+    # X (not incremented) once at battle start, at EACH of the owner's own
+    # burst-tier fires - e.g. Soda's Golden Chip resetting to 17 when her burst
+    # consumes it - a fixed delay after those, or at each Full Burst's end. See
+    # raid_simulator's resolution pass.
     resets: list[dict] = field(default_factory=list)
 
 

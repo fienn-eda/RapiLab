@@ -651,8 +651,10 @@ def test_instant_damage_pulse_deals_damage_at_full_burst_enter_using_casters_own
     # Fires at the instant Full Burst opens, a beat after the tier-3 cast.
     assert len(instant_hits) == 1
     assert instant_hits[0]["time"] == pytest.approx(5.0)
+    # It lands AT full_burst_start, so it is inside the window and worth 1.5x.
+    assert fb_factor(result, instant_hits[0]["time"]) == 1.5
     assert {k: v for k, v in instant_hits[0].items() if k != "time"} == {
-        "slug": "buffer", "damage": 10000.0, "source": "instant_nuke",
+        "slug": "buffer", "damage": 10000.0 * 1.5, "source": "instant_nuke",
         "damage_type": "attack"}
 
 
@@ -998,11 +1000,15 @@ def test_periodic_rules_apply_buffs_on_own_cooldown_before_damage_passes():
         periodic_rules=periodic_rules,
     )
     by_time = {round(e["time"], 3): e["damage"] for e in result["damage_log"] if e["source"] == "periodic"}
-    assert by_time[5.0] == 10000.0   # before first cd fire (t=15): no debuff
-    assert by_time[15.0] == 11000.0  # debuff active [15, 20): 10000 * (1 + 0.1)
-    assert by_time[19.0] == 11000.0
-    assert by_time[25.0] == 10000.0  # expired at 20; next fire at 30
-    assert by_time[30.0] == 11000.0  # second periodic firing
+    # Each tick also carries its own window position, so the debuff is read
+    # against a 1.5x baseline wherever the tick lands inside Full Burst.
+    def expect(t, debuffed):
+        return round(10000.0 * (1.1 if debuffed else 1.0) * fb_factor(result, t), 4)
+    assert by_time[5.0] == expect(5.0, False)    # before first cd fire (t=15): no debuff
+    assert by_time[15.0] == expect(15.0, True)   # debuff active [15, 20)
+    assert by_time[19.0] == expect(19.0, True)
+    assert by_time[25.0] == expect(25.0, False)  # expired at 20; next fire at 30
+    assert by_time[30.0] == expect(30.0, True)   # second periodic firing
 
 
 def test_periodic_rules_defaults_to_none_and_is_a_no_op():
@@ -1045,7 +1051,9 @@ def test_per_shot_every_n_fires_a_nuke_at_each_nth_shot():
     )
     ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
     assert [round(e["time"], 4) for e in ps] == [round(4 / 12, 4), round(9 / 12, 4)]
-    assert all(e["damage"] == 10000.0 for e in ps)  # 100% coeff * atk 10000, no defense
+    # 100% coeff * atk 10000, no defense - times whatever each shot's own
+    # window position is worth.
+    assert all(e["damage"] == 10000.0 * fb_factor(result, e["time"]) for e in ps)
 
 
 def test_per_shot_after_n_fires_a_nuke_once():
@@ -1068,14 +1076,13 @@ def test_per_shot_after_n_fires_a_nuke_once():
     assert round(ps[0]["time"], 4) == round(2 / 12, 4)  # count 3 = index 2
 
 
-def test_per_shot_nuke_full_burst_bonus_eligible_applies_when_shot_lands_in_window():
-    # Asuka's Skill 1 nuke ("after 50 normal attacks... as additional damage")
-    # is an ordinary per-shot instant nuke whose timing is unrelated to her own
-    # burst - it gets the Full Burst Bonus only on whichever shots happen to
-    # land inside a Full Burst window. gauge_charge_time=0.1 -> window
+def test_per_shot_nuke_takes_the_bonus_when_its_own_shot_lands_in_a_window():
+    # A per-shot instant nuke is computed at its shot's time, which has nothing
+    # to do with the caster's burst, so the bonus follows whichever shots
+    # happen to land inside a window. gauge_charge_time=0.1 -> window
     # [0.1, 10.1); the "after 3" shot lands at t=2/12=0.1667, inside it.
     per_shot_rules = {
-        "attacker": [(3, "after", [instant_nuke_pulse_rule("per_shot", 100.0, full_burst_bonus_eligible=True)])]
+        "attacker": [(3, "after", [instant_nuke_pulse_rule("per_shot", 100.0)])]
     }
     result = simulate_raid(
         make_deck(),
@@ -1169,7 +1176,9 @@ def test_per_shot_every_during_own_status_window_gated_to_own_burst_window():
     ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
     assert len(ps) >= 1
     assert [round(e["time"], 4) for e in ps] == [round(t, 4) for t in expected]
-    assert all(e["damage"] == 10000.0 for e in ps)  # 100% coeff * atk 10000, no defense
+    # 100% coeff * atk 10000, no defense - times whatever each shot's own
+    # window position is worth.
+    assert all(e["damage"] == 10000.0 * fb_factor(result, e["time"]) for e in ps)
 
 
 def test_per_shot_nuke_damage_type_reaches_its_type_bucket_and_the_log():
@@ -2283,8 +2292,10 @@ def test_resource_scaled_nuke_multi_tick_dot_reads_count_at_each_ticks_own_time(
     )
     assert len(hits) == 3
     assert [round(h["time"], 4) for h in hits] == [2.0, 3.0, 4.0]
-    # count at t=2,3,4 (periodic fills every 1s from t=1): 2, 3, 4 stacks.
-    assert [round(h["damage"], 4) for h in hits] == [2000.0, 3000.0, 4000.0]
+    # count at t=2,3,4 (periodic fills every 1s from t=1): 2, 3, 4 stacks, each
+    # times its own tick's window position.
+    assert [round(h["damage"], 4) for h in hits] == [
+        round(n * 1000.0 * fb_factor(result, t), 4) for n, t in ((2, 2.0), (3, 3.0), (4, 4.0))]
     assert all(h["damage_type"] == "sustained" for h in hits)
 
 
@@ -2308,18 +2319,18 @@ def test_resource_scaled_nuke_without_a_resource_ticks_at_a_flat_percent():
     )
     assert len(hits) == 3
     assert [round(h["time"], 4) for h in hits] == [2.0, 3.0, 4.0]
-    assert all(h["damage"] == 1000.0 for h in hits)  # 10% coeff * atk 10000, no scaling
+    # 10% coeff * atk 10000, no scaling - times each tick's own window position.
+    assert all(h["damage"] == 1000.0 * fb_factor(result, h["time"]) for h in hits)
     assert all(h["damage_type"] == "sustained" for h in hits)
 
 
-def test_resource_scaled_nuke_full_burst_bonus_eligible_applies_to_every_tick_in_window():
-    # Mana's Fatal Error!: confirmed in-game (Fienn, 2026-07-12) that every
-    # tick of her DoT gets the +50% Full Burst Bonus, even though her skill
-    # text says "as sustained damage" (not "as additional damage") - unlike a
-    # single-instant nuke, a repeating tick is inherently NOT all "at cast
-    # time": only the very first tick coincides with the burst instant, and
-    # every later tick is computed strictly after it, landing squarely inside
-    # the Full Burst window that opened at the same moment.
+def test_resource_scaled_nuke_that_resolves_after_the_cast_gets_the_bonus_on_every_tick():
+    # Mana's Fatal Error!, confirmed in-game (Fienn, 2026-07-12): every tick of
+    # her DoT takes the +50% bonus. `resolves_after_cast` is what says the DoT
+    # starts a beat AFTER the burst instant rather than on it - a modelling
+    # choice about WHEN, not an eligibility switch. Everything follows from
+    # that: the shifted ticks land inside the window her own Burst 3 opened, so
+    # the engine's time test gives them the bonus.
     result = simulate_raid(
         make_deck(),
         {"buffer": [], "midtier": [], "attacker": []},
@@ -2327,7 +2338,7 @@ def test_resource_scaled_nuke_full_burst_bonus_eligible_applies_to_every_tick_in
         enemy_def=0, gauge_charge_time=2.0, fight_duration=10.0, mode="auto", base_crit_rate=0.0,
         resource_scaled_nukes={"attacker": [{
             "base_percent": 10.0, "tick_count": 3, "tick_interval": 1.0, "damage_type": "sustained",
-            "full_burst_bonus_eligible": True,
+            "resolves_after_cast": True,
         }]},
     )
     hits = sorted(
@@ -2690,16 +2701,17 @@ def test_dynamic_hit_count_nuke_fire_delay_fires_and_resets_at_burst_time_plus_d
     # t=1..14 by then (14 stacks) - NOT the count at t=5.0 (which would be 5).
     assert len(hits) == 14
     assert all(round(h["time"], 4) == 14.0 for h in hits)
-    assert all(h["damage"] == 1000.0 for h in hits)  # 1000 atk * 100% coefficient, no bonuses
+    # 1000 atk * 100% coefficient. The delayed fire time (14.0) lands inside
+    # the window its own burst opened at t=5.0 - that is the delay doing it,
+    # not any property of the skill's wording.
+    assert all(h["damage"] == 1000.0 * fb_factor(result, h["time"]) for h in hits)
 
 
-def test_dynamic_hit_count_nuke_full_burst_bonus_eligible_applies_when_delay_lands_in_window():
-    # Same setup, but opted into full_burst_bonus - the delayed fire time
-    # (14.0) falls inside the Full Burst window ([5.0, 15.0), since
-    # full_burst_start fires at the same instant as the tier-3 burst and
-    # FULL_BURST_DURATION is 10s) - matching Fienn's confirmed rule that only
-    # "as additional damage" (i.e. computed after a delay, not at cast time)
-    # gets the +50% bonus.
+def test_dynamic_hit_count_nuke_takes_the_bonus_when_its_delay_lands_in_a_window():
+    # Same setup as above. The delay puts the fire time at 14.0, inside the
+    # Full Burst window [5.0, 15.0) (full_burst_start fires at the same instant
+    # as the tier-3 burst and FULL_BURST_DURATION is 10s), and that is the
+    # entire reason it collects the bonus.
     spec = ResourceSpec(
         name="at_field", fill=("periodic", 1.0), cap=30,
         resets=[{"trigger": "own_burst_delayed", "delay": 9.0, "value": 0}],
@@ -2713,7 +2725,6 @@ def test_dynamic_hit_count_nuke_full_burst_bonus_eligible_applies_when_delay_lan
         dynamic_hit_count_nukes={
             "attacker": [{
                 "resource": "at_field", "base_percent": 100.0, "fire_delay": 9.0,
-                "full_burst_bonus_eligible": True,
             }]
         },
     )
@@ -2722,12 +2733,12 @@ def test_dynamic_hit_count_nuke_full_burst_bonus_eligible_applies_when_delay_lan
     assert all(h["damage"] == 1500.0 for h in hits)  # 1000 * (1 + full_burst_bonus*0.5) = 1000*1.5
 
 
-def test_dynamic_hit_count_nuke_full_burst_bonus_eligible_defaults_to_false():
-    # A cast-time nuke (no delay) doesn't land inside the Full Burst window
-    # (its own burst fires strictly before full_burst_start per the engine's
-    # ordering, except for the exact boundary instant) and, more importantly,
-    # never opts in unless a unit's skill text says "as additional damage" -
-    # defaulting False keeps every existing dynamic_hit_count_nuke unaffected.
+def test_dynamic_hit_count_nuke_without_a_delay_fires_at_cast_time_and_takes_no_bonus():
+    # No `fire_delay`, so the nuke resolves AT the cast - and the engine fires
+    # a unit's own burst strictly before full_burst_start, so the instant it is
+    # computed at is outside every window. This is the shape that made the old
+    # "as damage" text rule look right: such bullets never had a window to be
+    # inside of, whatever their description happened to say.
     spec = ResourceSpec(
         name="mp", fill=("squad_burst_cycle_conditional", [(_tier1_fire, lambda c: c == 0, 1)]),
         cap=12, buffs=[], resets=[{"trigger": "own_burst", "value": 0}],
@@ -3414,10 +3425,12 @@ def test_burst_three_cast_does_not_see_buffs_that_land_when_full_burst_opens():
 
 def test_burst_three_cast_is_outside_the_full_burst_window():
     # Same fact seen through the Full Burst bonus rather than through a buff:
-    # an eligible instance recorded at the Burst 3's own cast is NOT inside.
+    # damage recorded at the Burst 3's own cast is NOT inside the window that
+    # cast opens, so it takes no bonus. This is the whole of what the deleted
+    # "as damage" text rule was really observing.
     def nuke_at_own_burst(context, caster_slug, time, registry):
         registry.add_pulse(Pulse("instant_damage_percent", 1000.0, "self",
-                                 "attacker", True, "attack"))
+                                 "attacker", "attack"))
 
     result = simulate_raid(
         make_deck(),

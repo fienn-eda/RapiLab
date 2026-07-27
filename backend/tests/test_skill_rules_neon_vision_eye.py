@@ -101,6 +101,5 @@ def test_firepower_explosion_base_and_super_bonus():
     pulses = registry.drain_pulses("instant_damage_percent")
     values = sorted(p.value for p in pulses)
     assert values == [262.79, 437.98]
-    assert all(p.full_burst_bonus_eligible is True for p in pulses)  # "as additional damage"
     # A Rocket Launcher's explosion: reads projectile_explosion_damage_up.
     assert all(p.damage_type == "projectile_explosion" for p in pulses)

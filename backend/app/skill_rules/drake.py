@@ -12,7 +12,8 @@ Modeled (DPS-relevant):
 - Thunderbolt (skills[1]): after every 10 normal attacks, a 98.55%-of-final-ATK
   nuke (gap #1 `every`). Signature adds a second trigger: after every 5 normal
   attacks, a 201.6% nuke. "3 / 1 enemies with lowest HP" collapses to the single
-  raid boss. "As damage" (not "additional"), so NOT Full-Burst-Bonus eligible.
+  raid boss. It rides her own shots, so the Full Burst bonus follows whichever
+  of them land inside a window.
 - Drake Special (skills[2], her burst): burst nuke (base 1254%, signature 3009.6%
   of final ATK) plus self Max Ammunition +72.18% for 10 sec. Signature also
   grants self Attack Damage +31.68% for 10 sec.

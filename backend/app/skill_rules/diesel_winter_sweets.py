@@ -174,7 +174,6 @@ def build_diesel_full_burst_dot(values):
         "schedule": schedule,
         "percent": _f(values, "sing_now", 7),
         "damage_type": "sustained",
-        "full_burst_bonus_eligible": True,
     }]
 
 
@@ -187,5 +186,5 @@ def build_diesel_burst_dot(values):
         "tick_count": int(_f(values, "la_la_la", 5)),
         "tick_interval": _f(values, "la_la_la", 4),
         "damage_type": "sustained",
-        "full_burst_bonus_eligible": True,
+        "resolves_after_cast": True,
     }]

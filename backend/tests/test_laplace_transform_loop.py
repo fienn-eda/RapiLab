@@ -128,4 +128,3 @@ def test_mjolnir_stage_nukes_use_the_stage_at_each_burst():
     assert by_stage[2]["schedule"](ctx, 180.0) == [50.0]
     # stage 0 버스트는 어떤 스펙에도 안 잡힌다 (추가딜 0)
     assert all(10.0 not in s["schedule"](ctx, 180.0) for s in specs)
-    assert all(s["full_burst_bonus_eligible"] for s in specs)

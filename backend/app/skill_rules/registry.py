@@ -30,7 +30,12 @@ from app.skill_rules.anis_star import (
     build_stardust_rules,
 )
 from app.skill_rules.arcana import arcana_burst_percent, build_arcana_rules
-from app.skill_rules.arcana_fortune_mate import build_fortune_mate_rules, radiant_youth_burst_percent
+from app.skill_rules.arcana_fortune_mate import (
+    build_fortune_mate_rules,
+    build_keepsake_album_resource_gated_buffs,
+    build_memories_and_moments_resources,
+    radiant_youth_burst_percent,
+)
 from app.skill_rules.ark_ranger_black import (
     build_ark_ranger_black_rules,
     build_ark_ranger_dots,
@@ -726,7 +731,7 @@ _PERIODIC_NUKE_BUILDERS = {
 # Only a Burst 3 can actually collect it: Burst 1 and 2 cast before
 # full_burst_start, so the window test in _damage_instance excludes them on
 # timing (Fienn, 2026-07-26).
-_BURST_FULL_BURST_BONUS_ELIGIBLE = {
+_BURST_RESOLVES_AFTER_CAST = {
     "liberalio",       # Submerged World: "Deals 925% of final ATK as additional damage."
     "rapi-red-hood",   # Stage 3: "Deals 2808% of final ATK as additional damage."
 }
@@ -906,6 +911,7 @@ _PER_SHOT_RULE_BUILDERS = {
 # raid_simulator's `resource_specs` param and effects.ResourceSpec. Each entry
 # returns a list of ResourceSpec.
 _RESOURCE_SPEC_BUILDERS = {
+    "arcana-fortune-mate": lambda sv: build_memories_and_moments_resources(sv),
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_resources(sv),
     "julia": lambda sv: build_crescendo_resources(sv),
     "julia-signature": lambda sv: julia_signature.build_crescendo_signature_resources(sv),
@@ -940,12 +946,14 @@ _RESOURCE_SCALED_NUKE_BUILDERS = {
     "sakura-bloom-in-summer": lambda sv: build_sakura_resource_scaled_nukes(sv),
 }
 
-# A Nikke with a burst-fired BUFF gated/scaled by a named resource's count at
-# the burst's own time - see raid_simulator's `resource_gated_buffs` param.
-# Each entry returns a list of spec dicts: {"resource", "cap",
-# "use_pre_reset"(optional), "lifetime"(optional), "gate_fn", "stat", "value",
-# "scope", "duration"}.
+# A Nikke with a BUFF gated/scaled by a named resource's count, read at the
+# owner's own burst times by default - see raid_simulator's
+# `resource_gated_buffs` param. Each entry returns a list of spec dicts:
+# {"resource", "cap", "use_pre_reset"(optional), "lifetime"(optional),
+# "gate_fn"+"value" OR "value_per_stack", "scope" OR "member_filter",
+# "at"(optional, "full_burst_end"), "stat", "duration"}.
 _RESOURCE_GATED_BUFF_BUILDERS = {
+    "arcana-fortune-mate": lambda sv: build_keepsake_album_resource_gated_buffs(sv),
     "soda-twinkling-bunny": lambda sv: build_onward_soda_resource_gated_buffs(sv),
 }
 
@@ -984,11 +992,13 @@ def get_burst_damage_type(slug):
     return _BURST_DAMAGE_TYPES.get(slug, "attack")
 
 
-def get_burst_full_burst_bonus_eligible(slug):
-    """Whether this Nikke's burst nuke collects the Full Burst bonus - see
-    `_BURST_FULL_BURST_BONUS_ELIGIBLE`. False for the vast majority, whose
-    burst damage is dealt at cast time."""
-    return slug in _BURST_FULL_BURST_BONUS_ELIGIBLE
+def get_burst_resolves_after_cast(slug):
+    """Whether this Nikke's burst nuke resolves a beat AFTER the cast rather
+    than at it - see `_BURST_RESOLVES_AFTER_CAST`. False for the vast majority,
+    whose burst damage is dealt at cast time. For a Burst 3 the difference is
+    exactly whether the hit lands inside its own Full Burst window, which is
+    what decides the bonus; the engine reads that off the recorded time."""
+    return slug in _BURST_RESOLVES_AFTER_CAST
 
 
 def get_ammo_rounds_per_shot(slug):

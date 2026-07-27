@@ -108,7 +108,6 @@ def test_flawless_glass_per_shot_nuke_takes_the_full_burst_bonus():
     _, _, rules = build_flawless_glass_per_shot_rules(CINDERELLA)[0]
     reg = EffectRegistry()
     rules[0].action(make_context(), "cinderella", 0.0, reg)
-    assert reg.drain_pulses("instant_damage_percent")[0].full_burst_bonus_eligible is True
 
 
 def test_beautiful_resource_ticks_every_3_sec_capped_at_12():

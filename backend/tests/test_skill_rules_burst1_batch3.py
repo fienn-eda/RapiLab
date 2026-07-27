@@ -285,7 +285,6 @@ def test_little_mermaid_bubble_barrage_fires_per_500_squad_bullets():
     assert len(specs) == 1
     spec = specs[0]
     assert spec["percent"] == 85.0
-    assert not spec.get("full_burst_bonus_eligible", False)  # "as damage"
 
     # 600 squad-wide bullets (two units x 300): the merged timeline crosses 500
     # once, at the moment the 500th bullet fires - 10 hits at that instant.
@@ -400,7 +399,6 @@ def test_moran_bring_it_on_rider_only_counts_shots_inside_the_transform():
     pulses = reg.drain_pulses("instant_damage_percent")
     assert [p.value for p in pulses] == [47.18]
     # "as additional damage" -> eligible for the Full Burst bonus.
-    assert pulses[0].full_burst_bonus_eligible is True
 
 
 def test_base_moran_registers_no_skill_rules():

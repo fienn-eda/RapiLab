@@ -89,13 +89,13 @@ def build_firepower_explosion_per_shot_rules(values):
     super_bonus_percent = float(healthy_body["description_value_08"])
     return [
         (1, "every", [instant_nuke_pulse_rule(
-            "per_shot", base_percent, full_burst_bonus_eligible=True,
+            "per_shot", base_percent,
             damage_type="projectile_explosion")]),
         (
             (1, SUPER_FIREPOWER_WINDOW),
             "every_during_own_status_window",
             [instant_nuke_pulse_rule(
-                "per_shot", super_bonus_percent, full_burst_bonus_eligible=True,
+                "per_shot", super_bonus_percent,
                 damage_type="projectile_explosion")],
         ),
     ]

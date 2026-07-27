@@ -12,36 +12,77 @@ Modeled (DPS-relevant):
   - On using her Burst Skill, an Attack Damage buff to "all shotgun-wielding
     allies (except self)" - exact scope via the gap #3 live member filter
     (2026-07-18; was a squad approximation that also over-applied to herself).
-  - Precious Moments: at the 6th normal attack landed while in Making Memories,
-    self ATK +2.49% (continuous, stacks up to 3). The 6th normal is reliably
-    reached exactly once per Full Burst (SG fires far more than 6 shots in the
-    10s window, and the phase effect does not re-stack within one Making
-    Memories), so the increment is modeled once per Full Burst on
-    `full_burst_enter` (an exact per-cycle equivalence, NOT a normal-count
-    approximation onto the wrong trigger). This ALSO keeps the stack count in
-    the burst-cycle pass, where Keepsake Album can read it - a per-shot count
-    would be built in a later pass and be invisible to Keepsake's full_burst_end
-    read. Stacks persist across cycles (Keepsake removes only Making Memories and
-    Snapshots, not Precious Moments), ramping 1 -> 2 -> 3 over three cycles. The
-    stack count is tracked with `record_activation("precious_moments")`.
+  - The normal-attack PHASE ROTATION, the kit's engine (see below).
 - Keepsake Album (skills[0]): when Full Burst ends, all shotgun-wielding allies
   (exact SG member filter, self included) gain flat ATK = 13% of the caster's
-  ATK PER Precious Moments stack, for 15 sec. Reads the live stack count, so it ramps with Precious
-  Moments (13% -> 26% -> 39% of caster ATK over three cycles). Clears the
-  `making_memories` status so the next cycle's burst re-arms it.
+  ATK PER Precious Moments stack, for 15 sec. Clears the `making_memories`
+  status so the next cycle's burst re-arms it.
+
+THE PHASE ROTATION (Fienn's in-game observation, 2026-07-28)
+------------------------------------------------------------
+"Effect varies according to the number of attacks. Only one effect is triggered
+at a time." reads like three independent thresholds; it is one ROTATION. Every
+2nd normal attack landed while in Making Memories fires exactly ONE of three
+effects, in order, and the cycle repeats:
+
+    2 reload | 4 Happy Memories | 6 Precious Moments | 8 reload | 10 HM | 12 PM | ...
+
+Fienn counted this to the 18th normal and confirmed the decisive negative: at
+the 12th, Happy Memories and the reload do NOT fire - only Precious Moments.
+The counter restarts when Making Memories is removed (skill text), i.e. every
+Full Burst. So each effect is one (first, period) pair on a period-6 rotation,
+which is what `per_shot_rules`' `cycle_in_own_status_window` mode expresses;
+the older `every_during_own_status_window` would drag the phase across windows.
+
+HOW FAR THE ROTATION GETS IS DECK-DEPENDENT, which is why none of this is
+folded into a per-cycle constant. Her SG fires ~14 shots in a 10 sec window
+unaided (Happy Memories 2, Precious Moments 2), but Fienn measured 22 with
+Tove's attack speed in the squad - which caps BOTH at 3 inside a single window.
+An "N stacks per Full Burst" approximation would have been wrong by 2x in one
+direction or the other depending on who else is seated.
+
+RANGE-TESTED (Fienn, 2026-07-28 - Tove + her + Dorothy: Serendipity + Drake
+(favorite item) + Solin: Frost Ticket, non-crit per-pellet readings)
+--------------------------------------------------------------------
+Reading CONSECUTIVE pairs isolates one stack gain at a time, cancelling ATK and
+every deck buff:
+
+- Precious Moments is exactly what the data slot says. The three PM steps read
+  1.009247 / 1.009164 / 1.009080, and ATK +2.49% into one additive bucket
+  reproduces all three from a single fitted bucket total: 1 + A = 2.69271 /
+  2.69267 / 2.69252. Agreement to 0.007%.
+- Happy Memories' three steps add a CONSTANT amount to the shot: with her base
+  10 pellets, +0.091357 / +0.091359 / +0.091347 of the base shot (0.013%
+  spread). At 9 or 11 base pellets the same fit is 20x worse, which is how the
+  pellet count was pinned before Fienn confirmed it.
+- Snapshots of Youth does NOTHING measurable. Per-pellet damage FALLS as Happy
+  Memories stacks (x0.992143 / x0.993399 / x0.994377), and no positive bucket
+  term can push a ratio below 1. Solving
+  `(10+k)/10 x (1+B+0.1k)/(1+B) = 1 + 0.091354k` for any pre-existing bucket B
+  gives B = -13.7, i.e. no solution. Its buff icon appears in game; its +10%
+  Normal Attack Damage Multiplier does not reach her normal attacks.
+
+Hence Happy Memories and Snapshots are encoded as ONE measured term. They are
+1:1 (every Happy Memories stack grants a Snapshots stack) and both are
+self-only normal-attack effects, so in game they cannot be separated - and the
+measured +9.1354% per stack already contains whatever Snapshots contributes.
+Modeling them apart would mean inventing a split the measurement denies.
+
+E2E on the squad Fienn measured in (Tove + her + Dorothy: Serendipity + Drake
+(favorite item) + Soline: Frost Ticket, real synced roster): she goes 0.978B ->
+1.093B (+11.7%), and her three SG allies gain 0.5-0.8% each from Keepsake Album
+now reading the live count instead of one stack per cycle. Deck total +2.40%.
 
 Not modeled / deferred:
-- Happy Memories (Memories and Moments' 4th-normal effect): "Number of pellets
-  +1, stacks up to 3" - the engine has no per-pellet SG damage concept, so a
-  pellet-count buff can't be represented. This is a real part of her SG DPS.
-- Snapshots of Youth (Keepsake Album, triggered by Happy Memories): Normal
-  Attack Damage Multiplier +10% (stacks up to 3) - Normal Attack Damage
-  Multiplier is a deferred stat (see damage-formula-reference.md).
-- Memories and Moments' 2nd/4th-normal reload phases (reload/pellet) - reload
-  isn't DPS-modeled and pellets are deferred as above.
+- The rotation's reload phase ("Reloads 6 rounds" every 6th normal): the shot
+  timeline is fixed before per-shot rules run, so no rule can hand a magazine
+  rounds back (same wall as Milk's forced reload and EVE's Eagle Eye, gap #11).
+  It matters here - the refill is what keeps her firing without a reload gap
+  inside the window - so her shot count is a FLOOR.
 """
 from app.burst_cycle import FULL_BURST_DURATION
-from app.effects import Effect
+from app.effects import Effect, ResourceSpec
+from app.skill_rules._helpers import linear_resource_buff, refreshing_buff_rule
 from app.squad_engine import SkillRule, has_status
 
 SKILL_VALUE_MANIFESTS = {
@@ -57,7 +98,23 @@ SKILL_VALUE_MANIFESTS = {
 }
 
 MAKING_MEMORIES_STATUS = "making_memories"
-PRECIOUS_MOMENTS_COUNTER = "precious_moments"
+PRECIOUS_MOMENTS_RESOURCE = "precious_moments"
+HAPPY_MEMORIES_RESOURCE = "happy_memories"
+
+# The rotation: one effect per 2nd normal attack, three effects in order, so
+# each lands every 6th normal starting at its own step. The reload phase (step
+# 2) has no engine representation - see the docstring's deferred note.
+ROTATION_PERIOD = 6
+HAPPY_MEMORIES_FIRST = 4
+PRECIOUS_MOMENTS_FIRST = 6
+
+# Measured, not derived from a data slot: one Happy Memories stack raises her
+# whole normal attack by this much, Snapshots of Youth included. See the
+# range-test block in the docstring for the three readings it comes from and
+# for why the two effects share one term. Her base pellet count (10), which
+# turns "+1 pellet" into a shot multiplier, is not in any collected data source
+# either - Fienn confirmed it in game.
+HAPPY_MEMORIES_DAMAGE_PER_STACK = 0.091354
 
 
 def radiant_youth_burst_percent(values):
@@ -67,17 +124,11 @@ def radiant_youth_burst_percent(values):
 def build_fortune_mate_rules(values):
     radiant_youth = values["radiant_youth"]
     memories = values["memories_and_moments"]
-    keepsake = values["keepsake_album"]
-    caster_atk = values["caster_atk"]
 
     crit_rate = float(radiant_youth["description_value_01"]) / 100
     attack_damage = float(radiant_youth["description_value_03"]) / 100
     ally_attack_damage = float(memories["description_value_06"]) / 100
     ally_attack_damage_duration = float(memories["description_value_07"])
-    precious_moments_atk = float(memories["description_value_04"]) / 100
-    precious_moments_cap = int(float(memories["description_value_05"]))
-    keepsake_atk_per_stack = float(keepsake["description_value_01"]) / 100 * caster_atk
-    keepsake_duration = float(keepsake["description_value_02"])
 
     def apply_radiant_youth(context, caster_slug, time, registry):
         context.set_status(caster_slug, MAKING_MEMORIES_STATUS, time)
@@ -101,32 +152,62 @@ def build_fortune_mate_rules(values):
             applied_at=time,
         )
 
-    def gain_precious_moments(context, caster_slug, time, registry):
-        if context.activation_count(caster_slug, PRECIOUS_MOMENTS_COUNTER) >= precious_moments_cap:
-            return
-        context.record_activation(caster_slug, PRECIOUS_MOMENTS_COUNTER)
-        registry.add(Effect("atk_percent", precious_moments_atk, "self", None, caster_slug), applied_at=time)
-
-    def apply_keepsake_album(context, caster_slug, time, registry):
+    def clear_making_memories(context, caster_slug, time, registry):
+        # Keepsake Album's third bullet. Its flat-ATK grant is NOT here: that
+        # scales off a Precious Moments count only the shot loop can produce,
+        # so it is resolved by `build_keepsake_album_resource_gated_buffs`.
         context.clear_status(caster_slug, MAKING_MEMORIES_STATUS)
-        stacks = context.activation_count(caster_slug, PRECIOUS_MOMENTS_COUNTER)
-        if stacks == 0:
-            return
-        # "all shotgun-wielding allies" (Fortune Mate herself is SG and
-        # included) - exact scope via the gap #3 live member filter.
-        slugs = [m.slug for m in context.members if m.weapon == "SG"]
-        if not slugs:
-            return
-        registry.add(
-            Effect("flat_atk", keepsake_atk_per_stack * stacks, "slugs:" + ",".join(slugs),
-                   keepsake_duration, caster_slug),
-            applied_at=time,
-        )
 
     return [
         SkillRule(trigger="own_burst_activate", action=apply_radiant_youth),
         SkillRule(trigger="own_burst_activate", action=apply_sg_ally_attack_damage),
-        SkillRule(trigger="full_burst_enter", action=gain_precious_moments,
-                  condition=has_status(MAKING_MEMORIES_STATUS)),
-        SkillRule(trigger="full_burst_end", action=apply_keepsake_album),
+        SkillRule(trigger="full_burst_end", action=clear_making_memories),
     ]
+
+
+def build_memories_and_moments_resources(values):
+    """Both stack counters the rotation feeds. They differ in exactly one way -
+    Precious Moments persists across cycles, Happy Memories is wiped when Full
+    Burst ends - so only the latter carries a reset."""
+    memories = values["memories_and_moments"]
+    keepsake = values["keepsake_album"]
+    return [
+        ResourceSpec(
+            name=PRECIOUS_MOMENTS_RESOURCE,
+            fill=("per_shot_cycle_in_own_status_window",
+                  PRECIOUS_MOMENTS_FIRST, ROTATION_PERIOD, FULL_BURST_DURATION),
+            cap=int(float(memories["description_value_05"])),
+            buffs=[linear_resource_buff(
+                "atk_percent", float(memories["description_value_04"]) / 100, "self")],
+        ),
+        ResourceSpec(
+            name=HAPPY_MEMORIES_RESOURCE,
+            fill=("per_shot_cycle_in_own_status_window",
+                  HAPPY_MEMORIES_FIRST, ROTATION_PERIOD, FULL_BURST_DURATION),
+            # Happy Memories and Snapshots of Youth share a cap of 3 and rise
+            # together, so one counter carries both - as the measured term does.
+            cap=int(float(keepsake["description_value_04"])),
+            buffs=[linear_resource_buff(
+                "normal_attack_damage_multiplier", HAPPY_MEMORIES_DAMAGE_PER_STACK, "self")],
+            resets=[{"trigger": "full_burst_end", "value": 0}],
+        ),
+    ]
+
+
+def build_keepsake_album_resource_gated_buffs(values):
+    """"When Full Burst ends ... ATK 13% of the skill user's ATK x stack count
+    of Precious Moments for 15 sec", to all shotgun-wielding allies (herself
+    included). Read at full_burst_end rather than fired by a SkillRule there,
+    because the burst-cycle walk runs before any shot exists and would always
+    see an empty counter."""
+    keepsake = values["keepsake_album"]
+    memories = values["memories_and_moments"]
+    return [{
+        "resource": PRECIOUS_MOMENTS_RESOURCE,
+        "cap": int(float(memories["description_value_05"])),
+        "at": "full_burst_end",
+        "stat": "flat_atk",
+        "value_per_stack": float(keepsake["description_value_01"]) / 100 * values["caster_atk"],
+        "member_filter": lambda member, caster_slug: member.weapon == "SG",
+        "duration": float(keepsake["description_value_02"]),
+    }]

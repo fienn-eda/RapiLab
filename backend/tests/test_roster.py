@@ -360,7 +360,14 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # RATIO rose 1.0458 -> 1.0514 for the same reason this test exists: a reload
     # saving buys extra shots, and those shots are worth more now that the ones
     # landing inside a window carry +0.5 in the major modifier.
-    assert round(dmg_with / dmg_without, 4) == round(759385337.0821916 / 722294144.4420553, 4)
+    #
+    # Re-baselined 2026-07-28 again: Helm: Aquamarine's Admire Accompaniment
+    # per-shot nuke ("every 30 normal attacks, deals 131.34% of final ATK as
+    # ADDITIONAL damage") now collects the bonus too. Absolutes rose 722.3M ->
+    # 741.7M and 759.4M -> 780.9M, and the RATIO rose 1.0514 -> 1.0529 by the
+    # same mechanism as the entry above: the nuke fires off a shot COUNT, so
+    # the extra shots a reload saving buys carry it, and each is now worth more.
+    assert round(dmg_with / dmg_without, 4) == round(780921864.3566974 / 741664627.6785583, 4)
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

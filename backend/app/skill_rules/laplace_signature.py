@@ -111,7 +111,7 @@ def build_hero_bomber_signature_per_shot_rules(values):
     hero_bomber = values["hero_bomber"]
     nuke_percent = float(hero_bomber["description_value_01"])
     return [(1, "every_outside_full_burst", [
-        instant_nuke_pulse_rule("per_shot", nuke_percent, full_burst_bonus_eligible=True),
+        instant_nuke_pulse_rule("per_shot", nuke_percent),
     ])]
 
 

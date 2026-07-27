@@ -7,7 +7,7 @@ window is a single measured shot rather than a rate_of_fire anchor.
 Modeled (DPS-relevant):
 - Determination (skills[0]): every 30th normal-attack hit, deals 82.8% of
   final ATK "as additional damage" to the target (`per_shot_rules`' "every"
-  mode, full_burst_bonus_eligible=True) and grants self ATK +8.28% for 5 sec.
+  mode) and grants self ATK +8.28% for 5 sec.
 - Seven Dwarves: V & VI (skills[1]): a periodic AoE nuke on its own 15s
   cooldown, independent of the burst cycle - 144.73% of final ATK
   (`get_periodic_nuke`).
@@ -71,8 +71,7 @@ def build_determination_per_shot_rules(values):
     det = values["determination"]
     n = int(float(det["description_value_01"]))
     return [(n, "every", [
-        instant_nuke_pulse_rule("per_shot", float(det["description_value_02"]),
-                                full_burst_bonus_eligible=True),
+        instant_nuke_pulse_rule("per_shot", float(det["description_value_02"])),
         buff_rule("per_shot", [("atk_percent", float(det["description_value_04"]) / 100,
                                 "self", float(det["description_value_05"]))]),
     ])]

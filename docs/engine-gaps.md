@@ -5,7 +5,34 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
-- 마지막 갱신: 2026-07-28 (**엔진 결함 2건 수정 — 실기록 합계 0.936x → 1.011x.**
+- 마지막 갱신: 2026-07-28 (**FB 보너스 판정 = 대미지 연산 시점. 문구 규칙 삭제.**
+  Fienn: 「as damage」가 못 받는 것처럼 보인 건 **B3 즉발 스킬이 FB 진입 이전에 연산되기**
+  때문이지 문구 때문이 아니다 — 진입 이후면 "as damage"도 받는다. 스노우화이트 오토파이어의
+  크리/논크리 비가 창 밖 1.586000·창 안 1.390667로 각 가설에 0.00001% 이내로 안착해 확정.
+  `full_burst_bonus_eligible` 배선을 전부 삭제하고(플래그가 겸하던 **시각 이동**만
+  `resolves_after_cast`로 개명해 존치), 판정은 인스턴스 자기 시각 하나로 통일.
+  **±15% 이내 11/25 → 13/25**, 미달 −1.552B → **−0.873B**. 리틀머메이드 0.850→1.048 ·
+  미하라 0.753→0.909 · 라피 0.924→0.990 · 신데렐라:CW 0.897→0.962.
+  **스노우화이트가 1.386x로 절대오차 1위** — 맞는 수정이 그 밑의 반대 오차를 드러냈다.
+  검증은 **순수 삭제 불변식**(판정만 바꾼 실험과 배선 제거 후가 동일해야 함)으로 했다.
+  상세 `docs/decisions.md` ADR, `docs/insights.md`.
+  이전 갱신: 2026-07-28 (**"추가 대미지" per-shot 넉의 FB 보너스 누락 — 리베랄리오 0.922x → 1.006x.** per-shot 넉 38개 중 21개가 `full_burst_bonus_eligible`을 안 넘기고 있었고, 헬퍼 독스트링이 **2026-07-12의 옛 문구 규칙**을 들고 있는 게 원인. 07-26에 "연산 시점으로 판단"으로 재구성됐지만 넉 호출부는 되짚지 않았다(평타 때와 **같은 형태의 누락**). **두 규칙이 합의하는 5유닛 6개 호출**에만 적용 — 덱1 0.946 → 0.977, 덱2~5 불변, 미달 −1.903B → −1.552B. **plain "as damage" 넉 15개는 미해결**: 일괄 적용 시 합계 1.025x지만 스노우화이트 1.386x, 반면 그녀 실측은 "as damage" 스윕도 보너스를 받는다고 말한다. 가르는 측정법은 `docs/insights.md`.
+  이전 갱신: 2026-07-28 (**아르카나의 페이즈 회전 인코딩 — 엔진 확장 3건.**
+  skill2의 "공격 횟수에 따라 효과가 달라진다"가 임계값 3개가 아니라 **2타마다 셋 중
+  하나씩 도는 회전**임이 Fienn 관측으로 확정. 신규: ① per-shot/자원 fill 모드
+  `per_shot_cycle_in_own_status_window`(창마다 카운터 **리셋** — 기존 모드는 창을 이어
+  붙여 세어 위상이 밀린다) ② 자원 리셋 트리거 `full_burst_end` ③ `resource_gated_buffs`의
+  `at:"full_burst_end"` · `value_per_stack` · `member_filter`(발사 루프 뒤에서 스택 수를
+  읽어야 하는 버프용 — 버스트 사이클 패스는 항상 0을 읽는다). 실측 덱에서 그녀 **+11.7%**.
+  실기록 5덱에 없어 캘리브레이션 수치는 불변. 상세 `docs/insights.md` 2개 항목.
+  이전 갱신: 2026-07-28 (**아스카의 자기 디버프 배선 — 합계 1.011x → 1.000x,
+  ±15% 이내 11/25.** Annihilation State의 「평타 대미지 배율 ▼40%/9초」가 빠져 있었다.
+  막고 있던 것은 엔진이 아니라 **낡은 보류 사유**였다 — `normal_attack_damage_multiplier`는
+  gap #9에서 이미 만들어져 있었고, 필요한 건 그 스탯의 음수 값 한 줄이었다.
+  9초는 전투의 5%지만 그녀 버스트가 곧 풀버스트 시작점이라 그 창이 그녀 평타 데미지의
+  **62.1%**를 덮는다 → 1.192x → **1.055x**. **교훈: gap을 닫으면 그 gap을 사유로 든
+  독스트링을 되짚어라**(같은 사유가 아르카나에도 남아 있었다). `docs/insights.md` 참조.
+  이전 갱신: 2026-07-28 (**엔진 결함 2건 수정 — 실기록 합계 0.936x → 1.011x.**
   둘 다 절대 오차 순 감사에서 나왔고 둘 다 **사격장 측정으로 확정한 뒤에만** 고쳤다.
   (1) **gap #18 해소 — 평타가 Full Burst 보너스를 못 받고 있었다.** 옵트인 플래그가
   스킬 넉에만 달려 있었고 평타 `record()`는 아예 안 넘기고 있어, 2026-07-26/27에
@@ -229,7 +256,7 @@
 | ~~6~~ | ~~periodic-during-Full-Burst 넉~~ (풀버스트 창 안에서만 N초마다) | 2 (Ada·Little Mermaid) | **완료 (2026-07-16 Phase C, `during_full_burst`+`hit_count`+`own_burst_interval`)** | 타이밍 변형 |
 | ~~7~~ | ~~풀버스트/자기상태창 한정 per-shot 트리거~~ (fill이 아니라 버프/넉 직접 발동) | 4 (Soda·Asuka·Grave·Velvet) | **완료 (2026-07-15, `per_shot_rules`의 `every_during_full_burst`/`every_during_own_status_window` 모드)** | 신규 트리거 변형 |
 | ~~8~~ | ~~자원-fill-트리거 타 유닛 버프~~ (자원 소유자 아닌 아군에게 버프) | 1 (Maiden) | **완료 (2026-07-16 Phase C, `resource_fill_triggered_buffs`)** | 신규 트리거 |
-| ~~9~~ | ~~reload 후 첫 발("first bullet after reload") per-shot 마커~~ | 1 (Jill Valentine) | **완료 (2026-07-16 Phase C, `first_bullet` 모드 + `normal_attack_damage_multiplier`)** | 신규 트리거 변형 |
+| ~~9~~ | ~~reload 후 첫 발("first bullet after reload") per-shot 마커~~ | 1 (Jill Valentine) → **실제 3** | **완료 (2026-07-16 Phase C, `first_bullet` 모드 + `normal_attack_damage_multiplier`)**. **후행 소비 (2026-07-28): asuka-shikinami-langley-wille** — 이 gap이 닫힌 뒤에도 "엔진에 수단이 없다"는 낡은 사유로 2주간 보류돼 있었다(그녀 1.192x의 정체). **arcana-fortune-mate**(Snapshots of Youth)도 같은 사유가 남아 있었고 스택 수만 미확인. → **gap을 닫을 때 그 사유를 인용한 독스트링을 반드시 grep할 것** | 신규 트리거 변형 |
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
 | — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) | **완료 (2026-07-11, `ally_burst_activate`)** | 신규 트리거 |
 | — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |

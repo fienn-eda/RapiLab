@@ -70,7 +70,6 @@ def test_overload_electric_additional_bullet_only_against_electric_boss():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 164.83
-    assert pulses[0].full_burst_bonus_eligible is False
     assert pulses[0].source_slug == "helm-aquamarine"
 
     registry2 = EffectRegistry()

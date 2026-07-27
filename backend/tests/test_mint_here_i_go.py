@@ -8,6 +8,17 @@ from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
 from app.skill_rules.prika import build_prika_rules
 
 HERE_I_GO = {"description_value_01": "45.02", "description_value_02": "3", "caster_atk": 200000}
+
+
+def fb_factor(result):
+    """What an instance is worth for landing where it lands: the Full Burst
+    bonus is +0.5 in the major-modifier bucket, so a hit carrying no other
+    major modifier is worth 1.5x inside a window."""
+    windows = list(zip(
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_start"),
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_end"),
+    ))
+    return lambda t: 1.5 if any(s <= t < e for s, e in windows) else 1.0
 PRIKA_SHOW = {"description_value_01": "3.04", "description_value_02": "25",
               "description_value_03": "25", "description_value_04": "25"}
 PRIKA_ENCORE = {"description_value_01": "19.98", "description_value_02": "10", "description_value_03": "21",
@@ -51,8 +62,13 @@ def test_solo_here_i_go_toggles_squad_atk_with_dancing_and_singing_cycles():
         periodic_nukes={"attacker": {"cooldown": 1.0, "percent": 100.0}},
     )
     periodic = {round(e["time"], 1): e["damage"] for e in result["damage_log"] if e["source"] == "periodic"}
-    assert periodic[10.0] == 10000.0             # Dancing cycle -> no Here I Go buff
-    assert round(periodic[30.0], 2) == 100040.0  # Singing cycle -> +45.02% of Mint's 200000 ATK (flat_atk 90040)
+    # The probe ticks also carry their own Full Burst window position, which
+    # this test is not about - factor it out so the assertions keep saying
+    # "Here I Go is / is not on" and nothing else.
+    fb = fb_factor(result)
+    assert periodic[10.0] == 10000.0 * fb(10.0)             # Dancing cycle -> no Here I Go buff
+    # Singing cycle -> +45.02% of Mint's 200000 ATK (flat_atk 90040)
+    assert round(periodic[30.0], 2) == round(100040.0 * fb(30.0), 2)
 
 
 def test_combo_here_i_go_excludes_shots_before_prikas_encore_pins_singing():

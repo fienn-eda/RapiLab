@@ -33,11 +33,12 @@ Modeled (DPS-relevant):
   battle start. The ~0.5s ramp to full stacks is ignored (documented approximation).
 - Aegis Cannon Overload's Electric-Code additional bullet: an extra 164.83% of
   final ATK burst hit against an Electric boss (boss_is_element). Fired on her own
-  burst without the Full Burst bonus: her text says "as additional damage" (which
-  Fienn's rule would make bonus-eligible), but she is Burst 2, so the engine fires
-  her burst a moment BEFORE the Full Burst window opens - an FB-eligibility check
-  would never pass, so it's modeled without the bonus rather than as inert opt-in
-  (Fienn, 2026-07-16).
+  burst, and it takes no Full Burst bonus for a reason that has nothing to do
+  with its wording: she is Burst 2, so the engine fires her burst well before the
+  window opens, and the instant her damage is computed at is simply outside it.
+  This case is why the old "as additional damage" text rule looked right for so
+  long - the phrase kept coinciding with damage that had no window to be inside
+  of (Fienn, 2026-07-16; rule deleted 2026-07-28).
 
 Not modeled: none - both Electric-Code bullets are now representable via the
 boss_element gate.

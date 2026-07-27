@@ -71,7 +71,7 @@ def test_climax_resource_scaled_nuke_gates_on_crescendo_at_max_stacks():
     assert spec["cap"] == 5
     assert spec["base_percent"] == 544.5
     assert spec["tick_count"] == 1
-    assert spec["full_burst_bonus_eligible"] is True
+    assert spec["resolves_after_cast"] is True
     assert spec["scale_fn"](4) == 0.0   # below max stacks - gate fails
     assert spec["scale_fn"](5) == 1.0   # at max stacks - gate passes
 

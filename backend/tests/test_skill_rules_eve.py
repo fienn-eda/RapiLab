@@ -112,7 +112,6 @@ def test_unstable_energy_emits_three_separate_hits():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert [p.value for p in pulses] == [pytest.approx(240.0)] * 3
     # "as damage", not "as additional damage"
-    assert not any(p.full_burst_bonus_eligible for p in pulses)
 
 
 def test_unstable_energy_doubles_inside_the_mk2_window():
