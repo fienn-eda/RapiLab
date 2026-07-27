@@ -73,6 +73,19 @@ describe('RosterGrid', () => {
     expect(screen.getByText('Crown')).toBeInTheDocument()
   })
 
+  // A bordered toolbar with nothing to filter reads as a bug, not a feature -
+  // this covers both an empty roster and a roster the supported list hasn't
+  // loaded for yet.
+  it('does not draw the filter toolbar when there is no supported unit to filter', () => {
+    grid(['crown'], [])
+    expect(screen.queryByLabelText('이름 검색')).not.toBeInTheDocument()
+  })
+
+  it('does not draw the filter toolbar for an empty roster', () => {
+    grid([])
+    expect(screen.queryByLabelText('이름 검색')).not.toBeInTheDocument()
+  })
+
   describe('burst grouping and the filter', () => {
     const overloaded = (slug: string, value: number): NikkeDraft => ({
       ...draft(slug),

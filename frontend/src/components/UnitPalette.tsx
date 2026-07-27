@@ -91,12 +91,14 @@ export function UnitPalette({
 
   return (
     <div className="palette">
-      <UnitFilterBar
-        value={filter}
-        onChange={setFilter}
-        shown={visible.length}
-        total={shown.length}
-      />
+      {shown.length > 0 && (
+        <UnitFilterBar
+          value={filter}
+          onChange={setFilter}
+          shown={visible.length}
+          total={shown.length}
+        />
+      )}
       {BURST_TIERS.map((tier) => {
         const units = visible.filter((unit) => unit.burstTier === tier)
         if (units.length === 0) return null

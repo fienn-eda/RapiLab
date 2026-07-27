@@ -190,9 +190,9 @@ describe('RecommendPanel', () => {
     vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    // A combobox, not merely a '속성'-labelled element: the palette's filter
-    // toolbar now has its own '속성' element-chip group alongside this select.
-    const element = screen.getByRole('combobox', { name: '속성' })
+    // Labelled '보스 속성', distinct from the palette's own '속성'
+    // element-chip group, so a plain label lookup is unambiguous.
+    const element = screen.getByLabelText('보스 속성')
     await user.selectOptions(element, 'Fire')
     expect(within(element).getByRole('option', { name: '작열' })).toBeInTheDocument()
     await user.click(screen.getByLabelText('코어 피격 가능'))
@@ -863,6 +863,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
       expect(screen.getByText(/6\/6 탐색 풀에 포함됨/)).toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: '작열' }))
+      expect(screen.queryByRole('button', { name: /Crown 사용/i })).not.toBeInTheDocument()
       expect(screen.getByText(/6\/6 탐색 풀에 포함됨/)).toBeInTheDocument()
     })
 

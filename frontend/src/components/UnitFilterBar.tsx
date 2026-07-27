@@ -138,7 +138,7 @@ export function UnitFilterBar({ value, onChange, shown, total }: UnitFilterBarPr
 
       {filtering && (
         <p className="unit-filter__status">
-          <span>
+          <span aria-live="polite">
             {total}기 중 {shown}기 표시 중
           </span>
           {/* Clears only what hides units. Resetting the sort as well would

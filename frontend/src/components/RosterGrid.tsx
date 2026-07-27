@@ -58,12 +58,14 @@ export function RosterGrid({ drafts, supportedUnits, portraitFor }: RosterGridPr
 
   return (
     <div className="roster">
-      <UnitFilterBar
-        value={filter}
-        onChange={setFilter}
-        shown={visible.length}
-        total={supported.length}
-      />
+      {supported.length > 0 && (
+        <UnitFilterBar
+          value={filter}
+          onChange={setFilter}
+          shown={visible.length}
+          total={supported.length}
+        />
+      )}
 
       {BURST_TIERS.map((tier) => {
         const units = visible.filter(

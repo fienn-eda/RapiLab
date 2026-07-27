@@ -115,7 +115,7 @@ describe('UnitPalette', () => {
     // are both one line but not remotely the same decision. Names are
     // abbreviated to the forms used at the table.
     // Scoped to the overload line itself: the filter toolbar's sort <select>
-    // now offers the same abbreviations as option text.
+    // offers the same abbreviations as option text.
     expect(screen.getByText('공', { selector: '.overload__name' })).toBeInTheDocument()
     expect(screen.getByText('40.91%')).toBeInTheDocument()
     expect(screen.getByText('우코', { selector: '.overload__name' })).toBeInTheDocument()
@@ -241,6 +241,12 @@ describe('UnitPalette', () => {
       filtered()
       await user.click(screen.getByRole('button', { name: '철갑' }))
       expect(screen.getByText('3기 중 1기 표시 중')).toBeInTheDocument()
+    })
+
+    // A bordered toolbar with nothing to filter reads as a bug, not a feature.
+    it('does not draw the filter toolbar when the roster owns no supported unit', () => {
+      render(<UnitPalette {...base} roster={[]} />)
+      expect(screen.queryByLabelText('이름 검색')).not.toBeInTheDocument()
     })
   })
 })
