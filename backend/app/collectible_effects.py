@@ -5,7 +5,7 @@ read it: `stat_assembly` takes only the atk/hp curves, so the engine could not
 tell a collectible was equipped at all. Ade: Agent Bunny's range test found the
 gap - every one of seven readings sat a uniform 1.06x below the model, which
 resolved to her SR-group collectible's "차지 대미지 6.31% 배율" (see
-docs/engine-gaps.md #15).
+docs/engine-gaps.md #17).
 
 Two things here are easy to get wrong, and both have already bitten this
 codebase once:

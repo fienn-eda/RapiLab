@@ -21,12 +21,12 @@ of one another - every buff, value and gate above is right, including the
 They sit a uniform 1.06x below the model, and the cause is her COLLECTIBLE
 (소장품, SR weapon group Lv5, "차지대미지 6.31% 배율"), which scales the
 weapon's own 250% full charge to 265.775%. Nothing in the engine models
-collectible skill effects - see docs/engine-gaps.md #15.
+collectible skill effects - see docs/engine-gaps.md #17.
 
 Not modeled: Spy Lens / Minimum Effective Range STACKING (the 4.44%-per-stack
 ramp to max - approximated as permanently maxed) and the effective-range damage
 bonus itself, which the measurement puts at exactly +0.30 in the major modifier
-but `raid_simulator` never sets (gap #14). Her burst has no enemy nuke.
+but `raid_simulator` never sets (gap #16). Her burst has no enemy nuke.
 """
 from app.skill_rules._helpers import buff_rule
 

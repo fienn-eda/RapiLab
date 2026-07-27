@@ -1216,7 +1216,7 @@
       이제 **미달과 과대가 양쪽에 있다** — 이전의 "미달 쪽에 몰려 있다"는 관측은
       잘못된 보스가 만든 것이었다.
 - [x] **소장품 스킬 효과 배선 완료, 캘리브레이션은 아직 무변동 (2026-07-27).**
-      gap #15(에이드의 사격장 균일 편차 0.94315x = SR 소장품 「차지대미지 6.31%
+      gap #17(에이드의 사격장 균일 편차 0.94315x = SR 소장품 「차지대미지 6.31%
       배율」 누락)를 5개 태스크로 배선 — 데이터 테이블 → 리졸버 → 유닛별 배선
       (`UserNikkeState`/`NikkeSpec`) → 데미지 적용 → 프론트 페이로드. 배선 후
       `python3 scripts/measure_record_calibration.py`를 재실행해 배선 전과 대조한
@@ -1226,7 +1226,7 @@
       `scripts/roster_fixture.py::_state_from_draft`도 그 필드를 안 읽어 전원 미보유로
       떨어지기 때문이다. 회귀가 아니라 **배선이 소장품 미보유 유닛에 정확히 무해하다는
       확인**. 백엔드 1479 passed / 3 skipped, 프론트 291 passed 유지. 상세
-      `docs/decisions.md` ADR, `docs/engine-gaps.md` gap #15.
+      `docs/decisions.md` ADR, `docs/engine-gaps.md` gap #17.
 - [ ] **To-Do: 소장품 배선을 실제로 검증하려면 Fienn의 로스터 재동기화가 필요하다.**
       `roster-drafts.json`에 `collectible_tid`/`collectible_level`이 실리기 전까지는
       위 배선이 캘리브레이션 수치를 전혀 움직이지 않는다 — 재동기화 후

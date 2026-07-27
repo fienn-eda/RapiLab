@@ -2,7 +2,7 @@
 
 수치의 근거는 Fienn의 인게임 확인이다: MG 소장품 최대단계가 최대 장탄 수 9.5%
 (Flora, SSR 5단계에서도 동일)이고, SR 소장품 5단계가 차지 대미지 6.31% 배율
-(에이드 사격장). docs/engine-gaps.md #15.
+(에이드 사격장). docs/engine-gaps.md #17.
 """
 import pytest
 
@@ -161,7 +161,7 @@ def test_a_favorite_item_holder_reads_the_top_rung_through_collectible_modifiers
 
 def test_a_favorite_item_holder_with_no_record_for_their_weapon_group_degrades_safely():
     """SMG and RL have no committed collectible record at all
-    (docs/engine-gaps.md #15) - a favorite-item holder in one of those groups
+    (docs/engine-gaps.md #17) - a favorite-item holder in one of those groups
     must fall through to nothing, not raise, same as an unrecognized ordinary
     tid."""
     from app.stat_assembly import FAVORITE_ITEM_TID_BASE
