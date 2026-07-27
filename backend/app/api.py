@@ -18,6 +18,7 @@ from starlette.concurrency import run_in_threadpool
 from app.cancellation import CancelToken, Cancelled
 from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_draft
 from app.deck_search import BossProfile, search_best_decks
+from app.engine_version import engine_version
 from app.models import UserNikkeState
 from app.overload_effects import NAME_TO_STAT
 from app.roster_assembly import assemble_roster, load_directory, to_roster_json
@@ -65,6 +66,9 @@ class DeckRecommendation(BaseModel):
 class RecommendResponse(BaseModel):
     decks: list[DeckRecommendation]
     excluded_slugs: list[str]
+    # 클라이언트가 결과를 입력 해시로 캐싱한다. 어떤 엔진이 낸 답인지 같이
+    # 실어주지 않으면 엔진을 고친 뒤에도 낡은 수치가 캐시에서 계속 나온다.
+    engine_version: str
 
 
 class DraftUnit(BaseModel):
@@ -101,6 +105,7 @@ class RecommendRaidResponse(BaseModel):
     leftover_slugs: list[str]
     within_draft: DraftAllocation | None = None
     baseline_total_damage: float | None = None
+    engine_version: str
 
 
 class SupportedUnit(BaseModel):
@@ -194,6 +199,7 @@ def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
             for r in results
         ],
         excluded_slugs=excluded,
+        engine_version=engine_version(),
     )
 
 
@@ -288,6 +294,7 @@ def _recommend_raid_sync(request: RecommendRaidRequest, cancel) -> RecommendRaid
         leftover_slugs=rec["leftover_slugs"],
         within_draft=within,
         baseline_total_damage=out["baseline_total_damage"],
+        engine_version=engine_version(),
     )
 
 
@@ -345,6 +352,13 @@ async def recommend_raid(
 @app.get("/api/supported-units", response_model=list[SupportedUnit])
 def supported_units_route() -> list[SupportedUnit]:
     return [SupportedUnit(**u) for u in _supported_units()]
+
+
+@app.get("/api/engine-version")
+def engine_version_route() -> dict[str, str]:
+    """클라이언트는 요청을 보내기 전에 결과 캐시를 조회하므로, 버전을 응답으로만
+    받으면 조회 시점에 알 수가 없다. 그래서 GET으로도 낸다."""
+    return {"engine_version": engine_version()}
 
 
 @app.post("/api/assemble-roster")

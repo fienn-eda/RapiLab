@@ -153,6 +153,7 @@ describe('RecommendPanel', () => {
         },
       ],
       excluded_slugs: [],
+      engine_version: 'test-engine-version',
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
@@ -187,7 +188,7 @@ describe('RecommendPanel', () => {
 
   it('sends the entered element and enemy DEF instead of the defaults', async () => {
     const user = userEvent.setup()
-    vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
+    vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     // Labelled '보스 속성', distinct from the palette's own '속성'
@@ -216,7 +217,7 @@ describe('RecommendPanel', () => {
 
   it('sends part_destructible: true when the part-destruction gimmick is toggled on', async () => {
     const user = userEvent.setup()
-    vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
+    vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/부위파괴 기믹/i))
@@ -256,6 +257,7 @@ describe('RecommendPanel raid mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
@@ -289,6 +291,7 @@ describe('RecommendPanel raid mode', () => {
       leftover_slugs: ['k'],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
@@ -323,6 +326,7 @@ describe('RecommendPanel raid mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
     await waitFor(() =>
       expect(screen.queryByRole('status')).not.toBeInTheDocument(),
@@ -366,6 +370,7 @@ describe('RecommendPanel draft mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     const sixRoster = [...fullRoster, nikke('f')]
@@ -428,6 +433,7 @@ describe('RecommendPanel draft mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     const roster = [...fullRoster, nikke('bready')]
@@ -504,6 +510,7 @@ describe('RecommendPanel mode switch', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
@@ -590,6 +597,7 @@ describe('RecommendPanel persistence', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     }
     vi.mocked(recommendRaidDecks).mockResolvedValue(response)
 
@@ -690,6 +698,7 @@ describe('RecommendPanel persistence', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
@@ -736,6 +745,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
   const raidResponse = {
     decks: [], combined_total_damage: 0, excluded_slugs: [],
     leftover_slugs: [], within_draft: null, baseline_total_damage: null,
+    engine_version: 'test-engine-version',
   }
 
   const renderMode = async (roster: UserNikkeState[], radio: RegExp) => {
@@ -837,7 +847,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
     it('sends the whole roster even while the palette shows one unit', async () => {
       const user = userEvent.setup()
       vi.mocked(getSupportedUnits).mockResolvedValue(paletteUnits)
-      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
+      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
       render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
       await screen.findByRole('button', { name: /Crown 사용/i })
@@ -872,7 +882,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
     it('leaves an exclusion intact across a filter that hides that unit', async () => {
       const user = userEvent.setup()
       vi.mocked(getSupportedUnits).mockResolvedValue(paletteUnits)
-      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
+      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
       render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
       await screen.findByRole('button', { name: /Anne 사용/i })
