@@ -57,6 +57,34 @@ Red Hood/Snow White's Pierce bullets - no engine representation), the 41.9%
 destructible-projectile sweep (no destructible projectiles modeled), Lock-On
 multi-target bookkeeping (single raid boss collapses "up to 5/10 targets" to
 one target, same as every other multi-target Lock-On kit in this engine).
+
+RANGE-TESTED AND CORRECTED (Fienn, 2026-07-28 - Rapi + Crown + her, non-core
+normal attacks). Everything about Auto Fire's SHAPE was already right and is now
+sourced rather than assumed:
+
+- Five sequential hits outside Fully Active, fifteen inside - counted in game.
+- One Auto Fire hit reads 2.52005x the 41.9% all-enemy sweep, against a bare
+  coefficient ratio of 105.59 / 41.9 = 2.52005. Exact.
+- The sweep reads 0.22175x her normal attack outside the segment and 0.07570x
+  inside it, against 0.419 / (0.6904 x 2.73675) = 0.22176 and
+  0.419 / (0.6904 x 8.01675) = 0.07570 - which also confirms the Fully Active
+  profile's 273.675 + 528 charge damage, collectible included.
+- Crit reads 1.586x outside a Full Burst window and 1.39067x inside one, i.e.
+  (1 + 0.5 + 0.086) and (1.5 + 0.5 + 0.086) / 1.5 - her 8.6% crit-damage
+  overload, and an independent re-confirmation of the Full Burst bonus.
+
+What was WRONG was "Sequential attack damage 158.4%". It was folded into the
+volley's coefficient as x2.584; the measurement puts the Fully Active hit at
+4.26515x the sweep where the bare coefficients give 2.52005x, so the bullet is
+worth 1.69249x - and 1 + 1.584 / (1 + 1.2874) = 1.69249 against the engine's own
+live Damage-Up bucket at that instant. It is an ADDITIVE bucket term, not a
+coefficient multiplier, and the engine was over-counting her Fully Active Auto
+Fire by 2.584 / 1.69249 = 1.527x. She read 1.424x of her record; she now reads
+1.152x.
+
+Hence the split below: the sweep is not a sequential attack and keeps the plain
+type, while the volley carries damage_type "sequential" so the type-gated
+`sequential_attack_damage_up` reaches it and nothing else.
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 from app.squad_engine import burst_stage_entered
@@ -117,13 +145,33 @@ def build_seven_dwarves_per_shot_rules(values):
         # charge is fixed at 1.2 sec, so refreshing per shot holds it open.
         ("has_pierce", 1.0, "self", float(shades["description_value_04"])),
     ])
+    # Fully Active's "Sequential attack damage 158.4%" lands in the shared
+    # Damage-Up bucket, so the sequential volley is emitted as its own
+    # type-gated pulse instead of being folded into the coefficient. The
+    # all-enemy 41.9% sweep is NOT a sequential attack and stays plain, which
+    # is why the two split here rather than riding one pulse.
+    # "for 1 round(s)" on a shot that must cover its OWN Auto Fire (Fienn's
+    # reading shows the granting charge's volley already carries it), so this
+    # cannot be a round grant - those cover the NEXT shots. Bounded by her base
+    # charge time instead: the base cadence resumes exactly one base charge
+    # after the segment's last shot, and the effect window is half-open, so the
+    # first post-segment shot lands precisely on the expiry and is excluded.
+    # Segment shots are 3.2 sec apart, so each simply re-grants it.
+    base_charge = float(values["caster_weapon_stats"]["charge_time"])
+    sequential_up = refreshing_buff_rule("per_shot", [
+        ("sequential_attack_damage_up", seq_up, "self", base_charge),
+    ])
     return [
         (1, "every", [charge_window_buffs]),
         (1, "every_outside_segment",
-         [instant_nuke_pulse_rule("per_shot", all_hit + base_ammo * seq_hit)]),
+         [instant_nuke_pulse_rule("per_shot", all_hit),
+          instant_nuke_pulse_rule("per_shot", base_ammo * seq_hit,
+                                  damage_type="sequential")]),
         (1, "every_during_segment",
-         [instant_nuke_pulse_rule("per_shot",
-                                  all_hit + boosted_ammo * seq_hit * (1 + seq_up))]),
+         [sequential_up,
+          instant_nuke_pulse_rule("per_shot", all_hit),
+          instant_nuke_pulse_rule("per_shot", boosted_ammo * seq_hit,
+                                  damage_type="sequential")]),
     ]
 
 

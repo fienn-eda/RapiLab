@@ -44,8 +44,24 @@ def _electric_except_owner(member, owner_slug):
     return member.element == "Electric" and member.slug != owner_slug
 
 
+def _fb_windows(result):
+    starts = [e["time"] for e in result["events"] if e["type"] == "full_burst_start"]
+    ends = [e["time"] for e in result["events"] if e["type"] == "full_burst_end"]
+    return list(zip(starts, ends))
+
+
 def _shots(result, slug):
-    return [(e["time"], e["damage"]) for e in result["damage_log"]
+    """(time, damage) per normal attack, with the Full Burst bonus divided out.
+
+    A normal attack inside a Full Burst window carries +0.5 in the major
+    modifier (measured 2026-07-28), which multiplies the same shot as the
+    atk_percent step these tests are reading. Dividing it back out keeps every
+    expectation below about the fill-triggered buff and nothing else.
+    """
+    windows = _fb_windows(result)
+    return [(e["time"],
+             e["damage"] / (1.5 if any(s <= e["time"] < x for s, x in windows) else 1.0))
+            for e in result["damage_log"]
             if e["source"] == "normal_attack" and e["slug"] == slug]
 
 

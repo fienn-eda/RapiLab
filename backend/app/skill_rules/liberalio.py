@@ -28,6 +28,29 @@ charge-speed buffer speed her up when in game it cannot.
 
 Approximation: the on-core Attack Damage is applied on every Full Charge (core
 hits aren't tracked per-shot), consistent with how core damage is handled globally.
+
+She reads 0.837x of her recorded raid damage - **the largest absolute miss in
+the whole calibration** (-0.630B of 3.860B) - and every input behind that number
+was audited on 2026-07-27 and found correct. Re-auditing them is wasted work:
+- Her five overload rolls reproduce the damage formula's terms exactly (ATK
+  +40.91% -> atk_percent 0.4091; superior code 99.82% + cube 19.09% ->
+  other_elemental_bonus 1.1891; charge damage +21.52% on the collectible-scaled
+  273.675% -> charge_damage_bonus 1.95195).
+- 117 shots = 13 magazines of 9 rounds, which is max ammo +48.39% on her 6, at
+  1.417 sec = her 1.5 sec charge with her own +6.09% and the external immunity
+  correctly refusing everyone else's.
+- Skills are 10/10/10 and the values match the level-10 text; attack_damage_up
+  2.5183 is Raging Current 231% + the on-core 20.83% counted ONCE, which is what
+  the text supports (no "stacks up to" phrase).
+- She bursts 8 of the deck's 15 Full Bursts because deck1 seats two Burst 3s who
+  alternate, and 25.24 sec between her bursts is her 40 sec cooldown minus two
+  doses of Anis: Star's per-Full-Burst reduction.
+- Calm Depths' charge buff correctly lands on Scarlet (lowest FINAL ATK B3, not
+  lowest base), reproducing Fienn's 0.7323 -> 0.5424 sec measurement.
+The shortfall is therefore not an input error in this file. It sits with the
+roster-wide pattern in docs/insights.md: the simulator compresses each deck's
+spread, and deck1's three big dealers (Liberalio, Scarlet, Anis: Star) are three
+of the four largest misses in the run, all in the same direction.
 """
 from app.effects import Effect
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule

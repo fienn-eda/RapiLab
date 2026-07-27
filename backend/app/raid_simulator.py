@@ -397,6 +397,10 @@ _TYPE_BUCKETS = {
     "true": ["true_damage_up"],
     "projectile_explosion": ["projectile_explosion_damage_up"],
     "projectile_attachment": ["projectile_attachment_damage_up"],
+    # A multi-hit "attacks sequentially" volley (Snow White: Heavy Arms' Auto
+    # Fire). Only the sequential hits carry it - the same skill's all-enemy
+    # sweep rides the plain "attack" type.
+    "sequential": ["sequential_attack_damage_up"],
 }
 
 # Every registry stat phase-2 damage computation can read (_damage_instance,
@@ -413,6 +417,7 @@ _BUNDLE_STATS = (
     "pierce_damage_up", "has_pierce", "damage_taken_up",
     "sustained_damage_up", "distributed_damage_up", "true_damage_up",
     "projectile_explosion_damage_up", "projectile_attachment_damage_up",
+    "sequential_attack_damage_up",
     "normal_attack_damage_multiplier",
 )
 
@@ -980,8 +985,17 @@ def simulate_raid(
                             full_burst_bonus_eligible=pulse.full_burst_bonus_eligible,
                         )
             damage_type = rec.damage_type or normal_attack_type(slug, rec.weapon, shot_time)
+            # A normal attack IS Full-Burst-Bonus eligible: its shot time is the
+            # most concrete "computed later than the cast" there is, so the flag
+            # just enables the engine's own window test against that shot's own
+            # time. Measured (Fienn, 2026-07-28, Anis: Star + Ade + Liberalio at
+            # target DEF 100): the same core non-crit shot reads 1,586,816
+            # outside the window and 7,492,265 inside it, and the two hypotheses
+            # differ by exactly (1 + 1.0 + 0.5) / (1 + 1.0) = 1.2500. The
+            # measurement lands on the +0.5 branch to 0.00003%.
             record(slug, rec.damage_percent, shot_time, "normal_attack",
                    damage_type=damage_type, extra_charge_bonus=rec.extra_charge_bonus,
+                   full_burst_bonus_eligible=True,
                    on_charge_weapon=rec.weapon in CHARGE_WEAPONS)
         shot_times_by_slug[slug] = shot_times
 

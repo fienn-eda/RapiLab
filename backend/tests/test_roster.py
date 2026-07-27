@@ -354,7 +354,13 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # three units in this deck and restored Crown's Last Kingdom via
     # Effect.refresh_group (680M -> 1124M, ratio 1.0224 -> 1.0369, because charge
     # speed began shortening the charge instead of dividing it).
-    assert round(dmg_with / dmg_without, 4) == round(666938934.1753864 / 637702635.1666895, 4)
+    # Re-baselined 2026-07-28: normal attacks now collect the Full Burst bonus
+    # (measured; see raid_simulator's normal-attack record call). Absolutes rose
+    # 637.7M -> 722.3M without the cube and 666.9M -> 759.4M with it, and the
+    # RATIO rose 1.0458 -> 1.0514 for the same reason this test exists: a reload
+    # saving buys extra shots, and those shots are worth more now that the ones
+    # landing inside a window carry +0.5 in the major modifier.
+    assert round(dmg_with / dmg_without, 4) == round(759385337.0821916 / 722294144.4420553, 4)
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

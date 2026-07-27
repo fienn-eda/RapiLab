@@ -27,6 +27,20 @@ Not modeled: Spy Lens / Minimum Effective Range STACKING (the 4.44%-per-stack
 ramp to max - approximated as permanently maxed) and the effective-range damage
 bonus itself, which the measurement puts at exactly +0.30 in the major modifier
 but `raid_simulator` never sets (gap #16). Her burst has no enemy nuke.
+
+She reads 1.629x of her recorded raid damage, the roster's worst ratio, and it
+was investigated in full on 2026-07-27 - DO NOT re-open it as an Ade bug. Her
+per-shot damage is exact (the range test above), and her 169 shots in 180s are
+fully accounted for by her real overload (max ammo +68.93%, charge speed +9.84%)
+and the cube's reload speed. What she is, is the extreme point of a roster-wide
+pattern: the simulator compresses each deck's damage spread, and her 0.102B is
+the SMALLEST recorded contribution of all 25 measured units, so the same
+over-credit reads as the largest ratio. In absolute terms she is +0.064B, 1.5%
+of her deck and only 4th of its 5 units. Two tempting fixes are already
+measured and rejected: lowering the global core-hit rate (0.2 puts her at 1.001
+and collapses the other 24 - see docs/insights.md) and wiring gap #16, which
+moves her to 1.700. What is NOT settled is whether she actually fired for the
+whole 180 seconds in that run.
 """
 from app.skill_rules._helpers import buff_rule
 

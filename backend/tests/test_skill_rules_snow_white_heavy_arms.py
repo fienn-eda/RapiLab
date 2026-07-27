@@ -140,19 +140,31 @@ def test_auto_fire_pulses_base_and_fully_active_variants():
     assert atk_buff == ("atk_percent", pytest.approx(0.4684), "self", 5.0)
     assert parts_buff == ("damage_to_parts_up", pytest.approx(0.6264), "self", 5.0)
 
-    # base cadence: 41.9% all-hit + 5-ammo x 105.59% sequential = 569.85%
-    reg = EffectRegistry()
-    outside[2][0].action(make_context(), "snow-white-heavy-arms", 1.0, reg)
-    base_pulses = reg.drain_pulses("instant_damage_percent")
-    assert len(base_pulses) == 1
-    assert base_pulses[0].value == pytest.approx(569.85)
+    # The sweep and the sequential volley are SEPARATE pulses: "Sequential
+    # attack damage 158.4%" belongs to the shared Damage-Up bucket and must
+    # reach only the sequential hits, so it cannot ride one merged coefficient
+    # (measured 2026-07-28 - see the module docstring).
+    def _pulses(rules, time=1.0):
+        reg = EffectRegistry()
+        for rule in rules:
+            rule.action(make_context(), "snow-white-heavy-arms", time, reg)
+        return reg.drain_pulses("instant_damage_percent")
 
-    # Fully Active cadence: 41.9% all-hit + 15-ammo x 105.59% x (1+158.4%)
+    # base cadence: 41.9% all-hit sweep, then 5-ammo x 105.59% sequential
+    base_pulses = _pulses(outside[2])
+    assert [p.value for p in base_pulses] == [pytest.approx(41.9), pytest.approx(527.95)]
+    assert [p.damage_type for p in base_pulses] == ["attack", "sequential"]
+
+    # Fully Active cadence: same sweep, 15 ammo, and the 158.4% arriving as a
+    # self buff rather than folded into the volley's percent
     reg = EffectRegistry()
-    during[2][0].action(make_context(), "snow-white-heavy-arms", 1.0, reg)
+    for rule in during[2]:
+        rule.action(make_context(), "snow-white-heavy-arms", 1.0, reg)
     seg_pulses = reg.drain_pulses("instant_damage_percent")
-    assert len(seg_pulses) == 1
-    assert seg_pulses[0].value == pytest.approx(4134.5684, abs=0.001)
+    assert [p.value for p in seg_pulses] == [pytest.approx(41.9), pytest.approx(1583.85)]
+    assert [p.damage_type for p in seg_pulses] == ["attack", "sequential"]
+    seq_up = [e for e, _ in reg._entries if e.stat == "sequential_attack_damage_up"]
+    assert seq_up and seq_up[0].value == pytest.approx(1.584)
 
 
 def test_fully_active_segment_is_two_slow_charged_shots():
@@ -222,9 +234,11 @@ def test_e2e_burst_opens_fully_active_segment_then_resumes_base_cadence():
     per_shot = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
     segment_pulses = [e for e in per_shot if e["time"] in (8.2, 11.4)]
     base_pulse_at_resume = [e for e in per_shot if e["time"] == 12.6]
-    assert len(segment_pulses) == 2          # both segment shots fire the empowered pulse
-    assert len(base_pulse_at_resume) == 1    # the resumed base shot fires the base pulse only
-    # the empowered pulse (41.9 + 15*105.59*2.584 ~= 4134.57%) dwarfs the base
-    # one (41.9 + 5*105.59 = 569.85%) - structurally impossible to double-count
-    # (mutually exclusive every_during_segment/every_outside_segment, Task 8).
-    assert min(p["damage"] for p in segment_pulses) > max(p["damage"] for p in base_pulse_at_resume)
+    # Two pulses per shot now (sweep + sequential volley), so the segment's two
+    # shots are four entries and the resumed base shot is two.
+    assert len(segment_pulses) == 4
+    assert len(base_pulse_at_resume) == 2
+    # The empowered volley (15 x 105.59% carrying +158.4% in the Damage-Up
+    # bucket) dwarfs the base one (5 x 105.59%) - structurally impossible to
+    # double-count (mutually exclusive every_during_segment/every_outside_segment).
+    assert max(p["damage"] for p in segment_pulses) > max(p["damage"] for p in base_pulse_at_resume)
