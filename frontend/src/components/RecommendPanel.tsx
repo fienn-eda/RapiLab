@@ -383,11 +383,11 @@ export function RecommendPanel({
   // 상태를 알려주는 유일한 자리이기 때문이다.
   const loadingLabel =
     mode === 'single'
-      ? '추천 중…'
+      ? '단일 덱 탐색 중…'
       : mode === 'raid'
-        ? '배분 중…'
+        ? '전부 최적화 중…'
         : mode === 'draft'
-          ? '최적화 중…'
+          ? '빈자리만 최적화 중…'
           : '계산 중…'
   const submitLabel = active.status === 'loading' ? loadingLabel : '인카운터!'
 
@@ -549,7 +549,7 @@ export function RecommendPanel({
 
         {(mode === 'draft' || mode === 'evaluate') && (
           <fieldset className="group">
-            <legend className="group__legend">{mode === 'draft' ? '드래프트' : '평가할 덱'}</legend>
+            <legend className="group__legend">{mode === 'draft' ? '내 편성' : '평가할 덱'}</legend>
             {/* How to seat a unit is explained beside the decks themselves
                 (DraftEditor's hint), where the player is looking when they
                 need it. */}
