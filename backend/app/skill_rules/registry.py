@@ -1027,6 +1027,7 @@ NO_CHARGE_MOTION_DELAY = frozenset({
     "liberalio",
     "neon-vision-eye",
     "laplace-ultimate-hero",
+    "anis-star",
 })
 
 # Units Fienn watched and saw a pause on without timing it; they carry the

@@ -621,7 +621,7 @@ def test_no_delay_confirmed_is_recorded_separately_from_never_checked():
     from app.skill_rules.registry import (
         NO_CHARGE_MOTION_DELAY, TIMED_CHARGE_MOTION_DELAY, get_charge_motion_delay)
 
-    for slug in ("liberalio", "neon-vision-eye", "laplace-ultimate-hero"):
+    for slug in ("liberalio", "neon-vision-eye", "laplace-ultimate-hero", "anis-star"):
         assert slug in NO_CHARGE_MOTION_DELAY
         assert get_charge_motion_delay(slug) == 0.0
     # Timed and confirmed-none are disjoint: a unit cannot be both.
