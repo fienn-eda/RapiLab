@@ -6,6 +6,7 @@ import { useMemo, useState } from 'react'
 import './App.css'
 import { useProfiles } from './hooks/useProfiles'
 import { usePortraitManifest } from './hooks/usePortraitManifest'
+import { useEngineVersion } from './hooks/useEngineVersion'
 import { getValidRoster } from './types/nikkeDraft'
 import { getResult } from './types/profile'
 import { useSupportedUnits } from './hooks/useSupportedUnits'
@@ -35,6 +36,7 @@ function App() {
   // would rewrite 22 of its test's render sites to save one GET of a small
   // static endpoint.
   const supportedUnits = useSupportedUnits()
+  const engineVersion = useEngineVersion()
   const [tab, setTab] = useState<Tab>('roster')
 
   const drafts = activeProfile?.roster ?? NO_ROSTER
@@ -139,6 +141,7 @@ function App() {
                 key={state.activeOpenId ?? 'none'}
                 roster={validRoster}
                 investmentFor={investmentFor}
+                engineVersion={engineVersion}
                 activeOpenId={state.activeOpenId}
                 getCached={(hash) => (activeProfile ? getResult(activeProfile, hash) : null)}
                 onResult={(args) => {

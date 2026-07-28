@@ -57,6 +57,9 @@ interface RecommendPanelProps {
   /** Breakthrough/core per slug, for the palette chips. Not part of the
    * roster: UserNikkeState mirrors the backend model, which has neither. */
   investmentFor?: (slug: string) => UnitInvestment
+  /** The result cache's invalidation axis - lib/inputHash.ts. Null until the
+   * backend has answered. */
+  engineVersion: string | null
 }
 
 type RecommendMode = 'single' | 'raid' | 'draft'
@@ -92,6 +95,7 @@ export function RecommendPanel({
   restoreInputs,
   restoreResult,
   investmentFor,
+  engineVersion,
 }: RecommendPanelProps) {
   const [mode, setMode] = useState<RecommendMode>('single')
   const [numDecks, setNumDecks] = useState(DEFAULT_NUM_DECKS)
@@ -306,10 +310,17 @@ export function RecommendPanel({
     setDisplayMode(null)
 
     // Only raid/draft cache — the engine is deterministic, so identical
-    // roster/boss/draft/numDecks always reproduces the same result, and a
-    // hit means we can skip the (slow, thousands-of-simulations) request.
+    // roster/boss/draft/numDecks/engineVersion always reproduces the same
+    // result, and a hit means we can skip the (slow,
+    // thousands-of-simulations) request.
     const draftForHash = mode === 'draft' ? draftValue : null
-    const hash = hashRecommendInputs(effectiveRoster, bossProfile, draftForHash, numDecks)
+    const hash = hashRecommendInputs(
+      effectiveRoster,
+      bossProfile,
+      draftForHash,
+      numDecks,
+      engineVersion,
+    )
     const cached = getCached(hash)
     if (cached) {
       setDisplayResult(cached)

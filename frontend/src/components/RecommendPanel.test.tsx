@@ -60,6 +60,7 @@ const noPersistence = {
   onResult: () => {},
   restoreInputs: null,
   restoreResult: null,
+  engineVersion: null,
 }
 
 beforeEach(() => {
@@ -567,6 +568,7 @@ describe('RecommendPanel persistence', () => {
         onResult={() => {}}
         restoreInputs={restoreInputs}
         restoreResult={restoreResult}
+        engineVersion={null}
       />,
     )
 
@@ -609,13 +611,14 @@ describe('RecommendPanel persistence', () => {
         onResult={onResult}
         restoreInputs={null}
         restoreResult={null}
+        engineVersion={null}
       />,
     )
     await user.click(screen.getByLabelText(/레이드 배분/i))
     await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
     await screen.findByText('덱 1')
 
-    const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5)
+    const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5, null)
     expect(onResult).toHaveBeenCalledWith({
       hash: expectedHash,
       result: {
@@ -640,7 +643,7 @@ describe('RecommendPanel persistence', () => {
   it('renders a cache hit immediately, never calls the raid client, and never calls onResult', async () => {
     const user = userEvent.setup()
     const onResult = vi.fn()
-    const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5)
+    const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5, null)
     const cached: StoredResult = {
       decks: [
         {
@@ -668,6 +671,7 @@ describe('RecommendPanel persistence', () => {
         onResult={onResult}
         restoreInputs={null}
         restoreResult={null}
+        engineVersion={null}
       />,
     )
     await user.click(screen.getByLabelText(/레이드 배분/i))
