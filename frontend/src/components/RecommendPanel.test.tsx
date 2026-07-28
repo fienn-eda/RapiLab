@@ -557,6 +557,41 @@ describe('RecommendPanel evaluate mode', () => {
     expect(screen.getByRole('button', { name: /계산/ })).toBeEnabled()
   })
 
+  it('로스터가 최소 인원 밑으로 줄어도 평가는 제출된다 - 평가는 편성된 유닛만 채점하지 로스터 크기를 보지 않는다', async () => {
+    // canSubmit already exempts evaluate mode from rosterTooSmall; this test
+    // is for handleSubmit's early return, which used to still bail on it -
+    // reachable by drafting five units, then deleting units from the roster
+    // tab (here: the roster prop shrinking on a rerender, same effect).
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    const { rerender } = render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+
+    // The roster tab drops below MIN_DECK_ROSTER_SIZE - the already-drafted
+    // deck (internal state) is unaffected.
+    rerender(<RecommendPanel roster={fullRoster.slice(0, 3)} {...noPersistence} />)
+    expect(screen.queryByText(/니케가 최소 5기 필요해요/)).not.toBeInTheDocument()
+
+    const submitButton = screen.getByRole('button', { name: /계산/ })
+    expect(submitButton).toBeEnabled()
+    await user.click(submitButton)
+
+    expect(evaluateDecks).toHaveBeenCalled()
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+  })
+
   it('선택한 덱만큼 evaluate-decks에 제출하고 결과를 렌더한다', async () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)

@@ -303,7 +303,12 @@ export function RecommendPanel({
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setTouched(true)
-    if (!bossProfile || rosterTooSmall) return
+    // Evaluate scores exactly the units placed in the draft, never searching
+    // the roster - roster size genuinely isn't its gate (canSubmit above
+    // already agrees), so this early return must not apply to it, or the
+    // button can be enabled by a full draft and still silently do nothing
+    // once the roster tab shrinks below MIN_DECK_ROSTER_SIZE.
+    if (!bossProfile || (mode !== 'evaluate' && rosterTooSmall)) return
     if (mode === 'single') {
       const request: RecommendRequest = { roster: effectiveRoster, boss: bossProfile }
       void single.submit(request)
@@ -513,7 +518,7 @@ export function RecommendPanel({
                   취소
                 </button>
               )}
-              {rosterTooSmall && (
+              {mode !== 'evaluate' && rosterTooSmall && (
                 <p className="field__error" role="alert">
                   덱을 추천하려면 준비된 니케가 최소 {MIN_DECK_ROSTER_SIZE}기 필요해요.
                 </p>
