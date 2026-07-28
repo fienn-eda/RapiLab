@@ -7,9 +7,50 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-07-26
+- 마지막 갱신: 2026-07-28
 - 브랜치: `ui-korean-localization` 워크트리(`wip/scaffolding` 1413 passed, 3 skipped 기준에서 분기, 이 항목 시점에 트렁크 미병합)
-- 프론트: **294 passed** (2026-07-26, **UI 크롬 한글화 완료** — 2026-07-25 "유닛 표시
+- 백엔드: **1513 passed, 3 skipped** · 프론트: **380 passed** (2026-07-28,
+  **고정 편성 평가(evaluate-decks) 착지** — 기존 추천 탭의 세 모드(단일 덱·레이드
+  배분·초안 기반)는 전부 엔진이 덱을 **만드는** 방향이었는데, 이번 작업은 그
+  반대로 플레이어가 5자리를 전부 채운 편성을 엔진이 **채점만** 하게 한다.
+  `backend/app/deck_evaluation.py`의 `evaluate_decks(decks, bosses,
+  alternatives=None)`가 덱마다 자기 보스를 상대로 `best_ordering_summary`
+  (Task 3에서 비공개명에서 승격)에 위임해 채점 후 합산 — 별도 데미지 계산
+  경로를 새로 만들지 않았다. `deck_search.deck_is_valid(units)`(허용 형태
+  (1,1,3)/(1,2,2)/(2,1,2) + 변형 충돌 + 티어1 좌석 + 버퍼석 규칙)를 신설해
+  "필드 가능한 5인 덱"의 정의 하나를 탐색·평가가 공유. `POST /api/evaluate-decks`
+  (요청 `{roster, decks: [{units, boss}]}` — 덱마다 보스가 하나인 이유는
+  유니온 레이드가 전투마다 다른 보스를 상대하기 때문; 응답 `{decks,
+  combined_total_damage, excluded_slugs, engine_version}`, `deck` 배열은
+  제출 순서가 아니라 **엔진이 고른 좌석 순서**; 422 다섯 가지 — 빈 덱
+  목록·5인이 아닌 덱·덱 간 슬러그 중복·평가 불가 슬러그·형태/좌석이 필드
+  불가한 덱)로 노출. `backend/app/engine_version.py`의 `engine_version()`
+  (`backend/app/` 전체 `.py`에 대한 12자리 sha256, `lru_cache`)과
+  `GET /api/engine-version`을 신설(프론트가 요청을 보내기 전에 캐시부터
+  확인하므로 응답에 얹는 것만으로는 부족), 프론트 결과 캐시 키
+  (`lib/inputHash.ts`)의 필수 인자로 섞어 엔진이 바뀌면 같은 입력이라도
+  캐시가 조용히 낡는 문제를 막는다. 프론트: 추천 탭 4번째 모드 "평가"
+  (1–5덱, 보스 1개), 신규 3번째 탭 "유니온 레이드"(1–3전투, 기본 3, 전투마다
+  자기 보스 프로필 + 180초 기본값), 두 화면이 `EvaluationResults.tsx` 하나를
+  공유하고 각 덱에 자기 보스 원소를 라벨링. `DraftEditor`에 `showLocks?:
+  boolean`(기본 true) 신설 — 두 화면 다 잠금 토글이 의미 없어 숨긴다. 평가
+  결과는 **캐시하지 않음**(초 단위 응답이라 재실행이 저렴하고, 캐싱하려면
+  배분 결과용으로 짜인 저장 스키마를 넓혀야 함). **실측(TestClient, 실
+  로스터):** 3덱×서로 다른 보스 3개 = 3.43초, 5덱×보스 1개 = 4.40초(대체
+  대상인 초안 모드의 797초 대비 압도적으로 빠름) — SimPool 없이 순차 실행이
+  정답으로 확인됨(SimPool은 워커 초기화 시 보스를 고정해 덱별-보스 배치를
+  못 건넘). 덱별 보스가 실제로 수치를 바꾸는 것도 확인(동일 덱 기준 철갑
+  1.5715e9 vs 무속성 1.4282e9). 브라우저 실측: 편성 제출 시 "1번 덱 · 철갑 /
+  892,714,648 총딜"과 함께 엔진이 배치를 재정렬했고, 결과 제출 후 보스
+  셀렉트를 바꿔도 결과 카드의 라벨은 제출 시점 보스로 고정됨을 확인. 스펙:
+  `docs/superpowers/specs/2026-07-28-fixed-deck-evaluation-design.md`, 플랜:
+  `docs/superpowers/plans/2026-07-28-fixed-deck-evaluation.md`(13개 작업,
+  서브에이전트 기반 개발로 각 작업 개별 리뷰). **범위 밖:** 유니온 레이드
+  *추천*(엔진이 3덱을 직접 구성 — 배분 알고리즘의 덱별-보스 인지 확장과
+  스왑 언덕오르기 재검토 필요) · 5속성 보스 프리셋(보스별 부위파괴/코어피격
+  특성 데이터 미확보) · 평가 결과 화면에 "이 편성 최적화?" CTA 없음(초안
+  모드가 이미 그 역할). was 1487/3 · 350(이 브랜치 분기 시점).)
+- 이전(프론트): **294 passed** (2026-07-26, **UI 크롬 한글화 완료** — 2026-07-25 "유닛 표시
   이름 한글화" 스펙(`docs/superpowers/specs/2026-07-25-korean-display-names-design.md`,
   유닛 이름·애장품 하트 담당)이 별도 작업으로 미뤄뒀던 "UI 크롬 한글화(Boss profile,
   Recommend decks 등)"를 마무리. 헤딩·라벨·버튼·힌트·빈 상태 메시지·aria-label·title·

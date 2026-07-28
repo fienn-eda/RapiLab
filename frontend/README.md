@@ -301,6 +301,66 @@ shape **plus** `pinned_slugs`), and two additive top-level fields appear:
   roster; the same slug placed in two decks; an over-constrained draft whose locked
   tier counts fit no legal deck shape. The `detail` names the offending slug/deck.
 
+### POST /api/evaluate-decks (고정 편성 평가 — 솔로 5덱 / 유니온 3덱)
+
+The three modes above all ask the engine to **build** a deck. This endpoint is
+the opposite: the player has already filled every seat, and the engine only
+**scores** what they built — no search, no substitution.
+
+Request body:
+```jsonc
+{
+  "roster": UserNikkeState[],
+  "decks": [
+    {
+      "units": string[],   // exactly 5 character slugs
+      "boss": BossProfile  // same shape as /api/recommend's boss
+    }
+  ]                        // 1-5 entries
+}
+```
+Each deck carries **its own** boss rather than one boss shared across the
+whole request — a union raid pits different decks against different bosses in
+the same run, so the request has to let each deck name its own.
+
+Response `200`:
+```jsonc
+{
+  "decks": [
+    {
+      "deck": string[],              // the same 5 slugs, in the seating order
+                                      // the ENGINE chose (B1 -> B2 -> B3) — NOT
+                                      // necessarily the order submitted; this
+                                      // is the order the player must reproduce
+                                      // in game to get the stated damage
+      "total_damage": number,
+      "burst_damage": number,
+      "normal_attack_damage": number
+    }
+  ],                                  // one entry per submitted deck, same order
+  "combined_total_damage": number,    // sum over decks
+  "excluded_slugs": string[],         // same meaning as /api/recommend
+  "engine_version": string
+}
+```
+
+`422` in five cases: an empty `decks` list; a deck whose `units` isn't exactly
+5 slugs; the same slug submitted across two different decks; a slug the engine
+can't evaluate (unencoded / no local data) — unlike `/api/recommend`'s
+`excluded_slugs`, there's no substitute to route around here, since the deck
+is fixed by the player, not searched; and a deck whose tier counts/seating
+aren't fieldable, checked by `deck_search.deck_is_valid` — the same shape and
+seating rule the search itself never violates, so it has to be checked
+explicitly here.
+
+**`engine_version`** is the axis the frontend's result cache invalidates on:
+`lib/inputHash.ts` mixes it into the cache key, so a code change to the engine
+— not just a change to the inputs — busts any stored result, since the
+engine's output is only deterministic within one version of itself.
+`GET /api/engine-version` exists as a separate call because the frontend
+checks its cache **before** sending a request at all, so it has to learn the
+current engine version independently of any response.
+
 ### `GET /api/supported-units`
 
 Feeds the palettes and every place a slug has to be named or drawn:
@@ -377,6 +437,24 @@ square face crop the deck slots, roster tiles and result rows use is pure CSS �
     vs the submitted draft, and `pinned_slugs` badges.
   - Otherwise → the single recommended allocation (reuse the raid results view).
 - Keep the fetch client confined to `src/api/`; mirror the existing raid module.
+
+### UI scope — 평가 모드 · 유니온 레이드 탭 (built)
+
+- The recommend tab gained a fourth mode, **평가** (1–5 decks, one shared boss),
+  alongside single/raid/draft. A new third top-level tab, **유니온 레이드**,
+  holds 1–3 battles (default 3), each with its own full boss profile and a
+  180s default fight duration.
+- Both screens submit to `/api/evaluate-decks` and share one results
+  component, `components/EvaluationResults.tsx`, which labels each deck with
+  its own boss's element and states that the shown seating order is the one
+  to reproduce in game.
+- Both reuse `DraftEditor` with the new `showLocks?: boolean` prop (default
+  `true`) set to `false` — there's nothing to lock when every seat is already
+  fixed by the player.
+- **Evaluate results are not cached.** The call resolves in seconds, not the
+  minutes raid/draft allocation takes, so re-running is cheap; caching it
+  would also mean widening the stored-result schema, which is shaped for
+  allocation results, not for a per-deck-per-boss score.
 
 ### UI conventions
 
