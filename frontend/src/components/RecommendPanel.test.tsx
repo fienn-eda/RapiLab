@@ -108,13 +108,11 @@ describe('RecommendPanel', () => {
 
     const boss = screen.getByRole('group', { name: /보스 설정/i })
     const mode = screen.getByRole('group', { name: /^모드$/i })
-    const submit = screen.getByRole('button', { name: /인카운터/ })
     const palette = screen.getByRole('group', { name: /사용할 유닛/i })
 
-    // Same row: one wrapper holds the boss fields and the mode+submit block.
+    // Same row: one wrapper holds the boss fields and the mode block.
     const setup = boss.parentElement!
     expect(setup).toBe(mode.parentElement)
-    expect(setup.contains(submit)).toBe(true)
     expect(setup.contains(palette)).toBe(false)
 
     // ...and that row comes before the palette in the document.
@@ -1159,5 +1157,31 @@ describe('RecommendPanel 실행 버튼', () => {
 
     await user.click(screen.getByRole('radio', { name: /단일 덱/ }))
     expect(screen.getByRole('button', { name: /인카운터/ })).toBeInTheDocument()
+  })
+
+  it('덱 컬럼이 없는 모드에서는 실행 버튼이 화면 하단 고정 바에 선다', async () => {
+    await renderAndPick(/전부 최적화/i)
+
+    const button = screen.getByRole('button', { name: /인카운터/ })
+    expect(button.closest('.recommend-form__actions--sticky')).not.toBeNull()
+    expect(button.closest('.draft-layout__decks')).toBeNull()
+  })
+
+  it('덱 컬럼이 있는 모드에서는 실행 버튼이 덱과 함께 붙어 다닌다', async () => {
+    const user = await renderAndPick(/전부 최적화/i)
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/i }))
+
+    const button = screen.getByRole('button', { name: /인카운터/ })
+    expect(button.closest('.draft-layout__decks')).not.toBeNull()
+    expect(button.closest('.recommend-form__actions--sticky')).toBeNull()
+  })
+
+  it('기대 딜량 계산 모드도 실행 버튼을 덱 컬럼에 둔다', async () => {
+    const user = await renderAndPick(/전부 최적화/i)
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+
+    expect(
+      screen.getByRole('button', { name: /인카운터/ }).closest('.draft-layout__decks'),
+    ).not.toBeNull()
   })
 })

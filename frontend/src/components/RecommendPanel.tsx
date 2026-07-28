@@ -405,6 +405,29 @@ export function RecommendPanel({
     setMode(next)
   }
 
+  // 실행 버튼은 두 자리 중 하나에 선다 - 아래 폼을 볼 것. 내용물은 같으므로
+  // 여기서 한 번만 만든다.
+  const actionButtons = (
+    <>
+      <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
+        {submitLabel}
+      </button>
+      {/* 무언가 실제로 돌고 있을 때만 - 제출 옆에 상시 놓인 취소는 두 행동
+          사이의 선택처럼 읽힌다. `type="button"`이 중요하다: 폼 안의 맨
+          버튼은 제출이라, 첫 실행을 멈추는 대신 두 번째를 시작해버린다. */}
+      {active.status === 'loading' && (
+        <button type="button" className="btn" onClick={active.cancel}>
+          취소
+        </button>
+      )}
+      {mode !== 'evaluate' && rosterTooSmall && (
+        <p className="field__error" role="alert">
+          덱을 추천하려면 준비된 니케가 최소 {MIN_DECK_ROSTER_SIZE}기 필요해요.
+        </p>
+      )}
+    </>
+  )
+
   return (
     <section className="card" aria-label="솔로 레이드">
       <header className="card__header">
@@ -412,8 +435,8 @@ export function RecommendPanel({
       </header>
 
       <form onSubmit={handleSubmit} className="recommend-form">
-        {/* Everything needed to START a run sits in one row: the boss on the
-            left, the mode choice and Submit on the right. The boss fields used
+        {/* Everything needed to CONFIGURE a run sits in one row: the boss on
+            the left, the mode choice on the right. The boss fields used
             to close the form instead, 2040px below the button that acts on
             them with the whole 70-chip palette in between - so the input that
             moves the answer most (Element) was the one a player never scrolled
@@ -495,30 +518,6 @@ export function RecommendPanel({
                 </select>
               </div>
             )}
-
-            {/* Submit sits with the mode choice rather than after the boss
-                fields: the palette and deck grid between them run long, and the
-                player should not have to scroll past their whole roster to
-                start a run they have already configured. */}
-            <div className="recommend-form__actions">
-              <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
-                {submitLabel}
-              </button>
-              {/* Only while something is actually running - a permanent Cancel
-                  next to Submit would read as a choice between two actions.
-                  `type="button"` matters: inside a form, a bare button submits,
-                  which would start a second run instead of stopping the first. */}
-              {active.status === 'loading' && (
-                <button type="button" className="btn" onClick={active.cancel}>
-                  취소
-                </button>
-              )}
-              {mode !== 'evaluate' && rosterTooSmall && (
-                <p className="field__error" role="alert">
-                  덱을 추천하려면 준비된 니케가 최소 {MIN_DECK_ROSTER_SIZE}기 필요해요.
-                </p>
-              )}
-            </div>
           </fieldset>
         </div>
 
@@ -579,9 +578,20 @@ export function RecommendPanel({
                   // place has nothing to mean there.
                   showLocks={mode !== 'evaluate'}
                 />
+                {/* 이 컬럼은 sticky라, 여기 얹은 실행 버튼은 덱과 함께
+                    화면에 남는다. */}
+                <div className="recommend-form__actions">{actionButtons}</div>
               </div>
             </div>
           </fieldset>
+        )}
+
+        {/* 덱 컬럼이 없는 모드다. 팔레트 70여 개 칩이 화면보다 길어 실행
+            버튼이 스크롤 밖으로 밀리므로, 대신 화면 하단에 붙인다. */}
+        {(mode === 'single' || mode === 'raid') && (
+          <div className="recommend-form__actions recommend-form__actions--sticky">
+            {actionButtons}
+          </div>
         )}
       </form>
 
