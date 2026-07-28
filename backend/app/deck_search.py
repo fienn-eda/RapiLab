@@ -349,8 +349,8 @@ def _reference_deck(by_tier, b1):
     # sibling filtered out of the B3 pool up front, or it could rank into the
     # B3 picks and seat both builds in the same reference deck - the exact
     # clash _no_character_clash forbids for real candidate decks.
-    b1_base = _CHARACTER_OF.get(b1.slug, b1.slug)
-    b3_pool = [u for u in by_tier[3] if _CHARACTER_OF.get(u.slug, u.slug) != b1_base]
+    b1_character = _CHARACTER_OF.get(b1.slug, b1.slug)
+    b3_pool = [u for u in by_tier[3] if _CHARACTER_OF.get(u.slug, u.slug) != b1_character]
     if len(b3_pool) < 3:
         # No legal way to fill all 3 B3 slots without b1's own sibling (e.g.
         # exactly 3 total B3 units and one of them IS the sibling) - a
@@ -387,17 +387,17 @@ def _reference_deck(by_tier, b1):
 
 
 def _character_safe_top(units, n):
-    """First `n` from a prior-ranked list, skipping any unit whose
-    character is already taken - _reference_deck's B3 picks otherwise
-    slice the top 3 blindly, which could seat two builds of one character
-    (e.g. both Cinderella: Crystal Wave modes) in one "deck," the exact clash
+    """First `n` from a prior-ranked list, skipping any unit whose character is
+    already taken - _reference_deck's B3 picks otherwise slice the top 3
+    blindly, which could seat two builds of one character (e.g. both
+    Cinderella: Crystal Wave modes) in one "deck," the exact clash
     _no_character_clash forbids for real candidate decks."""
-    chosen, bases_seen = [], set()
+    chosen, characters_seen = [], set()
     for unit in units:
-        base = _CHARACTER_OF.get(unit.slug, unit.slug)
-        if base in bases_seen:
+        character = _CHARACTER_OF.get(unit.slug, unit.slug)
+        if character in characters_seen:
             continue
-        bases_seen.add(base)
+        characters_seen.add(character)
         chosen.append(unit)
         if len(chosen) == n:
             break
@@ -408,13 +408,12 @@ _TIER_SLOT = {1: 0, 2: 1, 3: 4}
 
 
 def _swap_slot(reference, unit):
-    """Index in `reference` that swapping `unit` in should overwrite, or
-    None if no single-slot swap can seat `unit` without also seating a
-    sibling build of it.
+    """Index in `reference` that swapping `unit` in should overwrite, or None if
+    no single-slot swap can seat `unit` without also seating a sibling build.
 
-    Normally the unit's tier default (B3 replaces the reference's weakest
-    B3, the last one). But if a sibling build of `unit` already sits
-    in a different reference slot (e.g. the reference's first, non-last B3
+    Normally the unit's tier default (B3 replaces the reference's weakest B3,
+    the last one). But if a sibling build of `unit` already sits in a different
+    reference slot (e.g. the reference's first, non-last B3
     slot), swap over the sibling instead of the tier default - otherwise the
     default slot leaves the sibling seated too, measuring a deck with both
     builds present at once, the exact clash _no_character_clash forbids for
@@ -431,13 +430,13 @@ def _swap_slot(reference, unit):
     table, can't drift out of sync with that layout. Swapping over a
     cross-tier sibling would misplace the unit's own tier (e.g. a B3 unit
     evicting the reference's only B1); falling back to the tier default
-    instead would leave that sibling seated too, still a clash between two builds
-    Neither is safe, so the swap is refused."""
-    base = _CHARACTER_OF.get(unit.slug)
-    if base is not None:
+    instead would leave that sibling seated too, still a clash between two
+    builds of one character. Neither is safe, so the swap is refused."""
+    character = _CHARACTER_OF.get(unit.slug)
+    if character is not None:
         same_tier_slot, cross_tier_sibling = None, False
         for i, seated in enumerate(reference):
-            if _CHARACTER_OF.get(seated.slug) == base:
+            if _CHARACTER_OF.get(seated.slug) == character:
                 if seated.burst_tier == unit.burst_tier:
                     same_tier_slot = i
                     break
@@ -476,12 +475,12 @@ def _cross_tier_reference(reference, unit, by_tier):
     `unit` genuinely cannot be measured against this reference family.
     Callers must not treat that None as a real 0.0 score; see
     prune_candidate_pool and _measure_against."""
-    base = _CHARACTER_OF.get(unit.slug)
-    if base is None:
+    character = _CHARACTER_OF.get(unit.slug)
+    if character is None:
         return None
     sibling, sibling_slot = None, None
     for i, seated in enumerate(reference):
-        if _CHARACTER_OF.get(seated.slug) == base and seated.burst_tier != unit.burst_tier:
+        if _CHARACTER_OF.get(seated.slug) == character and seated.burst_tier != unit.burst_tier:
             sibling, sibling_slot = seated, i
             break
     if sibling is None:
@@ -489,7 +488,7 @@ def _cross_tier_reference(reference, unit, by_tier):
     seated_slugs = {u.slug for u in reference}
     alt_reference = None
     for candidate in by_tier[sibling.burst_tier]:
-        if candidate.slug in seated_slugs or _CHARACTER_OF.get(candidate.slug, candidate.slug) == base:
+        if candidate.slug in seated_slugs or _CHARACTER_OF.get(candidate.slug, candidate.slug) == character:
             continue
         trial = list(reference)
         trial[sibling_slot] = candidate

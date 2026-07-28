@@ -8,11 +8,20 @@
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
 - 마지막 갱신: 2026-07-28
-- 브랜치: `worktree-fixed-deck-evaluation` 워크트리(`.claude/worktrees/fixed-deck-evaluation`,
-  `wip/scaffolding` `3a3731c` 기준에서 분기 — 백엔드 1487 passed, 3 skipped · 프론트 350,
-  이 항목 시점에 트렁크 미병합). 이전: `ui-korean-localization` 워크트리(`wip/scaffolding`
-  1413 passed, 3 skipped 기준에서 분기, 이 항목 시점에 트렁크 미병합)
-- 백엔드: **1513 passed, 3 skipped** · 프론트: **380 passed** (2026-07-28,
+- 브랜치: `worktree-identity-vs-fanout` 워크트리(`.claude/worktrees/identity-vs-fanout`,
+  `wip/scaffolding` `8a1ed2c` 기준에서 분기 — 백엔드 1519 passed, 3 skipped, 이 항목
+  시점에 트렁크 미병합). 이전: `worktree-fixed-deck-evaluation` 워크트리
+  (`wip/scaffolding` `3a3731c` 기준에서 분기 — 백엔드 1487 passed, 3 skipped · 프론트 350)
+- 백엔드: **1529 passed, 3 skipped** (2026-07-28, **정체성/팬아웃 분리 착지** —
+  `MODE_VARIANTS` 하나가 (a) 누가 같은 캐릭터인가 (b) 엔진이 무엇을 고를 수 있는가를
+  겸하는 바람에 애장품 `-signature` 13쌍이 두 캐릭터로 보이던 빈틈을 닫았다. 정체성은
+  신설 `registry.character_map()`이 **매니페스트 `data_slug`에서 파생**해 답하고
+  (17그룹 정확히, 오탐 0 — 손으로 유지할 표 없음), `MODE_VARIANTS`는 팬아웃 전용으로
+  남는다. **애장품 쌍은 (b)에 절대 넣지 않는다** — 넣으면 아이템이 없는 유저에게
+  엔진이 `-signature`를 골라준다. 실제 로스터 4모드 전부 트렁크와 바이트 동일(순수
+  확장), 라이브에서 같은 형태 (2,1,2) 기준 다른 두 캐릭터 200 / 한 캐릭터 두 빌드 422.
+  프론트 무변경. 상세는 아래 To-Do 항목. was 1519/3.)
+- 이전(백엔드/프론트): **1513 passed, 3 skipped** · 프론트: **380 passed** (2026-07-28,
   **고정 편성 평가(evaluate-decks) 착지** — 기존 추천 탭의 세 모드(단일 덱·레이드
   배분·초안 기반)는 전부 엔진이 덱을 **만드는** 방향이었는데, 이번 작업은 그
   반대로 플레이어가 5자리를 전부 채운 편성을 엔진이 **채점만** 하게 한다.
@@ -926,8 +935,33 @@
       플래그를 `NikkeDraft`까지 보존했다(`grade`/`core`와 같은 패턴, 와이어 타입은 불변).
       백엔드 **1387 passed / 3 skipped**, 프론트 **282 passed**. 라이브 확인 완료.
       스펙: `docs/superpowers/specs/2026-07-25-korean-display-names-design.md`.
-- [ ] **정체성 그룹과 후보 팬아웃을 분리 — 애장품 쌍이 한 캐릭터로 안 묶인다
-      (2026-07-28 발견, Fienn 판단으로 별건 보류).** `deck_search._VARIANT_GROUP`이
+- [x] **정체성 그룹과 후보 팬아웃을 분리 — 완료 (2026-07-28).** 정체성은 이제
+      `registry.character_map()`이 답하고, `MODE_VARIANTS`는 팬아웃 전용으로 남았다.
+      **정체성의 출처는 매니페스트의 `data_slug`다** — 인코딩 93슬러그를 그걸로 묶으면
+      MODE_VARIANTS 4그룹 + `-signature` 13쌍 = **17그룹이 정확히, 오탐 0으로** 나온다.
+      손으로 유지할 표가 없고 앞으로 인코딩될 애장품 빌드가 자동으로 덮인다. 대신
+      "데이터 출처" 필드에 정체성을 얹는 결합이 생기므로 `test_character_map.py`가
+      17그룹을 통째로 고정해 드리프트를 막는다. 표는 **빌드가 2개 이상인 캐릭터의
+      슬러그만** 담는다(솔로는 `.get(slug, slug)`로 자기 자신이라 넣을 필요가 없고,
+      덱 탐색 최내곽 루프의 비용이 그대로 유지된다).
+      이름도 따라갔다: `_VARIANT_GROUP`·`variant_base`·`_no_variant_clash`·
+      `_variant_safe_top` → `_CHARACTER_OF`·`character_of`·`_no_character_clash`·
+      `_character_safe_top`. `VARIANT_BURST_TIERS`와 `SOLE_TIER1_SLUGS`는 진짜로 모드
+      변형 개념이라 그대로 뒀고, 주석도 정체성 자리만 "sibling build"로 바꾸고
+      팬아웃을 말하는 자리는 `MODE_VARIANTS`를 남겼다.
+      **반대쪽이 안 넓어졌음을 세 각도로 못박았다**(이게 이 작업의 안전장치다):
+      `load_roster`가 miranda 1기를 스펙 1개로만 내놓고 · `supported_units`의 miranda에
+      `candidates`가 없고 · 드래프트 좌석이 `alternatives`를 안 달고 온다. 애장품이
+      없는 유저에게 엔진이 `-signature`를 골라주는 일은 여전히 불가능하다.
+      **회귀 실측**: 실제 로스터(77스펙) 4모드 전부 트렁크와 **바이트 단위 동일**
+      (단일 12,962,894,676.151 · 분배 34,898,460,675.857 · 드래프트 35,767,895,536.505 ·
+      고정평가 12,962,894,676.151) — 기존 정의역 위에선 순수 확장이기 때문이다.
+      결함의 직접 증거: 옛 표로 되돌린 mutation 런에서 `miranda`가 1덱, `miranda-signature`가
+      2덱에 동시에 앉는다. 라이브 확인도 결정적 — **같은 덱 형태 (2,1,2)에서 다른 두
+      캐릭터는 200, 한 캐릭터의 두 빌드는 422**. 백엔드 **1519 → 1529 passed / 3 skipped**
+      (신규 10). 프론트 무변경. 스펙·계획은
+      `docs/superpowers/specs/2026-07-28-identity-vs-candidate-fanout-design.md`.
+      (원래 항목 기록) `deck_search._VARIANT_GROUP`이
       `MODE_VARIANTS` 하나에서 파생되는데, 그 테이블이 성격이 다른 두 질문을 겸한다:
       (a) **누가 같은 캐릭터인가**(중복 편성 금지) (b) **엔진이 무엇을 고를 수 있는가**
       (`api.py`의 `alternatives` 팬아웃). `-signature` 13쌍은 (a)가 필요하지만 (b)는

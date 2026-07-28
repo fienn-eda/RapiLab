@@ -2,8 +2,8 @@
 maximizing summed damage (Phase 5). Disjoint by OWNED CHARACTER, not by slug:
 the decks are fielded simultaneously, so a character encoded as several builds
 still holds at most one seat in the whole allocation (see deck_search's
-`character_of`). Same boss => total = sum of independent
-deck scores, so: greedy peeling (best deck on the remaining roster, repeat)
+`character_of`). Same boss => total = sum of independent deck scores, so:
+greedy peeling (best deck on the remaining roster, repeat)
 lands near the optimum, and a budget-bounded same-tier swap hill-climb
 recovers its classic mistake (stacking synergy cores in deck 1 when splitting
 them supports two decks better). No optimality claim - set partitioning is
@@ -15,8 +15,8 @@ from app.cascade import Cascade, cached_fit_surrogate
 from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
                              _intra_tier_orderings, _orderings_within_budget,
                              _score_batch, _summarize, best_completions,
-                             completions_fit_budget, deck_is_valid,
-                             evaluate_deck, search_best_decks, character_of)
+                             character_of, completions_fit_budget,
+                             deck_is_valid, evaluate_deck, search_best_decks)
 from app.sim_pool import SimPool, resolve_workers
 
 
@@ -80,10 +80,10 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
         by_slug = {u.slug: u for u in roster}
         draft = draft or []
         # Pooling is per OWNED CHARACTER, not per slug: the player fields all of
-        # these decks simultaneously, so seating one build of a character
-        # spends her and retires her other builds too. Keying on the slug
-        # instead let one Rapi: Red Hood hold a seat in deck 2 as B3 and
-        # another in deck 4 as B1 - a formation the game cannot produce.
+        # these decks simultaneously, so seating one build of a character spends
+        # her and retires her other builds too. Keying on the slug instead let
+        # one Rapi: Red Hood hold a seat in deck 2 as B3 and another in deck 4
+        # as B1 - a formation the game cannot produce.
         drafted = [character_of(u.slug) for deck in draft for u in deck]
         placed = set(drafted)
         if len(drafted) != len(placed):
@@ -228,9 +228,9 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
     character rule across the whole allocation. Bringing a bench unit in spends
     that character, so any other candidate offering one of her remaining builds
     stops being legal the moment a swap is accepted - the unscanned tail is
-    pruned there rather than trusted. Deck-to-deck swaps need
-    no such filter: both units are already seated, so exchanging them cannot
-    make a character appear twice.
+    pruned there rather than trusted. Deck-to-deck swaps need no such filter:
+    both units are already seated, so exchanging them cannot make a character
+    appear twice.
     """
     # Bench swaps only: the incoming character must not already hold a seat -
     # in THIS deck or any other, since the player fields all of them at once.
@@ -300,9 +300,9 @@ def _better(a, b):
 
 
 def _leftover_against(alloc, roster):
-    # Base-keyed like the peel: a seated character's OTHER candidate slugs are
-    # not benched units the player could still field, so they never reach the
-    # bench (which the UI reads as "not allocated to a deck").
+    # Character-keyed like the peel: a seated character's OTHER builds are not
+    # benched units the player could still field, so they never reach the bench
+    # (which the UI reads as "not allocated to a deck").
     used = {character_of(s) for d in alloc["decks"] for s in d["deck"]}
     return sorted(u.slug for u in roster if character_of(u.slug) not in used)
 
