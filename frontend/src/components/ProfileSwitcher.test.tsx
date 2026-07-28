@@ -99,6 +99,49 @@ describe('ProfileSwitcher', () => {
     expect(onDelete).toHaveBeenCalledWith('a')
   })
 
+  // A failed sync can leave a profile keyed by the empty string. It is the one
+  // profile a player most needs to remove, and an `!activeOpenId` guard treats
+  // it as "no account selected" - the delete button silently does nothing.
+  it('deletes a profile whose openId is the empty string', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    const user = userEvent.setup()
+    const onDelete = vi.fn()
+    const profiles = [
+      makeProfile({ openId: 'a', nickname: '본계' }),
+      makeProfile({ openId: '', nickname: '' }),
+    ]
+    render(
+      <ProfileSwitcher
+        profiles={profiles}
+        activeOpenId=""
+        onSwitch={vi.fn()}
+        onDelete={onDelete}
+      />,
+    )
+    await user.click(screen.getByRole('button', { name: /삭제/i }))
+    expect(window.confirm).toHaveBeenCalledOnce()
+    expect(onDelete).toHaveBeenCalledWith('')
+  })
+
+  // With neither a nickname nor an openId to show, the option and the delete
+  // button's accessible name both collapse to blank, leaving the entry
+  // unidentifiable in the dropdown and unreachable by name.
+  it('labels a profile that has neither nickname nor openId', () => {
+    const profiles = [makeProfile({ openId: '', nickname: '' })]
+    render(
+      <ProfileSwitcher
+        profiles={profiles}
+        activeOpenId=""
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('option', { name: '이름 없는 계정' })).toBeInTheDocument()
+    expect(
+      screen.getByRole('button', { name: '이름 없는 계정 프로필 삭제' }),
+    ).toBeInTheDocument()
+  })
+
   it('does not delete when the confirmation is declined', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(false)
     const user = userEvent.setup()
