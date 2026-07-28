@@ -95,12 +95,27 @@ buffs the two decks share (Crown, Rapi, Moran).
 
 And the sensitivity table's top entry is now dead: strip the Burst-Stage-3 ATK
 +73.92% and the engine reads 2.42127 against Fienn's 3.18397 - 24% LOW. The
-buff is real, applies to her, and is roughly the right size. Which means her
-1.320x in deck 4 is NOT in her per-shot damage at any buff state, so the next
-place to look is uptime and counts across the 180 sec fight, or deck 4's own
-buffers - Volume, Mint and Prika all read 1.25-1.50x of their own records
-there, and the same measurement shape run in deck 4 would settle whether their
-buffs are what is inflating her.
+buff is real, applies to her, and is roughly the right size.
+
+THE RECORDED DECK ITSELF WAS THEN MEASURED (Fienn, 2026-07-28) and clears the
+last of the per-shot layer. Volume + Mint + Prika + Cinderella + her, on the
+rotation she actually plays (Volume+Prika+her, Volume+Mint+Cinderella,
+Volume+Mint+her, repeating - which is exactly the ordering the engine picks on
+its own, and its 14 Full Bursts match her count). Against a pre-burst baseline
+of 1,803,987: her own-burst Fully Active shot reads 19,490,867 (ratio 10.8043,
+engine 11.1754, high by 3.4%) and a settled ally-burst base shot reads
+7,868,058 (ratio 4.3615, engine 4.5641, high by 4.7%). Her deck's buffs are not
+what inflates her either.
+
+So the whole residual is COUNTS. Taking the Fully Active block at its measured
+3.4%: 14 shots worth 1.083B become 1.047B, her record leaves 0.636B for the
+base block, and the engine puts that at 1.138B over 96 shots. The base block
+would have to be 0.558 of what the engine gives - about 51 base shots, not 96,
+i.e. roughly 62% firing uptime across the 180 sec where the engine assumes
+continuous fire. What that means is the open question: a uniform uptime cut
+cannot be the whole answer, because Cinderella sits in the same deck at 0.971x
+while Volume, Mint and Prika read 1.25-1.50x. Counting her actual normal
+attacks in one run is the measurement that would settle it.
 
 Deferred: DEF up 42.24% (defensive, inert), Pierce (convention, same as
 Red Hood/Snow White's Pierce bullets - no engine representation), the 41.9%
