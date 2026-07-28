@@ -877,6 +877,20 @@
   margin-top: var(--sp-3);
 }
 
+/* 덱 컬럼이 없는 모드의 실행 버튼. 카드 패딩만큼 좌우로 넓혀 카드 폭을 채우고,
+   불투명 배경으로 아래 팔레트를 가린다. 팔레트의 유닛 상세 팝오버가 z-index 2라
+   그보다 위에 서야 버튼이 가려지지 않는다. */
+.recommend-form__actions--sticky {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  margin: 0 calc(-1 * var(--sp-5));
+  width: calc(100% + var(--sp-5) * 2);
+  padding: var(--sp-3) var(--sp-5);
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+}
+
 .deck-results {
   list-style: none;
   margin: 0;
@@ -1244,10 +1258,30 @@
 /* The roster outgrows the viewport, so the decks stick rather than the palette
    scrolling inside its own box: a scroll container would clip the overload
    popover that opens beside a portrait, and a drag would have to chase a
-   target that scrolls away. */
+   target that scrolls away. Capped to the viewport height so the action row
+   stays reachable on short screens - with 5 full decks the column runs
+   ~760px tall, taller than a 768px viewport, and a sticky element that's
+   taller than the viewport can never be fully on screen at once. The deck
+   list scrolls inside the cap instead (see .draft-editor below); the action
+   row is a sibling flex item so it never scrolls out with it. */
 .draft-layout__decks {
   position: sticky;
   top: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100svh - var(--sp-4) * 2);
+}
+
+/* min-height: 0 is load-bearing - without it a flex item won't shrink below
+   its content size, and the overflow above never engages. */
+.draft-layout__decks .draft-editor {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.draft-layout__decks > .recommend-form__actions {
+  flex-shrink: 0;
 }
 
 @media (max-width: 900px) {
@@ -1257,6 +1291,7 @@
 
   .draft-layout__decks {
     position: static;
+    max-height: none;
   }
 }
 

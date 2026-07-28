@@ -94,7 +94,7 @@ describe('UnionRaidPanel', () => {
 
   it('15칸을 다 채우기 전에는 제출을 막는다', () => {
     renderPanel()
-    expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
   })
 
   it('잠금 토글을 그리지 않는다', async () => {
@@ -146,7 +146,7 @@ describe('UnionRaidPanel', () => {
       }
     }
 
-    const submit = screen.getByRole('button', { name: /계산/ })
+    const submit = screen.getByRole('button', { name: /인카운터/ })
     expect(submit).toBeEnabled()
     await user.click(submit)
 
@@ -191,7 +191,7 @@ describe('UnionRaidPanel', () => {
     renderPanel()
     await user.selectOptions(screen.getByLabelText('전투 수'), '1')
     for (const slug of ['u0', 'u1', 'u2', 'u3', 'u4']) dropOnDeck(1, slug)
-    await user.click(screen.getByRole('button', { name: /계산/ }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(await screen.findByText('1번 덱 · 무속성')).toBeInTheDocument()
 
@@ -229,7 +229,7 @@ describe('UnionRaidPanel', () => {
     // Refill the emptied seat with a different unit so the deck is complete
     // again, then submit.
     dropOnDeck(1, 'u5')
-    await user.click(screen.getByRole('button', { name: /계산/ }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(evaluateDecks).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -249,13 +249,21 @@ describe('UnionRaidPanel', () => {
         dropOnDeck(deck + 1, `u${deck * 5 + seat}`)
       }
     }
-    expect(screen.getByRole('button', { name: /계산/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeEnabled()
 
     const groups = screen.getAllByRole('group', { name: /전투/ })
     const fightDuration = within(groups[1]).getByLabelText(/전투 시간/)
     await user.clear(fightDuration)
     await user.type(fightDuration, '0')
 
-    expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
+  })
+
+  it('실행 버튼이 덱 컬럼 안에 있어 편성과 함께 화면에 남는다', async () => {
+    renderPanel()
+
+    expect(
+      screen.getByRole('button', { name: /인카운터/ }).closest('.draft-layout__decks'),
+    ).not.toBeNull()
   })
 })

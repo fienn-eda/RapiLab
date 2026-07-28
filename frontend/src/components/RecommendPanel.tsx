@@ -378,22 +378,18 @@ export function RecommendPanel({
     }
   }
 
-  const submitLabel =
+  // 유휴 라벨은 모드와 무관하게 하나다 - 무엇을 시작하는 버튼인지는 바로 위의
+  // 모드 라디오가 이미 말한다. 실행 중 라벨만 모드별로 갈리는데, 버튼이 진행
+  // 상태를 알려주는 유일한 자리이기 때문이다.
+  const loadingLabel =
     mode === 'single'
-      ? active.status === 'loading'
-        ? '추천 중…'
-        : '덱 추천'
+      ? '단일 덱 탐색 중…'
       : mode === 'raid'
-        ? active.status === 'loading'
-          ? '배분 중…'
-          : '레이드 덱 배분'
+        ? '전부 최적화 중…'
         : mode === 'draft'
-          ? active.status === 'loading'
-            ? '최적화 중…'
-            : '드래프트 최적화'
-          : active.status === 'loading'
-            ? '계산 중…'
-            : '기대 딜량 계산'
+          ? '빈자리만 최적화 중…'
+          : '계산 중…'
+  const submitLabel = active.status === 'loading' ? loadingLabel : '인카운터!'
 
   // Evaluation isn't cached and its display is gated purely on `mode`, unlike
   // raid/draft's raidResultMode/displayResult - so a stray in-flight evaluate
@@ -409,15 +405,38 @@ export function RecommendPanel({
     setMode(next)
   }
 
+  // 실행 버튼은 두 자리 중 하나에 선다 - 아래 폼을 볼 것. 내용물은 같으므로
+  // 여기서 한 번만 만든다.
+  const actionButtons = (
+    <>
+      <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
+        {submitLabel}
+      </button>
+      {/* 무언가 실제로 돌고 있을 때만 - 제출 옆에 상시 놓인 취소는 두 행동
+          사이의 선택처럼 읽힌다. `type="button"`이 중요하다: 폼 안의 맨
+          버튼은 제출이라, 첫 실행을 멈추는 대신 두 번째를 시작해버린다. */}
+      {active.status === 'loading' && (
+        <button type="button" className="btn" onClick={active.cancel}>
+          취소
+        </button>
+      )}
+      {mode !== 'evaluate' && rosterTooSmall && (
+        <p className="field__error" role="alert">
+          덱을 추천하려면 준비된 니케가 최소 {MIN_DECK_ROSTER_SIZE}기 필요해요.
+        </p>
+      )}
+    </>
+  )
+
   return (
-    <section className="card" aria-label="덱 추천">
+    <section className="card" aria-label="솔로 레이드">
       <header className="card__header">
-        <h2 className="card__title">덱 추천</h2>
+        <h2 className="card__title">솔로 레이드</h2>
       </header>
 
       <form onSubmit={handleSubmit} className="recommend-form">
-        {/* Everything needed to START a run sits in one row: the boss on the
-            left, the mode choice and Submit on the right. The boss fields used
+        {/* Everything needed to CONFIGURE a run sits in one row: the boss on
+            the left, the mode choice on the right. The boss fields used
             to close the form instead, 2040px below the button that acts on
             them with the whole 70-chip palette in between - so the input that
             moves the answer most (Element) was the one a player never scrolled
@@ -437,7 +456,7 @@ export function RecommendPanel({
                   onChange={() => switchMode('single')}
                 />
                 단일 덱
-                <span className="group__hint"> — 덱 하나의 순위별 대안</span>
+                <span className="group__hint"> — 기대 딜량이 높은 개별 덱을 찾아줘요</span>
               </label>
               <label className="radio">
                 <input
@@ -447,8 +466,8 @@ export function RecommendPanel({
                   checked={mode === 'raid'}
                   onChange={() => switchMode('raid')}
                 />
-                레이드 배분
-                <span className="group__hint"> — 여러 개의 겹치지 않는 덱을 동시에 편성</span>
+                전부 최적화
+                <span className="group__hint"> — 설정한 덱 개수만큼 최적화해요</span>
               </label>
               <label className="radio">
                 <input
@@ -458,11 +477,10 @@ export function RecommendPanel({
                   checked={mode === 'draft'}
                   onChange={() => switchMode('draft')}
                 />
-                드래프트 기반 최적화
+                빈자리만 최적화
                 <span className="group__hint">
                   {' '}
-                  — 직접 고른 핵심 유닛으로 덱을 시드하면, 엔진이 나머지를 채우고
-                  최적화해요
+                  — 직접 편성한 니케들을 기반으로 나머지 자리를 최적화해요
                 </span>
               </label>
               <label className="radio">
@@ -473,7 +491,7 @@ export function RecommendPanel({
                   checked={mode === 'evaluate'}
                   onChange={() => switchMode('evaluate')}
                 />
-                평가
+                기대 딜량 계산
                 <span className="group__hint">
                   {' '}
                   — 직접 짠 덱의 기대 딜량만 빠르게 계산해요, 최적화는 하지 않아요
@@ -500,30 +518,6 @@ export function RecommendPanel({
                 </select>
               </div>
             )}
-
-            {/* Submit sits with the mode choice rather than after the boss
-                fields: the palette and deck grid between them run long, and the
-                player should not have to scroll past their whole roster to
-                start a run they have already configured. */}
-            <div className="recommend-form__actions">
-              <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
-                {submitLabel}
-              </button>
-              {/* Only while something is actually running - a permanent Cancel
-                  next to Submit would read as a choice between two actions.
-                  `type="button"` matters: inside a form, a bare button submits,
-                  which would start a second run instead of stopping the first. */}
-              {active.status === 'loading' && (
-                <button type="button" className="btn" onClick={active.cancel}>
-                  취소
-                </button>
-              )}
-              {mode !== 'evaluate' && rosterTooSmall && (
-                <p className="field__error" role="alert">
-                  덱을 추천하려면 준비된 니케가 최소 {MIN_DECK_ROSTER_SIZE}기 필요해요.
-                </p>
-              )}
-            </div>
           </fieldset>
         </div>
 
@@ -555,7 +549,7 @@ export function RecommendPanel({
 
         {(mode === 'draft' || mode === 'evaluate') && (
           <fieldset className="group">
-            <legend className="group__legend">{mode === 'draft' ? '드래프트' : '평가할 덱'}</legend>
+            <legend className="group__legend">{mode === 'draft' ? '내 편성' : '평가할 덱'}</legend>
             {/* How to seat a unit is explained beside the decks themselves
                 (DraftEditor's hint), where the player is looking when they
                 need it. */}
@@ -584,15 +578,26 @@ export function RecommendPanel({
                   // place has nothing to mean there.
                   showLocks={mode !== 'evaluate'}
                 />
+                {/* 이 컬럼은 sticky라, 여기 얹은 실행 버튼은 덱과 함께
+                    화면에 남는다. */}
+                <div className="recommend-form__actions">{actionButtons}</div>
               </div>
             </div>
           </fieldset>
+        )}
+
+        {/* 덱 컬럼이 없는 모드다. 팔레트 70여 개 칩이 화면보다 길어 실행
+            버튼이 스크롤 밖으로 밀리므로, 대신 화면 하단에 붙인다. */}
+        {(mode === 'single' || mode === 'raid') && (
+          <div className="recommend-form__actions recommend-form__actions--sticky">
+            {actionButtons}
+          </div>
         )}
       </form>
 
       {(mode === 'raid' || mode === 'draft') && raid.status === 'loading' && (
         <p className="recommend-form__progress" role="status">
-          {mode === 'raid' ? '레이드 덱 배분 중' : '드래프트 최적화 중'} — 수천 번의
+          {mode === 'raid' ? '전부 최적화 중' : '빈자리만 최적화 중'} — 수천 번의
           시뮬레이션을 실행하며 보통 1~2분이 걸려요. 아직 진행 중이니 완료되면
           버튼이 다시 활성화돼요.
         </p>

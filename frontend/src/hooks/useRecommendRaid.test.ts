@@ -141,6 +141,6 @@ describe('useRecommendRaid', () => {
     })
 
     await waitFor(() => expect(result.current.status).toBe('error'))
-    expect(result.current.error).toBe('레이드 덱 배분을 가져오지 못했어요.')
+    expect(result.current.error).toBe('덱 배분 결과를 가져오지 못했어요.')
   })
 })
