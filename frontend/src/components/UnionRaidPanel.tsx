@@ -13,7 +13,7 @@ import {
   validateBossProfileDraft,
   type BossProfileDraft,
 } from '../types/bossProfileDraft'
-import { makeEmptyDraft, MAX_DRAFT_SEATS_PER_DECK, type Draft } from '../types/draft'
+import { isDraftComplete, makeEmptyDraft, resizeDraft, type Draft } from '../types/draft'
 import { DEFAULT_UNION_NUM_DECKS, MAX_UNION_NUM_DECKS, MIN_UNION_NUM_DECKS } from '../types/evaluate'
 import type { BossElement } from '../types/recommend'
 import type { SupportedUnit } from '../types/supportedUnit'
@@ -79,17 +79,13 @@ export function UnionRaidPanel({
     setBosses((current) =>
       Array.from({ length: next }, (_, i) => current[i] ?? makeDefaultBossProfileDraft()),
     )
-    setDraftValue((current) => ({
-      decks: Array.from({ length: next }, (_, i) => current.decks[i] ?? []),
-    }))
+    setDraftValue((current) => resizeDraft(current, next))
   }
 
   const validated = useMemo(() => bosses.map((draft) => validateBossProfileDraft(draft)), [bosses])
   const allBossesValid = validated.every((v) => v.value !== undefined)
 
-  const decksFull = draftValue.decks
-    .slice(0, numBattles)
-    .every((seats) => seats.length === MAX_DRAFT_SEATS_PER_DECK)
+  const decksFull = isDraftComplete(draftValue, numBattles)
 
   const canSubmit = decksFull && allBossesValid && evaluation.status !== 'loading'
 

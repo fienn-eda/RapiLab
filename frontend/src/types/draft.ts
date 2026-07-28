@@ -20,3 +20,19 @@ export const MAX_DRAFT_SEATS_PER_DECK = 5
 export const makeEmptyDraft = (numDecks: number): Draft => ({
   decks: Array.from({ length: numDecks }, () => []),
 })
+
+/** Resizes a draft to `numDecks`, preserving already-placed decks by index -
+ * growing appends empty decks, shrinking drops the trailing ones. Shared by
+ * the recommend tab's deck-count selector and the union raid tab's
+ * battle-count selector, which both resize their (differently-named) draft
+ * state the same way. */
+export const resizeDraft = (draft: Draft, numDecks: number): Draft => ({
+  decks: Array.from({ length: numDecks }, (_, i) => draft.decks[i] ?? []),
+})
+
+/** Whether every one of the first `numDecks` decks is full - the gate for
+ * evaluate-shaped screens (RecommendPanel's evaluate mode, the union raid
+ * tab), which score exactly what the player placed rather than searching, so
+ * a partial deck has nothing to complete. */
+export const isDraftComplete = (draft: Draft, numDecks: number): boolean =>
+  draft.decks.slice(0, numDecks).every((seats) => seats.length === MAX_DRAFT_SEATS_PER_DECK)

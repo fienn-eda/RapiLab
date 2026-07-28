@@ -22,7 +22,7 @@ import {
   validateBossProfileDraft,
   type BossProfileDraft,
 } from '../types/bossProfileDraft'
-import { makeEmptyDraft, MAX_DRAFT_SEATS_PER_DECK, type Draft } from '../types/draft'
+import { isDraftComplete, makeEmptyDraft, resizeDraft, type Draft } from '../types/draft'
 import type { StoredInputs, StoredResult } from '../types/profile'
 import {
   DEFAULT_NUM_DECKS,
@@ -198,9 +198,7 @@ export function RecommendPanel({
   // The editor always shows exactly numDecks columns; growing/shrinking that
   // selector resizes the draft, preserving already-placed decks by index.
   useEffect(() => {
-    setDraftValue((current) => ({
-      decks: Array.from({ length: numDecks }, (_, i) => current.decks[i] ?? []),
-    }))
+    setDraftValue((current) => resizeDraft(current, numDecks))
   }, [numDecks])
 
   const { errors, value: bossProfile } = useMemo(
@@ -223,9 +221,7 @@ export function RecommendPanel({
   const rosterTooSmall = effectiveRoster.length < MIN_DECK_ROSTER_SIZE
   // Evaluate mode has no search, so its gate isn't roster size but "every
   // selected deck is actually fielded" — a partial squad can't be scored.
-  const evaluateDecksFull = draftValue.decks
-    .slice(0, numDecks)
-    .every((seats) => seats.length === MAX_DRAFT_SEATS_PER_DECK)
+  const evaluateDecksFull = isDraftComplete(draftValue, numDecks)
   const canSubmit =
     mode === 'evaluate'
       ? evaluateDecksFull && !!bossProfile && active.status !== 'loading'
