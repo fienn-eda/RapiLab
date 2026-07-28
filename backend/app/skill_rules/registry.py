@@ -999,25 +999,38 @@ def get_burst_damage_type(slug):
     return _BURST_DAMAGE_TYPES.get(slug, "attack")
 
 
-# A unit that pauses between firing a charged shot and starting the next charge
-# (attack_rate.CHARGE_MOTION_DELAY_SECONDS). Fienn watched for it in game and
-# named these five; Liberalio is a Sniper Rifle WITHOUT it, which is why this is
-# a per-unit list and not a weapon-class constant (2026-07-28). Only her own
-# delay has been timed - 0.4 sec on Snow White: Heavy Arms - so the others carry
-# the same value on the strength of "it is there", not of a second stopwatch.
-_CHARGE_MOTION_DELAY = frozenset({
-    "snow-white-heavy-arms",
-    "ade-agent-bunny",
-    "helm", "helm-signature",
-    "bready-lingering", "bready-recommended",
-    "velvet",
-})
+# Seconds a unit pauses between firing a charged shot and starting the next
+# charge. It is a property of the UNIT: Liberalio is a Sniper Rifle with no gap
+# at all, and handing the delay to every charge weapon drops Scarlet: Black
+# Shadow from 0.981x of her recorded damage to 0.559x (2026-07-28).
+#
+# Fienn times these off the Full Burst clock, reading when the charged bullet
+# leaves against when the next charge gauge starts filling - deliberately NOT
+# the gap between damage numbers, which an RL grenade's travel time distorts
+# with distance. Each timing also checks itself: the shot-to-shot gap must come
+# out as charge time + delay.
+#   Snow White: Heavy Arms  0.4    (timed)
+#   Mint                    0.39   (timed: 0.39 / 0.40 / 0.39, gaps 1.40)
+#   Prika                   0.34   (timed: 0.36 / 0.34 / 0.33, gaps 1.36 / 1.35)
+# The rest are units Fienn watched and saw a pause on, without a stopwatch, so
+# they carry the shared default on the strength of "it is there".
+_CHARGE_MOTION_DELAY = {
+    "snow-white-heavy-arms": CHARGE_MOTION_DELAY_SECONDS,
+    "mint": 0.39,
+    "prika": 0.34,
+    "ade-agent-bunny": CHARGE_MOTION_DELAY_SECONDS,
+    "helm": CHARGE_MOTION_DELAY_SECONDS,
+    "helm-signature": CHARGE_MOTION_DELAY_SECONDS,
+    "bready-lingering": CHARGE_MOTION_DELAY_SECONDS,
+    "bready-recommended": CHARGE_MOTION_DELAY_SECONDS,
+    "velvet": CHARGE_MOTION_DELAY_SECONDS,
+}
 
 
 def get_charge_motion_delay(slug):
     """Seconds this Nikke waits between a charged shot and the next charge; 0
     for the vast majority - see `_CHARGE_MOTION_DELAY`."""
-    return CHARGE_MOTION_DELAY_SECONDS if slug in _CHARGE_MOTION_DELAY else 0.0
+    return _CHARGE_MOTION_DELAY.get(slug, 0.0)
 
 
 def get_burst_resolves_after_cast(slug):

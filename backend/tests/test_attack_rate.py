@@ -571,6 +571,22 @@ def test_charge_motion_delay_is_a_per_unit_list_not_a_weapon_class_constant():
     assert get_charge_motion_delay("scarlet-black-shadow") == 0.0
 
 
+def test_a_timed_unit_carries_its_own_delay_rather_than_the_shared_default():
+    """Fienn timed Mint and Prika the same way he timed Snow White, reading the
+    gap between a charged bullet leaving and the next charge gauge starting off
+    the Full Burst clock (2026-07-28, 60 FPS so ~0.01 sec of noise):
+        Mint   0.39 / 0.40 / 0.39
+        Prika  0.36 / 0.34 / 0.33
+    Their shot-to-shot gaps confirm the model rather than just the number - 1.40
+    sec for Mint and 1.36/1.35 for Prika, against a 1.0 sec charge time, so the
+    interval really is charge + delay. The values differ per unit, which is why
+    this is a mapping and not one constant over a list."""
+    from app.skill_rules.registry import get_charge_motion_delay
+
+    assert get_charge_motion_delay("mint") == 0.39
+    assert get_charge_motion_delay("prika") == 0.34
+
+
 def test_charge_motion_delay_lengthens_the_shot_interval_and_nothing_else():
     base = {"weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
             "reload_time": 2.0, "charge_time": 1.2, "charge_damage_percent": 250.0}
