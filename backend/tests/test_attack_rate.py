@@ -552,3 +552,35 @@ def test_charge_floor_still_bounds_the_combination():
     # A huge flat reduction cannot drive the interval below the unit's floor.
     assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=5.0) == pytest.approx(
         CHARGE_INTERVAL_FLOOR_SECONDS)
+
+
+# --- per-unit charge motion delay --------------------------------------------
+# Fienn timed about 0.4 sec between a charged shot firing and the next charge
+# starting (2026-07-28). It is a property of the UNIT, not the weapon: Liberalio
+# is a Sniper Rifle with no gap at all, and handing it to every charge weapon
+# drops Scarlet: Black Shadow from 0.981x of her recorded damage to 0.559x.
+
+def test_charge_motion_delay_is_a_per_unit_list_not_a_weapon_class_constant():
+    from app.skill_rules.registry import get_charge_motion_delay
+    from app.attack_rate import CHARGE_MOTION_DELAY_SECONDS
+    for slug in ("snow-white-heavy-arms", "ade-agent-bunny", "helm", "helm-signature",
+                 "bready-lingering", "bready-recommended", "velvet"):
+        assert get_charge_motion_delay(slug) == CHARGE_MOTION_DELAY_SECONDS
+    # Liberalio is the counter-example that makes this a list: also SR, no gap.
+    assert get_charge_motion_delay("liberalio") == 0.0
+    assert get_charge_motion_delay("scarlet-black-shadow") == 0.0
+
+
+def test_charge_motion_delay_lengthens_the_shot_interval_and_nothing_else():
+    base = {"weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
+            "reload_time": 2.0, "charge_time": 1.2, "charge_damage_percent": 250.0}
+    without = generate_segmented_shots(base, [], 30.0)
+    with_delay = generate_segmented_shots({**base, "charge_motion_delay": 0.4}, [], 30.0)
+    # First shot lands one charge in, so the delay shows up immediately...
+    assert round(without[0].time, 4) == 1.2
+    assert round(with_delay[0].time, 4) == 1.6
+    # ...and every gap inside a magazine grows by exactly the delay.
+    assert round(without[1].time - without[0].time, 4) == 1.2
+    assert round(with_delay[1].time - with_delay[0].time, 4) == 1.6
+    # Fewer shots fit, which is the whole point.
+    assert len(with_delay) < len(without)

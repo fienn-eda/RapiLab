@@ -87,6 +87,20 @@ def reload_time_with_speed(reload_time, reload_speed_percent):
 CHARGE_INTERVAL_FLOOR_SECONDS = 10.0 / 29
 
 
+# Some units pause between firing a charged shot and starting the next charge -
+# a fire-motion/charge-motion gap that is NOT charge time and NOT reload. Fienn
+# timed Snow White: Heavy Arms at about 0.4 sec (2026-07-28), and her 180-sec
+# shot count only balances with it: 14 x (3.2 + 0.4) + 72 x (1.2 + 0.4) + 7 x
+# 2.0 sec of reloads = 179.6 of 180 sec, against an engine that had her firing
+# every 1.2 sec flat and gave her 37% too many base shots.
+#
+# It is PER UNIT, not per weapon class: Liberalio is also a Sniper Rifle and
+# fires her charged shots back to back with no gap (Fienn). Applying it to every
+# charge weapon is measurably wrong - it drops Scarlet: Black Shadow from 0.981x
+# of her recorded damage to 0.559x and Cinderella from 0.971x to 0.654x. The
+# units that have it are listed in skill_rules.registry._CHARGE_MOTION_DELAY.
+CHARGE_MOTION_DELAY_SECONDS = 0.4
+
 FRAME_SECONDS = 1.0 / 60
 
 
@@ -451,7 +465,7 @@ def _base_shot_records(base, window_start, window_end,
         while magazine_start < window_end:
             effective_charge = charge_time_with_speed(
                 base["charge_time"], charge_speed_percent_at(magazine_start),
-                charge_time_reduction_sec_at(magazine_start))
+                charge_time_reduction_sec_at(magazine_start)) + base.get("charge_motion_delay", 0.0)
             magazine_size = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
             last_shot_time = None
             for i in range(magazine_size):
@@ -484,7 +498,7 @@ def _base_shot_records(base, window_start, window_end,
 
 
 def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
-                          charge_time_reduction_sec_at=_zero):
+                          charge_time_reduction_sec_at=_zero, motion_delay=0.0):
     """Shots of one override window. Cadence: charge-style profiles
     (charge_time) honor live charge-speed buffs; explicit rate_of_fire
     profiles are measurement anchors and take NO cadence buffs (the measured
@@ -501,7 +515,7 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
     if profile.get("charge_time"):
         interval = charge_time_with_speed(
             profile["charge_time"], charge_speed_percent_at(start),
-            charge_time_reduction_sec_at(start))
+            charge_time_reduction_sec_at(start)) + motion_delay
     else:
         interval = 1.0 / profile["rate_of_fire"]
     charge = profile.get("charge_damage_percent")
@@ -564,7 +578,7 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
             in_segment = True
         charge = charge_time_with_speed(
             profile["charge_time"], charge_speed_percent_at(cursor),
-            charge_time_reduction_sec_at(cursor))
+            charge_time_reduction_sec_at(cursor)) + base.get("charge_motion_delay", 0.0)
         shot_time = cursor + charge
         # A segment opening mid-charge takes over: the pending shot is
         # abandoned exactly as the default path drops base shots past a
@@ -631,6 +645,7 @@ def generate_segmented_shots(
         if seg is None or seg["start"] >= fight_duration:
             break
         seg_records, cursor = _segment_shot_records(
-            seg, fight_duration, charge_speed_percent_at, charge_time_reduction_sec_at)
+            seg, fight_duration, charge_speed_percent_at, charge_time_reduction_sec_at,
+            base.get("charge_motion_delay", 0.0))
         records.extend(seg_records)
     return records
