@@ -17,6 +17,7 @@ Usage (any cwd):
 """
 import argparse
 import sys
+import textwrap
 from collections import defaultdict
 from pathlib import Path
 
@@ -25,7 +26,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
-from raid_record import RECORD_BOSS, RECORD_DECKS, RECORD_ROTATIONS, deck_total  # noqa: E402
+from raid_record import (  # noqa: E402
+    RECORD_BOSS, RECORD_CAVEATS, RECORD_DECKS, RECORD_ROTATIONS, deck_total)
 from roster_fixture import real_roster  # noqa: E402
 
 
@@ -104,9 +106,51 @@ def measure(name, boss, by_slug):
             {slug: best_per_unit[slug] / rec for slug, rec in record.items()}, note), None
 
 
+def _print_orderings(name, boss, by_slug):
+    """Every feasible seat order for one deck, scored per unit.
+
+    Decks 1 and 2 are still graded by taking whichever ordering totals highest,
+    which is a known bias - when decks 3/4/5 were graded that way most of the
+    over-reading units sat at the TOP of their own range. Recovering the real
+    order needs Fienn, and this is what makes that answerable from the numbers
+    rather than from memory alone: a unit whose recorded damage only one
+    ordering reproduces identifies the ordering.
+    """
+    record = RECORD_DECKS[name]
+    if name in RECORD_ROTATIONS:
+        print(f"{name}: seat order already recorded "
+              f"({' -> '.join(RECORD_ROTATIONS[name]['order'])})\n")
+        return
+    states, missing = _states_for(record, by_slug)
+    if missing:
+        print(f"{name}: SKIPPED - not in the synced roster: {', '.join(missing)}\n")
+        return
+    specs, excluded = load_roster(states)
+    if excluded:
+        print(f"{name}: SKIPPED - not encoded: {', '.join(excluded)}\n")
+        return
+    total = deck_total(name)
+
+    print(f"{name}   record {total / 1e9:.3f}B")
+    for index, order in enumerate(feasible_orderings(specs), start=1):
+        result = evaluate_deck(list(order), boss)
+        per_unit = _per_unit(result)
+        seats = " -> ".join(f"{spec.slug}(B{spec.burst_tier})" for spec in order)
+        print(f"\n  [{index}] {result['total_damage'] / total:.3f}x   {seats}")
+        for slug, rec in sorted(record.items(), key=lambda kv: -kv[1]):
+            ratio = per_unit[slug] / rec
+            print(f"        {slug:<34} {ratio:>6.3f}x   "
+                  f"sim {per_unit[slug] / 1e9:.3f}B vs record {rec / 1e9:.3f}B")
+    print()
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--deck", help="one deck name (default: all)")
+    p.add_argument("--orderings", action="store_true",
+                   help="for decks whose seat order was never recorded, print "
+                        "every feasible ordering with its per-unit ratios so "
+                        "the one actually played can be recognised")
     p.add_argument("--element", default=RECORD_BOSS["element"],
                    help="override the boss's code - for what-if sweeps only")
     args = p.parse_args()
@@ -129,6 +173,11 @@ def main():
           f"{boss.fight_duration:.0f}s, core hittable, parts destructible")
     print(f"roster: real synced roster ({len(roster)} units)\n")
 
+    if args.orderings:
+        for name in names:
+            _print_orderings(name, boss, by_slug)
+        return
+
     all_ratios, sim_sum, record_sum = [], 0.0, 0.0
     for name in names:
         measured, problem = measure(name, boss, by_slug)
@@ -141,7 +190,10 @@ def main():
         record_sum += record
         print(f"{name}   {deck_ratio:.3f}x   (record {record / 1e9:.3f}B, {note})")
         for slug, ratio in sorted(ratios.items(), key=lambda kv: -abs(kv[1] - 1)):
-            flag = "  <--" if abs(ratio - 1) >= 0.25 else ""
+            if slug in RECORD_CAVEATS:
+                flag = "  (caveat, see below)"
+            else:
+                flag = "  <--" if abs(ratio - 1) >= 0.25 else ""
             print(f"      {slug:<34} {ratio:>6.3f}x{flag}")
             all_ratios.append((ratio, slug, RECORD_DECKS[name][slug]))
         print()
@@ -149,11 +201,28 @@ def main():
     if record_sum:
         print(f"combined   {sim_sum / record_sum:.3f}x   "
               f"over {len(all_ratios)} units")
-        worst = sorted(all_ratios, key=lambda r: -abs(r[0] - 1))[:5]
-        print("worst by ratio: " + ", ".join(f"{s} {r:.2f}x" for r, s, _ in worst))
+        # Caveated units top this list by construction - their record does not
+        # describe the modelled rotation - so leaving them in sends every
+        # session after a number that cannot be fixed in the engine.
+        chaseable = [r for r in all_ratios if r[1] not in RECORD_CAVEATS]
+        worst = sorted(chaseable, key=lambda r: -abs(r[0] - 1))[:5]
+        print("worst by ratio: " + ", ".join(f"{s} {r:.2f}x" for r, s, _ in worst)
+              + f"   (excludes {len(all_ratios) - len(chaseable)} caveated)")
         within = sum(1 for r, _, _ in all_ratios if abs(r - 1) < 0.15)
         print(f"within +-15%: {within}/{len(all_ratios)}")
         _print_absolute_errors(all_ratios, record_sum)
+        _print_caveats(all_ratios)
+
+
+def _print_caveats(all_ratios):
+    present = [slug for _, slug, _ in all_ratios if slug in RECORD_CAVEATS]
+    if not present:
+        return
+    print("\ncaveated - the record, not the encoding, is what these measure:")
+    for slug in sorted(set(present)):
+        print(f"  {slug}")
+        for line in textwrap.wrap(RECORD_CAVEATS[slug], 72):
+            print(f"      {line}")
 
 
 def _print_absolute_errors(all_ratios, record_sum):
@@ -170,14 +239,19 @@ def _print_absolute_errors(all_ratios, record_sum):
     r = -0.56).
     """
     errors = [(ratio * record - record, slug, record, ratio)
-              for ratio, slug, record in all_ratios]
-    print("\nby absolute error (sim - record), the order to work in:")
+              for ratio, slug, record in all_ratios
+              if slug not in RECORD_CAVEATS]
+    print("\nby absolute error (sim - record), the order to work in "
+          "(caveated units left out):")
     for delta, slug, record, ratio in sorted(errors, key=lambda e: -abs(e[0]))[:10]:
         print(f"      {slug:<34} {delta / 1e9:>+7.3f}B   "
               f"({ratio:.3f}x of {record / 1e9:.3f}B, {abs(delta) / record_sum:>5.1%} of the run)")
     under = sum(d for d, _, _, _ in errors if d < 0)
     over = sum(d for d, _, _, _ in errors if d > 0)
-    print(f"      {'':<34} 미달 합계 {under / 1e9:+.3f}B · 과대 합계 {over / 1e9:+.3f}B")
+    # Caveated units are out of these sums too, so they are not comparable with
+    # the totals recorded before 2026-07-29 (ark-ranger alone was +0.196B).
+    print(f"      {'':<34} 미달 합계 {under / 1e9:+.3f}B · 과대 합계 {over / 1e9:+.3f}B"
+          f"  (chaseable only)")
 
 
 if __name__ == "__main__":

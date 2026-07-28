@@ -87,6 +87,25 @@ RECORD_DECKS = {
 }
 
 
+# Units whose recorded number does NOT describe the rotation the engine models,
+# so their ratio measures the mismatch and not the encoding. Chasing one is
+# chasing the record, and without saying so here every session re-opens them:
+# they sit at the top of "worst by ratio" precisely because they are wrong.
+RECORD_CAVEATS = {
+    "ade-agent-bunny":
+        "Fienn tap-fired her in the recorded run - what players call "
+        "'tok-tok-i' - instead of full charging every shot, so her recorded "
+        "damage does not correspond to "
+        "the full-charge rotation the engine simulates (Fienn, 2026-07-29). "
+        "Her charge motion delay (0.35) and per-shot damage were both measured "
+        "correct beforehand, which is why the residual had no other home.",
+    "ark-ranger-black":
+        "Her output is a floor/ceiling bracket, not a point estimate - part "
+        "destruction fills her battery on a schedule nobody can know. See the "
+        "BossProfile.part_destructible decision in docs/decisions.md.",
+}
+
+
 # How the bursts were actually spent, per deck (Fienn, 2026-07-28). `order` is
 # the seat order, which the scheduler reads as priority within a burst tier, and
 # `max_bursts` names the seats whose burst was held: 0 for a totem, seated for
