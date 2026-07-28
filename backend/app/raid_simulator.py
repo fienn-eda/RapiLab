@@ -134,6 +134,14 @@ def core_eligible(source, damage_type):
     apply" - so it collects exactly what a core hit collects. The same tooltip
     says it does NOT fire "on core hit" conditions; nothing to guard, as this
     engine has no core-hit trigger (Fienn, 2026-07-26).
+
+    A SUMMON is the second exception, and it is not a damage type but a per-
+    instance fact, so a `scheduled_nukes` spec opts in with `core_eligible`
+    rather than being decided here: Anis: Star's Shooting Stars are stars that
+    aim and shoot on their own, and in game their damage lands as core hits
+    (Fienn, range footage 2026-07-28). "Scheduled tick" describes how the engine
+    emits the damage, not what the game thinks it is - a summon's shot is a
+    normal attack, just not its owner's.
     """
     if damage_type == "core_strike":
         return True
@@ -633,7 +641,7 @@ def simulate_raid(
     def record(
         slug, percent, time, source, damage_type="attack",
         extra_charge_bonus=0.0, resource_gate=None, extra_flat_atk=0.0,
-        on_charge_weapon=None,
+        on_charge_weapon=None, core_eligible_override=None,
     ):
         damage_events.append({
             "slug": slug, "percent": percent, "time": time, "source": source,
@@ -642,6 +650,9 @@ def simulate_raid(
             # None = decide from the unit's base weapon; a normal attack pins
             # the weapon its own shot record actually fired.
             "on_charge_weapon": on_charge_weapon,
+            # None = apply `core_eligible`'s general rule. True opts one
+            # instance in against it - see that function's summon exception.
+            "core_eligible_override": core_eligible_override,
         })
 
     def _resolve_percent(ev):
@@ -1339,7 +1350,8 @@ def simulate_raid(
                 if hit_time >= fight_duration:
                     continue
                 record(slug, spec["percent"], hit_time, "scheduled",
-                       damage_type=damage_type, resource_gate=resource_gate)
+                       damage_type=damage_type, resource_gate=resource_gate,
+                       core_eligible_override=spec.get("core_eligible"))
 
     def _normal_attack_percent(ev):
         # Normal Attack Damage Multiplier is a Final ATK modifier on the
@@ -1362,7 +1374,11 @@ def simulate_raid(
                 ev["time"],
                 damage_type=ev["damage_type"], extra_charge_bonus=ev["extra_charge_bonus"],
                 extra_flat_atk=ev["extra_flat_atk"],
-                hits_core=core_hittable and core_eligible(ev["source"], ev["damage_type"]),
+                hits_core=core_hittable and (
+                    core_eligible(ev["source"], ev["damage_type"])
+                    if ev["core_eligible_override"] is None
+                    else ev["core_eligible_override"]
+                ),
                 on_charge_weapon=ev["on_charge_weapon"],
             ),
             "source": ev["source"],

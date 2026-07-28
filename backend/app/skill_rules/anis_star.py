@@ -15,12 +15,10 @@ Modeled (DPS-relevant):
   `build_shooting_stars_scheduled_nukes`); and the window's fixed 0.7-sec
   charge time (see `build_star_anis_burst_rules`).
 
-Her damage splits 61% normal attacks / 20% Shooting Stars / 19% Starfall in the
-recorded deck (measured 2026-07-28). The tick stream LOOKS dominant at 600 ticks
-against 201 shots, and this docstring called it "by far her largest source" until
-the split was actually measured - a tick carries neither the core hit (x1.5388)
-nor the projectile-explosion bucket (x1.4994) her normal attacks do. Count
-instances and you will rank her sources wrong; measure them.
+Her damage splits 48% normal attacks / 38% Shooting Stars / 15% Starfall in the
+recorded deck (measured 2026-07-28). Count instances and you will rank her
+sources wrong - 600 ticks against 201 shots is not 3:1 in damage, because one
+tick's coefficient is 40.01% against a shot's 167.76%.
 
 Shooting Stars IS `full_burst_bonus_eligible`. It carries no "as additional
 damage" phrase at all - it is a summon that attacks - and the phrase was only
@@ -50,29 +48,33 @@ Everyone's Star "Re-enters Burst / Stage" branch (no multi-stage burst
 re-entry); the burst's Explosion Radius (inert) and DEF, and all heal / Max HP
 (survival).
 
-She reads 0.627x of her recorded raid damage - the LOWEST ratio of all 25
-measured units - and needs +59% to reach it, which is a different order of miss
-from the rest of her deck (+20% / +9% / +7% / -15%). An audit on 2026-07-27
-found the modelled parts right: her Projectile Explosion Damage +92.03% does
-reach her own shots (all 201 of her normal attacks carry damage_type
+She reads 0.946x of her recorded raid damage, up from 0.627x over four
+corrections. Everything below is the audit trail, kept because the WAY the last
+one hid is the reusable part.
+
+Verified and not worth re-checking: her Projectile Explosion Damage +92.03%
+reaches her own shots (all 201 of her normal attacks carry damage_type
 "projectile_explosion"), the burst's 0.7-sec charge fix shows up as 128 of her
 ~180 shot intervals, her cooldown reduction applies to herself (20 - 7.48 =
 12.52 sec, matching her 15 bursts), and her 88.61% Superior Code overload is
 correctly discarded because Electric holds no advantage over an Iron boss.
 
-Both readings that could have explained it are now settled AGAINST changing
-anything here (Fienn, 2026-07-28):
+Two readings of Shooting Stars, one confirmed and one reversed (Fienn,
+2026-07-28):
 
 - Shooting Stars fires ONE star every 0.25 sec, measured in game. The 40-tick
   stream is right; "generates starS" is flavour. (Had it been N streams her
   damage would scale nearly linearly in N - 2 gives 0.778x, 3 gives 0.929x -
   which is why it was worth measuring.)
-- Shooting Stars does NOT take Projectile Explosion Damage. The in-game tooltip
-  scopes that stat to "로켓 런쳐의 폭발과 부착형 발사체의 폭발" - a rocket
-  launcher's own explosion and an attached projectile's - and a summon's
-  auto-attack is neither. Her RL NORMAL attacks are in scope and already carry
-  the type. Typing the ticks projectile_explosion would add +0.108B (her 0.627x
-  -> 0.706x, deck1 0.867x -> 0.876x); that damage would be fictional.
+- ~~Shooting Stars does NOT take Projectile Explosion Damage.~~ **REVERSED
+  2026-07-28.** The tooltip scoping ("로켓 런쳐의 폭발과 부착형 발사체의 폭발")
+  was read as excluding a summon, and the burst's own "Explosion Radius +100%"
+  additional effect - which only means something for damage that explodes - was
+  filed as inert alongside it. Fienn's range footage settles it directly: a tick
+  and a normal attack, both non-crit core hits in one window, differ by exactly
+  their bare coefficients, so the tick is in the same buckets. The ticks also
+  collect the CORE bonus, against the blanket "scheduled ticks never core" rule.
+  Together: 0.739x -> 0.946x (core alone 0.823x, the type alone 0.818x).
 
 Her per-hit damage is EXACT. Ten range-test readings (solo, target DEF 100,
 crit/non-crit x core/non-core x before/after her own burst) reproduce from a
@@ -84,34 +86,34 @@ That last point doubles as proof the solo test never entered Full Burst (no
 +0.5, no Stardust buffs), which is also why it cannot test the Projectile
 Explosion question - Stardust's +92.03% is Full-Burst-gated.
 
-So her 0.627x sits entirely ABOVE the per-hit layer, in counts, uptime or deck
-context - the same signature Ade: Agent Bunny showed. Do not look for it in the
-coefficients again.
+★ HOW THE LAST -0.358B HID, because the shape recurs. An audit on 2026-07-28
+decomposed her three sources against each other inside one window and reported
+"nothing unaccounted for": normal attack 4,293,059.88 for 61.3 x 2.73675, a star
+tick 443,724.05 for 40.01, Starfall 973,376.55 for 120.13, with the gaps being
+"exactly the three modifiers that differ - star tick vs normal = core 1.5388 x
+the projectile-explosion bucket 1.4994". That sentence IS the bug, written down
+as a result. The audit checked that the sim's own numbers were internally
+consistent with the sim's own assumptions, and a source-vs-source ratio can only
+ever do that. Whether the tick SHOULD have been missing core and projectile
+explosion is a question about the game, and no amount of internal arithmetic
+reaches it. A solo range test could not reach it either - solo never enters Full
+Burst, so Stardust's Full-Burst-gated +92.03% is absent and the pair carries no
+projectile-explosion factor to compare.
+  What settled it: the same two instances measured IN A DECK, IN a Full Burst
+window (Fienn's footage, above). Their ratio came out as the bare coefficient
+ratio, which says every modifier cancels - the tick is in her normal attack's
+state exactly. **A ratio between two of the engine's own outputs verifies
+consistency; only a ratio against the GAME verifies truth.**
 
-AUDIT, 2026-07-28. She reads 0.739x now (0.627 -> 0.703 from the normal-attack
-Full Burst fix, -> 0.739 from Starfall's, below). The deck-context layer was
-re-derived from the sim's own log and every piece of it checks out, so the
-remaining -0.358B is NOT in any of these:
+Still under-modeled, small and named: her shot intervals read 128 at 0.70 sec
+against 50 at 1.00, i.e. 71.9% at the burst-fixed cadence where her burst covers
+79.9% of the fight. That is the once-per-MAGAZINE charge-speed sampling this
+module already documents, worth about +5% of her normal attack and Starfall -
+roughly +0.038B against the -0.074B that remains.
 
-- The three sources decompose exactly against their bare coefficients. Read
-  inside one window (t~39.7, so all buffs match): normal attack 4,293,059.88
-  for 61.3 x 2.73675, a star tick 443,724.05 for 40.01, Starfall 973,376.55 for
-  120.13. Per 1% that is 25,589.5 / 11,090.3 / 8,102.6, and the three gaps are
-  exactly the three modifiers that differ - Starfall vs star tick = 1.3687, the
-  Full Burst bonus alone; star tick vs normal = core 1.5388 x the projectile-
-  explosion bucket 1.4994. Nothing unaccounted for.
-- Her element is NOT costing her anything: `elements.py` returns 1.0 for a
-  disadvantaged attacker, not a penalty (Iron beats Electric, and NIKKE has no
-  reverse malus).
-- 15 bursts, 12.52/12.72 sec apart, 15 Full Burst windows covering 141.6 of 180
-  sec. 94.6% of her normal-attack damage and 100% of her star ticks land inside
-  one.
-
-What IS still under-modeled here is small and named: her shot intervals read
-128 at 0.70 sec against 50 at 1.00, i.e. 71.9% at the burst-fixed cadence where
-her burst covers 79.9% of the fight. That is the once-per-MAGAZINE charge-speed
-sampling this module already documents, and closing it is worth about +5% of
-her normal attack and Starfall - roughly +0.038B against a -0.358B gap.
+Her element is NOT costing her anything: `elements.py` returns 1.0 for a
+disadvantaged attacker, not a penalty (Iron beats Electric, and NIKKE has no
+reverse malus).
 """
 from app.effects import Effect, Pulse
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
@@ -259,7 +261,20 @@ def build_shooting_stars_scheduled_nukes(values: dict):
     Her burst opens Full Burst 0.2 sec later (B1 -> B2 -> B3) while the first
     tick lands 0.25 sec after it, so every tick falls inside the window - and
     the engine still tests each tick's own time, so this stays exact rather
-    than an approximation (Fienn, 2026-07-27)."""
+    than an approximation (Fienn, 2026-07-27).
+
+    A tick is ALSO `core_eligible` and typed `projectile_explosion`, because a
+    star is a shooter, not a status effect. Fienn's range footage settles both
+    at once: one non-crit core-hit tick reads 1,786,809 against a non-crit
+    core-hit normal attack's 7,492,265, a ratio of 4.193098, while the bare
+    coefficients give (61.3% x 273.675%) / 40.01% = 4.193021 - the same to
+    0.0018%. Every modifier cancels between the pair, so the tick sits in
+    exactly the state her own shot does: the core bonus AND the
+    projectile-explosion bucket her Stardust was filling inside that window.
+    Two earlier readings of the same skill were wrong in the same direction:
+    "scheduled ticks never collect core" was applied as a blanket rule, and the
+    burst's "Explosion Radius +100%" additional effect - which only makes sense
+    for something that explodes - was dismissed as inert."""
     percent = float(values["description_value_01"])
     duration = float(values["description_value_02"])
     ticks = int(round(duration / SHOOTING_STARS_INTERVAL))
@@ -274,7 +289,8 @@ def build_shooting_stars_scheduled_nukes(values: dict):
             )
         return times
 
-    return [{"schedule": schedule, "percent": percent}]
+    return [{"schedule": schedule, "percent": percent, "core_eligible": True,
+             "damage_type": "projectile_explosion"}]
 
 
 def build_star_anis_burst_rules(values: dict) -> list[SkillRule]:

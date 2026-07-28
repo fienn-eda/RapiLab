@@ -256,3 +256,37 @@ def test_shooting_stars_are_independent_of_her_magazine_and_reloads():
     times = stars["schedule"](context, 180.0)
     gaps = [round(b - a, 10) for a, b in zip(times, times[1:])]
     assert set(gaps) == {0.25}  # perfectly even: no reload gap ever appears
+
+
+# --- Shooting Stars are a summon's own shots -----------------------------
+# Fienn's range footage (3-unit deck [anis-star, ade-agent-bunny, liberalio],
+# 2026-07-28) reads these three NON-CRIT numbers inside one Full Burst window:
+#   Shooting Stars, core hit  1,786,809
+#   normal attack, core hit   7,492,265
+# Their ratio is 4.193098. The bare coefficient ratio is
+# (61.3% x 273.675% charge) / 40.01% = 4.193021 - the same to 0.0018%, which is
+# the game's integer display rounding. Every multiplier therefore CANCELS
+# between them: the stars share her normal attack's core hit AND its
+# damage-type buckets (her shots are projectile_explosion and Stardust's
+# +92.03% was live inside that window). The engine used to give the ticks
+# neither, which is why she read 0.739x.
+
+STARS_OVER_NORMAL_MEASURED = 7_492_265.0 / 1_786_809.0
+
+
+def test_shooting_stars_are_core_eligible_and_projectile_explosion():
+    (stars,) = build_shooting_stars_scheduled_nukes(STAR_ANIS)
+
+    assert stars["core_eligible"] is True
+    assert stars["damage_type"] == "projectile_explosion"
+
+
+def test_a_star_tick_holds_the_measured_ratio_against_her_normal_attack():
+    """The invariant Fienn measured: one tick against one normal attack, same
+    instant, is the bare coefficient ratio and nothing else."""
+    (stars,) = build_shooting_stars_scheduled_nukes(STAR_ANIS)
+    tick_percent = stars["percent"]
+    normal_percent = 61.3 * 273.675 / 100  # weapon damage% x her charge damage%
+
+    assert normal_percent / tick_percent == pytest.approx(
+        STARS_OVER_NORMAL_MEASURED, rel=1e-4)

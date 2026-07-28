@@ -1,7 +1,7 @@
 import pytest
 
 from app.effects import Effect, Pulse, ResourceBuff, ResourceSpec
-from app.raid_simulator import simulate_raid
+from app.raid_simulator import CORE_HIT_BONUS, simulate_raid
 from app.skill_rules._helpers import (
     buff_rule,
     instant_nuke_pulse_rule,
@@ -3108,6 +3108,62 @@ def test_scheduled_nuke_context_exposes_full_burst_windows():
     )
     assert seen["windows"], "full burst windows must be visible to schedules"
     assert all(end > start for start, end in seen["windows"])
+
+
+def test_a_scheduled_nuke_can_opt_in_to_the_core_hit_bonus():
+    # Core Damage is a normal-attack-only modifier, so scheduled ticks are ruled
+    # out by default. A SUMMON's auto-attack is the exception: Anis: Star's
+    # Shooting Stars land as core hits in game (Fienn, range footage
+    # 2026-07-28), so the spec can opt one in.
+    def schedule(context, fight_duration):
+        return [5.0]
+
+    kwargs = dict(
+        deck=[{"slug": "buffer", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+              {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+              {"slug": "gunner", "burst_tier": 3, "element": "Iron", "cooldown": 40.0, "weapon": "SR"}],
+        rules_by_slug={}, burst_damage_percents={},
+        base_stats={"buffer": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+                    "midtier": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+                    "gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        core_hittable=True, base_crit_rate=0.0,
+    )
+    plain = simulate_raid(scheduled_nukes={
+        "gunner": [{"schedule": schedule, "percent": 100.0}]}, **kwargs)
+    opted = simulate_raid(scheduled_nukes={
+        "gunner": [{"schedule": schedule, "percent": 100.0, "core_eligible": True}]}, **kwargs)
+
+    def tick(result):
+        return next(e for e in result["damage_log"] if e["source"] == "scheduled")
+
+    # The tick lands inside a Full Burst window, so its bucket is 1 + 0.5
+    # without a core hit and 1 + 0.5 + CORE_HIT_BONUS with one - core sits in
+    # the SAME additive bucket as the Full Burst bonus, it does not multiply it.
+    assert tick(plain)["damage"] == pytest.approx(1000.0 * 1.5)
+    assert tick(opted)["damage"] == pytest.approx(1000.0 * (1.5 + CORE_HIT_BONUS))
+
+
+def test_a_scheduled_nuke_that_does_not_opt_in_still_never_cores():
+    def schedule(context, fight_duration):
+        return [5.0]
+
+    result = simulate_raid(
+        deck=[{"slug": "buffer", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+              {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+              {"slug": "gunner", "burst_tier": 3, "element": "Iron", "cooldown": 40.0, "weapon": "SR"}],
+        rules_by_slug={}, burst_damage_percents={},
+        base_stats={"buffer": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+                    "midtier": {"atk": 0.0, "def": 0.0, "max_hp": 0.0},
+                    "gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        core_hittable=True, base_crit_rate=0.0,
+        scheduled_nukes={"gunner": [{"schedule": schedule, "percent": 100.0}]},
+    )
+    tick = next(e for e in result["damage_log"] if e["source"] == "scheduled")
+    # 100% of ATK 1000, no crit, no buffs, x1.5 for the Full Burst window it
+    # lands in - and no core bonus, which is the point.
+    assert tick["damage"] == pytest.approx(1000.0 * 1.5)
 
 
 def test_projectile_attachment_damage_up_scales_attachment_typed_nuke():

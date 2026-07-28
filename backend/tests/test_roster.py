@@ -319,7 +319,20 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     )["total_damage"]
 
     assert dmg_with > dmg_without
-    # Golden pin. Re-baselined 2026-07-27 (latest): Full Burst now opens a beat
+    # Golden pin. Re-baselined 2026-07-28 (latest): Anis: Star's Shooting Stars
+    # collect the core hit bonus and carry projectile_explosion damage, both
+    # settled by Fienn's range footage. Her ticks are a fixed 40 per cycle that
+    # no reload buff buys more of, so this only grows the BASE: 711.0M -> 741.3M
+    # and 746.2M -> 776.4M, with the reload DELTA byte-identical at 35,136,487.
+    # The RATIO therefore falls 1.049415 -> 1.047400 for the same reason it rose
+    # in the 07-27 entry below - dilution, not a change in the reload path.
+    #
+    # NOTE for the next re-baseline: the "29.24M" delta quoted in the 07-27
+    # entry was already stale before this change (measured here at 35,136,487
+    # both before and after). Re-measure the delta rather than trusting the
+    # last comment's figure - that is what makes this pin worth keeping.
+    #
+    # Re-baselined 2026-07-27: Full Burst now opens a beat
     # AFTER the tier-3 cast, so a Burst 3's own burst nuke no longer collects
     # any full_burst_enter buff (burst_cycle.FULL_BURST_OPEN_DELAY). Both
     # absolutes fell 902.0M -> 666.9M and 872.8M -> 637.7M, but the reload
@@ -373,7 +386,12 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # each of her shots occupies 1.4 sec rather than 1.0. The RATIO FELL
     # 1.0529 -> 1.0494, which is the point of the delay: a reload saving buys
     # the same seconds back, but seconds are worth fewer shots now.
-    assert round(dmg_with / dmg_without, 4) == 1.0494
+    assert round(dmg_with / dmg_without, 4) == 1.0474
+    # Pin the DELTA too, not just the ratio: the ratio moves whenever anything
+    # in this deck's damage moves, but a reload-speed change is the only thing
+    # that may move the delta. Splitting them is what stops a re-baseline from
+    # quietly absorbing a real regression in the reload path.
+    assert round(dmg_with - dmg_without, 0) == 35_136_487.0
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():
