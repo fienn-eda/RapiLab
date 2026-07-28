@@ -20,18 +20,20 @@ const renderResults = (overrides = {}) =>
 
 describe('EvaluationResults', () => {
   it('덱마다 카드를 그리고 합계를 보여준다', () => {
-    const { container } = renderResults()
-    // DeckCard renders each deck as an <li class="deck-results__item">; its
-    // own units are also <li> elements, so a role query can't distinguish
-    // deck cards from unit rows — the class is the honest selector here.
-    expect(container.querySelectorAll('.deck-results__item')).toHaveLength(2)
+    renderResults()
+    // The composed label ("N번 덱 · 속성") is this component's own output,
+    // not DeckCard's internal markup — counting matches of it proves one
+    // card per deck without coupling to a CSS class this component doesn't own.
+    expect(screen.getAllByText(/\d번 덱 · /)).toHaveLength(2)
     expect(screen.getByText(/150/)).toBeTruthy()
   })
 
-  it('덱마다 자기 보스 속성을 표시한다', () => {
+  it('덱마다 자기 보스 속성을 표시한다 (자리와 짝이 맞다)', () => {
+    // Exact composed text, not a substring match, so this fails if the
+    // element/deck pairing is transposed, reversed, or off-by-one.
     renderResults()
-    expect(screen.getByText(/철갑/)).toBeTruthy()
-    expect(screen.getByText(/수냉/)).toBeTruthy()
+    expect(screen.getByText('1번 덱 · 철갑')).toBeTruthy()
+    expect(screen.getByText('2번 덱 · 수냉')).toBeTruthy()
   })
 
   it('엔진이 고른 순서를 안내한다', () => {
