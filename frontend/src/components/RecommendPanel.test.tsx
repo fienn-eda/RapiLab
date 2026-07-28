@@ -97,7 +97,7 @@ describe('RecommendPanel', () => {
     expect(
       screen.getByText('덱을 추천하려면 준비된 니케가 최소 5기 필요해요.'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /덱 추천/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
   })
 
   // The boss profile used to sit at the very END of the form, past the whole
@@ -108,13 +108,11 @@ describe('RecommendPanel', () => {
 
     const boss = screen.getByRole('group', { name: /보스 설정/i })
     const mode = screen.getByRole('group', { name: /^모드$/i })
-    const submit = screen.getByRole('button', { name: /덱 추천/i })
     const palette = screen.getByRole('group', { name: /사용할 유닛/i })
 
-    // Same row: one wrapper holds the boss fields and the mode+submit block.
+    // Same row: one wrapper holds the boss fields and the mode block.
     const setup = boss.parentElement!
     expect(setup).toBe(mode.parentElement)
-    expect(setup.contains(submit)).toBe(true)
     expect(setup.contains(palette)).toBe(false)
 
     // ...and that row comes before the palette in the document.
@@ -142,7 +140,7 @@ describe('RecommendPanel', () => {
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
 
     expect(screen.queryByRole('button', { name: /^취소$/i })).not.toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /덱 추천/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     const cancel = await screen.findByRole('button', { name: /^취소$/i })
     await user.click(cancel)
@@ -153,7 +151,7 @@ describe('RecommendPanel', () => {
       expect(screen.queryByRole('button', { name: /^취소$/i })).not.toBeInTheDocument(),
     )
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /덱 추천/i })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeEnabled()
   })
 
   it('submits the roster and boss profile, and renders the ranked results', async () => {
@@ -173,7 +171,7 @@ describe('RecommendPanel', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByRole('button', { name: /덱 추천/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(recommendDecks).toHaveBeenCalledWith({
       roster: fullRoster,
@@ -197,7 +195,7 @@ describe('RecommendPanel', () => {
     )
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByRole('button', { name: /덱 추천/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(await screen.findByText('No feasible 5-unit deck.')).toBeInTheDocument()
   })
@@ -217,7 +215,7 @@ describe('RecommendPanel', () => {
     await user.clear(enemyDef)
     await user.type(enemyDef, '20000')
 
-    await user.click(screen.getByRole('button', { name: /덱 추천/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(recommendDecks).toHaveBeenCalledWith({
       roster: fullRoster,
@@ -238,7 +236,7 @@ describe('RecommendPanel', () => {
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/부위파괴 기믹/i))
 
-    await user.click(screen.getByRole('button', { name: /덱 추천/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(recommendDecks).toHaveBeenCalledWith({
       roster: fullRoster,
@@ -260,7 +258,7 @@ describe('RecommendPanel raid mode', () => {
 
     expect(screen.queryByLabelText('덱 개수')).not.toBeInTheDocument()
 
-    await user.click(screen.getByLabelText(/레이드 배분/i))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
     expect(screen.getByLabelText('덱 개수')).toHaveValue('5')
   })
 
@@ -277,9 +275,9 @@ describe('RecommendPanel raid mode', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/레이드 배분/i))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '3')
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(recommendRaidDecks).toHaveBeenCalledWith({
       roster: fullRoster,
@@ -311,8 +309,8 @@ describe('RecommendPanel raid mode', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/레이드 배분/i))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(await screen.findByText('덱 1')).toBeInTheDocument()
     expect(screen.getByText('덱 2')).toBeInTheDocument()
@@ -329,11 +327,11 @@ describe('RecommendPanel raid mode', () => {
     )
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/레이드 배분/i))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
-    expect(screen.getByRole('button', { name: /배분 중/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /전부 최적화 중/i })).toBeDisabled()
 
     resolveRequest({
       decks: [],
@@ -357,8 +355,8 @@ describe('RecommendPanel raid mode', () => {
     )
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/레이드 배분/i))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(await screen.findByText('No feasible deck from the usable roster.')).toBeInTheDocument()
   })
@@ -391,7 +389,7 @@ describe('RecommendPanel draft mode', () => {
 
     const sixRoster = [...fullRoster, nikke('f')]
     render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/드래프트 기반/i))
+    await user.click(screen.getByLabelText(/빈자리만 최적화/i))
 
     await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
 
@@ -399,7 +397,7 @@ describe('RecommendPanel draft mode', () => {
     // spans two decks — not just deck 1.
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
     dropOnDeck(2, 'f')
-    await user.click(screen.getByRole('button', { name: /드래프트 최적화/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(recommendRaidDecks).toHaveBeenCalledWith({
       roster: sixRoster,
@@ -454,11 +452,11 @@ describe('RecommendPanel draft mode', () => {
 
     const roster = [...fullRoster, nikke('bready')]
     render(<RecommendPanel roster={roster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/드래프트 기반/i))
+    await user.click(screen.getByLabelText(/빈자리만 최적화/i))
     await screen.findByRole('button', { name: /bready 사용/i }) // draft palette has her
 
     dropOnDeck(1, 'bready')
-    await user.click(screen.getByRole('button', { name: /드래프트 최적화/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(recommendRaidDecks).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -477,8 +475,8 @@ describe('RecommendPanel draft mode', () => {
     )
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/드래프트 기반/i))
-    await user.click(screen.getByRole('button', { name: /드래프트 최적화/i }))
+    await user.click(screen.getByLabelText(/빈자리만 최적화/i))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(
       await screen.findByText('draft references unusable slug: z'),
@@ -497,7 +495,7 @@ describe('RecommendPanel draft mode', () => {
     const sixRoster = Array.from({ length: 6 }, (_, i) => nikke(`u${i}`))
 
     render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/드래프트 기반/i))
+    await user.click(screen.getByLabelText(/빈자리만 최적화/i))
 
     await screen.findByRole('button', { name: /u0 사용/i }) // palette loaded
 
@@ -520,8 +518,8 @@ describe('RecommendPanel evaluate mode', () => {
   it('평가 모드는 25칸을 다 채우기 전에는 제출을 막는다', async () => {
     const user = userEvent.setup()
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByRole('radio', { name: /평가/ }))
-    expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
   })
 
   it('평가 모드에서는 잠금 토글이 없다', async () => {
@@ -529,7 +527,7 @@ describe('RecommendPanel evaluate mode', () => {
     vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
 
     // Seat a unit so the draft editor actually draws a slot — with nothing
@@ -546,15 +544,15 @@ describe('RecommendPanel evaluate mode', () => {
     vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
     await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
 
     for (const slug of ['a', 'b', 'c', 'd']) dropOnDeck(1, slug)
-    expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
 
     dropOnDeck(1, 'e')
-    expect(screen.getByRole('button', { name: /계산/ })).toBeEnabled()
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeEnabled()
   })
 
   it('로스터가 최소 인원 밑으로 줄어도 평가는 제출된다 - 평가는 편성된 유닛만 채점하지 로스터 크기를 보지 않는다', async () => {
@@ -574,7 +572,7 @@ describe('RecommendPanel evaluate mode', () => {
     })
 
     const { rerender } = render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
     await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
@@ -584,7 +582,7 @@ describe('RecommendPanel evaluate mode', () => {
     rerender(<RecommendPanel roster={fullRoster.slice(0, 3)} {...noPersistence} />)
     expect(screen.queryByText(/니케가 최소 5기 필요해요/)).not.toBeInTheDocument()
 
-    const submitButton = screen.getByRole('button', { name: /계산/ })
+    const submitButton = screen.getByRole('button', { name: /인카운터/ })
     expect(submitButton).toBeEnabled()
     await user.click(submitButton)
 
@@ -605,12 +603,12 @@ describe('RecommendPanel evaluate mode', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
     await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
 
-    await user.click(screen.getByRole('button', { name: /계산/ }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(evaluateDecks).toHaveBeenCalledWith(
       {
@@ -652,11 +650,11 @@ describe('RecommendPanel evaluate mode', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
     await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
-    await user.click(screen.getByRole('button', { name: /계산/ }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(await screen.findByText('1번 덱 · 무속성')).toBeInTheDocument()
 
@@ -683,12 +681,12 @@ describe('RecommendPanel mode switch', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/레이드 배분/i))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
     // RaidResults-specific text, distinct from DraftEditor's own "Deck N" column headers.
     expect(await screen.findByText(/이 1개 덱을 모두 함께 편성하세요/)).toBeInTheDocument()
 
-    await user.click(screen.getByLabelText(/드래프트 기반/i))
+    await user.click(screen.getByLabelText(/빈자리만 최적화/i))
     expect(screen.queryByText(/모두 함께 편성/)).not.toBeInTheDocument()
     expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
   })
@@ -708,11 +706,11 @@ describe('RecommendPanel mode switch', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
     await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
-    await user.click(screen.getByRole('button', { name: /계산/ }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
 
@@ -737,20 +735,20 @@ describe('RecommendPanel mode switch', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
     await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
-    await user.click(screen.getByRole('button', { name: /계산/ }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
     expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
 
     // 딴 모드로 갔다가, 공유된 draftValue의 편성을 바꾼다.
-    await user.click(screen.getByRole('radio', { name: /드래프트 기반/ }))
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/ }))
     await user.click(screen.getByRole('button', { name: '덱 1에서 E 제거' }))
     dropOnDeck(1, 'e') // rebuild a full deck so evaluate mode can submit again
 
     // 평가로 돌아온다 - 새로 제출하지 않았으므로 옛 성공 결과가 남아 있으면 안 된다.
-    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
   })
 })
@@ -804,7 +802,7 @@ describe('RecommendPanel persistence', () => {
     expect(await screen.findByText('덱 1')).toBeInTheDocument()
     expect(screen.getByText('180 딜')).toBeInTheDocument()
     expect(screen.getByText('벤치 (덱에 배정되지 않음): K')).toBeInTheDocument()
-    expect(screen.getByLabelText(/레이드 배분/i)).toBeChecked()
+    expect(screen.getByLabelText(/전부 최적화/i)).toBeChecked()
     expect(screen.getByLabelText('덱 개수')).toHaveValue('3')
     expect(recommendRaidDecks).not.toHaveBeenCalled()
   })
@@ -843,8 +841,8 @@ describe('RecommendPanel persistence', () => {
         engineVersion={null}
       />,
     )
-    await user.click(screen.getByLabelText(/레이드 배분/i))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await screen.findByText('덱 1')
 
     const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5, null)
@@ -903,8 +901,8 @@ describe('RecommendPanel persistence', () => {
         engineVersion={null}
       />,
     )
-    await user.click(screen.getByLabelText(/레이드 배분/i))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(await screen.findByText('999 딜')).toBeInTheDocument()
     expect(recommendRaidDecks).not.toHaveBeenCalled()
@@ -935,8 +933,8 @@ describe('RecommendPanel persistence', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/레이드 배분/i))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
     expect(await screen.findByText('100 딜')).toBeInTheDocument()
 
     // Change an input (num_decks) so the resubmit is a genuinely different
@@ -947,7 +945,7 @@ describe('RecommendPanel persistence', () => {
       new RecommendApiError(422, { detail: 'No feasible deck from the usable roster.' }),
     )
     await user.selectOptions(screen.getByLabelText('덱 개수'), '3')
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
     expect(
       await screen.findByText('No feasible deck from the usable roster.'),
@@ -992,9 +990,9 @@ describe('RecommendPanel unit-pool exclusion', () => {
   }
 
   it('drops an unchecked unit from the raid request roster', async () => {
-    const user = await renderMode(poolRoster, /레이드 배분/i)
+    const user = await renderMode(poolRoster, /전부 최적화/i)
     await user.click(screen.getByRole('button', { name: /a 사용/i }))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())
     const sent = vi.mocked(recommendRaidDecks).mock.calls[0][0]
     expect(sent.roster.map((n) => n.character_slug)).not.toContain('a')
@@ -1004,14 +1002,14 @@ describe('RecommendPanel unit-pool exclusion', () => {
   it('disables submit when exclusions drop the roster below the minimum', async () => {
     // fullRoster is exactly MIN_DECK_ROSTER_SIZE (5); excluding one under-fills.
     expect(fullRoster.length).toBe(MIN_DECK_ROSTER_SIZE)
-    const user = await renderMode(fullRoster, /레이드 배분/i)
+    const user = await renderMode(fullRoster, /전부 최적화/i)
     await user.click(screen.getByRole('button', { name: /a 사용/i }))
-    expect(screen.getByRole('button', { name: /레이드 덱 배분/i })).toBeDisabled()
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
   })
 
   it('unplaces a drafted unit when it is excluded (draft mode)', async () => {
     // poolRoster/supported/raidResponse are defined in this describe's scope.
-    const user = await renderMode(poolRoster, /드래프트 기반/i)
+    const user = await renderMode(poolRoster, /빈자리만 최적화/i)
 
     // Seat unit "a" by dropping it on Deck 1, then exclude it.
     dropOnDeck(1, 'a')
@@ -1019,7 +1017,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
     expect(screen.getByRole('button', { name: '덱 1에서 A 제거' })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /a 사용/i }))
 
-    await user.click(screen.getByRole('button', { name: /드래프트 최적화/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())
     const sent = vi.mocked(recommendRaidDecks).mock.calls[0][0]
     const draftedSlugs = (sent.draft ?? []).flatMap((d) => d.units.map((u) => u.slug))
@@ -1033,7 +1031,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
     const { rerender } = render(
       <RecommendPanel roster={poolRoster} {...noPersistence} activeOpenId="p1" />,
     )
-    await user.click(screen.getByRole('radio', { name: /레이드 배분/i }))
+    await user.click(screen.getByRole('radio', { name: /전부 최적화/i }))
     await screen.findByRole('button', { name: /a 사용/i })
     await user.click(screen.getByRole('button', { name: /a 사용/i }))
     expect(screen.getByRole('button', { name: /a 사용/i })).toHaveAttribute('aria-pressed', 'false')
@@ -1047,14 +1045,14 @@ describe('RecommendPanel unit-pool exclusion', () => {
     const getCached = vi.fn().mockReturnValue(null)
     const user = userEvent.setup()
     render(<RecommendPanel roster={poolRoster} {...noPersistence} getCached={getCached} />)
-    await user.click(screen.getByRole('radio', { name: /레이드 배분/i }))
+    await user.click(screen.getByRole('radio', { name: /전부 최적화/i }))
     await screen.findByRole('button', { name: /a 사용/i })
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await waitFor(() => expect(getCached).toHaveBeenCalledTimes(1))
     const hashFull = getCached.mock.calls[0][0]
-    await screen.findByRole('button', { name: /레이드 덱 배분/i }) // loading cleared
+    await screen.findByRole('button', { name: /인카운터/ }) // loading cleared
     await user.click(screen.getByRole('button', { name: /a 사용/i }))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await waitFor(() => expect(getCached).toHaveBeenCalledTimes(2))
     expect(getCached.mock.calls[1][0]).not.toEqual(hashFull)
   })
@@ -1089,7 +1087,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
       expect(screen.getByRole('button', { name: /Anne 사용/i })).toBeInTheDocument()
       expect(screen.queryByRole('button', { name: /Crown 사용/i })).not.toBeInTheDocument()
 
-      await user.click(screen.getByRole('button', { name: /덱 추천/i }))
+      await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
       expect(recommendDecks).toHaveBeenCalledWith(
         expect.objectContaining({ roster: sixRoster }),
@@ -1124,7 +1122,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
       await user.click(screen.getByRole('button', { name: '철갑' }))
       expect(screen.queryByRole('button', { name: /Anne 사용/i })).not.toBeInTheDocument()
 
-      await user.click(screen.getByRole('button', { name: /덱 추천/i }))
+      await user.click(screen.getByRole('button', { name: /인카운터/ }))
       expect(recommendDecks).toHaveBeenCalledWith(
         expect.objectContaining({
           roster: sixRoster.filter((nikke) => nikke.character_slug !== 'b'),
@@ -1132,5 +1130,58 @@ describe('RecommendPanel unit-pool exclusion', () => {
         expect.any(AbortSignal),
       )
     })
+  })
+})
+
+// 실행 버튼은 모드를 옮겨도 같은 이름이어야 하고(무엇을 시작하는지는 모드
+// 라디오가 말한다), 스크롤을 내려도 닿을 수 있어야 한다.
+describe('RecommendPanel 실행 버튼', () => {
+  const renderAndPick = async (radio: RegExp) => {
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+    const user = userEvent.setup()
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: radio }))
+    await screen.findByRole('button', { name: /a 사용/i }) // 팔레트 도착
+    return user
+  }
+
+  it('모드를 바꿔도 유휴 상태의 라벨은 늘 인카운터!다', async () => {
+    const user = await renderAndPick(/전부 최적화/i)
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/i }))
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: /단일 덱/ }))
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeInTheDocument()
+  })
+
+  it('덱 컬럼이 없는 모드에서는 실행 버튼이 화면 하단 고정 바에 선다', async () => {
+    await renderAndPick(/전부 최적화/i)
+
+    const button = screen.getByRole('button', { name: /인카운터/ })
+    expect(button.closest('.recommend-form__actions--sticky')).not.toBeNull()
+    expect(button.closest('.draft-layout__decks')).toBeNull()
+  })
+
+  it('덱 컬럼이 있는 모드에서는 실행 버튼이 덱과 함께 붙어 다닌다', async () => {
+    const user = await renderAndPick(/전부 최적화/i)
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/i }))
+
+    const button = screen.getByRole('button', { name: /인카운터/ })
+    expect(button.closest('.draft-layout__decks')).not.toBeNull()
+    expect(button.closest('.recommend-form__actions--sticky')).toBeNull()
+  })
+
+  it('기대 딜량 계산 모드도 실행 버튼을 덱 컬럼에 둔다', async () => {
+    const user = await renderAndPick(/전부 최적화/i)
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+
+    expect(
+      screen.getByRole('button', { name: /인카운터/ }).closest('.draft-layout__decks'),
+    ).not.toBeNull()
   })
 })

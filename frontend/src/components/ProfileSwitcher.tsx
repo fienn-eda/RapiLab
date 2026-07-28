@@ -12,6 +12,15 @@ interface ProfileSwitcherProps {
   onDelete: (openId: string) => void
 }
 
+const UNNAMED = '이름 없는 계정'
+
+/** A profile goes by its nickname; a sync that could not read one leaves the
+ * open_id to stand in. A sync that arrived without either leaves a profile with
+ * nothing to show, which must still be nameable so it can be picked out of the
+ * dropdown and removed. */
+const labelFor = (profile: Profile): string =>
+  profile.nickname || profile.openId || UNNAMED
+
 export function ProfileSwitcher({
   profiles,
   activeOpenId,
@@ -20,11 +29,14 @@ export function ProfileSwitcher({
 }: ProfileSwitcherProps) {
   if (profiles.length === 0) return null
 
-  const activeLabel =
-    profiles.find((p) => p.openId === activeOpenId)?.nickname || activeOpenId
+  const active = profiles.find((p) => p.openId === activeOpenId)
+  const activeLabel = active ? labelFor(active) : activeOpenId || UNNAMED
 
   const handleDelete = () => {
-    if (!activeOpenId) return
+    // The empty string is a real profile key - a sync that arrived without an
+    // open_id files itself under it - and that profile is the one most in need
+    // of removing. Only null means no account is selected, so only null returns.
+    if (activeOpenId === null) return
     if (window.confirm(`"${activeLabel}" 프로필을 삭제할까요? 동기화된 로스터와 캐시된 결과가 함께 삭제돼요.`)) {
       onDelete(activeOpenId)
     }
@@ -43,7 +55,7 @@ export function ProfileSwitcher({
       >
         {profiles.map((profile) => (
           <option key={profile.openId} value={profile.openId}>
-            {profile.nickname || profile.openId}
+            {labelFor(profile)}
           </option>
         ))}
       </select>

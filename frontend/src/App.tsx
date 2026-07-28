@@ -25,8 +25,8 @@ const NO_ROSTER: NikkeDraft[] = []
 type Tab = 'roster' | 'recommend' | 'union'
 
 const TABS: { id: Tab; label: string }[] = [
-  { id: 'roster', label: '로스터' },
-  { id: 'recommend', label: '추천' },
+  { id: 'roster', label: '니케 풀' },
+  { id: 'recommend', label: '솔로 레이드' },
   { id: 'union', label: '유니온 레이드' },
 ]
 
@@ -73,12 +73,12 @@ function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <h1 className="app__title">NIKKE 덱 빌더</h1>
+        <h1 className="app__title">RapiLab</h1>
         <p className="app__subtitle">
           blablalink에서 로스터를 동기화하면 엔진이 덱을 구성해줘요.
         </p>
         <p className="app__note">
-          모든 니케가 Resilience 큐브 Lv.15를 착용한 것으로 계산합니다.
+          모든 니케가 재장전 큐브 15레벨을 착용한 것으로 계산합니다.
         </p>
       </header>
 

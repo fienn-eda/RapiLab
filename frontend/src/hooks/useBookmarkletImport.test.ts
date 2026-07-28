@@ -23,15 +23,41 @@ describe('useBookmarkletImport', () => {
     const onRoster = vi.fn()
     renderHook(() => useBookmarkletImport(onRoster))
 
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: EMPTY })
+    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: { ...EMPTY, open_id: 'abc123' } })
 
     await waitFor(() =>
       expect(onRoster).toHaveBeenCalledWith({
-        openId: '',
+        openId: 'abc123',
         nickname: '',
         raw: { units: [] },
       }),
     )
+  })
+
+  // open_id는 프로필의 키다. 없는 채로 통과시키면 빈 문자열로 키가 잡힌 계정이
+  // 저장소에 생기는데, 그건 드롭다운에 이름 없는 칸으로 보이고 어느 계정인지
+  // 알 수도 없다. 계정을 특정할 수 없으면 로스터도 받지 않는다.
+  it('open_id가 없는 payload는 프로필을 만들지 않고 오류를 낸다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
+    const onRoster = vi.fn()
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+
+    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: EMPTY })
+
+    await waitFor(() => expect(result.current.status).toBe('error'))
+    expect(result.current.error).toMatch(/계정/)
+    expect(onRoster).not.toHaveBeenCalled()
+  })
+
+  it('open_id가 공백뿐인 payload도 거절한다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
+    const onRoster = vi.fn()
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+
+    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: { ...EMPTY, open_id: '   ' } })
+
+    await waitFor(() => expect(result.current.status).toBe('error'))
+    expect(onRoster).not.toHaveBeenCalled()
   })
 
   it('payload의 open_id/nickname을 분리해 raw와 함께 onRoster로 넘긴다', async () => {
@@ -69,7 +95,7 @@ describe('useBookmarkletImport', () => {
     vi.mocked(assembleRoster).mockRejectedValue(new Error('boom'))
     const { result } = renderHook(() => useBookmarkletImport(vi.fn()))
 
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: EMPTY })
+    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: { ...EMPTY, open_id: 'abc123' } })
 
     await waitFor(() => expect(result.current.status).toBe('error'))
     expect(result.current.error).toContain('boom')
@@ -128,12 +154,12 @@ describe('useBookmarkletImport', () => {
     expect(messageListenerCount()).toBe(1)
     expect(opener.postMessage).toHaveBeenCalledTimes(1)
 
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: EMPTY })
+    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: { ...EMPTY, open_id: 'abc123' } })
 
     await waitFor(() =>
       expect(received).toEqual({
         tag: 4,
-        raw: { openId: '', nickname: '', raw: { units: [] } },
+        raw: { openId: 'abc123', nickname: '', raw: { units: [] } },
       }),
     )
 
