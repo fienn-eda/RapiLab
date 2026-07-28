@@ -59,9 +59,18 @@ export const useBookmarkletImport = (
     setStatus('importing')
     setError(null)
     try {
+      // open_id는 프로필 저장소의 키다. 없는 payload를 받아주면 빈 문자열로 키가
+      // 잡힌 계정이 생기는데, 그건 드롭다운에서 다른 실패한 동기화와 구분할 수도
+      // 없고 어느 계정인지도 모른다. 받지 말고, 뭘 해야 하는지 알려준다.
+      const openId = String(payload.open_id ?? '').trim()
+      if (openId === '') {
+        throw new Error(
+          '북마크릿이 계정 정보를 보내지 않았어요. "동기화 방법"을 열어 북마크릿을 다시 설치한 뒤 시도해 주세요.',
+        )
+      }
       const assembled = await assembleRoster(payload)
       onRosterRef.current({
-        openId: String(payload.open_id ?? ''),
+        openId,
         nickname: String(payload.nickname ?? ''),
         raw: assembled,
       })

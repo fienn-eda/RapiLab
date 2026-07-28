@@ -16,7 +16,14 @@ const shareUrl = `https://www.blablalink.com/shiftyspad?uid=${uid}`
 const uid2 = btoa('29080-1111111111111111111')
 const shareUrl2 = `https://www.blablalink.com/shiftyspad?uid=${uid2}`
 
-const RAW_PAYLOAD = { owned: [], character_details: [], recycle_room_researches: [] }
+// open_id는 프로필의 키라 없으면 import 자체가 거절된다 - 이 파일의 테스트들은
+// 그 뒤의 파싱/표시를 보는 것이므로 유효한 값을 달고 출발한다.
+const RAW_PAYLOAD = {
+  open_id: 'abc123',
+  owned: [],
+  character_details: [],
+  recycle_room_researches: [],
+}
 
 const postPayload = () =>
   act(() => {
