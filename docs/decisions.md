@@ -5,6 +5,80 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 제출 버튼 유휴 라벨은 전 모드·전 탭에서 통일하되, 실행 중 라벨은 모드별로 남긴다
+
+- Date: 2026-07-29
+- Context: RapiLab 개편 중 모드 이름이 바뀌면서(`3491e28`) 제출 버튼 라벨도 모드마다
+  제각각이었다(`덱 추천`/`레이드 덱 배분`/`드래프트 최적화`/`기대 딜량 계산`) — 이름이
+  늘어날수록 버튼이 무엇을 하는지보다 "지금 뭘 누르는 거지"가 헷갈렸다.
+- Decision: 유휴(대기) 상태 라벨은 전 모드·`RecommendPanel`/`UnionRaidPanel` 두 패널
+  모두 `인카운터!`로 통일한다(`d83c042`). 실행 중 라벨은 모드별로 남긴다 —
+  단일 덱 탐색은 `추천 중…`, 전부 최적화(레이드 분배)는 `배분 중…`,
+  빈자리만 최적화(드래프트)는 `최적화 중…`, 기대 딜량 계산과 유니온 레이드는
+  `계산 중…`.
+- Why: 대안은 실행 중 라벨도 통일하는 것이었으나, 버튼은 앱에서 진행 상태를 알려주는
+  유일한 자리다 — 실행 중 라벨까지 하나로 뭉치면 눌렸는지, 뭐가 도는지 알 길이
+  없어진다. 유휴 라벨은 "액션을 시작하라"는 뜻만 담으면 되므로 통일해도 정보 손실이
+  없다.
+- Consequences: 버튼 텍스트만으로는 모드를 구분할 수 없으므로 테스트는
+  `within(패널 컨테이너)`로 스코프해 버튼을 찾아야 한다(`App.test.tsx`, `d83c042`).
+  라벨을 여러 자리에 흩어 쓰면 짝을 이루는 문구(진행 배너 등)를 놓치기 쉽다 —
+  `67a9f10`에서 실제로 새어나갔다(`docs/insights.md` Frontend 절 참조).
+
+## 실행 버튼 배치를 모드에 따라 둘로 나눈다 — 덱 컬럼이 있으면 그 안, 없으면 폼 바닥 sticky 바
+
+- Date: 2026-07-29
+- Context: 팔레트가 70여 개 칩으로 화면보다 길어서, 폼 상단에 있던 제출 버튼(`1d5382a`
+  이전)이 로스터를 다 스크롤해야 보였다.
+- Decision: 우측 덱 컬럼이 있는 모드(빈자리만 최적화·기대 딜량 계산 — `RecommendPanel`의
+  `mode==='draft'|'evaluate'` — 그리고 유니온 레이드)는 그 컬럼 안, `DraftEditor` 아래에
+  실행 버튼을 놓는다(컬럼 자체가 `position: sticky`라 버튼도 같이 따라온다). 우측 덱
+  컬럼이 없는 모드(단일 덱 탐색·전부 최적화)는 폼 바닥에 `position: sticky; bottom: 0`인
+  별도 바(`.recommend-form__actions--sticky`)를 둔다.
+- Why: 대안은 전 모드 하단 고정 바로 통일하는 것이었으나, Fienn이 덱 아래 배치를
+  택했다 — 덱 컬럼이 있는 모드는 이미 그 컬럼이 화면에 붙어 있어 버튼을 굳이 폼 전체
+  바닥까지 내릴 이유가 없고, 액션이 "지금 짜고 있는 덱"과 시각적으로 붙어 있는 편이
+  더 명확하다.
+- Consequences: `actionButtons`를 `RecommendPanel` 안에서 한 번 만들어 두 자리 중
+  하나에 꽂는 구조가 됐다(`1d5382a`). 두 배치 각각의 CSS 클래스가 서로 다른 sticky
+  문제를 겪는다 — 아래 결정("덱 컬럼을 뷰포트 높이로 캡...") 참조.
+
+## 덱 컬럼을 뷰포트 높이로 캡하고 덱만 내부 스크롤, 액션 행은 컬럼 하단에 고정
+
+- Date: 2026-07-29
+- Context: 위 결정으로 덱 컬럼 안에 버튼을 얹었지만, 5덱 전체 + 액션 행이 약 760px로
+  1366×768 뷰포트보다 커서 `position: sticky; top:`이 컬럼을 화면 안으로 절대 못
+  끌어온다(`docs/insights.md` Frontend 절의 sticky 함정 참조).
+- Decision: `.draft-layout__decks`에 `max-height: calc(100svh - var(--sp-4)*2)` +
+  `display: flex; flex-direction: column`을 주고, 덱 리스트(`.draft-editor`)는
+  `flex: 1 1 auto; min-height: 0; overflow-y: auto`로 내부 스크롤시키며, 액션 행
+  (`.recommend-form__actions`)은 `flex-shrink: 0`으로 컬럼 하단에 고정한다(`b6bd04f`).
+- Why: 대안이던 `bottom:` 기준 sticky는 브라우저 실측으로 기각됐다 — 아래로 스크롤할
+  때는 안 붙고 위로 스크롤할 때만 붙는, 지금 문제와 반대 방향으로만 동작한다.
+  `max-height` 캡은 1080p처럼 컬럼이 뷰포트 안에 들어가는 화면에서는 아무것도 안
+  바뀐다(캡에 안 걸림) — 회귀가 없다.
+- Consequences: 교환으로 768px처럼 작은 화면에서는 5덱 편성 시 덱 리스트가 내부
+  스크롤을 요구한다(전체가 한 화면에 안 보인다). `@media (max-width: 900px)`에서는
+  컬럼이 `position: static`으로 바뀌므로 `max-height`도 같이 `none`으로 풀어야 한다 —
+  안 풀면 좁은 화면에서 불필요하게 스크롤이 갇힌다.
+
+## 두 패널(RecommendPanel·UnionRaidPanel)은 실행-버튼 블록 컴포넌트를 공유하지 않는다
+
+- Date: 2026-07-29
+- Context: 위 세 결정으로 두 패널의 실행 버튼이 라벨·배치·sticky 규칙까지 거의 같은
+  모양이 됐다(둘 다 덱 컬럼 안, 둘 다 `인카운터!` 유휴 라벨).
+- Decision: 공유 컴포넌트로 뽑지 않고 각 패널이 자기 JSX를 따로 갖는다(`RecommendPanel`의
+  `actionButtons`는 그 컴포넌트 내부 지역 변수, `UnionRaidPanel`은 자체 인라인 버튼 —
+  `3164ca1`).
+- Why: 두 패널의 액션 블록은 겉모습이 비슷해도 내용이 다르다 — `RecommendPanel`은
+  실행 중 취소 버튼과 로스터 크기 미달 경고(`rosterTooSmall`)를 갖지만
+  `UnionRaidPanel`은 둘 다 없다. 공유 컴포넌트로 뽑으면 `showCancel`/
+  `showRosterWarning` 같은 조건부 props만 늘어나고, 두 패널이 독립적으로 진화할
+  자유(예: 유니온 레이드에 다른 경고가 필요해질 때)를 잃는다. YAGNI.
+- Consequences: 라벨이나 배치 규칙을 바꿀 때 두 파일을 각각 고쳐야 한다(실제로
+  `67a9f10`이 이 이음매에서 라벨 하나를 놓칠 뻔했다 — 결국 잡혔지만 공유
+  컴포넌트였다면 애초에 안 생겼을 종류의 버그다). 이 비용은 의도적으로 받아들인 것이다.
+
 ## 아크레인저의 변신은 파괴가능 보스에서 상한(영구)으로 계속 평가한다 — 부위파괴는 파라미터화하지 않는다
 
 - Date: 2026-07-28
