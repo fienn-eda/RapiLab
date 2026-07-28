@@ -613,6 +613,25 @@ def test_a_timed_unit_carries_its_own_delay_rather_than_the_shared_default():
     assert get_charge_motion_delay("anchor-innocent-maid") == 0.4
 
 
+def test_the_borrowed_default_was_timed_and_held():
+    """Helm, Bready and Velvet carried Snow White's 0.4 on Fienn's naked-eye
+    "there is a pause" until he timed all three (2026-07-29), reading charge
+    completion against next-charge start:
+        Helm    0.39 / 0.40 / 0.39 / 0.40 / 0.40
+        Bready  0.40 / 0.40 / 0.40 / 0.40
+        Velvet  0.40 / 0.40 / 0.40 / 0.39 / 0.40
+    The borrowed value was right, so no damage moves - what changes is that
+    these stop being assumptions. Their shot gaps check the model again
+    (1.380 / 1.343 / 1.393 against charges of 0.987 / 0.943 / 0.997, so
+    interval - delay lands back on the charge every time)."""
+    from app.skill_rules.registry import TIMED_CHARGE_MOTION_DELAY, get_charge_motion_delay
+
+    for slug in ("helm", "helm-signature", "bready-lingering",
+                 "bready-recommended", "velvet"):
+        assert slug in TIMED_CHARGE_MOTION_DELAY, f"{slug} is still an assumption"
+        assert get_charge_motion_delay(slug) == 0.4
+
+
 def test_no_delay_confirmed_is_recorded_separately_from_never_checked():
     """The engine treats an unchecked charge weapon as having no pause, so a
     unit nobody has looked at is indistinguishable from one Fienn has checked -

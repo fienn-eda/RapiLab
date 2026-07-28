@@ -1015,6 +1015,15 @@ TIMED_CHARGE_MOTION_DELAY = {
     # charge, that makes them slow.
     "scarlet-black-shadow": 0.43,   # 0.44 / 0.42 / 0.44 / 0.42 / 0.43
     "raven": 1.014,                 # 1.02 / 0.99 / 1.02 / 1.02 / 1.02
+    # Timed 2026-07-29, and all three landed on the 0.4 they had been borrowing
+    # from Snow White. Their shot gaps (1.380 / 1.343 / 1.393) minus the delay
+    # return the measured charge (0.987 / 0.943 / 0.997), so the reading checks
+    # the interval = charge + delay model, not just the number.
+    "helm": 0.4,                    # 0.39 / 0.40 / 0.39 / 0.40 / 0.40
+    "helm-signature": 0.4,
+    "bready-lingering": 0.4,        # 0.40 / 0.40 / 0.40 / 0.40
+    "bready-recommended": 0.4,
+    "velvet": 0.4,                  # 0.40 / 0.40 / 0.40 / 0.39 / 0.40
 }
 
 # Charge weapons Fienn has checked and found NO pause on. The engine's default
@@ -1031,12 +1040,10 @@ NO_CHARGE_MOTION_DELAY = frozenset({
 })
 
 # Units Fienn watched and saw a pause on without timing it; they carry the
-# shared default until someone puts a clock on them.
-_ASSUMED_CHARGE_MOTION_DELAY = frozenset({
-    "helm", "helm-signature",
-    "bready-lingering", "bready-recommended",
-    "velvet",
-})
+# shared default until someone puts a clock on them. Empty since 2026-07-29,
+# when the last five were timed - kept because the next unencoded SR/RL will
+# land here first, and because the audit reports assumed apart from timed.
+_ASSUMED_CHARGE_MOTION_DELAY = frozenset()
 
 _CHARGE_MOTION_DELAY = {
     **TIMED_CHARGE_MOTION_DELAY,
