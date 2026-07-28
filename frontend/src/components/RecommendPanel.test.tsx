@@ -55,6 +55,16 @@ const nikke = (slug: string): UserNikkeState => ({
 
 const fullRoster = ['a', 'b', 'c', 'd', 'e'].map(nikke)
 
+// Shared by the evaluate-mode tests below - a five-unit palette is all any of
+// them needs, and a fresh array per call keeps tests from sharing references.
+const makeEvaluateSupportedUnits = () =>
+  ['a', 'b', 'c', 'd', 'e'].map((slug, i) => ({
+    slug,
+    name: slug.toUpperCase(),
+    burstTier: ((i % 3) + 1) as 1 | 2 | 3,
+    element: 'Iron' as const,
+  }))
+
 // Every test exercises roster + boss/mode form state, not the persistence
 // wiring — inert no-op defaults for the new profile-store props keep the
 // pre-existing tests focused on what they actually check.
@@ -505,12 +515,7 @@ describe('RecommendPanel draft mode', () => {
 })
 
 describe('RecommendPanel evaluate mode', () => {
-  const supportedUnits = ['a', 'b', 'c', 'd', 'e'].map((slug, i) => ({
-    slug,
-    name: slug.toUpperCase(),
-    burstTier: ((i % 3) + 1) as 1 | 2 | 3,
-    element: 'Iron' as const,
-  }))
+  const supportedUnits = makeEvaluateSupportedUnits()
 
   it('평가 모드는 25칸을 다 채우기 전에는 제출을 막는다', async () => {
     const user = userEvent.setup()
@@ -594,6 +599,37 @@ describe('RecommendPanel evaluate mode', () => {
     expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
     expect(screen.getByText('100 딜', { exact: false })).toBeInTheDocument()
   })
+
+  it('결과가 나온 뒤 보스 속성을 바꿔도 카드 표시는 제출 당시 속성 그대로다', async () => {
+    // The card's damage numbers were computed against the SUBMITTED boss, so
+    // its element label must stay pinned to that submission too - reading the
+    // live form field instead would relabel a finished result out from under
+    // its own numbers.
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+    await user.click(screen.getByRole('button', { name: /계산/ }))
+
+    expect(await screen.findByText('1번 덱 · 무속성')).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('보스 속성'), 'Fire')
+
+    expect(screen.getByText('1번 덱 · 무속성')).toBeInTheDocument()
+    expect(screen.queryByText('1번 덱 · 작열')).not.toBeInTheDocument()
+  })
 })
 
 describe('RecommendPanel mode switch', () => {
@@ -626,13 +662,7 @@ describe('RecommendPanel mode switch', () => {
     // 평가 성공 상태를 만든 뒤 '단일 덱'으로 전환하면 결과가 사라져야 한다 -
     // 기존 raidResultMode 가드가 raid/draft 사이에서 지키는 것과 같은 계약.
     const user = userEvent.setup()
-    const supportedUnits = ['a', 'b', 'c', 'd', 'e'].map((slug, i) => ({
-      slug,
-      name: slug.toUpperCase(),
-      burstTier: ((i % 3) + 1) as 1 | 2 | 3,
-      element: 'Iron' as const,
-    }))
-    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
         { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },

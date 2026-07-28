@@ -29,6 +29,7 @@ import {
   MAX_NUM_DECKS,
   MIN_DECK_ROSTER_SIZE,
   MIN_NUM_DECKS,
+  type BossElement,
   type RecommendRaidRequest,
   type RecommendRequest,
 } from '../types/recommend'
@@ -107,6 +108,12 @@ export function RecommendPanel({
   const [touched, setTouched] = useState(false)
   const [draftValue, setDraftValue] = useState<Draft>(() => makeEmptyDraft(DEFAULT_NUM_DECKS))
   const [submittedDraft, setSubmittedDraft] = useState<Draft>()
+  // The boss element evaluate's cards were actually scored against, captured
+  // at submit time - same idea as submittedDraft above. bossProfile is live
+  // form state; reading it straight from the result render would relabel a
+  // completed result's cards the moment the player edits the element field
+  // afterward, while the damage numbers still reflect the old boss.
+  const [evaluatedBossElement, setEvaluatedBossElement] = useState<BossElement>(null)
   // 'raid' and 'draft' share one useRecommendRaid() instance (same endpoint);
   // without tracking which mode actually produced the current result, the
   // OTHER mode's stale success/error would render just by switching the
@@ -139,6 +146,7 @@ export function RecommendPanel({
   // activeOpenId alone so it never clobbers in-progress edits mid-typing.
   useEffect(() => {
     setExcludedSlugs(new Set())
+    setEvaluatedBossElement(null)
     if (restoreInputs && restoreResult) {
       setMode(restoreInputs.mode)
       setNumDecks(restoreInputs.numDecks)
@@ -314,6 +322,7 @@ export function RecommendPanel({
     if (mode === 'evaluate') {
       // No cache, no raidResultMode/displayResult - evaluation is seconds-fast
       // and renders straight from useEvaluateDecks' own state (see file header).
+      setEvaluatedBossElement(bossProfile.element)
       void evaluation.submit({
         roster: effectiveRoster,
         decks: draftValue.decks.slice(0, numDecks).map((seats) => ({
@@ -647,13 +656,16 @@ export function RecommendPanel({
         />
       )}
       {/* Reads straight off useEvaluateDecks, not displayResult/displayMode -
-          see the file header and frontend/README.md's evaluate-mode note. */}
-      {mode === 'evaluate' && evaluation.status === 'success' && bossProfile && (
+          see the file header. bossElements comes from evaluatedBossElement
+          (submit-time snapshot), not the live bossProfile, so editing the
+          boss field afterward can't relabel a result it wasn't scored
+          against. */}
+      {mode === 'evaluate' && evaluation.status === 'success' && (
         <EvaluationResults
           decks={evaluation.decks}
           combinedTotalDamage={evaluation.combinedTotalDamage}
           excludedSlugs={evaluation.excludedSlugs}
-          bossElements={evaluation.decks.map(() => bossProfile.element)}
+          bossElements={evaluation.decks.map(() => evaluatedBossElement)}
           portraitFor={portraitFor}
           nameFor={nameFor}
         />
