@@ -12,7 +12,7 @@ import random
 
 import numpy as np
 
-from app.deck_search import (ALLOWED_SHAPES, _no_variant_clash,
+from app.deck_search import (ALLOWED_SHAPES, _no_character_clash,
                              _tier1_seating_valid, _intra_tier_orderings)
 
 # Buffer-attacker (1-3, 2-3), buffer-buffer (1-2), attacker-attacker (3-3).
@@ -96,7 +96,7 @@ def sample_feasible_combinations(roster, n_samples, seed):
         # A combo with two same-tier buffer-seat units (e.g. modernia+velvet)
         # has zero valid intra-tier orderings, which best_ordering_damage
         # can't score (max() of an empty span) -- reject it here instead.
-        if (_no_variant_clash(combo) and _tier1_seating_valid(combo)
+        if (_no_character_clash(combo) and _tier1_seating_valid(combo)
                 and next(_intra_tier_orderings(combo), None) is not None):
             seen.add(key)
             out.append(combo)

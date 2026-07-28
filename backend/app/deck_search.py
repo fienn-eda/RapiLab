@@ -23,33 +23,34 @@ from itertools import combinations, permutations
 
 from app.raid_simulator import simulate_raid
 from app.roster import assemble_simulation_inputs
-from app.skill_rules.registry import MODE_VARIANTS
+from app.skill_rules.registry import character_map
 
-# variant slug -> its base, for the seat-exclusion check below.
-_VARIANT_GROUP = {variant: base
-                  for base, variants in MODE_VARIANTS.items() for variant in variants}
+# candidate slug -> the owned character it is a build of, for the seat-exclusion
+# check below. An absent slug is its own character.
+_CHARACTER_OF = character_map()
 
 
-def variant_base(slug):
-    """The single OWNED CHARACTER a candidate slug stands for - a MODE_VARIANTS
-    variant maps to its base, and every other slug is its own character.
+def character_of(slug):
+    """The single OWNED CHARACTER a candidate slug stands for - a mode variant
+    and a Favorite Item build alike map to the character they are a build of,
+    and every other slug is its own character.
 
     Anything that must not spend one owned character twice keys on this rather
-    than on the slug: a deck's seats (`_no_variant_clash` below) and, because
+    than on the slug: a deck's seats (`_no_character_clash` below) and, because
     the player fields all of a raid's decks at once, the whole allocation
     (deck_allocation's peel, bench and hill-climb).
     """
-    return _VARIANT_GROUP.get(slug, slug)
+    return _CHARACTER_OF.get(slug, slug)
 
 
-def _no_variant_clash(units):
+def _no_character_clash(units):
     seen = set()
     for unit in units:
-        base = _VARIANT_GROUP.get(unit.slug)
-        if base is not None:
-            if base in seen:
+        character = _CHARACTER_OF.get(unit.slug)
+        if character is not None:
+            if character in seen:
                 return False
-            seen.add(base)
+            seen.add(character)
     return True
 
 
@@ -141,7 +142,7 @@ def shape_combinations(roster):
             for c2 in combinations(by_tier[2], n2):
                 for c3 in combinations(by_tier[3], n3):
                     deck = list(c1) + list(c2) + list(c3)
-                    if _no_variant_clash(deck) and _tier1_seating_valid(deck):
+                    if _no_character_clash(deck) and _tier1_seating_valid(deck):
                         yield deck
 
 
@@ -166,9 +167,9 @@ def _shape_completions(required, candidates):
             for f2 in combinations(cand_by_tier[2], need[2]):
                 for f3 in combinations(cand_by_tier[3], need[3]):
                     deck = list(required) + list(f1) + list(f2) + list(f3)
-                    # canonical tier order for _no_variant_clash / seating checks
+                    # canonical tier order for _no_character_clash / seating checks
                     deck.sort(key=lambda u: u.burst_tier)
-                    if _no_variant_clash(deck) and _tier1_seating_valid(deck):
+                    if _no_character_clash(deck) and _tier1_seating_valid(deck):
                         yield deck
 
 
@@ -202,7 +203,7 @@ def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None
         orderings = _all_intra_tier_orderings(combos)
         if not orderings:
             # The cut pool cannot complete this draft even though the full one
-            # can (every candidate left at some tier is a MODE_VARIANTS sibling
+            # can (every candidate left at some tier is a sibling build
             # of a drafted unit, say). Reporting the draft infeasible would be
             # wrong, so pay the exhaustive search rather than refuse a deck the
             # player can actually field.
@@ -224,7 +225,7 @@ def feasible_orderings(roster):
                 break
             by_tier[unit.burst_tier].append(unit)
         if (infeasible or not all(by_tier[t] for t in (1, 2, 3))
-                or not _no_variant_clash(combo) or not _tier1_seating_valid(combo)):
+                or not _no_character_clash(combo) or not _tier1_seating_valid(combo)):
             continue
         for order1 in permutations(by_tier[1]):
             for order2 in permutations(by_tier[2]):
@@ -322,7 +323,7 @@ def deck_is_valid(units):
     tier_counts = Counter(u.burst_tier for u in units)
     shape = tuple(tier_counts.get(t, 0) for t in (1, 2, 3))
     return (shape in ALLOWED_SHAPES
-            and _no_variant_clash(units)
+            and _no_character_clash(units)
             and _tier1_seating_valid(units)
             and next(_intra_tier_orderings(units), None) is not None)
 
@@ -350,15 +351,15 @@ def _prior(unit):
 
 
 def _reference_deck(by_tier, b1):
-    # _variant_safe_top only guards against two B3 picks clashing with EACH
+    # _character_safe_top only guards against two B3 picks clashing with EACH
     # OTHER - it doesn't know `b1` occupies a slot too, so a B1 whose
-    # MODE_VARIANTS sibling lives at tier 3 (VARIANT_BURST_TIERS, e.g. Rapi:
+    # sibling build lives at tier 3 (VARIANT_BURST_TIERS, e.g. Rapi:
     # Red Hood's Combat Assist stand-in vs. her Burst-3 self) needs that
     # sibling filtered out of the B3 pool up front, or it could rank into the
-    # B3 picks and seat both variants in the same reference deck - the exact
-    # clash _no_variant_clash forbids for real candidate decks.
-    b1_base = _VARIANT_GROUP.get(b1.slug, b1.slug)
-    b3_pool = [u for u in by_tier[3] if _VARIANT_GROUP.get(u.slug, u.slug) != b1_base]
+    # B3 picks and seat both builds in the same reference deck - the exact
+    # clash _no_character_clash forbids for real candidate decks.
+    b1_character = _CHARACTER_OF.get(b1.slug, b1.slug)
+    b3_pool = [u for u in by_tier[3] if _CHARACTER_OF.get(u.slug, u.slug) != b1_character]
     if len(b3_pool) < 3:
         # No legal way to fill all 3 B3 slots without b1's own sibling (e.g.
         # exactly 3 total B3 units and one of them IS the sibling) - a
@@ -366,9 +367,9 @@ def _reference_deck(by_tier, b1):
         # reference deck below 5 units (breaking _TIER_SLOT's fixed slot-4
         # assumption downstream).
         b3_pool = by_tier[3]
-    b3_picks = _variant_safe_top(b3_pool, 3)
+    b3_picks = _character_safe_top(b3_pool, 3)
     if len(b3_picks) < 3:
-        # _variant_safe_top's SAME-TIER dedup (two variants of one base both
+        # _character_safe_top's SAME-TIER dedup (two builds of one character both
         # surviving the cross-tier filter above, e.g. Cinderella: Crystal
         # Wave's MG/Snipe modes) can independently short the picks below 3
         # even though b3_pool itself has 3+ units - top back up from
@@ -394,18 +395,18 @@ def _reference_deck(by_tier, b1):
     return reference
 
 
-def _variant_safe_top(units, n):
-    """First `n` from a prior-ranked list, skipping any unit whose
-    MODE_VARIANTS base is already taken - _reference_deck's B3 picks otherwise
-    slice the top 3 blindly, which could seat two variants of the same base
-    (e.g. both Cinderella: Crystal Wave modes) in one "deck," the exact clash
-    _no_variant_clash forbids for real candidate decks (deck_search.py:32)."""
-    chosen, bases_seen = [], set()
+def _character_safe_top(units, n):
+    """First `n` from a prior-ranked list, skipping any unit whose character is
+    already taken - _reference_deck's B3 picks otherwise slice the top 3
+    blindly, which could seat two builds of one character (e.g. both
+    Cinderella: Crystal Wave modes) in one "deck," the exact clash
+    _no_character_clash forbids for real candidate decks."""
+    chosen, characters_seen = [], set()
     for unit in units:
-        base = _VARIANT_GROUP.get(unit.slug, unit.slug)
-        if base in bases_seen:
+        character = _CHARACTER_OF.get(unit.slug, unit.slug)
+        if character in characters_seen:
             continue
-        bases_seen.add(base)
+        characters_seen.add(character)
         chosen.append(unit)
         if len(chosen) == n:
             break
@@ -416,16 +417,15 @@ _TIER_SLOT = {1: 0, 2: 1, 3: 4}
 
 
 def _swap_slot(reference, unit):
-    """Index in `reference` that swapping `unit` in should overwrite, or
-    None if no single-slot swap can seat `unit` without also seating a
-    MODE_VARIANTS sibling of it.
+    """Index in `reference` that swapping `unit` in should overwrite, or None if
+    no single-slot swap can seat `unit` without also seating a sibling build.
 
-    Normally the unit's tier default (B3 replaces the reference's weakest
-    B3, the last one). But if a MODE_VARIANTS sibling of `unit` already sits
-    in a different reference slot (e.g. the reference's first, non-last B3
+    Normally the unit's tier default (B3 replaces the reference's weakest B3,
+    the last one). But if a sibling build of `unit` already sits in a different
+    reference slot (e.g. the reference's first, non-last B3
     slot), swap over the sibling instead of the tier default - otherwise the
     default slot leaves the sibling seated too, measuring a deck with both
-    variants present at once, the exact clash _no_variant_clash forbids for
+    builds present at once, the exact clash _no_character_clash forbids for
     real candidate decks. Swapping over the sibling (rather than skipping the
     unit) still gives it a real marginal score: how it performs standing in
     for its own sibling.
@@ -439,13 +439,13 @@ def _swap_slot(reference, unit):
     table, can't drift out of sync with that layout. Swapping over a
     cross-tier sibling would misplace the unit's own tier (e.g. a B3 unit
     evicting the reference's only B1); falling back to the tier default
-    instead would leave that sibling seated too, still a two-variant clash.
-    Neither is safe, so the swap is refused."""
-    base = _VARIANT_GROUP.get(unit.slug)
-    if base is not None:
+    instead would leave that sibling seated too, still a clash between two
+    builds of one character. Neither is safe, so the swap is refused."""
+    character = _CHARACTER_OF.get(unit.slug)
+    if character is not None:
         same_tier_slot, cross_tier_sibling = None, False
         for i, seated in enumerate(reference):
-            if _VARIANT_GROUP.get(seated.slug) == base:
+            if _CHARACTER_OF.get(seated.slug) == character:
                 if seated.burst_tier == unit.burst_tier:
                     same_tier_slot = i
                     break
@@ -458,7 +458,7 @@ def _swap_slot(reference, unit):
 
 
 def _cross_tier_reference(reference, unit, by_tier):
-    """When `unit`'s MODE_VARIANTS sibling sits in `reference` at a
+    """When `unit`'s sibling build sits in `reference` at a
     DIFFERENT burst tier than `unit`'s own (VARIANT_BURST_TIERS), _swap_slot
     refuses the swap - see its docstring for why neither available slot is
     safe. Refusing isn't the end of the story: `unit` can still get a real
@@ -467,9 +467,9 @@ def _cross_tier_reference(reference, unit, by_tier):
     sibling's own tier, with `unit` then seated at its own tier-default slot
     in THAT deck. The result keeps the (1,2,3x3) shape; the alternative is
     also picked to keep `alt_reference` itself clash-free (never seated
-    elsewhere in `reference`, never a same-base variant of `unit`, and never
-    a same-base variant of any OTHER unit still seated in `reference` - the
-    alternative's own MODE_VARIANTS sibling could otherwise already occupy
+    elsewhere in `reference`, never a sibling build of `unit`, and never
+    a sibling build of any OTHER unit still seated in `reference` - the
+    alternative's own sibling build could otherwise already occupy
     an unrelated slot).
 
     Returns `(alt_reference, deck)`. The caller must diff `deck` against a
@@ -484,12 +484,12 @@ def _cross_tier_reference(reference, unit, by_tier):
     `unit` genuinely cannot be measured against this reference family.
     Callers must not treat that None as a real 0.0 score; see
     prune_candidate_pool and _measure_against."""
-    base = _VARIANT_GROUP.get(unit.slug)
-    if base is None:
+    character = _CHARACTER_OF.get(unit.slug)
+    if character is None:
         return None
     sibling, sibling_slot = None, None
     for i, seated in enumerate(reference):
-        if _VARIANT_GROUP.get(seated.slug) == base and seated.burst_tier != unit.burst_tier:
+        if _CHARACTER_OF.get(seated.slug) == character and seated.burst_tier != unit.burst_tier:
             sibling, sibling_slot = seated, i
             break
     if sibling is None:
@@ -497,15 +497,15 @@ def _cross_tier_reference(reference, unit, by_tier):
     seated_slugs = {u.slug for u in reference}
     alt_reference = None
     for candidate in by_tier[sibling.burst_tier]:
-        if candidate.slug in seated_slugs or _VARIANT_GROUP.get(candidate.slug, candidate.slug) == base:
+        if candidate.slug in seated_slugs or _CHARACTER_OF.get(candidate.slug, candidate.slug) == character:
             continue
         trial = list(reference)
         trial[sibling_slot] = candidate
-        # _no_variant_clash catches a candidate whose own MODE_VARIANTS
-        # sibling already sits elsewhere in `reference` under an unrelated
-        # base - the same clash rule real candidate decks are held to,
-        # reused here instead of duplicating it.
-        if _no_variant_clash(trial):
+        # _no_character_clash catches a candidate whose own sibling build
+        # already sits elsewhere in `reference` under an unrelated character -
+        # the same clash rule real candidate decks are held to, reused here
+        # instead of duplicating it.
+        if _no_character_clash(trial):
             alt_reference = trial
             break
     if alt_reference is None:
@@ -520,7 +520,7 @@ def _measure_against(reference, unit, boss, baseline, by_tier):
     # over the reference's baseline. A unit already in the reference leaves
     # the deck unchanged, so its marginal contribution is 0.0 with no
     # re-simulation. A unit with no safe single-slot swap (_swap_slot
-    # returns None for a cross-tier MODE_VARIANTS sibling) is measured
+    # returns None for a cross-tier sibling build) is measured
     # against an alternate reference instead (_cross_tier_reference) rather
     # than being scored an unmeasured 0.0; only when that alternate doesn't
     # exist either (no other unit at the sibling's tier) does it fall
@@ -546,7 +546,7 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
     best-measured B1 - CDR holders change cycle count, Fienn rule 2/3), with
     synergy sets measured as pairs and weapon-themed units pulled in around
     their anchor rather than trusting the mis-contextual cut. A candidate
-    whose MODE_VARIANTS sibling holds a cross-tier reference slot still gets
+    whose sibling build holds a cross-tier reference slot still gets
     a genuine simulated score, against an alternate reference with that
     sibling swapped out (_cross_tier_reference) - it is never scored an
     unmeasured 0.0 purely because the primary reference couldn't seat it.
@@ -555,8 +555,8 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
     still all feed the same PRUNED_TIER_CAPS sort below, so a cross-tier
     candidate's ranking isn't produced under identical conditions to a
     same-slot swap-in's. On degenerate rosters with fewer than 3 distinct
-    mode-variant bases at tier 3, the reference deck itself may seat two
-    variants of one base."""
+    distinct characters at tier 3, the reference deck itself may seat two
+    builds of one character."""
     by_tier = {t: sorted((u for u in roster if u.burst_tier == t),
                          key=_prior, reverse=True) for t in (1, 2, 3)}
     if not (by_tier[1] and by_tier[2] and len(by_tier[3]) >= 3):
@@ -582,8 +582,8 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
                 swapped.append(deck)
                 baselines.append(baseline)
                 continue
-            # no safe single-slot swap exists (cross-tier MODE_VARIANTS
-            # sibling elsewhere in the reference, _swap_slot) - measure
+            # no safe single-slot swap exists (cross-tier sibling build
+            # elsewhere in the reference, _swap_slot) - measure
             # against an alternate reference instead of starving the
             # candidate at an unmeasured 0.0 (_cross_tier_reference).
             cross = _cross_tier_reference(reference, unit, by_tier)
@@ -652,7 +652,7 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
 def _reference_b1_variants(by_tier, boss):
     # Pass 1: prior-seeded B1. Pass 2: the B1 whose swap-in measured best
     # (usually the CDR holder - shorter cycles change everyone's value).
-    # _measure_against may score a cross-tier MODE_VARIANTS candidate against
+    # _measure_against may score a cross-tier sibling-build candidate against
     # an alternate reference's baseline instead of this one's (see its
     # docstring) - the delta is still a legitimate marginal contribution
     # either way, so max() over the deltas is a fair comparison even though

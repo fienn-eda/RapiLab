@@ -107,3 +107,16 @@ def test_load_nikke_spec_slug_override_applies_weapon_profile_override(monkeypat
     spec = load_nikke_spec(_state("drake"), slug_override="drake-signature")
     assert spec.slug == "drake-signature"
     assert spec.weapon_stats == sentinel
+
+
+def test_a_favorite_item_pair_is_not_fanned_out():
+    # Identity and candidate fan-out are different questions. miranda and
+    # miranda-signature are one character, but the roster loader must NOT turn
+    # one owned Miranda into both: whether the player owns the item is settled
+    # data, so offering the -signature encoding would hand them an item's
+    # effects they may not have.
+    specs, excluded = load_roster([_state("miranda")])
+    assert [s.slug for s in specs] == ["miranda"]
+    assert excluded == []
+    signature_only, _ = load_roster([_state("miranda-signature")])
+    assert [s.slug for s in signature_only] == ["miranda-signature"]
