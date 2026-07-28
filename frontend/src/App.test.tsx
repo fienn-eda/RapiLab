@@ -46,9 +46,14 @@ afterEach(() => {
 })
 
 describe('App', () => {
+  it('앱 이름을 RapiLab으로 내건다', () => {
+    render(<App />)
+    expect(screen.getByRole('heading', { level: 1, name: 'RapiLab' })).toBeInTheDocument()
+  })
+
   it('states the harmony cube assumption', () => {
     render(<App />)
-    expect(screen.getByText(/Resilience 큐브 Lv\.15/i)).toBeInTheDocument()
+    expect(screen.getByText(/재장전 큐브 15레벨/i)).toBeInTheDocument()
   })
 
   it('prompts to sync and hides the roster/recommend panel when there is no active profile', () => {
@@ -87,7 +92,7 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Red Hood' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: '덱 추천' })).not.toBeInTheDocument()
 
-    await user.click(screen.getByRole('tab', { name: '추천' }))
+    await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
 
     expect(screen.getByRole('heading', { name: '덱 추천' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
@@ -185,7 +190,7 @@ describe('App', () => {
     })
 
     render(<App />)
-    await user.click(screen.getByRole('tab', { name: '추천' }))
+    await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
     await user.click(screen.getByLabelText(/레이드 배분/i))
     await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
     expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
@@ -223,13 +228,13 @@ describe('App', () => {
     })
 
     render(<App />)
-    await user.click(screen.getByRole('tab', { name: '추천' }))
+    await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
     await user.click(screen.getByLabelText(/레이드 배분/i))
     await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
     expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
 
-    await user.click(screen.getByRole('tab', { name: '로스터' }))
-    await user.click(screen.getByRole('tab', { name: '추천' }))
+    await user.click(screen.getByRole('tab', { name: '니케 풀' }))
+    await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
 
     // Still running, and still in raid mode - a remount would have reset both.
     expect(screen.getByRole('status')).toHaveTextContent(/1~2분/)
