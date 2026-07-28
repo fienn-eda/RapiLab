@@ -37,6 +37,8 @@ magazine CAPACITY), but the cadence change shifts that round's TIME, so the
 speed callables are threaded here too to keep last-bullet times aligned.
 """
 
+import math
+
 RATE_OF_FIRE_60FPS = {
     "AR": 12.0,
     "MG": 60.0,
@@ -128,10 +130,19 @@ def charge_time_with_speed(charge_time, charge_speed_percent, flat_reduction_sec
     charge. Liberalio is the clear case - she is a Sniper Rifle with a 1.5 sec
     charge, so her "Charge Speed +12.74% of the skill user's" is 0.1911 sec for
     whoever receives it. Korean community guides state the same figure ("약
-    0.19초 줄어든다"), and it reproduces Fienn's Scarlet measurement (0.7323 ->
-    0.5424 sec) to 0.07 frames. Expressing it as a percent would be wrong: the
-    equivalent percent is 26.1% on Scarlet's 0.73 sec charge but 19.1% on a
-    1.0 sec one.
+    0.19초 줄어든다"). Expressing it as a percent would be wrong: the equivalent
+    percent is 26.1% on Scarlet's 0.73 sec charge but 19.1% on a 1.0 sec one.
+
+    Whatever the two cuts come to, the charge that SURVIVES them is a whole
+    number of frames - the game has no sub-frame charge. That final flooring is
+    what a flat cut makes visible, because it is the only cut that can leave a
+    fraction: 0.30 - 0.1911 = 0.1089 sec floors to 6 frames = 0.10, so Liberalio
+    takes 0.20 sec off Scarlet: Black Shadow rather than the 0.1911 she grants.
+    Fienn timed three Full Burst windows frame by frame (2026-07-29, Scarlet
+    with a 2.86% charge-speed overload, damage numbers read against the Full
+    Burst clock): 0.72998 sec per shot alone, and 0.52923 / 0.52709 with
+    Liberalio. Flooring predicts 0.73000 and 0.53000 - 0.11 frames out on
+    average, against 0.64 frames if the 0.1089 is carried unfloored.
 
     The same expression covers slowdowns: at -20% it returns 1.2x the base,
     which is the behaviour Bready's Taste debuff needs.
@@ -154,9 +165,20 @@ def charge_time_with_speed(charge_time, charge_speed_percent, flat_reduction_sec
     return max(_reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec), floor)
 
 
+# Sub-frame slack for _floor_to_frames. A charge that is a whole number of
+# frames in exact arithmetic can land just under it in floats - 0.30 sec minus
+# one frame reads as 16.999999999999996 frames - and truncating that to 16
+# would hand out a frame the game never gives.
+_FRAME_EPSILON = 1e-9
+
+
+def _floor_to_frames(seconds):
+    return math.floor(seconds / FRAME_SECONDS + _FRAME_EPSILON) * FRAME_SECONDS
+
+
 def _reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec):
     frames = int(charge_time / FRAME_SECONDS * charge_speed_percent)
-    return charge_time - frames * FRAME_SECONDS - flat_reduction_sec
+    return _floor_to_frames(charge_time - frames * FRAME_SECONDS - flat_reduction_sec)
 
 
 def shot_interval_with_speed(charge_time, charge_speed_percent, flat_reduction_sec=0.0,
