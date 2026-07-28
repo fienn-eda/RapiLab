@@ -228,6 +228,27 @@ def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
     )
 
 
+def _variant_alternatives(specs):
+    """A drafted seat may name an OWNED slug the engine models as several mode
+    candidates (MODE_VARIANTS) rather than a spec of its own - that is what the
+    palette offers, since it is what the roster owns. Such a seat travels as one
+    representative spec plus its alternatives, and the engine settles the mode
+    by completing the deck each way (deck_allocation's `_seed_choices`).
+
+    Keyed by the MODE_VARIANTS base (what a client's draft/deck names a seat
+    by), not yet by the representative spec's own slug - a caller resolves a
+    seat against the client-sent base slug first, then rekeys to the chosen
+    representative once every seat is settled (deck_allocation and
+    deck_evaluation both key their `alternatives` argument that way)."""
+    by_slug = {u.slug: u for u in specs}
+    alternatives = {}
+    for base, variants in MODE_VARIANTS.items():
+        loadable = tuple(by_slug[v] for v in variants if v in by_slug)
+        if base not in by_slug and loadable:
+            alternatives[base] = loadable
+    return by_slug, alternatives
+
+
 def _to_recs(decks, pinned_by_deck=None):
     pinned_by_deck = pinned_by_deck or [[] for _ in decks]
     return [
@@ -256,17 +277,7 @@ def _recommend_raid_sync(request: RecommendRaidRequest, cancel) -> RecommendRaid
         raise HTTPException(
             422, f"draft has {len(request.draft)} decks but num_decks is {request.num_decks}")
 
-    by_slug = {u.slug: u for u in specs}
-    # A drafted seat may name an OWNED slug the engine models as several mode
-    # candidates (MODE_VARIANTS) rather than a spec of its own - that is what the
-    # palette offers, since it is what the roster owns. Such a seat travels as one
-    # representative spec plus its alternatives, and the engine settles the mode
-    # by completing the deck each way (deck_allocation's `_seed_choices`).
-    alternatives = {}
-    for base, variants in MODE_VARIANTS.items():
-        loadable = tuple(by_slug[v] for v in variants if v in by_slug)
-        if base not in by_slug and loadable:
-            alternatives[base] = loadable
+    by_slug, alternatives = _variant_alternatives(specs)
 
     # resolve draft slugs -> specs; unknown/unsupported slug is a client error
     draft, locked, requested = [], set(), []
@@ -331,12 +342,7 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
     if not request.decks:
         raise HTTPException(422, "평가할 덱이 없어요.")
 
-    by_slug = {u.slug: u for u in specs}
-    alternatives = {}
-    for base, variants in MODE_VARIANTS.items():
-        loadable = tuple(by_slug[v] for v in variants if v in by_slug)
-        if base not in by_slug and loadable:
-            alternatives[base] = loadable
+    by_slug, alternatives = _variant_alternatives(specs)
 
     decks, bosses, requested = [], [], []
     for index, deck_in in enumerate(request.decks, start=1):
