@@ -19,9 +19,9 @@ import type { BossElement } from '../types/recommend'
 import type { SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
-import { DraftEditor } from './DraftEditor'
+import { DraftEditor, removeUnitBySlug } from './DraftEditor'
 import { EvaluationResults } from './EvaluationResults'
-import { UnitPalette } from './UnitPalette'
+import { UnitPalette, toggleExcludedSlug, type UnitInvestment } from './UnitPalette'
 
 interface UnionRaidPanelProps {
   roster: UserNikkeState[]
@@ -32,6 +32,10 @@ interface UnionRaidPanelProps {
   nameFor: (slug: string) => string
   /** Burst tier, or null when the slug is not a supported unit. */
   burstTierFor: (slug: string) => 1 | 2 | 3 | null
+  /** Breakthrough/core/Favorite Item per slug, for the palette chips - same
+   * lookup RecommendPanel passes its own palette. Without it every chip here
+   * would show blank stars/core/heart next to a recommend tab that shows them. */
+  investmentFor?: (slug: string) => UnitInvestment
 }
 
 const NUM_BATTLES_OPTIONS = Array.from(
@@ -45,6 +49,7 @@ export function UnionRaidPanel({
   portraitFor,
   nameFor,
   burstTierFor,
+  investmentFor,
 }: UnionRaidPanelProps) {
   const [numBattles, setNumBattles] = useState(DEFAULT_UNION_NUM_DECKS)
   const [bosses, setBosses] = useState<BossProfileDraft[]>(() =>
@@ -93,13 +98,21 @@ export function UnionRaidPanel({
     [draftValue],
   )
 
+  // The roster after exclusions - what actually gets submitted. Mirrors
+  // RecommendPanel's effectiveRoster: "excluded" has to mean the same thing
+  // in both screens, out of the deck AND out of the scored roster, not just
+  // greyed out in the palette while still counted at full weight.
+  const effectiveRoster = useMemo(
+    () => roster.filter((nikke) => !excludedSlugs.has(nikke.character_slug)),
+    [roster, excludedSlugs],
+  )
+
   const toggleExclude = (slug: string) => {
-    setExcludedSlugs((prev) => {
-      const next = new Set(prev)
-      if (next.has(slug)) next.delete(slug)
-      else next.add(slug)
-      return next
-    })
+    if (!excludedSlugs.has(slug)) {
+      // Excluding a unit also unplaces it from whichever battle holds it.
+      setDraftValue((current) => removeUnitBySlug(current, slug))
+    }
+    setExcludedSlugs((prev) => toggleExcludedSlug(prev, slug))
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -110,7 +123,7 @@ export function UnionRaidPanel({
     const bossProfiles = validated.slice(0, numBattles).map((v) => v.value!)
     setEvaluatedBossElements(bossProfiles.map((boss) => boss.element))
     void evaluation.submit({
-      roster,
+      roster: effectiveRoster,
       decks: draftValue.decks.slice(0, numBattles).map((seats, i) => ({
         units: seats.map((seat) => seat.slug),
         boss: bossProfiles[i],
@@ -171,6 +184,7 @@ export function UnionRaidPanel({
               draggable
               excludedSlugs={[...excludedSlugs]}
               onToggleExclude={toggleExclude}
+              investmentFor={investmentFor}
             />
             <div className="draft-layout__decks">
               <DraftEditor

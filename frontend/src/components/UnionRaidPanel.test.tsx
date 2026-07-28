@@ -201,4 +201,61 @@ describe('UnionRaidPanel', () => {
     expect(screen.getByText('1번 덱 · 무속성')).toBeInTheDocument()
     expect(screen.queryByText('1번 덱 · 작열')).not.toBeInTheDocument()
   })
+
+  it('배치된 유닛을 제외하면 편성에서 빠지고, 다시 채워 제출하면 제출 로스터에도 포함되지 않는다', async () => {
+    // "Exclude" must mean the same thing here as in the recommend tab's
+    // palette: out of the deck AND out of the scored roster, not greyed out
+    // while still seated and counted at full weight.
+    const user = userEvent.setup()
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['u1', 'u2', 'u3', 'u4', 'u5'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0 },
+      ],
+      combined_total_damage: 10,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    renderPanel()
+    await user.selectOptions(screen.getByLabelText('전투 수'), '1')
+    await screen.findByRole('button', { name: /u0 사용/i }) // palette rendered
+    for (const slug of ['u0', 'u1', 'u2', 'u3', 'u4']) dropOnDeck(1, slug)
+
+    // Exclude the seated u0 - unseats it and greys it out.
+    await user.click(screen.getByRole('button', { name: /u0 사용/i }))
+    expect(screen.queryByRole('button', { name: '덱 1에서 U0 제거' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /u0 사용/i })).toHaveAttribute('aria-pressed', 'false')
+
+    // Refill the emptied seat with a different unit so the deck is complete
+    // again, then submit.
+    dropOnDeck(1, 'u5')
+    await user.click(screen.getByRole('button', { name: /계산/ }))
+
+    expect(evaluateDecks).toHaveBeenCalledWith(
+      expect.objectContaining({
+        roster: roster.filter((n) => n.character_slug !== 'u0'),
+        decks: [{ units: ['u1', 'u2', 'u3', 'u4', 'u5'], boss: expect.anything() }],
+      }),
+      expect.any(AbortSignal),
+    )
+  })
+
+  it('보스 필드가 하나라도 유효하지 않으면 15칸을 다 채워도 제출을 막는다', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await screen.findByRole('button', { name: /u0 사용/i }) // palette rendered
+    for (let deck = 0; deck < 3; deck += 1) {
+      for (let seat = 0; seat < 5; seat += 1) {
+        dropOnDeck(deck + 1, `u${deck * 5 + seat}`)
+      }
+    }
+    expect(screen.getByRole('button', { name: /계산/ })).toBeEnabled()
+
+    const groups = screen.getAllByRole('group', { name: /전투/ })
+    const fightDuration = within(groups[1]).getByLabelText(/전투 시간/)
+    await user.clear(fightDuration)
+    await user.type(fightDuration, '0')
+
+    expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
+  })
 })

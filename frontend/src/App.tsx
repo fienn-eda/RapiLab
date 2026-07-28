@@ -187,6 +187,7 @@ function App() {
                 portraitFor={portraitFor}
                 nameFor={nameFor}
                 burstTierFor={burstTierFor}
+                investmentFor={investmentFor}
               />
             </div>
           </main>

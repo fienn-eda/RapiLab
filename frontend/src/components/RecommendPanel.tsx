@@ -40,7 +40,7 @@ import { DraftEditor, removeUnitBySlug, toRequestDraft } from './DraftEditor'
 import { DraftResults } from './DraftResults'
 import { EvaluationResults } from './EvaluationResults'
 import { RaidResults } from './RaidResults'
-import { UnitPalette, type UnitInvestment } from './UnitPalette'
+import { UnitPalette, toggleExcludedSlug, type UnitInvestment } from './UnitPalette'
 
 interface RecommendPanelProps {
   /** The validated, ready subset of the entered roster. */
@@ -301,12 +301,7 @@ export function RecommendPanel({
       // Excluding a unit also unplaces it from the draft.
       setDraftValue((current) => removeUnitBySlug(current, slug))
     }
-    setExcludedSlugs((prev) => {
-      const next = new Set(prev)
-      if (next.has(slug)) next.delete(slug)
-      else next.add(slug)
-      return next
-    })
+    setExcludedSlugs((prev) => toggleExcludedSlug(prev, slug))
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {

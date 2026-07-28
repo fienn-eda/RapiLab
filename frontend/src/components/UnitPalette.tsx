@@ -37,6 +37,19 @@ const STAR_SLOTS = 3
  * keeps a stray drag from elsewhere in the page reading as a unit drop. */
 export const DRAG_SLUG_TYPE = 'application/x-nikke-slug'
 
+/** Toggles a slug's membership in an excluded-slugs set - the Set half of
+ * "exclude". RecommendPanel and UnionRaidPanel both pair this with
+ * DraftEditor's removeUnitBySlug (unseat a NEWLY excluded unit from wherever
+ * it's placed) so "exclude" means the same thing everywhere it appears:
+ * out of the deck AND out of the submitted roster, never one without the
+ * other. */
+export const toggleExcludedSlug = (excluded: Set<string>, slug: string): Set<string> => {
+  const next = new Set(excluded)
+  if (next.has(slug)) next.delete(slug)
+  else next.add(slug)
+  return next
+}
+
 interface UnitPaletteProps {
   /** The owned, validated roster - membership decides what the palette shows,
    * and each entry supplies that unit's investment display. */
