@@ -116,11 +116,24 @@ RECORD_CAVEATS = {
 # that was never spent - the tier waits on the two remaining cooldowns instead,
 # and the deck reaches Full Burst fewer times over the 180 sec.
 #
-# Decks 1 and 2 are not here: their seat order was never recorded, so they keep
-# the enumerate-and-take-the-best treatment. Their ordering spreads are narrow
-# (0.918-0.977x and 1.013-1.019x) where decks 3/4/5 spanned up to 0.793-1.081x,
-# which is why these three were the ones worth asking about.
+# Decks 1 and 2 joined on 2026-07-29, so nothing is graded by argmax any more.
+# Both turned out to BE their argmax ordering, which is why neither number
+# moved - unlike decks 3/4/5, where argmax had been flattering the over-reading
+# units by seating them at the top of their own range. Recording them is still
+# worth it: the deck-1 spread was 0.932-0.990x and rested entirely on Scarlet
+# (0.86x under the two orderings Fienn did not play), so "it happens to agree"
+# and "it is what he played" were different claims until he was asked.
 RECORD_ROTATIONS = {
+    "deck1": {
+        "order": ["anis-star", "anchor-innocent-maid", "mast-romantic-maid",
+                  "liberalio", "scarlet-black-shadow"],
+        "max_bursts": {},
+    },
+    "deck2": {
+        "order": ["little-mermaid", "nayuta", "velvet",
+                  "cinderella-crystal-wave-mg", "privaty-signature"],
+        "max_bursts": {},
+    },
     "deck3": {
         "order": ["rapi-red-hood-b1", "crown", "rei-ayanami-tentative-name",
                   "asuka-shikinami-langley-wille", "helm-signature"],

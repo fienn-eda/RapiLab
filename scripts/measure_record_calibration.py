@@ -88,7 +88,7 @@ def measure(name, boss, by_slug):
         result = evaluate_deck(order, boss, max_bursts=rotation["max_bursts"])
         per_unit = _per_unit(result)
         held = ", ".join(f"{slug} x{n}" for slug, n in rotation["max_bursts"].items())
-        note = f"as played, bursts held: {held}"
+        note = f"as played, bursts held: {held}" if held else "as played, every burst spent"
         return (result["total_damage"] / total,
                 {slug: per_unit[slug] / rec for slug, rec in record.items()}, note), None
 
