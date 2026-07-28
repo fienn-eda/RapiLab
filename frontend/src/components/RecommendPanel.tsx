@@ -397,9 +397,14 @@ export function RecommendPanel({
   // Evaluation isn't cached and its display is gated purely on `mode`, unlike
   // raid/draft's raidResultMode/displayResult - so a stray in-flight evaluate
   // request left running after the player moves to another mode is stopped
-  // here rather than by a render guard.
+  // here rather than by a render guard. reset() also clears a FINISHED
+  // result, which cancel() cannot touch (there is nothing left in flight to
+  // abort) - draftValue is shared with draft mode, so without it a result
+  // computed for one composition could still render after the player edits
+  // the decks elsewhere and switches back to evaluate.
   const switchMode = (next: RecommendMode) => {
     evaluation.cancel()
+    evaluation.reset()
     setMode(next)
   }
 

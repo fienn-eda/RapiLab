@@ -684,6 +684,40 @@ describe('RecommendPanel mode switch', () => {
     await user.click(screen.getByRole('radio', { name: /단일 덱/ }))
     expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
   })
+
+  it('평가 결과가 나온 뒤 딴 데 갔다 편성을 바꾸고 돌아오면 옛 결과가 남아 있지 않다', async () => {
+    // draftValue는 드래프트/평가 모드가 공유한다 - evaluation.cancel()은 이미
+    // 끝난 요청을 다시 abort할 수 없는 no-op이라, 평가 -> 다른 모드 -> 편성
+    // 수정 -> 평가로 돌아왔을 때 옛 결과가 바뀐 편성 위에 그대로 남을 수
+    // 있었다. reset()이 그 성공 상태 자체를 지워야 한다.
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+    await user.click(screen.getByRole('button', { name: /계산/ }))
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+
+    // 딴 모드로 갔다가, 공유된 draftValue의 편성을 바꾼다.
+    await user.click(screen.getByRole('radio', { name: /드래프트 기반/ }))
+    await user.click(screen.getByRole('button', { name: '덱 1에서 E 제거' }))
+    dropOnDeck(1, 'e') // rebuild a full deck so evaluate mode can submit again
+
+    // 평가로 돌아온다 - 새로 제출하지 않았으므로 옛 성공 결과가 남아 있으면 안 된다.
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
+  })
 })
 
 describe('RecommendPanel persistence', () => {

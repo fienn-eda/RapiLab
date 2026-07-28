@@ -16,6 +16,11 @@ export interface EvaluateDecksState {
   error?: string
   cancel: () => void
   submit: (request: EvaluateDecksRequest) => Promise<void>
+  /** Clears a finished result and returns to idle, with no new run - for a
+   * caller leaving evaluate mode (or coming back to it) whose previous
+   * result may no longer match the decks on screen (see RecommendPanel's
+   * switchMode). */
+  reset: () => void
 }
 
 const FALLBACK_ERROR_MESSAGE = '기대 딜량을 계산하지 못했어요.'
@@ -24,7 +29,7 @@ export const useEvaluateDecks = (): EvaluateDecksState => {
   const [decks, setDecks] = useState<DeckRecommendation[]>([])
   const [combinedTotalDamage, setCombinedTotalDamage] = useState(0)
   const [excludedSlugs, setExcludedSlugs] = useState<string[]>([])
-  const { status, error, run, cancel } = useAsyncRequestStatus()
+  const { status, error, run, cancel, reset: resetStatus } = useAsyncRequestStatus()
 
   const submit = useCallback(
     (request: EvaluateDecksRequest) =>
@@ -40,5 +45,12 @@ export const useEvaluateDecks = (): EvaluateDecksState => {
     [run],
   )
 
-  return { status, decks, combinedTotalDamage, excludedSlugs, error, cancel, submit }
+  const reset = useCallback(() => {
+    resetStatus()
+    setDecks([])
+    setCombinedTotalDamage(0)
+    setExcludedSlugs([])
+  }, [resetStatus])
+
+  return { status, decks, combinedTotalDamage, excludedSlugs, error, cancel, submit, reset }
 }
