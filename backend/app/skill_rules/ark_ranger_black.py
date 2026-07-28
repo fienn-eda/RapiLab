@@ -30,9 +30,24 @@ Modeled (DPS-relevant):
   Ark herself is Wind AR and her DoTs are sustained-typed, so it self-applies;
   it also reaches any other Wind-AR sustained dealer in the deck.
 
+The bracket in real units (2026-07-28). Every battery FILL in the level-10 text
+is worth 50% - a destroyed part gives +50% (capped at 100%), a burst while
+transformed +50%, a burst while not transformed +100% then -50% on transforming
+(net +50%). The drain is 1% per 0.2 sec = 5%/sec. So one fill is exactly TEN
+SECONDS of transformation, and total uptime is `10 x (bursts + parts destroyed)`,
+less whatever overflows the 100% store. In the recorded deck she bursts 7 times:
+- floor = 70 sec (39% uptime), i.e. assuming no part is ever destroyed;
+- ceiling = 180 sec, which requires ELEVEN part destructions in one run. That
+  makes the permanent branch near-certainly too generous, and the argument is
+  the skill text's own arithmetic - it does not depend on the calibration.
+- her recorded 1.735B implies 126 sec (70%), about SIX part destructions.
+The free parameter is therefore not "how long does she stay transformed" but
+"how many parts got destroyed", which is a countable event. Fitting the duration
+to the record would be circular; taking the count as data is not.
+
 Not modeled / deferred:
 - Part-destruction battery fill (no enemy-part concept) - the reason for the
-  floor/ceiling flag.
+  floor/ceiling flag, and the whole distance between the two brackets.
 - Damage to Parts +20% (skill 1) - situational part damage, not raid DPS.
 """
 from app.skill_rules._helpers import buff_rule, member_subset_buff_rule, refreshing_buff_rule
