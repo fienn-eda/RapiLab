@@ -197,15 +197,16 @@ export function UnionRaidPanel({
                 // was placed.
                 showLocks={false}
               />
+              {/* 이 컬럼은 sticky라, 여기 얹은 실행 버튼은 편성과 함께
+                  화면에 남는다. */}
+              <div className="recommend-form__actions">
+                <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
+                  {evaluation.status === 'loading' ? '계산 중…' : '인카운터!'}
+                </button>
+              </div>
             </div>
           </div>
         </fieldset>
-
-        <div className="recommend-form__actions">
-          <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
-            {evaluation.status === 'loading' ? '계산 중…' : '인카운터!'}
-          </button>
-        </div>
       </form>
 
       {evaluation.status === 'loading' && (

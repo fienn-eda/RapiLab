@@ -258,4 +258,12 @@ describe('UnionRaidPanel', () => {
 
     expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
   })
+
+  it('실행 버튼이 덱 컬럼 안에 있어 편성과 함께 화면에 남는다', async () => {
+    renderPanel()
+
+    expect(
+      screen.getByRole('button', { name: /인카운터/ }).closest('.draft-layout__decks'),
+    ).not.toBeNull()
+  })
 })
