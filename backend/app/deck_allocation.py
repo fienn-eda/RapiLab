@@ -15,8 +15,8 @@ from app.cascade import Cascade, cached_fit_surrogate
 from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
                              _intra_tier_orderings, _orderings_within_budget,
                              _score_batch, _summarize, best_completions,
-                             completions_fit_budget, evaluate_deck,
-                             search_best_decks, variant_base)
+                             completions_fit_budget, deck_is_valid,
+                             evaluate_deck, search_best_decks, variant_base)
 from app.sim_pool import SimPool, resolve_workers
 
 
@@ -168,7 +168,7 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
                    batch=max(_MIN_SWAP_BATCH, worker_count * SWAP_BATCH_PER_WORKER),
                    cancel=cancel)
 
-        summaries = [_best_ordering_summary(units, boss, pool) for units in decks]
+        summaries = [best_ordering_summary(units, boss, pool) for units in decks]
         return {"decks": summaries,
                 "leftover_slugs": sorted(u.slug for u in remaining)}
     finally:
@@ -376,10 +376,17 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
         # "The draft's exact groupings, scored as-is" has no single reading for a
         # seat whose mode the engine picks, so score the best one - the same
         # standard the recommendation itself is held to, which keeps the gain the
-        # UI reports from being inflated by a mode the player never chose.
+        # UI reports from being inflated by a mode the player never chose. Not
+        # every reading is fieldable (a variant swap can change burst tier and
+        # break ALLOWED_SHAPES or tier-1 seating), so deck_is_valid filters them
+        # the same way deck_evaluation does - a fixed deck handed to this
+        # function has to ask that question explicitly, per deck_is_valid's own
+        # docstring, or this baseline could score a deck the search would never
+        # produce.
         baseline_total = sum(
-            max(_best_ordering_summary(reading, boss)["total_damage"]
-                for reading in _seed_choices(deck, alternatives))
+            max(best_ordering_summary(reading, boss)["total_damage"]
+                for reading in _seed_choices(deck, alternatives)
+                if deck_is_valid(reading))
             for deck in draft)
 
     pinned_by_deck = [[s for s in d["deck"] if variant_base(s) in locked]
@@ -388,7 +395,7 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
             "baseline_total_damage": baseline_total, "pinned_by_deck": pinned_by_deck}
 
 
-def _best_ordering_summary(units, boss, pool=None):
+def best_ordering_summary(units, boss, pool=None):
     # Final polish: the swap pass scored canonical orders only; pick the best
     # intra-tier ordering for the finished deck (a handful of sims per deck).
     # Batch-scored; ties keep the first ordering, like the serial `>` did.

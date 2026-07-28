@@ -1,13 +1,16 @@
-// Boss-profile input + "Recommend decks" action. Three modes share the same
+// Boss-profile input + "Recommend decks" action. Four modes share the same
 // boss profile: single deck (POST /api/recommend, ranked alternatives), raid
 // allocation (POST /api/recommend-raid, a partition of disjoint decks fielded
-// together), and draft-based raid allocation (the same endpoint, seeded with
+// together), draft-based raid allocation (the same endpoint, seeded with
 // the player's own key units via `draft` — frontend/README.md "Draft-based
-// raid recommendation"). Only one mode's request is ever in flight.
+// raid recommendation"), and evaluate (POST /api/evaluate-decks, scoring
+// decks the player fully built themselves — no search, so no caching either;
+// see useEvaluateDecks). Only one mode's request is ever in flight.
 
 import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useRecommend } from '../hooks/useRecommend'
 import { useRecommendRaid } from '../hooks/useRecommendRaid'
+import { useEvaluateDecks } from '../hooks/useEvaluateDecks'
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import { useSupportedUnits } from '../hooks/useSupportedUnits'
 import { nameFromSlug, withFavoriteItem } from '../lib/unitName'
@@ -19,13 +22,14 @@ import {
   validateBossProfileDraft,
   type BossProfileDraft,
 } from '../types/bossProfileDraft'
-import { makeEmptyDraft, type Draft } from '../types/draft'
+import { isDraftComplete, makeEmptyDraft, resizeDraft, type Draft } from '../types/draft'
 import type { StoredInputs, StoredResult } from '../types/profile'
 import {
   DEFAULT_NUM_DECKS,
   MAX_NUM_DECKS,
   MIN_DECK_ROSTER_SIZE,
   MIN_NUM_DECKS,
+  type BossElement,
   type RecommendRaidRequest,
   type RecommendRequest,
 } from '../types/recommend'
@@ -34,8 +38,9 @@ import { BossProfileField } from './BossProfileField'
 import { DeckResults } from './DeckResults'
 import { DraftEditor, removeUnitBySlug, toRequestDraft } from './DraftEditor'
 import { DraftResults } from './DraftResults'
+import { EvaluationResults } from './EvaluationResults'
 import { RaidResults } from './RaidResults'
-import { UnitPalette, type UnitInvestment } from './UnitPalette'
+import { UnitPalette, toggleExcludedSlug, type UnitInvestment } from './UnitPalette'
 
 interface RecommendPanelProps {
   /** The validated, ready subset of the entered roster. */
@@ -57,9 +62,12 @@ interface RecommendPanelProps {
   /** Breakthrough/core per slug, for the palette chips. Not part of the
    * roster: UserNikkeState mirrors the backend model, which has neither. */
   investmentFor?: (slug: string) => UnitInvestment
+  /** The result cache's invalidation axis - lib/inputHash.ts. Null until the
+   * backend has answered. */
+  engineVersion: string | null
 }
 
-type RecommendMode = 'single' | 'raid' | 'draft'
+type RecommendMode = 'single' | 'raid' | 'draft' | 'evaluate'
 
 /** Maps the useRecommendRaid hook's success fields to the cacheable shape -
  * both raid and draft submits persist through this. */
@@ -92,6 +100,7 @@ export function RecommendPanel({
   restoreInputs,
   restoreResult,
   investmentFor,
+  engineVersion,
 }: RecommendPanelProps) {
   const [mode, setMode] = useState<RecommendMode>('single')
   const [numDecks, setNumDecks] = useState(DEFAULT_NUM_DECKS)
@@ -99,6 +108,12 @@ export function RecommendPanel({
   const [touched, setTouched] = useState(false)
   const [draftValue, setDraftValue] = useState<Draft>(() => makeEmptyDraft(DEFAULT_NUM_DECKS))
   const [submittedDraft, setSubmittedDraft] = useState<Draft>()
+  // The boss element evaluate's cards were actually scored against, captured
+  // at submit time - same idea as submittedDraft above. bossProfile is live
+  // form state; reading it straight from the result render would relabel a
+  // completed result's cards the moment the player edits the element field
+  // afterward, while the damage numbers still reflect the old boss.
+  const [evaluatedBossElement, setEvaluatedBossElement] = useState<BossElement>(null)
   // 'raid' and 'draft' share one useRecommendRaid() instance (same endpoint);
   // without tracking which mode actually produced the current result, the
   // OTHER mode's stale success/error would render just by switching the
@@ -121,7 +136,8 @@ export function RecommendPanel({
 
   const single = useRecommend()
   const raid = useRecommendRaid()
-  const active = mode === 'single' ? single : raid
+  const evaluation = useEvaluateDecks()
+  const active = mode === 'single' ? single : mode === 'evaluate' ? evaluation : raid
   const supportedUnits = useSupportedUnits()
   const { portraitFor } = usePortraitManifest()
 
@@ -130,6 +146,7 @@ export function RecommendPanel({
   // activeOpenId alone so it never clobbers in-progress edits mid-typing.
   useEffect(() => {
     setExcludedSlugs(new Set())
+    setEvaluatedBossElement(null)
     if (restoreInputs && restoreResult) {
       setMode(restoreInputs.mode)
       setNumDecks(restoreInputs.numDecks)
@@ -181,9 +198,7 @@ export function RecommendPanel({
   // The editor always shows exactly numDecks columns; growing/shrinking that
   // selector resizes the draft, preserving already-placed decks by index.
   useEffect(() => {
-    setDraftValue((current) => ({
-      decks: Array.from({ length: numDecks }, (_, i) => current.decks[i] ?? []),
-    }))
+    setDraftValue((current) => resizeDraft(current, numDecks))
   }, [numDecks])
 
   const { errors, value: bossProfile } = useMemo(
@@ -204,7 +219,13 @@ export function RecommendPanel({
   // not entered here. This roster-size check is necessary but not
   // sufficient — the backend still returns 422 for an infeasible roster.
   const rosterTooSmall = effectiveRoster.length < MIN_DECK_ROSTER_SIZE
-  const canSubmit = !rosterTooSmall && !!bossProfile && active.status !== 'loading'
+  // Evaluate mode has no search, so its gate isn't roster size but "every
+  // selected deck is actually fielded" — a partial squad can't be scored.
+  const evaluateDecksFull = isDraftComplete(draftValue, numDecks)
+  const canSubmit =
+    mode === 'evaluate'
+      ? evaluateDecksFull && !!bossProfile && active.status !== 'loading'
+      : !rosterTooSmall && !!bossProfile && active.status !== 'loading'
 
   // Shrinking numDecks below this would silently drop already-drafted seats
   // (the resize effect truncates draftValue.decks to numDecks) — disable
@@ -276,21 +297,35 @@ export function RecommendPanel({
       // Excluding a unit also unplaces it from the draft.
       setDraftValue((current) => removeUnitBySlug(current, slug))
     }
-    setExcludedSlugs((prev) => {
-      const next = new Set(prev)
-      if (next.has(slug)) next.delete(slug)
-      else next.add(slug)
-      return next
-    })
+    setExcludedSlugs((prev) => toggleExcludedSlug(prev, slug))
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     setTouched(true)
-    if (!bossProfile || rosterTooSmall) return
+    // Evaluate scores exactly the units placed in the draft, never searching
+    // the roster - roster size genuinely isn't its gate (canSubmit above
+    // already agrees), so this early return must not apply to it, or the
+    // button can be enabled by a full draft and still silently do nothing
+    // once the roster tab shrinks below MIN_DECK_ROSTER_SIZE.
+    if (!bossProfile || (mode !== 'evaluate' && rosterTooSmall)) return
     if (mode === 'single') {
       const request: RecommendRequest = { roster: effectiveRoster, boss: bossProfile }
       void single.submit(request)
+      return
+    }
+
+    if (mode === 'evaluate') {
+      // No cache, no raidResultMode/displayResult - evaluation is seconds-fast
+      // and renders straight from useEvaluateDecks' own state (see file header).
+      setEvaluatedBossElement(bossProfile.element)
+      void evaluation.submit({
+        roster: effectiveRoster,
+        decks: draftValue.decks.slice(0, numDecks).map((seats) => ({
+          units: seats.map((seat) => seat.slug),
+          boss: bossProfile,
+        })),
+      })
       return
     }
 
@@ -306,10 +341,17 @@ export function RecommendPanel({
     setDisplayMode(null)
 
     // Only raid/draft cache — the engine is deterministic, so identical
-    // roster/boss/draft/numDecks always reproduces the same result, and a
-    // hit means we can skip the (slow, thousands-of-simulations) request.
+    // roster/boss/draft/numDecks/engineVersion always reproduces the same
+    // result, and a hit means we can skip the (slow,
+    // thousands-of-simulations) request.
     const draftForHash = mode === 'draft' ? draftValue : null
-    const hash = hashRecommendInputs(effectiveRoster, bossProfile, draftForHash, numDecks)
+    const hash = hashRecommendInputs(
+      effectiveRoster,
+      bossProfile,
+      draftForHash,
+      numDecks,
+      engineVersion,
+    )
     const cached = getCached(hash)
     if (cached) {
       setDisplayResult(cached)
@@ -345,9 +387,27 @@ export function RecommendPanel({
         ? active.status === 'loading'
           ? '배분 중…'
           : '레이드 덱 배분'
-        : active.status === 'loading'
-          ? '최적화 중…'
-          : '드래프트 최적화'
+        : mode === 'draft'
+          ? active.status === 'loading'
+            ? '최적화 중…'
+            : '드래프트 최적화'
+          : active.status === 'loading'
+            ? '계산 중…'
+            : '기대 딜량 계산'
+
+  // Evaluation isn't cached and its display is gated purely on `mode`, unlike
+  // raid/draft's raidResultMode/displayResult - so a stray in-flight evaluate
+  // request left running after the player moves to another mode is stopped
+  // here rather than by a render guard. reset() also clears a FINISHED
+  // result, which cancel() cannot touch (there is nothing left in flight to
+  // abort) - draftValue is shared with draft mode, so without it a result
+  // computed for one composition could still render after the player edits
+  // the decks elsewhere and switches back to evaluate.
+  const switchMode = (next: RecommendMode) => {
+    evaluation.cancel()
+    evaluation.reset()
+    setMode(next)
+  }
 
   return (
     <section className="card" aria-label="덱 추천">
@@ -374,7 +434,7 @@ export function RecommendPanel({
                   name="recommend-mode"
                   value="single"
                   checked={mode === 'single'}
-                  onChange={() => setMode('single')}
+                  onChange={() => switchMode('single')}
                 />
                 단일 덱
                 <span className="group__hint"> — 덱 하나의 순위별 대안</span>
@@ -385,7 +445,7 @@ export function RecommendPanel({
                   name="recommend-mode"
                   value="raid"
                   checked={mode === 'raid'}
-                  onChange={() => setMode('raid')}
+                  onChange={() => switchMode('raid')}
                 />
                 레이드 배분
                 <span className="group__hint"> — 여러 개의 겹치지 않는 덱을 동시에 편성</span>
@@ -396,13 +456,27 @@ export function RecommendPanel({
                   name="recommend-mode"
                   value="draft"
                   checked={mode === 'draft'}
-                  onChange={() => setMode('draft')}
+                  onChange={() => switchMode('draft')}
                 />
                 드래프트 기반 최적화
                 <span className="group__hint">
                   {' '}
                   — 직접 고른 핵심 유닛으로 덱을 시드하면, 엔진이 나머지를 채우고
                   최적화해요
+                </span>
+              </label>
+              <label className="radio">
+                <input
+                  type="radio"
+                  name="recommend-mode"
+                  value="evaluate"
+                  checked={mode === 'evaluate'}
+                  onChange={() => switchMode('evaluate')}
+                />
+                평가
+                <span className="group__hint">
+                  {' '}
+                  — 직접 짠 덱의 기대 딜량만 빠르게 계산해요, 최적화는 하지 않아요
                 </span>
               </label>
             </div>
@@ -444,7 +518,7 @@ export function RecommendPanel({
                   취소
                 </button>
               )}
-              {rosterTooSmall && (
+              {mode !== 'evaluate' && rosterTooSmall && (
                 <p className="field__error" role="alert">
                   덱을 추천하려면 준비된 니케가 최소 {MIN_DECK_ROSTER_SIZE}기 필요해요.
                 </p>
@@ -453,7 +527,7 @@ export function RecommendPanel({
           </fieldset>
         </div>
 
-        {mode !== 'draft' && (
+        {mode !== 'draft' && mode !== 'evaluate' && (
           <fieldset className="group">
             <legend className="group__legend">사용할 유닛</legend>
             {/* Default-expanded (discoverable) but collapsible. `open` also keeps the
@@ -479,9 +553,9 @@ export function RecommendPanel({
           </fieldset>
         )}
 
-        {mode === 'draft' && (
+        {(mode === 'draft' || mode === 'evaluate') && (
           <fieldset className="group">
-            <legend className="group__legend">드래프트</legend>
+            <legend className="group__legend">{mode === 'draft' ? '드래프트' : '평가할 덱'}</legend>
             {/* How to seat a unit is explained beside the decks themselves
                 (DraftEditor's hint), where the player is looking when they
                 need it. */}
@@ -506,6 +580,9 @@ export function RecommendPanel({
                   portraitFor={portraitFor}
                   nameFor={nameFor}
                   burstTierFor={burstTierFor}
+                  // Evaluate has no optimizer to constrain - locking a unit in
+                  // place has nothing to mean there.
+                  showLocks={mode !== 'evaluate'}
                 />
               </div>
             </div>
@@ -513,11 +590,16 @@ export function RecommendPanel({
         )}
       </form>
 
-      {mode !== 'single' && raid.status === 'loading' && (
+      {(mode === 'raid' || mode === 'draft') && raid.status === 'loading' && (
         <p className="recommend-form__progress" role="status">
           {mode === 'raid' ? '레이드 덱 배분 중' : '드래프트 최적화 중'} — 수천 번의
           시뮬레이션을 실행하며 보통 1~2분이 걸려요. 아직 진행 중이니 완료되면
           버튼이 다시 활성화돼요.
+        </p>
+      )}
+      {mode === 'evaluate' && evaluation.status === 'loading' && (
+        <p className="recommend-form__progress" role="status">
+          기대 딜량 계산 중이에요 — 몇 초면 끝나요.
         </p>
       )}
 
@@ -536,6 +618,11 @@ export function RecommendPanel({
             {raid.error}
           </p>
         )}
+      {mode === 'evaluate' && evaluation.status === 'error' && (
+        <p className="field__error" role="alert">
+          {evaluation.error}
+        </p>
+      )}
 
       {mode === 'single' && single.status === 'success' && (
         <DeckResults
@@ -565,6 +652,21 @@ export function RecommendPanel({
           baselineTotalDamage={displayResult.baselineTotalDamage}
           submittedDraft={submittedDraft}
           ownedSlugFor={ownedSlugResolver}
+          portraitFor={portraitFor}
+          nameFor={nameFor}
+        />
+      )}
+      {/* Reads straight off useEvaluateDecks, not displayResult/displayMode -
+          see the file header. bossElements comes from evaluatedBossElement
+          (submit-time snapshot), not the live bossProfile, so editing the
+          boss field afterward can't relabel a result it wasn't scored
+          against. */}
+      {mode === 'evaluate' && evaluation.status === 'success' && (
+        <EvaluationResults
+          decks={evaluation.decks}
+          combinedTotalDamage={evaluation.combinedTotalDamage}
+          excludedSlugs={evaluation.excludedSlugs}
+          bossElements={evaluation.decks.map(() => evaluatedBossElement)}
           portraitFor={portraitFor}
           nameFor={nameFor}
         />

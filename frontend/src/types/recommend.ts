@@ -47,6 +47,8 @@ export interface DeckRecommendation {
 export interface RecommendResponse {
   decks: DeckRecommendation[] // ranked by total_damage desc, length <= top_n
   excluded_slugs: string[] // submitted slugs the backend can't evaluate yet (not encoded / no data); shown as "not yet supported"
+  // 이 결과를 낸 엔진의 버전 — 결과 캐시의 무효화 축(lib/inputHash.ts).
+  engine_version: string
 }
 
 // A deck needs 5 Nikkes. This is necessary but NOT sufficient for a feasible
@@ -112,6 +114,8 @@ export interface RecommendRaidResponse {
   baseline_total_damage: number | null // the user's exact drafted groupings scored;
   // non-null only for a COMPLETE draft. Monotone guarantee (complete draft):
   // baseline_total_damage <= sum(within_draft.decks.total_damage) <= combined_total_damage
+  // 이 결과를 낸 엔진의 버전 — 결과 캐시의 무효화 축(lib/inputHash.ts).
+  engine_version: string
 }
 
 export const MIN_NUM_DECKS = 1

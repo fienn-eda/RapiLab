@@ -147,7 +147,12 @@ describe('toRequestDraft', () => {
 describe('DraftEditor', () => {
   const TIERS: Record<string, 1 | 2 | 3> = { crown: 1, liter: 2, blanc: 3 }
 
-  const editor = (numDecks: number, value: Draft, onChange: (next: Draft) => void = () => {}) =>
+  const editor = (
+    numDecks: number,
+    value: Draft,
+    onChange: (next: Draft) => void = () => {},
+    showLocks?: boolean,
+  ) =>
     render(
       <DraftEditor
         numDecks={numDecks}
@@ -156,6 +161,7 @@ describe('DraftEditor', () => {
         portraitFor={() => null}
         nameFor={nameFromSlug}
         burstTierFor={(slug) => TIERS[slug] ?? null}
+        showLocks={showLocks}
       />,
     )
 
@@ -203,6 +209,20 @@ describe('DraftEditor', () => {
     expect(lock).toHaveAttribute('aria-pressed', 'false')
     await user.click(lock)
     expect(onChange).toHaveBeenCalledWith({ decks: [[{ slug: 'crown', locked: true }]] })
+  })
+
+  // A screen that only scores a placed squad has no search to constrain, so
+  // a lock toggle there would promise something the screen can't honor.
+  it('hides the lock toggle when showLocks is false', () => {
+    const value: Draft = { decks: [[{ slug: 'crown', locked: false }]] }
+    editor(1, value, undefined, false)
+    expect(screen.queryByRole('button', { pressed: false })).not.toBeInTheDocument()
+  })
+
+  it('shows the lock toggle by default, unchanged from before showLocks existed', () => {
+    const value: Draft = { decks: [[{ slug: 'crown', locked: false }]] }
+    editor(1, value)
+    expect(screen.getByRole('button', { pressed: false })).toBeInTheDocument()
   })
 
   it('removes a seat via its remove button', async () => {

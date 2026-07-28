@@ -8,7 +8,7 @@ live in the API end-to-end test."""
 from unittest.mock import patch
 
 import app.deck_allocation as da
-from app.deck_search import BossProfile
+from app.deck_search import SOLE_TIER1_SLUGS, BossProfile
 from tests.test_deck_allocation import Unit, roster_of, patch_scorer
 
 BOSS = BossProfile()
@@ -210,3 +210,34 @@ def test_zero_base_makes_exactly_one_allocate_decks_call(monkeypatch):
     with patch.object(da, "allocate_decks", wraps=da.allocate_decks) as spy:
         da.recommend_from_draft(r, BOSS, num_decks=2, draft=None, workers=None)
     assert spy.call_count == 1
+
+
+def test_baseline_filters_out_a_reading_the_search_would_never_field(monkeypatch):
+    # Final-review finding 1: baseline_total_damage used to score every
+    # candidate reading of a drafted seat with best_ordering_summary alone,
+    # which enforces only the buffer-seat rule (_intra_tier_orderings) - not
+    # ALLOWED_SHAPES or tier-1 seating. A seat whose alternate reading swaps in
+    # a SOLE_TIER1_SLUGS unit next to another Burst-1 unit produces a deck
+    # deck_is_valid rejects (two Burst-1s, one of them sole-seat-only) but
+    # best_ordering_summary would happily score - and score higher here, so an
+    # unfiltered max() would take it. This has teeth: without the
+    # deck_is_valid filter added to recommend_from_draft, this assertion fails
+    # (baseline comes out 999.0, the illegal reading's score).
+    sole_tier1_slug = next(iter(SOLE_TIER1_SLUGS))
+    by_slug = {u.slug: u for u in roster_of({
+        "t1": 1, "t2": 2, "t3a": 3, "t3b": 3, "rep": 3,
+    })}
+    rep = by_slug["rep"]
+    alt = Unit(sole_tier1_slug, 1)  # rep's alternate reading: a second Burst-1
+    seed = [by_slug["t1"], by_slug["t2"], by_slug["t3a"], by_slug["t3b"], rep]
+
+    def score(slugs):
+        return 999.0 if sole_tier1_slug in slugs else 50.0
+
+    patch_scorer(monkeypatch, score)
+    roster = list(by_slug.values()) + [alt]
+    out = da.recommend_from_draft(
+        roster, BOSS, num_decks=1, draft=[seed],
+        alternatives={"rep": (rep, alt)}, workers=None)
+
+    assert out["baseline_total_damage"] == 50.0

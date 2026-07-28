@@ -25,6 +25,10 @@ interface DraftEditorProps {
    * badge a slot carries: a deck needs tiers 1, 2 and 3 to be feasible, and
    * with names gone there is nothing else to read that from. */
   burstTierFor: (slug: string) => 1 | 2 | 3 | null
+  /** A lock means "the optimizer must keep this unit here" - meaningless on
+   * a screen that only scores a placed squad, with no search to constrain.
+   * Defaults on, matching the draft editor's existing behavior. */
+  showLocks?: boolean
 }
 
 const TIER_NUMERALS = ['I', 'II', 'III'] as const
@@ -122,6 +126,7 @@ export function DraftEditor({
   portraitFor,
   nameFor,
   burstTierFor,
+  showLocks = true,
 }: DraftEditorProps) {
   // Which deck the pointer is currently over during a drag, so the target
   // reads as a target before the player commits to the drop.
@@ -205,15 +210,17 @@ export function DraftEditor({
                           </span>
                         )}
                       </div>
-                      <button
-                        type="button"
-                        className="draft-editor__slot-lock"
-                        aria-pressed={seat.locked}
-                        aria-label={`${where}에서 ${name} 고정`}
-                        onClick={() => onChange(toggleLock(value, deckIndex, seatIndex))}
-                      >
-                        <LockGlyph />
-                      </button>
+                      {showLocks && (
+                        <button
+                          type="button"
+                          className="draft-editor__slot-lock"
+                          aria-pressed={seat.locked}
+                          aria-label={`${where}에서 ${name} 고정`}
+                          onClick={() => onChange(toggleLock(value, deckIndex, seatIndex))}
+                        >
+                          <LockGlyph />
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="draft-editor__slot-remove"
