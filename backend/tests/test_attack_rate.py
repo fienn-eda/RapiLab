@@ -560,6 +560,28 @@ def test_charge_floor_still_bounds_the_combination():
 # is a Sniper Rifle with no gap at all, and handing it to every charge weapon
 # drops Scarlet: Black Shadow from 0.981x of her recorded damage to 0.559x.
 
+def test_a_measured_pause_replaces_the_floor_instead_of_stacking_on_it():
+    """`CHARGE_INTERVAL_FLOOR_SECONDS` is what bounds a charge weapon's cadence
+    once charge speed drives the charge to zero, and 10/29 is Cinderella's own
+    residual read in exactly that state. It therefore stands in for a pause
+    nobody has measured - so a unit whose pause IS measured must use hers, not
+    both. Red Hood settles that they differ: her transform window fires 33 shots
+    in 10 sec (0.303 sec apart) where Cinderella's floor is 0.345.
+    """
+    from app.attack_rate import shot_interval_with_speed, CHARGE_INTERVAL_FLOOR_SECONDS
+
+    # Unmeasured: the floor still stands in, exactly as before.
+    assert shot_interval_with_speed(1.0, 1.0) == CHARGE_INTERVAL_FLOOR_SECONDS
+    assert shot_interval_with_speed(1.0, 0.0) == 1.0
+    # Measured: the pause is the bound. Stacking the floor on top of it had Mint
+    # firing every 0.735 sec at full charge speed instead of every 0.39.
+    assert shot_interval_with_speed(1.0, 1.0, motion_delay=0.39) == pytest.approx(0.39)
+    # And a charge already quicker than the floor keeps benefiting from a buff:
+    # Scarlet charges in 0.30 sec, which the floor used to pin in place.
+    assert shot_interval_with_speed(0.30, 0.5, motion_delay=0.43) == pytest.approx(0.58)
+    assert shot_interval_with_speed(0.30, 0.0, motion_delay=0.43) == pytest.approx(0.73)
+
+
 def test_charge_motion_delay_is_a_per_unit_list_not_a_weapon_class_constant():
     from app.skill_rules.registry import get_charge_motion_delay
     from app.attack_rate import CHARGE_MOTION_DELAY_SECONDS
@@ -567,9 +589,10 @@ def test_charge_motion_delay_is_a_per_unit_list_not_a_weapon_class_constant():
     for slug in ("helm", "helm-signature", "bready-lingering",
                  "bready-recommended", "velvet"):
         assert get_charge_motion_delay(slug) == CHARGE_MOTION_DELAY_SECONDS
-    # Liberalio is the counter-example that makes this a list: also SR, no gap.
+    # Liberalio is the counter-example that makes this per-unit: also SR, and
+    # Fienn confirms she fires her charged shots back to back with no gap.
     assert get_charge_motion_delay("liberalio") == 0.0
-    assert get_charge_motion_delay("scarlet-black-shadow") == 0.0
+    assert get_charge_motion_delay("neon-vision-eye") == 0.0
 
 
 def test_a_timed_unit_carries_its_own_delay_rather_than_the_shared_default():
@@ -618,3 +641,71 @@ def test_charge_motion_delay_lengthens_the_shot_interval_and_nothing_else():
     assert round(with_delay[1].time - with_delay[0].time, 4) == 1.6
     # Fewer shots fit, which is the whole point.
     assert len(with_delay) < len(without)
+
+
+# --- The cadence floor stands in for an UNMEASURED motion delay -----------
+# CHARGE_INTERVAL_FLOOR_SECONDS (10/29) is what remained of Cinderella's cadence
+# once a +100% charge-speed buff took her charge to zero - i.e. her own
+# fire-to-charge gap, generalised to everyone because nobody else's was known.
+# A unit whose delay HAS been timed already carries that bound explicitly, so
+# flooring her charge on top double-counts it, and for a charge shorter than the
+# floor it cancels charge-speed buffs outright.
+
+def test_a_timed_units_charge_is_not_floored_because_her_delay_already_bounds_her():
+    """Scarlet: Black Shadow's real cycle is a 0.30 sec charge plus a 0.43 sec
+    motion delay (Fienn, 2026-07-28). Liberalio cuts a flat 0.19 sec off the
+    CHARGE, and Fienn measured the result at 0.5424 sec. Flooring the 0.30
+    charge at 10/29 would swallow the whole cut."""
+    from app.attack_rate import shot_interval_with_speed
+
+    unbuffed = shot_interval_with_speed(0.30, 0.0, 0.0, motion_delay=0.43)
+    with_liberalio = shot_interval_with_speed(0.30, 0.0, 0.19, motion_delay=0.43)
+
+    assert unbuffed == pytest.approx(0.73, abs=0.001)
+    assert with_liberalio == pytest.approx(0.54, abs=0.001)
+
+
+def test_a_unit_with_no_timed_delay_still_gets_the_floor():
+    """Cinderella holds a permanent +100% charge speed from her own kit, so her
+    charge is zero all fight and the floor IS her cadence. Nothing about her
+    may move until someone times her."""
+    from app.attack_rate import shot_interval_with_speed, CHARGE_INTERVAL_FLOOR_SECONDS
+
+    assert shot_interval_with_speed(1.0, 1.0) == pytest.approx(CHARGE_INTERVAL_FLOOR_SECONDS)
+    assert shot_interval_with_speed(1.0, 0.0) == pytest.approx(1.0)
+
+
+def test_a_timed_delay_bounds_the_cadence_where_the_floor_used_to():
+    # Mint at +100% charge speed: her charge really does reach zero, and what is
+    # left is her own 0.39, not Cinderella's 0.345 stacked on top of it.
+    from app.attack_rate import shot_interval_with_speed
+
+    assert shot_interval_with_speed(1.0, 1.0, motion_delay=0.39) == pytest.approx(0.39)
+
+
+def test_the_sword_swingers_decompose_into_charge_plus_delay():
+    """Scarlet: Black Shadow and Raven both measured far slower than their data
+    said, and both were modelled by overwriting charge_time with the whole
+    measured interval. Timing the fire-to-charge gap the same way as Mint's
+    (Fienn, 2026-07-28) splits that interval and vindicates the data files:
+
+        Scarlet  delay 0.43, interval 0.7325  ->  charge 0.3025  (file says 0.30)
+        Raven    delay 1.014, interval 2.0275 ->  charge 1.0135  (file says 1.0)
+
+    The split is not cosmetic. Charge-speed buffs apply to the charge and not to
+    the delay, and Scarlet is played with Liberalio precisely for that buff.
+    """
+    from app.skill_rules.registry import get_charge_motion_delay
+    assert get_charge_motion_delay("scarlet-black-shadow") == 0.43
+    assert get_charge_motion_delay("raven") == 1.014
+
+
+def test_scarlet_keeps_her_measured_cadence_after_the_split():
+    """Both readings she has must still come out: 0.7325 sec unbuffed, and
+    0.5424 under Liberalio's flat 0.19 sec cut."""
+    from app.attack_rate import shot_interval_with_speed
+    from app.skill_rules.registry import get_charge_motion_delay
+
+    delay = get_charge_motion_delay("scarlet-black-shadow")
+    assert shot_interval_with_speed(0.30, 0.0, 0.0, delay) == pytest.approx(0.73, abs=0.005)
+    assert shot_interval_with_speed(0.30, 0.0, 0.19, delay) == pytest.approx(0.5424, abs=0.005)

@@ -191,10 +191,13 @@ def build_raven_scheduled_nukes(values):
 # charge-speed overload, i.e. a ~1.0 sec base exactly as her data says. So this
 # is NOT a blanket data problem: it is per-unit, and these two need correcting
 # while ordinary RLs do not.
-MEASURED_CHARGE_INTERVAL_SEC = 8.11 / 4
-
-
-def build_raven_weapon_profile(values, weapon_stats):
-    """Her real firing cadence, measured rather than taken from the data file.
-    Everything else about the weapon is left untouched."""
-    return {**weapon_stats, "charge_time": MEASURED_CHARGE_INTERVAL_SEC}
+# Timing the fire-to-charge gap (Fienn, 2026-07-28) splits that interval the
+# same way it split Scarlet's: pauses of 1.02 / 0.99 / 1.02 / 1.02 / 1.02 sec
+# against a 2.0275 sec cadence leaves 1.0135 sec of charge - the 1.0 her data
+# file always listed. Her charge time was never wrong; the sword animation
+# after the shot was missing. She carries it as a motion delay
+# (registry.TIMED_CHARGE_MOTION_DELAY).
+#
+# Some of the recorded pairs are two shots apart rather than one: the damage
+# effect covered the Full Burst clock on the shots in between, so those were
+# skipped rather than mistimed.

@@ -148,12 +148,35 @@ def charge_time_with_speed(charge_time, charge_speed_percent, flat_reduction_sec
     would have silently slowed her down. That the two disagree is itself
     evidence the floor is not one global constant - see the note above it.
     """
-    frames = int(charge_time / FRAME_SECONDS * charge_speed_percent)
-    reduced = charge_time - frames * FRAME_SECONDS - flat_reduction_sec
     # The floor is measured against the UNBUFFED charge, so a weapon already
-    # quicker than it (Scarlet) is bounded by its own base, not slowed to it.
+    # quicker than it is bounded by its own base, not slowed to it.
     floor = min(charge_time, CHARGE_INTERVAL_FLOOR_SECONDS)
-    return max(reduced, floor)
+    return max(_reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec), floor)
+
+
+def _reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec):
+    frames = int(charge_time / FRAME_SECONDS * charge_speed_percent)
+    return charge_time - frames * FRAME_SECONDS - flat_reduction_sec
+
+
+def shot_interval_with_speed(charge_time, charge_speed_percent, flat_reduction_sec=0.0,
+                             motion_delay=0.0):
+    """Seconds from one charged shot to the next: the buffed charge plus the
+    unit's fire-to-charge motion delay.
+
+    `CHARGE_INTERVAL_FLOOR_SECONDS` applies only when that delay is UNKNOWN.
+    The floor is itself a motion delay - what remained of Cinderella's cadence
+    once +100% charge speed took her charge to zero - generalised to everyone
+    because hers was the only one measured. A unit whose own delay has since
+    been timed is already bounded by it, so flooring her charge as well counts
+    the same pause twice, and for a charge shorter than the floor it cancels
+    charge-speed buffs entirely: Scarlet: Black Shadow charges in 0.30 sec, and
+    Liberalio's flat 0.19 sec cut would vanish against a 0.345 floor.
+    """
+    reduced = _reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec)
+    if motion_delay:
+        return max(0.0, reduced) + motion_delay
+    return max(reduced, min(charge_time, CHARGE_INTERVAL_FLOOR_SECONDS))
 
 
 def rate_of_fire_for_weapon(weapon: str) -> float:
@@ -463,9 +486,10 @@ def _base_shot_records(base, window_start, window_end,
         bonus = base["charge_damage_percent"] / 100 - 1
         magazine_start = window_start
         while magazine_start < window_end:
-            effective_charge = charge_time_with_speed(
+            effective_charge = shot_interval_with_speed(
                 base["charge_time"], charge_speed_percent_at(magazine_start),
-                charge_time_reduction_sec_at(magazine_start)) + base.get("charge_motion_delay", 0.0)
+                charge_time_reduction_sec_at(magazine_start),
+                base.get("charge_motion_delay", 0.0))
             magazine_size = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
             last_shot_time = None
             for i in range(magazine_size):
@@ -513,9 +537,9 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
     profile = seg["profile"]
     start = seg["start"]
     if profile.get("charge_time"):
-        interval = charge_time_with_speed(
+        interval = shot_interval_with_speed(
             profile["charge_time"], charge_speed_percent_at(start),
-            charge_time_reduction_sec_at(start)) + motion_delay
+            charge_time_reduction_sec_at(start), motion_delay)
     else:
         interval = 1.0 / profile["rate_of_fire"]
     charge = profile.get("charge_damage_percent")
@@ -576,9 +600,9 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
             charge_percent = profile.get("charge_damage_percent")
             bonus = charge_percent / 100 - 1 if charge_percent is not None else 0.0
             in_segment = True
-        charge = charge_time_with_speed(
+        charge = shot_interval_with_speed(
             profile["charge_time"], charge_speed_percent_at(cursor),
-            charge_time_reduction_sec_at(cursor)) + base.get("charge_motion_delay", 0.0)
+            charge_time_reduction_sec_at(cursor), base.get("charge_motion_delay", 0.0))
         shot_time = cursor + charge
         # A segment opening mid-charge takes over: the pending shot is
         # abandoned exactly as the default path drops base shots past a
