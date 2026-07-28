@@ -97,6 +97,20 @@ def test_infeasible_deck_names_its_index(monkeypatch):
     assert excinfo.value.deck_index == 1
 
 
+def test_infeasible_shape_names_its_index(monkeypatch):
+    # 5명 전원 B3면 (n1, n2, n3)가 ALLOWED_SHAPES 어디에도 안 들어 legal한
+    # 배치가 없다 - _buffer_seat_valid와는 다른 규칙(shape 자체가 불법).
+    patch_boss_aware_scorer(monkeypatch, lambda slugs, boss: 10.0)
+    roster, decks = _two_decks()
+    all_tier3 = roster_of({"x1": 3, "x2": 3, "x3": 3, "x4": 3, "x5": 3})
+
+    with pytest.raises(InfeasibleDeck) as excinfo:
+        evaluate_decks([decks[0], all_tier3],
+                       [BossProfile(), BossProfile()])
+
+    assert excinfo.value.deck_index == 1
+
+
 def test_mode_variant_seat_is_scored_at_its_best_reading(monkeypatch):
     # 한 좌석이 두 후보(-mg / -snipe)를 갖는다. -snipe가 더 세므로 그쪽이 채택돼야
     # 한다 - baseline_total_damage가 쓰는 것과 같은 기준.

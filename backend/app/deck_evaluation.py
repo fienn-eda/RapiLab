@@ -10,7 +10,7 @@
 결과가 추천 결과와 어긋나면 유저가 두 수치 중 어느 쪽도 믿을 수 없게 된다.
 """
 from app.deck_allocation import _seed_choices, best_ordering_summary
-from app.deck_search import _intra_tier_orderings
+from app.deck_search import deck_is_valid
 
 
 class InfeasibleDeck(ValueError):
@@ -38,9 +38,10 @@ def evaluate_decks(decks, bosses, alternatives=None):
     for index, (deck, boss) in enumerate(zip(decks, bosses)):
         readings = _seed_choices(deck, alternatives)
         # 어떤 해석으로도 legal한 배치가 없을 때만 불가능한 덱이다. 좌석의
-        # 모드는 티어를 바꿀 수 있으므로(VARIANT_BURST_TIERS) 해석마다 따로 본다.
+        # 모드는 티어를 바꿀 수 있으므로(VARIANT_BURST_TIERS) 해석마다 shape
+        # 자체가 달라질 수 있어, deck_is_valid를 해석마다 따로 묻는다.
         scored = [best_ordering_summary(reading, boss) for reading in readings
-                  if next(_intra_tier_orderings(reading), None) is not None]
+                  if deck_is_valid(reading)]
         if not scored:
             raise InfeasibleDeck(index)
         summaries.append(max(scored, key=lambda s: s["total_damage"]))

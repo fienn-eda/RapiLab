@@ -5,7 +5,6 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api import app
-from app.deck_evaluation import InfeasibleDeck
 from app.engine_version import engine_version
 from tests.test_api_recommend import _nikke
 
@@ -98,25 +97,12 @@ def test_rejects_a_slug_the_engine_cannot_use():
     assert "not-a-nikke" in response.json()["detail"]
 
 
-def test_rejects_a_deck_with_no_feasible_burst_ordering(monkeypatch):
-    """평가 경로도 InfeasibleDeck을 422로 번역해야 한다.
-
-    실제 로스터로는 이 예외를 재현할 수 없어 배선만 목으로 검증한다:
-    deck_evaluation.evaluate_decks는 티어 구성(1/2/3 전원 필요)을 검사하지
-    않고(_intra_tier_orderings에 ALLOWED_SHAPES 체크가 없음), 유일하게 실제로
-    InfeasibleDeck을 일으키는 경로(_buffer_seat_valid - 버퍼 좌석 두 명이 같은
-    티어에 있을 때)는 등록된 버퍼 슬러그가 modernia(B3)·velvet(B2) 둘뿐이라
-    실제 티어가 이미 달라 실유닛 조합으로는 절대 같은 티어에 모이지 않는다
-    (Task 4 보고서 `task-4-report.md`에서도 같은 사실을 검증함). 그래서 이
-    테스트는 라우트의 예외 변환 코드를 직접 겨냥해 목으로 짚는다."""
-    import app.api as api_module
-
-    def _raise_infeasible(decks, bosses, alternatives=None):
-        raise InfeasibleDeck(0)
-
-    monkeypatch.setattr(api_module, "evaluate_decks", _raise_infeasible)
+def test_rejects_a_deck_with_no_feasible_burst_ordering():
+    """B1이 없는 5인은 legal한 배치가 없다(ALLOWED_SHAPES 어디에도 안 맞음)."""
+    b3_only = ["modernia", "privaty", "noir", "drake", "helm"]
+    roster = [_nikke(s) for s in b3_only]
     response = client.post("/api/evaluate-decks",
-                           json=_request([{"units": DECK, "boss": {}}]))
+                           json=_request([{"units": b3_only, "boss": {}}], roster=roster))
 
     assert response.status_code == 422
     assert "1번" in response.json()["detail"]
