@@ -943,10 +943,15 @@ def simulate_raid(
                     core_hittable, fight_duration, full_burst_windows,
                 ))
             elif mode == "every_during_own_status_window":
-                n, window_duration = threshold
+                # An optional third element is the BURST PERIOD: the status is
+                # granted by a resource the burst itself spends, so it only
+                # returns every Nth burst (Neon: Vision Eye's Firepower Gauge -
+                # 1st, 4th, 7th ...). Without it the window opens on every burst.
+                n, window_duration, *burst_period = threshold
+                anchors = own_burst_times[::burst_period[0]] if burst_period else own_burst_times
                 window_fire_times[idx] = set(_resource_fill_times(
                     ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
-                    core_hittable, fight_duration, full_burst_windows, own_burst_times,
+                    core_hittable, fight_duration, full_burst_windows, anchors,
                 ))
             elif mode == "cycle_in_own_status_window":
                 first, period, window_duration = threshold

@@ -1181,6 +1181,39 @@ def test_per_shot_every_during_own_status_window_gated_to_own_burst_window():
     assert all(e["damage"] == 10000.0 * fb_factor(result, e["time"]) for e in ps)
 
 
+def test_own_status_window_can_open_on_only_every_nth_burst():
+    # Neon: Vision Eye's Firepower Gauge is spent by the Super Firepower it
+    # triggers and takes two more bursts to refill, so the status window opens
+    # on her 1st, 4th, 7th ... burst - not on every one. An optional third
+    # element on the threshold names that burst period.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=0.1,
+        fight_duration=260.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules={"attacker": [
+            ((1, 5.0, 3), "every_during_own_status_window",
+             [instant_nuke_pulse_rule("per_shot", 100.0)])]},
+    )
+    own_bursts = [
+        e["time"] for e in result["events"] if e["type"] == "burst" and e["slug"] == "attacker"
+    ]
+    assert len(own_bursts) >= 4  # or the test cannot tell "every" from "every 3rd"
+    windows = [(bt, bt + 5.0) for bt in own_bursts[::3]]
+    fires = [e["time"] for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+    assert fires
+    assert all(any(s <= t < e for s, e in windows) for t in fires)
+    # The skipped bursts really are skipped, not merely rarer.
+    skipped = [(bt, bt + 5.0) for i, bt in enumerate(own_bursts) if i % 3]
+    assert not any(any(s <= t < e for s, e in skipped) for t in fires)
+
+
 def test_per_shot_nuke_damage_type_reaches_its_type_bucket_and_the_log():
     # The pulse path carries a damage_type (default "attack"), so a per-shot
     # nuke whose text says "as Distributed Damage" (e.g. Scarlet's 6th/9th
