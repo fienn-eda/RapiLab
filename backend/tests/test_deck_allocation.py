@@ -197,6 +197,33 @@ def test_peeling_never_spends_one_character_on_two_decks(monkeypatch):
     assert RECOMMENDED not in out["leftover_slugs"]
 
 
+def test_peeling_never_spends_a_favorite_item_character_on_two_decks(monkeypatch):
+    """A Favorite Item build and its base are the same owned unit, so the five
+    raid decks - fielded simultaneously - can seat her only once. A roster
+    holding both encodings (a hand-edited roster.json) must not buy two seats."""
+    roster = roster_of({
+        "a1": 1, "a2": 2, "a3": 3, "a4": 3,
+        "b1": 1, "b2": 2, "b3": 3, "b4": 3, "b5": 3,
+        "miranda": 3, "miranda-signature": 3,
+    })
+
+    def score(slugs):
+        if slugs == {"a1", "a2", "a3", "a4", "miranda"}:
+            return 100.0
+        if slugs == {"b1", "b2", "b3", "b4", "miranda-signature"}:
+            return 90.0
+        return 10.0
+
+    patch_scorer(monkeypatch, score)
+    out = da.allocate_decks(roster, BossProfile(), num_decks=2, time_budget_sec=0.0)
+
+    seated = [slug for d in out["decks"] for slug in d["deck"]]
+    assert "miranda" in seated                       # the 100-point deck still wins
+    assert "miranda-signature" not in seated
+    # She is fielded, so her other build is not a benched unit either.
+    assert "miranda-signature" not in out["leftover_slugs"]
+
+
 def test_a_bench_swap_never_seats_a_character_already_holding_a_seat(monkeypatch):
     """The peel leaves a character entirely benched when neither candidate makes
     a deck; the hill-climb can then pull one into each deck one bench swap at a
