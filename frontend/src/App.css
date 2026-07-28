@@ -1009,6 +1009,33 @@
   font-size: 16px;
 }
 
+/* Union raid panel -------------------------------------------------------- */
+
+/* Each battle is its own fieldset (a real group role, so its boss fields are
+   scoped and testable) but skips .group's border/padding - BossProfileField
+   inside already draws that box, and nesting two would double it. */
+.union-raid-form__battles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-4);
+  width: 100%;
+}
+
+.union-raid-form__battle {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 260px;
+  flex: 1 1 260px;
+}
+
+.union-raid-form__battle-legend {
+  font-size: 13px;
+  font-weight: 600;
+  padding: 0 0 var(--sp-2);
+  color: var(--text);
+}
+
 /* Draft palette ---------------------------------------------------------- */
 
 .palette {
