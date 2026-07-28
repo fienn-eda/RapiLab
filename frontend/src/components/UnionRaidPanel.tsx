@@ -94,10 +94,12 @@ export function UnionRaidPanel({
     [draftValue],
   )
 
-  // The roster after exclusions - what actually gets submitted. Mirrors
-  // RecommendPanel's effectiveRoster: "excluded" has to mean the same thing
-  // in both screens, out of the deck AND out of the scored roster, not just
-  // greyed out in the palette while still counted at full weight.
+  // The roster after exclusions - what actually gets submitted. Unlike
+  // RecommendPanel's search modes, evaluate never searches or scores the
+  // roster - only the placed units are - so this filter isn't keeping an
+  // excluded unit from being weighed by anything; its real effects are
+  // unseating it from whichever battle holds it (below) and keeping it out
+  // of what gets submitted as `roster`.
   const effectiveRoster = useMemo(
     () => roster.filter((nikke) => !excludedSlugs.has(nikke.character_slug)),
     [roster, excludedSlugs],
