@@ -1,10 +1,13 @@
 // Deterministic cache key for a recommend-raid request. The engine has no
-// RNG, so two requests with the same roster investment data, boss profile,
-// and draft always produce the same result - this hash lets us skip
-// recomputing it. Normalizes away orderings that don't affect the result
-// (roster array order, seat order within a draft deck) so equivalent
-// requests collide on purpose, and canonicalizes object key order so
-// structurally-equal values always serialize identically.
+// RNG, so the same roster investment data, boss profile, draft, and engine
+// version always produce the same result - this hash lets us skip
+// recomputing it. The engine version is in the key on purpose: a key built
+// from the inputs alone would keep serving stale numbers from the cache
+// after the engine itself is fixed or changed. Normalizes away orderings
+// that don't affect the result (roster array order, seat order within a
+// draft deck) so equivalent requests collide on purpose, and canonicalizes
+// object key order so structurally-equal values always serialize
+// identically.
 
 import type { UserNikkeState } from '../types/userNikkeState'
 import type { BossProfile } from '../types/recommend'
@@ -54,12 +57,17 @@ export const hashRecommendInputs = (
   boss: BossProfile,
   draft: Draft | null,
   numDecks: number,
+  /** Null while unknown from the backend. Null keys are self-consistent, so
+   * caching still works before it arrives, and the first request after it
+   * arrives is a single guaranteed miss. */
+  engineVersion: string | null,
 ): string => {
   const canonical = {
     roster: canonicalRoster(roster),
     boss: canonicalize(boss),
     draft: canonicalDraft(draft),
     numDecks,
+    engineVersion,
   }
   return fnv1a(JSON.stringify(canonical))
 }

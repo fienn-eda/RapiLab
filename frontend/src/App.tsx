@@ -6,24 +6,28 @@ import { useMemo, useState } from 'react'
 import './App.css'
 import { useProfiles } from './hooks/useProfiles'
 import { usePortraitManifest } from './hooks/usePortraitManifest'
+import { useEngineVersion } from './hooks/useEngineVersion'
 import { getValidRoster } from './types/nikkeDraft'
 import { getResult } from './types/profile'
 import { useSupportedUnits } from './hooks/useSupportedUnits'
+import { nameFromSlug } from './lib/unitName'
 import { ProfileSwitcher } from './components/ProfileSwitcher'
 import { RosterGrid } from './components/RosterGrid'
 import { RecommendPanel } from './components/RecommendPanel'
 import { SyncRosterPanel } from './components/SyncRosterPanel'
+import { UnionRaidPanel } from './components/UnionRaidPanel'
 import type { NikkeDraft } from './types/nikkeDraft'
 
 // A stable reference so useMemo below doesn't see a "new" roster every render
 // when there's no active profile (a fresh `?? []` literal would).
 const NO_ROSTER: NikkeDraft[] = []
 
-type Tab = 'roster' | 'recommend'
+type Tab = 'roster' | 'recommend' | 'union'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'roster', label: '로스터' },
   { id: 'recommend', label: '추천' },
+  { id: 'union', label: '유니온 레이드' },
 ]
 
 function App() {
@@ -35,6 +39,7 @@ function App() {
   // would rewrite 22 of its test's render sites to save one GET of a small
   // static endpoint.
   const supportedUnits = useSupportedUnits()
+  const engineVersion = useEngineVersion()
   const [tab, setTab] = useState<Tab>('roster')
 
   const drafts = activeProfile?.roster ?? NO_ROSTER
@@ -53,6 +58,17 @@ function App() {
     )
     return (slug: string) => bySlug.get(slug) ?? {}
   }, [drafts])
+
+  // Union raid draws its deck slots the same way DraftEditor draws them
+  // anywhere else: a name and a burst-tier badge, both looked up from
+  // /api/supported-units - same fallback RecommendPanel's own unitIndex uses
+  // for a slug the list doesn't know.
+  const unitIndex = useMemo(
+    () => new Map(supportedUnits.units.map((unit) => [unit.slug, unit])),
+    [supportedUnits.units],
+  )
+  const nameFor = (slug: string) => unitIndex.get(slug)?.name ?? nameFromSlug(slug)
+  const burstTierFor = (slug: string) => unitIndex.get(slug)?.burstTier ?? null
 
   return (
     <div className="app">
@@ -139,6 +155,7 @@ function App() {
                 key={state.activeOpenId ?? 'none'}
                 roster={validRoster}
                 investmentFor={investmentFor}
+                engineVersion={engineVersion}
                 activeOpenId={state.activeOpenId}
                 getCached={(hash) => (activeProfile ? getResult(activeProfile, hash) : null)}
                 onResult={(args) => {
@@ -150,6 +167,27 @@ function App() {
                     ? getResult(activeProfile, activeProfile.lastResultHash)
                     : null
                 }
+              />
+            </div>
+
+            <div
+              role="tabpanel"
+              id="panel-union"
+              aria-labelledby="tab-union"
+              hidden={tab !== 'union'}
+              className="panel"
+            >
+              <UnionRaidPanel
+                // Same reasoning as RecommendPanel's key: an evaluate request
+                // outliving a profile switch must not land against the
+                // previous profile's hook instance.
+                key={state.activeOpenId ?? 'none'}
+                roster={validRoster}
+                supportedUnits={supportedUnits.units}
+                portraitFor={portraitFor}
+                nameFor={nameFor}
+                burstTierFor={burstTierFor}
+                investmentFor={investmentFor}
               />
             </div>
           </main>

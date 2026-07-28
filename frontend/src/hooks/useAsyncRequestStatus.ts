@@ -25,6 +25,11 @@ export interface AsyncRequestStatus {
   ) => Promise<void>
   /** Aborts the request in flight, if any. No-op otherwise. */
   cancel: () => void
+  /** Aborts whatever's in flight and returns to idle with no error - for a
+   * caller that needs to discard a finished result with no new run to
+   * replace it (e.g. leaving a mode whose stale success would otherwise
+   * still render if the player comes back to it). */
+  reset: () => void
 }
 
 const DEFAULT_FALLBACK_ERROR_MESSAGE = '덱 추천을 가져오지 못했어요.'
@@ -74,5 +79,12 @@ export const useAsyncRequestStatus = (): AsyncRequestStatus => {
 
   const cancel = useCallback(() => controllerRef.current?.abort(), [])
 
-  return { status, error, run, cancel }
+  const reset = useCallback(() => {
+    controllerRef.current?.abort()
+    controllerRef.current = null
+    setStatus('idle')
+    setError(undefined)
+  }, [])
+
+  return { status, error, run, cancel, reset }
 }

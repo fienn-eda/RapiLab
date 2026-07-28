@@ -93,6 +93,33 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
   })
 
+  it('renders three tabs and reaches the union raid panel through its own tab', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
+    seedProfiles({
+      activeOpenId: 'acct-a',
+      profiles: {
+        'acct-a': {
+          openId: 'acct-a',
+          nickname: '본계',
+          roster: [validDraft()],
+          results: {},
+          lastResultHash: null,
+          lastInputs: null,
+        },
+      },
+    })
+
+    render(<App />)
+    expect(screen.getAllByRole('tab')).toHaveLength(3)
+    expect(screen.queryByRole('heading', { name: '유니온 레이드' })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: '유니온 레이드' }))
+
+    expect(screen.getByRole('heading', { name: '유니온 레이드' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
+  })
+
   it('switches the displayed roster when the active profile changes (isolation)', async () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])

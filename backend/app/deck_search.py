@@ -308,6 +308,25 @@ def _intra_tier_orderings(combo):
                     yield ordered
 
 
+def deck_is_valid(units):
+    """Whether these exact 5 units can ever be fielded as a legal deck.
+
+    `shape_combinations`/`_shape_completions` never need this: they only ever
+    GENERATE decks by construction, so every deck they produce already passes
+    every rule below. A caller HANDED a fixed 5-unit deck instead of building
+    one has to ask the same question explicitly, or it will call a deck legal
+    that the search would never have produced - the two paths would then
+    disagree about what is playable."""
+    if len(units) != 5:
+        return False
+    tier_counts = Counter(u.burst_tier for u in units)
+    shape = tuple(tier_counts.get(t, 0) for t in (1, 2, 3))
+    return (shape in ALLOWED_SHAPES
+            and _no_variant_clash(units)
+            and _tier1_seating_valid(units)
+            and next(_intra_tier_orderings(units), None) is not None)
+
+
 # Curated two-unit sets that only work together (Fienn, 2026-07-17): candidate
 # cuts must measure them as a pair and never separate them.
 SYNERGY_SETS = (frozenset({"mint", "prika"}),

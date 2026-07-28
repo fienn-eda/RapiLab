@@ -109,7 +109,7 @@ def main():
     cascade.prune_candidate_pool = counter.wrap(cascade.prune_candidate_pool, "prune")
     da.cached_fit_surrogate = counter.wrap(da.cached_fit_surrogate, "fit")
     da._swap_pass = counter.wrap(da._swap_pass, "swap")
-    da._best_ordering_summary = counter.wrap(da._best_ordering_summary, "summary")
+    da.best_ordering_summary = counter.wrap(da.best_ordering_summary, "summary")
 
     started = time.perf_counter()
     da.allocate_decks(specs, boss, num_decks=args.decks, workers=workers)

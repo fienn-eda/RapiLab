@@ -62,6 +62,7 @@ describe('useRecommendRaid', () => {
       leftover_slugs: ['k', 'l'],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     const { result } = renderHook(() => useRecommendRaid())
@@ -103,6 +104,7 @@ describe('useRecommendRaid', () => {
       leftover_slugs: [],
       within_draft: withinDraft,
       baseline_total_damage: 80,
+      engine_version: 'test-engine-version',
     })
 
     const { result } = renderHook(() => useRecommendRaid())

@@ -28,6 +28,9 @@ vi.mock('../api/recommend', () => ({
 vi.mock('../api/recommendRaid', () => ({
   recommendRaidDecks: vi.fn(),
 }))
+vi.mock('../api/evaluateDecks', () => ({
+  evaluateDecks: vi.fn(),
+}))
 vi.mock('../api/supportedUnits', () => ({
   getSupportedUnits: vi.fn(),
 }))
@@ -37,6 +40,7 @@ vi.mock('../hooks/usePortraitManifest', () => ({
 
 import { recommendDecks } from '../api/recommend'
 import { recommendRaidDecks } from '../api/recommendRaid'
+import { evaluateDecks } from '../api/evaluateDecks'
 import { getSupportedUnits } from '../api/supportedUnits'
 
 const nikke = (slug: string): UserNikkeState => ({
@@ -51,6 +55,16 @@ const nikke = (slug: string): UserNikkeState => ({
 
 const fullRoster = ['a', 'b', 'c', 'd', 'e'].map(nikke)
 
+// Shared by the evaluate-mode tests below - a five-unit palette is all any of
+// them needs, and a fresh array per call keeps tests from sharing references.
+const makeEvaluateSupportedUnits = () =>
+  ['a', 'b', 'c', 'd', 'e'].map((slug, i) => ({
+    slug,
+    name: slug.toUpperCase(),
+    burstTier: ((i % 3) + 1) as 1 | 2 | 3,
+    element: 'Iron' as const,
+  }))
+
 // Every test exercises roster + boss/mode form state, not the persistence
 // wiring — inert no-op defaults for the new profile-store props keep the
 // pre-existing tests focused on what they actually check.
@@ -60,6 +74,7 @@ const noPersistence = {
   onResult: () => {},
   restoreInputs: null,
   restoreResult: null,
+  engineVersion: null,
 }
 
 beforeEach(() => {
@@ -72,6 +87,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.mocked(recommendDecks).mockReset()
   vi.mocked(recommendRaidDecks).mockReset()
+  vi.mocked(evaluateDecks).mockReset()
   vi.mocked(getSupportedUnits).mockReset()
 })
 
@@ -153,6 +169,7 @@ describe('RecommendPanel', () => {
         },
       ],
       excluded_slugs: [],
+      engine_version: 'test-engine-version',
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
@@ -187,7 +204,7 @@ describe('RecommendPanel', () => {
 
   it('sends the entered element and enemy DEF instead of the defaults', async () => {
     const user = userEvent.setup()
-    vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
+    vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     // Labelled '보스 속성', distinct from the palette's own '속성'
@@ -216,7 +233,7 @@ describe('RecommendPanel', () => {
 
   it('sends part_destructible: true when the part-destruction gimmick is toggled on', async () => {
     const user = userEvent.setup()
-    vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
+    vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/부위파괴 기믹/i))
@@ -256,6 +273,7 @@ describe('RecommendPanel raid mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
@@ -289,6 +307,7 @@ describe('RecommendPanel raid mode', () => {
       leftover_slugs: ['k'],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
@@ -323,6 +342,7 @@ describe('RecommendPanel raid mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
     await waitFor(() =>
       expect(screen.queryByRole('status')).not.toBeInTheDocument(),
@@ -366,6 +386,7 @@ describe('RecommendPanel draft mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     const sixRoster = [...fullRoster, nikke('f')]
@@ -428,6 +449,7 @@ describe('RecommendPanel draft mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     const roster = [...fullRoster, nikke('bready')]
@@ -492,6 +514,159 @@ describe('RecommendPanel draft mode', () => {
   })
 })
 
+describe('RecommendPanel evaluate mode', () => {
+  const supportedUnits = makeEvaluateSupportedUnits()
+
+  it('평가 모드는 25칸을 다 채우기 전에는 제출을 막는다', async () => {
+    const user = userEvent.setup()
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
+  })
+
+  it('평가 모드에서는 잠금 토글이 없다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+
+    // Seat a unit so the draft editor actually draws a slot — with nothing
+    // placed, "no lock button" would be true regardless of showLocks. The
+    // palette's own "사용" toggle also carries aria-pressed, so scope on the
+    // lock button's distinct label ("고정") rather than the pressed role alone.
+    dropOnDeck(1, 'a')
+    expect(screen.getByRole('button', { name: '덱 1에서 A 제거' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /고정/ })).not.toBeInTheDocument()
+  })
+
+  it('선택한 덱 수만큼 5명씩 다 채워야 제출 버튼이 켜진다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+
+    for (const slug of ['a', 'b', 'c', 'd']) dropOnDeck(1, slug)
+    expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
+
+    dropOnDeck(1, 'e')
+    expect(screen.getByRole('button', { name: /계산/ })).toBeEnabled()
+  })
+
+  it('로스터가 최소 인원 밑으로 줄어도 평가는 제출된다 - 평가는 편성된 유닛만 채점하지 로스터 크기를 보지 않는다', async () => {
+    // canSubmit already exempts evaluate mode from rosterTooSmall; this test
+    // is for handleSubmit's early return, which used to still bail on it -
+    // reachable by drafting five units, then deleting units from the roster
+    // tab (here: the roster prop shrinking on a rerender, same effect).
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    const { rerender } = render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+
+    // The roster tab drops below MIN_DECK_ROSTER_SIZE - the already-drafted
+    // deck (internal state) is unaffected.
+    rerender(<RecommendPanel roster={fullRoster.slice(0, 3)} {...noPersistence} />)
+    expect(screen.queryByText(/니케가 최소 5기 필요해요/)).not.toBeInTheDocument()
+
+    const submitButton = screen.getByRole('button', { name: /계산/ })
+    expect(submitButton).toBeEnabled()
+    await user.click(submitButton)
+
+    expect(evaluateDecks).toHaveBeenCalled()
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+  })
+
+  it('선택한 덱만큼 evaluate-decks에 제출하고 결과를 렌더한다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+
+    await user.click(screen.getByRole('button', { name: /계산/ }))
+
+    expect(evaluateDecks).toHaveBeenCalledWith(
+      {
+        roster: fullRoster,
+        decks: [
+          {
+            units: ['a', 'b', 'c', 'd', 'e'],
+            boss: {
+              element: null,
+              core_hittable: false,
+              enemy_def: 0,
+              fight_duration: 180,
+              part_destructible: false,
+            },
+          },
+        ],
+      },
+      expect.any(AbortSignal),
+    )
+    expect(recommendRaidDecks).not.toHaveBeenCalled()
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText('100 딜', { exact: false })).toBeInTheDocument()
+  })
+
+  it('결과가 나온 뒤 보스 속성을 바꿔도 카드 표시는 제출 당시 속성 그대로다', async () => {
+    // The card's damage numbers were computed against the SUBMITTED boss, so
+    // its element label must stay pinned to that submission too - reading the
+    // live form field instead would relabel a finished result out from under
+    // its own numbers.
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+    await user.click(screen.getByRole('button', { name: /계산/ }))
+
+    expect(await screen.findByText('1번 덱 · 무속성')).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('보스 속성'), 'Fire')
+
+    expect(screen.getByText('1번 덱 · 무속성')).toBeInTheDocument()
+    expect(screen.queryByText('1번 덱 · 작열')).not.toBeInTheDocument()
+  })
+})
+
 describe('RecommendPanel mode switch', () => {
   it('does not render the previous mode\'s result after switching modes without resubmitting', async () => {
     const user = userEvent.setup()
@@ -504,6 +679,7 @@ describe('RecommendPanel mode switch', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
@@ -514,6 +690,67 @@ describe('RecommendPanel mode switch', () => {
 
     await user.click(screen.getByLabelText(/드래프트 기반/i))
     expect(screen.queryByText(/모두 함께 편성/)).not.toBeInTheDocument()
+    expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('다른 모드로 바꾸면 평가 결과가 새어 보이지 않는다', async () => {
+    // 평가 성공 상태를 만든 뒤 '단일 덱'으로 전환하면 결과가 사라져야 한다 -
+    // 기존 raidResultMode 가드가 raid/draft 사이에서 지키는 것과 같은 계약.
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+    await user.click(screen.getByRole('button', { name: /계산/ }))
+
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: /단일 덱/ }))
+    expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('평가 결과가 나온 뒤 딴 데 갔다 편성을 바꾸고 돌아오면 옛 결과가 남아 있지 않다', async () => {
+    // draftValue는 드래프트/평가 모드가 공유한다 - evaluation.cancel()은 이미
+    // 끝난 요청을 다시 abort할 수 없는 no-op이라, 평가 -> 다른 모드 -> 편성
+    // 수정 -> 평가로 돌아왔을 때 옛 결과가 바뀐 편성 위에 그대로 남을 수
+    // 있었다. reset()이 그 성공 상태 자체를 지워야 한다.
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+    await user.click(screen.getByRole('button', { name: /계산/ }))
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+
+    // 딴 모드로 갔다가, 공유된 draftValue의 편성을 바꾼다.
+    await user.click(screen.getByRole('radio', { name: /드래프트 기반/ }))
+    await user.click(screen.getByRole('button', { name: '덱 1에서 E 제거' }))
+    dropOnDeck(1, 'e') // rebuild a full deck so evaluate mode can submit again
+
+    // 평가로 돌아온다 - 새로 제출하지 않았으므로 옛 성공 결과가 남아 있으면 안 된다.
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
     expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
   })
 })
@@ -560,6 +797,7 @@ describe('RecommendPanel persistence', () => {
         onResult={() => {}}
         restoreInputs={restoreInputs}
         restoreResult={restoreResult}
+        engineVersion={null}
       />,
     )
 
@@ -590,6 +828,7 @@ describe('RecommendPanel persistence', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     }
     vi.mocked(recommendRaidDecks).mockResolvedValue(response)
 
@@ -601,13 +840,14 @@ describe('RecommendPanel persistence', () => {
         onResult={onResult}
         restoreInputs={null}
         restoreResult={null}
+        engineVersion={null}
       />,
     )
     await user.click(screen.getByLabelText(/레이드 배분/i))
     await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
     await screen.findByText('덱 1')
 
-    const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5)
+    const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5, null)
     expect(onResult).toHaveBeenCalledWith({
       hash: expectedHash,
       result: {
@@ -632,7 +872,7 @@ describe('RecommendPanel persistence', () => {
   it('renders a cache hit immediately, never calls the raid client, and never calls onResult', async () => {
     const user = userEvent.setup()
     const onResult = vi.fn()
-    const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5)
+    const expectedHash = hashRecommendInputs(fullRoster, defaultBoss, null, 5, null)
     const cached: StoredResult = {
       decks: [
         {
@@ -660,6 +900,7 @@ describe('RecommendPanel persistence', () => {
         onResult={onResult}
         restoreInputs={null}
         restoreResult={null}
+        engineVersion={null}
       />,
     )
     await user.click(screen.getByLabelText(/레이드 배분/i))
@@ -690,6 +931,7 @@ describe('RecommendPanel persistence', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      engine_version: 'test-engine-version',
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
@@ -736,6 +978,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
   const raidResponse = {
     decks: [], combined_total_damage: 0, excluded_slugs: [],
     leftover_slugs: [], within_draft: null, baseline_total_damage: null,
+    engine_version: 'test-engine-version',
   }
 
   const renderMode = async (roster: UserNikkeState[], radio: RegExp) => {
@@ -837,7 +1080,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
     it('sends the whole roster even while the palette shows one unit', async () => {
       const user = userEvent.setup()
       vi.mocked(getSupportedUnits).mockResolvedValue(paletteUnits)
-      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
+      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
       render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
       await screen.findByRole('button', { name: /Crown 사용/i })
@@ -872,7 +1115,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
     it('leaves an exclusion intact across a filter that hides that unit', async () => {
       const user = userEvent.setup()
       vi.mocked(getSupportedUnits).mockResolvedValue(paletteUnits)
-      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [] })
+      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
       render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
       await screen.findByRole('button', { name: /Anne 사용/i })
