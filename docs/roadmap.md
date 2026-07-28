@@ -8,7 +8,10 @@
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
 - 마지막 갱신: 2026-07-28
-- 브랜치: `ui-korean-localization` 워크트리(`wip/scaffolding` 1413 passed, 3 skipped 기준에서 분기, 이 항목 시점에 트렁크 미병합)
+- 브랜치: `worktree-fixed-deck-evaluation` 워크트리(`.claude/worktrees/fixed-deck-evaluation`,
+  `wip/scaffolding` `3a3731c` 기준에서 분기 — 백엔드 1487 passed, 3 skipped · 프론트 350,
+  이 항목 시점에 트렁크 미병합). 이전: `ui-korean-localization` 워크트리(`wip/scaffolding`
+  1413 passed, 3 skipped 기준에서 분기, 이 항목 시점에 트렁크 미병합)
 - 백엔드: **1513 passed, 3 skipped** · 프론트: **380 passed** (2026-07-28,
   **고정 편성 평가(evaluate-decks) 착지** — 기존 추천 탭의 세 모드(단일 덱·레이드
   배분·초안 기반)는 전부 엔진이 덱을 **만드는** 방향이었는데, 이번 작업은 그
