@@ -83,15 +83,34 @@ def test_battle_start_self_atk_from_max_hp_is_permanent():
 
 
 def test_burst_stage3_entry_self_attack_damage_fires_on_her_own_burst():
-    """스킬텍스트의 [버스트 3단계 진입 시]는 그녀 자신이 B3를 쏘는 순간이다
-    (Fienn 실측 2026-07-24). full_burst_enter가 아니라 own_burst_activate라야
-    다른 B3가 대신 버스트한 사이클에 잘못 지급되지 않는다."""
     ctx = make_context()
     registry = EffectRegistry()
-    fire_trigger("own_burst_activate", {"laplace-ultimate-hero": rules()}, ctx, registry, time=5.0)
+    ctx.last_burst_slug = "laplace-ultimate-hero"
+    fire_trigger("ally_burst_activate", {"laplace-ultimate-hero": rules()}, ctx, registry, time=5.0)
     assert round(registry.total_for("attack_damage_up", LAPLACE, now=5.0), 4) == 0.5214
     assert registry.total_for("attack_damage_up", LAPLACE, now=15.1) == 0.0  # 10 sec window
     assert registry.total_for("attack_damage_up", ALLY, now=5.0) == 0.0  # self-only
+
+
+def test_burst_stage3_entry_also_fires_when_another_burst3_takes_the_slot():
+    """[버스트 3단계 진입 시]는 단계에 대한 서술이지 시전자에 대한 서술이 아니다.
+    두 번째 B3를 앉히면 둘이 슬롯을 나눠 갖고, 상대가 쏜 사이클도 3단계 진입이다."""
+    ctx = SquadContext([
+        SquadMember("laplace-ultimate-hero", burst_tier=3, element="Wind", weapon="RL"),
+        SquadMember("other-burst-three", burst_tier=3, element="Fire", weapon="AR"),
+    ])
+    registry = EffectRegistry()
+    ctx.last_burst_slug = "other-burst-three"
+    fire_trigger("ally_burst_activate", {"laplace-ultimate-hero": rules()}, ctx, registry, time=5.0)
+    assert round(registry.total_for("attack_damage_up", LAPLACE, now=5.0), 4) == 0.5214
+
+
+def test_burst_stage3_entry_does_not_fire_when_a_lower_tier_bursts():
+    ctx = make_context()
+    registry = EffectRegistry()
+    ctx.last_burst_slug = "ally"  # Burst 1
+    fire_trigger("ally_burst_activate", {"laplace-ultimate-hero": rules()}, ctx, registry, time=5.0)
+    assert registry.total_for("attack_damage_up", LAPLACE, now=5.0) == 0.0
 
 
 def test_full_burst_enter_alone_does_not_grant_attack_damage():

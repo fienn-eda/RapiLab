@@ -37,14 +37,13 @@ Modeled (DPS-relevant):
   max_hp_scaled_atk_rule, so ally/self Max HP buffs feed it. Snapshot at
   battle start: her own Over Energy stages raise Max HP later in the fight
   and must re-apply this buff to be reflected (see the deferred list).
-- Over Energy (skills[1]), on her OWN Burst-3 activation ("[Burst Stage 3
-  entry]" = after B2 fires, before B3 fires - Fienn's in-game reading,
-  2026-07-24): self Attack Damage +52.14% for 10 sec. Encoded on
-  own_burst_activate, not full_burst_enter: the two are numerically
-  identical for a B3 unit's own nuke (same timestamp, inclusive buff
-  window - see tests/test_burst_cycle_buff_timing.py), but
-  full_burst_enter would also pay out on cycles where a DIFFERENT B3 unit
-  bursts instead of her.
+- Over Energy (skills[1]), on "[Burst Stage 3 entry]" (= after B2 fires,
+  before B3 fires - Fienn's in-game reading, 2026-07-24): self Attack Damage
+  +52.14% for 10 sec. That phrase describes the STAGE, so it rides
+  `ally_burst_activate` + `burst_stage_entered(3)` - a deck seating a second
+  Burst 3 splits the slot and the ally's cycles are Stage-3 entries too.
+  Not `full_burst_enter`, which is the LATER instant (after the B3 cast) and
+  so would miss her own burst damage.
 - Regenerative Energy Armament: Mjolnir (skills[2], her burst):
   - self ATK +63.36% for 10 sec.
   - burst nuke: 2953.84% of final ATK (default attack type).
@@ -66,7 +65,7 @@ Not modeled / deferred:
 """
 from app.effects import Effect
 from app.skill_rules._helpers import buff_rule, max_hp_scaled_atk_rule
-from app.squad_engine import SkillRule
+from app.squad_engine import SkillRule, burst_stage_entered
 
 SLUG = "laplace-ultimate-hero"
 
@@ -75,6 +74,7 @@ SMG_RATE_OF_FIRE = 20.0        # the transformed weapon fires at SMG cadence
 WARM_UP_BUILD_SECONDS = 4.0    # 5 full charges: 1.0 + 0.9 + 0.8 + 0.7 + 0.6
 OVER_ENERGY_TRANSFORMS_PER_STAGE = 2   # 240 transformed normals = 2 full magazines
 OVER_ENERGY_MAX_STAGE = 4
+OVER_ENERGY_BURST_STAGE = 3    # "[Burst Stage 3 entry]" - the stage, not her cast
 
 _ELECTRIC_POWER_GROUP = "electric_power_atk"
 _OVER_ENERGY_GROUP = "over_energy_stage_max_hp"
@@ -167,11 +167,13 @@ def build_laplace_ultimate_hero_rules(values, caster_max_hp):
             refreshing=True, refresh_group=_ELECTRIC_POWER_GROUP,
         ),
         _over_energy_stage_rule(values, caster_max_hp),
-        # 스킬텍스트의 [버스트 3단계 진입 시] = 그녀 자신이 B3를 쏘는 순간
-        # (Fienn 실측 2026-07-24). own_burst_activate는 넉이 기록되기 전에 발동해
-        # 이 버프가 그녀의 버스트딜에 곱해지고, 그녀가 버스트하지 않은 사이클엔
-        # 지급되지 않는다 (full_burst_enter는 후자를 못 막는다).
-        buff_rule("own_burst_activate", [("attack_damage_up", fb_attack_damage, "self", fb_attack_damage_dur)]),
+        # 스킬텍스트의 [버스트 3단계 진입 시]는 **단계**에 대한 서술이라 그 슬롯을
+        # 누가 가져가든 일어난다 — 두 번째 B3를 앉히면 상대가 쏜 사이클도 3단계
+        # 진입이다. 트리거가 넉 기록보다 먼저 발동하므로 그녀가 직접 쏜 사이클엔
+        # 여전히 자기 버스트딜에 곱해진다. full_burst_enter는 캐스트 이후라 다르다.
+        buff_rule("ally_burst_activate",
+                  [("attack_damage_up", fb_attack_damage, "self", fb_attack_damage_dur)],
+                  condition=burst_stage_entered(OVER_ENERGY_BURST_STAGE)),
         buff_rule("own_burst_activate", [("atk_percent", burst_atk, "self", burst_atk_dur)]),
         # Mjolnir's transformed weapon gains Pierce for the transform window.
         buff_rule("own_burst_activate", [("has_pierce", 1.0, "self", burst_atk_dur)]),

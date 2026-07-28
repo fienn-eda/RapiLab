@@ -21,8 +21,10 @@ Modeled (DPS-relevant):
   output.
 - Feather Shot's self Charge Damage +80% for 1 round on every Full Charge
   (per-shot trigger + RoundGrant).
-- Feather Standby's self ATK +70.12% for 10 sec on entering Burst Stage 3. She
-  IS the Burst-3 slot, so that instant is her own burst activation.
+- Feather Standby's self ATK +70.12% for 10 sec on entering Burst Stage 3.
+  The bullet describes the STAGE, so it rides `ally_burst_activate` +
+  `burst_stage_entered(3)`: in a deck seating a second Burst 3 the two split
+  the slot, and the cycles the ally takes are still Stage-3 entries.
 - Feather-All Range (her burst): self True Damage +55.3% and Charge Damage
   +140.68% for 10 sec, plus a 300.02% true-damage nuke. "10 enemy units with the
   highest final DEF" collapses to the single raid boss, so it lands once. The
@@ -47,6 +49,7 @@ Not modeled / deferred:
 - Feather targeting ("1 random enemy unit") - the solo raid has one boss.
 """
 from app.skill_rules._helpers import buff_rule, round_buff_rule
+from app.squad_engine import burst_stage_entered
 
 SKILL_VALUE_MANIFESTS = {
     "ein": {
@@ -67,6 +70,7 @@ MAX_FEATHERS = 6
 FEATHER_LIFETIMES = (None, 38.0, 32.0, 26.0, 10.0, 10.0)
 # Feathers 1-4 exist from battle start; 5-6 only ever arrive with her burst.
 BATTLE_START_FEATHERS = 4
+FEATHER_STANDBY_BURST_STAGE = 3
 BASE_ATTACK_COOLDOWN = 8.0
 COOLDOWN_REDUCTION_PER_EXTRA_FEATHER = 0.16
 # Both measured from Fienn's Full Burst recording (2026-07-17).
@@ -146,9 +150,14 @@ def build_ein_rules(values):
     charge_damage_duration = float(all_range["description_value_05"])
 
     return [
-        # She is the Burst-3 slot, so "entering Burst Skill Stage 3" is her cast.
-        buff_rule("own_burst_activate", [
+        # Feather Standby's ATK reads "entering Burst Skill Stage 3" - the
+        # STAGE, so it also fires in cycles an allied Burst 3 takes the slot,
+        # and it lands one beat before that cast settles.
+        buff_rule("ally_burst_activate", [
             ("atk_percent", self_atk, "self", self_atk_duration),
+        ], condition=burst_stage_entered(FEATHER_STANDBY_BURST_STAGE)),
+        # Feather-All Range is her own burst skill, so its buffs ride her cast.
+        buff_rule("own_burst_activate", [
             ("true_damage_up", true_damage, "self", true_damage_duration),
             ("charge_damage_bonus", charge_damage, "self", charge_damage_duration),
         ]),

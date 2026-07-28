@@ -113,10 +113,56 @@ def test_scheduled_nuke_is_true_damage_at_the_feather_percent():
     assert spec["schedule"] is _feather_hit_times
 
 
-def test_burst_grants_self_atk_true_damage_and_charge_damage():
-    rules = build_ein_rules(VALUES)
-    assert len(rules) == 1
-    assert rules[0].trigger == "own_burst_activate"
+class _FakeRegistry:
+    """Minimal registry stand-in exposing a bare `.added` list - buff_rule's
+    action only ever calls registry.add / add_refreshing."""
+
+    def __init__(self):
+        self.added = []
+
+    def add(self, effect, applied_at):
+        self.added.append((effect.stat, effect.value, effect.scope, effect.duration))
+
+    def add_refreshing(self, effect, applied_at):
+        self.added.append((effect.stat, effect.value, effect.scope, effect.duration))
+
+
+def _shared_burst_three_context():
+    return SquadContext([
+        SquadMember("ein", burst_tier=3, element="Electric"),
+        SquadMember("other-burst-three", burst_tier=3, element="Fire"),
+    ])
+
+
+def _applied_buffs(rule):
+    """{stat: (value, scope, duration)} for one rule's action."""
+    reg = _FakeRegistry()
+    rule.action(_shared_burst_three_context(), "ein", 0.0, reg)
+    return {stat: rest for stat, *rest in reg.added}
+
+
+def test_feather_all_range_buffs_ride_her_own_cast():
+    """Her burst skill's own True Damage and Charge Damage stay on her cast."""
+    bursts = [r for r in build_ein_rules(VALUES) if r.trigger == "own_burst_activate"]
+    assert len(bursts) == 1
+
+    buffs = _applied_buffs(bursts[0])
+    assert buffs["true_damage_up"] == [pytest.approx(0.553), "self", 10.0]
+    assert buffs["charge_damage_bonus"] == [pytest.approx(1.4068), "self", 10.0]
+    # Feather Standby's ATK belongs to the stage, not to this cast.
+    assert "atk_percent" not in buffs
+
+
+def test_feather_standby_atk_fires_when_any_burst_three_takes_the_slot():
+    """Feather Standby reads "entering Burst SKILL Stage 3" - the stage, so it
+    must still pay out in a cycle an allied Burst 3 bursts instead of her."""
+    stage = [r for r in build_ein_rules(VALUES) if r.trigger == "ally_burst_activate"]
+    assert len(stage) == 1
+    assert _applied_buffs(stage[0])["atk_percent"] == [pytest.approx(0.7012), "self", 10.0]
+
+    context = _shared_burst_three_context()
+    context.last_burst_slug = "other-burst-three"
+    assert stage[0].condition(context, "ein") is True
 
 
 def test_full_charge_grants_one_round_of_charge_damage():
