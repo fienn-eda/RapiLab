@@ -51,7 +51,7 @@ def test_feasible_orderings_intra_tier_order_varies():
 
 def test_mode_variants_never_share_a_deck(monkeypatch):
     from app import deck_search
-    monkeypatch.setattr(deck_search, "_VARIANT_GROUP",
+    monkeypatch.setattr(deck_search, "_CHARACTER_OF",
                         {"unit-a-mg": "unit-a", "unit-a-snipe": "unit-a"})
     roster = [
         FakeUnit("b1", 1), FakeUnit("b2", 2),
@@ -65,13 +65,33 @@ def test_mode_variants_never_share_a_deck(monkeypatch):
         assert not {"unit-a-mg", "unit-a-snipe"} <= slugs
 
 
+def test_a_favorite_item_build_is_the_same_character_as_its_base():
+    # The Favorite Item is equipment on one owned unit, so her base and
+    # -signature encodings are two builds of one character and cannot both hold
+    # a seat. They are NOT candidates the engine may choose between - owning the
+    # item is settled before the search runs.
+    from app import deck_search
+
+    assert deck_search.character_of("miranda-signature") == "miranda"
+    assert deck_search.character_of("miranda") == "miranda"
+    assert not deck_search._no_character_clash(
+        [FakeUnit("miranda", 1), FakeUnit("miranda-signature", 1)])
+
+
+def test_a_slug_with_no_sibling_build_is_its_own_character():
+    from app import deck_search
+
+    assert deck_search.character_of("crown") == "crown"
+    assert deck_search._no_character_clash([FakeUnit("crown", 2), FakeUnit("blanc", 1)])
+
+
 def test_reference_deck_never_seats_two_variants_of_one_base(monkeypatch):
     # prune_candidate_pool's reference-deck construction calls evaluate_deck
     # directly and doesn't go through shape_combinations/feasible_orderings,
-    # so it never sees _no_variant_clash on its own - _reference_deck must be
+    # so it never sees _no_character_clash on its own - _reference_deck must be
     # clash-aware itself (deck_search.py's controller-added Task 6 item).
     import app.deck_search as ds
-    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+    monkeypatch.setattr(ds, "_CHARACTER_OF",
                         {"unit-a-mg": "unit-a", "unit-a-snipe": "unit-a"})
     by_tier = {
         1: [FakeUnit("b1", 1)],
@@ -88,15 +108,15 @@ def test_reference_deck_never_seats_two_variants_of_one_base(monkeypatch):
 
 
 def test_reference_deck_never_seats_a_cross_tier_variant_sibling(monkeypatch):
-    # _variant_safe_top only guards the B3 picks against EACH OTHER - it
+    # _character_safe_top only guards the B3 picks against EACH OTHER - it
     # doesn't know the B1 slot is occupied too. A MODE_VARIANTS pair spanning
     # tiers (VARIANT_BURST_TIERS, e.g. Rapi: Red Hood's Combat Assist B1
     # stand-in vs. her Burst-3 self) needs the B1's own sibling filtered out
     # of the B3 pool, or _reference_deck can seat both variants of one base
-    # at once - the exact clash _no_variant_clash forbids for real candidate
+    # at once - the exact clash _no_character_clash forbids for real candidate
     # decks (found by exercising this path with real Rapi data, Task 7).
     import app.deck_search as ds
-    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+    monkeypatch.setattr(ds, "_CHARACTER_OF",
                         {"unit-a-b1": "unit-a", "unit-a-b3": "unit-a"})
     by_tier = {
         1: [FakeUnit("unit-a-b1", 1)],
@@ -119,7 +139,7 @@ def test_reference_deck_accepts_the_clash_when_no_legal_b3_pool_remains(monkeypa
     # reference below 5 units (breaking _TIER_SLOT's fixed slot-4 assumption
     # downstream).
     import app.deck_search as ds
-    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+    monkeypatch.setattr(ds, "_CHARACTER_OF",
                         {"unit-a-b1": "unit-a", "unit-a-b3": "unit-a"})
     by_tier = {
         1: [FakeUnit("unit-a-b1", 1)],
@@ -133,14 +153,14 @@ def test_reference_deck_accepts_the_clash_when_no_legal_b3_pool_remains(monkeypa
 
 def test_reference_deck_tops_up_b3_when_same_tier_dedup_shorts_the_pool(monkeypatch):
     # The len(b3_pool) < 3 fallback above only covers the CROSS-TIER filter
-    # shortening b3_pool itself. _variant_safe_top's SAME-TIER dedup (two
+    # shortening b3_pool itself. _character_safe_top's SAME-TIER dedup (two
     # variants of one base both surviving that filter, e.g. Cinderella:
     # Crystal Wave's MG/Snipe modes) can independently return fewer than 3
     # picks even though b3_pool has 3+ units - _reference_deck must top back
     # up from b3_pool, accepting the clash, rather than return a 4-unit
     # reference.
     import app.deck_search as ds
-    monkeypatch.setattr(ds, "_VARIANT_GROUP", {"cw-mg": "cw", "cw-snipe": "cw"})
+    monkeypatch.setattr(ds, "_CHARACTER_OF", {"cw-mg": "cw", "cw-snipe": "cw"})
     by_tier = {
         1: [FakeUnit("b1", 1)],
         2: [FakeUnit("b2", 2)],
@@ -347,10 +367,10 @@ def test_prune_swap_in_never_measures_two_variants_together(monkeypatch):
     # If the reference deck seats one mode variant in a non-last B3 slot
     # (index 2 or 3, not the "weakest B3" slot 4 that swap-ins normally
     # replace), swapping its sibling into slot 4 would seat both variants at
-    # once - the exact clash _variant_safe_top exists to keep out of the
+    # once - the exact clash _character_safe_top exists to keep out of the
     # reference itself. Every deck the swap-in loop measures must stay clash-free.
     import app.deck_search as ds
-    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+    monkeypatch.setattr(ds, "_CHARACTER_OF",
                         {"unit-a-mg": "unit-a", "unit-a-snipe": "unit-a"})
     roster = [
         FakeSpec("b1", 1),
@@ -389,7 +409,7 @@ def test_swap_slot_refuses_a_cross_tier_variant_sibling(monkeypatch):
     # either: it would leave the tier-1 sibling seated too, so no clean
     # single-slot swap exists and _swap_slot must say so.
     import app.deck_search as ds
-    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+    monkeypatch.setattr(ds, "_CHARACTER_OF",
                         {"unit-a-b1": "unit-a", "unit-a-b3": "unit-a"})
     reference = [
         FakeUnit("unit-a-b1", 1),  # tier-1 variant seated at the tier-1 slot
@@ -404,10 +424,10 @@ def test_prune_cross_tier_variant_never_breaks_shape_or_clashes(monkeypatch):
     # Integration version of the above through the real swap-in loop:
     # prune_candidate_pool must never hand evaluate_deck a deck that either
     # drops below one tier-1 unit (shape violation) or seats both "unit-a"
-    # variants at once (the exact clash _no_variant_clash forbids for real
+    # variants at once (the exact clash _no_character_clash forbids for real
     # candidate decks).
     import app.deck_search as ds
-    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+    monkeypatch.setattr(ds, "_CHARACTER_OF",
                         {"unit-a-b1": "unit-a", "unit-a-b3": "unit-a"})
     roster = [
         FakeSpec("unit-a-b1", 1),  # sole tier-1 unit -> seats the reference's tier-1 slot
@@ -450,7 +470,7 @@ def test_prune_measures_cross_tier_sibling_instead_of_starving_it(monkeypatch):
     # scored an unmeasured 0.0 that would sort it out of the pool as an
     # artifact of measurement order, not weakness.
     import app.deck_search as ds
-    monkeypatch.setattr(ds, "_VARIANT_GROUP",
+    monkeypatch.setattr(ds, "_CHARACTER_OF",
                         {"unit-a-b1": "unit-a", "unit-a-b3": "unit-a"})
     roster = [
         FakeSpec("unit-a-b1", 1, base_stats={"atk": 500.0}),  # top-prior B1
@@ -490,7 +510,7 @@ def test_cross_tier_reference_rejects_an_alternative_that_clashes_elsewhere(monk
     # unit-c-snipe (higher prior than the only clash-free option) is exactly
     # the illegal pick the old filter would have accepted.
     import app.deck_search as ds
-    monkeypatch.setattr(ds, "_VARIANT_GROUP", {
+    monkeypatch.setattr(ds, "_CHARACTER_OF", {
         "unit-a-b1": "unit-a", "unit-a-b3": "unit-a",
         "unit-c-mg": "unit-c", "unit-c-snipe": "unit-c",
     })
@@ -519,7 +539,7 @@ def test_cross_tier_reference_rejects_an_alternative_that_clashes_elsewhere(monk
         slugs = {u.slug for u in deck}
         assert not {"unit-a-b1", "unit-a-b3"} <= slugs
         assert not {"unit-c-mg", "unit-c-snipe"} <= slugs
-        assert ds._no_variant_clash(deck)
+        assert ds._no_character_clash(deck)
 
 
 def test_prune_keeps_synergy_partners_together(monkeypatch):
