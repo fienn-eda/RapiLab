@@ -28,6 +28,9 @@ vi.mock('../api/recommend', () => ({
 vi.mock('../api/recommendRaid', () => ({
   recommendRaidDecks: vi.fn(),
 }))
+vi.mock('../api/evaluateDecks', () => ({
+  evaluateDecks: vi.fn(),
+}))
 vi.mock('../api/supportedUnits', () => ({
   getSupportedUnits: vi.fn(),
 }))
@@ -37,6 +40,7 @@ vi.mock('../hooks/usePortraitManifest', () => ({
 
 import { recommendDecks } from '../api/recommend'
 import { recommendRaidDecks } from '../api/recommendRaid'
+import { evaluateDecks } from '../api/evaluateDecks'
 import { getSupportedUnits } from '../api/supportedUnits'
 
 const nikke = (slug: string): UserNikkeState => ({
@@ -73,6 +77,7 @@ beforeEach(() => {
 afterEach(() => {
   vi.mocked(recommendDecks).mockReset()
   vi.mocked(recommendRaidDecks).mockReset()
+  vi.mocked(evaluateDecks).mockReset()
   vi.mocked(getSupportedUnits).mockReset()
 })
 
@@ -499,6 +504,98 @@ describe('RecommendPanel draft mode', () => {
   })
 })
 
+describe('RecommendPanel evaluate mode', () => {
+  const supportedUnits = ['a', 'b', 'c', 'd', 'e'].map((slug, i) => ({
+    slug,
+    name: slug.toUpperCase(),
+    burstTier: ((i % 3) + 1) as 1 | 2 | 3,
+    element: 'Iron' as const,
+  }))
+
+  it('평가 모드는 25칸을 다 채우기 전에는 제출을 막는다', async () => {
+    const user = userEvent.setup()
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
+  })
+
+  it('평가 모드에서는 잠금 토글이 없다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+
+    // Seat a unit so the draft editor actually draws a slot — with nothing
+    // placed, "no lock button" would be true regardless of showLocks. The
+    // palette's own "사용" toggle also carries aria-pressed, so scope on the
+    // lock button's distinct label ("고정") rather than the pressed role alone.
+    dropOnDeck(1, 'a')
+    expect(screen.getByRole('button', { name: '덱 1에서 A 제거' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /고정/ })).not.toBeInTheDocument()
+  })
+
+  it('선택한 덱 수만큼 5명씩 다 채워야 제출 버튼이 켜진다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+
+    for (const slug of ['a', 'b', 'c', 'd']) dropOnDeck(1, slug)
+    expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
+
+    dropOnDeck(1, 'e')
+    expect(screen.getByRole('button', { name: /계산/ })).toBeEnabled()
+  })
+
+  it('선택한 덱만큼 evaluate-decks에 제출하고 결과를 렌더한다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+
+    await user.click(screen.getByRole('button', { name: /계산/ }))
+
+    expect(evaluateDecks).toHaveBeenCalledWith(
+      {
+        roster: fullRoster,
+        decks: [
+          {
+            units: ['a', 'b', 'c', 'd', 'e'],
+            boss: {
+              element: null,
+              core_hittable: false,
+              enemy_def: 0,
+              fight_duration: 180,
+              part_destructible: false,
+            },
+          },
+        ],
+      },
+      expect.any(AbortSignal),
+    )
+    expect(recommendRaidDecks).not.toHaveBeenCalled()
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+    expect(screen.getByText('100 딜', { exact: false })).toBeInTheDocument()
+  })
+})
+
 describe('RecommendPanel mode switch', () => {
   it('does not render the previous mode\'s result after switching modes without resubmitting', async () => {
     const user = userEvent.setup()
@@ -522,6 +619,39 @@ describe('RecommendPanel mode switch', () => {
 
     await user.click(screen.getByLabelText(/드래프트 기반/i))
     expect(screen.queryByText(/모두 함께 편성/)).not.toBeInTheDocument()
+    expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('다른 모드로 바꾸면 평가 결과가 새어 보이지 않는다', async () => {
+    // 평가 성공 상태를 만든 뒤 '단일 덱'으로 전환하면 결과가 사라져야 한다 -
+    // 기존 raidResultMode 가드가 raid/draft 사이에서 지키는 것과 같은 계약.
+    const user = userEvent.setup()
+    const supportedUnits = ['a', 'b', 'c', 'd', 'e'].map((slug, i) => ({
+      slug,
+      name: slug.toUpperCase(),
+      burstTier: ((i % 3) + 1) as 1 | 2 | 3,
+      element: 'Iron' as const,
+    }))
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: /평가/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+    await user.click(screen.getByRole('button', { name: /계산/ }))
+
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: /단일 덱/ }))
     expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
   })
 })
