@@ -107,6 +107,32 @@ engine 11.1754, high by 3.4%) and a settled ally-burst base shot reads
 7,868,058 (ratio 4.3615, engine 4.5641, high by 4.7%). Her deck's buffs are not
 what inflates her either.
 
+AND THE COUNT WAS THEN TAKEN (Fienn, 180 sec range, same deck, 2026-07-28):
+86 shots - 14 Fully Active and 70 base. The Fully Active count is EXACT; the
+engine's base count is 96, over by 37%. Correcting only that puts her at
+1.137x, and applying the 3.4-4.7% per-shot over-count on top puts her at 1.088x
+- so between them the two measured layers account for her whole residual.
+
+Her charge is fixed at 1.2 / 3.2 sec by Shades of White, so the missing time is
+not charge speed. Budgeting the 180 sec against her own count: 44.8 sec
+charging Fully Active + 84.0 sec charging base + 7.1 sec reloading (7 reloads
+at her 98.42% overload) = 135.9 sec, leaving 44.1 SEC UNACCOUNTED - 0.526 sec
+per shot that the engine does not model.
+
+The likely mechanism is Auto Fire itself: the volley of 5 (or 15) sequential
+hits has to play out before the next charge can start, which is why this shows
+up on her and not on charge weapons generally. The engine's own
+CHARGE_INTERVAL_FLOOR points the same way - 10/29 = 0.345 sec came from
+Cinderella firing 29 shots in 10 sec with her charge driven to ~0 by +100%
+charge speed, i.e. it is what remains when the charge vanishes. That is a
+per-shot RECOVERY, not a floor.
+
+What is NOT settled is how the 44.1 sec splits between her two modes: a flat
+0.526 sec per shot fits, and so does a recovery proportional to the volley
+(0.394 sec on a 5-hit base shot, 1.18 sec on a 15-hit Fully Active one). One
+reading of the gap between two consecutive base shots decides it. Do not fit a
+constant to the total without that - see docs/engine-gaps.md.
+
 So the whole residual is COUNTS. Taking the Fully Active block at its measured
 3.4%: 14 shots worth 1.083B become 1.047B, her record leaves 0.636B for the
 base block, and the engine puts that at 1.138B over 96 shots. The base block
