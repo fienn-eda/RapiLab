@@ -59,3 +59,18 @@ def test_draft_longer_than_num_decks_is_422():
                       {"units": [{"slug": FEASIBLE[1]}]}]}
     resp = client.post("/api/recommend-raid", json=body)
     assert resp.status_code == 422
+
+
+def test_variant_alternatives_omits_favorite_item_pairs():
+    # A drafted seat naming `miranda` is a concrete spec, not an ambiguous one:
+    # there is no mode for the engine to settle. Only a base the roster loader
+    # fans out (a MODE_VARIANTS base) travels with alternatives.
+    from app.api import _variant_alternatives
+    from app.user_roster import load_roster
+    from tests.test_user_roster import _state
+
+    specs, _ = load_roster([_state("miranda"), _state("miranda-signature"),
+                            _state("bready")])
+    _by_slug, alternatives = _variant_alternatives(specs)
+    assert "miranda" not in alternatives
+    assert set(alternatives) == {"bready"}

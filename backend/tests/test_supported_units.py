@@ -104,3 +104,12 @@ def test_supported_units_endpoint():
     assert by_slug["bready"]["candidates"] == ["bready-lingering",
                                               "bready-recommended"]
     assert by_slug["crown"]["candidates"] is None
+
+
+def test_a_favorite_item_base_carries_no_candidate_list():
+    """`candidates` means "the engine picks among these". A Favorite Item build
+    is not a choice the engine makes, so miranda must not advertise her
+    -signature encoding as one - even though the two are the same character."""
+    units = {u["slug"]: u for u in supported_units()}
+    assert "candidates" not in units["miranda"]
+    assert "candidates" not in units["miranda-signature"]
