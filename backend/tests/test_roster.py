@@ -367,7 +367,13 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # 741.7M and 759.4M -> 780.9M, and the RATIO rose 1.0514 -> 1.0529 by the
     # same mechanism as the entry above: the nuke fires off a shot COUNT, so
     # the extra shots a reload saving buys carry it, and each is now worth more.
-    assert round(dmg_with / dmg_without, 4) == round(780921864.3566974 / 741664627.6785583, 4)
+    #
+    # Re-baselined 2026-07-28 once more: Helm now carries the 0.4 sec charge
+    # motion delay Fienn timed (attack_rate.CHARGE_MOTION_DELAY_SECONDS), so
+    # each of her shots occupies 1.4 sec rather than 1.0. The RATIO FELL
+    # 1.0529 -> 1.0494, which is the point of the delay: a reload saving buys
+    # the same seconds back, but seconds are worth fewer shots now.
+    assert round(dmg_with / dmg_without, 4) == 1.0494
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

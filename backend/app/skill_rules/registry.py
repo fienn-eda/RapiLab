@@ -15,6 +15,7 @@ the burst cycle (e.g. Helm: Aquamarine's Aegis Cannon Suppression Fire) - see
 separate from `_BUILDERS` so the ~25 existing builders' 2-tuple return shape
 never has to change for the one or two Nikkes that need this.
 """
+from app.attack_rate import CHARGE_MOTION_DELAY_SECONDS
 from app.skill_rules.ada_wong import build_ada_wong_rules, build_flash_grenade_periodic_nuke
 from app.skill_rules.ade_agent_bunny import build_ade_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
@@ -990,6 +991,27 @@ def get_burst_damage_type(slug):
     matters for a slug that has a burst nuke - see raid_simulator's
     burst_damage_types."""
     return _BURST_DAMAGE_TYPES.get(slug, "attack")
+
+
+# A unit that pauses between firing a charged shot and starting the next charge
+# (attack_rate.CHARGE_MOTION_DELAY_SECONDS). Fienn watched for it in game and
+# named these five; Liberalio is a Sniper Rifle WITHOUT it, which is why this is
+# a per-unit list and not a weapon-class constant (2026-07-28). Only her own
+# delay has been timed - 0.4 sec on Snow White: Heavy Arms - so the others carry
+# the same value on the strength of "it is there", not of a second stopwatch.
+_CHARGE_MOTION_DELAY = frozenset({
+    "snow-white-heavy-arms",
+    "ade-agent-bunny",
+    "helm", "helm-signature",
+    "bready-lingering", "bready-recommended",
+    "velvet",
+})
+
+
+def get_charge_motion_delay(slug):
+    """Seconds this Nikke waits between a charged shot and the next charge; 0
+    for the vast majority - see `_CHARGE_MOTION_DELAY`."""
+    return CHARGE_MOTION_DELAY_SECONDS if slug in _CHARGE_MOTION_DELAY else 0.0
 
 
 def get_burst_resolves_after_cast(slug):

@@ -52,6 +52,97 @@ Modeled (DPS-relevant):
   (1 + 158.4% Sequential attack damage) - `every_during_segment` /
   `every_outside_segment` (Task 8) keep these mutually exclusive per shot.
 
+AUDITED, 2026-07-28, and the per-hit layer is exonerated a second time. In the
+recorded deck 4 the engine reproduces Fienn's own range ratio to five decimals
+(a base charge's 5-hit volley reads 12.60024x its 41.9% sweep against her
+measured 12.60025), every term of one shot's damage formula reproduces by hand,
+and the burst cadence is corroborated by CINDERELLA - same deck, same shared
+buffs, 0.971x. A squad-wide over-count would have moved her too.
+
+Three readings of the kit that could each have carried the residual were put to
+Fienn and came back confirming the model (2026-07-28): Auto Fire fires 15 hits
+per Fully Active SHOT (not 15 across the burst), and BOTH Fully Active shots
+carry the +528% Charge Damage and +158.4% Sequential attack damage - so "for 1
+round(s)" does not mean only one of them. The third did not: Fully Active
+SHARES her magazine with the normal state, which the engine had wrong (see
+`shares_magazine` in build_fully_active_weapon_mode_schedule). Fixing it took
+her 1.386x -> 1.320x.
+
+She is still the run's largest single error at +0.539B, and the sensitivity is
+recorded here so the next session does not re-derive it. Zeroing one bullet at
+a time, against her 1.320x: Burst-Stage-3 ATK +73.92% -> 1.039x, boosted ammo
+15->5 -> 1.069x, Full-Charge ATK +46.84% -> 1.153x, burst Attack Damage +84.48%
+-> 1.194x, Sequential +158.4% -> 1.211x, Fully Active Charge +528% -> 1.283x.
+The last four are range-measured and the ammo is counted in game, so the
+remaining suspect list is short - and 46.5% of her damage comes from just 14
+Fully Active shots, which is why anything about that block moves her so far.
+
+TWO MORE RANGE READINGS SETTLE THE TOP OF THAT LIST (Fienn, 2026-07-28). Both
+compare her non-crit non-core normal attack BEFORE any burst against one inside
+the first Full Burst window, so the whole buff stack that arrives at the burst
+is one ratio:
+
+- Moran(FI) + Crown + Rapi: Red Hood (taking Burst 3) + her. Measured
+  4,697,120 / 1,475,242 = 3.18397; the engine gives 3.35587, high by 5.4%.
+- Rapi (Burst 1) + Crown + her, so SHE takes the Burst 3 seat and the reading
+  is a Fully Active shot: measured 25,931,088 / 1,475,242 = 17.5775; the engine
+  gives 18.7239, high by 6.5%.
+
+Dividing the two isolates her own burst stack - Fully Active's +84.48% Attack
+Damage, the +528% Charge Damage, the Sequential bullet and the 15-round volley
+- at 6.5 / 5.4 = 1.011. HER OWN KIT IS 1% OVER. The 5.4% belongs to the allied
+buffs the two decks share (Crown, Rapi, Moran).
+
+And the sensitivity table's top entry is now dead: strip the Burst-Stage-3 ATK
++73.92% and the engine reads 2.42127 against Fienn's 3.18397 - 24% LOW. The
+buff is real, applies to her, and is roughly the right size.
+
+THE RECORDED DECK ITSELF WAS THEN MEASURED (Fienn, 2026-07-28) and clears the
+last of the per-shot layer. Volume + Mint + Prika + Cinderella + her, on the
+rotation she actually plays (Volume+Prika+her, Volume+Mint+Cinderella,
+Volume+Mint+her, repeating - which is exactly the ordering the engine picks on
+its own, and its 14 Full Bursts match her count). Against a pre-burst baseline
+of 1,803,987: her own-burst Fully Active shot reads 19,490,867 (ratio 10.8043,
+engine 11.1754, high by 3.4%) and a settled ally-burst base shot reads
+7,868,058 (ratio 4.3615, engine 4.5641, high by 4.7%). Her deck's buffs are not
+what inflates her either.
+
+AND THE COUNT WAS THEN TAKEN (Fienn, 180 sec range, same deck, 2026-07-28):
+86 shots - 14 Fully Active and 70 base. The Fully Active count is EXACT; the
+engine's base count is 96, over by 37%. Correcting only that puts her at
+1.137x, and applying the 3.4-4.7% per-shot over-count on top puts her at 1.088x
+- so between them the two measured layers account for her whole residual.
+
+Her charge is fixed at 1.2 / 3.2 sec by Shades of White, so the missing time is
+not charge speed. Budgeting the 180 sec against her own count: 44.8 sec
+charging Fully Active + 84.0 sec charging base + 7.1 sec reloading (7 reloads
+at her 98.42% overload) = 135.9 sec, leaving 44.1 SEC UNACCOUNTED - 0.526 sec
+per shot that the engine does not model.
+
+The likely mechanism is Auto Fire itself: the volley of 5 (or 15) sequential
+hits has to play out before the next charge can start, which is why this shows
+up on her and not on charge weapons generally. The engine's own
+CHARGE_INTERVAL_FLOOR points the same way - 10/29 = 0.345 sec came from
+Cinderella firing 29 shots in 10 sec with her charge driven to ~0 by +100%
+charge speed, i.e. it is what remains when the charge vanishes. That is a
+per-shot RECOVERY, not a floor.
+
+What is NOT settled is how the 44.1 sec splits between her two modes: a flat
+0.526 sec per shot fits, and so does a recovery proportional to the volley
+(0.394 sec on a 5-hit base shot, 1.18 sec on a 15-hit Fully Active one). One
+reading of the gap between two consecutive base shots decides it. Do not fit a
+constant to the total without that - see docs/engine-gaps.md.
+
+So the whole residual is COUNTS. Taking the Fully Active block at its measured
+3.4%: 14 shots worth 1.083B become 1.047B, her record leaves 0.636B for the
+base block, and the engine puts that at 1.138B over 96 shots. The base block
+would have to be 0.558 of what the engine gives - about 51 base shots, not 96,
+i.e. roughly 62% firing uptime across the 180 sec where the engine assumes
+continuous fire. What that means is the open question: a uniform uptime cut
+cannot be the whole answer, because Cinderella sits in the same deck at 0.971x
+while Volume, Mint and Prika read 1.25-1.50x. Counting her actual normal
+attacks in one run is the measurement that would settle it.
+
 Deferred: DEF up 42.24% (defensive, inert), Pierce (convention, same as
 Red Hood/Snow White's Pierce bullets - no engine representation), the 41.9%
 destructible-projectile sweep (no destructible projectiles modeled), Lock-On
@@ -189,7 +280,13 @@ def build_fully_active_weapon_mode_schedule(values):
     uses = int(float(burst["description_value_03"]))
 
     def schedule(context, fight_duration):
-        return [{"start": t, "until_shots": uses, "profile": profile}
+        # Fully Active is not a weapon swap - it only re-times her own charge
+        # and widens Auto Fire - so its shots come out of the SAME magazine as
+        # her normal state (Fienn, in game, 2026-07-28). Without that, she was
+        # firing two free rounds per burst AND restarting full afterwards,
+        # which left her reloading once in a 180-sec fight.
+        return [{"start": t, "until_shots": uses, "profile": profile,
+                 "shares_magazine": True}
                 for t in context.burst_times.get("snow-white-heavy-arms", [])]
 
     return schedule

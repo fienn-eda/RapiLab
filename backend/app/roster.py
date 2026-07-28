@@ -24,6 +24,7 @@ from app.skill_rules.registry import (
     get_burst_cooldown_reduction,
     get_burst_damage_type,
     get_burst_resolves_after_cast,
+    get_charge_motion_delay,
     get_burst_delay,
     get_burst_hit_count,
     get_per_shot_rules,
@@ -112,7 +113,14 @@ def assemble_simulation_inputs(ordered_deck):
             member["burst_delay"] = burst_delay
         deck.append(member)
         base_stats[spec.slug] = spec.base_stats
-        weapon_stats[spec.slug] = spec.weapon_stats
+        # A unit that pauses between a charged shot and the next charge carries
+        # that gap on its weapon stats, so every shot-timeline path picks it up
+        # (see attack_rate.CHARGE_MOTION_DELAY_SECONDS).
+        motion_delay = get_charge_motion_delay(spec.slug)
+        weapon_stats[spec.slug] = (
+            {**spec.weapon_stats, "charge_motion_delay": motion_delay}
+            if motion_delay else spec.weapon_stats
+        )
         rounds = get_ammo_rounds_per_shot(spec.slug)
         if rounds != (1.0, 1.0):
             ammo_rounds_per_shot[spec.slug] = rounds
