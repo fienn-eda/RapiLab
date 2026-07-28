@@ -106,3 +106,21 @@ def test_rejects_a_deck_with_no_feasible_burst_ordering():
 
     assert response.status_code == 422
     assert "1번" in response.json()["detail"]
+
+
+def test_infeasible_message_does_not_claim_a_missing_tier_it_has():
+    """1×B1·3×B2·1×B3처럼 세 티어가 다 있어도 ALLOWED_SHAPES 밖이면 여전히
+    불가능한 조합이다 - 메시지가 "티어가 없다"고 잘못 말하면 안 되고, 실제
+    허용 대형을 구체적으로 말해줘야 한다."""
+    not_a_shape = ["liter", "blanc", "crown", "grave", "modernia"]
+    roster = [_nikke(s) for s in not_a_shape]
+    response = client.post("/api/evaluate-decks",
+                           json=_request([{"units": not_a_shape, "boss": {}}], roster=roster))
+
+    assert response.status_code == 422
+    detail = response.json()["detail"]
+    assert "1번" in detail
+    # 이 덱은 B1/B2/B3를 모두 가졌으므로 "모두 필요하다"는 말은 거짓이다.
+    assert "모두 필요" not in detail
+    # 실제 허용 대형(ALLOWED_SHAPES)을 구체적으로 알려줘야 actionable하다.
+    assert "1·2·2" in detail

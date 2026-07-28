@@ -370,9 +370,15 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
     try:
         out = evaluate_decks(decks, bosses, alternatives=alternatives)
     except InfeasibleDeck as e:
+        # 세 티어가 다 있어도 인원 수 조합(ALLOWED_SHAPES)이 아니면 여전히
+        # 불가능하다 - "1·2·3단계가 모두 필요하다"는 말은 거짓일 수 있으므로
+        # 실제 허용 대형을 구체적으로 알려준다. 두 번째 원인(버퍼 좌석 충돌)도
+        # 같은 문장에서 짚어서 원인마다 다른 예외를 새로 만들지 않는다.
         raise HTTPException(
-            422, f"{e.deck_index + 1}번 덱은 버스트 단계 조합이 성립하지 않아요 "
-                 f"(1·2·3단계가 모두 필요해요).")
+            422, f"{e.deck_index + 1}번 덱은 성립하는 버스트 순서가 없어요. 버스트 "
+                 f"1·2·3단계 인원 수가 1·1·3, 1·2·2, 2·1·2 중 하나가 아니거나, 같은 "
+                 f"단계에 모더니아·벨벳처럼 버퍼로만 앉아야 하는 니케가 여럿이면 "
+                 f"이렇게 돼요.")
 
     return EvaluateDecksResponse(
         decks=[DeckRecommendation(
