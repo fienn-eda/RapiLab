@@ -5,6 +5,55 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 정체성 그룹과 후보 팬아웃을 분리 — `registry.character_map()`을 `MODE_VARIANTS`와 나란히 신설
+
+- Date: 2026-07-28
+- Context: `deck_search._VARIANT_GROUP`(seat 배타 검사가 쓰는 "누가 같은 캐릭터인가" 표)이
+  `registry.MODE_VARIANTS` 하나에서 파생되고 있었는데, 그 표는 원래 **다른 질문**에
+  답하려고 무기변형 계획에서 생겼다 — "엔진이 후보로 무엇을 고를 수 있는가"
+  (`api._variant_alternatives`, `user_roster.load_roster`의 팬아웃, `supported_units`의
+  `candidates`). 애장품(`-signature`) 13쌍은 앞 질문("같은 소유 캐릭터")은 필요하지만
+  뒤 질문("엔진이 고를 선택지")은 절대 아니다 — 애장품 보유 여부는 이미 정해진 사실이지
+  엔진이 골라줄 선택지가 아니며, 팬아웃에 들어가면 **애장품이 없는 유저에게 엔진이
+  `-signature` 인코딩을 골라줄 수 있다**(없는 아이템의 효과를 얻는다). 실측으로 확인한
+  결함: `variant_base('miranda-signature')`가 `'miranda-signature'`를 돌려주고
+  `_no_variant_clash([miranda, miranda-signature])`가 `True`였다 — 엔진이 둘을 다른
+  캐릭터로 봤다. `rosterImport.ts`가 캐릭터당 슬러그 하나만 만들어서 실제 로스터로는
+  지금까지 안 닿았지만, 손으로 고친 `roster.json`이나 임포트/수집기 변경으로 둘 다
+  들어오면 유니온 레이드의 "재사용 불가" 전제가 깨진다(한 캐릭터가 두 덱에 앉는다).
+- Decision: 표를 둘로 나눈다. **`registry.character_map()`**(신설, 정체성 전용) — 슬러그
+  → 소유 캐릭터, 매니페스트의 `data_slug` 그룹핑에서 지연 파생(`get_skill_value_manifest`와
+  같은 캐시 패턴). `MODE_VARIANTS`는 **팬아웃 전용으로 남는다**(내용 불변, 독스트링만
+  "정체성 표가 아니다" 정정). 이름도 개념을 따라간다: `deck_search._VARIANT_GROUP` →
+  `_CHARACTER_OF`, `variant_base` → `character_of`, `_no_variant_clash` →
+  `_no_character_clash` (`deck_search.py`·`deck_allocation.py`·`surrogate.py`,
+  22곳 기계적 치환). 정체성이 필요한 소비자 넷 전부를 이 함수로 옮겼다: 덱 탐색 좌석
+  배타, 레이드 5덱 전체 배타(`deck_allocation`), `surrogate`, 그리고 팬아웃에 새지
+  않았음을 못박는 회귀 3종(로스터 로더가 캐릭터당 spec 1개만 냄·팔레트가
+  `-signature`에 `candidates`를 안 줌·드래프트 좌석 alternatives에 `-signature`가 없음).
+- Why: 정체성의 출처로 세 안을 견줬다. **(A, 채택) `data_slug` 그룹핑에서 파생** —
+  인코딩된 93개 슬러그를 매니페스트 `data_slug`로 묶으면 정확히 17그룹이 나오고, 그게
+  `MODE_VARIANTS` 4그룹 + `-signature` 13쌍과 오탐 없이 완전히 일치한다(데이터가 이미
+  정답을 갖고 있다). (B) `CHARACTER_GROUPS`를 손으로 작성 — 애장품을 새로 인코딩할
+  때마다 추가해야 하고, 빠뜨리면 같은 버그가 조용히 재발한다. (C) `MODE_VARIANTS` 파생 +
+  "`-signature`로 끝나면 base와 같은 캐릭터" 명명 규칙 — A와 달리 데이터로 검증되지
+  않는다. A가 지불하는 비용은 `data_slug`가 원래 "어느 파일에서 데이터를 읽나"라는
+  데이터 출처 필드라는 것 — 정체성 의미를 얹으면 나중에 출처 사정으로 `data_slug`가
+  바뀔 때 정체성이 조용히 따라 바뀐다. 이 결합은 **기대 그룹핑(17그룹)을 고정하는
+  drift 방어 테스트**(`test_character_map.py`)로 방어한다.
+- Consequences: 애장품 쌍이 둘 다 든 로스터가 들어와도(손으로 고친 `roster.json` 등)
+  이제 엔진은 둘을 한 캐릭터로 보고 점수가 높은 쪽만 앉힌다 — 유니온 5덱의 "재사용
+  불가" 전제가 지켜진다. 애장품이 없는 유저에게 엔진이 `-signature`를 골라주는 일은
+  여전히 일어나지 않는다(팬아웃 표는 안 넓어졌으므로). 기존 네 모드(단일 덱 추천 ·
+  레이드 분배 · 드래프트 · 고정 편성 평가) 동작은 이 표의 정의역 위에서 **완전히 동일한
+  값**을 내므로 회귀 없음(`_CHARACTER_OF`는 기존 `_VARIANT_GROUP`의 순수 확장). 새 시야:
+  이제 소비자가 정체성이 필요한지 팬아웃이 필요한지 물을 때 표 이름 자체가 답을
+  말해준다 — 앞으로 애장품류 쌍이 추가돼도 `MODE_VARIANTS`에 넣는 오진을 짓지 않는다.
+  백엔드 1519 passed / 3 skipped(구현 착수 시점) → **1529 passed / 3 skipped**(회귀
+  3종 추가 후). 스펙: `docs/superpowers/specs/2026-07-28-identity-vs-candidate-fanout-design.md`,
+  구현 계획: `docs/superpowers/plans/2026-07-28-identity-vs-candidate-fanout.md`.
+  브랜치 `worktree-identity-vs-fanout`, 트렁크(`wip/scaffolding`) 병합 전.
+
 ## Full Burst 보너스 판정을 「추가 대미지」 문구에서 **대미지 연산 시점**으로 확정하고, 문구 규칙과 그 배선을 삭제
 
 - Date: 2026-07-28

@@ -16,7 +16,7 @@ Which state she runs in is decided by her DECK, not by the player - and the
 engine has no "I received a buff of kind X" trigger to detect it. So the two
 states are encoded as two static slugs wired through `MODE_VARIANTS`, the
 same shape Cinderella: Crystal Wave's MG/Snipe modes use: the roster fans
-Bready out into both candidates, `_no_variant_clash` stops a deck fielding
+Bready out into both candidates, `_no_character_clash` stops a deck fielding
 both, and the search picks whichever scores higher. Fienn's ruling
 (2026-07-19) is that both must exist rather than hardcoding today's meta:
 she is paired with distributed-damage buffers now only because the available

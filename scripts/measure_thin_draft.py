@@ -26,7 +26,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.deck_search import (BossProfile, SEARCH_SIM_BUDGET,  # noqa: E402
                              _all_intra_tier_orderings, _shape_completions,
-                             variant_base)
+                             character_of)
 from app.user_roster import load_roster  # noqa: E402
 import app.deck_allocation as da  # noqa: E402
 from roster_fixture import real_roster  # noqa: E402
@@ -58,8 +58,8 @@ def main():
 
     for n in args.seats:
         seats = _draft_seats(specs, n)
-        placed = {variant_base(u.slug) for u in seats}
-        rest = [u for u in specs if variant_base(u.slug) not in placed]
+        placed = {character_of(u.slug) for u in seats}
+        rest = [u for u in specs if character_of(u.slug) not in placed]
         exhaustive = len(_all_intra_tier_orderings(_shape_completions(seats, rest)))
 
         t0 = time.perf_counter()

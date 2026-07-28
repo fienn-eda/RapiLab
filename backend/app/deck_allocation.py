@@ -1,9 +1,9 @@
 """Splits a roster into up to five disjoint decks against ONE boss profile,
 maximizing summed damage (Phase 5). Disjoint by OWNED CHARACTER, not by slug:
-the decks are fielded simultaneously, so a character encoded as several
-MODE_VARIANTS candidates still holds at most one seat in the whole allocation
-(see deck_search's `variant_base`). Same boss => total = sum of independent
-deck scores, so: greedy peeling (best deck on the remaining roster, repeat)
+the decks are fielded simultaneously, so a character encoded as several builds
+still holds at most one seat in the whole allocation (see deck_search's
+`character_of`). Same boss => total = sum of independent deck scores, so:
+greedy peeling (best deck on the remaining roster, repeat)
 lands near the optimum, and a budget-bounded same-tier swap hill-climb
 recovers its classic mistake (stacking synergy cores in deck 1 when splitting
 them supports two decks better). No optimality claim - set partitioning is
@@ -15,8 +15,8 @@ from app.cascade import Cascade, cached_fit_surrogate
 from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
                              _intra_tier_orderings, _orderings_within_budget,
                              _score_batch, _summarize, best_completions,
-                             completions_fit_budget, deck_is_valid,
-                             evaluate_deck, search_best_decks, variant_base)
+                             character_of, completions_fit_budget,
+                             deck_is_valid, evaluate_deck, search_best_decks)
 from app.sim_pool import SimPool, resolve_workers
 
 
@@ -34,7 +34,7 @@ _MIN_SWAP_BATCH = 4
 class InfeasibleDraft(ValueError):
     """A draft deck's locked/placed units fit no legal deck shape, the pool is
     exhausted before every drafted deck can be completed, or the draft spends one
-    owned character on two decks (two MODE_VARIANTS candidates of one base)."""
+    owned character on two decks (two builds of one character)."""
 
 
 def _seed_choices(seed, alternatives):
@@ -80,17 +80,17 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
         by_slug = {u.slug: u for u in roster}
         draft = draft or []
         # Pooling is per OWNED CHARACTER, not per slug: the player fields all of
-        # these decks simultaneously, so seating one MODE_VARIANTS candidate
-        # spends the character and retires her other candidates too. Keying on
-        # the slug instead let one Rapi: Red Hood hold a seat in deck 2 as B3 and
-        # another in deck 4 as B1 - a formation the game cannot produce.
-        drafted = [variant_base(u.slug) for deck in draft for u in deck]
+        # these decks simultaneously, so seating one build of a character spends
+        # her and retires her other builds too. Keying on the slug instead let
+        # one Rapi: Red Hood hold a seat in deck 2 as B3 and another in deck 4
+        # as B1 - a formation the game cannot produce.
+        drafted = [character_of(u.slug) for deck in draft for u in deck]
         placed = set(drafted)
         if len(drafted) != len(placed):
             twice = sorted({b for b in placed if drafted.count(b) > 1})
             raise InfeasibleDraft(
                 f"one owned character drafted into more than one deck: {twice}")
-        remaining = [u for u in roster if variant_base(u.slug) not in placed]
+        remaining = [u for u in roster if character_of(u.slug) not in placed]
 
         # One fit serves the whole allocation: the surrogate is additive over
         # unit membership, so coefficients learned on the full roster score any
@@ -131,8 +131,8 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
             units = [by_slug[s] for s in found["deck"]]
             decks.append(units)
             # newly-pulled fillers leave the pool
-            used = {variant_base(u.slug) for u in units} - placed
-            remaining = [u for u in remaining if variant_base(u.slug) not in used]
+            used = {character_of(u.slug) for u in units} - placed
+            remaining = [u for u in remaining if character_of(u.slug) not in used]
 
         # Probed against `remaining`, not `roster`, so a small leftover pool
         # never pays for a fit nothing will use; `probed` bounds the question to
@@ -151,8 +151,8 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
                 break
             units = [by_slug[slug] for slug in found[0]["deck"]]
             decks.append(units)
-            used = {variant_base(u.slug) for u in units}
-            remaining = [u for u in remaining if variant_base(u.slug) not in used]
+            used = {character_of(u.slug) for u in units}
+            remaining = [u for u in remaining if character_of(u.slug) not in used]
 
         # time_budget_sec caps the swap-improvement phase ONLY, starting when the
         # swap phase itself starts: greedy peeling above and the final ordering
@@ -188,7 +188,7 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
     # Read locks per OWNED CHARACTER: a drafted seat may name a character whose
     # MODE_VARIANTS candidate the engine chose, so locking `bready` has to hold
     # whichever of her candidates ended up seated.
-    locked = {variant_base(slug) for slug in locked}
+    locked = {character_of(slug) for slug in locked}
     cancel = cancel or NEVER
     scores = _score_batch(decks, boss, pool)
     improved = True
@@ -226,23 +226,23 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
 
     The one filter that CAN flip is `seated`, which upholds the one-owned-
     character rule across the whole allocation. Bringing a bench unit in spends
-    that character, so any other candidate offering one of her remaining
-    MODE_VARIANTS slugs stops being legal the moment a swap is accepted - the
-    unscanned tail is pruned there rather than trusted. Deck-to-deck swaps need
-    no such filter: both units are already seated, so exchanging them cannot
-    make a character appear twice.
+    that character, so any other candidate offering one of her remaining builds
+    stops being legal the moment a swap is accepted - the unscanned tail is
+    pruned there rather than trusted. Deck-to-deck swaps need no such filter:
+    both units are already seated, so exchanging them cannot make a character
+    appear twice.
     """
     # Bench swaps only: the incoming character must not already hold a seat -
     # in THIS deck or any other, since the player fields all of them at once.
-    seated = None if j is not None else {variant_base(u.slug)
+    seated = None if j is not None else {character_of(u.slug)
                                          for deck in decks for u in deck}
     # `locked` arrives already keyed by owned character (see _swap_pass).
     candidates = [(a, k)
-                  for a in range(5) if variant_base(decks[i][a].slug) not in locked
+                  for a in range(5) if character_of(decks[i][a].slug) not in locked
                   for k in range(len(partner))
-                  if variant_base(partner[k].slug) not in locked
+                  if character_of(partner[k].slug) not in locked
                   and decks[i][a].burst_tier == partner[k].burst_tier
-                  and (seated is None or variant_base(partner[k].slug) not in seated)]
+                  and (seated is None or character_of(partner[k].slug) not in seated)]
     width = 1 if j is None else 2      # decks re-scored per candidate
     improved = False
     start = 0
@@ -279,11 +279,11 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
             # `partner[k]` now holds the unit that LEFT deck i, and the character
             # who came in occupies decks[i][a]. Drop the unscanned candidates
             # that would seat her a second time.
-            seated.discard(variant_base(partner[k].slug))
-            seated.add(variant_base(decks[i][a].slug))
+            seated.discard(character_of(partner[k].slug))
+            seated.add(character_of(decks[i][a].slug))
             candidates = candidates[:start] + [
                 (a2, k2) for a2, k2 in candidates[start:]
-                if variant_base(partner[k2].slug) not in seated]
+                if character_of(partner[k2].slug) not in seated]
     return improved
 
 
@@ -300,11 +300,11 @@ def _better(a, b):
 
 
 def _leftover_against(alloc, roster):
-    # Base-keyed like the peel: a seated character's OTHER candidate slugs are
-    # not benched units the player could still field, so they never reach the
-    # bench (which the UI reads as "not allocated to a deck").
-    used = {variant_base(s) for d in alloc["decks"] for s in d["deck"]}
-    return sorted(u.slug for u in roster if variant_base(u.slug) not in used)
+    # Character-keyed like the peel: a seated character's OTHER builds are not
+    # benched units the player could still field, so they never reach the bench
+    # (which the UI reads as "not allocated to a deck").
+    used = {character_of(s) for d in alloc["decks"] for s in d["deck"]}
+    return sorted(u.slug for u in roster if character_of(u.slug) not in used)
 
 
 def recommend_from_draft(roster, boss, num_decks=5, draft=None,
@@ -324,11 +324,11 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
     draft = draft or []
     # Locks are per owned character, so a lock on `bready` still holds after the
     # engine settles on one of her candidates.
-    locked = {variant_base(slug) for slug in locked}
+    locked = {character_of(slug) for slug in locked}
     # from-scratch pass honors hard locks (seed ONLY the locked units, leaving
     # flexible seats free to explore all shapes) - without this, a scratch win
     # could drop a locked unit. Empty when there are no locks => pure from-scratch.
-    locked_seed = [[u for u in deck if variant_base(u.slug) in locked]
+    locked_seed = [[u for u in deck if character_of(u.slug) in locked]
                    for deck in draft]
     locked_seed = [d for d in locked_seed if d]
     if draft:
@@ -389,7 +389,7 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
                 if deck_is_valid(reading))
             for deck in draft)
 
-    pinned_by_deck = [[s for s in d["deck"] if variant_base(s) in locked]
+    pinned_by_deck = [[s for s in d["deck"] if character_of(s) in locked]
                       for d in recommended["decks"]]
     return {"recommended": recommended, "within_draft": within_draft,
             "baseline_total_damage": baseline_total, "pinned_by_deck": pinned_by_deck}
