@@ -14,7 +14,7 @@
 
 - 작업 디렉터리는 워크트리 `.claude/worktrees/identity-vs-fanout`, 브랜치 `worktree-identity-vs-fanout`. 트렁크는 `wip/scaffolding`이며 원격은 없다.
 - pytest는 `backend/`에서 실행한다: `cd backend && python -m pytest`.
-- **기준선: 백엔드 1413 passed / 3 skipped.** 이 계획이 추가하는 테스트만큼만 늘어야 하고, 기존 테스트는 하나도 깨지면 안 된다.
+- **기준선: 백엔드 1519 passed / 3 skipped** (트렁크 `8a1ed2c`에서 실측, 2026-07-28). 이 계획이 추가하는 테스트만큼만 늘어야 하고, 기존 테스트는 하나도 깨지면 안 된다.
 - 프론트엔드(`frontend/`)는 이 작업에서 **건드리지 않는다.**
 - `MODE_VARIANTS`의 **내용(entries)은 바꾸지 않는다.** 독스트링만 정정한다.
 - `VARIANT_BURST_TIERS`와 `SOLE_TIER1_SLUGS`는 이름도 내용도 **그대로 둔다** — 진짜 모드 변형 개념이다.
@@ -383,7 +383,7 @@ Expected: PASS. **여기서 통과하는 것이 정상이다** — Task 1·2가 
 - [ ] **Step 4: 전체 스위트를 돌린다**
 
 Run: `cd backend && python -m pytest -q 2>&1 | tail -3`
-Expected: 기준선 1413 + 신규 9 = **1422 passed / 3 skipped**
+Expected: 기준선 1519 + 신규 9 = **1528 passed / 3 skipped**
 
 - [ ] **Step 5: 커밋**
 
@@ -503,7 +503,7 @@ git commit -m "Cover the raid allocation against seating one character twice"
 - [ ] **Step 1: 백엔드 전체 스위트**
 
 Run: `cd backend && python -m pytest -q 2>&1 | tail -5`
-Expected: **1423 passed / 3 skipped** (기준선 1413 + 신규 10). 숫자가 다르면 실제 값을 기록하고 차이를 설명한다.
+Expected: **1529 passed / 3 skipped** (기준선 1519 + 신규 10). 숫자가 다르면 실제 값을 기록하고 차이를 설명한다.
 
 - [ ] **Step 2: 실제 로스터로 네 모드 회귀**
 

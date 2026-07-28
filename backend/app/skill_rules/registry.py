@@ -1121,6 +1121,7 @@ def get_dynamic_hit_count_nukes(slug, skill_values):
 
 import importlib
 import pkgutil
+from collections import defaultdict
 
 import app.skill_rules as _skill_rules_package
 
@@ -1141,3 +1142,41 @@ def get_skill_value_manifest(slug):
             merged.update(getattr(module, "SKILL_VALUE_MANIFESTS", {}))
         _skill_value_manifest_cache = merged
     return _skill_value_manifest_cache.get(slug)
+
+
+_character_map_cache = None
+
+
+def character_map():
+    """Slug -> the one OWNED CHARACTER whose build it is, for every slug whose
+    character has more than one encoded build.
+
+    This is the IDENTITY table: it answers "may these two hold a seat at the
+    same time", and the answer is no for two builds of one character, since the
+    player owns her once. A character with a single build is absent because
+    `.get(slug, slug)` already names her.
+
+    It is NOT MODE_VARIANTS, which answers the separate question of what the
+    engine may CHOOSE between. A Favorite Item build belongs here and must never
+    be fanned out: owning the item is a fact about the player, not a choice the
+    search gets to make for them.
+
+    Identity comes from the manifest's `data_slug`, which already names the
+    character a build's data is collected from; test_character_map pins the
+    grouping so a data-sourcing change cannot redraw it silently.
+
+    Built on first use, not at import: resolving the manifests walks every
+    module in this package, which includes this one.
+    """
+    global _character_map_cache
+    if _character_map_cache is None:
+        by_character = defaultdict(list)
+        for slug in ENCODED_SLUGS:
+            manifest = get_skill_value_manifest(slug) or {}
+            by_character[manifest.get("data_slug", slug)].append(slug)
+        _character_map_cache = {
+            slug: character
+            for character, slugs in by_character.items() if len(slugs) > 1
+            for slug in slugs
+        }
+    return _character_map_cache
