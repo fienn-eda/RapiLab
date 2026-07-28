@@ -333,3 +333,69 @@ def test_gauge_charge_time_stays_low_enough_to_rarely_bind():
     # (Fienn: most compositions fill the gauge faster than cooldowns clear).
     # Raising it slows every CDR-heavy deck, so a change needs an argument.
     assert BossProfile.gauge_charge_time == 2.0
+
+
+# --- Seats whose burst the player never spends -------------------------
+# A "totem" is seated for its passive kit and never bursts, and a unit can be
+# burst once and then held for the rest of the fight (Fienn's recorded raid:
+# Helm and Mihara are totems; Prika bursts only the opening cycle, after which
+# Mint takes the tier-2 seat). That is a choice made in the run, not a property
+# of the unit, so it arrives as `max_bursts` on the deck member.
+
+
+def test_a_totem_seat_never_bursts():
+    deck = make_deck()
+    deck[2]["max_bursts"] = 0
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=180.0, mode="auto")
+
+    assert not any(e["type"] == "burst" and e["slug"] == "b3_unit_a" for e in events)
+
+
+def test_a_totems_tier_mates_still_carry_the_cycle():
+    deck = make_deck()
+    deck[2]["max_bursts"] = 0
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=180.0, mode="auto")
+
+    tier3 = [e["slug"] for e in events if e["type"] == "burst" and e["tier"] == 3]
+    assert not any(e["type"] == "full_burst_missed" for e in events)
+    assert set(tier3) == {"b3_unit_b", "flex_unit"}
+
+
+def test_max_bursts_of_one_fires_the_opening_cycle_and_then_never_again():
+    deck = make_deck()
+    deck[2]["max_bursts"] = 1
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=180.0, mode="auto")
+
+    fires = [e["time"] for e in events if e["type"] == "burst" and e["slug"] == "b3_unit_a"]
+    assert fires == [5.0]
+
+
+def test_a_tier_of_nothing_but_totems_stalls_rather_than_bursting_one_anyway():
+    # Firing a held burst would credit the deck a Full Burst it never had - the
+    # same reasoning as a delayed unit alone in its tier.
+    deck = make_deck()
+    for member in deck:
+        if member["burst_tier"] == 3:
+            member["max_bursts"] = 0
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=60.0, mode="auto")
+
+    assert not any(e["type"] == "burst" for e in events)
+
+
+def test_a_totem_does_not_shorten_the_wait_for_a_tier_mate_on_cooldown():
+    # b3_unit_a is a totem, so the tier's readiness is b3_unit_b's alone: the
+    # second Full Burst waits a full 40 sec instead of being covered.
+    deck = make_deck()
+    deck[2]["max_bursts"] = 0
+    deck[4]["max_bursts"] = 0
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=180.0, mode="auto")
+
+    fires = [e["time"] for e in events if e["type"] == "burst" and e["tier"] == 3]
+    assert all(e == "b3_unit_b" for e in
+               [x["slug"] for x in events if x["type"] == "burst" and x["tier"] == 3])
+    assert all(b - a >= 40.0 for a, b in zip(fires, fires[1:]))

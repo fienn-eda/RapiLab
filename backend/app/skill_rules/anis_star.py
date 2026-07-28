@@ -11,9 +11,16 @@ Modeled (DPS-relevant):
   she's a Defender so ~everyone qualifies -> squad approx); squad Attack Damage.
 - Star Anis (burst): self Attack Damage while My Own Star; Shooting Stars, the
   summoned auto-attack that ticks 40.01% of final ATK every 0.25 sec for 10 sec
-  off each of her bursts (40 ticks per cycle - by far her largest damage source,
-  see `build_shooting_stars_scheduled_nukes`); and the window's fixed 0.7-sec
+  off each of her bursts (40 ticks per cycle, see
+  `build_shooting_stars_scheduled_nukes`); and the window's fixed 0.7-sec
   charge time (see `build_star_anis_burst_rules`).
+
+Her damage splits 61% normal attacks / 20% Shooting Stars / 19% Starfall in the
+recorded deck (measured 2026-07-28). The tick stream LOOKS dominant at 600 ticks
+against 201 shots, and this docstring called it "by far her largest source" until
+the split was actually measured - a tick carries neither the core hit (x1.5388)
+nor the projectile-explosion bucket (x1.4994) her normal attacks do. Count
+instances and you will rank her sources wrong; measure them.
 
 Shooting Stars IS `full_burst_bonus_eligible`. It carries no "as additional
 damage" phrase at all - it is a summon that attacks - and the phrase was only

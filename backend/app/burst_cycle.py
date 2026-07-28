@@ -33,6 +33,13 @@ spends them). The cycle-count and the time forms are not interchangeable -
 one unit's reason is a cycle count and the other's is a resource's fill time,
 and a fight's cycle length varies with the deck's cooldowns.
 
+A member may also carry `max_bursts`, capping how many times that SEAT spends
+its burst: 0 is a totem, seated for its passive kit and never burst at all, and
+1 is an opening burst then held for the rest of the fight. Unlike `burst_delay`,
+which is a property of the unit's own kit, this is a decision the player made in
+one particular run, so it only ever reaches the scheduler from a caller holding
+a real record - never from the registry.
+
 A deck missing any member of a burst tier can never complete a cycle at
 all - that's the one case still reported as "full_burst_missed" and ends
 the simulation, since no amount of waiting fixes it. Attack-rate-driven
@@ -54,12 +61,16 @@ FULL_BURST_DURATION = 10.0
 FULL_BURST_OPEN_DELAY = 1e-6
 
 
-def _ready_at(member, last_used_at, last_fired_at, cycle_index):
+def _ready_at(member, last_used_at, last_fired_at, cycle_index, fire_count):
     """When `member` may next burst: its plain cooldown, pushed later by any
     `burst_delay`. Returns infinity while a `skip_cycles` delay still holds,
     which drops the member out of its tier for that cycle - if it is the
     tier's only member the cycle simply doesn't fire, rather than crediting
-    the unit a burst it would not have taken."""
+    the unit a burst it would not have taken. A seat that has already spent
+    its `max_bursts` is out of its tier the same way, permanently."""
+    max_bursts = member.get("max_bursts")
+    if max_bursts is not None and fire_count[member["slug"]] >= max_bursts:
+        return float("inf")
     ready = last_used_at[member["slug"]] + member["cooldown"]
     delay = member.get("burst_delay")
     if not delay:
@@ -101,6 +112,7 @@ def simulate_burst_cycle(
     # Mirrors last_used_at but is never rewound by cooldown reduction, so a
     # burst_delay's min_interval measures real elapsed time.
     last_fired_at = dict(last_used_at)
+    fire_count = {member["slug"]: 0 for member in deck}
     members_by_tier = {
         tier: [member for member in deck if member["burst_tier"] == tier] for tier in (1, 2, 3)
     }
@@ -120,7 +132,7 @@ def simulate_burst_cycle(
 
         tier_ready_time = {
             tier: min(
-                _ready_at(member, last_used_at, last_fired_at, cycle_index)
+                _ready_at(member, last_used_at, last_fired_at, cycle_index, fire_count)
                 for member in members_by_tier[tier]
             )
             for tier in (1, 2, 3)
@@ -139,12 +151,14 @@ def simulate_burst_cycle(
             eligible = [
                 member
                 for member in members_by_tier[tier]
-                if _ready_at(member, last_used_at, last_fired_at, cycle_index) <= fire_time
+                if _ready_at(member, last_used_at, last_fired_at, cycle_index, fire_count)
+                <= fire_time
             ]
             chosen = eligible[0]
             events.append({"type": "burst", "tier": tier, "slug": chosen["slug"], "time": fire_time})
             last_used_at[chosen["slug"]] = fire_time
             last_fired_at[chosen["slug"]] = fire_time
+            fire_count[chosen["slug"]] += 1
             if on_tier_fire:
                 on_tier_fire(tier, chosen["slug"], fire_time)
             if tier == 3:

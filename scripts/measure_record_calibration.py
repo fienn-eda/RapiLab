@@ -25,7 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
-from raid_record import RECORD_BOSS, RECORD_DECKS, deck_total  # noqa: E402
+from raid_record import RECORD_BOSS, RECORD_DECKS, RECORD_ROTATIONS, deck_total  # noqa: E402
 from roster_fixture import real_roster  # noqa: E402
 
 
@@ -52,12 +52,21 @@ def _base_owner(by_slug, slug):
     return None
 
 
-def measure(name, boss, by_slug):
-    """(deck ratio, {slug: ratio}) for one recorded deck, or None if unseatable.
+def _per_unit(result):
+    per_unit = defaultdict(float)
+    for event in result["damage_log"]:
+        per_unit[event["slug"]] += event["damage"]
+    return per_unit
 
-    The best-damage ordering is chosen, matching `measure_deck_breakdown.py` -
-    seat order was not recorded, and the spread across orderings is reported so
-    the choice is visible rather than hidden.
+
+def measure(name, boss, by_slug):
+    """(deck ratio, {slug: ratio}, note) for one recorded deck, or None.
+
+    A deck whose rotation Fienn recorded is scored on THAT rotation alone - the
+    seat order he played and the bursts he actually spent. Without one, the best
+    of the feasible orderings is taken and its spread reported, so the choice
+    stays visible rather than hidden; that spread reached 0.793-1.081x, which is
+    why the rotations were worth asking for.
     """
     record = RECORD_DECKS[name]
     states, missing = _states_for(record, by_slug)
@@ -66,22 +75,33 @@ def measure(name, boss, by_slug):
     specs, excluded = load_roster(states)
     if excluded:
         return None, f"not encoded / not usable: {', '.join(excluded)}"
+    total = deck_total(name)
+
+    rotation = RECORD_ROTATIONS.get(name)
+    if rotation:
+        by_spec = {spec.slug: spec for spec in specs}
+        order = [by_spec[slug] for slug in rotation["order"]]
+        if order not in list(feasible_orderings(specs)):
+            return None, f"recorded seat order is not a feasible ordering: {rotation['order']}"
+        result = evaluate_deck(order, boss, max_bursts=rotation["max_bursts"])
+        per_unit = _per_unit(result)
+        held = ", ".join(f"{slug} x{n}" for slug, n in rotation["max_bursts"].items())
+        note = f"as played, bursts held: {held}"
+        return (result["total_damage"] / total,
+                {slug: per_unit[slug] / rec for slug, rec in record.items()}, note), None
+
     orderings = list(feasible_orderings(specs))
     if not orderings:
         return None, "no feasible burst ordering"
-
     scored = []
     for order in orderings:
         result = evaluate_deck(list(order), boss)
-        per_unit = defaultdict(float)
-        for event in result["damage_log"]:
-            per_unit[event["slug"]] += event["damage"]
-        scored.append((result["total_damage"], per_unit))
+        scored.append((result["total_damage"], _per_unit(result)))
     best_total, best_per_unit = max(scored, key=lambda s: s[0])
-    total = deck_total(name)
-    spread = (min(s[0] for s in scored) / total, max(s[0] for s in scored) / total)
-    ratios = {slug: best_per_unit[slug] / rec for slug, rec in record.items()}
-    return (best_total / total, ratios, spread, len(orderings)), None
+    note = (f"seat order unrecorded, best of {len(orderings)} spanning "
+            f"{min(s[0] for s in scored) / total:.3f}-{max(s[0] for s in scored) / total:.3f}x")
+    return (best_total / total,
+            {slug: best_per_unit[slug] / rec for slug, rec in record.items()}, note), None
 
 
 def main():
@@ -115,12 +135,11 @@ def main():
         if problem:
             print(f"{name}   SKIPPED - {problem}\n")
             continue
-        deck_ratio, ratios, spread, n_orderings = measured
+        deck_ratio, ratios, note = measured
         record = deck_total(name)
         sim_sum += deck_ratio * record
         record_sum += record
-        print(f"{name}   {deck_ratio:.3f}x   (record {record / 1e9:.3f}B, "
-              f"{n_orderings} orderings span {spread[0]:.3f}-{spread[1]:.3f}x)")
+        print(f"{name}   {deck_ratio:.3f}x   (record {record / 1e9:.3f}B, {note})")
         for slug, ratio in sorted(ratios.items(), key=lambda kv: -abs(kv[1] - 1)):
             flag = "  <--" if abs(ratio - 1) >= 0.25 else ""
             print(f"      {slug:<34} {ratio:>6.3f}x{flag}")

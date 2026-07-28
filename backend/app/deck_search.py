@@ -234,8 +234,17 @@ def feasible_orderings(roster):
                         yield ordered
 
 
-def evaluate_deck(ordered_deck, boss: BossProfile):
+def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None):
+    """`max_bursts` ({slug: N}) caps how many times a seat spends its burst, for
+    scoring a run the player actually played rather than one the scheduler would
+    choose: 0 is a totem seated for its passives alone, 1 an opening burst then
+    held. It is a decision made in the run, not a unit property, so it never
+    comes from the registry - only a caller with a real record supplies it."""
     inputs = assemble_simulation_inputs(ordered_deck)
+    if max_bursts:
+        for member in inputs["deck"]:
+            if member["slug"] in max_bursts:
+                member["max_bursts"] = max_bursts[member["slug"]]
     return simulate_raid(
         **inputs,
         enemy_def=boss.enemy_def,

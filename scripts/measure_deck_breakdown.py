@@ -32,7 +32,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # noqa: E402
 from app.models import UserNikkeState  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
-from raid_record import RECORD_BOSS  # noqa: E402  (the record's single source of truth)
+from raid_record import RECORD_BOSS, RECORD_ROTATIONS  # noqa: E402  (the record's source of truth)
 from roster_fixture import real_roster  # noqa: E402
 
 
@@ -70,6 +70,17 @@ def _states_for(slugs, use_synthetic):
     return states, f"real synced roster ({len(roster)} units)"
 
 
+def _recorded_rotation(slugs):
+    """The rotation Fienn played, if these five units ARE one of the recorded
+    decks. Naming a recorded deck must give the same numbers as
+    `measure_record_calibration.py`, so the seat order and the held bursts have
+    to follow the unit set rather than being asked for on the command line."""
+    for rotation in RECORD_ROTATIONS.values():
+        if set(rotation["order"]) == set(slugs):
+            return rotation
+    return None
+
+
 def _base_owner(by_slug, slug):
     """The owned state behind a variant slug, longest base first so
     `-crystal-wave-mg` resolves to `cinderella-crystal-wave`, not `cinderella`."""
@@ -102,17 +113,25 @@ def main():
                        part_destructible=RECORD_BOSS["part_destructible"],
                        enemy_def=args.enemy_def, fight_duration=args.duration)
 
-    orderings = list(feasible_orderings(specs))
-    if not orderings:
-        sys.exit("ERROR: this 5-unit set has no feasible burst ordering.")
-    best = max(orderings, key=lambda d: evaluate_deck(list(d), boss)["total_damage"])
-    result = evaluate_deck(list(best), boss)
+    rotation = _recorded_rotation(slugs)
+    if rotation:
+        by_spec = {spec.slug: spec for spec in specs}
+        best = [by_spec[slug] for slug in rotation["order"]]
+        result = evaluate_deck(best, boss, max_bursts=rotation["max_bursts"])
+        held = ", ".join(f"{slug} x{n}" for slug, n in rotation["max_bursts"].items())
+        ordering_note = f"as played, bursts held: {held}"
+    else:
+        orderings = list(feasible_orderings(specs))
+        if not orderings:
+            sys.exit("ERROR: this 5-unit set has no feasible burst ordering.")
+        best = max(orderings, key=lambda d: evaluate_deck(list(d), boss)["total_damage"])
+        result = evaluate_deck(list(best), boss)
+        ordering_note = f"best of {len(orderings)} feasible"
 
     print(f"roster:   {roster_note}")
     print(f"boss:     {args.element}, DEF {args.enemy_def:,.0f}, {args.duration:.0f}s, "
           f"core hittable, parts destructible")
-    print(f"ordering: {' > '.join(spec.slug for spec in best)}  "
-          f"(best of {len(orderings)} feasible)")
+    print(f"ordering: {' > '.join(spec.slug for spec in best)}  ({ordering_note})")
 
     per_unit = defaultdict(lambda: defaultdict(float))
     for event in result["damage_log"]:

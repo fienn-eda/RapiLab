@@ -46,8 +46,8 @@ RECORD_TOTAL = 34_767_622_294.0
 
 B = 1_000_000_000.0
 
-# deck name -> {slug: recorded damage}. Seat order is not recorded; the
-# harness enumerates feasible burst orderings itself.
+# deck name -> {slug: recorded damage}. Where RECORD_ROTATIONS below has no
+# entry, seat order is unknown and the harness enumerates feasible orderings.
 RECORD_DECKS = {
     "deck1": {
         "anchor-innocent-maid": 0.308 * B,
@@ -83,6 +83,39 @@ RECORD_DECKS = {
         "neon-vision-eye": 1.230 * B,
         "ark-ranger-black": 1.735 * B,
         "mihara-bonding-chain": 0.964 * B,
+    },
+}
+
+
+# How the bursts were actually spent, per deck (Fienn, 2026-07-28). `order` is
+# the seat order, which the scheduler reads as priority within a burst tier, and
+# `max_bursts` names the seats whose burst was held: 0 for a totem, seated for
+# its passive kit alone, 1 for an opening burst and then never again.
+#
+# This matters more than a tie-break. Two of the five decks seat THREE Burst 3s
+# and hold one of them, so the scheduler was covering Full Bursts with a burst
+# that was never spent - the tier waits on the two remaining cooldowns instead,
+# and the deck reaches Full Burst fewer times over the 180 sec.
+#
+# Decks 1 and 2 are not here: their seat order was never recorded, so they keep
+# the enumerate-and-take-the-best treatment. Their ordering spreads are narrow
+# (0.918-0.977x and 1.013-1.019x) where decks 3/4/5 spanned up to 0.793-1.081x,
+# which is why these three were the ones worth asking about.
+RECORD_ROTATIONS = {
+    "deck3": {
+        "order": ["rapi-red-hood-b1", "crown", "rei-ayanami-tentative-name",
+                  "asuka-shikinami-langley-wille", "helm-signature"],
+        "max_bursts": {"helm-signature": 0},
+    },
+    "deck4": {
+        "order": ["volume", "prika", "mint", "snow-white-heavy-arms", "cinderella"],
+        # Prika bursts the opening cycle only; Mint takes every tier-2 burst after.
+        "max_bursts": {"prika": 1},
+    },
+    "deck5": {
+        "order": ["moran-signature", "ade-agent-bunny", "neon-vision-eye",
+                  "ark-ranger-black", "mihara-bonding-chain"],
+        "max_bursts": {"mihara-bonding-chain": 0},
     },
 }
 
