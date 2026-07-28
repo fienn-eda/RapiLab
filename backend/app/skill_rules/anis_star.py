@@ -114,6 +114,14 @@ roughly +0.038B against the -0.074B that remains.
 Her element is NOT costing her anything: `elements.py` returns 1.0 for a
 disadvantaged attacker, not a penalty (Iron beats Electric, and NIKKE has no
 reverse malus).
+
+She is an RL, so she can NEVER collect the Effective Range Bonus at any distance
+(Fienn, 2026-07-28 - the rule lives in the encoding skill's
+references/damage-formula-reference.md). That is what makes her range footage
+read a major bucket of exactly 1.000000 before her burst and 1.500000 inside
+Full Burst, with no +0.30 term to account for, and it is why she is a good unit
+to measure the other terms against. When gap #16 wires the bonus, she must stay
+excluded.
 """
 from app.effects import Effect, Pulse
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule

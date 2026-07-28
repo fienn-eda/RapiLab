@@ -378,10 +378,23 @@ schedule is still deterministic - summons come from battle start plus the
 owner's burst times - so the unit module precomputes the time list and the
 engine only emits it, keeping summon bookkeeping out of the simulator. Declare
 spec dicts `{"schedule": fn(context, fight_duration) -> times, "percent",
-"damage_type"(optional), "full_burst_bonus_eligible"(optional)}`; wire via
+"damage_type"(optional), "full_burst_bonus_eligible"(optional),
+"core_eligible"(optional)}`; wire via
 `_SCHEDULED_NUKE_BUILDERS` / `get_scheduled_nukes`, threaded by `roster` into
 `simulate_raid`'s `scheduled_nukes` param. Times at or past `fight_duration` are
-dropped. Logged with `source="scheduled"`. The schedule may also read the owner's
+dropped. Logged with `source="scheduled"`. **`core_eligible: True` opts one
+scheduled instance into the Core Damage bonus**, against the general rule that
+only `source == "normal_attack"` collects it. Reach for it when the ticks are a
+SUMMON shooting rather than an effect ticking - a star or drone that aims and
+fires is a normal attack, just not its owner's, and the game lands it on the
+core. Anis: Star's Shooting Stars are the first consumer, settled by measuring
+one tick against one of her own shots in the same instant: the ratio came out as
+the bare coefficient ratio (0.0018%), meaning every modifier cancelled, so the
+tick sits in her normal attack's exact state - core AND its damage-type bucket
+(hers are `projectile_explosion`). Do NOT extend this to the same unit's other
+skill damage by association: her Starfall rider, measured the same day by a
+crit/non-crit pair, reads a major bucket of exactly 1.0 / 1.5 - no core.
+The schedule may also read the owner's
 own firing timeline off `context.shot_times[slug]` (filled by the weapon pass;
 empty without weapon stats) - that is how "a DoT per Full Charge" is expressed
 (Raven's Shock Wave). `context.shot_times` holds EVERY squad member's timeline,

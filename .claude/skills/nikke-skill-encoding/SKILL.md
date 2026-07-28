@@ -64,7 +64,14 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    group it belongs to, e.g. True Damage ignores DEF, Attack Damage affects all
    damage, Projectile Explosion is RL-only), consult
    `references/damage-formula-reference.md` — the authoritative nikke.gg
-   glossary/notes.
+   glossary/notes. It also carries the **scope rules for the major modifiers**,
+   which decide whether an effect can reach a given damage instance at all:
+   Core Damage and the Effective Range Bonus are **normal-attack only** (range
+   additionally maps distance to weapon — Near SG/SMG, Mid AR/MG, Far SR — and
+   **RLs never get it**), while the Full Burst Bonus is decided purely by *when*
+   the instance is computed. Getting scope wrong is invisible in tests and shows
+   up only against the real game, so check it there rather than inferring it
+   from a skill's wording.
 
 4. **Consolidate judgment calls and review in one batch (the encoding plan).**
    Before writing any code, gather **every judgment call from step 3 into a

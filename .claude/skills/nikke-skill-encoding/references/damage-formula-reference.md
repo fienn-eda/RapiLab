@@ -25,7 +25,24 @@ Element Bonus × Charge Damage × Damage Up × Damage Taken) lives in
 - *Final ATK modifier* itself is "incredibly rare".
 - **Normal Attack Damage Multiplier** — a lesser version that only affects the **user's normal-attack** damage (e.g. Asuka: Wille's Annihilation −40%).
 
-**Major Modifiers** (occur without secondary buffs): Critical Damage (base 150% = 0.5; base crit rate 15%), Core Damage (base ~200% = 1), Full Burst Bonus (base 50%), Effective Range Bonus (base 30%; **Rocket Launchers cannot benefit**).
+**Major Modifiers** (occur without secondary buffs): Critical Damage (base 150% = 0.5; base crit rate 15%), Core Damage (base ~200% = 1), Full Burst Bonus (base 50%), Effective Range Bonus (base 30%; **Rocket Launchers cannot benefit** — see below).
+
+They share ONE additive bucket. A non-crit instance is `1 + core + full_burst + effective_range`; a crit adds `0.5 + critical_damage_up` to that same sum. This is why a crit/non-crit pair of the SAME instance is the sharpest probe there is: everything else cancels and the bucket falls out as `(0.5 + crit_damage_up) / (crit/non-crit − 1)`.
+
+#### Effective Range Bonus — which weapon at which distance
+
+Increases **normal attack damage** when the Nikke's weapon matches the opponent's distance. Base value **30%**. Two exclusions decide whether a unit can ever see it:
+
+| Opponent distance | Weapons that benefit |
+|---|---|
+| Near | SG, SMG |
+| Mid | AR, MG |
+| Far | SR |
+| — | **RL: never**, at any distance |
+
+- **Normal attacks only.** A skill's damage — a burst nuke, a per-shot rider, a DoT — does not collect it, the same way Core Damage does not. (The one summon exception that applies to Core also applies here in principle; no encoded unit needs it yet.)
+- **RL is excluded outright**, which is a fact you can measure with rather than around: an RL unit's non-crit normal attack has a major bucket of exactly `1 + core + full_burst`, with no range term to guess at. Anis: Star's range footage reads 1.000000 before her burst and 1.500000 inside Full Burst for exactly this reason (2026-07-28) — do not read that as "she was standing out of range".
+- The engine has no concept of distance, so `effective_range_bonus` is currently never set and every unit computes as out-of-range. Wiring it needs a decision about what fraction of real play is in range, NOT just a flag: see `docs/engine-gaps.md` #16. When that lands, RL units must stay excluded regardless of the answer.
 
 **Element Bonus Damage** — +10% (×1.1) only with elemental advantage.
 
