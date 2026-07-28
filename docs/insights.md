@@ -1118,13 +1118,20 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - **"Every 1 sec for N sec" is N ticks, not N+1** — the established convention (mana's `drop_tokens`/`resource_scaled_nukes` batching) applies unchanged to a repeating DoT elsewhere in the kit: Diesel: Winter Sweets' "63.33% of final ATK every 1 sec for 9 sec" DoT and her burst's 9-tick 1s DoT (`skill_rules/diesel_winter_sweets.py`) are both `tick_count=9`, not 10.
 - **A charge weapon (RL/SR) fires a full charge on EVERY shot, so a "on full charge" trigger needs no separate full-charge counter — it's just `per_shot_every 1`.** Diesel's "Full Charge stacks (3s, cap 2)" buff is `("per_shot_every", 1)` feeding a `ResourceSpec(cap=2, lifetime=3.0)`, since every RL shot already IS a full charge. And a stack with both a CAP and a LIFETIME needs `ResourceSpec` specifically — `buff_rule` (infinite stacking) has no cap, `refreshing_buff_rule` (1-stack refresh) has no cap above 1, so any capped-stack mechanic (here: her 1s charge time holds both stacks inside one magazine, and the 2s reload lets one expire) should reach for `ResourceSpec` rather than either buff-rule helper.
 
-## 버스트 사이클에는 "N단계 진입"이라는 별도 이벤트가 없다 — `[버스트 N단계 진입 시]`는 그 티어 유닛의 `own_burst_activate`다
+## 버스트 사이클에는 "N단계 진입"이라는 별도 이벤트가 없다 — `[버스트 N단계 진입 시]`는 **그 티어의** `ally_burst_activate`다
+
+> **⚠ 이 절의 인코딩 규칙은 2026-07-27에 뒤집혔고 제목도 2026-07-29에 고쳤다.**
+> 옛 규칙("그 유닛의 `own_burst_activate`로 인코딩하라")은 **결함의 원인**이었다 —
+> 그대로 따른 `ein`과 `laplace-ultimate-hero`를 2026-07-29에 고쳤고, 후자는 이 절이
+> 모범 사례로 인용하던 바로 그 유닛이다. 아래 본문은 정정본이다.
 
 Fienn의 정본 로테이션은 `게이지 충전 → 1단계 진입 → B1 사용 → 2단계 진입 →
 B2 사용 → 3단계 진입 → B3 사용 → 풀버스트 10초`지만, 엔진(`burst_cycle.py`)은
 "진입"과 "사용"을 하나로 접는다 — `on_tier_fire(tier, slug, time)`이 곧 "BN
-사용"이고, 그 뒤 `on_full_burst_enter(tier3_fire_time)`이 호출된다. 즉
-**`full_burst_enter` 시각 == tier-3 발동 시각 == B3 버스트 넉 시각**이다.
+사용"이자 그 티어의 진입이다. **풀버스트는 그 뒤 `FULL_BURST_OPEN_DELAY`만큼
+늦게 열린다**(`full_burst_start = tier3_fire_time + 1e-6`) — 한때 두 시각이 같아서
+`full_burst_enter`가 stage-N 불릿의 대역으로 우연히 맞았고, 그 우연이 사라지면서
+이 절의 옛 규칙이 무너졌다.
 
 버프가 넉에 닿는지는 두 가지가 결정한다:
 1. `effects.py`의 active-window는 **시작 포함**(`applied_at <= now < applied_at
@@ -1140,14 +1147,20 @@ B2 사용 → 3단계 진입 → B3 사용 → 풀버스트 10초`지만, 엔진
   `full_burst_enter` 버프가 닿지만, **`manual` 모드는 티어 간 0.1초 간격이라
   B1 넉이 `full_burst_enter`보다 0.2초 먼저 발생 → 못 닿는다.**
 
-**인코딩 규칙:** 스킬텍스트가 `[버스트 N단계 진입 시]`라고 말하면
-`full_burst_enter`가 아니라 **그 유닛의 `own_burst_activate`로 인코딩하라.**
-이유는 두 가지다 — (a) B1/B2에서는 manual 모드에서 자기 버스트딜을 놓치고,
-(b) 어느 티어든 `full_burst_enter`는 **그 유닛이 버스트하지 않은 사이클에도**
-발동해 버프를 과대 지급한다(같은 티어의 다른 유닛이 대신 버스트한 경우).
-`full_burst_enter`는 진짜로 "풀버스트 창 진입"이 조건인 효과에만 쓴다.
-첫 정정 사례: `laplace_ultimate_hero`의 Over Energy 52.14% (2026-07-24) —
-그녀는 B3라 수치는 변하지 않았고, 바뀐 것은 과대지급 방지뿐이다.
+**인코딩 규칙 (현행):** 스킬텍스트가 `[버스트 N단계 진입 시]`라고 말하면
+**`ally_burst_activate` + `burst_stage_entered(N)`으로 인코딩하라.**
+그 문구는 **단계**에 대한 서술이지 시전자에 대한 서술이 아니다 — 그 사이클에 누가
+그 티어 슬롯을 가져가든 일어난다. 트리거가 넉 기록보다 먼저 발동하므로, 그 유닛이
+직접 쏜 사이클엔 **여전히 자기 버스트딜에 곱해진다**(잃는 것이 없다).
+`full_burst_enter`는 진짜로 "풀버스트 창 진입"이 조건인 효과에만 쓴다 — 그것은
+캐스트보다 **뒤**의 순간이라 B3의 자기 버스트딜에 못 닿는다.
+
+**옛 규칙이 든 이유 (b)는 정확히 거꾸로였다.** "같은 티어의 다른 유닛이 대신
+버스트한 사이클에 지급되는 것"을 **과대지급이라 불렀지만, 그것이 정답이다.**
+`own_burst_activate`로 걸면 그 사이클을 통째로 잃는다 — B3를 2기 앉히면 대략 절반이고,
+실측으로 에인 덱 **−3.81%** · 라플라스(UH) 덱 **−1.12%**였다.
+이유 (a)(B1/B2는 manual 모드에서 `full_burst_enter`가 자기 버스트딜을 놓친다)는
+여전히 유효하지만, 그 대안은 `own_burst_activate`가 아니라 위의 stage 배선이다.
 
 **2026-07-24 확장 (Flora 애장품):** 아래 "스코프가 실제 판별 기준" 규칙은
 **Stage 3 = Full Burst 진입**이라는 전제 위에 있다(`full_burst_enter`가 정확히

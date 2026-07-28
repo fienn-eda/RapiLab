@@ -642,8 +642,19 @@ engine-extension decision rather than making it silently mid-encoding.
 | `battle_start` | once at t=0 (permanent passives, at-start-of-battle skills) |
 | `own_burst_activate` | when THIS Nikke's burst tier fires (its burst skill) |
 | `ally_burst_activate` | when ANY unit's burst tier fires — for a skill that reacts to another unit bursting (e.g. Prika's Encore on Mint's Sing Along). Fired across all units' rules after the burster's own `own_burst_activate`; gate with `ally_bursted("<slug>")`, which reads `context.last_burst_slug`. Buff appliers only (no instant nukes), like `periodic_rules`. |
-| `full_burst_enter` | when tier-3 fires and Full Burst begins |
+| `full_burst_enter` | when the Full Burst window opens — `FULL_BURST_OPEN_DELAY` AFTER tier-3 fires, so it does NOT reach the B3's own burst damage. Use only for text that really says "at the start of Full Burst" (Crown's One for All is the only encoded one). |
 | `full_burst_end` | when the 10s Full Burst window ends |
+
+**"Activates when entering Burst (Skill) Stage N" is NOT `own_burst_activate`.**
+It describes the STAGE, so it fires in every cycle ANY ally of that tier takes
+the slot — encode it as `ally_burst_activate` + `burst_stage_entered(N)`
+(`squad_engine`). Wiring it to `own_burst_activate` silently drops the cycles a
+same-tier ally bursts instead, which in a two-Burst-3 deck is about half of
+them; seven units shipped that way before it was caught. The stage trigger
+still fires before the burst damage is recorded, so the caster loses nothing in
+the cycles it does burst. Watch for the wording variant "Burst **Skill** Stage
+N" (Ein). `scripts/audit_burst_stage_triggers.py` checks text against wiring
+across every encoded slug — run it after encoding a unit.
 
 There is **no** trigger for: normal-attack counts ("after N normal attacks"),
 full-charge-shot counts ("full charge N times"), ally-ammo-expended counters,
