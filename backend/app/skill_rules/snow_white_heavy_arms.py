@@ -77,6 +77,31 @@ The last four are range-measured and the ammo is counted in game, so the
 remaining suspect list is short - and 46.5% of her damage comes from just 14
 Fully Active shots, which is why anything about that block moves her so far.
 
+TWO MORE RANGE READINGS SETTLE THE TOP OF THAT LIST (Fienn, 2026-07-28). Both
+compare her non-crit non-core normal attack BEFORE any burst against one inside
+the first Full Burst window, so the whole buff stack that arrives at the burst
+is one ratio:
+
+- Moran(FI) + Crown + Rapi: Red Hood (taking Burst 3) + her. Measured
+  4,697,120 / 1,475,242 = 3.18397; the engine gives 3.35587, high by 5.4%.
+- Rapi (Burst 1) + Crown + her, so SHE takes the Burst 3 seat and the reading
+  is a Fully Active shot: measured 25,931,088 / 1,475,242 = 17.5775; the engine
+  gives 18.7239, high by 6.5%.
+
+Dividing the two isolates her own burst stack - Fully Active's +84.48% Attack
+Damage, the +528% Charge Damage, the Sequential bullet and the 15-round volley
+- at 6.5 / 5.4 = 1.011. HER OWN KIT IS 1% OVER. The 5.4% belongs to the allied
+buffs the two decks share (Crown, Rapi, Moran).
+
+And the sensitivity table's top entry is now dead: strip the Burst-Stage-3 ATK
++73.92% and the engine reads 2.42127 against Fienn's 3.18397 - 24% LOW. The
+buff is real, applies to her, and is roughly the right size. Which means her
+1.320x in deck 4 is NOT in her per-shot damage at any buff state, so the next
+place to look is uptime and counts across the 180 sec fight, or deck 4's own
+buffers - Volume, Mint and Prika all read 1.25-1.50x of their own records
+there, and the same measurement shape run in deck 4 would settle whether their
+buffs are what is inflating her.
+
 Deferred: DEF up 42.24% (defensive, inert), Pierce (convention, same as
 Red Hood/Snow White's Pierce bullets - no engine representation), the 41.9%
 destructible-projectile sweep (no destructible projectiles modeled), Lock-On
