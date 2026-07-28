@@ -59,7 +59,7 @@ describe('App', () => {
   it('prompts to sync and hides the roster/recommend panel when there is no active profile', () => {
     render(<App />)
     expect(screen.getByText(/동기화된 계정이 없어요/i)).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: '덱 추천' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '솔로 레이드' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
   })
 
@@ -90,11 +90,11 @@ describe('App', () => {
     render(<App />)
 
     expect(await screen.findByRole('heading', { name: 'Red Hood' })).toBeInTheDocument()
-    expect(screen.queryByRole('heading', { name: '덱 추천' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '솔로 레이드' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
 
-    expect(screen.getByRole('heading', { name: '덱 추천' })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: '솔로 레이드' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
   })
 
@@ -191,10 +191,10 @@ describe('App', () => {
 
     render(<App />)
     await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
-    await user.click(screen.getByLabelText(/레이드 배분/i))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
     await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
     expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
-    expect(screen.getByLabelText(/레이드 배분/i)).toBeChecked()
+    expect(screen.getByLabelText(/전부 최적화/i)).toBeChecked()
 
     await user.selectOptions(screen.getByLabelText('계정'), '부계')
 
@@ -229,7 +229,7 @@ describe('App', () => {
 
     render(<App />)
     await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
-    await user.click(screen.getByLabelText(/레이드 배분/i))
+    await user.click(screen.getByLabelText(/전부 최적화/i))
     await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
     expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
 
@@ -238,7 +238,7 @@ describe('App', () => {
 
     // Still running, and still in raid mode - a remount would have reset both.
     expect(screen.getByRole('status')).toHaveTextContent(/1~2분/)
-    expect(screen.getByLabelText(/레이드 배분/i)).toBeChecked()
+    expect(screen.getByLabelText(/전부 최적화/i)).toBeChecked()
     expect(vi.mocked(recommendRaidDecks)).toHaveBeenCalledTimes(1)
   })
 

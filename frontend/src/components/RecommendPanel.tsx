@@ -410,9 +410,9 @@ export function RecommendPanel({
   }
 
   return (
-    <section className="card" aria-label="덱 추천">
+    <section className="card" aria-label="솔로 레이드">
       <header className="card__header">
-        <h2 className="card__title">덱 추천</h2>
+        <h2 className="card__title">솔로 레이드</h2>
       </header>
 
       <form onSubmit={handleSubmit} className="recommend-form">
@@ -437,7 +437,7 @@ export function RecommendPanel({
                   onChange={() => switchMode('single')}
                 />
                 단일 덱
-                <span className="group__hint"> — 덱 하나의 순위별 대안</span>
+                <span className="group__hint"> — 기대 딜량이 높은 개별 덱을 찾아줘요</span>
               </label>
               <label className="radio">
                 <input
@@ -447,8 +447,8 @@ export function RecommendPanel({
                   checked={mode === 'raid'}
                   onChange={() => switchMode('raid')}
                 />
-                레이드 배분
-                <span className="group__hint"> — 여러 개의 겹치지 않는 덱을 동시에 편성</span>
+                전부 최적화
+                <span className="group__hint"> — 설정한 덱 개수만큼 최적화해요</span>
               </label>
               <label className="radio">
                 <input
@@ -458,11 +458,10 @@ export function RecommendPanel({
                   checked={mode === 'draft'}
                   onChange={() => switchMode('draft')}
                 />
-                드래프트 기반 최적화
+                빈자리만 최적화
                 <span className="group__hint">
                   {' '}
-                  — 직접 고른 핵심 유닛으로 덱을 시드하면, 엔진이 나머지를 채우고
-                  최적화해요
+                  — 직접 편성한 니케들을 기반으로 나머지 자리를 최적화해요
                 </span>
               </label>
               <label className="radio">
@@ -473,7 +472,7 @@ export function RecommendPanel({
                   checked={mode === 'evaluate'}
                   onChange={() => switchMode('evaluate')}
                 />
-                평가
+                기대 딜량 계산
                 <span className="group__hint">
                   {' '}
                   — 직접 짠 덱의 기대 딜량만 빠르게 계산해요, 최적화는 하지 않아요
@@ -592,7 +591,7 @@ export function RecommendPanel({
 
       {(mode === 'raid' || mode === 'draft') && raid.status === 'loading' && (
         <p className="recommend-form__progress" role="status">
-          {mode === 'raid' ? '레이드 덱 배분 중' : '드래프트 최적화 중'} — 수천 번의
+          {mode === 'raid' ? '전부 최적화 중' : '빈자리만 최적화 중'} — 수천 번의
           시뮬레이션을 실행하며 보통 1~2분이 걸려요. 아직 진행 중이니 완료되면
           버튼이 다시 활성화돼요.
         </p>
