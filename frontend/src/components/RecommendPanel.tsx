@@ -378,22 +378,18 @@ export function RecommendPanel({
     }
   }
 
-  const submitLabel =
+  // 유휴 라벨은 모드와 무관하게 하나다 - 무엇을 시작하는 버튼인지는 바로 위의
+  // 모드 라디오가 이미 말한다. 실행 중 라벨만 모드별로 갈리는데, 버튼이 진행
+  // 상태를 알려주는 유일한 자리이기 때문이다.
+  const loadingLabel =
     mode === 'single'
-      ? active.status === 'loading'
-        ? '추천 중…'
-        : '덱 추천'
+      ? '추천 중…'
       : mode === 'raid'
-        ? active.status === 'loading'
-          ? '배분 중…'
-          : '레이드 덱 배분'
+        ? '배분 중…'
         : mode === 'draft'
-          ? active.status === 'loading'
-            ? '최적화 중…'
-            : '드래프트 최적화'
-          : active.status === 'loading'
-            ? '계산 중…'
-            : '기대 딜량 계산'
+          ? '최적화 중…'
+          : '계산 중…'
+  const submitLabel = active.status === 'loading' ? loadingLabel : '인카운터!'
 
   // Evaluation isn't cached and its display is gated purely on `mode`, unlike
   // raid/draft's raidResultMode/displayResult - so a stray in-flight evaluate

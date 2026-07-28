@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import { makeEmptyDraft, type NikkeDraft } from './types/nikkeDraft'
@@ -192,7 +192,11 @@ describe('App', () => {
     render(<App />)
     await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
     await user.click(screen.getByLabelText(/전부 최적화/i))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(
+      within(document.getElementById('panel-recommend')!).getByRole('button', {
+        name: /인카운터/,
+      }),
+    )
     expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
     expect(screen.getByLabelText(/전부 최적화/i)).toBeChecked()
 
@@ -230,7 +234,11 @@ describe('App', () => {
     render(<App />)
     await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
     await user.click(screen.getByLabelText(/전부 최적화/i))
-    await user.click(screen.getByRole('button', { name: /레이드 덱 배분/i }))
+    await user.click(
+      within(document.getElementById('panel-recommend')!).getByRole('button', {
+        name: /인카운터/,
+      }),
+    )
     expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
 
     await user.click(screen.getByRole('tab', { name: '니케 풀' }))

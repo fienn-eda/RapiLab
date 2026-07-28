@@ -203,7 +203,7 @@ export function UnionRaidPanel({
 
         <div className="recommend-form__actions">
           <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
-            {evaluation.status === 'loading' ? '계산 중…' : '기대 딜량 계산'}
+            {evaluation.status === 'loading' ? '계산 중…' : '인카운터!'}
           </button>
         </div>
       </form>
