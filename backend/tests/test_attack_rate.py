@@ -563,8 +563,9 @@ def test_charge_floor_still_bounds_the_combination():
 def test_charge_motion_delay_is_a_per_unit_list_not_a_weapon_class_constant():
     from app.skill_rules.registry import get_charge_motion_delay
     from app.attack_rate import CHARGE_MOTION_DELAY_SECONDS
-    for slug in ("snow-white-heavy-arms", "ade-agent-bunny", "helm", "helm-signature",
-                 "bready-lingering", "bready-recommended", "velvet"):
+    # Units Fienn saw a pause on but has not put a clock to yet.
+    for slug in ("helm", "helm-signature", "bready-lingering",
+                 "bready-recommended", "velvet"):
         assert get_charge_motion_delay(slug) == CHARGE_MOTION_DELAY_SECONDS
     # Liberalio is the counter-example that makes this a list: also SR, no gap.
     assert get_charge_motion_delay("liberalio") == 0.0
@@ -585,6 +586,23 @@ def test_a_timed_unit_carries_its_own_delay_rather_than_the_shared_default():
 
     assert get_charge_motion_delay("mint") == 0.39
     assert get_charge_motion_delay("prika") == 0.34
+    assert get_charge_motion_delay("ade-agent-bunny") == 0.35
+    assert get_charge_motion_delay("anchor-innocent-maid") == 0.4
+
+
+def test_no_delay_confirmed_is_recorded_separately_from_never_checked():
+    """The engine treats an unchecked charge weapon as having no pause, so a
+    unit nobody has looked at is indistinguishable from one Fienn has checked -
+    and the first is a silent over-estimate. Naming the confirmed-none units
+    keeps `scripts/audit_charge_motion_delay.py` able to tell them apart."""
+    from app.skill_rules.registry import (
+        NO_CHARGE_MOTION_DELAY, TIMED_CHARGE_MOTION_DELAY, get_charge_motion_delay)
+
+    for slug in ("liberalio", "neon-vision-eye", "laplace-ultimate-hero"):
+        assert slug in NO_CHARGE_MOTION_DELAY
+        assert get_charge_motion_delay(slug) == 0.0
+    # Timed and confirmed-none are disjoint: a unit cannot be both.
+    assert not (TIMED_CHARGE_MOTION_DELAY.keys() & NO_CHARGE_MOTION_DELAY)
 
 
 def test_charge_motion_delay_lengthens_the_shot_interval_and_nothing_else():

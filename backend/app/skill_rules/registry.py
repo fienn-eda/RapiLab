@@ -1009,21 +1009,37 @@ def get_burst_damage_type(slug):
 # the gap between damage numbers, which an RL grenade's travel time distorts
 # with distance. Each timing also checks itself: the shot-to-shot gap must come
 # out as charge time + delay.
-#   Snow White: Heavy Arms  0.4    (timed)
-#   Mint                    0.39   (timed: 0.39 / 0.40 / 0.39, gaps 1.40)
-#   Prika                   0.34   (timed: 0.36 / 0.34 / 0.33, gaps 1.36 / 1.35)
-# The rest are units Fienn watched and saw a pause on, without a stopwatch, so
-# they carry the shared default on the strength of "it is there".
+TIMED_CHARGE_MOTION_DELAY = {
+    "snow-white-heavy-arms": CHARGE_MOTION_DELAY_SECONDS,   # 0.4
+    "anchor-innocent-maid": 0.4,
+    "mint": 0.39,                # 0.39 / 0.40 / 0.39, shot gaps 1.40
+    "ade-agent-bunny": 0.35,
+    "prika": 0.34,               # 0.36 / 0.34 / 0.33, shot gaps 1.36 / 1.35
+}
+
+# Charge weapons Fienn has checked and found NO pause on. The engine's default
+# is already 0, so these change no number - they exist because "0" otherwise
+# cannot be told apart from "nobody looked", and an unchecked unit is a silent
+# over-estimate (Mint read 1.502x of her record until hers was timed).
+# `scripts/audit_charge_motion_delay.py` reads both tables to report which
+# encoded charge weapons still have no answer.
+NO_CHARGE_MOTION_DELAY = frozenset({
+    "liberalio",
+    "neon-vision-eye",
+    "laplace-ultimate-hero",
+})
+
+# Units Fienn watched and saw a pause on without timing it; they carry the
+# shared default until someone puts a clock on them.
+_ASSUMED_CHARGE_MOTION_DELAY = frozenset({
+    "helm", "helm-signature",
+    "bready-lingering", "bready-recommended",
+    "velvet",
+})
+
 _CHARGE_MOTION_DELAY = {
-    "snow-white-heavy-arms": CHARGE_MOTION_DELAY_SECONDS,
-    "mint": 0.39,
-    "prika": 0.34,
-    "ade-agent-bunny": CHARGE_MOTION_DELAY_SECONDS,
-    "helm": CHARGE_MOTION_DELAY_SECONDS,
-    "helm-signature": CHARGE_MOTION_DELAY_SECONDS,
-    "bready-lingering": CHARGE_MOTION_DELAY_SECONDS,
-    "bready-recommended": CHARGE_MOTION_DELAY_SECONDS,
-    "velvet": CHARGE_MOTION_DELAY_SECONDS,
+    **TIMED_CHARGE_MOTION_DELAY,
+    **{slug: CHARGE_MOTION_DELAY_SECONDS for slug in _ASSUMED_CHARGE_MOTION_DELAY},
 }
 
 

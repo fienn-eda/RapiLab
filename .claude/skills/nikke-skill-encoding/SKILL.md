@@ -93,6 +93,26 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    The rule is still "ask rather than guess on unclear mechanics" — this just
    batches those questions into one review instead of drip-feeding them.
 
+   **If the unit is SR or RL, the plan MUST carry one extra question: does she
+   pause between firing a charged shot and starting the next charge?** It is a
+   property of the unit, not of the weapon class — Liberalio, Neon and Laplace:
+   Ultimate Hero have no pause at all while Snow White has 0.4 sec — and the
+   engine's default is none, so an unasked unit is silently modelled as the
+   fastest possible version of herself. Mint read 1.502x of her recorded damage
+   until hers was timed at 0.39. Ask even when you have no reason to suspect
+   one; the answer is cheap and its absence is invisible.
+   Register the answer in `registry.TIMED_CHARGE_MOTION_DELAY` (a measured
+   value) or `NO_CHARGE_MOTION_DELAY` (checked, none) — recording the negative
+   matters, because "0" otherwise cannot be told apart from "nobody looked".
+   `python3 scripts/audit_charge_motion_delay.py` lists every encoded charge
+   weapon still without an answer and exits non-zero if any remain.
+
+   How Fienn times it: read the Full Burst clock when the charged bullet leaves
+   and again when the next charge gauge starts filling — **not** the gap between
+   damage numbers, which an RL grenade's travel time distorts with distance. The
+   reading checks itself, since the shot-to-shot gap must come out as charge
+   time + delay.
+
 5. **Write the module** `backend/app/skill_rules/<slug_with_underscores>.py`.
    Reuse the `_helpers`: `buff_rule(trigger, buffs)` and
    `cdr_pulse_rule(trigger, seconds)` for the common "timed buffs + cooldown
