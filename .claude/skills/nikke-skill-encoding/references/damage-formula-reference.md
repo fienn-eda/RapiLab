@@ -52,7 +52,7 @@ Increases **normal attack damage** when the Nikke's weapon matches the opponent'
 - **Attack Damage** — a **general** damage-up buff. **Affects all damage dealt.**
 - **Sustained Damage** — only Sustained Damage (a constant damaging effect over a duration).
 - **True Damage** — only True Damage, **which ignores enemy DEF.**
-- **Pierce Damage** — only Pierce (normal attacks hitting everything in their path).
+- **Pierce Damage** — only Pierce (normal attacks hitting everything in their path). Two conditions, not one: the unit must HAVE Pierce (`has_pierce`, the [관통 특화] / "Gain Pierce" marker) **and** the damage instance must be her normal attack. A skill nuke fired by a piercing unit is not pierce damage and collects none of this bucket (Fienn, Snow White range footage 2026-07-28).
 - **Damage To Parts** — only Parts. Strong with Pierce or Projectile Explosion.
 - **Damage to Interruption Parts** — only Interruption Parts (see Notes; usually doesn't affect the boss itself).
 - **Shield Damage** — only Shields. Shields ignore Major Modifiers, Damage Taken debuffs, and Element Bonus; only take Normal Attack damage; can be bypassed by Pierce.

@@ -1214,6 +1214,42 @@ def test_own_status_window_can_open_on_only_every_nth_burst():
     assert not any(any(s <= t < e for s, e in skipped) for t in fires)
 
 
+def test_pierce_damage_up_reaches_normal_attacks_but_not_a_skill_nuke():
+    """Pierce Damage Up buffs Pierce - "normal attacks hitting everything in
+    their path" - so a unit who HAS Pierce still does not collect it on her
+    skill damage. Measured on Snow White: Heavy Arms (Fienn, range footage
+    2026-07-28): one Auto Fire round against the same shot's 41.9% sweep reads
+    a Damage-Up bucket of 1 + 0.8448, where the engine was supplying
+    1 + 0.8448 + 0.1309 - the extra term being exactly her pierce_damage_up.
+    """
+    def grant(context, caster_slug, time, registry):
+        registry.add(Effect("has_pierce", 1.0, "self", None, caster_slug), applied_at=time)
+        registry.add(Effect("pierce_damage_up", 0.5, "self", None, caster_slug), applied_at=time)
+
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [],
+         "attacker": [SkillRule(trigger="battle_start", action=grant)]},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules={"attacker": [(1, "every", [instant_nuke_pulse_rule("per_shot", 100.0)])]},
+    )
+    shot = next(e for e in result["damage_log"] if e["source"] == "normal_attack")
+    nuke = next(e for e in result["damage_log"] if e["source"] == "per_shot_nuke")
+    per_coefficient = shot["damage"] / (_ar_weapon()["damage_percent"] / 100)
+
+    # ATK 10000, no defense, no crit, and no Full Burst inside this 1-sec fight,
+    # so the only thing left in either instance is the Damage-Up bucket.
+    assert per_coefficient == pytest.approx(10000.0 * 1.5)   # normal attack: 1 + 0.5
+    assert nuke["damage"] == pytest.approx(10000.0)          # skill nuke: 1, no pierce
+
+
 def test_per_shot_nuke_damage_type_reaches_its_type_bucket_and_the_log():
     # The pulse path carries a damage_type (default "attack"), so a per-shot
     # nuke whose text says "as Distributed Damage" (e.g. Scarlet's 6th/9th

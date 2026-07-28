@@ -558,7 +558,7 @@ def simulate_raid(
 
     def _damage_instance(
         slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0,
-        hits_core=False, on_charge_weapon=None,
+        hits_core=False, on_charge_weapon=None, is_normal_attack=False,
     ):
         bundle = _stat_bundle(slug, time)
         # True Damage ignores enemy DEF (nikke.gg glossary).
@@ -616,10 +616,19 @@ def simulate_raid(
             ),
             attack_damage_up=bundle["attack_damage_up"],
             damage_to_parts_up=bundle["damage_to_parts_up"],
-            # Pierce Damage Up is worthless to a unit without Pierce, however
-            # generously an ally buffs it - see the module docstring.
+            # Pierce Damage Up buffs PIERCE, and Pierce is a property of normal
+            # attacks - "normal attacks hitting everything in their path"
+            # (references/damage-formula-reference.md). So it needs BOTH that
+            # the unit currently has Pierce and that this instance is her normal
+            # attack: a skill nuke fired by a piercing unit is not pierce damage
+            # and collects none of it. Gating on `has_pierce` alone leaked the
+            # bucket into every instance the unit produced - caught on Snow
+            # White: Heavy Arms, whose Auto Fire pulses were carrying her
+            # +13.09% (Fienn, range footage 2026-07-28).
             pierce_damage_up=(
-                bundle["pierce_damage_up"] if bundle["has_pierce"] > 0 else 0.0
+                bundle["pierce_damage_up"]
+                if is_normal_attack and bundle["has_pierce"] > 0
+                else 0.0
             ),
             damage_taken_up=bundle["damage_taken_up"],
         )
@@ -1380,6 +1389,7 @@ def simulate_raid(
                     else ev["core_eligible_override"]
                 ),
                 on_charge_weapon=ev["on_charge_weapon"],
+                is_normal_attack=ev["source"] == "normal_attack",
             ),
             "source": ev["source"],
             "damage_type": ev["damage_type"],
