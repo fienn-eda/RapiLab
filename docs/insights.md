@@ -672,10 +672,22 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   유닛은 **크라운 하나뿐**이고 올바르게 배선돼 있다. "entering Burst Stage N" 쪽은
   **5기가 틀려 있었고 전부 수정했다**(2026-07-27) — `mint` · `mihara-bonding-chain` ·
   `rei-ayanami` · `snow-white-heavy-arms` · `mast-romantic-maid`(2건).
+  **2026-07-29에 여기에 2기가 더 붙었다**(`ein` · `laplace-ultimate-hero`) — 아래 참조.
 - **불릿 단위로 봐야 한다는 규칙에 내 스크립트가 걸렸다.** `maiden-ice-rose`는
   파일 단위 grep이 잡은 **오탐**이었다 — 걸린 것은 룰이 아니라 `_full_burst_enter`라는
-  **헬퍼 함수 이름**이었고, 그녀의 MP는 SkillRule이 아니라 자원 시스템이 처리하며
-  원문도 "entering **Full Burst**"라 현행이 맞다. **정적 grep은 후보 목록일 뿐이다.**
+  **헬퍼 함수 이름**이었다. **정적 grep은 후보 목록일 뿐이다.**
+  (2026-07-29 정정: 당시 "그녀 원문도 'entering Full Burst'라 현행이 맞다"고 적었으나
+  Meditation은 **두 불릿**이고 1번은 실제로 "entering Burst **Stage 1**"이다. 무죄
+  판정 자체는 유효한데 **이유가 다르다** — 그 MP 적립은 SkillRule이 아니라
+  `_resolve_squad_burst_cycle_resource`가 처리하고, 거기서 이미 **스쿼드 단위**로
+  "누구든 1단계가 발동하면"으로 걸려 있다. 오탐의 근거는 원문이 아니라 **처리 경로**다.)
+- **★ 그 전수 대조는 전수가 아니었다 (2026-07-29).** 한 가지 표현만 grep했기 때문에
+  **두 유닛이 구조적으로 안 보였다**: `ein`의 원문은 "entering Burst **Skill** Stage 3"
+  이라는 **표현 변종**이고, `laplace-ultimate-hero`는 ShiftyPad 수치만 수집돼 있어
+  **대조할 원문 자체가 없다**(독스트링에만 "[Burst Stage 3 entry]"라고 적혀 있었다).
+  둘 다 진짜 결함이었다. 교훈 둘: **① 표현은 변종을 가정하고 정규식으로 훑을 것**,
+  **② "원문이 없어 확인 못 함"을 "이상 없음"과 절대 섞지 말 것.**
+  `scripts/audit_burst_stage_triggers.py`가 이 둘을 각각 별도 버킷으로 보고한다.
 - **한 룰에 두 불릿이 묶여 있으면 트리거를 갈아끼울 수 없다.**
   `snow_white_heavy_arms`는 Fully Active(자기 버스트 스킬)와 Shades of White(3단계
   진입)를 **하나의 `own_burst_activate` 룰**에 담고 있었다. 두 순간이 같았을 때는

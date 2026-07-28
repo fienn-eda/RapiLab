@@ -30,6 +30,7 @@ import json
 import os
 import re
 import sys
+import textwrap
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 
@@ -50,6 +51,25 @@ LOOSE_PHRASE = re.compile(r"Burst(?: Skill)? Stage \d", re.IGNORECASE)
 
 # Slugs whose skill text lives under a different file name than the slug.
 DATA_ALIASES = {"privaty": "privaty-nikke"}
+
+# Units whose stage bullet is genuinely not a SkillRule, checked by hand. They
+# match the phrase and always will, so listing the reason here keeps a re-run
+# from re-opening a settled question. Drop a unit from this list the moment its
+# encoding changes - the reason is what is being trusted, not the slug.
+CLEARED = {
+    "maiden-ice-rose":
+        "MP accrual runs through _resolve_squad_burst_cycle_resource, which "
+        "already fills on ANY member's Burst Stage 1 (squad scope). The "
+        "module's own_burst_activate rule is a different bullet - Blessings "
+        "Upon You's 'when MP is used'.",
+    "velvet":
+        "Bullet Snatch only refills the 6000-round ammo pouch, listed under "
+        "'Not modeled' - the pouch never binds, so the trigger has no "
+        "damage consequence.",
+    "soda-twinkling-bunny":
+        "Beginner's Rewards is deferred whole: it extends Full Burst "
+        "duration, which the engine holds as a single global constant.",
+}
 
 
 def base_slug(slug):
@@ -126,7 +146,7 @@ def main():
     args = parser.parse_args()
 
     modules = module_slugs()
-    suspects, agreed, untextted, loose = [], [], [], []
+    suspects, agreed, untextted, loose, cleared = [], [], [], [], []
 
     for slug in sorted(registry.ENCODED_SLUGS):
         bullets = load_bullets(slug)
@@ -148,7 +168,12 @@ def main():
             if odd:
                 loose.append((slug, rel, odd))
             continue
-        (suspects if not wired else agreed).append((slug, rel, staged))
+        if wired:
+            agreed.append((slug, rel, staged))
+        elif slug in CLEARED:
+            cleared.append((slug, rel))
+        else:
+            suspects.append((slug, rel, staged))
 
     print(f"{len(registry.ENCODED_SLUGS)} encoded slugs checked\n")
 
@@ -161,6 +186,12 @@ def main():
                 print(f"      | {line}")
     if not suspects:
         print("  (none)")
+
+    print(f"\n== cleared by hand: stage text, but no SkillRule to fix ({len(cleared)}) ==")
+    for slug, rel in cleared:
+        print(f"\n  {slug}   ({rel})")
+        for line in textwrap.wrap(CLEARED[slug], 74):
+            print(f"    {line}")
 
     print(f"\n== UNVERIFIABLE: no collected skill text, read the module by hand ({len(untextted)}) ==")
     for slug, rel, wired in untextted:
