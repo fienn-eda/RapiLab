@@ -42,8 +42,16 @@ less whatever overflows the 100% store. In the recorded deck she bursts 7 times:
   the skill text's own arithmetic - it does not depend on the calibration.
 - her recorded 1.735B implies 126 sec (70%), about SIX part destructions.
 The free parameter is therefore not "how long does she stay transformed" but
-"how many parts got destroyed", which is a countable event. Fitting the duration
-to the record would be circular; taking the count as data is not.
+"how many parts got destroyed". DECIDED (Fienn, 2026-07-28): the ceiling stays,
+and neither the count nor the duration becomes a parameter - part-destruction
+gimmicks and their timing differ per boss and per run, so a number taken from
+one recorded raid would be right there and wrong everywhere else. The record
+does not argue against that: ceiling gives 1.113x and the derivable base 0.901x,
+both inside +-15%, with the whole-run total at 1.023x against 1.013x. Her
+remaining +0.196B is an accepted modelling cost, not a defect - do not reopen it
+from a calibration session. The arithmetic above still stands as a caveat when
+reading recommendations: on a part-destructible boss she is scored at her upper
+bound.
 
 Not modeled / deferred:
 - Part-destruction battery fill (no enemy-part concept) - the reason for the
