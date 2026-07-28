@@ -290,3 +290,43 @@ def test_a_star_tick_holds_the_measured_ratio_against_her_normal_attack():
 
     assert normal_percent / tick_percent == pytest.approx(
         STARS_OVER_NORMAL_MEASURED, rel=1e-4)
+
+
+# --- Starfall is NOT a summon: no core, but it does take the Full Burst bonus
+# Same footage, Starfall's full-charge rider (120.13%), non-crit vs crit:
+#   before her burst   568,126 / 917,751
+#   inside Full Burst  2,282,272 / 3,218,612
+# A crit adds (0.5 + crit damage up) into the same additive bucket core and the
+# Full Burst bonus use, so crit/non-crit isolates that bucket with every other
+# modifier cancelling - the cleanest probe there is, since both readings are the
+# same instance at the same instant.
+
+STARFALL_CRIT_DELTA = 0.5 + 0.1154  # her only crit-damage source is an overload roll
+
+
+@pytest.mark.parametrize("label,non_crit,crit,expected_bucket", [
+    ("before her burst", 568_126.0, 917_751.0, 1.0),
+    ("inside Full Burst", 2_282_272.0, 3_218_612.0, 1.5),
+])
+def test_starfall_bucket_matches_the_measured_crit_ratio(label, non_crit, crit, expected_bucket):
+    """1.0 = no core, no Full Burst, no effective range. 1.5 = the Full Burst
+    bonus and nothing else - in particular still no core, which is what Fienn
+    saw directly (no reading in the footage carries a core-hit marker)."""
+    measured_bucket = STARFALL_CRIT_DELTA / (crit / non_crit - 1)
+
+    assert measured_bucket == pytest.approx(expected_bucket, rel=1e-5)
+
+
+def test_starfall_takes_neither_the_core_bonus_nor_projectile_explosion():
+    # The failure this guards: Shooting Stars gained both in 2026-07-28, and the
+    # obvious next move is to give her other damage the same treatment. The
+    # measurement above says no - Starfall's bucket is exactly 1.0 with no burst
+    # up, where a core hit would make it 2.0.
+    (threshold, mode, rules) = build_starfall_full_charge_nuke_rules(LEVEL_10_VALUES)[0]
+    registry = EffectRegistry()
+    rules[0].action(SquadContext([SquadMember("anis-star", burst_tier=1, element="Electric")]),
+                    "anis-star", 5.0, registry)
+    (pulse,) = registry.drain_pulses("instant_damage_percent")
+
+    assert pulse.damage_type == "attack"
+    assert getattr(pulse, "core_eligible", None) in (None, False)
