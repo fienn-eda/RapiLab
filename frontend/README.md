@@ -182,13 +182,17 @@ Response `200`:
       "deck": string[],             // 5 character slugs, ordered by burst role (B1 → B2 → B3)
       "total_damage": number,
       "burst_damage": number,
-      "normal_attack_damage": number
+      "normal_attack_damage": number,
+      "skill_damage": number        // everything neither a burst nor a normal attack (DoTs,
+                                     // per-shot riders, self-cooldowned procs); the three
+                                     // damage fields add up to total_damage
     }
   ],                                 // ranked by total_damage desc, length <= top_n
-  "excluded_slugs": string[]         // submitted slugs the backend can't evaluate yet
+  "excluded_slugs": string[],        // submitted slugs the backend can't evaluate yet
                                      // (not encoded / no local data); excluded from the
                                      // search and shown as "not yet supported" — never a
                                      // 422 by themselves
+  "engine_version": string          // see engine_version below (evaluate-decks section)
 }
 ```
 Validation failures (malformed body, out-of-range field, or no feasible deck in
@@ -221,9 +225,10 @@ Response `200`:
                                      // more feasible decks)
   "combined_total_damage": number,   // sum over decks
   "excluded_slugs": string[],        // same meaning as /api/recommend
-  "leftover_slugs": string[]         // usable units the allocation left out
+  "leftover_slugs": string[],        // usable units the allocation left out
                                      // (sorted; shown so the player knows who
                                      // sat on the bench)
+  "engine_version": string          // see engine_version below (evaluate-decks section)
 }
 ```
 `422` mirrors `/api/recommend` (no feasible deck at all in the usable roster).
