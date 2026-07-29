@@ -68,6 +68,15 @@ def test_liberalio_taking_her_own_buff_is_reported():
     assert any("리버렐리오" in note for note in body["notes"])
 
 
+def test_asking_for_an_absent_liberalio_says_so_and_drops_the_buff():
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])]
+    with_her = post("scarlet-black-shadow",
+                    roster + [a_unit("liberalio")], with_liberalio=True).json()
+    without_her = post("scarlet-black-shadow", roster, with_liberalio=True).json()
+    assert without_her["interval"] > with_her["interval"]
+    assert any("로스터에 없어" in note for note in without_her["notes"])
+
+
 def test_lines_the_two_aggregation_rules_split_on_are_reported():
     # 5.51% raw buys no frame of an 18-frame charge; rounded to 6% it buys one.
     roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])]

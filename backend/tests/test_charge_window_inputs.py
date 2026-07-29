@@ -171,6 +171,15 @@ def test_without_the_companion_there_is_no_cut():
     assert got.charge_time_reduction_sec == 0.0
 
 
+def test_an_absent_liberalio_grants_nothing_rather_than_borrowing_the_subject():
+    # Her grant is built from her own skill levels and collectible. With no
+    # Liberalio in the roster there is nothing to build it from, and reading the
+    # subject's investment instead would answer a question nobody asked.
+    got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=True,
+                       overrides=Overrides(None, None, None), liberalio_state=None)
+    assert got.charge_time_reduction_sec == 0.0
+
+
 def test_liberalio_refuses_the_cut_even_when_asked():
     # Strange Currents makes her immune to external charge-speed effects, so the
     # companion toggle cannot apply to her own row.

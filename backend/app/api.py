@@ -518,11 +518,15 @@ def _charge_window_notes(request, inputs, spec_atk, liberalio_atk):
         notes.append(
             "탄창이 창 안에서 비어 재장전이 걸립니다 — 엔진의 재장전 모델이 실측과 "
             "어긋나 있어(docs/engine-gaps.md) 마지막 한 발이 불확실합니다.")
-    if (request.with_liberalio and request.slug != LIBERALIO_SLUG
-            and liberalio_atk is not None and liberalio_atk <= spec_atk):
-        notes.append(
-            "리버렐리오의 공격력이 더 낮아 차지속도 버프가 그녀 자신에게 갑니다 — "
-            "대상은 '최저 공격력 버스트 3 아군'이고 시전자를 제외하지 않습니다.")
+    if request.with_liberalio and request.slug != LIBERALIO_SLUG:
+        if liberalio_atk is None:
+            notes.append(
+                "리버렐리오가 로스터에 없어 차지속도 버프를 빼고 계산했습니다 — "
+                "그녀의 스킬 레벨과 소장품을 모르면 버프 크기를 알 수 없습니다.")
+        elif liberalio_atk <= spec_atk:
+            notes.append(
+                "리버렐리오의 공격력이 더 낮아 차지속도 버프가 그녀 자신에게 갑니다 — "
+                "대상은 '최저 공격력 버스트 3 아군'이고 시전자를 제외하지 않습니다.")
     # Only the override path knows the individual lines. The synced roster
     # reports overload options already summed across gear, and a total cannot be
     # decomposed back into them - so there is nothing to compare and the UI

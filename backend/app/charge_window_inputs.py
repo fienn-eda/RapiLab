@@ -94,9 +94,13 @@ def build_inputs(state, with_liberalio, overrides, liberalio_state=None,
     # Strange Currents grants Liberalio immunity to external charge-speed
     # effects, so she can never receive her own grant - the toggle is refused
     # rather than hidden, because the API is callable without the UI.
+    #
+    # Her grant is built from HER skill levels and collectible, so a roster
+    # without her cannot produce one. The window is still worth answering
+    # un-buffed, so the cut is dropped and the caller says so.
     cut = 0.0
-    if with_liberalio and spec.slug != LIBERALIO_SLUG:
-        companion = load_nikke_spec(liberalio_state or state, data_dir,
+    if with_liberalio and spec.slug != LIBERALIO_SLUG and liberalio_state is not None:
+        companion = load_nikke_spec(liberalio_state, data_dir,
                                     slug_override=LIBERALIO_SLUG)
         if companion is not None:
             cut = calm_depths_charge_cut_seconds(
