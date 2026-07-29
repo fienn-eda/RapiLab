@@ -25,16 +25,26 @@ LIBERALIO_CUT = 0.1274 * 1.5  # 0.1911 sec, her caster-based grant
 
 
 def test_interval_reproduces_the_solo_measurement():
-    # 14 shots 0.72998 sec apart. A third of a frame is the tolerance.
-    assert shot_interval(SCARLET) == pytest.approx(0.72998, abs=1 / 180)
+    # Main account, four Full Burst windows: 0.73371 sec apart. The bound is
+    # loose because the 0.43 motion delay it rests on is itself only known to
+    # the nearest 0.01 sec - see the grant test below for the tight anchor.
+    assert shot_interval(SCARLET) == pytest.approx(0.73371, abs=0.35 / 60)
 
 
 def test_interval_reproduces_the_liberalio_measurement():
-    # Two runs, 0.52923 and 0.52709 sec. Carrying the unfloored 0.1089 charge
-    # would give 0.5389 and fail both.
+    # Main account, two accompanied windows: 0.54352 sec apart.
     buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
-    for measured in (0.52923, 0.52709):
-        assert shot_interval(buffed) == pytest.approx(measured, abs=1 / 180)
+    assert shot_interval(buffed) == pytest.approx(0.54352, abs=0.35 / 60)
+
+
+def test_liberalio_grant_matches_the_delay_free_measurement():
+    """The one comparison that assumes nothing about the motion delay: solo
+    minus accompanied, within one account, cancels it. Main account reads
+    0.19019 sec (2026-07-30). Snapping the surviving charge to the frame grid
+    would make it 0.20000 and miss by 0.59 frames."""
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    assert shot_interval(SCARLET) - shot_interval(buffed) == pytest.approx(
+        0.19019, abs=0.1 / 60)
 
 
 def test_start_charged_lands_a_shot_at_zero():
@@ -125,13 +135,13 @@ def test_a_liberalio_sized_charge_is_judged_on_its_own_frame_grid():
 
 
 def test_outcome_splits_the_window_between_two_shot_counts():
-    # At 0.53 sec a 10-second window holds 18.87 intervals, so the phase decides
-    # between 19 and 18, and 19 comes up 87% of the time.
+    # At 0.5389 sec a 10-second window holds 18.56 intervals, so the phase
+    # decides between 19 and 18, and 19 comes up 56% of the time.
     buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
     got = outcome(buffed)
     assert got.high_shots == 19
     assert got.low_shots == 18
-    assert got.high_probability == pytest.approx(0.868, abs=0.005)
+    assert got.high_probability == pytest.approx(0.556, abs=0.005)
     assert got.low_probability == pytest.approx(1 - got.high_probability)
 
 
@@ -161,12 +171,18 @@ def test_thresholds_only_list_charge_speeds_that_change_the_interval():
 
 
 def test_thresholds_carry_the_shot_counts_fienn_asked_about():
+    """The question this calculator was built for: what charge-speed total buys
+    19, 20, 21 shots. Each row's HIGH count is the one a favourable Full Burst
+    entry reaches; the row's probability says how often."""
     buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
     by_percent = {round(t.charge_speed_percent * 100, 2): t.outcome for t in thresholds(buffed)}
     assert by_percent[0.0].high_shots == 19
     assert by_percent[5.56].high_shots == 20
-    assert by_percent[11.11].high_shots == 21
-    assert by_percent[22.22].high_shots == 22
+    assert by_percent[16.67].high_shots == 21
+    assert by_percent[27.78].high_shots == 22
+    # 11.11% buys a frame but not a shot - it only makes 20 likelier.
+    assert by_percent[11.11].high_shots == 20
+    assert by_percent[11.11].high_probability > by_percent[5.56].high_probability
 
 
 def test_a_small_magazine_caps_the_shots_no_matter_the_charge_speed():

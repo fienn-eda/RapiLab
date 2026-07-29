@@ -30,7 +30,7 @@ def test_scarlet_with_liberalio_reports_the_measured_cadence():
     response = post("scarlet-black-shadow", roster, with_liberalio=True)
     assert response.status_code == 200
     body = response.json()
-    assert body["interval"] == pytest.approx(0.53, abs=1 / 180)
+    assert body["interval"] == pytest.approx(0.5389, abs=1 / 180)
     assert body["magazine"] == 22
     assert body["current"]["high_shots"] == 19
 

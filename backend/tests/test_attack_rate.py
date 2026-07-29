@@ -520,24 +520,22 @@ def test_charge_speed_reduction_is_quantised_to_whole_frames():
     assert charge_time_with_speed(1.0, 0.10) == pytest.approx(1.0 - 6 / 60)
 
 
-def test_the_surviving_charge_is_a_whole_number_of_frames():
-    """A percent cut lands on frames on its own, so only a flat cut can leave a
-    fraction - and the charge that survives one is floored to the frame below.
+def test_the_charge_left_by_a_flat_cut_keeps_its_fraction():
+    """Only the PERCENT cut lands on frames. A flat cut can leave a fraction of
+    a frame and that fraction survives - the charge is not snapped back onto the
+    grid afterwards.
 
     Scarlet: Black Shadow is the case that matters and she needs
     `shot_interval_with_speed`, because her 0.30 charge sits under
-    CHARGE_INTERVAL_FLOOR_SECONDS and only the timed-delay branch skips it.
-
-    The percent cases are the float trap this guards: `1.0 - 1/60` evaluates to
-    58.99999999999999 frames, and truncating that would hand back 58 frames and
-    a charge the game never serves."""
+    CHARGE_INTERVAL_FLOOR_SECONDS and only the timed-delay branch skips it."""
     from app.attack_rate import shot_interval_with_speed
 
-    # 0.30 - 0.1911 = 0.1089 sec of charge left, which is 6 frames, not 6.53.
+    # 0.30 - 0.1911 = 0.1089 sec of charge left - 6.53 frames, carried as such.
     assert shot_interval_with_speed(
-        0.30, 0.0, 0.1274 * 1.5, motion_delay=0.43) == pytest.approx(6 / 60 + 0.43)
-    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=0.05) == pytest.approx(57 / 60)
-    # Frame-aligned inputs must come back untouched, exactly.
+        0.30, 0.0, 0.1274 * 1.5, motion_delay=0.43) == pytest.approx(0.1089 + 0.43)
+    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=0.05) == pytest.approx(0.95)
+    # A percent cut still lands on whole frames, and a frame-aligned input comes
+    # back untouched: `1.0 - 1/60` must not lose a frame to float error.
     assert charge_time_with_speed(1.0, 0.02) == pytest.approx(59 / 60)
     assert charge_time_with_speed(1.0, 0.0) == pytest.approx(1.0)
 
@@ -551,11 +549,10 @@ def test_charge_speed_percent_applies_to_the_units_own_charge_time():
 
 def test_flat_reduction_subtracts_absolute_seconds_on_top():
     # "Caster-based" buffs (Liberalio, Mana) hand over SECONDS, computed from
-    # the caster's charge time, so they do not scale with the recipient's. The
-    # charge left over is a whole number of frames, so 0.1911 off a 1.0 sec
-    # charge leaves 48 frames and not the 0.8089 the subtraction alone gives.
-    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=0.1911) == pytest.approx(48 / 60)
-    assert charge_time_with_speed(1.5, 0.0, flat_reduction_sec=0.1911) == pytest.approx(78 / 60)
+    # the caster's charge time, so they do not scale with the recipient's - and
+    # the subtraction is plain, leaving whatever fraction of a frame it leaves.
+    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=0.1911) == pytest.approx(0.8089)
+    assert charge_time_with_speed(1.5, 0.0, flat_reduction_sec=0.1911) == pytest.approx(1.3089)
 
 
 def test_flat_reduction_and_percent_compose():
@@ -696,7 +693,7 @@ def test_a_timed_units_charge_is_not_floored_because_her_delay_already_bounds_he
     with_liberalio = shot_interval_with_speed(0.30, 0.0, 0.19, motion_delay=0.43)
 
     assert unbuffed == pytest.approx(0.73, abs=0.001)
-    assert with_liberalio == pytest.approx(0.53, abs=0.001)
+    assert with_liberalio == pytest.approx(0.54, abs=0.001)
 
 
 def test_a_unit_with_no_timed_delay_still_gets_the_floor():
@@ -735,27 +732,36 @@ def test_the_sword_swingers_decompose_into_charge_plus_delay():
 
 
 def test_scarlet_keeps_her_measured_cadence_after_the_split():
-    """Every reading she has must come out. Fienn read the damage numbers off
-    the Full Burst clock frame by frame (2026-07-29), with a 2.86% charge-speed
-    overload equipped - too small to buy a frame of her 18-frame charge, so it
-    changes nothing and the runs measure the unbuffed cadence:
+    """Her measured cadence, anchored on the comparison that needs no assumption
+    about the motion delay.
 
-        alone                       14 shots, 0.72998 sec apart
-        with Liberalio              19 shots, 0.52923 sec apart
-        with Liberalio, second run  19 shots, 0.52709 sec apart
+    Fienn read the damage numbers off the Full Burst clock frame by frame. The
+    delay is only known to the nearest 0.01 sec (0.44/0.42/0.44/0.42/0.43), so
+    an ABSOLUTE interval can only be pinned to about a third of a frame. But
+    subtracting the Liberalio-accompanied interval from the solo interval within
+    one account CANCELS the delay and leaves her grant alone, and that survives
+    a much tighter bound. Main account, four solo and two accompanied windows
+    (2026-07-30): 0.73371 and 0.54352 sec, so a grant of 0.19019.
 
-    The tolerance is a third of a frame - tight enough that carrying the
-    unfloored 0.1089 sec charge (0.5389) fails the Liberalio readings.
+    The grant assertion is what makes this test load-bearing: snapping the
+    surviving charge back onto the frame grid would make the effective grant
+    0.20000, which misses by 0.59 frames.
+
+    A second account reads 0.20229 for the same quantity and nothing known
+    separates the two - see docs/measurements/scarlet-black-shadow-charge.md.
     """
     from app.attack_rate import shot_interval_with_speed
     from app.skill_rules.registry import get_charge_motion_delay
 
     delay = get_charge_motion_delay("scarlet-black-shadow")
     liberalio_cut = 0.1274 * 1.5
-    tolerance = 1 / 180
+    frame = 1 / 60
 
-    assert shot_interval_with_speed(0.30, 0.0286, 0.0, delay) == pytest.approx(
-        0.72998, abs=tolerance)
-    for measured in (0.52923, 0.52709):
-        assert shot_interval_with_speed(0.30, 0.0286, liberalio_cut, delay) == pytest.approx(
-            measured, abs=tolerance)
+    solo = shot_interval_with_speed(0.30, 0.0, 0.0, delay)
+    accompanied = shot_interval_with_speed(0.30, 0.0, liberalio_cut, delay)
+
+    assert solo - accompanied == pytest.approx(0.19019, abs=0.1 * frame)
+    # Absolute intervals inherit the delay's own precision, so they get a
+    # looser bound than the difference above.
+    assert solo == pytest.approx(0.73371, abs=0.35 * frame)
+    assert accompanied == pytest.approx(0.54352, abs=0.35 * frame)
