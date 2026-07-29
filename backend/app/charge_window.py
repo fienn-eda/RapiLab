@@ -11,7 +11,7 @@ a fact - Fleetly Fading: Asura reloads her instantly on Full Burst entry - and
 for Liberalio and Neon it is an assumption the UI states, since nothing records
 how much they fired just before the window opened.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from app.attack_rate import (FRAME_SECONDS, charge_frames_bought,
                              reload_time_with_speed, shot_interval_with_speed)
@@ -159,11 +159,9 @@ def outcome(inputs: WindowInputs) -> Outcome:
 
 def thresholds(inputs: WindowInputs) -> list[Threshold]:
     """One row per charge-speed step that actually changes the cadence."""
-    import dataclasses
-
     rows, previous = [], None
     for step in charge_speed_steps(inputs.charge_time):
-        stepped = dataclasses.replace(inputs, charge_speed_percent=step)
+        stepped = replace(inputs, charge_speed_percent=step)
         interval = shot_interval(stepped)
         if previous is not None and interval == previous:
             continue

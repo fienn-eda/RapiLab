@@ -1,7 +1,12 @@
 """FB 창 안의 샷 타임라인 (docs/superpowers/specs/2026-07-29-charge-window-calculator-design.md)."""
+from dataclasses import replace
+
 import pytest
 
-from app.charge_window import WindowInputs, reload_intervenes, shot_interval, shot_times
+from app.charge_window import (WindowInputs, aggregate_charge_speed,
+                               aggregation_rules_disagree, charge_speed_steps,
+                               outcome, reload_intervenes, shot_interval,
+                               shot_times, thresholds)
 
 # Scarlet: Black Shadow as Fienn actually measured her (2026-07-29): a 0.30 sec
 # charge, a 0.43 sec motion delay, and a 2.86% charge-speed overload too small
@@ -27,7 +32,7 @@ def test_interval_reproduces_the_solo_measurement():
 def test_interval_reproduces_the_liberalio_measurement():
     # Two runs, 0.52923 and 0.52709 sec. Carrying the unfloored 0.1089 charge
     # would give 0.5389 and fail both.
-    buffed = dataclasses_replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
     for measured in (0.52923, 0.52709):
         assert shot_interval(buffed) == pytest.approx(measured, abs=1 / 180)
 
@@ -56,7 +61,7 @@ def test_starting_charged_is_worth_exactly_one_shot_when_no_reload_lands():
 
 
 def test_a_small_magazine_forces_a_reload_inside_the_window():
-    small = dataclasses_replace(SCARLET, max_ammo=5)
+    small = replace(SCARLET, max_ammo=5)
     assert reload_intervenes(small) is True
     assert reload_intervenes(SCARLET) is False
 
@@ -67,21 +72,11 @@ def test_the_reload_gap_is_the_cube_buffed_one():
     # engine's, so this test pins that the calculator does not restate it.
     from app.attack_rate import reload_time_with_speed
 
-    small = dataclasses_replace(SCARLET, max_ammo=5)
+    small = replace(SCARLET, max_ammo=5)
     times = shot_times(small, start_charged=False)
     gap = times[5] - times[4]
     expected = reload_time_with_speed(2.0, 0.2969) + shot_interval(small)
     assert gap == pytest.approx(expected)
-
-
-def dataclasses_replace(inputs, **changes):
-    import dataclasses
-
-    return dataclasses.replace(inputs, **changes)
-
-
-from app.charge_window import (aggregate_charge_speed, aggregation_rules_disagree,
-                               charge_speed_steps, outcome, thresholds)
 
 
 def test_charge_speed_steps_are_one_frame_apart():
@@ -95,7 +90,7 @@ def test_charge_speed_steps_are_one_frame_apart():
 
 def test_a_step_below_the_next_frame_changes_nothing():
     # 2.86% and 5.0% both floor to zero frames of an 18-frame charge.
-    quiet = dataclasses_replace(SCARLET, charge_speed_percent=0.05)
+    quiet = replace(SCARLET, charge_speed_percent=0.05)
     assert shot_interval(quiet) == pytest.approx(shot_interval(SCARLET))
 
 
@@ -132,7 +127,7 @@ def test_a_liberalio_sized_charge_is_judged_on_its_own_frame_grid():
 def test_outcome_splits_the_window_between_two_shot_counts():
     # At 0.53 sec a 10-second window holds 18.87 intervals, so the phase decides
     # between 19 and 18, and 19 comes up 87% of the time.
-    buffed = dataclasses_replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
     got = outcome(buffed)
     assert got.high_shots == 19
     assert got.low_shots == 18
@@ -145,7 +140,7 @@ def test_a_reload_inside_the_window_still_splits_the_two_counts():
     # shot lands at 9.572, only 0.428 sec of slack before the window closes. The
     # evenly-spaced fraction would read 10/0.73 - 11 = 2.7 and pin to a false
     # 100%; the timeline says 59%.
-    small = dataclasses_replace(SCARLET, max_ammo=6)
+    small = replace(SCARLET, max_ammo=6)
     assert reload_intervenes(small) is True
     got = outcome(small)
     assert (got.high_shots, got.low_shots) == (12, 11)
@@ -157,7 +152,7 @@ def test_a_reload_inside_the_window_still_splits_the_two_counts():
 
 
 def test_thresholds_only_list_charge_speeds_that_change_the_interval():
-    buffed = dataclasses_replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
     got = thresholds(buffed)
     assert [round(t.charge_speed_percent * 100, 2) for t in got][:5] == [
         0.0, 5.56, 11.11, 16.67, 22.22]
@@ -166,7 +161,7 @@ def test_thresholds_only_list_charge_speeds_that_change_the_interval():
 
 
 def test_thresholds_carry_the_shot_counts_fienn_asked_about():
-    buffed = dataclasses_replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
     by_percent = {round(t.charge_speed_percent * 100, 2): t.outcome for t in thresholds(buffed)}
     assert by_percent[0.0].high_shots == 19
     assert by_percent[5.56].high_shots == 20
@@ -177,9 +172,9 @@ def test_thresholds_carry_the_shot_counts_fienn_asked_about():
 def test_a_small_magazine_caps_the_shots_no_matter_the_charge_speed():
     """Charge speed is wasted money once the magazine, not the cadence, is the
     binding constraint - the reload eats whatever the faster charge bought."""
-    small = dataclasses_replace(SCARLET, max_ammo=6,
+    small = replace(SCARLET, max_ammo=6,
                                 charge_time_reduction_sec=LIBERALIO_CUT)
     counts = {t.outcome.high_shots for t in thresholds(small)}
-    roomy = dataclasses_replace(SCARLET, max_ammo=22,
+    roomy = replace(SCARLET, max_ammo=22,
                                 charge_time_reduction_sec=LIBERALIO_CUT)
     assert max(counts) < max(t.outcome.high_shots for t in thresholds(roomy))
