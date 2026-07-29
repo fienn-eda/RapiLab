@@ -11,11 +11,10 @@ import type { ChargeWindowResult } from '../types/chargeWindow'
 import { ChargeWindowLadder } from './ChargeWindowLadder'
 import { NumberField } from './fields/NumberField'
 
-const UNITS = [
-  { slug: 'scarlet-black-shadow', label: '홍련: 흑영' },
-  { slug: 'liberalio', label: '리버렐리오' },
-  { slug: 'neon-vision-eye', label: '네온: 비전 아이' },
-]
+// Which units the tab offers is a UI scoping decision; the backend's 422 stays
+// the authority on what the calculator actually covers. The display names are
+// NOT restated here - they come from /api/supported-units through `nameFor`.
+const UNIT_SLUGS = ['scarlet-black-shadow', 'liberalio', 'neon-vision-eye']
 
 const LIBERALIO_SLUG = 'liberalio'
 
@@ -26,8 +25,13 @@ const optional = (raw: string): number | null => {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-export function ChargeWindowPanel({ roster }: { roster: unknown[] }) {
-  const [slug, setSlug] = useState(UNITS[0].slug)
+interface ChargeWindowPanelProps {
+  roster: unknown[]
+  nameFor: (slug: string) => string
+}
+
+export function ChargeWindowPanel({ roster, nameFor }: ChargeWindowPanelProps) {
+  const [slug, setSlug] = useState(UNIT_SLUGS[0])
   const [withLiberalio, setWithLiberalio] = useState(true)
   const [chargeSpeed, setChargeSpeed] = useState('')
   const [maxAmmo, setMaxAmmo] = useState('')
@@ -68,8 +72,8 @@ export function ChargeWindowPanel({ roster }: { roster: unknown[] }) {
         value={slug}
         onChange={(event) => setSlug(event.target.value)}
       >
-        {UNITS.map((unit) => (
-          <option key={unit.slug} value={unit.slug}>{unit.label}</option>
+        {UNIT_SLUGS.map((unitSlug) => (
+          <option key={unitSlug} value={unitSlug}>{nameFor(unitSlug)}</option>
         ))}
       </select>
 
@@ -110,7 +114,7 @@ export function ChargeWindowPanel({ roster }: { roster: unknown[] }) {
       />
 
       <p className="charge-panel__assumption">
-        풀버스트 진입 시 탄창은 가득으로 가정합니다. 흑련은 아수라가 즉시 재장전하므로
+        풀버스트 진입 시 탄창은 가득으로 가정합니다. 홍련은 아수라가 즉시 재장전하므로
         사실이고, 리버렐리오와 네온은 가정입니다.
       </p>
 

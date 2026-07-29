@@ -206,6 +206,7 @@ function App() {
                 // panel's own state is the only place it lives.
                 key={state.activeOpenId ?? 'none'}
                 roster={validRoster}
+                nameFor={nameFor}
               />
             </div>
           </main>
