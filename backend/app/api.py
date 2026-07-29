@@ -16,6 +16,10 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from app.cancellation import CancelToken, Cancelled
+from app.charge_window import (near_frame_boundary, outcome, reload_intervenes,
+                               shot_interval, thresholds)
+from app.charge_window_inputs import (CALCULATOR_SLUGS, LIBERALIO_SLUG, Overrides,
+                                      build_inputs)
 from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_draft
 from app.deck_evaluation import InfeasibleDeck, evaluate_decks
 from app.deck_search import BossProfile, search_best_decks
@@ -131,6 +135,42 @@ class EvaluateDecksResponse(BaseModel):
     combined_total_damage: float
     excluded_slugs: list[str]
     engine_version: str
+
+
+class ChargeWindowOverrides(BaseModel):
+    """What the user typed over the synced roster; omitted fields keep it."""
+    charge_speed_lines: list[float] | None = None
+    max_ammo_percent: float | None = None
+    reload_speed_percent: float | None = None
+
+
+class ChargeWindowRequest(BaseModel):
+    slug: str
+    roster: list[UserNikkeState]
+    with_liberalio: bool = False
+    overrides: ChargeWindowOverrides = Field(default_factory=ChargeWindowOverrides)
+
+
+class ShotOutcome(BaseModel):
+    low_shots: int
+    low_probability: float
+    high_shots: int
+    high_probability: float
+
+
+class ChargeWindowThreshold(BaseModel):
+    charge_speed_percent: float
+    interval: float
+    outcome: ShotOutcome
+
+
+class ChargeWindowResponse(BaseModel):
+    interval: float
+    magazine: int
+    charge_speed_percent: float
+    current: ShotOutcome
+    thresholds: list[ChargeWindowThreshold]
+    notes: list[str]
 
 
 class SupportedUnit(BaseModel):
@@ -457,6 +497,80 @@ async def evaluate_decks_route(
     request: EvaluateDecksRequest, http_request: Request
 ) -> EvaluateDecksResponse:
     return await _run_cancellable(http_request, _evaluate_decks_sync, request)
+
+
+def _shot_outcome(value) -> ShotOutcome:
+    """charge_window.Outcome -> the wire model. Written out field by field so a
+    rename on either side is a type error rather than a silently missing key."""
+    return ShotOutcome(
+        low_shots=value.low_shots,
+        low_probability=value.low_probability,
+        high_shots=value.high_shots,
+        high_probability=value.high_probability,
+    )
+
+
+def _charge_window_notes(request, inputs, spec_atk, liberalio_atk):
+    """The judgements worth surfacing next to the ladder. Each is a fact the
+    calculator can check rather than a caveat the reader has to remember."""
+    notes = []
+    if reload_intervenes(inputs):
+        notes.append(
+            "탄창이 창 안에서 비어 재장전이 걸립니다 — 엔진의 재장전 모델이 실측과 "
+            "어긋나 있어(docs/engine-gaps.md) 마지막 한 발이 불확실합니다.")
+    if (request.with_liberalio and request.slug != LIBERALIO_SLUG
+            and liberalio_atk is not None and liberalio_atk <= spec_atk):
+        notes.append(
+            "리버렐리오의 공격력이 더 낮아 차지속도 버프가 그녀 자신에게 갑니다 — "
+            "대상은 '최저 공격력 버스트 3 아군'이고 시전자를 제외하지 않습니다.")
+    lines = (request.overrides.charge_speed_lines
+             if request.overrides.charge_speed_lines is not None
+             else [inputs.charge_speed_percent * 100])
+    if near_frame_boundary(lines, inputs.charge_time):
+        notes.append(
+            "차지속도 합계가 프레임 경계에 가까워, 부위별 옵션 구성에 따라 한 칸 "
+            "갈릴 수 있습니다 — 오버로드 집계 규칙이 미결입니다.")
+    return notes
+
+
+@app.post("/api/charge-window", response_model=ChargeWindowResponse)
+def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
+    """FB 창 안 타수와, 다음 타수를 사는 차지속도 임계값."""
+    if request.slug not in CALCULATOR_SLUGS:
+        raise HTTPException(422, f"charge-window calculator does not cover {request.slug}")
+    by_slug = {state.character_slug: state for state in request.roster}
+    if request.slug not in by_slug:
+        raise HTTPException(422, f"{request.slug} is not in the submitted roster")
+    try:
+        inputs = build_inputs(
+            by_slug[request.slug], request.with_liberalio,
+            Overrides(request.overrides.charge_speed_lines,
+                      request.overrides.max_ammo_percent,
+                      request.overrides.reload_speed_percent),
+            liberalio_state=by_slug.get(LIBERALIO_SLUG),
+        )
+    except ValueError as error:
+        raise HTTPException(422, str(error)) from error
+
+    liberalio_state = by_slug.get(LIBERALIO_SLUG)
+    notes = _charge_window_notes(
+        request, inputs, by_slug[request.slug].atk,
+        liberalio_state.atk if liberalio_state else None)
+    return ChargeWindowResponse(
+        interval=shot_interval(inputs),
+        magazine=inputs.max_ammo,
+        charge_speed_percent=inputs.charge_speed_percent,
+        current=_shot_outcome(outcome(inputs)),
+        thresholds=[
+            ChargeWindowThreshold(
+                charge_speed_percent=row.charge_speed_percent,
+                interval=row.interval,
+                outcome=_shot_outcome(row.outcome),
+            )
+            for row in thresholds(inputs)
+        ],
+        notes=notes,
+    )
 
 
 @app.get("/api/supported-units", response_model=list[SupportedUnit])
