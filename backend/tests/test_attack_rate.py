@@ -520,6 +520,28 @@ def test_charge_speed_reduction_is_quantised_to_whole_frames():
     assert charge_time_with_speed(1.0, 0.10) == pytest.approx(1.0 - 6 / 60)
 
 
+def test_the_surviving_charge_is_a_whole_number_of_frames():
+    """A percent cut lands on frames on its own, so only a flat cut can leave a
+    fraction - and the charge that survives one is floored to the frame below.
+
+    Scarlet: Black Shadow is the case that matters and she needs
+    `shot_interval_with_speed`, because her 0.30 charge sits under
+    CHARGE_INTERVAL_FLOOR_SECONDS and only the timed-delay branch skips it.
+
+    The percent cases are the float trap this guards: `1.0 - 1/60` evaluates to
+    58.99999999999999 frames, and truncating that would hand back 58 frames and
+    a charge the game never serves."""
+    from app.attack_rate import shot_interval_with_speed
+
+    # 0.30 - 0.1911 = 0.1089 sec of charge left, which is 6 frames, not 6.53.
+    assert shot_interval_with_speed(
+        0.30, 0.0, 0.1274 * 1.5, motion_delay=0.43) == pytest.approx(6 / 60 + 0.43)
+    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=0.05) == pytest.approx(57 / 60)
+    # Frame-aligned inputs must come back untouched, exactly.
+    assert charge_time_with_speed(1.0, 0.02) == pytest.approx(59 / 60)
+    assert charge_time_with_speed(1.0, 0.0) == pytest.approx(1.0)
+
+
 def test_charge_speed_percent_applies_to_the_units_own_charge_time():
     # The percent scales the charge time it applies to, so the same buff buys
     # less absolute time on a shorter charge.
@@ -529,17 +551,11 @@ def test_charge_speed_percent_applies_to_the_units_own_charge_time():
 
 def test_flat_reduction_subtracts_absolute_seconds_on_top():
     # "Caster-based" buffs (Liberalio, Mana) hand over SECONDS, computed from
-    # the caster's charge time, so they do not scale with the recipient's.
-    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=0.1911) == pytest.approx(1.0 - 0.1911)
-    assert charge_time_with_speed(1.5, 0.0, flat_reduction_sec=0.1911) == pytest.approx(1.5 - 0.1911)
-
-
-def test_liberalio_buff_reproduces_scarlets_measured_interval():
-    # Fienn measured Scarlet at 0.7323s alone and 0.5424s with Liberalio.
-    # Liberalio is an SR with a 1.5s charge, so her "12.74% caster-based"
-    # hands over 0.1274 * 1.5 = 0.1911s.
-    got = charge_time_with_speed(0.7323, 0.0, flat_reduction_sec=0.1274 * 1.5)
-    assert got == pytest.approx(0.5424, abs=1 / 60)
+    # the caster's charge time, so they do not scale with the recipient's. The
+    # charge left over is a whole number of frames, so 0.1911 off a 1.0 sec
+    # charge leaves 48 frames and not the 0.8089 the subtraction alone gives.
+    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=0.1911) == pytest.approx(48 / 60)
+    assert charge_time_with_speed(1.5, 0.0, flat_reduction_sec=0.1911) == pytest.approx(78 / 60)
 
 
 def test_flat_reduction_and_percent_compose():
@@ -673,15 +689,14 @@ def test_charge_motion_delay_lengthens_the_shot_interval_and_nothing_else():
 def test_a_timed_units_charge_is_not_floored_because_her_delay_already_bounds_her():
     """Scarlet: Black Shadow's real cycle is a 0.30 sec charge plus a 0.43 sec
     motion delay (Fienn, 2026-07-28). Liberalio cuts a flat 0.19 sec off the
-    CHARGE, and Fienn measured the result at 0.5424 sec. Flooring the 0.30
-    charge at 10/29 would swallow the whole cut."""
+    CHARGE. Flooring the 0.30 charge at 10/29 would swallow the whole cut."""
     from app.attack_rate import shot_interval_with_speed
 
     unbuffed = shot_interval_with_speed(0.30, 0.0, 0.0, motion_delay=0.43)
     with_liberalio = shot_interval_with_speed(0.30, 0.0, 0.19, motion_delay=0.43)
 
     assert unbuffed == pytest.approx(0.73, abs=0.001)
-    assert with_liberalio == pytest.approx(0.54, abs=0.001)
+    assert with_liberalio == pytest.approx(0.53, abs=0.001)
 
 
 def test_a_unit_with_no_timed_delay_still_gets_the_floor():
@@ -720,11 +735,27 @@ def test_the_sword_swingers_decompose_into_charge_plus_delay():
 
 
 def test_scarlet_keeps_her_measured_cadence_after_the_split():
-    """Both readings she has must still come out: 0.7325 sec unbuffed, and
-    0.5424 under Liberalio's flat 0.19 sec cut."""
+    """Every reading she has must come out. Fienn read the damage numbers off
+    the Full Burst clock frame by frame (2026-07-29), with a 2.86% charge-speed
+    overload equipped - too small to buy a frame of her 18-frame charge, so it
+    changes nothing and the runs measure the unbuffed cadence:
+
+        alone                       14 shots, 0.72998 sec apart
+        with Liberalio              19 shots, 0.52923 sec apart
+        with Liberalio, second run  19 shots, 0.52709 sec apart
+
+    The tolerance is a third of a frame - tight enough that carrying the
+    unfloored 0.1089 sec charge (0.5389) fails the Liberalio readings.
+    """
     from app.attack_rate import shot_interval_with_speed
     from app.skill_rules.registry import get_charge_motion_delay
 
     delay = get_charge_motion_delay("scarlet-black-shadow")
-    assert shot_interval_with_speed(0.30, 0.0, 0.0, delay) == pytest.approx(0.73, abs=0.005)
-    assert shot_interval_with_speed(0.30, 0.0, 0.19, delay) == pytest.approx(0.5424, abs=0.005)
+    liberalio_cut = 0.1274 * 1.5
+    tolerance = 1 / 180
+
+    assert shot_interval_with_speed(0.30, 0.0286, 0.0, delay) == pytest.approx(
+        0.72998, abs=tolerance)
+    for measured in (0.52923, 0.52709):
+        assert shot_interval_with_speed(0.30, 0.0286, liberalio_cut, delay) == pytest.approx(
+            measured, abs=tolerance)

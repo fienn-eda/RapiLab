@@ -142,6 +142,15 @@ def build_strange_currents_immunity_rules(values: dict) -> list[SkillRule]:
 CALM_DEPTHS_TARGET_BURST_TIER = 3
 
 
+def calm_depths_charge_cut_seconds(values: dict, caster_weapon_stats: dict) -> float:
+    """Calm Depths' caster-based grant, in absolute seconds.
+
+    Shared with charge_window_inputs so the calculator and the rule below cannot
+    disagree about what she hands an ally."""
+    percent = float(values["calm_depths"]["description_value_07"]) / 100
+    return percent * float(caster_weapon_stats["charge_time"])
+
+
 def build_calm_depths_charge_rules(values: dict, caster_weapon_stats: dict) -> list[SkillRule]:
     """Calm Depths' "Charge Speed +X% of the skill user's Charge Speed" on the
     lowest-final-ATK Burst 3 ally.
@@ -158,9 +167,8 @@ def build_calm_depths_charge_rules(values: dict, caster_weapon_stats: dict) -> l
     19.1% on a 1.0 sec one, so a single percent cannot be right for both.
     """
     calm = values["calm_depths"]
-    percent = float(calm["description_value_07"]) / 100
     duration = float(calm["description_value_08"])
-    seconds = percent * float(caster_weapon_stats["charge_time"])
+    seconds = calm_depths_charge_cut_seconds(values, caster_weapon_stats)
 
     def action(context, caster_slug, time, registry):
         targets = context.lowest_atk_slugs(

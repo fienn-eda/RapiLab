@@ -1524,3 +1524,40 @@
 .deck-results__diff-removed {
   color: var(--danger);
 }
+
+/* 차지 창 계산기 — 사다리 표. 좁은 화면에서 표가 페이지를 밀지 않도록
+   자기 컨테이너 안에서만 가로 스크롤한다. */
+.charge-ladder {
+  overflow-x: auto;
+}
+
+.charge-ladder__table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75rem 0;
+}
+
+.charge-ladder__table th,
+.charge-ladder__table td {
+  padding: 0.35rem 0.6rem;
+  text-align: left;
+  border-bottom: 1px solid var(--border, #3a3a3a);
+  white-space: nowrap;
+}
+
+.charge-ladder__row--current {
+  font-weight: 700;
+  background: var(--accent-soft, rgba(120, 170, 255, 0.14));
+}
+
+.charge-ladder__notes {
+  margin: 0.5rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.9em;
+  opacity: 0.85;
+}
+
+.charge-panel__assumption {
+  font-size: 0.9em;
+  opacity: 0.8;
+}
