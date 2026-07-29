@@ -14,7 +14,7 @@
 - **새 게임 상수를 정의하지 않는다.** 차지시간·모션딜레이·탄창·재장전·큐브·오버로드는 전부 기존 로더에서 읽는다. 스킬 텍스트에서 오는 두 값(흑련 아수라 최대장탄, 리버렐리오 Calm Depths 감소초)은 해당 유닛 모듈에 이름 붙인 함수를 만들고 **스킬 규칙 빌더와 계산기가 그 함수를 공유**한다.
 - FB 창 길이는 `WindowInputs.window_seconds` 기본값 **10.0초**.
 - 리버렐리오의 시전자 기준 감소는 `charge_time_reduction_sec` (절대 초), 오버로드 차지속도는 `charge_speed_percent` (비율, 0.0286 = 2.86%). 두 스탯을 섞지 않는다.
-- 백엔드 주석·docstring은 영어, 프론트 사용자 문구는 한국어(기존 코드 관례).
+- 백엔드 주석·docstring은 영어. 예외는 `api.py` 의 **라우트 docstring**과 사용자에게 그대로 보이는 문자열로, 기존 코드가 한국어를 쓴다(`engine_version_route` 참고). 프론트 사용자 문구는 한국어.
 - 작업 디렉터리는 `C:\Users\fienn\Desktop\NikkeDeckBuilder\.claude\worktrees\charge-frame-snap`. 백엔드 명령은 `backend/`에서, 프론트 명령은 `frontend/`에서 실행한다.
 - 기준선: 백엔드 `1561 passed, 3 skipped`. 어떤 작업도 이 수를 줄이면 안 된다. 각 작업이 적은 절대 개수는 그 작업까지의 누적치이며, **줄어들지 않는 것**이 실제 게이트다.
 - **이 워크트리에는 `frontend/node_modules`가 없다.** Task 6을 시작하기 전에 `cd frontend && npm install`을 한 번 실행한다. 하지 않으면 모든 vitest 명령이 `ERR_MODULE_NOT_FOUND`로 죽는다.
@@ -493,20 +493,36 @@ def test_calm_depths_cut_is_the_percent_times_the_casters_own_charge():
     assert calm_depths_charge_cut_seconds(values, {"charge_time": 1.5}) == 0.1274 * 1.5
 
 
-def test_the_rule_builder_uses_the_same_function_for_the_cut():
-    """Pin that the builder did not keep its own copy of the arithmetic: patch
-    the shared function and the rule must move with it."""
-    from unittest.mock import patch
-
-    from app.skill_rules import liberalio
+def test_the_rule_hands_out_exactly_what_the_shared_function_returns():
+    """Pin that the builder did not keep its own copy of the arithmetic. Fires
+    the real rule through a real registry - the same way
+    test_skill_rules_burst3_eb1 exercises Calm Depths - and compares the effect
+    it granted against the shared function's answer."""
+    from app.effects import EffectRegistry
+    from app.skill_rules.liberalio import build_calm_depths_charge_rules
+    from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
     values = {"calm_depths": {"description_value_07": "12.74",
                               "description_value_08": "10"}}
-    with patch.object(liberalio, "calm_depths_charge_cut_seconds",
-                      return_value=0.5) as shared:
-        liberalio.build_calm_depths_charge_rules(values, {"charge_time": 1.5})
-    shared.assert_called_once()
+    weapon = {"charge_time": 1.5}
+    rules = {"liberalio": build_calm_depths_charge_rules(values, weapon)}
+    ctx = SquadContext(
+        [
+            SquadMember("liberalio", burst_tier=3, element="Wind"),
+            SquadMember("scarlet-black-shadow", burst_tier=3, element="Wind"),
+        ],
+        base_atk={"liberalio": 400_000, "scarlet-black-shadow": 300_000},
+    )
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", rules, ctx, registry, time=5.0)
+
+    granted = registry.total_for(
+        "charge_time_reduction_sec",
+        {"slug": "scarlet-black-shadow", "element": "Wind"}, now=5.0)
+    assert granted == calm_depths_charge_cut_seconds(values, weapon)
 ```
+
+`EffectRegistry` 의 import 경로가 `app.effects` 가 아니면 `backend/tests/test_skill_rules_burst3_eb1.py` 상단이 무엇을 import하는지 보고 그것을 그대로 쓴다.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -555,7 +571,7 @@ def calm_depths_charge_cut_seconds(values: dict, caster_weapon_stats: dict) -> f
     return percent * float(caster_weapon_stats["charge_time"])
 ```
 
-같은 파일 `build_calm_depths_charge_rules` 안의 세 줄
+같은 파일 `build_calm_depths_charge_rules` 안의 네 줄
 
 ```python
     calm = values["calm_depths"]
@@ -564,24 +580,12 @@ def calm_depths_charge_cut_seconds(values: dict, caster_weapon_stats: dict) -> f
     seconds = percent * float(caster_weapon_stats["charge_time"])
 ```
 
-를 이렇게 바꾼다 (모듈 전역을 통해 부르는 것이 중요하다 — 테스트가 그 이름을 패치한다):
+를 이렇게 바꾼다:
 
 ```python
     calm = values["calm_depths"]
     duration = float(calm["description_value_08"])
-    seconds = _this_module().calm_depths_charge_cut_seconds(values, caster_weapon_stats)
-```
-
-그리고 `build_calm_depths_charge_rules` 아래에 헬퍼를 둔다:
-
-```python
-def _this_module():
-    """Resolve through the module object so a test can patch
-    `calm_depths_charge_cut_seconds` and see the builder follow it - a direct
-    call would bind the original function at definition time."""
-    import sys
-
-    return sys.modules[__name__]
+    seconds = calm_depths_charge_cut_seconds(values, caster_weapon_stats)
 ```
 
 - [ ] **Step 4: Run tests to verify they pass**
