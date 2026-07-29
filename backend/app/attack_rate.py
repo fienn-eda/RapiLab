@@ -133,16 +133,28 @@ def charge_time_with_speed(charge_time, charge_speed_percent, flat_reduction_sec
     0.19초 줄어든다"). Expressing it as a percent would be wrong: the equivalent
     percent is 26.1% on Scarlet's 0.73 sec charge but 19.1% on a 1.0 sec one.
 
-    Whatever the two cuts come to, the charge that SURVIVES them is a whole
-    number of frames - the game has no sub-frame charge. That final flooring is
-    what a flat cut makes visible, because it is the only cut that can leave a
-    fraction: 0.30 - 0.1911 = 0.1089 sec floors to 6 frames = 0.10, so Liberalio
-    takes 0.20 sec off Scarlet: Black Shadow rather than the 0.1911 she grants.
-    Fienn timed three Full Burst windows frame by frame (2026-07-29, Scarlet
-    with a 2.86% charge-speed overload, damage numbers read against the Full
-    Burst clock): 0.72998 sec per shot alone, and 0.52923 / 0.52709 with
-    Liberalio. Flooring predicts 0.73000 and 0.53000 - 0.11 frames out on
-    average, against 0.64 frames if the 0.1089 is carried unfloored.
+    The charge left after a flat cut is carried as-is, NOT snapped back onto the
+    frame grid. Only the percent cut lands in frames; a flat cut can leave a
+    fraction and that fraction survives. Scarlet: Black Shadow receiving
+    Liberalio therefore charges in 0.30 - 0.1911 = 0.1089 sec.
+
+    That is a measured ruling, and the measurement it rests on is unusually
+    strong because it needs no assumption about the motion delay: subtracting
+    her Liberalio-accompanied interval from her solo interval WITHIN one account
+    cancels the delay and leaves the grant alone. Across four solo and two
+    accompanied Full Burst windows Fienn read 0.19019 sec (2026-07-30), against
+    a nominal 0.19110 - 0.05 frames out. Snapping the residual to frames would
+    make the effective grant 0.20000 instead, which those readings reject at
+    17.6 sigma.
+
+    A SECOND account, measured the same way with the same deck, skill levels,
+    cubes and frame rate, instead reads 0.20229 - the snapped value - and
+    nothing known separates the two. See
+    docs/measurements/scarlet-black-shadow-charge.md for the raw windows, the
+    six hypotheses that failed to explain the gap, and why more readings of the
+    same kind cannot settle it: Liberalio's grant is 11.466 frames, so every
+    recipient of it sits 0.534 frames from a boundary and the two models are
+    always exactly that far apart.
 
     The same expression covers slowdowns: at -20% it returns 1.2x the base,
     which is the behaviour Bready's Taste debuff needs.
@@ -165,17 +177,6 @@ def charge_time_with_speed(charge_time, charge_speed_percent, flat_reduction_sec
     return max(_reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec), floor)
 
 
-# Sub-frame slack for _floor_to_frames. A charge that is a whole number of
-# frames in exact arithmetic can land just under it in floats - 0.30 sec minus
-# one frame reads as 16.999999999999996 frames - and truncating that to 16
-# would hand out a frame the game never gives.
-_FRAME_EPSILON = 1e-9
-
-
-def _floor_to_frames(seconds):
-    return math.floor(seconds / FRAME_SECONDS + _FRAME_EPSILON) * FRAME_SECONDS
-
-
 def charge_frames_bought(charge_time, charge_speed_percent):
     """Whole frames a charge-speed ratio takes off this charge time.
 
@@ -188,7 +189,7 @@ def charge_frames_bought(charge_time, charge_speed_percent):
 
 def _reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec):
     frames = charge_frames_bought(charge_time, charge_speed_percent)
-    return _floor_to_frames(charge_time - frames * FRAME_SECONDS - flat_reduction_sec)
+    return charge_time - frames * FRAME_SECONDS - flat_reduction_sec
 
 
 def shot_interval_with_speed(charge_time, charge_speed_percent, flat_reduction_sec=0.0,
