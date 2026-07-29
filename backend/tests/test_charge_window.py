@@ -126,6 +126,22 @@ def test_outcome_splits_the_window_between_two_shot_counts():
     assert got.low_probability == pytest.approx(1 - got.high_probability)
 
 
+def test_a_reload_inside_the_window_still_splits_the_two_counts():
+    # 6 rounds at 0.73 sec empty at 4.38 sec; after the buffed reload the 12th
+    # shot lands at 9.572, only 0.428 sec of slack before the window closes. The
+    # evenly-spaced fraction would read 10/0.73 - 11 = 2.7 and pin to a false
+    # 100%; the timeline says 59%.
+    small = dataclasses_replace(SCARLET, max_ammo=6)
+    assert reload_intervenes(small) is True
+    got = outcome(small)
+    assert (got.high_shots, got.low_shots) == (12, 11)
+    times = shot_times(small, start_charged=True)
+    expected = (small.window_seconds - times[-1]) / shot_interval(small)
+    assert got.high_probability == pytest.approx(expected)
+    assert got.high_probability == pytest.approx(0.586, abs=0.005)
+    assert got.low_probability == pytest.approx(1 - got.high_probability)
+
+
 def test_thresholds_only_list_charge_speeds_that_change_the_interval():
     buffed = dataclasses_replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
     got = thresholds(buffed)

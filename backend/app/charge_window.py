@@ -139,16 +139,20 @@ def outcome(inputs: WindowInputs) -> Outcome:
     an over- or under-statement. Reporting the guaranteed count alone hides that
     Scarlet reads 19 shots 87% of the time at zero charge speed.
 
-    The split is exact only while the magazine outlasts the window. Once a
-    reload lands inside it the shots are no longer evenly spaced and the
-    fraction is an approximation - which is what `reload_intervenes` exists to
-    warn about, since the reload formula is itself unsettled.
+    The split is exact, reload or no reload. Opening the window a delay d after
+    a charge completes shifts EVERY shot of the fully-charged timeline by that
+    same d, reloads included, because each gap - charge or reload - is measured
+    from the shot before it. So the high count survives exactly while
+    d < window_seconds - T[high - 1], and d is uniform over one interval. With
+    no reload T[high - 1] is (high - 1) intervals and the fraction is the plain
+    window/interval - low; with one it is not, and only the timeline knows.
     """
+    times = shot_times(inputs, start_charged=True)
+    high = len(times)
     low = len(shot_times(inputs, start_charged=False))
-    high = len(shot_times(inputs, start_charged=True))
     if high == low:
         return Outcome(low, 1.0, high, 0.0)
-    high_probability = inputs.window_seconds / shot_interval(inputs) - low
+    high_probability = (inputs.window_seconds - times[high - 1]) / shot_interval(inputs)
     high_probability = min(1.0, max(0.0, high_probability))
     return Outcome(low, 1.0 - high_probability, high, high_probability)
 
