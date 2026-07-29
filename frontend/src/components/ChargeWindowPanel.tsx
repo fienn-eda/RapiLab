@@ -93,6 +93,14 @@ export function ChargeWindowPanel({ roster }: { roster: unknown[] }) {
         onChange={setChargeSpeed}
         step={0.01}
       />
+      {/* The synced roster reports overload options already summed across gear,
+          so the per-slot lines the two aggregation rules differ on are not
+          recoverable from it. Typing the lines in is what makes the comparison
+          possible, hence a standing caveat rather than a per-result note. */}
+      <p className="charge-panel__assumption">
+        동기화된 로스터는 부위별 옵션이 아닌 합계만 알고 있어, 부위별 집계 규칙이
+        다를 경우 결과가 한 프레임 갈릴 수 있습니다.
+      </p>
       <NumberField
         label="최대장탄 오버로드"
         hint="(%, 비우면 동기화된 로스터 값)"

@@ -176,8 +176,18 @@ def _floor_to_frames(seconds):
     return math.floor(seconds / FRAME_SECONDS + _FRAME_EPSILON) * FRAME_SECONDS
 
 
+def charge_frames_bought(charge_time, charge_speed_percent):
+    """Whole frames a charge-speed ratio takes off this charge time.
+
+    Charge speed only ever lands in whole frames (see `charge_time_with_speed`),
+    so this is the one place the ratio meets the frame grid - anything that
+    needs to know whether two ratios differ AT ALL asks here rather than
+    re-deriving the quantisation."""
+    return int(charge_time / FRAME_SECONDS * charge_speed_percent)
+
+
 def _reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec):
-    frames = int(charge_time / FRAME_SECONDS * charge_speed_percent)
+    frames = charge_frames_bought(charge_time, charge_speed_percent)
     return _floor_to_frames(charge_time - frames * FRAME_SECONDS - flat_reduction_sec)
 
 

@@ -68,11 +68,28 @@ def test_liberalio_taking_her_own_buff_is_reported():
     assert any("리버렐리오" in note for note in body["notes"])
 
 
-def test_a_total_near_a_frame_boundary_is_reported():
+def test_lines_the_two_aggregation_rules_split_on_are_reported():
+    # 5.51% raw buys no frame of an 18-frame charge; rounded to 6% it buys one.
     roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])]
     body = post("scarlet-black-shadow", roster,
                 overrides={"charge_speed_lines": [5.51]}).json()
-    assert any("부위" in note for note in body["notes"])
+    assert any("집계 규칙" in note for note in body["notes"])
+
+
+def test_lines_the_two_rules_agree_on_get_no_note():
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])]
+    body = post("scarlet-black-shadow", roster,
+                overrides={"charge_speed_lines": [4.33, 4.33]}).json()
+    assert not any("집계 규칙" in note for note in body["notes"])
+
+
+def test_the_synced_roster_gets_no_aggregation_note():
+    # blablalink reports overload options already summed across gear, so the
+    # per-slot decomposition the comparison needs simply is not there.
+    roster = [a_unit("scarlet-black-shadow",
+                     [("최대 장탄 수 증가", 85.37), ("차지 속도 증가", 5.51)])]
+    body = post("scarlet-black-shadow", roster).json()
+    assert not any("집계 규칙" in note for note in body["notes"])
 
 
 def test_an_unsupported_slug_is_a_422():

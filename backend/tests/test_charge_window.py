@@ -80,8 +80,8 @@ def dataclasses_replace(inputs, **changes):
     return dataclasses.replace(inputs, **changes)
 
 
-from app.charge_window import (aggregate_charge_speed, charge_speed_steps,
-                               near_frame_boundary, outcome, thresholds)
+from app.charge_window import (aggregate_charge_speed, aggregation_rules_disagree,
+                               charge_speed_steps, outcome, thresholds)
 
 
 def test_charge_speed_steps_are_one_frame_apart():
@@ -105,14 +105,28 @@ def test_aggregate_sums_the_lines_and_returns_a_ratio():
     assert aggregate_charge_speed([], 0.30) == pytest.approx(0.0)
 
 
-def test_a_total_near_a_frame_boundary_is_flagged():
-    # The engine sums raw; the community reports per-line rounding. The two
-    # disagree on 6.7% of combinations and every one sits within 1.10 points of
-    # a frame boundary, so the total alone is enough to warn. 5.51% is one such
-    # case: raw gives 0 frames, rounding to 6% would give 1.
-    assert near_frame_boundary([5.51], 0.30) is True
-    # 8.66% is 1.56 frames - far enough from both 5.56 and 11.11 to be safe.
-    assert near_frame_boundary([4.33, 4.33], 0.30) is False
+def test_the_two_aggregation_rules_are_compared_exactly():
+    # Scarlet's 0.30 sec charge is 18 frames. One line of 5.51%: the engine's
+    # raw sum buys floor(18 * 0.0551) = 0 frames, the community's rounding to 6%
+    # buys 1. They disagree.
+    assert aggregation_rules_disagree([5.51], 0.30) is True
+    # Two lines of 4.33%: equal values sum to 8.66% before rounding, so 9% buys
+    # floor(18 * 0.09) = 1 frame and the raw 8.66% buys 1 too. They agree.
+    assert aggregation_rules_disagree([4.33, 4.33], 0.30) is False
+    # Nothing rolled is nothing to disagree about.
+    assert aggregation_rules_disagree([], 0.30) is False
+
+
+def test_a_liberalio_sized_charge_is_judged_on_its_own_frame_grid():
+    # Liberalio charges in 1.5 sec = 90 frames, so a frame is 1.11% and most
+    # totals leave the two rules agreeing - the answer depends on the charge
+    # time, not on a fixed band around the total.
+    assert aggregation_rules_disagree([2.6], 1.5) is False
+    assert aggregation_rules_disagree([4.33], 1.5) is False
+    # 1.2% buys one frame raw; rounding it down to 1% buys none.
+    assert aggregation_rules_disagree([1.2], 1.5) is True
+    # Two 4.33% lines sum to 8.66% = 7 frames raw, but group and round to 9% = 8.
+    assert aggregation_rules_disagree([4.33, 4.33], 1.5) is True
 
 
 def test_outcome_splits_the_window_between_two_shot_counts():

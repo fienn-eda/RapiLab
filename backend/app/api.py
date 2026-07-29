@@ -16,8 +16,8 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from app.cancellation import CancelToken, Cancelled
-from app.charge_window import (near_frame_boundary, outcome, reload_intervenes,
-                               shot_interval, thresholds)
+from app.charge_window import (aggregation_rules_disagree, outcome,
+                               reload_intervenes, shot_interval, thresholds)
 from app.charge_window_inputs import (CALCULATOR_SLUGS, LIBERALIO_SLUG, Overrides,
                                       build_inputs)
 from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_draft
@@ -523,13 +523,15 @@ def _charge_window_notes(request, inputs, spec_atk, liberalio_atk):
         notes.append(
             "리버렐리오의 공격력이 더 낮아 차지속도 버프가 그녀 자신에게 갑니다 — "
             "대상은 '최저 공격력 버스트 3 아군'이고 시전자를 제외하지 않습니다.")
-    lines = (request.overrides.charge_speed_lines
-             if request.overrides.charge_speed_lines is not None
-             else [inputs.charge_speed_percent * 100])
-    if near_frame_boundary(lines, inputs.charge_time):
+    # Only the override path knows the individual lines. The synced roster
+    # reports overload options already summed across gear, and a total cannot be
+    # decomposed back into them - so there is nothing to compare and the UI
+    # carries a standing caveat instead of a per-result note.
+    lines = request.overrides.charge_speed_lines
+    if lines is not None and aggregation_rules_disagree(lines, inputs.charge_time):
         notes.append(
-            "차지속도 합계가 프레임 경계에 가까워, 부위별 옵션 구성에 따라 한 칸 "
-            "갈릴 수 있습니다 — 오버로드 집계 규칙이 미결입니다.")
+            "이 차지속도 구성은 집계 규칙에 따라 프레임이 갈립니다 — 엔진은 원값 합계를, "
+            "커뮤니티 자료는 부위별 반올림을 씁니다. 어느 쪽이 맞는지는 미결입니다.")
     return notes
 
 

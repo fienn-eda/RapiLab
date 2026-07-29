@@ -13,8 +13,8 @@ how much they fired just before the window opened.
 """
 from dataclasses import dataclass
 
-from app.attack_rate import (FRAME_SECONDS, reload_time_with_speed,
-                             shot_interval_with_speed)
+from app.attack_rate import (FRAME_SECONDS, charge_frames_bought,
+                             reload_time_with_speed, shot_interval_with_speed)
 
 
 @dataclass(frozen=True)
@@ -68,18 +68,6 @@ def reload_intervenes(inputs: WindowInputs) -> bool:
     return inputs.max_ammo * shot_interval(inputs) < inputs.window_seconds
 
 
-# How far from a frame boundary a charge-speed total has to be before the
-# engine's aggregation rule and the community's can no longer disagree. The
-# engine sums the raw lines and floors once; community sources report each line
-# rounding to a whole percent, with equal values summed before rounding
-# (arca.live/b/nikketgv/169159561). Across every 1-to-4 line combination the two
-# differ on 6.7%, and all of those sit within this many percentage points of a
-# boundary - so a total alone is enough to flag the doubt. Which rule is right
-# is unresolved: every measurement we hold fails to separate them, and overload
-# options roll at random so a player cannot compose a decisive one on demand.
-BOUNDARY_TOLERANCE_POINTS = 1.10
-
-
 def aggregate_charge_speed(lines: list[float], charge_time: float) -> float:
     """Overload charge-speed lines (in percent) as the ratio the engine wants.
 
@@ -91,18 +79,30 @@ def aggregate_charge_speed(lines: list[float], charge_time: float) -> float:
     return sum(lines) / 100
 
 
-def near_frame_boundary(lines: list[float], charge_time: float) -> bool:
-    """Whether this total sits close enough to a frame boundary that the two
-    aggregation rules could disagree - see BOUNDARY_TOLERANCE_POINTS."""
-    total_points = sum(lines)
-    frames = charge_time / FRAME_SECONDS
-    if frames <= 0:
-        return False
-    points_per_frame = 100 / frames
-    return any(
-        abs(total_points - points_per_frame * step) <= BOUNDARY_TOLERANCE_POINTS
-        for step in range(int(frames) + 1)
-    )
+def _community_charge_speed(lines: list[float]) -> float:
+    """The same lines under the rule community sources report: equal values sum
+    first, then each group rounds to a whole percent
+    (arca.live/b/nikketgv/169159561)."""
+    grouped: dict[float, float] = {}
+    for line in lines:
+        grouped[line] = grouped.get(line, 0.0) + line
+    return sum(round(group) for group in grouped.values()) / 100
+
+
+def aggregation_rules_disagree(lines: list[float], charge_time: float) -> bool:
+    """Whether these lines buy a different number of frames under the engine's
+    aggregation rule than under the community's.
+
+    Which rule is right is unresolved: every measurement we hold fails to
+    separate them, and overload options roll at random so a player cannot
+    compose a decisive one on demand. So the two are computed and compared
+    rather than judged, and the doubt is reported only on the inputs where it
+    actually changes the answer. This needs the individual LINES - a total
+    alone cannot be decomposed back into them.
+    """
+    engine = charge_frames_bought(charge_time, aggregate_charge_speed(lines, charge_time))
+    community = charge_frames_bought(charge_time, _community_charge_speed(lines))
+    return engine != community
 
 
 def charge_speed_steps(charge_time: float) -> list[float]:
