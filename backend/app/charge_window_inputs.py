@@ -41,9 +41,16 @@ class Overrides:
     reload_speed_percent: float | None
 
 
+def _overload_lines(spec, stat):
+    """The roster's rolled values for one stat, in percent. blablalink reports
+    an option already summed across gear, so this is normally a single element -
+    which is exactly as much as the sync actually knows."""
+    return [option.value for option in spec.overload_options
+            if NAME_TO_STAT.get(option.name) == stat]
+
+
 def _overload_total(spec, stat):
-    return sum(option.value for option in spec.overload_options
-               if NAME_TO_STAT.get(option.name) == stat) / 100
+    return sum(_overload_lines(spec, stat)) / 100
 
 
 def _cube_reload_speed(slug):
@@ -71,11 +78,12 @@ def build_inputs(state, with_liberalio, overrides, liberalio_state=None,
         raise ValueError(f"{state.character_slug} could not be loaded from local data")
     weapon = spec.weapon_stats
 
-    if overrides.charge_speed_lines is None:
-        charge_speed = _overload_total(spec, "charge_speed_percent")
-    else:
-        charge_speed = aggregate_charge_speed(
-            overrides.charge_speed_lines, weapon["charge_time"])
+    # Both paths aggregate through the same function, so confirming the
+    # community's per-line rounding means editing `aggregate_charge_speed` and
+    # nothing else.
+    lines = (_overload_lines(spec, "charge_speed_percent")
+             if overrides.charge_speed_lines is None else overrides.charge_speed_lines)
+    charge_speed = aggregate_charge_speed(lines, weapon["charge_time"])
 
     ammo_percent = (_overload_total(spec, "max_ammo_percent")
                     if overrides.max_ammo_percent is None else overrides.max_ammo_percent)

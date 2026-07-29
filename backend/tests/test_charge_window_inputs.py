@@ -135,6 +135,23 @@ def test_the_charge_speed_overload_line_reaches_the_inputs():
     assert got.charge_speed_percent == pytest.approx(0.0286)
 
 
+def test_the_roster_path_aggregates_through_the_shared_function():
+    """The single aggregation rule is the deliverable, so the roster path must
+    CALL `aggregate_charge_speed` rather than sum the options itself: patching
+    it moves the roster's answer too, not only a typed override's."""
+    from unittest.mock import patch
+
+    from app import charge_window_inputs
+
+    state = a_state("scarlet-black-shadow", [("차지 속도 증가", 2.86)])
+    with patch.object(charge_window_inputs, "aggregate_charge_speed",
+                      return_value=0.5) as aggregate:
+        got = build_inputs(state, with_liberalio=False,
+                           overrides=Overrides(None, None, None))
+    assert got.charge_speed_percent == 0.5
+    assert aggregate.call_args.args[0] == [2.86]
+
+
 def test_the_assumed_cube_supplies_reload_speed():
     got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=False,
                        overrides=Overrides(None, None, None))
