@@ -57,6 +57,16 @@ describe('ChargeWindowLadder', () => {
     expect(screen.getByText(/재장전이 걸립니다/)).toBeInTheDocument()
   })
 
+  // App.css's `.charge-ladder { overflow-x: auto; }` contains the table's
+  // horizontal scroll to this wrapper instead of the page body. Vitest runs
+  // with `test.css: false` (vite.config.ts), so computed style can't be
+  // asserted here - this pins the DOM side of that contract: the table must
+  // stay inside the exact wrapper class the stylesheet targets.
+  it('wraps the table in the container the CSS scroll-containment rule targets', () => {
+    render(<ChargeWindowLadder result={RESULT} />)
+    expect(screen.getByRole('table').closest('.charge-ladder')).not.toBeNull()
+  })
+
   it('says so when the ladder has no further step to buy', () => {
     const topped = {
       ...RESULT,

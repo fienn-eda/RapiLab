@@ -1527,6 +1527,10 @@
 
 /* 차지 창 계산기 — 사다리 표. 좁은 화면에서 표가 페이지를 밀지 않도록
    자기 컨테이너 안에서만 가로 스크롤한다. */
+.charge-ladder {
+  overflow-x: auto;
+}
+
 .charge-ladder__table {
   width: 100%;
   border-collapse: collapse;
