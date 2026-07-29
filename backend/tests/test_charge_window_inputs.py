@@ -84,3 +84,97 @@ def test_the_rule_reads_the_cut_through_the_shared_function():
         "charge_time_reduction_sec",
         {"slug": "scarlet-black-shadow", "element": "Wind"}, now=5.0)
     assert granted == 0.5
+
+
+import pytest
+
+from app.charge_window_inputs import (CALCULATOR_SLUGS, LIBERALIO_SLUG, Overrides,
+                                      build_inputs)
+from app.models import OverloadOption, SkillLevels, UserNikkeState
+
+MAXED = SkillLevels(skill1=10, skill2=10, burst=10)
+
+
+def a_state(slug, overloads=()):
+    return UserNikkeState(
+        character_slug=slug, level=200, hp=1_000_000, atk=100_000, def_=10_000,
+        skill_levels=MAXED,
+        overload_options=[OverloadOption(name=n, value=v) for n, v in overloads],
+    )
+
+
+def test_the_three_units_the_calculator_covers():
+    assert CALCULATOR_SLUGS == ("scarlet-black-shadow", "liberalio", "neon-vision-eye")
+    assert LIBERALIO_SLUG == "liberalio"
+
+
+def test_scarlet_carries_her_measured_charge_and_delay():
+    got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=False,
+                       overrides=Overrides(None, None, None))
+    assert got.charge_time == pytest.approx(0.30)
+    assert got.motion_delay == pytest.approx(0.43)
+
+
+def test_asuras_magazine_grant_is_folded_into_max_ammo():
+    # Base 9 rounds, Asura +60%, no overload: round(9 * 1.60) = 14.
+    got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=False,
+                       overrides=Overrides(None, None, None))
+    assert got.max_ammo == 14
+
+
+def test_an_overload_max_ammo_line_stacks_on_top_of_asura():
+    # round(9 * (1 + 0.6 + 0.8537)) = 22.
+    state = a_state("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])
+    got = build_inputs(state, with_liberalio=False, overrides=Overrides(None, None, None))
+    assert got.max_ammo == 22
+
+
+def test_the_charge_speed_overload_line_reaches_the_inputs():
+    state = a_state("scarlet-black-shadow", [("차지 속도 증가", 2.86)])
+    got = build_inputs(state, with_liberalio=False, overrides=Overrides(None, None, None))
+    assert got.charge_speed_percent == pytest.approx(0.0286)
+
+
+def test_the_assumed_cube_supplies_reload_speed():
+    got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=False,
+                       overrides=Overrides(None, None, None))
+    assert got.reload_speed_percent == pytest.approx(0.2969, abs=1e-4)
+
+
+def test_liberalio_hands_over_her_absolute_seconds():
+    got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=True,
+                       overrides=Overrides(None, None, None),
+                       liberalio_state=a_state(LIBERALIO_SLUG))
+    assert got.charge_time_reduction_sec == pytest.approx(0.1274 * 1.5, abs=1e-4)
+
+
+def test_without_the_companion_there_is_no_cut():
+    got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=False,
+                       overrides=Overrides(None, None, None))
+    assert got.charge_time_reduction_sec == 0.0
+
+
+def test_liberalio_refuses_the_cut_even_when_asked():
+    # Strange Currents makes her immune to external charge-speed effects, so the
+    # companion toggle cannot apply to her own row.
+    got = build_inputs(a_state(LIBERALIO_SLUG), with_liberalio=True,
+                       overrides=Overrides(None, None, None),
+                       liberalio_state=a_state(LIBERALIO_SLUG))
+    assert got.charge_time_reduction_sec == 0.0
+
+
+def test_overrides_replace_the_roster_values():
+    state = a_state("scarlet-black-shadow", [("차지 속도 증가", 2.86)])
+    got = build_inputs(state, with_liberalio=False,
+                       overrides=Overrides(charge_speed_lines=[6.09, 6.09],
+                                           max_ammo_percent=0.8537,
+                                           reload_speed_percent=0.0))
+    assert got.charge_speed_percent == pytest.approx(0.1218)
+    assert got.max_ammo == 22
+    assert got.reload_speed_percent == 0.0
+
+
+def test_an_unknown_slug_is_refused():
+    with pytest.raises(ValueError, match="charge-window calculator"):
+        build_inputs(a_state("liter"), with_liberalio=False,
+                     overrides=Overrides(None, None, None))
