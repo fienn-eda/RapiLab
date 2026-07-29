@@ -372,7 +372,7 @@ FB 10초 창 안 타수와, 다음 타수를 사는 차지속도 임계값. `차
 
 요청:
 
-```json
+```jsonc
 {
   "slug": "scarlet-black-shadow",
   "roster": [ /* UserNikkeState[] — /api/recommend 와 같은 모양 */ ],
@@ -404,7 +404,7 @@ FB 10초 창 안 타수와, 다음 타수를 사는 차지속도 임계값. `차
 - `slug` 는 `scarlet-black-shadow` · `liberalio` · `neon-vision-eye` 셋뿐이고, 나머지는 **422**. 로스터에 그 슬러그가 없어도 422.
 - `overrides` 의 각 필드는 `null` 이면 동기화된 로스터 값을 쓴다. `charge_speed_lines` 는 퍼센트 단위 줄 목록이고(집계 규칙이 미결이라 목록으로 받는다), `max_ammo_percent` · `reload_speed_percent` 는 비율이다.
 - `thresholds` 는 케이던스를 **실제로 바꾸는** 차지속도만 오름차순으로 담는다. 두 타수와 각 확률을 함께 주는 이유는 FB 진입 위상이 플레이어의 선택이 아니기 때문이다.
-- `notes` 는 사용자에게 그대로 보여줄 한국어 문장이다.
+- `notes` 는 사용자에게 그대로 보여줄 한국어 문장이다. 집계 규칙이 갈리는 경우는 `charge_speed_lines` 를 보낸 요청에서만 알 수 있으므로(동기화된 로스터는 부위별이 아닌 합계만 안다) 그때만 나온다. `with_liberalio` 를 켰는데 로스터에 리버렐리오가 없으면 버프 없이 계산하고 그 사실을 note 로 알린다.
 
 ### `GET /api/supported-units`
 

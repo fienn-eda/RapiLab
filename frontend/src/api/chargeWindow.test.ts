@@ -4,7 +4,7 @@ import { postChargeWindow } from './chargeWindow'
 const WIRE = {
   interval: 0.53,
   magazine: 22,
-  charge_speed_percent: 0,
+  charge_speed_percent: 0.0286,
   current: { low_shots: 18, low_probability: 0.132, high_shots: 19, high_probability: 0.868 },
   thresholds: [
     {
@@ -31,6 +31,11 @@ describe('postChargeWindow', () => {
     expect(result.thresholds[0].chargeSpeedPercent).toBe(0)
     expect(result.thresholds[0].outcome.lowShots).toBe(18)
     expect(result.notes).toHaveLength(1)
+    // The ladder's summary line and its current-row marker read these three;
+    // a typo in any of them prints "탄창 undefined발" with nothing failing.
+    expect(result.interval).toBe(0.53)
+    expect(result.magazine).toBe(22)
+    expect(result.chargeSpeedPercent).toBe(0.0286)
   })
 
   it('sends snake_case field names to the backend', async () => {
