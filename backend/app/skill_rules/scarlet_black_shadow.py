@@ -67,7 +67,7 @@ SKILL_VALUE_MANIFESTS = {
 BREAKTHROUGH_BASE_REQUIREMENTS = (3, 6, 9)
 
 
-def full_burst_max_ammo_percent(values):
+def full_burst_max_ammo_percent(values: dict) -> float:
     """Fleetly Fading: Asura's Max Ammunition Capacity grant, as a ratio.
 
     Shared with charge_window_inputs: her magazine size decides whether a reload

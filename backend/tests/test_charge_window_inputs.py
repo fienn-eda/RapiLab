@@ -25,10 +25,12 @@ def test_calm_depths_cut_is_the_percent_times_the_casters_own_charge():
 
 
 def test_the_rule_hands_out_exactly_what_the_shared_function_returns():
-    """Pin that the builder did not keep its own copy of the arithmetic. Fires
-    the real rule through a real registry - the same way
-    test_skill_rules_burst3_eb1 exercises Calm Depths - and compares the effect
-    it granted against the shared function's answer."""
+    """Regression test on the value: fires the real rule through a real
+    registry - the same way test_skill_rules_burst3_eb1 exercises Calm Depths
+    - and compares the effect it granted against the shared function's
+    answer. This does not by itself prove the builder calls the shared
+    function rather than recomputing the same number - see the patch-based
+    test below for that."""
     from app.effects import EffectRegistry
     from app.skill_rules.liberalio import build_calm_depths_charge_rules
     from app.squad_engine import SquadContext, SquadMember, fire_trigger
@@ -51,3 +53,34 @@ def test_the_rule_hands_out_exactly_what_the_shared_function_returns():
         "charge_time_reduction_sec",
         {"slug": "scarlet-black-shadow", "element": "Wind"}, now=5.0)
     assert granted == calm_depths_charge_cut_seconds(values, weapon)
+
+
+def test_the_rule_reads_the_cut_through_the_shared_function():
+    """The single source is the deliverable, so the builder must CALL the
+    shared function rather than recompute the same number: patching it moves
+    the rule."""
+    from unittest.mock import patch
+
+    from app.effects import EffectRegistry
+    from app.skill_rules import liberalio
+    from app.squad_engine import SquadContext, SquadMember, fire_trigger
+
+    values = {"calm_depths": {"description_value_07": "12.74",
+                              "description_value_08": "10"}}
+    weapon = {"charge_time": 1.5}
+    with patch.object(liberalio, "calm_depths_charge_cut_seconds", return_value=0.5):
+        rules = {"liberalio": liberalio.build_calm_depths_charge_rules(values, weapon)}
+    ctx = SquadContext(
+        [
+            SquadMember("liberalio", burst_tier=3, element="Wind"),
+            SquadMember("scarlet-black-shadow", burst_tier=3, element="Wind"),
+        ],
+        base_atk={"liberalio": 400_000, "scarlet-black-shadow": 300_000},
+    )
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", rules, ctx, registry, time=5.0)
+
+    granted = registry.total_for(
+        "charge_time_reduction_sec",
+        {"slug": "scarlet-black-shadow", "element": "Wind"}, now=5.0)
+    assert granted == 0.5
