@@ -67,6 +67,15 @@ SKILL_VALUE_MANIFESTS = {
 BREAKTHROUGH_BASE_REQUIREMENTS = (3, 6, 9)
 
 
+def full_burst_max_ammo_percent(values):
+    """Fleetly Fading: Asura's Max Ammunition Capacity grant, as a ratio.
+
+    Shared with charge_window_inputs: her magazine size decides whether a reload
+    lands inside the Full Burst window, so the calculator needs the same number
+    the rule below applies."""
+    return float(values["fleetly_fading_asura"]["description_value_01"]) / 100
+
+
 def build_scarlet_black_shadow_rules(values):
     strike = values["fleetly_fading_strike"]
     self_atk = float(strike["description_value_05"]) / 100
@@ -74,7 +83,7 @@ def build_scarlet_black_shadow_rules(values):
     charge_damage = float(strike["description_value_07"]) / 100
     charge_damage_duration = float(strike["description_value_08"])
     asura = values["fleetly_fading_asura"]
-    max_ammo = float(asura["description_value_01"]) / 100
+    max_ammo = full_burst_max_ammo_percent(values)
     max_ammo_duration = float(asura["description_value_02"])
     return [
         buff_rule("own_burst_activate", [
