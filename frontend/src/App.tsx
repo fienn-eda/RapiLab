@@ -200,7 +200,13 @@ function App() {
               hidden={tab !== 'charge'}
               className="panel"
             >
-              <ChargeWindowPanel roster={validRoster} />
+              <ChargeWindowPanel
+                // Same reasoning as RecommendPanel's key: a ladder computed for
+                // one profile must not stay on screen after a switch, and the
+                // panel's own state is the only place it lives.
+                key={state.activeOpenId ?? 'none'}
+                roster={validRoster}
+              />
             </div>
           </main>
         </>

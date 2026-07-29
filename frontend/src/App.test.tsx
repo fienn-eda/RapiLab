@@ -210,6 +210,57 @@ describe('App', () => {
     expect(screen.getByLabelText(/단일 덱/i)).toBeChecked()
   })
 
+  it('drops a computed charge ladder when switching profiles (ChargeWindowPanel is remounted per profile)', async () => {
+    const user = userEvent.setup()
+    const outcome = {
+      low_shots: 18, low_probability: 0.132, high_shots: 19, high_probability: 0.868,
+    }
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({
+        interval: 0.53,
+        magazine: 22,
+        charge_speed_percent: 0,
+        current: outcome,
+        thresholds: [{ charge_speed_percent: 0, interval: 0.53, outcome }],
+        notes: [],
+      }),
+    }))
+    seedProfiles({
+      activeOpenId: 'acct-a',
+      profiles: {
+        'acct-a': {
+          openId: 'acct-a',
+          nickname: '본계',
+          roster: [validDraft({ character_slug: 'scarlet-black-shadow' })],
+          results: {},
+          lastResultHash: null,
+          lastInputs: null,
+        },
+        'acct-b': {
+          openId: 'acct-b',
+          nickname: '부계',
+          roster: [validDraft({ character_slug: 'scarlet-black-shadow' })],
+          results: {},
+          lastResultHash: null,
+          lastInputs: null,
+        },
+      },
+    })
+
+    render(<App />)
+    await user.click(screen.getByRole('tab', { name: '차지' }))
+    await user.click(screen.getByRole('button', { name: '계산' }))
+    expect(await screen.findByText(/탄창 22발/)).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('계정'), '부계')
+
+    // Account A's ladder is A's roster's answer. Without the profile key the
+    // panel keeps its result state and shows it against B's roster.
+    expect(screen.queryByText(/탄창 22발/)).not.toBeInTheDocument()
+    vi.unstubAllGlobals()
+  })
+
   it('keeps an in-flight raid alive across a tab switch', async () => {
     const user = userEvent.setup()
     // A raid allocation runs 1-2 minutes. Looking at the roster mid-run is a
