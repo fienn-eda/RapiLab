@@ -16,18 +16,20 @@ import { RosterGrid } from './components/RosterGrid'
 import { RecommendPanel } from './components/RecommendPanel'
 import { SyncRosterPanel } from './components/SyncRosterPanel'
 import { UnionRaidPanel } from './components/UnionRaidPanel'
+import { ChargeWindowPanel } from './components/ChargeWindowPanel'
 import type { NikkeDraft } from './types/nikkeDraft'
 
 // A stable reference so useMemo below doesn't see a "new" roster every render
 // when there's no active profile (a fresh `?? []` literal would).
 const NO_ROSTER: NikkeDraft[] = []
 
-type Tab = 'roster' | 'recommend' | 'union'
+type Tab = 'roster' | 'recommend' | 'union' | 'charge'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'roster', label: '니케 풀' },
   { id: 'recommend', label: '솔로 레이드' },
   { id: 'union', label: '유니온 레이드' },
+  { id: 'charge', label: '차지' },
 ]
 
 function App() {
@@ -189,6 +191,16 @@ function App() {
                 burstTierFor={burstTierFor}
                 investmentFor={investmentFor}
               />
+            </div>
+
+            <div
+              role="tabpanel"
+              id="panel-charge"
+              aria-labelledby="tab-charge"
+              hidden={tab !== 'charge'}
+              className="panel"
+            >
+              <ChargeWindowPanel roster={validRoster} />
             </div>
           </main>
         </>

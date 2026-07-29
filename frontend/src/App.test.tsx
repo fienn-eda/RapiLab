@@ -98,7 +98,7 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
   })
 
-  it('renders three tabs and reaches the union raid panel through its own tab', async () => {
+  it('renders four tabs and reaches the union raid panel through its own tab', async () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
     seedProfiles({
@@ -116,7 +116,7 @@ describe('App', () => {
     })
 
     render(<App />)
-    expect(screen.getAllByRole('tab')).toHaveLength(3)
+    expect(screen.getAllByRole('tab')).toHaveLength(4)
     expect(screen.queryByRole('heading', { name: '유니온 레이드' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: '유니온 레이드' }))
@@ -277,5 +277,49 @@ describe('App', () => {
       'aria-expanded',
       'false',
     )
+  })
+})
+
+describe('차지 탭', () => {
+  const seedActiveProfile = () =>
+    seedProfiles({
+      activeOpenId: 'acct-a',
+      profiles: {
+        'acct-a': {
+          openId: 'acct-a',
+          nickname: '본계',
+          roster: [validDraft()],
+          results: {},
+          lastResultHash: null,
+          lastInputs: null,
+        },
+      },
+    })
+
+  it('is one of the tabs', () => {
+    seedActiveProfile()
+    render(<App />)
+    expect(screen.getByRole('tab', { name: '차지' })).toBeInTheDocument()
+  })
+
+  it('shows the calculator when selected', async () => {
+    seedActiveProfile()
+    render(<App />)
+    await userEvent.click(screen.getByRole('tab', { name: '차지' }))
+    const panel = screen.getByRole('tabpanel', { name: '차지' })
+    expect(within(panel).getByLabelText('유닛')).toBeInTheDocument()
+  })
+
+  it('keeps the other panels mounted so a running request survives', async () => {
+    seedActiveProfile()
+    render(<App />)
+    await userEvent.click(screen.getByRole('tab', { name: '차지' }))
+    // hidden, not unmounted - the same rule the recommend panel follows.
+    // Identified by id rather than accessible name: dom-accessibility-api
+    // computes the name of anything carrying the `hidden` attribute as "",
+    // so getByRole's `name` filter can never match a hidden tabpanel.
+    const recommendPanel = document.getElementById('panel-recommend')
+    expect(recommendPanel).toHaveAttribute('aria-labelledby', 'tab-recommend')
+    expect(recommendPanel).toHaveAttribute('hidden')
   })
 })
