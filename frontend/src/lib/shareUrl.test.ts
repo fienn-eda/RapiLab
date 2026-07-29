@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { parseShareUrl } from './shareUrl'
 
-// uid는 "<shiftypad_region_id>-<intl_open_id>"의 base64. 앞자리는 ShiftyPad
-// 리전 id이지 API의 nikke_area_id(81 고정)가 아니다.
+// uid는 "<앞자리>-<intl_open_id>"의 base64. 앞자리는 API의 nikke_area_id가
+// 아니고, 계정의 서버 리전도 여기서는 알 수 없다.
 const uid = btoa('29080-1234567890123456789')
 
 describe('parseShareUrl', () => {

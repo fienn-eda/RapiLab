@@ -786,8 +786,11 @@
       실측 검증(Fienn 두 번째 계정 B, 공개 상태, 메인 세션 A에서 조회):
       - 공유 URL `blablalink.com/shiftyspad?uid=<base64>`의 uid = `<shiftypad_area>-<intl_open_id>`
         (예: `29080-8223...`). **앞자리 29080은 ShiftyPad 리전 id지 API의 `nikke_area_id`가
-        아니다** — API area는 **81**(인터내셔널 서버; A·B 모두 81, 검색 예시 uid도 29080).
+        아니다** — 당시 A·B 모두 area **81**로 통과했다.
         이 함정으로 첫 조회가 `param invalid` 났다가, area 81로 고치니 통과.
+        **⚠ 이때 적었던 "81 = 인터내셔널 서버"는 틀렸다(2026-07-29 정정).** 81은
+        **일본**이고, A·B가 둘 다 JP 계정이라 우연히 맞았다. 권위 목록은
+        `GetRegionList`: 81 Japan · 82 NA · **83 Korea** · 84 Global · 85 SEA.
       - **크로스계정 3콜 전부 `code 0`:** `GetUserCharacters(B)` 182보유 ·
         `GetUserCharacterDetails(B)` 육성입력(`arm_equip_*`·`attractive_lv`·`harmony_cube_*`
         =계산기 소비 필드) · `GetUserProfileOutpostInfo(B)` 기업연구 9행. **B2 계산기(159/159)와

@@ -3,7 +3,9 @@
 The three endpoints and their param shape were confirmed by cross-account
 reconnaissance (2026-07-19): GetUserCharacters -> owned, GetUserCharacterDetails
 (name_codes: whole roster in one call) -> investment, GetUserProfileOutpostInfo
--> corporation research ranks. nikke_area_id is 81 for the international server
+-> corporation research ranks. nikke_area_id names the game server region, and
+an account can only be read on its own: 81 Japan, 82 NA, 83 Korea, 84 Global,
+85 SEA (authoritative list: GET api/lip/direct/commodity/Game/GetRegionList)
 (NOT the ShiftyPad region id in a share-URL uid). The session is injected as a
 SessionCaller so this module never handles credentials; see spec sub-project 4.
 """
