@@ -39,11 +39,18 @@ from pathlib import Path
 # assembly for every recent unit.
 SYNCED_DIRS = ("data/dotgg", "data/lootandwaifus", "data/shiftypad")
 
-# The synced roster (personal investment data). Every measurement that compares
+# The synced rosters (personal investment data). Every measurement that compares
 # against Fienn's real recorded runs goes through scripts/roster_fixture.py,
-# which silently falls back to None when this file is absent - so a worktree
-# without it doesn't fail loudly, it just can't measure.
-SYNCED_FILES = ("tools/collect-blablalink/roster-drafts.json",)
+# which silently falls back to None when the default file is absent - so a
+# worktree without it doesn't fail loudly, it just can't measure.
+#
+# EVERY export, not just the default name: one account holds a roster per game
+# server and a player holds several accounts, so the per-account files are what
+# a between-account question is asked with, and they can be FRESHER than the
+# default. Copying only the blessed name reproduces the missing-data trap this
+# script exists for, one level in - the worktree measures, gets a number, and
+# the number is off a stale export.
+SYNCED_FILE_GLOBS = ("tools/collect-blablalink/roster-drafts*.json",)
 
 
 def _git(*args, cwd=None):
@@ -100,14 +107,16 @@ def plan_copies(worktree_root, main_root):
             dest = worktree_root / rel / source.relative_to(source_dir)
             if not dest.exists():
                 copies.append((source, dest))
-    for rel in SYNCED_FILES:
-        source = main_root / rel
-        if not source.is_file():
-            missing_sources.append(rel)
+    for pattern in SYNCED_FILE_GLOBS:
+        parent, _, name = pattern.rpartition("/")
+        matches = sorted((main_root / parent).glob(name))
+        if not matches:
+            missing_sources.append(pattern)
             continue
-        dest = worktree_root / rel
-        if not dest.exists():
-            copies.append((source, dest))
+        for source in matches:
+            dest = worktree_root / parent / source.name
+            if not dest.exists():
+                copies.append((source, dest))
     return copies, missing_sources
 
 
