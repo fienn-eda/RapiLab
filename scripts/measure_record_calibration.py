@@ -225,6 +225,11 @@ def main():
     if record_sum:
         print(f"combined   {sim_sum / record_sum:.3f}x   "
               f"over {len(all_ratios)} units")
+        # The engine hits the core with every core-eligible shot; the recorded
+        # run did not, because parts had to be hit directly. See raid_record's
+        # "What sim/record is, and is not".
+        print("           (a ceiling, not a target - 1.0 is not what this "
+              "should read)")
         # Caveated units top this list by construction - their record does not
         # describe the modelled rotation - so leaving them in sends every
         # session after a number that cannot be fixed in the engine.
