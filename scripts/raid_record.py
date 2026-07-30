@@ -106,6 +106,21 @@ RECORD_CAVEATS = {
 }
 
 
+# The harmony cube each unit actually wore in this run. Everyone not named here
+# wore the Resilience cube (렐릭 베어) the engine assumes for the whole roster.
+#
+# This is a fact about the RECORD, not about the roster: cubes are re-equipped
+# between fights, so a synced snapshot cannot supply it (Fienn) - which is also
+# why it lives here rather than on UserNikkeState. The recommender keeps the
+# global assumption.
+#
+# Scarlet: Black Shadow's Tactical Bear (택티컬 베어, 탄충) is confirmed by Fienn
+# (2026-07-29). It costs her the reload speed the engine was handing her and
+# gives her the bullet refund it could not represent at all.
+RECORD_CUBES = {
+    "scarlet-black-shadow": "tactical_bear",
+}
+
 # How the bursts were actually spent, per deck (Fienn, 2026-07-28). `order` is
 # the seat order, which the scheduler reads as priority within a burst tier, and
 # `max_bursts` names the seats whose burst was held: 0 for a totem, seated for

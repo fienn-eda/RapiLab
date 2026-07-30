@@ -32,7 +32,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # noqa: E402
 from app.models import UserNikkeState  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
-from raid_record import RECORD_BOSS, RECORD_ROTATIONS  # noqa: E402  (the record's source of truth)
+from raid_record import (  # noqa: E402  (the record's source of truth)
+    RECORD_BOSS, RECORD_CUBES, RECORD_ROTATIONS)
 from roster_fixture import add_roster_argument, real_roster  # noqa: E402
 
 
@@ -109,6 +110,11 @@ def main():
     specs, excluded = load_roster(states)
     if excluded:
         sys.exit(f"ERROR: not encoded / not usable: {', '.join(excluded)}")
+    # Score a recorded unit with the cube it actually wore, exactly as
+    # measure_record_calibration does - otherwise this script and that one
+    # disagree about the same deck.
+    for spec in specs:
+        spec.cube = RECORD_CUBES.get(spec.slug, spec.cube)
 
     boss = BossProfile(element=args.element, core_hittable=RECORD_BOSS["core_hittable"],
                        part_destructible=RECORD_BOSS["part_destructible"],

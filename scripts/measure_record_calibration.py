@@ -31,7 +31,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
 from raid_record import (  # noqa: E402
-    RECORD_BOSS, RECORD_CAVEATS, RECORD_DECKS, RECORD_ROTATIONS, deck_total)
+    RECORD_BOSS, RECORD_CAVEATS, RECORD_CUBES, RECORD_DECKS, RECORD_ROTATIONS,
+    deck_total)
 from roster_fixture import (REAL_ROSTER_JSON, add_roster_argument,  # noqa: E402
                             real_roster)
 
@@ -48,6 +49,19 @@ def _states_for(slugs, by_slug):
             continue
         states.append(owned.model_copy(update={"character_slug": slug}))
     return states, missing
+
+
+def _record_roster(states):
+    """load_roster, plus the cube each unit actually wore in the record.
+
+    The engine assumes a Resilience cube for everyone, which is the right
+    default for a recommendation but not for scoring a fight that was fought
+    with something else - see RECORD_CUBES.
+    """
+    specs, excluded = load_roster(states)
+    for spec in specs:
+        spec.cube = RECORD_CUBES.get(spec.slug, spec.cube)
+    return specs, excluded
 
 
 def _base_owner(by_slug, slug):
@@ -79,7 +93,7 @@ def measure(name, boss, by_slug):
     states, missing = _states_for(record, by_slug)
     if missing:
         return None, f"not in the synced roster: {', '.join(missing)}"
-    specs, excluded = load_roster(states)
+    specs, excluded = _record_roster(states)
     if excluded:
         return None, f"not encoded / not usable: {', '.join(excluded)}"
     total = deck_total(name)
@@ -130,7 +144,7 @@ def _print_orderings(name, boss, by_slug):
     if missing:
         print(f"{name}: SKIPPED - not in the synced roster: {', '.join(missing)}\n")
         return
-    specs, excluded = load_roster(states)
+    specs, excluded = _record_roster(states)
     if excluded:
         print(f"{name}: SKIPPED - not encoded: {', '.join(excluded)}\n")
         return
