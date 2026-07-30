@@ -243,6 +243,41 @@ describe('useBookmarkletImport', () => {
     expect(vi.mocked(assembleRoster).mock.calls[0][0].owned).toHaveLength(10)
   })
 
+  // choose()를 노출하는 버튼은 더블클릭될 수 있다. 이미 조립이 진행 중이면
+  // 같은 서버를 다시 눌러도 assembleRoster를 한 번 더 부르지 않아야 한다.
+  it('조립이 진행 중일 때 같은 서버를 다시 골라도 조립은 한 번만 한다', async () => {
+    let resolveAssemble: (value: { units: never[] }) => void = () => {}
+    vi.mocked(assembleRoster).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveAssemble = resolve
+        }),
+    )
+    const onRoster = vi.fn()
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+
+    post(BLABLALINK_ORIGIN, {
+      type: PAYLOAD_MESSAGE,
+      payload: { open_id: 'abc123', servers: [server(81, 186), server(83, 10)] },
+    })
+    await waitFor(() => expect(result.current.status).toBe('choosing'))
+
+    act(() => {
+      result.current.choose(83)
+    })
+    expect(result.current.status).toBe('importing')
+
+    act(() => {
+      result.current.choose(83)
+    })
+    expect(assembleRoster).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      resolveAssemble({ units: [] })
+    })
+    await waitFor(() => expect(onRoster).toHaveBeenCalledOnce())
+  })
+
   // 이미 설치된 북마크릿은 area 81로 조회한 데이터를 옛 모양으로 보낸다.
   it('구 payload는 area 81 서버 하나로 받는다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })

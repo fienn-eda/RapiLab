@@ -163,11 +163,15 @@ export const useBookmarkletImport = (
 
   const choose = useCallback(
     (area: number) => {
+      // The picker's buttons stay mounted while a choice imports, so a second
+      // click (or the same click landing twice) before it settles must not
+      // start a second assembleRoster call for the same candidate.
+      if (status === 'importing') return
       const server = servers.find((s) => s.area === area)
       if (!server) return
       void importServer(openId, server)
     },
-    [servers, openId, importServer],
+    [status, servers, openId, importServer],
   )
 
   useEffect(() => {
