@@ -3,7 +3,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import App from './App'
 import { makeEmptyDraft, type NikkeDraft } from './types/nikkeDraft'
-import type { ProfilesState } from './types/profile'
+import { profileKey, type ProfilesState } from './types/profile'
 
 vi.mock('./api/recommendRaid', () => ({
   recommendRaidDecks: vi.fn(),
@@ -34,6 +34,9 @@ const fiveValidDrafts = (slugPrefix: string): NikkeDraft[] =>
 const seedProfiles = (state: ProfilesState) => {
   localStorage.setItem('nikke-profiles', JSON.stringify(state))
 }
+
+const ACCT_A = profileKey('acct-a', 81)
+const ACCT_B = profileKey('acct-b', 81)
 
 beforeEach(() => {
   localStorage.clear()
@@ -74,10 +77,11 @@ describe('App', () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
     seedProfiles({
-      activeOpenId: 'acct-a',
+      activeKey: ACCT_A,
       profiles: {
-        'acct-a': {
+        [ACCT_A]: {
           openId: 'acct-a',
+          area: 81,
           nickname: '본계',
           roster: [validDraft()],
           results: {},
@@ -102,10 +106,11 @@ describe('App', () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
     seedProfiles({
-      activeOpenId: 'acct-a',
+      activeKey: ACCT_A,
       profiles: {
-        'acct-a': {
+        [ACCT_A]: {
           openId: 'acct-a',
+          area: 81,
           nickname: '본계',
           roster: [validDraft()],
           results: {},
@@ -129,18 +134,20 @@ describe('App', () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
     seedProfiles({
-      activeOpenId: 'acct-a',
+      activeKey: ACCT_A,
       profiles: {
-        'acct-a': {
+        [ACCT_A]: {
           openId: 'acct-a',
+          area: 81,
           nickname: '본계',
           roster: [validDraft({ character_slug: 'red-hood' })],
           results: {},
           lastResultHash: null,
           lastInputs: null,
         },
-        'acct-b': {
+        [ACCT_B]: {
           openId: 'acct-b',
+          area: 81,
           nickname: '부계',
           roster: [validDraft({ character_slug: 'privaty' })],
           results: {},
@@ -168,18 +175,20 @@ describe('App', () => {
     vi.mocked(recommendRaidDecks).mockImplementation(() => new Promise(() => {}))
 
     seedProfiles({
-      activeOpenId: 'acct-a',
+      activeKey: ACCT_A,
       profiles: {
-        'acct-a': {
+        [ACCT_A]: {
           openId: 'acct-a',
+          area: 81,
           nickname: '본계',
           roster: fiveValidDrafts('a'),
           results: {},
           lastResultHash: null,
           lastInputs: null,
         },
-        'acct-b': {
+        [ACCT_B]: {
           openId: 'acct-b',
+          area: 81,
           nickname: '부계',
           roster: fiveValidDrafts('b'),
           results: {},
@@ -227,18 +236,20 @@ describe('App', () => {
       }),
     }))
     seedProfiles({
-      activeOpenId: 'acct-a',
+      activeKey: ACCT_A,
       profiles: {
-        'acct-a': {
+        [ACCT_A]: {
           openId: 'acct-a',
+          area: 81,
           nickname: '본계',
           roster: [validDraft({ character_slug: 'scarlet-black-shadow' })],
           results: {},
           lastResultHash: null,
           lastInputs: null,
         },
-        'acct-b': {
+        [ACCT_B]: {
           openId: 'acct-b',
+          area: 81,
           nickname: '부계',
           roster: [validDraft({ character_slug: 'scarlet-black-shadow' })],
           results: {},
@@ -269,10 +280,11 @@ describe('App', () => {
     vi.mocked(recommendRaidDecks).mockImplementation(() => new Promise(() => {}))
 
     seedProfiles({
-      activeOpenId: 'acct-a',
+      activeKey: ACCT_A,
       profiles: {
-        'acct-a': {
+        [ACCT_A]: {
           openId: 'acct-a',
+          area: 81,
           nickname: '본계',
           roster: fiveValidDrafts('a'),
           results: {},
@@ -310,11 +322,13 @@ describe('App', () => {
   })
 
   it('이미 동기화한 계정이 있으면 로스터 탭의 도움말은 접혀 있다', () => {
+    const OPEN_1 = profileKey('open-1', 81)
     seedProfiles({
-      activeOpenId: 'open-1',
+      activeKey: OPEN_1,
       profiles: {
-        'open-1': {
+        [OPEN_1]: {
           openId: 'open-1',
+          area: 81,
           nickname: 'Fienn',
           roster: [],
           results: {},
@@ -334,10 +348,11 @@ describe('App', () => {
 describe('차지 탭', () => {
   const seedActiveProfile = () =>
     seedProfiles({
-      activeOpenId: 'acct-a',
+      activeKey: ACCT_A,
       profiles: {
-        'acct-a': {
+        [ACCT_A]: {
           openId: 'acct-a',
+          area: 81,
           nickname: '본계',
           roster: [validDraft()],
           results: {},

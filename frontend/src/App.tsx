@@ -44,6 +44,12 @@ function App() {
   const engineVersion = useEngineVersion()
   const [tab, setTab] = useState<Tab>('roster')
 
+  // SyncRosterPanel doesn't yet ask which game server an account should sync
+  // from, so every sync it produces is filed under area 81 (JP) - the same
+  // area the profile store's own migration assumes for pre-existing profiles.
+  const importSyncedRoster = (args: { openId: string; nickname: string; roster: NikkeDraft[] }) =>
+    upsertProfile({ ...args, area: 81 })
+
   const drafts = activeProfile?.roster ?? NO_ROSTER
   const validRoster = useMemo(() => getValidRoster(drafts), [drafts])
 
@@ -86,14 +92,14 @@ function App() {
 
       <ProfileSwitcher
         profiles={Object.values(state.profiles)}
-        activeOpenId={state.activeOpenId}
+        activeKey={state.activeKey}
         onSwitch={switchProfile}
         onDelete={deleteProfile}
       />
 
       {activeProfile === null ? (
         <main className="app__main">
-          <SyncRosterPanel onImport={upsertProfile} defaultHelpOpen />
+          <SyncRosterPanel onImport={importSyncedRoster} defaultHelpOpen />
           <div className="empty">
             <p className="empty__text">
               아직 동기화된 계정이 없어요. 위에서 blablalink 동기화를
@@ -131,7 +137,7 @@ function App() {
               hidden={tab !== 'roster'}
               className="panel"
             >
-              <SyncRosterPanel onImport={upsertProfile} />
+              <SyncRosterPanel onImport={importSyncedRoster} />
               {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
               <RosterGrid
                 drafts={drafts}
@@ -154,14 +160,14 @@ function App() {
                 // outlives a switch (1-2 min) would land against the shared
                 // hook instance and leak its result/error into whichever
                 // profile happens to be active when the response arrives.
-                key={state.activeOpenId ?? 'none'}
+                key={state.activeKey ?? 'none'}
                 roster={validRoster}
                 investmentFor={investmentFor}
                 engineVersion={engineVersion}
-                activeOpenId={state.activeOpenId}
+                activeKey={state.activeKey}
                 getCached={(hash) => (activeProfile ? getResult(activeProfile, hash) : null)}
                 onResult={(args) => {
-                  if (state.activeOpenId) saveResult({ openId: state.activeOpenId, ...args })
+                  if (state.activeKey) saveResult({ key: state.activeKey, ...args })
                 }}
                 restoreInputs={activeProfile?.lastInputs ?? null}
                 restoreResult={
@@ -183,7 +189,7 @@ function App() {
                 // Same reasoning as RecommendPanel's key: an evaluate request
                 // outliving a profile switch must not land against the
                 // previous profile's hook instance.
-                key={state.activeOpenId ?? 'none'}
+                key={state.activeKey ?? 'none'}
                 roster={validRoster}
                 supportedUnits={supportedUnits.units}
                 portraitFor={portraitFor}
@@ -204,7 +210,7 @@ function App() {
                 // Same reasoning as RecommendPanel's key: a ladder computed for
                 // one profile must not stay on screen after a switch, and the
                 // panel's own state is the only place it lives.
-                key={state.activeOpenId ?? 'none'}
+                key={state.activeKey ?? 'none'}
                 roster={validRoster}
                 nameFor={nameFor}
               />

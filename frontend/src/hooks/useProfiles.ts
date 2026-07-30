@@ -1,4 +1,4 @@
-// Owns the multi-account profile store: one Profile per blablalink open_id,
+// Owns the multi-account profile store: one Profile per (open_id, area) pair,
 // switched between and persisted to localStorage. This replaces the old
 // single-roster 'nikke-roster' key, which mixed every account together.
 //
@@ -10,6 +10,7 @@ import {
   activeProfile as computeActiveProfile,
   deleteProfile,
   emptyProfilesState,
+  profileKey,
   saveResult as pureSaveResult,
   switchProfile,
   upsertProfile,
@@ -25,13 +26,14 @@ export interface Profiles {
   activeProfile: Profile | null
   upsertProfile: (args: {
     openId: string
+    area: number
     nickname: string
     roster: NikkeDraft[]
   }) => void
-  switchProfile: (openId: string) => void
-  deleteProfile: (openId: string) => void
+  switchProfile: (key: string) => void
+  deleteProfile: (key: string) => void
   saveResult: (args: {
-    openId: string
+    key: string
     hash: string
     result: StoredResult
     inputs: StoredInputs
@@ -40,6 +42,35 @@ export interface Profiles {
 
 const STORAGE_KEY = 'nikke-profiles'
 const LEGACY_ROSTER_KEY = 'nikke-roster'
+
+/** 복합 키가 생기기 전의 저장소는 open_id만으로 프로필을 키잡고 `activeOpenId`를
+ * 들고 있었다. 그때 동기화된 데이터는 전부 area 81로 조회된 것이라, 81을 채워
+ * 넣으면 정확하다. 멱등이다 - 이미 새 모양이면 손대지 않는다. */
+const migrate = (raw: unknown): ProfilesState => {
+  const state = raw as Partial<ProfilesState> & {
+    activeOpenId?: string | null
+    profiles?: Record<string, Profile & { area?: number }>
+  }
+  const profiles = state.profiles ?? {}
+  if (state.activeKey !== undefined && !('activeOpenId' in state)) {
+    return { activeKey: state.activeKey ?? null, profiles: profiles as Record<string, Profile> }
+  }
+
+  const migrated: Record<string, Profile> = {}
+  for (const profile of Object.values(profiles)) {
+    const area = profile.area ?? 81
+    migrated[profileKey(profile.openId, area)] = { ...profile, area }
+  }
+  const legacyActive = state.activeOpenId ?? null
+  const activeOpenIdProfile = legacyActive === null ? undefined : profiles[legacyActive]
+  return {
+    activeKey:
+      activeOpenIdProfile === undefined
+        ? (state.activeKey ?? null)
+        : profileKey(activeOpenIdProfile.openId, activeOpenIdProfile.area ?? 81),
+    profiles: migrated,
+  }
+}
 
 const readStoredProfiles = (): ProfilesState => {
   const raw = localStorage.getItem(STORAGE_KEY)
@@ -53,7 +84,7 @@ const readStoredProfiles = (): ProfilesState => {
     return emptyProfilesState()
   }
   try {
-    return JSON.parse(raw) as ProfilesState
+    return migrate(JSON.parse(raw))
   } catch {
     // Unparseable means unrecoverable, but start usable rather than dead -
     // never let a bad key keep the form from opening.
@@ -70,24 +101,24 @@ export const useProfiles = (): Profiles => {
   }, [state])
 
   const upsert = useCallback(
-    (args: { openId: string; nickname: string; roster: NikkeDraft[] }) => {
+    (args: { openId: string; area: number; nickname: string; roster: NikkeDraft[] }) => {
       setState((current) => upsertProfile(current, args))
     },
     [],
   )
 
-  const switchTo = useCallback((openId: string) => {
-    setState((current) => switchProfile(current, openId))
+  const switchTo = useCallback((key: string) => {
+    setState((current) => switchProfile(current, key))
   }, [])
 
-  const remove = useCallback((openId: string) => {
-    setState((current) => deleteProfile(current, openId))
+  const remove = useCallback((key: string) => {
+    setState((current) => deleteProfile(current, key))
   }, [])
 
   const save = useCallback(
-    (args: { openId: string; hash: string; result: StoredResult; inputs: StoredInputs }) => {
+    (args: { key: string; hash: string; result: StoredResult; inputs: StoredInputs }) => {
       setState((current) =>
-        pureSaveResult(current, args.openId, {
+        pureSaveResult(current, args.key, {
           hash: args.hash,
           result: args.result,
           inputs: args.inputs,

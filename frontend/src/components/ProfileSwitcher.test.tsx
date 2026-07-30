@@ -2,10 +2,11 @@ import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ProfileSwitcher } from './ProfileSwitcher'
-import type { Profile } from '../types/profile'
+import { profileKey, type Profile } from '../types/profile'
 
 const makeProfile = (overrides: Partial<Profile> = {}): Profile => ({
   openId: 'abc123',
+  area: 81,
   nickname: 'Fienn',
   roster: [],
   results: {},
@@ -23,7 +24,7 @@ describe('ProfileSwitcher', () => {
     const { container } = render(
       <ProfileSwitcher
         profiles={[]}
-        activeOpenId={null}
+        activeKey={null}
         onSwitch={vi.fn()}
         onDelete={vi.fn()}
       />,
@@ -39,14 +40,14 @@ describe('ProfileSwitcher', () => {
     render(
       <ProfileSwitcher
         profiles={profiles}
-        activeOpenId="b"
+        activeKey={profileKey('b', 81)}
         onSwitch={vi.fn()}
         onDelete={vi.fn()}
       />,
     )
     expect(screen.getByRole('option', { name: '본계' })).toBeInTheDocument()
     expect(screen.getByRole('option', { name: '부계' })).toBeInTheDocument()
-    expect(screen.getByRole('combobox')).toHaveValue('b')
+    expect(screen.getByRole('combobox')).toHaveValue(profileKey('b', 81))
   })
 
   it('falls back to the openId when nickname is empty', () => {
@@ -54,7 +55,7 @@ describe('ProfileSwitcher', () => {
     render(
       <ProfileSwitcher
         profiles={profiles}
-        activeOpenId="no-nick"
+        activeKey={profileKey('no-nick', 81)}
         onSwitch={vi.fn()}
         onDelete={vi.fn()}
       />,
@@ -62,7 +63,7 @@ describe('ProfileSwitcher', () => {
     expect(screen.getByRole('option', { name: 'no-nick' })).toBeInTheDocument()
   })
 
-  it('calls onSwitch(openId) when the selection changes', async () => {
+  it('calls onSwitch(key) when the selection changes', async () => {
     const user = userEvent.setup()
     const onSwitch = vi.fn()
     const profiles = [
@@ -72,16 +73,16 @@ describe('ProfileSwitcher', () => {
     render(
       <ProfileSwitcher
         profiles={profiles}
-        activeOpenId="a"
+        activeKey={profileKey('a', 81)}
         onSwitch={onSwitch}
         onDelete={vi.fn()}
       />,
     )
     await user.selectOptions(screen.getByRole('combobox'), '부계')
-    expect(onSwitch).toHaveBeenCalledWith('b')
+    expect(onSwitch).toHaveBeenCalledWith(profileKey('b', 81))
   })
 
-  it('calls onDelete(openId) for the active profile after confirming', async () => {
+  it('calls onDelete(key) for the active profile after confirming', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     const user = userEvent.setup()
     const onDelete = vi.fn()
@@ -89,19 +90,19 @@ describe('ProfileSwitcher', () => {
     render(
       <ProfileSwitcher
         profiles={profiles}
-        activeOpenId="a"
+        activeKey={profileKey('a', 81)}
         onSwitch={vi.fn()}
         onDelete={onDelete}
       />,
     )
     await user.click(screen.getByRole('button', { name: /삭제/i }))
     expect(window.confirm).toHaveBeenCalledOnce()
-    expect(onDelete).toHaveBeenCalledWith('a')
+    expect(onDelete).toHaveBeenCalledWith(profileKey('a', 81))
   })
 
   // A failed sync can leave a profile keyed by the empty string. It is the one
-  // profile a player most needs to remove, and an `!activeOpenId` guard treats
-  // it as "no account selected" - the delete button silently does nothing.
+  // profile a player most needs to remove, and an `!activeKey` guard treats it
+  // as "no account selected" - the delete button silently does nothing.
   it('deletes a profile whose openId is the empty string', async () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     const user = userEvent.setup()
@@ -113,14 +114,14 @@ describe('ProfileSwitcher', () => {
     render(
       <ProfileSwitcher
         profiles={profiles}
-        activeOpenId=""
+        activeKey={profileKey('', 81)}
         onSwitch={vi.fn()}
         onDelete={onDelete}
       />,
     )
     await user.click(screen.getByRole('button', { name: /삭제/i }))
     expect(window.confirm).toHaveBeenCalledOnce()
-    expect(onDelete).toHaveBeenCalledWith('')
+    expect(onDelete).toHaveBeenCalledWith(profileKey('', 81))
   })
 
   // With neither a nickname nor an openId to show, the option and the delete
@@ -131,7 +132,7 @@ describe('ProfileSwitcher', () => {
     render(
       <ProfileSwitcher
         profiles={profiles}
-        activeOpenId=""
+        activeKey={profileKey('', 81)}
         onSwitch={vi.fn()}
         onDelete={vi.fn()}
       />,
@@ -150,7 +151,7 @@ describe('ProfileSwitcher', () => {
     render(
       <ProfileSwitcher
         profiles={profiles}
-        activeOpenId="a"
+        activeKey={profileKey('a', 81)}
         onSwitch={vi.fn()}
         onDelete={onDelete}
       />,
