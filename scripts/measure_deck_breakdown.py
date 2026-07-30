@@ -33,7 +33,7 @@ from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # no
 from app.models import UserNikkeState  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
 from raid_record import RECORD_BOSS, RECORD_ROTATIONS  # noqa: E402  (the record's source of truth)
-from roster_fixture import real_roster  # noqa: E402
+from roster_fixture import add_roster_argument, real_roster  # noqa: E402
 
 
 def _synthetic(slug):
@@ -44,7 +44,7 @@ def _synthetic(slug):
     })
 
 
-def _states_for(slugs, use_synthetic):
+def _states_for(slugs, use_synthetic, roster_path):
     """UserNikkeStates for the named slugs, real investment where available.
 
     A MODE_VARIANTS slug (`cinderella-crystal-wave-mg`) is owned under its base
@@ -53,7 +53,7 @@ def _states_for(slugs, use_synthetic):
     """
     if use_synthetic:
         return [_synthetic(s) for s in slugs], "synthetic (all ATK 60,000, skills 10/10/10)"
-    roster = real_roster()
+    roster = real_roster(roster_path)
     if roster is None:
         return [_synthetic(s) for s in slugs], "synthetic FALLBACK - no synced roster found"
     by_slug = {state.character_slug: state for state in roster}
@@ -92,6 +92,7 @@ def _base_owner(by_slug, slug):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    add_roster_argument(p)
     p.add_argument("--deck", required=True,
                    help="comma-separated slugs, exactly the 5 units to seat")
     p.add_argument("--record", type=float, default=None,
@@ -104,7 +105,7 @@ def main():
     args = p.parse_args()
 
     slugs = [s.strip() for s in args.deck.split(",") if s.strip()]
-    states, roster_note = _states_for(slugs, args.synthetic)
+    states, roster_note = _states_for(slugs, args.synthetic, args.roster)
     specs, excluded = load_roster(states)
     if excluded:
         sys.exit(f"ERROR: not encoded / not usable: {', '.join(excluded)}")

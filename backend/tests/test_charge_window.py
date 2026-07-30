@@ -4,9 +4,8 @@ from dataclasses import replace
 import pytest
 
 from app.charge_window import (WindowInputs, aggregate_charge_speed,
-                               aggregation_rules_disagree, charge_speed_steps,
-                               outcome, reload_intervenes, shot_interval,
-                               shot_times, thresholds)
+                               charge_speed_steps, outcome, reload_intervenes,
+                               shot_interval, shot_times, thresholds)
 
 # Scarlet: Black Shadow as Fienn actually measured her (2026-07-29): a 0.30 sec
 # charge, a 0.43 sec motion delay, and a 2.86% charge-speed overload too small
@@ -104,34 +103,35 @@ def test_a_step_below_the_next_frame_changes_nothing():
     assert shot_interval(quiet) == pytest.approx(shot_interval(SCARLET))
 
 
-def test_aggregate_sums_the_lines_and_returns_a_ratio():
-    assert aggregate_charge_speed([2.86], 0.30) == pytest.approx(0.0286)
-    assert aggregate_charge_speed([4.33, 4.33], 0.30) == pytest.approx(0.0866)
-    assert aggregate_charge_speed([], 0.30) == pytest.approx(0.0)
+def test_aggregate_rounds_each_group_of_equal_rolls_to_a_whole_percent():
+    """Prika settled this: a roll grants its rounded percent, not its exact one
+    (docs/measurements/prika-charge.md). The aggregation is the calculator's
+    single seam onto that rule."""
+    assert aggregate_charge_speed([2.86]) == pytest.approx(0.03)
+    assert aggregate_charge_speed([4.92]) == pytest.approx(0.05)
+    assert aggregate_charge_speed([]) == pytest.approx(0.0)
 
 
-def test_the_two_aggregation_rules_are_compared_exactly():
-    # Scarlet's 0.30 sec charge is 18 frames. One line of 5.51%: the engine's
-    # raw sum buys floor(18 * 0.0551) = 0 frames, the community's rounding to 6%
-    # buys 1. They disagree.
-    assert aggregation_rules_disagree([5.51], 0.30) is True
-    # Two lines of 4.33%: equal values sum to 8.66% before rounding, so 9% buys
-    # floor(18 * 0.09) = 1 frame and the raw 8.66% buys 1 too. They agree.
-    assert aggregation_rules_disagree([4.33, 4.33], 0.30) is False
-    # Nothing rolled is nothing to disagree about.
-    assert aggregation_rules_disagree([], 0.30) is False
+def test_equal_rolls_sum_before_they_round_and_can_cost_a_point():
+    """Grouping is not a rounding detail - it changes the answer, and not always
+    in the player's favour. 4.63 rounds up alone but 9.26 rounds down together,
+    so two of them grant 9 where rounding each would have granted 10."""
+    assert aggregate_charge_speed([4.63, 4.63]) == pytest.approx(0.09)
+    assert aggregate_charge_speed([4.63]) == pytest.approx(0.05)
+    # The community post's worked example: 4.63 twice and 4.33 once is 9 + 4.
+    assert aggregate_charge_speed([4.63, 4.63, 4.33]) == pytest.approx(0.13)
+    # Unequal rolls do NOT share a group, so each rounds on its own.
+    assert aggregate_charge_speed([4.63, 4.33]) == pytest.approx(0.09)
 
 
-def test_a_liberalio_sized_charge_is_judged_on_its_own_frame_grid():
-    # Liberalio charges in 1.5 sec = 90 frames, so a frame is 1.11% and most
-    # totals leave the two rules agreeing - the answer depends on the charge
-    # time, not on a fixed band around the total.
-    assert aggregation_rules_disagree([2.6], 1.5) is False
-    assert aggregation_rules_disagree([4.33], 1.5) is False
-    # 1.2% buys one frame raw; rounding it down to 1% buys none.
-    assert aggregation_rules_disagree([1.2], 1.5) is True
-    # Two 4.33% lines sum to 8.66% = 7 frames raw, but group and round to 9% = 8.
-    assert aggregation_rules_disagree([4.33, 4.33], 1.5) is True
+def test_the_rolls_are_needed_because_their_total_is_not_enough():
+    """The reason `lines` is threaded all the way from the sync rather than a
+    total being rounded on arrival: 2.28 + 4.92 and 2.57 + 4.63 both display
+    7.20%, and they grant 7 and 8. A roster that only kept the total cannot tell
+    which of those the player is holding."""
+    assert sum([2.28, 4.92]) == pytest.approx(sum([2.57, 4.63]))
+    assert aggregate_charge_speed([2.28, 4.92]) == pytest.approx(0.07)
+    assert aggregate_charge_speed([2.57, 4.63]) == pytest.approx(0.08)
 
 
 def test_outcome_splits_the_window_between_two_shot_counts():

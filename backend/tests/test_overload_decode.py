@@ -4,7 +4,8 @@ from pathlib import Path
 
 import pytest
 
-from app.overload_decode import assemble_overload, decode_option, overload_value
+from app.overload_decode import (assemble_overload, charge_speed_percent_from_lines,
+                                 decode_option, overload_value)
 from app.stat_assembly import load_stat_tables
 
 ROSTER = Path(__file__).resolve().parents[2] / "tools" / "collect-blablalink" / "roster.json"
@@ -107,4 +108,27 @@ def test_an_unknown_effect_type_is_skipped_with_a_warning(tables, caplog):
 def test_a_known_type_at_an_unobserved_level_is_kept(tables):
     """The fill means an unmeasured roll is valued, not dropped."""
     lines = assemble_overload(tables, _detail_with(7000915))
-    assert lines == [{"name": "차지 대미지 증가", "value": pytest.approx(14.63, abs=0.01)}]
+    assert lines == [{
+        "name": "차지 대미지 증가",
+        "value": pytest.approx(14.63, abs=0.01),
+        "lines": [{"slot": "head", "value": pytest.approx(14.63, abs=0.01)}],
+    }]
+
+
+def test_the_rolls_behind_a_total_survive_as_lines(tables):
+    """A total cannot be decomposed back into the rolls that made it, and charge
+    speed rounds per roll - so the rolls have to be carried, tagged with the slot
+    a future per-piece view would label them by.
+
+    The rolls here are the community post's own worked example: charge speed at
+    level 10 twice and level 9 once, which it reports as 9 + 4 = 13%."""
+    detail = {"head_equip_option1_id": 7001010,   # charge speed lv10 = 4.63
+              "arm_equip_option1_id": 7001010,    # the same roll on another piece
+              "torso_equip_option1_id": 7001009}  # lv9 = 4.33
+    [row] = assemble_overload(tables, detail)
+    assert [line["slot"] for line in row["lines"]] == ["head", "torso", "arm"]
+    assert row["value"] == pytest.approx(13.59, abs=0.01)
+    # Two of the three rolls are equal - exactly what a total cannot recover.
+    values = [line["value"] for line in row["lines"]]
+    assert values[0] == values[2] and values[0] != values[1]
+    assert charge_speed_percent_from_lines(values) == 13

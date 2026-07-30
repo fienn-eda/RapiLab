@@ -8,10 +8,23 @@ export interface SkillLevels {
   burst: number // int, 1–10
 }
 
+/** One overload roll on one gear piece, before same-type rolls are summed.
+ *  `slot` is head / torso / arm / leg. Nothing renders it yet — it is carried so
+ *  a per-piece view can label the rolls without another sync. */
+export interface OverloadLine {
+  slot: string
+  value: number // float
+}
+
 /** One aggregated overload stat line, summed across all 4 gear pieces. */
 export interface OverloadOption {
   name: string
   value: number // float
+  /** The rolls `value` is the sum of, when the sync supplied them. Charge speed
+   *  rounds per roll rather than on the total and a total cannot be decomposed
+   *  back, so the backend needs the rolls to be exact. Absent means "not known"
+   *  — the backend estimates from the total and says so. */
+  lines?: OverloadLine[]
 }
 
 export interface UserNikkeState {

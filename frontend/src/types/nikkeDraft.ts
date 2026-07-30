@@ -5,6 +5,7 @@
 
 import {
   CONSTRAINTS,
+  type OverloadLine,
   type OverloadOption,
   type UserNikkeState,
 } from './userNikkeState'
@@ -13,6 +14,11 @@ export interface OverloadRow {
   id: string
   name: string
   value: string
+  /** The per-gear rolls this row's total was summed from, when the sync knew
+   *  them. Kept out of the string-typed form state deliberately: nothing edits
+   *  a roll yet, and a row whose total no longer matches its rolls drops them
+   *  (see `toUserNikkeState`) rather than sending a stale pair. */
+  lines?: OverloadLine[]
 }
 
 export interface NikkeDraft {
@@ -53,6 +59,18 @@ export interface NikkeDraftErrors {
   def_?: string
   skill_levels?: { skill1?: string; skill2?: string; burst?: string }
   overload_options?: Record<string, { name?: string; value?: string }>
+}
+
+/** The row's rolls, but only while they still add up to the total it shows.
+ *
+ * Charge speed is computed from the rolls, so a total edited away from them
+ * would silently keep answering for the old gear. Checking the sum rather than
+ * clearing `lines` at every edit site means a future per-roll editor cannot
+ * forget to do it — the invariant lives where the payload is built. */
+const rollsStillMatching = (row: OverloadRow, value: number): { lines?: OverloadLine[] } => {
+  if (!row.lines?.length) return {}
+  const summed = row.lines.reduce((total, line) => total + line.value, 0)
+  return Math.abs(summed - value) < 0.005 ? { lines: row.lines } : {}
 }
 
 const newId = (): string => crypto.randomUUID()
@@ -149,7 +167,7 @@ export const validateDraft = (draft: NikkeDraft): ValidationResult => {
     if (Object.keys(rowErrors).length > 0) {
       overloadErrors[row.id] = rowErrors
     } else {
-      overloadOptions.push({ name, value: parsedValue.value! })
+      overloadOptions.push({ name, value: parsedValue.value!, ...rollsStillMatching(row, parsedValue.value!) })
     }
   }
   if (Object.keys(overloadErrors).length > 0)

@@ -3,7 +3,13 @@ roster.json
 # The app's own synced roster, lifted out of localStorage as NikkeDraft[] -
 # already slug-resolved (Favorite Item builds included), which roster.json is
 # not. Personal investment data: local only, same as roster.json.
-roster-drafts.json
+#
+# Globbed, not the bare name: a profile is one (open_id, area) pair, so a player
+# with two accounts - or one account playing on JP and KR - exports several
+# files side by side and names them apart (RECIPE.md, and `--roster PATH` on the
+# measurement scripts). Ignoring only the blessed name would leave every other
+# account's investment data staged and waiting for a `git add`.
+roster-drafts*.json
 details.json
 outpost.json
 *.backup-*.json

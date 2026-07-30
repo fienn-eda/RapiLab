@@ -44,7 +44,8 @@ from app.cascade import clear_fit_cache  # noqa: E402
 from app.deck_search import BossProfile, _intra_tier_orderings  # noqa: E402
 from app.supported_units import supported_units  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
-from roster_fixture import real_roster, synthetic_roster  # noqa: E402
+from roster_fixture import (add_roster_argument, real_roster,  # noqa: E402
+                            synthetic_roster)
 
 
 def _by_ordering_scorer(real_score_batch, counter):
@@ -95,6 +96,7 @@ def _run(specs, boss, decks, budget, workers, by_ordering):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    add_roster_argument(p)
     p.add_argument("--decks", type=int, default=5)
     p.add_argument("--budget", type=float, default=1200.0,
                    help="swap budget per run; the by-ordering run needs ~27x the "
@@ -110,7 +112,7 @@ def main():
     args = p.parse_args()
     workers = args.workers if args.workers == "auto" else int(args.workers)
 
-    states = None if args.synthetic else real_roster(limit=args.units)
+    states = None if args.synthetic else real_roster(args.roster, limit=args.units)
     source = "real synced roster"
     if states is None:
         states = synthetic_roster(args.units, supported_units())

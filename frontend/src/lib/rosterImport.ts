@@ -26,7 +26,7 @@ interface RosterUnit {
   collectible?: { tid: number; level: number }
   raid400: { hp: number; atk: number; def: number }
   actual?: { hp: number; atk: number; def: number }
-  overload?: { name: string; value: number }[]
+  overload?: { name: string; value: number; lines?: { slot: string; value: number }[] }[]
   skill_levels?: { skill1: number; skill2: number; burst: number }
 }
 interface RosterJson {
@@ -79,6 +79,7 @@ export const parseRosterJson = (
         id: crypto.randomUUID(),
         name: o.name,
         value: String(o.value),
+        ...(o.lines?.length ? { lines: o.lines } : {}),
       })),
     })
   }

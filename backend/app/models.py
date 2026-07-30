@@ -13,11 +13,28 @@ class SkillLevels(BaseModel):
     burst: int = Field(ge=1, le=10)
 
 
+class OverloadLine(BaseModel):
+    """One overload roll on one gear piece, before same-type rolls are summed.
+
+    `slot` is head / torso / arm / leg. Nothing renders it yet - it is carried so
+    a per-piece view can label the rolls without another sync.
+    """
+
+    slot: str
+    value: float
+
+
 class OverloadOption(BaseModel):
     """One aggregated overload stat line, summed across all 4 gear pieces."""
 
     name: str
     value: float
+    # The rolls `value` is the sum of, when the sync supplied them. Charge speed
+    # rounds per roll rather than on the total and a total cannot be decomposed
+    # back, so the rolls are what the rule needs - see
+    # overload_decode.charge_speed_percent_from_lines. None means "not known":
+    # a hand-edited value, or a roster synced before lines were carried.
+    lines: list[OverloadLine] | None = None
 
 
 class UserNikkeState(BaseModel):

@@ -35,7 +35,8 @@ import app.deck_allocation as da  # noqa: E402
 from app.deck_search import BossProfile  # noqa: E402
 from app.supported_units import supported_units  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
-from roster_fixture import real_roster, synthetic_roster  # noqa: E402
+from roster_fixture import (add_roster_argument, real_roster,  # noqa: E402
+                            synthetic_roster)
 
 
 class _SwapTrace:
@@ -111,6 +112,7 @@ def _full_pass_candidates(decks, leftovers):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    add_roster_argument(p)
     p.add_argument("--units", type=int, default=None,
                    help="cap the roster size (default: the whole synced roster)")
     p.add_argument("--decks", type=int, default=5)
@@ -124,7 +126,7 @@ def main():
     args = p.parse_args()
     workers = args.workers if args.workers == "auto" else int(args.workers)
 
-    states = None if args.synthetic else real_roster(limit=args.units)
+    states = None if args.synthetic else real_roster(args.roster, limit=args.units)
     source = "real synced roster"
     if states is None:
         states = synthetic_roster(args.units, supported_units())

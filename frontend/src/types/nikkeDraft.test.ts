@@ -99,6 +99,46 @@ describe('validateDraft', () => {
     ])
   })
 
+  it('forwards the per-gear rolls a synced row carries', () => {
+    const draft = validDraft()
+    draft.overload_options = [
+      {
+        id: 'row-1',
+        name: '차지 속도 증가',
+        value: '7.2',
+        lines: [
+          { slot: 'head', value: 2.57 },
+          { slot: 'arm', value: 4.63 },
+        ],
+      },
+    ]
+    const { value } = validateDraft(draft)
+    expect(value?.overload_options[0].lines).toEqual([
+      { slot: 'head', value: 2.57 },
+      { slot: 'arm', value: 4.63 },
+    ])
+  })
+
+  it('drops rolls whose sum no longer matches the total shown', () => {
+    // Charge speed is computed from the rolls, so a total edited away from them
+    // would keep answering for the old gear. 2.57 + 4.63 is 7.20, not 9.
+    const draft = validDraft()
+    draft.overload_options = [
+      {
+        id: 'row-1',
+        name: '차지 속도 증가',
+        value: '9',
+        lines: [
+          { slot: 'head', value: 2.57 },
+          { slot: 'arm', value: 4.63 },
+        ],
+      },
+    ]
+    const { value } = validateDraft(draft)
+    expect(value?.overload_options).toEqual([{ name: '차지 속도 증가', value: 9 }])
+    expect(value?.overload_options[0].lines).toBeUndefined()
+  })
+
   it('reports per-row overload errors keyed by row id', () => {
     const bad = { id: 'row-1', name: '', value: 'x' }
     const draft = validDraft()

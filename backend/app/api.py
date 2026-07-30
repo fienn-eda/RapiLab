@@ -16,10 +16,9 @@ from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
 
 from app.cancellation import CancelToken, Cancelled
-from app.charge_window import (aggregation_rules_disagree, outcome,
-                               reload_intervenes, shot_interval, thresholds)
+from app.charge_window import outcome, reload_intervenes, shot_interval, thresholds
 from app.charge_window_inputs import (CALCULATOR_SLUGS, LIBERALIO_SLUG, Overrides,
-                                      build_inputs)
+                                      build_inputs, charge_speed_rolls_known)
 from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_draft
 from app.deck_evaluation import InfeasibleDeck, evaluate_decks
 from app.deck_search import BossProfile, search_best_decks
@@ -510,7 +509,7 @@ def _shot_outcome(value) -> ShotOutcome:
     )
 
 
-def _charge_window_notes(request, inputs, spec_atk, liberalio_atk):
+def _charge_window_notes(request, inputs, spec_atk, liberalio_atk, rolls_known):
     """The judgements worth surfacing next to the ladder. Each is a fact the
     calculator can check rather than a caveat the reader has to remember."""
     notes = []
@@ -527,15 +526,13 @@ def _charge_window_notes(request, inputs, spec_atk, liberalio_atk):
             notes.append(
                 "리버렐리오의 공격력이 더 낮아 차지속도 버프가 그녀 자신에게 갑니다 — "
                 "대상은 '최저 공격력 버스트 3 아군'이고 시전자를 제외하지 않습니다.")
-    # Only the override path knows the individual lines. The synced roster
-    # reports overload options already summed across gear, and a total cannot be
-    # decomposed back into them - so there is nothing to compare and the UI
-    # carries a standing caveat instead of a per-result note.
-    lines = request.overrides.charge_speed_lines
-    if lines is not None and aggregation_rules_disagree(lines, inputs.charge_time):
+    # Charge speed rounds per roll, so a total that several roll combinations
+    # could have produced does not pin the frame count. An override supplies the
+    # rolls; a synced roster supplies them only if it carried them.
+    if request.overrides.charge_speed_lines is None and not rolls_known:
         notes.append(
-            "이 차지속도 구성은 집계 규칙에 따라 프레임이 갈립니다 — 엔진은 원값 합계를, "
-            "커뮤니티 자료는 부위별 반올림을 씁니다. 어느 쪽이 맞는지는 미결입니다.")
+            "차지속도를 부위별 굴림이 아니라 합계에서 추정했습니다 — 굴림 값이 서로 "
+            "다르면 한 프레임 어긋날 수 있습니다. 로스터를 다시 동기화하면 정확해집니다.")
     return notes
 
 
@@ -561,7 +558,8 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
     liberalio_state = by_slug.get(LIBERALIO_SLUG)
     notes = _charge_window_notes(
         request, inputs, by_slug[request.slug].atk,
-        liberalio_state.atk if liberalio_state else None)
+        liberalio_state.atk if liberalio_state else None,
+        charge_speed_rolls_known(by_slug[request.slug]))
     return ChargeWindowResponse(
         interval=shot_interval(inputs),
         magazine=inputs.max_ammo,
