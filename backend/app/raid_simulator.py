@@ -117,6 +117,14 @@ BASE_CRIT_RATE = 0.15
 # Damage types that can never hit a core, whatever fired them.
 NON_CORE_DAMAGE_TYPES = frozenset({"sustained", "distributed"})
 
+# Weapons that collect the Effective Range bonus at NO distance. Anis: Star's
+# range footage reads a non-crit normal attack's major bucket as exactly
+# 1.000000 outside Full Burst and 1.500000 inside - no range term anywhere -
+# where a weapon that could collect it would land on 1.30/1.80 (Fienn,
+# 2026-07-28). That makes a Rocket Launcher the measuring stick for the rest of
+# the bucket rather than a unit standing in the wrong place.
+RANGELESS_WEAPONS = frozenset({"RL"})
+
 
 def core_eligible(source, damage_type):
     """Whether a damage instance can collect the Core Damage bonus.
@@ -464,6 +472,7 @@ def simulate_raid(
     weapon_stats=None,
     boss_element=None,
     part_destructible=False,
+    in_effective_range=False,
     base_crit_rate=BASE_CRIT_RATE,
     periodic_nukes=None,
     burst_damage_types=None,
@@ -556,6 +565,28 @@ def simulate_raid(
             return 1 + ELEMENT_ADVANTAGE_BONUS
         return element_multiplier(member_by_slug[slug]["element"], boss_element)
 
+    def _in_effective_range(slug, is_normal_attack, damage_type):
+        """Whether this instance collects the Effective Range bonus.
+
+        The encounter decides the distance (`BossProfile.in_effective_range`),
+        not the engine and not the player - so unlike the core-hit assumption
+        this is never taken for granted. What the engine does decide is the
+        SCOPE, which is Core Damage's scope exactly: normal attacks only, never
+        Sustained/Distributed even when those are the unit's normal attack, and
+        never a Rocket Launcher at any distance at all.
+        """
+        return (
+            in_effective_range
+            and is_normal_attack
+            and damage_type not in NON_CORE_DAMAGE_TYPES
+            # Read off weapon_stats, which describes the weapon that fired the
+            # shot, rather than the deck entry - `weapon` is optional there
+            # (`SquadMember` takes it with .get). A slug absent from
+            # weapon_stats fires no normal attacks at all, so it never reaches
+            # this line with is_normal_attack true.
+            and (weapon_stats.get(slug) or {}).get("weapon") not in RANGELESS_WEAPONS
+        )
+
     def _damage_instance(
         slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0,
         hits_core=False, on_charge_weapon=None, is_normal_attack=False,
@@ -591,6 +622,14 @@ def simulate_raid(
                 bundle["other_core_damage_sources"] if hits_core else 0.0
             ),
             full_burst_bonus=1.0 if in_full_burst else 0.0,
+            # Effective Range is scoped exactly like Core Damage - normal
+            # attacks only, and never Sustained/Distributed even when those ARE
+            # the unit's normal attack - with one weapon carved out: a Rocket
+            # Launcher collects it at no distance at all (Fienn, 2026-07-28;
+            # engine-gaps item 16 for the measurement that fixed the +0.30).
+            effective_range_bonus=(
+                1.0 if _in_effective_range(slug, is_normal_attack, damage_type) else 0.0
+            ),
             element_multiplier=element_bonus_for(slug, bundle["element_advantage_grant"]),
             # Charge Damage multiplies a fully-charged SHOT and nothing else.
             # It is one of the damage formula's asterisked terms - "Modifiers

@@ -115,6 +115,19 @@ class BossProfile:
     gauge_charge_time: float = 2.0
     mode: str = "manual"
     part_destructible: bool = False
+    # Whether the squad fights this boss from inside its weapons' effective
+    # range, worth +0.30 in the major bucket to normal attacks (measured on
+    # Ade: Agent Bunny, engine-gaps item 16). It sits on the BOSS because the
+    # distance is not the player's to pick - Nikke positions are fixed and the
+    # encounter sets the range (Fienn, 2026-07-31). That makes it unlike the
+    # core-hit assumption, which is aim and therefore a ceiling the engine may
+    # take for granted.
+    #
+    # Defaults to False, which is what every caller computed before the term
+    # was wired at all. No recorded boss has been read yet, so nothing sets it
+    # to True; leaving the wiring in place with the flag off is deliberate, so
+    # the next measurement is one field away rather than a re-derivation.
+    in_effective_range: bool = False
 
 
 # Real decks come in exactly these B1/B2/B3 shapes (Fienn, 2026-07-17);
@@ -255,6 +268,7 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None):
         core_hittable=boss.core_hittable,
         boss_element=boss.element,
         part_destructible=boss.part_destructible,
+        in_effective_range=boss.in_effective_range,
     )
 
 
