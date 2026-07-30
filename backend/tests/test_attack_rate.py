@@ -485,27 +485,56 @@ def test_magazine_base_resumes_at_the_same_instant_as_a_charged_segments_final_s
     assert resumed_first[0].is_first_bullet
 
 
-def test_reload_speed_buff_shortens_the_reload_reciprocally():
-    assert reload_time_with_speed(2.0, 0.5) == pytest.approx(2.0 / 1.5)
-    assert reload_time_with_speed(2.0, 1.0) == pytest.approx(1.0)
+# Fienn's six readings, 60fps, 2026-07-29 - the measurements the affine model
+# was fitted to, promoted to a regression anchor. Max residual is 1.12 frames
+# (Privaty unbuffed), so the bound is 1.2 frames. Raw and what they do and do
+# not settle: docs/measurements/reload-affine.md.
+RELOAD_READINGS = [
+    # (file reload, reload speed, measured seconds)
+    (1.0, 0.0000, 1.1667),   # Privaty, AR, unbuffed
+    (1.0, 0.2969, 0.8333),   # + Resilience cube
+    (1.0, 0.8085, 0.3500),   # + cube and Privaty's own buff
+    (2.5, 0.0000, 2.6500),   # Rapi: Red Hood, MG, unbuffed
+    (2.5, 0.2969, 1.9000),
+    (2.5, 0.8085, 0.6400),
+]
 
 
-def test_reload_speed_reduction_lengthens_the_reload_symmetrically():
-    # Milk: Blooming Bunny's forced reload - "reload speed fixed at a 50%
-    # reduction" measures 3s against her 2s base in game (Fienn, 2026-07-20),
-    # i.e. 1.5x. Dividing by (1 + speed) would give 4s, doubling it instead.
-    assert reload_time_with_speed(2.0, -0.5) == pytest.approx(3.0)
+def test_the_model_reproduces_every_measured_reload():
+    for file_value, speed, measured in RELOAD_READINGS:
+        assert reload_time_with_speed(file_value, speed) == pytest.approx(
+            measured, abs=1.2 / 60), f"file {file_value} at {speed:.4%}"
 
 
-def test_reload_speed_directions_are_reciprocal_mirrors():
-    # +p and -p scale the reload by 1/(1+p) and (1+p) - symmetric in log space,
-    # which is what makes the two branches one formula rather than two rules.
-    for p in (0.25, 0.5, 0.8):
-        assert reload_time_with_speed(2.0, p) * reload_time_with_speed(2.0, -p) == pytest.approx(4.0)
+def test_an_unbuffed_reload_is_the_file_value_plus_the_fixed_segment():
+    """The model's core reinterpretation: the data file's reloadTime is the part
+    a buff scales, not the reload itself. Privaty's 1.0-sec file value measures
+    1.1667 in game with nothing on her."""
+    assert reload_time_with_speed(1.0, 0.0) == pytest.approx(1.148)
+    assert reload_time_with_speed(2.5, 0.0) == pytest.approx(2.648)
 
 
-def test_reload_speed_zero_is_the_identity_on_both_branches():
-    assert reload_time_with_speed(2.0, 0.0) == pytest.approx(2.0)
+def test_reload_speed_reduction_lengthens_the_reload():
+    """Milk: Blooming Bunny's forced reload - "reload speed fixed at a 50%
+    reduction" - scales her 2-sec file value by 1.5. She reads 3.0 sec in game
+    (Fienn, 2026-07-20), which is the file value alone; the fixed segment is
+    taken as global anyway (Fienn, 2026-07-31), so the model says 3.148 and that
+    reading is treated as too coarse to resolve 9 frames."""
+    assert reload_time_with_speed(2.0, -0.5) == pytest.approx(3.148)
+
+
+def test_enough_reload_speed_removes_the_reload_entirely():
+    """The observation that killed the reciprocal form: Crown + Privaty + the
+    Resilience cube reach 125.20% and the reload disappears. `time / (1 + s)`
+    cannot reach zero at any speed; this form reaches it at 1 + 0.148/file."""
+    assert reload_time_with_speed(1.0, 1.148) == pytest.approx(0.0)
+    assert reload_time_with_speed(1.0, 1.2520) == 0.0
+    assert reload_time_with_speed(2.5, 1.2520) == 0.0
+
+
+def test_the_reload_never_goes_negative():
+    for speed in (1.5, 2.0, 10.0):
+        assert reload_time_with_speed(1.0, speed) == 0.0
 
 
 # --- charge speed: frame quantisation + caster-based flat reductions ---

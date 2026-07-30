@@ -105,24 +105,41 @@ def _zero(_time):
     return 0.0
 
 
+# The part of a reload that no buff scales. Reload is affine, not reciprocal:
+# the data file's reloadTime is what a reload-speed buff multiplies, and a fixed
+# animation segment sits on top of it. Fienn's six readings (2026-07-29, 60fps)
+# fit `file * (1 - s) + 0.148` to 1.12 frames, and solving them per unit returns
+# slopes of 1.0029 and 2.4835 against file values of 1.0 and 2.5 - the file is
+# right, the old formula was not. Same shape as CHARGE_MOTION_DELAY_SECONDS.
+#
+# Taken as global (Fienn, 2026-07-31). The two readings that show no fixed
+# segment are both charge weapons - Milk's forced reload at -50% (exactly 1.5x
+# her file value) and Centi's clip load (exactly her 0.5-sec file value) - so a
+# per-weapon-class constant is a live alternative that those readings are too
+# coarse to settle. Raw: docs/measurements/reload-affine.md.
+RELOAD_FIXED_SECONDS = 0.148
+
+
 def reload_time_with_speed(reload_time, reload_speed_percent):
     """Reload TIME from a reload-SPEED modifier, in both directions.
 
-    Speed and time are reciprocal, and the game's two directions are
-    symmetric: +50% speed reloads in 1/1.5 of the time, -50% speed takes 1.5x
-    as long. Plain `time / (1 + speed)` only models the first direction - at
-    speed = -0.5 it DOUBLES the reload instead of adding half. Milk: Blooming
-    Bunny's forced reload is the first negative consumer in the roster and
-    measures 3s against her 2s base, not 4s (Fienn, 2026-07-20).
+    One expression, no branch: the negative direction was already
+    `file * (1 - s)` (Milk: Blooming Bunny's forced reload measures 3 sec
+    against her 2-sec file value at -50%, not 4), and this returns the positive
+    direction to the same convention.
 
-    The negative branch rests on that single in-game observation, so it is
-    anchored, not proven across magnitudes - revisit if a unit with a
-    different reduction ever disagrees. Every pre-existing consumer buffs
-    reload speed upward, so the positive branch is unchanged arithmetic.
+    Note what that costs: reload speed 0 is NOT the identity. An unbuffed reload
+    is the file value PLUS the fixed segment, because the file value is only the
+    scaled part - Privaty's 1.0 sec measures 1.1667 with nothing on her.
+
+    `max(0.0, ...)` is what lets the reload actually disappear. Crown (44.35%)
+    plus Privaty (51.16%) plus the Resilience cube (29.69%) reach 125.20% and
+    the game stops reloading; `time / (1 + s)` gives 0.888 sec there and cannot
+    reach zero at any speed. Whether the fixed segment survives past that point
+    or is clipped away with the rest is unmeasured - this clips it, which is the
+    reading that needs no second rule.
     """
-    if reload_speed_percent >= 0:
-        return reload_time / (1 + reload_speed_percent)
-    return reload_time * (1 - reload_speed_percent)
+    return max(0.0, reload_time * (1 - reload_speed_percent) + RELOAD_FIXED_SECONDS)
 
 
 # The shortest gap the game allows between charged shots. Anchored to one
