@@ -705,14 +705,23 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
 
     A real transform (Scarlet, Maxwell, Laplace, Cinderella's snipe mode) keeps
     the default: a different weapon arrives loaded. Hence the opt-in.
+
+    The same reasoning decides the ammo refund: shots taken here spend this
+    magazine, so they count toward the refund's trigger. Because a refund can
+    top a partly-spent magazine back up, whether a shot OPENS or EMPTIES its
+    magazine can no longer be read off the rounds remaining - `opening` tracks
+    the first and the last is stamped after the refund has been applied.
     """
     weapon = base["weapon"]
     base_bonus = base["charge_damage_percent"] / 100 - 1
+    refund = base.get("ammo_refund")
     records = []
     pending = list(segments)
     cursor = 0.0                 # instant the next charge starts from
     capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(0.0))))
     rounds = capacity
+    shots_fired = 0
+    opening = True               # is the next shot this magazine's first?
     seg, seg_left = None, 0
     while cursor < fight_duration:
         if seg is None and pending and pending[0]["start"] <= cursor:
@@ -738,21 +747,27 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
         if shot_time >= fight_duration:
             break
         rounds -= 1
+        shots_fired += 1
         records.append(ShotRecord(
             shot_time, profile["weapon"], profile["damage_percent"], bonus,
-            is_first_bullet=(rounds == capacity - 1), is_last_bullet=(rounds == 0),
+            is_first_bullet=opening, is_last_bullet=False,
             damage_type=profile.get("damage_type") if in_segment else None,
             in_segment=in_segment))
+        opening = False
+        if refund is not None and shots_fired % refund.every_shots == 0:
+            rounds = min(capacity, rounds + refund.rounds)
         cursor = shot_time
         if in_segment:
             seg_left -= 1
             if seg_left == 0:
                 seg = None
         if rounds == 0:
+            records[-1] = replace(records[-1], is_last_bullet=True)
             cursor = shot_time + reload_time_with_speed(
                 base["reload_time"], reload_speed_percent_at(shot_time))
             capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(cursor))))
             rounds = capacity
+            opening = True
     return records
 
 

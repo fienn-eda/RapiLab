@@ -86,6 +86,40 @@ def test_last_bullet_marks_the_refunded_final_round():
     assert times[17] not in lasts
 
 
+def _shared_magazine_case(**extra):
+    """Snow White: Heavy Arms' shape - a mode that re-times her charge and
+    draws from her own magazine rather than arriving loaded."""
+    base = dict(weapon="SR", max_ammo=6, reload_time=2.0, charge_time=1.2,
+                damage_percent=100.0, charge_damage_percent=200.0, **extra)
+    segment = [dict(start=5.0, until_shots=3, shares_magazine=True,
+                    profile=dict(weapon="SR", charge_time=3.2,
+                                 damage_percent=100.0,
+                                 charge_damage_percent=200.0))]
+    return base, segment
+
+
+def test_a_shared_magazine_segment_spends_refunded_rounds_too():
+    # Its shots draw from her own magazine, so they count toward the trigger
+    # like any other.
+    plain_base, segment = _shared_magazine_case()
+    bastion_base, _ = _shared_magazine_case(ammo_refund=BASTION)
+    plain = generate_segmented_shots(plain_base, segment, 60.0)
+    bastion = generate_segmented_shots(bastion_base, segment, 60.0)
+    assert len(bastion) > len(plain)
+
+
+def test_a_refund_does_not_re_open_the_magazine():
+    # Refunding onto a partly-spent magazine must not mark another shot as the
+    # magazine's first - only a reload starts a magazine.
+    base, segment = _shared_magazine_case(ammo_refund=BASTION)
+    records = generate_segmented_shots(base, segment, 60.0)
+    firsts = [r for r in records if r.is_first_bullet]
+    lasts = [r for r in records if r.is_last_bullet]
+    # Every magazine opens once and closes once (the fight may cut the last
+    # one short, so firsts can lead lasts by at most one).
+    assert 0 <= len(firsts) - len(lasts) <= 1
+
+
 def test_the_weapon_stats_dict_carries_the_refund_into_segmented_shots():
     plain = generate_segmented_shots(RL, [], 180.0)
     bastion = generate_segmented_shots({**RL, "ammo_refund": BASTION}, [], 180.0)
