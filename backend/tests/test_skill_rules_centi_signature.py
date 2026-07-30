@@ -127,3 +127,19 @@ def test_the_favorite_item_leaves_the_burst_alone():
     reg = _fire("own_burst_activate", build_centi_rules(CENTI_SIG))
     assert round(reg.total_for("enemy_def_percent", FIRE_ALLY, 0.0), 4) == -0.1454
     assert reg.total_for("enemy_def_percent", FIRE_ALLY, 10.1) == 0.0
+
+
+def test_her_cooldown_cut_follows_the_clip_reload():
+    # Her Skill 2 cooldown is derived from her shot interval, so the reload
+    # model propagates into how often the squad ATK buff lands. Modelling one
+    # reload made her cycle 5.74 sec; three loads make it 5.96.
+    def values(reload_time):
+        return {
+            "maintain_fortification": {"description_value_02": "9.16"},
+            "caster_weapon_stats": {
+                "charge_time": 1.0, "max_ammo": 6, "reload_time": reload_time,
+            },
+        }
+
+    assert round(field_discussion_effective_cooldown(values(1.5)), 4) == 5.9605
+    assert round(field_discussion_effective_cooldown(values(0.5)), 4) == 5.7378
