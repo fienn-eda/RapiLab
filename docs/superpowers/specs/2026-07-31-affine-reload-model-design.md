@@ -1,7 +1,9 @@
 # 아핀 재장전 모델 착륙 — 설계
 
 - Date: 2026-07-31
-- Status: 설계 승인됨 (Fienn), 구현 착수
+- Status: 착륙 완료 (2026-07-31) — 합계 **1.015x → 1.055x**, ±15% 이내 **21/25 → 19/25**,
+  백엔드 기준선 **1672 passed / 3 skipped**. 드러난 과대 항은 `docs/engine-gaps.md`
+  **항목 21**로 열었다.
 - 관련: `docs/engine-gaps.md`(★ 최상단 항목) · `backend/app/attack_rate.py` ·
   `docs/superpowers/specs/2026-07-31-clip-reload-design.md`
 
