@@ -228,11 +228,10 @@ def charge_time_with_speed(charge_time, charge_speed_percent, flat_reduction_sec
     The same expression covers slowdowns: at -20% it returns 1.2x the base,
     which is the behaviour Bready's Taste debuff needs.
 
-    NOTE the asymmetry with `reload_time_with_speed`, which divides on its
-    positive branch. That is not an oversight here: reload's positive branch
-    has never been measured, and changing it without evidence would be
-    inventing a number. If reload is ever measured and behaves like charge,
-    the two should converge.
+    `reload_time_with_speed` now subtracts the same way, so the two agree on
+    shape: a percent takes that percent OFF the file value rather than dividing
+    it. Reload got there by measurement (six readings, 2026-07-29) and carries a
+    fixed segment on top that charge does not - see RELOAD_FIXED_SECONDS.
 
     The floor can never make a weapon SLOWER than its own unbuffed charge:
     Scarlet: Black Shadow's base charge is 0.3 sec, already quicker than the
