@@ -123,6 +123,46 @@ describe('useProfiles', () => {
     expect(result.current.state.profiles['111111:81'].area).toBe(81)
   })
 
+  it('구·신 스키마가 섞인 저장소도 두 프로필 모두 area를 갖고 살아남는다', () => {
+    // area 없는 bare-key 항목 하나와 이미 복합 키인 항목 하나가 한 스토어에
+    // 섞인 경우 - 이 코드는 실제로 만들 수 없지만(도달 불가), 유저 브라우저의
+    // localStorage 위에서 도는 함수라 안전망으로 검증해 둔다. 스토어 전체를
+    // "신 스키마"로 단정해 통째로 통과시키던 예전 코드였다면 bare-key 항목은
+    // area 없이, 키도 그대로 남았을 것이다.
+    localStorage.setItem(
+      'nikke-profiles',
+      JSON.stringify({
+        activeKey: '222222:83',
+        profiles: {
+          '111111': {
+            openId: '111111',
+            nickname: 'LEGACY',
+            roster: [],
+            results: {},
+            lastResultHash: null,
+            lastInputs: null,
+          },
+          '222222:83': {
+            openId: '222222',
+            area: 83,
+            nickname: 'NEW',
+            roster: [],
+            results: {},
+            lastResultHash: null,
+            lastInputs: null,
+          },
+        },
+      }),
+    )
+
+    const { result } = renderHook(() => useProfiles())
+
+    expect(Object.keys(result.current.state.profiles).sort()).toEqual(['111111:81', '222222:83'])
+    expect(result.current.state.profiles['111111:81'].area).toBe(81)
+    expect(result.current.state.profiles['222222:83'].area).toBe(83)
+    expect(result.current.state.activeKey).toBe('222222:83')
+  })
+
   it('이미 새 스키마면 그대로 둔다', () => {
     localStorage.setItem(
       'nikke-profiles',
