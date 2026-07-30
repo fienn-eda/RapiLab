@@ -60,6 +60,7 @@ BASE_URL = "https://lootandwaifus.com"
 SLUG_ALIASES = {
     "bready-lingering": "bready",
     "bready-recommended": "bready",
+    "centi-signature": "centi",
     "cinderella-crystal-wave-mg": "cinderella-crystal-wave",
     "cinderella-crystal-wave-snipe": "cinderella-crystal-wave",
     "diesel-winter-sweets-highlight": "diesel-winter-sweets",

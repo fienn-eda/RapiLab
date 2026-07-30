@@ -303,6 +303,7 @@ from app.skill_rules.snow_white_heavy_arms import (
     build_seven_dwarves_per_shot_rules,
     build_snow_white_heavy_arms_rules,
 )
+from app.skill_rules import centi
 from app.skill_rules.flora import build_flora_rules
 from app.skill_rules import rosanna as rosanna_base
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
@@ -474,6 +475,12 @@ _BUILDERS = {
     "ark-ranger-black": lambda sv: (build_ark_ranger_black_rules(sv), None),
     "blanc": lambda sv: (build_blanc_rules(sv), None),
     "brid-silent-track": lambda sv: (build_brid_rules(sv), None),
+    # Her burst is the same in both builds; the Favorite Item's buffs ride
+    # Skill 2's cycle, so they arrive through _PERIODIC_RULE_BUILDERS instead.
+    "centi": lambda sv: (centi.build_centi_rules(sv), centi.start_construction_burst_percent(sv)),
+    "centi-signature": lambda sv: (
+        centi.build_centi_rules(sv), centi.start_construction_burst_percent(sv)
+    ),
     "cinderella": _build_cinderella,
     "cinderella-crystal-wave-mg": lambda sv: (
         build_crystal_wave_mg_rules(sv), crystal_wave_burst_percent(sv)
@@ -827,6 +834,14 @@ _BURST_HIT_COUNTS = {
 # ... applying buffs/debuffs) - see raid_simulator's `periodic_rules`. Kept
 # separate from _BUILDERS (event-triggered rules) and _PERIODIC_NUKE_BUILDERS.
 _PERIODIC_RULE_BUILDERS = {
+    # Her Full Charge hits keep cutting Field Discussion's cooldown, so the
+    # cycle it fires on is shorter than the listed 9 sec.
+    "centi-signature": lambda sv: [
+        (
+            centi.field_discussion_effective_cooldown(sv),
+            centi.build_field_discussion_periodic_rules(sv),
+        ),
+    ],
     "sakura-bloom-in-summer": lambda sv: build_sakura_periodic_rules(sv),
     "rosanna-chic-ocean": lambda sv: build_spina_periodic_rules(sv),  # Spina di Rosa, cd 30
     "takina-inoue": lambda sv: [
@@ -1029,6 +1044,10 @@ TIMED_CHARGE_MOTION_DELAY = {
     # grid the measurement resolved - docs/measurements/bready-charge.md.
     "bready-lingering": 22 / 60,    # 0.36667
     "bready-recommended": 22 / 60,
+    # Centi lands on the same 22 frames (Fienn, 2026-07-30). Both builds share
+    # one weapon, so both slugs share the pause.
+    "centi": centi.CHARGE_MOTION_DELAY,
+    "centi-signature": centi.CHARGE_MOTION_DELAY,
 }
 
 # Charge weapons Fienn has checked and found NO pause on. The engine's default
