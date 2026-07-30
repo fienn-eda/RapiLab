@@ -15,7 +15,7 @@ const storedResult = (n: number): StoredResult => ({
 const storedInputs: StoredInputs = {
   mode: 'raid',
   numDecks: 5,
-  boss: { element: null, core_hittable: false, enemy_def: 0, fight_duration: 180, part_destructible: false },
+  boss: { element: null, core_hittable: false, enemy_def: 0, fight_duration: 180, part_destructible: false, effective_range_band: null },
   draft: null,
 }
 

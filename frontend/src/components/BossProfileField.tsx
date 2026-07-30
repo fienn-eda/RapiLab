@@ -1,12 +1,26 @@
 // The boss profile inputs for POST /api/recommend: element, core hittable,
-// enemy DEF, fight duration, and part destructibility. Mirrors BossProfile in
-// src/types/recommend.ts.
+// enemy DEF, fight duration, part destructibility, and effective range band.
+// Mirrors BossProfile in src/types/recommend.ts.
 
 import { useId } from 'react'
 import { elementLabel } from '../lib/elementName'
 import type { BossProfileDraft, BossProfileDraftErrors } from '../types/bossProfileDraft'
-import { BOSS_ELEMENTS, type BossElement } from '../types/recommend'
+import {
+  BOSS_ELEMENTS,
+  BOSS_RANGE_BANDS,
+  type BossElement,
+  type BossRangeBand,
+} from '../types/recommend'
 import { NumberField } from './fields/NumberField'
+
+// What each band pays, named by the weapons rather than by a distance the
+// player cannot see. A Rocket Launcher is paid by none of them, which is why
+// no option mentions one.
+const RANGE_BAND_LABEL: Record<Exclude<BossRangeBand, null>, string> = {
+  near: '근거리 — SG · SMG',
+  mid: '중거리 — AR · MG',
+  far: '원거리 — SR',
+}
 
 interface BossProfileFieldProps {
   value: BossProfileDraft
@@ -16,6 +30,7 @@ interface BossProfileFieldProps {
 
 export function BossProfileField({ value, errors, onChange }: BossProfileFieldProps) {
   const elementId = useId()
+  const rangeBandId = useId()
 
   return (
     <fieldset className="group">
@@ -45,6 +60,35 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
         </select>
       </div>
 
+      <div className="field">
+        <label className="field__label" htmlFor={rangeBandId}>
+          보스 적정거리
+        </label>
+        <select
+          id={rangeBandId}
+          className="field__input"
+          value={value.effective_range_band ?? ''}
+          onChange={(event) =>
+            onChange({
+              ...value,
+              effective_range_band: (event.target.value || null) as BossRangeBand,
+            })
+          }
+        >
+          <option value="">모름 (보너스 없음)</option>
+          {BOSS_RANGE_BANDS.map((band) => (
+            <option key={band} value={band}>
+              {RANGE_BAND_LABEL[band]}
+            </option>
+          ))}
+        </select>
+        <span className="group__hint">
+          적정거리 안에서 쏘는 무기는 평타 대미지가 올라가요. 거리는 스테이지가
+          정하는 값이라 유닛이 아니라 보스에 붙어요. 런처(RL)는 어느 거리에서도
+          받지 않아요.
+        </span>
+      </div>
+
       <label className="checkbox">
         <input
           type="checkbox"
@@ -52,6 +96,12 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
           onChange={(event) => onChange({ ...value, core_hittable: event.target.checked })}
         />
         코어 피격 가능
+        <span className="group__hint">
+          {' '}
+          체크하면 <strong>모든 평타가 코어에 명중한다고 가정</strong>해요. 실제
+          전투에서는 조준과 부위 타격 때문에 100%가 나오지 않으므로, 이 추천은
+          상한 기준이고 평타 비중이 큰 유닛이 실제보다 높게 평가될 수 있어요.
+        </span>
       </label>
 
       <label className="checkbox">

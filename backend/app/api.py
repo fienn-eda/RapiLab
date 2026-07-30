@@ -49,6 +49,23 @@ class BossProfileIn(BaseModel):
     enemy_def: float = 0.0
     fight_duration: float = 180.0
     part_destructible: bool = False
+    # How far away this boss is fought. The band decides WHICH weapons are
+    # inside their effective range and collect +0.30 on their normal attacks:
+    # near pays SG/SMG, mid pays AR/MG, far pays SR, and a Rocket Launcher is
+    # paid by none of them. None means "not known for this boss" and pays
+    # nobody - see raid_simulator.EFFECTIVE_RANGE_BANDS.
+    effective_range_band: Literal["near", "mid", "far"] | None = None
+
+
+def boss_profile(boss: BossProfileIn) -> BossProfile:
+    """The request's boss as the engine's BossProfile.
+
+    Every field of BossProfileIn is a BossProfile field of the same name, so
+    this spreads rather than listing them. That is the point: three endpoints
+    build this same object, and listing the fields is how `effective_range_band`
+    reached the engine without reaching any of them (2026-07-31).
+    """
+    return BossProfile(**boss.model_dump())
 
 
 class RecommendRequest(BaseModel):
@@ -231,13 +248,7 @@ def _reject_unknown_overload_options(roster: list[UserNikkeState]) -> None:
 def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
     _reject_unknown_overload_options(request.roster)
     specs, excluded = load_roster(request.roster)
-    boss = BossProfile(
-        element=request.boss.element,
-        core_hittable=request.boss.core_hittable,
-        enemy_def=request.boss.enemy_def,
-        fight_duration=request.boss.fight_duration,
-        part_destructible=request.boss.part_destructible,
-    )
+    boss = boss_profile(request.boss)
     # SimPool only spawns worker processes for big batches (large rosters);
     # small requests run inline at zero pool cost.
     with SimPool(specs, boss, workers="auto") as pool:
@@ -305,13 +316,7 @@ def _to_recs(decks, pinned_by_deck=None):
 def _recommend_raid_sync(request: RecommendRaidRequest, cancel) -> RecommendRaidResponse:
     _reject_unknown_overload_options(request.roster)
     specs, excluded = load_roster(request.roster)
-    boss = BossProfile(
-        element=request.boss.element,
-        core_hittable=request.boss.core_hittable,
-        enemy_def=request.boss.enemy_def,
-        fight_duration=request.boss.fight_duration,
-        part_destructible=request.boss.part_destructible,
-    )
+    boss = boss_profile(request.boss)
     if len(request.draft) > request.num_decks:
         raise HTTPException(
             422, f"draft has {len(request.draft)} decks but num_decks is {request.num_decks}")
@@ -397,13 +402,7 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
             seat.append(options[0] if options else by_slug[slug])
             requested.append(slug)
         decks.append(seat)
-        bosses.append(BossProfile(
-            element=deck_in.boss.element,
-            core_hittable=deck_in.boss.core_hittable,
-            enemy_def=deck_in.boss.enemy_def,
-            fight_duration=deck_in.boss.fight_duration,
-            part_destructible=deck_in.boss.part_destructible,
-        ))
+        bosses.append(boss_profile(deck_in.boss))
 
     # 클라가 보낸 슬러그로 보고한다 - 해석된 대표 슬러그를 들이대면 유저가
     # 자기가 안 쓴 이름을 보게 된다.
