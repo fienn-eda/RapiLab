@@ -1,7 +1,9 @@
 # 택티컬 베어 큐브 — 탄환 환급 모델링 — 설계
 
 - Date: 2026-07-31
-- Status: 설계 승인됨 (Fienn), 구현 착수
+- Status: 구현 완료 — 흑련 **0.981x → 0.999x**(절대오차 −0.124B → −0.005B),
+  합계는 1.011x → **1.015x**로 멀어졌다(그녀의 부족분이 다른 유닛의 과대를 가리고
+  있었다). 상세는 `docs/engine-gaps.md` 항목 12-b.
 - 관련: `docs/superpowers/specs/2026-07-20-harmony-cube-assumed-lv15-design.md` ·
   `docs/engine-gaps.md` · `backend/app/attack_rate.py`
 
