@@ -2,7 +2,7 @@
 import json
 from pathlib import Path
 
-from app.shiftypad_normalize import normalize_shiftypad
+from app.shiftypad_normalize import clip_reload_splits, normalize_shiftypad
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "shiftypad"
 
@@ -82,3 +82,33 @@ def test_empty_slots_produce_dotgg_matching_level_dict():
         )
     )
     assert level1 == dotgg["skills"][0]["levels"][0]
+
+
+def _shot(max_ammo, reload_bullet):
+    return {"max_ammo": max_ammo, "reload_bullet": reload_bullet}
+
+
+def test_whole_magazine_reload_is_one_split():
+    assert clip_reload_splits(_shot(300, 10000)) == 1
+
+
+def test_centi_loads_a_six_round_magazine_two_at_a_time():
+    # 6 x 33% = 2 rounds a load, so three loads - Fienn watched exactly this
+    # (2026-07-30) and the data agrees, which is what pins the field's meaning.
+    assert clip_reload_splits(_shot(6, 3300)) == 3
+
+
+def test_a_nine_round_shotgun_also_takes_three_loads():
+    assert clip_reload_splits(_shot(9, 3300)) == 3
+
+
+def test_grave_reloads_her_sixty_rounds_in_halves():
+    assert clip_reload_splits(_shot(60, 5000)) == 2
+
+
+def test_split_count_survives_a_max_ammo_buff():
+    # The field is a FRACTION of the magazine, so a bigger magazine gets a
+    # bigger clip and the number of loads does not move. Overload's Max
+    # Ammunition therefore cannot change this constant.
+    assert clip_reload_splits(_shot(8, 3300)) == 3
+    assert clip_reload_splits(_shot(12, 3300)) == 3
