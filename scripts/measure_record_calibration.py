@@ -184,11 +184,10 @@ def main():
                     else " - run scripts/sync_worktree_data.py"))
     by_slug = {state.character_slug: state for state in roster}
 
-    boss = BossProfile(element=args.element,
-                       core_hittable=RECORD_BOSS["core_hittable"],
-                       part_destructible=RECORD_BOSS["part_destructible"],
-                       enemy_def=RECORD_BOSS["enemy_def"],
-                       fight_duration=RECORD_BOSS["fight_duration"])
+    # Spread rather than field-by-field: RECORD_BOSS's keys ARE BossProfile's
+    # field names, so a new fact about the encounter reaches this script
+    # without an edit here.
+    boss = BossProfile(**{**RECORD_BOSS, "element": args.element})
     names = [args.deck] if args.deck else list(RECORD_DECKS)
     if args.deck and args.deck not in RECORD_DECKS:
         sys.exit(f"ERROR: unknown deck {args.deck!r} - have {', '.join(RECORD_DECKS)}")

@@ -90,11 +90,10 @@ def _run_decks(by_slug, core_hit_bonus):
             sys.exit(f"ERROR: not encoded / not usable: {', '.join(excluded)}")
         for spec in specs:
             spec.cube = RECORD_CUBES.get(spec.slug, spec.cube)
-        boss = BossProfile(element=RECORD_BOSS["element"],
-                           core_hittable=RECORD_BOSS["core_hittable"],
-                           part_destructible=RECORD_BOSS["part_destructible"],
-                           enemy_def=RECORD_BOSS["enemy_def"],
-                           fight_duration=RECORD_BOSS["fight_duration"])
+        # Spread rather than field-by-field: RECORD_BOSS's keys ARE
+        # BossProfile's field names, so a new fact about the encounter reaches
+        # every script that scores the record without touching each one.
+        boss = BossProfile(**RECORD_BOSS)
         rotation = next(r for r in RECORD_ROTATIONS.values()
                         if set(r["order"]) == set(records))
         by_spec = {spec.slug: spec for spec in specs}
