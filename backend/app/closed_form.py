@@ -172,15 +172,16 @@ def _shot_count(weapon_stats, fight_duration):
     live timeline. The count depends only on the weapon, so identical units
     across combinations resolve it once.
     """
+    refund = weapon_stats.get("ammo_refund")
     key = (
         weapon_stats["weapon"], weapon_stats["max_ammo"], weapon_stats["reload_time"],
-        weapon_stats["charge_time"], fight_duration,
+        weapon_stats["charge_time"], fight_duration, refund,
     )
     cached = _shot_count_cache.get(key)
     if cached is None:
         cached = len(generate_shot_times(
             weapon_stats["weapon"], weapon_stats["max_ammo"], weapon_stats["reload_time"],
-            weapon_stats["charge_time"], fight_duration,
+            weapon_stats["charge_time"], fight_duration, ammo_refund=refund,
         ))
         _shot_count_cache[key] = cached
     return cached
