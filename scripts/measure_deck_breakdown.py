@@ -116,9 +116,11 @@ def main():
     for spec in specs:
         spec.cube = RECORD_CUBES.get(spec.slug, spec.cube)
 
-    boss = BossProfile(element=args.element, core_hittable=RECORD_BOSS["core_hittable"],
-                       part_destructible=RECORD_BOSS["part_destructible"],
-                       enemy_def=args.enemy_def, fight_duration=args.duration)
+    # Spread rather than field-by-field: RECORD_BOSS's keys ARE BossProfile's
+    # field names, so a new fact about the encounter reaches this script
+    # without an edit here. The three flags stay overridable.
+    boss = BossProfile(**{**RECORD_BOSS, "element": args.element,
+                          "enemy_def": args.enemy_def, "fight_duration": args.duration})
 
     rotation = _recorded_rotation(slugs)
     if rotation:

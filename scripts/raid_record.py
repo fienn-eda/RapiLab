@@ -53,9 +53,13 @@ mode was never pinned in earlier sessions and is the documented reason deck 2's
 ratio moved without any model change (see docs/roadmap.md).
 """
 
-# The boss profile every deck below was fought against.
+# The boss profile every deck below was fought against. `effective_range_band`
+# is "mid": Annihilio is fought at mid range, so the AR and MG normal attacks in
+# these decks collected the Effective Range bonus and nothing else did (Fienn,
+# 2026-07-31). See raid_simulator.EFFECTIVE_RANGE_BANDS for the weapon lists.
 RECORD_BOSS = dict(element="Iron", core_hittable=True, part_destructible=True,
-                   enemy_def=31784.0, fight_duration=180.0)
+                   enemy_def=31784.0, fight_duration=180.0,
+                   effective_range_band="mid")
 
 # The recorded 5-deck total, as reported. See the docstring's note on why this
 # is not simply the sum of RECORD_DECKS.

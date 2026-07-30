@@ -117,13 +117,21 @@ BASE_CRIT_RATE = 0.15
 # Damage types that can never hit a core, whatever fired them.
 NON_CORE_DAMAGE_TYPES = frozenset({"sustained", "distributed"})
 
-# Weapons that collect the Effective Range bonus at NO distance. Anis: Star's
-# range footage reads a non-crit normal attack's major bucket as exactly
-# 1.000000 outside Full Burst and 1.500000 inside - no range term anywhere -
-# where a weapon that could collect it would land on 1.30/1.80 (Fienn,
-# 2026-07-28). That makes a Rocket Launcher the measuring stick for the rest of
-# the bucket rather than a unit standing in the wrong place.
-RANGELESS_WEAPONS = frozenset({"RL"})
+# Which weapons are inside their effective range at each distance a boss can be
+# fought at (Fienn, 2026-07-28). The band belongs to the ENCOUNTER, the weapon
+# list to the game: Annihilio is a mid-range fight, so its AR and MG collect the
+# bonus and nothing else does (Fienn, 2026-07-31).
+#
+# A Rocket Launcher appears in no band. Anis: Star's range footage reads a
+# non-crit normal attack's major bucket as exactly 1.000000 outside Full Burst
+# and 1.500000 inside - no range term anywhere - where a weapon that could
+# collect it would land on 1.30/1.80. That makes an RL the measuring stick for
+# the rest of the bucket rather than a unit standing in the wrong place.
+EFFECTIVE_RANGE_BANDS = {
+    "near": frozenset({"SG", "SMG"}),
+    "mid": frozenset({"AR", "MG"}),
+    "far": frozenset({"SR"}),
+}
 
 
 def core_eligible(source, damage_type):
@@ -472,7 +480,7 @@ def simulate_raid(
     weapon_stats=None,
     boss_element=None,
     part_destructible=False,
-    in_effective_range=False,
+    effective_range_band=None,
     base_crit_rate=BASE_CRIT_RATE,
     periodic_nukes=None,
     burst_damage_types=None,
@@ -491,6 +499,14 @@ def simulate_raid(
     ammo_rounds_per_shot=None,
 ):
     weapon_stats = weapon_stats or {}
+    # None means "no band read for this encounter", which pays nobody. An
+    # unrecognised band raises rather than quietly paying nobody, since the two
+    # are indistinguishable in the output.
+    if effective_range_band is not None and effective_range_band not in EFFECTIVE_RANGE_BANDS:
+        raise ValueError(
+            f"unknown effective range band {effective_range_band!r} - "
+            f"expected one of {sorted(EFFECTIVE_RANGE_BANDS)} or None")
+    in_range_weapons = EFFECTIVE_RANGE_BANDS.get(effective_range_band, frozenset())
     weapon_mode_schedules = weapon_mode_schedules or {}
     periodic_nukes = periodic_nukes or {}
     burst_damage_types = burst_damage_types or {}
@@ -568,24 +584,22 @@ def simulate_raid(
     def _in_effective_range(slug, is_normal_attack, damage_type):
         """Whether this instance collects the Effective Range bonus.
 
-        The encounter decides the distance (`BossProfile.in_effective_range`),
-        not the engine and not the player - so unlike the core-hit assumption
-        this is never taken for granted. What the engine does decide is the
-        SCOPE, which is Core Damage's scope exactly: normal attacks only, never
-        Sustained/Distributed even when those are the unit's normal attack, and
-        never a Rocket Launcher at any distance at all.
+        The encounter decides the distance (`BossProfile.effective_range_band`)
+        and that band decides WHICH weapons are in range - a mid-range boss
+        pays an AR and an MG, not an SG. Neither the engine nor the player
+        picks it, so unlike the core-hit assumption this is never taken for
+        granted. What the engine does decide is the SCOPE, which is Core
+        Damage's scope exactly: normal attacks only, and never
+        Sustained/Distributed even when those are the unit's normal attack.
         """
-        return (
-            in_effective_range
-            and is_normal_attack
-            and damage_type not in NON_CORE_DAMAGE_TYPES
-            # Read off weapon_stats, which describes the weapon that fired the
-            # shot, rather than the deck entry - `weapon` is optional there
-            # (`SquadMember` takes it with .get). A slug absent from
-            # weapon_stats fires no normal attacks at all, so it never reaches
-            # this line with is_normal_attack true.
-            and (weapon_stats.get(slug) or {}).get("weapon") not in RANGELESS_WEAPONS
-        )
+        if not (is_normal_attack and damage_type not in NON_CORE_DAMAGE_TYPES):
+            return False
+        # Read off weapon_stats, which describes the weapon that fired the
+        # shot, rather than the deck entry - `weapon` is optional there
+        # (`SquadMember` takes it with .get). A slug absent from weapon_stats
+        # fires no normal attacks, so it never reaches this line.
+        weapon = (weapon_stats.get(slug) or {}).get("weapon")
+        return weapon in in_range_weapons
 
     def _damage_instance(
         slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0,

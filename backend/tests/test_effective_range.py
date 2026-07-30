@@ -6,10 +6,12 @@ a core hit's major of 2.0 is +0.30 (Fienn, 2026-07-27). `test_damage_formula`
 pins that arithmetic; these pin the SCOPE and the switch.
 
 Two things decide whether an instance collects it. The encounter decides the
-distance - `BossProfile.in_effective_range`, off by default, because Nikke
-positions are fixed and the player does not choose the range (Fienn,
-2026-07-31). The engine decides the scope, which is Core Damage's scope plus
-one carve-out: a Rocket Launcher collects it at no distance at all.
+distance - `BossProfile.effective_range_band`, unread (None) by default,
+because Nikke positions are fixed and the player does not choose the range
+(Fienn, 2026-07-31) - and that band decides WHICH weapons are in range: "near"
+pays SG/SMG, "mid" pays AR/MG, "far" pays SR. The engine decides the scope,
+which is Core Damage's scope, plus one weapon that no band ever pays: a Rocket
+Launcher collects it at no distance at all.
 """
 import pytest
 
@@ -39,7 +41,7 @@ def _weapon(kind="AR", **over):
     return w
 
 
-def _fight(in_range, weapon="AR", **over):
+def _fight(band, weapon="AR", **over):
     """One fight, short by default so no Full Burst opens - a window would add
     its own +0.5 to the same bucket and stop the ratio from being the range
     term alone."""
@@ -53,7 +55,7 @@ def _fight(in_range, weapon="AR", **over):
         base_crit_rate=0.0,
         core_hittable=False,
         weapon_stats={"attacker": _weapon(weapon)},
-        in_effective_range=in_range,
+        effective_range_band=band,
     )
     kwargs.update(over)
     return simulate_raid(DECK, **kwargs)
@@ -65,7 +67,7 @@ def _damage_from(result, source):
 
 def test_no_full_burst_opens_in_the_short_fixture():
     # The main comparison rests on it.
-    assert not [e for e in _fight(False)["events"] if e["type"] == "full_burst_start"]
+    assert not [e for e in _fight(None)["events"] if e["type"] == "full_burst_start"]
 
 
 def test_off_by_default_leaves_normal_attacks_exactly_as_they_were():
@@ -81,12 +83,12 @@ def test_off_by_default_leaves_normal_attacks_exactly_as_they_were():
         weapon_stats={"attacker": _weapon()},
     )
     assert _damage_from(default, "normal_attack") == _damage_from(
-        _fight(False), "normal_attack")
+        _fight(None), "normal_attack")
 
 
 def test_in_range_adds_030_to_a_normal_attack():
-    outside = _damage_from(_fight(False), "normal_attack")
-    inside = _damage_from(_fight(True), "normal_attack")
+    outside = _damage_from(_fight(None), "normal_attack")
+    inside = _damage_from(_fight("mid"), "normal_attack")
     assert outside > 0
     assert inside == pytest.approx(outside * RANGE_MULTIPLIER)
 
@@ -95,8 +97,8 @@ def test_a_rocket_launcher_collects_it_at_no_distance():
     # Anis: Star's range footage reads her non-crit normal attack's major
     # bucket as exactly 1.000000 outside Full Burst - no range term - which is
     # what makes an RL the measuring stick for the rest of the bucket.
-    outside = _damage_from(_fight(False, weapon="RL"), "normal_attack")
-    inside = _damage_from(_fight(True, weapon="RL"), "normal_attack")
+    outside = _damage_from(_fight(None, weapon="RL"), "normal_attack")
+    inside = _damage_from(_fight("mid", weapon="RL"), "normal_attack")
     assert outside > 0
     assert inside == outside
 
@@ -105,10 +107,28 @@ def test_a_sniper_rifle_does_collect_it_so_the_carve_out_is_the_weapon():
     # Ade: Agent Bunny, the unit the +0.30 was measured on, is an SR - and she
     # charges her shots just like a launcher does. So the RL exception is about
     # the weapon, not about charging.
-    outside = _damage_from(_fight(False, weapon="SR"), "normal_attack")
-    inside = _damage_from(_fight(True, weapon="SR"), "normal_attack")
+    outside = _damage_from(_fight(None, weapon="SR"), "normal_attack")
+    inside = _damage_from(_fight("far", weapon="SR"), "normal_attack")
     assert outside > 0
     assert inside == pytest.approx(outside * RANGE_MULTIPLIER)
+
+
+def test_a_band_pays_only_the_weapons_that_belong_to_it():
+    # The recorded raid is the case this exists for: Annihilio is mid range, so
+    # its AR and MG collect the bonus while the same AR at any other distance
+    # does not. Without this the band would be a boolean wearing three names.
+    bare = _damage_from(_fight(None), "normal_attack")
+    assert _damage_from(_fight("mid"), "normal_attack") == pytest.approx(
+        bare * RANGE_MULTIPLIER)
+    assert _damage_from(_fight("near"), "normal_attack") == bare
+    assert _damage_from(_fight("far"), "normal_attack") == bare
+
+
+def test_an_unrecognised_band_raises_instead_of_paying_nobody():
+    # Paying nobody is what None means, so a typo that silently did the same
+    # would be indistinguishable from "not read yet" in every output.
+    with pytest.raises(ValueError, match="unknown effective range band"):
+        _fight("medium")
 
 
 def test_skill_damage_never_collects_it():
@@ -116,7 +136,7 @@ def test_skill_damage_never_collects_it():
     # Long enough for the burst to fire; both runs share whatever windows open,
     # so the burst source is comparable between them.
     runs = [_fight(flag, fight_duration=30.0, burst_damage_percents={"attacker": 100.0})
-            for flag in (False, True)]
+            for flag in (None, "mid")]
     burst = [_damage_from(r, "burst") for r in runs]
     assert burst[0] > 0
     assert burst[1] == burst[0]
