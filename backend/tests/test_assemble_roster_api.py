@@ -122,6 +122,33 @@ def test_an_uncored_unit_never_needs_the_missing_flat(
     assert response.json()["unmeasured"] == []
 
 
+def test_the_sync_delivers_the_per_gear_rolls_not_only_their_total():
+    """Charge speed rounds per roll, so a roster that arrives with totals alone
+    can only be estimated from. The rolls exist in GetUserCharacterDetails and
+    have to survive assembly, `to_roster_json` and the endpoint's dict response -
+    if any of those flattens them, re-syncing changes nothing and the app keeps
+    estimating without anyone noticing.
+
+    Charge speed is effect type 10; 7001010 is its level-10 roll (4.63%).
+    """
+    unit = _pilgrim("Attacker")
+    detail = _bare_detail(unit["name_code"], core=0,
+                          head_equip_option1_id=7001010,
+                          arm_equip_option1_id=7001010,
+                          torso_equip_option1_id=7001009)
+    response = client.post("/api/assemble-roster", json={
+        "owned": [{"name_code": unit["name_code"], "lv": 400}],
+        "character_details": [detail], "recycle_room_researches": [],
+    })
+    assert response.status_code == 200
+    [row] = [o for o in response.json()["units"][0]["overload"]
+             if o["name"] == "차지 속도 증가"]
+    assert row["value"] == pytest.approx(13.59, abs=0.01)
+    assert [line["slot"] for line in row["lines"]] == ["head", "torso", "arm"]
+    # The rolls, not three copies of the total - grouping them is the whole point.
+    assert sorted(round(line["value"], 2) for line in row["lines"]) == [4.33, 4.63, 4.63]
+
+
 def test_a_cored_pilgrim_supporter_now_assembles():
     """The measurement itself: all six are cored and none is dropped."""
     supporters = [e for e in _directory()
