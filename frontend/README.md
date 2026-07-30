@@ -46,18 +46,26 @@ panel to switch tabs would abandon a request already in flight.
 
 ## Multi-account profiles
 
-The app supports **multiple blablalink accounts side by side**, each in its
-own isolated **profile**. This replaces the old single-roster `nikke-roster`
-key.
+The app supports **multiple blablalink accounts side by side**, each possibly
+holding a separate roster **on more than one game server** — a blablalink
+account isn't specific enough to key a roster by itself, so a **profile** is
+keyed by the (account, server) pair. This replaces the old single-roster
+`nikke-roster` key.
 
 - **Storage:** one `localStorage` key, `nikke-profiles`, holding
-  `{ activeOpenId, profiles: Record<openId, Profile> }`. Each `Profile` is
-  keyed by the blablalink account's `open_id` and holds that account's roster
-  plus its cached recommend-raid results (see below).
-- **Isolation invariant:** different `open_id`s are never merged. Syncing
-  account B never touches account A's roster, cache, or active-result state.
-  Switching profiles swaps the whole roster + result view; it never blends
-  two accounts' data.
+  `{ activeKey, profiles: Record<'<openId>:<area>', Profile> }`. Each `Profile`
+  is keyed by `` `${openId}:${area}` `` (`types/profile.ts`'s `profileKey`) and
+  holds that account-on-that-server's roster plus its cached recommend-raid
+  results (see below). `area` is blablalink's `nikke_area_id` — the game
+  server the roster was synced from (`src/types/server.ts`: 81 JP, 82 NA,
+  83 KR, 84 GL, 85 SEA).
+- **Isolation invariant:** different `(open_id, area)` pairs are never merged
+  — including **one `open_id` on two different servers**, which is a normal
+  case (a blablalink account can hold its own roster on each server), not a
+  duplicate-account edge case. Syncing one profile never touches another
+  profile's roster, cache, or active-result state, whether the two differ by
+  account or only by server. Switching profiles swaps the whole roster +
+  result view; it never blends two profiles' data.
 - **Sync capture, client-only:** the sync bookmarklet also calls
   `GetUserProfileBasicInfo` to grab the account's display `nickname`, and
   already has `open_id` from the share URL. Both are **client-only** —
@@ -67,6 +75,17 @@ key.
   identifier our backend ever sees, on any call, is the anonymous `clientId`
   (`src/lib/clientId.ts`, sent as `X-Client-Id`) — unrelated to any game
   account and never sent to blablalink.
+- **Bookmarklet `servers` payload:** the bookmarklet probes all five servers
+  (`GetUserCharacters` per `nikke_area_id`) and posts back
+  `{ open_id, servers: [{ area, nickname, owned, character_details,
+  recycle_room_researches }] }` — one entry per server that actually returned
+  a roster (a server with none is silently skipped, not sent as empty).
+  `useBookmarkletImport` reads this: one entry imports directly; more than one
+  means the account holds rosters on several servers, so the hook surfaces a
+  **server picker** (`status: 'choosing'`, `candidates: [{ area, count }]`,
+  `choose(area)`) instead of guessing — `SyncRosterPanel` renders it as one
+  button per server, labelled with `serverLabel(area)` and that server's unit
+  count, and the user's pick is what actually gets assembled and imported.
 - **Dropped units:** the assemble response carries
   `unmeasured: [{ name_en, reason }]` alongside `units` — owned Nikkes the
   backend could not give level-400 stats because nobody has measured them (a
@@ -76,16 +95,27 @@ key.
 - **A blank nickname never overwrites a stored one.** It comes from a separate
   blablalink call whose failure the bookmarklet swallows, so `''` means "this
   sync could not read it" — see `types/profile.ts`'s `upsertProfile`.
-- **Upsert:** a sync for a new `open_id` creates and activates a profile; a
-  sync for an existing `open_id` refreshes its nickname/roster in place (and
-  switches to it). If the refreshed roster actually differs from what was
+- **Upsert:** a sync for a new `(open_id, area)` pair creates and activates a
+  profile; a sync for an existing pair refreshes its nickname/roster in place
+  (and switches to it). If the refreshed roster actually differs from what was
   stored, that profile's cached results are invalidated — they no longer
   describe the current roster.
-- **Profiles UI:** `ProfileSwitcher` lists profiles by nickname with a
-  dropdown to switch and a button to delete the active one (with a
-  confirmation, since it drops that profile's roster and cache).
+- **Profiles UI:** `ProfileSwitcher` lists profiles as
+  `` `<nickname> (<server>)` `` (e.g. `FIENN (JP)`) with a dropdown to switch
+  and a button to delete the active one (with a confirmation, since it drops
+  that profile's roster and cache). The server suffix exists because the same
+  nickname can legitimately appear twice — one account, two servers — and
+  nickname alone can't tell those apart.
 - **Migration:** the app isn't deployed yet, so a legacy `nikke-roster` key
   (pre-profiles) is **discarded** on load, not migrated — `useProfiles.ts`.
+  The profile store itself, once it existed, went through one real schema
+  change: the pre-server-support store keyed profiles by bare `open_id` and
+  tracked `activeOpenId`. `useProfiles.ts`'s `migrate` re-keys every such
+  profile to `` `${openId}:81` `` (that generation of synced data was always
+  read from area 81) and re-derives `activeKey` from the old `activeOpenId`.
+  This runs per-profile, not once for the whole store, so a store with a mix
+  of old- and new-shaped entries migrates every entry correctly rather than
+  short-circuiting on the presence of a new-shaped `activeKey`.
 
 ### Result persistence
 
