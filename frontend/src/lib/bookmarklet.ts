@@ -19,6 +19,14 @@
 // 방법이 없는 반쪽짜리 로스터를 보내게 된다. 눈에 띄는 실패를 내고 재시도를
 // 맡기는 쪽이 더 안전하다.
 //
+// 1302125("get info list err")는 그 계정이 그 서버에 로스터가 없다는 뜻일
+// 뿐이다 - 다섯 중 넷에서는 정상이고, 로스터가 아예 없는 계정에서는 보통 가장
+// 먼저 기록되는 에러다. 그래서 probeErr에는 담지 않는다: 다섯 서버 모두
+// 1302125로 끝나면 "니케를 찾지 못했어요" 문구를 그대로 보여줘야 하고, 담아
+// 두면 그 문구 대신 아무 정보도 없는 원시 코드가 새어나간다. 300001(로그인
+// 필요)·1303005(공유 URL 오류) 같은, 실제로 유용한 코드는 그대로 담아 바깥
+// catch의 alert 분기로 보낸다.
+//
 // 외부 스크립트 로딩은 blablalink CSP의 script-src에 막힐 공산이 커서 로직이
 // 인라인으로 강제되고, 따라서 이 코드를 바꾸면 전 유저가 북마크를 다시 깔아야
 // 한다. 판단·조립·검증은 전부 서버로 미루고 여기는 얇게 유지할 것.
@@ -75,7 +83,7 @@ try{
  const found=[];let probeErr=null;
  for(const a of AREAS){
   let owned=[];
-  try{owned=(await call('GetUserCharacters',{intl_open_id:'${openId}',nikke_area_id:a})).characters||[]}catch(e){if(!probeErr)probeErr=e;owned=[]}
+  try{owned=(await call('GetUserCharacters',{intl_open_id:'${openId}',nikke_area_id:a})).characters||[]}catch(e){if(!probeErr&&!/:1302125$/.test(String(e)))probeErr=e;owned=[]}
   if(owned.length)found.push({area:a,owned:owned})}
  if(!found.length){if(probeErr)throw probeErr;throw new Error('이 계정에서 니케를 찾지 못했어요. 공유 URL이 맞는지 확인해주세요.')}
  const servers=[];
