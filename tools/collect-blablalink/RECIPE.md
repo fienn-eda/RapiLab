@@ -109,19 +109,45 @@ the sync lands in the browser's localStorage, and the file is lifted out of it b
 hand. A sync without this step leaves every script reading the previous snapshot,
 which looks exactly like "the change had no effect".
 
-In the browser console (F12) with the app open:
+A profile is one **(open_id, area)** pair, not one account: an account can hold a
+roster on several game servers and those must never mix, so the store is keyed
+`"<open_id>:<area>"` (`frontend/src/types/profile.ts`). List what is stored before
+copying anything — in the browser console (F12) with the app open:
 
 ```js
 const s = JSON.parse(localStorage.getItem('nikke-profiles'))
-copy(JSON.stringify(s.profiles[s.activeOpenId].roster, null, 2))
+console.table(Object.entries(s.profiles).map(([key, p]) =>
+  ({ key, openId: p.openId, area: p.area, nickname: p.nickname, units: p.roster.length })))
+```
+
+Then copy one profile's roster (`s.activeKey` is whichever is on screen):
+
+```js
+copy(JSON.stringify(s.profiles['<open_id>:<area>'].roster, null, 2))
 ```
 
 `copy()` puts it on the clipboard; paste over `tools/collect-blablalink/roster-drafts.json`.
-Confirm the new fields actually arrived before measuring anything:
+
+Several accounts (or one account on two servers) each get their own file —
+`roster-drafts-<label>.json`, all gitignored. The scripts that read a roster take
+`--roster PATH`, so a second export is measured without swapping files:
 
 ```
-python3 -c "import json; d=json.load(open('tools/collect-blablalink/roster-drafts.json',encoding='utf-8')); print(sum(1 for x in d if x.get('collectible_tid')), '/', len(d), 'with a collectible')"
+python3 scripts/measure_record_calibration.py --roster tools/collect-blablalink/roster-drafts-kr.json
 ```
+
+Confirm the fields that matter actually arrived before measuring anything. Charge
+speed is the one that fails silently: it rounds per gear roll, so a roster whose
+overload rows carry no `lines` is *estimated* from the total rather than computed
+(`docs/measurements/prika-charge.md`).
+
+```
+python3 -c "import json,sys; d=json.load(open(sys.argv[1],encoding='utf-8')); r=[o for x in d for o in x.get('overload_options',[]) if o['name']=='차지 속도 증가']; print(sum(1 for x in d if x.get('collectible_tid')),'/',len(d),'with a collectible;',sum(1 for o in r if o.get('lines')),'/',len(r),'charge-speed rows with per-gear rolls')" tools/collect-blablalink/roster-drafts.json
+```
+
+Zero rolls against a non-zero row count means the sync ran against a backend from
+before the rolls were carried — re-sync after updating it, or the re-sync will
+look like it did nothing.
 
 Gitignored — personal investment data, local only.
 

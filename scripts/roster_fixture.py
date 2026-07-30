@@ -34,6 +34,11 @@ def _state_from_draft(draft):
     The collectible fields are optional because a draft saved before the sync
     carried them has neither - such a roster measures as if nobody had one
     equipped, which is what it was measured as all along. A re-sync fills them.
+
+    An overload row's per-gear `lines` travel the same way, and for the same
+    reason: charge speed rounds per roll, so dropping them here would leave every
+    script estimating from the total no matter how recently the roster was
+    synced - the re-sync would look like it had done nothing.
     """
     return UserNikkeState.model_validate({
         "character_slug": draft["character_slug"],
@@ -42,11 +47,27 @@ def _state_from_draft(draft):
         "atk": float(draft["atk"]),
         "def_": float(draft["def_"]),
         "skill_levels": {k: int(v) for k, v in draft["skill_levels"].items()},
-        "overload_options": [{"name": row["name"], "value": float(row["value"])}
-                             for row in draft.get("overload_options", [])],
+        "overload_options": [
+            {"name": row["name"], "value": float(row["value"]),
+             **({"lines": row["lines"]} if row.get("lines") else {})}
+            for row in draft.get("overload_options", [])],
         "collectible_tid": int(draft.get("collectible_tid") or 0),
         "collectible_level": int(draft.get("collectible_level") or 0),
     })
+
+
+def add_roster_argument(parser):
+    """`--roster PATH` for a script that measures against the synced roster.
+
+    One blablalink account can hold a roster on several game servers and a
+    player can hold several accounts, so each export is its own drafts file -
+    and comparing two of them is the point (Scarlet's unresolved 9.5-sigma gap
+    is exactly a between-account question). Defined here rather than per script
+    so the flag, its default and its help text cannot drift apart.
+    """
+    parser.add_argument(
+        "--roster", type=Path, default=REAL_ROSTER_JSON, metavar="PATH",
+        help=f"동기화된 로스터 JSON (기본 {REAL_ROSTER_JSON.name})")
 
 
 def real_roster(path=REAL_ROSTER_JSON, limit=None):

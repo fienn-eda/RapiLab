@@ -29,7 +29,7 @@ from app.deck_search import (BossProfile, SEARCH_SIM_BUDGET,  # noqa: E402
                              character_of)
 from app.user_roster import load_roster  # noqa: E402
 import app.deck_allocation as da  # noqa: E402
-from roster_fixture import real_roster  # noqa: E402
+from roster_fixture import add_roster_argument, real_roster  # noqa: E402
 
 
 def _draft_seats(specs, n):
@@ -42,12 +42,13 @@ def _draft_seats(specs, n):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    add_roster_argument(parser)
     parser.add_argument("--seats", type=int, nargs="+", default=[1, 2, 3],
                         help="drafted seat counts to measure (default 1 2 3)")
     parser.add_argument("--workers", default="auto", help='worker count or "auto"')
     args = parser.parse_args()
 
-    states = real_roster()
+    states = real_roster(args.roster)
     if states is None:
         print("no synced roster (tools/collect-blablalink/roster-drafts.json); aborting")
         return 1

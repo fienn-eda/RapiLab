@@ -14,6 +14,10 @@ Usage (any cwd):
     python3 scripts/measure_record_calibration.py
     python3 scripts/measure_record_calibration.py --deck deck2
     python3 scripts/measure_record_calibration.py --element Water   # what-if
+    python3 scripts/measure_record_calibration.py --roster tools/collect-blablalink/roster-drafts-kr.json
+
+`--roster` names another account's export - one blablalink account can hold a
+roster on several game servers and each is exported separately (RECIPE.md).
 """
 import argparse
 import sys
@@ -28,7 +32,8 @@ from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # no
 from app.user_roster import load_roster  # noqa: E402
 from raid_record import (  # noqa: E402
     RECORD_BOSS, RECORD_CAVEATS, RECORD_DECKS, RECORD_ROTATIONS, deck_total)
-from roster_fixture import real_roster  # noqa: E402
+from roster_fixture import (REAL_ROSTER_JSON, add_roster_argument,  # noqa: E402
+                            real_roster)
 
 
 def _states_for(slugs, by_slug):
@@ -146,6 +151,7 @@ def _print_orderings(name, boss, by_slug):
 
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    add_roster_argument(p)
     p.add_argument("--deck", help="one deck name (default: all)")
     p.add_argument("--orderings", action="store_true",
                    help="for decks whose seat order was never recorded, print "
@@ -155,9 +161,13 @@ def main():
                    help="override the boss's code - for what-if sweeps only")
     args = p.parse_args()
 
-    roster = real_roster()
+    roster = real_roster(args.roster)
     if roster is None:
-        sys.exit("ERROR: no synced roster found - run scripts/sync_worktree_data.py")
+        # Naming the path matters once --roster exists: a typo and an unsynced
+        # worktree fail identically, and only one of them wants the sync script.
+        sys.exit(f"ERROR: no roster at {args.roster}"
+                 + ("" if args.roster != REAL_ROSTER_JSON
+                    else " - run scripts/sync_worktree_data.py"))
     by_slug = {state.character_slug: state for state in roster}
 
     boss = BossProfile(element=args.element,
