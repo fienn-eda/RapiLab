@@ -13,8 +13,9 @@ how much they fired just before the window opened.
 """
 from dataclasses import dataclass, replace
 
-from app.attack_rate import (FRAME_SECONDS, charge_frames_bought,
-                             reload_time_with_speed, shot_interval_with_speed)
+from app.attack_rate import (FRAME_SECONDS, reload_time_with_speed,
+                             shot_interval_with_speed)
+from app.overload_decode import charge_speed_percent_from_lines
 
 
 @dataclass(frozen=True)
@@ -68,41 +69,15 @@ def reload_intervenes(inputs: WindowInputs) -> bool:
     return inputs.max_ammo * shot_interval(inputs) < inputs.window_seconds
 
 
-def aggregate_charge_speed(lines: list[float], charge_time: float) -> float:
-    """Overload charge-speed lines (in percent) as the ratio the engine wants.
+def aggregate_charge_speed(lines: list[float]) -> float:
+    """Overload charge-speed ROLLS (in percent) as the ratio the engine wants.
 
-    `charge_time` is unused today - the engine's rule needs only the sum - and
-    is in the signature because the alternative rule quantises against it. If
-    the per-line rounding is ever confirmed, this function is the only thing
-    that changes.
+    Rolls of the same value sum first and each group rounds to a whole percent,
+    which is why this needs the rolls and not their total - see
+    `overload_decode.charge_speed_percent_from_lines` for the rule and the
+    measurement behind it.
     """
-    return sum(lines) / 100
-
-
-def _community_charge_speed(lines: list[float]) -> float:
-    """The same lines under the rule community sources report: equal values sum
-    first, then each group rounds to a whole percent
-    (arca.live/b/nikketgv/169159561)."""
-    grouped: dict[float, float] = {}
-    for line in lines:
-        grouped[line] = grouped.get(line, 0.0) + line
-    return sum(round(group) for group in grouped.values()) / 100
-
-
-def aggregation_rules_disagree(lines: list[float], charge_time: float) -> bool:
-    """Whether these lines buy a different number of frames under the engine's
-    aggregation rule than under the community's.
-
-    Which rule is right is unresolved: every measurement we hold fails to
-    separate them, and overload options roll at random so a player cannot
-    compose a decisive one on demand. So the two are computed and compared
-    rather than judged, and the doubt is reported only on the inputs where it
-    actually changes the answer. This needs the individual LINES - a total
-    alone cannot be decomposed back into them.
-    """
-    engine = charge_frames_bought(charge_time, aggregate_charge_speed(lines, charge_time))
-    community = charge_frames_bought(charge_time, _community_charge_speed(lines))
-    return engine != community
+    return charge_speed_percent_from_lines(lines) / 100
 
 
 def charge_speed_steps(charge_time: float) -> list[float]:

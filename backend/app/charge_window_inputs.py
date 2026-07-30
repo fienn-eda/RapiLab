@@ -42,11 +42,32 @@ class Overrides:
 
 
 def _overload_lines(spec, stat):
-    """The roster's rolled values for one stat, in percent. blablalink reports
-    an option already summed across gear, so this is normally a single element -
-    which is exactly as much as the sync actually knows."""
-    return [option.value for option in spec.overload_options
-            if NAME_TO_STAT.get(option.name) == stat]
+    """The roster's rolled values for one stat, in percent.
+
+    A synced option carries the per-gear rolls it was summed from, and those are
+    what charge speed rounds over. Without them the total is the only roll the
+    caller can see - which is exactly as much as that roster knows.
+    """
+    lines = []
+    for option in spec.overload_options:
+        if NAME_TO_STAT.get(option.name) != stat:
+            continue
+        rolls = getattr(option, "lines", None)
+        lines.extend([line.value for line in rolls] if rolls else [option.value])
+    return lines
+
+
+def charge_speed_rolls_known(spec) -> bool:
+    """Whether the individual charge-speed rolls are known, or only their total.
+
+    The rounding is per roll, so a total several roll combinations could have
+    produced leaves the frame count uncertain by one - the UI says so rather
+    than presenting an estimate as a reading.
+    """
+    for option in spec.overload_options:
+        if NAME_TO_STAT.get(option.name) == "charge_speed_percent":
+            return bool(getattr(option, "lines", None))
+    return True  # no charge-speed overload at all: nothing to be unsure about
 
 
 def _overload_total(spec, stat):
@@ -78,12 +99,11 @@ def build_inputs(state, with_liberalio, overrides, liberalio_state=None,
         raise ValueError(f"{state.character_slug} could not be loaded from local data")
     weapon = spec.weapon_stats
 
-    # Both paths aggregate through the same function, so confirming the
-    # community's per-line rounding means editing `aggregate_charge_speed` and
-    # nothing else.
+    # Both paths aggregate through the same function, so the per-roll rounding
+    # rule lives in `aggregate_charge_speed` and nowhere else.
     lines = (_overload_lines(spec, "charge_speed_percent")
              if overrides.charge_speed_lines is None else overrides.charge_speed_lines)
-    charge_speed = aggregate_charge_speed(lines, weapon["charge_time"])
+    charge_speed = aggregate_charge_speed(lines)
 
     ammo_percent = (_overload_total(spec, "max_ammo_percent")
                     if overrides.max_ammo_percent is None else overrides.max_ammo_percent)

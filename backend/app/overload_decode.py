@@ -62,12 +62,46 @@ def known_effect_type(tables, effect_type: int) -> bool:
     return str(effect_type) in overload["values"] and str(effect_type) in overload["type_name"]
 
 
+def charge_speed_percent_from_lines(values) -> float:
+    """The charge speed these overload LINES actually grant, in percent.
+
+    Lines of the same roll sum first, and each of those groups rounds to a whole
+    percent - so three lines of 4.63 / 4.63 / 4.33 grant 9 + 4 = 13%, not the
+    13.59% they add up to and not the 5 + 5 + 4 = 14% that rounding each line on
+    its own would give. Grouping can cost the player a point exactly as here,
+    because 4.63 rounds up alone and 9.26 rounds down together.
+
+    Confirmed by Prika, whose single 4.92% line makes a 1.00-sec charge 57
+    frames rather than the 58 the raw sum floors to - 6.22 sigma, with her pause
+    reading the matching 22 frames independently
+    (docs/measurements/prika-charge.md). Reported by arca.live/b/nikketgv/169159561.
+
+    This is charge speed ONLY. No measurement says an ATK or crit overload line
+    rounds the same way, and blablalink displays their exact sums, so applying
+    it there would be inventing a rule.
+
+    `round` is banker's rounding, which differs from round-half-up on a group
+    summing to exactly x.5. The one such group the 15 roll values can make is
+    3.75 twice, and both conventions send 7.5 to 8 - so the choice is currently
+    unobservable rather than decided.
+    """
+    grouped: dict[float, float] = collections.defaultdict(float)
+    for value in values:
+        grouped[round(value, 2)] += value
+    return float(sum(round(total) for total in grouped.values()))
+
+
 def assemble_overload(tables, detail: dict) -> list[dict]:
     """ShiftyPad-style consolidated overload lines for one unit's four gear slots.
 
     Options of the same effect type sum across slots into one line (this is how
-    ShiftyPad displays them). Types that fold into the base stat panel rather
-    than the Equipment Effects list are dropped from the returned lines.
+    ShiftyPad displays them), and `lines` keeps the per-slot rolls that sum was
+    made of. The display total is what blablalink shows and what the roster form
+    edits; the lines are what `charge_speed_percent_from_lines` needs, since a
+    total alone cannot be decomposed back into the rolls that produced it.
+
+    Types that fold into the base stat panel rather than the Equipment Effects
+    list are dropped from the returned lines.
 
     An effect type absent from the reference tables is dropped with a warning
     instead of raising: only Fienn's roster was ever measured, and another
@@ -77,6 +111,7 @@ def assemble_overload(tables, detail: dict) -> list[dict]:
     folded = set(tables["overload"]["base_stat_folded"])
     names = tables["overload"]["type_name"]
     totals: dict[int, float] = collections.defaultdict(float)
+    lines: dict[int, list[dict]] = collections.defaultdict(list)
     for slot in _SLOTS:
         for n in (1, 2, 3):
             dec = decode_option(detail.get(f"{slot}_equip_option{n}_id", 0))
@@ -90,5 +125,8 @@ def assemble_overload(tables, detail: dict) -> list[dict]:
                     "unknown overload effect type %s (level %s) - line dropped", etype, level
                 )
                 continue
-            totals[etype] += overload_value(tables, etype, level)
-    return [{"name": names[str(t)], "value": round(v, 2)} for t, v in totals.items()]
+            value = overload_value(tables, etype, level)
+            totals[etype] += value
+            lines[etype].append({"slot": slot, "value": value})
+    return [{"name": names[str(t)], "value": round(v, 2), "lines": lines[t]}
+            for t, v in totals.items()]

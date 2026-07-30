@@ -130,9 +130,12 @@ def test_an_overload_max_ammo_line_stacks_on_top_of_asura():
 
 
 def test_the_charge_speed_overload_line_reaches_the_inputs():
+    """A roll grants its rounded percent, so a 2.86% line arrives as 3% - and on
+    Scarlet's 18-frame charge that is still short of the 5.56% a frame costs, so
+    the interval does not move (docs/measurements/prika-charge.md)."""
     state = a_state("scarlet-black-shadow", [("차지 속도 증가", 2.86)])
     got = build_inputs(state, with_liberalio=False, overrides=Overrides(None, None, None))
-    assert got.charge_speed_percent == pytest.approx(0.0286)
+    assert got.charge_speed_percent == pytest.approx(0.03)
 
 
 def test_the_roster_path_aggregates_through_the_shared_function():
@@ -195,7 +198,9 @@ def test_overrides_replace_the_roster_values():
                        overrides=Overrides(charge_speed_lines=[6.09, 6.09],
                                            max_ammo_percent=0.8537,
                                            reload_speed_percent=0.0))
-    assert got.charge_speed_percent == pytest.approx(0.1218)
+    # Two equal rolls group before rounding: 12.18 becomes 12, not 6 + 6 by
+    # coincidence - see the grouping tests in test_charge_window.
+    assert got.charge_speed_percent == pytest.approx(0.12)
     assert got.max_ammo == 22
     assert got.reload_speed_percent == 0.0
 

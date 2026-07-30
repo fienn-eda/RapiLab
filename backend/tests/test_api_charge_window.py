@@ -10,10 +10,18 @@ MAXED = {"skill1": 10, "skill2": 10, "burst": 10}
 
 
 def a_unit(slug, overloads=()):
+    """An overload entry is (name, value) for a roster that only kept the total,
+    or (name, value, [rolls]) for one synced after the rolls were carried."""
+    options = []
+    for entry in overloads:
+        name, value = entry[0], entry[1]
+        option = {"name": name, "value": value}
+        if len(entry) > 2:
+            option["lines"] = [{"slot": "head", "value": roll} for roll in entry[2]]
+        options.append(option)
     return {
         "character_slug": slug, "level": 200, "hp": 1_000_000, "atk": 100_000,
-        "def_": 10_000, "skill_levels": MAXED,
-        "overload_options": [{"name": n, "value": v} for n, v in overloads],
+        "def_": 10_000, "skill_levels": MAXED, "overload_options": options,
     }
 
 
@@ -77,28 +85,47 @@ def test_asking_for_an_absent_liberalio_says_so_and_drops_the_buff():
     assert any("로스터에 없어" in note for note in without_her["notes"])
 
 
-def test_lines_the_two_aggregation_rules_split_on_are_reported():
-    # 5.51% raw buys no frame of an 18-frame charge; rounded to 6% it buys one.
-    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])]
-    body = post("scarlet-black-shadow", roster,
-                overrides={"charge_speed_lines": [5.51]}).json()
-    assert any("집계 규칙" in note for note in body["notes"])
-
-
-def test_lines_the_two_rules_agree_on_get_no_note():
-    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])]
-    body = post("scarlet-black-shadow", roster,
-                overrides={"charge_speed_lines": [4.33, 4.33]}).json()
-    assert not any("집계 규칙" in note for note in body["notes"])
-
-
-def test_the_synced_roster_gets_no_aggregation_note():
-    # blablalink reports overload options already summed across gear, so the
-    # per-slot decomposition the comparison needs simply is not there.
+def test_a_roster_that_only_kept_the_total_says_the_answer_is_an_estimate():
+    """Charge speed rounds per roll, so a total several roll combinations could
+    have produced does not pin the frame count - and the reader is told rather
+    than shown an estimate that looks like a reading."""
     roster = [a_unit("scarlet-black-shadow",
-                     [("최대 장탄 수 증가", 85.37), ("차지 속도 증가", 5.51)])]
+                     [("최대 장탄 수 증가", 85.37), ("차지 속도 증가", 7.20)])]
     body = post("scarlet-black-shadow", roster).json()
-    assert not any("집계 규칙" in note for note in body["notes"])
+    assert any("합계에서 추정" in note for note in body["notes"])
+
+
+def test_a_roster_carrying_the_rolls_gets_no_estimate_note():
+    roster = [a_unit("scarlet-black-shadow",
+                     [("최대 장탄 수 증가", 85.37),
+                      ("차지 속도 증가", 7.20, [2.57, 4.63])])]
+    body = post("scarlet-black-shadow", roster).json()
+    assert not any("합계에서 추정" in note for note in body["notes"])
+
+
+def test_typed_rolls_are_rolls_so_they_get_no_estimate_note():
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])]
+    body = post("scarlet-black-shadow", roster,
+                overrides={"charge_speed_lines": [2.57, 4.63]}).json()
+    assert not any("합계에서 추정" in note for note in body["notes"])
+
+
+def test_a_unit_with_no_charge_speed_overload_has_nothing_to_be_unsure_about():
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])]
+    body = post("scarlet-black-shadow", roster).json()
+    assert not any("합계에서 추정" in note for note in body["notes"])
+
+
+def test_the_rolls_a_total_hides_actually_change_the_answer():
+    """2.57 + 4.63 and 2.28 + 4.92 both display 7.20% and grant 8 and 7. This is
+    what the estimate note is warning about, so it has to be real."""
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])]
+    high = post("scarlet-black-shadow", roster,
+                overrides={"charge_speed_lines": [2.57, 4.63]}).json()
+    low = post("scarlet-black-shadow", roster,
+               overrides={"charge_speed_lines": [2.28, 4.92]}).json()
+    assert high["charge_speed_percent"] == pytest.approx(0.08)
+    assert low["charge_speed_percent"] == pytest.approx(0.07)
 
 
 def test_an_unsupported_slug_is_a_422():

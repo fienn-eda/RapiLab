@@ -9,6 +9,7 @@ because the attack-rate model they'd feed into doesn't exist. They're still
 named and converted so nothing is silently dropped before that model exists.
 """
 from app.effects import Effect
+from app.overload_decode import charge_speed_percent_from_lines
 
 NAME_TO_STAT = {
     "공격력 증가": "atk_percent",
@@ -21,6 +22,30 @@ NAME_TO_STAT = {
 }
 
 
+def granted_percent(option, stat):
+    """What this overload line GRANTS, which for charge speed is not what it shows.
+
+    Charge speed rounds each same-valued group of rolls to a whole percent before
+    the frame grid sees it, so a display of 9.26% grants 9 - measured on Prika,
+    whose single 4.92% roll makes a 1.00-sec charge 57 frames rather than the 58
+    the raw sum floors to (docs/measurements/prika-charge.md). Every other
+    overload stat is used as displayed: no measurement says they round, and
+    blablalink shows their exact sums.
+
+    With no lines the total is all there is, and rounding IT is exactly the same
+    rule whenever every roll was the same value - which includes the single-roll
+    case, the common one. It can differ only for mixed rolls: 4.63 + 4.63 + 4.33
+    grants 9 + 4 = 13 while its 13.59 total rounds to 14. So this is the closest
+    the app can get without a re-sync, not a second rule.
+    """
+    if stat != "charge_speed_percent":
+        return option.value
+    lines = getattr(option, "lines", None)
+    if lines:
+        return charge_speed_percent_from_lines(line.value for line in lines)
+    return float(round(option.value))
+
+
 def overload_options_to_effects(overload_options, source_slug):
     effects = []
     for option in overload_options:
@@ -30,7 +55,7 @@ def overload_options_to_effects(overload_options, source_slug):
         effects.append(
             Effect(
                 stat=stat,
-                value=option.value / 100,
+                value=granted_percent(option, stat) / 100,
                 scope="self",
                 duration=None,
                 source_slug=source_slug,
