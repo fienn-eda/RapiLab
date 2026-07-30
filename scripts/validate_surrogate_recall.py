@@ -6,17 +6,17 @@ correlation). This is the go/no-go signal for the cheap-filter -> sim-top-K
 cascade (docs/superpowers/specs/2026-07-23-cascade-surrogate-deck-search-
 design.md). No engine change; pure measurement.
 
-Two surrogates, selected with --surrogate:
+The surrogate measured is surrogate.py's sample regression - fit on a random
+sample of SIMULATED decks. Accurate in principle, but the fit costs thousands
+of sims per roster+boss, and grows with the roster.
 
-  regression   surrogate.py's sample regression - fit on a random sample of
-               SIMULATED decks. Accurate in principle, but the fit costs
-               thousands of sims per roster+boss, and grows with the roster.
-  closed-form  closed_form.py's fit-free estimate - no simulation at all, so
-               its cost is independent of roster size.
-  both         both, on the SAME holdout (pays the regression's fit cost).
+A fit-free closed-form scorer was measured here too until it was rejected on
+these very numbers (Spearman 0.54; see docs/insights.md "Deck search") and
+deleted. Anything cheap proposed in its place should be measured the same way,
+on the same holdout.
 
-The holdout depends only on --units/--fit/--holdout/--seed, so runs of
-different surrogates with matching arguments are directly comparable.
+The holdout depends only on --units/--fit/--holdout/--seed, so runs with
+matching arguments are directly comparable.
 
 Keep SimPool construction under __main__ (Windows spawn re-imports this module).
 
@@ -24,12 +24,10 @@ Usage (any cwd):
     python3 scripts/validate_surrogate_recall.py [--units 40] [--fit 1500]
                                                  [--holdout 400] [--lam 1.0]
                                                  [--seed 7]
-                                                 [--surrogate both]
 """
 import argparse
 import os
 import sys
-import time
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
@@ -51,7 +49,6 @@ from app.user_roster import load_roster  # noqa: E402
 from app.supported_units import supported_units  # noqa: E402
 from app.deck_search import BossProfile, evaluate_deck  # noqa: E402
 from app.sim_pool import SimPool, resolve_workers  # noqa: E402
-from app.closed_form import score_with_diagnostics  # noqa: E402
 from app.surrogate import (make_feature_space, build_matrix, fit_ridge, predict,
                            sample_feasible_combinations, best_ordering_damage)  # noqa: E402
 from app.cascade import fit_surrogate, widened_pool  # noqa: E402
@@ -121,10 +118,6 @@ def main():
                    help="draw the holdout from the cascade's widened pool instead "
                         "of the whole roster - the distribution the cascade "
                         "actually ranks, where every candidate is already strong")
-    p.add_argument("--surrogate", choices=("regression", "closed-form", "both"),
-                   default="both",
-                   help="which cheap ranker to measure; 'closed-form' needs no "
-                        "fit, so it skips simulating the fit sample entirely")
     p.add_argument("--workers", default="1",
                    help='"auto" (all-but-one core) or an int; default "1" = serial. '
                         "The SimPool parallel path oversubscribes BLAS threads on "
@@ -167,7 +160,6 @@ def main():
               f"--fit/--holdout to fit the feasible space.", flush=True)
         sys.exit(1)
 
-    needs_regression = args.surrogate in ("regression", "both")
     if args.fit_subset:
         # Drawn from the same sequence, so hold_combos above is untouched.
         fit_combos = fit_combos[:args.fit_subset]
@@ -178,45 +170,20 @@ def main():
     try:
         scorer = (pool.score_many if pool is not None
                   else lambda decks: [evaluate_deck(d, boss)["total_damage"] for d in decks])
-        # The fit sample is drawn either way (it decides where the holdout
-        # starts, so holdouts stay comparable across --surrogate choices), but
-        # only the regression has to pay for simulating it.
-        y_fit = best_ordering_damage(fit_combos, boss, scorer) if needs_regression else None
+        y_fit = best_ordering_damage(fit_combos, boss, scorer)
         y_hold = np.array(best_ordering_damage(hold_combos, boss, scorer))
     finally:
         if pool is not None:
             pool.close()
 
-    if needs_regression:
-        fs = make_feature_space(specs, include_pairs=not args.no_pairs)
-        if len(fit_combos) < fs.n_features:
-            print(f"NOTE: fit sample ({len(fit_combos)}) is smaller than the feature "
-                  f"space ({fs.n_features}); ridge fit is underdetermined.", flush=True)
-        beta = fit_ridge(build_matrix(fit_combos, fs), np.array(y_fit), lam=args.lam)
-        _report(f"sample regression, {'units only' if args.no_pairs else 'units+pairs'} "
-                f"({fs.n_features} cols, fit on {len(fit_combos)} simulated decks)",
-                predict(build_matrix(hold_combos, fs), beta), y_hold)
-
-    if args.surrogate in ("closed-form", "both"):
-        skipped = []
-
-        def score_orderings(decks):
-            scores = []
-            for deck in decks:
-                score, failures = score_with_diagnostics(list(deck), boss)
-                skipped.extend(failures)
-                scores.append(score)
-            return scores
-
-        started = time.perf_counter()
-        # Same best-of-orderings target the ground truth uses, so the two are
-        # measuring the same quantity - deck order decides who bursts.
-        pred_hold = np.array(best_ordering_damage(hold_combos, boss, score_orderings))
-        elapsed = time.perf_counter() - started
-        print(f"\nclosed-form scored {len(hold_combos)} combos in {elapsed:.2f}s "
-              f"({elapsed / len(hold_combos) * 1000:.2f} ms/combo); "
-              f"{len(skipped)} skill bullets skipped", flush=True)
-        _report("closed-form (no fit, no simulation)", pred_hold, y_hold)
+    fs = make_feature_space(specs, include_pairs=not args.no_pairs)
+    if len(fit_combos) < fs.n_features:
+        print(f"NOTE: fit sample ({len(fit_combos)}) is smaller than the feature "
+              f"space ({fs.n_features}); ridge fit is underdetermined.", flush=True)
+    beta = fit_ridge(build_matrix(fit_combos, fs), np.array(y_fit), lam=args.lam)
+    _report(f"sample regression, {'units only' if args.no_pairs else 'units+pairs'} "
+            f"({fs.n_features} cols, fit on {len(fit_combos)} simulated decks)",
+            predict(build_matrix(hold_combos, fs), beta), y_hold)
 
 
 if __name__ == "__main__":

@@ -86,15 +86,6 @@ def test_last_bullet_marks_the_refunded_final_round():
     assert times[17] not in lasts
 
 
-def test_the_surrogate_shot_count_sees_the_refund():
-    from app.closed_form import _shot_count
-    plain = _shot_count(dict(weapon="RL", max_ammo=9, reload_time=2.0,
-                             charge_time=0.3), 180.0)
-    bastion = _shot_count(dict(weapon="RL", max_ammo=9, reload_time=2.0,
-                               charge_time=0.3, ammo_refund=BASTION), 180.0)
-    assert bastion > plain
-
-
 def _shared_magazine_case(**extra):
     """Snow White: Heavy Arms' shape - a mode that re-times her charge and
     draws from her own magazine rather than arriving loaded."""

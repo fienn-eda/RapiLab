@@ -1,9 +1,9 @@
 """How much of a deck's real damage a static (timeline-free) scorer cannot see.
 
-app/closed_form.py estimates a deck's damage from a single snapshot of its
-buffs, so it can only account for normal attacks and burst nukes. Every other
-damage source in the engine - per-shot, periodic, scheduled, instant and
-resource-driven nukes - needs the shot timeline that scorer exists to avoid.
+A static scorer estimates a deck's damage from a single snapshot of its buffs,
+so it can only account for normal attacks and burst nukes. Every other damage
+source in the engine - per-shot, periodic, scheduled, instant and resource-
+driven nukes - needs the shot timeline such a scorer exists to avoid.
 
 This measures that blind spot directly: simulate a sample of real decks, split
 `damage_log` by source, and report both the aggregate share and the per-deck

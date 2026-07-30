@@ -78,8 +78,8 @@ def load_nikke_spec(
         # A clip weapon empties its magazine and then loads it back in several
         # goes, so the gap before the next magazine is that many file reloads.
         # Folded into the weapon's own reload_time because every consumer - the
-        # deck simulation, closed_form's shot count, the charge-window
-        # calculator, and caster_weapon_stats - already reads that field as
+        # deck simulation, the charge-window calculator, and
+        # caster_weapon_stats - already reads that field as
         # "the pause after the magazine runs out". Multiplying here rather than
         # in attack_rate leaves all nine of its reload call sites untouched;
         # reload_time_with_speed is linear in reload_time on both branches, so
