@@ -700,7 +700,11 @@ git commit -m "The bookmarklet asks every server which ones hold a roster"
     })
     await waitFor(() => expect(result.current.status).toBe('choosing'))
 
-    result.current.choose(83)
+    // `choose`는 상태를 바꾸므로 act 안에서 부른다 - 밖에서 부르면 경고가 찍히고,
+    // 이 저장소는 테스트 출력이 깨끗해야 통과다.
+    await act(async () => {
+      result.current.choose(83)
+    })
 
     await waitFor(() => expect(onRoster).toHaveBeenCalledOnce())
     expect(onRoster).toHaveBeenCalledWith({
