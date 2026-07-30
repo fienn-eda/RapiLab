@@ -88,10 +88,16 @@ def plan_copies(worktree_root, main_root):
         if not source_dir.is_dir():
             missing_sources.append(rel)
             continue
-        for source in sorted(source_dir.iterdir()):
+        # Recursive: data/shiftypad/raw/ holds the collected bundles that
+        # scripts/audit_weapon_data.py compares the engine's weapon inputs
+        # against. Copying only the top level left every worktree unable to run
+        # that audit - it reported all 95 encoded slugs as "no-live", which
+        # reads as "nobody collected these" rather than "the sync skipped a
+        # directory".
+        for source in sorted(source_dir.rglob("*")):
             if not source.is_file():
                 continue
-            dest = worktree_root / rel / source.name
+            dest = worktree_root / rel / source.relative_to(source_dir)
             if not dest.exists():
                 copies.append((source, dest))
     for rel in SYNCED_FILES:

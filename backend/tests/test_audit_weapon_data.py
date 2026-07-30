@@ -64,3 +64,24 @@ def test_load_live_keys_by_resource_id(tmp_path):
     live = audit.load_live(tmp_path)
     assert set(live) == {16}
     assert live[16]["weapon"] and live[16]["burst"] == "3"
+
+
+def test_an_unregistered_clip_weapon_is_a_mismatch():
+    # The failure this guards: a newly onboarded clip Nikke nobody added to
+    # CLIP_RELOAD_SPLITS reads as 11% faster than she fires, and nothing else
+    # in the pipeline would say so.
+    assert audit.reload_splits_diff("liter", {"max_ammo": 6, "reload_bullet": 3300}) == (1, 3)
+
+
+def test_a_registered_clip_weapon_agrees():
+    assert audit.reload_splits_diff("centi", {"max_ammo": 6, "reload_bullet": 3300}) is None
+
+
+def test_an_ordinary_weapon_agrees():
+    assert audit.reload_splits_diff("liter", {"max_ammo": 120, "reload_bullet": 10000}) is None
+
+
+def test_a_stale_table_entry_is_a_mismatch():
+    # The mirror case: a balance patch that makes Centi load her whole magazine
+    # at once leaves the table one reload too slow.
+    assert audit.reload_splits_diff("centi", {"max_ammo": 6, "reload_bullet": 10000}) == (3, 1)
