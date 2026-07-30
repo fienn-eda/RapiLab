@@ -44,8 +44,8 @@ def test_every_mode_variant_candidate_maps_to_its_base():
 def test_every_favorite_item_build_maps_to_its_base_character():
     encoded = set(ENCODED_SLUGS)
     pairs = {s: f"{s}-signature" for s in encoded if f"{s}-signature" in encoded}
-    assert len(pairs) == 13, (
-        "expected 13 encoded base/-signature pairs; a new Favorite Item build "
+    assert len(pairs) == 14, (
+        "expected 14 encoded base/-signature pairs; a new Favorite Item build "
         f"landed or one was removed - got {sorted(pairs)}"
     )
     for base, signature in pairs.items():
@@ -53,12 +53,13 @@ def test_every_favorite_item_build_maps_to_its_base_character():
         assert character_map()[base] == base
 
 
-def test_the_grouping_is_the_expected_seventeen_characters():
+def test_the_grouping_is_the_expected_eighteen_characters():
     # The whole table, pinned. A change here is either a new multi-build unit
     # (update this list) or a data_slug that drifted away from naming the
     # character (fix the manifest).
     assert sorted(_groups()) == [
-        "bready", "cinderella-crystal-wave", "diesel-winter-sweets", "drake",
-        "flora", "helm", "julia", "laplace", "miranda", "moran", "phantom",
-        "privaty", "rapi-red-hood", "rosanna", "sugar", "tove", "zwei",
+        "bready", "centi", "cinderella-crystal-wave", "diesel-winter-sweets",
+        "drake", "flora", "helm", "julia", "laplace", "miranda", "moran",
+        "phantom", "privaty", "rapi-red-hood", "rosanna", "sugar", "tove",
+        "zwei",
     ]
