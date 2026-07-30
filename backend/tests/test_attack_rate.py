@@ -598,10 +598,13 @@ def test_a_measured_pause_replaces_the_floor_instead_of_stacking_on_it():
 def test_charge_motion_delay_is_a_per_unit_list_not_a_weapon_class_constant():
     from app.skill_rules.registry import get_charge_motion_delay
     from app.attack_rate import CHARGE_MOTION_DELAY_SECONDS
-    # Units Fienn saw a pause on but has not put a clock to yet.
-    for slug in ("helm", "helm-signature", "bready-lingering",
-                 "bready-recommended", "velvet"):
+    # Units whose own timing happened to land on the shared default.
+    for slug in ("helm", "helm-signature", "velvet"):
         assert get_charge_motion_delay(slug) == CHARGE_MOTION_DELAY_SECONDS
+    # Bready is the same weapon class as those three and lands somewhere else,
+    # which is the point: 22 frames, not the 24 the default would hand her.
+    assert get_charge_motion_delay("bready-lingering") == pytest.approx(22 / 60)
+    assert get_charge_motion_delay("bready-lingering") != CHARGE_MOTION_DELAY_SECONDS
     # Liberalio is the counter-example that makes this per-unit: also SR, and
     # Fienn confirms she fires her charged shots back to back with no gap.
     assert get_charge_motion_delay("liberalio") == 0.0
@@ -627,22 +630,63 @@ def test_a_timed_unit_carries_its_own_delay_rather_than_the_shared_default():
 
 
 def test_the_borrowed_default_was_timed_and_held():
-    """Helm, Bready and Velvet carried Snow White's 0.4 on Fienn's naked-eye
-    "there is a pause" until he timed all three (2026-07-29), reading charge
-    completion against next-charge start:
+    """Helm and Velvet carried Snow White's 0.4 on Fienn's naked-eye "there is a
+    pause" until he timed both (2026-07-29), reading charge completion against
+    next-charge start:
         Helm    0.39 / 0.40 / 0.39 / 0.40 / 0.40
-        Bready  0.40 / 0.40 / 0.40 / 0.40
         Velvet  0.40 / 0.40 / 0.40 / 0.39 / 0.40
     The borrowed value was right, so no damage moves - what changes is that
     these stop being assumptions. Their shot gaps check the model again
-    (1.380 / 1.343 / 1.393 against charges of 0.987 / 0.943 / 0.997, so
-    interval - delay lands back on the charge every time)."""
+    (1.380 / 1.393 against charges of 0.987 / 0.997, so interval - delay lands
+    back on the charge every time)."""
     from app.skill_rules.registry import TIMED_CHARGE_MOTION_DELAY, get_charge_motion_delay
 
-    for slug in ("helm", "helm-signature", "bready-lingering",
-                 "bready-recommended", "velvet"):
+    for slug in ("helm", "helm-signature", "velvet"):
         assert slug in TIMED_CHARGE_MOTION_DELAY, f"{slug} is still an assumption"
         assert get_charge_motion_delay(slug) == 0.4
+
+
+def test_bready_pause_is_a_whole_number_of_frames():
+    """Bready's pause is the one read off raw video frame numbers rather than the
+    Full Burst clock, whose 0.01-sec display skips 0.04 in places and cannot
+    separate 22 frames from 24. 49 readings put it at 22 frames.
+
+    The reading is checked three ways rather than trusted alone: her charge reads
+    57 frames, her shot gap 78.9696 +- 0.0319 frames, and charge + pause lands
+    within 0.042 of a frame of that gap. Pinned as a frame count because that is
+    the grid the measurement resolved, and a decimal would hide it -
+    docs/measurements/bready-charge.md."""
+    from app.skill_rules.registry import get_charge_motion_delay
+
+    for slug in ("bready-lingering", "bready-recommended"):
+        assert get_charge_motion_delay(slug) == pytest.approx(22 / 60)
+    # Charge + pause returns the measured shot gap. This is what makes the pause
+    # a reading rather than a parameter fitted to one number.
+    charge = charge_time_with_speed(1.00, 0.0609)
+    assert charge + get_charge_motion_delay("bready-lingering") == pytest.approx(
+        78.9696 / 60, abs=0.042 / 60)
+
+
+def test_charge_speed_lands_on_frames_not_on_a_hundredth_of_a_second():
+    """Bready's 6.09% charge-speed overload buys 3 whole frames of her 1.00-sec
+    charge and the remaining 1.09%p is wasted, because a frame costs 1/60 =
+    1.6667% and the fourth frame needs 6.667%.
+
+    This is the anchor for the frame grid itself. Community guides report charge
+    speed rounding to 0.01 sec instead, which would take the full 0.0609 off and
+    leave 0.94 - a charge of 56.4 frames. Fienn's 51 charge readings put her at
+    57 frames: 83% of the readings that came out 56 or 57 were 57 where the
+    0.01-sec rule predicts 40% (5.6 sigma), and her shot gap sits 1.0 sigma from
+    a whole 79 frames where that rule needs 78.4 or 79.4 (13.5 sigma). See
+    docs/measurements/bready-charge.md for both arguments and what they rest
+    on."""
+    assert charge_time_with_speed(1.00, 0.0609) == pytest.approx(0.95)
+    assert charge_time_with_speed(1.00, 0.0609) != pytest.approx(0.94)
+    # The step is a frame wide: everything from the third frame up to the fourth
+    # threshold buys the same 3 frames, so paying more changes no number.
+    for percent in (0.05, 0.0521, 0.0609, 0.0666):
+        assert charge_time_with_speed(1.00, percent) == pytest.approx(0.95)
+    assert charge_time_with_speed(1.00, 0.0667) == pytest.approx(1.00 - 4 / 60)
 
 
 def test_no_delay_confirmed_is_recorded_separately_from_never_checked():
