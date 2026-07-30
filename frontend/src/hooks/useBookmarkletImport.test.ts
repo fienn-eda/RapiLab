@@ -1,4 +1,4 @@
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { useBookmarkletImport } from './useBookmarkletImport'
 import { BLABLALINK_ORIGIN, PAYLOAD_MESSAGE } from '../lib/bookmarklet'
@@ -15,6 +15,14 @@ const EMPTY = { owned: [], character_details: [], recycle_room_researches: [] }
 const post = (origin: string, data: unknown) =>
   window.dispatchEvent(new MessageEvent('message', { origin, data }))
 
+const server = (area: number, count: number, nickname = '') => ({
+  area,
+  nickname,
+  owned: Array.from({ length: count }, (_, i) => ({ name_code: i + 1 })),
+  character_details: [],
+  recycle_room_researches: [],
+})
+
 afterEach(() => vi.mocked(assembleRoster).mockReset())
 
 describe('useBookmarkletImport', () => {
@@ -28,6 +36,7 @@ describe('useBookmarkletImport', () => {
     await waitFor(() =>
       expect(onRoster).toHaveBeenCalledWith({
         openId: 'abc123',
+        area: 81,
         nickname: '',
         raw: { units: [] },
       }),
@@ -73,6 +82,7 @@ describe('useBookmarkletImport', () => {
     await waitFor(() =>
       expect(onRoster).toHaveBeenCalledWith({
         openId: 'abc123',
+        area: 81,
         nickname: 'Fienn',
         raw: { units: [] },
       }),
@@ -159,11 +169,133 @@ describe('useBookmarkletImport', () => {
     await waitFor(() =>
       expect(received).toEqual({
         tag: 4,
-        raw: { openId: 'abc123', nickname: '', raw: { units: [] } },
+        raw: { openId: 'abc123', area: 81, nickname: '', raw: { units: [] } },
       }),
     )
 
     addSpy.mockRestore()
     window.opener = null as unknown as Window
+  })
+
+  it('서버가 하나면 묻지 않고 바로 조립해 넘긴다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
+    const onRoster = vi.fn()
+    renderHook(() => useBookmarkletImport(onRoster))
+
+    post(BLABLALINK_ORIGIN, {
+      type: PAYLOAD_MESSAGE,
+      payload: { open_id: 'abc123', servers: [server(83, 181, 'FIENN')] },
+    })
+
+    await waitFor(() =>
+      expect(onRoster).toHaveBeenCalledWith({
+        openId: 'abc123',
+        area: 83,
+        nickname: 'FIENN',
+        raw: { units: [] },
+      }),
+    )
+  })
+
+  it('서버가 둘이면 고르기 전에는 아무것도 조립하지 않는다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
+    const onRoster = vi.fn()
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+
+    post(BLABLALINK_ORIGIN, {
+      type: PAYLOAD_MESSAGE,
+      payload: { open_id: 'abc123', servers: [server(81, 186), server(83, 10)] },
+    })
+
+    await waitFor(() => expect(result.current.status).toBe('choosing'))
+    expect(result.current.candidates).toEqual([
+      { area: 81, count: 186 },
+      { area: 83, count: 10 },
+    ])
+    expect(assembleRoster).not.toHaveBeenCalled()
+    expect(onRoster).not.toHaveBeenCalled()
+  })
+
+  it('고른 서버 하나만 조립한다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
+    const onRoster = vi.fn()
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+
+    post(BLABLALINK_ORIGIN, {
+      type: PAYLOAD_MESSAGE,
+      payload: { open_id: 'abc123', servers: [server(81, 186), server(83, 10)] },
+    })
+    await waitFor(() => expect(result.current.status).toBe('choosing'))
+
+    // `choose`는 상태를 바꾸므로 act 안에서 부른다 - 밖에서 부르면 경고가 찍히고,
+    // 이 저장소는 테스트 출력이 깨끗해야 통과다.
+    await act(async () => {
+      result.current.choose(83)
+    })
+
+    await waitFor(() => expect(onRoster).toHaveBeenCalledOnce())
+    expect(onRoster).toHaveBeenCalledWith({
+      openId: 'abc123',
+      area: 83,
+      nickname: '',
+      raw: { units: [] },
+    })
+    expect(vi.mocked(assembleRoster).mock.calls[0][0].owned).toHaveLength(10)
+  })
+
+  // choose()를 노출하는 버튼은 더블클릭될 수 있다. 이미 조립이 진행 중이면
+  // 같은 서버를 다시 눌러도 assembleRoster를 한 번 더 부르지 않아야 한다.
+  it('조립이 진행 중일 때 같은 서버를 다시 골라도 조립은 한 번만 한다', async () => {
+    let resolveAssemble: (value: { units: never[] }) => void = () => {}
+    vi.mocked(assembleRoster).mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveAssemble = resolve
+        }),
+    )
+    const onRoster = vi.fn()
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+
+    post(BLABLALINK_ORIGIN, {
+      type: PAYLOAD_MESSAGE,
+      payload: { open_id: 'abc123', servers: [server(81, 186), server(83, 10)] },
+    })
+    await waitFor(() => expect(result.current.status).toBe('choosing'))
+
+    act(() => {
+      result.current.choose(83)
+    })
+    expect(result.current.status).toBe('importing')
+
+    act(() => {
+      result.current.choose(83)
+    })
+    expect(assembleRoster).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      resolveAssemble({ units: [] })
+    })
+    await waitFor(() => expect(onRoster).toHaveBeenCalledOnce())
+  })
+
+  // 이미 설치된 북마크릿은 area 81로 조회한 데이터를 옛 모양으로 보낸다.
+  it('구 payload는 area 81 서버 하나로 받는다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
+    const onRoster = vi.fn()
+    renderHook(() => useBookmarkletImport(onRoster))
+
+    post(BLABLALINK_ORIGIN, {
+      type: PAYLOAD_MESSAGE,
+      payload: { ...EMPTY, open_id: 'abc123', nickname: 'FIENN' },
+    })
+
+    await waitFor(() =>
+      expect(onRoster).toHaveBeenCalledWith({
+        openId: 'abc123',
+        area: 81,
+        nickname: 'FIENN',
+        raw: { units: [] },
+      }),
+    )
   })
 })

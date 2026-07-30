@@ -86,7 +86,7 @@ function App() {
 
       <ProfileSwitcher
         profiles={Object.values(state.profiles)}
-        activeOpenId={state.activeOpenId}
+        activeKey={state.activeKey}
         onSwitch={switchProfile}
         onDelete={deleteProfile}
       />
@@ -154,14 +154,14 @@ function App() {
                 // outlives a switch (1-2 min) would land against the shared
                 // hook instance and leak its result/error into whichever
                 // profile happens to be active when the response arrives.
-                key={state.activeOpenId ?? 'none'}
+                key={state.activeKey ?? 'none'}
                 roster={validRoster}
                 investmentFor={investmentFor}
                 engineVersion={engineVersion}
-                activeOpenId={state.activeOpenId}
+                activeKey={state.activeKey}
                 getCached={(hash) => (activeProfile ? getResult(activeProfile, hash) : null)}
                 onResult={(args) => {
-                  if (state.activeOpenId) saveResult({ openId: state.activeOpenId, ...args })
+                  if (state.activeKey) saveResult({ key: state.activeKey, ...args })
                 }}
                 restoreInputs={activeProfile?.lastInputs ?? null}
                 restoreResult={
@@ -183,7 +183,7 @@ function App() {
                 // Same reasoning as RecommendPanel's key: an evaluate request
                 // outliving a profile switch must not land against the
                 // previous profile's hook instance.
-                key={state.activeOpenId ?? 'none'}
+                key={state.activeKey ?? 'none'}
                 roster={validRoster}
                 supportedUnits={supportedUnits.units}
                 portraitFor={portraitFor}
@@ -204,7 +204,7 @@ function App() {
                 // Same reasoning as RecommendPanel's key: a ladder computed for
                 // one profile must not stay on screen after a switch, and the
                 // panel's own state is the only place it lives.
-                key={state.activeOpenId ?? 'none'}
+                key={state.activeKey ?? 'none'}
                 roster={validRoster}
                 nameFor={nameFor}
               />

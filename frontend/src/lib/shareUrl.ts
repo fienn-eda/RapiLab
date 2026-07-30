@@ -1,6 +1,6 @@
 // ShiftyPad의 공개 공유 URL에서 intl_open_id를 뽑는다. uid는
-// "<shiftypad_region_id>-<intl_open_id>"의 base64이고, 앞자리 리전 id는
-// API가 받는 nikke_area_id(81 고정)와 무관하므로 버린다.
+// "<앞자리>-<intl_open_id>"의 base64이고, 앞자리는 API가 받는 nikke_area_id가
+// 아니므로 버린다 - 계정의 서버 리전은 uid에서 읽을 수 없다.
 
 const OPEN_ID = /^\d{6,}$/
 

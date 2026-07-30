@@ -786,8 +786,19 @@
       실측 검증(Fienn 두 번째 계정 B, 공개 상태, 메인 세션 A에서 조회):
       - 공유 URL `blablalink.com/shiftyspad?uid=<base64>`의 uid = `<shiftypad_area>-<intl_open_id>`
         (예: `29080-8223...`). **앞자리 29080은 ShiftyPad 리전 id지 API의 `nikke_area_id`가
-        아니다** — API area는 **81**(인터내셔널 서버; A·B 모두 81, 검색 예시 uid도 29080).
+        아니다** — 당시 A·B 모두 area **81**로 통과했다.
         이 함정으로 첫 조회가 `param invalid` 났다가, area 81로 고치니 통과.
+        **⚠ 이때 적었던 "81 = 인터내셔널 서버"는 틀렸다(2026-07-29 정정).** 81은
+        **일본**이다. 여기 적힌 A·B는 그 시점에 area 81 조회가 **성공**했을
+        뿐 — 즉 두 계정 모두 그때 JP 서버에 로스터를 갖고 있었다는 뜻이지,
+        그 계정이 "JP 전용"이라는 근거는 아니다. 한 계정이 서버마다 각각
+        로스터를 가질 수 있음이 2026-07-29에 확인됐으므로(아래 서버 지원
+        서브프로젝트), 이 결과는 애초에 81이 무엇을 뜻하는지에 대한 증거가
+        아니었다. **여기 A·B는 2026-07-29 스펙
+        (`docs/superpowers/specs/2026-07-29-sync-region-support-design.md`)의
+        예시 표에 나오는 A·B와는 무관한 별개의 라벨** — 글자가 같은 것은
+        우연이니 두 쌍을 같은 계정으로 읽지 말 것. 권위 목록은
+        `GetRegionList`: 81 Japan · 82 NA · **83 Korea** · 84 Global · 85 SEA.
       - **크로스계정 3콜 전부 `code 0`:** `GetUserCharacters(B)` 182보유 ·
         `GetUserCharacterDetails(B)` 육성입력(`arm_equip_*`·`attractive_lv`·`harmony_cube_*`
         =계산기 소비 필드) · `GetUserProfileOutpostInfo(B)` 기업연구 9행. **B2 계산기(159/159)와
@@ -808,8 +819,12 @@
       **설계 단계 미해결:** ① 대상이 비공개(방패 off)면 조회가 막히는지 — B는 공개라 "공개는 읽힘"만
       확인(비공개 게이팅이 곧 동의 메커니즘일 것; 어차피 sync엔 공개 필요) · ② **호출자 세션을
       누가 공급하나** — 호스티드면 서비스용 blablalink 계정 세션 필요(대상 아닌 *운영자* 자격증명
-      저장 문제, 기존 "자격증명 저장 금지" 원칙과 충돌 소지 → 재결정) · ③ 타 리전 유저 `nikke_area_id`
-      발견/기본값 · ④ 정찰 당시 edenpj.com 502는 **서버 점검**(운영자 공지), 폐쇄 아님 —
+      저장 문제, 기존 "자격증명 저장 금지" 원칙과 충돌 소지 → 재결정) ·
+      ③ **해결됨 (2026-07-29).** 타 리전 유저 `nikke_area_id` 발견/기본값 —
+      권위 출처는 blablalink 자신의 `GetRegionList`(81 JP · 82 NA · 83 KR ·
+      84 GL · 85 SEA); 값을 추측하거나 기본값 하나로 정하는 대신 앱이 다섯
+      서버를 모두 조회하고, 로스터를 가진 서버가 둘 이상이면 유저에게
+      물어본다 · ④ 정찰 당시 edenpj.com 502는 **서버 점검**(운영자 공지), 폐쇄 아님 —
       참조 OOB 패턴 유효하나 위 결과로 그 경로 자체가 불필요. nikkemimir.xyz 생존, `/sync` 미해독(SPA).
 - [x] **서브프로젝트 1+2: 페치+조립 슬라이스 구현 완료 (2026-07-19).** `(open_id, area, 주입세션)`
       → collector `roster.json` 형태(레벨400 hp/atk·오버로드·스킬). `backend/app/{blablalink_api,

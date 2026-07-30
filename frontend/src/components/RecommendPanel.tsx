@@ -45,9 +45,9 @@ import { UnitPalette, toggleExcludedSlug, type UnitInvestment } from './UnitPale
 interface RecommendPanelProps {
   /** The validated, ready subset of the entered roster. */
   roster: UserNikkeState[]
-  /** The active profile's open_id — keys the restore effect so switching
+  /** The active profile's key — keys the restore effect so switching
    * accounts (not just re-rendering) reloads that profile's form/result. */
-  activeOpenId: string | null
+  activeKey: string | null
   /** Looks up a cached raid/draft result by inputHash — a hit skips the
    * network call entirely (see lib/inputHash.ts). */
   getCached: (hash: string) => StoredResult | null
@@ -94,7 +94,7 @@ const NUM_DECKS_OPTIONS = Array.from(
 
 export function RecommendPanel({
   roster,
-  activeOpenId,
+  activeKey,
   getCached,
   onResult,
   restoreInputs,
@@ -143,7 +143,7 @@ export function RecommendPanel({
 
   // Restore the active profile's last raid/draft submission (form + result)
   // whenever the ACCOUNT changes, not on every render - keyed on
-  // activeOpenId alone so it never clobbers in-progress edits mid-typing.
+  // activeKey alone so it never clobbers in-progress edits mid-typing.
   useEffect(() => {
     setExcludedSlugs(new Set())
     setEvaluatedBossElement(null)
@@ -161,7 +161,7 @@ export function RecommendPanel({
       setDisplayMode(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeOpenId])
+  }, [activeKey])
 
   // Persist a raid/draft submission's success exactly once - guarded by
   // pendingSaveRef so a rerender that doesn't follow a fresh submit (e.g. a
