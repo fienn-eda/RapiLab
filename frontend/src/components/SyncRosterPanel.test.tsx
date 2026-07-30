@@ -1,4 +1,5 @@
 import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SyncRosterPanel } from './SyncRosterPanel'
 import { assembleRoster } from '../api/assembleRoster'
@@ -31,6 +32,25 @@ const postPayload = () =>
       new MessageEvent('message', {
         origin: BLABLALINK_ORIGIN,
         data: { type: PAYLOAD_MESSAGE, payload: RAW_PAYLOAD },
+      }),
+    )
+  })
+
+const postTwoServers = () =>
+  act(() => {
+    window.dispatchEvent(
+      new MessageEvent('message', {
+        origin: BLABLALINK_ORIGIN,
+        data: {
+          type: PAYLOAD_MESSAGE,
+          payload: {
+            open_id: 'abc123',
+            servers: [
+              { area: 81, nickname: 'FIENN', owned: [{ name_code: 1 }, { name_code: 2 }], character_details: [], recycle_room_researches: [] },
+              { area: 83, nickname: 'FIENN', owned: [{ name_code: 3 }], character_details: [], recycle_room_researches: [] },
+            ],
+          },
+        },
       }),
     )
   })
@@ -96,6 +116,9 @@ describe('SyncRosterPanel', () => {
     await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1))
     expect(onImport.mock.calls[0][0].openId).toBe('abc123')
     expect(onImport.mock.calls[0][0].nickname).toBe('Fienn')
+    // The legacy flat payload (no `servers` array) is a single-server account -
+    // promoted to area 81 (JP), same as the profile store's own migration.
+    expect(onImport.mock.calls[0][0].area).toBe(81)
   })
 
   it('surfaces parse warnings (e.g. unsupported owned units) as note paragraphs', async () => {
@@ -180,5 +203,29 @@ describe('SyncRosterPanel', () => {
       'true',
     )
     expect(screen.getByText(/계정마다 북마크가 따로 필요해요/)).toBeVisible()
+  })
+
+  it('서버가 둘이면 어느 것을 가져올지 묻고, 고르기 전엔 임포트하지 않는다', async () => {
+    const onImport = vi.fn()
+    render(<SyncRosterPanel onImport={onImport} />)
+    postTwoServers()
+
+    expect(await screen.findByText(/어느 서버의 계정을 가져올까요/)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /JP \(2기\)/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /KR \(1기\)/ })).toBeInTheDocument()
+    expect(onImport).not.toHaveBeenCalled()
+  })
+
+  it('고른 서버의 area가 onImport로 넘어간다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
+    const onImport = vi.fn()
+    render(<SyncRosterPanel onImport={onImport} />)
+    postTwoServers()
+
+    await user.click(await screen.findByRole('button', { name: /KR \(1기\)/ }))
+
+    await waitFor(() => expect(onImport).toHaveBeenCalledOnce())
+    expect(onImport.mock.calls[0][0].area).toBe(83)
   })
 })

@@ -80,6 +80,40 @@ catalog, see the `nikke-skill-encoding` skill, not here.
   벌어진다. 남은 실험은 **같은 계정을 다른 세션(재시작 후)에 다시 재는 것** —
   지금은 "계정"과 "녹화 세션"이 엉켜 있어 어느 쪽이 원인인지 구조적으로 못 가른다.
 
+## 로스터 동기화는 다섯 서버를 모두 조회하고, 로스터를 가진 서버가 둘 이상일 때만 유저에게 묻는다
+
+- Date: 2026-07-29
+- Context: 한 blablalink 계정이 서버(`nikke_area_id`)마다 별도의 로스터를 가질 수 있음이
+  확인되면서(위 `GetRegionList` 정정 참고), 북마크릿이 어느 서버를 조회해야 하는지 정해야
+  했다. 실측: 로스터가 없는 서버가 `code 1302125`("get info list err")로 응답하는 것과
+  별개로, 로스터가 있는 서버 **여럿**이 동시에 `code 0`으로 응답하는 것도 정상이다 —
+  "성공한 서버는 하나뿐"이라는 가정은 성립하지 않는다.
+- Decision: 다섯 서버를 전부 조회(`GetUserCharacters` 5회)한다. 로스터가 있는 서버가
+  정확히 하나면 그 서버로 바로 조립하고, 둘 이상이면 유저에게 어느 서버인지 물어본다
+  (`SyncRosterPanel`의 서버 선택 UI, `useBookmarkletImport`의 `status: 'choosing'`).
+- Why: 실측으로 기각한 대안 셋. (a) 응답이 온 유일한 서버를 자동 채택 — 여럿이 정상
+  응답하는 것이 흔하므로, 186유닛 본계정 대신 10유닛 부계정을 조용히 들여오는 사고가
+  날 수 있다. (b) 로스터가 가장 큰 서버를 자동 채택 — 부계정을 보고 싶은 유저에게는
+  조용히 틀린 답이다. (c) 정적인 서버 드롭다운 — 유저가 자기 계정이 어느 서버인지
+  미리 알아야 한다는 전제가 필요한데, 그게 애초에 이 기능이 대신 알아내려는 정보다.
+- Consequences: 첫 동기화마다 최대 5회의 추가 프로브 호출이 든다. 설계 단계에서
+  "성공이 유일할 때만 신뢰"하는 안전장치를 따로 만들었다가, 실측이 다중 성공을 정상으로
+  보여줘 그 자리에서 폐기했다.
+
+## 프로필 신원은 `open_id` 하나가 아니라 `(open_id, area)` 쌍이다
+
+- Date: 2026-07-29
+- Context: 한 계정이 서버마다 별도의 로스터를 가지므로, 프로필 저장소를 `open_id`만으로
+  키잡으면 같은 계정의 두 서버 로스터가 localStorage의 같은 슬롯을 다퉈 서로를 덮어쓴다.
+- Decision: 프로필 키를 `` `${openId}:${area}` ``로 바꾼다(`types/profile.ts`의
+  `profileKey`). 기존 저장소는 `useProfiles.ts`의 `migrate`가 area 81을 채워 넣어
+  재키잉한다 — 복합 키가 생기기 전의 동기화 데이터는 전부 area 81에서 온 것이므로 81을
+  채우는 것이 정확하다.
+- Why: 그렇지 않으면 한 계정의 두 서버가 localStorage에서 서로를 덮어쓴다.
+- Consequences: 스키마 마이그레이션이 기존 프로필을 `:81`로 재키잉해야 한다. 계정
+  드롭다운(`ProfileSwitcher`)도 서버를 함께 보여줘야 한다 — 같은 계정이 두 서버에
+  같은 닉네임으로 있을 수 있어, 닉네임만으로는 모호하다.
+
 ## 차지속도 버프를 다 받고 **남은** 차지시간이 프레임 격자에 스냅된다 (되돌려짐)
 
 - Date: 2026-07-29
@@ -1016,7 +1050,7 @@ catalog, see the `nikke-skill-encoding` skill, not here.
 - Context: Phase 7's roadmap status going into this reconnaissance was one line — "requires login, public query impossible" (`docs/roadmap.md`) — an assumption that had never actually been tested against a second account. Verified against Fienn's own second blablalink account (account B, roster visibility set public via the shield toggle), queried from account A's already-logged-in Chrome session over the same API path the collector already uses (`tools/collect-blablalink/collect.js`'s `fetchOwned`/`collectDetails` — `GetUserCharacters`, `GetUserCharacterDetails`, `GetUserProfileOutpostInfo`).
 - Decision (recorded as a finding, not a productization choice — see the open questions below): ShiftyPad's public share URL (`blablalink.com/shiftyspad?uid=<base64>`) decodes to `<shiftypad_region_id>-<intl_open_id>` (e.g. `29080-1234567890123456789`). From ANY authenticated session (not the target's own), calling the collector's existing three endpoints with the target's `open_id` and `nikke_area_id=81` (see the region-id gotcha in `docs/insights.md`) returns `code 0` and the full per-unit investment payload the B2 stat calculator (159/159, above) already consumes: `GetUserCharacters` (182 owned), `GetUserCharacterDetails` (`arm_equip_*`/`attractive_lv`/`harmony_cube_*`), `GetUserProfileOutpostInfo` (9 corporation-research rows). Combined, a consenting user's whole level-400 roster is computable with **zero per-unit page scraping**. An anonymous, session-less call is refused (`code 300001`, "game not login") — this is NOT a truly public API; it requires a valid CALLER-side blablalink session, but never the TARGET's credentials.
 - Why: This changes Phase 7's shape from "build a per-user out-of-band ownership-proof flow" (the edenpj precedent — paste a code into the game profile bio) to "the user toggles roster visibility public and hands over their share URL" — a materially simpler consent mechanism, contingent on resolving who supplies the caller-side session (below).
-- Consequences: Reverses the `docs/roadmap.md` Phase 7 "public query impossible" assumption (roadmap's Stage 1 entry already updated, 2026-07-19). Does **not** yet resolve who supplies the CALLER-side session for a hosted service — a service blablalink account would reintroduce an OPERATOR (not target) credential-storage question, which conflicts with the project's existing "never store credentials, tokens supplied by Fienn" posture (see "MVP user data = manual entry" below) unless explicitly re-decided. Open questions deferred to a future design pass, not decided here: (a) whether a PRIVATE (shield-off) account's data is actually gated on read, or just unlisted from search — only "public is readable" is confirmed, since account B was public; (b) the operator-session-storage question above; (c) how a cross-region user's `nikke_area_id` is discovered or defaulted (today only area 81 / international is confirmed, from both of Fienn's own accounts and one public search-result sample). Also observed in the same pass: edenpj.com (the OOB-proof precedent site) returned 502 during reconnaissance, but this was a **server-maintenance outage** (operator notice), not a shutdown, per Fienn — the OOB-proof pattern remains a valid reference even though the finding above makes that whole path unnecessary; nikkemimir.xyz survives but its `/sync` route is an unresolved SPA. The `resource_id`→slug map and B2 stat calculator need no changes regardless of which sync path is eventually chosen — blablalink's `open_id` is already the canonical per-account key either path would use. See `docs/insights.md` ("Data") for the region-id-vs-`nikke_area_id` gotcha this reconnaissance hit.
+- Consequences: Reverses the `docs/roadmap.md` Phase 7 "public query impossible" assumption (roadmap's Stage 1 entry already updated, 2026-07-19). Does **not** yet resolve who supplies the CALLER-side session for a hosted service — a service blablalink account would reintroduce an OPERATOR (not target) credential-storage question, which conflicts with the project's existing "never store credentials, tokens supplied by Fienn" posture (see "MVP user data = manual entry" below) unless explicitly re-decided. Open questions deferred to a future design pass, not decided here: (a) whether a PRIVATE (shield-off) account's data is actually gated on read, or just unlisted from search — only "public is readable" is confirmed, since account B was public; (b) the operator-session-storage question above; (c) how a cross-region user's `nikke_area_id` is discovered or defaulted — **resolved 2026-07-29**: blablalink's own `GetRegionList` is the authoritative list (81 Japan, 82 NA, 83 Korea, 84 Global, 85 SEA), and the app probes all five rather than guessing a default (see the two 2026-07-29 entries above on server probing and profile identity). Also observed in the same pass: edenpj.com (the OOB-proof precedent site) returned 502 during reconnaissance, but this was a **server-maintenance outage** (operator notice), not a shutdown, per Fienn — the OOB-proof pattern remains a valid reference even though the finding above makes that whole path unnecessary; nikkemimir.xyz survives but its `/sync` route is an unresolved SPA. The `resource_id`→slug map and B2 stat calculator need no changes regardless of which sync path is eventually chosen — blablalink's `open_id` is already the canonical per-account key either path would use. See `docs/insights.md` ("Data") for the region-id-vs-`nikke_area_id` gotcha this reconnaissance hit.
 
 ## Collector roster units map to slugs by `resource_id` in a dedicated table, with Favorite Item ownership kept in a SEPARATE set — identity and investment are different layers
 - Date: 2026-07-18

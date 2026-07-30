@@ -6,12 +6,14 @@ import { parseShareUrl } from '../lib/shareUrl'
 import { buildBookmarklet } from '../lib/bookmarklet'
 import { useBookmarkletImport } from '../hooks/useBookmarkletImport'
 import { parseRosterJson } from '../lib/rosterImport'
+import { serverLabel } from '../types/server'
 import type { NikkeDraft } from '../types/nikkeDraft'
 import { SyncHelp } from './SyncHelp'
 
 interface SyncRosterPanelProps {
   onImport: (args: {
     openId: string
+    area: number
     nickname: string
     roster: NikkeDraft[]
   }) => void
@@ -29,12 +31,14 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
   // verbatim so a syncing user is told too.
   const [notes, setNotes] = useState<string[]>([])
 
-  const { status, error } = useBookmarkletImport(({ openId, nickname, raw }) => {
-    const { drafts, warnings } = parseRosterJson(raw)
-    onImport({ openId, nickname, roster: drafts })
-    setSummary(`${drafts.length}기 동기화됨`)
-    setNotes(warnings)
-  })
+  const { status, error, candidates, choose } = useBookmarkletImport(
+    ({ openId, area, nickname, raw }) => {
+      const { drafts, warnings } = parseRosterJson(raw)
+      onImport({ openId, area, nickname, roster: drafts })
+      setSummary(`${drafts.length}기 동기화됨`)
+      setNotes(warnings)
+    },
+  )
 
   // A fresh import run supersedes whatever summary/error is on screen.
   useEffect(() => {
@@ -125,6 +129,25 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
           >
             니케 로스터 동기화
           </a>
+        </div>
+      )}
+      {/* 한 계정이 여러 서버에 로스터를 가진 경우다. 어느 쪽을 원하는지는
+          짐작할 수 없으므로 - 니케가 많은 쪽이 늘 정답은 아니다 - 물어본다. */}
+      {status === 'choosing' && (
+        <div className="sync__servers">
+          <p className="sync__hint">어느 서버의 계정을 가져올까요?</p>
+          <div className="sync__server-choices">
+            {candidates.map(({ area, count }) => (
+              <button
+                key={area}
+                type="button"
+                className="btn"
+                onClick={() => choose(area)}
+              >
+                {serverLabel(area)} ({count}기)
+              </button>
+            ))}
+          </div>
         </div>
       )}
       {status === 'importing' && <p className="sync__message">가져오는 중…</p>}

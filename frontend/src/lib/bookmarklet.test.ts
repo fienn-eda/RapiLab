@@ -15,6 +15,13 @@ describe('buildBookmarklet', () => {
     expect(code.startsWith('javascript:')).toBe(true)
   })
 
+  it('blablalink origin 가드를 포함한다 (우리 앱 페이지에서 실행되는 것을 막는다)', () => {
+    // location.origin이 BLABLALINK_ORIGIN이 아니면 즉시 alert 후 return - 이
+    // 가드가 없으면 우리 앱 페이지 등 다른 컨텍스트에서 실행됐을 때 세션
+    // 없는 fetch가 나가거나 CORS 없이 조용히 실패한다.
+    expect(source).toContain(`location.origin!=='${BLABLALINK_ORIGIN}'`)
+  })
+
   it('open_id와 앱 origin이 박힌다', () => {
     expect(source).toContain('1234567890123456789')
     expect(source).toContain('https://deck.example')
@@ -56,11 +63,18 @@ describe('buildBookmarklet', () => {
       return { basic_info: { nickname: NICKNAME, role_name: NICKNAME } }
     }
 
-    /** 북마크릿을 가짜 blablalink 창에서 돌리고, 앱 창으로 간 payload를 돌려준다. */
+    type FetchImpl = (
+      url: string,
+      init?: { body?: string },
+    ) => Promise<{ json: () => Promise<unknown> }>
+
+    /** 북마크릿을 가짜 blablalink 창에서 돌리고, 앱 창으로 간 payload와 뜬
+     * alert 문구들을 돌려준다. */
     const runBookmarklet = async (
-      fetchImpl: (url: string) => Promise<{ json: () => Promise<unknown> }>,
-    ): Promise<Record<string, unknown> | null> => {
+      fetchImpl: FetchImpl,
+    ): Promise<{ payload: Record<string, unknown> | null; alerts: string[] }> => {
       let sent: Record<string, unknown> | null = null
+      const alerts: string[] = []
       const appWindow = {
         postMessage: (message: { type: string; payload: Record<string, unknown> }) => {
           if (message.type === PAYLOAD_MESSAGE) sent = message.payload
@@ -84,28 +98,56 @@ describe('buildBookmarklet', () => {
         fakeWindow,
         { origin: BLABLALINK_ORIGIN },
         fetchImpl,
-        () => {},
+        (m: string) => alerts.push(m),
       )
       // 북마크릿은 앱 창이 ready를 알린 뒤에야 payload를 보낸다.
       for (const handler of listeners) {
         handler({ source: appWindow, origin: 'https://deck.example', data: { type: 'nikke-sync-ready' } })
       }
       await finished
-      return sent
+      return { payload: sent, alerts }
     }
 
     const okFetch = (url: string) =>
       Promise.resolve({ json: () => Promise.resolve({ code: 0, data: responseFor(url) }) })
 
-    it('basic_info 아래의 nickname을 payload에 싣는다', async () => {
-      const payload = await runBookmarklet(okFetch)
-      expect(payload?.nickname).toBe(NICKNAME)
+    /** GetUserCharacters를 area별로 갈라 응답하는 fetch를 만든다. `ownedByArea`에
+     * 없는 area는 1302125("get info list err")로 실패한다 - 실측대로 "이
+     * 계정은 이 서버엔 로스터가 없다"를 흉내낸다. 다른 세 엔드포인트는
+     * `responseFor`로 그대로 성공한다. 모든 호출을 (endpoint, body) 로 기록해
+     * 어느 area로 무엇을 불렀는지 검사할 수 있게 한다. */
+    const makeAreaFetch = (
+      ownedByArea: Record<number, { name_code: number }[]>,
+    ): { fetchImpl: FetchImpl; calls: { endpoint: string; body: Record<string, unknown> }[] } => {
+      const calls: { endpoint: string; body: Record<string, unknown> }[] = []
+      const fetchImpl: FetchImpl = (url, init) => {
+        const body = init?.body ? (JSON.parse(init.body) as Record<string, unknown>) : {}
+        calls.push({ endpoint: url, body })
+        if (url.endsWith('GetUserCharacters')) {
+          const owned = ownedByArea[body.nikke_area_id as number]
+          if (owned === undefined) {
+            return Promise.resolve({
+              json: () =>
+                Promise.resolve({ code: 1302125, msg: 'get info list err', data: null }),
+            })
+          }
+          return Promise.resolve({ json: () => Promise.resolve({ code: 0, data: { characters: owned } }) })
+        }
+        return Promise.resolve({ json: () => Promise.resolve({ code: 0, data: responseFor(url) }) })
+      }
+      return { fetchImpl, calls }
+    }
+
+    it('basic_info 아래의 nickname을 payload의 서버별 항목에 싣는다', async () => {
+      const { payload } = await runBookmarklet(okFetch)
+      const servers = payload?.servers as { nickname: string }[] | undefined
+      expect(servers?.[0]?.nickname).toBe(NICKNAME)
     })
 
     it('프로필 조회가 실패해도 로스터 싱크는 살아남는다', async () => {
       // code 1303005("user has not bind role_id")가 실측된 적 있다. 닉네임은
       // 표시용이므로 그 실패가 로스터 전체를 날려선 안 된다.
-      const payload = await runBookmarklet((url) =>
+      const { payload } = await runBookmarklet((url) =>
         Promise.resolve({
           json: () =>
             Promise.resolve(
@@ -116,15 +158,91 @@ describe('buildBookmarklet', () => {
         }),
       )
       expect(payload).not.toBeNull()
-      expect(payload?.nickname).toBe('')
-      expect(payload?.owned).toHaveLength(1)
+      const servers = payload?.servers as { nickname: string; owned: unknown[] }[] | undefined
+      expect(servers?.[0]?.nickname).toBe('')
+      expect(servers?.[0]?.owned).toHaveLength(1)
+    })
+
+    it('한 서버의 GetUserCharacters 실패는 그 서버만 빼고, 살아남은 서버는 그대로 동기화된다', async () => {
+      // area 82(NA)만 니케를 갖고, 나머지 넷은 1302125("이 서버엔 없음")로
+      // 응답한다. 네 개의 실패가 살아남은 서버까지 막으면 안 된다.
+      const { fetchImpl } = makeAreaFetch({ 82: [{ name_code: 5101 }] })
+      const { payload } = await runBookmarklet(fetchImpl)
+      const servers = payload?.servers as { area: number; owned: unknown[] }[] | undefined
+      expect(servers).toHaveLength(1)
+      expect(servers?.[0]?.area).toBe(82)
+      expect(servers?.[0]?.owned).toHaveLength(1)
+    })
+
+    it('후보별 상세/거점 조회가 그 후보의 area를 싣는다 (다른 후보의 area가 섞여 들지 않는다)', async () => {
+      // 두 서버(81, 84)가 모두 후보가 되면, 각 후보의 GetUserCharacterDetails·
+      // GetUserProfileOutpostInfo 호출은 그 후보 자신의 area를 실어야지 다른
+      // 후보의 area를 실으면 안 된다. name_code로 어느 후보의 호출인지 구분한다.
+      const { fetchImpl, calls } = makeAreaFetch({
+        81: [{ name_code: 1111 }],
+        84: [{ name_code: 4444 }],
+      })
+      await runBookmarklet(fetchImpl)
+      const detailCalls = calls.filter((c) => c.endpoint.endsWith('GetUserCharacterDetails'))
+      const outpostCalls = calls.filter((c) => c.endpoint.endsWith('GetUserProfileOutpostInfo'))
+      expect(detailCalls).toHaveLength(2)
+      expect(outpostCalls).toHaveLength(2)
+      const detailFor = (nameCode: number) =>
+        detailCalls.find((c) => (c.body.name_codes as number[]).includes(nameCode))
+      expect(detailFor(1111)?.body.nikke_area_id).toBe(81)
+      expect(detailFor(4444)?.body.nikke_area_id).toBe(84)
+      expect((outpostCalls.map((c) => c.body.nikke_area_id) as number[]).sort((a, b) => a - b)).toEqual([
+        81, 84,
+      ])
+    })
+
+    it('payload.servers의 각 항목이 그 항목을 조회한 area를 싣는다', async () => {
+      const { fetchImpl } = makeAreaFetch({
+        81: [{ name_code: 1111 }],
+        85: [{ name_code: 5555 }],
+      })
+      const { payload } = await runBookmarklet(fetchImpl)
+      const servers = payload?.servers as { area: number }[] | undefined
+      expect((servers?.map((s) => s.area) ?? []).sort((a, b) => a - b)).toEqual([81, 85])
+    })
+
+    it('다섯 서버 모두 1302125면 원시 코드가 아니라 사람이 읽을 문구가 뜬다 (Finding 1 회귀 고정)', async () => {
+      // probeErr에 1302125가 담기면 `if(probeErr)throw probeErr`가 앞서서
+      // "GetUserCharacters:1302125"라는 원시 코드가 그대로 alert에 샌다 -
+      // 문자열 단언(소스에 '니케를 찾지 못했어요'가 있는지)은 이 분기가 실제로
+      // 선택되는지 못 잡는다. 여기서는 북마크릿을 실행해 뜬 alert 문구
+      // 자체를 검증한다.
+      const { fetchImpl } = makeAreaFetch({})
+      const { payload, alerts } = await runBookmarklet(fetchImpl)
+      expect(payload).toBeNull()
+      expect(alerts).toHaveLength(1)
+      expect(alerts[0]).toContain('니케를 찾지 못했어요')
+      expect(alerts[0]).not.toContain('1302125')
     })
   })
 
-  it('area 81과 blablalink origin 가드를 포함한다', () => {
-    expect(source).toContain('nikke_area_id:81')
-    expect(source).toContain(BLABLALINK_ORIGIN)
-    expect(source).toContain(PAYLOAD_MESSAGE)
+  it('다섯 서버를 모두 훑고 area를 고정하지 않는다', () => {
+    expect(source).toContain('[81,82,83,84,85]')
+    expect(source).not.toContain('nikke_area_id:81')
+    expect(source).toContain('nikke_area_id:a')
+  })
+
+  it('서버별 조회 실패는 그 서버만 건너뛴다', () => {
+    // 한 서버의 일시적 오류(1303002가 관측됨)가 동기화 전체를 죽이면 안 된다.
+    // 1302125("get info list err")는 probeErr에 담기지 않는다 - 아래 실행
+    // 테스트가 이 필터가 실제로 동작하는지(다섯 서버 전부 1302125일 때 사람이
+    // 읽을 문구가 뜨는지) 검증한다.
+    expect(source).toContain(
+      "catch(e){if(!probeErr&&!/:1302125$/.test(String(e)))probeErr=e;owned=[]}",
+    )
+  })
+
+  it('니케가 있는 서버가 하나도 없으면 사람이 읽을 문구를 낸다', () => {
+    expect(source).toContain('니케를 찾지 못했어요')
+  })
+
+  it('payload는 서버 목록을 담는다', () => {
+    expect(source).toContain('servers:servers')
   })
 
   it('자격증명을 담지 않는다', () => {

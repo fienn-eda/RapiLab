@@ -704,6 +704,20 @@
   max-width: 480px;
 }
 
+/* 서버가 여러 개인 계정에서만 나타나는 선택 줄. 버튼이 한 줄에 들어가지 않으면
+   접히도록 둔다 - 서버는 다섯까지 늘 수 있다. */
+.sync__servers {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.sync__server-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
 /* 제목과 도움말 토글을 한 줄에. 도움말 본문은 이 행이 아니라 패널 아래로
    전체 폭으로 펼쳐진다. */
 .sync__header {

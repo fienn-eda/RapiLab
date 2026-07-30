@@ -69,7 +69,7 @@ const makeEvaluateSupportedUnits = () =>
 // wiring — inert no-op defaults for the new profile-store props keep the
 // pre-existing tests focused on what they actually check.
 const noPersistence = {
-  activeOpenId: null,
+  activeKey: null,
   getCached: () => null,
   onResult: () => {},
   restoreInputs: null,
@@ -790,7 +790,7 @@ describe('RecommendPanel persistence', () => {
     render(
       <RecommendPanel
         roster={fullRoster}
-        activeOpenId="A"
+        activeKey="A"
         getCached={() => null}
         onResult={() => {}}
         restoreInputs={restoreInputs}
@@ -833,7 +833,7 @@ describe('RecommendPanel persistence', () => {
     render(
       <RecommendPanel
         roster={fullRoster}
-        activeOpenId="A"
+        activeKey="A"
         getCached={() => null}
         onResult={onResult}
         restoreInputs={null}
@@ -893,7 +893,7 @@ describe('RecommendPanel persistence', () => {
     render(
       <RecommendPanel
         roster={fullRoster}
-        activeOpenId="A"
+        activeKey="A"
         getCached={getCached}
         onResult={onResult}
         restoreInputs={null}
@@ -1029,13 +1029,13 @@ describe('RecommendPanel unit-pool exclusion', () => {
     vi.mocked(getSupportedUnits).mockResolvedValue(supported)
     const user = userEvent.setup()
     const { rerender } = render(
-      <RecommendPanel roster={poolRoster} {...noPersistence} activeOpenId="p1" />,
+      <RecommendPanel roster={poolRoster} {...noPersistence} activeKey="p1" />,
     )
     await user.click(screen.getByRole('radio', { name: /전부 최적화/i }))
     await screen.findByRole('button', { name: /a 사용/i })
     await user.click(screen.getByRole('button', { name: /a 사용/i }))
     expect(screen.getByRole('button', { name: /a 사용/i })).toHaveAttribute('aria-pressed', 'false')
-    rerender(<RecommendPanel roster={poolRoster} {...noPersistence} activeOpenId="p2" />)
+    rerender(<RecommendPanel roster={poolRoster} {...noPersistence} activeKey="p2" />)
     expect(screen.getByRole('button', { name: /a 사용/i })).toHaveAttribute('aria-pressed', 'true')
   })
 
