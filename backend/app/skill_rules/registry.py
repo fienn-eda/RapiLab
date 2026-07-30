@@ -1015,15 +1015,20 @@ TIMED_CHARGE_MOTION_DELAY = {
     # charge, that makes them slow.
     "scarlet-black-shadow": 0.43,   # 0.44 / 0.42 / 0.44 / 0.42 / 0.43
     "raven": 1.014,                 # 1.02 / 0.99 / 1.02 / 1.02 / 1.02
-    # Timed 2026-07-29, and all three landed on the 0.4 they had been borrowing
-    # from Snow White. Their shot gaps (1.380 / 1.343 / 1.393) minus the delay
-    # return the measured charge (0.987 / 0.943 / 0.997), so the reading checks
-    # the interval = charge + delay model, not just the number.
+    # Timed 2026-07-29 off the Full Burst clock. Their shot gaps (1.380 / 1.393)
+    # minus the delay return the measured charge (0.987 / 0.997), so the reading
+    # checks the interval = charge + delay model, not just the number.
     "helm": 0.4,                    # 0.39 / 0.40 / 0.39 / 0.40 / 0.40
     "helm-signature": 0.4,
-    "bready-lingering": 0.4,        # 0.40 / 0.40 / 0.40 / 0.40
-    "bready-recommended": 0.4,
     "velvet": 0.4,                  # 0.40 / 0.40 / 0.40 / 0.39 / 0.40
+    # Bready is read off raw video frame numbers instead of the Full Burst
+    # clock, which shows 0.01 sec steps and skips 0.04 in places - too coarse to
+    # tell 22 frames from 24. Her pause is 22 frames across 49 readings, and it
+    # checks against her charge (57 frames) and shot gap (78.9696 +- 0.0319
+    # frames) to 0.042 of a frame. Written as a frame count because that is the
+    # grid the measurement resolved - docs/measurements/bready-charge.md.
+    "bready-lingering": 22 / 60,    # 0.36667
+    "bready-recommended": 22 / 60,
 }
 
 # Charge weapons Fienn has checked and found NO pause on. The engine's default
