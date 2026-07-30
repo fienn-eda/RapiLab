@@ -97,9 +97,10 @@ describe('buildBookmarklet', () => {
     const okFetch = (url: string) =>
       Promise.resolve({ json: () => Promise.resolve({ code: 0, data: responseFor(url) }) })
 
-    it('basic_info 아래의 nickname을 payload에 싣는다', async () => {
+    it('basic_info 아래의 nickname을 payload의 서버별 항목에 싣는다', async () => {
       const payload = await runBookmarklet(okFetch)
-      expect(payload?.nickname).toBe(NICKNAME)
+      const servers = payload?.servers as { nickname: string }[] | undefined
+      expect(servers?.[0]?.nickname).toBe(NICKNAME)
     })
 
     it('프로필 조회가 실패해도 로스터 싱크는 살아남는다', async () => {
@@ -116,15 +117,29 @@ describe('buildBookmarklet', () => {
         }),
       )
       expect(payload).not.toBeNull()
-      expect(payload?.nickname).toBe('')
-      expect(payload?.owned).toHaveLength(1)
+      const servers = payload?.servers as { nickname: string; owned: unknown[] }[] | undefined
+      expect(servers?.[0]?.nickname).toBe('')
+      expect(servers?.[0]?.owned).toHaveLength(1)
     })
   })
 
-  it('area 81과 blablalink origin 가드를 포함한다', () => {
-    expect(source).toContain('nikke_area_id:81')
-    expect(source).toContain(BLABLALINK_ORIGIN)
-    expect(source).toContain(PAYLOAD_MESSAGE)
+  it('다섯 서버를 모두 훑고 area를 고정하지 않는다', () => {
+    expect(source).toContain('[81,82,83,84,85]')
+    expect(source).not.toContain('nikke_area_id:81')
+    expect(source).toContain('nikke_area_id:a')
+  })
+
+  it('서버별 조회 실패는 그 서버만 건너뛴다', () => {
+    // 한 서버의 일시적 오류(1303002가 관측됨)가 동기화 전체를 죽이면 안 된다.
+    expect(source).toContain('catch(e){if(!probeErr)probeErr=e;owned=[]}')
+  })
+
+  it('니케가 있는 서버가 하나도 없으면 사람이 읽을 문구를 낸다', () => {
+    expect(source).toContain('니케를 찾지 못했어요')
+  })
+
+  it('payload는 서버 목록을 담는다', () => {
+    expect(source).toContain('servers:servers')
   })
 
   it('자격증명을 담지 않는다', () => {
