@@ -6,6 +6,7 @@ from app.skill_rules.registry import (
     get_burst_damage_type,
     get_burst_resolves_after_cast,
     get_burst_hit_count,
+    get_clip_reload_splits,
     get_per_shot_rules,
     get_periodic_nuke,
     get_periodic_rules,
@@ -266,3 +267,22 @@ def test_takina_event_rules_registered():
     triggers = {r.trigger for r in rules}
     assert {"battle_start", "full_burst_end", "full_burst_enter", "own_burst_activate"} <= triggers
     assert "periodic" not in triggers  # periodic rules come via get_periodic_rules, not here
+
+
+def test_clip_weapons_carry_their_load_count():
+    assert get_clip_reload_splits("centi") == 3
+    assert get_clip_reload_splits("centi-signature") == 3
+    assert get_clip_reload_splits("grave") == 2
+
+
+def test_an_ordinary_weapon_reloads_once():
+    assert get_clip_reload_splits("liter") == 1
+    assert get_clip_reload_splits("not-a-slug") == 1
+
+
+def test_both_builds_of_a_clip_unit_share_the_count():
+    # A Favorite Item does not change the weapon, so a base/signature pair that
+    # disagreed here would be a typo, not a mechanic.
+    for base in ("centi", "drake", "sugar"):
+        assert (get_clip_reload_splits(base)
+                == get_clip_reload_splits(f"{base}-signature"))
