@@ -81,11 +81,12 @@ def load_nikke_spec(
         # deck simulation, the charge-window calculator, and
         # caster_weapon_stats - already reads that field as
         # "the pause after the magazine runs out". Multiplying here rather than
-        # in attack_rate leaves all nine of its reload call sites untouched;
-        # reload_time_with_speed is linear in reload_time on both branches, so
-        # the order does not matter. If the affine reload model lands
-        # (docs/engine-gaps.md), whether its fixed 0.148 sec segment is per load
-        # or per magazine has to be settled before this fold stays correct.
+        # in attack_rate leaves all nine of its reload call sites untouched, and
+        # reload_time_with_speed scales reload_time linearly, so the order does
+        # not matter for the scaled part. The affine model's FIXED segment is not
+        # linear, and folding here is what decides where it lands: once for the
+        # magazine rather than once per load - the same convention Fienn
+        # confirmed for the charge motion delay after a clip reload.
         #
         # Before the mode override, not after: the count describes the weapon
         # this unit was collected with, and an override REPLACES that weapon

@@ -1123,7 +1123,10 @@ def test_per_shot_last_bullet_fires_a_nuke_when_the_magazine_empties():
     )
     ps = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
     assert len(ps) == 2
-    assert [round(e["time"], 4) for e in ps] == [round(2 / 12, 4), round(1.25 + 2 / 12, 4)]
+    # 3-round AR magazine empties at 3/12; the reload is the file 1.25 plus the
+    # fixed 0.148 segment, so the second magazine's last bullet is 0.148 later.
+    assert [round(e["time"], 4) for e in ps] == [
+        round(2 / 12, 4), round(1.398 + 2 / 12, 4)]
 
 
 def _windowed_nuke_result(mode, threshold):
@@ -1617,11 +1620,12 @@ def _zwei_pierce_stacks_per_sniper_shot(per_shot_rules):
 
 def test_uncapped_round_grants_pile_up_on_a_charge_weapon_allys_post_reload_shot():
     # Baseline for the cap: without one, every grant Zwei made during the SR's
-    # 3.5-sec charge+reload gap lands on the single shot that ends it.
+    # charge+reload gap lands on the single shot that ends it. The gap is 3.648
+    # sec (the reload carries the fixed 0.148 segment), which fits six grants.
     uncapped = round_buff_rule("per_shot", [("pierce_damage_up", 0.2499, "squad")], shots=1)
     stacks = _zwei_pierce_stacks_per_sniper_shot([(1, "every_during_full_burst", [uncapped])])
-    assert stacks[round(11.0, 4)] == 5.0
-    assert max(stacks.values()) == 5.0
+    assert stacks[round(11.148, 4)] == 6.0
+    assert max(stacks.values()) == 6.0
 
 
 def test_capped_round_grant_holds_a_charge_weapon_ally_to_the_skills_stack_cap():
@@ -1631,10 +1635,10 @@ def test_capped_round_grant_holds_a_charge_weapon_ally_to_the_skills_stack_cap()
     stacks = _zwei_pierce_stacks_per_sniper_shot(
         build_pierce_equation_per_shot_rules(ZWEI_PIERCE_EQUATION)
     )
-    assert stacks[round(11.0, 4)] == 3.0
+    assert stacks[round(11.148, 4)] == 3.0
     assert max(stacks.values()) == 3.0
-    assert stacks[round(6.0, 4)] == 1.0    # mid-magazine shot: one grant only
-    assert stacks[round(12.5, 4)] == 2.0   # 1.5-sec gap: two grants, under the cap
+    assert stacks[round(6.0, 4)] == 1.0      # mid-magazine shot: one grant only
+    assert stacks[round(12.648, 4)] == 2.0   # 1.5-sec gap: two grants, under the cap
 
 
 def test_miranda_top_atk_burst_buff_reaches_the_top_two_carries_end_to_end():
@@ -1999,9 +2003,10 @@ def test_privaty_ex_magazine_reload_buff_speeds_up_squad_reloads_end_to_end():
     )
     without_ex = second_magazine_start({"privaty": [], "ally": [], "b2": []})
 
-    # without buff: 2nd magazine at 3.0 (empty) + 3.0 (reload) = 6.0s
-    # with buff: reload = 3.0 / (1 + 0.5116) ~= 1.98s -> ~4.98s
-    assert without_ex == 6.0
+    # without buff: 2nd magazine at 3.0 (empty) + 3.148 (file 3.0 reload plus
+    # the fixed segment) = 6.148s. With the buff the scaled part shrinks by
+    # 51.16%, so the magazine starts earlier.
+    assert without_ex == pytest.approx(6.148)
     assert with_ex < without_ex
 
 

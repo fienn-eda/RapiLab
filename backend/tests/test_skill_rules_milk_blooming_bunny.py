@@ -106,9 +106,11 @@ def test_forced_reload_segment_covers_three_seconds_and_fires_nothing():
     segments = schedule(_Context([20.0]), 180.0)
 
     (segment,) = segments
-    # "50% reduction" on her 2s base = 3s, not 4s (reload_time_with_speed)
+    # "50% reduction" scales her 2s file value by 1.5, and the affine model
+    # adds the fixed 0.148 segment on top: 3.148s, not the 4s a reciprocal
+    # formula would give (reload_time_with_speed).
     assert segment["start"] == pytest.approx(31.5)
-    assert segment["end"] == pytest.approx(34.5)
+    assert segment["end"] == pytest.approx(34.648)
     # No shot can fit: the profile's interval is twice the window
     assert 1.0 / segment["profile"]["rate_of_fire"] > segment["end"] - segment["start"]
 

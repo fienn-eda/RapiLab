@@ -1,6 +1,7 @@
 import pytest
 
 from app.attack_rate import (
+    RELOAD_FIXED_SECONDS,
     CHARGE_INTERVAL_FLOOR_SECONDS,
     RATE_OF_FIRE_60FPS,
     ShotRecord,
@@ -36,14 +37,14 @@ def test_magazine_shots_are_evenly_spaced_within_one_magazine():
 
 
 def test_magazine_reloads_after_emptying_then_resumes():
-    # magazine empties at t=0.5 (5 shots * 0.1s), reload takes 1s -> next
-    # magazine starts at t=1.5.
+    # magazine empties at t=0.5 (5 shots * 0.1s), reload takes the file's 1s
+    # plus the fixed 0.148 segment -> next magazine starts at t=1.648.
     shots = generate_magazine_shot_times(
         rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=3.0
     )
     assert [round(t, 4) for t in shots] == [
         0.0, 0.1, 0.2, 0.3, 0.4,
-        1.5, 1.6, 1.7, 1.8, 1.9,
+        1.648, 1.748, 1.848, 1.948, 2.048,
     ]
 
 
@@ -55,13 +56,13 @@ def test_magazine_shots_stop_at_fight_duration():
 
 
 def test_magazine_reload_speed_up_shortens_the_gap_between_magazines():
-    # reload_speed_percent=1.0 (100% faster) at the moment the magazine
-    # empties -> actual reload time = 1.0 / (1+1.0) = 0.5s instead of 1.0s.
+    # reload_speed_percent=1.0 (100% faster) at the moment the magazine empties
+    # takes the whole scaled part away, leaving only the fixed 0.148 segment.
     shots = generate_magazine_shot_times(
         rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=3.0,
         reload_speed_percent_at=lambda t: 1.0,
     )
-    assert round(shots[5], 4) == 1.0  # 0.5 (empty) + 0.5 (reduced reload)
+    assert round(shots[5], 4) == 0.648  # 0.5 (empty) + 0.148 (what is left)
 
 
 def test_magazine_ammo_up_increases_shots_per_magazine():
@@ -94,11 +95,12 @@ def test_max_ammo_increase_and_decrease_both_apply_to_base_ammo_additively():
 
 def test_charge_shots_fire_max_ammo_rounds_before_reloading():
     # charge_time=1, max_ammo=3, reload_time=2: three charged shots 1s apart
-    # (t=1,2,3), THEN a 2s reload before the next magazine's first shot.
+    # (t=1,2,3), THEN a 2.148s reload (file 2.0 plus the fixed segment) before
+    # the next magazine's first shot.
     shots = generate_charge_shot_times(
         charge_time=1.0, reload_time=2.0, max_ammo=3, fight_duration=9.0
     )
-    assert shots == [1.0, 2.0, 3.0, 6.0, 7.0, 8.0]
+    assert shots == pytest.approx([1.0, 2.0, 3.0, 6.148, 7.148, 8.148])
 
 
 def test_charge_shots_single_round_magazine_matches_original_behavior():
@@ -106,7 +108,7 @@ def test_charge_shots_single_round_magazine_matches_original_behavior():
     shots = generate_charge_shot_times(
         charge_time=1.0, reload_time=2.0, max_ammo=1, fight_duration=8.0
     )
-    assert shots == [1.0, 4.0, 7.0]
+    assert shots == pytest.approx([1.0, 4.148, 7.296])
 
 
 def test_charge_shots_stop_at_fight_duration():
@@ -121,8 +123,9 @@ def test_charge_reload_speed_up_shortens_the_gap_between_magazines():
         charge_time=1.0, reload_time=2.0, max_ammo=1, fight_duration=8.0,
         reload_speed_percent_at=lambda t: 1.0,
     )
-    # reload = 2.0/(1+1.0) = 1.0s -> next shot at 1.0(charge) + 1.0(reload) + 1.0(charge) = 3.0
-    assert shots == [1.0, 3.0, 5.0, 7.0]
+    # +100% takes the whole scaled part, leaving the fixed 0.148 -> next shot at
+    # 1.0(charge) + 0.148(reload) + 1.0(charge) = 2.148.
+    assert shots == pytest.approx([1.0, 2.148, 3.296, 4.444, 5.592, 6.74, 7.888])
 
 
 def test_generate_shot_times_dispatches_to_magazine_for_non_charge_weapons():
@@ -138,7 +141,7 @@ def test_generate_shot_times_dispatches_to_charge_for_charge_weapons():
     shots = generate_shot_times(
         weapon="RL", max_ammo=3, reload_time=2.0, charge_time=1.0, fight_duration=9.0,
     )
-    assert shots == [1.0, 2.0, 3.0, 6.0, 7.0, 8.0]
+    assert shots == pytest.approx([1.0, 2.0, 3.0, 6.148, 7.148, 8.148])
 
 
 def test_rate_of_fire_for_unknown_weapon_raises():
@@ -148,13 +151,13 @@ def test_rate_of_fire_for_unknown_weapon_raises():
 
 def test_magazine_last_bullet_times_marks_the_final_round_of_each_magazine():
     # Same scenario as test_magazine_reloads_after_emptying_then_resumes:
-    # shots at [0, .1, .2, .3, .4, 1.5, 1.6, 1.7, 1.8, 1.9] - the round that
-    # actually empties each 5-round magazine is index 4 within it (t=0.4,
-    # t=1.9), not any other shot.
+    # shots at [0, .1, .2, .3, .4, 1.648, ...] - the round that actually empties
+    # each 5-round magazine is index 4 within it (t=0.4, t=2.048), not any
+    # other shot.
     last_bullets = magazine_last_bullet_times(
         rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=3.0,
     )
-    assert last_bullets == {0.4, 1.9}
+    assert sorted(last_bullets) == pytest.approx([0.4, 2.048])
 
 
 def test_magazine_last_bullet_times_tracks_live_max_ammo_percent():
@@ -183,12 +186,12 @@ def test_magazine_last_bullet_times_does_not_mark_a_fight_duration_truncated_sho
 
 def test_charge_last_bullet_times_marks_the_final_round_of_each_magazine():
     # Same scenario as test_charge_shots_fire_max_ammo_rounds_before_reloading:
-    # shots at [1, 2, 3, 6, 7, 8] - the round that empties each 3-shot
-    # magazine is the 3rd (t=3.0, t=8.0).
+    # shots at [1, 2, 3, 6.148, 7.148, 8.148] - the round that empties each
+    # 3-shot magazine is the 3rd (t=3.0, t=8.148).
     last_bullets = charge_last_bullet_times(
         charge_time=1.0, reload_time=2.0, max_ammo=3, fight_duration=9.0,
     )
-    assert last_bullets == {3.0, 8.0}
+    assert sorted(last_bullets) == pytest.approx([3.0, 8.148])
 
 
 def test_last_bullet_shot_times_dispatches_by_weapon_type():
@@ -207,7 +210,7 @@ def test_last_bullet_shot_times_dispatches_by_weapon_type():
     charge_last_bullets = last_bullet_shot_times(
         weapon="RL", max_ammo=3, reload_time=2.0, charge_time=1.0, fight_duration=9.0,
     )
-    assert charge_last_bullets == {3.0, 8.0}
+    assert sorted(charge_last_bullets) == pytest.approx([3.0, 8.148])
 
 
 def test_last_bullet_shot_times_is_always_a_subset_of_generate_shot_times():
@@ -228,7 +231,7 @@ def test_magazine_first_bullet_times_marks_each_magazine_start_including_t0():
     first_bullets = magazine_first_bullet_times(
         rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=3.0,
     )
-    assert first_bullets == {0.0, 1.5}
+    assert sorted(first_bullets) == pytest.approx([0.0, 1.648])
 
 
 def test_first_bullet_shot_times_ar_marks_each_magazine_start():
@@ -237,7 +240,7 @@ def test_first_bullet_shot_times_ar_marks_each_magazine_start():
     first_bullets = first_bullet_shot_times(
         weapon="AR", max_ammo=60, reload_time=1.0, charge_time=0.0, fight_duration=12.5,
     )
-    assert first_bullets == {0.0, 6.0, 12.0}
+    assert sorted(first_bullets) == pytest.approx([0.0, 6.148, 12.296])
 
 
 def test_charge_first_bullet_times_is_one_effective_charge_after_magazine_start():
@@ -246,7 +249,7 @@ def test_charge_first_bullet_times_is_one_effective_charge_after_magazine_start(
     first_bullets = charge_first_bullet_times(
         charge_time=1.0, reload_time=2.0, max_ammo=3, fight_duration=9.0,
     )
-    assert first_bullets == {1.0, 6.0}
+    assert sorted(first_bullets) == pytest.approx([1.0, 6.148])
 
 
 def test_charge_first_bullet_beyond_fight_duration_is_excluded():
@@ -282,15 +285,15 @@ def test_magazine_attack_speed_up_shortens_shot_interval():
 
 def test_magazine_attack_speed_is_evaluated_per_magazine():
     # +1.0 for the first magazine (start t=0), 0 afterwards. First magazine's
-    # interval is 0.05s (5 rounds: 0..0.2), empties at 0.25, reload 1.0 -> next
-    # magazine at 1.25 fires at the base 0.1s interval.
+    # interval is 0.05s (5 rounds: 0..0.2), empties at 0.25, reload 1.148 ->
+    # next magazine at 1.398 fires at the base 0.1s interval.
     def attack_speed(t):
         return 1.0 if t < 1.0 else 0.0
     shots = generate_magazine_shot_times(
         rate_of_fire=10.0, max_ammo=5, reload_time=1.0, fight_duration=1.6,
         attack_speed_percent_at=attack_speed,
     )
-    assert [round(t, 4) for t in shots] == [0.0, 0.05, 0.1, 0.15, 0.2, 1.25, 1.35, 1.45, 1.55]
+    assert [round(t, 4) for t in shots] == [0.0, 0.05, 0.1, 0.15, 0.2, 1.398, 1.498, 1.598]
 
 
 def test_magazine_attack_speed_default_is_inert():
@@ -855,32 +858,60 @@ def _shot_times(reload_time, duration=60.0):
         _centi_weapon(reload_time), [], duration)]
 
 
-def test_centis_clip_reload_reproduces_her_measured_cadence():
-    # Fienn timed her at 1.617 sec a shot. Six shots at charge + pause is
-    # 8.2 sec; the three 0.5 sec loads close the cycle at 9.7, and 9.7 / 6 is
-    # 1.6167. Modelling one reload gives 8.7 / 6 = 1.45 - about 11% fast.
+def test_centis_clip_reload_costs_three_loads_not_one():
+    """Her three 0.5-sec loads, not one - the clip fix this pins.
+
+    Fienn timed her at 1.617 sec a shot: six shots at charge + pause is 8.2 sec
+    and three loads close the cycle at 9.7. Modelling ONE reload gives 8.7 / 6 =
+    1.45, about 11% fast, which is the error this test exists to catch.
+
+    The engine now reads 9.848 rather than 9.7, because the affine reload model
+    adds a fixed 0.148-sec segment to every reload and Fienn ruled that segment
+    global (2026-07-31) even though her loads measure the file value exactly.
+    So this pins the load COUNT - the thing the clip fix decides - and records
+    that the cadence sits 0.148 sec above her reading by that ruling. If the
+    fixed segment is ever measured per weapon class, her 9.7 comes back.
+    """
     clip = _shot_times(1.5)
-    assert round(clip[6] - clip[0], 4) == 9.7
-    assert round((clip[6] - clip[0]) / 6, 4) == 1.6167
+    single = _shot_times(0.5)
+    assert round(clip[6] - clip[0], 4) == 9.848
+    assert round(single[6] - single[0], 4) == 8.848   # one load: still 11% fast
+    assert round((clip[6] - clip[0]) / 6, 4) == 1.6413
 
 
 def test_the_clip_reload_only_moves_shots_after_the_magazine_empties():
     # The loads run back-to-back once the magazine is out, so her first six
-    # shots are untouched and the seventh is a full second later.
+    # shots are untouched and the seventh is a full second later - the two extra
+    # loads, and only those. The fixed reload segment lands once either way, so
+    # it cancels out of that one-second difference.
     clip, single = _shot_times(1.5), _shot_times(0.5)
     assert clip[:6] == single[:6]
-    assert round(clip[6], 4) == 11.0667
-    assert round(single[6], 4) == 10.0667
-    assert round(clip[11], 4) == 17.9
-    assert len(clip) == 37
+    assert round(clip[6], 4) == 11.2147
+    assert round(single[6], 4) == 10.2147
+    assert round(clip[11], 4) == 18.048
+    assert len(clip) == 36
     assert len(single) == 41
 
 
 @pytest.mark.parametrize("speed", [0.2969, 0.8085, -0.5])
-def test_load_count_multiplies_cleanly_through_a_reload_speed_buff(speed):
-    # Why the multiplication is allowed to happen at roster assembly instead of
-    # inside attack_rate: reload_time_with_speed is linear in reload_time on
-    # both its branches, so scaling before or after a buff is the same number.
-    # (0.2969 is the cube, 0.8085 cube + Privaty, -0.5 the negative branch.)
-    assert (reload_time_with_speed(0.5 * 3, speed)
-            == pytest.approx(reload_time_with_speed(0.5, speed) * 3, abs=1e-12))
+def test_the_scaled_part_multiplies_cleanly_through_a_reload_speed_buff(speed):
+    """Why the load count may be multiplied at roster assembly rather than
+    inside attack_rate: the buff scales the file value linearly, so scaling
+    before or after it is the same number. (0.2969 is the cube, 0.8085 cube +
+    Privaty, -0.5 the negative direction.)"""
+    scaled = lambda t: reload_time_with_speed(t, speed) - RELOAD_FIXED_SECONDS
+    assert scaled(0.5 * 3) == pytest.approx(scaled(0.5) * 3, abs=1e-12)
+
+
+@pytest.mark.parametrize("speed", [0.0, 0.2969, -0.5])
+def test_a_clip_weapon_pays_the_fixed_segment_once_per_magazine(speed):
+    """The fixed segment is NOT linear, and that is the point. Folding Centi's
+    three loads into one 1.5-sec file value charges the segment once for the
+    magazine; charging it per load would add it three times. Once is the
+    convention Fienn confirmed for the charge motion delay on the same reload
+    (2026-07-31)."""
+    folded = reload_time_with_speed(0.5 * 3, speed)
+    per_load = 3 * reload_time_with_speed(0.5, speed)
+    assert per_load - folded == pytest.approx(2 * RELOAD_FIXED_SECONDS)
+
+

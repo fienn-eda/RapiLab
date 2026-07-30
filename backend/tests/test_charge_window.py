@@ -157,7 +157,7 @@ def test_a_reload_inside_the_window_still_splits_the_two_counts():
     times = shot_times(small, start_charged=True)
     expected = (small.window_seconds - times[-1]) / shot_interval(small)
     assert got.high_probability == pytest.approx(expected)
-    assert got.high_probability == pytest.approx(0.586, abs=0.005)
+    assert got.high_probability == pytest.approx(0.570, abs=0.005)
     assert got.low_probability == pytest.approx(1 - got.high_probability)
 
 

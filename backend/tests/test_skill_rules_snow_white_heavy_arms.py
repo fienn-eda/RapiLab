@@ -239,9 +239,10 @@ def test_e2e_burst_opens_fully_active_segment_which_spends_her_own_magazine():
     assert seg_shots == [pytest.approx(8.2), pytest.approx(11.4)]
     # Four base rounds before the burst interrupts the fifth charge.
     assert [t for t in shots if t < 5.0] == [1.2, 2.4, pytest.approx(3.6), 4.8]
-    # Magazine empty at 11.4 -> reload (2.0s) then one 1.2s charge = 14.6.
-    # Under the old fresh-magazine resume this shot landed at 12.6.
-    assert min(t for t in shots if t > 12.0) == pytest.approx(14.6)
+    # Magazine empty at 11.4 -> reload (file 2.0 plus the fixed 0.148 segment)
+    # then one 1.2s charge = 14.748. Under the old fresh-magazine resume this
+    # shot landed at 12.6.
+    assert min(t for t in shots if t > 12.0) == pytest.approx(14.748)
 
     per_shot = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
     segment_pulses = [e for e in per_shot if e["time"] in seg_shots]

@@ -1,3 +1,5 @@
+import pytest
+
 """Gap #9: the "first_bullet" per-shot mode (fires on the round that OPENS
 each magazine, including t=0 - "at the start of battle and upon reloading to
 Max Ammunition"), the RoundGrant second-pass refactor it needs (a grant
@@ -41,11 +43,12 @@ def _run(attacker_rules=(), per_shot_rules=None, periodic_nukes=None,
 
 
 def test_first_bullet_mode_fires_exactly_at_magazine_opening_shots():
-    # AR 12/s, 12 ammo, 1s reload: magazines open at t=0.0 and t=2.0.
+    # AR 12/s, 12 ammo, 1s file reload (1.148 with the fixed segment):
+    # magazines open at t=0.0 and t=2.148.
     per_shot = {"attacker": [(None, "first_bullet", [instant_nuke_pulse_rule("per_shot", 100.0)])]}
     result = _run(per_shot_rules=per_shot)
     nukes = [e["time"] for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
-    assert nukes == [0.0, 2.0]
+    assert nukes == pytest.approx([0.0, 2.148])
 
 
 def test_first_bullet_round_grant_covers_the_next_shots_of_the_same_unit():

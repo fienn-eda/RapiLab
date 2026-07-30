@@ -319,7 +319,15 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     )["total_damage"]
 
     assert dmg_with > dmg_without
-    # Golden pin. Re-baselined 2026-07-28 (latest): Anis: Star's Shooting Stars
+    # Golden pin. Re-baselined 2026-07-31 (latest): the reload model went affine
+    # (`file * (1 - s) + 0.148`), which is exactly this path. The cube's 29.69%
+    # now takes 29.69% off the SCALED part instead of dividing the whole reload,
+    # so the buff's delta grows: 35,136,487 -> 48,010,901, and the RATIO rises
+    # 1.047400 -> 1.064400. Unlike the two entries below, this one IS the reload
+    # path moving rather than the base being diluted around it - which is
+    # exactly what this pin's split into ratio + delta exists to show.
+    #
+    # Re-baselined 2026-07-28: Anis: Star's Shooting Stars
     # collect the core hit bonus and carry projectile_explosion damage, both
     # settled by Fienn's range footage. Her ticks are a fixed 40 per cycle that
     # no reload buff buys more of, so this only grows the BASE: 711.0M -> 741.3M
@@ -386,12 +394,12 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # each of her shots occupies 1.4 sec rather than 1.0. The RATIO FELL
     # 1.0529 -> 1.0494, which is the point of the delay: a reload saving buys
     # the same seconds back, but seconds are worth fewer shots now.
-    assert round(dmg_with / dmg_without, 4) == 1.0474
+    assert round(dmg_with / dmg_without, 4) == 1.0644
     # Pin the DELTA too, not just the ratio: the ratio moves whenever anything
     # in this deck's damage moves, but a reload-speed change is the only thing
     # that may move the delta. Splitting them is what stops a re-baseline from
     # quietly absorbing a real regression in the reload path.
-    assert round(dmg_with - dmg_without, 0) == 35_136_487.0
+    assert round(dmg_with - dmg_without, 0) == 48_010_901.0
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

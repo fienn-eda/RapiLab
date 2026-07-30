@@ -5,6 +5,8 @@ Ein's feathers only needed her burst times, but damage hung off a unit's firing
 the engine already generates. They ride on the context, so the schedule callable
 keeps its (context, fight_duration) signature.
 """
+
+import pytest
 from app.raid_simulator import simulate_raid
 
 WEAPON = {"weapon": "RL", "damage_percent": 61.3, "max_ammo": 6,
@@ -43,8 +45,10 @@ def test_schedule_sees_the_owners_shot_times():
         return []
 
     _run({"b3": [{"schedule": schedule, "percent": 100.0}]}, weapon_stats={"b3": WEAPON})
-    # RL: 1s charge per shot, 6-round magazine, 2s reload.
-    assert seen["times"][:7] == [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 9.0]
+    # RL: 1s charge per shot, 6-round magazine, 2s file reload (2.148 with the
+    # fixed segment), so the seventh shot lands at 6 + 2.148 + 1.
+    assert seen["times"][:7] == pytest.approx(
+        [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 9.148])
 
 
 def test_shot_times_are_empty_for_a_unit_without_weapon_stats():
@@ -74,9 +78,10 @@ def test_a_per_shot_dot_can_be_built_from_the_shot_times():
     # Every shot contributes five ticks, minus any pushed past the fight's end.
     # They deliberately OVERLAP - concurrent ticks at one instant are what
     # "stacks up to 10 times" means.
-    shots = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0,
-             17.0, 18.0, 19.0]
+    shots = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0,
+             9.148, 10.148, 11.148, 12.148, 13.148, 14.148,
+             17.296, 18.296, 19.296]
     expected = [s + n for s in shots for n in range(1, 6) if s + n < 20.0]
-    assert ticks == sorted(expected)
+    assert ticks == pytest.approx(sorted(expected))
     # t=6 sits under five live DoTs at once (from the shots at t=1..5).
     assert ticks.count(6.0) == 5
