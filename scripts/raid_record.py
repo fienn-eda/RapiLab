@@ -16,6 +16,23 @@ docstring as "Water element so Wind attackers get advantage", which reads the
 cycle backwards and instead made the boss Electric-weak. Resolve a boss element
 against `elements.py`, never from prose - see docs/decisions.md.
 
+What sim/record is, and is not
+------------------------------
+The boss has a core AND destructible parts, and parts had to be broken - for the
+gimmick and for what part destruction pays out (Ark: Ranger Black's battery).
+Some decks broke them incidentally with area damage while hitting the core;
+others had to hit the parts DIRECTLY, and a seat doing that gives up core hits
+to do it (Fienn, 2026-07-31).
+
+The engine has no core hit rate: every core-eligible shot hits the core
+(`raid_simulator.CORE_HIT_BONUS`), which is the CEILING of that run, not the run.
+So `sim/record` is expected to sit ABOVE 1.0, and a change that makes normal
+attacks more accurate will RAISE it - that is what the affine reload (1.015 ->
+1.055) and the Tactical Bear refund (1.011 -> 1.015) both did. Do not read a
+combined multiplier moving away from 1.0 as a regression on its own; see
+engine-gaps.md item 21 for how that was pinned down, and
+`scripts/measure_normal_attack_residual.py` to re-derive it.
+
 The numbers
 -----------
 Per-unit damage in absolute damage points, as Fienn read them off the raid's
