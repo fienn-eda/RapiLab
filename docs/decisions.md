@@ -5,6 +5,41 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 기각된 닫힌 수식 스코어러(`closed_form.py`)를 삭제한다 — 죽은 모듈이 살아 있는 경로로 오독됐다
+
+- Date: 2026-07-31
+- Context: `backend/app/closed_form.py`(덱 스코어러, 캐스케이드 옵션 B)는 2026-07-24
+  측정으로 이미 기각된 접근이었다(Spearman 0.54 — 정적 스코어러가 볼 수 있는 건
+  딜의 60%뿐이고, 못 보는 40%가 덱마다 6~62%로 요동해 랭킹이 무너짐. 아래 "캐스케이드
+  대리모델: 표본 회귀 vs 닫힌 수식..." 항목 참조). 그런데 모듈은 코드베이스에 남았고,
+  프로덕션 어느 모듈도 임포트하지 않는데도 `user_roster.py`의 주석이 소비자 넷 중
+  하나로 꼽아 살아 있는 경로처럼 읽혔다. 그 결과 `docs/engine-gaps.md` 갭 #20이
+  "덱 탐색 후보 순위가 움직이고 캘리브레이션 합계가 변할 수 있다"고 잘못 적혔다 —
+  실제로는(모듈이 죽어 있으므로) 아무것도 안 움직인다. 이 오독은 `7cda369`("Correct
+  gap 20: the diverging path is dead code, and the numbers were 19's")로 먼저
+  바로잡혔고, 이 커밋은 그 판정을 실행에 옮긴다.
+- Decision (Fienn, 2026-07-31): `closed_form._shot_count`에 차지 모션 딜레이를
+  배선해 시뮬 경로와 일치시키는 대신, 모듈 자체를 **삭제**한다(`866bb2c`). 같이
+  삭제: `backend/tests/test_closed_form.py`(21건), `test_ammo_refund.py`의 대리
+  발수 테스트 1건. 백엔드 **1689 → 1667 passed/3 skipped**(정확히 22건, 다른
+  커버리지 손실 없음).
+- Alternatives considered:
+  (a) 딜레이를 배선해 두 경로(`closed_form` vs 시뮬)를 일치시킨다 — 기각. 죽은
+  모듈을 정확하게 유지하는 비용만 늘고, 오해의 원인(임포트 안 되는데 소비자로
+  보이는 것) 자체는 그대로 남는다.
+  (b) 그대로 둔다 — 기각. 이미 engine-gaps.md에 문서 오류를 한 번 만들었다.
+- Why: 옵션 B는 이미 데이터로 기각됐고 대체할 계획도 없다 — 코드로만 남겨두는 것은
+  "언젠가 고칠 죽은 코드"가 아니라 "다음 사람이 실수로 살아있다고 믿을 함정"이다.
+- Consequences: 기각 근거를 재생산하는 능력은 보존된다 — `measure_unmodeled_damage_share.py`는
+  애초에 `closed_form`을 임포트하지 않았고(docstring 언급뿐, 표현만 일반화),
+  `validate_surrogate_recall.py`는 `--surrogate closed-form` 모드만 잃고 회귀
+  대리모델(표본 회귀, 채택안) 검증용으로 남는다. 둘 다 스모크 실행으로 정상 동작을
+  확인했다. 삭제 전 코드는 git 이력에 남아 있다(`git show f2dc3a3:backend/app/closed_form.py`).
+  `docs/engine-gaps.md`(갭 #20)·`docs/roadmap.md`도 삭제로 정리했다(별도 커밋).
+  `docs/insights.md`의 "A deck's damage lives in timeline-dependent nukes..."
+  항목은 발견 자체(정적 스코어러가 데미지의 40%를 못 본다)는 여전히 유효하므로
+  남기되, 파일이 더 이상 존재하지 않고 git 이력에 있다는 점을 반영해 갱신했다.
+
 ## 택티컬 베어 큐브는 유닛별 장착 정보를 실기록 전용(`RECORD_CUBES`)으로만 싣는다
 
 - Date: 2026-07-31
