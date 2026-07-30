@@ -44,12 +44,6 @@ function App() {
   const engineVersion = useEngineVersion()
   const [tab, setTab] = useState<Tab>('roster')
 
-  // SyncRosterPanel doesn't yet ask which game server an account should sync
-  // from, so every sync it produces is filed under area 81 (JP) - the same
-  // area the profile store's own migration assumes for pre-existing profiles.
-  const importSyncedRoster = (args: { openId: string; nickname: string; roster: NikkeDraft[] }) =>
-    upsertProfile({ ...args, area: 81 })
-
   const drafts = activeProfile?.roster ?? NO_ROSTER
   const validRoster = useMemo(() => getValidRoster(drafts), [drafts])
 
@@ -99,7 +93,7 @@ function App() {
 
       {activeProfile === null ? (
         <main className="app__main">
-          <SyncRosterPanel onImport={importSyncedRoster} defaultHelpOpen />
+          <SyncRosterPanel onImport={upsertProfile} defaultHelpOpen />
           <div className="empty">
             <p className="empty__text">
               아직 동기화된 계정이 없어요. 위에서 blablalink 동기화를
@@ -137,7 +131,7 @@ function App() {
               hidden={tab !== 'roster'}
               className="panel"
             >
-              <SyncRosterPanel onImport={importSyncedRoster} />
+              <SyncRosterPanel onImport={upsertProfile} />
               {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
               <RosterGrid
                 drafts={drafts}
