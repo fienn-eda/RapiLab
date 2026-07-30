@@ -161,7 +161,7 @@ describe('App', () => {
     expect(await screen.findByRole('heading', { name: 'Red Hood' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Privaty' })).not.toBeInTheDocument()
 
-    await user.selectOptions(screen.getByLabelText('계정'), '부계')
+    await user.selectOptions(screen.getByLabelText('계정'), '부계 (JP)')
 
     expect(screen.getByRole('heading', { name: 'Privaty' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
@@ -209,7 +209,7 @@ describe('App', () => {
     expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
     expect(screen.getByLabelText(/전부 최적화/i)).toBeChecked()
 
-    await user.selectOptions(screen.getByLabelText('계정'), '부계')
+    await user.selectOptions(screen.getByLabelText('계정'), '부계 (JP)')
 
     // A fresh RecommendPanel instance: no in-flight status banner (a new
     // useRecommendRaid, not the one A's never-resolving promise still
@@ -264,7 +264,7 @@ describe('App', () => {
     await user.click(screen.getByRole('button', { name: '계산' }))
     expect(await screen.findByText(/탄창 22발/)).toBeInTheDocument()
 
-    await user.selectOptions(screen.getByLabelText('계정'), '부계')
+    await user.selectOptions(screen.getByLabelText('계정'), '부계 (JP)')
 
     // Account A's ladder is A's roster's answer. Without the profile key the
     // panel keeps its result state and shows it against B's roster.

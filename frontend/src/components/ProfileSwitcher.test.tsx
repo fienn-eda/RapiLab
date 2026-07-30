@@ -45,8 +45,8 @@ describe('ProfileSwitcher', () => {
         onDelete={vi.fn()}
       />,
     )
-    expect(screen.getByRole('option', { name: '본계' })).toBeInTheDocument()
-    expect(screen.getByRole('option', { name: '부계' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '본계 (JP)' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '부계 (JP)' })).toBeInTheDocument()
     expect(screen.getByRole('combobox')).toHaveValue(profileKey('b', 81))
   })
 
@@ -60,7 +60,38 @@ describe('ProfileSwitcher', () => {
         onDelete={vi.fn()}
       />,
     )
-    expect(screen.getByRole('option', { name: 'no-nick' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'no-nick (JP)' })).toBeInTheDocument()
+  })
+
+  it('같은 닉네임의 두 서버 계정을 서버 표기로 구분한다', () => {
+    const profiles = [
+      makeProfile({ openId: '111111', area: 81, nickname: 'FIENN' }),
+      makeProfile({ openId: '111111', area: 83, nickname: 'FIENN' }),
+    ]
+    render(
+      <ProfileSwitcher
+        profiles={profiles}
+        activeKey="111111:83"
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('option', { name: 'FIENN (JP)' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: 'FIENN (KR)' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'FIENN (KR) 프로필 삭제' })).toBeInTheDocument()
+  })
+
+  it('이름이 없는 프로필에도 서버가 붙는다', () => {
+    const profiles = [makeProfile({ openId: '', area: 83, nickname: '' })]
+    render(
+      <ProfileSwitcher
+        profiles={profiles}
+        activeKey=":83"
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('option', { name: '이름 없는 계정 (KR)' })).toBeInTheDocument()
   })
 
   it('calls onSwitch(key) when the selection changes', async () => {
@@ -78,7 +109,7 @@ describe('ProfileSwitcher', () => {
         onDelete={vi.fn()}
       />,
     )
-    await user.selectOptions(screen.getByRole('combobox'), '부계')
+    await user.selectOptions(screen.getByRole('combobox'), '부계 (JP)')
     expect(onSwitch).toHaveBeenCalledWith(profileKey('b', 81))
   })
 
@@ -137,9 +168,9 @@ describe('ProfileSwitcher', () => {
         onDelete={vi.fn()}
       />,
     )
-    expect(screen.getByRole('option', { name: '이름 없는 계정' })).toBeInTheDocument()
+    expect(screen.getByRole('option', { name: '이름 없는 계정 (JP)' })).toBeInTheDocument()
     expect(
-      screen.getByRole('button', { name: '이름 없는 계정 프로필 삭제' }),
+      screen.getByRole('button', { name: '이름 없는 계정 (JP) 프로필 삭제' }),
     ).toBeInTheDocument()
   })
 

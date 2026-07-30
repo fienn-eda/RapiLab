@@ -4,6 +4,7 @@
 // so this renders nothing.
 
 import { profileKey, type Profile } from '../types/profile'
+import { serverLabel } from '../types/server'
 
 interface ProfileSwitcherProps {
   profiles: Profile[]
@@ -14,12 +15,12 @@ interface ProfileSwitcherProps {
 
 const UNNAMED = '이름 없는 계정'
 
-/** A profile goes by its nickname; a sync that could not read one leaves the
- * open_id to stand in. A sync that arrived without either leaves a profile with
- * nothing to show, which must still be nameable so it can be picked out of the
- * dropdown and removed. */
+/** 프로필은 닉네임으로 불리고, 닉네임을 못 읽은 동기화는 open_id가 대신 선다.
+ * 둘 다 없는 동기화가 남긴 프로필도 골라내 지울 수 있어야 하므로 이름이 필요하다.
+ * 서버를 뒤에 붙이는 이유: 한 사람이 두 서버에 같은 닉네임으로 있을 수 있고,
+ * 그러면 닉네임만으로는 어느 쪽인지 알 수 없다. */
 const labelFor = (profile: Profile): string =>
-  profile.nickname || profile.openId || UNNAMED
+  `${profile.nickname || profile.openId || UNNAMED} (${serverLabel(profile.area)})`
 
 export function ProfileSwitcher({
   profiles,
