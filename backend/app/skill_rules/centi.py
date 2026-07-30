@@ -26,6 +26,11 @@ item leaves her burst alone, so both builds share `build_centi_rules`), plus:
   per full charge) decides both buffs' uptime, so it is modeled as a shortened
   periodic cooldown - see `field_discussion_effective_cooldown`.
 
+She is a clip launcher: her 6-round magazine comes back two rounds at a time, so
+the gap after it empties is three 0.5-sec loads rather than one
+(registry.CLIP_RELOAD_SPLITS). Her cadence - and the cooldown cut derived from
+it - accounts for that.
+
 Neither stack cap binds: the cycle is ~5.7 sec against 8- and 10-sec buffs, so at
 most 2 of the 10 stacks are ever live.
 
@@ -35,11 +40,6 @@ Not modeled / deferred:
   has no damage consumer for survivability.
 - In the base build the Full Charge cooldown cut has nothing to accelerate -
   Skill 2 only raises a shield there - so it changes no damage and is left out.
-- She is a CLIP launcher: her 6-round magazine reloads in three 0.5-sec chunks of
-  2 rounds rather than one 0.5-sec reload after the sixth. `attack_rate` models a
-  single reload per magazine, so her cadence - and the cooldown cut derived from
-  it - is optimistic. Shared with the other clip launchers and clip shotguns; see
-  docs/engine-gaps.md.
 """
 from app.skill_rules._helpers import buff_rule
 
@@ -92,7 +92,8 @@ def build_centi_rules(values):
 def _average_shot_interval(weapon_stats):
     """Seconds between her charged shots, averaged across a magazine: the charge
     plus her measured post-shot pause, with the reload spread over the rounds it
-    buys."""
+    buys. `reload_time` is the whole refill, so her three clip loads are already
+    in it (see registry.CLIP_RELOAD_SPLITS) - 1.6167 sec, matching Fienn."""
     per_shot = weapon_stats["charge_time"] + CHARGE_MOTION_DELAY
     return per_shot + weapon_stats["reload_time"] / weapon_stats["max_ammo"]
 

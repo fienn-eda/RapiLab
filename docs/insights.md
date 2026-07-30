@@ -4,6 +4,27 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 「데이터에 없다」는 갭 문서의 단정을 **원본 페이로드로** 검증하라
+
+- 확립: 2026-07-31 (engine-gap #19 클립형 재장전).
+- 갭 #19는 *"게임 데이터 파일에는 `maxAmmo=6`, `reloadTime=0.5`만 있어 분할 횟수가
+  어디에도 없다"* 고 적혀 있었고, 그래서 **유닛별 실측 캠페인이 선행돼야 하는 작업**으로
+  분류돼 미착수로 남아 있었다. 실제로는 ShiftyPad 원본 `detail.shot_detail`에
+  **`reload_bullet`**(10000 = 탄창 100%를 한 번에)이 있었다. 착수 첫 5분에 원본
+  JSON의 필드를 훑는 것으로 갭 전체가 사라졌다.
+- **왜 안 보였나:** `normalize_shiftypad`가 dotgg 모양에 맞춰 무기 **6필드만**
+  뽑는다. 갭을 적은 사람은 정규화된 파일을 봤고, 거기 없으면 원본에도 없다고
+  적었다. **정규화된 데이터에 없다는 것은 원본에 없다는 뜻이 아니다.**
+- 같은 스캔이 덤으로 준 것: 막힌 유닛이 2명이 아니라 **9슬러그**였고, 무기군도
+  런처·샷건이 아니라 **AR(Grave)까지** 포함이었다. 문서의 "2 확인 + 일부 미확인"은
+  추정이었고 원본 전수 스캔은 30초짜리였다.
+- **실무 규칙:** 갭 문서의 "데이터에 없다 / 실측이 필요하다"는 **재확인 대상**이지
+  전제가 아니다. 착수 전에 `data/shiftypad/raw/*.json`의 해당 섹션 키를 전부 찍어
+  볼 것. 아직 미해석으로 남은 필드도 있다 — `reload_start_ammo`는 전 유닛
+  `max_ammo − 1`이라 판별력이 없다.
+- 이것은 「gap을 닫으면 그 사유를 인용한 독스트링을 grep하라」(아래)의 **거울상**이다:
+  낡은 사유가 코드에 남는 것과 같은 방식으로, **틀린 전제가 갭 문서에 남는다.**
+
 ## 시뮬 로그의 데미지는 **크리 기대값**이다 — 논크리 실측과 직접 비교하지 말 것
 
 - 확립: 2026-07-28 (민트 평타 검증 중 하마터면 오진할 뻔했다).
