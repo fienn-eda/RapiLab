@@ -26,9 +26,11 @@ def test_loads_drake_end_to_end_from_real_data_files():
     assert spec.burst_cooldown == 40.0
     assert spec.base_stats == {"atk": 60_000.0, "def": 3_000.0, "max_hp": 1_000_000.0}
     # weapon stats from data/dotgg/char_drake-nikke.json ("damage": "214.3%", maxAmmo 9, ...)
+    # reload_time is the file's 0.5 sec x 3, because Drake is a clip shotgun:
+    # she loads three of her nine rounds at a time (registry.CLIP_RELOAD_SPLITS).
     assert spec.weapon_stats == {
         "weapon": "SG", "damage_percent": 214.3, "max_ammo": 9,
-        "reload_time": 0.5, "charge_time": 0.0, "charge_damage_percent": 100.0,
+        "reload_time": 1.5, "charge_time": 0.0, "charge_damage_percent": 100.0,
     }
     # skill values assembled at max level (DRAKE_SPECIAL fixture ground truth)
     assert float(spec.skill_values["drake_special"]["description_value_01"]) == 1254.0
@@ -120,3 +122,20 @@ def test_a_favorite_item_pair_is_not_fanned_out():
     assert excluded == []
     signature_only, _ = load_roster([_state("miranda-signature")])
     assert [s.slug for s in signature_only] == ["miranda-signature"]
+
+
+def test_a_clip_weapon_carries_the_time_to_refill_the_whole_magazine():
+    # Centi loads two of her six rounds at a time, three times, so the gap after
+    # her magazine empties is 3 x the 0.5 sec in the data file.
+    spec = load_nikke_spec(_state("centi"))
+    assert spec.weapon_stats["reload_time"] == 1.5
+
+
+def test_an_ordinary_weapon_keeps_the_file_reload():
+    spec = load_nikke_spec(_state("liter"))
+    assert spec.weapon_stats["reload_time"] == 1.5  # SMG, one load
+
+
+def test_grave_reloads_her_magazine_in_two_loads():
+    spec = load_nikke_spec(_state("grave"))
+    assert spec.weapon_stats["reload_time"] == 2.0

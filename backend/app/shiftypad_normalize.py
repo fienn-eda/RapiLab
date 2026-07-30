@@ -18,6 +18,7 @@ user_roster.py's loader only ever reads meta["skills"][2]["cooldown"] at
 load time. An encoder who needs skill1/2 cooldowns reads them from the game
 UI directly; this normalizer must not fabricate them.
 """
+import math
 
 # ShiftyPad's element names mostly match dotgg's; "Electronic" is the one
 # exception (dotgg/the engine's elements.py call it "Electric") and must be
@@ -77,6 +78,32 @@ def _skill_levels(skill_detail):
             }
         )
     return levels
+
+
+def clip_reload_splits(shot_detail):
+    """How many separate loads it takes to refill this weapon's magazine.
+
+    `reload_bullet` is the share of the magazine one load restores, fixed-point
+    over 10000, so 10000 is the ordinary "whole magazine at once" and anything
+    lower is a clip weapon: Centi's 3300 fills 33% of her six rounds, two at a
+    time, three times (Fienn watched exactly that on 2026-07-30, which is what
+    pins this reading of the field). The magazine empties first and then the
+    loads run back-to-back - she does not fire between them.
+
+    Deriving the count from the fraction rather than storing rounds-per-load
+    keeps it stable under Overload's Max Ammunition: a bigger magazine gets a
+    proportionally bigger clip, so 33% is three loads at 6, 8 or 12 rounds.
+
+    Not part of `normalize_shiftypad`'s output: that is the dotgg-shaped weapon
+    schema the roster loader reads, and the count deliberately lives in
+    `registry.CLIP_RELOAD_SPLITS` instead - see its comment for why.
+    """
+    share = shot_detail["reload_bullet"] / 10000
+    if share >= 1:
+        return 1
+    max_ammo = shot_detail["max_ammo"]
+    per_load = max(1, round(max_ammo * share))
+    return math.ceil(max_ammo / per_load)
 
 
 def normalize_shiftypad(bundle):

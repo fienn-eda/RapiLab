@@ -26,13 +26,22 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
 1. **Find the slug and fetch data.**
    - **Non-signature units (`skills`, no dollskills) — ShiftyPad first.** This is
      the canonical source for a unit the roster loader must also assemble
-     (weapon stats + skill base values in one fetch, so no manual weapon entry;
-     dotgg is dead for anything released after 2026-05). Run
+     (weapon stats + skill base values in one fetch, so no manual weapon entry).
+     It is the publisher's own data, so it stays first even when dotgg is
+     current — reach for dotgg/lootandwaifus only for what ShiftyPad does not
+     carry (Fienn, 2026-07-31). Run
      `cd tools/collect-blablalink && node collect.js --nikke <rid|name> --headless`
      (public data, no login — it bundles playwright-core), then normalize with
      `python scripts/normalize_shiftypad_raw.py <rid>:<slug>` →
      `data/shiftypad/<slug>.json`. The manifest (step 9) then declares
      `source: "shiftypad"`. See `docs/new-nikke-detection.md`.
+   - **Check the raw bundle for a clip weapon.** If
+     `detail.shot_detail.reload_bullet` in `data/shiftypad/raw/<rid>.json` is not
+     `10000`, she refills her magazine in several loads rather than one and
+     belongs in `registry.CLIP_RELOAD_SPLITS` — leave her out and her cadence is
+     silently optimistic (Centi was 11% fast). The normalized file does NOT carry
+     this field, so it has to be read from the raw bundle.
+     `python scripts/audit_weapon_data.py` catches a miss after the fact.
    - **Still fetch lootandwaifus for the effect text.** ShiftyPad's normalized
      output is value slots; the free-text descriptions that tell you what each
      slot *means* (and the portrait for step 11) come from lootandwaifus. Fetch

@@ -42,8 +42,9 @@ from pathlib import Path
 REPO = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO / "backend"))
 
-from app.shiftypad_normalize import normalize_shiftypad  # noqa: E402
+from app.shiftypad_normalize import clip_reload_splits, normalize_shiftypad  # noqa: E402
 from app.skill_rules.registry import ENCODED_SLUGS  # noqa: E402
+from app.skill_rules.registry import get_clip_reload_splits  # noqa: E402
 from app.skill_rules.registry import get_skill_value_manifest  # noqa: E402
 from app.skill_values import DATA_DIR, load_character_data, load_weapon_data  # noqa: E402
 
@@ -98,6 +99,21 @@ def compare(local: dict, live: dict, fields: tuple[str, ...]) -> dict[str, tuple
     return diffs
 
 
+def reload_splits_diff(slug: str, shot_detail: dict):
+    """(ours, live) when the registry's load count disagrees with the bundle.
+
+    Kept next to the weapon-field comparison because it is the same kind of
+    claim - an engine input that has to still be the game's - but it reads the
+    RAW shot_detail rather than the normalized weapon stats, since the count is
+    deliberately not part of that schema (registry.CLIP_RELOAD_SPLITS holds it,
+    see the comment there). This is what catches a newly onboarded clip Nikke
+    nobody registered: her cadence would otherwise just be quietly optimistic.
+    """
+    ours = get_clip_reload_splits(slug)
+    live = clip_reload_splits(shot_detail)
+    return (ours, live) if ours != live else None
+
+
 def meta_source(manifest: dict, slug: str, weapon_data: dict, data_dir: Path) -> dict:
     """The file the loader reads element/burst/cooldown from, per load_nikke_spec.
 
@@ -133,12 +149,22 @@ def load_live(raw_dir: Path) -> dict[int, dict]:
     return live
 
 
+def load_live_shot_details(raw_dir: Path) -> dict[int, dict]:
+    """resource_id -> raw shot_detail, for the fields normalization drops."""
+    details = {}
+    for path in sorted(raw_dir.glob("*.json")):
+        bundle = json.loads(path.read_text(encoding="utf-8"))
+        details[int(path.stem)] = bundle["detail"]["shot_detail"]
+    return details
+
+
 def audit(raw_dir: Path, data_dir: Path = DATA_DIR) -> list[dict]:
     id_to_slug = parse_slug_map()
     slug_to_rid: dict[str, int] = {}
     for rid, slug in sorted(id_to_slug.items()):
         slug_to_rid.setdefault(slug, rid)
     live_by_rid = load_live(raw_dir)
+    shot_by_rid = load_live_shot_details(raw_dir)
 
     rows = []
     for slug in ENCODED_SLUGS:
@@ -178,11 +204,13 @@ def audit(raw_dir: Path, data_dir: Path = DATA_DIR) -> list[dict]:
             if ours_cd is not None and live_cd is not None and float(ours_cd) != float(live_cd)
             else None
         )
+        splits_diff = reload_splits_diff(slug, shot_by_rid[rid])
         rows.append(
             {
                 **row,
-                "verdict": "MISMATCH" if weapon_diffs else "ok",
+                "verdict": "MISMATCH" if weapon_diffs or splits_diff else "ok",
                 "weapon_diffs": weapon_diffs,
+                "reload_splits_diff": splits_diff,
                 "meta_diffs": meta_diffs,
                 "burst_cooldown_diff": cooldown_diff,
             }
@@ -213,6 +241,9 @@ def main(argv: list[str]) -> int:
             print(f"            {field}: ours={local!r} shiftypad={live!r}")
         for field, (local, live) in row.get("meta_diffs", {}).items():
             print(f"            (meta) {field}: ours={local!r} shiftypad={live!r}")
+        if row.get("reload_splits_diff"):
+            ours, live = row["reload_splits_diff"]
+            print(f"            (reload splits) ours={ours} shiftypad={live}")
         if row.get("burst_cooldown_diff"):
             ours, live = row["burst_cooldown_diff"]
             print(f"            (burst cooldown) ours={ours} shiftypad={live}")

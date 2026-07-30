@@ -20,6 +20,7 @@ from app.skill_rules.registry import (
     ENCODED_SLUGS,
     MODE_VARIANTS,
     VARIANT_BURST_TIERS,
+    get_clip_reload_splits,
     get_skill_value_manifest,
     get_weapon_profile_override,
 )
@@ -74,6 +75,25 @@ def load_nikke_spec(
         skill_values = assemble_skill_values(
             slug, manifest, state.skill_levels.model_dump(), data_dir
         )
+        # A clip weapon empties its magazine and then loads it back in several
+        # goes, so the gap before the next magazine is that many file reloads.
+        # Folded into the weapon's own reload_time because every consumer - the
+        # deck simulation, closed_form's shot count, the charge-window
+        # calculator, and caster_weapon_stats - already reads that field as
+        # "the pause after the magazine runs out". Multiplying here rather than
+        # in attack_rate leaves all nine of its reload call sites untouched;
+        # reload_time_with_speed is linear in reload_time on both branches, so
+        # the order does not matter. If the affine reload model lands
+        # (docs/engine-gaps.md), whether its fixed 0.148 sec segment is per load
+        # or per magazine has to be settled before this fold stays correct.
+        #
+        # Before the mode override, not after: the count describes the weapon
+        # this unit was collected with, and an override REPLACES that weapon
+        # (Cinderella: Crystal Wave's snipe profile swaps her MG for an SR), so
+        # it carries its own reload behaviour rather than the old weapon's.
+        splits = get_clip_reload_splits(slug)
+        if splits > 1:
+            weapon_stats = {**weapon_stats, "reload_time": weapon_stats["reload_time"] * splits}
         override = get_weapon_profile_override(slug, skill_values, weapon_stats)
         if override is not None:
             weapon_stats = override

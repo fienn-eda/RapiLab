@@ -882,16 +882,30 @@
 
 ### 클립형 재장전 (2026-07-30, Centi 인코딩에서 발견)
 
-- [ ] **클립 런처·클립 샷건의 분할 재장전을 모델링한다 (engine-gap #19).** 일부
-      런처·샷건은 탄창을 정수 단위로 N등분해 장전을 N번 한다 — Centi는 6발을 2발씩
-      0.5초씩 세 번. `attack_rate`는 "탄창당 재장전 1회"만 알아서 케이던스가 낙관적
-      (Centi 발당 1.45초 vs 실제 1.617초, 약 11%). Fienn 결정(2026-07-30): 유닛별로
-      찔끔 고치지 말고 **모아서 한 번에** 처리한다.
-      - [ ] 클립형 유닛 명단 확정 — 분할 수는 게임 데이터 파일에 없으므로 Fienn 실측이
-            필요하다(`TIMED_CHARGE_MOTION_DELAY`와 같은 성격의 상수 테이블).
-      - [ ] `attack_rate`에 유닛별 `reload_splits`(기본 1) 도입, 탄창 균등 분할.
-      - [ ] `centi-signature`의 유효 쿨다운 재확인 — 그녀의 스킬2 주기가 발당 간격에서
-            나오므로 이 갭이 그대로 버프 가동률로 전파된다.
+- [x] **클립 무기의 분할 재장전을 모델링한다 (engine-gap #19) — 완료 (2026-07-31).**
+      Centi 발당 1.45 → **1.6167초**(Fienn 실측), 60초 발수 41 → 37.
+      - [x] 클립형 유닛 명단 확정 — **실측은 필요 없었다.** 분할 수는 ShiftyPad 원본
+            `shot_detail.reload_bullet`에 있다(10000 = 탄창 100%를 한 번에).
+            정규화가 무기 6필드만 뽑아 안 보였을 뿐. 명단은 **9슬러그**이고
+            런처·샷건뿐 아니라 **Grave(AR)** 도 포함이다.
+      - [x] `reload_splits` 도입 — 단, `attack_rate`가 아니라
+            `user_roster.load_nikke_spec`이 `reload_time`에 한 번 곱한다.
+            `attack_rate.py`는 무변경(`reload_time_with_speed`가 선형).
+            값은 `registry.CLIP_RELOAD_SPLITS`, 대조는 `audit_weapon_data.py`.
+      - [x] `centi-signature`의 유효 쿨다운 재확인 — 5.7378 → **5.9605초**로
+            전파되며 테스트가 양쪽을 고정한다.
+      - [x] 덤: `sync_worktree_data.py`가 하위 디렉터리를 안 옮겨 워크트리에서
+            `audit_weapon_data.py`가 항상 "no-live 95"였던 것을 고쳤다.
+
+### 덱 탐색 발수와 시뮬 발수가 어긋난다 (2026-07-31, gap #19 작업 중 발견)
+
+- [ ] **`closed_form`의 발수에 차지 모션 딜레이를 반영한다 (engine-gap #20).**
+      `closed_form._shot_count`가 부르는 `generate_shot_times`에는 딜레이 인자가
+      없고 캐시 키에도 없어, 시뮬 경로(`_base_shot_records`)와 **같은 유닛에 다른
+      발수**를 준다 — `TIMED_CHARGE_MOTION_DELAY` 13슬러그, Centi 기준 60초에
+      41발 vs 37발. Fienn 결정(2026-07-31): 클립 재장전과 **분리**해서 처리한다.
+      - [ ] 수정 후 덱 탐색 추천 결과와 캘리브레이션 합계(현재 1.010x) 변화 측정 —
+            5덱에 차지 유닛이 있어 움직일 수 있다.
 
 ### 추천 기능 라이브 감사 (2026-07-25, 실제 로스터 159기로 브라우저 실행)
 

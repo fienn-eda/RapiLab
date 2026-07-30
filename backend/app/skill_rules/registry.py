@@ -1081,6 +1081,34 @@ def get_charge_motion_delay(slug):
     return _CHARGE_MOTION_DELAY.get(slug, 0.0)
 
 
+# Nikkes who refill a magazine in several loads instead of one. The count comes
+# from ShiftyPad's `shot_detail.reload_bullet` (see
+# shiftypad_normalize.clip_reload_splits) and is written here rather than read
+# live because every data/ directory is gitignored: a checkout without the raw
+# bundles would silently fall back to a single reload, which reads as an 11%
+# faster cadence rather than as missing data. `scripts/audit_weapon_data.py`
+# compares this table against the bundles whenever they ARE present.
+#
+# Not only launchers and shotguns - Grave is an AR that reloads in halves.
+CLIP_RELOAD_SPLITS = {
+    "centi": 3,                  # RL, 6 rounds two at a time
+    "centi-signature": 3,
+    "drake": 3,                  # SG, 9 rounds three at a time
+    "drake-signature": 3,
+    "sugar": 3,
+    "sugar-signature": 3,
+    "noir": 3,
+    "soda-twinkling-bunny": 3,
+    "grave": 2,                  # AR, 60 rounds in halves
+}
+
+
+def get_clip_reload_splits(slug):
+    """How many loads this Nikke needs to refill her magazine; 1 for nearly
+    everyone - see `CLIP_RELOAD_SPLITS`."""
+    return CLIP_RELOAD_SPLITS.get(slug, 1)
+
+
 def get_burst_resolves_after_cast(slug):
     """Whether this Nikke's burst nuke resolves a beat AFTER the cast rather
     than at it - see `_BURST_RESOLVES_AFTER_CAST`. False for the vast majority,

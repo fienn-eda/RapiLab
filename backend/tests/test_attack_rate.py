@@ -809,3 +809,49 @@ def test_scarlet_keeps_her_measured_cadence_after_the_split():
     # looser bound than the difference above.
     assert solo == pytest.approx(0.73371, abs=0.35 * frame)
     assert accompanied == pytest.approx(0.54352, abs=0.35 * frame)
+
+
+def _centi_weapon(reload_time):
+    """Centi's real weapon profile: RL, 6 rounds, 1.0 sec charge, and the 22
+    frame pause Fienn timed between a shot and the next charge."""
+    return {
+        "weapon": "RL", "charge_time": 1.0, "max_ammo": 6,
+        "reload_time": reload_time, "damage_percent": 100.0,
+        "charge_damage_percent": 250.0, "charge_motion_delay": 22 / 60,
+    }
+
+
+def _shot_times(reload_time, duration=60.0):
+    return [r.time for r in generate_segmented_shots(
+        _centi_weapon(reload_time), [], duration)]
+
+
+def test_centis_clip_reload_reproduces_her_measured_cadence():
+    # Fienn timed her at 1.617 sec a shot. Six shots at charge + pause is
+    # 8.2 sec; the three 0.5 sec loads close the cycle at 9.7, and 9.7 / 6 is
+    # 1.6167. Modelling one reload gives 8.7 / 6 = 1.45 - about 11% fast.
+    clip = _shot_times(1.5)
+    assert round(clip[6] - clip[0], 4) == 9.7
+    assert round((clip[6] - clip[0]) / 6, 4) == 1.6167
+
+
+def test_the_clip_reload_only_moves_shots_after_the_magazine_empties():
+    # The loads run back-to-back once the magazine is out, so her first six
+    # shots are untouched and the seventh is a full second later.
+    clip, single = _shot_times(1.5), _shot_times(0.5)
+    assert clip[:6] == single[:6]
+    assert round(clip[6], 4) == 11.0667
+    assert round(single[6], 4) == 10.0667
+    assert round(clip[11], 4) == 17.9
+    assert len(clip) == 37
+    assert len(single) == 41
+
+
+@pytest.mark.parametrize("speed", [0.2969, 0.8085, -0.5])
+def test_load_count_multiplies_cleanly_through_a_reload_speed_buff(speed):
+    # Why the multiplication is allowed to happen at roster assembly instead of
+    # inside attack_rate: reload_time_with_speed is linear in reload_time on
+    # both its branches, so scaling before or after a buff is the same number.
+    # (0.2969 is the cube, 0.8085 cube + Privaty, -0.5 the negative branch.)
+    assert (reload_time_with_speed(0.5 * 3, speed)
+            == pytest.approx(reload_time_with_speed(0.5, speed) * 3, abs=1e-12))

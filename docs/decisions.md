@@ -36,6 +36,54 @@ catalog, see the `nikke-skill-encoding` skill, not here.
   내놓는 덱은 여전히 전원 렐릭 베어로 계산되므로, 실제로 택티컬 베어를 낀 유저의
   화면상 기대 대미지는 이 결정이 남아있는 한 구조적으로 어긋난다 — 유저 큐브 선택
   UI가 생기기 전까지의 알려진 한계다.
+## 클립 분할 수는 데이터에서 유도하되 값은 코드에 둔다
+
+- Date: 2026-07-31
+- Context: 클립 무기의 장전 횟수는 ShiftyPad 원본 `shot_detail.reload_bullet`에
+  있다(10000 = 탄창 100%를 한 번에). 방침상 ShiftyPad가 1순위 출처이므로 값의
+  출처는 정해져 있는데, **`data/` 디렉터리가 전부 gitignore**라 런타임에 파일에서
+  읽을지 코드에 적을지가 갈렸다. 게다가 이 필드는 ShiftyPad에만 있다 —
+  dotgg·lootandwaifus의 캐릭터 파일은 무기 스탯 6종만 담고, 클립 9슬러그 중
+  drake·drake-signature·noir·soda-twinkling-bunny·grave는 무기 출처가 그쪽이다.
+- Decision: 유도 함수는 `shiftypad_normalize.clip_reload_splits`(원본
+  `shot_detail`을 받는 순수 함수, `normalize_shiftypad`의 출력에는 넣지 않음),
+  값은 `registry.CLIP_RELOAD_SPLITS`, 데이터와의 정합은
+  `scripts/audit_weapon_data.py`가 일곱 번째 감사 필드로 지킨다.
+- Why: 데이터에서 런타임에 읽으면 raw 번들이 없는 체크아웃에서 조용히 단일
+  재장전으로 되돌아가는데, 그 실패는 **"데이터 없음"이 아니라 "11% 빠른
+  케이던스"로 보인다**. `_CHARGE_MOTION_DELAY`도 출처는 Fienn 실측이고 위치는
+  코드다 — 「출처 규칙」과 「런타임 읽기 방식」은 다른 질문이다.
+- 기각한 대안: **클립 4유닛의 `weapon_source`를 ShiftyPad로 옮기기.** 무기 6필드가
+  이미 ShiftyPad와 **완전히 동일**함을 확인했으므로 얻는 게 없고,
+  `data/shiftypad/<slug>.json` 4개가 git에 없어 그 파일이 없는 체크아웃에서
+  `load_nikke_spec`이 `None`을 반환해 **유닛이 조용히 로스터에서 빠진다**.
+- Consequences: 신규 클립 니케는 사람이 테이블에 등록해야 한다. 그 누락은
+  감사 스크립트가 잡고(`reload_splits_diff`), `nikke-skill-encoding` 스킬의 데이터
+  확인 단계에도 한 줄로 들어갔다. 감사는 raw 번들이 수집된 뒤에만 답할 수 있으므로
+  두 곳 다 필요하다.
+
+## 클립 재장전은 곱셈 한 번으로 접는다 — `attack_rate`는 안 건드린다
+
+- Date: 2026-07-31
+- Context: 클립 무기는 탄창을 다 비운 뒤 장전을 n회 **연속**으로 하고, 모션 딜레이는
+  그 뒤 1회만 붙는다(Fienn). `attack_rate`에는 재장전을 계산하는 지점이 9곳 있고,
+  각각에 `reload_splits`를 흘려보내는 방법과 `reload_time` 자체를 미리 곱해두는
+  방법이 있었다.
+- Decision: `user_roster.load_nikke_spec`에서 `weapon_stats["reload_time"]`에 분할
+  수를 한 번 곱한다. `attack_rate.py`는 무변경.
+- Why: `NikkeSpec.weapon_stats`가 단일 깔때기라 소비자 넷(덱 시뮬 · `closed_form`
+  발수 · 차지창 계산기 · `caster_weapon_stats`)이 전부 자동으로 고쳐진다.
+  `reload_time_with_speed`는 양의 가지(`rt / (1+s)`)와 음의 가지(`rt × (1−s)`)
+  모두 `reload_time`에 **선형**이라 곱셈 순서가 결과를 안 바꾼다(테스트로 고정).
+  그리고 소비자 전원이 이 필드를 이미 "탄창이 빈 뒤의 정지 시간"으로 읽고 있으므로
+  의미가 오히려 정확해진다.
+- 곱셈은 **무기 프로필 오버라이드 앞**이다: 분할 수는 **수집된 무기**의 성질이고
+  오버라이드는 무기를 교체한다(Cinderella: Crystal Wave의 스나이프 프로필은 MG를
+  SR로 바꾼다). 교체된 무기가 옛 무기의 분할 수를 이어받을 이유가 없다.
+- Consequences: **아핀 재장전 모델**(`파일값 × (1−s) + 0.148초`, engine-gaps ★)이
+  착륙하면 고정 0.148초가 클립마다 붙는지 재장전당 한 번인지 갈라야 하고, 그때
+  이 접기를 다시 봐야 한다. 센티 실측(클립당 0.5초, 사이클 9.7초)은 클립마다 붙지
+  **않는** 쪽과 맞는다.
 
 ## 차지속도 오버로드는 굴림별로 정수 %에 반올림된다 — 그래서 굴림을 실어 나른다
 
