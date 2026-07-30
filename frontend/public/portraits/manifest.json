@@ -1,7 +1,7 @@
 {
   "source": "lootandwaifus.com",
   "base_url": "https://lootandwaifus.com",
-  "generated": "2026-07-25",
+  "generated": "2026-07-30",
   "note": "Portrait paths read from data/lootandwaifus/char_<slug>.html (data-default-src); regenerate via scripts/download_portraits.py.",
   "portraits": {
     "ada-wong": "mi_c840_00_s.png",
@@ -18,6 +18,8 @@
     "bready-lingering": "mi_c520_00_s.webp",
     "bready-recommended": "mi_c520_00_s.webp",
     "brid-silent-track": "mi_c073_00_s.webp",
+    "centi": "mi_c080_00_s.webp",
+    "centi-signature": "mi_c080_00_s.webp",
     "chisato-nishikigi": "mi_c860_00_s.webp",
     "cinderella": "mi_c511_00_s.webp",
     "cinderella-crystal-wave": "0cindi.webp",

@@ -31,6 +31,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   73: 'brid-silent-track', // Brid: Silent Track
   74: 'soline-frost-ticket', // Soline: Frost Ticket (71 = base Soline, not encoded)
   75: 'diesel-winter-sweets', // Diesel: Winter Sweets - base slug; fans out to -intro/-highlight (MODE_VARIANTS)
+  80: 'centi', // Centi — dual-slot base; promoted per the roster
   82: 'liter', // Liter
   100: 'laplace', // Laplace — dual-slot base; promoted per the roster
   101: 'drake', // Drake — dual-slot base; promoted per the roster
@@ -104,6 +105,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
 // The backend drift test asserts this equals the encoded base/-signature pairs, so a
 // newly encoded dual-slot unit fails the suite until it is added here.
 export const DUAL_SLOT_BASES: ReadonlySet<string> = new Set([
+  'centi',
   'drake', 'flora', 'helm', 'julia', 'laplace', 'miranda', 'moran', 'phantom', 'privaty',
   'rosanna',
   'sugar', 'tove', 'zwei',

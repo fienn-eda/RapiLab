@@ -71,6 +71,8 @@ DISPLAY_NAMES = {
     "arcana-fortune-mate":       "아르카나: 포츈 메이트", # Arcana: Fortune Mate
     "blanc":                     "블랑", # Blanc
     "brid-silent-track":         "브리드: 사일런트 트랙", # Brid: Silent Track
+    "centi":                     "센티",   # Centi
+    "centi-signature":           "센티",    # Centi
     "crown":                     "크라운", # Crown
     "flora":                     "플로라", # Flora
     "flora-signature":           "플로라", # Flora

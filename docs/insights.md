@@ -324,6 +324,23 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   에이드 0.35 · 프리카 0.34 · 흑련 0.43 · 레이븐 1.014. 공용 기본값을 아직 빌려 쓰는
   것은 헬름×2 · 브래디×2 · 벨벳 다섯뿐이다. 현황은 `scripts/audit_charge_motion_delay.py`.
 
+## 차지 케이던스에서 유도한 값은 딜레이·재장전 두 겹으로 민감하다
+
+- 확립: 2026-07-30 (Centi 애장품의 Skill 2 유효 쿨다운 인코딩).
+- 차지 모션 딜레이는 그 유닛의 평타 딜만 바꾸는 게 아니다. **케이던스에서 유도한
+  다른 값**이 있으면(여기서는 Skill 1의 풀차지 쿨감을 환산한 Skill 2의 유효
+  쿨다운) 딜레이 오차가 그 값으로도 전파된다. Centi는 22프레임(Fienn 실측,
+  위 "차지 무기의 발당 간격 ≠ 차지 시간" 참조)을 넣느냐 마느냐로 유효 쿨다운이
+  **5.11초 ↔ 5.74초**로 갈린다. 12%짜리 차이지만 그녀의 딜 기여 전부가 이 쿨다운의
+  가동률에 달려 있다 — 딜레이를 안 물어봤다면 그만큼 조용히 과대평가됐을 것이다.
+- 같은 이유로 재장전 모델 오차도 전파된다 — 클립형 재장전(`docs/engine-gaps.md`
+  #19)이 Centi에서 발견된 것도 이 경로였다: 그녀의 발당 간격(→유효 쿨다운)은
+  6발 탄창의 재장전을 1회로 뭉뚱그린 탓에 1.45초(모델) vs 1.617초(실제)로
+  낙관적이다.
+- 실무 규칙: 차지 무기 유닛에서 "발당 간격"을 읽어 무언가를 유도했다면, 그
+  유도값은 차지 모션 딜레이 답과 재장전 모델의 **양쪽 정확도에 걸려 있다**고
+  명시할 것. See `skill_rules/centi.py::field_discussion_effective_cooldown`.
+
 ## 오버로드 옵션은 7종뿐이고 **재장전 속도는 없다**
 
 - 확립: 2026-07-28 (Fienn). 계기: 깨진 한글 이름을 「재장전 속도 증가」로 잘못 읽었다.
@@ -981,6 +998,7 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 - 발견: 2026-07-24 (Flora 애장품 인코딩 — 두 번 어긋남)
 - "entering Burst Stage **2**"의 2, Iris "HP **90%** 이하"의 90을 버프 값이 아니라고 판단해 슬롯 배정에서 건너뛰었으나, lootandwaifus 파서는 텍스트에 등장하는 모든 숫자를 좌→우로 순서대로 슬롯 번호에 담는다 — 트리거 문구 속 숫자도 예외 없이. `test_skill_value_assembly` 하네스가 즉시 어긋남을 잡아냈다.
 - 교훈: `drop_tokens`로 손수 우회하기 전에 **파서 출력을 먼저 덤프**해서 자연 번호를 채택하는 편이 낫다 — Flora의 경우 자연 번호가 base ShiftyPad 슬롯 번호(01=90, 04=30.97)와도 일치해, base/애장품 두 빌드가 같은 번호 체계를 공유하게 됐다. 이후 Rosanna·Phantom은 "덤프 먼저" 방식으로 한 번에 맞췄다.
+- **재확인, Centi(2026-07-30):** `app.skill_values.extract_lootandwaifus_slots`로 `dollskills[0]`(Maintain Fortification)을 먼저 찍어보니 v01="2"("Skill **2**"의 2), v02="9.16"(쿨감%), v03="2"(또 다른 트리거 문구의 2), v04="5.69"(버프값) 순으로, 값 아닌 숫자가 v01·v03 두 자리를 먹고 있었다. "Stacks up to **10** times", "HP가 **100%** 이하로 떨어지면"류의 비-값 숫자도 마찬가지로 슬롯을 차지한다 — 예외가 아니라 항상 그렇다고 가정할 것. 덤프 먼저 방식으로 자연 번호를 그대로 채택해 `drop_tokens` 없이 조립 하네스를 통과했다(`test_skill_rules_centi_signature.py`).
 
 ## ShiftyPad 캐릭터 상세 페이로드 — 무기 필드는 고정소수점, 스킬 사다리는 전치 필요, 경로 함정 3개
 - 발견: 2026-07-21 ~ 2026-07-22 (무기+기본스킬 데이터원 ShiftyPad 전환, `backend/app/shiftypad_normalize.py`)

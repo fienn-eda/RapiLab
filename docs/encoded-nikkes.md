@@ -3,6 +3,16 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
+- 마지막 갱신: 2026-07-30 — **Centi 애장품 업데이트로 듀얼슬롯 신규 인코딩**
+  (`centi` + `centi-signature`). 애장품이 실드 전용이던 Field Discussion에 딜 버프
+  두 개를 붙여, 그 스킬의 발동 주기가 그녀의 기여 전부를 결정하게 됐다 — 그래서
+  Skill 1의 풀차지 쿨감(9초 × 9.16%/발)을 **유효 쿨다운 5.74초**로 환산해
+  `periodic_rules`에 넘긴다(공칭 9초를 그냥 쓰면 두 버프의 평균 중첩이 실제의
+  약 64%에 그친다 — 중첩 = 지속 ÷ 주기라 9초÷5.74초 = 1.57배 차이).
+  같은 측정에서 **Centi가 클립 런처**임이 확인됐다: 6발 탄창을 2발씩 3분할해
+  0.5초 장전을 세 번 한다. 엔진은 탄창당 1회 재장전만 모델하므로 그녀의
+  케이던스(와 거기서 나온 유효 쿨다운)는 낙관적 — 다른 클립 런처·클립 샷건과
+  묶어 [`engine-gaps.md`](engine-gaps.md) #19로 등록.
 - 마지막 갱신: 2026-07-23 — **신규 출시 온보딩: Maxwell: Ordinary Mechanic(✅) +
   Laplace: Ultimate Hero(🔶).** 둘 다 ShiftyPad(blablalink 공개 데이터, `collect.js
   --nikke`)로 수집 — 무기 스탯 + 스킬값 한 번에, 로그인 불필요. Maxwell은 팀 기여
@@ -48,16 +58,18 @@
   배치별 이력은 git log와
   [`decisions.md`](decisions.md)에, 갭 인벤토리는
   [`engine-gaps.md`](engine-gaps.md)에 있으므로 여기엔 현재 상태만 적는다.
-- 총 **86명**(테이블 행 수) / `ENCODED_SLUGS` **87개** — B1 형태변형
+- 총 **94명**(테이블 행 수) / `ENCODED_SLUGS` **95개** — B1 형태변형
   `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함.
-  (Burst 1: 13명 · Burst 2: 19명 · Burst 3: 54명 — 실제 행 수를 세어 갱신)
+  (Burst 1: 17명 · Burst 2: 21명 · Burst 3: 56명 — 실제 행 수를 세어 갱신)
 - **한 소유 캐릭터가 여러 후보 슬러그로 갈라지는 경우** — `MODE_VARIANTS`(전투 전
   선택이라 덱 탐색이 같은 base의 두 후보를 **동시 편성 금지**): Bready(Taste 2종) ·
   Diesel: Winter Sweets(Intro/Highlight) · Cinderella: Crystal Wave(MG/Snipe) ·
-  Rapi: Red Hood(B3/B1). 시그니처(애장품) 듀얼슬롯(Julia · Drake · Laplace ·
-  Sugar · Flora · Rosanna · Phantom)은 이와 별개로 base와 독립된 roster 엔트리다. 어느 쪽이 로스터에 실리는지는
-  프런트 `SIGNATURE_OWNED`(보유 rid 집합)가 정한다 — Sugar는 아직 미보유라 base로
-  해소된다.
+  Rapi: Red Hood(B3/B1). 시그니처(애장품) 듀얼슬롯(Centi · Drake · Flora · Helm ·
+  Julia · Laplace · Miranda · Moran · Phantom · Privaty · Rosanna · Sugar ·
+  Tove · Zwei)은 이와 별개로 base와 독립된 roster 엔트리다. 어느 쪽이 로스터에
+  실리는지는 프런트 `resolveSlugForUnit`이 **유닛별 `favorite_item` 플래그**로
+  정한다 — 보고할 수 없는 로스터는 base로 해소된다(과소평가는 복구 가능하지만
+  과대평가는 아니므로).
 - **스킬값 매니페스트 커버리지 — 예외 없음:** 전원이 `SKILL_VALUE_MANIFESTS`를
   보유(= API로 조립 가능). `test_skill_value_assembly.py`의
   `KNOWN_MANIFEST_EXCEPTIONS`가 빈 집합이라, 매니페스트 없는 신규 인코딩은
@@ -93,7 +105,7 @@
 | Zwei | `zwei` | Supporter | SG | Electric | ✅ | (base, 2026-07-24 분리) Pierce Equation FB진입 스쿼드 Pierce +20.13%(1 round) + 10.06%/10초 · Frame Analysis FB진입 크리율 +18.63%/**5초** · Overcharge Formula 무기변형(**1.5초** 차지 50.69%, 풀차지 300%, `until_shots:1`) + 스쿼드 Pierce +15.48%/10초. **슬롯 번호 함정**: lootandwaifus는 좌→우 토큰 번호라, 애장품만 상태명 "Pierce Attacks 101"을 말해 리터럴 101이 슬롯 05를 먹고 Pierce를 06/07로 민다(base는 05/06) — 고정 인덱스 공유 시 버프 대신 지속시간을 읽는다. **애장품이 붙여주는 것**(→ `zwei-signature`): 스택형 Pierce(24.99%) · Pierce Attacks 101 크리율 스택 · 크리창 10초 · 버스트 Pierce 25.03% · 차지 1.2초. 보류: Cover HP(생존) |
 | Zwei (애장품) | `zwei-signature` | Supporter | SG | Electric | ✅ | (애장품 빌드, 2026-07-24 분리) Pierce Equation 스쿼드 Pierce(**20.13% 1 round=탄수 버프** + 10.06% 10초)·풀버스트창 노멀공격 스택 Pierce(24.99%/1 round, per-shot FB 게이트)·Frame Analysis 크리율·**Pierce Attacks 101(버스트 10초 창) 노멀공격 크리율 스택 15%/5초·3중첩**(own_status_window 리소스)·스택 Pierce 3중첩 상한(round_buff_rule `cap`, 수혜자별)·버스트 Pierce 모델됨. **(갱신 2026-07-21) Overcharge Formula 무기변형 인코딩 완료** — "Max Ammunition Capacity: 1"이 창을 규정하므로 지속시간이 아니라 **버스트당 단 1발**(Maxwell Pierce Shot과 원문 형태까지 동일, `until_shots: 1`). 1.2초 차지 50.69%, 풀차지 300% = 152%. "Fixed at"이 없으므로 `rate_of_fire`가 아니라 `charge_time`(차지속도 버프를 받음). **dotgg → lootandwaifus 소스 이관** 필요(dotgg엔 차지시간·풀차지 슬롯 없음). E2E **+0.82%**. 보류: Cover HP(생존)뿐 |
 
-## Burst 2 (19명)
+## Burst 2 (21명)
 
 | 이름 | 슬러그 | 클래스 | 무기 | 원소 | 완성도 | 주요 보류 내용 |
 |---|---|---|---|---|---|---|
@@ -115,6 +127,8 @@
 | Velvet | `velvet` | Supporter | SR | Wind | ⚠ | Perfect Execution(버스트 자AD버프, 넉 없음) + **Bullets of Love(그녀의 실제 스쿼드 서포트): 풀버스트 중 풀차지샷마다(SR, N=1) 스쿼드 flat ATK(자ATK의 25.2%)+스쿼드 Charge Damage+100.8%(3초, refresh, Prika 선례 따라 스쿼드스코프)+풀버스트 중 노멀50회마다 자AD+15.03%/5초 + 400.92% 넉("as additional damage"→full_burst_bonus_eligible)**(`per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15) 모델됨. ammo pouch(6000, 버스트 스테이지2마다 풀리필)는 소모량 대비 압도적으로 커서 비제약으로 처리(자원 미모델링). **Sticky Fingers 모델됨(2026-07-18):** 풀버스트 아닐 때 풀차지마다(SR N=1) 자ATK+30.5%/자AD+30.5% 3초 refresh — 신규 `every_outside_full_burst` 모드(gap #7 거울상). Perfect Execution 무기변형딜(7%/발, 10초)은 **편성상 제외 확정(Fienn 2026-07-22)** — 실전은 버스트 미사용 토템(Skill 1/2 버프만)이라 변형이 발동 안 함. Modernia와 동류. "무기변형 미지원" stale 사유를 편성 결정으로 정정 |
 | Rosanna: Chic Ocean | `rosanna-chic-ocean` | Supporter | AR | Wind | ⚠ | (갱신 2026-07-21) **Spina di Rosa 전체 인코딩 완료** — 듀티사이클은 `scheduled_nukes`의 스케줄 콜백으로 해결(캐스트당 15틱, 연속 간격 가정하는 `periodic_nukes`로는 불가). 강제발동이 없으므로 **t=30·60·90·120·150**(Sakura와 달리 t=cd 규칙 그대로) → 5캐스트×15틱×70.4% = **5280%/180초**. 버프 절반(전체 파츠딜+24.26%/15초)은 `periodic_rules`. Ferita 창[0,15)과 겹치지 않아 갱신 불필요. 그녀의 자체 sustained 소스가 생겨 **Onda Grande의 sustained 버프도 이제 실효**. 고정 셸 E2E **+7.75%**. 보류: Ferita 파츠파괴 스택 ATK(gap #2 Pattern B) — 딜 증가분이라 floor |
 | Takina Inoue | `takina-inoue` | Supporter | SR | Iron | ✅ | 버스트 무기변형 인코딩됨(2026-07-22): Fienn 실측 FB 10초 25타 → `until_shots: 25` 세그먼트, 200.64%/발, `damage_type="true"` 고정(같은 bullet의 평타→진댐 변환이 곧 이 샷들 — 자35%·아군140% 진댐 버프 실림). S2는 periodic(cd15s 아군 True Damage▲140%). 부위딜용 stun만 미모델 |
+| Centi | `centi` | Defender | RL | Iron | ✅ | (신규 2026-07-30, base) 딜 기여는 버스트뿐 — Start Construction 145.46% 넉 + **스쿼드 적 DEF ▼14.54%/10초**("남은 HP가 가장 적은 적 5기"는 레이드 보스 1기로 수렴). 미모델: Field Discussion 공유 실드(최종 최대HP 6.38%, 비-DPS) · Maintain Fortification의 풀차지 스킬2 쿨감 9.16%(base에선 실드만 빨라져 딜이 안 변하므로 소비자가 없다). 차지 모션 딜레이 **22프레임 실측**(Fienn, 2026-07-30) |
+| Centi (Signature) | `centi-signature` | Defender | RL | Iron | ⚠ | (신규 2026-07-30, 시그니처/듀얼슬롯) 애장품이 실드 전용이던 스킬2에 딜 버프를 붙인다 — Field Discussion 발동마다 **스쿼드 flat ATK(자 ATK의 4.6%)/8초** + **철갑코드 아군 우월코드 대미지 ▲5.69%/10초**(둘 다 10중첩, `element:Iron` 정확 스코프, `periodic_rules`). 스킬2 주기는 풀차지 쿨감(9초×9.16%/발)을 반영한 **유효 5.74초**. 버스트는 base와 동일. 보류: **클립 런처 재장전**(gap #19) — 유효 쿨다운이 기본 케이던스에서 나오므로 이 갭이 그대로 가동률로 전파되고, 덱 차지속도·Max Ammo 버프도 정적 값이라 미추종 · 실드·Stockpile 힐·버스트 힐 30.2%(비-DPS) |
 | Maxwell: Ordinary Mechanic | `maxwell-ordinary-mechanic` | Supporter | SR | Wind | ✅ | (신규 2026-07-23, ShiftyPad 수집) 팀 기여 전부 모델됨: FB진입 시 스쿼드 AD+10%/5초·버스트 시 스쿼드 flat ATK(자기 최종 최대HP의 1%)/15초 + 스쿼드 AD+25%/10초·Overcurrent 자ATK+30%×최대5스택(버스트당 1스택 램프, escalating refreshing). 버스트가 자체 무기변환이라 넉 없음 → `burst_percent None`. 보류(전부 자체용/inert): Max HP 스택(풀차지마다 1%×30, 딜 inert)·버스트게이지 fill 7.15%(inert)·Matis UberBuster 버스트 무기변환(자체 단발 캐논, Overcurrent 단계별 차지타임 — 서포터 자체딜 미미) |
 
 ## Burst 3 (54명)
