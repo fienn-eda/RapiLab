@@ -23,13 +23,15 @@ import type { NikkeDraft } from './types/nikkeDraft'
 // when there's no active profile (a fresh `?? []` literal would).
 const NO_ROSTER: NikkeDraft[] = []
 
-type Tab = 'roster' | 'recommend' | 'union' | 'charge'
+type Tab = 'roster' | 'recommend' | 'union' | 'calculator'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'roster', label: '니케 풀' },
   { id: 'recommend', label: '솔로 레이드' },
   { id: 'union', label: '유니온 레이드' },
-  { id: 'charge', label: '차지' },
+  // Named for the section rather than for its one occupant: more
+  // calculators are going here (Fienn, 2026-07-31).
+  { id: 'calculator', label: '계산기' },
 ]
 
 function App() {
@@ -195,9 +197,9 @@ function App() {
 
             <div
               role="tabpanel"
-              id="panel-charge"
-              aria-labelledby="tab-charge"
-              hidden={tab !== 'charge'}
+              id="panel-calculator"
+              aria-labelledby="tab-calculator"
+              hidden={tab !== 'calculator'}
               className="panel"
             >
               <ChargeWindowPanel

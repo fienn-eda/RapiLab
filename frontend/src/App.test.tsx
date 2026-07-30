@@ -260,7 +260,7 @@ describe('App', () => {
     })
 
     render(<App />)
-    await user.click(screen.getByRole('tab', { name: '차지' }))
+    await user.click(screen.getByRole('tab', { name: '계산기' }))
     await user.click(screen.getByRole('button', { name: '계산' }))
     expect(await screen.findByText(/탄창 22발/)).toBeInTheDocument()
 
@@ -345,7 +345,7 @@ describe('App', () => {
   })
 })
 
-describe('차지 탭', () => {
+describe('계산기 탭', () => {
   const seedActiveProfile = () =>
     seedProfiles({
       activeKey: ACCT_A,
@@ -365,21 +365,21 @@ describe('차지 탭', () => {
   it('is one of the tabs', () => {
     seedActiveProfile()
     render(<App />)
-    expect(screen.getByRole('tab', { name: '차지' })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: '계산기' })).toBeInTheDocument()
   })
 
   it('shows the calculator when selected', async () => {
     seedActiveProfile()
     render(<App />)
-    await userEvent.click(screen.getByRole('tab', { name: '차지' }))
-    const panel = screen.getByRole('tabpanel', { name: '차지' })
+    await userEvent.click(screen.getByRole('tab', { name: '계산기' }))
+    const panel = screen.getByRole('tabpanel', { name: '계산기' })
     expect(within(panel).getByLabelText('유닛')).toBeInTheDocument()
   })
 
   it('keeps the other panels mounted so a running request survives', async () => {
     seedActiveProfile()
     render(<App />)
-    await userEvent.click(screen.getByRole('tab', { name: '차지' }))
+    await userEvent.click(screen.getByRole('tab', { name: '계산기' }))
     // hidden, not unmounted - the same rule the recommend panel follows.
     // Identified by id rather than accessible name: dom-accessibility-api
     // computes the name of anything carrying the `hidden` attribute as "",
