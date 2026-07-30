@@ -2,7 +2,7 @@
 // draft into a BossProfile. Numeric fields are held as strings so inputs can
 // be cleared/partial while typing, same pattern as nikkeDraft.ts.
 
-import type { BossElement, BossProfile } from './recommend'
+import type { BossElement, BossProfile, BossRangeBand } from './recommend'
 
 export interface BossProfileDraft {
   element: BossElement
@@ -10,6 +10,7 @@ export interface BossProfileDraft {
   enemy_def: string
   fight_duration: string
   part_destructible: boolean
+  effective_range_band: BossRangeBand
 }
 
 export const makeDefaultBossProfileDraft = (): BossProfileDraft => ({
@@ -18,6 +19,7 @@ export const makeDefaultBossProfileDraft = (): BossProfileDraft => ({
   enemy_def: '0',
   fight_duration: '180',
   part_destructible: false,
+  effective_range_band: null,
 })
 
 export interface BossProfileDraftErrors {
@@ -39,6 +41,9 @@ export const bossProfileToDraft = (boss: BossProfile): BossProfileDraft => ({
   enemy_def: String(boss.enemy_def),
   fight_duration: String(boss.fight_duration),
   part_destructible: boss.part_destructible,
+  // A profile saved before this field existed has it undefined, which would
+  // otherwise reach the select as an uncontrolled value.
+  effective_range_band: boss.effective_range_band ?? null,
 })
 
 interface ParsedNumber {
@@ -79,6 +84,7 @@ export const validateBossProfileDraft = (
     enemy_def: enemyDef.value!,
     fight_duration: fightDuration.value!,
     part_destructible: draft.part_destructible,
+    effective_range_band: draft.effective_range_band,
   }
   return { errors, value }
 }

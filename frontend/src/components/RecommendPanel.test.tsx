@@ -181,6 +181,7 @@ describe('RecommendPanel', () => {
         enemy_def: 0,
         fight_duration: 180,
         part_destructible: false,
+        effective_range_band: null,
       },
     }, expect.any(AbortSignal))
     expect(await screen.findByText('#1')).toBeInTheDocument()
@@ -210,7 +211,7 @@ describe('RecommendPanel', () => {
     const element = screen.getByLabelText('보스 속성')
     await user.selectOptions(element, 'Fire')
     expect(within(element).getByRole('option', { name: '작열' })).toBeInTheDocument()
-    await user.click(screen.getByLabelText('코어 피격 가능'))
+    await user.click(screen.getByLabelText(/코어 피격 가능/i))
     const enemyDef = screen.getByLabelText('적 방어력')
     await user.clear(enemyDef)
     await user.type(enemyDef, '20000')
@@ -225,6 +226,7 @@ describe('RecommendPanel', () => {
         enemy_def: 20000,
         fight_duration: 180,
         part_destructible: false,
+        effective_range_band: null,
       },
     }, expect.any(AbortSignal))
   })
@@ -246,6 +248,33 @@ describe('RecommendPanel', () => {
         enemy_def: 0,
         fight_duration: 180,
         part_destructible: true,
+        effective_range_band: null,
+      },
+    }, expect.any(AbortSignal))
+  })
+
+  it('sends the effective range band the user picked', async () => {
+    // The band reached the engine before it reached any endpoint, so what this
+    // pins is the wiring rather than the arithmetic: a boss fought at mid range
+    // pays the AR and MG in the deck, and the recommender only knows that if
+    // the request carries it.
+    const user = userEvent.setup()
+    vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.selectOptions(screen.getByLabelText('보스 적정거리'), 'mid')
+
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+
+    expect(recommendDecks).toHaveBeenCalledWith({
+      roster: fullRoster,
+      boss: {
+        element: null,
+        core_hittable: false,
+        enemy_def: 0,
+        fight_duration: 180,
+        part_destructible: false,
+        effective_range_band: 'mid',
       },
     }, expect.any(AbortSignal))
   })
@@ -287,6 +316,7 @@ describe('RecommendPanel raid mode', () => {
         enemy_def: 0,
         fight_duration: 180,
         part_destructible: false,
+        effective_range_band: null,
       },
       num_decks: 3,
     }, expect.any(AbortSignal))
@@ -407,6 +437,7 @@ describe('RecommendPanel draft mode', () => {
         enemy_def: 0,
         fight_duration: 180,
         part_destructible: false,
+        effective_range_band: null,
       },
       num_decks: 5,
       draft: [
@@ -622,6 +653,7 @@ describe('RecommendPanel evaluate mode', () => {
               enemy_def: 0,
               fight_duration: 180,
               part_destructible: false,
+              effective_range_band: null,
             },
           },
         ],
@@ -760,6 +792,7 @@ describe('RecommendPanel persistence', () => {
     enemy_def: 0,
     fight_duration: 180,
     part_destructible: false,
+    effective_range_band: null,
   }
 
   it('restores a persisted raid result and its inputs on mount, with no network call', async () => {

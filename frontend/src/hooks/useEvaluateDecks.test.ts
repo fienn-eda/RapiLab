@@ -25,7 +25,7 @@ const REQUEST: EvaluateDecksRequest = {
   roster: [nikke('liter')],
   decks: [{
     units: ['liter', 'blanc', 'crown', 'modernia', 'privaty'],
-    boss: { element: 'Iron', core_hittable: false, enemy_def: 0, fight_duration: 180, part_destructible: false },
+    boss: { element: 'Iron', core_hittable: false, enemy_def: 0, fight_duration: 180, part_destructible: false, effective_range_band: null },
   }],
 }
 

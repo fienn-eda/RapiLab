@@ -929,6 +929,27 @@
       **함정 하나 제거:** 세 스크립트가 `BossProfile`을 필드별로 조립하고 있어
       `RECORD_BOSS`에 사실이 추가돼도 안 따라왔다 — 전부 `**RECORD_BOSS` 전개로 바꿨다.
 
+### 배포 전 점검 (2026-07-31)
+
+- [x] **사거리 밴드를 추천 경로에 연결 — 완료.** 배선 직후엔 엔진과 실기록
+      하네스에만 닿아 있어서 **유저 추천은 항상 밴드 없음**으로 돌았다(AR·MG 보너스 0).
+      `BossProfileIn.effective_range_band` + 프론트 「보스 적정거리」 셀렉트.
+      원인이던 **필드별 조립을 제거** — 세 엔드포인트가 `api.boss_profile()` 하나를
+      쓰고 `BossProfile(**boss.model_dump())`로 펼친다. `test_api_boss_profile.py`가
+      **두 필드 집합을 비교**해 다음 보스 필드는 추가되는 날 커버된다.
+      백엔드 **1685 passed / 3 skipped** · 프론트 **453 passed**.
+- [x] **코어히트율 100% 가정 안내 — 완료.** 「코어 피격 가능」 체크박스 힌트에
+      "모든 평타가 코어에 명중한다고 가정(상한)이며 평타 비중이 큰 유닛이 실제보다
+      높게 평가될 수 있다"를 명시. 근거는 engine-gap #21.
+- [ ] **패키징 블로커 5건 (배포 작업에서 처리).** 전부 코드로 실재 확인함(2026-07-31):
+      `engine_version()`이 frozen에서 **예외 없이 빈 다이제스트**를 낸다(가장 위험,
+      결과 캐시가 낡은 채로 삶) · `requirements.txt`에 **numpy 없음**(`cascade`·
+      `surrogate`가 씀) · `__file__` 상대 데이터 경로 5곳 · `dotgg_client`가
+      `data/cache/`에 **쓴다**(Program Files 아래 금지) · **`freeze_support()` 없음**
+      (Windows spawn에서 앱이 자기를 무한 실행).
+- [ ] **pywebview 스모크 빌드가 첫 작업이어야 한다.** 스택 전체가 Python 3.14에서
+      가능한 것은 확인됐지만 **pywebview 6.2.1 실구동만 미검증**이다.
+
 ### 미달 유닛 추적 (2026-07-31, 상한 해석이 만든 새 우선순위)
 
 engine-gap #21이 `sim/record`를 **코어 100%라는 상한**으로 재정의했다. 그 귀결:

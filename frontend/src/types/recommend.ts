@@ -16,6 +16,10 @@ export const BOSS_ELEMENTS: Exclude<BossElement, null>[] = [
   'Electric',
 ]
 
+export type BossRangeBand = 'near' | 'mid' | 'far' | null
+
+export const BOSS_RANGE_BANDS: Exclude<BossRangeBand, null>[] = ['near', 'mid', 'far']
+
 export interface BossProfile {
   element: BossElement // null = non-elemental
   core_hittable: boolean // default false
@@ -24,6 +28,10 @@ export interface BossProfile {
   part_destructible: boolean // default false — boss has a part-destruction gimmick;
   // selects the ceiling (max-potential) model for units whose kit depends on
   // part destruction (e.g. Ark Ranger Black), false = floor (lower-bound) model.
+  effective_range_band: BossRangeBand // default null — how far away the boss is
+  // fought. The band decides WHICH weapons are inside their effective range and
+  // collect +0.30 on their normal attacks: near pays SG/SMG, mid pays AR/MG, far
+  // pays SR, and a Rocket Launcher is paid by none. null = unknown, pays nobody.
   // gauge_charge_time and mode also exist on the backend BossProfile but are
   // left to backend defaults and not surfaced here (per the README contract).
 }

@@ -18,6 +18,7 @@ const request: RecommendRequest = {
     enemy_def: 0,
     fight_duration: 180,
     part_destructible: false,
+    effective_range_band: null,
   },
 }
 
