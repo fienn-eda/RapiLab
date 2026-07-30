@@ -304,7 +304,7 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # assumed_cube_effects for a reload-only stub vs an empty one.
     kwargs = dict(enemy_def=0, gauge_charge_time=2.0, fight_duration=60.0, mode="manual")
 
-    monkeypatch.setattr(roster, "assumed_cube_effects", lambda slug: [])
+    monkeypatch.setattr(roster, "assumed_cube_effects", lambda slug, cube: [])
     dmg_without = simulate_raid(
         **assemble_simulation_inputs(minimal_feasible_deck()), **kwargs
     )["total_damage"]
@@ -312,7 +312,7 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     monkeypatch.setattr(
         roster,
         "assumed_cube_effects",
-        lambda slug: [Effect("reload_speed_percent", 0.2969, "self", None, slug)],
+        lambda slug, cube: [Effect("reload_speed_percent", 0.2969, "self", None, slug)],
     )
     dmg_with = simulate_raid(
         **assemble_simulation_inputs(minimal_feasible_deck()), **kwargs

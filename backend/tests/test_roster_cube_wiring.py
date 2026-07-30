@@ -7,6 +7,7 @@ runs the simulation and checks the damage actually moves.
 """
 import pytest
 
+from app.attack_rate import AmmoRefund
 from app.roster import NikkeSpec, assemble_simulation_inputs
 from app.raid_simulator import simulate_raid
 from app.skill_rules import registry
@@ -36,7 +37,7 @@ def _blank_test_slugs():
             registry._BUILDERS[slug] = builder
 
 
-def make_spec(slug, element="Iron", atk=2000, burst_tier=3):
+def make_spec(slug, element="Iron", atk=2000, burst_tier=3, **extra):
     return NikkeSpec(
         slug=slug,
         burst_tier=burst_tier,
@@ -46,6 +47,7 @@ def make_spec(slug, element="Iron", atk=2000, burst_tier=3):
         base_stats={"atk": atk, "def": 0, "max_hp": 0},
         skill_values={},
         weapon_stats={},
+        **extra,
     )
 
 
@@ -67,6 +69,31 @@ def test_every_spec_gets_the_cube_buffs_without_asking_for_them():
     assert round(by_stat["reload_speed_percent"].value, 4) == 0.2969
     assert round(by_stat["other_elemental_bonus"].value, 4) == 0.1909
     assert by_stat["reload_speed_percent"].source_slug == "attacker"
+
+
+def test_a_tactical_bear_wearer_carries_the_refund_on_its_weapon_stats():
+    inputs = assemble_simulation_inputs([make_spec("attacker", cube="tactical_bear")])
+    assert inputs["weapon_stats"]["attacker"]["ammo_refund"] == AmmoRefund(10, 3)
+
+
+def test_a_default_wearer_carries_no_refund_key():
+    inputs = assemble_simulation_inputs([make_spec("attacker")])
+    assert "ammo_refund" not in inputs["weapon_stats"]["attacker"]
+
+
+def test_a_tactical_bear_wearer_is_granted_no_reload_speed():
+    inputs = assemble_simulation_inputs([make_spec("attacker", cube="tactical_bear")])
+    granted = []
+
+    class _Registry:
+        def add(self, effect, applied_at=None):
+            granted.append(effect)
+
+    for rule in inputs["rules_by_slug"]["attacker"]:
+        if rule.trigger == "battle_start":
+            rule.action(None, "attacker", 0.0, _Registry())
+
+    assert {e.stat for e in granted} == {"other_elemental_bonus"}
 
 
 def test_the_cube_superior_code_bonus_moves_damage_against_a_weak_boss():

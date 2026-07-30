@@ -15,7 +15,7 @@ backup buffer among same-tier Nikkes.
 from dataclasses import dataclass, field
 
 from app.collectible_effects import collectible_modifiers
-from app.cube_effects import assumed_cube_effects
+from app.cube_effects import DEFAULT_CUBE, assumed_cube_effects, cube_refund_for
 from app.overload_effects import overload_options_to_effects
 from app.skill_rules.registry import (
     build_nikke_rules,
@@ -54,6 +54,10 @@ class NikkeSpec:
     overload_options: list = field(default_factory=list)
     collectible_tid: int = 0
     collectible_level: int = 0
+    # Which harmony cube this unit wears. Everyone is assumed to wear a
+    # Resilience cube; the recorded raid is scored with the cubes actually worn
+    # (scripts/raid_record.RECORD_CUBES), which is the only caller that sets it.
+    cube: str = DEFAULT_CUBE
 
 
 def _battle_start_effects_rule(effects):
@@ -65,14 +69,15 @@ def _battle_start_effects_rule(effects):
 
 
 def _passive_effects(spec: NikkeSpec):
-    """Overload, the harmony cube every unit is assumed to wear, and the
-    collectible this unit actually has equipped. The collectible's 배율 stats
-    are NOT here - they scale weapon stats and are applied in user_roster."""
+    """Overload, this unit's harmony cube, and the collectible it actually has
+    equipped. The collectible's 배율 stats are NOT here - they scale weapon
+    stats and are applied in user_roster. A cube that hands back rounds instead
+    of moving a stat contributes nothing here - see the weapon stats below."""
     _, collectible = collectible_modifiers(
         spec.collectible_tid, spec.collectible_level, spec.slug, spec.weapon)
     return (
         overload_options_to_effects(spec.overload_options, spec.slug)
-        + assumed_cube_effects(spec.slug)
+        + assumed_cube_effects(spec.slug, spec.cube)
         + collectible
     )
 
@@ -113,13 +118,20 @@ def assemble_simulation_inputs(ordered_deck):
             member["burst_delay"] = burst_delay
         deck.append(member)
         base_stats[spec.slug] = spec.base_stats
-        # A unit that pauses between a charged shot and the next charge carries
-        # that gap on its weapon stats, so every shot-timeline path picks it up
-        # (see attack_rate.CHARGE_MOTION_DELAY_SECONDS).
+        # Facts that change a unit's shot TIMELINE rather than its stats ride on
+        # its weapon stats, so every shot-timeline path picks them up: the gap
+        # between a charged shot and the next charge (see
+        # attack_rate.CHARGE_MOTION_DELAY_SECONDS), and the rounds a Tactical
+        # Bear cube hands back mid-magazine (attack_rate.AmmoRefund).
+        timeline = {}
         motion_delay = get_charge_motion_delay(spec.slug)
+        if motion_delay:
+            timeline["charge_motion_delay"] = motion_delay
+        ammo_refund = cube_refund_for(spec.cube)
+        if ammo_refund is not None:
+            timeline["ammo_refund"] = ammo_refund
         weapon_stats[spec.slug] = (
-            {**spec.weapon_stats, "charge_motion_delay": motion_delay}
-            if motion_delay else spec.weapon_stats
+            {**spec.weapon_stats, **timeline} if timeline else spec.weapon_stats
         )
         rounds = get_ammo_rounds_per_shot(spec.slug)
         if rounds != (1.0, 1.0):
