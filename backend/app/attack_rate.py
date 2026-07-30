@@ -38,6 +38,7 @@ speed callables are threaded here too to keep last-bullet times aligned.
 """
 
 import math
+from dataclasses import dataclass, replace
 
 RATE_OF_FIRE_60FPS = {
     "AR": 12.0,
@@ -47,6 +48,57 @@ RATE_OF_FIRE_60FPS = {
 }
 
 CHARGE_WEAPONS = {"RL", "SR"}
+
+
+@dataclass(frozen=True)
+class AmmoRefund:
+    """Rounds handed back into the magazine every N shots fired.
+
+    The Tactical Bear (택티컬 베어) harmony cube is the consumer: "10발 사격 시
+    탄환 충전 3발". Two rulings shape it (Fienn, 2026-07-31, in game):
+
+    - The shot counter is CUMULATIVE over the fight, not per magazine. Scarlet:
+      Black Shadow holds 9 rounds, so a per-magazine counter would never reach
+      10 and the cube would do nothing for her; it does.
+    - The refund is CAPPED at the magazine's capacity. Landing on a magazine
+      with 8 of 9 left hands back 1, not 3.
+
+    Those two together are why this cannot be a max-ammo percentage: how much a
+    refund is worth depends on where in the magazine it lands, and a magazine
+    that refills mid-fight shifts every later reload against the Full Burst
+    window. Faking it as a flat percentage scores non-monotonically.
+    """
+    every_shots: int
+    rounds: int
+
+    def __post_init__(self):
+        if self.rounds >= self.every_shots:
+            raise ValueError(
+                f"a refund of {self.rounds} every {self.every_shots} shots never "
+                "empties the magazine")
+
+
+def magazine_shot_count(capacity, shots_before, refund):
+    """Rounds this magazine actually fires, and the shot counter afterwards.
+
+    Walks the magazine one round at a time because the refund's value depends
+    on the rounds remaining when it lands (it is capped at capacity), and the
+    counter it triggers on runs across magazines. `refund=None` returns the
+    capacity untouched, so every non-Bastion timeline keeps its exact
+    arithmetic.
+    """
+    if refund is None:
+        return capacity, shots_before + capacity
+    rounds = capacity
+    shots = 0
+    counter = shots_before
+    while rounds > 0:
+        rounds -= 1
+        shots += 1
+        counter += 1
+        if counter % refund.every_shots == 0:
+            rounds = min(capacity, rounds + refund.rounds)
+    return shots, counter
 
 
 def _zero(_time):
@@ -479,9 +531,6 @@ def last_bullet_shot_times(
         rate_of_fire, max_ammo, reload_time, fight_duration,
         max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
     )
-
-
-from dataclasses import dataclass
 
 
 @dataclass(frozen=True)
