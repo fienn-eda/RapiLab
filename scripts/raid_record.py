@@ -114,11 +114,19 @@ RECORD_CAVEATS = {
 # why it lives here rather than on UserNikkeState. The recommender keeps the
 # global assumption.
 #
-# Scarlet: Black Shadow's Tactical Bear (택티컬 베어, 탄충) is confirmed by Fienn
-# (2026-07-29). It costs her the reload speed the engine was handing her and
-# gives her the bullet refund it could not represent at all.
+# There is no list to complete beyond these two. Asked who else wore a Tactical
+# Bear, Fienn's answer was that it depends on the deck and on taste (2026-07-31)
+# - these are the units where the choice is settled rather than situational:
+#
+#   Scarlet: Black Shadow  - confirmed 2026-07-29.
+#   Cinderella (the base RL, not Crystal Wave) - she holds 24 rounds and wants
+#       to reload as little as possible, so the ammo slot beats the reload one.
+#
+# Both trade the reload speed the engine was handing them for a bullet refund it
+# could not represent at all.
 RECORD_CUBES = {
     "scarlet-black-shadow": "tactical_bear",
+    "cinderella": "tactical_bear",
 }
 
 # How the bursts were actually spent, per deck (Fienn, 2026-07-28). `order` is
