@@ -9,10 +9,22 @@ stands in for it.
 """
 import pytest
 
-from app.attack_rate import AmmoRefund, magazine_shot_count
+from app.attack_rate import (
+    AmmoRefund,
+    generate_segmented_shots,
+    generate_shot_times,
+    last_bullet_shot_times,
+    magazine_shot_count,
+)
 
 
 BASTION = AmmoRefund(every_shots=10, rounds=3)
+
+# Scarlet: Black Shadow's weapon - the roster's one confirmed Tactical Bear
+# wearer, and the reason the counter has to outlive a magazine (she holds 9).
+RL = dict(weapon="RL", max_ammo=9, reload_time=2.0, charge_time=0.3,
+          damage_percent=57.29, charge_damage_percent=164.205,
+          charge_motion_delay=0.43)
 
 
 def test_no_refund_fires_exactly_the_magazine():
@@ -49,3 +61,34 @@ def test_a_refund_that_outpaces_the_trigger_is_rejected():
     # 10 rounds back every 10 shots would never empty the magazine.
     with pytest.raises(ValueError, match="never empties"):
         AmmoRefund(every_shots=10, rounds=10)
+
+
+def test_the_refund_adds_shots_to_a_charge_weapons_timeline():
+    without = generate_shot_times("RL", 9, 2.0, 0.3, 180.0)
+    with_refund = generate_shot_times("RL", 9, 2.0, 0.3, 180.0,
+                                      ammo_refund=BASTION)
+    assert len(with_refund) > len(without)
+
+
+def test_a_timeline_without_a_refund_is_unchanged():
+    assert generate_shot_times("RL", 9, 2.0, 0.3, 180.0) == \
+        generate_shot_times("RL", 9, 2.0, 0.3, 180.0, ammo_refund=None)
+
+
+def test_last_bullet_marks_the_refunded_final_round():
+    # With the refund the second magazine runs to 10 rounds, so the round that
+    # empties it is the 10th, not the 9th.
+    times = generate_shot_times("RL", 9, 2.0, 0.3, 180.0, ammo_refund=BASTION)
+    lasts = last_bullet_shot_times("RL", 9, 2.0, 0.3, 180.0,
+                                   ammo_refund=BASTION)
+    assert times[8] in lasts        # first magazine still ends at round 9
+    assert times[18] in lasts       # second ends at round 10 (index 9..18)
+    assert times[17] not in lasts
+
+
+def test_the_weapon_stats_dict_carries_the_refund_into_segmented_shots():
+    plain = generate_segmented_shots(RL, [], 180.0)
+    bastion = generate_segmented_shots({**RL, "ammo_refund": BASTION}, [], 180.0)
+    assert len(bastion) > len(plain)
+    assert [r.time for r in plain] == [r.time for r in
+                                       generate_segmented_shots(RL, [], 180.0)]
