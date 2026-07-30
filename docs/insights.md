@@ -385,8 +385,17 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   절대오차 −0.124B가 다른 유닛의 과대를 가려주고 있었다. "합계가 개선됐다"는
   개별 항목이 다 맞다는 뜻이 아니다 — "잔여 편차에 공통 원인은 없다" 항목과
   같은 계열의 함정.
+- **`RECORD_CUBES`는 캐릭터가 아니라 정확한 무기변형 slug로 키를 걸어야 한다.**
+  `cinderella`(기본, RL 24발)와 `cinderella-crystal-wave-mg`(MG 300발)는 이름이 같은
+  캐릭터지만 실기록에서 **다른 덱의 다른 슬러그**다(deck4 대 deck2) — 택티컬 베어를
+  끼는 쪽은 기본이고(2026-07-31, Fienn 확인), 같은 항목을 `cinderella-crystal-wave-mg`에
+  잘못 붙이면 0.977x → **1.029x**로 과대해진다. 게다가 탄약 소모 카운터가 발사
+  타임라인을 공유하는 덱메이트로 번져, 리틀머메이드도 동반으로 1.038x → 1.047x까지
+  같이 뛴다 — 잘못된 큐브 배선의 오차가 그 유닛 하나로 국한되지 않는다는 뜻. 큐브를
+  실기록에 매길 때는 슬러그 단위로 정확히 매칭할 것.
 - See `docs/superpowers/specs/2026-07-31-tactical-bear-ammo-refund-design.md`,
-  `backend/app/attack_rate.py::AmmoRefund`/`magazine_shot_count`.
+  `backend/app/attack_rate.py::AmmoRefund`/`magazine_shot_count`,
+  `scripts/raid_record.py::RECORD_CUBES`.
 
 ## 오버로드 옵션은 7종뿐이고 **재장전 속도는 없다**
 
