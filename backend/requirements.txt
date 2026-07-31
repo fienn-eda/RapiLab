@@ -2,5 +2,13 @@ fastapi
 uvicorn[standard]
 pydantic
 requests
+# app/cascade.py와 app/surrogate.py가 쓴다. 2026-07-31까지 빠져 있었고 개발 PC에
+# 이미 깔려 있어서 아무도 모르고 있었다 - test_requirements가 그 종류의 누락을 잡는다.
+numpy
+# api.py가 starlette.concurrency를 직접 임포트한다. fastapi를 통해 따라오지만,
+# 직접 쓰는 것은 직접 선언한다.
+starlette
+
+# 개발용 (서버 실행에는 불필요)
 pytest
 httpx

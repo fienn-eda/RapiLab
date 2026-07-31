@@ -50,3 +50,50 @@ def test_engine_version_is_short_stable_and_hex():
     assert len(version) == 12
     assert all(c in "0123456789abcdef" for c in version)
     assert version == engine_version()
+
+
+def test_frozen_without_a_stamped_version_raises_rather_than_returning_a_hash(
+        monkeypatch, tmp_path):
+    """소스가 없는 채로 해시하면 '빈 입력의 sha256'이 나온다.
+
+    그것은 유효해 보이는 12자 문자열이라 아무도 알아채지 못하고, 프론트의
+    결과 캐시는 엔진이 바뀌어도 낡은 수치를 계속 내놓는다 - 이 모듈이 막으려던
+    바로 그 실패다. 조용한 오답보다 시끄러운 실패가 낫다.
+    """
+    import pytest
+
+    from app import engine_version as ev
+
+    ev.engine_version.cache_clear()
+    monkeypatch.setattr(ev.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(ev.sys, "_MEIPASS", str(tmp_path), raising=False)
+    try:
+        with pytest.raises(RuntimeError, match="stamped"):
+            ev.engine_version()
+    finally:
+        ev.engine_version.cache_clear()
+
+
+def test_frozen_reads_the_stamped_version(monkeypatch, tmp_path):
+    from app import engine_version as ev
+
+    ev.engine_version.cache_clear()
+    (tmp_path / ev.VERSION_FILE).write_text("abc123def456\n", encoding="utf-8")
+    monkeypatch.setattr(ev.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(ev.sys, "_MEIPASS", str(tmp_path), raising=False)
+    try:
+        assert ev.engine_version() == "abc123def456"
+    finally:
+        ev.engine_version.cache_clear()
+
+
+def test_unfrozen_still_hashes_the_sources(monkeypatch):
+    # 개발 중 동작은 바뀌지 않아야 한다 - 스탬프는 얼린 빌드에만 있다.
+    from app import engine_version as ev
+
+    ev.engine_version.cache_clear()
+    monkeypatch.setattr(ev.sys, "frozen", False, raising=False)
+    try:
+        assert ev.engine_version() == ev.hash_sources(ev._APP_DIR)
+    finally:
+        ev.engine_version.cache_clear()

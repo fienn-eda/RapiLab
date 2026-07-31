@@ -12,10 +12,11 @@ speculatively. dotgg levels are already native slot dicts and pass through.
 import json
 import re
 from pathlib import Path
+from app.paths import data_dir
 
 _NUMBER = re.compile(r"\d+(?:\.\d+)?")
 
-DATA_DIR = Path(__file__).resolve().parent.parent.parent / "data"
+DATA_DIR = data_dir()
 
 _SKILL_INDEX_TO_LEVEL_KEY = {0: "skill1", 1: "skill2", 2: "burst"}
 

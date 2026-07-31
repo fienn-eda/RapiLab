@@ -941,14 +941,28 @@
 - [x] **코어히트율 100% 가정 안내 — 완료.** 「코어 피격 가능」 체크박스 힌트에
       "모든 평타가 코어에 명중한다고 가정(상한)이며 평타 비중이 큰 유닛이 실제보다
       높게 평가될 수 있다"를 명시. 근거는 engine-gap #21.
-- [ ] **패키징 블로커 5건 (배포 작업에서 처리).** 전부 코드로 실재 확인함(2026-07-31):
-      `engine_version()`이 frozen에서 **예외 없이 빈 다이제스트**를 낸다(가장 위험,
-      결과 캐시가 낡은 채로 삶) · `requirements.txt`에 **numpy 없음**(`cascade`·
-      `surrogate`가 씀) · `__file__` 상대 데이터 경로 5곳 · `dotgg_client`가
-      `data/cache/`에 **쓴다**(Program Files 아래 금지) · **`freeze_support()` 없음**
-      (Windows spawn에서 앱이 자기를 무한 실행).
-- [ ] **pywebview 스모크 빌드가 첫 작업이어야 한다.** 스택 전체가 Python 3.14에서
-      가능한 것은 확인됐지만 **pywebview 6.2.1 실구동만 미검증**이다.
+- [x] **패키징 블로커 5건 — 전부 해소 (2026-07-31).** `engine_version()`은 frozen에서
+      스탬프를 읽고 없으면 **거부**한다(빈 다이제스트를 조용히 내던 것) ·
+      numpy·starlette 선언 + `test_requirements`가 다음 누락을 잡는다 ·
+      `__file__` 경로 5곳을 `app/paths.py` 하나로 · 캐시는 `%LOCALAPPDATA%`로 ·
+      `freeze_support()` 배선 후 **얼린 exe에서 프로세스 풀 실동 확인**.
+- [x] **pywebview 스모크 — 통과 (2026-07-31).** 격리 venv(Python 3.14.6)에서
+      pywebview 6.2.1 · pyinstaller 6.21.0 · pythonnet 3.1.0(cp314 wheel) 설치되고
+      **실제 창이 뜨고 `start()`가 반환**한다. 브레인스토밍의 유일한 미검증 가정이었다.
+- [x] **①실행셸 + 패키징 — 완료.** `app/desktop.py`(uvicorn 스레드 → 응답 대기 → 창) ·
+      FastAPI가 프론트를 같은 origin에서 서빙(SPA 폴백 포함, `/api/*`는 제외) ·
+      `scripts/build_app.py` + `packaging/rapilab.spec`.
+      **얼린 exe 검증 통과**: `RapiLab.exe --selftest` → 엔진버전 스탬프 읽힘 ·
+      유닛 98 · 셸 서빙 · 프로세스 풀 정상, exit 0. 산출물 **95MB**.
+      계획: `docs/superpowers/plans/2026-07-31-desktop-app-packaging.md`.
+- [ ] **②동기화 경로 — 라이브 확인 대기 (Fienn).** 북마클릿이 `https://blablalink`에서
+      `http://127.0.0.1`로 POST할 수 있는지가 미확인이다. blablalink 탭 콘솔에서
+      `fetch('http://127.0.0.1:8000/api/supported-units').then(r=>console.log(r.status))`
+      (백엔드를 8000에 띄워두고) 200이면 진행, 막히면 접근을 바꿔야 한다.
+      **부수 결정 필요**: 셸이 포트를 OS에게 받으므로 북마클릿이 주소를 모른다 —
+      고정 포트로 되돌리거나 후보를 훑거나.
+- [ ] **③배포채널 + ④자동업데이트 — 원격 저장소가 선행.** 리포에 원격이 없다(계정
+      작업). ④는 ③에 의존하고 **첫 릴리스에 반드시 포함**돼야 하므로 둘을 한 계획으로.
 
 ### 미달 유닛 추적 (2026-07-31, 상한 해석이 만든 새 우선순위)
 
