@@ -32,6 +32,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+from pathlib import Path
 
 HOST = "127.0.0.1"
 WINDOW_TITLE = "RapiLab"
@@ -177,6 +178,26 @@ def selftest() -> int:
     return finish(0)
 
 
+def webview_storage_dir(port: int) -> Path:
+    """WebView2가 프로필(캐시·셰이더·크래시 기록)을 두는 곳. 인스턴스마다 하나.
+
+    자리를 정해주지 않으면 pywebview가 실행마다 새 임시 폴더를 만들고 지우지
+    않는다 - 한 번에 6MB쯤이라 조용히 쌓인다. 위 재시작 경로가 생기면서 한 번
+    실행에 여러 벌이 생길 수 있게 됐고, 그래서 자리를 못박는다.
+
+    그런데 **하나로 못박으면 안 된다**: 한 폴더를 두 인스턴스가 나눠 쓰면 두
+    번째의 WebView2가 아예 뜨지 않는다. 초기화가 끝나지 않아 실패 보고도 없고,
+    그래서 `guard_webview()`도 걸리지 않는다 - 복구가 없는 빈 창이다. 포트는
+    이미 인스턴스마다 다르고 후보가 넷뿐이라, 폴더도 넷을 넘지 않는다.
+
+    비공개 모드는 건드리지 않는다 - 쿠키와 로컬 저장소를 남기지 않는 것은 폴더
+    자리와 무관한 별개의 선택이고, 함께 바꾸면 지금 동작이 달라진다.
+    """
+    from app.paths import writable_dir
+
+    return writable_dir() / "webview" / str(port)
+
+
 def _relaunch_command() -> list[str]:
     """이 앱을 다시 띄우는 명령. 인자는 그대로 물려준다.
 
@@ -299,7 +320,8 @@ def main() -> None:
     # `--debug`면 창에서 우클릭으로 개발자 도구가 열린다. 배포 빌드는 콘솔이
     # 없어서, 창 안에서 무슨 일이 났는지 볼 방법이 이것뿐이다 - 서버 로그는
     # 브라우저가 겪은 것을 알지 못한다.
-    webview.start(debug="--debug" in sys.argv[1:])
+    webview.start(debug="--debug" in sys.argv[1:],
+                  storage_path=str(webview_storage_dir(port)))
 
 
 if __name__ == "__main__":

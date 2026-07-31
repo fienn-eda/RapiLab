@@ -180,6 +180,30 @@ def test_a_garbled_attempt_count_does_not_break_the_recovery(monkeypatch, restar
     assert exit_info.value.code == 0
 
 
+def test_the_webview_profile_stays_in_the_same_place_across_launches(tmp_path, monkeypatch):
+    """자리를 고정하지 않으면 실행마다 새 임시 폴더가 하나씩 쌓인다.
+
+    pywebview의 기본값이 그렇고, 지우지도 않는다 - 한 번에 6MB쯤이다. 창이
+    죽어 다시 띄우는 경로가 생기면서 그 배수가 됐다.
+    """
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    first = desktop.webview_storage_dir(desktop.SYNC_PORTS[0])
+    assert first == desktop.webview_storage_dir(desktop.SYNC_PORTS[0])
+    assert tmp_path in first.parents
+
+
+def test_each_instance_gets_its_own_webview_profile(tmp_path, monkeypatch):
+    """한 폴더를 두 인스턴스가 나눠 쓰면 두 번째 창이 영영 비어 있다.
+
+    실측(2026-08-01): 동시에 둘을 띄우면 백엔드는 둘 다 응답하는데 브라우저
+    프로세스는 하나뿐이었다. 두 번째는 초기화가 끝나지 않아 **실패조차 보고하지
+    않으므로** `guard_webview()`도 걸리지 않는다 - 복구가 없는 빈 창이다.
+    """
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    homes = {desktop.webview_storage_dir(port) for port in desktop.SYNC_PORTS}
+    assert len(homes) == len(desktop.SYNC_PORTS)
+
+
 def test_the_guard_gives_up_quietly_when_pywebview_is_missing():
     """감시를 못 걸어도 앱은 떠야 한다 - 감시는 부가 기능이지 실행 조건이 아니다.
 
