@@ -62,6 +62,18 @@ describe('인박스 폴링', () => {
     expect(result.current.error).toBeNull()
   })
 
+  it('동기화를 마친 뒤에도 다음 계정을 집어온다', async () => {
+    // 계정이 여러 개인 유저는 북마크를 연달아 누른다. 한 번 동기화한 뒤
+    // 폴링이 멈추면 두 번째 계정은 인박스에 놓인 채 앱에 닿지 못한다.
+    vi.mocked(takeSyncInbox)
+      .mockResolvedValueOnce(payload())
+      .mockResolvedValueOnce({ ...payload(), open_id: '999999' })
+    const onRoster = vi.fn()
+    renderHook(() => useBookmarkletImport(onRoster))
+    await waitFor(() => expect(onRoster).toHaveBeenCalledTimes(2))
+    expect(onRoster.mock.calls[1][0].openId).toBe('999999')
+  })
+
   it('후보를 고르는 중에는 더 집어오지 않는다', async () => {
     // 유저가 서버를 고르는 동안 새 payload가 끼어들면 방금 누른 것과 다른
     // 로스터가 들어온다.

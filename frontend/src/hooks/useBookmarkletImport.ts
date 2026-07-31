@@ -178,10 +178,12 @@ export const useBookmarkletImport = (
   // 북마크릿이 로컬 인박스에 두고 간 것을 집어온다. 네이티브 창에는 위
   // postMessage가 닿지 않으므로 앱에서는 이 경로가 실제로 쓰이는 쪽이다.
   //
-  // idle일 때만 돈다: 후보를 고르는 중이거나 조립 중에 새 payload가 끼어들면
-  // 유저가 방금 누른 것과 다른 로스터가 들어온다.
+  // 진행 중일 때만 멈춘다: 후보를 고르는 중이거나 조립 중에 새 payload가
+  // 끼어들면 유저가 방금 누른 것과 다른 로스터가 들어온다. 끝난 동기화는
+  // 폴링을 막을 이유가 없다 - 계정이 여러 개인 유저는 북마크를 연달아 누르고,
+  // 한 번 동기화한 계정도 다시 동기화한다.
   useEffect(() => {
-    if (status !== 'idle') return
+    if (status === 'choosing' || status === 'importing') return
     const controller = new AbortController()
     let stopped = false
 
