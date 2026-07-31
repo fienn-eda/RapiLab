@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 from app import stat_assembly as sa
+from app.paths import directory_snapshot
 from app.cube_effects import ASSUMED_CUBE_LEVEL
 from app.overload_decode import assemble_overload
 
@@ -16,10 +17,7 @@ from app.overload_decode import assemble_overload
 # corporation per unit. A Nikke released after this snapshot is absent, and
 # assemble_roster skips it silently - refresh the snapshot when that happens
 # (the sync endpoint's telemetry counts unknown name_codes for exactly this).
-DIRECTORY = (
-    Path(__file__).resolve().parents[2]
-    / "tools" / "collect-blablalink" / "nikke-directory.json"
-)
+DIRECTORY = directory_snapshot()
 
 
 def load_directory(path: Path = DIRECTORY) -> list[dict]:

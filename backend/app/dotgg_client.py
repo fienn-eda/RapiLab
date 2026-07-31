@@ -8,8 +8,11 @@ from pathlib import Path
 
 import requests
 
+from app.paths import writable_dir
+
 BASE_URL = "https://api.dotgg.gg/nikke"
-DEFAULT_CACHE_DIR = Path(__file__).resolve().parent.parent.parent / "data" / "cache"
+# 캐시는 번들이 아니라 사용자 디렉터리로 간다 - 설치 위치는 쓰기 금지일 수 있다.
+DEFAULT_CACHE_DIR = writable_dir() / "cache"
 
 
 class DotggApiError(Exception):

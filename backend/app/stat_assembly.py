@@ -51,9 +51,9 @@ import math
 from pathlib import Path
 from typing import Any
 
-STAT_TABLES = (
-    Path(__file__).resolve().parents[2] / "data" / "nikke-stat-tables" / "tables.json"
-)
+from app.paths import data_dir
+
+STAT_TABLES = data_dir() / "nikke-stat-tables" / "tables.json"
 
 # Each breakthrough step (grade or core) is worth this share of base ATK. Named
 # `grade_ratio` in the game tables, where it is stored as 200 = 2%.
