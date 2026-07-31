@@ -62,3 +62,25 @@ def test_no_bundle_means_no_mount(tmp_path, monkeypatch):
     client = TestClient(api.build_app())
     assert client.get("/some/client/route").status_code == 404
     assert client.get("/api/supported-units").status_code == 200
+
+
+def test_a_missing_asset_is_a_404_not_the_index(tmp_path, monkeypatch):
+    """없는 자산에 index.html을 200으로 주면 화면이 조용히 검게 뜬다.
+
+    브라우저는 `<script src="/assets/app.js">`가 돌려준 HTML을 파싱하다 실패하고
+    아무것도 그리지 않는다 - 증상에 원인이 한 마디도 안 남는다. 2026-07-31에
+    실제로 이 모양의 검은 화면을 겪었고, 그때 이 테스트가 없었다.
+    """
+    monkeypatch.setattr(api, "frontend_dist", lambda: _bundle(tmp_path))
+    client = TestClient(api.build_app())
+    assert client.get("/assets/index-DOESNOTEXIST.js").status_code == 404
+    assert client.get("/favicon-missing.svg").status_code == 404
+
+
+def test_a_client_route_with_no_extension_still_falls_back(tmp_path, monkeypatch):
+    # 자산 판별은 확장자로 하므로, 확장자 없는 SPA 라우트는 그대로 폴백해야 한다.
+    monkeypatch.setattr(api, "frontend_dist", lambda: _bundle(tmp_path))
+    client = TestClient(api.build_app())
+    response = client.get("/deck/3/edit")
+    assert response.status_code == 200
+    assert "rapilab" in response.text
