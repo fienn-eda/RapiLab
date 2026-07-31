@@ -603,6 +603,35 @@ def engine_version_route() -> dict[str, str]:
     return {"engine_version": engine_version()}
 
 
+# 북마클릿이 놓고 가면 앱이 집어가는 한 칸.
+#
+# 네이티브 창(WebView2)은 유저 브라우저와 별개 저장소를 쓰므로 기존
+# `window.open` + `postMessage` 경로가 앱 창에 닿지 않는다. 대신 북마클릿이
+# 이 로컬 서버로 직접 POST하고, 앱이 폴링해서 가져간다.
+#
+# 프로세스 메모리에만 있고 디스크에 쓰지 않는다 - 앱을 닫으면 사라진다.
+# 한 칸인 이유는 동기화가 유저가 의도적으로 한 번 하는 행위이기 때문이고,
+# 새 것이 앞의 것을 덮는 이유는 두 번 눌렀을 때 기대되는 것이 마지막
+# 결과이기 때문이다.
+_sync_inbox: AssembleRosterRequest | None = None
+
+
+@app.post("/api/sync-inbox")
+def put_sync_inbox(request: AssembleRosterRequest) -> dict:
+    global _sync_inbox
+    _sync_inbox = request
+    return {"received": True}
+
+
+@app.get("/api/sync-inbox")
+def take_sync_inbox() -> dict:
+    """가져가면서 비운다 - 앱이 폴링하므로, 비우지 않으면 같은 로스터를
+    계속 다시 집어간다."""
+    global _sync_inbox
+    payload, _sync_inbox = _sync_inbox, None
+    return {"payload": payload.model_dump() if payload else None}
+
+
 @app.post("/api/assemble-roster")
 def assemble_roster_endpoint(
     request: AssembleRosterRequest,
