@@ -13,7 +13,18 @@ from fastapi.testclient import TestClient
 from app.api import app
 
 client = TestClient(app)
-PAYLOAD = {"owned": [{"name_code": 1}], "character_details": [], "recycle_room_researches": []}
+# 북마크릿이 실제로 보내는 모양이다(`frontend/src/lib/bookmarklet.ts`의
+# `payload={open_id:...,servers:...}`). 조립 형태로 적었다가 실물이 전부 422로
+# 떨어지는 것을 놓쳤다 - 픽스처는 상대가 정말 보내는 것이어야 한다.
+PAYLOAD = {
+    "open_id": "1234567890123456789",
+    "servers": [{
+        "area": 81, "nickname": "FIENN",
+        "owned": [{"name_code": 5101}],
+        "character_details": [{"name_code": 5101}],
+        "recycle_room_researches": [{"tid": 1, "lv": 2}],
+    }],
+}
 
 
 def _drain():
@@ -44,11 +55,18 @@ def test_taking_it_empties_the_inbox():
 def test_a_second_sync_replaces_the_first():
     _drain()
     client.post("/api/sync-inbox", json=PAYLOAD)
-    newer = {**PAYLOAD, "owned": [{"name_code": 2}]}
+    newer = {**PAYLOAD, "open_id": "1111111111111111111"}
     client.post("/api/sync-inbox", json=newer)
     assert client.get("/api/sync-inbox").json()["payload"] == newer
 
 
-def test_the_inbox_rejects_a_body_that_is_not_a_roster_payload():
+def test_the_inbox_takes_the_shape_the_bookmarklet_sends():
+    """조립 형태를 요구하면 실물이 전부 거절된다 - 북마크릿에는 그것이
+    "앱을 찾지 못했다"로 보인다(2026-07-31 실제 증상)."""
     _drain()
-    assert client.post("/api/sync-inbox", json={"owned": "not a list"}).status_code == 422
+    assert client.post("/api/sync-inbox", json=PAYLOAD).status_code == 200
+
+
+def test_the_inbox_still_wants_an_object():
+    _drain()
+    assert client.post("/api/sync-inbox", json=[1, 2, 3]).status_code == 422

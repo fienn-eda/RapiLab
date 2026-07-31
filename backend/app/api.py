@@ -613,13 +613,25 @@ def engine_version_route() -> dict[str, str]:
 # 한 칸인 이유는 동기화가 유저가 의도적으로 한 번 하는 행위이기 때문이고,
 # 새 것이 앞의 것을 덮는 이유는 두 번 눌렀을 때 기대되는 것이 마지막
 # 결과이기 때문이다.
-_sync_inbox: AssembleRosterRequest | None = None
+_sync_inbox: dict | None = None
 
 
 @app.post("/api/sync-inbox")
-def put_sync_inbox(request: AssembleRosterRequest) -> dict:
+def put_sync_inbox(payload: dict) -> dict:
+    """북마크릿이 모은 것을 그대로 받는다.
+
+    구조를 강제하지 않는 이유: 북마크릿이 보내는 것은 `{open_id, servers:[...]}`,
+    즉 **서버 후보 목록**이다. 조립 형태(`{owned, character_details,
+    recycle_room_researches}`)가 되는 것은 유저가 서버를 고른 뒤이고, 그 변환은
+    프론트가 한다. 인박스가 조립 형태를 요구하면 실제 payload는 전부 422로
+    떨어지고, 북마크릿에는 "앱을 찾지 못했다"로 보인다 - 2026-07-31에 실제로
+    그렇게 나갔다.
+
+    형태 검사는 이 자리가 아니라 받는 쪽(`useBookmarkletImport`의 handle)이
+    한다. 모양이 어긋난 것은 거기서 조용히 무시된다.
+    """
     global _sync_inbox
-    _sync_inbox = request
+    _sync_inbox = payload
     return {"received": True}
 
 
@@ -629,7 +641,7 @@ def take_sync_inbox() -> dict:
     계속 다시 집어간다."""
     global _sync_inbox
     payload, _sync_inbox = _sync_inbox, None
-    return {"payload": payload.model_dump() if payload else None}
+    return {"payload": payload}
 
 
 @app.post("/api/assemble-roster")
