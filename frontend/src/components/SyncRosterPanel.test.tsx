@@ -1,13 +1,14 @@
-import { render, screen, fireEvent, act, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SyncRosterPanel } from './SyncRosterPanel'
 import { assembleRoster } from '../api/assembleRoster'
-import { BLABLALINK_ORIGIN, PAYLOAD_MESSAGE } from '../lib/bookmarklet'
+import { takeSyncInbox } from '../api/syncInbox'
 
 // This codebase's mocking convention is vi.mock + vi.mocked (see
 // useBookmarkletImport.test.ts) - ESM named exports can't be intercepted with
 // vi.spyOn.
+vi.mock('../api/syncInbox', () => ({ takeSyncInbox: vi.fn() }))
 vi.mock('../api/assembleRoster', () => ({
   assembleRoster: vi.fn(),
 }))
@@ -26,34 +27,20 @@ const RAW_PAYLOAD = {
   recycle_room_researches: [],
 }
 
+// 북마크릿이 인박스에 두고 간 상태를 만든다. 패널의 훅이 마운트하자마자
+// 확인하므로 render 앞에서 부른다.
 const postPayload = () =>
-  act(() => {
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        origin: BLABLALINK_ORIGIN,
-        data: { type: PAYLOAD_MESSAGE, payload: RAW_PAYLOAD },
-      }),
-    )
-  })
+  vi.mocked(takeSyncInbox).mockResolvedValueOnce(RAW_PAYLOAD)
 
 const postTwoServers = () =>
-  act(() => {
-    window.dispatchEvent(
-      new MessageEvent('message', {
-        origin: BLABLALINK_ORIGIN,
-        data: {
-          type: PAYLOAD_MESSAGE,
-          payload: {
-            open_id: 'abc123',
-            servers: [
-              { area: 81, nickname: 'FIENN', owned: [{ name_code: 1 }, { name_code: 2 }], character_details: [], recycle_room_researches: [] },
-              { area: 83, nickname: 'FIENN', owned: [{ name_code: 3 }], character_details: [], recycle_room_researches: [] },
-            ],
-          },
-        },
-      }),
-    )
+  vi.mocked(takeSyncInbox).mockResolvedValueOnce({
+    open_id: 'abc123',
+    servers: [
+      { area: 81, nickname: 'FIENN', owned: [{ name_code: 1 }, { name_code: 2 }], character_details: [], recycle_room_researches: [] },
+      { area: 83, nickname: 'FIENN', owned: [{ name_code: 3 }], character_details: [], recycle_room_researches: [] },
+    ],
   })
+
 
 afterEach(() => vi.mocked(assembleRoster).mockReset())
 
@@ -87,9 +74,8 @@ describe('SyncRosterPanel', () => {
       ],
     })
     const onImport = vi.fn()
-    render(<SyncRosterPanel onImport={onImport} />)
-
     postPayload()
+    render(<SyncRosterPanel onImport={onImport} />)
 
     await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1))
     expect(onImport.mock.calls[0][0].roster).toHaveLength(1)
@@ -99,19 +85,11 @@ describe('SyncRosterPanel', () => {
   it('separates open_id/nickname from the assembled roster when calling onImport', async () => {
     vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
     const onImport = vi.fn()
-    render(<SyncRosterPanel onImport={onImport} />)
-
-    act(() => {
-      window.dispatchEvent(
-        new MessageEvent('message', {
-          origin: BLABLALINK_ORIGIN,
-          data: {
-            type: PAYLOAD_MESSAGE,
-            payload: { ...RAW_PAYLOAD, open_id: 'abc123', nickname: 'Fienn' },
-          },
-        }),
-      )
+    vi.mocked(takeSyncInbox).mockResolvedValueOnce({
+      ...RAW_PAYLOAD, open_id: 'abc123', nickname: 'Fienn',
     })
+
+    render(<SyncRosterPanel onImport={onImport} />)
 
     await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1))
     expect(onImport.mock.calls[0][0].openId).toBe('abc123')
@@ -132,9 +110,8 @@ describe('SyncRosterPanel', () => {
       ],
     })
     const onImport = vi.fn()
-    render(<SyncRosterPanel onImport={onImport} />)
-
     postPayload()
+    render(<SyncRosterPanel onImport={onImport} />)
 
     await waitFor(() => expect(onImport).toHaveBeenCalledTimes(1))
     expect(
@@ -146,13 +123,16 @@ describe('SyncRosterPanel', () => {
   it('clears the summary and link when the input is cleared', async () => {
     vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
     const onImport = vi.fn()
+    // 인박스는 마운트 직후 한 번 확인된다 - 로스터는 화면이 뜬 시점에 이미
+    // 들어와 있고, 이 테스트가 보는 것은 그 뒤 입력을 비웠을 때의 정리다.
+    postPayload()
+
     render(<SyncRosterPanel onImport={onImport} />)
     const input = screen.getByLabelText(/공유 url/i)
 
     fireEvent.change(input, { target: { value: shareUrl } })
     expect(screen.getByRole('link', { name: /로스터/i })).toBeTruthy()
 
-    postPayload()
     await waitFor(() => expect(screen.getByText('0기 동기화됨')).toBeTruthy())
 
     fireEvent.change(input, { target: { value: '' } })
@@ -207,8 +187,9 @@ describe('SyncRosterPanel', () => {
 
   it('서버가 둘이면 어느 것을 가져올지 묻고, 고르기 전엔 임포트하지 않는다', async () => {
     const onImport = vi.fn()
-    render(<SyncRosterPanel onImport={onImport} />)
     postTwoServers()
+
+    render(<SyncRosterPanel onImport={onImport} />)
 
     expect(await screen.findByText(/어느 서버의 계정을 가져올까요/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /JP \(2기\)/ })).toBeInTheDocument()
@@ -220,8 +201,9 @@ describe('SyncRosterPanel', () => {
     const user = userEvent.setup()
     vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
     const onImport = vi.fn()
-    render(<SyncRosterPanel onImport={onImport} />)
     postTwoServers()
+
+    render(<SyncRosterPanel onImport={onImport} />)
 
     await user.click(await screen.findByRole('button', { name: /KR \(1기\)/ }))
 

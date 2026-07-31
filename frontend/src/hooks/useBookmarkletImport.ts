@@ -20,11 +20,6 @@ import {
   AssembleRosterApiError,
   describeAssembleRosterApiError,
 } from '../api/assembleRosterApiError'
-import {
-  BLABLALINK_ORIGIN,
-  PAYLOAD_MESSAGE,
-  READY_MESSAGE,
-} from '../lib/bookmarklet'
 
 type Status = 'idle' | 'choosing' | 'importing' | 'done' | 'error'
 
@@ -179,18 +174,6 @@ export const useBookmarkletImport = (
     [status, servers, openId, importServer],
   )
 
-  useEffect(() => {
-    const listener = (event: MessageEvent) => {
-      if (event.origin !== BLABLALINK_ORIGIN) return
-      const data = event.data as { type?: string; payload?: unknown }
-      if (data?.type !== PAYLOAD_MESSAGE) return
-      handle(data.payload)
-    }
-    window.addEventListener('message', listener)
-    // 북마크릿은 이 창이 뜬 뒤에야 payload를 보낼 수 있으므로 준비됐음을 알린다.
-    window.opener?.postMessage({ type: READY_MESSAGE }, BLABLALINK_ORIGIN)
-    return () => window.removeEventListener('message', listener)
-  }, [handle])
 
   // 북마크릿이 로컬 인박스에 두고 간 것을 집어온다. 네이티브 창에는 위
   // postMessage가 닿지 않으므로 앱에서는 이 경로가 실제로 쓰이는 쪽이다.

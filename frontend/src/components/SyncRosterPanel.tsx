@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { parseShareUrl } from '../lib/shareUrl'
-import { buildBookmarklet } from '../lib/bookmarklet'
+import { buildLocalSyncBookmarklet } from '../lib/bookmarklet'
 import { useBookmarkletImport } from '../hooks/useBookmarkletImport'
 import { parseRosterJson } from '../lib/rosterImport'
 import { serverLabel } from '../types/server'
@@ -101,8 +101,8 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
         <div className="sync__bookmarklet">
           <p className="sync__hint">
             이 링크를 북마크 바로 드래그한 다음, blablalink 페이지를 열고
-            로그인한 상태에서 눌러요. 로스터가 새 탭에서 열리므로, 이 탭은
-            새로고침해야 갱신돼요.
+            로그인한 상태에서 눌러요. RapiLab을 켜 둔 채로 누르면 이 화면에
+            로스터가 바로 들어와요.
           </p>
           <a
             className="btn btn--ghost"
@@ -115,16 +115,7 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
             // commit, before paint, so the anchor is never briefly draggable
             // as a dead `href="#"` link.
             ref={(el) => {
-              if (!el) return
-              try {
-                el.href = buildBookmarklet(openId, window.location.origin)
-              } catch (e) {
-                // appOrigin isn't a plain http(s) origin (e.g. opened via
-                // file://) - surface it like any other URL problem instead
-                // of letting the throw escape the commit phase.
-                setOpenId(null)
-                setUrlError(e instanceof Error ? e.message : String(e))
-              }
+              if (el) el.href = buildLocalSyncBookmarklet(openId)
             }}
           >
             니케 로스터 동기화

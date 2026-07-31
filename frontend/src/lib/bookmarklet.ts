@@ -34,8 +34,6 @@
 import { SERVER_AREAS } from '../types/server'
 
 export const BLABLALINK_ORIGIN = 'https://www.blablalink.com'
-export const READY_MESSAGE = 'nikke-sync-ready'
-export const PAYLOAD_MESSAGE = 'nikke-sync-payload'
 
 const OPEN_ID = /^\d{6,}$/
 
@@ -96,48 +94,6 @@ try{${collectSource(openId)}
   try{const r=await fetch('http://127.0.0.1:'+p+'/api/sync-inbox',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(r.ok){sent=true;break}}catch(e){}}
  alert(sent?'로스터를 보냈어요. RapiLab 창에서 확인해주세요.':'RapiLab을 찾지 못했어요. 앱을 켜고 다시 눌러주세요.')
 }catch(err){${errorAlertSource}}
-})()`
-  return 'javascript:' + encodeURIComponent(source)
-}
-
-// 생성된 소스에 그대로 splice되므로 따옴표가 섞이면 문법이 깨지거나 주입이 된다.
-// origin 형태(경로/쿼리/프래그먼트 없음, http(s)만)까지 확인해 http 문자열
-// 이스케이퍼 없이 저렴하게 막는다.
-const isPlainHttpOrigin = (value: string): boolean => {
-  if (/['"]/.test(value)) return false
-  try {
-    const url = new URL(value)
-    return (url.protocol === 'http:' || url.protocol === 'https:') && url.origin === value
-  } catch {
-    return false
-  }
-}
-
-export const buildBookmarklet = (openId: string, appOrigin: string): string => {
-  if (!OPEN_ID.test(openId)) {
-    throw new Error(`open ID(${JSON.stringify(openId)})는 숫자로만 이뤄져야 해요.`)
-  }
-  if (!isPlainHttpOrigin(appOrigin)) {
-    throw new Error(
-      `앱 주소(${JSON.stringify(appOrigin)})가 따옴표 없는 올바른 http(s) 주소가 아니에요.`,
-    )
-  }
-  // 클릭의 transient activation은 짧게 유지된다(크롬 5초, 파이어폭스는 프라미스
-  // 연속 안 window.open에 더 엄격). 세 API 호출을 먼저 기다리면 그 사이
-  // activation이 만료돼 정상 사용자도 팝업 차단을 겪는다 - 그래서 window.open과
-  // message 리스너 등록은 첫 await 전, 하나의 동기 블록 안에서 끝낸다.
-  const source = `(async()=>{
-if(location.origin!=='${BLABLALINK_ORIGIN}'){alert('blablalink 페이지에서 눌러주세요.');return}
-const w=window.open('${appOrigin}','nikke-deck-builder');
-if(!w){alert('팝업이 차단됐어요. 차단을 해제하고 다시 눌러주세요.');return}
-let ready=false,payload=null;
-const send=()=>{if(ready&&payload){w.postMessage({type:'${PAYLOAD_MESSAGE}',payload:payload},'${appOrigin}');window.removeEventListener('message',h)}};
-const h=e=>{if(e.source===w&&e.origin==='${appOrigin}'&&e.data&&e.data.type==='${READY_MESSAGE}'){ready=true;send()}};
-window.addEventListener('message',h);
-try{${collectSource(openId)}
- send()
-}catch(err){
- window.removeEventListener('message',h);${errorAlertSource}}
 })()`
   return 'javascript:' + encodeURIComponent(source)
 }

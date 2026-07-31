@@ -1,7 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { useBookmarkletImport } from './useBookmarkletImport'
-import { BLABLALINK_ORIGIN, PAYLOAD_MESSAGE } from '../lib/bookmarklet'
+import { takeSyncInbox } from '../api/syncInbox'
 import { assembleRoster } from '../api/assembleRoster'
 
 // 이 코드베이스의 모킹 관례는 vi.mock + vi.mocked다 (RecommendPanel.test.tsx 참고).
@@ -9,11 +9,14 @@ import { assembleRoster } from '../api/assembleRoster'
 vi.mock('../api/assembleRoster', () => ({
   assembleRoster: vi.fn(),
 }))
+vi.mock('../api/syncInbox', () => ({ takeSyncInbox: vi.fn() }))
 
 const EMPTY = { owned: [], character_details: [], recycle_room_researches: [] }
 
-const post = (origin: string, data: unknown) =>
-  window.dispatchEvent(new MessageEvent('message', { origin, data }))
+// 북마크릿이 인박스에 두고 간 상태를 만든다. 훅은 마운트하자마자 한 번
+// 확인하므로 renderHook 앞에서 부른다.
+const inbox = (payload: unknown) =>
+  vi.mocked(takeSyncInbox).mockResolvedValueOnce(payload)
 
 const server = (area: number, count: number, nickname = '') => ({
   area,
@@ -23,15 +26,22 @@ const server = (area: number, count: number, nickname = '') => ({
   recycle_room_researches: [],
 })
 
-afterEach(() => vi.mocked(assembleRoster).mockReset())
+beforeEach(() => {
+  // 기본은 빈 인박스. 각 테스트가 inbox()로 하나를 넣는다.
+  vi.mocked(takeSyncInbox).mockResolvedValue(null)
+})
+afterEach(() => {
+  vi.mocked(assembleRoster).mockReset()
+  vi.mocked(takeSyncInbox).mockReset()
+})
 
 describe('useBookmarkletImport', () => {
   it('blablalink에서 온 payload를 조립해 넘긴다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()
-    renderHook(() => useBookmarkletImport(onRoster))
+    inbox({ ...EMPTY, open_id: 'abc123' })
 
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: { ...EMPTY, open_id: 'abc123' } })
+    renderHook(() => useBookmarkletImport(onRoster))
 
     await waitFor(() =>
       expect(onRoster).toHaveBeenCalledWith({
@@ -49,9 +59,9 @@ describe('useBookmarkletImport', () => {
   it('open_id가 없는 payload는 프로필을 만들지 않고 오류를 낸다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()
-    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+    inbox(EMPTY)
 
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: EMPTY })
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
 
     await waitFor(() => expect(result.current.status).toBe('error'))
     expect(result.current.error).toMatch(/계정/)
@@ -61,9 +71,9 @@ describe('useBookmarkletImport', () => {
   it('open_id가 공백뿐인 payload도 거절한다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()
-    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+    inbox({ ...EMPTY, open_id: '   ' })
 
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: { ...EMPTY, open_id: '   ' } })
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
 
     await waitFor(() => expect(result.current.status).toBe('error'))
     expect(onRoster).not.toHaveBeenCalled()
@@ -72,12 +82,9 @@ describe('useBookmarkletImport', () => {
   it('payload의 open_id/nickname을 분리해 raw와 함께 onRoster로 넘긴다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()
-    renderHook(() => useBookmarkletImport(onRoster))
+    inbox({ ...EMPTY, open_id: 'abc123', nickname: 'Fienn' })
 
-    post(BLABLALINK_ORIGIN, {
-      type: PAYLOAD_MESSAGE,
-      payload: { ...EMPTY, open_id: 'abc123', nickname: 'Fienn' },
-    })
+    renderHook(() => useBookmarkletImport(onRoster))
 
     await waitFor(() =>
       expect(onRoster).toHaveBeenCalledWith({
@@ -89,103 +96,39 @@ describe('useBookmarkletImport', () => {
     )
   })
 
-  it('다른 출처의 메시지는 무시한다', async () => {
-    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
-    const onRoster = vi.fn()
-    renderHook(() => useBookmarkletImport(onRoster))
-
-    post('https://evil.example', { type: PAYLOAD_MESSAGE, payload: EMPTY })
-
-    await new Promise((r) => setTimeout(r, 10))
-    expect(assembleRoster).not.toHaveBeenCalled()
-    expect(onRoster).not.toHaveBeenCalled()
-  })
 
   it('조립 실패는 error 상태로 드러난다', async () => {
     vi.mocked(assembleRoster).mockRejectedValue(new Error('boom'))
-    const { result } = renderHook(() => useBookmarkletImport(vi.fn()))
+    inbox({ ...EMPTY, open_id: 'abc123' })
 
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: { ...EMPTY, open_id: 'abc123' } })
+    const { result } = renderHook(() => useBookmarkletImport(vi.fn()))
 
     await waitFor(() => expect(result.current.status).toBe('error'))
     expect(result.current.error).toContain('boom')
   })
 
-  it('window.opener가 없으면(일반 방문) 아무 동작도 하지 않고 예외도 던지지 않는다', () => {
-    expect(window.opener).toBeFalsy()
-    const onRoster = vi.fn()
-
-    expect(() => renderHook(() => useBookmarkletImport(onRoster))).not.toThrow()
-
-    expect(assembleRoster).not.toHaveBeenCalled()
-    expect(onRoster).not.toHaveBeenCalled()
-  })
 
   it('blablalink 출처라도 payload가 없거나 형태가 이상하면 assembleRoster를 부르지 않는다', async () => {
     const onRoster = vi.fn()
     renderHook(() => useBookmarkletImport(onRoster))
 
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE }) // payload 누락
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: null })
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: 'not-a-roster' }) // garbage
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: { owned: [] } }) // 필드 일부만
+    inbox(undefined) // payload 누락
+    inbox(null)
+    inbox('not-a-roster') // garbage
+    inbox({ owned: [] }) // 필드 일부만
 
     await new Promise((r) => setTimeout(r, 10))
     expect(assembleRoster).not.toHaveBeenCalled()
     expect(onRoster).not.toHaveBeenCalled()
   })
 
-  it('onRoster가 매 렌더마다 새로 생겨도 리스너/ready 신호는 마운트당 한 번만 등록한다', async () => {
-    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
-    const opener = { postMessage: vi.fn() }
-    window.opener = opener as unknown as Window
-    const addSpy = vi.spyOn(window, 'addEventListener')
-    const messageListenerCount = () =>
-      addSpy.mock.calls.filter((call) => call[0] === 'message').length
-
-    // SyncRosterPanel(Task 9)처럼 onRoster를 인라인 화살표로 넘기는 소비자를
-    // 흉내낸다 - 렌더마다 새 함수 참조가 onRoster로 들어온다.
-    let received: unknown = null
-    const { rerender } = renderHook(
-      ({ tag }: { tag: number }) =>
-        useBookmarkletImport((raw: unknown) => {
-          received = { tag, raw }
-        }),
-      { initialProps: { tag: 1 } },
-    )
-
-    expect(messageListenerCount()).toBe(1)
-    expect(opener.postMessage).toHaveBeenCalledTimes(1)
-
-    rerender({ tag: 2 })
-    rerender({ tag: 3 })
-    rerender({ tag: 4 })
-
-    expect(messageListenerCount()).toBe(1)
-    expect(opener.postMessage).toHaveBeenCalledTimes(1)
-
-    post(BLABLALINK_ORIGIN, { type: PAYLOAD_MESSAGE, payload: { ...EMPTY, open_id: 'abc123' } })
-
-    await waitFor(() =>
-      expect(received).toEqual({
-        tag: 4,
-        raw: { openId: 'abc123', area: 81, nickname: '', raw: { units: [] } },
-      }),
-    )
-
-    addSpy.mockRestore()
-    window.opener = null as unknown as Window
-  })
 
   it('서버가 하나면 묻지 않고 바로 조립해 넘긴다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()
-    renderHook(() => useBookmarkletImport(onRoster))
+    inbox({ open_id: 'abc123', servers: [server(83, 181, 'FIENN')] })
 
-    post(BLABLALINK_ORIGIN, {
-      type: PAYLOAD_MESSAGE,
-      payload: { open_id: 'abc123', servers: [server(83, 181, 'FIENN')] },
-    })
+    renderHook(() => useBookmarkletImport(onRoster))
 
     await waitFor(() =>
       expect(onRoster).toHaveBeenCalledWith({
@@ -200,12 +143,9 @@ describe('useBookmarkletImport', () => {
   it('서버가 둘이면 고르기 전에는 아무것도 조립하지 않는다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()
-    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+    inbox({ open_id: 'abc123', servers: [server(81, 186), server(83, 10)] })
 
-    post(BLABLALINK_ORIGIN, {
-      type: PAYLOAD_MESSAGE,
-      payload: { open_id: 'abc123', servers: [server(81, 186), server(83, 10)] },
-    })
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
 
     await waitFor(() => expect(result.current.status).toBe('choosing'))
     expect(result.current.candidates).toEqual([
@@ -219,12 +159,9 @@ describe('useBookmarkletImport', () => {
   it('고른 서버 하나만 조립한다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()
-    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+    inbox({ open_id: 'abc123', servers: [server(81, 186), server(83, 10)] })
 
-    post(BLABLALINK_ORIGIN, {
-      type: PAYLOAD_MESSAGE,
-      payload: { open_id: 'abc123', servers: [server(81, 186), server(83, 10)] },
-    })
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
     await waitFor(() => expect(result.current.status).toBe('choosing'))
 
     // `choose`는 상태를 바꾸므로 act 안에서 부른다 - 밖에서 부르면 경고가 찍히고,
@@ -254,12 +191,9 @@ describe('useBookmarkletImport', () => {
         }),
     )
     const onRoster = vi.fn()
-    const { result } = renderHook(() => useBookmarkletImport(onRoster))
+    inbox({ open_id: 'abc123', servers: [server(81, 186), server(83, 10)] })
 
-    post(BLABLALINK_ORIGIN, {
-      type: PAYLOAD_MESSAGE,
-      payload: { open_id: 'abc123', servers: [server(81, 186), server(83, 10)] },
-    })
+    const { result } = renderHook(() => useBookmarkletImport(onRoster))
     await waitFor(() => expect(result.current.status).toBe('choosing'))
 
     act(() => {
@@ -282,12 +216,9 @@ describe('useBookmarkletImport', () => {
   it('구 payload는 area 81 서버 하나로 받는다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()
-    renderHook(() => useBookmarkletImport(onRoster))
+    inbox({ ...EMPTY, open_id: 'abc123', nickname: 'FIENN' })
 
-    post(BLABLALINK_ORIGIN, {
-      type: PAYLOAD_MESSAGE,
-      payload: { ...EMPTY, open_id: 'abc123', nickname: 'FIENN' },
-    })
+    renderHook(() => useBookmarkletImport(onRoster))
 
     await waitFor(() =>
       expect(onRoster).toHaveBeenCalledWith({
