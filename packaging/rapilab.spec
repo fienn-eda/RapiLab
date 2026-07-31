@@ -24,6 +24,8 @@ a = Analysis(
          "tools/collect-blablalink"),
         # engine_version.VERSION_FILE - 번들 루트에 놓인다
         (str(ROOT / "packaging" / "engine_version.txt"), "."),
+        # app_version.VERSION_FILE - 릴리스 태그. 비어 있을 수 있다.
+        (str(ROOT / "packaging" / "app_version.txt"), "."),
     ],
     hiddenimports=[
         # uvicorn은 프로토콜/로깅 구현을 문자열로 늦게 임포트해서 정적 분석에

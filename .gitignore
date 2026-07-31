@@ -19,6 +19,7 @@ dist/
 # 빌드가 번들에 심는 엔진 버전. 소스에서 유도되는 값이라 커밋하지 않는다 -
 # 커밋하면 소스와 어긋난 값이 리포에 남을 수 있다.
 packaging/engine_version.txt
+packaging/app_version.txt
 
 # Playwright MCP가 진단 중 남기는 페이지 스냅샷.
 .playwright-mcp/
