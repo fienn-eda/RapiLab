@@ -38,19 +38,21 @@ export function SyncHelp({ id, hidden }: SyncHelpProps) {
         </li>
         <li>복사한 URL을 아래 칸에 붙여넣어요.</li>
         <li>
-          나타나는 <strong>니케 로스터 동기화</strong> 링크를 브라우저 북마크 바로
-          드래그해요. 북마크 바가 안 보이면 Ctrl+Shift+B(맥은 Cmd+Shift+B)로 켤 수
-          있어요.
+          나타나는 <strong>북마크릿 주소 복사</strong> 버튼을 눌러요.
         </li>
         <li>
-          blablalink 페이지를 열고 로그인한 상태에서 그 북마크를 눌러요. 로스터가
-          새 탭에서 열려요.
+          브라우저에서 북마크를 새로 만들고, <strong>주소(URL) 칸에 붙여넣어요</strong>.
+        </li>
+        <li>
+          RapiLab을 켜 둔 채, blablalink에 로그인한 상태로 그 북마크를 눌러요.
+          로스터가 이 화면으로 바로 들어와요.
         </li>
       </ol>
 
       <h3 className="sync-help__heading">다시 동기화할 때</h3>
       <p className="sync-help__text">
-        북마크만 다시 누르면 돼요. 공유 URL을 또 붙여넣을 필요는 없어요.
+        북마크만 다시 누르면 돼요. 공유 URL을 또 붙여넣을 필요는 없어요. RapiLab이
+        켜져 있어야 해요.
       </p>
 
       <h3 className="sync-help__heading">계정이 여러 개일 때</h3>
@@ -59,14 +61,13 @@ export function SyncHelp({ id, hidden }: SyncHelpProps) {
       </p>
       <ol className="sync-help__steps">
         <li>
-          추가할 계정의 SHIFTYPAD에서 공유 URL을 복사해 위 1~4단계를 다시 해요.
+          추가할 계정의 SHIFTYPAD에서 공유 URL을 복사해 위 1~5단계를 다시 해요.
         </li>
         <li>
-          이름이 다 똑같이 "니케 로스터 동기화"라서, 북마크 이름을 계정 이름으로
-          바꿔두면 헷갈리지 않아요.
+          북마크 이름을 계정 이름으로 바꿔두면 어느 계정 것인지 헷갈리지 않아요.
         </li>
         <li>
-          <strong>그 계정으로 로그인한 채 blablalink 페이지에서</strong> 해당
+          <strong>그 계정으로 blablalink에 로그인한 상태에서</strong> 해당
           북마크를 눌러요.
         </li>
       </ol>
