@@ -32,14 +32,27 @@ describe('filterAndSort', () => {
     expect(run({}).sort()).toEqual(['네온', '라피', '앨리스', '홍련'].sort())
   })
 
-  // The default sort is by name, so an unfiltered grid is 가나다순 rather than
+  // The grid opens on the units the player invested in most, rather than on
   // whatever order the backend happened to return.
-  it('sorts by name in Korean collation order by default', () => {
-    expect(run({})).toEqual(['네온', '라피', '앨리스', '홍련'])
+  it('starts on 우코, highest first', () => {
+    expect(EMPTY_FILTER.sortKey).toBe('우코')
+    expect(EMPTY_FILTER.sortDir).toBe('desc')
+    // Rows whose 우코 order contradicts their name order: in ROWS only one
+    // unit rolled the stat, so there the two orders coincide and the default
+    // would pass either way.
+    const rows: Row[] = [
+      { name: '가', element: 'Fire', burstTier: 1, overload: [{ name: '우월코드 대미지 증가', value: 10 }] },
+      { name: '나', element: 'Fire', burstTier: 1, overload: [{ name: '우월코드 대미지 증가', value: 50 }] },
+    ]
+    expect(names(filterAndSort(rows, facets, EMPTY_FILTER))).toEqual(['나', '가'])
+  })
+
+  it('sorts by name in Korean collation order', () => {
+    expect(run({ sortKey: 'name', sortDir: 'asc' })).toEqual(['네온', '라피', '앨리스', '홍련'])
   })
 
   it('reverses the name order when the direction is descending', () => {
-    expect(run({ sortDir: 'desc' })).toEqual(['홍련', '앨리스', '라피', '네온'])
+    expect(run({ sortKey: 'name', sortDir: 'desc' })).toEqual(['홍련', '앨리스', '라피', '네온'])
   })
 
   it('matches a name by substring, ignoring case and surrounding space', () => {

@@ -22,14 +22,15 @@ export interface UnitFilterState {
   sortDir: 'asc' | 'desc'
 }
 
-/** 기본 상태. 정렬 기본값이 이름·오름차순이라, 필터를 아무것도 걸지 않아도
- * 그리드는 가나다순으로 그려진다 - 백엔드가 준 순서는 유저에게 의미가 없다. */
+/** 기본 상태. 우코 내림차순으로 시작하는 이유: 백엔드가 준 순서는 유저에게
+ * 의미가 없고, 오버로드를 얼마나 굴렸는지가 그 니케를 실제로 쓸 수 있는지를
+ * 가장 잘 말해준다 - 가장 많이 굴린 쪽이 맨 위에 온다. */
 export const EMPTY_FILTER: UnitFilterState = {
   query: '',
   elements: [],
   burstTiers: [],
-  sortKey: 'name',
-  sortDir: 'asc',
+  sortKey: '우코',
+  sortDir: 'desc',
 }
 
 /** 무언가 숨겨지고 있는가. 정렬은 순서만 바꾸고 아무것도 숨기지 않으므로
