@@ -162,6 +162,13 @@ def main() -> None:
     if "--selftest" in sys.argv[1:]:
         raise SystemExit(selftest())
 
+    # 창을 만들기 전에 확인한다. 새 릴리스가 있으면 헬퍼가 이미 떴으므로
+    # 여기서 앱을 비워야 교체가 가능하다 - 실행 중인 exe는 잠겨 있다.
+    # 실패는 조용하고, 그때는 그냥 현재 버전으로 뜬다.
+    from app.updater import update_if_available
+    if update_if_available():
+        raise SystemExit(0)
+
     import webview
 
     port = pick_port()
