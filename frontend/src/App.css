@@ -431,8 +431,11 @@
   font-size: 13px;
 }
 
+/* Full text colour, not the muted one: the option names are the half a player
+   scans down a column, and on this ground a muted grey loses them. The value
+   stays distinguishable by weight. */
 .overload__name {
-  color: var(--text-muted);
+  color: var(--text);
   min-width: 0;
 }
 
