@@ -26,6 +26,7 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
   const [helpOpen, setHelpOpen] = useState(defaultHelpOpen)
   const [openId, setOpenId] = useState<string | null>(null)
   const [urlError, setUrlError] = useState<string | null>(null)
+  const [copied, setCopied] = useState<'idle' | 'ok' | 'manual'>('idle')
   const [summary, setSummary] = useState<string | null>(null)
   // Parse warning lines (e.g. which owned units are not yet supported), shown
   // verbatim so a syncing user is told too.
@@ -51,6 +52,9 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
   const handleUrl = (value: string) => {
     setSummary(null)
     setNotes([])
+    // 주소가 바뀌면 북마크릿도 다른 계정의 것이 된다 - 앞의 "복사했어요"가
+    // 남아 있으면 방금 만든 북마크가 최신인 줄 알게 된다.
+    setCopied('idle')
     if (!value.trim()) {
       setOpenId(null)
       setUrlError(null)
@@ -100,26 +104,48 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
       {openId && (
         <div className="sync__bookmarklet">
           <p className="sync__hint">
-            이 링크를 북마크 바로 드래그한 다음, blablalink 페이지를 열고
-            로그인한 상태에서 눌러요. RapiLab을 켜 둔 채로 누르면 이 화면에
-            로스터가 바로 들어와요.
+            ① 아래 버튼으로 주소를 복사해요. ② 브라우저에서 북마크를 새로
+            만들고 <strong>주소(URL) 칸에 붙여넣어요</strong>. ③ blablalink에
+            로그인한 상태로 그 북마크를 눌러요. RapiLab을 켜 둔 채로 누르면 이
+            화면에 로스터가 바로 들어와요.
           </p>
-          <a
+          {/* 드래그가 아니라 복사인 이유: 앱은 네이티브 창이라 북마크 바가
+              없고, 창 밖으로 링크를 끌어내는 것도 브라우저처럼 동작하지
+              않는다. 주소만 손에 쥐면 북마크는 브라우저에서 만들 수 있다. */}
+          <button
+            type="button"
             className="btn btn--ghost"
-            href="#"
-            // React 19 blocks a `javascript:` string passed through the `href`
-            // prop ("blocked a javascript: URL as a security precaution") - a
-            // bookmarklet's href IS that string, so it's set via the DOM
-            // directly instead, which React's sanitiser doesn't intercept.
-            // A ref callback (rather than a passive effect) sets it during
-            // commit, before paint, so the anchor is never briefly draggable
-            // as a dead `href="#"` link.
-            ref={(el) => {
-              if (el) el.href = buildLocalSyncBookmarklet(openId)
+            onClick={() => {
+              const url = buildLocalSyncBookmarklet(openId)
+              navigator.clipboard?.writeText(url).then(
+                () => setCopied('ok'),
+                // 클립보드가 막힌 환경이면 직접 복사할 수 있게 보여준다.
+                () => setCopied('manual'),
+              ) ?? setCopied('manual')
             }}
           >
-            니케 로스터 동기화
-          </a>
+            북마크릿 주소 복사
+          </button>
+          {copied === 'ok' && (
+            <p className="sync__hint" role="status">
+              복사했어요. 브라우저에서 북마크를 만들고 주소 칸에 붙여넣어 주세요.
+            </p>
+          )}
+          {copied === 'manual' && (
+            <>
+              <p className="sync__hint" role="status">
+                자동 복사가 막혀 있어요. 아래 주소를 직접 복사해 주세요.
+              </p>
+              <textarea
+                className="field__input"
+                readOnly
+                rows={3}
+                aria-label="북마크릿 주소"
+                value={buildLocalSyncBookmarklet(openId)}
+                onFocus={(e) => e.currentTarget.select()}
+              />
+            </>
+          )}
         </div>
       )}
       {/* 한 계정이 여러 서버에 로스터를 가진 경우다. 어느 쪽을 원하는지는

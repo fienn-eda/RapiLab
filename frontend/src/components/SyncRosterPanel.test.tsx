@@ -9,6 +9,16 @@ import { takeSyncInbox } from '../api/syncInbox'
 // useBookmarkletImport.test.ts) - ESM named exports can't be intercepted with
 // vi.spyOn.
 vi.mock('../api/syncInbox', () => ({ takeSyncInbox: vi.fn() }))
+
+// 앱은 네이티브 창이라 북마크 바가 없다 - 북마크릿은 드래그가 아니라 복사로
+// 건네므로, 검사 대상은 링크의 href가 아니라 클립보드에 들어간 값이다.
+const copied: string[] = []
+vi.stubGlobal('navigator', {
+  ...navigator,
+  clipboard: { writeText: (text: string) => { copied.push(text); return Promise.resolve() } },
+})
+const copyBookmarklet = () =>
+  fireEvent.click(screen.getByRole('button', { name: /북마크릿 주소 복사/ }))
 vi.mock('../api/assembleRoster', () => ({
   assembleRoster: vi.fn(),
 }))
@@ -45,14 +55,18 @@ const postTwoServers = () =>
 afterEach(() => vi.mocked(assembleRoster).mockReset())
 
 describe('SyncRosterPanel', () => {
-  it('공유 URL을 넣으면 북마크릿 링크가 나온다', () => {
+  it('공유 URL을 넣으면 북마크릿을 복사할 수 있다', () => {
+    copied.length = 0
     render(<SyncRosterPanel onImport={vi.fn()} />)
     fireEvent.change(screen.getByLabelText(/공유 url/i), {
       target: { value: shareUrl },
     })
-    const link = screen.getByRole('link', { name: /로스터/i })
-    expect(link.getAttribute('href')).toContain('javascript:')
-    expect(link.getAttribute('href')).toContain('1234567890123456789')
+
+    copyBookmarklet()
+
+    expect(copied).toHaveLength(1)
+    expect(copied[0]).toContain('javascript:')
+    expect(copied[0]).toContain('1234567890123456789')
   })
 
   it('잘못된 URL은 에러를 보여주고 링크를 만들지 않는다', () => {
@@ -131,27 +145,42 @@ describe('SyncRosterPanel', () => {
     const input = screen.getByLabelText(/공유 url/i)
 
     fireEvent.change(input, { target: { value: shareUrl } })
-    expect(screen.getByRole('link', { name: /로스터/i })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /북마크릿 주소 복사/ })).toBeTruthy()
 
     await waitFor(() => expect(screen.getByText('0기 동기화됨')).toBeTruthy())
 
     fireEvent.change(input, { target: { value: '' } })
     expect(screen.queryByText('0기 동기화됨')).toBeNull()
-    expect(screen.queryByRole('link', { name: /로스터/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: /북마크릿 주소 복사/ })).toBeNull()
   })
 
-  it('regenerates the bookmarklet link with the new open id when a different share URL is pasted', () => {
+  it('다른 공유 URL을 넣으면 그 계정의 북마크릿이 복사된다', () => {
+    copied.length = 0
     render(<SyncRosterPanel onImport={vi.fn()} />)
     const input = screen.getByLabelText(/공유 url/i)
 
     fireEvent.change(input, { target: { value: shareUrl } })
-    const firstHref = screen.getByRole('link', { name: /로스터/i }).getAttribute('href')
-    expect(firstHref).toContain('1234567890123456789')
+    copyBookmarklet()
+    expect(copied[0]).toContain('1234567890123456789')
 
     fireEvent.change(input, { target: { value: shareUrl2 } })
-    const secondHref = screen.getByRole('link', { name: /로스터/i }).getAttribute('href')
-    expect(secondHref).toContain('1111111111111111111')
-    expect(secondHref).not.toContain('1234567890123456789')
+    copyBookmarklet()
+    expect(copied[1]).toContain('1111111111111111111')
+    expect(copied[1]).not.toContain('1234567890123456789')
+  })
+
+  it('주소를 바꾸면 앞의 "복사했어요"가 남지 않는다', async () => {
+    // 남아 있으면 방금 만든 북마크가 최신인 줄 알게 된다.
+    render(<SyncRosterPanel onImport={vi.fn()} />)
+    const input = screen.getByLabelText(/공유 url/i)
+
+    fireEvent.change(input, { target: { value: shareUrl } })
+    copyBookmarklet()
+    // 클립보드 쓰기는 프라미스라 상태 표시는 한 틱 뒤에 나온다.
+    await waitFor(() => expect(screen.getByRole('status')).toBeInTheDocument())
+
+    fireEvent.change(input, { target: { value: shareUrl2 } })
+    expect(screen.queryByRole('status')).toBeNull()
   })
 
   it('도움말은 기본으로 접혀 있다', () => {
