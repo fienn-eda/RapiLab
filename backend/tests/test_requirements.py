@@ -15,6 +15,11 @@ LOCAL = {"app", "tests"}
 # 임포트 이름과 배포 이름이 다른 것들.
 IMPORT_TO_PACKAGE = {"webview": "pywebview"}
 
+# pythonnet이 CLR에서 노출하는 이름들 - pip에는 없고 `clr.AddReference`가 만든다.
+# 셸이 WebView2 이벤트를 다루려면 `Microsoft.Web.WebView2.Core`를 임포트해야
+# 하는데, 여기 없으면 그것이 "선언되지 않은 서드파티"로 보인다.
+CLR_NAMESPACES = {"Microsoft", "System"}
+
 # 데스크톱 앱으로 띄울 때만 임포트되는 모듈. 서버로 돌릴 때는 지나가지 않으므로
 # requirements.txt가 아니라 requirements-app.txt가 책임진다.
 APP_ONLY = {"desktop.py"}
@@ -48,7 +53,8 @@ def _third_party(paths) -> set[str]:
     for path in paths:
         imported |= _top_level_imports(path)
     return {IMPORT_TO_PACKAGE.get(name, name) for name in imported
-            if name not in STDLIB and name not in LOCAL}
+            if name not in STDLIB and name not in LOCAL
+            and name not in CLR_NAMESPACES}
 
 
 def test_every_third_party_import_in_the_server_is_declared():
