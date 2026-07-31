@@ -808,12 +808,14 @@
 }
 
 /* 패널이 뷰포트를 넘으면 3단계가 가리키는 URL 입력칸이 접힌 부분 아래로
-   밀려나므로, 높이를 제한하고 내부에서 스크롤한다. */
+   밀려나므로, 높이를 제한하고 내부에서 스크롤한다.
+   폭은 읽기 좋은 줄 길이에서 멈춘다 - 동기화 탭은 전체 폭을 내주지만, 문단을
+   창 끝까지 늘이면 다음 줄 첫 글자를 찾기 어려워진다. */
 .sync-help {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  max-width: 480px;
+  max-width: 720px;
   max-height: 55vh;
   padding: var(--sp-3);
   border: 1px solid var(--border);
