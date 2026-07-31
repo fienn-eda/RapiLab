@@ -15,6 +15,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { assembleRoster, type RawRosterPayload } from '../api/assembleRoster'
+import { takeSyncInbox } from '../api/syncInbox'
 import {
   AssembleRosterApiError,
   describeAssembleRosterApiError,
@@ -26,6 +27,10 @@ import {
 } from '../lib/bookmarklet'
 
 type Status = 'idle' | 'choosing' | 'importing' | 'done' | 'error'
+
+// 인박스를 확인하는 주기. 동기화는 유저가 버튼을 누르고 앱으로 돌아오는
+// 행위라 몇 초 지연은 눈에 띄지 않고, 더 촘촘히 찔러 봐야 얻을 것이 없다.
+export const SYNC_POLL_MS = 2000
 
 // open_id/nickname are client-only profile identifiers riding alongside the
 // roster payload - assembleRoster strips them before they ever reach the
@@ -186,6 +191,35 @@ export const useBookmarkletImport = (
     window.opener?.postMessage({ type: READY_MESSAGE }, BLABLALINK_ORIGIN)
     return () => window.removeEventListener('message', listener)
   }, [handle])
+
+  // 북마크릿이 로컬 인박스에 두고 간 것을 집어온다. 네이티브 창에는 위
+  // postMessage가 닿지 않으므로 앱에서는 이 경로가 실제로 쓰이는 쪽이다.
+  //
+  // idle일 때만 돈다: 후보를 고르는 중이거나 조립 중에 새 payload가 끼어들면
+  // 유저가 방금 누른 것과 다른 로스터가 들어온다.
+  useEffect(() => {
+    if (status !== 'idle') return
+    const controller = new AbortController()
+    let stopped = false
+
+    const check = async () => {
+      try {
+        const payload = await takeSyncInbox(controller.signal)
+        if (!stopped && payload) handle(payload)
+      } catch {
+        // 서버가 아직 없거나(개발 중 백엔드 미기동) 잠깐 끊긴 것이다.
+        // 화면에 띄울 일이 아니라 다음 주기를 기다리면 된다.
+      }
+    }
+
+    const timer = setInterval(() => void check(), SYNC_POLL_MS)
+    void check()
+    return () => {
+      stopped = true
+      controller.abort()
+      clearInterval(timer)
+    }
+  }, [status, handle])
 
   const candidates = servers.map((s) => ({ area: s.area, count: s.owned.length }))
 
