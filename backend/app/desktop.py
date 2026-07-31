@@ -19,6 +19,7 @@ uvicorn을 데몬 스레드로 띄우고, 실제로 응답할 때까지 기다�
 """
 import multiprocessing
 import socket
+import sys
 import threading
 import time
 import urllib.error
@@ -67,8 +68,77 @@ def _serve(port: int) -> None:
     uvicorn.run(build_app(), host=HOST, port=port, log_level="warning")
 
 
+def selftest() -> int:
+    """창을 열지 않고 얼린 빌드가 성한지 확인한다. 성공하면 0.
+
+    이것이 있는 이유: 얼린 앱은 포트를 OS에게 받으므로 밖에서 접근할 방법이
+    없고, 그러면 릴리스를 사람이 눌러보는 것 외에 검증할 길이 없다. 여기서
+    보는 넷은 전부 "얼렸을 때만" 깨질 수 있는 것들이다.
+
+        RapiLab.exe --selftest
+
+    결과를 파일에도 쓴다: 배포용 exe는 windowed 부트로더라 콘솔이 없고, 그러면
+    stdout이 갈 곳이 없어 종료 코드 말고는 아무것도 안 남는다.
+    """
+    import json
+    import urllib.request
+
+    from app.engine_version import engine_version
+    from app.paths import writable_dir
+
+    lines: list[str] = []
+
+    def report(message: str) -> None:
+        print(message)
+        lines.append(message)
+
+    def finish(code: int) -> int:
+        (writable_dir() / "selftest.log").write_text(
+            "\n".join(lines) + f"\nexit: {code}\n", encoding="utf-8")
+        return code
+
+    port = pick_port()
+    threading.Thread(target=_serve, args=(port,), daemon=True).start()
+    url = f"http://{HOST}:{port}"
+    if not wait_until_serving(url):
+        report(f"FAIL: backend did not answer on {url}")
+        return finish(1)
+
+    # ① 엔진 버전 - 얼린 빌드는 스탬프를 읽어야 하고, 없으면 여기서 죽는다.
+    report(f"engine version: {engine_version()}")
+
+    # ② 번들 데이터 - 경로가 어긋나면 유닛이 0개로 조용히 나온다.
+    # 이 엔드포인트는 리스트를 그대로 낸다(response_model=list[SupportedUnit]).
+    with urllib.request.urlopen(f"{url}/api/supported-units") as response:
+        units = json.load(response)
+    report(f"supported units: {len(units)}")
+    if not units:
+        report("FAIL: no units - data path is wrong inside the bundle")
+        return finish(1)
+
+    # ③ 프론트 번들 - 없으면 창이 빈 화면으로 뜬다.
+    with urllib.request.urlopen(url) as response:
+        served_index = "<div id=\"root\"" in response.read().decode("utf-8", "replace")
+    report(f"serves the app shell: {served_index}")
+    if not served_index:
+        return finish(1)
+
+    # ④ 프로세스 풀 - freeze_support()가 없으면 워커가 exe를 다시 실행해서
+    # 앱이 자기 자신을 무한히 띄운다. 실제로 하나 돌려봐야 알 수 있다.
+    from concurrent.futures import ProcessPoolExecutor
+    with ProcessPoolExecutor(max_workers=1) as pool:
+        if pool.submit(abs, -7).result(timeout=60) != 7:
+            report("FAIL: process pool returned the wrong answer")
+            return finish(1)
+    report("process pool: ok")
+    return finish(0)
+
+
 def main() -> None:
     multiprocessing.freeze_support()
+    if "--selftest" in sys.argv[1:]:
+        raise SystemExit(selftest())
+
     import webview
 
     port = pick_port()
