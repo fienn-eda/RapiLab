@@ -29,12 +29,33 @@ HOST = "127.0.0.1"
 WINDOW_TITLE = "RapiLab"
 STARTUP_TIMEOUT = 20.0
 
+# 로스터 동기화 북마클릿이 이 앱을 찾아야 하므로 포트는 **알려진 후보** 중에서
+# 고른다. OS에게 맡기면(0번 바인드) 주소를 미리 알 수 없어 북마클릿이 어디로
+# 보낼지 모르고, 하나로 고정하면 그 포트가 이미 쓰이고 있을 때 앱이 아예 뜨지
+# 않는다. 그래서 몇 개를 순서대로 시도한다.
+#
+# 이 목록은 `frontend/src/lib/bookmarklet.ts`의 같은 목록과 짝이다 - 한쪽만
+# 고치면 동기화가 조용히 안 된다. 값은 등록된 서비스가 없는 대역에서 골랐다.
+SYNC_PORTS = (41573, 41574, 41575, 41576)
+
+
+def _is_free(port: int) -> bool:
+    with socket.socket() as probe:
+        try:
+            probe.bind((HOST, port))
+            return True
+        except OSError:
+            return False
+
 
 def pick_port() -> int:
-    """비어 있는 포트 하나. 0번에 바인드해 OS에게 고르게 하고 곧바로 놓아준다."""
-    with socket.socket() as probe:
-        probe.bind((HOST, 0))
-        return probe.getsockname()[1]
+    """북마클릿이 찾을 수 있는 포트 중 비어 있는 첫 번째."""
+    for port in SYNC_PORTS:
+        if _is_free(port):
+            return port
+    raise RuntimeError(
+        f"none of the sync ports {SYNC_PORTS} are free - another copy of "
+        "RapiLab may already be running")
 
 
 def wait_until_serving(url: str, timeout: float = STARTUP_TIMEOUT) -> bool:
