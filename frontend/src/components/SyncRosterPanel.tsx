@@ -20,9 +20,17 @@ interface SyncRosterPanelProps {
   /** 활성 프로필이 없는 화면에서는 도움말이 펼쳐진 채로 시작한다 - 아직 아무것도
    * 동기화하지 못한 유저가 토글을 "발견"할 필요가 없어야 한다. */
   defaultHelpOpen?: boolean
+  /** 인박스에서 로스터를 집어 처리하기 시작했을 때. 이 패널이 감춰져 있을 수
+   * 있는 곳(탭)에서는 이 신호로 패널을 보이게 해야 한다 - 서버 선택 질문과
+   * 결과·경고 줄이 전부 여기에만 있다. */
+  onActivity?: () => void
 }
 
-export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRosterPanelProps) {
+export function SyncRosterPanel({
+  onImport,
+  defaultHelpOpen = false,
+  onActivity,
+}: SyncRosterPanelProps) {
   const [helpOpen, setHelpOpen] = useState(defaultHelpOpen)
   const [openId, setOpenId] = useState<string | null>(null)
   const [urlError, setUrlError] = useState<string | null>(null)
@@ -39,6 +47,7 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
       setSummary(`${drafts.length}기 동기화됨`)
       setNotes(warnings)
     },
+    onActivity,
   )
 
   // A fresh import run supersedes whatever summary/error is on screen.

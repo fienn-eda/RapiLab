@@ -102,7 +102,7 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
   })
 
-  it('renders four tabs and reaches the union raid panel through its own tab', async () => {
+  it('renders five tabs and reaches the union raid panel through its own tab', async () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
     seedProfiles({
@@ -121,7 +121,7 @@ describe('App', () => {
     })
 
     render(<App />)
-    expect(screen.getAllByRole('tab')).toHaveLength(4)
+    expect(screen.getAllByRole('tab')).toHaveLength(5)
     expect(screen.queryByRole('heading', { name: '유니온 레이드' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: '유니온 레이드' }))
@@ -321,7 +321,8 @@ describe('App', () => {
     )
   })
 
-  it('이미 동기화한 계정이 있으면 로스터 탭의 도움말은 접혀 있다', () => {
+  it('이미 동기화한 계정이 있으면 동기화 탭의 도움말은 접혀 있다', async () => {
+    const user = userEvent.setup()
     const OPEN_1 = profileKey('open-1', 81)
     seedProfiles({
       activeKey: OPEN_1,
@@ -338,10 +339,40 @@ describe('App', () => {
       },
     })
     render(<App />)
+    await user.click(screen.getByRole('tab', { name: '동기화' }))
     expect(screen.getByRole('button', { name: '동기화 방법' })).toHaveAttribute(
       'aria-expanded',
       'false',
     )
+  })
+
+  it('동기화는 니케 풀이 아니라 자기 탭에 있다', async () => {
+    const user = userEvent.setup()
+    const OPEN_1 = profileKey('open-1', 81)
+    seedProfiles({
+      activeKey: OPEN_1,
+      profiles: {
+        [OPEN_1]: {
+          openId: 'open-1',
+          area: 81,
+          nickname: 'Fienn',
+          roster: [],
+          results: {},
+          lastResultHash: null,
+          lastInputs: null,
+        },
+      },
+    })
+    render(<App />)
+
+    // 탭 패널은 전부 마운트된 채 hidden으로만 감춰지므로, 문서에 있느냐가
+    // 아니라 어느 패널 안에 있느냐를 본다.
+    const rosterPanel = screen.getByRole('tabpanel', { name: '니케 풀' })
+    expect(within(rosterPanel).queryByLabelText('ShiftyPad 공유 URL')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('ShiftyPad 공유 URL')).not.toBeVisible()
+
+    await user.click(screen.getByRole('tab', { name: '동기화' }))
+    expect(screen.getByLabelText('ShiftyPad 공유 URL')).toBeVisible()
   })
 })
 

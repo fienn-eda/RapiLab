@@ -239,4 +239,27 @@ describe('SyncRosterPanel', () => {
     await waitFor(() => expect(onImport).toHaveBeenCalledOnce())
     expect(onImport.mock.calls[0][0].area).toBe(83)
   })
+
+  it('인박스에서 로스터를 집으면 알린다', async () => {
+    // 이 패널은 감춰진 탭에 있을 수 있다. 알리지 않으면 결과도 경고도 아무도
+    // 보지 못한다.
+    vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
+    const onActivity = vi.fn()
+    postPayload()
+
+    render(<SyncRosterPanel onImport={vi.fn()} onActivity={onActivity} />)
+
+    await waitFor(() => expect(onActivity).toHaveBeenCalled())
+  })
+
+  it('서버를 고르라고 물을 때도 알린다', async () => {
+    // 유저의 답을 기다리는 화면이라, 감춰져 있으면 동기화가 멈춘 것으로 보인다.
+    const onActivity = vi.fn()
+    postTwoServers()
+
+    render(<SyncRosterPanel onImport={vi.fn()} onActivity={onActivity} />)
+
+    await screen.findByText(/어느 서버의 계정을 가져올까요/)
+    expect(onActivity).toHaveBeenCalled()
+  })
 })
