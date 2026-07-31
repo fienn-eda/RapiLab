@@ -13,6 +13,8 @@ import {
 } from '../types/recommend'
 import { NumberField } from './fields/NumberField'
 import { HelpTip } from './HelpTip'
+import { HelpText } from './HelpText'
+import { HELP } from '../lib/helpText'
 
 // What each band pays, named by the weapons rather than by a distance the
 // player cannot see. A Rocket Launcher is paid by none of them, which is why
@@ -67,9 +69,7 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
             보스 적정거리
           </label>
           <HelpTip label="보스 적정거리">
-            적정거리 안에서 쏘는 무기는 평타 대미지가 올라가요. 거리는 스테이지가
-            정하는 값이라 유닛이 아니라 보스에 붙어요. 런처(RL)는 어느 거리에서도
-            받지 않아요.
+            <HelpText>{HELP.boss.rangeBand}</HelpText>
           </HelpTip>
         </span>
         <select
@@ -104,9 +104,7 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
           코어 피격 가능
         </label>
         <HelpTip label="코어 피격 가능">
-          체크하면 <strong>모든 평타가 코어에 명중한다고 가정</strong>해요. 실제
-          전투에서는 조준과 부위 타격 때문에 100%가 나오지 않으므로, 이 추천은
-          상한 기준이고 평타 비중이 큰 유닛이 실제보다 높게 평가될 수 있어요.
+          <HelpText>{HELP.boss.coreHittable}</HelpText>
         </HelpTip>
       </div>
 
@@ -122,8 +120,7 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
           부위파괴 기믹
         </label>
         <HelpTip label="부위파괴 기믹">
-          부위파괴에 의존하는 유닛(예: 아크레인저 블랙)의 최대 잠재력 모델을
-          선택해요. 체크 해제 시 하한 모델을 사용해요.
+          <HelpText>{HELP.boss.partDestructible}</HelpText>
         </HelpTip>
       </div>
 

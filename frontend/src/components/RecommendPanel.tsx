@@ -41,6 +41,7 @@ import { DraftResults } from './DraftResults'
 import { EvaluationResults } from './EvaluationResults'
 import { RaidResults } from './RaidResults'
 import { UnitPalette, toggleExcludedSlug, type UnitInvestment } from './UnitPalette'
+import { HELP } from '../lib/helpText'
 
 interface RecommendPanelProps {
   /** The validated, ready subset of the entered roster. */
@@ -456,7 +457,7 @@ export function RecommendPanel({
                   onChange={() => switchMode('single')}
                 />
                 단일 덱
-                <span className="group__hint"> — 기대 딜량이 높은 개별 덱을 찾아줘요</span>
+                <span className="group__hint"> — {HELP.recommendMode.single}</span>
               </label>
               <label className="radio">
                 <input
@@ -467,7 +468,7 @@ export function RecommendPanel({
                   onChange={() => switchMode('raid')}
                 />
                 전부 최적화
-                <span className="group__hint"> — 설정한 덱 개수만큼 최적화해요</span>
+                <span className="group__hint"> — {HELP.recommendMode.raid}</span>
               </label>
               <label className="radio">
                 <input
@@ -478,10 +479,7 @@ export function RecommendPanel({
                   onChange={() => switchMode('draft')}
                 />
                 빈자리만 최적화
-                <span className="group__hint">
-                  {' '}
-                  — 직접 편성한 니케들을 기반으로 나머지 자리를 최적화해요
-                </span>
+                <span className="group__hint"> — {HELP.recommendMode.draft}</span>
               </label>
               <label className="radio">
                 <input
@@ -492,10 +490,7 @@ export function RecommendPanel({
                   onChange={() => switchMode('evaluate')}
                 />
                 기대 딜량 계산
-                <span className="group__hint">
-                  {' '}
-                  — 직접 짠 덱의 기대 딜량만 빠르게 계산해요, 최적화는 하지 않아요
-                </span>
+                <span className="group__hint"> — {HELP.recommendMode.evaluate}</span>
               </label>
             </div>
 
