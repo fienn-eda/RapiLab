@@ -672,16 +672,30 @@ class _SpaFiles(StaticFiles):
         # `api\no-such-endpoint`라, 슬래시로 접두사를 검사하면 조용히 빗나간다.
         return path.replace("\\", "/").lstrip("/").startswith("api/")
 
+    @staticmethod
+    def _is_asset(path: str) -> bool:
+        """확장자가 있으면 자산 요청이다 - 없는 자산은 404여야 한다.
+
+        폴백이 여기까지 삼키면 `<script src="/assets/app.js">`가 HTML을 200으로
+        받는다. 브라우저는 그것을 파싱하다 실패하고 아무것도 그리지 않으므로,
+        증상은 원인을 한 마디도 담지 않은 **빈 검은 화면**이다(2026-07-31 실제로
+        겪음). 404면 최소한 어느 파일이 없는지가 콘솔에 남는다.
+
+        SPA 라우트는 확장자를 갖지 않으므로 이 구분으로 갈린다.
+        """
+        return "." in path.replace("\\", "/").rsplit("/", 1)[-1]
+
     async def get_response(self, path: str, scope):
         # StaticFiles는 없는 파일에 404를 '반환'하지 않고 HTTPException으로
         # 던진다. 둘 다 받아야 폴백이 실제로 걸린다.
         try:
             response = await super().get_response(path, scope)
         except StarletteHTTPException as exc:
-            if exc.status_code != 404 or self._is_api(path):
+            if exc.status_code != 404 or self._is_api(path) or self._is_asset(path):
                 raise
             return await super().get_response("index.html", scope)
-        if response.status_code == 404 and not self._is_api(path):
+        if (response.status_code == 404
+                and not self._is_api(path) and not self._is_asset(path)):
             return await super().get_response("index.html", scope)
         return response
 
