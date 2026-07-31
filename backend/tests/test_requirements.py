@@ -12,6 +12,13 @@ BACKEND = Path(__file__).resolve().parents[1]
 STDLIB = set(sys.stdlib_module_names)
 LOCAL = {"app", "tests"}
 
+# 임포트 이름과 배포 이름이 다른 것들.
+IMPORT_TO_PACKAGE = {"webview": "pywebview"}
+
+# 데스크톱 앱으로 띄울 때만 임포트되는 모듈. 서버로 돌릴 때는 지나가지 않으므로
+# requirements.txt가 아니라 requirements-app.txt가 책임진다.
+APP_ONLY = {"desktop.py"}
+
 
 def _top_level_imports(path: Path) -> set[str]:
     tree = ast.parse(path.read_text(encoding="utf-8"))
@@ -36,13 +43,27 @@ def _declared(requirements: Path) -> set[str]:
     return declared
 
 
-def test_every_third_party_import_in_app_is_declared():
+def _third_party(paths) -> set[str]:
     imported = set()
-    for path in (BACKEND / "app").rglob("*.py"):
+    for path in paths:
         imported |= _top_level_imports(path)
-    third_party = {name for name in imported if name not in STDLIB and name not in LOCAL}
-    undeclared = third_party - _declared(BACKEND / "requirements.txt")
+    return {IMPORT_TO_PACKAGE.get(name, name) for name in imported
+            if name not in STDLIB and name not in LOCAL}
+
+
+def test_every_third_party_import_in_the_server_is_declared():
+    server_modules = [p for p in (BACKEND / "app").rglob("*.py") if p.name not in APP_ONLY]
+    undeclared = _third_party(server_modules) - _declared(BACKEND / "requirements.txt")
     assert not undeclared, f"imported but not declared: {sorted(undeclared)}"
+
+
+def test_the_desktop_shell_is_covered_by_the_app_requirements():
+    # 셸만 쓰는 것(pywebview)이 서버 목록에 들어가면, 서버로 배포할 때 GUI
+    # 스택을 끌고 간다. 그래서 별도 파일이 있고, 이 테스트가 그 경계를 지킨다.
+    declared = _declared(BACKEND / "requirements.txt") | _declared(
+        BACKEND / "requirements-app.txt")
+    undeclared = _third_party([BACKEND / "app" / "desktop.py"]) - declared
+    assert not undeclared, f"imported by the shell but not declared: {sorted(undeclared)}"
 
 
 def test_the_app_requirements_build_on_the_server_ones():
