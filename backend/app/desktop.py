@@ -16,6 +16,8 @@ uvicorn을 데몬 스레드로 띄우고, 실제로 응답할 때까지 기다�
 실행:
     python -m app.desktop          # 개발 중 (frontend/dist가 있어야 화면이 나온다)
     RapiLab.exe                    # 얼린 뒤
+    RapiLab.exe --debug            # 창에서 우클릭 -> 개발자 도구
+    RapiLab.exe --selftest         # 창 없이 번들 점검
 """
 import multiprocessing
 import socket
@@ -169,7 +171,10 @@ def main() -> None:
         raise RuntimeError(
             f"backend did not answer on {url} within {STARTUP_TIMEOUT:.0f}s")
     webview.create_window(WINDOW_TITLE, url, width=1280, height=860)
-    webview.start()
+    # `--debug`면 창에서 우클릭으로 개발자 도구가 열린다. 배포 빌드는 콘솔이
+    # 없어서, 창 안에서 무슨 일이 났는지 볼 방법이 이것뿐이다 - 서버 로그는
+    # 브라우저가 겪은 것을 알지 못한다.
+    webview.start(debug="--debug" in sys.argv[1:])
 
 
 if __name__ == "__main__":
