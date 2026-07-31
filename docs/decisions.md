@@ -5,6 +5,65 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## WebView2가 죽으면 앱 프로세스를 통째로 재시작한다 — 주입은 못 막으니 새 프로세스에 새 기회를 준다
+
+- Date: 2026-08-01
+- Context: 배포 스모크에서 "실행 몇 초 뒤 검은 화면"이 한 번 관측되고 재현되지 않아
+  미해결로 남아 있었다. 실측으로 정체가 드러났다: 오버레이 훅 소프트웨어
+  (RivaTuner Statistics Server, MSI Afterburner 동봉)가 모든 프로세스에 주입하는데,
+  WebView2의 **브라우저 프로세스**(우리 프로세스가 아니라 따로 사는 프로세스 무리) 안에서
+  `RTSSHooks64.dll +0x1490AF`가 `0xC0000005`로 죽는다 — 크래시 덤프 두 개가 같은
+  오프셋이고 Chromium 자신도 그 DLL 하나만 지목한다. pywebview 호스트는 멀쩡히 살아
+  있으므로 창은 남고 내용만 사라지며, 종료 코드에도 로그에도 아무것도 남지 않는다.
+  오진하기 쉬운 이유: 프로세스 목록에 앱이 있고, 백엔드 포트가 계속 200을 주고,
+  같은 URL을 브라우저로 열면 멀쩡하다 — 세 신호가 전부 "정상"을 가리킨다. 이
+  기계에서 실측 고장률은 RTSS 켬 6/10, 끔 6/6.
+- Decision: 막으려 하지 않고, 죽으면 새 프로세스로 재시작한다. pywebview 6.2.1은
+  `ProcessFailed`를 구독하지 않으므로 `EdgeChrome.on_webview_ready`를 감싸 직접
+  건다(`desktop.guard_webview()`). 브라우저 프로세스가 죽었다는 신호
+  (`CoreWebView2ProcessFailedKind.BrowserProcessExited`) 또는 초기화 자체가 실패
+  (`IsSuccess=False`)하면, 환경변수(`RAPILAB_WEBVIEW_ATTEMPT`)로 시도 횟수를 실어
+  같은 인자로 새 프로세스를 띄우고 `os._exit()`한다(반쯤 무너진 UI 스레드의 이벤트
+  핸들러 안이라 정상 종료 경로는 안 걸릴 수 있다). 4회까지 시도하고 그 뒤엔 OS
+  대화상자로 원인과 우회법(오버레이 끄기, 또는 RTSS의 `msedgewebview2.exe` 프로필
+  application detection level을 None으로)을 알린다.
+- Alternatives considered: (a) 주입 자체를 막기 — 기각, 주입은 우리 코드가 돌기도
+  전에 일어나고 `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS`로도 못 비킨다
+  (`--disable-gpu`를 실측했더니 오히려 4/10으로 악화). (b) 유저 안내만 하고 코드는
+  손대지 않기 — 기각, 통제할 수 없는 서드파티 소프트웨어에 정상 동작을 의존시키는
+  것이고 40% 고장률은 사용 불가 수준이다. (c) 무한 재시도 — 기각, 이 기계처럼
+  100% 죽는 조합이 있으면 유저가 앱을 끌 방법조차 없어져 검은 화면보다 나쁘다.
+- Consequences: `backend/app/desktop.py`에 재시작 경로(`_restart_or_give_up`,
+  `_relaunch_command`, `_report_dead_webview`)와 감시(`guard_webview`)가 생겼다.
+  복구 후 RTSS를 켠 채로 10/10 성공(실측). `test_requirements.py`가 pip 패키지와
+  pythonnet이 CLR에서 만들어내는 `Microsoft.*`/`System.*` 네임스페이스를 구분해야
+  했다(`CLR_NAMESPACES`) — 안 그러면 "선언되지 않은 서드파티"로 오탐된다. 검증에
+  실제 RTSS 크래시를 기다릴 필요는 없다 — 브라우저 프로세스를 직접 `Stop-Process`해도
+  WebView2에겐 같은 `ProcessFailed` 이벤트다(다만 낡은 프로세스가 `os._exit` 뒤에도
+  ~2.5초 남으므로 그보다 일찍 확인하면 "창이 둘"로 오판한다 — 관련 gotcha는
+  `docs/insights.md`).
+
+## WebView2 프로필 폴더는 인스턴스(포트)마다 고정하되 공유하지 않는다
+
+- Date: 2026-08-01
+- Context: 위 재시작 경로가 생기면서 실행 한 번에 WebView2 프로세스가 여러 벌
+  생길 수 있게 됐다. pywebview는 `storage_path`를 안 주면 실행마다 새 임시 폴더에
+  프로필(캐시·셰이더·크래시 기록)을 만들고 지우지 않는다 — 한 번에 6MB지만
+  재시작 경로가 그 배수를 만든다.
+- Decision: `storage_path`를 `%LOCALAPPDATA%\RapiLab\webview\<포트>`로 못박되,
+  포트(=인스턴스)마다 다른 폴더를 쓴다(`desktop.webview_storage_dir(port)`).
+  포트는 이미 인스턴스마다 다르고 후보가 `SYNC_PORTS` 넷뿐이라 폴더도 넷을
+  넘지 않는다.
+- Alternatives considered: 폴더 하나로 전 인스턴스가 공유 — 기각, 실측으로
+  걸렸다: 한 폴더를 두 인스턴스가 나눠 쓰면 두 번째 인스턴스의 WebView2가 아예
+  뜨지 않는다. 초기화가 **실패하는 게 아니라 끝나지 않아서** `on_webview_ready`도
+  안 불리고(성공도 실패도 이벤트가 없다) 위 재시작 감시도 걸리지 않는다 — 복구
+  없는 빈 창이 된다. pywebview 기본값(실행마다 새 임시 폴더) 유지 — 기각, 청소가
+  없어 재시작 경로와 만나면 계속 쌓인다.
+- Consequences: `webview.start(storage_path=...)`에 배선된다. 비공개 모드(쿠키·
+  로컬 저장소 미보존)는 건드리지 않는다 — 폴더 자리와 무관한 별개의 선택이라
+  함께 바꾸면 지금 동작이 달라진다.
+
 ## 코어히트율은 엔진에 넣지 않는다 — `sim/record`를 목표(1.0)가 아니라 **상한**으로 재정의
 
 - Date: 2026-07-31
