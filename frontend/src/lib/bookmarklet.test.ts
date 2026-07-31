@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { BLABLALINK_ORIGIN, LOCAL_SYNC_PORTS, PAYLOAD_MESSAGE, buildBookmarklet, buildLocalSyncBookmarklet } from './bookmarklet'
+import { BLABLALINK_ORIGIN, LOCAL_SYNC_PORTS, buildLocalSyncBookmarklet } from './bookmarklet'
 
-const code = buildBookmarklet('1234567890123456789', 'https://deck.example')
+const code = buildLocalSyncBookmarklet('1234567890123456789')
 // 본문은 encodeURIComponent로 감싸여 있어 "://" 같은 문자가 %3A%2F%2F로 바뀐다.
 // 따라서 내용 단언은 반드시 디코드한 소스에 대해 한다.
 const source = decodeURIComponent(code.replace(/^javascript:/, ''))
 
-describe('buildBookmarklet', () => {
+describe('buildLocalSyncBookmarklet: 수집', () => {
   it('javascript: URL로 나온다', () => {
     expect(code.startsWith('javascript:')).toBe(true)
   })
@@ -18,10 +18,6 @@ describe('buildBookmarklet', () => {
     expect(source).toContain(`location.origin!=='${BLABLALINK_ORIGIN}'`)
   })
 
-  it('open_id와 앱 origin이 박힌다', () => {
-    expect(source).toContain('1234567890123456789')
-    expect(source).toContain('https://deck.example')
-  })
 
   it('세 엔드포인트를 모두 부른다', () => {
     for (const ep of [
@@ -71,36 +67,21 @@ describe('buildBookmarklet', () => {
     ): Promise<{ payload: Record<string, unknown> | null; alerts: string[] }> => {
       let sent: Record<string, unknown> | null = null
       const alerts: string[] = []
-      const appWindow = {
-        postMessage: (message: { type: string; payload: Record<string, unknown> }) => {
-          if (message.type === PAYLOAD_MESSAGE) sent = message.payload
-        },
+      // 북마크릿은 수집한 것을 로컬 인박스로 POST한다. 그 호출을 가로채면
+      // 앱이 받게 될 payload를 그대로 볼 수 있다 - 창도 리스너도 필요 없다.
+      const wrapped = (url: string, init?: { body?: string }) => {
+        if (url.includes('/api/sync-inbox')) {
+          sent = JSON.parse(init?.body ?? 'null')
+          return Promise.resolve({ ok: true, json: () => Promise.resolve({ received: true }) })
+        }
+        return fetchImpl(url, init)
       }
-      const listeners: ((event: unknown) => void)[] = []
-      const fakeWindow = {
-        open: () => appWindow,
-        addEventListener: (_type: string, handler: (event: unknown) => void) =>
-          listeners.push(handler),
-        removeEventListener: () => {},
-      }
-      const run = new Function(
-        'window',
-        'location',
-        'fetch',
-        'alert',
-        `return ${source}`,
-      )
-      const finished = run(
-        fakeWindow,
+      const run = new Function('location', 'fetch', 'alert', `return ${source}`)
+      await run(
         { origin: BLABLALINK_ORIGIN },
-        fetchImpl,
+        wrapped,
         (m: string) => alerts.push(m),
       )
-      // 북마크릿은 앱 창이 ready를 알린 뒤에야 payload를 보낸다.
-      for (const handler of listeners) {
-        handler({ source: appWindow, origin: 'https://deck.example', data: { type: 'nikke-sync-ready' } })
-      }
-      await finished
       return { payload: sent, alerts }
     }
 
@@ -245,55 +226,10 @@ describe('buildBookmarklet', () => {
     expect(source).not.toMatch(/password|token|cookie=/i)
   })
 
-  it('window.open은 첫 await/fetch보다 먼저 동기적으로 실행된다 (팝업 차단 방지)', () => {
-    // 클릭의 transient activation은 짧게 유지된다(크롬 5초, 파이어폭스는 더
-    // 엄격). 세 API 호출을 기다린 뒤에야 window.open을 부르면 그 사이
-    // activation이 만료돼 브라우저가 팝업을 차단할 수 있다. open은 첫
-    // await/fetch 전에, 동기 블록 안에서 실행돼야 한다.
-    const openIndex = source.indexOf('window.open(')
-    const firstAwaitIndex = source.indexOf('await ')
-    const firstFetchIndex = source.indexOf('fetch(')
-    expect(openIndex).toBeGreaterThan(-1)
-    expect(firstAwaitIndex).toBeGreaterThan(-1)
-    expect(firstFetchIndex).toBeGreaterThan(-1)
-    expect(openIndex).toBeLessThan(firstAwaitIndex)
-    expect(openIndex).toBeLessThan(firstFetchIndex)
-  })
 
-  it('message 리스너 등록이 window.open과 같은 동기 블록에 있다 (fetch보다 먼저)', () => {
-    // 리스너 등록이 window.open과 분리돼 await 뒤(.then/연속)로 밀리면, 그
-    // 사이 자식 창이 먼저 ready를 보내는 race가 생길 수 있다. 등록도 open과
-    // 마찬가지로 첫 await/fetch 전, 같은 동기 블록에서 끝나야 한다.
-    const listenerIndex = source.indexOf("addEventListener('message'")
-    const firstAwaitIndex = source.indexOf('await ')
-    const firstFetchIndex = source.indexOf('fetch(')
-    expect(listenerIndex).toBeGreaterThan(-1)
-    expect(listenerIndex).toBeLessThan(firstAwaitIndex)
-    expect(listenerIndex).toBeLessThan(firstFetchIndex)
-  })
 
-  it('message 리스너는 매칭 후 스스로를 제거한다 (재동기화 시 중복 리스너 방지)', () => {
-    const handlerNameMatch = source.match(/window\.addEventListener\('message',(\w+)\)/)
-    expect(handlerNameMatch).not.toBeNull()
-    const handlerName = handlerNameMatch![1]
-    expect(source).toContain(`removeEventListener('message',${handlerName})`)
-  })
 
-  it('payload를 보낸 뒤에만 리스너가 제거된다 (ready만 왔을 때는 제거하지 않음)', () => {
-    // send()가 ready && payload 둘 다 있어야만 post+remove하는 구조인지,
-    // removeEventListener 호출이 실제로 그 send 경로 안에 있는지 확인한다.
-    const handlerNameMatch = source.match(/window\.addEventListener\('message',(\w+)\)/)
-    const handlerName = handlerNameMatch![1]
-    const sendFnMatch = source.match(/const send=\(\)=>\{(.*?)\};\n/)
-    expect(sendFnMatch).not.toBeNull()
-    const sendBody = sendFnMatch![1]
-    expect(sendBody).toContain('postMessage')
-    expect(sendBody).toContain(`removeEventListener('message',${handlerName})`)
-  })
 
-  it('메시지 가드가 발신 source까지 확인한다 (e.source===w)', () => {
-    expect(source).toContain('e.source===w')
-  })
 
   it('에러 코드 매칭이 문자열 끝에 고정된다 (:1000 같은 무관한 코드가 공유 URL 분기로 새지 않게)', () => {
     // catch 블록의 alert(...) 삼항식을 그대로 뽑아 실행해, 실제로 어떤 메시지가
@@ -310,46 +246,23 @@ describe('buildBookmarklet', () => {
     expect(alertExprFn('Error: GetUserCharacters:1')).toBe('공유 URL을 다시 확인해주세요.')
   })
 
-  it('window.open에 창 이름을 줘 재동기화 때 기존 탭을 재사용한다', () => {
-    // 이름 없는 window.open은 매번 새 탭을 연다. 같은 이름을 주면 브라우저가
-    // 그 탭을 재사용한다(재사용은 새로고침을 일으키지만 프로필은 매 변경마다
-    // localStorage에 저장되므로 잃는 것이 없다 - useProfiles.ts 참고).
-    const openCall = source.slice(
-      source.indexOf('window.open('),
-      source.indexOf('window.open(') + 80,
-    )
-    expect(openCall).toContain("'nikke-deck-builder'")
-  })
 })
 
-describe('buildBookmarklet 입력 검증', () => {
+describe('buildLocalSyncBookmarklet: 입력 검증', () => {
   it('openId에 숫자 아닌 문자가 섞이면 던진다', () => {
     expect(() =>
-      buildBookmarklet("123'-alert(1)-'456", 'https://deck.example'),
+      buildLocalSyncBookmarklet("123'-alert(1)-'456"),
     ).toThrow()
   })
 
-  it('appOrigin에 따옴표가 섞이면 던진다', () => {
-    expect(() =>
-      buildBookmarklet('1234567890123456789', "https://deck.example'-alert(1)-'"),
-    ).toThrow()
-  })
 
-  it('appOrigin이 http(s) origin 형태가 아니면 던진다', () => {
-    expect(() =>
-      buildBookmarklet('1234567890123456789', 'javascript:alert(1)'),
-    ).toThrow()
-    expect(() =>
-      buildBookmarklet('1234567890123456789', 'https://deck.example/path'),
-    ).toThrow()
-  })
 
   it('openId가 6자리 미만이면 던진다 (shareUrl.ts의 OPEN_ID 규칙과 일치)', () => {
-    expect(() => buildBookmarklet('12345', 'https://deck.example')).toThrow()
+    expect(() => buildLocalSyncBookmarklet('12345')).toThrow()
   })
 })
 
-describe('buildLocalSyncBookmarklet', () => {
+describe('buildLocalSyncBookmarklet: 전송', () => {
   const decoded = (openId: string) =>
     decodeURIComponent(buildLocalSyncBookmarklet(openId).replace(/^javascript:/, ''))
 
@@ -370,18 +283,6 @@ describe('buildLocalSyncBookmarklet', () => {
     }
   })
 
-  it('수집은 기존 북마크릿과 같은 코드를 쓴다', () => {
-    // 둘이 갈라지면 한쪽만 고쳐진 채로 오래 간다.
-    const local = decoded('123456')
-    const web = decodeURIComponent(
-      buildBookmarklet('123456', 'http://localhost:5173').replace(/^javascript:/, ''),
-    )
-    for (const fragment of ['GetUserCharacters', 'GetUserCharacterDetails',
-                            'GetUserProfileOutpostInfo', 'GetUserProfileBasicInfo']) {
-      expect(local).toContain(fragment)
-      expect(web).toContain(fragment)
-    }
-  })
 
   it('blablalink 페이지에서만 동작한다', () => {
     expect(decoded('123456')).toContain(BLABLALINK_ORIGIN)
