@@ -12,8 +12,10 @@ from typing import Literal
 
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 from starlette.concurrency import run_in_threadpool
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.cancellation import CancelToken, Cancelled
 from app.charge_window import outcome, reload_intervenes, shot_interval, thresholds
@@ -25,6 +27,7 @@ from app.deck_search import BossProfile, search_best_decks
 from app.engine_version import engine_version
 from app.models import UserNikkeState
 from app.overload_effects import NAME_TO_STAT
+from app.paths import frontend_dist
 from app.roster_assembly import assemble_roster, load_directory, to_roster_json
 from app.sim_pool import SimPool
 from app.skill_rules.registry import MODE_VARIANTS
@@ -611,3 +614,50 @@ def assemble_roster_endpoint(
         len(unmeasured),
     )
     return to_roster_json(units, unmeasured)
+
+
+class _SpaFiles(StaticFiles):
+    """정적 파일을 주되, 없는 경로에는 `index.html`을 준다.
+
+    앱은 SPA라 클라이언트가 서버가 모르는 경로를 가질 수 있고(새로고침·딥링크),
+    그때 404를 주면 빈 화면이 된다. 다만 `/api/*`는 폴백에서 제외한다 - 오타 난
+    엔드포인트가 HTML을 돌려주면 클라이언트는 JSON 파싱 오류를 보게 되고, 그
+    증상은 원인에서 한참 떨어져 있다.
+    """
+
+    @staticmethod
+    def _is_api(path: str) -> bool:
+        # StaticFiles는 이 자리에 OS 구분자로 정규화된 경로를 준다 - Windows에서는
+        # `api\no-such-endpoint`라, 슬래시로 접두사를 검사하면 조용히 빗나간다.
+        return path.replace("\\", "/").lstrip("/").startswith("api/")
+
+    async def get_response(self, path: str, scope):
+        # StaticFiles는 없는 파일에 404를 '반환'하지 않고 HTTPException으로
+        # 던진다. 둘 다 받아야 폴백이 실제로 걸린다.
+        try:
+            response = await super().get_response(path, scope)
+        except StarletteHTTPException as exc:
+            if exc.status_code != 404 or self._is_api(path):
+                raise
+            return await super().get_response("index.html", scope)
+        if response.status_code == 404 and not self._is_api(path):
+            return await super().get_response("index.html", scope)
+        return response
+
+
+def build_app() -> FastAPI:
+    """라우트가 전부 붙은 app에 프론트 번들을 (있으면) 얹는다.
+
+    마운트가 마지막이어야 하는 이유: `/`에 걸린 정적 서빙은 그 아래 모든 경로를
+    가져가므로, `/api/*` 라우트보다 먼저 붙으면 API가 전부 정적 404가 된다.
+    번들이 없으면 아무것도 하지 않는다 - 개발 중에는 :5173이 프론트를 맡고
+    백엔드는 API만 답하는 것이 정상이다.
+    """
+    # 멱등하게: 라우트는 데코레이터로 모듈 전역 `app`에 붙으므로 여기서 새
+    # FastAPI를 만들 수 없고, 그래서 이 함수를 두 번 부르면 마운트가 쌓인다.
+    # 앞선 마운트를 걷어내고 다시 붙이면 재호출이 안전해진다.
+    app.routes[:] = [r for r in app.routes if getattr(r, "name", None) != "frontend"]
+    dist = frontend_dist()
+    if (dist / "index.html").is_file():
+        app.mount("/", _SpaFiles(directory=dist, html=True), name="frontend")
+    return app
