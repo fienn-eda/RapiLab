@@ -18,9 +18,30 @@ def test_pick_port_returns_a_port_that_is_actually_free():
         probe.bind((desktop.HOST, port))  # 비어 있지 않으면 OSError
 
 
-def test_pick_port_does_not_hand_out_the_same_one_twice_in_a_row():
-    # OS가 고르게 하는 이유 자체 - 고정 포트는 이미 쓰이고 있을 수 있다.
-    assert len({desktop.pick_port() for _ in range(5)}) > 1
+def test_pick_port_only_returns_ports_the_bookmarklet_knows_about():
+    # 북마클릿은 목록에 없는 주소로는 보낼 수 없다 - OS가 고른 임의 포트를
+    # 쓰면 동기화가 앱을 못 찾는다.
+    assert desktop.pick_port() in desktop.SYNC_PORTS
+
+
+def test_pick_port_steps_past_one_that_is_taken():
+    # 하나로 고정하지 않는 이유 - 그 포트가 쓰이고 있으면 앱이 아예 못 뜬다.
+    first = desktop.SYNC_PORTS[0]
+    with socket.socket() as taken:
+        taken.bind((desktop.HOST, first))
+        taken.listen(1)
+        assert desktop.pick_port() != first
+        assert desktop.pick_port() in desktop.SYNC_PORTS
+
+
+def test_pick_port_says_so_when_every_candidate_is_taken(monkeypatch):
+    monkeypatch.setattr(desktop, "_is_free", lambda port: False)
+    try:
+        desktop.pick_port()
+    except RuntimeError as exc:
+        assert "already be running" in str(exc)
+    else:
+        raise AssertionError("expected RuntimeError")
 
 
 def test_wait_until_serving_gives_up_instead_of_hanging():

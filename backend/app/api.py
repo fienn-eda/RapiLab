@@ -213,9 +213,21 @@ class AssembleRosterRequest(BaseModel):
 
 
 app = FastAPI(title="NIKKE Deck Builder")
+# blablalink이 허용 출처인 이유: 로스터 동기화 북마클릿이 그 페이지 안에서 돌고
+# (거기서만 유저 세션으로 blablalink API를 부를 수 있다) 수집한 것을 이 로컬
+# 서버로 보낸다. 2026-07-31 라이브 확인에서 https 페이지 -> http://127.0.0.1
+# 요청 자체는 통과했다(브라우저가 loopback을 안전한 출처로 친다) - 막고 있던
+# 것은 이 헤더뿐이었다.
+#
+# 목록에 적힌 출처만 허용되므로 아무 사이트나 이 서버를 호출하지는 못한다.
+ALLOWED_ORIGINS = [
+    "http://localhost:5173",   # Vite 개발 서버
+    "https://www.blablalink.com",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_methods=["*"],
     allow_headers=["*"],
 )
