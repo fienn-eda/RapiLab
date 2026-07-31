@@ -211,7 +211,9 @@ describe('RecommendPanel', () => {
     const element = screen.getByLabelText('보스 속성')
     await user.selectOptions(element, 'Fire')
     expect(within(element).getByRole('option', { name: '작열' })).toBeInTheDocument()
-    await user.click(screen.getByLabelText(/코어 피격 가능/i))
+    // Exact, not a substring: the help button beside it is named after the
+    // same setting, so a loose match finds both.
+    await user.click(screen.getByLabelText('코어 피격 가능'))
     const enemyDef = screen.getByLabelText('적 방어력')
     await user.clear(enemyDef)
     await user.type(enemyDef, '20000')
@@ -236,7 +238,7 @@ describe('RecommendPanel', () => {
     vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await user.click(screen.getByLabelText(/부위파괴 기믹/i))
+    await user.click(screen.getByLabelText('부위파괴 기믹'))
 
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
