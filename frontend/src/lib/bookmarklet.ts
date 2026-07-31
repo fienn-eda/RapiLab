@@ -39,6 +39,67 @@ export const PAYLOAD_MESSAGE = 'nikke-sync-payload'
 
 const OPEN_ID = /^\d{6,}$/
 
+// 앱이 열려 있을 만한 포트들. `backend/app/desktop.py`의 SYNC_PORTS와 짝이고,
+// 마지막 8000은 개발용(uvicorn 기본)이다 - 한쪽만 고치면 동기화가 조용히 안 된다.
+export const LOCAL_SYNC_PORTS = [41573, 41574, 41575, 41576, 8000]
+
+// 수집 부분. 두 빌더가 같은 것을 쓰므로 한 곳에 둔다 - 전송 방식만 다르다.
+// `payload` 변수에 결과를 담고, 실패는 바깥 try/catch로 던진다.
+const collectSource = (openId: string): string => `
+const call=async(ep,body)=>{
+ const r=await fetch('https://api.blablalink.com/api/game/proxy/Game/'+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'include'});
+ const j=await r.json();
+ if(j.code!==0)throw new Error(ep+':'+j.code);
+ return j.data};
+const AREAS=[${SERVER_AREAS.join(',')}];
+const found=[];let probeErr=null;
+for(const a of AREAS){
+ let owned=[];
+ try{owned=(await call('GetUserCharacters',{intl_open_id:'${openId}',nikke_area_id:a})).characters||[]}catch(e){if(!probeErr&&!/:1302125$/.test(String(e)))probeErr=e;owned=[]}
+ if(owned.length)found.push({area:a,owned:owned})}
+if(!found.length){if(probeErr)throw probeErr;throw new Error('이 계정에서 니케를 찾지 못했어요. 공유 URL이 맞는지 확인해주세요.')}
+const servers=[];
+for(const f of found){
+ const base={intl_open_id:'${openId}',nikke_area_id:f.area};
+ const detail=await call('GetUserCharacterDetails',{...base,name_codes:f.owned.map(c=>c.name_code)});
+ const outpost=await call('GetUserProfileOutpostInfo',{...base});
+ const basic=await call('GetUserProfileBasicInfo',{...base}).catch(()=>null);
+ const bi=(basic&&basic.basic_info)||{};
+ servers.push({area:f.area,nickname:bi.nickname||bi.role_name||'',owned:f.owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]})}
+payload={open_id:'${openId}',servers:servers};`
+
+// 실패 문구. 두 빌더가 같은 코드를 같은 말로 설명해야 한다.
+const errorAlertSource = `
+const m=String(err);
+alert(m.indexOf('300001')>=0?'blablalink 로그인이 필요해요.':(m.indexOf('1303005')>=0||/:1$/.test(m))?'공유 URL을 다시 확인해주세요.':'가져오기 실패: '+m)`
+
+/**
+ * 앱이 켜져 있는 로컬 서버로 로스터를 직접 보내는 북마크릿.
+ *
+ * 네이티브 창(WebView2)은 유저 브라우저와 별개라 `window.open`+postMessage가
+ * 앱에 닿지 않는다. 대신 수집한 것을 `127.0.0.1`의 인박스로 POST하고 앱이
+ * 가져간다. 2026-07-31 라이브 확인: https 페이지에서 loopback으로 나가는 요청은
+ * 브라우저가 허용하며(안전한 출처로 친다), CORS 헤더만 서버가 내주면 된다.
+ *
+ * 포트를 훑는 이유는 앱이 비어 있는 첫 포트를 잡기 때문이다.
+ */
+export const buildLocalSyncBookmarklet = (openId: string): string => {
+  if (!OPEN_ID.test(openId)) {
+    throw new Error(`open ID(${JSON.stringify(openId)})는 숫자로만 이뤄져야 해요.`)
+  }
+  const source = `(async()=>{
+if(location.origin!=='${BLABLALINK_ORIGIN}'){alert('blablalink 페이지에서 눌러주세요.');return}
+let payload=null;
+try{${collectSource(openId)}
+ let sent=false;
+ for(const p of ${JSON.stringify(LOCAL_SYNC_PORTS)}){
+  try{const r=await fetch('http://127.0.0.1:'+p+'/api/sync-inbox',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(r.ok){sent=true;break}}catch(e){}}
+ alert(sent?'로스터를 보냈어요. RapiLab 창에서 확인해주세요.':'RapiLab을 찾지 못했어요. 앱을 켜고 다시 눌러주세요.')
+}catch(err){${errorAlertSource}}
+})()`
+  return 'javascript:' + encodeURIComponent(source)
+}
+
 // 생성된 소스에 그대로 splice되므로 따옴표가 섞이면 문법이 깨지거나 주입이 된다.
 // origin 형태(경로/쿼리/프래그먼트 없음, http(s)만)까지 확인해 http 문자열
 // 이스케이퍼 없이 저렴하게 막는다.
@@ -73,33 +134,10 @@ let ready=false,payload=null;
 const send=()=>{if(ready&&payload){w.postMessage({type:'${PAYLOAD_MESSAGE}',payload:payload},'${appOrigin}');window.removeEventListener('message',h)}};
 const h=e=>{if(e.source===w&&e.origin==='${appOrigin}'&&e.data&&e.data.type==='${READY_MESSAGE}'){ready=true;send()}};
 window.addEventListener('message',h);
-const call=async(ep,body)=>{
- const r=await fetch('https://api.blablalink.com/api/game/proxy/Game/'+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'include'});
- const j=await r.json();
- if(j.code!==0)throw new Error(ep+':'+j.code);
- return j.data};
-const AREAS=[${SERVER_AREAS.join(',')}];
-try{
- const found=[];let probeErr=null;
- for(const a of AREAS){
-  let owned=[];
-  try{owned=(await call('GetUserCharacters',{intl_open_id:'${openId}',nikke_area_id:a})).characters||[]}catch(e){if(!probeErr&&!/:1302125$/.test(String(e)))probeErr=e;owned=[]}
-  if(owned.length)found.push({area:a,owned:owned})}
- if(!found.length){if(probeErr)throw probeErr;throw new Error('이 계정에서 니케를 찾지 못했어요. 공유 URL이 맞는지 확인해주세요.')}
- const servers=[];
- for(const f of found){
-  const base={intl_open_id:'${openId}',nikke_area_id:f.area};
-  const detail=await call('GetUserCharacterDetails',{...base,name_codes:f.owned.map(c=>c.name_code)});
-  const outpost=await call('GetUserProfileOutpostInfo',{...base});
-  const basic=await call('GetUserProfileBasicInfo',{...base}).catch(()=>null);
-  const bi=(basic&&basic.basic_info)||{};
-  servers.push({area:f.area,nickname:bi.nickname||bi.role_name||'',owned:f.owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]})}
- payload={open_id:'${openId}',servers:servers};
+try{${collectSource(openId)}
  send()
 }catch(err){
- window.removeEventListener('message',h);
- const m=String(err);
- alert(m.indexOf('300001')>=0?'blablalink 로그인이 필요해요.':(m.indexOf('1303005')>=0||/:1$/.test(m))?'공유 URL을 다시 확인해주세요.':'가져오기 실패: '+m)}
+ window.removeEventListener('message',h);${errorAlertSource}}
 })()`
   return 'javascript:' + encodeURIComponent(source)
 }

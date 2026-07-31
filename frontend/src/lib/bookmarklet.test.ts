@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  BLABLALINK_ORIGIN,
-  PAYLOAD_MESSAGE,
-  buildBookmarklet,
-} from './bookmarklet'
+import { BLABLALINK_ORIGIN, LOCAL_SYNC_PORTS, PAYLOAD_MESSAGE, buildBookmarklet, buildLocalSyncBookmarklet } from './bookmarklet'
 
 const code = buildBookmarklet('1234567890123456789', 'https://deck.example')
 // 본문은 encodeURIComponent로 감싸여 있어 "://" 같은 문자가 %3A%2F%2F로 바뀐다.
@@ -350,5 +346,52 @@ describe('buildBookmarklet 입력 검증', () => {
 
   it('openId가 6자리 미만이면 던진다 (shareUrl.ts의 OPEN_ID 규칙과 일치)', () => {
     expect(() => buildBookmarklet('12345', 'https://deck.example')).toThrow()
+  })
+})
+
+describe('buildLocalSyncBookmarklet', () => {
+  const decoded = (openId: string) =>
+    decodeURIComponent(buildLocalSyncBookmarklet(openId).replace(/^javascript:/, ''))
+
+  it('앱을 여는 대신 로컬 인박스로 직접 POST한다', () => {
+    // 네이티브 창은 유저 브라우저와 별개라 window.open + postMessage가 닿지 않는다.
+    const source = decoded('123456')
+    expect(source).not.toContain('window.open')
+    expect(source).not.toContain('postMessage')
+    expect(source).toContain('/api/sync-inbox')
+    expect(source).toContain("method:'POST'")
+  })
+
+  it('앱이 잡을 수 있는 포트를 전부 훑는다', () => {
+    // 앱은 비어 있는 첫 포트를 쓰므로 하나만 찔러서는 못 찾는다.
+    const source = decoded('123456')
+    for (const port of LOCAL_SYNC_PORTS) {
+      expect(source).toContain(String(port))
+    }
+  })
+
+  it('수집은 기존 북마크릿과 같은 코드를 쓴다', () => {
+    // 둘이 갈라지면 한쪽만 고쳐진 채로 오래 간다.
+    const local = decoded('123456')
+    const web = decodeURIComponent(
+      buildBookmarklet('123456', 'http://localhost:5173').replace(/^javascript:/, ''),
+    )
+    for (const fragment of ['GetUserCharacters', 'GetUserCharacterDetails',
+                            'GetUserProfileOutpostInfo', 'GetUserProfileBasicInfo']) {
+      expect(local).toContain(fragment)
+      expect(web).toContain(fragment)
+    }
+  })
+
+  it('blablalink 페이지에서만 동작한다', () => {
+    expect(decoded('123456')).toContain(BLABLALINK_ORIGIN)
+  })
+
+  it('앱을 못 찾으면 그렇게 말한다', () => {
+    expect(decoded('123456')).toContain('RapiLab을 찾지 못했어요')
+  })
+
+  it('open ID가 숫자가 아니면 만들지 않는다', () => {
+    expect(() => buildLocalSyncBookmarklet("1'2")).toThrow(/숫자로만/)
   })
 })
