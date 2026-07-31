@@ -7,12 +7,25 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-07-28
-- 브랜치: `worktree-identity-vs-fanout` 워크트리(`.claude/worktrees/identity-vs-fanout`,
+- 마지막 갱신: 2026-08-01
+- 브랜치: `worktree-whole-percent-rounding` 워크트리
+  (`.claude/worktrees/whole-percent-rounding`). 이전: `worktree-identity-vs-fanout`
+  워크트리(`.claude/worktrees/identity-vs-fanout`,
   `wip/scaffolding` `8a1ed2c` 기준에서 분기 — 백엔드 1519 passed, 3 skipped, 이 항목
   시점에 트렁크 미병합). 이전: `worktree-fixed-deck-evaluation` 워크트리
   (`wip/scaffolding` `3a3731c` 기준에서 분기 — 백엔드 1487 passed, 3 skipped · 프론트 350)
-- 백엔드: **1529 passed, 3 skipped** (2026-07-28, **정체성/팬아웃 분리 착지** —
+- 프론트: **464 passed** (2026-08-01, **UI 다듬기 + 동기화 탭 분리** — Fienn이 설치된
+  앱을 켜고 짚은 6건. 그중 가장 무거운 것은 버그였다: 인박스 폴링 게이트가
+  `status !== 'idle'`이라 **동기화가 한 번 끝나면 폴링이 영구 정지**하고, 그 뒤 누른
+  북마크릿은 인박스에 놓인 채 앱에 닿지 못한다(브라우저는 200을 받으므로 "보냈어요"까지
+  띄운다 — 부계정이 안 들어온 경로다). 첫 동기화가 멀쩡했던 건 계정이 처음 생길 때
+  `App.tsx`가 패널을 통째로 갈아끼워 상태가 리셋되기 때문. 게이트를 `choosing`/
+  `importing`으로 좁혔다. 동기화는 자기 탭(맨 뒤)으로 옮기고, payload가 오면 그 탭을
+  앞으로 가져온다 — 서버 선택 질문이 감춰진 패널에 뜨면 유저는 멈춘 것으로만 본다.
+  보스 설정 설명 3개는 `HelpTip` 호버로 접었고(유니온 3열이 특히 짧아진다), 안내
+  문구는 `lib/helpText.ts` 한 곳에 모았다(`**강조**`만 지원). 니케 풀 기본 정렬은
+  우코 내림차순, 오버로드 옵션명은 본문색. 백엔드 무변경. was 452.)
+- 이전(백엔드): **1529 passed, 3 skipped** (2026-07-28, **정체성/팬아웃 분리 착지** —
   `MODE_VARIANTS` 하나가 (a) 누가 같은 캐릭터인가 (b) 엔진이 무엇을 고를 수 있는가를
   겸하는 바람에 애장품 `-signature` 13쌍이 두 캐릭터로 보이던 빈틈을 닫았다. 정체성은
   신설 `registry.character_map()`이 **매니페스트 `data_slug`에서 파생**해 답하고
