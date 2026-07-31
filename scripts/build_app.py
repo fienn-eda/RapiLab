@@ -22,6 +22,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "backend"))
 
+from app.app_version import VERSION_FILE as APP_VERSION_FILE  # noqa: E402
 from app.engine_version import VERSION_FILE, hash_sources  # noqa: E402
 
 PACKAGING = ROOT / "packaging"
@@ -58,6 +59,9 @@ def main():
                         help="frontend/dist를 다시 만들지 않고 그대로 쓴다")
     parser.add_argument("--clean", action="store_true",
                         help="build/ 와 dist/ 를 먼저 지운다")
+    parser.add_argument("--version", default="",
+                        help="이 빌드의 릴리스 태그(v1.2.3). 없으면 자동 업데이트를 "
+                             "하지 않는 빌드가 된다 - 릴리스는 CI가 태그를 넘긴다")
     args = parser.parse_args()
 
     if args.clean:
@@ -72,6 +76,11 @@ def main():
 
     version = stamp_version()
     print(f"stamped engine version {version}")
+
+    # 릴리스 태그. 비어 있으면 빈 파일이 들어가고 app_version()은 None을 낸다 -
+    # spec의 datas가 이 파일의 존재를 전제하므로 항상 쓴다.
+    (PACKAGING / APP_VERSION_FILE).write_text(args.version, encoding="utf-8")
+    print(f"stamped release tag {args.version or '(none - no auto-update)'}")
 
     _run([sys.executable, "-m", "PyInstaller", "--noconfirm", "--distpath",
           str(ROOT / "dist"), "--workpath", str(ROOT / "build"),
