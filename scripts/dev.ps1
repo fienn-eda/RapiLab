@@ -68,8 +68,17 @@ function Assert-Path($Path, $What) {
 function Get-PortOwner($Port) {
   $conn = Get-NetTCPConnection -State Listen -LocalPort $Port -ErrorAction SilentlyContinue
   if (-not $conn) { return $null }
-  $proc = Get-Process -Id $conn[0].OwningProcess -ErrorAction SilentlyContinue
-  if ($proc) { return $proc.ProcessName } else { return 'unknown' }
+  $ownerPid = $conn[0].OwningProcess
+  $proc = Get-Process -Id $ownerPid -ErrorAction SilentlyContinue
+  if ($proc) {
+    return @{ Name = $proc.ProcessName; Pid = $ownerPid; Alive = $true }
+  }
+  # A listening socket whose process is gone: the backend spawns simulation
+  # workers with multiprocessing, and a worker that outlives its parent keeps
+  # the inherited socket handle open. taskkill on the reported PID reports
+  # "process not found" while the port stays busy - the worker is what has to
+  # go.
+  return @{ Name = 'a process that no longer exists'; Pid = $ownerPid; Alive = $false }
 }
 
 Assert-Path $Python 'Python (anaconda)'
@@ -79,8 +88,13 @@ Assert-Path (Join-Path $Frontend 'node_modules') 'frontend deps (run npm install
 foreach ($p in @($BackendPort, $VitePort)) {
   $owner = Get-PortOwner $p
   if ($owner) {
-    Write-Host "Port $p is already held by '$owner'." -ForegroundColor Yellow
-    if ($owner -like '*python*' -or $owner -like '*node*') {
+    Write-Host "Port $p is held by $($owner.Name) (PID $($owner.Pid))." -ForegroundColor Yellow
+    if (-not $owner.Alive) {
+      Write-Host "  An orphaned worker from an earlier run is still holding the socket."
+      Write-Host "  Find it and stop it:"
+      Write-Host "    Get-CimInstance Win32_Process -Filter `"Name LIKE '%python%'`" | Select ProcessId, CommandLine"
+      Write-Host "    Stop-Process -Id <that id> -Force"
+    } elseif ($owner.Name -like '*python*' -or $owner.Name -like '*node*') {
       Write-Host "  That looks like this script already running. Close its window and retry."
     }
     exit 1
