@@ -5,6 +5,36 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 무기 테마 앵커(`WEAPON_SYNERGY_ANCHORS`)를 삭제한다
+
+- Date: 2026-08-02
+- Context: 앵커는 "SG B3는 토브가 있어야 의미가 있다"는 Fienn의 도메인 규칙을
+  후보 풀 가드로 인코딩한 것이었다(`{"tove": "SG"}`, 2026-07-17). 그런데 체크가
+  **리터럴 슬러그** `"tove"`라, **애장품이 없는 플레이어에게는 켜지고 있는
+  플레이어에게는 안 켜진다** — 같은 캐릭터인데 풀 선택과 무관한 아이템 하나가 탐색
+  동작을 가른다. Fienn의 로스터는 `tove-signature`라 **이 가드는 거기서 한 번도 돈
+  적이 없다**. `character_of('tove-signature')`는 이미 `'tove'`를 알고 있었다.
+- Decision: **키를 고치는 대신 앵커를 통째로 삭제한다(Fienn).** 근거 셋: (1)
+  `character_of`로 키를 잡아 **일관되게 켜본 결과**, 펄링은 34.84B → 36.23B로
+  **+4.0%** 좋아졌지만 **수렴 합계는 42,617,220,675 → 42,184,508,999로 -1.02%**
+  였다(62.7초 수렴 — 예산 부족이 아니라 더 나쁜 국소최적). (2) 앵커가 지키려던 그
+  덱을 **가드 없이 이미 찾는다** — 지금 덱4가 토브 + SG 4명이다. (3) 삭제는 Fienn
+  로스터에서 **완전한 무동작**(펄링·합계 둘 다 자릿수까지 동일)이라 되돌릴 위험이
+  낮다.
+- Alternatives considered: (a) `character_of`로 키만 고침 — 일관되지만 위 측정에서
+  추천 품질이 1.02% 하락. (b) 그대로 두기 — 애장품 유무로 동작이 갈리는 불일치를
+  남기는 것이라 가장 나쁘다. (c) B3 한정을 풀어 전 티어로 확장 — 측정 안 함.
+  이번 세션의 다른 근거(솔린은 B1 SG인데 앵커가 B3만 끌어온다)가 이 방향을
+  시사하긴 하나, 앵커 자체가 켜면 손해라 확장할 이유가 없어졌다.
+- Consequences: `deck_search.py`에서 상수 + 풀인 블록 삭제, `prune_candidate_pool`
+  docstring에서 해당 문장 제거. 테스트 `test_prune_includes_sg_theme_around_tove`
+  삭제 — **이 테스트가 통과하고 있던 이유가 버그가 살아남은 이유와 같다**:
+  픽스처가 `FakeSpec("tove")`, 즉 **애장품을 가진 로스터에는 존재하지 않는 슬러그
+  형태**를 썼다(`live-check-roster-fixture-trap`의 재발). 백엔드 **1750 passed /
+  3 skipped**(테스트 1건 삭제분). `SYNERGY_SETS`는 여전히 리터럴 슬러그 매칭이고
+  이제 주석이 그렇게 말한다 — 네 멤버 다 현재 형제 빌드가 없지만, 하나라도 애장품이
+  생기면 **똑같은 방식으로 조용히 죽는다**.
+
 ## 배분 언덕오르기는 버스트 티어를 넘어 교환한다 — 합법성 검사를 붙여서
 
 - Date: 2026-08-02
