@@ -206,9 +206,11 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
                                    deadline, locked, pool, batch)
 
 
-def _swap_is_fieldable(decks, i, a, partner, k, j):
-    """Whether exchanging deck `i`'s seat `a` with `partner`'s seat `k` leaves
-    every deck it touches one the player could actually field.
+def _swap_is_fieldable(deck, a, partner, k, partner_is_deck):
+    """Whether exchanging `deck`'s seat `a` with `partner`'s seat `k` leaves
+    every deck it touches one the player could actually field. `partner` is
+    either another deck (`partner_is_deck`) or the leftover bench, which has no
+    shape of its own to keep.
 
     Only a CROSS-tier exchange can fail this, because it is the only kind that
     changes a deck's B1/B2/B3 shape - and the shape is what decides whether the
@@ -216,17 +218,17 @@ def _swap_is_fieldable(decks, i, a, partner, k, j):
     check, which is what keeps the same-tier half of the climb behaving exactly
     as it did before cross-tier moves were allowed.
     """
-    if decks[i][a].burst_tier == partner[k].burst_tier:
+    if deck[a].burst_tier == partner[k].burst_tier:
         return True
-    trial_i = list(decks[i])
-    trial_i[a] = partner[k]
-    if not deck_is_valid(trial_i):
+    trial = list(deck)
+    trial[a] = partner[k]
+    if not deck_is_valid(trial):
         return False
-    if j is None:
-        return True                    # a benched unit belongs to no deck shape
-    trial_j = list(partner)
-    trial_j[k] = decks[i][a]
-    return deck_is_valid(trial_j)
+    if not partner_is_deck:
+        return True
+    partner_trial = list(partner)
+    partner_trial[k] = deck[a]
+    return deck_is_valid(partner_trial)
 
 
 def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch):
@@ -270,7 +272,7 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
 
     def admissible(a, k):
         return ((seated is None or character_of(partner[k].slug) not in seated)
-                and _swap_is_fieldable(decks, i, a, partner, k, j))
+                and _swap_is_fieldable(decks[i], a, partner, k, j is not None))
 
     # `locked` arrives already keyed by owned character (see _swap_pass).
     candidates = [(a, k)

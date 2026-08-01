@@ -293,6 +293,29 @@ def test_a_cross_tier_swap_that_leaves_an_unfieldable_shape_is_refused(monkeypat
     assert [u.slug for u in bench] == ["y"]
 
 
+def test_an_accepted_cross_tier_swap_re_judges_the_candidates_behind_it(monkeypatch):
+    """Legality is decided when the candidate list is built, but a cross-tier
+    swap changes the shape it was decided against. Here y and z are both Burst
+    1s worth having: seating y takes the deck from (1,1,3) to (2,1,2), which
+    leaves z's own candidate - legal when the list was built - pointing at a
+    third Burst 1 and a (3,1,1) deck the game cannot field."""
+    deck = roster_of({"x1": 1, "x2": 2, "x3": 3, "x4": 3, "x5": 3})
+    bench = [Unit("y", 1), Unit("z", 1)]
+
+    def score(slugs):
+        # Both pay off as ADDITIONAL Burst 1s, so the more of them the better -
+        # nothing but the shape rule stands between the deck and seating both.
+        if "x1" not in slugs:
+            return 90.0
+        return 100.0 + 50.0 * len({"y", "z"} & slugs)
+
+    patch_scorer(monkeypatch, score)
+    da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0, batch=8)
+
+    assert sorted(u.burst_tier for u in deck) == [1, 1, 2, 3, 3]
+    assert len({"y", "z"} & {u.slug for u in deck}) == 1
+
+
 def test_a_drafted_character_is_seated_in_the_mode_that_scores_best(monkeypatch):
     """A drafted seat can name a character the engine models in several modes;
     which one she runs in is the ENGINE's call. The seat arrives as one

@@ -110,11 +110,11 @@ def _full_pass_candidates(decks, leftovers):
                for i in range(len(decks))
                for j in range(i + 1, len(decks))
                for a in range(len(decks[i])) for b in range(len(decks[j]))
-               if _swap_is_fieldable(decks, i, a, decks[j], b, j))
+               if _swap_is_fieldable(decks[i], a, decks[j], b, True))
     leftover = sum(1
-                   for i in range(len(decks))
-                   for a in range(len(decks[i])) for k in range(len(leftovers))
-                   if _swap_is_fieldable(decks, i, a, leftovers, k, None))
+                   for deck in decks
+                   for a in range(len(deck)) for k in range(len(leftovers))
+                   if _swap_is_fieldable(deck, a, leftovers, k, False))
     return pair + leftover
 
 
