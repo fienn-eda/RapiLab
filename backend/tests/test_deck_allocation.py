@@ -250,6 +250,49 @@ def test_a_bench_swap_never_seats_a_character_already_holding_a_seat(monkeypatch
     assert RECOMMENDED in [u.slug for u in bench]
 
 
+def test_a_bench_swap_may_change_the_decks_burst_tier_shape(monkeypatch):
+    """(1,1,3) and (2,1,2) are both shapes real play uses, so the unit that wins
+    a seat is often not the tier of the one it displaces - a Burst-1 cooldown
+    holder earns her place by taking a Burst 3's chair, not another Burst 1's.
+    Restricting the climb to same-tier exchanges puts every such move outside
+    the search: here y is worth double, and no same-tier swap reaches her."""
+    deck = roster_of({"x1": 1, "x2": 2, "x3": 3, "x4": 3, "x5": 3})
+    bench = [Unit("y", 1)]
+
+    def score(slugs):
+        # y pays off as an ADDITIONAL Burst 1, so displacing the deck's existing
+        # one - the only same-tier swap available - is a loss, not a gain.
+        if "y" not in slugs:
+            return 100.0
+        return 200.0 if "x1" in slugs else 90.0
+
+    patch_scorer(monkeypatch, score)
+    da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0, batch=8)
+
+    assert "y" in [u.slug for u in deck]
+    assert sorted(u.burst_tier for u in deck) == [1, 1, 2, 3, 3]
+
+
+def test_a_cross_tier_swap_that_leaves_an_unfieldable_shape_is_refused(monkeypatch):
+    """A same-tier exchange cannot change a deck's B1/B2/B3 shape, which is why
+    the climb never had to ask whether its result was legal. A cross-tier one
+    can, and (2,0,3) - a deck with no Burst 2 - can never reach Full Burst. The
+    only improving swap here produces exactly that, so the deck must stand."""
+    deck = roster_of({"x1": 1, "x2": 2, "x3": 3, "x4": 3, "x5": 3})
+    before = [u.slug for u in deck]
+    bench = [Unit("y", 1)]
+
+    # 200 only in the seat that leaves the deck without a Burst 2; every legal
+    # landing spot for y costs one of x3/x4/x5 and is worth no more than staying.
+    patch_scorer(monkeypatch,
+                 lambda slugs: 200.0 if {"y", "x1", "x3", "x4", "x5"} <= slugs
+                 else 100.0)
+    da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0, batch=8)
+
+    assert [u.slug for u in deck] == before
+    assert [u.slug for u in bench] == ["y"]
+
+
 def test_a_drafted_character_is_seated_in_the_mode_that_scores_best(monkeypatch):
     """A drafted seat can name a character the engine models in several modes;
     which one she runs in is the ENGINE's call. The seat arrives as one
@@ -279,13 +322,14 @@ def test_a_drafted_character_is_seated_in_the_mode_that_scores_best(monkeypatch)
 def test_a_lock_on_a_drafted_character_holds_whichever_mode_was_chosen(monkeypatch):
     """The player locks the slug they own (`bready`); the seat ends up holding a
     candidate slug. Comparing locks by slug would silently unpin her."""
-    # Her seat is the deck's ONLY Burst-3 one, so the bench unit y (also B3) can
-    # swap in nowhere else - the lock is the single thing standing between them.
-    deck = roster_of({"x1": 1, "x2": 2, RECOMMENDED: 3, "x4": 1, "x5": 2})
+    # A (1,2,2) deck - a shape real play uses, so every seat is a swap the climb
+    # may legally make - and a bench unit worth having in exactly one of them:
+    # the locked one. The lock is the single thing standing between them.
+    deck = roster_of({"x1": 1, "x2": 2, "x5": 2, RECOMMENDED: 3, "x4": 3})
     bench = [Unit("y", 3)]
 
     def score(slugs):
-        return 500.0 if "y" in slugs else 100.0
+        return 500.0 if "y" in slugs and RECOMMENDED not in slugs else 100.0
 
     patch_scorer(monkeypatch, score)
     da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0,

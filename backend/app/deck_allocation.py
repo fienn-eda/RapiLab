@@ -206,10 +206,42 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
                                    deadline, locked, pool, batch)
 
 
+def _swap_is_fieldable(decks, i, a, partner, k, j):
+    """Whether exchanging deck `i`'s seat `a` with `partner`'s seat `k` leaves
+    every deck it touches one the player could actually field.
+
+    Only a CROSS-tier exchange can fail this, because it is the only kind that
+    changes a deck's B1/B2/B3 shape - and the shape is what decides whether the
+    deck can reach Full Burst at all. A same-tier pair is admitted without the
+    check, which is what keeps the same-tier half of the climb behaving exactly
+    as it did before cross-tier moves were allowed.
+    """
+    if decks[i][a].burst_tier == partner[k].burst_tier:
+        return True
+    trial_i = list(decks[i])
+    trial_i[a] = partner[k]
+    if not deck_is_valid(trial_i):
+        return False
+    if j is None:
+        return True                    # a benched unit belongs to no deck shape
+    trial_j = list(partner)
+    trial_j[k] = decks[i][a]
+    return deck_is_valid(trial_j)
+
+
 def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch):
-    """Same-tier swaps between deck `i` and `partner` - either another deck
-    (`j` is its index, so its score counts toward the improvement too) or the
-    leftover bench (`j` is None, and a benched unit contributes nothing).
+    """Unit swaps between deck `i` and `partner` - either another deck (`j` is
+    its index, so its score counts toward the improvement too) or the leftover
+    bench (`j` is None, and a benched unit contributes nothing).
+
+    The two seats need not share a burst tier. Real play uses three deck shapes,
+    so the unit that deserves a seat is regularly not the tier of the one it
+    displaces - a Burst-1 cooldown holder earns her chair from a Burst 3, taking
+    a (1,1,3) deck to (2,1,2). Refusing cross-tier exchanges put every such move
+    outside the search, and on a real 58-unit roster that was the whole
+    difference: the climb reached a local optimum with no same-tier gain left
+    anywhere, while two bench units were each worth billions in a seat of
+    another tier (measured 2026-08-02, +8.45% over the five decks).
 
     Candidates are scored a batch at a time so a SimPool can fan them out. The
     walk over a scored batch keeps the serial rule exactly: accept the FIRST
@@ -219,30 +251,33 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
     scoring is bounded by the batch and rare in practice: measured on a 78-unit
     roster, under 1% of candidates are ever accepted.
 
-    Tier and lock, the filters that decide which pairs are candidates at all,
-    never go stale: a same-tier swap leaves both seats' tiers unchanged and never
-    moves a locked unit. That is what makes scoring a candidate before reaching
-    it safe in the first place.
+    Lock, the filter that never goes stale, is applied once up front: no swap
+    moves a locked unit, whatever its tier.
 
-    The one filter that CAN flip is `seated`, which upholds the one-owned-
-    character rule across the whole allocation. Bringing a bench unit in spends
-    that character, so any other candidate offering one of her remaining builds
-    stops being legal the moment a swap is accepted - the unscanned tail is
-    pruned there rather than trusted. Deck-to-deck swaps need no such filter:
-    both units are already seated, so exchanging them cannot make a character
-    appear twice.
+    Two filters CAN flip when a swap is accepted, so the unscanned tail is
+    re-filtered rather than trusted. `seated` upholds the one-owned-character
+    rule across the whole allocation: bringing a bench unit in spends that
+    character, retiring her other builds (deck-to-deck swaps need no such check
+    - both units are already seated, so exchanging them cannot make a character
+    appear twice). `_swap_is_fieldable` is the cross-tier counterpart: an
+    accepted cross-tier swap changes the deck's shape, so a later candidate
+    judged legal against the OLD shape may not be legal against the new one.
     """
     # Bench swaps only: the incoming character must not already hold a seat -
     # in THIS deck or any other, since the player fields all of them at once.
     seated = None if j is not None else {character_of(u.slug)
                                          for deck in decks for u in deck}
+
+    def admissible(a, k):
+        return ((seated is None or character_of(partner[k].slug) not in seated)
+                and _swap_is_fieldable(decks, i, a, partner, k, j))
+
     # `locked` arrives already keyed by owned character (see _swap_pass).
     candidates = [(a, k)
                   for a in range(5) if character_of(decks[i][a].slug) not in locked
                   for k in range(len(partner))
                   if character_of(partner[k].slug) not in locked
-                  and decks[i][a].burst_tier == partner[k].burst_tier
-                  and (seated is None or character_of(partner[k].slug) not in seated)]
+                  and admissible(a, k)]
     width = 1 if j is None else 2      # decks re-scored per candidate
     improved = False
     start = 0
@@ -277,13 +312,12 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
         start += accepted + 1
         if seated is not None:
             # `partner[k]` now holds the unit that LEFT deck i, and the character
-            # who came in occupies decks[i][a]. Drop the unscanned candidates
-            # that would seat her a second time.
+            # who came in occupies decks[i][a]. Both sides of that exchange move,
+            # so the seat-exclusion set follows it before the tail is re-judged.
             seated.discard(character_of(partner[k].slug))
             seated.add(character_of(decks[i][a].slug))
-            candidates = candidates[:start] + [
-                (a2, k2) for a2, k2 in candidates[start:]
-                if character_of(partner[k2].slug) not in seated]
+        candidates = candidates[:start] + [(a2, k2) for a2, k2 in candidates[start:]
+                                           if admissible(a2, k2)]
     return improved
 
 
