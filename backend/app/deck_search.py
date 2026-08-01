@@ -345,15 +345,13 @@ def deck_is_valid(units):
 
 
 # Curated two-unit sets that only work together (Fienn, 2026-07-17): candidate
-# cuts must measure them as a pair and never separate them.
+# cuts must measure them as a pair and never separate them. Keyed by slug, so a
+# member that ever gains a Favorite Item encoding needs its `-signature` build
+# added here too - the pair is matched literally, and a set that silently stops
+# matching is the failure mode that killed the weapon-theme anchor this replaced
+# the last of (see docs/decisions.md, 2026-08-02).
 SYNERGY_SETS = (frozenset({"mint", "prika"}),
                 frozenset({"mast-romantic-maid", "anchor-innocent-maid"}))
-
-# A weapon-scoped buffer anchors a themed sub-pool: its weapon's B3 attackers
-# are only meaningful with it in the deck (Fienn: "SG B3s need Tove"), so they
-# join the pool whenever the anchor is rostered, bypassing the mis-contextual
-# marginal cut.
-WEAPON_SYNERGY_ANCHORS = {"tove": "SG"}
 
 # Per-tier pool caps sized so shape_combinations stays a few hundred combos
 # (~103 ms/sim budget); synergy/theme guards may exceed them slightly.
@@ -560,8 +558,8 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
     """Cut the roster to a pool the budget can enumerate. Scores are marginal
     contributions in reference-deck context (two passes: prior-seeded B1, then
     best-measured B1 - CDR holders change cycle count, Fienn rule 2/3), with
-    synergy sets measured as pairs and weapon-themed units pulled in around
-    their anchor rather than trusting the mis-contextual cut. A candidate
+    synergy sets measured as pairs rather than trusting the mis-contextual cut.
+    A candidate
     whose sibling build holds a cross-tier reference slot still gets
     a genuine simulated score, against an alternate reference with that
     sibling swapped out (_cross_tier_reference) - it is never scored an
@@ -655,13 +653,6 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
         if pair & pool_slugs and pair <= slugs.keys():
             pool.extend(slugs[s] for s in pair if s not in pool_slugs)
             pool_slugs |= pair
-    for anchor, weapon in WEAPON_SYNERGY_ANCHORS.items():  # themed pull-in
-        if anchor in slugs:
-            themed = [u for u in roster
-                      if u.slug == anchor
-                      or (u.burst_tier == 3 and getattr(u, "weapon", None) == weapon)]
-            pool.extend(u for u in themed if u.slug not in pool_slugs)
-            pool_slugs |= {u.slug for u in themed}
     return pool
 
 

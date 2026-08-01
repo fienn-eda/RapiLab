@@ -562,19 +562,6 @@ def test_prune_keeps_synergy_partners_together(monkeypatch):
     assert {"mint", "prika"} <= pool_slugs
 
 
-def test_prune_includes_sg_theme_around_tove(monkeypatch):
-    import app.deck_search as ds
-    roster = _big_fake_roster()  # all AR
-    roster += [FakeSpec("tove", 1, weapon="AR")]
-    roster += [FakeSpec(f"sg_{i}", 3, weapon="SG",
-                        base_stats={"atk": 1.0}) for i in range(2)]  # tiny prior
-
-    monkeypatch.setattr(ds, "evaluate_deck", _fake_scorer({}))
-    pool_slugs = {u.slug for u in ds.prune_candidate_pool(roster, BossProfile())}
-    assert "tove" in pool_slugs
-    assert {"sg_0", "sg_1"} <= pool_slugs  # anchored theme survives the cut
-
-
 def test_sole_tier1_slug_rejected_next_to_another_b1():
     # rapi-red-hood-b1's Combat Assist only holds when she is the deck's ONLY
     # Burst-1 unit - seating her next to a real B1 (liter) simulates a
