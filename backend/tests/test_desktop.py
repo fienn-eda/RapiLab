@@ -1,4 +1,4 @@
-"""실행셸에서 GUI가 아닌 부분 - 포트 선택과 준비 대기.
+"""실행셸에서 GUI가 아닌 부분 - 포트 선택, 준비 대기, WebView2 복구.
 
 창 자체는 여기서 열지 않는다: 테스트가 사람의 화면을 뺏고, 창이 뜨는지는
 2026-07-31 스모크(격리 venv, Python 3.14.6)에서 이미 확인했다. 여기서 고정하는
@@ -8,6 +8,8 @@
 import socket
 import threading
 from http.server import BaseHTTPRequestHandler, HTTPServer
+
+import pytest
 
 from app import desktop
 
@@ -99,3 +101,113 @@ def test_a_404_still_counts_as_serving():
         # 닫고, 안 닫으면 ResourceWarning이 테스트를 깨뜨린다.
         server.shutdown()
         server.server_close()
+
+
+class _Exited(Exception):
+    """`os._exit` 자리. 진짜를 부르면 테스트 실행기가 통째로 사라진다."""
+
+    def __init__(self, code: int):
+        self.code = code
+
+
+@pytest.fixture
+def restart_probe(monkeypatch):
+    """재시작 경로를 관찰한다 - 무엇을 띄웠고 어떤 코드로 나갔는지."""
+    spawned = []
+    monkeypatch.setattr(desktop.subprocess, "Popen",
+                        lambda command, **kwargs: spawned.append((command, kwargs)))
+    monkeypatch.setattr(desktop.os, "_exit",
+                        lambda code: (_ for _ in ()).throw(_Exited(code)))
+    monkeypatch.delenv(desktop.WEBVIEW_ATTEMPT_ENV, raising=False)
+    return spawned
+
+
+def test_relaunch_runs_the_exe_itself_when_frozen(monkeypatch):
+    # 얼린 뒤 sys.executable은 RapiLab.exe다. 인자를 물려줘야 --debug로 띄운
+    # 앱이 재시작 뒤에도 --debug로 뜬다.
+    monkeypatch.setattr(desktop.sys, "frozen", True, raising=False)
+    monkeypatch.setattr(desktop.sys, "executable", r"C:\RapiLab\RapiLab.exe")
+    monkeypatch.setattr(desktop.sys, "argv", ["RapiLab.exe", "--debug"])
+    assert desktop._relaunch_command() == [r"C:\RapiLab\RapiLab.exe", "--debug"]
+
+
+def test_relaunch_runs_the_module_when_not_frozen(monkeypatch):
+    # 개발 중에는 sys.executable이 python이라 그것만 띄우면 REPL이 뜬다.
+    monkeypatch.delattr(desktop.sys, "frozen", raising=False)
+    monkeypatch.setattr(desktop.sys, "executable", r"C:\python.exe")
+    monkeypatch.setattr(desktop.sys, "argv", ["-m", "--debug"])
+    assert desktop._relaunch_command()[:3] == [r"C:\python.exe", "-m", "app.desktop"]
+
+
+def test_a_dead_webview_gets_another_try(monkeypatch, restart_probe):
+    monkeypatch.setattr(desktop, "_relaunch_command", lambda: ["RapiLab.exe"])
+    with pytest.raises(_Exited) as exit_info:
+        desktop._restart_or_give_up()
+    assert exit_info.value.code == 0
+    command, kwargs = restart_probe[0]
+    assert command == ["RapiLab.exe"]
+    assert kwargs["env"][desktop.WEBVIEW_ATTEMPT_ENV] == "2"
+
+
+def test_the_new_process_keeps_the_rest_of_the_environment(monkeypatch, restart_probe):
+    # 환경을 통째로 갈아끼우면 PATH도 사라진다 - 그러면 재시작한 앱은 아예 못 뜬다.
+    monkeypatch.setattr(desktop, "_relaunch_command", lambda: ["RapiLab.exe"])
+    monkeypatch.setenv("RAPILAB_TEST_MARKER", "kept")
+    with pytest.raises(_Exited):
+        desktop._restart_or_give_up()
+    assert restart_probe[0][1]["env"]["RAPILAB_TEST_MARKER"] == "kept"
+
+
+def test_it_stops_retrying_and_says_why(monkeypatch, restart_probe):
+    """무한 재시작은 검은 화면보다 나쁘다 - 유저가 앱을 끌 수조차 없다."""
+    told = []
+    monkeypatch.setattr(desktop, "_report_dead_webview", lambda: told.append(True))
+    monkeypatch.setenv(desktop.WEBVIEW_ATTEMPT_ENV, str(desktop.WEBVIEW_ATTEMPTS))
+    with pytest.raises(_Exited) as exit_info:
+        desktop._restart_or_give_up()
+    assert exit_info.value.code == 1
+    assert told == [True]
+    assert restart_probe == []
+
+
+def test_a_garbled_attempt_count_does_not_break_the_recovery(monkeypatch, restart_probe):
+    # 이 경로는 이미 무언가 잘못된 상태에서 도는 곳이다. 여기서 예외가 나면
+    # 남는 것은 아무 설명 없는 빈 창이다.
+    monkeypatch.setattr(desktop, "_relaunch_command", lambda: ["RapiLab.exe"])
+    monkeypatch.setenv(desktop.WEBVIEW_ATTEMPT_ENV, "일곱")
+    with pytest.raises(_Exited) as exit_info:
+        desktop._restart_or_give_up()
+    assert exit_info.value.code == 0
+
+
+def test_the_webview_profile_stays_in_the_same_place_across_launches(tmp_path, monkeypatch):
+    """자리를 고정하지 않으면 실행마다 새 임시 폴더가 하나씩 쌓인다.
+
+    pywebview의 기본값이 그렇고, 지우지도 않는다 - 한 번에 6MB쯤이다. 창이
+    죽어 다시 띄우는 경로가 생기면서 그 배수가 됐다.
+    """
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    first = desktop.webview_storage_dir(desktop.SYNC_PORTS[0])
+    assert first == desktop.webview_storage_dir(desktop.SYNC_PORTS[0])
+    assert tmp_path in first.parents
+
+
+def test_each_instance_gets_its_own_webview_profile(tmp_path, monkeypatch):
+    """한 폴더를 두 인스턴스가 나눠 쓰면 두 번째 창이 영영 비어 있다.
+
+    실측(2026-08-01): 동시에 둘을 띄우면 백엔드는 둘 다 응답하는데 브라우저
+    프로세스는 하나뿐이었다. 두 번째는 초기화가 끝나지 않아 **실패조차 보고하지
+    않으므로** `guard_webview()`도 걸리지 않는다 - 복구가 없는 빈 창이다.
+    """
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path))
+    homes = {desktop.webview_storage_dir(port) for port in desktop.SYNC_PORTS}
+    assert len(homes) == len(desktop.SYNC_PORTS)
+
+
+def test_the_guard_gives_up_quietly_when_pywebview_is_missing():
+    """감시를 못 걸어도 앱은 떠야 한다 - 감시는 부가 기능이지 실행 조건이 아니다.
+
+    이 테스트 환경에는 pywebview가 없다. 그래서 여기서 통과한다는 것은 곧
+    임포트 실패가 앱을 죽이지 않는다는 뜻이다.
+    """
+    desktop.guard_webview()

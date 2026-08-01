@@ -4,6 +4,52 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 폴링을 "쉬는 상태에서만" 돌리면 한 번 쓰고 멈춘다 — 막을 것은 **진행 중**이지 끝난 것이 아니다
+
+- 확립: 2026-08-01, 부계정 동기화가 앱에 도달하지 않던 버그.
+- `useBookmarkletImport`의 인박스 폴링이 `status !== 'idle'`일 때 멈췄다. 그런데
+  `'done'`(성공)과 `'error'`(실패)에서 `idle`로 돌아가는 경로가 없어, **한 번
+  동기화하면 폴링이 영구 정지**한다. 그 뒤 누른 북마크릿은 인박스에 POST까지
+  성공하므로 브라우저는 "로스터를 보냈어요"를 띄우고, 앱만 영영 집어가지 않는다.
+- 게이트의 의도는 주석에 있었다 — "고르는 중이거나 조립 중에 새 payload가 끼어들면
+  안 된다". 지켜야 할 것은 `choosing`과 `importing` **둘뿐**인데 조건이 그 여집합을
+  통째로 막고 있었다. 진행 중인 상태를 나열하는 쪽으로 좁히면 끝난다.
+- **첫 번째가 되는 것이 진단을 가린다.** 첫 동기화는 멀쩡했다 — `App.tsx`가 활성
+  프로필 유무에 따라 패널을 삼항의 다른 가지에서 그리므로, 첫 계정이 생기는 순간
+  컴포넌트가 갈아끼워지며 상태가 우연히 `idle`로 리셋된다. "한 번은 되니까 코드는
+  맞다"가 성립하지 않는 구조였다.
+- **규칙:** 재개 조건이 없는 게이트는 잠금이다. `if (busy) return`으로 쓰고,
+  `if (!idle) return`으로 쓰지 말 것.
+
+## 한 번 일어난 일을 `status` 변화로 관찰하지 말 것 — 배치가 삼키고, 같은 값이 두 번이면 아예 안 돈다
+
+- 확립: 2026-08-01, 동기화 도착을 App에 알리려다 두 번 헛디딤.
+- 처음엔 패널이 `useEffect(() => { if (status === 'importing') onActivity() }, [status])`로
+  알리게 했다. 테스트가 바로 잡아냈다 — 조립이 즉시 끝나면 `'importing'` 렌더가
+  **커밋되지 않은 채** `'done'`으로 넘어가서 effect가 그 상태를 본 적이 없다.
+- `'done'`을 조건에 넣어도 안 된다. 계정을 연달아 동기화하면 `'done'` → `'done'`이라
+  **상태가 바뀌지 않아** effect가 돌지 않는다. 두 번째 계정에서 조용히 신호가 빠진다.
+- 해결은 상태를 지켜보는 대신 사건이 일어나는 자리에서 콜백을 부르는 것이다. 훅이
+  payload를 받아들인 그 줄에서 `onActivityRef.current?.()`. ref로 잡는 이유는 호출부가
+  인라인 화살표를 넘겨도 effect 의존성이 흔들리지 않게 하기 위해서다(같은 파일의
+  `onRoster`가 이미 쓰던 패턴).
+- **규칙:** 상태는 "지금 어떤가"를 답하고, 사건은 "방금 무엇이 일어났나"를 답한다.
+  후자를 전자로 표현하면 렌더가 합쳐질 때와 값이 반복될 때 조용히 사라진다.
+
+## 기본값을 바꾸면 그 기본값에 기대던 테스트가 **통과한 채로** 의미를 잃는다
+
+- 확립: 2026-08-01, 니케 풀 기본 정렬을 이름 오름차순 → 우코 내림차순으로 바꾸며.
+- 테스트 헬퍼가 `{ ...EMPTY_FILTER, ...state }` 꼴이라 명시하지 않은 축은 기본값을
+  따랐다. 기본값을 바꾸자 한 테스트는 빨개졌는데(**보이는 손상**), "기본은 이름순"을
+  검증하던 테스트는 **그대로 통과**했다 — 픽스처에서 우코를 굴린 유닛이 하나뿐이라
+  두 정렬이 우연히 같은 순서를 냈다. 이름 정렬을 지키던 테스트가 그때부터 우코
+  정렬을 지키고 있었다.
+- 고치는 법: 테스트가 검사하려는 축을 **전부 명시**하고(`{ sortKey: 'name',
+  sortDir: 'asc' }`), 새 기본값에는 두 해석이 갈리는 픽스처를 따로 준다(우코 순서와
+  이름 순서가 어긋나는 두 행).
+- **규칙:** 기본값을 바꿀 때는 빨개진 테스트만 보지 말고, **그 기본값을 이름에 달고
+  있는 테스트**를 찾아 읽을 것. 초록은 그것이 여전히 무엇을 지키는지 말해주지 않는다.
+
 ## 유닛 하나가 더 정확해지면 캘리브레이션 합계가 오히려 나빠질 수 있다 — 그건 되돌릴 신호가 아니라 숨은 과대항의 신호다
 
 - 확립: 2026-07-31, 같은 날 두 번 일어나 패턴이 됨.
@@ -1452,6 +1498,10 @@ own_burst_activate가 아니라...) 참고.
 - **An application logger's INFO records are silently dropped under uvicorn, and pytest's `caplog` hides this from a normal test suite.** uvicorn only configures its own `uvicorn.*` loggers; the root logger keeps its default WARNING level with no handler for application loggers, so a module-level `logging.getLogger(__name__).info(...)` emits nothing in a real server run even though the request itself succeeds (uvicorn's own access log still shows `200 OK`). A test using `caplog.at_level(logging.INFO)` forces the level for the duration of the test and therefore passes regardless — the telemetry looks tested while being dead in production. Found 2026-07-19 via `logging.getLogger('app.api').getEffectiveLevel()` returning 30 (WARNING) against a real run of the roster-sync endpoint. Fix: configure the application logger's own handler + level directly (`if not logger.handlers: logger.addHandler(logging.StreamHandler()); logger.setLevel(logging.INFO)`), not root — this leaves uvicorn's own access/error loggers untouched and doesn't double-log. A regression test that would actually catch this must exercise the real default-logging path (e.g. run the endpoint in a bare subprocess, no pytest/caplog involved) rather than a `caplog.at_level`-forced one. See `backend/app/api.py`, `backend/tests/test_assemble_roster_api.py`, commit `5069dc2`.
 - **On Windows, `pkill -f` does not kill a stale server holding a port — verifying a fix against a live server first requires confirming the OLD process is actually gone.** A pre-fix server left running kept answering `200 OK` on the target port after a `pkill -f` that silently no-opped, which made a "verification" run against it look valid while testing nothing. Use `Get-NetTCPConnection -LocalPort <port> -State Listen` to find the real PID and `Stop-Process` to free the port before restarting and re-testing.
 - **`scripts/download_portraits.py`가 매니페스트를 통째로 재생성해 해소 불가 슬러그의 기존 항목을 삭제했다.** lootandwaifus HTML이 없는 유닛(ShiftyPad로 온보딩된 `laplace-ultimate-hero`, `maxwell-ordinary-mechanic`)은 포트레이트 경로를 유도할 수 없는데, 스크립트가 매니페스트를 빈 dict부터 다시 쌓다 보니 그 두 항목이 조용히 지워지고 있었다(발견: 2026-07-24, Sugar 온보딩). 새 유닛을 온보딩할 때마다(= HTML 없는 유닛이 새로 생길 때마다) 재발하는 구조적 버그다. 수정: 해소에 실패하면 기존 매니페스트에서 그 슬러그를 찾아보고, 아이콘 파일이 실제로 존재하면 보존해 `KEPT`로 로그에 남긴다(빈 dict부터 재생성하지 않고 기존 항목을 기반으로 갱신). 수정 후 diff가 sugar 2줄 추가뿐(기존 두 항목은 그대로)임을 확인해 검증했다.
+- **A dead WebView2 browser process leaves the pywebview host process alive with zero signal — every "looks fine" check can pass while the window is blank.** WebView2 renders through a separate process group, not the Python process. If that browser process dies (measured cause: an overlay-hook injector, see below), the host process, the exit code, and the app log all stay clean — there is no crash to catch. Three independently-checked signals all read "normal" at the same time: the process is still in the process list, the backend port still answers 200, and opening the same URL in a regular browser works fine. **pywebview 6.2.1 does not even subscribe to WebView2's own `ProcessFailed` event**, so nothing in the library reports this either — you have to hook `webview.platforms.edgechromium.EdgeChrome.on_webview_ready` yourself and subscribe `sender.CoreWebView2.ProcessFailed` from inside it (import order matters: `Microsoft.Web.WebView2.Core` is only importable after `edgechromium` has attached the WebView2 assembly to the CLR). A failed `IsSuccess=False` init callback is the same failure mode with no `CoreWebView2` object to subscribe on at all. See `backend/app/desktop.py::guard_webview`, `docs/decisions.md` ("WebView2가 죽으면 앱 프로세스를 통째로 재시작한다...").
+- **An overlay-hook injector (RivaTuner Statistics Server / MSI Afterburner) can silently kill WebView2's browser process, and there is no way to keep it from injecting.** The injected `RTSSHooks64.dll` faulted at the same offset (`+0x1490AF`, `0xC0000005`) in every captured crash dump (`%TEMP%\tmp*\EBWebView\Crashpad\reports`), and Chromium's own `third_party_modules` diagnostics named only that DLL. Injection happens before app code runs, so browser launch args don't dodge it — `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--disable-gpu` was tried and measured WORSE. Counts are **launches that ended with a working window**: 6/6 with RTSS off, 6/10 with RTSS on, 4/10 with RTSS on plus `--disable-gpu`, 10/10 with RTSS on after the restart-on-death fix. The failure is intermittent because it's an injection-timing race — this is what "reproduced once, then never again" during manual testing actually was. Since prevention isn't possible, the mitigation is process-level restart-on-death, not avoidance.
+- **A `storage_path` shared across two pywebview instances doesn't error — it hangs the second instance's init forever, with no success or failure event.** Testing whether one WebView2 profile folder could serve all app instances: the second instance's WebView2 never rendered. Its initialization neither completed nor reported failure, so `on_webview_ready` was never called at all — a restart-on-death guard watching for `ProcessFailed`/`IsSuccess=False` doesn't catch this, because neither ever fires. The fix is one storage folder per instance, keyed by the (already-instance-unique) port. See `backend/app/desktop.py::webview_storage_dir`.
+- **To test WebView2 crash-recovery, kill the browser process directly with `Stop-Process` instead of waiting for a real overlay-tool crash — it fires the identical `ProcessFailed`/`BrowserProcessExited` event.** This turns an intermittent, hard-to-trigger failure into an on-demand one for verification. One trap when checking "did the old window actually go away": the old process still shows up in the process list for **~2.5 seconds** after its own `os._exit()`, so checking sooner than that misreads a clean single-instance restart as "two windows."
 
 ## Data (lootandwaifus.com primary, dotgg fallback)
 - **"Is this stat already folded into the displayed value?" must be asked per source — ShiftyPad answers it differently for cubes vs. overload.** ShiftyPad's shown hp/atk/def already include the equipped cube's contribution (bare character stats if none is equipped), but shows overload option values SEPARATELY from those same stats, additive on top (both confirmed by Fienn — see `docs/decisions.md`, "ShiftyPad's displayed hp/atk/def already include the equipped cube"). Don't assume a UI's convention is uniform across every stat-contributing source it displays; check each one. This mattered far more for automated ingestion than manual entry: a human copying numbers by hand tends to notice something looks off, but a scraper swallows ShiftyPad's displayed numbers wholesale and would silently double-count (or drop) a source's contribution if the fold-in assumption is wrong.

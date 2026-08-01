@@ -9,6 +9,8 @@ import { parseRosterJson } from '../lib/rosterImport'
 import { serverLabel } from '../types/server'
 import type { NikkeDraft } from '../types/nikkeDraft'
 import { SyncHelp } from './SyncHelp'
+import { HelpText } from './HelpText'
+import { HELP } from '../lib/helpText'
 
 interface SyncRosterPanelProps {
   onImport: (args: {
@@ -20,9 +22,17 @@ interface SyncRosterPanelProps {
   /** 활성 프로필이 없는 화면에서는 도움말이 펼쳐진 채로 시작한다 - 아직 아무것도
    * 동기화하지 못한 유저가 토글을 "발견"할 필요가 없어야 한다. */
   defaultHelpOpen?: boolean
+  /** 인박스에서 로스터를 집어 처리하기 시작했을 때. 이 패널이 감춰져 있을 수
+   * 있는 곳(탭)에서는 이 신호로 패널을 보이게 해야 한다 - 서버 선택 질문과
+   * 결과·경고 줄이 전부 여기에만 있다. */
+  onActivity?: () => void
 }
 
-export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRosterPanelProps) {
+export function SyncRosterPanel({
+  onImport,
+  defaultHelpOpen = false,
+  onActivity,
+}: SyncRosterPanelProps) {
   const [helpOpen, setHelpOpen] = useState(defaultHelpOpen)
   const [openId, setOpenId] = useState<string | null>(null)
   const [urlError, setUrlError] = useState<string | null>(null)
@@ -39,6 +49,7 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
       setSummary(`${drafts.length}기 동기화됨`)
       setNotes(warnings)
     },
+    onActivity,
   )
 
   // A fresh import run supersedes whatever summary/error is on screen.
@@ -104,10 +115,7 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
       {openId && (
         <div className="sync__bookmarklet">
           <p className="sync__hint">
-            ① 아래 버튼으로 주소를 복사해요. ② 브라우저에서 북마크를 새로
-            만들고 <strong>주소(URL) 칸에 붙여넣어요</strong>. ③ blablalink에
-            로그인한 상태로 그 북마크를 눌러요. RapiLab을 켜 둔 채로 누르면 이
-            화면에 로스터가 바로 들어와요.
+            <HelpText>{HELP.sync.bookmarkletHint}</HelpText>
           </p>
           {/* 드래그가 아니라 복사인 이유: 앱은 네이티브 창이라 북마크 바가
               없고, 창 밖으로 링크를 끌어내는 것도 브라우저처럼 동작하지
@@ -128,13 +136,13 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
           </button>
           {copied === 'ok' && (
             <p className="sync__hint" role="status">
-              복사했어요. 브라우저에서 북마크를 만들고 주소 칸에 붙여넣어 주세요.
+              {HELP.sync.copied}
             </p>
           )}
           {copied === 'manual' && (
             <>
               <p className="sync__hint" role="status">
-                자동 복사가 막혀 있어요. 아래 주소를 직접 복사해 주세요.
+                {HELP.sync.copyBlocked}
               </p>
               <textarea
                 className="field__input"
@@ -152,7 +160,7 @@ export function SyncRosterPanel({ onImport, defaultHelpOpen = false }: SyncRoste
           짐작할 수 없으므로 - 니케가 많은 쪽이 늘 정답은 아니다 - 물어본다. */}
       {status === 'choosing' && (
         <div className="sync__servers">
-          <p className="sync__hint">어느 서버의 계정을 가져올까요?</p>
+          <p className="sync__hint">{HELP.sync.chooseServer}</p>
           <div className="sync__server-choices">
             {candidates.map(({ area, count }) => (
               <button

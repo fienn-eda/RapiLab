@@ -431,8 +431,11 @@
   font-size: 13px;
 }
 
+/* Full text colour, not the muted one: the option names are the half a player
+   scans down a column, and on this ground a muted grey loses them. The value
+   stays distinguishable by weight. */
 .overload__name {
-  color: var(--text-muted);
+  color: var(--text);
   min-width: 0;
 }
 
@@ -615,6 +618,68 @@
   font-size: 14px;
 }
 
+/* Carries the help button beside a checkbox instead of inside its label, where
+   a click meant for the help would toggle the box. */
+.checkbox-row,
+.field__label-row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
+/* Help tip ---------------------------------------------------------------- */
+
+.help-tip {
+  position: relative;
+  display: inline-flex;
+}
+
+.help-tip__button {
+  width: 17px;
+  height: 17px;
+  padding: 0;
+  border: 1px solid var(--border-strong);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 11px;
+  line-height: 1;
+  cursor: help;
+}
+
+.help-tip__button:hover,
+.help-tip__button:focus-visible {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* Opens downward: these buttons sit on a field's label line, and opening
+   upward would cover the field above - the one the reader just filled in. */
+.help-tip__bubble {
+  position: absolute;
+  top: calc(100% + var(--sp-1));
+  left: 0;
+  z-index: 2;
+  display: none;
+  width: max-content;
+  max-width: 280px;
+  padding: var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-muted);
+  text-align: left;
+}
+
+.help-tip:hover .help-tip__bubble,
+.help-tip__button:focus-visible + .help-tip__bubble {
+  display: block;
+}
+
 /* Buttons -------------------------------------------------------------- */
 
 .btn {
@@ -743,12 +808,14 @@
 }
 
 /* 패널이 뷰포트를 넘으면 3단계가 가리키는 URL 입력칸이 접힌 부분 아래로
-   밀려나므로, 높이를 제한하고 내부에서 스크롤한다. */
+   밀려나므로, 높이를 제한하고 내부에서 스크롤한다.
+   폭은 읽기 좋은 줄 길이에서 멈춘다 - 동기화 탭은 전체 폭을 내주지만, 문단을
+   창 끝까지 늘이면 다음 줄 첫 글자를 찾기 어려워진다. */
 .sync-help {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  max-width: 480px;
+  max-width: 720px;
   max-height: 55vh;
   padding: var(--sp-3);
   border: 1px solid var(--border);
@@ -862,19 +929,6 @@
   gap: var(--sp-4);
   align-items: start;
   width: 100%;
-}
-
-/* A checkbox row is `display: flex`, so a trailing hint competes with its own
-   label for the line. That was fine across the full form width; in the boss
-   column it broke "Part-destruction gimmick" across three lines. Drop the hint
-   to its own line, indented past the box, and the label gets the width back. */
-.recommend-form__setup .checkbox {
-  flex-wrap: wrap;
-}
-
-.recommend-form__setup .checkbox > .group__hint {
-  flex: 1 0 100%;
-  margin-left: calc(13px + var(--sp-2));
 }
 
 @media (max-width: 900px) {

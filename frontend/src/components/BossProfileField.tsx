@@ -12,6 +12,9 @@ import {
   type BossRangeBand,
 } from '../types/recommend'
 import { NumberField } from './fields/NumberField'
+import { HelpTip } from './HelpTip'
+import { HelpText } from './HelpText'
+import { HELP } from '../lib/helpText'
 
 // What each band pays, named by the weapons rather than by a distance the
 // player cannot see. A Rocket Launcher is paid by none of them, which is why
@@ -61,9 +64,14 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
       </div>
 
       <div className="field">
-        <label className="field__label" htmlFor={rangeBandId}>
-          보스 적정거리
-        </label>
+        <span className="field__label-row">
+          <label className="field__label" htmlFor={rangeBandId}>
+            보스 적정거리
+          </label>
+          <HelpTip label="보스 적정거리">
+            <HelpText>{HELP.boss.rangeBand}</HelpText>
+          </HelpTip>
+        </span>
         <select
           id={rangeBandId}
           className="field__input"
@@ -82,43 +90,39 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
             </option>
           ))}
         </select>
-        <span className="group__hint">
-          적정거리 안에서 쏘는 무기는 평타 대미지가 올라가요. 거리는 스테이지가
-          정하는 값이라 유닛이 아니라 보스에 붙어요. 런처(RL)는 어느 거리에서도
-          받지 않아요.
-        </span>
       </div>
 
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={value.core_hittable}
-          onChange={(event) => onChange({ ...value, core_hittable: event.target.checked })}
-        />
-        코어 피격 가능
-        <span className="group__hint">
-          {' '}
-          체크하면 <strong>모든 평타가 코어에 명중한다고 가정</strong>해요. 실제
-          전투에서는 조준과 부위 타격 때문에 100%가 나오지 않으므로, 이 추천은
-          상한 기준이고 평타 비중이 큰 유닛이 실제보다 높게 평가될 수 있어요.
-        </span>
-      </label>
+      {/* 설명 버튼이 <label> 밖에 있는 이유: 라벨 안에서는 아무 클릭이나
+          체크박스를 토글하므로, 설명을 열려던 클릭이 보스 설정을 바꾼다. */}
+      <div className="checkbox-row">
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={value.core_hittable}
+            onChange={(event) => onChange({ ...value, core_hittable: event.target.checked })}
+          />
+          코어 피격 가능
+        </label>
+        <HelpTip label="코어 피격 가능">
+          <HelpText>{HELP.boss.coreHittable}</HelpText>
+        </HelpTip>
+      </div>
 
-      <label className="checkbox">
-        <input
-          type="checkbox"
-          checked={value.part_destructible}
-          onChange={(event) =>
-            onChange({ ...value, part_destructible: event.target.checked })
-          }
-        />
-        부위파괴 기믹
-        <span className="group__hint">
-          {' '}
-          부위파괴에 의존하는 유닛(예: 아크레인저 블랙)의 최대 잠재력 모델을
-          선택해요. 체크 해제 시 하한 모델을 사용해요.
-        </span>
-      </label>
+      <div className="checkbox-row">
+        <label className="checkbox">
+          <input
+            type="checkbox"
+            checked={value.part_destructible}
+            onChange={(event) =>
+              onChange({ ...value, part_destructible: event.target.checked })
+            }
+          />
+          부위파괴 기믹
+        </label>
+        <HelpTip label="부위파괴 기믹">
+          <HelpText>{HELP.boss.partDestructible}</HelpText>
+        </HelpTip>
+      </div>
 
       <div className="field-row field-row--pair">
         <NumberField

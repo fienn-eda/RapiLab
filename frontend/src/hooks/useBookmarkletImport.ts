@@ -89,6 +89,13 @@ const toServers = (payload: unknown): ServerPayload[] | null => {
 
 export const useBookmarkletImport = (
   onRoster: (args: BookmarkletImportArgs) => void,
+  /** 인박스에서 무언가를 집어 화면에 띄우기 시작할 때. 이 훅을 쓰는 패널이
+   * 감춰져 있을 수 있는 곳에서, 그것을 보이게 만들 기회다.
+   *
+   * status를 밖에서 지켜보는 것으로는 안 된다: 조립이 즉시 끝나면 'importing'
+   * 렌더가 커밋되지 않은 채 'done'으로 넘어가고, 연달아 동기화하면 'done'에서
+   * 'done'이라 상태가 아예 바뀌지 않는다. */
+  onActivity?: () => void,
 ) => {
   const [status, setStatus] = useState<Status>('idle')
   const [error, setError] = useState<string | null>(null)
@@ -96,8 +103,10 @@ export const useBookmarkletImport = (
   const [servers, setServers] = useState<ServerPayload[]>([])
 
   const onRosterRef = useRef(onRoster)
+  const onActivityRef = useRef(onActivity)
   useEffect(() => {
     onRosterRef.current = onRoster
+    onActivityRef.current = onActivity
   })
 
   const importServer = useCallback(async (id: string, server: ServerPayload) => {
@@ -139,6 +148,9 @@ export const useBookmarkletImport = (
       if (list === null || list.length === 0) return
 
       setError(null)
+      // 여기서부터는 무엇이 나오든 - 서버 선택, 결과 줄, 거절 메시지 - 이
+      // 패널에만 나온다. 그러니 아래 거절보다 앞에서 알린다.
+      onActivityRef.current?.()
       // open_id는 프로필 저장소 키의 절반이다. 없으면 어느 계정인지 알 수 없어
       // 이름 없는 프로필이 생기므로, 받지 않고 그 자리에서 거절한다. 여기까지
       // 왔다면 로스터 모양은 맞으므로, 이것은 조용히 무시할 문제가 아니다.
@@ -178,10 +190,12 @@ export const useBookmarkletImport = (
   // 북마크릿이 로컬 인박스에 두고 간 것을 집어온다. 네이티브 창에는 위
   // postMessage가 닿지 않으므로 앱에서는 이 경로가 실제로 쓰이는 쪽이다.
   //
-  // idle일 때만 돈다: 후보를 고르는 중이거나 조립 중에 새 payload가 끼어들면
-  // 유저가 방금 누른 것과 다른 로스터가 들어온다.
+  // 진행 중일 때만 멈춘다: 후보를 고르는 중이거나 조립 중에 새 payload가
+  // 끼어들면 유저가 방금 누른 것과 다른 로스터가 들어온다. 끝난 동기화는
+  // 폴링을 막을 이유가 없다 - 계정이 여러 개인 유저는 북마크를 연달아 누르고,
+  // 한 번 동기화한 계정도 다시 동기화한다.
   useEffect(() => {
-    if (status !== 'idle') return
+    if (status === 'choosing' || status === 'importing') return
     const controller = new AbortController()
     let stopped = false
 

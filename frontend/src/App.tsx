@@ -23,7 +23,7 @@ import type { NikkeDraft } from './types/nikkeDraft'
 // when there's no active profile (a fresh `?? []` literal would).
 const NO_ROSTER: NikkeDraft[] = []
 
-type Tab = 'roster' | 'recommend' | 'union' | 'calculator'
+type Tab = 'roster' | 'recommend' | 'union' | 'calculator' | 'sync'
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'roster', label: '니케 풀' },
@@ -32,6 +32,10 @@ const TABS: { id: Tab; label: string }[] = [
   // Named for the section rather than for its one occupant: more
   // calculators are going here (Fienn, 2026-07-31).
   { id: 'calculator', label: '계산기' },
+  // Last because syncing is occasional: the front of the row belongs to the
+  // tabs used every session. Switching accounts stays reachable from the
+  // header dropdown either way.
+  { id: 'sync', label: '동기화' },
 ]
 
 function App() {
@@ -133,7 +137,6 @@ function App() {
               hidden={tab !== 'roster'}
               className="panel"
             >
-              <SyncRosterPanel onImport={upsertProfile} />
               {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
               <RosterGrid
                 drafts={drafts}
@@ -210,6 +213,20 @@ function App() {
                 roster={validRoster}
                 nameFor={nameFor}
               />
+            </div>
+
+            <div
+              role="tabpanel"
+              id="panel-sync"
+              aria-labelledby="tab-sync"
+              hidden={tab !== 'sync'}
+              className="panel"
+            >
+              {/* 북마크릿이 로스터를 보내오면 이 탭을 앞으로 가져온다. 여러
+                  서버에 로스터가 있는 계정은 "어느 서버를 가져올까요?"에
+                  답해야 넘어가는데, 그 질문이 감춰진 패널에 뜨면 유저에게는
+                  동기화가 멈춘 것으로만 보인다. */}
+              <SyncRosterPanel onImport={upsertProfile} onActivity={() => setTab('sync')} />
             </div>
           </main>
         </>

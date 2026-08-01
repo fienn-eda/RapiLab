@@ -89,6 +89,17 @@ cd backend && uvicorn app.api:app --reload --port 8000
 cd frontend && npm run dev            # http://localhost:5173
 ```
 
+Windows에서는 스크립트 하나로 둘을 함께 띄울 수 있습니다. 창 두 개를 열고
+포트가 비어 있는지 확인한 뒤 브라우저까지 엽니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/dev.ps1
+```
+
+UI를 고칠 때는 설치된 앱(`dist\RapiLab\RapiLab.exe`)이 아니라 이 개발 서버로
+확인하세요. 설치본은 빌드 시점의 프론트를 담고 있어서 변경을 보려면 매번 다시
+빌드해야 하고, 실행 중인 앱은 자기 exe를 덮어쓸 수 없습니다.
+
 테스트는 각자의 디렉터리에서 돌립니다. 백엔드는 리포 루트에서 실행하면
 `No module named 'app'`으로 수집에 실패합니다.
 
