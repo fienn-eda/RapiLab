@@ -32,6 +32,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 
 import app.deck_allocation as da  # noqa: E402
+from app.deck_allocation import _swap_is_fieldable  # noqa: E402
 from app.deck_search import BossProfile  # noqa: E402
 from app.supported_units import supported_units  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
@@ -93,20 +94,27 @@ class _SwapTrace:
 
 
 def _full_pass_candidates(decks, leftovers):
-    """Same-tier swap candidates one complete hill-climb pass would try.
+    """Swap candidates one complete hill-climb pass would try.
 
     Deck-to-deck candidates cost two sims each (both decks are re-scored);
     leftover candidates cost one. Counted in candidates, not sims.
+
+    Admissibility is asked of `_swap_is_fieldable` rather than restated here.
+    This denominator IS the coverage figure, so a copy of the rule that drifts
+    from the phase it measures reports a coverage the run never had - which is
+    exactly what a same-tier copy did once cross-tier swaps were allowed.
+    `locked` and `seated` are left out: this counts the space of a pass, and
+    both of those depend on run state rather than on the decks alone.
     """
     pair = sum(1
                for i in range(len(decks))
                for j in range(i + 1, len(decks))
-               for a in decks[i] for b in decks[j]
-               if a.burst_tier == b.burst_tier)
+               for a in range(len(decks[i])) for b in range(len(decks[j]))
+               if _swap_is_fieldable(decks[i], a, decks[j], b, True))
     leftover = sum(1
                    for deck in decks
-                   for a in deck for u in leftovers
-                   if a.burst_tier == u.burst_tier)
+                   for a in range(len(deck)) for k in range(len(leftovers))
+                   if _swap_is_fieldable(deck, a, leftovers, k, False))
     return pair + leftover
 
 
