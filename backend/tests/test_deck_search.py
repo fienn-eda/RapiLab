@@ -562,6 +562,32 @@ def test_prune_keeps_synergy_partners_together(monkeypatch):
     assert {"mint", "prika"} <= pool_slugs
 
 
+def test_a_synergy_pair_does_not_outrank_the_tier_on_scale_alone(monkeypatch):
+    """Every other entry in `scores` is a marginal CONTRIBUTION - a delta over
+    a reference deck. Scoring a pair with its shell's total damage instead puts
+    it on a different scale entirely, an order of magnitude larger, so `max()`
+    picks it every time and the pair takes the tier cap whatever it is worth.
+    Here the pair adds nothing at all and two other Burst 2s each do, and the
+    cap has room for exactly three."""
+    import app.deck_search as ds
+    roster = _big_fake_roster()
+    roster += [FakeSpec("mint", 2), FakeSpec("prika", 2)]
+    # Low prior, so neither seats the reference deck and both are measured as
+    # swap-ins - the same way the pair's members are.
+    roster += [FakeSpec("strong-a", 2, base_stats={"atk": 500.0}),
+               FakeSpec("strong-b", 2, base_stats={"atk": 500.0})]
+
+    def scorer(ordered_deck, boss):
+        slugs = {u.slug for u in ordered_deck}
+        total = 100.0 + 50.0 * ("strong-a" in slugs) + 30.0 * ("strong-b" in slugs)
+        return {"total_damage": total, "damage_log": []}
+
+    monkeypatch.setattr(ds, "evaluate_deck", scorer)
+    pool_slugs = {u.slug for u in ds.prune_candidate_pool(roster, BossProfile())}
+
+    assert {"strong-a", "strong-b"} <= pool_slugs
+
+
 def test_sole_tier1_slug_rejected_next_to_another_b1():
     # rapi-red-hood-b1's Combat Assist only holds when she is the deck's ONLY
     # Burst-1 unit - seating her next to a real B1 (liter) simulates a
