@@ -554,6 +554,20 @@ def _measure_against(reference, unit, boss, baseline, by_tier):
     return evaluate_deck(deck, boss)["total_damage"] - alt_baseline
 
 
+def _shell_damage(shell_b1, two_b2s, shell_b3, boss):
+    """The (1,2,2) shell's damage with `two_b2s` in its Burst-2 seats, best of
+    both seatings - burst_cycle fires the LEFTMOST eligible same-tier unit, and
+    order-dependent synergies exist (Prika must burst before Mint for her Encore
+    to ever fire). Both the pair and the baseline it is measured against go
+    through this, so neither is judged in a seating the other was spared.
+
+    The shell shape assumes a two-Burst-2 pair; a future cross-tier SYNERGY_SETS
+    entry would need a different one.
+    """
+    return max(evaluate_deck([shell_b1, *ordering, *shell_b3], boss)["total_damage"]
+               for ordering in (list(two_b2s), list(two_b2s)[::-1]))
+
+
 def prune_candidate_pool(roster, boss: BossProfile, pool=None):
     """Cut the roster to a pool the budget can enumerate. Scores are marginal
     contributions in reference-deck context (two passes: prior-seeded B1, then
@@ -615,21 +629,30 @@ def prune_candidate_pool(roster, boss: BossProfile, pool=None):
         for unit, total, base in zip(candidates, _score_batch(swapped, boss, pool), baselines):
             scores[unit.slug] = max(scores.get(unit.slug, 0.0), total - base)
 
-    # Synergy sets: measured as a pair in a (1,2,2) shell; both members share it.
+    # Synergy sets: both members share what the pair is worth OVER the two
+    # Burst 2s the shell would otherwise hold. It must be that delta and not the
+    # shell's total, because every other entry in `scores` is a marginal
+    # contribution: a total is a different quantity an order of magnitude
+    # larger, so a pair carrying one wins `max()` on scale alone and holds the
+    # tier cap whatever the pair is actually worth. The delta is measured in a
+    # (1,2,2) shell while the rest of `scores` is measured against the
+    # (1,2,3,3,3) reference deck, which makes the two the same KIND of number
+    # without being strictly comparable - the same caveat _cross_tier_reference
+    # carries for its own alternate baseline.
     shell_b1, shell_b3 = by_tier[1][0], by_tier[3][:2]
     slugs = {u.slug: u for u in roster}
     for pair in SYNERGY_SETS:
         if pair <= slugs.keys():
             members = [slugs[s] for s in sorted(pair)]
-            # burst_cycle fires the LEFTMOST eligible same-tier unit, and
-            # order-dependent synergies exist (Prika must burst before Mint
-            # for Encore to ever fire) - measure both orders, keep the max.
-            # Shells assume a two-B2 pair; a future cross-tier set would need
-            # a different shell shape.
-            pair_score = max(
-                evaluate_deck([shell_b1, *ordering, *shell_b3], boss)["total_damage"]
-                for ordering in (members, members[::-1])
-            )
+            # The two best Burst 2s the pair displaces. Fewer than two means the
+            # tier is too small to build the comparison - and too small for the
+            # cap to cut much either - so the pair keeps its individual scores
+            # rather than being credited against a baseline that doesn't exist.
+            others = [u for u in by_tier[2] if u.slug not in pair][:2]
+            if len(others) < 2:
+                continue
+            pair_score = (_shell_damage(shell_b1, members, shell_b3, boss)
+                          - _shell_damage(shell_b1, others, shell_b3, boss))
             for member in members:
                 scores[member.slug] = max(scores[member.slug], pair_score)
 
