@@ -55,10 +55,10 @@
 - `.raid-results__note`, `.evaluation-results__ordering-note`
 - `.deck-results__excluded`, `.raid-results__leftover`
 - `.charge-panel__assumption`
-- `.empty__text`
 
 `.sync__hint`는 이미 `max-width: 480px`로 일부러 더 좁게 잡혀 있다. 건드리지
-않는다.
+않는다. `.empty__text`는 JSX에만 있고 `App.css`에 규칙이 없으며, 문장도 한
+줄짜리 안내라 읽기 폭이 필요 없다.
 
 ### 3. 결과를 설정 행 바로 아래로 (전 모드)
 
@@ -127,9 +127,9 @@
 
 ## 검증
 
-- `cd frontend && npm test` — 기준선은 49개 파일 464 통과 (2026-08-02 이
-  워크트리에서 실측). DOM 순서에 의존하는 테스트가 있으면 순서 기대만 고친다.
-  테스트를 삭제하거나 축소하지 않는다.
+- `cd frontend && npm test` — 기준선은 51개 파일 464 통과 (2026-08-02 이
+  워크트리에서 트렁크 `9fb6939` 위에 리베이스한 뒤 실측). DOM 순서에 의존하는
+  테스트가 있으면 순서 기대만 고친다. 테스트를 삭제하거나 축소하지 않는다.
 - 백엔드 + 프론트를 띄우고 실제 로스터로 세 폭에서 눈으로 확인한다:
   - **1920px** — 주 대상. 팔레트/로스터 열 수, 글줄 길이, 결과 위치
   - **1400px** — 중간
