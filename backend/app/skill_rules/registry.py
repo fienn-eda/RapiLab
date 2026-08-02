@@ -255,6 +255,7 @@ from app.skill_rules.maiden_ice_rose import (
     build_blessings_upon_you_per_shot_rules,
     build_blessings_upon_you_rules,
     build_diamond_dust_dynamic_hit_count_nukes,
+    build_meditation_per_shot_rules,
     build_mp_resources,
 )
 from app.skill_rules.mast_romantic_maid import build_mast_rules
@@ -285,7 +286,12 @@ from app.skill_rules.rosanna_chic_ocean import (
     build_spina_periodic_rules,
     build_spina_scheduled_nukes,
 )
-from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
+from app.skill_rules.rouge import (
+    build_card_throw_rules,
+    build_coin_flip_per_shot_rules,
+    build_coin_flip_rules,
+    build_game_master_rules,
+)
 from app.skill_rules.soda_twinkling_bunny import (
     build_golden_chip_resources,
     build_lucky_golden_chip_per_shot_rules,
@@ -350,7 +356,7 @@ from app.skill_rules.zwei import (
 
 def _build_rouge(sv):
     rules = build_card_throw_rules(sv["card_throw"])
-    rules += build_coin_flip_rules(sv["coin_flip"])
+    rules += build_coin_flip_rules({**sv["coin_flip"], "caster_max_hp": sv["caster_max_hp"]})
     rules += build_game_master_rules({
         **sv["game_master"], "caster_atk": sv["caster_atk"], "caster_max_hp": sv["caster_max_hp"],
     })
@@ -360,9 +366,11 @@ def _build_rouge(sv):
 def _build_anis_star(sv):
     rules = build_starfall_rules(sv["starfall"])
     rules += build_stardust_rules({**sv["stardust"], "caster_atk": sv["caster_atk"]})
-    rules += build_star_anis_burst_rules(
-        {**sv["star_anis"], "caster_weapon_stats": sv["caster_weapon_stats"]}
-    )
+    rules += build_star_anis_burst_rules({
+        **sv["star_anis"],
+        "caster_weapon_stats": sv["caster_weapon_stats"],
+        "caster_max_hp": sv["caster_max_hp"],
+    })
     return rules, None
 
 
@@ -911,9 +919,11 @@ _PER_SHOT_RULE_BUILDERS = {
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
     "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),
     "chisato-nishikigi": lambda sv: build_chisato_per_shot_rules(sv),
-    "maiden-ice-rose": lambda sv: build_blessings_upon_you_per_shot_rules(sv),
+    "maiden-ice-rose": lambda sv: (build_blessings_upon_you_per_shot_rules(sv)
+                                   + build_meditation_per_shot_rules(sv, sv["caster_max_hp"])),
     "miranda-signature": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
+    "rouge": lambda sv: build_coin_flip_per_shot_rules(sv["coin_flip"]),
     "prika": lambda sv: build_lets_get_show_started_rules(
         {**sv["lets_get_the_show_started"], "caster_atk": sv["caster_atk"]}
     ),

@@ -36,7 +36,9 @@ def test_encore_squad_attack_damage_reaches_the_attacker_burst_through_the_pipel
     ]
     rules_by_slug = {
         "b1": [],
-        "prika": build_prika_rules({"get_ready_for_an_amazing_show": PRIKA_SHOW, "one_more_song": PRIKA_ENCORE}),
+        "prika": build_prika_rules({"get_ready_for_an_amazing_show": PRIKA_SHOW,
+                                    "one_more_song": PRIKA_ENCORE,
+                                    "caster_max_hp": 700_000.0}),
         "mint": build_mint_rules({"lets_sing_together": MINT_SING_TOGETHER, "fantastic_performance": MINT_FANTASTIC}),
         "attacker": [],
     }

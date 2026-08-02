@@ -230,8 +230,10 @@ def escalating_buff_rule(trigger, tiers, refreshing=False):
     return SkillRule(trigger=trigger, action=action)
 
 
-# Nikkes whose own skills restore a unit's HP, derived from the collected skill
-# text by scripts/find_heal_providers.py (re-run it after encoding a new unit).
+# Nikkes whose own skills restore a unit's HP. Derived from the collected skill
+# text - `provider_scan.heal_provider_slugs()` re-derives it and
+# tests/test_provider_lists_match_data.py fails when this drifts, so a newly
+# encoded healer cannot go missing here the way six of them did.
 # Cover-HP restores are excluded: the cover's health is not a unit receiving
 # recovery. Used only by Crown, whose Royal Attire arms on ANY ally's healing -
 # the engine has no heal event, so deck presence is what can be asked.
@@ -241,17 +243,44 @@ HEAL_PROVIDER_SLUGS = frozenset({
     "anis-star",
     "asuka-shikinami-langley-wille",
     "blanc",
+    "centi",
+    "centi-signature",
     "crown",
+    "flora",
+    "flora-signature",
     "grave",
     "guillotine-winter-slayer",
     "helm",
+    "helm-signature",
     "mana",
     "mint",
     "moran",
+    "moran-signature",
     "nayuta",
     "prika",
     "red-hood",
     "soline-frost-ticket",
+})
+
+# Nikkes whose own skills place a shield that reaches the WHOLE squad. Same
+# shape and same reason as the heal list: Flora's Favorite Item Iris bullet arms
+# on "a shield is placed in front of this unit" and the engine has no shield
+# event, so deck presence is what can be asked.
+SHIELD_PROVIDER_SLUGS = frozenset({
+    "blanc",
+    "centi",
+    "centi-signature",
+    "crown",
+    "flora",
+    "flora-signature",
+})
+
+# Shields that exist but reach only part of the squad, so deck presence alone
+# does NOT establish that the consumer received one. Rei: Ayanami's shield is
+# "Affects all Fire Code allies" and Flora - the only consumer - is Electric.
+# Kept as its own set rather than dropped, so the data cross-check stays total.
+ELEMENT_GATED_SHIELD_SLUGS = frozenset({
+    "rei-ayanami",
 })
 
 

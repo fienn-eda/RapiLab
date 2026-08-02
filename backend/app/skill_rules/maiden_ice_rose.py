@@ -50,10 +50,15 @@ Modeled (DPS-relevant): an "mp" resource, capped at 12.
   = 20.9% of Maiden's ATK, 10 sec each, refreshing (resource_fill_triggered_
   buffs, gap #8). See build_blessings_fill_triggered_buffs.
 
+- Meditation (skills[0]), 3rd bullet: self Max HP +6.34% of her own, 15 sec, on
+  every 6th Full Charge. It reaches damage through Blessings Upon You, which
+  converts her LIVE Max HP into ATK - so the stack she grants herself is worth
+  real output, not just survivability.
+
 Not modeled / deferred:
-- Meditation's "Max HP +6.34% for 15 sec, stacks up to 10, on every 6th
-  Full-Charge attack" - Max HP isn't a stat the engine's damage formula
-  consumes; survivability, not DPS.
+- Meditation's stack cap of 10: reaching it needs 60 charged shots inside one
+  15-sec window, which no RL cadence approaches, so the cap cannot bind and the
+  stacks are added plainly.
 """
 from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import instant_nuke_pulse_rule
@@ -65,10 +70,14 @@ SKILL_VALUE_MANIFESTS = {
         "source": "lootandwaifus",
         "test_module": "test_skill_rules_maiden_ice_rose",
         "keys": {
+            "meditation": ("skills", 0),
             "blessings_upon_you": ("skills", 1),
             "diamond_dust": ("skills", 2),
         },
         "drop_tokens": {
+            # Trigger wording ("Burst Stage 1", "MP is 0", "MP is above 1") and
+            # both "maximum of 12" mentions - MP_CAP restated - are not slots.
+            "meditation": [0, 1, 3, 4, 6],
             "blessings_upon_you": [8, 9],
             "diamond_dust": [0],
         },
@@ -170,6 +179,32 @@ def build_blessings_upon_you_rules(values, caster_max_hp):
 def build_blessings_upon_you_per_shot_rules(values):
     nuke = float(values["blessings_upon_you"]["description_value_09"])
     return [(1, "every", [instant_nuke_pulse_rule("per_shot", nuke)])]
+
+
+def build_meditation_per_shot_rules(values, caster_max_hp):
+    """Meditation's 3rd bullet: self Max HP +6.34% of her own, 15 sec, on every
+    6th Full Charge (every shot is one, on an RL).
+
+    This reaches damage through Blessings Upon You, which converts her LIVE Max
+    HP into ATK - she is one of the engine's few Max-HP consumers, and the stack
+    she grants herself was the one thing that conversion could not see.
+
+    Stacks plainly rather than through a cap group: the text's cap of 10 needs
+    60 charged shots inside one 15-sec window, which no RL cadence reaches (six
+    shots is already about a magazine plus its reload), so the cap cannot bind.
+    """
+    meditation = values["meditation"]
+    threshold = int(float(meditation["description_value_03"]))
+    per_stack = caster_max_hp * float(meditation["description_value_04"]) / 100
+    duration = float(meditation["description_value_05"])
+
+    def action(context, caster_slug, time, registry):
+        registry.add(
+            Effect("flat_max_hp", per_stack, "self", duration, caster_slug),
+            applied_at=time,
+        )
+
+    return [(threshold, "every", [SkillRule(trigger="per_shot", action=action)])]
 
 
 def build_diamond_dust_dynamic_hit_count_nukes(values):

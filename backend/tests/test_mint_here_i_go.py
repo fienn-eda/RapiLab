@@ -83,7 +83,9 @@ def test_combo_here_i_go_excludes_shots_before_prikas_encore_pins_singing():
     ]
     rules_by_slug = {
         "b1": [],
-        "prika": build_prika_rules({"get_ready_for_an_amazing_show": PRIKA_SHOW, "one_more_song": PRIKA_ENCORE}),
+        "prika": build_prika_rules({"get_ready_for_an_amazing_show": PRIKA_SHOW,
+                                    "one_more_song": PRIKA_ENCORE,
+                                    "caster_max_hp": 700_000.0}),
         "mint": build_mint_rules({"lets_sing_together": MINT_SING, "fantastic_performance": MINT_FANTASTIC}),
         "attacker": [],
     }

@@ -43,9 +43,13 @@ value would not move - an over-estimate confined to decks that buff charge
 speed (the engine has no per-unit buff-immunity primitive; Liberalio needs the
 same one).
 
+Star Anis also grants the squad Max HP +15.02% of her own while in Everyone's
+Star - modeled, because `flat_max_hp` feeds every "ATK ▲ X% of Max HP"
+conversion in the deck (Maiden, Cinderella, Maxwell, Laplace: Ultimate Hero).
+
 Not modeled: Starfall's Burst Gauge filling speed (inert stat) and the
 Everyone's Star "Re-enters Burst / Stage" branch (no multi-stage burst
-re-entry); the burst's Explosion Radius (inert) and DEF, and all heal / Max HP
+re-entry); the burst's Explosion Radius (inert) and DEF, and her heals
 (survival).
 
 She reads 0.946x of her recorded raid damage, up from 0.627x over four
@@ -140,10 +144,11 @@ SKILL_VALUE_MANIFESTS = {
         "drop_tokens": {
             # Kept: Shooting Stars damage 40.01 + its 10s window (which the
             # burst's other effects share), the My Own Star Attack Damage pair
-            # (35.2 / 10s), and the fixed 0.7s charge time. Dropped: the inert
-            # Explosion Radius 100, DEF 55.01, and the Everyone's Star Max HP
-            # pair (15.02 / 10s) - all survivability or unconsumed stats.
-            "star_anis": [2, 3, 6, 7],
+            # (35.2 / 10s), the Everyone's Star Max HP pair (15.02 / 10s - it
+            # feeds every Max-HP-scaled ATK conversion in the deck), and the
+            # fixed 0.7s charge time. Dropped: the inert Explosion Radius 100
+            # and DEF 55.01.
+            "star_anis": [2, 3],
         },
     },
 }
@@ -305,7 +310,9 @@ def build_star_anis_burst_rules(values: dict) -> list[SkillRule]:
     self_attack_damage = float(values["description_value_03"]) / 100
     self_attack_damage_duration = float(values["description_value_04"])
     window_duration = float(values["description_value_02"])
-    fixed_charge_time = float(values["description_value_05"])
+    squad_max_hp = values["caster_max_hp"] * float(values["description_value_05"]) / 100
+    squad_max_hp_duration = float(values["description_value_06"])
+    fixed_charge_time = float(values["description_value_07"])
     base_charge_time = float(values["caster_weapon_stats"]["charge_time"])
     # "Charge time is fixed at 0.7 sec" as the charge-speed buff that produces
     # that cadence on her own weapon - see the module docstring for why this is
@@ -326,11 +333,22 @@ def build_star_anis_burst_rules(values: dict) -> list[SkillRule]:
             applied_at=time,
         )
 
+    def apply_squad_max_hp(context, caster_slug, time, registry):
+        registry.add(
+            Effect("flat_max_hp", squad_max_hp, "squad", squad_max_hp_duration, caster_slug),
+            applied_at=time,
+        )
+
     return [
         SkillRule(
             trigger="own_burst_activate",
             condition=has_status("My Own Star"),
             action=apply_self_attack_damage,
+        ),
+        SkillRule(
+            trigger="own_burst_activate",
+            condition=has_status("Everyone's Star"),
+            action=apply_squad_max_hp,
         ),
         SkillRule(trigger="own_burst_activate", action=apply_fixed_charge_time),
     ]

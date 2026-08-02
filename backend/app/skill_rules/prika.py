@@ -24,7 +24,10 @@ Modeled (DPS-relevant):
   `burst_cooldown_reduction_sec` pulse: rotation bookkeeping, but DPS-relevant
   in the sim, since without it Prika re-bursts every ~40 sec and displaces
   Mint's tier-2 slot (Fienn's intended rotation is Mint owning it from cycle 2
-  on).
+  on). Its first bullet - self Max HP +19.98% of her own on entering Full Burst,
+  10 sec - is registered as `flat_max_hp`: nothing in her own kit converts Max
+  HP to damage, but the stat is live for deck-mates that do, so the granter
+  states it honestly rather than deciding for them (Rouge's precedent).
 - Let's Get the Show Started! (skills[0]): on every Full Charge attack, squad
   Projectile Explosion Damage, Pierce Damage, and ATK % of Prika's ATK for 3 sec
   - via the per-shot trigger (`per_shot_rules`). Prika is an SR (charge weapon),
@@ -34,8 +37,7 @@ Not modeled:
 - Encore's Performance-duration +21 sec: rotation bookkeeping, not squad DPS.
   The Charge Damage refresh already captures the outcome (Performance is
   maintained while Mint keeps bursting).
-- One More Song!'s Full-Burst self Max HP and Let's Get the Show Started!'s
-  Performance-only self healing/Pierce: survivability.
+- Let's Get the Show Started!'s Performance-only self healing: survivability.
 - Standalone (no Mint) Encore never fires - which is correct: without Mint there
   is no Sing Along to trigger it. Prika solo is then just her burst Charge Damage
   plus her full-charge squad buffs.
@@ -82,6 +84,8 @@ def build_prika_rules(values):
     encore_attack_damage = float(encore["description_value_04"]) / 100
     encore_attack_damage_duration = float(encore["description_value_05"])
     encore_cd_increase = float(encore["description_value_06"])
+    self_max_hp = values["caster_max_hp"] * float(encore["description_value_01"]) / 100
+    self_max_hp_duration = float(encore["description_value_02"])
 
     def apply_burst(context, caster_slug, time, registry):
         # With Mint present, Encore keeps extending Performance, so the Charge
@@ -117,8 +121,15 @@ def build_prika_rules(values):
             Pulse("burst_cooldown_reduction_sec", -encore_cd_increase, "self", caster_slug)
         )
 
+    def apply_self_max_hp(context, caster_slug, time, registry):
+        registry.add(
+            Effect("flat_max_hp", self_max_hp, "self", self_max_hp_duration, caster_slug),
+            applied_at=time,
+        )
+
     return [
         SkillRule(trigger="own_burst_activate", action=apply_burst),
+        SkillRule(trigger="full_burst_enter", action=apply_self_max_hp),
         SkillRule(
             trigger="ally_burst_activate",
             condition=all_conditions(ally_bursted(SING_ALONG_SOURCE), has_status(PERFORMANCE_STATUS)),

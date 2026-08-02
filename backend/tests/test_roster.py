@@ -47,7 +47,8 @@ def anis_star_spec():
             "star_anis": {
                 "description_value_01": "40.01", "description_value_02": "10",
                 "description_value_03": "35.2", "description_value_04": "10",
-                "description_value_05": "0.7",
+                "description_value_05": "15.02", "description_value_06": "10",
+                "description_value_07": "0.7",
             },
         },
         weapon_stats={

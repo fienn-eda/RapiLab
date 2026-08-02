@@ -10,6 +10,7 @@ from app.skill_rules.maiden_ice_rose import (
     build_blessings_upon_you_per_shot_rules,
     build_blessings_upon_you_rules,
     build_diamond_dust_dynamic_hit_count_nukes,
+    build_meditation_per_shot_rules,
     build_mp_resources,
 )
 from app.squad_engine import SquadContext, SquadMember
@@ -23,6 +24,13 @@ MAIDEN_VALUES = {
         "description_value_09": "547.62",
     },
     "diamond_dust": {"description_value_01": "1372.8", "description_value_02": "10"},
+    # 03 = shots per proc, 04 = Max HP %, 05 = sec, 06 = stack cap. The two
+    # "maximum of 12" mentions are MP_CAP restated and are dropped, not numbered.
+    "meditation": {
+        "description_value_01": "1", "description_value_02": "1",
+        "description_value_03": "6", "description_value_04": "6.34",
+        "description_value_05": "15", "description_value_06": "10",
+    },
 }
 
 MAIDEN = {"slug": "maiden-ice-rose", "element": "Electric"}
@@ -78,6 +86,47 @@ def test_blessings_upon_you_self_buff_is_active_for_damage_after_the_cast():
     assert round(reg.total_for("other_elemental_bonus", MAIDEN, now=5.1), 4) == 0.3168
     assert round(reg.total_for("flat_atk", MAIDEN, now=5.1), 4) == round(0.032 * 50000, 4)
     assert reg.total_for("other_elemental_bonus", MAIDEN, now=15.1) == 0.0  # 10s window
+
+
+def test_meditation_stacks_max_hp_on_every_sixth_full_charge():
+    ps = build_meditation_per_shot_rules(MAIDEN_VALUES, caster_max_hp=50000)
+    assert len(ps) == 1
+    threshold, mode, rules = ps[0]
+    assert (threshold, mode) == (6, "every")
+
+    ctx = make_context()
+    reg = EffectRegistry()
+    for rule in rules:
+        rule.action(ctx, "maiden-ice-rose", 10.0, reg)
+    per_stack = 50000 * 0.0634
+    assert round(reg.total_for("flat_max_hp", MAIDEN, now=10.0), 4) == round(per_stack, 4)
+    # 두 번째 발동은 쌓인다 (첫 스택이 살아 있는 동안)
+    for rule in rules:
+        rule.action(ctx, "maiden-ice-rose", 16.0, reg)
+    assert round(reg.total_for("flat_max_hp", MAIDEN, now=16.0), 4) == round(2 * per_stack, 4)
+    assert round(reg.total_for("flat_max_hp", MAIDEN, now=25.1), 4) == round(per_stack, 4)  # 첫 스택 15초 만료
+    assert reg.total_for("flat_max_hp", MAIDEN, now=31.1) == 0.0
+
+
+def test_meditation_is_self_scoped():
+    ps = build_meditation_per_shot_rules(MAIDEN_VALUES, caster_max_hp=50000)
+    reg = EffectRegistry()
+    for rule in ps[0][2]:
+        rule.action(make_context(), "maiden-ice-rose", 10.0, reg)
+    assert reg.total_for("flat_max_hp", {"slug": "ally", "element": "Iron"}, now=10.0) == 0.0
+
+
+def test_meditation_stacks_feed_her_own_max_hp_scaled_atk():
+    # 그녀는 이 엔진에서 자기 Max HP를 ATK로 환산하는 몇 안 되는 소비자인데,
+    # 자기 Meditation 스택은 "엔진이 Max HP를 안 쓴다"는 사유로 빠져 있었다.
+    ctx = make_context()
+    reg = EffectRegistry()
+    for rule in build_meditation_per_shot_rules(MAIDEN_VALUES, caster_max_hp=50000)[0][2]:
+        rule.action(ctx, "maiden-ice-rose", 1.0, reg)
+    for rule in build_blessings_upon_you_rules(MAIDEN_VALUES, caster_max_hp=50000):
+        rule.action(ctx, "maiden-ice-rose", 5.0, reg)
+    live_max_hp = 50000 * (1 + 0.0634)
+    assert round(reg.total_for("flat_atk", MAIDEN, now=5.1), 4) == round(0.032 * live_max_hp, 4)
 
 
 def test_blessings_upon_you_rules_trigger_on_own_burst_activate():
@@ -233,3 +282,4 @@ def test_maiden_end_to_end_diamond_dust_hits_once_per_cycle_scaled_by_10pct_max_
 # (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
 BLESSINGS_UPON_YOU = MAIDEN_VALUES["blessings_upon_you"]
 DIAMOND_DUST = MAIDEN_VALUES["diamond_dust"]
+MEDITATION = MAIDEN_VALUES["meditation"]

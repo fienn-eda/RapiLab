@@ -3,7 +3,12 @@ Wife. Values are the real max-level (dollskill for Zwei) figures from dotgg.
 """
 from app.effects import EffectRegistry
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
-from app.skill_rules.rouge import build_card_throw_rules, build_coin_flip_rules, build_game_master_rules
+from app.skill_rules.rouge import (
+    build_card_throw_rules,
+    build_coin_flip_per_shot_rules,
+    build_coin_flip_rules,
+    build_game_master_rules,
+)
 from app.skill_rules.zwei import (
     build_overcharge_weapon_mode_schedule,
     build_frame_analysis_resources,
@@ -49,10 +54,64 @@ def test_rouge_coin_flip_sword_coin_squad_attack_damage_from_battle_start():
     # "self + 2 adjacent"); also sets the Sword Coin status Game Master reads.
     ctx = deck_ctx("rouge")
     reg = EffectRegistry()
-    fire_trigger("battle_start", {"rouge": build_coin_flip_rules(ROUGE_COIN_FLIP)}, ctx, reg, 0.0)
+    fire_trigger("battle_start", {"rouge": _coin_flip()}, ctx, reg, 0.0)
     assert round(reg.total_for("attack_damage_up", ALLY, 0.0), 4) == 0.0665
     assert round(reg.total_for("attack_damage_up", ALLY, 999.0), 4) == 0.0665  # continuous
     assert ctx.has_status("rouge", "Sword Coin") is True
+
+
+ROUGE_MAX_HP = 10_000_000.0
+
+
+def _coin_flip():
+    return build_coin_flip_rules({**ROUGE_COIN_FLIP, "caster_max_hp": ROUGE_MAX_HP})
+
+
+def test_rouge_shield_coin_arms_after_thirty_full_charges_and_needs_sword_coin():
+    ps = build_coin_flip_per_shot_rules(ROUGE_COIN_FLIP)
+    assert len(ps) == 1
+    threshold, mode, rules = ps[0]
+    assert (threshold, mode) == (30, "after")
+
+    # Sword Coin 없이는 사슬이 시작되지 않는다.
+    bare = deck_ctx("rouge")
+    reg = EffectRegistry()
+    for rule in rules:
+        if rule.condition(bare, "rouge"):
+            rule.action(bare, "rouge", 30.0, reg)
+    assert bare.has_status("rouge", "Shield Coin") is False
+
+    ctx = deck_ctx("rouge")
+    ctx.set_status("rouge", "Sword Coin")
+    for rule in rules:
+        if rule.condition(ctx, "rouge"):
+            rule.action(ctx, "rouge", 30.0, reg)
+    assert ctx.has_status("rouge", "Shield Coin") is True
+
+
+def test_rouge_double_sword_coin_needs_five_bursts_and_shield_coin():
+    ctx = deck_ctx("rouge")
+    ctx.set_status("rouge", "Shield Coin")
+    reg = EffectRegistry()
+    rules = {"rouge": _coin_flip()}
+    for cycle in range(1, 5):
+        fire_trigger("own_burst_activate", rules, ctx, reg, float(cycle))
+        assert ctx.has_status("rouge", "Double Sword Coin") is False
+        assert reg.total_for("flat_max_hp", ALLY, float(cycle)) == 0.0
+    fire_trigger("own_burst_activate", rules, ctx, reg, 5.0)
+    assert ctx.has_status("rouge", "Double Sword Coin") is True
+    assert round(reg.total_for("flat_max_hp", ALLY, 5.0), 2) == round(ROUGE_MAX_HP * 0.1508, 2)
+    assert round(reg.total_for("flat_max_hp", ALLY, 999.0), 2) == round(ROUGE_MAX_HP * 0.1508, 2)
+
+
+def test_rouge_double_sword_coin_never_arms_without_shield_coin():
+    ctx = deck_ctx("rouge")
+    reg = EffectRegistry()
+    rules = {"rouge": _coin_flip()}
+    for cycle in range(1, 8):
+        fire_trigger("own_burst_activate", rules, ctx, reg, float(cycle))
+    assert ctx.has_status("rouge", "Double Sword Coin") is False
+    assert reg.total_for("flat_max_hp", ALLY, 7.0) == 0.0
 
 
 def test_rouge_card_throw_cdr_applied_per_cycle():

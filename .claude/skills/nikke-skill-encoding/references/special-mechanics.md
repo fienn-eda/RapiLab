@@ -131,6 +131,24 @@ how to encode it, and current engine status.
   as one uninterruptible block, so a fractional mid-magazine refill has nowhere
   to land.
 
+## A heal or shield whose OCCURRENCE is another bullet's trigger - BUILT (provider lists)
+- **What:** a bullet arms on something happening to a unit rather than on a
+  timer - "when recovery takes effect" (Crown's Royal Attire), "when a shield is
+  placed in front of this unit" (Flora's Favorite Item Iris bullet).
+- **Easy mistake:** skipping the heal/shield as survivability and then finding
+  the consuming bullet unencodable. The AMOUNT is survivability; the EVENT is a
+  trigger, and it is the only way those bullets ever fire.
+- **Gap:** the engine models no heal or shield event, so per-occurrence timing
+  cannot be asked. Deck presence can: `deck_contains_any(HEAL_PROVIDER_SLUGS)` /
+  `SHIELD_PROVIDER_SLUGS` in `_helpers`, both derived from the collected skill
+  text and cross-checked by `tests/test_provider_lists_match_data.py`.
+- **Encode:** presence promotes the bullet to permanent - the CEILING. Where the
+  unit can also arm it herself on a countable schedule, keep that as the FLOOR
+  and make the two mutually exclusive, or the same bullet lands twice (Flora).
+- **Watch for partial scopes:** Rei: Ayanami shields "all Fire Code allies", so
+  her presence does not establish that an Electric consumer got one. Those live
+  in `ELEMENT_GATED_SHIELD_SLUGS` rather than being silently dropped.
+
 ## "Deals X% as damage" tied to a trigger other than the caster's own burst
 - **What:** some passives deal real damage on a trigger like "on entering Full
   Burst" or "after N normal attacks", NOT on the caster's own burst firing.

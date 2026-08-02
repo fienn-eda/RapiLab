@@ -90,6 +90,48 @@ def test_stage_two_bullets_do_not_fire_on_another_tier_burst():
     assert reg.total_for("flat_atk", ALLY, 20.0) == 0.0
 
 
+def _shielded_ctx():
+    """크라운은 아군 전체에게 쉴드를 놓는다 (SHIELD_PROVIDER_SLUGS)."""
+    return SquadContext([
+        SquadMember("flora-signature", burst_tier=2, element="Electric", weapon="MG"),
+        SquadMember("crown", burst_tier=2, element="Water", weapon="SMG"),
+        SquadMember("ally-b3", burst_tier=3, element="Fire", weapon="AR"),
+    ])
+
+
+def test_a_shielding_ally_keeps_the_atk_bullet_up_from_battle_start():
+    # "이 유닛 앞에 쉴드가 놓이면"의 천장 분기. 엔진에 쉴드 이벤트가 없으므로
+    # 덱에 쉴드를 놓는 아군이 있는지가 물을 수 있는 전부다 (크라운 Royal Attire와
+    # 같은 논리).
+    reg = _fire("battle_start", ctx=_shielded_ctx())
+    expected = round(CASTER_ATK * 0.4512, 2)
+    assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == expected
+    assert round(reg.total_for("flat_atk", ALLY, 179.0), 2) == expected
+
+
+def test_without_a_shielding_ally_the_atk_bullet_waits_for_her_own_combo():
+    reg = _fire("battle_start")
+    assert reg.total_for("flat_atk", ALLY, 0.0) == 0.0
+
+
+def test_the_two_shield_paths_never_stack():
+    # 같은 불릿이 두 경로로 걸리면 안 된다 - 아군이 쉴드를 놓으면 자기 콤보 경로는
+    # 물러선다.
+    reg = EffectRegistry()
+    ctx = _shielded_ctx()
+    rules = {"flora-signature": build_flora_signature_rules(FLORA_SIG)}
+    fire_trigger("battle_start", rules, ctx, reg, 0.0)
+    ctx.last_burst_slug = "flora-signature"
+    fire_trigger("ally_burst_activate", rules, ctx, reg, 20.0)
+    assert round(reg.total_for("flat_atk", ALLY, 20.0), 2) == round(CASTER_ATK * 0.4512, 2)
+
+
+def test_the_max_hp_bullet_is_unaffected_by_a_shielding_ally():
+    reg = _fire("ally_burst_activate", burster="flora-signature", time=20.0,
+                ctx=_shielded_ctx())
+    assert round(reg.total_for("flat_max_hp", ALLY, 20.0), 2) == round(CASTER_MAX_HP * 0.1501, 2)
+
+
 def test_burst_adds_squad_atk_on_top_of_its_true_damage():
     reg = _fire("own_burst_activate", time=20.0)
     assert round(reg.total_for("true_damage_up", ALLY, 20.0), 4) == 0.4239
