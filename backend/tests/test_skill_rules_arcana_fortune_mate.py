@@ -2,7 +2,6 @@ from app.burst_cycle import FULL_BURST_DURATION
 from app.effects import EffectRegistry
 from app.raid_simulator import _resource_fill_times, simulate_raid
 from app.skill_rules.arcana_fortune_mate import (
-    HAPPY_MEMORIES_DAMAGE_PER_STACK,
     HAPPY_MEMORIES_FIRST,
     PRECIOUS_MOMENTS_FIRST,
     ROTATION_PERIOD,
@@ -158,7 +157,7 @@ def test_rotation_ignores_shots_outside_the_status_window():
 
 # --- end to end: the rotation driven by a real shot timeline ------------------
 
-def arcana_deck_result(fight_duration=40.0):
+def arcana_deck_result(fight_duration=40.0, extra_rules=()):
     """Fortune Mate (Burst 2) between two filler allies, her SG carrying enough
     ammo to fire without a reload gap so the rotation is bounded by the Full
     Burst window rather than by her magazine. Base ATK is CASTER_ATK and enemy
@@ -174,7 +173,8 @@ def arcana_deck_result(fight_duration=40.0):
               "keepsake_album": KEEPSAKE_ALBUM, "caster_atk": CASTER_ATK}
     return simulate_raid(
         deck,
-        {"ally-b1": [], "sg-ally": [], "arcana-fortune-mate": build_fortune_mate_rules(values)},
+        {"ally-b1": [], "sg-ally": [],
+         "arcana-fortune-mate": build_fortune_mate_rules(values) + list(extra_rules)},
         burst_damage_percents={},
         base_stats={m["slug"]: {"atk": CASTER_ATK if m["slug"] == "arcana-fortune-mate" else 0,
                                 "def": 0, "max_hp": 0} for m in deck},
@@ -197,7 +197,7 @@ def her_normal_attacks(result):
 def test_rotation_steps_land_on_their_own_normals_through_a_real_timeline():
     in_window = [e for e in her_normal_attacks(arcana_deck_result())
                  if 5.0 <= e["time"] < 15.0]
-    h, p = HAPPY_MEMORIES_DAMAGE_PER_STACK, 0.0249
+    h, p = 0.1, 0.0249
 
     def step(n):  # the nth in-window normal against the one before it
         return round(in_window[n - 1]["damage"] / in_window[n - 2]["damage"], 6)
@@ -214,14 +214,14 @@ def test_rotation_steps_land_on_their_own_normals_through_a_real_timeline():
     assert len(in_window) == 15
 
 
-def test_keepsake_album_reads_the_live_stack_count_and_happy_memories_is_wiped():
+def test_keepsake_album_reads_the_live_stack_count_and_snapshots_is_wiped():
     shots = her_normal_attacks(arcana_deck_result(fight_duration=80.0))
     base = shots[0]["damage"]  # opening shot: no burst, no stacks
 
     # Final ATK is base_atk x (1 + atk%) + flat_atk, and both are expressed in
     # units of base_atk here, so a post-window shot reads (1 + 2.49% x stacks)
     # + 13% x stacks exactly. A leaked Happy Memories stack would show up as a
-    # further x1.0914, and the old per-cycle model as 13% x 1 instead of x 2.
+    # further x1.1, and the old per-cycle model as 13% x 1 instead of x 2.
     after_first = next(e for e in shots if e["time"] > 15.0)
     assert round(after_first["damage"] / base, 6) == round((1 + 2 * 0.0249) + 0.13 * 2, 6)
 
@@ -233,17 +233,19 @@ def test_keepsake_album_reads_the_live_stack_count_and_happy_memories_is_wiped()
     assert round(after_third["damage"] / base, 6) == round((1 + 3 * 0.0249) + 0.13 * 3, 6)
 
 
-def test_happy_memories_carries_the_cap_and_the_full_burst_end_reset():
-    happy = next(s for s in build_memories_and_moments_resources({
+def test_snapshots_of_youth_carries_the_cap_and_the_full_burst_end_reset():
+    snapshots = next(s for s in build_memories_and_moments_resources({
         "memories_and_moments": MEMORIES_AND_MOMENTS, "keepsake_album": KEEPSAKE_ALBUM,
-    }) if s.name == "happy_memories")
-    # Cap and reset are what stop the 4th rotation step (the 22nd normal, which
-    # Fienn reached with Tove seated) from becoming a 4th stack, and what clear
-    # the counter between windows.
-    assert happy.cap == 3
-    assert happy.resets == [{"trigger": "full_burst_end", "value": 0}]
-    assert happy.fill == ("per_shot_cycle_in_own_status_window", 4, 6, FULL_BURST_DURATION)
-    assert round(happy.buffs[0].value_fn(3), 6) == round(3 * HAPPY_MEMORIES_DAMAGE_PER_STACK, 6)
+    }) if s.name == "snapshots_of_youth")
+    # 「Happy Memories가 발동할 때」 붙으므로 채움은 로테이션의 HM 스텝과 같고,
+    # 「Full Burst 종료 시 Snapshots of Youth 제거」가 리셋이다. 상한과 리셋이
+    # 4번째 로테이션 스텝(22번째 평타 - Tove를 앉힌 Fienn이 도달한 지점)을 4번째
+    # 스택으로 만들지 않게 막고, 창 사이에 카운터를 비운다.
+    assert snapshots.cap == 3
+    assert snapshots.resets == [{"trigger": "full_burst_end", "value": 0}]
+    assert snapshots.fill == ("per_shot_cycle_in_own_status_window", 4, 6, FULL_BURST_DURATION)
+    # 값은 스킬 데이터 슬롯에서 온다 - 피팅된 상수가 아니다.
+    assert round(snapshots.buffs[0].value_fn(3), 6) == 0.3
 
     precious = next(s for s in build_memories_and_moments_resources({
         "memories_and_moments": MEMORIES_AND_MOMENTS, "keepsake_album": KEEPSAKE_ALBUM,
@@ -252,3 +254,25 @@ def test_happy_memories_carries_the_cap_and_the_full_burst_end_reset():
     # Snapshots of Youth, not this.
     assert precious.resets == []
     assert precious.fill == ("per_shot_cycle_in_own_status_window", 6, 6, FULL_BURST_DURATION)
+
+
+def test_snapshots_stacks_additively_with_the_sg_collectible_bucket():
+    """Fienn의 2026-07-28 사격장 판독을 재현한다. 소장품이 이미 9.46%를 넣어 둔
+    버킷에 청춘의 기록 +10%가 가산되면 스택당 한계효과는 0.1/1.0946 = 0.0913576이고,
+    실측 첫 스택 기울기가 0.0913573이었다. 두 소스가 곱셈으로 붙으면 1.1이 나오는데
+    그것은 실측과 0.87% 어긋난다 - 그 0.87%가 이 테스트가 지키는 값이다."""
+    from app.effects import Effect
+    from app.roster import _battle_start_effects_rule
+
+    collectible = Effect("normal_attack_damage_multiplier", 0.0946, "self",
+                         None, "arcana-fortune-mate")
+    result = arcana_deck_result(
+        extra_rules=[_battle_start_effects_rule([collectible])])
+    in_window = [e for e in her_normal_attacks(result) if 5.0 <= e["time"] < 15.0]
+
+    def step(n):
+        return in_window[n - 1]["damage"] / in_window[n - 2]["damage"]
+
+    assert round(step(4), 7) == round(1.1946 / 1.0946, 7)
+    assert round(step(10), 7) == round(1.2946 / 1.1946, 7)
+    assert round(step(4), 4) != 1.1

@@ -55,6 +55,12 @@ logger = logging.getLogger(__name__)
 #              6.31% takes her rocket... her SR's 250% full charge to 265.775%,
 #              NOT to 256.31%.
 #
+# 배율이라고 전부 "weapon"은 아니다. 무엇이 결정하느냐는 **게임이 그 스탯을 뭐라
+# 부르느냐**다. SG·SMG의 「일반 공격 대미지 배율」은 스킬이 주는
+# Normal Attack Damage Multiplier와 같은 이름이고, 같은 이름은 같은 가산 버킷을
+# 뜻한다 - 그래서 "effect"로 가서 registry의 1 + Σ 안에 들어간다. RL·SR의 차지
+# 대미지에는 그 버킷을 함께 쓰는 스킬 소스가 없어 "weapon"으로 남는다.
+#
 # Kept as an explicit table rather than parsed out of the record's description
 # text: the description is display markup, and each group only needs deciding
 # once. An unmapped group_id is logged and skipped, never guessed.
@@ -68,14 +74,14 @@ COLLECTIBLE_SKILL_STATS: dict[int, list[tuple[str, str] | None]] = {
     711101: [("other_core_damage_sources", "effect"), None],  # 코어 대미지 (AR)
     711301: [("charge_damage_percent", "weapon"), None],      # 차지 대미지 배율 (RL·SR)
     711401: [("max_ammo_percent", "effect"), None],           # 최대 장탄 수 (MG)
-    711501: [("damage_percent", "weapon"), None],             # 일반 공격 대미지 배율 (SG)
-    711901: [("damage_percent", "weapon"), None],             # 일반 공격 대미지 배율 (SMG)
+    711501: [("normal_attack_damage_multiplier", "effect"), None],  # 일반 공격 대미지 배율 (SG)
+    711901: [("normal_attack_damage_multiplier", "effect"), None],  # 일반 공격 대미지 배율 (SMG)
     # SR 등급 - 무기군 슬롯 + 공용 방어 슬롯.
     712101: [("other_core_damage_sources", "effect"), None],  # 코어 대미지 (AR)
     712301: [("charge_damage_percent", "weapon"), None],      # 차지 대미지 배율 (RL·SR)
     712401: [("max_ammo_percent", "effect"), None],           # 최대 장탄 수 (MG)
-    712501: [("damage_percent", "weapon"), None],             # 일반 공격 대미지 배율 (SG)
-    712901: [("damage_percent", "weapon"), None],             # 일반 공격 대미지 배율 (SMG)
+    712501: [("normal_attack_damage_multiplier", "effect"), None],  # 일반 공격 대미지 배율 (SG)
+    712901: [("normal_attack_damage_multiplier", "effect"), None],  # 일반 공격 대미지 배율 (SMG)
     712002: [None, None],                                     # 받는 대미지 / 엄폐물 체력
 }
 

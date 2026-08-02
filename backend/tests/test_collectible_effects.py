@@ -106,6 +106,7 @@ def test_a_roster_without_the_field_defaults_to_no_collectible():
 MG_COLLECTIBLE_TID = 100202   # SR rarity, MG group - in-game verified (Flora)
 SR_COLLECTIBLE_TID = 100602   # SR rarity, SR group - in-game verified (에이드)
 R_SR_COLLECTIBLE_TID = 100601  # R rarity, SR group
+SG_COLLECTIBLE_TID = 100402   # SR rarity, SG group - 포츈메이트가 실제로 낀 것
 
 
 def test_the_pinned_collectible_tids_are_still_in_the_committed_table():
@@ -143,6 +144,27 @@ def test_every_committed_skill_group_has_a_mapping():
             assert group["group_id"] in COLLECTIBLE_SKILL_STATS, (
                 f"{record['id']} ({record['favorite_rare']} {record['weapon_type']})"
                 f" 의 그룹 {group['group_id']}")
+
+
+def test_the_pinned_sg_collectible_tid_is_still_in_the_committed_table():
+    from app.stat_assembly import load_stat_tables
+
+    table = load_stat_tables()["collectibles"]
+    assert table[str(SG_COLLECTIBLE_TID)]["weapon_type"] == "SG"
+    assert table[str(SG_COLLECTIBLE_TID)]["favorite_rare"] == "SR"
+
+
+def test_an_sg_collectible_grants_the_normal_attack_multiplier_not_a_weapon_scale():
+    """SG·SMG 소장품이 올리는 것은 「일반 공격 대미지 배율」이고, 그것은 청춘의
+    기록 같은 스킬이 주는 것과 **같은 스탯**이다(damage-formula-reference.md:75).
+    같은 스탯이면 같은 가산 버킷에 들어가야 한다 - 무기 스탯을 따로 곱하면 두
+    소스가 곱셈으로 붙어 포츈메이트 실측(스택당 0.0913573)과 0.87% 어긋난다."""
+    weapon_multipliers, effects = collectible_modifiers(
+        SG_COLLECTIBLE_TID, 15, "arcana-fortune-mate", weapon="SG")
+
+    assert weapon_multipliers == {}
+    assert [(e.stat, round(e.value, 6), e.scope, e.duration) for e in effects] == [
+        ("normal_attack_damage_multiplier", 0.0946, "self", None)]
 
 
 def test_ades_charge_damage_matches_her_range_test():
