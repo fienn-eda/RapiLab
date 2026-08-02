@@ -47,7 +47,12 @@ catalog, see the `nikke-skill-encoding` skill, not here.
   구조적으로 놓치고 있었던 잠재 결함의 수정이지, 이번 버킷 이관이 새로 만든
   오차가 아니다. 실기록 5덱 캘리브레이션 합계 1.077x → **1.082x**(±15% 이내
   16/25 그대로), 옛 구성 재채점도 악화 없음(+0.13%). 같은 사각지대가 RL·SR의
-  `charge_damage_percent`에도 남아 있다 — `docs/engine-gaps.md` 참고.
+  `charge_damage_percent`에도 남아 있다 — `docs/engine-gaps.md` 참고. **이 판단은
+  이제 실측으로도 확인된다**: 2026-08-03 스노우 화이트 사격장 실측
+  (`docs/measurements/collectible-during-weapon-transform.md`)이 무기변환 중인
+  버스트 샷도 소장품 보너스를 정확히 받는다는 것을 코어/논코어 비율(잔차 4.9e-08,
+  두 창 모두)로 직접 보여준다 — 나유타 쪽 결론은 구조적 추론에서 실측 확인으로
+  격상됐다.
 
 ## 힐·쉴드는 "발생 여부"만 모델하고, 그 명단은 데이터에서 재도출한다
 

@@ -18,8 +18,8 @@ CASTER_ATK = 80000.0
 KEEPSAKE_ALBUM = {
     "description_value_01": "13",     # squad(approx) flat ATK = 13% of caster ATK PER Precious Moments stack
     "description_value_02": "15",     # its duration
-    "description_value_03": "10",     # deferred: Snapshots Normal Attack Damage Multiplier %
-    "description_value_04": "3",      # deferred: Snapshots stack cap
+    "description_value_03": "10",     # Snapshots Normal Attack Damage Multiplier % (modeled)
+    "description_value_04": "3",      # Snapshots stack cap (modeled)
 }
 RADIANT_YOUTH = {
     "description_value_01": "20.09",  # self Critical Rate %
@@ -29,8 +29,8 @@ RADIANT_YOUTH = {
 }
 MEMORIES_AND_MOMENTS = {
     "description_value_01": "6",      # deferred: Two-times reload count
-    "description_value_02": "1",      # deferred: Four-times pellet count
-    "description_value_03": "3",      # deferred: pellet stack cap
+    "description_value_02": "1",      # Four-times pellet count; not a damage term, unconsumed
+    "description_value_03": "3",      # pellet stack cap; not a damage term, unconsumed
     "description_value_04": "2.49",   # Six-times Precious Moments self ATK % per stack
     "description_value_05": "3",      # Precious Moments stack cap
     "description_value_06": "55",     # squad(approx) Attack Damage % on burst
