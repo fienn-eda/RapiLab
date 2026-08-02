@@ -516,6 +516,96 @@ export function RecommendPanel({
           </fieldset>
         </div>
 
+        {/* 덱 컬럼이 없는 모드의 실행 버튼. 자기가 작용하는 보스·모드 설정
+            바로 아래에 선다. */}
+        {(mode === 'single' || mode === 'raid') && (
+          <div className="recommend-form__actions">{actionButtons}</div>
+        )}
+
+        {/* 답은 설정 바로 아래에 선다. 팔레트와 편성 칸은 그 아래로, 결과를
+            읽는 데 스크롤이 필요 없도록. */}
+        {(mode === 'raid' || mode === 'draft') && raid.status === 'loading' && (
+          <p className="recommend-form__progress" role="status">
+            {mode === 'raid' ? '전부 최적화 중' : '빈자리만 최적화 중'} — 수천 번의
+            시뮬레이션을 실행하며 보통 1~2분이 걸려요. 아직 진행 중이니 완료되면
+            버튼이 다시 활성화돼요.
+          </p>
+        )}
+        {mode === 'evaluate' && evaluation.status === 'loading' && (
+          <p className="recommend-form__progress" role="status">
+            기대 딜량 계산 중이에요 — 몇 초면 끝나요.
+          </p>
+        )}
+
+        {mode === 'single' && single.status === 'error' && (
+          <p className="field__error" role="alert">
+            {single.error}
+          </p>
+        )}
+        {/* A cache hit sets displayResult without touching raid.status, so a
+            stale error from an earlier, different submit must not outrank it. */}
+        {mode !== 'single' &&
+          raid.status === 'error' &&
+          raidResultMode === mode &&
+          !(displayResult && displayMode === mode) && (
+            <p className="field__error" role="alert">
+              {raid.error}
+            </p>
+          )}
+        {mode === 'evaluate' && evaluation.status === 'error' && (
+          <p className="field__error" role="alert">
+            {evaluation.error}
+          </p>
+        )}
+
+        {mode === 'single' && single.status === 'success' && (
+          <DeckResults
+            decks={single.decks}
+            excludedSlugs={single.excludedSlugs}
+            portraitFor={portraitFor}
+            nameFor={nameFor}
+          />
+        )}
+        {mode === 'raid' && displayResult && displayMode === 'raid' && (
+          <RaidResults
+            decks={displayResult.decks}
+            combinedTotalDamage={displayResult.combinedTotalDamage}
+            excludedSlugs={displayResult.excludedSlugs}
+            leftoverSlugs={displayResult.leftoverSlugs}
+            portraitFor={portraitFor}
+            nameFor={nameFor}
+          />
+        )}
+        {mode === 'draft' && displayResult && displayMode === 'draft' && (
+          <DraftResults
+            decks={displayResult.decks}
+            combinedTotalDamage={displayResult.combinedTotalDamage}
+            excludedSlugs={displayResult.excludedSlugs}
+            leftoverSlugs={displayResult.leftoverSlugs}
+            withinDraft={displayResult.withinDraft}
+            baselineTotalDamage={displayResult.baselineTotalDamage}
+            submittedDraft={submittedDraft}
+            ownedSlugFor={ownedSlugResolver}
+            portraitFor={portraitFor}
+            nameFor={nameFor}
+          />
+        )}
+        {/* Reads straight off useEvaluateDecks, not displayResult/displayMode -
+            see the file header. bossElements comes from evaluatedBossElement
+            (submit-time snapshot), not the live bossProfile, so editing the
+            boss field afterward can't relabel a result it wasn't scored
+            against. */}
+        {mode === 'evaluate' && evaluation.status === 'success' && (
+          <EvaluationResults
+            decks={evaluation.decks}
+            combinedTotalDamage={evaluation.combinedTotalDamage}
+            excludedSlugs={evaluation.excludedSlugs}
+            bossElements={evaluation.decks.map(() => evaluatedBossElement)}
+            portraitFor={portraitFor}
+            nameFor={nameFor}
+          />
+        )}
+
         {mode !== 'draft' && mode !== 'evaluate' && (
           <fieldset className="group">
             <legend className="group__legend">사용할 유닛</legend>
@@ -580,97 +670,7 @@ export function RecommendPanel({
             </div>
           </fieldset>
         )}
-
-        {/* 덱 컬럼이 없는 모드다. 팔레트 70여 개 칩이 화면보다 길어 실행
-            버튼이 스크롤 밖으로 밀리므로, 대신 화면 하단에 붙인다. */}
-        {(mode === 'single' || mode === 'raid') && (
-          <div className="recommend-form__actions recommend-form__actions--sticky">
-            {actionButtons}
-          </div>
-        )}
       </form>
-
-      {(mode === 'raid' || mode === 'draft') && raid.status === 'loading' && (
-        <p className="recommend-form__progress" role="status">
-          {mode === 'raid' ? '전부 최적화 중' : '빈자리만 최적화 중'} — 수천 번의
-          시뮬레이션을 실행하며 보통 1~2분이 걸려요. 아직 진행 중이니 완료되면
-          버튼이 다시 활성화돼요.
-        </p>
-      )}
-      {mode === 'evaluate' && evaluation.status === 'loading' && (
-        <p className="recommend-form__progress" role="status">
-          기대 딜량 계산 중이에요 — 몇 초면 끝나요.
-        </p>
-      )}
-
-      {mode === 'single' && single.status === 'error' && (
-        <p className="field__error" role="alert">
-          {single.error}
-        </p>
-      )}
-      {/* A cache hit sets displayResult without touching raid.status, so a
-          stale error from an earlier, different submit must not outrank it. */}
-      {mode !== 'single' &&
-        raid.status === 'error' &&
-        raidResultMode === mode &&
-        !(displayResult && displayMode === mode) && (
-          <p className="field__error" role="alert">
-            {raid.error}
-          </p>
-        )}
-      {mode === 'evaluate' && evaluation.status === 'error' && (
-        <p className="field__error" role="alert">
-          {evaluation.error}
-        </p>
-      )}
-
-      {mode === 'single' && single.status === 'success' && (
-        <DeckResults
-          decks={single.decks}
-          excludedSlugs={single.excludedSlugs}
-          portraitFor={portraitFor}
-          nameFor={nameFor}
-        />
-      )}
-      {mode === 'raid' && displayResult && displayMode === 'raid' && (
-        <RaidResults
-          decks={displayResult.decks}
-          combinedTotalDamage={displayResult.combinedTotalDamage}
-          excludedSlugs={displayResult.excludedSlugs}
-          leftoverSlugs={displayResult.leftoverSlugs}
-          portraitFor={portraitFor}
-          nameFor={nameFor}
-        />
-      )}
-      {mode === 'draft' && displayResult && displayMode === 'draft' && (
-        <DraftResults
-          decks={displayResult.decks}
-          combinedTotalDamage={displayResult.combinedTotalDamage}
-          excludedSlugs={displayResult.excludedSlugs}
-          leftoverSlugs={displayResult.leftoverSlugs}
-          withinDraft={displayResult.withinDraft}
-          baselineTotalDamage={displayResult.baselineTotalDamage}
-          submittedDraft={submittedDraft}
-          ownedSlugFor={ownedSlugResolver}
-          portraitFor={portraitFor}
-          nameFor={nameFor}
-        />
-      )}
-      {/* Reads straight off useEvaluateDecks, not displayResult/displayMode -
-          see the file header. bossElements comes from evaluatedBossElement
-          (submit-time snapshot), not the live bossProfile, so editing the
-          boss field afterward can't relabel a result it wasn't scored
-          against. */}
-      {mode === 'evaluate' && evaluation.status === 'success' && (
-        <EvaluationResults
-          decks={evaluation.decks}
-          combinedTotalDamage={evaluation.combinedTotalDamage}
-          excludedSlugs={evaluation.excludedSlugs}
-          bossElements={evaluation.decks.map(() => evaluatedBossElement)}
-          portraitFor={portraitFor}
-          nameFor={nameFor}
-        />
-      )}
     </section>
   )
 }

@@ -266,4 +266,35 @@ describe('UnionRaidPanel', () => {
       screen.getByRole('button', { name: /인카운터/ }).closest('.draft-layout__decks'),
     ).not.toBeNull()
   })
+
+  // 답은 보스 설정 바로 아래에 선다. 편성 칸을 스크롤해 지나야 결과가 나오면
+  // 안 된다.
+  it('결과를 편성 위에 그린다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0 },
+        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0 },
+        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0 },
+      ],
+      combined_total_damage: 60,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    renderPanel()
+    await screen.findByRole('button', { name: /u0 사용/i })
+    for (let deck = 0; deck < 3; deck += 1) {
+      for (let seat = 0; seat < 5; seat += 1) {
+        dropOnDeck(deck + 1, `u${deck * 5 + seat}`)
+      }
+    }
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+
+    const results = (await screen.findByText('1번 덱 · 무속성')).closest('ol')!
+    const roster = screen.getByRole('group', { name: /편성/ })
+
+    expect(results.compareDocumentPosition(roster) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy()
+  })
 })

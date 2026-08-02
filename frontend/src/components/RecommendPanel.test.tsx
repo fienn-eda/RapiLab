@@ -120,6 +120,49 @@ describe('RecommendPanel', () => {
       .toBeTruthy()
   })
 
+  // 결과를 읽으려면 70여 개 칩의 팔레트를 스크롤해 지나야 해서는 안 된다.
+  it('renders the results above the unit palette', async () => {
+    const user = userEvent.setup()
+    vi.mocked(recommendDecks).mockResolvedValue({
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          skill_damage: 0,
+        },
+      ],
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+
+    const results = (await screen.findByText('#1')).closest('ol')!
+    const palette = screen.getByRole('group', { name: /사용할 유닛/i })
+
+    expect(results.compareDocumentPosition(palette) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy()
+  })
+
+  // 팔레트 아래 sticky 바에 있던 실행 버튼을, 그것이 작용하는 설정 바로
+  // 아래에 세운다.
+  it('stands the run button between the setup row and the palette', () => {
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+
+    const boss = screen.getByRole('group', { name: /보스 설정/i })
+    const setup = boss.parentElement!
+    const submit = screen.getByRole('button', { name: /인카운터/ })
+    const palette = screen.getByRole('group', { name: /사용할 유닛/i })
+
+    expect(setup.compareDocumentPosition(submit) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy()
+    expect(submit.compareDocumentPosition(palette) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy()
+  })
+
   it('offers Cancel only while a run is in flight, and aborts it', async () => {
     // A run takes one to two minutes. Started by mistake, it used to be
     // unstoppable: no button, and a reload freed only the screen while the
@@ -1194,12 +1237,20 @@ describe('RecommendPanel 실행 버튼', () => {
     expect(screen.getByRole('button', { name: /인카운터/ })).toBeInTheDocument()
   })
 
-  it('덱 컬럼이 없는 모드에서는 실행 버튼이 화면 하단 고정 바에 선다', async () => {
+  // 실행 버튼은 두 집 중 하나에 산다: 덱 컬럼 안이거나, 설정 행 바로 아래거나.
+  // 덱 컬럼이 없는 모드는 후자다.
+  it('덱 컬럼이 없는 모드에서는 실행 버튼이 설정 행 바로 아래에 선다', async () => {
     await renderAndPick(/전부 최적화/i)
 
     const button = screen.getByRole('button', { name: /인카운터/ })
-    expect(button.closest('.recommend-form__actions--sticky')).not.toBeNull()
     expect(button.closest('.draft-layout__decks')).toBeNull()
+
+    const setup = screen.getByRole('group', { name: /보스 설정/i }).parentElement!
+    const palette = screen.getByRole('group', { name: /사용할 유닛/i })
+    expect(setup.compareDocumentPosition(button) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy()
+    expect(button.compareDocumentPosition(palette) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy()
   })
 
   it('덱 컬럼이 있는 모드에서는 실행 버튼이 덱과 함께 붙어 다닌다', async () => {
@@ -1208,7 +1259,6 @@ describe('RecommendPanel 실행 버튼', () => {
 
     const button = screen.getByRole('button', { name: /인카운터/ })
     expect(button.closest('.draft-layout__decks')).not.toBeNull()
-    expect(button.closest('.recommend-form__actions--sticky')).toBeNull()
   })
 
   it('기대 딜량 계산 모드도 실행 버튼을 덱 컬럼에 둔다', async () => {

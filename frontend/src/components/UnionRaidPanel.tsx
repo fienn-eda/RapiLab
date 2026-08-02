@@ -169,6 +169,28 @@ export function UnionRaidPanel({
           ))}
         </div>
 
+        {/* 답은 보스 설정 바로 아래에 선다. 편성 칸은 그 아래로. */}
+        {evaluation.status === 'loading' && (
+          <p className="recommend-form__progress" role="status">
+            기대 딜량 계산 중이에요 — 몇 초면 끝나요.
+          </p>
+        )}
+        {evaluation.status === 'error' && (
+          <p className="field__error" role="alert">
+            {evaluation.error}
+          </p>
+        )}
+        {evaluation.status === 'success' && (
+          <EvaluationResults
+            decks={evaluation.decks}
+            combinedTotalDamage={evaluation.combinedTotalDamage}
+            excludedSlugs={evaluation.excludedSlugs}
+            bossElements={evaluatedBossElements}
+            portraitFor={portraitFor}
+            nameFor={nameFor}
+          />
+        )}
+
         <fieldset className="group">
           <legend className="group__legend">편성</legend>
           {/* Palette left, decks right: dragging a unit into a battle's deck
@@ -208,27 +230,6 @@ export function UnionRaidPanel({
           </div>
         </fieldset>
       </form>
-
-      {evaluation.status === 'loading' && (
-        <p className="recommend-form__progress" role="status">
-          기대 딜량 계산 중이에요 — 몇 초면 끝나요.
-        </p>
-      )}
-      {evaluation.status === 'error' && (
-        <p className="field__error" role="alert">
-          {evaluation.error}
-        </p>
-      )}
-      {evaluation.status === 'success' && (
-        <EvaluationResults
-          decks={evaluation.decks}
-          combinedTotalDamage={evaluation.combinedTotalDamage}
-          excludedSlugs={evaluation.excludedSlugs}
-          bossElements={evaluatedBossElements}
-          portraitFor={portraitFor}
-          nameFor={nameFor}
-        />
-      )}
     </section>
   )
 }

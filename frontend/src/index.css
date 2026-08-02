@@ -57,6 +57,10 @@
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
   --mono: ui-monospace, Consolas, monospace;
 
+  /* 읽기 폭. 레이아웃은 창을 다 쓰지만 문장은 이 폭을 넘지 않는다 - 한 줄이
+     길어질수록 다음 줄 첫 글자를 찾기 어려워진다. */
+  --measure: 72ch;
+
   color-scheme: dark;
 }
 
