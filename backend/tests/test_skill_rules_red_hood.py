@@ -106,6 +106,27 @@ def test_red_wolf_schedule_is_33_shot_window_per_own_burst():
     assert profile["charge_damage_percent"] == pytest.approx(343.36, abs=0.01)
 
 
+def test_red_wolf_profile_scales_only_the_weapon_full_charge_term():
+    """Her transform's charge damage is a SUM of two things, and the
+    collectible's 배율 scales only the transformed weapon's own full-charge
+    multiplier. The Glaring conversion term is a skill effect, not a weapon base
+    stat - the same split snow_white_heavy_arms already makes."""
+    def charge_damage(values):
+        schedule = build_red_wolf_weapon_mode_schedule(values)
+        segments = schedule(SimpleNamespace(burst_times={"red-hood": [20.0]}), 180.0)
+        return segments[0]["profile"]["charge_damage_percent"]
+
+    plain = charge_damage(RED_HOOD_VALUES)
+    scaled = charge_damage(
+        {**RED_HOOD_VALUES, "caster_charge_damage_multiplier": 1.0947})
+
+    weapon_term = float(RED_WOLF["description_value_12"])
+    converted_term = plain - weapon_term
+    assert scaled == pytest.approx(weapon_term * 1.0947 + converted_term)
+    # Scaling the whole sum would be the other reading, and it is not this one.
+    assert scaled != pytest.approx(plain * 1.0947)
+
+
 SR_WEAPON = {
     "weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
     "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0,
