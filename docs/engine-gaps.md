@@ -398,6 +398,40 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 
 ## 갭 상세
 
+### —. 힐·쉴드·Max HP를 "생존기"로 스킵한 것 — ✅ 해소 (2026-08-02)
+
+**갭이 아니라 분류 오류였다.** 셋 다 엔진이 이미 소비할 수 있었는데 인코딩 지침
+(`SKILL.md` 3단계)이 **"heals, shields, DEF, taunts, Max HP → skip"** 이라고 적고
+있어서 여섯 유닛이 비어 있었다.
+
+**Max HP.** `flat_max_hp`는 2026-07-24부터 "ATK ▲ Max HP의 X%" 환산을 먹인다(소비자
+넷: maiden-ice-rose · cinderella · maxwell-ordinary-mechanic · laplace-ultimate-hero).
+`engine-capabilities.md`는 이미 "defer하지 말라"고 적고 있었으므로 **두 문서가 정면
+모순**인 채 굴러갔다. 압권은 **메이든** — 소비자 본인인데 자기 Meditation 스택을 자기가
+못 먹고 있었다. 되살린 다섯: maiden(self·풀차지 6회마다) · anis-star(전원·Everyone's
+Star) · rouge(전원·코인 사슬) · soline(전원·티켓 수) · prika(self·풀버스트).
+
+**진짜로 표현 불가한 둘** (blanc이 해당, 사유를 "생존기"에서 이것으로 정정):
+**수신자 기준 %**(`flat_max_hp`는 절대값이라 대상마다 다른 값을 담을 수 없다)와
+**"남은 HP 최저 아군"**(시뮬이 아군을 안 때리므로 대상 자체가 정의되지 않는다).
+
+**힐·쉴드는 양이 생존기일 뿐 발생은 트리거다.** 크라운 Royal Attire("아군이 회복되면"
+→ 스쿼드 공댐 **영구**)와 플로라 애장품 Iris("쉴드가 놓이면" → ATK +45.12%)가 소비자다.
+엔진에 그 이벤트가 없으니 물을 수 있는 건 덱 멤버십뿐 — `HEAL_PROVIDER_SLUGS`와 신설
+`SHIELD_PROVIDER_SLUGS`.
+
+**같이 잡은 진짜 버그: 힐 목록이 여섯 슬러그만큼 낡아 있었다** (centi ·
+centi-signature · **flora** · **flora-signature** · helm-signature ·
+moran-signature). 플로라가 빠져 있었으므로 **스쿼드에서 가장 순수한 힐러 옆에서
+크라운의 천장 분기가 한 번도 안 켜졌다**. 낡아도 테스트는 전부 green이었다 —
+아무것도 상수를 데이터와 대조하지 않았다. 이제
+`tests/test_provider_lists_match_data.py`가 `app/skill_rules/provider_scan.py`로
+재도출해 대조하고, 스크립트는 규칙을 자체 구현하는 대신 같은 모듈을 임포트한다.
+
+**캘리브레이션 무변동** (1.077x, 덱별 값도 전부 동일) — 다섯 중 누구도 소비자와 같은
+실기록 덱에 앉아 있지 않다.
+
+
 ### —. 플랫 발수 장탄 버프 — ✅ 해소 (2026-08-02)
 
 **무엇이었나:** 게임은 [최대 장탄 수]를 두 형태로 준다. 오버로드와 대부분의 스킬은

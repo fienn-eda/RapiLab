@@ -62,9 +62,29 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
 
 3. **Classify every effect** into: (a) DPS-relevant AND representable by the
    engine → model it; (b) DPS-relevant but NOT representable → defer + document;
-   (c) not DPS-relevant (heals, shields, DEF, taunts, Max HP) → skip. Use
-   `references/engine-capabilities.md` for the exact catalog of stats, triggers,
-   scopes, and the deferred-mechanics list. When unsure whether a mechanic is
+   (c) not DPS-relevant (DEF, taunts, immunity, the AMOUNT of a heal or shield)
+   → skip. Use `references/engine-capabilities.md` for the exact catalog of
+   stats, triggers, scopes, and the deferred-mechanics list.
+
+   **Three things look defensive and are not** — this trio was mis-skipped
+   across six units before anyone checked (2026-08-02):
+   - **Max HP is a damage stat.** Since 2026-07-24 `flat_max_hp` feeds every
+     "ATK ▲ X% of Max HP" conversion, so encode Max-HP grants rather than
+     skipping them. The only ones that genuinely cannot be encoded are those
+     scaled off the RECIPIENT's Max HP (the stat is an absolute value) or aimed
+     at "the ally with the lowest HP" (undefined in a sim that never damages
+     allies).
+   - **A heal's OCCURRENCE is a trigger.** Crown's Royal Attire arms on any
+     ally healing. The engine models no heal event, so the question is deck
+     presence: put the unit in `_helpers.HEAL_PROVIDER_SLUGS`.
+   - **A shield's OCCURRENCE is a trigger too** — Flora's Favorite Item Iris
+     bullet arms on one being placed on her. Same shape:
+     `_helpers.SHIELD_PROVIDER_SLUGS`.
+
+   Both lists are checked against the collected skill text by
+   `tests/test_provider_lists_match_data.py`, so encoding a new healer or
+   shielder turns that test red until the slug is added. Run
+   `python scripts/find_heal_providers.py` to see the matching line. When unsure whether a mechanic is
    representable, check that catalog before inventing anything. Also check
    `references/special-mechanics.md` for mechanics that are easy to misread
    (e.g. Distributed Damage is a DPS buff, not defensive) — and **append a new

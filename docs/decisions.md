@@ -5,6 +5,54 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 힐·쉴드는 "발생 여부"만 모델하고, 그 명단은 데이터에서 재도출한다
+
+- Date: 2026-08-02
+- Context: 두 불릿이 엔진에 없는 이벤트에 걸려 있다 — 크라운 Royal Attire("아군이
+  회복되면", 켜지면 스쿼드 공댐 **영구**)와 플로라 애장품 Iris("이 유닛 앞에 쉴드가
+  놓이면", ATK +45.12%). 힐 쪽은 `HEAL_PROVIDER_SLUGS`로 이미 근사돼 있었는데
+  **여섯 슬러그만큼 낡아 있었다**(centi·centi-signature·flora·flora-signature·
+  helm-signature·moran-signature). 플로라가 빠져 있었으므로 **스쿼드에서 가장 순수한
+  힐러 옆에서 크라운의 천장 분기가 한 번도 안 켜졌다**. 목록이 낡아도 테스트는 전부
+  green이었다 — 아무것도 상수를 데이터와 대조하지 않았다.
+- Decision: 판정 로직을 `app/skill_rules/provider_scan.py`(모듈)로 옮기고,
+  `tests/test_provider_lists_match_data.py`가 수집된 스킬 텍스트에서 두 목록을
+  재도출해 커밋된 상수와 대조한다. 쉴드용 `SHIELD_PROVIDER_SLUGS`도 같은 모양으로
+  신설. 스크립트(`find_heal_providers.py`)는 규칙을 자체 구현하지 않고 같은 모듈을
+  임포트한다.
+- Alternatives considered: (a) 목록을 손으로 갱신만 하기 — 같은 방식으로 이미 한 번
+  낡았고, 낡음을 알려주는 신호가 없다. (b) 엔진에 힐/쉴드 이벤트를 만들기 — 힐량은
+  DPS와 무관하고, 이벤트 추적은 시뮬 핫패스를 무겁게 한다(덱 탐색 비용이 Fienn의
+  제약). 물을 수 있는 건 덱 멤버십뿐이라는 판단은 그대로 유지.
+- Consequences: 플로라 애장품의 ATK 불릿은 이제 두 경로다 — 자기 콤보(바닥, 버스트
+  2단계마다 10초)와 **덱에 다른 쉴드 제공자가 있으면 상시**(천장). 둘은 상호배타다;
+  같이 돌면 같은 불릿이 두 번 계산된다. Rei: Ayanami는 쉴드가 **Fire Code 한정**이라
+  Electric인 플로라에게 닿지 않으므로 `ELEMENT_GATED_SHIELD_SLUGS`로 따로 뺐다 —
+  버리지 않고 남겨야 데이터 대조가 전량으로 유지된다.
+
+## Max HP defer들의 사유가 만료됐다 — 표현 가능한 다섯을 되살린다
+
+- Date: 2026-08-02
+- Context: `flat_max_hp`는 2026-07-24부터 "ATK ▲ Max HP의 X%" 환산을 먹인다(소비자
+  넷: maiden-ice-rose · cinderella · maxwell-ordinary-mechanic ·
+  laplace-ultimate-hero). 그런데 인코딩 지침(`SKILL.md`)은 여전히 "Max HP → skip"이라
+  적고 있었고 `engine-capabilities.md`는 "defer하지 말라"고 적고 있었다 — **두 문서가
+  정면 모순**. 그 사이 여섯 유닛의 Max HP 불릿이 "생존기"로 비어 있었고, 그중
+  **메이든은 소비자 본인이면서 자기 Meditation 스택을 못 먹고 있었다**.
+- Decision: 표현 가능한 다섯을 인코딩한다 — maiden(self, 풀차지 6회마다) ·
+  anis-star(전원, Everyone's Star) · rouge(전원, 코인 사슬 3단) · soline(전원, 티켓
+  수) · prika(self, 풀버스트). `SKILL.md`의 분류 지침도 함께 고쳐 모순을 없앤다.
+- Alternatives considered: 소비자와 실제로 만나는 것만 넣기 — prika는 self Max HP인데
+  본인이 소비자가 아니라 오늘 딱 0을 움직인다. 그래도 넣는다: **부여자는 정직하게
+  선언하고 소비 여부는 덱이 정한다**(Rouge의 기존 선례, Fienn 2026-07-24).
+- Consequences: rouge는 상태 setter 두 개(Shield Coin·Double Sword Coin)가 새로
+  생겨 **Game Master의 잠자던 Max HP 불릿 둘도 함께 살아났다**. soline의 티켓은 시뮬
+  특성상 상한 2장에 고정된다(소모 조건이 "아군 HP 15% 미만"인데 시뮬은 아군을 안
+  때린다). blanc만 defer 유지 — "남은 HP 최저 아군 1명"에 **대상 기준 %**라, 절대값
+  스탯으로도 못 담고 대상도 정의되지 않는다(사유를 "생존기"에서 이것으로 정정).
+  실기록 캘리브레이션 **1.077x 불변**(덱별 값도 전부 동일) — 다섯 중 누구도 소비자와
+  같은 실기록 덱에 앉아 있지 않다. 백엔드 1775 → **1788 passed / 3 skipped**.
+
 ## 플랫 발수 장탄 버프는 수신자 쪽에서 퍼센트로 환산한다
 
 - Date: 2026-08-02

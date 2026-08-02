@@ -12,8 +12,11 @@
   배분 탐색 6건(교차-티어 스왑 +6.93% 외, 아래 "배분 탐색 품질" To-Do),
   **PR #1**(WebView2 크래시 복구 · UI 다듬기 · 동기화 탭), 그리고 **플랫 발수 장탄
   버프**(`max_ammo_rounds` — 토브·그레이브·느와르의 "최대 장탄 수 ▲ N발"이 퍼센트로는
-  근사조차 안 돼 defer 중이던 것. 고정 덱 +2.59%, 캘리 불변). 기준선 **백엔드 1772
-  passed, 3 skipped · 프론트 464 passed** · 실기록 캘리 **1.077x · 16/25**.
+  근사조차 안 돼 defer 중이던 것. 고정 덱 +2.59%, 캘리 불변), 그리고 **힐·쉴드·Max HP
+  분류 정정**(지침이 "생존기라 스킵"이라 적고 있어 여섯 유닛이 비어 있었다 — 힐 제공자
+  목록 드리프트 6슬러그 + Max HP 5유닛 + 쉴드 제공자 목록 신설. 캘리 불변).
+  기준선 **백엔드 1788 passed, 3 skipped · 프론트 464 passed** ·
+  실기록 캘리 **1.077x · 16/25**.
 - 이전 브랜치: `worktree-identity-vs-fanout` 워크트리(`.claude/worktrees/identity-vs-fanout`,
   `wip/scaffolding` `8a1ed2c` 기준에서 분기 — 백엔드 1519 passed, 3 skipped, 이 항목
   시점에 트렁크 미병합). 이전: `worktree-fixed-deck-evaluation` 워크트리
