@@ -4,6 +4,8 @@ slots numbered left-to-right per skill (full transcription, no skips -
 """
 from types import SimpleNamespace
 
+import pytest
+
 from app.effects import EffectRegistry
 from app.skill_rules.maxwell import (
     build_maxwell_rules,
@@ -103,3 +105,29 @@ def test_burst_transform_schedule_has_one_segment_per_own_burst():
     segments = schedule(context, 180.0)
     assert [seg["start"] for seg in segments] == [20.0, 60.0, 100.0]
     assert all(seg["until_shots"] == 1 for seg in segments)
+
+
+def test_pierce_shot_profile_takes_the_collectible_charge_damage_multiplier():
+    """The transformed weapon's whole full-charge multiplier is a skill value,
+    so the collectible 배율 that weapon_stats already carries never reaches this
+    profile on its own. Fienn measured (2026-08-03) that it must - residual
+    4.9e-05 for "it applies" against 1.5e-01 for "it does not"."""
+    values = {**MAXWELL_VALUES, "caster_charge_damage_multiplier": 1.0631}
+    schedule = build_pierce_shot_weapon_mode_schedule(values)
+    segments = schedule(SimpleNamespace(burst_times={"maxwell": [20.0]}), 180.0)
+
+    plain = float(PIERCE_SHOT["description_value_03"])
+    assert segments[0]["profile"]["charge_damage_percent"] == pytest.approx(
+        plain * 1.0631)
+    # The shot's own coefficient is not a charge stat and takes nothing.
+    assert segments[0]["profile"]["damage_percent"] == pytest.approx(
+        float(PIERCE_SHOT["description_value_02"]))
+
+
+def test_pierce_shot_profile_defaults_to_no_multiplier():
+    """A unit with no collectible, and any caller that does not supply the key,
+    both land on 1.0."""
+    schedule = build_pierce_shot_weapon_mode_schedule(MAXWELL_VALUES)
+    segments = schedule(SimpleNamespace(burst_times={"maxwell": [20.0]}), 180.0)
+    assert segments[0]["profile"]["charge_damage_percent"] == pytest.approx(
+        float(PIERCE_SHOT["description_value_03"]))

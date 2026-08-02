@@ -105,10 +105,17 @@ def build_maxwell_rules(values):
 
 def build_pierce_shot_weapon_mode_schedule(values):
     pierce = values["pierce_shot"]
+    # The transformed weapon's full-charge multiplier is wholly a skill value:
+    # no term here comes from weapon_stats, which is where a collectible's
+    # charge-damage 배율 is applied. So the 배율 has to be applied here to reach
+    # this profile at all - Fienn measured 2026-08-03 that it does reach it
+    # (docs/measurements/collectible-charge-damage-in-transform.md).
     profile = {
         "weapon": "SR",
         "damage_percent": float(pierce["description_value_02"]),
-        "charge_damage_percent": float(pierce["description_value_03"]),
+        "charge_damage_percent": (
+            float(pierce["description_value_03"])
+            * values.get("caster_charge_damage_multiplier", 1.0)),
         "charge_time": float(pierce["description_value_01"]),
     }
 

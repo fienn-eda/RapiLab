@@ -68,19 +68,18 @@ def _battle_start_effects_rule(effects):
     return SkillRule(trigger="battle_start", action=action)
 
 
-def _passive_effects(spec: NikkeSpec):
+def _passive_effects(spec: NikkeSpec, collectible_effects):
     """Overload, this unit's harmony cube, and the collectible it actually has
     equipped. A collectible's charge-damage 배율 is NOT here - it scales a
-    weapon stat and is applied in user_roster - but its normal-attack 배율 IS,
-    because that one shares a buff bucket with skills. A cube that hands back
-    rounds instead of moving a stat contributes nothing here - see the weapon
-    stats below."""
-    _, collectible = collectible_modifiers(
-        spec.collectible_tid, spec.collectible_level, spec.slug, spec.weapon)
+    weapon stat - but its normal-attack 배율 IS, because that one shares a buff
+    bucket with skills. A cube that hands back rounds instead of moving a stat
+    contributes nothing here - see the weapon stats below. The collectible is
+    resolved by the caller so that one lookup feeds both this and the
+    weapon-mode multiplier."""
     return (
         overload_options_to_effects(spec.overload_options, spec.slug)
         + assumed_cube_effects(spec.slug, spec.cube)
-        + collectible
+        + collectible_effects
     )
 
 
@@ -139,6 +138,13 @@ def assemble_simulation_inputs(ordered_deck):
         if rounds != (1.0, 1.0):
             ammo_rounds_per_shot[spec.slug] = rounds
 
+        # One resolution per unit: the weapon 배율 feeds weapon-mode profiles
+        # that are built from skill data (weapon_stats never reaches those), the
+        # effects feed the buff registry. collectible_modifiers sits on
+        # deck_search's permutation loop, so this stays a single call.
+        weapon_multipliers, collectible_effects = collectible_modifiers(
+            spec.collectible_tid, spec.collectible_level, spec.slug, spec.weapon)
+
         # inject caster base stats so skills that scale off them (e.g. Crown's
         # "X% of caster's ATK") resolve without the caller duplicating them
         skill_values = {
@@ -147,10 +153,12 @@ def assemble_simulation_inputs(ordered_deck):
             "caster_def": spec.base_stats["def"],
             "caster_max_hp": spec.base_stats["max_hp"],
             "caster_weapon_stats": spec.weapon_stats,
+            "caster_charge_damage_multiplier": weapon_multipliers.get(
+                "charge_damage_percent", 1.0),
         }
         rules, burst_percent = build_nikke_rules(spec.slug, skill_values)
 
-        passive = _passive_effects(spec)
+        passive = _passive_effects(spec, collectible_effects)
         if passive:
             rules = rules + [_battle_start_effects_rule(passive)]
         rules_by_slug[spec.slug] = rules

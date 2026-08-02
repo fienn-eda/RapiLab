@@ -331,3 +331,31 @@ def test_the_stat_table_is_parsed_once_across_many_lookups(monkeypatch):
             SR_COLLECTIBLE_TID, 5, "ade-agent-bunny", weapon="SR")
     assert len(calls) == 1
     collectible_effects._collectibles_table.cache_clear()
+
+
+def test_a_collectible_charge_damage_multiplier_reaches_a_transform_profile():
+    """무기변형 프로파일은 스킬 슬롯에서 만들어져 weapon_stats를 안 거친다. 배율이
+    값 딕셔너리를 타고 가야 그 프로파일이 소장품을 받는다 - 맥스웰이 그 경로다.
+    (Fienn 실측 2026-08-03, docs/measurements/collectible-charge-damage-in-transform.md)"""
+    from types import SimpleNamespace
+
+    from app.models import UserNikkeState
+    from app.roster import assemble_simulation_inputs
+    from app.user_roster import load_roster
+
+    def transform_charge_damage(tid, level):
+        state = UserNikkeState.model_validate({
+            "character_slug": "maxwell", "level": 200,
+            "hp": 1_000_000.0, "atk": 300_000.0, "def_": 3_000.0,
+            "skill_levels": {"skill1": 1, "skill2": 1, "burst": 1},
+            "collectible_tid": tid, "collectible_level": level,
+        })
+        specs, excluded = load_roster([state])
+        assert not excluded
+        schedule = assemble_simulation_inputs(specs)["weapon_mode_schedules"]["maxwell"]
+        segment = schedule(SimpleNamespace(burst_times={"maxwell": [20.0]}), 180.0)[0]
+        return segment["profile"]["charge_damage_percent"]
+
+    bare = transform_charge_damage(0, 0)
+    equipped = transform_charge_damage(SR_COLLECTIBLE_TID, 5)
+    assert equipped == pytest.approx(bare * 1.0631)
