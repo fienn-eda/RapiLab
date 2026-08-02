@@ -516,6 +516,12 @@ export function RecommendPanel({
           </fieldset>
         </div>
 
+        {/* 덱 컬럼이 없는 모드의 실행 버튼. 자기가 작용하는 보스·모드 설정
+            바로 아래에 선다. */}
+        {(mode === 'single' || mode === 'raid') && (
+          <div className="recommend-form__actions">{actionButtons}</div>
+        )}
+
         {/* 답은 설정 바로 아래에 선다. 팔레트와 편성 칸은 그 아래로, 결과를
             읽는 데 스크롤이 필요 없도록. */}
         {(mode === 'raid' || mode === 'draft') && raid.status === 'loading' && (
@@ -663,14 +669,6 @@ export function RecommendPanel({
               </div>
             </div>
           </fieldset>
-        )}
-
-        {/* 덱 컬럼이 없는 모드다. 팔레트 70여 개 칩이 화면보다 길어 실행
-            버튼이 스크롤 밖으로 밀리므로, 대신 화면 하단에 붙인다. */}
-        {(mode === 'single' || mode === 'raid') && (
-          <div className="recommend-form__actions recommend-form__actions--sticky">
-            {actionButtons}
-          </div>
         )}
       </form>
     </section>

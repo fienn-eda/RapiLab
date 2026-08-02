@@ -945,20 +945,6 @@
   margin-top: var(--sp-3);
 }
 
-/* 덱 컬럼이 없는 모드의 실행 버튼. 카드 패딩만큼 좌우로 넓혀 카드 폭을 채우고,
-   불투명 배경으로 아래 팔레트를 가린다. 팔레트의 유닛 상세 팝오버가 z-index 2라
-   그보다 위에 서야 버튼이 가려지지 않는다. */
-.recommend-form__actions--sticky {
-  position: sticky;
-  bottom: 0;
-  z-index: 3;
-  margin: 0 calc(-1 * var(--sp-5));
-  width: calc(100% + var(--sp-5) * 2);
-  padding: var(--sp-3) var(--sp-5);
-  border-top: 1px solid var(--border);
-  background: var(--surface);
-}
-
 .deck-results {
   list-style: none;
   margin: 0;
