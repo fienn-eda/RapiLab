@@ -1701,29 +1701,38 @@ Happy Memories, 스택당 +1)는 **대미지에 영향이 없음이 확인됐다
 그녀 1명이지만, 성격은 "펠릿 대미지 모델 없음"이 아니라 "펠릿 카운터 트리거
 없음"이다.
 
-### 참고 — 무기변환 세그먼트는 소장품의 「무기」 배치 스탯을 못 받는다 — 실제 갭, 8유닛 영향
+### 참고 — 무기변환 세그먼트와 소장품의 「무기」 배치 스탯 (2026-08-03 해소, 잔여 1건)
 
 `weapon_mode_schedule`로 짓는 세그먼트(무기변환 창)의 대체 프로필은 캐스터 자신의
-스킬 데이터만으로 조립되는 정적 dict라 `weapon_stats`를 전혀 읽지 않는다(예:
-`nayuta.py`의 `build_memory_incineration_weapon_mode_schedule`). SG·SMG 소장품의
-「일반 공격 대미지 배율」을 2026-08-03에 무기 스탯 버킷에서 가산 버킷
-(`normal_attack_damage_multiplier`)으로 옮기며(`docs/decisions.md`) 나유타의 이
-창이 실제로 그 보너스를 놓치고 있었음이 드러났다 — 버킷은 스탯 레지스트리를 거쳐
-읽히므로 세그먼트 안팎 어디서든 균일하게 닿지만, 세그먼트 프로필이 직접 참조하는
-무기 스탯은 세그먼트 밖에서만 유효하다.
+스킬 데이터만으로 조립되는 정적 dict라 `weapon_stats`를 읽지 않는 경우가 있다. 그런
+프로필은 `user_roster`가 무기 스탯에 곱해 둔 소장품 배율을 놓친다.
 
-**같은 사각지대가 RL·SR의 `charge_damage_percent`(에이드 사격장 실측으로 확정된
-무기 스탯 배치, `docs/insights.md` 참고)에는 그대로 남아 있고, 오늘 실제로
-8유닛이 걸린다.** `weapon_mode_schedule`을 쓰면서 RL/SR 차지대미지 소장품을 착용한
-로스터: `anis-star` · `laplace-signature` · `maxwell` · `milk-blooming-bunny` ·
-`red-hood` · `scarlet-black-shadow` · `snow-white-heavy-arms` · `takina-inoue`.
-이 중 3명은 실기록 캘리브레이션 덱에 앉아 있다. 이 조합에 걸리면 세그먼트 구간의
-차지댐이 소장품 보너스를 놓친다.
+Fienn이 2026-08-03에 맥스웰로 실측해 **배율이 변형된 무기에도 붙는다**를 확정했다
+(변형샷 ÷ 기본풀차지 = 2.5176220, 「붙는다」 예측과 잔차 4.9e-05, 「안 붙는다」와는
+6.3% 어긋남 — `docs/measurements/collectible-charge-damage-in-transform.md`).
+따라서 놓치는 것은 버그이고, 걸린 유닛은 **`maxwell`과 `red-hood` 둘**이었다.
+`roster`가 `caster_charge_damage_multiplier`를 값에 실어 보내고 두 빌더가 그것을
+곱하는 것으로 해소했다.
 
-**고칠 방향은 배치를 옮기는 게 아니다.** 에이드 사격장 실측(7개 판독, 0.002% 안
-재현)이 이미 `charge_damage_percent`가 무기의 기본 차지댐에 곱해지는 배치임을
-확정했다 — 250% × 1.0631 = 265.775%. 그 배치는 옳다. 고칠 것은 세그먼트 프로필이
-그 무기 배율을 못 받는 쪽이다. 별도 브랜치로 미룬다.
+빌더를 프로파일의 차지댐 출처로 분류하면 나머지는 애초에 걸리지 않는다.
+
+| 분류 | 유닛 |
+| --- | --- |
+| 걸렸음 (해소) | `maxwell` · `red-hood` |
+| `weapon_stats`를 읽음 | `snow-white-heavy-arms` |
+| 침묵 세그먼트(`damage_percent: 0.0`) | `milk-blooming-bunny` · `scarlet-black-shadow` |
+| 프로필에 차지댐 없음 | `laplace` · `laplace-signature` · `takina-inoue` · `moran(-signature)` · `laplace-ultimate-hero` |
+| 소장품이 `"effect"` 배치 | `snow-white`(AR) · `zwei(-signature)`(SG) · `nayuta`(SMG) |
+| 변형 빌더 없음 | `anis-star` · `modernia` |
+
+`backend/tests/test_weapon_mode_collectible.py`가 이 상태를 목록 없이 지킨다:
+차지댐을 가진 변형 프로필은 `weapon_stats`나 `caster_charge_damage_multiplier` 중
+하나에는 반드시 반응해야 하고, 적용 무기군(RL·SR)은 소장품 테이블에서 유도한다.
+
+**잔여 1건 — 가산 스킬 항.** `red-hood`의 `converted * 100`(Glaring의 차속→차지댐
+변환)과 `snow-white-heavy-arms`의 `shades` 항에도 배율이 붙는지는 **측정되지
+않았다.** 맥스웰의 변형에는 가산 항이 없어 그 판독이 가르지 못했다. 「배율은 기본
+스탯을 스케일한다」는 툴팁 해석을 따라 두 항에는 붙이지 않고 있다.
 
 ## 만들지 않는 것 (딜 개념 아님 — defer 유지)
 
