@@ -255,6 +255,7 @@ from app.skill_rules.maiden_ice_rose import (
     build_blessings_upon_you_per_shot_rules,
     build_blessings_upon_you_rules,
     build_diamond_dust_dynamic_hit_count_nukes,
+    build_meditation_per_shot_rules,
     build_mp_resources,
 )
 from app.skill_rules.mast_romantic_maid import build_mast_rules
@@ -911,7 +912,8 @@ _PER_SHOT_RULE_BUILDERS = {
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
     "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),
     "chisato-nishikigi": lambda sv: build_chisato_per_shot_rules(sv),
-    "maiden-ice-rose": lambda sv: build_blessings_upon_you_per_shot_rules(sv),
+    "maiden-ice-rose": lambda sv: (build_blessings_upon_you_per_shot_rules(sv)
+                                   + build_meditation_per_shot_rules(sv, sv["caster_max_hp"])),
     "miranda-signature": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
     "prika": lambda sv: build_lets_get_show_started_rules(
