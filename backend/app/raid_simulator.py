@@ -598,6 +598,13 @@ def simulate_raid(
         # shot, rather than the deck entry - `weapon` is optional there
         # (`SquadMember` takes it with .get). A slug absent from weapon_stats
         # fires no normal attacks, so it never reaches this line.
+        #
+        # A weapon-mode segment does NOT change the band, even when its profile
+        # names a different weapon class: Nayuta transforms SMG -> an "SR"
+        # profile, and her transformed shots keep SMG's near band (Fienn,
+        # 2026-08-03, residual 5.8e-08 against 8.20% for profile banding -
+        # docs/measurements/weapon-transform-effective-range-band.md). Reading
+        # the unit's weapon_stats is therefore correct for segment shots too.
         weapon = (weapon_stats.get(slug) or {}).get("weapon")
         return weapon in in_range_weapons
 
