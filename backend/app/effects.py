@@ -303,3 +303,18 @@ class EffectRegistry:
             cached = (self._version, sorted(boundary_set))
             self._epoch_tables[key] = cached
         return bisect_right(cached[1], now)
+
+
+def max_ammo_percent_total(registry, target: dict, now: float, base_max_ammo: int) -> float:
+    """[최대 장탄 수] 버프 전체가 만드는 하나의 배율.
+
+    게임은 이 스탯을 두 형태로 준다. 오버로드와 대부분의 스킬은 퍼센트지만
+    일부 스킬은 무기와 무관한 고정 발수를 준다("최대 장탄 수 ▲ 2발"). 후자는
+    받는 유닛의 기본 장탄에 대한 비율로 환산해 합류시킨다 -
+    `round(base × (1 + pct + flat/base))` 는 `round(base × (1 + pct) + flat)`
+    와 같은 값이라, 탄창 크기를 계산하는 쪽은 지금까지처럼 배율 하나만 알면
+    된다. 퍼센트가 기본 장탄에만 걸리고 플랫이 그 위에 얹히는 순서는 Fienn의
+    판단(2026-08-02)이다.
+    """
+    return (registry.total_for("max_ammo_percent", target, now)
+            + registry.total_for("max_ammo_rounds", target, now) / base_max_ammo)

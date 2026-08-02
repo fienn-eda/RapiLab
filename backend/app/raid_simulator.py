@@ -103,7 +103,7 @@ absent field = always fires, matching every existing spec's behavior.
 from app.attack_rate import CHARGE_WEAPONS, generate_segmented_shots
 from app.burst_cycle import FULL_BURST_OPEN_DELAY, simulate_burst_cycle
 from app.damage_formula import calculate_damage
-from app.effects import Effect, EffectRegistry, _matches_scope
+from app.effects import Effect, EffectRegistry, _matches_scope, max_ammo_percent_total
 from app.elements import ELEMENT_ADVANTAGE_BONUS, element_multiplier
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
@@ -928,7 +928,13 @@ def simulate_raid(
 
     for slug, weapon in weapon_stats.items():
         target = target_for(slug)
-        max_ammo_percent_at = lambda t, target=target: registry.total_for("max_ammo_percent", target, t)
+        # 플랫 발수 버프("최대 장탄 수 ▲ 2발")는 여기서 이 유닛의 기본 장탄에
+        # 대한 비율로 환산되어 퍼센트와 한 값으로 합쳐진다 - 발수는 무기마다
+        # 다른 배율이 되므로 스탯 자체는 스쿼드 스코프로 두고 환산만 수신자
+        # 쪽에서 한다.
+        max_ammo_percent_at = lambda t, target=target, base=weapon["max_ammo"]: (
+            max_ammo_percent_total(registry, target, t, base)
+        )
         reload_speed_percent_at = lambda t, target=target: registry.total_for(
             "reload_speed_percent", target, t
         )

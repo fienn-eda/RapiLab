@@ -19,7 +19,7 @@ PLOT_SPOILER = {
     "description_value_02": "52.8",   # self Pierce Damage %
     "description_value_03": "48.2",   # squad Attack Damage %
     "description_value_04": "39.98",  # squad Pierce Damage %
-    "description_value_05": "3",      # squad Max Ammo +N rounds (not modeled)
+    "description_value_05": "3",      # squad Max Ammo +N rounds
     "description_value_06": "85.19",  # squad Critical Rate %
 }
 OVERHEAT = {
@@ -59,6 +59,15 @@ def test_plot_spoiler_grants_self_pierce_and_squad_buffs():
     assert round(registry.total_for("attack_damage_up", ALLY, now=5.0), 4) == 0.482
     assert round(registry.total_for("crit_rate", ALLY, now=5.0), 4) == 0.8519
     assert registry.total_for("attack_damage_up", ALLY, now=15.1) == 0.0  # 10s hardcoded duration
+
+
+def test_plot_spoiler_grants_squad_flat_max_ammo():
+    # 최대 장탄 +3발, 전원, 다른 Plot Spoiler 버프와 같은 10초.
+    ctx = make_context()
+    registry = EffectRegistry()
+    fire_trigger("own_burst_activate", {"grave": build()}, ctx, registry, time=5.0)
+    assert registry.total_for("max_ammo_rounds", ALLY, now=5.0) == 3.0
+    assert registry.total_for("max_ammo_rounds", ALLY, now=15.1) == 0.0
 
 
 def test_heat_emission_only_triggers_if_grave_burst_this_cycle():

@@ -63,7 +63,7 @@ Not modeled / deferred:
   shot this is a rounding error against the transform, and the reload IS
   counted in the cycle period, which is what actually matters.
 """
-from app.effects import Effect
+from app.effects import Effect, max_ammo_percent_total
 from app.skill_rules._helpers import buff_rule, max_hp_scaled_atk_rule
 from app.squad_engine import SkillRule, burst_stage_entered
 
@@ -207,7 +207,8 @@ def _over_energy_stage_rule(values, caster_max_hp):
             return
         target = _caster_target(context, caster_slug)
         _, window, period = _plan_from_percent(
-            weapon, registry.total_for("max_ammo_percent", target, time)
+            weapon,
+            max_ammo_percent_total(registry, target, time, int(weapon["max_ammo"])),
         )
         # Enough horizon to reach the last stage; effects landing past the
         # fight's end simply never become active.

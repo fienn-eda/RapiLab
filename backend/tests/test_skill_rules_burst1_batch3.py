@@ -171,7 +171,16 @@ TOVE_BASE_MIRACLE_OF_MAKESHIFTS = {
     "description_value_01": "2.32", "description_value_02": "10",
     "description_value_03": "24.21", "description_value_04": "10",
 }
+# 임시개조를 실어 나르는 스킬. 발동 조건(01)만 빌드마다 다르고 - 기본은 공격 시
+# 5% 확률, 애장품은 일반공격 10회마다 - 나머지 슬롯은 두 빌드가 동일하다.
+TOVE_BASE_EMERGENCY_CRAFTED_BULLETS = {
+    "description_value_01": "5", "description_value_02": "5.31",
+    "description_value_03": "2", "description_value_04": "3",
+    "description_value_05": "5", "description_value_06": "5.24",
+    "description_value_07": "5",
+}
 TOVE_BASE = {
+    "emergency_crafted_bullets": TOVE_BASE_EMERGENCY_CRAFTED_BULLETS,
     "modification_successful": TOVE_BASE_MODIFICATION_SUCCESSFUL,
     "miracle_of_makeshifts": TOVE_BASE_MIRACLE_OF_MAKESHIFTS,
     "caster_atk": 300000,
@@ -184,8 +193,15 @@ TOVE_SIG_MIRACLE_OF_MAKESHIFTS = {
     "description_value_01": "2.32", "description_value_02": "15",
     "description_value_03": "24.21", "description_value_04": "15",
 }
+TOVE_SIG_EMERGENCY_CRAFTED_BULLETS = {
+    "description_value_01": "10", "description_value_02": "5.31",
+    "description_value_03": "2", "description_value_04": "3",
+    "description_value_05": "5", "description_value_06": "5.24",
+    "description_value_07": "5",
+}
 
 TOVE = {
+    "emergency_crafted_bullets": TOVE_SIG_EMERGENCY_CRAFTED_BULLETS,
     "modification_successful": TOVE_SIG_MODIFICATION_SUCCESSFUL,
     "miracle_of_makeshifts": {
         "description_value_01": "2.32", "description_value_02": "15",
@@ -203,6 +219,31 @@ def test_tove_squad_crit_rate_and_stacked_flat_atk():
     fire_trigger("own_burst_activate", rules, deck_ctx("tove"), reg, 0.0)
     # 2.32% of ATK per stack * 3 max stacks = 6.96% of 300000 = 20880
     assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == round(300000 * 0.0232 * 3, 2)
+
+
+def test_tove_temporary_modification_flat_ammo_and_crit_damage():
+    # 임시개조는 최대 장탄을 퍼센트가 아니라 발수로 준다: +2발 x 3중첩 = +6발,
+    # 전원. 같은 블록의 크리티컬 데미지는 "최대 3회 중첩"이 장탄 줄에만 붙어
+    # 있으므로 중첩을 따르지 않고 1배로 들어간다.
+    for values in (TOVE_BASE, TOVE):
+        reg = EffectRegistry()
+        rules = {"tove": build_tove_rules(values)}
+        fire_trigger("battle_start", rules, deck_ctx("tove"), reg, 0.0)
+        assert reg.total_for("max_ammo_rounds", ALLY, 0.0) == 6.0
+        assert round(reg.total_for("other_critical_damage_sources", ALLY, 0.0), 4) == 0.0524
+
+
+def test_tove_stack_count_comes_from_the_skill_data():
+    # 중첩 상한은 상수가 아니라 임시개조 슬롯에서 읽는다 - 미라클의 두 ATK
+    # 불릿도 같은 중첩 수를 미러하므로 한 곳에서만 온다.
+    two_stacks = dict(TOVE, emergency_crafted_bullets=dict(
+        TOVE_SIG_EMERGENCY_CRAFTED_BULLETS, description_value_04="2"))
+    reg = EffectRegistry()
+    rules = {"tove": build_tove_rules(two_stacks)}
+    fire_trigger("battle_start", rules, deck_ctx("tove"), reg, 0.0)
+    fire_trigger("own_burst_activate", rules, deck_ctx("tove"), reg, 0.0)
+    assert reg.total_for("max_ammo_rounds", ALLY, 0.0) == 4.0
+    assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == round(300000 * 0.0232 * 2, 2)
 
 
 def _tove_weapon_ctx():
@@ -268,6 +309,42 @@ def test_tove_attack_speed_raises_sg_ally_shot_count():
     shots_without = [e for e in without["damage_log"] if e["source"] == "normal_attack"]
     shots_with = [e for e in with_tove["damage_log"] if e["source"] == "normal_attack"]
     assert shots_without and len(shots_with) > len(shots_without)
+
+
+def test_tove_enlarges_an_ar_allys_magazine():
+    # 덱 레벨: 임시개조의 +6발이 동료의 실제 탄창에 닿는지 (룰 -> 레지스트리 ->
+    # raid_simulator의 발수 환산까지 한 줄). SG가 아니라 AR 동료로 재는 이유는
+    # SG에게는 공속 버프도 같이 걸려 탄창 효과만 떼어 볼 수 없기 때문이다.
+    from app.raid_simulator import simulate_raid
+
+    def shot_times(rules):
+        result = simulate_raid(
+            deck=[
+                {"slug": "tove", "burst_tier": 1, "element": "Water", "cooldown": 20.0, "weapon": "AR"},
+                {"slug": "ar-ally", "burst_tier": 3, "element": "Fire", "cooldown": 40.0, "weapon": "AR"},
+            ],
+            rules_by_slug={"tove": rules, "ar-ally": []},
+            burst_damage_percents={},
+            base_stats={"tove": {"atk": 300000}, "ar-ally": {"atk": 200000}},
+            enemy_def=0,
+            gauge_charge_time=5.0,
+            fight_duration=10.0,
+            base_crit_rate=0.0,
+            weapon_stats={"ar-ally": {"weapon": "AR", "damage_percent": 60.0, "max_ammo": 60,
+                                      "reload_time": 1.5, "charge_time": 0.0,
+                                      "charge_damage_percent": 100.0}},
+        )
+        return [e["time"] for e in result["damage_log"] if e["source"] == "normal_attack"]
+
+    def first_magazine_size(times):
+        interval = 1 / 12.0  # AR rate of fire
+        size = 1
+        while size < len(times) and abs(times[size] - times[size - 1] - interval) < 1e-6:
+            size += 1
+        return size
+
+    assert first_magazine_size(shot_times([])) == 60
+    assert first_magazine_size(shot_times(build_tove_rules(TOVE))) == 66
 
 
 def test_little_mermaid_bubble_wave_fb_nuke_spec():
