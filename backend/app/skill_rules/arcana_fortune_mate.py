@@ -56,11 +56,14 @@ every deck buff:
   0.1 / 1.0946 = 0.0913576. The readings pick her collectible rung out of the
   ladder's four - 4.73/6.30/7.88/9.46 predict 0.0955/0.0941/0.0927/0.0914 and
   only the last is within reading precision.
-- Happy Memories' pellet does NOT add shot damage. Per-pellet damage falls by
-  exactly the pellet-count ratio (1.091357/1.1 = 0.992143, measured 0.992143;
-  same at 2 and 3 stacks), i.e. the same shot total is split across more
-  pellets. Pellet count buys hit consistency and core coverage, not damage -
-  which is why the engine having no per-pellet model costs nothing here.
+- Happy Memories' pellet does NOT add shot damage. The pellet count (10/11/12/13,
+  counted off the boss's bullet holes) and the per-pellet value are measured
+  INDEPENDENTLY, so their product - the shot total - carries no assumption: it
+  grows 9.13573% per stack, which is Snapshots' marginal contribution alone.
+  Pellets multiplying damage would put it at 20.05% (1.1 x 1.0914 - 1). The same
+  shot total is split across more pellets, so pellet count buys hit consistency
+  and core coverage, not damage - which is why the engine having no per-pellet
+  model costs nothing here.
 
 E2E on the squad Fienn measured in (Tove + her + Dorothy: Serendipity + Drake
 (favorite item) + Soline: Frost Ticket, real synced roster): she goes 0.978B ->
