@@ -25,8 +25,15 @@ Modeled (DPS-relevant):
   entering Burst Stage 2. `flat_max_hp` stopped being inert on 2026-07-24 - it
   feeds every "ATK ▲ X% of the caster's Max HP" conversion - so this pays out
   whenever the deck holds such a consumer.
-- Iris (dollskills[1]), the shield bullet: squad ATK +45.12% of Flora's ATK for
-  10 sec, on the same Burst Stage 2 entry per the combo above.
+- Iris (dollskills[1]), the shield bullet: squad ATK +45.12% of Flora's ATK.
+  Two paths, never both (the same bullet would land twice):
+  - FLOOR - her own combo above, 10 sec on each Burst Stage 2 entry. The only
+    path when nobody else in the deck shields.
+  - CEILING - an ally who shields the whole squad (`SHIELD_PROVIDER_SLUGS`)
+    keeps it up on a schedule the engine cannot count, since it models no shield
+    event; deck presence is what can be asked, so it becomes permanent. Same
+    ruling and same shape as Crown's Royal Attire heal branch. Rei: Ayanami is
+    NOT in that list - her shield is Fire Code only and Flora is Electric.
 - Secret Garden (dollskills[2], her burst, cd 40): squad True Damage +42.39%
   AND squad ATK +85.86% of Flora's ATK, both 10 sec. No damage, burst percent
   is None.
@@ -43,15 +50,21 @@ positional targeting has no scope model, so these land as `squad` (Rouge's
 precedent).
 
 Not modeled / skipped:
-- Every heal, shield and Incoming Healing bullet - survivability, not damage.
-  The shield is still *causally* modeled: it is the link in the combo above,
-  it just contributes no shield_amount effect of its own.
+- The AMOUNT of every heal, shield and Incoming Healing bullet - survivability,
+  not damage. Their occurrence is what the engine consumes: the shield is the
+  link in the combo above, and Flora is in `HEAL_PROVIDER_SLUGS`, so a deck-mate
+  whose bullet arms on any ally healing (Crown) sees her.
 - Petunia's "after landing 100 normal attacks, all Electric Code allies:
   Increases the stack count of stackable buffs by 1" - the engine has no notion
   of incrementing another unit's stackable-buff count. Same defer as the base.
 """
-from app.skill_rules._helpers import buff_rule
-from app.squad_engine import burst_stage_entered
+from app.skill_rules._helpers import SHIELD_PROVIDER_SLUGS, buff_rule
+from app.squad_engine import (
+    all_conditions,
+    burst_stage_entered,
+    deck_contains_any,
+    not_condition,
+)
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -87,14 +100,25 @@ def build_flora_signature_rules(values):
     burst_atk = caster_atk * float(garden["description_value_04"]) / 100
     burst_atk_duration = float(garden["description_value_05"])
     stage_two = burst_stage_entered(BURST_STAGE)
+    shielded_by_ally = deck_contains_any(SHIELD_PROVIDER_SLUGS)
     return [
         buff_rule("battle_start", [
             ("true_damage_up", iris_true_damage, "squad", None),
         ]),
+        # An ally who shields the whole squad keeps the bullet up on their own
+        # schedule, which the engine cannot count - deck presence is what can be
+        # asked, so this is the ceiling (Crown's Royal Attire precedent).
+        buff_rule("battle_start", [
+            ("flat_atk", shield_atk, "squad", None),
+        ], condition=shielded_by_ally),
         buff_rule("ally_burst_activate", [
             ("flat_max_hp", max_hp_bonus, "squad", max_hp_duration),
-            ("flat_atk", shield_atk, "squad", shield_atk_duration),
         ], condition=stage_two),
+        # Her own combo is the floor and the only path when nobody else shields.
+        # The two never run together: the same bullet would land twice.
+        buff_rule("ally_burst_activate", [
+            ("flat_atk", shield_atk, "squad", shield_atk_duration),
+        ], condition=all_conditions(stage_two, not_condition(shielded_by_ally))),
         buff_rule("own_burst_activate", [
             ("true_damage_up", burst_true_damage, "squad", burst_true_duration),
             ("flat_atk", burst_atk, "squad", burst_atk_duration),
