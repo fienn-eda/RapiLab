@@ -70,9 +70,11 @@ def _battle_start_effects_rule(effects):
 
 def _passive_effects(spec: NikkeSpec):
     """Overload, this unit's harmony cube, and the collectible it actually has
-    equipped. The collectible's 배율 stats are NOT here - they scale weapon
-    stats and are applied in user_roster. A cube that hands back rounds instead
-    of moving a stat contributes nothing here - see the weapon stats below."""
+    equipped. A collectible's charge-damage 배율 is NOT here - it scales a
+    weapon stat and is applied in user_roster - but its normal-attack 배율 IS,
+    because that one shares a buff bucket with skills. A cube that hands back
+    rounds instead of moving a stat contributes nothing here - see the weapon
+    stats below."""
     _, collectible = collectible_modifiers(
         spec.collectible_tid, spec.collectible_level, spec.slug, spec.weapon)
     return (

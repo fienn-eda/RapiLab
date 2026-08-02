@@ -16,7 +16,8 @@ Modeled (DPS-relevant):
 - Keepsake Album (skills[0]): when Full Burst ends, all shotgun-wielding allies
   (exact SG member filter, self included) gain flat ATK = 13% of the caster's
   ATK PER Precious Moments stack, for 15 sec. Clears the `making_memories`
-  status so the next cycle's burst re-arms it.
+  status so the next cycle's burst re-arms it. Also grants Snapshots of Youth
+  (Normal Attack Damage Multiplier +10%, cap 3) each time Happy Memories fires.
 
 THE PHASE ROTATION (Fienn's in-game observation, 2026-07-28)
 ------------------------------------------------------------
@@ -49,24 +50,17 @@ every deck buff:
 
 - Precious Moments is exactly what the data slot says. The three PM steps read
   1.009247 / 1.009164 / 1.009080, and ATK +2.49% into one additive bucket
-  reproduces all three from a single fitted bucket total: 1 + A = 2.69271 /
-  2.69267 / 2.69252. Agreement to 0.007%.
-- Happy Memories' three steps add a CONSTANT amount to the shot: with her base
-  10 pellets, +0.091357 / +0.091359 / +0.091347 of the base shot (0.013%
-  spread). At 9 or 11 base pellets the same fit is 20x worse, which is how the
-  pellet count was pinned before Fienn confirmed it.
-- Snapshots of Youth does NOTHING measurable. Per-pellet damage FALLS as Happy
-  Memories stacks (x0.992143 / x0.993399 / x0.994377), and no positive bucket
-  term can push a ratio below 1. Solving
-  `(10+k)/10 x (1+B+0.1k)/(1+B) = 1 + 0.091354k` for any pre-existing bucket B
-  gives B = -13.7, i.e. no solution. Its buff icon appears in game; its +10%
-  Normal Attack Damage Multiplier does not reach her normal attacks.
-
-Hence Happy Memories and Snapshots are encoded as ONE measured term. They are
-1:1 (every Happy Memories stack grants a Snapshots stack) and both are
-self-only normal-attack effects, so in game they cannot be separated - and the
-measured +9.1354% per stack already contains whatever Snapshots contributes.
-Modeling them apart would mean inventing a split the measurement denies.
+  reproduces all three from a single fitted bucket total, to 0.007%.
+- Snapshots of Youth lands at 0.0913573 per stack, not 0.1, because her SG
+  COLLECTIBLE already holds 9.46% of the same "일반 공격 대미지 배율" bucket:
+  0.1 / 1.0946 = 0.0913576. The readings pick her collectible rung out of the
+  ladder's four - 4.73/6.30/7.88/9.46 predict 0.0955/0.0941/0.0927/0.0914 and
+  only the last is within reading precision.
+- Happy Memories' pellet does NOT add shot damage. Per-pellet damage falls by
+  exactly the pellet-count ratio (1.091357/1.1 = 0.992143, measured 0.992143;
+  same at 2 and 3 stacks), i.e. the same shot total is split across more
+  pellets. Pellet count buys hit consistency and core coverage, not damage -
+  which is why the engine having no per-pellet model costs nothing here.
 
 E2E on the squad Fienn measured in (Tove + her + Dorothy: Serendipity + Drake
 (favorite item) + Soline: Frost Ticket, real synced roster): she goes 0.978B ->
@@ -79,6 +73,8 @@ Not modeled / deferred:
   rounds back (same wall as Milk's forced reload and EVE's Eagle Eye, gap #11).
   It matters here - the refill is what keeps her firing without a reload gap
   inside the window - so her shot count is a FLOOR.
+- Happy Memories' pellet count itself: it moves no damage (see above), and the
+  engine has no per-pellet shotgun model to hang hit-consistency on.
 """
 from app.burst_cycle import FULL_BURST_DURATION
 from app.effects import Effect, ResourceSpec
@@ -99,7 +95,7 @@ SKILL_VALUE_MANIFESTS = {
 
 MAKING_MEMORIES_STATUS = "making_memories"
 PRECIOUS_MOMENTS_RESOURCE = "precious_moments"
-HAPPY_MEMORIES_RESOURCE = "happy_memories"
+SNAPSHOTS_RESOURCE = "snapshots_of_youth"
 
 # The rotation: one effect per 2nd normal attack, three effects in order, so
 # each lands every 6th normal starting at its own step. The reload phase (step
@@ -107,14 +103,6 @@ HAPPY_MEMORIES_RESOURCE = "happy_memories"
 ROTATION_PERIOD = 6
 HAPPY_MEMORIES_FIRST = 4
 PRECIOUS_MOMENTS_FIRST = 6
-
-# Measured, not derived from a data slot: one Happy Memories stack raises her
-# whole normal attack by this much, Snapshots of Youth included. See the
-# range-test block in the docstring for the three readings it comes from and
-# for why the two effects share one term. Her base pellet count (10), which
-# turns "+1 pellet" into a shot multiplier, is not in any collected data source
-# either - Fienn confirmed it in game.
-HAPPY_MEMORIES_DAMAGE_PER_STACK = 0.091354
 
 
 def radiant_youth_burst_percent(values):
@@ -181,14 +169,16 @@ def build_memories_and_moments_resources(values):
                 "atk_percent", float(memories["description_value_04"]) / 100, "self")],
         ),
         ResourceSpec(
-            name=HAPPY_MEMORIES_RESOURCE,
+            name=SNAPSHOTS_RESOURCE,
+            # Snapshots of Youth is granted "when Happy Memories takes effect",
+            # so it rides the Happy Memories rotation step 1:1 and shares its
+            # cap. Full Burst's end removes it, hence the reset.
             fill=("per_shot_cycle_in_own_status_window",
                   HAPPY_MEMORIES_FIRST, ROTATION_PERIOD, FULL_BURST_DURATION),
-            # Happy Memories and Snapshots of Youth share a cap of 3 and rise
-            # together, so one counter carries both - as the measured term does.
             cap=int(float(keepsake["description_value_04"])),
             buffs=[linear_resource_buff(
-                "normal_attack_damage_multiplier", HAPPY_MEMORIES_DAMAGE_PER_STACK, "self")],
+                "normal_attack_damage_multiplier",
+                float(keepsake["description_value_03"]) / 100, "self")],
             resets=[{"trigger": "full_burst_end", "value": 0}],
         ),
     ]

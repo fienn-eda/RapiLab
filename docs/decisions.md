@@ -5,6 +5,54 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## SG·SMG 소장품의 「일반 공격 대미지 배율」은 무기 스탯이 아니라 가산 버킷으로 간다
+
+- Date: 2026-08-03
+- Context: `collectible_effects.COLLECTIBLE_SKILL_STATS`의 SG·SMG 배율 항목 4개
+  (group_id 711501/711901/712501/712901)가 `("damage_percent", "weapon")`로
+  배선돼 있어, 유닛의 기본 `weapon_stats["damage_percent"]`에 곱해지는 값으로
+  들어가고 있었다. 아르카나: 포츈메이트의 Snapshots of Youth(청춘의 기록, 평타
+  대미지 배율 ▲10%/스택, 3중첩)를 이 값과 나란히 반증하려던 식
+  `(10+k)/10 × (1+B+0.1k)/(1+B) = 1+0.091354k`가 B=−13.7(해 없음)로 풀려,
+  기록은 이 스킬이 "실측상 그녀의 평타에 닿지 않는다"고 적고 있었다. 좌변 첫 항
+  `(10+k)/10`은 "펠릿이 1개 늘면 샷 데미지가 10% 오른다"는 틀린 전제를 식에 박아
+  넣은 것이었다. 그 항을 빼고, 그녀의 실제 SG 소장품(레벨 15, 배율 1.0946)이 이미
+  같은 "일반 공격 대미지 배율" 스탯에 값을 채우고 있다고 보면, 스택당 한계효과
+  `0.1/1.0946 = 0.0913576`이 2026-07-28 실측 `0.0913573`과 잔차 3e-07로 일치한다.
+  `damage-formula-reference.md`도 SG·SMG 소장품이 올리는 스탯을 정확히 "Normal
+  Attack Damage Multiplier"라 적어, 청춘의 기록과 이름이 같은 스탯임을 확인해
+  준다.
+- Decision: `COLLECTIBLE_SKILL_STATS`의 SG·SMG 4개 group_id를
+  `("damage_percent", "weapon")`에서 `("normal_attack_damage_multiplier",
+  "effect")`로 옮긴다. `"effect"` 배치는 `roster._passive_effects`를 거쳐 영구
+  self Effect가 되고 `raid_simulator._normal_attack_percent`가 `1 + Σ`로
+  합산해 읽는다 — 청춘의 기록의 +10%/스택이 쓰는 것과 같은 가산 버킷이다. RL·SR의
+  `charge_damage_percent`(에이드 사격장 실측으로 확정된 배치)는 건드리지 않는다
+  — 그 계열엔 같은 버킷을 쓰는 스킬 소스가 아직 없다.
+- Alternatives considered: (a) 무기 스탯 배치를 유지하고 청춘의 기록 쪽을 별도 곱
+  계수로 새로 만들기 — 기각. 반증식이 풀리는 유일한 형태가 가산이라, 곱셈으로
+  넣으면 실측과 다시 어긋난다. (b) 소장품만 예외적으로 전용 버킷을 새로 만들기 —
+  기각. 게임이 이미 같은 스탯 이름("일반 공격 대미지 배율")을 쓰고 있고 레퍼런스
+  문서가 그 이름을 확인해 주므로, 이름이 같은 스탯을 인코딩에서 따로 쪼갤 근거가
+  없다.
+- Consequences: 오늘 두 소스가 한 유닛에서 겹치는 경우는 포츈메이트뿐이다(Jill
+  Valentine은 AR, Asuka: Wille는 MG라 소장품이 다른 스탯으로 간다). NADM 소스가
+  없는 SG·SMG 유닛은 `damage × 1.0946`과 `damage × (1+0.0946)`이 수학적으로 같은
+  값이라 무변화. 부작용 하나 — 나유타(SMG 소장품 tid 100502 레벨 15 착용)의
+  Memory Incineration 대체 무기 프로필(`nayuta.py`의
+  `build_memory_incineration_weapon_mode_schedule`)은 자기 스킬 데이터로만 지은
+  정적 dict라 `weapon_stats`를 전혀 읽지 않는다. 옛 무기-스탯 배치에서는 그 10초
+  창의 샷이 소장품 보너스를 못 받고 있었는데, 모든 평타 샷에 균일하게 닿는 새
+  버킷 배치에서는 그 창도 보너스를 받는다 — 나유타의 세그먼트 배선이 이 스탯을
+  구조적으로 놓치고 있었던 잠재 결함의 수정이지, 이번 버킷 이관이 새로 만든
+  오차가 아니다. 실기록 5덱 캘리브레이션 합계 1.077x → **1.082x**(±15% 이내
+  16/25 그대로), 옛 구성 재채점도 악화 없음(+0.13%). 같은 사각지대가 RL·SR의
+  `charge_damage_percent`에도 남아 있다 — `docs/engine-gaps.md` 참고. **이 판단은
+  이제 실측으로도 확인된다**: 2026-08-03 스노우 화이트 사격장 실측
+  (`docs/measurements/collectible-during-weapon-transform.md`)이 무기변환 중인
+  버스트 샷도 소장품 보너스를 정확히 받는다는 것을 코어/논코어 비율(평타 풀버스트 밖 잔차 5.2e-06, 변형샷 풀버스트 안 잔차 4.9e-08)로 직접 보여준다 — 나유타 쪽 결론은 구조적 추론에서 실측 확인으로
+  격상됐다.
+
 ## 힐·쉴드는 "발생 여부"만 모델하고, 그 명단은 데이터에서 재도출한다
 
 - Date: 2026-08-02

@@ -17,8 +17,8 @@
   목록 드리프트 6슬러그 + Max HP 5유닛 + 쉴드 제공자 목록 신설. 캘리 불변), 그리고
   **유동폭 레이아웃**(셸은 창을 채우고 본문은 가독폭을 지킨다 · 모드 열은 내용에
   맞춰 좁아지고 · 결과가 설정 행 아래·팔레트 위로 · 유니온 결과가 로스터 위로).
-  기준선 **백엔드 1788 passed, 3 skipped · 프론트 467 passed** ·
-  실기록 캘리 **1.077x · 16/25**. origin `1a6a4cf`까지 푸시됨(태그는 아직 v0.1.1).
+  기준선 **백엔드 1791 passed, 3 skipped · 프론트 467 passed** ·
+  실기록 캘리 **1.082x · 16/25**. origin `1a6a4cf`까지 푸시됨(태그는 아직 v0.1.1).
 - 이전 브랜치: `worktree-identity-vs-fanout` 워크트리(`.claude/worktrees/identity-vs-fanout`,
   `wip/scaffolding` `8a1ed2c` 기준에서 분기 — 백엔드 1519 passed, 3 skipped, 이 항목
   시점에 트렁크 미병합). 이전: `worktree-fixed-deck-evaluation` 워크트리
@@ -1841,10 +1841,13 @@ snow-white 0.998 · scarlet 0.999. 뒤 셋은 오차 범위이므로 실질 대�
       결정적 근거는 **부정형**이었다 — 12타에서 행복한기억·재장전이 안 뜬다(임계값
       모델이면 셋 다 떠야 한다).
       **사격장 측정으로 확정한 것:** 소중한추억 ATK +2.49%/스택(3회 독립 측정이 단일
-      버킷값 1+A=2.6927로 0.007% 일치) · 행복한기억은 **스택당 총 발당 +9.1354%**
-      (증가분 편차 0.013%) · **기본 펠릿 10**(데이터 소스에 없는데 "증가분이 일정해지는
-      P"로 풀렸고 Fienn이 인게임 확인) · **청춘의기록의 +10%는 실측상 무효**(어떤 기존
-      버킷을 넣어도 해가 음수. 아이콘은 뜬다).
+      버킷값 1+A=2.6927로 0.007% 일치) · **기본 펠릿 10**(데이터 소스에 없는데
+      "증가분이 일정해지는 P"로 풀렸고 Fienn이 인게임 확인, 펠릿 자체는 데미지 갭이
+      아니다 — `docs/engine-gaps.md`) · **청춘의기록(Snapshots of Youth)은 스택당
+      한계효과 +9.13573%로 작동한다** — 그녀의 SG 소장품(레벨 15, 배율 1.0946)이
+      이미 같은 "일반 공격 대미지 배율" 버킷에 값을 채우고 있어 명목 +10%가
+      `0.1/1.0946`로 줄어든 것(잔차 3e-07, 2026-08-03 확정, `docs/decisions.md`·
+      `docs/measurements/arcana-fortune-mate-happy-memories.md`).
       **엔진 확장 3건:** `per_shot_cycle_in_own_status_window`(창마다 리셋되는 위상
       카운터) · 자원 리셋 트리거 `full_burst_end` · `resource_gated_buffs`의
       `at:"full_burst_end"`/`value_per_stack`/`member_filter`.

@@ -104,9 +104,10 @@ def load_nikke_spec(
         element, weapon = meta["element"], meta["weapon"]
     except (KeyError, IndexError, TypeError, ValueError):
         return None
-    # A collectible's 배율 scales the WEAPON's own base stat, so it lands here
-    # rather than in the buff registry - and after any mode override, so a unit
-    # whose weapon profile swaps mid-kit still carries it.
+    # A collectible's charge-damage 배율 scales the WEAPON's own base stat, so
+    # it lands here rather than in the buff registry - and after any mode
+    # override, so a unit whose weapon profile swaps mid-kit still carries it.
+    # Its normal-attack 배율 goes to the buff registry instead (collectible_effects).
     weapon_multipliers, _ = collectible_modifiers(
         state.collectible_tid, state.collectible_level, slug, weapon)
     if weapon_multipliers:
