@@ -104,7 +104,13 @@ def build_red_wolf_weapon_mode_schedule(values):
     profile = {
         "weapon": "SR",
         "damage_percent": shot_percent,
-        "charge_damage_percent": full_charge_percent + converted * 100,
+        # A collectible's charge-damage 배율 scales the transformed weapon's own
+        # full-charge multiplier only. The Glaring conversion is a skill effect
+        # riding on top of it, not a weapon base stat - the same split
+        # snow_white_heavy_arms makes between weapon_stats and its skill term.
+        "charge_damage_percent": (
+            full_charge_percent * values.get("caster_charge_damage_multiplier", 1.0)
+            + converted * 100),
         "rate_of_fire": TRANSFORM_SHOTS / duration,
     }
 
