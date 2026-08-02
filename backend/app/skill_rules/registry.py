@@ -361,9 +361,11 @@ def _build_rouge(sv):
 def _build_anis_star(sv):
     rules = build_starfall_rules(sv["starfall"])
     rules += build_stardust_rules({**sv["stardust"], "caster_atk": sv["caster_atk"]})
-    rules += build_star_anis_burst_rules(
-        {**sv["star_anis"], "caster_weapon_stats": sv["caster_weapon_stats"]}
-    )
+    rules += build_star_anis_burst_rules({
+        **sv["star_anis"],
+        "caster_weapon_stats": sv["caster_weapon_stats"],
+        "caster_max_hp": sv["caster_max_hp"],
+    })
     return rules, None
 
 

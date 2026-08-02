@@ -30,18 +30,21 @@ STARDUST = {
     "description_value_06": "34",     # squad Attack Damage %
     "description_value_07": "10",     # duration
 }
-# Star Anis (burst), dotgg native slots after drop_tokens [2, 3, 6, 7] removes
-# Explosion Radius 100, DEF 55.01 and the Everyone's Star Max HP pair (15.02/10).
+# Star Anis (burst), dotgg native slots after drop_tokens [2, 3] removes the
+# inert Explosion Radius 100 and DEF 55.01.
 STAR_ANIS = {
     "description_value_01": "40.01",  # Shooting Stars damage % of final ATK
     "description_value_02": "10",     # Shooting Stars duration (shared by the window's other effects)
     "description_value_03": "35.2",   # My Own Star: self Attack Damage %
     "description_value_04": "10",     # duration
-    "description_value_05": "0.7",    # charge time is fixed at this for the window
+    "description_value_05": "15.02",  # Everyone's Star: squad Max HP % of caster's
+    "description_value_06": "10",     # duration
+    "description_value_07": "0.7",    # charge time is fixed at this for the window
 }
 # Her RL's real base charge time (data/dotgg/char_anis-star.json), injected by
 # the assembly layer as `caster_weapon_stats` (see roster.py).
-BURST_VALUES = {**STAR_ANIS, "caster_weapon_stats": {"charge_time": 1.0}}
+BURST_VALUES = {**STAR_ANIS, "caster_weapon_stats": {"charge_time": 1.0},
+                "caster_max_hp": 80_000.0}
 ALLY = {"slug": "crown", "element": "Iron"}
 ANIS = {"slug": "anis-star", "element": "Electric"}
 
@@ -191,6 +194,27 @@ def test_burst_grants_self_attack_damage_only_while_my_own_star():
     registry2 = EffectRegistry()
     fire_trigger("own_burst_activate", rules, ctx2, registry2, time=5.0)
     assert registry2.total_for("attack_damage_up", ANIS, now=5.0) == 0.0
+
+
+def test_burst_grants_squad_max_hp_only_while_everyones_star():
+    # 시전자 Max HP 기준이라 절대값 하나로 전원에게 같은 양이 간다.
+    rules = {"anis-star": build_star_anis_burst_rules(
+        {**BURST_VALUES, "caster_max_hp": 80_000.0})}
+    ctx = with_ally_context()
+    ctx.set_status("anis-star", "Everyone's Star")
+    registry = EffectRegistry()
+    fire_trigger("own_burst_activate", rules, ctx, registry, time=5.0)
+    expected = 80_000.0 * 0.1502
+    assert round(registry.total_for("flat_max_hp", ALLY, now=5.0), 4) == round(expected, 4)
+    assert round(registry.total_for("flat_max_hp", ANIS, now=5.0), 4) == round(expected, 4)
+    assert registry.total_for("flat_max_hp", ALLY, now=15.1) == 0.0  # 10초
+
+    # My Own Star(단독 편성)에서는 이 불릿이 없다.
+    alone = alone_context()
+    alone.set_status("anis-star", "My Own Star")
+    registry2 = EffectRegistry()
+    fire_trigger("own_burst_activate", rules, alone, registry2, time=5.0)
+    assert registry2.total_for("flat_max_hp", ANIS, now=5.0) == 0.0
 
 
 class _BurstContext:
