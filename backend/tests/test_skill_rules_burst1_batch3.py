@@ -442,14 +442,37 @@ def test_little_mermaid_bubble_wave_ticks_only_in_fb_windows():
     assert ticks.count(start + 1.0) == 4  # 4 sequential hits per tick
 
 
-CHECK_TICKET = {"description_value_03": "7.48"}
+SOLINE_MAX_HP = 900_000.0
+CHECK_TICKET = {
+    "description_value_01": "10",    # Max HP % of caster's, PER ticket
+    "description_value_02": "2",     # ticket cap
+    "description_value_03": "7.48",  # squad burst CDR sec
+}
 
 
-def test_soline_frost_ticket_only_cdr():
+def _soline_rules():
+    return {"soline-frost-ticket": build_soline_frost_ticket_rules(
+        {"check_ticket": CHECK_TICKET, "caster_max_hp": SOLINE_MAX_HP})}
+
+
+def test_soline_frost_ticket_cdr():
     reg = EffectRegistry()
-    rules = {"soline-frost-ticket": build_soline_frost_ticket_rules({"check_ticket": CHECK_TICKET})}
-    fire_trigger("full_burst_enter", rules, deck_ctx("soline-frost-ticket"), reg, 0.0)
+    fire_trigger("full_burst_enter", _soline_rules(), deck_ctx("soline-frost-ticket"), reg, 0.0)
     assert reg.drain_pulses("burst_cooldown_reduction_sec")[0].value == 7.48
+
+
+def test_soline_tickets_grant_squad_max_hp_and_stop_at_the_cap():
+    # 티켓은 전투 시작에 1장, 버스트마다 1장, 상한 2장. 소모 경로는 "스쿼드
+    # 누군가 HP 15% 미만"인데 시뮬은 아군을 때리지 않으므로 한 번 찬 뒤 안 준다.
+    reg = EffectRegistry()
+    rules = _soline_rules()
+    ctx = deck_ctx("soline-frost-ticket")
+    fire_trigger("battle_start", rules, ctx, reg, 0.0)
+    assert round(reg.total_for("flat_max_hp", ALLY, 0.0), 2) == round(SOLINE_MAX_HP * 0.10, 2)
+    fire_trigger("own_burst_activate", rules, ctx, reg, 20.0)
+    assert round(reg.total_for("flat_max_hp", ALLY, 20.0), 2) == round(SOLINE_MAX_HP * 0.20, 2)
+    fire_trigger("own_burst_activate", rules, ctx, reg, 40.0)
+    assert round(reg.total_for("flat_max_hp", ALLY, 40.0), 2) == round(SOLINE_MAX_HP * 0.20, 2)
 
 
 # Module-level fixture aliases so the assembly verification harness
