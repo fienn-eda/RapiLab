@@ -50,6 +50,10 @@ def test_noirs_finale_grants_interruption_parts():
     values = {
         "caster_atk": 100000,
         "lucky_charm": {"description_value_01": "14.08"},
+        "rabbit_twins_b": {
+            "description_value_01": "5", "description_value_02": "10",
+            "description_value_03": "39.88",
+        },
         "finale": {
             "description_value_01": "351.64", "description_value_02": "13.93",
             "description_value_03": "10", "description_value_04": "23.23",

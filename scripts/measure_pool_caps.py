@@ -16,9 +16,17 @@ Caps are given as B1/B2/B3. "all" seats the whole roster at every tier, the
 ceiling no guard can beat; it enumerates every legal combination in Python and
 is much slower than the others.
 
+`--top-k` sweeps the OTHER width: how many of the surrogate's top-ranked
+combinations actually reach the simulator. The pool decides what can be ranked;
+K decides how much of that ranking the simulator gets to overrule. A result that
+moves with K is one the surrogate was mis-ranking - which is what a synergy the
+unit-only model cannot express (e.g. a flat-ammo buff, worth +50% to an SR ally
+and +5% to the AR caster) looks like from here.
+
 Usage (any cwd):
     python3 scripts/measure_pool_caps.py [--caps 4/6/12,6/9/18,8/12/24,all]
-                                         [--exclude slug,slug] [--workers auto]
+                                         [--top-k 20,100] [--exclude slug,slug]
+                                         [--workers auto]
 """
 import argparse
 import sys
@@ -29,6 +37,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import app.cascade as cascade  # noqa: E402
+import app.deck_allocation as deck_allocation  # noqa: E402
 from app.deck_allocation import allocate_decks  # noqa: E402
 from app.deck_search import BossProfile  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
@@ -49,6 +58,9 @@ def main():
                    help="B1/B2/B3 pool caps to sweep, comma separated; "
                         "'all' seats the whole roster (default 4/6/12 is "
                         "production's WIDE_TIER_CAPS)")
+    p.add_argument("--top-k", default=str(cascade.DEFAULT_TOP_K),
+                   help="combinations handed to the simulator, comma separated "
+                        f"(default: production's {cascade.DEFAULT_TOP_K})")
     p.add_argument("--decks", type=int, default=5)
     p.add_argument("--budget", type=float, default=45.0,
                    help="swap budget in seconds (default: production's 45)")
@@ -74,30 +86,36 @@ def main():
     print(f"roster {len(specs)} usable ({len(dropped)} unloadable, "
           f"{len(excluded)} excluded); {args.decks} decks; "
           f"swap budget {args.budget:.0f}s; workers={workers}")
-    print(f"{'caps':>12} {'combined total':>18} {'vs production':>14} {'wall':>8}")
+    print(f"{'caps':>12} {'top-k':>6} {'combined total':>18} {'vs production':>14} {'wall':>8}")
 
     production = None
     original = cascade.WIDE_TIER_CAPS
+    original_cascade = deck_allocation.Cascade
     for text in args.caps.split(","):
         caps = _parse_caps(text.strip(), specs)
-        cascade.WIDE_TIER_CAPS = caps
-        # Cascade defaults its `caps` field to None and reads WIDE_TIER_CAPS at
-        # call time, so rebinding the module attribute is enough - but the fit
-        # cache is keyed on roster+boss only, which is what we want here: the
-        # model is identical across cap settings, only the pool changes.
-        started = time.perf_counter()
-        try:
-            out = allocate_decks(specs, boss, num_decks=args.decks,
-                                 time_budget_sec=args.budget, workers=workers)
-        finally:
-            cascade.WIDE_TIER_CAPS = original
-        elapsed = time.perf_counter() - started
-        total = sum(d["total_damage"] for d in out["decks"])
-        if production is None:
-            production = total
-        label = f"{caps[1]}/{caps[2]}/{caps[3]}"
-        print(f"{label:>12} {total:>18,.0f} {total / production - 1:>+13.2%} "
-              f"{elapsed:>7.0f}s", flush=True)
+        for top_k in (int(k) for k in args.top_k.split(",")):
+            cascade.WIDE_TIER_CAPS = caps
+            # Cascade defaults its `caps` field to None and reads WIDE_TIER_CAPS
+            # at call time, so rebinding the module attribute is enough - but the
+            # fit cache is keyed on roster+boss only, which is what we want here:
+            # the model is identical across cap settings, only the pool changes.
+            # `top_k` is a constructor default instead, so the allocator's own
+            # `Cascade(model)` call is what has to be widened.
+            deck_allocation.Cascade = lambda model, k=top_k: original_cascade(model, top_k=k)
+            started = time.perf_counter()
+            try:
+                out = allocate_decks(specs, boss, num_decks=args.decks,
+                                     time_budget_sec=args.budget, workers=workers)
+            finally:
+                cascade.WIDE_TIER_CAPS = original
+                deck_allocation.Cascade = original_cascade
+            elapsed = time.perf_counter() - started
+            total = sum(d["total_damage"] for d in out["decks"])
+            if production is None:
+                production = total
+            label = f"{caps[1]}/{caps[2]}/{caps[3]}"
+            print(f"{label:>12} {top_k:>6} {total:>18,.0f} "
+                  f"{total / production - 1:>+13.2%} {elapsed:>7.0f}s", flush=True)
 
 
 if __name__ == "__main__":

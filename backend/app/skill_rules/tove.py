@@ -10,6 +10,13 @@ Crit Rate 3.32% -> 10.08% and stretches both Miracle of Makeshifts windows
 10 -> 15 sec; the SG Attack Speed and the two ATK coefficients are identical.
 
 Modeled (DPS-relevant):
+- Emergency-Crafted Bullets (dollskills[0]): the Temporary Modification stack
+  itself - squad Max Ammunition Capacity +2 ROUNDS per stack (a flat round
+  count, not a percent - `max_ammo_rounds`, converted against each recipient's
+  own base magazine in raid_simulator) plus the block's squad Critical Damage
+  +5.24%. Both continuous under the full-stack assumption below. The crit
+  damage does NOT mirror the stack count: "stacks up to 3 time(s)" sits on the
+  Max Ammo line only, so it lands once.
 - Modification Successful (dollskills[1]): squad Crit Rate up (continuous while
   Temporary Modification is fully stacked); shotgun allies additionally get
   Attack Speed +42.24% continuously (member-subset scope, gap #3 - live-read
@@ -35,13 +42,10 @@ builds despite their different triggers (Fienn, 2026-07-24):
   carries the small overcredit.
 
 Not modeled (both builds):
-- Emergency-Crafted Bullets itself: its magazine reload is not a damage stat,
-  its "Max Ammunition Capacity +2" is a FLAT round count where the engine only
-  has `max_ammo_percent`, and its Critical Damage +5.24% rider is left out
-  because the text does not say whether that bullet mirrors the stack count the
-  way the Miracle bullets explicitly do - guessing a x3 would be inventing.
-  This gap predates the base/signature split; it applied to the baked encoding
-  too, so neither build regresses.
+- Emergency-Crafted Bullets' own partial reload ("Reload 5.31% of the
+  magazine(s)"): the engine reloads a magazine as one uninterruptible block, so
+  a fractional top-up mid-magazine has nowhere to land. It shortens her own
+  downtime slightly and she is a supporter, so the omission is small.
 """
 from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
 
@@ -51,10 +55,12 @@ SKILL_VALUE_MANIFESTS = {
         "source": "lootandwaifus",
         "test_module": "test_skill_rules_burst1_batch3",
         "keys": {
+            "emergency_crafted_bullets": ("skills", 0),
             "modification_successful": ("skills", 1),
             "miracle_of_makeshifts": ("skills", 2),
         },
         "fixtures": {
+            "emergency_crafted_bullets": "TOVE_BASE_EMERGENCY_CRAFTED_BULLETS",
             "modification_successful": "TOVE_BASE_MODIFICATION_SUCCESSFUL",
             "miracle_of_makeshifts": "TOVE_BASE_MIRACLE_OF_MAKESHIFTS",
         },
@@ -64,10 +70,12 @@ SKILL_VALUE_MANIFESTS = {
         "data_slug": "tove",
         "test_module": "test_skill_rules_burst1_batch3",
         "keys": {
+            "emergency_crafted_bullets": ("dollskills", 0),
             "modification_successful": ("dollskills", 1),
             "miracle_of_makeshifts": ("dollskills", 2),
         },
         "fixtures": {
+            "emergency_crafted_bullets": "TOVE_SIG_EMERGENCY_CRAFTED_BULLETS",
             "modification_successful": "TOVE_SIG_MODIFICATION_SUCCESSFUL",
             "miracle_of_makeshifts": "TOVE_SIG_MIRACLE_OF_MAKESHIFTS",
         },
@@ -75,25 +83,32 @@ SKILL_VALUE_MANIFESTS = {
 }
 
 
-MAX_TEMP_MOD_STACKS = 3  # Emergency-Crafted Bullets "stacks up to 3 times"
-
-
 def build_tove_rules(values):
+    emergency = values["emergency_crafted_bullets"]
     modification = values["modification_successful"]
     miracle = values["miracle_of_makeshifts"]
     caster_atk = values["caster_atk"]
+    # Every "mirrors the Temporary Modification stack count" bullet in the kit
+    # reads its cap from here, so the number lives in one place.
+    max_stacks = int(float(emergency["description_value_04"]))
+    ammo_rounds = float(emergency["description_value_03"]) * max_stacks
+    crit_damage = float(emergency["description_value_06"]) / 100
     crit_rate = float(modification["description_value_01"]) / 100
     atk_per_stack = caster_atk * float(miracle["description_value_01"]) / 100
-    atk_bonus = atk_per_stack * MAX_TEMP_MOD_STACKS
+    atk_bonus = atk_per_stack * max_stacks
     atk_duration = float(miracle["description_value_02"])
     sg_attack_speed = float(modification["description_value_02"]) / 100
-    sg_atk = caster_atk * float(miracle["description_value_03"]) / 100 * MAX_TEMP_MOD_STACKS
+    sg_atk = caster_atk * float(miracle["description_value_03"]) / 100 * max_stacks
     sg_atk_duration = float(miracle["description_value_04"])
 
     sg_only = lambda m, context: m.weapon == "SG"
 
     return [
-        buff_rule("battle_start", [("crit_rate", crit_rate, "squad", None)]),
+        buff_rule("battle_start", [
+            ("crit_rate", crit_rate, "squad", None),
+            ("max_ammo_rounds", ammo_rounds, "squad", None),
+            ("other_critical_damage_sources", crit_damage, "squad", None),
+        ]),
         buff_rule("own_burst_activate", [("flat_atk", atk_bonus, "squad", atk_duration)]),
         # Modification Successful: continuous under the module's existing
         # full-stack steady-state assumption, like the squad crit rate.

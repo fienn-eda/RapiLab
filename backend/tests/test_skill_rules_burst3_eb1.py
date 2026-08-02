@@ -35,6 +35,11 @@ def deck_ctx(src_slug, element="Wind"):
 NOIR_ATK = 100000
 NOIR = {
     "lucky_charm": {"description_value_01": "14.08"},
+    "rabbit_twins_b": {
+        "description_value_01": "5",      # squad Max Ammo +N rounds
+        "description_value_02": "10",     # duration sec
+        "description_value_03": "39.88",  # instant partial reload % (not modeled)
+    },
     "finale": {
         "description_value_01": "351.64", "description_value_02": "13.93", "description_value_03": "10",
         "description_value_04": "23.23", "description_value_05": "10", "description_value_06": "11.61",
@@ -48,6 +53,14 @@ def test_noir_lucky_charm_squad_atk_from_battle_start():
     reg = EffectRegistry()
     fire_trigger("battle_start", {"noir": build_noir_rules(NOIR)}, deck_ctx("noir"), reg, 0.0)
     assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == round(0.1408 * NOIR_ATK, 2)
+
+
+def test_noir_rabbit_twins_b_grants_flat_rounds_on_full_burst():
+    # 최대 장탄 +5발, 전원, 10초 - 퍼센트가 아니라 발수라 무기별로 다른 배율이 된다.
+    reg = EffectRegistry()
+    fire_trigger("full_burst_enter", {"noir": build_noir_rules(NOIR)}, deck_ctx("noir"), reg, 0.0)
+    assert reg.total_for("max_ammo_rounds", ALLY, 0.0) == 5.0
+    assert reg.total_for("max_ammo_rounds", ALLY, 10.1) == 0.0
 
 
 def test_noir_finale_burst_parts_buffs_stack_then_expire():
@@ -216,6 +229,7 @@ STRANGE_CURRENTS = LIBERALIO["strange_currents"]
 SUBMERGED_WORLD = LIBERALIO["submerged_world"]
 FINALE = NOIR["finale"]
 LUCKY_CHARM = NOIR["lucky_charm"]
+RABBIT_TWINS_B = NOIR["rabbit_twins_b"]
 
 
 def test_strange_currents_refuses_allies_charge_speed_but_keeps_her_own():

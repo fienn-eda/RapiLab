@@ -3,11 +3,12 @@ signature weapon).
 
 Modeled (DPS-relevant):
 - Plot Spoiler (skills[2], her burst): self Pierce Damage; squad Attack
-  Damage, Pierce Damage, and Critical Rate. All durations are a literal
-  "10 sec" in the skill text (not a data slot), hence the hardcoded constant.
-  Her self HP drain (Prediction) and the flat "+3 rounds" Max Ammo bullet are
-  not modeled - the latter needs the caster's base ammo, which skill_rules
-  doesn't have access to (only raid_simulator/roster do).
+  Damage, Pierce Damage, Critical Rate, and Max Ammunition Capacity +3 ROUNDS
+  (a flat round count, `max_ammo_rounds` - raid_simulator converts it against
+  each recipient's own base magazine, which is why skill_rules can state it
+  without knowing any weapon). All durations are a literal "10 sec" in the
+  skill text (not a data slot), hence the hardcoded constant. Her self HP
+  drain (Prediction) is not modeled.
 - Heat Emission (skills[0]): "Activates when Prediction status ends" -
   Prediction is granted for exactly 10 sec by her own burst, and Full Burst
   itself lasts 10 sec, so activation is approximated as firing at
@@ -69,6 +70,7 @@ def build_grave_rules(values):
     squad_attack_damage = float(plot_spoiler["description_value_03"]) / 100
     squad_pierce = float(plot_spoiler["description_value_04"]) / 100
     squad_crit_rate = float(plot_spoiler["description_value_06"]) / 100
+    squad_ammo_rounds = float(plot_spoiler["description_value_05"])
     heat_emission_pierce = float(heat_emission["description_value_05"]) / 100
 
     def apply_plot_spoiler(context, caster_slug, time, registry):
@@ -92,6 +94,10 @@ def build_grave_rules(values):
         )
         registry.add(
             Effect("crit_rate", squad_crit_rate, "squad", PLOT_SPOILER_BUFF_DURATION, caster_slug),
+            applied_at=time,
+        )
+        registry.add(
+            Effect("max_ammo_rounds", squad_ammo_rounds, "squad", PLOT_SPOILER_BUFF_DURATION, caster_slug),
             applied_at=time,
         )
 

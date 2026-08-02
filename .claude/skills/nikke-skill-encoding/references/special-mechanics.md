@@ -115,6 +115,22 @@ how to encode it, and current engine status.
   DPS unit, she'll incorrectly also receive the ally-only buff (document this
   self-overstatement explicitly). See `arcana_fortune_mate.py`.
 
+## "Max Ammunition Capacity ▲ N round(s)" - a FLAT count, not a percent - BUILT (`max_ammo_rounds`, 2026-08-02)
+- **What:** most ammo buffs are percentages, but some grant whole rounds
+  ("Max Ammunition Capacity ▲ 2", Tove's Temporary Modification; +3 Grave,
+  +5 Noir). The tell is the missing `%` and the "round(s)" wording.
+- **Easy mistake:** filing it under `max_ammo_percent` "close enough". It
+  isn't close: the same +6 rounds is +67% on an SG's 9-round magazine, +100%
+  on an SR/RL's 6, and +2% on an MG's 300. These bullets are squad-scoped, so
+  one percentage cannot serve the squad.
+- **Encode:** `max_ammo_rounds`, stating the round count as-is. The caster does
+  NOT need to know the recipient's weapon - `raid_simulator` converts against
+  each recipient's own base magazine. See `tove.py`, `grave.py`, `noir.py`.
+- **Still deferred alongside it:** "Reload N% of the magazine(s)", the partial
+  top-up that usually rides in the same bullet. The engine reloads a magazine
+  as one uninterruptible block, so a fractional mid-magazine refill has nowhere
+  to land.
+
 ## "Deals X% as damage" tied to a trigger other than the caster's own burst
 - **What:** some passives deal real damage on a trigger like "on entering Full
   Burst" or "after N normal attacks", NOT on the caster's own burst firing.
