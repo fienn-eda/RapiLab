@@ -1,11 +1,10 @@
 /* Layout and component styles for the ShiftyPad investment-data input UI. */
 
-/* Wide enough to stand the unit grid beside the deck column in draft mode -
-   dragging only works when both are on screen at once. */
+/* 창 폭을 그대로 쓴다. 로스터 그리드와 유닛 팔레트는 열 수로 폭을 받아내고,
+   문장은 --measure가 따로 잡는다. */
 .app {
-  max-width: 1120px;
   margin: 0 auto;
-  padding: var(--sp-6) var(--sp-4) var(--sp-6);
+  padding: var(--sp-6) var(--sp-5) var(--sp-6);
   display: flex;
   flex-direction: column;
   gap: var(--sp-5);
@@ -26,12 +25,14 @@
 
 .app__subtitle {
   color: var(--text-muted);
+  max-width: var(--measure);
 }
 
 .app__note {
   color: var(--text-muted);
   font-size: 13px;
   font-style: italic;
+  max-width: var(--measure);
 }
 
 .app__main {
@@ -592,6 +593,11 @@
   gap: var(--sp-3);
 }
 
+/* 접이식 그룹의 요약문은 문장이라 읽기 폭을 넘지 않는다. */
+.group__details > summary {
+  max-width: var(--measure);
+}
+
 .group__legend {
   font-size: 13px;
   font-weight: 600;
@@ -1049,14 +1055,18 @@
 .raid-results__leftover {
   font-size: 13px;
   color: var(--text-muted);
+  max-width: var(--measure);
 }
 
 /* Mode switch + raid/evaluation results --------------------------------- */
 
+/* 모드 힌트는 인라인 <span>이라 max-width가 듣지 않는다. 줄바꿈을 결정하는
+   것은 이 컨테이너다. */
 .mode-switch {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+  max-width: var(--measure);
 }
 
 .recommend-form__progress {
@@ -1064,12 +1074,14 @@
   border-radius: var(--radius-sm);
   padding: var(--sp-3) var(--sp-4);
   font-size: 14px;
+  max-width: var(--measure);
 }
 
 .raid-results__note,
 .evaluation-results__ordering-note {
   color: var(--text-muted);
   font-size: 13px;
+  max-width: var(--measure);
 }
 
 .raid-results__combined,
@@ -1614,4 +1626,5 @@
 .charge-panel__assumption {
   font-size: 0.9em;
   opacity: 0.8;
+  max-width: var(--measure);
 }
