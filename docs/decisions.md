@@ -5,6 +5,32 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 플랫 발수 장탄 버프는 수신자 쪽에서 퍼센트로 환산한다
+
+- Date: 2026-08-02
+- Context: 토브의 임시개조(+2발×3중첩)·그레이브(+3발)·느와르(+5발)는 [최대 장탄 수]를
+  퍼센트가 아니라 **라운드 수**로, 그것도 **모든 아군**에게 준다. 엔진에는
+  `max_ammo_percent`밖에 없었고, 같은 +6발이 SG 9발에는 **+67%**, SR/RL 6발에는
+  **+100%**, MG 300발에는 +2%라 스쿼드 스코프 퍼센트 하나로는 근사조차 되지 않는다.
+  셋 다 이 사유로 defer 중이었다.
+- Decision: 신규 스탯 `max_ammo_rounds`. 스킬 쪽은 **발수를 그대로 선언**하고, 환산은
+  **수신자 쪽**에서 한다 — `raid_simulator`가 각 유닛의 기본 탄창으로 나눠 기존 퍼센트에
+  합류시킨다(`effects.max_ammo_percent_total`). 합성 순서는 **곱한 뒤 더한다**(Fienn):
+  `round(base × (1+pct) + flat)`.
+- Alternatives considered: (a) `attack_rate.py`에 플랫 콜러블을 따로 스레딩 — 정확하지만
+  탄창 크기를 계산하는 8군데의 시그니처를 전부 바꿔야 하고, 환산식이 대수적으로 동일하므로
+  얻는 게 없다. `round(base × (1 + pct + flat/base))` 와 `round(base × (1+pct) + flat)` 는
+  같은 값이다. (b) 유닛별로 퍼센트를 하드코딩 — 스쿼드 버프라 받는 쪽 무기를 시전자가 알 수
+  없으므로 불가능.
+- Consequences: `attack_rate.py`의 핫패스 **무변경**. 세그먼트(변신)는 원래 재장전을 하지
+  않아 영향 없고, 라이브 max ammo를 읽는 유일한 소비자(라플라스 변신 주기)는 기본 탄창이
+  세그먼트가 비우는 탄창과 같아 환산이 정확하다 — 같은 스탯을 직접 조회하던 스테이지 넉
+  한 곳도 같은 헬퍼로 통일했다. 캘리브레이션 **1.077x 불변**(세 유닛 모두 실기록 5덱에
+  없음)이지만 SG/SR/RL 덱의 추천 결과는 움직인다. 백엔드 1761 → **1772 passed / 3 skipped**.
+- **미확인으로 남는 것:** 합성 순서는 인게임 실측이 아니라 판단이다. `(base + flat) × (1+pct)`
+  라면 오버로드 퍼센트가 플랫에도 곱해져 SG/SR에서 1~2발 더 나온다. 확인되면 고칠 곳은
+  `effects.max_ammo_percent_total` 한 곳뿐이다.
+
 ## 시너지 쌍 점수를 한계기여도로 바꾼다 — 그리고 후보 풀 가드의 값은 이 로스터에서 0이다
 
 - Date: 2026-08-02

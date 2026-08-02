@@ -66,6 +66,7 @@ Scheduling stats (change the burst rotation / shot timing, not per-hit damage):
 |---|---|---|
 | `burst_cooldown_reduction_sec` | **Pulse**, drained at full-burst-end; **scope-aware** (self reduces only the caster's cooldown, squad reduces everyone's) | "Cooldown of Burst Skill ▼ X sec" |
 | `max_ammo_percent` | scales base magazine size (increases and decreases both apply to BASE, summed) | "Max Ammunition Capacity ▲/▼ X%" |
+| `max_ammo_rounds` | adds whole ROUNDS to the magazine, on top of the percent: `round(base × (1+pct) + rounds)`. State the round count as-is - `raid_simulator` converts it against each recipient's own base magazine, so a squad-scope grant correctly means +67% to an SG and +2% to an MG | "Max Ammunition Capacity ▲ N round(s)" (no `%`) |
 | `reload_speed_percent` | shortens reloads | "Reloading Speed ▲ X%" |
 
 Burst nuke: not a stat — exposed via a `<name>_burst_percent(values)` helper and
