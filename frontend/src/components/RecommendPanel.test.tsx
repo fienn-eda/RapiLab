@@ -120,6 +120,33 @@ describe('RecommendPanel', () => {
       .toBeTruthy()
   })
 
+  // 결과를 읽으려면 70여 개 칩의 팔레트를 스크롤해 지나야 해서는 안 된다.
+  it('renders the results above the unit palette', async () => {
+    const user = userEvent.setup()
+    vi.mocked(recommendDecks).mockResolvedValue({
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          skill_damage: 0,
+        },
+      ],
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+
+    const results = (await screen.findByText('#1')).closest('ol')!
+    const palette = screen.getByRole('group', { name: /사용할 유닛/i })
+
+    expect(results.compareDocumentPosition(palette) & Node.DOCUMENT_POSITION_FOLLOWING)
+      .toBeTruthy()
+  })
+
   it('offers Cancel only while a run is in flight, and aborts it', async () => {
     // A run takes one to two minutes. Started by mistake, it used to be
     // unstoppable: no button, and a reload freed only the screen while the
