@@ -10,7 +10,7 @@ GET_READY_FOR_AN_AMAZING_SHOW = {
     "description_value_04": "25",     # duration
 }
 ONE_MORE_SONG = {
-    "description_value_01": "19.98",  # self Max HP % (not modeled)
+    "description_value_01": "19.98",  # self Max HP % of her own
     "description_value_02": "10",     # duration
     "description_value_03": "21",     # Performance duration extension (not modeled)
     "description_value_04": "25.01",  # Encore squad Attack Damage %
@@ -51,14 +51,30 @@ def solo_context():
     ])
 
 
+PRIKA_MAX_HP = 700_000.0
+
+
 def build():
     return build_prika_rules({
         "get_ready_for_an_amazing_show": GET_READY_FOR_AN_AMAZING_SHOW,
         "one_more_song": ONE_MORE_SONG,
+        "caster_max_hp": PRIKA_MAX_HP,
     })
 
 
 ALLY = {"slug": "ally", "element": "Fire"}
+PRIKA = {"slug": "prika", "element": "Water"}
+
+
+def test_one_more_song_grants_self_max_hp_on_full_burst():
+    # 소비자가 덱에 있을 때만 딜이 되지만(Max HP를 ATK로 환산하는 유닛),
+    # 스탯 자체는 부여자 쪽에서 정직하게 등록해 둔다.
+    ctx = make_context()
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", {"prika": build()}, ctx, registry, time=5.0)
+    assert round(registry.total_for("flat_max_hp", PRIKA, now=5.0), 2) == round(PRIKA_MAX_HP * 0.1998, 2)
+    assert registry.total_for("flat_max_hp", ALLY, now=5.0) == 0.0  # self 스코프
+    assert registry.total_for("flat_max_hp", PRIKA, now=15.1) == 0.0  # 10초
 
 
 def test_burst_charge_damage_lasts_25s_solo_and_sets_performance_status():
