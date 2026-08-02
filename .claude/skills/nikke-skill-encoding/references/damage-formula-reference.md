@@ -82,4 +82,4 @@ Increases **normal attack damage** when the Nikke's weapon matches the opponent'
 - **True Damage ignores DEF** — a `true`-typed instance is computed with `enemy_def=0`.
 - **Projectile Explosion** — RL normal attacks are `projectile_explosion` typed; skills explicitly confirmed here (Rapi: Red Hood, Anis: Star's burst stars) are tagged too.
 - **Distributed Damage** sits in the Damage-Taken group in the formula (as coded) and is applied **unconditionally** (no Damage-Taken-debuff prerequisite — Fienn-verified, see Notes). Correctly modeled once a distributed-damage dealer is encoded (the buff is type-gated to `distributed` instances, which none are produced yet).
-- Not modeled yet (deferred): Normal Attack Damage Multiplier, Shield Damage, Damage to Interruption Parts vs boss-hitbox overlap, Effective Range / Full Burst major-modifier buffs, collection-item stat modifiers, DEF floor at 0.
+- Not modeled yet (deferred): Shield Damage, Damage to Interruption Parts vs boss-hitbox overlap, Effective Range / Full Burst major-modifier buffs, DEF floor at 0.
