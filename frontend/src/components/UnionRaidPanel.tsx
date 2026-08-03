@@ -59,7 +59,7 @@ export function UnionRaidPanel({
   const [touched, setTouched] = useState(false)
   // The boss elements each battle's card was actually scored against,
   // captured at submit time - same reasoning as RecommendPanel's
-  // evaluatedBossElement. Reading the live bosses array from the render below
+  // evaluatedBoss. Reading the live bosses array from the render below
   // would relabel a finished result's cards the moment the player edits a
   // boss field afterward, while the damage numbers still reflect the old boss.
   const [evaluatedBossElements, setEvaluatedBossElements] = useState<BossElement[]>([])

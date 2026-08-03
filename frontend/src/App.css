@@ -1059,6 +1059,14 @@
   font-weight: 600;
 }
 
+/* 파훼 불가 표시는 덱을 부정하지 않는다 - 대미지는 그대로 유효하고, 기믹만 못
+   깬다. 그래서 danger가 아니라 경고 색이다. */
+.deck-results__warning {
+  font-size: 12px;
+  color: var(--warn);
+  white-space: nowrap;
+}
+
 /* The answer, in the same language as the palette and the draft slots: five
    faces. A column of slugs made this the least legible screen in the app. */
 .deck-results__units {

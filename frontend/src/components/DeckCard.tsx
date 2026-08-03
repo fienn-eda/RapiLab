@@ -23,6 +23,10 @@ export interface UnitLookups {
    * supported-unit list, which is also what the unit tests render against. */
   portraitFor?: (slug: string) => string | null
   nameFor?: (slug: string) => string
+  /** 이 덱이 보스의 속성저지 기믹을 파훼할 수 없는지. 판정은 화면이 한다 —
+   * supported-units가 슬러그별 속성을 주므로 응답에 필드를 더할 이유가 없다.
+   * 없으면(제약이 꺼졌거나 판정할 보스가 없으면) 배지도 없다. */
+  gimmickUnmetFor?: (deckSlugs: string[]) => boolean
 }
 
 interface DeckCardProps extends UnitLookups {
@@ -44,6 +48,7 @@ export function DeckCard({
   removedSlugs = [],
   portraitFor = () => null,
   nameFor = nameFromSlug,
+  gimmickUnmetFor,
 }: DeckCardProps) {
   return (
     <li className="deck-results__item">
@@ -52,6 +57,11 @@ export function DeckCard({
         <span className="deck-results__total">
           {formatDamage(deck.total_damage)} 총딜
         </span>
+        {gimmickUnmetFor?.(deck.deck) && (
+          <span className="deck-results__warning">
+            <span aria-hidden="true">⚠</span> 속성저지 파훼 불가
+          </span>
+        )}
       </div>
       <ol className="deck-results__units">
         {deck.deck.map((slug, slot) => {
