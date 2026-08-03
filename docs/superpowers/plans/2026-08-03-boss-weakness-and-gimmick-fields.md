@@ -24,7 +24,9 @@ Vitest + Testing Library (frontend).
   PowerShell이면 `cd backend; $env:PYTHONIOENCODING='utf-8'; python -m pytest tests/ -q`.
   `PYTHONIOENCODING`이 없으면 콘솔이 cp949라 한글 이름에서 터진다.
 - **프론트 테스트:** `cd frontend && npm test` (vitest run).
-- **기준선:** 착수 시점 백엔드 1788 passed / 3 skipped, 프론트 467 passed. 떨어지면 회귀다.
+- **기준선:** 착수 시점 백엔드 **1810 passed / 3 skipped**, 프론트 **467 passed**.
+  떨어지면 회귀다. (초판에 적힌 1788은 낡은 숫자였다 — Task 5의 구현자가 stash로 실측해
+  1810을 확인했다. 각 Task는 자기 앞의 Task들이 더한 테스트만큼 올라간 값을 기대할 것.)
 - **캘리브레이션 불변.** 세 항목 전부 기본값이 off/기존 동작이라, 기록 덱 5개의 합계
   **1.077x**가 움직이면 그 자체가 회귀다. Task 13에서 확인한다.
 - **와이어의 `BossProfile.element`는 끝까지 보스 본인 속성이다.** 약점으로 바꾸지 않는다.
