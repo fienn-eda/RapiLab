@@ -283,6 +283,25 @@ def test_boss_element_advantage_raises_a_decks_score():
     assert advantaged["total_damage"] > neutral["total_damage"]
 
 
+def test_find_best_decks_agrees_with_search_best_decks_on_a_weakness_less_roster():
+    """find_best_decks isn't a production path (search_best_decks is), but the
+    design's reason for wiring the gimmick filter into it at all is that the
+    two must not disagree about what is playable. A gimmick-on boss whose
+    weakness element the roster cannot field must not make one return decks
+    and the other []."""
+    from app.deck_search import search_best_decks
+
+    roster = real_five_roster()   # elements: Electric, Iron, Water, Fire - no Wind
+    boss = BossProfile(element="Iron", elemental_interrupt_required=True, fight_duration=40.0)
+    assert not any(u.element == "Wind" for u in roster)  # Iron's weakness is Wind
+
+    exhaustive = find_best_decks(roster, boss, top_n=1)
+    searched = search_best_decks(roster, boss, top_n=1)
+
+    assert exhaustive
+    assert searched
+
+
 def test_shape_combinations_yields_only_the_three_real_shapes():
     from app.deck_search import shape_combinations
     roster = fake_roster([1, 1, 1, 2, 2, 2, 3, 3, 3, 3])

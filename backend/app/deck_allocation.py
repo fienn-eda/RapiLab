@@ -59,16 +59,25 @@ def _seed_choices(seed, alternatives):
     return readings
 
 
-def _gimmick_budget(available, boss, decks_left):
+def _gimmick_budget(available, boss, decks_left, seed=()):
     """The gimmick constraint for ONE deck about to be built, budgeting the
     weakness units across the decks still to build. None when there is nothing to
     enforce (gimmick off, element-less boss, or no weakness unit left at all).
 
     A deck must hold at least one weakness unit and at most
-    `max(1, w - decks_left + 1)` of them. The CAP is what keeps the greedy peel
-    from starving later decks: without it, deck 1 can take two of three weakness
-    units and deck 3 gets none, which drops the satisfied count below the
-    min(M, N) the design promises.
+    `max(1, seed_held, w - decks_left + 1)` of them, where `seed_held` is how
+    many weakness units `seed` (this deck's already-drafted seats, if any)
+    holds by itself. The CAP is what keeps the greedy peel from starving later
+    decks: without it, deck 1 can take two of three weakness units and deck 3
+    gets none, which drops the satisfied count below the min(M, N) the design
+    promises. Flooring at `seed_held` matters only on the seed path - the free
+    peel has no seed, so `seed=()` leaves its cap exactly
+    `max(1, w - decks_left + 1)`. Without the floor, a draft that pins two
+    weakness units into one deck against a thin remaining pool can compute a
+    cap below what the seed already holds, making the constrained completion
+    unsatisfiable and falling through to the caller's unconstrained
+    `complete(None)` retry - which drops the cap for that deck ENTIRELY,
+    defeating the starvation guard exactly where a thin roster needs it most.
 
     On a real roster the cap never binds - 60-80 units carry 12-16 of any one
     element, so it sits at 8 or more and a 5-unit deck cannot reach it. It bites
@@ -90,7 +99,8 @@ def _gimmick_budget(available, boss, decks_left):
     if w == 0:
         return None
     weakness = weakness_of(boss.element)
-    cap = max(1, w - decks_left + 1)
+    seed_held = sum(1 for u in seed if u.element == weakness)
+    cap = max(1, seed_held, w - decks_left + 1)
 
     def ok(units):
         held = sum(1 for u in units if u.element == weakness)
@@ -107,17 +117,18 @@ def _satisfied_count(decks, boss):
     return sum(1 for deck in decks if deck_breaks_gimmick(deck, boss))
 
 
-def _gimmick_floor(decks, boss, target):
+def _gimmick_floor(decks, boss):
     """The number of gimmick-breaking decks a swap may not take us below: never
     fewer than we already hold.
 
-    `target` (= min(M, N), the most this roster could ever satisfy) cannot bind
-    here and needs no explicit clamp. Satisfied decks are disjoint - each holds
-    at least one of the M weakness units, and a unit sits in only one deck - so
-    `_satisfied_count(decks, boss)` can never exceed `target` in the first
-    place; neither M nor N changes under a swap. Kept as a named, tested
-    function (not inlined as `_satisfied_count`) because it states the
-    invariant the swap guard actually relies on, `target` and all.
+    Takes no target/cap parameter: the most this roster could ever satisfy is
+    min(M, N) (M = weakness-element units on the roster, N = decks), but that
+    bound cannot bind here and needs no explicit clamp. Satisfied decks are
+    disjoint - each holds at least one of the M weakness units, and a unit
+    sits in only one deck - so `_satisfied_count(decks, boss)` can never
+    exceed min(M, N) in the first place; neither M nor N changes under a
+    swap. Kept as a named, tested function (not inlined as `_satisfied_count`)
+    because it states the invariant the swap guard actually relies on.
     """
     return _satisfied_count(decks, boss)
 
@@ -186,9 +197,12 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
                 completions_fit_budget(reading, remaining) for reading in readings
             ) else ranker()
             # The seat budget counts the seed's own weakness units as available:
-            # a drafted deck that already holds one needs no second.
+            # a drafted deck that already holds one needs no second. `seed=`
+            # also floors the CAP at what the seed already holds, so a draft
+            # that pins two weakness units into one deck can never compute a
+            # cap below 2 and fall through to the unconstrained retry below.
             gimmick = _gimmick_budget(list(readings[0]) + remaining, boss,
-                                      num_decks - len(decks))
+                                      num_decks - len(decks), seed=readings[0])
 
             def complete(deck_filter):
                 return max(
@@ -280,12 +294,14 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
     locked = {character_of(slug) for slug in locked}
     cancel = cancel or NEVER
     scores = _score_batch(decks, boss, pool)
-    # K = min(M, N): the most decks this roster could ever satisfy. The climb may
-    # move weakness units between decks freely; what it may not do is lower the
-    # number of decks that hold one.
-    gimmick_target = min(
-        weakness_holders([u for deck in decks for u in deck] + list(leftovers), boss),
-        len(decks))
+    # The guard only needs to know WHETHER the gimmick can bind at all, not the
+    # cap min(M, N) (M = weakness-element units, N = decks) itself - that bound
+    # never binds `_gimmick_floor`'s invariant (see its docstring), so nothing
+    # downstream needs the number. The climb may move weakness units between
+    # decks freely; what it may not do is lower the number of decks that hold
+    # one.
+    gimmick_active = weakness_holders(
+        [u for deck in decks for u in deck] + list(leftovers), boss) > 0
     improved = True
     while improved and time.monotonic() < deadline:
         improved = False
@@ -296,9 +312,9 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
             cancel.check()
             for j in range(i + 1, len(decks)):
                 improved |= _try_swaps(decks, scores, i, decks[j], j, boss,
-                                       deadline, locked, pool, batch, gimmick_target)
+                                       deadline, locked, pool, batch, gimmick_active)
             improved |= _try_swaps(decks, scores, i, leftovers, None, boss,
-                                   deadline, locked, pool, batch, gimmick_target)
+                                   deadline, locked, pool, batch, gimmick_active)
 
 
 def _swap_is_fieldable(deck, a, partner, k, partner_is_deck):
@@ -327,7 +343,7 @@ def _swap_is_fieldable(deck, a, partner, k, partner_is_deck):
 
 
 def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch,
-               gimmick_target=0):
+               gimmick_active=False):
     """Unit swaps between deck `i` and `partner` - either another deck (`j` is
     its index, so its score counts toward the improvement too) or the leftover
     bench (`j` is None, and a benched unit contributes nothing).
@@ -371,14 +387,14 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
     # the SAME decks state, so recomputing it inside gimmick_ok would redo the
     # same _satisfied_count walk for every pair asked. Computed once here and
     # refreshed once per acceptance below instead.
-    floor = _gimmick_floor(decks, boss, gimmick_target) if gimmick_target else 0
+    floor = _gimmick_floor(decks, boss) if gimmick_active else 0
 
     def gimmick_ok(a, k):
         """The swap must not lower how many decks can break the gimmick below
         `floor` - `decks`/`partner` are read live, so the trial reflects the
         swap actually under test. An accepted swap that RAISED the count
         raises `floor` with it (see the refresh after acceptance below)."""
-        if gimmick_target == 0:
+        if not gimmick_active:
             return True
         trial = list(decks)
         deck_i = list(decks[i])
@@ -439,8 +455,8 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
             # so the seat-exclusion set follows it before the tail is re-judged.
             seated.discard(character_of(partner[k].slug))
             seated.add(character_of(decks[i][a].slug))
-        if gimmick_target:
-            floor = _gimmick_floor(decks, boss, gimmick_target)
+        if gimmick_active:
+            floor = _gimmick_floor(decks, boss)
         candidates = candidates[:start] + [(a2, k2) for a2, k2 in candidates[start:]
                                            if admissible(a2, k2)]
     return improved

@@ -13,7 +13,7 @@ catalog, see the `nikke-skill-encoding` skill, not here.
   발동을 끊는다) 기능. 로스터가 얇으면 `num_decks`개 전부에 약점 유닛을 하나씩
   채울 수 없는 경우가 생긴다.
 - Decision: 배분기(`deck_allocation.py`)는 로스터가 감당하는 만큼(=
-  `min(M, N)`, M=제약이 걸린 덱 수, N=보유 약점 유닛 수)만 만족시키고, 채우지
+  `min(M, N)`, M=보유 약점 유닛 수, N=덱 수)만 만족시키고, 채우지
   못한 나머지 덱은 그대로 완성한 뒤 UI가 뱃지로 경고한다(design B.2/B.6). 두
   경로가 이걸 서로 다른 방식으로 얻는다. 시드/드래프트 경로는
   `best_completions`를 부르는데 이 함수엔 내부 재시도가 없어서, 배분기가

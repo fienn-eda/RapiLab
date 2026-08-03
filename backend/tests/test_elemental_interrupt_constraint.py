@@ -271,21 +271,28 @@ def test_the_climb_will_not_stack_the_weakness_units_back_together(monkeypatch):
 
 
 def test_the_swap_floor_never_exceeds_what_we_already_hold():
-    """가드의 두 번째 갈래. K에 못 미치는 상태에서는 하한도 K가 아니라 현재값이다 -
-    K를 그대로 쓰면 모든 스왑이 거부되어 클라임이 통째로 죽는다."""
+    """가드의 두 번째 갈래. `_gimmick_floor`는 목표치(min(M, N))가 아니라 지금
+    만족된 덱 수를 그대로 반환해야 한다 - 로스터 전체로는 2덱을 만족시킬 재료가
+    있어도(약점 유닛이 decks+leftovers에 2기, 즉 M=2) 지금 실제로 만족된 건
+    1덱뿐이면 하한도 1이다. 목표치를 하한으로 쓰면 로스터가 얇아 목표치에 못
+    미치는 상태에서 모든 스왑이 거부되어 클라임이 통째로 멈춘다."""
     from app.deck_allocation import _gimmick_floor, _satisfied_count
 
     decks = [[Unit("a", 1, WEAKNESS)], [Unit("b", 1, "Fire")]]
+    leftovers = [Unit("c", 1, WEAKNESS)]   # a second weakness unit still on the bench
 
+    assert weakness_holders([u for deck in decks for u in deck] + leftovers,
+                            GIMMICK_BOSS) == 2   # M=2
     assert _satisfied_count(decks, GIMMICK_BOSS) == 1
-    assert _gimmick_floor(decks, GIMMICK_BOSS, 2) == 1   # K=2지만 지금은 1
-    assert _gimmick_floor(decks, GIMMICK_BOSS, 1) == 1
+    assert _gimmick_floor(decks, GIMMICK_BOSS) == 1   # not M=2, only what's held now
     assert _satisfied_count(decks, BossProfile(element="Fire")) == 0   # 기믹 없음
 
 
-def test_an_allocation_without_the_gimmick_is_byte_for_byte_the_old_one(monkeypatch):
-    """제약이 꺼져 있으면 _gimmick_budget이 None, gimmick_target이 0이라 peel도
-    클라임도 이전 코드와 같은 경로를 탄다. 배분 결과가 달라지면 회귀다."""
+def test_without_the_gimmick_allocation_follows_score_alone(monkeypatch):
+    """제약이 꺼져 있으면(`elemental_interrupt_required=False`) `_gimmick_budget`이
+    None을 반환해 peel도 클라임도 기믹 게이트를 거치지 않고 순수하게 점수만
+    따른다. 이 로스터는 몰아넣기(110점)가 흩뿌리기(20점)보다 높으므로 두
+    약점유닛이 한 덱에 몰려야 한다."""
     from app.deck_allocation import allocate_decks
 
     _stacking_scorer(monkeypatch)
@@ -337,3 +344,34 @@ def test_a_seed_that_fills_every_seat_still_allocates_unconstrained(monkeypatch)
 
     assert len(alloc["decks"]) == 2
     assert sorted(alloc["decks"][0]["deck"]) == sorted(u.slug for u in seed)
+
+
+def test_the_seed_floor_keeps_a_thin_pool_on_the_constrained_path(monkeypatch):
+    """드래프트 경로, 캡의 시드 바닥. 시드가 약점유닛을 2기 이미 쥐었는데 뒤에 지을
+    덱이 많으면(decks_left=3), 바닥 없는 캡 공식 max(1, w-decks_left+1)은 1로
+    잡혀 시드 자신의 보유량(2)보다 낮아진다 - 시드를 포함하는 어떤 완성도 캡을
+    통과 못 해 complete(gimmick)이 통째로 실패하고, complete(None)이 캡 자체를
+    없앤 채 채운다. 그러면 이미 만족된 시드 덱이 유일한 여분 약점유닛까지
+    삼켜(점수가 그걸 부추기면) 뒤 덱을 굶길 수 있다. seed=로 캡을 시드 보유량에
+    바닥을 깔면 제약 경로가 그대로 성공해 여분은 뒤 덱을 위해 남는다."""
+    from app.deck_allocation import allocate_decks
+    from tests.test_deck_allocation import patch_scorer
+
+    roster = _roster(2)   # u0,u1=T1 약점, u2=T1 보스속성, u3/u4=T2, u5-u9=T3
+    by_slug = {u.slug: u for u in roster}
+    # T3 한 자리를 여분 약점유닛으로 바꾼다 - 시드 몫(2기) 밖의 세 번째 약점유닛.
+    roster = [Unit("u5", 3, WEAKNESS) if u.slug == "u5" else u for u in roster]
+    by_slug = {u.slug: u for u in roster}
+    seed = [by_slug["u0"], by_slug["u1"]]   # 둘 다 T1 약점 - (2,1,2) 모양을 요구
+
+    # 여분(u5)을 이미 만족된 시드 덱에 끌어들이는 쪽이 점수가 높다 - 캡이 없으면
+    # 문 미끼를 문다.
+    patch_scorer(monkeypatch, lambda slugs: 100.0 if "u5" in slugs else 10.0)
+
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=3, draft=[seed],
+                           time_budget_sec=0.0)
+
+    # 시드 덱은 자체 보유로 항상 만족한다; 캡이 시드 바닥을 지키면 여분은 뒤
+    # 덱으로 남아 두 번째 덱도 만족시킨다. 캡이 시드 보유량 밑으로 잡혀
+    # complete(None)으로 떨어지면 시드 덱이 여분까지 삼켜 1로 떨어진다.
+    assert _satisfied(alloc, roster) == 2

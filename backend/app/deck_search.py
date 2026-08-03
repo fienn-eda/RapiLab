@@ -416,11 +416,22 @@ def _summarize(ordered_deck, result):
 
 
 def find_best_decks(roster, boss: BossProfile, top_n=5):
+    """Not a production path (search_best_decks is), but the two must not
+    disagree about what is playable - so it gets the same unfiltered retry
+    search_best_decks does: a roster with no weakness-element unit at all
+    cannot break the gimmick in any deck, and refusing a recommendation
+    outright is worse than the best deck that clears everything but the phase
+    gate."""
     deck_filter = _gimmick_filter(boss)
     scored = [
         _summarize(ordered, evaluate_deck(ordered, boss))
         for ordered in feasible_orderings(roster, deck_filter)
     ]
+    if not scored and deck_filter is not None:
+        scored = [
+            _summarize(ordered, evaluate_deck(ordered, boss))
+            for ordered in feasible_orderings(roster, None)
+        ]
     scored.sort(key=lambda entry: entry["total_damage"], reverse=True)
     return scored[:top_n]
 
@@ -880,7 +891,13 @@ def search_best_decks(roster, boss: BossProfile, top_n=5,
     recommendation outright is worse than the best deck that clears
     everything but the phase gate, so that case is retried unfiltered - the
     caller surfaces the shortfall itself (weakness_holders) rather than the
-    search returning nothing.
+    search returning nothing. "Unfiltered" only drops the `deck_filter`
+    predicate, though: `_ensure_weakness_in_pool` (in `_resolve_orderings`'s
+    pruned-cut path) is gated on `boss.elemental_interrupt_required` alone, so
+    a gimmick-on boss still gets this retry's pruned pool topped up with up to
+    3 weakness units (one per tier) even here. Harmless - it only ever widens
+    the pool a filterless search draws from - but this retry's pool is not
+    quite the same size a gimmick-less boss's search would see.
 
     `deck_filter` left at its default derives the boss's gimmick filter (or
     None, if the boss has none). Pass None explicitly to search with NO
