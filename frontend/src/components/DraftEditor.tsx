@@ -84,6 +84,37 @@ export const moveUnit = (draft: Draft, deckIndex: number, slug: string): Draft =
   return placeUnit(removeUnitBySlug(draft, slug), deckIndex, slug, locked)
 }
 
+/**
+ * Trades two seated units between the decks that hold them.
+ *
+ * The plain move refuses a full deck, and correctly - it would have to drop
+ * somebody. A trade does not: it is one unit out for one unit in on both
+ * sides, so neither deck changes size and two full decks can still deal with
+ * each other. Each unit carries its own lock across, the same rule `moveUnit`
+ * follows.
+ *
+ * Trading within one deck is a no-op: seat order inside a deck is membership
+ * only, so it would be a move that changes no answer.
+ */
+export const swapUnits = (draft: Draft, slug: string, otherSlug: string): Draft => {
+  const deckOf = (wanted: string) =>
+    draft.decks.findIndex((seats) => seats.some((seat) => seat.slug === wanted))
+  const from = deckOf(slug)
+  const to = deckOf(otherSlug)
+  if (from === -1 || to === -1 || from === to) return draft
+  const seatOf = (deckIndex: number, wanted: string) =>
+    draft.decks[deckIndex].find((seat) => seat.slug === wanted)!
+  const moving = seatOf(from, slug)
+  const displaced = seatOf(to, otherSlug)
+  return {
+    decks: draft.decks.map((seats, index) => {
+      if (index === from) return seats.map((seat) => (seat.slug === slug ? displaced : seat))
+      if (index === to) return seats.map((seat) => (seat.slug === otherSlug ? moving : seat))
+      return seats
+    }),
+  }
+}
+
 export const toggleLock = (draft: Draft, deckIndex: number, seatIndex: number): Draft =>
   mapDeck(draft, deckIndex, (seats) =>
     seats.map((seat, i) => (i === seatIndex ? { ...seat, locked: !seat.locked } : seat)),
@@ -131,6 +162,9 @@ export function DraftEditor({
   // Which deck the pointer is currently over during a drag, so the target
   // reads as a target before the player commits to the drop.
   const [dropTarget, setDropTarget] = useState<number | null>(null)
+  // The seat under the pointer, which is a different promise: dropping on a
+  // deck seats a unit, dropping on a seat trades with its occupant.
+  const [swapTarget, setSwapTarget] = useState<string | null>(null)
 
   const handleDrop = (event: React.DragEvent, deckIndex: number) => {
     const slug = event.dataTransfer.getData(DRAG_SLUG_TYPE)
@@ -140,11 +174,34 @@ export function DraftEditor({
     onChange(moveUnit(value, deckIndex, slug))
   }
 
+  const handleSeatDrop = (event: React.DragEvent, deckIndex: number, occupant: string) => {
+    const slug = event.dataTransfer.getData(DRAG_SLUG_TYPE)
+    setSwapTarget(null)
+    if (!slug) return
+    event.preventDefault()
+    // The seat sits inside the deck, so without this the deck would handle the
+    // same drop again as a plain move.
+    event.stopPropagation()
+    setDropTarget(null)
+    const seated = value.decks.some((seats) => seats.some((seat) => seat.slug === slug))
+    onChange(seated ? swapUnits(value, slug, occupant) : moveUnit(value, deckIndex, slug))
+  }
+
+  // Membership, not seating: the search sorts every deck it builds into tier
+  // order and permutes within a tier, so ordering the row here changes nothing
+  // it reads. The stored index rides along because the slot controls act on a
+  // position in the STORED deck, which this no longer matches.
+  const inTierOrder = (seats: DraftSeat[]) =>
+    seats
+      .map((seat, seatIndex) => ({ seat, seatIndex }))
+      .sort((a, b) => (burstTierFor(a.seat.slug) ?? 4) - (burstTierFor(b.seat.slug) ?? 4))
+
   return (
     <div className="draft-editor">
       <p className="draft-editor__hint">
-        유닛을 덱 위로 드래그하면 배치돼요. 다른 덱으로 옮기려면 그쪽으로
-        드래그하세요. 슬롯은 소속만 나타내며, 버스트 순서는 엔진이 정해요.
+        유닛을 덱 위로 드래그하면 배치돼요. 다른 덱의 빈자리로 드래그하면 옮겨지고,
+        다른 덱의 유닛 위로 드래그하면 둘이 자리를 바꿔요. 슬롯은 소속만 나타내며,
+        버스트 순서는 엔진이 정해요.
       </p>
       <div className="draft-editor__decks">
         {Array.from({ length: numDecks }, (_, deckIndex) => {
@@ -182,13 +239,34 @@ export function DraftEditor({
                 </span>
               </h4>
               <ul className="draft-editor__slots">
-                {seats.map((seat, seatIndex) => {
+                {inTierOrder(seats).map(({ seat, seatIndex }) => {
                   const portrait = portraitFor(seat.slug)
                   const name = nameFor(seat.slug)
                   const tier = burstTierFor(seat.slug)
                   const where = `덱 ${deckIndex + 1}`
                   return (
-                    <li key={seat.slug} className="draft-editor__slot">
+                    <li
+                      key={seat.slug}
+                      className={
+                        swapTarget === seat.slug
+                          ? 'draft-editor__slot draft-editor__slot--swap-target'
+                          : 'draft-editor__slot'
+                      }
+                      // A seat accepts a drop even when its deck is full: a
+                      // trade is one out for one in, so the deck's capacity
+                      // never comes into it.
+                      onDragOver={(event) => {
+                        if (!event.dataTransfer.types.includes(DRAG_SLUG_TYPE)) return
+                        event.preventDefault()
+                        event.stopPropagation()
+                        event.dataTransfer.dropEffect = 'move'
+                        setSwapTarget(seat.slug)
+                      }}
+                      onDragLeave={() =>
+                        setSwapTarget((current) => (current === seat.slug ? null : current))
+                      }
+                      onDrop={(event) => handleSeatDrop(event, deckIndex, seat.slug)}
+                    >
                       <div
                         className="draft-editor__slot-grip"
                         draggable

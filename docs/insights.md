@@ -4,6 +4,22 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 드래프트의 덱 안 좌석 순서는 엔진에 아무 의미가 없다 — 화면은 마음대로 정렬해도 된다
+
+- 확립: 2026-08-04. 근거가 세 곳에 흩어져 있어 매번 다시 파게 되므로 적어 둔다.
+  - `DraftEditor`가 그렇게 설계돼 있다 — "Slots are MEMBERSHIP ONLY".
+  - `deck_search._shape_completions`는 덱을 만들 때마다
+    `deck.sort(key=burst_tier)`로 **정규 티어 순서**를 강제한다.
+  - 점수는 `deck_allocation.best_ordering_summary` → `_intra_tier_orderings`가
+    **티어 내부 순열을 전수**로 돌려 최선을 고른다.
+- 따라서 드래프트가 보내는 순서는 결과를 바꾸지 않는다. 화면을 티어순으로
+  정렬하면 오히려 엔진의 정규 순서와 일치한다.
+- **주의**: 좌석 컨트롤(제거·고정)은 *저장된 배열의 인덱스*를 받는다. 화면에서만
+  정렬하면 인덱스가 어긋나 이웃이 지워진다 — 정렬한 뷰에 원본 인덱스를 실어
+  나르거나 슬러그 기준으로 바꿀 것.
+- 이것은 **덱 안**의 이야기다. 좌석 순서가 의미를 갖는 곳이 따로 있다(실기록
+  캘리브레이션의 `order`는 스케줄러가 티어 안 우선순위로 읽는다) — 그쪽과 혼동하지 말 것.
+
 ## 평평한 표는 "계산이 틀렸다"가 아니라 "다른 축이 묶고 있다"일 수 있다 — 화면이 어느 축인지 말해야 한다
 
 - 확립: 2026-08-04. 차지 탭이 0/5.56/11.11/16.67/22.22%에서 전부 18타를 냈다.

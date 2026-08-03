@@ -1529,6 +1529,13 @@
   border: 1px solid var(--border);
 }
 
+/* Dropping here trades with this unit rather than seating alongside it, so
+   the seat itself lights up instead of the deck around it. */
+.draft-editor__slot--swap-target {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 1px var(--accent) inset;
+}
+
 /* An open slot reads as an invitation, not as a unit that failed to load. */
 .draft-editor__slot--open {
   border-style: dashed;

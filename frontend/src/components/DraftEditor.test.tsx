@@ -8,6 +8,7 @@ import {
   placeUnit,
   removeUnit,
   removeUnitBySlug,
+  swapUnits,
   toggleLock,
   toRequestDraft,
 } from './DraftEditor'
@@ -144,6 +145,48 @@ describe('toRequestDraft', () => {
   })
 })
 
+describe('swapUnits', () => {
+  const seat = (slug: string, locked = false) => ({ slug, locked })
+
+  it('trades two units between the decks that hold them', () => {
+    const draft: Draft = { decks: [[seat('crown')], [seat('blanc')]] }
+    expect(swapUnits(draft, 'crown', 'blanc')).toEqual({
+      decks: [[seat('blanc')], [seat('crown')]],
+    })
+  })
+
+  // A lock says "keep this one in the deck I put it in", so it belongs to the
+  // unit and travels with it - the same rule moveUnit follows.
+  it('sends each unit across with its own lock', () => {
+    const draft: Draft = { decks: [[seat('crown', true)], [seat('blanc')]] }
+    expect(swapUnits(draft, 'crown', 'blanc')).toEqual({
+      decks: [[seat('blanc')], [seat('crown', true)]],
+    })
+  })
+
+  it('leaves the neighbours of both seats alone', () => {
+    const draft: Draft = {
+      decks: [[seat('a'), seat('crown'), seat('b')], [seat('c'), seat('blanc')]],
+    }
+    expect(swapUnits(draft, 'crown', 'blanc')).toEqual({
+      decks: [[seat('a'), seat('blanc'), seat('b')], [seat('c'), seat('crown')]],
+    })
+  })
+
+  // Seat order inside a deck means nothing to the engine, so trading two of
+  // one deck's own seats would be a move that changes no answer.
+  it('does nothing inside a single deck', () => {
+    const draft: Draft = { decks: [[seat('crown'), seat('blanc')]] }
+    expect(swapUnits(draft, 'crown', 'blanc')).toEqual(draft)
+  })
+
+  it('does nothing when either unit is not drafted', () => {
+    const draft: Draft = { decks: [[seat('crown')], []] }
+    expect(swapUnits(draft, 'crown', 'blanc')).toEqual(draft)
+    expect(swapUnits(draft, 'blanc', 'crown')).toEqual(draft)
+  })
+})
+
 describe('DraftEditor', () => {
   const TIERS: Record<string, 1 | 2 | 3> = { crown: 1, liter: 2, blanc: 3 }
 
@@ -235,6 +278,66 @@ describe('DraftEditor', () => {
     expect(onChange).toHaveBeenCalledWith({ decks: [[]] })
   })
 
+  describe('burst-tier order', () => {
+    const numerals = (container: HTMLElement) =>
+      [...container.querySelectorAll('.draft-editor__slot-tier')].map((el) => el.textContent)
+
+    // Slots carry membership, not seating: the search sorts every deck it
+    // builds into tier order and permutes within a tier, so this reorders
+    // nothing the engine reads. It makes "does this deck have a B2" a glance
+    // instead of a hunt.
+    it('draws a deck in burst-tier order however it was filled', () => {
+      const { container } = editor(1, {
+        decks: [[
+          { slug: 'blanc', locked: false },
+          { slug: 'crown', locked: false },
+          { slug: 'liter', locked: false },
+        ]],
+      })
+      expect(numerals(container)).toEqual(['I', 'II', 'III'])
+    })
+
+    it('puts a unit the engine does not know last', () => {
+      const { container } = editor(1, {
+        decks: [[{ slug: 'stranger', locked: false }, { slug: 'crown', locked: false }]],
+      })
+      const shown = [...container.querySelectorAll('.draft-editor__slot-portrait--missing')]
+      expect(shown.map((el) => el.textContent)).toEqual([
+        nameFromSlug('crown'), nameFromSlug('stranger'),
+      ])
+    })
+
+    // The slot controls act on a position in the STORED deck, which sorting
+    // no longer matches. Getting this wrong deletes the neighbour.
+    it('removes the unit whose control was pressed, not its old neighbour', async () => {
+      const user = userEvent.setup()
+      const onChange = vi.fn()
+      editor(1, {
+        decks: [[{ slug: 'blanc', locked: false }, { slug: 'crown', locked: false }]],
+      }, onChange)
+
+      await user.click(
+        screen.getByRole('button', { name: `덱 1에서 ${nameFromSlug('crown')} 제거` }))
+
+      expect(onChange).toHaveBeenCalledWith({ decks: [[{ slug: 'blanc', locked: false }]] })
+    })
+
+    it('locks the unit whose control was pressed, not its old neighbour', async () => {
+      const user = userEvent.setup()
+      const onChange = vi.fn()
+      editor(1, {
+        decks: [[{ slug: 'blanc', locked: false }, { slug: 'crown', locked: false }]],
+      }, onChange)
+
+      await user.click(
+        screen.getByRole('button', { name: `덱 1에서 ${nameFromSlug('crown')} 고정` }))
+
+      expect(onChange).toHaveBeenCalledWith({
+        decks: [[{ slug: 'blanc', locked: false }, { slug: 'crown', locked: true }]],
+      })
+    })
+  })
+
   describe('drag and drop', () => {
     // jsdom has no drag implementation, so drive the handlers with a stub
     // dataTransfer carrying only what the component reads.
@@ -290,6 +393,79 @@ describe('DraftEditor', () => {
       fireEvent.drop(deckAt(0), { dataTransfer: dataTransfer(null) })
 
       expect(onChange).not.toHaveBeenCalled()
+    })
+
+    const slotOf = (deckIndex: number, slug: string) =>
+      screen.getByRole('button', {
+        name: `덱 ${deckIndex + 1}에서 ${nameFromSlug(slug)} 제거`,
+      }).closest('.draft-editor__slot')!
+
+    // Two full decks had no way to trade at all: the deck is the drop target
+    // and a full one refuses, so a swap meant removing a unit first.
+    it('trades places when a seated unit is dropped on a seat in another deck', () => {
+      const onChange = vi.fn()
+      const deck = (prefix: string) =>
+        Array.from({ length: MAX_DRAFT_SEATS_PER_DECK }, (_, i) => ({
+          slug: `${prefix}${i}`,
+          locked: false,
+        }))
+      editor(2, { decks: [deck('a'), deck('b')] }, onChange)
+
+      fireEvent.drop(slotOf(1, 'b2'), { dataTransfer: dataTransfer('a0') })
+
+      expect(onChange).toHaveBeenCalledTimes(1)
+      const next: Draft = onChange.mock.calls[0][0]
+      expect(next.decks[0].map((s) => s.slug)).toContain('b2')
+      expect(next.decks[0].map((s) => s.slug)).not.toContain('a0')
+      expect(next.decks[1].map((s) => s.slug)).toContain('a0')
+      expect(next.decks.every((seats) => seats.length === MAX_DRAFT_SEATS_PER_DECK)).toBe(true)
+    })
+
+    // The slot sits inside the deck, so a slot drop that let the event through
+    // would be handled twice - once as a swap and once as a plain move.
+    it('does not let a seat drop reach the deck behind it', () => {
+      const onChange = vi.fn()
+      editor(2, {
+        decks: [[{ slug: 'crown', locked: false }], [{ slug: 'blanc', locked: false }]],
+      }, onChange)
+
+      fireEvent.drop(slotOf(1, 'blanc'), { dataTransfer: dataTransfer('crown') })
+
+      expect(onChange).toHaveBeenCalledTimes(1)
+      expect(onChange).toHaveBeenCalledWith({
+        decks: [[{ slug: 'blanc', locked: false }], [{ slug: 'crown', locked: false }]],
+      })
+    })
+
+    // A palette unit is not seated anywhere, so there is nothing to trade with
+    // - it is the plain move onto that deck, which its capacity still governs.
+    it('seats a palette unit dropped on a seat when that deck has room', () => {
+      const onChange = vi.fn()
+      editor(2, { decks: [[{ slug: 'blanc', locked: false }], []] }, onChange)
+
+      fireEvent.drop(slotOf(0, 'blanc'), { dataTransfer: dataTransfer('crown') })
+
+      expect(onChange).toHaveBeenCalledWith({
+        decks: [[{ slug: 'blanc', locked: false }, { slug: 'crown', locked: false }], []],
+      })
+    })
+
+    it('accepts the dragover on a full deck when the pointer is over a seat', () => {
+      const full = {
+        decks: [
+          Array.from({ length: MAX_DRAFT_SEATS_PER_DECK }, (_, i) => ({
+            slug: `unit-${i}`,
+            locked: false,
+          })),
+          [{ slug: 'crown', locked: false }],
+        ],
+      }
+      editor(2, full)
+
+      // Handled - preventDefault called - is what marks a real drop target.
+      const handled = fireEvent.dragOver(slotOf(0, 'unit-1'),
+                                         { dataTransfer: dataTransfer('crown') })
+      expect(handled).toBe(false)
     })
 
     it('refuses a drop on a full deck by declining to handle the dragover', () => {
