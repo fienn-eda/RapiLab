@@ -7,7 +7,7 @@
 // decks the player fully built themselves — no search, so no caching either;
 // see useEvaluateDecks). Only one mode's request is ever in flight.
 
-import { useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type FormEvent } from 'react'
 import { useRecommend } from '../hooks/useRecommend'
 import { useRecommendRaid } from '../hooks/useRecommendRaid'
 import { useEvaluateDecks } from '../hooks/useEvaluateDecks'
@@ -110,13 +110,22 @@ export function RecommendPanel({
   const [touched, setTouched] = useState(false)
   const [draftValue, setDraftValue] = useState<Draft>(() => makeEmptyDraft(DEFAULT_NUM_DECKS))
   const [submittedDraft, setSubmittedDraft] = useState<Draft>()
-  // The boss a displayed result was actually computed against, captured at
-  // submit time (or restore time) - same idea as submittedDraft above.
-  // bossProfile is live form state; reading it straight from the result
-  // render would relabel a finished result's cards - and its gimmick-unmet
-  // badges - the moment the player edits the boss field afterward, while the
-  // damage numbers still reflect the old boss.
-  const [evaluatedBoss, setEvaluatedBoss] = useState<BossProfile | null>(null)
+  // The boss each SURVIVING result was actually computed against, captured
+  // at submit time (or restore time) - same idea as submittedDraft above.
+  // bossProfile is live form state; reading it straight from a result render
+  // would relabel that result's cards - and its gimmick-unmet badges - the
+  // moment the player edits the boss field afterward, while the damage
+  // numbers still reflect the old boss.
+  //
+  // One shared snapshot is not enough: single's result (single.status) and
+  // the raid/draft result (displayResult) both survive a MODE switch - only
+  // evaluate's is cleared on one (switchMode below calls evaluation.reset()).
+  // So switching to another mode and submitting there must not touch the
+  // boss a still-displayed single or raid/draft result is judged against -
+  // each gets its own slot, updated only when ITS OWN result is (re)computed.
+  const [singleBoss, setSingleBoss] = useState<BossProfile | null>(null)
+  const [displayBoss, setDisplayBoss] = useState<BossProfile | null>(null)
+  const [evaluateBoss, setEvaluateBoss] = useState<BossProfile | null>(null)
   // 'raid' and 'draft' share one useRecommendRaid() instance (same endpoint);
   // without tracking which mode actually produced the current result, the
   // OTHER mode's stale success/error would render just by switching the
@@ -161,11 +170,13 @@ export function RecommendPanel({
       // The restored result was computed against restoreInputs.boss, not
       // whatever the (now-reset) form happens to hold - same submit-time
       // snapshot rule as a fresh handleSubmit, just replayed from storage.
-      setEvaluatedBoss(restoreInputs.boss)
+      // Only displayBoss: a restored raid/draft result never touches
+      // single's or evaluate's own result slots.
+      setDisplayBoss(restoreInputs.boss)
     } else {
       setDisplayResult(null)
       setDisplayMode(null)
-      setEvaluatedBoss(null)
+      setDisplayBoss(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeKey])
@@ -189,6 +200,10 @@ export function RecommendPanel({
     })
     setDisplayResult(result)
     setDisplayMode(pending.inputs.mode)
+    // pending.inputs.boss is the boss THIS submit was made with, captured
+    // back in handleSubmit before the request went out - not whatever the
+    // form (or another mode's later submit) holds by the time this resolves.
+    setDisplayBoss(pending.inputs.boss)
     onResult({ hash: pending.hash, result, inputs: pending.inputs })
     pendingSaveRef.current = null
   }, [
@@ -286,20 +301,52 @@ export function RecommendPanel({
     [ownedSlugs],
   )
 
-  // Whether a result deck has no unit of the boss's weakness element, and so
-  // can't break its elemental-interrupt gimmick - undefined (no badge) when
-  // the constraint is off or there's no evaluated boss yet. Reads through
-  // ownedSlugResolver because a deck names the ENGINE slug the search chose
-  // for a multi-mode character (`bready-lingering`), which isn't a key in
-  // supported-units' per-slug element map - only the owned slug is.
-  const gimmickUnmetFor = useMemo(() => {
-    const boss = evaluatedBoss
-    if (!boss?.elemental_interrupt_required || boss.element === null) return undefined
-    const weakness = weaknessFor(boss.element)
-    const elementOf = new Map(supportedUnits.units.map((u) => [u.slug, u.element]))
-    return (deckSlugs: string[]) =>
-      !deckSlugs.some((slug) => elementOf.get(ownedSlugResolver(slug)) === weakness)
-  }, [evaluatedBoss, supportedUnits.units, ownedSlugResolver])
+  const elementOf = useMemo(
+    () => new Map(supportedUnits.units.map((u) => [u.slug, u.element])),
+    [supportedUnits.units],
+  )
+
+  // Builds the "can this deck break the gimmick" predicate for ONE boss
+  // snapshot - undefined (no badge drawn) when the constraint is off, there's
+  // no boss yet, or supported-units hasn't loaded. That last case matters:
+  // with elementOf empty, `.get()` always misses and `.some()` is always
+  // false, which would flip EVERY deck to "unmet" - asserting a fact the
+  // panel has no data for, rather than just not asserting one.
+  //
+  // Reads through ownedSlugResolver purely for consistency with every other
+  // slug lookup in this file (nameFor below), not because it fills a gap:
+  // supported-units already lists a MODE_VARIANTS candidate like
+  // `bready-lingering` under its own key, carrying the same element as the
+  // owned `bready` (backend/app/supported_units.py merges a candidate's own
+  // fields into the base entry, and
+  // test_a_merged_entry_describes_candidates_that_actually_agree pins that
+  // they agree) - so a raw deck slug would already resolve correctly here.
+  const gimmickUnmetForBoss = useCallback(
+    (boss: BossProfile | null) => {
+      if (!boss?.elemental_interrupt_required || boss.element === null) return undefined
+      if (elementOf.size === 0) return undefined
+      const weakness = weaknessFor(boss.element)
+      return (deckSlugs: string[]) =>
+        !deckSlugs.some((slug) => elementOf.get(ownedSlugResolver(slug)) === weakness)
+    },
+    [elementOf, ownedSlugResolver],
+  )
+
+  // One predicate per result slot (see singleBoss/displayBoss/evaluateBoss
+  // above) - sharing one would badge whichever OTHER result is still on
+  // screen using the boss most recently submitted in a different mode.
+  const singleGimmickUnmetFor = useMemo(
+    () => gimmickUnmetForBoss(singleBoss),
+    [singleBoss, gimmickUnmetForBoss],
+  )
+  const raidGimmickUnmetFor = useMemo(
+    () => gimmickUnmetForBoss(displayBoss),
+    [displayBoss, gimmickUnmetForBoss],
+  )
+  const evaluateGimmickUnmetFor = useMemo(
+    () => gimmickUnmetForBoss(evaluateBoss),
+    [evaluateBoss, gimmickUnmetForBoss],
+  )
 
   // A result names ENGINE slugs, so the Favorite Item flag - which rides on the
   // roster, keyed by the slug the player owns - is looked up through
@@ -331,12 +378,11 @@ export function RecommendPanel({
     // button can be enabled by a full draft and still silently do nothing
     // once the roster tab shrinks below MIN_DECK_ROSTER_SIZE.
     if (!bossProfile || (mode !== 'evaluate' && rosterTooSmall)) return
-    // Every mode's result renders labeled against the boss it was actually
-    // computed with, not the live form (see evaluatedBoss above) - set once
-    // here so single/raid/draft/evaluate all get it, rather than repeating
-    // this in each branch below.
-    setEvaluatedBoss(bossProfile)
     if (mode === 'single') {
+      // singleBoss is single's own result-slot snapshot (see the state
+      // declarations above) - set alongside the submit so single.decks and
+      // the boss it was judged against always change together.
+      setSingleBoss(bossProfile)
       const request: RecommendRequest = { roster: effectiveRoster, boss: bossProfile }
       void single.submit(request)
       return
@@ -345,6 +391,7 @@ export function RecommendPanel({
     if (mode === 'evaluate') {
       // No cache, no raidResultMode/displayResult - evaluation is seconds-fast
       // and renders straight from useEvaluateDecks' own state (see file header).
+      setEvaluateBoss(bossProfile)
       void evaluation.submit({
         roster: effectiveRoster,
         decks: draftValue.decks.slice(0, numDecks).map((seats) => ({
@@ -365,6 +412,7 @@ export function RecommendPanel({
     // through loading and, on failure, lets the error banner show.
     setDisplayResult(null)
     setDisplayMode(null)
+    setDisplayBoss(null)
 
     // Only raid/draft cache — the engine is deterministic, so identical
     // roster/boss/draft/numDecks/engineVersion always reproduces the same
@@ -382,6 +430,7 @@ export function RecommendPanel({
     if (cached) {
       setDisplayResult(cached)
       setDisplayMode(mode)
+      setDisplayBoss(bossProfile)
       return
     }
 
@@ -589,7 +638,7 @@ export function RecommendPanel({
             excludedSlugs={single.excludedSlugs}
             portraitFor={portraitFor}
             nameFor={nameFor}
-            gimmickUnmetFor={gimmickUnmetFor}
+            gimmickUnmetFor={singleGimmickUnmetFor}
           />
         )}
         {mode === 'raid' && displayResult && displayMode === 'raid' && (
@@ -600,7 +649,7 @@ export function RecommendPanel({
             leftoverSlugs={displayResult.leftoverSlugs}
             portraitFor={portraitFor}
             nameFor={nameFor}
-            gimmickUnmetFor={gimmickUnmetFor}
+            gimmickUnmetFor={raidGimmickUnmetFor}
           />
         )}
         {mode === 'draft' && displayResult && displayMode === 'draft' && (
@@ -615,11 +664,11 @@ export function RecommendPanel({
             ownedSlugFor={ownedSlugResolver}
             portraitFor={portraitFor}
             nameFor={nameFor}
-            gimmickUnmetFor={gimmickUnmetFor}
+            gimmickUnmetFor={raidGimmickUnmetFor}
           />
         )}
         {/* Reads straight off useEvaluateDecks, not displayResult/displayMode -
-            see the file header. bossElements comes from evaluatedBoss
+            see the file header. bossElements comes from evaluateBoss
             (submit-time snapshot), not the live bossProfile, so editing the
             boss field afterward can't relabel a result it wasn't scored
             against. */}
@@ -628,10 +677,10 @@ export function RecommendPanel({
             decks={evaluation.decks}
             combinedTotalDamage={evaluation.combinedTotalDamage}
             excludedSlugs={evaluation.excludedSlugs}
-            bossElements={evaluation.decks.map(() => evaluatedBoss?.element ?? null)}
+            bossElements={evaluation.decks.map(() => evaluateBoss?.element ?? null)}
             portraitFor={portraitFor}
             nameFor={nameFor}
-            gimmickUnmetFor={gimmickUnmetFor}
+            gimmickUnmetFor={evaluateGimmickUnmetFor}
           />
         )}
 

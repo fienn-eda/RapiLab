@@ -840,6 +840,64 @@ describe('RecommendPanel mode switch', () => {
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
   })
+
+  it('싱글 결과의 파훼 불가 배지는 다른 모드에서 나중에 제출해도 흔들리지 않는다', async () => {
+    // Regression: the badge predicate used to close over ONE shared "last
+    // submitted boss" for every mode. Single's result (single.status) and
+    // raid/draft's (displayResult) both survive a mode switch, so switching
+    // to another mode and submitting THERE with the constraint off silently
+    // stripped the badge off a single-mode result still on screen, even
+    // though its own decks/damage numbers never changed.
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(
+      ['a', 'b', 'c', 'd', 'e'].map((slug, i) => ({
+        slug,
+        name: slug.toUpperCase(),
+        burstTier: ((i % 3) + 1) as 1 | 2 | 3,
+        element: 'Iron' as const, // no Water unit anywhere in the roster
+      })),
+    )
+    vi.mocked(recommendDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      ],
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+    vi.mocked(recommendRaidDecks).mockResolvedValue({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 200, burst_damage: 120, normal_attack_damage: 80, skill_damage: 0, pinned_slugs: [] },
+      ],
+      combined_total_damage: 200,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await screen.findByRole('button', { name: /a 사용/i }) // supported-units loaded
+
+    // 단일 덱: 약점 수냉(보스는 작열), 속성저지 필수를 켜고 제출한다 - 로스터
+    // 전원이 Iron이라 파훼할 수 없는 덱이 나온다.
+    await user.click(screen.getByLabelText('수냉'))
+    await user.click(screen.getByLabelText('속성저지 필수'))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    expect(await screen.findByText('속성저지 파훼 불가')).toBeInTheDocument()
+
+    // 전부 최적화로 바꾸고, 이번엔 속성저지 필수를 끈 채로 거기서 제출한다.
+    await user.click(screen.getByRole('radio', { name: /전부 최적화/ }))
+    await user.click(screen.getByLabelText('속성저지 필수'))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    expect(await screen.findByText(/이 1개 덱을 모두 함께 편성하세요/)).toBeInTheDocument()
+
+    // 단일 덱으로 돌아온다 - 재제출하지 않았으므로 옛 결과가 그대로 남아
+    // 있고, 그 배지는 방금 다른 모드에서 제출한(속성저지 꺼진) 보스가 아니라
+    // 그 결과가 실제로 제출됐던 보스 그대로여야 한다.
+    await user.click(screen.getByRole('radio', { name: /단일 덱/ }))
+    expect(screen.getByText('속성저지 파훼 불가')).toBeInTheDocument()
+  })
 })
 
 describe('RecommendPanel persistence', () => {
