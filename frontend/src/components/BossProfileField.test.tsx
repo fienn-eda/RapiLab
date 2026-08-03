@@ -89,3 +89,38 @@ describe('BossProfileField 약점 속성 선택', () => {
     expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ element: null }))
   })
 })
+
+describe('BossProfileField 코어 2관통', () => {
+  it('2관통을 켜면 코어 피격 가능도 함께 켜진다', async () => {
+    // 코어를 못 때리면 뚫고 지나갈 것이 없다. 모순 상태를 만들 수 없게 한다.
+    const user = userEvent.setup()
+    const onChange = renderField()
+
+    await user.click(screen.getByLabelText('상시 코어 2관통'))
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ core_hittable: true, pierce_hits_body_behind_core: true }),
+    )
+  })
+
+  it('코어 피격 가능을 끄면 2관통도 꺼진다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{
+          ...makeDefaultBossProfileDraft(),
+          core_hittable: true,
+          pierce_hits_body_behind_core: true,
+        }}
+        onChange={onChange}
+      />,
+    )
+
+    await user.click(screen.getByLabelText('코어 피격 가능'))
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ core_hittable: false, pierce_hits_body_behind_core: false }),
+    )
+  })
+})

@@ -23,6 +23,9 @@ export const BOSS_RANGE_BANDS: Exclude<BossRangeBand, null>[] = ['near', 'mid', 
 export interface BossProfile {
   element: BossElement // null = non-elemental
   core_hittable: boolean // default false
+  pierce_hits_body_behind_core: boolean // default false — 코어와 본체가 별개 객체인
+  // 보스. 관통 특화 니케의 탄이 코어를 뚫고 뒤의 본체까지 때려 통상공격 1발이 두 번
+  // 들어간다. core_hittable에 의존한다 — 뚫고 지나갈 코어가 없으면 성립하지 않는다.
   enemy_def: number // default 0
   fight_duration: number // seconds, default 180
   part_destructible: boolean // default false — boss has a part-destruction gimmick;

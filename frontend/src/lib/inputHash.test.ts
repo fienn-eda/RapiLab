@@ -17,6 +17,7 @@ const nikke = (slug: string): UserNikkeState => ({
 const boss: BossProfile = {
   element: null,
   core_hittable: false,
+  pierce_hits_body_behind_core: false,
   enemy_def: 0,
   fight_duration: 180,
   part_destructible: false,

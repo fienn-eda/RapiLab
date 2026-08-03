@@ -221,6 +221,7 @@ describe('RecommendPanel', () => {
       boss: {
         element: null,
         core_hittable: false,
+        pierce_hits_body_behind_core: false,
         enemy_def: 0,
         fight_duration: 180,
         part_destructible: false,
@@ -266,6 +267,7 @@ describe('RecommendPanel', () => {
       boss: {
         element: 'Fire',
         core_hittable: true,
+        pierce_hits_body_behind_core: false,
         enemy_def: 20000,
         fight_duration: 180,
         part_destructible: false,
@@ -288,6 +290,7 @@ describe('RecommendPanel', () => {
       boss: {
         element: null,
         core_hittable: false,
+        pierce_hits_body_behind_core: false,
         enemy_def: 0,
         fight_duration: 180,
         part_destructible: true,
@@ -314,6 +317,7 @@ describe('RecommendPanel', () => {
       boss: {
         element: null,
         core_hittable: false,
+        pierce_hits_body_behind_core: false,
         enemy_def: 0,
         fight_duration: 180,
         part_destructible: false,
@@ -356,6 +360,7 @@ describe('RecommendPanel raid mode', () => {
       boss: {
         element: null,
         core_hittable: false,
+        pierce_hits_body_behind_core: false,
         enemy_def: 0,
         fight_duration: 180,
         part_destructible: false,
@@ -477,6 +482,7 @@ describe('RecommendPanel draft mode', () => {
       boss: {
         element: null,
         core_hittable: false,
+        pierce_hits_body_behind_core: false,
         enemy_def: 0,
         fight_duration: 180,
         part_destructible: false,
@@ -693,6 +699,7 @@ describe('RecommendPanel evaluate mode', () => {
             boss: {
               element: null,
               core_hittable: false,
+              pierce_hits_body_behind_core: false,
               enemy_def: 0,
               fight_duration: 180,
               part_destructible: false,
@@ -832,6 +839,7 @@ describe('RecommendPanel persistence', () => {
   const defaultBoss = {
     element: null,
     core_hittable: false,
+    pierce_hits_body_behind_core: false,
     enemy_def: 0,
     fight_duration: 180,
     part_destructible: false,

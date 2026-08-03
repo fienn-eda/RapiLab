@@ -7,6 +7,7 @@ import type { BossElement, BossProfile, BossRangeBand } from './recommend'
 export interface BossProfileDraft {
   element: BossElement
   core_hittable: boolean
+  pierce_hits_body_behind_core: boolean
   enemy_def: string
   fight_duration: string
   part_destructible: boolean
@@ -16,6 +17,7 @@ export interface BossProfileDraft {
 export const makeDefaultBossProfileDraft = (): BossProfileDraft => ({
   element: null,
   core_hittable: false,
+  pierce_hits_body_behind_core: false,
   enemy_def: '0',
   fight_duration: '180',
   part_destructible: false,
@@ -38,6 +40,9 @@ export interface BossProfileValidationResult {
 export const bossProfileToDraft = (boss: BossProfile): BossProfileDraft => ({
   element: boss.element,
   core_hittable: boss.core_hittable,
+  // 이 필드가 생기기 전에 저장된 프로필은 undefined라, 그대로 두면 체크박스가
+  // 비제어 컴포넌트가 된다.
+  pierce_hits_body_behind_core: boss.pierce_hits_body_behind_core ?? false,
   enemy_def: String(boss.enemy_def),
   fight_duration: String(boss.fight_duration),
   part_destructible: boss.part_destructible,
@@ -81,6 +86,7 @@ export const validateBossProfileDraft = (
   const value: BossProfile = {
     element: draft.element,
     core_hittable: draft.core_hittable,
+    pierce_hits_body_behind_core: draft.pierce_hits_body_behind_core,
     enemy_def: enemyDef.value!,
     fight_duration: fightDuration.value!,
     part_destructible: draft.part_destructible,

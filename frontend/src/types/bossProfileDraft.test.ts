@@ -13,6 +13,7 @@ describe('validateBossProfileDraft', () => {
     expect(value).toEqual({
       element: null,
       core_hittable: false,
+      pierce_hits_body_behind_core: false,
       enemy_def: 0,
       fight_duration: 180,
       part_destructible: false,
@@ -24,6 +25,7 @@ describe('validateBossProfileDraft', () => {
     const draft: BossProfileDraft = {
       element: 'Fire',
       core_hittable: true,
+      pierce_hits_body_behind_core: false,
       enemy_def: '15000',
       fight_duration: '90',
       part_destructible: true,
@@ -32,6 +34,7 @@ describe('validateBossProfileDraft', () => {
     expect(validateBossProfileDraft(draft).value).toEqual({
       element: 'Fire',
       core_hittable: true,
+      pierce_hits_body_behind_core: false,
       enemy_def: 15000,
       fight_duration: 90,
       part_destructible: true,
@@ -73,6 +76,7 @@ describe('bossProfileToDraft', () => {
     const draft: BossProfileDraft = {
       element: 'Fire',
       core_hittable: true,
+      pierce_hits_body_behind_core: false,
       enemy_def: '15000',
       fight_duration: '90',
       part_destructible: true,
@@ -88,5 +92,13 @@ describe('bossProfileToDraft', () => {
     const { value: boss } = validateBossProfileDraft(makeDefaultBossProfileDraft())
     const { value: restoredBoss } = validateBossProfileDraft(bossProfileToDraft(boss!))
     expect(restoredBoss).toEqual(boss)
+  })
+
+  it('2관통 플래그가 draft와 BossProfile 사이를 왕복한다', () => {
+    const draft = { ...makeDefaultBossProfileDraft(), pierce_hits_body_behind_core: true }
+    const { value } = validateBossProfileDraft(draft)
+
+    expect(value?.pierce_hits_body_behind_core).toBe(true)
+    expect(bossProfileToDraft(value!).pierce_hits_body_behind_core).toBe(true)
   })
 })
