@@ -203,3 +203,97 @@ def test_best_completions_deck_filter_none_means_unconstrained_not_derived(monke
     assert unconstrained
     deck = [by_slug[s] for s in unconstrained[0]["deck"]]
     assert not deck_breaks_gimmick(deck, GIMMICK_BOSS)
+
+
+def _satisfied(alloc, roster):
+    by_slug = {u.slug: u for u in roster}
+    return sum(1 for d in alloc["decks"]
+               if any(by_slug[s].element == WEAKNESS for s in d["deck"]))
+
+
+def _stacking_scorer(monkeypatch):
+    """Reward putting BOTH weakness units in one deck.
+
+    Without the peel's per-deck cap the greedy peel takes that bait and deck 2
+    gets nothing - which is exactly the starvation the cap exists to prevent. A
+    scorer that is indifferent would make these tests pass for the wrong reason.
+    """
+    from tests.test_deck_allocation import patch_scorer
+    patch_scorer(monkeypatch, lambda slugs: 100.0 if {"u0", "u1"} <= slugs else 10.0)
+
+
+def test_the_peel_spreads_the_weakness_units_across_the_decks(monkeypatch):
+    """설계 B.2. 약점유닛 2기 / 2덱이면 2덱 다 만족한다 - 점수가 몰아넣기를 부추겨도."""
+    from app.deck_allocation import allocate_decks
+
+    _stacking_scorer(monkeypatch)
+    roster = _roster(2)
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, time_budget_sec=0.0)
+
+    assert len(alloc["decks"]) == 2
+    assert _satisfied(alloc, roster) == 2
+
+
+def test_a_thin_roster_satisfies_as_many_decks_as_it_can_and_no_fewer(monkeypatch):
+    """약점유닛 1기 / 2덱이면 정확히 1덱. 0덱(제약을 놓침)도 2덱(없는 유닛)도 아니다."""
+    from app.deck_allocation import allocate_decks
+    from tests.test_deck_allocation import patch_scorer
+
+    patch_scorer(monkeypatch, lambda slugs: 1.0)
+    roster = _roster(1)
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, time_budget_sec=0.0)
+
+    assert _satisfied(alloc, roster) == 1
+
+
+def test_a_roster_with_no_weakness_unit_still_allocates(monkeypatch):
+    from app.deck_allocation import allocate_decks
+    from tests.test_deck_allocation import patch_scorer
+
+    patch_scorer(monkeypatch, lambda slugs: 1.0)
+    roster = _roster(0)
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, time_budget_sec=0.0)
+
+    assert len(alloc["decks"]) == 2
+    assert _satisfied(alloc, roster) == 0
+
+
+def test_the_climb_will_not_stack_the_weakness_units_back_together(monkeypatch):
+    """가드의 첫 번째 갈래. 몰아넣기가 100 + 10 = 110점이고 흩뿌리기는 10 + 10 = 20점
+    이므로, 가드가 없으면 힐클라임이 peel의 배분을 즉시 되돌린다."""
+    from app.deck_allocation import allocate_decks
+
+    _stacking_scorer(monkeypatch)
+    roster = _roster(2)
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, time_budget_sec=30.0)
+
+    assert _satisfied(alloc, roster) == 2
+
+
+def test_the_swap_floor_never_exceeds_what_we_already_hold():
+    """가드의 두 번째 갈래. K에 못 미치는 상태에서는 하한도 K가 아니라 현재값이다 -
+    K를 그대로 쓰면 모든 스왑이 거부되어 클라임이 통째로 죽는다."""
+    from app.deck_allocation import _gimmick_floor, _satisfied_count
+
+    decks = [[Unit("a", 1, WEAKNESS)], [Unit("b", 1, "Fire")]]
+
+    assert _satisfied_count(decks, GIMMICK_BOSS) == 1
+    assert _gimmick_floor(decks, GIMMICK_BOSS, 2) == 1   # K=2지만 지금은 1
+    assert _gimmick_floor(decks, GIMMICK_BOSS, 1) == 1
+    assert _satisfied_count(decks, BossProfile(element="Fire")) == 0   # 기믹 없음
+
+
+def test_an_allocation_without_the_gimmick_is_byte_for_byte_the_old_one(monkeypatch):
+    """제약이 꺼져 있으면 _gimmick_budget이 None, gimmick_target이 0이라 peel도
+    클라임도 이전 코드와 같은 경로를 탄다. 배분 결과가 달라지면 회귀다."""
+    from app.deck_allocation import allocate_decks
+
+    _stacking_scorer(monkeypatch)
+    roster = _roster(2)
+
+    off = allocate_decks(roster, BossProfile(element="Fire"), num_decks=2,
+                         time_budget_sec=30.0)
+
+    # 기믹이 없으면 점수를 그대로 따라가 두 약점유닛이 한 덱에 몰린다.
+    assert _satisfied(off, roster) == 1
+    assert sum(d["total_damage"] for d in off["decks"]) == 110.0
