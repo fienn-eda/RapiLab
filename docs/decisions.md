@@ -5,6 +5,84 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 로스터가 얇으면 배분은 채울 수 있는 만큼만 채우고 나머지는 경고한다
+
+- Date: 2026-08-03
+- Context: `wip/boss-weakness-and-gimmicks` 브랜치(`3f83e0e..e72f521`, 22커밋,
+  아직 트렁크 미병합), 보스의 원소 인터럽트(약점 원소 유닛이 덱에 하나는 있어야
+  발동을 끊는다) 기능. 로스터가 얇으면 `num_decks`개 전부에 약점 유닛을 하나씩
+  채울 수 없는 경우가 생긴다.
+- Decision: 배분기(`deck_allocation.py`)는 로스터가 감당하는 만큼(=
+  `min(M, N)`, M=제약이 걸린 덱 수, N=보유 약점 유닛 수)만 만족시키고, 채우지
+  못한 나머지 덱은 그대로 완성한 뒤 UI가 뱃지로 경고한다(design B.2/B.6). 시드
+  덱이 약점 유닛 없이 제약을 못 깨면 무제약으로 풀고("The draft cannot break
+  the gimmick... Solve it unconstrained rather than refuse a deck they can
+  field"), 그리디 필링 쪽 남은 풀에 약점 유닛이 없어도 예산 안에서 무제약 덱을
+  받아 `num_decks`를 채운다("Take the best unconstrained deck rather than stop
+  short of num_decks - the design's 'as many decks as we can'").
+- Alternatives considered: 로스터가 제약을 완전히 만족 못 시키면 추천 자체를
+  거부하기 — 기각. 플레이어가 실제로 편성 가능한 덱(원소 인터럽트를 못 깨는
+  덱이라도 딜은 낸다)을 아예 안 보여주는 것은 "약점 유닛이 부족하다"는 경고보다
+  나쁘다. 있는 걸 보여주고 부족을 알리는 쪽이 항상 우월하다.
+- Consequences: `_gimmick_budget`/`_gimmick_floor`(`deck_allocation.py`)가 모두
+  "요구하되 불가능하면 무제약으로 대체"하는 형태로 통일된다 — 어떤 경로도
+  `InfeasibleDraft`를 원소 인터럽트 하나만으로 던지지 않는다. 로스터가 얇을 때
+  실제로 몇 덱까지 만족시킬 수 있는지는 아래 `docs/engine-gaps.md`의 새 항목
+  참고(같은 얇은-로스터 조건에서 배분기 자체가 셰이프를 굶길 수 있다는 별개의
+  발견).
+
+## 원소 인터럽트 제약은 덱 생성 시점에 검색 안에서 거른다 — 탐색 후 보정이 아니다
+
+- Date: 2026-08-03
+- Context: 같은 브랜치. 보스의 `elemental_interrupt_required`가 켜져 있으면 덱은
+  약점 원소 유닛을 최소 하나 가져야 인터럽트를 끊을 수 있다. 이 규칙을 어디서
+  강제할지가 선택지였다 — 탐색이 다 끝난 뒤 결과를 고치는 패치 단계로 둘 수도,
+  탐색 자체가 후보를 만드는 매 지점에서 거를 수도 있었다.
+- Decision: 세 덱 생성기(`shape_combinations` · `_shape_completions` ·
+  `feasible_orderings`)와 후보 풀 프루닝, 캐스케이드 숏리스트, 언덕오르기 스왑
+  단계까지 전부 `deck_filter`/`gimmick` 인자를 받아 **후보가 만들어지는 그
+  자리에서** 제약을 어긴 덱을 걸러낸다(`deck_search.py`, `deck_allocation.py`).
+- Alternatives considered: 탐색 후 보정(제약 없이 최적을 찾은 뒤, 제약을 어긴
+  덱만 별도 로직으로 다시 채우거나 스왑) — 기각. 탐색이 나중에 금지될 덱 쪽으로
+  수렴하도록 놔뒀다가 사후에 바로잡으면, 그 사이에 잃는 덱 품질을 **예측하거나
+  한계 지을 수 없다** — 탐색이 무엇을 향해 수렴했는지에 따라 손실이 매번 다르다.
+  생성 시점에 걸러 애초에 금지된 덱을 후보에도 안 올리는 쪽이 손실을 구조적으로
+  없앤다.
+- Consequences: 원소 인터럽트는 **엔진에 들어온 첫 보스-의존 합법성 규칙**이다 —
+  지금까지 덱 합법성은 유닛만으로 정해졌다(아래 `docs/insights.md` 참고). 다섯
+  군데를 동시에 고쳐야 했던 이유이자, 다음에 보스-의존 규칙을 하나 더 추가할
+  사람이 각오해야 할 표면적이다. 상세 테스트는
+  `backend/tests/test_elemental_interrupt_constraint.py`. 브랜치 전체(보스
+  약점 피커·원소 인터럽트·코어 2단 관통, 22커밋 `3f83e0e..e72f521`, 아직 트렁크
+  미병합)의 기준선은 **백엔드 1839 passed / 3 skipped · 프론트 485 passed**,
+  실기록 캘리브레이션 **1.082x 불변**(브랜치 병합 기준점 `bdb5bf9`에서도 동일
+  값으로 재확인 — 이 브랜치가 캘리브레이션을 흔들지 않는다는 뜻이다. 메모에
+  남아 있는 옛 1.077x는 이 브랜치가 갈라지기 전에 무관한 이유로 이미 1.082x로
+  움직여 있었다).
+
+## 약점 원소 ↔ 보스 고유 원소 변환은 UI 경계에만 둔다 — 배선 형식은 그대로
+
+- Date: 2026-08-03
+- Context: 같은 브랜치. 플레이어는 "보스의 약점 원소"를 코드 아이콘으로 고르지만
+  (`04e3b3d` "Convert between a boss's weakness and its own element",
+  `a571108` "Pick the boss's weakness by code icon instead of naming the boss's
+  element"), `BossProfile.element`는 원래부터 "보스 고유 원소"를 뜻해 왔다. 둘 중
+  하나로 배선을 통일해야 했다.
+- Decision: 변환은 **프론트엔드가 전송 직전에** 한다(플레이어가 고른 "약점
+  원소"를 보스 고유 원소로 바꿔서 실어 보낸다) — `BossProfile.element`는 지금과
+  똑같이 "보스 고유 원소"를 유지한다. 와이어 포맷 자체를 약점 원소로 바꾸는
+  대안은 채택하지 않았다.
+- Alternatives considered: 와이어 포맷을 약점 원소로 바꾸기 — 기각 두 가지 이유.
+  (a) `boss_is_element` 조건부 스킬(예: 브리드의 Wind-Code Damage Taken)은
+  **보스 고유 원소**를 읽지 **약점 원소**를 읽지 않는다 — 시뮬레이터는 어차피
+  보스 고유 원소가 필요하므로 와이어를 바꿔도 변환이 시뮬레이터 입력 직전
+  어딘가로 옮겨갈 뿐 없어지지 않는다. (b) localStorage에 저장된 모든 프로필의
+  `lastInputs.boss.element`가 뜻을 뒤집어야 해서 **마이그레이션이 필요**했다 —
+  변환을 UI 경계 한 곳에 두면 저장된 값의 의미가 하나도 안 바뀐다.
+- Consequences: 변환 로직은 `frontend/src/lib/elementAdvantage.ts`(신규) 한
+  곳에만 있다. `BossProfile.element`를 읽는 백엔드 어디도(스킬 룰·시뮬레이터·
+  캘리브레이션) 이 기능으로 바뀌지 않는다 — 보스 고유 원소라는 계약이 유지된다.
+
 ## SG·SMG 소장품의 「일반 공격 대미지 배율」은 무기 스탯이 아니라 가산 버킷으로 간다
 
 - Date: 2026-08-03

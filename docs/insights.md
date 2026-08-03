@@ -1615,6 +1615,39 @@ own_burst_activate가 아니라...) 참고.
 - **A serial hill-climb parallelizes without changing its answer if you batch SPECULATIVELY and re-batch on acceptance — the trick is proving the candidate LIST is invariant even though the scores are not.** The swap phase looked unparallelizable ("each accepted swap changes the state the next candidate is judged against", `docs/decisions.md` 2026-07-17) and was deferred twice for that reason. But the dependency is only on the *scores*: the candidate list — (seat, partner) pairs surviving the same-tier and not-locked filters — cannot change, because a same-tier swap leaves both seats' tiers untouched and a locked unit is never a swap source on either side. So the whole list can be scored ahead of the walk, and the walk keeps the serial rule (accept the FIRST improvement, in the original order); only when it accepts does the rest of that batch become stale, and then it re-batches from the next candidate. The result is bit-identical to the serial version — pin that with a test that runs the same fixture at several batch widths and asserts one outcome, plus one where the second candidate improves on the ORIGINAL deck but not the accepted one (a naive implementation trusting stale scores seats the worse unit). Waste is bounded by the acceptance rate, which was under 1% of candidates on a 78-unit roster. General shape: before declaring a sequential loop unparallelizable, separate what the iteration *reads* from what it *decides* — often only the former is order-dependent.
 - **A threshold that guards creating an expensive resource must not also gate reusing it.** `SimPool.SPAWN_THRESHOLD = 32` ran small batches inline, which is right when the cost in question is starting a `ProcessPoolExecutor` (spawning processes, pickling the roster into each). Applied to *every* batch, though, it silently refused an executor that was already warm — and the swap hill-climb's deck-to-deck candidates arrive ~22 at a time, so they all fell through to the serial path. First measurement of the batched phase came back at 1.9x instead of the workers' worth; the 282 inline sims were ~29s of a 45s budget while the pooled leftover batches did twice the work in ~4s. Fix was one condition (`len(decks) < threshold and self._executor is None`). Watch for this shape wherever a lazily-created resource has a "is it worth it?" guard — the guard's cost model is about creation and stops being true the moment the resource exists.
 - **A real scoring bias can still be worth leaving in: the swap hill-climb judges candidates on ONE canonical ordering — a method this codebase measures as up to 78% low — and fixing it buys ≤0.47%.** `_swap_pass` scores a deck in the order the search returned it, then replaces one seat and re-scores in that same order. The decks arriving from `search_best_decks` are already at their BEST ordering while the unit swapped in may want a different seat in its tier, so the error does not cancel between incumbent and challenger — it is biased *against* the challenger, and the hill-climb rejects swaps that would have won. All true, and measured worthless to fix: judging every candidate on its best ordering, run to convergence on the real 77-unit roster, gained **+0.02% (Water/180s), +0.47% (Fire/180s), +0.14% (Electric/90s)** while making the whole allocation 3.3-5.4x slower (`scripts/audit_swap_ordering.py`). **The reason is that the objective is flat near its optimum** — the Water run's two methods produced *completely different* five-deck compositions whose totals differed by 0.02%. A mis-ranked swap does flip the verdict; it just lands on another local optimum of the same value. The durable lesson: a demonstrable bias in a heuristic's judgment is not the same as a loss in its output, and on a flat objective the two can differ by two orders of magnitude — measure the output, not the bias. (Revisit if shells grow, raising orderings per deck, or if synergies become far more order-sensitive.) See `docs/roadmap.md`.
+- **덱 합법성은 이 기능 전까지 유닛만의 속성이었다 — 원소 인터럽트가 첫 보스-의존
+  합법성 규칙이고, 다섯 자리를 전부 건드려야 했다.** `_no_character_clash`·
+  `_tier1_seating_valid`·`_buffer_seat_valid`(`deck_search.py`)는 전부 유닛
+  목록만 보고 결정한다. 보스의 `elemental_interrupt_required`는 처음으로 **보스를
+  봐야** 판정할 수 있는 합법성이라, 세 덱 생성기(`shape_combinations`·
+  `_shape_completions`·`feasible_orderings`) + 프루닝된 후보 풀 + 캐스케이드
+  숏리스트 + 언덕오르기 스왑 단계까지 다섯 군데를 전부 `deck_filter`로 뚫어야
+  했다(`wip/boss-weakness-and-gimmicks`, `4886080`·`0191000`). 다음에 보스-의존
+  규칙을 하나 더 추가하는 사람은 유닛 전용 검사 하나로 끝나던 자리가 아니라 같은
+  표면적을 각오할 것.
+- **`evaluate_deck`이 보스 필드를 `simulate_raid`에 이름으로 손스프레드하고
+  있었다 — `api.boss_profile`이 2026-07-31에 고친 것과 같은 목록 함정이 한 겹 더
+  깊이 있었다.** 새 `BossProfile` 필드(`effective_range_band`)가 `api.py`의 수동
+  키워드 스프레드에서 빠져 조용히 유실됐던 사고와 같은 형태가 `deck_search.py`의
+  `evaluate_deck`에서 재발할 뻔했다 — API 경계가 아니라 그 한 겹 아래(덱 탐색이
+  시뮬레이터를 부르는 자리)였을 뿐, 지금까지 아무도 알아채지 못하고 있었다. 신규
+  테스트 `test_evaluate_deck_forwards_every_boss_field_the_simulator_accepts`
+  (`backend/tests/test_api_boss_profile.py`)가 `BossProfile`의 필드 집합과
+  `evaluate_deck`이 실제로 넘기는 것을 대조해, 다음 필드 추가가 같은 사고를
+  조용히 반복하지 못하게 막는다.
+- **힐클라임의 약점-유닛 스프레드 가드는 바닥을 "지금 보유한 개수"로 잡아야
+  한다 — 목표치 K를 그대로 쓰면 언덕오르기 자체가 멈춘다.** `_gimmick_floor`는
+  처음엔 `min(target, _satisfied_count(decks, boss))`였다(`0191000`) — target
+  (=K=min(M,N))을 바닥으로 그대로 쓰면, 로스터가 얇아 K에 못 미치는 상황에서
+  **모든 스왑이 거부돼 언덕오르기가 아예 멈춘다**(약점 관련 스왑뿐 아니라
+  전부 — 가드가 조건 없이 K 밑을 막으므로 K 미만인 채로는 어떤 스왑도 통과 못
+  한다). 이후 리뷰(`bb3f1d6`)에서 `target`이 실제로는 절대 바인딩하지 않는다는
+  게 증명됐다 — 만족된 덱들은 서로소이고(각각 M개 약점 유닛 중 최소 하나를
+  쥐고, 유닛은 한 덱에만 앉는다) 스왑이 M·N 어느 쪽도 바꾸지 않으므로
+  `_satisfied_count`는 절대 target을 못 넘는다. 그래서 `min()`을 걷어내고
+  `_gimmick_floor`는 지금 `_satisfied_count(decks, boss)`를 그대로 반환한다
+  (`deck_allocation.py:110-122`) — 동작은 `min(K, current)`와 완전히 같지만,
+  겉보기엔 더 방어적으로 보이던 `min()`은 실제로는 죽은 코드였다.
 
 ## Frontend (React)
 - **정사각 얼굴 크롭에 새 에셋은 필요 없다 — `object-position: center 18.75%`가 그 답이고, 숫자는 유도된다.** 초상화 원본은 256×512 전신이고 CDN에 다른 크기는 없다(`si_`/`ci_`/`fi_`/`icon_` 접두사, `.png`, `/assets/nikke/` 전부 404 — 2026-07-25 실측). 정사각 박스에서 `object-fit: cover`는 이미지를 W×2W로 그리므로 세로로 W(=**이미지 256행**)가 잘린다. `object-position`의 퍼센트는 **잘리는 양에 대한 비율**이지 이미지 높이에 대한 비율이 아니다 — 위에서 48행을 건너뛰려면 48/256 = **18.75%**다(512로 나눠 9.375%가 아니다). y=0/24/48/72를 실제로 잘라 비교했을 때 48이 표본 전원의 머리와 턱을 온전히 남겼다: y=0은 머리 위 여백이 남고 턱이 잘리며, y=72부터 머리가 잘리기 시작한다. 덱 슬롯·로스터 타일·결과 셀이 이 한 규칙을 공유한다(`App.css`의 "THE FACE CROP").
@@ -1637,6 +1670,20 @@ own_burst_activate가 아니라...) 참고.
 - **`position: sticky; top:`은 요소가 뷰포트보다 크면 목적을 못 이룬다 — `bottom:`으로 바꾸는 것도 오답이다.** 5덱 + 액션 행 컬럼이 ~760px인데 1366×768 화면에서 `top: var(--sp-4)`로 붙는 순간 버튼 하단이 776px에 걸려 **어느 스크롤 위치에서도 화면 밖**이다(`docs/decisions.md`, "덱 컬럼을 뷰포트 높이로 캡..."). `bottom:` 고정은 반대 방향으로만 붙는다(위로 스크롤할 때만) — 이 문제엔 안 맞는다. 해법은 컬럼에 `max-height: calc(100svh - var(--sp-4)*2)` + `display:flex; flex-direction:column`을 주고, 스크롤할 자식에 `flex:1 1 auto; min-height:0; overflow-y:auto`, 고정할 액션 행에 `flex-shrink:0`을 주는 것. **`min-height:0`이 없으면 flex 자식이 콘텐츠 크기 밑으로 안 줄어들어 `overflow-y`가 아예 안 걸린다.** `@media (max-width:900px)`에서 sticky를 `static`으로 끌 때 `max-height`도 같이 풀어야 한다(`b6bd04f`) — 안 풀면 좁은 화면에서 불필요한 스크롤이 남는다.
 - **빈 문자열이 falsy 가드를 뚫고 "유효한 키"로 살아남을 수 있다.** `useBookmarkletImport`가 `open_id` 없는 동기화 페이로드를 `String(x ?? '')`로 삼켜 `profiles['']`를 만들었다(수신 검증 `isRawRosterPayload`가 애초에 `open_id`를 체크하지 않았다). `ProfileSwitcher`의 삭제 버튼이 `if (!activeOpenId) return`으로 "계정 미선택"을 가드했는데, `''`도 falsy라 그 프로필만 확인창조차 안 뜨고(계측: `confirm` 호출 0회) 삭제가 막혔다 — 하필 유저가 가장 지우고 싶어할 그 깨진 프로필이 지울 수 없는 유일한 프로필이었다. 고침: `null`만 "계정 없음"으로 취급하고(`activeOpenId === null`), 페이로드에 `open_id`가 없으면 프로필을 만들지 않고 그 자리에서 임포트를 거부한다(`5c35da8`). **일반화: "없음"을 나타내는 sentinel이 빈 문자열/0/NaN처럼 falsy와 겹치는 자료형이면, `!x`가 아니라 그 sentinel과의 명시적 동등 비교를 쓸 것.** 진단 단서: 실제 `open_id`는 32비트를 넘는 긴 정수라 JS 객체 키로 넣어도 정수 인덱스 최적화 대상이 아니라서 **삽입 순서가 그대로 남는다** — 재현할 때 짧은 숫자로 테스트 데이터를 만들면 객체 키 순서가 자동 정렬돼버려 드롭다운 순서가 실제와 달라지고 오도된다.
 - **라벨을 여러 자리에서 통일할 땐 짝을 이루는 문구가 같이 움직였는지 반드시 확인하라.** 모드 이름을 바꾸면서(`3491e28`) 진행 배너("전부 최적화 중" 등)는 새 이름을 받았는데, 버튼의 로딩 라벨(`배분 중…`)과 네트워크 실패 메시지, 드래프트 섹션 헤딩은 옛 모드 이름에 그대로 남아 **한 화면에 같은 동작을 가리키는 이름이 둘 생겼다**(`67a9f10`, "Retired mode names finished leaking through loading labels, an error, and a legend"). 서브에이전트에게 작업을 나눠 맡기면 각자 자기가 건드린 파일만 보고 리뷰해 이 이음매(버튼 라벨 ↔ 배너 문구 ↔ 에러 메시지처럼 서로 다른 컴포넌트에 흩어진 같은 개념의 문구)를 놓치기 쉽다 — 이번엔 개별 작업 리뷰가 아니라 **전 브랜치를 다시 훑는 리뷰**가 잡아냈다. 문구를 바꿀 땐 같은 개념을 가리키는 모든 자리를 grep해서 짝을 확인할 것.
+- **패널 레벨 스냅샷 하나로는 부족하다 — 모드 전환에서도 살아남는 결과가 둘
+  이상이면 결과마다 스냅샷이 있어야 한다.** RecommendPanel에서 single(단일 덱
+  평가)과 raid/draft 결과는 모드를 바꿔도 화면에 남는데, `evaluatedBoss`는
+  패널 전체가 공유하는 상태 하나였다(제출마다 갱신). 그래서 다른 모드에서 다시
+  제출하면, 화면에 그대로 남아 있는 **다른** 모드의 결과가 자기 것이 아닌 방금
+  제출된 보스 프로필로 라벨(gimmick-unmet 뱃지)됐다. 고침은 `singleBoss`/
+  `displayBoss`/`evaluateBoss`로 결과 슬롯마다 스냅샷을 분리하고, 각 슬롯은
+  **자기 결과가 (재)계산될 때만** 갱신하는 것 — raid/draft의 캐시-히트·복원
+  경로도 포함(`RecommendPanel.tsx`, 커밋 `e72f521` "Fix round 1: snapshot the
+  gimmick-unmet boss per result, not per panel"). 일반화하면: "제출 시점 스냅샷"
+  패턴(위 `submittedDraft` 항목들과 같은 계열) 자체는 옳아도, **그 스냅샷이 몇
+  개의 독립적으로 살아남는 결과를 대표해야 하는지**를 먼저 세야 한다 — 결과가
+  하나면 패널 레벨 상태로 충분하지만, 둘 이상이 서로 다른 생명주기로 화면에
+  남으면 공유 스냅샷은 그중 하나를 잘못 라벨링한다.
 
 ## Backend / operations
 - **An application logger's INFO records are silently dropped under uvicorn, and pytest's `caplog` hides this from a normal test suite.** uvicorn only configures its own `uvicorn.*` loggers; the root logger keeps its default WARNING level with no handler for application loggers, so a module-level `logging.getLogger(__name__).info(...)` emits nothing in a real server run even though the request itself succeeds (uvicorn's own access log still shows `200 OK`). A test using `caplog.at_level(logging.INFO)` forces the level for the duration of the test and therefore passes regardless — the telemetry looks tested while being dead in production. Found 2026-07-19 via `logging.getLogger('app.api').getEffectiveLevel()` returning 30 (WARNING) against a real run of the roster-sync endpoint. Fix: configure the application logger's own handler + level directly (`if not logger.handlers: logger.addHandler(logging.StreamHandler()); logger.setLevel(logging.INFO)`), not root — this leaves uvicorn's own access/error loggers untouched and doesn't double-log. A regression test that would actually catch this must exercise the real default-logging path (e.g. run the endpoint in a bare subprocess, no pytest/caplog involved) rather than a `caplog.at_level`-forced one. See `backend/app/api.py`, `backend/tests/test_assemble_roster_api.py`, commit `5069dc2`.
