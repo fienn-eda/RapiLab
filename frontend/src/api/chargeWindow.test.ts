@@ -24,6 +24,7 @@ describe('postChargeWindow', () => {
       { ok: true, json: () => Promise.resolve(WIRE) }))
     const result = await postChargeWindow({
       slug: 'scarlet-black-shadow', roster: [], withLiberalio: true,
+      cube: 'resilience',
       overrides: { chargeSpeedLines: null, maxAmmoPercent: null, reloadSpeedPercent: null },
     })
     expect(result.current.highShots).toBe(19)
@@ -43,10 +44,12 @@ describe('postChargeWindow', () => {
     vi.stubGlobal('fetch', fetchMock)
     await postChargeWindow({
       slug: 'neon-vision-eye', roster: [], withLiberalio: false,
+      cube: 'tactical_bear',
       overrides: { chargeSpeedLines: [4.33, 4.33], maxAmmoPercent: null, reloadSpeedPercent: null },
     })
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
     expect(body.with_liberalio).toBe(false)
+    expect(body.cube).toBe('tactical_bear')
     expect(body.overrides.charge_speed_lines).toEqual([4.33, 4.33])
   })
 
@@ -54,7 +57,7 @@ describe('postChargeWindow', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
       { ok: false, status: 422, json: () => Promise.resolve({ detail: 'nope' }) }))
     await expect(postChargeWindow({
-      slug: 'liter', roster: [], withLiberalio: false,
+      slug: 'liter', roster: [], withLiberalio: false, cube: 'resilience',
       overrides: { chargeSpeedLines: null, maxAmmoPercent: null, reloadSpeedPercent: null },
     })).rejects.toMatchObject({ status: 422 })
   })
