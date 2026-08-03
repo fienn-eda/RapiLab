@@ -5,6 +5,7 @@ const WIRE = {
   interval: 0.53,
   magazine: 22,
   charge_speed_percent: 0.0286,
+  charge_speed_ceiling: 0.24,
   current: { low_shots: 18, low_probability: 0.132, high_shots: 19, high_probability: 0.868 },
   thresholds: [
     {
@@ -37,6 +38,9 @@ describe('postChargeWindow', () => {
     expect(result.interval).toBe(0.53)
     expect(result.magazine).toBe(22)
     expect(result.chargeSpeedPercent).toBe(0.0286)
+    // The ladder's closing line prints this one, and an unmapped key reads as
+    // "오버로드 상한 NaN%" with nothing failing.
+    expect(result.chargeSpeedCeiling).toBe(0.24)
   })
 
   it('sends snake_case field names to the backend', async () => {

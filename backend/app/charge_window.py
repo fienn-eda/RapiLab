@@ -161,10 +161,18 @@ def outcome(inputs: WindowInputs) -> Outcome:
     return Outcome(low, 1.0 - high_probability, high, high_probability)
 
 
-def thresholds(inputs: WindowInputs) -> list[Threshold]:
-    """One row per charge-speed step that actually changes the cadence."""
+def thresholds(inputs: WindowInputs, ceiling: float | None = None) -> list[Threshold]:
+    """One row per charge-speed step that actually changes the cadence.
+
+    `ceiling` is the highest total the reader could actually reach - overload
+    tops out well before the frame grid does, and steps past it are money that
+    does not exist. Left out, the ladder answers the pure frame-grid question
+    and runs until the charge itself is gone.
+    """
     rows, previous = [], None
     for step in charge_speed_steps(inputs.charge_time):
+        if ceiling is not None and step > ceiling + 1e-9:
+            break
         stepped = replace(inputs, charge_speed_percent=step)
         interval = shot_interval(stepped)
         if previous is not None and interval == previous:

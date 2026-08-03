@@ -18,6 +18,7 @@ export interface ChargeWindowResultWire {
   interval: number
   magazine: number
   charge_speed_percent: number
+  charge_speed_ceiling: number
   current: ShotOutcomeWire
   thresholds: ChargeWindowThresholdWire[]
   notes: string[]
@@ -40,6 +41,7 @@ export interface ChargeWindowResult {
   interval: number
   magazine: number
   chargeSpeedPercent: number
+  chargeSpeedCeiling: number
   current: ShotOutcome
   thresholds: ChargeWindowThreshold[]
   notes: string[]
@@ -68,6 +70,7 @@ export const mapChargeWindowResult = (wire: ChargeWindowResultWire): ChargeWindo
   interval: wire.interval,
   magazine: wire.magazine,
   chargeSpeedPercent: wire.charge_speed_percent,
+  chargeSpeedCeiling: wire.charge_speed_ceiling,
   current: mapShotOutcome(wire.current),
   thresholds: wire.thresholds.map((row) => ({
     chargeSpeedPercent: row.charge_speed_percent,

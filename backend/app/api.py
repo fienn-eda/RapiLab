@@ -28,7 +28,7 @@ from app.deck_evaluation import InfeasibleDeck, evaluate_decks
 from app.deck_search import BossProfile, search_best_decks
 from app.engine_version import engine_version
 from app.models import UserNikkeState
-from app.overload_effects import NAME_TO_STAT
+from app.overload_effects import NAME_TO_STAT, max_charge_speed_percent
 from app.paths import frontend_dist
 from app.roster_assembly import assemble_roster, load_directory, to_roster_json
 from app.sim_pool import SimPool
@@ -199,6 +199,9 @@ class ChargeWindowResponse(BaseModel):
     interval: float
     magazine: int
     charge_speed_percent: float
+    # The most overload alone can grant. The ladder stops here, so the screen
+    # needs it to say WHY it stops rather than looking like it ran out of grid.
+    charge_speed_ceiling: float
     current: ShotOutcome
     thresholds: list[ChargeWindowThreshold]
     notes: list[str]
@@ -535,7 +538,8 @@ def _shot_outcome(value) -> ShotOutcome:
     )
 
 
-def _charge_window_notes(request, inputs, current, liberalio_in_roster, rolls_known):
+def _charge_window_notes(request, inputs, current, ceiling, liberalio_in_roster,
+                         rolls_known):
     """The judgements worth surfacing next to the ladder. Each is a fact the
     calculator can check rather than a caveat the reader has to remember."""
     notes = []
@@ -553,6 +557,13 @@ def _charge_window_notes(request, inputs, current, liberalio_in_roster, rolls_kn
             f"{current.high_shots}타지만, 창 안에서 안 비울 만큼 넉넉하면 같은 "
             f"차지속도로 {uncapped}타입니다. 여기서는 차지속도보다 최대장탄이 "
             f"먼저입니다.")
+    # The ladder is cut at the ceiling, so a total above it has to be named -
+    # otherwise the row past the cut looks like something overload could buy.
+    if inputs.charge_speed_percent > ceiling + 1e-9:
+        notes.append(
+            f"차지속도 합계 {inputs.charge_speed_percent * 100:.2f}%가 오버로드 상한 "
+            f"{ceiling * 100:.0f}%를 넘습니다 — 4부위 전부 최고 굴림이 그 상한이라, "
+            f"나머지는 덱 버프이거나 직접 입력한 값입니다.")
     if request.with_liberalio and request.slug != LIBERALIO_SLUG:
         if not liberalio_in_roster:
             notes.append(
@@ -597,13 +608,15 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
         raise HTTPException(422, str(error)) from error
 
     current = outcome(inputs)
+    ceiling = max_charge_speed_percent(load_stat_tables()) / 100
     notes = _charge_window_notes(
-        request, inputs, current, LIBERALIO_SLUG in by_slug,
+        request, inputs, current, ceiling, LIBERALIO_SLUG in by_slug,
         charge_speed_rolls_known(by_slug[request.slug]))
     return ChargeWindowResponse(
         interval=shot_interval(inputs),
         magazine=inputs.max_ammo,
         charge_speed_percent=inputs.charge_speed_percent,
+        charge_speed_ceiling=ceiling,
         current=_shot_outcome(current),
         thresholds=[
             ChargeWindowThreshold(
@@ -611,7 +624,10 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
                 interval=row.interval,
                 outcome=_shot_outcome(row.outcome),
             )
-            for row in thresholds(inputs)
+            # A total past the ceiling is the reader's to state - a deck buffer
+            # or a typed value - so the ladder still reaches the row they are
+            # standing on. Cutting below it would hide their own marker.
+            for row in thresholds(inputs, max(ceiling, inputs.charge_speed_percent))
         ],
         notes=notes,
     )

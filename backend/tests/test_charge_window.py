@@ -172,6 +172,26 @@ def test_thresholds_only_list_charge_speeds_that_change_the_interval():
     assert intervals == sorted(intervals, reverse=True), "each step must be faster"
 
 
+def test_the_ladder_stops_at_a_total_the_player_cannot_reach():
+    """Steps above what overload can actually grant are money that does not
+    exist. Scarlet's grid moves every 5.56%, so a 24% ceiling makes 22.22% the
+    last row anyone can buy - 27.78% is off the table, not merely expensive."""
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    rows = thresholds(buffed, ceiling=0.24)
+    assert [round(row.charge_speed_percent * 100, 2) for row in rows] == [
+        0.0, 5.56, 11.11, 16.67, 22.22]
+
+
+def test_without_a_ceiling_the_ladder_runs_until_the_charge_is_gone():
+    """No ceiling is the pure frame-grid question, and it ends where the charge
+    does: at 38.89% Liberalio's cut already covers what is left of the 0.30 sec,
+    so every faster step reads the same 0.43 motion delay and dedupes away."""
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    rows = thresholds(buffed)
+    assert round(rows[-1].charge_speed_percent * 100, 2) == 38.89
+    assert rows[-1].interval == pytest.approx(SCARLET.motion_delay)
+
+
 def test_thresholds_carry_the_shot_counts_fienn_asked_about():
     """The question this calculator was built for: what charge-speed total buys
     19, 20, 21 shots. Each row's HIGH count is the one a favourable Full Burst

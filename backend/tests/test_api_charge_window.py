@@ -44,6 +44,38 @@ def test_scarlet_with_liberalio_reports_the_measured_cadence():
     assert body["current"]["high_shots"] == 19
 
 
+def test_the_ladder_ends_where_overload_does():
+    """Four gear slots at the top roll grant 24%, so on Scarlet's 5.56% grid the
+    22.22% row is the last one anybody can buy."""
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)]),
+              a_unit("liberalio")]
+    body = post("scarlet-black-shadow", roster, with_liberalio=True).json()
+    assert body["charge_speed_ceiling"] == pytest.approx(0.24)
+    percents = [round(t["charge_speed_percent"] * 100, 2) for t in body["thresholds"]]
+    assert percents[-1] == 22.22
+
+
+def test_a_total_past_the_ceiling_keeps_its_own_row_and_says_so():
+    """The ceiling is what OVERLOAD can buy, not what the unit can carry - a
+    typed total is the user's to state. Cutting the ladder below it would hide
+    the row they are standing on."""
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)]),
+              a_unit("liberalio")]
+    body = post("scarlet-black-shadow", roster, with_liberalio=True,
+                overrides={"charge_speed_lines": [6.09] * 6}).json()
+    assert body["charge_speed_percent"] == pytest.approx(0.37)
+    percents = [round(t["charge_speed_percent"] * 100, 2) for t in body["thresholds"]]
+    assert percents[-1] == 33.33
+    assert any("오버로드 상한" in note for note in body["notes"])
+
+
+def test_a_total_within_the_ceiling_gets_no_such_note():
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)]),
+              a_unit("liberalio")]
+    body = post("scarlet-black-shadow", roster, with_liberalio=True).json()
+    assert not any("오버로드 상한" in note for note in body["notes"])
+
+
 def test_the_threshold_ladder_comes_back_ordered_and_deduplicated():
     roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)]),
               a_unit("liberalio")]

@@ -89,3 +89,14 @@ def test_converted_effects_plug_directly_into_effect_registry():
     anis = {"slug": "anis-star", "element": "Electric"}
     assert round(registry.total_for("atk_percent", anis, now=123.0), 4) == 0.402
     assert round(registry.total_for("other_elemental_bonus", anis, now=123.0), 4) == 0.8861
+
+
+def test_the_charge_speed_ceiling_is_a_top_roll_on_every_gear_slot():
+    """The most charge speed overload alone can grant. Derived rather than
+    written down: the roll ladder is in the committed stat tables and the
+    grouping is `charge_speed_percent_from_lines`, so a re-fitted table moves
+    this without an edit. Four slots at 6.09 sum to 24.36 and group to 24."""
+    from app.overload_effects import max_charge_speed_percent
+    from app.stat_assembly import load_stat_tables
+
+    assert max_charge_speed_percent(load_stat_tables()) == 24.0
