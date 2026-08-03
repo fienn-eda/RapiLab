@@ -21,6 +21,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from itertools import combinations, permutations
 
+from app.elements import weakness_of
 from app.raid_simulator import simulate_raid
 from app.roster import assemble_simulation_inputs
 from app.skill_rules.registry import character_map
@@ -96,6 +97,30 @@ def _buffer_seat_valid(ordered_units):
     return True
 
 
+def weakness_holders(units, boss: BossProfile):
+    """How many of `units` hold elemental advantage over this boss - 0 whenever
+    the gimmick is off or the boss has no element, so callers need no second
+    guard before budgeting them across decks."""
+    if not boss.elemental_interrupt_required or boss.element is None:
+        return 0
+    weakness = weakness_of(boss.element)
+    return sum(1 for u in units if u.element == weakness)
+
+
+def deck_breaks_gimmick(units, boss: BossProfile):
+    """Whether these units can break the boss's elemental-interrupt gimmick.
+
+    Vacuously true when the boss has no gimmick, and ALSO when it has no element:
+    an element-less boss has no weakness, so no deck could ever satisfy the
+    requirement and enforcing it would make every roster infeasible rather than
+    expressing anything real.
+    """
+    if not boss.elemental_interrupt_required or boss.element is None:
+        return True
+    weakness = weakness_of(boss.element)
+    return any(u.element == weakness for u in units)
+
+
 @dataclass
 class BossProfile:
     element: str | None = None
@@ -136,6 +161,12 @@ class BossProfile:
     # to pierce through without a hittable core, and raid_simulator reads the two
     # together rather than trusting the caller not to send the contradiction.
     pierce_hits_body_behind_core: bool = False
+    # The boss gates a gimmick on an elemental interrupt: breaking it needs at
+    # least one Nikke holding elemental advantage, so a deck without one cannot
+    # clear the phase however much damage it does. Unlike every other deck
+    # legality rule in this module, this one depends on the BOSS - see
+    # deck_breaks_gimmick.
+    elemental_interrupt_required: bool = False
 
 
 # Real decks come in exactly these B1/B2/B3 shapes (Fienn, 2026-07-17);
