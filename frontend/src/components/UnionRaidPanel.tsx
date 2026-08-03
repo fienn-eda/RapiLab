@@ -59,7 +59,7 @@ export function UnionRaidPanel({
   const [touched, setTouched] = useState(false)
   // The boss elements each battle's card was actually scored against,
   // captured at submit time - same reasoning as RecommendPanel's
-  // evaluatedBossElement. Reading the live bosses array from the render below
+  // evaluateBoss. Reading the live bosses array from the render below
   // would relabel a finished result's cards the moment the player edits a
   // boss field afterward, while the damage numbers still reflect the old boss.
   const [evaluatedBossElements, setEvaluatedBossElements] = useState<BossElement[]>([])
@@ -164,6 +164,8 @@ export function UnionRaidPanel({
                 onChange={(next) =>
                   setBosses((current) => current.map((boss, idx) => (idx === i ? next : boss)))
                 }
+                // 이 탭은 유저가 짠 편성을 채점만 해서 탐색이 없다 - 제약이 걸 곳이 없다.
+                showElementalInterrupt={false}
               />
             </fieldset>
           ))}

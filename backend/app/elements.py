@@ -26,3 +26,19 @@ def element_multiplier(attacker_element: str, boss_element: str) -> float:
     if _STRONG_AGAINST[attacker_element] == boss_element:
         return 1 + ELEMENT_ADVANTAGE_BONUS
     return 1.0
+
+
+# beaten element -> the attacker that beats it. Derived from _STRONG_AGAINST
+# rather than written out, so the two can never disagree.
+_WEAK_TO = {beaten: attacker for attacker, beaten in _STRONG_AGAINST.items()}
+
+
+def weakness_of(boss_element: str) -> str:
+    """The attacker element that holds advantage over `boss_element`.
+
+    The boss's "weakness" in the UI's language: the element a player fields to
+    break an elemental-interrupt gimmick.
+    """
+    if boss_element not in _WEAK_TO:
+        raise KeyError(f"unknown element: {boss_element!r}")
+    return _WEAK_TO[boss_element]

@@ -8,14 +8,6 @@ import type { UserNikkeState } from './userNikkeState'
 
 export type BossElement = 'Fire' | 'Water' | 'Wind' | 'Iron' | 'Electric' | null
 
-export const BOSS_ELEMENTS: Exclude<BossElement, null>[] = [
-  'Fire',
-  'Water',
-  'Wind',
-  'Iron',
-  'Electric',
-]
-
 export type BossRangeBand = 'near' | 'mid' | 'far' | null
 
 export const BOSS_RANGE_BANDS: Exclude<BossRangeBand, null>[] = ['near', 'mid', 'far']
@@ -23,6 +15,9 @@ export const BOSS_RANGE_BANDS: Exclude<BossRangeBand, null>[] = ['near', 'mid', 
 export interface BossProfile {
   element: BossElement // null = non-elemental
   core_hittable: boolean // default false
+  pierce_hits_body_behind_core: boolean // default false — 코어와 본체가 별개 객체인
+  // 보스. 관통 특화 니케의 탄이 코어를 뚫고 뒤의 본체까지 때려 통상공격 1발이 두 번
+  // 들어간다. core_hittable에 의존한다 — 뚫고 지나갈 코어가 없으면 성립하지 않는다.
   enemy_def: number // default 0
   fight_duration: number // seconds, default 180
   part_destructible: boolean // default false — boss has a part-destruction gimmick;
@@ -34,6 +29,9 @@ export interface BossProfile {
   // pays SR, and a Rocket Launcher is paid by none. null = unknown, pays nobody.
   // gauge_charge_time and mode also exist on the backend BossProfile but are
   // left to backend defaults and not surfaced here (per the README contract).
+  elemental_interrupt_required: boolean // default false — 기믹 파훼에 약점 속성 니케가
+  // 덱당 최소 1기 필요하다. 무속성 보스에서는 무시된다(약점이 없으므로 어떤 덱도
+  // 만족시킬 수 없고, 강제하면 모든 로스터가 불능이 된다).
 }
 
 export interface RecommendRequest {

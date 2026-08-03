@@ -21,6 +21,7 @@ from collections import Counter, defaultdict
 from dataclasses import dataclass
 from itertools import combinations, permutations
 
+from app.elements import weakness_of
 from app.raid_simulator import simulate_raid
 from app.roster import assemble_simulation_inputs
 from app.skill_rules.registry import character_map
@@ -130,6 +131,88 @@ class BossProfile:
     # None means the band has not been read for this encounter and pays nobody,
     # which is what every caller computed before the term was wired at all.
     effective_range_band: str | None = None
+    # This boss keeps its core as a separate object from its body, so a Pierce
+    # holder's shot passes through the core and hits the body behind it - one
+    # normal attack, two instances. Depends on `core_hittable`: there is nothing
+    # to pierce through without a hittable core, and raid_simulator reads the two
+    # together rather than trusting the caller not to send the contradiction.
+    pierce_hits_body_behind_core: bool = False
+    # The boss gates a gimmick on an elemental interrupt: breaking it needs at
+    # least one Nikke holding elemental advantage, so a deck without one cannot
+    # clear the phase however much damage it does. Unlike every other deck
+    # legality rule in this module, this one depends on the BOSS - see
+    # deck_breaks_gimmick.
+    elemental_interrupt_required: bool = False
+
+
+def weakness_holders(units, boss: BossProfile):
+    """How many of `units` hold elemental advantage over this boss - 0 whenever
+    the gimmick is off or the boss has no element, so callers need no second
+    guard before budgeting them across decks."""
+    if not boss.elemental_interrupt_required or boss.element is None:
+        return 0
+    weakness = weakness_of(boss.element)
+    return sum(1 for u in units if u.element == weakness)
+
+
+def deck_breaks_gimmick(units, boss: BossProfile):
+    """Whether these units can break the boss's elemental-interrupt gimmick.
+
+    Vacuously true when the boss has no gimmick, and ALSO when it has no element:
+    an element-less boss has no weakness, so no deck could ever satisfy the
+    requirement and enforcing it would make every roster infeasible rather than
+    expressing anything real.
+    """
+    if not boss.elemental_interrupt_required or boss.element is None:
+        return True
+    weakness = weakness_of(boss.element)
+    return any(u.element == weakness for u in units)
+
+
+# Sentinel default for the `deck_filter` parameter on search_best_decks and
+# best_completions, distinct from None. A caller passing None wants exactly
+# that - no filter at all, the deliberate unconstrained fallback a drafted
+# completion needs when no constrained completion exists - so None cannot
+# also mean "derive one from the boss" or that caller has no way to ask for
+# an unfiltered search.
+_DERIVE_FILTER = object()
+
+
+def _gimmick_filter(boss: BossProfile):
+    """The boss's gimmick as a deck predicate, or None when there is none to
+    apply. None (rather than a predicate that always returns True) is what lets
+    every generator below skip the call entirely on the common path."""
+    if not boss.elemental_interrupt_required or boss.element is None:
+        return None
+    return lambda units: deck_breaks_gimmick(units, boss)
+
+
+def _ensure_weakness_in_pool(cut, roster, boss: BossProfile):
+    """Guarantee the cut pool can still form a deck that breaks the gimmick.
+
+    prune_candidate_pool ranks by marginal contribution and knows nothing about
+    the boss, so its cut can hold no unit of the weakness element - and then the
+    constrained search has nothing at all to return. Top the pool back up with
+    the best weakness unit at each tier instead. This is the same move
+    _reference_deck makes when its picks come up short: widen the pool rather
+    than return nothing, and never fall back to an exhaustive walk over the full
+    roster (millions of orderings on a real one).
+    """
+    if not boss.elemental_interrupt_required or boss.element is None:
+        return cut
+    weakness = weakness_of(boss.element)
+    if any(u.element == weakness for u in cut):
+        return cut
+    in_cut = {u.slug for u in cut}
+    added = []
+    for tier in (1, 2, 3):
+        pick = max((u for u in roster
+                    if u.burst_tier == tier and u.element == weakness
+                    and u.slug not in in_cut),
+                   key=_prior, default=None)
+        if pick is not None:
+            added.append(pick)
+    return list(cut) + added
 
 
 # Real decks come in exactly these B1/B2/B3 shapes (Fienn, 2026-07-17);
@@ -144,10 +227,17 @@ ALLOWED_SHAPES = ((1, 1, 3), (1, 2, 2), (2, 1, 2))
 SEARCH_SIM_BUDGET = 1200
 
 
-def shape_combinations(roster):
+def shape_combinations(roster, deck_filter=None):
     """Canonical tier-ordered 5-unit combinations, restricted to the shapes
     real play uses. Pure combinatorics on `.burst_tier` (like
-    feasible_orderings); intra-tier order is the input order."""
+    feasible_orderings); intra-tier order is the input order.
+
+    `deck_filter` is an optional extra legality predicate on the finished deck.
+    It exists for a rule this module had none of until now: one that depends on
+    the BOSS rather than only on the units (deck_breaks_gimmick). Filtering here
+    rather than after the search is deliberate - a search that converges on decks
+    the rule forbids and is corrected afterwards loses an unpredictable amount.
+    """
     by_tier = {1: [], 2: [], 3: []}
     for unit in roster:
         if unit.burst_tier in by_tier:
@@ -157,14 +247,19 @@ def shape_combinations(roster):
             for c2 in combinations(by_tier[2], n2):
                 for c3 in combinations(by_tier[3], n3):
                     deck = list(c1) + list(c2) + list(c3)
-                    if _no_character_clash(deck) and _tier1_seating_valid(deck):
+                    if (_no_character_clash(deck) and _tier1_seating_valid(deck)
+                            and (deck_filter is None or deck_filter(deck))):
                         yield deck
 
 
-def _shape_completions(required, candidates):
+def _shape_completions(required, candidates, deck_filter=None):
     """Yield 5-unit decks (canonical tier order) that contain every unit in
     `required`, filling the rest from `candidates`, for every ALLOWED_SHAPES
-    compatible with required's per-tier counts. Pure combinatorics on burst_tier."""
+    compatible with required's per-tier counts. Pure combinatorics on burst_tier.
+
+    `deck_filter` is the same optional boss-dependent legality predicate
+    shape_combinations takes - see its docstring for why filtering happens here.
+    """
     req_counts = Counter(u.burst_tier for u in required)
     if any(t not in (1, 2, 3) for t in req_counts):
         return
@@ -184,12 +279,13 @@ def _shape_completions(required, candidates):
                     deck = list(required) + list(f1) + list(f2) + list(f3)
                     # canonical tier order for _no_character_clash / seating checks
                     deck.sort(key=lambda u: u.burst_tier)
-                    if _no_character_clash(deck) and _tier1_seating_valid(deck):
+                    if (_no_character_clash(deck) and _tier1_seating_valid(deck)
+                            and (deck_filter is None or deck_filter(deck))):
                         yield deck
 
 
 def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None,
-                     sim_budget=SEARCH_SIM_BUDGET, cascade=None):
+                     sim_budget=SEARCH_SIM_BUDGET, cascade=None, deck_filter=_DERIVE_FILTER):
     """Best `top_n` 5-unit decks that contain every unit in `required`, over
     every ALLOWED_SHAPES-compatible completion drawn from `candidates`.
     Returns [] when required's tier counts fit no shape or no valid
@@ -207,14 +303,26 @@ def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None
     than it does for a free deck: the fewer seats a draft fills, the more of
     the answer comes out of the cut pool, so on a one-seat draft prune's
     marginal-contribution cut alone measured 14.6% below the ranked shortlist.
+
+    `deck_filter` left at its default derives the boss's gimmick filter (or
+    None, if the boss has none). Pass None explicitly to search with NO
+    filter at all - the two are not the same thing: a caller with no legal
+    constrained completion needs to ask for an actually unconstrained one.
     """
-    orderings = _bounded_orderings(_shape_completions(required, candidates), sim_budget)
+    if deck_filter is _DERIVE_FILTER:
+        deck_filter = _gimmick_filter(boss)
+    orderings = _bounded_orderings(_shape_completions(required, candidates, deck_filter),
+                                   sim_budget)
     if orderings is None:
         combos = (cascade.shortlist_completions(required, candidates, boss, pool)
                   if cascade is not None else None)
+        if combos is not None and deck_filter is not None:
+            combos = [c for c in combos if deck_filter(c)] or None
         if combos is None:
             cut = prune_candidate_pool(candidates, boss, pool)
-            combos = _shape_completions(required, cut)
+            combos = _shape_completions(required,
+                                        _ensure_weakness_in_pool(cut, candidates, boss),
+                                        deck_filter)
         orderings = _all_intra_tier_orderings(combos)
         if not orderings:
             # The cut pool cannot complete this draft even though the full one
@@ -222,7 +330,8 @@ def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None
             # of a drafted unit, say). Reporting the draft infeasible would be
             # wrong, so pay the exhaustive search rather than refuse a deck the
             # player can actually field.
-            orderings = _all_intra_tier_orderings(_shape_completions(required, candidates))
+            orderings = _all_intra_tier_orderings(
+                _shape_completions(required, candidates, deck_filter))
     if not orderings:
         return []
     totals = _score_batch(orderings, boss, pool)
@@ -230,7 +339,7 @@ def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None
     return [_summarize(ordered, evaluate_deck(ordered, boss)) for _, ordered in ranked[:top_n]]
 
 
-def feasible_orderings(roster):
+def feasible_orderings(roster, deck_filter=None):
     for combo in combinations(roster, 5):
         by_tier = {1: [], 2: [], 3: []}
         infeasible = False
@@ -240,7 +349,8 @@ def feasible_orderings(roster):
                 break
             by_tier[unit.burst_tier].append(unit)
         if (infeasible or not all(by_tier[t] for t in (1, 2, 3))
-                or not _no_character_clash(combo) or not _tier1_seating_valid(combo)):
+                or not _no_character_clash(combo) or not _tier1_seating_valid(combo)
+                or (deck_filter is not None and not deck_filter(combo))):
             continue
         for order1 in permutations(by_tier[1]):
             for order2 in permutations(by_tier[2]):
@@ -271,6 +381,7 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None):
         boss_element=boss.element,
         part_destructible=boss.part_destructible,
         effective_range_band=boss.effective_range_band,
+        pierce_hits_body_behind_core=boss.pierce_hits_body_behind_core,
     )
 
 
@@ -305,10 +416,22 @@ def _summarize(ordered_deck, result):
 
 
 def find_best_decks(roster, boss: BossProfile, top_n=5):
+    """Not a production path (search_best_decks is), but the two must not
+    disagree about what is playable - so it gets the same unfiltered retry
+    search_best_decks does: a roster with no weakness-element unit at all
+    cannot break the gimmick in any deck, and refusing a recommendation
+    outright is worse than the best deck that clears everything but the phase
+    gate."""
+    deck_filter = _gimmick_filter(boss)
     scored = [
         _summarize(ordered, evaluate_deck(ordered, boss))
-        for ordered in feasible_orderings(roster)
+        for ordered in feasible_orderings(roster, deck_filter)
     ]
+    if not scored and deck_filter is not None:
+        scored = [
+            _summarize(ordered, evaluate_deck(ordered, boss))
+            for ordered in feasible_orderings(roster, None)
+        ]
     scored.sort(key=lambda entry: entry["total_damage"], reverse=True)
     return scored[:top_n]
 
@@ -719,24 +842,25 @@ def _bounded_orderings(combos, sim_budget):
     return out
 
 
-def _orderings_within_budget(roster, sim_budget):
+def _orderings_within_budget(roster, sim_budget, deck_filter=None):
     """_bounded_orderings over every deck `roster` can form (no draft to honor)."""
-    return _bounded_orderings(shape_combinations(roster), sim_budget)
+    return _bounded_orderings(shape_combinations(roster, deck_filter), sim_budget)
 
 
-def completions_fit_budget(required, candidates, sim_budget=SEARCH_SIM_BUDGET):
+def completions_fit_budget(required, candidates, sim_budget=SEARCH_SIM_BUDGET, deck_filter=None):
     """Whether best_completions can enumerate this draft's completions outright.
 
     Exported so a caller can decide UP FRONT whether to pay for something only
     the over-budget path needs (allocate_decks fits a surrogate). Asking is
     nearly free: the walk stops at the first ordering past the budget.
     """
-    return _bounded_orderings(_shape_completions(required, candidates),
+    return _bounded_orderings(_shape_completions(required, candidates, deck_filter),
                               sim_budget) is not None
 
 
 def search_best_decks(roster, boss: BossProfile, top_n=5,
-                      sim_budget=SEARCH_SIM_BUDGET, pool=None, cascade=None):
+                      sim_budget=SEARCH_SIM_BUDGET, pool=None, cascade=None,
+                      deck_filter=_DERIVE_FILTER):
     """Budget-aware replacement for exhaustive find_best_decks: every shape
     combination is scored in EVERY intra-tier order, and when that would blow
     the budget the roster is first cut to a candidate pool
@@ -760,17 +884,64 @@ def search_best_decks(roster, boss: BossProfile, top_n=5,
     pruned pool. It may decline by returning None, in which case the pruned
     exhaustive path runs unchanged. This module never imports the cascade -
     surrogate.py already imports this one.
+
+    A roster that holds no weakness-element unit at all cannot break the
+    gimmick in ANY deck, so a `deck_filter` derived from it rejects the whole
+    space and `_resolve_orderings` legitimately comes back empty. Refusing a
+    recommendation outright is worse than the best deck that clears
+    everything but the phase gate, so that case is retried unfiltered - the
+    caller surfaces the shortfall itself (weakness_holders) rather than the
+    search returning nothing. "Unfiltered" only drops the `deck_filter`
+    predicate, though: `_ensure_weakness_in_pool` (in `_resolve_orderings`'s
+    pruned-cut path) is gated on `boss.elemental_interrupt_required` alone, so
+    a gimmick-on boss still gets this retry's pruned pool topped up with up to
+    3 weakness units (one per tier) even here. Harmless - it only ever widens
+    the pool a filterless search draws from - but this retry's pool is not
+    quite the same size a gimmick-less boss's search would see.
+
+    `deck_filter` left at its default derives the boss's gimmick filter (or
+    None, if the boss has none). Pass None explicitly to search with NO
+    filter at all - the two are not the same thing.
     """
     candidates = list(roster)
-    orderings = _orderings_within_budget(candidates, sim_budget)
-    if orderings is None:
-        combos = cascade.shortlist(roster, boss, pool) if cascade is not None else None
-        if combos is None:
-            combos = shape_combinations(prune_candidate_pool(roster, boss, pool))
-        orderings = _all_intra_tier_orderings(combos)
+    if deck_filter is _DERIVE_FILTER:
+        deck_filter = _gimmick_filter(boss)
+        if deck_filter is not None and not deck_breaks_gimmick(roster, boss):
+            # No unit anywhere in the roster holds the weakness element, so no
+            # deck drawn from it can ever hold one either - walking the full
+            # shape space just to discover that is a multi-second stall on a
+            # real roster (measured ~9s on 78 units). Drop the filter up
+            # front rather than pay for the doomed walk and its retry below.
+            deck_filter = None
+    orderings = _resolve_orderings(candidates, boss, sim_budget, pool, cascade, deck_filter)
+    if not orderings and deck_filter is not None:
+        orderings = _resolve_orderings(candidates, boss, sim_budget, pool, cascade, None)
     # Ranked on slim scores first; only the returned top_n get a second sim to
     # attach the full "result" (evaluate_deck is pure, so the floats are
     # identical to scoring the full summaries directly).
     totals = _score_batch(orderings, boss, pool)
     ranked = sorted(zip(totals, orderings), key=lambda pair: pair[0], reverse=True)
     return [_summarize(ordered, evaluate_deck(ordered, boss)) for _, ordered in ranked[:top_n]]
+
+
+def _resolve_orderings(roster, boss, sim_budget, pool, cascade, deck_filter):
+    """search_best_decks's budget-then-cascade-then-cut ladder for one
+    deck_filter value: try the full space first, and only pay for cascade's
+    shortlist or prune_candidate_pool's cut once the full space blows the
+    budget. A named function lets search_best_decks run the same ladder under
+    two different filter values without keeping two copies in sync."""
+    orderings = _orderings_within_budget(roster, sim_budget, deck_filter)
+    if orderings is None:
+        combos = cascade.shortlist(roster, boss, pool) if cascade is not None else None
+        if combos is not None and deck_filter is not None:
+            # The cascade ranks by predicted damage and knows nothing about the
+            # gimmick, so its shortlist can be entirely decks the filter rejects.
+            # Falling through to the pruned path is the same two-step this
+            # function already takes when the cascade declines outright.
+            combos = [c for c in combos if deck_filter(c)] or None
+        if combos is None:
+            cut = prune_candidate_pool(roster, boss, pool)
+            combos = shape_combinations(_ensure_weakness_in_pool(cut, roster, boss),
+                                        deck_filter)
+        orderings = _all_intra_tier_orderings(combos)
+    return orderings

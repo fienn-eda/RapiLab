@@ -7,19 +7,23 @@ import type { BossElement, BossProfile, BossRangeBand } from './recommend'
 export interface BossProfileDraft {
   element: BossElement
   core_hittable: boolean
+  pierce_hits_body_behind_core: boolean
   enemy_def: string
   fight_duration: string
   part_destructible: boolean
   effective_range_band: BossRangeBand
+  elemental_interrupt_required: boolean
 }
 
 export const makeDefaultBossProfileDraft = (): BossProfileDraft => ({
   element: null,
   core_hittable: false,
+  pierce_hits_body_behind_core: false,
   enemy_def: '0',
   fight_duration: '180',
   part_destructible: false,
   effective_range_band: null,
+  elemental_interrupt_required: false,
 })
 
 export interface BossProfileDraftErrors {
@@ -38,12 +42,18 @@ export interface BossProfileValidationResult {
 export const bossProfileToDraft = (boss: BossProfile): BossProfileDraft => ({
   element: boss.element,
   core_hittable: boss.core_hittable,
+  // 이 필드가 생기기 전에 저장된 프로필은 undefined라, 그대로 두면 체크박스가
+  // 비제어 컴포넌트가 된다.
+  pierce_hits_body_behind_core: boss.pierce_hits_body_behind_core ?? false,
   enemy_def: String(boss.enemy_def),
   fight_duration: String(boss.fight_duration),
   part_destructible: boss.part_destructible,
   // A profile saved before this field existed has it undefined, which would
   // otherwise reach the select as an uncontrolled value.
   effective_range_band: boss.effective_range_band ?? null,
+  // 이 필드가 생기기 전에 저장된 프로필은 undefined라, 그대로 두면 체크박스가
+  // 비제어 컴포넌트가 된다.
+  elemental_interrupt_required: boss.elemental_interrupt_required ?? false,
 })
 
 interface ParsedNumber {
@@ -81,10 +91,12 @@ export const validateBossProfileDraft = (
   const value: BossProfile = {
     element: draft.element,
     core_hittable: draft.core_hittable,
+    pierce_hits_body_behind_core: draft.pierce_hits_body_behind_core,
     enemy_def: enemyDef.value!,
     fight_duration: fightDuration.value!,
     part_destructible: draft.part_destructible,
     effective_range_band: draft.effective_range_band,
+    elemental_interrupt_required: draft.elemental_interrupt_required,
   }
   return { errors, value }
 }

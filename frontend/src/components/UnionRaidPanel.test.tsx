@@ -78,12 +78,14 @@ describe('UnionRaidPanel', () => {
   })
 
   it('전투마다 보스 속성을 따로 고를 수 있다', async () => {
+    // The picker speaks in the boss's weakness: 풍압(Wind) weak -> boss is
+    // Iron, 전격(Electric) weak -> boss is Water.
     renderPanel()
     const groups = screen.getAllByRole('group', { name: /전투/ })
-    await userEvent.selectOptions(within(groups[0]).getByLabelText(/속성/), 'Iron')
-    await userEvent.selectOptions(within(groups[1]).getByLabelText(/속성/), 'Water')
-    expect(within(groups[0]).getByLabelText(/속성/)).toHaveValue('Iron')
-    expect(within(groups[1]).getByLabelText(/속성/)).toHaveValue('Water')
+    await userEvent.click(within(groups[0]).getByLabelText('풍압'))
+    await userEvent.click(within(groups[1]).getByLabelText('전격'))
+    expect(within(groups[0]).getByLabelText('풍압')).toBeChecked()
+    expect(within(groups[1]).getByLabelText('전격')).toBeChecked()
   })
 
   it('전투 시간 기본값은 180초다', () => {
@@ -95,6 +97,13 @@ describe('UnionRaidPanel', () => {
   it('15칸을 다 채우기 전에는 제출을 막는다', () => {
     renderPanel()
     expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
+  })
+
+  it('유니온레이드 탭에는 속성저지 체크박스가 없다', () => {
+    // 이 탭은 유저가 짠 편성을 채점만 하므로 탐색 제약이 걸 곳이 없다.
+    renderPanel()
+
+    expect(screen.queryByLabelText('속성저지 필수')).not.toBeInTheDocument()
   })
 
   it('잠금 토글을 그리지 않는다', async () => {
@@ -136,9 +145,10 @@ describe('UnionRaidPanel', () => {
 
     renderPanel()
     const groups = screen.getAllByRole('group', { name: /전투/ })
-    await user.selectOptions(within(groups[0]).getByLabelText(/속성/), 'Iron')
-    await user.selectOptions(within(groups[1]).getByLabelText(/속성/), 'Water')
-    await user.selectOptions(within(groups[2]).getByLabelText(/속성/), 'Wind')
+    // 풍압 약점 -> 철갑 보스, 전격 약점 -> 수냉 보스, 작열 약점 -> 풍압 보스.
+    await user.click(within(groups[0]).getByLabelText('풍압'))
+    await user.click(within(groups[1]).getByLabelText('전격'))
+    await user.click(within(groups[2]).getByLabelText('작열'))
 
     for (let deck = 0; deck < 3; deck += 1) {
       for (let seat = 0; seat < 5; seat += 1) {
@@ -196,7 +206,8 @@ describe('UnionRaidPanel', () => {
     expect(await screen.findByText('1번 덱 · 무속성')).toBeInTheDocument()
 
     const groups = screen.getAllByRole('group', { name: /전투/ })
-    await user.selectOptions(within(groups[0]).getByLabelText(/속성/), 'Fire')
+    // 수냉 약점 -> 작열 보스.
+    await user.click(within(groups[0]).getByLabelText('수냉'))
 
     expect(screen.getByText('1번 덱 · 무속성')).toBeInTheDocument()
     expect(screen.queryByText('1번 덱 · 작열')).not.toBeInTheDocument()

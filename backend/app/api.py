@@ -58,6 +58,11 @@ class BossProfileIn(BaseModel):
     # paid by none of them. None means "not known for this boss" and pays
     # nobody - see raid_simulator.EFFECTIVE_RANGE_BANDS.
     effective_range_band: Literal["near", "mid", "far"] | None = None
+    # See BossProfile.pierce_hits_body_behind_core - only meaningful together
+    # with core_hittable.
+    pierce_hits_body_behind_core: bool = False
+    # See BossProfile.elemental_interrupt_required. Inert on an element-less boss.
+    elemental_interrupt_required: bool = False
 
 
 def boss_profile(boss: BossProfileIn) -> BossProfile:

@@ -9,9 +9,12 @@ import { DeckCard, type UnitLookups } from './DeckCard'
 import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
 import { elementLabel } from '../lib/elementName'
+import { weaknessFor } from '../lib/elementAdvantage'
 
+// 보스의 본인 속성이 아니라 약점을 이름 붙인다 — 보스 폼이 받는 것이 약점이므로,
+// 결과가 본인 속성으로 말하면 두 화면이 다른 언어를 쓰게 된다.
 const bossElementLabel = (element: BossElement): string =>
-  element === null ? '무속성' : elementLabel(element)
+  element === null ? '무속성' : `약점 ${elementLabel(weaknessFor(element))}`
 
 interface EvaluationResultsProps extends UnitLookups {
   decks: DeckRecommendation[]

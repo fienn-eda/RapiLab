@@ -18,6 +18,14 @@ const renderResults = (overrides = {}) =>
     nameFor={(slug) => slug}
     {...overrides} />)
 
+const DECK = {
+  deck: ['a', 'b', 'c', 'd', 'e'],
+  total_damage: 1000,
+  burst_damage: 500,
+  normal_attack_damage: 400,
+  skill_damage: 100,
+}
+
 describe('EvaluationResults', () => {
   it('덱마다 카드를 그리고 합계를 보여준다', () => {
     renderResults()
@@ -32,8 +40,8 @@ describe('EvaluationResults', () => {
     // Exact composed text, not a substring match, so this fails if the
     // element/deck pairing is transposed, reversed, or off-by-one.
     renderResults()
-    expect(screen.getByText('1번 덱 · 철갑')).toBeTruthy()
-    expect(screen.getByText('2번 덱 · 수냉')).toBeTruthy()
+    expect(screen.getByText('1번 덱 · 약점 풍압')).toBeTruthy()
+    expect(screen.getByText('2번 덱 · 약점 전격')).toBeTruthy()
   })
 
   it('엔진이 고른 순서를 안내한다', () => {
@@ -47,5 +55,23 @@ describe('EvaluationResults', () => {
     // rendered text is "Not A Nikke", not the raw slug.
     renderResults({ excludedSlugs: ['not-a-nikke'] })
     expect(screen.getByText(/Not A Nikke/)).toBeTruthy()
+  })
+})
+
+describe('EvaluationResults 덱 라벨', () => {
+  it('보스 본인 속성이 아니라 약점 속성으로 라벨한다', () => {
+    render(
+      <EvaluationResults decks={[DECK]} combinedTotalDamage={1000} bossElements={['Fire']} nameFor={(slug) => slug} />,
+    )
+
+    expect(screen.getByText('1번 덱 · 약점 수냉')).toBeInTheDocument()
+  })
+
+  it('무속성 보스는 그대로 무속성이다', () => {
+    render(
+      <EvaluationResults decks={[DECK]} combinedTotalDamage={1000} bossElements={[null]} nameFor={(slug) => slug} />,
+    )
+
+    expect(screen.getByText('1번 덱 · 무속성')).toBeInTheDocument()
   })
 })

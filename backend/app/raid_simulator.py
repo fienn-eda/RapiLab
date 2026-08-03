@@ -480,6 +480,12 @@ def simulate_raid(
     weapon_stats=None,
     boss_element=None,
     part_destructible=False,
+    # A boss that keeps its core as a separate object from its body: a Pierce
+    # holder's shot passes through the core and lands on the body behind it, so
+    # one normal attack produces two instances (Fienn, 2026-08-03). Read together
+    # with `core_hittable` below - there is no 2-pierce without a core to pierce,
+    # so a caller that sets this without core_hittable gets nothing.
+    pierce_hits_body_behind_core=False,
     effective_range_band=None,
     base_crit_rate=BASE_CRIT_RATE,
     periodic_nukes=None,
@@ -1439,29 +1445,51 @@ def simulate_raid(
     # Phase 2: now that every buff/debuff is in the registry, compute each
     # recorded damage event against the final registry (each read at its own
     # time is replay-safe).
-    damage_log = [
-        {
-            "slug": ev["slug"],
-            "time": ev["time"],
-            "damage": _damage_instance(
-                ev["slug"],
-                _normal_attack_percent(ev) if ev["source"] == "normal_attack" else _resolve_percent(ev),
-                ev["time"],
-                damage_type=ev["damage_type"], extra_charge_bonus=ev["extra_charge_bonus"],
-                extra_flat_atk=ev["extra_flat_atk"],
-                hits_core=core_hittable and (
-                    core_eligible(ev["source"], ev["damage_type"])
-                    if ev["core_eligible_override"] is None
-                    else ev["core_eligible_override"]
+    def _entries(ev):
+        """One damage entry per event - or TWO when a Pierce holder's normal
+        attack strikes a core the boss keeps as a separate object from its body.
+        The shot passes through the core and lands on the body behind it, and the
+        body hit is the same instance minus the core bonus (Fienn, 2026-08-03).
+
+        `hits_core` already folds in `core_hittable`, so the second instance
+        cannot appear in a fight with no hittable core.
+        """
+        is_normal_attack = ev["source"] == "normal_attack"
+        percent = _normal_attack_percent(ev) if is_normal_attack else _resolve_percent(ev)
+        hits_core = core_hittable and (
+            core_eligible(ev["source"], ev["damage_type"])
+            if ev["core_eligible_override"] is None
+            else ev["core_eligible_override"]
+        )
+
+        def instance(on_core):
+            return {
+                "slug": ev["slug"],
+                "time": ev["time"],
+                "damage": _damage_instance(
+                    ev["slug"], percent, ev["time"],
+                    damage_type=ev["damage_type"],
+                    extra_charge_bonus=ev["extra_charge_bonus"],
+                    extra_flat_atk=ev["extra_flat_atk"],
+                    hits_core=on_core,
+                    on_charge_weapon=ev["on_charge_weapon"],
+                    is_normal_attack=is_normal_attack,
                 ),
-                on_charge_weapon=ev["on_charge_weapon"],
-                is_normal_attack=ev["source"] == "normal_attack",
-            ),
-            "source": ev["source"],
-            "damage_type": ev["damage_type"],
-        }
-        for ev in damage_events
-    ]
+                "source": ev["source"],
+                "damage_type": ev["damage_type"],
+            }
+
+        pierces = (
+            pierce_hits_body_behind_core
+            and hits_core
+            and is_normal_attack
+            and _stat_bundle(ev["slug"], ev["time"])["has_pierce"] > 0
+        )
+        # The body hit keeps `source` = "normal_attack", so a caller's
+        # burst/normal/skill split (deck_search._summarize) still adds up.
+        return [instance(True), instance(False)] if pierces else [instance(hits_core)]
+
+    damage_log = [entry for ev in damage_events for entry in _entries(ev)]
 
     return {
         "total_damage": sum(entry["damage"] for entry in damage_log),

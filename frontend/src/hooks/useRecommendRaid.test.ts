@@ -15,10 +15,12 @@ const request: RecommendRaidRequest = {
   boss: {
     element: null,
     core_hittable: false,
+    pierce_hits_body_behind_core: false,
     enemy_def: 0,
     fight_duration: 180,
     part_destructible: false,
     effective_range_band: null,
+    elemental_interrupt_required: false,
   },
   num_decks: 3,
 }
