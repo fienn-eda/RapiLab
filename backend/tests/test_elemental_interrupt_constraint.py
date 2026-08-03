@@ -297,3 +297,43 @@ def test_an_allocation_without_the_gimmick_is_byte_for_byte_the_old_one(monkeypa
     # 기믹이 없으면 점수를 그대로 따라가 두 약점유닛이 한 덱에 몰린다.
     assert _satisfied(off, roster) == 1
     assert sum(d["total_damage"] for d in off["decks"]) == 110.0
+
+
+def test_the_seed_completion_pulls_in_a_weakness_unit_when_the_seed_lacks_one(monkeypatch):
+    """드래프트 경로. 시드 자체엔 약점유닛이 없어도, 완성이 남은 자리에 채워 넣는다 -
+    peel과 별개의 코드 경로(allocate_decks의 시드 루프, best_completions)라서 peel
+    테스트가 통과해도 이쪽은 따로 확인해야 한다."""
+    from app.deck_allocation import allocate_decks
+    from tests.test_deck_allocation import patch_scorer
+
+    patch_scorer(monkeypatch, lambda slugs: 1.0)
+    roster = _roster(2)
+    by_slug = {u.slug: u for u in roster}
+    seed = [by_slug["u2"]]   # tier-1, 보스 자신의 속성 - 아직 약점유닛이 없다
+
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, draft=[seed],
+                           time_budget_sec=0.0)
+
+    seeded_deck = alloc["decks"][0]["deck"]
+    assert "u2" in seeded_deck
+    assert any(by_slug[s].element == WEAKNESS for s in seeded_deck)
+
+
+def test_a_seed_that_fills_every_seat_still_allocates_unconstrained(monkeypatch):
+    """드래프트 경로, 무제약 폴백. 시드가 5석을 전부 비-약점유닛으로 채우면 완성이
+    채울 자리가 없다 - InfeasibleDraft로 거부하지 않고 무제약으로 떨어져야 한다
+    (설계의 "덱을 거부하지 않는다"; :187-192의 complete(None) 폴백이 이 경로를 살린다)."""
+    from app.deck_allocation import allocate_decks
+    from tests.test_deck_allocation import patch_scorer
+
+    patch_scorer(monkeypatch, lambda slugs: 1.0)
+    roster = _roster(2)
+    by_slug = {u.slug: u for u in roster}
+    # (1,1,3) 모양을 5석 다 채우는 시드, 전부 보스 자신의 속성 - 채울 자리가 없다
+    seed = [by_slug[s] for s in ("u2", "u3", "u5", "u6", "u7")]
+
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, draft=[seed],
+                           time_budget_sec=0.0)   # InfeasibleDraft를 던지면 안 된다
+
+    assert len(alloc["decks"]) == 2
+    assert sorted(alloc["decks"][0]["deck"]) == sorted(u.slug for u in seed)

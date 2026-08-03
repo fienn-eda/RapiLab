@@ -73,6 +73,18 @@ def _gimmick_budget(available, boss, decks_left):
     On a real roster the cap never binds - 60-80 units carry 12-16 of any one
     element, so it sits at 8 or more and a 5-unit deck cannot reach it. It bites
     only on thin rosters, which is exactly where the starvation happens.
+
+    On a thin roster the cap can still cost a DECK, not just bind uselessly:
+    fuzzed over 300 thin rosters with a tied scorer, the constrained argmax
+    sometimes picked a completion that spent a scarce burst tier, leaving the
+    next deck's remaining pool fitting no ALLOWED_SHAPES at all - fewer decks
+    formed than the unconstrained peel would have managed (17/300 runs). The
+    min(M, N) satisfied-count invariant still held everywhere in the same fuzz
+    (0/300 breaks with the cap, 107/300 without), so this is a real but
+    separate cost from what the cap is FOR - shape starvation, not filter
+    emptiness - and it is thin-roster-only for the same reason the cap itself
+    is: a real 60-80-unit roster's cap sits at 8+ and a 5-unit deck cannot
+    reach it, so it never forces this tradeoff there either.
     """
     w = weakness_holders(available, boss)
     if w == 0:
@@ -96,15 +108,18 @@ def _satisfied_count(decks, boss):
 
 
 def _gimmick_floor(decks, boss, target):
-    """The number of gimmick-breaking decks a swap may not take us below.
+    """The number of gimmick-breaking decks a swap may not take us below: never
+    fewer than we already hold.
 
-    The `min` is the whole point. Once the peel reached `target` (= min(M, N)),
-    the count may not drop below it. If it came up short - a roster too thin to
-    fill every deck - the rule is only "do not make it worse". Using `target`
-    itself as the floor would reject every swap in that second case and kill the
-    climb outright.
+    `target` (= min(M, N), the most this roster could ever satisfy) cannot bind
+    here and needs no explicit clamp. Satisfied decks are disjoint - each holds
+    at least one of the M weakness units, and a unit sits in only one deck - so
+    `_satisfied_count(decks, boss)` can never exceed `target` in the first
+    place; neither M nor N changes under a swap. Kept as a named, tested
+    function (not inlined as `_satisfied_count`) because it states the
+    invariant the swap guard actually relies on, `target` and all.
     """
-    return min(target, _satisfied_count(decks, boss))
+    return _satisfied_count(decks, boss)
 
 
 def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
@@ -211,17 +226,16 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
                 if _orderings_within_budget(remaining, SEARCH_SIM_BUDGET) is None:
                     cascade = ranker()
             gimmick = _gimmick_budget(remaining, boss, num_decks - len(decks))
+            # No unconstrained retry needed here, unlike the seed path above:
+            # search_best_decks already falls back to an unfiltered resolve
+            # whenever a non-None deck_filter empties the search space (see its
+            # `if not orderings and deck_filter is not None` retry in
+            # deck_search.py), so passing `gimmick` straight through already
+            # gets "as many decks as we can" for free. best_completions has no
+            # such retry of its own - a deliberate Task 9 asymmetry - which is
+            # why the seed path still needs its own explicit fallback.
             found = search_best_decks(remaining, boss, top_n=1, pool=pool,
                                       cascade=cascade, deck_filter=gimmick)
-            if not found and gimmick is not None:
-                # No legal deck in the remaining pool holds a weakness unit within
-                # the budget. Take the best unconstrained deck rather than stop
-                # short of num_decks - the design's "as many decks as we can".
-                # `deck_filter=None` is what says unconstrained; OMITTING it would
-                # let search_best_decks derive the boss's filter and re-impose the
-                # very constraint this line is escaping.
-                found = search_best_decks(remaining, boss, top_n=1, pool=pool,
-                                          cascade=cascade, deck_filter=None)
             if not found:
                 break
             units = [by_slug[slug] for slug in found[0]["deck"]]
@@ -352,13 +366,20 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
     seated = None if j is not None else {character_of(u.slug)
                                          for deck in decks for u in deck}
 
+    # `floor` only changes when a swap is actually ACCEPTED (decks[i]/partner[k]
+    # mutate) - admissible() asks gimmick_ok() once per candidate pair against
+    # the SAME decks state, so recomputing it inside gimmick_ok would redo the
+    # same _satisfied_count walk for every pair asked. Computed once here and
+    # refreshed once per acceptance below instead.
+    floor = _gimmick_floor(decks, boss, gimmick_target) if gimmick_target else 0
+
     def gimmick_ok(a, k):
         """The swap must not lower how many decks can break the gimmick below
-        `_gimmick_floor` - read live off `decks`, so an accepted swap that RAISED
-        the count raises the floor with it."""
+        `floor` - `decks`/`partner` are read live, so the trial reflects the
+        swap actually under test. An accepted swap that RAISED the count
+        raises `floor` with it (see the refresh after acceptance below)."""
         if gimmick_target == 0:
             return True
-        floor = _gimmick_floor(decks, boss, gimmick_target)
         trial = list(decks)
         deck_i = list(decks[i])
         deck_i[a] = partner[k]
@@ -418,6 +439,8 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
             # so the seat-exclusion set follows it before the tail is re-judged.
             seated.discard(character_of(partner[k].slug))
             seated.add(character_of(decks[i][a].slug))
+        if gimmick_target:
+            floor = _gimmick_floor(decks, boss, gimmick_target)
         candidates = candidates[:start] + [(a2, k2) for a2, k2 in candidates[start:]
                                            if admissible(a2, k2)]
     return improved
