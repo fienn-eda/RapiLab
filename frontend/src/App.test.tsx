@@ -54,9 +54,11 @@ describe('App', () => {
     expect(screen.getByRole('heading', { level: 1, name: 'RapiLab' })).toBeInTheDocument()
   })
 
-  it('states the harmony cube assumption', () => {
+  it('states the harmony cube assumption, and whose it is', () => {
+    // The 계산기 tab asks which cube the unit wears, so an unqualified "every
+    // Nikke wears a reload cube" is a claim the app contradicts on that screen.
     render(<App />)
-    expect(screen.getByText(/재장전 큐브 15레벨/i)).toBeInTheDocument()
+    expect(screen.getByText(/덱 추천은 .*재장전 큐브 15레벨/i)).toBeInTheDocument()
   })
 
   it('prompts to sync and hides the roster/recommend panel when there is no active profile', () => {

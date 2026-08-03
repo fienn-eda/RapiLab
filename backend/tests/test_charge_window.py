@@ -3,9 +3,11 @@ from dataclasses import replace
 
 import pytest
 
+from app.attack_rate import AmmoRefund
 from app.charge_window import (WindowInputs, aggregate_charge_speed,
                                charge_speed_steps, outcome, reload_intervenes,
-                               shot_interval, shot_times, thresholds)
+                               shot_interval, shot_times,
+                               shots_without_magazine_limit, thresholds)
 
 # Scarlet: Black Shadow as Fienn actually measured her (2026-07-29): a 0.30 sec
 # charge, a 0.43 sec motion delay, and a 2.86% charge-speed overload too small
@@ -170,6 +172,26 @@ def test_thresholds_only_list_charge_speeds_that_change_the_interval():
     assert intervals == sorted(intervals, reverse=True), "each step must be faster"
 
 
+def test_the_ladder_stops_at_a_total_the_player_cannot_reach():
+    """Steps above what overload can actually grant are money that does not
+    exist. Scarlet's grid moves every 5.56%, so a 24% ceiling makes 22.22% the
+    last row anyone can buy - 27.78% is off the table, not merely expensive."""
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    rows = thresholds(buffed, ceiling=0.24)
+    assert [round(row.charge_speed_percent * 100, 2) for row in rows] == [
+        0.0, 5.56, 11.11, 16.67, 22.22]
+
+
+def test_without_a_ceiling_the_ladder_runs_until_the_charge_is_gone():
+    """No ceiling is the pure frame-grid question, and it ends where the charge
+    does: at 38.89% Liberalio's cut already covers what is left of the 0.30 sec,
+    so every faster step reads the same 0.43 motion delay and dedupes away."""
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    rows = thresholds(buffed)
+    assert round(rows[-1].charge_speed_percent * 100, 2) == 38.89
+    assert rows[-1].interval == pytest.approx(SCARLET.motion_delay)
+
+
 def test_thresholds_carry_the_shot_counts_fienn_asked_about():
     """The question this calculator was built for: what charge-speed total buys
     19, 20, 21 shots. Each row's HIGH count is the one a favourable Full Burst
@@ -194,3 +216,32 @@ def test_a_small_magazine_caps_the_shots_no_matter_the_charge_speed():
     roomy = replace(SCARLET, max_ammo=22,
                                 charge_time_reduction_sec=LIBERALIO_CUT)
     assert max(counts) < max(t.outcome.high_shots for t in thresholds(roomy))
+
+
+def test_the_shots_a_magazine_costs_are_countable():
+    """What the ladder cannot say on its own: whether a row is flat because of
+    the cadence or because of the magazine. Fienn's synced Scarlet holds 18
+    rounds and reads 18 shots at every step through 22.22%, while the cadence
+    alone would have landed 19."""
+    capped = replace(SCARLET, max_ammo=18, charge_time_reduction_sec=LIBERALIO_CUT)
+    assert outcome(capped).high_shots == 18
+    assert shots_without_magazine_limit(capped) == 19
+
+
+def test_a_magazine_that_never_empties_costs_nothing():
+    roomy = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    assert reload_intervenes(roomy) is False
+    assert shots_without_magazine_limit(roomy) == outcome(roomy).high_shots
+
+
+def test_the_bear_refund_pushes_the_reload_past_the_window():
+    """A Tactical Bear turns Scarlet's 18 rounds into 24 fired before the
+    magazine empties, and the window closes long before that. It is the whole
+    difference between the 18 shots the Resilience assumption reads and the even
+    19 Fienn measures."""
+    capped = replace(SCARLET, max_ammo=18, charge_time_reduction_sec=LIBERALIO_CUT)
+    bear = replace(capped, ammo_refund=AmmoRefund(10, 3), reload_speed_percent=0.0)
+    assert reload_intervenes(capped) is True
+    assert outcome(capped).high_shots == 18
+    assert reload_intervenes(bear) is False
+    assert outcome(bear).high_shots == 19

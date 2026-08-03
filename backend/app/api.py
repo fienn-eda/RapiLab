@@ -18,7 +18,9 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.cancellation import CancelToken, Cancelled
-from app.charge_window import outcome, reload_intervenes, shot_interval, thresholds
+from app.cube_effects import CUBE_NAMES, DEFAULT_CUBE
+from app.charge_window import (outcome, reload_intervenes, shot_interval,
+                               shots_without_magazine_limit, thresholds)
 from app.charge_window_inputs import (CALCULATOR_SLUGS, LIBERALIO_SLUG, Overrides,
                                       build_inputs, charge_speed_rolls_known)
 from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_draft
@@ -26,7 +28,7 @@ from app.deck_evaluation import InfeasibleDeck, evaluate_decks
 from app.deck_search import BossProfile, search_best_decks
 from app.engine_version import engine_version
 from app.models import UserNikkeState
-from app.overload_effects import NAME_TO_STAT
+from app.overload_effects import NAME_TO_STAT, max_charge_speed_percent
 from app.paths import frontend_dist
 from app.roster_assembly import assemble_roster, load_directory, to_roster_json
 from app.sim_pool import SimPool
@@ -173,6 +175,11 @@ class ChargeWindowRequest(BaseModel):
     roster: list[UserNikkeState]
     with_liberalio: bool = False
     overrides: ChargeWindowOverrides = Field(default_factory=ChargeWindowOverrides)
+    # The wearer's harmony cube. Everywhere else in the app it is an assumption
+    # (cube_effects.DEFAULT_CUBE); here it is a question worth asking, because a
+    # Tactical Bear's rounds decide whether the magazine empties inside the
+    # window - two different shot counts on the same gear.
+    cube: str = DEFAULT_CUBE
 
 
 class ShotOutcome(BaseModel):
@@ -192,6 +199,9 @@ class ChargeWindowResponse(BaseModel):
     interval: float
     magazine: int
     charge_speed_percent: float
+    # The most overload alone can grant. The ladder stops here, so the screen
+    # needs it to say WHY it stops rather than looking like it ran out of grid.
+    charge_speed_ceiling: float
     current: ShotOutcome
     thresholds: list[ChargeWindowThreshold]
     notes: list[str]
@@ -528,7 +538,8 @@ def _shot_outcome(value) -> ShotOutcome:
     )
 
 
-def _charge_window_notes(request, inputs, spec_atk, liberalio_atk, rolls_known):
+def _charge_window_notes(request, inputs, current, ceiling, liberalio_in_roster,
+                         rolls_known):
     """The judgements worth surfacing next to the ladder. Each is a fact the
     calculator can check rather than a caveat the reader has to remember."""
     notes = []
@@ -536,15 +547,34 @@ def _charge_window_notes(request, inputs, spec_atk, liberalio_atk, rolls_known):
         notes.append(
             "탄창이 창 안에서 비어 재장전이 걸립니다 — 엔진의 재장전 모델이 실측과 "
             "어긋나 있어(docs/engine-gaps.md) 마지막 한 발이 불확실합니다.")
+    # Which axis is the binding one. Without this a magazine-capped ladder shows
+    # the same count on every row and reads as a broken table rather than as the
+    # answer "charge speed is not what is stopping you".
+    uncapped = shots_without_magazine_limit(inputs)
+    if uncapped > current.high_shots:
+        notes.append(
+            f"최대장탄이 타수를 막고 있습니다 — 탄창 {inputs.max_ammo}발로는 "
+            f"{current.high_shots}타지만, 창 안에서 안 비울 만큼 넉넉하면 같은 "
+            f"차지속도로 {uncapped}타입니다. 여기서는 차지속도보다 최대장탄이 "
+            f"먼저입니다.")
+    # The ladder is cut at the ceiling, so a total above it has to be named -
+    # otherwise the row past the cut looks like something overload could buy.
+    if inputs.charge_speed_percent > ceiling + 1e-9:
+        notes.append(
+            f"차지속도 합계 {inputs.charge_speed_percent * 100:.2f}%가 오버로드 상한 "
+            f"{ceiling * 100:.0f}%를 넘습니다 — 4부위 전부 최고 굴림이 그 상한이라, "
+            f"나머지는 덱 버프이거나 직접 입력한 값입니다.")
     if request.with_liberalio and request.slug != LIBERALIO_SLUG:
-        if liberalio_atk is None:
+        if not liberalio_in_roster:
             notes.append(
                 "리버렐리오가 로스터에 없어 차지속도 버프를 빼고 계산했습니다 — "
                 "그녀의 스킬 레벨과 소장품을 모르면 버프 크기를 알 수 없습니다.")
-        elif liberalio_atk <= spec_atk:
+        elif inputs.charge_time_reduction_sec == 0.0:
             notes.append(
-                "리버렐리오의 공격력이 더 낮아 차지속도 버프가 그녀 자신에게 갑니다 — "
-                "대상은 '최저 공격력 버스트 3 아군'이고 시전자를 제외하지 않습니다.")
+                "리버렐리오의 최종 공격력이 더 낮아 차지속도 버프가 그녀 자신에게 "
+                "갑니다 — 대상은 '최저 최종 공격력 버스트 3 아군'이고 시전자를 "
+                "제외하지 않습니다. 판정 시점은 풀버스트 진입이라 그녀의 자버프 "
+                "공격력 +160%와 대상 자신의 버스트 공격력 증가가 모두 들어갑니다.")
     # Charge speed rounds per roll, so a total that several roll combinations
     # could have produced does not pin the frame count. An override supplies the
     # rolls; a synced roster supplies them only if it carried them.
@@ -560,6 +590,8 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
     """FB 창 안 타수와, 다음 타수를 사는 차지속도 임계값."""
     if request.slug not in CALCULATOR_SLUGS:
         raise HTTPException(422, f"charge-window calculator does not cover {request.slug}")
+    if request.cube not in CUBE_NAMES:
+        raise HTTPException(422, f"no harmony cube table for {request.cube}")
     by_slug = {state.character_slug: state for state in request.roster}
     if request.slug not in by_slug:
         raise HTTPException(422, f"{request.slug} is not in the submitted roster")
@@ -570,27 +602,32 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
                       request.overrides.max_ammo_percent,
                       request.overrides.reload_speed_percent),
             liberalio_state=by_slug.get(LIBERALIO_SLUG),
+            cube=request.cube,
         )
     except ValueError as error:
         raise HTTPException(422, str(error)) from error
 
-    liberalio_state = by_slug.get(LIBERALIO_SLUG)
+    current = outcome(inputs)
+    ceiling = max_charge_speed_percent(load_stat_tables()) / 100
     notes = _charge_window_notes(
-        request, inputs, by_slug[request.slug].atk,
-        liberalio_state.atk if liberalio_state else None,
+        request, inputs, current, ceiling, LIBERALIO_SLUG in by_slug,
         charge_speed_rolls_known(by_slug[request.slug]))
     return ChargeWindowResponse(
         interval=shot_interval(inputs),
         magazine=inputs.max_ammo,
         charge_speed_percent=inputs.charge_speed_percent,
-        current=_shot_outcome(outcome(inputs)),
+        charge_speed_ceiling=ceiling,
+        current=_shot_outcome(current),
         thresholds=[
             ChargeWindowThreshold(
                 charge_speed_percent=row.charge_speed_percent,
                 interval=row.interval,
                 outcome=_shot_outcome(row.outcome),
             )
-            for row in thresholds(inputs)
+            # A total past the ceiling is the reader's to state - a deck buffer
+            # or a typed value - so the ladder still reaches the row they are
+            # standing on. Cutting below it would hide their own marker.
+            for row in thresholds(inputs, max(ceiling, inputs.charge_speed_percent))
         ],
         notes=notes,
     )

@@ -9,7 +9,8 @@ because the attack-rate model they'd feed into doesn't exist. They're still
 named and converted so nothing is silently dropped before that model exists.
 """
 from app.effects import Effect
-from app.overload_decode import charge_speed_percent_from_lines
+from app.overload_decode import (GEAR_SLOTS, MAX_LEVEL,
+                                 charge_speed_percent_from_lines, overload_value)
 
 NAME_TO_STAT = {
     "공격력 증가": "atk_percent",
@@ -20,6 +21,26 @@ NAME_TO_STAT = {
     "차지 속도 증가": "charge_speed_percent",
     "최대 장탄 수 증가": "max_ammo_percent",
 }
+
+
+def max_charge_speed_percent(tables) -> float:
+    """The most charge speed overload alone can grant: a top roll on every slot.
+
+    Nothing here is written down. A gear slot carries at most one line of a
+    given effect (no unit in three synced accounts has two), the roll ladder
+    tops out at level 15 in the committed tables, and the grouping is the rule
+    above - so a re-fitted table or another slot moves this number without an
+    edit. Four slots of 6.09 sum to 24.36 and group to 24.
+
+    Raises KeyError if the tables carry no charge-speed effect type, which would
+    mean the roster decoder could not name the option either.
+    """
+    for effect_type, name in tables["overload"]["type_name"].items():
+        if NAME_TO_STAT.get(name) != "charge_speed_percent":
+            continue
+        top_roll = overload_value(tables, int(effect_type), MAX_LEVEL)
+        return charge_speed_percent_from_lines([top_roll] * len(GEAR_SLOTS))
+    raise KeyError("the overload tables carry no charge-speed effect type")
 
 
 def granted_percent(option, stat):

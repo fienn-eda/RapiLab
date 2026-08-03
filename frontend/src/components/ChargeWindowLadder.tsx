@@ -15,6 +15,23 @@ const describeOutcome = (outcome: ShotOutcome) => {
   return `${outcome.highShots}타 ${odds(outcome.highProbability)} / ${outcome.lowShots}타 ${odds(outcome.lowProbability)}`
 }
 
+// What to say under the ladder. A ladder that ends can end for three different
+// reasons and they call for different advice: the frame grid runs to 100%, so a
+// last row short of it means overload ran out first - unless the reader's own
+// total already carried the ladder past that ceiling, in which case blaming the
+// ceiling would contradict the rows above it.
+const closingLine = (result: ChargeWindowResult, gap: number | null): string => {
+  if (gap !== null) return `다음 구간까지 ${(gap * 100).toFixed(2)}%p 남았습니다.`
+  const last = result.thresholds[result.thresholds.length - 1]
+  if (last === undefined || last.chargeSpeedPercent >= 1) {
+    return '더 올릴 구간이 없습니다 — 차지가 이미 사라졌습니다.'
+  }
+  if (last.chargeSpeedPercent <= result.chargeSpeedCeiling + 1e-9) {
+    return `오버로드 상한 ${percent(result.chargeSpeedCeiling)}까지만 보여줍니다 — 4부위 전부 최고 굴림이 그 상한입니다.`
+  }
+  return '더 올릴 구간이 없습니다 — 지금 합계가 이미 마지막 구간입니다.'
+}
+
 export function ChargeWindowLadder({ result }: { result: ChargeWindowResult }) {
   // The highest step the current total already pays for. Steps are sorted
   // ascending, so the last one at or below the total is the live row.
@@ -53,11 +70,7 @@ export function ChargeWindowLadder({ result }: { result: ChargeWindowResult }) {
           ))}
         </tbody>
       </table>
-      <p className="charge-ladder__next">
-        {gap === null
-          ? '더 올릴 구간이 없습니다 — 차지가 이미 사라졌습니다.'
-          : `다음 구간까지 ${(gap * 100).toFixed(2)}%p 남았습니다.`}
-      </p>
+      <p className="charge-ladder__next">{closingLine(result, gap)}</p>
       {result.notes.length > 0 && (
         <ul className="charge-ladder__notes">
           {result.notes.map((note) => (

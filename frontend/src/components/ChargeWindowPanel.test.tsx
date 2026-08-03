@@ -129,6 +129,26 @@ describe('ChargeWindowPanel', () => {
     expect(await screen.findByRole('alert')).toBeInTheDocument()
   })
 
+  it('defaults to the harmony cube the rest of the app assumes', async () => {
+    const fetchMock = stubFetch()
+    renderPanel()
+    await userEvent.click(screen.getByRole('button', { name: '계산' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).cube).toBe('resilience')
+  })
+
+  it('sends the Tactical Bear when that is the cube picked', async () => {
+    // Its rounds decide whether a reload lands inside the window, which is two
+    // different shot counts on identical gear - so it is a question here rather
+    // than the app-wide assumption it is everywhere else.
+    const fetchMock = stubFetch()
+    renderPanel()
+    await userEvent.selectOptions(screen.getByLabelText('하모니 큐브'), 'tactical_bear')
+    await userEvent.click(screen.getByRole('button', { name: '계산' }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body).cube).toBe('tactical_bear')
+  })
+
   it('says the magazine is assumed full at window start', () => {
     stubFetch()
     renderPanel()

@@ -5,6 +5,7 @@ const WIRE = {
   interval: 0.53,
   magazine: 22,
   charge_speed_percent: 0.0286,
+  charge_speed_ceiling: 0.24,
   current: { low_shots: 18, low_probability: 0.132, high_shots: 19, high_probability: 0.868 },
   thresholds: [
     {
@@ -24,6 +25,7 @@ describe('postChargeWindow', () => {
       { ok: true, json: () => Promise.resolve(WIRE) }))
     const result = await postChargeWindow({
       slug: 'scarlet-black-shadow', roster: [], withLiberalio: true,
+      cube: 'resilience',
       overrides: { chargeSpeedLines: null, maxAmmoPercent: null, reloadSpeedPercent: null },
     })
     expect(result.current.highShots).toBe(19)
@@ -36,6 +38,9 @@ describe('postChargeWindow', () => {
     expect(result.interval).toBe(0.53)
     expect(result.magazine).toBe(22)
     expect(result.chargeSpeedPercent).toBe(0.0286)
+    // The ladder's closing line prints this one, and an unmapped key reads as
+    // "오버로드 상한 NaN%" with nothing failing.
+    expect(result.chargeSpeedCeiling).toBe(0.24)
   })
 
   it('sends snake_case field names to the backend', async () => {
@@ -43,10 +48,12 @@ describe('postChargeWindow', () => {
     vi.stubGlobal('fetch', fetchMock)
     await postChargeWindow({
       slug: 'neon-vision-eye', roster: [], withLiberalio: false,
+      cube: 'tactical_bear',
       overrides: { chargeSpeedLines: [4.33, 4.33], maxAmmoPercent: null, reloadSpeedPercent: null },
     })
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
     expect(body.with_liberalio).toBe(false)
+    expect(body.cube).toBe('tactical_bear')
     expect(body.overrides.charge_speed_lines).toEqual([4.33, 4.33])
   })
 
@@ -54,7 +61,7 @@ describe('postChargeWindow', () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
       { ok: false, status: 422, json: () => Promise.resolve({ detail: 'nope' }) }))
     await expect(postChargeWindow({
-      slug: 'liter', roster: [], withLiberalio: false,
+      slug: 'liter', roster: [], withLiberalio: false, cube: 'resilience',
       overrides: { chargeSpeedLines: null, maxAmmoPercent: null, reloadSpeedPercent: null },
     })).rejects.toMatchObject({ status: 422 })
   })

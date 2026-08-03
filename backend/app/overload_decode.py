@@ -26,7 +26,9 @@ def decode_option(option_id: int) -> tuple[int, int] | None:
     return int(s[3:5]), int(s[5:7])
 
 
-_SLOTS = ("head", "torso", "arm", "leg")
+# The four gear slots overload rolls on. One line of a given effect per slot,
+# so the slot count is also the most lines any one option can carry.
+GEAR_SLOTS = ("head", "torso", "arm", "leg")
 
 
 def overload_value(tables, effect_type: int, level: int) -> float:
@@ -112,7 +114,7 @@ def assemble_overload(tables, detail: dict) -> list[dict]:
     names = tables["overload"]["type_name"]
     totals: dict[int, float] = collections.defaultdict(float)
     lines: dict[int, list[dict]] = collections.defaultdict(list)
-    for slot in _SLOTS:
+    for slot in GEAR_SLOTS:
         for n in (1, 2, 3):
             dec = decode_option(detail.get(f"{slot}_equip_option{n}_id", 0))
             if dec is None:

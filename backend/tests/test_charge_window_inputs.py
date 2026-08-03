@@ -159,6 +159,19 @@ def test_the_assumed_cube_supplies_reload_speed():
     got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=False,
                        overrides=Overrides(None, None, None))
     assert got.reload_speed_percent == pytest.approx(0.2969, abs=1e-4)
+    assert got.ammo_refund is None
+
+
+def test_the_tactical_bear_trades_that_reload_speed_for_rounds():
+    """The two cubes differ only in their first slot, and for this screen that
+    slot is the whole answer: rounds handed back mid-magazine decide whether a
+    reload lands inside the window at all."""
+    from app.attack_rate import AmmoRefund
+
+    got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=False,
+                       overrides=Overrides(None, None, None), cube="tactical_bear")
+    assert got.ammo_refund == AmmoRefund(10, 3)
+    assert got.reload_speed_percent == 0.0
 
 
 def test_liberalio_hands_over_her_absolute_seconds():
@@ -180,6 +193,42 @@ def test_an_absent_liberalio_grants_nothing_rather_than_borrowing_the_subject():
     # subject's investment instead would answer a question nobody asked.
     got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=True,
                        overrides=Overrides(None, None, None), liberalio_state=None)
+    assert got.charge_time_reduction_sec == 0.0
+
+
+def test_the_cut_is_dropped_when_liberalio_wins_it_herself():
+    """Calm Depths hands its cut to the lowest-FINAL-ATK Burst 3 and does not
+    exclude the caster, so a subject who out-ATKs her leaves her buffing
+    herself. The ladder then has to be the un-buffed one - applying seconds the
+    unit never receives would answer the wrong question."""
+    scarlet = a_state("scarlet-black-shadow").model_copy(update={"atk": 400_000})
+    got = build_inputs(scarlet, with_liberalio=True,
+                       overrides=Overrides(None, None, None),
+                       liberalio_state=a_state(LIBERALIO_SLUG))
+    assert got.charge_time_reduction_sec == 0.0
+
+
+def test_out_basing_liberalio_does_not_take_the_cut_away():
+    """The ranking is on FINAL ATK: her own Calm Depths hands her +160% at Full
+    Burst entry, which lifts her over a subject who out-BASES her. Fienn's
+    roster is exactly that shape (Scarlet 140,088 vs her 131,857) and his
+    measurement has the cut landing on Scarlet, 0.7323 -> 0.5424 sec."""
+    liberalio = a_state(LIBERALIO_SLUG).model_copy(update={"atk": 90_000})
+    got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=True,
+                       overrides=Overrides(None, None, None),
+                       liberalio_state=liberalio)
+    assert got.charge_time_reduction_sec == pytest.approx(0.1274 * 1.5, abs=1e-4)
+
+
+def test_the_subjects_own_burst_atk_counts_in_the_ranking():
+    """Her burst is live in the window she is being measured in, so its self ATK
+    +115.12% is part of the final ATK the grant is ranked on. Between these two
+    ATKs the burst is the whole difference: 210,000 x 2.1512 beats her 260,000,
+    while the base 210,000 does not."""
+    scarlet = a_state("scarlet-black-shadow").model_copy(update={"atk": 210_000})
+    got = build_inputs(scarlet, with_liberalio=True,
+                       overrides=Overrides(None, None, None),
+                       liberalio_state=a_state(LIBERALIO_SLUG))
     assert got.charge_time_reduction_sec == 0.0
 
 

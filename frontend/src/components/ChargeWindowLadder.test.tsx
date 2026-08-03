@@ -12,6 +12,7 @@ const RESULT: ChargeWindowResult = {
   interval: 0.53,
   magazine: 22,
   chargeSpeedPercent: 0,
+  chargeSpeedCeiling: 0.24,
   current: outcome(18, 19, 0.868),
   thresholds: [
     { chargeSpeedPercent: 0, interval: 0.53, outcome: outcome(18, 19, 0.868) },
@@ -67,13 +68,37 @@ describe('ChargeWindowLadder', () => {
     expect(screen.getByRole('table').closest('.charge-ladder')).not.toBeNull()
   })
 
-  it('says so when the ladder has no further step to buy', () => {
-    const topped = {
-      ...RESULT,
-      chargeSpeedPercent: 0.1111,
-      thresholds: RESULT.thresholds.slice(0, 3),
-    }
+  it('names the overload ceiling as the reason the ladder ends', () => {
+    // The last row is well short of the frame grid's end, so the ladder stopped
+    // because overload did - not because the charge ran out.
+    const topped = { ...RESULT, chargeSpeedPercent: 0.1111 }
     render(<ChargeWindowLadder result={topped} />)
+    expect(screen.getByText(/오버로드 상한 24\.00%/)).toBeInTheDocument()
+  })
+
+  it('does not blame the ceiling for a ladder that ran past it', () => {
+    // A total above the ceiling extends the ladder to keep its own row, so the
+    // last row is no longer what overload could buy.
+    const past = {
+      ...RESULT,
+      chargeSpeedPercent: 0.37,
+      thresholds: [...RESULT.thresholds,
+                   { chargeSpeedPercent: 0.3333, interval: 0.4389, outcome: outcome(19, 20, 0.24) }],
+    }
+    render(<ChargeWindowLadder result={past} />)
+    expect(screen.queryByText(/오버로드 상한/)).not.toBeInTheDocument()
     expect(screen.getByText(/더 올릴 구간이 없습니다/)).toBeInTheDocument()
+  })
+
+  it('says the charge is gone when the ladder ran out of frames instead', () => {
+    const spent = {
+      ...RESULT,
+      chargeSpeedPercent: 1,
+      chargeSpeedCeiling: 0.24,
+      thresholds: [...RESULT.thresholds,
+                   { chargeSpeedPercent: 1, interval: 0.43, outcome: outcome(23, 23, 0) }],
+    }
+    render(<ChargeWindowLadder result={spent} />)
+    expect(screen.getByText(/차지가 이미 사라졌습니다/)).toBeInTheDocument()
   })
 })
