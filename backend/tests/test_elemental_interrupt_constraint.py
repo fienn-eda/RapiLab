@@ -176,3 +176,30 @@ def test_a_roster_with_no_weakness_unit_still_gets_a_recommendation(monkeypatch)
     patch_scorer(monkeypatch, lambda slugs: 1.0)
 
     assert search_best_decks(_roster(0), GIMMICK_BOSS, top_n=1)
+
+
+def test_best_completions_deck_filter_none_means_unconstrained_not_derived(monkeypatch):
+    """None must mean "search with no filter at all" and not silently fall
+    back to the boss-derived gimmick filter - Task 10's unconstrained
+    fallback for an undraftable completion depends on the two being
+    different. `required` fills tier 2 and all of tier 3, leaving only one
+    tier-1 seat; the sole tier-1 candidate shares the boss's own element, so
+    the only completion this draft can ever form fails the gimmick outright -
+    the constrained call must refuse it and the unconstrained one must not."""
+    from app.deck_search import best_completions, deck_breaks_gimmick
+    from tests.test_deck_allocation import patch_scorer
+
+    required = [Unit("r2", 2, "Fire"), Unit("r3a", 3, "Fire"),
+                Unit("r3b", 3, "Fire"), Unit("r3c", 3, "Fire")]
+    candidates = [Unit("f1", 1, "Fire"), Unit("w3", 3, "Water")]
+    by_slug = {u.slug: u for u in required + candidates}
+    patch_scorer(monkeypatch, lambda slugs: 1.0)
+
+    constrained = best_completions(required, candidates, GIMMICK_BOSS, top_n=1)
+    assert constrained == []
+
+    unconstrained = best_completions(required, candidates, GIMMICK_BOSS, top_n=1,
+                                     deck_filter=None)
+    assert unconstrained
+    deck = [by_slug[s] for s in unconstrained[0]["deck"]]
+    assert not deck_breaks_gimmick(deck, GIMMICK_BOSS)

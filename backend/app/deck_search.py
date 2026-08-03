@@ -169,6 +169,15 @@ def deck_breaks_gimmick(units, boss: BossProfile):
     return any(u.element == weakness for u in units)
 
 
+# Sentinel default for the `deck_filter` parameter on search_best_decks and
+# best_completions, distinct from None. A caller passing None wants exactly
+# that - no filter at all, the deliberate unconstrained fallback a drafted
+# completion needs when no constrained completion exists - so None cannot
+# also mean "derive one from the boss" or that caller has no way to ask for
+# an unfiltered search.
+_DERIVE_FILTER = object()
+
+
 def _gimmick_filter(boss: BossProfile):
     """The boss's gimmick as a deck predicate, or None when there is none to
     apply. None (rather than a predicate that always returns True) is what lets
@@ -276,7 +285,7 @@ def _shape_completions(required, candidates, deck_filter=None):
 
 
 def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None,
-                     sim_budget=SEARCH_SIM_BUDGET, cascade=None, deck_filter=None):
+                     sim_budget=SEARCH_SIM_BUDGET, cascade=None, deck_filter=_DERIVE_FILTER):
     """Best `top_n` 5-unit decks that contain every unit in `required`, over
     every ALLOWED_SHAPES-compatible completion drawn from `candidates`.
     Returns [] when required's tier counts fit no shape or no valid
@@ -294,8 +303,13 @@ def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None
     than it does for a free deck: the fewer seats a draft fills, the more of
     the answer comes out of the cut pool, so on a one-seat draft prune's
     marginal-contribution cut alone measured 14.6% below the ranked shortlist.
+
+    `deck_filter` left at its default derives the boss's gimmick filter (or
+    None, if the boss has none). Pass None explicitly to search with NO
+    filter at all - the two are not the same thing: a caller with no legal
+    constrained completion needs to ask for an actually unconstrained one.
     """
-    if deck_filter is None:
+    if deck_filter is _DERIVE_FILTER:
         deck_filter = _gimmick_filter(boss)
     orderings = _bounded_orderings(_shape_completions(required, candidates, deck_filter),
                                    sim_budget)
@@ -835,7 +849,7 @@ def completions_fit_budget(required, candidates, sim_budget=SEARCH_SIM_BUDGET, d
 
 def search_best_decks(roster, boss: BossProfile, top_n=5,
                       sim_budget=SEARCH_SIM_BUDGET, pool=None, cascade=None,
-                      deck_filter=None):
+                      deck_filter=_DERIVE_FILTER):
     """Budget-aware replacement for exhaustive find_best_decks: every shape
     combination is scored in EVERY intra-tier order, and when that would blow
     the budget the roster is first cut to a candidate pool
@@ -867,10 +881,21 @@ def search_best_decks(roster, boss: BossProfile, top_n=5,
     everything but the phase gate, so that case is retried unfiltered - the
     caller surfaces the shortfall itself (weakness_holders) rather than the
     search returning nothing.
+
+    `deck_filter` left at its default derives the boss's gimmick filter (or
+    None, if the boss has none). Pass None explicitly to search with NO
+    filter at all - the two are not the same thing.
     """
     candidates = list(roster)
-    if deck_filter is None:
+    if deck_filter is _DERIVE_FILTER:
         deck_filter = _gimmick_filter(boss)
+        if deck_filter is not None and not deck_breaks_gimmick(roster, boss):
+            # No unit anywhere in the roster holds the weakness element, so no
+            # deck drawn from it can ever hold one either - walking the full
+            # shape space just to discover that is a multi-second stall on a
+            # real roster (measured ~9s on 78 units). Drop the filter up
+            # front rather than pay for the doomed walk and its retry below.
+            deck_filter = None
     orderings = _resolve_orderings(candidates, boss, sim_budget, pool, cascade, deck_filter)
     if not orderings and deck_filter is not None:
         orderings = _resolve_orderings(candidates, boss, sim_budget, pool, cascade, None)
@@ -884,8 +909,10 @@ def search_best_decks(roster, boss: BossProfile, top_n=5,
 
 def _resolve_orderings(roster, boss, sim_budget, pool, cascade, deck_filter):
     """search_best_decks's budget-then-cascade-then-cut ladder for one
-    deck_filter value, factored out so the gimmick-empty retry above can run
-    it a second time with deck_filter=None without duplicating the ladder."""
+    deck_filter value: try the full space first, and only pay for cascade's
+    shortlist or prune_candidate_pool's cut once the full space blows the
+    budget. A named function lets search_best_decks run the same ladder under
+    two different filter values without keeping two copies in sync."""
     orderings = _orderings_within_budget(roster, sim_budget, deck_filter)
     if orderings is None:
         combos = cascade.shortlist(roster, boss, pool) if cascade is not None else None
