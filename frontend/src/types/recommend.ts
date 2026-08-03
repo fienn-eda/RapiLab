@@ -8,14 +8,6 @@ import type { UserNikkeState } from './userNikkeState'
 
 export type BossElement = 'Fire' | 'Water' | 'Wind' | 'Iron' | 'Electric' | null
 
-export const BOSS_ELEMENTS: Exclude<BossElement, null>[] = [
-  'Fire',
-  'Water',
-  'Wind',
-  'Iron',
-  'Electric',
-]
-
 export type BossRangeBand = 'near' | 'mid' | 'far' | null
 
 export const BOSS_RANGE_BANDS: Exclude<BossRangeBand, null>[] = ['near', 'mid', 'far']

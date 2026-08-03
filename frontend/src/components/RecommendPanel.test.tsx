@@ -842,12 +842,12 @@ describe('RecommendPanel mode switch', () => {
   })
 
   it('싱글 결과의 파훼 불가 배지는 다른 모드에서 나중에 제출해도 흔들리지 않는다', async () => {
-    // Regression: the badge predicate used to close over ONE shared "last
-    // submitted boss" for every mode. Single's result (single.status) and
-    // raid/draft's (displayResult) both survive a mode switch, so switching
-    // to another mode and submitting THERE with the constraint off silently
-    // stripped the badge off a single-mode result still on screen, even
-    // though its own decks/damage numbers never changed.
+    // Invariant: each mode's badge is judged against the boss ITS OWN result
+    // was submitted with, not whatever boss was most recently submitted in
+    // any mode. Single's result (single.status) and raid/draft's
+    // (displayResult) both survive a mode switch, so submitting elsewhere
+    // with the constraint off must not strip the badge off a single-mode
+    // result still on screen, whose own decks/damage numbers never changed.
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue(
       ['a', 'b', 'c', 'd', 'e'].map((slug, i) => ({
