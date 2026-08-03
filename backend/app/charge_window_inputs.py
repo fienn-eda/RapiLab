@@ -1,21 +1,24 @@
 """Turns a roster entry into the calculator's WindowInputs.
 
-Everything except two skill-text values is read from the loaders the recommender
+Everything except one skill-text value is read from the loaders the recommender
 already uses, so a re-measured charge time, a re-timed motion delay or a
-re-synced overload roll moves the calculator with no edit here. The two
-exceptions - Asura's magazine grant and Calm Depths' caster-based cut - are read
-through the functions their own unit modules expose, which the rule builders
-call too.
+re-synced overload roll moves the calculator with no edit here. The exception -
+Asura's magazine grant - is read through the function her own unit module
+exposes, which her rule builder calls too. Calm Depths' cut is not read at all:
+its rule is fired through the engine and whatever it grants is what the
+calculator applies, because WHO receives it is itself part of the rule.
 """
 from dataclasses import dataclass
 
 from app.charge_window import WindowInputs, aggregate_charge_speed
 from app.cube_effects import assumed_cube_effects
+from app.effects import EffectRegistry
 from app.overload_effects import NAME_TO_STAT
-from app.skill_rules.liberalio import calm_depths_charge_cut_seconds
+from app.roster import assemble_simulation_inputs
 from app.skill_rules.registry import get_charge_motion_delay
 from app.skill_rules.scarlet_black_shadow import full_burst_max_ammo_percent
 from app.skill_values import DATA_DIR
+from app.squad_engine import SquadContext, SquadMember, fire_trigger
 from app.user_roster import load_nikke_spec
 
 SCARLET_SLUG = "scarlet-black-shadow"
@@ -89,6 +92,42 @@ def _self_max_ammo_percent(spec):
     return 0.0
 
 
+def calm_depths_cut_for(spec, companion) -> float:
+    """The seconds Calm Depths actually hands THIS unit - asked of the engine.
+
+    Which Burst 3 wins the grant is a ranking on FINAL ATK at Full Burst entry,
+    not on the roster's base ATK: Calm Depths hands Liberalio herself +160% at
+    that moment, and the subject's own burst is live in the window it is being
+    measured in. A comparison rebuilt here would be a second copy of the rule
+    the deck search already owns, and it would answer differently - Fienn's own
+    roster has Scarlet out-BASING her while she out-finals Scarlet, which is
+    what his 0.7323 -> 0.5424 sec measurement records.
+
+    So the two units are assembled and their triggers fired the way the
+    simulator fires them, and whoever the rule picks is who the calculator
+    buffs. Her Strange Currents immunity rides along for free: when she wins her
+    own grant it lands nowhere.
+    """
+    engine = assemble_simulation_inputs([spec, companion])
+    context = SquadContext(
+        [SquadMember(member["slug"], burst_tier=member["burst_tier"],
+                     element=member["element"])
+         for member in engine["deck"]],
+        base_atk={slug: stats["atk"] for slug, stats in engine["base_stats"].items()},
+    )
+    registry = EffectRegistry()
+    rules = engine["rules_by_slug"]
+    fire_trigger("battle_start", rules, context, registry, time=0.0)
+    # Her burst only ever raises her ATK, which is the direction that can COST
+    # her the grant - so leaving it out would be an over-estimate, not a
+    # conservative one.
+    fire_trigger("own_burst_activate", {spec.slug: rules.get(spec.slug, [])},
+                 context, registry, time=0.0)
+    fire_trigger("full_burst_enter", rules, context, registry, time=0.0)
+    return registry.total_for("charge_time_reduction_sec",
+                              {"slug": spec.slug, "element": spec.element}, now=0.0)
+
+
 def build_inputs(state, with_liberalio, overrides, liberalio_state=None,
                  data_dir=DATA_DIR):
     if state.character_slug not in CALCULATOR_SLUGS:
@@ -123,8 +162,7 @@ def build_inputs(state, with_liberalio, overrides, liberalio_state=None,
         companion = load_nikke_spec(liberalio_state, data_dir,
                                     slug_override=LIBERALIO_SLUG)
         if companion is not None:
-            cut = calm_depths_charge_cut_seconds(
-                companion.skill_values, companion.weapon_stats)
+            cut = calm_depths_cut_for(spec, companion)
 
     total_ammo_percent = ammo_percent + _self_max_ammo_percent(spec)
     return WindowInputs(

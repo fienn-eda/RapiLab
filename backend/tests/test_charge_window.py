@@ -5,7 +5,8 @@ import pytest
 
 from app.charge_window import (WindowInputs, aggregate_charge_speed,
                                charge_speed_steps, outcome, reload_intervenes,
-                               shot_interval, shot_times, thresholds)
+                               shot_interval, shot_times,
+                               shots_without_magazine_limit, thresholds)
 
 # Scarlet: Black Shadow as Fienn actually measured her (2026-07-29): a 0.30 sec
 # charge, a 0.43 sec motion delay, and a 2.86% charge-speed overload too small
@@ -194,3 +195,19 @@ def test_a_small_magazine_caps_the_shots_no_matter_the_charge_speed():
     roomy = replace(SCARLET, max_ammo=22,
                                 charge_time_reduction_sec=LIBERALIO_CUT)
     assert max(counts) < max(t.outcome.high_shots for t in thresholds(roomy))
+
+
+def test_the_shots_a_magazine_costs_are_countable():
+    """What the ladder cannot say on its own: whether a row is flat because of
+    the cadence or because of the magazine. Fienn's synced Scarlet holds 18
+    rounds and reads 18 shots at every step through 22.22%, while the cadence
+    alone would have landed 19."""
+    capped = replace(SCARLET, max_ammo=18, charge_time_reduction_sec=LIBERALIO_CUT)
+    assert outcome(capped).high_shots == 18
+    assert shots_without_magazine_limit(capped) == 19
+
+
+def test_a_magazine_that_never_empties_costs_nothing():
+    roomy = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    assert reload_intervenes(roomy) is False
+    assert shots_without_magazine_limit(roomy) == outcome(roomy).high_shots

@@ -59,6 +59,25 @@ def test_a_reload_inside_the_window_is_reported_as_a_note():
     assert any("재장전" in note for note in body["notes"])
 
 
+def test_a_magazine_that_costs_shots_says_which_axis_is_the_limit():
+    """Fienn's synced Scarlet holds 18 rounds and reads 18 shots at every step
+    through 22.22%. The ladder is right and looks broken, because nothing on it
+    says the magazine - not the charge speed - is what is capping the count."""
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 44.28)]),
+              a_unit("liberalio")]
+    body = post("scarlet-black-shadow", roster, with_liberalio=True).json()
+    assert body["magazine"] == 18
+    assert body["current"]["high_shots"] == 18
+    assert any("최대장탄" in note for note in body["notes"])
+
+
+def test_a_magazine_the_cadence_cannot_empty_gets_no_such_note():
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)]),
+              a_unit("liberalio")]
+    body = post("scarlet-black-shadow", roster, with_liberalio=True).json()
+    assert not any("최대장탄" in note for note in body["notes"])
+
+
 def test_a_roomy_magazine_produces_no_reload_note():
     roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)]),
               a_unit("liberalio")]
@@ -67,13 +86,37 @@ def test_a_roomy_magazine_produces_no_reload_note():
 
 
 def test_liberalio_taking_her_own_buff_is_reported():
-    # The grant goes to the lowest-ATK Burst 3 ally and does NOT exclude her, so
-    # a Scarlet with more ATK means Liberalio keeps it.
+    # The grant goes to the lowest-final-ATK Burst 3 ally and does NOT exclude
+    # her, so a Scarlet whose burst lifts her past Liberalio means Liberalio
+    # keeps it.
     scarlet = a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])
     liberalio = a_unit("liberalio")
-    liberalio["atk"] = 50_000  # lower than Scarlet's 100,000
+    liberalio["atk"] = 50_000  # 130,000 final against Scarlet's 215,120
     body = post("scarlet-black-shadow", [scarlet, liberalio], with_liberalio=True).json()
     assert any("리버렐리오" in note for note in body["notes"])
+
+
+def test_the_buff_liberalio_keeps_is_left_out_of_the_ladder_too():
+    """The note and the numbers are one judgement: seconds she never hands over
+    must not be in the interval the ladder is built from."""
+    scarlet = a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])
+    liberalio = a_unit("liberalio")
+    liberalio["atk"] = 50_000
+    kept = post("scarlet-black-shadow", [scarlet, liberalio], with_liberalio=True).json()
+    solo = post("scarlet-black-shadow", [scarlet, liberalio]).json()
+    assert kept["interval"] == pytest.approx(solo["interval"])
+
+
+def test_out_basing_liberalio_does_not_mean_she_keeps_the_buff():
+    """Fienn's roster shape: Scarlet out-BASES her, yet Calm Depths' +160% on
+    herself at Full Burst entry puts her final ATK above Scarlet's, so the cut
+    lands on Scarlet - as his own measurement shows. Ranking on the roster's
+    base ATK reports the opposite."""
+    scarlet = a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 85.37)])
+    liberalio = a_unit("liberalio")
+    liberalio["atk"] = 90_000  # 234,000 final against Scarlet's 215,120
+    body = post("scarlet-black-shadow", [scarlet, liberalio], with_liberalio=True).json()
+    assert not any("그녀 자신에게" in note for note in body["notes"])
 
 
 def test_asking_for_an_absent_liberalio_says_so_and_drops_the_buff():

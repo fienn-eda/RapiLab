@@ -18,7 +18,8 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.cancellation import CancelToken, Cancelled
-from app.charge_window import outcome, reload_intervenes, shot_interval, thresholds
+from app.charge_window import (outcome, reload_intervenes, shot_interval,
+                               shots_without_magazine_limit, thresholds)
 from app.charge_window_inputs import (CALCULATOR_SLUGS, LIBERALIO_SLUG, Overrides,
                                       build_inputs, charge_speed_rolls_known)
 from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_draft
@@ -528,7 +529,7 @@ def _shot_outcome(value) -> ShotOutcome:
     )
 
 
-def _charge_window_notes(request, inputs, spec_atk, liberalio_atk, rolls_known):
+def _charge_window_notes(request, inputs, current, liberalio_in_roster, rolls_known):
     """The judgements worth surfacing next to the ladder. Each is a fact the
     calculator can check rather than a caveat the reader has to remember."""
     notes = []
@@ -536,15 +537,27 @@ def _charge_window_notes(request, inputs, spec_atk, liberalio_atk, rolls_known):
         notes.append(
             "탄창이 창 안에서 비어 재장전이 걸립니다 — 엔진의 재장전 모델이 실측과 "
             "어긋나 있어(docs/engine-gaps.md) 마지막 한 발이 불확실합니다.")
+    # Which axis is the binding one. Without this a magazine-capped ladder shows
+    # the same count on every row and reads as a broken table rather than as the
+    # answer "charge speed is not what is stopping you".
+    uncapped = shots_without_magazine_limit(inputs)
+    if uncapped > current.high_shots:
+        notes.append(
+            f"최대장탄이 타수를 막고 있습니다 — 탄창 {inputs.max_ammo}발로는 "
+            f"{current.high_shots}타지만, 창 안에서 안 비울 만큼 넉넉하면 같은 "
+            f"차지속도로 {uncapped}타입니다. 여기서는 차지속도보다 최대장탄이 "
+            f"먼저입니다.")
     if request.with_liberalio and request.slug != LIBERALIO_SLUG:
-        if liberalio_atk is None:
+        if not liberalio_in_roster:
             notes.append(
                 "리버렐리오가 로스터에 없어 차지속도 버프를 빼고 계산했습니다 — "
                 "그녀의 스킬 레벨과 소장품을 모르면 버프 크기를 알 수 없습니다.")
-        elif liberalio_atk <= spec_atk:
+        elif inputs.charge_time_reduction_sec == 0.0:
             notes.append(
-                "리버렐리오의 공격력이 더 낮아 차지속도 버프가 그녀 자신에게 갑니다 — "
-                "대상은 '최저 공격력 버스트 3 아군'이고 시전자를 제외하지 않습니다.")
+                "리버렐리오의 최종 공격력이 더 낮아 차지속도 버프가 그녀 자신에게 "
+                "갑니다 — 대상은 '최저 최종 공격력 버스트 3 아군'이고 시전자를 "
+                "제외하지 않습니다. 판정 시점은 풀버스트 진입이라 그녀의 자버프 "
+                "공격력 +160%와 대상 자신의 버스트 공격력 증가가 모두 들어갑니다.")
     # Charge speed rounds per roll, so a total that several roll combinations
     # could have produced does not pin the frame count. An override supplies the
     # rolls; a synced roster supplies them only if it carried them.
@@ -574,16 +587,15 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
     except ValueError as error:
         raise HTTPException(422, str(error)) from error
 
-    liberalio_state = by_slug.get(LIBERALIO_SLUG)
+    current = outcome(inputs)
     notes = _charge_window_notes(
-        request, inputs, by_slug[request.slug].atk,
-        liberalio_state.atk if liberalio_state else None,
+        request, inputs, current, LIBERALIO_SLUG in by_slug,
         charge_speed_rolls_known(by_slug[request.slug]))
     return ChargeWindowResponse(
         interval=shot_interval(inputs),
         magazine=inputs.max_ammo,
         charge_speed_percent=inputs.charge_speed_percent,
-        current=_shot_outcome(outcome(inputs)),
+        current=_shot_outcome(current),
         thresholds=[
             ChargeWindowThreshold(
                 charge_speed_percent=row.charge_speed_percent,

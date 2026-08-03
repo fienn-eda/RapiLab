@@ -62,6 +62,21 @@ def shot_times(inputs: WindowInputs, start_charged: bool) -> list[float]:
     return times
 
 
+def shots_without_magazine_limit(inputs: WindowInputs) -> int:
+    """What the cadence alone would land, which is what the magazine is measured
+    against.
+
+    A ladder whose rows read the same count says nothing about WHICH axis is
+    flat: charge speed that buys a frame but no shot looks exactly like a
+    magazine that runs out. Comparing against a magazine the window cannot empty
+    separates them - and raising the magazine past that size is the same as
+    removing it, so this is the real ceiling rather than an arbitrary number.
+    """
+    roomy = replace(
+        inputs, max_ammo=int(inputs.window_seconds / shot_interval(inputs)) + 2)
+    return len(shot_times(roomy, start_charged=True))
+
+
 def reload_intervenes(inputs: WindowInputs) -> bool:
     """Whether the magazine empties before the window closes. When it does, the
     last shot depends on the reload formula, which is a known open question -
