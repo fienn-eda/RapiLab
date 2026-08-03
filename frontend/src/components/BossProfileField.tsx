@@ -39,9 +39,17 @@ interface BossProfileFieldProps {
   value: BossProfileDraft
   errors?: BossProfileDraftErrors
   onChange: (value: BossProfileDraft) => void
+  /** 속성저지 필수를 그릴지. 유니온레이드 탭은 탐색이 없어 제약이 걸 곳이 없으므로
+   * 항목 자체를 감춘다 - 켤 수는 있는데 아무 일도 안 일어나는 것이 더 나쁘다. */
+  showElementalInterrupt?: boolean
 }
 
-export function BossProfileField({ value, errors, onChange }: BossProfileFieldProps) {
+export function BossProfileField({
+  value,
+  errors,
+  onChange,
+  showElementalInterrupt = true,
+}: BossProfileFieldProps) {
   const elementId = useId()
   const rangeBandId = useId()
 
@@ -178,6 +186,24 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
           <HelpText>{HELP.boss.partDestructible}</HelpText>
         </HelpTip>
       </div>
+
+      {showElementalInterrupt && (
+        <div className="checkbox-row">
+          <label className="checkbox">
+            <input
+              type="checkbox"
+              checked={value.elemental_interrupt_required}
+              onChange={(event) =>
+                onChange({ ...value, elemental_interrupt_required: event.target.checked })
+              }
+            />
+            속성저지 필수
+          </label>
+          <HelpTip label="속성저지 필수">
+            <HelpText>{HELP.boss.elementalInterrupt}</HelpText>
+          </HelpTip>
+        </div>
+      )}
 
       <div className="field-row field-row--pair">
         <NumberField

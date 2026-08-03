@@ -226,6 +226,7 @@ describe('RecommendPanel', () => {
         fight_duration: 180,
         part_destructible: false,
         effective_range_band: null,
+        elemental_interrupt_required: false,
       },
     }, expect.any(AbortSignal))
     expect(await screen.findByText('#1')).toBeInTheDocument()
@@ -272,6 +273,7 @@ describe('RecommendPanel', () => {
         fight_duration: 180,
         part_destructible: false,
         effective_range_band: null,
+        elemental_interrupt_required: false,
       },
     }, expect.any(AbortSignal))
   })
@@ -295,6 +297,7 @@ describe('RecommendPanel', () => {
         fight_duration: 180,
         part_destructible: true,
         effective_range_band: null,
+        elemental_interrupt_required: false,
       },
     }, expect.any(AbortSignal))
   })
@@ -322,6 +325,7 @@ describe('RecommendPanel', () => {
         fight_duration: 180,
         part_destructible: false,
         effective_range_band: 'mid',
+        elemental_interrupt_required: false,
       },
     }, expect.any(AbortSignal))
   })
@@ -365,6 +369,7 @@ describe('RecommendPanel raid mode', () => {
         fight_duration: 180,
         part_destructible: false,
         effective_range_band: null,
+        elemental_interrupt_required: false,
       },
       num_decks: 3,
     }, expect.any(AbortSignal))
@@ -487,6 +492,7 @@ describe('RecommendPanel draft mode', () => {
         fight_duration: 180,
         part_destructible: false,
         effective_range_band: null,
+        elemental_interrupt_required: false,
       },
       num_decks: 5,
       draft: [
@@ -704,6 +710,7 @@ describe('RecommendPanel evaluate mode', () => {
               fight_duration: 180,
               part_destructible: false,
               effective_range_band: null,
+              elemental_interrupt_required: false,
             },
           },
         ],
@@ -844,6 +851,7 @@ describe('RecommendPanel persistence', () => {
     fight_duration: 180,
     part_destructible: false,
     effective_range_band: null,
+    elemental_interrupt_required: false,
   }
 
   it('restores a persisted raid result and its inputs on mount, with no network call', async () => {

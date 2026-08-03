@@ -22,6 +22,7 @@ const boss: BossProfile = {
   fight_duration: 180,
   part_destructible: false,
   effective_range_band: null,
+  elemental_interrupt_required: false,
 }
 
 describe('hashRecommendInputs', () => {

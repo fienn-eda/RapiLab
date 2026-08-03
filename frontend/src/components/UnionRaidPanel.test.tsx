@@ -99,6 +99,13 @@ describe('UnionRaidPanel', () => {
     expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
   })
 
+  it('유니온레이드 탭에는 속성저지 체크박스가 없다', () => {
+    // 이 탭은 유저가 짠 편성을 채점만 하므로 탐색 제약이 걸 곳이 없다.
+    renderPanel()
+
+    expect(screen.queryByLabelText('속성저지 필수')).not.toBeInTheDocument()
+  })
+
   it('잠금 토글을 그리지 않는다', async () => {
     renderPanel()
     await screen.findByRole('button', { name: /u0 사용/i }) // palette rendered

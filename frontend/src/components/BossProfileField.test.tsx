@@ -90,6 +90,32 @@ describe('BossProfileField 약점 속성 선택', () => {
   })
 })
 
+describe('BossProfileField 속성저지', () => {
+  it('기본으로 속성저지 체크박스를 그린다', async () => {
+    const user = userEvent.setup()
+    const onChange = renderField()
+
+    await user.click(screen.getByLabelText('속성저지 필수'))
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ elemental_interrupt_required: true }),
+    )
+  })
+
+  it('showElementalInterrupt=false면 그리지 않는다', () => {
+    // 유니온레이드 탭은 탐색이 없어 제약이 걸 곳이 없다.
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        onChange={vi.fn()}
+        showElementalInterrupt={false}
+      />,
+    )
+
+    expect(screen.queryByLabelText('속성저지 필수')).not.toBeInTheDocument()
+  })
+})
+
 describe('BossProfileField 코어 2관통', () => {
   it('2관통을 켜면 코어 피격 가능도 함께 켜진다', async () => {
     // 코어를 못 때리면 뚫고 지나갈 것이 없다. 모순 상태를 만들 수 없게 한다.

@@ -164,6 +164,8 @@ export function UnionRaidPanel({
                 onChange={(next) =>
                   setBosses((current) => current.map((boss, idx) => (idx === i ? next : boss)))
                 }
+                // 이 탭은 유저가 짠 편성을 채점만 해서 탐색이 없다 - 제약이 걸 곳이 없다.
+                showElementalInterrupt={false}
               />
             </fieldset>
           ))}

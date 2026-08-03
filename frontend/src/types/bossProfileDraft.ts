@@ -12,6 +12,7 @@ export interface BossProfileDraft {
   fight_duration: string
   part_destructible: boolean
   effective_range_band: BossRangeBand
+  elemental_interrupt_required: boolean
 }
 
 export const makeDefaultBossProfileDraft = (): BossProfileDraft => ({
@@ -22,6 +23,7 @@ export const makeDefaultBossProfileDraft = (): BossProfileDraft => ({
   fight_duration: '180',
   part_destructible: false,
   effective_range_band: null,
+  elemental_interrupt_required: false,
 })
 
 export interface BossProfileDraftErrors {
@@ -49,6 +51,9 @@ export const bossProfileToDraft = (boss: BossProfile): BossProfileDraft => ({
   // A profile saved before this field existed has it undefined, which would
   // otherwise reach the select as an uncontrolled value.
   effective_range_band: boss.effective_range_band ?? null,
+  // 이 필드가 생기기 전에 저장된 프로필은 undefined라, 그대로 두면 체크박스가
+  // 비제어 컴포넌트가 된다.
+  elemental_interrupt_required: boss.elemental_interrupt_required ?? false,
 })
 
 interface ParsedNumber {
@@ -91,6 +96,7 @@ export const validateBossProfileDraft = (
     fight_duration: fightDuration.value!,
     part_destructible: draft.part_destructible,
     effective_range_band: draft.effective_range_band,
+    elemental_interrupt_required: draft.elemental_interrupt_required,
   }
   return { errors, value }
 }

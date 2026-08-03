@@ -18,6 +18,7 @@ describe('validateBossProfileDraft', () => {
       fight_duration: 180,
       part_destructible: false,
       effective_range_band: null,
+      elemental_interrupt_required: false,
     })
   })
 
@@ -30,6 +31,7 @@ describe('validateBossProfileDraft', () => {
       fight_duration: '90',
       part_destructible: true,
       effective_range_band: null,
+      elemental_interrupt_required: false,
     }
     expect(validateBossProfileDraft(draft).value).toEqual({
       element: 'Fire',
@@ -39,6 +41,7 @@ describe('validateBossProfileDraft', () => {
       fight_duration: 90,
       part_destructible: true,
       effective_range_band: null,
+      elemental_interrupt_required: false,
     })
   })
 
@@ -81,6 +84,7 @@ describe('bossProfileToDraft', () => {
       fight_duration: '90',
       part_destructible: true,
       effective_range_band: null,
+      elemental_interrupt_required: false,
     }
     const { value: boss } = validateBossProfileDraft(draft)
     const restoredDraft = bossProfileToDraft(boss!)

@@ -37,6 +37,9 @@ export interface BossProfile {
   // pays SR, and a Rocket Launcher is paid by none. null = unknown, pays nobody.
   // gauge_charge_time and mode also exist on the backend BossProfile but are
   // left to backend defaults and not surfaced here (per the README contract).
+  elemental_interrupt_required: boolean // default false — 기믹 파훼에 약점 속성 니케가
+  // 덱당 최소 1기 필요하다. 무속성 보스에서는 무시된다(약점이 없으므로 어떤 덱도
+  // 만족시킬 수 없고, 강제하면 모든 로스터가 불능이 된다).
 }
 
 export interface RecommendRequest {
