@@ -249,11 +249,9 @@ describe('RecommendPanel', () => {
     vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    // Labelled '보스 속성', distinct from the palette's own '속성'
-    // element-chip group, so a plain label lookup is unambiguous.
-    const element = screen.getByLabelText('보스 속성')
-    await user.selectOptions(element, 'Fire')
-    expect(within(element).getByRole('option', { name: '작열' })).toBeInTheDocument()
+    // The picker speaks in the boss's weakness, not its own element - 수냉
+    // (Water) weak means the boss's own element is Fire.
+    await user.click(screen.getByLabelText('수냉'))
     // Exact, not a substring: the help button beside it is named after the
     // same setting, so a loose match finds both.
     await user.click(screen.getByLabelText('코어 피격 가능'))
@@ -735,7 +733,7 @@ describe('RecommendPanel evaluate mode', () => {
 
     expect(await screen.findByText('1번 덱 · 무속성')).toBeInTheDocument()
 
-    await user.selectOptions(screen.getByLabelText('보스 속성'), 'Fire')
+    await user.click(screen.getByLabelText('수냉'))
 
     expect(screen.getByText('1번 덱 · 무속성')).toBeInTheDocument()
     expect(screen.queryByText('1번 덱 · 작열')).not.toBeInTheDocument()

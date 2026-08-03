@@ -78,12 +78,14 @@ describe('UnionRaidPanel', () => {
   })
 
   it('전투마다 보스 속성을 따로 고를 수 있다', async () => {
+    // The picker speaks in the boss's weakness: 풍압(Wind) weak -> boss is
+    // Iron, 전격(Electric) weak -> boss is Water.
     renderPanel()
     const groups = screen.getAllByRole('group', { name: /전투/ })
-    await userEvent.selectOptions(within(groups[0]).getByLabelText(/속성/), 'Iron')
-    await userEvent.selectOptions(within(groups[1]).getByLabelText(/속성/), 'Water')
-    expect(within(groups[0]).getByLabelText(/속성/)).toHaveValue('Iron')
-    expect(within(groups[1]).getByLabelText(/속성/)).toHaveValue('Water')
+    await userEvent.click(within(groups[0]).getByLabelText('풍압'))
+    await userEvent.click(within(groups[1]).getByLabelText('전격'))
+    expect(within(groups[0]).getByLabelText('풍압')).toBeChecked()
+    expect(within(groups[1]).getByLabelText('전격')).toBeChecked()
   })
 
   it('전투 시간 기본값은 180초다', () => {
@@ -136,9 +138,10 @@ describe('UnionRaidPanel', () => {
 
     renderPanel()
     const groups = screen.getAllByRole('group', { name: /전투/ })
-    await user.selectOptions(within(groups[0]).getByLabelText(/속성/), 'Iron')
-    await user.selectOptions(within(groups[1]).getByLabelText(/속성/), 'Water')
-    await user.selectOptions(within(groups[2]).getByLabelText(/속성/), 'Wind')
+    // 풍압 약점 -> 철갑 보스, 전격 약점 -> 수냉 보스, 작열 약점 -> 풍압 보스.
+    await user.click(within(groups[0]).getByLabelText('풍압'))
+    await user.click(within(groups[1]).getByLabelText('전격'))
+    await user.click(within(groups[2]).getByLabelText('작열'))
 
     for (let deck = 0; deck < 3; deck += 1) {
       for (let seat = 0; seat < 5; seat += 1) {
@@ -196,7 +199,8 @@ describe('UnionRaidPanel', () => {
     expect(await screen.findByText('1번 덱 · 무속성')).toBeInTheDocument()
 
     const groups = screen.getAllByRole('group', { name: /전투/ })
-    await user.selectOptions(within(groups[0]).getByLabelText(/속성/), 'Fire')
+    // 수냉 약점 -> 작열 보스.
+    await user.click(within(groups[0]).getByLabelText('수냉'))
 
     expect(screen.getByText('1번 덱 · 무속성')).toBeInTheDocument()
     expect(screen.queryByText('1번 덱 · 작열')).not.toBeInTheDocument()

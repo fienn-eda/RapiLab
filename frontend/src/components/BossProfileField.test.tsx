@@ -49,3 +49,43 @@ describe('BossProfileField', () => {
     )
   })
 })
+
+describe('BossProfileField 약점 속성 선택', () => {
+  it('약점 아이콘을 고르면 보스 본인 속성이 draft로 간다', async () => {
+    // 화면은 약점으로 말하고 와이어는 보스 본인 속성을 나른다. 수냉이 약점이면
+    // 보스는 작열이다.
+    const user = userEvent.setup()
+    const onChange = renderField()
+
+    await user.click(screen.getByLabelText('수냉'))
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ element: 'Fire' }))
+  })
+
+  it('저장된 보스 속성이 대응하는 약점 아이콘을 선택 상태로 그린다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), element: 'Fire' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByLabelText('수냉')).toBeChecked()
+    expect(screen.getByLabelText('작열')).not.toBeChecked()
+  })
+
+  it('약점 없음이 null로 왕복한다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), element: 'Fire' }}
+        onChange={onChange}
+      />,
+    )
+
+    await user.click(screen.getByLabelText('약점 없음'))
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ element: null }))
+  })
+})

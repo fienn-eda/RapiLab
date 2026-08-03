@@ -3,14 +3,11 @@
 // Mirrors BossProfile in src/types/recommend.ts.
 
 import { useId } from 'react'
+import { bossElementFor } from '../lib/elementAdvantage'
 import { elementLabel } from '../lib/elementName'
 import type { BossProfileDraft, BossProfileDraftErrors } from '../types/bossProfileDraft'
-import {
-  BOSS_ELEMENTS,
-  BOSS_RANGE_BANDS,
-  type BossElement,
-  type BossRangeBand,
-} from '../types/recommend'
+import { BOSS_RANGE_BANDS, type BossRangeBand } from '../types/recommend'
+import type { NikkeElement } from '../types/supportedUnit'
 import { NumberField } from './fields/NumberField'
 import { HelpTip } from './HelpTip'
 import { HelpText } from './HelpText'
@@ -24,6 +21,19 @@ const RANGE_BAND_LABEL: Record<Exclude<BossRangeBand, null>, string> = {
   mid: '중거리 — AR · MG',
   far: '원거리 — SR',
 }
+
+// 화면에 그리는 것은 보스 본인 속성이 아니라 그 보스를 이기는 속성이다 — 플레이어가
+// 편성할 때 보는 값이 그쪽이기 때문. 아이콘은 blablalink의 코드 아이콘을
+// scripts/download_element_icons.py로 받아둔 것이다.
+const WEAKNESS_ICON: Record<NikkeElement, string> = {
+  Fire: '/elements/fire.png',
+  Water: '/elements/water.png',
+  Wind: '/elements/wind.png',
+  Iron: '/elements/iron.png',
+  Electric: '/elements/electric.png',
+}
+
+const WEAKNESS_CHOICES: NikkeElement[] = ['Fire', 'Water', 'Wind', 'Iron', 'Electric']
 
 interface BossProfileFieldProps {
   value: BossProfileDraft
@@ -40,27 +50,43 @@ export function BossProfileField({ value, errors, onChange }: BossProfileFieldPr
       <legend className="group__legend">보스 설정</legend>
 
       <div className="field">
-        <label className="field__label" htmlFor={elementId}>
-          보스 속성
-        </label>
-        <select
-          id={elementId}
-          className="field__input"
-          value={value.element ?? ''}
-          onChange={(event) =>
-            onChange({
-              ...value,
-              element: (event.target.value || null) as BossElement,
-            })
-          }
-        >
-          <option value="">무속성</option>
-          {BOSS_ELEMENTS.map((element) => (
-            <option key={element} value={element}>
-              {elementLabel(element)}
-            </option>
-          ))}
-        </select>
+        <span className="field__label" id={`${elementId}-label`}>
+          보스 약점 속성
+        </span>
+        {/* 진짜 라디오를 시각적으로만 숨긴다. div/button으로 만들면 화살표 이동과
+            화면 낭독기의 그룹 읽기를 둘 다 잃는다. */}
+        <div className="element-picker" role="radiogroup" aria-labelledby={`${elementId}-label`}>
+          {WEAKNESS_CHOICES.map((weakness) => {
+            const bossElement = bossElementFor(weakness)
+            return (
+              <label
+                key={weakness}
+                className="element-picker__option"
+                data-element={weakness}
+              >
+                <input
+                  type="radio"
+                  className="visually-hidden"
+                  name={elementId}
+                  checked={value.element === bossElement}
+                  onChange={() => onChange({ ...value, element: bossElement })}
+                />
+                <img className="element-picker__icon" src={WEAKNESS_ICON[weakness]} alt="" />
+                <span className="element-picker__name">{elementLabel(weakness)}</span>
+              </label>
+            )
+          })}
+          <label className="element-picker__option element-picker__option--none">
+            <input
+              type="radio"
+              className="visually-hidden"
+              name={elementId}
+              checked={value.element === null}
+              onChange={() => onChange({ ...value, element: null })}
+            />
+            <span className="element-picker__name">약점 없음</span>
+          </label>
+        </div>
       </div>
 
       <div className="field">
