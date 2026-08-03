@@ -1300,7 +1300,9 @@ from app.elements import weakness_of
     elemental_interrupt_required: bool = False
 ```
 
-`_buffer_seat_valid` 아래에:
+`BossProfile` dataclass **아래에** — 두 함수가 그것을 타입힌트로 달기 때문이다. 위에 두면
+전방 참조가 되고, 이 파일에 선례가 없는 Python 3.14 전용 동작(PEP 649 지연 어노테이션)에
+기대게 된다. Task 9가 더할 `_gimmick_filter` · `_ensure_weakness_in_pool`도 같은 자리다.
 
 ```python
 def weakness_holders(units, boss: BossProfile):
