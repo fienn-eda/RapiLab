@@ -53,9 +53,29 @@ describe('ChargeWindowLadder', () => {
     expect(screen.getByText(/5\.56%p/)).toBeInTheDocument()
   })
 
-  it('lists every note', () => {
+  it('counts the notes in the open and keeps their text behind hover help', () => {
+    // Four judged notes of two or three lines each buried the ladder they were
+    // about. Vitest runs with `test.css: false`, so what is actually collapsed
+    // can only be pinned as structure: the prose lives inside the tip's bubble.
+    render(<ChargeWindowLadder result={{ ...RESULT, notes: ['재장전이 걸립니다', '최대장탄이 막고 있습니다'] }} />)
+    expect(screen.getByText(/알아둘 점 2개/)).toBeInTheDocument()
+    const bubble = screen.getByRole('tooltip')
+    expect(within(bubble).getByText('재장전이 걸립니다')).toBeInTheDocument()
+    expect(within(bubble).getByText('최대장탄이 막고 있습니다')).toBeInTheDocument()
+  })
+
+  it('says nothing at all when there is nothing to note', () => {
+    render(<ChargeWindowLadder result={{ ...RESULT, notes: [] }} />)
+    expect(screen.queryByText(/알아둘 점/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
+  })
+
+  // The bubble is absolutely positioned, and `.charge-ladder { overflow-x:
+  // auto }` would clip it - a scroll container clips both axes. So the scroll
+  // wrapper has to hug the table and nothing else.
+  it('keeps the hover bubble outside the table scroll container', () => {
     render(<ChargeWindowLadder result={RESULT} />)
-    expect(screen.getByText(/재장전이 걸립니다/)).toBeInTheDocument()
+    expect(screen.getByRole('tooltip').closest('.charge-ladder')).toBeNull()
   })
 
   // App.css's `.charge-ladder { overflow-x: auto; }` contains the table's

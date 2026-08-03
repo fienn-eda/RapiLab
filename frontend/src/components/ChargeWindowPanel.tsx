@@ -7,8 +7,11 @@
 
 import { useState } from 'react'
 import { postChargeWindow } from '../api/chargeWindow'
+import { HELP } from '../lib/helpText'
 import type { ChargeWindowResult } from '../types/chargeWindow'
 import { ChargeWindowLadder } from './ChargeWindowLadder'
+import { HelpText } from './HelpText'
+import { HelpTip } from './HelpTip'
 import { NumberField } from './fields/NumberField'
 
 // Which units the tab offers is a UI scoping decision; the backend's 422 stays
@@ -88,7 +91,12 @@ export function ChargeWindowPanel({ roster, nameFor }: ChargeWindowPanelProps) {
         ))}
       </select>
 
-      <label className="field__label" htmlFor="charge-cube">하모니 큐브</label>
+      <span className="field__label-row">
+        <label className="field__label" htmlFor="charge-cube">하모니 큐브</label>
+        <HelpTip label="하모니 큐브">
+          <HelpText>{HELP.charge.cube}</HelpText>
+        </HelpTip>
+      </span>
       <select
         id="charge-cube"
         className="field__input"
@@ -113,35 +121,26 @@ export function ChargeWindowPanel({ roster, nameFor }: ChargeWindowPanelProps) {
         </label>
       )}
 
-      <NumberField
-        label="차지속도 합계"
-        hint="(%, 비우면 동기화된 로스터 값)"
-        value={chargeSpeed}
-        onChange={setChargeSpeed}
-        step={0.01}
-      />
       {/* The synced roster reports overload options already summed across gear,
           so the per-slot lines the two aggregation rules differ on are not
           recoverable from it. Typing the lines in is what makes the comparison
           possible, hence a standing caveat rather than a per-result note. */}
-      <p className="charge-panel__assumption">
-        동기화된 로스터는 부위별 옵션이 아닌 합계만 알고 있어, 부위별 집계 규칙이
-        다를 경우 결과가 한 프레임 갈릴 수 있습니다.
-      </p>
+      <NumberField
+        label="차지속도 합계"
+        hint="(%, 비우면 동기화된 로스터 값)"
+        help={HELP.charge.speedTotal}
+        value={chargeSpeed}
+        onChange={setChargeSpeed}
+        step={0.01}
+      />
       <NumberField
         label="최대장탄 오버로드"
         hint="(%, 비우면 동기화된 로스터 값)"
+        help={HELP.charge.maxAmmo}
         value={maxAmmo}
         onChange={setMaxAmmo}
         step={0.01}
       />
-
-      <p className="charge-panel__assumption">
-        풀버스트 진입 시 탄창은 가득으로 가정합니다. 홍련은 아수라가 즉시 재장전하므로
-        사실이고, 리버렐리오와 네온은 가정입니다. 택티컬 베어의 환급 카운터도 창에서
-        0부터 세는 것으로 가정합니다 — 이 카운터는 전투 내내 누적되고 아수라의
-        재장전이 건드리지 않아, 창이 어느 지점에서 열리는지는 기록에 없습니다.
-      </p>
 
       <button type="button" className="button" onClick={run} disabled={busy}>
         계산

@@ -6,6 +6,7 @@
 // to choose and it decides the last shot.
 
 import type { ChargeWindowResult, ShotOutcome } from '../types/chargeWindow'
+import { HelpTip } from './HelpTip'
 
 const percent = (ratio: number) => `${(ratio * 100).toFixed(2)}%`
 const odds = (ratio: number) => `${Math.round(ratio * 100)}%`
@@ -43,40 +44,50 @@ export function ChargeWindowLadder({ result }: { result: ChargeWindowResult }) {
   const gap = next ? next.chargeSpeedPercent - result.chargeSpeedPercent : null
 
   return (
-    <div className="charge-ladder">
+    <div>
       <p className="charge-ladder__summary">
         탄창 {result.magazine}발 · 발당 {result.interval.toFixed(4)}초 · 현재 차지속도{' '}
         {percent(result.chargeSpeedPercent)}
       </p>
-      <table className="charge-ladder__table">
-        <thead>
-          <tr>
-            <th scope="col">차지속도</th>
-            <th scope="col">간격</th>
-            <th scope="col">타수</th>
-          </tr>
-        </thead>
-        <tbody>
-          {result.thresholds.map((row, index) => (
-            <tr
-              key={row.chargeSpeedPercent}
-              data-testid={index === currentIndex ? 'ladder-row-current' : undefined}
-              className={index === currentIndex ? 'charge-ladder__row--current' : undefined}
-            >
-              <td>{percent(row.chargeSpeedPercent)}</td>
-              <td>{row.interval.toFixed(4)}초</td>
-              <td>{describeOutcome(row.outcome)}</td>
+      {/* Only the table is inside the scroll container. A help bubble is
+          absolutely positioned and a scroll container clips both axes, so
+          anything with one has to sit outside this wrapper. */}
+      <div className="charge-ladder">
+        <table className="charge-ladder__table">
+          <thead>
+            <tr>
+              <th scope="col">차지속도</th>
+              <th scope="col">간격</th>
+              <th scope="col">타수</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {result.thresholds.map((row, index) => (
+              <tr
+                key={row.chargeSpeedPercent}
+                data-testid={index === currentIndex ? 'ladder-row-current' : undefined}
+                className={index === currentIndex ? 'charge-ladder__row--current' : undefined}
+              >
+                <td>{percent(row.chargeSpeedPercent)}</td>
+                <td>{row.interval.toFixed(4)}초</td>
+                <td>{describeOutcome(row.outcome)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <p className="charge-ladder__next">{closingLine(result, gap)}</p>
+      {/* The count stays in the open because it is the part that has to be
+          noticed; the reasoning behind each is read once. */}
       {result.notes.length > 0 && (
-        <ul className="charge-ladder__notes">
-          {result.notes.map((note) => (
-            <li key={note}>{note}</li>
-          ))}
-        </ul>
+        <p className="charge-ladder__notes">
+          알아둘 점 {result.notes.length}개{' '}
+          <HelpTip label="알아둘 점">
+            {result.notes.map((note) => (
+              <span className="charge-ladder__note" key={note}>{note}</span>
+            ))}
+          </HelpTip>
+        </p>
       )}
     </div>
   )

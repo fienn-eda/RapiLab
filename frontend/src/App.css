@@ -1698,14 +1698,19 @@
 }
 
 .charge-ladder__notes {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
   margin: 0.5rem 0 0;
-  padding-left: 1.1rem;
   font-size: 0.9em;
   opacity: 0.85;
 }
 
-.charge-panel__assumption {
-  font-size: 0.9em;
-  opacity: 0.8;
-  max-width: var(--measure);
+/* One judged note per line inside the tip's bubble, which is a span. */
+.charge-ladder__note {
+  display: block;
+}
+
+.charge-ladder__note + .charge-ladder__note {
+  margin-top: var(--sp-2);
 }

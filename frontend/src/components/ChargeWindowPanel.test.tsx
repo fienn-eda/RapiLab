@@ -29,6 +29,10 @@ const nameFor = (slug: string) => NAMES[slug] ?? slug
 
 const renderPanel = () => render(<ChargeWindowPanel roster={ROSTER} nameFor={nameFor} />)
 
+// Scoped to the input: a field's HelpTip button is named "<label> 설명", so a
+// bare label regex now matches both.
+const numberField = (label: RegExp) => screen.getByRole('spinbutton', { name: label })
+
 const stubFetch = () => {
   const mock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(WIRE) })
   vi.stubGlobal('fetch', mock)
@@ -72,8 +76,8 @@ describe('ChargeWindowPanel', () => {
   it('sends the typed overrides instead of the roster values', async () => {
     const fetchMock = stubFetch()
     renderPanel()
-    await userEvent.clear(screen.getByLabelText(/차지속도 합계/))
-    await userEvent.type(screen.getByLabelText(/차지속도 합계/), '12.18')
+    await userEvent.clear(numberField(/차지속도 합계/))
+    await userEvent.type(numberField(/차지속도 합계/), '12.18')
     await userEvent.click(screen.getByRole('button', { name: '계산' }))
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
@@ -94,8 +98,8 @@ describe('ChargeWindowPanel', () => {
   it('sends max ammo as a ratio and charge speed as a percent', async () => {
     const fetchMock = stubFetch()
     renderPanel()
-    await userEvent.type(screen.getByLabelText(/차지속도 합계/), '5.51')
-    await userEvent.type(screen.getByLabelText(/최대장탄 오버로드/), '85.37')
+    await userEvent.type(numberField(/차지속도 합계/), '5.51')
+    await userEvent.type(numberField(/최대장탄 오버로드/), '85.37')
     await userEvent.click(screen.getByRole('button', { name: '계산' }))
     await waitFor(() => expect(fetchMock).toHaveBeenCalled())
     const body = JSON.parse(fetchMock.mock.calls[0][1].body)
@@ -118,7 +122,17 @@ describe('ChargeWindowPanel', () => {
   it('carries a standing caveat that the synced roster knows only the total', () => {
     stubFetch()
     renderPanel()
-    expect(screen.getByText(/합계만 알고 있어/)).toBeInTheDocument()
+    expect(screen.getByText(/합계만 알고 있어/).closest('.help-tip__bubble')).not.toBeNull()
+  })
+
+  it('hangs each standing caveat off the field it is about', () => {
+    // Three paragraphs above the button pushed 계산 off a short screen, and
+    // they are read once. The boss form already solved this with HelpTip.
+    stubFetch()
+    renderPanel()
+    for (const label of ['하모니 큐브', '차지속도 합계', '최대장탄 오버로드']) {
+      expect(screen.getByRole('button', { name: `${label} 설명` })).toBeInTheDocument()
+    }
   })
 
   it('reports an error instead of a ladder when the request fails', async () => {
@@ -152,6 +166,15 @@ describe('ChargeWindowPanel', () => {
   it('says the magazine is assumed full at window start', () => {
     stubFetch()
     renderPanel()
-    expect(screen.getByText(/탄창은 가득/)).toBeInTheDocument()
+    expect(screen.getByText(/탄창은 가득/).closest('.help-tip__bubble')).not.toBeNull()
+  })
+
+  it('says the Tactical Bear refund counter is assumed to start at zero', () => {
+    // Weaker than the magazine assumption beside it - that counter is
+    // cumulative over the fight and Asura's reload does not touch it - so it
+    // belongs on the cube, not buried in the magazine's sentence.
+    stubFetch()
+    renderPanel()
+    expect(screen.getByText(/환급 카운터/).closest('.help-tip__bubble')).not.toBeNull()
   })
 })

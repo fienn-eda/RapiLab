@@ -2,6 +2,8 @@
 // the field can be empty/partial while typing; parsing happens in validation.
 
 import { useId } from 'react'
+import { HelpText } from '../HelpText'
+import { HelpTip } from '../HelpTip'
 
 interface NumberFieldProps {
   label: string
@@ -12,6 +14,10 @@ interface NumberFieldProps {
   max?: number
   step?: number
   hint?: string
+  /** Explanation to fold behind a ? on the label line, as the boss form does.
+   * `hint` is the unit or a few words that must stay visible; this is the
+   * paragraph that only needs reading once. */
+  help?: string
 }
 
 export function NumberField({
@@ -23,15 +29,26 @@ export function NumberField({
   max,
   step,
   hint,
+  help,
 }: NumberFieldProps) {
   const id = useId()
   const errorId = `${id}-error`
+  const labelText = (
+    <label className="field__label" htmlFor={id}>
+      {label}
+      {hint && <span className="field__hint"> {hint}</span>}
+    </label>
+  )
   return (
     <div className={`field${error ? ' field--invalid' : ''}`}>
-      <label className="field__label" htmlFor={id}>
-        {label}
-        {hint && <span className="field__hint"> {hint}</span>}
-      </label>
+      {help === undefined ? labelText : (
+        <span className="field__label-row">
+          {labelText}
+          <HelpTip label={label}>
+            <HelpText>{help}</HelpText>
+          </HelpTip>
+        </span>
+      )}
       <input
         id={id}
         className="field__input"
