@@ -32,6 +32,46 @@ describe('UnitFilterBar', () => {
     }
   })
 
+  // The chips carry the game's own icons. Their names still come from the
+  // markup - the alt text IS the button's accessible name - so a chip stays
+  // reachable by "작열" for a screen reader and for the tests above.
+  it('draws each element chip as its icon and no text', () => {
+    bar()
+    const chip = screen.getByRole('button', { name: '작열' })
+    expect(chip).toHaveTextContent('')
+    expect(chip.querySelector('img')).toHaveAttribute('src', '/elements/fire.png')
+  })
+
+  it('draws each burst chip as its icon and no text', () => {
+    bar()
+    const chip = screen.getByRole('button', { name: 'B2' })
+    expect(chip).toHaveTextContent('')
+    expect(chip.querySelector('img')).toHaveAttribute('src', '/elements/icon-burst-2.png')
+  })
+
+  // The icons say what the groups are, so a heading over each would be naming
+  // them twice. The group keeps the name for anyone who cannot see them.
+  it('drops the group headings but keeps the groups named', () => {
+    bar()
+    expect(screen.queryByText('속성')).not.toBeInTheDocument()
+    expect(screen.queryByText('단계')).not.toBeInTheDocument()
+    expect(screen.getByRole('group', { name: '속성' })).toBeInTheDocument()
+    expect(screen.getByRole('group', { name: '단계' })).toBeInTheDocument()
+  })
+
+  it('puts the sort controls under the search box and left of the filters', () => {
+    bar()
+    const search = screen.getByLabelText('이름 검색')
+    const sort = screen.getByLabelText('정렬')
+    const elements = screen.getByRole('group', { name: '속성' })
+    expect(sort.closest('.unit-filter__row')).not.toBe(search.closest('.unit-filter__row'))
+    expect(elements.closest('.unit-filter__row')).toBe(sort.closest('.unit-filter__row'))
+    const follows = (a: Element, b: Element) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING)
+    expect(follows(search, sort)).toBe(true)
+    expect(follows(sort, elements)).toBe(true)
+  })
+
   it('adds an element to the filter when its chip is pressed', async () => {
     const user = userEvent.setup()
     const onChange = bar()

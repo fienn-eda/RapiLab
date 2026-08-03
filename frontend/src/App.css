@@ -166,6 +166,28 @@
   outline-offset: 2px;
 }
 
+/* An icon chip has no text to set its height, so the icon does. Burst icons
+   are wider than they are tall and elements are near-square; fixing the height
+   and letting width follow keeps both on one baseline. */
+.unit-filter__chip--icon {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--sp-1);
+}
+
+.unit-filter__icon {
+  display: block;
+  height: 18px;
+  width: auto;
+  /* Off chips read as unlit rather than absent - the border still holds the
+     hit area, so this is the only thing carrying the on/off state visually. */
+  opacity: 0.45;
+}
+
+.unit-filter__chip[aria-pressed='true'] .unit-filter__icon {
+  opacity: 1;
+}
+
 /* Lit by the same element token the portrait borders use, so "작열" in the
    toolbar and a 작열 unit's edge are recognisably the same colour. */
 .unit-filter__chip[aria-pressed='true'] {

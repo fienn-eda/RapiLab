@@ -26,6 +26,17 @@ import { BURST_TIERS, type NikkeElement } from '../types/supportedUnit'
 // element tokens are declared in index.css.
 const ELEMENTS: readonly NikkeElement[] = ['Fire', 'Water', 'Wind', 'Iron', 'Electric']
 
+// The game's own code and burst icons (scripts/download_element_icons.py).
+// A chip is the icon alone, so the alt text is what names the button - which
+// is why it is the Korean label and not a filename or an empty string.
+const ELEMENT_ICON: Record<NikkeElement, string> = {
+  Fire: '/elements/fire.png',
+  Water: '/elements/water.png',
+  Wind: '/elements/wind.png',
+  Iron: '/elements/iron.png',
+  Electric: '/elements/electric.png',
+}
+
 interface UnitFilterBarProps {
   value: UnitFilterState
   onChange: (next: UnitFilterState) => void
@@ -42,8 +53,6 @@ export function UnitFilterBar({ value, onChange, shown, total }: UnitFilterBarPr
   const searchId = useId()
   const sortId = useId()
   const sortDirId = useId()
-  const elementsId = useId()
-  const tiersId = useId()
   const filtering = isFiltering(value)
 
   return (
@@ -60,7 +69,12 @@ export function UnitFilterBar({ value, onChange, shown, total }: UnitFilterBarPr
           value={value.query}
           onChange={(event) => onChange({ ...value, query: event.target.value })}
         />
+      </div>
 
+      {/* Sorting reorders, the chips hide - two different jobs sharing a row.
+          They sit together under the search box because the search box is the
+          one control wide enough to want a line of its own. */}
+      <div className="unit-filter__row">
         <label className="unit-filter__label" htmlFor={sortId}>
           정렬
         </label>
@@ -95,42 +109,45 @@ export function UnitFilterBar({ value, onChange, shown, total }: UnitFilterBarPr
           <option value="asc">오름차순</option>
           <option value="desc">내림차순</option>
         </select>
-      </div>
 
-      <div className="unit-filter__row">
-        <span className="unit-filter__label" id={elementsId}>
-          속성
-        </span>
-        <div className="unit-filter__chips" role="group" aria-labelledby={elementsId}>
+        {/* No heading over either group: the icons are the game's own and say
+            what they are. The group keeps the name for anyone who cannot see
+            them, and each chip is named by its icon's alt text. */}
+        <div className="unit-filter__chips" role="group" aria-label="속성">
           {ELEMENTS.map((element) => (
             <button
               key={element}
               type="button"
-              className="unit-filter__chip"
+              className="unit-filter__chip unit-filter__chip--icon"
               // Tints the lit chip with that element's colour, the same token
               // the portrait borders use.
               data-element={element}
               aria-pressed={value.elements.includes(element)}
               onClick={() => onChange({ ...value, elements: toggle(value.elements, element) })}
             >
-              {elementLabel(element)}
+              <img
+                className="unit-filter__icon"
+                src={ELEMENT_ICON[element]}
+                alt={elementLabel(element)}
+              />
             </button>
           ))}
         </div>
 
-        <span className="unit-filter__label" id={tiersId}>
-          단계
-        </span>
-        <div className="unit-filter__chips" role="group" aria-labelledby={tiersId}>
+        <div className="unit-filter__chips" role="group" aria-label="단계">
           {BURST_TIERS.map((tier) => (
             <button
               key={tier}
               type="button"
-              className="unit-filter__chip"
+              className="unit-filter__chip unit-filter__chip--icon"
               aria-pressed={value.burstTiers.includes(tier)}
               onClick={() => onChange({ ...value, burstTiers: toggle(value.burstTiers, tier) })}
             >
-              B{tier}
+              <img
+                className="unit-filter__icon"
+                src={`/elements/icon-burst-${tier}.png`}
+                alt={`B${tier}`}
+              />
             </button>
           ))}
         </div>
