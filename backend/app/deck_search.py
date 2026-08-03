@@ -130,6 +130,12 @@ class BossProfile:
     # None means the band has not been read for this encounter and pays nobody,
     # which is what every caller computed before the term was wired at all.
     effective_range_band: str | None = None
+    # This boss keeps its core as a separate object from its body, so a Pierce
+    # holder's shot passes through the core and hits the body behind it - one
+    # normal attack, two instances. Depends on `core_hittable`: there is nothing
+    # to pierce through without a hittable core, and raid_simulator reads the two
+    # together rather than trusting the caller not to send the contradiction.
+    pierce_hits_body_behind_core: bool = False
 
 
 # Real decks come in exactly these B1/B2/B3 shapes (Fienn, 2026-07-17);
@@ -271,6 +277,7 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None):
         boss_element=boss.element,
         part_destructible=boss.part_destructible,
         effective_range_band=boss.effective_range_band,
+        pierce_hits_body_behind_core=boss.pierce_hits_body_behind_core,
     )
 
 

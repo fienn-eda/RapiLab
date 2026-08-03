@@ -17,6 +17,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.api import BossProfileIn, boss_profile
+from app.raid_simulator import simulate_raid
 
 
 def test_every_request_field_reaches_the_engine_profile():
@@ -49,3 +50,40 @@ def test_the_other_boss_fields_still_arrive():
     assert (profile.element, profile.core_hittable, profile.enemy_def,
             profile.fight_duration, profile.part_destructible) == (
         "Iron", True, 31784.0, 180.0, True)
+
+
+def test_the_pierce_flag_a_caller_sends_is_the_flag_the_engine_gets():
+    assert boss_profile(BossProfileIn(
+        pierce_hits_body_behind_core=True)).pierce_hits_body_behind_core is True
+
+
+def test_evaluate_deck_forwards_every_boss_field_the_simulator_accepts(monkeypatch):
+    """The API's spread fixed one listing trap; this is the same trap one layer
+    down. `evaluate_deck` hands simulate_raid its boss kwargs by NAME, so a new
+    BossProfile field reaches the wire, reaches the engine's dataclass, and then
+    silently stops - exactly how `effective_range_band` was lost on 2026-07-31.
+    """
+    import inspect
+
+    from app import deck_search
+
+    # BossProfile field -> simulate_raid parameter, where the two differ.
+    ALIASES = {"element": "boss_element"}
+
+    captured = {}
+
+    def fake_simulate_raid(**kwargs):
+        captured.update(kwargs)
+        return {"total_damage": 0.0, "damage_log": [], "events": []}
+
+    monkeypatch.setattr(deck_search, "assemble_simulation_inputs", lambda deck: {})
+    monkeypatch.setattr(deck_search, "simulate_raid", fake_simulate_raid)
+    deck_search.evaluate_deck([], deck_search.BossProfile())
+
+    sim_params = set(inspect.signature(simulate_raid).parameters)
+    expected = {ALIASES.get(f.name, f.name)
+                for f in dataclasses.fields(deck_search.BossProfile)} & sim_params
+
+    assert expected <= set(captured), (
+        f"evaluate_deck drops boss fields the simulator accepts: "
+        f"{sorted(expected - set(captured))}")
