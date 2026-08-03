@@ -14,12 +14,20 @@ catalog, see the `nikke-skill-encoding` skill, not here.
   채울 수 없는 경우가 생긴다.
 - Decision: 배분기(`deck_allocation.py`)는 로스터가 감당하는 만큼(=
   `min(M, N)`, M=제약이 걸린 덱 수, N=보유 약점 유닛 수)만 만족시키고, 채우지
-  못한 나머지 덱은 그대로 완성한 뒤 UI가 뱃지로 경고한다(design B.2/B.6). 시드
-  덱이 약점 유닛 없이 제약을 못 깨면 무제약으로 풀고("The draft cannot break
-  the gimmick... Solve it unconstrained rather than refuse a deck they can
-  field"), 그리디 필링 쪽 남은 풀에 약점 유닛이 없어도 예산 안에서 무제약 덱을
-  받아 `num_decks`를 채운다("Take the best unconstrained deck rather than stop
-  short of num_decks - the design's 'as many decks as we can'").
+  못한 나머지 덱은 그대로 완성한 뒤 UI가 뱃지로 경고한다(design B.2/B.6). 두
+  경로가 이걸 서로 다른 방식으로 얻는다. 시드/드래프트 경로는
+  `best_completions`를 부르는데 이 함수엔 내부 재시도가 없어서, 배분기가
+  직접 무제약으로 한 번 더 불러야 한다("The draft cannot break the gimmick...
+  Solve it unconstrained rather than refuse a deck they can field",
+  `deck_allocation.py`) — 이 폴백은 없으면 실제로 깨지는 살아있는 코드다.
+  그리디 필링(peel) 경로는 `search_best_decks`를 부르는데, 이쪽은 걸린
+  필터가 탐색 공간을 비우면 **함수 자신이** 무필터로 재시도한다
+  (`deck_search.py`) — 그래서 peel이 갖고 있던 같은 모양의 명시적 폴백은
+  죽은 코드였고 `bb3f1d6`에서 지웠다(자리엔 왜 필요 없는지를 설명하는 주석만
+  남겼다). 두 경로가 이렇게 갈리는 건 실수가 아니라 `best_completions`에
+  `search_best_decks`의 내부 재시도가 없다는 Task 9 비대칭이 그대로 드러난
+  것이다 — 나중에 "필링 쪽에도 똑같이 폴백을 넣어야 하지 않나" 싶을 수 있지만,
+  넣으면 중복이다.
 - Alternatives considered: 로스터가 제약을 완전히 만족 못 시키면 추천 자체를
   거부하기 — 기각. 플레이어가 실제로 편성 가능한 덱(원소 인터럽트를 못 깨는
   덱이라도 딜은 낸다)을 아예 안 보여주는 것은 "약점 유닛이 부족하다"는 경고보다
