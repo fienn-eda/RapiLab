@@ -67,3 +67,112 @@ def test_weakness_holders_counts_only_when_the_gimmick_is_on():
     assert weakness_holders(units, BossProfile(element="Fire")) == 0
     assert weakness_holders(
         units, BossProfile(element="Fire", elemental_interrupt_required=True)) == 2
+
+
+def test_shape_combinations_drops_decks_that_cannot_break_the_gimmick():
+    from app.deck_search import shape_combinations
+
+    boss = BossProfile(element="Fire", elemental_interrupt_required=True)
+    # Four tier-3 units (not three) so combinations(4, 3) has more than one
+    # 3-of-4 pick - with exactly three, the only pick IS all three and always
+    # includes the lone Water unit, leaving nothing for the filter to drop.
+    roster = [Unit("b1", 1, "Fire"), Unit("b2", 2, "Fire"),
+              Unit("c1", 3, "Fire"), Unit("c2", 3, "Fire"), Unit("c3", 3, "Water"),
+              Unit("c4", 3, "Fire")]
+
+    unfiltered = list(shape_combinations(roster))
+    filtered = list(shape_combinations(roster, lambda d: deck_breaks_gimmick(d, boss)))
+
+    assert unfiltered      # the roster does form (1,1,3) decks
+    assert all(any(u.element == "Water" for u in deck) for deck in filtered)
+    assert len(filtered) < len(unfiltered)
+
+
+def test_shape_completions_drops_them_too():
+    from app.deck_search import _shape_completions
+
+    boss = BossProfile(element="Fire", elemental_interrupt_required=True)
+    required = [Unit("b1", 1, "Fire")]
+    candidates = [Unit("b2", 2, "Fire"), Unit("c1", 3, "Fire"),
+                  Unit("c2", 3, "Fire"), Unit("c3", 3, "Water")]
+
+    filtered = list(_shape_completions(required, candidates,
+                                       lambda d: deck_breaks_gimmick(d, boss)))
+
+    assert filtered
+    assert all(any(u.element == "Water" for u in deck) for deck in filtered)
+
+
+def test_a_pruned_pool_is_topped_back_up_with_the_weakness_element():
+    """prune_candidate_pool ranks by marginal contribution and knows nothing
+    about the gimmick, so its cut can hold no weakness unit at all - and then the
+    constrained search has nothing to return. Widen the pool rather than fall
+    back to an exhaustive walk over the full roster (millions of orderings)."""
+    from app.deck_search import _ensure_weakness_in_pool
+
+    boss = BossProfile(element="Fire", elemental_interrupt_required=True)
+    cut = [Unit("b1", 1, "Fire"), Unit("b2", 2, "Fire"), Unit("c1", 3, "Fire")]
+    roster = cut + [Unit("w1", 1, "Water"), Unit("w3", 3, "Water")]
+
+    topped = _ensure_weakness_in_pool(cut, roster, boss)
+
+    assert any(u.element == "Water" for u in topped)
+    # Unit is frozen but holds dict fields (base_stats/weapon_stats), so it is
+    # unhashable - set() would raise TypeError. Containment only needs __eq__.
+    assert all(u in topped for u in cut)
+
+
+def test_a_pool_that_already_holds_the_weakness_is_left_alone():
+    from app.deck_search import _ensure_weakness_in_pool
+
+    boss = BossProfile(element="Fire", elemental_interrupt_required=True)
+    cut = [Unit("b1", 1, "Water"), Unit("b2", 2, "Fire")]
+
+    assert _ensure_weakness_in_pool(cut, cut, boss) is cut
+
+
+# 작열 보스의 약점. 이 파일 전체가 이 한 쌍으로 말한다.
+WEAKNESS = "Water"
+GIMMICK_BOSS = BossProfile(element="Fire", elemental_interrupt_required=True)
+
+
+def _roster(n_weakness):
+    """10 units - two decks' worth - of which the first `n_weakness` are the
+    weakness element and the rest are the boss's own.
+
+    Tiers 3/2/5 (B1/B2/B3) put every ordering under SEARCH_SIM_BUDGET (720 of
+    1200), so the search enumerates rather than pruning: this file is about the
+    constraint, not about the cut. The weakness units land at tier 1 first, so
+    n=2 gives two B1s that CAN sit in different decks - which is what makes the
+    budget cap in Task 10 a real test rather than a tautology.
+    """
+    tiers = [1, 1, 1, 2, 2, 3, 3, 3, 3, 3]
+    return [Unit(f"u{i}", t, WEAKNESS if i < n_weakness else "Fire")
+            for i, t in enumerate(tiers)]
+
+
+def test_a_single_deck_search_returns_a_deck_that_breaks_the_gimmick(monkeypatch):
+    """종단 확인 - 술어가 아니라 search_best_decks의 반환값을 본다."""
+    from app.deck_search import search_best_decks
+    from tests.test_deck_allocation import patch_scorer
+
+    roster = _roster(2)
+    by_slug = {u.slug: u for u in roster}
+    # 약점 유닛이 없는 덱을 더 높게 친다 - 제약이 없으면 그쪽이 뽑힌다.
+    patch_scorer(monkeypatch,
+                 lambda slugs: 10.0 if any(by_slug[s].element == WEAKNESS for s in slugs)
+                 else 100.0)
+
+    result = search_best_decks(roster, GIMMICK_BOSS, top_n=1)
+
+    assert any(by_slug[s].element == WEAKNESS for s in result[0]["deck"])
+
+
+def test_a_roster_with_no_weakness_unit_still_gets_a_recommendation(monkeypatch):
+    # 제약을 못 지키는 로스터에 대해 추천을 거부하지 않는다 - UI가 경고를 단다.
+    from app.deck_search import search_best_decks
+    from tests.test_deck_allocation import patch_scorer
+
+    patch_scorer(monkeypatch, lambda slugs: 1.0)
+
+    assert search_best_decks(_roster(0), GIMMICK_BOSS, top_n=1)
