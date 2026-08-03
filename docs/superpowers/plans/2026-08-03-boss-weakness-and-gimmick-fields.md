@@ -1884,8 +1884,11 @@ def _gimmick_floor(decks, boss, target):
                 # No legal deck in the remaining pool holds a weakness unit within
                 # the budget. Take the best unconstrained deck rather than stop
                 # short of num_decks - the design's "as many decks as we can".
+                # `deck_filter=None` is what says unconstrained; OMITTING it would
+                # let search_best_decks derive the boss's filter and re-impose the
+                # very constraint this line is escaping.
                 found = search_best_decks(remaining, boss, top_n=1, pool=pool,
-                                          cascade=cascade)
+                                          cascade=cascade, deck_filter=None)
             if not found:
                 break
 ```
