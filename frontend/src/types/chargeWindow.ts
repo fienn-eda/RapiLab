@@ -49,6 +49,7 @@ export interface ChargeWindowRequest {
   slug: string
   roster: unknown[]
   withLiberalio: boolean
+  cube: string
   overrides: {
     chargeSpeedLines: number[] | null
     maxAmmoPercent: number | null

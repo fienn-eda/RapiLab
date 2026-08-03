@@ -14,6 +14,7 @@ export const postChargeWindow = async (
       slug: request.slug,
       roster: request.roster,
       with_liberalio: request.withLiberalio,
+      cube: request.cube,
       overrides: {
         charge_speed_lines: request.overrides.chargeSpeedLines,
         max_ammo_percent: request.overrides.maxAmmoPercent,

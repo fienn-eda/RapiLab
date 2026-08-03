@@ -25,11 +25,12 @@ def a_unit(slug, overloads=()):
     }
 
 
-def post(slug, roster, with_liberalio=False, overrides=None):
-    return client.post("/api/charge-window", json={
-        "slug": slug, "roster": roster, "with_liberalio": with_liberalio,
-        "overrides": overrides or {},
-    })
+def post(slug, roster, with_liberalio=False, overrides=None, cube=None):
+    body = {"slug": slug, "roster": roster, "with_liberalio": with_liberalio,
+            "overrides": overrides or {}}
+    if cube is not None:
+        body["cube"] = cube
+    return client.post("/api/charge-window", json=body)
 
 
 def test_scarlet_with_liberalio_reports_the_measured_cadence():
@@ -69,6 +70,24 @@ def test_a_magazine_that_costs_shots_says_which_axis_is_the_limit():
     assert body["magazine"] == 18
     assert body["current"]["high_shots"] == 18
     assert any("최대장탄" in note for note in body["notes"])
+
+
+def test_a_tactical_bear_takes_the_magazine_cap_off_the_same_gear():
+    """Same 18 rounds, other cube: the rounds it hands back mid-magazine push
+    the reload past the window, so the count is the cadence's own 19 again."""
+    roster = [a_unit("scarlet-black-shadow", [("최대 장탄 수 증가", 44.28)]),
+              a_unit("liberalio")]
+    body = post("scarlet-black-shadow", roster, with_liberalio=True,
+                cube="tactical_bear").json()
+    assert body["magazine"] == 18
+    assert body["current"]["high_shots"] == 19
+    assert not any("최대장탄" in note for note in body["notes"])
+    assert not any("재장전" in note for note in body["notes"])
+
+
+def test_a_cube_the_project_has_no_table_for_is_refused():
+    roster = [a_unit("scarlet-black-shadow"), a_unit("liberalio")]
+    assert post("scarlet-black-shadow", roster, cube="bastion").status_code == 422
 
 
 def test_a_magazine_the_cadence_cannot_empty_gets_no_such_note():

@@ -9,12 +9,15 @@ calculator without anyone editing it.
 The magazine is assumed FULL at window start. For Scarlet: Black Shadow that is
 a fact - Fleetly Fading: Asura reloads her instantly on Full Burst entry - and
 for Liberalio and Neon it is an assumption the UI states, since nothing records
-how much they fired just before the window opened.
+how much they fired just before the window opened. A Tactical Bear's refund
+counter is assumed to start there too, which is a plainer assumption than the
+magazine: that counter is cumulative over the whole fight and Asura's reload
+does not touch it, so the window opens at a phase nothing records.
 """
 from dataclasses import dataclass, replace
 
-from app.attack_rate import (FRAME_SECONDS, reload_time_with_speed,
-                             shot_interval_with_speed)
+from app.attack_rate import (FRAME_SECONDS, AmmoRefund, magazine_shot_count,
+                             reload_time_with_speed, shot_interval_with_speed)
 from app.overload_decode import charge_speed_percent_from_lines
 
 
@@ -28,6 +31,10 @@ class WindowInputs:
     charge_time_reduction_sec: float   # Liberalio's caster-based grant, in seconds
     reload_speed_percent: float
     window_seconds: float = 10.0
+    # Rounds the wearer's harmony cube hands back mid-magazine. A Tactical Bear
+    # decides whether the magazine empties inside the window at all, which on
+    # this screen is the difference between two whole shot counts.
+    ammo_refund: AmmoRefund | None = None
 
 
 def shot_interval(inputs: WindowInputs) -> float:
@@ -51,12 +58,18 @@ def shot_times(inputs: WindowInputs, start_charged: bool) -> list[float]:
     reload_gap = reload_time_with_speed(inputs.reload_time, inputs.reload_speed_percent)
     times = []
     time = 0.0 if start_charged else interval
+    # How many rounds a magazine actually fires is `magazine_shot_count`'s to
+    # say, because a refund is capped at capacity and its counter runs across
+    # magazines - the same walker the deck search fires shots through.
+    magazine, counter = magazine_shot_count(inputs.max_ammo, 0, inputs.ammo_refund)
     fired = 0
     while time < inputs.window_seconds:
         times.append(time)
         fired += 1
-        if fired >= inputs.max_ammo:
+        if fired >= magazine:
             time += reload_gap
+            magazine, counter = magazine_shot_count(
+                inputs.max_ammo, counter, inputs.ammo_refund)
             fired = 0
         time += interval
     return times
@@ -81,7 +94,8 @@ def reload_intervenes(inputs: WindowInputs) -> bool:
     """Whether the magazine empties before the window closes. When it does, the
     last shot depends on the reload formula, which is a known open question -
     see docs/engine-gaps.md. The UI warns instead of quietly answering."""
-    return inputs.max_ammo * shot_interval(inputs) < inputs.window_seconds
+    magazine, _ = magazine_shot_count(inputs.max_ammo, 0, inputs.ammo_refund)
+    return magazine * shot_interval(inputs) < inputs.window_seconds
 
 
 def aggregate_charge_speed(lines: list[float]) -> float:

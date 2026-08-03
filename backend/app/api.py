@@ -18,6 +18,7 @@ from starlette.concurrency import run_in_threadpool
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.cancellation import CancelToken, Cancelled
+from app.cube_effects import CUBE_NAMES, DEFAULT_CUBE
 from app.charge_window import (outcome, reload_intervenes, shot_interval,
                                shots_without_magazine_limit, thresholds)
 from app.charge_window_inputs import (CALCULATOR_SLUGS, LIBERALIO_SLUG, Overrides,
@@ -174,6 +175,11 @@ class ChargeWindowRequest(BaseModel):
     roster: list[UserNikkeState]
     with_liberalio: bool = False
     overrides: ChargeWindowOverrides = Field(default_factory=ChargeWindowOverrides)
+    # The wearer's harmony cube. Everywhere else in the app it is an assumption
+    # (cube_effects.DEFAULT_CUBE); here it is a question worth asking, because a
+    # Tactical Bear's rounds decide whether the magazine empties inside the
+    # window - two different shot counts on the same gear.
+    cube: str = DEFAULT_CUBE
 
 
 class ShotOutcome(BaseModel):
@@ -573,6 +579,8 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
     """FB 창 안 타수와, 다음 타수를 사는 차지속도 임계값."""
     if request.slug not in CALCULATOR_SLUGS:
         raise HTTPException(422, f"charge-window calculator does not cover {request.slug}")
+    if request.cube not in CUBE_NAMES:
+        raise HTTPException(422, f"no harmony cube table for {request.cube}")
     by_slug = {state.character_slug: state for state in request.roster}
     if request.slug not in by_slug:
         raise HTTPException(422, f"{request.slug} is not in the submitted roster")
@@ -583,6 +591,7 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
                       request.overrides.max_ammo_percent,
                       request.overrides.reload_speed_percent),
             liberalio_state=by_slug.get(LIBERALIO_SLUG),
+            cube=request.cube,
         )
     except ValueError as error:
         raise HTTPException(422, str(error)) from error

@@ -3,6 +3,7 @@ from dataclasses import replace
 
 import pytest
 
+from app.attack_rate import AmmoRefund
 from app.charge_window import (WindowInputs, aggregate_charge_speed,
                                charge_speed_steps, outcome, reload_intervenes,
                                shot_interval, shot_times,
@@ -211,3 +212,16 @@ def test_a_magazine_that_never_empties_costs_nothing():
     roomy = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
     assert reload_intervenes(roomy) is False
     assert shots_without_magazine_limit(roomy) == outcome(roomy).high_shots
+
+
+def test_the_bear_refund_pushes_the_reload_past_the_window():
+    """A Tactical Bear turns Scarlet's 18 rounds into 24 fired before the
+    magazine empties, and the window closes long before that. It is the whole
+    difference between the 18 shots the Resilience assumption reads and the even
+    19 Fienn measures."""
+    capped = replace(SCARLET, max_ammo=18, charge_time_reduction_sec=LIBERALIO_CUT)
+    bear = replace(capped, ammo_refund=AmmoRefund(10, 3), reload_speed_percent=0.0)
+    assert reload_intervenes(capped) is True
+    assert outcome(capped).high_shots == 18
+    assert reload_intervenes(bear) is False
+    assert outcome(bear).high_shots == 19

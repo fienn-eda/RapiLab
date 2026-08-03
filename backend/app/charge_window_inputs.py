@@ -11,7 +11,7 @@ calculator applies, because WHO receives it is itself part of the rule.
 from dataclasses import dataclass
 
 from app.charge_window import WindowInputs, aggregate_charge_speed
-from app.cube_effects import assumed_cube_effects
+from app.cube_effects import DEFAULT_CUBE, assumed_cube_effects, cube_refund_for
 from app.effects import EffectRegistry
 from app.overload_effects import NAME_TO_STAT
 from app.roster import assemble_simulation_inputs
@@ -77,8 +77,8 @@ def _overload_total(spec, stat):
     return sum(_overload_lines(spec, stat)) / 100
 
 
-def _cube_reload_speed(slug):
-    for effect in assumed_cube_effects(slug):
+def _cube_reload_speed(slug, cube):
+    for effect in assumed_cube_effects(slug, cube):
         if effect.stat == "reload_speed_percent":
             return effect.value
     return 0.0
@@ -129,7 +129,7 @@ def calm_depths_cut_for(spec, companion) -> float:
 
 
 def build_inputs(state, with_liberalio, overrides, liberalio_state=None,
-                 data_dir=DATA_DIR):
+                 data_dir=DATA_DIR, cube=DEFAULT_CUBE):
     if state.character_slug not in CALCULATOR_SLUGS:
         raise ValueError(
             f"{state.character_slug} is not covered by the charge-window calculator")
@@ -146,7 +146,7 @@ def build_inputs(state, with_liberalio, overrides, liberalio_state=None,
 
     ammo_percent = (_overload_total(spec, "max_ammo_percent")
                     if overrides.max_ammo_percent is None else overrides.max_ammo_percent)
-    reload_speed = (_cube_reload_speed(spec.slug)
+    reload_speed = (_cube_reload_speed(spec.slug, cube)
                     if overrides.reload_speed_percent is None
                     else overrides.reload_speed_percent)
 
@@ -173,4 +173,5 @@ def build_inputs(state, with_liberalio, overrides, liberalio_state=None,
         charge_speed_percent=charge_speed,
         charge_time_reduction_sec=cut,
         reload_speed_percent=reload_speed,
+        ammo_refund=cube_refund_for(cube),
     )

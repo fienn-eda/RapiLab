@@ -18,6 +18,15 @@ const UNIT_SLUGS = ['scarlet-black-shadow', 'liberalio', 'neon-vision-eye']
 
 const LIBERALIO_SLUG = 'liberalio'
 
+// The two cubes the project holds stat tables for. Everywhere else in the app
+// the Resilience cube is an assumption nobody is asked about; here the Tactical
+// Bear's rounds decide whether a reload lands inside the window at all, which
+// is two different shot counts on identical gear.
+const CUBES = [
+  { name: 'resilience', label: '렐릭 베어 (재장전 속도)' },
+  { name: 'tactical_bear', label: '택티컬 베어 (탄환 환급)' },
+]
+
 const optional = (raw: string): number | null => {
   const trimmed = raw.trim()
   if (trimmed === '') return null
@@ -32,6 +41,7 @@ interface ChargeWindowPanelProps {
 
 export function ChargeWindowPanel({ roster, nameFor }: ChargeWindowPanelProps) {
   const [slug, setSlug] = useState(UNIT_SLUGS[0])
+  const [cube, setCube] = useState(CUBES[0].name)
   const [withLiberalio, setWithLiberalio] = useState(true)
   const [chargeSpeed, setChargeSpeed] = useState('')
   const [maxAmmo, setMaxAmmo] = useState('')
@@ -49,6 +59,7 @@ export function ChargeWindowPanel({ roster, nameFor }: ChargeWindowPanelProps) {
         slug,
         roster,
         withLiberalio: slug === LIBERALIO_SLUG ? false : withLiberalio,
+        cube,
         overrides: {
           chargeSpeedLines: chargeSpeedValue === null ? null : [chargeSpeedValue],
           maxAmmoPercent: maxAmmoValue === null ? null : maxAmmoValue / 100,
@@ -74,6 +85,18 @@ export function ChargeWindowPanel({ roster, nameFor }: ChargeWindowPanelProps) {
       >
         {UNIT_SLUGS.map((unitSlug) => (
           <option key={unitSlug} value={unitSlug}>{nameFor(unitSlug)}</option>
+        ))}
+      </select>
+
+      <label className="field__label" htmlFor="charge-cube">하모니 큐브</label>
+      <select
+        id="charge-cube"
+        className="field__input"
+        value={cube}
+        onChange={(event) => setCube(event.target.value)}
+      >
+        {CUBES.map((option) => (
+          <option key={option.name} value={option.name}>{option.label}</option>
         ))}
       </select>
 
@@ -115,7 +138,9 @@ export function ChargeWindowPanel({ roster, nameFor }: ChargeWindowPanelProps) {
 
       <p className="charge-panel__assumption">
         풀버스트 진입 시 탄창은 가득으로 가정합니다. 홍련은 아수라가 즉시 재장전하므로
-        사실이고, 리버렐리오와 네온은 가정입니다.
+        사실이고, 리버렐리오와 네온은 가정입니다. 택티컬 베어의 환급 카운터도 창에서
+        0부터 세는 것으로 가정합니다 — 이 카운터는 전투 내내 누적되고 아수라의
+        재장전이 건드리지 않아, 창이 어느 지점에서 열리는지는 기록에 없습니다.
       </p>
 
       <button type="button" className="button" onClick={run} disabled={busy}>

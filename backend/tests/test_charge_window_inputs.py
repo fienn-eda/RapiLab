@@ -159,6 +159,19 @@ def test_the_assumed_cube_supplies_reload_speed():
     got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=False,
                        overrides=Overrides(None, None, None))
     assert got.reload_speed_percent == pytest.approx(0.2969, abs=1e-4)
+    assert got.ammo_refund is None
+
+
+def test_the_tactical_bear_trades_that_reload_speed_for_rounds():
+    """The two cubes differ only in their first slot, and for this screen that
+    slot is the whole answer: rounds handed back mid-magazine decide whether a
+    reload lands inside the window at all."""
+    from app.attack_rate import AmmoRefund
+
+    got = build_inputs(a_state("scarlet-black-shadow"), with_liberalio=False,
+                       overrides=Overrides(None, None, None), cube="tactical_bear")
+    assert got.ammo_refund == AmmoRefund(10, 3)
+    assert got.reload_speed_percent == 0.0
 
 
 def test_liberalio_hands_over_her_absolute_seconds():
