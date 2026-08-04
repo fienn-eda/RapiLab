@@ -1841,6 +1841,38 @@ own_burst_activate가 아니라...) 참고.
   개의 독립적으로 살아남는 결과를 대표해야 하는지**를 먼저 세야 한다 — 결과가
   하나면 패널 레벨 상태로 충분하지만, 둘 이상이 서로 다른 생명주기로 화면에
   남으면 공유 스냅샷은 그중 하나를 잘못 라벨링한다.
+- **무효화 축을 키에 넣어도, 저장된 값이 화면에 닿는 경로가 둘이면 둘 다 그 키를
+  지나야 한다 — 한쪽이 우회하면 축은 없는 것과 같다.** `inputHash.ts`는 엔진 버전을
+  캐시 키에 일부러 넣어 둔다(고쳐진 엔진이 옛 숫자를 계속 내주지 못하게). 그런데
+  저장된 결과가 화면에 오르는 길은 둘이었다: `getCached(hash)`는 **방금 계산한**
+  해시로 조회하니 엔진이 바뀌면 정확히 미스한다. `restoreResult`는 그 옆을 지나
+  프로필의 `lastResultHash`를 곧장 꺼냈다 — **저장 당시의** 해시다. 키에 엔진
+  버전이 있었지만 키를 아무도 안 물어봤다. `hold_burst_slugs`가 `RaidDeck`에
+  추가되자(`821be39`) 그 전에 저장된 결과가 그대로 복원돼 `DeckCard`가
+  `undefined.length`를 읽었다. 고침은 복원도 캐시 히트와 **같은 질문**에
+  답하게 하는 것: 오늘의 로스터와 오늘의 엔진 버전으로 해시를 다시 만들어
+  저장된 것과 일치할 때만 복원한다(`lib/restorableResult.ts`, 커밋 `19070f5`).
+  새로 저장할 것은 없다 — 축은 이미 있었고 복원 경로가 안 쓰고 있었을 뿐이다.
+- **렌더 중 throw는 패널 하나가 아니라 트리 전체를 언마운트한다 — 배경이 어두우면
+  그 결과는 "검은 화면"이고, 원인을 앱 바깥에서 찾게 된다.** 위 항목의 버그가
+  실제로 낸 증상은 "잠깐 보였다가 검게 변함"이었다(앱 배경은 `#0e0d13`). 에러
+  바운더리가 없어 `DeckCard`의 예외가 전부를 걷어냈다. 이 증상이 오진을 부르는
+  이유는 **바깥 신호가 전부 정상**이기 때문이다: 두 서버가 200을 주고, 같은
+  Chrome 바이너리라도 저장된 결과가 없는 프로필에서는 완벽하게 그려진다. 그래서
+  서버·GPU·확장·오버레이(RTSS)를 먼저 뒤지게 된다 —
+  [[webview2-black-screen-is-rtss-injection]]의 진짜 RTSS 사례와 증상이 겹쳐서
+  더 그렇다. **가른 것은 브라우저 콘솔 한 줄이었다**(`Cannot read properties of
+  undefined (reading 'length') at DeckCard`). 검은 화면을 만나면 환경을 파기 전에
+  콘솔부터 볼 것 — 그리고 재현이 안 되면 **내 프로필에만 없는 저장 상태**를
+  의심할 것(여기서는 캐시된 추천 결과였다).
+- **엔진 버전에 기대는 판단은 마운트 시점에 답할 수 없다 — `useEngineVersion`은 한
+  박자 뒤에 도착한다.** 그래서 `restoreResult`는 첫 렌더에 `null`이고 나중 렌더에
+  값이 된다. 복원 effect가 `[activeKey]`만 보고 있으면 그 값을 **영영** 못 받아
+  복원 기능이 조용히 죽는다 — 스위트는 초록인 채로(누구도 이 타이밍을 테스트하지
+  않았다). `[activeKey, engineVersion]`으로 두면 마운트당 두 번만 돈다(버전은 한
+  번 정착한다). 일반화: 비동기로 도착하는 값에 의존하는 "한 번만 하는" effect는
+  **그 값도 의존성에 있어야** 하고, 없을 때의 회귀는 에러가 아니라 **아무 일도
+  일어나지 않음**이라 테스트로만 잡힌다.
 
 ## Backend / operations
 - **An application logger's INFO records are silently dropped under uvicorn, and pytest's `caplog` hides this from a normal test suite.** uvicorn only configures its own `uvicorn.*` loggers; the root logger keeps its default WARNING level with no handler for application loggers, so a module-level `logging.getLogger(__name__).info(...)` emits nothing in a real server run even though the request itself succeeds (uvicorn's own access log still shows `200 OK`). A test using `caplog.at_level(logging.INFO)` forces the level for the duration of the test and therefore passes regardless — the telemetry looks tested while being dead in production. Found 2026-07-19 via `logging.getLogger('app.api').getEffectiveLevel()` returning 30 (WARNING) against a real run of the roster-sync endpoint. Fix: configure the application logger's own handler + level directly (`if not logger.handlers: logger.addHandler(logging.StreamHandler()); logger.setLevel(logging.INFO)`), not root — this leaves uvicorn's own access/error loggers untouched and doesn't double-log. A regression test that would actually catch this must exercise the real default-logging path (e.g. run the endpoint in a bare subprocess, no pytest/caplog involved) rather than a `caplog.at_level`-forced one. See `backend/app/api.py`, `backend/tests/test_assemble_roster_api.py`, commit `5069dc2`.
