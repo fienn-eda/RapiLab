@@ -9,6 +9,7 @@ import { useState } from 'react'
 import type { Draft, DraftSeat } from '../types/draft'
 import { MAX_DRAFT_SEATS_PER_DECK } from '../types/draft'
 import type { DraftDeck } from '../types/recommend'
+import type { BurstTier } from '../types/supportedUnit'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
 
 interface DraftEditorProps {
@@ -21,10 +22,12 @@ interface DraftEditorProps {
   /** The unit's name. Slots show no name text, so this is what labels the
    * slot's controls for anyone not looking at pixels. */
   nameFor: (slug: string) => string
-  /** Burst tier, or null when the slug is not a supported unit. The only
-   * badge a slot carries: a deck needs tiers 1, 2 and 3 to be feasible, and
-   * with names gone there is nothing else to read that from. */
-  burstTierFor: (slug: string) => 1 | 2 | 3 | null
+  /** Every burst tier the slug can be seated at, nominal one first, empty when
+   * it is not a supported unit. The only badge a slot carries: a deck needs
+   * tiers 1, 2 and 3 to be feasible, and with names gone there is nothing else
+   * to read that from. Plural because a character the engine fans out can hold
+   * more than one (`burstTiersFor`); the slot draws the nominal one. */
+  burstTiersFor: (slug: string) => BurstTier[]
   /** A lock means "the optimizer must keep this unit here" - meaningless on
    * a screen that only scores a placed squad, with no search to constrain.
    * Defaults on, matching the draft editor's existing behavior. */
@@ -141,13 +144,18 @@ export const toRequestDraft = (draft: Draft): DraftDeck[] =>
 
 /** Which of burst tiers 1/2/3 no seat in this deck covers. A deck missing one
  * cannot be fielded, and a partly-filled deck can still be rescued — so this
- * reports the gap rather than waiting for the backend's 422. */
+ * reports the gap rather than waiting for the backend's 422.
+ *
+ * A seat covers EVERY tier its unit can be seated at (`burstTiersFor`), not
+ * just the nominal one: the engine, not the player, settles which mode a
+ * fanned-out character runs in. It stays the weak check it has always been —
+ * it says nothing about deck SHAPE, which is the backend's 422 to give. */
 export const missingBurstTiers = (
   seats: DraftSeat[],
-  burstTierFor: (slug: string) => 1 | 2 | 3 | null,
+  burstTiersFor: (slug: string) => BurstTier[],
 ): number[] => {
-  const present = new Set(seats.map((seat) => burstTierFor(seat.slug)))
-  return [1, 2, 3].filter((tier) => !present.has(tier as 1 | 2 | 3))
+  const present = new Set(seats.flatMap((seat) => burstTiersFor(seat.slug)))
+  return [1, 2, 3].filter((tier) => !present.has(tier as BurstTier))
 }
 
 export function DraftEditor({
@@ -156,9 +164,12 @@ export function DraftEditor({
   onChange,
   portraitFor,
   nameFor,
-  burstTierFor,
+  burstTiersFor,
   showLocks = true,
 }: DraftEditorProps) {
+  // A slot draws ONE numeral and the rows sort by ONE tier, so both read the
+  // nominal tier - the first - and leave the rest to missingBurstTiers.
+  const nominalTierFor = (slug: string): BurstTier | null => burstTiersFor(slug)[0] ?? null
   // Which deck the pointer is currently over during a drag, so the target
   // reads as a target before the player commits to the drop.
   const [dropTarget, setDropTarget] = useState<number | null>(null)
@@ -194,7 +205,7 @@ export function DraftEditor({
   const inTierOrder = (seats: DraftSeat[]) =>
     seats
       .map((seat, seatIndex) => ({ seat, seatIndex }))
-      .sort((a, b) => (burstTierFor(a.seat.slug) ?? 4) - (burstTierFor(b.seat.slug) ?? 4))
+      .sort((a, b) => (nominalTierFor(a.seat.slug) ?? 4) - (nominalTierFor(b.seat.slug) ?? 4))
 
   return (
     <div className="draft-editor">
@@ -207,7 +218,7 @@ export function DraftEditor({
         {Array.from({ length: numDecks }, (_, deckIndex) => {
           const seats = value.decks[deckIndex] ?? []
           const full = seats.length >= MAX_DRAFT_SEATS_PER_DECK
-          const missing = seats.length > 0 ? missingBurstTiers(seats, burstTierFor) : []
+          const missing = seats.length > 0 ? missingBurstTiers(seats, burstTiersFor) : []
           return (
             <div
               className={
@@ -242,7 +253,7 @@ export function DraftEditor({
                 {inTierOrder(seats).map(({ seat, seatIndex }) => {
                   const portrait = portraitFor(seat.slug)
                   const name = nameFor(seat.slug)
-                  const tier = burstTierFor(seat.slug)
+                  const tier = nominalTierFor(seat.slug)
                   const where = `덱 ${deckIndex + 1}`
                   return (
                     <li

@@ -16,7 +16,7 @@ import {
 import { isDraftComplete, makeEmptyDraft, resizeDraft, type Draft } from '../types/draft'
 import { DEFAULT_UNION_NUM_DECKS, MAX_UNION_NUM_DECKS, MIN_UNION_NUM_DECKS } from '../types/evaluate'
 import type { BossElement } from '../types/recommend'
-import type { SupportedUnit } from '../types/supportedUnit'
+import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
 import { DraftEditor, removeUnitBySlug } from './DraftEditor'
@@ -30,8 +30,9 @@ interface UnionRaidPanelProps {
   portraitFor: (slug: string) => string | null
   /** The unit's display name, for a slot's controls. */
   nameFor: (slug: string) => string
-  /** Burst tier, or null when the slug is not a supported unit. */
-  burstTierFor: (slug: string) => 1 | 2 | 3 | null
+  /** Every burst tier a slug can be seated at, nominal one first; empty when
+   * the slug is not a supported unit. */
+  burstTiersFor: (slug: string) => BurstTier[]
   /** Breakthrough/core/Favorite Item per slug, for the palette chips - same
    * lookup RecommendPanel passes its own palette. Without it every chip here
    * would show blank stars/core/heart next to a recommend tab that shows them. */
@@ -48,7 +49,7 @@ export function UnionRaidPanel({
   supportedUnits,
   portraitFor,
   nameFor,
-  burstTierFor,
+  burstTiersFor,
   investmentFor,
 }: UnionRaidPanelProps) {
   const [numBattles, setNumBattles] = useState(DEFAULT_UNION_NUM_DECKS)
@@ -215,7 +216,7 @@ export function UnionRaidPanel({
                 onChange={setDraftValue}
                 portraitFor={portraitFor}
                 nameFor={nameFor}
-                burstTierFor={burstTierFor}
+                burstTiersFor={burstTiersFor}
                 // There is no optimizer here to constrain - locking a unit in
                 // place has nothing to mean on a screen that only scores what
                 // was placed.

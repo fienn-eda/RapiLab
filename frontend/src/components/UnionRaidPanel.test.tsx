@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { UnionRaidPanel } from './UnionRaidPanel'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
 import type { UserNikkeState } from '../types/userNikkeState'
-import type { SupportedUnit } from '../types/supportedUnit'
+import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 
 vi.mock('../api/evaluateDecks', () => ({
   evaluateDecks: vi.fn(),
@@ -47,9 +47,9 @@ const supportedUnits: SupportedUnit[] = Array.from({ length: 15 }, (_, i) => ({
 
 const portraitFor = () => null
 const nameFor = (slug: string) => slug.toUpperCase()
-const burstTierFor = (slug: string): 1 | 2 | 3 | null => {
+const burstTiersFor = (slug: string): BurstTier[] => {
   const i = Number(slug.slice(1))
-  return Number.isNaN(i) ? null : (((i % 3) + 1) as 1 | 2 | 3)
+  return Number.isNaN(i) ? [] : [((i % 3) + 1) as BurstTier]
 }
 
 const renderPanel = () =>
@@ -59,7 +59,7 @@ const renderPanel = () =>
       supportedUnits={supportedUnits}
       portraitFor={portraitFor}
       nameFor={nameFor}
-      burstTierFor={burstTierFor}
+      burstTiersFor={burstTiersFor}
     />,
   )
 

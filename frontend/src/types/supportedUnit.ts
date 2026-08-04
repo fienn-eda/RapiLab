@@ -54,6 +54,28 @@ export const ownedSlugIndex = (units: SupportedUnit[]): Map<string, string> =>
     ),
   )
 
+/** Every burst tier a seat naming `slug` can cover, its NOMINAL one first —
+ * empty for a slug the catalog doesn't list.
+ *
+ * One tier for the vast majority. A character the engine fans out into
+ * candidates covers every tier those sit at, because which one she runs as is
+ * the engine's pick, not the player's: Rapi: Red Hood takes her Combat Assist
+ * B1 seat in a deck that has no other B1. Reading her as B3 alone reports a
+ * fieldable deck as missing a tier. */
+export const burstTiersFor = (
+  slug: string,
+  index: Map<string, SupportedUnit>,
+): BurstTier[] => {
+  const unit = index.get(slug)
+  if (!unit) return []
+  const tiers = [unit.burstTier]
+  for (const candidate of unit.candidates ?? []) {
+    const tier = index.get(candidate)?.burstTier
+    if (tier !== undefined && !tiers.includes(tier)) tiers.push(tier)
+  }
+  return tiers
+}
+
 /** The owned slug a result slug belongs to — itself for the vast majority.
  *
  * Anything comparing what the player SENT against what came BACK has to go

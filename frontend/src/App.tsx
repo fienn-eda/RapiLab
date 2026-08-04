@@ -11,6 +11,7 @@ import { getValidRoster } from './types/nikkeDraft'
 import { getResult } from './types/profile'
 import { useSupportedUnits } from './hooks/useSupportedUnits'
 import { nameFromSlug } from './lib/unitName'
+import { burstTiersFor } from './types/supportedUnit'
 import { ProfileSwitcher } from './components/ProfileSwitcher'
 import { RosterGrid } from './components/RosterGrid'
 import { RecommendPanel } from './components/RecommendPanel'
@@ -76,7 +77,7 @@ function App() {
     [supportedUnits.units],
   )
   const nameFor = (slug: string) => unitIndex.get(slug)?.name ?? nameFromSlug(slug)
-  const burstTierFor = (slug: string) => unitIndex.get(slug)?.burstTier ?? null
+  const burstTiersResolver = (slug: string) => burstTiersFor(slug, unitIndex)
 
   return (
     <div className="app">
@@ -194,7 +195,7 @@ function App() {
                 supportedUnits={supportedUnits.units}
                 portraitFor={portraitFor}
                 nameFor={nameFor}
-                burstTierFor={burstTierFor}
+                burstTiersFor={burstTiersResolver}
                 investmentFor={investmentFor}
               />
             </div>

@@ -315,6 +315,13 @@ def _variant_alternatives(specs):
     representative spec plus its alternatives, and the engine settles the mode
     by completing the deck each way (deck_allocation's `_seed_choices`).
 
+    A base that is ITSELF one of its candidates (rapi-red-hood, whose Combat
+    Assist seat is the other) gets alternatives too. Being a loadable spec only
+    settles which spec represents the seat - it does not settle the mode, and
+    for her the two candidates sit at DIFFERENT burst tiers, so pinning her to
+    the nominal one makes a deck whose only tier-1 is her Combat Assist seat
+    report no feasible ordering at all.
+
     Keyed by the MODE_VARIANTS base (what a client's draft/deck names a seat
     by), not yet by the representative spec's own slug - a caller resolves a
     seat against the client-sent base slug first, then rekeys to the chosen
@@ -324,7 +331,7 @@ def _variant_alternatives(specs):
     alternatives = {}
     for base, variants in MODE_VARIANTS.items():
         loadable = tuple(by_slug[v] for v in variants if v in by_slug)
-        if base not in by_slug and loadable:
+        if loadable:
             alternatives[base] = loadable
     return by_slug, alternatives
 

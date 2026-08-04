@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { mapSupportedUnit, ownedSlugFor, ownedSlugIndex } from './supportedUnit'
+import { burstTiersFor, mapSupportedUnit, ownedSlugFor, ownedSlugIndex } from './supportedUnit'
 
 describe('mapSupportedUnit', () => {
   it('maps the backend snake_case wire shape to the camelCase frontend shape', () => {
@@ -53,5 +53,35 @@ describe('ownedSlugFor', () => {
     // a stale cached result must not resolve to undefined.
     expect(ownedSlugFor('bready', index)).toBe('bready')
     expect(ownedSlugFor('who-dis', index)).toBe('who-dis')
+  })
+})
+
+describe('burstTiersFor', () => {
+  const index = new Map(
+    [
+      mapSupportedUnit({ slug: 'crown', name: 'Crown', burst_tier: 1, element: 'Iron' }),
+      mapSupportedUnit({
+        slug: 'rapi-red-hood', name: '라피: 레드후드', burst_tier: 3, element: 'Fire',
+        candidates: ['rapi-red-hood', 'rapi-red-hood-b1'],
+      }),
+      mapSupportedUnit({
+        slug: 'rapi-red-hood-b1', name: '라피: 레드후드(1버)', burst_tier: 1, element: 'Fire',
+      }),
+    ].map((unit) => [unit.slug, unit] as const),
+  )
+
+  it('covers every tier the engine may seat a fanned-out character at', () => {
+    // Nominal tier first: it is the one the palette groups her under and the
+    // one her slot draws.
+    expect(burstTiersFor('rapi-red-hood', index)).toEqual([3, 1])
+  })
+
+  it('is the single tier of a unit the engine has no choice about', () => {
+    expect(burstTiersFor('crown', index)).toEqual([1])
+    expect(burstTiersFor('rapi-red-hood-b1', index)).toEqual([1])
+  })
+
+  it('is empty for a slug the catalog has never heard of', () => {
+    expect(burstTiersFor('who-dis', index)).toEqual([])
   })
 })

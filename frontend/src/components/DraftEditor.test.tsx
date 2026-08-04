@@ -14,6 +14,7 @@ import {
 } from './DraftEditor'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
 import type { Draft } from '../types/draft'
+import type { BurstTier } from '../types/supportedUnit'
 import { makeEmptyDraft, MAX_DRAFT_SEATS_PER_DECK } from '../types/draft'
 import { nameFromSlug } from '../lib/unitName'
 
@@ -83,16 +84,26 @@ describe('moveUnit', () => {
 })
 
 describe('missingBurstTiers', () => {
-  const tierOf = (slug: string) =>
-    (({ crown: 1, liter: 2, blanc: 3 }) as Record<string, 1 | 2 | 3>)[slug] ?? null
+  const tiersOf = (slug: string) =>
+    (({ crown: [1], liter: [2], blanc: [3], 'rapi-red-hood': [3, 1] }) as Record<
+      string,
+      BurstTier[]
+    >)[slug] ?? []
 
   it('reports the tiers no seat covers', () => {
-    expect(missingBurstTiers([{ slug: 'crown', locked: false }], tierOf)).toEqual([2, 3])
+    expect(missingBurstTiers([{ slug: 'crown', locked: false }], tiersOf)).toEqual([2, 3])
   })
 
   it('reports nothing once all three tiers are seated', () => {
     const seats = ['crown', 'liter', 'blanc'].map((slug) => ({ slug, locked: false }))
-    expect(missingBurstTiers(seats, tierOf)).toEqual([])
+    expect(missingBurstTiers(seats, tiersOf)).toEqual([])
+  })
+
+  it('counts a seat the engine may move between tiers as covering either', () => {
+    // 라피: 레드후드는 B3로도 B1로도 앉는다. 다른 B1이 없으면 엔진이 그녀를
+    // B1로 앉히므로, 이 덱을 두고 "B1 없음"이라 말하면 거짓이다.
+    const seats = ['rapi-red-hood', 'liter', 'blanc'].map((slug) => ({ slug, locked: false }))
+    expect(missingBurstTiers(seats, tiersOf)).toEqual([])
   })
 })
 
@@ -188,7 +199,13 @@ describe('swapUnits', () => {
 })
 
 describe('DraftEditor', () => {
-  const TIERS: Record<string, 1 | 2 | 3> = { crown: 1, liter: 2, blanc: 3 }
+  const TIERS: Record<string, BurstTier[]> = {
+    crown: [1],
+    liter: [2],
+    blanc: [3],
+    // 엔진이 티어를 골라 앉히는 캐릭터. 라피: 레드후드가 그런 유일한 경우다.
+    'rapi-red-hood': [3, 1],
+  }
 
   const editor = (
     numDecks: number,
@@ -203,7 +220,7 @@ describe('DraftEditor', () => {
         onChange={onChange}
         portraitFor={() => null}
         nameFor={nameFromSlug}
-        burstTierFor={(slug) => TIERS[slug] ?? null}
+        burstTiersFor={(slug: string) => TIERS[slug] ?? []}
         showLocks={showLocks}
       />,
     )
@@ -238,6 +255,15 @@ describe('DraftEditor', () => {
 
   it('says nothing about burst tiers for a deck with all three', () => {
     const seats = ['crown', 'liter', 'blanc'].map((slug) => ({ slug, locked: false }))
+    editor(1, { decks: [seats] })
+    expect(screen.queryByText(/없음$/)).not.toBeInTheDocument()
+  })
+
+  it('says nothing when the missing tier is one a seat can be moved to', () => {
+    // 라피: 레드후드가 앉은 이 덱엔 다른 B1이 없다 - 그래서 엔진이 그녀를
+    // B1로 앉히고, 이 편성은 실제로 성립한다. "B1 없음"은 유저가 인게임에서
+    // 굴리는 편성을 못 쓰는 것으로 오해하게 만든다.
+    const seats = ['rapi-red-hood', 'liter', 'blanc'].map((slug) => ({ slug, locked: false }))
     editor(1, { decks: [seats] })
     expect(screen.queryByText(/없음$/)).not.toBeInTheDocument()
   })

@@ -108,6 +108,21 @@ def test_rejects_a_deck_with_no_feasible_burst_ordering():
     assert "1번" in response.json()["detail"]
 
 
+def test_seats_a_dual_tier_character_in_the_tier_the_deck_needs():
+    """라피: 레드후드는 B3 좌석과 Combat Assist의 B1 좌석 둘 다로 모델링된다
+    (MODE_VARIANTS). 나머지 넷이 B2 하나 + B3 셋이면 성립하는 대형은 그녀가
+    B1로 앉는 1·1·3 하나뿐이라, 좌석의 모드를 엔진이 고르지 못하면 유저가
+    인게임에서 실제로 굴리는 편성이 422로 거절된다."""
+    deck = ["rapi-red-hood", "nayuta", "helm", "ludmilla-winter-owner",
+            "quency-escape-queen"]
+    roster = [_nikke(s) for s in deck]
+    response = client.post("/api/evaluate-decks",
+                           json=_request([{"units": deck, "boss": {}}], roster=roster))
+
+    assert response.status_code == 200, response.json()
+    assert "rapi-red-hood-b1" in response.json()["decks"][0]["deck"]
+
+
 def test_infeasible_message_does_not_claim_a_missing_tier_it_has():
     """1×B1·3×B2·1×B3처럼 세 티어가 다 있어도 ALLOWED_SHAPES 밖이면 여전히
     불가능한 조합이다 - 메시지가 "티어가 없다"고 잘못 말하면 안 되고, 실제

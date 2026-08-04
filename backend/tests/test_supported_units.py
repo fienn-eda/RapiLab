@@ -37,11 +37,20 @@ def test_a_mode_variant_character_is_listed_once_with_her_candidates():
     assert {"bready-lingering", "bready-recommended"} <= set(units)
 
 
-def test_a_base_slug_that_is_itself_a_candidate_carries_no_candidate_list():
-    """rapi-red-hood is both the owned slug and an engine candidate, so she
-    needs no merged entry - and must not get one, since a draft CAN seat her."""
-    units = {u["slug"]: u for u in supported_units()}
-    assert "candidates" not in units["rapi-red-hood"]
+def test_a_base_slug_that_is_itself_a_candidate_still_lists_its_candidates():
+    """rapi-red-hood is both the owned slug and an engine candidate, so her own
+    entry already describes her and she must not gain a second, merged one.
+
+    She still carries `candidates`: that field means "the engine picks among
+    these", which is true of her - and for her alone the pick spans burst
+    tiers. A client without it cannot tell that a result naming
+    `rapi-red-hood-b1` is the character it drafted as `rapi-red-hood`."""
+    listed = supported_units()
+    units = {u["slug"]: u for u in listed}
+    assert [u["slug"] for u in listed].count("rapi-red-hood") == 1
+    assert units["rapi-red-hood"]["candidates"] == ["rapi-red-hood",
+                                                    "rapi-red-hood-b1"]
+    # 칩은 그녀의 공칭 티어로 그려지고, 후보는 각자 자기 티어로 남는다.
     assert units["rapi-red-hood"]["burst_tier"] == 3
     assert units["rapi-red-hood-b1"]["burst_tier"] == 1
 

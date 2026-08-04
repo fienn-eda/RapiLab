@@ -72,13 +72,17 @@ def supported_units(data_dir=DATA_DIR):
     by_slug = {e["slug"]: e for e in out}
 
     for base, variants in MODE_VARIANTS.items():
-        # A base that is itself a candidate is already listed, and needs no
-        # merged entry - which is also why rapi-red-hood being the one base
-        # whose candidates sit at DIFFERENT burst tiers costs nothing here.
-        if base in by_slug:
-            continue
         loadable = [v for v in variants if v in by_slug]
         if not loadable:
+            continue
+        # A base that is itself a candidate (rapi-red-hood) is already listed
+        # on her own terms - name, element and her NOMINAL burst tier - so she
+        # needs no merged entry, only the candidate list. She is the one base
+        # whose candidates sit at different burst tiers, and that list is how a
+        # client learns the engine may seat her at either: without it, a result
+        # naming `rapi-red-hood-b1` reads as a unit nobody drafted.
+        if base in by_slug:
+            by_slug[base]["candidates"] = loadable
             continue
         # The candidates are the same character, so element/burst tier agree
         # and the first one describes her; test_supported_units pins that
