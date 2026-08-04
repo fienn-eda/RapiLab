@@ -600,8 +600,11 @@ export function RecommendPanel({
             읽는 데 스크롤이 필요 없도록. */}
         {(mode === 'raid' || mode === 'draft') && raid.status === 'loading' && (
           <p className="recommend-form__progress" role="status">
+            {/* 덱 배분(85초쯤) + 스왑 개선 단계(최대 180초, 개선이 끊기면 바로
+                끝난다)를 실측한 폭이다 — backend/app/deck_allocation.py의
+                SWAP_TIME_BUDGET_SEC. 로스터가 얇으면 훨씬 빨리 끝난다. */}
             {mode === 'raid' ? '전부 최적화 중' : '빈자리만 최적화 중'} — 수천 번의
-            시뮬레이션을 실행하며 보통 1~2분이 걸려요. 아직 진행 중이니 완료되면
+            시뮬레이션을 실행하며 보통 2~4분이 걸려요. 아직 진행 중이니 완료되면
             버튼이 다시 활성화돼요.
           </p>
         )}

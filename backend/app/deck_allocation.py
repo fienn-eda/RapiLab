@@ -32,6 +32,29 @@ from app.sim_pool import SimPool, resolve_workers
 SWAP_BATCH_PER_WORKER = 4
 _MIN_SWAP_BATCH = 4
 
+# Wall-clock ceiling on the swap-improvement phase. A CEILING, not a cost: the
+# climb exits the moment a full pass finds no improvement, so a configuration
+# that converges early pays nothing for a higher number here - it only ever
+# binds where it is actually still buying damage.
+#
+# Chosen by measurement, `scripts/measure_swap_budget.py` on Fienn's roster
+# (78 usable, 5 decks, Fire boss / 수냉 약점, 속성 저지 필수, DEF 31,784, 180 s):
+#
+#     budget   combined total   vs peel   end-to-end   converged
+#         0s   22,564,405,444    +0.00%        85.4s   yes
+#        45s   27,901,137,219   +23.65%       111.9s   NO - cut off
+#       120s   30,637,712,508   +35.78%       187.6s   NO - cut off
+#       300s   30,659,850,448   +35.88%       243.1s   yes  (climbed 176.6s)
+#
+# 45 was costing 9.8% of the allocation here. The value curve is flat past
+# 120s (120 captures 99.93% of 300's), so 180 is 120 plus headroom: the climb
+# is wall-clock, so how long convergence takes depends on machine load, and a
+# ceiling set at the measured convergence point would bind again on a busier
+# machine. The earlier "45s is not the bottleneck" reading (2026-08-02) was a
+# Wind boss with the gimmick OFF - the constraint changes the search, so that
+# measurement never covered this case.
+SWAP_TIME_BUDGET_SEC = 180.0
+
 
 class InfeasibleDraft(ValueError):
     """A draft deck's locked/placed units fit no legal deck shape, the pool is
@@ -134,7 +157,7 @@ def _gimmick_floor(decks, boss):
 
 
 def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
-                   locked=frozenset(), time_budget_sec=45.0, workers=None,
+                   locked=frozenset(), time_budget_sec=SWAP_TIME_BUDGET_SEC, workers=None,
                    alternatives=None, cancel=None):
     """`cancel` (see app.cancellation) stops a run whose caller went away.
 

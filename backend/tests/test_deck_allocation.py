@@ -3,6 +3,7 @@ same-tier swap pass recovers the classic greedy mistake (stacking two strong
 supporters in deck 1 when splitting them wins). All search/sim calls are
 stubbed - real sims live in the API end-to-end test."""
 from dataclasses import dataclass
+import inspect
 import time
 
 import app.deck_allocation as da
@@ -190,6 +191,16 @@ def patch_scoring_clock(monkeypatch, scorer, per_score=1.0):
     patch_scorer(monkeypatch, timed)
     monkeypatch.setattr(da, "time", clock)
     return clock
+
+
+def test_the_swap_budget_default_is_the_named_constant():
+    """The climb's ceiling is a MEASURED number, and the measurement that chose
+    it is written beside the constant. Every test in this file passes an
+    explicit budget, so nothing else here would notice the default drifting
+    back to a bare literal - and a literal in the signature is exactly how the
+    number and the note justifying it come apart."""
+    default = inspect.signature(da.allocate_decks).parameters["time_budget_sec"].default
+    assert default is da.SWAP_TIME_BUDGET_SEC
 
 
 def test_a_binding_budget_still_reaches_the_last_deck(monkeypatch):
