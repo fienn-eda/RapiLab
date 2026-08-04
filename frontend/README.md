@@ -469,6 +469,15 @@ plus one entry per candidate. So:
   engine dropping one unit and adding another, and can fail to pair the deck at
   all. `pinned_slugs` needs no mapping: it already names the seated candidate,
   which is what a result row draws.
+- **An owned entry can be a candidate of itself**, and then its `candidates`
+  includes its own slug — `rapi-red-hood` carries
+  `["rapi-red-hood", "rapi-red-hood-b1"]`. She is also the only character whose
+  candidates sit at DIFFERENT burst tiers, so `burst_tier` on her entry is the
+  nominal one and does not tell you where a deck will actually seat her.
+  Anything asking "does this deck cover tier N" reads `burstTiersFor`
+  (`types/supportedUnit.ts`), not `burstTier`, or it warns "B1 없음" over a deck
+  the engine fields happily. Chips, slot numerals and tier sorting still use the
+  nominal tier: those place her in the palette, they do not judge a deck.
 
 ### Portraits
 

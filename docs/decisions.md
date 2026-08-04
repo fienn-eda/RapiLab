@@ -5,6 +5,34 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 자기 자신이 후보인 베이스도 `candidates`를 실어 보낸다 — 못박아 둔 반대 주장을 뒤집었다
+
+- Date: 2026-08-04
+- Context: 라피: 레드후드가 앉은 편성이 기대 딜량 계산·편성 기반 추천 양쪽에서
+  거절됐다(각각 다른 422 문구). 원인은 `api._variant_alternatives`가 자기 자신이
+  후보인 베이스를 건너뛴 것 — 상세는 `docs/insights.md`. 그 백엔드 가드를 떼는
+  것은 논쟁의 여지가 없었으나, **같은 전제가 카탈로그에도 있었고 그쪽은 테스트로
+  못박혀 있었다**: `test_a_base_slug_that_is_itself_a_candidate_carries_no_candidate_list`
+  ("she needs no merged entry - and must not get one, since a draft CAN seat her").
+- Decision (Fienn 승인, 2026-08-04): 그 테스트의 주장을 뒤집는다. `supported_units`는
+  자기 자신이 후보인 베이스에게 **병합 항목은 여전히 만들지 않되**(항목이 둘이 되면
+  팔레트 칩이 겹친다) `candidates`는 자기 항목에 얹는다. 프론트는 새 와이어 필드
+  없이 그 목록에서 `burstTiersFor`를 유도해, 덱의 티어 커버 판정에만 쓴다.
+- Why: `candidates`의 뜻은 옆 테스트(`..._favorite_item_base_carries_no_candidate_list`)가
+  "the engine picks among these"로 이미 정의해 뒀고, 라피는 정확히 그 경우다.
+  뒤집는 테스트가 **앉히는 것**(맞다, 그녀는 spec이다)과 **티어를 고르는 것**(엔진의
+  몫이다)을 한 문장에 섞어 놓은 것이 오류였다. 대안 둘을 견줬다. **(A) 백엔드만
+  고치기** — 422는 사라지지만 엔진이 그때부터 결과에 `rapi-red-hood-b1`을 실어
+  보내는데 `ownedSlugFor`가 그걸 라피로 못 되돌려, 드래프트 diff가 "한 명 빠지고 한 명
+  추가"로 읽고 애장품 하트가 사라진다 — 고친 만큼 새로 깨진다. **(B) 새 와이어 필드
+  `burst_tiers`** — `candidates`가 이미 답을 담고 있어 두 번째 진실 원본이 된다.
+- Consequences: 라피의 항목은 이제 `candidates: ["rapi-red-hood", "rapi-red-hood-b1"]`
+  이고 `burst_tier`는 **공칭값 3으로 남는다** — 그 필드만 읽고 "이 덱은 B3를 덮는다"고
+  단정하면 안 된다는 뜻이라, `frontend/README.md`에 명시했다. `DraftEditor`의
+  티어 프롭이 단수 → 복수로 바뀌었다(`burstTierFor` → `burstTiersFor`, 호출부 셋).
+  뱃지는 여전히 **약한 검사**다 — ALLOWED_SHAPES는 안 보며, 그건 백엔드 422의 몫이다.
+  백엔드 1860 → **1861 passed / 3 skipped**, 프론트 510 → **515**.
+
 ## 차지 계산기의 "누가 버프를 받나"는 엔진에게 물어본다 — 로스터 공격력으로 비교하지 않는다
 
 - Date: 2026-08-04

@@ -14,7 +14,7 @@ import { useEvaluateDecks } from '../hooks/useEvaluateDecks'
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import { useSupportedUnits } from '../hooks/useSupportedUnits'
 import { nameFromSlug, withFavoriteItem } from '../lib/unitName'
-import { ownedSlugFor, ownedSlugIndex } from '../types/supportedUnit'
+import { burstTiersFor, ownedSlugFor, ownedSlugIndex } from '../types/supportedUnit'
 import { hashRecommendInputs } from '../lib/inputHash'
 import {
   bossProfileToDraft,
@@ -359,7 +359,7 @@ export function RecommendPanel({
       unitIndex.get(slug)?.name ?? nameFromSlug(slug),
       investmentFor?.(ownedSlugResolver(slug))?.favoriteItem,
     )
-  const burstTierFor = (slug: string) => unitIndex.get(slug)?.burstTier ?? null
+  const burstTiersResolver = (slug: string) => burstTiersFor(slug, unitIndex)
 
   const toggleExclude = (slug: string) => {
     if (!excludedSlugs.has(slug)) {
@@ -736,7 +736,7 @@ export function RecommendPanel({
                   onChange={setDraftValue}
                   portraitFor={portraitFor}
                   nameFor={nameFor}
-                  burstTierFor={burstTierFor}
+                  burstTiersFor={burstTiersResolver}
                   // Evaluate has no optimizer to constrain - locking a unit in
                   // place has nothing to mean there.
                   showLocks={mode !== 'evaluate'}
