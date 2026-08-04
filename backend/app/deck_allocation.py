@@ -302,19 +302,31 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
     # one.
     gimmick_active = weakness_holders(
         [u for deck in decks for u in deck] + list(leftovers), boss) > 0
+    # One pass's work items: for each deck, every deck after it, then the bench.
+    items = [(i, j) for i in range(len(decks))
+             for j in [*range(i + 1, len(decks)), None]]
     improved = True
     while improved and time.monotonic() < deadline:
         improved = False
-        for i in range(len(decks)):
+        for done, (i, j) in enumerate(items):
             # The longest phase in the run - it climbs until it converges or the
-            # 45s budget runs out - so it is asked once per deck rather than only
+            # budget runs out - so it is asked per work item rather than only
             # once per pass.
             cancel.check()
-            for j in range(i + 1, len(decks)):
-                improved |= _try_swaps(decks, scores, i, decks[j], j, boss,
-                                       deadline, locked, pool, batch, gimmick_active)
-            improved |= _try_swaps(decks, scores, i, leftovers, None, boss,
-                                   deadline, locked, pool, batch, gimmick_active)
+            # An item may spend only its EQUAL SHARE of what is left, so a
+            # budget that binds cuts every deck a little instead of being spent
+            # entirely on the first one. Measured on Fienn's roster (2026-08-04,
+            # 5 decks, gimmick on): deck 1's five items took all 45 seconds and
+            # decks 2-5 got no swap AT ALL - which left a bench unit worth
+            # +969,725,138 unseated beside deck 3. An item that runs out of
+            # candidates before its share is up hands the rest to the items
+            # behind it, so a climb that fits inside the budget converges
+            # exactly as it did before.
+            now = time.monotonic()
+            partner = leftovers if j is None else decks[j]
+            improved |= _try_swaps(decks, scores, i, partner, j, boss,
+                                   now + (deadline - now) / (len(items) - done),
+                                   locked, pool, batch, gimmick_active)
 
 
 def _swap_is_fieldable(deck, a, partner, k, partner_is_deck):
