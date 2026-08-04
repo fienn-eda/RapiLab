@@ -4,6 +4,29 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 「베이스가 이미 spec이다」는 「모드가 정해졌다」가 아니다 — 팬아웃 가드가 라피를 빼먹었다
+
+- 확립: 2026-08-04. 유저 신고: 기대 딜량 계산 모드에서 [라피: 레드후드, 나유타,
+  헬름, 루드밀라: 윈터 오너, 퀀시: 이스케이프 퀸]이 422로 거절됐다. 나머지 넷이
+  B2 하나 + B3 셋이라 성립하는 대형은 라피가 B1로 앉는 1·1·3 하나뿐인데,
+  그 좌석을 아무도 제안하지 않고 있었다.
+- 원인은 `api._variant_alternatives`의 `if base not in by_slug`. `MODE_VARIANTS`
+  베이스 중 **자기 자신이 후보인 것은 라피 하나**이고(`("rapi-red-hood",
+  "rapi-red-hood-b1")`), 로스터 로더가 두 spec을 다 만들어 놓으니 이 조건이 참이
+  되어 그녀만 건너뛰었다. 가드는 브레디·디젤·신데렐라(베이스가 spec이 아닌 셋)를
+  보고 쓰였고, 라피의 B1은 그보다 **엿새 먼저** 들어와 있었다.
+- 교훈: **어느 spec이 좌석을 대표하나**와 **그 캐릭터가 어느 모드로 도나**는 다른
+  질문이다. 베이스가 로드된다는 사실은 앞엣것만 답한다. 팬아웃 표에 뭔가를 넣을 땐
+  "이 베이스가 후보 목록에 자기를 포함하나"를 따로 물을 것.
+- 같은 전제가 **두 군데**에 복사돼 있었다. `supported_units`도 같은 이유로 그녀에게
+  `candidates`를 안 줬고, 그걸 못박은 테스트까지 있었다("a draft CAN seat her").
+  앉히는 것과 티어를 고르는 것은 다른 얘기다 — `candidates`의 정의는 옆 테스트가
+  이미 "the engine picks among these"라고 적어 두고 있었다.
+- **프론트에도 샜다**: `burstTier` 하나로 "이 덱이 티어 N을 덮나"를 물으면 라피가
+  앉은 성립 가능한 덱에 "B1 없음"이 뜬다. 그 판정은 `burstTiersFor`(후보들의
+  티어 합집합)로 물을 것. 칩·슬롯 번호·정렬은 여전히 공칭 티어다 — 그건 팔레트에
+  자리를 주는 일이지 덱을 판정하는 일이 아니다.
+
 ## 드래프트의 덱 안 좌석 순서는 엔진에 아무 의미가 없다 — 화면은 마음대로 정렬해도 된다
 
 - 확립: 2026-08-04. 근거가 세 곳에 흩어져 있어 매번 다시 파게 되므로 적어 둔다.
