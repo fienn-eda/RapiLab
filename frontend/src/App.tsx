@@ -9,6 +9,7 @@ import { usePortraitManifest } from './hooks/usePortraitManifest'
 import { useEngineVersion } from './hooks/useEngineVersion'
 import { getValidRoster } from './types/nikkeDraft'
 import { getResult } from './types/profile'
+import { restorableResult } from './lib/restorableResult'
 import { useSupportedUnits } from './hooks/useSupportedUnits'
 import { nameFromSlug } from './lib/unitName'
 import { burstTiersFor } from './types/supportedUnit'
@@ -53,6 +54,13 @@ function App() {
 
   const drafts = activeProfile?.roster ?? NO_ROSTER
   const validRoster = useMemo(() => getValidRoster(drafts), [drafts])
+
+  // 마지막 제출 결과를 다시 올릴 수 있을 때만 올린다. 엔진 버전은 마운트 뒤
+  // 늦게 도착하므로, 그 전까지는 판단이 "아직 아니오"이고 도착한 뒤 유효해진다.
+  const restorableRaidResult = useMemo(
+    () => (activeProfile ? restorableResult(activeProfile, validRoster, engineVersion) : null),
+    [activeProfile, validRoster, engineVersion],
+  )
 
   // Breakthrough/core and the Favorite Item heart, for the palette chips and
   // the names in a result. It rides alongside the roster rather than in it:
@@ -171,11 +179,7 @@ function App() {
                   if (state.activeKey) saveResult({ key: state.activeKey, ...args })
                 }}
                 restoreInputs={activeProfile?.lastInputs ?? null}
-                restoreResult={
-                  activeProfile && activeProfile.lastResultHash
-                    ? getResult(activeProfile, activeProfile.lastResultHash)
-                    : null
-                }
+                restoreResult={restorableRaidResult}
               />
             </div>
 

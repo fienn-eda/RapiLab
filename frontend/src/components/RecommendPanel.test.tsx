@@ -912,31 +912,31 @@ describe('RecommendPanel persistence', () => {
     elemental_interrupt_required: false,
   }
 
-  it('restores a persisted raid result and its inputs on mount, with no network call', async () => {
-    const restoreInputs: StoredInputs = {
-      mode: 'raid',
-      numDecks: 3,
-      boss: defaultBoss,
-      draft: null,
-    }
-    const restoreResult: StoredResult = {
-      decks: [
-        {
-          deck: ['a', 'b', 'c', 'd', 'e'],
-          total_damage: 100,
-          burst_damage: 60,
-          normal_attack_damage: 40,
-          skill_damage: 0, hold_burst_slugs: [],
-          pinned_slugs: [],
-        },
-      ],
-      combinedTotalDamage: 180,
-      excludedSlugs: [],
-      leftoverSlugs: ['k'],
-      withinDraft: null,
-      baselineTotalDamage: null,
-    }
+  const restoreInputs: StoredInputs = {
+    mode: 'raid',
+    numDecks: 3,
+    boss: defaultBoss,
+    draft: null,
+  }
+  const restoreResult: StoredResult = {
+    decks: [
+      {
+        deck: ['a', 'b', 'c', 'd', 'e'],
+        total_damage: 100,
+        burst_damage: 60,
+        normal_attack_damage: 40,
+        skill_damage: 0, hold_burst_slugs: [],
+        pinned_slugs: [],
+      },
+    ],
+    combinedTotalDamage: 180,
+    excludedSlugs: [],
+    leftoverSlugs: ['k'],
+    withinDraft: null,
+    baselineTotalDamage: null,
+  }
 
+  it('restores a persisted raid result and its inputs on mount, with no network call', async () => {
     render(
       <RecommendPanel
         roster={fullRoster}
@@ -954,6 +954,42 @@ describe('RecommendPanel persistence', () => {
     expect(screen.getByText('벤치 (덱에 배정되지 않음): K')).toBeInTheDocument()
     expect(screen.getByLabelText(/전부 최적화/i)).toBeChecked()
     expect(screen.getByLabelText('덱 개수')).toHaveValue('3')
+    expect(recommendRaidDecks).not.toHaveBeenCalled()
+  })
+
+  it('restores a result that only becomes restorable once the engine version arrives', async () => {
+    // Whether a stored result is still valid can't be answered until the
+    // backend says which engine produced the current numbers, and that answer
+    // lands a beat AFTER mount (useEngineVersion fetches it). So restoreResult
+    // is null on the first render and turns into a value on a later one.
+    // Restoring only what was present at mount would drop it forever.
+    const { rerender } = render(
+      <RecommendPanel
+        roster={fullRoster}
+        activeKey="A"
+        getCached={() => null}
+        onResult={() => {}}
+        restoreInputs={restoreInputs}
+        restoreResult={null}
+        engineVersion={null}
+      />,
+    )
+    expect(screen.queryByText('덱 1')).not.toBeInTheDocument()
+
+    rerender(
+      <RecommendPanel
+        roster={fullRoster}
+        activeKey="A"
+        getCached={() => null}
+        onResult={() => {}}
+        restoreInputs={restoreInputs}
+        restoreResult={restoreResult}
+        engineVersion="engine-1"
+      />,
+    )
+
+    expect(await screen.findByText('덱 1')).toBeInTheDocument()
+    expect(screen.getByText('180 딜')).toBeInTheDocument()
     expect(recommendRaidDecks).not.toHaveBeenCalled()
   })
 

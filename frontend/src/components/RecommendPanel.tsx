@@ -154,8 +154,12 @@ export function RecommendPanel({
   const { portraitFor } = usePortraitManifest()
 
   // Restore the active profile's last raid/draft submission (form + result)
-  // whenever the ACCOUNT changes, not on every render - keyed on
-  // activeKey alone so it never clobbers in-progress edits mid-typing.
+  // whenever the ACCOUNT changes, not on every render, so it never clobbers
+  // in-progress edits mid-typing. engineVersion is the other trigger because
+  // whether a stored result is still valid can't be answered until the backend
+  // names the current engine, and that lands a beat after mount - restoreResult
+  // is null until then. Without it here, a restorable result would be dropped
+  // for good. It settles once per mount, so this stays two firings.
   useEffect(() => {
     setExcludedSlugs(new Set())
     if (restoreInputs && restoreResult) {
@@ -179,7 +183,7 @@ export function RecommendPanel({
       setDisplayBoss(null)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeKey])
+  }, [activeKey, engineVersion])
 
   // Persist a raid/draft submission's success exactly once - guarded by
   // pendingSaveRef so a rerender that doesn't follow a fresh submit (e.g. a
