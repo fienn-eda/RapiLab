@@ -208,7 +208,7 @@ describe('App', () => {
         name: /인카운터/,
       }),
     )
-    expect(await screen.findByRole('status')).toHaveTextContent(/2~4분/)
+    expect(await screen.findByRole('status')).toHaveTextContent(/2~5분/)
     expect(screen.getByLabelText(/전부 최적화/i)).toBeChecked()
 
     await user.selectOptions(screen.getByLabelText('계정'), '부계 (JP)')
@@ -304,13 +304,13 @@ describe('App', () => {
         name: /인카운터/,
       }),
     )
-    expect(await screen.findByRole('status')).toHaveTextContent(/2~4분/)
+    expect(await screen.findByRole('status')).toHaveTextContent(/2~5분/)
 
     await user.click(screen.getByRole('tab', { name: '니케 풀' }))
     await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
 
     // Still running, and still in raid mode - a remount would have reset both.
-    expect(screen.getByRole('status')).toHaveTextContent(/2~4분/)
+    expect(screen.getByRole('status')).toHaveTextContent(/2~5분/)
     expect(screen.getByLabelText(/전부 최적화/i)).toBeChecked()
     expect(vi.mocked(recommendRaidDecks)).toHaveBeenCalledTimes(1)
   })

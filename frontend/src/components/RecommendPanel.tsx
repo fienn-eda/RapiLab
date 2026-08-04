@@ -600,11 +600,13 @@ export function RecommendPanel({
             읽는 데 스크롤이 필요 없도록. */}
         {(mode === 'raid' || mode === 'draft') && raid.status === 'loading' && (
           <p className="recommend-form__progress" role="status">
-            {/* 덱 배분(85초쯤) + 스왑 개선 단계(최대 180초, 개선이 끊기면 바로
-                끝난다)를 실측한 폭이다 — backend/app/deck_allocation.py의
-                SWAP_TIME_BUDGET_SEC. 로스터가 얇으면 훨씬 빨리 끝난다. */}
+            {/* 실측(Fienn 로스터 78기·5덱, 2026-08-04): 전부 최적화 188초,
+                편성이 꽉 찬 빈자리만 최적화 264초 — 후자는 배분을 세 번 돌린다
+                (recommend_from_draft의 recommended + within_draft 둘). 스왑 단계
+                상한은 backend/app/deck_allocation.py의 SWAP_TIME_BUDGET_SEC이고,
+                개선이 끊기면 상한을 다 쓰지 않고 끝나므로 얇은 로스터는 훨씬 빠르다. */}
             {mode === 'raid' ? '전부 최적화 중' : '빈자리만 최적화 중'} — 수천 번의
-            시뮬레이션을 실행하며 보통 2~4분이 걸려요. 아직 진행 중이니 완료되면
+            시뮬레이션을 실행하며 보통 2~5분이 걸려요. 아직 진행 중이니 완료되면
             버튼이 다시 활성화돼요.
           </p>
         )}
