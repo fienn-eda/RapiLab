@@ -16,14 +16,14 @@ describe('RaidResults', () => {
         total_damage: 5_000_000,
         burst_damage: 3_000_000,
         normal_attack_damage: 2_000_000,
-        skill_damage: 0,
+        skill_damage: 0, hold_burst_slugs: [],
       },
       {
         deck: ['mast', 'privaty', 'drake', 'grave', 'crown'],
         total_damage: 4_000_000,
         burst_damage: 2_500_000,
         normal_attack_damage: 1_500_000,
-        skill_damage: 0,
+        skill_damage: 0, hold_burst_slugs: [],
       },
     ]
     render(<RaidResults decks={decks} combinedTotalDamage={9_000_000} />)
@@ -36,7 +36,7 @@ describe('RaidResults', () => {
 
   it('shows the combined total prominently', () => {
     const decks: DeckRecommendation[] = [
-      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
     ]
     render(<RaidResults decks={decks} combinedTotalDamage={100} />)
     expect(screen.getByText('100 딜')).toBeInTheDocument()
@@ -44,7 +44,7 @@ describe('RaidResults', () => {
 
   it('lists leftover slugs as bench when there are any', () => {
     const decks: DeckRecommendation[] = [
-      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
     ]
     render(<RaidResults decks={decks} combinedTotalDamage={100} leftoverSlugs={['f', 'g']} />)
     expect(screen.getByText('벤치 (덱에 배정되지 않음): F, G')).toBeInTheDocument()
@@ -52,7 +52,7 @@ describe('RaidResults', () => {
 
   it('renders no bench line when nothing is leftover', () => {
     const decks: DeckRecommendation[] = [
-      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0 },
+      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
     ]
     render(<RaidResults decks={decks} combinedTotalDamage={100} leftoverSlugs={[]} />)
     expect(screen.queryByText(/벤치/)).not.toBeInTheDocument()

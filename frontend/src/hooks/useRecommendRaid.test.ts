@@ -46,7 +46,7 @@ describe('useRecommendRaid', () => {
         total_damage: 100,
         burst_damage: 60,
         normal_attack_damage: 40,
-        skill_damage: 0,
+        skill_damage: 0, hold_burst_slugs: [],
         pinned_slugs: [],
       },
       {
@@ -54,7 +54,7 @@ describe('useRecommendRaid', () => {
         total_damage: 80,
         burst_damage: 50,
         normal_attack_damage: 30,
-        skill_damage: 0,
+        skill_damage: 0, hold_burst_slugs: [],
         pinned_slugs: [],
       },
     ]
@@ -89,13 +89,13 @@ describe('useRecommendRaid', () => {
         total_damage: 100,
         burst_damage: 60,
         normal_attack_damage: 40,
-        skill_damage: 0,
+        skill_damage: 0, hold_burst_slugs: [],
         pinned_slugs: ['a'],
       },
     ]
     const withinDraft = {
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 90, burst_damage: 55, normal_attack_damage: 35, skill_damage: 0, pinned_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 90, burst_damage: 55, normal_attack_damage: 35, skill_damage: 0, hold_burst_slugs: [], pinned_slugs: [] },
       ],
       combined_total_damage: 90,
       leftover_slugs: [],

@@ -21,12 +21,18 @@ class Unit:
     # only the units that let prune run for real need them to differ.
     base_stats: dict = None
     weapon_stats: dict = None
+    # Only the seat-order tie-break reads this, and only to ask the registry for
+    # a burst_delay - a fake slug has no builder, and Diesel's ignores its
+    # argument - so an empty dict serves every fixture here.
+    skill_values: dict = None
 
     def __post_init__(self):
         if self.base_stats is None:
             object.__setattr__(self, "base_stats", {"atk": 1000.0})
         if self.weapon_stats is None:
             object.__setattr__(self, "weapon_stats", {"damage_percent": 1.0})
+        if self.skill_values is None:
+            object.__setattr__(self, "skill_values", {})
 
 
 def roster_of(tiers_by_slug):
@@ -148,6 +154,29 @@ def test_batch_width_never_changes_the_outcome(monkeypatch):
     assert len(set(map(str, outcomes))) == 1, outcomes
 
 
+def test_a_tie_seats_an_opening_skipper_behind_her_tier_mate(monkeypatch):
+    """`burst_cycle` fires the leftmost READY member of a tier, and so does the
+    game. A `skip_cycles` delay makes a unit unready for the opening cycles -
+    which the SEAT cannot express, so both orders score identically here while
+    only one of them can be fielded literally.
+
+    Fienn, 2026-08-04: deck 4 came back with 디젤: 윈터 스위츠(후버) LEFT of her
+    tier-mate. Played as shown, the game bursts her into the opening Full Burst
+    and locks Intro - the state her Highlight build is scored as NOT having. The
+    two orderings were tied to the digit (4,195,637,343), so preferring the
+    playable one costs nothing.
+    """
+    units = [Unit("a1", 1), Unit("b1", 2), Unit("b2", 2),
+             Unit("diesel-winter-sweets-highlight", 3), Unit("mate", 3)]
+    patch_scorer(monkeypatch, lambda slugs: 100.0)      # every ordering ties
+
+    summary = da.best_ordering_summary(units, BossProfile())
+
+    tier3 = [s for s in summary["deck"]
+             if next(u for u in units if u.slug == s).burst_tier == 3]
+    assert tier3 == ["mate", "diesel-winter-sweets-highlight"]
+
+
 def test_swap_pass_respects_an_expired_deadline(monkeypatch):
     """A budget of zero must leave the decks untouched - allocate_decks relies
     on this to return a valid (if unimproved) allocation with no budget."""
@@ -203,6 +232,26 @@ def test_the_swap_budget_default_is_the_named_constant():
     assert default is da.SWAP_TIME_BUDGET_SEC
 
 
+def test_the_climb_never_swaps_a_taste_variant_into_a_deck_that_cannot_induce_it(monkeypatch):
+    """A same-tier swap skips `deck_is_valid` - it cannot change the deck's
+    shape, so the check was pure cost. But a Taste variant's rule is about
+    MEMBERSHIP, not shape: Bready needs a deck-mate whose buff puts her in the
+    state her whole kit is gated on.
+
+    Measured on Fienn's roster (2026-08-04): fixing only the three generators
+    left the climb free to walk her straight back into a deck holding no
+    sustained-damage buffer, and it did."""
+    deck = roster_of({"x1": 1, "x2": 2, "x3": 3, "x4": 3, "x5": 3})
+    bench = [Unit("bready-lingering", 3)]
+    patch_scorer(monkeypatch,
+                 lambda slugs: 500.0 if "bready-lingering" in slugs else 100.0)
+
+    da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0, batch=8)
+
+    assert [u.slug for u in deck] == ["x1", "x2", "x3", "x4", "x5"]
+    assert [u.slug for u in bench] == ["bready-lingering"]
+
+
 def test_a_binding_budget_still_reaches_the_last_deck(monkeypatch):
     """The climb walks deck 1's partners, then deck 2's, and so on, and each
     work item may spend everything that is left. A budget that binds was
@@ -247,9 +296,12 @@ def test_a_binding_budget_still_reaches_the_last_deck(monkeypatch):
 
 # One owned character, several candidate slugs (registry's MODE_VARIANTS). The
 # real slugs are used rather than a stubbed mapping, since the mapping IS what
-# these tests check; Bready's pair carries no extra seating rule (unlike
-# rapi-red-hood-b1's SOLE_TIER1_SLUGS), so it isolates the character rule.
-LINGERING, RECOMMENDED = "bready-lingering", "bready-recommended"
+# these tests check, so the pair has to be one that carries NO extra seating
+# rule of its own - otherwise these tests stop isolating the character rule and
+# start failing for someone else's reason. Cinderella: Crystal Wave's two firing
+# modes are that pair today. Bready's was, until her Taste variants gained
+# TASTE_INDUCER_SLUGS; rapi-red-hood-b1 never was (SOLE_TIER1_SLUGS).
+MODE_A, MODE_B = "cinderella-crystal-wave-mg", "cinderella-crystal-wave-snipe"
 
 
 def test_peeling_never_spends_one_character_on_two_decks(monkeypatch):
@@ -261,13 +313,13 @@ def test_peeling_never_spends_one_character_on_two_decks(monkeypatch):
     roster = roster_of({
         "a1": 1, "a2": 2, "a3": 3, "a4": 3,
         "b1": 1, "b2": 2, "b3": 3, "b4": 3, "b5": 3,
-        LINGERING: 3, RECOMMENDED: 3,
+        MODE_A: 3, MODE_B: 3,
     })
 
     def score(slugs):
-        if slugs == {"a1", "a2", "a3", "a4", LINGERING}:
+        if slugs == {"a1", "a2", "a3", "a4", MODE_A}:
             return 100.0
-        if slugs == {"b1", "b2", "b3", "b4", RECOMMENDED}:
+        if slugs == {"b1", "b2", "b3", "b4", MODE_B}:
             return 90.0
         return 10.0
 
@@ -275,12 +327,12 @@ def test_peeling_never_spends_one_character_on_two_decks(monkeypatch):
     out = da.allocate_decks(roster, BossProfile(), num_decks=2, time_budget_sec=0.0)
 
     seated = [slug for d in out["decks"] for slug in d["deck"]]
-    assert LINGERING in seated                       # the 100-point deck still wins
-    assert RECOMMENDED not in seated
+    assert MODE_A in seated                       # the 100-point deck still wins
+    assert MODE_B not in seated
     # ...and her other candidate is not a benched unit either: Bready IS fielded,
     # so listing her among the leftovers would offer the player a unit she has
     # already committed.
-    assert RECOMMENDED not in out["leftover_slugs"]
+    assert MODE_B not in out["leftover_slugs"]
 
 
 def test_peeling_never_spends_a_favorite_item_character_on_two_decks(monkeypatch):
@@ -317,12 +369,12 @@ def test_a_bench_swap_never_seats_a_character_already_holding_a_seat(monkeypatch
     only if the rule is not enforced per swap as well as per peel."""
     deck_a = roster_of({"x1": 1, "x2": 2, "x3": 3, "x4": 3, "x5": 3})
     deck_b = roster_of({"w1": 1, "w2": 2, "w3": 3, "w4": 3, "w5": 3})
-    bench = [Unit(LINGERING, 3), Unit(RECOMMENDED, 3)]
+    bench = [Unit(MODE_A, 3), Unit(MODE_B, 3)]
 
     def score(slugs):
-        if LINGERING in slugs:
+        if MODE_A in slugs:
             return 200.0
-        if RECOMMENDED in slugs:
+        if MODE_B in slugs:
             return 150.0
         return 100.0
 
@@ -331,9 +383,9 @@ def test_a_bench_swap_never_seats_a_character_already_holding_a_seat(monkeypatch
                   time.monotonic() + 30.0, batch=8)
 
     seated = [u.slug for u in deck_a] + [u.slug for u in deck_b]
-    assert LINGERING in seated                       # deck 1 takes the better one
-    assert RECOMMENDED not in seated
-    assert RECOMMENDED in [u.slug for u in bench]
+    assert MODE_A in seated                       # deck 1 takes the better one
+    assert MODE_B not in seated
+    assert MODE_B in [u.slug for u in bench]
 
 
 def test_a_bench_swap_may_change_the_decks_burst_tier_shape(monkeypatch):
@@ -409,42 +461,43 @@ def test_a_drafted_character_is_seated_in_the_mode_that_scores_best(monkeypatch)
     way - so the representative loses when the other mode is worth more."""
     by_slug = {u.slug: u for u in roster_of({
         "a1": 1, "a2": 2, "a3": 3, "a4": 3,
-        LINGERING: 3, RECOMMENDED: 3,
+        MODE_A: 3, MODE_B: 3,
     })}
-    seed = [by_slug[s] for s in ("a1", "a2", "a3", "a4", LINGERING)]
+    seed = [by_slug[s] for s in ("a1", "a2", "a3", "a4", MODE_A)]
 
     def score(slugs):
-        return 200.0 if RECOMMENDED in slugs else 100.0
+        return 200.0 if MODE_B in slugs else 100.0
 
     patch_scorer(monkeypatch, score)
     out = da.allocate_decks(
         list(by_slug.values()), BossProfile(), num_decks=1, draft=[seed],
-        alternatives={LINGERING: (by_slug[LINGERING], by_slug[RECOMMENDED])},
+        alternatives={MODE_A: (by_slug[MODE_A], by_slug[MODE_B])},
         time_budget_sec=0.0)
 
     seated = out["decks"][0]["deck"]
-    assert RECOMMENDED in seated                     # the better mode won
-    assert LINGERING not in seated                   # ...and only one mode is seated
+    assert MODE_B in seated                     # the better mode won
+    assert MODE_A not in seated                   # ...and only one mode is seated
     assert out["decks"][0]["total_damage"] == 200.0
 
 
 def test_a_lock_on_a_drafted_character_holds_whichever_mode_was_chosen(monkeypatch):
-    """The player locks the slug they own (`bready`); the seat ends up holding a
-    candidate slug. Comparing locks by slug would silently unpin her."""
+    """The player locks the slug they own (`cinderella-crystal-wave`); the seat
+    ends up holding a candidate slug (`-snipe`). Comparing locks by slug would
+    silently unpin her."""
     # A (1,2,2) deck - a shape real play uses, so every seat is a swap the climb
     # may legally make - and a bench unit worth having in exactly one of them:
     # the locked one. The lock is the single thing standing between them.
-    deck = roster_of({"x1": 1, "x2": 2, "x5": 2, RECOMMENDED: 3, "x4": 3})
+    deck = roster_of({"x1": 1, "x2": 2, "x5": 2, MODE_B: 3, "x4": 3})
     bench = [Unit("y", 3)]
 
     def score(slugs):
-        return 500.0 if "y" in slugs and RECOMMENDED not in slugs else 100.0
+        return 500.0 if "y" in slugs and MODE_B not in slugs else 100.0
 
     patch_scorer(monkeypatch, score)
     da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0,
-                  locked=frozenset({"bready"}), batch=8)
+                  locked=frozenset({"cinderella-crystal-wave"}), batch=8)
 
-    assert RECOMMENDED in [u.slug for u in deck]      # the lock held
+    assert MODE_B in [u.slug for u in deck]      # the lock held
     assert [u.slug for u in bench] == ["y"]
 
 
@@ -457,12 +510,12 @@ def test_a_draft_spending_one_character_twice_is_infeasible(monkeypatch):
     by_slug = {u.slug: u for u in roster_of({
         "a1": 1, "a2": 2, "a3": 3, "a4": 3,
         "b1": 1, "b2": 2, "b3": 3, "b4": 3,
-        LINGERING: 3, RECOMMENDED: 3,
+        MODE_A: 3, MODE_B: 3,
     })}
-    draft = [[by_slug[s] for s in ("a1", "a2", "a3", "a4", LINGERING)],
-             [by_slug[s] for s in ("b1", "b2", "b3", "b4", RECOMMENDED)]]
+    draft = [[by_slug[s] for s in ("a1", "a2", "a3", "a4", MODE_A)],
+             [by_slug[s] for s in ("b1", "b2", "b3", "b4", MODE_B)]]
 
-    with pytest.raises(da.InfeasibleDraft, match="bready"):
+    with pytest.raises(da.InfeasibleDraft, match="cinderella-crystal-wave"):
         da.allocate_decks(list(by_slug.values()), BossProfile(), num_decks=2,
                           draft=draft, time_budget_sec=0.0)
 

@@ -87,6 +87,13 @@ export function DeckCard({
           )
         })}
       </ol>
+      {deck.hold_burst_slugs.length > 0 && (
+        <p className="deck-results__hold">
+          <span aria-hidden="true">⏳</span>{' '}
+          {deck.hold_burst_slugs.map(nameFor).join(', ')}는 첫 풀버스트에 버스트를
+          아껴주세요 — 그래야 이 수치대로 나와요.
+        </p>
+      )}
       {(addedSlugs.length > 0 || removedSlugs.length > 0) && (
         <div className="deck-results__diff">
           {addedSlugs.length > 0 && (

@@ -10,6 +10,9 @@ from tests.test_roster import anis_star_spec, crown_spec, helm_spec
 class FakeUnit:
     slug: str
     burst_tier: int
+    # Real NikkeSpecs carry this; the seat rules ask the registry for a
+    # burst_delay through it, and a fake slug has no delay builder to reach.
+    skill_values: dict = None
 
 
 def fake_roster(tiers):
@@ -357,10 +360,12 @@ class FakeSpec:
     weapon: str = "AR"
     base_stats: dict = None
     weapon_stats: dict = None
+    skill_values: dict = None
 
     def __post_init__(self):
         self.base_stats = self.base_stats or {"atk": 1000.0}
         self.weapon_stats = self.weapon_stats or {"damage_percent": 100.0}
+        self.skill_values = self.skill_values or {}
 
 
 def _big_fake_roster():
@@ -621,6 +626,51 @@ def test_sole_tier1_slug_rejected_next_to_another_b1():
     for deck in deck_search.feasible_orderings(roster):
         slugs = {u.slug for u in deck}
         assert not {"rapi-red-hood-b1", "liter"} <= slugs
+
+
+def test_a_summary_names_the_seats_the_player_has_to_hold():
+    """A `skip_cycles` delay is a PLAY decision the seat cannot express, so when
+    the chosen order still puts such a unit first in her tier - because that
+    order genuinely scored higher - the player has to hold her burst by hand or
+    get a different state than the one scored. The summary has to say so;
+    nothing else on the way to the screen knows.
+
+    Behind a tier-mate the game's own rule already produces the held schedule,
+    so there is nothing to tell the player and the list stays empty."""
+    from app import deck_search
+    mate = FakeUnit("mate", 3)
+    diesel = FakeSpec("diesel-winter-sweets-highlight", 3)
+    result = {"total_damage": 1.0, "damage_log": []}
+
+    first = deck_search._summarize([FakeUnit("a", 1), FakeUnit("b", 2), diesel, mate],
+                                   result)
+    behind = deck_search._summarize([FakeUnit("a", 1), FakeUnit("b", 2), mate, diesel],
+                                    result)
+
+    assert first["hold_burst_slugs"] == ["diesel-winter-sweets-highlight"]
+    assert behind["hold_burst_slugs"] == []
+
+
+def test_a_taste_variant_needs_a_deck_that_induces_it():
+    """Bready enters Lingering Taste by RECEIVING a buff that increases
+    sustained damage ("Activates when gaining a buff that increases sustained
+    damage", char_bready.json). A deck holding no such buffer never puts her in
+    it - and both Favorite Candy bullets and two thirds of New Flavor are gated
+    on the status, so what the engine simulates is a unit that does not exist.
+
+    Measured on Fienn's deck 5 (2026-08-04): the engine credited her with
+    1,066,561,255 she could not deal - 18.7% of that deck - and 27 of the 32
+    bench Burst-3s beat what is actually left of her.
+    """
+    from app import deck_search
+
+    def deck(fifth):
+        return [FakeUnit("bready-lingering", 3), FakeUnit("b1", 1),
+                FakeUnit("b2", 2), FakeUnit("d1", 3), fifth]
+
+    assert not deck_search.deck_is_valid(deck(FakeUnit("d2", 3)))
+    # Onda Grande: "Sustained Damage ▲ ... Affects all allies".
+    assert deck_search.deck_is_valid(deck(FakeUnit("rosanna-chic-ocean", 3)))
 
 
 def test_prune_keeps_a_legal_tier1_pair_when_a_sole_tier1_slug_tops_the_pool(monkeypatch):

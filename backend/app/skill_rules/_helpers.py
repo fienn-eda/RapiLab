@@ -283,6 +283,36 @@ ELEMENT_GATED_SHIELD_SLUGS = frozenset({
     "rei-ayanami",
 })
 
+# Nikkes whose skills raise an ALLY's Sustained / Distributed damage. Third and
+# fourth of the same shape as the two lists above, and re-derived from skill
+# text by `provider_scan` under the same cross-check - a newly encoded buffer
+# that never reaches these sets would silently keep Bready out of a deck she
+# belongs in.
+#
+# Bready's consumer is not a bullet but a STATE: Lingering Taste is entered by
+# "gaining a buff that increases sustained damage" and Recommended Taste by one
+# that increases distributed damage. Self-scoped buffs are excluded on purpose -
+# she has to RECEIVE one - which is why Diesel, Mana, Raven and the rest of the
+# units whose text says "Sustained Damage ▲ ... Affects self" are absent.
+SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS = frozenset({
+    "rosanna-chic-ocean",
+})
+
+SQUAD_DISTRIBUTED_DAMAGE_BUFF_SLUGS = frozenset({
+    "anchor-innocent-maid",
+    "mast-romantic-maid",
+})
+
+# Sustained-damage buffs that reach only part of the squad, so deck presence
+# alone does not establish that a given ally received one - the same distinction
+# ELEMENT_GATED_SHIELD_SLUGS draws. Ark: Ranger Black's Tremble! is "Affects all
+# Wind Code allies with assault rifles", and Bready - the only consumer - is a
+# Water SR. Kept as its own set rather than dropped, so the data cross-check
+# stays total.
+SUBSET_SUSTAINED_DAMAGE_BUFF_SLUGS = frozenset({
+    "ark-ranger-black",
+})
+
 
 def max_hp_scaled_atk_rule(
     trigger, percent, scope, duration, base_max_hp, condition=None, refreshing=False,

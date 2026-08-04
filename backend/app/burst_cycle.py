@@ -33,6 +33,14 @@ spends them). The cycle-count and the time forms are not interchangeable -
 one unit's reason is a cycle count and the other's is a resource's fill time,
 and a fight's cycle length varies with the deck's cooldowns.
 
+A member may instead take ITSELF out of the rotation: `self_stun` of
+`{"seconds": S, "cycles": N}` makes it unavailable for S seconds after every
+Nth Full Burst ends. Unlike `burst_delay` this recurs and is anchored on a
+mid-fight event, which is what Mast: Romantic Maid's Hangover is - at max
+Drunken stacks she stuns herself, and without an Anchor to clear a stack each
+cycle she reaches that cap every third one. A tier-mate covers the cycles she
+misses; alone in her tier, the cycle waits for her.
+
 A member may also carry `max_bursts`, capping how many times that SEAT spends
 its burst: 0 is a totem, seated for its passive kit and never burst at all, and
 1 is an opening burst then held for the rest of the fight. Unlike `burst_delay`,
@@ -61,17 +69,22 @@ FULL_BURST_DURATION = 10.0
 FULL_BURST_OPEN_DELAY = 1e-6
 
 
-def _ready_at(member, last_used_at, last_fired_at, cycle_index, fire_count):
+def _ready_at(member, last_used_at, last_fired_at, cycle_index, fire_count,
+              stunned_until):
     """When `member` may next burst: its plain cooldown, pushed later by any
-    `burst_delay`. Returns infinity while a `skip_cycles` delay still holds,
-    which drops the member out of its tier for that cycle - if it is the
-    tier's only member the cycle simply doesn't fire, rather than crediting
-    the unit a burst it would not have taken. A seat that has already spent
-    its `max_bursts` is out of its tier the same way, permanently."""
+    `burst_delay` and by a self-stun still running. Returns infinity while a
+    `skip_cycles` delay still holds, which drops the member out of its tier for
+    that cycle - if it is the tier's only member the cycle simply doesn't fire,
+    rather than crediting the unit a burst it would not have taken. A seat that
+    has already spent its `max_bursts` is out of its tier the same way,
+    permanently."""
     max_bursts = member.get("max_bursts")
     if max_bursts is not None and fire_count[member["slug"]] >= max_bursts:
         return float("inf")
-    ready = last_used_at[member["slug"]] + member["cooldown"]
+    # A stun is not a cooldown: it starts from a mid-fight event and simply
+    # makes her unavailable until it lapses, whatever her cooldown says.
+    ready = max(last_used_at[member["slug"]] + member["cooldown"],
+                stunned_until[member["slug"]])
     delay = member.get("burst_delay")
     if not delay:
         return ready
@@ -113,6 +126,9 @@ def simulate_burst_cycle(
     # burst_delay's min_interval measures real elapsed time.
     last_fired_at = dict(last_used_at)
     fire_count = {member["slug"]: 0 for member in deck}
+    # A member who stuns HERSELF is out of the rotation until it lapses - see
+    # `self_stun` in the module docstring.
+    stunned_until = {member["slug"]: float("-inf") for member in deck}
     members_by_tier = {
         tier: [member for member in deck if member["burst_tier"] == tier] for tier in (1, 2, 3)
     }
@@ -132,7 +148,8 @@ def simulate_burst_cycle(
 
         tier_ready_time = {
             tier: min(
-                _ready_at(member, last_used_at, last_fired_at, cycle_index, fire_count)
+                _ready_at(member, last_used_at, last_fired_at, cycle_index,
+                          fire_count, stunned_until)
                 for member in members_by_tier[tier]
             )
             for tier in (1, 2, 3)
@@ -151,8 +168,8 @@ def simulate_burst_cycle(
             eligible = [
                 member
                 for member in members_by_tier[tier]
-                if _ready_at(member, last_used_at, last_fired_at, cycle_index, fire_count)
-                <= fire_time
+                if _ready_at(member, last_used_at, last_fired_at, cycle_index,
+                             fire_count, stunned_until) <= fire_time
             ]
             chosen = eligible[0]
             events.append({"type": "burst", "tier": tier, "slug": chosen["slug"], "time": fire_time})
@@ -172,6 +189,11 @@ def simulate_burst_cycle(
         full_burst_end = full_burst_start + FULL_BURST_DURATION
         events.append({"type": "full_burst_start", "time": full_burst_start})
         events.append({"type": "full_burst_end", "time": full_burst_end})
+
+        for member in deck:
+            stun = member.get("self_stun")
+            if stun and (cycle_index + 1) % stun["cycles"] == 0:
+                stunned_until[member["slug"]] = full_burst_end + stun["seconds"]
 
         cooldown_reduction = on_full_burst_end(full_burst_end) if on_full_burst_end else None
         if cooldown_reduction:

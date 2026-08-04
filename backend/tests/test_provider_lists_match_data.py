@@ -12,10 +12,15 @@ from app.skill_rules._helpers import (
     ELEMENT_GATED_SHIELD_SLUGS,
     HEAL_PROVIDER_SLUGS,
     SHIELD_PROVIDER_SLUGS,
+    SQUAD_DISTRIBUTED_DAMAGE_BUFF_SLUGS,
+    SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS,
+    SUBSET_SUSTAINED_DAMAGE_BUFF_SLUGS,
 )
 from app.skill_rules.provider_scan import (
+    distributed_damage_buff_slugs,
     heal_provider_slugs,
     shield_provider_slugs,
+    sustained_damage_buff_slugs,
     unreadable_slugs,
 )
 
@@ -39,3 +44,22 @@ def test_shield_provider_constant_matches_the_skill_data(unreadable):
 
 def test_element_gated_shields_are_not_also_counted_as_reaching_everyone():
     assert not (SHIELD_PROVIDER_SLUGS & ELEMENT_GATED_SHIELD_SLUGS)
+
+
+def test_sustained_damage_buff_constant_matches_the_skill_data(unreadable):
+    """같은 대조를 지속딜 버퍼에도 건다. 이쪽은 소비자가 불릿이 아니라 **상태**다 —
+    브래디는 지속딜 버프를 받아야 Lingering Taste에 들어가고, 그 상태가 없으면
+    Favorite Candy 두 불릿과 New Flavor의 3분의 2가 전부 안 켜진다. 목록이 낡으면
+    새 지속딜 버퍼 옆에서도 그녀가 계속 불법으로 판정된다."""
+    derived = sustained_damage_buff_slugs()
+    committed = SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS | SUBSET_SUSTAINED_DAMAGE_BUFF_SLUGS
+    assert derived - unreadable == committed - unreadable
+
+
+def test_distributed_damage_buff_constant_matches_the_skill_data(unreadable):
+    derived = distributed_damage_buff_slugs()
+    assert derived - unreadable == SQUAD_DISTRIBUTED_DAMAGE_BUFF_SLUGS - unreadable
+
+
+def test_subset_sustained_buffs_are_not_also_counted_as_reaching_everyone():
+    assert not (SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS & SUBSET_SUSTAINED_DAMAGE_BUFF_SLUGS)

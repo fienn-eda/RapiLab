@@ -24,7 +24,8 @@ from itertools import combinations, permutations
 from app.elements import weakness_of
 from app.raid_simulator import simulate_raid
 from app.roster import assemble_simulation_inputs
-from app.skill_rules.registry import character_map
+from app.skill_rules.registry import (TASTE_INDUCER_SLUGS, character_map,
+                                      get_burst_delay, has_burst_delay)
 
 # candidate slug -> the owned character it is a build of, for the seat-exclusion
 # check below. An absent slug is its own character.
@@ -66,6 +67,64 @@ def _tier1_seating_valid(units):
     if len(tier1) <= 1:
         return True
     return not any(u.slug in SOLE_TIER1_SLUGS for u in tier1)
+
+
+def _taste_induced_valid(units):
+    """Whether every state-gated variant here has a deck-mate that induces its
+    state (registry's TASTE_INDUCER_SLUGS).
+
+    Bready's two builds are the only ones: she enters a Taste by RECEIVING a
+    buff of the matching damage kind, and almost her whole kit is gated on being
+    in one. Seating her beside no such buffer scores a unit the game does not
+    produce - so this refuses the deck rather than letting the search bank
+    damage she cannot deal. She has no Taste-less build to fall back to, and
+    measurement says she should not: stripped of the gated bullets she loses to
+    27 of the 32 Burst-3s her bench offered (Fienn's deck 5, 2026-08-04)."""
+    slugs = {u.slug for u in units}
+    return all(slugs & inducers
+               for variant, inducers in TASTE_INDUCER_SLUGS.items()
+               if variant in slugs)
+
+
+def _skips_opening_cycle(unit):
+    if not has_burst_delay(unit.slug):
+        return False
+    delay = get_burst_delay(unit.slug, unit.skill_values) or {}
+    return delay.get("skip_cycles", 0) > 0
+
+
+def _seat_order_is_playable(ordered_units):
+    """Whether this seat order produces, on its own, the schedule its units'
+    burst delays imply.
+
+    The scheduler fires the leftmost READY member of a tier and the game does
+    the same - but a `skip_cycles` delay makes a unit unready for the opening
+    cycles, and a SEAT cannot say that. So an ordering that puts such a unit
+    first in her tier scores exactly what the playable one scores while
+    contradicting itself on screen: fielded as shown, the game bursts her in
+    cycle 1 and she never reaches the state the delay exists to model (Diesel:
+    Winter Sweets' Highlight, Fienn 2026-08-04). Behind a tier-mate, the game's
+    own rule produces the held schedule with nothing asked of the player."""
+    for tier in (1, 2, 3):
+        members = [u for u in ordered_units if u.burst_tier == tier]
+        if len(members) > 1 and _skips_opening_cycle(members[0]):
+            return False
+    return True
+
+
+def hold_burst_slugs(ordered_deck):
+    """Seats the PLAYER has to hold back by hand for this order to be the one
+    that was scored - empty for the vast majority.
+
+    `best_ordering_summary` prefers a playable order whenever the scores tie, so
+    this only fills when the leading order genuinely scored higher with the
+    skipper in front. Then the seat alone no longer produces her held schedule
+    and nothing else between here and the screen knows it: the deck is right,
+    but fielding it as drawn hands her the state she was scored as NOT having."""
+    return [members[0].slug
+            for tier in (1, 2, 3)
+            for members in [[u for u in ordered_deck if u.burst_tier == tier]]
+            if len(members) > 1 and _skips_opening_cycle(members[0])]
 
 
 # Units the player runs as non-bursting buffers ("totems"): their burst is a
@@ -248,6 +307,7 @@ def shape_combinations(roster, deck_filter=None):
                 for c3 in combinations(by_tier[3], n3):
                     deck = list(c1) + list(c2) + list(c3)
                     if (_no_character_clash(deck) and _tier1_seating_valid(deck)
+                            and _taste_induced_valid(deck)
                             and (deck_filter is None or deck_filter(deck))):
                         yield deck
 
@@ -280,6 +340,7 @@ def _shape_completions(required, candidates, deck_filter=None):
                     # canonical tier order for _no_character_clash / seating checks
                     deck.sort(key=lambda u: u.burst_tier)
                     if (_no_character_clash(deck) and _tier1_seating_valid(deck)
+                            and _taste_induced_valid(deck)
                             and (deck_filter is None or deck_filter(deck))):
                         yield deck
 
@@ -350,6 +411,7 @@ def feasible_orderings(roster, deck_filter=None):
             by_tier[unit.burst_tier].append(unit)
         if (infeasible or not all(by_tier[t] for t in (1, 2, 3))
                 or not _no_character_clash(combo) or not _tier1_seating_valid(combo)
+                or not _taste_induced_valid(combo)
                 or (deck_filter is not None and not deck_filter(combo))):
             continue
         for order1 in permutations(by_tier[1]):
@@ -411,6 +473,7 @@ def _summarize(ordered_deck, result):
         "burst_damage": burst,
         "normal_attack_damage": normal,
         "skill_damage": sum(by_source.values()),
+        "hold_burst_slugs": hold_burst_slugs(ordered_deck),
         "result": result,
     }
 
@@ -464,6 +527,7 @@ def deck_is_valid(units):
     return (shape in ALLOWED_SHAPES
             and _no_character_clash(units)
             and _tier1_seating_valid(units)
+            and _taste_induced_valid(units)
             and next(_intra_tier_orderings(units), None) is not None)
 
 

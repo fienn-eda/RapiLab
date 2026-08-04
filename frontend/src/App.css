@@ -1089,6 +1089,14 @@
   white-space: nowrap;
 }
 
+/* 좌석 순서로는 말할 수 없는 플레이 지시. 헤더의 경고와 달리 문장이라 줄바꿈을
+   허용하고, 덱 아래에 붙어 "이 카드에 대한 조건"으로 읽히게 둔다. */
+.deck-results__hold {
+  margin: var(--sp-2) 0 0;
+  font-size: 12px;
+  color: var(--warn);
+}
+
 /* The answer, in the same language as the palette and the draft slots: five
    faces. A column of slugs made this the least legible screen in the app. */
 .deck-results__units {
