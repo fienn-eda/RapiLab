@@ -5,6 +5,44 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 브래디의 Taste는 덱이 유도해야 한다 — 유도 못 하는 덱은 아예 불법으로
+
+- Date: 2026-08-04
+- Context: 5덱 전부최적화가 덱 5를 [목단, 아르카나, 나유타, 신데렐라, 브래디(지딜)]로
+  냈는데, 넷 중 지속딜 버프를 주는 유닛이 없다. 원문은 *"Activates when gaining a
+  buff that increases sustained damage"* — 상태는 **받아야** 켜지고, Favorite Candy
+  두 불릿과 New Flavor의 3분의 2가 전부 그 상태에 걸려 있다. `bready.py`가 인코딩
+  당시부터 캐비엇으로 적어둔 갭이 처음으로 틀린 추천을 만들었다.
+  실측: 못 내는 딜 **1,066,561,255**(그 덱의 18.7%)를 얹고 있었고, 게이트된 불릿을
+  걷어내면 **벤치 B3 32명 중 27명**이 그녀를 이긴다(최선 +18.34%).
+- Decision (Fienn, 2026-08-04): **덱 합법성 규칙**으로 막는다 — 유도 버퍼가 같은 덱에
+  없으면 그 Taste 변형은 seat될 수 없다. **Taste 없는 제3의 빌드는 만들지 않는다**:
+  27/32에게 지는 유닛이라 앉힐 자리가 없고, 없는 선택지를 인코딩할 이유도 없다.
+- Why 이 모양: 힐·쉴드 제공자 목록과 **같은 3단 구조**를 따랐다. 그쪽이 이미 어려운
+  절반("버프는 있는데 이 소비자에게 닿는가")을 풀어 놨기 때문이다.
+  `provider_scan`이 스킬 원문의 `Affects` 절을 읽어 아군 대상만 골라내고(그래서
+  "Sustained Damage ▲ … Affects self"인 디젤·마나·레이븐 등 ~15기는 제공자가 아니다),
+  `_helpers`가 닿는 집합을 커밋하며, **Ark: 레인저 블랙은 `SUBSET_...`로 분리**한다 —
+  Tremble!이 "all Wind Code allies with assault rifles"라 Water SR인 브래디에겐 안
+  닿는다. `ELEMENT_GATED_SHIELD_SLUGS`와 정확히 같은 분리다. 대조 테스트가 드리프트를
+  잡는 것도 그대로다(상수를 비워 실제로 터지는지 확인함).
+- Alternatives considered: **(a) 엔진에 "아군에게서 X종 버프를 받았다" 트리거 신설** —
+  근본적이고 슬러그 둘을 하나로 합칠 수 있지만, 정적 룰을 런타임 상태로 바꿔야 해서
+  가장 크다. **미채택이지 기각이 아니다.** **(b) UI 경고만** — 탐색이 여전히 과대평가해
+  틀린 추천 자체를 못 막는다. **(c) 손으로 쓴 제공자 목록** — 힐 목록이 여섯 슬러그
+  낡았던 전례가 있어 대조 없이는 안 된다.
+- Consequences: **배선 지점이 넷이다.** 생성기 3곳 + `deck_is_valid`만으로는 부족했고,
+  **언덕오르기가 동티어 스왑으로 그녀를 도로 밀어넣었다** — `_swap_is_fieldable`이
+  동티어면 `deck_is_valid`를 건너뛰기 때문(모양은 안 변하니 맞는 최적화다). 소속
+  규칙은 모든 교환에서 돌고 모양 규칙만 면제로 남겼다. `docs/roadmap.md`가 열거해 둔
+  표면 목록에 힐클라임이 있었는데 처음엔 빠뜨렸다.
+  캐릭터 규칙을 검증하던 테스트 둘이 브래디 쌍을 쓰고 있었고("carries no extra seating
+  rule"), 그 전제가 깨져 **신데렐라: 크리스탈 웨이브 쌍으로 이전**했다.
+  남은 캐비엇: 풀 pruning·캐스케이드가 유도 버퍼를 못 집으면 브래디가 **아예 후보에서
+  사라질 수** 있다(합법성이 아니라 굶주림 쪽 문제).
+  검증: 덱 3에서 빠지고 **마스트 옆 덱 5에 `bready-recommended`로 재등장**했다.
+  백엔드 1863 → **1868 passed / 3 skipped**.
+
 ## 스왑 예산: 항목별 균등 배분 + 상한 45초 → 180초
 
 - Date: 2026-08-04

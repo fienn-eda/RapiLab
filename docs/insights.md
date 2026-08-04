@@ -4,6 +4,36 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 없는 속성을 읽는 감사 스크립트는 **모든 항목에 "없음"**을 찍고 조용히 통과한다
+
+- 확립: 2026-08-04. 덱에 지속딜 버퍼가 있는지 감사하려고 룰을 훑으며
+  `getattr(rule, "effects", [])`를 읽었다. **`SkillRule`에는 `effects`가 없다** —
+  필드는 `trigger`·`action`·`condition`뿐이고 효과는 `action` 클로저 안에 있다.
+  그래서 모든 유닛이 빈 리스트를 내고 "없음"이 찍혔고, 나는 그걸 **측정 결과라고
+  보고했다.** 결론은 우연히 맞았지만 근거는 공허했다.
+- 잡아준 것은 **0이 나오면 안 되는 자리에서 나온 0**이었다. 차지속도 페널티를 빼고
+  재보니 차이가 **정확히 -0**이라, 패치가 안 먹었다는 뜻이었다.
+- **How to apply:** `getattr(x, "attr", 기본값)`으로 감사하면 오타·리팩터가 **에러 없이
+  전량 기본값**으로 흐른다. 감사 대상이 "없음"으로 나올 때는 먼저 **양성 대조**를
+  찾을 것 — 반드시 잡혀야 하는 항목 하나가 실제로 잡히는지. 이 저장소의 옳은 방법은
+  엔진에 물어보는 것이다: 효과는 전부 `EffectRegistry.add`를 지나가므로 그걸 가로채면
+  캐스터·스코프·값이 그대로 나온다. 관련: [[measurement-scripts-must-ask-the-module]]
+
+## 덱 합법성 규칙은 배선 지점이 **넷**이다 — 생성기 셋으로는 언덕오르기가 되돌린다
+
+- 확립: 2026-08-04. 브래디의 Taste 규칙을 `shape_combinations` ·
+  `feasible_orderings` · `_shape_completions` · `deck_is_valid`에 넣고 끝-끝을 돌렸더니
+  **그녀가 그대로 앉아 있었다.** 언덕오르기가 동티어 벤치 스왑으로 도로 밀어넣은 것.
+- `_swap_is_fieldable`은 동티어면 `deck_is_valid`를 **건너뛴다**. 그건 맞는 최적화다 —
+  동티어 교환은 B1/B2/B3 **모양**을 못 바꾸니까. 그런데 새 규칙은 모양이 아니라
+  **소속**에 관한 것이었다. 두 질문을 갈라서, 소속은 모든 교환에서 검사하고 모양만
+  면제로 남겼다.
+- **How to apply:** 덱 합법성 규칙을 넣을 때 `docs/roadmap.md`의
+  「생성기 3곳 · 풀 pruning · 캐스케이드 shortlist · 힐클라임」을 **체크리스트로 쓸 것**.
+  그리고 그 규칙이 **모양 규칙인지 소속 규칙인지** 먼저 물을 것 — 동티어 면제가
+  적용되는 건 앞쪽뿐이다. (풀 pruning·캐스케이드는 후보 풀만 고르고 생성기가 뒤에서
+  거르므로 불법 덱을 못 만든다. 대신 유도 버퍼를 못 집으면 **굶길** 수는 있다.)
+
 ## 「국소최적에 갇혔다」고 말하기 전에 **예산이 어디로 갔는지** 볼 것 — 덱 1이 45초를 다 먹고 있었다
 
 - 확립: 2026-08-04. 제보: 5덱 전부최적화가 덱 3에 이사벨을 앉혔는데 **벤치의**
