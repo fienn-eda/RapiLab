@@ -306,9 +306,14 @@ def test_the_gauge_sets_the_steady_cycle_once_cooldowns_outrun_it():
     """Fienn's range run of Volume/Prika/Mint/Snow White: Heavy Arms/Cinderella
     (2026-07-27): 14 Full Bursts in 180 sec with the 14th at 2:57. Volume's
     cumulative cooldown reduction (up to 8.21 sec/cycle) outruns the gauge, so
-    the rotation settles at `FULL_BURST_DURATION + gauge_charge_time + tier gap`
-    and those two observations pin gauge_charge_time - a tight fit, since at
-    2.9 sec the 14th burst no longer lands inside the fight.
+    the rotation settles at `FULL_BURST_DURATION + gauge_charge_time + tier gap`.
+
+    That law is what this test exercises. It does NOT pin the constant: this
+    composition and the 7.48-sec-CDR one that sets the current value imply
+    different gauges (14 Full Bursts here vs 15 there in the same 180 sec), which
+    is the per-deck nature of the real gauge showing through - it fills from
+    damage dealt. The constant follows the faster measurement, so this deck is
+    modelled with one cycle more than it ran.
 
     Here that law is exercised directly: cooldowns short enough to never bind,
     so every cycle is gauge-bound.
@@ -327,12 +332,19 @@ def test_the_gauge_sets_the_steady_cycle_once_cooldowns_outrun_it():
     assert all(g == pytest.approx(FULL_BURST_DURATION + gauge + 0.2) for g in gaps)
 
 
-def test_gauge_charge_time_stays_low_enough_to_rarely_bind():
-    # It is a per-DECK quantity modelled as one constant, so it is set where it
-    # invents the fewest constraints rather than where any one deck measures
-    # (Fienn: most compositions fill the gauge faster than cooldowns clear).
-    # Raising it slows every CDR-heavy deck, so a change needs an argument.
-    assert BossProfile.gauge_charge_time == 2.0
+def test_gauge_charge_time_matches_the_measurement_it_is_derived_from():
+    # It is a per-DECK quantity modelled as one constant, so a change needs an
+    # argument rather than a preference. This value has one: a CDR deck driven
+    # as fast as the gauge allows opens its 15th Full Burst at t~179, which
+    # solves to 2.4 (the arithmetic lives in
+    # test_default_gauge_reproduces_the_measured_fifteenth_full_burst).
+    #
+    # Two measured compositions do NOT agree - the Volume run above implies a
+    # slower gauge - so this sits at the fast end of what has been measured.
+    # That end is the one that invents the fewest constraints for decks whose
+    # gauge never binds, which is the same principle as before; what changed is
+    # which number that principle picks now that a fast deck has been timed.
+    assert BossProfile.gauge_charge_time == 2.4
 
 
 # --- Seats whose burst the player never spends -------------------------
@@ -429,3 +441,31 @@ def test_a_self_stun_holds_a_member_out_of_the_cycles_it_covers():
                 and any(a <= t < b for a, b in windows)]
     # ...and the tier keeps firing, because her tier-mate covers those cycles.
     assert len(b2) == len(ends)
+
+
+# --- What sets the default gauge charge time ---------------------------
+
+
+def test_default_gauge_reproduces_the_measured_fifteenth_full_burst():
+    """실측(Fienn, 2026-08-05): CDR 7.48초 유닛이 든 덱을 게이지 충전까지
+    최대한 빠르게 컨트롤하면 **15번째 풀버스트가 t≈179**에 열린다.
+
+    게이지가 병목일 때 사이클 간격은 CDR과 무관하게
+    `FULL_BURST_DURATION + gauge + 티어갭`이 되므로, 그 한 시각이 기본
+    게이지를 유일하게 결정한다 - 그래서 이 테스트가 곧
+    `BossProfile.gauge_charge_time`의 근거다. 값을 바꾸면 여기서 걸리고,
+    걸리면 실측을 다시 봐야 한다.
+
+    쿨다운을 1초로 둔 것은 게이지 말고는 아무것도 병목이 되지 않게 하기
+    위해서다. 실제 덱에서 CDR이 클수록 이 조건에 가까워진다.
+    """
+    deck = [{"slug": f"u{tier}", "burst_tier": tier, "cooldown": 1.0}
+            for tier in (1, 2, 3)]
+
+    events = simulate_burst_cycle(
+        deck, gauge_charge_time=BossProfile().gauge_charge_time,
+        fight_duration=180.0, mode="manual")
+
+    starts = [e["time"] for e in events if e["type"] == "full_burst_start"]
+    assert len(starts) == 15
+    assert starts[-1] == pytest.approx(179.0, abs=0.1)

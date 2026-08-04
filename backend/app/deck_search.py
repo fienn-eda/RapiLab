@@ -162,17 +162,27 @@ class BossProfile:
     core_hittable: bool = False
     enemy_def: float = 0.0
     fight_duration: float = 180.0
-    # Deliberately LOW, so it rarely binds (Fienn): the real burst gauge fills
-    # from damage dealt, so it is a property of the DECK, not the boss, and in
-    # most compositions - anything carrying a 7.48-sec CDR unit like Anis: Star,
-    # Moran or Rapi: Red Hood B1 - it fills faster than cooldowns clear and is
-    # not the bottleneck at all. A single constant can only be wrong per deck,
-    # so it is set where it invents the fewest constraints.
-    # Known error: in the deck-4 composition, whose Volume supplies up to 8.21
-    # sec of CDR a cycle, the gauge DOES bind and Fienn's range run measures it
-    # at 2.65 sec (14 Full Bursts, the 14th at 2:57) - the engine's 14th lands
-    # at 169 sec instead of 177. See docs/roadmap.md for the open item.
-    gauge_charge_time: float = 2.0
+    # The floor a cycle cannot go below: Full Burst (10s) + this + the tier gap.
+    #
+    # Measured (Fienn, 2026-08-05): a deck carrying a 7.48-sec CDR unit, driven
+    # as fast as the gauge can be controlled, opens its 15th Full Burst at
+    # t~179. While the gauge binds, cycle spacing is independent of cooldown
+    # reduction, so that single instant fixes the value:
+    #     15th start = (g + 0.2) + 14 * (10.2 + g) = 143.0 + 15g = 179 -> g = 2.4
+    # test_default_gauge_reproduces_the_measured_fifteenth_full_burst holds that
+    # arithmetic, so changing this number fails there before anything else.
+    #
+    # The gauge binds MORE as a deck's cooldown reduction grows, not less -
+    # cooldowns clear sooner and the gauge is all that is left. So the decks this
+    # value decides are exactly the CDR-heavy ones: scoring one deck either side
+    # of it moves a CDR-heavy composition 16.3% and a composition without CDR
+    # 0.4%, which is also why a too-low value quietly promotes CDR-stacked decks
+    # in the search.
+    #
+    # It remains a per-DECK quantity flattened into one constant: the real gauge
+    # fills from damage dealt, and a different composition measured 2.65 sec.
+    # Promoting it to a deck property is the open item in docs/roadmap.md.
+    gauge_charge_time: float = 2.4
     mode: str = "manual"
     part_destructible: bool = False
     # How far away this boss is fought, which decides WHICH weapons are inside
