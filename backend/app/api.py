@@ -92,6 +92,11 @@ class DeckRecommendation(BaseModel):
     # Everything that was neither a burst nor a normal attack - DoTs, per-shot
     # riders, self-cooldowned procs. The three add up to total_damage.
     skill_damage: float
+    # Seats the player has to hold back by hand for this order to be the one
+    # that was scored (deck_search's `hold_burst_slugs`). Empty for nearly every
+    # deck: the seat order is preferred playable whenever the scores tie, so
+    # this only fills when holding the burst is what the higher score is FOR.
+    hold_burst_slugs: list[str] = []
 
 
 class RecommendResponse(BaseModel):
@@ -300,6 +305,7 @@ def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
                 deck=r["deck"], total_damage=r["total_damage"],
                 burst_damage=r["burst_damage"], normal_attack_damage=r["normal_attack_damage"],
                 skill_damage=r["skill_damage"],
+                hold_burst_slugs=r["hold_burst_slugs"],
             )
             for r in results
         ],
@@ -343,6 +349,7 @@ def _to_recs(decks, pinned_by_deck=None):
             deck=d["deck"], total_damage=d["total_damage"],
             burst_damage=d["burst_damage"], normal_attack_damage=d["normal_attack_damage"],
             skill_damage=d["skill_damage"],
+            hold_burst_slugs=d["hold_burst_slugs"],
             pinned_slugs=pinned,
         )
         for d, pinned in zip(decks, pinned_by_deck)
@@ -466,7 +473,8 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
             deck=d["deck"], total_damage=d["total_damage"],
             burst_damage=d["burst_damage"],
             normal_attack_damage=d["normal_attack_damage"],
-            skill_damage=d["skill_damage"]) for d in out["decks"]],
+            skill_damage=d["skill_damage"],
+            hold_burst_slugs=d["hold_burst_slugs"]) for d in out["decks"]],
         combined_total_damage=out["combined_total_damage"],
         excluded_slugs=excluded,
         engine_version=engine_version(),

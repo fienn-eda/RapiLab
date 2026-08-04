@@ -21,12 +21,18 @@ class Unit:
     # only the units that let prune run for real need them to differ.
     base_stats: dict = None
     weapon_stats: dict = None
+    # Only the seat-order tie-break reads this, and only to ask the registry for
+    # a burst_delay - a fake slug has no builder, and Diesel's ignores its
+    # argument - so an empty dict serves every fixture here.
+    skill_values: dict = None
 
     def __post_init__(self):
         if self.base_stats is None:
             object.__setattr__(self, "base_stats", {"atk": 1000.0})
         if self.weapon_stats is None:
             object.__setattr__(self, "weapon_stats", {"damage_percent": 1.0})
+        if self.skill_values is None:
+            object.__setattr__(self, "skill_values", {})
 
 
 def roster_of(tiers_by_slug):
@@ -146,6 +152,29 @@ def test_batch_width_never_changes_the_outcome(monkeypatch):
         outcomes.append(([u.slug for u in deck], [u.slug for u in bench]))
 
     assert len(set(map(str, outcomes))) == 1, outcomes
+
+
+def test_a_tie_seats_an_opening_skipper_behind_her_tier_mate(monkeypatch):
+    """`burst_cycle` fires the leftmost READY member of a tier, and so does the
+    game. A `skip_cycles` delay makes a unit unready for the opening cycles -
+    which the SEAT cannot express, so both orders score identically here while
+    only one of them can be fielded literally.
+
+    Fienn, 2026-08-04: deck 4 came back with 디젤: 윈터 스위츠(후버) LEFT of her
+    tier-mate. Played as shown, the game bursts her into the opening Full Burst
+    and locks Intro - the state her Highlight build is scored as NOT having. The
+    two orderings were tied to the digit (4,195,637,343), so preferring the
+    playable one costs nothing.
+    """
+    units = [Unit("a1", 1), Unit("b1", 2), Unit("b2", 2),
+             Unit("diesel-winter-sweets-highlight", 3), Unit("mate", 3)]
+    patch_scorer(monkeypatch, lambda slugs: 100.0)      # every ordering ties
+
+    summary = da.best_ordering_summary(units, BossProfile())
+
+    tier3 = [s for s in summary["deck"]
+             if next(u for u in units if u.slug == s).burst_tier == 3]
+    assert tier3 == ["mate", "diesel-winter-sweets-highlight"]
 
 
 def test_swap_pass_respects_an_expired_deadline(monkeypatch):

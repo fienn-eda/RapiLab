@@ -664,6 +664,14 @@ def get_burst_anchored_buffs(slug, skill_values):
     return builder(skill_values) if builder else None
 
 
+def has_burst_delay(slug):
+    """Whether this slug's kit holds its first burst back at all. The seat rules
+    ask this before `get_burst_delay`, which needs the unit's skill values -
+    only the handful of units with a delay builder are worth reading them for,
+    and a caller holding something less than a full spec should not have to."""
+    return slug in _BURST_DELAY_BUILDERS
+
+
 def get_burst_delay(slug, skill_values):
     builder = _BURST_DELAY_BUILDERS.get(slug)
     if builder is None:

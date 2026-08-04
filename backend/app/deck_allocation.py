@@ -14,7 +14,8 @@ from app.cancellation import NEVER
 from app.cascade import Cascade, cached_fit_surrogate
 from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
                              _intra_tier_orderings, _orderings_within_budget,
-                             _score_batch, _summarize, _taste_induced_valid,
+                             _score_batch, _seat_order_is_playable,
+                             _summarize, _taste_induced_valid,
                              best_completions, character_of,
                              completions_fit_budget, deck_breaks_gimmick,
                              deck_is_valid, evaluate_deck, search_best_decks,
@@ -617,8 +618,10 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
 def best_ordering_summary(units, boss, pool=None):
     # Final polish: the swap pass scored canonical orders only; pick the best
     # intra-tier ordering for the finished deck (a handful of sims per deck).
-    # Batch-scored; ties keep the first ordering, like the serial `>` did.
+    # Batch-scored; ties prefer an order the player can field literally and then
+    # keep the first, like the serial `>` did.
     orderings = list(_intra_tier_orderings(units))
     totals = _score_batch(orderings, boss, pool)
-    best_i = max(range(len(orderings)), key=lambda i: (totals[i], -i))
+    best_i = max(range(len(orderings)),
+                 key=lambda i: (totals[i], _seat_order_is_playable(orderings[i]), -i))
     return _summarize(orderings[best_i], evaluate_deck(orderings[best_i], boss))

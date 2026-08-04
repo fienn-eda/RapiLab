@@ -48,6 +48,10 @@ export interface DeckRecommendation {
   // Everything that was neither a burst nor a normal attack — DoTs, per-shot
   // riders, self-cooldowned procs. The three add up to total_damage.
   skill_damage: number
+  // 좌석 순서만으로는 표현할 수 없는 플레이 지시: 이 슬러그들은 첫 풀버스트에
+  // 버스트를 아껴야 채점된 그 상태가 걸린다. 거의 항상 빈 배열이다 — 엔진은
+  // 동점이면 그대로 플레이 가능한 순서를 고르므로, 홀드가 더 높게 나올 때만 찬다.
+  hold_burst_slugs: string[]
 }
 
 export interface RecommendResponse {
