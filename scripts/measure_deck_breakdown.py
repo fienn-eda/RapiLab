@@ -102,7 +102,30 @@ def main():
                    help="uniform stats instead of the synced roster")
     p.add_argument("--duration", type=float, default=RECORD_BOSS["fight_duration"])
     p.add_argument("--enemy-def", type=float, default=RECORD_BOSS["enemy_def"])
-    p.add_argument("--element", default=RECORD_BOSS["element"])
+    p.add_argument("--element", default=RECORD_BOSS["element"],
+                   help="the boss's OWN element, not its weakness "
+                        "(Water beats Fire beats Wind beats Iron beats Electric beats Water) "
+                        "- a 'weak to Water' boss is element=Fire")
+    # The rest of the encounter. Without these the script can only measure the
+    # recorded Annihilio fight, and a deck asked about under different terms
+    # (a near-range boss pays SG/SMG, not AR/MG) gets scored on the wrong ones.
+    p.add_argument("--range-band", choices=["near", "mid", "far", "none"],
+                   default=RECORD_BOSS["effective_range_band"],
+                   help="who collects the +0.30 effective-range term: "
+                        "near=SG/SMG, mid=AR/MG, far=SR, none=nobody (RL is never paid)")
+    p.add_argument("--no-core", dest="core_hittable", action="store_false",
+                   help="the boss has no hittable core")
+    p.add_argument("--no-parts", dest="part_destructible", action="store_false",
+                   help="the boss has no destructible parts")
+    p.add_argument("--pierce", action="store_true",
+                   help="a Pierce shot passes through the core into the body behind it "
+                        "(only meaningful with a hittable core)")
+    p.add_argument("--interrupt-required", action="store_true",
+                   help="the boss gates a gimmick on an elemental interrupt - recorded here "
+                        "because it decides deck LEGALITY upstream, so a deck named on the "
+                        "command line may be one the search could never have returned without it")
+    p.set_defaults(core_hittable=RECORD_BOSS["core_hittable"],
+                   part_destructible=RECORD_BOSS["part_destructible"])
     args = p.parse_args()
 
     slugs = [s.strip() for s in args.deck.split(",") if s.strip()]
@@ -119,8 +142,17 @@ def main():
     # Spread rather than field-by-field: RECORD_BOSS's keys ARE BossProfile's
     # field names, so a new fact about the encounter reaches this script
     # without an edit here. The three flags stay overridable.
-    boss = BossProfile(**{**RECORD_BOSS, "element": args.element,
-                          "enemy_def": args.enemy_def, "fight_duration": args.duration})
+    boss = BossProfile(**{
+        **RECORD_BOSS,
+        "element": args.element,
+        "enemy_def": args.enemy_def,
+        "fight_duration": args.duration,
+        "effective_range_band": None if args.range_band == "none" else args.range_band,
+        "core_hittable": args.core_hittable,
+        "part_destructible": args.part_destructible,
+        "pierce_hits_body_behind_core": args.pierce,
+        "elemental_interrupt_required": args.interrupt_required,
+    })
 
     rotation = _recorded_rotation(slugs)
     if rotation:
@@ -137,9 +169,21 @@ def main():
         result = evaluate_deck(list(best), boss)
         ordering_note = f"best of {len(orderings)} feasible"
 
+    # Read the traits off the profile that was actually built. Printing them as
+    # a fixed string is how a run under different terms reports the recorded
+    # encounter's terms instead of its own.
+    traits = [
+        "core hittable" if boss.core_hittable else "core NOT hittable",
+        "parts destructible" if boss.part_destructible else "no destructible parts",
+        f"range band {boss.effective_range_band or 'none'}",
+    ]
+    if boss.pierce_hits_body_behind_core:
+        traits.append("pierce hits body behind core")
+    if boss.elemental_interrupt_required:
+        traits.append("elemental interrupt REQUIRED")
     print(f"roster:   {roster_note}")
-    print(f"boss:     {args.element}, DEF {args.enemy_def:,.0f}, {args.duration:.0f}s, "
-          f"core hittable, parts destructible")
+    print(f"boss:     {boss.element}, DEF {boss.enemy_def:,.0f}, {boss.fight_duration:.0f}s, "
+          + ", ".join(traits))
     print(f"ordering: {' > '.join(spec.slug for spec in best)}  ({ordering_note})")
 
     per_unit = defaultdict(lambda: defaultdict(float))
