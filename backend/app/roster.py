@@ -26,6 +26,7 @@ from app.skill_rules.registry import (
     get_burst_resolves_after_cast,
     get_charge_motion_delay,
     get_burst_delay,
+    get_self_stun,
     get_burst_hit_count,
     get_per_shot_rules,
     get_periodic_nuke,
@@ -117,6 +118,13 @@ def assemble_simulation_inputs(ordered_deck):
         burst_delay = get_burst_delay(spec.slug, spec.skill_values)
         if burst_delay:
             member["burst_delay"] = burst_delay
+        # Deck-dependent, so it is read here rather than baked into the spec:
+        # who else is seated decides whether Mast ever reaches the Drunken cap
+        # that stuns her.
+        self_stun = get_self_stun(spec.slug, spec.skill_values,
+                                  [u.slug for u in ordered_deck])
+        if self_stun:
+            member["self_stun"] = self_stun
         deck.append(member)
         base_stats[spec.slug] = spec.base_stats
         # Facts that change a unit's shot TIMELINE rather than its stats ride on

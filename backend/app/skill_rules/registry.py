@@ -260,7 +260,8 @@ from app.skill_rules.maiden_ice_rose import (
     build_meditation_per_shot_rules,
     build_mp_resources,
 )
-from app.skill_rules.mast_romantic_maid import build_mast_rules
+from app.skill_rules.mast_romantic_maid import (build_mast_rules,
+                                                build_mast_self_stun)
 from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
 from app.skill_rules.miranda import (
     build_health_up_rules,
@@ -662,6 +663,22 @@ def get_burst_anchored_buffs(slug, skill_values):
     for the vast majority without one."""
     builder = _BURST_ANCHORED_BUFF_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
+
+
+# A Nikke who takes HERSELF out of the rotation on a recurring, mid-fight
+# event (burst_cycle's `self_stun`). Deck-dependent, unlike every other builder
+# here: Mast: Romantic Maid only reaches the Drunken cap that stuns her when no
+# Anchor is clearing a stack each cycle, so the builder is handed the deck.
+_SELF_STUN_BUILDERS = {
+    "mast-romantic-maid": build_mast_self_stun,
+}
+
+
+def get_self_stun(slug, skill_values, deck_slugs):
+    """This unit's self-inflicted downtime in THIS deck, or None - which is
+    everyone but Mast, and Mast herself beside an Anchor."""
+    builder = _SELF_STUN_BUILDERS.get(slug)
+    return builder(skill_values, deck_slugs) if builder else None
 
 
 def has_burst_delay(slug):

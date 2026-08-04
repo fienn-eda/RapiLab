@@ -28,13 +28,17 @@ PIRATES_ROMANCE = {
 DEALER = {"slug": "dealer", "element": "Fire"}
 
 
-def build(caster_atk=10000):
-    return build_mast_rules({
+def _values(caster_atk=10000):
+    return {
         "pirates_heart": PIRATES_HEART,
         "pirates_spirit": PIRATES_SPIRIT,
         "pirates_romance": PIRATES_ROMANCE,
         "caster_atk": caster_atk,
-    })
+    }
+
+
+def build(caster_atk=10000):
+    return build_mast_rules(_values(caster_atk))
 
 
 # Drunken is gained "when entering Burst stage 1", so every context needs a
@@ -164,3 +168,20 @@ def test_stacks_count_squad_stage_one_entries_not_masts_own_bursts():
     enter_stage_one(ctx, 21.0)   # cycle 2 - Mast bursts
     fire_trigger("own_burst_activate", {"mast-romantic-maid": rules}, ctx, registry, time=22.0)
     assert registry.total_for("flat_atk", DEALER, now=22.0) == 4012.0  # 20.06% x 2 stacks
+
+
+# Hangover is the ONE part of her kit that takes her out of the rotation rather
+# than buffing someone, and whether it ever fires is decided by her deck-mates:
+# Anchor clears a stack each cycle, so she never reaches the cap.
+def test_hangover_stuns_her_every_third_cycle_without_anchor():
+    from app.skill_rules.mast_romantic_maid import build_mast_self_stun
+
+    assert build_mast_self_stun(_values(), ["mast-romantic-maid", "flora"]) == {
+        "seconds": 10.0, "cycles": 3}
+
+
+def test_anchor_in_the_deck_means_she_is_never_stunned():
+    from app.skill_rules.mast_romantic_maid import build_mast_self_stun
+
+    assert build_mast_self_stun(
+        _values(), ["mast-romantic-maid", "anchor-innocent-maid"]) is None

@@ -399,3 +399,33 @@ def test_a_totem_does_not_shorten_the_wait_for_a_tier_mate_on_cooldown():
     assert all(e == "b3_unit_b" for e in
                [x["slug"] for x in events if x["type"] == "burst" and x["tier"] == 3])
     assert all(b - a >= 40.0 for a, b in zip(fires, fires[1:]))
+
+
+# A Nikke can also take herself out of the rotation: Mast: Romantic Maid's
+# Hangover stuns HER for 10 sec at the end of every third Full Burst when no
+# Anchor is there to clear her Drunken stacks. That is not a `burst_delay` -
+# it recurs, and it starts from an event mid-fight rather than from the opening.
+def test_a_self_stun_holds_a_member_out_of_the_cycles_it_covers():
+    """Fienn, 2026-08-04: in deck 4, 2 of Mast's 8 bursts landed inside a stun
+    window the scheduler knew nothing about. A stunned member cannot burst - a
+    tier-mate covers, and with no tier-mate the cycle waits for her."""
+    deck = [
+        {"slug": "b1_unit", "burst_tier": 1, "cooldown": 5.0},
+        {"slug": "drunk", "burst_tier": 2, "cooldown": 5.0,
+         "self_stun": {"seconds": 10.0, "cycles": 2}},
+        {"slug": "sober", "burst_tier": 2, "cooldown": 5.0},
+        {"slug": "b3_a", "burst_tier": 3, "cooldown": 5.0},
+        {"slug": "b3_b", "burst_tier": 3, "cooldown": 5.0},
+    ]
+    events = simulate_burst_cycle(deck, gauge_charge_time=1.0, fight_duration=60.0,
+                                  mode="auto")
+
+    ends = [e["time"] for e in events if e["type"] == "full_burst_end"]
+    b2 = [(e["time"], e["slug"]) for e in events if e["type"] == "burst" and e["tier"] == 2]
+    # Every second Full Burst leaves her stunned for the 10 sec after it.
+    windows = [(end, end + 10.0) for end in ends[1::2]]
+    assert windows, "fixture must run long enough to stun her at all"
+    assert not [t for t, slug in b2 if slug == "drunk"
+                and any(a <= t < b for a, b in windows)]
+    # ...and the tier keeps firing, because her tier-mate covers those cycles.
+    assert len(b2) == len(ends)

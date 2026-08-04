@@ -79,6 +79,27 @@ def _drunken_stacks(context, time):
     return ((cycle - 1) % MAX_DRUNKEN_STACKS) + 1 if cycle else 0
 
 
+def build_mast_self_stun(values, deck_slugs):
+    """Hangover as a `burst_cycle.self_stun`, or None when this deck never
+    triggers it.
+
+    "Activates when Drunken is at max stacks at the end of Full Burst. Removes
+    all stacks and affects self. Hangover: Stunned for N sec." Stacks come one
+    per cycle, so solo she hits the cap - and stuns herself - every third Full
+    Burst, which is the same `_drunken_stacks` wrap this module already models.
+    With Anchor clearing a stack each cycle she never reaches the cap at all,
+    and the stun simply does not exist for that deck.
+
+    It is a SCHEDULING fact, not a buff, so it leaves through the deck member
+    rather than through a SkillRule: a stunned Nikke cannot burst, a tier-mate
+    covers for her, and alone in her tier the cycle waits (Fienn, 2026-08-04 -
+    2 of her 8 bursts in deck 4 fell inside a window nothing knew about)."""
+    if ANCHOR_SLUG in deck_slugs:
+        return None
+    return {"seconds": float(values["pirates_spirit"]["description_value_05"]),
+            "cycles": MAX_DRUNKEN_STACKS}
+
+
 def build_mast_rules(values):
     heart = values["pirates_heart"]
     spirit = values["pirates_spirit"]
