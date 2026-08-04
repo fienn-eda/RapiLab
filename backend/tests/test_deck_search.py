@@ -623,6 +623,28 @@ def test_sole_tier1_slug_rejected_next_to_another_b1():
         assert not {"rapi-red-hood-b1", "liter"} <= slugs
 
 
+def test_a_taste_variant_needs_a_deck_that_induces_it():
+    """Bready enters Lingering Taste by RECEIVING a buff that increases
+    sustained damage ("Activates when gaining a buff that increases sustained
+    damage", char_bready.json). A deck holding no such buffer never puts her in
+    it - and both Favorite Candy bullets and two thirds of New Flavor are gated
+    on the status, so what the engine simulates is a unit that does not exist.
+
+    Measured on Fienn's deck 5 (2026-08-04): the engine credited her with
+    1,066,561,255 she could not deal - 18.7% of that deck - and 27 of the 32
+    bench Burst-3s beat what is actually left of her.
+    """
+    from app import deck_search
+
+    def deck(fifth):
+        return [FakeUnit("bready-lingering", 3), FakeUnit("b1", 1),
+                FakeUnit("b2", 2), FakeUnit("d1", 3), fifth]
+
+    assert not deck_search.deck_is_valid(deck(FakeUnit("d2", 3)))
+    # Onda Grande: "Sustained Damage ▲ ... Affects all allies".
+    assert deck_search.deck_is_valid(deck(FakeUnit("rosanna-chic-ocean", 3)))
+
+
 def test_prune_keeps_a_legal_tier1_pair_when_a_sole_tier1_slug_tops_the_pool(monkeypatch):
     # rapi-red-hood-b1 can't co-seat with any other B1 (_tier1_seating_valid,
     # SOLE_TIER1_SLUGS). If she fills one of only PRUNED_TIER_CAPS[1]=2

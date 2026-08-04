@@ -16,6 +16,8 @@ separate from `_BUILDERS` so the ~25 existing builders' 2-tuple return shape
 never has to change for the one or two Nikkes that need this.
 """
 from app.attack_rate import CHARGE_MOTION_DELAY_SECONDS
+from app.skill_rules._helpers import (SQUAD_DISTRIBUTED_DAMAGE_BUFF_SLUGS,
+                                      SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS)
 from app.skill_rules.ada_wong import build_ada_wong_rules, build_flash_grenade_periodic_nuke
 from app.skill_rules.ade_agent_bunny import build_ade_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
@@ -689,6 +691,24 @@ def get_burst_cooldown_reduction(slug, skill_values):
 # nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
 VARIANT_BURST_TIERS: dict[str, int] = {
     "rapi-red-hood-b1": 1,
+}
+
+
+# A variant whose kit only exists while a state HER DECK has to induce is live,
+# mapped to the slugs that can induce it. Bready alone: she enters Lingering
+# Taste on "gaining a buff that increases sustained damage" and Recommended
+# Taste on one that increases distributed damage (char_bready.json), and BOTH of
+# Favorite Candy's bullets plus two thirds of New Flavor are gated on the
+# status. A deck holding neither kind of buffer therefore simulates a unit the
+# game does not produce - measured on Fienn's deck 5 (2026-08-04) as
+# 1,066,561,255 of credited damage she could not deal, 18.7% of that deck.
+#
+# The other MODE_VARIANTS bases need no entry: Cinderella: Crystal Wave's
+# MG/Snipe and Diesel's burst timing are the PLAYER's choice, and Rapi: Red
+# Hood's B3/B1 is already constrained by burst-tier legality.
+TASTE_INDUCER_SLUGS: dict[str, frozenset[str]] = {
+    "bready-lingering": SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS,
+    "bready-recommended": SQUAD_DISTRIBUTED_DAMAGE_BUFF_SLUGS,
 }
 
 

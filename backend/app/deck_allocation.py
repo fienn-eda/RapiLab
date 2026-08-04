@@ -14,10 +14,11 @@ from app.cancellation import NEVER
 from app.cascade import Cascade, cached_fit_surrogate
 from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
                              _intra_tier_orderings, _orderings_within_budget,
-                             _score_batch, _summarize, best_completions,
-                             character_of, completions_fit_budget,
-                             deck_breaks_gimmick, deck_is_valid, evaluate_deck,
-                             search_best_decks, weakness_holders)
+                             _score_batch, _summarize, _taste_induced_valid,
+                             best_completions, character_of,
+                             completions_fit_budget, deck_breaks_gimmick,
+                             deck_is_valid, evaluate_deck, search_best_decks,
+                             weakness_holders)
 from app.elements import weakness_of
 from app.sim_pool import SimPool, resolve_workers
 
@@ -358,23 +359,31 @@ def _swap_is_fieldable(deck, a, partner, k, partner_is_deck):
     either another deck (`partner_is_deck`) or the leftover bench, which has no
     shape of its own to keep.
 
-    Only a CROSS-tier exchange can fail this, because it is the only kind that
-    changes a deck's B1/B2/B3 shape - and the shape is what decides whether the
-    deck can reach Full Burst at all. A same-tier pair is admitted without the
-    check, which is what keeps the same-tier half of the climb behaving exactly
-    as it did before cross-tier moves were allowed.
+    Two different questions, and only one of them is about SHAPE. A same-tier
+    exchange cannot change a deck's B1/B2/B3 counts, so it skips the full
+    `deck_is_valid` - that is what keeps the same-tier half of the climb as
+    cheap as it was before cross-tier moves were allowed. But a Taste variant's
+    rule is about MEMBERSHIP: Bready needs a deck-mate whose buff puts her in
+    the state her kit is gated on, and swapping her in for another Burst 3 both
+    keeps the shape and breaks that. So the membership half runs on EVERY
+    exchange - the generators alone left the climb free to walk her back into a
+    deck that induces nothing, and on Fienn's roster it did (2026-08-04).
     """
-    if deck[a].burst_tier == partner[k].burst_tier:
-        return True
     trial = list(deck)
     trial[a] = partner[k]
+    partner_trial = None
+    if partner_is_deck:
+        partner_trial = list(partner)
+        partner_trial[k] = deck[a]
+    if not _taste_induced_valid(trial):
+        return False
+    if partner_trial is not None and not _taste_induced_valid(partner_trial):
+        return False
+    if deck[a].burst_tier == partner[k].burst_tier:
+        return True
     if not deck_is_valid(trial):
         return False
-    if not partner_is_deck:
-        return True
-    partner_trial = list(partner)
-    partner_trial[k] = deck[a]
-    return deck_is_valid(partner_trial)
+    return partner_trial is None or deck_is_valid(partner_trial)
 
 
 def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch,
