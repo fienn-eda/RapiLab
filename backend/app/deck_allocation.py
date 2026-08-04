@@ -32,6 +32,29 @@ from app.sim_pool import SimPool, resolve_workers
 SWAP_BATCH_PER_WORKER = 4
 _MIN_SWAP_BATCH = 4
 
+# Wall-clock ceiling on the swap-improvement phase. A CEILING, not a cost: the
+# climb exits the moment a full pass finds no improvement, so a configuration
+# that converges early pays nothing for a higher number here - it only ever
+# binds where it is actually still buying damage.
+#
+# Chosen by measurement, `scripts/measure_swap_budget.py` on Fienn's roster
+# (78 usable, 5 decks, Fire boss / 수냉 약점, 속성 저지 필수, DEF 31,784, 180 s):
+#
+#     budget   combined total   vs peel   end-to-end   converged
+#         0s   22,564,405,444    +0.00%        85.4s   yes
+#        45s   27,901,137,219   +23.65%       111.9s   NO - cut off
+#       120s   30,637,712,508   +35.78%       187.6s   NO - cut off
+#       300s   30,659,850,448   +35.88%       243.1s   yes  (climbed 176.6s)
+#
+# 45 was costing 9.8% of the allocation here. The value curve is flat past
+# 120s (120 captures 99.93% of 300's), so 180 is 120 plus headroom: the climb
+# is wall-clock, so how long convergence takes depends on machine load, and a
+# ceiling set at the measured convergence point would bind again on a busier
+# machine. The earlier "45s is not the bottleneck" reading (2026-08-02) was a
+# Wind boss with the gimmick OFF - the constraint changes the search, so that
+# measurement never covered this case.
+SWAP_TIME_BUDGET_SEC = 180.0
+
 
 class InfeasibleDraft(ValueError):
     """A draft deck's locked/placed units fit no legal deck shape, the pool is
@@ -134,7 +157,7 @@ def _gimmick_floor(decks, boss):
 
 
 def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
-                   locked=frozenset(), time_budget_sec=45.0, workers=None,
+                   locked=frozenset(), time_budget_sec=SWAP_TIME_BUDGET_SEC, workers=None,
                    alternatives=None, cancel=None):
     """`cancel` (see app.cancellation) stops a run whose caller went away.
 
@@ -302,19 +325,31 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
     # one.
     gimmick_active = weakness_holders(
         [u for deck in decks for u in deck] + list(leftovers), boss) > 0
+    # One pass's work items: for each deck, every deck after it, then the bench.
+    items = [(i, j) for i in range(len(decks))
+             for j in [*range(i + 1, len(decks)), None]]
     improved = True
     while improved and time.monotonic() < deadline:
         improved = False
-        for i in range(len(decks)):
+        for done, (i, j) in enumerate(items):
             # The longest phase in the run - it climbs until it converges or the
-            # 45s budget runs out - so it is asked once per deck rather than only
+            # budget runs out - so it is asked per work item rather than only
             # once per pass.
             cancel.check()
-            for j in range(i + 1, len(decks)):
-                improved |= _try_swaps(decks, scores, i, decks[j], j, boss,
-                                       deadline, locked, pool, batch, gimmick_active)
-            improved |= _try_swaps(decks, scores, i, leftovers, None, boss,
-                                   deadline, locked, pool, batch, gimmick_active)
+            # An item may spend only its EQUAL SHARE of what is left, so a
+            # budget that binds cuts every deck a little instead of being spent
+            # entirely on the first one. Measured on Fienn's roster (2026-08-04,
+            # 5 decks, gimmick on): deck 1's five items took all 45 seconds and
+            # decks 2-5 got no swap AT ALL - which left a bench unit worth
+            # +969,725,138 unseated beside deck 3. An item that runs out of
+            # candidates before its share is up hands the rest to the items
+            # behind it, so a climb that fits inside the budget converges
+            # exactly as it did before.
+            now = time.monotonic()
+            partner = leftovers if j is None else decks[j]
+            improved |= _try_swaps(decks, scores, i, partner, j, boss,
+                                   now + (deadline - now) / (len(items) - done),
+                                   locked, pool, batch, gimmick_active)
 
 
 def _swap_is_fieldable(deck, a, partner, k, partner_is_deck):

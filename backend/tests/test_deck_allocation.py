@@ -3,6 +3,7 @@ same-tier swap pass recovers the classic greedy mistake (stacking two strong
 supporters in deck 1 when splitting them wins). All search/sim calls are
 stubbed - real sims live in the API end-to-end test."""
 from dataclasses import dataclass
+import inspect
 import time
 
 import app.deck_allocation as da
@@ -157,6 +158,91 @@ def test_swap_pass_respects_an_expired_deadline(monkeypatch):
     da._swap_pass([deck], bench, BossProfile(), time.monotonic() - 1.0)
 
     assert [u.slug for u in deck] == before
+
+
+class _ScoringClock:
+    """A clock that only moves when a deck is SCORED.
+
+    The swap phase's budget is wall-clock, so a test that wants it to bind at a
+    particular point either sleeps (slow, and still a race) or takes the clock
+    over. Simulation is what the budget actually buys, so charging time per
+    scored deck makes "the budget ran out here" exact and instant."""
+
+    def __init__(self, per_score=1.0):
+        self.now = 0.0
+        self.per_score = per_score
+
+    def monotonic(self):
+        return self.now
+
+    def spend(self):
+        self.now += self.per_score
+
+
+def patch_scoring_clock(monkeypatch, scorer, per_score=1.0):
+    """patch_scorer, with each scored deck charged to a _ScoringClock that
+    deck_allocation reads as its own clock. Returns the clock."""
+    clock = _ScoringClock(per_score)
+
+    def timed(slugs):
+        clock.spend()
+        return scorer(slugs)
+
+    patch_scorer(monkeypatch, timed)
+    monkeypatch.setattr(da, "time", clock)
+    return clock
+
+
+def test_the_swap_budget_default_is_the_named_constant():
+    """The climb's ceiling is a MEASURED number, and the measurement that chose
+    it is written beside the constant. Every test in this file passes an
+    explicit budget, so nothing else here would notice the default drifting
+    back to a bare literal - and a literal in the signature is exactly how the
+    number and the note justifying it come apart."""
+    default = inspect.signature(da.allocate_decks).parameters["time_budget_sec"].default
+    assert default is da.SWAP_TIME_BUDGET_SEC
+
+
+def test_a_binding_budget_still_reaches_the_last_deck(monkeypatch):
+    """The climb walks deck 1's partners, then deck 2's, and so on, and each
+    work item may spend everything that is left. A budget that binds was
+    therefore spent ENTIRELY on the first deck, and the decks after it got no
+    swap at all - not a worse swap, none.
+
+    Fienn hit this on 2026-08-04: a 5-deck run left a bench unit worth
+    +969,725,138 unseated beside deck 3, because the budget was gone before
+    deck 3 was ever looked at. Here `w` is worth double to the LAST deck and
+    worthless anywhere else, so it can only be found by an item the old walk
+    never reached.
+    """
+    decks = [[Unit(f"{p}1", 3), Unit(f"{p}2", 1), Unit(f"{p}3", 2),
+              Unit(f"{p}4", 3), Unit(f"{p}5", 3)] for p in "abc"]
+    # `w` first, so it is the first candidate the last deck's bench pass judges
+    # once that pass gets any budget at all.
+    bench = [Unit("w", 3)] + [Unit(f"f{i}", 3) for i in range(11)]
+
+    def score(slugs):
+        if "w" in slugs:
+            # Only the last deck wants her; everywhere else she is a downgrade,
+            # so no earlier item can seat her and end the test by accident.
+            return 200.0 if any(s.startswith("c") for s in slugs) else 10.0
+        if any(s.startswith("f") for s in slugs):
+            return 10.0
+        return 100.0
+
+    clock = patch_scoring_clock(monkeypatch, score)
+    # A full pass over this fixture scores ~180 decks and reaches the last
+    # deck's bench item at ~141. 130 therefore binds partway through the
+    # SECOND deck - the same shape as the real run, where the budget went while
+    # deck 1 was still being worked.
+    deadline = clock.monotonic() + 130.0
+    da._swap_pass(decks, bench, BossProfile(), deadline)
+
+    assert clock.monotonic() >= deadline, (
+        "the budget never bound, so this fixture proves nothing about a climb "
+        "that is cut off")
+    assert "w" in [u.slug for u in decks[2]], (
+        "the last deck never got a swap - the budget was spent before its turn")
 
 
 # One owned character, several candidate slugs (registry's MODE_VARIANTS). The

@@ -413,7 +413,7 @@ describe('RecommendPanel raid mode', () => {
     await user.click(screen.getByLabelText(/전부 최적화/i))
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
-    expect(await screen.findByRole('status')).toHaveTextContent(/1~2분/)
+    expect(await screen.findByRole('status')).toHaveTextContent(/2~5분/)
     expect(screen.getByRole('button', { name: /전부 최적화 중/i })).toBeDisabled()
 
     resolveRequest({
