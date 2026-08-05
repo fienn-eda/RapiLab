@@ -72,9 +72,12 @@ def main():
     add_roster_argument(p)
     p.add_argument("--budgets", default="0,2000,8000,40000",
                    help="swap budgets in CANDIDATE EXCHANGES, comma separated. "
-                        "0 is the peel-only baseline; a run that converges "
-                        "reports what it spent, which is the number the "
-                        "production ceiling is chosen from")
+                        "0 is the peel-only baseline - no swap pass runs at "
+                        "all, so that row always prints \"NO - cut off\" "
+                        "(correct: nothing converged because nothing ran, "
+                        "not a bug); a run that converges reports what it "
+                        "spent, which is the number the production ceiling "
+                        "is chosen from")
     p.add_argument("--decks", type=int, default=5)
     p.add_argument("--workers", default="auto",
                    help='"auto" (default), 1 for serial, or N')
@@ -119,6 +122,14 @@ def main():
     print(f"{'budget':>9} {'combined total':>18} {'vs peel':>9} "
           f"{'candidates':>11} {'swap took':>10} {'end-to-end':>11}  converged")
 
+    # "vs peel" is only honest when the sweep actually includes the peel-only
+    # (budget 0) row to compare against - otherwise the first budget given
+    # would silently stand in for it, printing a meaningless "+0.00%" for
+    # itself. Print "n/a" instead of a percentage in that case - plain ASCII,
+    # since this prints to a Windows console whose cp949 codepage cannot
+    # encode an em dash.
+    has_peel_baseline = budgets[0] == 0
+
     baseline = None
     original = da._swap_pass
     for budget in budgets:
@@ -137,7 +148,8 @@ def main():
         if baseline is None:
             baseline = total
         spent, took, converged = record[0] if record else (0, 0.0, True)
-        print(f"{budget:>9,} {total:>18,.0f} {total / baseline - 1:>+8.2%} "
+        vs_peel = f"{total / baseline - 1:>+8.2%}" if has_peel_baseline else f"{'n/a':>8}"
+        print(f"{budget:>9,} {total:>18,.0f} {vs_peel} "
               f"{spent:>11,} {took:>9.1f}s {end_to_end:>10.1f}s  "
               f"{'yes' if converged else 'NO - cut off'}", flush=True)
 
