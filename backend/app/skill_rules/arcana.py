@@ -4,10 +4,27 @@ signature weapon).
 "Wheel of Fortune" is a status her own burst (Shackles of Destiny) grants to
 all Electric Code allies, including herself (she is Electric). Her other two
 skills gate a bullet on "if self is in Wheel of Fortune status" - since only
-her own burst grants it, this is equivalent to "did Arcana's own burst fire
-this cycle", modeled with `own_burst_fired_this_cycle()` (reads
+her own burst grants it, the encoding reads that as "did Arcana's own burst
+fire this cycle" and uses `own_burst_fired_this_cycle()` (reads
 SquadContext.burst_used_this_cycle, which is not yet cleared when
 full_burst_end rules run).
+
+KNOWN DEFECT (2026-08-05): that equivalence drops the status's CLOCK, and these
+three bullets fire on full_burst_end, ten seconds after the grant. Wheel of
+Fortune lasts 10 sec and starts when Arcana casts at Burst Stage 2 - strictly
+BEFORE the Burst 3 cast that opens Full Burst - so with the standard 10 sec
+window it has always lapsed by the time Full Burst ends. The registry agrees:
+in a scored deck the Wheel expires at t=12.500 while full_burst_end fires at
+t=12.600. Read honestly the gate is ALWAYS false, and the only thing that
+turns it true is a shortened Full Burst - which today means Isabel alone
+("Full Burst Time -5 sec", not modelled either, see isabel.py). So Arcana's
+three conditional bullets currently fire in every deck she bursts in, worth
++25-29% of deck total on a real roster, when they should fire only alongside
+Isabel. Fixing this needs a per-cycle Full Burst duration in burst_cycle.py
+plus a time-aware gate; the two changes are useless apart and are an
+engine-extension decision, not a skill-rule edit. Contrast grave.py, which
+gates the same 10-sec-status/10-sec-window coincidence on the status ENDING
+(where full_burst_end is the right instant) rather than on it still running.
 
 Modeled (DPS-relevant):
 - Shackles of Destiny (skills[2], her burst): Electric-Code squad Attack

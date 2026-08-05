@@ -16,8 +16,14 @@ Modeled (DPS-relevant):
 Assumption: the N-th burst grants Marked Target N (Skill 1) AND applies the
 stage-N burst bonus that same cycle (activation_count == N inside the burst rule).
 
-Not modeled: Sonic Chaser's squad Full Burst Duration +5s - a rotation-timing
-effect, not a damage buff.
+Not modeled: Sonic Chaser's squad Full Burst Time -5 sec. She is the only unit
+in the collected data that SHORTENS Full Burst (Modernia and Soda: Twinkling
+Bunny lengthen it), and `burst_cycle.FULL_BURST_DURATION` is one global
+constant, so a deck holding her runs on a 10 sec window here. That is not just
+rotation timing: a 5 sec window is the only way Arcana's Wheel of Fortune (10
+sec, granted by her Burst 2) is still up when Full Burst ends, which is the
+gate on Arcana's three biggest bullets - so this omission is what makes those
+bullets fire in decks that did not earn them. See arcana.py.
 """
 from app.effects import Pulse
 from app.skill_rules._helpers import buff_rule, escalating_buff_rule

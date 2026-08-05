@@ -85,24 +85,38 @@ how to encode it, and current engine status.
   others). E.g. Arcana's "Wheel of Fortune" - granted to Electric Code allies
   including herself by her own burst (Shackles of Destiny); other bullets check
   "if self is in Wheel of Fortune".
-- **Encode:** this is equivalent to "did this Nikke's own burst fire earlier in
-  the current cycle" - use the `own_burst_fired_this_cycle()` condition
-  (`squad_engine.py`), which reads `SquadContext.burst_used_this_cycle` (already
-  tracked by the engine, not yet cleared when `full_burst_end` rules run). No
-  new status-tracking needed. See `arcana.py`.
+- **Encode:** `own_burst_fired_this_cycle()` (`squad_engine.py`) reads
+  `SquadContext.burst_used_this_cycle` (already tracked, not yet cleared when
+  `full_burst_end` rules run), so no new status-tracking is needed - **but it
+  drops the status's clock, so first check that the clock cannot run out
+  between the grant and the check.** Compare the status's duration against the
+  gap from the grant to the trigger:
+  - `full_burst_enter` - safe. The unit's own tier-3-ordered burst fires
+    immediately before, so at most a tier gap has passed (Asuka, Mana).
+  - `full_burst_end` - **only safe if the status outlasts the whole Full Burst
+    window plus the tier gap.** A 10 sec status granted at Burst Stage 2 has
+    already lapsed when a 10 sec Full Burst ends: the grant starts BEFORE the
+    Burst 3 cast that opens the window. Arcana is exactly this case and the
+    engine gets it wrong today (see `arcana.py`'s KNOWN DEFECT).
+  - The same coincidence is fine when the bullet fires on the status **ending**
+    rather than on it still running - then `full_burst_end` IS the right
+    instant (Grave's Heat Emission, `grave.py`).
+  A status whose clock matters against a Full Burst window can only be modelled
+  once `burst_cycle.FULL_BURST_DURATION` stops being a single global constant,
+  since units that lengthen or shorten Full Burst decide the answer.
 
 ## Targeting a per-member subset by tier + element + prior-burst
 - **What:** some bullets target a dynamic subset like "all Burst 3 Electric
   Code allies who previously cast their Burst Skill" - a combination of tier,
   element, AND per-member "already burst this cycle" state.
-- **Gap:** `Effect.scope` only supports `self` / `squad` / `element:X` - there's
-  no way to target an arbitrary computed list of member slugs. This is a real
-  engine gap, not a judgment call.
-- **Encode:** defer + document (do not approximate onto `squad` or
-  `element:X` - the audience is much narrower and these bullets are often large
-  numbers precisely because the audience is narrow). Flag it if the deferred
-  bullet looks central to the unit's value in a specific deck archetype. See
-  `arcana.py`'s deferred "Magician"/"Strength" bullets.
+- **Encode:** `member_subset_buff_rule` (`_helpers.py`) - pass a
+  `member_filter(member, context)` and it resolves the matching members to a
+  live `slugs:` scope at trigger time (gap #3, closed 2026-07-16). Do NOT
+  approximate onto `squad` or `element:X` - the audience is much narrower and
+  these bullets carry large numbers precisely because it is. See `arcana.py`'s
+  "Magician"/"Strength" bullets and `ark_ranger_black.py`.
+- **Caveat:** the filter runs ONCE, at the trigger's own instant - the target
+  set is a snapshot, not a continuously re-evaluated membership.
 
 ## Weapon-type-scoped buffs ("all shotgun-wielding allies")
 - **What:** some buffs target allies by weapon type (e.g. "all shotgun-wielding
