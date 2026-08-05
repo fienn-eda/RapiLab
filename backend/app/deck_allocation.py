@@ -23,12 +23,11 @@ from app.sim_pool import SimPool, resolve_workers
 
 
 # Swap candidates scored per batch, per worker. The batch is what SimPool fans
-# out, so it has to be wide enough to fill the pool - but every candidate in a
-# batch is scored before the deadline is checked again, so a wider batch also
-# overshoots the deadline further. Scaling with the worker count holds that
-# overshoot near-constant (~a second at today's ~100 ms simulation) whatever the
-# machine, and the floor keeps the serial path's granularity close to the
-# one-candidate-at-a-time walk this replaced.
+# out, so it has to be wide enough to fill the pool, and the floor keeps the
+# serial path scoring a few candidates at a time rather than one. Width does not
+# change the answer - the walk accepts the first improving candidate in a fixed
+# order either way, and a batch never reaches past the share it is truncated to
+# (see _try_swaps) - so this is purely a throughput knob.
 SWAP_BATCH_PER_WORKER = 4
 _MIN_SWAP_BATCH = 4
 
