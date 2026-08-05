@@ -8,7 +8,9 @@
   Burst 3(`FULL_BURST_DURATION_DELTA`)에서 읽히게 됐고, `SkillRule`에 트리거 자신의
   시각을 아는 `time_condition`(`own_burst_status_active`)이 생겼다. 아르카나·이사벨
   ⚠→✅, 아르카나의 잔여 스킬2 쿨감(-75%, 이사벨의 Pointed Feather로 감)도 함께
-  인코딩. 실로스터 기준 아르카나 있는 덱 총딜이 최대 −29%(과대적용 해소).
+  인코딩. 실로스터 기준 네온 덱(이사벨 없음, `anis-star,arcana,crown,cinderella,
+  neon-vision-eye`) 총딜이 8,421,587,537 → 6,729,347,469로 −20.1%(옛 값은 새
+  값보다 +25.2% 부풀어 있었다 — 게이트가 늘 열려 있던 대가).
 - 마지막 갱신: 2026-07-31 — **클립형 재장전 배선(gap #19 해소).** 탄창을 여러 번에
   나눠 채우는 **9슬러그**(`centi`·`drake`·`sugar`·`soda-twinkling-bunny`·`noir`·
   `grave` + 시그니처)의 재장전이 이제 전체 재충전 시간이다. 분할 수는 실측이 아니라

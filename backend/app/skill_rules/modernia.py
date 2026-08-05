@@ -15,10 +15,13 @@ Modeled (DPS-relevant):
   60 shots/s puts consecutive marks well inside the 10s duration).
 - New World's squad Full Burst Duration +5 sec: registered as
   `FULL_BURST_DURATION_DELTA["modernia"]` (registry.py), read by burst_cycle
-  from whichever member opened that cycle's tier 3. Independent of whether her
-  burst nuke/transform fires - but her best shape ((1,1,3), see below) is built
-  around her never bursting, so in practice this only lengthens the rare cycle
-  a thinner deck forces her to fire.
+  from whichever member opened that cycle's tier 3 - so it applies ONLY on a
+  cycle she is the one who actually bursts, never on a cycle a tier-3 ally
+  opens instead. That's a separate question from whether her burst nuke or
+  weapon transform is modeled (it isn't - see below): the delta fires off her
+  being the tier-3 opener, not off the transform. Her best shape ((1,1,3), see
+  below) is built around her never bursting, so in practice this only
+  lengthens the rare cycle a thinner deck forces her to fire.
 
 Not modeled / deferred:
 - The Max Ammunition Capacity stack is emitted, but Max Ammo only feeds shot
