@@ -85,17 +85,27 @@ def _report(label, deck, boss, max_bursts=None):
           f"soda: {per_unit[SODA]:,.0f} ({per_unit[SODA] / result['total_damage']:.1%})")
     print(f"Soda bursts: {len(soda_bursts)} of {len(tier3)} Burst-3 fires    "
           f"chip fills: {len(fills)}")
-    print(f"\n{'cycle':>5} {'t (sec)':>9}  {'B3 seat':<22} {'chip':>6}  "
+    # `refill` is the fills since the previous Burst-3 fire - what the Full
+    # Burst put back before this spend. It is printed because a chip pinned at
+    # its cap looks exactly like one that never fills, and only this column
+    # tells the two apart.
+    print(f"\n{'cycle':>5} {'t (sec)':>9}  {'B3 seat':<22} {'chip':>6} {'refill':>8}  "
           f"{'ATK+65.25%':>11}  {'FB ext':>7}")
     for i, event in enumerate(tier3, 1):
         # The chip an instant BEFORE the burst - what her own burst would spend
         # and what Beginner's Rewards reads on entering Burst Stage 3.
         chip = ctx.resource_count(SODA, "chip", event["time"] - 1e-6, CAP)
+        previous = tier3[i - 2]["time"] if i > 1 else 0.0
+        gained = sum(1 for f in fills if previous <= f < event["time"])
         mine = event["slug"] == SODA
         gate = ("OPEN" if chip >= ATK_GATE else "shut") if mine else "-"
         ext = "+5s" if chip >= EXT_II else ("+2s" if chip >= EXT_I else "none")
         seat = event["slug"] + (" <- SODA" if mine else "")
-        print(f"{i:>5} {event['time']:9.2f}  {seat:<22} {chip:6.1f}  {gate:>11}  {ext:>7}")
+        refill = f"+{gained}" + ("*" if chip >= CAP else "")
+        print(f"{i:>5} {event['time']:9.2f}  {seat:<22} {chip:6.1f} {refill:>8}  "
+              f"{gate:>11}  {ext:>7}")
+    if any(ctx.resource_count(SODA, "chip", e["time"] - 1e-6, CAP) >= CAP for e in tier3):
+        print(f"  * chip was at its {CAP} cap, so those fills were discarded")
 
     if resets:
         print(f"\nchip resets (battle start + each of her own bursts):")
