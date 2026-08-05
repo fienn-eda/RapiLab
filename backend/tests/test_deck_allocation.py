@@ -500,6 +500,54 @@ def test_allocate_decks_workers_parity():
     assert pooled["leftover_slugs"] == serial["leftover_slugs"]
 
 
+def test_a_cut_off_climb_returns_the_same_allocation_twice(monkeypatch):
+    """Same input, same answer - the whole point. Asserted where it used to
+    fail: a budget that binds, so the run is decided by where the climb stopped
+    rather than by where it converged."""
+    def run():
+        decks = [[Unit(f"{p}1", 3), Unit(f"{p}2", 1), Unit(f"{p}3", 2),
+                  Unit(f"{p}4", 3), Unit(f"{p}5", 3)] for p in "abc"]
+        bench = [Unit(f"f{i}", 3) for i in range(11)]
+        patch_scorer(monkeypatch, lambda slugs: 100.0 + len(
+            [s for s in slugs if s.startswith("f")]) * 5.0)
+        converged = da._swap_pass(decks, bench, BossProfile(), 40)
+        return converged, [[u.slug for u in deck] for deck in decks]
+
+    first, second = run(), run()
+
+    assert first[0] is False, "the budget never bound - nothing is being proven"
+    assert first == second
+
+
+def test_an_item_spends_no_more_than_its_share(monkeypatch):
+    """The equal split is what keeps a binding budget from being eaten by deck
+    1, so `used` has to respect it exactly - the batch is truncated for this
+    reason and nothing else asserts the truncation directly.
+
+    The deck is (1,2,3,3,3) and every bench unit a Burst 3, so only the three
+    Burst-3 seats yield admissible candidates: 3 x 20 = 60, far more than the
+    share of 7 can reach."""
+    decks = [roster_of({"x1": 1, "x2": 2, "x3": 3, "x4": 3, "x5": 3})]
+    bench = [Unit(f"b{i}", 3) for i in range(20)]
+    scores = [100.0]
+
+    calls = []
+
+    def fake_score_batch(trials, boss, pool):
+        calls.append(len(trials))
+        return [1.0] * len(trials)
+
+    monkeypatch.setattr(da, "_score_batch", fake_score_batch)
+    improved, used, exhausted = da._try_swaps(
+        decks, scores, 0, bench, None, BossProfile(), 7,
+        frozenset(), None, 4)
+
+    assert improved is False          # every trial scores 1.0, below the 100 baseline
+    assert used == 7                  # exactly the share, never over
+    assert exhausted is False         # 5 x 20 candidates, so 7 cannot finish them
+    assert calls == [4, 3]            # the second batch is truncated to what is left
+
+
 from app.cascade import clear_fit_cache
 
 
