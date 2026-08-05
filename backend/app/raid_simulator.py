@@ -830,6 +830,7 @@ def simulate_raid(
             )
 
     def on_full_burst_enter(time, end):
+        context.current_full_burst_end = end
         fire_trigger("full_burst_enter", rules_by_slug, context, registry, time)
         drain_instant_damage(time)
 

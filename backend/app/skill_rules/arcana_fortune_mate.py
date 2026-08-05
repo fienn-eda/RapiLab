@@ -81,7 +81,11 @@ Not modeled / deferred:
 """
 from app.burst_cycle import FULL_BURST_DURATION
 from app.effects import Effect, ResourceSpec
-from app.skill_rules._helpers import linear_resource_buff, refreshing_buff_rule
+from app.skill_rules._helpers import (
+    _full_burst_window_length,
+    linear_resource_buff,
+    refreshing_buff_rule,
+)
 from app.squad_engine import SkillRule, has_status
 
 SKILL_VALUE_MANIFESTS = {
@@ -123,11 +127,12 @@ def build_fortune_mate_rules(values):
 
     def apply_radiant_youth(context, caster_slug, time, registry):
         context.set_status(caster_slug, MAKING_MEMORIES_STATUS, time)
+        window = _full_burst_window_length(context, time)
         registry.add(
-            Effect("crit_rate", crit_rate, "self", FULL_BURST_DURATION, caster_slug), applied_at=time
+            Effect("crit_rate", crit_rate, "self", window, caster_slug), applied_at=time
         )
         registry.add(
-            Effect("attack_damage_up", attack_damage, "self", FULL_BURST_DURATION, caster_slug),
+            Effect("attack_damage_up", attack_damage, "self", window, caster_slug),
             applied_at=time,
         )
 

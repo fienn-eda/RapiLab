@@ -6,7 +6,8 @@ her normal-attack damage volume.
 Modeled (DPS-relevant):
 - Radiant Wings (skills[1]): self Pierce Damage +55.08% continuously (from battle
   start, permanent). During Full Burst, self ATK +75.24% - modeled as a
-  full_burst_enter buff lasting the Full Burst window (`FULL_BURST_DURATION`).
+  full_burst_enter buff lasting until the open Full Burst window closes (falls
+  back to `FULL_BURST_DURATION` for a context without a burst cycle).
 - False Salvation (skills[2], her burst): self Attack Speed +65% and self ATK
   +88.12%, both for 15 sec. Attack Speed feeds the Phase S shot-cadence model, so
   her shotgun fires ~65% more often for those 15 sec. Her burst has no nuke.
@@ -18,8 +19,9 @@ Not modeled / deferred:
 - Hit Rate buffs (Radiant Wings +40.68%, Flash +98.18%) - Hit Rate is not
   consumed by the engine.
 """
-from app.burst_cycle import FULL_BURST_DURATION
-from app.skill_rules._helpers import buff_rule
+from app.effects import Effect
+from app.skill_rules._helpers import _full_burst_window_length, buff_rule
+from app.squad_engine import SkillRule
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -45,6 +47,13 @@ def build_dorothy_serendipity_rules(values):
     burst_atk = float(false_salvation["description_value_03"]) / 100
     burst_atk_duration = float(false_salvation["description_value_04"])
 
+    def apply_full_burst_atk(context, caster_slug, time, registry):
+        registry.add(
+            Effect("atk_percent", fb_atk, "self",
+                   _full_burst_window_length(context, time), caster_slug),
+            applied_at=time,
+        )
+
     return [
         buff_rule("battle_start", [
             ("pierce_damage_up", self_pierce, "self", None),
@@ -53,7 +62,7 @@ def build_dorothy_serendipity_rules(values):
             # Pierce Damage the same kit gives her.
             ("has_pierce", 1.0, "self", None),
         ]),
-        buff_rule("full_burst_enter", [("atk_percent", fb_atk, "self", FULL_BURST_DURATION)]),
+        SkillRule(trigger="full_burst_enter", action=apply_full_burst_atk),
         buff_rule("own_burst_activate", [
             ("atk_percent", burst_atk, "self", burst_atk_duration),
             ("attack_speed_percent", attack_speed, "self", attack_speed_duration),
