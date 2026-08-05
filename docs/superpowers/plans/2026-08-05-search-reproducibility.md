@@ -1209,13 +1209,16 @@ Expected: **523 passed** — 주석만 바꿨으므로 움직이면 안 된다.
 - [ ] **Step 4: 커밋**
 
 ```bash
-git add frontend/src
-git commit -m "Say how long the wait is now, and that the machine decides
+git add frontend/src/components/RecommendPanel.tsx
+git commit -F - <<'EOF'
+Point the wait note at the ceiling that exists
 
-The climb runs to convergence instead of to a clock, so the ceiling no longer
-promises an upper bound in seconds - on fewer cores the same search simply
-takes longer. The copy says so; without that line it is merely false on a
-slower machine."
+The comment named SWAP_TIME_BUDGET_SEC, which is gone, and quoted timings taken
+under it. The ceiling is now counted in candidate exchanges, so it does not
+convert to seconds the same way on every machine - and the copy's band is
+deliberately wider than the measurement to cover that, which the comment now
+says so nobody narrows it to the measured range.
+EOF
 ```
 
 ---
