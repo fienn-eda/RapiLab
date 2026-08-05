@@ -17,7 +17,9 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   프로세스마다 문자열 해시를 무작위화하므로, 집합 순회가 순서 결정에 닿는 곳이
   하나라도 있으면 그 주장은 거짓이 된다. `PYTHONHASHSEED`를 달리해 두 번 돌려
   비교하면 코드를 다 읽지 않고도 판정된다(2026-08-05: 수렴 배분이
-  `6089389733.91905`까지 일치).
+  `6089389733.91905`까지 일치). `scripts/verify_search_reproducibility.py`가
+  이 A/B를 별도 서브프로세스 두 개로 실행하고 바이트 단위로 비교한다 — 매번
+  즉석 스크립트를 새로 짤 필요 없다.
 
 ## CDR이 **클수록** 게이지가 병목이 된다 — 「CDR 유닛이 있으니 게이지는 안 걸린다」는 거꾸로였다
 
