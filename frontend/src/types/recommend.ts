@@ -124,6 +124,8 @@ export interface RecommendRaidResponse {
   baseline_total_damage: number | null // the user's exact drafted groupings scored;
   // non-null only for a COMPLETE draft. Monotone guarantee (complete draft):
   // baseline_total_damage <= sum(within_draft.decks.total_damage) <= combined_total_damage
+  // 탐색이 상한에 걸리지 않고 끝까지 갔는지. false면 더 나은 배분이 남아 있을 수 있다.
+  swap_converged: boolean
   // 이 결과를 낸 엔진의 버전 — 결과 캐시의 무효화 축(lib/inputHash.ts).
   engine_version: string
 }

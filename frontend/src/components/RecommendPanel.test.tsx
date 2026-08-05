@@ -351,6 +351,7 @@ describe('RecommendPanel raid mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      swap_converged: true,
       engine_version: 'test-engine-version',
     })
 
@@ -388,6 +389,7 @@ describe('RecommendPanel raid mode', () => {
       leftover_slugs: ['k'],
       within_draft: null,
       baseline_total_damage: null,
+      swap_converged: true,
       engine_version: 'test-engine-version',
     })
 
@@ -423,6 +425,7 @@ describe('RecommendPanel raid mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      swap_converged: true,
       engine_version: 'test-engine-version',
     })
     await waitFor(() =>
@@ -467,6 +470,7 @@ describe('RecommendPanel draft mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      swap_converged: true,
       engine_version: 'test-engine-version',
     })
 
@@ -533,6 +537,7 @@ describe('RecommendPanel draft mode', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      swap_converged: true,
       engine_version: 'test-engine-version',
     })
 
@@ -766,6 +771,7 @@ describe('RecommendPanel mode switch', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      swap_converged: true,
       engine_version: 'test-engine-version',
     })
 
@@ -873,6 +879,7 @@ describe('RecommendPanel mode switch', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      swap_converged: true,
       engine_version: 'test-engine-version',
     })
 
@@ -1012,6 +1019,7 @@ describe('RecommendPanel persistence', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      swap_converged: true,
       engine_version: 'test-engine-version',
     }
     vi.mocked(recommendRaidDecks).mockResolvedValue(response)
@@ -1041,6 +1049,7 @@ describe('RecommendPanel persistence', () => {
         leftoverSlugs: response.leftover_slugs,
         withinDraft: response.within_draft,
         baselineTotalDamage: response.baseline_total_damage,
+        swapConverged: response.swap_converged,
       },
       inputs: {
         mode: 'raid',
@@ -1115,6 +1124,7 @@ describe('RecommendPanel persistence', () => {
       leftover_slugs: [],
       within_draft: null,
       baseline_total_damage: null,
+      swap_converged: true,
       engine_version: 'test-engine-version',
     })
 
@@ -1162,6 +1172,7 @@ describe('RecommendPanel unit-pool exclusion', () => {
   const raidResponse = {
     decks: [], combined_total_damage: 0, excluded_slugs: [],
     leftover_slugs: [], within_draft: null, baseline_total_damage: null,
+    swap_converged: true,
     engine_version: 'test-engine-version',
   }
 

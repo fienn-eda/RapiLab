@@ -27,6 +27,8 @@ export interface StoredResult {
   leftoverSlugs: string[]
   withinDraft: DraftAllocation | null
   baselineTotalDamage: number | null
+  /** 없을 수 있다 — 이 필드가 생기기 전에 저장된 결과. 없으면 경고하지 않는다. */
+  swapConverged?: boolean
 }
 
 export interface Profile {

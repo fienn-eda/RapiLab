@@ -24,6 +24,8 @@ interface DraftResultsProps extends UnitLookups {
   leftoverSlugs?: string[]
   withinDraft?: DraftAllocation | null
   baselineTotalDamage?: number | null
+  /** false일 때만 경고한다 — 없으면(옛 저장 결과) 아무 말도 하지 않는다. */
+  swapConverged?: boolean
   /** The draft as submitted, for the per-deck diff. Diffs are omitted without it. */
   submittedDraft?: Draft
   /** Maps a result slug to the owned slug the player drafted (`ownedSlugFor`).
@@ -94,6 +96,7 @@ export function DraftResults({
   leftoverSlugs = [],
   withinDraft = null,
   baselineTotalDamage = null,
+  swapConverged,
   submittedDraft,
   // Destructured, not left in `lookups`: DeckCard and RaidResults take unit
   // lookups only, and this is a submitted-vs-returned reconciliation.
@@ -109,6 +112,7 @@ export function DraftResults({
         combinedTotalDamage={combinedTotalDamage}
         excludedSlugs={excludedSlugs}
         leftoverSlugs={leftoverSlugs}
+        swapConverged={swapConverged}
         {...lookups}
       />
     )

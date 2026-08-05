@@ -18,6 +18,8 @@ interface RaidResultsProps extends UnitLookups {
   excludedSlugs?: string[]
   /** Usable units the allocation left out of every deck. */
   leftoverSlugs?: string[]
+  /** false일 때만 경고한다 — 없으면(옛 저장 결과) 아무 말도 하지 않는다. */
+  swapConverged?: boolean
 }
 
 export function RaidResults({
@@ -25,6 +27,7 @@ export function RaidResults({
   combinedTotalDamage,
   excludedSlugs = [],
   leftoverSlugs = [],
+  swapConverged,
   ...lookups
 }: RaidResultsProps) {
   const nameFor = lookups.nameFor ?? nameFromSlug
@@ -43,6 +46,11 @@ export function RaidResults({
         이 {decks.length}개 덱을 모두 함께 편성하세요 — 각 니케는 정확히 하나의 덱에만
         배정돼요. 이것은 순위별 대안이 아니라 하나의 분할이에요.
       </p>
+      {swapConverged === false && (
+        <p className="raid-results__note" role="status">
+          탐색이 상한에 걸려 끝까지 가지 못했어요. 더 나은 배분이 남아 있을 수 있어요.
+        </p>
+      )}
       <p className="raid-results__combined">
         총합: <strong>{formatDamage(combinedTotalDamage)} 딜</strong>
       </p>

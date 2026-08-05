@@ -80,6 +80,7 @@ const toStoredResult = (raid: {
   leftoverSlugs: string[]
   withinDraft: StoredResult['withinDraft']
   baselineTotalDamage: number | null
+  swapConverged: boolean
 }): StoredResult => ({
   decks: raid.decks,
   combinedTotalDamage: raid.combinedTotalDamage,
@@ -87,6 +88,7 @@ const toStoredResult = (raid: {
   leftoverSlugs: raid.leftoverSlugs,
   withinDraft: raid.withinDraft,
   baselineTotalDamage: raid.baselineTotalDamage,
+  swapConverged: raid.swapConverged,
 })
 
 const NUM_DECKS_OPTIONS = Array.from(
@@ -188,7 +190,7 @@ export function RecommendPanel({
   // Persist a raid/draft submission's success exactly once - guarded by
   // pendingSaveRef so a rerender that doesn't follow a fresh submit (e.g. a
   // parent passing a new onResult reference) can't re-save the same result.
-  const { status: raidStatus, decks, combinedTotalDamage, excludedSlugs: raidExcludedSlugs, leftoverSlugs, withinDraft, baselineTotalDamage } = raid
+  const { status: raidStatus, decks, combinedTotalDamage, excludedSlugs: raidExcludedSlugs, leftoverSlugs, withinDraft, baselineTotalDamage, swapConverged } = raid
   useEffect(() => {
     if (raidStatus !== 'success') return
     const pending = pendingSaveRef.current
@@ -201,6 +203,7 @@ export function RecommendPanel({
       leftoverSlugs,
       withinDraft,
       baselineTotalDamage,
+      swapConverged,
     })
     setDisplayResult(result)
     setDisplayMode(pending.inputs.mode)
@@ -218,6 +221,7 @@ export function RecommendPanel({
     leftoverSlugs,
     withinDraft,
     baselineTotalDamage,
+    swapConverged,
     onResult,
   ])
 
@@ -656,6 +660,7 @@ export function RecommendPanel({
             combinedTotalDamage={displayResult.combinedTotalDamage}
             excludedSlugs={displayResult.excludedSlugs}
             leftoverSlugs={displayResult.leftoverSlugs}
+            swapConverged={displayResult.swapConverged}
             portraitFor={portraitFor}
             nameFor={nameFor}
             gimmickUnmetFor={raidGimmickUnmetFor}
@@ -669,6 +674,7 @@ export function RecommendPanel({
             leftoverSlugs={displayResult.leftoverSlugs}
             withinDraft={displayResult.withinDraft}
             baselineTotalDamage={displayResult.baselineTotalDamage}
+            swapConverged={displayResult.swapConverged}
             submittedDraft={submittedDraft}
             ownedSlugFor={ownedSlugResolver}
             portraitFor={portraitFor}
