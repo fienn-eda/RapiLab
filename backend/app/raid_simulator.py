@@ -261,8 +261,8 @@ def _resource_fill_times(
         windows = [(bt, bt + window_duration) for bt in own_burst_times]
         in_window = [t for t in shot_times if any(start <= t < end for start, end in windows)]
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
-    if kind == "per_shot_cycle_in_own_status_window":
-        # ("per_shot_cycle_in_own_status_window", first, period, window_duration):
+    if kind == "per_shot_cycle_from_own_burst_to_full_burst_end":
+        # ("per_shot_cycle_from_own_burst_to_full_burst_end", first, period):
         # fires at the `first`-th shot of the status window and every `period`
         # after, with the count RESTARTED IN EACH WINDOW. That restart is the
         # whole difference from "per_shot_every_during_own_status_window", which
@@ -271,16 +271,27 @@ def _resource_fill_times(
         # window holding a non-multiple of `period` shots would drag the phase
         # into the next window and never line up again.
         #
+        # The window is the span of a status the owner's OWN burst grants and
+        # the end of Full Burst removes: it opens at each of her burst times and
+        # closes at the first Full Burst end after it. Its length is a property
+        # of the DECK, not a constant - the Burst 3 that opened that cycle may
+        # have moved the window (Isabel -5 sec, Modernia +5 sec), and her burst
+        # is a tier gap earlier than the window's own start. Reading the end off
+        # `full_burst_windows` is what keeps this fill and the buff half of the
+        # same status (open-ended + `truncate_open_ended` at `full_burst_end`)
+        # describing one window instead of two that disagree. A burst with no
+        # Full Burst left to close it runs to the end of the fight.
+        #
         # Arcana: Fortune Mate's Memories and Moments is the shape this exists
         # for: while Making Memories is up, every 2nd normal attack triggers ONE
         # of three effects in rotation (2 reload, 4 Happy Memories, 6 Precious
         # Moments, then 8/10/12, ...), and the count resets when the status is
         # removed. Each effect is one (first, period) pair on the same rotation.
-        first, period, window_duration = fill[1], fill[2], fill[3]
+        first, period = fill[1], fill[2]
         times = []
         for burst_time in own_burst_times:
-            start, end = burst_time, burst_time + window_duration
-            in_window = [t for t in shot_times if start <= t < end]
+            end = next((e for _start, e in full_burst_windows if e > burst_time), fight_duration)
+            in_window = [t for t in shot_times if burst_time <= t < end]
             times.extend(t for i, t in enumerate(in_window)
                          if i + 1 >= first and (i + 1 - first) % period == 0)
         return sorted(times)
@@ -1052,10 +1063,10 @@ def simulate_raid(
                     ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
                     core_hittable, fight_duration, full_burst_windows, anchors,
                 ))
-            elif mode == "cycle_in_own_status_window":
-                first, period, window_duration = threshold
+            elif mode == "cycle_from_own_burst_to_full_burst_end":
+                first, period = threshold
                 window_fire_times[idx] = set(_resource_fill_times(
-                    ("per_shot_cycle_in_own_status_window", first, period, window_duration),
+                    ("per_shot_cycle_from_own_burst_to_full_burst_end", first, period),
                     shot_times, core_hittable, fight_duration, full_burst_windows, own_burst_times,
                 ))
             elif mode == "every_during_segment":
