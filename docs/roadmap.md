@@ -2020,8 +2020,8 @@ snow-white 0.998 · scarlet 0.999. 뒤 셋은 오차 범위이므로 실질 대�
       이미 같은 "일반 공격 대미지 배율" 버킷에 값을 채우고 있어 명목 +10%가
       `0.1/1.0946`로 줄어든 것(잔차 3e-07, 2026-08-03 확정, `docs/decisions.md`·
       `docs/measurements/arcana-fortune-mate-happy-memories.md`).
-      **엔진 확장 3건:** `per_shot_cycle_in_own_status_window`(창마다 리셋되는 위상
-      카운터) · 자원 리셋 트리거 `full_burst_end` · `resource_gated_buffs`의
+      **엔진 확장 3건:** `per_shot_cycle_from_own_burst_to_full_burst_end`(창마다
+      리셋되는 위상 카운터) · 자원 리셋 트리거 `full_burst_end` · `resource_gated_buffs`의
       `at:"full_burst_end"`/`value_per_stack`/`member_filter`.
       상수로 접지 않은 이유: 회전이 어디까지 도는지를 **덱이 정한다**(단독 창당 14발 =
       각 2스택, 토브 공속 시 22발 = 셋 다 3스택). 백엔드 **1491 passed / 3 skipped**.

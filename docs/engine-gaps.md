@@ -152,7 +152,7 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
   이전 갱신: 2026-07-28 (**아르카나의 페이즈 회전 인코딩 — 엔진 확장 3건.**
   skill2의 "공격 횟수에 따라 효과가 달라진다"가 임계값 3개가 아니라 **2타마다 셋 중
   하나씩 도는 회전**임이 Fienn 관측으로 확정. 신규: ① per-shot/자원 fill 모드
-  `per_shot_cycle_in_own_status_window`(창마다 카운터 **리셋** — 기존 모드는 창을 이어
+  `per_shot_cycle_from_own_burst_to_full_burst_end`(창마다 카운터 **리셋** — 기존 모드는 창을 이어
   붙여 세어 위상이 밀린다) ② 자원 리셋 트리거 `full_burst_end` ③ `resource_gated_buffs`의
   `at:"full_burst_end"` · `value_per_stack` · `member_filter`(발사 루프 뒤에서 스택 수를
   읽어야 하는 버프용 — 버스트 사이클 패스는 항상 0을 읽는다). 실측 덱에서 그녀 **+11.7%**.
@@ -436,7 +436,7 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 | ~~20~~ | ~~`closed_form` 발수가 차지 모션 딜레이를 무시~~ | 14 (`TIMED_CHARGE_MOTION_DELAY` 전원) | **해소 (2026-07-31)** — 고치지 않고 **모듈을 삭제**했다. 기각된 스코어러라 프로덕션이 안 썼고, 남아 있는 것 자체가 오해의 원인이었다 | 발사 타임라인 |
 | ~~21~~ | ~~평타를 과대평가하는 항이 있다~~ | **0** — 엔진 갭이 아니었다 | **규명 (2026-07-31), 엔진 변경 없음** — 잔차는 평타 **전용**이 맞지만(회귀 a=0.85~0.90 · b=1.02) 그 항은 **코어 히트**이고, 코어히트율은 **그 판의 플레이 조건**(파츠를 직접 때린 좌석은 코어를 놓친다, Fienn)이다. 캘리브레이션 **해석**이 바뀐다: `sim/record`는 1.0이 목표가 아니라 **1.0보다 위가 정상** | 기록 캐비엇 |
 | ~~—~~ | ~~**플랫 발수 장탄 버프**~~ ("최대 장탄 수 ▲ N발" — 퍼센트가 아니라 라운드 수) | 3 (Tove·Grave·Noir, 전부 스쿼드 스코프) | **해소 (2026-08-02)** — 신규 스탯 `max_ammo_rounds`. 수신자의 기본 탄창 대비로 환산해 기존 배율에 합류시키므로 `attack_rate` 핫패스 무변경 | 스탯 배선 |
-| ~~22~~ | ~~풀 버스트 길이가 전역 상수다~~ (`FULL_BURST_DURATION = 10.0`) | 2 직접(Isabel −5초 · Modernia +5초) + **간접**(Arcana의 게이트 · Dorothy: Serendipity · Arcana: Fortune Mate) | **완료 (2026-08-05)** — 풀 버스트 창 길이가 그 사이클을 연 Burst 3에서 읽힌다(`FULL_BURST_DURATION_DELTA` + `burst_cycle`), 그리고 `SkillRule`에 트리거 자신의 시각을 아는 `time_condition`(`own_burst_status_active`)이 생겼다. 소비자: Isabel·Modernia(직접, 자기 FB 길이) · Arcana(간접, 「수레바퀴 상태로 FB 종료」 게이트가 이제 FB를 실제로 줄이는 Burst 3 뒤에서만 열린다 — 오늘은 Isabel뿐) · Dorothy: Serendipity(간접, Radiant Wings의 FB 지속 버프가 실제 창 길이를 따라간다) · Arcana: Fortune Mate(간접, Making Memories가 실제 창 길이를 몰라도 되도록 open-ended+truncate로 재모델). **Soda: Twinkling Bunny의 FB +2/3초는 별도 사유로 계속 보류** — 그녀의 확장은 FB 스케줄이 고정된 뒤에야 쌓이는 자원(Golden Chip)에 종속돼 순환이라, `docs/roadmap.md` To-Do에 별도 티켓 | 타이밍 |
+| ~~22~~ | ~~풀 버스트 길이가 전역 상수다~~ (`FULL_BURST_DURATION = 10.0`) | 2 직접(Isabel −5초 · Modernia +5초) + **간접**(Arcana의 게이트 · Dorothy: Serendipity · Arcana: Fortune Mate) | **완료 (2026-08-05)** — 풀 버스트 창 길이가 그 사이클을 연 Burst 3에서 읽힌다(`FULL_BURST_DURATION_DELTA` + `burst_cycle`), 그리고 `SkillRule`에 트리거 자신의 시각을 아는 `time_condition`(`own_burst_status_active`)이 생겼다. 소비자: Isabel·Modernia(직접, 자기 FB 길이) · Arcana(간접, 「수레바퀴 상태로 FB 종료」 게이트가 이제 FB를 실제로 줄이는 Burst 3 뒤에서만 열린다 — 오늘은 Isabel뿐) · Dorothy: Serendipity(간접, Radiant Wings의 FB 지속 버프가 실제 창 길이를 따라간다) · Arcana: Fortune Mate(간접, Making Memories를 open-ended+truncate로 재모델해 창 길이를 묻지 않게 하고, 같은 상태가 게이팅하는 두 스택 카운터의 채움 창도 실제 풀 버스트 종료를 따라가게 함). **Soda: Twinkling Bunny의 FB +2/3초는 별도 사유로 계속 보류** — 그녀의 확장은 FB 스케줄이 고정된 뒤에야 쌓이는 자원(Golden Chip)에 종속돼 순환이라, `docs/roadmap.md` To-Do에 별도 티켓 | 타이밍 |
 | — | hit rate · Burst Gauge fill speed (딜/타이밍 아님) | 15 | **구현 안 함** (defer 유지) | 범위 밖 |
 
 > **핵심 결론:** #1 하나가 압도적이다. 노멀공격 카운터(20명)와 풀차지 카운터(19명)는
@@ -920,8 +920,12 @@ Maiden은 정규화 기준에서 FB를 나눠 빼도록 고쳤고, 코어 테스
   게이트가 `own_burst_status_active`로 교체돼 실제로 창을 줄이는 Burst 3 뒤에서만
   열린다 — 오늘은 Isabel뿐) · Dorothy: Serendipity(간접, Radiant Wings의 Full
   Burst ATK 버프 지속시간이 고정 10초 대신 그 사이클의 실제 창 길이를 따라간다) ·
-  Arcana: Fortune Mate(간접, Making Memories가 실제 창 길이를 몰라도 되도록
-  open-ended + truncate로 재모델 — Grave의 Heat Emission과 같은 패턴).
+  Arcana: Fortune Mate(간접, Making Memories를 open-ended + truncate로 재모델해
+  창 길이를 묻지 않게 했다 — Grave의 Heat Emission과 같은 패턴. 같은 상태가 게이팅하는
+  두 스택 카운터(Precious Moments · Snapshots of Youth)의 채움 창도 같은 창을 읽는다 —
+  `per_shot_cycle_from_own_burst_to_full_burst_end`가 끝을 `full_burst_windows`에서
+  가져온다. 고정 10초를 쓰면 한 상태의 두 반쪽이 서로 다른 창을 말하고, Precious
+  Moments는 리셋이 없어 그 차이가 전투 끝까지 남는다).
 - **측정 (실로스터, 네온 덱 `anis-star,arcana,crown,cinderella,neon-vision-eye` —
   이사벨이 없어 게이트가 열리면 안 되는 덱):** 총딜이 8,421,587,537 →
   6,729,347,469로 **−20.1%**(옛 값은 새 값보다 **+25.1%** 부풀어 있었다 —
