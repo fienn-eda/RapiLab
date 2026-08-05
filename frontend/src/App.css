@@ -862,9 +862,13 @@
   font-size: 14px;
 }
 
+/* The soft red fill already carries the hover state, so the label switches to
+   --text instead of staying --accent: red on --accent-soft measures too thin
+   a contrast margin to depend on. */
 .btn--ghost:hover {
   background: var(--accent-soft);
   border-color: var(--accent);
+  color: var(--text);
 }
 
 .btn--icon {
@@ -875,9 +879,12 @@
   border-radius: var(--radius-sm);
 }
 
+/* The soft red fill already carries the hover state, so the label switches to
+   --text instead of staying --accent: red on --accent-soft measures too thin
+   a contrast margin to depend on. */
 .btn--icon:hover {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--text);
 }
 
 .field-row--overload .btn--icon {
