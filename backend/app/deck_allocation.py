@@ -63,8 +63,9 @@ _MIN_SWAP_BATCH = 4
 # a measurement, which is why the multiple is generous. Caveat: ONE roster.
 #
 # Candidates, not seconds, so what this buys in wall clock depends on the
-# machine: a converging run here spends about two minutes, and this ceiling would
-# be roughly eleven if it ever bound.
+# machine: a converging run here spends about two minutes, and against the
+# slower of the two measured rates (gimmick on, 140.6 s / 3,331 candidates =
+# 42 ms/candidate) this ceiling would be roughly fourteen minutes if it ever bound.
 SWAP_CANDIDATE_BUDGET = 20_000
 
 
@@ -359,14 +360,23 @@ def _swap_pass(decks, leftovers, boss, budget, locked=frozenset(), pool=None,
             # once per pass.
             cancel.check()
             # An item may spend only its EQUAL SHARE of what is left, so a
-            # budget that binds cuts every deck a little instead of being spent
-            # entirely on the first one. Measured on Fienn's roster (2026-08-04,
-            # 5 decks, gimmick on): deck 1's five items took the whole budget and
-            # decks 2-5 got no swap AT ALL - which left a bench unit worth
-            # +969,725,138 unseated beside deck 3. An item that runs out of
-            # candidates before its share is up hands the rest to the items
-            # behind it, so a climb that fits inside the budget converges exactly
-            # as an unbudgeted one would.
+            # budget that binds is spread across every item instead of being
+            # spent entirely on the first one - without this, deck 1's five
+            # items took the whole budget on Fienn's roster (2026-08-04, 5
+            # decks, gimmick on) and decks 2-5 got no swap AT ALL, leaving a
+            # bench unit worth +969,725,138 unseated beside deck 3. An item that
+            # runs out of candidates before its share is up hands the rest to
+            # the items behind it, so a climb that fits inside the budget
+            # converges exactly as an unbudgeted one would.
+            #
+            # Floor division rounds each share down, so a budget SMALLER than
+            # the remaining item count does not spread evenly: the earliest
+            # items round to a share of zero (no swap chance at all) and only
+            # the later items, once the shrinking item count catches up, get a
+            # share of one. Measured: 15 items and a budget of 10 gives the
+            # first five share=0 and the last ten share=1 each. Unreachable at
+            # the shipped 20,000-candidate ceiling, but a hazard if this number
+            # is ever shrunk well below the item count.
             share = (budget - spent) // (len(items) - done)
             partner = leftovers if j is None else decks[j]
             gained, used, exhausted = _try_swaps(decks, scores, i, partner, j,
