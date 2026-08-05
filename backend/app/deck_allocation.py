@@ -8,8 +8,6 @@ lands near the optimum, and a budget-bounded same-tier swap hill-climb
 recovers its classic mistake (stacking synergy cores in deck 1 when splitting
 them supports two decks better). No optimality claim - set partitioning is
 NP-hard; this is the standard practical combo."""
-import time
-
 from app.cancellation import NEVER
 from app.cascade import Cascade, cached_fit_surrogate
 from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
@@ -34,28 +32,23 @@ from app.sim_pool import SimPool, resolve_workers
 SWAP_BATCH_PER_WORKER = 4
 _MIN_SWAP_BATCH = 4
 
-# Wall-clock ceiling on the swap-improvement phase. A CEILING, not a cost: the
-# climb exits the moment a full pass finds no improvement, so a configuration
-# that converges early pays nothing for a higher number here - it only ever
-# binds where it is actually still buying damage.
+# How much of the swap-improvement climb one allocate_decks call may spend,
+# counted in CANDIDATE EXCHANGES examined - not simulations. Charging per
+# simulation would let the batch width (which scales with the worker count)
+# decide WHERE a binding budget cuts, and a binding budget is exactly the moment
+# reproducibility is needed. Counting candidates and truncating each batch to
+# what is left makes the cut point the same on every machine.
 #
-# Chosen by measurement, `scripts/measure_swap_budget.py` on Fienn's roster
-# (78 usable, 5 decks, Fire boss / 수냉 약점, 속성 저지 필수, DEF 31,784, 180 s):
+# A runaway guard, not a quality knob. The climb reaches a local optimum and
+# stops on its own: the accept test is a strict improvement on an objective that
+# only rises, over a finite space of unit-to-deck assignments, so it cannot
+# cycle. This number bounds only how long getting there may take - and the UI
+# offers cancel besides (RecommendPanel.tsx's 취소 button).
 #
-#     budget   combined total   vs peel   end-to-end   converged
-#         0s   22,564,405,444    +0.00%        85.4s   yes
-#        45s   27,901,137,219   +23.65%       111.9s   NO - cut off
-#       120s   30,637,712,508   +35.78%       187.6s   NO - cut off
-#       300s   30,659,850,448   +35.88%       243.1s   yes  (climbed 176.6s)
-#
-# 45 was costing 9.8% of the allocation here. The value curve is flat past
-# 120s (120 captures 99.93% of 300's), so 180 is 120 plus headroom: the climb
-# is wall-clock, so how long convergence takes depends on machine load, and a
-# ceiling set at the measured convergence point would bind again on a busier
-# machine. The earlier "45s is not the bottleneck" reading (2026-08-02) was a
-# Wind boss with the gimmick OFF - the constraint changes the search, so that
-# measurement never covered this case.
-SWAP_TIME_BUDGET_SEC = 180.0
+# PROVISIONAL - large enough that it never binds, so the climb always runs to
+# convergence. Task 5 of docs/superpowers/plans/2026-08-05-search-reproducibility.md
+# replaces it with a measured value and the table that justifies it.
+SWAP_CANDIDATE_BUDGET = 1_000_000
 
 
 class InfeasibleDraft(ValueError):
@@ -159,7 +152,7 @@ def _gimmick_floor(decks, boss):
 
 
 def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
-                   locked=frozenset(), time_budget_sec=SWAP_TIME_BUDGET_SEC, workers=None,
+                   locked=frozenset(), swap_budget=SWAP_CANDIDATE_BUDGET, workers=None,
                    alternatives=None, cancel=None):
     """`cancel` (see app.cancellation) stops a run whose caller went away.
 
@@ -282,17 +275,15 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
             used = {character_of(u.slug) for u in units}
             remaining = [u for u in remaining if character_of(u.slug) not in used]
 
-        # time_budget_sec caps the swap-improvement phase ONLY, starting when the
-        # swap phase itself starts: greedy peeling above and the final ordering
-        # polish below are unbudgeted, so a valid (if unimproved) allocation is
-        # returned even with a zero budget. The hill-climb's DECISIONS stay
-        # sequential - each accepted swap changes the state the next candidate is
-        # judged against - but the candidates it judges are scored in batches
-        # through the same pool the peel used, which is what lets the phase reach
-        # a local optimum inside the budget instead of being cut off mid-climb.
-        deadline = time.monotonic() + time_budget_sec
+        # swap_budget caps the swap-improvement phase ONLY: greedy peeling above
+        # and the final ordering polish below are unbudgeted, so a valid (if
+        # unimproved) allocation is returned even with a budget of zero. The
+        # hill-climb's DECISIONS stay sequential - each accepted swap changes the
+        # state the next candidate is judged against - but the candidates it
+        # judges are scored in batches through the same pool the peel used, which
+        # is what lets the phase converge instead of being cut off mid-climb.
         cancel.check()
-        _swap_pass(decks, remaining, boss, deadline, locked=locked, pool=pool,
+        _swap_pass(decks, remaining, boss, swap_budget, locked=locked, pool=pool,
                    batch=max(_MIN_SWAP_BATCH, worker_count * SWAP_BATCH_PER_WORKER),
                    cancel=cancel)
 
@@ -304,15 +295,21 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
             pool.close()
 
 
-def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
+def _swap_pass(decks, leftovers, boss, budget, locked=frozenset(), pool=None,
                batch=_MIN_SWAP_BATCH, cancel=None):
-    """Hill-climb: try same-tier unit swaps between two decks (and between a
-    deck and the leftovers), re-scoring only the affected deck(s); keep a swap
-    iff the summed total improves. Same-tier swaps preserve the deck shapes.
-    Loops until a full pass finds no improvement or the deadline passes.
-    `locked` slugs are never chosen as a swap source, pinning a drafted seat."""
+    """Hill-climb: try unit swaps between two decks (and between a deck and the
+    leftovers), re-scoring only the affected deck(s); keep a swap iff the summed
+    total improves. Loops until a full pass finds no improvement or `budget`
+    candidate exchanges have been examined. `locked` slugs are never chosen as a
+    swap source, pinning a drafted seat.
+
+    Returns whether the climb CONVERGED. "No improvement in the last pass" is
+    not enough on its own: an item cut short by its share may simply not have
+    reached the candidates that would have improved it, so a pass counts as
+    conclusive only when every item also exhausted its candidate list.
+    """
     if not decks:
-        return
+        return True
     # Read locks per OWNED CHARACTER: a drafted seat may name a character whose
     # MODE_VARIANTS candidate the engine chose, so locking `bready` has to hold
     # whichever of her candidates ended up seated.
@@ -330,9 +327,12 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
     # One pass's work items: for each deck, every deck after it, then the bench.
     items = [(i, j) for i in range(len(decks))
              for j in [*range(i + 1, len(decks)), None]]
+    spent = 0
     improved = True
-    while improved and time.monotonic() < deadline:
+    complete = True
+    while improved and spent < budget:
         improved = False
+        complete = True
         for done, (i, j) in enumerate(items):
             # The longest phase in the run - it climbs until it converges or the
             # budget runs out - so it is asked per work item rather than only
@@ -341,17 +341,21 @@ def _swap_pass(decks, leftovers, boss, deadline, locked=frozenset(), pool=None,
             # An item may spend only its EQUAL SHARE of what is left, so a
             # budget that binds cuts every deck a little instead of being spent
             # entirely on the first one. Measured on Fienn's roster (2026-08-04,
-            # 5 decks, gimmick on): deck 1's five items took all 45 seconds and
+            # 5 decks, gimmick on): deck 1's five items took the whole budget and
             # decks 2-5 got no swap AT ALL - which left a bench unit worth
             # +969,725,138 unseated beside deck 3. An item that runs out of
             # candidates before its share is up hands the rest to the items
-            # behind it, so a climb that fits inside the budget converges
-            # exactly as it did before.
-            now = time.monotonic()
+            # behind it, so a climb that fits inside the budget converges exactly
+            # as an unbudgeted one would.
+            share = (budget - spent) // (len(items) - done)
             partner = leftovers if j is None else decks[j]
-            improved |= _try_swaps(decks, scores, i, partner, j, boss,
-                                   now + (deadline - now) / (len(items) - done),
-                                   locked, pool, batch, gimmick_active)
+            gained, used, exhausted = _try_swaps(decks, scores, i, partner, j,
+                                                 boss, share, locked, pool, batch,
+                                                 gimmick_active)
+            improved |= gained
+            spent += used
+            complete &= exhausted
+    return not improved and complete
 
 
 def _swap_is_fieldable(deck, a, partner, k, partner_is_deck):
@@ -387,7 +391,7 @@ def _swap_is_fieldable(deck, a, partner, k, partner_is_deck):
     return partner_trial is None or deck_is_valid(partner_trial)
 
 
-def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch,
+def _try_swaps(decks, scores, i, partner, j, boss, share, locked, pool, batch,
                gimmick_active=False):
     """Unit swaps between deck `i` and `partner` - either another deck (`j` is
     its index, so its score counts toward the improvement too) or the leftover
@@ -408,7 +412,10 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
     batch stale - those scores describe a deck that no longer exists - so the
     loop re-batches from the next candidate instead of trusting them. Wasted
     scoring is bounded by the batch and rare in practice: measured on a 78-unit
-    roster, under 1% of candidates are ever accepted.
+    roster, under 1% of candidates are ever accepted. Batch width therefore never
+    decides WHICH candidate is accepted, only how many are scored ahead of the
+    acceptance - which is what lets a converged climb agree across machines with
+    different core counts.
 
     Lock, the filter that never goes stale, is applied once up front: no swap
     moves a locked unit, whatever its tier.
@@ -465,10 +472,12 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
     width = 1 if j is None else 2      # decks re-scored per candidate
     improved = False
     start = 0
-    while start < len(candidates):
-        if time.monotonic() >= deadline:
-            return improved
-        chunk = candidates[start:start + batch]
+    used = 0
+    while start < len(candidates) and used < share:
+        # Truncating the chunk to what the share still allows is what keeps the
+        # cut point off the machine: a wider batch would otherwise overshoot the
+        # share by up to its own width.
+        chunk = candidates[start:start + min(batch, share - used)]
         trials = []
         for a, k in chunk:
             deck_i = list(decks[i])
@@ -486,6 +495,7 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
                         None)
         if accepted is None:
             start += len(chunk)
+            used += len(chunk)
             continue
         a, k = chunk[accepted]
         decks[i][a], partner[k] = partner[k], decks[i][a]
@@ -494,6 +504,7 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
             scores[j] = totals[accepted * width + 1]
         improved = True
         start += accepted + 1
+        used += accepted + 1
         if seated is not None:
             # `partner[k]` now holds the unit that LEFT deck i, and the character
             # who came in occupies decks[i][a]. Both sides of that exchange move,
@@ -504,7 +515,7 @@ def _try_swaps(decks, scores, i, partner, j, boss, deadline, locked, pool, batch
             floor = _gimmick_floor(decks, boss)
         candidates = candidates[:start] + [(a2, k2) for a2, k2 in candidates[start:]
                                            if admissible(a2, k2)]
-    return improved
+    return improved, used, start >= len(candidates)
 
 
 def _combined(alloc):

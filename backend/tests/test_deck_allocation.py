@@ -4,7 +4,6 @@ supporters in deck 1 when splitting them wins). All search/sim calls are
 stubbed - real sims live in the API end-to-end test."""
 from dataclasses import dataclass
 import inspect
-import time
 
 import app.deck_allocation as da
 from app.deck_search import BossProfile
@@ -66,7 +65,7 @@ def test_greedy_peels_disjoint_decks_best_first(monkeypatch):
         return 10.0
 
     patch_scorer(monkeypatch, score)
-    out = da.allocate_decks(roster, BossProfile(), num_decks=5, time_budget_sec=0.0)
+    out = da.allocate_decks(roster, BossProfile(), num_decks=5, swap_budget=0)
     assert len(out["decks"]) == 2                      # 10 units -> 2 decks
     assert sorted(out["decks"][0]["deck"]) == ["a1", "a2", "a3", "a4", "a5"]
     used = [slug for d in out["decks"] for slug in d["deck"]]
@@ -78,7 +77,7 @@ def test_partial_roster_returns_fewer_decks(monkeypatch):
     roster = roster_of({"a1": 1, "a2": 2, "a3": 3, "a4": 3, "a5": 3, "x": 3})
     # decks containing x score lower, so the leftover is deterministically x
     patch_scorer(monkeypatch, lambda s: 0.5 if "x" in s else 1.0)
-    out = da.allocate_decks(roster, BossProfile(), num_decks=5, time_budget_sec=0.0)
+    out = da.allocate_decks(roster, BossProfile(), num_decks=5, swap_budget=0)
     assert len(out["decks"]) == 1                      # only one feasible deck
     assert out["leftover_slugs"] == ["x"]              # honest leftover report
 
@@ -99,7 +98,7 @@ def test_swap_pass_fixes_a_greedy_split(monkeypatch):
         return 120.0 if both else 100.0 if one else 10.0
 
     patch_scorer(monkeypatch, score)
-    out = da.allocate_decks(roster, BossProfile(), num_decks=2, time_budget_sec=30.0)
+    out = da.allocate_decks(roster, BossProfile(), num_decks=2, swap_budget=10_000)
     per_deck = [set(d["deck"]) & {"m", "n"} for d in out["decks"]]
     assert all(len(x) == 1 for x in per_deck)          # one buffer per deck
     assert sum(d["total_damage"] for d in out["decks"]) == 200.0
@@ -132,7 +131,7 @@ def test_an_accepted_swap_invalidates_the_rest_of_its_batch(monkeypatch):
     patch_scorer(monkeypatch, _bench_scorer)
 
     da._swap_pass([deck], bench, BossProfile(),
-                  time.monotonic() + 30.0, batch=8)
+                  10_000, batch=8)
 
     assert {u.slug for u in deck} == {"x1", "x2", "y", "x4", "x5"}
     assert sorted(u.slug for u in bench) == ["x3", "z"]
@@ -148,7 +147,7 @@ def test_batch_width_never_changes_the_outcome(monkeypatch):
         deck, bench = _swap_fixture()
         patch_scorer(monkeypatch, _bench_scorer)
         da._swap_pass([deck], bench, BossProfile(),
-                      time.monotonic() + 30.0, batch=batch)
+                      10_000, batch=batch)
         outcomes.append(([u.slug for u in deck], [u.slug for u in bench]))
 
     assert len(set(map(str, outcomes))) == 1, outcomes
@@ -177,59 +176,26 @@ def test_a_tie_seats_an_opening_skipper_behind_her_tier_mate(monkeypatch):
     assert tier3 == ["mate", "diesel-winter-sweets-highlight"]
 
 
-def test_swap_pass_respects_an_expired_deadline(monkeypatch):
-    """A budget of zero must leave the decks untouched - allocate_decks relies
-    on this to return a valid (if unimproved) allocation with no budget."""
+def test_a_zero_budget_leaves_the_decks_untouched(monkeypatch):
+    """allocate_decks relies on this to return a valid (if unimproved)
+    allocation when the swap phase is given nothing to spend."""
     deck, bench = _swap_fixture()
     before = [u.slug for u in deck]
     patch_scorer(monkeypatch, _bench_scorer)
 
-    da._swap_pass([deck], bench, BossProfile(), time.monotonic() - 1.0)
+    da._swap_pass([deck], bench, BossProfile(), 0)
 
     assert [u.slug for u in deck] == before
-
-
-class _ScoringClock:
-    """A clock that only moves when a deck is SCORED.
-
-    The swap phase's budget is wall-clock, so a test that wants it to bind at a
-    particular point either sleeps (slow, and still a race) or takes the clock
-    over. Simulation is what the budget actually buys, so charging time per
-    scored deck makes "the budget ran out here" exact and instant."""
-
-    def __init__(self, per_score=1.0):
-        self.now = 0.0
-        self.per_score = per_score
-
-    def monotonic(self):
-        return self.now
-
-    def spend(self):
-        self.now += self.per_score
-
-
-def patch_scoring_clock(monkeypatch, scorer, per_score=1.0):
-    """patch_scorer, with each scored deck charged to a _ScoringClock that
-    deck_allocation reads as its own clock. Returns the clock."""
-    clock = _ScoringClock(per_score)
-
-    def timed(slugs):
-        clock.spend()
-        return scorer(slugs)
-
-    patch_scorer(monkeypatch, timed)
-    monkeypatch.setattr(da, "time", clock)
-    return clock
 
 
 def test_the_swap_budget_default_is_the_named_constant():
     """The climb's ceiling is a MEASURED number, and the measurement that chose
     it is written beside the constant. Every test in this file passes an
-    explicit budget, so nothing else here would notice the default drifting
-    back to a bare literal - and a literal in the signature is exactly how the
-    number and the note justifying it come apart."""
-    default = inspect.signature(da.allocate_decks).parameters["time_budget_sec"].default
-    assert default is da.SWAP_TIME_BUDGET_SEC
+    explicit budget, so nothing else here would notice the default drifting back
+    to a bare literal - and a literal in the signature is exactly how the number
+    and the note justifying it come apart."""
+    default = inspect.signature(da.allocate_decks).parameters["swap_budget"].default
+    assert default is da.SWAP_CANDIDATE_BUDGET
 
 
 def test_the_climb_never_swaps_a_taste_variant_into_a_deck_that_cannot_induce_it(monkeypatch):
@@ -246,7 +212,7 @@ def test_the_climb_never_swaps_a_taste_variant_into_a_deck_that_cannot_induce_it
     patch_scorer(monkeypatch,
                  lambda slugs: 500.0 if "bready-lingering" in slugs else 100.0)
 
-    da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0, batch=8)
+    da._swap_pass([deck], bench, BossProfile(), 10_000, batch=8)
 
     assert [u.slug for u in deck] == ["x1", "x2", "x3", "x4", "x5"]
     assert [u.slug for u in bench] == ["bready-lingering"]
@@ -279,15 +245,14 @@ def test_a_binding_budget_still_reaches_the_last_deck(monkeypatch):
             return 10.0
         return 100.0
 
-    clock = patch_scoring_clock(monkeypatch, score)
-    # A full pass over this fixture scores ~180 decks and reaches the last
-    # deck's bench item at ~141. 130 therefore binds partway through the
-    # SECOND deck - the same shape as the real run, where the budget went while
-    # deck 1 was still being worked.
-    deadline = clock.monotonic() + 130.0
-    da._swap_pass(decks, bench, BossProfile(), deadline)
+    patch_scorer(monkeypatch, score)
+    # Six work items ((0,1) (0,2) (0,bench) (1,2) (1,bench) (2,bench)), so a
+    # budget of 60 gives each of them ten candidates - enough for the last one
+    # to reach `w`, who is the first bench unit it judges. Spending it all on
+    # the first item, the way an unfair split does, never gets there.
+    converged = da._swap_pass(decks, bench, BossProfile(), 60)
 
-    assert clock.monotonic() >= deadline, (
+    assert not converged, (
         "the budget never bound, so this fixture proves nothing about a climb "
         "that is cut off")
     assert "w" in [u.slug for u in decks[2]], (
@@ -324,7 +289,7 @@ def test_peeling_never_spends_one_character_on_two_decks(monkeypatch):
         return 10.0
 
     patch_scorer(monkeypatch, score)
-    out = da.allocate_decks(roster, BossProfile(), num_decks=2, time_budget_sec=0.0)
+    out = da.allocate_decks(roster, BossProfile(), num_decks=2, swap_budget=0)
 
     seated = [slug for d in out["decks"] for slug in d["deck"]]
     assert MODE_A in seated                       # the 100-point deck still wins
@@ -353,7 +318,7 @@ def test_peeling_never_spends_a_favorite_item_character_on_two_decks(monkeypatch
         return 10.0
 
     patch_scorer(monkeypatch, score)
-    out = da.allocate_decks(roster, BossProfile(), num_decks=2, time_budget_sec=0.0)
+    out = da.allocate_decks(roster, BossProfile(), num_decks=2, swap_budget=0)
 
     seated = [slug for d in out["decks"] for slug in d["deck"]]
     assert "miranda" in seated                       # the 100-point deck still wins
@@ -380,7 +345,7 @@ def test_a_bench_swap_never_seats_a_character_already_holding_a_seat(monkeypatch
 
     patch_scorer(monkeypatch, score)
     da._swap_pass([deck_a, deck_b], bench, BossProfile(),
-                  time.monotonic() + 30.0, batch=8)
+                  10_000, batch=8)
 
     seated = [u.slug for u in deck_a] + [u.slug for u in deck_b]
     assert MODE_A in seated                       # deck 1 takes the better one
@@ -405,7 +370,7 @@ def test_a_bench_swap_may_change_the_decks_burst_tier_shape(monkeypatch):
         return 200.0 if "x1" in slugs else 90.0
 
     patch_scorer(monkeypatch, score)
-    da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0, batch=8)
+    da._swap_pass([deck], bench, BossProfile(), 10_000, batch=8)
 
     assert "y" in [u.slug for u in deck]
     assert sorted(u.burst_tier for u in deck) == [1, 1, 2, 3, 3]
@@ -425,7 +390,7 @@ def test_a_cross_tier_swap_that_leaves_an_unfieldable_shape_is_refused(monkeypat
     patch_scorer(monkeypatch,
                  lambda slugs: 200.0 if {"y", "x1", "x3", "x4", "x5"} <= slugs
                  else 100.0)
-    da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0, batch=8)
+    da._swap_pass([deck], bench, BossProfile(), 10_000, batch=8)
 
     assert [u.slug for u in deck] == before
     assert [u.slug for u in bench] == ["y"]
@@ -448,7 +413,7 @@ def test_an_accepted_cross_tier_swap_re_judges_the_candidates_behind_it(monkeypa
         return 100.0 + 50.0 * len({"y", "z"} & slugs)
 
     patch_scorer(monkeypatch, score)
-    da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0, batch=8)
+    da._swap_pass([deck], bench, BossProfile(), 10_000, batch=8)
 
     assert sorted(u.burst_tier for u in deck) == [1, 1, 2, 3, 3]
     assert len({"y", "z"} & {u.slug for u in deck}) == 1
@@ -472,7 +437,7 @@ def test_a_drafted_character_is_seated_in_the_mode_that_scores_best(monkeypatch)
     out = da.allocate_decks(
         list(by_slug.values()), BossProfile(), num_decks=1, draft=[seed],
         alternatives={MODE_A: (by_slug[MODE_A], by_slug[MODE_B])},
-        time_budget_sec=0.0)
+        swap_budget=0)
 
     seated = out["decks"][0]["deck"]
     assert MODE_B in seated                     # the better mode won
@@ -494,7 +459,7 @@ def test_a_lock_on_a_drafted_character_holds_whichever_mode_was_chosen(monkeypat
         return 500.0 if "y" in slugs and MODE_B not in slugs else 100.0
 
     patch_scorer(monkeypatch, score)
-    da._swap_pass([deck], bench, BossProfile(), time.monotonic() + 30.0,
+    da._swap_pass([deck], bench, BossProfile(), 10_000,
                   locked=frozenset({"cinderella-crystal-wave"}), batch=8)
 
     assert MODE_B in [u.slug for u in deck]      # the lock held
@@ -517,18 +482,19 @@ def test_a_draft_spending_one_character_twice_is_infeasible(monkeypatch):
 
     with pytest.raises(da.InfeasibleDraft, match="cinderella-crystal-wave"):
         da.allocate_decks(list(by_slug.values()), BossProfile(), num_decks=2,
-                          draft=draft, time_budget_sec=0.0)
+                          draft=draft, swap_budget=0)
 
 
 def test_allocate_decks_workers_parity():
     # Real 5-spec roster (stubs can't cross the SimPool process/module
-    # boundary); time_budget_sec=0 keeps the wall-clock-capped swap phase out
-    # of the comparison.
+    # boundary); swap_budget=0 keeps this comparison on the peel alone. The
+    # climb's own worker-parity is asserted under a BINDING budget by
+    # test_a_binding_budget_agrees_across_worker_counts.
     from tests.test_deck_search import real_five_roster, short_boss
 
     roster, boss = real_five_roster(), short_boss()
-    serial = da.allocate_decks(roster, boss, num_decks=2, time_budget_sec=0.0)
-    pooled = da.allocate_decks(roster, boss, num_decks=2, time_budget_sec=0.0, workers=2)
+    serial = da.allocate_decks(roster, boss, num_decks=2, swap_budget=0)
+    pooled = da.allocate_decks(roster, boss, num_decks=2, swap_budget=0, workers=2)
     assert [d["deck"] for d in pooled["decks"]] == [d["deck"] for d in serial["decks"]]
     assert [d["total_damage"] for d in pooled["decks"]] == [d["total_damage"] for d in serial["decks"]]
     assert pooled["leftover_slugs"] == serial["leftover_slugs"]
@@ -570,7 +536,7 @@ def test_allocation_fits_the_surrogate_once_for_the_whole_peel(monkeypatch):
     monkeypatch.setattr(da, "cached_fit_surrogate", counting_fit)
 
     da.allocate_decks(_wide_roster(), BossProfile(), num_decks=3,
-                      time_budget_sec=0.0)
+                      swap_budget=0)
 
     assert fits["n"] == 1
 
@@ -585,7 +551,7 @@ def test_small_rosters_never_fit_a_surrogate(monkeypatch):
                         lambda *a, **k: fits.__setitem__("n", fits["n"] + 1))
 
     da.allocate_decks(roster_of({"a1": 1, "a2": 2, "a3": 3, "a4": 3, "a5": 3}),
-                      BossProfile(), num_decks=1, time_budget_sec=0.0)
+                      BossProfile(), num_decks=1, swap_budget=0)
 
     assert fits["n"] == 0
 
@@ -609,7 +575,7 @@ def test_complete_draft_never_fits_a_surrogate(monkeypatch):
     ]
 
     out = da.allocate_decks(roster, BossProfile(), num_decks=3, draft=draft,
-                            time_budget_sec=0.0)
+                            swap_budget=0)
 
     assert len(out["decks"]) == 3
     assert fits["n"] == 0
