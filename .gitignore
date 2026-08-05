@@ -3,6 +3,9 @@ __pycache__/
 .pytest_cache/
 data/cache/
 node_modules/
+
+# Brainstorming companion sessions (mockups + server state)
+.superpowers/
 .env
 .claude/worktrees/
 .claude/skills/*-workspace/
