@@ -44,10 +44,28 @@ _MIN_SWAP_BATCH = 4
 # cycle. This number bounds only how long getting there may take - and the UI
 # offers cancel besides (RecommendPanel.tsx's 취소 button).
 #
-# PROVISIONAL - large enough that it never binds, so the climb always runs to
-# convergence. Task 5 of docs/superpowers/plans/2026-08-05-search-reproducibility.md
-# replaces it with a measured value and the table that justifies it.
-SWAP_CANDIDATE_BUDGET = 1_000_000
+# Measured by scripts/measure_swap_budget.py on Fienn's roster (78 usable,
+# 5 decks, Fire boss / 수냉 약점, DEF 31,784, 180 s, workers=auto):
+#
+#     속성 저지   candidates to converge   swap took   end-to-end     5-deck total
+#            on                    3,331     140.6 s     182.2 s   36,021,146,063
+#           off                    3,735     120.8 s     163.2 s   37,260,609,321
+#
+# The peel alone scores 28,990,691,285 there, so the climb is worth +24.2%.
+# The two conditions disagree in direction: the gimmick makes convergence cost
+# FEWER candidates but MORE seconds, since its floor check is paid per candidate.
+# The ceiling is counted in candidates, so it is set against the heavier of those
+# - 20,000 is 5.4x of 3,735.
+#
+# Why that much headroom: candidate lists scale with the bench, and this roster
+# benches ~53 units where a player owning every unit benches ~134 - roughly 2.5x
+# the candidates per work item, with more passes on top. 3-5x is an ESTIMATE, not
+# a measurement, which is why the multiple is generous. Caveat: ONE roster.
+#
+# Candidates, not seconds, so what this buys in wall clock depends on the
+# machine: a converging run here spends about two minutes, and this ceiling would
+# be roughly eleven if it ever bound.
+SWAP_CANDIDATE_BUDGET = 20_000
 
 
 class InfeasibleDraft(ValueError):
