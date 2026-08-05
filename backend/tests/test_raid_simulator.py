@@ -1927,6 +1927,44 @@ def test_self_scoped_cdr_only_reduces_the_casters_cooldown():
     assert starts == pytest.approx([5.0, 45.0])
 
 
+def test_battle_start_cdr_pulse_is_not_banked_into_the_first_cycle():
+    # Mirrors Anis: Star's Starfall, which registers the SAME action on BOTH
+    # battle_start and full_burst_end (skill_rules/anis_star.py's alone_branch)
+    # - at battle start nothing has bursted, so that pulse has nothing to
+    # reduce and must be discarded there, not carried forward to double up
+    # with cycle 1's own pulse.
+    def emit_cdr_pulse(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("burst_cooldown_reduction_sec", 20.0, "squad", caster_slug))
+
+    rules_by_slug = {
+        "buffer": [
+            SkillRule(trigger="battle_start", action=emit_cdr_pulse),
+            SkillRule(trigger="full_burst_end", action=emit_cdr_pulse),
+        ],
+        "midtier": [],
+        "attacker": [],
+    }
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=1000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=30.0,
+        mode="auto",
+    )
+    # Cycle 1 fires all three tiers at t=5 (last_used_at=-inf for everyone),
+    # Full Burst ends at t=15. A single 20s reduction there (cycle 1's own
+    # pulse only) leaves attacker (40s cooldown, last used t=5) ready at
+    # 5-20+40=25, one gauge_charge_time above the 20.0 floor - cycle 2 opens
+    # at 25.0. If the battle_start pulse were still queued and drained
+    # alongside it, the pair would sum to a 40s reduction (ready at 5.0) and
+    # cycle 2 would open at the 20.0 gauge floor instead.
+    attacker_hits = [e for e in result["damage_log"] if e["slug"] == "attacker"]
+    assert [e["time"] for e in attacker_hits] == pytest.approx([5.0, 25.0])
+
+
 def test_full_burst_enter_and_full_burst_end_triggers_fire_for_all_members():
     enter_calls = []
     end_calls = []

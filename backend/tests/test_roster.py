@@ -321,7 +321,23 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     )["total_damage"]
 
     assert dmg_with > dmg_without
-    # Golden pin. Re-baselined 2026-07-31 (latest): the reload model went affine
+    # Golden pin. Re-baselined 2026-08-05 (latest): the battle-start
+    # burst-cooldown-reduction pulse Anis: Star's Starfall grants
+    # (skill_rules/anis_star.py's alone_branch, registered on BOTH
+    # battle_start and full_burst_end) is no longer banked into cycle 1's own
+    # reduction - raid_simulator.on_battle_start now drains it there, since
+    # nothing has bursted yet for it to reduce (Fienn, in-game, 2026-08-05).
+    # She is in minimal_feasible_deck, so her own rotation is what moved:
+    # cycle 1's cooldowns are no longer double-reduced, and the rotation
+    # starts marginally slower. Both absolutes fell - 744,964,664 ->
+    # 694,864,568 without the cube, 792,975,565 -> 742,128,726 with it. The
+    # reload saving's DELTA fell too (48,010,901 -> 47,264,159 - the slower
+    # rotation shifts which shots land inside/outside Full Burst windows for
+    # the buffed run), but LESS than the base did, so the same saving now
+    # buys a marginally larger share of a marginally smaller pie: the RATIO
+    # rose 1.0644 -> 1.0680.
+    #
+    # Re-baselined 2026-07-31: the reload model went affine
     # (`file * (1 - s) + 0.148`), which is exactly this path. The cube's 29.69%
     # now takes 29.69% off the SCALED part instead of dividing the whole reload,
     # so the buff's delta grows: 35,136,487 -> 48,010,901, and the RATIO rises
@@ -396,12 +412,12 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # each of her shots occupies 1.4 sec rather than 1.0. The RATIO FELL
     # 1.0529 -> 1.0494, which is the point of the delay: a reload saving buys
     # the same seconds back, but seconds are worth fewer shots now.
-    assert round(dmg_with / dmg_without, 4) == 1.0644
+    assert round(dmg_with / dmg_without, 4) == 1.068
     # Pin the DELTA too, not just the ratio: the ratio moves whenever anything
     # in this deck's damage moves, but a reload-speed change is the only thing
     # that may move the delta. Splitting them is what stops a re-baseline from
     # quietly absorbing a real regression in the reload path.
-    assert round(dmg_with - dmg_without, 0) == 48_010_901.0
+    assert round(dmg_with - dmg_without, 0) == 47_264_159.0
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

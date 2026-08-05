@@ -774,6 +774,15 @@ def simulate_raid(
     def on_battle_start(time):
         fire_trigger("battle_start", rules_by_slug, context, registry, time)
         drain_instant_damage(0.0)
+        # A burst-cooldown cut emitted at battle start has nothing to cut: no
+        # burst has been used, so every unit's last-used time is -inf and the
+        # reduction is a no-op. Draining it here is what makes it one - pulses
+        # are otherwise collected only at Full Burst end, so this one would be
+        # banked and paid against the FIRST cycle's real cooldowns on top of
+        # that cycle's own cut (Anis: Star grants hers on both battle_start and
+        # full_burst_end; in game the squad receives 7.48 sec after cycle one,
+        # not twice that - Fienn, 2026-08-05).
+        registry.drain_pulses("burst_cooldown_reduction_sec")
 
     def on_tier_fire(tier, slug, time):
         context.burst_used_this_cycle.add(slug)
