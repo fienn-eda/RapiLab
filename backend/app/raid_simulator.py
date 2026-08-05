@@ -1413,6 +1413,15 @@ def simulate_raid(
                     _tick(tick)
                     tick += interval
         else:
+            # The reduction is sampled once at the tick that starts each
+            # step and fixes that step's whole length - not re-read as the
+            # step plays out, so a buff lapsing partway through a step does
+            # not split it; the step keeps running at the rate it started
+            # with. Same shape as the during_full_burst branch above, which
+            # fixes each window's interval from the state at the window's
+            # start rather than tracking it continuously - acceptable here
+            # for the same reason: the loop only needs a rate at the instant
+            # it advances, not a sub-interval-accurate one.
             skill_slot = spec.get("cooldown_skill_slot")
             target = target_for(slug)
             tick = cooldown
