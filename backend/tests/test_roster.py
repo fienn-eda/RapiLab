@@ -1,8 +1,9 @@
 from app import roster
 from app.effects import Effect
-from app.models import OverloadOption
+from app.models import OverloadOption, UserNikkeState
 from app.raid_simulator import simulate_raid
 from app.roster import NikkeSpec, assemble_simulation_inputs
+from app.user_roster import load_roster
 
 
 def helm_spec(overload_options=None):
@@ -407,3 +408,23 @@ def test_weapon_mode_schedules_key_exists_in_assembled_inputs():
     inputs = assemble_simulation_inputs(minimal_feasible_deck())
     assert "weapon_mode_schedules" in inputs
     assert inputs["weapon_mode_schedules"] == {}
+
+
+def test_assemble_puts_the_full_burst_delta_on_the_member_only_when_nonzero():
+    # Real data files (via load_roster) rather than a hand-built NikkeSpec:
+    # isabel's -5.0 comes from registry.FULL_BURST_DURATION_DELTA keyed by her
+    # slug, so the roster-loading path has to be the one under test.
+    states = [
+        UserNikkeState(
+            character_slug=slug, level=200,
+            hp=1_000_000.0, atk=60_000.0, def_=3_000.0,
+            skill_levels={"skill1": 10, "skill2": 10, "burst": 10},
+        )
+        for slug in ("liter", "arcana", "isabel")
+    ]
+    specs, _excluded = load_roster(states)
+    inputs = assemble_simulation_inputs(specs)
+    by_slug = {m["slug"]: m for m in inputs["deck"]}
+
+    assert by_slug["isabel"]["full_burst_duration_delta"] == -5.0
+    assert "full_burst_duration_delta" not in by_slug["arcana"]

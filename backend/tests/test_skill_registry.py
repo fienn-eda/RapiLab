@@ -7,6 +7,7 @@ from app.skill_rules.registry import (
     get_burst_resolves_after_cast,
     get_burst_hit_count,
     get_clip_reload_splits,
+    get_full_burst_duration_delta,
     get_per_shot_rules,
     get_periodic_nuke,
     get_periodic_rules,
@@ -286,3 +287,17 @@ def test_both_builds_of_a_clip_unit_share_the_count():
     for base in ("centi", "drake", "sugar"):
         assert (get_clip_reload_splits(base)
                 == get_clip_reload_splits(f"{base}-signature"))
+
+
+def test_isabel_shortens_the_full_burst_window():
+    # Sonic Chaser: "Full Burst Time (down) 5 sec."
+    assert get_full_burst_duration_delta("isabel") == -5.0
+
+
+def test_modernia_lengthens_the_full_burst_window():
+    # New World: "Full Burst Duration (up) 5 sec."
+    assert get_full_burst_duration_delta("modernia") == 5.0
+
+
+def test_a_unit_that_does_not_touch_the_window_reads_zero():
+    assert get_full_burst_duration_delta("arcana") == 0.0

@@ -26,6 +26,7 @@ from app.skill_rules.registry import (
     get_burst_resolves_after_cast,
     get_charge_motion_delay,
     get_burst_delay,
+    get_full_burst_duration_delta,
     get_self_stun,
     get_burst_hit_count,
     get_per_shot_rules,
@@ -118,6 +119,9 @@ def assemble_simulation_inputs(ordered_deck):
         burst_delay = get_burst_delay(spec.slug, spec.skill_values)
         if burst_delay:
             member["burst_delay"] = burst_delay
+        full_burst_delta = get_full_burst_duration_delta(spec.slug)
+        if full_burst_delta:
+            member["full_burst_duration_delta"] = full_burst_delta
         # Deck-dependent, so it is read here rather than baked into the spec:
         # who else is seated decides whether Mast ever reaches the Drunken cap
         # that stuns her.

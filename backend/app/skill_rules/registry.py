@@ -712,6 +712,20 @@ def get_burst_cooldown_reduction(slug, skill_values):
     return builder(skill_values) if builder else 0.0
 
 
+# 자기 버스트가 풀 버스트 창 자체의 길이를 바꾸는 Burst 3. 값이 스킬 데이터 슬롯이
+# 아니라 설명문에 박힌 리터럴이라 여기 적는다(그레이브의 "10 sec"와 같은 사정).
+# 효과는 그 유닛이 연 사이클에만 걸린다 - burst_cycle이 티어 3을 쏜 멤버에게서 읽는다.
+FULL_BURST_DURATION_DELTA: dict[str, float] = {
+    "isabel": -5.0,     # Sonic Chaser: "Full Burst Time ▼ 5 sec."
+    "modernia": 5.0,    # New World:    "Full Burst Duration ▲ 5 sec."
+}
+
+
+def get_full_burst_duration_delta(slug: str) -> float:
+    """이 유닛의 버스트가 풀 버스트 창을 몇 초 움직이는가 (대부분 0.0)."""
+    return FULL_BURST_DURATION_DELTA.get(slug, 0.0)
+
+
 # A variant seated in a different burst-rotation slot than the character's
 # nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
 VARIANT_BURST_TIERS: dict[str, int] = {
