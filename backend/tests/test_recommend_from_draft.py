@@ -258,9 +258,11 @@ def test_a_converged_allocation_reports_that_it_converged(monkeypatch):
 
 
 def test_a_budget_that_binds_reports_that_it_did_not_converge(monkeypatch):
-    """allocate_decks' flag has to survive the trip up through
-    recommend_from_draft - including the branch that rebuilds `recommended`
-    from within_draft, which carries only the keys it is handed."""
+    """Pins the flag at the layer that produces it: allocate_decks itself must
+    report False when its own swap_budget cuts the climb short. (The trip up
+    through recommend_from_draft's three-call fold is a separate question,
+    covered below by
+    test_a_budget_that_binds_folds_into_recommend_from_draft_as_not_converged.)"""
     roster = roster_of({
         "a1": 1, "a2": 2, "a3": 3, "a4": 3, "a5": 3,
         "b1": 1, "b2": 2, "b3": 3, "b4": 3, "b5": 3,
@@ -270,3 +272,27 @@ def test_a_budget_that_binds_reports_that_it_did_not_converge(monkeypatch):
     alloc = da.allocate_decks(roster, BOSS, num_decks=2, swap_budget=1)
 
     assert alloc["swap_converged"] is False
+
+
+def test_a_budget_that_binds_folds_into_recommend_from_draft_as_not_converged(monkeypatch):
+    """The flag has to survive the trip up through recommend_from_draft, which
+    for a COMPLETE draft makes three allocate_decks calls (`recommended`, and
+    within_draft's `w`/`s`) and folds their flags with all() at
+    deck_allocation.py:653. recommend_from_draft has no swap_budget parameter
+    of its own, so this pins every call's budget down to 1 by wrapping
+    allocate_decks itself - proving the fold sees a real cut-off climb, not
+    just the layer that produces the flag directly (the test above)."""
+    patch_scorer(monkeypatch, _score)
+    r = _roster()
+    draft = _complete_draft(r)
+    real_allocate_decks = da.allocate_decks
+
+    def budget_of_one(*args, **kwargs):
+        kwargs["swap_budget"] = 1
+        return real_allocate_decks(*args, **kwargs)
+
+    monkeypatch.setattr(da, "allocate_decks", budget_of_one)
+
+    out = da.recommend_from_draft(r, BOSS, num_decks=2, draft=draft, workers=None)
+
+    assert out["swap_converged"] is False
