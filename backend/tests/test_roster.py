@@ -412,7 +412,7 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # each of her shots occupies 1.4 sec rather than 1.0. The RATIO FELL
     # 1.0529 -> 1.0494, which is the point of the delay: a reload saving buys
     # the same seconds back, but seconds are worth fewer shots now.
-    assert round(dmg_with / dmg_without, 4) == 1.068
+    assert round(dmg_with / dmg_without, 4) == 1.0680
     # Pin the DELTA too, not just the ratio: the ratio moves whenever anything
     # in this deck's damage moves, but a reload-speed change is the only thing
     # that may move the delta. Splitting them is what stops a re-baseline from

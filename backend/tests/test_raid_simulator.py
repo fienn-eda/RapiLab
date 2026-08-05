@@ -1955,12 +1955,13 @@ def test_battle_start_cdr_pulse_is_not_banked_into_the_first_cycle():
         mode="auto",
     )
     # Cycle 1 fires all three tiers at t=5 (last_used_at=-inf for everyone),
-    # Full Burst ends at t=15. A single 20s reduction there (cycle 1's own
-    # pulse only) leaves attacker (40s cooldown, last used t=5) ready at
-    # 5-20+40=25, one gauge_charge_time above the 20.0 floor - cycle 2 opens
-    # at 25.0. If the battle_start pulse were still queued and drained
-    # alongside it, the pair would sum to a 40s reduction (ready at 5.0) and
-    # cycle 2 would open at the 20.0 gauge floor instead.
+    # Full Burst ends at t=15.000001 (FULL_BURST_OPEN_DELAY carried through).
+    # A single 20s reduction there (cycle 1's own pulse only) leaves attacker
+    # (40s cooldown, last used t=5) ready at 5-20+40=25, one gauge_charge_time
+    # above the 20.000001 floor - cycle 2 opens at 25.0. If the battle_start
+    # pulse were still queued and drained alongside it, the pair would sum to
+    # a 40s reduction (ready at 5.0) and cycle 2 would open at the 20.000001
+    # gauge floor instead.
     attacker_hits = [e for e in result["damage_log"] if e["slug"] == "attacker"]
     assert [e["time"] for e in attacker_hits] == pytest.approx([5.0, 25.0])
 
