@@ -11,10 +11,25 @@
   min-height: 100svh;
 }
 
+/* Title on the left, account picker on the right. They wrap onto separate
+   lines rather than squeezing when the window is too narrow to hold both. */
 .app__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sp-2) var(--sp-5);
+}
+
+.app__masthead {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+}
+
+/* An auto margin rather than space-between: it keeps the picker on the right
+   even after it has wrapped onto a line of its own. */
+.app__header .profile-switcher {
+  margin-left: auto;
 }
 
 .app__title {
@@ -74,6 +89,16 @@
   color: var(--text-muted);
 }
 
+/* The burst icon that heads a tier group, in both the roster grid and the
+   recommend palette. The three icons are Roman numerals of one height and
+   three widths, so height is fixed and width follows. The type properties on
+   the headings above stay: they style the alt text if the image ever fails. */
+.burst-heading__icon {
+  display: block;
+  height: 22px;
+  width: auto;
+}
+
 /* Auto-fill rather than a fixed column count: a tile is as wide as its
    overload lines need and the row reflows to the window. */
 .roster__grid {
@@ -88,6 +113,13 @@
    tab has the width for one row and the recommend palette does not, and a
    toolbar that scrolls sideways hides the controls it exists to offer. */
 .unit-filter {
+  /* The toolbar sets its own type scale rather than each control naming a
+     size, so the whole row can be resized from one place. Labels and chips
+     take the smaller of the two; anything you type into or pick from takes
+     the larger. */
+  --filter-text: 18px;
+  --filter-input: 19.5px;
+
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
@@ -105,7 +137,7 @@
 }
 
 .unit-filter__label {
-  font-size: 12px;
+  font-size: var(--filter-text);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -119,7 +151,7 @@
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--filter-input);
 }
 
 .unit-filter__search:focus-visible {
@@ -135,7 +167,7 @@
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--filter-input);
 }
 
 .unit-filter__select:focus-visible {
@@ -157,7 +189,7 @@
   background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--filter-text);
   cursor: pointer;
 }
 
@@ -217,7 +249,7 @@
   align-items: baseline;
   gap: var(--sp-2);
   margin: 0;
-  font-size: 12px;
+  font-size: var(--filter-text);
   color: var(--text-muted);
 }
 
@@ -227,7 +259,7 @@
   background: transparent;
   color: var(--accent);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--filter-text);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -239,7 +271,7 @@
 
 .unit-filter__empty {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--filter-input);
   color: var(--text-muted);
 }
 

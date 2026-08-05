@@ -74,7 +74,16 @@ export function RosterGrid({ drafts, supportedUnits, portraitFor }: RosterGridPr
         if (units.length === 0) return null
         return (
           <section key={tier} className="roster__group">
-            <h2 className="roster__heading">B{tier}</h2>
+            {/* The game's own burst icon carries the tier. Its alt is what
+                names the heading, so the section is still "B1" to a reader
+                who never sees the image. */}
+            <h2 className="roster__heading">
+              <img
+                className="burst-heading__icon"
+                src={`/elements/icon-burst-${tier}.png`}
+                alt={`B${tier}`}
+              />
+            </h2>
             <div className="roster__grid">
               {units.map((draft, index) => {
                 const unit = bySlug.get(draft.character_slug)!
