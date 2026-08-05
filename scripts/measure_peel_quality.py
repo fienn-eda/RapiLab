@@ -14,7 +14,7 @@ causes with opposite fixes:
               the cascade's narrowing being paid back late, and the fix belongs
               in the pool, not in swap
 
-This runs the peel both ways with the swap phase disabled (time_budget_sec=0),
+This runs the peel both ways with the swap phase disabled (swap_budget=0),
 so the comparison isolates the decks peeling itself produces. Cascade-off is
 the pre-cascade shipped path (pruned exhaustive), reached by making the fit
 return None.
@@ -61,7 +61,7 @@ def _run(specs, boss, decks, cascade_on, real_fit):
     try:
         started = time.perf_counter()
         out = da.allocate_decks(specs, boss, num_decks=decks,
-                                time_budget_sec=0.0, workers=1)
+                                swap_budget=0, workers=1)
         elapsed = time.perf_counter() - started
     finally:
         ds.evaluate_deck = real_evaluate
