@@ -488,8 +488,8 @@ def test_a_draft_spending_one_character_twice_is_infeasible(monkeypatch):
 def test_allocate_decks_workers_parity():
     # Real 5-spec roster (stubs can't cross the SimPool process/module
     # boundary); swap_budget=0 keeps this comparison on the peel alone. The
-    # climb's own worker-parity is asserted under a BINDING budget by
-    # test_a_binding_budget_agrees_across_worker_counts.
+    # climb's own width-independence under a BINDING budget is asserted by
+    # test_batch_width_never_changes_a_cut_off_climb_either.
     from tests.test_deck_search import real_five_roster, short_boss
 
     roster, boss = real_five_roster(), short_boss()
@@ -498,6 +498,37 @@ def test_allocate_decks_workers_parity():
     assert [d["deck"] for d in pooled["decks"]] == [d["deck"] for d in serial["decks"]]
     assert [d["total_damage"] for d in pooled["decks"]] == [d["total_damage"] for d in serial["decks"]]
     assert pooled["leftover_slugs"] == serial["leftover_slugs"]
+
+
+def test_batch_width_never_changes_a_cut_off_climb_either(monkeypatch):
+    """The reproducibility guarantee, at the only point it can fail.
+
+    Worker count reaches the climb as batch width (`worker_count *
+    SWAP_BATCH_PER_WORKER`), and a CONVERGED climb agrees across widths whatever
+    the budget is counted in - it runs out of improving swaps either way, which
+    test_batch_width_never_changes_the_outcome already pins. What can disagree is
+    a climb the budget CUTS: a wider batch consuming the budget faster stops
+    somewhere else. Charging by how far the candidate walk advanced, and
+    truncating each batch to the share that is left, makes the cut land on the
+    same candidate at every width.
+    """
+    outcomes = []
+    for batch in (1, 4, 64):
+        decks = [[Unit(f"{p}1", 3), Unit(f"{p}2", 1), Unit(f"{p}3", 2),
+                  Unit(f"{p}4", 3), Unit(f"{p}5", 3)] for p in "abc"]
+        bench = [Unit(f"f{i}", 3) for i in range(11)]
+        # Every f unit seated is worth more, so acceptances happen throughout -
+        # the walk's accept path is where batch width could diverge.
+        patch_scorer(monkeypatch, lambda slugs: 100.0 + 5.0 * len(
+            [s for s in slugs if s.startswith("f")]))
+        converged = da._swap_pass(decks, bench, BossProfile(), 40, batch=batch)
+        outcomes.append((converged,
+                         [[u.slug for u in deck] for deck in decks],
+                         sorted(u.slug for u in bench)))
+
+    assert outcomes[0][0] is False, (
+        "the budget never bound, so this proves only what convergence already did")
+    assert len(set(map(str, outcomes))) == 1, outcomes
 
 
 def test_a_cut_off_climb_returns_the_same_allocation_twice(monkeypatch):
