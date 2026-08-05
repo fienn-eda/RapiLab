@@ -271,6 +271,28 @@ def own_burst_fired_this_cycle() -> Callable[[SquadContext, str], bool]:
     return check
 
 
+def own_burst_status_active(seconds: float) -> Callable[[SquadContext, str, float], bool]:
+    """자기 버스트가 자신에게 건 상태가 그 시각에 아직 살아 있는가.
+
+    부여 시점은 그 버스트를 쓴 시각이므로 별도 상태 기록이 필요 없다
+    (`SquadContext.burst_times`). 한 번도 버스트하지 않았으면 거짓.
+
+    `own_burst_fired_this_cycle()`가 답할 수 없는 질문이다: 그쪽은 시계가 없어서
+    부여 이후 `seconds`가 지났는지 구별하지 못한다. 풀 버스트 창 하나를 사이에 둔
+    `full_burst_end` 게이트에서는 그 차이가 전부다 - 아르카나의 운명의 수레바퀴는
+    10초짜리인데 그녀는 버스트 스테이지 2에서 시전하므로, 표준 10초 창이 끝날 때는
+    이미 만료돼 있다.
+    """
+
+    def check(context: SquadContext, caster_slug: str, time: float) -> bool:
+        times = context.burst_times.get(caster_slug)
+        if not times:
+            return False
+        return times[-1] + seconds > time
+
+    return check
+
+
 def ally_bursted(slug: str) -> Callable[[SquadContext, str], bool]:
     """Condition for an `ally_burst_activate` rule: the unit whose burst just
     fired is `slug` (e.g. Prika's Encore fires when Mint bursts). Reads
@@ -384,11 +406,21 @@ def _always_true(context: SquadContext, caster_slug: str) -> bool:
     return True
 
 
+def _always_true_at(context: SquadContext, caster_slug: str, time: float) -> bool:
+    return True
+
+
 @dataclass
 class SkillRule:
     trigger: str
     action: Callable[[SquadContext, str, float, EffectRegistry], None]
     condition: Callable[[SquadContext, str], bool] = field(default=_always_true)
+    # 상태의 남은 시간처럼, 트리거가 발동한 시각을 봐야만 답할 수 있는 게이트.
+    # 시각은 언제나 호출자가 넘긴다 - 컨텍스트에 현재 시각을 찍어두고 나중에 읽는
+    # 방식은 호출 지점 하나가 찍기를 빠뜨리면 낡은 값을 에러 없이 반환한다.
+    time_condition: Callable[[SquadContext, str, float], bool] = field(
+        default=_always_true_at
+    )
 
 
 def fire_trigger(trigger, rules_by_slug, context, registry, time):
@@ -397,5 +429,5 @@ def fire_trigger(trigger, rules_by_slug, context, registry, time):
         if matching:
             context.record_activation(slug, trigger)
         for rule in matching:
-            if rule.condition(context, slug):
+            if rule.condition(context, slug) and rule.time_condition(context, slug, time):
                 rule.action(context, slug, time, registry)

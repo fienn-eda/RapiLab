@@ -3573,3 +3573,49 @@ def test_burst_three_cast_is_outside_the_full_burst_window():
     )
     nuke = next(e for e in result["damage_log"] if e["source"] == "instant_nuke")
     assert nuke["damage"] == 10000 * 10.0  # no +0.5 Full Burst bonus
+
+
+def test_time_condition_is_honoured_by_the_periodic_and_per_shot_passes():
+    """세 호출 지점(fire_trigger / periodic_rules / per_shot_rules)이 전부
+    time_condition을 존중하는지. 하나라도 빠지면 그 경로의 게이트가 조용히 열린다."""
+    seen = {"periodic": [], "per_shot": []}
+
+    def never(context, caster_slug, time):
+        return False
+
+    def always(context, caster_slug, time):
+        return True
+
+    def record(bucket):
+        def action(context, caster_slug, time, registry):
+            seen[bucket].append(round(time, 3))
+        return action
+
+    def run(time_condition):
+        seen["periodic"].clear()
+        seen["per_shot"].clear()
+        return simulate_raid(
+            make_deck(),
+            {"buffer": [], "midtier": [], "attacker": []},
+            burst_damage_percents={},
+            base_stats=make_base_stats(attacker_atk=10000),
+            enemy_def=0,
+            gauge_charge_time=5.0,
+            fight_duration=40.0,
+            mode="auto",
+            base_crit_rate=0.0,
+            periodic_rules={"buffer": [(15.0, [SkillRule(
+                trigger="periodic", action=record("periodic"),
+                time_condition=time_condition)])]},
+            weapon_stats={"attacker": _ar_weapon()},
+            per_shot_rules={"attacker": [(5, "every", [SkillRule(
+                trigger="per_shot", action=record("per_shot"),
+                time_condition=time_condition)])]},
+        )
+
+    run(always)
+    assert seen["periodic"], "periodic 패스가 아예 안 돌았다 - 픽스처가 잘못됐다"
+    assert seen["per_shot"], "per-shot 패스가 아예 안 돌았다 - 픽스처가 잘못됐다"
+
+    run(never)
+    assert seen == {"periodic": [], "per_shot": []}

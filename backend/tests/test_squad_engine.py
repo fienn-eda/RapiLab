@@ -13,6 +13,7 @@ from app.squad_engine import (
     no_other_burst_tier_allies,
     not_condition,
     own_burst_fired_this_cycle,
+    own_burst_status_active,
 )
 
 
@@ -427,3 +428,44 @@ def test_boss_core_hittable_condition_reads_context_flag():
     members = [SquadMember("a", 3, "Iron")]
     assert cond(SquadContext(members, core_hittable=True), "a") is True
     assert cond(SquadContext(members), "a") is False
+
+
+def test_time_condition_defaults_to_always_true():
+    fired = []
+    rule = SkillRule(trigger="t", action=lambda c, s, time, r: fired.append(time))
+    ctx = SquadContext([SquadMember("a", burst_tier=1, element="Fire")])
+    fire_trigger("t", {"a": [rule]}, ctx, EffectRegistry(), time=3.0)
+    assert fired == [3.0]
+
+
+def test_a_false_time_condition_blocks_the_action():
+    fired = []
+    rule = SkillRule(
+        trigger="t", action=lambda c, s, time, r: fired.append(time),
+        time_condition=lambda c, s, time: time < 5.0,
+    )
+    ctx = SquadContext([SquadMember("a", burst_tier=1, element="Fire")])
+    fire_trigger("t", {"a": [rule]}, ctx, EffectRegistry(), time=3.0)
+    fire_trigger("t", {"a": [rule]}, ctx, EffectRegistry(), time=7.0)
+    assert fired == [3.0]
+
+
+def test_own_burst_status_active_is_true_only_while_the_status_runs():
+    check = own_burst_status_active(10.0)
+    ctx = SquadContext([SquadMember("a", burst_tier=2, element="Electric")])
+
+    # 한 번도 버스트하지 않았으면 상태가 없다.
+    assert check(ctx, "a", 5.0) is False
+
+    ctx.record_burst_time("a", 2.5)
+    assert check(ctx, "a", 12.4) is True     # 만료 직전
+    assert check(ctx, "a", 12.5) is False    # 정확히 만료
+    assert check(ctx, "a", 12.6) is False    # 만료 후
+
+
+def test_own_burst_status_active_measures_from_the_latest_burst():
+    check = own_burst_status_active(10.0)
+    ctx = SquadContext([SquadMember("a", burst_tier=2, element="Electric")])
+    ctx.record_burst_time("a", 2.5)
+    ctx.record_burst_time("a", 42.5)
+    assert check(ctx, "a", 50.0) is True

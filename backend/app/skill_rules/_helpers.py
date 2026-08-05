@@ -14,13 +14,16 @@ _round_cap_group_ids = count()
 _refresh_group_ids = count()
 
 
-def _rule(trigger, action, condition):
-    """Build a SkillRule, attaching `condition` only when given (None keeps
-    SkillRule's own default of always-true) - so a gated bullet (e.g. a
-    boss-element-conditional debuff) reuses the same builder as an ungated one."""
+def _rule(trigger, action, condition, time_condition=None):
+    """Build a SkillRule, attaching `condition`/`time_condition` only when given
+    (None keeps SkillRule's own always-true defaults) - so a gated bullet (e.g. a
+    boss-element-conditional debuff, or one gated on a status that may have
+    lapsed) reuses the same builder as an ungated one."""
     rule = SkillRule(trigger=trigger, action=action)
     if condition is not None:
         rule.condition = condition
+    if time_condition is not None:
+        rule.time_condition = time_condition
     return rule
 
 
@@ -125,7 +128,8 @@ def highest_atk_buff_rule(trigger, n, buffs):
     return SkillRule(trigger=trigger, action=action)
 
 
-def member_subset_buff_rule(trigger, member_filter, buffs, condition=None, refreshing=False):
+def member_subset_buff_rule(trigger, member_filter, buffs, condition=None,
+                            refreshing=False, time_condition=None):
     """Timed buffs on the squad members selected by `member_filter` at trigger
     time - the narrow subsets Effect.scope can't express ("all Wind Code allies
     with assault rifles", "all Burst 3 allies who previously used their Burst
@@ -148,7 +152,7 @@ def member_subset_buff_rule(trigger, member_filter, buffs, condition=None, refre
             else:
                 registry.add(effect, applied_at=time)
 
-    return _rule(trigger, action, condition)
+    return _rule(trigger, action, condition, time_condition)
 
 
 def round_buff_rule(trigger, buffs, shots=1, cap=None):

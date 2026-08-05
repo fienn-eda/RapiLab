@@ -866,7 +866,7 @@ def simulate_raid(
             tick = cooldown
             while tick < fight_duration:
                 for rule in rules:
-                    if rule.condition(context, slug):
+                    if rule.condition(context, slug) and rule.time_condition(context, slug, tick):
                         rule.action(context, slug, tick, registry)
                 tick += cooldown
 
@@ -1102,7 +1102,8 @@ def simulate_raid(
                     )
                 if fires:
                     for rule in rules:
-                        if rule.condition(context, slug):
+                        if (rule.condition(context, slug)
+                                and rule.time_condition(context, slug, shot_time)):
                             rule.action(context, slug, shot_time, registry)
                     for pulse in registry.drain_pulses("instant_damage_percent"):
                         record(
