@@ -36,7 +36,7 @@ is updated.
 
 Licence: NanumSquare Neo is Naver's, under the SIL Open Font License. Embedding
 and redistribution are permitted; selling the font file by itself is not. The
-notice travels with the font in frontend/public/fonts/LICENSE.txt.
+notice travels with the font in frontend/public/fonts/NOTICE.txt.
 """
 
 import argparse
@@ -185,10 +185,16 @@ def _instance_ink(path, weight, drop_stat=False):
 
 
 def check(path, source):
-    """Confirm a built font lands each CSS weight on the intended master.
+    """Confirm the built font's transform carries each CSS weight to the design
+    position WEIGHT_MAP names for it.
 
-    Compares contour area against the source font instanced at the design value
-    the mapping claims, so a silently wrong `avar` cannot pass.
+    Compares contour area at the built font's CSS weight against the source
+    font instanced at WEIGHT_MAP's paired design value, so a default-move,
+    `avar` segment, or relabel that drifts from what WEIGHT_MAP claims cannot
+    pass silently. It cannot catch WEIGHT_MAP itself being wrong: both sides
+    of the comparison read the same constant, so a mismeasured design value
+    would print `ok` for every row while the built font still renders the
+    wrong master.
     """
     ok = True
     for css_weight, design_value, label in WEIGHT_MAP:
@@ -222,13 +228,6 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.check:
-        if not os.path.isfile(args.output):
-            print(f"error: nothing built at {args.output}", file=sys.stderr)
-            return 1
-        print(f"checking {args.output}")
-        return 0 if check(args.output, args.source) else 1
-
     if not os.path.isfile(args.source):
         print(
             f"error: source font not found at {args.source}\n"
@@ -237,6 +236,13 @@ def main():
             file=sys.stderr,
         )
         return 1
+
+    if args.check:
+        if not os.path.isfile(args.output):
+            print(f"error: nothing built at {args.output}", file=sys.stderr)
+            return 1
+        print(f"checking {args.output}")
+        return 0 if check(args.output, args.source) else 1
 
     os.makedirs(os.path.dirname(args.output), exist_ok=True)
     font = build(args.source)
