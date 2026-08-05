@@ -942,6 +942,28 @@
 
 로드맵보다 잘게 쪼갠 실행 항목. 끝나면 `[x]`로 체크.
 
+### 사이클별 풀 버스트 길이 + 아르카나 수레바퀴 게이트 정정 (2026-08-05, 제보 조사에서 착지)
+
+- [x] **아르카나의 조건부 불릿 셋(Magician/Strength/Death)이 실제로 창을 줄이는
+      Burst 3 뒤에서만 발동하도록 정정 — 완료 (`wip/arcana-wheel-gate-review`
+      브랜치, 트렁크 미병합).** 스펙
+      `docs/superpowers/specs/2026-08-05-per-cycle-full-burst-length-design.md`,
+      계획 `docs/superpowers/plans/2026-08-05-per-cycle-full-burst-length.md`,
+      구현 커밋 `aa5388a7`~`718fd420`(10개) + 상호작용 테스트·뮤테이션 확인·문서
+      정리(Task 8). 풀 버스트 창 길이가 그 사이클을 연 Burst 3에서 읽히도록
+      바뀌었다(`FULL_BURST_DURATION_DELTA`, `burst_cycle`), `SkillRule`에 트리거
+      자신의 시각을 아는 `time_condition`(`own_burst_status_active`)이 생겼다.
+      아르카나의 「운명의 수레바퀴 상태로 FB 종료」게이트는 이제 FB를 실제로
+      줄이는 Burst 3(오늘은 이사벨뿐) 뒤에서만 열린다. 이사벨·모더니아의 FB 길이
+      변경과 아르카나의 잔여 스킬2 쿨감(-75%, 이사벨의 Pointed Feather로 감)도
+      함께 인코딩(gap #22 해소). 실로스터 기준 아르카나가 든 덱 총딜이 최대
+      **-29%** 움직였다(과대적용 해소). 기준선 백엔드 **1903 passed/3 skipped**,
+      캘리브레이션 **1.078x·17/25 불변**(기록 덱 5개 어디에도 이사벨·모더니아·
+      아르카나·소다가 없어 캘리는 그대로 — 이 변경은 덱 추천만 움직인다).
+- [ ] Soda: Twinkling Bunny의 FB 확장(+2/+3초)은 여전히 보류 — 바로 아래 소다
+      항목 참고(골든칩 소비가 FB 스케줄에 종속돼 순환이라, gap #22의 엔진 수단이
+      생긴 뒤에도 그녀만 남는다).
+
 ### 소다의 골든칩 소비가 감산이 아니라 리셋으로 인코딩됐다 (2026-08-05, 아르카나 검토 중 발견)
 
 - [ ] **`soda_twinkling_bunny.py`의 `resets: {"trigger": "own_burst", "value": 17}`

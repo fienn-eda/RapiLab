@@ -97,6 +97,15 @@ def test_get_periodic_nuke_returns_cooldown_and_percent_for_helm_aquamarine():
     assert spec == {"cooldown": 4.0, "percent": 105.58}
 
 
+def test_get_periodic_nuke_tags_isabel_pointed_feather_as_her_skill_2():
+    # The tag is what lets Arcana's The Magician (a skill_cooldown_reduction_percent
+    # buff) reach this periodic nuke's interval - untagged periodic entries
+    # (Ada Wong's in-window interval, Snow White's own cadence) must not collect it.
+    skill_values = {"pointed_feather": {"description_value_02": "170.58"}}
+    spec = get_periodic_nuke("isabel", skill_values)
+    assert spec["cooldown_skill_slot"] == 2
+
+
 def test_get_burst_damage_type_defaults_to_attack():
     assert get_burst_damage_type("crown") == "attack"
     assert get_burst_damage_type("helm") == "attack"

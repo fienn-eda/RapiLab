@@ -436,7 +436,7 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 | ~~20~~ | ~~`closed_form` 발수가 차지 모션 딜레이를 무시~~ | 14 (`TIMED_CHARGE_MOTION_DELAY` 전원) | **해소 (2026-07-31)** — 고치지 않고 **모듈을 삭제**했다. 기각된 스코어러라 프로덕션이 안 썼고, 남아 있는 것 자체가 오해의 원인이었다 | 발사 타임라인 |
 | ~~21~~ | ~~평타를 과대평가하는 항이 있다~~ | **0** — 엔진 갭이 아니었다 | **규명 (2026-07-31), 엔진 변경 없음** — 잔차는 평타 **전용**이 맞지만(회귀 a=0.85~0.90 · b=1.02) 그 항은 **코어 히트**이고, 코어히트율은 **그 판의 플레이 조건**(파츠를 직접 때린 좌석은 코어를 놓친다, Fienn)이다. 캘리브레이션 **해석**이 바뀐다: `sim/record`는 1.0이 목표가 아니라 **1.0보다 위가 정상** | 기록 캐비엇 |
 | ~~—~~ | ~~**플랫 발수 장탄 버프**~~ ("최대 장탄 수 ▲ N발" — 퍼센트가 아니라 라운드 수) | 3 (Tove·Grave·Noir, 전부 스쿼드 스코프) | **해소 (2026-08-02)** — 신규 스탯 `max_ammo_rounds`. 수신자의 기본 탄창 대비로 환산해 기존 배율에 합류시키므로 `attack_rate` 핫패스 무변경 | 스탯 배선 |
-| 22 | **풀 버스트 길이가 전역 상수다** (`FULL_BURST_DURATION = 10.0`) | 3 직접(Isabel −5초 · Modernia +5초 · Soda: Twinkling Bunny +2/3초) + **1 간접**(Arcana의 게이트) | **미착수 (신규 2026-08-05)**. FB 길이를 바꾸는 유닛이 셋뿐이라 오래 "로테 타이밍"으로 보류돼 있었는데, **대가를 치르는 건 그 셋이 아니라 아르카나**다 — 「운명의 수레바퀴(10초) 상태로 FB 종료」 게이트는 FB가 짧아져야만 열리므로, 미모델 상태에서 게이트가 항상 참으로 인코딩돼 **덱 총딜 +25~29%**를 부풀린다. 사이클별 FB 길이(어느 B3가 터졌는지가 정한다) + 시간 인식 게이트가 **함께** 필요 | 타이밍 |
+| ~~22~~ | ~~풀 버스트 길이가 전역 상수다~~ (`FULL_BURST_DURATION = 10.0`) | 2 직접(Isabel −5초 · Modernia +5초) + **간접**(Arcana의 게이트 · Dorothy: Serendipity · Arcana: Fortune Mate) | **완료 (2026-08-05)** — 풀 버스트 창 길이가 그 사이클을 연 Burst 3에서 읽힌다(`FULL_BURST_DURATION_DELTA` + `burst_cycle`), 그리고 `SkillRule`에 트리거 자신의 시각을 아는 `time_condition`(`own_burst_status_active`)이 생겼다. 소비자: Isabel·Modernia(직접, 자기 FB 길이) · Arcana(간접, 「수레바퀴 상태로 FB 종료」 게이트가 이제 FB를 실제로 줄이는 Burst 3 뒤에서만 열린다 — 오늘은 Isabel뿐) · Dorothy: Serendipity(간접, Radiant Wings의 FB 지속 버프가 실제 창 길이를 따라간다) · Arcana: Fortune Mate(간접, Making Memories가 실제 창 길이를 몰라도 되도록 open-ended+truncate로 재모델). **Soda: Twinkling Bunny의 FB +2/3초는 별도 사유로 계속 보류** — 그녀의 확장은 FB 스케줄이 고정된 뒤에야 쌓이는 자원(Golden Chip)에 종속돼 순환이라, `docs/roadmap.md` To-Do에 별도 티켓 | 타이밍 |
 | — | hit rate · Burst Gauge fill speed (딜/타이밍 아님) | 15 | **구현 안 함** (defer 유지) | 범위 밖 |
 
 > **핵심 결론:** #1 하나가 압도적이다. 노멀공격 카운터(20명)와 풀차지 카운터(19명)는
@@ -894,6 +894,42 @@ Maiden은 정규화 기준에서 FB를 나눠 빼도록 고쳤고, 코어 테스
   기준선이 **1.077x**로 옮겨간 뒤 다시 재면 전역 k는 0.82→**0.80**, p는 0.49→**0.44**로
   내려간다 — **결론(발수 배제 · 평타 전용)은 그대로이고 크기만 움직인다.**
   다른 항목의 스윕 결론을 인용하기 전에 그 항목이 확립된 날의 합계 배수부터 볼 것.
+
+### 22. 풀 버스트 길이가 전역 상수다 — ✅ 해소 (2026-08-05)
+
+- **무엇이었나:** `burst_cycle.FULL_BURST_DURATION`이 `10.0`짜리 단일 상수라,
+  자기 버스트로 풀 버스트 창 자체의 길이를 바꾸는 유닛(Isabel의 "Full Burst Time
+  ▼5초", Modernia의 "▲5초")이 그 효과를 낼 방법이 없었다. 로테 타이밍 문제로만
+  보여 오래 보류돼 있었는데, 실제 대가는 그 둘이 아니라 **아르카나**가 치르고
+  있었다: 「운명의 수레바퀴(10초, 버스트 스테이지 2에서 부여) 상태로 Full Burst
+  종료」게이트가 `own_burst_fired_this_cycle()`(시계 없는 조건)로 인코딩돼 있어서,
+  표준 10초 창(항상 만료)이든 이사벨의 5초 창(살아있음)이든 구분 못 하고 **항상
+  참**으로 평가되고 있었다.
+- **해소:** 두 축이 함께 필요했다.
+  1. **사이클별 창 길이** — `FULL_BURST_DURATION_DELTA: dict[str, float]`
+     (`skill_rules/registry.py`)에 유닛별 델타를 등록하고, `burst_cycle`이 그
+     사이클의 tier-3 멤버(`tier3_member`)에게서 델타를 읽어 창 길이를 계산한다
+     (`FULL_BURST_DURATION + delta`, `MIN_FULL_BURST_DURATION`으로 하한). 그 유닛이
+     연 사이클에만 적용되고, 다른 멤버가 열면 표준 10초로 돌아간다.
+  2. **시간을 아는 게이트** — `SkillRule`에 `time_condition` 필드가 생겨 트리거
+     자신의 시각을 받는 조건을 걸 수 있다. `own_burst_status_active(seconds)`
+     (`squad_engine.py`)는 자기 버스트가 부여한 상태의 부여 시각과 트리거 시각의
+     실제 간격을 비교한다 — `own_burst_fired_this_cycle()`과 달리 시계를 버리지
+     않는다.
+- **소비자:** Isabel·Modernia(직접, `FULL_BURST_DURATION_DELTA`) · Arcana(간접,
+  게이트가 `own_burst_status_active`로 교체돼 실제로 창을 줄이는 Burst 3 뒤에서만
+  열린다 — 오늘은 Isabel뿐) · Dorothy: Serendipity(간접, Radiant Wings의 Full
+  Burst ATK 버프 지속시간이 고정 10초 대신 그 사이클의 실제 창 길이를 따라간다) ·
+  Arcana: Fortune Mate(간접, Making Memories가 실제 창 길이를 몰라도 되도록
+  open-ended + truncate로 재모델 — Grave의 Heat Emission과 같은 패턴).
+- **측정 (실로스터):** 아르카나 있는 덱의 총딜이 최대 **-29%** 움직였다(과대적용
+  해소). 기록 덱 5개 어디에도 이사벨·모더니아·아르카나·소다가 없어 캘리브레이션은
+  **1.078x·17/25 그대로**.
+- **보류로 남는 것:** Soda: Twinkling Bunny의 "Full Burst Duration ▲2/3초"는 이
+  갭의 수단이 생긴 뒤에도 계속 보류다 — 그녀의 확장은 FB 중 사격으로 쌓이는
+  Golden Chip 자원에 종속되는데, 그 사격은 FB 창이 정해져야 존재하고 창 길이를
+  정하는 게 다시 그 자원이라 순환이다. `docs/roadmap.md` To-Do에 별도 티켓.
+- 설계: `docs/superpowers/specs/2026-08-05-per-cycle-full-burst-length-design.md`
 
 ### 20. `closed_form`의 발수가 차지 모션 딜레이를 무시했다 — ✅ 해소 (2026-07-31, 모듈 삭제)
 

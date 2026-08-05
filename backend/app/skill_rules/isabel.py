@@ -6,24 +6,27 @@ Modeled (DPS-relevant):
   exceeds her 40s burst cd (so re-applications would otherwise stack).
 - Pointed Feather (skills[1], cd 15s): a self-cooldown nuke, 170.58% of final
   ATK, auto-firing every 15s (periodic_nuke). "5 enemies with the highest final
-  DEF" is just the boss in a solo raid.
+  DEF" is just the boss in a solo raid. Tagged `cooldown_skill_slot=2` in the
+  registry (her skill 2), so a Skill 2 cooldown-reduction buff reaches its
+  interval - Arcana's The Magician (-75% for 15 sec, gated on her own Wheel of
+  Fortune still running) is the one ally buff that does.
 - Sonic Chaser (skills[2], her burst): burst nuke 149.85%; plus staged bonuses by
   Marked Target stage (= burst number): MT1 (>=1 burst) squad Damage Taken +39.96%
   for 5s; MT2 (>=2) +299.7% additional damage; MT3 (>=3) +349.65% additional
   damage. The additional damages are instant nukes gated on activation_count, so
-  they escalate cycle-accurately rather than assuming a steady state.
+  they escalate cycle-accurately rather than assuming a steady state. Also squad
+  Full Burst Time -5 sec: registered as `FULL_BURST_DURATION_DELTA["isabel"]`
+  (registry.py), read by burst_cycle from whichever member opened that cycle's
+  tier 3 - so it shortens only the cycles SHE bursts. This is what lets Arcana's
+  Wheel of Fortune (10 sec, granted at her own Burst Stage 2) still be running
+  when Full Burst ends, opening the gate on Arcana's three conditional bullets
+  (The Magician, Strength, Death) - see arcana.py.
 
 Assumption: the N-th burst grants Marked Target N (Skill 1) AND applies the
 stage-N burst bonus that same cycle (activation_count == N inside the burst rule).
 
-Not modeled: Sonic Chaser's squad Full Burst Time -5 sec. She is the only unit
-in the collected data that SHORTENS Full Burst (Modernia and Soda: Twinkling
-Bunny lengthen it), and `burst_cycle.FULL_BURST_DURATION` is one global
-constant, so a deck holding her runs on a 10 sec window here. That is not just
-rotation timing: a 5 sec window is the only way Arcana's Wheel of Fortune (10
-sec, granted by her Burst 2) is still up when Full Burst ends, which is the
-gate on Arcana's three biggest bullets - so this omission is what makes those
-bullets fire in decks that did not earn them. See arcana.py.
+Not modeled: none - every DPS-relevant bullet, including the Full Burst Time
+change, is encoded.
 """
 from app.effects import Pulse
 from app.skill_rules._helpers import buff_rule, escalating_buff_rule

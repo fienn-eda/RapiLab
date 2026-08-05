@@ -85,25 +85,40 @@ how to encode it, and current engine status.
   others). E.g. Arcana's "Wheel of Fortune" - granted to Electric Code allies
   including herself by her own burst (Shackles of Destiny); other bullets check
   "if self is in Wheel of Fortune".
-- **Encode:** `own_burst_fired_this_cycle()` (`squad_engine.py`) reads
-  `SquadContext.burst_used_this_cycle` (already tracked, not yet cleared when
-  `full_burst_end` rules run), so no new status-tracking is needed - **but it
-  drops the status's clock, so first check that the clock cannot run out
-  between the grant and the check.** Compare the status's duration against the
-  gap from the grant to the trigger:
-  - `full_burst_enter` - safe. The unit's own tier-3-ordered burst fires
-    immediately before, so at most a tier gap has passed (Asuka, Mana).
-  - `full_burst_end` - **only safe if the status outlasts the whole Full Burst
-    window plus the tier gap.** A 10 sec status granted at Burst Stage 2 has
-    already lapsed when a 10 sec Full Burst ends: the grant starts BEFORE the
-    Burst 3 cast that opens the window. Arcana is exactly this case and the
-    engine gets it wrong today (see `arcana.py`'s KNOWN DEFECT).
-  - The same coincidence is fine when the bullet fires on the status **ending**
-    rather than on it still running - then `full_burst_end` IS the right
-    instant (Grave's Heat Emission, `grave.py`).
-  A status whose clock matters against a Full Burst window can only be modelled
-  once `burst_cycle.FULL_BURST_DURATION` stops being a single global constant,
-  since units that lengthen or shorten Full Burst decide the answer.
+- **Encode:** first decide whether the clock between the grant and the check
+  can matter, by comparing the status's duration against the gap from the grant
+  to the trigger:
+  - `full_burst_enter` - the unit's own tier-3-ordered burst fires immediately
+    before, so at most a tier gap has passed. Use `own_burst_fired_this_cycle()`
+    (`squad_engine.py`, reads `SquadContext.burst_used_this_cycle` - already
+    tracked, not yet cleared when `full_burst_enter`/`full_burst_end` rules
+    run) directly; no new status-tracking is needed and the dropped clock never
+    has room to matter (Asuka, Mana).
+  - `full_burst_end` when the bullet wants the status **ending** rather than
+    still running - the same coincidence is fine, so `own_burst_fired_this_cycle()`
+    on `full_burst_end` IS correct (Grave's Heat Emission, `grave.py`).
+  - `full_burst_end` when the bullet wants the status **still running** -
+    `own_burst_fired_this_cycle()` is UNSOUND here: it carries no clock, so it
+    can't tell "status still active" from "status already lapsed". A 10 sec
+    status granted at Burst Stage 2 has already lapsed by the time a *standard*
+    10 sec Full Burst ends (the grant starts BEFORE the Burst 3 cast that opens
+    the window) - only a Full Burst shortened below the status's duration keeps
+    it alive. Use `own_burst_status_active(seconds)` instead: it reads the
+    grant off `context.burst_times[caster_slug]` and compares it against the
+    trigger's own live time, as a `SkillRule`'s `time_condition`. Arcana's
+    Wheel of Fortune gate on The Magician/Strength/Death is the worked example
+    (`arcana.py`) - the gate only opens behind a Burst 3 that actually shortens
+    Full Burst (`FULL_BURST_DURATION_DELTA`, below), Isabel today.
+  Ask which of these three shapes a new "if self is in status X" bullet is
+  BEFORE picking a condition - the wrong one compiles and passes review, it
+  just returns the wrong boolean at the one instant that matters.
+- **A unit whose own burst changes the Full Burst window's length** (not just
+  rotation timing) registers the delta in `FULL_BURST_DURATION_DELTA`
+  (`skill_rules/registry.py`) - `burst_cycle` reads it off whichever member
+  opened that cycle's tier 3, so the effect only applies to the cycles THAT
+  unit bursts in (Isabel -5 sec, Modernia +5 sec). `burst_cycle.FULL_BURST_DURATION`
+  is the base/default width a cycle falls back to when its tier-3 member
+  carries no delta, not a hard global ceiling.
 
 ## Targeting a per-member subset by tier + element + prior-burst
 - **What:** some bullets target a dynamic subset like "all Burst 3 Electric

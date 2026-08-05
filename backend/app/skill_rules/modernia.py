@@ -13,6 +13,12 @@ Modeled (DPS-relevant):
   15-sec increasing-Hit-Rate window the skill text describes (Fienn
   2026-07-18), so it's a plain every-200 per-shot rule, refreshing (MG's
   60 shots/s puts consecutive marks well inside the 10s duration).
+- New World's squad Full Burst Duration +5 sec: registered as
+  `FULL_BURST_DURATION_DELTA["modernia"]` (registry.py), read by burst_cycle
+  from whichever member opened that cycle's tier 3. Independent of whether her
+  burst nuke/transform fires - but her best shape ((1,1,3), see below) is built
+  around her never bursting, so in practice this only lengthens the rare cycle
+  a thinner deck forces her to fire.
 
 Not modeled / deferred:
 - The Max Ammunition Capacity stack is emitted, but Max Ammo only feeds shot
@@ -21,9 +27,10 @@ Not modeled / deferred:
   own already-scheduled magazines. It's an inert-for-own-shots buff, kept for
   faithfulness (a future live-max-ammo consumer would read it).
 - Giant Leap's all-ally Hit Rate buff: inert (not a damage stat).
-- New World (skills[2], her burst): Full Burst Duration +5s, unlimited ammo, and
-  Destroy Mode (auto-aim + a 2.24%-of-ATK Destroy-Mode damage over 15s) - a
-  weapon/targeting mode, not a single burst nuke, so burst_percent is None.
+- New World (skills[2], her burst): unlimited ammo and Destroy Mode (auto-aim +
+  a 2.24%-of-ATK Destroy-Mode damage over 15s) - a weapon/targeting mode, not a
+  single burst nuke, so burst_percent is None. (Full Burst Duration +5s is
+  modeled above, independent of the transform.)
 - Its Destroy Mode weapon transform is deliberately NOT modeled as a
   `weapon_mode_schedules` segment, though the primitive exists. Per Fienn
   (2026-07-21), against a raid boss Modernia's burst is a DPS LOSS - Destroy
@@ -33,9 +40,9 @@ Not modeled / deferred:
   rightmost in a (1,1,3) deck where her two Burst-3 allies carry the rotation.
   Modelling the segment would force her burst and understate her by ~12% (a
   fixed-shell sweep confirmed this). Her current base-MG normal fire is the
-  faithful picture of a unit that never enters Destroy Mode - the segment, the
-  unlimited ammo, and the Full Burst +5s all only fire on a burst she does not
-  use. The abstention itself is represented in the deck search, not here: she is
+  faithful picture of a unit that never enters Destroy Mode - the segment and
+  the unlimited ammo only fire on a burst she does not use. The abstention
+  itself is represented in the deck search, not here: she is
   pinned to the LAST Burst-3 seat (deck_search._BUFFER_SEAT_SLUGS), so a Burst-3
   ally is the leftmost-eligible burster every cycle and Modernia never enters
   Destroy Mode in her best shape ((1,1,3), where two allies cover the ~40s
