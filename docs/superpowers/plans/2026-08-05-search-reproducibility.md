@@ -1135,15 +1135,29 @@ item's candidate list, so what it missed is unseen, not rejected."
 
 ---
 
-## Task 7: 대기 문구를 실측에 맞춘다
+## Task 7: 대기 문구 — 문자열은 유지, 주석만 갱신
+
+**Fienn 결정 (2026-08-05, Task 5 게이트에서):** 실측은 전부최적화 **182초** ·
+빈자리만 **227초**(≈3~4분)인데, 사용자 문구 **"보통 2~5분"은 그대로 둔다.**
+벽시계 상한이 사라져 느린 머신에서 더 걸리는 것이 이제 실제 위험이고, 넓은 밴드가
+그 몫을 한다 — 실측에 딱 맞춰 좁히면 코어 적은 머신에서 거짓이 된다. 그래서 아래
+Step 2(테스트 세 곳)는 **하지 않는다.**
+
+남는 것은 **그 위의 코드 주석 하나**다. 사라진 `SWAP_TIME_BUDGET_SEC`을 이름으로
+지목하고 2026-08-04 수치를 인용하고 있어 지금은 거짓이다. 새 주석은 새 상수·새
+실측을 싣고, **문구의 폭이 실측보다 넓은 이유**를 적어 다음 사람이 3~4분으로
+좁히지 않게 한다.
 
 **Files:**
-- Modify: `frontend/src/components/RecommendPanel.tsx:605-616`
-- Modify: `frontend/src/App.test.tsx:211, 313`, `frontend/src/components/RecommendPanel.test.tsx:416`
+- Modify: `frontend/src/components/RecommendPanel.tsx` — 진행 문구 위의 JSX 주석만
+- 테스트 변경 없음 (`App.test.tsx`·`RecommendPanel.test.tsx`의 `/2~5분/` 셋은 그대로 통과)
 
 **Interfaces:**
-- Consumes: Task 5 Step 3의 끝-끝 대기 실측
-- Produces: 없음 (문구)
+- Consumes: Task 5의 끝-끝 실측과 수렴 후보 수
+- Produces: 없음
+
+<details>
+<summary>원래 계획의 Step 1~2 (문자열을 3~4분으로 바꾸는 안) — 미채택</summary>
 
 - [ ] **Step 1: 문구를 바꾼다**
 
@@ -1169,13 +1183,28 @@ item's candidate list, so what it missed is unseen, not rejected."
 
 `frontend/src/App.test.tsx:211`, `:313`, `frontend/src/components/RecommendPanel.test.tsx:416`의 `/2~5분/`을 새 값의 정규식으로 바꾼다. 셋 다 같은 문구를 보므로 값이 어긋나지 않게 한 번에 고친다.
 
+</details>
+
+- [ ] **Step 1: 주석을 갱신한다**
+
+`RecommendPanel.tsx`의 진행 문구 위 JSX 주석을 새 상수·새 실측으로 바꾸고, 문구의
+폭이 실측보다 넓은 이유를 적는다. **`보통 2~5분` 문자열은 건드리지 않는다.**
+
+- [ ] **Step 2: 낡은 상수 이름이 남아 있지 않은지 확인한다**
+
+```bash
+grep -rn "SWAP_TIME_BUDGET_SEC" --include="*.py" --include="*.ts" --include="*.tsx" backend frontend scripts
+```
+
+Expected: 매치 없음.
+
 - [ ] **Step 3: 프론트 스위트를 돌린다**
 
 ```bash
 cd frontend && npm test
 ```
 
-Expected: **523 passed**
+Expected: **523 passed** — 주석만 바꿨으므로 움직이면 안 된다.
 
 - [ ] **Step 4: 커밋**
 
