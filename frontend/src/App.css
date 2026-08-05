@@ -119,6 +119,12 @@
      the larger. */
   --filter-text: 18px;
   --filter-input: 19.5px;
+  --filter-icon: 26px;
+  /* Drawn to the same height, an element badge reads smaller than a burst
+     numeral: the badge is a thin hexagon outline around a small glyph, while
+     the numeral is solid strokes filling its box. Matching the boxes is what
+     makes them look mismatched, so the badge is given a little more. */
+  --filter-icon-element: calc(var(--filter-icon) * 1.2);
 
   display: flex;
   flex-direction: column;
@@ -198,22 +204,30 @@
   outline-offset: 2px;
 }
 
-/* An icon chip has no text to set its height, so the icon does. Burst icons
-   are wider than they are tall and elements are near-square; fixing the height
-   and letting width follow keeps both on one baseline. */
+/* An icon chip has no text to set its height, so the icon does. Every icon is
+   sized by height with width left to follow, because within each family the
+   artwork shares a height and differs in width. */
 .unit-filter__chip--icon {
   display: inline-flex;
   align-items: center;
   padding: 2px var(--sp-1);
+  /* One pill height across both families, set by the taller icon plus this
+     rule's own padding and border. Without it, evening up the icons only moves
+     the mismatch out to the outlines around them. */
+  min-height: calc(var(--filter-icon-element) + 4px + 2px);
 }
 
 .unit-filter__icon {
   display: block;
-  height: 18px;
+  height: var(--filter-icon);
   width: auto;
   /* Off chips read as unlit rather than absent - the border still holds the
      hit area, so this is the only thing carrying the on/off state visually. */
   opacity: 0.45;
+}
+
+.unit-filter__chip[data-element] .unit-filter__icon {
+  height: var(--filter-icon-element);
 }
 
 .unit-filter__chip[aria-pressed='true'] .unit-filter__icon {
