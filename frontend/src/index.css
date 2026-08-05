@@ -30,21 +30,40 @@
   --radius: 10px;
   --radius-sm: 6px;
 
-  /* Three grounds, not one: the page recedes, panels sit on it, and controls
-     sit on the panels. Depth comes from this ladder rather than from borders
-     doing all the work. */
-  --bg: #0e0d13;
-  --surface: #17161e;
-  --surface-2: #1f1d29;
-  --border: #2c2937;
-  --border-strong: #3f3b4e;
-  --text: #eceaf1;
-  --text-muted: #9c95ab;
+  /* One near-black ground with two barely-lighter steps. Unlike the palette
+     this replaced, the ladder is almost flat - 1.05 and 1.08 between steps -
+     so the borders below carry the structure instead of the fills. */
+  --bg: #0a0a0a;
+  --surface: #111111;
+  --surface-2: #1a1a1a;
 
-  --accent: #a78bfa;
-  --accent-hover: #b9a3fc;
-  --accent-contrast: #17131f;
-  --accent-soft: rgba(167, 139, 250, 0.16);
+  /* Three lines, three jobs. A divider that merely separates content may sit
+     below the 3:1 floor; a line that is what tells you something IS a control
+     may not. Ratios are against --surface-2, the lightest ground any of them
+     is drawn on: 1.28 / 3.03 / 5.04. --border clears its floor by 0.03, so
+     re-run scripts/check_palette_contrast.py if it or --surface-2 moves. */
+  --rule: #2e2e2e;
+  --border: #666666;
+  --border-strong: #8a8a8a;
+
+  /* Not pure white on pure black. That pairing maxes contrast at 21:1 but
+     haloes, and this screen is read for minutes at a time. */
+  --text: #f2f2f2;
+  --text-muted: #9e9e9e;
+
+  /* White is what you press; red is what the app is pointing at - the active
+     tab, a selected chip, a focus ring, an error. Keeping red rare is what
+     lets it mean "look here" when it does appear.
+     The contrast token is near-black, not white: white on this red is 3.80,
+     which fails; near-black is 5.21. */
+  --primary: #f2f2f2;
+  --primary-contrast: #0a0a0a;
+  --primary-hover: #ffffff;
+
+  --accent: #ff2233;
+  --accent-hover: #ff4757;
+  --accent-contrast: #0a0a0a;
+  --accent-soft: rgba(255, 34, 51, 0.18);
 
   --ok: #4ade80;
   --ok-soft: rgba(74, 222, 128, 0.14);
@@ -53,9 +72,10 @@
   --danger: #f87171;
 
   /* Element identity, so a portrait can state its element without a label.
-     Fire is a deep red (Fienn, 2026-07-28) so it does not read as Iron's gold
-     on a dark surface. Electric leans magenta to stay distinct from the
-     purple accent. */
+     These are the one place colour still carries game data, and the reason
+     the rest of the UI gave up its colour: against a monochrome chrome they
+     read louder, not weaker. Fire is a deep red (Fienn, 2026-07-28) so it
+     does not read as Iron's gold on a dark surface. */
   --el-fire: #dd3333;
   --el-water: #3fa9f5;
   --el-wind: #46c96b;
@@ -68,7 +88,10 @@
      reads as its own fact next to the gold breakthrough stars. */
   --favorite-item: #ff8a3d;
 
-  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.4);
+  /* Nothing: a dark shadow on a near-black ground does no work. The two
+     popovers that need to float (.help-tip__bubble, .palette__details) are
+     separated by an opaque background and a --border-strong edge instead. */
+  --shadow: none;
 
   --sans: 'NanumSquare Neo', system-ui, 'Segoe UI', Roboto, sans-serif;
   /* Left proportional-free on purpose: the one place this is used lines up
