@@ -1399,7 +1399,7 @@
 }
 
 .palette__portrait--missing {
-  border: 1px dashed var(--border-strong);
+  border: 1px dashed var(--rule);
 }
 
 /* Who this is and what it rolled - everything the chip stopped showing.

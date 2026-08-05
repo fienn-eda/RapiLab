@@ -87,8 +87,8 @@
   --shadow: none;
 
   --sans: 'NanumSquare Neo', system-ui, 'Segoe UI', Roboto, sans-serif;
-  /* Left proportional-free on purpose: the one place this is used lines up
-     columns of numbers. */
+  /* Deliberately excluded from the bundled proportional typeface: the one
+     place this is used lines up columns of numbers. */
   --mono: ui-monospace, Consolas, monospace;
 
   /* 읽기 폭. 레이아웃은 창을 다 쓰지만 문장은 이 폭을 넘지 않는다 - 한 줄이
