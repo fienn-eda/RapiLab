@@ -464,6 +464,9 @@ def test_own_burst_status_active_is_true_only_while_the_status_runs():
 
 
 def test_own_burst_status_active_measures_from_the_latest_burst():
+    # 「가장 최근」은 `burst_times`가 버스트 사이클 워크와 함께 자라는 동안의 뜻이다.
+    # 그 워크 밖에서 이 술어를 걸면 목록이 비어 있거나(사이클 이전) 전투 마지막
+    # 버스트로 끝나 있어(사이클 이후) 답이 틀린다 - 술어 독스트링의 제약.
     check = own_burst_status_active(10.0)
     ctx = SquadContext([SquadMember("a", burst_tier=2, element="Electric")])
     ctx.record_burst_time("a", 2.5)

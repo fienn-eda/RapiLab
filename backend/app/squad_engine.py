@@ -287,6 +287,23 @@ def own_burst_status_active(seconds: float) -> Callable[[SquadContext, str, floa
     `full_burst_end` 게이트에서는 그 차이가 전부다 - 아르카나의 운명의 수레바퀴는
     10초짜리인데 그녀는 버스트 스테이지 2에서 시전하므로, 표준 10초 창이 끝날 때는
     이미 만료돼 있다.
+
+    **버스트 사이클 트리거에서만 의미가 있다** — `battle_start` ·
+    `own_burst_activate` · `ally_burst_activate` · `full_burst_enter` ·
+    `full_burst_end`. `burst_times[caster][-1]`이 「가장 최근 버스트」인 것은
+    `simulate_burst_cycle` 워크가 도는 동안뿐이고, `raid_simulator`의 나머지 두
+    호출 지점에서는 다른 것을 가리킨다:
+
+    - `periodic_rules` 패스는 `simulate_burst_cycle`보다 **먼저** 돌아
+      `burst_times`가 아직 비어 있다 → 이 술어는 무조건 거짓이다.
+    - per-shot 패스는 **나중에** 돌아 `burst_times`가 전투 전체를 담고 있다 →
+      `[-1]`은 그 전투의 **마지막** 버스트이고, 그 버스트가 일어나기 한참 전인
+      사격 시각에서도 참을 돌려준다.
+
+    `SkillRule.time_condition` 필드 자체는 세 지점이 모두 존중한다
+    (`test_raid_simulator.py`의
+    `test_time_condition_is_honoured_by_the_periodic_and_per_shot_passes`).
+    제약은 이 술어의 것이지 필드의 것이 아니다.
     """
 
     def check(context: SquadContext, caster_slug: str, time: float) -> bool:

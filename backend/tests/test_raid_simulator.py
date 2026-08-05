@@ -3645,7 +3645,13 @@ def test_burst_three_cast_is_outside_the_full_burst_window():
 
 def test_time_condition_is_honoured_by_the_periodic_and_per_shot_passes():
     """세 호출 지점(fire_trigger / periodic_rules / per_shot_rules)이 전부
-    time_condition을 존중하는지. 하나라도 빠지면 그 경로의 게이트가 조용히 열린다."""
+    time_condition을 존중하는지. 하나라도 빠지면 그 경로의 게이트가 조용히 열린다.
+
+    존중되는 것은 **필드**다. 특정 술어가 세 지점에서 다 의미 있다는 뜻은 아니다 -
+    `own_burst_status_active`는 `context.burst_times[caster][-1]`을 읽으므로 그 값이
+    「가장 최근 버스트」인 버스트 사이클 트리거에서만 옳고, periodic 패스(버스트 사이클
+    이전이라 목록이 비어 있다)와 per-shot 패스(이후라 목록이 전투 마지막 버스트로
+    끝난다)에서는 틀린 답을 낸다. 그 술어의 독스트링에 적혀 있다."""
     seen = {"periodic": [], "per_shot": []}
 
     def never(context, caster_slug, time):
