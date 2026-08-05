@@ -840,14 +840,17 @@
   outline-offset: 2px;
 }
 
+/* White, not red. Red is reserved for what the app is pointing at; the button
+   you are meant to press is the brightest thing on the page instead. */
 .btn--primary {
-  background: var(--accent);
-  color: var(--accent-contrast);
-  font-weight: 600;
+  background: var(--primary);
+  color: var(--primary-contrast);
+  border-color: var(--primary);
 }
 
 .btn--primary:hover {
-  background: var(--accent-hover);
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .btn--ghost {
