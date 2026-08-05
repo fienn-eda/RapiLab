@@ -68,9 +68,9 @@ Expected: 표가 출력되고 `border`·`border-strong` 행이 `ok`. 이 스크�
 `frontend/src/index.css`의 33-42행(주석 포함)을 아래로 바꾼다:
 
 ```css
-  /* One near-black ground with two barely-lighter steps. Unlike the palette
-     this replaced, the ladder is almost flat - 1.05 and 1.08 between steps -
-     so the borders below carry the structure instead of the fills. */
+  /* One near-black ground with two barely-lighter steps. The ladder is almost
+     flat - 1.05 and 1.08 between steps - so the borders below carry the
+     structure rather than the fills. */
   --bg: #0a0a0a;
   --surface: #111111;
   --surface-2: #1a1a1a;
@@ -116,10 +116,10 @@ Expected: 표가 출력되고 `border`·`border-strong` 행이 `ok`. 이 스크�
 
 ```css
   /* Element identity, so a portrait can state its element without a label.
-     These are the one place colour still carries game data, and the reason
-     the rest of the UI gave up its colour: against a monochrome chrome they
-     read louder, not weaker. Fire is a deep red (Fienn, 2026-07-28) so it
-     does not read as Iron's gold on a dark surface. */
+     This is the one place colour carries game data, and it is why the chrome
+     around it is monochrome: against a grey ground these read louder, not
+     weaker. Fire is a deep red (Fienn, 2026-07-28) so it does not read as
+     Iron's gold on a dark surface. */
 ```
 
 - [ ] **Step 5: 그림자를 끈다**
@@ -202,6 +202,7 @@ http://localhost:5173/ → 솔로 레이드 탭. **「인카운터!」 버튼이
   background: var(--primary);
   color: var(--primary-contrast);
   border-color: var(--primary);
+  font-weight: 600;
 }
 
 .btn--primary:hover {
@@ -209,6 +210,8 @@ http://localhost:5173/ → 솔로 레이드 탭. **「인카운터!」 버튼이
   border-color: var(--primary-hover);
 }
 ```
+
+`font-weight: 600`은 새로 넣는 것이 아니라 **이미 이 규칙에 있던 선언**이다. 교체하면서 떨어뜨리면 안 된다 — 글자 굵기는 이 개편의 범위 밖이다.
 
 - [ ] **Step 3: 고아가 된 `--accent-hover`를 지운다**
 
@@ -423,6 +426,20 @@ a stated edge, so red keeps meaning something is wrong."
 ```css
   background: var(--accent-soft);
 ```
+
+같은 부류가 하나 더 있다. `.charge-ladder__table td`의 행 구분선이다:
+
+```css
+  border-bottom: 1px solid var(--border, #3a3a3a);
+```
+
+표의 행 사이를 가르는 선이므로 `--rule`이 맞고, 폴백은 여기서도 죽은 값이다:
+
+```css
+  border-bottom: 1px solid var(--rule);
+```
+
+**이 지점은 최초 조사가 놓쳤다.** `var(--border)`를 정확 일치로 셌기 때문에 폴백이 붙은 `var(--border, …)` 형태가 빠졌다. 앞으로 토큰 사용처를 셀 때는 `var\(--border\b` 처럼 폴백까지 걸리는 패턴을 쓸 것.
 
 - [ ] **Step 5: 밀도를 라이브로 확인한다 — 이 방향의 알려진 실패 지점**
 
