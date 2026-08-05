@@ -34,8 +34,11 @@ Usage
 The output is committed, so this only needs re-running when the upstream font
 is updated.
 
-Licence: NanumSquare Neo is Naver's, under the SIL Open Font License. Embedding
-and redistribution are permitted; selling the font file by itself is not. The
+Licence: NanumSquare Neo is Naver's, under the SIL Open Font License (full text
+in frontend/public/fonts/OFL.txt). Embedding and redistribution are permitted;
+selling the font file by itself is not. The OFL reserves the name "Nanum" /
+"나눔" for the original, so this build also renames the family to RapiLab Sans -
+a Modified Version may not present a Reserved Font Name to its users. The
 notice travels with the font in frontend/public/fonts/NOTICE.txt.
 """
 
@@ -76,6 +79,18 @@ WEIGHT_MAP = [
 
 CSS_DEFAULT = 400  # which CSS weight is the font's default instance
 
+# The OFL reserves "Nanum" / "나눔" for the upstream font, so a Modified Version
+# must not present that name to users. nameID 0 (copyright) is deliberately
+# absent here - it credits NAVER and Sandoll and is left untouched.
+RENAMED_STRINGS = {
+    1: "RapiLab Sans",  # Family
+    4: "RapiLab Sans",  # Full name
+    16: "RapiLab Sans",  # Typographic family
+    6: "RapiLabSans-Regular",  # PostScript name
+    3: "RapiLab Sans; derived from NanumSquare Neo",  # Unique ID
+    21: "RapiLab Sans",  # WWSFamily - a family-name record OSes read, same as 1/4/16
+}
+
 
 def _normalize(value, lo, default, hi):
     """Map an axis value into OpenType's [-1, 0, 1] normalized space."""
@@ -84,6 +99,24 @@ def _normalize(value, lo, default, hi):
     if value > default:
         return (value - default) / (hi - default)
     return 0.0
+
+
+def _rename_family(font):
+    """Replace the family-facing name records with RapiLab Sans.
+
+    Iterates each nameID's existing platform/encoding/language records rather
+    than writing a fixed (3, 1, 0x409) triple, so no stale Mac or Korean-locale
+    record is left behind still reading "NanumSquare Neo" / "나눔스퀘어 네오".
+    """
+    name_table = font["name"]
+    for name_id, value in RENAMED_STRINGS.items():
+        triples = {
+            (rec.platformID, rec.platEncID, rec.langID)
+            for rec in name_table.names
+            if rec.nameID == name_id
+        }
+        for platform_id, plat_enc_id, lang_id in triples:
+            name_table.setName(value, name_id, platform_id, plat_enc_id, lang_id)
 
 
 def build(source):
@@ -162,6 +195,8 @@ def build(source):
             }
         ],
     )
+
+    _rename_family(font)
 
     font.flavor = "woff2"
     return font

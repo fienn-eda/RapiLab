@@ -10,9 +10,13 @@
 
    The file is retuned by scripts/build_app_font.py: Naver ships the axis with
    Regular at 300 and Bold at 500, so the stock font would render this app's
-   body text nearly bold. See that script for the measurements. */
+   body text nearly bold. See that script for the measurements.
+
+   The same build also renames the embedded family to RapiLab Sans, so the
+   'RapiLab Sans' below is a local alias for that retuned NanumSquare Neo
+   file, not a separate typeface. */
 @font-face {
-  font-family: 'NanumSquare Neo';
+  font-family: 'RapiLab Sans';
   src: url('/fonts/NanumSquareNeo-Variable.woff2') format('woff2');
   font-weight: 300 900;
   font-style: normal;
@@ -86,7 +90,7 @@
      separated by an opaque background and a --border-strong edge instead. */
   --shadow: none;
 
-  --sans: 'NanumSquare Neo', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: 'RapiLab Sans', system-ui, 'Segoe UI', Roboto, sans-serif;
   /* Deliberately excluded from the bundled proportional typeface: the one
      place this is used lines up columns of numbers. */
   --mono: ui-monospace, Consolas, monospace;

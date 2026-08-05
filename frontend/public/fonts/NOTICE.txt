@@ -1,17 +1,17 @@
 NanumSquare Neo (나눔스퀘어 네오)
-Copyright (c) NAVER Corp. All rights reserved.
 
-Licensed under the SIL Open Font License (OFL).
-Source and full licence text: https://hangeul.naver.com/font
+Copyright © 2022 NAVER Corp. All rights reserved. Font Designed by Sandoll Inc.
 
-Terms, in brief:
-  - Free for personal and commercial use.
-  - May be embedded in applications and redistributed, including bundled with
-    other software, provided this notice travels with it.
-  - The font file may not be sold on its own.
+Licensed under the SIL Open Font License, Version 1.1. The full licence text
+is in OFL.txt beside this file. The upstream distribution ships no licence
+file of its own, so the OFL text bundled here was obtained from a canonical
+published copy of the licence, not from NAVER.
 
-NanumSquareNeo-Variable.woff2 in this directory is a derived work: the upstream
-variable font compressed to WOFF2 and retuned so its weight axis follows the CSS
-convention. It is not re-drawn - every weight it renders is a weight the
-upstream font already contained. See scripts/build_app_font.py for what was
-changed and why.
+NanumSquareNeo-Variable.woff2 in this directory is a Modified Version under
+the OFL: the upstream variable font's weight axis was retuned so it follows
+the CSS convention, the file was compressed to WOFF2, and the embedded family
+was renamed to RapiLab Sans. The rename exists so this Modified Version
+presents no Reserved Font Name of its own. scripts/build_app_font.py is what
+produces the file and documents the axis work.
+
+NAVER's page for the typeface: https://hangeul.naver.com/font
