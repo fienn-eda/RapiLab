@@ -1779,7 +1779,7 @@
 .charge-ladder__table td {
   padding: 0.35rem 0.6rem;
   text-align: left;
-  border-bottom: 1px solid var(--border, #3a3a3a);
+  border-bottom: 1px solid var(--rule);
   white-space: nowrap;
 }
 
