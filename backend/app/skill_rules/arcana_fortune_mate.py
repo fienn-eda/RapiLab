@@ -3,11 +3,14 @@ attacker. Base skills (no signature weapon).
 
 Modeled (DPS-relevant):
 - Radiant Youth (skills[2], her burst): grants herself "Making Memories" -
-  Critical Rate + Attack Damage, continuous until Full Burst ends (Keepsake
-  Album removes it there) - approximated as lasting the Full Burst window
-  (`FULL_BURST_DURATION`). Plus the burst nuke, 554.4% of final ATK
-  (`radiant_youth_burst_percent`). Also sets the `making_memories` status that
-  gates the Precious Moments ramp below.
+  Critical Rate + Attack Damage, from the cast until Full Burst ends (Keepsake
+  Album removes it there). Modeled as Grave's Heat Emission is: the two effects
+  are added open-ended (duration=None) at the cast and truncated to the elapsed
+  time when Full Burst ends (`EffectRegistry.truncate_open_ended`), so a replay
+  query for any point in the fight sees the correct on/off window regardless of
+  which unit's kit is moving that Full Burst's length. Plus the burst nuke,
+  554.4% of final ATK (`radiant_youth_burst_percent`). Also sets the
+  `making_memories` status that gates the Precious Moments ramp below.
 - Memories and Moments (skills[1]) two mechanics:
   - On using her Burst Skill, an Attack Damage buff to "all shotgun-wielding
     allies (except self)" - exact scope via the gap #3 live member filter
@@ -81,11 +84,7 @@ Not modeled / deferred:
 """
 from app.burst_cycle import FULL_BURST_DURATION
 from app.effects import Effect, ResourceSpec
-from app.skill_rules._helpers import (
-    _full_burst_window_length,
-    linear_resource_buff,
-    refreshing_buff_rule,
-)
+from app.skill_rules._helpers import linear_resource_buff, refreshing_buff_rule
 from app.squad_engine import SkillRule, has_status
 
 SKILL_VALUE_MANIFESTS = {
@@ -127,12 +126,11 @@ def build_fortune_mate_rules(values):
 
     def apply_radiant_youth(context, caster_slug, time, registry):
         context.set_status(caster_slug, MAKING_MEMORIES_STATUS, time)
-        window = _full_burst_window_length(context, time)
         registry.add(
-            Effect("crit_rate", crit_rate, "self", window, caster_slug), applied_at=time
+            Effect("crit_rate", crit_rate, "self", None, caster_slug), applied_at=time
         )
         registry.add(
-            Effect("attack_damage_up", attack_damage, "self", window, caster_slug),
+            Effect("attack_damage_up", attack_damage, "self", None, caster_slug),
             applied_at=time,
         )
 
@@ -152,6 +150,10 @@ def build_fortune_mate_rules(values):
         # Keepsake Album's third bullet. Its flat-ATK grant is NOT here: that
         # scales off a Precious Moments count only the shot loop can produce,
         # so it is resolved by `build_keepsake_album_resource_gated_buffs`.
+        # Closes out Radiant Youth's open-ended crit_rate/attack_damage_up,
+        # same shape as Grave's Heat Emission.
+        registry.truncate_open_ended("crit_rate", caster_slug, time)
+        registry.truncate_open_ended("attack_damage_up", caster_slug, time)
         context.clear_status(caster_slug, MAKING_MEMORIES_STATUS)
 
     return [

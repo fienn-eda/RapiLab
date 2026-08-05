@@ -56,8 +56,16 @@ def build():
 
 
 def run_cycle(rules, ctx, registry, burst_time):
-    """One burst cycle for arcana: her tier-2 burst, then Full Burst enter/end."""
+    """One burst cycle for arcana: her tier-2 burst, then Full Burst enter/end.
+
+    Also sets `current_full_burst_end` where raid_simulator.on_full_burst_enter
+    would - AFTER own_burst_activate has already fired, since tier 2 (her burst)
+    always runs before tier 3 opens the window in the real tier loop. A test
+    that skipped this would never reproduce the stale-window bug (own_burst_activate
+    reading the PREVIOUS cycle's end) that motivated Making Memories' open-ended +
+    truncate_open_ended shape."""
     fire_trigger("own_burst_activate", rules, ctx, registry, burst_time)
+    ctx.current_full_burst_end = burst_time + 10.0
     fire_trigger("full_burst_enter", rules, ctx, registry, burst_time + 1.0)
     fire_trigger("full_burst_end", rules, ctx, registry, burst_time + 10.0)
 
@@ -83,9 +91,10 @@ def test_radiant_youth_grants_self_crit_rate_and_attack_damage():
     assert round(registry.total_for("attack_damage_up", SELF_TARGET, now=5.0), 4) == 0.2999
     assert registry.total_for("crit_rate", ALLY, now=5.0) == 0.0  # self-scoped
 
-    # expires after the Full Burst window approximation
-    later = 5.0 + FULL_BURST_DURATION + 0.1
-    assert registry.total_for("crit_rate", SELF_TARGET, now=later) == 0.0
+    # Open-ended (duration=None): with no full_burst_end to close it, it stays
+    # active indefinitely - see test_radiant_youth_buff_survives_into_the_second_
+    # full_burst_cycle for the truncation and multi-cycle behavior.
+    assert round(registry.total_for("crit_rate", SELF_TARGET, now=5.0 + FULL_BURST_DURATION + 0.1), 4) == 0.2009
 
 
 def test_memories_and_moments_grants_sg_allies_attack_damage_on_burst():
@@ -109,6 +118,34 @@ def test_own_burst_grants_self_only_radiant_youth_attack_damage():
     fire_trigger("own_burst_activate", {"arcana-fortune-mate": build()}, ctx, registry, time=5.0)
 
     assert round(registry.total_for("attack_damage_up", SELF_TARGET, now=5.0), 4) == 0.2999
+
+
+def test_radiant_youth_buff_survives_into_the_second_full_burst_cycle():
+    # Regression test: apply_radiant_youth fires on own_burst_activate (her
+    # own tier-2 burst), which ALWAYS runs before this cycle's tier 3 opens the
+    # window and current_full_burst_end is published for it - so a version of
+    # this buff that read the window (end - time) instead of going open-ended
+    # was reading the PREVIOUS cycle's stale end from the second cycle onward,
+    # going negative and clamping to a dead-on-arrival 0-duration buff. The
+    # bug's signature was "alive in cycle 1, dead from cycle 2" - a
+    # single-cycle test cannot see it, so this one runs two.
+    ctx = make_context()
+    registry = EffectRegistry()
+    rules = {"arcana-fortune-mate": build()}
+
+    run_cycle(rules, ctx, registry, burst_time=5.0)    # cycle 1: [5, 15)
+    run_cycle(rules, ctx, registry, burst_time=25.0)   # cycle 2: [25, 35)
+
+    # Cycle 1's window has long closed by the time cycle 2 is checked.
+    assert registry.total_for("crit_rate", SELF_TARGET, now=20.0) == 0.0
+
+    # Alive mid-cycle-2 - this is exactly what the stale-window bug zeroed out.
+    assert round(registry.total_for("crit_rate", SELF_TARGET, now=30.0), 4) == 0.2009
+    assert round(registry.total_for("attack_damage_up", SELF_TARGET, now=30.0), 4) == 0.2999
+
+    # And dead once cycle 2's own Full Burst ends.
+    assert registry.total_for("crit_rate", SELF_TARGET, now=35.1) == 0.0
+    assert registry.total_for("attack_damage_up", SELF_TARGET, now=35.1) == 0.0
 
 
 # --- the phase rotation (Fienn's in-game observation, 2026-07-28) -------------
