@@ -3,28 +3,15 @@ signature weapon).
 
 "Wheel of Fortune" is a status her own burst (Shackles of Destiny) grants to
 all Electric Code allies, including herself (she is Electric). Her other two
-skills gate a bullet on "if self is in Wheel of Fortune status" - since only
-her own burst grants it, the encoding reads that as "did Arcana's own burst
-fire this cycle" and uses `own_burst_fired_this_cycle()` (reads
-SquadContext.burst_used_this_cycle, which is not yet cleared when
-full_burst_end rules run).
-
-KNOWN DEFECT (2026-08-05): that equivalence drops the status's CLOCK, and these
-three bullets fire on full_burst_end, ten seconds after the grant. Wheel of
-Fortune lasts 10 sec and starts when Arcana casts at Burst Stage 2 - strictly
-BEFORE the Burst 3 cast that opens Full Burst - so with the standard 10 sec
-window it has always lapsed by the time Full Burst ends. The registry agrees:
-in a scored deck the Wheel expires at t=12.500 while full_burst_end fires at
-t=12.600. Read honestly the gate is ALWAYS false, and the only thing that
-turns it true is a shortened Full Burst - which today means Isabel alone
-("Full Burst Time -5 sec", not modelled either, see isabel.py). So Arcana's
-three conditional bullets currently fire in every deck she bursts in, worth
-+25-29% of deck total on a real roster, when they should fire only alongside
-Isabel. Fixing this needs a per-cycle Full Burst duration in burst_cycle.py
-plus a time-aware gate; the two changes are useless apart and are an
-engine-extension decision, not a skill-rule edit. Contrast grave.py, which
-gates the same 10-sec-status/10-sec-window coincidence on the status ENDING
-(where full_burst_end is the right instant) rather than on it still running.
+skills gate three bullets on "if self is in Wheel of Fortune status" at Full
+Burst END - and the status runs 10 sec from her Burst Stage 2 cast, which is
+strictly before the Burst 3 cast that opens the window. So with a standard 10
+sec Full Burst it has always lapsed by the time those bullets check, and the
+only thing that opens the gate is a shortened window: today that means Isabel
+alone ("Full Burst Time -5 sec"). Modeled with `own_burst_status_active`, which
+reads the grant off her own burst time and compares it against the trigger's
+time - `own_burst_fired_this_cycle()` carries no clock and cannot tell the two
+cases apart.
 
 Modeled (DPS-relevant):
 - Shackles of Destiny (skills[2], her burst): Electric-Code squad Attack
@@ -34,8 +21,9 @@ Modeled (DPS-relevant):
 - Awakened Destiny (skills[0]): on Full Burst end, squad ATK % of caster's ATK
   - this bullet is unconditioned (no Wheel of Fortune requirement).
 - Cycle of Destiny (skills[1]): on Full Burst end, an unconditioned squad
-  Attack Damage buff, plus - only if Arcana's own burst fired this cycle -
-  squad burst-cooldown reduction + squad ATK % of caster's ATK (Death).
+  Attack Damage buff, plus - only while Arcana is still in Wheel of Fortune
+  status - squad burst-cooldown reduction + squad ATK % of caster's ATK
+  (Death).
 - "The Magician" (skills[0]) / "Strength" (skills[1]) first bullets: on Full
   Burst end, all Burst 3 Electric Code allies who previously cast their Burst
   Skill - if Arcana is in Wheel of Fortune status - get Attack damage +180%
@@ -57,7 +45,7 @@ Not modeled: The Magician's "Cooldown of Skill 2 -75%".
 """
 from app.effects import Effect, Pulse
 from app.skill_rules._helpers import member_subset_buff_rule
-from app.squad_engine import SkillRule, own_burst_fired_this_cycle
+from app.squad_engine import SkillRule, own_burst_status_active
 
 SKILL_VALUE_MANIFESTS = {
     "arcana": {
@@ -137,20 +125,23 @@ def build_arcana_rules(values):
             and member.slug in context.burst_used_this_cycle
         )
 
+    wheel_active = own_burst_status_active(wheel_duration)
+
     return [
         SkillRule(trigger="own_burst_activate", action=apply_shackles_buffs),
         SkillRule(trigger="full_burst_end", action=apply_awakened_squad_atk),
-        SkillRule(trigger="full_burst_end", action=apply_cycle_death, condition=own_burst_fired_this_cycle()),
+        SkillRule(trigger="full_burst_end", action=apply_cycle_death,
+                  time_condition=wheel_active),
         SkillRule(trigger="full_burst_end", action=apply_cycle_attack_damage),
         # The Magician / Strength: bursted Electric Burst-3 subset (gap #3).
         member_subset_buff_rule(
             "full_burst_end", bursted_electric_b3,
             [("attack_damage_up", magician_attack_damage, magician_duration)],
-            condition=own_burst_fired_this_cycle(),
+            time_condition=wheel_active,
         ),
         member_subset_buff_rule(
             "full_burst_end", bursted_electric_b3,
             [("flat_atk", strength_atk, strength_duration)],
-            condition=own_burst_fired_this_cycle(),
+            time_condition=wheel_active,
         ),
     ]
