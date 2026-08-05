@@ -30,7 +30,7 @@ is real, the shipping shape is two-stage (rank on one order, re-score a
 shortlist across orderings), not this.
 
 Usage (any cwd):
-    python3 scripts/audit_swap_ordering.py [--decks 5] [--budget 1000000]
+    python3 scripts/audit_swap_ordering.py [--decks 5] [--budget 20000]
                                            [--workers auto]
 """
 import argparse
