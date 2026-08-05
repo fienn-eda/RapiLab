@@ -282,13 +282,16 @@ def allocate_decks(roster, boss: BossProfile, num_decks=5, draft=None,
         # judges are scored in batches through the same pool the peel used, which
         # is what lets the phase converge instead of being cut off mid-climb.
         cancel.check()
-        _swap_pass(decks, remaining, boss, swap_budget, locked=locked, pool=pool,
-                   batch=max(_MIN_SWAP_BATCH, worker_count * SWAP_BATCH_PER_WORKER),
-                   cancel=cancel)
+        converged = _swap_pass(decks, remaining, boss, swap_budget, locked=locked,
+                               pool=pool,
+                               batch=max(_MIN_SWAP_BATCH,
+                                         worker_count * SWAP_BATCH_PER_WORKER),
+                               cancel=cancel)
 
         summaries = [best_ordering_summary(units, boss, pool) for units in decks]
         return {"decks": summaries,
-                "leftover_slugs": sorted(u.slug for u in remaining)}
+                "leftover_slugs": sorted(u.slug for u in remaining),
+                "swap_converged": converged}
     finally:
         if pool is not None:
             pool.close()
@@ -579,6 +582,10 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
                                      workers=workers, alternatives=alternatives,
                                      cancel=cancel)
 
+    # Every allocate_decks call that actually ran counts: the answer the player
+    # sees is only as complete as the least complete search behind it.
+    converged = [recommended["swap_converged"]]
+
     within_draft = None
     baseline_total = None
     if _is_complete(draft, num_decks):
@@ -596,13 +603,15 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
                            workers=workers, alternatives=alternatives,
                            cancel=cancel)
         within_draft = _better(w, s)
+        converged += [w["swap_converged"], s["swap_converged"]]
         # within_draft's decks are a valid full-roster allocation (drafted units
         # subset of roster), so fold it into recommended to guarantee
         # recommended >= within_draft by construction; recompute its leftovers
         # against the FULL roster (bench units belong in leftover).
         if _combined(within_draft) > _combined(recommended):
             recommended = {"decks": within_draft["decks"],
-                           "leftover_slugs": _leftover_against(within_draft, roster)}
+                           "leftover_slugs": _leftover_against(within_draft, roster),
+                           "swap_converged": within_draft["swap_converged"]}
         # "The draft's exact groupings, scored as-is" has no single reading for a
         # seat whose mode the engine picks, so score the best one - the same
         # standard the recommendation itself is held to, which keeps the gain the
@@ -622,7 +631,8 @@ def recommend_from_draft(roster, boss, num_decks=5, draft=None,
     pinned_by_deck = [[s for s in d["deck"] if character_of(s) in locked]
                       for d in recommended["decks"]]
     return {"recommended": recommended, "within_draft": within_draft,
-            "baseline_total_damage": baseline_total, "pinned_by_deck": pinned_by_deck}
+            "baseline_total_damage": baseline_total, "pinned_by_deck": pinned_by_deck,
+            "swap_converged": all(converged)}
 
 
 def best_ordering_summary(units, boss, pool=None):

@@ -241,3 +241,32 @@ def test_baseline_filters_out_a_reading_the_search_would_never_field(monkeypatch
         alternatives={"rep": (rep, alt)}, workers=None)
 
     assert out["baseline_total_damage"] == 50.0
+
+
+def test_a_converged_allocation_reports_that_it_converged(monkeypatch):
+    """The flag is what the UI uses to decide whether to warn, so a run that
+    finished must not carry the warning."""
+    roster = roster_of({
+        "a1": 1, "a2": 2, "a3": 3, "a4": 3, "a5": 3,
+        "b1": 1, "b2": 2, "b3": 3, "b4": 3, "b5": 3,
+    })
+    patch_scorer(monkeypatch, lambda slugs: 100.0)
+
+    out = da.recommend_from_draft(roster, BOSS, num_decks=2)
+
+    assert out["swap_converged"] is True
+
+
+def test_a_budget_that_binds_reports_that_it_did_not_converge(monkeypatch):
+    """allocate_decks' flag has to survive the trip up through
+    recommend_from_draft - including the branch that rebuilds `recommended`
+    from within_draft, which carries only the keys it is handed."""
+    roster = roster_of({
+        "a1": 1, "a2": 2, "a3": 3, "a4": 3, "a5": 3,
+        "b1": 1, "b2": 2, "b3": 3, "b4": 3, "b5": 3,
+    })
+    patch_scorer(monkeypatch, lambda slugs: 100.0)
+
+    alloc = da.allocate_decks(roster, BOSS, num_decks=2, swap_budget=1)
+
+    assert alloc["swap_converged"] is False
