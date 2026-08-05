@@ -166,6 +166,43 @@ describe('DraftResults', () => {
     expect(screen.queryByText(/^\+/)).not.toBeInTheDocument()
     expect(screen.queryByText(/^-/)).not.toBeInTheDocument()
   })
+
+  it('탐색이 잘렸을 때만 경고한다 (complete-draft, three-tier branch)', () => {
+    const { rerender } = render(
+      <DraftResults
+        decks={recommendedDecks}
+        combinedTotalDamage={130}
+        withinDraft={withinDraft}
+        baselineTotalDamage={100}
+        submittedDraft={submittedDraft}
+        swapConverged={false}
+      />,
+    )
+    expect(screen.getByText(/상한에 걸려 끝까지 가지 못했어요/)).toBeInTheDocument()
+
+    rerender(
+      <DraftResults
+        decks={recommendedDecks}
+        combinedTotalDamage={130}
+        withinDraft={withinDraft}
+        baselineTotalDamage={100}
+        submittedDraft={submittedDraft}
+        swapConverged={true}
+      />,
+    )
+    expect(screen.queryByText(/상한에 걸려 끝까지 가지 못했어요/)).not.toBeInTheDocument()
+
+    rerender(
+      <DraftResults
+        decks={recommendedDecks}
+        combinedTotalDamage={130}
+        withinDraft={withinDraft}
+        baselineTotalDamage={100}
+        submittedDraft={submittedDraft}
+      />,
+    )
+    expect(screen.queryByText(/상한에 걸려 끝까지 가지 못했어요/)).not.toBeInTheDocument()
+  })
 })
 
 describe('matchDecksToSubmitted', () => {

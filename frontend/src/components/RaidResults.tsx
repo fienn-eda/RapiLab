@@ -10,6 +10,7 @@ import { DeckCard, type UnitLookups } from './DeckCard'
 import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
 import { nameFromSlug } from '../lib/unitName'
+import { SwapConvergenceNote } from './SwapConvergenceNote'
 
 interface RaidResultsProps extends UnitLookups {
   decks: DeckRecommendation[]
@@ -46,11 +47,7 @@ export function RaidResults({
         이 {decks.length}개 덱을 모두 함께 편성하세요 — 각 니케는 정확히 하나의 덱에만
         배정돼요. 이것은 순위별 대안이 아니라 하나의 분할이에요.
       </p>
-      {swapConverged === false && (
-        <p className="raid-results__note" role="status">
-          탐색이 상한에 걸려 끝까지 가지 못했어요. 더 나은 배분이 남아 있을 수 있어요.
-        </p>
-      )}
+      <SwapConvergenceNote swapConverged={swapConverged} />
       <p className="raid-results__combined">
         총합: <strong>{formatDamage(combinedTotalDamage)} 딜</strong>
       </p>

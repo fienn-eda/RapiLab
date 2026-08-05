@@ -16,6 +16,7 @@ import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
 import { nameFromSlug } from '../lib/unitName'
 import { RaidResults } from './RaidResults'
+import { SwapConvergenceNote } from './SwapConvergenceNote'
 
 interface DraftResultsProps extends UnitLookups {
   decks: RaidDeck[]
@@ -131,6 +132,7 @@ export function DraftResults({
         세 단계로 올라가요: 제출한 드래프트, 드래프트한 유닛만으로 만든
         최선의 배분, 벤치까지 포함한 추천.
       </p>
+      <SwapConvergenceNote swapConverged={swapConverged} />
 
       <section className="draft-results__tier" aria-label="내 드래프트">
         <h3 className="draft-results__tier-title">내 드래프트</h3>
