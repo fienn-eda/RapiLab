@@ -5,6 +5,37 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 나눔스퀘어 네오를 번들하고, 그 굵기 축을 CSS 눈금으로 다시 맞춘다
+
+- Date: 2026-08-06
+- Context: 앱 텍스트를 나눔스퀘어 네오로 바꾸고 싶다는 요청. 폰트는 Fienn이
+  내려받아 로컬에 있었고(변수 1종 + 정적 5종), 라이선스는 OFL이라 임베딩·재배포가
+  허용된다(파일 자체 판매만 금지).
+- Decision (Bot, 2026-08-06, Fienn의 「앱 전체에 적용」 지시 아래): **변수 폰트를
+  woff2로 번들하되, `avar`로 굵기 축을 CSS 관례에 맞춘 파생본을 만들어 싣는다.**
+  `--sans` 토큰 하나만 교체하면 앱 전체가 따라온다. `--mono`는 그대로 둔다 —
+  유일한 사용처가 덱 비교의 증감 숫자 정렬이다.
+- Why 번들인가: 설치된 시스템 폰트 이름만 적으면 Fienn의 PC에서만 맞고, RapiLab
+  설치본을 받은 사람 화면은 폴백으로 떨어진다. `frontend/public/`에 두면 Vite가
+  `dist/`로 옮기고 백엔드가 그 `dist`를 서빙하므로(`backend/app/api.py`) 데스크톱
+  배포본까지 자동으로 따라간다.
+- Why 변수인가: 앱 CSS가 400·500·550·600·650·700을 쓴다. 정적 5종으로 가면 CSS
+  폰트 매칭이 550/600/650/700을 **전부 Bold 하나로** 스냅해 디자인의 층위가
+  사라진다. 변수 축은 이 넷을 실제로 다른 굵기로 렌더링한다.
+- Why 리매핑인가: 이 폰트의 축은 Regular가 300, Bold가 500이다 — 손대지 않으면
+  본문이 거의 볼드로 나온다. 측정 근거와 `avar` 순서 제약은
+  `docs/insights.md`「변수 폰트의 `wght` 축이 CSS 관례를 따른다는 보장은 없다」.
+- Alternatives considered: **(a) 시스템 설치 폰트 참조** — 배포본에서 깨진다.
+  **(b) 정적 5종 번들** — 위의 스냅 문제. **(c) 축을 그대로 두고 앱 CSS의 굵기를
+  전부 다시 쓰기** — 변경 지점이 29곳이고, 폰트를 또 바꾸면 다시 해야 한다.
+  파생본 한 번이 더 싸다. **(d) 한글 서브셋** — 8.34MB가 woff2로 1.82MB까지
+  줄어 필요가 없어졌다. 서브셋은 없는 글자에서 두부를 만드는 위험을 새로 연다.
+- Consequences: 저장소와 설치본이 1.82MB 늘어난다. 업스트림 폰트가 갱신되면
+  `scripts/build_app_font.py`를 다시 돌려야 한다(`--check`가 다섯 굵기가 의도한
+  마스터에 앉았는지 검증한다). 백엔드 1912 passed / 3 skipped, 프론트 524 —
+  둘 다 불변. 라이선스 고지는 `frontend/public/fonts/NOTICE.txt`로 폰트 옆에
+  같이 배포된다.
+
 ## 스왑 예산을 벽시계에서 후보 교환 수로 — 상한은 폭주 방지용이 되고 등반은 수렴까지 간다
 
 - Date: 2026-08-05

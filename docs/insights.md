@@ -4,6 +4,28 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 변수 폰트의 `wght` 축이 CSS 관례를 따른다는 보장은 없다 — 그 폰트 자신의 정적 마스터로 검증할 것
+
+- 확립: 2026-08-06. 나눔스퀘어 네오 변수 폰트의 명명 인스턴스는 `Light=100,
+  Regular=300, Bold=500, ExtraBold=700, Heavy=900`이다. 브라우저는 CSS
+  `font-weight`를 **`wght` 축 값에 그대로 얹으므로**, 이 폰트를 손대지 않고
+  번들하면 `font-weight: 400` 본문이 Regular(축 300)보다 훨씬 두꺼운 축 400에서,
+  `700`은 ExtraBold에서 렌더링된다. 앱 전체가 볼드로 뭉개진다.
+- **라벨은 벤더가 쓴 것이라 그 자체로는 증거가 아니다.** 같은 패밀리의 정적
+  마스터(`usWeightClass`가 350/400/700/800/900로 정상)와 **글리프 잉크량**을
+  대조해서 사실로 확정했다: 정적 Regular의 H 면적 0.1473은 변수축 300(0.1526)과,
+  Bold 0.2028은 축 500(0.2121)과 맞았다. 축 400은 이미 0.1824다.
+- **How to apply:** 잉크량은 `fontTools.pens.areaPen.AreaPen`으로 잰다 — 굵기의
+  대리 지표로 충분하고, 정적/변수 어느 쪽에도 쓸 수 있어 두 파일을 같은 자로 잰다.
+  브라우저 쪽에서도 같은 방법이 통한다(canvas에 그린 뒤 어두운 픽셀 수).
+- 고치는 방법은 `avar` 세그먼트 맵이다. 단 **`avar`는 기본값을 옮기지 못한다**
+  (0→0을 강제한다). 그래서 순서가 있다: 먼저 instancer로 폰트의 기본값을 시각적
+  Regular로 옮기고, 그 다음 사용자 축을 CSS 눈금으로 다시 라벨링하고, 마지막에
+  `avar`가 나머지를 옮긴다. `scripts/build_app_font.py`가 이 순서대로 한다.
+- 부수 소득: 정적 5종으로 갔다면 앱이 쓰는 500/550/600/650이 CSS 폰트 매칭
+  규칙에 따라 **전부 Bold 하나로 스냅**된다. 변수 축을 살리면 이 넷이 실제로
+  다른 굵기가 된다(브라우저 실측 잉크: 1425 / 1504 / 1529 / 1704).
+
 ## 배치 폭은 어느 후보가 채택되는지를 바꾸지 않는다
 
 - 확립: 2026-08-05. `_try_swaps`는 후보를 고정 순서로 훑어 **처음 개선하는 것**을

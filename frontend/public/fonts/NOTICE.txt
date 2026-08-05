@@ -1,0 +1,17 @@
+NanumSquare Neo (나눔스퀘어 네오)
+Copyright (c) NAVER Corp. All rights reserved.
+
+Licensed under the SIL Open Font License (OFL).
+Source and full licence text: https://hangeul.naver.com/font
+
+Terms, in brief:
+  - Free for personal and commercial use.
+  - May be embedded in applications and redistributed, including bundled with
+    other software, provided this notice travels with it.
+  - The font file may not be sold on its own.
+
+NanumSquareNeo-Variable.woff2 in this directory is a derived work: the upstream
+variable font compressed to WOFF2 and retuned so its weight axis follows the CSS
+convention. It is not re-drawn - every weight it renders is a weight the
+upstream font already contained. See scripts/build_app_font.py for what was
+changed and why.

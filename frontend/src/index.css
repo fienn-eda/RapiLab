@@ -3,6 +3,22 @@
    dark ground than on white - a light theme meant every surface had to be
    tuned twice for a look neither of them got to keep. */
 
+/* NanumSquare Neo carries the Korean UI text. It is bundled rather than named
+   as an installed font so every install renders the same, and it is variable
+   so the weights the design asks for between Regular and Bold - 500 through
+   650 - are real weights rather than a snap to the nearest master.
+
+   The file is retuned by scripts/build_app_font.py: Naver ships the axis with
+   Regular at 300 and Bold at 500, so the stock font would render this app's
+   body text nearly bold. See that script for the measurements. */
+@font-face {
+  font-family: 'NanumSquare Neo';
+  src: url('/fonts/NanumSquareNeo-Variable.woff2') format('woff2');
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
 :root {
   --sp-1: 4px;
   --sp-2: 8px;
@@ -54,7 +70,9 @@
 
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.5), 0 4px 14px rgba(0, 0, 0, 0.4);
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --sans: 'NanumSquare Neo', system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* Left proportional-free on purpose: the one place this is used lines up
+     columns of numbers. */
   --mono: ui-monospace, Consolas, monospace;
 
   /* 읽기 폭. 레이아웃은 창을 다 쓰지만 문장은 이 폭을 넘지 않는다 - 한 줄이
