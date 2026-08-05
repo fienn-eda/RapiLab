@@ -781,6 +781,10 @@ _PERIODIC_NUKE_BUILDERS = {
     "isabel": lambda sv: {
         "cooldown": POINTED_FEATHER_COOLDOWN,
         "percent": pointed_feather_percent(sv),
+        # Pointed Feather는 그녀의 스킬 2다 - 아르카나의 The Magician이 깎는 바로
+        # 그 쿨다운. 태그가 없는 주기 항목은 스킬 쿨다운을 모델한 것이 아니므로
+        # (에이다의 창 내 간격, 스노우 화이트의 자체 주기) 감소를 받지 않는다.
+        "cooldown_skill_slot": 2,
     },
     "jill-valentine": lambda sv: build_acid_ammo_periodic_nuke(sv),
     "little-mermaid": lambda sv: build_bubble_wave_fb_nuke(sv),

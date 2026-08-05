@@ -114,6 +114,12 @@ AFTER_WINDOW_EPSILON = 1e-3
 CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
+# 스킬 쿨다운 감소의 하한 배수. 감소가 100%에 닿으면 주기 루프가 전진하지 않는다.
+# 오늘 데이터로는 스킬 쿨감을 주는 유닛이 아르카나 하나뿐이라(75%) 겹칠 수 없고,
+# 그래서 합산 규칙이 가산인지 승산인지는 알 수 없다 - 이 상수는 그 규칙이 아니라
+# 무한 루프 방어다.
+MIN_COOLDOWN_FACTOR = 0.05
+
 # Damage types that can never hit a core, whatever fired them.
 NON_CORE_DAMAGE_TYPES = frozenset({"sustained", "distributed"})
 
@@ -1407,10 +1413,17 @@ def simulate_raid(
                     _tick(tick)
                     tick += interval
         else:
+            skill_slot = spec.get("cooldown_skill_slot")
+            target = target_for(slug)
             tick = cooldown
             while tick < fight_duration:
                 _tick(tick)
-                tick += cooldown
+                factor = 1.0
+                if skill_slot == 2:
+                    reduction = registry.total_for(
+                        "skill_cooldown_reduction_percent", target, tick)
+                    factor = max(MIN_COOLDOWN_FACTOR, 1.0 - reduction)
+                tick += cooldown * factor
 
     # Damage on a cadence the unit computes for itself. `periodic_nukes` covers
     # a fixed interval; a summoned entity whose attack rate depends on how many
