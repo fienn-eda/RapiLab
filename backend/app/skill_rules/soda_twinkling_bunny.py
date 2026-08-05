@@ -1,10 +1,9 @@
 """Soda: Twinkling Bunny (slug "soda-twinkling-bunny"), a Burst-3 Iron
 Shotgun attacker. Base skills. PARTIAL - see below.
 
-First consumer of the reset-capable resource primitive (a resource SET to a
-fixed value rather than incremented - see effects.ResourceSpec.resets) and of
-resource_gated_buffs (a burst-fired buff gated on a resource's count at the
-burst's own time - see raid_simulator's `resource_gated_buffs` param).
+First consumer of resource_gated_buffs (a burst-fired buff gated on a
+resource's count at the burst's own time - see raid_simulator's
+`resource_gated_buffs` param).
 
 Modeled (DPS-relevant): a "chip" resource (Golden Chip), capped at 50.
 - Lucky Golden Chip (skills[0]) starts it at 50 (the cap) from battle start,
@@ -12,10 +11,14 @@ Modeled (DPS-relevant): a "chip" resource (Golden Chip), capped at 50.
   (`per_shot_every_during_full_burst`) - it IS her Critical Damage stack:
   +1.32% Critical Damage per stack, continuous.
 - Onward, Soda! (skills[2], her burst): deals 628.7% of final ATK as damage,
-  then resets Golden Chip to 17 (`resets`, trigger "own_burst") - consuming
-  whatever it had built up. Additionally, if she had at least 30 stacks right
-  BEFORE that reset (`resource_gated_buffs`, `use_pre_reset`), grants self
-  ATK +65.25% for 15 sec.
+  then SPENDS 17 Golden Chip ("stacks v 17 after the effect is applied" - a
+  `resets` entry with a `value_fn`, trigger "own_burst"), floored at 1.
+  Additionally, if she had at least 30 stacks right BEFORE that spend
+  (`resource_gated_buffs`, `use_pre_reset`), grants self ATK +65.25% for
+  15 sec. The chip therefore DRAINS over a fight rather than settling: each
+  cycle spends 17 and a Full Burst refills only ~5, so a 180 sec fight reads
+  50 / 43 / 35 / 28 / 20 / 13 / 9 at her seven bursts and the ATK gate opens
+  for the first three, not just the first.
 
 - Lucky Golden Chip's co-fired buff ("after 3 normal attacks during Full
   Burst, affects self and the 1 ally with the highest final ATK: Attack
@@ -27,17 +30,29 @@ Modeled (DPS-relevant): a "chip" resource (Golden Chip), capped at 50.
   refresh rather than stack). See `build_lucky_golden_chip_per_shot_rules`.
 
 Not modeled / deferred:
-- Beginner's Rewards (skills[1]) entirely: both bullets depend on a per-unit
-  Full Burst Duration extension (+2s/+3s gated on Golden Chip stacks), which
-  has no engine concept (Full Burst duration is a single global constant, not
-  adjustable per-caster) - and the bullet's own per-shot nuke is itself gated
-  on that same extension state, so it's unreachable too.
-- Onward, Soda!'s Hit Rate +38.91%/15s (gated on pre-reset stacks >=20) is
+- Beginner's Rewards (skills[1]) entirely: both bullets depend on a Full Burst
+  Duration extension (+2 sec at 10+ stacks, a further +3 at 20+) and the
+  bullet's own per-shot nuke is gated on that same extension state. A per-cycle
+  Full Burst length DOES exist now (`FULL_BURST_DURATION_DELTA`, built
+  2026-08-05 for Isabel and Modernia), but it holds a CONSTANT per slug, and
+  hers is neither constant nor independent: the extension is decided by a chip
+  count that drains cycle by cycle (above), and a longer Full Burst means more
+  in-window shots, which refill the chip, which decides the extension. The
+  answer feeds back into its own input, so it needs either fixed-point
+  iteration or a second implementation of the chip machine inside the
+  scheduler - see docs/roadmap.md.
+- Onward, Soda!'s Hit Rate +38.91%/15s (gated on pre-spend stacks >=20) is
   inert - Hit Rate isn't a stat the engine consumes.
 """
 from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import linear_resource_buff
 from app.squad_engine import SkillRule
+
+
+# Her burst never spends the chip below this, whatever it held (Fienn's in-game
+# reading: bursting at 16 stacks leaves 1). Not in the skill text, so it is a
+# measurement rather than a transcription.
+CHIP_FLOOR = 1
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -93,7 +108,7 @@ def build_golden_chip_resources(values):
     initial_stacks = int(float(chip["description_value_01"]))
     crit_damage_per_stack = float(chip["description_value_03"]) / 100
     cap = int(float(chip["description_value_04"]))
-    post_burst_value = int(float(soda["description_value_01"]))
+    burst_spend = int(float(soda["description_value_01"]))
 
     return [
         ResourceSpec(
@@ -103,10 +118,17 @@ def build_golden_chip_resources(values):
             buffs=[linear_resource_buff("other_critical_damage_sources", crit_damage_per_stack, "self")],
             resets=[
                 {"trigger": "battle_start", "value": initial_stacks},
-                {"trigger": "own_burst", "value": post_burst_value},
+                {"trigger": "own_burst", "value_fn": _make_chip_spend(burst_spend)},
             ],
         )
     ]
+
+
+def _make_chip_spend(amount):
+    """"Golden Chip stacks v 17 after the effect is applied" - the burst SPENDS
+    17 of whatever had built up, floored at 1 (Fienn bursted at 16 stacks in
+    game and was left with 1)."""
+    return lambda pre_value: max(CHIP_FLOOR, pre_value - amount)
 
 
 def build_onward_soda_resource_gated_buffs(values):

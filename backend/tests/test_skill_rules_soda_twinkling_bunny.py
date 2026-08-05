@@ -58,7 +58,7 @@ def test_lucky_golden_chip_cofired_buff_targets_self_and_top_atk_ally():
     assert reg.total_for("attack_damage_up", SODA, now=8.1) == 0.0
 
 
-def test_golden_chip_resource_starts_at_cap_and_resets_on_burst():
+def test_golden_chip_resource_starts_at_cap_and_burst_spends_seventeen():
     specs = build_golden_chip_resources(SODA_VALUES)
     assert len(specs) == 1
     spec = specs[0]
@@ -66,10 +66,19 @@ def test_golden_chip_resource_starts_at_cap_and_resets_on_burst():
     assert spec.name == "chip"
     assert spec.fill == ("per_shot_every_during_full_burst", 3)
     assert spec.cap == 50
-    assert spec.resets == [
-        {"trigger": "battle_start", "value": 50},
-        {"trigger": "own_burst", "value": 17},
-    ]
+    assert len(spec.resets) == 2
+    assert spec.resets[0] == {"trigger": "battle_start", "value": 50}
+    assert spec.resets[1]["trigger"] == "own_burst"
+
+    # "Golden Chip stacks v 17" SPENDS 17 of whatever had built up - it does
+    # not set the count to 17.
+    spend = spec.resets[1]["value_fn"]
+    assert spend(50) == 33
+    assert spend(30) == 13
+    # Floored at 1: Fienn bursted at 16 stacks in game and was left with 1.
+    assert spend(16) == 1
+    assert spend(17) == 1
+    assert spend(1) == 1
 
 
 def test_golden_chip_crit_damage_scales_linearly_per_stack():
@@ -97,10 +106,10 @@ def test_onward_soda_atk_buff_gated_on_pre_reset_stacks_at_least_30():
     assert spec["duration"] == 15.0
 
 
-def test_soda_end_to_end_burst_resets_chip_and_gates_the_atk_buff():
-    # Full chain: Golden Chip starts at cap (50) from battle start, so the
-    # FIRST burst's pre-reset count is already >=30 -> the ATK buff fires;
-    # the reset then drops the crit-damage stack to 17 for the next cycle.
+def _simulate(fight_duration):
+    """Soda plus two damage-less totems, so every entry in the log is hers.
+    Her SG fires 1.5/s with ammo enough never to reload, so Golden Chip fills
+    once per 2 sec of Full Burst."""
     deck = [
         {"slug": "buffer", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
         {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
@@ -113,18 +122,26 @@ def test_soda_end_to_end_burst_resets_chip_and_gates_the_atk_buff():
     }
     sg = {"weapon": "SG", "damage_percent": 10.0, "max_ammo": 1000,
           "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 0.0}
-    result = simulate_raid(
+    return simulate_raid(
         deck,
         {"buffer": [], "midtier": [], "soda-twinkling-bunny": []},
         burst_damage_percents={"soda-twinkling-bunny": onward_soda_burst_percent(SODA_VALUES)},
         base_stats=base_stats,
-        enemy_def=0, gauge_charge_time=5.0, fight_duration=6.0, mode="auto", base_crit_rate=0.0,
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=fight_duration, mode="auto",
+        base_crit_rate=0.0,
         weapon_stats={"soda-twinkling-bunny": sg},
         resource_specs={"soda-twinkling-bunny": build_golden_chip_resources(SODA_VALUES)},
         resource_gated_buffs={
             "soda-twinkling-bunny": build_onward_soda_resource_gated_buffs(SODA_VALUES)
         },
     )
+
+
+def test_soda_end_to_end_burst_spends_chip_and_gates_the_atk_buff():
+    # Full chain: Golden Chip starts at cap (50) from battle start, so the
+    # FIRST burst's pre-spend count is already >=30 -> the ATK buff fires;
+    # the spend then takes the crit-damage stack down to 33 for the next cycle.
+    result = _simulate(fight_duration=6.0)
     burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
     assert len(burst_hits) == 1
     # the gated ATK buff is granted at the SAME instant as the burst nuke it
@@ -141,6 +158,20 @@ def test_soda_end_to_end_burst_resets_chip_and_gates_the_atk_buff():
     # x1.5: the burst opened Full Burst, so this shot also collects the +0.5
     # the major modifier gains inside the window (measured 2026-07-28).
     assert round(post_burst_shot["damage"], 4) == round(10000 * 1.6525 * 0.10 * 1.5, 4)
+
+
+def test_soda_second_burst_still_clears_the_atk_gate_because_the_spend_leaves_stacks():
+    # What the spend-vs-set reading decides. Spending: 50 - 17 = 33, plus the
+    # 5 fills of the first Full Burst = 38 at the second burst, so the >=30 ATK
+    # gate opens again. SETTING the count to 17 would leave 17 + 5 = 22 and the
+    # gate would stay shut for every cycle after the first.
+    result = _simulate(fight_duration=50.0)
+    burst_hits = sorted(
+        [e for e in result["damage_log"] if e["source"] == "burst"], key=lambda e: e["time"]
+    )
+    assert [round(e["time"], 3) for e in burst_hits] == [5.0, 45.0]
+    for hit in burst_hits:
+        assert round(hit["damage"], 4) == round(10000 * 1.6525 * 6.287, 4)
 
 
 # Module-level fixture aliases so the assembly verification harness

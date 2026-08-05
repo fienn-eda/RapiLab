@@ -935,6 +935,11 @@ Maiden은 정규화 기준에서 FB를 나눠 빼도록 고쳤고, 코어 테스
   갭의 수단이 생긴 뒤에도 계속 보류다 — 그녀의 확장은 FB 중 사격으로 쌓이는
   Golden Chip 자원에 종속되는데, 그 사격은 FB 창이 정해져야 존재하고 창 길이를
   정하는 게 다시 그 자원이라 순환이다. `docs/roadmap.md` To-Do에 별도 티켓.
+  **2026-08-06 재판단(칩 소비를 감산으로 고친 뒤):** 보류 유지. 이제 근거가 궤적이다 —
+  실로스터 180초에서 그녀의 칩은 50→43→35→28→20→13→10으로 떨어져 임계 20을
+  t=141.40에 실제로 가로지른다(5사이클 +5초 → 2사이클 +2초). 즉 값이 사이클마다
+  달라 `FULL_BURST_DURATION_DELTA`의 **슬러그당 고정값** 자리에 올릴 수 없고, 순환도
+  그대로다.
 - 설계: `docs/superpowers/specs/2026-08-05-per-cycle-full-burst-length-design.md`
 
 ### 20. `closed_form`의 발수가 차지 모션 딜레이를 무시했다 — ✅ 해소 (2026-07-31, 모듈 삭제)
@@ -1404,9 +1409,11 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
   fill + `dynamic_hit_count_nukes`**: eb3 Pattern-A 배치(Soda·Maiden)에서 자원
   primitive를 여섯 방향으로 확장.
   - `SquadContext.reset_resource`/`resource_count_before_reset`: 자원을 증분이 아니라
-    **고정값으로 SET**(Soda의 Golden Chip이 버스트에서 17로 리셋). `resource_count`는
+    **고정값으로 SET**(Soda의 Golden Chip이 전투 시작에 50으로). `resource_count`는
     조회 시각 이전 최신 reset을 베이스라인으로 씀; `resource_count_before_reset`은 reset
-    직전 값을 노출(리셋 전 스택 수 게이팅용).
+    직전 값을 노출(소비 전 스택 수 게이팅용). 나중에 `value_fn(pre_value)`가 붙어
+    **소비하는 양을 pre-value에서 읽는** 감산도 같은 자리에서 표현된다(Elegg의 ghost
+    소비, Soda의 버스트가 칩 17을 쓰고 바닥 1).
   - `("per_shot_every_during_full_burst", N)` fill: 풀버스트 창 안의 발사만 세는 자원
     채우기 — `simulate_burst_cycle`의 이벤트 로그(`full_burst_start`/`full_burst_end`
     페어)로 계산.
