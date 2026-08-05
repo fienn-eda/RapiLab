@@ -141,6 +141,9 @@ class RecommendRaidResponse(BaseModel):
     leftover_slugs: list[str]
     within_draft: DraftAllocation | None = None
     baseline_total_damage: float | None = None
+    # 탐색이 상한에 걸리지 않고 끝까지 갔는지. 기본 True - 이 필드를 모르는
+    # 클라이언트에게 경고를 띄우지 않는다.
+    swap_converged: bool = True
     engine_version: str
 
 
@@ -418,6 +421,7 @@ def _recommend_raid_sync(request: RecommendRaidRequest, cancel) -> RecommendRaid
         leftover_slugs=rec["leftover_slugs"],
         within_draft=within,
         baseline_total_damage=out["baseline_total_damage"],
+        swap_converged=out["swap_converged"],
         engine_version=engine_version(),
     )
 

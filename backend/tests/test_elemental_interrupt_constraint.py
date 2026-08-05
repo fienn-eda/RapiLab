@@ -228,7 +228,7 @@ def test_the_peel_spreads_the_weakness_units_across_the_decks(monkeypatch):
 
     _stacking_scorer(monkeypatch)
     roster = _roster(2)
-    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, time_budget_sec=0.0)
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, swap_budget=0)
 
     assert len(alloc["decks"]) == 2
     assert _satisfied(alloc, roster) == 2
@@ -241,7 +241,7 @@ def test_a_thin_roster_satisfies_as_many_decks_as_it_can_and_no_fewer(monkeypatc
 
     patch_scorer(monkeypatch, lambda slugs: 1.0)
     roster = _roster(1)
-    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, time_budget_sec=0.0)
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, swap_budget=0)
 
     assert _satisfied(alloc, roster) == 1
 
@@ -252,7 +252,7 @@ def test_a_roster_with_no_weakness_unit_still_allocates(monkeypatch):
 
     patch_scorer(monkeypatch, lambda slugs: 1.0)
     roster = _roster(0)
-    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, time_budget_sec=0.0)
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, swap_budget=0)
 
     assert len(alloc["decks"]) == 2
     assert _satisfied(alloc, roster) == 0
@@ -265,7 +265,7 @@ def test_the_climb_will_not_stack_the_weakness_units_back_together(monkeypatch):
 
     _stacking_scorer(monkeypatch)
     roster = _roster(2)
-    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, time_budget_sec=30.0)
+    alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, swap_budget=10_000)
 
     assert _satisfied(alloc, roster) == 2
 
@@ -299,7 +299,7 @@ def test_without_the_gimmick_allocation_follows_score_alone(monkeypatch):
     roster = _roster(2)
 
     off = allocate_decks(roster, BossProfile(element="Fire"), num_decks=2,
-                         time_budget_sec=30.0)
+                         swap_budget=10_000)
 
     # 기믹이 없으면 점수를 그대로 따라가 두 약점유닛이 한 덱에 몰린다.
     assert _satisfied(off, roster) == 1
@@ -319,7 +319,7 @@ def test_the_seed_completion_pulls_in_a_weakness_unit_when_the_seed_lacks_one(mo
     seed = [by_slug["u2"]]   # tier-1, 보스 자신의 속성 - 아직 약점유닛이 없다
 
     alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, draft=[seed],
-                           time_budget_sec=0.0)
+                           swap_budget=0)
 
     seeded_deck = alloc["decks"][0]["deck"]
     assert "u2" in seeded_deck
@@ -340,7 +340,7 @@ def test_a_seed_that_fills_every_seat_still_allocates_unconstrained(monkeypatch)
     seed = [by_slug[s] for s in ("u2", "u3", "u5", "u6", "u7")]
 
     alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=2, draft=[seed],
-                           time_budget_sec=0.0)   # InfeasibleDraft를 던지면 안 된다
+                           swap_budget=0)   # InfeasibleDraft를 던지면 안 된다
 
     assert len(alloc["decks"]) == 2
     assert sorted(alloc["decks"][0]["deck"]) == sorted(u.slug for u in seed)
@@ -369,7 +369,7 @@ def test_the_seed_floor_keeps_a_thin_pool_on_the_constrained_path(monkeypatch):
     patch_scorer(monkeypatch, lambda slugs: 100.0 if "u5" in slugs else 10.0)
 
     alloc = allocate_decks(roster, GIMMICK_BOSS, num_decks=3, draft=[seed],
-                           time_budget_sec=0.0)
+                           swap_budget=0)
 
     # 시드 덱은 자체 보유로 항상 만족한다; 캡이 시드 바닥을 지키면 여분은 뒤
     # 덱으로 남아 두 번째 덱도 만족시킨다. 캡이 시드 보유량 밑으로 잡혀

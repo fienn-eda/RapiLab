@@ -1,16 +1,18 @@
-"""What the swap hill-climb actually gets done inside its time budget.
+"""What the swap hill-climb actually gets done inside its candidate budget.
 
 The cascade pinned the search's cost to K, which leaves `_swap_pass` as the
 biggest phase that never got optimized: it is serial, it never touches the
-SimPool, and it stops at a wall-clock deadline rather than at convergence. Three
-numbers decide what to do about it, and none of them are in the phase split:
+SimPool, and it stops at a candidate-count budget rather than at convergence.
+Three numbers decide what to do about it, and none of them are in the phase
+split:
 
   coverage    how many of a full pass' swap candidates it evaluates before the
-              deadline (a pass it cannot finish is also a biased pass - the
-              nested loops always start at deck 0, slot 0)
+              budget runs out (a pass it cannot finish is also a biased pass -
+              the nested loops always start at deck 0, slot 0)
   gain curve  when the accepted improvements actually land. Gains that stop
-              early argue for a smaller budget; gains still accruing at the
-              deadline argue the phase is starved and needs batching/parallelism
+              early argue for a smaller budget; gains still accruing when the
+              budget runs out argue the phase is starved and needs
+              batching/parallelism
   split       how the sims divide between deck-to-deck and leftover swaps
 
 Run before changing the swap phase, and again afterwards. Sims are counted
@@ -21,7 +23,7 @@ Runs against the real synced roster by default (see roster_fixture.py for why
 the uniform-investment stand-in flatters the hill-climb).
 
 Usage (any cwd):
-    python3 scripts/measure_swap_phase.py [--decks 5] [--budget 45]
+    python3 scripts/measure_swap_phase.py [--decks 5] [--budget 40000]
                                           [--workers auto] [--units N] [--synthetic]
 """
 import argparse
@@ -52,6 +54,8 @@ class _SwapTrace:
         self.passes = 0
         self.elapsed = 0.0
         self.candidates_per_pass = 0
+        self.candidates_spent = 0
+        self.hit_budget = False
 
     def since_start(self):
         return time.perf_counter() - self.started
@@ -74,7 +78,10 @@ class _SwapTrace:
             before = list(scores)
             self.kind = "leftover" if j is None else "pair"
             try:
-                return func(decks, scores, i, partner, j, *args, **kwargs)
+                improved, used, exhausted = func(decks, scores, i, partner, j,
+                                                 *args, **kwargs)
+                self.candidates_spent += used
+                return improved, used, exhausted
             finally:
                 self.kind = None
                 self.accepted += sum(1 for b, a in zip(before, scores) if a != b)
@@ -82,14 +89,14 @@ class _SwapTrace:
         return wrapped
 
     def wrap_pass(self, func, budget):
-        def wrapped(decks, leftovers, boss, deadline, **kwargs):
+        def wrapped(decks, leftovers, boss, candidate_budget, **kwargs):
             self.started = time.perf_counter()
             self.candidates_per_pass = _full_pass_candidates(decks, leftovers)
             try:
-                return func(decks, leftovers, boss, deadline, **kwargs)
+                return func(decks, leftovers, boss, candidate_budget, **kwargs)
             finally:
                 self.elapsed = self.since_start()
-                self.hit_deadline = self.elapsed >= budget * 0.99
+                self.hit_budget = self.candidates_spent >= budget
         return wrapped
 
 
@@ -124,8 +131,8 @@ def main():
     p.add_argument("--units", type=int, default=None,
                    help="cap the roster size (default: the whole synced roster)")
     p.add_argument("--decks", type=int, default=5)
-    p.add_argument("--budget", type=float, default=45.0,
-                   help="swap phase time budget in seconds (default: production's 45)")
+    p.add_argument("--budget", type=int, default=40_000,
+                   help="swap phase budget in candidate exchanges (default 40000)")
     p.add_argument("--workers", default=1,
                    help='1 (default) or "auto"/N to run the pooled path')
     p.add_argument("--synthetic", action="store_true",
@@ -143,7 +150,7 @@ def main():
     specs, _ = load_roster(states)
     boss = BossProfile(element="Water", fight_duration=180.0)
     print(f"roster {len(specs)} loadable of {len(states)} ({source}); "
-          f"{args.decks} decks; swap budget {args.budget:.0f}s "
+          f"{args.decks} decks; swap budget {args.budget:,} candidates "
           f"({'serial' if workers == 1 else f'workers={workers}'})", flush=True)
 
     trace = _SwapTrace()
@@ -153,7 +160,7 @@ def main():
 
     started = time.perf_counter()
     da.allocate_decks(specs, boss, num_decks=args.decks,
-                      time_budget_sec=args.budget, workers=workers)
+                      swap_budget=args.budget, workers=workers)
     total_elapsed = time.perf_counter() - started
 
     sims = trace.sims["pair"] + trace.sims["leftover"]
@@ -164,7 +171,7 @@ def main():
     # The first checkpoint is already post-improvement, so read the pre-swap
     # total off the run's own start instead of inferring it.
     print(f"\nallocation {total_elapsed:.0f}s; swap phase {trace.elapsed:.1f}s "
-          f"(deadline hit: {trace.hit_deadline})", flush=True)
+          f"(budget hit: {trace.hit_budget})", flush=True)
     print(f"swap sims {sims} (pair {trace.sims['pair']}, "
           f"leftover {trace.sims['leftover']})", flush=True)
     print(f"candidates tried ~{tried:.0f} of {trace.candidates_per_pass} "

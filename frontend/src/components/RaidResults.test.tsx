@@ -64,4 +64,20 @@ describe('RaidResults', () => {
       screen.getByText('아직 미지원 (탐색에서 제외됨): Some Slug'),
     ).toBeInTheDocument()
   })
+
+  it('탐색이 잘렸을 때만 경고한다', () => {
+    const decks: DeckRecommendation[] = [
+      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
+    ]
+    const { rerender } = render(
+      <RaidResults decks={decks} combinedTotalDamage={100} swapConverged={false} />,
+    )
+    expect(screen.getByText(/상한에 걸려 끝까지 가지 못했어요/)).toBeInTheDocument()
+
+    rerender(<RaidResults decks={decks} combinedTotalDamage={100} swapConverged={true} />)
+    expect(screen.queryByText(/상한에 걸려 끝까지 가지 못했어요/)).not.toBeInTheDocument()
+
+    rerender(<RaidResults decks={decks} combinedTotalDamage={100} />)
+    expect(screen.queryByText(/상한에 걸려 끝까지 가지 못했어요/)).not.toBeInTheDocument()
+  })
 })

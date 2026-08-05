@@ -61,6 +61,16 @@ def test_draft_longer_than_num_decks_is_422():
     assert resp.status_code == 422
 
 
+def test_the_raid_response_says_whether_the_search_converged():
+    """The client only warns when this is False, so it has to arrive at all -
+    and an ordinary request, which converges, must not carry the warning."""
+    roster = [_nikke(slug) for slug in FEASIBLE]
+    body = {"roster": roster, "boss": BOSS, "num_decks": 1}
+    resp = client.post("/api/recommend-raid", json=body)
+    assert resp.status_code == 200
+    assert resp.json()["swap_converged"] is True
+
+
 def test_variant_alternatives_omits_favorite_item_pairs():
     # A drafted seat naming `miranda` is a concrete spec, not an ambiguous one:
     # there is no mode for the engine to settle. Only a base the roster loader

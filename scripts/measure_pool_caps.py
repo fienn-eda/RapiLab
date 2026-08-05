@@ -62,8 +62,9 @@ def main():
                    help="combinations handed to the simulator, comma separated "
                         f"(default: production's {cascade.DEFAULT_TOP_K})")
     p.add_argument("--decks", type=int, default=5)
-    p.add_argument("--budget", type=float, default=45.0,
-                   help="swap budget in seconds (default: production's 45)")
+    p.add_argument("--budget", type=int, default=deck_allocation.SWAP_CANDIDATE_BUDGET,
+                   help="swap budget in candidate exchanges (default: the "
+                        "production ceiling)")
     p.add_argument("--workers", default="auto")
     p.add_argument("--exclude", default="")
     p.add_argument("--element", default="Wind",
@@ -85,7 +86,7 @@ def main():
 
     print(f"roster {len(specs)} usable ({len(dropped)} unloadable, "
           f"{len(excluded)} excluded); {args.decks} decks; "
-          f"swap budget {args.budget:.0f}s; workers={workers}")
+          f"swap budget {args.budget:,} candidates; workers={workers}")
     print(f"{'caps':>12} {'top-k':>6} {'combined total':>18} {'vs production':>14} {'wall':>8}")
 
     production = None
@@ -105,7 +106,7 @@ def main():
             started = time.perf_counter()
             try:
                 out = allocate_decks(specs, boss, num_decks=args.decks,
-                                     time_budget_sec=args.budget, workers=workers)
+                                     swap_budget=args.budget, workers=workers)
             finally:
                 cascade.WIDE_TIER_CAPS = original
                 deck_allocation.Cascade = original_cascade

@@ -34,7 +34,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from app.deck_allocation import allocate_decks  # noqa: E402
+from app.deck_allocation import SWAP_CANDIDATE_BUDGET, allocate_decks  # noqa: E402
 from app.deck_search import BossProfile, evaluate_deck  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
 from roster_fixture import add_roster_argument, real_roster  # noqa: E402
@@ -58,7 +58,7 @@ def _dump(args):
     specs = _specs(args)
     started = time.perf_counter()
     out = allocate_decks(specs, _boss(args), num_decks=args.decks,
-                         time_budget_sec=args.budget, workers=args.workers)
+                         swap_budget=args.budget, workers=args.workers)
     elapsed = time.perf_counter() - started
     decks = [list(d["deck"]) for d in out["decks"]]
     totals = [d["total_damage"] for d in out["decks"]]
@@ -68,7 +68,7 @@ def _dump(args):
         "per_deck": totals,
         "boss": {"element": args.element, "core_hittable": not args.no_core,
                  "enemy_def": args.enemy_def, "duration": args.duration},
-        "budget_sec": args.budget,
+        "swap_budget": args.budget,
     }
     Path(args.dump).write_text(json.dumps(payload, indent=1), encoding="utf-8")
     print(f"search total {sum(totals):,.0f} in {elapsed:.0f}s -> {args.dump}")
@@ -104,8 +104,9 @@ def main():
     mode.add_argument("--score", metavar="FILE",
                      help="rescore a saved composition with the current code")
     p.add_argument("--decks", type=int, default=5)
-    p.add_argument("--budget", type=float, default=45.0,
-                   help="swap budget in seconds (default: production's 45)")
+    p.add_argument("--budget", type=int, default=SWAP_CANDIDATE_BUDGET,
+                   help="swap budget in candidate exchanges (default: the "
+                        "production ceiling)")
     p.add_argument("--workers", default=None)
     p.add_argument("--element", default="Wind",
                    choices=["Fire", "Water", "Wind", "Iron", "Electric"])

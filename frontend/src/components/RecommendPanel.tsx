@@ -80,6 +80,7 @@ const toStoredResult = (raid: {
   leftoverSlugs: string[]
   withinDraft: StoredResult['withinDraft']
   baselineTotalDamage: number | null
+  swapConverged: boolean
 }): StoredResult => ({
   decks: raid.decks,
   combinedTotalDamage: raid.combinedTotalDamage,
@@ -87,6 +88,7 @@ const toStoredResult = (raid: {
   leftoverSlugs: raid.leftoverSlugs,
   withinDraft: raid.withinDraft,
   baselineTotalDamage: raid.baselineTotalDamage,
+  swapConverged: raid.swapConverged,
 })
 
 const NUM_DECKS_OPTIONS = Array.from(
@@ -188,7 +190,7 @@ export function RecommendPanel({
   // Persist a raid/draft submission's success exactly once - guarded by
   // pendingSaveRef so a rerender that doesn't follow a fresh submit (e.g. a
   // parent passing a new onResult reference) can't re-save the same result.
-  const { status: raidStatus, decks, combinedTotalDamage, excludedSlugs: raidExcludedSlugs, leftoverSlugs, withinDraft, baselineTotalDamage } = raid
+  const { status: raidStatus, decks, combinedTotalDamage, excludedSlugs: raidExcludedSlugs, leftoverSlugs, withinDraft, baselineTotalDamage, swapConverged } = raid
   useEffect(() => {
     if (raidStatus !== 'success') return
     const pending = pendingSaveRef.current
@@ -201,6 +203,7 @@ export function RecommendPanel({
       leftoverSlugs,
       withinDraft,
       baselineTotalDamage,
+      swapConverged,
     })
     setDisplayResult(result)
     setDisplayMode(pending.inputs.mode)
@@ -218,6 +221,7 @@ export function RecommendPanel({
     leftoverSlugs,
     withinDraft,
     baselineTotalDamage,
+    swapConverged,
     onResult,
   ])
 
@@ -604,11 +608,14 @@ export function RecommendPanel({
             읽는 데 스크롤이 필요 없도록. */}
         {(mode === 'raid' || mode === 'draft') && raid.status === 'loading' && (
           <p className="recommend-form__progress" role="status">
-            {/* 실측(Fienn 로스터 78기·5덱, 2026-08-04): 전부 최적화 188초,
-                편성이 꽉 찬 빈자리만 최적화 264초 — 후자는 배분을 세 번 돌린다
+            {/* 실측(Fienn 로스터 78기·5덱, 2026-08-05): 전부 최적화 182초,
+                편성이 꽉 찬 빈자리만 최적화 227초 — 후자는 배분을 세 번 돌린다
                 (recommend_from_draft의 recommended + within_draft 둘). 스왑 단계
-                상한은 backend/app/deck_allocation.py의 SWAP_TIME_BUDGET_SEC이고,
-                개선이 끊기면 상한을 다 쓰지 않고 끝나므로 얇은 로스터는 훨씬 빠르다. */}
+                상한은 backend/app/deck_allocation.py의 SWAP_CANDIDATE_BUDGET인데
+                단위가 후보 교환 수라 초 환산이 머신마다 다르다. 등반은 수렴하면
+                상한을 다 쓰지 않고 끝나고(이 로스터는 3,331~3,735후보) 얇은
+                로스터는 훨씬 빠르다. 문구의 폭이 실측보다 넓은 것은 그 몫으로
+                느린 머신을 덮기 위해서다. */}
             {mode === 'raid' ? '전부 최적화 중' : '빈자리만 최적화 중'} — 수천 번의
             시뮬레이션을 실행하며 보통 2~5분이 걸려요. 아직 진행 중이니 완료되면
             버튼이 다시 활성화돼요.
@@ -656,6 +663,7 @@ export function RecommendPanel({
             combinedTotalDamage={displayResult.combinedTotalDamage}
             excludedSlugs={displayResult.excludedSlugs}
             leftoverSlugs={displayResult.leftoverSlugs}
+            swapConverged={displayResult.swapConverged}
             portraitFor={portraitFor}
             nameFor={nameFor}
             gimmickUnmetFor={raidGimmickUnmetFor}
@@ -669,6 +677,7 @@ export function RecommendPanel({
             leftoverSlugs={displayResult.leftoverSlugs}
             withinDraft={displayResult.withinDraft}
             baselineTotalDamage={displayResult.baselineTotalDamage}
+            swapConverged={displayResult.swapConverged}
             submittedDraft={submittedDraft}
             ownedSlugFor={ownedSlugResolver}
             portraitFor={portraitFor}

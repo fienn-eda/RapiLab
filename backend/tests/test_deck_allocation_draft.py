@@ -48,7 +48,7 @@ def test_locked_unit_stays_in_its_deck(monkeypatch):
     patch_scorer(monkeypatch, lambda slugs: sum(quality.get(s, 0) for s in slugs))
     weak3 = next(u for u in r if u.slug == "weak3")
     out = da.allocate_decks(r, BOSS, num_decks=1, draft=[[weak3]],
-                             locked={"weak3"}, time_budget_sec=30.0, workers=None)
+                             locked={"weak3"}, swap_budget=10_000, workers=None)
     assert "weak3" in out["decks"][0]["deck"]
 
 
@@ -95,7 +95,7 @@ def test_a_thin_seed_is_completed_with_the_cascade(monkeypatch):
     seed = [next(u for u in r if u.slug == "b30")]
 
     da.allocate_decks(r, BOSS, num_decks=1, draft=[seed], workers=None,
-                      time_budget_sec=0.0)
+                      swap_budget=0)
 
     assert seen and all(c is not None for c in seen)
 
@@ -112,7 +112,7 @@ def test_a_seed_within_budget_never_pays_for_a_fit(monkeypatch):
     seed = [next(u for u in r if u.slug == "b30")]
 
     da.allocate_decks(r, BOSS, num_decks=1, draft=[seed], workers=None,
-                      time_budget_sec=0.0)
+                      swap_budget=0)
 
     assert seen == [None]
     assert fits == []
@@ -212,7 +212,7 @@ def test_the_pool_is_attached_so_a_cancel_reaches_the_workers(monkeypatch):
     token = CancelToken()
 
     da.allocate_decks(_roster(), BOSS, num_decks=1, workers=2, cancel=token,
-                      time_budget_sec=0.0)
+                      swap_budget=0)
     token.cancel()
 
     assert built and built[0].cancelled == 1, "the pool was never registered"

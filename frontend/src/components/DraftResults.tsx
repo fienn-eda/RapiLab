@@ -16,6 +16,7 @@ import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
 import { nameFromSlug } from '../lib/unitName'
 import { RaidResults } from './RaidResults'
+import { SwapConvergenceNote } from './SwapConvergenceNote'
 
 interface DraftResultsProps extends UnitLookups {
   decks: RaidDeck[]
@@ -24,6 +25,8 @@ interface DraftResultsProps extends UnitLookups {
   leftoverSlugs?: string[]
   withinDraft?: DraftAllocation | null
   baselineTotalDamage?: number | null
+  /** false일 때만 경고한다 — 없으면(옛 저장 결과) 아무 말도 하지 않는다. */
+  swapConverged?: boolean
   /** The draft as submitted, for the per-deck diff. Diffs are omitted without it. */
   submittedDraft?: Draft
   /** Maps a result slug to the owned slug the player drafted (`ownedSlugFor`).
@@ -94,6 +97,7 @@ export function DraftResults({
   leftoverSlugs = [],
   withinDraft = null,
   baselineTotalDamage = null,
+  swapConverged,
   submittedDraft,
   // Destructured, not left in `lookups`: DeckCard and RaidResults take unit
   // lookups only, and this is a submitted-vs-returned reconciliation.
@@ -109,6 +113,7 @@ export function DraftResults({
         combinedTotalDamage={combinedTotalDamage}
         excludedSlugs={excludedSlugs}
         leftoverSlugs={leftoverSlugs}
+        swapConverged={swapConverged}
         {...lookups}
       />
     )
@@ -127,6 +132,7 @@ export function DraftResults({
         세 단계로 올라가요: 제출한 드래프트, 드래프트한 유닛만으로 만든
         최선의 배분, 벤치까지 포함한 추천.
       </p>
+      <SwapConvergenceNote swapConverged={swapConverged} />
 
       <section className="draft-results__tier" aria-label="내 드래프트">
         <h3 className="draft-results__tier-title">내 드래프트</h3>

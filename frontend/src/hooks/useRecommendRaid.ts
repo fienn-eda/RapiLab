@@ -19,6 +19,8 @@ export interface RecommendRaidState {
   /** Non-null only when the submitted draft was complete — see recommend.ts's RecommendRaidResponse. */
   withinDraft: DraftAllocation | null
   baselineTotalDamage: number | null
+  /** 탐색이 상한에 걸리지 않고 끝까지 갔는지. */
+  swapConverged: boolean
   error?: string
   /** Aborts a run in flight; the backend stops with it. */
   cancel: () => void
@@ -34,6 +36,7 @@ export const useRecommendRaid = (): RecommendRaidState => {
   const [leftoverSlugs, setLeftoverSlugs] = useState<string[]>([])
   const [withinDraft, setWithinDraft] = useState<DraftAllocation | null>(null)
   const [baselineTotalDamage, setBaselineTotalDamage] = useState<number | null>(null)
+  const [swapConverged, setSwapConverged] = useState(true)
   const { status, error, run, cancel } = useAsyncRequestStatus()
 
   const submit = useCallback(
@@ -47,6 +50,7 @@ export const useRecommendRaid = (): RecommendRaidState => {
           setLeftoverSlugs(response.leftover_slugs)
           setWithinDraft(response.within_draft)
           setBaselineTotalDamage(response.baseline_total_damage)
+          setSwapConverged(response.swap_converged)
         },
         FALLBACK_ERROR_MESSAGE,
       ),
@@ -61,6 +65,7 @@ export const useRecommendRaid = (): RecommendRaidState => {
     leftoverSlugs,
     withinDraft,
     baselineTotalDamage,
+    swapConverged,
     error,
     cancel,
     submit,
