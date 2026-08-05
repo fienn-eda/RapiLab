@@ -273,8 +273,8 @@ def _try_swaps(decks, scores, i, partner, j, boss, share, locked, pool, batch,
 def test_allocate_decks_workers_parity():
     # Real 5-spec roster (stubs can't cross the SimPool process/module
     # boundary); swap_budget=0 keeps this comparison on the peel alone. The
-    # climb's own worker-parity is asserted under a BINDING budget by
-    # test_a_binding_budget_agrees_across_worker_counts.
+    # climb's own width-independence under a BINDING budget is asserted by
+    # test_batch_width_never_changes_a_cut_off_climb_either.
     from tests.test_deck_search import real_five_roster, short_boss
 
     roster, boss = real_five_roster(), short_boss()
@@ -384,30 +384,35 @@ candidate budget binds exactly where the test asks it to."
 `backend/tests/test_deck_allocation.py`의 `test_allocate_decks_workers_parity` **바로 뒤**에 넣는다:
 
 ```python
-def test_a_binding_budget_agrees_across_worker_counts():
+def test_batch_width_never_changes_a_cut_off_climb_either(monkeypatch):
     """The reproducibility guarantee, at the only point it can fail.
 
-    A converged climb agreed across worker counts even before this change - it
-    runs out of improving swaps either way. What did not agree was a climb the
-    budget CUT: batch width scales with the worker count, so a wider batch
-    consumed the budget faster and stopped somewhere else. Candidates are
-    counted and each batch truncated to the share, so the cut lands on the same
-    candidate whatever the machine.
+    Worker count reaches the climb as batch width (`worker_count *
+    SWAP_BATCH_PER_WORKER`), and a CONVERGED climb agrees across widths whatever
+    the budget is counted in - it runs out of improving swaps either way, which
+    test_batch_width_never_changes_the_outcome already pins. What can disagree is
+    a climb the budget CUTS: a wider batch consuming the budget faster stops
+    somewhere else. Charging by how far the candidate walk advanced, and
+    truncating each batch to the share that is left, makes the cut land on the
+    same candidate at every width.
     """
-    from tests.test_deck_search import real_five_roster, short_boss
+    outcomes = []
+    for batch in (1, 4, 64):
+        decks = [[Unit(f"{p}1", 3), Unit(f"{p}2", 1), Unit(f"{p}3", 2),
+                  Unit(f"{p}4", 3), Unit(f"{p}5", 3)] for p in "abc"]
+        bench = [Unit(f"f{i}", 3) for i in range(11)]
+        # Every f unit seated is worth more, so acceptances happen throughout -
+        # the walk's accept path is where batch width could diverge.
+        patch_scorer(monkeypatch, lambda slugs: 100.0 + 5.0 * len(
+            [s for s in slugs if s.startswith("f")]))
+        converged = da._swap_pass(decks, bench, BossProfile(), 40, batch=batch)
+        outcomes.append((converged,
+                         [[u.slug for u in deck] for deck in decks],
+                         sorted(u.slug for u in bench)))
 
-    roster, boss = real_five_roster(), short_boss()
-    # Small enough that the climb cannot finish - if it converges the test
-    # proves only what the peel already guaranteed.
-    budget = 12
-    serial = da.allocate_decks(roster, boss, num_decks=2, swap_budget=budget)
-    pooled = da.allocate_decks(roster, boss, num_decks=2, swap_budget=budget,
-                               workers=2)
-
-    assert [d["deck"] for d in pooled["decks"]] == [d["deck"] for d in serial["decks"]]
-    assert [d["total_damage"] for d in pooled["decks"]] == [
-        d["total_damage"] for d in serial["decks"]]
-    assert pooled["leftover_slugs"] == serial["leftover_slugs"]
+    assert outcomes[0][0] is False, (
+        "the budget never bound, so this proves only what convergence already did")
+    assert len(set(map(str, outcomes))) == 1, outcomes
 
 
 def test_a_cut_off_climb_returns_the_same_allocation_twice(monkeypatch):
@@ -464,7 +469,11 @@ def test_an_item_spends_no_more_than_its_share(monkeypatch):
 cd backend && python3 -m pytest -q tests/test_deck_allocation.py
 ```
 
-Expected: 전부 통과. `test_a_binding_budget_agrees_across_worker_counts`가 `converged` 없이 통과했다면 예산 12가 안 물린 것이므로, `swap_budget`을 더 줄이지 말고 **먼저 `_swap_pass`의 반환값을 찍어 확인한다** — 이 로스터에서 후보가 12개도 안 나오면 픽스처를 `real_five_roster` 대신 더 큰 것으로 바꿔야 한다.
+Expected: 전부 통과.
+
+**왜 SimPool을 안 쓰는가** (2026-08-05, 실행 중 확인): 워커 수가 등반에 닿는 통로는 `batch = max(_MIN_SWAP_BATCH, worker_count * SWAP_BATCH_PER_WORKER)` **하나뿐**이다 — `SimPool._map`은 `executor.map`이라 순서를 보존하고 양쪽 다 같은 순수 `evaluate_deck`을 부른다. `_swap_pass`가 `batch`를 인자로 받으므로 폭을 직접 흔드는 쪽이 변수를 격리한다. (원래 이 자리에 `real_five_roster()`로 `workers=1` vs `workers=2`를 비교하는 테스트를 적었으나 **성립하지 않는다**: 그 픽스처는 정확히 5유닛이라 `num_decks=2`가 덱 하나에 빈 벤치를 만들어 어떤 예산에서도 스왑 후보가 0개다.)
+
+예산 40이 물리지 않고 수렴하거나 세 폭의 결과가 갈리면 **픽스처를 맞추지 말고 보고한다** — 후자는 보장 자체가 깨진 것이다.
 
 - [ ] **Step 3: 뮤테이션 — 테스트가 진짜로 잡는지 깨서 확인한다**
 
