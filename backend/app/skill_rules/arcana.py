@@ -13,6 +13,17 @@ reads the grant off her own burst time and compares it against the trigger's
 time - `own_burst_fired_this_cycle()` carries no clock and cannot tell the two
 cases apart.
 
+THE CLOSED CASE RESTS ON A MARGIN THIS ENGINE SETS RATHER THAN MEASURES. At a
+standard 10 sec window the status lapses exactly one Burst-Stage-2-to-3 gap
+before the check, and that gap is `burst_cycle`'s own: 0.1 sec between tiers in
+manual mode, and in auto mode only `FULL_BURST_OPEN_DELAY` (1e-6), the constant
+that keeps a Burst 3's cast distinct from the window it opens. The strict `>` in
+`own_burst_status_active` is what makes that sliver a closed gate. In the real
+game the same gap is two burst animations resolving in sequence - a visible
+fraction of a second - so the gate is shut by far more than the engine can show,
+and no measurement pins how much. The OPEN case is not thin the same way:
+Isabel's 5 sec window leaves 4.9 sec of the status still running.
+
 Modeled (DPS-relevant):
 - Shackles of Destiny (skills[2], her burst): Electric-Code squad Attack
   Damage (Wheel of Fortune, `element:Electric` scope); burst nuke 300% of
