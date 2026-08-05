@@ -500,6 +500,24 @@ def test_allocate_decks_workers_parity():
     assert pooled["leftover_slugs"] == serial["leftover_slugs"]
 
 
+def _cut_off_climb_fixture():
+    """Three 5-seat (1,2,3,3,3) decks plus an 11-unit Burst-3 bench - enough
+    candidates that a budget of 40 candidate exchanges cuts the climb short
+    before it converges. Fresh Units on every call, since the climb swaps
+    units into the returned decks/bench in place and a caller runs this more
+    than once."""
+    decks = [[Unit(f"{p}1", 3), Unit(f"{p}2", 1), Unit(f"{p}3", 2),
+              Unit(f"{p}4", 3), Unit(f"{p}5", 3)] for p in "abc"]
+    bench = [Unit(f"f{i}", 3) for i in range(11)]
+    return decks, bench
+
+
+def _cut_off_climb_scorer(slugs):
+    # Every f unit seated is worth more, so acceptances happen throughout -
+    # the walk's accept path is where a batch-width divergence would show up.
+    return 100.0 + 5.0 * len([s for s in slugs if s.startswith("f")])
+
+
 def test_batch_width_never_changes_a_cut_off_climb_either(monkeypatch):
     """The reproducibility guarantee, at the only point it can fail.
 
@@ -514,13 +532,8 @@ def test_batch_width_never_changes_a_cut_off_climb_either(monkeypatch):
     """
     outcomes = []
     for batch in (1, 4, 64):
-        decks = [[Unit(f"{p}1", 3), Unit(f"{p}2", 1), Unit(f"{p}3", 2),
-                  Unit(f"{p}4", 3), Unit(f"{p}5", 3)] for p in "abc"]
-        bench = [Unit(f"f{i}", 3) for i in range(11)]
-        # Every f unit seated is worth more, so acceptances happen throughout -
-        # the walk's accept path is where batch width could diverge.
-        patch_scorer(monkeypatch, lambda slugs: 100.0 + 5.0 * len(
-            [s for s in slugs if s.startswith("f")]))
+        decks, bench = _cut_off_climb_fixture()
+        patch_scorer(monkeypatch, _cut_off_climb_scorer)
         converged = da._swap_pass(decks, bench, BossProfile(), 40, batch=batch)
         outcomes.append((converged,
                          [[u.slug for u in deck] for deck in decks],
@@ -532,15 +545,12 @@ def test_batch_width_never_changes_a_cut_off_climb_either(monkeypatch):
 
 
 def test_a_cut_off_climb_returns_the_same_allocation_twice(monkeypatch):
-    """Same input, same answer - the whole point. Asserted where it used to
-    fail: a budget that binds, so the run is decided by where the climb stopped
-    rather than by where it converged."""
+    """Same input, same answer - the whole point, pinned under a budget that
+    binds, so the run is decided by where the climb stopped rather than by
+    where it converged."""
     def run():
-        decks = [[Unit(f"{p}1", 3), Unit(f"{p}2", 1), Unit(f"{p}3", 2),
-                  Unit(f"{p}4", 3), Unit(f"{p}5", 3)] for p in "abc"]
-        bench = [Unit(f"f{i}", 3) for i in range(11)]
-        patch_scorer(monkeypatch, lambda slugs: 100.0 + len(
-            [s for s in slugs if s.startswith("f")]) * 5.0)
+        decks, bench = _cut_off_climb_fixture()
+        patch_scorer(monkeypatch, _cut_off_climb_scorer)
         converged = da._swap_pass(decks, bench, BossProfile(), 40)
         return converged, [[u.slug for u in deck] for deck in decks]
 
@@ -575,7 +585,7 @@ def test_an_item_spends_no_more_than_its_share(monkeypatch):
 
     assert improved is False          # every trial scores 1.0, below the 100 baseline
     assert used == 7                  # exactly the share, never over
-    assert exhausted is False         # 5 x 20 candidates, so 7 cannot finish them
+    assert exhausted is False         # 3 x 20 candidates, so 7 cannot finish them
     assert calls == [4, 3]            # the second batch is truncated to what is left
 
 
