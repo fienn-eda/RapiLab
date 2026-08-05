@@ -94,7 +94,13 @@ def test_the_bullets_do_not_land_behind_a_burst3_that_keeps_the_window_at_ten_se
 def test_isabel_pointed_feather_ticks_more_often_with_arcana_seated():
     """The Magician의 스킬 2 쿨감(-75%, 15초)이 이사벨의 Pointed Feather에 닿는다."""
     with_arcana = _run(["liter", "arcana", "crown", "isabel", "cinderella"])
+    without_arcana = _run(["liter", CONTROL_B2, "crown", "isabel", "cinderella"])
 
-    # 실측 8틱(대조군일 때는 3틱). 맨 `>`는 -75%가 -10%로 약해지는 회귀도 통과시킨다
-    # (3틱보다 크기만 하면 되므로) - 절대 하한 6으로 쿨감이 실제로 크게 작용했는지까지 건다.
-    assert _periodic_ticks(with_arcana, "isabel") >= 6
+    # 실측 8틱 vs 3틱. 절대 하한(>= 6)만으로는 아르카나와 무관한 변화로 이사벨이
+    # 더 자주 틱해도 통과한다 - 비교(> without_arcana)를 같이 걸어야 원인이
+    # 아르카나라는 것까지 고정된다. 절대 하한은 그 쿨감이 -75%에서 -10%처럼
+    # 약해지는 회귀를 잡는다(3보다 크기만 한 값으로는 못 잡는 규모).
+    with_ticks = _periodic_ticks(with_arcana, "isabel")
+    without_ticks = _periodic_ticks(without_arcana, "isabel")
+    assert with_ticks >= 6
+    assert with_ticks > without_ticks
