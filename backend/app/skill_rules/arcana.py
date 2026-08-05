@@ -43,9 +43,17 @@ Modeled (DPS-relevant):
   (member_subset_buff_rule, gap #3; burst_used_this_cycle is still populated
   when full_burst_end rules run).
 
-Not modeled: The Magician's "Cooldown of Skill 2 -75%" - ally Skill 1/2
-cooldowns aren't simulated (only periodic_rules units have one, and none is
-Electric Burst-3 today).
+Not modeled: The Magician's "Cooldown of Skill 2 -75%".
+
+  Its stated reason was WRONG (checked 2026-08-05): it claimed no Electric
+  Burst-3 ally has a cooldowned Skill 2. Isabel's Pointed Feather is exactly
+  that - Skill 2, cooldown 15 sec, wired as a `periodic_nukes` entry - and she
+  is the ONE ally this bullet can reach. The other three Electric Burst-3 units
+  with cooldown-driven damage carry no skill cooldown at all: Jill Valentine's
+  Acid Ammo and Ada Wong's Flash Grenade tick on an interval inside their own
+  window, and Ein's Feather Shot is a summon cadence. So the bullet has exactly
+  one consumer, and it is the same unit whose Full Burst shortening opens the
+  Wheel of Fortune gate above.
 """
 from app.effects import Effect, Pulse
 from app.skill_rules._helpers import member_subset_buff_rule
