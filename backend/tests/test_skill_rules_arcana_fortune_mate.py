@@ -56,10 +56,18 @@ def build():
 
 
 def run_cycle(rules, ctx, registry, burst_time):
-    """One burst cycle for arcana: her tier-2 burst, then Full Burst enter/end."""
+    """One burst cycle for arcana: her tier-2 burst, then Full Burst enter/end.
+
+    Also sets `current_full_burst_end` where raid_simulator.on_full_burst_enter
+    would - AFTER own_burst_activate has already fired, since tier 2 (her burst)
+    always runs before tier 3 opens the window in the real tier loop. A test
+    that skipped this would never reproduce the stale-window bug (own_burst_activate
+    reading the PREVIOUS cycle's end) that motivated Making Memories' open-ended +
+    truncate_open_ended shape."""
     fire_trigger("own_burst_activate", rules, ctx, registry, burst_time)
+    ctx.current_full_burst_end = burst_time + FULL_BURST_DURATION
     fire_trigger("full_burst_enter", rules, ctx, registry, burst_time + 1.0)
-    fire_trigger("full_burst_end", rules, ctx, registry, burst_time + 10.0)
+    fire_trigger("full_burst_end", rules, ctx, registry, burst_time + FULL_BURST_DURATION)
 
 
 SELF_TARGET = {"slug": "arcana-fortune-mate", "element": "Fire"}
@@ -83,9 +91,10 @@ def test_radiant_youth_grants_self_crit_rate_and_attack_damage():
     assert round(registry.total_for("attack_damage_up", SELF_TARGET, now=5.0), 4) == 0.2999
     assert registry.total_for("crit_rate", ALLY, now=5.0) == 0.0  # self-scoped
 
-    # expires after the Full Burst window approximation
-    later = 5.0 + FULL_BURST_DURATION + 0.1
-    assert registry.total_for("crit_rate", SELF_TARGET, now=later) == 0.0
+    # Open-ended (duration=None): with no full_burst_end to close it, it stays
+    # active indefinitely - see test_radiant_youth_buff_survives_into_the_second_
+    # full_burst_cycle for the truncation and multi-cycle behavior.
+    assert round(registry.total_for("crit_rate", SELF_TARGET, now=5.0 + FULL_BURST_DURATION + 0.1), 4) == 0.2009
 
 
 def test_memories_and_moments_grants_sg_allies_attack_damage_on_burst():
@@ -111,15 +120,47 @@ def test_own_burst_grants_self_only_radiant_youth_attack_damage():
     assert round(registry.total_for("attack_damage_up", SELF_TARGET, now=5.0), 4) == 0.2999
 
 
+def test_radiant_youth_buff_survives_into_the_second_full_burst_cycle():
+    # Regression test: apply_radiant_youth fires on own_burst_activate (her
+    # own tier-2 burst), which ALWAYS runs before this cycle's tier 3 opens the
+    # window and current_full_burst_end is published for it - so a version of
+    # this buff that read the window (end - time) instead of going open-ended
+    # was reading the PREVIOUS cycle's stale end from the second cycle onward,
+    # going negative and clamping to a dead-on-arrival 0-duration buff. The
+    # bug's signature was "alive in cycle 1, dead from cycle 2" - a
+    # single-cycle test cannot see it, so this one runs two.
+    ctx = make_context()
+    registry = EffectRegistry()
+    rules = {"arcana-fortune-mate": build()}
+
+    run_cycle(rules, ctx, registry, burst_time=5.0)    # cycle 1: [5, 15)
+    run_cycle(rules, ctx, registry, burst_time=25.0)   # cycle 2: [25, 35)
+
+    # Cycle 1's window has long closed by the time cycle 2 is checked.
+    assert registry.total_for("crit_rate", SELF_TARGET, now=20.0) == 0.0
+
+    # Alive mid-cycle-2 - this is exactly what the stale-window bug zeroed out.
+    assert round(registry.total_for("crit_rate", SELF_TARGET, now=30.0), 4) == 0.2009
+    assert round(registry.total_for("attack_damage_up", SELF_TARGET, now=30.0), 4) == 0.2999
+
+    # And dead once cycle 2's own Full Burst ends.
+    assert registry.total_for("crit_rate", SELF_TARGET, now=35.1) == 0.0
+    assert registry.total_for("attack_damage_up", SELF_TARGET, now=35.1) == 0.0
+
+
 # --- the phase rotation (Fienn's in-game observation, 2026-07-28) -------------
 # Every 2nd normal attack while in Making Memories fires ONE of three effects
 # in rotation - 2 reload, 4 Happy Memories, 6 Precious Moments, then 8/10/12 -
 # and the count restarts when Making Memories is removed (each Full Burst).
 
 def rotation_times(first, shot_times, own_burst_times, window=FULL_BURST_DURATION):
+    """The rotation's fill times, with a Full Burst window closing `window`
+    seconds after each of her bursts - the length is a per-cycle fact the deck
+    decides, so it is an argument here rather than a constant."""
     return _resource_fill_times(
-        ("per_shot_cycle_in_own_status_window", first, ROTATION_PERIOD, window),
+        ("per_shot_cycle_from_own_burst_to_full_burst_end", first, ROTATION_PERIOD),
         shot_times, core_hittable=False, fight_duration=1000.0,
+        full_burst_windows=[(bt, bt + window) for bt in own_burst_times],
         own_burst_times=own_burst_times,
     )
 
@@ -157,17 +198,21 @@ def test_rotation_ignores_shots_outside_the_status_window():
 
 # --- end to end: the rotation driven by a real shot timeline ------------------
 
-def arcana_deck_result(fight_duration=40.0, extra_rules=()):
+def arcana_deck_result(fight_duration=40.0, extra_rules=(), b3_full_burst_delta=0.0):
     """Fortune Mate (Burst 2) between two filler allies, her SG carrying enough
     ammo to fire without a reload gap so the rotation is bounded by the Full
     Burst window rather than by her magazine. Base ATK is CASTER_ATK and enemy
     DEF is 0, so a shot's damage divided by the opening shot's is exactly her
-    final-ATK ratio - which is what makes the assertions below plain arithmetic."""
+    final-ATK ratio - which is what makes the assertions below plain arithmetic.
+
+    `b3_full_burst_delta` seats a Burst 3 that moves the window it opens, the
+    way Isabel's -5 sec does."""
     deck = [
         {"slug": "ally-b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0, "weapon": "AR"},
         {"slug": "arcana-fortune-mate", "burst_tier": 2, "element": "Fire", "cooldown": 20.0,
          "weapon": "SG"},
-        {"slug": "sg-ally", "burst_tier": 3, "element": "Iron", "cooldown": 20.0, "weapon": "SG"},
+        {"slug": "sg-ally", "burst_tier": 3, "element": "Iron", "cooldown": 20.0, "weapon": "SG",
+         "full_burst_duration_delta": b3_full_burst_delta},
     ]
     values = {"radiant_youth": RADIANT_YOUTH, "memories_and_moments": MEMORIES_AND_MOMENTS,
               "keepsake_album": KEEPSAKE_ALBUM, "caster_atk": CASTER_ATK}
@@ -233,6 +278,31 @@ def test_keepsake_album_reads_the_live_stack_count_and_snapshots_is_wiped():
     assert round(after_third["damage"] / base, 6) == round((1 + 3 * 0.0249) + 0.13 * 3, 6)
 
 
+def test_rotation_stops_when_a_shortened_full_burst_removes_making_memories():
+    """Making Memories runs from her burst to the end of THAT cycle's Full
+    Burst, so a Burst 3 that shortens the window (Isabel -5 sec) shortens the
+    rotation with it. Asserted on the shot damage rather than on the fill list,
+    because the cost of getting this wrong is a stack: Precious Moments never
+    resets, so one phantom fill rides on through Keepsake Album's flat ATK for
+    the rest of the fight."""
+    def stacks(delta, after):
+        shots = her_normal_attacks(arcana_deck_result(b3_full_burst_delta=delta))
+        ratio = next(e for e in shots if e["time"] > after)["damage"] / shots[0]["damage"]
+        # Final ATK is base_atk x (1 + 2.49% x n) + 13% x n x base_atk, both in
+        # units of base_atk, so the ratio names n outright.
+        return round((ratio - 1) / (0.0249 + 0.13), 6)
+
+    # The 5 sec window carries the rotation to its 6th normal and no further -
+    # one Precious Moments stack per window against the standard window's two.
+    assert stacks(-5.0, after=10.1) == 1
+    assert stacks(0.0, after=15.1) == 2
+    # The second window is where a 10 sec fill window would show: it would have
+    # taken the shortened deck's first window to its 12th normal too, banking a
+    # phantom stack that Precious Moments never gives back.
+    assert stacks(-5.0, after=30.1) == 2
+    assert stacks(0.0, after=35.1) == 3
+
+
 def test_snapshots_of_youth_carries_the_cap_and_the_full_burst_end_reset():
     snapshots = next(s for s in build_memories_and_moments_resources({
         "memories_and_moments": MEMORIES_AND_MOMENTS, "keepsake_album": KEEPSAKE_ALBUM,
@@ -243,7 +313,7 @@ def test_snapshots_of_youth_carries_the_cap_and_the_full_burst_end_reset():
     # 스택으로 만들지 않게 막고, 창 사이에 카운터를 비운다.
     assert snapshots.cap == 3
     assert snapshots.resets == [{"trigger": "full_burst_end", "value": 0}]
-    assert snapshots.fill == ("per_shot_cycle_in_own_status_window", 4, 6, FULL_BURST_DURATION)
+    assert snapshots.fill == ("per_shot_cycle_from_own_burst_to_full_burst_end", 4, 6)
     # 값은 스킬 데이터 슬롯에서 온다 - 피팅된 상수가 아니다.
     assert round(snapshots.buffs[0].value_fn(3), 6) == 0.3
 
@@ -253,7 +323,7 @@ def test_snapshots_of_youth_carries_the_cap_and_the_full_burst_end_reset():
     # Precious Moments is NOT reset - Keepsake Album removes Making Memories and
     # Snapshots of Youth, not this.
     assert precious.resets == []
-    assert precious.fill == ("per_shot_cycle_in_own_status_window", 6, 6, FULL_BURST_DURATION)
+    assert precious.fill == ("per_shot_cycle_from_own_burst_to_full_burst_end", 6, 6)
 
 
 def test_snapshots_stacks_additively_with_the_sg_collectible_bucket():

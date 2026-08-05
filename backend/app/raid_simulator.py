@@ -114,6 +114,12 @@ AFTER_WINDOW_EPSILON = 1e-3
 CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
+# 스킬 쿨다운 감소의 하한 배수. 감소가 100%에 닿으면 주기 루프가 전진하지 않는다.
+# 오늘 데이터로는 스킬 쿨감을 주는 유닛이 아르카나 하나뿐이라(75%) 겹칠 수 없고,
+# 그래서 합산 규칙이 가산인지 승산인지는 알 수 없다 - 이 상수는 그 규칙이 아니라
+# 무한 루프 방어다.
+MIN_COOLDOWN_FACTOR = 0.05
+
 # Damage types that can never hit a core, whatever fired them.
 NON_CORE_DAMAGE_TYPES = frozenset({"sustained", "distributed"})
 
@@ -255,8 +261,8 @@ def _resource_fill_times(
         windows = [(bt, bt + window_duration) for bt in own_burst_times]
         in_window = [t for t in shot_times if any(start <= t < end for start, end in windows)]
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
-    if kind == "per_shot_cycle_in_own_status_window":
-        # ("per_shot_cycle_in_own_status_window", first, period, window_duration):
+    if kind == "per_shot_cycle_from_own_burst_to_full_burst_end":
+        # ("per_shot_cycle_from_own_burst_to_full_burst_end", first, period):
         # fires at the `first`-th shot of the status window and every `period`
         # after, with the count RESTARTED IN EACH WINDOW. That restart is the
         # whole difference from "per_shot_every_during_own_status_window", which
@@ -265,16 +271,27 @@ def _resource_fill_times(
         # window holding a non-multiple of `period` shots would drag the phase
         # into the next window and never line up again.
         #
+        # The window is the span of a status the owner's OWN burst grants and
+        # the end of Full Burst removes: it opens at each of her burst times and
+        # closes at the first Full Burst end after it. Its length is a property
+        # of the DECK, not a constant - the Burst 3 that opened that cycle may
+        # have moved the window (Isabel -5 sec, Modernia +5 sec), and her burst
+        # is a tier gap earlier than the window's own start. Reading the end off
+        # `full_burst_windows` is what keeps this fill and the buff half of the
+        # same status (open-ended + `truncate_open_ended` at `full_burst_end`)
+        # describing one window instead of two that disagree. A burst with no
+        # Full Burst left to close it runs to the end of the fight.
+        #
         # Arcana: Fortune Mate's Memories and Moments is the shape this exists
         # for: while Making Memories is up, every 2nd normal attack triggers ONE
         # of three effects in rotation (2 reload, 4 Happy Memories, 6 Precious
         # Moments, then 8/10/12, ...), and the count resets when the status is
         # removed. Each effect is one (first, period) pair on the same rotation.
-        first, period, window_duration = fill[1], fill[2], fill[3]
+        first, period = fill[1], fill[2]
         times = []
         for burst_time in own_burst_times:
-            start, end = burst_time, burst_time + window_duration
-            in_window = [t for t in shot_times if start <= t < end]
+            end = next((e for _start, e in full_burst_windows if e > burst_time), fight_duration)
+            in_window = [t for t in shot_times if burst_time <= t < end]
             times.extend(t for i, t in enumerate(in_window)
                          if i + 1 >= first and (i + 1 - first) % period == 0)
         return sorted(times)
@@ -757,6 +774,15 @@ def simulate_raid(
     def on_battle_start(time):
         fire_trigger("battle_start", rules_by_slug, context, registry, time)
         drain_instant_damage(0.0)
+        # A burst-cooldown cut emitted at battle start has nothing to cut: no
+        # burst has been used, so every unit's last-used time is -inf and the
+        # reduction is a no-op. Draining it here is what makes it one - pulses
+        # are otherwise collected only at Full Burst end, so this one would be
+        # banked and paid against the FIRST cycle's real cooldowns on top of
+        # that cycle's own cut (Anis: Star grants hers on both battle_start and
+        # full_burst_end; in game the squad receives 7.48 sec after cycle one,
+        # not twice that - Fienn, 2026-08-05).
+        registry.drain_pulses("burst_cooldown_reduction_sec")
 
     def on_tier_fire(tier, slug, time):
         context.burst_used_this_cycle.add(slug)
@@ -829,7 +855,8 @@ def simulate_raid(
                 damage_type=burst_damage_types.get(slug, "attack"),
             )
 
-    def on_full_burst_enter(time):
+    def on_full_burst_enter(time, end):
+        context.current_full_burst_end = end
         fire_trigger("full_burst_enter", rules_by_slug, context, registry, time)
         drain_instant_damage(time)
 
@@ -866,7 +893,7 @@ def simulate_raid(
             tick = cooldown
             while tick < fight_duration:
                 for rule in rules:
-                    if rule.condition(context, slug):
+                    if rule.condition(context, slug) and rule.time_condition(context, slug, tick):
                         rule.action(context, slug, tick, registry)
                 tick += cooldown
 
@@ -1045,10 +1072,10 @@ def simulate_raid(
                     ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
                     core_hittable, fight_duration, full_burst_windows, anchors,
                 ))
-            elif mode == "cycle_in_own_status_window":
-                first, period, window_duration = threshold
+            elif mode == "cycle_from_own_burst_to_full_burst_end":
+                first, period = threshold
                 window_fire_times[idx] = set(_resource_fill_times(
-                    ("per_shot_cycle_in_own_status_window", first, period, window_duration),
+                    ("per_shot_cycle_from_own_burst_to_full_burst_end", first, period),
                     shot_times, core_hittable, fight_duration, full_burst_windows, own_burst_times,
                 ))
             elif mode == "every_during_segment":
@@ -1102,7 +1129,8 @@ def simulate_raid(
                     )
                 if fires:
                     for rule in rules:
-                        if rule.condition(context, slug):
+                        if (rule.condition(context, slug)
+                                and rule.time_condition(context, slug, shot_time)):
                             rule.action(context, slug, shot_time, registry)
                     for pulse in registry.drain_pulses("instant_damage_percent"):
                         record(
@@ -1405,10 +1433,26 @@ def simulate_raid(
                     _tick(tick)
                     tick += interval
         else:
+            # The reduction is sampled once at the tick that starts each
+            # step and fixes that step's whole length - not re-read as the
+            # step plays out, so a buff lapsing partway through a step does
+            # not split it; the step keeps running at the rate it started
+            # with. Same shape as the during_full_burst branch above, which
+            # fixes each window's interval from the state at the window's
+            # start rather than tracking it continuously - acceptable here
+            # for the same reason: the loop only needs a rate at the instant
+            # it advances, not a sub-interval-accurate one.
+            skill_slot = spec.get("cooldown_skill_slot")
+            target = target_for(slug)
             tick = cooldown
             while tick < fight_duration:
                 _tick(tick)
-                tick += cooldown
+                factor = 1.0
+                if skill_slot == 2:
+                    reduction = registry.total_for(
+                        "skill_cooldown_reduction_percent", target, tick)
+                    factor = max(MIN_COOLDOWN_FACTOR, 1.0 - reduction)
+                tick += cooldown * factor
 
     # Damage on a cadence the unit computes for itself. `periodic_nukes` covers
     # a fixed interval; a summoned entity whose attack rate depends on how many

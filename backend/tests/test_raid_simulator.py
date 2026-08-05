@@ -979,6 +979,74 @@ def test_periodic_nukes_defaults_to_none_and_is_a_no_op():
     assert not any(e["source"] == "periodic" for e in result["damage_log"])
 
 
+def _periodic_times(result):
+    return [round(e["time"], 3) for e in result["damage_log"] if e["source"] == "periodic"]
+
+
+def _run_with_skill_cdr(nuke_spec, reduction=0.75, buff_duration=30.0):
+    """`buffer`가 전투 시작에 스킬 쿨감을 자기 자신에게 걸고, 그 주기 넉이 어떻게
+    도는지 본다. 아르카나가 이사벨에게 하는 일과 같은 모양이다."""
+    rules = {
+        "buffer": [buff_rule("battle_start", [
+            ("skill_cooldown_reduction_percent", reduction, "self", buff_duration)])],
+        "midtier": [],
+        "attacker": [],
+    }
+    return simulate_raid(
+        make_deck(),
+        rules,
+        burst_damage_percents={},
+        base_stats=make_base_stats(),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=60.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        periodic_nukes={"buffer": nuke_spec},
+    )
+
+
+def test_a_skill_cooldown_reduction_shortens_a_periodic_nuke_s_interval():
+    """스킬 2 쿨다운을 깎는 버프가 살아 있는 동안 주기 넉이 더 자주 터진다 -
+    아르카나의 The Magician이 이사벨의 Pointed Feather(쿨 15초)에 하는 일이다.
+
+    개수가 아니라 시각을 단언한다: 개수만 세면 경계에서 한 틱 어긋나도 통과한다."""
+    result = _run_with_skill_cdr(
+        {"cooldown": 15.0, "percent": 100.0, "cooldown_skill_slot": 2})
+
+    # 첫 틱은 쿨다운 그대로 t=15. 그 뒤 버프가 살아 있는 동안 15 * 0.25 = 3.75 간격.
+    # t=30.0에서 버프는 이미 만료(30.0 < 0+30.0이 거짓)라 다음 간격은 다시 15초.
+    assert _periodic_times(result) == [15.0, 18.75, 22.5, 26.25, 30.0, 45.0]
+
+
+def test_the_interval_returns_to_the_base_cooldown_when_the_buff_lapses():
+    # 20초짜리 버프: t=15, 18.75 뒤 t=22.5에서는 이미 만료라 그다음은 37.5.
+    result = _run_with_skill_cdr(
+        {"cooldown": 15.0, "percent": 100.0, "cooldown_skill_slot": 2},
+        buff_duration=20.0)
+
+    assert _periodic_times(result) == [15.0, 18.75, 22.5, 37.5, 52.5]
+
+
+def test_a_periodic_nuke_without_the_skill_slot_tag_ignores_the_reduction():
+    """태그가 없으면 그 주기 항목은 스킬 2 쿨다운을 모델한 것이 아니다
+    (에이다의 창 내 간격, 스노우 화이트의 자체 주기)."""
+    result = _run_with_skill_cdr({"cooldown": 15.0, "percent": 100.0})
+
+    assert _periodic_times(result) == [15.0, 30.0, 45.0]
+
+
+def test_a_reduction_at_or_above_one_cannot_stall_the_tick_loop():
+    # MIN_COOLDOWN_FACTOR가 없으면 간격이 0이 되어 루프가 전진하지 않는다.
+    result = _run_with_skill_cdr(
+        {"cooldown": 15.0, "percent": 100.0, "cooldown_skill_slot": 2},
+        reduction=1.5)
+
+    times = _periodic_times(result)
+    assert times[0] == 15.0
+    assert all(b > a for a, b in zip(times, times[1:]))
+
+
 def test_periodic_rules_apply_buffs_on_own_cooldown_before_damage_passes():
     # A Skill-1/2 with a cooldown first activates at t=cooldown, then repeats.
     # The debuff it applies must be visible to damage computed at those times,
@@ -1857,6 +1925,45 @@ def test_self_scoped_cdr_only_reduces_the_casters_cooldown():
     )
     starts = [e["time"] for e in result["events"] if e["type"] == "full_burst_start"]
     assert starts == pytest.approx([5.0, 45.0])
+
+
+def test_battle_start_cdr_pulse_is_not_banked_into_the_first_cycle():
+    # Mirrors Anis: Star's Starfall, which registers the SAME action on BOTH
+    # battle_start and full_burst_end (skill_rules/anis_star.py's alone_branch)
+    # - at battle start nothing has bursted, so that pulse has nothing to
+    # reduce and must be discarded there, not carried forward to double up
+    # with cycle 1's own pulse.
+    def emit_cdr_pulse(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("burst_cooldown_reduction_sec", 20.0, "squad", caster_slug))
+
+    rules_by_slug = {
+        "buffer": [
+            SkillRule(trigger="battle_start", action=emit_cdr_pulse),
+            SkillRule(trigger="full_burst_end", action=emit_cdr_pulse),
+        ],
+        "midtier": [],
+        "attacker": [],
+    }
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(attacker_atk=1000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=30.0,
+        mode="auto",
+    )
+    # Cycle 1 fires all three tiers at t=5 (last_used_at=-inf for everyone),
+    # Full Burst ends at t=15.000001 (FULL_BURST_OPEN_DELAY carried through).
+    # A single 20s reduction there (cycle 1's own pulse only) leaves attacker
+    # (40s cooldown, last used t=5) ready at 5-20+40=25, one gauge_charge_time
+    # above the 20.000001 floor - cycle 2 opens at 25.0. If the battle_start
+    # pulse were still queued and drained alongside it, the pair would sum to
+    # a 40s reduction (ready at 5.0) and cycle 2 would open at the 20.000001
+    # gauge floor instead.
+    attacker_hits = [e for e in result["damage_log"] if e["slug"] == "attacker"]
+    assert [e["time"] for e in attacker_hits] == pytest.approx([5.0, 25.0])
 
 
 def test_full_burst_enter_and_full_burst_end_triggers_fire_for_all_members():
@@ -3573,3 +3680,55 @@ def test_burst_three_cast_is_outside_the_full_burst_window():
     )
     nuke = next(e for e in result["damage_log"] if e["source"] == "instant_nuke")
     assert nuke["damage"] == 10000 * 10.0  # no +0.5 Full Burst bonus
+
+
+def test_time_condition_is_honoured_by_the_periodic_and_per_shot_passes():
+    """세 호출 지점(fire_trigger / periodic_rules / per_shot_rules)이 전부
+    time_condition을 존중하는지. 하나라도 빠지면 그 경로의 게이트가 조용히 열린다.
+
+    존중되는 것은 **필드**다. 특정 술어가 세 지점에서 다 의미 있다는 뜻은 아니다 -
+    `own_burst_status_active`는 `context.burst_times[caster][-1]`을 읽으므로 그 값이
+    「가장 최근 버스트」인 버스트 사이클 트리거에서만 옳고, periodic 패스(버스트 사이클
+    이전이라 목록이 비어 있다)와 per-shot 패스(이후라 목록이 전투 마지막 버스트로
+    끝난다)에서는 틀린 답을 낸다. 그 술어의 독스트링에 적혀 있다."""
+    seen = {"periodic": [], "per_shot": []}
+
+    def never(context, caster_slug, time):
+        return False
+
+    def always(context, caster_slug, time):
+        return True
+
+    def record(bucket):
+        def action(context, caster_slug, time, registry):
+            seen[bucket].append(round(time, 3))
+        return action
+
+    def run(time_condition):
+        seen["periodic"].clear()
+        seen["per_shot"].clear()
+        return simulate_raid(
+            make_deck(),
+            {"buffer": [], "midtier": [], "attacker": []},
+            burst_damage_percents={},
+            base_stats=make_base_stats(attacker_atk=10000),
+            enemy_def=0,
+            gauge_charge_time=5.0,
+            fight_duration=40.0,
+            mode="auto",
+            base_crit_rate=0.0,
+            periodic_rules={"buffer": [(15.0, [SkillRule(
+                trigger="periodic", action=record("periodic"),
+                time_condition=time_condition)])]},
+            weapon_stats={"attacker": _ar_weapon()},
+            per_shot_rules={"attacker": [(5, "every", [SkillRule(
+                trigger="per_shot", action=record("per_shot"),
+                time_condition=time_condition)])]},
+        )
+
+    run(always)
+    assert seen["periodic"], "periodic 패스가 아예 안 돌았다 - 픽스처가 잘못됐다"
+    assert seen["per_shot"], "per-shot 패스가 아예 안 돌았다 - 픽스처가 잘못됐다"
+
+    run(never)
+    assert seen == {"periodic": [], "per_shot": []}

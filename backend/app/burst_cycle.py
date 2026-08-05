@@ -68,6 +68,11 @@ FULL_BURST_DURATION = 10.0
 # backwards into the cast that opened the window.
 FULL_BURST_OPEN_DELAY = 1e-6
 
+# 풀 버스트 창의 하한. 창 길이를 줄이는 유닛(이사벨의 "Full Burst Time -5 sec")이
+# 기본 길이보다 큰 값을 깎는 배치는 오늘 데이터에 없지만, 길이가 음수인 창은
+# 아래의 모든 [start, end) 검사를 조용히 뒤집으므로 여기서 막는다.
+MIN_FULL_BURST_DURATION = 0.0
+
 
 def _ready_at(member, last_used_at, last_fired_at, cycle_index, fire_count,
               stunned_until):
@@ -113,7 +118,9 @@ def simulate_burst_cycle(
     triggers with the scheduling without duplicating this algorithm:
         on_battle_start(time)             - called once, before the first cycle
         on_tier_fire(tier, slug, time)     - called as each burst tier fires
-        on_full_burst_enter(time)          - called when tier 3 fires
+        on_full_burst_enter(start, end)     - called when tier 3 fires; `end` is
+            when the window this Burst 3 opened will close, which the tier-3
+            unit's own kit may have moved
         on_full_burst_end(time) -> {slug: seconds} - called when Full Burst
             ends; each Nikke's last-used-at is reduced by its entry (an instant
             cooldown pulse). Returning a per-slug map lets a self-scoped pulse
@@ -160,6 +167,7 @@ def simulate_burst_cycle(
             break
 
         tier3_fire_time = None
+        tier3_member = None
         for tier in (1, 2, 3):
             # Same arithmetic as tier_ready_time (last + cooldown vs fire_time):
             # subtracting instead (fire_time - last >= cooldown) rounds
@@ -180,13 +188,21 @@ def simulate_burst_cycle(
                 on_tier_fire(tier, chosen["slug"], fire_time)
             if tier == 3:
                 tier3_fire_time = fire_time
+                tier3_member = chosen
             fire_time += gap
 
         full_burst_start = tier3_fire_time + FULL_BURST_OPEN_DELAY
+        # 창 길이는 이 사이클을 연 Burst 3이 정한다: 자기 버스트가 풀 버스트 자체를
+        # 늘리거나 줄이는 유닛이 있고(이사벨 -5초, 모더니아 +5초), 그 효과는 그 유닛이
+        # 연 사이클에만 걸린다.
+        duration = max(
+            MIN_FULL_BURST_DURATION,
+            FULL_BURST_DURATION + tier3_member.get("full_burst_duration_delta", 0.0),
+        )
+        full_burst_end = full_burst_start + duration
         if on_full_burst_enter:
-            on_full_burst_enter(full_burst_start)
+            on_full_burst_enter(full_burst_start, full_burst_end)
 
-        full_burst_end = full_burst_start + FULL_BURST_DURATION
         events.append({"type": "full_burst_start", "time": full_burst_start})
         events.append({"type": "full_burst_end", "time": full_burst_end})
 

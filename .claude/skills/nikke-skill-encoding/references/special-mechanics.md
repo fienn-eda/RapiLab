@@ -85,24 +85,53 @@ how to encode it, and current engine status.
   others). E.g. Arcana's "Wheel of Fortune" - granted to Electric Code allies
   including herself by her own burst (Shackles of Destiny); other bullets check
   "if self is in Wheel of Fortune".
-- **Encode:** this is equivalent to "did this Nikke's own burst fire earlier in
-  the current cycle" - use the `own_burst_fired_this_cycle()` condition
-  (`squad_engine.py`), which reads `SquadContext.burst_used_this_cycle` (already
-  tracked by the engine, not yet cleared when `full_burst_end` rules run). No
-  new status-tracking needed. See `arcana.py`.
+- **Encode:** first decide whether the clock between the grant and the check
+  can matter, by comparing the status's duration against the gap from the grant
+  to the trigger:
+  - `full_burst_enter` - the unit's own tier-3-ordered burst fires immediately
+    before, so at most a tier gap has passed. Use `own_burst_fired_this_cycle()`
+    (`squad_engine.py`, reads `SquadContext.burst_used_this_cycle` - already
+    tracked, not yet cleared when `full_burst_enter`/`full_burst_end` rules
+    run) directly; no new status-tracking is needed and the dropped clock never
+    has room to matter (Asuka, Mana).
+  - `full_burst_end` when the bullet wants the status **ending** rather than
+    still running - the same coincidence is fine, so `own_burst_fired_this_cycle()`
+    on `full_burst_end` IS correct (Grave's Heat Emission, `grave.py`).
+  - `full_burst_end` when the bullet wants the status **still running** -
+    `own_burst_fired_this_cycle()` is UNSOUND here: it carries no clock, so it
+    can't tell "status still active" from "status already lapsed". A 10 sec
+    status granted at Burst Stage 2 has already lapsed by the time a *standard*
+    10 sec Full Burst ends (the grant starts BEFORE the Burst 3 cast that opens
+    the window) - only a Full Burst shortened below the status's duration keeps
+    it alive. Use `own_burst_status_active(seconds)` instead: it reads the
+    grant off `context.burst_times[caster_slug]` and compares it against the
+    trigger's own live time, as a `SkillRule`'s `time_condition`. Arcana's
+    Wheel of Fortune gate on The Magician/Strength/Death is the worked example
+    (`arcana.py`) - the gate only opens behind a Burst 3 that actually shortens
+    Full Burst (`FULL_BURST_DURATION_DELTA`, below), Isabel today.
+  Ask which of these three shapes a new "if self is in status X" bullet is
+  BEFORE picking a condition - the wrong one compiles and passes review, it
+  just returns the wrong boolean at the one instant that matters.
+- **A unit whose own burst changes the Full Burst window's length** (not just
+  rotation timing) registers the delta in `FULL_BURST_DURATION_DELTA`
+  (`skill_rules/registry.py`) - `burst_cycle` reads it off whichever member
+  opened that cycle's tier 3, so the effect only applies to the cycles THAT
+  unit bursts in (Isabel -5 sec, Modernia +5 sec). `burst_cycle.FULL_BURST_DURATION`
+  is the base/default width a cycle falls back to when its tier-3 member
+  carries no delta, not a hard global ceiling.
 
 ## Targeting a per-member subset by tier + element + prior-burst
 - **What:** some bullets target a dynamic subset like "all Burst 3 Electric
   Code allies who previously cast their Burst Skill" - a combination of tier,
   element, AND per-member "already burst this cycle" state.
-- **Gap:** `Effect.scope` only supports `self` / `squad` / `element:X` - there's
-  no way to target an arbitrary computed list of member slugs. This is a real
-  engine gap, not a judgment call.
-- **Encode:** defer + document (do not approximate onto `squad` or
-  `element:X` - the audience is much narrower and these bullets are often large
-  numbers precisely because the audience is narrow). Flag it if the deferred
-  bullet looks central to the unit's value in a specific deck archetype. See
-  `arcana.py`'s deferred "Magician"/"Strength" bullets.
+- **Encode:** `member_subset_buff_rule` (`_helpers.py`) - pass a
+  `member_filter(member, context)` and it resolves the matching members to a
+  live `slugs:` scope at trigger time (gap #3, closed 2026-07-16). Do NOT
+  approximate onto `squad` or `element:X` - the audience is much narrower and
+  these bullets carry large numbers precisely because it is. See `arcana.py`'s
+  "Magician"/"Strength" bullets and `ark_ranger_black.py`.
+- **Caveat:** the filter runs ONCE, at the trigger's own instant - the target
+  set is a snapshot, not a continuously re-evaluated membership.
 
 ## Weapon-type-scoped buffs ("all shotgun-wielding allies")
 - **What:** some buffs target allies by weapon type (e.g. "all shotgun-wielding

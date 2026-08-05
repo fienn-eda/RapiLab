@@ -63,6 +63,11 @@ class SquadContext:
         # Hood's projectile explosions). Filled by raid_simulator right
         # before the weapon pass; empty for contexts without a burst cycle.
         self.full_burst_windows: list[tuple[float, float]] = []
+        # 지금 열려 있는 풀 버스트 창이 닫히는 시각. 원문이 "continuously"인 버프
+        # (도로시의 Radiant Wings)는 초 수가 아니라 창의 끝까지 가므로, 그 길이를
+        # 정한 Burst 3이 누구였는지에 따라 달라진다. full_burst_enter에서 세워지고
+        # 그 순간에만 읽힌다.
+        self.current_full_burst_end: float | None = None
         # slug -> every time that unit fires, so a `scheduled_nukes` schedule can
         # derive damage from its owner's own shot timeline (e.g. Raven's Shock
         # Wave, a sustained DoT started by each Full Charge). Filled in by
@@ -271,6 +276,45 @@ def own_burst_fired_this_cycle() -> Callable[[SquadContext, str], bool]:
     return check
 
 
+def own_burst_status_active(seconds: float) -> Callable[[SquadContext, str, float], bool]:
+    """자기 버스트가 자신에게 건 상태가 그 시각에 아직 살아 있는가.
+
+    부여 시점은 그 버스트를 쓴 시각이므로 별도 상태 기록이 필요 없다
+    (`SquadContext.burst_times`). 한 번도 버스트하지 않았으면 거짓.
+
+    `own_burst_fired_this_cycle()`가 답할 수 없는 질문이다: 그쪽은 시계가 없어서
+    부여 이후 `seconds`가 지났는지 구별하지 못한다. 풀 버스트 창 하나를 사이에 둔
+    `full_burst_end` 게이트에서는 그 차이가 전부다 - 아르카나의 운명의 수레바퀴는
+    10초짜리인데 그녀는 버스트 스테이지 2에서 시전하므로, 표준 10초 창이 끝날 때는
+    이미 만료돼 있다.
+
+    **버스트 사이클 트리거에서만 의미가 있다** — `battle_start` ·
+    `own_burst_activate` · `ally_burst_activate` · `full_burst_enter` ·
+    `full_burst_end`. `burst_times[caster][-1]`이 「가장 최근 버스트」인 것은
+    `simulate_burst_cycle` 워크가 도는 동안뿐이고, `raid_simulator`의 나머지 두
+    호출 지점에서는 다른 것을 가리킨다:
+
+    - `periodic_rules` 패스는 `simulate_burst_cycle`보다 **먼저** 돌아
+      `burst_times`가 아직 비어 있다 → 이 술어는 무조건 거짓이다.
+    - per-shot 패스는 **나중에** 돌아 `burst_times`가 전투 전체를 담고 있다 →
+      `[-1]`은 그 전투의 **마지막** 버스트이고, 그 버스트가 일어나기 한참 전인
+      사격 시각에서도 참을 돌려준다.
+
+    `SkillRule.time_condition` 필드 자체는 세 지점이 모두 존중한다
+    (`test_raid_simulator.py`의
+    `test_time_condition_is_honoured_by_the_periodic_and_per_shot_passes`).
+    제약은 이 술어의 것이지 필드의 것이 아니다.
+    """
+
+    def check(context: SquadContext, caster_slug: str, time: float) -> bool:
+        times = context.burst_times.get(caster_slug)
+        if not times:
+            return False
+        return times[-1] + seconds > time
+
+    return check
+
+
 def ally_bursted(slug: str) -> Callable[[SquadContext, str], bool]:
     """Condition for an `ally_burst_activate` rule: the unit whose burst just
     fired is `slug` (e.g. Prika's Encore fires when Mint bursts). Reads
@@ -384,11 +428,21 @@ def _always_true(context: SquadContext, caster_slug: str) -> bool:
     return True
 
 
+def _always_true_at(context: SquadContext, caster_slug: str, time: float) -> bool:
+    return True
+
+
 @dataclass
 class SkillRule:
     trigger: str
     action: Callable[[SquadContext, str, float, EffectRegistry], None]
     condition: Callable[[SquadContext, str], bool] = field(default=_always_true)
+    # 상태의 남은 시간처럼, 트리거가 발동한 시각을 봐야만 답할 수 있는 게이트.
+    # 시각은 언제나 호출자가 넘긴다 - 컨텍스트에 현재 시각을 찍어두고 나중에 읽는
+    # 방식은 호출 지점 하나가 찍기를 빠뜨리면 낡은 값을 에러 없이 반환한다.
+    time_condition: Callable[[SquadContext, str, float], bool] = field(
+        default=_always_true_at
+    )
 
 
 def fire_trigger(trigger, rules_by_slug, context, registry, time):
@@ -397,5 +451,5 @@ def fire_trigger(trigger, rules_by_slug, context, registry, time):
         if matching:
             context.record_activation(slug, trigger)
         for rule in matching:
-            if rule.condition(context, slug):
+            if rule.condition(context, slug) and rule.time_condition(context, slug, time):
                 rule.action(context, slug, time, registry)

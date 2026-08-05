@@ -3,11 +3,26 @@ signature weapon).
 
 "Wheel of Fortune" is a status her own burst (Shackles of Destiny) grants to
 all Electric Code allies, including herself (she is Electric). Her other two
-skills gate a bullet on "if self is in Wheel of Fortune status" - since only
-her own burst grants it, this is equivalent to "did Arcana's own burst fire
-this cycle", modeled with `own_burst_fired_this_cycle()` (reads
-SquadContext.burst_used_this_cycle, which is not yet cleared when
-full_burst_end rules run).
+skills gate three bullets on "if self is in Wheel of Fortune status" at Full
+Burst END - and the status runs 10 sec from her Burst Stage 2 cast, which is
+strictly before the Burst 3 cast that opens the window. So with a standard 10
+sec Full Burst it has always lapsed by the time those bullets check, and the
+only thing that opens the gate is a shortened window: today that means Isabel
+alone ("Full Burst Time -5 sec"). Modeled with `own_burst_status_active`, which
+reads the grant off her own burst time and compares it against the trigger's
+time - `own_burst_fired_this_cycle()` carries no clock and cannot tell the two
+cases apart.
+
+THE CLOSED CASE RESTS ON A MARGIN THIS ENGINE SETS RATHER THAN MEASURES. At a
+standard 10 sec window the status lapses exactly one Burst-Stage-2-to-3 gap
+before the check, and that gap is `burst_cycle`'s own: 0.1 sec between tiers in
+manual mode, and in auto mode only `FULL_BURST_OPEN_DELAY` (1e-6), the constant
+that keeps a Burst 3's cast distinct from the window it opens. The strict `>` in
+`own_burst_status_active` is what makes that sliver a closed gate. In the real
+game the same gap is two burst animations resolving in sequence - a visible
+fraction of a second - so the gate is shut by far more than the engine can show,
+and no measurement pins how much. The OPEN case is not thin the same way:
+Isabel's 5 sec window leaves 4.9 sec of the status still running.
 
 Modeled (DPS-relevant):
 - Shackles of Destiny (skills[2], her burst): Electric-Code squad Attack
@@ -17,22 +32,26 @@ Modeled (DPS-relevant):
 - Awakened Destiny (skills[0]): on Full Burst end, squad ATK % of caster's ATK
   - this bullet is unconditioned (no Wheel of Fortune requirement).
 - Cycle of Destiny (skills[1]): on Full Burst end, an unconditioned squad
-  Attack Damage buff, plus - only if Arcana's own burst fired this cycle -
-  squad burst-cooldown reduction + squad ATK % of caster's ATK (Death).
+  Attack Damage buff, plus - only while Arcana is still in Wheel of Fortune
+  status - squad burst-cooldown reduction + squad ATK % of caster's ATK
+  (Death).
 - "The Magician" (skills[0]) / "Strength" (skills[1]) first bullets: on Full
   Burst end, all Burst 3 Electric Code allies who previously cast their Burst
-  Skill - if Arcana is in Wheel of Fortune status - get Attack damage +180%
-  (Magician) and ATK +180% of caster's ATK (Strength), 15 sec each
+  Skill - if Arcana is still in Wheel of Fortune status - get Attack damage
+  +180% and Skill 2 cooldown -75% (Magician, 15 sec each) and ATK +180% of
+  caster's ATK (Strength, 15 sec). The Skill 2 cut has exactly one consumer:
+  Isabel's Pointed Feather (Skill 2, cooldown 15 sec). The other Electric
+  Burst-3 units with cooldown-driven damage carry no skill cooldown at all -
+  Jill Valentine's Acid Ammo and Ada Wong's Flash Grenade tick on an interval
+  inside their own window, and Ein's Feather Shot is a summon cadence.
   (member_subset_buff_rule, gap #3; burst_used_this_cycle is still populated
   when full_burst_end rules run).
 
-Not modeled: The Magician's "Cooldown of Skill 2 -75%" - ally Skill 1/2
-cooldowns aren't simulated (only periodic_rules units have one, and none is
-Electric Burst-3 today).
+Not modeled: nothing. All six bullets are encoded.
 """
 from app.effects import Effect, Pulse
 from app.skill_rules._helpers import member_subset_buff_rule
-from app.squad_engine import SkillRule, own_burst_fired_this_cycle
+from app.squad_engine import SkillRule, own_burst_status_active
 
 SKILL_VALUE_MANIFESTS = {
     "arcana": {
@@ -65,6 +84,8 @@ def build_arcana_rules(values):
     awakened_atk = float(awakened["description_value_06"]) / 100 * caster_atk
     awakened_atk_duration = float(awakened["description_value_07"])
 
+    magician_skill2_cdr = float(awakened["description_value_02"]) / 100
+    magician_skill2_cdr_duration = float(awakened["description_value_03"])
     magician_attack_damage = float(awakened["description_value_04"]) / 100
     magician_duration = float(awakened["description_value_05"])
     strength_atk = float(cycle["description_value_02"]) / 100 * caster_atk
@@ -112,20 +133,25 @@ def build_arcana_rules(values):
             and member.slug in context.burst_used_this_cycle
         )
 
+    wheel_active = own_burst_status_active(wheel_duration)
+
     return [
         SkillRule(trigger="own_burst_activate", action=apply_shackles_buffs),
         SkillRule(trigger="full_burst_end", action=apply_awakened_squad_atk),
-        SkillRule(trigger="full_burst_end", action=apply_cycle_death, condition=own_burst_fired_this_cycle()),
+        SkillRule(trigger="full_burst_end", action=apply_cycle_death,
+                  time_condition=wheel_active),
         SkillRule(trigger="full_burst_end", action=apply_cycle_attack_damage),
         # The Magician / Strength: bursted Electric Burst-3 subset (gap #3).
         member_subset_buff_rule(
             "full_burst_end", bursted_electric_b3,
-            [("attack_damage_up", magician_attack_damage, magician_duration)],
-            condition=own_burst_fired_this_cycle(),
+            [("attack_damage_up", magician_attack_damage, magician_duration),
+             ("skill_cooldown_reduction_percent", magician_skill2_cdr,
+              magician_skill2_cdr_duration)],
+            time_condition=wheel_active,
         ),
         member_subset_buff_rule(
             "full_burst_end", bursted_electric_b3,
             [("flat_atk", strength_atk, strength_duration)],
-            condition=own_burst_fired_this_cycle(),
+            time_condition=wheel_active,
         ),
     ]

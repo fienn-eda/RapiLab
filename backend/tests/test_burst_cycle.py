@@ -132,9 +132,10 @@ def test_on_full_burst_enter_hook_fires_at_tier3_time():
     calls = []
     simulate_burst_cycle(
         deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto",
-        on_full_burst_enter=lambda time: calls.append(time),
+        on_full_burst_enter=lambda start, end: calls.append((start, end)),
     )
-    assert calls == [5.0 + FULL_BURST_OPEN_DELAY]
+    assert calls == [(5.0 + FULL_BURST_OPEN_DELAY,
+                      5.0 + FULL_BURST_OPEN_DELAY + FULL_BURST_DURATION)]
 
 
 def test_on_full_burst_end_hook_return_value_reduces_all_cooldowns():
@@ -469,3 +470,69 @@ def test_default_gauge_reproduces_the_measured_fifteenth_full_burst():
     starts = [e["time"] for e in events if e["type"] == "full_burst_start"]
     assert len(starts) == 15
     assert starts[-1] == pytest.approx(179.0, abs=0.1)
+
+
+def _deck_with_two_b3(delta_a=None, delta_b=None):
+    """b3_unit_a와 b3_unit_b가 사이클마다 번갈아 티어 3을 맡는 덱."""
+    a = {"slug": "b3_unit_a", "burst_tier": 3, "cooldown": 40.0}
+    b = {"slug": "b3_unit_b", "burst_tier": 3, "cooldown": 40.0}
+    if delta_a is not None:
+        a["full_burst_duration_delta"] = delta_a
+    if delta_b is not None:
+        b["full_burst_duration_delta"] = delta_b
+    return [
+        {"slug": "b1_unit", "burst_tier": 1, "cooldown": 20.0},
+        {"slug": "b2_unit", "burst_tier": 2, "cooldown": 20.0},
+        a,
+        b,
+    ]
+
+
+def _windows(events):
+    return list(zip(
+        (e["time"] for e in events if e["type"] == "full_burst_start"),
+        (e["time"] for e in events if e["type"] == "full_burst_end"),
+    ))
+
+
+def test_full_burst_window_shortens_for_a_tier3_that_cuts_it():
+    deck = _deck_with_two_b3(delta_a=-5.0)
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto")
+
+    start, end = _windows(events)[0]
+    assert end - start == pytest.approx(5.0)
+
+
+def test_full_burst_window_lengthens_for_a_tier3_that_extends_it():
+    deck = _deck_with_two_b3(delta_a=5.0)
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=25.0, mode="auto")
+
+    start, end = _windows(events)[0]
+    assert end - start == pytest.approx(15.0)
+
+
+def test_each_cycle_takes_the_length_of_whichever_burst3_opened_it():
+    # 티어 3이 둘이고 쿨다운이 40초라 사이클마다 번갈아 연다. 창 길이는 사이클의
+    # 속성이 아니라 그 사이클을 연 유닛의 속성이다.
+    deck = _deck_with_two_b3(delta_a=-5.0)
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=60.0, mode="auto")
+
+    lengths = [round(end - start, 6) for start, end in _windows(events)[:2]]
+    assert lengths == [5.0, 10.0]
+
+
+def test_a_delta_below_the_base_duration_gives_a_zero_length_window_not_a_negative_one():
+    # 음수 길이의 창은 아래의 모든 `start <= t < end` 검사를 조용히 뒤집는다.
+    deck = _deck_with_two_b3(delta_a=-25.0)
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto")
+
+    start, end = _windows(events)[0]
+    assert end - start == pytest.approx(0.0)
+
+
+def test_a_member_without_a_delta_keeps_the_base_duration():
+    deck = _deck_with_two_b3()
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=20.0, mode="auto")
+
+    start, end = _windows(events)[0]
+    assert end - start == pytest.approx(FULL_BURST_DURATION)

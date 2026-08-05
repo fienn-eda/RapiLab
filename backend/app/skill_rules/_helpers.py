@@ -6,6 +6,7 @@ module only has to declare its stats/values, not re-implement the action.
 """
 from itertools import count
 
+from app.burst_cycle import FULL_BURST_DURATION
 from app.effects import Effect, Pulse, ResourceBuff, RoundGrant
 from app.squad_engine import SkillRule
 
@@ -14,13 +15,25 @@ _round_cap_group_ids = count()
 _refresh_group_ids = count()
 
 
-def _rule(trigger, action, condition):
-    """Build a SkillRule, attaching `condition` only when given (None keeps
-    SkillRule's own default of always-true) - so a gated bullet (e.g. a
-    boss-element-conditional debuff) reuses the same builder as an ungated one."""
+def full_burst_window_length(context, time):
+    """지금 열린 창이 남긴 시간. 컨텍스트가 창을 모르면(버스트 사이클 없는 테스트)
+    엔진 기본값으로 떨어진다. "continuously"라고 적힌 풀 버스트 버프(도로시의
+    Radiant Wings)가 쓴다 - 창 길이가 사이클마다 달라지므로 고정 상수로는 못
+    재현한다."""
+    end = context.current_full_burst_end
+    return FULL_BURST_DURATION if end is None else max(0.0, end - time)
+
+
+def _rule(trigger, action, condition, time_condition=None):
+    """Build a SkillRule, attaching `condition`/`time_condition` only when given
+    (None keeps SkillRule's own always-true defaults) - so a gated bullet (e.g. a
+    boss-element-conditional debuff, or one gated on a status that may have
+    lapsed) reuses the same builder as an ungated one."""
     rule = SkillRule(trigger=trigger, action=action)
     if condition is not None:
         rule.condition = condition
+    if time_condition is not None:
+        rule.time_condition = time_condition
     return rule
 
 
@@ -125,7 +138,8 @@ def highest_atk_buff_rule(trigger, n, buffs):
     return SkillRule(trigger=trigger, action=action)
 
 
-def member_subset_buff_rule(trigger, member_filter, buffs, condition=None, refreshing=False):
+def member_subset_buff_rule(trigger, member_filter, buffs, condition=None,
+                            refreshing=False, time_condition=None):
     """Timed buffs on the squad members selected by `member_filter` at trigger
     time - the narrow subsets Effect.scope can't express ("all Wind Code allies
     with assault rifles", "all Burst 3 allies who previously used their Burst
@@ -148,7 +162,7 @@ def member_subset_buff_rule(trigger, member_filter, buffs, condition=None, refre
             else:
                 registry.add(effect, applied_at=time)
 
-    return _rule(trigger, action, condition)
+    return _rule(trigger, action, condition, time_condition)
 
 
 def round_buff_rule(trigger, buffs, shots=1, cap=None):

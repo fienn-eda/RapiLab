@@ -5,8 +5,8 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 # Real skill level 10 values from api.dotgg.gg.
 AWAKENED_DESTINY = {
     "description_value_01": "3",    # Burst 3 (subset bullet's tier filter)
-    "description_value_02": "75",   # deferred: Cooldown of Skill 2 down %
-    "description_value_03": "15",   # deferred: duration
+    "description_value_02": "75",   # The Magician: Cooldown of Skill 2 down %
+    "description_value_03": "15",   # duration
     "description_value_04": "180",  # The Magician: Attack damage %
     "description_value_05": "15",   # duration
     "description_value_06": "5",    # squad ATK % of caster's ATK
@@ -75,23 +75,38 @@ def test_awakened_destiny_squad_atk_applies_unconditionally():
     assert registry.total_for("flat_atk", FIRE_ALLY, now=15.0) == 500.0  # 5% of 10000
 
 
-def test_cycle_of_destiny_death_bullet_requires_arcana_burst_this_cycle():
+def test_death_bullet_needs_the_wheel_still_running_at_full_burst_end():
+    # 수레바퀴는 그녀가 버스트 스테이지 2에서 시전할 때 시작하는 10초짜리다.
     ctx = make_context()
+    ctx.record_burst_time("arcana", 2.5)
     registry = EffectRegistry()
-    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=15.0)
-    assert registry.drain_pulses("burst_cooldown_reduction_sec") == []
-    # only Awakened Destiny's unconditioned 5% applies, not Death's 50%
-    assert registry.total_for("flat_atk", FIRE_ALLY, now=15.0) == 500.0
+    # 표준 10초 창: 그녀의 시전은 창이 열리기 전이므로 종료 시점엔 이미 만료다.
+    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=12.6)
 
-    ctx.burst_used_this_cycle.add("arcana")
+    assert registry.drain_pulses("burst_cooldown_reduction_sec") == []
+    # Awakened Destiny의 무조건 5%만 적용된다 (Death의 50%는 아니다)
+    assert registry.total_for("flat_atk", FIRE_ALLY, now=12.6) == 500.0
+
+    # 이사벨이 창을 5초로 줄인 사이클에서는 아직 살아 있다.
+    ctx2 = make_context()
+    ctx2.record_burst_time("arcana", 2.5)
     registry2 = EffectRegistry()
-    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry2, time=15.0)
+    fire_trigger("full_burst_end", {"arcana": build()}, ctx2, registry2, time=7.6)
+
     pulses = registry2.drain_pulses("burst_cooldown_reduction_sec")
     assert len(pulses) == 1
     assert pulses[0].value == 6.0
     assert pulses[0].scope == "squad"
-    # Awakened's 5% (500) + Death's 50% (5000) = 5500
-    assert registry2.total_for("flat_atk", FIRE_ALLY, now=15.0) == 5500.0
+    # Awakened의 5% (500) + Death의 50% (5000)
+    assert registry2.total_for("flat_atk", FIRE_ALLY, now=7.6) == 5500.0
+
+
+def test_death_bullet_does_not_fire_when_arcana_never_burst():
+    ctx = make_context()
+    registry = EffectRegistry()
+    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=7.6)
+    assert registry.drain_pulses("burst_cooldown_reduction_sec") == []
+    assert registry.total_for("flat_atk", FIRE_ALLY, now=7.6) == 500.0
 
 
 def test_cycle_of_destiny_attack_damage_bullet_applies_unconditionally():
@@ -116,9 +131,10 @@ FIRE_B3 = {"slug": "fire-b3", "element": "Fire"}
 def test_magician_and_strength_hit_bursted_electric_b3_allies():
     # The Magician (Awakened Destiny) / Strength (Cycle of Destiny): FB end,
     # all Burst 3 Electric Code allies who previously cast their Burst Skill,
-    # if Arcana is in Wheel of Fortune status (= her own burst fired this cycle).
+    # if Arcana is still in Wheel of Fortune status at that instant.
     ctx = _b3_context()
     ctx.burst_used_this_cycle.update({"arcana", "electric-b3", "fire-b3"})
+    ctx.record_burst_time("arcana", 10.0)  # wheel still up at t=15.0 (10.0 + 10 > 15.0)
     registry = EffectRegistry()
     fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=15.0)
 
@@ -133,19 +149,56 @@ def test_magician_and_strength_hit_bursted_electric_b3_allies():
     assert round(registry.total_for("attack_damage_up", ELECTRIC_B3, now=30.1), 4) == 0.0
 
 
-def test_magician_and_strength_require_bursted_target_and_wheel_of_fortune():
-    # Target that didn't burst this cycle is excluded.
+def test_magician_and_strength_need_the_wheel_still_running():
     ctx = _b3_context()
-    ctx.burst_used_this_cycle.add("arcana")  # Wheel of Fortune, but target didn't burst
-    registry = EffectRegistry()
-    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=15.0)
-    assert round(registry.total_for("attack_damage_up", ELECTRIC_B3, now=15.0), 4) == 0.075
-    assert registry.total_for("flat_atk", ELECTRIC_B3, now=15.0) == 5500.0
+    ctx.burst_used_this_cycle.update({"arcana", "electric-b3", "fire-b3"})
+    ctx.record_burst_time("arcana", 2.5)
 
-    # Without Arcana's own burst (no Wheel of Fortune) nothing subset-y applies.
-    ctx2 = _b3_context()
-    ctx2.burst_used_this_cycle.add("electric-b3")
+    # 10초 창: 만료 - 스쿼드 공댐 7.5%와 Awakened의 500만 남는다.
+    registry = EffectRegistry()
+    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=12.6)
+    assert round(registry.total_for("attack_damage_up", ELECTRIC_B3, now=12.6), 4) == 0.075
+    assert registry.total_for("flat_atk", ELECTRIC_B3, now=12.6) == 500.0
+
+    # 5초 창: 살아 있다 - Magician 1.80 + 스쿼드 0.075
     registry2 = EffectRegistry()
-    fire_trigger("full_burst_end", {"arcana": build()}, ctx2, registry2, time=15.0)
-    assert round(registry2.total_for("attack_damage_up", ELECTRIC_B3, now=15.0), 4) == 0.075
-    assert registry2.total_for("flat_atk", ELECTRIC_B3, now=15.0) == 500.0  # Awakened only
+    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry2, time=7.6)
+    assert round(registry2.total_for("attack_damage_up", ELECTRIC_B3, now=7.6), 4) == 1.875
+    assert round(registry2.total_for("attack_damage_up", FIRE_B3, now=7.6), 4) == 0.075
+    # Awakened 500 + Death 5000 + Strength 18000
+    assert registry2.total_for("flat_atk", ELECTRIC_B3, now=7.6) == 23500.0
+    assert registry2.total_for("flat_atk", FIRE_B3, now=7.6) == 5500.0
+
+
+def test_magician_and_strength_skip_a_target_that_did_not_burst():
+    ctx = _b3_context()
+    ctx.burst_used_this_cycle.add("arcana")   # 수레바퀴는 있지만 대상이 안 터졌다
+    ctx.record_burst_time("arcana", 2.5)
+    registry = EffectRegistry()
+    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=7.6)
+    assert round(registry.total_for("attack_damage_up", ELECTRIC_B3, now=7.6), 4) == 0.075
+    assert registry.total_for("flat_atk", ELECTRIC_B3, now=7.6) == 5500.0
+
+
+def test_magician_also_cuts_the_targets_skill_2_cooldown():
+    # "The Magician: Cooldown of Skill 2 ▼ 75% for 15 sec."
+    ctx = _b3_context()
+    ctx.burst_used_this_cycle.update({"arcana", "electric-b3", "fire-b3"})
+    ctx.record_burst_time("arcana", 2.5)
+    registry = EffectRegistry()
+    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=7.6)
+
+    assert registry.total_for("skill_cooldown_reduction_percent", ELECTRIC_B3, now=7.6) == 0.75
+    # 대상 부분집합 밖에는 안 간다
+    assert registry.total_for("skill_cooldown_reduction_percent", FIRE_B3, now=7.6) == 0.0
+    # 15초짜리다
+    assert registry.total_for("skill_cooldown_reduction_percent", ELECTRIC_B3, now=22.7) == 0.0
+
+
+def test_magician_skill_2_cooldown_cut_needs_the_wheel_too():
+    ctx = _b3_context()
+    ctx.burst_used_this_cycle.update({"arcana", "electric-b3"})
+    ctx.record_burst_time("arcana", 2.5)
+    registry = EffectRegistry()
+    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=12.6)
+    assert registry.total_for("skill_cooldown_reduction_percent", ELECTRIC_B3, now=12.6) == 0.0

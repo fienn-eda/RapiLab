@@ -3,11 +3,14 @@ attacker. Base skills (no signature weapon).
 
 Modeled (DPS-relevant):
 - Radiant Youth (skills[2], her burst): grants herself "Making Memories" -
-  Critical Rate + Attack Damage, continuous until Full Burst ends (Keepsake
-  Album removes it there) - approximated as lasting the Full Burst window
-  (`FULL_BURST_DURATION`). Plus the burst nuke, 554.4% of final ATK
-  (`radiant_youth_burst_percent`). Also sets the `making_memories` status that
-  gates the Precious Moments ramp below.
+  Critical Rate + Attack Damage, from the cast until Full Burst ends (Keepsake
+  Album removes it there). Modeled as Grave's Heat Emission is: the two effects
+  are added open-ended (duration=None) at the cast and truncated to the elapsed
+  time when Full Burst ends (`EffectRegistry.truncate_open_ended`), so a replay
+  query for any point in the fight sees the correct on/off window regardless of
+  which unit's kit is moving that Full Burst's length. Plus the burst nuke,
+  554.4% of final ATK (`radiant_youth_burst_percent`). Also sets the
+  `making_memories` status that gates the Precious Moments ramp below.
 - Memories and Moments (skills[1]) two mechanics:
   - On using her Burst Skill, an Attack Damage buff to "all shotgun-wielding
     allies (except self)" - exact scope via the gap #3 live member filter
@@ -32,8 +35,17 @@ Fienn counted this to the 18th normal and confirmed the decisive negative: at
 the 12th, Happy Memories and the reload do NOT fire - only Precious Moments.
 The counter restarts when Making Memories is removed (skill text), i.e. every
 Full Burst. So each effect is one (first, period) pair on a period-6 rotation,
-which is what `per_shot_rules`' `cycle_in_own_status_window` mode expresses;
-the older `every_during_own_status_window` would drag the phase across windows.
+which is what the `per_shot_cycle_from_own_burst_to_full_burst_end` fill mode
+expresses; `every_during_own_status_window` would drag the phase across windows.
+
+Both stack counters read their window off the SAME status the crit_rate /
+attack_damage_up half above reads its lifetime off - her burst opens it, that
+cycle's Full Burst end closes it - so a deck whose Burst 3 moves the window
+(Isabel -5 sec, Modernia +5 sec) moves both halves of Making Memories together.
+A fill window pinned to a 10 sec constant would keep feeding Precious Moments
+after the status was already gone, and Precious Moments never resets, so the
+phantom stack would ride on into Keepsake Album's flat ATK for the rest of the
+fight.
 
 HOW FAR THE ROTATION GETS IS DECK-DEPENDENT, which is why none of this is
 folded into a per-cycle constant. Her SG fires ~14 shots in a 10 sec window
@@ -79,7 +91,6 @@ Not modeled / deferred:
 - Happy Memories' pellet count itself: it moves no damage (see above), and the
   engine has no per-pellet shotgun model to hang hit-consistency on.
 """
-from app.burst_cycle import FULL_BURST_DURATION
 from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import linear_resource_buff, refreshing_buff_rule
 from app.squad_engine import SkillRule, has_status
@@ -124,10 +135,10 @@ def build_fortune_mate_rules(values):
     def apply_radiant_youth(context, caster_slug, time, registry):
         context.set_status(caster_slug, MAKING_MEMORIES_STATUS, time)
         registry.add(
-            Effect("crit_rate", crit_rate, "self", FULL_BURST_DURATION, caster_slug), applied_at=time
+            Effect("crit_rate", crit_rate, "self", None, caster_slug), applied_at=time
         )
         registry.add(
-            Effect("attack_damage_up", attack_damage, "self", FULL_BURST_DURATION, caster_slug),
+            Effect("attack_damage_up", attack_damage, "self", None, caster_slug),
             applied_at=time,
         )
 
@@ -147,6 +158,10 @@ def build_fortune_mate_rules(values):
         # Keepsake Album's third bullet. Its flat-ATK grant is NOT here: that
         # scales off a Precious Moments count only the shot loop can produce,
         # so it is resolved by `build_keepsake_album_resource_gated_buffs`.
+        # Closes out Radiant Youth's open-ended crit_rate/attack_damage_up,
+        # same shape as Grave's Heat Emission.
+        registry.truncate_open_ended("crit_rate", caster_slug, time)
+        registry.truncate_open_ended("attack_damage_up", caster_slug, time)
         context.clear_status(caster_slug, MAKING_MEMORIES_STATUS)
 
     return [
@@ -165,8 +180,8 @@ def build_memories_and_moments_resources(values):
     return [
         ResourceSpec(
             name=PRECIOUS_MOMENTS_RESOURCE,
-            fill=("per_shot_cycle_in_own_status_window",
-                  PRECIOUS_MOMENTS_FIRST, ROTATION_PERIOD, FULL_BURST_DURATION),
+            fill=("per_shot_cycle_from_own_burst_to_full_burst_end",
+                  PRECIOUS_MOMENTS_FIRST, ROTATION_PERIOD),
             cap=int(float(memories["description_value_05"])),
             buffs=[linear_resource_buff(
                 "atk_percent", float(memories["description_value_04"]) / 100, "self")],
@@ -176,8 +191,8 @@ def build_memories_and_moments_resources(values):
             # Snapshots of Youth is granted "when Happy Memories takes effect",
             # so it rides the Happy Memories rotation step 1:1 and shares its
             # cap. Full Burst's end removes it, hence the reset.
-            fill=("per_shot_cycle_in_own_status_window",
-                  HAPPY_MEMORIES_FIRST, ROTATION_PERIOD, FULL_BURST_DURATION),
+            fill=("per_shot_cycle_from_own_burst_to_full_burst_end",
+                  HAPPY_MEMORIES_FIRST, ROTATION_PERIOD),
             cap=int(float(keepsake["description_value_04"])),
             buffs=[linear_resource_buff(
                 "normal_attack_damage_multiplier",

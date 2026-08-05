@@ -7,6 +7,7 @@ from app.skill_rules.registry import (
     get_burst_resolves_after_cast,
     get_burst_hit_count,
     get_clip_reload_splits,
+    get_full_burst_duration_delta,
     get_per_shot_rules,
     get_periodic_nuke,
     get_periodic_rules,
@@ -94,6 +95,15 @@ def test_get_periodic_nuke_returns_cooldown_and_percent_for_helm_aquamarine():
     }
     spec = get_periodic_nuke("helm-aquamarine", skill_values)
     assert spec == {"cooldown": 4.0, "percent": 105.58}
+
+
+def test_get_periodic_nuke_tags_isabel_pointed_feather_as_her_skill_2():
+    # The tag is what lets Arcana's The Magician (a skill_cooldown_reduction_percent
+    # buff) reach this periodic nuke's interval - untagged periodic entries
+    # (Ada Wong's in-window interval, Snow White's own cadence) must not collect it.
+    skill_values = {"pointed_feather": {"description_value_02": "170.58"}}
+    spec = get_periodic_nuke("isabel", skill_values)
+    assert spec["cooldown_skill_slot"] == 2
 
 
 def test_get_burst_damage_type_defaults_to_attack():
@@ -286,3 +296,17 @@ def test_both_builds_of_a_clip_unit_share_the_count():
     for base in ("centi", "drake", "sugar"):
         assert (get_clip_reload_splits(base)
                 == get_clip_reload_splits(f"{base}-signature"))
+
+
+def test_isabel_shortens_the_full_burst_window():
+    # Sonic Chaser: "Full Burst Time (down) 5 sec."
+    assert get_full_burst_duration_delta("isabel") == -5.0
+
+
+def test_modernia_lengthens_the_full_burst_window():
+    # New World: "Full Burst Duration (up) 5 sec."
+    assert get_full_burst_duration_delta("modernia") == 5.0
+
+
+def test_a_unit_that_does_not_touch_the_window_reads_zero():
+    assert get_full_burst_duration_delta("arcana") == 0.0
