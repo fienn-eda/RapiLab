@@ -10,7 +10,7 @@ that issued it:
   fit         fitting the cascade's surrogate: sampled decks simulated once per
               allocation, then reused across every greedy-peel iteration
   search      scoring the intra-tier orderings the search actually judges
-  swap        _swap_pass' hill-climb, which is serial and deadline-capped
+  swap        _swap_pass' hill-climb, which is serial and budget-capped
   summary     the final per-deck best-ordering polish
 
 Serial by default so every call lands in this process and the sim counts are

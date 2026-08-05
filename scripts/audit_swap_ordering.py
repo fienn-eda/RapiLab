@@ -23,13 +23,14 @@ gap is what canonical-order judging leaves on the table, and it decides whether
 the fix is worth building at all.
 
 Cost: judging by ordering multiplies the swap phase's simulations by the number
-of intra-tier orderings per deck (~27), so give it a budget in the hundreds of
-seconds. That expense is the reason this is a one-off measurement and not how
-production would ship it - if the gap is real, the shipping shape is two-stage
-(rank on one order, re-score a shortlist across orderings), not this.
+of intra-tier orderings per deck (~27), so the by-ordering run takes far longer
+in wall time to spend the same candidate budget. That expense is the reason
+this is a one-off measurement and not how production would ship it - if the gap
+is real, the shipping shape is two-stage (rank on one order, re-score a
+shortlist across orderings), not this.
 
 Usage (any cwd):
-    python3 scripts/audit_swap_ordering.py [--decks 5] [--budget 1200]
+    python3 scripts/audit_swap_ordering.py [--decks 5] [--budget 1000000]
                                            [--workers auto]
 """
 import argparse
@@ -85,7 +86,7 @@ def _run(specs, boss, decks, budget, workers, by_ordering):
     try:
         started = time.perf_counter()
         out = da.allocate_decks(specs, boss, num_decks=decks,
-                                time_budget_sec=budget, workers=workers)
+                                swap_budget=budget, workers=workers)
         elapsed = time.perf_counter() - started
     finally:
         da._score_batch = real_score_batch
@@ -98,9 +99,10 @@ def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     add_roster_argument(p)
     p.add_argument("--decks", type=int, default=5)
-    p.add_argument("--budget", type=float, default=1200.0,
-                   help="swap budget per run; the by-ordering run needs ~27x the "
-                        "simulations, so keep this well above production's 45")
+    p.add_argument("--budget", type=int, default=da.SWAP_CANDIDATE_BUDGET,
+                   help="swap budget per run, in candidate exchanges (default: "
+                        "the production ceiling, large enough that both runs "
+                        "converge instead of being cut off)")
     p.add_argument("--workers", default="auto")
     p.add_argument("--units", type=int, default=None)
     p.add_argument("--synthetic", action="store_true")
@@ -121,7 +123,7 @@ def main():
     boss = BossProfile(element=args.element, fight_duration=args.duration)
     print(f"roster {len(specs)} loadable of {len(states)} ({source}); "
           f"{args.decks} decks; boss {args.element}/{args.duration:.0f}s; "
-          f"swap budget {args.budget:.0f}s; workers={workers}", flush=True)
+          f"swap budget {args.budget:,} candidates; workers={workers}", flush=True)
 
     results = {}
     for label, by_ordering in (("canonical", False), ("by-ordering", True)):
