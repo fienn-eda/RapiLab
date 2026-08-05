@@ -371,7 +371,7 @@ Run: `PYTHONIOENCODING=utf-8 python scripts/measure_deck_breakdown.py --deck ani
 - [ ] **Step 7: 커밋**
 
 ```bash
-git add backend/app/skill_rules/registry.py backend/app/roster.py backend/tests/
+git add backend/app/skill_rules/registry.py backend/app/roster.py \n  backend/tests/test_skill_rules_registry.py backend/tests/test_roster.py
 git commit -m "Register Isabel's and Modernia's Full Burst length changes
 
 Isabel's Sonic Chaser cuts the window to 5 sec and Modernia's New World
@@ -936,7 +936,7 @@ Expected: `1892 passed, 3 skipped` (1890 + 신규 2)
 - [ ] **Step 5: 커밋**
 
 ```bash
-git add backend/app/squad_engine.py backend/app/raid_simulator.py backend/app/skill_rules/_helpers.py backend/app/skill_rules/dorothy_serendipity.py backend/app/skill_rules/arcana_fortune_mate.py backend/tests/
+git add backend/app/squad_engine.py backend/app/raid_simulator.py \n  backend/app/skill_rules/_helpers.py backend/app/skill_rules/dorothy_serendipity.py \n  backend/app/skill_rules/arcana_fortune_mate.py \n  backend/tests/test_skill_rules_dorothy_serendipity.py
 git commit -m "Let 'continuously during Full Burst' buffs follow the real window
 
 Dorothy: Serendipity's Radiant Wings and Arcana: Fortune Mate's Making Memories
