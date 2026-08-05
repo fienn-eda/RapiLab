@@ -20,7 +20,7 @@ Not modeled / deferred:
   consumed by the engine.
 """
 from app.effects import Effect
-from app.skill_rules._helpers import _full_burst_window_length, buff_rule
+from app.skill_rules._helpers import buff_rule, full_burst_window_length
 from app.squad_engine import SkillRule
 
 
@@ -50,7 +50,7 @@ def build_dorothy_serendipity_rules(values):
     def apply_full_burst_atk(context, caster_slug, time, registry):
         registry.add(
             Effect("atk_percent", fb_atk, "self",
-                   _full_burst_window_length(context, time), caster_slug),
+                   full_burst_window_length(context, time), caster_slug),
             applied_at=time,
         )
 

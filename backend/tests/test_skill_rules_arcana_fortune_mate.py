@@ -67,7 +67,7 @@ def run_cycle(rules, ctx, registry, burst_time):
     fire_trigger("own_burst_activate", rules, ctx, registry, burst_time)
     ctx.current_full_burst_end = burst_time + FULL_BURST_DURATION
     fire_trigger("full_burst_enter", rules, ctx, registry, burst_time + 1.0)
-    fire_trigger("full_burst_end", rules, ctx, registry, burst_time + 10.0)
+    fire_trigger("full_burst_end", rules, ctx, registry, burst_time + FULL_BURST_DURATION)
 
 
 SELF_TARGET = {"slug": "arcana-fortune-mate", "element": "Fire"}
