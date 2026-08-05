@@ -183,14 +183,32 @@ def own_burst_status_active(seconds: float):
 
 `on_full_burst_enter` 훅이 지금 시작 시각만 넘긴다. 종료 시각도 같이 넘기도록
 `full_burst_end` 계산을 훅 호출 **위로** 올린다. `raid_simulator`가 그것을
-`context.current_full_burst_end`에 세우고, 원문이 `continuously`(= 풀 버스트가 끝날
-때까지)인 두 버프가 `end - time`으로 지속시간을 잡는다:
+`context.current_full_burst_end`에 세운다. 지금까지는 FB가 항상 10초라
+`FULL_BURST_DURATION` 상수가 맞았고, **이 변경이 그 전제를 깬다.** 그래서 범위 안이다.
+
+원문이 `continuously`(= 풀 버스트가 끝날 때까지)인 버프는 둘인데, **둘의 모양이 다르다.**
+가르는 것은 트리거 시각이 이번 사이클의 창 안이냐다.
+
+**`full_burst_enter`에서 도는 쪽은 `end - time`을 그대로 쓴다.** 그 시각에는 이번
+사이클의 티어 3이 이미 창을 열었으므로 `current_full_burst_end`가 이번 사이클의 값이다.
 
 - `dorothy_serendipity.py` — Radiant Wings의 풀 버스트 중 자ATK +75.24%
-- `arcana_fortune_mate.py` — Making Memories의 자크리율 +20.09% · 공댐 +29.99%
+  (`_helpers`의 창 길이 헬퍼)
 
-지금까지는 FB가 항상 10초라 `FULL_BURST_DURATION` 상수가 맞았고, **이 변경이 그 전제를
-깬다.** 그래서 범위 안이다.
+**포츈 메이트는 그 길을 못 간다.** Making Memories를 거는 `apply_radiant_youth`는
+`full_burst_enter`가 아니라 **`own_burst_activate`**에서 돈다. 그녀는 Burst 2라 그
+시각의 `current_full_burst_end`는 아직 **직전 사이클의** 종료 시각이고, `end - time`은
+두 번째 사이클부터 음수가 되어 0초 버프로 죽는다. 그래서 그녀의 상태는 **창 길이를
+아예 묻지 않는 모양**으로 모델한다 — 그레이브의 Heat Emission과 같다:
+
+- `arcana_fortune_mate.py` — Making Memories의 자크리율 +20.09% · 공댐 +29.99%를
+  `duration=None`으로 걸고 `full_burst_end`에서 `EffectRegistry.truncate_open_ended`
+  로 끊는다.
+- **같은 상태가 게이팅하는 두 스택 카운터의 채움 창도 같은 창이어야 한다** — Precious
+  Moments · Snapshots of Youth. `per_shot_cycle_from_own_burst_to_full_burst_end`가 그
+  창의 끝을 `full_burst_windows`에서 읽는다. 고정 길이를 쓰면 한 상태의 두 반쪽이 서로
+  다른 창을 말하게 되고(이사벨 좌석에서 5초 차이), Precious Moments는 리셋이 없어 그
+  차이가 전투 끝까지 남는다.
 
 ---
 
