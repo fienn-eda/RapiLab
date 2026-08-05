@@ -627,12 +627,12 @@
 }
 
 .field--invalid .field__input {
-  border-color: var(--danger);
+  border-color: var(--accent);
 }
 
 .field__error {
   font-size: 12px;
-  color: var(--danger);
+  color: var(--accent);
 }
 
 .field-row {
@@ -876,8 +876,8 @@
 }
 
 .btn--icon:hover {
-  background: var(--warn-soft);
-  color: var(--danger);
+  background: var(--accent-soft);
+  color: var(--accent);
 }
 
 .field-row--overload .btn--icon {
@@ -900,7 +900,7 @@
 
 .sync__error {
   font-size: 13px;
-  color: var(--danger);
+  color: var(--accent);
 }
 
 .sync__bookmarklet {
@@ -1017,13 +1017,17 @@
 }
 
 .pill--ok {
-  background: var(--ok-soft);
-  color: var(--ok);
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
+/* A warning is not an error. It reads as quieter text inside a stated edge,
+   which leaves red to mean something is actually wrong. */
 .pill--warn {
-  background: var(--warn-soft);
-  color: var(--warn);
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
 }
 
 .pill--muted {
@@ -1135,7 +1139,7 @@
    깬다. 그래서 danger가 아니라 경고 색이다. */
 .deck-results__warning {
   font-size: 12px;
-  color: var(--warn);
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -1144,7 +1148,7 @@
 .deck-results__hold {
   margin: var(--sp-2) 0 0;
   font-size: 12px;
-  color: var(--warn);
+  color: var(--text-muted);
 }
 
 /* The answer, in the same language as the palette and the draft slots: five
@@ -1562,7 +1566,7 @@
 .draft-editor__deck-warning {
   font-size: 11px;
   font-weight: 600;
-  color: var(--warn);
+  color: var(--text-muted);
   margin-right: auto;
   margin-left: var(--sp-2);
 }
@@ -1752,11 +1756,11 @@
 }
 
 .deck-results__diff-added {
-  color: var(--ok);
+  color: var(--text);
 }
 
 .deck-results__diff-removed {
-  color: var(--danger);
+  color: var(--accent);
 }
 
 /* 차지 창 계산기 — 사다리 표. 좁은 화면에서 표가 페이지를 밀지 않도록
