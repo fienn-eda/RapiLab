@@ -5,6 +5,34 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 소다의 골든칩은 버스트에서 17로 리셋되는 게 아니라 17이 소비된다 — 바닥은 실측한 1
+
+- Date: 2026-08-06
+- Context: 2026-07-12에 소다를 인코딩하며 `Golden Chip stacks ▼ 17 after the effect
+  is applied`를 「칩을 17로 세팅」으로 읽었다(아래 2026-07-12 ADR이 그 기록이고,
+  거기 적힌 "resets the chip to a fixed value (17)"는 이 결정으로 대체된다).
+  2026-08-05 아르카나 검토 중 `▼`가 이 데이터 전체에서 **감산 기호**임이 드러났다 —
+  이사벨 `Full Burst Time ▼ 5 sec`, 아르카나 `▼ 6 sec` 모두 감산이다.
+- Decision: `own_burst` 리셋을 `value_fn(pre_value) = max(1, pre_value - 17)`로
+  바꾼다. 엔진 확장은 없다 — `resets`의 `value_fn`은 Elegg의 ghost 소비("13캡에서 9,
+  아래에서 6, 최소 1 유지")를 위해 이미 있었고, 소다는 그 두 번째 소비자가 된다.
+  `battle_start`의 50은 그대로 고정값 SET이다(0에서 시작하니 결과가 같고, 원문도
+  `▲ 50`으로 방향이 반대다).
+- Why 바닥이 1인가: **원문에 없다.** 스킬 텍스트는 최소 유지량을 말하지 않는데,
+  180초 전투에서 칩이 17 아래로 내려가는 사이클이 실제로 나오므로 답이 필요했다.
+  Fienn의 인게임 실측이 정한다 — **16스택에서 버스트하면 1스택이 남는다.**
+  `max(0, ...)`는 이 관측과 어긋난다. 텍스트 전사가 아니라 측정값이므로
+  `CHIP_FLOOR` 상수에 그 사실과 함께 적어 뒀다.
+- Consequences: 그녀는 이제 **고갈된다.** 매 사이클 17을 쓰고 풀 버스트가 ~5만
+  되돌려주므로, 실로스터 덱(`anis-star,arcana,crown,cinderella,soda-twinkling-bunny`,
+  180초)에서 버스트 직전 스택이 평평한 26~27에서 **50/43/35/28/20/13/10**으로 바뀐다.
+  스택당 크리댐 +1.32%가 최대치에서 시작해 내려가고, ATK +65.25% 게이트(≥30)가
+  **1회 → 3회** 열린다. 소다 본인 딜 **+4.97%**(807.9M → 848.0M), 덱 총딜 +0.86% —
+  옛 인코딩은 **과소** 방향이었다. 기록 덱 5개에 소다가 없어 캘리브레이션은 불변.
+  Beginner's Rewards의 FB 확장(+2/+3초)은 이 수정 뒤에도 보류다: 궤적이 임계 20을
+  t=141.40에 실제로 가로지르므로 슬러그당 고정값인 `FULL_BURST_DURATION_DELTA`에
+  올릴 수 없고, 칩↔FB 길이의 순환도 그대로다(`docs/roadmap.md`).
+
 ## 스왑 예산을 벽시계에서 후보 교환 수로 — 상한은 폭주 방지용이 되고 등반은 수렴까지 간다
 
 - Date: 2026-08-05

@@ -101,9 +101,11 @@ class ResourceSpec:
     buffs: list[ResourceBuff] = field(default_factory=list)
     # Optional list of {"trigger": "battle_start"|"own_burst"|
     # "own_burst_delayed"|"full_burst_end", "value": X}: the resource is SET to
-    # X (not incremented) once at battle start, at EACH of the owner's own
-    # burst-tier fires - e.g. Soda's Golden Chip resetting to 17 when her burst
-    # consumes it - a fixed delay after those, or at each Full Burst's end. See
+    # X (not incremented) once at battle start - e.g. Soda's Golden Chip
+    # starting the fight at its 50 cap - at EACH of the owner's own burst-tier
+    # fires, a fixed delay after those, or at each Full Burst's end. `value_fn`
+    # replaces `value` for a spend that reads the count it consumes (Soda's
+    # burst spending 17 of the chip, Elegg's ghosts spending 9 at the cap). See
     # raid_simulator's resolution pass.
     resets: list[dict] = field(default_factory=list)
 

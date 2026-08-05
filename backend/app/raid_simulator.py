@@ -1215,8 +1215,8 @@ def simulate_raid(
                     context.fill_resource(slug, spec.name, amount, ft)
                 fill_times.extend(source_times)
 
-            # Resets (a resource SET to a new value rather than incremented,
-            # e.g. Soda's Golden Chip consumed down to 17 on her own burst) are
+            # Resets (a resource whose value is REPLACED rather than
+            # incremented, e.g. Soda's Golden Chip starting at its 50 cap) are
             # collected from every reset spec and replayed in time order, so
             # each reset's pre-value correctly reflects fills AND any earlier
             # reset already applied. Each spec carries either a fixed `value`
@@ -1309,7 +1309,7 @@ def simulate_raid(
 
     # A burst-fired buff gated on (or scaled by) a named resource's count AT
     # THE BURST'S OWN TIME - e.g. Soda's ATK+65.25%/15s if she had >=30 Golden
-    # Chip stacks right before her burst consumed it down to 17. Processed
+    # Chip stacks right before that same burst spent 17 of them. Processed
     # here (not at on_tier_fire, where the burst is actually recorded)
     # because the resource's fills/resets from the loop above aren't known
     # until now - same ordering reason as resource_scaled_nukes' deferred

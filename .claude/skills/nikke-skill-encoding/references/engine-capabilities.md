@@ -281,12 +281,26 @@ value_fn(count) at every time. First consumers: `modernia.py` (timed capped),
 Ranger battery, blocked additionally on part-destruction fills) remain deferred.
 See `special-mechanics.md`.
 
-**Resource resets (SET to a fixed value, not incremented):** for a resource that
-gets reset to a fixed value rather than only ever accumulating - e.g. Soda's
-Golden Chip, reset to 17 when her burst consumes it. `ResourceSpec` takes an
-optional `resets` field: `[{"trigger": "battle_start"|"own_burst"|
-"own_burst_delayed", "value": X, "delay": seconds (own_burst_delayed only)},
-...]`. `"own_burst_delayed"` resets `delay` seconds AFTER each own-burst fire
+**Resource resets (value REPLACED, not incremented):** for a resource that gets
+set or spent rather than only ever accumulating - e.g. Soda's Golden Chip,
+starting the fight at its 50 cap and spending 17 at each of her bursts.
+`ResourceSpec` takes an optional `resets` field: `[{"trigger":
+"battle_start"|"own_burst"|"own_burst_delayed", "value": X, "delay": seconds
+(own_burst_delayed only)}, ...]`.
+
+**A spend uses `value_fn(pre_value)` in place of `value`** - for a consumption
+that reads the count it is spending, rather than landing on a fixed number.
+Elegg's ghosts spend 9 at the 13 cap and 6 below it, floored at 1; Soda's burst
+spends 17, floored at 1. Reach for this whenever the skill text says
+`stacks ▼ N`: **`▼` is a SUBTRACTION marker throughout this data** (Isabel
+`Full Burst Time ▼ 5 sec`, Arcana `▼ 6 sec`), so `▼ 17` means "spend 17", NOT
+"set to 17" - reading it as a set parks the unit in a steady state instead of
+draining her, and the two readings agree on the FIRST activation, so a test
+that only checks one fire will not tell them apart. The floor is usually not in
+the text at all and has to be measured in game (Soda's is 1: bursting at 16
+stacks leaves 1).
+
+`"own_burst_delayed"` resets `delay` seconds AFTER each own-burst fire
 instead of at the burst itself - e.g. Asuka's Anti A.T. Field, cleared when
 Annihilation State ends (9s later), not when the burst that started it fires;
 pair with `dynamic_hit_count_nukes`' matching `fire_delay` (below) so the nuke
@@ -303,7 +317,10 @@ with reset events (sorted by time, using `context.burst_times[slug]` for
 pre-value correctly reflects prior fills AND any earlier reset already applied.
 Verified to produce identical output to the pre-existing behavior when no
 `resets` are present (a regression risk since it touches the shared resolution
-pass every resource-using Nikke relies on). First consumer: `soda_twinkling_bunny.py`.
+pass every resource-using Nikke relies on). Consumers: `soda_twinkling_bunny.py`
+(set at battle start + `value_fn` spend at her burst), `elegg_boom_and_shock.py`
+(`value_fn` spend), `asuka_shikinami_langley_wille.py` (delayed clear),
+`arcana_fortune_mate.py` (`full_burst_end` clear).
 
 **`resource_gated_buffs` (the buff-side analog of resource-scaled nukes):** a
 burst-fired BUFF gated on (or scaled by) a resource's count AT THE BURST'S OWN

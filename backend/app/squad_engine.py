@@ -99,9 +99,10 @@ class SquadContext:
         # which would break across the burst-cycle vs shot-loop phase ordering.
         self.resource_fills: dict[tuple[str, str], list[tuple[float, float]]] = {}
         # (slug, resource-name) -> list of (time, pre_value, post_value) resets,
-        # for a resource that's SET to a fixed value rather than incremented
-        # (e.g. Soda's Golden Chip resetting to 17 when her burst fires,
-        # consuming whatever it had built up). Fills before a reset no longer
+        # for a resource whose value is REPLACED rather than incremented - set
+        # to a fixed number (Soda's Golden Chip starting at its 50 cap) or spent
+        # down from what it held (her burst spending 17 of it, floored at 1).
+        # Fills before a reset no longer
         # count toward the total; resource_count uses the latest reset at or
         # before the query time as its baseline instead of 0.
         self.resource_resets: dict[tuple[str, str], list[tuple[float, float, float]]] = {}

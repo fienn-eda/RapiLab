@@ -8,6 +8,29 @@ this and **append a new entry whenever a special mechanic comes up** (Fienn's
 standing request). Keep entries short: what it is, why it's easy to get wrong,
 how to encode it, and current engine status.
 
+## `▼` on a stack count means SPEND, not "set to"
+
+- **What:** `Number of X stacks ▼ N after the effect is applied` (Soda:
+  Twinkling Bunny's `Golden Chip stacks ▼ 17`) subtracts N from whatever the
+  counter held. `▼` is the subtraction marker throughout this data - Isabel's
+  `Full Burst Time ▼ 5 sec`, Arcana's `▼ 6 sec` - and `▲` is its increment
+  counterpart, so the SAME unit can carry both (Soda's skill 1 grants
+  `Golden Chip stacks ▲ 50` at battle start).
+- **Why it's easy to get wrong:** the value slot holds just `17`, so nothing in
+  the numbers distinguishes "spend 17" from "set to 17", and both readings give
+  the SAME answer on the first activation. Soda shipped as a set for five weeks;
+  the difference only appears from the second cycle on, where a set parks the
+  counter in a steady state and a spend drains it. Her stacks read a flat 26-27
+  every burst instead of 50/43/35/28/20/13/10, which cost her the ≥30 gate on
+  cycles 2 and 3 and understated her damage by ~5%.
+- **How to encode:** a `resets` entry with `value_fn=lambda pre: max(floor, pre - N)`
+  (see engine-capabilities.md). Write a test that checks the SECOND activation -
+  the first one cannot tell the two readings apart.
+- **The floor is usually not in the text.** Elegg says "Maintains at least 1
+  ghost"; Soda says nothing, yet bursting at 16 stacks leaves 1 in game (Fienn,
+  2026-08-06). Ask rather than assume 0, and record the answer as a measurement
+  (a named constant with the reading in its comment), not as a transcription.
+
 ## Distributed Damage (분산 대미지)
 - **What:** `distributed_damage_up` ("Distributed Damage ▲ X%") is a **DPS
   buff** that raises the damage of Nikkes whose kit deals *Distributed Damage*
