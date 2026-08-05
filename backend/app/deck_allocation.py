@@ -51,7 +51,7 @@ _MIN_SWAP_BATCH = 4
 #            on                    3,331     140.6 s     182.2 s   36,021,146,063
 #           off                    3,735     120.8 s     163.2 s   37,260,609,321
 #
-# The peel alone scores 28,990,691,285 there, so the climb is worth +24.2%.
+# The peel alone scores 28,990,691,285 there, so the climb is worth +24.3%.
 # The two conditions disagree in direction: the gimmick makes convergence cost
 # FEWER candidates but MORE seconds, since its floor check is paid per candidate.
 # The ceiling is counted in candidates, so it is set against the heavier of those
