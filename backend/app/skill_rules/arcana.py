@@ -26,22 +26,17 @@ Modeled (DPS-relevant):
   (Death).
 - "The Magician" (skills[0]) / "Strength" (skills[1]) first bullets: on Full
   Burst end, all Burst 3 Electric Code allies who previously cast their Burst
-  Skill - if Arcana is in Wheel of Fortune status - get Attack damage +180%
-  (Magician) and ATK +180% of caster's ATK (Strength), 15 sec each
+  Skill - if Arcana is still in Wheel of Fortune status - get Attack damage
+  +180% and Skill 2 cooldown -75% (Magician, 15 sec each) and ATK +180% of
+  caster's ATK (Strength, 15 sec). The Skill 2 cut has exactly one consumer:
+  Isabel's Pointed Feather (Skill 2, cooldown 15 sec). The other Electric
+  Burst-3 units with cooldown-driven damage carry no skill cooldown at all -
+  Jill Valentine's Acid Ammo and Ada Wong's Flash Grenade tick on an interval
+  inside their own window, and Ein's Feather Shot is a summon cadence.
   (member_subset_buff_rule, gap #3; burst_used_this_cycle is still populated
   when full_burst_end rules run).
 
-Not modeled: The Magician's "Cooldown of Skill 2 -75%".
-
-  Its stated reason was WRONG (checked 2026-08-05): it claimed no Electric
-  Burst-3 ally has a cooldowned Skill 2. Isabel's Pointed Feather is exactly
-  that - Skill 2, cooldown 15 sec, wired as a `periodic_nukes` entry - and she
-  is the ONE ally this bullet can reach. The other three Electric Burst-3 units
-  with cooldown-driven damage carry no skill cooldown at all: Jill Valentine's
-  Acid Ammo and Ada Wong's Flash Grenade tick on an interval inside their own
-  window, and Ein's Feather Shot is a summon cadence. So the bullet has exactly
-  one consumer, and it is the same unit whose Full Burst shortening opens the
-  Wheel of Fortune gate above.
+Not modeled: nothing. All six bullets are encoded.
 """
 from app.effects import Effect, Pulse
 from app.skill_rules._helpers import member_subset_buff_rule
@@ -78,6 +73,8 @@ def build_arcana_rules(values):
     awakened_atk = float(awakened["description_value_06"]) / 100 * caster_atk
     awakened_atk_duration = float(awakened["description_value_07"])
 
+    magician_skill2_cdr = float(awakened["description_value_02"]) / 100
+    magician_skill2_cdr_duration = float(awakened["description_value_03"])
     magician_attack_damage = float(awakened["description_value_04"]) / 100
     magician_duration = float(awakened["description_value_05"])
     strength_atk = float(cycle["description_value_02"]) / 100 * caster_atk
@@ -136,7 +133,9 @@ def build_arcana_rules(values):
         # The Magician / Strength: bursted Electric Burst-3 subset (gap #3).
         member_subset_buff_rule(
             "full_burst_end", bursted_electric_b3,
-            [("attack_damage_up", magician_attack_damage, magician_duration)],
+            [("attack_damage_up", magician_attack_damage, magician_duration),
+             ("skill_cooldown_reduction_percent", magician_skill2_cdr,
+              magician_skill2_cdr_duration)],
             time_condition=wheel_active,
         ),
         member_subset_buff_rule(

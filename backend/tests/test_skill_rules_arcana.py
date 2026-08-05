@@ -5,8 +5,8 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 # Real skill level 10 values from api.dotgg.gg.
 AWAKENED_DESTINY = {
     "description_value_01": "3",    # Burst 3 (subset bullet's tier filter)
-    "description_value_02": "75",   # deferred: Cooldown of Skill 2 down %
-    "description_value_03": "15",   # deferred: duration
+    "description_value_02": "75",   # The Magician: Cooldown of Skill 2 down %
+    "description_value_03": "15",   # duration
     "description_value_04": "180",  # The Magician: Attack damage %
     "description_value_05": "15",   # duration
     "description_value_06": "5",    # squad ATK % of caster's ATK
@@ -178,3 +178,27 @@ def test_magician_and_strength_skip_a_target_that_did_not_burst():
     fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=7.6)
     assert round(registry.total_for("attack_damage_up", ELECTRIC_B3, now=7.6), 4) == 0.075
     assert registry.total_for("flat_atk", ELECTRIC_B3, now=7.6) == 5500.0
+
+
+def test_magician_also_cuts_the_targets_skill_2_cooldown():
+    # "The Magician: Cooldown of Skill 2 ▼ 75% for 15 sec."
+    ctx = _b3_context()
+    ctx.burst_used_this_cycle.update({"arcana", "electric-b3", "fire-b3"})
+    ctx.record_burst_time("arcana", 2.5)
+    registry = EffectRegistry()
+    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=7.6)
+
+    assert registry.total_for("skill_cooldown_reduction_percent", ELECTRIC_B3, now=7.6) == 0.75
+    # 대상 부분집합 밖에는 안 간다
+    assert registry.total_for("skill_cooldown_reduction_percent", FIRE_B3, now=7.6) == 0.0
+    # 15초짜리다
+    assert registry.total_for("skill_cooldown_reduction_percent", ELECTRIC_B3, now=22.7) == 0.0
+
+
+def test_magician_skill_2_cooldown_cut_needs_the_wheel_too():
+    ctx = _b3_context()
+    ctx.burst_used_this_cycle.update({"arcana", "electric-b3"})
+    ctx.record_burst_time("arcana", 2.5)
+    registry = EffectRegistry()
+    fire_trigger("full_burst_end", {"arcana": build()}, ctx, registry, time=12.6)
+    assert registry.total_for("skill_cooldown_reduction_percent", ELECTRIC_B3, now=12.6) == 0.0
