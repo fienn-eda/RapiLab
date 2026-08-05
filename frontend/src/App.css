@@ -846,6 +846,7 @@
   background: var(--primary);
   color: var(--primary-contrast);
   border-color: var(--primary);
+  font-weight: 600;
 }
 
 .btn--primary:hover {
