@@ -65,7 +65,7 @@ def run_cycle(rules, ctx, registry, burst_time):
     reading the PREVIOUS cycle's end) that motivated Making Memories' open-ended +
     truncate_open_ended shape."""
     fire_trigger("own_burst_activate", rules, ctx, registry, burst_time)
-    ctx.current_full_burst_end = burst_time + 10.0
+    ctx.current_full_burst_end = burst_time + FULL_BURST_DURATION
     fire_trigger("full_burst_enter", rules, ctx, registry, burst_time + 1.0)
     fire_trigger("full_burst_end", rules, ctx, registry, burst_time + 10.0)
 

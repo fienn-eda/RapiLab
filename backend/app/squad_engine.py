@@ -64,9 +64,9 @@ class SquadContext:
         # before the weapon pass; empty for contexts without a burst cycle.
         self.full_burst_windows: list[tuple[float, float]] = []
         # 지금 열려 있는 풀 버스트 창이 닫히는 시각. 원문이 "continuously"인 버프
-        # (도로시의 Radiant Wings, 포츈 메이트의 Making Memories)는 초 수가 아니라
-        # 창의 끝까지 가므로, 그 길이를 정한 Burst 3이 누구였는지에 따라 달라진다.
-        # full_burst_enter에서 세워지고 그 순간에만 읽힌다.
+        # (도로시의 Radiant Wings)는 초 수가 아니라 창의 끝까지 가므로, 그 길이를
+        # 정한 Burst 3이 누구였는지에 따라 달라진다. full_burst_enter에서 세워지고
+        # 그 순간에만 읽힌다.
         self.current_full_burst_end: float | None = None
         # slug -> every time that unit fires, so a `scheduled_nukes` schedule can
         # derive damage from its owner's own shot timeline (e.g. Raven's Shock

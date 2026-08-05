@@ -18,8 +18,8 @@ _refresh_group_ids = count()
 def _full_burst_window_length(context, time):
     """지금 열린 창이 남긴 시간. 컨텍스트가 창을 모르면(버스트 사이클 없는 테스트)
     엔진 기본값으로 떨어진다. "continuously"라고 적힌 풀 버스트 버프(도로시의
-    Radiant Wings, 포츈 메이트의 Making Memories)가 쓴다 - 창 길이가 사이클마다
-    달라지므로 고정 상수로는 못 재현한다."""
+    Radiant Wings)가 쓴다 - 창 길이가 사이클마다 달라지므로 고정 상수로는 못
+    재현한다."""
     end = context.current_full_burst_end
     return FULL_BURST_DURATION if end is None else max(0.0, end - time)
 
