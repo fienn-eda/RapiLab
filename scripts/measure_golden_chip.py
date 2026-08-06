@@ -1,8 +1,10 @@
 """Soda: Twinkling Bunny's Golden Chip stack count through a fight, per deck.
 
-Her burst spends 17 chip (floored at 1) and a Full Burst refills only a few, so
-the count DRAINS - which cycles clear the >=30 ATK gate is a property of the
-whole deck's burst schedule, not of Soda alone. That makes "how many stacks does
+Her burst spends 17 chip (floored at 1) and each Full Burst window refills some,
+so whether the count drains or settles is decided by how many windows she gets
+per spend - a property of the whole deck's burst schedule, not of Soda alone.
+Bursting every cycle drains her; taking the seat every other cycle gives her two
+windows per spend and the chip sustains itself. That makes "how many stacks does
 she have when it matters" a question only a simulated fight can answer, and the
 answer moves with the company she keeps.
 
@@ -56,21 +58,34 @@ HIT_RATE_GATE = 20  # stage 2: Hit Rate (inert - the engine consumes no hit rate
 def _run(deck, boss, max_bursts=None):
     """Score `deck` while capturing Soda's chip machinery. Returns the result,
     the SquadContext (so the chip can be queried at any instant afterward), the
-    reset log and the fill times."""
+    reset log and the fill times - all from the CONVERGED pass only.
+
+    `simulate_raid` is not one simulation when a unit's Full Burst length depends
+    on a resource: it replays the fight until the stage table stops changing, and
+    every replay calls these hooks. Pooling them would sum the refills of every
+    pass and print the discarded first pass's drain ahead of the answer - which
+    is exactly the drain this script is cited to disprove. So the records are
+    bucketed by the context that produced them (each pass builds a fresh one) and
+    only the last context's - the converged pass's - are returned. The buckets
+    hold their context, which also keeps `id()` from being recycled underneath
+    the key.
+    """
     captured = {}
-    resets, fills = [], []
+    per_context = {}  # id(ctx) -> (ctx, resets, fills)
     original_reset, original_fill = SquadContext.reset_resource, SquadContext.fill_resource
+
+    def bucket(ctx):
+        captured["ctx"] = ctx
+        return per_context.setdefault(id(ctx), (ctx, [], []))
 
     def spy_reset(self, slug, name, time, pre_value, post_value):
         if slug == SODA:
-            captured["ctx"] = self
-            resets.append((time, pre_value, post_value))
+            bucket(self)[1].append((time, pre_value, post_value))
         return original_reset(self, slug, name, time, pre_value, post_value)
 
     def spy_fill(self, slug, name, amount, time):
         if slug == SODA:
-            captured["ctx"] = self
-            fills.append(time)
+            bucket(self)[2].append(time)
         return original_fill(self, slug, name, amount, time)
 
     SquadContext.reset_resource, SquadContext.fill_resource = spy_reset, spy_fill
@@ -78,7 +93,12 @@ def _run(deck, boss, max_bursts=None):
         result = evaluate_deck(list(deck), boss, max_bursts=max_bursts)
     finally:
         SquadContext.reset_resource, SquadContext.fill_resource = original_reset, original_fill
-    return result, captured.get("ctx"), resets, fills
+
+    ctx = captured.get("ctx")
+    if ctx is None:
+        return result, None, [], []
+    _, resets, fills = per_context[id(ctx)]
+    return result, ctx, resets, fills
 
 
 def _report(label, deck, boss, max_bursts=None):
@@ -114,10 +134,15 @@ def _report(label, deck, boss, max_bursts=None):
         gained = sum(1 for f in fills if previous <= f < event["time"])
         mine = event["slug"] == SODA
         gate = ("OPEN" if chip >= ATK_GATE else "shut") if mine else "-"
-        # The window this cycle actually got, taken from the simulation. A cycle
-        # whose window never opened prints "-" rather than borrowing a neighbour's.
-        window = (f"{windows[i - 1][1] - windows[i - 1][0]:.2f}s"
-                  if i <= len(windows) else "-")
+        # The window this cycle actually got, matched by TIME rather than by
+        # position: a window opens FULL_BURST_OPEN_DELAY after its tier-3 fire,
+        # so the one belonging to this cycle is the one starting between this
+        # fire and the next. A cycle that never opened a window prints "-"
+        # instead of shifting every later row onto its neighbour's.
+        following = tier3[i]["time"] if i < len(tier3) else float("inf")
+        length = next((end - start for start, end in windows
+                       if event["time"] <= start < following), None)
+        window = f"{length:.2f}s" if length is not None else "-"
         seat = event["slug"] + (" <- SODA" if mine else "")
         refill = f"+{gained}" + ("*" if chip >= CAP else "")
         print(f"{i:>5} {event['time']:9.2f}  {seat:<22} {chip:6.1f} {refill:>8}  "
