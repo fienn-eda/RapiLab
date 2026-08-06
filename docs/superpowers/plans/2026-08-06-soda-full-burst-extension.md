@@ -569,20 +569,37 @@ def get_conditional_full_burst_delta(slug, skill_values):
         "conditional_full_burst_deltas": conditional_full_burst_deltas,
 ```
 
-- [ ] **Step 5: 통과를 확인한다 — 그리고 무엇이 빨간지 정확히 센다**
+- [ ] **Step 5: `simulate_raid`가 새 인자를 받아 두게 한다 (아직 쓰지는 않는다)**
+
+`assemble_simulation_inputs`의 출력은 `evaluate_deck`에서 `simulate_raid(**inputs, ...)`로 펼쳐지므로, 키 하나가 늘면 `simulate_raid`가 그것을 받을 줄 알아야 한다. 받지 않으면 `test_assembled_inputs_run_through_simulate_raid`가 `TypeError`로 깨진다 — **빨간 커밋을 남기지 않는다.**
+
+`app/raid_simulator.py`의 `simulate_raid` 시그니처 끝에 한 줄 추가한다(Task 5의 rename이 이것을 그대로 물려받는다):
+
+```python
+    ammo_rounds_per_shot=None,
+    conditional_full_burst_deltas=None,
+):
+```
+
+그리고 정규화 블록에:
+
+```python
+    conditional_full_burst_deltas = conditional_full_burst_deltas or {}
+```
+
+이 태스크에서는 **읽기만 하고 쓰지 않는다.** 값을 소비하는 것은 Task 6의 해석기다.
+
+- [ ] **Step 6: 전체 스위트를 돌린다**
 
 ```
 PYTHONIOENCODING=utf-8 python -m pytest tests/ -q
 ```
+기대: **1921 passed / 3 skipped** — 전부 초록. 빨간 것이 하나라도 있으면 배선이 잘못된 것이니 다음으로 넘어가지 않는다.
 
-새 테스트 2건은 PASS여야 한다. `simulate_raid`가 아직 `conditional_full_burst_deltas` 인자를 모르므로 **`test_assembled_inputs_run_through_simulate_raid` 하나가 `TypeError`로 실패하는 것이 정상**이고, Task 5가 그것을 닫는다. xfail 표시를 붙이지 않는다 — 한 커밋 동안 빨간 채로 두고 다음 커밋이 고치는 편이, 나중에 지워야 할 마커를 남기는 것보다 낫다(커밋 메시지에 그 사실을 적는다).
-
-**실패가 그 하나가 아니면 배선이 잘못된 것이다.** 다른 실패를 안고 다음 태스크로 넘어가지 않는다.
-
-- [ ] **Step 6: 커밋**
+- [ ] **Step 7: 커밋**
 
 ```bash
-git add backend/app/skill_rules/registry.py backend/app/roster.py backend/tests/test_roster.py
+git add backend/app/skill_rules/registry.py backend/app/roster.py backend/app/raid_simulator.py backend/tests/test_roster.py
 git commit -F - <<'EOF'
 Wire Soda's conditional Full Burst delta through the roster
 
@@ -594,8 +611,9 @@ It does NOT go on the member dict. The existing full_burst_duration_delta
 lives there because burst_cycle reads it directly; this one is read by the
 resolver that runs after the resource pass, which is a different consumer.
 
-simulate_raid does not accept the argument yet - that is the next commit, and
-test_assembled_inputs_run_through_simulate_raid stays red until then.
+simulate_raid accepts the argument here and ignores it - assemble's output is
+splatted into it, so the parameter has to exist for the suite to stay green.
+The resolver that reads it comes two commits later.
 EOF
 ```
 
@@ -636,10 +654,9 @@ def _simulate_raid_once(
 ):
 ```
 
-기존 정규화 블록(`ammo_rounds_per_shot = ammo_rounds_per_shot or {}` 근처)에 두 줄 추가:
+`conditional_full_burst_deltas=None`은 Task 4가 이미 넣어 뒀다 — 여기서는 `full_burst_stage_overrides=None`만 새로 추가된다. 정규화 블록에도 한 줄만 더한다:
 
 ```python
-    conditional_full_burst_deltas = conditional_full_burst_deltas or {}
     full_burst_stage_overrides = full_burst_stage_overrides or {}
 ```
 
