@@ -2034,6 +2034,22 @@ own_burst_activate가 아니라...) 참고.
 - **An overlay-hook injector (RivaTuner Statistics Server / MSI Afterburner) can silently kill WebView2's browser process, and there is no way to keep it from injecting.** The injected `RTSSHooks64.dll` faulted at the same offset (`+0x1490AF`, `0xC0000005`) in every captured crash dump (`%TEMP%\tmp*\EBWebView\Crashpad\reports`), and Chromium's own `third_party_modules` diagnostics named only that DLL. Injection happens before app code runs, so browser launch args don't dodge it — `WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--disable-gpu` was tried and measured WORSE. Counts are **launches that ended with a working window**: 6/6 with RTSS off, 6/10 with RTSS on, 4/10 with RTSS on plus `--disable-gpu`, 10/10 with RTSS on after the restart-on-death fix. The failure is intermittent because it's an injection-timing race — this is what "reproduced once, then never again" during manual testing actually was. Since prevention isn't possible, the mitigation is process-level restart-on-death, not avoidance.
 - **A `storage_path` shared across two pywebview instances doesn't error — it hangs the second instance's init forever, with no success or failure event.** Testing whether one WebView2 profile folder could serve all app instances: the second instance's WebView2 never rendered. Its initialization neither completed nor reported failure, so `on_webview_ready` was never called at all — a restart-on-death guard watching for `ProcessFailed`/`IsSuccess=False` doesn't catch this, because neither ever fires. The fix is one storage folder per instance, keyed by the (already-instance-unique) port. See `backend/app/desktop.py::webview_storage_dir`.
 - **To test WebView2 crash-recovery, kill the browser process directly with `Stop-Process` instead of waiting for a real overlay-tool crash — it fires the identical `ProcessFailed`/`BrowserProcessExited` event.** This turns an intermittent, hard-to-trigger failure into an on-demand one for verification. One trap when checking "did the old window actually go away": the old process still shows up in the process list for **~2.5 seconds** after its own `os._exit()`, so checking sooner than that misreads a clean single-instance restart as "two windows."
+- **문서 안내의 "우리가 보내는 요청은 이것뿐"이라는 주장은, 배포되는 앱이 실제로
+  import하는 모듈 그래프를 subprocess로 물어봐서 지킨다 — 짐작한 파일 목록이
+  아니라.** `backend/tests/test_privacy_claims.py`는 배포 앱이 실제로 거치는
+  진입점(`app.api`/`app.desktop`/`app.updater`)을 새 서브프로세스에서 import한
+  뒤, 그 결과 `sys.modules`에 실제로 올라온 `app.*` 모듈의 소스만 정규식으로
+  긁어 URL을 화이트리스트(`CLASSIFIED`)와 대조한다. 같은 프로세스 안에서 하면
+  `sys.modules`가 pytest 세션 전체와 공유돼, 형제 테스트가 미리 import해 둔
+  `app.blablalink_api` 같은 — 배포 앱에는 없는 — 모듈까지 "배포 앱의 모듈"로
+  잘못 센다(그래서 서브프로세스 격리는 장식이 아니다). 깨지는 조건은 "바깥
+  요청이 늘었을 때"가 아니라 **분류되지 않은 URL이 하나라도 생겼을 때**다 —
+  CORS 허용 출처든 독스트링의 출처 표기든, 사람이 "이건 나가는 요청이냐"에
+  답해야 통과한다. 그 답이 "그렇다"면 안내 문구를 먼저 고쳐야 한다 —
+  hosted-service 시절 "우리 백엔드가 보는 유일한 식별자"류 문구가 desktop
+  전환 후에도 손으로는 안 고쳐진 채 남아 있던 재발을 막는 장치. 같은 파일이
+  "로스터 조회는 앱이 아니라 브라우저가 한다"는 주장도 `app.blablalink_api`/
+  `app.dotgg_client`가 `sys.modules`에 없음을 확인해 지킨다.
 
 ## Data (lootandwaifus.com primary, dotgg fallback)
 - **"Is this stat already folded into the displayed value?" must be asked per source — ShiftyPad answers it differently for cubes vs. overload.** ShiftyPad's shown hp/atk/def already include the equipped cube's contribution (bare character stats if none is equipped), but shows overload option values SEPARATELY from those same stats, additive on top (both confirmed by Fienn — see `docs/decisions.md`, "ShiftyPad's displayed hp/atk/def already include the equipped cube"). Don't assume a UI's convention is uniform across every stat-contributing source it displays; check each one. This mattered far more for automated ingestion than manual entry: a human copying numbers by hand tends to notice something looks off, but a scraper swallows ShiftyPad's displayed numbers wholesale and would silently double-count (or drop) a source's contribution if the fold-in assumption is wrong.

@@ -5,6 +5,37 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 팬 제작물 고지와 개인정보 처리방침을 앱 안에 접이식으로 넣는다 — 링크가 아니라 문구, 적법성이 아니라 사실
+
+- Date: 2026-08-06
+- Context: roadmap의 "개인정보 처리방침 — 공개 배포 전 필요"(법률 검토는 범위 밖으로
+  명시) 항목을 실제로 작성했다. 이 앱은 `fienn-eda/RapiLab`(public)에서 설치형
+  데스크톱 앱으로 배포되고 백엔드가 유저 PC에서 돈다 — 그래서 무엇을 어디로
+  보내는지에 대한 답이 필요해졌다.
+- Decision: 개인정보 안내를 외부 페이지로 링크하지 않고 화면 맨 아래 접이식
+  (`frontend/src/components/PrivacyNotice.tsx`, 문안은 `lib/helpText.ts`의
+  `HELP.privacy`)으로 앱 안에 직접 넣는다. 로스터를 맡길지 정하는 순간에도 읽혀야
+  하므로 프로필이 없는 초기 화면에도 뜬다. 팬 제작물 출처 고지(SHIFT UP·Level
+  Infinite과 무관, 게임 자산 권리는 원저작자에게 있음 — README와 같은 두 문장,
+  `HELP.attribution`)는 접지 않고 항상 노출한다. 안내가 말하는 것은 **무관함이라는
+  사실**뿐이고, "약관을 위반하지 않는다" 같은 적법성 주장은 넣지 않는다 — 대신
+  "하지 않는 것" 섹션에 코드로 확인 가능한 사실 네 개(비밀번호 미저장, 게임 미접속,
+  남의 계정 미조회, 자동 반복 없음)를 적었다.
+- Why: (1) 네이티브 창이라 주소창도 뒤로가기도 없다 — 외부 링크로 나가면 돌아올
+  방법이 없다. (2) "이 앱이 내 정보를 어디로 보내나"의 답 자체가 그것을 읽으려고
+  네트워크 요청을 요구하면 앞뒤가 안 맞는다 — 오프라인에서도 읽혀야 한다. (3)
+  "약관 위반 안 함"은 이해당사자가 남의 계약에 내린 결론이라 무게가 없고, 약관이나
+  그 해석이 바뀌는 순간 유저에게 한 허위진술이 된다 — 검증 가능한 사실만 주장한다.
+- Alternatives considered: **외부 웹페이지에 링크**(정적 페이지 하나 호스팅) — 기각,
+  위 (1)(2)로. **"약관을 준수한다"는 적극적 진술 포함** — 기각, 위 (3)으로.
+- Consequences: 안내의 주장은 `backend/tests/test_privacy_claims.py`가 코드와
+  대조해 지킨다(`docs/insights.md` 참고) — 문구가 코드와 어긋나면 테스트가 먼저
+  깨진다. 부수로 hosted-service 시절 "우리 백엔드가 보는 유일한 식별자"류 문구
+  (`clientId.ts`, `frontend/README.md`)가 desktop 전환 후에도 남아 있던 것을 이
+  참에 고쳤다. 법률 검토는 여전히 범위 밖 — 서버가 없어 개인정보처리자 지위가
+  성립하지 않는다는 전제 위에 서 있고, 호스팅형으로 되돌아가면 이 판단 전체를
+  다시 봐야 한다.
+
 ## 소다의 FB 확장은 순환이 아니라 순차 의존이었다 — 고정점 반복으로 푼다
 
 - Date: 2026-08-06
