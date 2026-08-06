@@ -42,7 +42,7 @@
 
 **Interfaces:**
 - Consumes: 없음 (가장 안쪽 레이어)
-- Produces: `simulate_burst_cycle(deck, gauge_charge_time, fight_duration, mode="auto", *, full_burst_duration_overrides=None, on_battle_start=None, on_tier_fire=None, on_full_burst_enter=None, on_full_burst_end=None)` — `full_burst_duration_overrides`는 `{cycle_index: float}` 또는 `None`. 사이클 인덱스는 0부터.
+- Produces: `simulate_burst_cycle(deck, gauge_charge_time, fight_duration, mode="auto", full_burst_duration_overrides=None, on_battle_start=None, on_tier_fire=None, on_full_burst_enter=None, on_full_burst_end=None)` — `full_burst_duration_overrides`는 `{cycle_index: float}` 또는 `None`. 사이클 인덱스는 0부터.
 
 - [ ] **Step 1: 실패하는 테스트를 쓴다**
 
