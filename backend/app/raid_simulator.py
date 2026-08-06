@@ -1686,4 +1686,11 @@ def _simulate_raid_once(
 # yields the real parameter list rather than the wrapper's (*args, **kwargs).
 # Set here rather than beside the wrapper because `_simulate_raid_once` is
 # defined below it.
+#
+# One entry in that list is not a real parameter for a caller: the wrapper
+# supplies `full_burst_stage_overrides` itself on every iteration
+# (`_simulate_raid_once(deck, **kwargs, full_burst_stage_overrides=overrides)`),
+# so passing it through `simulate_raid(**kwargs)` raises `TypeError: got
+# multiple values for keyword argument`. The advertised signature is honest
+# about every other parameter.
 simulate_raid.__wrapped__ = _simulate_raid_once

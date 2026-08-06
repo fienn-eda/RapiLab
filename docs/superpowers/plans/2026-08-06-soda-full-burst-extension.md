@@ -407,6 +407,28 @@ PYTHONIOENCODING=utf-8 python -m pytest tests/test_skill_rules_soda_twinkling_bu
 
 `drop_tokens`는 **일단 건드리지 않는다** — 다음 스텝의 하네스가 필요 여부를 알려준다.
 
+새 키를 매니페스트에 추가하면 픽스처 쪽에도 짝이 있어야 한다.
+`tests/test_skill_value_assembly.py`는 각 키의 정답 픽스처를
+`getattr(fixtures_module, manifest.get("fixtures", {}).get(key, key.upper()))`로
+찾는다 - `fixtures` 오버라이드가 없으면 `beginners_rewards`는 모듈에서
+`BEGINNERS_REWARDS`라는 이름의 속성을 찾는다.
+`backend/tests/test_skill_rules_soda_twinkling_bunny.py` 끝에 이미 있는
+
+```python
+LUCKY_GOLDEN_CHIP = SODA_VALUES["lucky_golden_chip"]
+ONWARD_SODA = SODA_VALUES["onward_soda"]
+```
+
+옆에 같은 패턴으로 한 줄을 추가한다:
+
+```python
+BEGINNERS_REWARDS = SODA_VALUES["beginners_rewards"]
+```
+
+이 별칭이 없으면 Step 6은 슬롯 번호 불일치가 아니라 `AttributeError`로 실패하고,
+그 실패는 `drop_tokens`로 고칠 수 있는 종류가 아니다 - 하네스나 매니페스트가
+아니라 픽스처 별칭이 아예 없는 게 원인이기 때문이다.
+
 - [ ] **Step 6: 조립 하네스를 돌린다**
 
 ```
