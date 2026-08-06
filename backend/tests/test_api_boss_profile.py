@@ -17,7 +17,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.api import BossProfileIn, boss_profile
-from app.raid_simulator import simulate_raid
+from app.raid_simulator import _simulate_raid_once
 
 
 def test_every_request_field_reaches_the_engine_profile():
@@ -80,7 +80,11 @@ def test_evaluate_deck_forwards_every_boss_field_the_simulator_accepts(monkeypat
     monkeypatch.setattr(deck_search, "simulate_raid", fake_simulate_raid)
     deck_search.evaluate_deck([], deck_search.BossProfile())
 
-    sim_params = set(inspect.signature(simulate_raid).parameters)
+    # `_simulate_raid_once` is where the boss parameters are actually named -
+    # the public `simulate_raid` is a fixed-point wrapper whose signature is
+    # (*args, **kwargs), so introspecting it would intersect to the empty set
+    # and this assertion would pass without checking anything.
+    sim_params = set(inspect.signature(_simulate_raid_once).parameters)
     expected = {ALIASES.get(f.name, f.name)
                 for f in dataclasses.fields(deck_search.BossProfile)} & sim_params
 
