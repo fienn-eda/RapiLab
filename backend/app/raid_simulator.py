@@ -468,7 +468,7 @@ _TYPE_BUCKETS = {
 # Every registry stat phase-2 damage computation can read (_damage_instance,
 # _normal_attack_percent). All are constant within one state epoch, so the
 # whole bundle is resolved once per (target, epoch, registry version) - see
-# _stat_bundle in simulate_raid. normal_attack_type reads its single stat
+# _stat_bundle in _simulate_raid_once. normal_attack_type reads its single stat
 # directly - it runs in phase 1 where per-shot mutations churn the version,
 # so bundle misses there cost more than they save.
 _BUNDLE_STATS = (
@@ -484,7 +484,132 @@ _BUNDLE_STATS = (
 )
 
 
-def simulate_raid(
+# 조건부 풀 버스트 확장(소다의 Beginner's Rewards)이 있는 덱에서 고정점을 찾는
+# 패스 수의 상한. 하한(확장 없음)에서 출발해 위로 가므로 수렴은 단조롭게 오르는
+# 방향이고, 이 상한은 수렴하지 않는 조합에서 무한히 도는 것을 막는 안전장치다.
+#
+# 필요한 패스 수는 덱 구성이 아니라 **전투 길이**의 함수다: 확장이 사이클 k의
+# 창을 늘리면 그 창의 사격이 사이클 k+1의 칩을 바꾸므로, 변화는 패스마다 한
+# 사이클씩 앞으로 번진다. 격 사이클 덱을 길이별로 쓸면 3패스(200초) / 5(400초) /
+# 7(600초) / 8(700초 이후 평평)이다.
+#
+# 그래서 「관측된 최악의 두 배」식 마진은 전투 길이가 고정일 때만 마진이다.
+# `fight_duration`은 사용자 입력이고(`BossProfileField.tsx`의 폼 필드, api.py의
+# 180.0은 기본값일 뿐) 700초를 넣으면 상한 8에 정확히 닿는다 - 여유 0이다.
+# 상한에 걸린 답은 고정점이 아닌 채 `converged: False`만 달고 조용히 나가는데,
+# 그 플래그를 읽는 하류가 없어 오답이 damage 숫자로 나간다.
+#
+# 32는 품질 노브가 아니라 폭주 방지 장치의 값이다. 수렴하는 덱은 상한과 무관하게
+# 실제 패스 수만 지불하므로(700초 덱은 32에서도 여전히 8패스에서 끝난다) 값을
+# 키우는 비용은 **진동해서 영영 안 끝나는 병리적 조합에만** 붙고, 그런 조합은
+# 어차피 답이 없다.
+MAX_FULL_BURST_PASSES = 32
+
+# 자원 조회를 리셋 "직전"으로 밀어내는 폭. resource_count는 조회 시각과 같은
+# 시각의 리셋을 베이스라인으로 쓰므로, 그냥 버스트 시각을 물으면 소비 후 값이
+# 돌아온다. 이 폭이면 같은 순간의 리셋만 벗어나고 직전 fill은 그대로 센다.
+#
+# `FULL_BURST_OPEN_DELAY`와 값이 같은 것은 우연이다 - 저쪽은 버스트 발동과 창
+# 개시를 가르는 폭이고 이쪽은 자원 조회를 리셋 앞으로 미는 폭이라, 한쪽이 바뀌어도
+# 다른 쪽을 따라 바꿀 이유가 없다.
+_PRE_BURST_EPSILON = 1e-6
+
+
+def _resolve_conditional_fb_deltas(context, events, conditional_full_burst_deltas):
+    """사이클별 {슬러그: 확장 단계}. 단계는 그 사이클의 Burst 3이 발동한 순간,
+    자원이 소비되기 직전의 값으로 정해진다.
+
+    원문이 "Activates when entering Burst Stage 3 / Affects all allies"이므로
+    스펙 보유자가 그 사이클의 Burst 3일 필요가 없다 - 덱에 있고 조건이 맞으면
+    누가 창을 열든 걸린다. 판정 시각도 `full_burst_start`가 아니라 버스트
+    발동 시각이다(둘은 FULL_BURST_OPEN_DELAY만큼 떨어져 있다).
+
+    단계 0은 담지 않는다: 아무 유닛도 조건을 못 넘긴 사이클은 키 자체가 없어야
+    "빈 딕셔너리"와의 비교로 고정점을 판정할 수 있다."""
+    resolved = {}
+    if not conditional_full_burst_deltas:
+        return resolved
+    tier3_times = [e["time"] for e in events if e.get("type") == "burst" and e.get("tier") == 3]
+    for cycle_index, fire_time in enumerate(tier3_times):
+        stages = {}
+        for slug, spec in conditional_full_burst_deltas.items():
+            count = context.resource_count(
+                slug, spec["resource"], fire_time - _PRE_BURST_EPSILON, spec["cap"]
+            )
+            # 임계는 "이상"이다: 소다의 소비 시퀀스는 정확히 20에 내려앉는데 그게
+            # II단계의 임계라, 여기서 한 칸 어긋나면 실제 딜이 바뀐다.
+            #
+            # 마지막으로 통과한 tier가 답인 것은 tiers가 임계 오름차순이기 때문이다
+            # (`build_beginners_rewards_full_burst_delta`가 그렇게 만든다).
+            # `_stage_seconds`의 `tiers[stage - 1]`도 같은 순서를 전제하므로, 순서가
+            # 깨지면 두 곳이 함께 틀린다.
+            stage = 0
+            for index, (threshold, _seconds) in enumerate(spec["tiers"], start=1):
+                if count >= threshold:
+                    stage = index
+            if stage:
+                stages[slug] = stage
+        if stages:
+            resolved[cycle_index] = stages
+    return resolved
+
+
+def simulate_raid(*args, **kwargs):
+    """한 번의 레이드 시뮬레이션. 대부분의 덱에서는 `_simulate_raid_once`를 정확히
+    한 번 부르는 것과 같다.
+
+    풀 버스트 창 길이가 자원 상태에 달린 유닛(소다: 트윙클링 바니)이 덱에 있으면
+    고정점까지 반복한다: 창 길이가 그 사이클 진입 시점의 골든칩으로 정해지는데,
+    칩은 창 안의 사격으로 차고, 사격은 창이 정해져야 존재한다. 시간 순서로는
+    인과가 한 방향이지만(사이클 k의 판정은 k-1까지의 샷만 본다) 이 엔진은
+    스케줄러를 통째로 먼저 돌리므로 패스 단위로 같은 답에 도달한다.
+
+    그런 유닛이 없으면 해석기가 빈 딕셔너리를 돌려주고 첫 패스에서 종료한다 -
+    결과도 비용도 오늘과 같다.
+    """
+    overrides = {}
+    result = None
+    for attempt in range(MAX_FULL_BURST_PASSES):
+        result, resolved = _simulate_raid_once(
+            *args, **kwargs, full_burst_stage_overrides=overrides
+        )
+        if resolved == overrides:
+            result["full_burst_passes"] = {"passes": attempt + 1, "converged": True}
+            return result
+        overrides = resolved
+    result["full_burst_passes"] = {"passes": MAX_FULL_BURST_PASSES, "converged": False}
+    return result
+
+
+def _stage_seconds(stage_table, conditional_full_burst_deltas):
+    """{사이클: {슬러그: 단계}}를 burst_cycle이 쓰는 {사이클: 초}로 바꾼다.
+
+    단계는 유닛별이고 초는 창 하나에 하나뿐이라 합산한다 - 확장을 주는 유닛이
+    둘 있는 덱이라면 창이 둘 다 만큼 길어진다. 오늘 소비자는 소다 하나뿐이라
+    합이 곧 그녀 몫이다.
+
+    단계는 1부터 센다. 0은 `SquadContext.full_burst_extension_stage`가 "확장
+    없음"으로 돌려주는 값이라 이 표에 실릴 값이 아니고, `tiers[stage - 1]`에
+    그대로 넣으면 `tiers[-1]`로 감겨 최대 단계를 조용히 사게 된다. 범위를 벗어난
+    단계는 생산자가 계약을 어겼다는 뜻이므로 건너뛰지 말고 터뜨린다 - 삼키면
+    버그가 예외가 아니라 damage 숫자로 나온다."""
+    seconds = {}
+    for cycle_index, stages in stage_table.items():
+        total = 0.0
+        for slug, stage in stages.items():
+            tiers = conditional_full_burst_deltas[slug]["tiers"]
+            if not 1 <= stage <= len(tiers):
+                raise ValueError(
+                    f"full burst extension stage {stage} for {slug!r} in cycle "
+                    f"{cycle_index} is outside 1..{len(tiers)} - stage 0 means "
+                    f"'no extension' and belongs out of this table, not in it")
+            total += tiers[stage - 1][1]
+        if total:
+            seconds[cycle_index] = total
+    return seconds
+
+
+def _simulate_raid_once(
     deck,
     rules_by_slug,
     burst_damage_percents,
@@ -520,6 +645,8 @@ def simulate_raid(
     weapon_mode_schedules=None,
     burst_anchored_buffs=None,
     ammo_rounds_per_shot=None,
+    conditional_full_burst_deltas=None,
+    full_burst_stage_overrides=None,
 ):
     weapon_stats = weapon_stats or {}
     # None means "no band read for this encounter", which pays nobody. An
@@ -544,6 +671,8 @@ def simulate_raid(
     resource_fill_triggered_buffs = resource_fill_triggered_buffs or {}
     scheduled_nukes = scheduled_nukes or {}
     ammo_rounds_per_shot = ammo_rounds_per_shot or {}
+    conditional_full_burst_deltas = conditional_full_burst_deltas or {}
+    full_burst_stage_overrides = full_burst_stage_overrides or {}
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"], m.get("weapon")) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -902,6 +1031,9 @@ def simulate_raid(
         gauge_charge_time,
         fight_duration,
         mode,
+        full_burst_duration_overrides=_stage_seconds(
+            full_burst_stage_overrides, conditional_full_burst_deltas
+        ),
         on_battle_start=on_battle_start,
         on_tier_fire=on_tier_fire,
         on_full_burst_enter=on_full_burst_enter,
@@ -916,6 +1048,14 @@ def simulate_raid(
         (e["time"] for e in events if e["type"] == "full_burst_end"),
     ))
     context.full_burst_windows = full_burst_windows
+
+    # 이번 패스가 받은 단계 테이블을 창에 붙여 context에 싣는다 - 창 길이와 단계가
+    # 같은 패스 안에서 항상 같은 출처를 갖도록. per-shot 소비자(소다의 Beginner's
+    # Rewards 넉)가 자기 샷이 속한 창의 자기 단계를 여기서 읽는다.
+    context.full_burst_extension_stages = [
+        (start, end, full_burst_stage_overrides.get(index, {}))
+        for index, (start, end) in enumerate(full_burst_windows)
+    ]
 
     # A buff a unit's own burst grants at an OFFSET from the burst, whose
     # duration may run "until that unit's NEXT own burst" rather than a fixed
@@ -1262,7 +1402,7 @@ def simulate_raid(
                 # OTHER slugs' resources processed later in this same loop);
                 # shadowing it here corrupted that log for any
                 # squad_burst_cycle_conditional resource resolved afterward
-                # in the same simulate_raid call (only surfaced once a deck
+                # in the same _simulate_raid_once pass (only surfaced once a deck
                 # combined a buffed resource with one, e.g. Asuka + Maiden
                 # sharing Burst 3 - see test_interaction_asuka_maiden_shared_burst_tier.py).
                 buff_step_times = set(fill_times) | set(reset_times)
@@ -1539,4 +1679,18 @@ def simulate_raid(
         "total_damage": sum(entry["damage"] for entry in damage_log),
         "damage_log": damage_log,
         "events": events,
-    }
+    }, _resolve_conditional_fb_deltas(context, events, conditional_full_burst_deltas)
+
+
+# `inspect.signature` follows `__wrapped__`, so introspecting the public name
+# yields the real parameter list rather than the wrapper's (*args, **kwargs).
+# Set here rather than beside the wrapper because `_simulate_raid_once` is
+# defined below it.
+#
+# One entry in that list is not a real parameter for a caller: the wrapper
+# supplies `full_burst_stage_overrides` itself on every iteration
+# (`_simulate_raid_once(deck, **kwargs, full_burst_stage_overrides=overrides)`),
+# so passing it through `simulate_raid(**kwargs)` raises `TypeError: got
+# multiple values for keyword argument`. The advertised signature is honest
+# about every other parameter.
+simulate_raid.__wrapped__ = _simulate_raid_once

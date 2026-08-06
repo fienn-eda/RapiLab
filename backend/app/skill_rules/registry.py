@@ -296,6 +296,8 @@ from app.skill_rules.rouge import (
     build_game_master_rules,
 )
 from app.skill_rules.soda_twinkling_bunny import (
+    build_beginners_rewards_full_burst_delta,
+    build_beginners_rewards_per_shot_rules,
     build_golden_chip_resources,
     build_lucky_golden_chip_per_shot_rules,
     build_onward_soda_resource_gated_buffs,
@@ -726,6 +728,22 @@ def get_full_burst_duration_delta(slug: str) -> float:
     return FULL_BURST_DURATION_DELTA.get(slug, 0.0)
 
 
+# 자기 버스트가 아니라 "덱에 있고 자원 조건이 맞으면" 풀 버스트를 늘리는 유닛.
+# FULL_BURST_DURATION_DELTA는 슬러그당 상수라 이 모양을 담을 수 없다 - 소다의
+# 확장은 골든칩 스택에 따라 사이클마다 +0/+2/+5초로 달라지고, 원문이
+# "entering Burst Stage 3 / Affects all allies"라 그녀가 그 사이클의 Burst 3일
+# 필요도 없다.
+_CONDITIONAL_FULL_BURST_DELTA_BUILDERS = {
+    "soda-twinkling-bunny": lambda sv: build_beginners_rewards_full_burst_delta(sv),
+}
+
+
+def get_conditional_full_burst_delta(slug, skill_values):
+    """이 유닛이 자원 조건에 따라 풀 버스트를 늘리는가 (대부분 None)."""
+    builder = _CONDITIONAL_FULL_BURST_DELTA_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
 # A variant seated in a different burst-rotation slot than the character's
 # nominal tier (e.g. Rapi: Red Hood's Combat Assist B1 stand-in).
 VARIANT_BURST_TIERS: dict[str, int] = {
@@ -961,7 +979,10 @@ _PER_SHOT_RULE_BUILDERS = {
     "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),
     "snow-white": lambda sv: build_determination_per_shot_rules(sv),
     "snow-white-heavy-arms": lambda sv: build_seven_dwarves_per_shot_rules(sv),
-    "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
+    "soda-twinkling-bunny": lambda sv: (
+        build_lucky_golden_chip_per_shot_rules(sv)
+        + build_beginners_rewards_per_shot_rules(sv)
+    ),
     "velvet": lambda sv: build_velvet_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),

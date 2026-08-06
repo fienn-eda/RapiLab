@@ -536,3 +536,55 @@ def test_a_member_without_a_delta_keeps_the_base_duration():
 
     start, end = _windows(events)[0]
     assert end - start == pytest.approx(FULL_BURST_DURATION)
+
+
+def test_full_burst_duration_overrides_lengthen_named_cycles():
+    """사이클별 오버라이드는 그 사이클의 창 길이에만 더해진다 - 소다의
+    Beginner's Rewards처럼 값이 사이클마다 다른 확장을 위한 자리."""
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "cooldown": 20.0},
+        {"slug": "b3", "burst_tier": 3, "cooldown": 20.0},
+    ]
+    events = simulate_burst_cycle(
+        deck, gauge_charge_time=5.0, fight_duration=100.0,
+        full_burst_duration_overrides={0: 5.0, 2: 2.0},
+    )
+    windows = list(zip(
+        [e["time"] for e in events if e["type"] == "full_burst_start"],
+        [e["time"] for e in events if e["type"] == "full_burst_end"],
+    ))
+    lengths = [round(end - start, 6) for start, end in windows]
+    assert lengths[0] == 15.0    # 10 + 5
+    assert lengths[1] == 10.0    # 오버라이드 없음
+    assert lengths[2] == 12.0    # 10 + 2
+
+
+def test_full_burst_duration_overrides_add_to_the_tier3_units_own_delta():
+    """오버라이드는 기존 유닛별 델타(이사벨 -5, 모더니아 +5)를 대체하지 않고
+    더한다 - 둘은 다른 조건이라 겹쳐 걸린다."""
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "cooldown": 20.0},
+        {"slug": "shortener", "burst_tier": 3, "cooldown": 20.0,
+         "full_burst_duration_delta": -5.0},
+    ]
+    events = simulate_burst_cycle(
+        deck, gauge_charge_time=5.0, fight_duration=60.0,
+        full_burst_duration_overrides={0: 5.0},
+    )
+    start = next(e["time"] for e in events if e["type"] == "full_burst_start")
+    end = next(e["time"] for e in events if e["type"] == "full_burst_end")
+    assert round(end - start, 6) == 10.0    # 10 - 5 + 5
+
+
+def test_no_overrides_is_todays_behaviour():
+    """None이면 오늘과 같다 - 조건부 델타가 없는 덱의 불변식."""
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "cooldown": 20.0},
+        {"slug": "b3", "burst_tier": 3, "cooldown": 20.0},
+    ]
+    with_none = simulate_burst_cycle(deck, 5.0, 100.0, full_burst_duration_overrides=None)
+    without = simulate_burst_cycle(deck, 5.0, 100.0)
+    assert with_none == without

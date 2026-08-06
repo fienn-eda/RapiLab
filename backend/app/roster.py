@@ -26,6 +26,7 @@ from app.skill_rules.registry import (
     get_burst_resolves_after_cast,
     get_charge_motion_delay,
     get_burst_delay,
+    get_conditional_full_burst_delta,
     get_full_burst_duration_delta,
     get_self_stun,
     get_burst_hit_count,
@@ -106,6 +107,7 @@ def assemble_simulation_inputs(ordered_deck):
     scheduled_nukes = {}
     weapon_mode_schedules = {}
     burst_anchored_buffs = {}
+    conditional_full_burst_deltas = {}
 
     for spec in ordered_deck:
         # A standing self-scoped cut to the unit's own burst cooldown (Moran's
@@ -198,6 +200,10 @@ def assemble_simulation_inputs(ordered_deck):
         if per_shot_rule:
             per_shot_rules[spec.slug] = per_shot_rule
 
+        conditional_full_burst = get_conditional_full_burst_delta(spec.slug, skill_values)
+        if conditional_full_burst is not None:
+            conditional_full_burst_deltas[spec.slug] = conditional_full_burst
+
         resource_spec = get_resource_specs(spec.slug, skill_values)
         if resource_spec:
             resource_specs[spec.slug] = resource_spec
@@ -251,4 +257,5 @@ def assemble_simulation_inputs(ordered_deck):
         "scheduled_nukes": scheduled_nukes,
         "weapon_mode_schedules": weapon_mode_schedules,
         "burst_anchored_buffs": burst_anchored_buffs,
+        "conditional_full_burst_deltas": conditional_full_burst_deltas,
     }

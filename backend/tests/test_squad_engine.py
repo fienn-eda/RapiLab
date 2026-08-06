@@ -472,3 +472,19 @@ def test_own_burst_status_active_measures_from_the_latest_burst():
     ctx.record_burst_time("a", 2.5)
     ctx.record_burst_time("a", 42.5)
     assert check(ctx, "a", 50.0) is True
+
+
+def test_full_burst_extension_stage_reads_the_window_a_time_falls_in():
+    """소다의 per-shot 넉이 자기 샷의 사이클 확장 단계를 묻는 자리. 단계는
+    창마다 다르고(칩이 줄면 내려간다), 창 밖은 0이다."""
+    context = SquadContext([SquadMember("soda", burst_tier=3, element="Iron")])
+    assert context.full_burst_extension_stage(5.0, "soda") == 0   # 아직 아무것도 안 실림
+
+    context.full_burst_extension_stages = [(2.0, 17.0, {"soda": 2}), (25.0, 37.0, {"soda": 1})]
+    assert context.full_burst_extension_stage(2.0, "soda") == 2     # 창 시작 포함
+    assert context.full_burst_extension_stage(16.9, "soda") == 2
+    assert context.full_burst_extension_stage(17.0, "soda") == 0    # 창 끝 배제
+    assert context.full_burst_extension_stage(20.0, "soda") == 0    # 창 사이
+    assert context.full_burst_extension_stage(30.0, "soda") == 1
+    assert context.full_burst_extension_stage(100.0, "soda") == 0   # 마지막 창 뒤
+    assert context.full_burst_extension_stage(5.0, "someone-else") == 0  # 다른 유닛

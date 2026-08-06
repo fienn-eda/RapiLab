@@ -4,6 +4,8 @@ left-to-right per skill (stage-number references in the text are not slots).
 from app.effects import EffectRegistry, ResourceSpec
 from app.raid_simulator import simulate_raid
 from app.skill_rules.soda_twinkling_bunny import (
+    build_beginners_rewards_full_burst_delta,
+    build_beginners_rewards_per_shot_rules,
     build_golden_chip_resources,
     build_lucky_golden_chip_per_shot_rules,
     build_onward_soda_resource_gated_buffs,
@@ -25,11 +27,72 @@ SODA_VALUES = {
         "description_value_03": "20", "description_value_04": "38.91", "description_value_05": "15",
         "description_value_06": "30", "description_value_07": "65.25", "description_value_08": "15",
     },
+    "beginners_rewards": {
+        "description_value_01": "3", "description_value_02": "1",
+        "description_value_03": "10", "description_value_04": "2",
+        "description_value_05": "2", "description_value_06": "20",
+        "description_value_07": "3", "description_value_08": "1",
+        "description_value_09": "1", "description_value_10": "52.04",
+        "description_value_11": "2", "description_value_12": "85.02",
+    },
 }
 
 
 def test_onward_soda_burst_percent():
     assert onward_soda_burst_percent(SODA_VALUES) == 628.7
+
+
+def test_beginners_rewards_full_burst_tiers_are_cumulative():
+    """"Each subsequent effect triggers all effects before it" - 20스택 이상은
+    Time Extension I(+2초)과 II(+3초)를 함께 받아 +5초다 (Fienn 실측: 풀 버스트
+    15초 = 10 + 2 + 3)."""
+    spec = build_beginners_rewards_full_burst_delta(SODA_VALUES)
+    assert spec["resource"] == "chip"
+    assert spec["cap"] == 50
+    assert spec["tiers"] == [(10.0, 2.0), (20.0, 5.0)]
+
+
+def test_beginners_rewards_reads_thresholds_and_seconds_from_slots():
+    """상수로 박지 않는다 - 스킬 레벨이 바뀌면 값도 따라가야 한다."""
+    lower = {
+        **SODA_VALUES,
+        "beginners_rewards": {**SODA_VALUES["beginners_rewards"],
+                              "description_value_03": "8", "description_value_04": "1",
+                              "description_value_06": "16", "description_value_07": "2"},
+    }
+    spec = build_beginners_rewards_full_burst_delta(lower)
+    assert spec["tiers"] == [(8.0, 1.0), (16.0, 3.0)]
+
+
+def test_beginners_rewards_nuke_scales_with_the_cycles_extension_stage():
+    """넉도 누적이다 (Fienn 확정): II단계 한 발은 52.04 + 85.02 = 137.06%.
+    확장이 없는 창(0단계)에서는 아예 안 나간다."""
+    rules = build_beginners_rewards_per_shot_rules(SODA_VALUES)
+    assert len(rules) == 1
+    threshold, mode, skill_rules = rules[0]
+    assert (threshold, mode) == (1, "every_during_full_burst")
+
+    ctx = SquadContext([SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron")])
+    reg = EffectRegistry()
+
+    ctx.full_burst_extension_stages = [
+        (0.0, 10.0, {}), (20.0, 32.0, {"soda-twinkling-bunny": 1}),
+        (40.0, 55.0, {"soda-twinkling-bunny": 2}),
+    ]
+
+    skill_rules[0].action(ctx, "soda-twinkling-bunny", 5.0, reg)
+    assert reg.drain_pulses("instant_damage_percent") == []      # 0단계: 넉 없음
+
+    skill_rules[0].action(ctx, "soda-twinkling-bunny", 25.0, reg)
+    pulses = reg.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert round(pulses[0].value, 4) == 52.04                    # I단계
+
+    skill_rules[0].action(ctx, "soda-twinkling-bunny", 45.0, reg)
+    pulses = reg.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert round(pulses[0].value, 4) == 137.06                   # II단계 = 52.04 + 85.02
+    assert pulses[0].source_slug == "soda-twinkling-bunny"
 
 
 def test_lucky_golden_chip_cofired_buff_targets_self_and_top_atk_ally():
@@ -177,4 +240,5 @@ def test_soda_second_burst_still_clears_the_atk_gate_because_the_spend_leaves_st
 # Module-level fixture aliases so the assembly verification harness
 # (test_skill_value_assembly.py) can resolve each sub-skill fixture by name.
 LUCKY_GOLDEN_CHIP = SODA_VALUES["lucky_golden_chip"]
+BEGINNERS_REWARDS = SODA_VALUES["beginners_rewards"]
 ONWARD_SODA = SODA_VALUES["onward_soda"]

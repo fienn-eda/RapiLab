@@ -106,6 +106,20 @@ class SquadContext:
         # count toward the total; resource_count uses the latest reset at or
         # before the query time as its baseline instead of 0.
         self.resource_resets: dict[tuple[str, str], list[tuple[float, float, float]]] = {}
+        # 사이클별 Full Burst 확장 단계 [(start, end, {슬러그: 단계})]. 초가 아니라
+        # 단계를 싣는 것은 소비자(소다의 per-shot 넉)가 "II단계인가"를 묻지
+        # "5.0초인가"를 묻지 않기 때문 - 초에서 단계를 역추론하면 값이 우연히
+        # 겹치는 날 조용히 틀린다. 슬러그별인 것은 초가 합산되는 것과 달리 단계는
+        # 유닛마다 다르기 때문. raid_simulator가 창을 만들 때 채운다.
+        self.full_burst_extension_stages: list[tuple[float, float, dict[str, int]]] = []
+
+    def full_burst_extension_stage(self, time: float, slug: str) -> int:
+        """`time`이 속한 Full Burst 창에서 `slug`가 도달한 확장 단계 (0 = 없음).
+        창은 [start, end) 반열림이라 창 끝의 샷은 어느 창에도 안 든다."""
+        for start, end, stages in self.full_burst_extension_stages:
+            if start <= time < end:
+                return stages.get(slug, 0)
+        return 0
 
     def record_burst_time(self, slug: str, time: float) -> None:
         self.burst_times[slug].append(time)

@@ -444,3 +444,78 @@ def test_assemble_puts_the_full_burst_delta_on_the_member_only_when_nonzero():
 
     assert by_slug["isabel"]["full_burst_duration_delta"] == -5.0
     assert "full_burst_duration_delta" not in by_slug["arcana"]
+
+
+def test_assemble_wires_sodas_conditional_full_burst_delta():
+    """조건부 FB 델타는 member가 아니라 별도 딕셔너리로 나간다 - burst_cycle이
+    아니라 resolution 뒤의 해석기가 읽기 때문."""
+    from app.models import UserNikkeState
+    from app.user_roster import load_roster
+
+    states = [
+        UserNikkeState.model_validate({
+            "character_slug": slug, "level": 200,
+            "hp": 1_000_000.0, "atk": 60_000.0, "def_": 3_000.0,
+            "skill_levels": {"skill1": 10, "skill2": 10, "burst": 10},
+        })
+        for slug in ("liter", "crown", "soda-twinkling-bunny")
+    ]
+    specs, excluded = load_roster(states)
+    assert not excluded
+    inputs = assemble_simulation_inputs(specs)
+
+    deltas = inputs["conditional_full_burst_deltas"]
+    assert set(deltas) == {"soda-twinkling-bunny"}
+    assert deltas["soda-twinkling-bunny"]["resource"] == "chip"
+    assert deltas["soda-twinkling-bunny"]["tiers"] == [(10.0, 2.0), (20.0, 5.0)]
+    # member에는 아무것도 안 붙는다
+    soda_member = next(m for m in inputs["deck"] if m["slug"] == "soda-twinkling-bunny")
+    assert "conditional_full_burst_delta" not in soda_member
+
+
+def test_assemble_leaves_conditional_deltas_empty_without_such_a_unit():
+    """소다 없는 덱은 빈 딕셔너리 - 이게 '1패스로 끝난다'의 출발점이다."""
+    from app.models import UserNikkeState
+    from app.user_roster import load_roster
+
+    states = [
+        UserNikkeState.model_validate({
+            "character_slug": slug, "level": 200,
+            "hp": 1_000_000.0, "atk": 60_000.0, "def_": 3_000.0,
+            "skill_levels": {"skill1": 10, "skill2": 10, "burst": 10},
+        })
+        for slug in ("liter", "crown", "modernia")
+    ]
+    specs, _ = load_roster(states)
+    assert assemble_simulation_inputs(specs)["conditional_full_burst_deltas"] == {}
+
+
+def test_assemble_wires_sodas_gated_nuke_alongside_her_cofired_buff():
+    """registry.PER_SHOT_RULE_BUILDERS의 소다 항목은
+    build_lucky_golden_chip_per_shot_rules(sv) + build_beginners_rewards_per_shot_rules(sv)
+    두 항을 더한 것 - 후자(넉, threshold 1)가 빠져도 이 항목을 직접 부르는
+    단위 테스트는 하나도 안 깨진다. assemble_simulation_inputs를 거쳐야
+    레지스트리 배선 자체가 검증된다 (test_assemble_puts_the_full_burst_delta_
+    on_the_member_only_when_nonzero가 FULL_BURST_DURATION_DELTA를 지키는 것과
+    같은 자리)."""
+    from app.models import UserNikkeState
+    from app.user_roster import load_roster
+
+    states = [
+        UserNikkeState.model_validate({
+            "character_slug": slug, "level": 200,
+            "hp": 1_000_000.0, "atk": 60_000.0, "def_": 3_000.0,
+            "skill_levels": {"skill1": 10, "skill2": 10, "burst": 10},
+        })
+        for slug in ("liter", "crown", "soda-twinkling-bunny")
+    ]
+    specs, excluded = load_roster(states)
+    assert not excluded
+    inputs = assemble_simulation_inputs(specs)
+
+    rules = inputs["per_shot_rules"]["soda-twinkling-bunny"]
+    modes = {(threshold, mode) for threshold, mode, _skill_rules in rules}
+    # 넉(Beginner's Rewards) - threshold 1, 확장 창 안 매 평타.
+    assert (1, "every_during_full_burst") in modes
+    # 골든칩 공동발동 버프(Lucky Golden Chip) - threshold 3.
+    assert (3, "every_during_full_burst") in modes
