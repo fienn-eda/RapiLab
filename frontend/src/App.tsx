@@ -90,22 +90,26 @@ function App() {
   return (
     <div className="app">
       <header className="app__header">
-        <h1 className="app__title">RapiLab</h1>
-        <p className="app__subtitle">
-          blablalink에서 로스터를 동기화하면 엔진이 덱을 구성해줘요.
-        </p>
-        <p className="app__note">
-          덱 추천은 모든 니케가 재장전 큐브 15레벨을 착용한 것으로 계산합니다.
-          계산기 탭에서는 큐브를 직접 고릅니다.
-        </p>
-      </header>
+        <div className="app__masthead">
+          <h1 className="app__title">RapiLab</h1>
+          <p className="app__subtitle">
+            blablalink에서 로스터를 동기화하면 엔진이 덱을 구성해줘요.
+          </p>
+          <p className="app__note">
+            덱 추천은 모든 니케가 재장전 큐브 15레벨을 착용한 것으로 계산합니다.
+            계산기 탭에서는 큐브를 직접 고릅니다.
+          </p>
+        </div>
 
-      <ProfileSwitcher
-        profiles={Object.values(state.profiles)}
-        activeKey={state.activeKey}
-        onSwitch={switchProfile}
-        onDelete={deleteProfile}
-      />
+        {/* Top right of the page, opposite the title: which account is loaded
+            is a property of the whole screen, not of the tab below it. */}
+        <ProfileSwitcher
+          profiles={Object.values(state.profiles)}
+          activeKey={state.activeKey}
+          onSwitch={switchProfile}
+          onDelete={deleteProfile}
+        />
+      </header>
 
       {activeProfile === null ? (
         <main className="app__main">

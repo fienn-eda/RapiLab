@@ -11,10 +11,25 @@
   min-height: 100svh;
 }
 
+/* Title on the left, account picker on the right. They wrap onto separate
+   lines rather than squeezing when the window is too narrow to hold both. */
 .app__header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--sp-2) var(--sp-5);
+}
+
+.app__masthead {
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
+}
+
+/* An auto margin rather than space-between: it keeps the picker on the right
+   even after it has wrapped onto a line of its own. */
+.app__header .profile-switcher {
+  margin-left: auto;
 }
 
 .app__title {
@@ -45,7 +60,7 @@
 .app__footer {
   margin-top: auto;
   padding-top: var(--sp-4);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--rule);
   color: var(--text-muted);
   font-size: 14px;
 }
@@ -74,6 +89,16 @@
   color: var(--text-muted);
 }
 
+/* The burst icon that heads a tier group, in both the roster grid and the
+   recommend palette. The three icons are Roman numerals of one height and
+   three widths, so height is fixed and width follows. The type properties on
+   the headings above stay: they style the alt text if the image ever fails. */
+.burst-heading__icon {
+  display: block;
+  height: 22px;
+  width: auto;
+}
+
 /* Auto-fill rather than a fixed column count: a tile is as wide as its
    overload lines need and the row reflows to the window. */
 .roster__grid {
@@ -88,11 +113,24 @@
    tab has the width for one row and the recommend palette does not, and a
    toolbar that scrolls sideways hides the controls it exists to offer. */
 .unit-filter {
+  /* The toolbar sets its own type scale rather than each control naming a
+     size, so the whole row can be resized from one place. Labels and chips
+     take the smaller of the two; anything you type into or pick from takes
+     the larger. */
+  --filter-text: 18px;
+  --filter-input: 19.5px;
+  --filter-icon: 26px;
+  /* Drawn to the same height, an element badge reads smaller than a burst
+     numeral: the badge is a thin hexagon outline around a small glyph, while
+     the numeral is solid strokes filling its box. Matching the boxes is what
+     makes them look mismatched, so the badge is given a little more. */
+  --filter-icon-element: calc(var(--filter-icon) * 1.2);
+
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
   padding: var(--sp-2) var(--sp-3);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: var(--radius);
   background: var(--surface-2);
 }
@@ -105,7 +143,7 @@
 }
 
 .unit-filter__label {
-  font-size: 12px;
+  font-size: var(--filter-text);
   font-weight: 600;
   color: var(--text-muted);
 }
@@ -119,7 +157,7 @@
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--filter-input);
 }
 
 .unit-filter__search:focus-visible {
@@ -135,7 +173,7 @@
   background: var(--surface);
   color: var(--text);
   font: inherit;
-  font-size: 13px;
+  font-size: var(--filter-input);
 }
 
 .unit-filter__select:focus-visible {
@@ -157,7 +195,7 @@
   background: transparent;
   color: var(--text-muted);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--filter-text);
   cursor: pointer;
 }
 
@@ -166,22 +204,30 @@
   outline-offset: 2px;
 }
 
-/* An icon chip has no text to set its height, so the icon does. Burst icons
-   are wider than they are tall and elements are near-square; fixing the height
-   and letting width follow keeps both on one baseline. */
+/* An icon chip has no text to set its height, so the icon does. Every icon is
+   sized by height with width left to follow, because within each family the
+   artwork shares a height and differs in width. */
 .unit-filter__chip--icon {
   display: inline-flex;
   align-items: center;
   padding: 2px var(--sp-1);
+  /* One pill height across both families, set by the taller icon plus this
+     rule's own padding and border. Without it, evening up the icons only moves
+     the mismatch out to the outlines around them. */
+  min-height: calc(var(--filter-icon-element) + 4px + 2px);
 }
 
 .unit-filter__icon {
   display: block;
-  height: 18px;
+  height: var(--filter-icon);
   width: auto;
   /* Off chips read as unlit rather than absent - the border still holds the
      hit area, so this is the only thing carrying the on/off state visually. */
   opacity: 0.45;
+}
+
+.unit-filter__chip[data-element] .unit-filter__icon {
+  height: var(--filter-icon-element);
 }
 
 .unit-filter__chip[aria-pressed='true'] .unit-filter__icon {
@@ -217,7 +263,7 @@
   align-items: baseline;
   gap: var(--sp-2);
   margin: 0;
-  font-size: 12px;
+  font-size: var(--filter-text);
   color: var(--text-muted);
 }
 
@@ -227,7 +273,7 @@
   background: transparent;
   color: var(--accent);
   font: inherit;
-  font-size: 12px;
+  font-size: var(--filter-text);
   text-decoration: underline;
   cursor: pointer;
 }
@@ -239,12 +285,12 @@
 
 .unit-filter__empty {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--filter-input);
   color: var(--text-muted);
 }
 
 .roster__unsupported {
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--rule);
   padding-top: var(--sp-3);
 }
 
@@ -267,7 +313,7 @@
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: var(--sp-5);
@@ -350,7 +396,7 @@
 .tabs {
   display: flex;
   gap: var(--sp-1);
-  border-bottom: 1px solid var(--border);
+  border-bottom: 1px solid var(--rule);
 }
 
 .tabs__tab {
@@ -418,7 +464,7 @@
   align-items: baseline;
   gap: 3px;
   padding: 2px var(--sp-2);
-  border: 1px solid var(--border);
+  border: 1px solid var(--rule);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
 }
@@ -513,7 +559,7 @@
 }
 
 .roster-card__portrait--missing {
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--rule);
 }
 
 /* Pinned to a corner as a discrete badge rather than stretched across the
@@ -581,12 +627,12 @@
 }
 
 .field--invalid .field__input {
-  border-color: var(--danger);
+  border-color: var(--accent);
 }
 
 .field__error {
   font-size: 12px;
-  color: var(--danger);
+  color: var(--accent);
 }
 
 .field-row {
@@ -675,7 +721,7 @@
 /* Groups (fieldsets) --------------------------------------------------- */
 
 .group {
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: var(--radius-sm);
   padding: var(--sp-4);
   margin: 0;
@@ -794,14 +840,18 @@
   outline-offset: 2px;
 }
 
+/* White, not red. Red is reserved for what the app is pointing at; the button
+   you are meant to press is the brightest thing on the page instead. */
 .btn--primary {
-  background: var(--accent);
-  color: var(--accent-contrast);
+  background: var(--primary);
+  color: var(--primary-contrast);
+  border-color: var(--primary);
   font-weight: 600;
 }
 
 .btn--primary:hover {
-  background: var(--accent-hover);
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 .btn--ghost {
@@ -812,9 +862,13 @@
   font-size: 14px;
 }
 
+/* The soft red fill already carries the hover state, so the label switches to
+   --text instead of staying --accent: red on --accent-soft measures too thin
+   a contrast margin to depend on. */
 .btn--ghost:hover {
   background: var(--accent-soft);
   border-color: var(--accent);
+  color: var(--text);
 }
 
 .btn--icon {
@@ -825,9 +879,12 @@
   border-radius: var(--radius-sm);
 }
 
+/* The soft red fill already carries the hover state, so the label switches to
+   --text instead of staying --accent: red on --accent-soft measures too thin
+   a contrast margin to depend on. */
 .btn--icon:hover {
-  background: var(--warn-soft);
-  color: var(--danger);
+  background: var(--accent-soft);
+  color: var(--text);
 }
 
 .field-row--overload .btn--icon {
@@ -850,7 +907,7 @@
 
 .sync__error {
   font-size: 13px;
-  color: var(--danger);
+  color: var(--accent);
 }
 
 .sync__bookmarklet {
@@ -967,19 +1024,23 @@
 }
 
 .pill--ok {
-  background: var(--ok-soft);
-  color: var(--ok);
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
 }
 
+/* A warning is not an error. It reads as quieter text inside a stated edge,
+   which leaves red to mean something is actually wrong. */
 .pill--warn {
-  background: var(--warn-soft);
-  color: var(--warn);
+  background: transparent;
+  color: var(--text-muted);
+  border: 1px solid var(--border-strong);
 }
 
 .pill--muted {
   background: var(--surface-2);
   color: var(--text-muted);
-  border: 1px solid var(--border);
+  border: 1px solid var(--rule);
 }
 
 /* Empty state ---------------------------------------------------------- */
@@ -1085,7 +1146,7 @@
    깬다. 그래서 danger가 아니라 경고 색이다. */
 .deck-results__warning {
   font-size: 12px;
-  color: var(--warn);
+  color: var(--text-muted);
   white-space: nowrap;
 }
 
@@ -1094,7 +1155,7 @@
 .deck-results__hold {
   margin: var(--sp-2) 0 0;
   font-size: 12px;
-  color: var(--warn);
+  color: var(--text-muted);
 }
 
 /* The answer, in the same language as the palette and the draft slots: five
@@ -1132,7 +1193,7 @@
 }
 
 .deck-results__portrait--missing {
-  border: 1px dashed var(--border);
+  border: 1px dashed var(--rule);
 }
 
 .deck-results__pin {
@@ -1257,12 +1318,18 @@
    whole roster at a glance. */
 .palette__item {
   display: flex;
+  /* One width for every chip. Sizing to content makes each chip as wide as its
+     own skill numbers - "S1 1" is narrower than "S1 10", and the typeface is
+     proportional so even "S1 10" and "S2 10" differ - which leaves the grid
+     ragged. 140px is the widest a chip needs: 72 for the portrait, 51 for the
+     pip column, and the gaps, padding and borders between them. */
+  flex: 0 0 140px;
   /* Stretch, not flex-start: the pip column is shorter than the portrait, and
      top-aligning it left a dead quarter in every chip. */
   align-items: stretch;
   gap: var(--sp-1);
   padding: var(--sp-1);
-  border: 1px solid var(--border);
+  border: 1px solid var(--rule);
   border-radius: var(--radius-sm);
   background: var(--surface);
   /* Set per element below; the neutral border is the fallback. */
@@ -1296,6 +1363,9 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 2px;
+  /* Takes whatever width the portrait leaves, so the pips are the same size in
+     every chip instead of each column hugging its own longest value. */
+  flex: 1;
 }
 
 /* Same cell shape as a skill pip, but one value instead of a label/value
@@ -1345,7 +1415,7 @@
 }
 
 .palette__portrait--missing {
-  border: 1px dashed var(--border-strong);
+  border: 1px dashed var(--rule);
 }
 
 /* Who this is and what it rolled - everything the chip stopped showing.
@@ -1479,7 +1549,7 @@
 }
 
 .draft-editor__deck {
-  border: 1px solid var(--border);
+  border: 2px solid var(--border);
   border-radius: var(--radius-sm);
   padding: var(--sp-3);
   display: flex;
@@ -1512,7 +1582,7 @@
 .draft-editor__deck-warning {
   font-size: 11px;
   font-weight: 600;
-  color: var(--warn);
+  color: var(--text-muted);
   margin-right: auto;
   margin-left: var(--sp-2);
 }
@@ -1678,7 +1748,7 @@
   display: flex;
   flex-direction: column;
   gap: var(--sp-2);
-  border-top: 1px solid var(--border);
+  border-top: 1px solid var(--rule);
   padding-top: var(--sp-3);
 }
 
@@ -1702,11 +1772,11 @@
 }
 
 .deck-results__diff-added {
-  color: var(--ok);
+  color: var(--text);
 }
 
 .deck-results__diff-removed {
-  color: var(--danger);
+  color: var(--accent);
 }
 
 /* 차지 창 계산기 — 사다리 표. 좁은 화면에서 표가 페이지를 밀지 않도록
@@ -1725,13 +1795,13 @@
 .charge-ladder__table td {
   padding: 0.35rem 0.6rem;
   text-align: left;
-  border-bottom: 1px solid var(--border, #3a3a3a);
+  border-bottom: 1px solid var(--rule);
   white-space: nowrap;
 }
 
 .charge-ladder__row--current {
   font-weight: 700;
-  background: var(--accent-soft, rgba(120, 170, 255, 0.14));
+  background: var(--accent-soft);
 }
 
 .charge-ladder__notes {

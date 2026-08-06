@@ -117,7 +117,15 @@ export function UnitPalette({
         if (units.length === 0) return null
         return (
           <section key={tier} className="palette__group">
-            <h4 className="palette__heading">B{tier}</h4>
+            {/* Same burst icon the roster grid and the filter chips use; the
+                alt keeps the group named for anyone who cannot see it. */}
+            <h4 className="palette__heading">
+              <img
+                className="burst-heading__icon"
+                src={`/elements/icon-burst-${tier}.png`}
+                alt={`B${tier}`}
+              />
+            </h4>
             <ul className="palette__list">
               {units.map((unit) => {
                 const owned = ownedBySlug.get(unit.slug)!
