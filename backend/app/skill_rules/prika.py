@@ -34,9 +34,11 @@ Modeled (DPS-relevant):
   so every shot is a full charge.
 
 Not modeled:
-- Encore's Performance-duration +21 sec: rotation bookkeeping, not squad DPS.
-  The Charge Damage refresh already captures the outcome (Performance is
-  maintained while Mint keeps bursting).
+- Encore's Performance-duration +21 sec as a duration ARITHMETIC. Its outcome
+  is modeled, not skipped: with Mint in the deck Performance never lapses, so
+  both things it gates - the burst's Charge Damage and her Pierce property -
+  are held permanent; without Mint neither is extended and both run their
+  stated 25 sec.
 - Let's Get the Show Started!'s Performance-only self healing: survivability.
 - Standalone (no Mint) Encore never fires - which is correct: without Mint there
   is no Sing Along to trigger it. Prika solo is then just her burst Charge Damage
@@ -96,8 +98,10 @@ def build_prika_rules(values):
             Effect("charge_damage_bonus", charge_damage, "squad", duration, caster_slug),
             applied_at=time,
         )
+        # "Activates only while in Performance status. Gains Pierce." - gated
+        # on the status, so it shares the window above rather than outliving it.
         registry.add(
-            Effect("has_pierce", 1.0, "self", None, caster_slug), applied_at=time,
+            Effect("has_pierce", 1.0, "self", duration, caster_slug), applied_at=time,
         )
         context.set_status(caster_slug, PERFORMANCE_STATUS)
 

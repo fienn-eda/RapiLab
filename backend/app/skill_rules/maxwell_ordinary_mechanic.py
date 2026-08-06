@@ -23,15 +23,19 @@ Modeled (DPS-relevant):
 - Matis Uberbuster (skills[2], her burst): all allies Attack Damage +25% for
   10 sec (squad).
 
-Not modeled / deferred (handle later, needs engine work):
+Not modeled / deferred:
 - Output Switching Sequence's "Fills Burst Gauge by 7.15% per Full Charge": burst
-  gauge fill speed is not consumed by the engine (fixed sim input), and the
-  trigger is a full-charge count. Deferred.
+  gauge fill speed is not consumed by the engine (fixed sim input).
 - Matis Uberbuster's weapon transform (Matis UberBuster single-shot cannon, whose
-  fixed charge time shortens with Overcurrent stage, 350% self damage): a stage-
-  dependent weapon transform. Her own SR/cannon damage is minor for a supporter,
-  so this is deferred rather than approximated; the team buffs above are her real
-  contribution.
+  fixed charge time shortens with Overcurrent stage, 350% self damage). The
+  engine can express this: `weapon_mode_schedules`' schedule function is handed
+  the context, so it can emit one `until_shots: 1` segment per own-burst time
+  with that burst's Overcurrent-stage charge time in its own profile - which is
+  exactly what base Maxwell's cannon already does, minus the per-burst stage.
+  It is left out because her own cannon damage is minor for a supporter and,
+  more to the point, HER SKILL PROSE IS NOT COLLECTED (ShiftyPad carries value
+  slots only, and no lootandwaifus page was fetched), so the stage-to-charge-time
+  mapping cannot be read. Collect her text before encoding this.
 """
 from app.skill_rules._helpers import buff_rule, escalating_buff_rule, max_hp_scaled_atk_rule
 

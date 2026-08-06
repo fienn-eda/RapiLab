@@ -27,11 +27,17 @@ Modeled cooldown:
   modeled as a per-CYCLE CDR pulse (on full_burst_end) rather than counting shots.
   Rationale (Fienn): 8 full charges is met essentially every cycle (a full charge
   ~1 sec), so applying the reduction once per cycle is a faithful approximation,
-  using the existing per-cycle CDR machinery. Its Max HP bullet is survival.
+  using the existing per-cycle CDR machinery.
 
 Not modeled:
-- Shield Coin's Damage Taken reduction (survival) and Card Throw's Max HP
-  bullet, whose own trigger the per-cycle CDR approximation does not track.
+- Shield Coin's Damage Taken reduction - survival.
+- Card Throw's own Max HP bullet (+5% of her Max HP to all allies, 5 sec). Max
+  HP IS a damage stat here (see the note above), so the reason is the TRIGGER,
+  not the stat: the per-cycle CDR approximation above does not track the
+  8-full-charge counter, and a 5-sec buff pinned to a ~20-sec cycle would be
+  wrong in a way the CDR's own once-per-cycle reading is not. Encoding it
+  honestly means moving both bullets onto `per_shot_rules`' "every 8" - a
+  change to a Fienn-approved approximation, so it is raised, not made here.
 """
 from app.effects import Effect
 from app.skill_rules._helpers import cdr_pulse_rule

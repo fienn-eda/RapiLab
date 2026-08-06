@@ -83,11 +83,13 @@ E2E on the squad Fienn measured in (Tove + her + Dorothy: Serendipity + Drake
 now reading the live count instead of one stack per cycle. Deck total +2.40%.
 
 Not modeled / deferred:
-- The rotation's reload phase ("Reloads 6 rounds" every 6th normal): the shot
-  timeline is fixed before per-shot rules run, so no rule can hand a magazine
-  rounds back (same wall as Milk's forced reload and EVE's Eagle Eye, gap #11).
-  It matters here - the refill is what keeps her firing without a reload gap
-  inside the window - so her shot count is a FLOOR.
+- The rotation's reload phase ("Reloads 6 rounds" every 6th normal). The engine
+  CAN hand rounds back mid-magazine (`attack_rate.AmmoRefund`, EVE's Eagle Eye
+  and Ludmilla's Queen's Gaze), but only on a fight-long "every N of the owner's
+  own shots" cadence - this one runs only inside Making Memories, and a refund
+  has no window gate. Her burst's own "Reloads N round(s)" is a single event at
+  cast, which the same primitive cannot express either. The refill is what keeps
+  her firing without a reload gap inside the window, so her shot count is a FLOOR.
 - Happy Memories' pellet count itself: it moves no damage (see above), and the
   engine has no per-pellet shotgun model to hang hit-consistency on.
 """

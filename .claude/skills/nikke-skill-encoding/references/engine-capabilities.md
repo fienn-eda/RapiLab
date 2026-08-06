@@ -46,10 +46,18 @@ Damage stats (fed into `calculate_damage`, so they change damage numbers):
 | `crit_rate` | crit rate buff (base 15% is added by the sim) | "Critical Rate ▲ X%" |
 | `charge_damage_bonus` | extra charge damage | "Charge Damage ▲ X%" |
 | `attack_damage_up` | Attack Damage bucket | "Attack Damage ▲ X%" |
-| `damage_to_parts_up` | damage to parts/interruption | "Damage to (Interruption) Parts ▲" |
-| `pierce_damage_up` | pierce damage (modeled as general damage-up) | "Pierce Damage ▲ X%" |
+| `pierce_damage_up` | pierce damage — **gated on the wielder holding the Pierce PROPERTY** (`has_pierce`), so a Pierce Damage buff on a unit that never gains Pierce pays nothing | "Pierce Damage ▲ X%" |
 | `damage_taken_up` | enemy damage-taken debuff — model as **squad** scope (all attackers share it) | "Damage Taken ▲ X%" (on enemy) |
 | `other_core_damage_sources` | core-damage buff, **gated on `core_hittable`** (inert if boss has no core) | "Damage dealt when attacking core ▲ X%" |
+| `has_pierce` | the Pierce PROPERTY itself, as a 0/1 self-scoped Effect (2026-07-26) — it gates `pierce_damage_up`, and on a `pierce_hits_body_behind_core` boss it makes one normal attack produce a second instance on the body behind the core | "Gain(s) Pierce", "Additional Effect: Pierce" |
+
+**Encode "Gains Pierce" — it is not a no-op.** The property has its own stat, so
+a bullet that grants Pierce for a window is credited for exactly that window and
+nothing outside it. Match the duration to the text: continuous → `None`, "for N
+sec" → the number, one charged shot → `round_buff_rule(..., shots=1)`, gated on a
+status → the same duration that status holds. Consumers: `red_hood`, `ade_agent_
+bunny`, `prika`, `milk_blooming_bunny` (continuous), `laplace*`, `grave` (timed),
+`snow_white`, `maxwell`, `zwei`, `d_killer_wife` (per-round).
 
 `core_hittable` isn't only an automatic gate on the stat above - it's also exposed
 on `SquadContext` (plan-2 weapon-transform batch, 2026-07-19) via the
@@ -68,6 +76,30 @@ Scheduling stats (change the burst rotation / shot timing, not per-hit damage):
 | `max_ammo_percent` | scales base magazine size (increases and decreases both apply to BASE, summed) | "Max Ammunition Capacity ▲/▼ X%" |
 | `max_ammo_rounds` | adds whole ROUNDS to the magazine, on top of the percent: `round(base × (1+pct) + rounds)`. State the round count as-is - `raid_simulator` converts it against each recipient's own base magazine, so a squad-scope grant correctly means +67% to an SG and +2% to an MG | "Max Ammunition Capacity ▲ N round(s)" (no `%`) |
 | `reload_speed_percent` | shortens reloads | "Reloading Speed ▲ X%" |
+
+**Mid-magazine ammo refund — NOT a stat, and NOT a Max Ammo percentage.**
+`attack_rate.AmmoRefund(every_shots=N, rounds=R)` hands `R` rounds back into the
+magazine every `N` of the unit's own shots. The shot counter is CUMULATIVE over
+the fight (not per magazine) and the refund is CAPPED at the magazine's capacity
+(Fienn, in game, 2026-07-31). Use it for "Activates when landing N normal
+attack(s) ... Reloads R round(s)": what a refund is worth depends on where in
+the magazine it lands, and it shifts every later reload against the Full Burst
+window, so approximating it as `max_ammo_percent` scores non-monotonically.
+`R` must be `< N` or the magazine never empties (the dataclass rejects it), and
+a unit can hold SEVERAL sources at once — its own skill plus the Tactical Bear
+cube — which are vetted together in `_refund_sequence`.
+
+Expose it as `<name>_ammo_refund(values)` and register in
+`registry._SKILL_AMMO_REFUNDS` as `slug: (builder, required_boss_element or
+None)`; the roster carries it as `skill_ammo_refund` and `raid_simulator.
+resolve_ammo_refunds` applies the encounter gate, since the roster assembles a
+deck and only the simulator knows the boss. Consumers: `eve` (Eagle Eye, gated
+Electric), `ludmilla_winter_owner` (The Queen's Gaze, ungated).
+
+What it CANNOT express: a refund that is a PERCENT of the magazine (Noir, Tove,
+Little Mermaid, Asuka), one granted to allies rather than the owner, and one
+whose trigger is anything but the owner's own shot count (a burst, a status
+window, a level-up). Those stay deferred.
 
 Burst nuke: not a stat — exposed via a `<name>_burst_percent(values)` helper and
 put in the registry entry, applied as the attack coefficient of a burst hit.
@@ -105,10 +137,9 @@ Damage +X%" buff boosts only sustained-typed damage, not every hit.
 | `projectile_attachment` | `projectile_attachment_damage_up` |
 
 The always-on buckets (`attack_damage_up`, `pierce_damage_up`,
-`damage_to_parts_up`, `damage_taken_up`) apply to EVERY instance regardless of
-type. So encoding one of the type-gated buffs is now live **only if the deck
-also produces an instance of that type** — the buff is a multiplier with nothing
-to multiply otherwise.
+`damage_taken_up`) apply to EVERY instance regardless of type. So encoding one
+of the type-gated buffs is now live **only if the deck also produces an instance
+of that type** — the buff is a multiplier with nothing to multiply otherwise.
 
 How an instance gets a non-`attack` type:
 - **Burst nuke:** add `slug → type` to `registry._BURST_DAMAGE_TYPES` (default
@@ -618,6 +649,18 @@ time is a fixed sim input), `shield_amount`, and anything HP/heal/DEF/
 survivability. Defer these; if a Nikke's contribution is mostly these, say so —
 a thin encoding is honest.
 
+**`damage_to_parts_up` and `damage_to_interruption_parts_up` are inert too**, and
+deliberately so. `calculate_damage` still TAKES `damage_to_parts_up` but leaves
+it out of the damage-up bucket on purpose: it raises damage dealt to PARTS, and
+this engine models one boss body with no parts, so riding the general bucket
+would treat every hit as a parts hit — a ceiling Fienn's recorded run disproves
+(see `damage_formula.py`'s comment, 2026-07-26). `damage_to_interruption_parts_up`
+is not even a formula parameter. Both are worth RECORDING so an encoding stays
+faithful and pays out the day parts become real targets, but never claim a
+"Damage to Parts ▲" bullet moves damage today. Consumers that record it:
+`cinderella_crystal_wave`, `rosanna_chic_ocean`, `anis_sparkling_summer`,
+`helm`, `noir`.
+
 **NOW consumed (Phase S, 2026-07-16):** `attack_speed_percent` (magazine weapons)
 and `charge_speed_percent` (charge weapons) DO move damage — in a fixed 180s
 fight a shorter shot interval means more shots. `attack_rate.py` scales the
@@ -649,8 +692,13 @@ segment tables) untouched — not making deck search heavier is a hard constrain
 its bullet lands at a delayed instant).
 
 **Valid formula terms that raid_simulator just doesn't wire from the registry
-yet** — a real gap, not a dead end: `shield_damage_up`, and the major-modifier
-terms `effective_range_bonus` / `final_atk_modifier`.
+yet** — a real gap, not a dead end: `shield_damage_up` and `final_atk_modifier`.
+(`effective_range_bonus` is NO LONGER one of them: since 2026-07-31 the
+encounter sets it via `BossProfile.effective_range_band` (`near`/`mid`/`far`),
+which decides WHICH weapon classes collect the measured +0.30 — a Rocket
+Launcher never does, and the scope is Core Damage's exactly, normal attacks
+only. It is not a registry stat and no skill emits it, so a unit whose weapon
+sits outside the encounter's band simply gets nothing.)
 (`sustained_damage_up`, `distributed_damage_up`, `true_damage_up`, and
 `projectile_explosion_damage_up` are NOW wired but **type-gated** — see "Damage
 typing" above; they only move damage when the deck also produces an instance of

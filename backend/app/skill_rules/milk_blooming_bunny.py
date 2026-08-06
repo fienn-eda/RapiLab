@@ -48,12 +48,13 @@ Modeled (DPS-relevant):
   at `bt + 2 .. bt + 10` (the status starts at the burst, so the first tick is
   one full interval in).
 
+- "Gain Pierce for 6 sec" on every full charge (skills[0]): the `has_pierce`
+  property, which is what lets her two "Pierce Damage +X%" clauses pay out at
+  all. She is an SR, so every shot IS a full charge and 6 sec is far longer
+  than her cadence - the window never lapses, so it is granted permanently from
+  battle start rather than re-applied per shot.
+
 Not modeled / deferred:
-- "Gain Pierce for 6 sec" on every full charge (skills[0]). This is the Pierce
-  KEYWORD (the ability to pierce), not a damage percentage; the engine models
-  no per-hit pierce flag - `pierce_damage_up` is applied to every hit as a
-  general Damage Up term regardless (see raid_simulator's module docstring).
-  Her two "Pierce Damage +X%" clauses ARE modeled, since those are that bucket.
 - Distributed Damage's "all enemies" split: a raid sim is a single boss, so
   every instance lands whole on the only target (existing convention).
 - The player choice not to arm Embarrassment before a cycle she will burst in

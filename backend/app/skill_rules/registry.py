@@ -97,7 +97,11 @@ from app.skill_rules.marciana_marine_study import (
     build_marciana_rules,
 )
 from app.skill_rules.maxwell import build_maxwell_rules, build_pierce_shot_weapon_mode_schedule
-from app.skill_rules.ludmilla_winter_owner import build_ludmilla_per_shot_rules, build_ludmilla_rules
+from app.skill_rules.ludmilla_winter_owner import (
+    build_ludmilla_per_shot_rules,
+    build_ludmilla_rules,
+    queens_gaze_ammo_refund,
+)
 from app.skill_rules.mana import (
     build_fatal_error_dot,
     build_fatal_error_self_buff_rules,
@@ -1228,6 +1232,9 @@ _SKILL_AMMO_REFUNDS = {
     # Eagle Eye-Type Exospine: "when landing 10 normal attack(s) on an Electric
     # Code target, Reloads 3 round(s)".
     "eve": (eagle_eye_ammo_refund, "Electric"),
+    # The Queen's Gaze: "when landing 60 normal attack(s), Reloads 20 round(s)
+    # of ammunition" - no boss condition on this one.
+    "ludmilla-winter-owner": (queens_gaze_ammo_refund, None),
 }
 
 

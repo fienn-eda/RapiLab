@@ -55,9 +55,12 @@ debuff on the boss), capped at 30.
   mechanics.
 
 Not modeled / deferred:
-- Annihilation State's 21% magazine reload and Emergency Repair's heating
-  speed / ammo removal / HP recovery / reload speed effects: all
-  reload/ammo/HP mechanics, not damage - not consumed by the engine (see
+- Annihilation State's 21% magazine reload: a one-shot percentage refill at her
+  burst. `attack_rate.AmmoRefund` is the mid-magazine refund path but hands back
+  whole ROUNDS on a repeating own-shot counter, so neither its unit nor its
+  trigger fits.
+- Emergency Repair's heating speed / ammo removal / HP recovery / reload speed
+  effects: HP and bookkeeping, not damage - not consumed by the engine (see
   "Stats the engine does NOT consume" in engine-capabilities.md).
 """
 from app.effects import Effect, ResourceSpec

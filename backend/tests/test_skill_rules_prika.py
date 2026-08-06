@@ -88,6 +88,22 @@ def test_burst_charge_damage_lasts_25s_solo_and_sets_performance_status():
     assert ctx.has_status("prika", "performance") is True
 
 
+def test_performance_pierce_lasts_exactly_as_long_as_performance():
+    """"Activates only while in Performance status. Gains Pierce." The property
+    is gated on the status, so it runs out with it solo and rides Encore's
+    extension - i.e. permanent - when Mint keeps re-arming Performance."""
+    solo = solo_context()
+    registry = EffectRegistry()
+    fire_trigger("own_burst_activate", {"prika": build()}, solo, registry, time=5.0)
+    assert registry.total_for("has_pierce", PRIKA, now=29.9) == 1.0
+    assert registry.total_for("has_pierce", PRIKA, now=30.1) == 0.0
+
+    with_mint = make_context()
+    registry = EffectRegistry()
+    fire_trigger("own_burst_activate", {"prika": build()}, with_mint, registry, time=5.0)
+    assert registry.total_for("has_pierce", PRIKA, now=170.0) == 1.0
+
+
 def test_burst_charge_damage_is_permanent_when_mint_is_present():
     # With Mint in the deck, Encore keeps extending Performance, so Charge Damage
     # is modeled as permanent (a single +25%, never re-added/stacked).
