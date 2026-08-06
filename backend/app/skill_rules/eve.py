@@ -51,7 +51,9 @@ Modeled (DPS-relevant):
   on her normal attacks; against any other it does not fire at all.
 
 Not modeled / deferred:
-- Skill 1's "Previous effects trigger repeatedly" line carries no count or
+- Eagle Eye-Type Exospine (skills[1])'s "Previous effects trigger repeatedly"
+  line - the third line of that skill's battle-start bullet, whose other two
+  lines (the ATK and Max Ammo grants) ARE modeled above. It carries no count or
   condition (the `escalating_buff_rule` phrasing normally reads "Once/Twice/
   Three times, previous effects trigger repeatedly"). It is bare in BOTH
   sources - dotgg's template shows no `description_value` placeholder on that
