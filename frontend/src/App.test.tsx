@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { renderSettled } from './test/renderSettled'
 import App from './App'
 import { makeEmptyDraft, type NikkeDraft } from './types/nikkeDraft'
 import { profileKey, type ProfilesState } from './types/profile'
@@ -50,39 +51,39 @@ afterEach(() => {
 })
 
 describe('App', () => {
-  it('앱 이름을 RapiLab으로 내건다', () => {
-    render(<App />)
+  it('앱 이름을 RapiLab으로 내건다', async () => {
+    await renderSettled(<App />)
     expect(screen.getByRole('heading', { level: 1, name: 'RapiLab' })).toBeInTheDocument()
   })
 
-  it('states the harmony cube assumption, and whose it is', () => {
+  it('states the harmony cube assumption, and whose it is', async () => {
     // The 계산기 tab asks which cube the unit wears, so an unqualified "every
     // Nikke wears a reload cube" is a claim the app contradicts on that screen.
-    render(<App />)
+    await renderSettled(<App />)
     expect(screen.getByText(/덱 추천은 .*재장전 큐브 15레벨/i)).toBeInTheDocument()
   })
 
-  it('prompts to sync and hides the roster/recommend panel when there is no active profile', () => {
-    render(<App />)
+  it('prompts to sync and hides the roster/recommend panel when there is no active profile', async () => {
+    await renderSettled(<App />)
     expect(screen.getByText(/동기화된 계정이 없어요/i)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: '솔로 레이드' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
   })
 
-  it('팬 제작물 고지는 접히지 않고 늘 떠 있다', () => {
+  it('팬 제작물 고지는 접히지 않고 늘 떠 있다', async () => {
     // 펼쳐야 보이는 고지는 고지가 아니다 - 개인정보 안내와 달리 이것은
     // 클릭 없이 읽혀야 한다.
-    render(<App />)
+    await renderSettled(<App />)
 
     for (const line of HELP.attribution) {
       expect(screen.getByText(line)).toBeVisible()
     }
   })
 
-  it('개인정보 안내는 아직 동기화하지 않은 화면에도 있다', () => {
+  it('개인정보 안내는 아직 동기화하지 않은 화면에도 있다', async () => {
     // 계정을 맡길지 정하는 순간이 바로 이때다. 푸터를 프로필이 있을 때만
     // 그리면, 그 안내는 이미 맡긴 사람에게만 보인다.
-    render(<App />)
+    await renderSettled(<App />)
 
     expect(screen.getByText('개인정보 처리방침')).toBeInTheDocument()
     expect(screen.queryByText(/기 준비 완료/)).not.toBeInTheDocument()
@@ -344,8 +345,8 @@ describe('App', () => {
     expect(vi.mocked(recommendRaidDecks)).toHaveBeenCalledTimes(1)
   })
 
-  it('활성 프로필이 없는 화면에서는 동기화 도움말이 펼쳐져 있다', () => {
-    render(<App />)
+  it('활성 프로필이 없는 화면에서는 동기화 도움말이 펼쳐져 있다', async () => {
+    await renderSettled(<App />)
     expect(screen.getByRole('button', { name: '동기화 방법' })).toHaveAttribute(
       'aria-expanded',
       'true',
@@ -427,9 +428,9 @@ describe('계산기 탭', () => {
       },
     })
 
-  it('is one of the tabs', () => {
+  it('is one of the tabs', async () => {
     seedActiveProfile()
-    render(<App />)
+    await renderSettled(<App />)
     expect(screen.getByRole('tab', { name: '계산기' })).toBeInTheDocument()
   })
 

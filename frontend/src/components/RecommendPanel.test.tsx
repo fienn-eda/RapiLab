@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
+import { renderSettled } from '../test/renderSettled'
 import userEvent from '@testing-library/user-event'
 import { RecommendPanel } from './RecommendPanel'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
@@ -96,13 +97,13 @@ afterEach(() => {
 })
 
 describe('RecommendPanel', () => {
-  it('opens with the solo raid boss DEF prefilled', () => {
-    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+  it('opens with the solo raid boss DEF prefilled', async () => {
+    await renderSettled(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     expect(screen.getByLabelText(/적 방어력/)).toHaveValue(31784)
   })
 
-  it('disables submit and shows a guard message when the roster has under 5 Nikkes', () => {
-    render(<RecommendPanel roster={fullRoster.slice(0, 2)} {...noPersistence} />)
+  it('disables submit and shows a guard message when the roster has under 5 Nikkes', async () => {
+    await renderSettled(<RecommendPanel roster={fullRoster.slice(0, 2)} {...noPersistence} />)
     expect(
       screen.getByText('덱을 추천하려면 준비된 니케가 최소 5기 필요해요.'),
     ).toBeInTheDocument()
@@ -112,8 +113,8 @@ describe('RecommendPanel', () => {
   // The boss profile used to sit at the very END of the form, past the whole
   // 70-chip palette - 2040px below the button that acts on it, so the input
   // that changes the answer most (Element) was the one nobody scrolled to.
-  it('puts the boss profile beside the mode choice, with no palette between them', () => {
-    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+  it('puts the boss profile beside the mode choice, with no palette between them', async () => {
+    await renderSettled(<RecommendPanel roster={fullRoster} {...noPersistence} />)
 
     const boss = screen.getByRole('group', { name: /보스 설정/i })
     const mode = screen.getByRole('group', { name: /^모드$/i })
@@ -209,8 +210,8 @@ describe('RecommendPanel', () => {
 
   // 팔레트 아래 sticky 바에 있던 실행 버튼을, 그것이 작용하는 설정 바로
   // 아래에 세운다.
-  it('stands the run button between the setup row and the palette', () => {
-    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+  it('stands the run button between the setup row and the palette', async () => {
+    await renderSettled(<RecommendPanel roster={fullRoster} {...noPersistence} />)
 
     const boss = screen.getByRole('group', { name: /보스 설정/i })
     const setup = boss.parentElement!
@@ -1472,8 +1473,8 @@ describe('RecommendPanel 결과 보관', () => {
     })
   }
 
-  it('결과가 없으면 저장 버튼도 없다', () => {
-    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+  it('결과가 없으면 저장 버튼도 없다', async () => {
+    await renderSettled(<RecommendPanel roster={fullRoster} {...noPersistence} />)
 
     expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument()
   })
