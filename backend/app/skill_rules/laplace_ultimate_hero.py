@@ -1,5 +1,6 @@
 """Laplace: Ultimate Hero (slug "laplace-ultimate-hero"), a Burst-3 Wind RL
-attacker from MISSILIS. Collected from ShiftyPad (blablalink public data).
+attacker from MISSILIS. Value slots from ShiftyPad (blablalink public data),
+effect text from lootandwaifus.
 
 Her core damage engine is a charge-count-driven weapon transform loop (Warm Up
 stacks -> "Electric Power, Fully Full Charge" weapon -> a full magazine at SMG
@@ -44,19 +45,31 @@ Modeled (DPS-relevant):
   Burst 3 splits the slot and the ally's cycles are Stage-3 entries too.
   Not `full_burst_enter`, which is the LATER instant (after the B3 cast) and
   so would miss her own burst damage.
+- The transformed weapon's "Additional Effect: Gains Pierce" (skills[0]): the
+  `has_pierce` property for exactly each transform window, pre-registered at the
+  first Full Burst alongside the Over Energy stages (same reason - the plan needs
+  [Max Ammo Increase], which is not in the registry at battle start). It rides
+  the transform, not her burst: Mjolnir's text names no Pierce at all.
 - Regenerative Energy Armament: Mjolnir (skills[2], her burst):
   - self ATK +63.36% for 10 sec.
   - burst nuke: 2953.84% of final ATK (default attack type).
 
 Not modeled / deferred:
+- Over Energy's fill is a COUNT, and the count-to-stage conversion is a
+  constant here rather than derived. The text gives it exactly: "+5% per 12
+  normal attacks while in the transformed state, up to 100%" (slots 09/08/01),
+  i.e. 240 transformed normals per stage, which at the baseline 120-round
+  magazine is the `OVER_ENERGY_TRANSFORMS_PER_STAGE = 2` below. It does NOT
+  scale: a deck with [Max Ammo Increase] fires more than 120 shots per window,
+  so a stage should arrive in FEWER than 2 transforms and land mid-window,
+  while this model still waits for two whole windows. Everything else in the
+  cycle is derived from the live magazine, so this is the one hardcoded step -
+  it under-credits her stage ramp exactly in max-ammo decks.
 - Warm Up's Charge Speed +10% per stack (skills[0]): not modeled as a buff
   because it is already IN the measurement - the 4.0s build time Fienn timed
   (1.0 + 0.9 + 0.8 + 0.7 + 0.6) is the ramp itself. Encoding it as a live
   charge-speed buff on top would double-count it, and it never holds max
   anyway (5 stacks are consumed to fire the transform).
-- Pierce on the transformed weapon IS modeled, as the `has_pierce` property
-  over the transform window: Pierce Damage Up only credits a unit that holds
-  Pierce (Fienn, 2026-07-26).
 - The reload gap after a transform: `generate_segmented_shots` resumes the base
   weapon at the segment's end with a fresh magazine and no reload, so she fires
   ~2 extra base shots during the 2.5s reload the real cycle spends. At 2.5% a
@@ -75,6 +88,12 @@ WARM_UP_BUILD_SECONDS = 4.0    # 5 full charges: 1.0 + 0.9 + 0.8 + 0.7 + 0.6
 OVER_ENERGY_TRANSFORMS_PER_STAGE = 2   # 240 transformed normals = 2 full magazines
 OVER_ENERGY_MAX_STAGE = 4
 OVER_ENERGY_BURST_STAGE = 3    # "[Burst Stage 3 entry]" - the stage, not her cast
+
+# How many transform windows the Pierce grant is pre-registered for. A SkillRule
+# is not handed `fight_duration`, and effects landing past the fight's end never
+# become active, so this is a runaway guard sized far above any fight - 200
+# windows is ~2500 sec at the measured 12.5 sec period - not a quality knob.
+PREREGISTERED_TRANSFORMS = 200
 
 _ELECTRIC_POWER_GROUP = "electric_power_atk"
 _OVER_ENERGY_GROUP = "over_energy_stage_max_hp"
@@ -175,8 +194,6 @@ def build_laplace_ultimate_hero_rules(values, caster_max_hp):
                   [("attack_damage_up", fb_attack_damage, "self", fb_attack_damage_dur)],
                   condition=burst_stage_entered(OVER_ENERGY_BURST_STAGE)),
         buff_rule("own_burst_activate", [("atk_percent", burst_atk, "self", burst_atk_dur)]),
-        # Mjolnir's transformed weapon gains Pierce for the transform window.
-        buff_rule("own_burst_activate", [("has_pierce", 1.0, "self", burst_atk_dur)]),
     ]
 
 
@@ -215,6 +232,15 @@ def _over_energy_stage_rule(values, caster_max_hp):
         horizon = WARM_UP_BUILD_SECONDS + period * (
             OVER_ENERGY_MAX_STAGE * OVER_ENERGY_TRANSFORMS_PER_STAGE
         )
+        # "Additional Effect: Gains Pierce" belongs to the TRANSFORMED weapon
+        # (skills[0]), so it is up for exactly each transform window - not for
+        # a duration off her burst, which Mjolnir's text never mentions. Pierce
+        # Damage Up only credits a holder, so the window has to be the real one.
+        for at in _transform_times(period, period * PREREGISTERED_TRANSFORMS):
+            registry.add(
+                Effect("has_pierce", 1.0, "self", window, caster_slug),
+                applied_at=at,
+            )
         for stage, at in _stage_times(period, window, horizon):
             # 누적: 스킬 원문의 "[Each subsequent effect triggers all effects
             # before it:]" - stage 2는 1+2, stage 4는 1+2+3+4를 받는다

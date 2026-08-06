@@ -121,6 +121,42 @@ def test_full_burst_enter_alone_does_not_grant_attack_damage():
     assert registry.total_for("attack_damage_up", LAPLACE, now=5.0) == 0.0
 
 
+def test_pierce_rides_the_transform_window_not_her_burst():
+    """"Additional Effect: Gains Pierce" is on skills[0]'s transformed weapon
+    (Electric Power, Fully Full Charge). Mjolnir's text names no Pierce at all,
+    so hanging it off her burst was both the wrong source and the wrong window.
+
+    At the measured baseline the transform runs 4.0-10.0, 16.5-22.5, ... (a 6.0
+    sec magazine on a 12.5 sec period)."""
+    ctx = make_context()
+    registry = EffectRegistry()
+    rs = {"laplace-ultimate-hero": rules()}
+    fire_trigger("own_burst_activate", rs, ctx, registry, time=5.0)
+    assert registry.total_for("has_pierce", LAPLACE, now=5.0) == 0.0
+
+    fire_trigger("full_burst_enter", rs, ctx, registry, time=5.0)
+    for inside in (4.0, 9.9, 16.5, 22.4):
+        assert registry.total_for("has_pierce", LAPLACE, now=inside) == 1.0, inside
+    for outside in (0.0, 3.9, 10.1, 16.4, 22.6):
+        assert registry.total_for("has_pierce", LAPLACE, now=outside) == 0.0, outside
+    assert registry.total_for("has_pierce", ALLY, now=4.0) == 0.0  # self-only
+
+
+def test_pierce_windows_stretch_with_max_ammo_like_the_transform_does():
+    """The window is the magazine at SMG cadence, so [Max Ammo Increase] makes
+    it longer - the same derivation the transform schedule itself uses."""
+    from app.effects import Effect
+
+    ctx = make_context()
+    registry = EffectRegistry()
+    registry.add(Effect("max_ammo_percent", 0.5, "self", None, "laplace-ultimate-hero"),
+                 applied_at=0.0)
+    fire_trigger("full_burst_enter", {"laplace-ultimate-hero": rules()}, ctx, registry, time=5.0)
+    # 120 -> 180 rounds = a 9.0 sec window, so 4.0-13.0 instead of 4.0-10.0.
+    assert registry.total_for("has_pierce", LAPLACE, now=12.9) == 1.0
+    assert registry.total_for("has_pierce", LAPLACE, now=13.1) == 0.0
+
+
 def test_burst_self_atk():
     ctx = make_context()
     registry = EffectRegistry()
