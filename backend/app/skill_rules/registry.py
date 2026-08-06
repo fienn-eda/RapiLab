@@ -202,7 +202,10 @@ from app.skill_rules.laplace_ultimate_hero import (
     build_laplace_ultimate_hero_rules,
     laplace_ultimate_hero_burst_percent,
 )
-from app.skill_rules.maxwell_ordinary_mechanic import build_maxwell_ordinary_mechanic_rules
+from app.skill_rules.maxwell_ordinary_mechanic import (
+    build_matis_uberbuster_weapon_mode_schedule,
+    build_maxwell_ordinary_mechanic_rules,
+)
 from app.skill_rules.dorothy_serendipity import build_dorothy_serendipity_rules
 from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resource_scaled_nukes,
@@ -898,6 +901,10 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "snow-white": lambda sv: build_seven_dwarves_weapon_mode_schedule(sv),  # single 5s-charge cannon shot per own-burst
     "snow-white-heavy-arms": lambda sv: build_fully_active_weapon_mode_schedule(sv),  # 2-shot 3.2s-charge segment per own-burst
     "maxwell": lambda sv: build_pierce_shot_weapon_mode_schedule(sv),  # single 2s-charge cannon shot per own-burst
+    # One charged shot per own-burst too, but its charge time is fixed BY the
+    # Overcurrent stage, so each segment carries its own profile: 3s at her
+    # first burst down to 0.4s from the fifth on.
+    "maxwell-ordinary-mechanic": lambda sv: build_matis_uberbuster_weapon_mode_schedule(sv),
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
     "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
     "nayuta": lambda sv: build_memory_incineration_weapon_mode_schedule(sv),  # Memory Incineration, 10s

@@ -1,3 +1,5 @@
+import pytest
+
 from app.effects import EffectRegistry
 from app.skill_rules.maxwell_ordinary_mechanic import build_maxwell_ordinary_mechanic_rules
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
@@ -55,6 +57,59 @@ ALLY = {"slug": "ally", "element": "Fire"}
 
 def rules():
     return build_maxwell_ordinary_mechanic_rules(values(), CASTER_MAX_HP)
+
+
+def test_matis_uberbuster_charge_time_follows_the_overcurrent_stage():
+    """"Charge Time is fixed. Effect varies according to the stage of
+    Overcurrent" - 3 sec at stage 1 or below, then 2.5 / 2 / 1.5, and 0.4 from
+    stage 5. Overcurrent gains one stage per own burst and caps at 5, so the
+    k-th burst transforms at stage min(k, 5) and every burst from the 5th on
+    fires the 0.4-sec version."""
+    from app.skill_rules.maxwell_ordinary_mechanic import (
+        build_matis_uberbuster_weapon_mode_schedule)
+
+    schedule = build_matis_uberbuster_weapon_mode_schedule(values())
+    ctx = make_context()
+    ctx.burst_times = {"maxwell-ordinary-mechanic": [10.0, 30.0, 50.0, 70.0, 90.0, 110.0, 130.0]}
+    segments = schedule(ctx, 180.0)
+
+    assert [s["start"] for s in segments] == [10.0, 30.0, 50.0, 70.0, 90.0, 110.0, 130.0]
+    assert [s["profile"]["charge_time"] for s in segments] == [3.0, 2.5, 2.0, 1.5, 0.4, 0.4, 0.4]
+    # One round, so one shot, and the transform's own damage terms.
+    assert all(s["until_shots"] == 1 for s in segments)
+    assert {s["profile"]["damage_percent"] for s in segments} == {350.0}
+    assert {s["profile"]["charge_damage_percent"] for s in segments} == {300.0}
+    assert {s["profile"]["weapon"] for s in segments} == {"SR"}
+
+
+def test_matis_uberbuster_charge_damage_takes_the_collectible_multiplier():
+    """No term in this profile comes from weapon_stats, which is where a
+    collectible's charge-damage 배율 is normally applied - so it has to be
+    applied here to reach the transform at all (base Maxwell's precedent,
+    measured 2026-08-03)."""
+    from app.skill_rules.maxwell_ordinary_mechanic import (
+        build_matis_uberbuster_weapon_mode_schedule)
+
+    schedule = build_matis_uberbuster_weapon_mode_schedule(
+        {**values(), "caster_charge_damage_multiplier": 1.0631})
+    ctx = make_context()
+    ctx.burst_times = {"maxwell-ordinary-mechanic": [10.0]}
+    assert schedule(ctx, 180.0)[0]["profile"]["charge_damage_percent"] == pytest.approx(
+        300.0 * 1.0631)
+
+
+def test_matis_uberbuster_grants_pierce_for_its_one_round():
+    """"Additional Effect: Gains Pierce." The transform is a single charged
+    shot, so the property covers exactly that round - base Maxwell's shape."""
+    grants = [r for r in rules() if getattr(r, "trigger", None) == "own_burst_activate"]
+    reg = EffectRegistry()
+    ctx = make_context()
+    for rule in grants:
+        rule.action(ctx, "maxwell-ordinary-mechanic", 10.0, reg)
+    pierce = [g for g in reg.round_grants() if g.stat == "has_pierce"]
+    assert len(pierce) == 1
+    assert pierce[0].shots == 1
+    assert pierce[0].scope == "self"
 
 
 def test_burst_stage_three_entry_grants_squad_attack_damage():
