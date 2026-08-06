@@ -126,3 +126,55 @@ def test_the_weapon_stats_dict_carries_the_refund_into_segmented_shots():
     assert len(bastion) > len(plain)
     assert [r.time for r in plain] == [r.time for r in
                                        generate_segmented_shots(RL, [], 180.0)]
+
+
+# EVE's Eagle Eye-Type Exospine hands back the same 3 rounds every 10 shots off
+# her own skill, so a wearer of the cube can carry two independent refunds.
+EAGLE_EYE = AmmoRefund(every_shots=10, rounds=3)
+
+
+def test_two_refunds_each_keep_their_own_trigger():
+    # A 14-round magazine, both refunds on the same 10-shot cadence. Shot 10
+    # leaves 4 and each hands back 3, so 10 remain; shot 20 leaves 0 and the
+    # pair rebuilds it to 6; those run out on shot 26 with no trigger left.
+    assert magazine_shot_count(14, 0, (BASTION, EAGLE_EYE)) == (26, 26)
+    # One source alone stops at 17 (see the single-refund case above).
+    assert magazine_shot_count(14, 0, BASTION) == (17, 17)
+
+
+def test_one_refund_in_a_sequence_matches_passing_it_alone():
+    assert magazine_shot_count(9, 9, (BASTION,)) == magazine_shot_count(9, 9, BASTION)
+
+
+def test_an_empty_sequence_is_the_no_refund_case():
+    assert magazine_shot_count(9, 0, ()) == magazine_shot_count(9, 0, None)
+
+
+def test_refunds_that_together_outpace_the_magazine_are_rejected():
+    # 9 rounds back every 10 shots is legal alone; three of them is not, and a
+    # magazine that never empties would spin forever.
+    nine = AmmoRefund(every_shots=10, rounds=9)
+    with pytest.raises(ValueError, match="never empties"):
+        magazine_shot_count(9, 0, (nine, nine))
+
+
+def test_the_boss_gate_is_resolved_where_the_encounter_is_known():
+    """The roster assembles a deck and cannot know the boss, so it carries the
+    skill refund with its required element and the simulator applies it."""
+    from app.raid_simulator import resolve_ammo_refunds
+
+    gated = {**RL, "skill_ammo_refund": (EAGLE_EYE, "Electric")}
+    assert resolve_ammo_refunds(gated, "Electric") == (EAGLE_EYE,)
+    assert resolve_ammo_refunds(gated, "Fire") == ()
+    assert resolve_ammo_refunds(gated, None) == ()
+
+    # An ungated skill refund needs no encounter.
+    ungated = {**RL, "skill_ammo_refund": (EAGLE_EYE, None)}
+    assert resolve_ammo_refunds(ungated, "Fire") == (EAGLE_EYE,)
+
+    # The cube's rides alongside, and both apply when both are present.
+    assert resolve_ammo_refunds({**RL, "ammo_refund": BASTION}, "Fire") == (BASTION,)
+    both = {**RL, "ammo_refund": BASTION, "skill_ammo_refund": (EAGLE_EYE, "Electric")}
+    assert resolve_ammo_refunds(both, "Electric") == (BASTION, EAGLE_EYE)
+    assert resolve_ammo_refunds(both, "Iron") == (BASTION,)
+    assert resolve_ammo_refunds(RL, "Electric") == ()

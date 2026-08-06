@@ -78,16 +78,36 @@ class AmmoRefund:
                 "empties the magazine")
 
 
+def _refund_sequence(refund):
+    """`refund` as a tuple, rejecting a set that never empties the magazine.
+
+    A unit can hold more than one source at once - EVE reloads 3 rounds every
+    10 shots off her own skill and a Tactical Bear cube hands back 3 more on
+    the same cadence - and each keeps its own trigger against the shared shot
+    counter. `AmmoRefund` can only vet itself, so the combined rate is checked
+    here: at one round back per shot the walk below would never terminate.
+    """
+    if refund is None:
+        return ()
+    refunds = (refund,) if isinstance(refund, AmmoRefund) else tuple(refund)
+    if sum(r.rounds / r.every_shots for r in refunds) >= 1:
+        raise ValueError(
+            f"refunds {refunds} together hand back a round per shot, so the "
+            "magazine never empties")
+    return refunds
+
+
 def magazine_shot_count(capacity, shots_before, refund):
     """Rounds this magazine actually fires, and the shot counter afterwards.
 
-    Walks the magazine one round at a time because the refund's value depends
-    on the rounds remaining when it lands (it is capped at capacity), and the
-    counter it triggers on runs across magazines. `refund=None` returns the
-    capacity untouched, so every non-Bastion timeline keeps its exact
-    arithmetic.
+    Walks the magazine one round at a time because a refund's value depends on
+    the rounds remaining when it lands (it is capped at capacity), and the
+    counter it triggers on runs across magazines. `refund` is one AmmoRefund, a
+    sequence of them, or None; None returns the capacity untouched, so every
+    timeline without a refund keeps its exact arithmetic.
     """
-    if refund is None:
+    refunds = _refund_sequence(refund)
+    if not refunds:
         return capacity, shots_before + capacity
     rounds = capacity
     shots = 0
@@ -96,8 +116,9 @@ def magazine_shot_count(capacity, shots_before, refund):
         rounds -= 1
         shots += 1
         counter += 1
-        if counter % refund.every_shots == 0:
-            rounds = min(capacity, rounds + refund.rounds)
+        for one in refunds:
+            if counter % one.every_shots == 0:
+                rounds = min(capacity, rounds + one.rounds)
     return shots, counter
 
 
@@ -743,7 +764,7 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
     """
     weapon = base["weapon"]
     base_bonus = base["charge_damage_percent"] / 100 - 1
-    refund = base.get("ammo_refund")
+    refunds = _refund_sequence(base.get("ammo_refund"))
     records = []
     pending = list(segments)
     cursor = 0.0                 # instant the next charge starts from
@@ -783,8 +804,9 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
             damage_type=profile.get("damage_type") if in_segment else None,
             in_segment=in_segment))
         opening = False
-        if refund is not None and shots_fired % refund.every_shots == 0:
-            rounds = min(capacity, rounds + refund.rounds)
+        for one in refunds:
+            if shots_fired % one.every_shots == 0:
+                rounds = min(capacity, rounds + one.rounds)
         cursor = shot_time
         if in_segment:
             seg_left -= 1

@@ -6,8 +6,13 @@ Modeled (DPS-relevant):
   allies, flat ATK = 55.31% of the caster's own base ATK and Reload Speed
   +49.28%, both for 10 sec. The caster-scaled ATK buff is her core support
   value. Scope is element:Electric, which includes Anis herself (also Electric).
-- Sparkling Wave (Burst, self): Max Ammunition Capacity +73.92% and Reload
-  Speed +27.72% for 10 sec, self only - boosts her own shotgun uptime. Also
+- Sparkling Wave (Burst, self): Max Ammunition Capacity -73.92% and Reload
+  Speed +27.72% for 10 sec, self only. The ammo line is a `▼` - it SHRINKS her
+  magazine, and that is the engine of her kit rather than a drawback: her 5-round
+  shotgun drops to `max(1, round(5 x 0.2608))` = 1 round, so every shot is a
+  last bullet and Sparkling Missile's nuke fires on each one. The breakpoint
+  the source documents falls out of the same arithmetic - burst level 8 leaves
+  2 rounds and level 9 leaves 1. Also
   Elemental Advantage Attack Damage +42.24% for 10 sec: since Anis is Electric,
   this only counts against a Water boss (Electric > Water), so it's gated on
   boss_is_element("Water") and lands in the Element Bonus group
@@ -24,7 +29,11 @@ Modeled (DPS-relevant):
   her personal damage, though as a supporter that's secondary to Sparkling Boost.
 
 Not modeled / deferred:
-- (none - all DPS-relevant effects modeled.)
+- Sparkling Missile's self Damage to Interruption Parts +6.91% is encoded, but
+  `damage_to_interruption_parts_up` reaches no damage this engine computes: it
+  raises damage to an interruption-gimmick zone, and the sim models one boss
+  body (see tests/test_parts_vs_interruption_parts.py). It is recorded so the
+  encoding stays honest, and pays out the day that target exists.
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 from app.squad_engine import SkillRule, boss_is_element
@@ -58,7 +67,7 @@ def build_anis_sparkling_summer_rules(values: dict) -> list[SkillRule]:
     electric_reload_duration = float(boost["description_value_04"])
 
     wave = values["sparkling_wave"]
-    self_max_ammo = float(wave["description_value_01"]) / 100
+    self_max_ammo_cut = float(wave["description_value_01"]) / 100
     self_max_ammo_duration = float(wave["description_value_02"])
     self_reload = float(wave["description_value_03"]) / 100
     self_reload_duration = float(wave["description_value_04"])
@@ -71,7 +80,7 @@ def build_anis_sparkling_summer_rules(values: dict) -> list[SkillRule]:
             ("reload_speed_percent", electric_reload, "element:Electric", electric_reload_duration),
         ]),
         buff_rule("own_burst_activate", [
-            ("max_ammo_percent", self_max_ammo, "self", self_max_ammo_duration),
+            ("max_ammo_percent", -self_max_ammo_cut, "self", self_max_ammo_duration),
             ("reload_speed_percent", self_reload, "self", self_reload_duration),
         ]),
         buff_rule(

@@ -5,9 +5,10 @@ capped stack - see effects.ResourceSpec and raid_simulator's resolution pass).
 Modeled (DPS-relevant):
 - High-Speed Evolution (skills[0]): every normal-attack hit deals 3.05% of final
   ATK as additional damage (per-shot instant nuke). Every 200 hits, gains a stack
-  of Critical Damage +14.25% AND Max Ammunition Capacity +5.04%, each stacking up
-  to 5 and lasting 10 sec - modeled as one "evolution" resource (filled every 200
-  shots, cap 5) driving two 10-sec linear buffs.
+  of Critical Damage +14.25% AND Max Ammunition Capacity -5.04% (the ammo line is
+  a `▼`, so each stack SHRINKS her magazine), each stacking up to 5 and lasting
+  10 sec - modeled as one "evolution" resource (filled every 200 shots, cap 5)
+  driving two 10-sec linear buffs.
 - Giant Leap (skills[1]) self ATK +29.38% for 10 sec: fires on every 200th
   normal hit counted from battle start - in-game it is NOT gated on the
   15-sec increasing-Hit-Rate window the skill text describes (Fienn
@@ -26,9 +27,11 @@ Modeled (DPS-relevant):
 Not modeled / deferred:
 - The Max Ammunition Capacity stack is emitted, but Max Ammo only feeds shot
   generation (magazine size / reload cadence), which is computed for this unit
-  BEFORE the resource resolution pass runs - so it can't retroactively grow her
+  BEFORE the resource resolution pass runs - so it can't retroactively resize her
   own already-scheduled magazines. It's an inert-for-own-shots buff, kept for
-  faithfulness (a future live-max-ammo consumer would read it).
+  faithfulness (a future live-max-ammo consumer would read it). She is the only
+  unit whose resource feeds a stat the shot loop consumes, so this ordering costs
+  exactly one bullet today.
 - Giant Leap's all-ally Hit Rate buff: inert (not a damage stat).
 - New World (skills[2], her burst): unlimited ammo and Destroy Mode (auto-aim +
   a 2.24%-of-ATK Destroy-Mode damage over 15s) - a weapon/targeting mode, not a
@@ -77,7 +80,9 @@ def build_modernia_resources(values):
     crit_per_stack = float(evo["description_value_03"]) / 100
     stack_cap = int(evo["description_value_04"])
     stack_duration = float(evo["description_value_05"])
-    ammo_per_stack = float(evo["description_value_06"]) / 100
+    # "Max Ammunition Capacity ▼ 5.04%" - the arrow subtracts, so each stack
+    # shrinks her magazine.
+    ammo_cut_per_stack = float(evo["description_value_06"]) / 100
     return [
         ResourceSpec(
             name="evolution",
@@ -87,7 +92,8 @@ def build_modernia_resources(values):
                 linear_resource_buff(
                     "other_critical_damage_sources", crit_per_stack, "self", lifetime=stack_duration
                 ),
-                linear_resource_buff("max_ammo_percent", ammo_per_stack, "self", lifetime=stack_duration),
+                linear_resource_buff("max_ammo_percent", -ammo_cut_per_stack, "self",
+                                     lifetime=stack_duration),
             ],
         )
     ]
