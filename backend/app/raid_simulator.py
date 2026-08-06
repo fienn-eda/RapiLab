@@ -520,6 +520,7 @@ def simulate_raid(
     weapon_mode_schedules=None,
     burst_anchored_buffs=None,
     ammo_rounds_per_shot=None,
+    conditional_full_burst_deltas=None,
 ):
     weapon_stats = weapon_stats or {}
     # None means "no band read for this encounter", which pays nobody. An
@@ -544,6 +545,7 @@ def simulate_raid(
     resource_fill_triggered_buffs = resource_fill_triggered_buffs or {}
     scheduled_nukes = scheduled_nukes or {}
     ammo_rounds_per_shot = ammo_rounds_per_shot or {}
+    conditional_full_burst_deltas = conditional_full_burst_deltas or {}
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"], m.get("weapon")) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
