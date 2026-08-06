@@ -485,13 +485,24 @@ _BUNDLE_STATS = (
 
 
 # 조건부 풀 버스트 확장(소다의 Beginner's Rewards)이 있는 덱에서 고정점을 찾는
-# 패스 수의 상한. 하한(확장 없음)에서 출발해 위로 가므로 보통 2~3패스면 끝나고,
-# 이 상한은 수렴하지 않는 조합에서 무한히 도는 것을 막는 안전장치다.
-MAX_FULL_BURST_PASSES = 4
+# 패스 수의 상한. 하한(확장 없음)에서 출발해 위로 가므로 수렴은 단조롭게 오르는
+# 방향이고, 이 상한은 수렴하지 않는 조합에서 무한히 도는 것을 막는 안전장치다.
+#
+# 실측(소다 + 아니스: 스파클링 서머 / 타키나 / 헬름, manual, 180초)에서 이 덱은
+# 4패스째에 고정점에 닿았다. 상한이 4였을 때 그 덱은 마지막으로 허용된 패스에서
+# 겨우 수렴한 셈이라 여유가 0이었고, 한 패스 더 필요한 덱은 `converged: False`와
+# 함께 고정점이 아닌 답을 조용히 내놓는다 - 그 오답은 하류에서 감지할 수단이
+# 없다. 8은 관측된 최악(4)의 두 배이고, 값을 다 쓰는 최악의 경우에도 그런 유닛이
+# 든 덱만 ~350ms를 더 낼 뿐이다.
+MAX_FULL_BURST_PASSES = 8
 
 # 자원 조회를 리셋 "직전"으로 밀어내는 폭. resource_count는 조회 시각과 같은
 # 시각의 리셋을 베이스라인으로 쓰므로, 그냥 버스트 시각을 물으면 소비 후 값이
 # 돌아온다. 이 폭이면 같은 순간의 리셋만 벗어나고 직전 fill은 그대로 센다.
+#
+# `FULL_BURST_OPEN_DELAY`와 값이 같은 것은 우연이다 - 저쪽은 버스트 발동과 창
+# 개시를 가르는 폭이고 이쪽은 자원 조회를 리셋 앞으로 미는 폭이라, 한쪽이 바뀌어도
+# 다른 쪽을 따라 바꿀 이유가 없다.
 _PRE_BURST_EPSILON = 1e-6
 
 
@@ -516,6 +527,13 @@ def _resolve_conditional_fb_deltas(context, events, conditional_full_burst_delta
             count = context.resource_count(
                 slug, spec["resource"], fire_time - _PRE_BURST_EPSILON, spec["cap"]
             )
+            # 임계는 "이상"이다: 소다의 소비 시퀀스는 정확히 20에 내려앉는데 그게
+            # II단계의 임계라, 여기서 한 칸 어긋나면 실제 딜이 바뀐다.
+            #
+            # 마지막으로 통과한 tier가 답인 것은 tiers가 임계 오름차순이기 때문이다
+            # (`build_beginners_rewards_full_burst_delta`가 그렇게 만든다).
+            # `_stage_seconds`의 `tiers[stage - 1]`도 같은 순서를 전제하므로, 순서가
+            # 깨지면 두 곳이 함께 틀린다.
             stage = 0
             for index, (threshold, _seconds) in enumerate(spec["tiers"], start=1):
                 if count >= threshold:

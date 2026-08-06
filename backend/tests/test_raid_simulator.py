@@ -3825,3 +3825,95 @@ def test_deck_without_a_conditional_unit_resolves_in_exactly_one_pass():
         weapon_stats={m["slug"]: sg for m in deck},
     )
     assert result["full_burst_passes"] == {"passes": 1, "converged": True}
+
+
+def test_conditional_full_burst_delta_keys_each_cycle_by_its_own_burst():
+    """사이클 인덱스는 tier-3 발동 순서다. 자격을 얻은 사이클만 세는 것이 아니라
+    (첫 사이클이 미달이어도 다음 사이클은 0이 아니라 1이고), tier-3이 아닌 버스트는
+    아예 세지 않는다."""
+    from app.raid_simulator import _resolve_conditional_fb_deltas
+    from app.squad_engine import SquadContext, SquadMember
+
+    context = SquadContext([SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron")])
+    context.fill_resource("soda-twinkling-bunny", "chip", 12.0, 20.0)
+    context.fill_resource("soda-twinkling-bunny", "chip", 9.0, 40.0)
+    events = [
+        {"type": "burst", "tier": 3, "slug": "soda-twinkling-bunny", "time": 10.0},  # 칩 0
+        {"type": "burst", "tier": 1, "slug": "ally", "time": 25.0},                  # 세지 않는다
+        {"type": "burst", "tier": 3, "slug": "soda-twinkling-bunny", "time": 30.0},  # 칩 12
+        {"type": "burst", "tier": 3, "slug": "soda-twinkling-bunny", "time": 50.0},  # 칩 21
+    ]
+    specs = {"soda-twinkling-bunny": {"resource": "chip", "cap": 50,
+                                      "tiers": [(10.0, 2.0), (20.0, 5.0)]}}
+
+    # 미달인 0번은 키가 없고, 그 뒤 사이클은 1·2로 남는다 - 자격 얻은 순서로
+    # 다시 매기면 {0: I, 1: II}가 되어 창이 한 사이클씩 어긋난다.
+    assert _resolve_conditional_fb_deltas(context, events, specs) == {
+        1: {"soda-twinkling-bunny": 1},
+        2: {"soda-twinkling-bunny": 2},
+    }
+
+
+def test_conditional_full_burst_delta_takes_a_tier_at_exactly_its_threshold():
+    """임계는 "이상"이다. 소다의 소비 시퀀스가 정확히 20에 내려앉고 그게 II단계의
+    임계라, 여기가 `>`였다면 실제 딜이 바뀐다."""
+    from app.raid_simulator import _resolve_conditional_fb_deltas
+    from app.squad_engine import SquadContext, SquadMember
+
+    specs = {"soda-twinkling-bunny": {"resource": "chip", "cap": 50,
+                                      "tiers": [(10.0, 2.0), (20.0, 5.0)]}}
+    events = [{"type": "burst", "tier": 3, "slug": "soda-twinkling-bunny", "time": 10.0}]
+
+    def stage_at(count):
+        context = SquadContext(
+            [SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron")])
+        context.reset_resource("soda-twinkling-bunny", "chip", 0.0, 0.0, count)
+        resolved = _resolve_conditional_fb_deltas(context, events, specs)
+        return resolved.get(0, {}).get("soda-twinkling-bunny", 0)
+
+    assert stage_at(9.0) == 0
+    assert stage_at(10.0) == 1
+    assert stage_at(19.0) == 1
+    assert stage_at(20.0) == 2
+
+
+def test_simulate_raid_feeds_the_resolved_stage_back_into_the_full_burst_window():
+    """이 기능이 존재하는 이유 그 자체: 해석된 단계가 다음 패스의 창 길이가 된다.
+
+    칩이 cap(20)에서 시작하고 cap이 곧 II단계의 임계라 매 사이클이 II단계다.
+    해석 결과가 스케줄러에 닿지 않으면 창은 기본 10초로 남고 루프도 첫 패스에서
+    끝난다 - 두 assert가 그 두 가지를 각각 잡는다."""
+    from app.effects import ResourceSpec
+
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "chipholder", "burst_tier": 3, "element": "Iron", "cooldown": 40.0},
+    ]
+    base_stats = {m["slug"]: {"atk": 10000, "def": 0, "max_hp": 0} for m in deck}
+    sg = {"weapon": "SG", "damage_percent": 10.0, "max_ammo": 1000,
+          "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 0.0}
+    result = simulate_raid(
+        deck, {m["slug"]: [] for m in deck}, burst_damage_percents={},
+        base_stats=base_stats, enemy_def=0, gauge_charge_time=5.0,
+        fight_duration=120.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={m["slug"]: sg for m in deck},
+        resource_specs={"chipholder": [ResourceSpec(
+            name="chip", fill=("per_shot_every_during_full_burst", 3), cap=20.0,
+            resets=[{"trigger": "battle_start", "value": 20.0}])]},
+        conditional_full_burst_deltas={
+            "chipholder": {"resource": "chip", "cap": 20,
+                           "tiers": [(10.0, 2.0), (20.0, 5.0)]}},
+    )
+
+    # 첫 패스는 확장 없이 도는 하한이므로, 확장이 실제로 실렸다면 한 패스로는
+    # 끝날 수 없다.
+    assert result["full_burst_passes"] == {"passes": 2, "converged": True}
+
+    windows = list(zip(
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_start"),
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_end"),
+    ))
+    assert windows, "풀 버스트 창이 하나도 안 열렸다 - 픽스처가 잘못됐다"
+    # 기본 10초 + II단계 5초. 누적값이라 소비 지점이 다시 더하지 않는다.
+    assert [round(end - start, 6) for start, end in windows] == [15.0] * len(windows)
