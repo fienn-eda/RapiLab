@@ -117,6 +117,20 @@
   font-size: 12px;
 }
 
+/* 푸터의 나머지는 왼쪽에 붙지만 출처 고지만 가운데다. 폭을 늘려 잡지 않으면
+   flex-start를 물려받아 왼쪽에 선 채로 text-align이 아무것도 하지 않는다. */
+.app__attribution {
+  align-self: stretch;
+  margin: var(--sp-2) 0 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.app__attribution-line {
+  display: block;
+}
+
 /* Roster + cards ------------------------------------------------------- */
 
 .roster {

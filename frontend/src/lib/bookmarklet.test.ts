@@ -11,6 +11,16 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
     expect(code.startsWith('javascript:')).toBe(true)
   })
 
+  it('건네받은 open_id 하나로만 조회한다', () => {
+    // 개인정보 안내가 "남의 계정을 조회하지 않아요"라고 말하는 근거다. 북마크릿은
+    // 유저 브라우저에서 유저 세션으로 도니까, 다른 id가 하나라도 섞여 들어가면
+    // 그것은 곧 남의 계정을 그 세션으로 조회한다는 뜻이 된다.
+    const ids = [...source.matchAll(/intl_open_id:'(\d+)'/g)].map((m) => m[1])
+
+    expect(ids.length).toBeGreaterThan(0)
+    expect(new Set(ids)).toEqual(new Set(['1234567890123456789']))
+  })
+
   it('blablalink origin 가드를 포함한다 (우리 앱 페이지에서 실행되는 것을 막는다)', () => {
     // location.origin이 BLABLALINK_ORIGIN이 아니면 즉시 alert 후 return - 이
     // 가드가 없으면 우리 앱 페이지 등 다른 컨텍스트에서 실행됐을 때 세션

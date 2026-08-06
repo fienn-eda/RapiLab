@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import App from './App'
 import { makeEmptyDraft, type NikkeDraft } from './types/nikkeDraft'
 import { profileKey, type ProfilesState } from './types/profile'
+import { HELP } from './lib/helpText'
 
 vi.mock('./api/recommendRaid', () => ({
   recommendRaidDecks: vi.fn(),
@@ -66,6 +67,16 @@ describe('App', () => {
     expect(screen.getByText(/동기화된 계정이 없어요/i)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: '솔로 레이드' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
+  })
+
+  it('팬 제작물 고지는 접히지 않고 늘 떠 있다', () => {
+    // 펼쳐야 보이는 고지는 고지가 아니다 - 개인정보 안내와 달리 이것은
+    // 클릭 없이 읽혀야 한다.
+    render(<App />)
+
+    for (const line of HELP.attribution) {
+      expect(screen.getByText(line)).toBeVisible()
+    }
   })
 
   it('개인정보 안내는 아직 동기화하지 않은 화면에도 있다', () => {

@@ -20,6 +20,7 @@ import { SyncRosterPanel } from './components/SyncRosterPanel'
 import { UnionRaidPanel } from './components/UnionRaidPanel'
 import { ChargeWindowPanel } from './components/ChargeWindowPanel'
 import { PrivacyNotice } from './components/PrivacyNotice'
+import { HELP } from './lib/helpText'
 import type { NikkeDraft } from './types/nikkeDraft'
 import type { SavedRun } from './types/profile'
 
@@ -295,6 +296,15 @@ function App() {
           </span>
         )}
         <PrivacyNotice />
+
+        {/* 출처 고지는 접지 않는다 - 펼쳐야 보이는 고지는 고지가 아니다. */}
+        <p className="app__attribution">
+          {HELP.attribution.map((line) => (
+            <span key={line} className="app__attribution-line">
+              {line}
+            </span>
+          ))}
+        </p>
       </footer>
     </div>
   )
