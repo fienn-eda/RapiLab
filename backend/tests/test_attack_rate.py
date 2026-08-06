@@ -679,6 +679,59 @@ def test_charge_motion_delay_is_a_per_unit_list_not_a_weapon_class_constant():
     assert get_charge_motion_delay("neon-vision-eye") == 0.0
 
 
+def test_an_untimed_charge_weapon_carries_the_measured_stand_in_not_zero():
+    """Zero is not the neutral choice for a unit nobody has timed - it models
+    her as the fastest version of herself, which is what put Mint at 1.502x of
+    her record. Until someone puts a clock on her she carries the frame-resolved
+    pause Bready and Centi share, one SR and one RL."""
+    from app.skill_rules.registry import (ASSUMED_CHARGE_MOTION_DELAY_SECONDS,
+                                          NO_CHARGE_MOTION_DELAY,
+                                          TIMED_CHARGE_MOTION_DELAY,
+                                          get_charge_motion_delay)
+
+    assert ASSUMED_CHARGE_MOTION_DELAY_SECONDS == pytest.approx(22 / 60)
+    for slug in ("maiden-ice-rose", "red-hood", "takina-inoue", "ein"):
+        assert get_charge_motion_delay(slug) == pytest.approx(22 / 60), slug
+    # Cinderella is not one of them: the "floor" was always HER pause, measured
+    # by driving her charge to zero, so she carries her own number.
+    assert get_charge_motion_delay("cinderella") == pytest.approx(10 / 29)
+    # A measured answer always wins over the stand-in, in both directions.
+    for slug in NO_CHARGE_MOTION_DELAY:
+        assert get_charge_motion_delay(slug) == 0.0, slug
+    for slug, delay in TIMED_CHARGE_MOTION_DELAY.items():
+        assert get_charge_motion_delay(slug) == pytest.approx(delay), slug
+
+
+def test_no_charge_weapon_is_left_silently_at_zero():
+    """The audit's UNVERIFIED bucket is what "nobody looked" looks like, and an
+    empty one is the invariant this pins: every encoded charge weapon is either
+    timed, confirmed to have none, or carrying the stand-in."""
+    import json
+    from pathlib import Path
+
+    from app.skill_rules.registry import (NO_CHARGE_MOTION_DELAY,
+                                          TIMED_CHARGE_MOTION_DELAY,
+                                          _BUILDERS, get_charge_motion_delay)
+
+    root = Path(__file__).resolve().parent.parent.parent
+    silent = []
+    for slug in sorted(_BUILDERS):
+        weapon = None
+        parts = slug.split("-")
+        for cut in range(len(parts), 0, -1):
+            base = "-".join(parts[:cut])
+            for source in ("lootandwaifus", "dotgg"):
+                path = root / "data" / source / f"char_{base}.json"
+                if weapon is None and path.exists():
+                    weapon = json.loads(path.read_text(encoding="utf-8")).get("weapon")
+        if weapon not in ("SR", "RL"):
+            continue
+        known = slug in TIMED_CHARGE_MOTION_DELAY or slug in NO_CHARGE_MOTION_DELAY
+        if not known and not get_charge_motion_delay(slug):
+            silent.append(slug)
+    assert silent == []
+
+
 def test_a_timed_unit_carries_its_own_delay_rather_than_the_shared_default():
     """Fienn timed Mint and Prika the same way he timed Snow White, reading the
     gap between a charged bullet leaving and the next charge gauge starting off

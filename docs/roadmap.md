@@ -1120,18 +1120,31 @@
 - [x] **`scripts/audit_target_scopes.py` 신설** — 좁은 타게팅 문구를 전수로 나열하고
       좁은 스코프를 하나도 안 내는 모듈을 SUSPECT로 분리한다. 현재 SUSPECT 3건은
       전부 검증 완료(페이로드가 inert/보류 스탯이라 무해).
-- [ ] **`laplace-ultimate-hero`·`maxwell-ordinary-mechanic`의 스킬 산문이 수집돼 있지
-      않다.** ShiftyPad 정규화 파일은 값 슬롯뿐이고 lootandwaifus 페이지를 안 받았다.
-      **감사 3종(▼ 부호·버스트 단계 트리거·스코프)이 이 둘만 "NOT SCANNED"로 남긴다** —
-      즉 이 둘은 어떤 원문 대조도 못 받고 있다. lootandwaifus에서 두 페이지를 받으면
-      닫힌다. 맥스웰의 Matis Uberbuster 변형(스테이지별 차지시간)은 엔진이 표현
-      가능하지만(세그먼트 스케줄이 컨텍스트를 받으므로 버스트별 프로필 가능) **스테이지→
-      차지시간 매핑을 원문 없이는 읽을 수 없어** 이것이 선행 조건이다.
-- [ ] **차지 무기 16유닛의 모션 딜레이가 미확인이다** (`scripts/audit_charge_motion_delay.py`,
-      exit 1). 엔진 기본값은 「딜레이 없음」이라 **안 물어본 유닛은 조용히 가장 빠른
-      버전으로 모델된다**(민트가 1.502x를 읽던 원인). Fienn 인게임 판독 필요:
-      ada-wong · arcana · cinderella · d-killer-wife · diesel-winter-sweets(2종) ·
-      ein · laplace · laplace-signature · maiden-ice-rose · maxwell ·
+- [x] **`laplace-ultimate-hero`·`maxwell-ordinary-mechanic` 원문 수집 + 검증 완료
+      (2026-08-07).** 감사 3종의 "NOT SCANNED"가 0이 됐고, 읽어보니 각각 결함이
+      하나씩 있었다 — 맥스웰의 「Burst Stage 3 진입 시」가 `full_burst_enter`로 배선돼
+      B3 자신의 버스트딜에 안 닿았고(슬롯 03이 문자 그대로 `3`이다), 라플라스의
+      「Gains Pierce」는 원문상 skills[0]의 변형 무기에 붙는데 그녀의 버스트에 10초로
+      걸려 있었다(Mjolnir 원문엔 Pierce가 없다). 원문이 확정한 것 둘: Over Energy는
+      「변형 상태 평타 12회마다 +5%, 100%까지」= 스테이지당 240타라 기준 탄창에서
+      `2 transforms`가 맞고, **이것이 이 모듈에서 유일하게 최대탄약을 안 따라가는
+      단계**임이 드러났다(최대탄약 덱에서 스테이지 램프를 과소평가). Matis Uberbuster의
+      스테이지별 차지시간(3/2.5/2/1.5/0.4)도 읽혔다.
+- [ ] **맥스웰:OM의 Matis Uberbuster 변형** — 데이터 장벽은 사라졌다. 남은 이유는
+      순수 추가가 아니라 **트레이드**라는 것(세그먼트가 그녀의 기본 SR을 침묵시킨다).
+      별도 작업으로 착수 여부 결정 필요.
+- [ ] **라플라스:UH의 Over Energy 스테이지 임계가 최대탄약을 안 따라간다** — 240타/스테이지는
+      원문이 확정했으므로 `240 / shots_per_transform`으로 유도 가능하고, 그러면 스테이지가
+      창 중간에 떨어진다(현재는 창 두 개를 통째로 기다린다).
+- [x] **미측정 차지 무기 16유닛을 실측 stand-in(22프레임)으로 전환 (2026-08-07).**
+      0은 중립이 아니라 「가장 빠른 자기 자신」이다. 신데렐라는 stand-in이 아니라
+      **자기 실측값**(`CHARGE_INTERVAL_FLOOR_SECONDS` = 10/29초가 곧 그녀의 딜레이였다)로
+      갔다. 15유닛 −0.40%~−14.73%, **캘리 1.079x·17/25 불변**. 상세는 `docs/engine-gaps.md`.
+- [ ] **그 15유닛은 여전히 실측이 필요하다** (`scripts/audit_charge_motion_delay.py`가
+      `assumed`도 계속 질문하고 exit 1). 실측값은 0.34~0.43으로 흩어져 있고 **네 유닛은
+      아예 멈춤이 없으므로**, stand-in은 그 중 누군가에게 반드시 틀리다. 대상:
+      ada-wong · arcana · d-killer-wife · diesel-winter-sweets(2종) · ein · laplace ·
+      laplace-signature · maiden-ice-rose(**−14.7%로 가장 크다**) · maxwell ·
       maxwell-ordinary-mechanic · milk-blooming-bunny · red-hood · rouge · takina-inoue.
 - [ ] **루즈 Card Throw의 Max HP 불릿**(전원 +Max HP 5%/5초, 8풀차지마다). Max HP는
       2026-07-24부터 딜 스탯이므로 「생존기」 사유는 무효이고, 진짜 이유는 같은 불릿의

@@ -1,5 +1,6 @@
 """Maxwell: Ordinary Mechanic (slug "maxwell-ordinary-mechanic"), a Burst-2 Wind
-SR supporter from MISSILIS. Collected from ShiftyPad (blablalink public data).
+SR supporter from MISSILIS. Value slots from ShiftyPad (blablalink public data),
+effect text from lootandwaifus.
 
 Her team value is a stack of Attack Damage buffs plus an ATK buff scaled off her
 own Max HP - all fully modeled. Her burst is a self weapon-transform (a single-
@@ -7,8 +8,9 @@ shot cannon) with no "X% as Burst Skill damage" nuke, so the registry burst
 percent is None (buffs-only support).
 
 Modeled (DPS-relevant):
-- Sequential Limit Release (skills[0]), on entering Full Burst (Burst Stage 3):
-  all allies Attack Damage +10% for 5 sec (squad).
+- Sequential Limit Release (skills[0]), on entering Burst Stage 3: all allies
+  Attack Damage +10% for 5 sec (squad) - `ally_burst_activate` +
+  `burst_stage_entered(3)`, so it lands before that unit's own burst damage.
 - Sequential Limit Release (skills[0]) Max HP: +1% of her Max HP per Full
   Charge, capped at 30 stacks (squad). The full-charge-count trigger does not
   exist, but her SR fires a full charge every shot, so the cap is reached early
@@ -26,18 +28,26 @@ Modeled (DPS-relevant):
 Not modeled / deferred:
 - Output Switching Sequence's "Fills Burst Gauge by 7.15% per Full Charge": burst
   gauge fill speed is not consumed by the engine (fixed sim input).
-- Matis Uberbuster's weapon transform (Matis UberBuster single-shot cannon, whose
-  fixed charge time shortens with Overcurrent stage, 350% self damage). The
-  engine can express this: `weapon_mode_schedules`' schedule function is handed
-  the context, so it can emit one `until_shots: 1` segment per own-burst time
-  with that burst's Overcurrent-stage charge time in its own profile - which is
-  exactly what base Maxwell's cannon already does, minus the per-burst stage.
-  It is left out because her own cannon damage is minor for a supporter and,
-  more to the point, HER SKILL PROSE IS NOT COLLECTED (ShiftyPad carries value
-  slots only, and no lootandwaifus page was fetched), so the stage-to-charge-time
-  mapping cannot be read. Collect her text before encoding this.
+- Matis Uberbuster's weapon transform, now fully readable from the collected
+  text: "Changes the weapon in use: Matis UberBuster. Charge Time is fixed.
+  Effect varies according to the stage of Overcurrent" - 3 sec at stage 1 or
+  below, then 2.5 / 2 / 1.5, and 0.4 at stage 5 or above (slots 09, 01..04);
+  Damage 350% of final ATK (slot 05), Full Charge Damage 300%, Max Ammunition
+  Capacity 1 (slot 06), Additional Effect: Gains Pierce.
+  The engine can express it - `weapon_mode_schedules`' schedule function is
+  handed the context, so it can emit one `until_shots: 1` segment per own-burst
+  time carrying that burst's stage charge time, which is base Maxwell's cannon
+  plus a per-burst stage lookup. It stays out because one 350% shot per burst is
+  minor against her buffs, and encoding it silences her base SR for the window,
+  so it is a damage TRADE rather than a pure addition. Raise it as its own piece
+  of work rather than folding it into an audit.
 """
 from app.skill_rules._helpers import buff_rule, escalating_buff_rule, max_hp_scaled_atk_rule
+from app.squad_engine import burst_stage_entered
+
+# Sequential Limit Release's second bullet names the stage, and the skill's own
+# slot 03 carries the literal 3.
+BURST_STAGE = 3
 
 SKILL_VALUE_MANIFESTS = {
     "maxwell-ordinary-mechanic": {
@@ -73,9 +83,13 @@ def build_maxwell_ordinary_mechanic_rules(values, caster_max_hp):
     burst_attack_damage_dur = float(burst["description_value_08"])     # 10 sec
 
     return [
-        buff_rule("full_burst_enter", [
-            ("attack_damage_up", fb_attack_damage, "squad", fb_attack_damage_dur),
-        ]),
+        # "Activates when entering Burst Stage 3" - the STAGE, so it happens in
+        # every cycle whoever takes that slot, and it fires before the Burst 3's
+        # own nuke is recorded. full_burst_enter is the LATER instant and would
+        # drop the +10% from that damage.
+        buff_rule("ally_burst_activate",
+                  [("attack_damage_up", fb_attack_damage, "squad", fb_attack_damage_dur)],
+                  condition=burst_stage_entered(BURST_STAGE)),
         # 풀차지마다 Max HP +1%(그녀 Max HP 기준), 캡 30 - SR은 매 발사가
         # 풀차지라 캡에 초반 도달해 유지되므로 정착값을 battle_start에 부여한다.
         buff_rule("battle_start", [("flat_max_hp", settled_max_hp, "squad", None)]),

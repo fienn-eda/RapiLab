@@ -57,12 +57,35 @@ def rules():
     return build_maxwell_ordinary_mechanic_rules(values(), CASTER_MAX_HP)
 
 
-def test_full_burst_grants_squad_attack_damage():
+def test_burst_stage_three_entry_grants_squad_attack_damage():
+    """"Activates when entering Burst Stage 3" describes the STAGE, so it rides
+    ally_burst_activate + burst_stage_entered(3) - which fires BEFORE the Burst
+    3's own nuke is recorded, unlike full_burst_enter."""
+    ctx = make_context()
+    registry = EffectRegistry()
+    rs = {"maxwell-ordinary-mechanic": rules()}
+    ctx.last_burst_slug = "ally"          # the deck's Burst 3 takes the stage
+    fire_trigger("ally_burst_activate", rs, ctx, registry, time=5.0)
+    assert round(registry.total_for("attack_damage_up", ALLY, now=5.0), 4) == 0.10
+    assert registry.total_for("attack_damage_up", ALLY, now=10.1) == 0.0  # 5 sec window
+
+
+def test_stage_three_buff_does_not_fire_on_a_lower_tier_ally_bursting():
+    ctx = make_context()
+    registry = EffectRegistry()
+    rs = {"maxwell-ordinary-mechanic": rules()}
+    ctx.last_burst_slug = "maxwell-ordinary-mechanic"   # her own tier-2 cast
+    fire_trigger("ally_burst_activate", rs, ctx, registry, time=5.0)
+    assert registry.total_for("attack_damage_up", ALLY, now=5.0) == 0.0
+
+
+def test_stage_three_buff_is_not_on_full_burst_enter():
+    """full_burst_enter lands AFTER the Burst 3 cast, so wiring it there would
+    silently drop the +10% from that unit's own burst damage."""
     ctx = make_context()
     registry = EffectRegistry()
     fire_trigger("full_burst_enter", {"maxwell-ordinary-mechanic": rules()}, ctx, registry, time=5.0)
-    assert round(registry.total_for("attack_damage_up", ALLY, now=5.0), 4) == 0.10
-    assert registry.total_for("attack_damage_up", ALLY, now=10.1) == 0.0  # 5 sec window
+    assert registry.total_for("attack_damage_up", ALLY, now=5.0) == 0.0
 
 
 def test_burst_grants_squad_atk_from_max_hp_and_attack_damage():

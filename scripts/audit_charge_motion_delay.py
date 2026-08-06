@@ -10,7 +10,14 @@ reason.
 
 So "no delay registered" has two very different meanings - checked and found to
 have none, or never checked - and this script separates them. Run it after
-encoding any SR/RL Nikke; anything under UNVERIFIED is a question for Fienn.
+encoding any SR/RL Nikke.
+
+An unchecked unit no longer sits at zero: she carries the frame-resolved 22
+frames Bready and Centi share (registry.ASSUMED_CHARGE_MOTION_DELAY_SECONDS),
+which is a better guess than "no pause at all" but is still a guess - the real
+values run 0.34 to 0.43 and four units have none. So BOTH `assumed` and
+`UNVERIFIED` are questions for Fienn, and the exit code stays non-zero while
+either is non-empty.
 
 How Fienn times one (see docs/insights.md): read the Full Burst clock at the
 instant the charged bullet leaves and again when the next charge gauge starts
@@ -94,10 +101,13 @@ def main():
           f"{sum(1 for r in rows if r[0] == 'TIMED')} timed, {len(assumed)} assumed, "
           f"{sum(1 for r in rows if r[0].startswith('none'))} confirmed none, "
           f"{len(unverified)} UNVERIFIED")
-    if unverified:
-        print("\nASK FIENN whether these pause between a charged shot and the next charge:")
-        print("   " + ", ".join(r[1] for r in unverified))
-    return 1 if unverified else 0
+    unanswered = unverified + assumed
+    if unanswered:
+        print("\nASK FIENN whether these pause between a charged shot and the next charge.")
+        print("An `assumed` row is carrying a stand-in, not an answer - it is still wrong")
+        print("for whoever turns out to have no pause at all, as four checked units do.")
+        print("   " + ", ".join(sorted(r[1] for r in unanswered)))
+    return 1 if unanswered else 0
 
 
 if __name__ == "__main__":
