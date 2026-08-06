@@ -35,6 +35,16 @@ const WEAKNESS_ICON: Record<NikkeElement, string> = {
 
 const WEAKNESS_CHOICES: NikkeElement[] = ['Fire', 'Water', 'Wind', 'Iron', 'Electric']
 
+/** 접힌 채로도 무슨 값으로 계산되는지 보이게 하는 요약. 편집 중이라 비어 있는
+ * 칸은 숫자 대신 —로 둔다. */
+const foldedSummary = (draft: BossProfileDraft): string => {
+  const def = draft.enemy_def.trim()
+  const seconds = draft.fight_duration.trim()
+  const defText = def === '' ? '—' : Number(def).toLocaleString()
+  const secondsText = seconds === '' ? '—' : seconds
+  return `방어력 ${defText} · ${secondsText}초`
+}
+
 interface BossProfileFieldProps {
   value: BossProfileDraft
   errors?: BossProfileDraftErrors
@@ -205,24 +215,32 @@ export function BossProfileField({
         </div>
       )}
 
-      <div className="field-row field-row--pair">
-        <NumberField
-          label="적 방어력"
-          value={value.enemy_def}
-          error={errors?.enemy_def}
-          min={0}
-          onChange={(enemy_def) => onChange({ ...value, enemy_def })}
-        />
-        <NumberField
-          label="전투 시간"
-          hint="초"
-          value={value.fight_duration}
-          error={errors?.fight_duration}
-          min={0}
-          step={1}
-          onChange={(fight_duration) => onChange({ ...value, fight_duration })}
-        />
-      </div>
+      {/* 거의 바꾸지 않는 두 값이라 접어 둔다. 오류가 있을 때는 강제로 펼쳐
+          제출을 막는 이유가 접힌 상자 안에 숨지 않게 한다. */}
+      <details
+        className="group__details boss-profile__folded"
+        open={errors?.enemy_def || errors?.fight_duration ? true : undefined}
+      >
+        <summary className="group__hint">기타 설정 — {foldedSummary(value)}</summary>
+        <div className="field-row field-row--pair">
+          <NumberField
+            label="적 방어력"
+            value={value.enemy_def}
+            error={errors?.enemy_def}
+            min={0}
+            onChange={(enemy_def) => onChange({ ...value, enemy_def })}
+          />
+          <NumberField
+            label="전투 시간"
+            hint="초"
+            value={value.fight_duration}
+            error={errors?.fight_duration}
+            min={0}
+            step={1}
+            onChange={(fight_duration) => onChange({ ...value, fight_duration })}
+          />
+        </div>
+      </details>
     </fieldset>
   )
 }

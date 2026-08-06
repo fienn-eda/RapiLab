@@ -150,3 +150,40 @@ describe('BossProfileField 코어 2관통', () => {
     )
   })
 })
+
+describe('기타 설정', () => {
+  it('방어력과 전투 시간을 접되 요약에 그 값을 남긴다', () => {
+    render(
+      <BossProfileField value={makeDefaultBossProfileDraft('31784')} onChange={vi.fn()} />,
+    )
+
+    const details = screen.getByText(/기타 설정/).closest('details')
+    expect(details).not.toBeNull()
+    expect(details).not.toHaveAttribute('open')
+    expect(screen.getByText(/방어력 31,784/)).toBeInTheDocument()
+    expect(screen.getByText(/180초/)).toBeInTheDocument()
+  })
+
+  it('접힌 칸에 오류가 있으면 스스로 펼친다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), enemy_def: '' }}
+        errors={{ enemy_def: '필수 입력이에요' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/기타 설정/).closest('details')).toHaveAttribute('open')
+  })
+
+  it('편집 중이라 비어 있는 칸은 요약에서 —로 둔다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), enemy_def: '' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/방어력 —/)).toBeInTheDocument()
+  })
+})

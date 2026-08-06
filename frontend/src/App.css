@@ -735,6 +735,12 @@
   max-width: var(--measure);
 }
 
+/* 접힌 요약은 값이 아니라 값이 있는 곳을 가리키는 표지다. */
+.boss-profile__folded > summary {
+  cursor: pointer;
+  margin-top: var(--sp-2);
+}
+
 .group__legend {
   font-size: 13px;
   font-weight: 600;
