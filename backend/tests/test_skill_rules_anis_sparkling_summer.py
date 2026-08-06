@@ -83,7 +83,10 @@ def test_burst_grants_self_ammo_and_reload():
     registry = EffectRegistry()
     fire_trigger("own_burst_activate", {"anis-sparkling-summer": build()}, ctx, registry, time=5.0)
 
-    assert round(registry.total_for("max_ammo_percent", ANIS, now=5.0), 4) == 0.7392
+    # "Max Ammunition Capacity ▼ 73.92%" - her burst SHRINKS her magazine, which
+    # is the point: a 5-round shotgun drops to 1 round, so every shot is a last
+    # bullet and Sparkling Missile's 382.42% nuke fires on each of them.
+    assert round(registry.total_for("max_ammo_percent", ANIS, now=5.0), 4) == -0.7392
     assert round(registry.total_for("reload_speed_percent", ANIS, now=5.0), 4) == 0.2772
     # self-scoped: allies don't share it
     assert registry.total_for("max_ammo_percent", ELECTRIC_ALLY, now=5.0) == 0.0

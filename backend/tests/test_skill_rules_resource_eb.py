@@ -60,7 +60,9 @@ def test_modernia_evolution_resource_is_timed_capped_crit_and_ammo():
     assert round(crit.value_fn(3), 4) == round(0.1425 * 3, 4)
     assert ammo.stat == "max_ammo_percent"
     assert ammo.lifetime == 10.0
-    assert round(ammo.value_fn(5), 4) == round(0.0504 * 5, 4)
+    # "Max Ammunition Capacity ▼ 5.04%" - the arrow is a subtraction marker, so
+    # each Evolution stack SHRINKS her magazine rather than growing it.
+    assert round(ammo.value_fn(5), 4) == round(-0.0504 * 5, 4)
 
 
 def test_modernia_per_hit_additional_damage_every_shot():
