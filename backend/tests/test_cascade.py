@@ -2,9 +2,10 @@ from types import SimpleNamespace
 
 import numpy as np
 
-from app.cascade import (FIT_CACHE_SIZE, WIDE_TIER_CAPS, Cascade,
-                         SurrogateModel, cached_fit_surrogate, clear_fit_cache,
-                         fit_surrogate, roster_fingerprint, widened_pool)
+from app.cascade import (DEFAULT_TOP_K, FIT_CACHE_SIZE, WIDE_TIER_CAPS,
+                         Cascade, SurrogateModel, cached_fit_surrogate,
+                         clear_fit_cache, fit_surrogate, roster_fingerprint,
+                         widened_pool)
 from app.deck_search import BossProfile
 
 
@@ -371,3 +372,36 @@ def test_shortlist_completions_declines_when_the_draft_fits_no_shape(monkeypatch
     required = [u for u in roster if u.slug in ("a0", "a1", "a2")]
 
     assert Cascade(model).shortlist_completions(required, roster, BOSS) is None
+
+
+def test_the_pool_width_and_the_shortlist_width_are_one_setting():
+    """These two numbers are not independent knobs, and the pair is measured.
+
+    The pool decides what can be ranked; K decides how much of that ranking the
+    simulator gets to overrule. Widen the pool without widening K and the
+    shortlist fills with combinations the unit-only surrogate overrates, which
+    pushes the genuinely best deck out of the twenty that get simulated. On
+    Fienn's roster (78 usable, 5 decks, Wind boss, DEF 31,784, 180 s), measured
+    2026-08-06 with `python3 scripts/measure_pool_caps.py`:
+
+        caps      K=20                    K=100
+        2/4/8     40.932B  (-0.30%)       -
+        3/5/10    41.579B  (+1.27%)       -
+        4/6/12    41.056B  (shipped)      41.228B  (+0.42%)
+        6/9/18    36.408B  (-11.32%)      40.846B  (-0.51%)
+        8/12/24   36.408B  (-11.32%)      40.846B  (-0.51%)
+
+    So quality is NOT monotone in the caps and the shipped pair is not a peak -
+    3/5/10 beat it by 1.27% in the same wall time on that one roster. Two
+    stale roadmap notes read the other way ("widening the pool is worth 0",
+    "widen it so the pool stops missing CDR units"); both were measured before
+    the swap budget became a candidate count, and following either one today
+    costs 11% unless K moves with it.
+
+    Change either constant and this test fails on purpose: re-run the sweep on
+    a real roster, on at least two bosses, and put the new table here.
+    """
+    assert (WIDE_TIER_CAPS, DEFAULT_TOP_K) == ({1: 4, 2: 6, 3: 12}, 20), (
+        "pool caps and shortlist width are a measured pair - see this test's "
+        "docstring and re-run scripts/measure_pool_caps.py before changing them"
+    )
