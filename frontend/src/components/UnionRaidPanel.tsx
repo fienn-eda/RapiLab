@@ -15,7 +15,7 @@ import {
 } from '../types/bossProfileDraft'
 import { isDraftComplete, makeEmptyDraft, resizeDraft, type Draft } from '../types/draft'
 import { DEFAULT_UNION_NUM_DECKS, MAX_UNION_NUM_DECKS, MIN_UNION_NUM_DECKS } from '../types/evaluate'
-import type { BossElement } from '../types/recommend'
+import type { BossProfile } from '../types/recommend'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
@@ -63,7 +63,7 @@ export function UnionRaidPanel({
   // evaluateBoss. Reading the live bosses array from the render below
   // would relabel a finished result's cards the moment the player edits a
   // boss field afterward, while the damage numbers still reflect the old boss.
-  const [evaluatedBossElements, setEvaluatedBossElements] = useState<BossElement[]>([])
+  const [evaluatedBosses, setEvaluatedBosses] = useState<BossProfile[]>([])
   const [excludedSlugs, setExcludedSlugs] = useState<Set<string>>(new Set())
   const numBattlesId = useId()
 
@@ -120,7 +120,7 @@ export function UnionRaidPanel({
     if (!canSubmit) return
 
     const bossProfiles = validated.slice(0, numBattles).map((v) => v.value!)
-    setEvaluatedBossElements(bossProfiles.map((boss) => boss.element))
+    setEvaluatedBosses(bossProfiles)
     void evaluation.submit({
       roster: effectiveRoster,
       decks: draftValue.decks.slice(0, numBattles).map((seats, i) => ({
@@ -188,7 +188,7 @@ export function UnionRaidPanel({
             decks={evaluation.decks}
             combinedTotalDamage={evaluation.combinedTotalDamage}
             excludedSlugs={evaluation.excludedSlugs}
-            bossElements={evaluatedBossElements}
+            bosses={evaluatedBosses}
             portraitFor={portraitFor}
             nameFor={nameFor}
           />

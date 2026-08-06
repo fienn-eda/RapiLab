@@ -723,7 +723,7 @@ export function RecommendPanel({
             decks={evaluation.decks}
             combinedTotalDamage={evaluation.combinedTotalDamage}
             excludedSlugs={evaluation.excludedSlugs}
-            bossElements={evaluation.decks.map(() => evaluateBoss?.element ?? null)}
+            bosses={evaluation.decks.map(() => evaluateBoss!)}
             portraitFor={portraitFor}
             nameFor={nameFor}
             gimmickUnmetFor={evaluateGimmickUnmetFor}

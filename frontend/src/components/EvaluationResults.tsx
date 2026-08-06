@@ -4,7 +4,7 @@
 // only difference is that each deck can name its own boss element (union
 // raid's three battles each pick one).
 
-import type { DeckRecommendation, BossElement } from '../types/recommend'
+import type { DeckRecommendation, BossElement, BossProfile } from '../types/recommend'
 import { DeckCard, type UnitLookups } from './DeckCard'
 import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
@@ -21,15 +21,15 @@ interface EvaluationResultsProps extends UnitLookups {
   combinedTotalDamage: number
   /** Submitted slugs the backend can't evaluate yet — shown as "not yet supported". */
   excludedSlugs?: string[]
-  /** One boss element per deck (union raid's three battles each pick their own). */
-  bossElements: BossElement[]
+  /** 덱 하나당 보스 하나. 유니온 레이드의 세 전투는 각자 보스를 고른다. */
+  bosses: BossProfile[]
 }
 
 export function EvaluationResults({
   decks,
   combinedTotalDamage,
   excludedSlugs = [],
-  bossElements,
+  bosses,
   ...lookups
 }: EvaluationResultsProps) {
   return (
@@ -41,8 +41,9 @@ export function EvaluationResults({
         {decks.map((deck, index) => (
           <DeckCard
             key={deck.deck.join('-')}
-            label={`${index + 1}번 덱 · ${bossElementLabel(bossElements[index])}`}
+            label={`${index + 1}번 덱 · ${bossElementLabel(bosses[index]?.element ?? null)}`}
             deck={deck}
+            boss={bosses[index]}
             {...lookups}
           />
         ))}

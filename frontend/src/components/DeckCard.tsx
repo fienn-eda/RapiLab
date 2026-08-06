@@ -12,8 +12,9 @@
 // in it, and a column of slugs made the answer the least legible screen in
 // the app.
 
-import type { DeckRecommendation } from '../types/recommend'
+import type { BossProfile, DeckRecommendation } from '../types/recommend'
 import { nameFromSlug } from '../lib/unitName'
+import { BossSummary } from './BossSummary'
 import { formatDamage } from './formatDamage'
 
 /** How a result view turns a slug into something a player can recognise.
@@ -32,6 +33,9 @@ export interface UnitLookups {
 interface DeckCardProps extends UnitLookups {
   label: string
   deck: DeckRecommendation
+  /** 이 덱이 상대한 보스. 덱마다 보스가 다른 화면(유니온 레이드)만 넘긴다 —
+   * 전부 같은 보스인 화면은 결과 위에 한 번만 적는다. */
+  boss?: BossProfile
   /** Locked draft slugs the engine kept in this deck (RaidDeck.pinned_slugs). */
   pinnedSlugs?: string[]
   /** Slugs in this deck the submitted draft didn't have (DraftResults diff). */
@@ -43,6 +47,7 @@ interface DeckCardProps extends UnitLookups {
 export function DeckCard({
   label,
   deck,
+  boss,
   pinnedSlugs = [],
   addedSlugs = [],
   removedSlugs = [],
@@ -63,6 +68,7 @@ export function DeckCard({
           </span>
         )}
       </div>
+      {boss && <BossSummary boss={boss} />}
       <ol className="deck-results__units">
         {deck.deck.map((slug, slot) => {
           const portrait = portraitFor(slug)

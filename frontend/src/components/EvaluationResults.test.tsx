@@ -1,6 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { EvaluationResults } from './EvaluationResults'
+import type { BossProfile } from '../types/recommend'
 
 const DECKS = [
   { deck: ['liter', 'blanc', 'crown', 'modernia', 'privaty'],
@@ -9,12 +10,24 @@ const DECKS = [
     total_damage: 50, burst_damage: 30, normal_attack_damage: 15, skill_damage: 5, hold_burst_slugs: [] },
 ]
 
+const boss = (overrides: Partial<BossProfile> = {}): BossProfile => ({
+  element: null,
+  core_hittable: false,
+  pierce_hits_body_behind_core: false,
+  enemy_def: 31784,
+  fight_duration: 180,
+  part_destructible: false,
+  effective_range_band: null,
+  elemental_interrupt_required: false,
+  ...overrides,
+})
+
 const renderResults = (overrides = {}) =>
   render(<EvaluationResults
     decks={DECKS}
     combinedTotalDamage={150}
     excludedSlugs={[]}
-    bossElements={['Iron', 'Water']}
+    bosses={[boss({ element: 'Iron' }), boss({ element: 'Water' })]}
     nameFor={(slug) => slug}
     {...overrides} />)
 
@@ -56,12 +69,30 @@ describe('EvaluationResults', () => {
     renderResults({ excludedSlugs: ['not-a-nikke'] })
     expect(screen.getByText(/Not A Nikke/)).toBeTruthy()
   })
+
+  // 전투마다 보스가 다르므로 조건은 카드 밖에 몰아 쓸 수 없다.
+  it('카드마다 그 전투의 보스 설정을 다시 적는다', () => {
+    renderResults()
+
+    expect(screen.getAllByText('방어력 31,784')).toHaveLength(2)
+  })
+
+  it('카드마다 자기 보스의 기믹만 적는다', () => {
+    renderResults({
+      bosses: [
+        boss({ element: 'Iron', part_destructible: true }),
+        boss({ element: 'Water' }),
+      ],
+    })
+
+    expect(screen.getAllByText('부위파괴')).toHaveLength(1)
+  })
 })
 
 describe('EvaluationResults 덱 라벨', () => {
   it('보스 본인 속성이 아니라 약점 속성으로 라벨한다', () => {
     render(
-      <EvaluationResults decks={[DECK]} combinedTotalDamage={1000} bossElements={['Fire']} nameFor={(slug) => slug} />,
+      <EvaluationResults decks={[DECK]} combinedTotalDamage={1000} bosses={[boss({ element: 'Fire' })]} nameFor={(slug) => slug} />,
     )
 
     expect(screen.getByText('1번 덱 · 약점 수냉')).toBeInTheDocument()
@@ -69,7 +100,7 @@ describe('EvaluationResults 덱 라벨', () => {
 
   it('무속성 보스는 그대로 무속성이다', () => {
     render(
-      <EvaluationResults decks={[DECK]} combinedTotalDamage={1000} bossElements={[null]} nameFor={(slug) => slug} />,
+      <EvaluationResults decks={[DECK]} combinedTotalDamage={1000} bosses={[boss()]} nameFor={(slug) => slug} />,
     )
 
     expect(screen.getByText('1번 덱 · 무속성')).toBeInTheDocument()

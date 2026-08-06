@@ -57,3 +57,35 @@ describe('DeckCard 버스트 홀드 안내', () => {
     expect(screen.queryByText(/첫 풀버스트/)).not.toBeInTheDocument()
   })
 })
+
+describe('DeckCard 보스 설정', () => {
+  // 덱마다 보스가 다른 화면(유니온 레이드)만 넘긴다. 전부 같은 보스인 화면은
+  // 결과 위에 한 번만 적는다.
+  it('보스를 받으면 카드 안에 그 설정을 적는다', () => {
+    render(
+      <DeckCard
+        label="1번 덱"
+        deck={DECK}
+        boss={{
+          element: 'Fire',
+          core_hittable: true,
+          pierce_hits_body_behind_core: false,
+          enemy_def: 31784,
+          fight_duration: 180,
+          part_destructible: false,
+          effective_range_band: null,
+          elemental_interrupt_required: false,
+        }}
+      />,
+    )
+
+    expect(screen.getByText(/약점 수냉/)).toBeInTheDocument()
+    expect(screen.getByText('코어 피격')).toBeInTheDocument()
+  })
+
+  it('보스가 없으면 그 줄을 아예 그리지 않는다', () => {
+    render(<DeckCard label="#1" deck={DECK} />)
+
+    expect(screen.queryByText(/약점/)).not.toBeInTheDocument()
+  })
+})
