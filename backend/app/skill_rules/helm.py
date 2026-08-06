@@ -36,12 +36,13 @@ Signature only - "Aegis Cannon" additionally grants herself Charge Damage
 Multiplier +158.4% for 10 ROUNDS - a bullet-count duration, not seconds, so it
 uses `round_buff_rule(shots=10)` (the Zwei/Miranda precedent).
 
+Frontline Command's crit rate reads "Critical Rate of normal attack", so it
+rides the `normal_attack_crit_rate` bucket. As plain `crit_rate` it used to
+raise every burst nuke in the squad along with the normal attacks it names.
+
 Not modeled / deferred (both builds): Frontline Command's own full-charge
 bonuses (Max-HP recovery + Burst Gauge fill - survivability and an inert stat),
-and Aegis Cannon's damage-proportional heal-over-time. Frontline Command's crit
-rate reads "Critical Rate of normal attack"; the engine has no normal-attack-only
-crit bucket, so it is encoded as plain `crit_rate` - a slight overcredit on burst
-damage, unchanged from the pre-split encoding.
+and Aegis Cannon's damage-proportional heal-over-time.
 """
 from app.effects import Effect
 from app.skill_rules._helpers import (
@@ -88,7 +89,10 @@ def build_frontline_command_per_shot_rules(values: dict) -> list:
     crit_rate_up = float(values["description_value_01"]) / 100
     duration = float(values["description_value_02"])
     return [(None, "last_bullet", [
-        refreshing_buff_rule("per_shot", [("crit_rate", crit_rate_up, "squad", duration)])
+        # "Critical Rate of normal attack" - the normal-attack-only bucket, so
+        # it no longer inflates the squad's burst nukes as plain crit_rate did.
+        refreshing_buff_rule("per_shot",
+                             [("normal_attack_crit_rate", crit_rate_up, "squad", duration)])
     ])]
 
 

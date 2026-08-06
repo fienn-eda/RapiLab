@@ -295,6 +295,7 @@ from app.skill_rules.rosanna_chic_ocean import (
     build_spina_scheduled_nukes,
 )
 from app.skill_rules.rouge import (
+    build_card_throw_per_shot_rules,
     build_card_throw_rules,
     build_coin_flip_per_shot_rules,
     build_coin_flip_rules,
@@ -1012,7 +1013,8 @@ _PER_SHOT_RULE_BUILDERS = {
                                    + build_meditation_per_shot_rules(sv, sv["caster_max_hp"])),
     "miranda-signature": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
-    "rouge": lambda sv: build_coin_flip_per_shot_rules(sv["coin_flip"]),
+    "rouge": lambda sv: (build_coin_flip_per_shot_rules(sv["coin_flip"])
+                         + build_card_throw_per_shot_rules(sv["card_throw"], sv["caster_max_hp"])),
     "prika": lambda sv: build_lets_get_show_started_rules(
         {**sv["lets_get_the_show_started"], "caster_atk": sv["caster_atk"]}
     ),

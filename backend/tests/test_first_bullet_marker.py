@@ -96,3 +96,63 @@ def test_normal_attack_damage_multiplier_scales_only_normal_attacks():
         assert round(boost_damage, 6) == round(base_damage * 1.30, 6), t
     assert by_source(baseline, "burst") == by_source(boosted, "burst")
     assert by_source(baseline, "periodic") == by_source(boosted, "periodic")
+
+
+def test_normal_attack_crit_rate_reaches_only_normal_attacks():
+    """"Critical Rate of normal attack" (Helm's Frontline Command, Julia
+    signature's Decrescendo) is a crit rate the SKILL scopes to normal attacks.
+    Crit itself is not a normal-attack-exclusive modifier the way Core Damage
+    is, so the gate is the instance being a normal attack and nothing else.
+
+    Stated as an equivalence against the general bucket, which holds inside and
+    outside Full Burst alike: a flat ratio would not, since the Full Burst
+    bonus already sits in the same major modifier and dilutes the crit term.
+    """
+    kwargs = dict(
+        burst_damage_percents={"attacker": 100.0},
+        periodic_nukes={"attacker": {"cooldown": 1.0, "percent": 50.0}},
+        fight_duration=6.0,
+    )
+    plain = _run(**kwargs)
+    normal_only = _run(attacker_rules=[buff_rule(
+        "battle_start", [("normal_attack_crit_rate", 1.0, "self", None)])], **kwargs)
+    general = _run(attacker_rules=[buff_rule(
+        "battle_start", [("crit_rate", 1.0, "self", None)])], **kwargs)
+
+    def by_source(result, source):
+        return [(e["time"], e["damage"]) for e in result["damage_log"] if e["source"] == source]
+
+    # On normal attacks the two buckets are the same buff...
+    assert by_source(plain, "normal_attack")
+    assert by_source(normal_only, "normal_attack") == pytest.approx(
+        by_source(general, "normal_attack"))
+    assert by_source(normal_only, "normal_attack") != pytest.approx(
+        by_source(plain, "normal_attack"))
+    # ...and everywhere else the normal-attack bucket does nothing at all.
+    for source in ("burst", "periodic"):
+        assert by_source(plain, source)
+        assert by_source(normal_only, source) == by_source(plain, source)
+        assert by_source(general, source) != by_source(plain, source)
+
+
+def test_normal_attack_crit_rate_adds_to_the_general_one_under_the_same_cap():
+    """A unit holding both buckets crits at their sum, and the total is still
+    capped at 1.0 - the cap lives on the sum, not on either bucket."""
+    both = [buff_rule("battle_start", [
+        ("crit_rate", 0.4, "self", None),
+        ("normal_attack_crit_rate", 0.4, "self", None),
+    ])]
+    general_only = [buff_rule("battle_start", [("crit_rate", 0.8, "self", None)])]
+    kwargs = dict(fight_duration=6.0)
+
+    def normals(rules):
+        return [e["damage"] for e in _run(attacker_rules=rules, **kwargs)["damage_log"]
+                if e["source"] == "normal_attack"]
+
+    assert normals(both) == pytest.approx(normals(general_only))
+    over_cap = [buff_rule("battle_start", [
+        ("crit_rate", 0.8, "self", None),
+        ("normal_attack_crit_rate", 0.8, "self", None),
+    ])]
+    capped = [buff_rule("battle_start", [("crit_rate", 1.0, "self", None)])]
+    assert normals(over_cap) == pytest.approx(normals(capped))

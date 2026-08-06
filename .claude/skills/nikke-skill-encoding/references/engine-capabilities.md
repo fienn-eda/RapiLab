@@ -44,12 +44,21 @@ Damage stats (fed into `calculate_damage`, so they change damage numbers):
 | `element_advantage_grant` | grants the wielder elemental advantage it does NOT naturally have (`raid_simulator.element_bonus_for` returns `1 + ELEMENT_ADVANTAGE_BONUS` instead of the natural multiplier when set — it does not add to `other_elemental_bonus`, so it can't double up with natural advantage, and it does not change the unit's element identity for `element:<Name>`-scoped buffs) | "Applies Elemental Advantage damage to `<X>` Code enemies" (advantage-granting skill — rare; see `rapi_red_hood.py` for the only current consumer) |
 | `other_critical_damage_sources` | crit damage buff | "Critical Damage ▲ X%" |
 | `crit_rate` | crit rate buff (base 15% is added by the sim) | "Critical Rate ▲ X%" |
+| `normal_attack_crit_rate` | crit rate that reaches ONLY the holder's normal attacks (2026-08-07). Added to `crit_rate` before the 1.0 cap, so the cap sits on the sum | "Critical Rate **of normal attack(s)** ▲ X%", "**Normal Attack** Critical Rate ▲ X%" |
 | `charge_damage_bonus` | extra charge damage | "Charge Damage ▲ X%" |
 | `attack_damage_up` | Attack Damage bucket | "Attack Damage ▲ X%" |
 | `pierce_damage_up` | pierce damage — **gated on the wielder holding the Pierce PROPERTY** (`has_pierce`), so a Pierce Damage buff on a unit that never gains Pierce pays nothing | "Pierce Damage ▲ X%" |
 | `damage_taken_up` | enemy damage-taken debuff — model as **squad** scope (all attackers share it) | "Damage Taken ▲ X%" (on enemy) |
 | `other_core_damage_sources` | core-damage buff, **gated on `core_hittable`** (inert if boss has no core) | "Damage dealt when attacking core ▲ X%" |
 | `has_pierce` | the Pierce PROPERTY itself, as a 0/1 self-scoped Effect (2026-07-26) — it gates `pierce_damage_up`, and on a `pierce_hits_body_behind_core` boss it makes one normal attack produce a second instance on the body behind the core | "Gain(s) Pierce", "Additional Effect: Pierce" |
+
+**Read the crit bullet's own wording before reaching for `crit_rate`.** A skill
+that says "Critical Rate **of normal attack**" is a different bucket from a bare
+"Critical Rate", and the two appear side by side in one skill (Julia signature's
+Decrescendo grants both). Folding the narrow one into `crit_rate` credits every
+burst nuke in its scope - Helm's squad-wide grant did exactly that. Note the
+scope is the RECIPIENT's normal attacks, so a squad-scope grant still pays only
+each ally's own shots, never their skills. Consumers: `helm`, `julia_signature`.
 
 **Encode "Gains Pierce" — it is not a no-op.** The property has its own stat, so
 a bullet that grants Pierce for a window is credited for exactly that window and

@@ -12,8 +12,9 @@ it rides the matching resource fill `("per_critical_hit_every", N)` rather than
 the per-shot mode; both share `_expected_crit_positions`.
 
 Modeled (DPS-relevant):
-- Decrescendo (skills[0], own cooldown 20s): self Crit Rate +26.04% and self
-  ATK +20% for 10 sec. Fires periodically (t=20,40,...) like base Julia's
+- Decrescendo (skills[0], own cooldown 20s): self Crit Rate +26.04%, self
+  Normal Attack Critical Rate +36.16% (its own bucket, so it never reaches
+  Climax) and self ATK +20%, all for 10 sec. Fires periodically (t=20,40,...) like base Julia's
   Decrescendo, PLUS an extra cast at battle start - Crescendo's "Activates at
   the start of battle... Forcefully uses Skill 1" bullet (alongside, not
   instead of, the periodic schedule - a forced use still starts her own
@@ -38,11 +39,6 @@ Not modeled / deferred:
   already produced the Marcato proc, and unlike the counter conversion it has
   not been put to Fienn. Left out, which makes this encoding a FLOOR for her by
   roughly `crit_rate * 100%` per Marcato.
-- Decrescendo's Normal Attack Critical Rate +36.16%/10s: the engine has one
-  crit_rate stat shared by every damage instance (burst/normal/per-shot) - no
-  bucket for a NORMAL-ATTACK-ONLY crit rate distinct from the general one.
-  Folding it into the general crit_rate would inflate her burst nuke's crit
-  too, an overcount; deferred rather than faked.
 - "Affects random enemies" targeting - a raid sim is a single boss.
 """
 from app.effects import ResourceSpec
@@ -78,9 +74,15 @@ def _decrescendo_buffs(values):
     crit_rate_duration = float(values["description_value_02"])
     atk = float(values["description_value_03"]) / 100
     atk_duration = float(values["description_value_04"])
+    normal_crit_rate = float(values["description_value_05"]) / 100
+    normal_crit_rate_duration = float(values["description_value_06"])
     return [
         ("crit_rate", crit_rate, "self", crit_rate_duration),
         ("atk_percent", atk, "self", atk_duration),
+        # A SECOND, separate bullet: "Normal Attack Critical Rate ▲ 36.16%".
+        # Its own bucket, so it reaches her normal attacks (and the expected-crit
+        # counters Crescendo rides) without inflating Climax.
+        ("normal_attack_crit_rate", normal_crit_rate, "self", normal_crit_rate_duration),
     ]
 
 

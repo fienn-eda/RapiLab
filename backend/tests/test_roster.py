@@ -412,12 +412,21 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # each of her shots occupies 1.4 sec rather than 1.0. The RATIO FELL
     # 1.0529 -> 1.0494, which is the point of the delay: a reload saving buys
     # the same seconds back, but seconds are worth fewer shots now.
-    assert round(dmg_with / dmg_without, 4) == 1.0680
+    #
+    # Re-baselined 2026-08-07: Frontline Command's "Critical Rate of normal
+    # attack" moved to the normal_attack_crit_rate bucket, so it stops reaching
+    # anything that is not a normal attack. RATIO 1.0680 -> 1.0678, DELTA
+    # 47,264,159 -> 46,818,986. The delta moving is not a reload regression: the
+    # shots this cube buys also drive Admire Accompaniment's per-shot NUKE, and
+    # a nuke is not a normal attack, so each extra shot is now worth slightly
+    # less than it was. A reload-path regression would move the delta with the
+    # nuke's own value unchanged.
+    assert round(dmg_with / dmg_without, 4) == 1.0678
     # Pin the DELTA too, not just the ratio: the ratio moves whenever anything
     # in this deck's damage moves, but a reload-speed change is the only thing
     # that may move the delta. Splitting them is what stops a re-baseline from
     # quietly absorbing a real regression in the reload path.
-    assert round(dmg_with - dmg_without, 0) == 47_264_159.0
+    assert round(dmg_with - dmg_without, 0) == 46_818_986.0
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():
