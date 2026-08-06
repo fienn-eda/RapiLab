@@ -468,7 +468,7 @@ _TYPE_BUCKETS = {
 # Every registry stat phase-2 damage computation can read (_damage_instance,
 # _normal_attack_percent). All are constant within one state epoch, so the
 # whole bundle is resolved once per (target, epoch, registry version) - see
-# _stat_bundle in simulate_raid. normal_attack_type reads its single stat
+# _stat_bundle in _simulate_raid_once. normal_attack_type reads its single stat
 # directly - it runs in phase 1 where per-shot mutations churn the version,
 # so bundle misses there cost more than they save.
 _BUNDLE_STATS = (
@@ -522,13 +522,24 @@ def _stage_seconds(stage_table, conditional_full_burst_deltas):
 
     단계는 유닛별이고 초는 창 하나에 하나뿐이라 합산한다 - 확장을 주는 유닛이
     둘 있는 덱이라면 창이 둘 다 만큼 길어진다. 오늘 소비자는 소다 하나뿐이라
-    합이 곧 그녀 몫이다."""
+    합이 곧 그녀 몫이다.
+
+    단계는 1부터 센다. 0은 `SquadContext.full_burst_extension_stage`가 "확장
+    없음"으로 돌려주는 값이라 이 표에 실릴 값이 아니고, `tiers[stage - 1]`에
+    그대로 넣으면 `tiers[-1]`로 감겨 최대 단계를 조용히 사게 된다. 범위를 벗어난
+    단계는 생산자가 계약을 어겼다는 뜻이므로 건너뛰지 말고 터뜨린다 - 삼키면
+    버그가 예외가 아니라 damage 숫자로 나온다."""
     seconds = {}
     for cycle_index, stages in stage_table.items():
-        total = sum(
-            conditional_full_burst_deltas[slug]["tiers"][stage - 1][1]
-            for slug, stage in stages.items()
-        )
+        total = 0.0
+        for slug, stage in stages.items():
+            tiers = conditional_full_burst_deltas[slug]["tiers"]
+            if not 1 <= stage <= len(tiers):
+                raise ValueError(
+                    f"full burst extension stage {stage} for {slug!r} in cycle "
+                    f"{cycle_index} is outside 1..{len(tiers)} - stage 0 means "
+                    f"'no extension' and belongs out of this table, not in it")
+            total += tiers[stage - 1][1]
         if total:
             seconds[cycle_index] = total
     return seconds
@@ -1327,7 +1338,7 @@ def _simulate_raid_once(
                 # OTHER slugs' resources processed later in this same loop);
                 # shadowing it here corrupted that log for any
                 # squad_burst_cycle_conditional resource resolved afterward
-                # in the same simulate_raid call (only surfaced once a deck
+                # in the same _simulate_raid_once pass (only surfaced once a deck
                 # combined a buffed resource with one, e.g. Asuka + Maiden
                 # sharing Burst 3 - see test_interaction_asuka_maiden_shared_burst_tier.py).
                 buff_step_times = set(fill_times) | set(reset_times)
@@ -1605,3 +1616,10 @@ def _simulate_raid_once(
         "damage_log": damage_log,
         "events": events,
     }, {}
+
+
+# `inspect.signature` follows `__wrapped__`, so introspecting the public name
+# yields the real parameter list rather than the wrapper's (*args, **kwargs).
+# Set here rather than beside the wrapper because `_simulate_raid_once` is
+# defined below it.
+simulate_raid.__wrapped__ = _simulate_raid_once
