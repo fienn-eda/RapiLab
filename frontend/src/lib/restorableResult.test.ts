@@ -50,6 +50,7 @@ const profileSavedUnder = (engineVersion: string | null): Profile => {
     results: { [hash]: RESULT },
     lastResultHash: hash,
     lastInputs: INPUTS,
+    savedRuns: [],
   }
 }
 

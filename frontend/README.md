@@ -71,10 +71,13 @@ keyed by the (account, server) pair. This replaces the old single-roster
   already has `open_id` from the share URL. Both are **client-only** —
   `src/api/assembleRoster.ts` destructures them out of the payload before
   the fetch, so `POST /api/assemble-roster` receives only roster fields.
-  The backend never learns any account's `open_id` or `nickname`. The only
-  identifier our backend ever sees, on any call, is the anonymous `clientId`
-  (`src/lib/clientId.ts`, sent as `X-Client-Id`) — unrelated to any game
-  account and never sent to blablalink.
+  The backend never learns any account's `open_id` or `nickname`. That
+  backend runs on the user's own machine — the app bundles it and serves it
+  on localhost — so no call from this app reaches a remote service; the
+  stripping is what keeps those two fields out of the request and its
+  telemetry line regardless. The only identifier any call carries is the
+  anonymous `clientId` (`src/lib/clientId.ts`, sent as `X-Client-Id`) —
+  unrelated to any game account and never sent to blablalink.
 - **Bookmarklet `servers` payload:** the bookmarklet probes all five servers
   (`GetUserCharacters` per `nikke_area_id`) and posts back
   `{ open_id, servers: [{ area, nickname, owned, character_details,

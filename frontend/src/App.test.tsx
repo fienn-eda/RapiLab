@@ -68,6 +68,15 @@ describe('App', () => {
     expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
   })
 
+  it('개인정보 안내는 아직 동기화하지 않은 화면에도 있다', () => {
+    // 계정을 맡길지 정하는 순간이 바로 이때다. 푸터를 프로필이 있을 때만
+    // 그리면, 그 안내는 이미 맡긴 사람에게만 보인다.
+    render(<App />)
+
+    expect(screen.getByText('개인정보 처리방침')).toBeInTheDocument()
+    expect(screen.queryByText(/기 준비 완료/)).not.toBeInTheDocument()
+  })
+
   // The roster grid cards a unit only once /api/supported-units confirms the
   // engine can simulate it, so these have to wait for that list to land.
   const SUPPORTED = [
@@ -89,6 +98,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
       },
     })
@@ -118,6 +128,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
       },
     })
@@ -146,6 +157,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
         [ACCT_B]: {
           openId: 'acct-b',
@@ -155,6 +167,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
       },
     })
@@ -187,6 +200,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
         [ACCT_B]: {
           openId: 'acct-b',
@@ -196,6 +210,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
       },
     })
@@ -248,6 +263,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
         [ACCT_B]: {
           openId: 'acct-b',
@@ -257,6 +273,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
       },
     })
@@ -292,6 +309,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
       },
     })
@@ -337,6 +355,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
       },
     })
@@ -362,6 +381,7 @@ describe('App', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
       },
     })
@@ -391,6 +411,7 @@ describe('계산기 탭', () => {
           results: {},
           lastResultHash: null,
           lastInputs: null,
+          savedRuns: [],
         },
       },
     })

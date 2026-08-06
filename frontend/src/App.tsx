@@ -19,6 +19,7 @@ import { RecommendPanel } from './components/RecommendPanel'
 import { SyncRosterPanel } from './components/SyncRosterPanel'
 import { UnionRaidPanel } from './components/UnionRaidPanel'
 import { ChargeWindowPanel } from './components/ChargeWindowPanel'
+import { PrivacyNotice } from './components/PrivacyNotice'
 import type { NikkeDraft } from './types/nikkeDraft'
 import type { SavedRun } from './types/profile'
 
@@ -284,11 +285,17 @@ function App() {
         </>
       )}
 
-      {activeProfile !== null && (
-        <footer className="app__footer">
-          니케 {validRoster.length}/{drafts.length}기 준비 완료
-        </footer>
-      )}
+      {/* 푸터는 프로필이 없을 때도 나온다. 개인정보 안내를 가장 읽고 싶은
+          때가 바로 아직 아무것도 동기화하지 않은 때 - 계정을 맡길지 정하는
+          순간이기 때문이다. 준비 완료 수만 프로필이 있을 때 붙는다. */}
+      <footer className="app__footer">
+        {activeProfile !== null && (
+          <span>
+            니케 {validRoster.length}/{drafts.length}기 준비 완료
+          </span>
+        )}
+        <PrivacyNotice />
+      </footer>
     </div>
   )
 }

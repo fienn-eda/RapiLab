@@ -63,6 +63,58 @@
   border-top: 1px solid var(--rule);
   color: var(--text-muted);
   font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--sp-2);
+}
+
+/* Privacy notice ------------------------------------------------------- */
+
+/* 링크처럼 보이지만 링크가 아니다 - 눌러도 창을 떠나지 않고 아래에서 펼쳐진다.
+   이 앱에는 주소창도 뒤로가기도 없어서, 떠나면 돌아올 방법이 없다. */
+.privacy__summary {
+  cursor: pointer;
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.privacy__body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+  max-width: var(--measure);
+  margin-top: var(--sp-3);
+  padding: var(--sp-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-2);
+  font-size: 13px;
+}
+
+.privacy__heading {
+  margin: 0 0 var(--sp-2);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.privacy__text {
+  margin: 0;
+}
+
+.privacy__items {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin: 0;
+  padding-left: var(--sp-4);
+}
+
+.privacy__updated {
+  margin: 0;
+  font-size: 12px;
 }
 
 /* Roster + cards ------------------------------------------------------- */
