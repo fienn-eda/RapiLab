@@ -125,6 +125,10 @@
      the numeral is solid strokes filling its box. Matching the boxes is what
      makes them look mismatched, so the badge is given a little more. */
   --filter-icon-element: calc(var(--filter-icon) * 1.2);
+  /* 아이콘 칩은 어느 것이든 같은 정사각형이다. 아이콘 원본은 패밀리별로 가로
+     비율이 달라(버스트 1은 좁고 3은 넓다) 폭을 아이콘에 맡기면 칩마다 폭이
+     달라진다. 가장 큰 아이콘이 들어갈 만큼으로 잡는다. */
+  --filter-chip-box: calc(var(--filter-icon-element) + 6px);
 
   display: flex;
   flex-direction: column;
@@ -204,23 +208,27 @@
   outline-offset: 2px;
 }
 
-/* An icon chip has no text to set its height, so the icon does. Every icon is
-   sized by height with width left to follow, because within each family the
-   artwork shares a height and differs in width. */
+/* 아이콘 칩은 내용과 무관하게 같은 정사각형이다 - 크기를 아이콘에 맡기면
+   가로 비율이 다른 원본들이 저마다 다른 폭의 칩을 만든다. 아이콘은 그 안에
+   맞춰 들어가고, 남는 자리는 여백이 된다. */
 .unit-filter__chip--icon {
   display: inline-flex;
   align-items: center;
-  padding: 2px var(--sp-1);
-  /* One pill height across both families, set by the taller icon plus this
-     rule's own padding and border. Without it, evening up the icons only moves
-     the mismatch out to the outlines around them. */
-  min-height: calc(var(--filter-icon-element) + 4px + 2px);
+  justify-content: center;
+  padding: 0;
+  width: var(--filter-chip-box);
+  height: var(--filter-chip-box);
+  /* 정사각형이라 알약 반경은 원이 된다. 상자로 읽히게 앱의 기본 반경을 쓴다. */
+  border-radius: var(--radius-sm);
 }
 
 .unit-filter__icon {
   display: block;
   height: var(--filter-icon);
   width: auto;
+  /* 상자보다 넓은 원본이 상자를 밀어내지 않게. */
+  max-width: 100%;
+  object-fit: contain;
   /* Off chips read as unlit rather than absent - the border still holds the
      hit area, so this is the only thing carrying the on/off state visually. */
   opacity: 0.45;
