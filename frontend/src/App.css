@@ -1318,6 +1318,12 @@
    whole roster at a glance. */
 .palette__item {
   display: flex;
+  /* One width for every chip. Sizing to content makes each chip as wide as its
+     own skill numbers - "S1 1" is narrower than "S1 10", and the typeface is
+     proportional so even "S1 10" and "S2 10" differ - which leaves the grid
+     ragged. 140px is the widest a chip needs: 72 for the portrait, 51 for the
+     pip column, and the gaps, padding and borders between them. */
+  flex: 0 0 140px;
   /* Stretch, not flex-start: the pip column is shorter than the portrait, and
      top-aligning it left a dead quarter in every chip. */
   align-items: stretch;
@@ -1357,6 +1363,9 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 2px;
+  /* Takes whatever width the portrait leaves, so the pips are the same size in
+     every chip instead of each column hugging its own longest value. */
+  flex: 1;
 }
 
 /* Same cell shape as a skill pip, but one value instead of a label/value
