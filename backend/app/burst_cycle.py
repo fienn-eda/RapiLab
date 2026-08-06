@@ -109,6 +109,7 @@ def simulate_burst_cycle(
     gauge_charge_time,
     fight_duration,
     mode="auto",
+    full_burst_duration_overrides=None,
     on_battle_start=None,
     on_tier_fire=None,
     on_full_burst_enter=None,
@@ -126,6 +127,13 @@ def simulate_burst_cycle(
             cooldown pulse). Returning a per-slug map lets a self-scoped pulse
             (e.g. Blanc's own CDR) reduce only the caster's cooldown while a
             squad-scoped one reduces everyone's.
+
+    `full_burst_duration_overrides`는 {사이클 인덱스: 초}로, 그 사이클의 창
+    길이에 더해진다. 이 스케줄러는 그 값이 어디서 왔는지 모른다 - 값이
+    사이클마다 달라지는 확장(소다의 Beginner's Rewards는 골든칩 스택에 따라
+    +0/+2/+5초)은 자원 상태를 봐야 정해지는데, 자원은 이 스케줄러가 창을
+    확정한 뒤에야 채워지기 때문이다. raid_simulator가 고정점까지 반복하며
+    이 테이블을 갱신한다.
     """
     gap = 0.0 if mode == "auto" else 0.1
     last_used_at = {member["slug"]: float("-inf") for member in deck}
@@ -197,7 +205,9 @@ def simulate_burst_cycle(
         # 연 사이클에만 걸린다.
         duration = max(
             MIN_FULL_BURST_DURATION,
-            FULL_BURST_DURATION + tier3_member.get("full_burst_duration_delta", 0.0),
+            FULL_BURST_DURATION
+            + tier3_member.get("full_burst_duration_delta", 0.0)
+            + (full_burst_duration_overrides or {}).get(cycle_index, 0.0),
         )
         full_burst_end = full_burst_start + duration
         if on_full_burst_enter:
