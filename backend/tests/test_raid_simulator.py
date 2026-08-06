@@ -3732,3 +3732,96 @@ def test_time_condition_is_honoured_by_the_periodic_and_per_shot_passes():
 
     run(never)
     assert seen == {"periodic": [], "per_shot": []}
+
+
+def test_conditional_full_burst_delta_reads_the_chip_before_the_burst_spends_it():
+    """소다 본인이 그 사이클의 Burst 3이면, 같은 순간에 Beginner's Rewards가
+    칩을 읽고 Onward Soda!가 17을 쓴다. 판정은 소비 전이다 - 같은 순간의 ATK
+    게이트(>=30)가 이미 소비 전을 읽으므로 둘이 같은 값을 봐야 한다.
+
+    칩 28로 진입하면 소비 전 판정은 II단계(>=20), 소비 후라면 11이라 I단계다."""
+    from app.raid_simulator import _resolve_conditional_fb_deltas
+    from app.squad_engine import SquadContext, SquadMember
+
+    context = SquadContext([SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron")])
+    # 전투 시작 28, t=10.0에 버스트가 17을 써서 11로
+    context.reset_resource("soda-twinkling-bunny", "chip", 0.0, 0.0, 28.0)
+    context.reset_resource("soda-twinkling-bunny", "chip", 10.0, 28.0, 11.0)
+    events = [{"type": "burst", "tier": 3, "slug": "soda-twinkling-bunny", "time": 10.0}]
+    specs = {"soda-twinkling-bunny": {"resource": "chip", "cap": 50,
+                                      "tiers": [(10.0, 2.0), (20.0, 5.0)]}}
+
+    assert _resolve_conditional_fb_deltas(context, events, specs) == {0: {"soda-twinkling-bunny": 2}}
+
+
+def test_conditional_full_burst_delta_is_empty_below_the_lowest_threshold():
+    from app.raid_simulator import _resolve_conditional_fb_deltas
+    from app.squad_engine import SquadContext, SquadMember
+
+    context = SquadContext([SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron")])
+    context.reset_resource("soda-twinkling-bunny", "chip", 0.0, 0.0, 9.0)
+    events = [{"type": "burst", "tier": 3, "slug": "soda-twinkling-bunny", "time": 10.0}]
+    specs = {"soda-twinkling-bunny": {"resource": "chip", "cap": 50,
+                                      "tiers": [(10.0, 2.0), (20.0, 5.0)]}}
+
+    assert _resolve_conditional_fb_deltas(context, events, specs) == {}
+
+
+def test_conditional_full_burst_delta_applies_when_another_unit_opened_the_cycle():
+    """"Affects all allies" - 소다가 그 사이클의 Burst 3가 아니어도 걸린다."""
+    from app.raid_simulator import _resolve_conditional_fb_deltas
+    from app.squad_engine import SquadContext, SquadMember
+
+    context = SquadContext([
+        SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron"),
+        SquadMember("other-b3", burst_tier=3, element="Iron"),
+    ])
+    context.reset_resource("soda-twinkling-bunny", "chip", 0.0, 0.0, 50.0)
+    events = [{"type": "burst", "tier": 3, "slug": "other-b3", "time": 10.0}]
+    specs = {"soda-twinkling-bunny": {"resource": "chip", "cap": 50,
+                                      "tiers": [(10.0, 2.0), (20.0, 5.0)]}}
+
+    assert _resolve_conditional_fb_deltas(context, events, specs) == {0: {"soda-twinkling-bunny": 2}}
+
+
+def test_no_conditional_specs_resolves_empty():
+    """소다 없는 덱의 불변식 출발점."""
+    from app.raid_simulator import _resolve_conditional_fb_deltas
+    from app.squad_engine import SquadContext, SquadMember
+
+    context = SquadContext([SquadMember("a", burst_tier=3, element="Iron")])
+    events = [{"type": "burst", "tier": 3, "slug": "a", "time": 10.0}]
+    assert _resolve_conditional_fb_deltas(context, events, {}) == {}
+
+
+def test_stage_seconds_rejects_a_stage_outside_the_tier_range():
+    """단계 0은 "확장 없음"이라 이 표에 실릴 값이 아니다. tiers[0 - 1]은
+    tiers[-1]로 감겨 최대 단계를 조용히 사므로, 삼키지 말고 터져야 한다."""
+    from app.raid_simulator import _stage_seconds
+
+    specs = {"soda-twinkling-bunny": {"resource": "chip", "cap": 50,
+                                      "tiers": [(10.0, 2.0), (20.0, 5.0)]}}
+
+    with pytest.raises(ValueError, match="outside 1..2"):
+        _stage_seconds({0: {"soda-twinkling-bunny": 0}}, specs)
+    with pytest.raises(ValueError, match="outside 1..2"):
+        _stage_seconds({0: {"soda-twinkling-bunny": 3}}, specs)
+
+
+def test_deck_without_a_conditional_unit_resolves_in_exactly_one_pass():
+    """이 설계에서 가장 중요한 성질: 소다가 없으면 오늘과 같다."""
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b3", "burst_tier": 3, "element": "Iron", "cooldown": 20.0},
+    ]
+    base_stats = {m["slug"]: {"atk": 10000, "def": 0, "max_hp": 0} for m in deck}
+    sg = {"weapon": "SG", "damage_percent": 10.0, "max_ammo": 1000,
+          "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 0.0}
+    result = simulate_raid(
+        deck, {m["slug"]: [] for m in deck}, burst_damage_percents={},
+        base_stats=base_stats, enemy_def=0, gauge_charge_time=5.0,
+        fight_duration=60.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={m["slug"]: sg for m in deck},
+    )
+    assert result["full_burst_passes"] == {"passes": 1, "converged": True}

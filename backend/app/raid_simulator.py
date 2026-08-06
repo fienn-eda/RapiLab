@@ -489,6 +489,43 @@ _BUNDLE_STATS = (
 # 이 상한은 수렴하지 않는 조합에서 무한히 도는 것을 막는 안전장치다.
 MAX_FULL_BURST_PASSES = 4
 
+# 자원 조회를 리셋 "직전"으로 밀어내는 폭. resource_count는 조회 시각과 같은
+# 시각의 리셋을 베이스라인으로 쓰므로, 그냥 버스트 시각을 물으면 소비 후 값이
+# 돌아온다. 이 폭이면 같은 순간의 리셋만 벗어나고 직전 fill은 그대로 센다.
+_PRE_BURST_EPSILON = 1e-6
+
+
+def _resolve_conditional_fb_deltas(context, events, conditional_full_burst_deltas):
+    """사이클별 {슬러그: 확장 단계}. 단계는 그 사이클의 Burst 3이 발동한 순간,
+    자원이 소비되기 직전의 값으로 정해진다.
+
+    원문이 "Activates when entering Burst Stage 3 / Affects all allies"이므로
+    스펙 보유자가 그 사이클의 Burst 3일 필요가 없다 - 덱에 있고 조건이 맞으면
+    누가 창을 열든 걸린다. 판정 시각도 `full_burst_start`가 아니라 버스트
+    발동 시각이다(둘은 FULL_BURST_OPEN_DELAY만큼 떨어져 있다).
+
+    단계 0은 담지 않는다: 아무 유닛도 조건을 못 넘긴 사이클은 키 자체가 없어야
+    "빈 딕셔너리"와의 비교로 고정점을 판정할 수 있다."""
+    resolved = {}
+    if not conditional_full_burst_deltas:
+        return resolved
+    tier3_times = [e["time"] for e in events if e.get("type") == "burst" and e.get("tier") == 3]
+    for cycle_index, fire_time in enumerate(tier3_times):
+        stages = {}
+        for slug, spec in conditional_full_burst_deltas.items():
+            count = context.resource_count(
+                slug, spec["resource"], fire_time - _PRE_BURST_EPSILON, spec["cap"]
+            )
+            stage = 0
+            for index, (threshold, _seconds) in enumerate(spec["tiers"], start=1):
+                if count >= threshold:
+                    stage = index
+            if stage:
+                stages[slug] = stage
+        if stages:
+            resolved[cycle_index] = stages
+    return resolved
+
 
 def simulate_raid(*args, **kwargs):
     """한 번의 레이드 시뮬레이션. 대부분의 덱에서는 `_simulate_raid_once`를 정확히
@@ -1615,7 +1652,7 @@ def _simulate_raid_once(
         "total_damage": sum(entry["damage"] for entry in damage_log),
         "damage_log": damage_log,
         "events": events,
-    }, {}
+    }, _resolve_conditional_fb_deltas(context, events, conditional_full_burst_deltas)
 
 
 # `inspect.signature` follows `__wrapped__`, so introspecting the public name
