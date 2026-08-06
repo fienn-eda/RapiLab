@@ -21,7 +21,9 @@ Modeled (DPS-relevant):
   -32.19%, and self Attack Damage +75.17% as a per-shot round grant - both
   exactly as in the base build.
 - Thief's Vision (dollskills[1]): self ATK +85.12% for 5 sec and Distributed
-  Damage +31.92% for 10 sec every 10 normal attacks, also as in the base.
+  Damage +31.92% for 10 sec every 10 normal attacks, also as in the base. The
+  bullet names no stack count, so at 12 AR shots/sec each re-application
+  refreshes the live grant instead of adding to it.
 - Thief's Vision (dollskills[1]) at max dagger stacks, every 60 shots:
   * 84.33% of final ATK as ADDITIONAL damage. "Additional damage" is
     Full-Burst-Bonus eligible (the project's standing rule), and unlike a burst
@@ -45,6 +47,7 @@ Not modeled / deferred:
 from app.skill_rules._helpers import (
     buff_rule,
     instant_nuke_pulse_rule,
+    refreshing_buff_rule,
     round_buff_rule,
 )
 from app.squad_engine import boss_is_element
@@ -118,7 +121,7 @@ def build_phantom_signature_per_shot_rules(values):
                             shots=rounds),
         ]),
         (vision_shots, "every", [
-            buff_rule("per_shot", [
+            refreshing_buff_rule("per_shot", [
                 ("atk_percent", vision_atk, "self", vision_atk_duration),
                 ("distributed_damage_up", distributed, "self", distributed_duration),
             ]),
