@@ -5,6 +5,7 @@ import { UnionRaidPanel } from './UnionRaidPanel'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
 import type { UserNikkeState } from '../types/userNikkeState'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
+import type { SavedRun } from '../types/profile'
 
 vi.mock('../api/evaluateDecks', () => ({
   evaluateDecks: vi.fn(),
@@ -52,7 +53,14 @@ const burstTiersFor = (slug: string): BurstTier[] => {
   return Number.isNaN(i) ? [] : [((i % 3) + 1) as BurstTier]
 }
 
-const renderPanel = () =>
+const noKeeping = {
+  savedRuns: [],
+  onSaveRun: () => true,
+  onRenameRun: () => {},
+  onDeleteRun: () => {},
+}
+
+const renderPanel = (overrides = {}) =>
   render(
     <UnionRaidPanel
       roster={roster}
@@ -60,8 +68,21 @@ const renderPanel = () =>
       portraitFor={portraitFor}
       nameFor={nameFor}
       burstTiersFor={burstTiersFor}
+      {...noKeeping}
+      {...overrides}
     />,
   )
+
+/** 세 전투를 전부 채우고 제출한다 - 유니온은 편성이 꽉 차야 실행된다. */
+const fillAndSubmit = async (user: ReturnType<typeof userEvent.setup>) => {
+  await screen.findByRole('button', { name: /u0 사용/i })
+  for (let deck = 0; deck < 3; deck += 1) {
+    for (let seat = 0; seat < 5; seat += 1) {
+      dropOnDeck(deck + 1, `u${deck * 5 + seat}`)
+    }
+  }
+  await user.click(screen.getByRole('button', { name: /인카운터/ }))
+}
 
 beforeEach(() => {
   vi.mocked(evaluateDecks).mockReset()
@@ -307,5 +328,86 @@ describe('UnionRaidPanel', () => {
 
     expect(results.compareDocumentPosition(roster) & Node.DOCUMENT_POSITION_FOLLOWING)
       .toBeTruthy()
+  })
+})
+
+describe('UnionRaidPanel 결과 보관', () => {
+  const evaluationSuccess = () => {
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [] },
+      ],
+      combined_total_damage: 60,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+  }
+
+  it('결과가 없으면 저장 버튼도 없다', () => {
+    renderPanel()
+
+    expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument()
+  })
+
+  // 솔로 탭의 보관물과 한 목록에 섞이지 않게 하는 것이 이 필드다.
+  it('유니온 결과는 유니온 몫으로 남는다', async () => {
+    const user = userEvent.setup()
+    evaluationSuccess()
+    const saved: SavedRun[] = []
+    renderPanel({
+      onSaveRun: (run: SavedRun) => {
+        saved.push(run)
+        return true
+      },
+    })
+
+    await fillAndSubmit(user)
+    await screen.findByText('1번 덱 · 무속성')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+    await user.click(screen.getByRole('button', { name: '확인' }))
+
+    expect(saved).toHaveLength(1)
+    expect(saved[0].tab).toBe('union')
+    expect(saved[0].view).toMatchObject({ numBattles: 3 })
+  })
+
+  it('보관한 유니온 결과를 열면 그때의 세 덱을 다시 그린다', async () => {
+    const user = userEvent.setup()
+    const boss = {
+      element: null,
+      core_hittable: false,
+      pierce_hits_body_behind_core: false,
+      enemy_def: 0,
+      fight_duration: 180,
+      part_destructible: false,
+      effective_range_band: null,
+      elemental_interrupt_required: false,
+    }
+    renderPanel({
+      savedRuns: [
+        {
+          id: 'r1',
+          name: '지난 주 유니온',
+          savedAt: 1754438400000,
+          tab: 'union' as const,
+          view: {
+            numBattles: 3,
+            bosses: [boss, boss, boss],
+            draft: { decks: [[], [], []] },
+            decks: [
+              { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 888, burst_damage: 500, normal_attack_damage: 300, skill_damage: 88, hold_burst_slugs: [] },
+            ],
+            combinedTotalDamage: 888,
+            excludedSlugs: [],
+          },
+        },
+      ],
+    })
+
+    await user.click(screen.getByRole('button', { name: /지난 주 유니온/ }))
+
+    expect(screen.getByText('888 총딜')).toBeInTheDocument()
   })
 })

@@ -9,6 +9,7 @@
 import { useId, useMemo, useState, type FormEvent } from 'react'
 import { useEvaluateDecks } from '../hooks/useEvaluateDecks'
 import {
+  bossProfileToDraft,
   makeDefaultBossProfileDraft,
   validateBossProfileDraft,
   type BossProfileDraft,
@@ -21,6 +22,9 @@ import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
 import { DraftEditor, removeUnitBySlug } from './DraftEditor'
 import { EvaluationResults } from './EvaluationResults'
+import { SaveRunButton } from './SaveRunButton'
+import { SavedRunList } from './SavedRunList'
+import { makeRunId, type SavedRun, type UnionRunView } from '../types/profile'
 import { UnitPalette, toggleExcludedSlug, type UnitInvestment } from './UnitPalette'
 
 interface UnionRaidPanelProps {
@@ -37,6 +41,19 @@ interface UnionRaidPanelProps {
    * lookup RecommendPanel passes its own palette. Without it every chip here
    * would show blank stars/core/heart next to a recommend tab that shows them. */
   investmentFor?: (slug: string) => UnitInvestment
+  /** 이 프로필이 유니온 탭에서 이름 붙여 남겨 둔 결과들, 최신순. */
+  savedRuns: SavedRun[]
+  /** 보관 상한에 걸려 거절되면 false. */
+  onSaveRun: (run: SavedRun) => boolean
+  onRenameRun: (id: string, name: string) => void
+  onDeleteRun: (id: string) => void
+}
+
+/** 유니온은 전투마다 보스가 달라 하나를 이름에 뽑을 수 없다 — 전투 수와 날짜로
+ * 구분한다. */
+const suggestUnionRunName = (at: Date, numBattles: number): string => {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `유니온 ${numBattles}전투 · ${pad(at.getMonth() + 1)}-${pad(at.getDate())}`
 }
 
 const NUM_BATTLES_OPTIONS = Array.from(
@@ -51,6 +68,10 @@ export function UnionRaidPanel({
   nameFor,
   burstTiersFor,
   investmentFor,
+  savedRuns,
+  onSaveRun,
+  onRenameRun,
+  onDeleteRun,
 }: UnionRaidPanelProps) {
   const [numBattles, setNumBattles] = useState(DEFAULT_UNION_NUM_DECKS)
   const [bosses, setBosses] = useState<BossProfileDraft[]>(() =>
@@ -113,6 +134,28 @@ export function UnionRaidPanel({
     }
     setExcludedSlugs((prev) => toggleExcludedSlug(prev, slug))
   }
+
+  // 화면에 떠 있는 유니온 결과. 보스는 제출 시점 스냅샷(evaluatedBosses)이라,
+  // 결과가 나온 뒤 보스 폼을 만져도 이 값은 따라 움직이지 않는다.
+  const displayedRun = useMemo<UnionRunView | null>(() => {
+    if (evaluation.status !== 'success') return null
+    return {
+      numBattles,
+      bosses: evaluatedBosses,
+      draft: draftValue,
+      decks: evaluation.decks,
+      combinedTotalDamage: evaluation.combinedTotalDamage,
+      excludedSlugs: evaluation.excludedSlugs,
+    }
+  }, [
+    evaluation.status,
+    evaluation.decks,
+    evaluation.combinedTotalDamage,
+    evaluation.excludedSlugs,
+    evaluatedBosses,
+    draftValue,
+    numBattles,
+  ])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -183,6 +226,24 @@ export function UnionRaidPanel({
             {evaluation.error}
           </p>
         )}
+        {displayedRun && (
+          <div className="result-head">
+            <span className="saved-runs__name">유니온 레이드 {numBattles}전투</span>
+            <SaveRunButton
+              suggestedName={suggestUnionRunName(new Date(), numBattles)}
+              onSave={(name) => {
+                const savedAt = Date.now()
+                return onSaveRun({
+                  id: makeRunId(savedAt, savedRuns),
+                  name,
+                  savedAt,
+                  tab: 'union',
+                  view: displayedRun,
+                })
+              }}
+            />
+          </div>
+        )}
         {evaluation.status === 'success' && (
           <EvaluationResults
             decks={evaluation.decks}
@@ -231,6 +292,41 @@ export function UnionRaidPanel({
               </div>
             </div>
           </div>
+        </fieldset>
+
+        <fieldset className="group">
+          <legend className="group__legend">저장한 결과 ({savedRuns.length})</legend>
+          <details className="group__details">
+            <summary className="group__hint">
+              이름을 눌러 그때의 결과를 다시 볼 수 있어요
+            </summary>
+            <SavedRunList
+              runs={savedRuns}
+              renderRun={(run) => {
+                const view = run.view as UnionRunView
+                return (
+                  <EvaluationResults
+                    decks={view.decks}
+                    combinedTotalDamage={view.combinedTotalDamage}
+                    excludedSlugs={view.excludedSlugs}
+                    bosses={view.bosses}
+                    portraitFor={portraitFor}
+                    nameFor={nameFor}
+                  />
+                )
+              }}
+              onRestore={(run) => {
+                const view = run.view as UnionRunView
+                // changeNumBattles가 bosses/draftValue도 함께 바꾸므로, 뒤따르는
+                // 두 setState가 최종 값을 쥔다 - React가 셋을 한 렌더로 묶는다.
+                changeNumBattles(view.numBattles)
+                setBosses(view.bosses.map(bossProfileToDraft))
+                setDraftValue(view.draft)
+              }}
+              onRename={onRenameRun}
+              onDelete={onDeleteRun}
+            />
+          </details>
         </fieldset>
       </form>
     </section>

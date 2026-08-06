@@ -79,6 +79,10 @@ function App() {
     () => (activeProfile ? runsForTab(activeProfile, 'solo') : NO_SAVED_RUNS),
     [activeProfile],
   )
+  const unionSavedRuns = useMemo(
+    () => (activeProfile ? runsForTab(activeProfile, 'union') : NO_SAVED_RUNS),
+    [activeProfile],
+  )
 
   // Breakthrough/core and the Favorite Item heart, for the palette chips and
   // the names in a result. It rides alongside the roster rather than in it:
@@ -233,6 +237,16 @@ function App() {
                 nameFor={nameFor}
                 burstTiersFor={burstTiersResolver}
                 investmentFor={investmentFor}
+                savedRuns={unionSavedRuns}
+                onSaveRun={(run) =>
+                  state.activeKey ? saveRun({ key: state.activeKey, run }) : false
+                }
+                onRenameRun={(id, name) => {
+                  if (state.activeKey) renameRun({ key: state.activeKey, id, name })
+                }}
+                onDeleteRun={(id) => {
+                  if (state.activeKey) deleteRun({ key: state.activeKey, id })
+                }}
               />
             </div>
 
