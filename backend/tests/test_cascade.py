@@ -378,28 +378,35 @@ def test_the_pool_width_and_the_shortlist_width_are_one_setting():
     """These two numbers are not independent knobs, and the pair is measured.
 
     The pool decides what can be ranked; K decides how much of that ranking the
-    simulator gets to overrule. Widen the pool without widening K and the
-    shortlist fills with combinations the unit-only surrogate overrates, which
-    pushes the genuinely best deck out of the twenty that get simulated. On
-    Fienn's roster (78 usable, 5 decks, Wind boss, DEF 31,784, 180 s), measured
-    2026-08-06 with `python3 scripts/measure_pool_caps.py`:
+    simulator gets to overrule. Measured 2026-08-06 with
+    `python3 scripts/measure_pool_caps.py` on Fienn's roster (78 usable, 5
+    decks, DEF 31,784, 180 s), against the shipped caps at K=20:
 
-        caps      K=20                    K=100
-        2/4/8     40.932B  (-0.30%)       -
-        3/5/10    41.579B  (+1.27%)       -
-        4/6/12    41.056B  (shipped)      41.228B  (+0.42%)
-        6/9/18    36.408B  (-11.32%)      40.846B  (-0.51%)
-        8/12/24   36.408B  (-11.32%)      40.846B  (-0.51%)
+        caps      Wind boss   Fire boss     Wind at K=100
+        2/4/8      -0.30%      +2.27%       -
+        3/5/10     +1.27%      -0.53%       -
+        4/6/12     shipped     shipped      +0.42%
+        6/9/18    -11.32%      +0.12%       -0.51%
+        8/12/24   -11.32%      -            -0.51%
 
-    So quality is NOT monotone in the caps and the shipped pair is not a peak -
-    3/5/10 beat it by 1.27% in the same wall time on that one roster. Two
-    stale roadmap notes read the other way ("widening the pool is worth 0",
-    "widen it so the pool stops missing CDR units"); both were measured before
-    the swap budget became a candidate count, and following either one today
-    costs 11% unless K moves with it.
+    Three things, and only the first is about the caps themselves:
+
+    1. Quality is NOT monotone in the caps, and the shipped pair is not a peak
+       on either boss - but no alternative wins on both, so there is nothing
+       here to move to. 3/5/10 is the best setting on Wind and among the worst
+       on Fire; 2/4/8 is the reverse.
+    2. The 11% excursion is real and is NOT a property of widening. It is one
+       (boss, caps) cell: the same widening costs nothing on Fire. What K=100
+       shows is only that simulating more of the ranking recovers it, i.e. the
+       surrogate mis-ranks that particular wider pool.
+    3. Two roadmap notes read the other way - "widening the pool is worth 0"
+       and "widen it so the pool stops missing CDR units" - and were measured
+       before the swap budget became a candidate count. Neither is safe to
+       act on without re-measuring.
 
     Change either constant and this test fails on purpose: re-run the sweep on
-    a real roster, on at least two bosses, and put the new table here.
+    a real roster, on at least two bosses, and put the new table here. One
+    boss is what made the 11% look like a law.
     """
     assert (WIDE_TIER_CAPS, DEFAULT_TOP_K) == ({1: 4, 2: 6, 3: 12}, 20), (
         "pool caps and shortlist width are a measured pair - see this test's "
