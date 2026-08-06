@@ -4,6 +4,29 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 팔레트가 카드의 폭을 정한다 — 폼이 shrink-to-fit이라 자식의 `display`를 바꾸면 카드가 무너진다
+
+- 확립: 2026-08-06. 솔로/유니온 레이드의 팔레트 칩 폭이 제각각이었다. 원인은
+  단순했다 — `.palette__list`가 `flex-wrap`이라 **각 칩이 자기 스킬 숫자만큼만**
+  넓어진다. `S1 1`보다 `S1 10`이 넓고, 폰트가 비례폭이라 **`S1 10`과 `S2 10`조차
+  다르다**. 74칩이 136 / 136.9 / 139 세 폭으로 갈렸다.
+- **당연해 보이는 수정이 틀렸다.** 니케 풀 탭이 멀쩡한 이유가 `.roster__grid`의
+  `repeat(auto-fill, minmax(170px, 1fr))`이므로 팔레트도 그리드로 바꾸면 될 것
+  같지만, 그렇게 하면 **카드 폭이 1377 → 972로 무너지고 한 줄 칩 수가 8 → 4로
+  반토막 난다**.
+- 이유: `.recommend-form`과 `.panel`이 **`align-items: flex-start`**라 자식이
+  shrink-to-fit이다. 즉 **카드의 폭을 벌리고 있는 것이 팔레트 자신**이고, 팔레트의
+  max-content가 달라지면 조상 전체가 따라 줄어든다. 그리드의 max-content는
+  flex-wrap 한 줄의 그것과 전혀 다르다.
+- 그래서 고친 자리는 레이아웃이 아니라 **칩 하나**다: `.palette__item`에
+  `flex: 0 0 140px`, `.palette__stats`에 `flex: 1`. 조상 폭 계산이 한 픽셀도 안
+  바뀐다(카드 1377 유지, 행 수 11 유지).
+- **How to apply:** 폭이 균일하지 않다는 증상을 보면 **어느 계층에서 폭이 갈리는지
+  부터 재라.** 여기서는 `.palette__face`가 전 칩 72로 균일하고 `.palette__stats`만
+  48/48.9/51로 갈려서, 범인이 핍 열임이 바로 나왔다. 그리고 `display`를 바꾸기
+  전에 **조상 체인의 폭을 before/after로 재라** — shrink-to-fit 조상이 하나라도
+  있으면 자식의 내재 폭 변화가 위로 전파된다.
+
 ## 어두운 팔레트를 눈으로 고르면 틀린다 — 특히 테두리가 깊이를 질 때
 
 - 확립: 2026-08-06. 흑·회·백·적 개편에서 **눈으로는 멀쩡했던 값 셋이 계산에서
