@@ -5,6 +5,7 @@ from app.effects import EffectRegistry, ResourceSpec
 from app.raid_simulator import simulate_raid
 from app.skill_rules.soda_twinkling_bunny import (
     build_beginners_rewards_full_burst_delta,
+    build_beginners_rewards_per_shot_rules,
     build_golden_chip_resources,
     build_lucky_golden_chip_per_shot_rules,
     build_onward_soda_resource_gated_buffs,
@@ -61,6 +62,37 @@ def test_beginners_rewards_reads_thresholds_and_seconds_from_slots():
     }
     spec = build_beginners_rewards_full_burst_delta(lower)
     assert spec["tiers"] == [(8.0, 1.0), (16.0, 3.0)]
+
+
+def test_beginners_rewards_nuke_scales_with_the_cycles_extension_stage():
+    """넉도 누적이다 (Fienn 확정): II단계 한 발은 52.04 + 85.02 = 137.06%.
+    확장이 없는 창(0단계)에서는 아예 안 나간다."""
+    rules = build_beginners_rewards_per_shot_rules(SODA_VALUES)
+    assert len(rules) == 1
+    threshold, mode, skill_rules = rules[0]
+    assert (threshold, mode) == (1, "every_during_full_burst")
+
+    ctx = SquadContext([SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron")])
+    reg = EffectRegistry()
+
+    ctx.full_burst_extension_stages = [
+        (0.0, 10.0, {}), (20.0, 32.0, {"soda-twinkling-bunny": 1}),
+        (40.0, 55.0, {"soda-twinkling-bunny": 2}),
+    ]
+
+    skill_rules[0].action(ctx, "soda-twinkling-bunny", 5.0, reg)
+    assert reg.drain_pulses("instant_damage_percent") == []      # 0단계: 넉 없음
+
+    skill_rules[0].action(ctx, "soda-twinkling-bunny", 25.0, reg)
+    pulses = reg.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert round(pulses[0].value, 4) == 52.04                    # I단계
+
+    skill_rules[0].action(ctx, "soda-twinkling-bunny", 45.0, reg)
+    pulses = reg.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert round(pulses[0].value, 4) == 137.06                   # II단계 = 52.04 + 85.02
+    assert pulses[0].source_slug == "soda-twinkling-bunny"
 
 
 def test_lucky_golden_chip_cofired_buff_targets_self_and_top_atk_ally():

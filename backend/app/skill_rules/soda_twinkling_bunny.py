@@ -29,22 +29,23 @@ Modeled (DPS-relevant): a "chip" resource (Golden Chip), capped at 50.
   shots" every 2 sec, exactly the buff's own duration, so repeated fires
   refresh rather than stack). See `build_lucky_golden_chip_per_shot_rules`.
 
+- Beginner's Rewards (skills[1]), both bullets. On entering Burst Stage 3 the
+  chip decides a Full Burst Duration extension - +2 sec at 10+ stacks, a
+  further +3 at 20+, cumulative, so 20+ is +5 (Fienn measured 15 sec windows
+  in play). It affects ALL allies and does not need her to be the Burst 3 that
+  opened the cycle. The extension is registered as a conditional per-cycle
+  delta (`build_beginners_rewards_full_burst_delta`, resolved to a fixed point
+  by simulate_raid) rather than the per-slug constant Isabel and Modernia use,
+  because its value changes cycle to cycle with the chip.
+  Gated on that same state, every in-Full-Burst normal attack fires a nuke -
+  52.04% of final ATK in Time Extension I, 137.06% in II (also cumulative).
+  See docs/superpowers/specs/2026-08-06-soda-full-burst-extension-design.md.
+
 Not modeled / deferred:
-- Beginner's Rewards (skills[1]) entirely: both bullets depend on a Full Burst
-  Duration extension (+2 sec at 10+ stacks, a further +3 at 20+) and the
-  bullet's own per-shot nuke is gated on that same extension state. A per-cycle
-  Full Burst length DOES exist now (`FULL_BURST_DURATION_DELTA`, built
-  2026-08-05 for Isabel and Modernia), but it holds a CONSTANT per slug, and
-  hers is neither constant nor independent: the extension is decided by a chip
-  count that drains cycle by cycle (above), and a longer Full Burst means more
-  in-window shots, which refill the chip, which decides the extension. The
-  answer feeds back into its own input, so it needs either fixed-point
-  iteration or a second implementation of the chip machine inside the
-  scheduler - see docs/roadmap.md.
 - Onward, Soda!'s Hit Rate +38.91%/15s (gated on pre-spend stacks >=20) is
   inert - Hit Rate isn't a stat the engine consumes.
 """
-from app.effects import Effect, ResourceSpec
+from app.effects import Effect, Pulse, ResourceSpec
 from app.skill_rules._helpers import linear_resource_buff
 from app.squad_engine import SkillRule
 
@@ -127,6 +128,31 @@ def build_beginners_rewards_full_burst_delta(values):
             (stage2_threshold, stage1_seconds + stage2_seconds),
         ],
     }
+
+
+def build_beginners_rewards_per_shot_rules(values):
+    """Beginner's Rewards의 둘째 불릿: 풀 버스트 중 평타마다, 그 사이클의 Time
+    Extension 단계에 따라 최종 ATK의 52.04%(I) / 137.06%(II)를 넉으로 꽂는다.
+
+    누적이다 - 첫 불릿과 같은 "Each subsequent effect triggers all effects
+    before it" 아래에 있고, Fienn이 확인했다(2026-08-06).
+
+    단계는 첫 불릿이 정하므로 이 넉은 확장이 모델되기 전에는 도달할 수 없었다.
+    threshold 1 = 창 안 모든 샷. 창 밖 샷은 애초에 이 모드가 세지 않는다."""
+    rewards = values["beginners_rewards"]
+    stage1_percent = float(rewards["description_value_10"])
+    stage2_percent = stage1_percent + float(rewards["description_value_12"])
+    by_stage = {1: stage1_percent, 2: stage2_percent}
+
+    def apply(context, caster_slug, time, registry):
+        percent = by_stage.get(context.full_burst_extension_stage(time, caster_slug))
+        if percent is None:
+            return
+        registry.add_pulse(
+            Pulse("instant_damage_percent", percent, "self", caster_slug)
+        )
+
+    return [(1, "every_during_full_burst", [SkillRule(trigger="per_shot", action=apply)])]
 
 
 def build_golden_chip_resources(values):

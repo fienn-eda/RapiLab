@@ -297,6 +297,7 @@ from app.skill_rules.rouge import (
 )
 from app.skill_rules.soda_twinkling_bunny import (
     build_beginners_rewards_full_burst_delta,
+    build_beginners_rewards_per_shot_rules,
     build_golden_chip_resources,
     build_lucky_golden_chip_per_shot_rules,
     build_onward_soda_resource_gated_buffs,
@@ -978,7 +979,10 @@ _PER_SHOT_RULE_BUILDERS = {
     "scarlet-black-shadow": lambda sv: build_breakthrough_per_shot_rules(sv),
     "snow-white": lambda sv: build_determination_per_shot_rules(sv),
     "snow-white-heavy-arms": lambda sv: build_seven_dwarves_per_shot_rules(sv),
-    "soda-twinkling-bunny": lambda sv: build_lucky_golden_chip_per_shot_rules(sv),
+    "soda-twinkling-bunny": lambda sv: (
+        build_lucky_golden_chip_per_shot_rules(sv)
+        + build_beginners_rewards_per_shot_rules(sv)
+    ),
     "velvet": lambda sv: build_velvet_per_shot_rules(sv),
     "brid-silent-track": lambda sv: build_journey_ahead_rules(sv["journey_ahead"]),
     "helm-aquamarine": lambda sv: build_admire_accompaniment_per_shot_rules(sv["admire_accompaniment"]),
