@@ -1231,6 +1231,30 @@
   white-space: nowrap;
 }
 
+/* 결과가 무엇을 상대로 나온 것인지 적는 줄. 약점은 답을 가장 크게 좌우하므로
+   본문 무게로, 기믹과 숫자는 조건이라 무채색으로 물러난다. */
+.boss-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--sp-1) var(--sp-3);
+  margin: 0;
+  font-size: 13px;
+}
+
+.boss-summary__weakness {
+  font-weight: 600;
+}
+
+.boss-summary__badge,
+.boss-summary__number {
+  color: var(--text-muted);
+}
+
+.boss-summary__number {
+  font-variant-numeric: tabular-nums;
+}
+
 .deck-results__excluded,
 .raid-results__leftover {
   font-size: 13px;
