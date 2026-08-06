@@ -1,7 +1,23 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest'
 import { act, renderHook } from '@testing-library/react'
 import { useProfiles } from './useProfiles'
-import type { StoredInputs, StoredResult } from '../types/profile'
+import { SAVED_RUNS_CAP, type SavedRun, type StoredInputs, type StoredResult } from '../types/profile'
+
+const savedRun = (id: string): SavedRun => ({
+  id,
+  name: `run ${id}`,
+  savedAt: Number(id),
+  tab: 'solo',
+  view: {
+    mode: 'raid',
+    boss: { element: null, core_hittable: false, pierce_hits_body_behind_core: false, enemy_def: 31784, fight_duration: 180, part_destructible: false, effective_range_band: null, elemental_interrupt_required: false },
+    numDecks: 5,
+    decks: [],
+    combinedTotalDamage: 1,
+    excludedSlugs: [],
+    leftoverSlugs: [],
+  },
+})
 
 const storedResult = (n: number): StoredResult => ({
   decks: [],
@@ -121,6 +137,48 @@ describe('useProfiles', () => {
     expect(Object.keys(result.current.state.profiles)).toEqual(['111111:81'])
     expect(result.current.state.activeKey).toBe('111111:81')
     expect(result.current.state.profiles['111111:81'].area).toBe(81)
+  })
+
+  // 저장이 조용히 안 되는 화면을 만들지 않으려면 호출부가 거절을 알아야 한다.
+  it('상한에 걸린 저장은 거절됐다고 알려준다', () => {
+    const { result } = renderHook(() => useProfiles())
+    act(() => {
+      result.current.upsertProfile({ openId: 'A', area: 81, nickname: '본계', roster: [] })
+    })
+
+    for (let i = 0; i < SAVED_RUNS_CAP; i++) {
+      act(() => {
+        result.current.saveRun({ key: 'A:81', run: savedRun(String(i)) })
+      })
+    }
+
+    let accepted = true
+    act(() => {
+      accepted = result.current.saveRun({ key: 'A:81', run: savedRun('9999') })
+    })
+
+    expect(accepted).toBe(false)
+    expect(result.current.activeProfile?.savedRuns).toHaveLength(SAVED_RUNS_CAP)
+  })
+
+  it('보관물의 이름을 바꾸고 지운다', () => {
+    const { result } = renderHook(() => useProfiles())
+    act(() => {
+      result.current.upsertProfile({ openId: 'A', area: 81, nickname: '본계', roster: [] })
+    })
+    act(() => {
+      result.current.saveRun({ key: 'A:81', run: savedRun('1') })
+    })
+
+    act(() => {
+      result.current.renameRun({ key: 'A:81', id: '1', name: '새 이름' })
+    })
+    expect(result.current.activeProfile?.savedRuns[0].name).toBe('새 이름')
+
+    act(() => {
+      result.current.deleteRun({ key: 'A:81', id: '1' })
+    })
+    expect(result.current.activeProfile?.savedRuns).toHaveLength(0)
   })
 
   it('보관 목록이 생기기 전에 저장된 프로필에도 빈 목록을 채워 준다', () => {
