@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest'
 import {
   emptyProfilesState, upsertProfile, switchProfile, deleteProfile, activeProfile,
   saveResult, getResult, profileKey, RESULTS_CAP,
-  type StoredResult, type StoredInputs,
+  saveRun, renameRun, deleteRun, runsForTab, makeRunId, SAVED_RUNS_CAP,
+  type StoredResult, type StoredInputs, type SavedRun,
 } from './profile'
 import type { NikkeDraft } from './nikkeDraft'
 
@@ -169,5 +170,127 @@ describe('(open_id, area) 정체성', () => {
 
   it('profileKey는 open_id와 area를 이어 붙인다', () => {
     expect(profileKey('111111', 83)).toBe('111111:83')
+  })
+})
+
+const boss = {
+  element: 'Fire' as const,
+  core_hittable: false,
+  pierce_hits_body_behind_core: false,
+  enemy_def: 31784,
+  fight_duration: 180,
+  part_destructible: false,
+  effective_range_band: null,
+  elemental_interrupt_required: false,
+}
+
+const soloRun = (overrides: Partial<SavedRun> = {}): SavedRun => ({
+  id: '1000-0',
+  name: '작열 · 전부 최적화 · 08-06',
+  savedAt: 1000,
+  tab: 'solo',
+  view: {
+    mode: 'raid',
+    boss,
+    numDecks: 5,
+    decks: [],
+    combinedTotalDamage: 42,
+    excludedSlugs: [],
+    leftoverSlugs: [],
+  },
+  ...overrides,
+})
+
+const unionRun = (overrides: Partial<SavedRun> = {}): SavedRun => ({
+  ...soloRun(),
+  tab: 'union',
+  view: {
+    numBattles: 3,
+    bosses: [boss],
+    draft: { decks: [] },
+    decks: [],
+    combinedTotalDamage: 0,
+    excludedSlugs: [],
+  },
+  ...overrides,
+})
+
+const withProfile = () =>
+  upsertProfile(emptyProfilesState(), {
+    openId: 'A', area: 81, nickname: '본계', roster: [draft('liter')],
+  })
+
+describe('보관한 결과', () => {
+  it('프로필에 남는다', () => {
+    const s = saveRun(withProfile(), 'A:81', soloRun())
+    expect(s.profiles['A:81'].savedRuns).toHaveLength(1)
+  })
+
+  // 캐시는 오래된 것을 조용히 밀어내지만, 유저가 이름 붙여 남긴 것을 그렇게
+  // 다루면 안 된다.
+  it('상한을 넘으면 밀어내는 대신 저장을 거절한다', () => {
+    let s = withProfile()
+    for (let i = 0; i < SAVED_RUNS_CAP; i++) {
+      s = saveRun(s, 'A:81', soloRun({ id: `${i}`, name: `run ${i}` }))
+    }
+    const full = s
+
+    s = saveRun(s, 'A:81', soloRun({ id: 'one-too-many', name: '거절될 것' }))
+
+    expect(s).toBe(full)
+    expect(s.profiles['A:81'].savedRuns.map((r) => r.name)).not.toContain('거절될 것')
+  })
+
+  // 보관물은 "지금 로스터에 대한 답"이 아니라 "그때 이런 답이 나왔다"는 기록이다.
+  it('로스터 재동기화에도 살아남는다 - 결과 캐시와 다른 점이다', () => {
+    let s = saveRun(withProfile(), 'A:81', soloRun())
+    s = saveResult(s, 'A:81', {
+      hash: 'h',
+      result: { decks: [], combinedTotalDamage: 1, excludedSlugs: [], leftoverSlugs: [], withinDraft: null, baselineTotalDamage: null },
+      inputs: { mode: 'raid', numDecks: 5, boss, draft: null },
+    })
+
+    s = upsertProfile(s, {
+      openId: 'A', area: 81, nickname: '본계', roster: [draft('liter'), draft('crown')],
+    })
+
+    expect(s.profiles['A:81'].savedRuns).toHaveLength(1)
+    expect(s.profiles['A:81'].results).toEqual({})
+  })
+
+  it('id로 이름을 바꾸고 지운다', () => {
+    let s = saveRun(withProfile(), 'A:81', soloRun({ id: 'x' }))
+
+    s = renameRun(s, 'A:81', 'x', '새 이름')
+    expect(s.profiles['A:81'].savedRuns[0].name).toBe('새 이름')
+
+    s = deleteRun(s, 'A:81', 'x')
+    expect(s.profiles['A:81'].savedRuns).toHaveLength(0)
+  })
+
+  it('두 탭의 보관물은 서로 섞이지 않는다', () => {
+    let s = saveRun(withProfile(), 'A:81', soloRun({ id: 's' }))
+    s = saveRun(s, 'A:81', unionRun({ id: 'u' }))
+
+    const profile = s.profiles['A:81']
+    expect(runsForTab(profile, 'solo').map((r) => r.id)).toEqual(['s'])
+    expect(runsForTab(profile, 'union').map((r) => r.id)).toEqual(['u'])
+  })
+
+  it('최신 것을 먼저 보여준다', () => {
+    let s = saveRun(withProfile(), 'A:81', soloRun({ id: 'old', savedAt: 1 }))
+    s = saveRun(s, 'A:81', soloRun({ id: 'new', savedAt: 2 }))
+
+    expect(runsForTab(s.profiles['A:81'], 'solo').map((r) => r.id)).toEqual(['new', 'old'])
+  })
+})
+
+describe('makeRunId', () => {
+  it('그 시각의 첫 저장은 -0이다', () => {
+    expect(makeRunId(1000, [])).toBe('1000-0')
+  })
+
+  it('같은 밀리초에 이미 있으면 다음 번호로 넘어간다', () => {
+    expect(makeRunId(1000, [soloRun({ id: '1000-0', savedAt: 1000 })])).toBe('1000-1')
   })
 })

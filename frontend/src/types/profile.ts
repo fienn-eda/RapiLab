@@ -5,7 +5,7 @@
 // roster/result cache is what breaks multi-account (or multi-server) use.
 
 import type { NikkeDraft } from './nikkeDraft'
-import type { BossProfile, DraftAllocation, RaidDeck } from './recommend'
+import type { BossProfile, DeckRecommendation, DraftAllocation, RaidDeck } from './recommend'
 import type { Draft } from './draft'
 
 /** What the player submitted for a POST /api/recommend-raid call - enough to
@@ -31,6 +31,62 @@ export interface StoredResult {
   swapConverged?: boolean
 }
 
+interface SoloRunBase {
+  boss: BossProfile
+  numDecks: number
+  excludedSlugs: string[]
+}
+
+/** 솔로 탭 네 모드. `mode`로 갈리는 판별 유니온인 이유는 타입이 실제로 다르기
+ * 때문이다 - RaidDeck은 DeckRecommendation에 pinned_slugs를 필수로 더한 것이고,
+ * DraftResults는 그 좁은 쪽을 요구한다. */
+export type SoloRunView =
+  | (SoloRunBase & { mode: 'single'; decks: DeckRecommendation[] })
+  | (SoloRunBase & {
+      mode: 'raid'
+      decks: RaidDeck[]
+      combinedTotalDamage: number
+      leftoverSlugs: string[]
+      swapConverged?: boolean
+    })
+  | (SoloRunBase & {
+      mode: 'draft'
+      decks: RaidDeck[]
+      combinedTotalDamage: number
+      leftoverSlugs: string[]
+      withinDraft: DraftAllocation | null
+      baselineTotalDamage: number | null
+      swapConverged?: boolean
+      draft: Draft | null
+    })
+  | (SoloRunBase & {
+      mode: 'evaluate'
+      decks: DeckRecommendation[]
+      combinedTotalDamage: number
+      draft: Draft
+    })
+
+export interface UnionRunView {
+  numBattles: number
+  bosses: BossProfile[]
+  draft: Draft
+  decks: DeckRecommendation[]
+  combinedTotalDamage: number
+  excludedSlugs: string[]
+}
+
+/** 유저가 이름을 붙여 남겨 둔 결과 하나. 캐시(`results`)와 달리 로스터가 바뀌어도
+ * 지워지지 않는다 - 이것은 "지금 로스터에 대한 답"이 아니라 "그때 이런 답이
+ * 나왔다"는 기록이다. */
+export interface SavedRun {
+  id: string
+  name: string
+  savedAt: number
+  /** 솔로 탭과 유니온 탭의 보관물이 섞이지 않게 하는 것은 이 필드다. */
+  tab: 'solo' | 'union'
+  view: SoloRunView | UnionRunView
+}
+
 export interface Profile {
   openId: string
   /** 이 로스터가 속한 게임 서버(blablalink API의 `nikke_area_id`). 한 open_id가
@@ -41,6 +97,7 @@ export interface Profile {
   results: Record<string, StoredResult> // key = inputHash (see lib/inputHash.ts)
   lastResultHash: string | null
   lastInputs: StoredInputs | null
+  savedRuns: SavedRun[]
 }
 
 export interface ProfilesState {
@@ -98,6 +155,7 @@ export const upsertProfile = (
         results: {},
         lastResultHash: null,
         lastInputs: null,
+        savedRuns: [],
       }
 
   return {
@@ -162,3 +220,55 @@ export const saveResult = (
 
 export const getResult = (profile: Profile, hash: string): StoredResult | null =>
   profile.results[hash] ?? null
+
+/** 프로필 하나가 보관할 수 있는 결과 수. 넘으면 저장을 거절한다 - 캐시와 달리
+ * 유저가 이름 붙여 남긴 것을 말없이 밀어내면 안 된다. */
+export const SAVED_RUNS_CAP = 50
+
+/** 같은 밀리초에 두 번 저장해도 부딪히지 않는 결정적 id. */
+export const makeRunId = (savedAt: number, existing: SavedRun[]): string =>
+  `${savedAt}-${existing.filter((run) => run.savedAt === savedAt).length}`
+
+/** 상한을 넘으면 상태를 그대로 돌려준다 - 호출부는 참조 동일성으로 거절을 안다. */
+export const saveRun = (state: ProfilesState, key: string, run: SavedRun): ProfilesState => {
+  const profile = state.profiles[key]
+  if (!profile) return state
+  if (profile.savedRuns.length >= SAVED_RUNS_CAP) return state
+
+  const updated: Profile = { ...profile, savedRuns: [...profile.savedRuns, run] }
+  return { ...state, profiles: { ...state.profiles, [key]: updated } }
+}
+
+export const renameRun = (
+  state: ProfilesState,
+  key: string,
+  id: string,
+  name: string,
+): ProfilesState => {
+  const profile = state.profiles[key]
+  if (!profile) return state
+
+  const updated: Profile = {
+    ...profile,
+    savedRuns: profile.savedRuns.map((run) => (run.id === id ? { ...run, name } : run)),
+  }
+  return { ...state, profiles: { ...state.profiles, [key]: updated } }
+}
+
+export const deleteRun = (state: ProfilesState, key: string, id: string): ProfilesState => {
+  const profile = state.profiles[key]
+  if (!profile) return state
+
+  const updated: Profile = {
+    ...profile,
+    savedRuns: profile.savedRuns.filter((run) => run.id !== id),
+  }
+  return { ...state, profiles: { ...state.profiles, [key]: updated } }
+}
+
+/** 한 탭이 보여줄 보관물, 최신순. */
+export const runsForTab = (profile: Profile, tab: SavedRun['tab']): SavedRun[] =>
+  profile.savedRuns
+    .filter((run) => run.tab === tab)
+    .slice()
+    .sort((a, b) => b.savedAt - a.savedAt)

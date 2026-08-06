@@ -123,6 +123,30 @@ describe('useProfiles', () => {
     expect(result.current.state.profiles['111111:81'].area).toBe(81)
   })
 
+  it('보관 목록이 생기기 전에 저장된 프로필에도 빈 목록을 채워 준다', () => {
+    localStorage.setItem(
+      'nikke-profiles',
+      JSON.stringify({
+        activeKey: '111111:81',
+        profiles: {
+          '111111:81': {
+            openId: '111111',
+            area: 81,
+            nickname: 'FIENN',
+            roster: [],
+            results: {},
+            lastResultHash: null,
+            lastInputs: null,
+          },
+        },
+      }),
+    )
+
+    const { result } = renderHook(() => useProfiles())
+
+    expect(result.current.activeProfile?.savedRuns).toEqual([])
+  })
+
   it('구·신 스키마가 섞인 저장소도 두 프로필 모두 area를 갖고 살아남는다', () => {
     // area 없는 bare-key 항목 하나와 이미 복합 키인 항목 하나가 한 스토어에
     // 섞인 경우 - 이 코드는 실제로 만들 수 없지만(도달 불가), 유저 브라우저의

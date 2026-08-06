@@ -16,6 +16,7 @@ import {
   upsertProfile,
   type Profile,
   type ProfilesState,
+  type SavedRun,
   type StoredInputs,
   type StoredResult,
 } from '../types/profile'
@@ -55,14 +56,20 @@ const LEGACY_ROSTER_KEY = 'nikke-roster'
 const migrate = (raw: unknown): ProfilesState => {
   const state = raw as Partial<ProfilesState> & {
     activeOpenId?: string | null
-    profiles?: Record<string, Profile & { area?: number }>
+    profiles?: Record<string, Profile & { area?: number; savedRuns?: SavedRun[] }>
   }
   const profiles = state.profiles ?? {}
 
   const migrated: Record<string, Profile> = {}
   for (const profile of Object.values(profiles)) {
     const area = profile.area ?? 81
-    migrated[profileKey(profile.openId, area)] = { ...profile, area }
+    migrated[profileKey(profile.openId, area)] = {
+      ...profile,
+      area,
+      // 보관 목록이 생기기 전에 저장된 프로필은 이 필드가 없다. 여기서 한 번
+      // 채우면 읽는 쪽마다 `?? []`를 흩뿌리지 않아도 된다.
+      savedRuns: profile.savedRuns ?? [],
+    }
   }
 
   // activeKey가 이미 복합 키를 가리키면(신 스키마) 그대로 쓴다. 그렇지 않고
