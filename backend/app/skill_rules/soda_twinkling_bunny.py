@@ -15,17 +15,22 @@ Modeled (DPS-relevant): a "chip" resource (Golden Chip), capped at 50.
   `resets` entry with a `value_fn`, trigger "own_burst"), floored at 1.
   Additionally, if she had at least 30 stacks right BEFORE that spend
   (`resource_gated_buffs`, `use_pre_reset`), grants self ATK +65.25% for
-  15 sec. The chip therefore DRAINS over a fight rather than settling: each
-  cycle spends 17 and a Full Burst refills only ~5, so a 180 sec fight reads
-  50 / 43 / 35 / 28 / 20 / 13 / 9 at her seven bursts and the ATK gate opens
-  for the first three, not just the first.
+  15 sec. Whether the chip drains or settles is a property of the DECK, not
+  of her: what matters is how many Full Burst windows she gets per spend.
+  Bursting every cycle drains her (one window's refill against 17). Taking the
+  seat every other cycle - the rotation Fienn plays, with two other Burst 3s -
+  gives her two windows per spend, and with her own extension making those
+  windows 15 sec the refill covers the spend: the chip cycles
+  50 -> 33 -> 42 -> 50 and the ATK gate opens every time
+  (docs/measurements/soda-golden-chip-in-play.md).
 
 - Lucky Golden Chip's co-fired buff ("after 3 normal attacks during Full
   Burst, affects self and the 1 ally with the highest final ATK: Attack
   Damage +10.51% for 2 sec"): modeled via the FB-window-gated per-shot trigger
   (`per_shot_rules` mode "every_during_full_burst", gap #7, built 2026-07-15) -
-  counting only in-Full-Burst shots, so it stays confined to her ~10s Full
-  Burst window each cycle. A REFRESHING buff (SG's 1.5/s cadence makes "every 3
+  counting only in-Full-Burst shots, so it stays confined to that cycle's Full
+  Burst window (10 sec, or longer when her own extension below is up).
+  A REFRESHING buff (SG's 1.5/s cadence makes "every 3
   shots" every 2 sec, exactly the buff's own duration, so repeated fires
   refresh rather than stack). See `build_lucky_golden_chip_per_shot_rules`.
 

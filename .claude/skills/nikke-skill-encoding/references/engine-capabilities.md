@@ -336,6 +336,46 @@ param, exposed per-Nikke via `_RESOURCE_GATED_BUFF_BUILDERS` /
 `get_resource_gated_buffs`. First consumer: Soda's ATK +65.25%/15s (gated on
 Golden Chip's pre-reset count >= 30).
 
+**Per-cycle Full Burst length.** Two shapes, and picking the wrong one is the
+whole difficulty:
+
+1. **Fixed per slug** — `FULL_BURST_DURATION_DELTA` (`skill_rules/registry.py`)
+   maps a slug to seconds. `burst_cycle` reads it off the unit that OPENED the
+   cycle (`tier3_member`), so it applies only to cycles that unit's own Burst 3
+   started. Isabel's `Full Burst Time ▼ 5 sec` and Modernia's `▲ 5 sec`.
+2. **Conditional on a resource** — `_CONDITIONAL_FULL_BURST_DELTA_BUILDERS`
+   (same file, `get_conditional_full_burst_delta`) returns
+   `{"resource", "cap", "tiers": [(threshold, seconds), ...]}`; wired through
+   `roster.py` into `simulate_raid`'s `conditional_full_burst_deltas`. Use this
+   when the extension is `Activates when entering Burst Stage 3 / Affects all
+   allies`, i.e. the holder does NOT have to be the unit that opened the cycle -
+   shape 1 would silently drop every cycle a same-tier ally takes the seat.
+   Thresholds are `>=` and the seconds are CUMULATIVE (build the total into the
+   tier so the consumer never re-adds). Stage 0 means "no extension" and must be
+   absent from the resolved table, not present as a zero. First consumer: Soda's
+   Beginner's Rewards (chip 10+ -> +2s, 20+ -> +5s total).
+
+**Shape 2 needs a fixed point, and `simulate_raid` runs one for you.** The
+window length is decided by the resource at the cycle's Burst 3, the resource is
+filled by shots, and the shots exist only once the window is known. That reads
+circular but is not: in TIME the dependency is one-way (cycle k's threshold sees
+only shots up to k-1). It only looks circular because this engine schedules the
+whole fight before simulating it. So `simulate_raid` is a wrapper that calls
+`_simulate_raid_once` from the no-extension lower bound and feeds each pass's
+resolved stage table back in as `full_burst_stage_overrides` until a pass
+reproduces its own input. Results carry
+`full_burst_passes = {"passes": N, "converged": bool}`.
+
+Two properties to preserve if you add a second consumer. **A deck with no such
+unit resolves in exactly one pass** - the resolver returns an empty dict and the
+loop exits, so cost and output are unchanged for everyone else; that invariant is
+what makes the feature free, and it is worth a test of its own. And **the pass
+count tracks FIGHT DURATION, not deck composition**, because each pass propagates
+the change one cycle further: a draining alternating deck needs 3 passes at 200s
+and 8 at 700s. `MAX_FULL_BURST_PASSES` is therefore a runaway guard, not a
+quality knob - size it far above any plausible fight, never at "twice the worst
+deck I measured", since `fight_duration` is a user-entered form field.
+
 **`dynamic_hit_count_nukes` (hit count itself is a resource's value):** a
 burst-fired nuke whose HIT COUNT - not just its percent - is a named resource's
 value at burst time, e.g. Maiden's Diamond Dust ("attacks repeatedly based on
