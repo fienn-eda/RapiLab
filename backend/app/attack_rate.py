@@ -187,10 +187,12 @@ CHARGE_INTERVAL_FLOOR_SECONDS = 10.0 / 29
 # every 1.2 sec flat and gave her 37% too many base shots.
 #
 # It is PER UNIT, not per weapon class: Liberalio is also a Sniper Rifle and
-# fires her charged shots back to back with no gap (Fienn). Applying it to every
-# charge weapon is measurably wrong - it drops Scarlet: Black Shadow from 0.981x
-# of her recorded damage to 0.559x and Cinderella from 0.971x to 0.654x. The
-# units that have it are listed in skill_rules.registry._CHARGE_MOTION_DELAY.
+# fires her charged shots back to back with no gap (Fienn), and handing THIS
+# value to every charge weapon is measurably wrong - it dropped Scarlet: Black
+# Shadow from 0.981x of her recorded damage to 0.559x before either was timed.
+# Every unit's own answer lives in skill_rules.registry._CHARGE_MOTION_DELAY,
+# where the untimed ones carry a smaller stand-in (22 frames, from the two
+# frame-number measurements) rather than a silent zero.
 CHARGE_MOTION_DELAY_SECONDS = 0.4
 
 FRAME_SECONDS = 1.0 / 60

@@ -15,7 +15,7 @@ the burst cycle (e.g. Helm: Aquamarine's Aegis Cannon Suppression Fire) - see
 separate from `_BUILDERS` so the ~25 existing builders' 2-tuple return shape
 never has to change for the one or two Nikkes that need this.
 """
-from app.attack_rate import CHARGE_MOTION_DELAY_SECONDS
+from app.attack_rate import CHARGE_INTERVAL_FLOOR_SECONDS, CHARGE_MOTION_DELAY_SECONDS
 from app.skill_rules._helpers import (SQUAD_DISTRIBUTED_DAMAGE_BUFF_SLUGS,
                                       SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS)
 from app.skill_rules.ada_wong import build_ada_wong_rules, build_flash_grenade_periodic_nuke
@@ -1147,6 +1147,16 @@ TIMED_CHARGE_MOTION_DELAY = {
     # one weapon, so both slugs share the pause.
     "centi": centi.CHARGE_MOTION_DELAY,
     "centi-signature": centi.CHARGE_MOTION_DELAY,
+    # Cinderella's was measured before this table existed and was filed as
+    # something else: `attack_rate.CHARGE_INTERVAL_FLOOR_SECONDS` (10/29 sec) is
+    # what remained of her cadence once Flawless Glass's +100% Charge Speed took
+    # her 1.0-sec charge to zero, i.e. 29 shots in 10 sec with no reload. What
+    # remains when the charge vanishes IS the pause, so it is her timing, not a
+    # generic floor - snow_white_heavy_arms.py's docstring reaches the same
+    # reading independently. Naming it here also stops the double count:
+    # `shot_interval_with_speed` applies the floor only to a unit with no
+    # delay of her own.
+    "cinderella": CHARGE_INTERVAL_FLOOR_SECONDS,   # 0.34483
 }
 
 # Charge weapons Fienn has checked and found NO pause on. The engine's default
@@ -1162,15 +1172,47 @@ NO_CHARGE_MOTION_DELAY = frozenset({
     "anis-star",
 })
 
-# Units Fienn watched and saw a pause on without timing it; they carry the
-# shared default until someone puts a clock on them. Empty since 2026-07-29,
-# when the last five were timed - kept because the next unencoded SR/RL will
-# land here first, and because the audit reports assumed apart from timed.
-_ASSUMED_CHARGE_MOTION_DELAY = frozenset()
+# What an untimed charge weapon carries until someone puts a clock on her.
+#
+# Zero is NOT the neutral choice. It models her as the fastest possible version
+# of herself, and a pause is the common case: of the 18 units checked so far 14
+# have one. Mint read 1.502x of her recorded damage on exactly this assumption.
+#
+# 22 frames is the value the two FRAME-NUMBER readings agree on - Bready (SR,
+# 49 readings, checked against her charge and shot gap to 0.042 of a frame) and
+# Centi (RL). Those two are the best-resolved measurements in the table and they
+# span both charge weapon classes, which is why the stand-in comes from them
+# rather than from the Full-Burst-clock readings, whose 0.01-sec display skips
+# 0.04 in places (docs/measurements/bready-charge.md).
+#
+# This is a STAND-IN, not an answer: the real values run 0.34 to 0.43 and four
+# units have none at all, so every slug below is still a question for Fienn and
+# `scripts/audit_charge_motion_delay.py` keeps asking.
+ASSUMED_CHARGE_MOTION_DELAY_SECONDS = 22 / 60
+
+_ASSUMED_CHARGE_MOTION_DELAY = frozenset({
+    "ada-wong",
+    "arcana",
+    "d-killer-wife",
+    "diesel-winter-sweets-highlight",
+    "diesel-winter-sweets-intro",
+    "ein",
+    "laplace",
+    "laplace-signature",
+    "maiden-ice-rose",
+    "maxwell",
+    "maxwell-ordinary-mechanic",
+    "milk-blooming-bunny",
+    "red-hood",
+    "rouge",
+    "takina-inoue",
+})
 
 _CHARGE_MOTION_DELAY = {
+    **{slug: ASSUMED_CHARGE_MOTION_DELAY_SECONDS for slug in _ASSUMED_CHARGE_MOTION_DELAY},
+    # A measured answer always wins over the stand-in, including a measured zero.
     **TIMED_CHARGE_MOTION_DELAY,
-    **{slug: CHARGE_MOTION_DELAY_SECONDS for slug in _ASSUMED_CHARGE_MOTION_DELAY},
+    **{slug: 0.0 for slug in NO_CHARGE_MOTION_DELAY},
 }
 
 
