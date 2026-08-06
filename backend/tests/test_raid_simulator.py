@@ -3917,3 +3917,50 @@ def test_simulate_raid_feeds_the_resolved_stage_back_into_the_full_burst_window(
     assert windows, "풀 버스트 창이 하나도 안 열렸다 - 픽스처가 잘못됐다"
     # 기본 10초 + II단계 5초. 누적값이라 소비 지점이 다시 더하지 않는다.
     assert [round(end - start, 6) for start, end in windows] == [15.0] * len(windows)
+
+
+def test_a_long_fight_still_reaches_a_fixed_point_with_room_to_spare():
+    """패스 수는 덱이 아니라 **전투 길이**를 따라 늘어난다 - 확장이 사이클 k의 창을
+    바꾸면 그 창의 사격이 k+1의 자원을 바꾸므로, 변화가 패스마다 한 사이클씩 번진다.
+    이 픽스처를 길이별로 쓸면 3(200초) / 5(400초) / 7(600초) / 8(700초 이후 평평)이다.
+
+    `fight_duration`은 사용자 입력이므로 700초는 실제로 들어올 수 있는 값이다.
+    상한이 그 수와 같으면 여유가 0이고, 한 패스만 더 필요한 조합은 고정점이 아닌 답을
+    `converged: False`만 달고 조용히 내놓는다 - 그 플래그를 읽는 하류가 없다.
+    그래서 `converged`만이 아니라 **상한에 여유가 있는지**를 함께 단언한다: 상한이
+    다시 8로 좁아지면 이 부등식이 깨진다."""
+    from app.effects import ResourceSpec
+    from app.raid_simulator import MAX_FULL_BURST_PASSES
+
+    # 소다처럼 자기 버스트가 자원을 깎는 보유자 + 나머지 사이클을 여는 B3 하나.
+    # 그가 격 사이클로만 소비해야 자원이 천천히 흘러내리며 패스가 길어진다.
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "chipholder", "burst_tier": 3, "element": "Iron", "cooldown": 40.0},
+        {"slug": "b3b", "burst_tier": 3, "element": "Iron", "cooldown": 40.0},
+    ]
+    base_stats = {m["slug"]: {"atk": 10000, "def": 0, "max_hp": 0} for m in deck}
+    sg = {"weapon": "SG", "damage_percent": 10.0, "max_ammo": 1000,
+          "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 0.0}
+    result = simulate_raid(
+        deck, {m["slug"]: [] for m in deck}, burst_damage_percents={},
+        base_stats=base_stats, enemy_def=0, gauge_charge_time=5.0,
+        fight_duration=700.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats={m["slug"]: sg for m in deck},
+        resource_specs={"chipholder": [ResourceSpec(
+            name="chip", fill=("per_shot_every_during_full_burst", 3), cap=50.0,
+            resets=[{"trigger": "battle_start", "value": 50.0},
+                    {"trigger": "own_burst",
+                     "value_fn": lambda pre: max(1.0, pre - 17.0)}])]},
+        conditional_full_burst_deltas={
+            "chipholder": {"resource": "chip", "cap": 50,
+                           "tiers": [(10.0, 2.0), (20.0, 5.0)]}},
+    )
+
+    passes = result["full_burst_passes"]
+    assert passes["converged"] is True
+    assert passes["passes"] == 8, "이 픽스처의 700초 고정점 - 드리프트하면 여기서 보인다"
+    assert passes["passes"] < MAX_FULL_BURST_PASSES, (
+        "상한은 폭주 방지 장치이지 품질 노브가 아니다 - 알려진 최악의 전투 길이가 "
+        "상한을 다 쓰면 한 패스 더 필요한 덱이 조용히 오답을 낸다")

@@ -160,8 +160,7 @@ def test_the_extension_falls_as_her_own_bursts_drain_the_chip():
     assert lengths[-1] < 15.0, "칩이 고갈되면 확장이 내려가야 한다"
     assert lengths == sorted(lengths, reverse=True), "단조 감소여야 한다"
     # 10사이클에 걸쳐 확장 단계가 셋(+5 / +2 / 없음) 다 나오는 덱인데도 고정점은
-    # 3패스에 닫힌다. 상한은 `raid_simulator.MAX_FULL_BURST_PASSES` = 8이므로
-    # 여유가 크다 - 이 숫자를 못박아 두면 수렴이 느려질 때 상한에 조용히
+    # 3패스에 닫힌다. 이 숫자를 못박아 두면 수렴이 느려질 때 상한에 조용히
     # 다가가지 않고 여기서 걸린다.
     assert result["full_burst_passes"] == {"passes": 3, "converged": True}
 
