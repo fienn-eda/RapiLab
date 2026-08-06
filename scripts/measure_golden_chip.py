@@ -13,14 +13,25 @@ never pick her - and a Golden Chip with no spend point sits pinned at its cap.
 every seat) so the drain is visible; read the two totals as bracketing the real
 run, not as a fair comparison, since holding a burst removes its damage too.
 
-Per burst cycle it prints who took the Burst-3 seat and Soda's chip an instant
-before it - what her own burst would spend, and what Beginner's Rewards reads
-on entering Burst Stage 3 (that extension is NOT modeled; the column is there
-to size what the deferral costs - see `soda_twinkling_bunny.py`).
+Per burst cycle it prints who took the Burst-3 seat, Soda's chip an instant
+before it - what her own burst would spend, and what Beginner's Rewards reads on
+entering Burst Stage 3 - and the Full Burst window that chip bought. The window
+is read back out of the simulation rather than predicted from the thresholds, so
+the column disagrees with the chip if the extension ever stops being derived
+from it.
+
+`--hold` is what reproduces Fienn's in-play rotation. With three Burst-3 units
+the scheduler may hand every seat to the other two; holding ONE of them leaves
+Soda alternating with the other, which is how the fight in
+`docs/measurements/soda-golden-chip-in-play.md` was actually played. That
+rotation is the one whose chip band (50 -> 33 -> 42 -> 50) matches the reading -
+`--soda-bursts` holds ALL the others and so removes the intervening cycles
+entirely, which is a different operating pattern, not a slower version of it.
 
 Usage (any cwd):
     python3 scripts/measure_golden_chip.py --deck a,b,c,d,e
     python3 scripts/measure_golden_chip.py --deck a,b,c,d,e --soda-bursts
+    python3 scripts/measure_golden_chip.py --deck a,b,c,d,e --hold some-other-b3
 """
 import argparse
 import sys
@@ -40,7 +51,6 @@ SODA = "soda-twinkling-bunny"
 CAP = 50
 ATK_GATE = 30       # Onward, Soda! stage 3: ATK +65.25%/15s
 HIT_RATE_GATE = 20  # stage 2: Hit Rate (inert - the engine consumes no hit rate)
-EXT_I, EXT_II = 10, 20  # Beginner's Rewards stages (NOT modeled - see docstring)
 
 
 def _run(deck, boss, max_bursts=None):
@@ -79,18 +89,23 @@ def _report(label, deck, boss, max_bursts=None):
 
     tier3 = [e for e in result["events"] if e.get("type") == "burst" and e.get("tier") == 3]
     soda_bursts = [e["time"] for e in tier3 if e["slug"] == SODA]
+    windows = list(zip(
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_start"),
+        (e["time"] for e in result["events"] if e["type"] == "full_burst_end"),
+    ))
 
     print(f"\n{'=' * 78}\n{label}\n{'=' * 78}")
     print(f"total: {result['total_damage']:,.0f}    "
           f"soda: {per_unit[SODA]:,.0f} ({per_unit[SODA] / result['total_damage']:.1%})")
     print(f"Soda bursts: {len(soda_bursts)} of {len(tier3)} Burst-3 fires    "
-          f"chip fills: {len(fills)}")
+          f"chip fills: {len(fills)}    "
+          f"fixed point: {result['full_burst_passes']}")
     # `refill` is the fills since the previous Burst-3 fire - what the Full
     # Burst put back before this spend. It is printed because a chip pinned at
     # its cap looks exactly like one that never fills, and only this column
     # tells the two apart.
     print(f"\n{'cycle':>5} {'t (sec)':>9}  {'B3 seat':<22} {'chip':>6} {'refill':>8}  "
-          f"{'ATK+65.25%':>11}  {'FB ext':>7}")
+          f"{'ATK+65.25%':>11}  {'FB window':>9}")
     for i, event in enumerate(tier3, 1):
         # The chip an instant BEFORE the burst - what her own burst would spend
         # and what Beginner's Rewards reads on entering Burst Stage 3.
@@ -99,11 +114,14 @@ def _report(label, deck, boss, max_bursts=None):
         gained = sum(1 for f in fills if previous <= f < event["time"])
         mine = event["slug"] == SODA
         gate = ("OPEN" if chip >= ATK_GATE else "shut") if mine else "-"
-        ext = "+5s" if chip >= EXT_II else ("+2s" if chip >= EXT_I else "none")
+        # The window this cycle actually got, taken from the simulation. A cycle
+        # whose window never opened prints "-" rather than borrowing a neighbour's.
+        window = (f"{windows[i - 1][1] - windows[i - 1][0]:.2f}s"
+                  if i <= len(windows) else "-")
         seat = event["slug"] + (" <- SODA" if mine else "")
         refill = f"+{gained}" + ("*" if chip >= CAP else "")
         print(f"{i:>5} {event['time']:9.2f}  {seat:<22} {chip:6.1f} {refill:>8}  "
-              f"{gate:>11}  {ext:>7}")
+              f"{gate:>11}  {window:>9}")
     if any(ctx.resource_count(SODA, "chip", e["time"] - 1e-6, CAP) >= CAP for e in tier3):
         print(f"  * chip was at its {CAP} cap, so those fills were discarded")
 
@@ -120,9 +138,17 @@ def main():
     p.add_argument("--soda-bursts", action="store_true",
                    help="also score the run where the OTHER Burst-3 units hold their "
                         "bursts, so Soda takes the seat every cycle")
+    p.add_argument("--hold", default="",
+                   help="comma-separated slugs whose burst is held. Holding one of two "
+                        "other Burst-3 units leaves Soda alternating with the remaining "
+                        "one - Fienn's in-play rotation")
     args = p.parse_args()
 
     slugs = [s.strip() for s in args.deck.split(",") if s.strip()]
+    held = [s.strip() for s in args.hold.split(",") if s.strip()]
+    stray = [s for s in held if s not in slugs]
+    if stray:
+        sys.exit(f"ERROR: --hold names units that are not in --deck: {', '.join(stray)}")
     roster = real_roster()
     if roster is None:
         sys.exit("ERROR: no synced roster found.")
@@ -146,6 +172,10 @@ def main():
           f"core hittable={boss.core_hittable}")
     print(f"ordering: {' > '.join(s.slug for s in best)}  (best of {len(orderings)} feasible)")
     _report("as the scheduler plays it", best, boss)
+
+    if held:
+        _report(f"holding {', '.join(held)}", best, boss,
+                max_bursts={slug: 0 for slug in held})
 
     if args.soda_bursts:
         others = [s.slug for s in best if s.burst_tier == 3 and s.slug != SODA]
