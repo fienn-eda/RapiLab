@@ -294,7 +294,7 @@ export function UnionRaidPanel({
           </div>
         </fieldset>
 
-        <fieldset className="group">
+        <fieldset className="group saved-runs-group">
           <legend className="group__legend">저장한 결과 ({savedRuns.length})</legend>
           <details className="group__details">
             <summary className="group__hint">

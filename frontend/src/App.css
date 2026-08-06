@@ -1281,6 +1281,12 @@
   width: 100%;
 }
 
+/* 폼의 다른 상자와 달리 창 폭을 다 쓴다 — 펼친 보관물 안에도 덱 그리드가
+   들어가는데, 상자가 내용 크기로 줄면 그 그리드가 한 열로 갇힌다. */
+.saved-runs-group {
+  width: 100%;
+}
+
 .saved-runs {
   list-style: none;
   margin: 0;
