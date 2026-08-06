@@ -69,6 +69,10 @@ interface RecommendPanelProps {
   engineVersion: string | null
 }
 
+/** 솔로 레이드 보스의 방어력. 유니온 레이드 보스는 다른 값이라 이 기본값을
+ * 공유하지 않는다(Fienn, 2026-08-06). */
+export const SOLO_RAID_DEFAULT_ENEMY_DEF = '31784'
+
 type RecommendMode = 'single' | 'raid' | 'draft' | 'evaluate'
 
 /** Maps the useRecommendRaid hook's success fields to the cacheable shape -
@@ -108,7 +112,9 @@ export function RecommendPanel({
 }: RecommendPanelProps) {
   const [mode, setMode] = useState<RecommendMode>('single')
   const [numDecks, setNumDecks] = useState(DEFAULT_NUM_DECKS)
-  const [draft, setDraft] = useState<BossProfileDraft>(makeDefaultBossProfileDraft())
+  const [draft, setDraft] = useState<BossProfileDraft>(
+    makeDefaultBossProfileDraft(SOLO_RAID_DEFAULT_ENEMY_DEF),
+  )
   const [touched, setTouched] = useState(false)
   const [draftValue, setDraftValue] = useState<Draft>(() => makeEmptyDraft(DEFAULT_NUM_DECKS))
   const [submittedDraft, setSubmittedDraft] = useState<Draft>()

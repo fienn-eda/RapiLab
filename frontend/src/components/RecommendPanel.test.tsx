@@ -92,6 +92,11 @@ afterEach(() => {
 })
 
 describe('RecommendPanel', () => {
+  it('opens with the solo raid boss DEF prefilled', () => {
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    expect(screen.getByLabelText(/적 방어력/)).toHaveValue(31784)
+  })
+
   it('disables submit and shows a guard message when the roster has under 5 Nikkes', () => {
     render(<RecommendPanel roster={fullRoster.slice(0, 2)} {...noPersistence} />)
     expect(
@@ -222,7 +227,7 @@ describe('RecommendPanel', () => {
         element: null,
         core_hittable: false,
         pierce_hits_body_behind_core: false,
-        enemy_def: 0,
+        enemy_def: 31784,
         fight_duration: 180,
         part_destructible: false,
         effective_range_band: null,
@@ -293,7 +298,7 @@ describe('RecommendPanel', () => {
         element: null,
         core_hittable: false,
         pierce_hits_body_behind_core: false,
-        enemy_def: 0,
+        enemy_def: 31784,
         fight_duration: 180,
         part_destructible: true,
         effective_range_band: null,
@@ -321,7 +326,7 @@ describe('RecommendPanel', () => {
         element: null,
         core_hittable: false,
         pierce_hits_body_behind_core: false,
-        enemy_def: 0,
+        enemy_def: 31784,
         fight_duration: 180,
         part_destructible: false,
         effective_range_band: 'mid',
@@ -366,7 +371,7 @@ describe('RecommendPanel raid mode', () => {
         element: null,
         core_hittable: false,
         pierce_hits_body_behind_core: false,
-        enemy_def: 0,
+        enemy_def: 31784,
         fight_duration: 180,
         part_destructible: false,
         effective_range_band: null,
@@ -492,7 +497,7 @@ describe('RecommendPanel draft mode', () => {
         element: null,
         core_hittable: false,
         pierce_hits_body_behind_core: false,
-        enemy_def: 0,
+        enemy_def: 31784,
         fight_duration: 180,
         part_destructible: false,
         effective_range_band: null,
@@ -711,7 +716,7 @@ describe('RecommendPanel evaluate mode', () => {
               element: null,
               core_hittable: false,
               pierce_hits_body_behind_core: false,
-              enemy_def: 0,
+              enemy_def: 31784,
               fight_duration: 180,
               part_destructible: false,
               effective_range_band: null,
@@ -912,7 +917,7 @@ describe('RecommendPanel persistence', () => {
     element: null,
     core_hittable: false,
     pierce_hits_body_behind_core: false,
-    enemy_def: 0,
+    enemy_def: 31784,
     fight_duration: 180,
     part_destructible: false,
     effective_range_band: null,

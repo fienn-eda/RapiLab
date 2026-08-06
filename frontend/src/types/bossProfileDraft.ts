@@ -15,11 +15,13 @@ export interface BossProfileDraft {
   elemental_interrupt_required: boolean
 }
 
-export const makeDefaultBossProfileDraft = (): BossProfileDraft => ({
+/** 기본 방어력은 호출부가 정한다 — 솔로 레이드와 유니온 레이드 보스는 방어력이
+ * 다르므로, 공유 기본값 하나로는 한쪽이 틀린 값으로 계산된다. */
+export const makeDefaultBossProfileDraft = (enemyDef = '0'): BossProfileDraft => ({
   element: null,
   core_hittable: false,
   pierce_hits_body_behind_core: false,
-  enemy_def: '0',
+  enemy_def: enemyDef,
   fight_duration: '180',
   part_destructible: false,
   effective_range_band: null,

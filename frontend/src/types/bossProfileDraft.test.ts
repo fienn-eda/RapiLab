@@ -106,3 +106,18 @@ describe('bossProfileToDraft', () => {
     expect(bossProfileToDraft(value!).pierce_hits_body_behind_core).toBe(true)
   })
 })
+
+describe('makeDefaultBossProfileDraft', () => {
+  it('defaults enemy_def to 0 when no default is given', () => {
+    expect(makeDefaultBossProfileDraft().enemy_def).toBe('0')
+  })
+
+  it('takes the caller-supplied enemy_def', () => {
+    expect(makeDefaultBossProfileDraft('31784').enemy_def).toBe('31784')
+  })
+
+  it('leaves every other field at its default when given one', () => {
+    const withDef = makeDefaultBossProfileDraft('31784')
+    expect({ ...withDef, enemy_def: '0' }).toEqual(makeDefaultBossProfileDraft())
+  })
+})
