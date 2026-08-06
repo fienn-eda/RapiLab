@@ -663,7 +663,8 @@ def _base_shot_records(base, window_start, window_end,
 
 
 def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
-                          charge_time_reduction_sec_at=_zero, motion_delay=0.0):
+                          charge_time_reduction_sec_at=_zero, motion_delay=0.0,
+                          stop_at=None):
     """Shots of one override window. Cadence: charge-style profiles
     (charge_time) honor live charge-speed buffs; explicit rate_of_fire
     profiles are measurement anchors and take NO cadence buffs (the measured
@@ -674,7 +675,12 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
     that resume is itself a shot landing on that exact instant (round 0 of
     the fresh magazine fires AT magazine_start, per `_base_shot_records`); a
     CHARGE base (RL/SR) instead fires its first shot one charge-time later,
-    so only magazine bases coincide with the segment's final-shot time."""
+    so only magazine bases coincide with the segment's final-shot time.
+
+    `stop_at` is when the NEXT window opens, if one opens while this is still
+    running: the transform refreshes from the new cast, so this window ends
+    there rather than running its own course (see
+    `_reject_unrepresentable_overlaps`)."""
     profile = seg["profile"]
     start = seg["start"]
     if profile.get("charge_time"):
@@ -687,9 +693,16 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
     bonus = charge / 100 - 1 if charge is not None else 0.0
     if "until_shots" in seg:
         times = [start + k * interval for k in range(1, seg["until_shots"] + 1)]
+        # The window ends at its last shot - which may be past the bell, and
+        # then it is the BELL that ends it, not that shot. Folding it back to
+        # the last shot that actually landed would hand the base weapon the
+        # closing seconds it never had.
         seg_end = times[-1]
+        if stop_at is not None and stop_at < seg_end:
+            times = [t for t in times if t < stop_at]
+            seg_end = stop_at
     else:
-        seg_end = seg["end"]
+        seg_end = seg["end"] if stop_at is None else min(seg["end"], stop_at)
         times = []
         k = 1
         while start + k * interval < seg_end:
@@ -787,6 +800,35 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
     return records
 
 
+def _reject_unrepresentable_overlaps(segments):
+    """Windows must arrive in order, and two that overlap must be the SAME
+    transform.
+
+    A window re-opening while it still runs is ordinary, not an error: a
+    schedule anchored on its owner's bursts emits one window per burst, and her
+    burst comes back before the window closes as soon as the deck cycles faster
+    than the window is long. Nothing capped that before - a cycle cost at least
+    `FULL_BURST_DURATION` + the gauge, which exceeded every window in the
+    registry - until per-cycle Full Burst lengths landed and Isabel's -5 sec
+    let a heavy-cooldown deck cycle in 9.45 sec against Nayuta's 10-sec Memory
+    Incineration (2026-08-06). In game the second cast refreshes the duration
+    from itself (Fienn), which `_segment_shot_records`' `stop_at` expresses by
+    ending the running window where the new one opens.
+
+    Two DIFFERENT profiles overlapping has no such reading - there is no answer
+    to which weapon she is holding - so it stays an error. An `until_shots`
+    window has no end until it is walked, so an overlap involving one cannot be
+    seen from here; the caller's own cursor check is the backstop.
+    """
+    for previous, seg in zip(segments, segments[1:]):
+        if seg["start"] < previous["start"]:
+            raise ValueError("weapon mode segments overlap or are unsorted")
+        end = previous.get("end")
+        if (end is not None and seg["start"] < end
+                and seg["profile"] != previous["profile"]):
+            raise ValueError("weapon mode segments overlap or are unsorted")
+
+
 def generate_segmented_shots(
     base,
     segments,
@@ -805,13 +847,15 @@ def generate_segmented_shots(
 
     A segment marked `"shares_magazine": True` is not a weapon swap and draws
     from the unit's own magazine - see `_shared_magazine_shots`."""
+    _reject_unrepresentable_overlaps(segments)
     if any(seg.get("shares_magazine") for seg in segments):
         return _shared_magazine_shots(
             base, segments, fight_duration, max_ammo_percent_at,
             reload_speed_percent_at, charge_speed_percent_at, charge_time_reduction_sec_at)
     records = []
     cursor = 0.0
-    for seg in list(segments) + [None]:
+    windows = list(segments)
+    for index, seg in enumerate(windows + [None]):
         if seg is None:
             stretch_end = fight_duration
         else:
@@ -824,8 +868,10 @@ def generate_segmented_shots(
             charge_time_reduction_sec_at))
         if seg is None or seg["start"] >= fight_duration:
             break
+        reopened_at = (windows[index + 1]["start"]
+                       if index + 1 < len(windows) else None)
         seg_records, cursor = _segment_shot_records(
             seg, fight_duration, charge_speed_percent_at, charge_time_reduction_sec_at,
-            base.get("charge_motion_delay", 0.0))
+            base.get("charge_motion_delay", 0.0), stop_at=reopened_at)
         records.extend(seg_records)
     return records

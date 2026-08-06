@@ -3117,6 +3117,35 @@ def test_weapon_mode_schedule_swaps_profile_inside_window():
     assert cannon[0]["damage"] > base_shot * 20
 
 
+def test_a_transform_retriggered_before_its_window_closed_still_fights():
+    # A schedule anchored on its owner's bursts emits one window per burst, and
+    # nothing makes her burst interval longer than the window. It was longer by
+    # accident until per-cycle Full Burst lengths landed: a cycle cost at least
+    # FULL_BURST_DURATION + gauge, which exceeded every window in the registry.
+    # Isabel's -5 sec removed that floor, so Nayuta's 10-sec Memory Incineration
+    # can re-open 9.45 sec after the last one and the fight died with
+    # "weapon mode segments overlap or are unsorted" (2026-08-06).
+    profile = {"weapon": "SR", "damage_percent": 22.2, "rate_of_fire": 4.0}
+
+    def schedule(context, fight_duration):
+        return [{"start": 5.0, "end": 15.0, "profile": profile},
+                {"start": 12.0, "end": 22.0, "profile": profile}]
+
+    result = simulate_raid(
+        deck=_one_unit_deck(), rules_by_slug={}, burst_damage_percents={},
+        base_stats={"gunner": {"atk": 1000.0, "def": 0.0, "max_hp": 10000.0}},
+        enemy_def=0.0, gauge_charge_time=2.0, fight_duration=30.0,
+        weapon_stats={"gunner": SR_WEAPON},
+        weapon_mode_schedules={"gunner": schedule},
+    )
+    # The refreshed window runs to 22.0 as one stretch: transform shots keep
+    # landing past the first window's end and the base weapon never returns
+    # in between.
+    transform = [e for e in result["damage_log"]
+                 if e["source"] == "normal_attack" and 15.0 <= e["time"] < 22.0]
+    assert transform, "the refreshed window fired nothing"
+
+
 def test_per_shot_every_during_segment_and_every_outside_segment_are_mutually_exclusive():
     # Task 8: gates a per-shot rule to fire only on segment (transform)
     # shots or only on base-weapon shots, off the same in_segment flag that
