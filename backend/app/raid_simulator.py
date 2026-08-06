@@ -484,7 +484,57 @@ _BUNDLE_STATS = (
 )
 
 
-def simulate_raid(
+# 조건부 풀 버스트 확장(소다의 Beginner's Rewards)이 있는 덱에서 고정점을 찾는
+# 패스 수의 상한. 하한(확장 없음)에서 출발해 위로 가므로 보통 2~3패스면 끝나고,
+# 이 상한은 수렴하지 않는 조합에서 무한히 도는 것을 막는 안전장치다.
+MAX_FULL_BURST_PASSES = 4
+
+
+def simulate_raid(*args, **kwargs):
+    """한 번의 레이드 시뮬레이션. 대부분의 덱에서는 `_simulate_raid_once`를 정확히
+    한 번 부르는 것과 같다.
+
+    풀 버스트 창 길이가 자원 상태에 달린 유닛(소다: 트윙클링 바니)이 덱에 있으면
+    고정점까지 반복한다: 창 길이가 그 사이클 진입 시점의 골든칩으로 정해지는데,
+    칩은 창 안의 사격으로 차고, 사격은 창이 정해져야 존재한다. 시간 순서로는
+    인과가 한 방향이지만(사이클 k의 판정은 k-1까지의 샷만 본다) 이 엔진은
+    스케줄러를 통째로 먼저 돌리므로 패스 단위로 같은 답에 도달한다.
+
+    그런 유닛이 없으면 해석기가 빈 딕셔너리를 돌려주고 첫 패스에서 종료한다 -
+    결과도 비용도 오늘과 같다.
+    """
+    overrides = {}
+    result = None
+    for attempt in range(MAX_FULL_BURST_PASSES):
+        result, resolved = _simulate_raid_once(
+            *args, **kwargs, full_burst_stage_overrides=overrides
+        )
+        if resolved == overrides:
+            result["full_burst_passes"] = {"passes": attempt + 1, "converged": True}
+            return result
+        overrides = resolved
+    result["full_burst_passes"] = {"passes": MAX_FULL_BURST_PASSES, "converged": False}
+    return result
+
+
+def _stage_seconds(stage_table, conditional_full_burst_deltas):
+    """{사이클: {슬러그: 단계}}를 burst_cycle이 쓰는 {사이클: 초}로 바꾼다.
+
+    단계는 유닛별이고 초는 창 하나에 하나뿐이라 합산한다 - 확장을 주는 유닛이
+    둘 있는 덱이라면 창이 둘 다 만큼 길어진다. 오늘 소비자는 소다 하나뿐이라
+    합이 곧 그녀 몫이다."""
+    seconds = {}
+    for cycle_index, stages in stage_table.items():
+        total = sum(
+            conditional_full_burst_deltas[slug]["tiers"][stage - 1][1]
+            for slug, stage in stages.items()
+        )
+        if total:
+            seconds[cycle_index] = total
+    return seconds
+
+
+def _simulate_raid_once(
     deck,
     rules_by_slug,
     burst_damage_percents,
@@ -521,6 +571,7 @@ def simulate_raid(
     burst_anchored_buffs=None,
     ammo_rounds_per_shot=None,
     conditional_full_burst_deltas=None,
+    full_burst_stage_overrides=None,
 ):
     weapon_stats = weapon_stats or {}
     # None means "no band read for this encounter", which pays nobody. An
@@ -546,6 +597,7 @@ def simulate_raid(
     scheduled_nukes = scheduled_nukes or {}
     ammo_rounds_per_shot = ammo_rounds_per_shot or {}
     conditional_full_burst_deltas = conditional_full_burst_deltas or {}
+    full_burst_stage_overrides = full_burst_stage_overrides or {}
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"], m.get("weapon")) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -904,6 +956,9 @@ def simulate_raid(
         gauge_charge_time,
         fight_duration,
         mode,
+        full_burst_duration_overrides=_stage_seconds(
+            full_burst_stage_overrides, conditional_full_burst_deltas
+        ),
         on_battle_start=on_battle_start,
         on_tier_fire=on_tier_fire,
         on_full_burst_enter=on_full_burst_enter,
@@ -918,6 +973,14 @@ def simulate_raid(
         (e["time"] for e in events if e["type"] == "full_burst_end"),
     ))
     context.full_burst_windows = full_burst_windows
+
+    # 이번 패스가 받은 단계 테이블을 창에 붙여 context에 싣는다 - 창 길이와 단계가
+    # 같은 패스 안에서 항상 같은 출처를 갖도록. per-shot 소비자(소다의 Beginner's
+    # Rewards 넉)가 자기 샷이 속한 창의 자기 단계를 여기서 읽는다.
+    context.full_burst_extension_stages = [
+        (start, end, full_burst_stage_overrides.get(index, {}))
+        for index, (start, end) in enumerate(full_burst_windows)
+    ]
 
     # A buff a unit's own burst grants at an OFFSET from the burst, whose
     # duration may run "until that unit's NEXT own burst" rather than a fixed
@@ -1541,4 +1604,4 @@ def simulate_raid(
         "total_damage": sum(entry["damage"] for entry in damage_log),
         "damage_log": damage_log,
         "events": events,
-    }
+    }, {}
