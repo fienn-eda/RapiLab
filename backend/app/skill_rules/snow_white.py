@@ -29,12 +29,21 @@ Not modeled / deferred:
   triggered-rule/registry pipeline a condition could hook into) - deferring
   rather than applying it unconditionally, which would overstate her outside
   Full Burst.
-- Whether the transform's single shot counts toward Determination's own
-  30-hit normal-attack counter: the spec's open question - this engine's
-  per-shot loop counts EVERY shot on a unit's unified timeline (including
-  weapon-mode segment shots), so as encoded it DOES count. Flag for Fienn to
-  confirm; if the transform shot should NOT count, Determination's threshold
-  bookkeeping would need a dedicated exclusion this engine doesn't have yet.
+- Determination's own ATK +8.28%/5 sec on the transform's charged shot: it does
+  not apply, and it does not need to be made not to. Fienn (2026-08-07): the
+  charge itself takes 5 sec, so a buff that lasts 5 sec has run out by the time
+  the shot leaves. Verified end to end - toggling the buff off leaves all six
+  transform shots of a 180-sec run bit-identical, because her base weapon is
+  silenced for the whole charge (shots stop at burst+0.0 and the transform lands
+  at burst+5.0) and effects are active on [start, start+duration). The relation
+  this rests on is pinned by a test, since both numbers are skill slots.
+
+  Residual: the transform shot DOES count toward the 30-hit counter (the
+  per-shot loop counts every shot on the unified timeline), so on the roughly
+  1-in-30 cycle where it is itself the 30th, it applies the buff at its own
+  instant and this engine's same-instant-inclusive semantics let it buff
+  itself. Excluding that would need a per-shot counter exclusion the engine
+  does not have; it did not occur in any of the six sampled transforms.
 
 Numbers sourced from data/lootandwaifus/char_snow-white.json (skill values)
 and dotgg (AR weapon: 14.71% damage, 60 rounds, 1.5s reload - unused directly

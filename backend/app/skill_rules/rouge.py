@@ -28,19 +28,19 @@ Modeled cooldown:
   Rationale (Fienn): 8 full charges is met essentially every cycle (a full charge
   ~1 sec), so applying the reduction once per cycle is a faithful approximation,
   using the existing per-cycle CDR machinery.
+- Card Throw's OTHER bullet, all-ally Max HP +5% of her own for 5 sec, rides the
+  real every-8-full-charge counter (`per_shot_rules`) rather than that
+  approximation. The two bullets share a trigger but not a constraint: a
+  cooldown cut has to be settled before the rotation is scheduled and per-shot
+  rules run after it, while a Max HP grant is a damage input phase 2 reads at
+  each instance's own time. Pinning a 5-sec buff to a ~20-sec cycle would have
+  been wrong in a way the CDR's once-per-cycle reading is not.
 
 Not modeled:
 - Shield Coin's Damage Taken reduction - survival.
-- Card Throw's own Max HP bullet (+5% of her Max HP to all allies, 5 sec). Max
-  HP IS a damage stat here (see the note above), so the reason is the TRIGGER,
-  not the stat: the per-cycle CDR approximation above does not track the
-  8-full-charge counter, and a 5-sec buff pinned to a ~20-sec cycle would be
-  wrong in a way the CDR's own once-per-cycle reading is not. Encoding it
-  honestly means moving both bullets onto `per_shot_rules`' "every 8" - a
-  change to a Fienn-approved approximation, so it is raised, not made here.
 """
 from app.effects import Effect
-from app.skill_rules._helpers import cdr_pulse_rule
+from app.skill_rules._helpers import cdr_pulse_rule, refreshing_buff_rule
 from app.squad_engine import SkillRule, has_status
 
 
@@ -70,11 +70,33 @@ SHIELD_COIN_STATUS = "Shield Coin"
 DOUBLE_SWORD_COIN_STATUS = "Double Sword Coin"
 
 
+CARD_THROW_FULL_CHARGE_COUNT = 8  # skill text: "attacking with Full Charge for 8 time(s)"
+
+
 def build_card_throw_rules(values):
     """Card Throw's every-8-full-charge squad Cooldown reduction as a per-cycle
-    CDR pulse (see the module docstring). Its Max HP is survival, not modeled."""
+    CDR pulse (see the module docstring). Its Max HP bullet rides the real
+    counter instead - `build_card_throw_per_shot_rules`."""
     cdr_sec = float(values["description_value_04"])
     return [cdr_pulse_rule("full_burst_end", cdr_sec)]
+
+
+def build_card_throw_per_shot_rules(values, caster_max_hp):
+    """Card Throw's "Max HP ▲ 5% of the skill user's Max HP ... for 5 sec", on
+    the counter the skill actually names.
+
+    Its sibling bullet (the burst-cooldown cut) stays a per-cycle approximation
+    because a cooldown change must be settled before the rotation is scheduled,
+    and per-shot rules run after that. A Max HP grant carries no such ordering
+    constraint - it is a damage INPUT, read at each damage instance's own time -
+    so there is no reason for it to inherit the approximation. It matters
+    because Max HP feeds every "ATK ▲ X% of Max HP" conversion in the deck.
+    """
+    max_hp = caster_max_hp * float(values["description_value_02"]) / 100
+    duration = float(values["description_value_03"])
+    return [(CARD_THROW_FULL_CHARGE_COUNT, "every", [
+        refreshing_buff_rule("per_shot", [("flat_max_hp", max_hp, "squad", duration)]),
+    ])]
 
 
 def build_coin_flip_rules(values):

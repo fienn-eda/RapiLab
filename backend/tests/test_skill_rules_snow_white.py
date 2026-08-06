@@ -38,6 +38,24 @@ SNOW_WHITE_VALUES = {
     "seven_dwarves_i": SEVEN_DWARVES_I,
 }
 SNOW_WHITE = {"slug": "snow-white", "element": "Iron"}
+
+
+def test_determination_atk_cannot_outlive_the_transform_charge():
+    """Fienn (2026-08-07): Determination's ATK +8.28% does NOT reach the
+    transform's charged shot, because that charge takes 5 sec and the buff
+    lasts 5 sec.
+
+    The engine already produces this - the buff's last possible application is
+    at the burst instant and the shot lands a whole charge later, and effects
+    are active on [start, start+duration), so it has expired. Nothing enforces
+    it though: it holds only while the buff is not LONGER than the charge, and
+    both numbers are skill slots a rebalance can move. This pins the relation
+    rather than the two numbers, so it fails on the change that would break the
+    ruling instead of on any change at all.
+    """
+    buff_duration = float(DETERMINATION["description_value_05"])
+    charge_time = float(SEVEN_DWARVES_I["description_value_01"])
+    assert buff_duration <= charge_time
 ALLY = {"slug": "ally", "element": "Fire"}
 
 

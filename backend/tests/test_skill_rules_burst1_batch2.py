@@ -296,6 +296,46 @@ DKW = {
 }
 
 
+def test_card_throw_max_hp_rides_the_real_eight_full_charge_counter():
+    """Card Throw's two bullets share one trigger but not one mechanism.
+
+    The CDR stays a per-cycle pulse because a burst-cooldown change has to be
+    known before the rotation is scheduled, and per-shot rules run after it.
+    The Max HP grant has no such ordering constraint - it is a damage INPUT that
+    phase 2 reads at each instance's own time - so it rides the counter the
+    skill actually names, every 8 full charges (Rouge is an SR, so every shot).
+    """
+    from app.skill_rules.rouge import build_card_throw_per_shot_rules
+
+    rules = build_card_throw_per_shot_rules(ROUGE_CARD_THROW, caster_max_hp=500_000.0)
+    threshold, mode, skill_rules = rules[0]
+    assert (threshold, mode) == (8, "every")
+
+    reg = EffectRegistry()
+    ctx = deck_ctx("rouge")
+    for rule in skill_rules:
+        rule.action(ctx, "rouge", 4.0, reg)
+    # 5% of her own 500,000 Max HP, to every ally, for 5 sec.
+    assert round(reg.total_for("flat_max_hp", ALLY, 4.0), 2) == 25_000.0
+    assert reg.total_for("flat_max_hp", ALLY, 9.1) == 0.0
+
+
+def test_card_throw_max_hp_refreshes_rather_than_stacking():
+    """8 full charges is ~8 sec for an SR against a 5-sec buff, but a deck that
+    speeds her charge can re-arm it inside its own window - the game refreshes
+    a re-application, it does not sum them."""
+    from app.skill_rules.rouge import build_card_throw_per_shot_rules
+
+    _, _, skill_rules = build_card_throw_per_shot_rules(
+        ROUGE_CARD_THROW, caster_max_hp=500_000.0)[0]
+    reg = EffectRegistry()
+    ctx = deck_ctx("rouge")
+    for rule in skill_rules:
+        rule.action(ctx, "rouge", 4.0, reg)
+        rule.action(ctx, "rouge", 6.0, reg)
+    assert round(reg.total_for("flat_max_hp", ALLY, 6.0), 2) == 25_000.0  # not 50,000
+
+
 def test_d_killer_wife_pierce_buff_reaches_sniper_allies_only():
     """"Affects all allies with a Sniper Rifle" - an exact weapon filter, so an
     AR ally that happens to hold Pierce does not collect her Pierce Damage."""

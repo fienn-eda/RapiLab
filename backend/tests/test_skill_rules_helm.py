@@ -66,7 +66,10 @@ def make_context():
     )
 
 
-def test_frontline_command_grants_squad_crit_rate_on_last_bullet_hit():
+def test_frontline_command_grants_squad_normal_attack_crit_rate_on_last_bullet_hit():
+    """The bullet reads "Critical Rate of normal attack", so it lands in the
+    normal-attack-only bucket - as plain crit_rate it also raised every burst
+    nuke in the squad."""
     ps = build_frontline_command_per_shot_rules(FRONTLINE_COMMAND_VALUES)
     assert len(ps) == 1
     threshold, mode, rules = ps[0]
@@ -77,8 +80,9 @@ def test_frontline_command_grants_squad_crit_rate_on_last_bullet_hit():
         rule.action(ctx, "helm", 3.0, registry)
 
     ally = {"slug": "ally", "element": "Iron"}
-    assert round(registry.total_for("crit_rate", ally, now=3.0), 4) == 0.1464
-    assert registry.total_for("crit_rate", ally, now=8.1) == 0.0
+    assert round(registry.total_for("normal_attack_crit_rate", ally, now=3.0), 4) == 0.1464
+    assert registry.total_for("normal_attack_crit_rate", ally, now=8.1) == 0.0
+    assert registry.total_for("crit_rate", ally, now=3.0) == 0.0
 
 
 def test_frontline_command_refreshes_instead_of_stacking_on_repeated_last_bullets():
@@ -94,7 +98,7 @@ def test_frontline_command_refreshes_instead_of_stacking_on_repeated_last_bullet
         rule.action(ctx, "helm", 4.0, registry)  # 2nd last bullet before the 1st buff expires
 
     ally = {"slug": "ally", "element": "Iron"}
-    assert round(registry.total_for("crit_rate", ally, now=4.0), 4) == 0.1464  # not 0.2928
+    assert round(registry.total_for("normal_attack_crit_rate", ally, now=4.0), 4) == 0.1464  # not 0.2928
 
 
 def test_fire_away_grants_permanent_squad_damage_to_parts():
