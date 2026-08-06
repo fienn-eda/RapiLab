@@ -43,6 +43,7 @@ def build(caster_atk=10000):
 
 
 ALLY = {"slug": "ally", "element": "Wind"}
+BRID = {"slug": "brid-silent-track", "element": "Fire"}
 
 
 def test_ignition_sequence_emits_an_instant_nuke_pulse_on_full_burst_enter():
@@ -56,7 +57,9 @@ def test_ignition_sequence_emits_an_instant_nuke_pulse_on_full_burst_enter():
     assert pulses[0].source_slug == "brid-silent-track"
 
 
-def test_full_throttle_grants_squad_atk_on_own_burst():
+def test_full_throttle_grants_atk_to_allies_but_not_to_brid_herself():
+    """"Affects all allies (except self)" - a live member filter, not a squad
+    approximation, so Brid does not collect her own flat ATK."""
     ctx = make_context()
     registry = EffectRegistry()
     fire_trigger("own_burst_activate", {"brid-silent-track": build()}, ctx, registry, time=5.0)
@@ -64,6 +67,15 @@ def test_full_throttle_grants_squad_atk_on_own_burst():
     # 66.52% of caster ATK 10000 = 6652, for 10 sec.
     assert registry.total_for("flat_atk", ALLY, now=5.0) == 6652.0
     assert registry.total_for("flat_atk", ALLY, now=15.1) == 0.0
+    assert registry.total_for("flat_atk", BRID, now=5.0) == 0.0
+
+
+def test_full_throttle_grants_nothing_when_brid_is_the_only_member():
+    ctx = SquadContext([SquadMember("brid-silent-track", burst_tier=2, element="Fire")])
+    registry = EffectRegistry()
+    fire_trigger("own_burst_activate", {"brid-silent-track": build()}, ctx, registry, time=5.0)
+
+    assert registry.total_for("flat_atk", BRID, now=5.0) == 0.0
 
 
 def test_ignition_sequence_wind_debuff_applies_only_against_wind_boss():

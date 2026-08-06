@@ -23,13 +23,11 @@ Modeled (DPS-relevant):
   +12.12% Damage Taken for 10 sec against a Wind Code boss (refreshing per-shot
   buff, gated on `boss_is_element("Wind")`).
 - Full Throttle (skills[2], her burst): ATK % of caster's ATK to "all allies
-  except self" - the engine has no "squad except self" scope, so approximated
-  as squad (per the encoding skill's documented approximation pattern); Brid
-  herself also incorrectly picks up her own buff, a small self-only
-  overstatement.
+  (except self)" - resolved at trigger time to a live `slugs:` scope over the
+  deck's other members, so Brid does not collect her own grant.
 
-Not modeled: none - both Wind-Code debuffs are now representable via the
-boss_element gate (gap #5).
+Not modeled: none - both Wind-Code debuffs are representable via the
+boss_element gate (gap #5), and the except-self scope via a live member filter.
 """
 from app.effects import Effect
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
@@ -67,7 +65,17 @@ def build_brid_rules(values):
     ally_atk_duration = float(full_throttle["description_value_02"])
 
     def apply_full_throttle(context, caster_slug, time, registry):
-        registry.add(Effect("flat_atk", ally_atk, "squad", ally_atk_duration, caster_slug), applied_at=time)
+        # "Affects all allies (except self)" - resolved live to a slugs: scope,
+        # the same shape Arcana: Fortune Mate's SG-allies-except-self bullet
+        # uses. A squad scope would hand Brid her own flat ATK.
+        allies = [m.slug for m in context.members if m.slug != caster_slug]
+        if not allies:
+            return
+        registry.add(
+            Effect("flat_atk", ally_atk, "slugs:" + ",".join(allies),
+                   ally_atk_duration, caster_slug),
+            applied_at=time,
+        )
 
     return [
         instant_nuke_pulse_rule("full_burst_enter", nuke_percent),

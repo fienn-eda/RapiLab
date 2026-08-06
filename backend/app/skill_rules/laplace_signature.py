@@ -59,9 +59,11 @@ Not modeled / deferred (same as base Laplace, plus signature-specific):
 - Laplace Buster's "Gains Pierce" (Additional Effect 1) IS modeled, as the
   `has_pierce` property for the transform's duration: Pierce Damage Up only
   credits a unit that holds Pierce (Fienn, 2026-07-26).
-- Base Laplace's own weapon-transform kit stays deferred on the "laplace"
-  slug (untouched by this module) - it never got an in-game tick-count
-  measurement, unlike this signature build.
+(Base Laplace's own Buster transform is NOT deferred - `laplace.py` models it
+as a 5-sec segment riding the tick rate measured here, which Fienn confirmed
+(2026-07-21) is the same for both Busters. What the base build lacks is this
+build's max-Hero-Vision true-damage conversion, since its Hero Vision counter
+is the Pattern B gauge above.)
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 

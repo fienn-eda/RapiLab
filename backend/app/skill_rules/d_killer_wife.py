@@ -2,9 +2,14 @@
 (no signature).
 
 Modeled (DPS-relevant):
-- Calm Sniping (skills[0]): on Full Burst enter, squad Pierce Damage up (the
-  skill limits it to Sniper Rifle allies; approximated as squad - the scope
-  model has no weapon-conditional targeting, and pierce is a general damage-up).
+- Calm Sniping (skills[0]): on Full Burst enter, Pierce Damage up on "all allies
+  with a Sniper Rifle" - the exact live weapon filter, not a squad
+  approximation. It matters because Pierce Damage is gated on the recipient
+  holding Pierce, and non-SR units do hold it (Grave, Dorothy: Serendipity,
+  Zwei), so a squad scope really did pay allies the skill excludes.
+- Calm Sniping's "attacking with Full Charge for 3 time(s): Gain Pierce for 1
+  shot" - the `has_pierce` property as a one-round grant, which is what her own
+  Pierce Damage buff then credits on her.
 - Assault Formation (skills[1]): squad Attack Damage on every 5 Full Charge
   attacks (via per_shot_rules; an SR's every shot is a full charge); and its
   every-8-full-charge squad Cooldown reduction, modeled as a per-CYCLE CDR pulse
@@ -14,16 +19,14 @@ Modeled (DPS-relevant):
   per-cycle CDR machinery, sidestepping the per-shot -> rotation ordering problem.
 
 Not modeled:
-- Calm Sniping's "gain Pierce for 1 shot after 3 full charges" - a per-shot
-  pierce enable, not a damage-up buff.
 - Kill the Target (skills[2], her burst): deferred per Fienn. It is a 269.28%
   nuke plus a Wipe-Out debuff whose follow-up buffs depend on which area of the
   target allies hit (positional/target-state, unrepresentable). Her burst
   currently contributes no modeled damage.
 """
 from app.skill_rules._helpers import (
-    buff_rule,
     cdr_pulse_rule,
+    member_subset_buff_rule,
     refreshing_buff_rule,
     round_buff_rule,
 )
@@ -55,9 +58,11 @@ def build_d_killer_wife_rules(values):
     fb_pierce_duration = float(calm["description_value_03"])
     cdr_sec = float(assault["description_value_02"])  # every-8-full-charge CDR ~= per cycle
     return [
-        buff_rule("full_burst_enter", [
-            ("pierce_damage_up", fb_pierce, "squad", fb_pierce_duration),
-        ]),
+        member_subset_buff_rule(
+            "full_burst_enter",
+            lambda m, context: m.weapon == "SR",
+            [("pierce_damage_up", fb_pierce, fb_pierce_duration)],
+        ),
         cdr_pulse_rule("full_burst_end", cdr_sec),
     ]
 

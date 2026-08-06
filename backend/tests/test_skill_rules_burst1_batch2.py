@@ -296,10 +296,19 @@ DKW = {
 }
 
 
-def test_d_killer_wife_pierce_buff_on_full_burst():
+def test_d_killer_wife_pierce_buff_reaches_sniper_allies_only():
+    """"Affects all allies with a Sniper Rifle" - an exact weapon filter, so an
+    AR ally that happens to hold Pierce does not collect her Pierce Damage."""
+    ctx = SquadContext([
+        SquadMember("d-killer-wife", burst_tier=1, element="Electric", weapon="SR"),
+        SquadMember("sniper-ally", burst_tier=3, element="Fire", weapon="SR"),
+        SquadMember("ally", burst_tier=2, element="Fire", weapon="AR"),
+    ])
     reg = EffectRegistry()
-    fire_trigger("full_burst_enter", {"d-killer-wife": build_d_killer_wife_rules(DKW)}, deck_ctx("d-killer-wife"), reg, 0.0)
-    assert round(reg.total_for("pierce_damage_up", ALLY, 0.0), 4) == 0.1355
+    fire_trigger("full_burst_enter", {"d-killer-wife": build_d_killer_wife_rules(DKW)}, ctx, reg, 0.0)
+    assert round(reg.total_for("pierce_damage_up", {"slug": "sniper-ally", "element": "Fire"}, 0.0), 4) == 0.1355
+    assert round(reg.total_for("pierce_damage_up", {"slug": "d-killer-wife", "element": "Electric"}, 0.0), 4) == 0.1355
+    assert reg.total_for("pierce_damage_up", ALLY, 0.0) == 0.0
 
 
 def test_d_killer_wife_assault_formation_cdr_applied_per_cycle():

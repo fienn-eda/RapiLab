@@ -43,9 +43,11 @@ builds despite their different triggers (Fienn, 2026-07-24):
 
 Not modeled (both builds):
 - Emergency-Crafted Bullets' own partial reload ("Reload 5.31% of the
-  magazine(s)"): the engine reloads a magazine as one uninterruptible block, so
-  a fractional top-up mid-magazine has nowhere to land. It shortens her own
-  downtime slightly and she is a supporter, so the omission is small.
+  magazine(s)"). `attack_rate.AmmoRefund` hands back whole ROUNDS, and 5.31% of
+  an SG magazine rounds to zero of them, so there is nothing to hand back - and
+  the base build's trigger is a 5% roll, which this engine cannot make either.
+  It shortens her own downtime slightly and she is a supporter, so the omission
+  is small.
 """
 from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
 

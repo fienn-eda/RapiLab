@@ -225,8 +225,18 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    `frontend/public/portraits/README.md`.
 
 12. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
-   avoids cp949 encoding errors with Korean/arrow characters on Windows). Then
-   commit on the WIP branch with a message listing what's modeled and deferred.
+   avoids cp949 encoding errors with Korean/arrow characters on Windows), then
+   the text-vs-encoding audits, which no test can replace because each of them
+   checks a thing that registers as a perfectly valid Effect:
+   `scripts/audit_down_arrow_stats.py` (▲/▼ direction — the value slot carries
+   only the number), `scripts/audit_target_scopes.py` (narrow targeting encoded
+   as `squad` — same stat, same number, wrong recipients),
+   `scripts/audit_burst_stage_triggers.py` ("Burst Stage N" wired to
+   `own_burst_activate`), `scripts/audit_per_shot_buff_stacking.py` (a per-shot
+   buff that stacks where the text has no "stacks up to" clause), and
+   `scripts/audit_charge_motion_delay.py` (step 4's question, unanswered).
+   Then commit on the WIP branch with a message listing what's modeled and
+   deferred.
 
 ## Judgment: model, approximate, or defer
 
@@ -284,7 +294,13 @@ silently.
 - **A "deferred" note is a claim about the engine on the day it was written.**
   Before honouring one, check that the capability it names is still missing —
   `references/engine-capabilities.md` and `docs/engine-gaps.md` are the current
-  truth; module docstrings are not. Several units carried defers long after the
+  truth; module docstrings are not. **And when you BUILD a capability, add it to
+  that catalog in the same change.** The 2026-08-07 sweep found five stale
+  defers and four had the same cause: `has_pierce` and `AmmoRefund` shipped
+  without a catalog entry, so five modules went on saying the Pierce property
+  "has no engine representation" while modelling it, and Ludmilla's 20-round
+  refund sat behind "ammo QoL" for a week after EVE proved the primitive. An
+  undocumented capability is an absent one. Several units carried defers long after the
   blocking primitive shipped (Anis: Star's Shooting Stars cited gap #6, which
   had landed; Crown's Royal Attire cited "an attack-rate model that doesn't
   exist yet", which exists; Helm's own docstring admitted its bullet was "just

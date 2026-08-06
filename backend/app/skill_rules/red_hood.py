@@ -38,12 +38,15 @@ Modeled (DPS-relevant):
   Charge Damage / ATK buffs now multiply these shots like any other normal
   attack.
 
+- Wild Tooth's "Gain Pierce continuously": the `has_pierce` property from
+  battle start, which is what makes any Pierce Damage buff worth anything to
+  her.
+
 Not modeled / deferred:
-- Wild Tooth's "Gain Pierce continuously": the pierce property itself has no
-  engine representation until 2026-07-26 (pierce_damage_up is a damage bucket, not the
-  property); Beast Cage squad DEF and Last Howl healing are survival stats
-  on unreachable branches anyway.
-- Red Wolf's "Expand Pierce range by 100%": no pierce/range model.
+- Beast Cage's squad DEF and The Last Howl's healing - survival stats, and on
+  burst-step branches this engine never reaches anyway (see above).
+- Red Wolf's "Expand Pierce range by 100%": the engine models no pierce RANGE
+  (only the property and the damage bucket).
 
 Numbers sourced from data/dotgg/char_red-hood.json for the weapon profile
 (SR, 69.04% damage, 250% charge damage, 6 rounds, 2.0s reload, 1.0s charge)

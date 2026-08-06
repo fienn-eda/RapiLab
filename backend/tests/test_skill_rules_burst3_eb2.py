@@ -89,6 +89,19 @@ def test_snowstorm_core_nuke_fires_every_60_shots_only_when_the_core_is_hittable
     assert reg2.drain_pulses("instant_damage_percent") == []
 
 
+def test_queens_gaze_reloads_twenty_rounds_every_sixty_shots():
+    """"Activates when landing 60 normal attack(s). Affects self. Reloads 20
+    round(s) of ammunition." Both numbers are the skill's own slots, and the
+    rider needs no boss element."""
+    from app.attack_rate import AmmoRefund
+    from app.skill_rules.ludmilla_winter_owner import queens_gaze_ammo_refund
+    from app.skill_rules.registry import get_skill_ammo_refund
+
+    assert queens_gaze_ammo_refund(LUDMILLA) == AmmoRefund(every_shots=60, rounds=20)
+    assert get_skill_ammo_refund("ludmilla-winter-owner", LUDMILLA) == (
+        AmmoRefund(every_shots=60, rounds=20), None)
+
+
 # --- Chisato Nishikigi (SMG/Iron) ---
 CHISATO = {
     "extrasensory": {"description_value_06": "53.69", "description_value_08": "48.62"},

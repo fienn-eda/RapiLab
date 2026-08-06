@@ -26,9 +26,26 @@ Modeled (DPS-relevant):
   counts as a core hit - an over-estimate whose size is exactly the deck's
   real core-hit rate, and the same convention the rest of the engine uses.
 
+- The Queen's Gaze's second bullet, "when landing 60 normal attack(s), Reloads
+  20 round(s) of ammunition": an `AmmoRefund` off her own slots
+  (`queens_gaze_ammo_refund`), ungated - the bullet names no boss condition.
+  Rounds handed back mid-magazine are not a Max Ammo percentage: what a refund
+  is worth depends on how much of the magazine is left when it lands, and an
+  earlier reload shifts every later one against the Full Burst window.
+
+  **Wiring it LOWERED her damage, and that is the model working.** In the
+  per-slug sweep shell she goes 9,766 -> 9,930 normal attacks (+1.68%) while her
+  own damage falls 0.65%, because average damage per shot drops 2.25%: the
+  reload time a refund buys back is the time she was NOT firing, and her burst
+  hands her Reload Speed +67.2% for 20 sec, so the reloads near her Full Burst
+  were already cheap and the ones it actually shortens sit outside the window.
+  The shots it adds therefore miss the Full Burst bonus. Same non-monotonicity
+  the Tactical Bear cube showed. Do not read the drop as a bug and revert it.
+
 Not modeled / deferred:
-- The Queen's Gaze self reload of 20 rounds - ammo QoL, not a % buff.
+- Nothing. Every bullet of all three skills is encoded.
 """
+from app.attack_rate import AmmoRefund
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule
 from app.squad_engine import boss_core_hittable
 
@@ -63,6 +80,21 @@ def build_ludmilla_rules(values):
             ("reload_speed_percent", burst_reload, "self", burst_reload_duration),
         ]),
     ]
+
+
+def queens_gaze_ammo_refund(values):
+    """"Activates when landing 60 normal attack(s). Affects self. Reloads 20
+    round(s) of ammunition."
+
+    Both numbers are the skill's own slots, so a rebalance moves them. Unlike
+    EVE's Eagle Eye the bullet carries no boss condition, so the registry
+    registers it with no required element.
+    """
+    queens = values["queens_gaze"]
+    return AmmoRefund(
+        every_shots=int(float(queens["description_value_05"])),
+        rounds=int(float(queens["description_value_06"])),
+    )
 
 
 def build_ludmilla_per_shot_rules(values):

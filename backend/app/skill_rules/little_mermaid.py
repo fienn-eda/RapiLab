@@ -24,7 +24,9 @@ Not modeled:
   damage over the permanent Bubble already modeled - only the stun, which isn't
   modeled. Deliberately not double-counted.
 - Bubble Order's "ally ammo reaches 400 -> Burst Gauge +37%" (gauge fill isn't a
-  consumed stat) and Siren's Song's instant partial reload.
+  consumed stat) and Siren's Song's instant partial reload - a percentage of
+  every ALLY's magazine at her burst, which `attack_rate.AmmoRefund` (whole
+  rounds, on the owner's own shot counter) cannot express.
 
 Cross-note (2026-07-19): Bubble Barrage's squad ammo-expended counter assumes
 "1 shot = 1 round." Velvet's ammo pouch (100/300-round accounting) and

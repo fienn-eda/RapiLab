@@ -40,8 +40,10 @@ lands keeps the slower cadence and one starting late keeps the faster one past
 the window's end; and modeling a "fixed at" as a buff means an ally's Charge
 Speed buff stacks on top and pushes below 0.7 sec, where in game the fixed
 value would not move - an over-estimate confined to decks that buff charge
-speed (the engine has no per-unit buff-immunity primitive; Liberalio needs the
-same one).
+speed. The engine DOES have a per-unit buff-immunity primitive
+(`EffectRegistry.set_external_stat_immunity`, which Liberalio's Strange Currents
+uses to refuse everyone else's charge speed), but it is permanent once set,
+and hers must cover only her burst window - so it cannot be reused here as-is.
 
 Star Anis also grants the squad Max HP +15.02% of her own while in Everyone's
 Star - modeled, because `flat_max_hp` feeds every "ATK ▲ X% of Max HP"

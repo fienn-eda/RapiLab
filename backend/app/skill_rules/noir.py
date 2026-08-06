@@ -14,9 +14,11 @@ Modeled (DPS-relevant):
   like Damage to Parts, never reaches body damage.
 
 Not modeled:
-- Rabbit Twins B's instant partial reload ("Reload 39.88% magazine(s)"): the
-  engine reloads a magazine as one uninterruptible block, so a fractional
-  mid-magazine top-up has nowhere to land.
+- Rabbit Twins B's instant partial reload ("Reload 39.88% magazine(s)").
+  `attack_rate.AmmoRefund` is the mid-magazine refund path, but it hands back a
+  fixed round count on the OWNER'S OWN shot counter; this one is a percentage of
+  each recipient's magazine, granted to all allies on Full Burst enter, so
+  neither its unit, its target nor its trigger fits.
 - Finale's Hit Rate buffs - Hit Rate is not consumed by this engine.
 """
 from app.skill_rules._helpers import buff_rule

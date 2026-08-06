@@ -19,7 +19,8 @@ Modeled (DPS-relevant):
   (`until_shots: 1`) at each own-burst time - the transform's single charged
   shot rides the same extra_charge_bonus path a normal charge-weapon shot
   uses, so deck Charge Damage/ATK buffs multiply it like any other charge
-  shot.
+  shot. Its "Additional Effect: Pierce" is the `has_pierce` property, granted
+  for exactly that one round (`round_buff_rule`, shots=1).
 
 Not modeled / deferred:
 - Seven Dwarves: V & VI's "Critical Rate +26.1% for 10 sec" rider: gated on
@@ -28,10 +29,6 @@ Not modeled / deferred:
   triggered-rule/registry pipeline a condition could hook into) - deferring
   rather than applying it unconditionally, which would overstate her outside
   Full Burst.
-- Seven Dwarves: I's "Additional Effect: Pierce": the pierce property has no
-  engine representation (same as Red Hood's Wild Tooth/Red Wolf Pierce -
-  pierce_damage_up is a damage bucket, not the property itself; the property
-  is now carried as `has_pierce`).
 - Whether the transform's single shot counts toward Determination's own
   30-hit normal-attack counter: the spec's open question - this engine's
   per-shot loop counts EVERY shot on a unit's unified timeline (including
