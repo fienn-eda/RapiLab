@@ -61,6 +61,7 @@ SKILL_VALUE_MANIFESTS = {
         "test_module": "test_skill_rules_soda_twinkling_bunny",
         "keys": {
             "lucky_golden_chip": ("skills", 0),
+            "beginners_rewards": ("skills", 1),
             "onward_soda": ("skills", 2),
         },
         "drop_tokens": {
@@ -99,6 +100,33 @@ def build_lucky_golden_chip_per_shot_rules(values):
             )
 
     return [(every, "every_during_full_burst", [SkillRule(trigger="per_shot", action=apply)])]
+
+
+def build_beginners_rewards_full_burst_delta(values):
+    """Beginner's Rewards의 첫 불릿: Burst Stage 3 진입 시, 골든칩 스택에 따라
+    풀 버스트 지속시간이 늘어난다(10+ 이면 +2초, 20+ 이면 거기에 +3초 더).
+
+    누적이다 - "Each subsequent effect triggers all effects before it"이고,
+    Fienn의 실측이 그것을 확인한다(풀 버스트 15초 = 10 + 2 + 3,
+    docs/measurements/soda-golden-chip-in-play.md). 누적을 여기서 값에 반영해
+    소비 지점이 다시 더하지 않게 한다.
+
+    "Affects all allies"이므로 그녀가 그 사이클의 Burst 3일 필요가 없다 -
+    덱에 있고 칩이 임계 위면 누가 창을 열든 걸린다."""
+    rewards = values["beginners_rewards"]
+    stage1_threshold = float(rewards["description_value_03"])
+    stage1_seconds = float(rewards["description_value_04"])
+    stage2_threshold = float(rewards["description_value_06"])
+    stage2_seconds = float(rewards["description_value_07"])
+
+    return {
+        "resource": "chip",
+        "cap": int(float(values["lucky_golden_chip"]["description_value_04"])),
+        "tiers": [
+            (stage1_threshold, stage1_seconds),
+            (stage2_threshold, stage1_seconds + stage2_seconds),
+        ],
+    }
 
 
 def build_golden_chip_resources(values):
