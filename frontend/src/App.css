@@ -1271,6 +1271,16 @@
   gap: var(--sp-2);
 }
 
+/* 보스 요약과 저장 버튼이 결과의 첫 줄을 나눠 쓴다. */
+.result-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2) var(--sp-3);
+  width: 100%;
+}
+
 .saved-runs {
   list-style: none;
   margin: 0;

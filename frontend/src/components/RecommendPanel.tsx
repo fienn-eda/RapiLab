@@ -23,7 +23,13 @@ import {
   type BossProfileDraft,
 } from '../types/bossProfileDraft'
 import { isDraftComplete, makeEmptyDraft, resizeDraft, type Draft } from '../types/draft'
-import type { StoredInputs, StoredResult } from '../types/profile'
+import {
+  makeRunId,
+  type SavedRun,
+  type SoloRunView,
+  type StoredInputs,
+  type StoredResult,
+} from '../types/profile'
 import {
   DEFAULT_NUM_DECKS,
   MAX_NUM_DECKS,
@@ -34,6 +40,7 @@ import {
   type RecommendRequest,
 } from '../types/recommend'
 import { weaknessFor } from '../lib/elementAdvantage'
+import { elementLabel } from '../lib/elementName'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
 import { BossSummary } from './BossSummary'
@@ -42,6 +49,8 @@ import { DraftEditor, removeUnitBySlug, toRequestDraft } from './DraftEditor'
 import { DraftResults } from './DraftResults'
 import { EvaluationResults } from './EvaluationResults'
 import { RaidResults } from './RaidResults'
+import { SaveRunButton } from './SaveRunButton'
+import { SavedRunList } from './SavedRunList'
 import { UnitPalette, toggleExcludedSlug, type UnitInvestment } from './UnitPalette'
 import { HELP } from '../lib/helpText'
 
@@ -68,11 +77,32 @@ interface RecommendPanelProps {
   /** The result cache's invalidation axis - lib/inputHash.ts. Null until the
    * backend has answered. */
   engineVersion: string | null
+  /** 이 프로필이 솔로 탭에서 이름 붙여 남겨 둔 결과들, 최신순. */
+  savedRuns: SavedRun[]
+  /** 보관 상한에 걸려 거절되면 false. */
+  onSaveRun: (run: SavedRun) => boolean
+  onRenameRun: (id: string, name: string) => void
+  onDeleteRun: (id: string) => void
 }
 
 /** 솔로 레이드 보스의 방어력. 유니온 레이드 보스는 다른 값이라 이 기본값을
  * 공유하지 않는다(Fienn, 2026-08-06). */
 export const SOLO_RAID_DEFAULT_ENEMY_DEF = '31784'
+
+const MODE_LABEL: Record<RecommendMode, string> = {
+  single: '단일 덱',
+  raid: '전부 최적화',
+  draft: '빈자리만 최적화',
+  evaluate: '기대 딜량 계산',
+}
+
+/** 저장 이름 제안. 무엇을 상대로 어떤 모드로 돌렸는지가 나중에 목록에서
+ * 고르는 단서다. */
+const suggestRunName = (boss: BossProfile, mode: RecommendMode, at: Date): string => {
+  const weakness = boss.element === null ? '약점 없음' : elementLabel(weaknessFor(boss.element))
+  const pad = (n: number) => String(n).padStart(2, '0')
+  return `${weakness} · ${MODE_LABEL[mode]} · ${pad(at.getMonth() + 1)}-${pad(at.getDate())}`
+}
 
 type RecommendMode = 'single' | 'raid' | 'draft' | 'evaluate'
 
@@ -110,6 +140,10 @@ export function RecommendPanel({
   restoreResult,
   investmentFor,
   engineVersion,
+  savedRuns,
+  onSaveRun,
+  onRenameRun,
+  onDeleteRun,
 }: RecommendPanelProps) {
   const [mode, setMode] = useState<RecommendMode>('single')
   const [numDecks, setNumDecks] = useState(DEFAULT_NUM_DECKS)
@@ -363,24 +397,69 @@ export function RecommendPanel({
     [evaluateBoss, gimmickUnmetForBoss],
   )
 
-  // 지금 화면에 떠 있는 결과가 채점된 보스. 라이브 폼 상태(`draft`)가 아니라
-  // 제출 시점 스냅샷을 읽는다 - 결과가 나온 뒤 폼을 만지면 숫자는 옛 보스인데
-  // 설명만 새 보스가 되어 화면이 거짓말을 한다.
-  const displayedBoss = useMemo<BossProfile | null>(() => {
-    if (mode === 'single') return single.status === 'success' ? singleBoss : null
-    if (mode === 'raid' || mode === 'draft') {
-      return displayResult && displayMode === mode ? displayBoss : null
+  // 지금 화면에 떠 있는 결과를 보관 가능한 모양으로 모은다. 없으면 null이고,
+  // 그러면 저장 버튼도 없다. 보스는 라이브 폼 상태(`draft`)가 아니라 제출 시점
+  // 스냅샷을 읽는다 - 결과가 나온 뒤 폼을 만지면 숫자는 옛 보스인데 설명만 새
+  // 보스가 되어 화면이 거짓말을 한다.
+  const displayedRun = useMemo<SoloRunView | null>(() => {
+    if (mode === 'single') {
+      if (single.status !== 'success' || !singleBoss) return null
+      return {
+        mode: 'single',
+        boss: singleBoss,
+        numDecks,
+        decks: single.decks,
+        excludedSlugs: single.excludedSlugs,
+      }
     }
-    return evaluation.status === 'success' ? evaluateBoss : null
+    if (mode === 'raid' || mode === 'draft') {
+      if (!displayResult || displayMode !== mode || !displayBoss) return null
+      const shared = {
+        boss: displayBoss,
+        numDecks,
+        decks: displayResult.decks,
+        combinedTotalDamage: displayResult.combinedTotalDamage,
+        excludedSlugs: displayResult.excludedSlugs,
+        leftoverSlugs: displayResult.leftoverSlugs,
+        swapConverged: displayResult.swapConverged,
+      }
+      return mode === 'raid'
+        ? { mode: 'raid', ...shared }
+        : {
+            mode: 'draft',
+            ...shared,
+            withinDraft: displayResult.withinDraft,
+            baselineTotalDamage: displayResult.baselineTotalDamage,
+            draft: submittedDraft ?? null,
+          }
+    }
+    if (evaluation.status !== 'success' || !evaluateBoss) return null
+    return {
+      mode: 'evaluate',
+      boss: evaluateBoss,
+      numDecks,
+      decks: evaluation.decks,
+      combinedTotalDamage: evaluation.combinedTotalDamage,
+      excludedSlugs: evaluation.excludedSlugs,
+      draft: draftValue,
+    }
   }, [
     mode,
     single.status,
+    single.decks,
+    single.excludedSlugs,
     singleBoss,
     displayResult,
     displayMode,
     displayBoss,
+    submittedDraft,
     evaluation.status,
+    evaluation.decks,
+    evaluation.combinedTotalDamage,
+    evaluation.excludedSlugs,
     evaluateBoss,
+    numDecks,
+    draftValue,
   ])
 
   // A result names ENGINE slugs, so the Favorite Item flag - which rides on the
@@ -402,6 +481,66 @@ export function RecommendPanel({
       setDraftValue((current) => removeUnitBySlug(current, slug))
     }
     setExcludedSlugs((prev) => toggleExcludedSlug(prev, slug))
+  }
+
+  /** 보관물을 여는 것만으로는 폼이 바뀌지 않는다. 이 버튼을 눌렀을 때만 그때의
+   * 설정으로 되돌린다 - 결과는 되돌리지 않는다(조건을 조금 바꿔 다시 돌리는
+   * 것이 목적이다). */
+  const restoreRun = (run: SavedRun) => {
+    const view = run.view as SoloRunView
+    setMode(view.mode)
+    setNumDecks(view.numDecks)
+    setDraft(bossProfileToDraft(view.boss))
+    // 편성은 draft/evaluate 갈래에만 있다.
+    if ('draft' in view && view.draft) setDraftValue(view.draft)
+  }
+
+  /** 보관물을 읽기 모드로 그린다. gimmickUnmetFor는 넘기지 않는다 - 그 판정은
+   * 지금 로스터의 속성으로 내리는 것이라, 그때의 로스터로 나온 결과에 지금
+   * 기준을 덧씌우면 거짓말이 된다. */
+  const renderSavedRun = (run: SavedRun) => {
+    const view = run.view as SoloRunView
+    const lookups = { portraitFor, nameFor }
+    return (
+      <>
+        <BossSummary boss={view.boss} />
+        {view.mode === 'single' && (
+          <DeckResults decks={view.decks} excludedSlugs={view.excludedSlugs} {...lookups} />
+        )}
+        {view.mode === 'raid' && (
+          <RaidResults
+            decks={view.decks}
+            combinedTotalDamage={view.combinedTotalDamage}
+            excludedSlugs={view.excludedSlugs}
+            leftoverSlugs={view.leftoverSlugs}
+            swapConverged={view.swapConverged}
+            {...lookups}
+          />
+        )}
+        {view.mode === 'draft' && (
+          <DraftResults
+            decks={view.decks}
+            combinedTotalDamage={view.combinedTotalDamage}
+            excludedSlugs={view.excludedSlugs}
+            leftoverSlugs={view.leftoverSlugs}
+            withinDraft={view.withinDraft}
+            baselineTotalDamage={view.baselineTotalDamage}
+            submittedDraft={view.draft ?? undefined}
+            ownedSlugFor={ownedSlugResolver}
+            {...lookups}
+          />
+        )}
+        {view.mode === 'evaluate' && (
+          <EvaluationResults
+            decks={view.decks}
+            combinedTotalDamage={view.combinedTotalDamage}
+            excludedSlugs={view.excludedSlugs}
+            bosses={view.decks.map(() => view.boss)}
+            {...lookups}
+          />
+        )}
+      </>
+    )
   }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
@@ -675,7 +814,24 @@ export function RecommendPanel({
           </p>
         )}
 
-        {displayedBoss && <BossSummary boss={displayedBoss} />}
+        {displayedRun && (
+          <div className="result-head">
+            <BossSummary boss={displayedRun.boss} />
+            <SaveRunButton
+              suggestedName={suggestRunName(displayedRun.boss, displayedRun.mode, new Date())}
+              onSave={(name) => {
+                const savedAt = Date.now()
+                return onSaveRun({
+                  id: makeRunId(savedAt, savedRuns),
+                  name,
+                  savedAt,
+                  tab: 'solo',
+                  view: displayedRun,
+                })
+              }}
+            />
+          </div>
+        )}
         {mode === 'single' && single.status === 'success' && (
           <DeckResults
             decks={single.decks}
@@ -729,6 +885,22 @@ export function RecommendPanel({
             gimmickUnmetFor={evaluateGimmickUnmetFor}
           />
         )}
+
+        <fieldset className="group">
+          <legend className="group__legend">저장한 결과 ({savedRuns.length})</legend>
+          <details className="group__details">
+            <summary className="group__hint">
+              이름을 눌러 그때의 결과를 다시 볼 수 있어요
+            </summary>
+            <SavedRunList
+              runs={savedRuns}
+              renderRun={renderSavedRun}
+              onRestore={restoreRun}
+              onRename={onRenameRun}
+              onDelete={onDeleteRun}
+            />
+          </details>
+        </fieldset>
 
         {mode !== 'draft' && mode !== 'evaluate' && (
           <fieldset className="group">

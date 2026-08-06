@@ -19,7 +19,7 @@ const dropOnDeck = (deckNumber: number, slug: string) => {
 import { hashRecommendInputs } from '../lib/inputHash'
 import { MIN_DECK_ROSTER_SIZE } from '../types/recommend'
 import type { UserNikkeState } from '../types/userNikkeState'
-import type { StoredInputs, StoredResult } from '../types/profile'
+import type { SavedRun, StoredInputs, StoredResult } from '../types/profile'
 import type { SupportedUnit } from '../types/supportedUnit'
 
 vi.mock('../api/recommend', () => ({
@@ -75,6 +75,10 @@ const noPersistence = {
   restoreInputs: null,
   restoreResult: null,
   engineVersion: null,
+  savedRuns: [],
+  onSaveRun: () => true,
+  onRenameRun: () => {},
+  onDeleteRun: () => {},
 }
 
 beforeEach(() => {
@@ -1003,6 +1007,7 @@ describe('RecommendPanel persistence', () => {
     render(
       <RecommendPanel
         roster={fullRoster}
+        {...noPersistence}
         activeKey="A"
         getCached={() => null}
         onResult={() => {}}
@@ -1029,6 +1034,7 @@ describe('RecommendPanel persistence', () => {
     const { rerender } = render(
       <RecommendPanel
         roster={fullRoster}
+        {...noPersistence}
         activeKey="A"
         getCached={() => null}
         onResult={() => {}}
@@ -1042,6 +1048,7 @@ describe('RecommendPanel persistence', () => {
     rerender(
       <RecommendPanel
         roster={fullRoster}
+        {...noPersistence}
         activeKey="A"
         getCached={() => null}
         onResult={() => {}}
@@ -1083,6 +1090,7 @@ describe('RecommendPanel persistence', () => {
     render(
       <RecommendPanel
         roster={fullRoster}
+        {...noPersistence}
         activeKey="A"
         getCached={() => null}
         onResult={onResult}
@@ -1144,6 +1152,7 @@ describe('RecommendPanel persistence', () => {
     render(
       <RecommendPanel
         roster={fullRoster}
+        {...noPersistence}
         activeKey="A"
         getCached={getCached}
         onResult={onResult}
@@ -1443,5 +1452,143 @@ describe('RecommendPanel 실행 버튼', () => {
     expect(
       screen.getByRole('button', { name: /인카운터/ }).closest('.draft-layout__decks'),
     ).not.toBeNull()
+  })
+})
+
+describe('RecommendPanel 결과 보관', () => {
+  const singleSuccess = () => {
+    vi.mocked(recommendDecks).mockResolvedValue({
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          skill_damage: 0, hold_burst_slugs: [],
+        },
+      ],
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+  }
+
+  it('결과가 없으면 저장 버튼도 없다', () => {
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+
+    expect(screen.queryByRole('button', { name: '저장' })).not.toBeInTheDocument()
+  })
+
+  it('화면에 뜬 결과를 이름 붙여 솔로 탭 몫으로 남긴다', async () => {
+    const user = userEvent.setup()
+    singleSuccess()
+    const saved: SavedRun[] = []
+    render(
+      <RecommendPanel
+        roster={fullRoster}
+        {...noPersistence}
+        onSaveRun={(run: SavedRun) => {
+          saved.push(run)
+          return true
+        }}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    await screen.findByText('#1')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+    await user.click(screen.getByRole('button', { name: '확인' }))
+
+    expect(saved).toHaveLength(1)
+    expect(saved[0].tab).toBe('solo')
+    expect(saved[0].view).toMatchObject({ mode: 'single' })
+  })
+
+  it('보관한 결과를 열면 그때의 덱을 다시 그린다', async () => {
+    const user = userEvent.setup()
+    render(
+      <RecommendPanel
+        roster={fullRoster}
+        {...noPersistence}
+        savedRuns={[
+          {
+            id: 'r1',
+            name: '지난 주 배분',
+            savedAt: 1754438400000,
+            tab: 'solo',
+            view: {
+              mode: 'single',
+              boss: {
+                element: 'Fire',
+                core_hittable: false,
+                pierce_hits_body_behind_core: false,
+                enemy_def: 31784,
+                fight_duration: 180,
+                part_destructible: false,
+                effective_range_band: null,
+                elemental_interrupt_required: false,
+              },
+              numDecks: 5,
+              decks: [
+                {
+                  deck: ['a', 'b', 'c', 'd', 'e'],
+                  total_damage: 777,
+                  burst_damage: 400,
+                  normal_attack_damage: 300,
+                  skill_damage: 77, hold_burst_slugs: [],
+                },
+              ],
+              excludedSlugs: [],
+            },
+          },
+        ]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /지난 주 배분/ }))
+
+    expect(screen.getByText('777 총딜')).toBeInTheDocument()
+  })
+
+  // 여는 것만으로 폼이 바뀌면, 결과를 훑어보려던 클릭이 지금 짜던 설정을 지운다.
+  it('"폼 채우기"를 눌러야 보스 설정이 그때로 돌아간다', async () => {
+    const user = userEvent.setup()
+    render(
+      <RecommendPanel
+        roster={fullRoster}
+        {...noPersistence}
+        savedRuns={[
+          {
+            id: 'r1',
+            name: '지난 주 배분',
+            savedAt: 1754438400000,
+            tab: 'solo',
+            view: {
+              mode: 'single',
+              boss: {
+                element: 'Fire',
+                core_hittable: true,
+                pierce_hits_body_behind_core: false,
+                enemy_def: 12345,
+                fight_duration: 180,
+                part_destructible: false,
+                effective_range_band: null,
+                elemental_interrupt_required: false,
+              },
+              numDecks: 5,
+              decks: [],
+              excludedSlugs: [],
+            },
+          },
+        ]}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /지난 주 배분/ }))
+    expect(screen.getByLabelText(/적 방어력/)).toHaveValue(31784)
+
+    await user.click(screen.getByRole('button', { name: '이 설정으로 폼 채우기' }))
+
+    expect(screen.getByLabelText(/적 방어력/)).toHaveValue(12345)
+    expect(screen.getByLabelText('코어 피격 가능')).toBeChecked()
   })
 })

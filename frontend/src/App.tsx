@@ -8,7 +8,7 @@ import { useProfiles } from './hooks/useProfiles'
 import { usePortraitManifest } from './hooks/usePortraitManifest'
 import { useEngineVersion } from './hooks/useEngineVersion'
 import { getValidRoster } from './types/nikkeDraft'
-import { getResult } from './types/profile'
+import { getResult, runsForTab } from './types/profile'
 import { restorableResult } from './lib/restorableResult'
 import { useSupportedUnits } from './hooks/useSupportedUnits'
 import { nameFromSlug } from './lib/unitName'
@@ -20,10 +20,12 @@ import { SyncRosterPanel } from './components/SyncRosterPanel'
 import { UnionRaidPanel } from './components/UnionRaidPanel'
 import { ChargeWindowPanel } from './components/ChargeWindowPanel'
 import type { NikkeDraft } from './types/nikkeDraft'
+import type { SavedRun } from './types/profile'
 
 // A stable reference so useMemo below doesn't see a "new" roster every render
 // when there's no active profile (a fresh `?? []` literal would).
 const NO_ROSTER: NikkeDraft[] = []
+const NO_SAVED_RUNS: SavedRun[] = []
 
 type Tab = 'roster' | 'recommend' | 'union' | 'calculator' | 'sync'
 
@@ -41,8 +43,17 @@ const TABS: { id: Tab; label: string }[] = [
 ]
 
 function App() {
-  const { state, activeProfile, upsertProfile, switchProfile, deleteProfile, saveResult } =
-    useProfiles()
+  const {
+    state,
+    activeProfile,
+    upsertProfile,
+    switchProfile,
+    deleteProfile,
+    saveResult,
+    saveRun,
+    renameRun,
+    deleteRun,
+  } = useProfiles()
   const { portraitFor } = usePortraitManifest()
   // The Roster tab needs names, elements and the supported/unsupported split.
   // RecommendPanel loads the same list for itself: making it a prop instead
@@ -60,6 +71,13 @@ function App() {
   const restorableRaidResult = useMemo(
     () => (activeProfile ? restorableResult(activeProfile, validRoster, engineVersion) : null),
     [activeProfile, validRoster, engineVersion],
+  )
+
+  // 탭마다 자기 몫의 보관물만 본다 - 솔로와 유니온이 섞이지 않는 것은 이
+  // 필터가 전부다. useMemo인 이유는 runsForTab이 매번 새 배열을 낸다는 것뿐이다.
+  const soloSavedRuns = useMemo(
+    () => (activeProfile ? runsForTab(activeProfile, 'solo') : NO_SAVED_RUNS),
+    [activeProfile],
   )
 
   // Breakthrough/core and the Favorite Item heart, for the palette chips and
@@ -184,6 +202,16 @@ function App() {
                 }}
                 restoreInputs={activeProfile?.lastInputs ?? null}
                 restoreResult={restorableRaidResult}
+                savedRuns={soloSavedRuns}
+                onSaveRun={(run) =>
+                  state.activeKey ? saveRun({ key: state.activeKey, run }) : false
+                }
+                onRenameRun={(id, name) => {
+                  if (state.activeKey) renameRun({ key: state.activeKey, id, name })
+                }}
+                onDeleteRun={(id) => {
+                  if (state.activeKey) deleteRun({ key: state.activeKey, id })
+                }}
               />
             </div>
 
