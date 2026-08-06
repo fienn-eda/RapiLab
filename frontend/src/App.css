@@ -1262,6 +1262,61 @@
   max-width: var(--measure);
 }
 
+/* 보관 목록 ------------------------------------------------------------- */
+
+.saved-runs {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  width: 100%;
+}
+
+.saved-runs__item {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+
+.saved-runs__open {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-3);
+  width: 100%;
+  padding: var(--sp-2) var(--sp-3);
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.saved-runs__name {
+  font-weight: 600;
+}
+
+.saved-runs__when {
+  font-size: 12px;
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.saved-runs__body {
+  padding: 0 var(--sp-3) var(--sp-3);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-3);
+}
+
+.saved-runs__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+}
+
 /* Mode switch + raid/evaluation results --------------------------------- */
 
 /* 모드 힌트는 인라인 <span>이라 max-width가 듣지 않는다. 줄바꿈을 결정하는
