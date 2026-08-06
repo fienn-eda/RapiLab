@@ -1109,6 +1109,41 @@
       damage 숫자로 나간다. 상한 32면 실질적으로 안 걸리지만, 걸렸을 때 보이게 할 곳이
       필요하다(API 응답 또는 로그).
 
+### 보류 전수 감사 후속 (2026-08-07)
+
+83개 모듈 보류 전수 대조 + 스코프 전수 대조에서 나온 잔여. 상세는
+`docs/engine-gaps.md`「보류 전수 감사」.
+
+- [x] **낡은 보류 5건 정정 + 인코딩-원문 불일치 3건 수정.** 루드밀라 탄환환급 배선,
+      브리드/D:Killer Wife 스코프, 프리카 Pierce 지속시간. 기준선 1958/3 → **1961/3**,
+      캘리 **1.079x·17/25 불변**.
+- [x] **`scripts/audit_target_scopes.py` 신설** — 좁은 타게팅 문구를 전수로 나열하고
+      좁은 스코프를 하나도 안 내는 모듈을 SUSPECT로 분리한다. 현재 SUSPECT 3건은
+      전부 검증 완료(페이로드가 inert/보류 스탯이라 무해).
+- [ ] **`laplace-ultimate-hero`·`maxwell-ordinary-mechanic`의 스킬 산문이 수집돼 있지
+      않다.** ShiftyPad 정규화 파일은 값 슬롯뿐이고 lootandwaifus 페이지를 안 받았다.
+      **감사 3종(▼ 부호·버스트 단계 트리거·스코프)이 이 둘만 "NOT SCANNED"로 남긴다** —
+      즉 이 둘은 어떤 원문 대조도 못 받고 있다. lootandwaifus에서 두 페이지를 받으면
+      닫힌다. 맥스웰의 Matis Uberbuster 변형(스테이지별 차지시간)은 엔진이 표현
+      가능하지만(세그먼트 스케줄이 컨텍스트를 받으므로 버스트별 프로필 가능) **스테이지→
+      차지시간 매핑을 원문 없이는 읽을 수 없어** 이것이 선행 조건이다.
+- [ ] **차지 무기 16유닛의 모션 딜레이가 미확인이다** (`scripts/audit_charge_motion_delay.py`,
+      exit 1). 엔진 기본값은 「딜레이 없음」이라 **안 물어본 유닛은 조용히 가장 빠른
+      버전으로 모델된다**(민트가 1.502x를 읽던 원인). Fienn 인게임 판독 필요:
+      ada-wong · arcana · cinderella · d-killer-wife · diesel-winter-sweets(2종) ·
+      ein · laplace · laplace-signature · maiden-ice-rose · maxwell ·
+      maxwell-ordinary-mechanic · milk-blooming-bunny · red-hood · rouge · takina-inoue.
+- [ ] **루즈 Card Throw의 Max HP 불릿**(전원 +Max HP 5%/5초, 8풀차지마다). Max HP는
+      2026-07-24부터 딜 스탯이므로 「생존기」 사유는 무효이고, 진짜 이유는 같은 불릿의
+      CDR이 **사이클당 1회 근사**(Fienn 승인)라 8풀차지 카운터를 안 센다는 것. 정직하게
+      인코딩하려면 두 불릿을 `per_shot_rules` "every 8"로 옮겨야 하는데 그것은 Fienn이
+      승인한 근사를 바꾸는 일이라 여기 올린다.
+- [ ] **스노우화이트: 변형샷이 Determination의 30히트 카운터에 들어가는가**(그녀 독스트링의
+      미해결 질문). 현재 엔진은 통합 타임라인의 모든 샷을 세므로 **들어간다**. 인게임 확인 필요.
+- [ ] **normal-attack 전용 크리율 버킷이 없어 두 유닛이 반대 방향으로 틀려 있다** —
+      헬름은 일반 `crit_rate`로 넣어(버스트 넉까지 크리 오르는) **과대**, 줄리아
+      시그니처는 넣지 않아 **과소**. 어느 쪽이든 한 방향으로 통일하거나 버킷을 만들 것.
+
 ### 보스 약점·속성저지·코어 2관통 (2026-08-03, 스펙 착지)
 
 - [x] **보스 약점 선택 · 속성저지 필수 제약 · 코어 2관통 플래그 — 완료
