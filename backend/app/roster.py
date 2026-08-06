@@ -29,6 +29,7 @@ from app.skill_rules.registry import (
     get_conditional_full_burst_delta,
     get_full_burst_duration_delta,
     get_self_stun,
+    get_skill_ammo_refund,
     get_burst_hit_count,
     get_per_shot_rules,
     get_periodic_nuke,
@@ -145,6 +146,13 @@ def assemble_simulation_inputs(ordered_deck):
         ammo_refund = cube_refund_for(spec.cube)
         if ammo_refund is not None:
             timeline["ammo_refund"] = ammo_refund
+        # A refund off the unit's OWN skill can be gated on the boss's element,
+        # which this layer does not know - it assembles a deck, not an
+        # encounter - so the requirement travels with it for the simulator to
+        # resolve (raid_simulator.resolve_ammo_refunds).
+        skill_refund = get_skill_ammo_refund(spec.slug, spec.skill_values)
+        if skill_refund is not None:
+            timeline["skill_ammo_refund"] = skill_refund
         weapon_stats[spec.slug] = (
             {**spec.weapon_stats, **timeline} if timeline else spec.weapon_stats
         )

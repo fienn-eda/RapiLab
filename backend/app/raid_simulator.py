@@ -140,6 +140,28 @@ EFFECTIVE_RANGE_BANDS = {
 }
 
 
+def resolve_ammo_refunds(weapon, boss_element):
+    """Every ammo refund this unit actually gets against THIS boss.
+
+    Two sources, and a unit can hold both: the Tactical Bear cube's, which its
+    wearer gets in any encounter, and one off her own skill, which may require
+    a boss element (EVE's Eagle Eye-Type Exospine reloads only "on an Electric
+    Code target"). `roster` cannot resolve the second - it assembles a deck, not
+    an encounter - so it carries the requirement here as
+    `("skill_ammo_refund", (refund, element or None))`.
+    """
+    refunds = []
+    cube = weapon.get("ammo_refund")
+    if cube is not None:
+        refunds.append(cube)
+    skill = weapon.get("skill_ammo_refund")
+    if skill is not None:
+        refund, required_element = skill
+        if required_element is None or required_element == boss_element:
+            refunds.append(refund)
+    return tuple(refunds)
+
+
 def core_eligible(source, damage_type):
     """Whether a damage instance can collect the Core Damage bonus.
 
@@ -1108,6 +1130,10 @@ def _simulate_raid_once(
 
     for slug, weapon in weapon_stats.items():
         target = target_for(slug)
+        # 큐브와 스킬에서 오는 탄약 환급을 이 인카운터에 맞게 확정한다 - 스킬 쪽은
+        # 보스 원소가 조건일 수 있고, 그 정보는 덱을 조립하는 로스터가 아니라
+        # 여기에만 있다.
+        weapon = {**weapon, "ammo_refund": resolve_ammo_refunds(weapon, boss_element)}
         # 플랫 발수 버프("최대 장탄 수 ▲ 2발")는 여기서 이 유닛의 기본 장탄에
         # 대한 비율로 환산되어 퍼센트와 한 값으로 합쳐진다 - 발수는 무기마다
         # 다른 배율이 되므로 스탯 자체는 스쿼드 스코프로 두고 환산만 수신자

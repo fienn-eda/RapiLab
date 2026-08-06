@@ -165,6 +165,7 @@ from app.skill_rules.eve import (
     build_eve_rules,
     build_unstable_energy_per_shot_rules,
     counter_chain_burst_percent,
+    eagle_eye_ammo_refund,
 )
 from app.skill_rules.milk_blooming_bunny import (
     build_milk_burst_anchored_buffs,
@@ -1217,6 +1218,29 @@ def get_ammo_rounds_per_shot(slug):
     accounts for toward squad ammo-expended counters - see
     `_AMMO_ROUNDS_PER_SHOT`. (1.0, 1.0) for everyone with a plain magazine."""
     return _AMMO_ROUNDS_PER_SHOT.get(slug, (1.0, 1.0))
+
+
+# A Nikke whose own skill reloads rounds back into her magazine mid-fight, as
+# (builder, the boss element it needs or None). Distinct from the Tactical Bear
+# cube's refund, which its wearer gets against any boss and which stacks with
+# this one - a unit can hold both.
+_SKILL_AMMO_REFUNDS = {
+    # Eagle Eye-Type Exospine: "when landing 10 normal attack(s) on an Electric
+    # Code target, Reloads 3 round(s)".
+    "eve": (eagle_eye_ammo_refund, "Electric"),
+}
+
+
+def get_skill_ammo_refund(slug, skill_values):
+    """(AmmoRefund, required boss element or None) for a Nikke whose own skill
+    hands rounds back, else None - see `_SKILL_AMMO_REFUNDS`. The element is
+    returned rather than applied because the roster assembles a deck, not an
+    encounter; the simulator holds the boss and resolves the gate."""
+    entry = _SKILL_AMMO_REFUNDS.get(slug)
+    if entry is None:
+        return None
+    builder, required_element = entry
+    return builder(skill_values), required_element
 
 
 def get_periodic_nuke(slug, skill_values):

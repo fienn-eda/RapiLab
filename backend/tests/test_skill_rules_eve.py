@@ -150,3 +150,21 @@ def test_electric_rider_expires_after_ten_seconds():
 def test_counter_chain_burst_is_six_sequential_hits():
     assert counter_chain_burst_percent(VALUES) == pytest.approx(457.14)
     assert COUNTER_CHAIN_HIT_COUNT == 6
+
+
+def test_eagle_eye_reloads_three_rounds_every_ten_shots():
+    """"Activates when landing 10 normal attack(s) on an Electric Code target.
+    Reloads 3 round(s)." Both numbers are the skill's own slots."""
+    from app.attack_rate import AmmoRefund
+    from app.skill_rules.eve import eagle_eye_ammo_refund
+
+    assert eagle_eye_ammo_refund(VALUES) == AmmoRefund(every_shots=10, rounds=3)
+
+
+def test_the_refund_is_registered_against_an_electric_boss_only():
+    from app.attack_rate import AmmoRefund
+    from app.skill_rules.registry import get_skill_ammo_refund
+
+    assert get_skill_ammo_refund("eve", VALUES) == (
+        AmmoRefund(every_shots=10, rounds=3), "Electric")
+    assert get_skill_ammo_refund("liter", VALUES) is None

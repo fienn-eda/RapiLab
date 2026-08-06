@@ -42,22 +42,28 @@ Modeled (DPS-relevant):
   skill text (2026-07-20): the English "Damage multiplier of Eagle Eye-Type
   Exospine" is really skill 2's ATK buff, which Mk2 raises to 100%.
 
+- Eagle Eye-Type Exospine (skills[1]): "when landing 10 normal attack(s) on an
+  Electric Code target, Reloads 3 round(s)" - an `AmmoRefund` off her own slots
+  (`eagle_eye_ammo_refund`), registered with the Electric requirement the
+  simulator resolves against the encounter. Rounds handed back mid-magazine are
+  not a Max Ammo percentage: what a refund is worth depends on how much of the
+  magazine is left when it lands. Against an Electric boss it is worth ~+2.8%
+  on her normal attacks; against any other it does not fire at all.
+
 Not modeled / deferred:
-- Eagle Eye's "when landing 10 normal attack(s) on an Electric Code target,
-  Reloads 3 round(s)". Ammo/reload manipulation: the firing timeline is
-  generated before per-shot rules run and rules explicitly must not change shot
-  generation, so this is the same class of gap as Milk: Blooming Bunny's forced
-  reload (engine-gaps #11). It would shorten reload downtime, so this encoding
-  is a floor for her.
 - Skill 1's "Previous effects trigger repeatedly" line carries no count or
-  condition in the collected text (the `escalating_buff_rule` phrasing normally
-  reads "Once/Twice/Three times, previous effects trigger repeatedly"). Left
-  unmodeled rather than guessed at a stack count.
+  condition (the `escalating_buff_rule` phrasing normally reads "Once/Twice/
+  Three times, previous effects trigger repeatedly"). It is bare in BOTH
+  sources - dotgg's template shows no `description_value` placeholder on that
+  line at all, so there is no number being lost in rendering - and EVE is the
+  only unit in the collected data with the phrasing, so there is no precedent
+  to read it against. Left unmodeled rather than guessed at a stack count.
 - "Affects random enemy units" targeting - a raid sim is a single boss, so
   every hit lands on the only target.
 
 Numbers sourced from data/lootandwaifus/char_eve.json.
 """
+from app.attack_rate import AmmoRefund
 from app.effects import Effect, Pulse
 from app.skill_rules._helpers import buff_rule
 from app.squad_engine import SkillRule
@@ -92,6 +98,23 @@ def _f(values, key, slot):
 
 def counter_chain_burst_percent(values):
     return _f(values, "counter_chain", 1)
+
+
+def eagle_eye_ammo_refund(values):
+    """"Activates when landing 10 normal attack(s) on an Electric Code target.
+    Reloads 3 round(s)."
+
+    Rounds handed back mid-magazine, not a Max Ammo percentage: what the refund
+    is worth depends on how much of the magazine is left when it lands, and an
+    earlier reload moves every later one against the Full Burst window. Both
+    numbers are the skill's own slots, so a rebalance moves them. The
+    Electric-Code gate lives in the registry, since the roster assembles a deck
+    and only the simulator knows the encounter.
+    """
+    return AmmoRefund(
+        every_shots=int(_f(values, "eagle_eye_exospine", 3)),
+        rounds=int(_f(values, "eagle_eye_exospine", 4)),
+    )
 
 
 def _mk2_scale(values, slot):
