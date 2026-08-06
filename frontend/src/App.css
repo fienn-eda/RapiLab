@@ -1113,13 +1113,15 @@
   margin-top: var(--sp-3);
 }
 
+/* 덱 카드는 얼굴 다섯 개가 들어가는 만큼만 넓다. 남는 가로 폭은 다음 덱이
+   받는다 — 창이 넓을수록 세로 스크롤이 짧아진다. */
 .deck-results {
   list-style: none;
   margin: 0;
   padding: 0;
   width: 100%;
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
   gap: var(--sp-3);
 }
 
