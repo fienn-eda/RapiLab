@@ -455,9 +455,36 @@ def test_fight_duration_clips_segment_shots():
     assert len(seg_shots) < 33
 
 
-def test_overlapping_segments_rejected():
+def test_a_window_reopened_before_it_closed_runs_on_the_new_windows_clock():
+    # 같은 변형이 아직 열려 있는 창을 다시 열면 지속시간이 **새 발동 기준으로**
+    # 갱신된다(Fienn 판정, 2026-08-06). 그래서 이전 창은 재발동 시각에서 끊기고
+    # 새 창이 자기 시각부터 케이던스를 세운다 - 변형 자체는 한 순간도 안 풀린다.
+    reopened = [{"start": 10.0, "end": 20.0, "profile": TICKER},
+                {"start": 15.1, "end": 25.0, "profile": TICKER}]
+    records = generate_segmented_shots(SR_BASE, reopened, 60.0)
+    times = [r.time for r in records]
+    # 10.0~25.0 사이에 기본 무기가 한 발도 안 나간다 (창이 안 끊긴다)
+    assert all(r.damage_percent == 22.2 for r in records if 10.0 <= r.time < 25.0)
+    # 첫 창은 15.1에서 끊긴다 - 이어졌다면 15.25에 한 발이 더 있었다
+    assert not [t for t in times if 15.1 < t < 15.35]
+    # 새 창의 첫 발은 자기 시작 + 1/rate
+    assert pytest.approx(15.35) in times
+    # 25.0 이후 기본 무기 복귀
+    assert any(r.time >= 25.0 and r.damage_percent == 69.04 for r in records)
+
+
+def test_overlapping_segments_of_different_profiles_rejected():
+    # 갱신은 같은 변형일 때의 이야기다. 서로 다른 프로필이 겹치면 어느 무기를
+    # 들고 있는지 정해지지 않으므로 여전히 표현할 수 없다.
     segs = [{"start": 10.0, "end": 20.0, "profile": TICKER},
-            {"start": 15.0, "end": 25.0, "profile": TICKER}]
+            {"start": 15.0, "end": 25.0, "profile": CANNON}]
+    with pytest.raises(ValueError):
+        generate_segmented_shots(SR_BASE, segs, 60.0)
+
+
+def test_unsorted_segments_rejected():
+    segs = [{"start": 25.0, "end": 30.0, "profile": TICKER},
+            {"start": 10.0, "end": 20.0, "profile": TICKER}]
     with pytest.raises(ValueError):
         generate_segmented_shots(SR_BASE, segs, 60.0)
 
