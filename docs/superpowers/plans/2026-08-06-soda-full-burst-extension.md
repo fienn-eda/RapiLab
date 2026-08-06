@@ -1294,7 +1294,28 @@ EOF
 ### Task 9: 검증과 문서
 
 **Files:**
-- Modify: `docs/roadmap.md`, `docs/engine-gaps.md`, `docs/encoded-nikkes.md`, `docs/decisions.md`, `.claude/skills/nikke-skill-encoding/references/engine-capabilities.md`
+- Modify: `backend/app/raid_simulator.py`(상한), `backend/tests/test_raid_simulator.py`, `docs/roadmap.md`, `docs/engine-gaps.md`, `docs/encoded-nikkes.md`, `docs/decisions.md`, `.claude/skills/nikke-skill-encoding/references/engine-capabilities.md`
+
+- [ ] **Step 0: `MAX_FULL_BURST_PASSES`를 다시 정한다 — 이건 merge 전에 닫아야 한다**
+
+Task 8에서 드러난 사실: **패스 수는 덱 구성이 아니라 전투 길이의 함수다.** 격번 덱을
+길이별로 쓸어보면 3패스(200초) → 5(400초) → 7(600초) → **8(700초)** → 8 → 8로,
+700초부터 상한에 붙는다. 상한을 4에서 8로 올릴 때 근거였던 「관측 최악(4)의 두 배」는
+**전투 길이가 고정일 때만** 마진이다.
+
+그리고 전투 길이는 **사용자 입력이다** — `frontend/src/components/BossProfileField.tsx`가
+폼 필드로 노출하고 `api.py`의 기본값 180.0은 기본값일 뿐이다. 즉 사용자가 700초를
+넣으면 상한에 걸려 **고정점이 아닌 답이 `converged: False`만 달고 조용히 나간다**.
+(그 플래그는 어디에도 안 닿는다 — Task 6에서 파킹한 그 항목이다.)
+
+`MAX_FULL_BURST_PASSES = 32`로 올린다. 상한은 원래 품질 노브가 아니라 폭주 방지
+장치이므로, 수렴하는 덱은 상한과 무관하게 실제 패스 수만 지불한다(700초 덱은 여전히
+8패스에서 끝난다). 값을 키우는 비용은 **진동해서 영영 안 끝나는 병리적 조합에만**
+붙고, 그런 경우는 어차피 답이 없다. 주석은 「사이클 수에 비례해 늘어난다」는 관측을
+적고, 왜 큰 값이 안전한지(수렴이 상한 전에 온다) 밝힌다.
+
+테스트 하나를 추가한다 — 긴 전투(700초)에서도 `converged: True`로 끝나는 것. 이건
+상한이 다시 좁아지면 깨진다.
 
 - [ ] **Step 1: 실측과 대조한다**
 
@@ -1313,14 +1334,17 @@ PYTHONIOENCODING=utf-8 python scripts/measure_record_calibration.py
 ```
 기대: **1.078x · 17/25 그대로**. 기록 덱 5개에 소다가 없으므로 한 자리도 움직이면 안 된다. 움직이면 「소다 없는 덱 불변」이 깨진 것이니 되돌아가 원인을 찾는다.
 
-- [ ] **Step 3: 시뮬 비용을 잰다**
+- [ ] **Step 3: 시뮬 비용과 실제 패스 수를 잰다**
 
 ```
 PYTHONIOENCODING=utf-8 python scripts/bench_evaluate_deck.py
 ```
 기준선은 소다 없는 덱 44.4ms(2026-08-06 측정). **이 값이 유지되어야 한다** — 소다 없는 덱은 1패스이므로.
 
-소다가 든 덱의 비용과 실제 수렴 패스 수는 Step 1의 출력에서 읽거나, 필요하면 `evaluate_deck` 결과의 `full_burst_passes`를 찍어 확인한다. 그 수를 문서에 적는다.
+소다가 든 덱은 `evaluate_deck` 결과의 `full_burst_passes`를 찍어 **실제 패스 수를
+보고한다**(180초 실 로스터). 세 에이전트가 독립적으로 지적한 미결이 이것이다 — 실
+로스터 덱의 수렴 패스 수가 테스트로 고정돼 있지 않아 드리프트가 안 보인다. 지금은
+숫자를 기록해 두는 것으로 대신하고, 그 수가 상한에 가까우면 Step 0의 판단을 다시 본다.
 
 - [ ] **Step 4: 덱 추천 변화를 본다**
 
