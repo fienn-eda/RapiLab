@@ -691,15 +691,18 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
         interval = 1.0 / profile["rate_of_fire"]
     charge = profile.get("charge_damage_percent")
     bonus = charge / 100 - 1 if charge is not None else 0.0
-    cut = fight_duration if stop_at is None else min(stop_at, fight_duration)
     if "until_shots" in seg:
         times = [start + k * interval for k in range(1, seg["until_shots"] + 1)]
-        times = [t for t in times if t < cut]
-        # A window cut before its first shot still held the weapon until the
-        # next one opened, so it ends there rather than back at its start.
-        seg_end = times[-1] if times else cut
+        # The window ends at its last shot - which may be past the bell, and
+        # then it is the BELL that ends it, not that shot. Folding it back to
+        # the last shot that actually landed would hand the base weapon the
+        # closing seconds it never had.
+        seg_end = times[-1]
+        if stop_at is not None and stop_at < seg_end:
+            times = [t for t in times if t < stop_at]
+            seg_end = stop_at
     else:
-        seg_end = min(seg["end"], cut)
+        seg_end = seg["end"] if stop_at is None else min(seg["end"], stop_at)
         times = []
         k = 1
         while start + k * interval < seg_end:

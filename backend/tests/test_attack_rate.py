@@ -473,6 +473,15 @@ def test_a_window_reopened_before_it_closed_runs_on_the_new_windows_clock():
     assert any(r.time >= 25.0 and r.damage_percent == 69.04 for r in records)
 
 
+def test_a_window_still_running_at_the_bell_never_hands_the_weapon_back():
+    # `until_shots` 창은 마지막 발이 전투 밖이면 전투가 끝날 때까지 계속 들고 있는
+    # 것이다. 창의 끝을 "실제로 쏜 마지막 발"로 접으면 매거진 베이스가 그 뒤로
+    # 돌아온다 - 새 매거진의 0번 탄은 재개 시각에 바로 나가므로 눈에 보인다.
+    seg = {"start": 178.0, "until_shots": 33, "profile": TICKER}
+    records = generate_segmented_shots(AR_BASE, [seg], 180.0)
+    assert [r.time for r in records if r.time >= 178.0 and r.damage_percent == 14.71] == []
+
+
 def test_overlapping_segments_of_different_profiles_rejected():
     # 갱신은 같은 변형일 때의 이야기다. 서로 다른 프로필이 겹치면 어느 무기를
     # 들고 있는지 정해지지 않으므로 여전히 표현할 수 없다.
