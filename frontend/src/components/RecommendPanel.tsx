@@ -36,6 +36,7 @@ import {
 import { weaknessFor } from '../lib/elementAdvantage'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
+import { BossSummary } from './BossSummary'
 import { DeckResults } from './DeckResults'
 import { DraftEditor, removeUnitBySlug, toRequestDraft } from './DraftEditor'
 import { DraftResults } from './DraftResults'
@@ -362,6 +363,26 @@ export function RecommendPanel({
     [evaluateBoss, gimmickUnmetForBoss],
   )
 
+  // 지금 화면에 떠 있는 결과가 채점된 보스. 라이브 폼 상태(`draft`)가 아니라
+  // 제출 시점 스냅샷을 읽는다 - 결과가 나온 뒤 폼을 만지면 숫자는 옛 보스인데
+  // 설명만 새 보스가 되어 화면이 거짓말을 한다.
+  const displayedBoss = useMemo<BossProfile | null>(() => {
+    if (mode === 'single') return single.status === 'success' ? singleBoss : null
+    if (mode === 'raid' || mode === 'draft') {
+      return displayResult && displayMode === mode ? displayBoss : null
+    }
+    return evaluation.status === 'success' ? evaluateBoss : null
+  }, [
+    mode,
+    single.status,
+    singleBoss,
+    displayResult,
+    displayMode,
+    displayBoss,
+    evaluation.status,
+    evaluateBoss,
+  ])
+
   // A result names ENGINE slugs, so the Favorite Item flag - which rides on the
   // roster, keyed by the slug the player owns - is looked up through
   // ownedSlugResolver (bready-lingering -> bready; helm-signature is already
@@ -654,6 +675,7 @@ export function RecommendPanel({
           </p>
         )}
 
+        {displayedBoss && <BossSummary boss={displayedBoss} />}
         {mode === 'single' && single.status === 'success' && (
           <DeckResults
             decks={single.decks}

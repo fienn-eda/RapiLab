@@ -152,6 +152,57 @@ describe('RecommendPanel', () => {
       .toBeTruthy()
   })
 
+  it('결과 위에 그 결과가 채점된 보스를 적는다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(recommendDecks).mockResolvedValue({
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          skill_damage: 0, hold_burst_slugs: [],
+        },
+      ],
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: '작열' }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+
+    expect(await screen.findByText(/약점 작열/)).toBeInTheDocument()
+  })
+
+  // 결과가 나온 뒤 폼을 만지면 숫자는 옛 보스인데 설명만 새 보스가 되어,
+  // 화면이 거짓말을 한다.
+  it('결과가 나온 뒤 보스 폼을 바꿔도 요약은 그 결과의 보스에 남는다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(recommendDecks).mockResolvedValue({
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          skill_damage: 0, hold_burst_slugs: [],
+        },
+      ],
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByRole('radio', { name: '작열' }))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    await screen.findByText(/약점 작열/)
+
+    await user.click(screen.getByRole('radio', { name: '수냉' }))
+
+    expect(screen.getByText(/약점 작열/)).toBeInTheDocument()
+  })
+
   // 팔레트 아래 sticky 바에 있던 실행 버튼을, 그것이 작용하는 설정 바로
   // 아래에 세운다.
   it('stands the run button between the setup row and the palette', () => {
