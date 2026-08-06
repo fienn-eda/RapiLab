@@ -1,7 +1,8 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { SyncRosterPanel } from './SyncRosterPanel'
+import { renderSettled } from '../test/renderSettled'
 import { assembleRoster } from '../api/assembleRoster'
 import { takeSyncInbox } from '../api/syncInbox'
 
@@ -17,8 +18,13 @@ vi.stubGlobal('navigator', {
   ...navigator,
   clipboard: { writeText: (text: string) => { copied.push(text); return Promise.resolve() } },
 })
-const copyBookmarklet = () =>
+/** Click 복사, and let the clipboard write settle: the handler sets state in
+ * the write's `.then`, so returning before it resolves leaves that update
+ * outside act(). */
+const copyBookmarklet = async () => {
   fireEvent.click(screen.getByRole('button', { name: /북마크릿 주소 복사/ }))
+  await act(async () => {})
+}
 vi.mock('../api/assembleRoster', () => ({
   assembleRoster: vi.fn(),
 }))
@@ -55,14 +61,14 @@ const postTwoServers = () =>
 afterEach(() => vi.mocked(assembleRoster).mockReset())
 
 describe('SyncRosterPanel', () => {
-  it('공유 URL을 넣으면 북마크릿을 복사할 수 있다', () => {
+  it('공유 URL을 넣으면 북마크릿을 복사할 수 있다', async () => {
     copied.length = 0
-    render(<SyncRosterPanel onImport={vi.fn()} />)
+    await renderSettled(<SyncRosterPanel onImport={vi.fn()} />)
     fireEvent.change(screen.getByLabelText(/공유 url/i), {
       target: { value: shareUrl },
     })
 
-    copyBookmarklet()
+    await copyBookmarklet()
 
     expect(copied).toHaveLength(1)
     expect(copied[0]).toContain('javascript:')
@@ -154,17 +160,17 @@ describe('SyncRosterPanel', () => {
     expect(screen.queryByRole('button', { name: /북마크릿 주소 복사/ })).toBeNull()
   })
 
-  it('다른 공유 URL을 넣으면 그 계정의 북마크릿이 복사된다', () => {
+  it('다른 공유 URL을 넣으면 그 계정의 북마크릿이 복사된다', async () => {
     copied.length = 0
-    render(<SyncRosterPanel onImport={vi.fn()} />)
+    await renderSettled(<SyncRosterPanel onImport={vi.fn()} />)
     const input = screen.getByLabelText(/공유 url/i)
 
     fireEvent.change(input, { target: { value: shareUrl } })
-    copyBookmarklet()
+    await copyBookmarklet()
     expect(copied[0]).toContain('1234567890123456789')
 
     fireEvent.change(input, { target: { value: shareUrl2 } })
-    copyBookmarklet()
+    await copyBookmarklet()
     expect(copied[1]).toContain('1111111111111111111')
     expect(copied[1]).not.toContain('1234567890123456789')
   })
@@ -175,7 +181,7 @@ describe('SyncRosterPanel', () => {
     const input = screen.getByLabelText(/공유 url/i)
 
     fireEvent.change(input, { target: { value: shareUrl } })
-    copyBookmarklet()
+    await copyBookmarklet()
     // 클립보드 쓰기는 프라미스라 상태 표시는 한 틱 뒤에 나온다.
     await waitFor(() => expect(screen.getByRole('status')).toBeInTheDocument())
 
