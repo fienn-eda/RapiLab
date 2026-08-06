@@ -13,7 +13,9 @@ Modeled (DPS-relevant):
   effectively always up, this is a per-shot round buff on every shot.
 - Thief's Vision (skills[1]): self ATK +85.12% for 5 sec and Distributed Damage
   +31.92% for 10 sec every 10 normal attacks. 10 AR shots take 0.83 sec, so both
-  are re-applied far faster than they expire.
+  are re-applied far faster than they expire - and the bullet names no stack
+  count (unlike the two that do), so each re-application REFRESHES the live
+  grant rather than adding to it.
 - Secret Trick: Rampages of Thieves (skills[2], her burst, cd 40): 1457.28% of
   final ATK as Distributed Damage.
 
@@ -30,7 +32,7 @@ Not modeled / deferred:
 - Thief's Dagger's Hit Rate +25.75% - Hit Rate is not a damage concept in the
   engine even where the stacks do accrue.
 """
-from app.skill_rules._helpers import buff_rule, round_buff_rule
+from app.skill_rules._helpers import buff_rule, refreshing_buff_rule, round_buff_rule
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -76,7 +78,7 @@ def build_phantom_per_shot_rules(values):
                             shots=rounds),
         ]),
         (vision_shots, "every", [
-            buff_rule("per_shot", [
+            refreshing_buff_rule("per_shot", [
                 ("atk_percent", vision_atk, "self", vision_atk_duration),
                 ("distributed_damage_up", distributed, "self", distributed_duration),
             ]),

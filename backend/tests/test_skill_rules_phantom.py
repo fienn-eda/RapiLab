@@ -77,6 +77,20 @@ def test_two_shot_counters_attack_damage_every_shot_and_the_10_shot_pair():
     assert reg.total_for("distributed_damage_up", SELF, 13.1) == 0.0
 
 
+def test_the_10_shot_pair_refreshes_instead_of_stacking():
+    """The bullet carries no "Stacks up to N times" clause, so a re-application
+    replaces the live grant. At 12 AR shots/sec the counter fires every 0.83 sec,
+    far inside both durations, so stacking would multiply it six- to twelvefold."""
+    by_count = {every: shot_rules for every, _mode, shot_rules in
+                build_phantom_per_shot_rules(PHANTOM)}
+    reg = EffectRegistry()
+    ctx = _ctx()
+    for shot in range(10, 121, 10):
+        fire_trigger("per_shot", {"phantom": by_count[10]}, ctx, reg, shot / 12.0)
+    assert round(reg.total_for("atk_percent", SELF, 10.0), 4) == 0.8512
+    assert round(reg.total_for("distributed_damage_up", SELF, 10.0), 4) == 0.3192
+
+
 def test_dagger_gated_bullets_and_hit_rate_are_absent():
     """The dagger can never reach max stacks in this build (Fienn, 2026-07-24),
     so neither Thief's Vision's 84.33% nor its stacking Distributed Damage may

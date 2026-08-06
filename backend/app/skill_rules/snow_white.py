@@ -7,7 +7,9 @@ window is a single measured shot rather than a rate_of_fire anchor.
 Modeled (DPS-relevant):
 - Determination (skills[0]): every 30th normal-attack hit, deals 82.8% of
   final ATK "as additional damage" to the target (`per_shot_rules`' "every"
-  mode) and grants self ATK +8.28% for 5 sec.
+  mode) and grants self ATK +8.28% for 5 sec. 30 AR shots take 2.5 sec, inside
+  that duration, and the bullet names no stack count - so each re-application
+  refreshes the live grant rather than adding to it.
 - Seven Dwarves: V & VI (skills[1]): a periodic AoE nuke on its own 15s
   cooldown, independent of the burst cycle - 144.73% of final ATK
   (`get_periodic_nuke`).
@@ -42,7 +44,11 @@ and dotgg (AR weapon: 14.71% damage, 60 rounds, 1.5s reload - unused directly
 here since the transform profile is self-contained, but confirms she has no
 signature weapon).
 """
-from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, round_buff_rule
+from app.skill_rules._helpers import (
+    instant_nuke_pulse_rule,
+    refreshing_buff_rule,
+    round_buff_rule,
+)
 
 SEVEN_DWARVES_V_VI_COOLDOWN = 15.0
 
@@ -72,8 +78,9 @@ def build_determination_per_shot_rules(values):
     n = int(float(det["description_value_01"]))
     return [(n, "every", [
         instant_nuke_pulse_rule("per_shot", float(det["description_value_02"])),
-        buff_rule("per_shot", [("atk_percent", float(det["description_value_04"]) / 100,
-                                "self", float(det["description_value_05"]))]),
+        refreshing_buff_rule("per_shot",
+                             [("atk_percent", float(det["description_value_04"]) / 100,
+                               "self", float(det["description_value_05"]))]),
     ])]
 
 

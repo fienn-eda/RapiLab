@@ -99,3 +99,21 @@ def test_frenzy_stacks_when_the_counter_completes_again_inside_its_duration():
     for t in (11.1, 22.2, 33.3):
         fire_trigger("per_shot", {"rosanna-signature": frenzy}, ctx, reg, t)
     assert round(reg.total_for("atk_percent", SELF, 33.3), 4) == round(0.2261 * 3, 4)
+
+
+def test_the_crit_buff_refreshes_while_frenzy_keeps_stacking():
+    """Only Frenzy's text names a stack count ("Stacks up to 10 times"); the
+    crit bullet does not, so it refreshes. 120 MG shots take 2.0 sec against a
+    3 sec duration, and the two bullets must not collapse into each other."""
+    by_count = {every: shot_rules for every, _mode, shot_rules in
+                build_rosanna_signature_per_shot_rules(ROSANNA_SIG)}
+    reg = EffectRegistry()
+    ctx = _ctx()
+    for time in (2.0, 4.0, 6.0, 8.0):
+        fire_trigger("per_shot", {"rosanna-signature": by_count[120]}, ctx, reg, time)
+    assert round(reg.total_for("crit_rate", SELF, 8.0), 4) == 0.1934
+
+    fire_trigger("per_shot", {"rosanna-signature": by_count[500]}, ctx, reg, 11.1)
+    fire_trigger("per_shot", {"rosanna-signature": by_count[120]}, ctx, reg, 12.0)
+    assert round(reg.total_for("atk_percent", SELF, 12.0), 4) == 0.2261
+    assert round(reg.total_for("crit_rate", SELF, 12.0), 4) == 0.1934

@@ -6,7 +6,9 @@ burst that carries essentially all of her damage.
 
 Modeled (DPS-relevant):
 - On the Lam (skills[0]): self Critical Rate +19.34% for 3 sec every 120 normal
-  attacks (`per_shot_rules`' "every" mode).
+  attacks (`per_shot_rules`' "every" mode). 120 MG shots take 2.0 sec, inside
+  the 3 sec duration, and the bullet names no stack count - so each
+  re-application refreshes the live grant rather than adding to it.
 - Vendetta (skills[2], her burst, cd 40): 1310.4% of final ATK, plus the
   Concealment rider's 561.6% folded in - see below. A raid boss is one target,
   so the "affects 2 unit(s)" targeting lands as a single hit.
@@ -32,7 +34,7 @@ Not modeled / deferred:
   highest-ATK enemies, once per battle" bullet - neither is a damage concept the
   engine represents (there is no enemy-buff model at all).
 """
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import refreshing_buff_rule
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -67,5 +69,5 @@ def build_rosanna_base_per_shot_rules(values):
     crit_rate = float(lam["description_value_03"]) / 100
     crit_duration = float(lam["description_value_04"])
     return [(shots, "every", [
-        buff_rule("per_shot", [("crit_rate", crit_rate, "self", crit_duration)]),
+        refreshing_buff_rule("per_shot", [("crit_rate", crit_rate, "self", crit_duration)]),
     ])]

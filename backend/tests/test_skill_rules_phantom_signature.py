@@ -89,6 +89,32 @@ def test_vision_proc_emits_both_nukes_with_the_right_typing():
     assert by_percent[250.0].damage_type == "distributed"
 
 
+def test_the_10_shot_pair_refreshes_instead_of_stacking():
+    """That bullet carries no "Stacks up to N times" clause - unlike the two that
+    do - so a re-application replaces the live grant. At 12 AR shots/sec the
+    counter fires every 0.83 sec, far inside both durations."""
+    by_count = {every: shot_rules for every, _mode, shot_rules in
+                build_phantom_signature_per_shot_rules(PHANTOM_SIG)}
+    reg = EffectRegistry()
+    ctx = _ctx()
+    for shot in range(10, 121, 10):
+        fire_trigger("per_shot", {"phantom-signature": by_count[10]}, ctx, reg, shot / 12.0)
+    assert round(reg.total_for("atk_percent", SELF, 10.0), 4) == 0.8512
+    assert round(reg.total_for("distributed_damage_up", SELF, 10.0), 4) == 0.3192
+
+
+def test_her_two_distributed_damage_bullets_stay_independent():
+    """One refreshes and one stacks, and both grant self `distributed_damage_up` -
+    so the refreshing bullet must not sweep away the Vision proc's stacks."""
+    by_count = {every: shot_rules for every, _mode, shot_rules in
+                build_phantom_signature_per_shot_rules(PHANTOM_SIG)}
+    reg = EffectRegistry()
+    ctx = _ctx()
+    fire_trigger("per_shot", {"phantom-signature": by_count[VISION_PROC_SHOTS]}, ctx, reg, 5.0)
+    fire_trigger("per_shot", {"phantom-signature": by_count[10]}, ctx, reg, 5.1)
+    assert round(reg.total_for("distributed_damage_up", SELF, 5.1), 4) == round(0.1286 + 0.3192, 4)
+
+
 def test_vision_proc_also_stacks_self_distributed_damage():
     rules = build_phantom_signature_per_shot_rules(PHANTOM_SIG)
     vision = next(r for every, _m, r in rules if every == VISION_PROC_SHOTS)
