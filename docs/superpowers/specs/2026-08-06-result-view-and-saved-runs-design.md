@@ -146,19 +146,37 @@ export interface Profile {
 결과에 나오는 슬러그는 결과 안에 있고, 이름·초상화는 전역 조회다.
 
 ```ts
-interface SoloRunView {
-  mode: 'single' | 'raid' | 'draft' | 'evaluate'
+interface SoloRunBase {
   boss: BossProfile
   numDecks: number
-  draft: Draft | null        // draft/evaluate 모드에서 유저가 짠 편성
-  decks: DeckRecommendation[]
-  combinedTotalDamage: number | null   // single 모드엔 없다
   excludedSlugs: string[]
-  leftoverSlugs: string[]
-  withinDraft: DraftAllocation | null
-  baselineTotalDamage: number | null
-  swapConverged?: boolean
 }
+
+type SoloRunView =
+  | (SoloRunBase & { mode: 'single'; decks: DeckRecommendation[] })
+  | (SoloRunBase & {
+      mode: 'raid'
+      decks: RaidDeck[]
+      combinedTotalDamage: number
+      leftoverSlugs: string[]
+      swapConverged?: boolean
+    })
+  | (SoloRunBase & {
+      mode: 'draft'
+      decks: RaidDeck[]
+      combinedTotalDamage: number
+      leftoverSlugs: string[]
+      withinDraft: DraftAllocation | null
+      baselineTotalDamage: number | null
+      swapConverged?: boolean
+      draft: Draft | null
+    })
+  | (SoloRunBase & {
+      mode: 'evaluate'
+      decks: DeckRecommendation[]
+      combinedTotalDamage: number
+      draft: Draft
+    })
 
 interface UnionRunView {
   numBattles: number
@@ -170,9 +188,15 @@ interface UnionRunView {
 }
 ```
 
-`SoloRunView`는 네 모드의 합집합이다. 모드별로 타입을 쪼개면 렌더 쪽 분기가
-네 갈래로 늘어나는데, 실제로 다른 것은 "어떤 필드가 채워지느냐"뿐이다. `mode`가
-그 답을 들고 있으므로 읽는 쪽은 지금 `RecommendPanel`이 하는 것과 같은 분기를 한다.
+`SoloRunView`는 `mode`로 갈리는 판별 유니온이다. 넷을 한 타입으로 합치는 쪽이
+처음에는 단순해 보이지만 **타입이 통과하지 않는다**: `RaidDeck`은
+`DeckRecommendation`에 `pinned_slugs: string[]`를 **필수로** 더한 것이고,
+`DraftResults`는 `decks: RaidDeck[]`를 요구한다. 합집합 하나로 두면 `decks`가
+넓은 쪽(`DeckRecommendation[]`)이 되어 `DraftResults`에 넘길 수 없다.
+
+쪼갠 값은 그 이상이다. 렌더 쪽은 어차피 `mode`로 네 갈래로 갈리고 있으므로,
+판별 유니온은 그 분기 안에서 필드를 좁혀 준다 — `single`에는 존재하지도 않는
+`withinDraft`를 `null`로 채워 넣을 일이 없어진다.
 
 ### UI
 
