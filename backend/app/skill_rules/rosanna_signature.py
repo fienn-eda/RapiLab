@@ -17,7 +17,8 @@ Modeled (DPS-relevant):
   advantage-GATED: it only pays out when she already holds elemental advantage
   over the boss.
 - On the Lam (dollskills[0]): self Critical Rate +19.34% for 3 sec every 120
-  normal attacks, as in the base build.
+  normal attacks, as in the base build. Unlike Frenzy below, that bullet names
+  no stack count, so it refreshes rather than stacks.
 - Capo dei Capi (dollskills[1]): Frenzy, self ATK +22.61% for 30 sec, every 500
   normal attacks on the stage target. At the engine's MG rate (60 shots/sec, 300
   rounds, 1.67s reload) 500 shots take ~11.1 sec of wall clock, so about 2-3
@@ -37,7 +38,7 @@ Not modeled / deferred:
 - The Burst Gauge fill (36.54%) - gauge charge time is a fixed sim input.
 - Concealment's untargetability and the enemy buff-strip - no engine concept.
 """
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import buff_rule, refreshing_buff_rule
 from app.squad_engine import boss_is_element
 
 
@@ -88,7 +89,8 @@ def build_rosanna_signature_per_shot_rules(values):
     frenzy_duration = float(capo["description_value_11"])
     return [
         (crit_shots, "every", [
-            buff_rule("per_shot", [("crit_rate", crit_rate, "self", crit_duration)]),
+            refreshing_buff_rule("per_shot",
+                                 [("crit_rate", crit_rate, "self", crit_duration)]),
         ]),
         (frenzy_shots, "every", [
             buff_rule("per_shot", [("atk_percent", frenzy_atk, "self", frenzy_duration)]),

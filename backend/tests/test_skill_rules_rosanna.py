@@ -53,6 +53,18 @@ def test_on_the_lam_grants_self_crit_rate_every_120_shots():
     assert reg.total_for("crit_rate", SELF, 8.1) == 0.0  # 3s duration
 
 
+def test_the_crit_buff_refreshes_instead_of_stacking():
+    """The bullet names no stack count, so a re-application replaces the live
+    grant. 120 MG shots take 2.0 sec against a 3 sec duration, so stacking
+    would leave her permanently at double the crit rate the skill grants."""
+    _every, _mode, shot_rules = build_rosanna_base_per_shot_rules(ROSANNA)[0]
+    reg = EffectRegistry()
+    ctx = SquadContext([SquadMember("rosanna", burst_tier=1, element="Electric", weapon="MG")])
+    for time in (2.0, 4.0, 6.0, 8.0):
+        fire_trigger("per_shot", {"rosanna": shot_rules}, ctx, reg, time)
+    assert round(reg.total_for("crit_rate", SELF, 8.0), 4) == 0.1934
+
+
 def test_frenzy_and_the_buff_strip_are_not_emitted():
     """Frenzy keys off "a Nikke is incapacitated" (the sim never downs an ally)
     and the enemy buff-strip has no engine concept."""

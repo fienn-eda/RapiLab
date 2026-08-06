@@ -107,3 +107,15 @@ def test_burst_transform_schedule_has_one_segment_per_own_burst():
     segments = schedule(context, 180.0)
     assert [seg["start"] for seg in segments] == [20.0, 60.0, 100.0]
     assert all(seg["until_shots"] == 1 for seg in segments)
+
+
+def test_determinations_self_atk_refreshes_instead_of_stacking():
+    """The bullet names no stack count, so a re-application replaces the live
+    grant. 30 AR shots take 2.5 sec against a 5 sec duration, so stacking would
+    double the buff the skill grants."""
+    _threshold, _mode, rules = build_determination_per_shot_rules(SNOW_WHITE_VALUES)[0]
+    ctx = make_context()
+    registry = EffectRegistry()
+    for time in (2.5, 5.0, 7.5, 10.0):
+        fire_trigger("per_shot", {"snow-white": rules}, ctx, registry, time)
+    assert round(registry.total_for("atk_percent", SNOW_WHITE, 10.0), 4) == 0.0828
