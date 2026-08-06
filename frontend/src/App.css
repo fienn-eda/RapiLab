@@ -1264,6 +1264,13 @@
 
 /* 보관 목록 ------------------------------------------------------------- */
 
+.save-run {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--sp-2);
+}
+
 .saved-runs {
   list-style: none;
   margin: 0;
