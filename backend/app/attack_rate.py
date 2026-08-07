@@ -697,6 +697,12 @@ class ShotRecord:
     is_last_bullet: bool
     damage_type: str | None = None
     in_segment: bool = False
+    # A transform whose shots land on the core every time, whatever spread the
+    # unit's real weapon draws (Nayuta's Memory Incineration). Declared on the
+    # segment profile because it is a measured property of that transform - a
+    # segment's `weapon` label alone never decides a spread (raid_simulator's
+    # _core_hit_rate_at).
+    always_core_hit: bool = False
 
 
 def _base_shot_records(base, window_start, window_end,
@@ -812,7 +818,8 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
     records = [
         ShotRecord(t, profile["weapon"], profile["damage_percent"], bonus,
                    is_first_bullet=False, is_last_bullet=False,
-                   damage_type=profile.get("damage_type"), in_segment=True)
+                   damage_type=profile.get("damage_type"), in_segment=True,
+                   always_core_hit=bool(profile.get("always_core_hit")))
         for t in times if t < fight_duration
     ]
     return records, min(seg_end, fight_duration)
@@ -882,7 +889,8 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
             shot_time, profile["weapon"], profile["damage_percent"], bonus,
             is_first_bullet=opening, is_last_bullet=False,
             damage_type=profile.get("damage_type") if in_segment else None,
-            in_segment=in_segment))
+            in_segment=in_segment,
+            always_core_hit=in_segment and bool(profile.get("always_core_hit"))))
         opening = False
         for one in refunds:
             if shots_fired % one.every_shots == 0:
