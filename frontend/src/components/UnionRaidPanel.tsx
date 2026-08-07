@@ -16,6 +16,7 @@ import {
 } from '../types/bossProfileDraft'
 import { isDraftComplete, makeEmptyDraft, resizeDraft, type Draft } from '../types/draft'
 import { DEFAULT_UNION_NUM_DECKS, MAX_UNION_NUM_DECKS, MIN_UNION_NUM_DECKS } from '../types/evaluate'
+import { latestRotationFor, type RaidRotation } from '../types/raidRotation'
 import type { BossProfile } from '../types/recommend'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
@@ -29,6 +30,8 @@ import { UnitPalette, toggleExcludedSlug, type UnitInvestment } from './UnitPale
 
 interface UnionRaidPanelProps {
   roster: UserNikkeState[]
+  /** 공지에서 읽어둔 회차 전체. 이 탭은 유니온 레이드 회차만 쓴다. */
+  rotations?: RaidRotation[]
   supportedUnits: SupportedUnit[]
   /** Resolves a slug's portrait for a deck slot. Null when unknown. */
   portraitFor: (slug: string) => string | null
@@ -63,6 +66,7 @@ const NUM_BATTLES_OPTIONS = Array.from(
 
 export function UnionRaidPanel({
   roster,
+  rotations = [],
   supportedUnits,
   portraitFor,
   nameFor,
@@ -89,6 +93,7 @@ export function UnionRaidPanel({
   const numBattlesId = useId()
 
   const evaluation = useEvaluateDecks()
+  const unionRotation = useMemo(() => latestRotationFor(rotations, 'union'), [rotations])
 
   // Shrinking numBattles drops the trailing battles' boss settings and seats;
   // growing it appends fresh (default) ones - preserving earlier battles by
@@ -208,6 +213,7 @@ export function UnionRaidPanel({
                 onChange={(next) =>
                   setBosses((current) => current.map((boss, idx) => (idx === i ? next : boss)))
                 }
+                rotation={unionRotation}
                 // 이 탭은 유저가 짠 편성을 채점만 해서 탐색이 없다 - 제약이 걸 곳이 없다.
                 showElementalInterrupt={false}
               />

@@ -13,9 +13,14 @@ vi.mock('./api/recommendRaid', () => ({
 vi.mock('./api/supportedUnits', () => ({
   getSupportedUnits: vi.fn(),
 }))
+vi.mock('./api/raidRotations', () => ({
+  getRaidRotations: vi.fn(),
+}))
 
 import { recommendRaidDecks } from './api/recommendRaid'
 import { getSupportedUnits } from './api/supportedUnits'
+import { getRaidRotations } from './api/raidRotations'
+import type { RaidRotation } from './types/raidRotation'
 
 const validDraft = (overrides: Partial<NikkeDraft> = {}): NikkeDraft => ({
   ...makeEmptyDraft(),
@@ -43,11 +48,13 @@ const ACCT_B = profileKey('acct-b', 81)
 beforeEach(() => {
   localStorage.clear()
   vi.mocked(getSupportedUnits).mockResolvedValue([])
+  vi.mocked(getRaidRotations).mockResolvedValue([])
 })
 
 afterEach(() => {
   vi.mocked(recommendRaidDecks).mockReset()
   vi.mocked(getSupportedUnits).mockReset()
+  vi.mocked(getRaidRotations).mockReset()
 })
 
 describe('App', () => {
@@ -153,6 +160,65 @@ describe('App', () => {
 
     expect(screen.getByRole('heading', { name: '유니온 레이드' })).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'Red Hood' })).not.toBeInTheDocument()
+  })
+
+  const ROTATIONS: RaidRotation[] = [
+    {
+      id: 'solo-39',
+      raid: 'solo',
+      title: '솔로 레이드 39시즌',
+      starts_at: '2026-07-16T12:00:00+09:00',
+      ends_at: '2026-07-23T04:59:00+09:00',
+      source_url: 'https://arca.live/b/nikketgv/177017741',
+      source_locale: 'ko',
+      read_on: '2026-08-07',
+      bosses: [{ name: '아일랜드 이터', weakness: 'Iron', stated: {} }],
+    },
+    {
+      id: 'union-2026-07-31',
+      raid: 'union',
+      title: '유니온 레이드 7/31',
+      starts_at: '2026-07-31T05:00:00+09:00',
+      ends_at: '2026-08-06T04:59:00+09:00',
+      source_url: 'https://arca.live/b/nikketgv/177833660',
+      source_locale: 'ko',
+      read_on: '2026-08-07',
+      bosses: [{ name: '선바스', weakness: 'Electric', stated: {} }],
+    },
+  ]
+
+  it('탭마다 그 레이드의 회차 보스만 뜬다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
+    vi.mocked(getRaidRotations).mockResolvedValue([...ROTATIONS])
+    seedProfiles({
+      activeKey: ACCT_A,
+      profiles: {
+        [ACCT_A]: {
+          openId: 'acct-a',
+          area: 81,
+          nickname: '본계',
+          roster: [validDraft()],
+          results: {},
+          lastResultHash: null,
+          lastInputs: null,
+          savedRuns: [],
+        },
+      },
+    })
+
+    render(<App />)
+
+    await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
+    expect(await screen.findByRole('radio', { name: /아일랜드 이터/ })).toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: /선바스/ })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('tab', { name: '유니온 레이드' }))
+    // 유니온 탭은 전투마다 자기 몫의 카드 목록을 그린다(기본 3전투) - 같은
+    // 회차라 보스 카드가 전투 수만큼 반복되므로 한 전투로 좁혀서 본다.
+    const firstBattle = screen.getByRole('group', { name: '1번 전투' })
+    expect(within(firstBattle).getByRole('radio', { name: /선바스/ })).toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: /아일랜드 이터/ })).not.toBeInTheDocument()
   })
 
   it('switches the displayed roster when the active profile changes (isolation)', async () => {

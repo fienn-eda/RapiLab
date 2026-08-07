@@ -792,6 +792,72 @@
   --element: var(--el-electric);
 }
 
+/* 회차 보스 카드. 카드마다 공지 원문이 붙어 높이가 제각각이므로 flex가 아니라
+   그리드로 놓는다 — 5장이 들쭉날쭉하면 어느 것이 골라졌는지 읽기 어렵다. */
+.rotation-picker {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: var(--sp-2);
+}
+
+.rotation-picker__option {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  padding: var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  cursor: pointer;
+}
+
+.rotation-picker__option:has(input:checked) {
+  border-color: var(--accent);
+  background: var(--surface);
+}
+
+.rotation-picker__option:has(input:focus-visible) {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.rotation-picker__head {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-1);
+}
+
+.rotation-picker__icon {
+  width: 20px;
+  height: 20px;
+}
+
+.rotation-picker__name {
+  font-weight: 600;
+}
+
+/* 공지 원문은 참고 자료지 입력값이 아니다 — 카드에서 시선을 덜 끌게 둔다. */
+.rotation-picker__stated {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.rotation-picker__stated-row {
+  display: flex;
+  gap: var(--sp-1);
+}
+
+.rotation-picker__stated-row dt::after {
+  content: ':';
+}
+
+.rotation-picker__stated-row dd {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
 /* Groups (fieldsets) --------------------------------------------------- */
 
 .group {

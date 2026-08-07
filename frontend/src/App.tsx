@@ -11,6 +11,7 @@ import { getValidRoster } from './types/nikkeDraft'
 import { getResult, runsForTab } from './types/profile'
 import { restorableResult } from './lib/restorableResult'
 import { useSupportedUnits } from './hooks/useSupportedUnits'
+import { useRaidRotations } from './hooks/useRaidRotations'
 import { nameFromSlug } from './lib/unitName'
 import { burstTiersFor } from './types/supportedUnit'
 import { ProfileSwitcher } from './components/ProfileSwitcher'
@@ -62,6 +63,9 @@ function App() {
   // would rewrite 22 of its test's render sites to save one GET of a small
   // static endpoint.
   const supportedUnits = useSupportedUnits()
+  // 두 탭 패널이 동시에 마운트되므로 훅을 패널마다 부르면 같은 파일을 두 번
+  // 받는다. 한 번 받아 내려보낸다.
+  const raidRotations = useRaidRotations()
   const engineVersion = useEngineVersion()
   const [tab, setTab] = useState<Tab>('roster')
 
@@ -199,6 +203,7 @@ function App() {
                 // profile happens to be active when the response arrives.
                 key={state.activeKey ?? 'none'}
                 roster={validRoster}
+                rotations={raidRotations.rotations}
                 investmentFor={investmentFor}
                 engineVersion={engineVersion}
                 activeKey={state.activeKey}
@@ -234,6 +239,7 @@ function App() {
                 // previous profile's hook instance.
                 key={state.activeKey ?? 'none'}
                 roster={validRoster}
+                rotations={raidRotations.rotations}
                 supportedUnits={supportedUnits.units}
                 portraitFor={portraitFor}
                 nameFor={nameFor}

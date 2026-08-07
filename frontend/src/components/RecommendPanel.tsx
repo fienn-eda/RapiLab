@@ -23,6 +23,7 @@ import {
   type BossProfileDraft,
 } from '../types/bossProfileDraft'
 import { isDraftComplete, makeEmptyDraft, resizeDraft, type Draft } from '../types/draft'
+import { latestRotationFor, type RaidRotation } from '../types/raidRotation'
 import {
   makeRunId,
   type SavedRun,
@@ -57,6 +58,11 @@ import { HELP } from '../lib/helpText'
 interface RecommendPanelProps {
   /** The validated, ready subset of the entered roster. */
   roster: UserNikkeState[]
+  /** 공지에서 읽어둔 회차 전체. 이 탭은 솔로 레이드 회차만 쓴다.
+   *  선택적인 이유는 이 컴포넌트를 직접 렌더하는 테스트가 51곳이기 때문이다 —
+   *  전부 고치면 그 소음에 실제 변경이 묻힌다. 배선을 빠뜨리면 App 테스트의
+   *  "탭마다 그 레이드의 회차 보스만 뜬다"가 잡는다. */
+  rotations?: RaidRotation[]
   /** The active profile's key — keys the restore effect so switching
    * accounts (not just re-rendering) reloads that profile's form/result. */
   activeKey: string | null
@@ -133,6 +139,7 @@ const NUM_DECKS_OPTIONS = Array.from(
 
 export function RecommendPanel({
   roster,
+  rotations = [],
   activeKey,
   getCached,
   onResult,
@@ -691,7 +698,13 @@ export function RecommendPanel({
             moves the answer most (Element) was the one a player never scrolled
             to, and a minute of simulation ran against a default nobody chose. */}
         <div className="recommend-form__setup">
-          <BossProfileField value={draft} errors={touched ? errors : {}} onChange={setDraft} />
+          <BossProfileField
+            value={draft}
+            errors={touched ? errors : {}}
+            onChange={setDraft}
+            rotation={latestRotationFor(rotations, 'solo')}
+            defaultEnemyDef={SOLO_RAID_DEFAULT_ENEMY_DEF}
+          />
 
           <fieldset className="group">
             <legend className="group__legend">모드</legend>
