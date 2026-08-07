@@ -30,6 +30,7 @@ from app.engine_version import engine_version
 from app.models import UserNikkeState
 from app.overload_effects import NAME_TO_STAT, max_charge_speed_percent
 from app.paths import frontend_dist
+from app.raid_rotations import load_rotations
 from app.roster_assembly import assemble_roster, load_directory, to_roster_json
 from app.sim_pool import SimPool
 from app.skill_rules.registry import MODE_VARIANTS
@@ -65,6 +66,38 @@ class BossProfileIn(BaseModel):
     pierce_hits_body_behind_core: bool = False
     # See BossProfile.elemental_interrupt_required. Inert on an element-less boss.
     elemental_interrupt_required: bool = False
+
+
+class RotationBoss(BaseModel):
+    """공지가 적은 보스 하나.
+
+    `weakness`만 앱이 해석한다 - 화면이 이 값으로 보스 속성을 역산해 채운다.
+    `stated`는 공지 원문이고 렌더링만 된다. 자유 형식인 이유는 솔로 공지와
+    유니온 공지가 서로 다른 항목을 적기 때문이다(솔로: 보스 속성·스쿼드 추천·공격
+    패턴 / 유니온: 등급·거리).
+    """
+    name: str
+    weakness: Literal["Fire", "Water", "Wind", "Iron", "Electric"] | None = None
+    stated: dict[str, str | list[str]] = {}
+
+
+class RaidRotation(BaseModel):
+    id: str
+    raid: Literal["solo", "union"]
+    title: str
+    # 공지 본문이 종료 시각만 적는 경우가 있어 시작은 비어 있을 수 있다.
+    starts_at: str | None = None
+    ends_at: str
+    source_url: str
+    # `name`이 한국 서버 표기인지 영문명인지. 읽는 쪽이 알아야 한다.
+    source_locale: Literal["ko", "en"]
+    read_on: str
+    bosses: list[RotationBoss]
+
+
+class RaidRotationsResponse(BaseModel):
+    schema_version: int
+    rotations: list[RaidRotation]
 
 
 def boss_profile(boss: BossProfileIn) -> BossProfile:
@@ -655,6 +688,12 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
 @app.get("/api/supported-units", response_model=list[SupportedUnit])
 def supported_units_route() -> list[SupportedUnit]:
     return [SupportedUnit(**u) for u in _supported_units()]
+
+
+@app.get("/api/raid-rotations", response_model=RaidRotationsResponse)
+def raid_rotations_route() -> RaidRotationsResponse:
+    """공지에서 읽어둔 회차 보스 전부. 어느 회차를 노출할지는 화면이 정한다."""
+    return RaidRotationsResponse(**load_rotations())
 
 
 @app.get("/api/engine-version")
