@@ -224,6 +224,61 @@ def test_a_part_destructible_boss_keeps_the_squad_muted():
     assert reg.total_for("hit_rate", {"slug": "sg-ally", "element": "Iron"}, 0.0) == 0.0
 
 
+def test_noise_pollution_reaches_an_allys_damage_in_a_real_fight():
+    """End to end, not just in the registry: the second inside Noise Pollution
+    costs a shotgun ally real damage.
+
+    It takes a whole fight to see, because the bullet hangs off HER burst and
+    Highlight skips the opening cycle - a deck without a Burst-3 tier-mate to
+    cover that cycle never opens a Full Burst at all and she never bursts
+    (`burst_cycle` reports that as `full_burst_missed`). So the deck here is the
+    shape ALLOWED_SHAPES guarantees: a second Burst 3, on a long enough cooldown
+    that the cycle after the skipped one falls to her."""
+    from app.raid_simulator import simulate_raid
+
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "sg-ally", "burst_tier": 3, "element": "Iron", "cooldown": 60.0,
+         "weapon": "SG"},
+        {"slug": DIESEL_HIGHLIGHT, "burst_tier": 3, "element": "Fire",
+         "cooldown": 40.0, "weapon": "RL",
+         "burst_delay": HIGHLIGHT_BURST_DELAY},
+    ]
+    result = simulate_raid(
+        deck,
+        {"b1": [], "b2": [], "sg-ally": [],
+         DIESEL_HIGHLIGHT: build_diesel_highlight_rules(VALUES)},
+        burst_damage_percents={},
+        base_stats={s["slug"]: {"atk": 10000, "def": 0, "max_hp": 0} for s in deck},
+        enemy_def=0,
+        gauge_charge_time=2.4,
+        fight_duration=90.0,
+        base_crit_rate=0.0,
+        weapon_stats={
+            "sg-ally": {"weapon": "SG", "damage_percent": 100.0, "max_ammo": 999,
+                        "reload_time": 0.0, "charge_time": 0.0,
+                        "charge_damage_percent": 100.0},
+        },
+        core_hittable=True,
+        core_diameter_px=50.0,
+    )
+
+    bursts = [e["time"] for e in result["events"]
+              if e["type"] == "burst" and e["slug"] == DIESEL_HIGHLIGHT]
+    assert bursts, "fixture broken: Diesel never took a Burst-3 seat"
+
+    fired = bursts[0]
+    shots = [(e["time"], e["damage"]) for e in result["damage_log"]
+             if e["slug"] == "sg-ally" and e["source"] == "normal_attack"]
+    blinded = [d for t, d in shots if fired <= t < fired + 1.0]
+    clear = [d for t, d in shots if fired + 1.0 <= t < fired + 4.0]
+    assert blinded and clear, "fixture broken: no shots on either side of the second"
+    # -100% doubles the spread (250px -> 477px), so the share of it inside a
+    # 50px core falls from 4.0% to 1.1%.
+    assert max(blinded) < min(clear)
+
+
 def test_intro_never_pays_noise_pollution():
     """It is gated on Highlight STATUS, which the Intro build never enters."""
     reg = EffectRegistry()

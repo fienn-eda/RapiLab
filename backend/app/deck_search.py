@@ -463,6 +463,23 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None):
     )
 
 
+def never_full_bursts(result):
+    """이 배치가 풀 버스트를 한 번도 못 여는가 - `evaluate_deck`의 결과에 대고
+    묻는다.
+
+    「덱이 성립하지 않는다」는 뜻이 아니라 「이 배치로는 창이 안 열린다」는
+    뜻이고, 총딜은 평타만으로 여전히 나온다. 그래서 그 숫자를 그냥 출력하면
+    다른 배치와 비교 가능한 값처럼 보인다 - 실제로는 아니다.
+
+    측정 스크립트가 각자 `events`를 뒤지는 대신 여기 물어보는 이유: 규칙을
+    자체 구현한 스크립트는 에러 없이 틀린 숫자를 낸다(이 저장소에서 이미 두 번
+    났다). 오늘 이 답이 참인 유일한 경우는 티어의 유일한 멤버가 `skip_cycles`
+    지연이나 `max_bursts` 소진으로 영구히 못 쏘는 배치다 - 디젤: 윈터
+    스위츠(Highlight)를 유일한 Burst 3으로 앉히면 그렇게 된다(그 조합은
+    `ALLOWED_SHAPES`가 B3를 항상 둘 이상 요구하므로 추천 경로로는 안 나온다)."""
+    return any(e["type"] == "full_burst_missed" for e in result["events"])
+
+
 def _score_batch(decks, boss, pool):
     """Total damage for each deck. `pool` (a SimPool, duck-typed - this module
     must not import sim_pool, which imports evaluate_deck from here) fans the

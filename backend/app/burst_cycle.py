@@ -169,6 +169,18 @@ def simulate_burst_cycle(
             )
             for tier in (1, 2, 3)
         }
+
+        # A tier whose every member is out for good - the lone member of its
+        # tier holding a `skip_cycles` delay (the delay lifts on the cycle
+        # AFTER this one, and this one is the cycle that would have advanced
+        # the count), or one that has spent its `max_bursts` - is the same dead
+        # end as a tier with no members at all: no amount of waiting fixes it.
+        # It reports the same way rather than leaving through the end-of-fight
+        # branch below, where an empty event list reads as "the fight ended".
+        if any(tier_ready_time[tier] == float("inf") for tier in (1, 2, 3)):
+            events.append({"type": "full_burst_missed", "time": gauge_ready})
+            break
+
         fire_time = max(gauge_ready, *tier_ready_time.values())
 
         if fire_time >= fight_duration:

@@ -26,7 +26,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 from app.models import UserNikkeState  # noqa: E402
 from app.skill_rules.registry import ENCODED_SLUGS  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
-from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # noqa: E402
+from app.deck_search import (  # noqa: E402
+    BossProfile,
+    evaluate_deck,
+    feasible_orderings,
+    never_full_bursts,
+)
 
 # One fixed shell per burst tier, each drawn ENTIRELY from the other two tiers.
 # A shell must not contain the tier it is measuring: only one unit per tier
@@ -56,7 +61,16 @@ def _tier_of(slug):
 
 def measure(slug):
     """Best total damage over the feasible orderings of (tier-matched shell +
-    slug), or None if the slug can't be measured here."""
+    slug), or None if the slug can't be measured here.
+
+    "Can't be measured here" now includes a shell that never opens a Full Burst
+    at all. A shell holds no member of the tier under test (see SHELLS), so a
+    unit whose kit REQUIRES a tier-mate has nobody to cover for it: Diesel:
+    Winter Sweets in Highlight skips the opening cycle by design, and alone in
+    her tier that cycle is the one that would have advanced the count, so no
+    window ever opens. Her normal attacks still total a number, which is why
+    this used to report her at a fraction of her real damage without complaint
+    (163M against ~691M for her Intro build, found 2026-08-07)."""
     tier = _tier_of(slug)
     shell = SHELLS.get(tier)
     if shell is None or slug in shell:
@@ -66,9 +80,11 @@ def measure(slug):
         return None
     best = None
     for ordering in feasible_orderings(specs):
-        total = evaluate_deck(ordering, BOSS)["total_damage"]
-        if best is None or total > best:
-            best = total
+        result = evaluate_deck(ordering, BOSS)
+        if never_full_bursts(result):
+            return None
+        if best is None or result["total_damage"] > best:
+            best = result["total_damage"]
     return best
 
 

@@ -234,6 +234,58 @@ def test_an_undelayed_tier_mate_still_covers_the_skipped_cycle():
     assert sum(e["type"] == "full_burst_start" for e in events) >= 3
 
 
+def test_a_lone_delayed_burst_three_reports_a_miss_instead_of_falling_silent():
+    """A `skip_cycles` delay on the ONLY member of its tier is unsatisfiable:
+    the cycle it skips is the cycle that would have advanced the counter, so
+    the delay never lifts and no Full Burst ever opens.
+
+    That is the same dead end as a missing tier - no amount of waiting fixes
+    it - and it must be reported the same way. Reaching `fight_duration` with
+    an infinite ready-time used to leave through the ordinary end-of-fight
+    branch, so the whole simulation returned an EMPTY event list and a caller
+    could not tell a deck that cannot Full Burst from a fight that simply
+    ended. `evaluate_deck` scored such a deck at a fraction of its real damage
+    with no complaint (Diesel: Winter Sweets in Highlight, measured 2026-08-07).
+    """
+    deck = [
+        {"slug": "b1_unit", "burst_tier": 1, "cooldown": 20.0},
+        {"slug": "b2_unit", "burst_tier": 2, "cooldown": 20.0},
+        {"slug": "lone_b3", "burst_tier": 3, "cooldown": 40.0,
+         "burst_delay": {"skip_cycles": 1}},
+    ]
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=180.0,
+                                  mode="auto")
+
+    assert events == [{"type": "full_burst_missed", "time": 5.0}]
+
+
+def test_a_lone_totem_burst_three_reports_the_same_miss():
+    """`max_bursts: 0` takes the seat out of its tier permanently, which is the
+    same dead end reached a different way."""
+    deck = [
+        {"slug": "b1_unit", "burst_tier": 1, "cooldown": 20.0},
+        {"slug": "b2_unit", "burst_tier": 2, "cooldown": 20.0},
+        {"slug": "totem_b3", "burst_tier": 3, "cooldown": 40.0, "max_bursts": 0},
+    ]
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=180.0,
+                                  mode="auto")
+
+    assert events == [{"type": "full_burst_missed", "time": 5.0}]
+
+
+def test_a_fight_that_simply_runs_out_of_time_is_not_a_miss():
+    """The other side of the same branch: a deck that CAN Full Burst but whose
+    fight ends first is not a miss, and must stay silent as before."""
+    deck = make_deck()
+
+    events = simulate_burst_cycle(deck, gauge_charge_time=5.0, fight_duration=4.0,
+                                  mode="auto")
+
+    assert events == []
+
+
 def test_delay_applies_only_to_the_first_burst():
     # Once the unit has burst, it re-fires on its plain cooldown.
     deck = make_deck()

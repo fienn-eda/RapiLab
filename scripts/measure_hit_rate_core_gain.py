@@ -32,7 +32,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
 
 import app.accuracy as accuracy  # noqa: E402
 import app.raid_simulator as raid_simulator  # noqa: E402
-from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # noqa: E402
+from app.deck_search import (  # noqa: E402
+    BossProfile,
+    evaluate_deck,
+    feasible_orderings,
+    never_full_bursts,
+)
 from app.models import UserNikkeState  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
 
@@ -70,13 +75,17 @@ def _tier_of(slug):
 
 
 def _best(slug, boss):
-    """(총딜, 그 배치에서 이 유닛이 버스트한 횟수) 또는 None.
+    """(총딜, 이 유닛의 버스트 횟수) · "NO_FULL_BURST" · None.
 
     버스트 횟수를 같이 돌려주는 이유: 버스트에 달린 명중 불릿은 그 유닛이 그
     셸에서 버스트를 안 하면 아예 안 걸리고, 그러면 차이가 0.00%로 나와
-    「배선이 안 됐다」와 구별되지 않는다. 디젤: 윈터 스위츠(Highlight)가 실제로
-    그렇다 - `burst_delay`가 그녀를 첫 사이클에서 빼는데 이 셸의 티어메이트가
-    이후 모든 좌석을 가져간다."""
+    「배선이 안 됐다」와 구별되지 않는다.
+
+    `"NO_FULL_BURST"`는 그보다 더한 경우다 - 이 셸로는 풀 버스트가 한 번도 안
+    열려서 총딜 자체가 다른 행과 비교 불가다. 디젤: 윈터 스위츠(Highlight)가
+    그렇다: `burst_delay`가 그녀를 첫 사이클에서 빼는데 이 셸에는 대신 쏠
+    Burst 3이 없다. 그 조합은 `ALLOWED_SHAPES`가 못 만들게 하므로 추천 결과가
+    아니라 **이 셸의 한계**다."""
     tier = _tier_of(slug)
     shell = SHELLS.get(tier)
     if shell is None or slug in shell:
@@ -87,6 +96,8 @@ def _best(slug, boss):
     best = None
     for ordering in feasible_orderings(specs):
         result = evaluate_deck(ordering, boss)
+        if never_full_bursts(result):
+            return "NO_FULL_BURST"
         if best is None or result["total_damage"] > best[0]:
             # `events`, not the damage log: a buffs-only burst (Jill, Sugar,
             # Chisato) records no "burst" damage entry at all, so counting the
@@ -138,6 +149,9 @@ def main():
         measured = _best(slug, boss)
         if measured is None:
             print(f"{slug:30} {'덱을 못 만든다':>16}")
+            continue
+        if measured == "NO_FULL_BURST":
+            print(f"{slug:30} {'이 셸로는 풀 버스트가 안 열린다 — 측정 불가':>16}")
             continue
         with_hit, bursts = measured
         with _blind():
