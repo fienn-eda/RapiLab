@@ -15,7 +15,9 @@
 
 **기준선 (2026-08-08 실측, `cd backend && python -m pytest -q`):** 2079 passed / 0 failed / 34.6초.
 `rootdir`가 `backend`이고 `configfile: pytest.ini`라 `filterwarnings = error`가
-실제로 걸린 상태의 숫자다 — 저장소 루트에서 돌리면 그 설정이 안 잡힌다.
+실제로 걸린 상태의 숫자다. **반드시 `backend/`에서 돌릴 것** — 저장소 루트에서
+돌리면 `ModuleNotFoundError: No module named 'app'`로 수집이 중단된다(설정 파일
+자체는 루트에서도 잡힌다; 깨지는 것은 `sys.path`다).
 
 설계문서: `docs/superpowers/specs/2026-08-08-full-burst-convergence-visibility-design.md`
 브랜치: `wip/full-burst-convergence-warning` (설계 커밋 `b47f20f5`가 이미 올라가 있다)
