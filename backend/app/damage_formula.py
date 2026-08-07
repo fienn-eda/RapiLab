@@ -29,6 +29,7 @@ def _base_damage(atk, atk_percent, flat_atk, enemy_def, enemy_def_percent, flat_
 def _major_modifiers(
     crit_rate,
     other_critical_damage_sources,
+    core_hit_rate,
     core_hit_bonus,
     other_core_damage_sources,
     full_burst_bonus,
@@ -39,11 +40,16 @@ def _major_modifiers(
     # many hits that is crit_rate * (0.5 + sources). Crit damage sources are
     # therefore inert without any crit chance, matching the game.
     expected_crit_term = crit_rate * (0.5 + other_critical_damage_sources)
+    # Expected-value core, the same shape. Aiming at the core is not the same as
+    # landing on it: the bullet spread can be wider than the core, and
+    # core_hit_rate is the share of rounds that fall inside it (see accuracy.py).
+    # Core damage sources sit INSIDE the probability because they pay out only on
+    # a round that hit the core.
+    expected_core_term = core_hit_rate * (core_hit_bonus + other_core_damage_sources)
     return (
         1
         + expected_crit_term
-        + core_hit_bonus
-        + other_core_damage_sources
+        + expected_core_term
         + full_burst_bonus * 0.5
         + effective_range_bonus * 0.3
     )
@@ -60,6 +66,7 @@ def calculate_damage(
     final_atk_modifier=0.0,
     crit_rate=0.0,
     other_critical_damage_sources=0.0,
+    core_hit_rate=1.0,
     core_hit_bonus=0.0,
     other_core_damage_sources=0.0,
     full_burst_bonus=0.0,
@@ -87,12 +94,13 @@ def calculate_damage(
     # multiplies the whole Base Damage, i.e. AFTER defense is subtracted.
     final_atk_modifiers = attack_coefficient * (1 + final_atk_modifier)
     major_modifiers = _major_modifiers(
-        crit_rate,
-        other_critical_damage_sources,
-        core_hit_bonus,
-        other_core_damage_sources,
-        full_burst_bonus,
-        effective_range_bonus,
+        crit_rate=crit_rate,
+        other_critical_damage_sources=other_critical_damage_sources,
+        core_hit_rate=core_hit_rate,
+        core_hit_bonus=core_hit_bonus,
+        other_core_damage_sources=other_core_damage_sources,
+        full_burst_bonus=full_burst_bonus,
+        effective_range_bonus=effective_range_bonus,
     )
     # "Superior Code Damage" only applies when the attacker actually holds
     # elemental advantage; element_multiplier is already that indicator
