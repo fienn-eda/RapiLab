@@ -54,6 +54,19 @@ def test_not_yet_consumed_stats_still_produce_named_effects():
     assert stats == {"crit_rate", "charge_speed_percent", "max_ammo_percent"}
 
 
+def test_hit_rate_overload_maps_to_the_hit_rate_stat():
+    # Moran's fixture total. The engine reads hit_rate to size the bullet
+    # spread, so this line is what makes an overload roll reach core hits.
+    effects = overload_options_to_effects(
+        [OverloadOption(name="명중률 증가", value=17.99)], source_slug="moran"
+    )
+    assert len(effects) == 1
+    assert effects[0].stat == "hit_rate"
+    assert round(effects[0].value, 4) == 0.1799
+    assert effects[0].scope == "self"
+    assert effects[0].duration is None
+
+
 def test_multiple_overload_options_all_convert():
     options = [
         OverloadOption(name="우월코드 대미지 증가", value=88.61),

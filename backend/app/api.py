@@ -64,6 +64,10 @@ class BossProfileIn(BaseModel):
     # See BossProfile.pierce_hits_body_behind_core - only meaningful together
     # with core_hittable.
     pierce_hits_body_behind_core: bool = False
+    # See BossProfile.core_diameter_px - only meaningful together with
+    # core_hittable. Must be positive: zero or negative divides by zero or
+    # invents a positive core-hit share for an impossible boss.
+    core_diameter_px: float | None = Field(default=None, gt=0)
     # See BossProfile.elemental_interrupt_required. Inert on an element-less boss.
     elemental_interrupt_required: bool = False
 

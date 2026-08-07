@@ -51,6 +51,7 @@ Damage stats (fed into `calculate_damage`, so they change damage numbers):
 | `damage_taken_up` | enemy damage-taken debuff — model as **squad** scope (all attackers share it) | "Damage Taken ▲ X%" (on enemy) |
 | `other_core_damage_sources` | core-damage buff, **gated on `core_hittable`** (inert if boss has no core) | "Damage dealt when attacking core ▲ X%" |
 | `has_pierce` | the Pierce PROPERTY itself, as a 0/1 self-scoped Effect (2026-07-26) — it gates `pierce_damage_up`, and on a `pierce_hits_body_behind_core` boss it makes one normal attack produce a second instance on the body behind the core | "Gain(s) Pierce", "Additional Effect: Pierce" |
+| `hit_rate` | narrows a normal attack's bullet spread; the share of that spread still inside the boss's core becomes the core-hit probability (`accuracy.core_hit_rate`) | "Hit Rate ▲/▼ X%" |
 
 **Read the crit bullet's own wording before reaching for `crit_rate`.** A skill
 that says "Critical Rate **of normal attack**" is a different bucket from a bare
@@ -77,6 +78,29 @@ Crystal Wave (MG mode)'s 833.79% core-strike Full Burst nuke, which the skill
 text scopes to "enemies with activated cores" and this engine's uniform
 per-instance core correction has no per-enemy distinction for, so gating the
 whole nuke is the established convention.
+
+**`hit_rate` reaches damage only through the bullet spread, and only on an
+encounter that opts in (2026-08-07).** A weapon's normal-attack rounds land
+inside a circle whose diameter shrinks as `hit_rate` rises
+(`accuracy.spread_diameter`; base diameters in `WEAPON_SPREAD_DIAMETER` — AR 75
+· SG 250 · SMG 110 · MG/SR/RL 10px, all read off the game data, all three
+weapons' measured regressions crossing zero diameter at the same 110% hit
+rate). The share of that circle still inside the boss's core is the area ratio
+(`accuracy.core_hit_rate`), fed into `calculate_damage`'s `core_hit_rate`
+parameter the same way crit already averages over `crit_rate`. This is gated
+on `BossProfile.core_diameter_px` — `None` (the default, and every boss before
+2026-08-07) leaves every core-eligible normal attack at p=1.0, the engine's old
+ceiling, so `hit_rate` is a genuine no-op until an encounter sets a diameter.
+
+**Even with a diameter set, MG/SR/RL still see nothing** — their base spread
+is already 10px, inside any plausible core, so narrowing it further changes
+nothing; only AR/SG/SMG have room to move. `core_strike`-typed skill damage
+and `core_eligible_override` summons (e.g. Anis: Star's Shooting Stars) keep
+p=1.0 regardless of `hit_rate` — the text says the hit already lands on the
+core, so aim is not in question. A Pierce holder's body-instance (the second
+hit on a `pierce_hits_body_behind_core` boss) is weighted by the same
+probability: a round that missed the core has no core to pass through. See
+`accuracy.py`.
 
 Scheduling stats (change the burst rotation / shot timing, not per-hit damage):
 | stat | mechanism | game wording |
@@ -653,10 +677,9 @@ tests can still pass (the effect registers and `total_for` returns it), but the
 value never reaches `calculate_damage`, so it does NOT change simulated damage.
 
 **Not a damage concept at all** — no consumer will ever exist without a bigger
-model: `hit_rate` / Hit Rate, `burst_gauge_fill_speed_percent` (gauge charge
-time is a fixed sim input), `shield_amount`, and anything HP/heal/DEF/
-survivability. Defer these; if a Nikke's contribution is mostly these, say so —
-a thin encoding is honest.
+model: `burst_gauge_fill_speed_percent` (gauge charge time is a fixed sim
+input), `shield_amount`, and anything HP/heal/DEF/survivability. Defer these;
+if a Nikke's contribution is mostly these, say so — a thin encoding is honest.
 
 **`damage_to_parts_up` and `damage_to_interruption_parts_up` are inert too**, and
 deliberately so. `calculate_damage` still TAKES `damage_to_parts_up` but leaves

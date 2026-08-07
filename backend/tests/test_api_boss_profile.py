@@ -91,3 +91,25 @@ def test_evaluate_deck_forwards_every_boss_field_the_simulator_accepts(monkeypat
     assert expected <= set(captured), (
         f"evaluate_deck drops boss fields the simulator accepts: "
         f"{sorted(expected - set(captured))}")
+
+
+def test_an_omitted_core_diameter_models_the_old_ceiling():
+    # None means "this encounter does not model a core hit rate", which is what
+    # every caller sent before the field existed - and what the recorded-raid
+    # harness keeps sending, so the calibration is untouched by this work.
+    assert boss_profile(BossProfileIn()).core_diameter_px is None
+
+
+def test_the_core_diameter_a_caller_sends_is_the_one_the_engine_gets():
+    assert boss_profile(BossProfileIn(
+        core_hittable=True, core_diameter_px=62.5)).core_diameter_px == 62.5
+
+
+def test_a_non_positive_core_diameter_is_rejected_at_the_edge():
+    # accuracy.core_hit_rate divides by the diameter; zero or negative would
+    # divide by zero or invent a positive core-hit share for an impossible
+    # boss, so the wire model constrains it instead of letting either happen.
+    with pytest.raises(ValidationError):
+        BossProfileIn(core_diameter_px=0.0)
+    with pytest.raises(ValidationError):
+        BossProfileIn(core_diameter_px=-1.0)

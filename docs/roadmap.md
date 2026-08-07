@@ -1197,6 +1197,39 @@
 - [x] **`normal_attack_crit_rate` 버킷 신설 (2026-08-07).** 헬름 과대·줄리아 시그니처 과소를
       동시에 해소. 줄리아 시그니처 스윕 **+3.61%**, 헬름 시그니처 실기록 1.334x → **1.319x**,
       합계 1.079x → **1.076x**(17/25 불변). 상세는 `docs/engine-gaps.md`.
+- [x] **명중률 → 탄착군 → 코어히트율 모델 착륙 (2026-08-07, `wip/hit-rate-core-accuracy`
+      브랜치).** `hit_rate`가 `accuracy.core_hit_rate`로 소비자를 얻었다 — 무기별
+      탄착군(AR 75·SG 250·SMG 110·MG/SR/RL 10px, 실측 회귀식 셋이 전부 명중 110%에서
+      지름 0으로 수렴)이 명중률로 좁아지고, 코어 지름과의 면적비가 코어히트 확률이 돼
+      `damage_formula`가 크리티컬과 같은 기대값 항으로 소비한다. 평타에만 적용(코어
+      스트라이크·소환물 자체조준은 조준 문제가 아니라 p=1.0 유지). **`BossProfile.
+      core_diameter_px`는 opt-in, 기본값 `None`** — `RECORD_BOSS`엔 없어 캘리브레이션은
+      1ULP 이내로 불변(1.047x·19/25, 5덱 중 1덱이 8.45e9 중 9.5e-07 차이 — 결합법칙
+      때문이라 보고 수치는 안 움직인다). 15슬러그의 Hit Rate 보류 중 11은 엔진 쪽 블로커가
+      풀렸고(재인코딩은 아래 항목), 4(디젤·마스트·모더니아·앵커)는 자기 자신이
+      RL/MG라 계속 inert — 단 디젤·모더니아·앵커 셋의 명중 버프는 대상이 아군
+      전체라 SG/SMG/AR 아군에게는 재인코딩 시 실제 영향이 있다(자기 한정은
+      마스트뿐). 설계 `docs/superpowers/specs/2026-08-07-hit-rate-core-accuracy-
+      design.md`, 상세는 `docs/engine-gaps.md`.
+- [ ] **로스터 재동기화 필요 — 명중률 오버로드 값 곡선 미확정.** 수집기가 이제
+      「명중률 증가」행을 수집한다(`tools/collect-blablalink/parse.js`)만, 기존
+      로스터 드래프트에는 이 행이 없다. **차지속도의 `lines` 신설 때와 같은 성격의
+      변경**이다 — 재동기화 전까지는 로스터의 명중 오버로드 값이 전부 비어 있다.
+      Fienn이 재동기화 → 재동기화된 드래프트의 `{slot}_equip_option{n}_id`와 HTML
+      합계를 대조해 명중의 효과 타입 번호와 값 곡선을 fit(`base_stat_folded =
+      [6, 13]`의 정체가 여기서 확정) → `data/nikke-stat-tables/tables.json`의
+      `overload.values`/`type_name` 반영.
+- [ ] **11슬러그(엔진 블로커 해소 그룹)의 Hit Rate 재인코딩 — 아직 어느 모듈도
+      `hit_rate`를 Effect로 등록하지 않는다.** 대상: dorothy-serendipity ·
+      jill-valentine · phantom(+시그니처) · chisato-nishikigi · miranda(+시그니처) ·
+      quency-escape-queen · nayuta · soda-twinkling-bunny · sugar(+시그니처) ·
+      drake(+시그니처) · noir. 도로시: 세렌디피티가 최대 수혜자로 예상된다(두 명중
+      버프가 110% 특이점을 넘어 SG 코어히트가 100%가 된다). 상세는
+      `docs/encoded-nikkes.md` 각 행.
+- [ ] **`core_diameter_px`는 API 전용 — 프론트엔드 미노출.** `BossProfileField.tsx`는
+      `core_hittable`과 `pierce_hits_body_behind_core`만 그린다(의도된 스코프,
+      설계 §4). 실기록 보스 외의 보스 코어 크기를 실측하기 전까지는 사용자가 입력할
+      근거 있는 값이 없다 — 언블록 조건은 그 실측.
 
 ### 보스 약점·속성저지·코어 2관통 (2026-08-03, 스펙 착지)
 

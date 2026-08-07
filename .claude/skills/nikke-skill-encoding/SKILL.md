@@ -258,7 +258,7 @@ exactly. In priority order:
   coupling), the settled max is still fine — document the assumption.
 - **Defer + document** when a trigger or mechanic simply doesn't exist yet
   (normal-attack-count, full-charge-count, ammo-expended counters, positional
-  rows, weapon transformation, attack speed, hit rate). Do NOT approximate these
+  rows, weapon transformation, attack speed). Do NOT approximate these
   onto `full_burst_enter` or similar — a wrong trigger silently distorts
   results, which is worse than an honest omission. Equally, do NOT invent a
   placeholder trigger name that nothing fires (e.g. a `shield_applied` trigger)
@@ -289,8 +289,11 @@ silently.
   **Attack Speed and Charge Speed are damage stats too** since Phase S
   (2026-07-16): `attack_rate.py` scales the firing cadence from
   `attack_speed_percent` / `charge_speed_percent`, so in a fixed-length fight
-  they mean more shots. Encode them. Only Hit Rate and Burst Gauge fill speed
-  are still inert — defer + document those.
+  they mean more shots. Encode them. Hit Rate is also a damage stat now
+  (2026-08-07) — it narrows a normal attack's bullet spread against the boss's
+  core (`accuracy.core_hit_rate`), though MG/SR/RL's own spread is already
+  inside any plausible core so it moves nothing for those weapons. Only Burst
+  Gauge fill speed is still inert — defer + document it.
 - **A "deferred" note is a claim about the engine on the day it was written.**
   Before honouring one, check that the capability it names is still missing —
   `references/engine-capabilities.md` and `docs/engine-gaps.md` are the current

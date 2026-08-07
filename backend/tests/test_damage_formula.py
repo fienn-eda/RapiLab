@@ -274,3 +274,39 @@ def test_without_the_collectible_every_reading_is_uniformly_six_percent_low():
               for key, measured in ADE_READINGS.items()]
     assert max(ratios) - min(ratios) < 1e-4, ratios
     assert all(round(1 / r, 3) == 1.060 for r in ratios), ratios
+
+
+def test_core_hit_rate_defaults_to_certainty():
+    # Every existing caller omits it, so the default must leave them unchanged.
+    assert (calculate_damage(atk=1000, enemy_def=0, core_hit_bonus=1.0)
+            == calculate_damage(atk=1000, enemy_def=0, core_hit_bonus=1.0,
+                                core_hit_rate=1.0))
+
+
+def test_core_hit_rate_scales_the_core_term_only():
+    # 1 + 0.5 * 1.0 = 1.5 against the certain hit's 1 + 1.0 = 2.0
+    assert calculate_damage(atk=1000, enemy_def=0, core_hit_bonus=1.0,
+                            core_hit_rate=0.5) == 1500
+
+
+def test_core_damage_sources_ride_inside_the_probability():
+    # They only pay out on a round that actually hit the core.
+    # 1 + 0.5 * (1.0 + 0.4) = 1.7
+    assert calculate_damage(atk=1000, enemy_def=0, core_hit_bonus=1.0,
+                            other_core_damage_sources=0.4,
+                            core_hit_rate=0.5) == 1700
+
+
+def test_core_hit_rate_leaves_the_other_major_modifiers_alone():
+    # crit / full burst / effective range are untouched by the core probability:
+    # 1 + 0.15*0.5 + 0.5*1.0 + 1.0*0.5 + 1.0*0.3 = 2.375
+    assert calculate_damage(
+        atk=1000, enemy_def=0, crit_rate=0.15, core_hit_bonus=1.0,
+        core_hit_rate=0.5, full_burst_bonus=1.0, effective_range_bonus=1.0,
+    ) == 2375
+
+
+def test_a_missed_core_pays_nothing():
+    assert (calculate_damage(atk=1000, enemy_def=0, core_hit_bonus=1.0,
+                             core_hit_rate=0.0)
+            == calculate_damage(atk=1000, enemy_def=0))

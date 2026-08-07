@@ -33,11 +33,19 @@ test('parseOverload maps English labels to the Korean stat names, summed', () =>
     { name: '최대 장탄 수 증가', value: 173.93 },
     { name: '크리티컬 확률 증가', value: 4.69 },
   ])
-  // Moran confirms Charge Speed; Hit Rate / DEF are dropped (not in backend's 7).
+  // Moran confirms Charge Speed. Hit Rate is now mapped; DEF still drops
+  // (the engine consumes enemy DEF only, so an ally DEF stat would be inert).
   const moran = parseOverload(doc('moran'))
   assert.ok(moran.some((o) => o.name === '차지 속도 증가' && o.value === 4.92))
   assert.ok(moran.some((o) => o.name === '크리티컬 대미지 증가' && o.value === 16.44))
-  assert.ok(!moran.some((o) => /명중|Hit|DEF|방어/.test(o.name)))
+  assert.ok(moran.some((o) => o.name === '명중률 증가' && o.value === 17.99))
+  assert.ok(!moran.some((o) => /DEF|방어/.test(o.name)))
+  // Three more fixtures carry a Hit Rate row, at three different totals.
+  const hitRate = (slug) =>
+    parseOverload(doc(slug)).find((o) => o.name === '명중률 증가')?.value
+  assert.equal(hitRate('blanc'), 23.62)
+  assert.equal(hitRate('liter'), 11.81)
+  assert.equal(hitRate('maxwell'), 7.59)
   // An uninvested unit has no equipment, so no overload section.
   assert.deepEqual(parseOverload(doc('neon-blue-ocean')), [])
 })
@@ -63,8 +71,9 @@ test('parseSkills reads level-1 skills for an uninvested unit', () => {
 
 // Blanc is captured with the current per-tab pluck (stat rows, overload, skills, and
 // cube each plucked from their own tab and concatenated) — the format collect.js now
-// produces. It also exercises dropped labels (Hit Rate / DEF) and distinct skill levels.
-test('parses a per-tab-plucked capture (Blanc): stats, dropped overloads, skills, no cube', () => {
+// produces. Its Equipment Effects box carries both a mapped label (Hit Rate) and a
+// dropped one (DEF) alongside distinct skill levels.
+test('parses a per-tab-plucked capture (Blanc): stats, overload, skills, no cube', () => {
   const d = doc('blanc')
   assert.deepEqual(parseMainStats(d), {
     actual: { hp: 10006777, atk: 240903, def: 67080 },
@@ -72,6 +81,7 @@ test('parses a per-tab-plucked capture (Blanc): stats, dropped overloads, skills
   })
   assert.deepEqual(parseOverload(d), [
     { name: '최대 장탄 수 증가', value: 137.86 },
+    { name: '명중률 증가', value: 23.62 },
     { name: '크리티컬 확률 증가', value: 5.71 },
   ])
   assert.deepEqual(parseSkills(d), { skill1: 4, skill2: 7, burst: 9 })
