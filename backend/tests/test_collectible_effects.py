@@ -209,21 +209,20 @@ def test_a_favorite_item_holder_reads_the_top_rung_through_collectible_modifiers
     assert [(e.stat, round(e.value, 5)) for e in effects] == [("max_ammo_percent", 0.095)]
 
 
-def test_level_zero_gives_the_skill_but_no_stat_and_the_tid_is_what_says_equipped():
-    """레벨 0 소장품은 **착용된 상태**다 - 스킬은 나오고 스탯만 아직 0이다.
+def test_level_zero_is_equipped_and_pays_both_its_skill_and_its_stat():
+    """레벨 0 소장품은 **착용된 상태**이고, 스킬과 스탯을 둘 다 사다리 1단으로 낸다.
 
-    두 함수가 서로 다른 축으로 판정하는 것이 우연이 아님을 한 자리에 못 박는다.
-    한쪽을 다른 쪽에 '맞추려는' 수정이 이 테스트를 깨야 한다.
+    착용 여부를 말하는 것은 레벨이 아니라 **tid**다 - 빈 슬롯은 tid가 0이다. 두
+    함수가 tid로 판정하는 것이 우연이 아님을 한 자리에 못 박는다.
 
     - 스킬: Fienn이 레벨 0 보유 9유닛을 인게임에서 전수 확인했다(2026-07-27) -
       헬름: 아쿠아마린 코어 대미지 +10.22%, 볼륨·리터 평타 배율 4.73%,
       D: 킬러 와이프 차지 배율 4.74%, R등급 코어 +5.67% / 최대 장탄 +1.56%.
       전부 사다리 **1단**이고 전부 **적용 중**이었다.
-    - 스탯: 레벨 0에 커브 index 0을 주면 159 측정 유닛 중 **31기**가 정확히 그
-      값만큼(SR 3,029 · R 638) 어긋난다. 배열의 index 0은 레벨 0의 스탯이 아니다.
-    - 착용 여부를 말하는 것은 **tid**다. 빈 슬롯은 tid가 0이다.
+    - 스탯: 레벨 0 착용 31기가 커브 index 0을 정확히 요구한다(SR 3,029 · R 638).
+      리터의 인게임 표시값이 이 읽기를 확정했다(Fienn, 2026-08-07).
     """
-    from app.stat_assembly import collectible_atk, load_stat_tables
+    from app.stat_assembly import collectible_atk, collectible_hp, load_stat_tables
 
     tables = load_stat_tables()
     # 헬름: 아쿠아마린과 같은 상태: SR 등급 AR 소장품, 레벨 0.
@@ -231,12 +230,15 @@ def test_level_zero_gives_the_skill_but_no_stat_and_the_tid_is_what_says_equippe
     assert weapon == {}
     assert [(e.stat, round(e.value, 5)) for e in effects] == [
         ("other_core_damage_sources", 0.1022)]
-    # 같은 슬롯이 스탯은 아직 0이다.
-    assert collectible_atk(tables, 100102, 0) == 0
-    # 그런데 빈 슬롯과는 다르다 - 스킬이 나온다.
+    # 같은 슬롯이 스탯도 사다리 1단으로 낸다.
+    assert collectible_atk(tables, 100102, 0) == 3029
+    assert collectible_hp(tables, 100102, 0) == 94000
+    # 빈 슬롯은 둘 다 없다 - 판별자는 레벨이 아니라 tid.
     assert collectible_modifiers(0, 0, "helm-aquamarine", weapon="AR") == ({}, [])
-    # 레벨 1부터 스탯이 붙는다.
-    assert collectible_atk(tables, 100102, 1) > 0
+    assert collectible_atk(tables, 0, 0) == 0
+    assert collectible_hp(tables, 0, 0) == 0
+    # 레벨이 오르면 사다리를 따라 올라간다.
+    assert collectible_atk(tables, 100102, 1) == 3370
 
 
 def test_a_favorite_item_holder_with_no_record_for_their_weapon_group_degrades_safely():

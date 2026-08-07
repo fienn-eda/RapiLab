@@ -1002,7 +1002,7 @@ tid와 무관하게 `collectible_sample`(= SR MG 레코드) 커브 하나만 읽
 (실계정 50유닛), 레벨 0 착용은 tid가 100xxx(31유닛) — 두 상태는 **완전히 구분된다.**
 `collectible_effects`가 tid로(`if not tid`), `stat_assembly`가 레벨로
 (`if item_level <= 0`) 판정하는 것은 그래서 우연이 아니다.
-`test_level_zero_gives_the_skill_but_no_stat_and_the_tid_is_what_says_equipped`가
+`test_level_zero_is_equipped_and_pays_both_its_skill_and_its_stat`가
 두 반쪽을 한 자리에 못 박는다 — 한쪽을 다른 쪽에 "맞추려는" 수정은 이 테스트를 깬다.
 
 **부수 관찰 — 애장품의 인게임 단계와 API `favorite_item_lv`는 다른 축이다.** 인게임

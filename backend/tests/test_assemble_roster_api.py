@@ -78,13 +78,23 @@ def supporter_core_flat_unmeasured(monkeypatch):
 
     A cored PILGRIM Supporter had no measured per-core flat, stat_assembly
     refused to answer plausibly, and the refusal rose out of the endpoint - so
-    ONE such unit made a whole account unsyncable. The measurement has since
-    landed, and with it no REAL unit can reach that path any more - every class is
-    covered for both tiers. The drop-and-name behaviour is the safety net for the
-    next combination nobody has measured, so the gap is recreated here rather than
-    left untested."""
+    ONE such unit made a whole account unsyncable. NOTHING raises `UnmeasuredStat`
+    any more: the per-core flats it guarded turned out to be the research term's
+    2% and were deleted (2026-08-07), so the model has no fitted constant left to
+    be missing. The drop-and-name behaviour is the safety net for the NEXT
+    combination nobody has measured, so the refusal is injected here rather than
+    left untested - a cored Supporter stands in for whatever that turns out to be.
+    """
     import app.stat_assembly as sa
-    monkeypatch.delitem(sa.CORE_FLAT_ATK_PILGRIM, "Supporter")
+    real = sa.affinity_atk
+
+    def refusing(tables, character_class, affinity_level):
+        if character_class == "Supporter":
+            raise sa.UnmeasuredStat(
+                f"affinity ATK for a {character_class} was never measured")
+        return real(tables, character_class, affinity_level)
+
+    monkeypatch.setattr(sa, "affinity_atk", refusing)
 
 
 def test_a_unit_whose_stat_was_never_measured_is_named_not_a_500(
@@ -99,27 +109,12 @@ def test_a_unit_whose_stat_was_never_measured_is_named_not_a_500(
         "recycle_room_researches": [],
     })
 
+    # The account still syncs: only the refused unit is dropped, and it is named.
     assert response.status_code == 200
     body = response.json()
     assert [u["name_en"] for u in body["units"]] == [attacker["name_en"]]
     assert [u["name_en"] for u in body["unmeasured"]] == [supporter["name_en"]]
     assert "never measured" in body["unmeasured"][0]["reason"]
-
-
-def test_an_uncored_unit_never_needs_the_missing_flat(
-    supporter_core_flat_unmeasured,
-):
-    """`assemble_atk` guards the per-core flat behind `if core:`, which is why the
-    main account synced all along while owning the same Nikkes uncored."""
-    supporter = _pilgrim("Supporter")
-    response = client.post("/api/assemble-roster", json={
-        "owned": [{"name_code": supporter["name_code"], "lv": 1}],
-        "character_details": [_bare_detail(supporter["name_code"], core=0)],
-        "recycle_room_researches": [],
-    })
-    assert response.status_code == 200
-    assert [u["name_en"] for u in response.json()["units"]] == [supporter["name_en"]]
-    assert response.json()["unmeasured"] == []
 
 
 def test_the_sync_delivers_the_per_gear_rolls_not_only_their_total():

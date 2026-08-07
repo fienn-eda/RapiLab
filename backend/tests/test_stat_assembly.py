@@ -18,8 +18,6 @@ from app.stat_assembly import (
     owns_favorite_item,
     breakthrough_multiplier,
     base_atk,
-    core_flat_atk,
-    UnmeasuredStat,
     assemble_atk,
     affinity_hp,
     research_hp,
@@ -27,13 +25,12 @@ from app.stat_assembly import (
     cube_hp,
     collectible_hp,
     base_hp,
-    core_flat_hp,
     assemble_hp,
     load_stat_tables,
 )
 
 # Rapi: Red Hood - Attacker, grade 3 / core 6, measured 143,543 ATK at level 400.
-RAPI_RED_HOOD_RAID400_ATK = 143543
+RAPI_RED_HOOD_RAID400_ATK = 143655
 # The committed public directory snapshot; the ground truth is keyed by name, and
 # resource_id is what the calculator identifies a unit by.
 DIRECTORY = (
@@ -93,8 +90,9 @@ def test_assemble_atk_reproduces_a_measured_unit(tables):
         level=400,
         grade=3,
         core=6,
-        affinity_flat=2340,        # affinity 40; scaled by the core step
-        extra_flat=33120,          # gear + cube + collectible, affinity removed
+        affinity_flat=2340,        # affinity 40; inside the core step
+        research_flat=4350,        # ELYSION research rank 174; inside the core step
+        extra_flat=28870,          # gear + cube + collectible; outside it
     )
     assert atk == pytest.approx(RAPI_RED_HOOD_RAID400_ATK, abs=1.0)
 
@@ -111,78 +109,11 @@ def test_assemble_atk_without_extra_flat_undershoots_a_geared_unit(tables):
 # --- per-core flat ------------------------------------------------------------
 
 
-def test_core_flat_atk_defaults_to_the_class_value():
-    # Refitted 2026-07-25 with affinity inside the core step; each dropped by
-    # 0.02 * the affinity its group had been absorbing.
-    assert core_flat_atk("Attacker") == pytest.approx(86.152)
-    assert core_flat_atk("Supporter") == pytest.approx(85.992)
-    assert core_flat_atk("Defender") == pytest.approx(85.968)
-
-
-def test_pilgrims_get_more_atk_per_core(tables):
-    # Scarlet and the other four Pilgrim Attackers all measure ~10 more per core
-    # than every other SSR Attacker. Fitted on eight cored ground-truth units.
-    assert core_flat_atk("Attacker", corporation="PILGRIM") == pytest.approx(96.151)
-    assert core_flat_atk("Defender", corporation="PILGRIM") == pytest.approx(96.022)
-    assert core_flat_atk("Attacker", corporation="ELYSION") == pytest.approx(86.152)
-
-
-def test_there_is_no_overspec_tier():
-    """OVERSPEC used to sit between class and Pilgrim, and it was affinity in
-    disguise: every cored OVERSPEC unit in the ground truth is at affinity 40
-    while the class rows were fitted at 30. Refitted with affinity inside the
-    core step, OVERSPEC Attackers come out at 86.119 against 86.152 for everyone
-    else - the same row - so the tier is gone."""
-    assert core_flat_atk("Attacker") == pytest.approx(86.152)
-    assert core_flat_atk("Attacker", corporation="ELYSION") == pytest.approx(86.152)
-    assert core_flat_atk("Attacker", corporation="PILGRIM") == pytest.approx(96.151)
-
-
-def test_the_three_former_outliers_need_no_row_of_their_own():
-    """Vesti, Rosanna and Nero used to carry per-unit rows recorded as
-    unexplained. They are the only cored units in the ground truth at affinity
-    10, where their class row was fitted at 30 - so with affinity inside the core
-    step they land on the class value and the mechanism is gone. The full-roster
-    parity below is what proves it: all three are in it."""
-    import inspect
-    from app import stat_assembly
-    assert not hasattr(stat_assembly, "CORE_FLAT_ATK_BY_RESOURCE_ID")
-    assert not hasattr(stat_assembly, "CORE_FLAT_HP_BY_RESOURCE_ID")
-    assert "resource_id" not in inspect.signature(core_flat_atk).parameters
-
-
-def test_core_flat_atk_rejects_an_unknown_class():
-    with pytest.raises(KeyError):
-        core_flat_atk("Healer")
-
-
-def test_pilgrim_buys_a_supporter_nothing_per_core():
-    """Reading four Supporters off ShiftyPad by stepping only the core - Grave,
-    Dorothy and Nayuta (Pilgrims) plus Naga (MISSILIS) - puts all four in one
-    cluster 0.67 wide, against +9.95 for a Pilgrim Attacker. So the Pilgrim row
-    repeats the class value for Supporters rather than leaving them unmeasured."""
-    assert (core_flat_atk("Supporter", corporation="PILGRIM")
-            == core_flat_atk("Supporter"))
-    assert core_flat_atk("Attacker", corporation="PILGRIM") > core_flat_atk("Attacker")
-
-
-def test_an_unmeasured_combination_still_refuses_to_guess(monkeypatch):
-    """Every class is covered for both tiers today, so the refusal is unreachable
-    with real data - recreate the gap rather than lose the guard. It is what
-    turned a sub-account's first sync into a 500 until assemble_roster learned to
-    drop just that unit, and it protects the next unmeasured combination."""
-    from app import stat_assembly
-    monkeypatch.delitem(stat_assembly.CORE_FLAT_ATK_PILGRIM, "Supporter")
-    with pytest.raises(UnmeasuredStat, match="never measured"):
-        core_flat_atk("Supporter", corporation="PILGRIM")
-
-
 def test_a_coreless_unit_needs_no_identity(tables):
     # A unit with no cores never reaches the per-core flat, so an un-measured
     # Pilgrim Supporter still assembles as long as it has no cores.
     assert assemble_atk(
         tables, character_class="Supporter", level=400, grade=3, core=0,
-        corporation="PILGRIM",
     ) > 0
 
 
@@ -220,8 +151,9 @@ def test_the_snapshot_carries_the_overspec_field(identity):
     """
     overspec = {n for n, e in identity.items() if e["corporation_sub_type"] == "OVERSPEC"}
     assert {"Rapi: Red Hood", "Anis: Star", "Neon: Vision Eye"} <= overspec
-    # Every Pilgrim measured is OVERSPEC, which is why corporation alone settles
-    # a Pilgrim in core_flat_atk.
+    # Every Pilgrim measured is OVERSPEC, which is why corporation alone used to
+    # settle a Pilgrim's per-core row - before the row turned out to be its
+    # research rank.
     assert {"Scarlet", "Modernia", "Red Hood", "Noah", "Crown", "Cinderella"} <= overspec
 
 
@@ -236,7 +168,7 @@ def test_ground_truth_spans_two_levels(ground_truth):
     # The whole point of the fixture: one level cannot separate a base-scaled
     # term from a flat one, so a single-level fixture would silently pass a
     # wrong formula.
-    assert {u["level"] for u in ground_truth} == {1, 663}
+    assert {u["level"] for u in ground_truth} == {1, 668}
     assert len(ground_truth) == 159
 
 
@@ -304,8 +236,10 @@ def test_affinity_atk_clamps_level_0_to_the_level_1_floor(tables):
 
 def test_corporation_atk_is_per_rank(tables, ground_truth_ranks):
     # Popup: 엘리시온 RANK 170 -> 4,250 ATK, i.e. 25 per rank rather than 25 total.
-    assert corporation_atk(tables, "ELYSION", ground_truth_ranks) == 4250
-    assert corporation_atk(tables, "PILGRIM", ground_truth_ranks) == 4750
+    # The account has since researched further; the per-rank shape is what is pinned.
+    assert corporation_atk(tables, "ELYSION", ground_truth_ranks) == 4350
+    assert corporation_atk(tables, "PILGRIM", ground_truth_ranks) == 4850
+    assert corporation_atk(tables, "ELYSION", {"1201": 170}) == 4250
 
 
 def test_an_unresearched_corporation_contributes_nothing(tables):
@@ -323,7 +257,10 @@ def test_flat_model_reproduces_every_ungeared_unit(
     """
     exact, deviating = 0, []
     for u in ground_truth:
-        if u["favorite_item_lv"] or u["harmony_cube_lv"] or max(e["tier"] for e in u["equip"]):
+        # A collectible is EQUIPPED per its tid, never its level - level 0 is a
+        # real rung that pays a stat, so filtering on the level would leave 31
+        # holders in a set that claims to have no collectible.
+        if u["favorite_item_tid"] or u["harmony_cube_lv"] or max(e["tier"] for e in u["equip"]):
             continue
         predicted = assemble_atk(
             tables,
@@ -331,9 +268,8 @@ def test_flat_model_reproduces_every_ungeared_unit(
             level=400,
             grade=u["grade"],
             core=u["core"],
-            corporation=u["corporation"],
             affinity_flat=affinity_atk(tables, u["class"], u["attractive_lv"]),
-            extra_flat=corporation_atk(tables, u["corporation"], ground_truth_ranks),
+            research_flat=corporation_atk(tables, u["corporation"], ground_truth_ranks),
         )
         delta = u["measured"]["raid400_atk"] - predicted
         if abs(delta) < 1.0:
@@ -396,32 +332,30 @@ def test_gear_only_units_reproduce_exactly(
     """End-to-end over every unit with gear but no cube or collectible."""
     exact, off = 0, []
     for u in ground_truth:
-        if u["harmony_cube_lv"] or u["favorite_item_lv"]:
+        if u["harmony_cube_lv"] or u["favorite_item_tid"]:  # equipped is the tid
             continue
-        flat = (
-            corporation_atk(tables, u["corporation"], ground_truth_ranks)
-            + sum(
-                equipment_atk(
-                    tables,
-                    x["tid"],
-                    x["lv"],
-                    equip_corporation_type=x["corporation_type"],
-                    unit_corporation=u["corporation"],
-                )
-                for x in u["equip"]
+        flat = sum(
+            equipment_atk(
+                tables,
+                x["tid"],
+                x["lv"],
+                equip_corporation_type=x["corporation_type"],
+                unit_corporation=u["corporation"],
             )
+            for x in u["equip"]
         )
         predicted = assemble_atk(
             tables, character_class=u["class"], level=400,
-            grade=u["grade"], core=u["core"], corporation=u["corporation"],
+            grade=u["grade"], core=u["core"],
             affinity_flat=affinity_atk(tables, u["class"], u["attractive_lv"]),
+            research_flat=corporation_atk(tables, u["corporation"], ground_truth_ranks),
             extra_flat=flat,
         )
         delta = u["measured"]["raid400_atk"] - predicted
         exact += abs(delta) < 1.0
         if abs(delta) >= 1.0:
             off.append((u["name_en"], round(delta, 1)))
-    assert exact >= 74, f"regression: only {exact} exact (was 74)"
+    assert exact >= 48, f"regression: only {exact} exact (was 48)"
     assert off == [], off
 
 
@@ -442,10 +376,11 @@ def test_collectible_atk_is_indexed_by_level(tables):
 
 
 def test_an_unequipped_collectible_contributes_nothing(tables):
+    # An EMPTY slot reports tid 0. A tid at level 0 is equipped and pays the
+    # curve's first rung, so the level can never stand in for this check.
     assert collectible_atk(tables, 0, 0) == 0
-    # A tid with level 0 is an empty slot: the curve has an entry at index 0
-    # (3,029) but such units measure no contribution.
-    assert collectible_atk(tables, 100202, 0) == 0
+    assert collectible_atk(tables, 0, 5) == 0
+    assert collectible_atk(tables, 100202, 0) == 3029
 
 
 def test_a_favorite_item_is_priced_at_the_curve_maximum(tables):
@@ -464,8 +399,7 @@ def test_full_model_reproduces_the_whole_roster(
     exact, off = 0, []
     for u in ground_truth:
         flat = (
-            corporation_atk(tables, u["corporation"], ground_truth_ranks)
-            + sum(
+            sum(
                 equipment_atk(
                     tables, x["tid"], x["lv"],
                     equip_corporation_type=x["corporation_type"],
@@ -478,8 +412,9 @@ def test_full_model_reproduces_the_whole_roster(
         )
         predicted = assemble_atk(
             tables, character_class=u["class"], level=400,
-            grade=u["grade"], core=u["core"], corporation=u["corporation"],
+            grade=u["grade"], core=u["core"],
             affinity_flat=affinity_atk(tables, u["class"], u["attractive_lv"]),
+            research_flat=corporation_atk(tables, u["corporation"], ground_truth_ranks),
             extra_flat=flat,
         )
         delta = u["measured"]["raid400_atk"] - predicted
@@ -500,26 +435,14 @@ def test_base_hp_reads_the_class_curve(tables):
     assert base_hp(tables, "Defender", 1) == 16500
 
 
-def test_core_flat_hp_is_settled_by_class_alone(tables):
-    """HP needs no corporation row at all. The OVERSPEC/Pilgrim tier and the
-    three per-unit rows that used to live here were affinity in disguise;
-    refitted with affinity inside the core step, class alone reproduces all 159
-    (worst 0.87)."""
-    import inspect
-    assert core_flat_hp("Attacker") == pytest.approx(5610.022)
-    assert core_flat_hp("Supporter") == pytest.approx(5474.792)
-    assert core_flat_hp("Defender") == pytest.approx(5699.796)
-    assert list(inspect.signature(core_flat_hp).parameters) == ["character_class"]
-
-
 def test_research_hp_is_personal_plus_class_not_corporation(tables, ground_truth_ranks):
     # HP account research lives in the Personal (account-wide) and Class-specific
     # rows; the Corporation rows carry ATK, not HP (their hp column is 0). So
     # research HP depends on class, and is the same across corporations.
-    # Attacker: Personal rank 310 * 450 + Class rank 176 * 750 = 271500.
-    assert research_hp(tables, "Attacker", ground_truth_ranks) == 271500
-    assert research_hp(tables, "Defender", ground_truth_ranks) == 276000
-    assert research_hp(tables, "Supporter", ground_truth_ranks) == 264750
+    # Attacker: Personal rank 310 * 450 + Class rank 179 * 750 = 273750.
+    assert research_hp(tables, "Attacker", ground_truth_ranks) == 273750
+    assert research_hp(tables, "Defender", ground_truth_ranks) == 279000
+    assert research_hp(tables, "Supporter", ground_truth_ranks) == 267000
 
 
 def test_missing_research_rows_count_as_rank_zero(tables, ground_truth_ranks):
@@ -549,8 +472,7 @@ def test_full_hp_model_reproduces_the_whole_roster(
     exact, off = 0, []
     for u in ground_truth:
         flat = (
-            research_hp(tables, u["class"], ground_truth_ranks)
-            + sum(
+            sum(
                 equipment_hp(
                     tables, x["tid"], x["lv"],
                     equip_corporation_type=x["corporation_type"],
@@ -565,6 +487,7 @@ def test_full_hp_model_reproduces_the_whole_roster(
             tables, character_class=u["class"], level=400,
             grade=u["grade"], core=u["core"],
             affinity_flat_hp=affinity_hp(tables, u["class"], u["attractive_lv"]),
+            research_flat_hp=research_hp(tables, u["class"], ground_truth_ranks),
             extra_flat_hp=flat,
         )
         delta = u["measured"]["raid400_hp"] - predicted
@@ -573,3 +496,50 @@ def test_full_hp_model_reproduces_the_whole_roster(
             off.append((u["name_en"], round(delta, 1)))
     assert off == [], off
     assert exact == 159, f"only {exact}/159 exact"
+
+
+# --- the core step scales the research term ------------------------------------
+
+
+def test_the_core_step_scales_everything_above_the_gear_line(tables, ground_truth,
+                                                             ground_truth_ranks):
+    """The whole model, with no fitted per-core constant anywhere.
+
+    A core scales base, grade, affinity AND the account's research term - so the
+    research rank is what the old per-core flats were measuring. That is why
+    PILGRIM looked worth ~10 more per core (its research rank sits 20 above the
+    rest: 20 * 25 ATK * 0.02 = 10) and why every class appeared to gain ~2 per
+    core when the account researched 4 more ranks (4 * 25 * 0.02 = 2).
+
+    The floor is load-bearing: the game truncates the scaled part before the core
+    multiplier, and without it 15 units miss by up to 1.4.
+    """
+    off = []
+    for u in ground_truth:
+        predicted = assemble_atk(
+            tables, character_class=u["class"], level=400,
+            grade=u["grade"], core=u["core"],
+            affinity_flat=affinity_atk(tables, u["class"], u["attractive_lv"]),
+            research_flat=corporation_atk(tables, u["corporation"], ground_truth_ranks),
+            extra_flat=(
+                sum(equipment_atk(tables, e["tid"], e["lv"],
+                                  equip_corporation_type=e["corporation_type"],
+                                  unit_corporation=u["corporation"]) for e in u["equip"])
+                + cube_atk(tables, u["harmony_cube_lv"])
+                + collectible_atk(tables, u["favorite_item_tid"], u["favorite_item_lv"])
+            ),
+        )
+        delta = u["measured"]["raid400_atk"] - predicted
+        if abs(delta) >= 1.0:
+            off.append((u["name_en"], round(delta, 2)))
+    assert off == [], off[:5]
+
+
+def test_no_per_core_constant_survives():
+    """The tables were the model's only fitted numbers. Re-introducing one would
+    hide a research-rank change as a constant again, which is exactly how a
+    4-rank bump read as "the game raised the per-core value"."""
+    from app import stat_assembly
+    for name in ("CORE_FLAT_ATK", "CORE_FLAT_ATK_PILGRIM", "CORE_FLAT_ATK_TETRA",
+                 "CORE_FLAT_HP", "core_flat_atk", "core_flat_hp"):
+        assert not hasattr(stat_assembly, name), name

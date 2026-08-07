@@ -6,44 +6,43 @@ it in the browser - and scraping it costs one page load per unit. Computing it
 instead is what lets a roster be read from the API alone, which is the
 precondition for syncing a roster we cannot scrape (i.e. anyone else's).
 
-THE MODEL (reproduces all 159 collected units exactly)
+THE MODEL (reproduces all 159 collected units, worst 0.5)
 
-    atk = base[class][level] * (1 + 0.02*grade) * (1 + 0.02*core)
-          + grade*grade_attack
-          + affinity_flat * (1 + 0.02*core)
-          + core*core_flat_atk(unit)
-          + extra_flat
+    stat = floor( base[class][level] * (1 + 0.02*grade)
+                  + grade*grade_<stat>
+                  + affinity_flat
+                  + research_flat )
+           * (1 + 0.02*core)
+           + equipment + cube + collectible
+
+A core scales EVERYTHING above the gear line - base, the grade flat, affinity and
+the account's research term - while gear, cube and collectible sit outside it.
+The model has no fitted constant left: `research_flat` is corporation_atk for ATK
+and research_hp for HP, both read straight off the account's recycle-room ranks.
+
+The per-core flats this module used to carry (CORE_FLAT_ATK / _PILGRIM /
+CORE_FLAT_HP) were measuring the research term's 2%, which is why they moved
+whenever the account researched and why PILGRIM appeared to be worth ~10 more per
+core: its research rank sits 20 above the other corporations, and
+20 ranks * 25 ATK * 0.02 = 10. A 4-rank account-wide bump likewise read as "every
+class gained 2 per core" (4 * 25 * 0.02 = 2), and a corporation that gained one
+extra rank read as a whole new corporation row. None of those were real.
+(Fienn asked whether the console ranks had been accounted for, 2026-08-07 - they
+had not, and that question is what collapsed eleven fitted constants to zero.)
 
 The two breakthrough terms MULTIPLY - grade 3 with core 1 measures 1.0812, not
 the 1.08 an additive model predicts. This also identifies `grade_ratio=200` in
-the game tables as "2% per step", which earlier research had recorded as
-unknown. Affinity is NOT part of the GRADE step (units sharing a grade but
-differing in affinity all measure exactly 1.02) but it IS part of the core step -
-each core is worth 2% of the affinity bonus as well as 2% of base.
+the game tables as "2% per step", which earlier research had recorded as unknown.
 
-That last term was found on 2026-07-25 and is what the model had been missing.
-Adding affinity outside the multiplier still reproduced all 159 units, because it
-was absorbed into the per-core flats - which worked only because every cored unit
-inside a fitted group happens to share one affinity level. Two things gave it
-away: three units (Vesti, Rosanna, Nero) carried per-unit rows recorded as
-unexplained, and they are exactly the cored units at affinity 10 where their class
-row was fitted at 30; and four Pilgrim/MISSILIS Supporters read off ShiftyPad at
-affinities 20-40 disagreed by up to 22 per core under the old reading and agree to
-0.67 under this one. Putting affinity in its place deleted those three rows AND
-the OVERSPEC tier (also affinity in disguise: every cored OVERSPEC unit sits at
-affinity 40) and left ATK needing one Pilgrim row and HP needing none.
-
-`extra_flat` is assembled by the caller from the helpers below - corporation_atk,
-equipment_atk, cube_atk and collectible_atk, but NOT affinity_atk, which travels
-separately for the reason above. It is deliberately NOT defaulted to a guess, so
-an un-modelled unit reads as obviously wrong rather than plausibly wrong.
+The floor is load-bearing, not cosmetic: the game truncates the scaled part
+before applying the core multiplier. Without it 15 units miss by up to 1.4, and
+no choice of constants fixes them (see the interval solve in the 2026-08-07
+decision entry).
 
 WHAT IS NOT YET DERIVED
 
-Why a Pilgrim is worth ~10 more ATK per core than everyone else, and why the
-per-core flats are what they are rather than something the game tables state -
-they are still fitted, not read off a table. HP is modelled the same way (see the
-HP section below) and also reproduces all 159; DEF is not, as no caller reads it.
+Nothing in the ATK/HP path - both reproduce all 159 units from table values
+alone. DEF is not modelled, as no caller reads it.
 See docs/superpowers/specs/2026-07-18-stat-assembly-calculator-design.md.
 """
 import json
@@ -97,36 +96,6 @@ def core_scale(core: int) -> float:
     return 1 + BREAKTHROUGH_STEP * core
 
 
-# Flat ATK per core, on top of the 2% core step above. The stat_enhance table
-# lists core_attack = 200 for every class, but that value does not reproduce a
-# single measured unit; these do. Read off ShiftyPad's core screen, where each
-# extra core is worth a fixed amount at a fixed level: an Attacker (Brid) gains
-# 2,034 per core at level 400 and 6,950 at 663, and subtracting the 2% step
-# (base * 0.02 * 1.06) leaves ~119 at BOTH levels - so the remainder is flat and
-# level-independent. Refitted 2026-07-25 across every cored unit of the class,
-# once affinity moved inside the core step (see `assemble_atk`); the numbers each
-# dropped by 0.02 * that group's affinity, which is what they had been absorbing.
-CORE_FLAT_ATK = {"Attacker": 86.152, "Supporter": 85.992, "Defender": 85.968}
-
-# Pilgrims are worth about 10 more per core than their class. Measured on eight
-# ground-truth units (five Attackers, three Defenders) with no counter-example.
-#
-# Supporter is NOT one of them: no cored Pilgrim Supporter exists in the ground
-# truth, and reading four Supporters off ShiftyPad the same way (Grave, Dorothy,
-# Nayuta - Pilgrims - plus Naga, a MISSILIS Supporter) puts all four in one
-# cluster 0.67 wide. Whatever Pilgrim does for an Attacker (+9.95) or a Defender
-# (+10.05), it does nothing measurable for a Supporter, so this row repeats the
-# class value rather than leaving the combination unmeasured.
-CORE_FLAT_ATK_PILGRIM = {"Attacker": 96.151, "Defender": 96.022,
-                         "Supporter": CORE_FLAT_ATK["Supporter"]}
-
-# There is no OVERSPEC tier. It looked like one because every cored OVERSPEC unit
-# in the ground truth sits at affinity 40 while the class rows were fitted on
-# affinity 30 - so the gap it appeared to open was affinity's core scaling in
-# disguise. Refitting with affinity in its proper place puts OVERSPEC Attackers at
-# 86.119 against 86.152 for everyone else, i.e. on the same row.
-
-
 class UnmeasuredStat(KeyError):
     """A stat this account needs was never measured, so no honest value exists.
 
@@ -137,31 +106,6 @@ class UnmeasuredStat(KeyError):
     see roster_assembly.assemble_roster. Subclasses KeyError so existing handlers
     keep working.
     """
-
-
-def core_flat_atk(character_class: str, *, corporation: str | None = None) -> float:
-    """Flat ATK each core is worth for this unit: a Pilgrim row over a class row.
-
-    There used to be a third, per-unit row for Vesti, Rosanna and Nero, recorded as
-    unexplained. They are explained: they are the only cored units in the ground
-    truth at affinity 10 where their class row was fitted at 30, and once affinity
-    scales with the core step (`assemble_atk`) they land on the class value within
-    0.01. No unit needs an override any more.
-    """
-    if character_class not in CORE_FLAT_ATK:
-        raise KeyError(
-            f"no core flat for class {character_class!r}; have {sorted(CORE_FLAT_ATK)}"
-        )
-    table = CORE_FLAT_ATK_PILGRIM if corporation == "PILGRIM" else CORE_FLAT_ATK
-    try:
-        return table[character_class]
-    except KeyError:
-        # Every class is covered for both tiers today, so this is reachable only
-        # by a class the tables have never seen. Falling back would be wrong by
-        # ~10 per core, so say so rather than answer plausibly.
-        raise UnmeasuredStat(
-            f"core flat ATK for a {corporation} {character_class} was never measured"
-        ) from None
 
 
 # Which recycle-room research row ranks each corporation. Only PILGRIM and
@@ -318,19 +262,10 @@ def collectible_atk(tables: dict[str, Any], item_tid: int, item_level: int) -> i
         # game's own favorite-item records agree: their curve is flat at that
         # value across all three of their levels.
         return curve[-1]
-    if item_level <= 0:
-        # A LEVEL-0 COLLECTIBLE IS EQUIPPED - it just carries no stat yet. Its
-        # SKILL is already active (Fienn read all nine of his level-0 holders
-        # in-game, 2026-07-27: Helm: Aquamarine's +10.22% core damage and the
-        # rest, exactly the ladder's first rung), while its ATK/HP start at
-        # level 1. The curve does have an entry at index 0, and crediting it
-        # breaks 31 of the 159 measured units by exactly that entry (3,029 for
-        # SR, 638 for R) - so the array's index 0 is not a level-0 stat.
-        #
-        # Equipped-vs-empty is answered by the TID, never by the level: an empty
-        # slot reports tid 0. `collectible_effects` keys on the tid for that
-        # reason; the two functions differ because the two axes really differ.
-        return 0
+    # Level 0 is a real rung, not an empty slot: the curve's index 0 IS its
+    # stat, the same way index 0 of the skill ladder is its skill. Equipped-vs-
+    # empty is answered by the TID - an empty slot reports tid 0 - which is why
+    # `collectible_effects` keys on the tid too.
     return curve[item_level]
 
 
@@ -388,23 +323,6 @@ def base_hp(tables: dict[str, Any], character_class: str, level: int) -> int:
 # at affinity 40 while the class rows were fitted at 30 - and once affinity scales
 # properly, class alone reproduces all 159 units (worst 0.87). ATK still needs a
 # Pilgrim row; HP does not.
-CORE_FLAT_HP = {"Attacker": 5610.022, "Supporter": 5474.792, "Defender": 5699.796}
-
-
-def core_flat_hp(character_class: str) -> float:
-    """Flat HP each core is worth for this unit - class alone settles it.
-
-    Both the OVERSPEC/Pilgrim tier and the three per-unit rows that used to live
-    here were affinity in disguise; see `core_flat_atk`. HP, unlike ATK, needs no
-    corporation row at all once affinity is scaled properly.
-    """
-    if character_class not in CORE_FLAT_HP:
-        raise KeyError(
-            f"no core flat for class {character_class!r}; have {sorted(CORE_FLAT_HP)}"
-        )
-    return CORE_FLAT_HP[character_class]
-
-
 # Account research that adds HP: the Personal (account-wide) row and the
 # Class-specific row. The Corporation rows carry ATK, not HP - their hp column is
 # 0 - which is why HP research keys on class where ATK keys on corporation.
@@ -495,8 +413,6 @@ def collectible_hp(tables: dict[str, Any], item_tid: int, item_level: int) -> in
     curve = _collectible_curve(tables, item_tid, "hp")
     if item_tid >= FAVORITE_ITEM_TID_BASE:
         return curve[-1]
-    if item_level <= 0:
-        return 0
     return curve[item_level]
 
 
@@ -508,19 +424,24 @@ def assemble_hp(
     grade: int,
     core: int,
     affinity_flat_hp: float = 0.0,
+    research_flat_hp: float = 0.0,
     extra_flat_hp: float = 0.0,
 ) -> float:
     """Solo-raid HP for one unit, the HP sibling of assemble_atk. DEF is not
-    modelled - the simulator never reads it. `extra_flat_hp` is assembled by the
-    caller from research_hp, equipment_hp, cube_hp and collectible_hp; affinity is
-    passed separately because it scales with the core step (see assemble_atk).
+    modelled - the simulator never reads it.
+
+    `research_flat_hp` is `research_hp` and rides inside the core step with base,
+    grade and affinity; `extra_flat_hp` is equipment + cube + collectible and
+    sits outside it.
     """
     enhance = tables["classes"][character_class]["stat_enhance"]
-    scaled = base_hp(tables, character_class, level) * breakthrough_multiplier(grade, core)
-    flat = grade * enhance["grade_hp"] + affinity_flat_hp * core_scale(core)
-    if core:
-        flat += core * core_flat_hp(character_class)
-    return scaled + flat + extra_flat_hp
+    scaled = math.floor(
+        base_hp(tables, character_class, level) * (1 + BREAKTHROUGH_STEP * grade)
+        + grade * enhance["grade_hp"]
+        + affinity_flat_hp
+        + research_flat_hp
+    )
+    return scaled * core_scale(core) + extra_flat_hp
 
 
 def assemble_atk(
@@ -530,25 +451,27 @@ def assemble_atk(
     level: int,
     grade: int,
     core: int,
-    corporation: str | None = None,
     affinity_flat: float = 0.0,
+    research_flat: float = 0.0,
     extra_flat: float = 0.0,
 ) -> float:
-    """Solo-raid ATK for one unit. `extra_flat` covers what is not yet derived.
+    """Solo-raid ATK for one unit.
 
-    AFFINITY IS NOT PART OF `extra_flat`. It scales with the core step - each core
-    is worth 2% of the affinity bonus as well as 2% of base - so it arrives
-    separately and gets multiplied by `core_scale`. Reading it as a plain flat
-    addition is what made three units (Vesti, Rosanna, Nero) look like unexplained
-    outliers and made an OVERSPEC tier appear where there is none: those are the
-    units and groups whose affinity differs from the row they were fitted against.
+    THE CORE STEP SCALES EVERYTHING ABOVE THE GEAR LINE. Base, the grade flat,
+    affinity and `research_flat` (the account's corporation research) all ride
+    inside it; `extra_flat` - equipment, cube, collectible - sits outside. That
+    is why this function takes the research term separately instead of letting
+    the caller fold it into `extra_flat`.
 
-    `corporation` only selects the per-core flat, so a unit without cores needs it
-    no more than it needs affinity.
+    `math.floor` before the core multiplier is measured, not defensive: the game
+    truncates there, and 15 of the 159 ground-truth units miss by up to 1.4
+    without it.
     """
     enhance = tables["classes"][character_class]["stat_enhance"]
-    scaled = base_atk(tables, character_class, level) * breakthrough_multiplier(grade, core)
-    flat = grade * enhance["grade_attack"] + affinity_flat * core_scale(core)
-    if core:
-        flat += core * core_flat_atk(character_class, corporation=corporation)
-    return scaled + flat + extra_flat
+    scaled = math.floor(
+        base_atk(tables, character_class, level) * (1 + BREAKTHROUGH_STEP * grade)
+        + grade * enhance["grade_attack"]
+        + affinity_flat
+        + research_flat
+    )
+    return scaled * core_scale(core) + extra_flat

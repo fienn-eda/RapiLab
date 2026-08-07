@@ -1,14 +1,14 @@
 {
   "account_research": {
     "1001": 310,
-    "1101": 176,
-    "1102": 182,
-    "1103": 167,
-    "1201": 170,
-    "1202": 170,
-    "1203": 170,
-    "1204": 190,
-    "1205": 164
+    "1101": 179,
+    "1102": 186,
+    "1103": 170,
+    "1201": 174,
+    "1202": 174,
+    "1203": 175,
+    "1204": 194,
+    "1205": 168
   },
   "units": [
     {
@@ -53,10 +53,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 69677,
-        "actual_atk": 9865,
-        "raid400_hp": 2980903,
-        "actual_hp": 513644
+        "raid400_atk": 69777,
+        "actual_atk": 9965,
+        "raid400_hp": 2983903,
+        "actual_hp": 516644
       }
     },
     {
@@ -101,10 +101,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 102287,
-        "actual_atk": 12569,
-        "raid400_hp": 2458823,
-        "actual_hp": 440156
+        "raid400_atk": 102387,
+        "actual_atk": 12669,
+        "raid400_hp": 2461073,
+        "actual_hp": 442406
       }
     },
     {
@@ -149,10 +149,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 120692,
-        "actual_atk": 30974,
-        "raid400_hp": 2932980,
-        "actual_hp": 914313
+        "raid400_atk": 120792,
+        "actual_atk": 31074,
+        "raid400_hp": 2935230,
+        "actual_hp": 916563
       }
     },
     {
@@ -162,7 +162,7 @@
       "level": 1,
       "grade": 2,
       "core": 0,
-      "attractive_lv": 15,
+      "attractive_lv": 19,
       "favorite_item_lv": 0,
       "favorite_item_tid": 0,
       "harmony_cube_lv": 0,
@@ -197,17 +197,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 83135,
-        "actual_atk": 5380,
-        "raid400_hp": 2636140,
-        "actual_hp": 303459
+        "raid400_atk": 83461,
+        "actual_atk": 5706,
+        "raid400_hp": 2644413,
+        "actual_hp": 311732
       }
     },
     {
       "name_en": "Ade: Agent Bunny",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 2,
       "core": 0,
       "attractive_lv": 30,
@@ -220,7 +220,7 @@
           "tid": 3131001,
           "tier": 10,
           "corporation_type": 0,
-          "lv": 3
+          "lv": 4
         },
         {
           "slot": "torso",
@@ -245,10 +245,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 100417,
-        "actual_atk": 301402,
-        "raid400_hp": 3117363,
-        "actual_hp": 9146945
+        "raid400_atk": 101043,
+        "actual_atk": 304238,
+        "raid400_hp": 3125077,
+        "actual_hp": 9220959
       }
     },
     {
@@ -293,17 +293,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 84612,
-        "actual_atk": 5362,
-        "raid400_hp": 2682843,
-        "actual_hp": 305303
+        "raid400_atk": 84712,
+        "actual_atk": 5462,
+        "raid400_hp": 2685093,
+        "actual_hp": 307553
       }
     },
     {
       "name_en": "Alice",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 7,
       "attractive_lv": 30,
@@ -341,17 +341,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 141794,
-        "actual_atk": 422029,
-        "raid400_hp": 3437754,
-        "actual_hp": 9743073
+        "raid400_atk": 141937,
+        "actual_atk": 425253,
+        "raid400_hp": 3440319,
+        "actual_hp": 9814969
       }
     },
     {
       "name_en": "Alice: Wonderland Bunny",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -389,23 +389,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 92065,
-        "actual_atk": 301013,
-        "raid400_hp": 2915862,
-        "actual_hp": 9184308
+        "raid400_atk": 95222,
+        "actual_atk": 306467,
+        "raid400_hp": 3012157,
+        "actual_hp": 9349530
       }
     },
     {
       "name_en": "Anchor: Innocent Maid",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100302,
-      "harmony_cube_lv": 0,
+      "harmony_cube_lv": 15,
       "equip": [
         {
           "slot": "head",
@@ -437,17 +437,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 110523,
-        "actual_atk": 319471,
-        "raid400_hp": 3465801,
-        "actual_hp": 9734247
+        "raid400_atk": 113405,
+        "actual_atk": 324650,
+        "raid400_hp": 3551496,
+        "actual_hp": 9888869
       }
     },
     {
       "name_en": "Anis: Sparkling Summer",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -485,23 +485,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 103208,
-        "actual_atk": 296463,
-        "raid400_hp": 3223936,
-        "actual_hp": 9021611
+        "raid400_atk": 103333,
+        "actual_atk": 298713,
+        "raid400_hp": 3226186,
+        "actual_hp": 9087611
       }
     },
     {
       "name_en": "Anis: Star",
       "class": "Defender",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 40,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100302,
-      "harmony_cube_lv": 15,
+      "harmony_cube_lv": 0,
       "equip": [
         {
           "slot": "head",
@@ -533,17 +533,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 94492,
-        "actual_atk": 261649,
-        "raid400_hp": 3855268,
-        "actual_hp": 10750559
+        "raid400_atk": 91839,
+        "actual_atk": 260835,
+        "raid400_hp": 3774928,
+        "actual_hp": 10746038
       }
     },
     {
       "name_en": "Arcana",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -581,17 +581,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 110340,
-        "actual_atk": 319288,
-        "raid400_hp": 3417985,
-        "actual_hp": 9686431
+        "raid400_atk": 110442,
+        "actual_atk": 321687,
+        "raid400_hp": 3420280,
+        "actual_hp": 9757653
       }
     },
     {
       "name_en": "Arcana: Fortune Mate",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -629,17 +629,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 130338,
-        "actual_atk": 376158,
-        "raid400_hp": 3175145,
-        "actual_hp": 8706126
+        "raid400_atk": 130438,
+        "actual_atk": 378961,
+        "raid400_hp": 3177395,
+        "actual_hp": 8769193
       }
     },
     {
       "name_en": "Aria",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 10,
@@ -677,17 +677,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 96797,
-        "actual_atk": 333341,
-        "raid400_hp": 2356372,
-        "actual_hp": 7678637
+        "raid400_atk": 96922,
+        "actual_atk": 336067,
+        "raid400_hp": 2358622,
+        "actual_hp": 7739409
       }
     },
     {
       "name_en": "Ark Ranger Black",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 20,
@@ -725,10 +725,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 118004,
-        "actual_atk": 354548,
-        "raid400_hp": 2917232,
-        "actual_hp": 8239497
+        "raid400_atk": 118129,
+        "actual_atk": 357274,
+        "raid400_hp": 2919482,
+        "actual_hp": 8300269
       }
     },
     {
@@ -773,10 +773,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 107559,
-        "actual_atk": 17841,
-        "raid400_hp": 2573391,
-        "actual_hp": 554724
+        "raid400_atk": 110688,
+        "actual_atk": 20970,
+        "raid400_hp": 2669641,
+        "actual_hp": 650974
       }
     },
     {
@@ -821,10 +821,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 119926,
-        "actual_atk": 30208,
-        "raid400_hp": 2932980,
-        "actual_hp": 914313
+        "raid400_atk": 120026,
+        "actual_atk": 30308,
+        "raid400_hp": 2935230,
+        "actual_hp": 916563
       }
     },
     {
@@ -869,17 +869,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 81376,
-        "actual_atk": 5116,
-        "raid400_hp": 2580941,
-        "actual_hp": 293119
+        "raid400_atk": 81476,
+        "actual_atk": 5216,
+        "raid400_hp": 2583191,
+        "actual_hp": 295369
       }
     },
     {
       "name_en": "Bay",
       "class": "Defender",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -917,17 +917,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 88381,
-        "actual_atk": 255538,
-        "raid400_hp": 3648194,
-        "actual_hp": 10543485
+        "raid400_atk": 88508,
+        "actual_atk": 257504,
+        "raid400_hp": 3651254,
+        "actual_hp": 10622364
       }
     },
     {
       "name_en": "Biscuit",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -965,17 +965,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 94445,
-        "actual_atk": 303393,
-        "raid400_hp": 2980622,
-        "actual_hp": 9249068
+        "raid400_atk": 97602,
+        "actual_atk": 308847,
+        "raid400_hp": 3076917,
+        "actual_hp": 9414290
       }
     },
     {
       "name_en": "Blanc",
       "class": "Defender",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 2,
       "core": 0,
       "attractive_lv": 30,
@@ -1013,17 +1013,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 80115,
-        "actual_atk": 240903,
-        "raid400_hp": 3374236,
-        "actual_hp": 10006777
+        "raid400_atk": 80240,
+        "actual_atk": 242796,
+        "raid400_hp": 3377236,
+        "actual_hp": 10082707
       }
     },
     {
       "name_en": "Bready",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -1061,17 +1061,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 129209,
-        "actual_atk": 379945,
-        "raid400_hp": 3144864,
-        "actual_hp": 8786465
+        "raid400_atk": 129336,
+        "actual_atk": 382830,
+        "raid400_hp": 3147159,
+        "actual_hp": 8850793
       }
     },
     {
       "name_en": "Brid",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 2,
       "attractive_lv": 30,
@@ -1109,17 +1109,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 105754,
-        "actual_atk": 361407,
-        "raid400_hp": 2570354,
-        "actual_hp": 8322574
+        "raid400_atk": 105858,
+        "actual_atk": 364322,
+        "raid400_hp": 2572694,
+        "actual_hp": 8388164
       }
     },
     {
       "name_en": "Brid: Silent Track",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -1157,23 +1157,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 102205,
-        "actual_atk": 295460,
-        "raid400_hp": 3152896,
-        "actual_hp": 8950571
+        "raid400_atk": 102305,
+        "actual_atk": 297685,
+        "raid400_hp": 3155146,
+        "actual_hp": 9016571
       }
     },
     {
       "name_en": "Centi",
       "class": "Defender",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 5,
       "attractive_lv": 30,
       "favorite_item_lv": 0,
       "favorite_item_tid": 100301,
-      "harmony_cube_lv": 7,
+      "harmony_cube_lv": 0,
       "equip": [
         {
           "slot": "head",
@@ -1205,17 +1205,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 82157,
-        "actual_atk": 262425,
-        "raid400_hp": 3496537,
-        "actual_hp": 10932636
+        "raid400_atk": 81995,
+        "actual_atk": 264245,
+        "raid400_hp": 3491937,
+        "actual_hp": 11009801
       }
     },
     {
       "name_en": "Chime",
       "class": "Supporter",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 10,
@@ -1253,17 +1253,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 84926,
-        "actual_atk": 289777,
-        "raid400_hp": 2677259,
-        "actual_hp": 8822795
+        "raid400_atk": 85026,
+        "actual_atk": 292129,
+        "raid400_hp": 2679509,
+        "actual_hp": 8892620
       }
     },
     {
       "name_en": "Chisato",
       "class": "Attacker",
       "corporation": "ABNORMAL",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -1301,17 +1301,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 107284,
-        "actual_atk": 339190,
-        "raid400_hp": 2634554,
-        "actual_hp": 7852461
+        "raid400_atk": 107384,
+        "actual_atk": 341840,
+        "raid400_hp": 2636804,
+        "actual_hp": 7912086
       }
     },
     {
       "name_en": "Cinderella",
       "class": "Defender",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 3,
       "attractive_lv": 40,
@@ -1349,23 +1349,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 97810,
-        "actual_atk": 271522,
-        "raid400_hp": 3988078,
-        "actual_hp": 11153773
+        "raid400_atk": 97916,
+        "actual_atk": 273539,
+        "raid400_hp": 3991258,
+        "actual_hp": 11235745
       }
     },
     {
       "name_en": "Cinderella: Crystal Wave",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
-      "attractive_lv": 27,
+      "attractive_lv": 37,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100202,
-      "harmony_cube_lv": 15,
+      "harmony_cube_lv": 12,
       "equip": [
         {
           "slot": "head",
@@ -1397,17 +1397,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 130856,
-        "actual_atk": 376676,
-        "raid400_hp": 3202582,
-        "actual_hp": 8733563
+        "raid400_atk": 130692,
+        "actual_atk": 379215,
+        "raid400_hp": 3191794,
+        "actual_hp": 8783592
       }
     },
     {
       "name_en": "Clay",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -1445,17 +1445,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 84750,
-        "actual_atk": 278005,
-        "raid400_hp": 2679682,
-        "actual_hp": 8477357
+        "raid400_atk": 84875,
+        "actual_atk": 280255,
+        "raid400_hp": 2681932,
+        "actual_hp": 8543357
       }
     },
     {
       "name_en": "Cocoa",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 10,
@@ -1493,10 +1493,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 86141,
-        "actual_atk": 290992,
-        "raid400_hp": 2699294,
-        "actual_hp": 8844830
+        "raid400_atk": 86266,
+        "actual_atk": 293369,
+        "raid400_hp": 2701544,
+        "actual_hp": 8914655
       }
     },
     {
@@ -1541,23 +1541,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 64731,
-        "actual_atk": 4919,
-        "raid400_hp": 2770835,
-        "actual_hp": 303576
+        "raid400_atk": 64831,
+        "actual_atk": 5019,
+        "raid400_hp": 2773835,
+        "actual_hp": 306576
       }
     },
     {
       "name_en": "Crown",
       "class": "Defender",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 6,
       "attractive_lv": 40,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100202,
-      "harmony_cube_lv": 15,
+      "harmony_cube_lv": 0,
       "equip": [
         {
           "slot": "head",
@@ -1589,17 +1589,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 102021,
-        "actual_atk": 285567,
-        "raid400_hp": 4167006,
-        "actual_hp": 11738307
+        "raid400_atk": 99353,
+        "actual_atk": 284917,
+        "raid400_hp": 4086966,
+        "actual_hp": 11741519
       }
     },
     {
       "name_en": "Crust",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -1637,17 +1637,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 85412,
-        "actual_atk": 278667,
-        "raid400_hp": 2714939,
-        "actual_hp": 8512614
+        "raid400_atk": 86175,
+        "actual_atk": 281555,
+        "raid400_hp": 2736589,
+        "actual_hp": 8598014
       }
     },
     {
       "name_en": "D",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 20,
@@ -1685,17 +1685,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 97382,
-        "actual_atk": 333926,
-        "raid400_hp": 2369524,
-        "actual_hp": 7691789
+        "raid400_atk": 97482,
+        "actual_atk": 336627,
+        "raid400_hp": 2371774,
+        "actual_hp": 7752561
       }
     },
     {
       "name_en": "D: Killer Wife",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 6,
       "attractive_lv": 30,
@@ -1733,20 +1733,20 @@
         }
       ],
       "measured": {
-        "raid400_atk": 104824,
-        "actual_atk": 334257,
-        "raid400_hp": 3306400,
-        "actual_hp": 10189401
+        "raid400_atk": 107965,
+        "actual_atk": 339920,
+        "raid400_hp": 3402920,
+        "actual_hp": 10361605
       }
     },
     {
       "name_en": "Delta: Ninja Thief",
       "class": "Defender",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
-      "attractive_lv": 22,
+      "attractive_lv": 26,
       "favorite_item_lv": 0,
       "favorite_item_tid": 100201,
       "harmony_cube_lv": 0,
@@ -1781,17 +1781,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 75954,
-        "actual_atk": 239834,
-        "raid400_hp": 3245561,
-        "actual_hp": 10005651
+        "raid400_atk": 76865,
+        "actual_atk": 242547,
+        "raid400_hp": 3275086,
+        "actual_hp": 10109508
       }
     },
     {
       "name_en": "Diesel",
       "class": "Defender",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 10,
@@ -1829,17 +1829,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 71051,
-        "actual_atk": 228747,
-        "raid400_hp": 3033578,
-        "actual_hp": 9538570
+        "raid400_atk": 71151,
+        "actual_atk": 230581,
+        "raid400_hp": 3036578,
+        "actual_hp": 9613097
       }
     },
     {
       "name_en": "Diesel: Winter Sweets",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -1877,17 +1877,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 121061,
-        "actual_atk": 352967,
-        "raid400_hp": 2964948,
-        "actual_hp": 8182855
+        "raid400_atk": 121161,
+        "actual_atk": 355617,
+        "raid400_hp": 2967198,
+        "actual_hp": 8242480
       }
     },
     {
       "name_en": "Dolla",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -1925,17 +1925,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 94445,
-        "actual_atk": 303393,
-        "raid400_hp": 2980622,
-        "actual_hp": 9249068
+        "raid400_atk": 95211,
+        "actual_atk": 306456,
+        "raid400_hp": 3002317,
+        "actual_hp": 9339690
       }
     },
     {
       "name_en": "Dorothy",
       "class": "Supporter",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -1973,20 +1973,20 @@
         }
       ],
       "measured": {
-        "raid400_atk": 89463,
-        "actual_atk": 282718,
-        "raid400_hp": 2806013,
-        "actual_hp": 8603688
+        "raid400_atk": 92592,
+        "actual_atk": 287972,
+        "raid400_hp": 2902263,
+        "actual_hp": 8763688
       }
     },
     {
       "name_en": "Dorothy: Serendipity",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
-      "attractive_lv": 26,
+      "attractive_lv": 29,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100402,
       "harmony_cube_lv": 0,
@@ -2021,17 +2021,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 128010,
-        "actual_atk": 373830,
-        "raid400_hp": 3128760,
-        "actual_hp": 8659741
+        "raid400_atk": 128309,
+        "actual_atk": 376832,
+        "raid400_hp": 3135508,
+        "actual_hp": 8727306
       }
     },
     {
       "name_en": "Drake",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 7,
       "attractive_lv": 30,
@@ -2069,17 +2069,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 144793,
-        "actual_atk": 425028,
-        "raid400_hp": 3553122,
-        "actual_hp": 9858441
+        "raid400_atk": 144907,
+        "actual_atk": 428223,
+        "raid400_hp": 3555687,
+        "actual_hp": 9930337
       }
     },
     {
       "name_en": "E.H.",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -2117,17 +2117,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 112563,
-        "actual_atk": 358383,
-        "raid400_hp": 2785386,
-        "actual_hp": 8316367
+        "raid400_atk": 112663,
+        "actual_atk": 361186,
+        "raid400_hp": 2787636,
+        "actual_hp": 8379434
       }
     },
     {
       "name_en": "EVE",
       "class": "Attacker",
       "corporation": "ABNORMAL",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -2165,23 +2165,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 120692,
-        "actual_atk": 352598,
-        "raid400_hp": 2932980,
-        "actual_hp": 8150887
+        "raid400_atk": 120792,
+        "actual_atk": 355248,
+        "raid400_hp": 2935230,
+        "actual_hp": 8210512
       }
     },
     {
       "name_en": "Ein",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100602,
-      "harmony_cube_lv": 15,
+      "harmony_cube_lv": 0,
       "equip": [
         {
           "slot": "head",
@@ -2213,17 +2213,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 131606,
-        "actual_atk": 382342,
-        "raid400_hp": 3224575,
-        "actual_hp": 8866176
+        "raid400_atk": 128928,
+        "actual_atk": 382421,
+        "raid400_hp": 3143470,
+        "actual_hp": 8847104
       }
     },
     {
       "name_en": "Elegg",
       "class": "Supporter",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 3,
       "attractive_lv": 30,
@@ -2261,17 +2261,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 96953,
-        "actual_atk": 314095,
-        "raid400_hp": 3055038,
-        "actual_hp": 9569306
+        "raid400_atk": 97697,
+        "actual_atk": 317227,
+        "raid400_hp": 3076823,
+        "actual_hp": 9662721
       }
     },
     {
       "name_en": "Elegg: Boom and Shock",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -2309,10 +2309,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 125972,
-        "actual_atk": 371792,
-        "raid400_hp": 3054858,
-        "actual_hp": 8585839
+        "raid400_atk": 126072,
+        "actual_atk": 374595,
+        "raid400_hp": 3057108,
+        "actual_hp": 8648906
       }
     },
     {
@@ -2357,10 +2357,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 106545,
-        "actual_atk": 16827,
-        "raid400_hp": 2582337,
-        "actual_hp": 563670
+        "raid400_atk": 107283,
+        "actual_atk": 17565,
+        "raid400_hp": 2603987,
+        "actual_hp": 585320
       }
     },
     {
@@ -2405,17 +2405,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 79851,
-        "actual_atk": 5086,
-        "raid400_hp": 2532782,
-        "actual_hp": 289819
+        "raid400_atk": 79951,
+        "actual_atk": 5186,
+        "raid400_hp": 2535032,
+        "actual_hp": 292069
       }
     },
     {
       "name_en": "Emma: Tactical Upgrade",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 20,
@@ -2453,17 +2453,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 88232,
-        "actual_atk": 285352,
-        "raid400_hp": 2779914,
-        "actual_hp": 8693542
+        "raid400_atk": 88970,
+        "actual_atk": 288257,
+        "raid400_hp": 2801564,
+        "actual_hp": 8780217
       }
     },
     {
       "name_en": "Epinel",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -2501,10 +2501,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 104920,
-        "actual_atk": 350740,
-        "raid400_hp": 2497936,
-        "actual_hp": 8028917
+        "raid400_atk": 105020,
+        "actual_atk": 353543,
+        "raid400_hp": 2500186,
+        "actual_hp": 8091984
       }
     },
     {
@@ -2549,17 +2549,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 101687,
-        "actual_atk": 6586,
-        "raid400_hp": 2471494,
-        "actual_hp": 331707
+        "raid400_atk": 101787,
+        "actual_atk": 6686,
+        "raid400_hp": 2473744,
+        "actual_hp": 333957
       }
     },
     {
       "name_en": "Eunhwa: Tactical Upgrade",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -2597,17 +2597,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 101026,
-        "actual_atk": 332932,
-        "raid400_hp": 2476671,
-        "actual_hp": 7694578
+        "raid400_atk": 101764,
+        "actual_atk": 336220,
+        "raid400_hp": 2498321,
+        "actual_hp": 7773603
       }
     },
     {
       "name_en": "Exia",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -2645,43 +2645,43 @@
         }
       ],
       "measured": {
-        "raid400_atk": 105966,
-        "actual_atk": 314914,
-        "raid400_hp": 3337382,
-        "actual_hp": 9605828
+        "raid400_atk": 106094,
+        "actual_atk": 317339,
+        "raid400_hp": 3339677,
+        "actual_hp": 9677050
       }
     },
     {
       "name_en": "Flora",
       "class": "Supporter",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
-      "favorite_item_lv": 0,
-      "favorite_item_tid": 100201,
-      "harmony_cube_lv": 0,
+      "favorite_item_lv": 2,
+      "favorite_item_tid": 201901,
+      "harmony_cube_lv": 15,
       "equip": [
         {
           "slot": "head",
-          "tid": 3130901,
-          "tier": 9,
-          "corporation_type": 2,
+          "tid": 3131001,
+          "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "torso",
-          "tid": 3230901,
-          "tier": 9,
-          "corporation_type": 2,
+          "tid": 3231001,
+          "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
           "slot": "arm",
-          "tid": 3330901,
-          "tier": 9,
-          "corporation_type": 2,
+          "tid": 3331001,
+          "tier": 10,
+          "corporation_type": 0,
           "lv": 0
         },
         {
@@ -2693,17 +2693,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 93535,
-        "actual_atk": 302483,
-        "raid400_hp": 2953322,
-        "actual_hp": 9221768
+        "raid400_atk": 108848,
+        "actual_atk": 320093,
+        "raid400_hp": 3410738,
+        "actual_hp": 9748111
       }
     },
     {
       "name_en": "Folkwang",
       "class": "Defender",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -2741,17 +2741,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 66515,
-        "actual_atk": 221119,
-        "raid400_hp": 2770835,
-        "actual_hp": 9148278
+        "raid400_atk": 66640,
+        "actual_atk": 222944,
+        "raid400_hp": 2773835,
+        "actual_hp": 9221403
       }
     },
     {
       "name_en": "Frima",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -2789,17 +2789,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 87662,
-        "actual_atk": 292513,
-        "raid400_hp": 2832318,
-        "actual_hp": 8977854
+        "raid400_atk": 87787,
+        "actual_atk": 294890,
+        "raid400_hp": 2834568,
+        "actual_hp": 9047679
       }
     },
     {
       "name_en": "Grave",
       "class": "Supporter",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 20,
@@ -2837,17 +2837,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 106404,
-        "actual_atk": 303524,
-        "raid400_hp": 3270379,
-        "actual_hp": 9184007
+        "raid400_atk": 106504,
+        "actual_atk": 305791,
+        "raid400_hp": 3272629,
+        "actual_hp": 9251282
       }
     },
     {
       "name_en": "Guillotine",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 10,
@@ -2885,17 +2885,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 110879,
-        "actual_atk": 356699,
-        "raid400_hp": 2578777,
-        "actual_hp": 8109758
+        "raid400_atk": 111617,
+        "actual_atk": 360140,
+        "raid400_hp": 2600427,
+        "actual_hp": 8192225
       }
     },
     {
       "name_en": "Guillotine: Winter Slayer",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -2933,17 +2933,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 100850,
-        "actual_atk": 332756,
-        "raid400_hp": 2450890,
-        "actual_hp": 7668797
+        "raid400_atk": 101588,
+        "actual_atk": 336044,
+        "raid400_hp": 2472540,
+        "actual_hp": 7747822
       }
     },
     {
       "name_en": "Guilty",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -2981,17 +2981,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 95735,
-        "actual_atk": 327641,
-        "raid400_hp": 2424447,
-        "actual_hp": 7642354
+        "raid400_atk": 95835,
+        "actual_atk": 330291,
+        "raid400_hp": 2426697,
+        "actual_hp": 7701979
       }
     },
     {
       "name_en": "Harran",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 40,
@@ -3029,17 +3029,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 109912,
-        "actual_atk": 355732,
-        "raid400_hp": 2659122,
-        "actual_hp": 8190103
+        "raid400_atk": 110012,
+        "actual_atk": 358535,
+        "raid400_hp": 2661372,
+        "actual_hp": 8253170
       }
     },
     {
       "name_en": "Helm",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 4,
       "attractive_lv": 30,
@@ -3077,17 +3077,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 136887,
-        "actual_atk": 402373,
-        "raid400_hp": 3335978,
-        "actual_hp": 9309437
+        "raid400_atk": 136995,
+        "actual_atk": 405400,
+        "raid400_hp": 3338408,
+        "actual_hp": 9377549
       }
     },
     {
       "name_en": "Helm: Aquamarine",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -3125,20 +3125,20 @@
         }
       ],
       "measured": {
-        "raid400_atk": 101026,
-        "actual_atk": 332932,
-        "raid400_hp": 2476671,
-        "actual_hp": 7694578
+        "raid400_atk": 104155,
+        "actual_atk": 338611,
+        "raid400_hp": 2572921,
+        "actual_hp": 7848203
       }
     },
     {
       "name_en": "Isabel",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
-      "attractive_lv": 37,
+      "attractive_lv": 39,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100402,
       "harmony_cube_lv": 0,
@@ -3173,17 +3173,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 126957,
-        "actual_atk": 372777,
-        "raid400_hp": 3065789,
-        "actual_hp": 8596770
+        "raid400_atk": 127200,
+        "actual_atk": 375723,
+        "raid400_hp": 3071246,
+        "actual_hp": 8663044
       }
     },
     {
       "name_en": "Jackal",
       "class": "Defender",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -3221,17 +3221,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 81440,
-        "actual_atk": 248597,
-        "raid400_hp": 3409457,
-        "actual_hp": 10304748
+        "raid400_atk": 81542,
+        "actual_atk": 250537,
+        "raid400_hp": 3412517,
+        "actual_hp": 10383627
       }
     },
     {
       "name_en": "Julia",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -3269,17 +3269,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 103721,
-        "actual_atk": 354457,
-        "raid400_hp": 2520924,
-        "actual_hp": 8162525
+        "raid400_atk": 104461,
+        "actual_atk": 357954,
+        "raid400_hp": 2542619,
+        "actual_hp": 8246253
       }
     },
     {
       "name_en": "K",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 2,
       "core": 0,
       "attractive_lv": 30,
@@ -3317,17 +3317,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 99860,
-        "actual_atk": 341042,
-        "raid400_hp": 2427850,
-        "actual_hp": 7854473
+        "raid400_atk": 99960,
+        "actual_atk": 343794,
+        "raid400_hp": 2430100,
+        "actual_hp": 7916393
       }
     },
     {
       "name_en": "Kilo",
       "class": "Defender",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -3365,20 +3365,20 @@
         }
       ],
       "measured": {
-        "raid400_atk": 74324,
-        "actual_atk": 238204,
-        "raid400_hp": 3172949,
-        "actual_hp": 9933039
+        "raid400_atk": 74424,
+        "actual_atk": 240106,
+        "raid400_hp": 3175949,
+        "actual_hp": 10010371
       }
     },
     {
       "name_en": "Label",
       "class": "Defender",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
-      "attractive_lv": 12,
+      "attractive_lv": 16,
       "favorite_item_lv": 0,
       "favorite_item_tid": 0,
       "harmony_cube_lv": 0,
@@ -3413,17 +3413,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 71124,
-        "actual_atk": 228820,
-        "raid400_hp": 3036593,
-        "actual_hp": 9541585
+        "raid400_atk": 71378,
+        "actual_atk": 230808,
+        "raid400_hp": 3045947,
+        "actual_hp": 9622466
       }
     },
     {
       "name_en": "Laplace",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 3,
       "attractive_lv": 30,
@@ -3461,17 +3461,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 128410,
-        "actual_atk": 388979,
-        "raid400_hp": 3167492,
-        "actual_hp": 9030332
+        "raid400_atk": 128516,
+        "actual_atk": 391951,
+        "raid400_hp": 3169877,
+        "actual_hp": 9097183
       }
     },
     {
       "name_en": "Leona",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -3509,19 +3509,19 @@
         }
       ],
       "measured": {
-        "raid400_atk": 90871,
-        "actual_atk": 295722,
-        "raid400_hp": 2861698,
-        "actual_hp": 9007234
+        "raid400_atk": 91634,
+        "actual_atk": 298737,
+        "raid400_hp": 2883348,
+        "actual_hp": 9096459
       }
     },
     {
       "name_en": "Liberalio",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
-      "core": 0,
+      "core": 1,
       "attractive_lv": 40,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100602,
@@ -3557,23 +3557,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 128977,
-        "actual_atk": 374797,
-        "raid400_hp": 3139466,
-        "actual_hp": 8670447
+        "raid400_atk": 131137,
+        "actual_atk": 384630,
+        "raid400_hp": 3191506,
+        "actual_hp": 8895140
       }
     },
     {
       "name_en": "Liter",
       "class": "Supporter",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 7,
       "attractive_lv": 30,
       "favorite_item_lv": 0,
       "favorite_item_tid": 100502,
-      "harmony_cube_lv": 15,
+      "harmony_cube_lv": 0,
       "equip": [
         {
           "slot": "head",
@@ -3605,17 +3605,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 109313,
-        "actual_atk": 342843,
-        "raid400_hp": 3443964,
-        "actual_hp": 10449875
+        "raid400_atk": 109676,
+        "actual_atk": 345773,
+        "raid400_hp": 3457129,
+        "actual_hp": 10540076
       }
     },
     {
       "name_en": "Little Mermaid",
       "class": "Supporter",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 2,
       "core": 0,
       "attractive_lv": 30,
@@ -3653,17 +3653,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 107789,
-        "actual_atk": 308774,
-        "raid400_hp": 3351182,
-        "actual_hp": 9380764
+        "raid400_atk": 107889,
+        "actual_atk": 311084,
+        "raid400_hp": 3353432,
+        "actual_hp": 9449314
       }
     },
     {
       "name_en": "Ludmilla",
       "class": "Defender",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 10,
@@ -3701,17 +3701,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 72989,
-        "actual_atk": 236869,
-        "raid400_hp": 2970873,
-        "actual_hp": 9730963
+        "raid400_atk": 73114,
+        "actual_atk": 238796,
+        "raid400_hp": 2973873,
+        "actual_hp": 9808295
       }
     },
     {
       "name_en": "Ludmilla: Winter Owner",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -3749,17 +3749,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 126191,
-        "actual_atk": 372011,
-        "raid400_hp": 3086826,
-        "actual_hp": 8617807
+        "raid400_atk": 126316,
+        "actual_atk": 374839,
+        "raid400_hp": 3089076,
+        "actual_hp": 8680874
       }
     },
     {
       "name_en": "Maiden",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 10,
@@ -3797,17 +3797,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 96797,
-        "actual_atk": 333341,
-        "raid400_hp": 2356372,
-        "actual_hp": 7678637
+        "raid400_atk": 96897,
+        "actual_atk": 336042,
+        "raid400_hp": 2358622,
+        "actual_hp": 7739409
       }
     },
     {
       "name_en": "Maiden: Ice Rose",
       "class": "Defender",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -3845,17 +3845,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 89852,
-        "actual_atk": 253732,
-        "raid400_hp": 3706497,
-        "actual_hp": 10466587
+        "raid400_atk": 89952,
+        "actual_atk": 255634,
+        "raid400_hp": 3709497,
+        "actual_hp": 10543919
       }
     },
     {
       "name_en": "Mana",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -3893,17 +3893,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 116184,
-        "actual_atk": 366920,
-        "raid400_hp": 2836799,
-        "actual_hp": 8478400
+        "raid400_atk": 116286,
+        "actual_atk": 369779,
+        "raid400_hp": 2839094,
+        "actual_hp": 8542728
       }
     },
     {
       "name_en": "Marciana",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 2,
       "attractive_lv": 30,
@@ -3941,44 +3941,44 @@
         }
       ],
       "measured": {
-        "raid400_atk": 95244,
-        "actual_atk": 308289,
-        "raid400_hp": 3007485,
-        "actual_hp": 9398843
+        "raid400_atk": 95986,
+        "actual_atk": 311373,
+        "raid400_hp": 3029225,
+        "actual_hp": 9490861
       }
     },
     {
       "name_en": "Marciana: Marine Study",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
-      "attractive_lv": 4,
+      "attractive_lv": 19,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100102,
-      "harmony_cube_lv": 0,
+      "harmony_cube_lv": 15,
       "equip": [
         {
           "slot": "head",
           "tid": 3111001,
           "tier": 10,
           "corporation_type": 0,
-          "lv": 0
+          "lv": 4
         },
         {
           "slot": "torso",
           "tid": 3211001,
           "tier": 10,
           "corporation_type": 0,
-          "lv": 0
+          "lv": 1
         },
         {
           "slot": "arm",
           "tid": 3311001,
           "tier": 10,
           "corporation_type": 0,
-          "lv": 0
+          "lv": 3
         },
         {
           "slot": "leg",
@@ -3989,10 +3989,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 117124,
-        "actual_atk": 353668,
-        "raid400_hp": 2897443,
-        "actual_hp": 8219708
+        "raid400_atk": 124484,
+        "actual_atk": 363629,
+        "raid400_hp": 3037143,
+        "actual_hp": 8417930
       }
     },
     {
@@ -4037,17 +4037,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 94644,
-        "actual_atk": 19879,
-        "raid400_hp": 2927057,
-        "actual_hp": 684094
+        "raid400_atk": 94744,
+        "actual_atk": 19979,
+        "raid400_hp": 2929307,
+        "actual_hp": 686344
       }
     },
     {
       "name_en": "Mary",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -4085,17 +4085,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 84750,
-        "actual_atk": 278005,
-        "raid400_hp": 2686293,
-        "actual_hp": 8483968
+        "raid400_atk": 84875,
+        "actual_atk": 280255,
+        "raid400_hp": 2688543,
+        "actual_hp": 8549968
       }
     },
     {
       "name_en": "Mary: Bay Goddess",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -4133,18 +4133,18 @@
         }
       ],
       "measured": {
-        "raid400_atk": 84750,
-        "actual_atk": 278005,
-        "raid400_hp": 2686293,
-        "actual_hp": 8483968
+        "raid400_atk": 84875,
+        "actual_atk": 280255,
+        "raid400_hp": 2688543,
+        "actual_hp": 8549968
       }
     },
     {
       "name_en": "Mast",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
-      "grade": 0,
+      "level": 668,
+      "grade": 3,
       "core": 0,
       "attractive_lv": 10,
       "favorite_item_lv": 0,
@@ -4181,17 +4181,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 86495,
-        "actual_atk": 279750,
-        "raid400_hp": 2747453,
-        "actual_hp": 8545128
+        "raid400_atk": 91170,
+        "actual_atk": 298273,
+        "raid400_hp": 2894180,
+        "actual_hp": 9107291
       }
     },
     {
       "name_en": "Mast: Romantic Maid",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 4,
       "attractive_lv": 30,
@@ -4229,17 +4229,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 118431,
-        "actual_atk": 339670,
-        "raid400_hp": 3711692,
-        "actual_hp": 10348871
+        "raid400_atk": 118539,
+        "actual_atk": 342210,
+        "raid400_hp": 3714122,
+        "actual_hp": 10424282
       }
     },
     {
       "name_en": "Maxwell",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 7,
       "attractive_lv": 30,
@@ -4277,17 +4277,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 135833,
-        "actual_atk": 416068,
-        "raid400_hp": 3237952,
-        "actual_hp": 9543271
+        "raid400_atk": 135947,
+        "actual_atk": 419263,
+        "raid400_hp": 3240517,
+        "actual_hp": 9615167
       }
     },
     {
       "name_en": "Mica: Snow Buddy",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -4325,23 +4325,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 84750,
-        "actual_atk": 278005,
-        "raid400_hp": 2686293,
-        "actual_hp": 8483968
+        "raid400_atk": 84875,
+        "actual_atk": 280255,
+        "raid400_hp": 2688543,
+        "actual_hp": 8549968
       }
     },
     {
       "name_en": "Mihara: Bonding Chain",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 20,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100202,
-      "harmony_cube_lv": 0,
+      "harmony_cube_lv": 15,
       "equip": [
         {
           "slot": "head",
@@ -4373,10 +4373,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 123472,
-        "actual_atk": 360016,
-        "raid400_hp": 3021743,
-        "actual_hp": 8344008
+        "raid400_atk": 126352,
+        "actual_atk": 365497,
+        "raid400_hp": 3107393,
+        "actual_hp": 8488180
       }
     },
     {
@@ -4421,17 +4421,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 94971,
-        "actual_atk": 5253,
-        "raid400_hp": 2312729,
-        "actual_hp": 294062
+        "raid400_atk": 95096,
+        "actual_atk": 5378,
+        "raid400_hp": 2314979,
+        "actual_hp": 296312
       }
     },
     {
       "name_en": "Milk: Blooming Bunny",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 5,
       "attractive_lv": 30,
@@ -4469,17 +4469,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 137836,
-        "actual_atk": 408238,
-        "raid400_hp": 3354878,
-        "actual_hp": 9438958
+        "raid400_atk": 137973,
+        "actual_atk": 411349,
+        "raid400_hp": 3357353,
+        "actual_hp": 9508331
       }
     },
     {
       "name_en": "Mint",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -4517,17 +4517,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 107310,
-        "actual_atk": 312161,
-        "raid400_hp": 3321514,
-        "actual_hp": 9467050
+        "raid400_atk": 107435,
+        "actual_atk": 314538,
+        "raid400_hp": 3323764,
+        "actual_hp": 9536875
       }
     },
     {
       "name_en": "Miranda",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 3,
       "attractive_lv": 30,
@@ -4565,17 +4565,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 106641,
-        "actual_atk": 323783,
-        "raid400_hp": 3363449,
-        "actual_hp": 9877717
+        "raid400_atk": 106747,
+        "actual_atk": 326277,
+        "raid400_hp": 3365834,
+        "actual_hp": 9951732
       }
     },
     {
       "name_en": "Modernia",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 2,
       "attractive_lv": 40,
@@ -4613,17 +4613,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 128006,
-        "actual_atk": 383659,
-        "raid400_hp": 3058827,
-        "actual_hp": 8811047
+        "raid400_atk": 128110,
+        "actual_atk": 386574,
+        "raid400_hp": 3061167,
+        "actual_hp": 8876637
       }
     },
     {
       "name_en": "Moran",
       "class": "Defender",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 4,
       "attractive_lv": 30,
@@ -4661,17 +4661,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 98024,
-        "actual_atk": 275015,
-        "raid400_hp": 3974330,
-        "actual_hp": 11275228
+        "raid400_atk": 98159,
+        "actual_atk": 277096,
+        "raid400_hp": 3977570,
+        "actual_hp": 11358746
       }
     },
     {
       "name_en": "Mori",
       "class": "Defender",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 20,
@@ -4709,23 +4709,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 68792,
-        "actual_atk": 232672,
-        "raid400_hp": 2944934,
-        "actual_hp": 9705024
+        "raid400_atk": 68892,
+        "actual_atk": 234574,
+        "raid400_hp": 2947934,
+        "actual_hp": 9782356
       }
     },
     {
       "name_en": "Naga",
       "class": "Supporter",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 7,
       "attractive_lv": 30,
       "favorite_item_lv": 5,
       "favorite_item_tid": 100402,
-      "harmony_cube_lv": 15,
+      "harmony_cube_lv": 0,
       "equip": [
         {
           "slot": "head",
@@ -4757,17 +4757,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 114726,
-        "actual_atk": 348256,
-        "raid400_hp": 3621238,
-        "actual_hp": 10627149
+        "raid400_atk": 112060,
+        "actual_atk": 348157,
+        "raid400_hp": 3540403,
+        "actual_hp": 10623350
       }
     },
     {
       "name_en": "Nayuta",
       "class": "Supporter",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -4805,10 +4805,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 106488,
-        "actual_atk": 299743,
-        "raid400_hp": 3307336,
-        "actual_hp": 9105011
+        "raid400_atk": 106588,
+        "actual_atk": 301968,
+        "raid400_hp": 3309586,
+        "actual_hp": 9171011
       }
     },
     {
@@ -4818,7 +4818,7 @@
       "level": 1,
       "grade": 0,
       "core": 0,
-      "attractive_lv": 8,
+      "attractive_lv": 10,
       "favorite_item_lv": 0,
       "favorite_item_tid": 0,
       "harmony_cube_lv": 0,
@@ -4853,23 +4853,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 94866,
-        "actual_atk": 5148,
-        "raid400_hp": 2310369,
-        "actual_hp": 291702
+        "raid400_atk": 95071,
+        "actual_atk": 5353,
+        "raid400_hp": 2314979,
+        "actual_hp": 296312
       }
     },
     {
       "name_en": "Neon: Vision Eye",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 40,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100302,
-      "harmony_cube_lv": 15,
+      "harmony_cube_lv": 0,
       "equip": [
         {
           "slot": "head",
@@ -4901,17 +4901,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 133305,
-        "actual_atk": 384041,
-        "raid400_hp": 3272611,
-        "actual_hp": 8914212
+        "raid400_atk": 130627,
+        "actual_atk": 384120,
+        "raid400_hp": 3191506,
+        "actual_hp": 8895140
       }
     },
     {
       "name_en": "Nero",
       "class": "Defender",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 2,
       "attractive_lv": 10,
@@ -4949,10 +4949,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 76235,
-        "actual_atk": 246670,
-        "raid400_hp": 3256082,
-        "actual_hp": 10286576
+        "raid400_atk": 76365,
+        "actual_atk": 248674,
+        "raid400_hp": 3259202,
+        "actual_hp": 10367001
       }
     },
     {
@@ -4997,17 +4997,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 102093,
-        "actual_atk": 12375,
-        "raid400_hp": 2469592,
-        "actual_hp": 450925
+        "raid400_atk": 102193,
+        "actual_atk": 12475,
+        "raid400_hp": 2471842,
+        "actual_hp": 453175
       }
     },
     {
       "name_en": "Noah",
       "class": "Defender",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 2,
       "attractive_lv": 40,
@@ -5045,17 +5045,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 85113,
-        "actual_atk": 255548,
-        "raid400_hp": 3551924,
-        "actual_hp": 10582418
+        "raid400_atk": 85217,
+        "actual_atk": 257526,
+        "raid400_hp": 3555044,
+        "actual_hp": 10662843
       }
     },
     {
       "name_en": "Noir",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 3,
       "attractive_lv": 30,
@@ -5093,17 +5093,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 126323,
-        "actual_atk": 386892,
-        "raid400_hp": 3099042,
-        "actual_hp": 8961882
+        "raid400_atk": 126456,
+        "actual_atk": 389890,
+        "raid400_hp": 3101427,
+        "actual_hp": 9028733
       }
     },
     {
       "name_en": "Noise",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 4,
       "attractive_lv": 30,
@@ -5141,17 +5141,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 107017,
-        "actual_atk": 328256,
-        "raid400_hp": 3371723,
-        "actual_hp": 10008902
+        "raid400_atk": 107152,
+        "actual_atk": 330823,
+        "raid400_hp": 3374153,
+        "actual_hp": 10084313
       }
     },
     {
       "name_en": "Novel",
       "class": "Defender",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
@@ -5189,17 +5189,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 74324,
-        "actual_atk": 238204,
-        "raid400_hp": 3172949,
-        "actual_hp": 9933039
+        "raid400_atk": 74449,
+        "actual_atk": 240131,
+        "raid400_hp": 3175949,
+        "actual_hp": 10010371
       }
     },
     {
       "name_en": "Pepper",
       "class": "Supporter",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 30,
@@ -5237,17 +5237,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 94325,
-        "actual_atk": 303273,
-        "raid400_hp": 2970411,
-        "actual_hp": 9238857
+        "raid400_atk": 94427,
+        "actual_atk": 305672,
+        "raid400_hp": 2972706,
+        "actual_hp": 9310079
       }
     },
     {
       "name_en": "Phantom",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 2,
       "attractive_lv": 30,
@@ -5285,17 +5285,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 111809,
-        "actual_atk": 367462,
-        "raid400_hp": 2734296,
-        "actual_hp": 8486516
+        "raid400_atk": 112551,
+        "actual_atk": 371015,
+        "raid400_hp": 2756036,
+        "actual_hp": 8571506
       }
     },
     {
       "name_en": "Poli",
       "class": "Defender",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 2,
       "attractive_lv": 30,
@@ -5333,17 +5333,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 77093,
-        "actual_atk": 247528,
-        "raid400_hp": 3291464,
-        "actual_hp": 10321958
+        "raid400_atk": 77835,
+        "actual_atk": 250144,
+        "raid400_hp": 3313984,
+        "actual_hp": 10421783
       }
     },
     {
       "name_en": "Prika",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 20,
@@ -5381,23 +5381,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 103716,
-        "actual_atk": 300836,
-        "raid400_hp": 3197864,
-        "actual_hp": 9111492
+        "raid400_atk": 103841,
+        "actual_atk": 303128,
+        "raid400_hp": 3200114,
+        "actual_hp": 9178767
       }
     },
     {
       "name_en": "Privaty",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 3,
       "attractive_lv": 30,
       "favorite_item_lv": 2,
       "favorite_item_tid": 201401,
-      "harmony_cube_lv": 15,
+      "harmony_cube_lv": 0,
       "equip": [
         {
           "slot": "head",
@@ -5429,17 +5429,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 135673,
-        "actual_atk": 396242,
-        "raid400_hp": 3323435,
-        "actual_hp": 9186275
+        "raid400_atk": 132999,
+        "actual_atk": 396434,
+        "raid400_hp": 3242420,
+        "actual_hp": 9169726
       }
     },
     {
       "name_en": "Privaty: Unkind Maid",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 3,
       "attractive_lv": 30,
@@ -5477,10 +5477,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 123543,
-        "actual_atk": 384112,
-        "raid400_hp": 3015642,
-        "actual_hp": 8878482
+        "raid400_atk": 123649,
+        "actual_atk": 387084,
+        "raid400_hp": 3018027,
+        "actual_hp": 8945333
       }
     },
     {
@@ -5525,17 +5525,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 79851,
-        "actual_atk": 5086,
-        "raid400_hp": 2532782,
-        "actual_hp": 289819
+        "raid400_atk": 79951,
+        "actual_atk": 5186,
+        "raid400_hp": 2535032,
+        "actual_hp": 292069
       }
     },
     {
       "name_en": "Quency: Escape Queen",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 4,
       "attractive_lv": 30,
@@ -5573,17 +5573,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 134107,
-        "actual_atk": 399593,
-        "raid400_hp": 3252578,
-        "actual_hp": 9226037
+        "raid400_atk": 134215,
+        "actual_atk": 402620,
+        "raid400_hp": 3255008,
+        "actual_hp": 9294149
       }
     },
     {
       "name_en": "Quiry",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 10,
@@ -5621,17 +5621,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 84426,
-        "actual_atk": 289277,
-        "raid400_hp": 2677259,
-        "actual_hp": 8822795
+        "raid400_atk": 84526,
+        "actual_atk": 291629,
+        "raid400_hp": 2679509,
+        "actual_hp": 8892620
       }
     },
     {
       "name_en": "Rapi: Red Hood",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 6,
       "attractive_lv": 40,
@@ -5669,17 +5669,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 143543,
-        "actual_atk": 418862,
-        "raid400_hp": 3532402,
-        "actual_hp": 9727100
+        "raid400_atk": 143655,
+        "actual_atk": 422001,
+        "raid400_hp": 3534922,
+        "actual_hp": 9797735
       }
     },
     {
       "name_en": "Rapunzel",
       "class": "Supporter",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 20,
@@ -5717,20 +5717,20 @@
         }
       ],
       "measured": {
-        "raid400_atk": 92265,
-        "actual_atk": 289385,
-        "raid400_hp": 2892485,
-        "actual_hp": 8806113
+        "raid400_atk": 93003,
+        "actual_atk": 292290,
+        "raid400_hp": 2914135,
+        "actual_hp": 8892788
       }
     },
     {
       "name_en": "Rapunzel: Pure Grace",
       "class": "Defender",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
-      "attractive_lv": 32,
+      "attractive_lv": 35,
       "favorite_item_lv": 0,
       "favorite_item_tid": 100601,
       "harmony_cube_lv": 0,
@@ -5765,17 +5765,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 74914,
-        "actual_atk": 238794,
-        "raid400_hp": 3176706,
-        "actual_hp": 9936796
+        "raid400_atk": 75791,
+        "actual_atk": 241473,
+        "raid400_hp": 3204834,
+        "actual_hp": 10039256
       }
     },
     {
       "name_en": "Raven",
       "class": "Attacker",
       "corporation": "ABNORMAL",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -5813,23 +5813,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 120692,
-        "actual_atk": 352598,
-        "raid400_hp": 2932980,
-        "actual_hp": 8150887
+        "raid400_atk": 120792,
+        "actual_atk": 355248,
+        "raid400_hp": 2935230,
+        "actual_hp": 8210512
       }
     },
     {
       "name_en": "Red Hood",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 3,
       "attractive_lv": 40,
       "favorite_item_lv": 15,
       "favorite_item_tid": 100602,
-      "harmony_cube_lv": 0,
+      "harmony_cube_lv": 12,
       "equip": [
         {
           "slot": "head",
@@ -5861,17 +5861,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 135150,
-        "actual_atk": 395719,
-        "raid400_hp": 3288701,
-        "actual_hp": 9151541
+        "raid400_atk": 137086,
+        "actual_atk": 400521,
+        "raid400_hp": 3345986,
+        "actual_hp": 9273292
       }
     },
     {
       "name_en": "Rei",
       "class": "Defender",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 10,
@@ -5909,10 +5909,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 65955,
-        "actual_atk": 223651,
-        "raid400_hp": 2823510,
-        "actual_hp": 9328502
+        "raid400_atk": 66080,
+        "actual_atk": 225510,
+        "raid400_hp": 2826510,
+        "actual_hp": 9403029
       }
     },
     {
@@ -5957,10 +5957,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 110576,
-        "actual_atk": 20858,
-        "raid400_hp": 2708587,
-        "actual_hp": 689920
+        "raid400_atk": 110676,
+        "actual_atk": 20958,
+        "raid400_hp": 2710837,
+        "actual_hp": 692170
       }
     },
     {
@@ -6005,10 +6005,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 120806,
-        "actual_atk": 29294,
-        "raid400_hp": 2931986,
-        "actual_hp": 872946
+        "raid400_atk": 120906,
+        "actual_atk": 29394,
+        "raid400_hp": 2934236,
+        "actual_hp": 875196
       }
     },
     {
@@ -6053,20 +6053,20 @@
         }
       ],
       "measured": {
-        "raid400_atk": 86070,
-        "actual_atk": 11305,
-        "raid400_hp": 2736092,
-        "actual_hp": 493129
+        "raid400_atk": 86808,
+        "actual_atk": 12043,
+        "raid400_hp": 2757742,
+        "actual_hp": 514779
       }
     },
     {
       "name_en": "Rosanna",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
-      "attractive_lv": 10,
+      "attractive_lv": 13,
       "favorite_item_lv": 0,
       "favorite_item_tid": 100201,
       "harmony_cube_lv": 0,
@@ -6101,17 +6101,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 109925,
-        "actual_atk": 360661,
-        "raid400_hp": 2638626,
-        "actual_hp": 8280227
+        "raid400_atk": 110860,
+        "actual_atk": 364353,
+        "raid400_hp": 2664132,
+        "actual_hp": 8367766
       }
     },
     {
       "name_en": "Rosanna: Chic Ocean",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -6149,17 +6149,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 91041,
-        "actual_atk": 284296,
-        "raid400_hp": 2873703,
-        "actual_hp": 8671378
+        "raid400_atk": 91166,
+        "actual_atk": 286546,
+        "raid400_hp": 2875953,
+        "actual_hp": 8737378
       }
     },
     {
       "name_en": "Rouge",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 2,
       "attractive_lv": 30,
@@ -6197,17 +6197,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 112232,
-        "actual_atk": 325277,
-        "raid400_hp": 3519964,
-        "actual_hp": 9911322
+        "raid400_atk": 112362,
+        "actual_atk": 327749,
+        "raid400_hp": 3522304,
+        "actual_hp": 9983940
       }
     },
     {
       "name_en": "Rumani",
       "class": "Defender",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 2,
       "core": 0,
       "attractive_lv": 30,
@@ -6245,17 +6245,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 73100,
-        "actual_atk": 233888,
-        "raid400_hp": 3120274,
-        "actual_hp": 9752815
+        "raid400_atk": 73863,
+        "actual_atk": 236419,
+        "raid400_hp": 3142674,
+        "actual_hp": 9848145
       }
     },
     {
       "name_en": "Rupee",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 10,
@@ -6293,19 +6293,19 @@
         }
       ],
       "measured": {
-        "raid400_atk": 106946,
-        "actual_atk": 352766,
-        "raid400_hp": 2556038,
-        "actual_hp": 8087019
+        "raid400_atk": 107071,
+        "actual_atk": 355594,
+        "raid400_hp": 2558288,
+        "actual_hp": 8150086
       }
     },
     {
       "name_en": "Sakura",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
-      "core": 2,
+      "core": 3,
       "attractive_lv": 30,
       "favorite_item_lv": 0,
       "favorite_item_tid": 0,
@@ -6341,17 +6341,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 93774,
-        "actual_atk": 306819,
-        "raid400_hp": 2970025,
-        "actual_hp": 9361383
+        "raid400_atk": 95616,
+        "actual_atk": 315145,
+        "raid400_hp": 3026574,
+        "actual_hp": 9612472
       }
     },
     {
       "name_en": "Sakura: Bloom in Summer",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -6389,17 +6389,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 110726,
-        "actual_atk": 342632,
-        "raid400_hp": 2708587,
-        "actual_hp": 7926494
+        "raid400_atk": 110851,
+        "actual_atk": 345307,
+        "raid400_hp": 2710837,
+        "actual_hp": 7986119
       }
     },
     {
       "name_en": "Scarlet",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 1,
       "attractive_lv": 40,
@@ -6437,17 +6437,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 122504,
-        "actual_atk": 373240,
-        "raid400_hp": 2947604,
-        "actual_hp": 8589205
+        "raid400_atk": 122606,
+        "actual_atk": 376099,
+        "raid400_hp": 2949899,
+        "actual_hp": 8653533
       }
     },
     {
       "name_en": "Scarlet: Black Shadow",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 4,
       "attractive_lv": 40,
@@ -6485,10 +6485,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 139988,
-        "actual_atk": 405474,
-        "raid400_hp": 3421846,
-        "actual_hp": 9395305
+        "raid400_atk": 140096,
+        "actual_atk": 408501,
+        "raid400_hp": 3424276,
+        "actual_hp": 9463418
       }
     },
     {
@@ -6533,17 +6533,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 94971,
-        "actual_atk": 5253,
-        "raid400_hp": 2312729,
-        "actual_hp": 294062
+        "raid400_atk": 95071,
+        "actual_atk": 5353,
+        "raid400_hp": 2314979,
+        "actual_hp": 296312
       }
     },
     {
       "name_en": "Sin",
       "class": "Defender",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -6581,17 +6581,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 66515,
-        "actual_atk": 221119,
-        "raid400_hp": 2770835,
-        "actual_hp": 9148278
+        "raid400_atk": 66615,
+        "actual_atk": 222919,
+        "raid400_hp": 2773835,
+        "actual_hp": 9221403
       }
     },
     {
       "name_en": "Snow White",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 20,
@@ -6629,17 +6629,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 122167,
-        "actual_atk": 358711,
-        "raid400_hp": 2952888,
-        "actual_hp": 8275153
+        "raid400_atk": 122267,
+        "actual_atk": 361412,
+        "raid400_hp": 2955138,
+        "actual_hp": 8335925
       }
     },
     {
       "name_en": "Snow White: Heavy Arms",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 4,
       "attractive_lv": 40,
@@ -6677,17 +6677,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 137208,
-        "actual_atk": 402694,
-        "raid400_hp": 3338446,
-        "actual_hp": 9311905
+        "raid400_atk": 137316,
+        "actual_atk": 405721,
+        "raid400_hp": 3340876,
+        "actual_hp": 9380018
       }
     },
     {
       "name_en": "Snow White: Innocent Days",
       "class": "Attacker",
       "corporation": "PILGRIM",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -6725,17 +6725,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 95471,
-        "actual_atk": 327377,
-        "raid400_hp": 2312729,
-        "actual_hp": 7530636
+        "raid400_atk": 95571,
+        "actual_atk": 330027,
+        "raid400_hp": 2314979,
+        "actual_hp": 7590261
       }
     },
     {
       "name_en": "Soda",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 10,
@@ -6773,23 +6773,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 83091,
-        "actual_atk": 280211,
-        "raid400_hp": 2602976,
-        "actual_hp": 8516604
+        "raid400_atk": 83216,
+        "actual_atk": 282503,
+        "raid400_hp": 2605226,
+        "actual_hp": 8583879
       }
     },
     {
       "name_en": "Soda: Twinkling Bunny",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 3,
       "attractive_lv": 30,
       "favorite_item_lv": 5,
       "favorite_item_tid": 100402,
-      "harmony_cube_lv": 0,
+      "harmony_cube_lv": 15,
       "equip": [
         {
           "slot": "head",
@@ -6821,17 +6821,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 126495,
-        "actual_atk": 387064,
-        "raid400_hp": 3030396,
-        "actual_hp": 8893236
+        "raid400_atk": 129408,
+        "actual_atk": 392842,
+        "raid400_hp": 3116181,
+        "actual_hp": 9043487
       }
     },
     {
       "name_en": "Soline",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 2,
       "attractive_lv": 30,
@@ -6869,17 +6869,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 111633,
-        "actual_atk": 367286,
-        "raid400_hp": 2702565,
-        "actual_hp": 8454785
+        "raid400_atk": 111737,
+        "actual_atk": 370201,
+        "raid400_hp": 2704905,
+        "actual_hp": 8520375
       }
     },
     {
       "name_en": "Soline: Frost Ticket",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 20,
@@ -6917,17 +6917,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 102167,
-        "actual_atk": 299287,
-        "raid400_hp": 3174640,
-        "actual_hp": 9088268
+        "raid400_atk": 102267,
+        "actual_atk": 301554,
+        "raid400_hp": 3176890,
+        "actual_hp": 9155543
       }
     },
     {
       "name_en": "Sora",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -6965,22 +6965,22 @@
         }
       ],
       "measured": {
-        "raid400_atk": 86220,
-        "actual_atk": 279475,
-        "raid400_hp": 2723753,
-        "actual_hp": 8521428
+        "raid400_atk": 86320,
+        "actual_atk": 281700,
+        "raid400_hp": 2726003,
+        "actual_hp": 8587428
       }
     },
     {
       "name_en": "Sugar",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
-      "attractive_lv": 13,
+      "attractive_lv": 18,
       "favorite_item_lv": 0,
-      "favorite_item_tid": 0,
+      "favorite_item_tid": 100401,
       "harmony_cube_lv": 0,
       "equip": [
         {
@@ -7013,17 +7013,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 103291,
-        "actual_atk": 349111,
-        "raid400_hp": 2467227,
-        "actual_hp": 7998208
+        "raid400_atk": 104349,
+        "actual_atk": 352872,
+        "raid400_hp": 2495517,
+        "actual_hp": 8087315
       }
     },
     {
       "name_en": "Takina",
       "class": "Supporter",
       "corporation": "ABNORMAL",
-      "level": 663,
+      "level": 668,
       "grade": 0,
       "core": 0,
       "attractive_lv": 10,
@@ -7061,23 +7061,23 @@
         }
       ],
       "measured": {
-        "raid400_atk": 90891,
-        "actual_atk": 284146,
-        "raid400_hp": 2873703,
-        "actual_hp": 8671378
+        "raid400_atk": 90991,
+        "actual_atk": 286371,
+        "raid400_hp": 2875953,
+        "actual_hp": 8737378
       }
     },
     {
       "name_en": "Tia",
       "class": "Defender",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 4,
       "attractive_lv": 30,
       "favorite_item_lv": 5,
       "favorite_item_tid": 100302,
-      "harmony_cube_lv": 15,
+      "harmony_cube_lv": 0,
       "equip": [
         {
           "slot": "head",
@@ -7109,17 +7109,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 89730,
-        "actual_atk": 266721,
-        "raid400_hp": 3753352,
-        "actual_hp": 11054250
+        "raid400_atk": 87058,
+        "actual_atk": 265995,
+        "raid400_hp": 3673192,
+        "actual_hp": 11054368
       }
     },
     {
       "name_en": "Tove",
       "class": "Supporter",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 7,
       "attractive_lv": 30,
@@ -7157,17 +7157,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 123558,
-        "actual_atk": 357088,
-        "raid400_hp": 3861887,
-        "actual_hp": 10867798
+        "raid400_atk": 123672,
+        "actual_atk": 359769,
+        "raid400_hp": 3864452,
+        "actual_hp": 10947399
       }
     },
     {
       "name_en": "Trina",
       "class": "Supporter",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 20,
@@ -7205,17 +7205,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 88232,
-        "actual_atk": 285352,
-        "raid400_hp": 2786525,
-        "actual_hp": 8700153
+        "raid400_atk": 91361,
+        "actual_atk": 290648,
+        "raid400_hp": 2882775,
+        "actual_hp": 8861428
       }
     },
     {
       "name_en": "Trony",
       "class": "Attacker",
       "corporation": "MISSILIS",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 7,
       "attractive_lv": 30,
@@ -7253,17 +7253,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 115923,
-        "actual_atk": 396158,
-        "raid400_hp": 2817503,
-        "actual_hp": 9122822
+        "raid400_atk": 116037,
+        "actual_atk": 399353,
+        "raid400_hp": 2820068,
+        "actual_hp": 9194718
       }
     },
     {
       "name_en": "Velvet",
       "class": "Supporter",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 2,
       "core": 0,
       "attractive_lv": 30,
@@ -7301,10 +7301,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 105785,
-        "actual_atk": 306770,
-        "raid400_hp": 3262338,
-        "actual_hp": 9291920
+        "raid400_atk": 105910,
+        "actual_atk": 309105,
+        "raid400_hp": 3264588,
+        "actual_hp": 9360470
       }
     },
     {
@@ -7349,17 +7349,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 112532,
-        "actual_atk": 11725,
-        "raid400_hp": 2748271,
-        "actual_hp": 480096
+        "raid400_atk": 112638,
+        "actual_atk": 11831,
+        "raid400_hp": 2750656,
+        "actual_hp": 482481
       }
     },
     {
       "name_en": "Vesti: Tactical Upgrade",
       "class": "Attacker",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 2,
       "core": 0,
       "attractive_lv": 30,
@@ -7397,22 +7397,22 @@
         }
       ],
       "measured": {
-        "raid400_atk": 118676,
-        "actual_atk": 359858,
-        "raid400_hp": 2854446,
-        "actual_hp": 8281069
+        "raid400_atk": 118776,
+        "actual_atk": 362610,
+        "raid400_hp": 2856696,
+        "actual_hp": 8342989
       }
     },
     {
       "name_en": "Viper",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 0,
       "attractive_lv": 30,
-      "favorite_item_lv": 5,
-      "favorite_item_tid": 100402,
+      "favorite_item_lv": 2,
+      "favorite_item_tid": 200501,
       "harmony_cube_lv": 0,
       "equip": [
         {
@@ -7445,17 +7445,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 113974,
-        "actual_atk": 359794,
-        "raid400_hp": 2767538,
-        "actual_hp": 8298519
+        "raid400_atk": 118966,
+        "actual_atk": 367489,
+        "raid400_hp": 2921638,
+        "actual_hp": 8513436
       }
     },
     {
       "name_en": "Volume",
       "class": "Attacker",
       "corporation": "TETRA",
-      "level": 663,
+      "level": 668,
       "grade": 1,
       "core": 0,
       "attractive_lv": 10,
@@ -7493,10 +7493,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 104263,
-        "actual_atk": 340807,
-        "raid400_hp": 2502466,
-        "actual_hp": 7824731
+        "raid400_atk": 107417,
+        "actual_atk": 346562,
+        "raid400_hp": 2598716,
+        "actual_hp": 7979503
       }
     },
     {
@@ -7541,10 +7541,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 97385,
-        "actual_atk": 5873,
-        "raid400_hp": 2442309,
-        "actual_hp": 383269
+        "raid400_atk": 98148,
+        "actual_atk": 6636,
+        "raid400_hp": 2463959,
+        "actual_hp": 404919
       }
     },
     {
@@ -7589,17 +7589,17 @@
         }
       ],
       "measured": {
-        "raid400_atk": 67406,
-        "actual_atk": 5202,
-        "raid400_hp": 2885554,
-        "actual_hp": 319605
+        "raid400_atk": 67506,
+        "actual_atk": 5302,
+        "raid400_hp": 2888554,
+        "actual_hp": 322605
       }
     },
     {
       "name_en": "Zwei",
       "class": "Supporter",
       "corporation": "ELYSION",
-      "level": 663,
+      "level": 668,
       "grade": 3,
       "core": 5,
       "attractive_lv": 30,
@@ -7637,10 +7637,10 @@
         }
       ],
       "measured": {
-        "raid400_atk": 110060,
-        "actual_atk": 335396,
-        "raid400_hp": 3471777,
-        "actual_hp": 10231866
+        "raid400_atk": 110170,
+        "actual_atk": 337983,
+        "raid400_hp": 3474252,
+        "actual_hp": 10308674
       }
     }
   ]

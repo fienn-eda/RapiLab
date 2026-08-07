@@ -68,27 +68,29 @@ def extract_inputs(entry: dict, owned: dict, detail: dict,
     }
 
 
-def _extra_flat_atk(tables, inp, research):
-    # Affinity is deliberately absent: it scales with the core step, so it travels
-    # separately to assemble_atk (see stat_assembly's `core_scale`).
+def _gear_atk(tables, inp):
+    """Equipment + cube + collectible: the terms that sit OUTSIDE the core step.
+
+    Affinity and the corporation research ride inside it, so both travel to
+    assemble_atk on their own parameters (see stat_assembly's model docstring).
+    """
     return (
-        sa.corporation_atk(tables, inp["corporation"], research)
-        + sum(sa.equipment_atk(tables, e["tid"], e["lv"],
-                               equip_corporation_type=e["corporation_type"],
-                               unit_corporation=inp["corporation"]) for e in inp["equip"])
+        sum(sa.equipment_atk(tables, e["tid"], e["lv"],
+                             equip_corporation_type=e["corporation_type"],
+                             unit_corporation=inp["corporation"]) for e in inp["equip"])
         + sa.cube_atk(tables, inp["harmony_cube_lv"])
         + sa.collectible_atk(tables, inp["favorite_item_tid"], inp["favorite_item_lv"])
     )
 
 
-def _extra_flat_hp(tables, inp, research):
-    # HP account research is Personal+Class (research_hp), not Corporation - the
-    # Corporation research rows carry ATK only. See stat_assembly's HP section.
+def _gear_hp(tables, inp):
+    """HP sibling of `_gear_atk`. HP account research is Personal+Class
+    (research_hp), not Corporation - the Corporation rows carry ATK only - and
+    like its ATK counterpart it rides inside the core step."""
     return (
-        sa.research_hp(tables, inp["class"], research)
-        + sum(sa.equipment_hp(tables, e["tid"], e["lv"],
-                              equip_corporation_type=e["corporation_type"],
-                              unit_corporation=inp["corporation"]) for e in inp["equip"])
+        sum(sa.equipment_hp(tables, e["tid"], e["lv"],
+                            equip_corporation_type=e["corporation_type"],
+                            unit_corporation=inp["corporation"]) for e in inp["equip"])
         + sa.cube_hp(tables, inp["harmony_cube_lv"])
         + sa.collectible_hp(tables, inp["favorite_item_tid"], inp["favorite_item_lv"])
     )
@@ -99,15 +101,18 @@ def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict
     inp = extract_inputs(entry, owned, detail, assume_cube_level)
     atk = sa.assemble_atk(tables, character_class=inp["class"], level=400,
                           grade=inp["grade"], core=inp["core"],
-                          corporation=inp["corporation"],
                           affinity_flat=sa.affinity_atk(
                               tables, inp["class"], inp["attractive_lv"]),
-                          extra_flat=_extra_flat_atk(tables, inp, research))
+                          research_flat=sa.corporation_atk(
+                              tables, inp["corporation"], research),
+                          extra_flat=_gear_atk(tables, inp))
     hp = sa.assemble_hp(tables, character_class=inp["class"], level=400,
                         grade=inp["grade"], core=inp["core"],
                         affinity_flat_hp=sa.affinity_hp(
                             tables, inp["class"], inp["attractive_lv"]),
-                        extra_flat_hp=_extra_flat_hp(tables, inp, research))
+                        research_flat_hp=sa.research_hp(
+                            tables, inp["class"], research),
+                        extra_flat_hp=_gear_hp(tables, inp))
     return {
         "name_en": inp["name_en"],
         "resource_id": inp["resource_id"],

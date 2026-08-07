@@ -172,11 +172,12 @@ def main() -> int:
           + " · ".join(f"{k} {v}" for k, v in by_rarity.most_common()))
     zero_level = [u for u, _, _ in moved if u["level"] == 0]
     if zero_level:
-        # 이건 이상 신호가 아니다 (Fienn 인게임 전수 확인, 2026-07-27): 레벨 0
-        # 소장품은 착용된 상태이고 스킬은 레벨 0부터 나온다. 스탯(ATK/HP)만
-        # 레벨 1부터 붙는다 - 착용 여부를 말하는 것은 레벨이 아니라 tid다.
-        print(f"  참고: 그중 {len(zero_level)}유닛은 레벨 0이다 - 스킬은 레벨 0부터 "
-              "나오고(정상) 스탯만 레벨 1부터 붙는다")
+        # 이건 이상 신호가 아니다: 레벨 0 소장품은 착용된 상태이고, 스킬도
+        # 스탯(ATK/HP)도 사다리 1단을 낸다 - 착용 여부를 말하는 것은 레벨이
+        # 아니라 tid다 (스킬은 Fienn 인게임 전수 확인 2026-07-27, 스탯은
+        # 리터 인게임 대조 2026-08-07).
+        print(f"  참고: 그중 {len(zero_level)}유닛은 레벨 0이다 - 착용된 상태이고 "
+              "스킬·스탯 모두 사다리 1단을 낸다(정상)")
     if args.verbose or silent:
         for unit, weapon_delta, effects in (moved if args.verbose else []) + silent:
             mark = "  " if (weapon_delta or effects) else "!!"
