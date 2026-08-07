@@ -165,6 +165,19 @@ def distributed_damage_buff_slugs():
     return _damage_type_buff_slugs(DISTRIBUTED_DAMAGE_BUFF)
 
 
+# A Hit Rate bullet, in either direction. It is a damage stat since 2026-08-07
+# (accuracy.core_hit_rate), and the fifteen slugs that carried one had all
+# written it off as inert - which is why this scan exists rather than a list.
+HIT_RATE_BULLET = re.compile(r"Hit Rate\s*[▲▼]", re.I)
+
+
+def hit_rate_bullet_slugs():
+    """Every encoded slug whose own skill text moves Hit Rate, up or down."""
+    return frozenset(
+        slug for slug in ENCODED_SLUGS if matching_lines(slug, (HIT_RATE_BULLET,))
+    )
+
+
 def unreadable_slugs():
     """Encoded slugs with no manifest or no collected data - they can neither be
     confirmed nor ruled out, so a caller comparing lists must exclude them."""

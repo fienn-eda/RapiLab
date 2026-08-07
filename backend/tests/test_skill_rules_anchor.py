@@ -15,7 +15,7 @@ STARFISH_OMURICE = {
 }
 # Sea Anemone (Shaped) Pasta (skills[1]) - escalating on Full Burst end.
 SEA_ANEMONE_PASTA = {
-    "description_value_01": "10.13",  # Once: Hit Rate (not modeled)
+    "description_value_01": "10.13",  # Once: squad Hit Rate %
     "description_value_02": "10",
     "description_value_03": "35.02",  # Twice: ATK % of caster's ATK
     "description_value_04": "10",
@@ -89,6 +89,22 @@ def test_sea_anemone_pasta_escalates_over_burst_cycles():
     fire_trigger("full_burst_end", rules, ctx, registry, time=50.0)
     assert registry.total_for("flat_atk", ally, now=50.0) == 3502.0
     assert round(registry.total_for("reload_speed_percent", ally, now=50.0), 4) == 0.4004
+
+
+def test_sea_anemone_pasta_hit_rate_unlocks_on_the_first_activation():
+    """The Once tier, which sat empty while Hit Rate had no consumer. Cumulative
+    like the rest: every later cycle re-applies it alongside the tiers above."""
+    ctx = make_context()
+    registry = EffectRegistry()
+    rules = {"anchor-innocent-maid": build()}
+    ally = {"slug": "ally", "element": "Fire"}
+
+    fire_trigger("full_burst_end", rules, ctx, registry, time=10.0)   # cycle 1
+    assert round(registry.total_for("hit_rate", ally, now=10.0), 4) == 0.1013
+    assert registry.total_for("hit_rate", ally, now=20.1) == 0.0      # 10s duration
+
+    fire_trigger("full_burst_end", rules, ctx, registry, time=30.0)   # cycle 2
+    assert round(registry.total_for("hit_rate", ally, now=30.0), 4) == 0.1013
 
 
 def test_sea_anemone_pasta_atk_buff_scales_with_caster_atk():

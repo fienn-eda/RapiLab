@@ -5,10 +5,13 @@ build has higher numbers and an extra shotgun-ally buff plus a second Thunderbol
 trigger.
 
 Modeled (DPS-relevant):
-- Overcharge (skills[0], on entering Full Burst): all allies ATK +11.85% for 10
-  sec (squad). Signature adds, for all Shotgun allies (exact weapon-type
-  scope via the gap #3 member filter, 2026-07-18 - was a squad approx),
-  ATK +63.88% and Max Ammunition +50.14% for 10 sec.
+- Overcharge (skills[0], on entering Full Burst): all allies ATK +11.85% and Hit
+  Rate +11.85% (base) / +20.09% (signature) for 10 sec (squad). The Hit Rate half
+  is squad-wide, so it pays out on whichever allies have a spread left to narrow -
+  nothing for the deck's MG/SR/RL seats, whose 10px is already inside any core.
+  Signature adds, for all Shotgun allies (exact weapon-type scope via the gap #3
+  member filter, 2026-07-18 - was a squad approx), ATK +63.88% and Max Ammunition
+  +50.14% for 10 sec.
 - Thunderbolt (skills[1]): after every 10 normal attacks, a 98.55%-of-final-ATK
   nuke (gap #1 `every`). Signature adds a second trigger: after every 5 normal
   attacks, a 201.6% nuke. "3 / 1 enemies with lowest HP" collapses to the single
@@ -19,8 +22,7 @@ Modeled (DPS-relevant):
   grants self Attack Damage +31.68% for 10 sec.
 
 Not modeled / deferred:
-- Overcharge's Hit Rate buff (+11.85% base / +20.09% signature) - Hit Rate is not
-  consumed by the engine (like Attack Speed), so it's inert.
+- Nothing outstanding.
 - (resolved 2026-07-18) The shotgun-ally scope was approximated as squad; it now
   uses the exact SG member filter, so non-shotgun allies no longer receive the
   +63.88% ATK / +50.14% Max Ammo.
@@ -67,13 +69,18 @@ def build_drake_rules(values):
     overcharge = values["overcharge"]
     drake_special = values["drake_special"]
 
+    squad_hit_rate = float(overcharge["description_value_01"]) / 100
+    squad_hit_rate_duration = float(overcharge["description_value_02"])
     squad_atk = float(overcharge["description_value_03"]) / 100
     squad_atk_duration = float(overcharge["description_value_04"])
     self_max_ammo = float(drake_special["description_value_02"]) / 100
     self_max_ammo_duration = float(drake_special["description_value_03"])
 
     return [
-        buff_rule("full_burst_enter", [("atk_percent", squad_atk, "squad", squad_atk_duration)]),
+        buff_rule("full_burst_enter", [
+            ("atk_percent", squad_atk, "squad", squad_atk_duration),
+            ("hit_rate", squad_hit_rate, "squad", squad_hit_rate_duration),
+        ]),
         buff_rule("own_burst_activate", [("max_ammo_percent", self_max_ammo, "self", self_max_ammo_duration)]),
     ]
 
@@ -82,6 +89,8 @@ def build_drake_signature_rules(values):
     overcharge = values["overcharge"]
     drake_special = values["drake_special"]
 
+    squad_hit_rate = float(overcharge["description_value_01"]) / 100
+    squad_hit_rate_duration = float(overcharge["description_value_02"])
     squad_atk = float(overcharge["description_value_03"]) / 100
     squad_atk_duration = float(overcharge["description_value_04"])
     sg_atk = float(overcharge["description_value_05"]) / 100
@@ -98,6 +107,7 @@ def build_drake_signature_rules(values):
     return [
         buff_rule("full_burst_enter", [
             ("atk_percent", squad_atk, "squad", squad_atk_duration),
+            ("hit_rate", squad_hit_rate, "squad", squad_hit_rate_duration),
         ]),
         # "all Shotgun allies" (Drake included) - exact scope via the gap #3
         # member filter (was a squad approximation before 2026-07-18).

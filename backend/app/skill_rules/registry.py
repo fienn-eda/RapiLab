@@ -218,7 +218,11 @@ from app.skill_rules.mihara_bonding_chain import (
     build_mihara_bonding_chain_rules,
     build_mihara_scheduled_nukes,
 )
-from app.skill_rules.modernia import build_modernia_per_shot_rules, build_modernia_resources
+from app.skill_rules.modernia import (
+    build_modernia_per_shot_rules,
+    build_modernia_resources,
+    build_modernia_rules,
+)
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
     build_aegis_cannon_rules,
@@ -272,6 +276,7 @@ from app.skill_rules.mast_romantic_maid import (build_mast_rules,
                                                 build_mast_self_stun)
 from app.skill_rules.mint import build_here_i_go_rules, build_mint_rules
 from app.skill_rules.miranda import (
+    build_health_up_hit_rate_rules,
     build_health_up_rules,
     build_miranda_base_rules,
     build_miranda_rules,
@@ -585,7 +590,7 @@ _BUILDERS = {
     ),
     "dorothy-serendipity": lambda sv: (build_dorothy_serendipity_rules(sv), None),  # burst is buff-only (self Attack Speed + ATK)
     "guillotine-winter-slayer": lambda sv: (build_guillotine_rules(sv), None),  # Extermination DoT (Hero-Level-scaled) deferred
-    "modernia": lambda sv: ([], None),  # all modeled content is per-shot + resource; burst deferred
+    "modernia": lambda sv: (build_modernia_rules(sv), None),  # burst deferred; the rest is per-shot + resource
     "little-mermaid": lambda sv: (build_little_mermaid_rules(sv), None),
     "mast-romantic-maid": lambda sv: (build_mast_rules(sv), None),
     "mint": lambda sv: (build_mint_rules(sv), None),
@@ -1018,6 +1023,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "chisato-nishikigi": lambda sv: build_chisato_per_shot_rules(sv),
     "maiden-ice-rose": lambda sv: (build_blessings_upon_you_per_shot_rules(sv)
                                    + build_meditation_per_shot_rules(sv, sv["caster_max_hp"])),
+    "miranda": lambda sv: build_health_up_hit_rate_rules(sv["health_up"]),
     "miranda-signature": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
     "rouge": lambda sv: (build_coin_flip_per_shot_rules(sv["coin_flip"])

@@ -102,6 +102,21 @@ hit on a `pierce_hits_body_behind_core` boss) is weighted by the same
 probability: a round that missed the core has no core to pass through. See
 `accuracy.py`.
 
+**A weapon-mode segment may declare `always_core_hit: True` on its profile**
+(2026-08-07), which puts that segment's shots on the core with no spread math at
+all. Nayuta's Memory Incineration is the case Fienn measured in play: the
+transform turns her submachine gun into a charged shot that never misses the
+core. Do NOT infer this from the segment's `weapon` string — that label is a
+hand-written archetype, and `_core_hit_rate_at` deliberately reads the unit's
+REAL weapon for a segment without the declaration (an undeclared segment's
+spread is still an open, unmeasured approximation).
+
+**Every collected Hit Rate bullet is encoded as of 2026-08-07** (15 units, 19
+slugs). `tests/test_hit_rate_bullets_are_encoded.py` cross-checks the skill text
+against the modules, so a new unit with a Hit Rate bullet fails the suite until
+its module registers the stat — the gap that let this stat ship with a consumer
+and no producers for five weeks.
+
 Scheduling stats (change the burst rotation / shot timing, not per-hit damage):
 | stat | mechanism | game wording |
 |---|---|---|

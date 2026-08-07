@@ -1,9 +1,12 @@
 """Tests for the first batch of Burst-1 supporters: Liter, Volume, Miranda.
 Values are the real max-level (dollskill for Miranda) figures from dotgg.
 """
+import pytest
+
 from app.effects import EffectRegistry
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.miranda import (
+    build_health_up_hit_rate_rules,
     build_health_up_rules,
     build_miranda_base_rules,
     build_miranda_rules,
@@ -191,8 +194,9 @@ def test_miranda_wake_up_grants_top1_crit_rate_for_one_round():
 
 def test_miranda_health_up_self_atk_every_30_normal_attacks():
     rules = build_health_up_rules(MIRANDA["health_up"])
-    assert len(rules) == 1
-    threshold, mode, skill_rules = rules[0]
+    # The two shared Hit Rate steps, then the Favorite Item's own self ATK step.
+    assert len(rules) == 2
+    threshold, mode, skill_rules = rules[-1]
     assert (threshold, mode) == (30, "every")
 
     reg = EffectRegistry()
@@ -203,6 +207,52 @@ def test_miranda_health_up_self_atk_every_30_normal_attacks():
     assert round(reg.total_for("atk_percent", miranda, 3.0), 4) == 0.5006  # self ATK
     assert reg.total_for("atk_percent", ALLY, 3.0) == 0.0  # self-only
     assert reg.total_for("atk_percent", miranda, 8.1) == 0.0  # 5s window expired
+
+
+def _weapon_deck_ctx():
+    """Miranda plus one SMG ally and one shotgun ally, so Health Up!'s
+    submachine-gun step has something to include and something to exclude."""
+    return SquadContext([
+        SquadMember("miranda", burst_tier=1, element="Iron", weapon="SMG"),
+        SquadMember("smg-ally", burst_tier=3, element="Fire", weapon="SMG"),
+        SquadMember("sg-ally", burst_tier=2, element="Water", weapon="SG"),
+    ])
+
+
+@pytest.mark.parametrize("values", [MIRANDA_BASE_HEALTH_UP, MIRANDA_SIG_HEALTH_UP])
+def test_miranda_health_up_hit_rate_reaches_the_squad_then_the_smgs(values):
+    """Both bullets, on both builds: +5.44% for everyone and a further +3.79%
+    for submachine guns only. Miranda carries one herself, so she collects
+    both."""
+    threshold, mode, skill_rules = build_health_up_hit_rate_rules(values)[0]
+    assert (threshold, mode) == (30, "every")
+
+    reg = EffectRegistry()
+    ctx = _weapon_deck_ctx()
+    for rule in skill_rules:
+        rule.action(ctx, "miranda", 3.0, reg)
+    miranda = {"slug": "miranda", "element": "Iron"}
+    smg_ally = {"slug": "smg-ally", "element": "Fire"}
+    sg_ally = {"slug": "sg-ally", "element": "Water"}
+    assert round(reg.total_for("hit_rate", miranda, 3.0), 4) == 0.0923
+    assert round(reg.total_for("hit_rate", smg_ally, 3.0), 4) == 0.0923
+    assert round(reg.total_for("hit_rate", sg_ally, 3.0), 4) == 0.0544  # squad half only
+    assert reg.total_for("hit_rate", miranda, 8.1) == 0.0               # 5s window
+
+
+def test_miranda_health_up_hit_rate_refreshes_instead_of_stacking():
+    """Neither bullet says "stacks up to", and 30 SMG rounds take ~1.5 sec
+    against a 5 sec duration - so a stacking reading would pile up without
+    bound. Firing the counter three times inside one window must read the same
+    as firing it once."""
+    threshold, mode, skill_rules = build_health_up_hit_rate_rules(MIRANDA_BASE_HEALTH_UP)[0]
+    reg = EffectRegistry()
+    ctx = _weapon_deck_ctx()
+    for time in (1.5, 3.0, 4.5):
+        for rule in skill_rules:
+            rule.action(ctx, "miranda", time, reg)
+    miranda = {"slug": "miranda", "element": "Iron"}
+    assert round(reg.total_for("hit_rate", miranda, 4.5), 4) == 0.0923
 
 
 # Module-level fixture aliases so the assembly verification harness

@@ -27,7 +27,8 @@ def _weapon(weapon):
             "reload_time": 0.0, "charge_time": 0.0, "charge_damage_percent": 100.0}
 
 
-def _log(weapon, *, core_diameter_px, striker_rules=(), two_pierce=False):
+def _log(weapon, *, core_diameter_px, striker_rules=(), two_pierce=False,
+         weapon_mode_schedules=None):
     return simulate_raid(
         _deck(weapon),
         {"b1": [], "b2": [], "striker": list(striker_rules)},
@@ -43,6 +44,7 @@ def _log(weapon, *, core_diameter_px, striker_rules=(), two_pierce=False):
         core_hittable=True,
         core_diameter_px=core_diameter_px,
         pierce_hits_body_behind_core=two_pierce,
+        weapon_mode_schedules=weapon_mode_schedules or {},
     )["damage_log"]
 
 
@@ -160,6 +162,50 @@ def test_a_scheduled_summon_hit_also_ignores_the_spread():
     )
     tick = next(e["damage"] for e in result["damage_log"] if e["source"] == "scheduled")
     assert tick == 20000.0
+
+
+def _transform(**profile_extras):
+    profile = {"weapon": "SR", "damage_percent": 100.0, "charge_time": 0.0,
+               "charge_damage_percent": 100.0, "rate_of_fire": 2.0}
+    profile.update(profile_extras)
+    return {"striker": lambda context, fight_duration: [
+        {"start": 0.0, "end": 1.5, "profile": profile}
+    ]}
+
+
+def test_a_transform_segment_keeps_the_base_weapon_spread_by_default():
+    """A segment's `"weapon"` string is a hand-written label, not a measured
+    aiming circle, so it does NOT get to pick a spread on its own - the unit's
+    real weapon does. Here an SG that transforms into an "SR" profile still
+    collects the SG's 4%."""
+    shots = _shots(_log("SG", core_diameter_px=50.0,
+                        weapon_mode_schedules=_transform()))
+    assert shots and all(s == pytest.approx(10400.0) for s in shots)
+
+
+def test_a_segment_may_declare_that_it_always_strikes_the_core():
+    """Nayuta's Memory Incineration: the transform turns her SMG into a charged
+    shot that lands on the core every time (Fienn, in play). That is a measured
+    property of the segment, so it is declared on the profile rather than
+    inferred from its weapon label - segments without the declaration keep the
+    base weapon's spread (the test above)."""
+    shots = _shots(_log("SG", core_diameter_px=50.0,
+                        weapon_mode_schedules=_transform(always_core_hit=True)))
+    assert shots and all(s == 20000.0 for s in shots)
+
+
+def test_an_always_core_segment_still_reads_the_hit_rate_for_base_shots():
+    """The declaration covers the segment's own shots and nothing else: with the
+    window ending at 1.0 sec, the shots after it are back on the SG's spread."""
+    schedules = {"striker": lambda context, fight_duration: [
+        {"start": 0.0, "end": 1.0,
+         "profile": {"weapon": "SR", "damage_percent": 100.0, "charge_time": 0.0,
+                     "charge_damage_percent": 100.0, "rate_of_fire": 4.0,
+                     "always_core_hit": True}}
+    ]}
+    shots = _shots(_log("SG", core_diameter_px=50.0, weapon_mode_schedules=schedules))
+    assert 20000.0 in shots, "the segment's own shot should ignore the spread"
+    assert pytest.approx(10400.0) in shots, "shots after the window should not"
 
 
 def test_the_pierce_body_instance_is_weighted_by_the_core_hit_rate():

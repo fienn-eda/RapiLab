@@ -11,7 +11,11 @@ from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resources,
     build_guillotine_rules,
 )
-from app.skill_rules.modernia import build_modernia_per_shot_rules, build_modernia_resources
+from app.skill_rules.modernia import (
+    build_modernia_per_shot_rules,
+    build_modernia_resources,
+    build_modernia_rules,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 
@@ -31,7 +35,7 @@ MODERNIA = {
         "description_value_06": "5.04", "description_value_07": "5", "description_value_08": "10",
     },
     "giant_leap": {
-        "description_value_01": "8.56",   # all-ally Hit Rate % (inert, not modeled)
+        "description_value_01": "8.56",   # squad Hit Rate %
         "description_value_02": "15",     # its duration
         "description_value_03": "200",    # normal-attack-hit threshold
         "description_value_04": "29.38",  # self ATK %
@@ -74,6 +78,20 @@ def test_modernia_per_hit_additional_damage_every_shot():
     rules[0].action(deck_ctx("modernia", "Fire"), "modernia", 0.0, reg)
     pulses = reg.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1 and pulses[0].value == 3.05
+
+
+def test_modernia_giant_leap_hit_rate_is_for_the_allies():
+    """Her own machine gun's spread converges to 10px, already inside any core,
+    so this bullet buys HER nothing - but it says "Affects all allies", and the
+    deck's shotguns and submachine guns are where it lands."""
+    reg = EffectRegistry()
+    ctx = deck_ctx("modernia", "Fire")
+    fire_trigger("full_burst_enter", {"modernia": build_modernia_rules(MODERNIA)}, ctx, reg, 0.0)
+    for target in ({"slug": "modernia", "element": "Fire"},
+                   {"slug": "iron-ally", "element": "Iron"},
+                   {"slug": "water-ally", "element": "Water"}):
+        assert round(reg.total_for("hit_rate", target, now=0.0), 4) == 0.0856
+    assert reg.total_for("hit_rate", {"slug": "iron-ally", "element": "Iron"}, now=15.1) == 0.0
 
 
 def test_modernia_giant_leap_self_atk_every_200_hits_from_battle_start():

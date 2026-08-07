@@ -13,8 +13,13 @@ Modeled (DPS-relevant):
   window (0.5-2s), so once a stage first caps it stays capped continuously for
   the rest of the fight - modeled as a STEADY-STATE approximation (all of it
   permanent from battle_start; the ~2.5s real ramp to fully stack is
-  negligible against a raid's length). Hit Rate per stage is inert, not
-  modeled.
+  negligible against a raid's length). Each stage also carries a Hit Rate stack
+  on the same caps: 1.36% x10 + 2.71% x10 + 4.08% x5 = 61.1%, summed by the same
+  steady-state reasoning. That is enough to pull a submachine gun's 110px spread
+  down to 48.9px, INSIDE a 50px core - so on an encounter with a core that size
+  she goes from 20.7% of her rounds on the core to all of them. She is not a
+  marginal case of this model; she is one of the two units it decides
+  (Jill Valentine is the other).
 - The Great Thief (skills[2], her burst): self Attack Damage +57.08% and
   Reload Speed +25.87% for 10 sec, plus a 1736.31%-of-final-ATK burst nuke
   dealing Distributed Damage - typed "distributed" in the registry's
@@ -40,6 +45,8 @@ SKILL_VALUE_MANIFESTS = {
 
 
 STEADY_STATE_ATK = 2.45 * 10 + 4.9 * 10 + 7.36 * 5  # Explore Route stages 1-3, fully stacked
+# The same three stages' Hit Rate stacks, on the same caps (10 / 10 / 5).
+STEADY_STATE_HIT_RATE = 1.36 * 10 + 2.71 * 10 + 4.08 * 5
 
 
 def the_great_thief_burst_percent(values):
@@ -62,6 +69,7 @@ def build_quency_rules(values):
     return [
         buff_rule("battle_start", [
             ("atk_percent", STEADY_STATE_ATK / 100, "self", None),
+            ("hit_rate", STEADY_STATE_HIT_RATE / 100, "self", None),
             ("distributed_damage_up", distributed_damage, "self", None),
             ("other_core_damage_sources", core_damage, "self", None),
             ("crit_rate", crit_rate, "self", None),

@@ -43,7 +43,7 @@ LA_LA_LA = {
     "description_value_06": "181.2",   # stage-target DoT % of final ATK
     "description_value_07": "1",       # its tick interval sec
     "description_value_08": "9",       # its duration sec
-    "description_value_09": "100",     # Noise Pollution Hit Rate % (deferred)
+    "description_value_09": "100",     # Noise Pollution Hit Rate ▼ %
     "description_value_10": "1",       # its duration sec
     "description_value_11": "1",       # Mute stacks consumed (not modeled)
 }
@@ -185,5 +185,49 @@ def test_burst_puts_damage_taken_up_on_the_boss_for_ten_seconds():
 def test_both_modes_share_every_non_state_effect():
     intro = build_diesel_intro_rules(VALUES)
     highlight = build_diesel_highlight_rules(VALUES)
-    assert len(intro) == len(highlight)
+    # Highlight carries exactly one rule Intro does not: Noise Pollution, which
+    # only exists while she is in Highlight status.
+    assert len(intro) + 1 == len(highlight)
     assert build_diesel_burst_dot(VALUES) == build_diesel_burst_dot(VALUES)
+
+
+def _squad_context(slug, part_destructible=False):
+    """Diesel plus two allies, so "all allies (except self)" has somewhere to
+    land and someone to skip."""
+    return SquadContext([
+        SquadMember(slug, 3, "Fire", "RL"),
+        SquadMember("sg-ally", 1, "Iron", "SG"),
+        SquadMember("ar-ally", 2, "Wind", "AR"),
+    ], part_destructible=part_destructible)
+
+
+def test_noise_pollution_blinds_the_allies_but_not_diesel():
+    reg = EffectRegistry()
+    rules = {DIESEL_HIGHLIGHT: build_diesel_highlight_rules(VALUES)}
+    ctx = _squad_context(DIESEL_HIGHLIGHT)
+    fire_trigger("own_burst_activate", rules, ctx, reg, 0.0)
+    assert reg.total_for("hit_rate", _target(DIESEL_HIGHLIGHT), 0.0) == 0.0
+    for ally in ("sg-ally", "ar-ally"):
+        target = {"slug": ally, "element": "Iron"}
+        assert reg.total_for("hit_rate", target, 0.0) == -1.0
+        assert reg.total_for("hit_rate", target, 1.1) == 0.0  # 1 sec, and gone
+
+
+def test_a_part_destructible_boss_keeps_the_squad_muted():
+    """Mute (immunity to Noise Pollution) is restocked by destroying a part, and
+    her burst spends only one stack - so where parts fall the penalty never
+    lands. Same reading as her Sustained bracket, other side of the flag."""
+    reg = EffectRegistry()
+    rules = {DIESEL_HIGHLIGHT: build_diesel_highlight_rules(VALUES)}
+    ctx = _squad_context(DIESEL_HIGHLIGHT, part_destructible=True)
+    fire_trigger("own_burst_activate", rules, ctx, reg, 0.0)
+    assert reg.total_for("hit_rate", {"slug": "sg-ally", "element": "Iron"}, 0.0) == 0.0
+
+
+def test_intro_never_pays_noise_pollution():
+    """It is gated on Highlight STATUS, which the Intro build never enters."""
+    reg = EffectRegistry()
+    rules = {DIESEL_INTRO: build_diesel_intro_rules(VALUES)}
+    ctx = _squad_context(DIESEL_INTRO)
+    fire_trigger("own_burst_activate", rules, ctx, reg, 0.0)
+    assert reg.total_for("hit_rate", {"slug": "sg-ally", "element": "Iron"}, 0.0) == 0.0

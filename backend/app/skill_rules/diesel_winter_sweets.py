@@ -50,22 +50,29 @@ Modeled (DPS-relevant):
   enough to read as continuous); on a non-destructible boss it is absent.
   Approximation, because there is no on-part-destroyed trigger to time it.
 
+- Noise Pollution (La La La, Highlight only): Hit Rate -100% for 1 sec on all
+  allies EXCEPT herself, on her burst. This is Highlight's price, and it is a
+  real one for a squad of shotguns - a 250px spread doubles to 477px, which on
+  a 50px core cuts an ally's core-hit share from 4.0% to 1.1% for that second.
+  It is gated on the boss having NO destructible part, because the same skill
+  gives allies Mute (immunity to Noise Pollution, up to 3 stacks) "when an ally
+  or self destroys an enemy's part": on a part-destructible boss the squad
+  restocks Mute repeatedly and the penalty simply never lands, while her burst
+  spends only one stack per use. That is the same "parts are destroyed
+  repeatedly through a raid" reading her Sustained bracket below already uses,
+  applied to the other side of the flag (Fienn, 2026-08-07).
+
 Not modeled / deferred:
-- Noise Pollution (Hit Rate -100% for 1 sec on allies while she is in
-  Highlight) and the Mute stacks that grant immunity to it. `hit_rate` is
-  not consumed by the engine, so encoding either is inert. This one omission
-  biases in the OPTIMISTIC direction: in game, Highlight's payoff is charged
-  against an ally accuracy penalty that a Mute-stacked squad neutralises,
-  and the engine sees only the payoff. Read a Highlight deck as assuming the
-  Mute upkeep is being played correctly.
-- Mute stack bookkeeping itself (a defensive immunity counter, no damage
-  term).
+- Mute stack bookkeeping itself: a real counter with a source, a cap and a
+  spend, standing in here as a boss-profile branch. Two things that branch
+  cannot see are a fight where parts exist but are destroyed too rarely to keep
+  Mute up, and the very start of a fight before the first part falls.
 
 Numbers sourced from data/lootandwaifus/char_diesel-winter-sweets.json.
 """
-from app.effects import ResourceSpec
+from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import buff_rule, linear_resource_buff, refreshing_buff_rule
-from app.squad_engine import boss_part_destructible
+from app.squad_engine import SkillRule, boss_part_destructible, boss_part_indestructible
 
 _MANIFEST_KEYS = {
     "mic_test": ("skills", 0),
@@ -129,12 +136,41 @@ def _state_rules(values, crit_slot, sustained_slot):
     ]
 
 
+def _noise_pollution_rule(values):
+    """Highlight's price: on her burst, every ally BUT her loses all Hit Rate
+    for a second. Gated on the boss having no destructible part - see the
+    module docstring for why that flag stands in for the Mute counter."""
+    hit_rate = _f(values, "la_la_la", 9) / 100
+    duration = _f(values, "la_la_la", 10)
+
+    def apply_noise_pollution(context, caster_slug, time, registry):
+        # "Affects all allies (except self)" - resolved live to a slugs: scope,
+        # the shape Brid: Silent Track's Full Throttle established. A squad
+        # scope would blind Diesel herself, whose RL never cared either way.
+        allies = [m.slug for m in context.members if m.slug != caster_slug]
+        if not allies:
+            return
+        registry.add(
+            Effect("hit_rate", -hit_rate, "slugs:" + ",".join(allies),
+                   duration, caster_slug),
+            applied_at=time,
+        )
+
+    rule = SkillRule(trigger="own_burst_activate", action=apply_noise_pollution)
+    rule.condition = boss_part_indestructible()
+    return rule
+
+
 def build_diesel_intro_rules(values):
+    # Intro never enters Highlight status, so Noise Pollution cannot fire for
+    # her at all - the bullet is gated on the state, not on the burst.
     return _state_rules(values, crit_slot=1, sustained_slot=3) + _shared_rules(values)
 
 
 def build_diesel_highlight_rules(values):
-    return _state_rules(values, crit_slot=2, sustained_slot=5) + _shared_rules(values)
+    return (_state_rules(values, crit_slot=2, sustained_slot=5)
+            + _shared_rules(values)
+            + [_noise_pollution_rule(values)])
 
 
 def build_diesel_resource_specs(values):

@@ -56,10 +56,17 @@ def test_burst_gives_self_attack_speed():
     assert reg.total_for("attack_speed_percent", SELF, 15.1) == 0.0
 
 
-def test_inert_and_deferred_effects_are_not_emitted():
-    """Hit Rate has no consumer, and Black Typhoon's cover-attack trigger does
-    not exist - neither may leak into the registry."""
+def test_burst_gives_self_hit_rate():
+    reg = _fire("own_burst_activate")
+    assert round(reg.total_for("hit_rate", SELF, 0.0), 4) == 0.33
+    assert reg.total_for("hit_rate", SG_ALLY, 0.0) == 0.0   # "Affects self"
+    assert reg.total_for("hit_rate", SELF, 15.1) == 0.0
+
+
+def test_deferred_effects_are_not_emitted():
+    """Black Typhoon's cover-attack trigger does not exist in the engine, so
+    neither of the stats behind it may leak into the registry."""
     for trigger in ("battle_start", "full_burst_enter", "own_burst_activate"):
         reg = _fire(trigger)
-        for stat in ("hit_rate", "other_critical_damage_sources", "reload_speed_percent"):
+        for stat in ("other_critical_damage_sources", "reload_speed_percent"):
             assert reg.total_for(stat, SELF, 0.0) == 0.0

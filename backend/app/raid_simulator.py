@@ -786,7 +786,7 @@ def _simulate_raid_once(
         weapon = (weapon_stats.get(slug) or {}).get("weapon")
         return weapon in in_range_weapons
 
-    def _core_hit_rate_at(slug, time, is_normal_attack):
+    def _core_hit_rate_at(slug, time, is_normal_attack, always_core_hit=False):
         """이 인스턴스의 발 중 코어에 드는 비율.
 
         탄착군이 좌우하는 것은 평타뿐이다. `core_strike`는 스킬이 코어를
@@ -805,11 +805,16 @@ def _simulate_raid_once(
         아니다 - 세그먼트의 `"weapon"`은 스킬 모듈에 손으로 적힌 무기 클래스
         라벨일 뿐, `shot_detail`이 잰 그 세그먼트의 실제 조준원이 아니다.
         `WEAPON_SPREAD_DIAMETER`를 그 라벨로 찾으면 없는 탄착군 수치를 지어내는
-        셈이 되므로 기저 무기를 쓴다. **이 판단은 측정되지 않았다** -
-        docs/superpowers/specs/2026-08-07-hit-rate-core-accuracy-design.md §9
-        보류 참고.
+        셈이 된다.
+
+        그래서 세그먼트가 조준원을 바꾸는 경우는 라벨이 아니라 **선언**으로
+        들어온다: 프로필의 `always_core_hit`(→ ShotRecord)이 선 세그먼트는
+        p=1.0이다. 나유타의 Memory Incineration이 그렇다(Fienn 인게임 확인,
+        2026-08-07) - 차지 방식으로 바뀌면서 코어를 언제나 맞힌다. 선언이 없는
+        세그먼트는 여전히 기저 무기를 쓰고, 그 근사는 미측정으로 남는다
+        (docs/superpowers/specs/2026-08-07-hit-rate-core-accuracy-design.md §9).
         """
-        if core_diameter_px is None or not is_normal_attack:
+        if core_diameter_px is None or not is_normal_attack or always_core_hit:
             return 1.0
         weapon = (weapon_stats.get(slug) or {}).get("weapon")
         if weapon not in WEAPON_SPREAD_DIAMETER:
@@ -934,7 +939,7 @@ def _simulate_raid_once(
     def record(
         slug, percent, time, source, damage_type="attack",
         extra_charge_bonus=0.0, resource_gate=None, extra_flat_atk=0.0,
-        on_charge_weapon=None, core_eligible_override=None,
+        on_charge_weapon=None, core_eligible_override=None, always_core_hit=False,
     ):
         damage_events.append({
             "slug": slug, "percent": percent, "time": time, "source": source,
@@ -946,6 +951,9 @@ def _simulate_raid_once(
             # None = apply `core_eligible`'s general rule. True opts one
             # instance in against it - see that function's summon exception.
             "core_eligible_override": core_eligible_override,
+            # This shot came from a weapon-mode segment that declares it always
+            # lands on the core, so no spread math applies to it.
+            "always_core_hit": always_core_hit,
         })
 
     def _resolve_percent(ev):
@@ -1364,7 +1372,8 @@ def _simulate_raid_once(
             # measurement lands on the +0.5 branch to 0.00003%.
             record(slug, rec.damage_percent, shot_time, "normal_attack",
                    damage_type=damage_type, extra_charge_bonus=rec.extra_charge_bonus,
-                   on_charge_weapon=rec.weapon in CHARGE_WEAPONS)
+                   on_charge_weapon=rec.weapon in CHARGE_WEAPONS,
+                   always_core_hit=rec.always_core_hit)
         shot_times_by_slug[slug] = shot_times
 
     # "For N round(s)" (bullet-count) buffs expire when the affected ally
@@ -1722,7 +1731,8 @@ def _simulate_raid_once(
             else ev["core_eligible_override"]
         )
 
-        share = _core_hit_rate_at(ev["slug"], ev["time"], is_normal_attack)
+        share = _core_hit_rate_at(ev["slug"], ev["time"], is_normal_attack,
+                                  ev["always_core_hit"])
 
         def instance(on_core, weight=1.0):
             return {

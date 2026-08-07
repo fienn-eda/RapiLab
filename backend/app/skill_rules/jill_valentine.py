@@ -4,9 +4,12 @@ attacker. Base skills.
 Modeled (DPS-relevant):
 - Acid Ammo (skills[1]): on Full Burst enter, self ATK +40.03% for 10s.
 - Magnum Ammo (skills[0]) + Supercop (skills[2], her burst): on burst, self True
-  Damage +34.99%, Attack Damage +75%, Reload Speed +99.96%, and normal attacks
-  deal True Damage - all for 10s. During her burst she sprays AR normal attacks as
-  True Damage, boosted by those buffs; a buffs-only burst (no separate nuke).
+  Damage +34.99%, Attack Damage +75%, Reload Speed +99.96%, Hit Rate +80.78%, and
+  normal attacks deal True Damage - all for 10s. During her burst she sprays AR
+  normal attacks as True Damage, boosted by those buffs; a buffs-only burst (no
+  separate nuke). +80.78% shrinks an AR's 75px spread to 19.9px, inside any
+  plausible core, so on an encounter that sets a core diameter those 10 sec put
+  every one of her rounds on the core.
 - Magnum Ammo's 1st bullet: at battle start and on each reload to Max
   Ammunition, her next 9 rounds get Normal Attack Damage Multiplier +30% - a
   Final ATK modifier on her normal attacks only (damage-formula reference),
@@ -21,7 +24,8 @@ Modeled (DPS-relevant):
   periodic sustained nuke. See build_acid_ammo_periodic_nuke.
 
 Not modeled / deferred:
-- Supercop's Hit Rate buff (inert) and its forced-reload/ammo-removal bookkeeping.
+- Supercop's forced-reload / ammo-removal bookkeeping ("Removes 100% of ammo",
+  "Forced Reload"): the engine has no way to empty a magazine mid-fight.
 """
 from app.skill_rules._helpers import buff_rule, round_buff_rule
 
@@ -50,6 +54,8 @@ def build_jill_rules(values):
     true_damage_duration = float(magnum["description_value_04"])
     reload_speed = float(supercop["description_value_01"]) / 100
     reload_speed_duration = float(supercop["description_value_02"])
+    hit_rate = float(supercop["description_value_04"]) / 100
+    hit_rate_duration = float(supercop["description_value_05"])
     attack_damage = float(supercop["description_value_06"]) / 100
     attack_damage_duration = float(supercop["description_value_07"])
     true_conversion_duration = float(supercop["description_value_08"])
@@ -60,6 +66,7 @@ def build_jill_rules(values):
             ("true_damage_up", true_damage, "self", true_damage_duration),
             ("attack_damage_up", attack_damage, "self", attack_damage_duration),
             ("reload_speed_percent", reload_speed, "self", reload_speed_duration),
+            ("hit_rate", hit_rate, "self", hit_rate_duration),
             ("normal_attacks_deal_true", 1.0, "self", true_conversion_duration),
         ]),
     ]

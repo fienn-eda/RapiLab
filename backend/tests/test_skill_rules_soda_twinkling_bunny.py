@@ -156,8 +156,8 @@ def test_golden_chip_crit_damage_scales_linearly_per_stack():
 
 def test_onward_soda_atk_buff_gated_on_pre_reset_stacks_at_least_30():
     specs = build_onward_soda_resource_gated_buffs(SODA_VALUES)
-    assert len(specs) == 1
-    spec = specs[0]
+    assert len(specs) == 2
+    spec = specs[1]
     assert spec["resource"] == "chip"
     assert spec["cap"] == 50
     assert spec["use_pre_reset"] is True
@@ -167,6 +167,20 @@ def test_onward_soda_atk_buff_gated_on_pre_reset_stacks_at_least_30():
     assert round(spec["value"], 4) == 0.6525
     assert spec["scope"] == "self"
     assert spec["duration"] == 15.0
+
+
+def test_onward_soda_hit_rate_opens_ten_stacks_earlier_than_the_atk():
+    """Stage 2 (20+) and Stage 3 (30+) are separate gates on the same pre-spend
+    count, which is how "each subsequent effect triggers all effects before it"
+    falls out: a burst at 25 stacks buys the Hit Rate alone."""
+    hit_rate, atk = build_onward_soda_resource_gated_buffs(SODA_VALUES)
+    assert hit_rate["stat"] == "hit_rate"
+    assert round(hit_rate["value"], 4) == 0.3891
+    assert hit_rate["scope"] == "self"
+    assert hit_rate["duration"] == 15.0
+    assert hit_rate["use_pre_reset"] is True
+    assert (hit_rate["gate_fn"](20), hit_rate["gate_fn"](19)) == (True, False)
+    assert (atk["gate_fn"](25), hit_rate["gate_fn"](25)) == (False, True)
 
 
 def _simulate(fight_duration):

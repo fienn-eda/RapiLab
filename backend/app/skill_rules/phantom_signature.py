@@ -18,8 +18,10 @@ Weapon stats come from base Phantom's ShiftyPad file via the manifest's
 
 Modeled (DPS-relevant):
 - Thief's Calling Card (dollskills[0]): permanent squad `enemy_def_percent`
-  -32.19%, and self Attack Damage +75.17% as a per-shot round grant - both
-  exactly as in the base build.
+  -32.19%, self Attack Damage +75.17% as a per-shot round grant, and ONE
+  dagger stack's Hit Rate +25.75% held permanently - all three exactly as in
+  the base build. The extra stacks this build genuinely earns are NOT added:
+  see the deferral below.
 - Thief's Vision (dollskills[1]): self ATK +85.12% for 5 sec and Distributed
   Damage +31.92% for 10 sec every 10 normal attacks, also as in the base. The
   bullet names no stack count, so at 12 AR shots/sec each re-application
@@ -39,10 +41,18 @@ Modeled (DPS-relevant):
   Ammunition Capacity +50% for 10 sec.
 
 Not modeled / deferred:
-- Thief's Dagger's Hit Rate +25.75% - Hit Rate is not a damage concept.
 - The dagger stack count itself is not tracked as a resource: the 60-shot
   counter stands in for "max stacks reached", per Fienn's cadence. If the
   engine ever grows a real multi-source stack model this should be revisited.
+- Which is also why her Hit Rate is encoded at ONE stack, the base build's
+  floor, rather than the two or three this build really carries. The count here
+  is a sawtooth, not a level: the third bullet of Thief's Vision "Removes
+  stacks", so every time the dagger reaches 3 it drops back to 0 and rebuilds
+  from two sources at once. Pinning any single value in between would be
+  inventing a duty cycle nobody measured, and the floor is the honest end of
+  that range - so this build's core-hit share (44.4% -> 75.8% of a 50px core)
+  is an UNDERSTATEMENT. A stack model, or an in-game reading of the sawtooth,
+  is what would close it.
 """
 from app.skill_rules._helpers import (
     buff_rule,
@@ -85,6 +95,7 @@ def build_phantom_signature_rules(values):
     card = values["calling_card"]
     trick = values["secret_trick"]
     def_debuff = float(card["description_value_01"]) / 100
+    dagger_hit_rate = float(card["description_value_03"]) / 100
     damage_taken = float(trick["description_value_02"]) / 100
     damage_taken_duration = float(trick["description_value_03"])
     max_ammo = float(trick["description_value_04"]) / 100
@@ -92,6 +103,8 @@ def build_phantom_signature_rules(values):
     return [
         buff_rule("battle_start", [
             ("enemy_def_percent", -def_debuff, "squad", None),
+            # The base build's single held stack, its floor - see the docstring.
+            ("hit_rate", dagger_hit_rate, "self", None),
         ]),
         buff_rule("own_burst_activate", [
             ("max_ammo_percent", max_ammo, "self", max_ammo_duration),

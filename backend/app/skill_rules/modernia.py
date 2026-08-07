@@ -9,6 +9,10 @@ Modeled (DPS-relevant):
   a `▼`, so each stack SHRINKS her magazine), each stacking up to 5 and lasting
   10 sec - modeled as one "evolution" resource (filled every 200 shots, cap 5)
   driving two 10-sec linear buffs.
+- Giant Leap (skills[1]) squad Hit Rate +8.56% for 15 sec on Full Burst entry.
+  It buys HER nothing - an MG's spread converges to 10px, already inside any
+  plausible core - but it is "Affects all allies", so it is the deck's SG/SMG/AR
+  seats that collect it.
 - Giant Leap (skills[1]) self ATK +29.38% for 10 sec: fires on every 200th
   normal hit counted from battle start - in-game it is NOT gated on the
   15-sec increasing-Hit-Rate window the skill text describes (Fienn
@@ -32,7 +36,6 @@ Not modeled / deferred:
   faithfulness (a future live-max-ammo consumer would read it). She is the only
   unit whose resource feeds a stat the shot loop consumes, so this ordering costs
   exactly one bullet today.
-- Giant Leap's all-ally Hit Rate buff: inert (not a damage stat).
 - New World (skills[2], her burst): unlimited ammo and Destroy Mode (auto-aim +
   a 2.24%-of-ATK Destroy-Mode damage over 15s) - a weapon/targeting mode, not a
   single burst nuke, so burst_percent is None. (Full Burst Duration +5s is
@@ -57,6 +60,7 @@ Not modeled / deferred:
 """
 from app.effects import ResourceSpec
 from app.skill_rules._helpers import (
+    buff_rule,
     instant_nuke_pulse_rule,
     linear_resource_buff,
     refreshing_buff_rule,
@@ -72,6 +76,20 @@ SKILL_VALUE_MANIFESTS = {
         },
     },
 }
+
+
+def build_modernia_rules(values):
+    """Giant Leap's first bullet: squad Hit Rate on Full Burst entry. Her own
+    MG gains nothing from it (10px spread), so this exists entirely for the
+    allies sharing her deck."""
+    leap = values["giant_leap"]
+    squad_hit_rate = float(leap["description_value_01"]) / 100
+    duration = float(leap["description_value_02"])
+    return [
+        buff_rule("full_burst_enter", [
+            ("hit_rate", squad_hit_rate, "squad", duration),
+        ]),
+    ]
 
 
 def build_modernia_resources(values):
