@@ -81,7 +81,11 @@ def _per_unit(result):
 
 
 def measure(name, boss, by_slug):
-    """(deck ratio, {slug: ratio}, note) for one recorded deck, or None.
+    """(deck ratio, {slug: ratio}, {slug: weapon}, note) for one recorded deck.
+
+    The weapon class rides along because the residual turned out to be ordered
+    by it (see `_print_by_weapon`), and re-deriving it would mean assembling
+    the roster a second time.
 
     A deck whose rotation Fienn recorded is scored on THAT rotation alone - the
     seat order he played and the bursts he actually spent. Without one, the best
@@ -109,7 +113,8 @@ def measure(name, boss, by_slug):
         held = ", ".join(f"{slug} x{n}" for slug, n in rotation["max_bursts"].items())
         note = f"as played, bursts held: {held}" if held else "as played, every burst spent"
         return (result["total_damage"] / total,
-                {slug: per_unit[slug] / rec for slug, rec in record.items()}, note), None
+                {slug: per_unit[slug] / rec for slug, rec in record.items()},
+                _weapons(specs), note), None
 
     orderings = list(feasible_orderings(specs))
     if not orderings:
@@ -122,7 +127,12 @@ def measure(name, boss, by_slug):
     note = (f"seat order unrecorded, best of {len(orderings)} spanning "
             f"{min(s[0] for s in scored) / total:.3f}-{max(s[0] for s in scored) / total:.3f}x")
     return (best_total / total,
-            {slug: best_per_unit[slug] / rec for slug, rec in record.items()}, note), None
+            {slug: best_per_unit[slug] / rec for slug, rec in record.items()},
+            _weapons(specs), note), None
+
+
+def _weapons(specs):
+    return {spec.slug: (spec.weapon_stats or {}).get("weapon", "?") for spec in specs}
 
 
 def _print_orderings(name, boss, by_slug):
@@ -202,12 +212,13 @@ def main():
         return
 
     all_ratios, sim_sum, record_sum = [], 0.0, 0.0
+    weapons = {}
     for name in names:
         measured, problem = measure(name, boss, by_slug)
         if problem:
             print(f"{name}   SKIPPED - {problem}\n")
             continue
-        deck_ratio, ratios, note = measured
+        deck_ratio, ratios, deck_weapons, note = measured
         record = deck_total(name)
         sim_sum += deck_ratio * record
         record_sum += record
@@ -220,6 +231,7 @@ def main():
             print(f"      {slug:<34} {ratio:>6.3f}x{flag}")
             all_ratios.append((ratio, slug, RECORD_DECKS[name][slug]))
         print()
+        weapons.update(deck_weapons)
 
     if record_sum:
         print(f"combined   {sim_sum / record_sum:.3f}x   "
@@ -239,7 +251,29 @@ def main():
         within = sum(1 for r, _, _ in all_ratios if abs(r - 1) < 0.15)
         print(f"within +-15%: {within}/{len(all_ratios)}")
         _print_absolute_errors(all_ratios, record_sum)
+        _print_by_weapon(all_ratios, weapons)
         _print_caveats(all_ratios)
+
+
+def _print_by_weapon(all_ratios, weapons):
+    """The residual rolled up by weapon class.
+
+    Why this is in the standard output rather than a one-off: the per-unit list
+    invites unit-by-unit hunts, and the 2026-08-07 Asuka investigation found the
+    residual is not per-unit at all - it is ordered by weapon class, and the
+    order is how fast that class fires. Chasing the top unit without this table
+    is chasing one instance of a class-wide term.
+    """
+    chaseable = [(r, s) for r, s, _ in all_ratios if s not in RECORD_CAVEATS]
+    if not chaseable or not weapons:
+        return
+    groups = {}
+    for ratio, slug in chaseable:
+        groups.setdefault(weapons.get(slug, "?"), []).append(ratio)
+    print("\nby weapon class (caveated units excluded):")
+    for weapon, ratios in sorted(groups.items(),
+                                 key=lambda kv: -sum(kv[1]) / len(kv[1])):
+        print(f"      {weapon:<5} n={len(ratios):<3} mean {sum(ratios) / len(ratios):.3f}x")
 
 
 def _print_caveats(all_ratios):
