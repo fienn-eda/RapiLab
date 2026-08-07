@@ -246,7 +246,7 @@ Fienn 확인 게이트가 있고 포크된 서브에이전트는 Fienn에게 닿
 검증(로드 시점):
 
 - `id` 중복 없음
-- `weakness`가 5속성 중 하나이거나 `null`
+- `weakness`가 5속성 중 하나 (비어 있으면 거부 — 위 필드 설명 참고)
 - `starts_at`/`ends_at`이 파싱되고, 둘 다 있으면 `starts_at < ends_at`
 - `raid`가 `solo`/`union` 중 하나
 
