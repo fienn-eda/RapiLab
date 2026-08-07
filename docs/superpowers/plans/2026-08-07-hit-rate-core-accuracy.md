@@ -979,9 +979,30 @@ DEF keeps dropping: the engine consumes enemy DEF, never an ally's."
 ### Task 7: 문서 갱신
 
 **Files:**
+- Modify: `.claude/skills/nikke-skill-encoding/references/engine-capabilities.md` · `.claude/skills/nikke-skill-encoding/SKILL.md`
 - Modify: `docs/engine-gaps.md` · `docs/encoded-nikkes.md` · `docs/decisions.md` · `docs/insights.md` · `docs/roadmap.md` · `tools/collect-blablalink/RECIPE.md`
 
-- [ ] **Step 1: Record the decisions and insights**
+- [ ] **Step 1: Fix the capability catalog FIRST — it is the load-bearing one**
+
+이 저장소는 「능력을 만든 날 카탈로그에 안 적으면 그 능력은 없는 것과 같다」를 이미
+한 번 비싸게 배웠다(감사에서 낡은 보류 5건 중 4건의 원인이 그것 하나였고, 5주를
+살아남았다). 이번 작업이 정확히 같은 자리에 있다.
+
+- `.claude/skills/nikke-skill-encoding/references/engine-capabilities.md` — 「엔진이
+  소비하지 **않는** 스탯(인코딩이 inert이므로 보류할 것)」 목록에서 `hit_rate`를 빼고
+  소비되는 스탯으로 옮긴다. 그 항목은 **「더 큰 모델 없이는 소비자가 생길 일이
+  없다」**고 단언하고 있는데, 이제 그 소비자가 `accuracy.core_hit_rate`다. 무엇이
+  그것을 읽는지(무기 탄착군 → 코어 면적비)와 **무엇이 여전히 안 되는지**(RL·MG는
+  기본 탄착군 10px라 명중이 바꿀 것이 없다)를 같이 적는다.
+- `.claude/skills/nikke-skill-encoding/SKILL.md` — 「보류 + 문서화」 목록과 「Hit
+  Rate와 버스트 게이지 충전 속도만 아직 inert」 문장에서 Hit Rate를 뺀다.
+
+**왜 첫 스텝인가:** SKILL.md가 인코더에게 「낡은 보류를 확인하려면
+engine-capabilities.md를 보라」고 지시한다. 즉 틀린 답이 **프로세스가 가리키는 바로
+그 자리**에 있다. 18개 스킬 모듈이 Hit Rate 보류 문구를 달고 있어, 이걸 고치기 전에는
+다음 인코더가 이제 엔진이 읽는 스탯을 또 보류한다.
+
+- [ ] **Step 2: Record the decisions and insights**
 
 `/document` 커맨드(docs-keeper 서브에이전트)에 다음을 넘긴다:
 
@@ -991,7 +1012,7 @@ DEF keeps dropping: the engine consumes enemy DEF, never an ally's."
 - **인사이트:** 실제 코어히트율은 **두 항의 곱**이다 — `p_조준`(플레이 조건·좌석별, gap #21이 다룬 것) × `p_탄착`(무기·명중·결정론, 이 작업). 둘은 직교하므로 gap #21의 결론은 살아 있다.
 - **인사이트:** **수집 단계에서 버린 데이터는 "게임에 없다"로 오독된다.** 오버로드 7종을 보고 "게임에 명중 오버로드가 없다"고 결론냈으나 실제로는 `parse.js`가 라벨 미등록으로 버리고 있었고, 그 사실이 같은 파일 주석에 이름까지 적혀 있었다. 데이터 부재를 결론 삼기 전에 수집 경로의 필터부터 볼 것.
 
-- [ ] **Step 2: Update the gap inventory and the encoded-nikke table**
+- [ ] **Step 3: Update the gap inventory and the encoded-nikke table**
 
 `docs/engine-gaps.md`:
 - `hit_rate` inert 갭을 **해소**로 적는다. 소비자는 `accuracy.core_hit_rate`.
@@ -1002,17 +1023,23 @@ DEF keeps dropping: the engine consumes enemy DEF, never an ally's."
 - **해소(11):** dorothy-serendipity · jill-valentine · phantom · chisato-nishikigi · miranda · quency-escape-queen · nayuta · soda-twinkling-bunny · sugar · drake · noir
 - **여전히 inert, 그러나 사유가 바뀜(4):** diesel-winter-sweets · mast-romantic-maid · modernia · anchor-innocent-maid — RL/MG라 기본 탄착군 10px가 이미 코어 안이다. 「엔진이 안 읽는다」가 아니라 「명중이 바꿀 것이 없다」. **단 디젤의 −100%는 아군 대상이므로 SG/SMG/AR 아군에게는 무해하지 않다** — 그쪽은 이제 실제로 모델된다.
 
-- [ ] **Step 3: Update the roadmap and the collector recipe**
+- [ ] **Step 4: Update the roadmap and the collector recipe**
 
 `docs/roadmap.md` — To-Do 반영. **로스터 재동기화가 필요한 변경**임을 명시한다(차지속도 `lines` 신설과 같은 성격). 재동기화 전까지 기존 로스터에는 명중 오버로드 값이 없다.
 
 `tools/collect-blablalink/RECIPE.md` — 명중 행이 이제 수집된다는 것과, 드롭되는 라벨이 DEF만 남았다는 것.
 
-- [ ] **Step 4: Commit**
+- [ ] **Step 5: Commit**
 
 ```bash
-git add docs/ tools/collect-blablalink/RECIPE.md
-git commit -m "Document the accuracy model and the two gaps it opened"
+git add docs/ tools/collect-blablalink/RECIPE.md .claude/skills/nikke-skill-encoding/
+git commit -m "Document the accuracy model, and stop the catalog from lying
+
+The capability catalog said hit_rate had no consumer and never would. It has
+one now, and eighteen skill modules carry a deferral note written against the
+old answer - so the catalog is the load-bearing edit here, not the footnote.
+Two new gaps recorded: the MG's in-magazine accuracy warm-up, and a core
+damage rate that is 2.5x on four units where the engine hardcodes 2.0x."
 ```
 
 ---
