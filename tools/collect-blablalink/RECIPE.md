@@ -222,7 +222,7 @@ the guard, which is also how you look up the id for a unit nobody owns yet.
   `No data available`, the unit has no PvE cube → `null`. Else name = `…Cube` match,
   level = `LV.<n>` (max is 15).
 
-## (f) Overload labels — English → Korean (backend's 7)
+## (f) Overload labels — English → Korean (backend's 8)
 
 Confirmed against real units (Rapi, Liter, Moran, Maxwell):
 
@@ -235,10 +235,20 @@ Confirmed against real units (Rapi, Liter, Moran, Maxwell):
 | Increase Critical Damage              | 크리티컬 대미지 증가                   | confirmed |
 | Increase Charge Speed                 | 차지 속도 증가                         | confirmed |
 | Increase Charge Damage                | 차지 대미지 증가                       | **unconfirmed** — no captured unit had it; label follows the observed pattern, verify when a charge-damage unit is captured |
+| Increase Hit Rate                     | 명중률 증가                            | confirmed — collected since 2026-08-07 |
 
-**Dropped by design:** ShiftyPad also shows `Increase Hit Rate` (명중률) and
-`Increase DEF` (방어력). The engine models only the 7 damage-relevant overloads above,
-so the parser drops any unmapped label. This is intentional data reduction, not a bug.
+**Collected since 2026-08-07:** `Increase Hit Rate` (명중률 증가) used to be
+dropped for the same reason as DEF below — no engine consumer — but the engine
+gained one (`accuracy.core_hit_rate`: hit rate narrows a normal attack's
+bullet spread against the boss's core), so the parser now maps the label. No
+value table was needed for the label itself — blablalink gives the summed
+percentage as text, same as the other 7 rows; fitting the overload's own
+level curve (which `option_id` it is, what each level is worth) still needs a
+roster resync (`docs/roadmap.md` To-Do).
+
+**Dropped by design:** ShiftyPad also shows `Increase DEF` (방어력). The engine
+consumes enemy DEF only, never an ally's, so this stays an inert stat and the
+parser drops it — the only label still dropped for that reason.
 
 ## (g) Sanitization
 
@@ -253,5 +263,6 @@ no identifiers:
 `rapi-red-hood` (Attacker, cube), `liter` (Supporter, no Battle cube), `moran`
 (Defender, Bastion cube, charge-speed overload), `maxwell` (Attacker, low investment
 1/1/1, no cube), `neon-blue-ocean` (uninvested lv1 stepped up → positive delta, empty
-overload), `blanc` (Defender, per-tab pluck, dropped Hit Rate/DEF overloads, distinct
-skill levels 4/7/9, no cube). Re-capture with `node capture.js <resource_id> <slug>`.
+overload), `blanc` (Defender, per-tab pluck, Hit Rate overload row (parsed since
+2026-08-07) alongside a dropped DEF overload, distinct skill levels 4/7/9, no
+cube). Re-capture with `node capture.js <resource_id> <slug>`.
