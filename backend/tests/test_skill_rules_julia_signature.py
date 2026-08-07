@@ -30,6 +30,7 @@ JULIA_SIGNATURE_VALUES = {
 }
 
 JULIA = {"slug": "julia-signature", "element": "Water"}
+ALLY = {"slug": "ally", "element": "Iron"}
 
 
 def make_context():
@@ -56,6 +57,19 @@ def test_decrescendo_periodic_buffs_self_crit_rate_and_atk():
     assert round(reg.total_for("atk_percent", JULIA, now=20.0), 4) == 0.20
     assert reg.total_for("crit_rate", JULIA, now=30.1) == 0.0  # 10s window
     assert reg.total_for("atk_percent", JULIA, now=30.1) == 0.0
+
+
+def test_decrescendo_also_grants_the_normal_attack_only_crit_rate():
+    """The signature Decrescendo has TWO crit bullets: "Critical Rate ▲ 26.04%"
+    and "Normal Attack Critical Rate ▲ 36.16%". They are separate buckets, so
+    the second reaches her normal attacks without touching her Climax nuke."""
+    ctx = make_context()
+    reg = EffectRegistry()
+    for rule in build_decrescendo_periodic_rules(JULIA_SIGNATURE_VALUES["decrescendo"]):
+        rule.action(ctx, "julia-signature", 20.0, reg)
+    assert round(reg.total_for("normal_attack_crit_rate", JULIA, now=20.0), 4) == 0.3616
+    assert reg.total_for("normal_attack_crit_rate", JULIA, now=30.1) == 0.0  # 10s window
+    assert reg.total_for("normal_attack_crit_rate", ALLY, now=20.0) == 0.0  # self-only
 
 
 def test_decrescendo_periodic_rules_are_labeled_periodic():

@@ -54,17 +54,16 @@ Modeled (DPS-relevant):
   - self ATK +63.36% for 10 sec.
   - burst nuke: 2953.84% of final ATK (default attack type).
 
+- Over Energy (skills[1]): one stage per 240 transformed normal attacks - the
+  text's "+5% per 12 normal attacks while in the transformed state, up to 100%"
+  (slots 09/08/01), counted in SHOTS rather than in whole transform windows.
+  At the baseline 120-round magazine those coincide (240 = two windows exactly),
+  which is what made a "2 transforms per stage" constant look right; they part
+  company as soon as a deck adds [Max Ammo Increase]. A stage then lands
+  part-way through a window, and once a single window can hold 240 shots it
+  skips a reload gap and arrives 6.5 sec sooner.
+
 Not modeled / deferred:
-- Over Energy's fill is a COUNT, and the count-to-stage conversion is a
-  constant here rather than derived. The text gives it exactly: "+5% per 12
-  normal attacks while in the transformed state, up to 100%" (slots 09/08/01),
-  i.e. 240 transformed normals per stage, which at the baseline 120-round
-  magazine is the `OVER_ENERGY_TRANSFORMS_PER_STAGE = 2` below. It does NOT
-  scale: a deck with [Max Ammo Increase] fires more than 120 shots per window,
-  so a stage should arrive in FEWER than 2 transforms and land mid-window,
-  while this model still waits for two whole windows. Everything else in the
-  cycle is derived from the live magazine, so this is the one hardcoded step -
-  it under-credits her stage ramp exactly in max-ammo decks.
 - Warm Up's Charge Speed +10% per stack (skills[0]): not modeled as a buff
   because it is already IN the measurement - the 4.0s build time Fienn timed
   (1.0 + 0.9 + 0.8 + 0.7 + 0.6) is the ramp itself. Encoding it as a live
@@ -85,7 +84,6 @@ SLUG = "laplace-ultimate-hero"
 # Fienn's in-game measurement (2026-07-24).
 SMG_RATE_OF_FIRE = 20.0        # the transformed weapon fires at SMG cadence
 WARM_UP_BUILD_SECONDS = 4.0    # 5 full charges: 1.0 + 0.9 + 0.8 + 0.7 + 0.6
-OVER_ENERGY_TRANSFORMS_PER_STAGE = 2   # 240 transformed normals = 2 full magazines
 OVER_ENERGY_MAX_STAGE = 4
 OVER_ENERGY_BURST_STAGE = 3    # "[Burst Stage 3 entry]" - the stage, not her cast
 
@@ -122,15 +120,41 @@ def _transform_times(period, fight_duration):
     return times
 
 
-def _stage_times(period, window, fight_duration):
-    """[(stage, time)] - stage s lands when the 2s-th transform window ends."""
+def over_energy_normals_per_stage(values):
+    """Transformed normal attacks one Over Energy stage costs.
+
+    "+5% per 12 normal attacks while in the transformed state, up to 100%" -
+    so 100/5 = 20 activations of 12 shots each = 240. Read from the slots
+    because all three numbers are skill values a rebalance can move.
+    """
+    s2 = values["over_energy"]
+    cap = float(s2["description_value_01"])
+    per_normal_count = float(s2["description_value_08"])
+    per_trigger = float(s2["description_value_09"])
+    return int(round(cap / per_trigger * per_normal_count))
+
+
+def _stage_times(period, window, shots, normals_per_stage, fight_duration):
+    """[(stage, time)] - when each Over Energy stage is reached.
+
+    Counted in SHOTS, not in whole transform windows. The magazine scales with
+    [Max Ammo Increase] and the stage cost does not, so a bigger magazine buys
+    a stage sooner AND part-way through a window - at the baseline 120 rounds
+    the two happen to coincide (240 = exactly two windows), which is what made
+    a "2 transforms per stage" constant look right.
+    """
     times = _transform_times(period, fight_duration)
     out = []
     for stage in range(1, OVER_ENERGY_MAX_STAGE + 1):
-        index = stage * OVER_ENERGY_TRANSFORMS_PER_STAGE - 1
+        needed = stage * normals_per_stage
+        full_windows, remainder = divmod(needed, shots)
+        # A remainder of 0 means the stage lands on the last shot of window
+        # `full_windows`, not at the start of the next one.
+        index = full_windows - 1 if remainder == 0 else full_windows
         if index >= len(times):
             break
-        out.append((stage, times[index] + window))
+        into_window = window if remainder == 0 else remainder / SMG_RATE_OF_FIRE
+        out.append((stage, times[index] + into_window))
     return out
 
 
@@ -223,14 +247,15 @@ def _over_energy_stage_rule(values, caster_max_hp):
         if context.activation_count(caster_slug, "full_burst_enter") != 1:
             return
         target = _caster_target(context, caster_slug)
-        _, window, period = _plan_from_percent(
+        shots, window, period = _plan_from_percent(
             weapon,
             max_ammo_percent_total(registry, target, time, int(weapon["max_ammo"])),
         )
         # Enough horizon to reach the last stage; effects landing past the
         # fight's end simply never become active.
+        normals_per_stage = over_energy_normals_per_stage(values)
         horizon = WARM_UP_BUILD_SECONDS + period * (
-            OVER_ENERGY_MAX_STAGE * OVER_ENERGY_TRANSFORMS_PER_STAGE
+            OVER_ENERGY_MAX_STAGE * normals_per_stage / shots + 1
         )
         # "Additional Effect: Gains Pierce" belongs to the TRANSFORMED weapon
         # (skills[0]), so it is up for exactly each transform window - not for
@@ -241,7 +266,7 @@ def _over_energy_stage_rule(values, caster_max_hp):
                 Effect("has_pierce", 1.0, "self", window, caster_slug),
                 applied_at=at,
             )
-        for stage, at in _stage_times(period, window, horizon):
+        for stage, at in _stage_times(period, window, shots, normals_per_stage, horizon):
             # 누적: 스킬 원문의 "[Each subsequent effect triggers all effects
             # before it:]" - stage 2는 1+2, stage 4는 1+2+3+4를 받는다
             # (Fienn 2026-07-24). refreshing이라 앞 단계 효과를 대체하되,
@@ -303,14 +328,15 @@ def build_laplace_stage_nukes(values):
     """
     per_stage = float(values["regenerative_energy_armament_mjolnir"]["description_value_04"])
     weapon = values["caster_weapon_stats"]
+    normals_per_stage = over_energy_normals_per_stage(values)
 
     def make_schedule(stage):
         def schedule(context, fight_duration):
             plan = getattr(context, _PLAN_ATTR, None)
             if plan is None:  # no weapon-mode pass ran (unit not in this sim)
                 plan = _plan_from_percent(weapon, 0.0)
-            _, window, period = plan
-            stage_times = _stage_times(period, window, fight_duration)
+            shots, window, period = plan
+            stage_times = _stage_times(period, window, shots, normals_per_stage, fight_duration)
             return [
                 t for t in context.burst_times.get(SLUG, [])
                 if _stage_at(stage_times, t) == stage

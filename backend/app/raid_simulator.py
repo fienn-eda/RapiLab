@@ -503,6 +503,7 @@ _BUNDLE_STATS = (
     "projectile_explosion_damage_up", "projectile_attachment_damage_up",
     "sequential_attack_damage_up",
     "normal_attack_damage_multiplier",
+    "normal_attack_crit_rate",
 )
 
 
@@ -811,7 +812,15 @@ def _simulate_raid_once(
             flat_atk=bundle["flat_atk"] + extra_flat_atk,
             other_elemental_bonus=bundle["other_elemental_bonus"],
             other_critical_damage_sources=bundle["other_critical_damage_sources"],
-            crit_rate=min(1.0, base_crit_rate + bundle["crit_rate"]),
+            # "Critical Rate of normal attack" is a second crit-rate bucket the
+            # SKILL scopes to normal attacks (Helm's Frontline Command, Julia
+            # signature's Decrescendo). Unlike Core Damage and Effective Range
+            # crit is not a normal-attack-exclusive modifier in the formula, so
+            # the only gate is the instance being a normal attack. The cap sits
+            # on the SUM, which is why it is added before the min.
+            crit_rate=min(1.0, base_crit_rate + bundle["crit_rate"] + (
+                bundle["normal_attack_crit_rate"] if is_normal_attack else 0.0
+            )),
             core_hit_bonus=CORE_HIT_BONUS if hits_core else 0.0,
             other_core_damage_sources=(
                 bundle["other_core_damage_sources"] if hits_core else 0.0

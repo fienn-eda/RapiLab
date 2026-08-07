@@ -1,3 +1,5 @@
+import pytest
+
 from app.effects import EffectRegistry
 from app.skill_rules.laplace_ultimate_hero import (
     build_laplace_ultimate_hero_rules,
@@ -155,6 +157,43 @@ def test_pierce_windows_stretch_with_max_ammo_like_the_transform_does():
     # 120 -> 180 rounds = a 9.0 sec window, so 4.0-13.0 instead of 4.0-10.0.
     assert registry.total_for("has_pierce", LAPLACE, now=12.9) == 1.0
     assert registry.total_for("has_pierce", LAPLACE, now=13.1) == 0.0
+
+
+def test_over_energy_stages_are_counted_in_shots_not_in_whole_transforms():
+    """"+5% per 12 normal attacks in the transformed state, up to 100%" = 240
+    transformed normals per stage. At the baseline 120-round magazine that is
+    exactly two windows, which is what the old constant said; with more max ammo
+    a stage arrives sooner and lands MID-window, which the constant could not."""
+    from app.skill_rules.laplace_ultimate_hero import (
+        _plan_from_percent, _stage_times, over_energy_normals_per_stage)
+
+    values = {"over_energy": OVER_ENERGY}
+    assert over_energy_normals_per_stage(values) == 240
+
+    weapon = dict(CASTER_WEAPON_STATS)
+    shots, window, period = _plan_from_percent(weapon, 0.0)
+    assert (shots, window, period) == (120, 6.0, 12.5)
+    baseline = _stage_times(period, window, shots, 240, 200.0)
+    # Stage 1 at the end of the 2nd window (4.0 + 12.5 + 6.0), stage 2 two more.
+    assert [t for _, t in baseline][:2] == pytest.approx([22.5, 47.5])
+
+    # +50% max ammo: 180 shots a window, so stage 1 needs 1 window + 60 shots
+    # and lands 3.0 sec INTO the second one rather than at its end. The clock
+    # does not move (4.0 + 15.5 + 3.0 = 22.5): 240 shots take 12 sec of firing
+    # either way and both layouts cross exactly one reload gap.
+    shots, window, period = _plan_from_percent(weapon, 0.5)
+    assert (shots, window, period) == (180, 9.0, 15.5)
+    mid = _stage_times(period, window, shots, 240, 200.0)
+    assert mid[0][1] == pytest.approx(4.0 + period + 60 / 20.0) == pytest.approx(22.5)
+
+    # +100%: 240 shots fit in ONE window, so the stage skips a reload gap
+    # entirely and arrives 6.5 sec sooner. That is the case the old "2
+    # transforms per stage" constant could never express.
+    shots, window, period = _plan_from_percent(weapon, 1.0)
+    assert (shots, window) == (240, 12.0)
+    fast = _stage_times(period, window, shots, 240, 200.0)
+    assert fast[0][1] == pytest.approx(16.0)
+    assert fast[0][1] < baseline[0][1]
 
 
 def test_burst_self_atk():
