@@ -1383,6 +1383,74 @@ def test_per_shot_every_outside_full_burst_fires_only_on_out_of_window_shots():
     assert all(not any(s <= e["time"] < end for s, end in windows) for e in ps)
 
 
+def _accumulate_result(limit, increment_at, seen=None):
+    """A one-second AR timeline (12 shots at k/12) driving an "accumulate"
+    per-shot rule. `seen` collects the (shots_since_fire) the mode passes the
+    callback, so a test can assert on the lock bookkeeping directly."""
+    def increment(context, slug, time, registry, shots_since_fire):
+        if seen is not None:
+            seen.append(shots_since_fire)
+        return increment_at(shots_since_fire)
+
+    return simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=0.1,
+        fight_duration=1.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon()},
+        per_shot_rules={"attacker": [
+            ((limit, increment), "accumulate", [instant_nuke_pulse_rule("per_shot", 100.0)]),
+        ]},
+    )
+
+
+def _fired_shot_indices(result):
+    shots = [round(k / 12, 4) for k in range(12)]
+    return [shots.index(round(e["time"], 4))
+            for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
+
+
+def test_accumulate_with_a_constant_increment_matches_every_n():
+    # The mode's baseline: feeding 1.0 per shot makes it a shot counter, so it
+    # must land on exactly the shots "every 3" would.
+    result = _accumulate_result(3, lambda _since: 1.0)
+    assert _fired_shot_indices(result) == [2, 5, 8, 11]
+
+
+def test_accumulate_carries_the_overshoot_into_the_next_cycle():
+    # The threshold is SUBTRACTED, not reset to zero. With 2.0 per shot and a
+    # limit of 3 the leftover 1.0 makes the next cycle one shot short, giving
+    # the 1,2 / 4,5 / 7,8 pattern. A reset-to-zero implementation would fire on
+    # every other shot (1,3,5,...), so this pins the arithmetic that makes
+    # Dorothy's 160-pellet trigger land on every second Flash.
+    result = _accumulate_result(3, lambda _since: 2.0)
+    assert _fired_shot_indices(result) == [1, 2, 4, 5, 7, 8, 10, 11]
+
+
+def test_accumulate_increment_may_vary_with_shots_since_the_last_fire():
+    # Dorothy's shape: the 3 shots after a fire contribute far less (her pellet
+    # count is fixed at 1), which stretches the next cycle. Hand-computed:
+    # 4,4,4 -> fires at index 2 leaving 2; then 1,1 (locked), 4 -> 12 at index
+    # 6; same again at 10.
+    result = _accumulate_result(10, lambda since: 1.0 if since is not None and since < 2 else 4.0)
+    assert _fired_shot_indices(result) == [2, 6, 10]
+
+
+def test_accumulate_reports_shots_since_fire_starting_at_none():
+    # Before the first fire there is no "since" to report - None, not 0, so a
+    # unit cannot mistake the opening shots for locked ones.
+    seen = []
+    _accumulate_result(10, lambda since: 1.0 if since is not None and since < 2 else 4.0, seen)
+    assert seen[:3] == [None, None, None]
+    # index 2 fires, so index 3 is the first shot after a fire.
+    assert seen[3:7] == [0, 1, 2, 3]
+
+
 def _sequence_result(spec, gauge_charge_time):
     # Three stages with distinct percents so the damage log tells apart WHICH
     # stage fired (100/200/300% of atk 10000 -> 10000/20000/30000).

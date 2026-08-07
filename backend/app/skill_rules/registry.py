@@ -1342,8 +1342,10 @@ def get_periodic_rules(slug, skill_values):
 def get_per_shot_rules(slug, skill_values):
     """List of (threshold, mode, [SkillRule, ...]) for a Nikke with a skill that
     fires after/every N shots (see raid_simulator's `per_shot_rules`), or None
-    for Nikkes without one. `mode` is "after" (once at the Nth shot) or "every"
-    (at every Nth shot)."""
+    for Nikkes without one. `mode` is "after" (once at the Nth shot), "every"
+    (at every Nth shot), or "accumulate", whose `threshold` is instead
+    `(limit, increment_at)` - a per-shot quantity the unit computes, fired when
+    the running total crosses `limit` (Dorothy: Serendipity's 80 pellets)."""
     builder = _PER_SHOT_RULE_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
 

@@ -1251,7 +1251,9 @@ def _simulate_raid_once(
         # to the registry (seen by phase 2 at each shot's time) or emit an
         # instant_damage_percent pulse recorded as a per-shot nuke.
         # "every_n_critical_hits" counts EXPECTED crits rather than shots (EVE's
-        # Unstable Energy) - see its branch below. Rules must
+        # Unstable Energy) and "accumulate" counts neither - it sums a per-shot
+        # quantity the unit supplies and fires at a threshold (Dorothy:
+        # Serendipity's 80 pellets) - see their branches below. Rules must
         # be stateless and must not change shot generation (reload/ammo), which
         # is already fixed for this unit here.
         unit_per_shot = per_shot_rules.get(slug, [])
@@ -1310,6 +1312,37 @@ def _simulate_raid_once(
                 base_indices = [i for i, r in enumerate(shot_records) if not r.in_segment]
                 window_fire_indices[idx] = {
                     i for pos, i in enumerate(base_indices) if (pos + 1) % threshold == 0}
+            elif mode == "accumulate":
+                # Every other mode COUNTS shots. This one accumulates a
+                # per-shot QUANTITY and fires when it crosses a threshold -
+                # Dorothy: Serendipity's Flash, "when hitting the target with
+                # 80 pellets", where a shot is worth 10 pellets normally, 15
+                # while her burst's "Number of pellets +5" is up, and 1 (+5)
+                # for the 3 shots her own proc fixes the count at 1.
+                #
+                # The threshold is SUBTRACTED rather than reset, so the
+                # overshoot carries into the next cycle. That is what makes a
+                # second threshold at 2x land on every second fire of the
+                # first (Flash's 160-pellet bullet, Fienn confirmed in-game
+                # 2026-08-07) instead of drifting apart.
+                #
+                # `shots_since_fire` is passed because a rule cannot read its
+                # OWN effect here: `round_buff_rule`'s grants only become
+                # Effects in the second pass, after every unit's shot loop
+                # (gap #9), while this counter has to run before it. None
+                # means "has not fired yet", which a unit must not mistake for
+                # the shot right after a fire.
+                limit, increment_at = threshold
+                total, last_fire_index = 0.0, None
+                fires = set()
+                for i, shot_time in enumerate(shot_times):
+                    since = None if last_fire_index is None else i - last_fire_index - 1
+                    total += increment_at(context, slug, shot_time, registry, since)
+                    if total >= limit:
+                        total -= limit
+                        fires.add(i)
+                        last_fire_index = i
+                window_fire_indices[idx] = fires
             elif mode == "every_n_critical_hits":
                 # This engine never rolls crit per hit - every hit's damage is
                 # scaled by the expected crit factor - so there is no "was this
