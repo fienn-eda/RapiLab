@@ -100,6 +100,7 @@ side of a boss-profile flag (e.g. Ark Ranger Black's floor DoT vs. ceiling
 DoT modeling the same battery-transformation state two different ways);
 absent field = always fires, matching every existing spec's behavior.
 """
+from app.accuracy import WEAPON_SPREAD_DIAMETER, core_hit_rate
 from app.attack_rate import CHARGE_WEAPONS, generate_segmented_shots
 from app.burst_cycle import FULL_BURST_OPEN_DELAY, simulate_burst_cycle
 from app.damage_formula import calculate_damage
@@ -504,6 +505,7 @@ _BUNDLE_STATS = (
     "sequential_attack_damage_up",
     "normal_attack_damage_multiplier",
     "normal_attack_crit_rate",
+    "hit_rate",
 )
 
 
@@ -784,9 +786,29 @@ def _simulate_raid_once(
         weapon = (weapon_stats.get(slug) or {}).get("weapon")
         return weapon in in_range_weapons
 
+    def _core_hit_rate_at(slug, time, is_normal_attack):
+        """이 인스턴스의 발 중 코어에 드는 비율.
+
+        탄착군이 좌우하는 것은 평타뿐이다. `core_strike`는 스킬이 코어를
+        때린다고 원문에 적힌 딜이고, 소환물은 스스로 조준하므로(아니스:
+        스타의 Shooting Stars) 둘 다 겨냥의 문제가 아니다 - 둘 다 평타가
+        아니라서 이 한 줄로 함께 걸러진다.
+
+        `core_diameter_px`가 없으면 이 인카운터는 코어히트율을 모델링하지
+        않는다: 적격 인스턴스는 엔진이 오래 모델해 온 상한인 1.0을 받는다.
+        """
+        if core_diameter_px is None or not is_normal_attack:
+            return 1.0
+        weapon = (weapon_stats.get(slug) or {}).get("weapon")
+        if weapon not in WEAPON_SPREAD_DIAMETER:
+            return 1.0
+        return core_hit_rate(
+            weapon, _stat_bundle(slug, time)["hit_rate"], core_diameter_px
+        )
+
     def _damage_instance(
         slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0,
-        hits_core=False, on_charge_weapon=None, is_normal_attack=False,
+        hits_core=False, on_charge_weapon=None, is_normal_attack=False, core_hit_share=1.0,
     ):
         bundle = _stat_bundle(slug, time)
         # True Damage ignores enemy DEF (nikke.gg glossary).
@@ -822,6 +844,7 @@ def _simulate_raid_once(
             crit_rate=min(1.0, base_crit_rate + bundle["crit_rate"] + (
                 bundle["normal_attack_crit_rate"] if is_normal_attack else 0.0
             )),
+            core_hit_rate=core_hit_share,
             core_hit_bonus=CORE_HIT_BONUS if hits_core else 0.0,
             other_core_damage_sources=(
                 bundle["other_core_damage_sources"] if hits_core else 0.0
@@ -1682,7 +1705,9 @@ def _simulate_raid_once(
             else ev["core_eligible_override"]
         )
 
-        def instance(on_core):
+        share = _core_hit_rate_at(ev["slug"], ev["time"], is_normal_attack)
+
+        def instance(on_core, weight=1.0):
             return {
                 "slug": ev["slug"],
                 "time": ev["time"],
@@ -1692,9 +1717,10 @@ def _simulate_raid_once(
                     extra_charge_bonus=ev["extra_charge_bonus"],
                     extra_flat_atk=ev["extra_flat_atk"],
                     hits_core=on_core,
+                    core_hit_share=share,
                     on_charge_weapon=ev["on_charge_weapon"],
                     is_normal_attack=is_normal_attack,
-                ),
+                ) * weight,
                 "source": ev["source"],
                 "damage_type": ev["damage_type"],
             }
@@ -1707,7 +1733,11 @@ def _simulate_raid_once(
         )
         # The body hit keeps `source` = "normal_attack", so a caller's
         # burst/normal/skill split (deck_search._summarize) still adds up.
-        return [instance(True), instance(False)] if pierces else [instance(hits_core)]
+        #
+        # 코어를 놓친 발은 본체에 맞고 그대로 나가므로 뚫고 나갈 코어가 없다.
+        # 그래서 본체 인스턴스는 코어를 맞춘 비율만큼만 존재한다.
+        return ([instance(True), instance(False, weight=share)] if pierces
+                else [instance(hits_core)])
 
     damage_log = [entry for ev in damage_events for entry in _entries(ev)]
 
