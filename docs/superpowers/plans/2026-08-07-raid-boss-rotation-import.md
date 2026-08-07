@@ -1382,8 +1382,17 @@ import { useRaidRotations } from './hooks/useRaidRotations'
 `frontend/src/components/RecommendPanel.tsx` — props 인터페이스에:
 
 ```ts
-  /** 공지에서 읽어둔 회차 전체. 이 탭은 솔로 레이드 회차만 쓴다. */
-  rotations: RaidRotation[]
+  /** 공지에서 읽어둔 회차 전체. 이 탭은 솔로 레이드 회차만 쓴다.
+   *  선택적인 이유는 이 컴포넌트를 직접 렌더하는 테스트가 51곳이기 때문이다 —
+   *  전부 고치면 그 소음에 실제 변경이 묻힌다. 배선을 빠뜨리면 App 테스트의
+   *  "탭마다 그 레이드의 회차 보스만 뜬다"가 잡는다. */
+  rotations?: RaidRotation[]
+```
+
+구조 분해에서 기본값을 준다:
+
+```tsx
+  rotations = [],
 ```
 
 import:
@@ -1406,11 +1415,13 @@ import { latestRotationFor, type RaidRotation } from '../types/raidRotation'
 
 - [ ] **Step 5: UnionRaidPanel을 배선한다**
 
-`frontend/src/components/UnionRaidPanel.tsx` — props 인터페이스에:
+`frontend/src/components/UnionRaidPanel.tsx` — props 인터페이스에. RecommendPanel과
+같은 이유로 선택적이다(이쪽 테스트는 `renderPanel` 헬퍼 하나지만, 두 패널의 prop
+모양이 다르면 App에서 배선할 때 한쪽만 틀리기 쉽다):
 
 ```ts
   /** 공지에서 읽어둔 회차 전체. 이 탭은 유니온 레이드 회차만 쓴다. */
-  rotations: RaidRotation[]
+  rotations?: RaidRotation[]
 ```
 
 import:
@@ -1419,7 +1430,7 @@ import:
 import { latestRotationFor, type RaidRotation } from '../types/raidRotation'
 ```
 
-구조 분해에 `rotations`를 더하고, 컴포넌트 본문에서 한 번만 고른다 (전투 수만큼
+구조 분해에 `rotations = [],`를 더하고, 컴포넌트 본문에서 한 번만 고른다 (전투 수만큼
 다시 계산하지 않기 위해):
 
 ```tsx
