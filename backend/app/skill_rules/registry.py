@@ -206,7 +206,10 @@ from app.skill_rules.maxwell_ordinary_mechanic import (
     build_matis_uberbuster_weapon_mode_schedule,
     build_maxwell_ordinary_mechanic_rules,
 )
-from app.skill_rules.dorothy_serendipity import build_dorothy_serendipity_rules
+from app.skill_rules.dorothy_serendipity import (
+    build_dorothy_serendipity_rules,
+    build_flash_per_shot_rules,
+)
 from app.skill_rules.guillotine_winter_slayer import (
     build_guillotine_resource_scaled_nukes,
     build_guillotine_resources,
@@ -973,6 +976,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "crown": lambda sv: build_royal_attire_per_shot_rules(sv["royal_attire"]),  # Royal Attire, 860 normals
     "bready-lingering": lambda sv: build_lingering_per_shot_rules(sv),
     "bready-recommended": lambda sv: build_recommended_per_shot_rules(sv),
+    "dorothy-serendipity": lambda sv: build_flash_per_shot_rules(sv),  # Flash, 80 pellets
     "jill-valentine": lambda sv: build_magnum_per_shot_rules(sv),
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),
