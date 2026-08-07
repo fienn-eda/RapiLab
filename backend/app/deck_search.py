@@ -206,6 +206,11 @@ class BossProfile:
     # to pierce through without a hittable core, and raid_simulator reads the two
     # together rather than trusting the caller not to send the contradiction.
     pierce_hits_body_behind_core: bool = False
+    # 코어의 지름(px). None이면 이 인카운터는 코어히트율을 모델링하지 않고
+    # 적격 평타가 전부 코어에 든다고 본다 - 엔진이 오래 모델해 온 상한이다.
+    # 값을 주면 무기 탄착군과의 면적비가 그 비율을 정한다(app/accuracy.py).
+    # `core_hittable`이 거짓이면 무시된다: 코어가 없으면 크기를 물을 수 없다.
+    core_diameter_px: float | None = None
     # The boss gates a gimmick on an elemental interrupt: breaking it needs at
     # least one Nikke holding elemental advantage, so a deck without one cannot
     # clear the phase however much damage it does. Unlike every other deck
@@ -454,6 +459,7 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None):
         part_destructible=boss.part_destructible,
         effective_range_band=boss.effective_range_band,
         pierce_hits_body_behind_core=boss.pierce_hits_body_behind_core,
+        core_diameter_px=boss.core_diameter_px,
     )
 
 

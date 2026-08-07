@@ -651,6 +651,7 @@ def _simulate_raid_once(
     # with `core_hittable` below - there is no 2-pierce without a core to pierce,
     # so a caller that sets this without core_hittable gets nothing.
     pierce_hits_body_behind_core=False,
+    core_diameter_px=None,
     effective_range_band=None,
     base_crit_rate=BASE_CRIT_RATE,
     periodic_nukes=None,

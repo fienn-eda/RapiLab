@@ -63,6 +63,9 @@ class BossProfileIn(BaseModel):
     # See BossProfile.pierce_hits_body_behind_core - only meaningful together
     # with core_hittable.
     pierce_hits_body_behind_core: bool = False
+    # See BossProfile.core_diameter_px - only meaningful together with
+    # core_hittable.
+    core_diameter_px: float | None = None
     # See BossProfile.elemental_interrupt_required. Inert on an element-less boss.
     elemental_interrupt_required: bool = False
 
