@@ -51,6 +51,73 @@ CHARGE_WEAPONS = {"RL", "SR"}
 
 
 @dataclass(frozen=True)
+class Spinup:
+    """A weapon that reaches its nominal rate of fire only after warming up.
+
+    `intervals` shot gaps at the head of every magazine together take `seconds`,
+    instead of the `intervals / rate_of_fire` they would at top speed; every gap
+    after that is the normal one. Stated as a total rather than as a curve
+    because a total is what the measurement pins - see the shape note below.
+    """
+    intervals: int
+    seconds: float
+
+    @property
+    def cost(self):
+        """Seconds a magazine loses to warming up, at 60 rounds/sec."""
+        return self.seconds - self.intervals / RATE_OF_FIRE_60FPS["MG"]
+
+
+# Fienn, 2026-08-07, frame-by-frame (Rosanna solo, 305-round magazine, no reload
+# buffs) - docs/measurements/mg-spinup.md. Her first shot lands at frame 863 and
+# her 49th at frame 1000, so 48 gaps take 137 frames where top speed would take
+# 48; from there to the empty magazine at frame 1256 it is 256 rounds in 256
+# frames, exactly one per frame. So the nominal 60/sec was never wrong - it is
+# the MAXIMUM, and the engine was handing it out from the first round.
+#
+# The SHAPE of the ramp is NOT measured: two endpoints and a total cannot tell a
+# linear acceleration from any other curve, and a rate rising linearly in time is
+# already ruled out (it would need a negative starting rate to fit 48 rounds in
+# 137 frames). So the ramp is modeled as one reduced constant rate, which
+# reproduces both endpoints and the magazine's total length exactly and differs
+# from the truth only in where those 48 rounds sit inside 2.28 sec.
+#
+# Two things this one reading does not settle, both flagged in the measurement
+# doc: whether a reload re-arms the spin-up (modeled: yes, it is per magazine -
+# a reload is not firing), and whether Attack Speed shortens the ramp (modeled:
+# no, it is a fixed segment like RELOAD_FIXED_SECONDS).
+MG_SPINUP = Spinup(intervals=48, seconds=137 / 60)
+
+_SPINUP_BY_WEAPON = {"MG": MG_SPINUP}
+
+
+def spinup_for_weapon(weapon):
+    """This weapon class's warm-up, or None for the classes that have none.
+
+    Only the MG has one measured. An SMG also over-reads against the record
+    (1.149x against the MG's 1.193x) but nothing has been timed on it, so it
+    stays at its nominal rate rather than borrowing the MG's numbers.
+    """
+    return _SPINUP_BY_WEAPON.get(weapon)
+
+
+def magazine_shot_offset(index, shot_interval, spinup):
+    """Seconds from a magazine's first round to its `index`-th one.
+
+    The single place the spin-up is applied, because two call sites generate
+    magazine timelines - `generate_magazine_shot_times` and the segmented
+    `_base_shot_records` - and they are contractually bit-identical when there
+    are no segments.
+    """
+    if spinup is None or index <= 0:
+        return index * shot_interval
+    ramp_interval = spinup.seconds / spinup.intervals
+    if index <= spinup.intervals:
+        return index * ramp_interval
+    return spinup.seconds + (index - spinup.intervals) * shot_interval
+
+
+@dataclass(frozen=True)
 class AmmoRefund:
     """Rounds handed back into the magazine every N shots fired.
 
@@ -316,21 +383,24 @@ def generate_magazine_shot_times(
     reload_speed_percent_at=_zero,
     attack_speed_percent_at=_zero,
     ammo_refund=None,
+    weapon=None,
 ):
     shots = []
     magazine_start = 0.0
     shots_fired = 0
+    spinup = spinup_for_weapon(weapon)
 
     while magazine_start < fight_duration:
         shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, ammo_refund)
         for i in range(magazine_size):
-            shot_time = magazine_start + i * shot_interval
+            shot_time = magazine_start + magazine_shot_offset(i, shot_interval, spinup)
             if shot_time >= fight_duration:
                 return shots
             shots.append(shot_time)
-        magazine_empty_at = magazine_start + magazine_size * shot_interval
+        magazine_empty_at = magazine_start + magazine_shot_offset(
+            magazine_size - 1, shot_interval, spinup) + shot_interval
         actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(magazine_empty_at))
         magazine_start = magazine_empty_at + actual_reload_time
 
@@ -394,7 +464,7 @@ def generate_shot_times(
     return generate_magazine_shot_times(
         rate_of_fire, max_ammo, reload_time, fight_duration,
         max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
-        ammo_refund=ammo_refund,
+        ammo_refund=ammo_refund, weapon=weapon,
     )
 
 
@@ -407,6 +477,7 @@ def magazine_last_bullet_times(
     reload_speed_percent_at=_zero,
     attack_speed_percent_at=_zero,
     ammo_refund=None,
+    weapon=None,
 ):
     """The subset of a magazine weapon's shot times that actually EMPTY their
     magazine (the round right before a reload) - for a "last bullet fired"
@@ -428,16 +499,18 @@ def magazine_last_bullet_times(
     last_bullets = set()
     magazine_start = 0.0
     shots_fired = 0
+    spinup = spinup_for_weapon(weapon)
 
     while magazine_start < fight_duration:
         shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, ammo_refund)
-        last_round_time = magazine_start + (magazine_size - 1) * shot_interval
+        last_round_time = magazine_start + magazine_shot_offset(
+            magazine_size - 1, shot_interval, spinup)
         if last_round_time >= fight_duration:
             return last_bullets
         last_bullets.add(last_round_time)
-        magazine_empty_at = magazine_start + magazine_size * shot_interval
+        magazine_empty_at = last_round_time + shot_interval
         actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(magazine_empty_at))
         magazine_start = magazine_empty_at + actual_reload_time
 
@@ -489,6 +562,7 @@ def magazine_first_bullet_times(
     reload_speed_percent_at=_zero,
     attack_speed_percent_at=_zero,
     ammo_refund=None,
+    weapon=None,
 ):
     """Mirror of magazine_last_bullet_times: each magazine's FIRST round,
     INCLUDING the battle-opening magazine at t=0 (a "at the start of battle and
@@ -500,12 +574,14 @@ def magazine_first_bullet_times(
     first_bullets = set()
     magazine_start = 0.0
     shots_fired = 0
+    spinup = spinup_for_weapon(weapon)
     while magazine_start < fight_duration:
         first_bullets.add(magazine_start)
         shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, ammo_refund)
-        magazine_empty_at = magazine_start + magazine_size * shot_interval
+        magazine_empty_at = magazine_start + magazine_shot_offset(
+            magazine_size - 1, shot_interval, spinup) + shot_interval
         actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(magazine_empty_at))
         magazine_start = magazine_empty_at + actual_reload_time
     return first_bullets
@@ -572,7 +648,7 @@ def first_bullet_shot_times(
     return magazine_first_bullet_times(
         rate_of_fire, max_ammo, reload_time, fight_duration,
         max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
-        ammo_refund=ammo_refund,
+        ammo_refund=ammo_refund, weapon=weapon,
     )
 
 
@@ -602,7 +678,7 @@ def last_bullet_shot_times(
     return magazine_last_bullet_times(
         rate_of_fire, max_ammo, reload_time, fight_duration,
         max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
-        ammo_refund=ammo_refund,
+        ammo_refund=ammo_refund, weapon=weapon,
     )
 
 
@@ -667,19 +743,21 @@ def _base_shot_records(base, window_start, window_end,
             magazine_start = last_shot_time + actual_reload
     else:
         rate = rate_of_fire_for_weapon(weapon)
+        spinup = spinup_for_weapon(weapon)
         magazine_start = window_start
         while magazine_start < window_end:
             interval = 1.0 / (rate * (1 + attack_speed_percent_at(magazine_start)))
             capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
             magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, refund)
             for i in range(magazine_size):
-                shot_time = magazine_start + i * interval
+                shot_time = magazine_start + magazine_shot_offset(i, interval, spinup)
                 if shot_time >= window_end:
                     return records
                 records.append(ShotRecord(
                     shot_time, weapon, base["damage_percent"], 0.0,
                     is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1)))
-            magazine_empty_at = magazine_start + magazine_size * interval
+            magazine_empty_at = magazine_start + magazine_shot_offset(
+                magazine_size - 1, interval, spinup) + interval
             actual_reload = reload_time_with_speed(base["reload_time"], reload_speed_percent_at(magazine_empty_at))
             magazine_start = magazine_empty_at + actual_reload
     return records
