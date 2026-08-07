@@ -102,15 +102,18 @@ def assemble_overload(tables, detail: dict) -> list[dict]:
     edits; the lines are what `charge_speed_percent_from_lines` needs, since a
     total alone cannot be decomposed back into the rolls that produced it.
 
-    Types that fold into the base stat panel rather than the Equipment Effects
-    list are dropped from the returned lines.
+    Effect types the engine has no consumer for are dropped from the returned
+    lines - `unconsumed_effect_types`, which is DEF alone: the damage formula
+    reads the ENEMY's defence, never an ally's, so an ally DEF stat would ride
+    the roster inert. They are perfectly visible on the page; being dropped is
+    a fact about this engine, not about ShiftyPad.
 
     An effect type absent from the reference tables is dropped with a warning
     instead of raising: only Fienn's roster was ever measured, and another
     account's unit must still assemble. The warning names the (type, level) so
     the tables can be completed from a real observation.
     """
-    folded = set(tables["overload"]["base_stat_folded"])
+    unconsumed = set(tables["overload"]["unconsumed_effect_types"])
     names = tables["overload"]["type_name"]
     totals: dict[int, float] = collections.defaultdict(float)
     lines: dict[int, list[dict]] = collections.defaultdict(list)
@@ -120,7 +123,7 @@ def assemble_overload(tables, detail: dict) -> list[dict]:
             if dec is None:
                 continue
             etype, level = dec
-            if etype in folded:
+            if etype in unconsumed:
                 continue
             if not known_effect_type(tables, etype):
                 logger.warning(
