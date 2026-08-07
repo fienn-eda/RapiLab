@@ -50,6 +50,26 @@ test('parseOverload maps English labels to the Korean stat names, summed', () =>
   assert.deepEqual(parseOverload(doc('neon-blue-ocean')), [])
 })
 
+test('parseOverload reads the relabelled page to the same rows', () => {
+  // ShiftyPad writes the same rows two ways - `Increase ATK` on the pages
+  // captured in July, `Increased ATK` on the page as served on 2026-08-07,
+  // with Element Damage Dealt becoming Elemental Advantage Dmg. Rapi is
+  // captured under both wordings with the same gear, so the two must parse
+  // identically. Without this, a wording change costs every unit its whole
+  // overload while the suite stays green - which is exactly what happened.
+  assert.deepEqual(
+    parseOverload(doc('rapi-red-hood-relabelled')),
+    parseOverload(doc('rapi-red-hood')),
+  )
+  const relabelled = parseOverload(doc('rapi-red-hood-relabelled'))
+  assert.deepEqual(relabelled, [
+    { name: '우월코드 대미지 증가', value: 87.21 },
+    { name: '공격력 증가', value: 42.32 },
+    { name: '최대 장탄 수 증가', value: 173.93 },
+    { name: '크리티컬 확률 증가', value: 4.69 },
+  ])
+})
+
 test('parseSkills reads the three skill levels in order (skill1, skill2, burst)', () => {
   assert.deepEqual(parseSkills(doc('rapi-red-hood')), { skill1: 10, skill2: 10, burst: 10 })
   assert.deepEqual(parseSkills(doc('liter')), { skill1: 10, skill2: 4, burst: 10 })
