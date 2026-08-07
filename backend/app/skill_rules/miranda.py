@@ -12,15 +12,17 @@ Base modeled (DPS-relevant):
 - Powering Up! (skills[2], her burst): ATK + Crit Damage up on the **1** ally
   with the highest final ATK. The Favorite Item widens this to 2 allies (slot 01
   is the ally count: 1 vs 2) and changes nothing else.
-
-Base NOT modeled: Health Up! (skills[0]) in its entirety - both of its steps are
-Hit Rate, which this engine's damage model does not consume. The base build
-therefore has no per-shot rules at all; the Favorite Item is what gives that
-skill a DPS effect (the self ATK step at slots 07-09).
+- Health Up! (skills[0]): after every 30 normal attacks, squad Hit Rate +5.44%
+  and a further +3.79% on submachine-gun allies, both for 5 sec. Both bullets
+  REFRESH rather than stack - neither says "stacks up to", and her own SMG
+  clears 30 rounds in about 1.5 sec, well inside the 5 sec they last, so a
+  stacking reading would run away. This IS the base build's per-shot rule set;
+  before Hit Rate had a consumer the base build had none at all.
 
 Favorite Item modeled (DPS-relevant):
-- Health Up! (dollskills[0]): after every 30 normal attacks, self ATK up (via
-  per_shot_rules - see build_health_up_rules).
+- Health Up! (dollskills[0]): the same two Hit Rate bullets, plus - the part the
+  Favorite Item adds - self ATK up on the same every-30-normals counter (via
+  per_shot_rules, see build_health_up_rules).
 - Wake Up! (dollskills[1]): on Full Burst enter, squad Crit Damage up, self Crit
   Rate + Attack Damage up, and Crit Rate up on the single highest-final-ATK ally
   for 1 round.
@@ -33,12 +35,12 @@ the ranking when Wake Up (Full Burst enter, tier 3) fires later that cycle. "for
 1 round" is a bullet-count duration: the buff covers exactly the target's next
 shot (see round_buff_rule / raid_simulator's round-grant handling).
 
-Not modeled (both builds): Health Up!'s two Hit Rate steps - Hit Rate is not
-consumed by this engine's damage model, so encoding it would be inert.
+Not modeled (both builds): nothing outstanding.
 """
 from app.skill_rules._helpers import (
     buff_rule,
     highest_atk_buff_rule,
+    member_subset_buff_rule,
     refreshing_buff_rule,
     round_buff_rule,
 )
@@ -140,14 +142,46 @@ def build_miranda_rules(values):
     ]
 
 
+def submachine_gun_allies(member, context):
+    """Health Up!'s second step, "all allies with a Submachine Gun" - Miranda
+    herself carries one, so she is included."""
+    return member.weapon == "SMG"
+
+
+def build_health_up_hit_rate_rules(values):
+    """Health Up!'s two Hit Rate steps, on both builds: after every N normal
+    attacks, squad Hit Rate and a second helping for submachine-gun allies.
+
+    Refreshing, not stacking. Neither bullet carries a "stacks up to" clause,
+    which is the only marker that tells the two apart - and the counter fires
+    far faster than the buff expires (30 SMG rounds ~ 1.5 sec against a 5 sec
+    duration), exactly the shape that inflates a wrongly-stacked buff without
+    bound."""
+    shot_count = int(values["description_value_01"])
+    squad_hit_rate = float(values["description_value_02"]) / 100
+    squad_duration = float(values["description_value_03"])
+    smg_hit_rate = float(values["description_value_05"]) / 100
+    smg_duration = float(values["description_value_06"])
+    return [
+        (shot_count, "every", [
+            refreshing_buff_rule("per_shot", [
+                ("hit_rate", squad_hit_rate, "squad", squad_duration),
+            ]),
+            member_subset_buff_rule("per_shot", submachine_gun_allies, [
+                ("hit_rate", smg_hit_rate, smg_duration),
+            ], refreshing=True),
+        ]),
+    ]
+
+
 def build_health_up_rules(values):
-    """Per-shot rules for Health Up!: after every N normal attacks, self ATK up.
-    Refreshing (re-applied each Nth shot without stacking). The skill's two Hit
-    Rate steps are omitted (inert - see module docstring)."""
+    """Per-shot rules for Health Up! on the FAVORITE ITEM build: the two Hit
+    Rate steps both builds share, plus the self ATK step only this build has
+    (slots 07-09, absent from the base array). Refreshing for the same reason."""
     shot_count = int(values["description_value_07"])
     self_atk = float(values["description_value_08"]) / 100
     self_atk_duration = float(values["description_value_09"])
-    return [
+    return build_health_up_hit_rate_rules(values) + [
         (shot_count, "every", [
             refreshing_buff_rule("per_shot", [("atk_percent", self_atk, "self", self_atk_duration)]),
         ]),

@@ -22,10 +22,10 @@ Modeled (DPS-relevant):
   and ATK +25.01% for 10 sec; Max Ammunition Capacity +83.8% for 15 sec on all
   shotgun allies (10 sec in the base build); Elemental Advantage Attack Damage
   +40.02% for 15 sec on Water and Iron Code shotgun allies.
-- Trouble Shooter (dollskills[2], her burst, cd 40): self Attack Speed +66% and
-  ATK +20% for 15 sec; Elemental Advantage Attack Damage +60.01% for 15 sec on
-  Water and Iron Code shotgun allies. Her burst deals no damage, so the
-  registry's burst percent is None.
+- Trouble Shooter (dollskills[2], her burst, cd 40): self Attack Speed +66%,
+  Hit Rate +33% and ATK +20% for 15 sec; Elemental Advantage Attack Damage
+  +60.01% for 15 sec on Water and Iron Code shotgun allies. Her burst deals no
+  damage, so the registry's burst percent is None.
 
 Both member subsets are EXACT, not squad approximations - member_subset_buff_rule
 resolves the weapon and element filters live against SquadMember.
@@ -38,7 +38,6 @@ Not modeled / deferred:
   is a FLOOR.
 - Black Typhoon's cover-HP restore (1.5% of final Max HP) - survivability, not
   damage.
-- Hit Rate +33% from her burst - not a damage concept in the engine.
 """
 from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
 from app.skill_rules.sugar import shotgun_allies
@@ -83,6 +82,8 @@ def build_sugar_signature_rules(values):
     fb_elemental_duration = float(sensor["description_value_08"])
     attack_speed = float(trouble["description_value_01"]) / 100
     speed_duration = float(trouble["description_value_02"])
+    hit_rate = float(trouble["description_value_03"]) / 100
+    hit_rate_duration = float(trouble["description_value_04"])
     burst_atk = float(trouble["description_value_05"]) / 100
     burst_atk_duration = float(trouble["description_value_06"])
     burst_elemental = float(trouble["description_value_07"]) / 100
@@ -106,6 +107,7 @@ def build_sugar_signature_rules(values):
         ]),
         buff_rule("own_burst_activate", [
             ("attack_speed_percent", attack_speed, "self", speed_duration),
+            ("hit_rate", hit_rate, "self", hit_rate_duration),
             ("atk_percent", burst_atk, "self", burst_atk_duration),
         ]),
         member_subset_buff_rule("own_burst_activate", water_or_iron_shotgun_allies, [

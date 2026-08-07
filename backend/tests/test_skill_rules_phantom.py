@@ -91,14 +91,25 @@ def test_the_10_shot_pair_refreshes_instead_of_stacking():
     assert round(reg.total_for("distributed_damage_up", SELF, 10.0), 4) == 0.3192
 
 
-def test_dagger_gated_bullets_and_hit_rate_are_absent():
+def test_dagger_gated_bullets_are_absent():
     """The dagger can never reach max stacks in this build (Fienn, 2026-07-24),
     so neither Thief's Vision's 84.33% nor its stacking Distributed Damage may
-    appear - and Hit Rate is inert regardless."""
+    appear."""
     reg = EffectRegistry()
     ctx = _ctx()
     rules = {"phantom": build_phantom_rules(PHANTOM)}
     for trigger in ("battle_start", "own_burst_activate", "full_burst_enter"):
         fire_trigger(trigger, rules, ctx, reg, 0.0)
-    assert reg.total_for("hit_rate", SELF, 0.0) == 0.0
     assert reg.total_for("distributed_damage_up", SELF, 0.0) == 0.0
+
+
+def test_the_daggers_one_held_stack_is_a_permanent_self_hit_rate():
+    """One stack, not the text's three: the same deadlock that pins the dagger
+    is what fixes the value, and the stack is re-earned within a tenth of a
+    second of lapsing, so it is up for the whole fight. Self-scoped."""
+    reg = EffectRegistry()
+    ctx = _ctx()
+    fire_trigger("battle_start", {"phantom": build_phantom_rules(PHANTOM)}, ctx, reg, 0.0)
+    assert round(reg.total_for("hit_rate", SELF, 0.0), 4) == 0.2575
+    assert round(reg.total_for("hit_rate", SELF, 175.0), 4) == 0.2575  # permanent
+    assert reg.total_for("hit_rate", ALLY, 0.0) == 0.0

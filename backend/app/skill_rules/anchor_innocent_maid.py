@@ -9,8 +9,10 @@ Modeled (DPS-relevant):
   debuff stack count ▼1, which is what lets Mast: Romantic Maid hold her Drunken
   stacks at 3 (handled on Mast's side via deck_contains, not emitted here).
 - Sea Anemone (Shaped) Pasta (skills[1]): escalating on Full Burst end -
-  Once: Hit Rate (accuracy, not modeled); Twice: squad ATK % of caster's ATK;
-  Three times: squad Reloading Speed.
+  Once: squad Hit Rate +10.13% for 10 sec; Twice: squad ATK % of caster's ATK;
+  Three times: squad Reloading Speed. The Hit Rate tier is worth nothing to
+  Anchor herself (an RL's spread is already inside any core) but reaches every
+  ally, so it is the deck's SG/SMG/AR seats that cash it.
 - Seaside Stroll (skills[2], her burst): squad ATK % of caster's ATK on her
   own burst (the storage/heal parts are survivability, not modeled).
 
@@ -46,6 +48,8 @@ def build_anchor_rules(values):
 
     starfish_distributed = float(starfish["description_value_03"]) / 100
     starfish_distributed_duration = float(starfish["description_value_04"])
+    pasta_hit_rate = float(pasta["description_value_01"]) / 100
+    pasta_hit_rate_duration = float(pasta["description_value_02"])
     pasta_atk = float(pasta["description_value_03"]) / 100 * caster_atk
     pasta_atk_duration = float(pasta["description_value_04"])
     pasta_reload = float(pasta["description_value_05"]) / 100
@@ -61,7 +65,7 @@ def build_anchor_rules(values):
             [],  # Three times: debuff stack ▼1 - enables Mast's stacks (handled in Mast)
         ]),
         escalating_buff_rule("full_burst_end", [
-            [],  # Once: Hit Rate - accuracy, not modeled
+            [("hit_rate", pasta_hit_rate, "squad", pasta_hit_rate_duration)],  # Once
             [("flat_atk", pasta_atk, "squad", pasta_atk_duration)],           # Twice
             [("reload_speed_percent", pasta_reload, "squad", pasta_reload_duration)],  # Three times
         ]),

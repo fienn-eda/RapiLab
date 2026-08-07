@@ -18,6 +18,13 @@ Modeled (DPS-relevant):
   caster's ATK - FLAT (not stack-scaled), active continuously. Approximated as
   applied once from cycle 1 and kept for the fight (she is Drunken almost the
   whole time; the brief solo post-stun gap is ignored).
+- A Pirate's Heart's own price: Drunken is Hit Rate ▼ 20% PER STACK on herself
+  (up to 3 = -60%), re-read each cycle from the same stack count her buffs use.
+  It costs her nothing today - a machine gun's spread converges to 10px, and
+  -60% only widens that to 15.5px, still inside any plausible core - but it is
+  encoded rather than skipped so that a boss with a genuinely small core prices
+  it correctly, and so the self-scope stays on the record: her allies never pay
+  for her drinking.
 - A Pirate's Spirit (skills[1]): on entering full burst (Burst stage 3) while
   Drunken, squad Distributed Damage ▲ and Reloading Speed ▲, both per-stack *
   stacks, for 10s. The Distributed Damage half is offensive - it multiplies
@@ -106,6 +113,10 @@ def build_mast_rules(values):
     romance = values["pirates_romance"]
     caster_atk = values["caster_atk"]
 
+    # "Drunken: Hit Rate ▼ 20%" - the arrow subtracts, and the stack cap in
+    # description_value_02 is the same MAX_DRUNKEN_STACKS this module already
+    # counts with.
+    drunken_hit_rate_per_stack = float(heart["description_value_01"]) / 100
     drunken_crit_rate = float(heart["description_value_03"]) / 100
     drunken_atk = float(heart["description_value_04"]) / 100 * caster_atk
 
@@ -130,6 +141,18 @@ def build_mast_rules(values):
             return
         registry.add(Effect("crit_rate", drunken_crit_rate, "squad", None, caster_slug), applied_at=time)
         registry.add(Effect("flat_atk", drunken_atk, "squad", None, caster_slug), applied_at=time)
+
+    def apply_drunken_hit_rate(context, caster_slug, time, registry):
+        # Unlike the two buffs above, the debuff SCALES with the stack count, so
+        # it is re-applied every cycle at that cycle's count. Refreshing, not
+        # adding: one Drunken debuff exists at a time and it grows, it does not
+        # accumulate one permanent copy per cycle.
+        stacks = _drunken_stacks(context, time)
+        registry.add_refreshing(
+            Effect("hit_rate", -drunken_hit_rate_per_stack * stacks, "self", None,
+                   caster_slug, refresh_group="mast_drunken_hit_rate"),
+            applied_at=time,
+        )
 
     def apply_spirit(context, caster_slug, time, registry):
         stacks = _drunken_stacks(context, time)
@@ -168,6 +191,8 @@ def build_mast_rules(values):
 
     return [
         SkillRule(trigger="ally_burst_activate", action=apply_drunken_continuous,
+                  condition=burst_stage_entered(DRUNKEN_BURST_STAGE)),
+        SkillRule(trigger="ally_burst_activate", action=apply_drunken_hit_rate,
                   condition=burst_stage_entered(DRUNKEN_BURST_STAGE)),
         SkillRule(trigger="ally_burst_activate", action=apply_spirit,
                   condition=burst_stage_entered(SPIRIT_BURST_STAGE)),

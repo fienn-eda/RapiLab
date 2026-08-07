@@ -6,12 +6,19 @@ Modeled (DPS-relevant):
 - Rabbit Twins B (skills[1]): on Full Burst entry, squad Max Ammunition Capacity
   +5 ROUNDS for 10 sec (a flat round count, `max_ammo_rounds` - raid_simulator
   converts it against each recipient's own base magazine).
-- Finale (skills[2], her burst): burst nuke 351.64% of final ATK, plus squad
-  Damage-to-Interruption-Parts up (23.23% for 10s + 19.36% for 30s). The "Shotgun
-  allies" / "ally from the same squad on the battlefield" scopes are approximated
-  as squad. "Interruption Parts" (저지 부위) is the zone an interruption gimmick
-  makes you hit - NOT a destructible part - so it goes to its own stat and,
-  like Damage to Parts, never reaches body damage.
+- Finale (skills[2], her burst): burst nuke 351.64% of final ATK, plus two
+  bullets that each carry a Hit Rate and a Damage-to-Interruption-Parts buff -
+  Shotgun allies get +13.93% / +23.23% for 10s, and the whole squad gets +11.61% /
+  +19.36% for 30s. The shotgun bullet's Hit Rate uses the EXACT weapon subset;
+  its Damage-to-Interruption-Parts twin stays on the squad approximation it was
+  encoded with (changing that moves damage, and is not this change's business).
+  The second bullet's "with an ally from the same squad still on the
+  battlefield" gate is always true in a sim where nobody dies, so it applies
+  unconditionally to the squad. "Interruption Parts" (저지 부위) is the zone an
+  interruption gimmick makes you hit - NOT a destructible part - so it goes to
+  its own stat and, like Damage to Parts, never reaches body damage.
+  The two Hit Rate halves stack on a shotgun ally (+25.54% together), which
+  narrows a 250px spread to 192px - 4.0% -> 6.8% of a 50px core.
 
 Not modeled:
 - Rabbit Twins B's instant partial reload ("Reload 39.88% magazine(s)").
@@ -19,9 +26,8 @@ Not modeled:
   fixed round count on the OWNER'S OWN shot counter; this one is a percentage of
   each recipient's magazine, granted to all allies on Full Burst enter, so
   neither its unit, its target nor its trigger fits.
-- Finale's Hit Rate buffs - Hit Rate is not consumed by this engine.
 """
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -44,6 +50,11 @@ def finale_burst_percent(values):
     return float(values["finale"]["description_value_01"])
 
 
+def shotgun_allies(member, context):
+    """Finale's "all allies with a Shotgun" - Noir herself included."""
+    return member.weapon == "SG"
+
+
 def build_noir_rules(values):
     lucky = values["lucky_charm"]
     rabbit_twins = values["rabbit_twins_b"]
@@ -52,8 +63,12 @@ def build_noir_rules(values):
     squad_atk = float(lucky["description_value_01"]) / 100 * caster_atk
     ammo_rounds = float(rabbit_twins["description_value_01"])
     ammo_duration = float(rabbit_twins["description_value_02"])
+    sg_hit_rate = float(finale["description_value_02"]) / 100
+    sg_duration = float(finale["description_value_03"])
     parts_1 = float(finale["description_value_04"]) / 100
     parts_1_duration = float(finale["description_value_05"])
+    squad_hit_rate = float(finale["description_value_06"]) / 100
+    squad_hit_rate_duration = float(finale["description_value_07"])
     parts_2 = float(finale["description_value_08"]) / 100
     parts_2_duration = float(finale["description_value_09"])
 
@@ -62,7 +77,18 @@ def build_noir_rules(values):
         buff_rule("full_burst_enter", [
             ("max_ammo_rounds", ammo_rounds, "squad", ammo_duration),
         ]),
+        # "Affects all allies with a Shotgun" - the exact weapon subset. A
+        # shotgun is the only weapon whose spread has room to narrow, so giving
+        # this Hit Rate to the whole squad would both over-apply it and hide how
+        # targeted the buff is.
+        member_subset_buff_rule("own_burst_activate", shotgun_allies, [
+            ("hit_rate", sg_hit_rate, sg_duration),
+        ]),
         buff_rule("own_burst_activate", [
+            ("hit_rate", squad_hit_rate, "squad", squad_hit_rate_duration),
+            # Its Damage-to-Interruption-Parts twin keeps the squad approximation
+            # it has carried since the encoding landed - narrowing that one moves
+            # real damage numbers, which is a separate change from this one.
             ("damage_to_interruption_parts_up", parts_1, "squad", parts_1_duration),
             ("damage_to_interruption_parts_up", parts_2, "squad", parts_2_duration),
         ]),

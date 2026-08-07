@@ -13,8 +13,9 @@ Modeled (DPS-relevant): a "chip" resource (Golden Chip), capped at 50.
 - Onward, Soda! (skills[2], her burst): deals 628.7% of final ATK as damage,
   then SPENDS 17 Golden Chip ("stacks v 17 after the effect is applied" - a
   `resets` entry with a `value_fn`, trigger "own_burst"), floored at 1.
-  Additionally, if she had at least 30 stacks right BEFORE that spend
-  (`resource_gated_buffs`, `use_pre_reset`), grants self ATK +65.25% for
+  Additionally, gated on the count right BEFORE that spend
+  (`resource_gated_buffs`, `use_pre_reset`): at 20+ stacks self Hit Rate
+  +38.91% for 15 sec, and at 30+ stacks self ATK +65.25% for
   15 sec. Whether the chip drains or settles is a property of the DECK, not
   of her: what matters is how many Full Burst windows she gets per spend.
   Bursting every cycle drains her (one window's refill against 17). Taking the
@@ -47,8 +48,9 @@ Modeled (DPS-relevant): a "chip" resource (Golden Chip), capped at 50.
   See docs/superpowers/specs/2026-08-06-soda-full-burst-extension-design.md.
 
 Not modeled / deferred:
-- Onward, Soda!'s Hit Rate +38.91%/15s (gated on pre-spend stacks >=20) is
-  inert - Hit Rate isn't a stat the engine consumes.
+- Nothing outstanding. (Her Hit Rate tier used to sit here as inert; it is
+  modeled above since 2026-08-07. A shotgun's 250px spread is wide enough that
+  +38.91% still only lifts her from 4.0% to 9.6% of a 50px core.)
 """
 from app.effects import Effect, Pulse, ResourceSpec
 from app.skill_rules._helpers import linear_resource_buff
@@ -191,13 +193,25 @@ def _make_chip_spend(amount):
 
 
 def build_onward_soda_resource_gated_buffs(values):
+    """Onward, Soda!'s two chip-gated stages. Both read the count BEFORE the
+    burst's own 17-chip spend, and both are cumulative ("Each subsequent effect
+    triggers all effects before it"), which falls out of two independent gates:
+    a burst at 30+ opens both, one at 20-29 opens only the Hit Rate."""
     soda = values["onward_soda"]
     cap = int(float(values["lucky_golden_chip"]["description_value_04"]))
+    hit_rate_gate = float(soda["description_value_03"])
+    hit_rate_value = float(soda["description_value_04"]) / 100
+    hit_rate_duration = float(soda["description_value_05"])
     atk_gate = float(soda["description_value_06"])
     atk_value = float(soda["description_value_07"]) / 100
     atk_duration = float(soda["description_value_08"])
 
     return [{
+        "resource": "chip", "cap": cap, "use_pre_reset": True,
+        "gate_fn": lambda count, gate=hit_rate_gate: count >= gate,
+        "stat": "hit_rate", "value": hit_rate_value, "scope": "self",
+        "duration": hit_rate_duration,
+    }, {
         "resource": "chip", "cap": cap, "use_pre_reset": True,
         "gate_fn": lambda count, gate=atk_gate: count >= gate,
         "stat": "atk_percent", "value": atk_value, "scope": "self", "duration": atk_duration,

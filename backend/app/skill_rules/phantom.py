@@ -11,6 +11,12 @@ Modeled (DPS-relevant):
 - Thief's Calling Card (skills[0]): self Attack Damage +75.17% "for 1 round(s)"
   on every normal attack against a Calling Card target. Since Calling Card is
   effectively always up, this is a per-shot round buff on every shot.
+- Thief's Dagger's Hit Rate +25.75%, as a permanent self buff - for the same
+  reason the DEF debuff above is permanent, and for the same ONE stack. Base
+  Phantom's dagger is pinned at a single stack (see the deferral below), and
+  that stack is re-earned within a tenth of a second of lapsing, so it is up
+  for the whole fight. It narrows her AR's 75px spread to 57.4px: 44.4% ->
+  75.8% of a 50px core.
 - Thief's Vision (skills[1]): self ATK +85.12% for 5 sec and Distributed Damage
   +31.92% for 10 sec every 10 normal attacks. 10 AR shots take 0.83 sec, so both
   are re-applied far faster than they expire - and the bullet names no stack
@@ -28,9 +34,8 @@ Not modeled / deferred:
   exactly the dagger's own duration - so the stack expires in the same instant
   the next one could be earned, pinning her at one stack forever. Her Favorite
   Item build adds a shot-counted dagger source that breaks the deadlock, and
-  encodes these bullets.
-- Thief's Dagger's Hit Rate +25.75% - Hit Rate is not a damage concept in the
-  engine even where the stacks do accrue.
+  encodes these bullets. The same pin is what makes her Hit Rate above exactly
+  one stack rather than the text's three.
 """
 from app.skill_rules._helpers import buff_rule, refreshing_buff_rule, round_buff_rule
 
@@ -55,9 +60,13 @@ def secret_trick_burst_percent(values):
 def build_phantom_rules(values):
     card = values["calling_card"]
     def_debuff = float(card["description_value_01"]) / 100
+    dagger_hit_rate = float(card["description_value_03"]) / 100
     return [
         buff_rule("battle_start", [
             ("enemy_def_percent", -def_debuff, "squad", None),
+            # ONE dagger stack, held for the fight - the base build can never
+            # hold a second (see module docstring).
+            ("hit_rate", dagger_hit_rate, "self", None),
         ]),
     ]
 

@@ -384,6 +384,18 @@ def boss_part_destructible() -> Callable[[SquadContext, str], bool]:
     return check
 
 
+def boss_part_indestructible() -> Callable[[SquadContext, str], bool]:
+    """The other side of the same flag - for an effect that a part-destruction
+    gimmick CANCELS. Diesel: Winter Sweets' Noise Pollution is the case: the
+    squad's immunity to it is restocked by destroying parts, so it only bites
+    on a boss with none."""
+
+    def check(context: SquadContext, caster_slug: str) -> bool:
+        return not context.part_destructible
+
+    return check
+
+
 def boss_core_hittable() -> Callable[[SquadContext, str], bool]:
     """True when the boss has an exploitable core (sim-level core_hittable
     flag) - for effects whose target is "enemies with activated cores"."""

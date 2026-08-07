@@ -24,6 +24,12 @@ Modeled (DPS-relevant):
 - Impermanence (skills[1]): self ATK / Attack Damage / core-damage (the last
   gated on `core_hittable` like every other core-damage source) at the fixed
   times above, permanent thereafter.
+- Impermanence's Memory Absorption stack is itself self Hit Rate +1.4% EACH, so
+  the cap is +42%, not +1.4% - and it arrives on the same fixed 3-sec clock, one
+  stack at a time, so it is added as 30 permanent Effects at t=3,6,...,90 rather
+  than as one steady-state lump. At the cap her SMG's 110px spread is down to
+  68px (20.7% -> 54.1% of a 50px core), but she does not get there until the
+  fight is half over, which is exactly what the per-stack timeline preserves.
 - Hypocrisy (skills[0]): "when Memory Absorption takes effect" (every 3 sec)
   grants SQUAD core-damage + squad ATK (caster-scaled) for 5 sec each time.
   Since the 3-sec re-trigger interval is shorter than the 5-sec duration,
@@ -46,8 +52,8 @@ Modeled (DPS-relevant):
   whole hit is `full_burst_bonus_eligible` (see the builder).
 
 Not modeled:
-- Unchanging Heart (self Indomitability), Impermanence's Hit Rate, and the two
-  HP-recovery bullets - survivability, not DPS-relevant.
+- Unchanging Heart (self Indomitability) and the two HP-recovery bullets -
+  survivability, not DPS-relevant.
 """
 from app.effects import Effect
 from app.squad_engine import SkillRule
@@ -79,6 +85,8 @@ def build_nayuta_rules(values):
     hyp_atk = float(hypocrisy["description_value_05"]) / 100 * caster_atk
 
     imp_interval = float(impermanence["description_value_01"])  # 3 sec
+    hit_rate_per_stack = float(impermanence["description_value_02"]) / 100
+    stack_cap = int(float(impermanence["description_value_03"]))  # 30
     stage1_threshold = float(impermanence["description_value_05"])  # reaches 2 stacks
     stage1_atk = float(impermanence["description_value_06"]) / 100
     stage2_threshold = float(impermanence["description_value_08"])  # reaches 10 stacks
@@ -96,6 +104,14 @@ def build_nayuta_rules(values):
     burst_attack_damage_duration = float(asceticism["description_value_02"])
 
     def apply_fixed_time_effects(context, caster_slug, time, registry):
+        # Memory Absorption's own payload: one permanent Hit Rate stack per
+        # interval, up to the cap. The Nth stack lands at t=N*interval, the same
+        # clock the three stages below are placed on.
+        for stack in range(1, stack_cap + 1):
+            registry.add(
+                Effect("hit_rate", hit_rate_per_stack, "self", None, caster_slug),
+                applied_at=stack * imp_interval,
+            )
         registry.add(
             Effect("other_core_damage_sources", hyp_core_damage, "squad", None, caster_slug),
             applied_at=imp_interval,
@@ -150,6 +166,13 @@ def build_memory_incineration_weapon_mode_schedule(values):
     1.8 sec, and an explicit rate_of_fire is precisely the profile kind that
     takes no cadence buffs. "SR" is the engine's charge archetype - the weapon
     string only changes damage typing for RL.
+
+    `always_core_hit`: in play the transformed charge shot lands on the core
+    every time (Fienn, 2026-08-07), so these shots take no spread math at all -
+    her base SMG's 110px circle, and whatever Memory Absorption has narrowed it
+    to, describe her OTHER shots. It is declared here rather than read off the
+    "SR" label, because that label is a hand-written archetype and not a
+    measured aiming circle (see raid_simulator._core_hit_rate_at).
     """
     asceticism = values["asceticism"]
     interval, duration = _memory_incineration_window(asceticism)
@@ -158,6 +181,7 @@ def build_memory_incineration_weapon_mode_schedule(values):
         "damage_percent": float(asceticism["description_value_05"]),
         "charge_damage_percent": float(asceticism["description_value_06"]),
         "rate_of_fire": 1 / interval,
+        "always_core_hit": True,
     }
 
     def schedule(context, fight_duration):

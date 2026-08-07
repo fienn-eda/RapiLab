@@ -224,23 +224,36 @@ def test_get_per_shot_rules_returns_journey_ahead_for_brid():
     assert all(r.trigger == "per_shot" for _, _, rules in result for r in rules)
 
 
+MIRANDA_HEALTH_UP = {
+    "description_value_01": "30", "description_value_02": "5.44", "description_value_03": "5",
+    "description_value_04": "30", "description_value_05": "3.79", "description_value_06": "5",
+}
+
+
 def test_get_per_shot_rules_returns_health_up_for_mirandas_favorite_item():
     result = get_per_shot_rules("miranda-signature", {
-        "health_up": {
-            "description_value_07": "30", "description_value_08": "50.06", "description_value_09": "5",
-        },
+        "health_up": dict(MIRANDA_HEALTH_UP,
+                          description_value_07="30", description_value_08="50.06",
+                          description_value_09="5"),
     })
+    # The two Hit Rate steps both builds share, then the self ATK step only the
+    # Favorite Item's text carries.
+    assert result is not None and len(result) == 2
+    assert all((threshold, mode) == (30, "every") for threshold, mode, _ in result)
+    assert all(r.trigger == "per_shot" for _, _, rules in result for r in rules)
+
+
+def test_base_miranda_has_health_ups_hit_rate_steps_and_nothing_else():
+    # Both of Health Up!'s base-build steps are Hit Rate, which the damage model
+    # consumes since 2026-08-07 (accuracy.core_hit_rate) - so the base build has
+    # per-shot rules now, but only those two. The self ATK step that the Favorite
+    # Item adds lives in slots 07-09, which the base array does not have.
+    result = get_per_shot_rules("miranda", {"health_up": MIRANDA_HEALTH_UP})
     assert result is not None and len(result) == 1
     threshold, mode, rules = result[0]
     assert (threshold, mode) == (30, "every")
+    assert len(rules) == 2   # squad, then the submachine-gun subset
     assert all(r.trigger == "per_shot" for r in rules)
-
-
-def test_base_miranda_has_no_per_shot_rules():
-    # Health Up! is two Hit Rate steps on the base build - inert in this damage
-    # model - so the self ATK step that makes it a per-shot rule exists only in
-    # the Favorite Item's text.
-    assert get_per_shot_rules("miranda", {"health_up": {}}) is None
 
 
 def test_build_nikke_rules_returns_flawless_glass_burst_percent_for_cinderella():

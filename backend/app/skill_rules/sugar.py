@@ -6,10 +6,13 @@ Modeled (DPS-relevant):
   10 sec, and Max Ammunition Capacity +83.8% for 10 sec on every shotgun ally.
   The shotgun subset is EXACT, not a squad approximation - member_subset_buff_rule
   resolves the weapon filter live against SquadMember.weapon.
-- Trouble Shooter (skills[2], her burst, cd 40): self Attack Speed +66% for
-  15 sec. Attack Speed moves damage since Phase S - attack_rate scales the firing
-  cadence from it, so a fixed-length fight fits more shots. Her burst deals no
-  damage, so the registry's burst percent is None.
+- Trouble Shooter (skills[2], her burst, cd 40): self Attack Speed +66% and self
+  Hit Rate +33%, both for 15 sec. Attack Speed moves damage since Phase S -
+  attack_rate scales the firing cadence from it, so a fixed-length fight fits more
+  shots. Hit Rate narrows her shotgun's spread from 250px to 175px, which on a
+  50px core doubles her core-hit share (4.0% -> 8.2%) - a shotgun's spread is so
+  wide that even a third of the way to the 110% singularity buys only that.
+  Her burst deals no damage, so the registry's burst percent is None.
 
 Not modeled / deferred:
 - Black Typhoon (skills[0]) entirely: Critical Damage +16.39% and Reload Speed
@@ -18,8 +21,6 @@ Not modeled / deferred:
   (2026-07-24) rather than approximated as permanent, because cover-hit frequency
   swings with the boss, its attack pattern and her position. This makes the
   encoding a FLOOR for her.
-- Hit Rate +33% from her burst: Hit Rate is not a damage concept in the engine
-  and no consumer can exist without a much bigger model.
 """
 from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
 
@@ -50,6 +51,8 @@ def build_sugar_rules(values):
     ammo_duration = float(sensor["description_value_04"])
     attack_speed = float(trouble["description_value_01"]) / 100
     speed_duration = float(trouble["description_value_02"])
+    hit_rate = float(trouble["description_value_03"]) / 100
+    hit_rate_duration = float(trouble["description_value_04"])
     return [
         buff_rule("full_burst_enter", [
             ("crit_rate", crit_rate, "self", crit_duration),
@@ -59,5 +62,6 @@ def build_sugar_rules(values):
         ]),
         buff_rule("own_burst_activate", [
             ("attack_speed_percent", attack_speed, "self", speed_duration),
+            ("hit_rate", hit_rate, "self", hit_rate_duration),
         ]),
     ]
