@@ -1,6 +1,6 @@
-// 이번 회차 보스 카드. 고르면 약점 속성만 보스 설정에 들어가고, 공지가 명시하지
-// 않은 것(거리·저지 부위·스쿼드 추천)은 원문 그대로 카드에 남는다 — 우리 플래그로
-// 번역하면 틀렸을 때 값 검증을 전부 통과하고 조용히 초록으로 남기 때문이다.
+// 이번 회차 보스 카드. 이름과 약점 아이콘만 그린다 — 고르면 어떤 값이 채워지는지는
+// 「보스 설정」 옆 설명이 말하고, 공지 원문 전문은 `stated`에 기록으로 남아 있되
+// 화면에는 나오지 않는다(Fienn, 2026-08-07).
 
 import { useId } from 'react'
 import { WEAKNESS_ICON } from '../lib/elementIcon'
@@ -34,45 +34,23 @@ export function RaidRotationPicker({
         aria-labelledby={`${groupId}-label`}
       >
         {rotation.bosses.map((boss) => (
-          // <label>은 라디오와 머리글만 감싼다 - 공지 원문(dl)까지 감싸면 그
-          // 문단이 접근성 이름에 섞이고, 원문을 읽으려는 클릭이 보스를 골라버린다.
-          <div key={boss.name} className="rotation-picker__option">
-            <label>
-              <input
-                type="radio"
-                className="visually-hidden"
-                name={groupId}
-                checked={selectedName === boss.name}
-                onChange={() => onPick(boss)}
-              />
-              <span className="rotation-picker__head">
-                <img
-                  className="rotation-picker__icon"
-                  src={WEAKNESS_ICON[boss.weakness]}
-                  alt={elementLabel(boss.weakness)}
-                />
-                <span className="rotation-picker__name">{boss.name}</span>
-              </span>
-            </label>
-            <dl className="rotation-picker__stated">
-              {Object.entries(boss.stated).map(([key, value]) => (
-                <div className="rotation-picker__stated-row" key={key}>
-                  <dt>{key}</dt>
-                  <dd>
-                    {Array.isArray(value)
-                      ? value.map((line, index) => <span key={index}>{line}</span>)
-                      : value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </div>
+          <label key={boss.name} className="rotation-picker__option">
+            <input
+              type="radio"
+              className="visually-hidden"
+              name={groupId}
+              checked={selectedName === boss.name}
+              onChange={() => onPick(boss)}
+            />
+            <img
+              className="rotation-picker__icon"
+              src={WEAKNESS_ICON[boss.weakness]}
+              alt={elementLabel(boss.weakness)}
+            />
+            <span className="rotation-picker__name">{boss.name}</span>
+          </label>
         ))}
       </div>
-      <p className="group__hint">
-        공지 원문이에요. 약점 속성만 자동으로 채워지고, 나머지는 직접 확인해서 체크하세요.
-        카드를 고르면 지금 켜둔 다른 보스 설정은 전부 기본값으로 되돌아가요.
-      </p>
     </div>
   )
 }

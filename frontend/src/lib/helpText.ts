@@ -28,6 +28,8 @@ interface HelpStep {
 
 export const HELP = {
   boss: {
+    rotationPicker:
+      '회차 보스를 고르면 공지가 적은 **약점 속성과 적정거리**가 채워지고, **나머지 보스 설정은 전부 기본값으로 되돌아가요.** 같은 보스라도 시즌마다 속성이 달라서, 직전 설정을 물려받지 않아요.',
     rangeBand:
       '적정거리에서 쏘는 무기는 평타 대미지가 올라가요. 런처(RL)는 어느 거리에서도 받지 않아요.',
     coreHittable:

@@ -507,6 +507,8 @@ Response `200`:
         {
           "name": string,
           "weakness": "Fire" | "Water" | "Wind" | "Iron" | "Electric",
+          "range_band": "near" | "mid" | "far" | null,  // null when the
+                                    // announcement states no distance (solo raids)
           "stated": Record<string, string | string[]>
         }
       ]
@@ -514,14 +516,20 @@ Response `200`:
   ]
 }
 ```
-**`weakness` is the only machine-read field per boss.** Picking a rotation
-card writes only this into the boss profile (and resets every other field to
-its default). `stated` is the announcement's raw prose — distance, squad
-recommendation, part-break hints, whatever that raid type's announcement
-happens to print — keyed however the announcement laid it out, one array
-entry per line for a multi-line value. The app renders `stated` verbatim and
-never interprets it; do not add logic that reads a `stated` value to drive
-behavior.
+**`weakness` and `range_band` are the only machine-read fields per boss.**
+Picking a rotation card writes those two into the boss profile — the weakness
+becomes `element`, the band becomes `effective_range_band` — and resets every
+other field to its default. Both arrive already translated into engine
+vocabulary: the announcement is read by the `/update-raid-bosses` skill, which
+is where Korean wording (`근거리` → `near`) is turned into these values.
+
+`stated` is the announcement's raw prose — squad recommendation, part-break
+hints, grade, flavour text, whatever that raid type's announcement happens to
+print — keyed however the announcement laid it out, one array entry per line
+for a multi-line value. It is a provenance record only: nothing renders it and
+nothing reads it. Do not add logic that parses a `stated` value to drive
+behavior — that would put a Korean-prose parser in the app, which is exactly
+what the skill exists to keep out.
 
 ### Portraits
 

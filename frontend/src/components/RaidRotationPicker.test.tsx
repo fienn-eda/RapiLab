@@ -17,30 +17,35 @@ const rotation: RaidRotation = {
     {
       name: '선바스',
       weakness: 'Electric',
+      range_band: 'near',
       stated: { 등급: '로드 급', 거리: '근거리', 설명: ['머리에 꽃을 얹은 랩쳐.'] },
     },
-    { name: '토커티브', weakness: 'Water', stated: { 등급: '타이런트 급' } },
+    {
+      name: '토커티브',
+      weakness: 'Water',
+      range_band: 'far',
+      stated: { 등급: '타이런트 급' },
+    },
   ],
 }
 
 describe('RaidRotationPicker', () => {
   it('회차의 보스를 전부 그린다', () => {
+    // 이름을 정확 일치로 찾는 것이 카드에 문단이 섞이지 않았다는 증거이기도 하다 —
+    // 라벨 안에 공지 원문이 들어가면 접근성 이름이 길어져 여기서 먼저 깨진다.
     render(<RaidRotationPicker rotation={rotation} selectedName={null} onPick={vi.fn()} />)
     expect(screen.getByRole('radio', { name: '전격선바스' })).toBeInTheDocument()
     expect(screen.getByRole('radio', { name: '수냉토커티브' })).toBeInTheDocument()
   })
 
-  it('공지 원문을 해석하지 않고 그대로 보여준다', () => {
-    // 「거리: 근거리」는 우리 적정거리 밴드로 번역되지 않는다 - 화면에 원문으로
-    // 남아 있어야 Fienn이 보고 직접 판단할 수 있다.
+  it('카드에는 이름과 약점 아이콘만 나온다', () => {
+    // 공지 원문은 `stated`에 기록으로 남지만 화면에는 안 나온다 - 5장이 각자
+    // 두어 문단을 달고 있으면 정작 만지려는 보스 설정이 화면 밖으로 밀린다.
     render(<RaidRotationPicker rotation={rotation} selectedName={null} onPick={vi.fn()} />)
-    expect(screen.getByText('거리')).toBeInTheDocument()
-    expect(screen.getByText('근거리')).toBeInTheDocument()
-  })
-
-  it('여러 줄짜리 항목도 전부 보여준다', () => {
-    render(<RaidRotationPicker rotation={rotation} selectedName={null} onPick={vi.fn()} />)
-    expect(screen.getByText('머리에 꽃을 얹은 랩쳐.')).toBeInTheDocument()
+    expect(screen.queryByText('거리')).not.toBeInTheDocument()
+    expect(screen.queryByText('근거리')).not.toBeInTheDocument()
+    expect(screen.queryByText('머리에 꽃을 얹은 랩쳐.')).not.toBeInTheDocument()
+    expect(screen.queryByText('로드 급')).not.toBeInTheDocument()
   })
 
   it('고른 보스를 콜백으로 넘긴다', async () => {
@@ -57,13 +62,8 @@ describe('RaidRotationPicker', () => {
     expect(screen.getByRole('radio', { name: '수냉토커티브' })).not.toBeChecked()
   })
 
-  it('공지 원문을 클릭해도 보스가 골라지지 않는다', async () => {
-    // <label>이 원문(dl)까지 감싸면 설명을 읽으려던 클릭이 보스를 선택해
-    // 버린다 - 라벨은 머리글까지만 감싸야 한다.
-    const user = userEvent.setup()
-    const onPick = vi.fn()
-    render(<RaidRotationPicker rotation={rotation} selectedName={null} onPick={onPick} />)
-    await user.click(screen.getByText('머리에 꽃을 얹은 랩쳐.'))
-    expect(onPick).not.toHaveBeenCalled()
+  it('카드는 보스 수만큼만 그려진다', () => {
+    render(<RaidRotationPicker rotation={rotation} selectedName={null} onPick={vi.fn()} />)
+    expect(screen.getAllByRole('radio')).toHaveLength(rotation.bosses.length)
   })
 })

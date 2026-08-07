@@ -20,7 +20,9 @@ def a_rotation(**overrides):
         "ends_at": "2026-01-08T04:59:00+09:00",
         "source_url": "https://example.test/1", "source_locale": "ko",
         "read_on": "2026-01-01",
-        "bosses": [{"name": "보스", "weakness": "Iron", "stated": {}}],
+        "bosses": [
+            {"name": "보스", "weakness": "Iron", "range_band": None, "stated": {}},
+        ],
     }
     doc.update(overrides)
     return doc
@@ -50,18 +52,40 @@ def test_an_unknown_raid_kind_is_rejected():
 
 
 def test_an_unknown_weakness_is_rejected():
-    boss = [{"name": "보스", "weakness": "Poison", "stated": {}}]
+    boss = [{"name": "보스", "weakness": "Poison", "range_band": None, "stated": {}}]
     with pytest.raises(ValueError, match="Poison"):
         validate_rotations(a_doc(a_rotation(bosses=boss)))
 
 
 def test_a_boss_with_no_weakness_is_rejected():
-    # 약점은 카드를 골랐을 때 채워지는 유일한 값이다. 그것이 비면 카드를 눌러도
-    # 화면에는 아무 일도 안 일어난 것처럼 보이면서 나머지 7개 필드는 조용히
+    # 약점은 카드를 골랐을 때 반드시 채워지는 값이다. 그것이 비면 카드를 눌러도
+    # 화면에는 거의 아무 일도 안 일어난 것처럼 보이면서 나머지 필드는 조용히
     # 초기화된다 (Fienn, 2026-08-07).
-    boss = [{"name": "보스", "weakness": None, "stated": {}}]
+    boss = [{"name": "보스", "weakness": None, "range_band": None, "stated": {}}]
     with pytest.raises(ValueError, match="보스"):
         validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_an_unknown_range_band_is_rejected():
+    # 공지의 「거리」는 판독 시점에 엔진 어휘로 옮겨 적힌다. 한글이 그대로 들어오면
+    # 옮기는 단계를 건너뛴 것이므로 화면이 그 값을 적정거리에 얹을 수 없다.
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": "근거리", "stated": {}}]
+    with pytest.raises(ValueError, match="근거리"):
+        validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_boss_with_no_range_band_is_allowed():
+    # 솔로 공지는 거리를 적지 않는다 - 그때 적정거리는 「모름」으로 남는다.
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None, "stated": {}}]
+    assert validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_the_shipped_union_bosses_all_carry_a_range_band():
+    # 유니온 공지는 보스마다 거리를 적으므로, 비어 있으면 판독에서 빠뜨린 것이다.
+    doc = load_rotations()
+    for union in [r for r in doc["rotations"] if r["raid"] == "union"]:
+        for boss in union["bosses"]:
+            assert boss["range_band"] in {"near", "mid", "far"}, boss["name"]
 
 
 def test_an_empty_boss_list_is_rejected():

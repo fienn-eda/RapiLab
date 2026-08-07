@@ -76,19 +76,33 @@ export function BossProfileField({
   const selectedName =
     picked && bossElementFor(picked.weakness) === value.element ? picked.name : null
 
-  // 공지가 명시한 약점만 얹고 나머지는 전부 기본값으로 돌린다. 직전 보스의 설정이
-  // 남으면 화면에는 새 보스 이름이 적혀 있는데 계산은 옛 보스 가정으로 돈다.
+  // 공지가 그 단어로 적은 것(약점 · 거리)만 얹고 나머지는 전부 기본값으로 돌린다.
+  // 직전 보스의 설정이 남으면 화면에는 새 보스 이름이 적혀 있는데 계산은 옛 보스
+  // 가정으로 돈다. 거리를 안 적는 솔로 공지에서는 range_band가 null이라 적정거리도
+  // 기본값(모름)으로 남는다.
   const pickRotationBoss = (boss: RotationBoss) => {
     setPickedName(boss.name)
     onChange({
       ...makeDefaultBossProfileDraft(defaultEnemyDef),
       element: bossElementFor(boss.weakness),
+      effective_range_band: boss.range_band,
     })
   }
 
   return (
     <fieldset className="group">
-      <legend className="group__legend">보스 설정</legend>
+      {/* 카드가 있을 때만 설명을 붙인다 - 회차 데이터가 없으면 이 탭에 카드 자체가
+          없어서, 카드를 고르면 어떻게 된다는 설명이 가리킬 대상이 없다. */}
+      <legend className="group__legend">
+        <span className="group__legend-row">
+          보스 설정
+          {rotation && (
+            <HelpTip label="회차 보스">
+              <HelpText>{HELP.boss.rotationPicker}</HelpText>
+            </HelpTip>
+          )}
+        </span>
+      </legend>
 
       {rotation && (
         <RaidRotationPicker

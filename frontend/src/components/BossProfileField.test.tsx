@@ -201,9 +201,18 @@ const rotation: RaidRotation = {
   source_locale: 'ko',
   read_on: '2026-08-07',
   bosses: [
-    { name: '선바스', weakness: 'Electric', stated: { 거리: '근거리' } },
-    { name: '토커티브', weakness: 'Water', stated: { 거리: '원거리' } },
+    { name: '선바스', weakness: 'Electric', range_band: 'near', stated: { 거리: '근거리' } },
+    { name: '토커티브', weakness: 'Water', range_band: 'far', stated: { 거리: '원거리' } },
   ],
+}
+
+/** 거리를 안 적는 솔로 공지에서 오는 모양. */
+const soloRotation: RaidRotation = {
+  ...rotation,
+  id: 'solo-39',
+  raid: 'solo',
+  title: '솔로 레이드 39시즌',
+  bosses: [{ name: '아일랜드 이터', weakness: 'Iron', range_band: null, stated: {} }],
 }
 
 describe('BossProfileField 회차 보스 피커', () => {
@@ -249,7 +258,37 @@ describe('BossProfileField 회차 보스 피커', () => {
     expect(onChange).toHaveBeenCalledWith({
       ...makeDefaultBossProfileDraft(),
       element: bossElementFor('Water'),
+      effective_range_band: 'far',
     })
+  })
+
+  it('유니온 보스를 고르면 공지가 적은 적정거리가 들어간다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        onChange={onChange}
+        rotation={rotation}
+      />,
+    )
+    await user.click(screen.getByRole('radio', { name: '전격선바스' }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ effective_range_band: 'near' }),
+    )
+  })
+
+  it('거리를 안 적는 솔로 보스는 적정거리를 모름으로 남긴다', async () => {
+    // 솔로 공지에는 「거리」 항목이 없다. 없는 값을 추측해 채우면 그 순간 아무도
+    // 근거를 댈 수 없는 +30%가 평타에 붙는다.
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    const dirty = { ...makeDefaultBossProfileDraft(), effective_range_band: 'mid' as const }
+    render(<BossProfileField value={dirty} onChange={onChange} rotation={soloRotation} />)
+    await user.click(screen.getByRole('radio', { name: '철갑아일랜드 이터' }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ effective_range_band: null }),
+    )
   })
 
   it('초기화되는 방어력은 호출부가 준 기본값이다', async () => {
@@ -271,6 +310,23 @@ describe('BossProfileField 회차 보스 피커', () => {
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ enemy_def: '31784' }),
     )
+  })
+
+  it('카드를 고르면 어떻게 되는지는 보스 설정 옆 설명이 말한다', () => {
+    // 카드 아래 문단으로 두면 5장 밑에 깔려 정작 읽어야 할 때 안 읽힌다.
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        onChange={vi.fn()}
+        rotation={rotation}
+      />,
+    )
+    expect(screen.getByRole('button', { name: '회차 보스 설명' })).toBeInTheDocument()
+  })
+
+  it('회차가 없으면 그 설명도 없다', () => {
+    render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />)
+    expect(screen.queryByRole('button', { name: '회차 보스 설명' })).not.toBeInTheDocument()
   })
 
   it('약점을 손으로 바꾸면 카드 선택이 풀린다', async () => {

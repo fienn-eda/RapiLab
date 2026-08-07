@@ -1,8 +1,10 @@
 """이번 회차 레이드 보스. `/update-raid-bosses` 스킬이 공지를 읽어 적고, 보스
 설정 화면의 카드 피커가 읽는다.
 
-기계가 읽는 필드는 보스마다 `weakness` 하나뿐이다. 거리·부위파괴 같은 것은
-공지가 명시하지 않으므로 `stated`에 원문 그대로 들어가고 앱은 해석하지 않는다
+기계가 읽는 필드는 보스마다 `weakness`와 `range_band` 둘이다. 둘 다 공지가
+그 단어로 적은 것을 엔진 어휘로 옮긴 값이고, 판독 시점에 스킬이 채운다 —
+앱이 `stated`의 한글 산문을 파싱하는 일은 없다. 나머지(부위파괴·스쿼드 추천 등)는
+대응이 확인되지 않아 `stated`에 원문 그대로만 남는다
 (docs/superpowers/specs/2026-08-07-raid-boss-rotation-import-design.md D3).
 
 파일의 키는 보스 이름이 아니라 (회차, 보스)다. 같은 보스가 시즌마다 다른 속성을
@@ -17,6 +19,11 @@ from app.elements import ELEMENTS
 from app.paths import data_dir
 
 RAID_KINDS = frozenset({"solo", "union"})
+
+# 공지의 「거리」를 옮겨 담는 값. `BossProfile.effective_range_band`와 같은 어휘라
+# 화면이 그대로 얹는다. 유니온 공지만 이 항목을 적고 솔로 공지는 적지 않으므로
+# None이 허용된다 — 그때는 보스 설정의 적정거리가 「모름」으로 남는다.
+RANGE_BANDS = frozenset({"near", "mid", "far"})
 
 
 def _parse_time(value, where):
@@ -56,6 +63,10 @@ def validate_rotations(doc):
             if weakness not in ELEMENTS:
                 raise ValueError(
                     f"{rid}/{boss['name']}: 알 수 없는 약점 {weakness!r}")
+            band = boss["range_band"]
+            if band is not None and band not in RANGE_BANDS:
+                raise ValueError(
+                    f"{rid}/{boss['name']}: 알 수 없는 거리 {band!r}")
     return doc
 
 

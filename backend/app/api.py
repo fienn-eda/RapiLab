@@ -75,16 +75,22 @@ class BossProfileIn(BaseModel):
 class RotationBoss(BaseModel):
     """공지가 적은 보스 하나.
 
-    `weakness`만 앱이 해석한다 - 화면이 이 값으로 보스 속성을 역산해 채운다.
-    카드를 고르면 채워지는 값이 이 하나뿐이라 비워둘 수 없다 - 로더가 이미
-    거부하므로(raid_rotations.validate_rotations) 여기 닿는 값은 항상 5원소
-    중 하나다.
-    `stated`는 공지 원문이고 렌더링만 된다. 자유 형식인 이유는 솔로 공지와
-    유니온 공지가 서로 다른 항목을 적기 때문이다(솔로: 보스 속성·스쿼드 추천·공격
-    패턴 / 유니온: 등급·거리).
+    앱이 해석하는 것은 `weakness`와 `range_band` 둘뿐이다 - 화면이 전자로 보스
+    속성을 역산하고 후자를 적정거리에 그대로 얹는다. 둘 다 공지를 읽는 시점에
+    스킬이 엔진 어휘로 옮겨 적으므로, 앱이 `stated`의 한글 산문을 파싱하지 않는다.
+
+    `weakness`는 비워둘 수 없다 - 로더가 이미 거부하므로
+    (raid_rotations.validate_rotations) 여기 닿는 값은 항상 5원소 중 하나다.
+    `range_band`는 유니온 공지에만 있어 비어 있을 수 있고, 그때 적정거리는
+    「모름」으로 남는다.
+
+    `stated`는 공지 원문 기록이다. 자유 형식인 이유는 솔로 공지와 유니온 공지가
+    서로 다른 항목을 적기 때문이다(솔로: 보스 속성·스쿼드 추천·공격 패턴 /
+    유니온: 등급·거리).
     """
     name: str
     weakness: Literal["Fire", "Water", "Wind", "Iron", "Electric"]
+    range_band: Literal["near", "mid", "far"] | None = None
     stated: dict[str, str | list[str]] = {}
 
 

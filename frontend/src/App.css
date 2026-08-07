@@ -792,19 +792,19 @@
   --element: var(--el-electric);
 }
 
-/* 회차 보스 카드. 카드마다 공지 원문이 붙어 높이가 제각각이므로 flex가 아니라
-   그리드로 놓는다 — 5장이 들쭉날쭉하면 어느 것이 골라졌는지 읽기 어렵다. */
+/* 회차 보스 카드. 아이콘과 이름 한 줄뿐이라 카드 높이가 서로 같고, 이름 길이는
+   제각각이라 폭은 내용에 맡긴다 — 속성 선택(.element-picker)과 같은 배치다. */
 .rotation-picker {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--sp-2);
 }
 
 .rotation-picker__option {
   display: flex;
-  flex-direction: column;
+  align-items: center;
   gap: var(--sp-1);
-  padding: var(--sp-2);
+  padding: var(--sp-1) var(--sp-2);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
@@ -821,12 +821,6 @@
   outline-offset: 1px;
 }
 
-.rotation-picker__head {
-  display: flex;
-  align-items: center;
-  gap: var(--sp-1);
-}
-
 .rotation-picker__icon {
   width: 20px;
   height: 20px;
@@ -834,28 +828,6 @@
 
 .rotation-picker__name {
   font-weight: 600;
-}
-
-/* 공지 원문은 참고 자료지 입력값이 아니다 — 카드에서 시선을 덜 끌게 둔다. */
-.rotation-picker__stated {
-  margin: 0;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.rotation-picker__stated-row {
-  display: flex;
-  gap: var(--sp-1);
-}
-
-.rotation-picker__stated-row dt::after {
-  content: ':';
-}
-
-.rotation-picker__stated-row dd {
-  margin: 0;
-  display: flex;
-  flex-direction: column;
 }
 
 /* Groups (fieldsets) --------------------------------------------------- */
@@ -886,6 +858,14 @@
   font-weight: 600;
   padding: 0 var(--sp-2);
   color: var(--text);
+}
+
+/* legend 자신에게 flex를 주면 브라우저가 legend를 배치하는 방식과 부딪히므로
+   안쪽 span을 정렬 상자로 쓴다. */
+.group__legend-row {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
 }
 
 .group__hint {

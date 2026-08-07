@@ -2,9 +2,11 @@
 // types/recommend.ts와 같은 이유로 snake_case를 그대로 둔다 — 파이썬 쪽이 진실의
 // 원천이고, 이름을 바꾸면 두 파일을 대조할 수 없다.
 //
-// `stated`는 공지 원문이다. 앱은 해석하지 않고 렌더링만 한다.
+// `stated`는 공지 원문 기록이다. 앱은 해석하지 않는다 — 화면이 읽는 값은
+// `weakness`와 `range_band`뿐이고, 둘 다 판독 시점에 엔진 어휘로 옮겨 적힌다.
 
 import type { NikkeElement } from './supportedUnit'
+import type { BossRangeBand } from './recommend'
 
 export type RaidKind = 'solo' | 'union'
 
@@ -12,7 +14,10 @@ export interface RotationBoss {
   name: string
   /** 공지가 적은 약점. 비어 있을 수 없다 — 로더가 거부한다. */
   weakness: NikkeElement
-  /** 공지 원문. 항목은 솔로/유니온이 다르므로 자유 형식이다. */
+  /** 공지가 적은 거리. 유니온 공지에만 있어 솔로 보스는 null이고, 그때 적정거리는
+   *  「모름」으로 남는다. */
+  range_band: BossRangeBand
+  /** 공지 원문 기록. 항목은 솔로/유니온이 다르므로 자유 형식이다. */
   stated: Record<string, string | string[]>
 }
 
