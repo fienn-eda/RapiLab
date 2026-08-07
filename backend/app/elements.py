@@ -42,3 +42,8 @@ def weakness_of(boss_element: str) -> str:
     if boss_element not in _WEAK_TO:
         raise KeyError(f"unknown element: {boss_element!r}")
     return _WEAK_TO[boss_element]
+
+
+# 5속성의 이름. 순환에서 유도한다 - 목록을 따로 적으면 순환이 바뀌는 날 둘이
+# 어긋나고, 어긋난 쪽이 검증에 쓰이면 없는 속성이 통과한다.
+ELEMENTS = frozenset(_STRONG_AGAINST)
