@@ -1064,11 +1064,23 @@
       soda-twinkling-bunny · sugar · drake · noir(해소 가능) + diesel-winter-sweets ·
       mast-romantic-maid · modernia · anchor-innocent-maid(RL/MG라 자기 자신에겐
       무의미하나 **아군 대상 버프/디버프는 SG·SMG·AR 아군에게 유효**).
-- [ ] **앱에서 로스터 재동기화 → `roster-drafts.json` 갱신.** 명중 오버로드가
-      이제 API 경로로도 조립되므로(타입 6이 `tables.json`에 들어왔다) 재동기화하면
-      34유닛이 명중 값을 갖는다. 그 뒤 `measure_record_calibration.py`가 처음으로
-      명중을 반영한 수치를 낸다. **동기화는 파일을 안 쓴다** — localStorage에서
-      손으로 꺼내는 절차는 `tools/collect-blablalink/RECIPE.md`.
+- [x] **로스터 재동기화 완료 (2026-08-07).** `roster-drafts-jp-fienn.json`에 34유닛의
+      명중이 부위별 굴림(`lines`)까지 들어왔다. **새 기준선 1.055x · 19/25** —
+      1.047x에서 움직인 것은 **로스터가 자란 것이지 명중이 아니다**(159유닛 전부
+      hp/atk가 바뀌었다). 명중 34줄을 지운 사본으로 다시 재면 **1.055x·19/25로
+      바이트 동일** — `core_diameter_px` 없이 `hit_rate`가 inert라는 계약이
+      실데이터에서 확인됐다.
+- [ ] **blessed 기본값 `roster-drafts.json`이 7/31 스냅샷으로 낡았다.** 측정
+      스크립트는 `--roster` 없이 부르면 그 파일을 읽으므로, 지금 그냥 돌리면
+      명중 없는 옛 로스터를 재고도 그렇게 보이지 않는다(이 저장소가 이미 한 번
+      겪은 함정이다). 새 export를 blessed로 승격할 것.
+- [ ] **코어 크기 실측.** 모델을 실제로 켜면(`core_diameter_px=50`) 실기록 5덱이
+      **−4.55%**(합계 35.828B → 34.199B)이고, 무기 구성이 그대로 설명한다:
+      deck1은 전원 RL/SR/MG라 **정확히 0%**, deck2는 SMG 둘(21%)+AR 하나(44%)라
+      **−13.89%**. 그러면 합계가 1.055x → **약 1.007x**가 되는데, **이것을 「코어가
+      50px이다」의 증거로 읽지 말 것** — 그 값은 `p_조준`까지 1.0으로 놓은 것이라
+      미지수 둘을 식 하나로 푸는 셈이다(gap #21은 파츠를 때린 좌석이 코어를 놓친다고
+      했다). 켜는 결정은 보스 코어 크기를 실제로 재고 나서.
 - [ ] **소장품 lv15 유닛의 스탯이 실측과 어긋난다 (명중과 무관, 새 데이터가 드러냄).**
       `test_assemble_roster_matches_the_collector_scrape`가 159유닛 중 3에서 실패한다 —
       Rapi: Red Hood(atk −12·hp −270) · Anis: Star(atk −2·hp −60) · Neon: Vision
