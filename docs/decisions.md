@@ -5,6 +5,42 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 고정점 루프의 수렴 실패는 API 필드가 아니라 파이썬 `warnings`로 알린다
+
+- Date: 2026-08-08
+- Context: 소다: 트윙클링 바니의 Full Burst 확장은 고정점 반복으로 푼다(2026-08-06,
+  "소다의 FB 확장은 순환이 아니라 순차 의존이었다" — 아래). 상한
+  `MAX_FULL_BURST_PASSES`에 걸리면 `simulate_raid`가
+  `result["full_burst_passes"] = {"passes": 32, "converged": False}`를
+  반환하지만, 이 필드를 읽는 하류가 하나도 없었다 — 고정점이 아닌 마지막-패스 답이
+  평범한 `total_damage` 숫자로 API를 그냥 빠져나가고 있었다.
+- Decision: 신호 채널로 파이썬 `warnings`(`FullBurstConvergenceWarning(UserWarning)`,
+  `backend/app/raid_simulator.py`)를 고른다. API 응답 필드(`swap_converged` 선례,
+  2026-08-05 "스왑 예산을 벽시계에서 후보 교환 수로" — 아래)도, 프론트 배너도
+  만들지 않는다.
+- Why: 수신자가 앱 사용자가 아니라 숫자를 집계하는 우리(스크립트·측정·테스트)라고
+  Fienn이 판정했다(2026-08-08) — 그 판정이 서면 나머지 선택은 거기서 따라온다.
+  `scripts/`에서 `evaluate_deck`/`simulate_raid` 결과를 소비하는 16개 파일 중
+  `deck_search.never_full_bursts`를 부르는 것은 `sweep_slug_damage.py`·
+  `measure_hit_rate_core_gain.py` 둘뿐이라, 질의 헬퍼를 하나 더 만드는 것은
+  「읽는 하류가 없다」는 원래 문제를 이름만 바꿔 재생산하는 것이다. `warnings`는
+  소비자가 아무것도 안 해도 닿는다 — `backend/pytest.ini`의
+  `filterwarnings = error`가 이미 그 목적으로 배치된 인프라라, 경고 하나를
+  추가하면 배선 0줄로 약 2000여 개 테스트 전부가 검사기가 된다.
+- Alternatives considered: (a) API 응답 필드 — `swap_converged` 선례가 있지만
+  소비자 배선이 필요하고, 지금도 그 배선이 안 되어 있다(`full_burst_passes.converged`가
+  이미 그 필드고 아무도 안 읽는다). (b) 프론트 배너 — 수신자가 앱 사용자가
+  아니라는 판정과 어긋난다.
+- Consequences: 앱 사용자에게는 이 경고가 절대 안 보인다 — API도 UI도 안 건드렸다.
+  메시지에는 덱 슬러그 같은 가변 식별자를 안 싣는다 — 파이썬 경고 중복 접기가
+  (텍스트, 카테고리, 위치) 키라서 요청마다 다른 텍스트를 내면 스윕 한 번이 수만
+  줄이 된다; 접히는 축인 `fight_duration`만 싣는다(요청당 사실상 하나이고, 애초에
+  패스 수를 정하는 축이다). 오늘 소다 격번 픽스처는 8패스에서 평평하고(상한 32는
+  4배 마진, 7200초 = 게임 최대 180초의 40배까지 재측정) 이 경고는 오늘 데이터로는
+  울릴 수 없다 — 자세한 수치는 아래 "소다의 FB 확장..." 결정의 2026-08-08 후속
+  참고. 구현: `FullBurstConvergenceWarning` + `simulate_raid`의 상한 탈출 지점.
+  커밋 `eb453ee6`, `8cba9478`.
+
 ## 코어는 「장비 윗줄 전부」에 곱해진다 — 코어당 상수 11개가 사라졌다
 
 - Date: 2026-08-07
@@ -341,6 +377,14 @@ catalog, see the `nikke-skill-encoding` skill, not here.
   그래서 `MAX_FULL_BURST_PASSES`는 품질 노브가 아니라 폭주 방지 장치로 다뤄야 하고,
   「관측된 최악의 두 배」식 마진은 `fight_duration`이 사용자 입력인 이상 마진이
   아니다(700초에서 옛 상한 8은 여유가 정확히 0이었다). 32로 올렸다.
+- **후속 (2026-08-08):** 상한 32의 실제 마진을 실측으로 못박았다 — 격번 픽스처의
+  패스 수는 200초 3 / 700초 8 / 1800초 8 / 3600초 8 / **7200초 8**(게임 최대 180초의
+  40배)로 700초 이후 완전히 평평하다. 그러므로 32는 이 확장에 대해 **4배 마진**이고,
+  거기 걸리려면 진동해서 수렴하지 않는 조합이어야 한다. 비용은 급히 오른다(700초
+  0.39초 · 1800초 1.76초 · 3600초 5.93초 · 7200초 22.25초) — 그래서 테스트 스위트에
+  넣은 것은 700초 하나뿐이다. 그리고 걸리면 이제 조용하지 않다 —
+  `FullBurstConvergenceWarning`을 낸다("고정점 루프의 수렴 실패는..." 결정, 위 참고).
+  커밋 `8cba9478`.
 
 ## 소다의 골든칩은 버스트에서 17로 리셋되는 게 아니라 17이 소비된다 — 바닥은 실측한 1
 
