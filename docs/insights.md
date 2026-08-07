@@ -2265,6 +2265,34 @@ own_burst_activate가 아니라...) 참고.
   전환 후에도 손으로는 안 고쳐진 채 남아 있던 재발을 막는 장치. 같은 파일이
   "로스터 조회는 앱이 아니라 브라우저가 한다"는 주장도 `app.blablalink_api`/
   `app.dotgg_client`가 `sys.modules`에 없음을 확인해 지킨다.
+- **「부르면 받는」 질의 헬퍼는 이 저장소에서 채택률이 낮다 — 16개 중 2개.**
+  `scripts/`에서 `evaluate_deck`/`simulate_raid` 결과를 소비하는 16개 파일 중
+  `deck_search.never_full_bursts`를 실제로 부르는 것은 `sweep_slug_damage.py`·
+  `measure_hit_rate_core_gain.py` 둘뿐이다(2026-08-08, `full_burst_passes.converged`가
+  아무 하류도 없이 방치된 것을 확인한 세션). 놓치면 안 되는 신호에 헬퍼를 하나 더
+  만드는 것은 「읽는 하류가 없다」는 문제를 이름만 바꿔 재생산하는 것이다 — 소비자가
+  아무것도 안 해도 닿는 채널(아래 두 항목의 `warnings` + `pytest.ini`)을 먼저
+  고려할 것. `docs/decisions.md`("고정점 루프의 수렴 실패는...") 참조.
+- **`backend/pytest.ini`의 `filterwarnings = error`는 새 경고를 배선 0줄로
+  전수 검사기로 바꾸는, 이미 배치된 인프라다.** 파이썬 `warnings.warn`을 하나
+  추가하면 그 경고가 나는 모든 테스트가 실패로 뒤집힌다 — 약 2000여 개 테스트
+  전부가 그 순간부터 그 경고의 소비자가 된다(수정 0줄). 앱 사용자에게는 안
+  보여도 되지만 우리(스크립트·측정·테스트)는 놓치면 안 되는 내부 불변식 위반을
+  알리는 저비용 채널로 재사용 가치가 있다.
+- **경고 메시지에 가변 식별자를 실으면 파이썬 경고의 중복 접기가 무력화된다.**
+  기본 경고 필터는 `(메시지 텍스트, 카테고리, 파일:줄)` 키로 중복을 접는데,
+  메시지에 덱 슬러그처럼 요청마다 달라지는 값을 실으면 그 키가 매번 새것이 되어
+  스윕 한 번이 수만 줄짜리 로그가 된다. 요청당 사실상 하나인 값(예:
+  `fight_duration`)만 실어서 접히는 축을 지킬 것 — 그 값이 애초에 무엇을
+  다르게 만드는지도 함께 알려준다.
+- **"경고가 없다"를 단언하는 테스트에서 경고 클래스를 리스트 컴프리헨션 안에서만
+  참조하면 공허한 테스트가 된다.** `[w for w in caught if
+  issubclass(w.category, SomeWarning)] == []` 형태로 클래스 이름을 컴프리헨션
+  **안**에만 두면, 잡힌 경고가 0개일 때 파이썬이 그 이름 자체를 한 번도 평가하지
+  않는다 — `SomeWarning`이 오타·삭제로 존재하지 않아도 테스트가 통과한다. 실제로
+  `FullBurstConvergenceWarning` 구현 전에 이 테스트가 이미 그린이었던 것을 보고
+  잡았다. 카테고리를 컴프리헨션 **밖**에서 먼저 변수로 집어야 참조가 실제로
+  평가된다. `backend/tests/test_interaction_soda_full_burst_extension.py::test_a_converging_run_stays_silent`.
 
 ## Data (lootandwaifus.com primary, dotgg fallback)
 - **"Is this stat already folded into the displayed value?" must be asked per source — ShiftyPad answers it differently for cubes vs. overload.** ShiftyPad's shown hp/atk/def already include the equipped cube's contribution (bare character stats if none is equipped), but shows overload option values SEPARATELY from those same stats, additive on top (both confirmed by Fienn — see `docs/decisions.md`, "ShiftyPad's displayed hp/atk/def already include the equipped cube"). Don't assume a UI's convention is uniform across every stat-contributing source it displays; check each one. This mattered far more for automated ingestion than manual entry: a human copying numbers by hand tends to notice something looks off, but a scraper swallows ShiftyPad's displayed numbers wholesale and would silently double-count (or drop) a source's contribution if the fold-in assumption is wrong.

@@ -33,6 +33,11 @@ spend는 17이라 한 쌍마다 **-3씩 천천히 줄어든다**(톱니를 그�
 `fight_duration`을 늘렸다가 감소를 보고 회귀로 오해하지 말 것 - 그것이 이
 픽스처의 정상 거동이다.
 """
+import warnings
+
+import pytest
+
+from app import raid_simulator
 from app.raid_simulator import simulate_raid
 from app.skill_rules.soda_twinkling_bunny import (
     build_beginners_rewards_full_burst_delta,
@@ -173,3 +178,48 @@ def test_the_nuke_only_fires_inside_extended_windows():
     for nuke in nukes:
         assert any(start <= nuke["time"] < end for start, end in windows), \
             "창 밖에서 넉이 나오면 안 된다"
+
+
+def test_a_run_that_hits_the_pass_cap_says_so_out_loud(monkeypatch):
+    """상한에 걸린 답은 고정점이 아니다 - 마지막 패스가 낸 답일 뿐이다. 그 사실이
+    `full_burst_passes`에만 있으면 아무도 못 본다(그 플래그를 읽는 하류가 없다).
+    경고로도 나와야 `filterwarnings = error`인 이 스위트와 `scripts/`의 소비자들이
+    수정 없이 알아챈다.
+
+    상한 1을 쓰는 이유: 이 픽스처는 200초에서 3패스가 필요하다는 것이 위
+    테스트에 못박혀 있으므로, 1은 반드시 수렴 실패다."""
+    monkeypatch.setattr(raid_simulator, "MAX_FULL_BURST_PASSES", 1)
+    with pytest.warns(raid_simulator.FullBurstConvergenceWarning) as caught:
+        result = _run(_alternating_deck(), fight_duration=200.0)
+    assert result["full_burst_passes"] == {"passes": 1, "converged": False}
+    # 경고와 플래그가 같은 사실을 말하는지, 그리고 메시지만으로 재현이 되는지 -
+    # 덱을 싣지 않는 대신 길이는 실려야 한다.
+    assert "fight_duration=200.0" in str(caught[0].message)
+
+
+def test_a_converging_run_stays_silent():
+    """확장이 있다고 경고하는 게 아니라 수렴 못 했을 때만 경고한다. 이게 틀리면
+    `filterwarnings = error` 아래에서 이 파일의 다른 테스트가 전부 깨진다.
+
+    카테고리를 컴프리헨션 밖에서 먼저 집는 것은 의도다: 안에 두면 잡힌 경고가
+    없을 때 이름이 한 번도 평가되지 않아, 그 클래스가 존재하지 않아도 통과하는
+    공허한 테스트가 된다."""
+    category = raid_simulator.FullBurstConvergenceWarning
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        _run(_alternating_deck(), fight_duration=200.0)
+    assert [w for w in caught if issubclass(w.category, category)] == []
+
+
+def test_the_pass_count_plateaus_far_below_the_cap():
+    """패스 수는 전투 길이를 따라 오르다 8에서 멈춘다 - 상한 32는 4배 마진이다.
+
+    지키는 주장은 「상한은 품질 노브가 아니라 폭주 방지 장치」다. 평탄부가
+    올라가기 시작하면 여기서 걸린다.
+
+    700초를 고른 이유: 평탄부의 시작이면서 0.4초에 끝난다. 더 긴 길이는 사이클
+    수를 따라 급히 비싸져(3600초 5.9초 · 7200초 22초) 스위트에 못 넣는다 -
+    2026-08-08에 7200초까지 손으로 재서 8을 확인했다(게임 최대 180초의 40배).
+    """
+    result = _run(_alternating_deck(), fight_duration=700.0)
+    assert result["full_burst_passes"] == {"passes": 8, "converged": True}
