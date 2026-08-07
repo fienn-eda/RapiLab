@@ -100,6 +100,9 @@ side of a boss-profile flag (e.g. Ark Ranger Black's floor DoT vs. ceiling
 DoT modeling the same battery-transformation state two different ways);
 absent field = always fires, matching every existing spec's behavior.
 """
+import inspect
+import warnings
+
 from app.accuracy import WEAPON_SPREAD_DIAMETER, core_hit_rate
 from app.attack_rate import CHARGE_WEAPONS, generate_segmented_shots
 from app.burst_cycle import FULL_BURST_OPEN_DELAY, simulate_burst_cycle
@@ -530,6 +533,19 @@ _BUNDLE_STATS = (
 # 어차피 답이 없다.
 MAX_FULL_BURST_PASSES = 32
 
+
+class FullBurstConvergenceWarning(UserWarning):
+    """고정점 루프가 상한을 다 쓰고도 자기 입력을 재생산하지 못했다.
+
+    이 경고가 붙은 결과의 `total_damage`는 고정점이 아니다 - 마지막 패스가 낸
+    답일 뿐이라 창 길이가 실제와 다르고, 다른 덱과 비교할 수 있는 숫자가 아니다.
+
+    전용 클래스인 이유는 둘이다: `pytest.warns`가 다른 경고와 헷갈리지 않고
+    이것만 겨눌 수 있고, 언젠가 이것만 골라 끄고 싶어질 때 축이 있다.
+    `UserWarning` 하위라 파이썬 기본 필터에서 안 무시된다.
+    """
+
+
 # 자원 조회를 리셋 "직전"으로 밀어내는 폭. resource_count는 조회 시각과 같은
 # 시각의 리셋을 베이스라인으로 쓰므로, 그냥 버스트 시각을 물으면 소비 후 값이
 # 돌아온다. 이 폭이면 같은 순간의 리셋만 벗어나고 직전 fill은 그대로 센다.
@@ -603,6 +619,24 @@ def simulate_raid(*args, **kwargs):
             return result
         overrides = resolved
     result["full_burst_passes"] = {"passes": MAX_FULL_BURST_PASSES, "converged": False}
+    # `converged: False`만으로는 아무도 못 본다 - 이 플래그를 읽는 하류가 없다.
+    # 질의 헬퍼를 하나 더 만들어도 `scripts/`의 소비자 16개 중 2개만 부르는
+    # `deck_search.never_full_bursts`의 전철을 밟는다. 경고는 소비자가 아무것도
+    # 안 해도 닿고, `backend/pytest.ini`의 `filterwarnings = error` 아래에서는
+    # 테스트 실패가 된다.
+    #
+    # 덱을 메시지에 안 싣는 것은 의도다: 파이썬 기본 필터가 (텍스트, 카테고리,
+    # 위치)로 중복을 접으므로 덱마다 다른 텍스트를 내면 스윕 한 번이 수만 줄이
+    # 된다. `fight_duration`은 요청당 사실상 하나라 접힌 채로도 재현에 쓸 수
+    # 있고, 애초에 패스 수를 정하는 축이다.
+    bound = inspect.signature(_simulate_raid_once).bind_partial(*args, **kwargs)
+    warnings.warn(
+        f"풀 버스트 확장이 {MAX_FULL_BURST_PASSES} 패스 안에 수렴하지 않았다 "
+        f"(fight_duration={bound.arguments.get('fight_duration', '?')}) - "
+        f"이 결과의 total_damage는 고정점이 아니다.",
+        FullBurstConvergenceWarning,
+        stacklevel=2,
+    )
     return result
 
 
