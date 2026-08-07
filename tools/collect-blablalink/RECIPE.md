@@ -7,8 +7,18 @@ Every selector/procedure below was confirmed against the real page, not guessed.
 ## Prerequisites
 
 - Chrome started with `--remote-debugging-port=9222` and a **logged-in
-  blablalink session**. Launch (Windows):
-  `"C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir="C:\Users\<you>\bl-debug" "https://www.blablalink.com/"`
+  blablalink session**. Launch from PowerShell — the `&` call operator is
+  required, because a command starting with a quoted string is parsed as a
+  string expression and the following `--` becomes an operator
+  (`'--' 연산자는 변수 또는 속성에서만 동작합니다`):
+
+  ```powershell
+  & "C:\Program Files\Google\Chrome\Application\chrome.exe" --remote-debugging-port=9222 --user-data-dir=C:\Users\<you>\bl-debug https://www.blablalink.com/
+  ```
+
+  `--user-data-dir` names a SEPARATE Chrome profile, so log in to blablalink
+  once inside the window it opens; your everyday profile's session is not
+  visible there.
 - Connect with `playwright-core` `chromium.connectOverCDP('http://localhost:9222')`.
 - The session stays in the user's browser. We read the `game_openid` cookie only to
   replay two read-only game APIs; nothing is persisted except sanitized HTML.
