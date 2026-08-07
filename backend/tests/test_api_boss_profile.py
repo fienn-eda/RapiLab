@@ -103,3 +103,13 @@ def test_an_omitted_core_diameter_models_the_old_ceiling():
 def test_the_core_diameter_a_caller_sends_is_the_one_the_engine_gets():
     assert boss_profile(BossProfileIn(
         core_hittable=True, core_diameter_px=62.5)).core_diameter_px == 62.5
+
+
+def test_a_non_positive_core_diameter_is_rejected_at_the_edge():
+    # accuracy.core_hit_rate divides by the diameter; zero or negative would
+    # divide by zero or invent a positive core-hit share for an impossible
+    # boss, so the wire model constrains it instead of letting either happen.
+    with pytest.raises(ValidationError):
+        BossProfileIn(core_diameter_px=0.0)
+    with pytest.raises(ValidationError):
+        BossProfileIn(core_diameter_px=-1.0)

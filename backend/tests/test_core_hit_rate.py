@@ -109,9 +109,12 @@ def test_a_negative_hit_rate_widens_the_spread():
 
 
 def test_core_strike_ignores_the_spread():
-    """Skill damage whose own text says it strikes the core is not a question of
-    aim. The same `is_normal_attack` gate also covers a summon that aims and
-    shoots on its own (Anis: Star's Shooting Stars, `core_eligible_override`)."""
+    """Skill damage whose own text says it strikes the core is not a question
+    of aim - only the `is_normal_attack` gate decides, not the weapon's own
+    spread. `weapon_stats` gives the striker an SG so that spread is actually
+    in play: without the gate this would fall to 10400.0 (SG at 50px core =
+    4% of the bonus), the same number `test_each_weapon_collects_its_area_ratio`
+    pins for a bare SG normal attack."""
     result = simulate_raid(
         _deck("SG"),
         {s: [] for s in ("b1", "b2", "striker")},
@@ -121,6 +124,7 @@ def test_core_strike_ignores_the_spread():
         gauge_charge_time=2.0,
         fight_duration=30.0,
         base_crit_rate=0.0,
+        weapon_stats={"striker": _weapon("SG")},
         core_hittable=True,
         core_diameter_px=50.0,
         burst_damage_types={"striker": "core_strike"},
@@ -128,6 +132,34 @@ def test_core_strike_ignores_the_spread():
     burst = next(e["damage"] for e in result["damage_log"] if e["source"] == "burst")
     # An SG's own normal attacks would only collect 4% of the bonus here.
     assert burst == 20000.0
+
+
+def test_a_scheduled_summon_hit_also_ignores_the_spread():
+    # Anis: Star's Shooting Stars ticks record as source="scheduled" with
+    # core_eligible_override=True - the summon aims and fires on its own, so
+    # like core_strike its damage skips the spread math the same way, through
+    # the same is_normal_attack gate. Without the gate this would fall to
+    # 10400.0, same as the bare-SG case above.
+    result = simulate_raid(
+        _deck("SG"),
+        {s: [] for s in ("b1", "b2", "striker")},
+        burst_damage_percents={"striker": 100.0},
+        base_stats=BASE_STATS,
+        enemy_def=0,
+        gauge_charge_time=30.0,
+        fight_duration=1.5,
+        base_crit_rate=0.0,
+        weapon_stats={"striker": _weapon("SG")},
+        core_hittable=True,
+        core_diameter_px=50.0,
+        scheduled_nukes={"striker": [{
+            "schedule": lambda context, fight_duration: [0.5],
+            "percent": 100.0,
+            "core_eligible": True,
+        }]},
+    )
+    tick = next(e["damage"] for e in result["damage_log"] if e["source"] == "scheduled")
+    assert tick == 20000.0
 
 
 def test_the_pierce_body_instance_is_weighted_by_the_core_hit_rate():
