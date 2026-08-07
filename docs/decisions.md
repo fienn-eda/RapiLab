@@ -5,6 +5,81 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 레이드 회차 보스 공지 판독은 앱이 아니라 `/update-raid-bosses` 스킬이 한다
+
+- Date: 2026-08-07
+- Context: 솔로/유니온 레이드 공지에 실린 이번 회차 보스 정보(이름·약점 등)를 보스
+  설정 화면에 카드로 띄우는 기능을 설계했다. 조사해 보니 그 정보는 네 건의 공지
+  전부 **이미지 한 장 안**에 있고 본문 텍스트에는 이름·기간 정도만 있다(유니온은
+  이름조차 없다) — "누가 이미지를 읽는가"부터 정해야 했다.
+- Decision: 이미지 판독은 앱 코드가 아니라 `.claude/skills/update-raid-bosses/
+  SKILL.md` 스킬이 한다. Fienn이 공지 글 URL(또는 이미지 URL 직접)을 주면 스킬이
+  브라우저로 열어 본문 이미지를 읽고, 표로 보여준 뒤 Fienn 확인을 받아
+  `data/raid-rotations.json`에 회차를 커밋한다. 앱은 `GET /api/raid-rotations`로
+  그 파일을 낼 뿐이고, **이미지 처리 코드는 0줄**이다.
+- Why: 대안이던 "앱 안에서 템플릿 매칭"과 "비전 API 호출"은 둘 다 보스당 필드
+  2개(이름·약점)를 자동으로 채우자고 지불하기엔 무겁고, 공지 디자인이 바뀌면
+  곧바로 깨진다. 반면 에이전트가 이미지를 읽는 방식은 이 저장소가 `/collect-nikke`·
+  `/onboard-new-nikkes`로 이미 쓰고 있는 모양이라 새 인프라가 필요 없다. 회차
+  갱신은 드물게 일어나는 수동 트리거이므로(자동 감지·주기 실행은 범위 밖) 에이전트
+  개입 비용이 문제되지 않는다.
+- Consequences: 새 회차가 나올 때마다 Fienn이 공지 URL을 스킬에 준다 — 자동
+  폴링은 없다. 판독 중 Fienn 확인이 워크플로우의 유일한 중단점이라 승인 전에는
+  파일이 바뀌지 않는다. 공지 레이아웃이 바뀌면 스킬의 판독 절차(본문 컨테이너
+  셀렉터, 이미지 조각 자르기)만 고치면 되고 앱 재배포는 필요 없다. 설계·계획은
+  `docs/superpowers/specs/2026-08-07-raid-boss-rotation-import-design.md`
+  (D1), `docs/superpowers/plans/2026-08-07-raid-boss-rotation-import.md`.
+
+## 레이드 회차 보스 데이터의 키는 (회차, 보스)다 — 카드를 고르면 약점 외 나머지는 초기화된다
+
+- Date: 2026-08-07
+- Context: 같은 보스가 시즌마다 다른 속성으로 재등장한다(관측: 아일랜드 이터가
+  솔로 39시즌엔 보스 속성 전격·약점 철갑). Fienn 요구: 「동일 보스더라도 시즌마다
+  속성이 바뀌어서 등장할 때가 많아. 과거 시즌의 데이터로 인해 현재 시즌 보스의
+  데이터가 잘못 입력되는 일은 없어야 해.」(2026-08-07)
+- Decision: `data/raid-rotations.json`은 보스를 이름으로 전역 색인하지 않는다 —
+  각 회차(`rotations[]`)가 자기 `bosses[]`를 갖고, 보스 레코드는 그 회차 안에서만
+  존재한다("보스별 카탈로그"는 설계에서 명시적으로 범위 밖). 같은 원칙을 세션
+  안까지 끌고 간다: 프론트 `BossProfileField`에서 회차 카드를 고르면 공지가 준
+  약점(`element`, `bossElementFor(weakness)`로 역산)만 채워지고, 나머지 7개 필드
+  (`enemy_def`, `fight_duration`, `part_destructible`, `core_hittable`,
+  `pierce_hits_body_behind_core`, `elemental_interrupt_required`,
+  `effective_range_band`)는 기본값으로 되돌린다 — 직전에 고른 보스의 설정이
+  남는 것도 같은 실패로 취급해 금지한다.
+- Why: 「선바스는 코어가 있다」 같은 기록이 시즌을 넘어 재사용되면, 다음 시즌
+  선바스가 실제로 다른 특성으로 나왔을 때 그 값을 조용히 물려받는다. 키를
+  (회차, 보스)로 잡으면 이 경로가 구조적으로 존재하지 않는다. 세션 내 리셋도
+  같은 실패의 다른 얼굴이다 — 카드를 바꿨는데 화면엔 새 보스 이름이 적혀 있고
+  계산은 직전 보스의 가정으로 도는 상태를 막는다.
+- Consequences: 보스별 특성을 시즌 너머로 누적 학습하는 기능(예: "이 보스는 항상
+  코어가 있다")은 이 스키마 위에 바로 얹을 수 없다 — 필요해지면 별도 카탈로그와
+  그 카탈로그가 시즌을 넘어 신뢰할 수 있다는 근거가 따로 있어야 한다. 회귀 테스트
+  (`BossProfileField.test.tsx`)가 "다른 필드를 손으로 켜 둔 상태에서 카드를
+  고르면 초기화되는지"를 못박는다 — 이게 없으면 "안 건드리는" 구현이 조용히
+  통과한다. 로더(`backend/app/raid_rotations.py`)도 `weakness`가 비어 있는
+  회차를 거부한다 — 카드를 고르면 채워지는 값이 약점 하나뿐이라, 그게 비면
+  카드를 눌러도 화면엔 아무 일도 안 일어난 것처럼 보이면서 나머지 7개 필드가
+  조용히 초기화되기 때문이다.
+
+## source_url에는 공지 글 주소만 저장한다 — 이미지 URL은 저장하지 않는다
+
+- Date: 2026-08-07
+- Context: 판독 대상 이미지의 호스트가 둘이다(`arca.live`, `blablalink.com`).
+  arca.live 이미지 URL은 서명 URL이고 만료된다 — 관측된 예시는 발급 후 약
+  10시간(`expires=1786070129` → 2026-08-07 11:35 만료). blablalink CDN URL에는
+  만료가 없다.
+- Decision: `data/raid-rotations.json`의 `source_url`에는 공지 글 주소만 저장하고,
+  판독에 쓴 이미지 URL은 저장하지 않는다 — 판독 시점에 받아서 그 자리에서 버린다.
+  이미지를 다시 볼 일이 있으면 글을 다시 연다.
+- Why: 두 호스트를 한 스키마로 담아야 하는데 한쪽(arca)은 만료되고 한쪽
+  (blablalink)은 안 된다. 같은 필드에 만료되는 URL과 안 되는 URL을 섞으면 필드의
+  의미가 호스트마다 달라지고, arca 쪽 값은 저장한 지 하루도 안 돼 죽은 링크가
+  된다. 만료되지 않는 값(글 주소)을 기준으로 잡으면 스키마가 호스트를 안 타고
+  데이터가 썩지 않는다.
+- Consequences: 판독 근거 이미지 자체를 나중에 다시 보려면 글을 다시 열어야
+  한다 — 회차 갱신 자체가 Fienn이 URL을 주는 수동 트리거라 자동 재판독 경로는
+  애초에 없다(위 스킬 결정과 같은 전제).
+
 ## 다시 열린 변형 창은 새 발동 기준으로 갱신된다 — 이전 창을 끊고, 합치지 않는다
 
 - Date: 2026-08-06
