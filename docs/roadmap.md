@@ -1069,15 +1069,27 @@
       34유닛이 명중 값을 갖는다. 그 뒤 `measure_record_calibration.py`가 처음으로
       명중을 반영한 수치를 낸다. **동기화는 파일을 안 쓴다** — localStorage에서
       손으로 꺼내는 절차는 `tools/collect-blablalink/RECIPE.md`.
-- [ ] **소장품 lv15 스탯이 실측과 어긋난다 (명중과 무관, 새 데이터가 드러냄).**
-      `test_assemble_roster_matches_the_collector_scrape`가 3유닛에서 실패한다 —
-      Rapi: Red Hood(atk 12·hp 270) · Anis: Star(atk 2·hp 60) · Neon: Vision
-      Eye(atk 2). **셋의 공통점은 `favorite_item_lv=15`**이고, lv0·lv2 유닛은 전부
-      통과한다. `tables.json`의 `collectible_sample`은 level1/level2만 담아 lv15는
-      보간이라, 그 보간이나 소장품 성장 곡선이 틀렸다는 뜻이다. 이 테스트는
-      로컬 수집 덤프가 있을 때만 도는 조건부라 지금까지 skip돼 있었다.
-      먼저 해볼 것: `node collect.js --tables` / `--collectibles` 재수집(테이블이
-      2026-07-18 것이다).
+- [ ] **소장품 lv15 유닛의 스탯이 실측과 어긋난다 (명중과 무관, 새 데이터가 드러냄).**
+      `test_assemble_roster_matches_the_collector_scrape`가 159유닛 중 3에서 실패한다 —
+      Rapi: Red Hood(atk −12·hp −270) · Anis: Star(atk −2·hp −60) · Neon: Vision
+      Eye(atk −2). 전부 **모델이 실측보다 낮다**. 이 테스트는 로컬 수집 덤프가 있을
+      때만 도는 조건부라 지금까지 skip이었고, 2026-08-07 재수집으로 처음 깨어났다.
+
+      **좁혀둔 것:**
+      - 셋의 공통점은 **소장품 레벨 15**(`favorite_item_lv=15`). lv0(Liter)·lv2(Moran)
+        유닛은 전부 통과한다.
+      - **소장품 곡선은 무죄다.** 셋이 낀 tid(100202·100302)의 커밋된 레코드는
+        `collectible_sample`과 동일하고 `atk[15] = 9688`로 정상. `collectible_atk`도
+        `curve[15]`를 제대로 읽는다.
+      - 셋 다 **일반 소장품**(1xxxxx)이지 애장품(2xxxxx)이 아니다 — 애장품 분기
+        (`curve[-1]`)는 안 탄다.
+      - 남은 후보는 **레벨 15에서만 생기는 다른 항**이다. 곡선의 `grade` 배열이
+        lv15에서만 3이 된다(lv10~14는 2). 등급이 스탯에 얹히는지 미확인.
+      - **`node collect.js --tables` 재수집은 답이 아니었다** (2026-08-07 시도):
+        새 덤프의 `equipment`·`affinity`가 **`null`**이다(SPA 앱 캐시라 인터셉션이
+        요청을 못 봄 — `collect.js`가 경고만 찍고 없이 쓴다). `classes`는 레벨 상한이
+        1200→1400으로 늘었을 뿐 겹치는 값이 전부 동일해 400레벨 계산과 무관하다.
+        **그 덤프를 병합하면 테이블이 망가진다.**
 
 ### 사이클별 풀 버스트 길이 + 아르카나 수레바퀴 게이트 정정 (2026-08-05, 제보 조사에서 착지)
 
