@@ -796,11 +796,28 @@ def _simulate_raid_once(
 
         `core_diameter_px`가 없으면 이 인카운터는 코어히트율을 모델링하지
         않는다: 적격 인스턴스는 엔진이 오래 모델해 온 상한인 1.0을 받는다.
+
+        무기변형 세그먼트의 발도 탄착군은 기저 무기(`weapon_stats`)로 찾는다 -
+        세그먼트가 다른 무기 클래스를 자칭해도(나유타 SMG -> "SR" 프로필) 그
+        라벨은 안 쓴다. `_in_effective_range`의 같은 선택은 실측이
+        뒷받침한다(잔차 5.8e-08,
+        docs/measurements/weapon-transform-effective-range-band.md). 여기는
+        아니다 - 세그먼트의 `"weapon"`은 스킬 모듈에 손으로 적힌 무기 클래스
+        라벨일 뿐, `shot_detail`이 잰 그 세그먼트의 실제 조준원이 아니다.
+        `WEAPON_SPREAD_DIAMETER`를 그 라벨로 찾으면 없는 탄착군 수치를 지어내는
+        셈이 되므로 기저 무기를 쓴다. **이 판단은 측정되지 않았다** -
+        docs/superpowers/specs/2026-08-07-hit-rate-core-accuracy-design.md §9
+        보류 참고.
         """
         if core_diameter_px is None or not is_normal_attack:
             return 1.0
         weapon = (weapon_stats.get(slug) or {}).get("weapon")
         if weapon not in WEAPON_SPREAD_DIAMETER:
+            # accuracy.spread_diameter는 모르는 무기에 KeyError를 던진다(근거
+            # 없는 탄착군을 지어내지 않으려고). 여기서 대신 1.0을 주는 것은 그
+            # 규칙을 깨는 게 아니라, 이 opt-in 경로 전체가 이미 1.0을 중립값으로
+            # 쓰기 때문이다(core_diameter_px가 None일 때와 같은 값) - 모르는
+            # 무기는 지어낸 탄착군 대신 예전의 상한 동작으로 떨어진다.
             return 1.0
         return core_hit_rate(
             weapon, _stat_bundle(slug, time)["hit_rate"], core_diameter_px
