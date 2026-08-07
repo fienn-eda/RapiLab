@@ -5,6 +5,38 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 펠릿 카운터는 「주기 상수」가 아니라 발당 가변 증분을 쌓는 모드다
+
+- Date: 2026-08-07
+- Context: 도로시: 세렌디피티의 Flash(「표적을 펠릿 80발로 맞히면」 Hit Rate
+  +98.18% · Attack Damage +72% · Pierce · 「펠릿 수 1로 고정」을 3발 동안)는 명중
+  모델이 착륙한 날 그 모델의 최대 항으로 보류됐다. `docs/engine-gaps.md`가 남긴
+  처방은 「인게임에서 발동 간격을 한 번 재 그 주기를 상수로 박고 per-shot 룰로
+  끝낸다」였다.
+- Decision: 그 처방을 기각하고 `per_shot_rules`에 `"accumulate"` 모드를 넣었다 —
+  발을 세는 대신 유닛이 준 콜백으로 **발당 양을 누적해 임계값에서 발동**하고,
+  임계값은 리셋이 아니라 **감산**한다. 실측이 정말 필요했던 항은 `p_조준`(쏜 펠릿
+  중 표적에 맞는 비율) 하나뿐이었고, Fienn 판정으로 **1.0**(레이드 보스는 화면을
+  채우고 SG는 근접이라 250px 탄착군이 몸통 안에 들어간다). 나머지는 산술이다.
+- Why: 발당 펠릿이 고정이 아니다 — 평상시 10 · 버스트 중 15(False Salvation의
+  「+5」) · Flash 중 1(+5 = 6, **합산된다** — Fienn 인게임 확인). 그리고 도로시는
+  자기 발의 **58.4%를 자기 버스트 창 안에서** 쏘므로(버스트 쿨 40초에 버프 15초)
+  이 변동이 주기를 11발에서 8.32발로 바꾼다. 더 결정적으로, 균일 주기 `("every", N)`
+  은 발동이 그 창에 몰리는 편중 — 공속 +65%·ATK +88%로 발당 딜이 가장 큰 구간 —
+  을 표현하지 못해 **체계적으로 과소평가**한다. 감산(리셋 아님)을 고른 이유는
+  2배 임계값이 첫 임계값의 매 2회차에 얹혀야 하기 때문이고, Fienn이 인게임에서
+  160펠릿 효과가 Flash 두 번에 한 번 뜬다고 확인했다.
+- Alternatives considered: **평균 상수 N=9 근사** — 기각(위 편중). **펠릿 수를
+  일반 스탯으로 만들어 엔진 전체가 읽게 하기** — 기각(펠릿 수는 데미지 중립이라
+  읽을 곳이 카운터뿐이고, 아르카나: 포츈 메이트에게도 셀 카운터가 없다. YAGNI).
+- Consequences: `pellet_count_bonus`는 `raid_simulator._BUNDLE_STATS` **밖**에
+  둔다 — 데미지 경로에 닿지 않고 카운터 속도만 정하는 것이 의도다. 같은 작업에서
+  원문에 없던 상시 `has_pierce`를 제거했다(단독으로 딜 13.44%). 순 효과는 그녀
+  총딜 **+16.35%**. 160펠릿의 Pierce 범위 +200%는 보류로 남는다(엔진의 관통→데미지
+  통로가 불리언이라 곱할 자리가 없다) — 배선은 열려 있어 `limit=160` 룰 하나면
+  붙는다. 설계는
+  `docs/superpowers/specs/2026-08-07-dorothy-pellet-counter-design.md`.
+
 ## 레이드 회차 보스 공지 판독은 앱이 아니라 `/update-raid-bosses` 스킬이 한다
 
 - Date: 2026-08-07

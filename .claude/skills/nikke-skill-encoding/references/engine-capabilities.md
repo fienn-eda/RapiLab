@@ -254,7 +254,21 @@ time-based filter would let both modes fire on that one boundary shot;
 identity matching makes the two modes structurally mutually exclusive). The
 count runs across ALL segments merged, not reset per segment - a threshold
 >1 carries its count from one transform window into the next (inert today:
-the only consumer, Snow White: Heavy Arms, uses N=1). The
+the only consumer, Snow White: Heavy Arms, uses N=1), or `"accumulate"`
+(2026-08-07, Dorothy: Serendipity's Flash - the one mode that does NOT count
+shots. `threshold` is `(limit, increment_at)` where
+`increment_at(context, slug, time, registry, shots_since_fire) -> float` is a
+per-shot QUANTITY the unit computes; the rule fires each time the running total
+crosses `limit`, which is then SUBTRACTED rather than reset so the overshoot
+carries forward. Use it when the skill's trigger counts something other than
+shots and the per-shot amount varies - Flash's "80 pellets" is worth 10 a shot
+normally, 15 while her burst's "Number of pellets +5" is up, and 1 (+5) for the
+3 rounds it fixes the count at 1. The subtract-not-reset arithmetic is what
+makes a second rule at 2x the limit ride every second fire of the first.
+`shots_since_fire` is passed because a rule CANNOT read its own
+`round_buff_rule` grant here: grants become Effects only in the pass after every
+unit's shot loop, while this counter runs before it. `None` = has not fired yet,
+which must not be confused with the shot right after a fire). The
 engine counts the unit's generated shots (a charge
 weapon's every shot is a full charge, so "full charge N" == "shot N"; the
 encoding knows the weapon and picks N - no weapon gating in the engine). A
