@@ -19,16 +19,27 @@ def tables():
 
 
 def test_assemble_overload_reproduces_every_scraped_unit(tables):
-    """The decoded+valued overload must equal ShiftyPad's parsed lines for all 77."""
+    """The decoded+valued overload must equal ShiftyPad's parsed lines.
+
+    Two independent reads of the same gear: `--details` gives option ids (effect
+    type + level, no values), the scrape gives summed percentages (values, no
+    levels). Agreement means the id decode AND the value table are both right.
+
+    The coverage assertion is derived from the roster rather than pinned to a
+    count, because the count is how many units happen to wear overload today -
+    it grew from 77 to 78 between two syncs. What must hold is that no unit with
+    a scraped overload was skipped for want of a details entry.
+    """
     if not (ROSTER.exists() and DETAILS.exists()):
         pytest.skip("local collector dumps not synced")
     directory = {e["name_code"]: e for e in json.loads(DIRECTORY.read_text(encoding="utf-8"))}
     by_rid = {e["resource_id"]: e for e in directory.values()}
     raw = json.loads(DETAILS.read_text(encoding="utf-8"))
     details = {d["name_code"]: d for d in raw["character_details"]}
+    units = json.loads(ROSTER.read_text(encoding="utf-8"))["units"]
     off = []
     checked = 0
-    for u in json.loads(ROSTER.read_text(encoding="utf-8"))["units"]:
+    for u in units:
         scraped = u.get("overload") or []
         if not scraped:
             continue
@@ -41,7 +52,11 @@ def test_assemble_overload_reproduces_every_scraped_unit(tables):
         want = {o["name"]: round(o["value"], 2) for o in scraped}
         if got != want:
             off.append((u["name_en"], got, want))
-    assert checked == 77
+    wearing_overload = sum(1 for u in units if u.get("overload"))
+    assert checked == wearing_overload
+    # A roster that scraped no overload at all would make the comparison vacuous,
+    # and that is exactly what a page rewording produced once (RECIPE §f).
+    assert checked > 0
     assert off == [], off[:5]
 
 

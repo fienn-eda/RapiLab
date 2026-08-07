@@ -18,3 +18,10 @@ outpost.json
 # this tracked risks a stale capture (e.g. the pre-rename 900001-3 ids) later
 # getting re-merged over the committed table's current 190001-3 numbering.
 collectibles.json
+# --tables capture output, same reasoning as collectibles.json: scratch, not the
+# committed data/nikke-stat-tables/tables.json. A capture can also come back
+# PARTIAL - `equipment` and `affinity` are served from the SPA's own cache, so
+# the interception may never see the request and the dump writes them as null
+# with only a warning (observed 2026-08-07). Merging one of those over the
+# committed table would silently delete both.
+nikke-stat-tables.json
