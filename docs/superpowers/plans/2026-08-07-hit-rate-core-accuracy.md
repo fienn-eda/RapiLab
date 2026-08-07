@@ -4,7 +4,7 @@
 
 **Goal:** 코어 히트를 불리언에서 확률로 바꾼다 — 무기 클래스와 명중률 스탯이 정하는 탄착군이 코어보다 크면 그 면적비만큼만 코어에 든다.
 
-**Architecture:** 순수 함수 모듈(`accuracy.py`)이 탄착군과 확률을 계산하고, `damage_formula`가 그 확률을 크리티컬과 똑같은 기대값 항으로 소비한다. `BossProfile.core_diameter_px`가 None이면 확률은 1.0으로 고정돼 기존 동작이 바이트 단위로 보존된다(opt-in). 부수적으로 `hit_rate` 스탯이 소비자를 얻어 15슬러그의 보류가 풀리고, 지금 수집기가 버리는 명중률 오버로드가 들어온다.
+**Architecture:** 순수 함수 모듈(`accuracy.py`)이 탄착군과 확률을 계산하고, `damage_formula`가 그 확률을 크리티컬과 똑같은 기대값 항으로 소비한다. `BossProfile.core_diameter_px`가 None이면 확률은 1.0으로 고정돼 기존 동작이 보존된다(opt-in). **착륙 후 실측 정정:** 코어 항 둘이 확률 곱 안으로 묶이며 부동소수 결합법칙이 깨져 **엄밀한 바이트 동일은 아니다** — 실기록 5덱 중 1덱이 8.45e9 중 9.5e-07(상대 1e-16) 어긋난다. 보고되는 어떤 수치도 안 움직이고 캘리브레이션은 1.047x·19/25 그대로다. 부수적으로 `hit_rate` 스탯이 소비자를 얻어 15슬러그의 보류가 풀리고, 지금 수집기가 버리는 명중률 오버로드가 들어온다.
 
 **Tech Stack:** Python 3.14 (백엔드, pytest) · Node `node --test` + jsdom (blablalink 수집기)
 
@@ -13,7 +13,7 @@
 ## Global Constraints
 
 - **`hit_rate`는 비율이다** — 명중 33%는 `0.33`. 엔진의 모든 퍼센트 Effect가 그렇다(`overload_effects`가 `value/100`으로 넣는다). 탄착군이 0이 되는 지점은 `1.10`이지 `110`이 아니다.
-- **기본값은 opt-in이다** — `core_diameter_px=None`에서 기존 시뮬 결과가 **바이트 동일**해야 한다. 이것이 계약이고 Task 4의 첫 테스트가 그것을 지킨다.
+- **기본값은 opt-in이다** — `core_diameter_px=None`에서 기존 시뮬 결과가 바뀌지 않아야 한다. 이것이 계약이고 Task 4의 첫 테스트가 그것을 지킨다. (착륙 후 정정: 결합법칙이 깨져 **1ULP 이내**가 정확한 표현이다 — 위 Architecture 참고.)
 - **값을 지어내지 않는다.** 무기 탄착군은 게임 데이터에서 온 값이고, 오버로드 명중의 값 곡선은 `option_id` 대조 전까지 만들지 않는다.
 - 백엔드 테스트: `cd backend && python -m pytest` (루트에서 돌리면 `No module named 'app'`).
 - 수집기 테스트: `cd tools/collect-blablalink && npm test`.
