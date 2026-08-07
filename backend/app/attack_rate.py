@@ -94,9 +94,13 @@ _SPINUP_BY_WEAPON = {"MG": MG_SPINUP}
 def spinup_for_weapon(weapon):
     """This weapon class's warm-up, or None for the classes that have none.
 
-    Only the MG has one measured. An SMG also over-reads against the record
-    (1.149x against the MG's 1.193x) but nothing has been timed on it, so it
-    stays at its nominal rate rather than borrowing the MG's numbers.
+    The MG is the only class that has one. `heating` is a term the game applies
+    to machine guns alone - the two skills that move it share one word-group id
+    and Rei's names `allies with a Machine Gun` as the target - and Fienn
+    confirmed in game that an SMG reaches its nominal rate from the first round
+    (docs/measurements/smg-no-spinup.md). The SMG still over-reads against the
+    record (1.148x, the highest class) but the cause is elsewhere; the leading
+    candidate is its 110px spread under the accuracy model.
     """
     return _SPINUP_BY_WEAPON.get(weapon)
 
