@@ -209,3 +209,17 @@ def test_a_converging_run_stays_silent():
         warnings.simplefilter("always")
         _run(_alternating_deck(), fight_duration=200.0)
     assert [w for w in caught if issubclass(w.category, category)] == []
+
+
+def test_the_pass_count_plateaus_far_below_the_cap():
+    """패스 수는 전투 길이를 따라 오르다 8에서 멈춘다 - 상한 32는 4배 마진이다.
+
+    지키는 주장은 「상한은 품질 노브가 아니라 폭주 방지 장치」다. 평탄부가
+    올라가기 시작하면 여기서 걸린다.
+
+    700초를 고른 이유: 평탄부의 시작이면서 0.4초에 끝난다. 더 긴 길이는 사이클
+    수를 따라 급히 비싸져(3600초 5.9초 · 7200초 22초) 스위트에 못 넣는다 -
+    2026-08-08에 7200초까지 손으로 재서 8을 확인했다(게임 최대 180초의 40배).
+    """
+    result = _run(_alternating_deck(), fight_duration=700.0)
+    assert result["full_burst_passes"] == {"passes": 8, "converged": True}
