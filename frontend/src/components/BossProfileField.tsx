@@ -2,14 +2,17 @@
 // enemy DEF, fight duration, part destructibility, and effective range band.
 // Mirrors BossProfile in src/types/recommend.ts.
 
-import { useId } from 'react'
+import { useId, useState } from 'react'
 import { bossElementFor } from '../lib/elementAdvantage'
 import { WEAKNESS_ICON } from '../lib/elementIcon'
 import { elementLabel } from '../lib/elementName'
+import { makeDefaultBossProfileDraft } from '../types/bossProfileDraft'
 import type { BossProfileDraft, BossProfileDraftErrors } from '../types/bossProfileDraft'
+import type { RaidRotation, RotationBoss } from '../types/raidRotation'
 import { BOSS_RANGE_BANDS, type BossRangeBand } from '../types/recommend'
 import type { NikkeElement } from '../types/supportedUnit'
 import { NumberField } from './fields/NumberField'
+import { RaidRotationPicker } from './RaidRotationPicker'
 import { HelpTip } from './HelpTip'
 import { HelpText } from './HelpText'
 import { HELP } from '../lib/helpText'
@@ -44,6 +47,12 @@ interface BossProfileFieldProps {
   /** 속성저지 필수를 그릴지. 유니온레이드 탭은 탐색이 없어 제약이 걸 곳이 없으므로
    * 항목 자체를 감춘다 - 켤 수는 있는데 아무 일도 안 일어나는 것이 더 나쁘다. */
   showElementalInterrupt?: boolean
+  /** 이번 회차 보스 목록. 없으면 카드 피커를 그리지 않는다. */
+  rotation?: RaidRotation | null
+  /** 카드를 골랐을 때 방어력이 되돌아갈 값. 솔로 보스와 유니온 보스는 방어력이
+   *  달라 공유 기본값 하나로는 한쪽이 틀린 값으로 계산된다 —
+   *  makeDefaultBossProfileDraft가 인자를 받는 것과 같은 이유다. */
+  defaultEnemyDef?: string
 }
 
 export function BossProfileField({
@@ -51,13 +60,45 @@ export function BossProfileField({
   errors,
   onChange,
   showElementalInterrupt = true,
+  rotation = null,
+  defaultEnemyDef = '0',
 }: BossProfileFieldProps) {
   const elementId = useId()
   const rangeBandId = useId()
 
+  // 어느 보스 카드를 눌렀는지. 이름으로 들고 있는 이유는 같은 약점을 가진 보스가
+  // 한 회차에 둘 나올 수 있어서다 — 속성만으로는 어느 쪽인지 못 가른다.
+  const [pickedName, setPickedName] = useState<string | null>(null)
+
+  // 카드는 「이 보스로 계산 중」이라고 말한다. 그래서 약점이 그 보스와 달라진
+  // 순간(사용자가 아이콘을 직접 눌렀을 때) 체크를 놓아야 한다.
+  const picked = rotation?.bosses.find((boss) => boss.name === pickedName) ?? null
+  const selectedName =
+    picked && picked.weakness !== null && bossElementFor(picked.weakness) === value.element
+      ? picked.name
+      : null
+
+  // 공지가 명시한 약점만 얹고 나머지는 전부 기본값으로 돌린다. 직전 보스의 설정이
+  // 남으면 화면에는 새 보스 이름이 적혀 있는데 계산은 옛 보스 가정으로 돈다.
+  const pickRotationBoss = (boss: RotationBoss) => {
+    setPickedName(boss.name)
+    onChange({
+      ...makeDefaultBossProfileDraft(defaultEnemyDef),
+      element: boss.weakness === null ? null : bossElementFor(boss.weakness),
+    })
+  }
+
   return (
     <fieldset className="group">
       <legend className="group__legend">보스 설정</legend>
+
+      {rotation && (
+        <RaidRotationPicker
+          rotation={rotation}
+          selectedName={selectedName}
+          onPick={pickRotationBoss}
+        />
+      )}
 
       <div className="field">
         <span className="field__label" id={`${elementId}-label`}>

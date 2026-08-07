@@ -2,11 +2,14 @@
 // 버튼이 설정 자체를 건드리지 않는다는 것 - 체크박스 라벨 안에 있으면
 // 설명을 열려는 클릭이 보스 프로필을 바꾼다.
 
+import { useState } from 'react'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { BossProfileField } from './BossProfileField'
+import { bossElementFor } from '../lib/elementAdvantage'
 import { makeDefaultBossProfileDraft } from '../types/bossProfileDraft'
+import type { RaidRotation } from '../types/raidRotation'
 
 const renderField = (onChange = vi.fn()) => {
   render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={onChange} />)
@@ -185,5 +188,98 @@ describe('기타 설정', () => {
     )
 
     expect(screen.getByText(/방어력 —/)).toBeInTheDocument()
+  })
+})
+
+const rotation: RaidRotation = {
+  id: 'union-2026-07-31',
+  raid: 'union',
+  title: '유니온 레이드 7/31',
+  starts_at: '2026-07-31T05:00:00+09:00',
+  ends_at: '2026-08-06T04:59:00+09:00',
+  source_url: 'https://arca.live/b/nikketgv/177833660',
+  source_locale: 'ko',
+  read_on: '2026-08-07',
+  bosses: [
+    { name: '선바스', weakness: 'Electric', stated: { 거리: '근거리' } },
+    { name: '토커티브', weakness: 'Water', stated: { 거리: '원거리' } },
+  ],
+}
+
+describe('BossProfileField 회차 보스 피커', () => {
+  it('회차가 없으면 피커를 그리지 않는다', () => {
+    render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />)
+    expect(screen.queryByRole('radio', { name: /선바스/ })).not.toBeInTheDocument()
+  })
+
+  it('보스를 고르면 약점에서 역산한 보스 속성이 들어간다', async () => {
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        onChange={onChange}
+        rotation={rotation}
+      />,
+    )
+    await userEvent.click(screen.getByRole('radio', { name: /선바스/ }))
+    // 약점 전격 -> 전격이 이기는 속성이 보스 본인 속성이다.
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ element: bossElementFor('Electric') }),
+    )
+  })
+
+  it('보스를 고르면 손으로 켜둔 다른 필드가 전부 초기화된다', async () => {
+    // 설계 D2. 이게 없으면 화면에는 「토커티브」라고 적혀 있는데 계산은 직전 보스
+    // 가정(코어 피격 가능 · 부위파괴 · 방어력)으로 돈다.
+    const onChange = vi.fn()
+    const dirty = {
+      ...makeDefaultBossProfileDraft(),
+      core_hittable: true,
+      pierce_hits_body_behind_core: true,
+      part_destructible: true,
+      elemental_interrupt_required: true,
+      effective_range_band: 'far' as const,
+      enemy_def: '99999',
+      fight_duration: '240',
+    }
+    render(<BossProfileField value={dirty} onChange={onChange} rotation={rotation} />)
+    await userEvent.click(screen.getByRole('radio', { name: /토커티브/ }))
+    expect(onChange).toHaveBeenCalledWith({
+      ...makeDefaultBossProfileDraft(),
+      element: bossElementFor('Water'),
+    })
+  })
+
+  it('초기화되는 방어력은 호출부가 준 기본값이다', async () => {
+    // 솔로와 유니온 보스는 방어력이 달라서 공유 기본값 하나로는 한쪽이 틀린다 —
+    // makeDefaultBossProfileDraft가 인자를 받는 것과 같은 이유다.
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft('31784')}
+        onChange={onChange}
+        rotation={rotation}
+        defaultEnemyDef="31784"
+      />,
+    )
+    await userEvent.click(screen.getByRole('radio', { name: /선바스/ }))
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ enemy_def: '31784' }),
+    )
+  })
+
+  it('약점을 손으로 바꾸면 카드 선택이 풀린다', async () => {
+    // 카드는 「이 보스로 계산 중」이라고 말한다. 속성이 그 보스와 달라진 뒤에도
+    // 체크가 남아 있으면 화면이 거짓말을 한다.
+    const Harness = () => {
+      const [draft, setDraft] = useState(makeDefaultBossProfileDraft())
+      return <BossProfileField value={draft} onChange={setDraft} rotation={rotation} />
+    }
+    render(<Harness />)
+    await userEvent.click(screen.getByRole('radio', { name: /선바스/ }))
+    expect(screen.getByRole('radio', { name: /선바스/ })).toBeChecked()
+
+    await userEvent.click(screen.getByRole('radio', { name: '작열' }))
+    expect(screen.getByRole('radio', { name: /선바스/ })).not.toBeChecked()
   })
 })
