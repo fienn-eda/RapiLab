@@ -210,15 +210,15 @@ describe('App', () => {
     render(<App />)
 
     await user.click(screen.getByRole('tab', { name: '솔로 레이드' }))
-    expect(await screen.findByRole('radio', { name: /아일랜드 이터/ })).toBeInTheDocument()
-    expect(screen.queryByRole('radio', { name: /선바스/ })).not.toBeInTheDocument()
+    expect(await screen.findByRole('radio', { name: '철갑아일랜드 이터' })).toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: '전격선바스' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('tab', { name: '유니온 레이드' }))
     // 유니온 탭은 전투마다 자기 몫의 카드 목록을 그린다(기본 3전투) - 같은
     // 회차라 보스 카드가 전투 수만큼 반복되므로 한 전투로 좁혀서 본다.
     const firstBattle = screen.getByRole('group', { name: '1번 전투' })
-    expect(within(firstBattle).getByRole('radio', { name: /선바스/ })).toBeInTheDocument()
-    expect(screen.queryByRole('radio', { name: /아일랜드 이터/ })).not.toBeInTheDocument()
+    expect(within(firstBattle).getByRole('radio', { name: '전격선바스' })).toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: '철갑아일랜드 이터' })).not.toBeInTheDocument()
   })
 
   it('switches the displayed roster when the active profile changes (isolation)', async () => {

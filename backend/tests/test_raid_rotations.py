@@ -63,6 +63,13 @@ def test_a_boss_with_no_weakness_is_rejected():
         validate_rotations(a_doc(a_rotation(bosses=boss)))
 
 
+def test_an_empty_boss_list_is_rejected():
+    # 빈 목록이 검증을 통과하면 화면에는 카드 상자만 뜨고 카드가 하나도 없이
+    # 그려진다 - 회차 자체가 없는 것과 구별이 안 된다.
+    with pytest.raises(ValueError, match="solo-1"):
+        validate_rotations(a_doc(a_rotation(bosses=[])))
+
+
 def test_an_unparseable_time_is_rejected():
     with pytest.raises(ValueError, match="7/23"):
         validate_rotations(a_doc(a_rotation(ends_at="7/23 4:59")))
@@ -86,13 +93,15 @@ def test_the_shipped_file_loads():
     assert {r["id"] for r in doc["rotations"]} >= {"solo-39", "union-2026-07-31"}
 
 
-def test_the_shipped_union_rotation_has_one_boss_per_element():
+def test_every_shipped_union_rotation_has_one_boss_per_element():
     doc = load_rotations()
-    union = next(r for r in doc["rotations"] if r["id"] == "union-2026-07-31")
-    assert {b["weakness"] for b in union["bosses"]} == ELEMENTS
+    unions = [r for r in doc["rotations"] if r["raid"] == "union"]
+    assert unions
+    for union in unions:
+        assert {b["weakness"] for b in union["bosses"]} == ELEMENTS, union["id"]
 
 
-def test_the_shipped_file_is_the_one_the_app_bundles(tmp_path):
+def test_the_shipped_file_is_the_one_the_app_bundles():
     # 로더의 기본 경로가 paths.data_dir()이어야 얼린 앱에서도 같은 파일을 읽는다.
     from app.paths import data_dir
     assert json.loads((data_dir() / "raid-rotations.json").read_text(encoding="utf-8"))

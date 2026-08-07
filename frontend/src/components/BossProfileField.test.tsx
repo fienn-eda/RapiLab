@@ -209,10 +209,11 @@ const rotation: RaidRotation = {
 describe('BossProfileField 회차 보스 피커', () => {
   it('회차가 없으면 피커를 그리지 않는다', () => {
     render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />)
-    expect(screen.queryByRole('radio', { name: /선바스/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('radio', { name: '전격선바스' })).not.toBeInTheDocument()
   })
 
   it('보스를 고르면 약점에서 역산한 보스 속성이 들어간다', async () => {
+    const user = userEvent.setup()
     const onChange = vi.fn()
     render(
       <BossProfileField
@@ -221,7 +222,7 @@ describe('BossProfileField 회차 보스 피커', () => {
         rotation={rotation}
       />,
     )
-    await userEvent.click(screen.getByRole('radio', { name: /선바스/ }))
+    await user.click(screen.getByRole('radio', { name: '전격선바스' }))
     // 약점 전격 -> 전격이 이기는 속성이 보스 본인 속성이다.
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ element: bossElementFor('Electric') }),
@@ -231,6 +232,7 @@ describe('BossProfileField 회차 보스 피커', () => {
   it('보스를 고르면 손으로 켜둔 다른 필드가 전부 초기화된다', async () => {
     // 설계 D2. 이게 없으면 화면에는 「토커티브」라고 적혀 있는데 계산은 직전 보스
     // 가정(코어 피격 가능 · 부위파괴 · 방어력)으로 돈다.
+    const user = userEvent.setup()
     const onChange = vi.fn()
     const dirty = {
       ...makeDefaultBossProfileDraft(),
@@ -243,7 +245,7 @@ describe('BossProfileField 회차 보스 피커', () => {
       fight_duration: '240',
     }
     render(<BossProfileField value={dirty} onChange={onChange} rotation={rotation} />)
-    await userEvent.click(screen.getByRole('radio', { name: /토커티브/ }))
+    await user.click(screen.getByRole('radio', { name: '수냉토커티브' }))
     expect(onChange).toHaveBeenCalledWith({
       ...makeDefaultBossProfileDraft(),
       element: bossElementFor('Water'),
@@ -252,17 +254,20 @@ describe('BossProfileField 회차 보스 피커', () => {
 
   it('초기화되는 방어력은 호출부가 준 기본값이다', async () => {
     // 솔로와 유니온 보스는 방어력이 달라서 공유 기본값 하나로는 한쪽이 틀린다 —
-    // makeDefaultBossProfileDraft가 인자를 받는 것과 같은 이유다.
+    // makeDefaultBossProfileDraft가 인자를 받는 것과 같은 이유다. value와 prop을
+    // 다른 값으로 둬야 pickRotationBoss가 실제로 defaultEnemyDef를 쓰는지 갈린다
+    // - 둘을 같은 값으로 두면 `...value`로 초기화해도 통과해 버린다.
+    const user = userEvent.setup()
     const onChange = vi.fn()
     render(
       <BossProfileField
-        value={makeDefaultBossProfileDraft('31784')}
+        value={makeDefaultBossProfileDraft('99999')}
         onChange={onChange}
         rotation={rotation}
         defaultEnemyDef="31784"
       />,
     )
-    await userEvent.click(screen.getByRole('radio', { name: /선바스/ }))
+    await user.click(screen.getByRole('radio', { name: '전격선바스' }))
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ enemy_def: '31784' }),
     )
@@ -271,15 +276,16 @@ describe('BossProfileField 회차 보스 피커', () => {
   it('약점을 손으로 바꾸면 카드 선택이 풀린다', async () => {
     // 카드는 「이 보스로 계산 중」이라고 말한다. 속성이 그 보스와 달라진 뒤에도
     // 체크가 남아 있으면 화면이 거짓말을 한다.
+    const user = userEvent.setup()
     const Harness = () => {
       const [draft, setDraft] = useState(makeDefaultBossProfileDraft())
       return <BossProfileField value={draft} onChange={setDraft} rotation={rotation} />
     }
     render(<Harness />)
-    await userEvent.click(screen.getByRole('radio', { name: /선바스/ }))
-    expect(screen.getByRole('radio', { name: /선바스/ })).toBeChecked()
+    await user.click(screen.getByRole('radio', { name: '전격선바스' }))
+    expect(screen.getByRole('radio', { name: '전격선바스' })).toBeChecked()
 
-    await userEvent.click(screen.getByRole('radio', { name: '작열' }))
-    expect(screen.getByRole('radio', { name: /선바스/ })).not.toBeChecked()
+    await user.click(screen.getByRole('radio', { name: '작열' }))
+    expect(screen.getByRole('radio', { name: '전격선바스' })).not.toBeChecked()
   })
 })

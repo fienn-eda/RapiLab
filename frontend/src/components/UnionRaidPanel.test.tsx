@@ -5,6 +5,7 @@ import { UnionRaidPanel } from './UnionRaidPanel'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
 import type { UserNikkeState } from '../types/userNikkeState'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
+import type { RaidRotation } from '../types/raidRotation'
 import type { SavedRun } from '../types/profile'
 
 vi.mock('../api/evaluateDecks', () => ({
@@ -51,6 +52,21 @@ const nameFor = (slug: string) => slug.toUpperCase()
 const burstTiersFor = (slug: string): BurstTier[] => {
   const i = Number(slug.slice(1))
   return Number.isNaN(i) ? [] : [((i % 3) + 1) as BurstTier]
+}
+
+const unionRotation: RaidRotation = {
+  id: 'union-2026-07-31',
+  raid: 'union',
+  title: '유니온 레이드 7/31',
+  starts_at: '2026-07-31T05:00:00+09:00',
+  ends_at: '2026-08-06T04:59:00+09:00',
+  source_url: 'https://arca.live/b/nikketgv/177833660',
+  source_locale: 'ko',
+  read_on: '2026-08-07',
+  bosses: [
+    { name: '선바스', weakness: 'Electric', stated: {} },
+    { name: '토커티브', weakness: 'Water', stated: {} },
+  ],
 }
 
 const noKeeping = {
@@ -107,6 +123,20 @@ describe('UnionRaidPanel', () => {
     await userEvent.click(within(groups[1]).getByLabelText('전격'))
     expect(within(groups[0]).getByLabelText('풍압')).toBeChecked()
     expect(within(groups[1]).getByLabelText('전격')).toBeChecked()
+  })
+
+  it('전투 1에서 회차 보스를 고르면 전투 2의 선택은 그대로다', async () => {
+    // 세 전투가 한 화면에 세 개의 radiogroup을 세운다 - 같은 이름을 쓰면 라디오가
+    // 하나의 그룹으로 합쳐진다. useId가 전투마다 다른 그룹 이름을 주는 것을
+    // 실제로 클릭해서 확인한다.
+    const user = userEvent.setup()
+    renderPanel({ rotations: [unionRotation] })
+    const groups = screen.getAllByRole('group', { name: /전투/ })
+
+    await user.click(within(groups[0]).getByRole('radio', { name: '전격선바스' }))
+
+    expect(within(groups[0]).getByRole('radio', { name: '전격선바스' })).toBeChecked()
+    expect(within(groups[1]).getByRole('radio', { name: '전격선바스' })).not.toBeChecked()
   })
 
   it('전투 시간 기본값은 180초다', () => {

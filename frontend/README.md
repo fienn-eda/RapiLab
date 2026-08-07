@@ -482,6 +482,47 @@ plus one entry per candidate. So:
   the engine fields happily. Chips, slot numerals and tier sorting still use the
   nominal tier: those place her in the palette, they do not judge a deck.
 
+### `GET /api/raid-rotations`
+
+Feeds the boss-setting screen's rotation card picker
+(`components/RaidRotationPicker.tsx`). No request body; safe to fetch once
+and cache.
+
+Response `200`:
+```jsonc
+{
+  "schema_version": number,
+  "rotations": [
+    {
+      "id": string,
+      "raid": "solo" | "union",
+      "title": string,
+      "starts_at": string | null,  // ISO 8601 with KST offset; null when the
+                                    // announcement gave no start time
+      "ends_at": string,           // ISO 8601 with KST offset
+      "source_url": string,
+      "source_locale": "ko" | "en",
+      "read_on": string,           // YYYY-MM-DD, the day the announcement was read
+      "bosses": [
+        {
+          "name": string,
+          "weakness": "Fire" | "Water" | "Wind" | "Iron" | "Electric",
+          "stated": Record<string, string | string[]>
+        }
+      ]
+    }
+  ]
+}
+```
+**`weakness` is the only machine-read field per boss.** Picking a rotation
+card writes only this into the boss profile (and resets every other field to
+its default). `stated` is the announcement's raw prose — distance, squad
+recommendation, part-break hints, whatever that raid type's announcement
+happens to print — keyed however the announcement laid it out, one array
+entry per line for a multi-line value. The app renders `stated` verbatim and
+never interprets it; do not add logic that reads a `stated` value to drive
+behavior.
+
 ### Portraits
 
 Static, served from `frontend/public/portraits/`. The map lives at

@@ -31,8 +31,11 @@ def _parse_time(value, where):
 def validate_rotations(doc):
     """검사를 통과하면 `doc`을 그대로 돌려준다.
 
-    깨진 파일에 대해 빈 목록을 내지 않고 터뜨리는 이유: 회차 데이터가 조용히
-    비면 화면에서는 피커가 없는 것과 구별되지 않는다.
+    깨진 파일에 대해 빈 목록을 내지 않고 예외를 던지는 이유: 런타임에서는
+    이 예외도 결국 프런트(`useRaidRotations`)가 빈 목록으로 삼켜 화면은
+    똑같이 조용하다. 예외가 실제로 잡히는 자리는 `test_the_shipped_file_loads`
+    등 이 파일을 로드해 보는 테스트다 — 깨진 파일이 사용자에게 닿기 전에
+    거기서 걸린다.
     """
     seen = set()
     for rotation in doc["rotations"]:
@@ -46,6 +49,8 @@ def validate_rotations(doc):
         ends = _parse_time(rotation["ends_at"], rid)
         if starts is not None and starts >= ends:
             raise ValueError(f"{rid}: starts_at이 ends_at보다 늦거나 같다")
+        if not rotation["bosses"]:
+            raise ValueError(f"{rid}: bosses가 비어 있다")
         for boss in rotation["bosses"]:
             weakness = boss["weakness"]
             if weakness not in ELEMENTS:

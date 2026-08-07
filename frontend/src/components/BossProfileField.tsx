@@ -61,7 +61,7 @@ export function BossProfileField({
   onChange,
   showElementalInterrupt = true,
   rotation = null,
-  defaultEnemyDef = '0',
+  defaultEnemyDef,
 }: BossProfileFieldProps) {
   const elementId = useId()
   const rangeBandId = useId()

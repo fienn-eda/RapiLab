@@ -92,7 +92,9 @@ for i in range(5):
 - `stated` — 공지 원문 그대로. 거리·스쿼드 추천·저지 부위 같은 것은 **여기까지만**
   간다. 우리 플래그로 번역하지 않는다. 값은 `key → string | string[]`: 여러
   줄로 적힌 항목(유니온 「설명」, 솔로 「랩쳐 주요 공격」)은 배열, 한 줄짜리는
-  문자열.
+  문자열. 공지가 아무것도 안 주는 보스도 `stated` 키 자체는 적고 `{}`를 넣는다 —
+  키를 통째로 빼면 `test_the_route_serves_the_file_as_is`가 깨진다(서버는
+  pydantic 기본값 `{}`를 채워 응답하는데 파일에는 키가 없어 둘이 안 맞는다).
 - `source_url` — 글 주소. **이미지 URL은 적지 않는다** — arca 이미지는 서명 URL이라
   약 10시간 뒤 만료된다.
 - `source_locale` — 한국어 공지면 `ko`. 한국어판이 1순위다: CHATTERBOX의 한국 서버
@@ -105,7 +107,10 @@ for i in range(5):
 cd backend && python3 -m pytest tests/test_raid_rotations.py tests/test_api_raid_rotations.py -v
 ```
 
-`test_the_shipped_file_loads`가 새 회차를 포함해 통과해야 한다. 그 다음 커밋.
+`test_the_shipped_file_loads`는 새 회차의 id를 따로 확인하지 않는다 — 옛 시드
+두 id의 상위집합인지만 본다. 이 스위트를 돌리는 진짜 이유는 `load_rotations`가
+파일 전체를 읽으면서 `validate_rotations`를 거치므로, 방금 추가한 회차를
+포함해 파일 전체가 깨지지 않았는지가 여기서 걸린다는 것이다. 통과하면 커밋.
 
 ## 번역하지 않는 것
 

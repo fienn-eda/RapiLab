@@ -26,8 +26,8 @@ const rotation: RaidRotation = {
 describe('RaidRotationPicker', () => {
   it('회차의 보스를 전부 그린다', () => {
     render(<RaidRotationPicker rotation={rotation} selectedName={null} onPick={vi.fn()} />)
-    expect(screen.getByRole('radio', { name: /선바스/ })).toBeInTheDocument()
-    expect(screen.getByRole('radio', { name: /토커티브/ })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '전격선바스' })).toBeInTheDocument()
+    expect(screen.getByRole('radio', { name: '수냉토커티브' })).toBeInTheDocument()
   })
 
   it('공지 원문을 해석하지 않고 그대로 보여준다', () => {
@@ -44,15 +44,26 @@ describe('RaidRotationPicker', () => {
   })
 
   it('고른 보스를 콜백으로 넘긴다', async () => {
+    const user = userEvent.setup()
     const onPick = vi.fn()
     render(<RaidRotationPicker rotation={rotation} selectedName={null} onPick={onPick} />)
-    await userEvent.click(screen.getByRole('radio', { name: /토커티브/ }))
+    await user.click(screen.getByRole('radio', { name: '수냉토커티브' }))
     expect(onPick).toHaveBeenCalledWith(rotation.bosses[1])
   })
 
   it('선택된 보스만 체크되어 있다', () => {
     render(<RaidRotationPicker rotation={rotation} selectedName="선바스" onPick={vi.fn()} />)
-    expect(screen.getByRole('radio', { name: /선바스/ })).toBeChecked()
-    expect(screen.getByRole('radio', { name: /토커티브/ })).not.toBeChecked()
+    expect(screen.getByRole('radio', { name: '전격선바스' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: '수냉토커티브' })).not.toBeChecked()
+  })
+
+  it('공지 원문을 클릭해도 보스가 골라지지 않는다', async () => {
+    // <label>이 원문(dl)까지 감싸면 설명을 읽으려던 클릭이 보스를 선택해
+    // 버린다 - 라벨은 머리글까지만 감싸야 한다.
+    const user = userEvent.setup()
+    const onPick = vi.fn()
+    render(<RaidRotationPicker rotation={rotation} selectedName={null} onPick={onPick} />)
+    await user.click(screen.getByText('머리에 꽃을 얹은 랩쳐.'))
+    expect(onPick).not.toHaveBeenCalled()
   })
 })

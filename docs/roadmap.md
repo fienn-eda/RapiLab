@@ -17,6 +17,12 @@
   공지가 그 둘을 주지 않는다.
   스펙: `docs/superpowers/specs/2026-08-07-raid-boss-rotation-import-design.md`,
   플랜: `docs/superpowers/plans/2026-08-07-raid-boss-rotation-import.md`.
+- 브랜치: `worktree-raid-boss-rotation-import` — 병합 전 최종 리뷰 수정 반영(카드의
+  `<label>`이 공지 원문까지 감싸 접근성 이름이 문단 하나가 되고 원문 클릭이
+  보스를 선택해 버리던 것을 머리글만 감싸도록 정정, 초기화 안내 문구 보강,
+  `GET /api/raid-rotations` 계약 문서화, 빈 `bosses` 목록 거부 등). 기준선
+  **백엔드 1984 passed / 3 skipped · 프론트 598 passed**, 캘리 **1.079x · 17/25
+  불변**(엔진 로직은 건드리지 않았다).
 - 이전 갱신: 2026-08-06
 - 브랜치: 없음 — `wip/transform-window-refresh`를 트렁크에 병합(로컬, `61ec16a2`).
   기준선 **백엔드 1944 passed / 3 skipped**, 캘리 **1.079x · 17/25 불변**.
