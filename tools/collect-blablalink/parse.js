@@ -31,15 +31,35 @@ const parseMainStats = (doc) => {
   return out
 }
 
+// ShiftyPad writes these labels two ways, and both are live data to us: the
+// committed fixtures carry `Increase X` (and `Element Damage Dealt`), the page
+// as served on 2026-08-07 carries `Increased X` (and `Elemental Advantage Dmg`).
+// Same rows, same values - only the wording differs - so both spellings map to
+// the same Korean stat name rather than one being chosen over the other.
+//
+// A label absent from this map drops its row silently, which is how a wording
+// change costs an entire roster's overload without failing anything: the
+// fixtures kept passing while every live unit came back with none. `--details`
+// (option ids) is the independent read that catches it.
 const OVERLOAD_LABEL_TO_NAME = {
   'Increase ATK': '공격력 증가',
+  'Increased ATK': '공격력 증가',
   'Increase Element Damage Dealt': '우월코드 대미지 증가',
+  'Increased Elemental Advantage Dmg': '우월코드 대미지 증가',
   'Increase Critical Damage': '크리티컬 대미지 증가',
+  'Increased Critical Damage': '크리티컬 대미지 증가',
   'Increase Critical Rate': '크리티컬 확률 증가',
+  'Increased Critical Rate': '크리티컬 확률 증가',
+  // Charge Damage is the one row no captured or observed unit has carried; both
+  // spellings follow the pattern of the rows that were observed.
   'Increase Charge Damage': '차지 대미지 증가',
+  'Increased Charge Damage': '차지 대미지 증가',
   'Increase Charge Speed': '차지 속도 증가',
+  'Increased Charge Speed': '차지 속도 증가',
   'Increase Max Ammunition Capacity': '최대 장탄 수 증가',
+  'Increased Max Ammunition Capacity': '최대 장탄 수 증가',
   'Increase Hit Rate': '명중률 증가',
+  'Increased Hit Rate': '명중률 증가',
 }
 
 // Summed overload: the div whose header child is exactly 'Equipment Effects'

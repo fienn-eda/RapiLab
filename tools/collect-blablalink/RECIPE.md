@@ -234,18 +234,28 @@ the guard, which is also how you look up the id for a unit nobody owns yet.
 
 ## (f) Overload labels — English → Korean (backend's 8)
 
-Confirmed against real units (Rapi, Liter, Moran, Maxwell):
+**ShiftyPad writes every one of these two ways**, and `parse.js` maps both. The
+pages captured in July read `Increase X`; the page as served on 2026-08-07 reads
+`Increased X`, and Element Damage Dealt became Elemental Advantage Dmg. Same
+rows, same values, same gear — only the wording moved.
 
-| English label (ShiftyPad)             | Korean (backend `overload_effects.py`) | status |
-|---------------------------------------|----------------------------------------|--------|
-| Increase ATK                          | 공격력 증가                            | confirmed |
-| Increase Element Damage Dealt         | 우월코드 대미지 증가                   | confirmed |
-| Increase Max Ammunition Capacity      | 최대 장탄 수 증가                      | confirmed |
-| Increase Critical Rate                | 크리티컬 확률 증가                     | confirmed |
-| Increase Critical Damage              | 크리티컬 대미지 증가                   | confirmed |
-| Increase Charge Speed                 | 차지 속도 증가                         | confirmed |
-| Increase Charge Damage                | 차지 대미지 증가                       | **unconfirmed** — no captured unit had it; label follows the observed pattern, verify when a charge-damage unit is captured |
-| Increase Hit Rate                     | 명중률 증가                            | confirmed — collected since 2026-08-07 |
+**An unmapped label drops its row silently**, so this rewording cost every unit
+its entire overload while `npm test` stayed green on the July fixtures: a live
+`node collect.js` returned 159 units with `overload: []` and nothing failed.
+Two things catch it — `--details` (option ids, independent of any label) and
+the `rapi-red-hood-relabelled` fixture, which is the same unit and gear under
+the newer wording and must parse identically to `rapi-red-hood`.
+
+| English label (ShiftyPad)                                    | Korean (backend `overload_effects.py`) | status |
+|--------------------------------------------------------------|----------------------------------------|--------|
+| Increase ATK / Increase**d** ATK                              | 공격력 증가                            | both confirmed |
+| Increase Element Damage Dealt / Increase**d** Elemental Advantage Dmg | 우월코드 대미지 증가          | both confirmed |
+| Increase(**d**) Max Ammunition Capacity                       | 최대 장탄 수 증가                      | both confirmed |
+| Increase(**d**) Critical Rate                                 | 크리티컬 확률 증가                     | both confirmed |
+| Increase(**d**) Critical Damage                               | 크리티컬 대미지 증가                   | both confirmed |
+| Increase(**d**) Charge Speed                                  | 차지 속도 증가                         | both confirmed |
+| Increase(**d**) Charge Damage                                 | 차지 대미지 증가                       | **unconfirmed** — no captured or observed unit has carried it; both spellings follow the pattern of the rows that were observed |
+| Increase(**d**) Hit Rate                                      | 명중률 증가                            | both confirmed — collected since 2026-08-07 |
 
 **Collected since 2026-08-07:** `Increase Hit Rate` (명중률 증가) used to be
 dropped for the same reason as DEF below — no engine consumer — but the engine
@@ -275,4 +285,7 @@ no identifiers:
 1/1/1, no cube), `neon-blue-ocean` (uninvested lv1 stepped up → positive delta, empty
 overload), `blanc` (Defender, per-tab pluck, Hit Rate overload row (parsed since
 2026-08-07) alongside a dropped DEF overload, distinct skill levels 4/7/9, no
-cube). Re-capture with `node capture.js <resource_id> <slug>`.
+cube), `rapi-red-hood-relabelled` (2026-08-07 — same unit and same gear as
+`rapi-red-hood` under the newer `Increased X` wording; the pair is what proves
+both spellings parse to the same rows). Re-capture with
+`node capture.js <resource_id> <slug>`.
