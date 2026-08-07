@@ -250,11 +250,13 @@ def test_an_unknown_weakness_is_rejected():
         validate_rotations(a_doc(a_rotation(bosses=boss)))
 
 
-def test_a_boss_with_no_weakness_is_allowed():
-    # 무속성 보스가 나오면 약점 칸이 비어야 한다 - 5속성 중 하나를 억지로 고르면
-    # 그 순간 없는 약점특효가 붙는다.
+def test_a_boss_with_no_weakness_is_rejected():
+    # 약점은 카드를 골랐을 때 채워지는 유일한 값이다. 그것이 비면 카드를 눌러도
+    # 화면에는 아무 일도 안 일어난 것처럼 보이면서 나머지 7개 필드는 조용히
+    # 초기화된다 (Fienn, 2026-08-07).
     boss = [{"name": "보스", "weakness": None, "stated": {}}]
-    assert validate_rotations(a_doc(a_rotation(bosses=boss)))
+    with pytest.raises(ValueError, match="보스"):
+        validate_rotations(a_doc(a_rotation(bosses=boss)))
 
 
 def test_an_unparseable_time_is_rejected():
@@ -362,7 +364,7 @@ def validate_rotations(doc):
             raise ValueError(f"{rid}: starts_at이 ends_at보다 늦거나 같다")
         for boss in rotation["bosses"]:
             weakness = boss["weakness"]
-            if weakness is not None and weakness not in ELEMENTS:
+            if weakness not in ELEMENTS:
                 raise ValueError(
                     f"{rid}/{boss['name']}: 알 수 없는 약점 {weakness!r}")
     return doc
@@ -477,7 +479,7 @@ class RotationBoss(BaseModel):
     패턴 / 유니온: 등급·거리).
     """
     name: str
-    weakness: Literal["Fire", "Water", "Wind", "Iron", "Electric"] | None = None
+    weakness: Literal["Fire", "Water", "Wind", "Iron", "Electric"]
     stated: dict[str, str | list[str]] = {}
 
 
@@ -670,8 +672,8 @@ export type RaidKind = 'solo' | 'union'
 
 export interface RotationBoss {
   name: string
-  /** 공지가 적은 약점. 무속성 보스는 null. */
-  weakness: NikkeElement | null
+  /** 공지가 적은 약점. 비어 있을 수 없다 — 로더가 거부한다. */
+  weakness: NikkeElement
   /** 공지 원문. 항목은 솔로/유니온이 다르므로 자유 형식이다. */
   stated: Record<string, string | string[]>
 }
@@ -964,13 +966,11 @@ export function RaidRotationPicker({
               onChange={() => onPick(boss)}
             />
             <span className="rotation-picker__head">
-              {boss.weakness && (
-                <img
-                  className="rotation-picker__icon"
-                  src={WEAKNESS_ICON[boss.weakness]}
-                  alt={elementLabel(boss.weakness)}
-                />
-              )}
+              <img
+                className="rotation-picker__icon"
+                src={WEAKNESS_ICON[boss.weakness]}
+                alt={elementLabel(boss.weakness)}
+              />
               <span className="rotation-picker__name">{boss.name}</span>
             </span>
             <dl className="rotation-picker__stated">
@@ -1183,9 +1183,7 @@ export function BossProfileField({
   // 순간(사용자가 아이콘을 직접 눌렀을 때) 체크를 놓아야 한다.
   const picked = rotation?.bosses.find((boss) => boss.name === pickedName) ?? null
   const selectedName =
-    picked && picked.weakness !== null && bossElementFor(picked.weakness) === value.element
-      ? picked.name
-      : null
+    picked && bossElementFor(picked.weakness) === value.element ? picked.name : null
 
   // 공지가 명시한 약점만 얹고 나머지는 전부 기본값으로 돌린다. 직전 보스의 설정이
   // 남으면 화면에는 새 보스 이름이 적혀 있는데 계산은 옛 보스 가정으로 돈다.
@@ -1193,7 +1191,7 @@ export function BossProfileField({
     setPickedName(boss.name)
     onChange({
       ...makeDefaultBossProfileDraft(defaultEnemyDef),
-      element: boss.weakness === null ? null : bossElementFor(boss.weakness),
+      element: bossElementFor(boss.weakness),
     })
   }
 ```
