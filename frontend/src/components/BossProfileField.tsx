@@ -74,9 +74,7 @@ export function BossProfileField({
   // 순간(사용자가 아이콘을 직접 눌렀을 때) 체크를 놓아야 한다.
   const picked = rotation?.bosses.find((boss) => boss.name === pickedName) ?? null
   const selectedName =
-    picked && picked.weakness !== null && bossElementFor(picked.weakness) === value.element
-      ? picked.name
-      : null
+    picked && bossElementFor(picked.weakness) === value.element ? picked.name : null
 
   // 공지가 명시한 약점만 얹고 나머지는 전부 기본값으로 돌린다. 직전 보스의 설정이
   // 남으면 화면에는 새 보스 이름이 적혀 있는데 계산은 옛 보스 가정으로 돈다.
@@ -84,7 +82,7 @@ export function BossProfileField({
     setPickedName(boss.name)
     onChange({
       ...makeDefaultBossProfileDraft(defaultEnemyDef),
-      element: boss.weakness === null ? null : bossElementFor(boss.weakness),
+      element: bossElementFor(boss.weakness),
     })
   }
 

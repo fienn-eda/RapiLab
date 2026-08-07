@@ -72,12 +72,15 @@ class RotationBoss(BaseModel):
     """공지가 적은 보스 하나.
 
     `weakness`만 앱이 해석한다 - 화면이 이 값으로 보스 속성을 역산해 채운다.
+    카드를 고르면 채워지는 값이 이 하나뿐이라 비워둘 수 없다 - 로더가 이미
+    거부하므로(raid_rotations.validate_rotations) 여기 닿는 값은 항상 5원소
+    중 하나다.
     `stated`는 공지 원문이고 렌더링만 된다. 자유 형식인 이유는 솔로 공지와
     유니온 공지가 서로 다른 항목을 적기 때문이다(솔로: 보스 속성·스쿼드 추천·공격
     패턴 / 유니온: 등급·거리).
     """
     name: str
-    weakness: Literal["Fire", "Water", "Wind", "Iron", "Electric"] | None = None
+    weakness: Literal["Fire", "Water", "Wind", "Iron", "Electric"]
     stated: dict[str, str | list[str]] = {}
 
 

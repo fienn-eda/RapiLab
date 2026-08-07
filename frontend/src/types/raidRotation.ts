@@ -10,8 +10,8 @@ export type RaidKind = 'solo' | 'union'
 
 export interface RotationBoss {
   name: string
-  /** 공지가 적은 약점. 무속성 보스는 null. */
-  weakness: NikkeElement | null
+  /** 공지가 적은 약점. 비어 있을 수 없다 — 로더가 거부한다. */
+  weakness: NikkeElement
   /** 공지 원문. 항목은 솔로/유니온이 다르므로 자유 형식이다. */
   stated: Record<string, string | string[]>
 }

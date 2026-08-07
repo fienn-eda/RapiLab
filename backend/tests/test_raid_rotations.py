@@ -54,11 +54,13 @@ def test_an_unknown_weakness_is_rejected():
         validate_rotations(a_doc(a_rotation(bosses=boss)))
 
 
-def test_a_boss_with_no_weakness_is_allowed():
-    # 무속성 보스가 나오면 약점 칸이 비어야 한다 - 5속성 중 하나를 억지로 고르면
-    # 그 순간 없는 약점특효가 붙는다.
+def test_a_boss_with_no_weakness_is_rejected():
+    # 약점은 카드를 골랐을 때 채워지는 유일한 값이다. 그것이 비면 카드를 눌러도
+    # 화면에는 아무 일도 안 일어난 것처럼 보이면서 나머지 7개 필드는 조용히
+    # 초기화된다 (Fienn, 2026-08-07).
     boss = [{"name": "보스", "weakness": None, "stated": {}}]
-    assert validate_rotations(a_doc(a_rotation(bosses=boss)))
+    with pytest.raises(ValueError, match="보스"):
+        validate_rotations(a_doc(a_rotation(bosses=boss)))
 
 
 def test_an_unparseable_time_is_rejected():

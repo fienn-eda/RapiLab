@@ -48,7 +48,7 @@ def validate_rotations(doc):
             raise ValueError(f"{rid}: starts_at이 ends_at보다 늦거나 같다")
         for boss in rotation["bosses"]:
             weakness = boss["weakness"]
-            if weakness is not None and weakness not in ELEMENTS:
+            if weakness not in ELEMENTS:
                 raise ValueError(
                     f"{rid}/{boss['name']}: 알 수 없는 약점 {weakness!r}")
     return doc

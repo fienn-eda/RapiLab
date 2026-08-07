@@ -43,13 +43,11 @@ export function RaidRotationPicker({
               onChange={() => onPick(boss)}
             />
             <span className="rotation-picker__head">
-              {boss.weakness && (
-                <img
-                  className="rotation-picker__icon"
-                  src={WEAKNESS_ICON[boss.weakness]}
-                  alt={elementLabel(boss.weakness)}
-                />
-              )}
+              <img
+                className="rotation-picker__icon"
+                src={WEAKNESS_ICON[boss.weakness]}
+                alt={elementLabel(boss.weakness)}
+              />
               <span className="rotation-picker__name">{boss.name}</span>
             </span>
             <dl className="rotation-picker__stated">
