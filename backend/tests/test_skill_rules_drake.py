@@ -11,7 +11,7 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # Real skill level 10 values from api.dotgg.gg (base `skills` and signature `dollskills`).
 OVERCHARGE = {
-    "description_value_01": "11.85",  # deferred: Hit Rate %
+    "description_value_01": "11.85",  # squad Hit Rate %
     "description_value_02": "10",
     "description_value_03": "11.85",  # squad ATK %
     "description_value_04": "10",
@@ -27,7 +27,7 @@ DRAKE_SPECIAL = {
     "description_value_03": "10",
 }
 OVERCHARGE_SIG = {
-    "description_value_01": "20.09",  # deferred: Hit Rate %
+    "description_value_01": "20.09",  # squad Hit Rate %
     "description_value_02": "10",
     "description_value_03": "11.85",  # all-allies ATK %
     "description_value_04": "10",
@@ -114,6 +114,19 @@ def test_signature_overcharge_adds_sg_atk_and_max_ammo_to_sg_allies_only():
     # the AR ally gets only the all-allies portion
     assert round(registry.total_for("atk_percent", ALLY, now=5.0), 4) == 0.1185
     assert registry.total_for("max_ammo_percent", ALLY, now=5.0) == 0.0
+
+
+def test_overcharge_hit_rate_reaches_every_ally_on_both_builds():
+    """"Affects all allies", so it is squad scope on both builds - the AR ally
+    collects it too, even though only the shotguns and the AR have a spread wide
+    enough for it to matter."""
+    for build, expected in ((base(), 0.1185), (sig(), 0.2009)):
+        ctx = make_context()
+        registry = EffectRegistry()
+        fire_trigger("full_burst_enter", {"drake": build}, ctx, registry, time=5.0)
+        for target in (DRAKE, ALLY, SG_ALLY):
+            assert round(registry.total_for("hit_rate", target, now=5.0), 4) == expected
+        assert registry.total_for("hit_rate", DRAKE, now=15.1) == 0.0  # 10s duration
 
 
 def test_signature_burst_adds_self_attack_damage():

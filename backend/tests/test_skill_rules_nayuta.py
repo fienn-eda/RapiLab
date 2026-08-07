@@ -25,7 +25,7 @@ HYPOCRISY = {
 }
 IMPERMANENCE = {
     "description_value_01": "3",       # stack interval sec
-    "description_value_02": "1.4",     # Hit Rate % (not modeled)
+    "description_value_02": "1.4",     # self Hit Rate % PER STACK
     "description_value_03": "30",      # max stacks
     "description_value_04": "1",       # "Stage 1" label, not a value
     "description_value_05": "2",       # Stage 1 threshold
@@ -103,6 +103,33 @@ def test_impermanence_stage_buffs_activate_at_their_fixed_stack_threshold_times(
     # stacking on top of Hypocrisy's squad-wide core-damage share.
     assert round(registry.total_for("other_core_damage_sources", NAYUTA, now=89.9), 4) == 0.2515
     assert round(registry.total_for("other_core_damage_sources", NAYUTA, now=90.0), 4) == 0.462
+
+
+def test_memory_absorption_hit_rate_climbs_one_stack_every_three_seconds():
+    """The stack itself is +1.4% Hit Rate, so the cap is +42% - reading the
+    single-stack figure undercounts it thirtyfold. It arrives on the same fixed
+    clock the stages use, one stack at a time, and holds at the cap."""
+    ctx = make_context()
+    registry = EffectRegistry()
+    fire_trigger("battle_start", {"nayuta": build()}, ctx, registry, time=0.0)
+
+    assert registry.total_for("hit_rate", NAYUTA, now=2.9) == 0.0     # first stack at t=3
+    assert round(registry.total_for("hit_rate", NAYUTA, now=3.0), 4) == 0.014
+    assert round(registry.total_for("hit_rate", NAYUTA, now=30.0), 4) == 0.14   # 10 stacks
+    assert round(registry.total_for("hit_rate", NAYUTA, now=90.0), 4) == 0.42   # the cap
+    assert round(registry.total_for("hit_rate", NAYUTA, now=175.0), 4) == 0.42  # and no more
+    assert registry.total_for("hit_rate", ALLY, now=90.0) == 0.0                # self-only
+
+
+def test_memory_incineration_shots_always_strike_the_core():
+    """The transform turns her submachine gun into a charged shot that lands on
+    the core every time (Fienn, in play), so the segment declares it rather than
+    inheriting her SMG's spread."""
+    schedule = build_memory_incineration_weapon_mode_schedule({"asceticism": ASCETICISM})
+    ctx = make_context()
+    ctx.burst_times["nayuta"] = [20.0]
+    segments = schedule(ctx, 180.0)
+    assert segments and all(s["profile"]["always_core_hit"] for s in segments)
 
 
 def test_asceticism_grants_squad_attack_damage_on_own_burst():

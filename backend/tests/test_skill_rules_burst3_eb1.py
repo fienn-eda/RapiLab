@@ -76,6 +76,32 @@ def test_noir_finale_burst_percent():
     assert finale_burst_percent(NOIR) == 351.64
 
 
+def _noir_weapon_ctx():
+    return SquadContext([
+        SquadMember("noir", burst_tier=3, element="Wind", weapon="SG"),
+        SquadMember("sg-ally", burst_tier=1, element="Iron", weapon="SG"),
+        SquadMember("ar-ally", burst_tier=2, element="Fire", weapon="AR"),
+    ])
+
+
+def test_noir_finale_hit_rate_pays_shotguns_twice_and_everyone_once():
+    """Finale carries two Hit Rate bullets: +13.93% for 10s to shotgun allies
+    (the exact weapon subset), and +11.61% for 30s to everyone. A shotgun holds
+    both."""
+    reg = EffectRegistry()
+    ctx = _noir_weapon_ctx()
+    fire_trigger("own_burst_activate", {"noir": build_noir_rules(NOIR)}, ctx, reg, 0.0)
+    noir = {"slug": "noir", "element": "Wind"}
+    sg_ally = {"slug": "sg-ally", "element": "Iron"}
+    ar_ally = {"slug": "ar-ally", "element": "Fire"}
+    assert round(reg.total_for("hit_rate", noir, 0.0), 4) == round(0.1393 + 0.1161, 4)
+    assert round(reg.total_for("hit_rate", sg_ally, 0.0), 4) == round(0.1393 + 0.1161, 4)
+    assert round(reg.total_for("hit_rate", ar_ally, 0.0), 4) == 0.1161  # squad half only
+    # The shotgun half lapses at 10s; the squad half runs to 30.
+    assert round(reg.total_for("hit_rate", noir, 11.0), 4) == 0.1161
+    assert reg.total_for("hit_rate", noir, 31.0) == 0.0
+
+
 # --- Isabel (SG/Electric) ---
 ISABEL = {
     "marked_target": {

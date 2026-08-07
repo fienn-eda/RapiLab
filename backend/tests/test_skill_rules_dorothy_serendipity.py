@@ -7,7 +7,7 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 RADIANT_WINGS = {
     "description_value_01": "55.08",  # self Pierce Damage % (continuous)
     "description_value_02": "75.24",  # self ATK % (during Full Burst)
-    "description_value_03": "40.68",  # deferred: Hit Rate %
+    "description_value_03": "40.68",  # self Hit Rate % (during Full Burst)
 }
 FALSE_SALVATION = {
     "description_value_01": "65",     # self Attack Speed %
@@ -52,6 +52,21 @@ def test_radiant_wings_grants_self_atk_during_full_burst():
     fire_trigger("full_burst_enter", {"dorothy-serendipity": build()}, ctx, registry, time=5.0)
     assert round(registry.total_for("atk_percent", DOROTHY, now=5.0), 4) == 0.7524
     assert registry.total_for("atk_percent", DOROTHY, now=5.0 + FULL_BURST_DURATION + 0.1) == 0.0
+
+
+def test_radiant_wings_grants_self_hit_rate_on_the_same_window():
+    """Her other Full Burst bullet, and the only Hit Rate she gets: Flash's
+    +98.18% is behind a pellet counter this engine does not have."""
+    ctx = make_context()
+    ctx.current_full_burst_end = 10.0
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", {"dorothy-serendipity": build()}, ctx, registry, time=5.0)
+    assert round(registry.total_for("hit_rate", DOROTHY, now=9.9), 4) == 0.4068
+    assert registry.total_for("hit_rate", DOROTHY, now=10.1) == 0.0
+    assert registry.total_for("hit_rate", ALLY, now=9.9) == 0.0   # "Affects self"
+    # And nothing outside the window: her shotgun spends most of a raid at its
+    # full 250px spread.
+    assert registry.total_for("hit_rate", DOROTHY, now=4.9) == 0.0
 
 
 def test_radiant_wings_lasts_exactly_the_window_that_is_open():

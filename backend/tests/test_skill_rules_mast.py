@@ -107,6 +107,32 @@ def test_spirit_reload_holds_at_three_stacks_with_anchor():
         assert round(registry.total_for("reload_speed_percent", DEALER, now=t), 4) == want
 
 
+def test_drunken_hit_rate_debuff_grows_with_the_stacks_and_stays_on_mast():
+    """Drunken's own price: -20% Hit Rate per stack, on HER. It refreshes rather
+    than accumulating - one Drunken exists at a time and it deepens - and it
+    never reaches an ally, which is the whole point of a self-scoped debuff in a
+    kit whose other bullets are squad-wide."""
+    ctx = anchor_context()
+    registry = EffectRegistry()
+    rules = build()
+    mast = {"slug": "mast-romantic-maid", "element": "Water"}
+    for time, want in zip([15.0, 35.0, 55.0, 75.0], [-0.2, -0.4, -0.6, -0.6]):
+        _run_cycle(rules, ctx, registry, time)
+        assert round(registry.total_for("hit_rate", mast, now=time), 4) == want
+        assert registry.total_for("hit_rate", DEALER, now=time) == 0.0
+
+
+def test_drunken_hit_rate_debuff_follows_the_solo_stack_wrap():
+    # Solo she stuns herself at 3 and starts over, so the debuff wraps too.
+    ctx = solo_context()
+    registry = EffectRegistry()
+    rules = build()
+    mast = {"slug": "mast-romantic-maid", "element": "Water"}
+    for time, want in zip([15.0, 35.0, 55.0, 75.0], [-0.2, -0.4, -0.6, -0.2]):
+        _run_cycle(rules, ctx, registry, time)
+        assert round(registry.total_for("hit_rate", mast, now=time), 4) == want
+
+
 def test_drunken_continuous_buff_applied_once_and_kept():
     # The while-Drunken Critical Rate + ATK buff is flat (not stack-scaled) and
     # applied once from cycle 1, then kept for the fight.

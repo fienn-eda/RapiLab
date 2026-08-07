@@ -182,6 +182,11 @@ def test_jill_burst_true_damage_attack_damage_reload_and_conversion():
     assert round(reg.total_for("reload_speed_percent", JIL, 0.0), 4) == 0.9996
     assert reg.total_for("normal_attacks_deal_true", JIL, 0.0) == 1.0
     assert reg.total_for("normal_attacks_deal_true", JIL, 10.1) == 0.0
+    # +80.78% shrinks an AR's 75px spread to 19.9px, inside any plausible core,
+    # so for these 10 sec every round of hers lands on it.
+    assert round(reg.total_for("hit_rate", JIL, 0.0), 4) == 0.8078
+    assert reg.total_for("hit_rate", ALLY, 0.0) == 0.0     # "Affects self"
+    assert reg.total_for("hit_rate", JIL, 10.1) == 0.0
 
 
 def test_jill_magnum_per_shot_rules_shape():

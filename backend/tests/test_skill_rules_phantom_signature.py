@@ -70,6 +70,17 @@ def test_burst_grants_self_max_ammo_and_a_fire_gated_damage_taken_debuff():
     assert round(off_element.total_for("max_ammo_percent", SELF, 20.0), 4) == 0.50
 
 
+def test_the_daggers_hit_rate_is_encoded_at_the_base_builds_floor():
+    """One stack, permanent - the same value base Phantom gets. This build
+    really earns two or three, but the third bullet of Thief's Vision removes
+    the stacks, so the count is a sawtooth rather than a level and no measured
+    duty cycle exists. The floor is the honest end of that range."""
+    reg = _fire("battle_start")
+    assert round(reg.total_for("hit_rate", SELF, 0.0), 4) == 0.2575
+    assert round(reg.total_for("hit_rate", SELF, 175.0), 4) == 0.2575
+    assert reg.total_for("hit_rate", ALLY, 0.0) == 0.0
+
+
 def test_three_shot_counters_including_the_vision_proc():
     rules = build_phantom_signature_per_shot_rules(PHANTOM_SIG)
     assert sorted(every for every, _mode, _rules in rules) == [1, 10, VISION_PROC_SHOTS]
