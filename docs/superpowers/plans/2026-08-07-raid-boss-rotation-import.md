@@ -377,12 +377,12 @@ def load_rotations(path: Path | None = None):
 - [ ] **Step 6: 테스트를 돌려 통과를 확인한다**
 
 Run: `cd backend && python3 -m pytest tests/test_raid_rotations.py -v`
-Expected: PASS (13 tests)
+Expected: PASS (12 tests)
 
 - [ ] **Step 7: 전체 스위트를 돌린다**
 
 Run: `cd backend && python3 -m pytest -q`
-Expected: `1980 passed, 3 skipped` (기준선 1967 + 이번 13)
+Expected: `1979 passed, 3 skipped` (기준선 1967 + 이번 12)
 
 - [ ] **Step 8: 커밋**
 
@@ -517,7 +517,7 @@ Expected: PASS (4 tests)
 - [ ] **Step 5: 전체 스위트를 돌린다**
 
 Run: `cd backend && python3 -m pytest -q`
-Expected: `1984 passed, 3 skipped`
+Expected: `1983 passed, 3 skipped`
 
 - [ ] **Step 6: 커밋**
 
@@ -1710,7 +1710,7 @@ cd backend && python3 -m pytest tests/test_raid_rotations.py tests/test_api_raid
 - [ ] **Step 4: 전체 스위트를 다시 돌린다**
 
 Run: `cd backend && python3 -m pytest -q`
-Expected: `1984 passed, 3 skipped`
+Expected: `1983 passed, 3 skipped`
 
 Run: `cd frontend && npx vitest run`
 Expected: `596 passed (61 files)`
