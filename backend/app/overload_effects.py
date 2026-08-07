@@ -20,6 +20,7 @@ NAME_TO_STAT = {
     "차지 대미지 증가": "charge_damage_bonus",
     "차지 속도 증가": "charge_speed_percent",
     "최대 장탄 수 증가": "max_ammo_percent",
+    "명중률 증가": "hit_rate",
 }
 
 

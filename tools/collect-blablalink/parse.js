@@ -39,11 +39,12 @@ const OVERLOAD_LABEL_TO_NAME = {
   'Increase Charge Damage': '차지 대미지 증가',
   'Increase Charge Speed': '차지 속도 증가',
   'Increase Max Ammunition Capacity': '최대 장탄 수 증가',
+  'Increase Hit Rate': '명중률 증가',
 }
 
 // Summed overload: the div whose header child is exactly 'Equipment Effects'
 // (per-piece blocks read 'Change Equipment Effects'). Rows live in its second child;
-// each row text is "<English label><NN.NN>%". Unmapped labels (Hit Rate, DEF) drop.
+// each row text is "<English label><NN.NN>%". Unmapped labels (DEF) drop.
 const parseOverload = (doc) => {
   let box = null
   for (const d of doc.querySelectorAll('div')) {
