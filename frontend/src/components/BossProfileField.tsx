@@ -4,6 +4,7 @@
 
 import { useId } from 'react'
 import { bossElementFor } from '../lib/elementAdvantage'
+import { WEAKNESS_ICON } from '../lib/elementIcon'
 import { elementLabel } from '../lib/elementName'
 import type { BossProfileDraft, BossProfileDraftErrors } from '../types/bossProfileDraft'
 import { BOSS_RANGE_BANDS, type BossRangeBand } from '../types/recommend'
@@ -23,16 +24,7 @@ const RANGE_BAND_LABEL: Record<Exclude<BossRangeBand, null>, string> = {
 }
 
 // 화면에 그리는 것은 보스 본인 속성이 아니라 그 보스를 이기는 속성이다 — 플레이어가
-// 편성할 때 보는 값이 그쪽이기 때문. 아이콘은 blablalink의 코드 아이콘을
-// scripts/download_element_icons.py로 받아둔 것이다.
-const WEAKNESS_ICON: Record<NikkeElement, string> = {
-  Fire: '/elements/fire.png',
-  Water: '/elements/water.png',
-  Wind: '/elements/wind.png',
-  Iron: '/elements/iron.png',
-  Electric: '/elements/electric.png',
-}
-
+// 편성할 때 보는 값이 그쪽이기 때문.
 const WEAKNESS_CHOICES: NikkeElement[] = ['Fire', 'Water', 'Wind', 'Iron', 'Electric']
 
 /** 접힌 채로도 무슨 값으로 계산되는지 보이게 하는 요약. 편집 중이라 비어 있는
