@@ -15,10 +15,25 @@
   기준선 **백엔드 2031 passed / 3 skipped · 프론트 598 passed**, 캘리
   **1.047x · 19/25 불변**. 움직이는 무기는 SG·SMG·AR뿐이고 MG·SR·RL은 기본 탄착군
   10px가 이미 코어 안이라 실질 항상 1.0이다.
+  **명중률 오버로드는 값까지 확정됐다 (2026-08-07 재수집).** 효과 타입은 **6**,
+  곡선은 **type 8과 동일**(lv1 4.77 … lv15 14.63, 등차 0.704). 34유닛의
+  `option_id`와 스크래이프 합계가 완전히 대응하고, 다중 굴림 8건이 전부
+  맞는다(Tia `lv[4,11,11]` → 30.50). 재현: `scripts/fit_overload_curve.py`.
+  `base_stat_folded`는 **틀린 이름이었다** — 6도 13도 Equipment Effects 목록에
+  멀쩡히 있고, 파서가 버린 뒤의 결과로 fit해서 그 이름이 붙었다. 이제
+  `unconsumed_effect_types = [13]`(DEF만)이다.
   **아직 안 된 것:** 어떤 스킬 모듈도 `hit_rate` Effect를 등록하지 않는다 —
-  엔진 능력은 열렸고 15슬러그는 **재인코딩 대기**다. 명중률 오버로드는 이제
-  수집되지만 **로스터 재동기화**를 해야 값이 들어오고, 그때 `option_id` 대조로
-  값 곡선과 `base_stat_folded = [6, 13]`의 정체가 확정된다.
+  엔진 능력은 열렸고 15슬러그는 **재인코딩 대기**다. 그리고 측정 스크립트가 읽는
+  `roster-drafts.json`은 **앱에서 재동기화 후 localStorage에서 손으로 꺼내야**
+  갱신된다(`RECIPE.md`의 export 절).
+- **수집기가 조용히 죽어 있었다 — 라벨 개편 (2026-08-07 발견·복구).**
+  ShiftyPad가 `Increase X`를 `Increased X`로, `Element Damage Dealt`를
+  `Elemental Advantage Dmg`로 바꿨다. 매핑에 없는 라벨은 행을 **조용히 버리므로**
+  라이브 `node collect.js`가 159유닛 전부 `overload: []`를 냈는데 `npm test`는
+  초록이었다 — 픽스처가 7월 문구를 담고 있어서다. **픽스처만 있는 스위트는 페이지
+  개편을 못 본다.** 두 철자를 다 매핑했고, 같은 유닛을 새 문구로 재캡처한
+  `rapi-red-hood-relabelled` 픽스처가 둘이 같게 파싱되는지 지킨다. 잡아낸 것은
+  `--details`(option id)와 스크래이프의 **불일치**였다.
   스펙: `docs/superpowers/specs/2026-08-07-hit-rate-core-accuracy-design.md`,
   플랜: `docs/superpowers/plans/2026-08-07-hit-rate-core-accuracy.md`.
 - **레이드 회차 보스 가져오기 착륙**: 솔로/유니온 공지에서 읽은 이번 회차 보스를
@@ -1039,6 +1054,30 @@
 ## To-Do (작은 단위)
 
 로드맵보다 잘게 쪼갠 실행 항목. 끝나면 `[x]`로 체크.
+
+### 명중률 착륙의 후속 (2026-08-07)
+
+- [ ] **15슬러그 재인코딩.** `hit_rate`는 이제 엔진이 읽지만 **어떤 스킬 모듈도
+      그 Effect를 등록하지 않는다**(`grep hit_rate backend/app/skill_rules/` →
+      docstring 하나뿐). 대상: dorothy-serendipity · jill-valentine · phantom ·
+      chisato-nishikigi · miranda · quency-escape-queen · nayuta ·
+      soda-twinkling-bunny · sugar · drake · noir(해소 가능) + diesel-winter-sweets ·
+      mast-romantic-maid · modernia · anchor-innocent-maid(RL/MG라 자기 자신에겐
+      무의미하나 **아군 대상 버프/디버프는 SG·SMG·AR 아군에게 유효**).
+- [ ] **앱에서 로스터 재동기화 → `roster-drafts.json` 갱신.** 명중 오버로드가
+      이제 API 경로로도 조립되므로(타입 6이 `tables.json`에 들어왔다) 재동기화하면
+      34유닛이 명중 값을 갖는다. 그 뒤 `measure_record_calibration.py`가 처음으로
+      명중을 반영한 수치를 낸다. **동기화는 파일을 안 쓴다** — localStorage에서
+      손으로 꺼내는 절차는 `tools/collect-blablalink/RECIPE.md`.
+- [ ] **소장품 lv15 스탯이 실측과 어긋난다 (명중과 무관, 새 데이터가 드러냄).**
+      `test_assemble_roster_matches_the_collector_scrape`가 3유닛에서 실패한다 —
+      Rapi: Red Hood(atk 12·hp 270) · Anis: Star(atk 2·hp 60) · Neon: Vision
+      Eye(atk 2). **셋의 공통점은 `favorite_item_lv=15`**이고, lv0·lv2 유닛은 전부
+      통과한다. `tables.json`의 `collectible_sample`은 level1/level2만 담아 lv15는
+      보간이라, 그 보간이나 소장품 성장 곡선이 틀렸다는 뜻이다. 이 테스트는
+      로컬 수집 덤프가 있을 때만 도는 조건부라 지금까지 skip돼 있었다.
+      먼저 해볼 것: `node collect.js --tables` / `--collectibles` 재수집(테이블이
+      2026-07-18 것이다).
 
 ### 사이클별 풀 버스트 길이 + 아르카나 수레바퀴 게이트 정정 (2026-08-05, 제보 조사에서 착지)
 
