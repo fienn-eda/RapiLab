@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { UnitPalette } from './UnitPalette'
 import type { SupportedUnit } from '../types/supportedUnit'
@@ -37,6 +37,9 @@ const base = {
   excludedSlugs: [],
   onToggleExclude: () => {},
 }
+
+const renderPalette = (overrides: Partial<Parameters<typeof UnitPalette>[0]> = {}) =>
+  render(<UnitPalette {...base} {...overrides} />)
 
 describe('UnitPalette', () => {
   const unitButton = (name: RegExp) => screen.getByRole('button', { name })
@@ -248,5 +251,24 @@ describe('UnitPalette', () => {
       render(<UnitPalette {...base} roster={[]} />)
       expect(screen.queryByLabelText('이름 검색')).not.toBeInTheDocument()
     })
+  })
+})
+
+describe('without onToggleExclude', () => {
+  it('draws the chip as a plain drag source rather than a toggle', () => {
+    // 이 화면(미란다 계산기)에는 탐색이 없어 후보 풀이라는 개념이 없다.
+    // 켤 수는 있는데 아무 일도 안 일어나는 컨트롤을 남기지 않는다.
+    renderPalette({ onToggleExclude: undefined, excludedSlugs: undefined })
+    const chip = screen.getByRole('button', { name: 'Crown' })
+    expect(chip).not.toHaveAttribute('aria-pressed')
+  })
+
+  it('still toggles when the handler is given', () => {
+    const onToggleExclude = vi.fn()
+    renderPalette({ onToggleExclude })
+    const chip = screen.getByRole('button', { name: /Crown 사용/ })
+    expect(chip).toHaveAttribute('aria-pressed', 'true')
+    fireEvent.click(chip)
+    expect(onToggleExclude).toHaveBeenCalledWith('crown')
   })
 })

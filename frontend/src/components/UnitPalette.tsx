@@ -55,9 +55,12 @@ interface UnitPaletteProps {
    * and each entry supplies that unit's investment display. */
   roster: UserNikkeState[]
   supportedUnits: SupportedUnit[]
-  /** Slugs the user has toggled OUT of the candidate pool. */
-  excludedSlugs: string[]
-  onToggleExclude: (slug: string) => void
+  /** Slugs the user has toggled OUT of the candidate pool. Absent on a screen
+   * with no pool to narrow. */
+  excludedSlugs?: string[]
+  /** Omit on a screen where excluding a unit would do nothing — the chip then
+   * stays a drag source instead of pretending to be a toggle. */
+  onToggleExclude?: (slug: string) => void
   /** Draft mode only: slugs already seated in a deck. */
   usedSlugs?: string[]
   /** Draft mode only: lets an included, unseated unit be dragged onto a deck. */
@@ -72,7 +75,7 @@ const NO_INVESTMENT: UnitInvestment = {}
 export function UnitPalette({
   roster,
   supportedUnits,
-  excludedSlugs,
+  excludedSlugs = [],
   onToggleExclude,
   usedSlugs = [],
   draggable = false,
@@ -150,15 +153,17 @@ export function UnitPalette({
                       className="palette__face"
                       // A toggle, so it reports its state rather than pretending
                       // each press is a fresh action. The name has to live here:
-                      // the chip itself no longer shows any text.
-                      aria-pressed={!isExcluded}
-                      aria-label={`${unit.name} 사용`}
+                      // the chip itself no longer shows any text. Without a
+                      // handler there is no pool to toggle membership in, so
+                      // the button is a plain drag source instead.
+                      aria-pressed={onToggleExclude ? !isExcluded : undefined}
+                      aria-label={onToggleExclude ? `${unit.name} 사용` : unit.name}
                       draggable={draggable && !isExcluded && !isUsed}
                       onDragStart={(event) => {
                         event.dataTransfer.setData(DRAG_SLUG_TYPE, unit.slug)
                         event.dataTransfer.effectAllowed = 'move'
                       }}
-                      onClick={() => onToggleExclude(unit.slug)}
+                      onClick={onToggleExclude ? () => onToggleExclude(unit.slug) : undefined}
                     >
                       <span className="palette__figure">
                         {portrait ? (
