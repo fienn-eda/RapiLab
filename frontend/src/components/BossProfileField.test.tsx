@@ -418,6 +418,49 @@ describe('BossProfileField 코어 지름', () => {
     )
   })
 
+  it('값을 넣으면 그 값이 무기별로 무엇을 뜻하는지 옆에 적는다', () => {
+    // 「33.33」은 사용자에게 아무 의미가 없다. 틀린 값을 넣었을 때 조용히 덱
+    // 순위만 바뀌지 않으려면 결과가 보여야 한다.
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), core_hittable: true,
+                 core_diameter_px: '33.33' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    // 실측 mid 코어. 문서 표의 AR 19.8%는 자르지 않은 33.333…(=25×4/3)의 값이라
+    // 여기 33.33으로는 19.7%가 맞다.
+    const readout = screen.getByTestId('core-hit-rate-readout')
+    expect(readout).toHaveTextContent('AR 19.7%')
+    expect(readout).toHaveTextContent('SMG 9.2%')
+    expect(readout).toHaveTextContent('SG 1.8%')
+    expect(readout).toHaveTextContent('MG·SR·RL 100%')
+  })
+
+  it('칸이 비어 있으면 아무것도 적지 않는다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), core_hittable: true }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByTestId('core-hit-rate-readout')).not.toBeInTheDocument()
+  })
+
+  it('값이 유효하지 않으면 아무것도 적지 않는다 — 0으로 나눈 비율을 보이지 않는다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), core_hittable: true,
+                 core_diameter_px: '0' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.queryByTestId('core-hit-rate-readout')).not.toBeInTheDocument()
+  })
+
   it('코어가 없는 회차 보스를 고르면 칸이 비고 코어 피격도 꺼진다', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()

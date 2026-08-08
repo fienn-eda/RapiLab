@@ -3,6 +3,7 @@
 // Mirrors BossProfile in src/types/recommend.ts.
 
 import { useId, useState } from 'react'
+import { coreHitRateGroups } from '../lib/coreHitRate'
 import { bossElementFor } from '../lib/elementAdvantage'
 import { WEAKNESS_ICON } from '../lib/elementIcon'
 import { elementLabel } from '../lib/elementName'
@@ -38,6 +39,29 @@ const foldedSummary = (draft: BossProfileDraft): string => {
   const defText = def === '' ? '—' : Number(def).toLocaleString()
   const secondsText = seconds === '' ? '—' : seconds
   return `방어력 ${defText} · ${secondsText}초`
+}
+
+/** 코어 지름 하나가 무기별로 무엇을 뜻하는지 한 줄로. 「33.33」은 사용자에게
+ * 아무 의미가 없어서, 값이 틀려도 조용히 덱 순위만 바뀐다 — 결과를 옆에 적어
+ * 두면 그 자리에서 이상함이 보인다.
+ *
+ * 명중 버프가 없는 기준이다. 실제 유닛은 명중이 탄착군을 좁혀 이보다 높게
+ * 나오므로, 이 줄은 「이 코어가 큰가 작은가」를 가늠하는 눈금이지 예측이 아니다. */
+function CoreHitRateReadout({ coreDiameter }: { coreDiameter: string }) {
+  const parsed = Number(coreDiameter.trim())
+  // 빈 칸과 유효하지 않은 값에서는 아무것도 적지 않는다 - 편집 중인 반쪽짜리
+  // 숫자에 대고 비율을 내면 값이 춤춘다.
+  if (coreDiameter.trim() === '' || !Number.isFinite(parsed) || parsed <= 0) return null
+  return (
+    <p className="field__readout group__hint" data-testid="core-hit-rate-readout">
+      무버프 코어 명중 —{' '}
+      {coreHitRateGroups(parsed)
+        // 확실한 값에 「100.0%」로 소수점을 붙이면 없는 정밀도를 주장하게 된다.
+        .map((group) => `${group.label} ${
+          group.rate >= 1 ? '100' : (group.rate * 100).toFixed(1)}%`)
+        .join(' · ')}
+    </p>
+  )
 }
 
 interface BossProfileFieldProps {
@@ -215,15 +239,18 @@ export function BossProfileField({
       </div>
 
       {value.core_hittable && (
-        <NumberField
-          label="코어 지름"
-          hint="엔진 단위"
-          value={value.core_diameter_px}
-          error={errors?.core_diameter_px}
-          min={0}
-          help={HELP.boss.coreDiameter}
-          onChange={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
-        />
+        <>
+          <NumberField
+            label="코어 지름"
+            hint="엔진 단위"
+            value={value.core_diameter_px}
+            error={errors?.core_diameter_px}
+            min={0}
+            help={HELP.boss.coreDiameter}
+            onChange={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
+          />
+          <CoreHitRateReadout coreDiameter={value.core_diameter_px} />
+        </>
       )}
 
       <div className="checkbox-row">
