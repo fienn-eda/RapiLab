@@ -709,11 +709,11 @@
   color: var(--accent);
 }
 
-/* 값이 무엇을 뜻하는지 칸 바로 아래 적는 줄. .field가 아니라 그 형제로 서므로
-   .field의 gap을 못 받아 위쪽 여백을 스스로 낸다. */
+/* 값이 무엇을 뜻하는지 칸 바로 아래 적는 줄. .field의 형제로 서므로 .field의
+   gap을 못 받고, 여백을 스스로 낸다. */
 .field__readout {
   font-size: 12px;
-  margin-top: calc(-1 * var(--sp-1));
+  margin-top: var(--sp-1);
 }
 
 .field-row {

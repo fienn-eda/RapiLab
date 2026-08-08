@@ -32,13 +32,19 @@ const RANGE_BAND_LABEL: Record<Exclude<BossRangeBand, null>, string> = {
 const WEAKNESS_CHOICES: NikkeElement[] = ['Fire', 'Water', 'Wind', 'Iron', 'Electric']
 
 /** 접힌 채로도 무슨 값으로 계산되는지 보이게 하는 요약. 편집 중이라 비어 있는
- * 칸은 숫자 대신 —로 둔다. */
+ * 칸은 숫자 대신 —로 둔다.
+ *
+ * 코어 지름은 코어를 때릴 수 있는 보스에서만 붙는다 — 그 밖에는 엔진이 값을
+ * 무시하므로 요약에 적으면 안 쓰이는 숫자를 계산 근거처럼 보이게 한다. */
 const foldedSummary = (draft: BossProfileDraft): string => {
   const def = draft.enemy_def.trim()
   const seconds = draft.fight_duration.trim()
+  const core = draft.core_diameter_px.trim()
   const defText = def === '' ? '—' : Number(def).toLocaleString()
   const secondsText = seconds === '' ? '—' : seconds
-  return `방어력 ${defText} · ${secondsText}초`
+  const parts = [`방어력 ${defText}`, `${secondsText}초`]
+  if (draft.core_hittable) parts.push(`코어 ${core === '' ? '—' : core}`)
+  return parts.join(' · ')
 }
 
 /** 코어 지름 하나가 무기별로 무엇을 뜻하는지 한 줄로. 「33.33」은 사용자에게
@@ -238,21 +244,6 @@ export function BossProfileField({
         </HelpTip>
       </div>
 
-      {value.core_hittable && (
-        <>
-          <NumberField
-            label="코어 지름"
-            hint="엔진 단위"
-            value={value.core_diameter_px}
-            error={errors?.core_diameter_px}
-            min={0}
-            help={HELP.boss.coreDiameter}
-            onChange={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
-          />
-          <CoreHitRateReadout coreDiameter={value.core_diameter_px} />
-        </>
-      )}
-
       <div className="checkbox-row">
         <label className="checkbox">
           <input
@@ -307,11 +298,15 @@ export function BossProfileField({
         </div>
       )}
 
-      {/* 거의 바꾸지 않는 두 값이라 접어 둔다. 오류가 있을 때는 강제로 펼쳐
+      {/* 거의 바꾸지 않는 값들이라 접어 둔다. 오류가 있을 때는 강제로 펼쳐
           제출을 막는 이유가 접힌 상자 안에 숨지 않게 한다. */}
       <details
         className="group__details boss-profile__folded"
-        open={errors?.enemy_def || errors?.fight_duration ? true : undefined}
+        open={
+          errors?.enemy_def || errors?.fight_duration || errors?.core_diameter_px
+            ? true
+            : undefined
+        }
       >
         <summary className="group__hint">기타 설정 — {foldedSummary(value)}</summary>
         <div className="field-row field-row--pair">
@@ -332,6 +327,22 @@ export function BossProfileField({
             onChange={(fight_duration) => onChange({ ...value, fight_duration })}
           />
         </div>
+        {/* 코어를 못 때리는 보스에서는 엔진이 이 값을 무시하므로 칸도 없앤다 -
+            켤 수는 있는데 아무 일도 안 일어나는 칸을 그리지 않는다. */}
+        {value.core_hittable && (
+          <>
+            <NumberField
+              label="코어 지름"
+              hint="엔진 단위"
+              value={value.core_diameter_px}
+              error={errors?.core_diameter_px}
+              min={0}
+              help={HELP.boss.coreDiameter}
+              onChange={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
+            />
+            <CoreHitRateReadout coreDiameter={value.core_diameter_px} />
+          </>
+        )}
       </details>
     </fieldset>
   )

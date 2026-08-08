@@ -359,6 +359,42 @@ describe('BossProfileField 코어 지름', () => {
     expect(screen.queryByRole('spinbutton', { name: /코어 지름/ })).not.toBeInTheDocument()
   })
 
+  it('접힌 요약이 코어 지름까지 적는다 — 펼치지 않아도 무엇으로 계산되는지 보인다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft('31784'), core_hittable: true,
+                 core_diameter_px: '58.67' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByText(/기타 설정 — 방어력 31,784 · 180초 · 코어 58.67/))
+      .toBeInTheDocument()
+  })
+
+  it('코어 피격이 꺼져 있으면 요약에 코어를 안 적는다', () => {
+    render(
+      <BossProfileField value={makeDefaultBossProfileDraft('31784')} onChange={vi.fn()} />,
+    )
+
+    expect(screen.getByText(/기타 설정 — 방어력 31,784 · 180초$/)).toBeInTheDocument()
+  })
+
+  it('코어 지름 오류는 접힌 상자를 강제로 펼친다', () => {
+    // 제출을 막는 이유가 접힌 상자 안에 숨으면 버튼만 죽은 화면이 된다 -
+    // 방어력·전투 시간이 이미 같은 규칙으로 펼쳐진다.
+    const { container } = render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), core_hittable: true,
+                 core_diameter_px: '0' }}
+        errors={{ core_diameter_px: '0보다 커야 해요' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(container.querySelector('details.boss-profile__folded')).toHaveAttribute('open')
+  })
+
   it('코어 피격을 켜면 칸이 나온다', () => {
     render(
       <BossProfileField
