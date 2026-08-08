@@ -35,7 +35,6 @@ const WIRE = {
   overload_thresholds: [],
   overload_atk_cap_percent: 58.52,
   notes: [],
-  engine_version: 'abc',
 }
 
 const state = (slug: string) =>

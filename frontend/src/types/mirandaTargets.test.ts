@@ -19,7 +19,6 @@ const WIRE: MirandaTargetsResultWire = {
   ],
   overload_atk_cap_percent: 58.52,
   notes: ['무속성 보스·180초 전투를 가정해 계산했어요.'],
-  engine_version: 'abc123',
 }
 
 describe('mapMirandaTargetsResult', () => {

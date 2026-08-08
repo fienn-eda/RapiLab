@@ -32,7 +32,6 @@ export interface MirandaTargetsResultWire {
   overload_thresholds: MirandaOverloadThresholdWire[]
   overload_atk_cap_percent: number
   notes: string[]
-  engine_version: string
 }
 
 export interface MirandaSeat {
@@ -61,7 +60,6 @@ export interface MirandaTargetsResult {
   overloadThresholds: MirandaOverloadThreshold[]
   overloadAtkCapPercent: number
   notes: string[]
-  engineVersion: string
 }
 
 export const mapMirandaTargetsResult = (
@@ -83,5 +81,4 @@ export const mapMirandaTargetsResult = (
   })),
   overloadAtkCapPercent: wire.overload_atk_cap_percent,
   notes: wire.notes,
-  engineVersion: wire.engine_version,
 })

@@ -302,7 +302,6 @@ class MirandaTargetsResponse(BaseModel):
     overload_thresholds: list[MirandaOverloadThreshold]
     overload_atk_cap_percent: float
     notes: list[str]
-    engine_version: str
 
 
 class SupportedUnit(BaseModel):
@@ -792,7 +791,6 @@ def _miranda_targets_sync(request: MirandaTargetsRequest, cancel) -> MirandaTarg
                              for row in report["overload_thresholds"]],
         overload_atk_cap_percent=report["overload_atk_cap_percent"],
         notes=[*report["notes"], MIRANDA_BOSS_NOTE],
-        engine_version=engine_version(),
     )
 
 

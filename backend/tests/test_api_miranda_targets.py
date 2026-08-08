@@ -30,7 +30,6 @@ def test_a_full_deck_reports_cycles_seats_and_thresholds():
     assert [c["index"] for c in body["cycles"]] == list(range(1, len(body["cycles"]) + 1))
     assert {t["slug"] for t in body["overload_thresholds"]} == set(DECK) - {"miranda-signature"}
     assert body["overload_atk_cap_percent"] > 0
-    assert body["engine_version"]
     # 고정한 보스 전제는 언제나 화면에 닿아야 한다.
     assert any("무속성" in note for note in body["notes"])
 
