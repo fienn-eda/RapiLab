@@ -1062,5 +1062,102 @@ how to encode it, and current engine status.
   requires an empty seat, not a specific rival" self-cancellation whenever
   a mode variant re-seats into a slot it doesn't nominally occupy.
 
+## "Affects all allies from the same squad" is the in-fiction SQUAD, not the deck
+
+- **What it looks like:** Eunhwa: Tactical Upgrade's AS Formation ("Effect 1:
+  Affects all allies from the same squad. Critical Rate ▲ 8.16%") and Emma:
+  Tactical Upgrade's LT Formation, whose Effect 1 is worded identically.
+- **What it is:** a NIKKE's squad is her in-fiction unit - `detail.squad` in the
+  ShiftyPad raw bundle (Absolute, Aegis, Counters, InfinityRail, ...). It has
+  nothing to do with the five units in your deck, and the engine has no scope
+  for it.
+- **Easy mistake:** reading "squad" as the deck and dropping the qualifier, or
+  approximating onto `squad` scope. Both hand every deck-mate a buff the game
+  gives to two or three units.
+- **Encode:** look the membership up in the data rather than guessing it - these
+  squads are small and closed. `node collect.js --nikke <ids> --headless` over
+  one corporation's SSRs, then group by `detail.squad`; Absolute came out as
+  Emma, Eunhwa and Vesti, base and Tactical Upgrade each, six units total
+  (2026-08-08). A short closed list means `member_subset_buff_rule` over a
+  committed slug set resolves it EXACTLY - no approximation needed. See
+  `_helpers.ABSOLUTE_SQUAD_SLUGS`, `eunhwa_tactical_upgrade.py`.
+- **Keep the set honest:** a squad-mate encoded later and not added silently
+  loses a buff the game gives her. Say so in the constant's comment.
+
+## Paired units whose bonus blocks name EACH OTHER'S formation status
+
+- **What it looks like:** Eunhwa: TU's S2 has "Bonus effects while this unit is
+  in the **LT Formation** state"; Emma: TU's S2 has "Bonus effects while this
+  unit is in the **AS Formation** state" - and AS Formation is Eunhwa's own S2,
+  LT Formation is Emma's.
+- **What it is:** each one's S2 "issues a tactic to the targets", i.e. puts her
+  allies in her formation state. So the bonus is live exactly when the partner
+  is in the deck (Fienn, 2026-08-08).
+- **Encode:** `deck_contains("<partner slug>")` on the bonus bullets. Both
+  directions, one in each module.
+- **Watch for a bonus that changes a TIMING rather than a stat.** Emma's fourth
+  bonus is "Recurring interval of Environment Setup ▼ 20 sec", turning a 30-sec
+  cycle into 10. A `periodic_rules` entry's cooldown is fixed when the registry
+  builds it and only a rule's CONDITION can see the deck - so register BOTH
+  intervals as separate entries and let mutually exclusive conditions pick.
+  See `emma_tactical_upgrade.build_environment_setup_periodic_rules`.
+
+## One status armed by SEVERAL triggers needs ONE shared refresh group
+
+- **What it looks like:** Eunhwa: TU's Camouflage arms "when using Burst Skill"
+  AND "when attacking with Full Charge during Full Burst" - two bullets, one
+  named status, and the windows overlap constantly.
+- **Easy mistake:** building each trigger with its own `refreshing_buff_rule`.
+  Each call mints its own refresh group, and `add_refreshing` only truncates
+  within a group - so the two windows SUM and the status is worth double for as
+  long as both are live.
+- **Encode:** pass the same explicit `refresh_group` to both rules. It is one
+  status re-armed, not two that add. The group is a plain string, so rules
+  registered through DIFFERENT paths (`_BUILDERS` and `_PER_SHOT_RULE_BUILDERS`)
+  still share it.
+- **Ordering is safe:** the per-shot pass runs after the burst cycle, but
+  `add_refreshing` compares `applied_at`, and an effect from a LATER cycle is
+  not "active" at an earlier shot's time - so cycles never truncate each other.
+
+## A skill that fires at battle start AND repeats on an interval
+
+- **What it looks like:** Emma: TU's Environment Setup - "Activates at the start
+  of battle" with a "Recurring interval: 30 sec" line.
+- **Why neither mechanism alone covers it:** `periodic_rules` first fires at
+  t=cooldown by the engine's universal battle rule, so it misses the t=0
+  instance the text explicitly promises; a plain `battle_start` rule misses
+  every repeat.
+- **Encode:** both. A `battle_start` rule for the opening instance, plus a
+  `periodic_rules` entry at the interval. Do not shift the periodic entry
+  earlier to fake the t=0 fire - it would move every later repeat too.
+
+## A self-only shield does not answer "was a shield placed in front of me"
+
+- **What it looks like:** Delta: Ninja Thief's Ninjutsu Camouflage creates a
+  shield, and `provider_scan` matches it - but every bullet reads "Affects
+  self".
+- **Easy mistake:** adding her to `SHIELD_PROVIDER_SLUGS`, which is what the
+  cross-check test's failure appears to ask for. That list answers a consumer's
+  question ("did someone shield ME"), and a self-only shield never does.
+- **Encode:** `SELF_ONLY_SHIELD_SLUGS` - same shape and same reason as
+  `ELEMENT_GATED_SHIELD_SLUGS` (Rei: Ayanami's Fire-only shield). Keeping it as
+  its own set rather than dropping it is what keeps the data cross-check total,
+  so silence never reads as "she places no shield".
+
+## `provider_scan`'s "same sentence" must survive a DECIMAL POINT
+
+- **What happened (2026-08-08):** the heal/shield patterns used `[^.]*` for
+  "within one sentence", which reads a decimal point as the end of the
+  sentence. Naga's "Recovers 9.58% of the skill user's final Max HP as HP" died
+  at "Recovers 9" and she was not derived as a healer at all.
+- **Why it stayed hidden:** almost every value in this data carries a decimal,
+  so the misses were the rule - but the units the pattern DID catch worded it
+  as "Restores HP equal to ...", with no number between the verb and "HP". All
+  95 slugs encoded before this batch happened to be of that kind.
+- **Fix:** `(?:[^.]|\.\d)*` - a point followed by a digit is a decimal, not a
+  full stop. Re-derived cleanly: one new provider, zero lost.
+- **The lesson generalizes:** a regex over this skill text that means "one
+  sentence" must never treat a bare `.` as the boundary.
+
 ---
 *Add new mechanics above this line as they come up.*

@@ -126,6 +126,15 @@ from app.skill_rules.dolla import (
     build_entrepreneurship_periodic_rules,
     rnd_shot_burst_percent,
 )
+from app.skill_rules.emma_tactical_upgrade import (
+    build_emma_tactical_upgrade_rules,
+    build_environment_setup_periodic_rules,
+)
+from app.skill_rules.eunhwa_tactical_upgrade import (
+    build_camouflage_per_shot_rules,
+    build_eunhwa_tactical_upgrade_rules,
+    build_explosive_round_weapon_mode_schedule,
+)
 from app.skill_rules.grave import build_grave_rules, build_overheat_per_shot_rules
 from app.skill_rules.rei_ayanami import (
     annihilation_burst_percent,
@@ -583,6 +592,11 @@ _BUILDERS = {
     "delta-ninja-thief": lambda sv: (
         build_delta_ninja_thief_rules(sv), ninja_overdrive_burst_percent(sv)),
     "dolla": lambda sv: (build_dolla_rules(sv), rnd_shot_burst_percent(sv)),
+    # Both Tactical Upgrades' bursts are buff-only as far as a burst PERCENT
+    # goes: Emma's is pure buffs, and Eunhwa's damage is the weapon-mode
+    # segment her burst swaps in (see _WEAPON_MODE_SCHEDULE_BUILDERS).
+    "emma-tactical-upgrade": lambda sv: (build_emma_tactical_upgrade_rules(sv), None),
+    "eunhwa-tactical-upgrade": lambda sv: (build_eunhwa_tactical_upgrade_rules(sv), None),
     "grave": lambda sv: (build_grave_rules(sv), None),
     "rei-ayanami": lambda sv: (build_rei_ayanami_rules(sv), annihilation_burst_percent(sv)),
     "rei-ayanami-tentative-name": lambda sv: (build_rei_tentative_rules(sv), attack_state_burst_percent(sv)),
@@ -934,6 +948,9 @@ _SCHEDULED_NUKE_BUILDERS = {
 # A Nikke whose burst swaps her weapon profile for a window (weapon-mode
 # segments - see raid_simulator's `weapon_mode_schedules` and the design spec).
 _WEAPON_MODE_SCHEDULE_BUILDERS = {
+    # Explosive Round: one true-damage exploding shot per own-burst (Fienn,
+    # in-game 2026-08-08 - the text names no duration).
+    "eunhwa-tactical-upgrade": lambda sv: build_explosive_round_weapon_mode_schedule(sv),
     "red-hood": lambda sv: build_red_wolf_weapon_mode_schedule(sv),  # Step 3 transform window, 33 measured shots
     "snow-white": lambda sv: build_seven_dwarves_weapon_mode_schedule(sv),  # single 5s-charge cannon shot per own-burst
     "snow-white-heavy-arms": lambda sv: build_fully_active_weapon_mode_schedule(sv),  # 2-shot 3.2s-charge segment per own-burst
@@ -987,6 +1004,10 @@ _PERIODIC_RULE_BUILDERS = {
             build_entrepreneurship_periodic_rules(sv["entrepreneurship"]),
         ),
     ],
+    # Two entries, 30s and 10s, mutually excluded by whether Eunhwa is in the
+    # deck - an entry's cooldown is fixed at build time, so a deck-dependent
+    # interval needs one entry per possibility.
+    "emma-tactical-upgrade": lambda sv: build_environment_setup_periodic_rules(sv),
     "sakura-bloom-in-summer": lambda sv: build_sakura_periodic_rules(sv),
     "rosanna-chic-ocean": lambda sv: build_spina_periodic_rules(sv),  # Spina di Rosa, cd 30
     "takina-inoue": lambda sv: [
@@ -1016,6 +1037,8 @@ _PER_SHOT_RULE_BUILDERS = {
     "anis-star": lambda sv: build_starfall_full_charge_nuke_rules(sv["starfall"]),
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
+    # Camouflage re-armed by every Full Charge inside Full Burst.
+    "eunhwa-tactical-upgrade": lambda sv: build_camouflage_per_shot_rules(sv["camouflage_scarf"]),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
     "naga": lambda sv: build_support_of_friendship_per_shot_rules(sv["support_of_friendship"]),
     "ein": lambda sv: build_ein_per_shot_rules(sv),

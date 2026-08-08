@@ -49,7 +49,7 @@ def buff_rule(trigger, buffs, condition=None):
     return _rule(trigger, action, condition)
 
 
-def refreshing_buff_rule(trigger, buffs, condition=None):
+def refreshing_buff_rule(trigger, buffs, condition=None, refresh_group=None):
     """Like buff_rule, but each buff REFRESHES instead of stacking (see
     EffectRegistry.add_refreshing) - for a per-shot buff re-applied every shot,
     which the game refreshes rather than stacks. `condition`: optional SkillRule
@@ -59,8 +59,13 @@ def refreshing_buff_rule(trigger, buffs, condition=None):
     bullet collapse into one another while the same unit's other buffs on the
     same stat are left alone. Without that, Liberalio's permanent Raging
     Current (+231% self Attack Damage) was truncated to nothing by her own
-    on-core buff (+20.83%, same stat and scope) on her very first shot."""
-    group = f"refresh_{next(_refresh_group_ids)}"
+    on-core buff (+20.83%, same stat and scope) on her very first shot.
+
+    Pass an explicit `refresh_group` for ONE status granted by SEVERAL triggers -
+    Eunhwa: Tactical Upgrade's Camouflage arms both on her burst and on every
+    Full Charge inside Full Burst, and the two windows overlap. Sharing a group
+    is what makes them one status rather than two that sum."""
+    group = refresh_group or f"refresh_{next(_refresh_group_ids)}"
 
     def action(context, caster_slug, time, registry):
         for stat, value, scope, duration in buffs:
@@ -274,6 +279,7 @@ HEAL_PROVIDER_SLUGS = frozenset({
     "centi-signature",
     "crown",
     "delta-ninja-thief",
+    "emma-tactical-upgrade",
     "flora",
     "flora-signature",
     "grave",
@@ -303,6 +309,24 @@ SHIELD_PROVIDER_SLUGS = frozenset({
     "flora",
     "flora-signature",
 })
+
+# The Absolute squad, ELYSION's own - the audience of "Affects all allies from
+# the same squad", which Eunhwa: Tactical Upgrade's AS Formation and Emma:
+# Tactical Upgrade's LT Formation both use. A NIKKE's squad is her in-fiction
+# unit (`detail.squad` in the ShiftyPad bundle), not her deck, and the engine's
+# scopes cannot express it - but the membership is short and settled: Emma,
+# Eunhwa and Vesti, base and Tactical Upgrade each, six units, of which these
+# two are the only ones encoded (read off the 43 ELYSION SSR bundles,
+# 2026-08-08). So the bullet resolves EXACTLY via member_subset_buff_rule
+# rather than being approximated onto `squad`.
+#
+# Add the other four here as they are encoded; a squad-mate missing from this
+# set silently loses a buff the game gives her.
+ABSOLUTE_SQUAD_SLUGS = frozenset({
+    "emma-tactical-upgrade",
+    "eunhwa-tactical-upgrade",
+})
+
 
 # Shields that exist but reach only part of the squad, so deck presence alone
 # does NOT establish that the consumer received one. Rei: Ayanami's shield is
