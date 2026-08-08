@@ -1,7 +1,7 @@
 import pytest
 
 from app.effects import Effect, Pulse, ResourceBuff, ResourceSpec
-from app.raid_simulator import CORE_HIT_BONUS, simulate_raid
+from app.raid_simulator import simulate_raid
 from app.skill_rules._helpers import (
     buff_rule,
     instant_nuke_pulse_rule,
@@ -3382,11 +3382,12 @@ def test_a_scheduled_nuke_can_opt_in_to_the_core_hit_bonus():
     def tick(result):
         return next(e for e in result["damage_log"] if e["source"] == "scheduled")
 
-    # The tick lands inside a Full Burst window, so its bucket is 1 + 0.5
-    # without a core hit and 1 + 0.5 + CORE_HIT_BONUS with one - core sits in
-    # the SAME additive bucket as the Full Burst bonus, it does not multiply it.
+    # The tick lands inside a Full Burst window, so its bucket is 1 + 0.5 full
+    # burst without a core hit, and 1 + 0.5 full burst + 1.0 core with one -
+    # core sits in the SAME additive bucket as the Full Burst bonus, it does
+    # not multiply it.
     assert tick(plain)["damage"] == pytest.approx(1000.0 * 1.5)
-    assert tick(opted)["damage"] == pytest.approx(1000.0 * (1.5 + CORE_HIT_BONUS))
+    assert tick(opted)["damage"] == pytest.approx(2500.0)
 
 
 def test_a_scheduled_nuke_that_does_not_opt_in_still_never_cores():

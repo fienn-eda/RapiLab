@@ -15,7 +15,7 @@ Three columns carry the argument:
             (a rider fires once per shot): f = (record - rest) / (normal + riders)
     p       the core hit rate that would land the unit on its record. The engine
             assumes every core-eligible shot hits the core; damage is linear in
-            CORE_HIT_BONUS, so one run at 1.0 and one at 0.0 give every p in
+            core_hit_bonus_for, so one run at 1.0 and one at 0.0 give every p in
             between by interpolation.
 
 Reading them: a term shared across units shows as a shared value; a per-weapon
@@ -33,7 +33,7 @@ Fienn's reading of that (2026-07-31): the recorded raid was fought on a boss
 with both a core and destructible parts, and a deck that had to hit PARTS
 directly gave up core hits to do it, while a deck whose area damage broke parts
 incidentally kept them. So p is a property of the run, not of the engine - which
-is why nothing here proposes changing CORE_HIT_BONUS.
+is why nothing here proposes changing core_hit_bonus_for.
 
 Usage (any cwd):
     python3 scripts/measure_normal_attack_residual.py
@@ -69,13 +69,16 @@ def _base_owner(by_slug, slug):
     return None
 
 
-def _run_decks(by_slug, core_hit_bonus):
-    """Every recorded deck, seated as played, at the given core-hit bonus.
+def _run_decks(by_slug, zero_core, live_core_hit_bonus_for):
+    """Every recorded deck, seated as played, with the core term on or off.
 
-    Returns {slug: {source: damage}}. The bonus is a module attribute rather
-    than an argument anywhere, so it is set here and restored by the caller.
+    The core bonus is per-unit (`core_damage.core_hit_bonus_for`) and reaches
+    the simulator as a module-level name, so toggling it means swapping that
+    name for the duration of the run - assigned on both branches so the
+    result does not depend on call order. The caller restores it.
     """
-    raid_simulator.CORE_HIT_BONUS = core_hit_bonus
+    raid_simulator.core_hit_bonus_for = (
+        (lambda slug: 0.0) if zero_core else live_core_hit_bonus_for)
     per_unit = {}
     weapons = {}
     for records in RECORD_DECKS.values():
@@ -118,12 +121,12 @@ def main():
         sys.exit("ERROR: no synced roster - per-unit ratios need real investment.")
     by_slug = {state.character_slug: state for state in roster}
 
-    live = raid_simulator.CORE_HIT_BONUS
+    live = raid_simulator.core_hit_bonus_for
     try:
-        with_core, weapons = _run_decks(by_slug, live)
-        without_core, _ = _run_decks(by_slug, 0.0)
+        with_core, weapons = _run_decks(by_slug, zero_core=False, live_core_hit_bonus_for=live)
+        without_core, _ = _run_decks(by_slug, zero_core=True, live_core_hit_bonus_for=live)
     finally:
-        raid_simulator.CORE_HIT_BONUS = live
+        raid_simulator.core_hit_bonus_for = live
 
     records = {slug: dmg for deck in RECORD_DECKS.values() for slug, dmg in deck.items()}
     rows = []

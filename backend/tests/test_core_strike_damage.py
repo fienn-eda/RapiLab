@@ -41,7 +41,8 @@ def test_core_strike_collects_the_core_bonus_despite_being_skill_damage():
     assert core_eligible("burst", "core_strike")
     assert core_eligible("instant_nuke", "core_strike")
     assert core_eligible("scheduled", "core_strike")
-    # CORE_HIT_BONUS is 1.0, so the core bonus doubles an otherwise bare hit.
+    # This caster's core bonus is 1.0, so the core bonus doubles an otherwise
+    # bare hit.
     assert _burst_damage("core_strike", core_hittable=True) == 20000.0
 
 

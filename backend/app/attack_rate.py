@@ -99,7 +99,7 @@ def spinup_for_weapon(weapon):
     and Rei's names `allies with a Machine Gun` as the target - and Fienn
     confirmed in game that an SMG reaches its nominal rate from the first round
     (docs/measurements/smg-no-spinup.md). The SMG still over-reads against the
-    record (1.148x, the highest class) but the cause is elsewhere; the leading
+    record (1.172x, the highest class) but the cause is elsewhere; the leading
     candidate is its 110px spread under the accuracy model.
     """
     return _SPINUP_BY_WEAPON.get(weapon)

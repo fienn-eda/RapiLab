@@ -5,8 +5,8 @@ produces TWO damage instances.
 The body hit is the same instance minus the core bonus (Fienn, 2026-08-03), so
 with no other major modifiers the pair reads (1 + 1.0) + 1 = 3.0 against the core
 hit's 2.0. The numbers below are pinned rather than expressed as "1.5x": that
-ratio is only true while CORE_HIT_BONUS is 1.0, and a test that hides the
-constant would keep passing if the constant moved.
+ratio is only true at this unit's core bonus of 1.0 (`core_damage.py`), and a
+test that hides the constant would keep passing if the constant moved.
 
 A unit without Pierce can still hit the core, but nothing is behind it for her.
 """

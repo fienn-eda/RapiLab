@@ -16,14 +16,18 @@ applied_at/duration), so querying registry.total_for(stat, target, shot_time)
 for a shot time anywhere in the fight is correct regardless of processing
 order - no need to interleave shot generation with the burst-cycle hooks.
 
-Core hit damage is a uniform +100% (200% total, i.e. exactly doubles a hit
-with no other modifiers) across every weapon type, per Fienn's direct
-in-game/ShiftyPad tooltip check - this corrects an earlier "1/1.5" figure
-pulled from a summarized fetch of the nikke.gg formula page, which turned
-out to be an unreliable paraphrase. `core_hittable` toggles it for the
-whole simulation (some raid bosses have an exploitable core, some don't),
-and `core_eligible` decides which instances inside such a fight collect it:
-NORMAL ATTACKS only, never skill damage, and never Sustained / Distributed
+Core hit damage is per-caster: `core_damage.core_hit_bonus_for(slug)` reads
+the caster's `shot_detail.core_damage_rate` and returns the major-modifier
+term it adds, defaulting to +100% (200% total, i.e. exactly doubles a hit
+with no other modifiers) with four characters at +150% (250% total) - see
+that module's docstring for the table and where the rate comes from.
+Fienn's direct in-game/ShiftyPad tooltip check is what pins the default -
+this corrects an earlier "1/1.5" figure pulled from a summarized fetch of
+the nikke.gg formula page, which turned out to be an unreliable paraphrase.
+`core_hittable` toggles it for the whole simulation (some raid bosses have
+an exploitable core, some don't), and `core_eligible` decides which
+instances inside such a fight collect it: NORMAL ATTACKS plus `core_strike`
+skill damage, never other skill damage, and never Sustained / Distributed
 damage. What is still not modeled is how OFTEN a real player lands the core
 - an eligible hit here always does.
 
@@ -106,6 +110,7 @@ import warnings
 from app.accuracy import WEAPON_SPREAD_DIAMETER, core_hit_rate
 from app.attack_rate import CHARGE_WEAPONS, generate_segmented_shots
 from app.burst_cycle import FULL_BURST_OPEN_DELAY, simulate_burst_cycle
+from app.core_damage import core_hit_bonus_for
 from app.damage_formula import calculate_damage
 from app.effects import Effect, EffectRegistry, _matches_scope, max_ammo_percent_total
 from app.elements import ELEMENT_ADVANTAGE_BONUS, element_multiplier
@@ -115,7 +120,6 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 # it orders after anything landing on the boundary instant itself.
 AFTER_WINDOW_EPSILON = 1e-3
 
-CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
 # 스킬 쿨다운 감소의 하한 배수. 감소가 100%에 닿으면 주기 루프가 전진하지 않는다.
@@ -909,7 +913,7 @@ def _simulate_raid_once(
                 bundle["normal_attack_crit_rate"] if is_normal_attack else 0.0
             )),
             core_hit_rate=core_hit_share,
-            core_hit_bonus=CORE_HIT_BONUS if hits_core else 0.0,
+            core_hit_bonus=core_hit_bonus_for(slug) if hits_core else 0.0,
             other_core_damage_sources=(
                 bundle["other_core_damage_sources"] if hits_core else 0.0
             ),
