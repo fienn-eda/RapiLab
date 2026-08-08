@@ -32,6 +32,7 @@ class SquadContext:
         boss_element: str | None = None,
         part_destructible: bool = False,
         core_hittable: bool = False,
+        target_grants: list[dict] | None = None,
     ):
         self.members = members
         # each member's base (summary) ATK, so a rule targeting "the N allies with
@@ -58,6 +59,10 @@ class SquadContext:
         # core_hittable flag), so a rule gated on core existence (e.g.
         # Cinderella: Crystal Wave's MG-mode core-strike nuke) can read it.
         self.core_hittable: bool = core_hittable
+        # top-N 대상형 버프가 누구에게 갔는지의 기록. None이면 아무것도 남기지
+        # 않는다 - 탐색은 한 요청에 수만 번 돌므로 기본이 off여야 한다.
+        # 미란다 계산기가 이 로그를 읽는다(app/miranda_targets.py).
+        self.target_grants: list[dict] | None = target_grants
         # Full Burst [start, end) windows from the burst-cycle pass, so a
         # scheduled_nukes schedule can anchor on FB entry (e.g. Rapi: Red
         # Hood's projectile explosions). Filled by raid_simulator right
@@ -200,7 +205,8 @@ class SquadContext:
         ]
 
     def top_atk_slugs(self, n: int, caster_slug: str, registry, time: float,
-                      member_filter=None, include_caster: bool = False) -> list[str]:
+                      member_filter=None, include_caster: bool = False,
+                      grant_stats: tuple[str, ...] | None = None) -> list[str]:
         """The `n` allies with the highest FINAL ATK at `time`. Final ATK is base
         ATK grown by live atk_percent buffs plus flat_atk, so a buff applied
         earlier this cycle (e.g. Miranda's own burst before her Full-Burst-enter
@@ -228,7 +234,12 @@ class SquadContext:
         neither `member_subset_buff_rule` (no ranking) nor a bare top-N (no
         filter) expresses alone. It applies to the caster's fill-in too: a caster
         outside the class must not receive a buff aimed at that class, so a deck
-        with no matching member yields an empty list rather than her."""
+        with no matching member yields an empty list rather than her.
+
+        `grant_stats`는 호출자가 지금 주려는 스탯 이름들이다. 넘기면 이 판정이
+        `target_grants`에 기록된다 - 대상 집합만으로는 한 시전자의 서로 다른
+        불릿을 구분할 수 없어서(둘 다 같은 랭킹을 쓴다), 무슨 불릿인지는 호출자가
+        선언해야만 알 수 있다."""
         by_slug = {m.slug: m for m in self.members}
 
         def final_atk(slug: str) -> float:
@@ -246,7 +257,13 @@ class SquadContext:
             if len(candidates) < n and any(m.slug == caster_slug for m in eligible):
                 candidates = candidates + [caster_slug]
         ranked = sorted(candidates, key=final_atk, reverse=True)
-        return ranked[:n]
+        targets = ranked[:n]
+        if grant_stats is not None and self.target_grants is not None:
+            self.target_grants.append({
+                "caster": caster_slug, "time": time,
+                "stats": list(grant_stats), "targets": list(targets),
+            })
+        return targets
 
     def longest_charge_time_slugs(self, n: int) -> list[str]:
         """The `n` members with the longest BASIC charge time - Mana's Metal

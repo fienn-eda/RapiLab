@@ -574,3 +574,45 @@ def test_full_burst_extension_stage_reads_the_window_a_time_falls_in():
     assert context.full_burst_extension_stage(30.0, "soda") == 1
     assert context.full_burst_extension_stage(100.0, "soda") == 0   # 마지막 창 뒤
     assert context.full_burst_extension_stage(5.0, "someone-else") == 0  # 다른 유닛
+
+
+def test_top_atk_slugs_records_the_grant_when_asked():
+    log = []
+    ctx = SquadContext(
+        [
+            SquadMember("miranda", burst_tier=1, element="Fire"),
+            SquadMember("scarlet", burst_tier=3, element="Fire"),
+            SquadMember("blast", burst_tier=1, element="Wind"),
+        ],
+        base_atk={"miranda": 50000, "scarlet": 70000, "blast": 60000},
+        target_grants=log,
+    )
+    registry = EffectRegistry()
+    ctx.top_atk_slugs(1, "miranda", registry, time=2.5, grant_stats=("crit_rate",))
+    assert log == [{"caster": "miranda", "time": 2.5,
+                    "stats": ["crit_rate"], "targets": ["scarlet"]}]
+
+
+def test_top_atk_slugs_records_nothing_without_grant_stats():
+    # 스탯 이름을 안 넘기는 호출자(맥스웰·레오나·나가·마나·소다)는 기록에 안 남는다 -
+    # 무슨 불릿인지 말하지 않은 호출을 무슨 불릿인지 아는 척 적을 수 없다.
+    log = []
+    ctx = SquadContext(
+        [SquadMember("a", burst_tier=1, element="Fire"),
+         SquadMember("b", burst_tier=3, element="Fire")],
+        base_atk={"a": 1, "b": 2},
+        target_grants=log,
+    )
+    ctx.top_atk_slugs(1, "a", EffectRegistry(), time=0.0)
+    assert log == []
+
+
+def test_top_atk_slugs_records_nothing_without_a_log():
+    # 기본 컨텍스트는 로그가 없다 - grant_stats를 넘겨도 조용하다.
+    ctx = SquadContext(
+        [SquadMember("a", burst_tier=1, element="Fire"),
+         SquadMember("b", burst_tier=3, element="Fire")],
+        base_atk={"a": 1, "b": 2},
+    )
+    assert ctx.target_grants is None
+    assert ctx.top_atk_slugs(1, "a", EffectRegistry(), 0.0, grant_stats=("atk_percent",)) == ["b"]
