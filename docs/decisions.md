@@ -5,6 +5,53 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 코어 히트 보너스 표는 손으로 적는다 — 수집 데이터에서 유도하지 않는다
+
+- Date: 2026-08-08
+- Context: 엔진은 코어 히트 보너스를 전 유닛 공통 상수 하나로 뒀다
+  (`raid_simulator.CORE_HIT_BONUS = 1.0`, 2.0배 코어 배율). 그런데 게임 데이터의
+  `shot_detail.core_damage_rate`는 유닛마다 다르다 — 인코딩된 101슬러그 중 미란다·
+  퀀시: 이스케이프 퀸·리틀 머메이드·치사토 니시키기 넷이 `25000`(2.5배)이고,
+  `miranda-signature`까지 세면 다섯이다.
+- Decision: 값을 코드에 손으로 적은 표로 둔다. `backend/app/core_damage.py`의
+  `DEFAULT_CORE_DAMAGE_RATE`(20000)와 예외 다섯을 담은 `CORE_DAMAGE_RATE`,
+  환산 함수 `core_hit_bonus_for(slug)`. 소비 지점은 `raid_simulator.py`의 한 줄뿐.
+  표가 낡는 것은 `scripts/audit_core_damage_rate.py`가 막는다 —
+  `data/shiftypad/raw/*.json`의 `shot_detail.core_damage_rate`와 대조해 갈라지면
+  exit 1.
+- Why: 당연해 보이는 대안 — 다른 무기 스탯처럼 수집 데이터가 `weapon_stats`를
+  거쳐 값을 흘려주는 것 — 은 막혀 있다. `data/dotgg/char_*.json`엔 이 필드 자체가
+  없고, 인코딩된 101슬러그 중 83개가 `load_weapon_data`를 거쳐 무기를 dotgg에서
+  읽는다(`weapon_source: shiftypad`가 아닌 것은 lootandwaifus 소스 유닛까지 포함해
+  전부 dotgg로 간다). 영향받는 다섯 슬러그 전부가 그 dotgg 경로 위에 있으므로,
+  데이터 경로는 다섯 중 하나에도 안 닿는다. 값이 존재하는 곳은 ShiftyPad raw
+  번들뿐인데 이건 숫자 rid로 키가 잡혀 있고 데이터 안에 rid→슬러그 매핑이 없다 —
+  그 매핑 표를 만들면 5행짜리 표 대신 101행짜리 손 표가 되고, rid는 수집 실행마다
+  바뀌는 부산물이라 슬러그보다 더 빨리 낡는다.
+- Alternatives considered: **수집 데이터에서 유도**(다른 무기 스탯과 같은 경로) —
+  기각, 위 이유로 다섯 슬러그 어디에도 안 닿는다. 선례는
+  `accuracy.WEAPON_SPREAD_DIAMETER` + `scripts/audit_weapon_accuracy_scales.py`.
+- Consequences: 손으로 유지되는 표 하나, 그리고 그것을 낡지 않게 지키는 감사
+  스크립트가 필수로 딸려온다. 설계:
+  `docs/superpowers/specs/2026-08-08-per-unit-core-damage-rate-design.md`. 관련:
+  `docs/engine-gaps.md` "코어 보너스 배율이 유닛별로 다르다".
+
+## 코어 보너스는 평타로 좁히지 않고 `hits_core`인 모든 인스턴스에 건다
+
+- Date: 2026-08-08
+- Context: `core_damage_rate`는 게임 데이터 스키마상 `shot_detail`(무기 발사)
+  필드다. 대안은 배율을 평타로만 좁히고, `core_strike`로 명시된 스킬 딜은 공유
+  2.0배 기본값에 남겨두는 것이었다.
+- Decision(Fienn, 2026-08-08): 시전자의 배율을 `hits_core`가 참인 모든 데미지
+  인스턴스(평타든 `core_strike` 스킬 딜이든)에 건다. 소비 지점에
+  `is_normal_attack` 분기를 두지 않는다.
+- Why: 오늘 시점에서는 둘이 구분되지 않는다 — 인코딩된 다섯 슬러그 중 코어 적격
+  스킬 딜을 가진 유닛이 하나도 없다. 즉 이 결정이 실제로 고치는 것은 오늘의 딜이
+  아니라 **앞으로 인코딩될 유닛이 물려받을 기본값**이다.
+- Consequences: 관통의 본체 인스턴스는 `hits_core=False`라 그대로 영향 밖이다.
+  앞으로 `core_strike` 넉이 인코딩되면 별도 배선 없이 시전자의 배율을 자동으로
+  받는다.
+
 ## 한글 표시 이름의 출처는 ShiftyPad의 로케일별 목록, 표 자체는 계속 손으로 쓴다
 
 - Date: 2026-08-08
