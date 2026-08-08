@@ -200,14 +200,27 @@ class SquadContext:
         ]
 
     def top_atk_slugs(self, n: int, caster_slug: str, registry, time: float,
-                      member_filter=None) -> list[str]:
-        """The `n` allies with the highest FINAL ATK at `time`, excluding the
-        caster - but including the caster to fill remaining slots if there aren't
-        enough other allies ("except caster; including the caster if there are not
-        enough allies"). Final ATK is base ATK grown by live atk_percent buffs plus
-        flat_atk, so a buff applied earlier this cycle (e.g. Miranda's own burst
-        before her Full-Burst-enter skill) is reflected in the ranking. Ties break
-        by deck order (stable sort).
+                      member_filter=None, include_caster: bool = False) -> list[str]:
+        """The `n` allies with the highest FINAL ATK at `time`. Final ATK is base
+        ATK grown by live atk_percent buffs plus flat_atk, so a buff applied
+        earlier this cycle (e.g. Miranda's own burst before her Full-Burst-enter
+        skill) is reflected in the ranking. Ties break by deck order (stable
+        sort).
+
+        **Whether the caster competes is the bullet's wording, not a default to
+        assume** (Fienn, 2026-08-08). Two shapes:
+
+        - `include_caster=False` (default): the caster is excluded, and only
+          fills a remaining slot when there are not enough other allies. This is
+          what Miranda's text spells out ("except caster; including the caster
+          if there are not enough allies") and Mana's and Soda's ("except the
+          skill user").
+        - `include_caster=True`: the caster is in the pool from the start,
+          ranked against everyone else. This is the reading for a bullet that
+          says only "N ally unit(s) with the highest ATK" with no exclusion
+          clause - Maxwell's Straight Shot (ruled 2026-07-19), Leona's pellet
+          bullet and Naga's Support of Friendship. The caster still has to meet
+          the bullet's own conditions, so `member_filter` applies to her too.
 
         `member_filter(member) -> bool` narrows the CANDIDATES before ranking,
         for a bullet that is a weapon/element class AND a top-N at once - Leona's
@@ -226,9 +239,12 @@ class SquadContext:
             )
 
         eligible = [m for m in self.members if member_filter is None or member_filter(m)]
-        candidates = [m.slug for m in eligible if m.slug != caster_slug]
-        if len(candidates) < n and any(m.slug == caster_slug for m in eligible):
-            candidates = candidates + [caster_slug]
+        if include_caster:
+            candidates = [m.slug for m in eligible]
+        else:
+            candidates = [m.slug for m in eligible if m.slug != caster_slug]
+            if len(candidates) < n and any(m.slug == caster_slug for m in eligible):
+                candidates = candidates + [caster_slug]
         ranked = sorted(candidates, key=final_atk, reverse=True)
         return ranked[:n]
 

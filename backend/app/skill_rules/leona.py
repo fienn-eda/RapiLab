@@ -37,15 +37,12 @@ Modeled (DPS-relevant):
   every shotgun ally would speed up a Flash counter the game never touched in
   any deck holding three shotguns.
 
-  One reading is still open: `top_atk_slugs` excludes the CASTER when there
-  are enough other candidates, which comes from Miranda's text spelling out
-  "except caster; including the caster if there are not enough allies". Leona's
-  bullet says only "the 2 ally unit(s) with shotguns", with no such clause, so
-  whether she can hold one of her own two slots is undecided from the text.
-  She is a supporter and rarely outranks the shotguns she is buffing, so the
-  two readings agree in most decks - but they do not always, and this note is
-  here so the question is asked rather than assumed. Naga's Support of
-  Friendship carries the identical ambiguity.
+  She competes for her own two slots (`include_caster=True`): the bullet says
+  only "the 2 ally unit(s) with shotguns who have the highest final ATK", with
+  no "except caster" clause, and such a bullet includes the caster whenever she
+  meets its conditions - which she does, being a shotgun (Fienn, 2026-08-08;
+  the same ruling Maxwell's Straight Shot got on 2026-07-19). The clause IS
+  spelled out when it applies, in Miranda's, Mana's and Soda's text.
 
 Not modeled / deferred:
 - Thunderous Roar's second bullet, "after 15 normal attacks, all allies with
@@ -137,7 +134,7 @@ def build_leona_rules(values):
         highest_atk_buff_rule(
             "full_burst_enter", pellet_targets,
             [(PELLET_COUNT_BONUS, pellets, pellet_duration)],
-            member_filter=_is_shotgun,
+            member_filter=_is_shotgun, include_caster=True,
         ),
         buff_rule("own_burst_activate", [
             ("other_critical_damage_sources", crit_damage, "squad", crit_damage_duration),

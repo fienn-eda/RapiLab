@@ -133,7 +133,8 @@ def _resolve_scope(scope_spec, context, caster_slug, registry, time):
     return scope_spec
 
 
-def highest_atk_buff_rule(trigger, n, buffs, refreshing=False, member_filter=None):
+def highest_atk_buff_rule(trigger, n, buffs, refreshing=False, member_filter=None,
+                          include_caster=False):
     """Timed buffs on the `n` allies with the highest final ATK at trigger time
     (except the caster) - e.g. Miranda's Powering Up. buffs: (stat, value,
     duration). The target set is ranked live, so a buff applied earlier in the
@@ -150,12 +151,17 @@ def highest_atk_buff_rule(trigger, n, buffs, refreshing=False, member_filter=Non
     `member_filter(member) -> bool`: narrow the candidates before ranking, for a
     bullet that is a class AND a top-N at once ("the 2 ally unit(s) with
     shotguns who have the highest final ATK", Leona). Passed to top_atk_slugs;
-    a deck with no matching member grants nothing."""
+    a deck with no matching member grants nothing.
+
+    `include_caster`: whether the caster competes for the slots. Read it off the
+    bullet - an "except caster" clause means False (the default, Miranda/Mana/
+    Soda), its absence means True (Maxwell/Leona/Naga). See top_atk_slugs."""
     group = f"refresh_{next(_refresh_group_ids)}" if refreshing else None
 
     def action(context, caster_slug, time, registry):
         targets = context.top_atk_slugs(n, caster_slug, registry, time,
-                                        member_filter=member_filter)
+                                        member_filter=member_filter,
+                                        include_caster=include_caster)
         if not targets:
             return
         scope = "slugs:" + ",".join(targets)

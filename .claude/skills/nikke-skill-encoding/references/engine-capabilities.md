@@ -320,14 +320,28 @@ or `("top_atk", n)`. No engine param to thread — `RoundGrant`s live on the
 registry. See `zwei.py` (squad) / `miranda.py` (top-1). Detail in
 `special-mechanics.md` ("For N round(s) is a bullet-count duration").
 
-**Highest-final-ATK top-N targeting:** for "N allies with the highest final ATK
-(except caster; including caster if not enough allies)". `highest_atk_buff_rule(
-trigger, n, [(stat, value, duration), ...])` applies timed buffs to the top-n;
-`round_buff_rule(..., ("top_atk", n))` does the bullet-count variant. Both resolve
-via `SquadContext.top_atk_slugs(n, caster, registry, time)`, which ranks by LIVE
-final ATK at application time (so an earlier same-cycle ATK buff is reflected) and
-emits a `slugs:` scope. `raid_simulator` injects each member's base ATK into the
-context. See `miranda.py`.
+**Highest-final-ATK top-N targeting:** for "N allies with the highest final
+ATK". `highest_atk_buff_rule(trigger, n, [(stat, value, duration), ...])`
+applies timed buffs to the top-n; `round_buff_rule(..., ("top_atk", n))` does
+the bullet-count variant. Both resolve via `SquadContext.top_atk_slugs(n,
+caster, registry, time)`, which ranks by LIVE final ATK at application time (so
+an earlier same-cycle ATK buff is reflected) and emits a `slugs:` scope.
+`raid_simulator` injects each member's base ATK into the context. See
+`miranda.py`.
+
+Two axes on top of the ranking, both read off the bullet's own wording:
+- **`include_caster`** (default False) - whether the caster competes for the
+  slots. False is Miranda's/Mana's/Soda's "(except caster ...)"; True is a
+  bullet with NO such clause (Maxwell, Leona, Naga). Getting it wrong is
+  invisible, so check the clause per bullet - see `special-mechanics.md`,
+  "Does the caster compete".
+- **`member_filter(member) -> bool`** - narrows the CANDIDATES before ranking,
+  for a bullet that is a weapon/element class AND a top-N at once ("the 2 ally
+  unit(s) with shotguns who have the highest final ATK", Leona). It applies to
+  the caster's inclusion too, so a caster outside the class never takes a slot.
+  Do NOT re-derive final ATK in a unit module to combine these yourself - a
+  second copy of the formula drifts silently (Maxwell carried one from
+  2026-07-19 until this landed).
 
 **Named resource / capped stack counter (gap #2 Pattern A):** a quantity-based
 resource (battery / ammo pouch / N-stack counter) driving count-scaled buffs.

@@ -330,6 +330,49 @@ def test_top_atk_slugs_can_rank_within_a_member_subset():
     assert ctx.top_atk_slugs(1, "leona", registry, 0.0, member_filter=shotgun) == ["dorothy"]
 
 
+def test_top_atk_slugs_can_rank_the_caster_alongside_everyone_else():
+    """"N ally unit(s) with the highest ATK" with NO "except caster" clause puts
+    the caster in the pool from the start, if she meets the bullet's own
+    conditions (Fienn, 2026-07-19 for Maxwell and 2026-08-08 as the general
+    rule). The default stays exclusion, which is what Miranda's and Mana's text
+    spells out."""
+    ctx = SquadContext(
+        [
+            SquadMember("maxwell", burst_tier=3, element="Iron"),
+            SquadMember("ally", burst_tier=1, element="Fire"),
+            SquadMember("weak", burst_tier=2, element="Wind"),
+        ],
+        base_atk={"maxwell": 95000, "ally": 80000, "weak": 10000},
+    )
+    registry = EffectRegistry()
+    # Excluded (the default): the caster's own 95k does not compete.
+    assert ctx.top_atk_slugs(2, "maxwell", registry, 0.0) == ["ally", "weak"]
+    # Included: she outranks both and takes a slot.
+    assert ctx.top_atk_slugs(2, "maxwell", registry, 0.0, include_caster=True) == [
+        "maxwell", "ally"]
+
+
+def test_top_atk_slugs_include_caster_still_honours_the_member_filter():
+    """"if she meets the conditions" is the whole clause - a caster outside the
+    bullet's class is not in the pool even when the caster is includable."""
+    ctx = SquadContext(
+        [
+            SquadMember("leona", burst_tier=2, element="Water", weapon="SG"),
+            SquadMember("carry", burst_tier=3, element="Fire", weapon="AR"),
+            SquadMember("dorothy", burst_tier=1, element="Wind", weapon="SG"),
+        ],
+        base_atk={"leona": 95000, "carry": 99000, "dorothy": 80000},
+    )
+    registry = EffectRegistry()
+    shotgun = lambda member: member.weapon == "SG"  # noqa: E731
+    # Leona is a shotgun and outranks Dorothy, so she takes the first slot.
+    assert ctx.top_atk_slugs(2, "leona", registry, 0.0,
+                             member_filter=shotgun, include_caster=True) == ["leona", "dorothy"]
+    # An AR caster is outside the class - she cannot take a shotgun-only slot.
+    assert ctx.top_atk_slugs(2, "carry", registry, 0.0,
+                             member_filter=shotgun, include_caster=True) == ["leona", "dorothy"]
+
+
 def test_top_atk_slugs_filter_still_lets_the_caster_fill_a_short_deck():
     """The caster fills remaining slots only when she matches the filter too -
     a non-shotgun caster must not be handed a shotgun-only buff."""

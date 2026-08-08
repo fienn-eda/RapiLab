@@ -4,13 +4,14 @@ no signature weapon - base skills only).
 Modeled (DPS-relevant):
 - Straight Shot (skills[0], on entering Full Burst): Charge Speed +4.48% and
   ATK +43.1% for 10 sec to the 2 allies with the highest final ATK. Fienn's
-  ruling (2026-07-19): unlike the shared `highest_atk_buff_rule` /
-  `SquadContext.top_atk_slugs` helper - which always EXCLUDES the caster and
-  only falls back to including her when there aren't enough OTHER allies -
-  Maxwell's "2 allies with the highest final ATK" includes Maxwell HERSELF in
-  the ranking pool from the start. A local `_top_final_atk_slugs` ranks every
-  squad member (caster included) by the same final-ATK formula
-  `top_atk_slugs` uses, and the top 2 are buffed via a `slugs:` scope Effect.
+  ruling (2026-07-19): Maxwell's "2 allies with the highest final ATK" includes
+  Maxwell HERSELF in the ranking pool from the start, because the bullet has no
+  "except caster" clause. That generalized on 2026-08-08 - the absence of the
+  clause is the marker, and its presence (Miranda, Mana, Soda) is what asks for
+  exclusion - so `top_atk_slugs` grew an `include_caster` flag and this module's
+  hand-rolled `_top_final_atk_slugs` was deleted in favour of
+  `highest_atk_buff_rule(..., include_caster=True)`. Keeping a second copy of
+  the final-ATK formula was a standing risk of the two drifting apart.
   Charge Speed is a real DPS stat (see red-hood.py's Phase-S re-verification -
   it feeds the firing cadence now), so it's encoded like ATK.
 - Pierce Shot (her burst, skills[2]): the weapon transform - self weapon
@@ -37,9 +38,7 @@ dotgg's char_maxwell.json weapon block (SR, 69.04% damage, 250% charge
 damage, 6 rounds, 2.0s reload, 1.0s charge) confirms she has no signature
 weapon, unused directly here since the transform profile is self-contained.
 """
-from app.effects import Effect
-from app.skill_rules._helpers import round_buff_rule
-from app.squad_engine import SkillRule
+from app.skill_rules._helpers import highest_atk_buff_rule, round_buff_rule
 
 SKILL_VALUE_MANIFESTS = {
     "maxwell": {
@@ -53,37 +52,6 @@ SKILL_VALUE_MANIFESTS = {
 }
 
 
-def _top_final_atk_slugs(context, registry, n, time):
-    """The `n` squad members with the highest final ATK at `time`, WITHOUT
-    excluding the caster (Fienn's ruling, 2026-07-19 - see module docstring).
-    Final ATK computed the same way as SquadContext.top_atk_slugs: base ATK
-    grown by live atk_percent buffs plus flat_atk. Ties break by deck order
-    (stable sort)."""
-    by_slug = {m.slug: m for m in context.members}
-
-    def final_atk(slug):
-        target = {"slug": slug, "element": by_slug[slug].element}
-        base = context.base_atk.get(slug, 0.0)
-        return base * (1 + registry.total_for("atk_percent", target, time)) + registry.total_for(
-            "flat_atk", target, time
-        )
-
-    ranked = sorted(by_slug, key=final_atk, reverse=True)
-    return ranked[:n]
-
-
-def _straight_shot_rule(n, buffs):
-    """buffs: list of (stat, value, duration), applied to the `n` allies
-    (caster included) with the highest final ATK - see _top_final_atk_slugs."""
-
-    def action(context, caster_slug, time, registry):
-        scope = "slugs:" + ",".join(_top_final_atk_slugs(context, registry, n, time))
-        for stat, value, duration in buffs:
-            registry.add(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
-
-    return SkillRule(trigger="full_burst_enter", action=action)
-
-
 def build_maxwell_rules(values):
     straight = values["straight_shot"]
     n = int(float(straight["description_value_01"]))
@@ -93,10 +61,10 @@ def build_maxwell_rules(values):
     atk_duration = float(straight["description_value_05"])
 
     return [
-        _straight_shot_rule(n, [
+        highest_atk_buff_rule("full_burst_enter", n, [
             ("charge_speed_percent", charge_speed, charge_speed_duration),
             ("atk_percent", atk, atk_duration),
-        ]),
+        ], include_caster=True),
         # Pierce shot's "Additional Effect: Pierce" - the transform is one
         # charged shot, so the property covers exactly that round.
         round_buff_rule("own_burst_activate", [("has_pierce", 1.0, "self")], shots=1),

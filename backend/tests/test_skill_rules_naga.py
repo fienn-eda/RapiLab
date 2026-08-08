@@ -95,10 +95,30 @@ def test_support_of_friendship_buffs_the_two_highest_atk_allies_every_five_shots
     fire_trigger("per_shot", {"naga": rules[0][2]}, ctx, reg, 3.3)
     assert round(reg.total_for("other_core_damage_sources", CARRY, 3.3), 4) == 0.4007
     assert round(reg.total_for("other_core_damage_sources", ALLY, 3.3), 4) == 0.4007
-    # Her own base ATK is the lowest, and top_atk_slugs excludes the caster when
-    # there are enough allies - so she does not buff herself here.
+    # She competes for her own slots (no "except caster" clause), but her base
+    # ATK here is the lowest in the deck, so the two carries outrank her.
     assert reg.total_for("other_core_damage_sources", SELF, 3.3) == 0.0
     assert reg.total_for("other_core_damage_sources", CARRY, 8.4) == 0.0  # 5 sec
+
+
+def test_naga_competes_for_her_own_slots_when_she_outranks_an_ally():
+    """"2 ally unit(s) with the highest ATK" carries no "except caster" clause,
+    so she is ranked alongside everyone else (Fienn, 2026-08-08) - unlike
+    Miranda, whose text spells the exclusion out."""
+    ctx = SquadContext(
+        [
+            SquadMember("naga", burst_tier=2, element="Electric", weapon="SG"),
+            SquadMember("carry", burst_tier=3, element="Water", weapon="AR"),
+            SquadMember("ally", burst_tier=1, element="Fire", weapon="MG"),
+        ],
+        base_atk={"naga": 90.0, "carry": 100.0, "ally": 10.0},
+    )
+    reg = EffectRegistry()
+    rules = build_support_of_friendship_per_shot_rules(SUPPORT_OF_FRIENDSHIP)
+    fire_trigger("per_shot", {"naga": rules[0][2]}, ctx, reg, 3.3)
+    assert round(reg.total_for("other_core_damage_sources", CARRY, 3.3), 4) == 0.4007
+    assert round(reg.total_for("other_core_damage_sources", SELF, 3.3), 4) == 0.4007
+    assert reg.total_for("other_core_damage_sources", ALLY, 3.3) == 0.0  # outranked
 
 
 def test_the_per_shot_buff_refreshes_instead_of_stacking():

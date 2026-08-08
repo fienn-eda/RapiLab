@@ -1194,14 +1194,33 @@ how to encode it, and current engine status.
 - **The filter applies to the caster's fill-in too**, so a caster outside the
   class never receives a buff aimed at that class, and a deck with no matching
   member grants nothing rather than falling back to her.
-- **Open question worth asking rather than assuming:** `top_atk_slugs` EXCLUDES
-  the caster whenever there are enough other candidates. That comes from
-  Miranda's text, which spells out "except caster; including the caster if there
-  are not enough allies". Bullets that say only "N ally unit(s) with the highest
-  ATK" (Leona, Naga) carry no such clause, so whether the caster can hold one of
-  her own slots is undecided from the text. Both current cases are supporters
-  who rarely outrank their carries, so the readings usually agree - but say so
-  in the docstring instead of letting the default pass as a decision.
+## Does the caster compete for "N allies with the highest ATK"? The CLAUSE decides
+
+- **The rule (Fienn, 2026-08-08, generalizing his 2026-07-19 Maxwell ruling):**
+  such a bullet INCLUDES the caster whenever she meets its own conditions. The
+  exclusion applies only where the text says so - and it always says so when it
+  means it.
+- **`top_atk_slugs`'s default is EXCLUSION**, so this is a trap in the direction
+  of silence: a bullet with no clause encoded without `include_caster=True` is
+  wrong and nothing complains.
+- **Read the clause, not the shape.** Both wordings appear in this data:
+  - excludes: "(except caster; including the caster if there are not enough
+    allies)" (Miranda), "(except the skill user)" (Mana, Soda). Watch for the
+    ABBREVIATED form - Miranda's ShiftyPad text drops "except" and keeps only
+    "(includes the skill user if there are not enough allies)", which means the
+    same thing: conditional inclusion implies ordinary exclusion.
+  - includes: no clause at all - "Affects 2 allies with the highest final ATK"
+    (Maxwell), "the 2 ally unit(s) with shotguns who have the highest final ATK"
+    (Leona), "2 ally unit(s) with the highest ATK" (Naga).
+- **"if she meets the conditions" includes the bullet's CLASS**, so
+  `member_filter` applies to the caster too: an AR caster cannot take a slot in
+  a shotgun-only bullet, and a deck with no matching member grants nothing
+  rather than falling back to her.
+- **Every ally-targeting top-ATK bullet across the encoded set was audited on
+  2026-08-08** (8 of them; the rest of the `highest ... ATK` matches target
+  ENEMIES and are unrelated). All agree with their text now. Re-run that check
+  when adding one: grep the collected text for `highest[^.\n]*ATK`, keep the
+  ally-targeting lines, and compare each against its module's flag.
 
 ---
 *Add new mechanics above this line as they come up.*

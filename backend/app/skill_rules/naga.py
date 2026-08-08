@@ -16,12 +16,11 @@ Modeled (DPS-relevant):
   sec against a 5-sec buff, so every re-application overlaps the live one and
   plain adds would sum into a multiple of the printed value.
 
-  Open reading, same as Leona's pellet bullet: `top_atk_slugs` excludes the
-  CASTER when the deck holds enough other candidates, a rule that comes from
-  Miranda's text spelling out "except caster". Naga's says only "2 ally unit(s)
-  with the highest ATK", so whether she can take one of her own slots is
-  undecided from the text. As a supporter she rarely outranks the carries she
-  is buffing, so the two readings usually agree.
+  She competes for her own two slots (`include_caster=True`): the bullet says
+  only "2 ally unit(s) with the highest ATK", with no "except caster" clause,
+  and such a bullet includes the caster whenever she meets its conditions
+  (Fienn, 2026-08-08). The clause IS spelled out when it applies - Miranda's,
+  Mana's and Soda's text all carry it.
 - As Long As We're With Friends (skills[2], her burst, cd 20):
   - self Pierce for 10 sec (`has_pierce`), which on a boss whose core sits in
     front of its body turns each of her normal attacks into a second instance.
@@ -84,7 +83,7 @@ def build_support_of_friendship_per_shot_rules(support):
             highest_atk_buff_rule(
                 "per_shot", targets,
                 [("other_core_damage_sources", core_damage, duration)],
-                refreshing=True,
+                refreshing=True, include_caster=True,
             ),
         ]),
     ]
