@@ -762,11 +762,14 @@ def test_a_cycle_miranda_does_not_burst_has_no_powering_up_but_still_wakes_up():
     # B1 둘에 B3 셋(2·0·3)은 ALLOWED_SHAPES에 없어 InfeasibleDeck으로 죽는다.
     report = a_report(["miranda-signature", "liter", "crown", "ada-wong", "cinderella"])
     assert report["cycles"]
+    # 이것이 이 테스트가 증명하는 것이다: 웨이크업!의 방아쇠는 풀버스트 진입이지
+    # 미란다의 버스트가 아니므로, 그녀가 못 쏜 사이클에도 3번불릿은 나간다.
     assert all(cycle["wake_up_crit_rate"] for cycle in report["cycles"])
-    silent = [c for c in report["cycles"] if not c["powering_up"]]
-    # 리터가 1티어를 가져가는 사이클이 하나라도 있으면 그 사이클은 조용하다.
-    # 하나도 없다면 미란다가 매번 쐈다는 뜻이고, 그것도 정상이다.
-    assert all(c["wake_up_crit_rate"] for c in silent)
+    # 두 B1은 쿨다운이 같아 스케줄러가 매번 같은 하나를 고른다 - 즉 한쪽은
+    # 전부 쏘고 다른 쪽은 한 번도 못 쏜다. 어느 쪽이든 파워업!은 전부이거나
+    # 전무이고, 그 중간은 이 덱에서 나올 수 없다.
+    bursts = sum(1 for c in report["cycles"] if c["powering_up"])
+    assert bursts in (0, len(report["cycles"]))
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1939,7 +1942,7 @@ git commit -m "제외 토글이 아무 일도 안 하는 화면에서는 안 그
 
 ```tsx
 import { describe, expect, it } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import { MirandaTargets } from './MirandaTargets'
 import type { MirandaTargetsResult } from '../types/mirandaTargets'
 
@@ -2040,8 +2043,6 @@ describe('MirandaTargets', () => {
   })
 })
 ```
-
-파일 상단 import에 `within`을 더한다: `import { render, screen, within } from '@testing-library/react'`
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -2295,9 +2296,10 @@ git commit -m "누가 받는지를 초상화 옆 뱃지로 답한다
 
 ```tsx
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { render, screen, waitFor } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MirandaCalculatorPanel } from './MirandaCalculatorPanel'
+import { MirandaCalculatorPanel, seatedMirandaSlug } from './MirandaCalculatorPanel'
+import { DRAG_SLUG_TYPE } from './UnitPalette'
 import type { SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 
@@ -2306,7 +2308,22 @@ const UNITS: SupportedUnit[] = [
   { slug: 'miranda', name: '미란다', burstTier: 1, element: 'Fire' },
   { slug: 'crown', name: '크라운', burstTier: 2, element: 'Iron' },
   { slug: 'ada-wong', name: '에이다 웡', burstTier: 3, element: 'Fire' },
+  { slug: 'cinderella', name: '신데렐라', burstTier: 3, element: 'Water' },
+  { slug: 'isabel', name: '이사벨', burstTier: 3, element: 'Wind' },
 ]
+
+const FULL = ['miranda-signature', 'crown', 'ada-wong', 'cinderella', 'isabel']
+
+const WIRE = {
+  seats: FULL.map((slug, i) => ({ slug, burst_tier: i === 0 ? 1 : i === 1 ? 2 : 3 })),
+  miranda_slug: 'miranda-signature',
+  has_favorite_item: true,
+  cycles: [{ index: 1, powering_up: ['ada-wong', 'crown'], wake_up_crit_rate: ['ada-wong'] }],
+  overload_thresholds: [],
+  overload_atk_cap_percent: 58.52,
+  notes: [],
+  engine_version: 'abc',
+}
 
 const state = (slug: string) => ({ character_slug: slug, atk: 100000 }) as unknown as UserNikkeState
 
@@ -2324,6 +2341,17 @@ const renderPanel = (roster: UserNikkeState[]) =>
     />,
   )
 
+/** 팔레트에서 덱으로 끌어다 놓는 것과 같은 경로 - DraftEditor의 덱 컨테이너가
+ * 드롭을 받아 자리에 앉힌다. */
+const seat = (container: HTMLElement, ...slugs: string[]) => {
+  for (const slug of slugs) {
+    const deck = container.querySelector('.draft-editor__deck')!
+    fireEvent.drop(deck, {
+      dataTransfer: { getData: (type: string) => (type === DRAG_SLUG_TYPE ? slug : '') },
+    })
+  }
+}
+
 afterEach(() => vi.unstubAllGlobals())
 
 describe('MirandaCalculatorPanel', () => {
@@ -2335,11 +2363,14 @@ describe('MirandaCalculatorPanel', () => {
     expect(screen.queryByRole('button', { name: /미란다 제거/ })).not.toBeInTheDocument()
   })
 
-  it('seats the favorite-item build when the roster owns it', () => {
-    renderPanel([state('miranda-signature'), state('crown')])
-    expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
-    // 팔레트가 앉은 미란다를 다시 제안하지 않는다.
-    expect(screen.getAllByText('미란다')).toHaveLength(1)
+  it('prefers the favorite-item build, falls back to the base one, and reports neither', () => {
+    // 어느 빌드가 앉는지는 답을 바꾼다(애장품이면 파워업! 2명 + 웨이크업!3,
+    // 아니면 파워업! 1명뿐). 화면 글자로는 둘 다 "미란다"라 구분되지 않으므로
+    // 고르는 함수를 직접 본다.
+    expect(seatedMirandaSlug([state('miranda'), state('crown')])).toBe('miranda')
+    expect(seatedMirandaSlug([state('miranda-signature'), state('crown')]))
+      .toBe('miranda-signature')
+    expect(seatedMirandaSlug([state('crown')])).toBeNull()
   })
 
   it('asks the player to sync when the roster has no Miranda at all', () => {
@@ -2353,19 +2384,37 @@ describe('MirandaCalculatorPanel', () => {
     expect(screen.getByRole('button', { name: /계산/ })).toBeDisabled()
   })
 
-  it('reports a failed request without clearing the deck', async () => {
+  it('submits the five seated slugs once the deck is full', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(WIRE) })
+    vi.stubGlobal('fetch', fetchMock)
+    const { container } = renderPanel(FULL.map(state))
+    seat(container, 'crown', 'ada-wong', 'cinderella', 'isabel')
+    const run = screen.getByRole('button', { name: '계산' })
+    await waitFor(() => expect(run).toBeEnabled())
+    await userEvent.click(run)
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled())
+    const body = JSON.parse(fetchMock.mock.calls[0][1].body as string)
+    expect(body.units.sort()).toEqual([...FULL].sort())
+  })
+
+  it('shows the backend detail when the request fails', async () => {
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
-      ok: false, status: 422, json: () => Promise.resolve({ detail: '성립하는 버스트 순서가 없어요' }),
+      ok: false, status: 422,
+      json: () => Promise.resolve({ detail: '이 다섯으로는 성립하는 버스트 순서가 없어요.' }),
     }))
-    const roster = ['miranda-signature', 'crown', 'ada-wong'].map(state)
-    renderPanel(roster)
-    // 5인이 안 차면 버튼이 눌리지 않으므로, 이 테스트는 오류 표시 자리만 본다.
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    const { container } = renderPanel(FULL.map(state))
+    seat(container, 'crown', 'ada-wong', 'cinderella', 'isabel')
+    await userEvent.click(screen.getByRole('button', { name: '계산' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('버스트 순서')
+    // 실패해도 편성은 남는다 - 다시 짜게 만들면 화면이 유저를 벌주는 셈이다.
+    expect(screen.getByText('5/5')).toBeInTheDocument()
   })
 })
 ```
 
-`SupportedUnit`의 실제 필드 이름이 다르면(`burstTier` vs `burst_tier`) `frontend/src/types/supportedUnit.ts`를 열어 맞춘다.
+프론트의 `SupportedUnit`은 camelCase(`burstTier`)다 — wire 쪽만 `burst_tier`다
+(`frontend/src/types/supportedUnit.ts`). `seat()`가 아무것도 안 앉히면
+`.draft-editor__deck` 클래스 이름이 바뀐 것이니 `DraftEditor.tsx`에서 확인한다.
 
 - [ ] **Step 2: Run test to verify it fails**
 
@@ -2401,6 +2450,12 @@ import { UnitPalette, type UnitInvestment } from './UnitPalette'
 // 1명뿐) 로스터가 가진 쪽을 그대로 앉힌다.
 const MIRANDA_SLUGS = ['miranda-signature', 'miranda']
 
+/** 이 로스터에 앉힐 미란다. 애장품 빌드가 있으면 그쪽이다 - 어느 빌드인지가
+ * 답을 바꾸므로 화면 글자("미란다", 둘 다 같다)가 아니라 이 함수가 결정을
+ * 쥔다. Exported so the decision can be tested without seating a whole deck. */
+export const seatedMirandaSlug = (roster: UserNikkeState[]): string | null =>
+  MIRANDA_SLUGS.find((slug) => roster.some((n) => n.character_slug === slug)) ?? null
+
 interface MirandaCalculatorPanelProps {
   roster: UserNikkeState[]
   supportedUnits: SupportedUnit[]
@@ -2418,10 +2473,7 @@ export function MirandaCalculatorPanel({
   burstTiersFor,
   investmentFor,
 }: MirandaCalculatorPanelProps) {
-  const mirandaSlug = useMemo(
-    () => MIRANDA_SLUGS.find((slug) => roster.some((n) => n.character_slug === slug)) ?? null,
-    [roster],
-  )
+  const mirandaSlug = useMemo(() => seatedMirandaSlug(roster), [roster])
   const [draft, setDraft] = useState<Draft>(() =>
     mirandaSlug ? placeUnit(makeEmptyDraft(1), 0, mirandaSlug) : makeEmptyDraft(1),
   )
