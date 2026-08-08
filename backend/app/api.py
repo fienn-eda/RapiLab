@@ -27,6 +27,7 @@ from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_
 from app.deck_evaluation import InfeasibleDeck, evaluate_decks
 from app.deck_search import BossProfile, search_best_decks
 from app.engine_version import engine_version
+from app.miranda_targets import MIRANDA_SLUGS, miranda_slug_in, miranda_target_report
 from app.models import UserNikkeState
 from app.overload_effects import NAME_TO_STAT, max_charge_speed_percent
 from app.paths import frontend_dist
@@ -263,6 +264,45 @@ class ChargeWindowResponse(BaseModel):
     current: ShotOutcome
     thresholds: list[ChargeWindowThreshold]
     notes: list[str]
+
+
+class MirandaTargetsRequest(BaseModel):
+    roster: list[UserNikkeState]
+    units: list[str]
+
+
+class MirandaSeat(BaseModel):
+    slug: str
+    burst_tier: int
+
+
+class MirandaCycle(BaseModel):
+    index: int
+    powering_up: list[str]
+    wake_up_crit_rate: list[str]
+
+
+class MirandaOverloadThreshold(BaseModel):
+    """이 니케가 전 사이클 웨이크업!3을 받는 오버로드 공격력의 경계."""
+    slug: str
+    current_percent: float
+    # gain: 지금 못 받는다 - threshold_percent 이상이면 받는다
+    # keep: 지금 받는다 - threshold_percent 밑으로 내려가면 놓친다
+    kind: Literal["gain", "keep"]
+    # gain에서 오버로드 상한 안에 답이 없으면 None. 누락이 아니라 「그런 값이
+    # 없다」는 뜻을 지닌 값이다.
+    threshold_percent: float | None
+
+
+class MirandaTargetsResponse(BaseModel):
+    seats: list[MirandaSeat]
+    miranda_slug: str
+    has_favorite_item: bool
+    cycles: list[MirandaCycle]
+    overload_thresholds: list[MirandaOverloadThreshold]
+    overload_atk_cap_percent: float
+    notes: list[str]
+    engine_version: str
 
 
 class SupportedUnit(BaseModel):
@@ -700,6 +740,65 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
         ],
         notes=notes,
     )
+
+
+# 이 계산기는 보스를 묻지 않는다. 답하는 것은 「누가 받는가」 하나이고, 그
+# 순위를 정하는 것은 대부분 덱 자신의 버프이기 때문이다. 그래서 BossProfileIn의
+# 기본값(무속성·180초)을 쓰고, 그 전제는 notes로 언제나 화면에 닿는다.
+MIRANDA_CALCULATOR_BOSS = BossProfileIn()
+
+MIRANDA_BOSS_NOTE = (
+    "무속성 보스·180초 전투를 가정해 계산했어요. 보스 속성에 걸린 공격력 버프를 "
+    "가진 니케가 있으면 실제 레이드와 순위가 다를 수 있어요."
+)
+
+
+def _miranda_targets_sync(request: MirandaTargetsRequest, cancel) -> MirandaTargetsResponse:
+    # 평가와 임계값 탐색을 합쳐 수 초다. SimPool을 만들지 않으므로 토큰에 접을
+    # 풀이 없다 - 인자는 _run_cancellable의 계약을 맞추기 위한 것.
+    _reject_unknown_overload_options(request.roster)
+    if len(request.units) != DECK_SIZE:
+        raise HTTPException(422, f"덱은 {DECK_SIZE}명이어야 해요.")
+    if miranda_slug_in(request.units) is None:
+        raise HTTPException(422, "덱에 미란다가 없어요. 미란다를 넣어야 계산할 수 있어요.")
+
+    specs, _excluded = load_roster(request.roster)
+    by_slug, alternatives = _variant_alternatives(specs)
+    deck_specs = []
+    for slug in request.units:
+        options = alternatives.get(slug)
+        if options is None and slug not in by_slug:
+            raise HTTPException(422, f"엔진이 쓸 수 없는 슬러그예요: {slug}")
+        deck_specs.append(options[0] if options else by_slug[slug])
+
+    alternatives = {options[0].slug: options for options in alternatives.values()}
+    try:
+        report = miranda_target_report(deck_specs, boss_profile(MIRANDA_CALCULATOR_BOSS),
+                                       by_slug, alternatives=alternatives)
+    except InfeasibleDeck:
+        raise HTTPException(
+            422, "이 다섯으로는 성립하는 버스트 순서가 없어요. 버스트 1·2·3단계 "
+                 "인원 수가 1·1·3, 1·2·2, 2·1·2 중 하나여야 해요.") from None
+
+    return MirandaTargetsResponse(
+        seats=[MirandaSeat(**seat) for seat in report["seats"]],
+        miranda_slug=report["miranda_slug"],
+        has_favorite_item=report["has_favorite_item"],
+        cycles=[MirandaCycle(**cycle) for cycle in report["cycles"]],
+        overload_thresholds=[MirandaOverloadThreshold(**row)
+                             for row in report["overload_thresholds"]],
+        overload_atk_cap_percent=report["overload_atk_cap_percent"],
+        notes=[*report["notes"], MIRANDA_BOSS_NOTE],
+        engine_version=engine_version(),
+    )
+
+
+@app.post("/api/miranda-targets", response_model=MirandaTargetsResponse)
+async def miranda_targets_route(
+    request: MirandaTargetsRequest, http_request: Request
+) -> MirandaTargetsResponse:
+    """덱 5인 중 누가 미란다의 파워업!과 웨이크업!3을 받는가."""
+    return await _run_cancellable(http_request, _miranda_targets_sync, request)
 
 
 @app.get("/api/supported-units", response_model=list[SupportedUnit])
