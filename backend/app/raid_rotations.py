@@ -1,9 +1,11 @@
 """이번 회차 레이드 보스. `/update-raid-bosses` 스킬이 공지를 읽어 적고, 보스
 설정 화면의 카드 피커가 읽는다.
 
-기계가 읽는 필드는 보스마다 `weakness`와 `range_band` 둘이다. 둘 다 공지가
-그 단어로 적은 것을 엔진 어휘로 옮긴 값이고, 판독 시점에 스킬이 채운다 —
-앱이 `stated`의 한글 산문을 파싱하는 일은 없다. 나머지(부위파괴·스쿼드 추천 등)는
+기계가 읽는 필드는 보스마다 `weakness` · `range_band` · `core_diameter_px` 셋이다.
+앞의 둘은 공지가 그 단어로 적은 것을 엔진 어휘로 옮긴 값이고, 판독 시점에 스킬이
+채운다 — 앱이 `stated`의 한글 산문을 파싱하는 일은 없다. 코어 지름만 출처가
+다르다: 공지에 없고, 그 보스와 싸우며 화면에서 잰 값을 엔진 단위로 환산해 적는다
+(docs/measurements/accuracy-circle-and-core-px.md). 나머지(부위파괴·스쿼드 추천 등)는
 대응이 확인되지 않아 `stated`에 원문 그대로만 남는다
 (docs/superpowers/specs/2026-08-07-raid-boss-rotation-import-design.md D3).
 
@@ -67,6 +69,14 @@ def validate_rotations(doc):
             if band is not None and band not in RANGE_BANDS:
                 raise ValueError(
                     f"{rid}/{boss['name']}: 알 수 없는 거리 {band!r}")
+            # 대괄호가 아니라 .get인 것은 의도다: 코어는 재야만 존재하는 값이라
+            # 공지가 반드시 답을 주는 weakness/range_band와 성격이 다르다.
+            # 번들 파일에 키가 빠지는 것은 라우트가 파일과 완전히 같은지 보는
+            # test_the_route_serves_the_file_as_is가 막는다.
+            core = boss.get("core_diameter_px")
+            if core is not None and not (isinstance(core, (int, float)) and core > 0):
+                raise ValueError(
+                    f"{rid}/{boss['name']}: 코어 지름은 양수여야 한다 {core!r}")
     return doc
 
 

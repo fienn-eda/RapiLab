@@ -91,6 +91,10 @@ class RotationBoss(BaseModel):
     name: str
     weakness: Literal["Fire", "Water", "Wind", "Iron", "Electric"]
     range_band: Literal["near", "mid", "far"] | None = None
+    # 그 보스와 싸우며 화면에서 잰 코어 지름을 엔진 단위로 환산한 값. 안 잰
+    # 보스는 None이고, 그때 코어히트율은 모델링되지 않는다 - 적격 평타가 전부
+    # p=1.0을 받는 동작 그대로다.
+    core_diameter_px: float | None = None
     stated: dict[str, str | list[str]] = {}
 
 
