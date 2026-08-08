@@ -4,9 +4,12 @@
 가리킨다. 변형을 구분하는 정보는 슬러그에만 있어서, 카탈로그 96개 중 17개 이름이
 서로 겹쳤다 — 벤치에 "Bready, Bready"가 나란히 뜨는 이유다.
 
-blablalink에는 한글 이름이 없다(디렉토리·캐릭터 데이터 모두 영문 전용이며,
-Accept-Language·쿠키·`/ko/` 경로 셋 다 196행 전부 영문을 돌려준다). 그래서 이 표는
-손으로 쓴다.
+**이름은 음차가 아니라 한국 서버 공식 표기다.** 표기는 ShiftyPad가 로케일마다 따로
+서빙하는 캐릭터 목록에서 오고, `tools/collect-blablalink/korean-names.js`가 그것을
+`nikke-directory.json`의 `name_ko`로 받아 둔다 — 추측할 일이 없다는 뜻이다. 실제로
+`dolla`는 "돌라"가 아니라 **"도라"**이고 `moran`은 "모란"이 아니라 **"목단"**이다.
+표 자체를 자동 생성하지 않는 이유는 아래 두 규칙(모드 변형·애장품) 때문이며, 그
+판단만 손으로 한다. 구분자는 원문의 " : "가 아니라 이 표의 관례인 ": "로 적는다.
 
 **빈 문자열은 "아직 안 채움"이다** — 그 슬러그는 영문 이름으로 떨어진다. 표가 부분적인
 것이 정상 상태이고, 한 줄씩 채우는 동안 화면이 비는 일은 없다.
@@ -46,23 +49,24 @@ DISPLAY_NAMES = {
     "rapi-red-hood-b1": "라피: 레드후드(1버)",
 
     # --- Burst 1 ---
-    "anis-star":           "아니스: 스타",      # Anis: Star
-    "d-killer-wife":       "D: 킬러 와이프",      # D: Killer Wife
-    "liter":               "리타",      # Liter
-    "little-mermaid":      "리틀 머메이드",      # Little Mermaid
-    "miranda":             "미란다",      # Miranda
-    "miranda-signature":   "미란다",      # Miranda
-    "moran":               "목단",      # Moran
-    "moran-signature":     "목단",      # Moran
-    "rosanna":             "로산나",      # Rosanna
-    "rosanna-signature":   "로산나",      # Rosanna
-    "rouge":               "루주",      # Rouge
-    "soline-frost-ticket": "솔린: 프로스트 티켓",      # Soline: Frost Ticket
-    "tove":                "토브",      # Tove
-    "tove-signature":      "토브",      # Tove
-    "volume":              "볼륨",      # Volume
-    "zwei":                "츠바이",      # Zwei
-    "zwei-signature":      "츠바이",      # Zwei
+    "anis-star":             "아니스: 스타",      # Anis: Star
+    "d-killer-wife":         "D: 킬러 와이프",      # D: Killer Wife
+    "emma-tactical-upgrade": "엠마: 택티컬 업",      # Emma: Tactical Upgrade
+    "liter":                 "리타",      # Liter
+    "little-mermaid":        "리틀 머메이드",      # Little Mermaid
+    "miranda":               "미란다",      # Miranda
+    "miranda-signature":     "미란다",      # Miranda
+    "moran":                 "목단",      # Moran
+    "moran-signature":       "목단",      # Moran
+    "rosanna":               "로산나",      # Rosanna
+    "rosanna-signature":     "로산나",      # Rosanna
+    "rouge":                 "루주",      # Rouge
+    "soline-frost-ticket":   "솔린: 프로스트 티켓",      # Soline: Frost Ticket
+    "tove":                  "토브",      # Tove
+    "tove-signature":        "토브",      # Tove
+    "volume":                "볼륨",      # Volume
+    "zwei":                  "츠바이",      # Zwei
+    "zwei-signature":        "츠바이",      # Zwei
 
     # --- Burst 2 ---
     "ade-agent-bunny":           "에이드: 에이전트 바니", # Ade: Agent Bunny
@@ -74,13 +78,18 @@ DISPLAY_NAMES = {
     "centi":                     "센티",   # Centi
     "centi-signature":           "센티",    # Centi
     "crown":                     "크라운", # Crown
+    "delta-ninja-thief":         "델타: 닌자 시프", # Delta: Ninja Thief
+    "dolla":                     "도라", # Dolla
+    "eunhwa-tactical-upgrade":   "은화: 택티컬 업", # Eunhwa: Tactical Upgrade
     "flora":                     "플로라", # Flora
     "flora-signature":           "플로라", # Flora
     "grave":                     "그레이브", # Grave
     "helm-aquamarine":           "헬름: 아쿠아마린", # Helm: Aquamarine
+    "leona":                     "레오나", # Leona
     "mast-romantic-maid":        "마스트: 로망틱 메이드", # Mast: Romantic Maid
     "maxwell-ordinary-mechanic": "맥스웰: 오디너리 미케닉", # Maxwell Ordinary Mechanic
     "mint":                      "민트", # Mint
+    "naga":                      "나가", # Naga
     "nayuta":                    "나유타", # Nayuta
     "prika":                     "프리카", # Prika
     "rosanna-chic-ocean":        "로산나: 시크 오션", # Rosanna: Chic Ocean

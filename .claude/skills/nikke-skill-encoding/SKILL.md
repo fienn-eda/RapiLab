@@ -224,7 +224,29 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    script mapping it to the base character's html slug, then re-run. See
    `frontend/public/portraits/README.md`.
 
-12. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
+12. **Name her in Korean.** The app is a Korean-language service, so an encoded
+   unit is not finished until `backend/app/display_names.py` carries her line —
+   until then the palette labels her in English.
+   `tests/test_display_names.py::test_every_encoded_slug_is_named_in_korean`
+   fails until it does, and **its message hands you the official name**, read
+   from `name_ko` in the committed directory snapshot.
+
+   **Never transliterate the English name.** The Korean service's own naming is
+   not always the phonetic reading — `dolla` is 도라, not "돌라"; `moran` is
+   목단, not "모란". The snapshot's `name_ko` is the publisher's own KR text
+   (ShiftyPad serves its character list per locale;
+   `tools/collect-blablalink/korean-names.js` fetches it — no browser, no
+   session). If the unit is too new to be in the snapshot, refresh it with
+   `node korean-names.js` in `tools/collect-blablalink`, or look one up with
+   `node korean-names.js --print <resource_id>`.
+
+   Two conventions the table enforces, which is why it stays hand-written:
+   - Write the separator as `": "`, not the source's `" : "`.
+   - A `-signature` build takes the **same** name as its base; MODE_VARIANTS
+     candidates must each take a **different** one (they sit on the bench
+     together), so add a suffix like `(지딜)` / `(MG)` / `(1버)`.
+
+13. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
    avoids cp949 encoding errors with Korean/arrow characters on Windows), then
    the text-vs-encoding audits, which no test can replace because each of them
    checks a thing that registers as a perfectly valid Effect:

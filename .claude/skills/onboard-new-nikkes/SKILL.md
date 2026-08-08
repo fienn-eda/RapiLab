@@ -46,11 +46,14 @@ authorizes the Phase 2 merge.
 
 ## Phase 2 — auto (implement → verify → merge)
 
-For each approved unit, follow `nikke-skill-encoding` steps 5–12:
+For each approved unit, follow `nikke-skill-encoding` steps 5–13:
 - module + tests + registry `_BUILDERS` entry + `frontend/src/lib/resourceIdSlugMap.ts`
   row + `SKILL_VALUE_MANIFESTS` (source `"shiftypad"`) + docstring
 - portrait: `python scripts/download_portraits.py` (add a `SLUG_ALIASES` line if the
   lootandwaifus slug carries a `-nikke` suffix, then re-run)
+- Korean name: one line in `backend/app/display_names.py`, copied from the snapshot's
+  `name_ko` (step 3 refreshed it) — never transliterated. The failing
+  `test_every_encoded_slug_is_named_in_korean` prints the official name.
 - docs: `docs/encoded-nikkes.md` row + Burst count + 갱신 노트; if a thin stub,
   register the gap in `docs/engine-gaps.md`
 - commit the refreshed directory snapshot

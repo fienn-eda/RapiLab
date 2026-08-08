@@ -1,15 +1,20 @@
 """The Korean display-name table (`app/display_names.py`) and how
 `supported_units()` prefers it.
 
-The table is hand-authored and deliberately allowed to be INCOMPLETE - an
-unfilled slug falls back to the source data's English name, so filling it is
-incremental and never a regression. These tests therefore check the table's
-internal consistency and the lookup's precedence, never its coverage.
+The table is hand-authored and allowed to be incomplete for units the engine does
+not support - an unfilled slug falls back to the source data's English name, so
+filling it is incremental and never a regression. Coverage is required only of the
+ENCODED slugs: those are the ones the deck builder puts on screen, and a committed
+snapshot carries the official Korean name for each, so leaving one in English is an
+oversight rather than work not yet done.
 """
+import json
+
 import app.supported_units as su
 from app.display_names import DISPLAY_NAMES
-from app.skill_rules.registry import MODE_VARIANTS
+from app.skill_rules.registry import ENCODED_SLUGS, MODE_VARIANTS
 from app.supported_units import supported_units
+from tests.test_resource_id_directory import SNAPSHOT, _mapped_entries
 
 
 def test_every_table_key_is_a_slug_the_catalog_lists():
@@ -57,6 +62,41 @@ def test_two_different_characters_never_share_a_name():
         if len({_owned_character(s) for s in slugs}) > 1
     }
     assert not crossed, f"one name across different characters: {crossed}"
+
+
+def _official_name_by_slug() -> dict[str, str]:
+    """한국 서버 공식 표기를 슬러그로 찾을 수 있게 뒤집은 것.
+
+    이름은 `nikke-directory.json`의 `name_ko`에서 온다 — ShiftyPad가 로케일별로
+    따로 서빙하는 캐릭터 목록을 그대로 받아 둔 것이라, 이 표를 채울 때 음차를
+    유추할 필요가 없다(`tools/collect-blablalink/korean-names.js`).
+    """
+    if not SNAPSHOT.exists():
+        return {}
+    entries = json.loads(SNAPSHOT.read_text(encoding="utf-8"))
+    by_id = {e["resource_id"]: e["name_ko"] for e in entries if e.get("name_ko")}
+    return {
+        slug: by_id[resource_id]
+        for resource_id, slug in _mapped_entries().items()
+        if resource_id in by_id
+    }
+
+
+def test_every_encoded_slug_is_named_in_korean():
+    """인코딩된 슬러그는 곧 화면에 뜨는 유닛이다. 영문 폴백은 지원하지 않는 ~95기를
+    위한 안전망이지 인코딩을 끝낸 유닛의 상태가 아니므로, 새 인코딩은 이 표에 한
+    줄을 더할 때까지 끝난 것이 아니다."""
+    official = _official_name_by_slug()
+    unnamed = {
+        slug: official.get(_owned_character(slug), "(스냅샷에 공식 표기 없음)")
+        for slug in sorted(ENCODED_SLUGS)
+        if not DISPLAY_NAMES.get(slug)
+    }
+    assert not unnamed, (
+        "인코딩됐는데 한글 이름이 없는 슬러그 (슬러그: 한국 서버 공식 표기): "
+        f"{unnamed}. 표기는 그대로 쓰되 구분자는 이 표의 관례인 ': '로 적고, "
+        "모드 변형은 접미사로 서로 다르게 쓴다."
+    )
 
 
 def test_the_catalog_prefers_the_table_over_the_source_name(monkeypatch):

@@ -5,6 +5,39 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 한글 표시 이름의 출처는 ShiftyPad의 로케일별 목록, 표 자체는 계속 손으로 쓴다
+
+- Date: 2026-08-08
+- Context: 6인 인코딩 배치가 앱에 영문 이름으로 떴다. `display_names.py`는
+  2026-07-25에 "blablalink에 한글 이름이 없다"는 판독 위에서 **전부 손으로** 쓰기로
+  했던 표인데, 그 판독이 틀렸다 — 앱 번들의
+  `getLFormatLangUrl('/character/{l_lang}/nikke_list_{lang}_v2.json')`이 로케일마다
+  다른 파일을 부르고, 한국어판에 196개 공식 표기가 전부 있다. 즉 이제는 자동 수입
+  경로가 있다.
+- Decision: 표기의 **출처**만 자동화하고 표는 손으로 유지한다.
+  `tools/collect-blablalink/korean-names.js`가 한국어 목록을 받아
+  `nikke-directory.json`에 `name_ko`로 넣고(`collect.js --directory`도 같은 조인을
+  수행), `display_names.py`는 사람이 그 값을 보고 한 줄씩 쓴다. 인코딩의 완료
+  조건에는 한글 이름을 넣어
+  `test_every_encoded_slug_is_named_in_korean`이 빈칸을 잡되, **실패 메시지가 공식
+  표기를 그대로 출력**해 조회 왕복을 없앤다.
+- Alternatives considered:
+  - **`name_ko`에서 표시 이름을 통째로 유도**(표는 예외만). 미지원 ~95기까지 공짜로
+    한글이 되지만, 표가 지금 담고 있는 두 판단이 데이터에 없다: 모드 변형은 서로
+    **달라야** 하고(벤치에 나란히 뜬다) 애장품 쌍은 서로 **같아야** 한다(로스터가
+    하나로만 해석한다). 둘 다 캐릭터 하나에 resource_id 하나라 CDN이 구분해 줄 수
+    없다. 규칙 대부분이 예외가 되는 자동화는 자동화가 아니다.
+  - **커버리지 테스트 없이 스킬 문서에만 적기.** 2026-07-25 설계가 표의 불완전을
+    정상 상태로 규정한 근거는 "손으로 쓰는 수밖에 없다"였는데 그 전제가 사라졌다.
+    빈칸이 조용히 영문으로 떨어지는 성질은 그대로라 문서만으로는 안 잡힌다.
+- Consequences: 인코딩된 101슬러그 전부 한글로 뜬다(영문 폴백 0건). 새 인코딩은
+  이름을 채울 때까지 백엔드 스위트가 빨간색이다 — `test_resource_id_slug_map`과
+  같은 성격의 의도된 실패다. 미지원 유닛의 표는 여전히 비어 있어도 되고, 그쪽은
+  영문 폴백이 화면을 채운다. 구분자 관례(`": "` — 원문은 `" : "`)는 표의 것이라
+  손으로 맞춘다.
+- 관련: `docs/insights.md`의 "ShiftyPad serves its character list once PER LOCALE",
+  `tools/collect-blablalink/RECIPE.md`의 "Korean official names".
+
 ## 고정점 루프의 수렴 실패는 API 필드가 아니라 파이썬 `warnings`로 알린다
 
 - Date: 2026-08-08
