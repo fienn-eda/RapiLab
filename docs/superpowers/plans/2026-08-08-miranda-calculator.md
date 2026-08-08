@@ -1729,21 +1729,29 @@ git commit -m "미란다 계산기 응답의 타입과 클라이언트
 describe('fixedSlugs', () => {
   const tiersFor = (slug: string): BurstTier[] =>
     slug === 'miranda-signature' ? [1] : [3]
-  const renderWith = (fixedSlugs?: string[]) => {
+  // nameFromSlug는 슬러그를 그대로 돌려주지 않는다(`miranda-signature` ->
+  // `Miranda Signature`로 타이틀케이스한다) - 아래 getByRole/getByText
+  // 셀렉터가 원문 슬러그를 찾으므로 항등함수를 쓴다.
+  const seededDraft: Draft = {
+    decks: [[
+      { slug: 'miranda-signature', locked: false },
+      { slug: 'ada-wong', locked: false },
+    ]],
+  }
+  const renderWith = (
+    fixedSlugs?: string[],
+    value: Draft = seededDraft,
+    numDecks = 1,
+    portraitFor: (slug: string) => string | null = () => null,
+  ) => {
     const onChange = vi.fn()
-    const value: Draft = {
-      decks: [[
-        { slug: 'miranda-signature', locked: false },
-        { slug: 'ada-wong', locked: false },
-      ]],
-    }
     render(
       <DraftEditor
-        numDecks={1}
+        numDecks={numDecks}
         value={value}
         onChange={onChange}
-        portraitFor={() => null}
-        nameFor={nameFromSlug}
+        portraitFor={portraitFor}
+        nameFor={(slug) => slug}
         burstTiersFor={tiersFor}
         showLocks={false}
         fixedSlugs={fixedSlugs}
@@ -1760,9 +1768,33 @@ describe('fixedSlugs', () => {
     expect(screen.getByRole('button', { name: /ada-wong 제거/ })).toBeInTheDocument()
   })
 
+  it('refuses a drag-out started from the portrait image, not just the grip', () => {
+    // draggable={false}는 그립 자신에게만 붙는다 - <img> 자손은 그 속성을
+    // 물려받지 않고 스스로 드래그를 시작해 버블링한다. jsdom의 fireEvent는
+    // draggable을 아예 보지 않으므로, 핸들러 자체가 거부해야만 이 경로가
+    // 실제로 막힌다.
+    const onChange = renderWith(['miranda-signature'], seededDraft, 1, () => 'https://example.com/miranda.png')
+    const portrait = screen.getByAltText('miranda-signature')
+    const setData = vi.fn()
+    fireEvent.dragStart(portrait, { dataTransfer: { setData, effectAllowed: '' } })
+    expect(setData).not.toHaveBeenCalled()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('refuses a swap dropped onto a fixed seat', () => {
     // 제거 버튼과 드래그만 막으면 뒷문이 열려 있다 - 스왑은 점유자를 밀어낸다.
-    const onChange = renderWith(['miranda-signature'])
+    // crown이 다른 덱에 이미 앉아 있어야 seated===true가 되어 실제로
+    // swapUnits 분기를 탄다 - 안 그러면 자리 없는 유닛의 moveUnit 분기를
+    // 시험하게 된다.
+    const onChange = renderWith(['miranda-signature'], {
+      decks: [
+        [
+          { slug: 'miranda-signature', locked: false },
+          { slug: 'ada-wong', locked: false },
+        ],
+        [{ slug: 'crown', locked: false }],
+      ],
+    }, 2)
     const fixed = screen.getByText('miranda-signature').closest('li')!
     fireEvent.drop(fixed, {
       dataTransfer: { getData: (type: string) => (type === DRAG_SLUG_TYPE ? 'crown' : '') },
@@ -1779,12 +1811,10 @@ describe('fixedSlugs', () => {
 })
 ```
 
-`nameFromSlug`가 슬러그를 그대로 돌려주지 않으면 위의 `getByRole` 이름 정규식이 안 맞는다 — 그때는 `nameFor={(slug) => slug}`로 바꾼다.
-
 - [ ] **Step 2: Run test to verify it fails**
 
 Run: `cd frontend && npm test -- DraftEditor`
-Expected: FAIL — 고정 좌석에도 제거 버튼이 있고, 스왑이 `onChange`를 부른다
+Expected: FAIL — 고정 좌석에도 제거 버튼이 있고, 그립/이미지 드래그와 스왑이 `onChange`를 부른다
 
 - [ ] **Step 3: Write minimal implementation**
 
@@ -1810,7 +1840,7 @@ props 인터페이스에 추가 (`showLocks?: boolean` 뒤):
   const fixedSet = new Set(fixedSlugs)
 ```
 
-`handleSeatDrop`의 `event.stopPropagation()` 다음에 추가:
+`handleSeatDrop`의 `setDropTarget(null)` 다음에 추가 — `event.stopPropagation()` 바로 다음이 아니라 그 뒤: 고정 좌석에 거부된 드롭도 드롭 하이라이트는 지워야 다음 드래그까지 눌어붙지 않는다.
 
 ```tsx
     if (fixedSet.has(occupant)) return
@@ -1844,6 +1874,15 @@ props 인터페이스에 추가 (`showLocks?: boolean` 뒤):
                         draggable={!isFixed}
 ```
 
+`draggable={false}`는 그립 자신에게만 적용된다 - 자손인 `<img>` 초상화는 브라우저 기본으로 draggable이라 그 속성을 물려받지 않고, 이미지에서 시작한 드래그가 그립까지 버블링해 `onDragStart`를 그대로 태운다. 속성만으로는 안 막히므로 핸들러 안에서도 거부해야 한다 — `onDragStart` 본문 맨 앞에 추가:
+
+```tsx
+                          if (isFixed) {
+                            event.preventDefault()
+                            return
+                          }
+```
+
 제거 버튼을 감싼다 (`<button className="draft-editor__slot-remove" …>` 전체를 조건부로):
 
 ```tsx
@@ -1868,12 +1907,18 @@ props 인터페이스에 추가 (`showLocks?: boolean` 뒤):
   outline: 1px solid var(--accent);
   outline-offset: -1px;
 }
+
+/* 그립의 grab 커서는 드래그가 된다는 약속이다 - 고정 좌석의 그립은 그 약속을
+   하면 안 된다. */
+.draft-editor__slot--fixed .draft-editor__slot-grip {
+  cursor: default;
+}
 ```
 
 - [ ] **Step 4: Run tests and typecheck**
 
 Run: `cd frontend && npm test -- DraftEditor`
-Expected: PASS (새 3개 + 기존 전부)
+Expected: PASS (새 4개 + 기존 전부)
 
 Run: `cd frontend && npm test && npx tsc -b --noEmit`
 Expected: 프론트 스위트 실패 0, 타입에러 0. 추천 탭·유니온 탭 테스트가 그대로 통과해야 한다 — `fixedSlugs` 기본값이 오늘의 동작이라는 증거다.

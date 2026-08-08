@@ -200,8 +200,8 @@ export function DraftEditor({
     // The seat sits inside the deck, so without this the deck would handle the
     // same drop again as a plain move.
     event.stopPropagation()
-    if (fixedSet.has(occupant)) return
     setDropTarget(null)
+    if (fixedSet.has(occupant)) return
     const seated = value.decks.some((seats) => seats.some((seat) => seat.slug === slug))
     onChange(seated ? swapUnits(value, slug, occupant) : moveUnit(value, deckIndex, slug))
   }
@@ -291,6 +291,15 @@ export function DraftEditor({
                         className="draft-editor__slot-grip"
                         draggable={!isFixed}
                         onDragStart={(event) => {
+                          // draggable={false} on the grip does not stop a
+                          // native-draggable descendant (the <img> portrait)
+                          // from starting its own drag that bubbles up here -
+                          // the handler has to refuse it too, not just the
+                          // attribute.
+                          if (isFixed) {
+                            event.preventDefault()
+                            return
+                          }
                           event.dataTransfer.setData(DRAG_SLUG_TYPE, seat.slug)
                           event.dataTransfer.effectAllowed = 'move'
                         }}

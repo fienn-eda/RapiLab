@@ -517,20 +517,25 @@ describe('DraftEditor', () => {
 describe('fixedSlugs', () => {
   const tiersFor = (slug: string): BurstTier[] =>
     slug === 'miranda-signature' ? [1] : [3]
-  const renderWith = (fixedSlugs?: string[]) => {
+  const seededDraft: Draft = {
+    decks: [[
+      { slug: 'miranda-signature', locked: false },
+      { slug: 'ada-wong', locked: false },
+    ]],
+  }
+  const renderWith = (
+    fixedSlugs?: string[],
+    value: Draft = seededDraft,
+    numDecks = 1,
+    portraitFor: (slug: string) => string | null = () => null,
+  ) => {
     const onChange = vi.fn()
-    const value: Draft = {
-      decks: [[
-        { slug: 'miranda-signature', locked: false },
-        { slug: 'ada-wong', locked: false },
-      ]],
-    }
     render(
       <DraftEditor
-        numDecks={1}
+        numDecks={numDecks}
         value={value}
         onChange={onChange}
-        portraitFor={() => null}
+        portraitFor={portraitFor}
         nameFor={(slug) => slug}
         burstTiersFor={tiersFor}
         showLocks={false}
@@ -548,9 +553,32 @@ describe('fixedSlugs', () => {
     expect(screen.getByRole('button', { name: /ada-wong 제거/ })).toBeInTheDocument()
   })
 
+  it('refuses a drag-out started from the portrait image, not just the grip', () => {
+    // draggable={false} on the grip does not stop a native-draggable
+    // descendant - jsdom fires dragStart on the <img> regardless of the
+    // attribute, which is exactly why the handler itself has to refuse it.
+    const onChange = renderWith(['miranda-signature'], seededDraft, 1, () => 'https://example.com/miranda.png')
+    const portrait = screen.getByAltText('miranda-signature')
+    const setData = vi.fn()
+    fireEvent.dragStart(portrait, { dataTransfer: { setData, effectAllowed: '' } })
+    expect(setData).not.toHaveBeenCalled()
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
   it('refuses a swap dropped onto a fixed seat', () => {
     // 제거 버튼과 드래그만 막으면 뒷문이 열려 있다 - 스왑은 점유자를 밀어낸다.
-    const onChange = renderWith(['miranda-signature'])
+    // crown이 다른 덱에 이미 앉아 있어야 seated===true가 되어 실제로
+    // swapUnits 분기를 탄다 - 안 그러면 자리 없는 유닛의 moveUnit 분기를
+    // 시험하게 된다.
+    const onChange = renderWith(['miranda-signature'], {
+      decks: [
+        [
+          { slug: 'miranda-signature', locked: false },
+          { slug: 'ada-wong', locked: false },
+        ],
+        [{ slug: 'crown', locked: false }],
+      ],
+    }, 2)
     const fixed = screen.getByText('miranda-signature').closest('li')!
     fireEvent.drop(fixed, {
       dataTransfer: { getData: (type: string) => (type === DRAG_SLUG_TYPE ? 'crown' : '') },

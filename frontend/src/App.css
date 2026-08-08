@@ -1883,6 +1883,12 @@
   outline-offset: -1px;
 }
 
+/* The grip's grab cursor promises a drag that the seat refuses - a fixed
+   seat's grip should not make that promise. */
+.draft-editor__slot--fixed .draft-editor__slot-grip {
+  cursor: default;
+}
+
 /* An open slot reads as an invitation, not as a unit that failed to load. */
 .draft-editor__slot--open {
   border-style: dashed;
