@@ -21,6 +21,7 @@ const boss: BossProfile = {
   enemy_def: 0,
   fight_duration: 180,
   part_destructible: false,
+  core_diameter_px: null,
   effective_range_band: null,
   elemental_interrupt_required: false,
 }

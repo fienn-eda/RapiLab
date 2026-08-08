@@ -15,6 +15,7 @@
           "name": "아일랜드 이터",
           "weakness": "Iron",
           "range_band": null,
+          "core_diameter_px": null,
           "stated": {
             "보스 속성": "전격",
             "약점 속성": "철갑",
@@ -42,6 +43,7 @@
           "name": "선바스",
           "weakness": "Electric",
           "range_band": "near",
+          "core_diameter_px": null,
           "stated": {
             "등급": "로드 급",
             "약점": "전격",
@@ -56,6 +58,7 @@
           "name": "플레이트",
           "weakness": "Fire",
           "range_band": "far",
+          "core_diameter_px": null,
           "stated": {
             "등급": "로드 급",
             "약점": "작열",
@@ -70,6 +73,7 @@
           "name": "토커티브",
           "weakness": "Water",
           "range_band": "far",
+          "core_diameter_px": null,
           "stated": {
             "등급": "타이런트 급",
             "약점": "수냉",
@@ -84,6 +88,7 @@
           "name": "리빌드 핑거즈",
           "weakness": "Wind",
           "range_band": "far",
+          "core_diameter_px": null,
           "stated": {
             "등급": "로드 급",
             "약점": "풍압",
@@ -98,6 +103,7 @@
           "name": "마테리얼 H",
           "weakness": "Iron",
           "range_band": "near",
+          "core_diameter_px": null,
           "stated": {
             "등급": "타이런트 급",
             "약점": "철갑",

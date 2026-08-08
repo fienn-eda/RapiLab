@@ -11,6 +11,8 @@ export interface BossProfileDraft {
   enemy_def: string
   fight_duration: string
   part_destructible: boolean
+  /** 빈 문자열 = 안 쟀다. 필수가 아니라서 다른 숫자 칸과 파싱 규칙이 다르다. */
+  core_diameter_px: string
   effective_range_band: BossRangeBand
   elemental_interrupt_required: boolean
 }
@@ -24,6 +26,7 @@ export const makeDefaultBossProfileDraft = (enemyDef = '0'): BossProfileDraft =>
   enemy_def: enemyDef,
   fight_duration: '180',
   part_destructible: false,
+  core_diameter_px: '',
   effective_range_band: null,
   elemental_interrupt_required: false,
 })
@@ -31,6 +34,7 @@ export const makeDefaultBossProfileDraft = (enemyDef = '0'): BossProfileDraft =>
 export interface BossProfileDraftErrors {
   enemy_def?: string
   fight_duration?: string
+  core_diameter_px?: string
 }
 
 export interface BossProfileValidationResult {
@@ -50,6 +54,9 @@ export const bossProfileToDraft = (boss: BossProfile): BossProfileDraft => ({
   enemy_def: String(boss.enemy_def),
   fight_duration: String(boss.fight_duration),
   part_destructible: boss.part_destructible,
+  // 이 필드가 생기기 전에 저장된 프로필은 undefined이고, null은 「안 쟀다」다.
+  // 둘 다 빈 칸으로 돌아간다.
+  core_diameter_px: boss.core_diameter_px == null ? '' : String(boss.core_diameter_px),
   // A profile saved before this field existed has it undefined, which would
   // otherwise reach the select as an uncontrolled value.
   effective_range_band: boss.effective_range_band ?? null,
@@ -72,6 +79,17 @@ const parseFloatField = (raw: string, bounds: { min: number }): ParsedNumber => 
   return { value }
 }
 
+/** 안 재도 되는 양수 칸. 빈 칸은 오류가 아니라 `null`이다 — `parseFloatField`는
+ * 빈 값을 「필수 입력」 오류로 보므로 재사용할 수 없다. */
+const parseOptionalPositive = (raw: string): ParsedNumber => {
+  const trimmed = raw.trim()
+  if (trimmed === '') return {}
+  const value = Number(trimmed)
+  if (!Number.isFinite(value)) return { error: '숫자를 입력하세요' }
+  if (value <= 0) return { error: '0보다 커야 해요' }
+  return { value }
+}
+
 /**
  * Validate a boss profile draft. Returns field-level errors and, only when
  * the whole draft is valid, the parsed BossProfile.
@@ -88,6 +106,9 @@ export const validateBossProfileDraft = (
   if (fightDuration.error) errors.fight_duration = fightDuration.error
   else if (fightDuration.value === 0) errors.fight_duration = '0보다 커야 해요'
 
+  const coreDiameter = parseOptionalPositive(draft.core_diameter_px)
+  if (coreDiameter.error) errors.core_diameter_px = coreDiameter.error
+
   if (Object.keys(errors).length > 0) return { errors }
 
   const value: BossProfile = {
@@ -97,6 +118,7 @@ export const validateBossProfileDraft = (
     enemy_def: enemyDef.value!,
     fight_duration: fightDuration.value!,
     part_destructible: draft.part_destructible,
+    core_diameter_px: coreDiameter.value ?? null,
     effective_range_band: draft.effective_range_band,
     elemental_interrupt_required: draft.elemental_interrupt_required,
   }

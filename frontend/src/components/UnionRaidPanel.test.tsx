@@ -64,8 +64,8 @@ const unionRotation: RaidRotation = {
   source_locale: 'ko',
   read_on: '2026-08-07',
   bosses: [
-    { name: '선바스', weakness: 'Electric', stated: {} },
-    { name: '토커티브', weakness: 'Water', stated: {} },
+    { name: '선바스', weakness: 'Electric', range_band: null, core_diameter_px: null, stated: {} },
+    { name: '토커티브', weakness: 'Water', range_band: null, core_diameter_px: null, stated: {} },
   ],
 }
 

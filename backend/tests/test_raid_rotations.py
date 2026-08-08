@@ -80,6 +80,29 @@ def test_a_boss_with_no_range_band_is_allowed():
     assert validate_rotations(a_doc(a_rotation(bosses=boss)))
 
 
+def test_a_non_positive_core_diameter_is_rejected():
+    # 0은 「코어가 없다」가 아니다 - 그건 BossProfile.core_hittable이 표현한다.
+    # 여기 0이 들어오면 판독이 값을 못 읽고 자리만 채운 것이다.
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "core_diameter_px": 0, "stated": {}}]
+    with pytest.raises(ValueError, match="보스"):
+        validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_measured_core_diameter_is_allowed():
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None,
+             "core_diameter_px": 33.33, "stated": {}}]
+    assert validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
+def test_a_boss_with_no_core_diameter_key_is_allowed():
+    # 코어는 재야만 존재하는 값이라 weakness/range_band와 성격이 다르다 - 안 잰
+    # 보스의 dict에는 키 자체가 없을 수 있다. 번들 파일에 키가 빠지는 것은
+    # test_api_raid_rotations.test_the_route_serves_the_file_as_is가 막는다.
+    boss = [{"name": "보스", "weakness": "Iron", "range_band": None, "stated": {}}]
+    assert validate_rotations(a_doc(a_rotation(bosses=boss)))
+
+
 def test_the_shipped_union_bosses_all_carry_a_range_band():
     # 유니온 공지는 보스마다 거리를 적으므로, 비어 있으면 판독에서 빠뜨린 것이다.
     doc = load_rotations()
