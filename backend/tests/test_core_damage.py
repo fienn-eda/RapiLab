@@ -119,3 +119,33 @@ def test_the_body_hit_behind_the_core_is_untouched_by_the_higher_rate():
     shots = [e["damage"] for e in log if e["source"] == "normal_attack"]
     # core 10000 x (1 + 1.5), body 10000 x 1
     assert shots[:2] == [25000.0, 10000.0]
+
+
+def _core_strike_damage(caster_slug):
+    """caster_slug가 core_strike 스킬딜을 쏘는 버스트 한 발."""
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": caster_slug, "burst_tier": 3, "element": "Iron", "cooldown": 20.0},
+    ]
+    log = simulate_raid(
+        deck,
+        {s["slug"]: [] for s in deck},
+        burst_damage_percents={caster_slug: 100.0},
+        base_stats={s["slug"]: {"atk": 10000, "def": 0, "max_hp": 0} for s in deck},
+        enemy_def=0,
+        gauge_charge_time=2.0,
+        fight_duration=30.0,
+        base_crit_rate=0.0,
+        core_hittable=True,
+        burst_damage_types={caster_slug: "core_strike"},
+    )["damage_log"]
+    return next(e["damage"] for e in log if e["source"] == "burst")
+
+
+def test_core_strike_collects_the_casters_own_rate_not_just_normal_attacks():
+    # core_strike는 스킬딜이지만 core_eligible이 인정하는 예외라 평타와 똑같이
+    # 시전자의 배율을 받는다 - 보너스가 평타로만 좁혀지면 미란다 쪽이 20000으로
+    # 떨어져 잡아낸다.
+    assert _core_strike_damage("miranda") == 25000.0    # 10000 x (1 + 1.5)
+    assert _core_strike_damage("julia") == 20000.0       # 10000 x (1 + 1.0)

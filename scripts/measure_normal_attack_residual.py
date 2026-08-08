@@ -69,15 +69,16 @@ def _base_owner(by_slug, slug):
     return None
 
 
-def _run_decks(by_slug, zero_core):
+def _run_decks(by_slug, zero_core, live_core_hit_bonus_for):
     """Every recorded deck, seated as played, with the core term on or off.
 
     The core bonus is per-unit (`core_damage.core_hit_bonus_for`) and reaches
-    the simulator as a module-level name, so zeroing it means swapping that
-    name for the duration of the run. The caller restores it.
+    the simulator as a module-level name, so toggling it means swapping that
+    name for the duration of the run - assigned on both branches so the
+    result does not depend on call order. The caller restores it.
     """
-    if zero_core:
-        raid_simulator.core_hit_bonus_for = lambda slug: 0.0
+    raid_simulator.core_hit_bonus_for = (
+        (lambda slug: 0.0) if zero_core else live_core_hit_bonus_for)
     per_unit = {}
     weapons = {}
     for records in RECORD_DECKS.values():
@@ -122,8 +123,8 @@ def main():
 
     live = raid_simulator.core_hit_bonus_for
     try:
-        with_core, weapons = _run_decks(by_slug, zero_core=False)
-        without_core, _ = _run_decks(by_slug, zero_core=True)
+        with_core, weapons = _run_decks(by_slug, zero_core=False, live_core_hit_bonus_for=live)
+        without_core, _ = _run_decks(by_slug, zero_core=True, live_core_hit_bonus_for=live)
     finally:
         raid_simulator.core_hit_bonus_for = live
 

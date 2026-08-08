@@ -16,14 +16,18 @@ applied_at/duration), so querying registry.total_for(stat, target, shot_time)
 for a shot time anywhere in the fight is correct regardless of processing
 order - no need to interleave shot generation with the burst-cycle hooks.
 
-Core hit damage is a uniform +100% (200% total, i.e. exactly doubles a hit
-with no other modifiers) across every weapon type, per Fienn's direct
-in-game/ShiftyPad tooltip check - this corrects an earlier "1/1.5" figure
-pulled from a summarized fetch of the nikke.gg formula page, which turned
-out to be an unreliable paraphrase. `core_hittable` toggles it for the
-whole simulation (some raid bosses have an exploitable core, some don't),
-and `core_eligible` decides which instances inside such a fight collect it:
-NORMAL ATTACKS only, never skill damage, and never Sustained / Distributed
+Core hit damage is per-caster: `core_damage.core_hit_bonus_for(slug)` reads
+the caster's `shot_detail.core_damage_rate` and returns the major-modifier
+term it adds, defaulting to +100% (200% total, i.e. exactly doubles a hit
+with no other modifiers) with four characters at +150% (250% total) - see
+that module's docstring for the table and where the rate comes from.
+Fienn's direct in-game/ShiftyPad tooltip check is what pins the default -
+this corrects an earlier "1/1.5" figure pulled from a summarized fetch of
+the nikke.gg formula page, which turned out to be an unreliable paraphrase.
+`core_hittable` toggles it for the whole simulation (some raid bosses have
+an exploitable core, some don't), and `core_eligible` decides which
+instances inside such a fight collect it: NORMAL ATTACKS plus `core_strike`
+skill damage, never other skill damage, and never Sustained / Distributed
 damage. What is still not modeled is how OFTEN a real player lands the core
 - an eligible hit here always does.
 
