@@ -1159,5 +1159,49 @@ how to encode it, and current engine status.
 - **The lesson generalizes:** a regex over this skill text that means "one
   sentence" must never treat a bare `.` as the boundary.
 
+## A status window on a FIXED timer is not a deferral - `time_condition` answers it
+
+- **What it looks like:** a bullet gated on "while in [status]", where that
+  status is a recurring window rather than a burst effect - Emma: Tactical
+  Upgrade's Enhanced Environment Setup, live only if her burst lands inside an
+  Environment Setup window (10 sec out of every 30, from battle start).
+- **The wrong reason to defer it:** "a condition sees the deck, not the clock".
+  That is true of `SkillRule.condition` and FALSE of `SkillRule.time_condition`,
+  which receives the trigger's own time and is honoured on `own_burst_activate`
+  (and by the periodic and per-shot passes -
+  `test_time_condition_is_honoured_by_the_periodic_and_per_shot_passes`).
+- **Encode:** `buff_rule(..., time_condition=lambda ctx, slug, t: (t % interval)
+  < duration)`. Ask first whether the window's clock is deck-INDEPENDENT: a
+  battle-start-anchored recurring window is (t is all you need), whereas a
+  window anchored to the caster's own burst needs `own_burst_status_active`
+  and one anchored to a cycle length is genuinely not answerable this way.
+- **Why it matters:** deferring here silently drops a real bullet from every
+  deck that does not hold the partner - the exact case the encoding was trying
+  to be honest about.
+
+## "N allies with the highest ATK" **of a class** - filter, then rank
+
+- **What it looks like:** Leona's "Affects the 2 ally unit(s) with shotguns who
+  have the highest final ATK" - a weapon class AND a top-N in one bullet.
+- **Why neither helper alone does it:** `member_subset_buff_rule` resolves a
+  class but does not rank; `highest_atk_buff_rule` ranks but takes every member
+  as a candidate.
+- **Encode:** `top_atk_slugs(..., member_filter=...)` (2026-08-08) narrows the
+  candidates BEFORE ranking, and `highest_atk_buff_rule` passes it through. Do
+  NOT re-derive final ATK inside the unit module to do this by hand - the
+  ranking rule (base ATK grown by live `atk_percent` + `flat_atk` at the trigger
+  time) then drifts from every other consumer silently.
+- **The filter applies to the caster's fill-in too**, so a caster outside the
+  class never receives a buff aimed at that class, and a deck with no matching
+  member grants nothing rather than falling back to her.
+- **Open question worth asking rather than assuming:** `top_atk_slugs` EXCLUDES
+  the caster whenever there are enough other candidates. That comes from
+  Miranda's text, which spells out "except caster; including the caster if there
+  are not enough allies". Bullets that say only "N ally unit(s) with the highest
+  ATK" (Leona, Naga) carry no such clause, so whether the caster can hold one of
+  her own slots is undecided from the text. Both current cases are supporters
+  who rarely outrank their carries, so the readings usually agree - but say so
+  in the docstring instead of letting the default pass as a decision.
+
 ---
 *Add new mechanics above this line as they come up.*
