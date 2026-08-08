@@ -61,7 +61,9 @@ class SquadContext:
         self.core_hittable: bool = core_hittable
         # top-N 대상형 버프가 누구에게 갔는지의 기록. None이면 아무것도 남기지
         # 않는다 - 탐색은 한 요청에 수만 번 돌므로 기본이 off여야 한다.
-        # 미란다 계산기가 이 로그를 읽는다(app/miranda_targets.py).
+        # 미란다 계산기가 이 로그를 읽는다(app/miranda_targets.py) - 덱 안의 모든
+        # 캐스터의 top-N 대상형 판정이 여기 함께 쌓이므로, 읽는 쪽이
+        # 시전자(caster)로 걸러 자기가 찾는 것만 골라낸다.
         self.target_grants: list[dict] | None = target_grants
         # Full Burst [start, end) windows from the burst-cycle pass, so a
         # scheduled_nukes schedule can anchor on FB entry (e.g. Rapi: Red

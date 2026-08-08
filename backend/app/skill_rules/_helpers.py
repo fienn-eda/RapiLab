@@ -129,8 +129,9 @@ def _resolve_scope(scope_spec, context, caster_slug, registry, time, grant_stats
     with the highest final ATK, encoded as a "slugs:a,b" scope.
 
     `grant_stats` is what stat this grant hands out, recorded on the target log
-    (SquadContext.top_atk_slugs). A static scope has no ranking to record, so
-    it's ignored there."""
+    (SquadContext.top_atk_slugs) for WHICHEVER caller's `("top_atk", n)` scope
+    this resolves - not only Miranda's. A static scope has no ranking to
+    record, so it's ignored there."""
     if isinstance(scope_spec, tuple) and scope_spec[0] == "top_atk":
         slugs = context.top_atk_slugs(scope_spec[1], caster_slug, registry, time,
                                       grant_stats=grant_stats)
@@ -144,6 +145,13 @@ def highest_atk_buff_rule(trigger, n, buffs, refreshing=False, member_filter=Non
     (except the caster) - e.g. Miranda's Powering Up. buffs: (stat, value,
     duration). The target set is ranked live, so a buff applied earlier in the
     same cycle is reflected (see SquadContext.top_atk_slugs).
+
+    This is a SHARED helper - it also backs Maxwell's Straight Shot, Leona's
+    pellet bullet and Naga's Support of Friendship. Every call passes its own
+    buffs' stat names as `grant_stats`, so whichever caster invokes it gets
+    logged the same way when a log is attached; a consumer reads
+    SquadContext.target_grants and filters by caster to pick out the one
+    bullet it cares about.
 
     `refreshing`: for a bullet re-applied faster than it expires - a per-shot
     top-N grant whose duration outlives its own trigger interval (Naga's

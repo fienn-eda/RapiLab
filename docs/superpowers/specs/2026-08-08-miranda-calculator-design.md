@@ -134,15 +134,19 @@ ATK 버프(`fire_trigger`가 `rules_by_slug` 순서로 돈다), ③ 지난 창�
 ```
 
 기록은 `top_atk_slugs`가 하지만 **무슨 불릿인지는 호출자가 선언한다.** 대상
-집합만으로는 두 불릿을 구분할 수 없고(둘 다 같은 랭킹을 쓴다), `n`으로 나누는
-것은 값이 바뀌면 조용히 깨진다. 그래서 자기가 줄 스탯 이름을 넘기는 두 곳만
-기록된다:
+집합만으로는 미란다의 두 불릿을 구분할 수 없고(둘 다 같은 랭킹을 쓴다), `n`으로
+나누는 것은 값이 바뀌면 조용히 깨진다. 그래서 두 룰 빌더가 자기 `buffs`의 스탯
+이름을 무조건 `grant_stats`로 넘긴다:
 
 - `_helpers.highest_atk_buff_rule` (`_helpers.py:136`) → 파워업!
-- `_helpers._resolve_scope`의 `("top_atk", n)` 분기 (`_helpers.py:126`) → 웨이크업!3
+- `_helpers._resolve_scope`의 `("top_atk", n)` 분기, `round_buff_rule`이 호출
+  (`_helpers.py:126`) → 웨이크업!3
 
-`grant_stats`를 안 넘기는 다른 호출자(맥스웰·레오나·나가·마나·소다)는 오늘과
-동일하게 아무것도 기록하지 않는다.
+**두 헬퍼는 미란다 전용이 아니라 공유 헬퍼다** — `highest_atk_buff_rule`은
+맥스웰(스트레이트샷)·레오나(펠릿)·나가(우정의 지원)의 top-N 불릿도 만든다.
+`grant_stats`가 무조건 넘어가므로 top-N 대상형 버프는 전부 자기 스탯을 선언해
+기록되고, 로그를 읽는 쪽이 시전자(caster)로 걸러 자기가 찾는 것만 골라낸다
+(§4.1의 `miranda_target_report`가 `caster in MIRANDA_SLUGS`로 그렇게 한다).
 
 `_simulate_raid_once`는 `collect_target_grants: bool = False`를 받아 컨텍스트에
 빈 리스트를 달고, 결과 dict에 `"target_grants"`를 싣는다(`raid_simulator.py:739`,
@@ -477,8 +481,10 @@ wire 타입의 필드는 **옵셔널로 두지 않는다** — 옵셔널이면 �
 - **딜 수치는 1비트도 안 움직인다.** 계측은 기본 off이고, 켜도 기록만 한다.
   임계값 탐색은 계산기 안에서만 스펙을 복제해 돌리며 로스터를 건드리지 않는다.
 - 미란다의 인코딩은 그대로다(§1 — 맞다).
-- 다른 top-N 유닛(맥스웰·레오나·나가·마나·소다)은 `grant_stats`를 안 넘기므로
-  기록되지 않는다. 그들의 계산기가 필요해지면 인자 하나를 넘기면 된다.
+- 다른 top-N 유닛(맥스웰·레오나·나가)의 grant도 `highest_atk_buff_rule`을 통해
+  로그가 붙어 있으면 함께 기록된다 — 오늘은 아무도 그 기록을 읽지 않는다. 탐색
+  경로에서는 비용이 0이다: `target_grants`는 `miranda_target_report`(§4)만
+  로그를 붙이고, 일반 탐색은 여전히 `None`이라 아무것도 안 쌓인다.
 - 차지 계산기의 동작·입력·결과는 그대로다. 바뀌는 것은 감싸는 서브탭뿐이다.
 - `DraftEditor`와 `UnitPalette`의 기존 두 호출자(추천 탭·유니온 탭)는 새 prop을
   안 넘기므로 오늘과 같이 동작한다. 두 변경 모두 기본값이 오늘의 동작이다.
