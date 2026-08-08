@@ -692,7 +692,9 @@ git commit -m "오버로드 공격력 상한을 테이블에서 뽑는다
 ```python
 """덱 5인 중 누가 미란다의 파워업!과 웨이크업!3을 받는가."""
 from app.deck_search import BossProfile
-from app.miranda_targets import MIRANDA_SLUGS, miranda_slug_in, miranda_target_report
+from app.miranda_targets import (
+    MIRANDA_SLUGS, NO_FULL_BURST_NOTE, miranda_slug_in, miranda_target_report,
+)
 from app.models import SkillLevels, UserNikkeState
 from app.user_roster import load_roster
 
@@ -707,13 +709,13 @@ def a_state(slug, atk=100_000.0):
     )
 
 
-def a_report(deck, atk_by_slug=None):
+def a_report(deck, atk_by_slug=None, boss=None):
     atk_by_slug = atk_by_slug or {}
     states = [a_state(slug, atk_by_slug.get(slug, 100_000.0)) for slug in deck]
     specs, _excluded = load_roster(states)
     spec_index = {spec.slug: spec for spec in specs}
     deck_specs = [spec_index[slug] for slug in deck]
-    return miranda_target_report(deck_specs, BOSS, spec_index)
+    return miranda_target_report(deck_specs, boss or BOSS, spec_index)
 
 
 def test_miranda_slug_in_finds_either_build():
@@ -737,6 +739,7 @@ def test_favorite_item_build_grants_two_and_one():
 def test_base_build_grants_one_and_has_no_third_bullet():
     report = a_report(["miranda", "crown", "ada-wong", "cinderella", "isabel"])
     assert report["has_favorite_item"] is False
+    assert report["cycles"], "풀 버스트가 한 번도 안 열렸다"
     for cycle in report["cycles"]:
         assert len(cycle["powering_up"]) == 1
         assert cycle["wake_up_crit_rate"] == []
@@ -745,6 +748,7 @@ def test_base_build_grants_one_and_has_no_third_bullet():
 
 def test_miranda_is_never_her_own_target():
     report = a_report(["miranda-signature", "crown", "ada-wong", "cinderella", "isabel"])
+    assert report["cycles"], "풀 버스트가 한 번도 안 열렸다"
     for cycle in report["cycles"]:
         assert "miranda-signature" not in cycle["powering_up"]
         assert "miranda-signature" not in cycle["wake_up_crit_rate"]
@@ -752,6 +756,7 @@ def test_miranda_is_never_her_own_target():
 
 def test_cycles_are_numbered_from_one_and_are_contiguous():
     report = a_report(["miranda-signature", "crown", "ada-wong", "cinderella", "isabel"])
+    assert report["cycles"], "풀 버스트가 한 번도 안 열렸다"
     assert [c["index"] for c in report["cycles"]] == list(
         range(1, len(report["cycles"]) + 1))
 
@@ -777,10 +782,29 @@ def test_a_cycle_miranda_does_not_burst_has_no_powering_up_but_still_wakes_up():
     # 미란다의 버스트가 아니므로, 그녀가 못 쏜 사이클에도 3번불릿은 나간다.
     assert all(cycle["wake_up_crit_rate"] for cycle in report["cycles"])
     # 두 B1은 쿨다운이 같아 스케줄러가 매번 같은 하나를 고른다 - 즉 한쪽은
-    # 전부 쏘고 다른 쪽은 한 번도 못 쏜다. 어느 쪽이든 파워업!은 전부이거나
-    # 전무이고, 그 중간은 이 덱에서 나올 수 없다.
+    # 전부 쏘고 다른 쪽은 한 번도 못 쏜다. best_ordering_summary(deck_allocation.py)가
+    # B1 두 순열(미란다 먼저 / 리터 먼저)을 총딜로 채점해 더 높은 쪽을 고르고,
+    # 그 채점에는 무작위성이 없다 - 두 유닛의 스탯이 고정이면 승자도 고정이다.
+    # 이 스탯에서는 리터가 먼저인 순열이 항상 이겨 유일한 B1 좌석에 앉으므로
+    # 미란다는 이 덱에서 한 번도 못 쏜다(파워업! 0회). "리터가 이긴다"는
+    # 사실 자체가 아니라 "결과가 결정적이다"가 이 assert의 요점이다.
     bursts = sum(1 for c in report["cycles"] if c["powering_up"])
-    assert bursts in (0, len(report["cycles"]))
+    assert bursts == 0
+
+
+def test_a_fight_shorter_than_the_gauge_never_opens_full_burst():
+    # gauge_charge_time 기본값(BossProfile, 2.4초) 안에서 끝나는 전투는 첫
+    # 사이클의 fire_time조차 못 넘긴다 - burst_cycle.simulate_burst_cycle은
+    # `fire_time >= fight_duration`이면 이벤트를 하나도 안 남기고 break한다
+    # (full_burst_missed도 아니다). cycles가 통째로 비어야 하고, 그 사실이
+    # notes에 실려야 빈 결과가 고장으로 안 읽힌다.
+    short_boss = BossProfile(fight_duration=1.0)
+    report = a_report(
+        ["miranda-signature", "crown", "ada-wong", "cinderella", "isabel"],
+        boss=short_boss,
+    )
+    assert report["cycles"] == []
+    assert NO_FULL_BURST_NOTE in report["notes"]
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
