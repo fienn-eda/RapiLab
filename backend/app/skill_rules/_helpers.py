@@ -123,12 +123,17 @@ def instant_nuke_pulse_rule(
     return _rule(trigger, action, condition)
 
 
-def _resolve_scope(scope_spec, context, caster_slug, registry, time):
+def _resolve_scope(scope_spec, context, caster_slug, registry, time, grant_stats=None):
     """A buff's scope can be a static string ("squad", "self", "element:X") or a
     dynamic ("top_atk", n) that resolves - at application time - to the n allies
-    with the highest final ATK, encoded as a "slugs:a,b" scope."""
+    with the highest final ATK, encoded as a "slugs:a,b" scope.
+
+    `grant_stats` is what stat this grant hands out, recorded on the target log
+    (SquadContext.top_atk_slugs). A static scope has no ranking to record, so
+    it's ignored there."""
     if isinstance(scope_spec, tuple) and scope_spec[0] == "top_atk":
-        slugs = context.top_atk_slugs(scope_spec[1], caster_slug, registry, time)
+        slugs = context.top_atk_slugs(scope_spec[1], caster_slug, registry, time,
+                                      grant_stats=grant_stats)
         return "slugs:" + ",".join(slugs)
     return scope_spec
 
@@ -161,7 +166,8 @@ def highest_atk_buff_rule(trigger, n, buffs, refreshing=False, member_filter=Non
     def action(context, caster_slug, time, registry):
         targets = context.top_atk_slugs(n, caster_slug, registry, time,
                                         member_filter=member_filter,
-                                        include_caster=include_caster)
+                                        include_caster=include_caster,
+                                        grant_stats=tuple(stat for stat, _, _ in buffs))
         if not targets:
             return
         scope = "slugs:" + ",".join(targets)
@@ -219,7 +225,8 @@ def round_buff_rule(trigger, buffs, shots=1, cap=None):
 
     def action(context, caster_slug, time, registry):
         for stat, value, scope_spec in buffs:
-            scope = _resolve_scope(scope_spec, context, caster_slug, registry, time)
+            scope = _resolve_scope(scope_spec, context, caster_slug, registry, time,
+                                   grant_stats=(stat,))
             registry.add_round_grant(
                 RoundGrant(stat, value, scope, caster_slug, shots, time, cap, cap_group)
             )

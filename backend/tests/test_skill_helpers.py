@@ -176,3 +176,51 @@ def test_leveled_resource_buff_scales_value_by_derived_level():
     assert buff.lifetime is None
     assert buff.value_fn(9) == 0.0        # level 0
     assert round(buff.value_fn(25), 4) == round(0.0116 * 2, 4)  # level 2
+
+
+def _three_member_context(log):
+    return SquadContext(
+        [
+            SquadMember("miranda", burst_tier=1, element="Fire"),
+            SquadMember("scarlet", burst_tier=3, element="Fire"),
+            SquadMember("blast", burst_tier=2, element="Wind"),
+        ],
+        base_atk={"miranda": 50000, "scarlet": 90000, "blast": 80000},
+        target_grants=log,
+    )
+
+
+def test_highest_atk_buff_rule_records_its_own_stats():
+    log = []
+    ctx = _three_member_context(log)
+    rule = highest_atk_buff_rule("own_burst_activate", 2, [
+        ("atk_percent", 0.404, 10.0),
+        ("other_critical_damage_sources", 0.5623, 10.0),
+    ])
+    rule.action(ctx, "miranda", 5.0, EffectRegistry())
+    assert log == [{
+        "caster": "miranda", "time": 5.0,
+        "stats": ["atk_percent", "other_critical_damage_sources"],
+        "targets": ["scarlet", "blast"],
+    }]
+
+
+def test_round_buff_rule_records_a_top_atk_scope():
+    log = []
+    ctx = _three_member_context(log)
+    rule = round_buff_rule("full_burst_enter",
+                           [("crit_rate", 0.8542, ("top_atk", 1))], shots=1)
+    rule.action(ctx, "miranda", 5.000001, EffectRegistry())
+    assert log == [{
+        "caster": "miranda", "time": 5.000001,
+        "stats": ["crit_rate"], "targets": ["scarlet"],
+    }]
+
+
+def test_round_buff_rule_records_nothing_for_a_static_scope():
+    # "squad"/"self"는 랭킹을 안 쓰므로 기록할 판정 자체가 없다.
+    log = []
+    ctx = _three_member_context(log)
+    rule = round_buff_rule("full_burst_enter", [("crit_rate", 0.1, "squad")], shots=1)
+    rule.action(ctx, "miranda", 1.0, EffectRegistry())
+    assert log == []
