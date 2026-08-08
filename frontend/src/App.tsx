@@ -19,7 +19,7 @@ import { RosterGrid } from './components/RosterGrid'
 import { RecommendPanel } from './components/RecommendPanel'
 import { SyncRosterPanel } from './components/SyncRosterPanel'
 import { UnionRaidPanel } from './components/UnionRaidPanel'
-import { ChargeWindowPanel } from './components/ChargeWindowPanel'
+import { CalculatorPanel } from './components/CalculatorPanel'
 import { PrivacyNotice } from './components/PrivacyNotice'
 import { HELP } from './lib/helpText'
 import type { NikkeDraft } from './types/nikkeDraft'
@@ -265,13 +265,17 @@ function App() {
               hidden={tab !== 'calculator'}
               className="panel"
             >
-              <ChargeWindowPanel
-                // Same reasoning as RecommendPanel's key: a ladder computed for
+              <CalculatorPanel
+                // Same reasoning as RecommendPanel's key: a result computed for
                 // one profile must not stay on screen after a switch, and the
-                // panel's own state is the only place it lives.
+                // panels' own state is the only place it lives.
                 key={state.activeKey ?? 'none'}
                 roster={validRoster}
+                supportedUnits={supportedUnits.units}
+                portraitFor={portraitFor}
                 nameFor={nameFor}
+                burstTiersFor={burstTiersResolver}
+                investmentFor={investmentFor}
               />
             </div>
 

@@ -497,6 +497,20 @@
   border-bottom-color: var(--accent);
 }
 
+/* 서브탭은 메인 탭보다 한 단 작다 - 같은 줄로 보이면 어느 쪽이 화면을
+   가르는지 읽히지 않는다. */
+.tabs--sub .tabs__tab {
+  padding: var(--sp-2) var(--sp-3);
+  font-size: 0.9rem;
+}
+
+.calculators {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-4);
+  width: 100%;
+}
+
 .panel {
   display: flex;
   flex-direction: column;
