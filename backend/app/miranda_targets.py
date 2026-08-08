@@ -8,8 +8,14 @@
 좌석 순서는 evaluate_decks가 정한다. 유니온 탭이 채점에 쓰는 것과 같은
 함수라, 이 화면이 보여주는 배치와 그 탭이 매기는 점수가 어긋날 수 없다.
 """
+import math
+from dataclasses import replace
+
 from app.deck_evaluation import evaluate_decks
 from app.deck_search import evaluate_deck
+from app.models import OverloadOption
+from app.overload_effects import max_atk_percent
+from app.stat_assembly import load_stat_tables
 
 MIRANDA_SLUGS = ("miranda", "miranda-signature")
 
@@ -27,6 +33,10 @@ NO_THIRD_BULLET_NOTE = (
     "크확 버프를 받는 니케가 없는 게 정상이에요."
 )
 NO_FULL_BURST_NOTE = "이 편성으로는 풀 버스트가 한 번도 열리지 않아요."
+
+# 블라블라링크가 오버로드를 소수 둘째 자리로 보여주므로 그보다 가늘 이유가 없다.
+THRESHOLD_PRECISION = 0.01
+OVERLOAD_ATK_NAME = "공격력 증가"
 
 
 def miranda_slug_in(slugs):
@@ -78,6 +88,69 @@ def order_deck(deck_specs, boss, spec_index, alternatives=None):
     return [spec_index[slug] for slug in summary["deck"]]
 
 
+def with_overload_atk(spec, percent):
+    """`spec`의 오버로드 공격력 라인만 `percent`로 바꾼 사본. 다른 라인은 그대로
+    둔다 - 이 탐색이 묻는 것은 공격력 하나를 움직였을 때의 답이다.
+
+    0이면 라인을 아예 뺀다: 0%짜리 라인은 없는 라인과 같고, 값 0을 남기면
+    overload_options_to_effects가 값 0짜리 효과를 하나 더 만든다."""
+    others = [o for o in spec.overload_options if o.name != OVERLOAD_ATK_NAME]
+    if percent > 0:
+        others = others + [OverloadOption(name=OVERLOAD_ATK_NAME, value=percent)]
+    return replace(spec, overload_options=others)
+
+
+def current_overload_atk(spec):
+    return sum(o.value for o in spec.overload_options if o.name == OVERLOAD_ATK_NAME)
+
+
+def _smallest_true(predicate, false_at, true_at):
+    """`predicate`가 참인 가장 작은 값. `false_at`은 거짓이 확인된 쪽,
+    `true_at`은 참이 확인된 쪽이고 `false_at < true_at`이다.
+
+    돌려주는 값은 **실제로 돌려서 참으로 확인된 쪽 끝을 올림한 것**이라, 반올림
+    때문에 「모자란데 된다고 적힌」 값이 나오지 않는다. 술어는 단조라고 가정한다
+    (설계문서 §5.2: 공격력을 순위로 나눠주는 규칙이 저장소에 없다)."""
+    while true_at - false_at > THRESHOLD_PRECISION:
+        middle = (false_at + true_at) / 2
+        if predicate(middle):
+            true_at = middle
+        else:
+            false_at = middle
+    return math.ceil(true_at * 100) / 100
+
+
+def overload_thresholds(ordered, boss, miranda_slug, cap):
+    """좌석마다 「전 사이클 웨이크업!3을 받는」 오버로드 공격력의 경계.
+
+    좌석 순서는 여기서 고정이다 - 값마다 배치를 다시 고르면 다른 덱의 답이 된다.
+    시전자는 자기 대상이 될 수 없으므로 빠진다."""
+    def receives_all(slug, percent):
+        trial = [with_overload_atk(spec, percent) if spec.slug == slug else spec
+                 for spec in ordered]
+        result = evaluate_deck(trial, boss, collect_target_grants=True)
+        cycles = cycles_from_result(result, miranda_slug)
+        return bool(cycles) and all(slug in c["wake_up_crit_rate"] for c in cycles)
+
+    rows = []
+    for spec in ordered:
+        if spec.slug == miranda_slug:
+            continue
+        current = current_overload_atk(spec)
+        predicate = lambda percent, slug=spec.slug: receives_all(slug, percent)
+        if predicate(current):
+            # 지금 받고 있다 - 어디까지 떨어져도 유지되는가.
+            threshold = 0.0 if predicate(0.0) else _smallest_true(predicate, 0.0, current)
+            rows.append({"slug": spec.slug, "current_percent": current,
+                         "kind": "keep", "threshold_percent": threshold})
+            continue
+        # 지금 못 받는다 - 상한에서도 못 받으면 오버로드로는 답이 없다.
+        threshold = _smallest_true(predicate, current, cap) if predicate(cap) else None
+        rows.append({"slug": spec.slug, "current_percent": current,
+                     "kind": "gain", "threshold_percent": threshold})
+    return rows
+
+
 def miranda_target_report(deck_specs, boss, spec_index, alternatives=None):
     ordered = order_deck(deck_specs, boss, spec_index, alternatives)
     miranda_slug = miranda_slug_in(spec.slug for spec in ordered)
@@ -93,10 +166,16 @@ def miranda_target_report(deck_specs, boss, spec_index, alternatives=None):
     if not cycles:
         notes.append(NO_FULL_BURST_NOTE)
 
+    cap = max_atk_percent(load_stat_tables())
+    thresholds = (overload_thresholds(ordered, boss, miranda_slug, cap)
+                  if miranda_slug == FAVORITE_ITEM_SLUG and cycles else [])
+
     return {
         "seats": [{"slug": spec.slug, "burst_tier": spec.burst_tier} for spec in ordered],
         "miranda_slug": miranda_slug,
         "has_favorite_item": miranda_slug == FAVORITE_ITEM_SLUG,
         "cycles": cycles,
+        "overload_thresholds": thresholds,
+        "overload_atk_cap_percent": cap,
         "notes": notes,
     }
