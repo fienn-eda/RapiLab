@@ -37,16 +37,20 @@ def _rule(trigger, action, condition, time_condition=None):
     return rule
 
 
-def buff_rule(trigger, buffs, condition=None):
+def buff_rule(trigger, buffs, condition=None, time_condition=None):
     """buffs: list of (stat, value, scope, duration). duration None = permanent.
     `condition`: optional SkillRule condition (e.g. boss_is_element("Wind")) for a
-    bullet that only applies in some sims."""
+    bullet that only applies in some sims.
+    `time_condition`: optional gate that needs the trigger's own TIME - for a
+    bullet gated on a status whose window runs on a clock the deck does not set
+    (Emma: Tactical Upgrade's Enhanced Environment Setup, live 10 sec out of
+    every 30 from battle start)."""
 
     def action(context, caster_slug, time, registry):
         for stat, value, scope, duration in buffs:
             registry.add(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
 
-    return _rule(trigger, action, condition)
+    return _rule(trigger, action, condition, time_condition)
 
 
 def refreshing_buff_rule(trigger, buffs, condition=None, refresh_group=None):

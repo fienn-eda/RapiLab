@@ -138,25 +138,46 @@ def test_her_burst_grants_a_squad_flat_atk_off_her_own_atk():
     assert reg.total_for("flat_atk", OUTSIDER, 15.1) == 0.0  # 10 sec
 
 
-def test_enhanced_environment_setup_doubles_the_debuff_only_when_paired():
-    """Its gate is "while in Environment Setup status". Paired, the 10-sec
-    status on a 10-sec interval is always up, so the burst always lands inside
-    it. Solo it is up for 10 sec in every 30 and the overlap depends on cycle
-    timing, so that case stays deferred rather than approximated."""
+def _enhanced_at(burst_time, with_eunhwa):
+    """The extra Damage Taken her burst adds when it lands in an Environment
+    Setup window, as seen right at the burst."""
     reg = EffectRegistry()
     fire_trigger(
         "own_burst_activate", {"emma-tactical-upgrade": build_emma_tactical_upgrade_rules(EMMA)},
-        _ctx(with_eunhwa=False), reg, 5.0,
+        _ctx(with_eunhwa=with_eunhwa), reg, burst_time,
     )
-    assert reg.total_for("damage_taken_up", OUTSIDER, 5.0) == 0.0
+    return round(reg.total_for("damage_taken_up", OUTSIDER, burst_time), 4)
 
+
+def test_enhanced_environment_setup_follows_the_windows_own_clock_when_solo():
+    """Its gate is "while in Environment Setup status", and that status runs on
+    a FIXED timer - 10 sec out of every 30, from t=0 - which is decided by the
+    clock alone, not by the deck. So a burst inside a window doubles the debuff
+    and one outside does not; `time_condition` gets the trigger's own time and
+    can answer this exactly."""
+    assert _enhanced_at(5.0, with_eunhwa=False) == 0.039     # inside [0, 10)
+    assert _enhanced_at(9.9, with_eunhwa=False) == 0.039
+    assert _enhanced_at(10.1, with_eunhwa=False) == 0.0      # window lapsed
+    assert _enhanced_at(29.9, with_eunhwa=False) == 0.0
+    assert _enhanced_at(30.0, with_eunhwa=False) == 0.039    # next window opens
+    assert _enhanced_at(63.0, with_eunhwa=False) == 0.039    # [60, 70)
+
+
+def test_enhanced_environment_setup_is_always_up_when_paired():
+    """Beside Eunhwa the interval shortens to 10 sec against a 10-sec status,
+    so there is no gap for a burst to fall into."""
+    for burst_time in (5.0, 10.1, 29.9, 47.3, 155.0):
+        assert _enhanced_at(burst_time, with_eunhwa=True) == 0.039
+
+
+def test_the_enhanced_debuff_expires_with_the_window_it_doubles():
     reg = EffectRegistry()
     fire_trigger(
         "own_burst_activate", {"emma-tactical-upgrade": build_emma_tactical_upgrade_rules(EMMA)},
         _ctx(with_eunhwa=True), reg, 5.0,
     )
     # "scaled by 100%" doubles the 3.9%, i.e. adds another 3.9% for 10 sec.
-    assert round(reg.total_for("damage_taken_up", OUTSIDER, 5.0), 4) == 0.039
+    assert round(reg.total_for("damage_taken_up", OUTSIDER, 14.9), 4) == 0.039
     assert reg.total_for("damage_taken_up", OUTSIDER, 15.1) == 0.0
 
 

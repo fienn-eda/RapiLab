@@ -31,16 +31,19 @@ Modeled (DPS-relevant):
 - Enhanced Environment Setup, the burst's rider: "Damage taken multiplier of
   Environment Setup is scaled by 100%" for 10 sec, i.e. another +3.9% on top of
   the running debuff. Gated on her being in Environment Setup status when she
-  bursts - which, paired, is always (a 10-sec status on a 10-sec interval), so
-  it is modeled for the paired case only. See the deferred note below for solo.
+  bursts, and that status runs on a FIXED timer - open at battle start and
+  every interval after, holding 10 sec - so whether a given burst lands inside
+  it is decided by the clock alone. `time_condition` receives the trigger's own
+  time and answers it exactly, for both intervals: paired there is no gap at
+  all (10-sec status, 10-sec interval), solo it is live 10 sec in every 30.
+
+  This was deferred for a day on the reasoning that "a condition sees the deck,
+  not the clock" - which is wrong about `time_condition`, whose whole purpose is
+  the clock (`squad_engine.SkillRule.time_condition`, honoured on
+  `own_burst_activate`). The window never depended on the cycle length; only on
+  t.
 
 Not modeled / deferred:
-- Enhanced Environment Setup in a deck WITHOUT Eunhwa. The status is then up
-  for 10 sec in every 30, and whether her burst lands inside it depends on the
-  cycle length the rest of the deck produces - a per-cycle overlap the rules
-  layer has no way to ask about (a `condition` sees the deck, not the clock).
-  Deferring understates her slightly in solo decks; approximating it either way
-  would be a guess about a coin-flip.
 - Environment Setup's regen (2.32% of her Max HP per second) and the burst's
   Incoming Healing +29.04%: survivability. The regen's OCCURRENCE is a trigger
   elsewhere, so she IS in `HEAL_PROVIDER_SLUGS`.
@@ -81,6 +84,22 @@ ENVIRONMENT_SETUP_PAIRED_INTERVAL = 10.0
 
 def _is_absolute_squad(member, _context=None):
     return member.slug in ABSOLUTE_SQUAD_SLUGS
+
+
+def _in_environment_setup_window(interval, duration):
+    """Is `time` inside an Environment Setup window?
+
+    The status runs on a FIXED timer - it opens at battle start and every
+    `interval` after, and holds `duration` - so the question is decided by the
+    clock alone, not by the deck or the burst cycle. That is exactly what a
+    `time_condition` is for: it receives the trigger's own time, and
+    `fire_trigger` honours it on `own_burst_activate`.
+    """
+
+    def check(context, caster_slug, time):
+        return (time % interval) < duration
+
+    return check
 
 
 def _environment_setup_debuff(setup):
@@ -154,10 +173,21 @@ def build_emma_tactical_upgrade_rules(values):
         ),
         buff_rule("own_burst_activate", [("flat_atk", squad_atk, "squad", squad_atk_duration)]),
         # Enhanced Environment Setup: the debuff's multiplier scaled by 100%,
-        # i.e. the same value again. Paired only - see the module docstring.
+        # i.e. the same value again - but only if this burst lands inside an
+        # Environment Setup window. One rule per interval, since the interval is
+        # what the partner changes; the window test is the same either way.
+        buff_rule(
+            "own_burst_activate",
+            [("damage_taken_up", debuff, "squad", debuff_duration)],
+            condition=not_condition(with_eunhwa),
+            time_condition=_in_environment_setup_window(
+                ENVIRONMENT_SETUP_SOLO_INTERVAL, debuff_duration),
+        ),
         buff_rule(
             "own_burst_activate",
             [("damage_taken_up", debuff, "squad", debuff_duration)],
             condition=with_eunhwa,
+            time_condition=_in_environment_setup_window(
+                ENVIRONMENT_SETUP_PAIRED_INTERVAL, debuff_duration),
         ),
     ]
