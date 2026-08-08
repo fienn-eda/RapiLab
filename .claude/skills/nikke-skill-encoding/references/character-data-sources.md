@@ -14,9 +14,47 @@ ranked — a unit generally needs both:
   It is the ONLY source for dollskills.
 - **ShiftyPad** (blablalink, via `tools/collect-blablalink/collect.js --nikke`)
   — weapon stats and base-skill value slots in one fetch, so no manual weapon
-  entry. Its normalized output carries **no description text**, which is why
-  lootandwaifus is still required. It does **not** expose dollskills. The
-  workflow lives in the skill's step 1, not here.
+  entry. Its NORMALIZED output carries no description text; its RAW bundle does
+  (see below). It does **not** expose dollskills. The workflow lives in the
+  skill's step 1, not here.
+
+### The RAW ShiftyPad bundle carries the description text too (2026-08-08)
+
+`data/shiftypad/raw/<rid>.json` is the untrimmed payload, and each of
+`detail.skill1_detail` / `skill2_detail` / `ulti_skill_detail` holds a
+`description_localkey` — the full effect text with **`{description_value_NN}`
+placeholders left in**, next to that skill's `description_value_list`.
+
+That is strictly better than numbering slots by hand off lootandwaifus prose:
+the placeholders name their own slots, so the commonest transcription error
+(Zwei's literal "101" eating slot 05 and shifting everything after it) cannot
+happen. The normalizer drops the text, so read it from the raw file:
+
+```python
+det = json.load(open(f"data/shiftypad/raw/{rid}.json", encoding="utf-8"))["detail"]
+for key in ("skill1_detail", "skill2_detail", "ulti_skill_detail"):
+    s = det[key]
+    print(s["name_localkey"], s["description_localkey"])
+    for i, slot in enumerate(s["description_value_list"], start=1):
+        if slot.get("description_value"):
+            print(f"  description_value_{i:02d} = {slot['description_value'][-1]}")
+```
+
+Two things it still does NOT replace lootandwaifus for: **skill cooldowns**
+(the raw `*_cost_detail` holds upgrade materials, not cooldowns — lootandwaifus
+prints them in the skill title, e.g. "Entrepreneurship (cd 10)", and a Skill
+1/2 cooldown is what decides `periodic_rules`), and the **portrait** step 11
+needs. Fetch both; cross-reading them also catches a bad capture, and on the six
+units collected 2026-08-08 the two sources agreed word for word.
+
+### `detail.squad` — the in-fiction squad, only in the raw bundle
+
+The raw bundle also carries `detail.squad` (Absolute, Aegis, Counters,
+InfinityRail, ...), which is what "Affects all allies from the same squad"
+means — not the deck. Nothing else in this repo exposes it, and the directory
+snapshot does not. To resolve a squad's membership, collect that corporation's
+SSRs (`--nikke <comma-separated rids> --headless`, ~2 min for 40) and group by
+the field. See `special-mechanics.md`.
 
 ## lootandwaifus.com (primary)
 
