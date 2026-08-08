@@ -106,6 +106,7 @@ import warnings
 from app.accuracy import WEAPON_SPREAD_DIAMETER, core_hit_rate
 from app.attack_rate import CHARGE_WEAPONS, generate_segmented_shots
 from app.burst_cycle import FULL_BURST_OPEN_DELAY, simulate_burst_cycle
+from app.core_damage import core_hit_bonus_for
 from app.damage_formula import calculate_damage
 from app.effects import Effect, EffectRegistry, _matches_scope, max_ammo_percent_total
 from app.elements import ELEMENT_ADVANTAGE_BONUS, element_multiplier
@@ -115,7 +116,6 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 # it orders after anything landing on the boundary instant itself.
 AFTER_WINDOW_EPSILON = 1e-3
 
-CORE_HIT_BONUS = 1.0
 BASE_CRIT_RATE = 0.15
 
 # 스킬 쿨다운 감소의 하한 배수. 감소가 100%에 닿으면 주기 루프가 전진하지 않는다.
@@ -904,7 +904,7 @@ def _simulate_raid_once(
                 bundle["normal_attack_crit_rate"] if is_normal_attack else 0.0
             )),
             core_hit_rate=core_hit_share,
-            core_hit_bonus=CORE_HIT_BONUS if hits_core else 0.0,
+            core_hit_bonus=core_hit_bonus_for(slug) if hits_core else 0.0,
             other_core_damage_sources=(
                 bundle["other_core_damage_sources"] if hits_core else 0.0
             ),

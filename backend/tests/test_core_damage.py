@@ -13,6 +13,8 @@ from app.core_damage import (
     DEFAULT_CORE_DAMAGE_RATE,
     core_hit_bonus_for,
 )
+from app.raid_simulator import simulate_raid
+from app.skill_rules._helpers import buff_rule
 
 FIXTURES = Path(__file__).resolve().parent / "fixtures" / "shiftypad"
 
@@ -47,3 +49,73 @@ def test_the_favorite_item_build_shares_the_base_units_weapon_rate():
     # 애장품 빌드는 load_weapon_data가 base 유닛의 무기 파일을 읽으므로 같은
     # 무기이고, 따라서 같은 배율이다.
     assert CORE_DAMAGE_RATE["miranda-signature"] == CORE_DAMAGE_RATE["miranda"]
+
+
+# --- 엔진이 실제로 그 값을 쓰는가 ---
+#
+# ATK 10000 x 발당 100%, 적 DEF 0, 크리 0%, 풀버스트 창이 열리기 전에 전투가
+# 끝나므로 한 발의 major modifier는 코어 보너스 하나뿐이다. 그래서 한 발은 곧
+# 10000 x (1 + 보너스)이고, 값으로 박을 수 있다.
+_WEAPON = {"weapon": "AR", "damage_percent": 100.0, "max_ammo": 999,
+           "reload_time": 0.0, "charge_time": 0.0, "charge_damage_percent": 100.0}
+
+
+def _first_shot(striker_slug, *, core_hittable=True):
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": striker_slug, "burst_tier": 3, "element": "Iron",
+         "cooldown": 20.0, "weapon": "AR"},
+    ]
+    log = simulate_raid(
+        deck,
+        {"b1": [], "b2": [], striker_slug: []},
+        burst_damage_percents={striker_slug: 100.0},
+        base_stats={s["slug"]: {"atk": 10000, "def": 0, "max_hp": 0} for s in deck},
+        enemy_def=0,
+        gauge_charge_time=30.0,
+        fight_duration=1.5,
+        base_crit_rate=0.0,
+        weapon_stats={striker_slug: _WEAPON},
+        core_hittable=core_hittable,
+    )["damage_log"]
+    return next(e["damage"] for e in log if e["source"] == "normal_attack")
+
+
+def test_a_25000_unit_hits_the_core_for_more_than_a_20000_unit():
+    assert _first_shot("miranda") == 25000.0      # 10000 x (1 + 1.5)
+    assert _first_shot("julia") == 20000.0        # 10000 x (1 + 1.0)
+
+
+def test_the_higher_rate_needs_a_core_to_land_on():
+    # 코어가 없는 보스에서는 아무도 보너스를 받지 않는다 - 2.5배 유닛도 마찬가지다.
+    assert _first_shot("miranda", core_hittable=False) == 10000.0
+    assert _first_shot("julia", core_hittable=False) == 10000.0
+
+
+def test_the_body_hit_behind_the_core_is_untouched_by_the_higher_rate():
+    """관통 유닛의 발은 코어를 뚫고 본체에 또 맞는다 - 그 본체 인스턴스는
+    코어 보너스를 받지 않으므로 2.5배 유닛이라도 그대로 10000이다."""
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "miranda", "burst_tier": 3, "element": "Iron",
+         "cooldown": 20.0, "weapon": "AR"},
+    ]
+    log = simulate_raid(
+        deck,
+        {"b1": [], "b2": [],
+         "miranda": [buff_rule("battle_start", [("has_pierce", 1.0, "self", None)])]},
+        burst_damage_percents={"miranda": 100.0},
+        base_stats={s["slug"]: {"atk": 10000, "def": 0, "max_hp": 0} for s in deck},
+        enemy_def=0,
+        gauge_charge_time=30.0,
+        fight_duration=1.5,
+        base_crit_rate=0.0,
+        weapon_stats={"miranda": _WEAPON},
+        core_hittable=True,
+        pierce_hits_body_behind_core=True,
+    )["damage_log"]
+    shots = [e["damage"] for e in log if e["source"] == "normal_attack"]
+    # core 10000 x (1 + 1.5), body 10000 x 1
+    assert shots[:2] == [25000.0, 10000.0]

@@ -25,7 +25,7 @@ others had to hit the parts DIRECTLY, and a seat doing that gives up core hits
 to do it (Fienn, 2026-07-31).
 
 The engine has no core hit rate: every core-eligible shot hits the core
-(`raid_simulator.CORE_HIT_BONUS`), which is the CEILING of that run, not the run.
+(`core_damage.core_hit_bonus_for`), which is the CEILING of that run, not the run.
 So `sim/record` is expected to sit ABOVE 1.0, and a change that makes normal
 attacks more accurate will RAISE it - that is what the affine reload (1.015 ->
 1.055) and the Tactical Bear refund (1.011 -> 1.015) both did. Do not read a

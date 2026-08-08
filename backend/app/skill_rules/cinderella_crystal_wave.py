@@ -101,7 +101,8 @@ def build_crystal_wave_mg_rules(values):
         ]),
         # 833.79% core strike: the skill text scopes this to "enemies with
         # activated cores" - the sim's core correction is a uniform per-instance
-        # model (CORE_HIT_BONUS, no per-enemy distinction), so gating the whole
+        # model (core_damage.core_hit_bonus_for, no per-enemy distinction), so
+        # gating the whole
         # nuke on core_hittable is the established convention for a
         # core-activated-enemies-only effect.
         #
