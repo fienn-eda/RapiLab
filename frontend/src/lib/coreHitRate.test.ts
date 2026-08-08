@@ -1,7 +1,9 @@
 import { describe, it, expect } from 'vitest'
 import {
+  REFERENCE_WEAPONS,
   WEAPON_SPREAD_DIAMETER,
   ZERO_SPREAD_HIT_RATE,
+  coreDiameterFromMeasurement,
   coreHitRate,
   coreHitRateGroups,
 } from './coreHitRate'
@@ -69,5 +71,49 @@ describe('coreHitRateGroups', () => {
     // 화면이 「나머지는 100%」를 하드코딩하지 않으려면 그룹이 전수여야 한다.
     const covered = coreHitRateGroups(33.33).flatMap((g) => g.label.split('·'))
     expect(covered.sort()).toEqual(Object.keys(WEAPON_SPREAD_DIAMETER).sort())
+  })
+})
+
+describe('coreDiameterFromMeasurement', () => {
+  it('같은 프레임의 두 길이 비로 엔진 단위를 낸다', () => {
+    // 실측 mid: 코어 25px · SG 조준원 187px.
+    expect(coreDiameterFromMeasurement(25, 187, 'SG')).toBeCloseTo(33.42, 2)
+  })
+
+  it('창 크기와 해상도에 영향받지 않는다 — 비율만 쓰기 때문', () => {
+    // 같은 코어를 세 가지 렌더 스케일에서 잰 셈. 둘 다 같은 배율로 커지므로
+    // 답이 움직이면 안 된다.
+    const answers = [1, 2560 / 2333, 1280 / 2333].map(
+      (scale) => coreDiameterFromMeasurement(25 * scale, 187 * scale, 'SG')!,
+    )
+    for (const answer of answers) expect(answer).toBeCloseTo(answers[0], 10)
+  })
+
+  it('기준자 무기가 답을 정한다', () => {
+    // 같은 픽셀 쌍이라도 무기를 잘못 적으면 그 비만큼 통째로 틀린다.
+    const asSG = coreDiameterFromMeasurement(25, 187, 'SG')!
+    const asAR = coreDiameterFromMeasurement(25, 187, 'AR')!
+    expect(asSG / asAR).toBeCloseTo(
+      WEAPON_SPREAD_DIAMETER.SG / WEAPON_SPREAD_DIAMETER.AR, 10)
+  })
+
+  it('잴 수 없는 값에는 null을 준다', () => {
+    // 편집 중인 빈 칸과 0으로 나누는 경우.
+    expect(coreDiameterFromMeasurement(25, 0, 'SG')).toBeNull()
+    expect(coreDiameterFromMeasurement(0, 187, 'SG')).toBeNull()
+    expect(coreDiameterFromMeasurement(-1, 187, 'SG')).toBeNull()
+    expect(coreDiameterFromMeasurement(Number.NaN, 187, 'SG')).toBeNull()
+  })
+})
+
+describe('REFERENCE_WEAPONS', () => {
+  it('탄착군이 10인 무기는 기준자에서 뺀다 — 판독 오차가 13%다', () => {
+    // MG·SR·RL은 조준원이 화면에서 몇 px밖에 안 돼 ±1px이 13%가 된다.
+    expect(REFERENCE_WEAPONS).toEqual(['SG', 'SMG', 'AR'])
+  })
+
+  it('큰 것부터 온다 — 첫 항목이 가장 정확한 기준자다', () => {
+    const diameters = REFERENCE_WEAPONS.map((w) => WEAPON_SPREAD_DIAMETER[w])
+    expect(diameters).toEqual([...diameters].sort((a, b) => b - a))
   })
 })

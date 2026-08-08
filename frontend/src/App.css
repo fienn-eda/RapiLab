@@ -716,6 +716,31 @@
   margin-top: var(--sp-1);
 }
 
+/* 화면에서 잰 픽셀을 엔진 단위로 옮기는 계산기. 코어 지름 칸에 딸린 도구라
+   그 칸과 구분되게 왼쪽 선을 준다 - 여기 넣는 숫자는 보스 설정이 아니라
+   재료다. */
+.core-measure {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  margin-top: var(--sp-3);
+  padding-left: var(--sp-3);
+  border-left: 2px solid var(--border);
+}
+
+.core-measure__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+/* 무기 고르개는 내용이 짧아 칸을 다 쓸 이유가 없다 - 남는 폭은 버튼이 쓴다. */
+.core-measure__row .field__input {
+  width: auto;
+  flex: 0 1 auto;
+}
+
 .field-row {
   display: flex;
   gap: var(--sp-3);

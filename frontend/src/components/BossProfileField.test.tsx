@@ -516,3 +516,75 @@ describe('BossProfileField 코어 지름', () => {
     )
   })
 })
+
+describe('BossProfileField 화면에서 재서 넣기', () => {
+  const openCore = (onChange = vi.fn()) => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), core_hittable: true }}
+        onChange={onChange}
+      />,
+    )
+    return onChange
+  }
+
+  it('코어 피격이 꺼져 있으면 계산기도 없다', () => {
+    render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />)
+
+    expect(screen.queryByRole('button', { name: '코어 지름 넣기' })).not.toBeInTheDocument()
+  })
+
+  it('두 픽셀을 넣으면 환산값을 보여준다', async () => {
+    const user = userEvent.setup()
+    openCore()
+
+    await user.type(screen.getByRole('spinbutton', { name: /코어 \(px\)/ }), '25')
+    await user.type(screen.getByRole('spinbutton', { name: /조준원 \(px\)/ }), '187')
+
+    // 기본 기준자는 SG(가장 큼 = 가장 정확). 25 x 250/187 = 33.42
+    expect(screen.getByTestId('core-measurement-result')).toHaveTextContent('33.42')
+  })
+
+  it('넣기를 누르면 엔진 칸이 채워진다', async () => {
+    const user = userEvent.setup()
+    const onChange = openCore()
+
+    await user.type(screen.getByRole('spinbutton', { name: /코어 \(px\)/ }), '25')
+    await user.type(screen.getByRole('spinbutton', { name: /조준원 \(px\)/ }), '187')
+    await user.click(screen.getByRole('button', { name: '코어 지름 넣기' }))
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ core_diameter_px: '33.42' }),
+    )
+  })
+
+  it('기준자 무기를 바꾸면 값이 따라 바뀐다', async () => {
+    const user = userEvent.setup()
+    openCore()
+
+    await user.type(screen.getByRole('spinbutton', { name: /코어 \(px\)/ }), '25')
+    await user.type(screen.getByRole('spinbutton', { name: /조준원 \(px\)/ }), '187')
+    await user.selectOptions(screen.getByRole('combobox', { name: '기준자 무기' }), 'AR')
+
+    // 25 x 75/187 = 10.03
+    expect(screen.getByTestId('core-measurement-result')).toHaveTextContent('10.03')
+  })
+
+  it('한쪽만 채우면 결과도 없고 넣기도 막힌다', async () => {
+    const user = userEvent.setup()
+    openCore()
+
+    await user.type(screen.getByRole('spinbutton', { name: /코어 \(px\)/ }), '25')
+
+    expect(screen.queryByTestId('core-measurement-result')).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '코어 지름 넣기' })).toBeDisabled()
+  })
+
+  it('탄착군 10짜리 무기는 기준자로 고를 수 없다 — 판독 오차가 13%다', () => {
+    openCore()
+
+    const options = [...screen.getByRole('combobox', { name: '기준자 무기' })
+      .querySelectorAll('option')].map((o) => o.value)
+    expect(options).toEqual(['SG', 'SMG', 'AR'])
+  })
+})

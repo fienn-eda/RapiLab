@@ -41,6 +41,36 @@ export const coreHitRate = (
   return (coreDiameter / diameter) ** 2
 }
 
+/** 화면에서 잰 길이를 엔진 단위로 옮길 때 기준자로 쓸 수 있는 무기, 정확한
+ * 순서(=조준원이 큰 순).
+ *
+ * MG·SR·RL은 뺀다 — 탄착군이 10이라 화면에서 몇 px밖에 안 되고, 판독 ±1px이
+ * 13%가 된다. 반대로 SG는 250이라 같은 ±1px이 0.5%다. */
+export const REFERENCE_WEAPONS = ['SG', 'SMG', 'AR'] as const satisfies readonly WeaponClass[]
+
+/** 같은 프레임(같은 렌더 스케일)에서 잰 코어와 조준원의 픽셀로 코어의 엔진
+ * 단위를 낸다.
+ *
+ *     코어_엔진 = 코어_px × (조준원_엔진 / 조준원_px)
+ *
+ * **비율만 쓰므로 해상도·창모드·전체화면·레터박스·녹화 업스케일이 전부
+ * 약분된다.** 화면 픽셀을 엔진 단위로 옮기는 해상도 기반 일반형은 없다 —
+ * 있다고 적었다가 틀렸다(`docs/measurements/accuracy-circle-and-core-px.md` §해석).
+ *
+ * 이 함수가 못 지켜주는 조건 둘: 조준원이 **무버프**여야 하고(명중 버프가
+ * 조준원을 좁혀 코어가 과대로 나온다), 두 길이가 **같은 창 설정**에서 나와야
+ * 한다. 잴 수 없는 입력에는 `null`.
+ */
+export const coreDiameterFromMeasurement = (
+  corePx: number,
+  reticlePx: number,
+  reticleWeapon: WeaponClass,
+): number | null => {
+  if (!Number.isFinite(corePx) || !Number.isFinite(reticlePx)) return null
+  if (corePx <= 0 || reticlePx <= 0) return null
+  return corePx * (WEAPON_SPREAD_DIAMETER[reticleWeapon] / reticlePx)
+}
+
 export interface CoreHitRateGroup {
   /** 지름이 같아 값도 같은 무기들, `·`로 이어 붙인 것. */
   label: string
