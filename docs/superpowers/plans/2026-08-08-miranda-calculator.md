@@ -1018,8 +1018,14 @@ def receives_all_cycles(spec_index, deck_specs, slug, percent):
     return bool(cycles) and all(slug in c["wake_up_crit_rate"] for c in cycles)
 
 
+# ada-wong의 우위는 오버로드 상한(58.52%) 안에서 뒤집을 수 있을 만큼만 둔다.
+# 필요치는 표시 공격력 격차를 단순히 나눈 값보다 훨씬 크다 - 경계가 「전
+# 사이클에서 받는가」이고 사이클마다 이기는 쪽이 갈리므로 가장 빡센 사이클이
+# 값을 정하기 때문이다. 120,000이면 교차점이 62~76%로 상한 밖이라 도달 가능한
+# gain 후보가 하나도 없고, 그러면 「필요치가 실제로 통한다」를 잴 수가 없다.
+# 실측(2026-08-08) 105,000에서: crown 49.03% · cinderella 35.48% · isabel 49.03%.
 ATK = {"miranda-signature": 100_000.0, "crown": 100_000.0,
-       "ada-wong": 120_000.0, "cinderella": 100_000.0, "isabel": 100_000.0}
+       "ada-wong": 105_000.0, "cinderella": 100_000.0, "isabel": 100_000.0}
 
 
 def by_slug(thresholds):
@@ -1051,14 +1057,20 @@ def test_a_gain_threshold_is_a_value_that_actually_works():
 
 
 def test_a_keep_threshold_is_the_edge_of_still_receiving():
-    report, index, deck = a_report(ATK, overload_by_slug={"ada-wong": 20.0})
+    # 받고 있는 유닛이 표시 공격력만으로도 이미 1위면 오버로드를 0으로 내려도
+    # 계속 받아 경계가 0이 되고, 그러면 「한 눈금 아래에서는 놓친다」가 아무것도
+    # 재지 않는다. 경계를 재려면 오버로드가 있어야만 1위인 배치여야 한다 -
+    # ada-wong의 표시 공격력을 나머지보다 낮춰 두고 오버로드로 뒤집는다.
+    # 실측(2026-08-08): 경계 7.4%.
+    report, index, deck = a_report({**ATK, "ada-wong": 95_000.0},
+                                   overload_by_slug={"ada-wong": 40.0})
     thresholds = by_slug(report["overload_thresholds"])
     keeper = next(t for t in thresholds.values() if t["kind"] == "keep")
     floor = keeper["threshold_percent"]
+    assert floor > 0, "경계가 0이면 아래 두 줄이 아무것도 재지 않는다"
     assert receives_all_cycles(index, deck, keeper["slug"], floor)
-    if floor > 0:
-        assert not receives_all_cycles(index, deck, keeper["slug"],
-                                       floor - 2 * THRESHOLD_PRECISION)
+    assert not receives_all_cycles(index, deck, keeper["slug"],
+                                   floor - 2 * THRESHOLD_PRECISION)
 
 
 def test_an_unreachable_unit_reports_no_threshold():
