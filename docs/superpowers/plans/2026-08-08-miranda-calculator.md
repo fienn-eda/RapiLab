@@ -2479,6 +2479,13 @@ import { DRAG_SLUG_TYPE } from './UnitPalette'
 import type { SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 
+// UnitPalette fetches its own portrait manifest over the same global `fetch`
+// these tests stub for /api/miranda-targets - unmocked, that fetch would be
+// the first recorded call and shift every mock.calls index by one.
+vi.mock('../hooks/usePortraitManifest', () => ({
+  usePortraitManifest: () => ({ portraitFor: () => null }),
+}))
+
 const UNITS: SupportedUnit[] = [
   { slug: 'miranda-signature', name: '미란다', burstTier: 1, element: 'Fire' },
   { slug: 'miranda', name: '미란다', burstTier: 1, element: 'Fire' },
@@ -2486,6 +2493,9 @@ const UNITS: SupportedUnit[] = [
   { slug: 'ada-wong', name: '에이다 웡', burstTier: 3, element: 'Fire' },
   { slug: 'cinderella', name: '신데렐라', burstTier: 3, element: 'Water' },
   { slug: 'isabel', name: '이사벨', burstTier: 3, element: 'Wind' },
+  // 로스터엔 있지만 어느 덱에도 앉히지 않는 여섯째 - 있어야 "roster를 그대로
+  // 보냈다"와 "편성한 다섯을 보냈다"가 실제로 갈린다.
+  { slug: 'snow-white', name: '백설공주', burstTier: 2, element: 'Electric' },
 ]
 
 const FULL = ['miranda-signature', 'crown', 'ada-wong', 'cinderella', 'isabel']
@@ -2501,7 +2511,13 @@ const WIRE = {
   engine_version: 'abc',
 }
 
-const state = (slug: string) => ({ character_slug: slug, atk: 100000 }) as unknown as UserNikkeState
+const state = (slug: string) =>
+  ({
+    character_slug: slug,
+    atk: 100000,
+    skill_levels: { skill1: 1, skill2: 1, burst: 1 },
+    overload_options: [],
+  }) as unknown as UserNikkeState
 
 const renderPanel = (roster: UserNikkeState[]) =>
   render(
@@ -2547,6 +2563,12 @@ describe('MirandaCalculatorPanel', () => {
     expect(seatedMirandaSlug([state('miranda-signature'), state('crown')]))
       .toBe('miranda-signature')
     expect(seatedMirandaSlug([state('crown')])).toBeNull()
+    // 둘 다 있을 때가 MIRANDA_SLUGS 순서가 실제로 일을 하는 유일한 경우다 -
+    // 로스터에 들어온 순서와 무관하게 애장품 쪽이 이겨야 한다.
+    expect(seatedMirandaSlug([state('miranda'), state('miranda-signature')]))
+      .toBe('miranda-signature')
+    expect(seatedMirandaSlug([state('miranda-signature'), state('miranda')]))
+      .toBe('miranda-signature')
   })
 
   it('asks the player to sync when the roster has no Miranda at all', () => {
@@ -2563,7 +2585,9 @@ describe('MirandaCalculatorPanel', () => {
   it('submits the five seated slugs once the deck is full', async () => {
     const fetchMock = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve(WIRE) })
     vi.stubGlobal('fetch', fetchMock)
-    const { container } = renderPanel(FULL.map(state))
+    // 로스터엔 편성에 없는 여섯째(백설공주)도 있다 - roster와 편성이 우연히
+    // 같은 다섯이면, 구현이 roster를 통째로 보내도 이 테스트가 못 잡는다.
+    const { container } = renderPanel([...FULL.map(state), state('snow-white')])
     seat(container, 'crown', 'ada-wong', 'cinderella', 'isabel')
     const run = screen.getByRole('button', { name: '계산' })
     await waitFor(() => expect(run).toBeEnabled())
