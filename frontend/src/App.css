@@ -2098,7 +2098,9 @@
 }
 
 /* 미란다 계산기 결과 — 초상화 한 줄에 뱃지와 임계값. 금은 웨이크업!3(단 한
-   명), 은은 파워업!(둘). 색만으로 구분되지 않도록 글자가 스탯 이름을 말한다. */
+   명), 은은 파워업!(둘). 색만으로 구분되지 않도록 글자가 스탯 이름을 말한다.
+   이 앱은 다크 전용(index.css)이라 뱃지도 .pill과 같은 어휘를 쓴다 - 옅은
+   배경을 채우지 않고 투명 바탕에 테두리·글자색만으로 구분한다. */
 .miranda-targets__list {
   list-style: none;
   margin: 0;
@@ -2146,18 +2148,20 @@
   font-size: 0.78rem;
   font-weight: 600;
   border: 1px solid;
+  background: transparent;
 }
 
+/* --star는 이 앱에서 돌파 별에 쓰는 금색 - 진한 바탕 위 글자·테두리 색으로만
+   쓰고 채움으로는 안 쓴다는 규칙을 그대로 따른다. */
 .miranda-badge--gold {
-  color: #8a6b12;
-  border-color: #d8b13a;
-  background: #fdf4dc;
+  color: var(--star);
+  border-color: var(--star);
 }
 
+/* .pill--warn과 같은 중립 톤 - 무채색 테두리에 흐린 글자. */
 .miranda-badge--silver {
-  color: #55585c;
-  border-color: #b9bdc2;
-  background: #f2f3f5;
+  color: var(--text-muted);
+  border-color: var(--border-strong);
 }
 
 .miranda-badge b {

@@ -28,13 +28,19 @@ export function MirandaTargets({ result, portraitFor, nameFor }: MirandaTargetsP
   // 「밀렸다」가 아니라 「그녀가 못 쐈다」는 뜻이 되므로 따로 말해야 한다.
   const burstCycles = poweringUp.filter((targets) => targets.length > 0).length
 
-  // 파워업! 대상이 사이클마다 갈리는가 - 갈리면 어느 사이클인지 짚어준다.
-  const firstPoweringUp = poweringUp[0] ?? []
-  const changedCycles = cycles
-    .filter((cycle) =>
-      cycle.poweringUp.length > 0 &&
-      (cycle.poweringUp.length !== firstPoweringUp.length ||
-        cycle.poweringUp.some((slug) => !firstPoweringUp.includes(slug))))
+  // 파워업! 대상이 실제로 쏜 사이클끼리 갈리는가 - 버스트를 못 한 사이클(빈
+  // poweringUp)은 비교에서 뺀다(그건 burstCycles 캐비엇의 몫이고, 빈 배열을
+  // 기준으로 삼으면 나머지가 서로 같아도 전부 「갈렸다」고 오판한다). 기준은
+  // 첫 버스트 사이클, 비교는 순서가 아니라 집합으로 한다 - 백엔드가 순위
+  // 순으로 주므로 같은 두 명이 자리만 바뀐 것을 변경으로 읽으면 안 된다.
+  const burstingCycles = cycles.filter((cycle) => cycle.poweringUp.length > 0)
+  const referenceTargets = new Set(burstingCycles[0]?.poweringUp ?? [])
+  const changedCycles = burstingCycles
+    .filter((cycle) => {
+      const targets = new Set(cycle.poweringUp)
+      return targets.size !== referenceTargets.size ||
+        [...targets].some((slug) => !referenceTargets.has(slug))
+    })
     .map((cycle) => cycle.index)
 
   const describeThreshold = (slug: string): string | null => {

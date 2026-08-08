@@ -2107,13 +2107,17 @@ const renderResult = (result: MirandaTargetsResult) =>
 const row = (name: string) => screen.getByRole('listitem', { name })
 
 describe('MirandaTargets', () => {
-  it('gives the wake-up recipient both badges and the powering-up-only unit the silver pair', () => {
+  it('gives the wake-up recipient both badges and the powering-up-only unit the silver pair, and Miranda herself none', () => {
     renderResult(base)
     expect(within(row('에이다 웡')).getByText('크확')).toBeInTheDocument()
     expect(within(row('에이다 웡')).getByText('공격력')).toBeInTheDocument()
     expect(within(row('크라운')).queryByText('크확')).not.toBeInTheDocument()
     expect(within(row('크라운')).getByText('크댐')).toBeInTheDocument()
     expect(within(row('이사벨')).queryByText('공격력')).not.toBeInTheDocument()
+    // 미란다는 자기 자신의 대상이 될 수 없다 - 뱃지 대신 「시전자」만 뜬다.
+    expect(within(row('미란다')).getByText('시전자')).toBeInTheDocument()
+    expect(within(row('미란다')).queryByText('크확')).not.toBeInTheDocument()
+    expect(within(row('미란다')).queryByText('공격력')).not.toBeInTheDocument()
   })
 
   it('marks a badge that only holds in some cycles with n/T', () => {
@@ -2136,7 +2140,36 @@ describe('MirandaTargets', () => {
         { index: 2, poweringUp: ['ada-wong', 'isabel'], wakeUpCritRate: ['ada-wong'] },
       ],
     })
-    expect(screen.getByText(/2사이클/)).toBeInTheDocument()
+    // 「2사이클」만 검사하면 버스트-일부-실패 캐비엇("미란다는 2사이클 중…")과
+    // 안 갈린다 - 이 캐비엇 특유의 문장까지 확인한다.
+    expect(screen.getByText(/2사이클에는 파워업!을 받는 니케가 달라요/)).toBeInTheDocument()
+  })
+
+  it('does not flag a change when the first cycle is simply a miss and the rest agree', () => {
+    renderResult({
+      ...base,
+      cycles: [
+        { index: 1, poweringUp: [], wakeUpCritRate: ['ada-wong'] },
+        { index: 2, poweringUp: ['ada-wong', 'crown'], wakeUpCritRate: ['ada-wong'] },
+        { index: 3, poweringUp: ['ada-wong', 'crown'], wakeUpCritRate: ['ada-wong'] },
+      ],
+    })
+    // 1사이클은 미란다가 못 쏜 것뿐이지 대상이 「바뀐」게 아니다 - 빈 배열을
+    // 기준으로 삼으면 2·3사이클이 (사실은 서로 같은데도) 갈렸다고 오판한다.
+    expect(screen.queryByText(/파워업!을 받는 니케가 달라요/)).not.toBeInTheDocument()
+  })
+
+  it('does not flag a change when the same two recipients swap rank order', () => {
+    renderResult({
+      ...base,
+      cycles: [
+        { index: 1, poweringUp: ['ada-wong', 'crown'], wakeUpCritRate: ['ada-wong'] },
+        { index: 2, poweringUp: ['crown', 'ada-wong'], wakeUpCritRate: ['ada-wong'] },
+      ],
+    })
+    // 백엔드는 순위 순으로 대상을 준다 - 자리만 바뀐 것을 「받는 사람이
+    // 바뀌었다」로 읽으면 안 된다. 집합으로 비교해야 한다.
+    expect(screen.queryByText(/파워업!을 받는 니케가 달라요/)).not.toBeInTheDocument()
   })
 
   it('says outright when Miranda could not burst every cycle', () => {
@@ -2160,10 +2193,10 @@ describe('MirandaTargets', () => {
         { slug: 'isabel', currentPercent: 0, kind: 'gain', thresholdPercent: null },
       ],
     })
-    expect(screen.getByText(/8\.00% → 11\.47% 필요 \(\+3\.47%p\)/)).toBeInTheDocument()
-    expect(screen.getByText(/9\.90% 밑으로 내려가면 놓쳐요/)).toBeInTheDocument()
-    expect(screen.getByText(/오버로드 공격력이 없어도 유지돼요/)).toBeInTheDocument()
-    expect(screen.getByText(/상한\(58\.52%\)까지 올려도 못 받아요/)).toBeInTheDocument()
+    expect(within(row('크라운')).getByText(/8\.00% → 11\.47% 필요 \(\+3\.47%p\)/)).toBeInTheDocument()
+    expect(within(row('에이다 웡')).getByText(/9\.90% 밑으로 내려가면 놓쳐요/)).toBeInTheDocument()
+    expect(within(row('신데렐라')).getByText(/오버로드 공격력이 없어도 유지돼요/)).toBeInTheDocument()
+    expect(within(row('이사벨')).getByText(/상한\(58\.52%\)까지 올려도 못 받아요/)).toBeInTheDocument()
   })
 
   it('shows every note the backend sent', () => {
@@ -2213,13 +2246,19 @@ export function MirandaTargets({ result, portraitFor, nameFor }: MirandaTargetsP
   // 「밀렸다」가 아니라 「그녀가 못 쐈다」는 뜻이 되므로 따로 말해야 한다.
   const burstCycles = poweringUp.filter((targets) => targets.length > 0).length
 
-  // 파워업! 대상이 사이클마다 갈리는가 - 갈리면 어느 사이클인지 짚어준다.
-  const firstPoweringUp = poweringUp[0] ?? []
-  const changedCycles = cycles
-    .filter((cycle) =>
-      cycle.poweringUp.length > 0 &&
-      (cycle.poweringUp.length !== firstPoweringUp.length ||
-        cycle.poweringUp.some((slug) => !firstPoweringUp.includes(slug))))
+  // 파워업! 대상이 실제로 쏜 사이클끼리 갈리는가 - 버스트를 못 한 사이클(빈
+  // poweringUp)은 비교에서 뺀다(그건 burstCycles 캐비엇의 몫이고, 빈 배열을
+  // 기준으로 삼으면 나머지가 서로 같아도 전부 「갈렸다」고 오판한다). 기준은
+  // 첫 버스트 사이클, 비교는 순서가 아니라 집합으로 한다 - 백엔드가 순위
+  // 순으로 주므로 같은 두 명이 자리만 바뀐 것을 변경으로 읽으면 안 된다.
+  const burstingCycles = cycles.filter((cycle) => cycle.poweringUp.length > 0)
+  const referenceTargets = new Set(burstingCycles[0]?.poweringUp ?? [])
+  const changedCycles = burstingCycles
+    .filter((cycle) => {
+      const targets = new Set(cycle.poweringUp)
+      return targets.size !== referenceTargets.size ||
+        [...targets].some((slug) => !referenceTargets.has(slug))
+    })
     .map((cycle) => cycle.index)
 
   const describeThreshold = (slug: string): string | null => {
@@ -2232,9 +2271,13 @@ export function MirandaTargets({ result, portraitFor, nameFor }: MirandaTargetsP
       const gap = row.thresholdPercent - row.currentPercent
       return `오버로드 공격력 ${percent(row.currentPercent)} → ${percent(row.thresholdPercent)} 필요 (+${gap.toFixed(2)}%p)`
     }
-    if (row.thresholdPercent === 0) return '오버로드 공격력이 없어도 유지돼요'
-    const slack = row.currentPercent - row.thresholdPercent
-    return `오버로드 공격력이 ${percent(row.thresholdPercent)} 밑으로 내려가면 놓쳐요 (지금 ${percent(row.currentPercent)}, 여유 ${slack.toFixed(2)}%p)`
+    // kind가 'keep'이면 지금 받고 있다는 뜻이라 경계는 항상 숫자다 (백엔드
+    // overload_thresholds가 이 조합에서만 null을 안 낸다) - null 분기는 gain 쪽뿐.
+    const { thresholdPercent } = row
+    if (thresholdPercent === null) return null
+    if (thresholdPercent === 0) return '오버로드 공격력이 없어도 유지돼요'
+    const slack = row.currentPercent - thresholdPercent
+    return `오버로드 공격력이 ${percent(thresholdPercent)} 밑으로 내려가면 놓쳐요 (지금 ${percent(row.currentPercent)}, 여유 ${slack.toFixed(2)}%p)`
   }
 
   return (
@@ -2303,7 +2346,9 @@ export function MirandaTargets({ result, portraitFor, nameFor }: MirandaTargetsP
 
 ```css
 /* 미란다 계산기 결과 — 초상화 한 줄에 뱃지와 임계값. 금은 웨이크업!3(단 한
-   명), 은은 파워업!(둘). 색만으로 구분되지 않도록 글자가 스탯 이름을 말한다. */
+   명), 은은 파워업!(둘). 색만으로 구분되지 않도록 글자가 스탯 이름을 말한다.
+   이 앱은 다크 전용(index.css)이라 뱃지도 .pill과 같은 어휘를 쓴다 - 옅은
+   배경을 채우지 않고 투명 바탕에 테두리·글자색만으로 구분한다. */
 .miranda-targets__list {
   list-style: none;
   margin: 0;
@@ -2351,18 +2396,20 @@ export function MirandaTargets({ result, portraitFor, nameFor }: MirandaTargetsP
   font-size: 0.78rem;
   font-weight: 600;
   border: 1px solid;
+  background: transparent;
 }
 
+/* --star는 이 앱에서 돌파 별에 쓰는 금색 - 진한 바탕 위 글자·테두리 색으로만
+   쓰고 채움으로는 안 쓴다는 규칙을 그대로 따른다. */
 .miranda-badge--gold {
-  color: #8a6b12;
-  border-color: #d8b13a;
-  background: #fdf4dc;
+  color: var(--star);
+  border-color: var(--star);
 }
 
+/* .pill--warn과 같은 중립 톤 - 무채색 테두리에 흐린 글자. */
 .miranda-badge--silver {
-  color: #55585c;
-  border-color: #b9bdc2;
-  background: #f2f3f5;
+  color: var(--text-muted);
+  border-color: var(--border-strong);
 }
 
 .miranda-badge b {
