@@ -113,3 +113,20 @@ def test_the_charge_speed_ceiling_is_a_top_roll_on_every_gear_slot():
     from app.stat_assembly import load_stat_tables
 
     assert max_charge_speed_percent(load_stat_tables()) == 24.0
+
+
+def test_max_atk_percent_is_a_top_roll_on_every_slot():
+    # 부위당 최고 굴림 14.63% x 4부위. 상수로 적지 않는 이유는 테이블이
+    # 재적합되면 값이 따라가야 하기 때문이다.
+    from app.overload_effects import max_atk_percent
+    from app.stat_assembly import load_stat_tables
+
+    assert max_atk_percent(load_stat_tables()) == 58.52
+
+
+def test_max_atk_percent_raises_when_the_tables_have_no_atk_type():
+    import pytest
+    from app.overload_effects import max_atk_percent
+
+    with pytest.raises(KeyError):
+        max_atk_percent({"overload": {"type_name": {}, "type_value": {}}})

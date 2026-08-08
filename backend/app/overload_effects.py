@@ -44,6 +44,24 @@ def max_charge_speed_percent(tables) -> float:
     raise KeyError("the overload tables carry no charge-speed effect type")
 
 
+def max_atk_percent(tables) -> float:
+    """The most ATK overload alone can grant: a top roll on every gear slot.
+
+    Same shape as max_charge_speed_percent and for the same reason - nothing
+    here is written down, so a re-fitted table moves this number without an
+    edit. The difference is the arithmetic: charge speed rounds per roll before
+    the frame grid sees it, while ATK is used exactly as displayed (see
+    granted_percent), so this is a plain sum.
+
+    Raises KeyError if the tables carry no ATK effect type.
+    """
+    for effect_type, name in tables["overload"]["type_name"].items():
+        if NAME_TO_STAT.get(name) != "atk_percent":
+            continue
+        return overload_value(tables, int(effect_type), MAX_LEVEL) * len(GEAR_SLOTS)
+    raise KeyError("the overload tables carry no ATK effect type")
+
+
 def granted_percent(option, stat):
     """What this overload line GRANTS, which for charge speed is not what it shows.
 
