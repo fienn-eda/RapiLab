@@ -27,12 +27,15 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   17: 'anis-star', // Anis: Star
   18: 'neon-vision-eye', // Neon: Vision Eye (14 = Neon: Blue Ocean, not encoded)
   32: 'miranda', // Miranda — dual-slot base; promoted per the roster
+  23: 'delta-ninja-thief', // Delta: Ninja Thief (20 = base Delta, an SR, not encoded)
   43: 'd-killer-wife', // D: Killer Wife
   73: 'brid-silent-track', // Brid: Silent Track
   74: 'soline-frost-ticket', // Soline: Frost Ticket (71 = base Soline, not encoded)
   75: 'diesel-winter-sweets', // Diesel: Winter Sweets - base slug; fans out to -intro/-highlight (MODE_VARIANTS)
   80: 'centi', // Centi — dual-slot base; promoted per the roster
   82: 'liter', // Liter
+  93: 'emma-tactical-upgrade', // Emma: Tactical Upgrade (90 = base Emma, not encoded)
+  95: 'eunhwa-tactical-upgrade', // Eunhwa: Tactical Upgrade (92 = base Eunhwa, not encoded)
   100: 'laplace', // Laplace — dual-slot base; promoted per the roster
   101: 'drake', // Drake — dual-slot base; promoted per the roster
   102: 'maxwell', // Maxwell
@@ -47,6 +50,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   183: 'maiden-ice-rose', // Maiden: Ice Rose
   192: 'tove', // Tove — dual-slot base; promoted per the roster
   194: 'ludmilla-winter-owner', // Ludmilla: Winter Owner
+  202: 'dolla', // Dolla
   220: 'snow-white', // Snow White (224 = Snow White: Innocent Days, not encoded)
   223: 'nayuta', // Nayuta
   225: 'scarlet-black-shadow', // Scarlet: Black Shadow (222 = base Scarlet, not encoded)
@@ -71,11 +75,13 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   353: 'helm-aquamarine', // Helm: Aquamarine
   354: 'mast-romantic-maid', // Mast: Romantic Maid
   355: 'anchor-innocent-maid', // Anchor: Innocent Maid
+  382: 'leona', // Leona
   390: 'zwei', // Zwei — dual-slot base; promoted per the roster
   391: 'ein', // Ein
   403: 'quency-escape-queen', // Quency: Escape Queen
   411: 'flora', // Flora — dual-slot base; promoted per the roster
   431: 'volume', // Volume
+  450: 'naga', // Naga
   470: 'red-hood', // Red Hood (16 = Rapi: Red Hood, separately encoded)
   471: 'snow-white-heavy-arms', // Snow White: Heavy Arms
   502: 'elegg-boom-and-shock', // Elegg: Boom and Shock

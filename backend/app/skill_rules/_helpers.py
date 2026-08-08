@@ -124,16 +124,29 @@ def _resolve_scope(scope_spec, context, caster_slug, registry, time):
     return scope_spec
 
 
-def highest_atk_buff_rule(trigger, n, buffs):
+def highest_atk_buff_rule(trigger, n, buffs, refreshing=False):
     """Timed buffs on the `n` allies with the highest final ATK at trigger time
     (except the caster) - e.g. Miranda's Powering Up. buffs: (stat, value,
     duration). The target set is ranked live, so a buff applied earlier in the
-    same cycle is reflected (see SquadContext.top_atk_slugs)."""
+    same cycle is reflected (see SquadContext.top_atk_slugs).
+
+    `refreshing`: for a bullet re-applied faster than it expires - a per-shot
+    top-N grant whose duration outlives its own trigger interval (Naga's
+    Support of Friendship, 5 sec on every 5th shot, which her shotgun fires
+    every 3.3-5.0 sec). Without it the overlaps SUM, multiplying the buff by
+    however many windows are live. Each rule instance gets its own refresh
+    group, as in refreshing_buff_rule, so it never truncates a different
+    bullet that happens to grant the same stat."""
+    group = f"refresh_{next(_refresh_group_ids)}" if refreshing else None
 
     def action(context, caster_slug, time, registry):
         scope = "slugs:" + ",".join(context.top_atk_slugs(n, caster_slug, registry, time))
         for stat, value, duration in buffs:
-            registry.add(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
+            effect = Effect(stat, value, scope, duration, caster_slug, refresh_group=group)
+            if refreshing:
+                registry.add_refreshing(effect, applied_at=time)
+            else:
+                registry.add(effect, applied_at=time)
 
     return SkillRule(trigger=trigger, action=action)
 
@@ -260,6 +273,7 @@ HEAL_PROVIDER_SLUGS = frozenset({
     "centi",
     "centi-signature",
     "crown",
+    "delta-ninja-thief",
     "flora",
     "flora-signature",
     "grave",
@@ -270,6 +284,7 @@ HEAL_PROVIDER_SLUGS = frozenset({
     "mint",
     "moran",
     "moran-signature",
+    "naga",
     "nayuta",
     "prika",
     "red-hood",
@@ -297,6 +312,17 @@ ELEMENT_GATED_SHIELD_SLUGS = frozenset({
     "rei-ayanami",
 })
 
+# Shields whose every bullet reads "Affects self" - the narrowest partial scope
+# of all, and the one that reaches no consumer at all. Delta: Ninja Thief's
+# Ninjutsu Camouflage shields only herself, so it can never be the shield a
+# consumer asks about ("when a shield is placed in front of THIS unit"). Same
+# reason ELEMENT_GATED_SHIELD_SLUGS is separate: the data cross-check has to
+# account for every shield the scan finds, and silence would read as "she
+# places none".
+SELF_ONLY_SHIELD_SLUGS = frozenset({
+    "delta-ninja-thief",
+})
+
 # Nikkes whose skills raise an ALLY's Sustained / Distributed damage. Third and
 # fourth of the same shape as the two lists above, and re-derived from skill
 # text by `provider_scan` under the same cross-check - a newly encoded buffer
@@ -314,6 +340,7 @@ SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS = frozenset({
 
 SQUAD_DISTRIBUTED_DAMAGE_BUFF_SLUGS = frozenset({
     "anchor-innocent-maid",
+    "delta-ninja-thief",
     "mast-romantic-maid",
 })
 

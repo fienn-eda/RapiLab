@@ -11,6 +11,7 @@ import pytest
 from app.skill_rules._helpers import (
     ELEMENT_GATED_SHIELD_SLUGS,
     HEAL_PROVIDER_SLUGS,
+    SELF_ONLY_SHIELD_SLUGS,
     SHIELD_PROVIDER_SLUGS,
     SQUAD_DISTRIBUTED_DAMAGE_BUFF_SLUGS,
     SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS,
@@ -36,14 +37,22 @@ def test_heal_provider_constant_matches_the_skill_data(unreadable):
 
 
 def test_shield_provider_constant_matches_the_skill_data(unreadable):
-    # 상수는 소비자에게 실제로 닿는 것만 담고, 속성 게이트가 걸린 쉴드는 사유와
-    # 함께 따로 뺀다 - 둘을 합치면 데이터가 말하는 전량이어야 한다.
+    # 상수는 소비자에게 실제로 닿는 것만 담고, 닿는 범위가 좁은 쉴드는 사유와
+    # 함께 따로 뺀다(속성 게이트 / 자기 전용) - 셋을 합치면 데이터가 말하는
+    # 전량이어야 한다.
     derived = shield_provider_slugs()
-    assert derived - unreadable == (SHIELD_PROVIDER_SLUGS | ELEMENT_GATED_SHIELD_SLUGS) - unreadable
+    committed = SHIELD_PROVIDER_SLUGS | ELEMENT_GATED_SHIELD_SLUGS | SELF_ONLY_SHIELD_SLUGS
+    assert derived - unreadable == committed - unreadable
 
 
 def test_element_gated_shields_are_not_also_counted_as_reaching_everyone():
     assert not (SHIELD_PROVIDER_SLUGS & ELEMENT_GATED_SHIELD_SLUGS)
+
+
+def test_self_only_shields_are_not_also_counted_as_reaching_everyone():
+    """자기에게만 거는 쉴드가 전체 도달 목록에 섞이면, 소비자가 「내 앞에 쉴드가
+    놓였나」에 거짓으로 예라고 답하게 된다."""
+    assert not (SELF_ONLY_SHIELD_SLUGS & (SHIELD_PROVIDER_SLUGS | ELEMENT_GATED_SHIELD_SLUGS))
 
 
 def test_sustained_damage_buff_constant_matches_the_skill_data(unreadable):

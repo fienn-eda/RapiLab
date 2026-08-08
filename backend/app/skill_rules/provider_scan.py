@@ -20,12 +20,21 @@ import re
 from app.skill_rules.registry import ENCODED_SLUGS, get_skill_value_manifest
 from app.skill_values import load_character_data
 
+# "Within one sentence": any run of characters that does not cross a full stop.
+# A bare `[^.]*` reads a DECIMAL POINT as the end of the sentence, which silently
+# hid every heal whose amount carries one - Naga's "Recovers 9.58% of the skill
+# user's final Max HP as HP" stopped dead at "Recovers 9". Almost every value in
+# this data has a decimal, so the miss was the rule rather than the exception;
+# the units the old pattern did catch were the ones wording it as "Restores HP
+# equal to ...", with no number in between.
+_SAME_SENTENCE = r"(?:[^.]|\.\d)*"
+
 # Phrases NIKKE uses for restoring HP. "Incoming Healing ▲" is deliberately NOT
 # here: buffing someone else's healing does not itself heal anyone.
 HEAL_PATTERNS = (
-    re.compile(r"Recovers?\b[^.]*\bHP\b", re.I),
-    re.compile(r"\bRestores?\b[^.]*\bHP\b", re.I),
-    re.compile(r"\bHeals?\b[^.]*\bHP\b", re.I),
+    re.compile(rf"Recovers?\b{_SAME_SENTENCE}\bHP\b", re.I),
+    re.compile(rf"\bRestores?\b{_SAME_SENTENCE}\bHP\b", re.I),
+    re.compile(rf"\bHeals?\b{_SAME_SENTENCE}\bHP\b", re.I),
 )
 
 # The crouching cover's own health is not a unit receiving recovery, so it does
@@ -34,7 +43,7 @@ COVER_ONLY = re.compile(r"\bCover(?:'s)?\s+HP\b", re.I)
 
 SHIELD_PATTERNS = (
     re.compile(r"Creates? (?:a )?(?:shared )?Shield", re.I),
-    re.compile(r"(?:grants?|gains?|applies) [^.]*\bShield\b", re.I),
+    re.compile(rf"(?:grants?|gains?|applies) {_SAME_SENTENCE}\bShield\b", re.I),
 )
 
 

@@ -116,6 +116,16 @@ from app.skill_rules.crown import (
     build_royal_attire_rules,
 )
 from app.skill_rules.d_killer_wife import build_assault_formation_rules, build_d_killer_wife_rules
+from app.skill_rules.delta_ninja_thief import (
+    build_delta_ninja_thief_rules,
+    ninja_overdrive_burst_percent,
+)
+from app.skill_rules.dolla import (
+    ENTREPRENEURSHIP_COOLDOWN,
+    build_dolla_rules,
+    build_entrepreneurship_periodic_rules,
+    rnd_shot_burst_percent,
+)
 from app.skill_rules.grave import build_grave_rules, build_overheat_per_shot_rules
 from app.skill_rules.rei_ayanami import (
     annihilation_burst_percent,
@@ -261,12 +271,21 @@ from app.skill_rules.julia import (
     climax_burst_percent,
 )
 from app.skill_rules import julia_signature
+from app.skill_rules.leona import (
+    build_leona_resources,
+    build_leona_rules,
+    build_lions_heart_resource_gated_buffs,
+)
 from app.skill_rules.little_mermaid import (
     build_bubble_barrage_scheduled_nukes,
     build_bubble_wave_fb_nuke,
     build_little_mermaid_rules,
 )
 from app.skill_rules.liter import build_liter_rules
+from app.skill_rules.naga import (
+    build_naga_rules,
+    build_support_of_friendship_per_shot_rules,
+)
 from app.skill_rules.maiden_ice_rose import (
     build_blessings_fill_triggered_buffs,
     build_blessings_upon_you_per_shot_rules,
@@ -551,6 +570,8 @@ _BUILDERS = {
     "laplace-ultimate-hero": _build_laplace_ultimate_hero,
     "privaty": _build_privaty,
     "privaty-signature": _build_privaty_signature,
+    # Lion's Heart is buffs only; her burst deals no damage.
+    "leona": lambda sv: (build_leona_rules(sv), None),
     "liter": lambda sv: (build_liter_rules(sv), None),
     "volume": lambda sv: (build_volume_rules(sv), None),
     "miranda": lambda sv: (build_miranda_base_rules(sv), None),
@@ -559,6 +580,9 @@ _BUILDERS = {
     "zwei": lambda sv: (build_zwei_base_rules(sv), None),
     "zwei-signature": lambda sv: (build_zwei_rules(sv), None),
     "d-killer-wife": lambda sv: (build_d_killer_wife_rules(sv), None),  # Kill the Target (burst) deferred
+    "delta-ninja-thief": lambda sv: (
+        build_delta_ninja_thief_rules(sv), ninja_overdrive_burst_percent(sv)),
+    "dolla": lambda sv: (build_dolla_rules(sv), rnd_shot_burst_percent(sv)),
     "grave": lambda sv: (build_grave_rules(sv), None),
     "rei-ayanami": lambda sv: (build_rei_ayanami_rules(sv), annihilation_burst_percent(sv)),
     "rei-ayanami-tentative-name": lambda sv: (build_rei_tentative_rules(sv), attack_state_burst_percent(sv)),
@@ -599,6 +623,8 @@ _BUILDERS = {
     "mint": lambda sv: (build_mint_rules(sv), None),
     "moran": lambda sv: (build_moran_base_rules(sv), None),
     "moran-signature": lambda sv: (build_moran_rules(sv), None),
+    # As Long As We're With Friends is buffs only; her burst deals no damage.
+    "naga": lambda sv: (build_naga_rules(sv), None),
     "nayuta": lambda sv: (build_nayuta_rules(sv), asceticism_burst_percent(sv)),
     "noir": lambda sv: (build_noir_rules(sv), finale_burst_percent(sv)),
     "prika": lambda sv: (build_prika_rules(sv), None),
@@ -874,6 +900,9 @@ _BURST_DAMAGE_TYPES = {
     # her whole burst, and the one her own Secure Route Stage-1 buff
     # (+49.58% Distributed Damage) exists to multiply.
     "quency-escape-queen": "distributed",
+    # Ninja Overdrive "deals 170% of final ATK as distributed damage", and her
+    # own +20% Distributed Damage buff is what it multiplies.
+    "delta-ninja-thief": "distributed",
     "rapi-red-hood": "projectile_explosion",  # Power of Inheritance = Projectile Explosion skill
     "ein": "true",  # Feather-All Range deals its nuke "as true damage"
 }
@@ -952,6 +981,12 @@ _PERIODIC_RULE_BUILDERS = {
             centi.build_field_discussion_periodic_rules(sv),
         ),
     ],
+    "dolla": lambda sv: [
+        (
+            ENTREPRENEURSHIP_COOLDOWN,
+            build_entrepreneurship_periodic_rules(sv["entrepreneurship"]),
+        ),
+    ],
     "sakura-bloom-in-summer": lambda sv: build_sakura_periodic_rules(sv),
     "rosanna-chic-ocean": lambda sv: build_spina_periodic_rules(sv),  # Spina di Rosa, cd 30
     "takina-inoue": lambda sv: [
@@ -982,6 +1017,7 @@ _PER_SHOT_RULE_BUILDERS = {
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_per_shot_rules(sv),
     "cinderella": lambda sv: build_flawless_glass_per_shot_rules(sv),
     "modernia": lambda sv: build_modernia_per_shot_rules(sv),
+    "naga": lambda sv: build_support_of_friendship_per_shot_rules(sv["support_of_friendship"]),
     "ein": lambda sv: build_ein_per_shot_rules(sv),
     "eve": lambda sv: build_unstable_energy_per_shot_rules(sv),
     "anis-sparkling-summer": lambda sv: build_sparkling_missile_per_shot_rules(sv["sparkling_missile"]),
@@ -1047,6 +1083,7 @@ _RESOURCE_SPEC_BUILDERS = {
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_resources(sv),
     "julia": lambda sv: build_crescendo_resources(sv),
     "julia-signature": lambda sv: julia_signature.build_crescendo_signature_resources(sv),
+    "leona": lambda sv: build_leona_resources(sv),
     "modernia": lambda sv: build_modernia_resources(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
     "cinderella": lambda sv: build_beautiful_resources(sv),
@@ -1086,6 +1123,7 @@ _RESOURCE_SCALED_NUKE_BUILDERS = {
 # "at"(optional, "full_burst_end"), "stat", "duration"}.
 _RESOURCE_GATED_BUFF_BUILDERS = {
     "arcana-fortune-mate": lambda sv: build_keepsake_album_resource_gated_buffs(sv),
+    "leona": lambda sv: build_lions_heart_resource_gated_buffs(sv),
     "soda-twinkling-bunny": lambda sv: build_onward_soda_resource_gated_buffs(sv),
 }
 
@@ -1215,7 +1253,9 @@ _ASSUMED_CHARGE_MOTION_DELAY = frozenset({
     "d-killer-wife",
     "diesel-winter-sweets-highlight",
     "diesel-winter-sweets-intro",
+    "dolla",
     "ein",
+    "eunhwa-tactical-upgrade",
     "laplace",
     "laplace-signature",
     "maiden-ice-rose",
