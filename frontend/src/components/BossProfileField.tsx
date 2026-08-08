@@ -3,7 +3,12 @@
 // Mirrors BossProfile in src/types/recommend.ts.
 
 import { useId, useState } from 'react'
-import { coreHitRateGroups } from '../lib/coreHitRate'
+import {
+  REFERENCE_WEAPONS,
+  WEAPON_SPREAD_DIAMETER,
+  coreDiameterFromMeasurement,
+  coreHitRateGroups,
+} from '../lib/coreHitRate'
 import { bossElementFor } from '../lib/elementAdvantage'
 import { WEAKNESS_ICON } from '../lib/elementIcon'
 import { elementLabel } from '../lib/elementName'
@@ -67,6 +72,77 @@ function CoreHitRateReadout({ coreDiameter }: { coreDiameter: string }) {
           group.rate >= 1 ? '100' : (group.rate * 100).toFixed(1)}%`)
         .join(' · ')}
     </p>
+  )
+}
+
+/** 화면에서 잰 두 픽셀을 엔진 단위로 옮겨 코어 지름 칸에 넣어 주는 계산기.
+ *
+ * 칸이 받는 단위(엔진)와 사람이 잴 수 있는 단위(화면 px)가 달라서, 이게 없으면
+ * 잰 숫자를 그대로 치는 순간 조용히 틀린다. 해상도를 묻지 않는 이유는
+ * **화면 px을 엔진 단위로 옮기는 일반형이 없기 때문**이다 — 비율만 쓴다
+ * (`lib/coreHitRate.ts`, `docs/measurements/accuracy-circle-and-core-px.md`).
+ *
+ * 입력은 draft에 남기지 않는다. 잰 값을 재료로 엔진 값을 만들고 나면 할 일이
+ * 끝나므로, 저장했다가 낡을 것이 없다. */
+function CoreMeasurementCalculator({ onFill }: { onFill: (engineValue: string) => void }) {
+  const [corePx, setCorePx] = useState('')
+  const [reticlePx, setReticlePx] = useState('')
+  const [weapon, setWeapon] = useState<(typeof REFERENCE_WEAPONS)[number]>(
+    REFERENCE_WEAPONS[0],
+  )
+  const weaponId = useId()
+
+  const engineValue = coreDiameterFromMeasurement(
+    Number(corePx.trim() === '' ? Number.NaN : corePx),
+    Number(reticlePx.trim() === '' ? Number.NaN : reticlePx),
+    weapon,
+  )
+  // 판독이 ±1px이면 결과는 수 %가 흔들린다. 소수점을 더 붙이면 없는 정밀도다.
+  const rounded = engineValue === null ? null : engineValue.toFixed(2)
+
+  return (
+    <div className="core-measure">
+      <span className="field__label-row">
+        <span className="field__label">화면에서 재서 넣기</span>
+        <HelpTip label="화면에서 재서 넣기">
+          <HelpText>{HELP.boss.coreMeasure}</HelpText>
+        </HelpTip>
+      </span>
+      <div className="field-row field-row--pair">
+        <NumberField label="코어 (px)" value={corePx} min={0} onChange={setCorePx} />
+        <NumberField label="조준원 (px)" value={reticlePx} min={0} onChange={setReticlePx} />
+      </div>
+      <div className="core-measure__row">
+        <label className="field__label" htmlFor={weaponId}>기준자 무기</label>
+        <select
+          id={weaponId}
+          className="field__input"
+          value={weapon}
+          onChange={(event) =>
+            setWeapon(event.target.value as (typeof REFERENCE_WEAPONS)[number])
+          }
+        >
+          {REFERENCE_WEAPONS.map((w) => (
+            <option key={w} value={w}>
+              {w} ({WEAPON_SPREAD_DIAMETER[w]})
+            </option>
+          ))}
+        </select>
+        <button
+          type="button"
+          className="btn"
+          disabled={rounded === null}
+          onClick={() => rounded !== null && onFill(rounded)}
+        >
+          코어 지름 넣기
+        </button>
+      </div>
+      {rounded !== null && (
+        <p className="field__readout group__hint" data-testid="core-measurement-result">
+          = 엔진 단위 <strong>{rounded}</strong>
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -341,6 +417,9 @@ export function BossProfileField({
               onChange={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
             />
             <CoreHitRateReadout coreDiameter={value.core_diameter_px} />
+            <CoreMeasurementCalculator
+              onFill={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
+            />
           </>
         )}
       </details>
