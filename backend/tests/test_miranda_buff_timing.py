@@ -68,6 +68,7 @@ def test_wake_up_ranks_after_powering_up_landed():
     # 웨이크업!의 랭킹이 파워업!의 공격력 버프를 못 보게 된다.
     result = a_run()
     powering_up, wake_up = _grants(result)
+    assert powering_up and wake_up, "파워업!·웨이크업!3이 한 번도 판정되지 않았다"
     assert len(powering_up) == len(wake_up)
     for p, w in zip(powering_up, wake_up):
         assert w["time"] > p["time"]
@@ -94,5 +95,6 @@ def test_miranda_never_targets_herself_in_a_five_unit_deck():
     # 원문이 "except caster"이고 후보가 넷이므로 그녀가 채울 빈자리가 없다.
     result = a_run(overload_on="ada-wong")
     powering_up, wake_up = _grants(result)
+    assert powering_up and wake_up, "파워업!·웨이크업!3이 한 번도 판정되지 않았다"
     for grant in powering_up + wake_up:
         assert "miranda-signature" not in grant["targets"]
