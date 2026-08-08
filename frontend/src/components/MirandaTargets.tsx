@@ -43,23 +43,26 @@ export function MirandaTargets({ result, portraitFor, nameFor }: MirandaTargetsP
     })
     .map((cycle) => cycle.index)
 
+  // 뱃지의 n/T는 「적어도 한 사이클」을 답한다. 이 문장이 재는 경계는 그와
+  // 다른 「매 사이클」이다(설계문서 §5.3) - 부분 수령 행에서 둘이 같은 줄에
+  // 뜨므로, 각 문장이 자기 기준을 스스로 말해야 뱃지와 안 부딪힌다.
   const describeThreshold = (slug: string): string | null => {
     const row = thresholdFor.get(slug)
     if (!row) return null
     if (row.kind === 'gain') {
       if (row.thresholdPercent === null) {
-        return `오버로드 공격력을 상한(${percent(overloadAtkCapPercent)})까지 올려도 못 받아요`
+        return `오버로드 공격력을 상한(${percent(overloadAtkCapPercent)})까지 올려도 매 사이클 받지는 못해요`
       }
       const gap = row.thresholdPercent - row.currentPercent
-      return `오버로드 공격력 ${percent(row.currentPercent)} → ${percent(row.thresholdPercent)} 필요 (+${gap.toFixed(2)}%p)`
+      return `오버로드 공격력 ${percent(row.currentPercent)} → ${percent(row.thresholdPercent)}면 매 사이클 받아요 (+${gap.toFixed(2)}%p)`
     }
     // kind가 'keep'이면 지금 받고 있다는 뜻이라 경계는 항상 숫자다 (백엔드
     // overload_thresholds가 이 조합에서만 null을 안 낸다) - null 분기는 gain 쪽뿐.
     const { thresholdPercent } = row
     if (thresholdPercent === null) return null
-    if (thresholdPercent === 0) return '오버로드 공격력이 없어도 유지돼요'
+    if (thresholdPercent === 0) return '오버로드 공격력이 없어도 매 사이클 유지돼요'
     const slack = row.currentPercent - thresholdPercent
-    return `오버로드 공격력이 ${percent(thresholdPercent)} 밑으로 내려가면 놓쳐요 (지금 ${percent(row.currentPercent)}, 여유 ${slack.toFixed(2)}%p)`
+    return `오버로드 공격력이 ${percent(thresholdPercent)} 밑으로 내려가면 매 사이클은 못 받아요 (지금 ${percent(row.currentPercent)}, 여유 ${slack.toFixed(2)}%p)`
   }
 
   return (
