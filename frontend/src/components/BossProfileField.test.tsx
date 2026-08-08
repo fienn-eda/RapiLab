@@ -348,3 +348,92 @@ describe('BossProfileField 회차 보스 피커', () => {
     expect(screen.getByRole('radio', { name: '전격선바스' })).not.toBeChecked()
   })
 })
+
+describe('BossProfileField 코어 지름', () => {
+  it('코어 피격이 꺼져 있으면 칸이 없다', () => {
+    // 엔진이 core_hittable이 거짓이면 이 값을 무시한다. 켤 수는 있는데 아무 일도
+    // 안 일어나는 칸을 그리지 않는다.
+    render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />)
+
+    // 롤로 겨눈다 - /코어 지름/은 설명 버튼(「코어 지름 설명」)까지 문다.
+    expect(screen.queryByRole('spinbutton', { name: /코어 지름/ })).not.toBeInTheDocument()
+  })
+
+  it('코어 피격을 켜면 칸이 나온다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), core_hittable: true }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    expect(screen.getByRole('spinbutton', { name: /코어 지름/ })).toBeInTheDocument()
+  })
+
+  it('코어 피격을 끄면 값도 지운다 — 폼에 모순 상태를 만들지 않는다', async () => {
+    // 값을 남겨 두면 화면에서 사라진 칸이 계산에는 남는다.
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{
+          ...makeDefaultBossProfileDraft(),
+          core_hittable: true,
+          core_diameter_px: '33.33',
+        }}
+        onChange={onChange}
+      />,
+    )
+
+    await user.click(screen.getByLabelText('코어 피격 가능'))
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ core_hittable: false, core_diameter_px: '' }),
+    )
+  })
+
+  it('코어가 기록된 회차 보스를 고르면 값과 코어 피격이 함께 들어간다', async () => {
+    // 코어 피격을 같이 켜지 않으면 엔진이 값을 무시해, 카드를 눌러도 아무 일이
+    // 없는 것과 같아진다.
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    const measured: RaidRotation = {
+      ...rotation,
+      bosses: rotation.bosses.map((boss) =>
+        boss.name === '선바스' ? { ...boss, core_diameter_px: 58.67 } : boss,
+      ),
+    }
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        onChange={onChange}
+        rotation={measured}
+      />,
+    )
+
+    await user.click(screen.getByRole('radio', { name: '전격선바스' }))
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ core_diameter_px: '58.67', core_hittable: true }),
+    )
+  })
+
+  it('코어가 없는 회차 보스를 고르면 칸이 비고 코어 피격도 꺼진다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), core_hittable: true,
+                 core_diameter_px: '99' }}
+        onChange={onChange}
+        rotation={rotation}
+      />,
+    )
+
+    await user.click(screen.getByRole('radio', { name: '전격선바스' }))
+
+    expect(onChange).toHaveBeenCalledWith(
+      expect.objectContaining({ core_diameter_px: '', core_hittable: false }),
+    )
+  })
+})

@@ -86,6 +86,11 @@ export function BossProfileField({
       ...makeDefaultBossProfileDraft(defaultEnemyDef),
       element: bossElementFor(boss.weakness),
       effective_range_band: boss.range_band,
+      core_diameter_px:
+        boss.core_diameter_px === null ? '' : String(boss.core_diameter_px),
+      // 코어 지름이 기록돼 있다는 것은 그 보스를 코어로 때릴 수 있다는 뜻이다.
+      // 같이 켜지 않으면 엔진이 값을 무시해, 카드를 눌러도 아무 일이 없다.
+      core_hittable: boss.core_diameter_px !== null,
     })
   }
 
@@ -196,6 +201,9 @@ export function BossProfileField({
                 // 폼에서 모순 상태를 아예 만들지 않는 편이 화면이 정직하다.
                 pierce_hits_body_behind_core:
                   event.target.checked && value.pierce_hits_body_behind_core,
+                // 코어를 못 때리면 크기도 의미가 없다. 값을 남겨 두면 화면에서
+                // 사라진 칸이 계산에는 남는다.
+                core_diameter_px: event.target.checked ? value.core_diameter_px : '',
               })
             }
           />
@@ -205,6 +213,18 @@ export function BossProfileField({
           <HelpText>{HELP.boss.coreHittable}</HelpText>
         </HelpTip>
       </div>
+
+      {value.core_hittable && (
+        <NumberField
+          label="코어 지름"
+          hint="엔진 단위"
+          value={value.core_diameter_px}
+          error={errors?.core_diameter_px}
+          min={0}
+          help={HELP.boss.coreDiameter}
+          onChange={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
+        />
+      )}
 
       <div className="checkbox-row">
         <label className="checkbox">
