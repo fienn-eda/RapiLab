@@ -544,15 +544,20 @@ def test_wake_up_ranks_after_powering_up_landed():
 
 
 def test_overload_atk_alone_decides_the_ranking():
-    # 표시 공격력이 다섯 다 같으므로, 오버로드가 안 세어지면 다섯이 동점이라
-    # 좌석 순서로만 갈린다. ada-wong이 이기면 오버로드가 세어진 것이다.
+    # 표시 공격력이 다섯 다 같으면 랭킹이 전부 동점이고, 동점은 좌석 순서로
+    # 갈린다(안정 정렬). 그래서 오버로드를 받는 쪽은 **덱의 맨 뒤**여야 한다 -
+    # isabel은 동점일 때 절대 안 뽑히는 자리에 있으므로, 그녀가 1순위로
+    # 올라오는 것은 오버로드 말고 설명할 길이 없다.
+    #
+    # 측정값(2026-08-08): 오버로드 없이 ['crown', 'ada-wong'],
+    # isabel에게 +12%를 주면 ['isabel', 'crown'].
     without = a_run()
-    with_overload = a_run(overload_on="ada-wong")
+    with_overload = a_run(overload_on="isabel")
     powering_up_without, _ = _grants(without)
     powering_up_with, wake_up_with = _grants(with_overload)
-    assert "ada-wong" not in powering_up_without[0]["targets"]
-    assert powering_up_with[0]["targets"][0] == "ada-wong"
-    assert wake_up_with[0]["targets"] == ["ada-wong"]
+    assert "isabel" not in powering_up_without[0]["targets"]
+    assert powering_up_with[0]["targets"][0] == "isabel"
+    assert wake_up_with[0]["targets"] == ["isabel"]
 
 
 def test_miranda_never_targets_herself_in_a_five_unit_deck():
@@ -568,7 +573,9 @@ def test_miranda_never_targets_herself_in_a_five_unit_deck():
 Run: `cd backend && python -m pytest tests/test_miranda_buff_timing.py -v`
 Expected: **PASS 전부.** 이 태스크는 이미 참인 사실을 고정하는 것이므로 실패하면 안 된다.
 
-FAIL이 나면 **거기서 멈추고 보고한다** — 앞선 세 태스크 중 하나가 계측을 잘못 배선했다는 뜻이다. `test_overload_atk_alone_decides_the_ranking`이 `powering_up_without[0]["targets"]`에서 IndexError를 내면 좌석 배치가 풀버스트를 못 여는 것이니 `DECK` 구성을 확인한다(1·1·3 모양이어야 한다: 미란다 B1 / crown B2 / 나머지 셋 B3).
+FAIL이 나면 **거기서 멈추고 보고한다** — 앞선 세 태스크 중 하나가 계측을 잘못 배선했다는 뜻이다. `powering_up_without[0]`에서 IndexError가 나면 좌석 배치가 풀버스트를 못 여는 것이니 `DECK`가 1·1·3 모양인지 확인한다(미란다 B1 / crown B2 / 나머지 셋 B3).
+
+`test_overload_atk_alone_decides_the_ranking`의 대상이 `isabel`인 것은 우연이 아니다 — 동점을 좌석 순서가 가르므로, 덱 앞쪽 유닛은 오버로드가 없어도 이미 상위 2명에 든다. 대상을 바꾸려면 그 유닛이 동점 상태에서 뽑히지 않는 자리인지 먼저 확인해야 한다.
 
 - [ ] **Step 3: Commit**
 
