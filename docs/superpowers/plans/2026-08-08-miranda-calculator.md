@@ -1322,11 +1322,19 @@ def test_a_slug_the_engine_cannot_use_is_rejected():
     assert "not-a-nikke" in response.json()["detail"]
 
 
+def test_a_deck_with_a_repeated_slug_is_rejected():
+    deck = ["miranda-signature", "crown", "ada-wong", "cinderella", "cinderella"]
+    response = post(deck)
+    assert response.status_code == 422
+    assert "cinderella" in response.json()["detail"]
+
+
 def test_a_deck_with_no_feasible_burst_order_is_rejected():
-    # B3 다섯 - 1·1·3 / 1·2·2 / 2·1·2 중 어느 모양도 아니다.
-    deck = ["ada-wong", "cinderella", "isabel", "julia", "helm"]
+    # 미란다(B1) + B3 넷 - 1·1·3 / 1·2·2 / 2·1·2 중 어느 모양도 아니다.
+    deck = ["miranda-signature", "ada-wong", "cinderella", "isabel", "julia"]
     response = post(deck, roster=[a_unit(slug) for slug in deck])
     assert response.status_code == 422
+    assert "성립하는 버스트 순서가 없어요" in response.json()["detail"]
 ```
 
 - [ ] **Step 2: Run test to verify it fails**
@@ -1339,7 +1347,7 @@ Expected: FAIL — 404 (라우트 없음)
 `backend/app/api.py`의 import 블록에 추가 (`from app.models import UserNikkeState` 앞, 알파벳 순서 유지):
 
 ```python
-from app.miranda_targets import MIRANDA_SLUGS, miranda_slug_in, miranda_target_report
+from app.miranda_targets import miranda_slug_in, miranda_target_report
 ```
 
 `ChargeWindowResponse` 클래스 정의 **뒤**에 모델을 추가:
@@ -1404,6 +1412,9 @@ def _miranda_targets_sync(request: MirandaTargetsRequest, cancel) -> MirandaTarg
     _reject_unknown_overload_options(request.roster)
     if len(request.units) != DECK_SIZE:
         raise HTTPException(422, f"덱은 {DECK_SIZE}명이어야 해요.")
+    if len(request.units) != len(set(request.units)):
+        dups = sorted({s for s in request.units if request.units.count(s) > 1})
+        raise HTTPException(422, f"이 덱에 같은 니케가 겹쳐 들어갔어요: {dups}")
     if miranda_slug_in(request.units) is None:
         raise HTTPException(422, "덱에 미란다가 없어요. 미란다를 넣어야 계산할 수 있어요.")
 

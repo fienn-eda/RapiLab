@@ -27,7 +27,7 @@ from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_
 from app.deck_evaluation import InfeasibleDeck, evaluate_decks
 from app.deck_search import BossProfile, search_best_decks
 from app.engine_version import engine_version
-from app.miranda_targets import MIRANDA_SLUGS, miranda_slug_in, miranda_target_report
+from app.miranda_targets import miranda_slug_in, miranda_target_report
 from app.models import UserNikkeState
 from app.overload_effects import NAME_TO_STAT, max_charge_speed_percent
 from app.paths import frontend_dist
@@ -759,6 +759,9 @@ def _miranda_targets_sync(request: MirandaTargetsRequest, cancel) -> MirandaTarg
     _reject_unknown_overload_options(request.roster)
     if len(request.units) != DECK_SIZE:
         raise HTTPException(422, f"덱은 {DECK_SIZE}명이어야 해요.")
+    if len(request.units) != len(set(request.units)):
+        dups = sorted({s for s in request.units if request.units.count(s) > 1})
+        raise HTTPException(422, f"이 덱에 같은 니케가 겹쳐 들어갔어요: {dups}")
     if miranda_slug_in(request.units) is None:
         raise HTTPException(422, "덱에 미란다가 없어요. 미란다를 넣어야 계산할 수 있어요.")
 

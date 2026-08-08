@@ -56,8 +56,16 @@ def test_a_slug_the_engine_cannot_use_is_rejected():
     assert "not-a-nikke" in response.json()["detail"]
 
 
+def test_a_deck_with_a_repeated_slug_is_rejected():
+    deck = ["miranda-signature", "crown", "ada-wong", "cinderella", "cinderella"]
+    response = post(deck)
+    assert response.status_code == 422
+    assert "cinderella" in response.json()["detail"]
+
+
 def test_a_deck_with_no_feasible_burst_order_is_rejected():
-    # B3 다섯 - 1·1·3 / 1·2·2 / 2·1·2 중 어느 모양도 아니다.
-    deck = ["ada-wong", "cinderella", "isabel", "julia", "helm"]
+    # 미란다(B1) + B3 넷 - 1·1·3 / 1·2·2 / 2·1·2 중 어느 모양도 아니다.
+    deck = ["miranda-signature", "ada-wong", "cinderella", "isabel", "julia"]
     response = post(deck, roster=[a_unit(slug) for slug in deck])
     assert response.status_code == 422
+    assert "성립하는 버스트 순서가 없어요" in response.json()["detail"]
