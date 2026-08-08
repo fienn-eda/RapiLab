@@ -6,7 +6,8 @@
     "original_rare": "SR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "라피"
   },
   {
     "resource_id": 11,
@@ -15,7 +16,8 @@
     "original_rare": "SR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "네온"
   },
   {
     "resource_id": 12,
@@ -24,7 +26,8 @@
     "original_rare": "SR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "아니스"
   },
   {
     "resource_id": 14,
@@ -33,7 +36,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "네온 : 블루 오션"
   },
   {
     "resource_id": 15,
@@ -42,7 +46,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "아니스 : 스파클링 서머"
   },
   {
     "resource_id": 16,
@@ -51,7 +56,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "라피 : 레드 후드"
   },
   {
     "resource_id": 17,
@@ -60,7 +66,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "아니스 : 스타"
   },
   {
     "resource_id": 18,
@@ -69,7 +76,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "네온 : 비전 아이"
   },
   {
     "resource_id": 20,
@@ -78,7 +86,8 @@
     "original_rare": "SR",
     "class": "Defender",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "델타"
   },
   {
     "resource_id": 22,
@@ -87,7 +96,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "시그널"
   },
   {
     "resource_id": 23,
@@ -96,7 +106,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "델타 : 닌자 시프"
   },
   {
     "resource_id": 30,
@@ -105,7 +116,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "폴리"
   },
   {
     "resource_id": 32,
@@ -114,7 +126,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "미란다"
   },
   {
     "resource_id": 33,
@@ -123,7 +136,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "키리"
   },
   {
     "resource_id": 40,
@@ -132,7 +146,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "D"
   },
   {
     "resource_id": 41,
@@ -141,7 +156,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "K"
   },
   {
     "resource_id": 43,
@@ -150,7 +166,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "D : 킬러 와이프"
   },
   {
     "resource_id": 60,
@@ -159,7 +176,8 @@
     "original_rare": "SR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "벨로타"
   },
   {
     "resource_id": 61,
@@ -168,7 +186,8 @@
     "original_rare": "SR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "미카"
   },
   {
     "resource_id": 62,
@@ -177,7 +196,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "미카 : 스노우 버디"
   },
   {
     "resource_id": 70,
@@ -186,7 +206,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "브리드"
   },
   {
     "resource_id": 71,
@@ -195,7 +216,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "솔린"
   },
   {
     "resource_id": 72,
@@ -204,7 +226,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "디젤"
   },
   {
     "resource_id": 73,
@@ -213,7 +236,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "브리드 : 사일런트 트랙"
   },
   {
     "resource_id": 74,
@@ -222,7 +246,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "솔린 : 프로스트 티켓"
   },
   {
     "resource_id": 75,
@@ -231,7 +256,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "디젤 : 윈터 스위츠"
   },
   {
     "resource_id": 80,
@@ -240,7 +266,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "센티"
   },
   {
     "resource_id": 82,
@@ -249,7 +276,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "리타"
   },
   {
     "resource_id": 90,
@@ -258,7 +286,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "엠마"
   },
   {
     "resource_id": 91,
@@ -267,7 +296,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "베스티"
   },
   {
     "resource_id": 92,
@@ -276,7 +306,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "은화"
   },
   {
     "resource_id": 93,
@@ -285,7 +316,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "엠마 : 택티컬 업"
   },
   {
     "resource_id": 94,
@@ -294,7 +326,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "베스티 : 택티컬 업"
   },
   {
     "resource_id": 95,
@@ -303,7 +336,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "은화 : 택티컬 업"
   },
   {
     "resource_id": 100,
@@ -312,7 +346,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "라플라스"
   },
   {
     "resource_id": 101,
@@ -321,7 +356,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "드레이크"
   },
   {
     "resource_id": 102,
@@ -330,7 +366,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "맥스웰"
   },
   {
     "resource_id": 103,
@@ -339,7 +376,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "라플라스 : 얼티밋 히어로"
   },
   {
     "resource_id": 105,
@@ -348,7 +386,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "맥스웰 : 오디너리 미케닉"
   },
   {
     "resource_id": 110,
@@ -357,7 +396,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "크로우"
   },
   {
     "resource_id": 111,
@@ -366,7 +406,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "자칼"
   },
   {
     "resource_id": 112,
@@ -375,7 +416,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "바이퍼"
   },
   {
     "resource_id": 113,
@@ -384,7 +426,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "E.H."
   },
   {
     "resource_id": 120,
@@ -393,7 +436,8 @@
     "original_rare": "SR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "N102"
   },
   {
     "resource_id": 121,
@@ -402,7 +446,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "앤 : 미라클 페어리"
   },
   {
     "resource_id": 130,
@@ -411,7 +456,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "메어리"
   },
   {
     "resource_id": 131,
@@ -420,7 +466,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "페퍼"
   },
   {
     "resource_id": 132,
@@ -429,7 +476,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "메어리 : 베이 갓데스"
   },
   {
     "resource_id": 140,
@@ -438,7 +486,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "슈가"
   },
   {
     "resource_id": 141,
@@ -447,7 +496,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "밀크"
   },
   {
     "resource_id": 142,
@@ -456,7 +506,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "프림"
   },
   {
     "resource_id": 143,
@@ -465,7 +516,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "밀크 : 블루밍 바니"
   },
   {
     "resource_id": 150,
@@ -474,7 +526,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "율리아"
   },
   {
     "resource_id": 160,
@@ -483,7 +536,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "유니"
   },
   {
     "resource_id": 161,
@@ -492,7 +546,8 @@
     "original_rare": "SR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "미하라"
   },
   {
     "resource_id": 162,
@@ -501,7 +556,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "미하라 : 본딩 체인"
   },
   {
     "resource_id": 170,
@@ -510,7 +566,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "프리바티"
   },
   {
     "resource_id": 171,
@@ -519,7 +576,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "율하"
   },
   {
     "resource_id": 172,
@@ -528,7 +586,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "애드미"
   },
   {
     "resource_id": 180,
@@ -537,7 +596,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "길로틴"
   },
   {
     "resource_id": 181,
@@ -546,7 +606,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "메이든"
   },
   {
     "resource_id": 182,
@@ -555,7 +616,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "길로틴 : 윈터 슬레이어"
   },
   {
     "resource_id": 183,
@@ -564,7 +626,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "메이든 : 아이스 로즈"
   },
   {
     "resource_id": 190,
@@ -573,7 +636,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "루드밀라"
   },
   {
     "resource_id": 191,
@@ -582,7 +646,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "앨리스"
   },
   {
     "resource_id": 192,
@@ -591,7 +656,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "토브"
   },
   {
     "resource_id": 193,
@@ -600,7 +666,8 @@
     "original_rare": "SR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "네베"
   },
   {
     "resource_id": 194,
@@ -609,7 +676,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "루드밀라 : 윈터 오너"
   },
   {
     "resource_id": 195,
@@ -618,7 +686,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "앨리스 : 원더랜드 바니"
   },
   {
     "resource_id": 200,
@@ -627,7 +696,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "루피"
   },
   {
     "resource_id": 201,
@@ -636,7 +706,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "얀"
   },
   {
     "resource_id": 202,
@@ -645,7 +716,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "도라"
   },
   {
     "resource_id": 203,
@@ -654,7 +726,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "루피 : 윈터 쇼퍼"
   },
   {
     "resource_id": 210,
@@ -663,7 +736,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "엑시아"
   },
   {
     "resource_id": 212,
@@ -672,7 +746,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "노벨"
   },
   {
     "resource_id": 220,
@@ -681,7 +756,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "스노우 화이트"
   },
   {
     "resource_id": 221,
@@ -690,7 +766,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "라푼젤"
   },
   {
     "resource_id": 222,
@@ -699,7 +776,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "홍련"
   },
   {
     "resource_id": 223,
@@ -708,7 +786,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "나유타"
   },
   {
     "resource_id": 224,
@@ -717,7 +796,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "스노우 화이트 : 이노센트 데이즈"
   },
   {
     "resource_id": 225,
@@ -726,7 +806,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "홍련 : 흑영"
   },
   {
     "resource_id": 226,
@@ -735,7 +816,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "라푼젤 : 퓨어 그레이스"
   },
   {
     "resource_id": 230,
@@ -744,7 +826,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "하란"
   },
   {
     "resource_id": 231,
@@ -753,7 +836,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "이사벨"
   },
   {
     "resource_id": 232,
@@ -762,7 +846,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "노아"
   },
   {
     "resource_id": 233,
@@ -771,7 +856,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "도로시"
   },
   {
     "resource_id": 234,
@@ -780,7 +866,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "도로시 : 세렌디피티"
   },
   {
     "resource_id": 240,
@@ -789,7 +876,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "루마니"
   },
   {
     "resource_id": 241,
@@ -798,7 +886,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "에피넬"
   },
   {
     "resource_id": 242,
@@ -807,7 +896,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "폴크방"
   },
   {
     "resource_id": 260,
@@ -816,7 +906,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "모더니아"
   },
   {
     "resource_id": 261,
@@ -825,7 +916,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "니힐리스타"
   },
   {
     "resource_id": 262,
@@ -834,7 +926,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "리버렐리오"
   },
   {
     "resource_id": 270,
@@ -843,7 +936,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "블랑"
   },
   {
     "resource_id": 271,
@@ -852,7 +946,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "누아르"
   },
   {
     "resource_id": 272,
@@ -861,7 +956,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "루주"
   },
   {
     "resource_id": 280,
@@ -870,7 +966,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "로산나"
   },
   {
     "resource_id": 281,
@@ -879,7 +976,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "목단"
   },
   {
     "resource_id": 282,
@@ -888,7 +986,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "사쿠라"
   },
   {
     "resource_id": 283,
@@ -897,7 +996,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "로산나 : 시크 오션"
   },
   {
     "resource_id": 284,
@@ -906,7 +1006,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "사쿠라 : 블룸 인 서머"
   },
   {
     "resource_id": 290,
@@ -915,7 +1016,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "마나"
   },
   {
     "resource_id": 291,
@@ -924,7 +1026,8 @@
     "original_rare": "SR",
     "class": "Defender",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "에테르"
   },
   {
     "resource_id": 300,
@@ -933,7 +1036,8 @@
     "original_rare": "R",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "솔져 E.G."
   },
   {
     "resource_id": 301,
@@ -942,7 +1046,8 @@
     "original_rare": "R",
     "class": "Defender",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "솔져 F.A."
   },
   {
     "resource_id": 302,
@@ -951,7 +1056,8 @@
     "original_rare": "R",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "프로덕트 08"
   },
   {
     "resource_id": 303,
@@ -960,7 +1066,8 @@
     "original_rare": "R",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "프로덕트 12"
   },
   {
     "resource_id": 304,
@@ -969,7 +1076,8 @@
     "original_rare": "R",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "iDoll 플라워"
   },
   {
     "resource_id": 305,
@@ -978,7 +1086,8 @@
     "original_rare": "R",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "iDoll 오션"
   },
   {
     "resource_id": 306,
@@ -987,7 +1096,8 @@
     "original_rare": "R",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "솔져 O.W."
   },
   {
     "resource_id": 307,
@@ -996,7 +1106,8 @@
     "original_rare": "R",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "프로덕트 23"
   },
   {
     "resource_id": 308,
@@ -1005,7 +1116,8 @@
     "original_rare": "R",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "iDoll 썬"
   },
   {
     "resource_id": 310,
@@ -1014,7 +1126,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "에이드"
   },
   {
     "resource_id": 311,
@@ -1023,7 +1136,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "코코아"
   },
   {
     "resource_id": 312,
@@ -1032,7 +1146,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "소다"
   },
   {
     "resource_id": 313,
@@ -1041,7 +1156,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "프리바티 : 언카인드 메이드"
   },
   {
     "resource_id": 314,
@@ -1050,7 +1166,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "소다 : 트윙클링 바니"
   },
   {
     "resource_id": 315,
@@ -1059,7 +1176,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "에이드 : 에이전트 바니"
   },
   {
     "resource_id": 316,
@@ -1068,7 +1186,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "벨벳"
   },
   {
     "resource_id": 321,
@@ -1077,7 +1196,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "마르차나"
   },
   {
     "resource_id": 322,
@@ -1086,7 +1206,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "마르차나 : 마린 스터디"
   },
   {
     "resource_id": 330,
@@ -1095,7 +1216,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "크라운"
   },
   {
     "resource_id": 331,
@@ -1104,7 +1226,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "차임"
   },
   {
     "resource_id": 350,
@@ -1113,7 +1236,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "마스트"
   },
   {
     "resource_id": 351,
@@ -1122,7 +1246,8 @@
     "original_rare": "SR",
     "class": "Defender",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "앵커"
   },
   {
     "resource_id": 352,
@@ -1131,7 +1256,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "헬름"
   },
   {
     "resource_id": 353,
@@ -1140,7 +1266,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "헬름 : 아쿠아마린"
   },
   {
     "resource_id": 354,
@@ -1149,7 +1276,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "마스트 : 로망틱 메이드"
   },
   {
     "resource_id": 355,
@@ -1158,7 +1286,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "앵커 : 이노센트 메이드"
   },
   {
     "resource_id": 361,
@@ -1167,7 +1296,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "킬로"
   },
   {
     "resource_id": 380,
@@ -1176,7 +1306,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "네로"
   },
   {
     "resource_id": 381,
@@ -1185,7 +1316,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "비스킷"
   },
   {
     "resource_id": 382,
@@ -1194,7 +1326,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "레오나"
   },
   {
     "resource_id": 390,
@@ -1203,7 +1336,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "츠바이"
   },
   {
     "resource_id": 391,
@@ -1212,7 +1346,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "아인"
   },
   {
     "resource_id": 392,
@@ -1221,7 +1356,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "라이"
   },
   {
     "resource_id": 400,
@@ -1230,7 +1366,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "길티"
   },
   {
     "resource_id": 401,
@@ -1239,7 +1376,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "신"
   },
   {
     "resource_id": 402,
@@ -1248,7 +1386,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "퀀시"
   },
   {
     "resource_id": 403,
@@ -1257,7 +1396,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "퀀시 : 이스케이프 퀸"
   },
   {
     "resource_id": 411,
@@ -1266,7 +1406,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "플로라"
   },
   {
     "resource_id": 412,
@@ -1275,7 +1416,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "트리나"
   },
   {
     "resource_id": 430,
@@ -1284,7 +1426,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "노이즈"
   },
   {
     "resource_id": 431,
@@ -1293,7 +1436,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "볼륨"
   },
   {
     "resource_id": 432,
@@ -1302,7 +1446,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "아리아"
   },
   {
     "resource_id": 441,
@@ -1311,7 +1456,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "아비스타"
   },
   {
     "resource_id": 450,
@@ -1320,7 +1466,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "나가"
   },
   {
     "resource_id": 451,
@@ -1329,7 +1476,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "티아"
   },
   {
     "resource_id": 470,
@@ -1338,7 +1486,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "레드 후드"
   },
   {
     "resource_id": 471,
@@ -1347,7 +1496,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "스노우 화이트 : 헤비암즈"
   },
   {
     "resource_id": 500,
@@ -1356,7 +1506,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "일레그"
   },
   {
     "resource_id": 501,
@@ -1365,7 +1516,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "트로니"
   },
   {
     "resource_id": 502,
@@ -1374,7 +1526,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "일레그 : 붐 앤 쇼크"
   },
   {
     "resource_id": 511,
@@ -1383,7 +1536,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "신데렐라"
   },
   {
     "resource_id": 513,
@@ -1392,7 +1546,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "리틀 머메이드"
   },
   {
     "resource_id": 514,
@@ -1401,7 +1556,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "그레이브"
   },
   {
     "resource_id": 515,
@@ -1410,7 +1566,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "PILGRIM",
-    "corporation_sub_type": "OVERSPEC"
+    "corporation_sub_type": "OVERSPEC",
+    "name_ko": "신데렐라 : 크리스탈 웨이브"
   },
   {
     "resource_id": 520,
@@ -1419,7 +1576,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "브래디"
   },
   {
     "resource_id": 521,
@@ -1428,7 +1586,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "크러스트"
   },
   {
     "resource_id": 532,
@@ -1437,7 +1596,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "소라"
   },
   {
     "resource_id": 550,
@@ -1446,7 +1606,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "베이"
   },
   {
     "resource_id": 551,
@@ -1455,7 +1616,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "클레이"
   },
   {
     "resource_id": 570,
@@ -1464,7 +1626,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "아크레인저 블랙"
   },
   {
     "resource_id": 580,
@@ -1473,7 +1636,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "팬텀"
   },
   {
     "resource_id": 581,
@@ -1482,7 +1646,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "아르카나"
   },
   {
     "resource_id": 582,
@@ -1491,7 +1656,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "레이블"
   },
   {
     "resource_id": 583,
@@ -1500,7 +1666,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ELYSION",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "아르카나 : 포츈 메이트"
   },
   {
     "resource_id": 590,
@@ -1509,7 +1676,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "모리"
   },
   {
     "resource_id": 600,
@@ -1518,7 +1686,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "민트"
   },
   {
     "resource_id": 601,
@@ -1527,7 +1696,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "TETRA",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "프리카"
   },
   {
     "resource_id": 620,
@@ -1536,7 +1706,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "MISSILIS",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "백학"
   },
   {
     "resource_id": 800,
@@ -1545,7 +1716,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "마키마"
   },
   {
     "resource_id": 801,
@@ -1554,7 +1726,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "파워"
   },
   {
     "resource_id": 802,
@@ -1563,7 +1736,8 @@
     "original_rare": "SR",
     "class": "Supporter",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "히메노"
   },
   {
     "resource_id": 810,
@@ -1572,7 +1746,8 @@
     "original_rare": "SSR",
     "class": "Defender",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "2B"
   },
   {
     "resource_id": 811,
@@ -1581,7 +1756,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "A2"
   },
   {
     "resource_id": 812,
@@ -1590,7 +1766,8 @@
     "original_rare": "SR",
     "class": "Supporter",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "파스칼"
   },
   {
     "resource_id": 820,
@@ -1599,7 +1776,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "렘"
   },
   {
     "resource_id": 821,
@@ -1608,7 +1786,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "에밀리아"
   },
   {
     "resource_id": 822,
@@ -1617,7 +1796,8 @@
     "original_rare": "SR",
     "class": "Defender",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "람"
   },
   {
     "resource_id": 830,
@@ -1626,7 +1806,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "아스카"
   },
   {
     "resource_id": 831,
@@ -1635,7 +1816,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "레이"
   },
   {
     "resource_id": 832,
@@ -1644,7 +1826,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "마리"
   },
   {
     "resource_id": 833,
@@ -1653,7 +1836,8 @@
     "original_rare": "SR",
     "class": "Supporter",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "미사토"
   },
   {
     "resource_id": 834,
@@ -1662,7 +1846,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "레이 (가칭)"
   },
   {
     "resource_id": 835,
@@ -1671,7 +1856,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "아스카 : WILLE"
   },
   {
     "resource_id": 836,
@@ -1680,7 +1866,8 @@
     "original_rare": "SR",
     "class": "Supporter",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "사쿠라"
   },
   {
     "resource_id": 840,
@@ -1689,7 +1876,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "에이다"
   },
   {
     "resource_id": 841,
@@ -1698,7 +1886,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "질"
   },
   {
     "resource_id": 842,
@@ -1707,7 +1896,8 @@
     "original_rare": "SR",
     "class": "Supporter",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "클레어"
   },
   {
     "resource_id": 850,
@@ -1716,7 +1906,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "이브"
   },
   {
     "resource_id": 851,
@@ -1725,7 +1916,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "레이븐"
   },
   {
     "resource_id": 852,
@@ -1734,7 +1926,8 @@
     "original_rare": "SR",
     "class": "Supporter",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "릴리"
   },
   {
     "resource_id": 860,
@@ -1743,7 +1936,8 @@
     "original_rare": "SSR",
     "class": "Attacker",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "치사토"
   },
   {
     "resource_id": 861,
@@ -1752,7 +1946,8 @@
     "original_rare": "SSR",
     "class": "Supporter",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "타키나"
   },
   {
     "resource_id": 862,
@@ -1761,6 +1956,7 @@
     "original_rare": "SR",
     "class": "Supporter",
     "corporation": "ABNORMAL",
-    "corporation_sub_type": null
+    "corporation_sub_type": null,
+    "name_ko": "쿠루미"
   }
 ]

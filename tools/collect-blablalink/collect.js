@@ -42,6 +42,7 @@ const { JSDOM } = require('jsdom')
 const { connect, launch, findPage, captureUnit } = require('./capture')
 const { parseMainStats, parseOverload, parseSkills, parseCube } = require('./parse')
 const { fetchResource } = require('./resource-url')
+const { fetchLocalisedNames, mergeLocalisedNames } = require('./korean-names')
 
 const args = process.argv.slice(2)
 const DRY = args.includes('--dry-run')
@@ -404,6 +405,10 @@ const main = async () => {
             : e,
         )
       }
+      // 한국 서버 공식 표기. 인터셉트로 잡히는 목록은 영문판이라 여기서 따로
+      // 받아 붙인다(korean-names.js). 실패하면 던져서 스냅샷을 손대지 않는다 —
+      // 반쪽짜리로 덮어쓰면 name_ko가 통째로 사라진다.
+      entries = mergeLocalisedNames(entries, await fetchLocalisedNames('ko'))
     }
     fs.writeFileSync(OUT, `${JSON.stringify(entries, null, 2)}\n`)
     log(`wrote ${OUT}: ${entries.length} nikkes`)

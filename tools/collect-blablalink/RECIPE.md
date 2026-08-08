@@ -194,8 +194,8 @@ each record. Opens no browser. Merge into the committed table with
 ### Directory snapshot (`nikke-directory.json`)
 
 `node collect.js --directory` writes the directory's public identity fields
-(`resource_id` / `name_code` / `name_en` / `original_rare`, one entry per nikke) to
-`nikke-directory.json`, then stops — no roster, no capture. **This mode needs no
+(`resource_id` / `name_code` / `name_en` / `name_ko` / `original_rare`, one entry per
+nikke) to `nikke-directory.json`, then stops — no roster, no capture. **This mode needs no
 account**: it returns before the `game_openid` lookup, so only a ShiftyPad page load
 is required, and `trimDirectory` keeps no ownership or stat fields. That is why the
 file is committed while `roster.json` is gitignored.
@@ -207,6 +207,32 @@ Ticket variant 74) leaves every slug encoded and mis-maps the unit silently.
 
 Refresh it when new nikkes release — a `resource_id` absent from the snapshot fails
 the guard, which is also how you look up the id for a unit nobody owns yet.
+
+### Korean official names (`korean-names.js`)
+
+`name_ko` is the Korean service's own name for each unit, and it is what
+`backend/app/display_names.py` must be filled from — the KR naming is not always the
+phonetic reading of the English one (`Dolla` is **도라**, `Moran` is **목단**), so
+transliterating is guesswork.
+
+The page's own traffic never carries it: ShiftyPad serves the character list **once per
+locale**, and the bundle's `getLFormatLangUrl('/character/{l_lang}/nikke_list_{lang}_v2.json')`
+substitutes `{l_lang}` with the locale and `{lang}` with the language, **stripping `_ko`
+when the locale is `ko`**. So Korean lives at `/character/ko/nikke_list_v2.json` while the
+intercepted one is the English `/character/en/nikke_list_en_v2.json`. Watch the naming
+trap: `/character/ko/nikke_list_ko_v2.json` also answers 200 — with a stale, shorter list.
+
+It is a computed CDN path (above), so this needs **no browser and no session**:
+
+```
+node korean-names.js                      # fill name_ko into nikke-directory.json
+node korean-names.js --check              # report only; exit 1 if the snapshot is behind
+node korean-names.js --print 202          # 202  도라
+```
+
+`collect.js --directory` performs the same join, so a snapshot refresh keeps `name_ko`
+rather than dropping it. A failed fetch throws instead of writing — a half-filled
+snapshot would silently blank every Korean name.
 
 ## (e) Parser DOM structure (drives parse.js)
 
