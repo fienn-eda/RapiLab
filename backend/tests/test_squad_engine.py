@@ -594,8 +594,10 @@ def test_top_atk_slugs_records_the_grant_when_asked():
 
 
 def test_top_atk_slugs_records_nothing_without_grant_stats():
-    # 스탯 이름을 안 넘기는 호출자(맥스웰·레오나·나가·마나·소다)는 기록에 안 남는다 -
-    # 무슨 불릿인지 말하지 않은 호출을 무슨 불릿인지 아는 척 적을 수 없다.
+    # grant_stats 없이 top_atk_slugs를 직접 부르면 기록에 안 남는다 - 무슨 불릿인지
+    # 말하지 않은 호출을 무슨 불릿인지 아는 척 적을 수 없다. 소다가 이렇게 직접
+    # 부른다; 맥스웰·레오나·나가는 공유 헬퍼 highest_atk_buff_rule을 거치며 그
+    # 헬퍼가 grant_stats를 대신 넘기므로 기록되고, 마나는 top-N 랭킹을 안 쓴다.
     log = []
     ctx = SquadContext(
         [SquadMember("a", burst_tier=1, element="Fire"),

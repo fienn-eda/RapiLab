@@ -1256,7 +1256,7 @@ git commit -m "받으려면 오버로드 공격력이 얼마나 필요한지 답
 - Test: `backend/tests/test_api_miranda_targets.py`
 
 **Interfaces:**
-- Consumes: Task 6·7의 `miranda_target_report`, `miranda_slug_in`, `MIRANDA_SLUGS`
+- Consumes: Task 6·7의 `miranda_target_report`, `miranda_slug_in`
 - Produces: `POST /api/miranda-targets` — 요청 `{roster, units}`, 응답 아래 `MirandaTargetsResponse`
 
 - [ ] **Step 1: Write the failing test**
