@@ -258,9 +258,19 @@ describe('without onToggleExclude', () => {
   it('draws the chip as a plain drag source rather than a toggle', () => {
     // 이 화면(미란다 계산기)에는 탐색이 없어 후보 풀이라는 개념이 없다.
     // 켤 수는 있는데 아무 일도 안 일어나는 컨트롤을 남기지 않는다.
-    renderPalette({ onToggleExclude: undefined, excludedSlugs: undefined })
+    renderPalette({ onToggleExclude: undefined, excludedSlugs: undefined, draggable: true })
     const chip = screen.getByRole('button', { name: 'Crown' })
     expect(chip).not.toHaveAttribute('aria-pressed')
+    expect(chip).toHaveAttribute('draggable', 'true')
+  })
+
+  // A button with no click handler and a tab stop is the same failure this
+  // task removes, just moved from the toggle state to the element role: it
+  // still announces as actionable to a keyboard user and still does nothing.
+  it('takes the chip out of the tab sequence when it is not a toggle', () => {
+    renderPalette({ onToggleExclude: undefined, excludedSlugs: undefined })
+    const chip = screen.getByRole('button', { name: 'Crown' })
+    expect(chip).toHaveAttribute('tabIndex', '-1')
   })
 
   it('still toggles when the handler is given', () => {
@@ -270,5 +280,13 @@ describe('without onToggleExclude', () => {
     expect(chip).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(chip)
     expect(onToggleExclude).toHaveBeenCalledWith('crown')
+  })
+
+  // Regression guard for the recommend and union tabs: giving a handler must
+  // restore default focusability, not merely restore the toggle attributes.
+  it('leaves the chip in the tab sequence when the handler is given', () => {
+    renderPalette({ onToggleExclude: vi.fn() })
+    const chip = screen.getByRole('button', { name: /Crown 사용/ })
+    expect(chip).not.toHaveAttribute('tabIndex')
   })
 })

@@ -155,9 +155,12 @@ export function UnitPalette({
                       // each press is a fresh action. The name has to live here:
                       // the chip itself no longer shows any text. Without a
                       // handler there is no pool to toggle membership in, so
-                      // the button is a plain drag source instead.
+                      // the button is a plain drag source instead - taken out
+                      // of the tab sequence too, since a keyboard user landing
+                      // on it would find nothing to press.
                       aria-pressed={onToggleExclude ? !isExcluded : undefined}
                       aria-label={onToggleExclude ? `${unit.name} 사용` : unit.name}
+                      tabIndex={onToggleExclude ? undefined : -1}
                       draggable={draggable && !isExcluded && !isUsed}
                       onDragStart={(event) => {
                         event.dataTransfer.setData(DRAG_SLUG_TYPE, unit.slug)

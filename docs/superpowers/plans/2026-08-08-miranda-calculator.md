@@ -1957,9 +1957,19 @@ describe('without onToggleExclude', () => {
   it('draws the chip as a plain drag source rather than a toggle', () => {
     // 이 화면(미란다 계산기)에는 탐색이 없어 후보 풀이라는 개념이 없다.
     // 켤 수는 있는데 아무 일도 안 일어나는 컨트롤을 남기지 않는다.
-    renderPalette({ onToggleExclude: undefined, excludedSlugs: undefined })
+    renderPalette({ onToggleExclude: undefined, excludedSlugs: undefined, draggable: true })
     const chip = screen.getByRole('button', { name: '크라운' })
     expect(chip).not.toHaveAttribute('aria-pressed')
+    expect(chip).toHaveAttribute('draggable', 'true')
+  })
+
+  // 클릭 핸들러도 없고 탭 정지점만 남은 버튼은 이 태스크가 없애려는 것과
+  // 같은 결함이 자리만 옮긴 것이다 - 키보드 사용자에게는 여전히 눌러볼
+  // 만한 것으로 보이고, 여전히 아무 일도 안 일어난다.
+  it('takes the chip out of the tab sequence when it is not a toggle', () => {
+    renderPalette({ onToggleExclude: undefined, excludedSlugs: undefined })
+    const chip = screen.getByRole('button', { name: '크라운' })
+    expect(chip).toHaveAttribute('tabIndex', '-1')
   })
 
   it('still toggles when the handler is given', () => {
@@ -1969,6 +1979,14 @@ describe('without onToggleExclude', () => {
     expect(chip).toHaveAttribute('aria-pressed', 'true')
     fireEvent.click(chip)
     expect(onToggleExclude).toHaveBeenCalledWith('crown')
+  })
+
+  // 추천 탭·유니온 탭의 회귀 가드: 핸들러를 주면 토글 속성뿐 아니라
+  // 기본 포커스 가능 상태도 함께 돌아와야 한다.
+  it('leaves the chip in the tab sequence when the handler is given', () => {
+    renderPalette({ onToggleExclude: vi.fn() })
+    const chip = screen.getByRole('button', { name: /크라운 사용/ })
+    expect(chip).not.toHaveAttribute('tabIndex')
   })
 })
 ```
@@ -2000,14 +2018,21 @@ props 인터페이스를 교체:
   onToggleExclude,
 ```
 
-face 버튼의 세 속성을 교체:
+face 버튼의 속성을 교체:
 
 ```tsx
                       aria-pressed={onToggleExclude ? !isExcluded : undefined}
                       aria-label={onToggleExclude ? `${unit.name} 사용` : unit.name}
+                      tabIndex={onToggleExclude ? undefined : -1}
                       ...
                       onClick={onToggleExclude ? () => onToggleExclude(unit.slug) : undefined}
 ```
+
+토글이 아닌 칩은 `<button>`인 채로 남지만(드래그 소스 역할과 두 호출자의
+DOM을 그대로 유지하기 위해) `tabIndex={-1}`로 탭 순서에서는 뺀다 - 누를
+핸들러가 없는 정지점을 키보드 사용자에게 남기지 않기 위해서다. 핸들러가
+있으면 `tabIndex`를 아예 안 줘서 기본 포커스 가능 상태(추천 탭·유니온
+탭이 기대하는 것)를 그대로 둔다.
 
 (`draggable` 줄은 그대로 둔다 — `isExcluded`는 토글이 없으면 항상 false다.)
 
