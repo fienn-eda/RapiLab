@@ -5,6 +5,32 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## top-N 대상형 버프의 기록은 캐스터로 게이트하지 않는다 - 모든 호출이 남기고, 소비자가 caster로 거른다
+
+- Date: 2026-08-08
+- Context: 미란다 계산기가 필요한 것은 「최종 공격력 상위 N」 판정의 기록 -
+  파워업!(버스트)과 웨이크업!3이 누구를 대상으로 삼았는지. 이 판정을 하는
+  `SquadContext.top_atk_slugs`는 미란다 전용이 아니다 - 맥스웰(스트레이트 샷)·
+  레오나(펠릿)·나가(우정의 지원)의 top-N 불릿도 같은 헬퍼
+  (`_helpers.highest_atk_buff_rule`/`round_buff_rule`)를 공유해서 쓴다.
+- Decision: 로그(`SquadContext.target_grants`, opt-in - 기본 `None`)가 붙어
+  있으면 **어느 caster가 호출했든** 자기 `grant_stats`(주는 스탯 이름)를 선언해
+  무조건 한 건을 남긴다. 미란다만 골라 기록하는 조건은 헬퍼 안에 두지 않는다 -
+  소비자가 `caster`로 걸러 자기가 찾는 불릿만 고른다(`miranda_targets.py`의
+  `caster in MIRANDA_SLUGS` 필터).
+- Why: 대안은 "caster가 미란다면 기록"을 헬퍼 안에 넣는 것이었다. 그러면
+  `highest_atk_buff_rule`이 자신을 호출하는 4명의 캐스터 중 누가 "특별"인지
+  알아야 하고, 다음 top-N 계산기(레오나·나가)가 생길 때마다 그 조건을 다시
+  넓혀야 한다. 캐스터로 거르는 일을 로그를 읽는 쪽의 몫으로 두면, 헬퍼는
+  **무엇을** 기록할지만 결정하고 **누구를 위한 것인지**는 몰라도 된다.
+- Consequences: 로그가 붙은 시뮬(`collect_target_grants=True` - 지금은
+  `miranda_target_report`뿐)에서는 맥스웰·레오나·나가의 grant도 함께 기록된다 -
+  오늘은 아무도 그 기록을 읽지 않는다. 탐색 핫패스(기본 `collect_target_grants=
+  False`)는 여전히 아무것도 안 쌓는다. 미래에 레오나나 나가의 계산기를 만들 때
+  데이터 배선은 이미 있다.
+- 관련: `docs/superpowers/specs/2026-08-08-miranda-calculator-design.md` §3,
+  `docs/insights.md`의 "미란다 오버로드 임계값은 naive 격차 나누기의 2.5~3배다".
+
 ## 한글 표시 이름의 출처는 ShiftyPad의 로케일별 목록, 표 자체는 계속 손으로 쓴다
 
 - Date: 2026-08-08
