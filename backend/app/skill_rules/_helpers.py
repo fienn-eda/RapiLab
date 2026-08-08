@@ -129,7 +129,7 @@ def _resolve_scope(scope_spec, context, caster_slug, registry, time, grant_stats
     with the highest final ATK, encoded as a "slugs:a,b" scope.
 
     `grant_stats` is what stat this grant hands out, recorded on the target log
-    (SquadContext.top_atk_slugs) for WHICHEVER caller's `("top_atk", n)` scope
+    (SquadContext.target_grants) for WHICHEVER caller's `("top_atk", n)` scope
     this resolves - not only Miranda's. A static scope has no ranking to
     record, so it's ignored there."""
     if isinstance(scope_spec, tuple) and scope_spec[0] == "top_atk":
