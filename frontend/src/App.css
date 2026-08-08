@@ -2096,3 +2096,84 @@
 .charge-ladder__note + .charge-ladder__note {
   margin-top: var(--sp-2);
 }
+
+/* 미란다 계산기 결과 — 초상화 한 줄에 뱃지와 임계값. 금은 웨이크업!3(단 한
+   명), 은은 파워업!(둘). 색만으로 구분되지 않도록 글자가 스탯 이름을 말한다. */
+.miranda-targets__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+}
+
+.miranda-targets__row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  flex-wrap: wrap;
+}
+
+.miranda-targets__portrait {
+  width: 40px;
+  height: 40px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.miranda-targets__portrait--missing {
+  background: var(--rule);
+}
+
+.miranda-targets__name {
+  font-weight: 550;
+  min-width: 7ch;
+}
+
+.miranda-targets__badges {
+  display: flex;
+  gap: var(--sp-1);
+  flex-wrap: wrap;
+}
+
+.miranda-badge {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.25em;
+  padding: 0.1em 0.5em;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  border: 1px solid;
+}
+
+.miranda-badge--gold {
+  color: #8a6b12;
+  border-color: #d8b13a;
+  background: #fdf4dc;
+}
+
+.miranda-badge--silver {
+  color: #55585c;
+  border-color: #b9bdc2;
+  background: #f2f3f5;
+}
+
+.miranda-badge b {
+  font-weight: 500;
+  opacity: 0.75;
+}
+
+.miranda-targets__caster,
+.miranda-targets__threshold,
+.miranda-targets__caveat,
+.miranda-targets__note {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.miranda-targets__threshold {
+  flex-basis: 100%;
+  padding-left: calc(40px + var(--sp-2));
+}
