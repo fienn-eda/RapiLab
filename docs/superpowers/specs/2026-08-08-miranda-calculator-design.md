@@ -333,7 +333,7 @@ class MirandaOverloadThreshold(BaseModel):
 | 조건 | 메시지 |
 |---|---|
 | `len(units) != 5` | 덱은 5명이어야 한다 |
-| 미란다 부재 | 미란다(또는 애장품 미란다)가 덱에 없다 |
+| 미란다 부재 | 미란다(또는 애장품 미란다)가 덱에 없다 — 화면에서는 좌석이 고정이라 닿지 않는 가드다(§7.2). API는 화면 밖에서도 불릴 수 있으므로 남긴다 |
 | 미지원/로스터에 없는 슬러그 | 그 슬러그를 쓸 수 없다 |
 | `InfeasibleDeck` | 성립하는 버스트 순서가 없다 (`_evaluate_decks_sync`의 문구 재사용) |
 
@@ -364,12 +364,45 @@ class MirandaOverloadThreshold(BaseModel):
 ```
 <div className="draft-layout">
   <UnitPalette ... />
-  <DraftEditor numDecks={1} showLocks={false} ... />
+  <DraftEditor numDecks={1} showLocks={false} fixedSlugs={[mirandaSlug]} ... />
 </div>
 ```
 
-같은 컴포넌트라 드래그·제외·초상화·티어 뱃지 동작이 자동으로 일치한다. 잠금이
-없는 이유도 같다 — 고정할 최적화가 없다.
+같은 컴포넌트라 드래그·초상화·티어 뱃지 동작이 자동으로 일치한다. 잠금이 없는
+이유도 같다 — 고정할 최적화가 없다.
+
+**미란다는 처음부터 앉아 있고, 유저는 남은 네 자리만 채운다**(Fienn, 2026-08-08).
+
+초기값은 `placeUnit(makeEmptyDraft(1), 0, mirandaSlug)`이다. `mirandaSlug`는
+로스터에 있는 쪽 — 애장품을 보유하면 임포트가 이미 `miranda-signature`로
+승격해 두었으므로(§8) 그것을, 아니면 `miranda`를 쓴다. 패널은 `App.tsx`가
+이미 쓰는 대로 `key={activeKey}`로 마운트되므로, 계정을 바꾸면 새 로스터로
+다시 앉는다.
+
+**「맨 왼쪽」에는 만들 장치가 없다.** `DraftEditor`가 좌석을 저장 순서가 아니라
+버스트 티어 순으로 그리고(`inTierOrder`, `DraftEditor.tsx:205-208`), 미란다는
+B1이라 언제나 첫 칸이다. 같은 B1이 하나 더 들어와도 JS의 정렬이 안정적이라 먼저
+앉은 미란다가 앞에 남는다.
+
+필요한 것은 **고정** 하나다. `DraftEditor`에 `fixedSlugs?: string[]`(기본
+`[]` = 오늘 동작)을 더해 세 가지를 막는다:
+
+1. × 제거 버튼을 그리지 않는다
+2. 그립이 `draggable`이 아니다 (끌어내서 뺄 수 없다)
+3. 그 좌석으로의 **스왑 드롭을 무시**한다 — 스왑은 점유자를 밀어내므로 ①②만
+   막으면 뒷문이 열린 채다
+
+**로스터에 미란다가 없으면** 편성을 시작할 수 없다. 빈 덱을 그려 두고 백엔드의
+422를 기다리는 대신, 패널이 안내만 띄운다 — 이 화면에서 유저가 할 수 있는 일이
+없기 때문이다.
+
+**팔레트의 「제외」는 이 화면에서 아무 일도 하지 않는다.** 제외가 하는 일은 탐색
+후보 풀에서 빼는 것인데 여기엔 탐색이 없고, 제출되는 것은 배치된 다섯뿐이다
+(로스터 전체는 스탯 때문에 실리지만 나머지는 안 읽힌다). 그래서
+`UnitPalette`의 `excludedSlugs`/`onToggleExclude`를 **옵셔널로 바꾸고**,
+`onToggleExclude`가 없으면 토글을 그리지 않는다. 켤 수는 있는데 아무 일도
+안 일어나는 컨트롤을 남기지 않는다는 것은 이 저장소가 이미 세운 규칙이다
+(`BossProfileField.tsx:47-49`). 기존 두 호출자는 계속 넘기므로 동작이 그대로다.
 
 요청 상태는 `ChargeWindowPanel`처럼 `useState` 세 개(`result`/`error`/`busy`)로
 둔다. 전용 훅을 만들 이유가 없다: 취소도, 캐시도, 프로필 저장도 없다. 다만 최대
@@ -418,8 +451,10 @@ class MirandaOverloadThreshold(BaseModel):
 | `frontend/src/components/MirandaTargets.tsx` | 초상화 + 뱃지 + 임계값 |
 | `frontend/src/api/mirandaTargets.ts` | POST |
 | `frontend/src/types/mirandaTargets.ts` | wire 타입 |
+| `frontend/src/components/DraftEditor.tsx` | `fixedSlugs` prop (기본 `[]`) |
+| `frontend/src/components/UnitPalette.tsx` | 제외 두 prop을 옵셔널로 |
 | `frontend/src/App.tsx` | 패널 한 줄 교체 |
-| `frontend/src/App.css` | 금/은 뱃지, 서브탭 |
+| `frontend/src/App.css` | 금/은 뱃지, 서브탭, 고정 좌석 |
 
 wire 타입의 필드는 **옵셔널로 두지 않는다** — 옵셔널이면 타입이 배선 누락을
 못 잡는다(`docs/insights.md`, 2026-08-07). `threshold_percent`의 `null`은
@@ -445,6 +480,8 @@ wire 타입의 필드는 **옵셔널로 두지 않는다** — 옵셔널이면 �
 - 다른 top-N 유닛(맥스웰·레오나·나가·마나·소다)은 `grant_stats`를 안 넘기므로
   기록되지 않는다. 그들의 계산기가 필요해지면 인자 하나를 넘기면 된다.
 - 차지 계산기의 동작·입력·결과는 그대로다. 바뀌는 것은 감싸는 서브탭뿐이다.
+- `DraftEditor`와 `UnitPalette`의 기존 두 호출자(추천 탭·유니온 탭)는 새 prop을
+  안 넘기므로 오늘과 같이 동작한다. 두 변경 모두 기본값이 오늘의 동작이다.
 
 ## 10. 테스트
 
@@ -475,9 +512,16 @@ wire 타입의 필드는 **옵셔널로 두지 않는다** — 옵셔널이면 �
   (차지 계산기 입력이 돌아와도 남아 있다).
 - `MirandaTargets.test.tsx` — 금+은 / 은만 / 뱃지 없음 세 상태, `n/T` 표기,
   변동 문장, 임계값 네 가지 문구, 애장품 없음 안내.
-- `MirandaCalculatorPanel.test.tsx` — 5명 미만이면 실행 버튼 비활성, 미란다가
-  없으면 안내, 진행 문구, 실패 시 오류 표시.
+- `MirandaCalculatorPanel.test.tsx` — 미란다가 처음부터 첫 칸에 앉아 있고 남은
+  네 자리가 비어 있다; 애장품을 보유하면 앉는 것이 `miranda-signature`다;
+  로스터에 미란다가 없으면 편성 대신 안내가 나온다; 다섯이 안 차면 실행 버튼
+  비활성; 진행 문구; 실패 시 오류 표시.
+- `DraftEditor.test.tsx` — `fixedSlugs`의 좌석은 제거 버튼이 없고, 드래그
+  소스가 아니며, **그 위로 스왑 드롭을 해도 밀려나지 않는다**(뒷문). 기본값
+  `[]`에서는 오늘 동작 그대로다.
+- `UnitPalette.test.tsx` — `onToggleExclude` 없이 렌더하면 제외 토글이 없고,
+  넘기면 오늘 동작 그대로다.
 
 ## 규모
 
-프로덕션 ~890줄(백엔드 ~450, 프론트 ~440), 테스트 ~500줄.
+프로덕션 ~920줄(백엔드 ~450, 프론트 ~470), 테스트 ~560줄.
