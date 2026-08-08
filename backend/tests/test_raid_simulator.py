@@ -4061,3 +4061,65 @@ def test_a_long_fight_still_reaches_a_fixed_point_with_room_to_spare():
     assert passes["passes"] < MAX_FULL_BURST_PASSES, (
         "상한은 폭주 방지 장치이지 품질 노브가 아니다 - 알려진 최악의 전투 길이가 "
         "상한을 다 쓰면 한 패스 더 필요한 덱이 조용히 오답을 낸다")
+
+
+def test_target_grants_are_absent_unless_asked_for():
+    # 계측이 기본 off라는 것이 탐색 핫패스 무변경의 증거다.
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    assert "target_grants" not in result
+
+
+def test_target_grants_carry_mirandas_two_bullets_when_asked_for():
+    from app.skill_rules.miranda import build_miranda_rules
+
+    miranda_values = {
+        "wake_up": {
+            "description_value_01": "32.99", "description_value_02": "10",
+            "description_value_03": "30.1", "description_value_04": "10",
+            "description_value_05": "23.7", "description_value_06": "10",
+            "description_value_07": "1", "description_value_08": "85.42",
+            "description_value_09": "1",
+        },
+        "powering_up": {
+            "description_value_01": "2", "description_value_02": "40.4",
+            "description_value_03": "10", "description_value_04": "56.23",
+            "description_value_05": "10",
+        },
+    }
+    deck = [
+        {"slug": "miranda", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "carry_b", "burst_tier": 2, "element": "Fire", "cooldown": 20.0},
+        {"slug": "carry_a", "burst_tier": 3, "element": "Fire", "cooldown": 40.0},
+    ]
+    result = simulate_raid(
+        deck,
+        {"miranda": build_miranda_rules(miranda_values), "carry_b": [], "carry_a": []},
+        burst_damage_percents={},
+        base_stats={"miranda": {"atk": 40000, "def": 0, "max_hp": 0},
+                    "carry_b": {"atk": 80000, "def": 0, "max_hp": 0},
+                    "carry_a": {"atk": 90000, "def": 0, "max_hp": 0}},
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        collect_target_grants=True,
+    )
+    grants = result["target_grants"]
+    powering_up = [g for g in grants if "atk_percent" in g["stats"]]
+    wake_up = [g for g in grants if "crit_rate" in g["stats"]]
+    assert len(powering_up) == 1 and len(wake_up) == 1
+    assert powering_up[0]["targets"] == ["carry_a", "carry_b"]
+    assert wake_up[0]["targets"] == ["carry_a"]
+    # 파워업!은 B1 시전 순간, 웨이크업!3은 그 직후 풀버스트 진입 순간.
+    assert wake_up[0]["time"] > powering_up[0]["time"]

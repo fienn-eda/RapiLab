@@ -437,12 +437,17 @@ def feasible_orderings(roster, deck_filter=None):
                         yield ordered
 
 
-def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None):
+def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None,
+                  collect_target_grants=False):
     """`max_bursts` ({slug: N}) caps how many times a seat spends its burst, for
     scoring a run the player actually played rather than one the scheduler would
     choose: 0 is a totem seated for its passives alone, 1 an opening burst then
     held. It is a decision made in the run, not a unit property, so it never
-    comes from the registry - only a caller with a real record supplies it."""
+    comes from the registry - only a caller with a real record supplies it.
+
+    `collect_target_grants`는 top-N 대상형 버프가 누구에게 갔는지를 결과에
+    싣는다 - 미란다 계산기(app/miranda_targets.py)가 읽는 기록이고, 기본 off라
+    탐색 경로는 오늘 그대로다."""
     inputs = assemble_simulation_inputs(ordered_deck)
     if max_bursts:
         for member in inputs["deck"]:
@@ -460,6 +465,7 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None):
         effective_range_band=boss.effective_range_band,
         pierce_hits_body_behind_core=boss.pierce_hits_body_behind_core,
         core_diameter_px=boss.core_diameter_px,
+        collect_target_grants=collect_target_grants,
     )
 
 

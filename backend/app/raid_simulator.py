@@ -710,6 +710,7 @@ def _simulate_raid_once(
     ammo_rounds_per_shot=None,
     conditional_full_burst_deltas=None,
     full_burst_stage_overrides=None,
+    collect_target_grants=False,
 ):
     weapon_stats = weapon_stats or {}
     # None means "no band read for this encounter", which pays nobody. An
@@ -736,6 +737,9 @@ def _simulate_raid_once(
     ammo_rounds_per_shot = ammo_rounds_per_shot or {}
     conditional_full_burst_deltas = conditional_full_burst_deltas or {}
     full_burst_stage_overrides = full_burst_stage_overrides or {}
+    # 대상 판정 기록은 계산기 화면 전용이라 기본이 off다. 켜져야만 리스트가
+    # 생기고, 그래야 탐색이 도는 수만 번의 시뮬이 오늘과 같은 할당을 한다.
+    target_grants = [] if collect_target_grants else None
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"], m.get("weapon")) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -746,6 +750,7 @@ def _simulate_raid_once(
         boss_element=boss_element,
         part_destructible=part_destructible,
         core_hittable=core_hittable,
+        target_grants=target_grants,
     )
     registry = EffectRegistry()
     # Damage is RECORDED as events during phase 1 (buffs are applied but no
@@ -1838,11 +1843,15 @@ def _simulate_raid_once(
 
     damage_log = [entry for ev in damage_events for entry in _entries(ev)]
 
-    return {
+    result = {
         "total_damage": sum(entry["damage"] for entry in damage_log),
         "damage_log": damage_log,
         "events": events,
-    }, _resolve_conditional_fb_deltas(context, events, conditional_full_burst_deltas)
+    }
+    if target_grants is not None:
+        result["target_grants"] = target_grants
+    return result, _resolve_conditional_fb_deltas(
+        context, events, conditional_full_burst_deltas)
 
 
 # `inspect.signature` follows `__wrapped__`, so introspecting the public name
