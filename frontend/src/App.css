@@ -1876,6 +1876,13 @@
   box-shadow: 0 0 0 1px var(--accent) inset;
 }
 
+/* 고정 좌석은 비울 수 없다. 테두리 하나로 「여기는 손대는 자리가 아니다」를
+   말하고, 없는 × 버튼이 나머지를 말한다. */
+.draft-editor__slot--fixed {
+  outline: 1px solid var(--accent);
+  outline-offset: -1px;
+}
+
 /* An open slot reads as an invitation, not as a unit that failed to load. */
 .draft-editor__slot--open {
   border-style: dashed;

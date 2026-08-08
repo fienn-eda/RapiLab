@@ -32,6 +32,11 @@ interface DraftEditorProps {
    * a screen that only scores a placed squad, with no search to constrain.
    * Defaults on, matching the draft editor's existing behavior. */
   showLocks?: boolean
+  /** Slugs whose seat the player may not vacate — the Miranda calculator seats
+   * her itself and asks for the other four. Removing, dragging out, and being
+   * swapped away all have to be closed: a swap displaces the occupant, so
+   * closing the first two alone leaves a back door. */
+  fixedSlugs?: string[]
 }
 
 const TIER_NUMERALS = ['I', 'II', 'III'] as const
@@ -166,10 +171,12 @@ export function DraftEditor({
   nameFor,
   burstTiersFor,
   showLocks = true,
+  fixedSlugs = [],
 }: DraftEditorProps) {
   // A slot draws ONE numeral and the rows sort by ONE tier, so both read the
   // nominal tier - the first - and leave the rest to missingBurstTiers.
   const nominalTierFor = (slug: string): BurstTier | null => burstTiersFor(slug)[0] ?? null
+  const fixedSet = new Set(fixedSlugs)
   // Which deck the pointer is currently over during a drag, so the target
   // reads as a target before the player commits to the drop.
   const [dropTarget, setDropTarget] = useState<number | null>(null)
@@ -193,6 +200,7 @@ export function DraftEditor({
     // The seat sits inside the deck, so without this the deck would handle the
     // same drop again as a plain move.
     event.stopPropagation()
+    if (fixedSet.has(occupant)) return
     setDropTarget(null)
     const seated = value.decks.some((seats) => seats.some((seat) => seat.slug === slug))
     onChange(seated ? swapUnits(value, slug, occupant) : moveUnit(value, deckIndex, slug))
@@ -255,14 +263,15 @@ export function DraftEditor({
                   const name = nameFor(seat.slug)
                   const tier = nominalTierFor(seat.slug)
                   const where = `덱 ${deckIndex + 1}`
+                  const isFixed = fixedSet.has(seat.slug)
                   return (
                     <li
                       key={seat.slug}
-                      className={
-                        swapTarget === seat.slug
-                          ? 'draft-editor__slot draft-editor__slot--swap-target'
-                          : 'draft-editor__slot'
-                      }
+                      className={[
+                        'draft-editor__slot',
+                        swapTarget === seat.slug ? 'draft-editor__slot--swap-target' : '',
+                        isFixed ? 'draft-editor__slot--fixed' : '',
+                      ].filter(Boolean).join(' ')}
                       // A seat accepts a drop even when its deck is full: a
                       // trade is one out for one in, so the deck's capacity
                       // never comes into it.
@@ -271,7 +280,7 @@ export function DraftEditor({
                         event.preventDefault()
                         event.stopPropagation()
                         event.dataTransfer.dropEffect = 'move'
-                        setSwapTarget(seat.slug)
+                        if (!isFixed) setSwapTarget(seat.slug)
                       }}
                       onDragLeave={() =>
                         setSwapTarget((current) => (current === seat.slug ? null : current))
@@ -280,7 +289,7 @@ export function DraftEditor({
                     >
                       <div
                         className="draft-editor__slot-grip"
-                        draggable
+                        draggable={!isFixed}
                         onDragStart={(event) => {
                           event.dataTransfer.setData(DRAG_SLUG_TYPE, seat.slug)
                           event.dataTransfer.effectAllowed = 'move'
@@ -310,14 +319,16 @@ export function DraftEditor({
                           <LockGlyph />
                         </button>
                       )}
-                      <button
-                        type="button"
-                        className="draft-editor__slot-remove"
-                        aria-label={`${where}에서 ${name} 제거`}
-                        onClick={() => onChange(removeUnit(value, deckIndex, seatIndex))}
-                      >
-                        <span aria-hidden="true">×</span>
-                      </button>
+                      {!isFixed && (
+                        <button
+                          type="button"
+                          className="draft-editor__slot-remove"
+                          aria-label={`${where}에서 ${name} 제거`}
+                          onClick={() => onChange(removeUnit(value, deckIndex, seatIndex))}
+                        >
+                          <span aria-hidden="true">×</span>
+                        </button>
+                      )}
                     </li>
                   )
                 })}

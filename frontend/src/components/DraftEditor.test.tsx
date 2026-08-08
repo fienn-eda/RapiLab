@@ -513,3 +513,55 @@ describe('DraftEditor', () => {
     })
   })
 })
+
+describe('fixedSlugs', () => {
+  const tiersFor = (slug: string): BurstTier[] =>
+    slug === 'miranda-signature' ? [1] : [3]
+  const renderWith = (fixedSlugs?: string[]) => {
+    const onChange = vi.fn()
+    const value: Draft = {
+      decks: [[
+        { slug: 'miranda-signature', locked: false },
+        { slug: 'ada-wong', locked: false },
+      ]],
+    }
+    render(
+      <DraftEditor
+        numDecks={1}
+        value={value}
+        onChange={onChange}
+        portraitFor={() => null}
+        nameFor={(slug) => slug}
+        burstTiersFor={tiersFor}
+        showLocks={false}
+        fixedSlugs={fixedSlugs}
+      />,
+    )
+    return onChange
+  }
+
+  it('draws no remove button for a fixed seat', () => {
+    renderWith(['miranda-signature'])
+    expect(
+      screen.queryByRole('button', { name: /miranda-signature 제거/ }),
+    ).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /ada-wong 제거/ })).toBeInTheDocument()
+  })
+
+  it('refuses a swap dropped onto a fixed seat', () => {
+    // 제거 버튼과 드래그만 막으면 뒷문이 열려 있다 - 스왑은 점유자를 밀어낸다.
+    const onChange = renderWith(['miranda-signature'])
+    const fixed = screen.getByText('miranda-signature').closest('li')!
+    fireEvent.drop(fixed, {
+      dataTransfer: { getData: (type: string) => (type === DRAG_SLUG_TYPE ? 'crown' : '') },
+    })
+    expect(onChange).not.toHaveBeenCalled()
+  })
+
+  it('leaves every seat removable when no slug is fixed', () => {
+    renderWith()
+    expect(
+      screen.getByRole('button', { name: /miranda-signature 제거/ }),
+    ).toBeInTheDocument()
+  })
+})
