@@ -17,6 +17,10 @@ export interface RotationBoss {
   /** 공지가 적은 거리. 유니온 공지에만 있어 솔로 보스는 null이고, 그때 적정거리는
    *  「모름」으로 남는다. */
   range_band: BossRangeBand
+  /** 그 보스와 싸우며 화면에서 잰 코어 지름을 엔진 단위로 환산한 값. 공지가
+   *  아니라 실측에서 오는 유일한 필드다. 안 잰 보스는 null이고, 그때
+   *  코어히트율은 모델링되지 않는다. */
+  core_diameter_px: number | null
   /** 공지 원문 기록. 항목은 솔로/유니온이 다르므로 자유 형식이다. */
   stated: Record<string, string | string[]>
 }

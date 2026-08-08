@@ -201,8 +201,10 @@ const rotation: RaidRotation = {
   source_locale: 'ko',
   read_on: '2026-08-07',
   bosses: [
-    { name: '선바스', weakness: 'Electric', range_band: 'near', stated: { 거리: '근거리' } },
-    { name: '토커티브', weakness: 'Water', range_band: 'far', stated: { 거리: '원거리' } },
+    { name: '선바스', weakness: 'Electric', range_band: 'near', core_diameter_px: null,
+      stated: { 거리: '근거리' } },
+    { name: '토커티브', weakness: 'Water', range_band: 'far', core_diameter_px: null,
+      stated: { 거리: '원거리' } },
   ],
 }
 
@@ -212,7 +214,8 @@ const soloRotation: RaidRotation = {
   id: 'solo-39',
   raid: 'solo',
   title: '솔로 레이드 39시즌',
-  bosses: [{ name: '아일랜드 이터', weakness: 'Iron', range_band: null, stated: {} }],
+  bosses: [{ name: '아일랜드 이터', weakness: 'Iron', range_band: null,
+             core_diameter_px: null, stated: {} }],
 }
 
 describe('BossProfileField 회차 보스 피커', () => {

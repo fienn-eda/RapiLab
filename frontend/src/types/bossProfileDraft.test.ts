@@ -17,6 +17,7 @@ describe('validateBossProfileDraft', () => {
       enemy_def: 0,
       fight_duration: 180,
       part_destructible: false,
+      core_diameter_px: null,
       effective_range_band: null,
       elemental_interrupt_required: false,
     })
@@ -30,6 +31,7 @@ describe('validateBossProfileDraft', () => {
       enemy_def: '15000',
       fight_duration: '90',
       part_destructible: true,
+      core_diameter_px: '',
       effective_range_band: null,
       elemental_interrupt_required: false,
     }
@@ -40,6 +42,7 @@ describe('validateBossProfileDraft', () => {
       enemy_def: 15000,
       fight_duration: 90,
       part_destructible: true,
+      core_diameter_px: null,
       effective_range_band: null,
       elemental_interrupt_required: false,
     })
@@ -83,6 +86,7 @@ describe('bossProfileToDraft', () => {
       enemy_def: '15000',
       fight_duration: '90',
       part_destructible: true,
+      core_diameter_px: '33.33',
       effective_range_band: null,
       elemental_interrupt_required: false,
     }
@@ -119,5 +123,52 @@ describe('makeDefaultBossProfileDraft', () => {
   it('leaves every other field at its default when given one', () => {
     const withDef = makeDefaultBossProfileDraft('31784')
     expect({ ...withDef, enemy_def: '0' }).toEqual(makeDefaultBossProfileDraft())
+  })
+})
+
+describe('core diameter', () => {
+  it('빈 칸은 오류가 아니라 null이다 — 안 잰 보스가 기본이다', () => {
+    const draft = { ...makeDefaultBossProfileDraft(), core_diameter_px: '' }
+    const { errors, value } = validateBossProfileDraft(draft)
+
+    expect(errors.core_diameter_px).toBeUndefined()
+    expect(value!.core_diameter_px).toBeNull()
+  })
+
+  it('양수는 숫자로 통과한다', () => {
+    const draft = { ...makeDefaultBossProfileDraft(), core_diameter_px: '33.33' }
+
+    expect(validateBossProfileDraft(draft).value!.core_diameter_px).toBe(33.33)
+  })
+
+  it('0과 음수는 거부한다 — 0은 「코어 없음」이 아니다', () => {
+    // 코어가 없다는 것은 core_hittable이 표현한다. 여기 0이 들어오면 값을
+    // 못 읽고 자리만 채운 것이다.
+    for (const raw of ['0', '-1']) {
+      const draft = { ...makeDefaultBossProfileDraft(), core_diameter_px: raw }
+      expect(validateBossProfileDraft(draft).errors.core_diameter_px).toBeDefined()
+    }
+  })
+
+  it('왕복해도 값이 남는다', () => {
+    const draft = {
+      ...makeDefaultBossProfileDraft(),
+      core_hittable: true,
+      core_diameter_px: '58.67',
+    }
+    const { value: boss } = validateBossProfileDraft(draft)
+    const restored = validateBossProfileDraft(bossProfileToDraft(boss!))
+
+    // 값을 따로 단언하는 것은 의도다: toEqual만 두면 양쪽 다 필드가 없을 때도
+    // 통과해, 이 필드가 왕복에서 빠져도 초록으로 남는다.
+    expect(restored.value!.core_diameter_px).toBe(58.67)
+    expect(restored.value).toEqual(boss)
+  })
+
+  it('이 필드가 없던 시절 저장된 프로필도 복원된다', () => {
+    const old = { ...validateBossProfileDraft(makeDefaultBossProfileDraft()).value! }
+    delete (old as { core_diameter_px?: unknown }).core_diameter_px
+
+    expect(bossProfileToDraft(old).core_diameter_px).toBe('')
   })
 })
