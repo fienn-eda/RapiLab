@@ -53,15 +53,63 @@ def test_courageous_look_gives_the_squad_hit_rate_on_full_burst_enter():
     assert reg.total_for("hit_rate", SELF, 22.1) == 0.0  # 10 sec
 
 
-def test_the_pellet_bonus_reaches_only_shotgun_allies():
-    """Pellet count moves no damage (measured on Arcana: Fortune Mate) - it is
-    encoded because it is an INPUT to Dorothy: Serendipity's Flash counter."""
+def test_the_pellet_bonus_reaches_the_two_highest_atk_shotgun_allies():
+    """Pellet count moves no damage directly (measured on Arcana: Fortune Mate),
+    but it feeds Dorothy: Serendipity's Flash counter, whose procs do - so the
+    targeting has to be the text's: shotguns AND top-2, not either alone."""
     reg = EffectRegistry()
     fire_trigger("full_burst_enter", {"leona": build_leona_rules(LEONA)}, _ctx(), reg, 12.0)
     assert reg.total_for("pellet_count_bonus", SHOTGUN_ALLY, 12.0) == 5.0
-    assert reg.total_for("pellet_count_bonus", SELF, 12.0) == 5.0  # she carries one too
+    assert reg.total_for("pellet_count_bonus", SELF, 12.0) == 5.0  # only 2 shotguns here
     assert reg.total_for("pellet_count_bonus", RIFLE_ALLY, 12.0) == 0.0
     assert reg.total_for("pellet_count_bonus", SHOTGUN_ALLY, 22.1) == 0.0  # 10 sec
+
+
+def test_a_fourth_shotgun_does_not_widen_the_pellet_bonus():
+    """The bullet names TWO shotgun allies, so in a deck with three OTHER
+    shotguns the lowest-ATK one misses out - approximating this as "every
+    shotgun ally" would speed up a Flash counter the game never touched.
+
+    Note who is ranked: `top_atk_slugs` excludes the CASTER whenever there are
+    enough other candidates, so Leona herself is out here even though her ATK
+    beats the third shotgun's. That is the engine's standing reading of "N ally
+    units with the highest final ATK" (Miranda's text spells the exclusion out;
+    Leona's does not) - see the module docstring."""
+    ctx = SquadContext(
+        [
+            SquadMember("leona", burst_tier=2, element="Water", weapon="SG"),
+            SquadMember("shotgun-ally", burst_tier=3, element="Fire", weapon="SG"),
+            SquadMember("second-shotgun", burst_tier=1, element="Iron", weapon="SG"),
+            SquadMember("third-shotgun", burst_tier=1, element="Wind", weapon="SG"),
+        ],
+        base_atk={"leona": 50000, "shotgun-ally": 90000,
+                  "second-shotgun": 80000, "third-shotgun": 10000},
+    )
+    reg = EffectRegistry()
+    fire_trigger("full_burst_enter", {"leona": build_leona_rules(LEONA)}, ctx, reg, 12.0)
+    second = {"slug": "second-shotgun", "element": "Iron"}
+    third = {"slug": "third-shotgun", "element": "Wind"}
+    assert reg.total_for("pellet_count_bonus", SHOTGUN_ALLY, 12.0) == 5.0   # 90k
+    assert reg.total_for("pellet_count_bonus", second, 12.0) == 5.0         # 80k
+    assert reg.total_for("pellet_count_bonus", third, 12.0) == 0.0          # 10k, cut
+    assert reg.total_for("pellet_count_bonus", SELF, 12.0) == 0.0           # caster excluded
+
+
+def test_the_pellet_bonus_grants_nothing_in_a_deck_with_no_other_shotgun():
+    """With only her own shotgun, the top-2 fill rule hands the slot to the
+    caster - she is a shotgun ally herself, so she keeps it and nobody else
+    gets one."""
+    ctx = SquadContext(
+        [
+            SquadMember("leona", burst_tier=2, element="Water", weapon="SG"),
+            SquadMember("rifle-ally", burst_tier=3, element="Iron", weapon="AR"),
+        ],
+        base_atk={"leona": 50000, "rifle-ally": 90000},
+    )
+    reg = EffectRegistry()
+    fire_trigger("full_burst_enter", {"leona": build_leona_rules(LEONA)}, ctx, reg, 12.0)
+    assert reg.total_for("pellet_count_bonus", SELF, 12.0) == 5.0
+    assert reg.total_for("pellet_count_bonus", RIFLE_ALLY, 12.0) == 0.0
 
 
 def test_lions_heart_gives_the_whole_squad_critical_damage():

@@ -199,14 +199,23 @@ class SquadContext:
             m for m in self.members if m.burst_tier == tier and m.slug != exclude_slug
         ]
 
-    def top_atk_slugs(self, n: int, caster_slug: str, registry, time: float) -> list[str]:
+    def top_atk_slugs(self, n: int, caster_slug: str, registry, time: float,
+                      member_filter=None) -> list[str]:
         """The `n` allies with the highest FINAL ATK at `time`, excluding the
         caster - but including the caster to fill remaining slots if there aren't
         enough other allies ("except caster; including the caster if there are not
         enough allies"). Final ATK is base ATK grown by live atk_percent buffs plus
         flat_atk, so a buff applied earlier this cycle (e.g. Miranda's own burst
         before her Full-Burst-enter skill) is reflected in the ranking. Ties break
-        by deck order (stable sort)."""
+        by deck order (stable sort).
+
+        `member_filter(member) -> bool` narrows the CANDIDATES before ranking,
+        for a bullet that is a weapon/element class AND a top-N at once - Leona's
+        "the 2 ally unit(s) with shotguns who have the highest final ATK", which
+        neither `member_subset_buff_rule` (no ranking) nor a bare top-N (no
+        filter) expresses alone. It applies to the caster's fill-in too: a caster
+        outside the class must not receive a buff aimed at that class, so a deck
+        with no matching member yields an empty list rather than her."""
         by_slug = {m.slug: m for m in self.members}
 
         def final_atk(slug: str) -> float:
@@ -216,8 +225,9 @@ class SquadContext:
                 "flat_atk", target, time
             )
 
-        candidates = [m.slug for m in self.members if m.slug != caster_slug]
-        if len(candidates) < n:
+        eligible = [m for m in self.members if member_filter is None or member_filter(m)]
+        candidates = [m.slug for m in eligible if m.slug != caster_slug]
+        if len(candidates) < n and any(m.slug == caster_slug for m in eligible):
             candidates = candidates + [caster_slug]
         ranked = sorted(candidates, key=final_atk, reverse=True)
         return ranked[:n]

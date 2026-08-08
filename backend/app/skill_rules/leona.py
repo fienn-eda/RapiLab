@@ -27,17 +27,25 @@ Modeled (DPS-relevant):
   onto `squad`. Roar reaches the cap about 19 sec in and holds it, so from the
   second cycle on this bullet is live every time.
 - Courageous Look's "Number of pellets ▲ 5" on the 2 highest-ATK shotgun
-  allies. Pellet count moves NO damage - the shot's total is split across more
-  pellets (measured on Arcana: Fortune Mate, 2026-08-03) - but it is a real
-  input to Dorothy: Serendipity's Flash counter, which counts pellets rather
-  than shots. Encoded as `pellet_count_bonus` so that deck pairing pays out.
+  allies. Pellet count moves NO damage directly - the shot's total is split
+  across more pellets (measured on Arcana: Fortune Mate, 2026-08-03) - but it
+  is a real input to Dorothy: Serendipity's Flash counter, which counts pellets
+  rather than shots, and Flash's procs DO move damage. So the targeting is
+  encoded as the text has it, shotguns AND top-2, via
+  `highest_atk_buff_rule(..., member_filter=_is_shotgun)`; `top_atk_slugs`
+  gained the filter for exactly this pair (2026-08-08). Approximating it onto
+  every shotgun ally would speed up a Flash counter the game never touched in
+  any deck holding three shotguns.
 
-  Approximation: the helpers can express "shotgun allies" (member_filter) or
-  "the N highest-ATK allies" (top_atk) but not their intersection, so this
-  lands on every shotgun ally. It over-applies only in a deck holding three or
-  more shotguns, and since the stat moves no damage the overshoot can only
-  reach Dorothy's counter - who would have been among the top two anyway in
-  any deck built around her.
+  One reading is still open: `top_atk_slugs` excludes the CASTER when there
+  are enough other candidates, which comes from Miranda's text spelling out
+  "except caster; including the caster if there are not enough allies". Leona's
+  bullet says only "the 2 ally unit(s) with shotguns", with no such clause, so
+  whether she can hold one of her own two slots is undecided from the text.
+  She is a supporter and rarely outranks the shotguns she is buffing, so the
+  two readings agree in most decks - but they do not always, and this note is
+  here so the question is asked rather than assumed. Naga's Support of
+  Friendship carries the identical ambiguity.
 
 Not modeled / deferred:
 - Thunderous Roar's second bullet, "after 15 normal attacks, all allies with
@@ -50,8 +58,8 @@ Not modeled / deferred:
 from app.effects import ResourceSpec
 from app.skill_rules._helpers import (
     buff_rule,
+    highest_atk_buff_rule,
     linear_resource_buff,
-    member_subset_buff_rule,
 )
 from app.skill_rules.dorothy_serendipity import PELLET_COUNT_BONUS
 
@@ -118,6 +126,7 @@ def build_leona_rules(values):
 
     hit_rate = float(look["description_value_01"]) / 100
     hit_rate_duration = float(look["description_value_02"])
+    pellet_targets = int(float(look["description_value_03"]))
     pellets = float(look["description_value_04"])
     pellet_duration = float(look["description_value_05"])
     crit_damage = float(heart["description_value_01"]) / 100
@@ -125,9 +134,10 @@ def build_leona_rules(values):
 
     return [
         buff_rule("full_burst_enter", [("hit_rate", hit_rate, "squad", hit_rate_duration)]),
-        member_subset_buff_rule(
-            "full_burst_enter", _is_shotgun,
+        highest_atk_buff_rule(
+            "full_burst_enter", pellet_targets,
             [(PELLET_COUNT_BONUS, pellets, pellet_duration)],
+            member_filter=_is_shotgun,
         ),
         buff_rule("own_burst_activate", [
             ("other_critical_damage_sources", crit_damage, "squad", crit_damage_duration),

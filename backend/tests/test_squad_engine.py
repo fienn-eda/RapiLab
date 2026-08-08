@@ -306,6 +306,49 @@ def test_top_atk_slugs_includes_caster_when_not_enough_allies():
     assert sorted(result) == ["miranda", "scarlet"]
 
 
+def test_top_atk_slugs_can_rank_within_a_member_subset():
+    """"The 2 ally unit(s) with shotguns who have the highest final ATK" is a
+    weapon filter AND a top-N, and neither helper alone expresses the pair.
+    Filtering first keeps the ranking rule in one place - a unit module that
+    re-derived final ATK to do this itself would drift from it silently."""
+    ctx = SquadContext(
+        [
+            SquadMember("leona", burst_tier=2, element="Water", weapon="SG"),
+            SquadMember("carry", burst_tier=3, element="Fire", weapon="AR"),
+            SquadMember("dorothy", burst_tier=1, element="Wind", weapon="SG"),
+            SquadMember("naga", burst_tier=2, element="Electric", weapon="SG"),
+        ],
+        base_atk={"leona": 50000, "carry": 99000, "dorothy": 80000, "naga": 70000},
+    )
+    registry = EffectRegistry()
+    shotgun = lambda member: member.weapon == "SG"  # noqa: E731
+
+    # The AR carry outranks every shotgun but must not be picked.
+    assert ctx.top_atk_slugs(2, "leona", registry, 0.0) == ["carry", "dorothy"]
+    assert ctx.top_atk_slugs(2, "leona", registry, 0.0, member_filter=shotgun) == [
+        "dorothy", "naga"]
+    assert ctx.top_atk_slugs(1, "leona", registry, 0.0, member_filter=shotgun) == ["dorothy"]
+
+
+def test_top_atk_slugs_filter_still_lets_the_caster_fill_a_short_deck():
+    """The caster fills remaining slots only when she matches the filter too -
+    a non-shotgun caster must not be handed a shotgun-only buff."""
+    ctx = SquadContext(
+        [
+            SquadMember("leona", burst_tier=2, element="Water", weapon="SG"),
+            SquadMember("carry", burst_tier=3, element="Fire", weapon="AR"),
+        ],
+        base_atk={"leona": 50000, "carry": 99000},
+    )
+    registry = EffectRegistry()
+    shotgun = lambda member: member.weapon == "SG"  # noqa: E731
+    # Only one shotgun in the deck and it IS the caster, so she fills the slot.
+    assert ctx.top_atk_slugs(2, "leona", registry, 0.0, member_filter=shotgun) == ["leona"]
+    # A caster who does not match cannot fill it - the result stays empty.
+    assert ctx.top_atk_slugs(2, "carry", registry, 0.0,
+                             member_filter=lambda m: m.weapon == "RL") == []
+
+
 def test_resource_count_accumulates_all_fills_up_to_time_when_permanent():
     # A permanent (lifetime=None) resource: count at `time` is the sum of every
     # fill AT OR BEFORE that time (Guillotine's EXP, which accumulates

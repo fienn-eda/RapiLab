@@ -133,7 +133,7 @@ def _resolve_scope(scope_spec, context, caster_slug, registry, time):
     return scope_spec
 
 
-def highest_atk_buff_rule(trigger, n, buffs, refreshing=False):
+def highest_atk_buff_rule(trigger, n, buffs, refreshing=False, member_filter=None):
     """Timed buffs on the `n` allies with the highest final ATK at trigger time
     (except the caster) - e.g. Miranda's Powering Up. buffs: (stat, value,
     duration). The target set is ranked live, so a buff applied earlier in the
@@ -145,11 +145,20 @@ def highest_atk_buff_rule(trigger, n, buffs, refreshing=False):
     every 3.3-5.0 sec). Without it the overlaps SUM, multiplying the buff by
     however many windows are live. Each rule instance gets its own refresh
     group, as in refreshing_buff_rule, so it never truncates a different
-    bullet that happens to grant the same stat."""
+    bullet that happens to grant the same stat.
+
+    `member_filter(member) -> bool`: narrow the candidates before ranking, for a
+    bullet that is a class AND a top-N at once ("the 2 ally unit(s) with
+    shotguns who have the highest final ATK", Leona). Passed to top_atk_slugs;
+    a deck with no matching member grants nothing."""
     group = f"refresh_{next(_refresh_group_ids)}" if refreshing else None
 
     def action(context, caster_slug, time, registry):
-        scope = "slugs:" + ",".join(context.top_atk_slugs(n, caster_slug, registry, time))
+        targets = context.top_atk_slugs(n, caster_slug, registry, time,
+                                        member_filter=member_filter)
+        if not targets:
+            return
+        scope = "slugs:" + ",".join(targets)
         for stat, value, duration in buffs:
             effect = Effect(stat, value, scope, duration, caster_slug, refresh_group=group)
             if refreshing:

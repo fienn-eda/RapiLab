@@ -15,6 +15,13 @@ Modeled (DPS-relevant):
   load-bearing, not cosmetic: her shotgun reaches the 5th round every 3.3-5.0
   sec against a 5-sec buff, so every re-application overlaps the live one and
   plain adds would sum into a multiple of the printed value.
+
+  Open reading, same as Leona's pellet bullet: `top_atk_slugs` excludes the
+  CASTER when the deck holds enough other candidates, a rule that comes from
+  Miranda's text spelling out "except caster". Naga's says only "2 ally unit(s)
+  with the highest ATK", so whether she can take one of her own slots is
+  undecided from the text. As a supporter she rarely outranks the carries she
+  is buffing, so the two readings usually agree.
 - As Long As We're With Friends (skills[2], her burst, cd 20):
   - self Pierce for 10 sec (`has_pierce`), which on a boss whose core sits in
     front of its body turns each of her normal attacks into a second instance.
