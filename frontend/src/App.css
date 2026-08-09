@@ -700,16 +700,34 @@
   display: flex;
   align-items: center;
   gap: var(--sp-3);
+  position: relative;
 }
 
-/* 열리면 다섯 번째 flex 아이템으로 끼어든다 - 스스로도 한 줄 flex라야 입력·
-   저장·취소가 한 줄로 붙고, min-width:0이라야 셀렉트를 밀어내는 대신 자기가
-   줄어든다. */
+/* 열리면 다섯 번째 flex 아이템으로 끼어들 수도 있었지만, flex 흐름에 남겨두면
+   (자연스러운 wrap이든 flex-basis:100% 강제든) 이 패널의 유무 자체가
+   .profile-switcher의 고유 너비 계산에 들어가 셀렉트의 width:100%가 열림/
+   닫힘 사이에 다른 값으로 풀린다(2026-08-09 실측: 397px → 852px - 셀렉트
+   규칙은 손대지 않기로 했으니 이쪽을 흐름 밖으로 뺀다). `.help-tip__bubble`과
+   같은 패턴: 트리거를 담은 행은 relative, 패널은 그 위에 absolute로 뜬다. */
 .profile-switcher__rename {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  right: 0;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: var(--sp-2);
-  min-width: 0;
+  padding: var(--sp-2);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+/* 계정 이름을 실제로 타이핑하는 칸이다 - 바닥값이 없으면 콘텐츠 크기로만
+   정해져 좁을 수 있다. */
+.profile-switcher__rename .field__input {
+  min-width: 8em;
 }
 
 /* Fields --------------------------------------------------------------- */
