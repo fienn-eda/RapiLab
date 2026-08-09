@@ -6,23 +6,29 @@
 // 직접 골라 첫 계정도 4호출) 전부 부족했다. 계정의 최초 동기화는 여전히 이름 대신
 // UID로 떨어진다. 가정을 재지 않은 채 다섯 번째 완화를 얹는 대신 규칙 자체를 잰다.
 //
-// **이 스크립트가 답하는 것.**
-//   1. 이름 조회를 묶음의 맨 앞으로 옮기면 통과하는가?   → roundA vs roundB
-//   2. 통과 못 한다면 몇 초의 정적이 필요한가?           → staircase
-//   3. 제한이 이 엔드포인트만의 것인가, 프록시 전체인가? → contamination
-//   4. 이미 부르는 다른 호출에 이름이 들어 있는가?       → scanForName (표의 「nameHits」)
+// **이미 답이 나온 것 (2026-08-09 실측).**
+//   - 순서는 상관없다. 묶음의 **맨 앞**에 둔 이름 조회가 거절되고, 93초 뒤
+//     **맨 뒤**에 둔 것이 통과했다. 「마지막이라 거절된다」는 죽었다.
+//   - 제한은 `GetUserProfileBasicInfo` **하나에만** 걸린다. 다른 엔드포인트를
+//     1.2초 안에 셋 태운 직후에도 이름 조회가 통과했다.
+//   - 따라서 호출 수·간격·서버 선택은 전부 원인이 아니었다. 실제 규칙은
+//     **「이 엔드포인트를 최근에 불렀는가」** 하나다.
+//   - 이름은 다른 응답에 없다. `GetUserProfileOutpostInfo`=`outpost_info` 열 개,
+//     `GetUserCharacters`=`characters|is_banned|trace_id`,
+//     `GetUserCharacterDetails`=`character_details|state_effects|trace_id`.
+//     2단계 스캔에서 이름 후보가 나온 것은 `basic_info`뿐이었다.
 //
-// 4번이 걸리면 나머지는 볼 것도 없다 - 이름 조회를 없애면 제한을 안 건드린다.
-// `GetUserProfileOutpostInfo`는 2026-08-09에 이미 탈락했다(키 열 개 중 이름 없음).
-// 남은 후보는 `GetUserCharacters`와 `GetUserCharacterDetails`고, 그 둘의 키는
-// 아직 아무도 본 적이 없다.
+// **아직 답이 없는 것.**
+//   1. 한 번만 부르는 최초 동기화가 왜 거절되는가 - 누가 먼저 불렀는가? → history
+//   2. 쿨다운이 몇 초인가 (93초 안에는 풀린다는 것까지만 안다)?        → measureWindow
 //
 // **쓰는 법.**
 //   1. blablalink.com에 로그인한 탭에서 F12 → 콘솔.
 //   2. 아래 ACCOUNT에 ShiftyPad 공유 URL을 그대로 붙이고(open id만 알면 그것도
 //      된다), AREA를 그 계정의 서버로 맞춘다.
-//   3. 파일 전체를 붙여넣는다. all()이 자동으로 돌고 끝에 표를 찍는다(약 7분).
-//   4. 한 단계만 다시 보려면 `__probe.roundA()` 처럼 따로 부른다.
+//   3. 파일 전체를 붙여넣는다. history()가 자동으로 돌고 표를 찍는다(즉시).
+//   4. 나머지는 따로 부른다: `__probe.measureWindow()`(최대 4분),
+//      `__probe.all()`(A/B 대조, 약 7분), `__probe.contamination()`.
 //   5. 표를 그대로 복사해 오면 된다.
 //
 // **시작 조건.** 직전 2분간 이 계정을 동기화하지 않았을 것 - 제한은 한 묶음 안이
@@ -187,6 +193,50 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
     await basic(p)
   }
 
+  /**
+   * **페이지 자신이 이름 조회를 부르고 있는가.** 우리가 한 번만 불러도 거절된다면
+   * 누군가 먼저 불렀다는 뜻이고, 가장 유력한 범인은 blablalink 페이지 자신이다
+   * (ShiftyPad 화면이 닉네임을 띄우려면 같은 엔드포인트가 필요하다).
+   *
+   * 브라우저는 페이지가 보낸 요청을 Resource Timing에 남긴다. 교차 출처라
+   * 상세 타이밍은 가려지지만 **URL과 시각은 보인다** - 우리가 물어야 하는 것은
+   * 그 둘뿐이다. 페이지를 새로 연 직후에 부를 것(기록이 그때 초기화된다).
+   */
+  const history = () => {
+    const now = performance.now()
+    const rows = performance
+      .getEntriesByType('resource')
+      .filter((e) => e.name.includes('/api/game/proxy/Game/'))
+      .map((e) => ({
+        ep: e.name.split('/Game/')[1],
+        secondsAgo: ((now - e.startTime) / 1000).toFixed(1),
+        initiatorType: e.initiatorType,
+      }))
+    console.table(rows)
+    return rows
+  }
+
+  /**
+   * 쿨다운의 길이를 잰다. 한 번 통과시켜 기준을 잡고 곧바로 다시 물어 거절을
+   * 확인한 뒤, 정적을 늘려가며 언제 다시 통과하는지 본다.
+   *
+   * 계단의 라벨은 **직전 호출로부터의 정적**이다. 최초 거절로부터의 누적 시간은
+   * 표의 `at` 열로 따로 읽을 것 - 어느 쪽이 제한의 기준인지는 아직 모른다.
+   */
+  const measureWindow = async () => {
+    const first = await basic('창1(기준)')
+    if (!first) {
+      console.log(`[${at()}] 아직 쿨다운 중입니다. 2분쯤 뒤에 다시 불러주세요.`)
+      return null
+    }
+    const again = await basic('창2(직후)')
+    if (again) {
+      console.log(`[${at()}] 연속 두 번이 통과 - 쿨다운은 0.35초보다 짧습니다.`)
+      return 0
+    }
+    return staircase()
+  }
+
   const table = () => {
     console.table(log)
     return log
@@ -207,7 +257,17 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
     return table()
   }
 
-  window.__probe = { roundA, roundB, staircase, contamination, table, log, all }
-  console.log('__probe 준비됨. all() / roundA() / roundB() / staircase() / contamination()')
-  return all()
+  window.__probe = {
+    roundA,
+    roundB,
+    staircase,
+    contamination,
+    history,
+    measureWindow,
+    table,
+    log,
+    all,
+  }
+  console.log('__probe 준비됨. history() / measureWindow() / all() / roundA() / roundB()')
+  return history()
 })()
