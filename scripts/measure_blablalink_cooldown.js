@@ -6,44 +6,39 @@
 // 직접 골라 첫 계정도 4호출) 전부 부족했다. 계정의 최초 동기화는 여전히 이름 대신
 // UID로 떨어진다. 가정을 재지 않은 채 다섯 번째 완화를 얹는 대신 규칙 자체를 잰다.
 //
-// **이미 답이 나온 것 (2026-08-09 실측).**
-//   - 순서는 상관없다. 묶음의 **맨 앞**에 둔 이름 조회가 거절되고, 93초 뒤
-//     **맨 뒤**에 둔 것이 통과했다. 「마지막이라 거절된다」는 죽었다.
-//   - 제한은 `GetUserProfileBasicInfo` **하나에만** 걸린다. 다른 엔드포인트를
-//     1.2초 안에 셋 태운 직후에도 이름 조회가 통과했다.
-//   - 따라서 호출 수·간격·서버 선택은 전부 원인이 아니었다. 실제 규칙은
-//     **「이 엔드포인트를 최근에 불렀는가」** 하나다.
-//   - 이름은 다른 응답에 없다. `GetUserProfileOutpostInfo`=`outpost_info` 열 개,
-//     `GetUserCharacters`=`characters|is_banned|trace_id`,
+// **죽은 가설 (2026-08-09 실측. 다시 세우지 말 것).**
+//   - 「묶음의 마지막이라 거절된다」 - 반대로 나왔다. 묶음의 **맨 앞**에 둔 이름
+//     조회가 거절되고, 93초 뒤 **맨 뒤**에 둔 것이 통과했다.
+//   - 「이 엔드포인트에 개별 쿨다운이 있다」 - 조용한 상태에서 0.4초 간격으로
+//     연속 두 번을 불러 **둘 다 통과**했다.
+//   - 「다른 응답에 이름이 있을 것이다」 - 없다. `GetUserProfileOutpostInfo`=
+//     `outpost_info` 열 개, `GetUserCharacters`=`characters|is_banned|trace_id`,
 //     `GetUserCharacterDetails`=`character_details|state_effects|trace_id`.
 //     2단계 스캔에서 이름 후보가 나온 것은 `basic_info`뿐이었다.
+//   - 「`GetSavedRoleInfo`로 갈아끼우면 된다」 - `role_info.role_name`이 있긴
+//     하지만 **로그인한 세션의 것**이다. 빈 body와 이 계정이 같은 이름을 주고,
+//     계정을 바꿔도 같은 이름을 주고, `role_id`가 넘긴 open_id와 다르다.
+//     썼다면 계정 셋에 전부 같은 이름이 붙었을 것이다 - 없는 이름보다 나쁘다.
 //
-//   - **먼저 부르는 것은 blablalink 페이지 자신이다.** 페이지가 뜬 지 16초 뒤에
-//     읽은 Resource Timing에 `GetUserProfileBasicInfo`가 이미 들어 있었다
-//     (`GetSavedRoleInfo`·`GetMyGuildInfo`·`GetUserCharacters` 등과 같은 묶음).
-//     유저가 그 몇 초 뒤에 북마크릿을 누르면 늘 쿨다운 안이다 - 우리 묶음을
-//     아무리 줄여도 못 이긴다. 경쟁 상대가 우리 묶음 안에 없었다.
+// **확정된 사실.**
+//   - **blablalink 페이지가 뜰 때 프록시를 열두 번 부르고, 그중 하나가
+//     `GetUserProfileBasicInfo`다**(Resource Timing, 로드 16초 뒤 판독).
+//     유저 동선은 「페이지 열자마자 북마크릿 클릭」이라 우리 묶음은 늘 그 열둘
+//     **위에** 얹힌다. 우리 묶음을 8→4로 줄여도 못 이긴 이유가 여기 있다.
+//   - 통과한 관측은 전부 로드 후 93초·132초였고, 거절된 것은 전부 로드 직후였다.
 //
-//   - **`GetSavedRoleInfo`에 `role_info.role_name`이 있다.** 쿨다운이 걸린
-//     엔드포인트가 아니고, 빈 body로도 파라미터를 넘겨도 code 0으로 답한다.
-//
-// **아직 답이 없는 것.**
-//   1. 그 `role_name`이 **누구 것인가** - 대상 계정인가 로그인한 세션인가?
-//      빈 body로도 답한다는 것이 세션 쪽의 방증이다.               → checkRoleScope
-//   2. 쿨다운이 몇 초인가 (93초 안에는 풀린다는 것까지만 안다)?    → measureWindow
+// **남은 모델과 검증.** 프록시 전체에 시간창 예산이 걸려 있고 페이지 로드가 그
+// 대부분을 태운다. → `freshLoad`가 한 호출로 재현하고, `burst`가 예산을 센다.
 //
 // **쓰는 법.**
 //   1. blablalink.com에 로그인한 탭에서 F12 → 콘솔.
 //   2. 아래 ACCOUNT에 ShiftyPad 공유 URL을 그대로 붙이고(open id만 알면 그것도
 //      된다), AREA를 그 계정의 서버로 맞춘다.
-//   3. 파일 전체를 붙여넣는다. history()가 자동으로 돌고 표를 찍는다(즉시).
-//   4. 나머지는 따로 부른다: `__probe.measureWindow()`(최대 4분),
-//      `__probe.all()`(A/B 대조, 약 7분), `__probe.contamination()`.
+//   3. **F5로 새로고침한 직후** 파일 전체를 붙여넣는다 - 유저가 북마크릿을 누르는
+//      시점과 같게 만드는 것이 실험의 전부다. `freshLoad()`가 자동으로 돈다.
+//   4. 나머지는 따로 부른다: `__probe.burst()`(예산 세기),
+//      `__probe.measureWindow()`, `__probe.all()`(A/B 대조, 약 7분).
 //   5. 표를 그대로 복사해 오면 된다.
-//
-// **시작 조건.** 직전 2분간 이 계정을 동기화하지 않았을 것 - 제한은 한 묶음 안이
-// 아니라 세션에 누적된다(계정 둘을 연달아 동기화하면 둘째만 UID로 떨어지는 것이
-// 그 증거다).
 //
 // 계정 값은 찍지 않는다. 남기는 것은 code · msg · 응답의 키 이름 · 「이름이
 // 비었는지」뿐이다.
@@ -294,6 +289,52 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
   }
 
   /**
+   * **버그를 한 호출로 재현한다.** 성공한 관측은 전부 페이지가 뜬 지 한참 뒤였고
+   * (93초·132초), 실패한 것은 전부 로드 직후 몇 초 안이었다. 실제 유저 동선이
+   * 정확히 후자다 - 페이지를 열자마자 북마크릿을 누른다.
+   *
+   * 페이지는 뜰 때 프록시를 열두 번 부른다. 그 직후 우리가 **한 번만** 물어서
+   * 거절되면, 예산을 태운 것이 우리 묶음이 아니라 페이지라는 뜻이다. 거절이
+   * 재현이다.
+   *
+   * F5 직후에 이 파일을 붙여넣으면 자동으로 돈다.
+   */
+  const freshLoad = async () => {
+    const rows = history()
+    const own = rows.filter((r) => r.ep === 'GetUserProfileBasicInfo')
+    console.log(
+      `페이지가 프록시를 ${rows.length}번 불렀습니다.` +
+        (own.length ? ` 이름 조회는 ${own.map((r) => r.secondsAgo).join('·')}초 전.` : ''),
+    )
+    const data = await basic('새 로드 직후')
+    console.log(
+      data
+        ? `[${at()}] 통과 - 로드 직후여도 된다. 예산 모델이 틀렸으니 burst()로 넘어간다.`
+        : `[${at()}] 거절 - 재현 성공. 예산을 태운 것은 우리 묶음이 아니라 페이지다.`,
+    )
+    return data
+  }
+
+  /**
+   * **예산이 몇 호출인가.** 조용한 상태에서 같은 엔드포인트를 연달아 부르며
+   * 몇 번째에 1300015가 나오는지 센다. 엔드포인트를 바꿔 두 번 재면 예산이
+   * 프록시 전체의 것인지 엔드포인트별인지도 갈린다.
+   *
+   * 일부러 제한을 건드리는 것이므로 끝나면 몇 분 쉴 것.
+   */
+  const burst = async (n = 25, ep = 'GetUserCharacters') => {
+    for (let i = 1; i <= n; i++) {
+      const data = await call(`버스트 ${i}`, ep, { ...base })
+      if (!data) {
+        console.log(`[${at()}] ${ep}: ${i}번째에서 거절됐다 - 예산은 ${i - 1}호출.`)
+        return i - 1
+      }
+    }
+    console.log(`[${at()}] ${ep}: ${n}번을 전부 통과했다 - 예산이 그보다 크다.`)
+    return null
+  }
+
+  /**
    * 쿨다운의 길이를 잰다. 한 번 통과시켜 기준을 잡고 곧바로 다시 물어 거절을
    * 확인한 뒤, 정적을 늘려가며 언제 다시 통과하는지 본다.
    *
@@ -342,13 +383,13 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
     history,
     sniffAlternatives,
     checkRoleScope,
+    freshLoad,
+    burst,
     measureWindow,
     table,
     log,
     all,
   }
-  console.log(
-    "__probe 준비됨. checkRoleScope('<다른 계정 URL>', 81) / measureWindow() / history() / all()",
-  )
-  return history()
+  console.log('__probe 준비됨. freshLoad()가 지금 돕니다. 이어서 burst() / measureWindow() / all()')
+  return freshLoad()
 })()
