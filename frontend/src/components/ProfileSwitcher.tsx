@@ -3,7 +3,7 @@
 // merges them. With no profiles yet, App shows its own empty state instead,
 // so this renders nothing.
 
-import { useId, useState } from 'react'
+import { useEffect, useId, useState } from 'react'
 import { profileKey, type Profile } from '../types/profile'
 import { serverLabel } from '../types/server'
 
@@ -36,6 +36,13 @@ export function ProfileSwitcher({
   const [renaming, setRenaming] = useState(false)
   const [renameValue, setRenameValue] = useState('')
   const renameFieldId = useId()
+
+  // 계정을 바꾸면 이름 바꾸기를 닫는다 - 열어 둔 채 두면 저장이 지금 보이는
+  // 계정이 아니라 새로 바뀐 activeKey에 실려, 편집하던 계정과 다른 계정의
+  // 이름이 바뀐다.
+  useEffect(() => {
+    setRenaming(false)
+  }, [activeKey])
 
   if (profiles.length === 0) return null
 

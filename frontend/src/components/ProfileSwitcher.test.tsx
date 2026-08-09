@@ -271,4 +271,32 @@ describe('ProfileSwitcher', () => {
     )
     expect(screen.queryByRole('button', { name: '계정 이름 바꾸기' })).toBeNull()
   })
+
+  // 편집하던 계정이 바뀌었는데 입력이 남아 있으면, 저장이 엉뚱한 계정에
+  // 실린다. 이름을 잘못 붙이는 것은 이름이 없는 것보다 나쁘다.
+  it('계정을 전환하면 이름 바꾸기가 닫힌다', async () => {
+    const a = makeProfile({ openId: 'a', nickname: '본계' })
+    const b = makeProfile({ openId: 'b', nickname: '부계' })
+    const { rerender } = render(
+      <ProfileSwitcher
+        profiles={[a, b]}
+        activeKey={profileKey('a', 81)}
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: '계정 이름 바꾸기' }))
+    expect(screen.getByRole('textbox', { name: '계정 이름' })).toBeTruthy()
+    rerender(
+      <ProfileSwitcher
+        profiles={[a, b]}
+        activeKey={profileKey('b', 81)}
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('textbox', { name: '계정 이름' })).toBeNull()
+  })
 })
