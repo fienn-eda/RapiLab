@@ -62,8 +62,15 @@ export function SyncRosterPanel({
       // 하기 때문에, 최초 동기화 시점에는 거의 늘 거절된다(2026-08-09 실측).
       // 그러니 「기다렸다 다시 하세요」는 거짓말이다. 유저가 실제로 할 수 있는
       // 일은 계정 드롭다운 옆에서 이름을 직접 붙이는 것 하나다.
+      //
+      // 설치된 북마크릿의 NAMED는 만들 때의 앱 상태 스냅샷이라, 유저가 이름을
+      // 붙인 뒤에도 그 북마크릿은 계속 이름 조회를 시도해 거절당한다
+      // (nicknameError≠''). 그래서 nicknameError만으로는 「안내가 필요한가」를
+      // 못 가른다 - knownFor는 이번 동기화 직전 상태를 보므로 「이미 이름이
+      // 있었나」를 정확히 답한다.
+      const alreadyNamed = knownFor?.(openId)?.namedAreas.includes(area) ?? false
       setNotes(
-        nickname || !nicknameError
+        nickname || !nicknameError || alreadyNamed
           ? warnings
           : [
               ...warnings,

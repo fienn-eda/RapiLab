@@ -168,6 +168,32 @@ describe('SyncRosterPanel', () => {
     expect(screen.getByText(/로스터는 정상이에요/)).toBeTruthy()
   })
 
+  // 설치된 북마크릿의 NAMED는 만들 때의 스냅샷이라 이름을 붙인 뒤에도 []로
+  // 남는다 - 그래서 재동기화는 이름 조회를 다시 시도해 거절당한다
+  // (nickname_error≠''). 하지만 앱은 knownFor로 "이 동기화 전에 이미 이름이
+  // 있었다"를 안다 - 그 경우엔 안내 줄이 뜨면 안 된다. 유저는 시킨 일(이름
+  // 붙이기)을 이미 했다.
+  it('이미 이름을 아는 계정의 재동기화에서는 안내 줄이 뜨지 않는다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
+    vi.mocked(takeSyncInbox).mockResolvedValueOnce({
+      open_id: 'abc123',
+      servers: [{
+        area: 83, nickname: '', nickname_error: 'GetUserProfileBasicInfo:1300015 too frequent',
+        owned: [], character_details: [], recycle_room_researches: [],
+      }],
+    })
+
+    render(
+      <SyncRosterPanel
+        onImport={vi.fn()}
+        knownFor={() => ({ areas: [83], namedAreas: [83] })}
+      />,
+    )
+
+    await screen.findByText(/동기화됨/)
+    expect(screen.queryByText(/계정 이름을 읽지 못했어요/)).toBeNull()
+  })
+
   // 이름을 이미 아는 계정은 그 조회를 아예 건너뛴다. 물어보지 않았으니 실패도
   // 아니고, 안내 줄이 뜨면 「뭔가 잘못됐다」로 읽힌다.
   it('이름 조회를 건너뛴 동기화에서는 아무 말도 하지 않는다', async () => {
