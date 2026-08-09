@@ -221,6 +221,54 @@ describe('App', () => {
     expect(screen.queryByRole('radio', { name: '철갑아일랜드 이터' })).not.toBeInTheDocument()
   })
 
+  // 미사용 니케는 그 계정의 로스터를 두고 한 판단이다. 계정을 바꿔도 남아
+  // 있으면, 있지도 않은 니케를 빼 둔 채로 시작하게 된다. (예전에는
+  // RecommendPanel이 자기 상태로 들고 있었고 프로필 복원 이펙트가 비웠다.)
+  it('계정을 바꾸면 미사용 표시가 비워진다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
+    seedProfiles({
+      activeKey: ACCT_A,
+      profiles: {
+        [ACCT_A]: {
+          openId: 'acct-a',
+          area: 81,
+          nickname: '본계',
+          roster: [validDraft({ character_slug: 'red-hood' })],
+          results: {},
+          lastResultHash: null,
+          lastInputs: null,
+          savedRuns: [],
+        },
+        [ACCT_B]: {
+          openId: 'acct-b',
+          area: 81,
+          nickname: '부계',
+          roster: [validDraft({ character_slug: 'red-hood' })],
+          results: {},
+          lastResultHash: null,
+          lastInputs: null,
+          savedRuns: [],
+        },
+      },
+    })
+
+    render(<App />)
+    const chip = await screen.findByRole('button', { name: 'Red Hood 사용' })
+    await user.click(chip)
+    expect(screen.getByRole('button', { name: 'Red Hood 사용' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+
+    await user.selectOptions(screen.getByLabelText('계정'), '부계 (JP)')
+
+    expect(screen.getByRole('button', { name: 'Red Hood 사용' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
   it('switches the displayed roster when the active profile changes (isolation)', async () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])

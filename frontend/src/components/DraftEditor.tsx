@@ -4,6 +4,10 @@
 // MEMBERSHIP ONLY — no burst order; the engine assigns burst roles. A slot is
 // both a drop target and a drag source, so a unit dropped in the wrong deck
 // is moved rather than removed and re-added.
+//
+// Pressing a seat's face vacates it, and pressing a palette chip fills one.
+// Dragging still works in a browser but cannot be the way in: the packaged
+// app's WebView2 fires `dragstart` and then delivers no drop.
 
 import { useState } from 'react'
 import type { Draft, DraftSeat } from '../types/draft'
@@ -294,6 +298,24 @@ export function DraftEditor({
                   const tier = nominalTierFor(seat.slug)
                   const where = `덱 ${deckIndex + 1}`
                   const isFixed = fixedSet.has(seat.slug)
+                  // Drawn once: the two grips below differ only in whether
+                  // they can be pressed, never in what they show.
+                  const slotFace = (
+                    <>
+                      {portrait ? (
+                        <img className="draft-editor__slot-portrait" src={portrait} alt={name} />
+                      ) : (
+                        <span className="draft-editor__slot-portrait draft-editor__slot-portrait--missing">
+                          {name}
+                        </span>
+                      )}
+                      {tier !== null && (
+                        <span className="draft-editor__slot-tier" aria-hidden="true">
+                          {TIER_NUMERALS[tier - 1]}
+                        </span>
+                      )}
+                    </>
+                  )
                   return (
                     <li
                       key={seat.slug}
@@ -317,36 +339,37 @@ export function DraftEditor({
                       }
                       onDrop={(event) => handleSeatDrop(event, deckIndex, seat.slug)}
                     >
-                      <div
-                        className="draft-editor__slot-grip"
-                        draggable={!isFixed}
-                        onDragStart={(event) => {
-                          // draggable={false} on the grip does not stop a
-                          // native-draggable descendant (the <img> portrait)
-                          // from starting its own drag that bubbles up here -
-                          // the handler has to refuse it too, not just the
-                          // attribute.
-                          if (isFixed) {
-                            event.preventDefault()
-                            return
-                          }
-                          event.dataTransfer.setData(DRAG_SLUG_TYPE, seat.slug)
-                          event.dataTransfer.effectAllowed = 'move'
-                        }}
-                      >
-                        {portrait ? (
-                          <img className="draft-editor__slot-portrait" src={portrait} alt={name} />
-                        ) : (
-                          <span className="draft-editor__slot-portrait draft-editor__slot-portrait--missing">
-                            {name}
-                          </span>
-                        )}
-                        {tier !== null && (
-                          <span className="draft-editor__slot-tier" aria-hidden="true">
-                            {TIER_NUMERALS[tier - 1]}
-                          </span>
-                        )}
-                      </div>
+                      {/* The seat's own face is what vacates it. A 14px `×` in
+                          the corner used to be the only way out, which is a
+                          small target for the thing a player does most while
+                          drafting. A fixed seat stays a plain div - it cannot
+                          be vacated, so it must not look pressable. */}
+                      {isFixed ? (
+                        <div
+                          className="draft-editor__slot-grip"
+                          // draggable={false} does not stop a native-draggable
+                          // descendant (the <img> portrait) from starting its
+                          // own drag that bubbles up here - the handler has to
+                          // refuse it too, not just the attribute.
+                          onDragStart={(event) => event.preventDefault()}
+                        >
+                          {slotFace}
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          className="draft-editor__slot-grip"
+                          aria-label={`${where}에서 ${name} 제거`}
+                          draggable
+                          onDragStart={(event) => {
+                            event.dataTransfer.setData(DRAG_SLUG_TYPE, seat.slug)
+                            event.dataTransfer.effectAllowed = 'move'
+                          }}
+                          onClick={() => onChange(removeUnit(value, deckIndex, seatIndex))}
+                        >
+                          {slotFace}
+                        </button>
+                      )}
                       {showLocks && (
                         <button
                           type="button"
@@ -356,16 +379,6 @@ export function DraftEditor({
                           onClick={() => onChange(toggleLock(value, deckIndex, seatIndex))}
                         >
                           <LockGlyph />
-                        </button>
-                      )}
-                      {!isFixed && (
-                        <button
-                          type="button"
-                          className="draft-editor__slot-remove"
-                          aria-label={`${where}에서 ${name} 제거`}
-                          onClick={() => onChange(removeUnit(value, deckIndex, seatIndex))}
-                        >
-                          <span aria-hidden="true">×</span>
                         </button>
                       )}
                     </li>

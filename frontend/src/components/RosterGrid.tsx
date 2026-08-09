@@ -28,9 +28,20 @@ interface RosterGridProps {
   drafts: NikkeDraft[]
   supportedUnits: SupportedUnit[]
   portraitFor: (slug: string) => string | null
+  /** Benched Nikkes — the recommender may not field these. Account-wide, so
+   * this tab is where they are decided; the raid tabs only read it. */
+  excludedSlugs?: string[]
+  onToggleExclude?: (slug: string) => void
 }
 
-export function RosterGrid({ drafts, supportedUnits, portraitFor }: RosterGridProps) {
+export function RosterGrid({
+  drafts,
+  supportedUnits,
+  portraitFor,
+  excludedSlugs = [],
+  onToggleExclude,
+}: RosterGridProps) {
+  const excludedSet = new Set(excludedSlugs)
   const bySlug = new Map(supportedUnits.map((unit) => [unit.slug, unit]))
   const supported = drafts.filter((draft) => bySlug.has(draft.character_slug))
   const unsupported = drafts.filter((draft) => !bySlug.has(draft.character_slug))
@@ -95,6 +106,12 @@ export function RosterGrid({ drafts, supportedUnits, portraitFor }: RosterGridPr
                     name={unit.name}
                     element={unit.element}
                     portrait={portraitFor(draft.character_slug)}
+                    excluded={excludedSet.has(draft.character_slug)}
+                    onToggleExclude={
+                      onToggleExclude
+                        ? () => onToggleExclude(draft.character_slug)
+                        : undefined
+                    }
                   />
                 )
               })}

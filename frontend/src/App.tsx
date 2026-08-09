@@ -2,7 +2,7 @@
 // blablalink per account (profile), then requests deck recommendations
 // against a boss profile (POST /api/recommend, via RecommendPanel).
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { useProfiles } from './hooks/useProfiles'
 import { usePortraitManifest } from './hooks/usePortraitManifest'
@@ -58,6 +58,21 @@ function App() {
     deleteRun,
   } = useProfiles()
   const { portraitFor } = usePortraitManifest()
+  // 미사용 니케는 계정 하나로 정해진다 - 니케 풀 탭에서 고르고, 솔로·유니온이
+  // 그것을 읽는다. 탭마다 따로 두면 「이 니케를 뺐다」가 어느 화면 이야기인지
+  // 매번 되물어야 한다. 세션 한정(프로필에 저장하지 않는다)이라 앱을 다시 켜면
+  // 전원이 다시 후보가 된다 - 예전 탭별 상태와 같은 수명이다.
+  const [excludedSlugs, setExcludedSlugs] = useState<string[]>([])
+  const toggleExclude = (slug: string) =>
+    setExcludedSlugs((current) =>
+      current.includes(slug) ? current.filter((s) => s !== slug) : [...current, slug],
+    )
+  // 계정이 바뀌면 비운다 - 뺀 니케는 그 계정의 로스터를 두고 한 판단이라,
+  // 다른 계정에 들고 가면 있지도 않은 니케를 빼 둔 채로 시작한다. 예전에
+  // RecommendPanel이 프로필 복원 이펙트에서 하던 일과 같다.
+  useEffect(() => {
+    setExcludedSlugs([])
+  }, [state.activeKey])
   // The Roster tab needs names, elements and the supported/unsupported split.
   // RecommendPanel loads the same list for itself: making it a prop instead
   // would rewrite 22 of its test's render sites to save one GET of a small
@@ -184,6 +199,8 @@ function App() {
                 drafts={drafts}
                 supportedUnits={supportedUnits.units}
                 portraitFor={portraitFor}
+                excludedSlugs={excludedSlugs}
+                onToggleExclude={toggleExclude}
               />
             </div>
 
@@ -223,6 +240,7 @@ function App() {
                 onDeleteRun={(id) => {
                   if (state.activeKey) deleteRun({ key: state.activeKey, id })
                 }}
+                excludedSlugs={excludedSlugs}
               />
             </div>
 
@@ -255,6 +273,7 @@ function App() {
                 onDeleteRun={(id) => {
                   if (state.activeKey) deleteRun({ key: state.activeKey, id })
                 }}
+                excludedSlugs={excludedSlugs}
               />
             </div>
 

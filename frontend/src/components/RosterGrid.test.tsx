@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RosterGrid } from './RosterGrid'
@@ -33,6 +33,49 @@ const grid = (slugs: string[], supportedUnits = SUPPORTED) =>
       portraitFor={() => null}
     />,
   )
+
+// 미사용 니케를 정하는 곳이 이 탭이다 - 솔로·유니온은 그 결정을 읽기만 한다.
+// 여기 컨트롤이 없어지면 앱 전체에서 니케를 뺄 방법이 사라진다.
+describe('RosterGrid 미사용 토글', () => {
+  const withToggle = (slugs: string[], excludedSlugs: string[] = []) => {
+    const onToggleExclude = vi.fn()
+    render(
+      <RosterGrid
+        drafts={slugs.map(draft)}
+        supportedUnits={SUPPORTED}
+        portraitFor={() => null}
+        excludedSlugs={excludedSlugs}
+        onToggleExclude={onToggleExclude}
+      />,
+    )
+    return onToggleExclude
+  }
+
+  it('초상화를 누르면 그 니케의 슬러그를 넘긴다', async () => {
+    const onToggleExclude = withToggle(['crown', 'liter'])
+    await userEvent.click(screen.getByRole('button', { name: 'Crown 사용' }))
+    expect(onToggleExclude).toHaveBeenCalledWith('crown')
+  })
+
+  it('뺀 니케만 눌리지 않은 상태로 보고한다', () => {
+    withToggle(['crown', 'liter'], ['liter'])
+    expect(screen.getByRole('button', { name: 'Crown 사용' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    expect(screen.getByRole('button', { name: 'Liter 사용' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  // 핸들러가 없는 화면에서는 초상화가 그냥 그림이다 - 눌러도 아무 일이 없는
+  // 컨트롤을 남기지 않는다.
+  it('토글을 다루지 않는 화면에서는 초상화가 버튼이 아니다', () => {
+    grid(['crown'])
+    expect(screen.queryByRole('button', { name: /사용/ })).not.toBeInTheDocument()
+  })
+})
 
 describe('RosterGrid', () => {
   it('gives a card to every owned unit the engine supports', () => {

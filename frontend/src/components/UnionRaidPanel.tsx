@@ -6,7 +6,7 @@
 // 잠금이 없는 것도(고정할 최적화가 없다), 결과를 캐시하지 않는 것도(수 초면
 // 끝난다) 같은 이유다.
 
-import { useId, useMemo, useState, type FormEvent } from 'react'
+import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { useEvaluateDecks } from '../hooks/useEvaluateDecks'
 import {
   bossProfileToDraft,
@@ -26,7 +26,7 @@ import { EvaluationResults } from './EvaluationResults'
 import { SaveRunButton } from './SaveRunButton'
 import { SavedRunList } from './SavedRunList'
 import { makeRunId, type SavedRun, type UnionRunView } from '../types/profile'
-import { UnitPalette, toggleExcludedSlug, type UnitInvestment } from './UnitPalette'
+import { UnitPalette, type UnitInvestment } from './UnitPalette'
 
 interface UnionRaidPanelProps {
   roster: UserNikkeState[]
@@ -48,6 +48,8 @@ interface UnionRaidPanelProps {
   savedRuns: SavedRun[]
   /** 보관 상한에 걸려 거절되면 false. */
   onSaveRun: (run: SavedRun) => boolean
+  /** 니케 풀 탭에서 정한 미사용 니케. 이 탭은 읽기만 한다. */
+  excludedSlugs?: string[]
   onRenameRun: (id: string, name: string) => void
   onDeleteRun: (id: string) => void
 }
@@ -76,6 +78,7 @@ export function UnionRaidPanel({
   onSaveRun,
   onRenameRun,
   onDeleteRun,
+  excludedSlugs: excludedSlugsProp,
 }: UnionRaidPanelProps) {
   const [numBattles, setNumBattles] = useState(DEFAULT_UNION_NUM_DECKS)
   const [bosses, setBosses] = useState<BossProfileDraft[]>(() =>
@@ -89,7 +92,12 @@ export function UnionRaidPanel({
   // would relabel a finished result's cards the moment the player edits a
   // boss field afterward, while the damage numbers still reflect the old boss.
   const [evaluatedBosses, setEvaluatedBosses] = useState<BossProfile[]>([])
-  const [excludedSlugs, setExcludedSlugs] = useState<Set<string>>(new Set())
+  // Benched Nikkes, decided once for the account on the roster tab. Optional
+  // so tests that render this panel directly keep their signature.
+  const excludedSlugs = useMemo(() => new Set(excludedSlugsProp ?? []), [excludedSlugsProp])
+  // A value the unseat effect can depend on - a fresh Set every render would
+  // re-run it forever.
+  const excludedKey = [...excludedSlugs].sort().join(',')
   // Which battle's deck the palette's `+` fills. Clamped at the point of use
   // rather than resynced when numBattles shrinks: one expression that is
   // always right beats a second piece of state that can disagree with the
@@ -138,13 +146,16 @@ export function UnionRaidPanel({
     [roster, excludedSlugs],
   )
 
-  const toggleExclude = (slug: string) => {
-    if (!excludedSlugs.has(slug)) {
-      // Excluding a unit also unplaces it from whichever battle holds it.
-      setDraftValue((current) => removeUnitBySlug(current, slug))
-    }
-    setExcludedSlugs((prev) => toggleExcludedSlug(prev, slug))
-  }
+  // Benching a Nikke also unseats her from whichever battle holds her, so
+  // "제외" means the same thing here as in the submitted roster. The decision
+  // arrives from the roster tab now, so it is watched rather than handled.
+  useEffect(() => {
+    setDraftValue((current) =>
+      [...excludedSlugs].reduce((draft, slug) => removeUnitBySlug(draft, slug), current),
+    )
+    // removeUnitBySlug returns the same draft when nothing matched, so this
+    // settles without a re-render.
+  }, [excludedKey])
 
   // 화면에 떠 있는 유니온 결과. 보스는 제출 시점 스냅샷(evaluatedBosses)이라,
   // 결과가 나온 뒤 보스 폼을 만져도 이 값은 따라 움직이지 않는다.
@@ -280,7 +291,6 @@ export function UnionRaidPanel({
               draggable
               onSeat={(slug) => setDraftValue((current) => placeUnit(current, seatDeck, slug))}
               excludedSlugs={[...excludedSlugs]}
-              onToggleExclude={toggleExclude}
               investmentFor={investmentFor}
             />
             <div className="draft-layout__decks">

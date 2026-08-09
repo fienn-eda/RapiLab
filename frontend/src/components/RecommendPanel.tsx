@@ -52,7 +52,7 @@ import { EvaluationResults } from './EvaluationResults'
 import { RaidResults } from './RaidResults'
 import { SaveRunButton } from './SaveRunButton'
 import { SavedRunList } from './SavedRunList'
-import { UnitPalette, toggleExcludedSlug, type UnitInvestment } from './UnitPalette'
+import { UnitPalette, type UnitInvestment } from './UnitPalette'
 import { HELP } from '../lib/helpText'
 
 interface RecommendPanelProps {
@@ -89,6 +89,9 @@ interface RecommendPanelProps {
   onSaveRun: (run: SavedRun) => boolean
   onRenameRun: (id: string, name: string) => void
   onDeleteRun: (id: string) => void
+  /** Benched Nikkes, decided account-wide on the roster tab. Optional because
+   * 51 tests render this panel directly; without it nobody is benched. */
+  excludedSlugs?: string[]
 }
 
 /** 솔로 레이드 보스의 방어력. 유니온 레이드 보스는 다른 값이라 이 기본값을
@@ -151,6 +154,7 @@ export function RecommendPanel({
   onSaveRun,
   onRenameRun,
   onDeleteRun,
+  excludedSlugs: excludedSlugsProp,
 }: RecommendPanelProps) {
   const [mode, setMode] = useState<RecommendMode>('single')
   const [numDecks, setNumDecks] = useState(DEFAULT_NUM_DECKS)
@@ -186,9 +190,13 @@ export function RecommendPanel({
   // care which of those produced it (see toStoredResult/getCached below).
   const [displayResult, setDisplayResult] = useState<StoredResult | null>(null)
   const [displayMode, setDisplayMode] = useState<'raid' | 'draft' | null>(null)
-  // Ephemeral per-request exclusions from the search pool — NOT persisted,
-  // reset whenever the active profile changes (see the restore effect).
-  const [excludedSlugs, setExcludedSlugs] = useState<Set<string>>(new Set())
+  // Benched Nikkes, decided once for the account on the roster tab. Optional
+  // so the 51 tests that render this panel directly keep their signature; on
+  // its own it simply benches nobody.
+  const excludedSlugs = useMemo(() => new Set(excludedSlugsProp ?? []), [excludedSlugsProp])
+  // A value the effect below can depend on - a fresh Set every render would
+  // re-run it forever.
+  const excludedKey = [...excludedSlugs].sort().join(',')
   // Which deck the palette's `+` fills. Clamped at the point of use rather
   // than resynced when numDecks shrinks: one expression that is always right
   // beats a second piece of state that can disagree with the first.
@@ -216,7 +224,6 @@ export function RecommendPanel({
   // is null until then. Without it here, a restorable result would be dropped
   // for good. It settles once per mount, so this stays two firings.
   useEffect(() => {
-    setExcludedSlugs(new Set())
     if (restoreInputs && restoreResult) {
       setMode(restoreInputs.mode)
       setNumDecks(restoreInputs.numDecks)
@@ -487,13 +494,17 @@ export function RecommendPanel({
     )
   const burstTiersResolver = (slug: string) => burstTiersFor(slug, unitIndex)
 
-  const toggleExclude = (slug: string) => {
-    if (!excludedSlugs.has(slug)) {
-      // Excluding a unit also unplaces it from the draft.
-      setDraftValue((current) => removeUnitBySlug(current, slug))
-    }
-    setExcludedSlugs((prev) => toggleExcludedSlug(prev, slug))
-  }
+  // Benching a Nikke also unseats her, so "제외" means the same thing here as
+  // it does in the submitted roster: out of the deck AND out of the search.
+  // The decision now arrives from the roster tab rather than from a control
+  // on this screen, so it is watched rather than handled.
+  useEffect(() => {
+    setDraftValue((current) =>
+      [...excludedSlugs].reduce((draft, slug) => removeUnitBySlug(draft, slug), current),
+    )
+    // removeUnitBySlug returns the same draft when nothing matched, so an
+    // unrelated change re-runs this and settles without a re-render.
+  }, [excludedKey])
 
   /** 보관물을 여는 것만으로는 폼이 바뀌지 않는다. 이 버튼을 눌렀을 때만 그때의
    * 설정으로 되돌린다 - 결과는 되돌리지 않는다(조건을 조금 바꿔 다시 돌리는
@@ -925,24 +936,19 @@ export function RecommendPanel({
             <legend className="group__legend">사용할 유닛</legend>
             {/* Default-expanded (discoverable) but collapsible. `open` also keeps the
                 unit toggles in the a11y tree for tests without a jsdom details toggle. */}
-            <details className="group__details" open>
-              <summary className="group__hint">
-                {poolKnown ? poolIncluded : effectiveRoster.length}/
-                {poolKnown ? poolTotal : roster.length} 탐색 풀에 포함됨 — 편성하지
-                않을 유닛을 클릭하면 제외돼요
-                {poolKnown && unsupportedCount > 0 && (
-                  <> (보유 중이나 아직 미지원 {unsupportedCount}기)</>
-                )}
-              </summary>
-              {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
-              <UnitPalette
-                roster={roster}
-                supportedUnits={supportedUnits.units}
-                excludedSlugs={[...excludedSlugs]}
-                onToggleExclude={toggleExclude}
-                investmentFor={investmentFor}
-              />
-            </details>
+            {/* The grid that used to live here was the same roster the 니케 풀
+                tab draws, and benching is now decided there once for the whole
+                account. What this tab still owes the player is the number: how
+                many of their Nikkes this search may actually field. */}
+            <p className="group__hint">
+              {poolKnown ? poolIncluded : effectiveRoster.length}/
+              {poolKnown ? poolTotal : roster.length} 탐색 풀에 포함됨 — 편성하지 않을
+              유닛은 니케 풀 탭에서 정해요
+              {poolKnown && unsupportedCount > 0 && (
+                <> (보유 중이나 아직 미지원 {unsupportedCount}기)</>
+              )}
+            </p>
+            {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}
           </fieldset>
         )}
 
@@ -963,7 +969,6 @@ export function RecommendPanel({
                 draggable
                 onSeat={(slug) => setDraftValue((current) => placeUnit(current, seatDeck, slug))}
                 excludedSlugs={[...excludedSlugs]}
-                onToggleExclude={toggleExclude}
                 investmentFor={investmentFor}
               />
               <div className="draft-layout__decks">

@@ -307,19 +307,33 @@ describe('UnitPalette 클릭 배치', () => {
     expect(screen.queryByRole('button', { name: /배치/ })).not.toBeInTheDocument()
   })
 
-  // 앉힐 수 없는 유닛에 버튼을 남기면 눌러도 아무 일이 없다 - draggable이
-  // 같은 두 조건으로 꺼지는 것과 같은 규칙을 따른다.
-  it('이미 앉았거나 풀에서 빠진 유닛에는 배치 버튼이 없다', () => {
-    renderPalette({ onSeat: vi.fn(), usedSlugs: ['crown'], excludedSlugs: ['blanc'] })
-    expect(screen.queryByRole('button', { name: 'Crown 배치' })).not.toBeInTheDocument()
-    expect(screen.queryByRole('button', { name: 'Blanc 배치' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Liter 배치' })).toBeInTheDocument()
+  // 이미 앉은 유닛은 누를 것이 없다 - 칩이 통째로 컨트롤이므로, 버튼을 지우는
+  // 대신 끈다(자리는 그대로 두어 그리드가 흔들리지 않는다).
+  it('이미 앉은 유닛의 칩은 눌리지 않는다', async () => {
+    const onSeat = vi.fn()
+    renderPalette({ onSeat, usedSlugs: ['crown'] })
+    const seated = screen.getByRole('button', { name: 'Crown 배치됨' })
+    expect(seated).toBeDisabled()
+    await userEvent.click(seated)
+    expect(onSeat).not.toHaveBeenCalled()
   })
 
   // 배치가 버튼이 된 덕에 편성이 키보드로도 된다 - 드래그였을 때는 마우스가
   // 없으면 아예 못 하던 일이다.
-  it('배치 버튼은 탭으로 닿는다', () => {
+  it('배치는 탭으로 닿는다', () => {
     renderPalette({ onSeat: vi.fn() })
     expect(screen.getByRole('button', { name: 'Crown 배치' })).not.toHaveAttribute('tabIndex', '-1')
+  })
+
+  // 두 뜻을 한 번의 누름에 담을 수 없다. 덱이 옆에 있는 화면에서는 배치가 이긴다.
+  it('배치와 제외가 둘 다 주어지면 배치가 이긴다', async () => {
+    const onSeat = vi.fn()
+    const onToggleExclude = vi.fn()
+    renderPalette({ onSeat, onToggleExclude })
+    const chip = screen.getByRole('button', { name: 'Crown 배치' })
+    expect(chip).not.toHaveAttribute('aria-pressed')
+    await userEvent.click(chip)
+    expect(onSeat).toHaveBeenCalledWith('crown')
+    expect(onToggleExclude).not.toHaveBeenCalled()
   })
 })

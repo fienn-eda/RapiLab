@@ -639,6 +639,33 @@
   background: var(--surface-2);
 }
 
+/* 이 탭이 「어떤 니케를 추천에 쓸지」를 정하는 곳이라, 초상화가 그 토글이다 -
+   팔레트가 예전에 들고 있던 것과 같은 몸짓이다. */
+.roster-card__use {
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+}
+
+.roster-card__use:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* 뺀 니케. 팔레트의 제외 표시와 같은 어휘(흐리게 + 흑백 + 파선)를 쓴다 -
+   같은 사실을 두 화면이 다른 말로 하면 둘을 잇지 못한다. */
+.roster-card--excluded {
+  opacity: 0.5;
+  border-top-style: dashed;
+}
+
+.roster-card--excluded .roster-card__portrait {
+  filter: grayscale(1);
+}
+
 .roster-card__portrait {
   display: block;
   width: 100%;
@@ -1674,34 +1701,10 @@
   cursor: pointer;
 }
 
-/* Seating a unit - the primary action on a draft screen, so it is always
-   visible rather than revealed on hover like the slot's remove button. It sits
-   on the art's lower-left corner: the upper-right is the favorite-item heart,
-   and anchoring from the chip's own padding avoids depending on how wide the
-   portrait happens to be. */
-.palette__seat {
-  position: absolute;
-  left: calc(var(--sp-1) + 2px);
-  bottom: calc(var(--sp-1) + 2px);
-  width: 19px;
-  height: 19px;
-  padding: 0;
-  border: 0;
-  border-radius: 999px;
-  font-size: 13px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  color: var(--accent-contrast);
-  background: var(--accent);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.palette__seat:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 1px;
+/* A seated chip has nothing left to do, so its face stops being a control.
+   The seated outline already says why. */
+.palette__face:disabled {
+  cursor: default;
 }
 
 /* Anchors the overload popover. */
@@ -1975,14 +1978,28 @@
   color: var(--text-muted);
 }
 
+/* The whole face, so vacating a seat is a full-slot target rather than the
+   14px corner glyph it used to be. A button reset because it started life as
+   a plain div and the slot's art must still fill it edge to edge. */
 .draft-editor__slot-grip {
   position: absolute;
   inset: 0;
-  cursor: grab;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
 }
 
-.draft-editor__slot-grip:active {
-  cursor: grabbing;
+.draft-editor__slot-grip:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* 눌리는 자리라는 것을 손이 먼저 알도록 - 예약된 좌석(div)에는 안 걸린다. */
+button.draft-editor__slot-grip:hover .draft-editor__slot-portrait {
+  opacity: 0.72;
 }
 
 /* THE FACE CROP, shared by every square portrait.
@@ -2028,8 +2045,7 @@
   pointer-events: none;
 }
 
-.draft-editor__slot-lock,
-.draft-editor__slot-remove {
+.draft-editor__slot-lock {
   position: absolute;
   padding: 0;
   border: 0;
@@ -2053,6 +2069,9 @@
   bottom: 2px;
   left: 2px;
   opacity: 0;
+  /* 좌석 버튼이 inset:0 으로 면 전체를 덮으므로, 자물쇠가 그 위에 있어야
+     눌린다. */
+  z-index: 1;
 }
 
 .draft-editor__slot-lock[aria-pressed='true'] {
@@ -2061,23 +2080,12 @@
   color: var(--accent-contrast);
 }
 
-/* Removing is destructive and rarely wanted now that a slot can be dragged
-   somewhere else, so it stays out of the way until reached for. */
-.draft-editor__slot-remove {
-  top: 2px;
-  right: 2px;
-  opacity: 0;
-}
-
 .draft-editor__slot:hover .draft-editor__slot-lock,
-.draft-editor__slot:hover .draft-editor__slot-remove,
-.draft-editor__slot-lock:focus-visible,
-.draft-editor__slot-remove:focus-visible {
+.draft-editor__slot-lock:focus-visible {
   opacity: 1;
 }
 
-.draft-editor__slot-lock:focus-visible,
-.draft-editor__slot-remove:focus-visible {
+.draft-editor__slot-lock:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }

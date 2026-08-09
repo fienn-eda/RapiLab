@@ -544,7 +544,7 @@ describe('RecommendPanel draft mode', () => {
     render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/빈자리만 최적화/i))
 
-    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    await screen.findByRole('button', { name: /a 배치/i }) // palette loaded
 
     // Fill deck 1 (5 seats) and put the 6th in deck 2, so the submitted draft
     // spans two decks — not just deck 1.
@@ -611,7 +611,7 @@ describe('RecommendPanel draft mode', () => {
     const roster = [...fullRoster, nikke('bready')]
     render(<RecommendPanel roster={roster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/빈자리만 최적화/i))
-    await screen.findByRole('button', { name: /bready 사용/i }) // draft palette has her
+    await screen.findByRole('button', { name: /bready 배치/i }) // draft palette has her
 
     dropOnDeck(1, 'bready')
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
@@ -655,7 +655,7 @@ describe('RecommendPanel draft mode', () => {
     render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
     await user.click(screen.getByLabelText(/빈자리만 최적화/i))
 
-    await screen.findByRole('button', { name: /u0 사용/i }) // palette loaded
+    await screen.findByRole('button', { name: /u0 배치/i }) // palette loaded
 
     // Fill deck 1 (5 seats) and put the 6th in deck 2, so 2 decks are
     // non-empty.
@@ -686,7 +686,7 @@ describe('RecommendPanel evaluate mode', () => {
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
-    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    await screen.findByRole('button', { name: /a 배치/i }) // palette loaded
 
     // Seat a unit so the draft editor actually draws a slot — with nothing
     // placed, "no lock button" would be true regardless of showLocks. The
@@ -704,7 +704,7 @@ describe('RecommendPanel evaluate mode', () => {
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
-    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    await screen.findByRole('button', { name: /a 배치/i }) // palette loaded
 
     for (const slug of ['a', 'b', 'c', 'd']) dropOnDeck(1, slug)
     expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
@@ -732,7 +732,7 @@ describe('RecommendPanel evaluate mode', () => {
     const { rerender } = render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
-    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    await screen.findByRole('button', { name: /a 배치/i }) // palette loaded
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
 
     // The roster tab drops below MIN_DECK_ROSTER_SIZE - the already-drafted
@@ -763,7 +763,7 @@ describe('RecommendPanel evaluate mode', () => {
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
-    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    await screen.findByRole('button', { name: /a 배치/i }) // palette loaded
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
 
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
@@ -814,7 +814,7 @@ describe('RecommendPanel evaluate mode', () => {
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
-    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    await screen.findByRole('button', { name: /a 배치/i }) // palette loaded
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
@@ -871,7 +871,7 @@ describe('RecommendPanel mode switch', () => {
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
-    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    await screen.findByRole('button', { name: /a 배치/i }) // palette loaded
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
@@ -900,7 +900,7 @@ describe('RecommendPanel mode switch', () => {
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
-    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    await screen.findByRole('button', { name: /a 배치/i }) // palette loaded
     for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
     expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
@@ -952,7 +952,9 @@ describe('RecommendPanel mode switch', () => {
     })
 
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
-    await screen.findByRole('button', { name: /a 사용/i }) // supported-units loaded
+    // 탐색 모드에는 팔레트가 없다(미사용은 니케 풀 탭이 정한다) - 풀 개수 줄이
+    // supported-units가 도착했다는 증거다.
+    await screen.findByText(/탐색 풀에 포함됨/)
 
     // 단일 덱: 약점 수냉(보스는 작열), 속성저지 필수를 켜고 제출한다 - 로스터
     // 전원이 Iron이라 파훼할 수 없는 덱이 나온다.
@@ -1250,19 +1252,25 @@ describe('RecommendPanel unit-pool exclusion', () => {
     engine_version: 'test-engine-version',
   }
 
-  const renderMode = async (roster: UserNikkeState[], radio: RegExp) => {
+  // 미사용 니케는 이제 니케 풀 탭이 정하고 이 패널은 받아 읽기만 한다.
+  // 그래서 여기서는 칩을 누르는 대신 프로퍼티로 넣는다 - 컨트롤이 어디 있든
+  // 「뺀 니케는 제출 로스터에도 편성에도 없다」는 이 패널의 약속이다.
+  const renderExcluded = async (
+    roster: UserNikkeState[],
+    radio: RegExp,
+    excludedSlugs: string[],
+  ) => {
     vi.mocked(getSupportedUnits).mockResolvedValue(supported)
     vi.mocked(recommendRaidDecks).mockResolvedValue(raidResponse)
     const user = userEvent.setup()
-    render(<RecommendPanel roster={roster} {...noPersistence} />)
+    render(<RecommendPanel roster={roster} {...noPersistence} excludedSlugs={excludedSlugs} />)
     await user.click(screen.getByRole('radio', { name: radio }))
-    await screen.findByRole('button', { name: /a 사용/i }) // palette loaded
+    await screen.findByText(/탐색 풀에 포함됨|덱 1/)
     return user
   }
 
   it('drops an unchecked unit from the raid request roster', async () => {
-    const user = await renderMode(poolRoster, /전부 최적화/i)
-    await user.click(screen.getByRole('button', { name: /a 사용/i }))
+    const user = await renderExcluded(poolRoster, /전부 최적화/i, ['a'])
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())
     const sent = vi.mocked(recommendRaidDecks).mock.calls[0][0]
@@ -1273,20 +1281,26 @@ describe('RecommendPanel unit-pool exclusion', () => {
   it('disables submit when exclusions drop the roster below the minimum', async () => {
     // fullRoster is exactly MIN_DECK_ROSTER_SIZE (5); excluding one under-fills.
     expect(fullRoster.length).toBe(MIN_DECK_ROSTER_SIZE)
-    const user = await renderMode(fullRoster, /전부 최적화/i)
-    await user.click(screen.getByRole('button', { name: /a 사용/i }))
+    await renderExcluded(fullRoster, /전부 최적화/i, ['a'])
     expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
   })
 
   it('unplaces a drafted unit when it is excluded (draft mode)', async () => {
-    // poolRoster/supported/raidResponse are defined in this describe's scope.
-    const user = await renderMode(poolRoster, /빈자리만 최적화/i)
+    vi.mocked(getSupportedUnits).mockResolvedValue(supported)
+    vi.mocked(recommendRaidDecks).mockResolvedValue(raidResponse)
+    const user = userEvent.setup()
+    const { rerender } = render(
+      <RecommendPanel roster={poolRoster} {...noPersistence} excludedSlugs={[]} />,
+    )
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/i }))
+    await screen.findByRole('button', { name: /a 배치/i })
 
-    // Seat unit "a" by dropping it on Deck 1, then exclude it.
+    // Seat unit "a" by dropping it on Deck 1, then bench her from the roster tab.
     dropOnDeck(1, 'a')
     // A slot renders a face, not a name — its controls are what say who is in it.
     expect(screen.getByRole('button', { name: '덱 1에서 A 제거' })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /a 사용/i }))
+    rerender(<RecommendPanel roster={poolRoster} {...noPersistence} excludedSlugs={['a']} />)
+    expect(screen.queryByRole('button', { name: '덱 1에서 A 제거' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())
@@ -1296,33 +1310,22 @@ describe('RecommendPanel unit-pool exclusion', () => {
     expect(sent.roster.map((n) => n.character_slug)).not.toContain('a')
   })
 
-  it('resets exclusions when the active profile changes', async () => {
-    vi.mocked(getSupportedUnits).mockResolvedValue(supported)
-    const user = userEvent.setup()
-    const { rerender } = render(
-      <RecommendPanel roster={poolRoster} {...noPersistence} activeKey="p1" />,
-    )
-    await user.click(screen.getByRole('radio', { name: /전부 최적화/i }))
-    await screen.findByRole('button', { name: /a 사용/i })
-    await user.click(screen.getByRole('button', { name: /a 사용/i }))
-    expect(screen.getByRole('button', { name: /a 사용/i })).toHaveAttribute('aria-pressed', 'false')
-    rerender(<RecommendPanel roster={poolRoster} {...noPersistence} activeKey="p2" />)
-    expect(screen.getByRole('button', { name: /a 사용/i })).toHaveAttribute('aria-pressed', 'true')
-  })
-
   it('excluding a unit changes the cache hash', async () => {
     vi.mocked(getSupportedUnits).mockResolvedValue(supported)
     vi.mocked(recommendRaidDecks).mockResolvedValue(raidResponse)
     const getCached = vi.fn().mockReturnValue(null)
     const user = userEvent.setup()
-    render(<RecommendPanel roster={poolRoster} {...noPersistence} getCached={getCached} />)
+    const props = { ...noPersistence, getCached }
+    const { rerender } = render(
+      <RecommendPanel roster={poolRoster} {...props} excludedSlugs={[]} />,
+    )
     await user.click(screen.getByRole('radio', { name: /전부 최적화/i }))
-    await screen.findByRole('button', { name: /a 사용/i })
+    await screen.findByText(/탐색 풀에 포함됨/)
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await waitFor(() => expect(getCached).toHaveBeenCalledTimes(1))
     const hashFull = getCached.mock.calls[0][0]
     await screen.findByRole('button', { name: /인카운터/ }) // loading cleared
-    await user.click(screen.getByRole('button', { name: /a 사용/i }))
+    rerender(<RecommendPanel roster={poolRoster} {...props} excludedSlugs={['a']} />)
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await waitFor(() => expect(getCached).toHaveBeenCalledTimes(2))
     expect(getCached.mock.calls[1][0]).not.toEqual(hashFull)
@@ -1330,12 +1333,9 @@ describe('RecommendPanel unit-pool exclusion', () => {
 
   // The palette filter narrows what is DRAWN. If it ever narrowed the request
   // too, a player would silently run a one-to-two-minute allocation against a
-  // roster they never chose to shrink - and the pool count in the summary
-  // would be the only place that said so.
+  // roster they never chose to shrink. The palette now only exists in the
+  // seating modes, so that is where this is asked.
   describe('the palette filter and the search pool', () => {
-    // Six, not five: the third test excludes one unit, and MIN_DECK_ROSTER_SIZE
-    // is 5 - on a five-unit roster the exclusion would disable Submit and the
-    // test would be asserting against a button it never actually pressed.
     const paletteUnits: SupportedUnit[] = [
       { slug: 'a', name: 'Crown', burstTier: 1, element: 'Iron' },
       { slug: 'b', name: 'Anne', burstTier: 1, element: 'Fire' },
@@ -1346,59 +1346,41 @@ describe('RecommendPanel unit-pool exclusion', () => {
     ]
     const sixRoster = [...fullRoster, nikke('f')]
 
-    it('sends the whole roster even while the palette shows one unit', async () => {
+    const draftModeWith = async (excludedSlugs: string[]) => {
       const user = userEvent.setup()
       vi.mocked(getSupportedUnits).mockResolvedValue(paletteUnits)
-      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
-
-      render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
-      await screen.findByRole('button', { name: /Crown 사용/i })
-
-      await user.click(screen.getByRole('button', { name: '작열' }))
-      expect(screen.getByRole('button', { name: /Anne 사용/i })).toBeInTheDocument()
-      expect(screen.queryByRole('button', { name: /Crown 사용/i })).not.toBeInTheDocument()
-
-      await user.click(screen.getByRole('button', { name: /인카운터/ }))
-
-      expect(recommendDecks).toHaveBeenCalledWith(
-        expect.objectContaining({ roster: sixRoster }),
-        expect.any(AbortSignal),
+      vi.mocked(recommendRaidDecks).mockResolvedValue(raidResponse)
+      render(
+        <RecommendPanel roster={sixRoster} {...noPersistence} excludedSlugs={excludedSlugs} />,
       )
-    })
+      await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/i }))
+      await screen.findByRole('button', { name: /Anne 배치/i })
+      return user
+    }
 
-    it('keeps the pool count on the full roster while a filter hides units', async () => {
-      const user = userEvent.setup()
-      vi.mocked(getSupportedUnits).mockResolvedValue(paletteUnits)
-
-      render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
-      await screen.findByRole('button', { name: /Crown 사용/i })
-      expect(screen.getByText(/6\/6 탐색 풀에 포함됨/)).toBeInTheDocument()
-
+    it('sends the whole roster even while the palette shows one unit', async () => {
+      const user = await draftModeWith([])
       await user.click(screen.getByRole('button', { name: '작열' }))
-      expect(screen.queryByRole('button', { name: /Crown 사용/i })).not.toBeInTheDocument()
-      expect(screen.getByText(/6\/6 탐색 풀에 포함됨/)).toBeInTheDocument()
-    })
-
-    // Excluding is the pool control; filtering is not. A unit excluded before
-    // a filter hid it must still be excluded after.
-    it('leaves an exclusion intact across a filter that hides that unit', async () => {
-      const user = userEvent.setup()
-      vi.mocked(getSupportedUnits).mockResolvedValue(paletteUnits)
-      vi.mocked(recommendDecks).mockResolvedValue({ decks: [], excluded_slugs: [], engine_version: 'test-engine-version' })
-
-      render(<RecommendPanel roster={sixRoster} {...noPersistence} />)
-      await screen.findByRole('button', { name: /Anne 사용/i })
-
-      await user.click(screen.getByRole('button', { name: /Anne 사용/i }))
-      await user.click(screen.getByRole('button', { name: '철갑' }))
-      expect(screen.queryByRole('button', { name: /Anne 사용/i })).not.toBeInTheDocument()
+      expect(screen.getByRole('button', { name: /Anne 배치/i })).toBeInTheDocument()
+      expect(screen.queryByRole('button', { name: /Crown 배치/i })).not.toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: /인카운터/ }))
-      expect(recommendDecks).toHaveBeenCalledWith(
-        expect.objectContaining({
-          roster: sixRoster.filter((nikke) => nikke.character_slug !== 'b'),
-        }),
-        expect.any(AbortSignal),
+      await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())
+      expect(vi.mocked(recommendRaidDecks).mock.calls[0][0].roster).toEqual(sixRoster)
+    })
+
+    // Benching is the pool control; filtering is not. A Nikke benched on the
+    // roster tab stays benched no matter what the palette happens to be
+    // showing.
+    it('leaves an exclusion intact across a filter that hides that unit', async () => {
+      const user = await draftModeWith(['b'])
+      await user.click(screen.getByRole('button', { name: '철갑' }))
+      expect(screen.queryByRole('button', { name: /Anne 배치/i })).not.toBeInTheDocument()
+
+      await user.click(screen.getByRole('button', { name: /인카운터/ }))
+      await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())
+      expect(vi.mocked(recommendRaidDecks).mock.calls[0][0].roster).toEqual(
+        sixRoster.filter((n) => n.character_slug !== 'b'),
       )
     })
   })
@@ -1412,7 +1394,10 @@ describe('RecommendPanel 실행 버튼', () => {
     const user = userEvent.setup()
     render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
     await user.click(screen.getByRole('radio', { name: radio }))
-    await screen.findByRole('button', { name: /a 사용/i }) // 팔레트 도착
+    // 모드마다 supported-units 도착의 증거가 다르다: 탐색 모드는 풀 개수 줄,
+    // 편성 모드는 팔레트 칩(탐색 모드에는 팔레트 자체가 없다).
+    if (/단일 덱|전부 최적화/.test(radio.source)) await screen.findByText(/탐색 풀에 포함됨/)
+    else await screen.findByRole('button', { name: /a 배치/i })
     return user
   }
 

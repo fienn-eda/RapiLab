@@ -91,7 +91,7 @@ const renderPanel = (overrides = {}) =>
 
 /** 세 전투를 전부 채우고 제출한다 - 유니온은 편성이 꽉 차야 실행된다. */
 const fillAndSubmit = async (user: ReturnType<typeof userEvent.setup>) => {
-  await screen.findByRole('button', { name: /u0 사용/i })
+  await screen.findByRole('button', { name: /u0 배치/i })
   for (let deck = 0; deck < 3; deck += 1) {
     for (let seat = 0; seat < 5; seat += 1) {
       dropOnDeck(deck + 1, `u${deck * 5 + seat}`)
@@ -115,7 +115,7 @@ describe('UnionRaidPanel', () => {
   it('배치 버튼은 덱 1이 아니라 활성 덱을 채운다', async () => {
     const user = userEvent.setup()
     renderPanel()
-    await screen.findByRole('button', { name: /u0 사용/i })
+    await screen.findByRole('button', { name: /u0 배치/i })
     await user.click(screen.getByRole('button', { name: '덱 2 활성 덱으로 선택' }))
     await user.click(screen.getByRole('button', { name: 'U0 배치' }))
     expect(screen.getAllByText(/^\d\/5$/).map((e) => e.textContent)).toEqual([
@@ -175,7 +175,7 @@ describe('UnionRaidPanel', () => {
 
   it('잠금 토글을 그리지 않는다', async () => {
     renderPanel()
-    await screen.findByRole('button', { name: /u0 사용/i }) // palette rendered
+    await screen.findByRole('button', { name: /u0 배치/i }) // palette rendered
     dropOnDeck(1, 'u0')
     expect(screen.getByRole('button', { name: '덱 1에서 U0 제거' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /고정/ })).not.toBeInTheDocument()
@@ -294,15 +294,26 @@ describe('UnionRaidPanel', () => {
       engine_version: 'test-engine-version',
     })
 
-    renderPanel()
+    // 미사용은 니케 풀 탭이 정하고 이 탭은 받아 읽는다 - 그래서 칩을 누르는
+    // 대신 프로퍼티로 넣는다.
+    const { rerender } = renderPanel({ excludedSlugs: [] })
     await user.selectOptions(screen.getByLabelText('전투 수'), '1')
-    await screen.findByRole('button', { name: /u0 사용/i }) // palette rendered
+    await screen.findByRole('button', { name: /u0 배치/i }) // palette rendered
     for (const slug of ['u0', 'u1', 'u2', 'u3', 'u4']) dropOnDeck(1, slug)
 
-    // Exclude the seated u0 - unseats it and greys it out.
-    await user.click(screen.getByRole('button', { name: /u0 사용/i }))
+    // u0을 빼면 앉아 있던 자리에서도 빠진다.
+    rerender(
+      <UnionRaidPanel
+        roster={roster}
+        supportedUnits={supportedUnits}
+        portraitFor={portraitFor}
+        nameFor={nameFor}
+        burstTiersFor={burstTiersFor}
+        {...noKeeping}
+        excludedSlugs={['u0']}
+      />,
+    )
     expect(screen.queryByRole('button', { name: '덱 1에서 U0 제거' })).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /u0 사용/i })).toHaveAttribute('aria-pressed', 'false')
 
     // Refill the emptied seat with a different unit so the deck is complete
     // again, then submit.
@@ -321,7 +332,7 @@ describe('UnionRaidPanel', () => {
   it('보스 필드가 하나라도 유효하지 않으면 15칸을 다 채워도 제출을 막는다', async () => {
     const user = userEvent.setup()
     renderPanel()
-    await screen.findByRole('button', { name: /u0 사용/i }) // palette rendered
+    await screen.findByRole('button', { name: /u0 배치/i }) // palette rendered
     for (let deck = 0; deck < 3; deck += 1) {
       for (let seat = 0; seat < 5; seat += 1) {
         dropOnDeck(deck + 1, `u${deck * 5 + seat}`)
@@ -361,7 +372,7 @@ describe('UnionRaidPanel', () => {
     })
 
     renderPanel()
-    await screen.findByRole('button', { name: /u0 사용/i })
+    await screen.findByRole('button', { name: /u0 배치/i })
     for (let deck = 0; deck < 3; deck += 1) {
       for (let seat = 0; seat < 5; seat += 1) {
         dropOnDeck(deck + 1, `u${deck * 5 + seat}`)

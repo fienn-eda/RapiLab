@@ -24,17 +24,51 @@ interface NikkeCardProps {
   /** Resolved portrait URL, or null to fall back to a placeholder. Passed in
    * rather than resolved here so one manifest load serves the whole roster. */
   portrait: string | null
+  /** Whether this Nikke is benched — the recommender may not field her. */
+  excluded?: boolean
+  /** Omit on a screen with no recommendation to narrow; the portrait is then
+   * a plain image rather than a control that does nothing. */
+  onToggleExclude?: () => void
 }
 
-export function NikkeCard({ draft, index, name, element, portrait }: NikkeCardProps) {
+export function NikkeCard({
+  draft,
+  index,
+  name,
+  element,
+  portrait,
+  excluded = false,
+  onToggleExclude,
+}: NikkeCardProps) {
   const title = name || draft.character_slug.trim() || `니케 ${index + 1}`
 
   return (
-    <section className="card roster-card" data-element={element} aria-label={`${title} 투자 정보`}>
+    <section
+      className={`card roster-card${excluded ? ' roster-card--excluded' : ''}`}
+      data-element={element}
+      aria-label={`${title} 투자 정보`}
+    >
       {/* The slot is always drawn, even with no portrait to put in it: a
-          missing one would otherwise shorten that tile against its row. */}
+          missing one would otherwise shorten that tile against its row.
+          Where benching is offered the art is the control - this is the one
+          tab that decides which Nikkes the recommender may field, and it is
+          the same gesture the palette used to carry. */}
       <div className="roster-card__figure">
-        {portrait ? (
+        {onToggleExclude ? (
+          <button
+            type="button"
+            className="roster-card__use"
+            aria-pressed={!excluded}
+            aria-label={`${title} 사용`}
+            onClick={onToggleExclude}
+          >
+            {portrait ? (
+              <img className="roster-card__portrait" src={portrait} alt="" />
+            ) : (
+              <span className="roster-card__portrait roster-card__portrait--missing" />
+            )}
+          </button>
+        ) : portrait ? (
           <img className="roster-card__portrait" src={portrait} alt="" />
         ) : (
           <span className="roster-card__portrait roster-card__portrait--missing" />

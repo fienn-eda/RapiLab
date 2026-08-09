@@ -66,11 +66,14 @@ interface UnitPaletteProps {
   /** Draft mode only: lets an included, unseated unit be dragged onto a deck.
    * A browser-only convenience - see `onSeat`. */
   draggable?: boolean
-  /** Draft mode only: seats the unit, which is what the `+` on each chip does.
-   * This is the path that has to work: the packaged app's WebView2 fires
-   * `dragstart` and then delivers no dragover or drop at all, so dragging can
-   * never finish there. It also puts seating on the keyboard, which dragging
-   * never could. */
+  /** Draft mode only: pressing the chip seats the unit. This is the path that
+   * has to work — the packaged app's WebView2 fires `dragstart` and then
+   * delivers no dragover or drop at all, so dragging can never finish there.
+   * It also puts seating on the keyboard, which dragging never could.
+   *
+   * Given together with `onToggleExclude` this wins: one press cannot mean two
+   * things, and on a screen with decks beside the palette, pressing a Nikke
+   * means putting her in one. Excluding lives on the roster tab instead. */
   onSeat?: (slug: string) => void
   /** Breakthrough/core per slug. Defaults to unknown, which draws the two
    * cells as dashes rather than claiming a unit has none. */
@@ -159,22 +162,39 @@ export function UnitPalette({
                     <button
                       type="button"
                       className="palette__face"
-                      // A toggle, so it reports its state rather than pretending
-                      // each press is a fresh action. The name has to live here:
-                      // the chip itself no longer shows any text. Without a
-                      // handler there is no pool to toggle membership in, so
-                      // the button is a plain drag source instead - taken out
-                      // of the tab sequence too, since a keyboard user landing
-                      // on it would find nothing to press.
-                      aria-pressed={onToggleExclude ? !isExcluded : undefined}
-                      aria-label={onToggleExclude ? `${unit.name} 사용` : unit.name}
-                      tabIndex={onToggleExclude ? undefined : -1}
+                      // Three shapes, and the name always lives here because
+                      // the chip shows no text of its own:
+                      //  - seating screen: pressing seats her, and a chip
+                      //    already seated has nothing left to do.
+                      //  - pool toggle: a toggle, so it reports its state
+                      //    rather than pretending each press is fresh.
+                      //  - neither: a plain drag source, taken out of the tab
+                      //    sequence since a keyboard user would find nothing
+                      //    to press.
+                      aria-pressed={!onSeat && onToggleExclude ? !isExcluded : undefined}
+                      aria-label={
+                        onSeat
+                          ? isUsed
+                            ? `${unit.name} 배치됨`
+                            : `${unit.name} 배치`
+                          : onToggleExclude
+                            ? `${unit.name} 사용`
+                            : unit.name
+                      }
+                      disabled={onSeat !== undefined && isUsed}
+                      tabIndex={onSeat || onToggleExclude ? undefined : -1}
                       draggable={draggable && !isExcluded && !isUsed}
                       onDragStart={(event) => {
                         event.dataTransfer.setData(DRAG_SLUG_TYPE, unit.slug)
                         event.dataTransfer.effectAllowed = 'move'
                       }}
-                      onClick={onToggleExclude ? () => onToggleExclude(unit.slug) : undefined}
+                      onClick={
+                        onSeat
+                          ? () => onSeat(unit.slug)
+                          : onToggleExclude
+                            ? () => onToggleExclude(unit.slug)
+                            : undefined
+                      }
                     >
                       <span className="palette__figure">
                         {portrait ? (
@@ -200,22 +220,6 @@ export function UnitPalette({
                         </span>
                       </span>
                     </button>
-
-                    {/* Seating is a control of its own, not a second meaning
-                        for the portrait: on the recommend and union tabs the
-                        portrait already toggles pool membership, and one
-                        press cannot mean both. Always visible - it is the
-                        primary action here, not a reveal-on-hover extra. */}
-                    {onSeat && !isExcluded && !isUsed && (
-                      <button
-                        type="button"
-                        className="palette__seat"
-                        aria-label={`${unit.name} 배치`}
-                        onClick={() => onSeat(unit.slug)}
-                      >
-                        <span aria-hidden="true">+</span>
-                      </button>
-                    )}
 
                     {/* Five rows top to bottom: breakthrough, core, then the
                         three skill levels. Breakthrough and core get a cell
