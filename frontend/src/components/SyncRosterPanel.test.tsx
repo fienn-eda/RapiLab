@@ -104,6 +104,52 @@ describe('SyncRosterPanel', () => {
 
   // 계정 이름 자리에 UID가 뜨는 것은 「이름이 잘못 나온다」로만 보인다 -
   // 무엇이 실패했고 무엇을 하면 되는지 말해야 유저가 고칠 수 있다.
+  // 처음 보는 계정은 서버를 몰라 다섯을 다 훑느라 8호출이 되고, 그 마지막인
+  // 이름 조회가 빈도 제한에 걸린다. 유저는 자기 서버를 아니까 물어보면 된다.
+  describe('조회할 서버 고르기', () => {
+    const areasIn = (value: string) =>
+      decodeURIComponent(value.replace(/^javascript:/, '')).match(/const AREAS=\[([^\]]*)\]/)?.[1]
+
+    const withUrl = async (node: React.ReactElement) => {
+      copied.length = 0
+      await renderSettled(node)
+      fireEvent.change(screen.getByLabelText(/공유 url/i), { target: { value: shareUrl } })
+    }
+
+    it('기본은 자동이고, 아는 것이 없으면 다섯 서버를 다 훑는다', async () => {
+      await withUrl(<SyncRosterPanel onImport={vi.fn()} />)
+      expect(screen.getByRole('button', { name: '자동' })).toHaveAttribute('aria-pressed', 'true')
+      await copyBookmarklet()
+      expect(areasIn(copied[0])).toBe('81,82,83,84,85')
+    })
+
+    it('서버를 고르면 그 서버만 조회한다', async () => {
+      await withUrl(<SyncRosterPanel onImport={vi.fn()} />)
+      fireEvent.click(screen.getByRole('button', { name: 'KR' }))
+      await copyBookmarklet()
+      expect(areasIn(copied[0])).toBe('83')
+    })
+
+    // 앱이 아는 계정이면 고르지 않아도 이미 좁혀져 있다 - 「자동」이 그 뜻이다.
+    it('자동은 앱이 아는 서버를 쓴다', async () => {
+      await withUrl(
+        <SyncRosterPanel onImport={vi.fn()} knownFor={() => ({ areas: [82], namedAreas: [82] })} />,
+      )
+      await copyBookmarklet()
+      expect(areasIn(copied[0])).toBe('82')
+    })
+
+    // 서버 선택은 그 계정에 대한 것이다 - 다른 계정으로 바꾸면 따라가면 안 된다.
+    it('계정을 바꾸면 서버 선택이 자동으로 돌아간다', async () => {
+      await withUrl(<SyncRosterPanel onImport={vi.fn()} />)
+      fireEvent.click(screen.getByRole('button', { name: 'KR' }))
+      fireEvent.change(screen.getByLabelText(/공유 url/i), { target: { value: shareUrl2 } })
+      expect(screen.getByRole('button', { name: '자동' })).toHaveAttribute('aria-pressed', 'true')
+      await copyBookmarklet()
+      expect(areasIn(copied[0])).toBe('81,82,83,84,85')
+    })
+  })
+
   it('닉네임을 못 읽으면 UID로 표시했다고 알리고 할 일을 말한다', async () => {
     vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
     vi.mocked(takeSyncInbox).mockResolvedValueOnce({
