@@ -3,7 +3,7 @@ import {
   emptyProfilesState, upsertProfile, switchProfile, deleteProfile, activeProfile,
   saveResult, getResult, profileKey, RESULTS_CAP,
   saveRun, renameRun, deleteRun, runsForTab, makeRunId, SAVED_RUNS_CAP,
-  toggleExcluded,
+  toggleExcluded, renameProfile,
   type StoredResult, type StoredInputs, type SavedRun, type ProfilesState,
 } from './profile'
 import type { NikkeDraft } from './nikkeDraft'
@@ -41,10 +41,20 @@ describe('upsertProfile', () => {
     expect(s.profiles['A:81'].roster.map((d) => d.character_slug)).toEqual(['liter', 'crown'])
   })
 
-  it('닉네임이 실제로 바뀌면 갱신한다', () => {
+  // 이름은 유저의 라벨이다. 유저가 「JP 본계」라고 붙여둔 것을 다음 동기화가
+  // 게임 닉네임으로 되돌리면, 계정을 구분하려고 붙인 이름이 유저 몰래 사라진다.
+  it('저장된 이름이 있으면 동기화가 가져온 닉네임으로 덮어쓰지 않는다', () => {
     let s = upsertProfile(emptyProfilesState(), { openId: 'A', area: 81, nickname: '본계', roster: [draft('liter')] })
     s = upsertProfile(s, { openId: 'A', area: 81, nickname: '개명', roster: [draft('liter')] })
-    expect(s.profiles['A:81'].nickname).toBe('개명')
+    expect(s.profiles['A:81'].nickname).toBe('본계')
+  })
+
+  // 씨앗은 심는다 - 이름을 못 읽은 채 만들어진 프로필이 나중에 운 좋은 동기화
+  // 하나로 이름을 얻을 수 있어야 한다. 그것이 이 조회를 남겨두는 유일한 이유다.
+  it('저장된 이름이 비어 있으면 동기화가 가져온 닉네임을 채운다', () => {
+    let s = upsertProfile(emptyProfilesState(), { openId: 'A', area: 81, nickname: '', roster: [draft('liter')] })
+    s = upsertProfile(s, { openId: 'A', area: 81, nickname: '뒤늦게읽음', roster: [draft('liter')] })
+    expect(s.profiles['A:81'].nickname).toBe('뒤늦게읽음')
   })
 
   it('기존 open_id 재sync: 로스터가 바뀌면 results를 클리어한다', () => {
@@ -60,7 +70,33 @@ describe('upsertProfile', () => {
     s = { ...s, profiles: { ...s.profiles, 'A:81': { ...s.profiles['A:81'], results: { h1: {} as never }, lastResultHash: 'h1' } } }
     s = upsertProfile(s, { openId: 'A', area: 81, nickname: '본계2', roster: [draft('liter')] })
     expect(s.profiles['A:81'].results).toHaveProperty('h1')
-    expect(s.profiles['A:81'].nickname).toBe('본계2')   // 닉네임은 갱신
+    expect(s.profiles['A:81'].nickname).toBe('본계') // 이름은 라벨이라 그대로다
+  })
+})
+
+describe('renameProfile', () => {
+  it('이름을 바꾼다', () => {
+    let s = upsertProfile(emptyProfilesState(), { openId: 'A', area: 81, nickname: '', roster: [] })
+    s = renameProfile(s, 'A:81', 'JP 본계')
+    expect(s.profiles['A:81'].nickname).toBe('JP 본계')
+  })
+
+  it('앞뒤 공백을 떼고 넣는다', () => {
+    let s = upsertProfile(emptyProfilesState(), { openId: 'A', area: 81, nickname: '', roster: [] })
+    s = renameProfile(s, 'A:81', '  JP 본계  ')
+    expect(s.profiles['A:81'].nickname).toBe('JP 본계')
+  })
+
+  // 빈 이름을 받아 넣으면 드롭다운이 UID로 되돌아간다 - 유저가 의도한 조작이
+  // 아니라 실수(전부 지우고 엔터)일 때 그렇게 되는 편이 흔하다.
+  it('빈 이름은 무시하고 상태를 그대로 돌려준다', () => {
+    const s = upsertProfile(emptyProfilesState(), { openId: 'A', area: 81, nickname: '본계', roster: [] })
+    expect(renameProfile(s, 'A:81', '   ')).toBe(s)
+  })
+
+  it('없는 key는 상태를 그대로 돌려준다', () => {
+    const s = upsertProfile(emptyProfilesState(), { openId: 'A', area: 81, nickname: '본계', roster: [] })
+    expect(renameProfile(s, 'Z:99', '아무개')).toBe(s)
   })
 })
 

@@ -119,17 +119,17 @@ export const emptyProfilesState = (): ProfilesState => ({
 
 /**
  * Create or resync a profile for (openId, area). A new pair is created and
- * made active. An existing pair has its nickname/roster refreshed; if the
- * roster actually changed, cached results are invalidated since they no
- * longer describe the current roster.
+ * made active. An existing pair has its roster refreshed; if the roster
+ * actually changed, cached results are invalidated since they no longer
+ * describe the current roster.
  *
- * A resync that arrives with a BLANK nickname keeps the stored one. The
- * bookmarklet reads the nickname from a separate blablalink call than the
- * roster (`GetUserProfileBasicInfo`) and swallows that call's failure, so an
- * empty string means "this sync could not read it", never "the account is now
- * nameless" - and overwriting on that used to silently demote the account
- * dropdown back to the raw open_id, with no way to get the name back short of a
- * luckier resync.
+ * The stored name is a LABEL the user owns, not a mirror of the in-game
+ * nickname. A sync seeds it only while it is empty; once there is a name,
+ * nothing but an explicit rename replaces it. blablalink rejects the nickname
+ * call (`GetUserProfileBasicInfo`, code 1300015) whenever the ShiftyPad page
+ * has just fetched it - which is exactly when a first sync happens - so the
+ * name that does arrive is a lucky bonus, and the one the user typed is the
+ * one worth keeping (2026-08-09 measurement).
  */
 export const upsertProfile = (
   state: ProfilesState,
@@ -144,7 +144,7 @@ export const upsertProfile = (
   const profile: Profile = existing
     ? {
         ...existing,
-        nickname: args.nickname || existing.nickname,
+        nickname: existing.nickname || args.nickname,
         roster: args.roster,
         ...(rosterChanged
           ? { results: {}, lastResultHash: null, lastInputs: null }
@@ -288,3 +288,20 @@ export const runsForTab = (profile: Profile, tab: SavedRun['tab']): SavedRun[] =
     .filter((run) => run.tab === tab)
     .slice()
     .sort((a, b) => b.savedAt - a.savedAt)
+
+/** 계정 이름을 바꾼다. 이름은 유저의 라벨이므로 이것만이 이름을 바꾸는 길이다.
+ * 빈 이름과 없는 key는 상태를 그대로 돌려준다 - 실수로 라벨을 지우는 쪽이
+ * 못 바꾸는 쪽보다 나쁘다. */
+export const renameProfile = (
+  state: ProfilesState,
+  key: string,
+  name: string,
+): ProfilesState => {
+  const trimmed = name.trim()
+  const existing = state.profiles[key]
+  if (trimmed === '' || existing === undefined) return state
+  return {
+    ...state,
+    profiles: { ...state.profiles, [key]: { ...existing, nickname: trimmed } },
+  }
+}
