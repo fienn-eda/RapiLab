@@ -24,9 +24,13 @@
 //     유저가 그 몇 초 뒤에 북마크릿을 누르면 늘 쿨다운 안이다 - 우리 묶음을
 //     아무리 줄여도 못 이긴다. 경쟁 상대가 우리 묶음 안에 없었다.
 //
+//   - **`GetSavedRoleInfo`에 `role_info.role_name`이 있다.** 쿨다운이 걸린
+//     엔드포인트가 아니고, 빈 body로도 파라미터를 넘겨도 code 0으로 답한다.
+//
 // **아직 답이 없는 것.**
-//   1. 이름을 쿨다운 없는 다른 엔드포인트에서 얻을 수 있는가?  → sniffAlternatives
-//   2. 쿨다운이 몇 초인가 (93초 안에는 풀린다는 것까지만 안다)? → measureWindow
+//   1. 그 `role_name`이 **누구 것인가** - 대상 계정인가 로그인한 세션인가?
+//      빈 body로도 답한다는 것이 세션 쪽의 방증이다.               → checkRoleScope
+//   2. 쿨다운이 몇 초인가 (93초 안에는 풀린다는 것까지만 안다)?    → measureWindow
 //
 // **쓰는 법.**
 //   1. blablalink.com에 로그인한 탭에서 F12 → 콘솔.
@@ -55,8 +59,8 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
   }
   // `frontend/src/lib/shareUrl.ts`와 같은 규칙(uid = "<앞자리>-<open id>"의 base64).
   // 콘솔에 붙여넣는 물건이라 앱 코드를 import할 수 없어 여기서 한 번 더 푼다.
-  const OPEN_ID = (() => {
-    const raw = ACCOUNT.trim()
+  const toOpenId = (input) => {
+    const raw = String(input || '').trim()
     if (/^\d{6,}$/.test(raw)) return raw
     try {
       const uid = new URL(raw).searchParams.get('uid')
@@ -64,7 +68,9 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
     } catch {
       return ''
     }
-  })()
+  }
+
+  const OPEN_ID = toOpenId(ACCOUNT)
   if (!/^\d{6,}$/.test(OPEN_ID)) {
     throw new Error('맨 위 ACCOUNT에 ShiftyPad 공유 URL이나 open id를 넣어주세요.')
   }
@@ -241,6 +247,53 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
   }
 
   /**
+   * **`GetSavedRoleInfo`의 이름이 누구 것인가.** 빈 body로도 답한다는 것은 넘긴
+   * open_id를 무시하고 로그인한 계정의 롤을 준다는 뜻일 수 있다. 그렇다면 이것은
+   * 고침이 아니라 더 나쁜 버그다 - 계정 셋이 전부 같은 이름으로 보이게 된다.
+   * **틀린 이름은 없는 이름보다 나쁘다**: 어느 계정인지 구분하려고 붙이는 것이
+   * 이름인데 구분이 안 된다.
+   *
+   * 다른 계정의 open_id를 넘겨 이름이 **바뀌는지**만 본다. 바뀌면 대상별이라
+   * 쓸 수 있고, 그대로면 세션의 것이라 못 쓴다.
+   *
+   * 이름 값은 찍지 않는다 - 「서로 같은가」만 남긴다.
+   *
+   * 쓰는 법: `__probe.checkRoleScope('<다른 계정 공유 URL>', 81)`
+   */
+  const checkRoleScope = async (otherAccount, otherArea) => {
+    const other = toOpenId(otherAccount)
+    if (!/^\d{6,}$/.test(other)) {
+      throw new Error('다른 계정의 공유 URL이나 open id를 넘겨주세요.')
+    }
+    if (other === OPEN_ID) {
+      throw new Error('맨 위 ACCOUNT와 같은 계정입니다 - 다른 계정이어야 합니다.')
+    }
+    const p = '스코프'
+    const nameOf = (d) => ((d && d.role_info) || {}).role_name || ''
+    const idOf = (d) => String(((d && d.role_info) || {}).role_id || '')
+
+    const blank = nameOf(await call(p, 'GetSavedRoleInfo', {}))
+    const mine = await call(p, 'GetSavedRoleInfo', { ...base })
+    const theirs = await call(p, 'GetSavedRoleInfo', {
+      intl_open_id: other,
+      nikke_area_id: otherArea === undefined ? AREA : otherArea,
+    })
+
+    const verdict = {
+      '빈 body와 이 계정이 같은 이름인가': blank === nameOf(mine),
+      '이 계정과 다른 계정이 같은 이름인가': nameOf(mine) === nameOf(theirs),
+      '이 계정 role_id가 넘긴 open_id와 같은가': idOf(mine) === OPEN_ID,
+      '다른 계정 role_id가 넘긴 open_id와 같은가': idOf(theirs) === other,
+      결론:
+        nameOf(mine) === nameOf(theirs)
+          ? '세션의 이름이다 - 쓸 수 없다(계정마다 같은 이름이 붙는다)'
+          : '대상별 이름이다 - 쓸 수 있다',
+    }
+    console.table(verdict)
+    return verdict
+  }
+
+  /**
    * 쿨다운의 길이를 잰다. 한 번 통과시켜 기준을 잡고 곧바로 다시 물어 거절을
    * 확인한 뒤, 정적을 늘려가며 언제 다시 통과하는지 본다.
    *
@@ -288,11 +341,14 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
     contamination,
     history,
     sniffAlternatives,
+    checkRoleScope,
     measureWindow,
     table,
     log,
     all,
   }
-  console.log('__probe 준비됨. sniffAlternatives() / measureWindow() / history() / all()')
+  console.log(
+    "__probe 준비됨. checkRoleScope('<다른 계정 URL>', 81) / measureWindow() / history() / all()",
+  )
   return history()
 })()
