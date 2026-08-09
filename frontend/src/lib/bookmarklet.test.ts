@@ -86,11 +86,15 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
         }
         return fetchImpl(url, init)
       }
-      const run = new Function('location', 'fetch', 'alert', `return ${source}`)
+      // setTimeout까지 주입한다: 북마크릿은 이름 조회를 백오프로 다시 시도하는데,
+      // 그 대기 길이는 blablalink가 정하는 제품 판단이지 테스트가 정할 것이
+      // 아니다. 여기서는 즉시 깨워 대기 없이 같은 경로를 돈다.
+      const run = new Function('location', 'fetch', 'alert', 'setTimeout', `return ${source}`)
       await run(
         { origin: BLABLALINK_ORIGIN },
         wrapped,
         (m: string) => alerts.push(m),
+        (fn: () => void) => fn(),
       )
       return { payload: sent, alerts }
     }
@@ -165,6 +169,63 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
       const { payload } = await runBookmarklet(okFetch)
       const servers = payload?.servers as { nickname_error: string }[] | undefined
       expect(servers?.[0]?.nickname_error).toBe('')
+    })
+
+    // 이름 조회는 이 묶음의 마지막 호출이라, 몰아서 던지면 거절된다(2026-08-09
+    // 실측: 같은 요청도 콘솔에서 하나만 보내면 code 0으로 성공한다). 한 번
+    // 튕겨도 다시 물어봐야 이름이 붙는다 - 이게 안 되면 화면은 UID로 떨어진다.
+    it('이름 조회가 한 번 튕겨도 다시 시도해 받아낸다', async () => {
+      // 서버 하나만 잡히게 한다 - 여러 서버면 각자 재시도해서 횟수가 섞인다.
+      let attempts = 0
+      const { payload } = await runBookmarklet((url: string, init?: { body?: string }) => {
+        const body = init?.body ? JSON.parse(init.body) : {}
+        if (url.endsWith('GetUserCharacters') && body.nikke_area_id !== 83) {
+          return Promise.resolve({
+            json: () => Promise.resolve({ code: 1302125, msg: 'get info list err', data: null }),
+          })
+        }
+        if (url.endsWith('GetUserProfileBasicInfo')) {
+          attempts += 1
+          return Promise.resolve({
+            json: () =>
+              Promise.resolve(
+                attempts === 1
+                  ? { code: 1300015, msg: 'ok', data: null }
+                  : { code: 0, data: responseFor(url) },
+              ),
+          })
+        }
+        return Promise.resolve({ json: () => Promise.resolve({ code: 0, data: responseFor(url) }) })
+      })
+      expect(attempts).toBe(2)
+      const servers = payload?.servers as { nickname: string; nickname_error: string }[] | undefined
+      expect(servers?.[0]?.nickname).toBe(NICKNAME)
+      // 결국 받아냈으면 실패 흔적을 남기지 않는다 - 안내 줄이 뜰 이유가 없다.
+      expect(servers?.[0]?.nickname_error).toBe('')
+    })
+
+    it('세 번 다 튕기면 시도 횟수를 적어 보낸다', async () => {
+      let attempts = 0
+      const { payload } = await runBookmarklet((url: string, init?: { body?: string }) => {
+        const body = init?.body ? JSON.parse(init.body) : {}
+        if (url.endsWith('GetUserCharacters') && body.nikke_area_id !== 83) {
+          return Promise.resolve({
+            json: () => Promise.resolve({ code: 1302125, msg: 'get info list err', data: null }),
+          })
+        }
+        if (url.endsWith('GetUserProfileBasicInfo')) attempts += 1
+        return Promise.resolve({
+          json: () =>
+            Promise.resolve(
+              url.endsWith('GetUserProfileBasicInfo')
+                ? { code: 1300015, msg: 'ok', data: null }
+                : { code: 0, data: responseFor(url) },
+            ),
+        })
+      })
+      expect(attempts).toBe(3)
+      const servers = payload?.servers as { nickname_error: string }[] | undefined
+      expect(servers?.[0]?.nickname_error).toContain('시도 3회')
     })
 
     it('basic_info 아래의 nickname을 payload의 서버별 항목에 싣는다', async () => {

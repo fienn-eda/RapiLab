@@ -14,10 +14,22 @@
 // 실패 코드인지 응답 모양이 바뀐 것인지는 여기서 적어 보내야만 알 수 있다.
 // 값이 아니라 코드나 최상위 키 이름만 담으므로 계정 정보가 새지 않는다.
 //
-// 그 첫 회신은 code 1300015였다 - 우리가 아는 코드가 아니고 문서도 없다. 같은
-// `{intl_open_id, nikke_area_id}`로 나머지 셋은 전부 성공하므로 인증이나 파라미터
-// 문제가 아니라 이 엔드포인트만의 것이고, 07-25에는 같은 요청이 동작했다.
-// 그래서 `call`이 `j.msg`까지 실어 던지게 했다(코드만으로는 물어볼 곳이 없다).
+// 그 첫 회신은 code 1300015였다 - 우리가 아는 코드가 아니고 문서도 없다.
+//
+// **원인은 요청이 아니라 연달아 던지는 것이었다.** 똑같은 요청을 콘솔에서 하나만
+// 보내면 `code 0 / msg ok / keys basic_info`로 성공한다(2026-08-09 실측).
+// 그런데 여기서는 이 호출이 묶음의 마지막이다: 07-25에는 area 81 하나만 봐서
+// 전체가 4호출이었고 닉네임이 멀쩡했는데, 07-30에 다섯 서버를 모두 훑기
+// 시작하면서(e37f5359) 8호출 이상이 됐고 그때부터 마지막 호출이 거절된다.
+// 그래서 이 호출만 백오프를 두고 세 번까지 다시 시도한다 - 1300015가 정확히
+// 무슨 뜻인지는 여전히 모르지만, 「혼자면 되고 몰아서 던지면 안 된다」는
+// 관측에는 재시도가 맞는 답이다.
+//
+// 순서를 바꿔 이 호출을 앞으로 당기는 것은 답이 아니다. 그러면 마지막 자리에
+// 서는 것이 GetUserProfileOutpostInfo가 되는데, 그쪽은 감싸지 않으므로
+// 동기화 전체가 죽는다.
+//
+// `call`은 `j.msg`까지 실어 던진다(코드만으로는 물어볼 곳이 없었다).
 //
 // 그러면서 코드 분기를 **문자열 정규식에서 `err.code` 비교로** 바꿨다. 메시지가
 // 코드 뒤에 붙는 순간 `/:1302125$/`의 `$` 앵커가 빗나가 "니케를 찾지 못했어요"
@@ -71,6 +83,8 @@ const call=async(ep,body)=>{
  const j=await r.json();
  if(j.code!==0){const e=new Error(ep+':'+j.code+(j.msg?' '+j.msg:''));e.code=j.code;throw e}
  return j.data};
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const WAITS=[0,800,2000];
 const AREAS=[${SERVER_AREAS.join(',')}];
 const found=[];let probeErr=null;
 for(const a of AREAS){
@@ -83,12 +97,16 @@ for(const f of found){
  const base={intl_open_id:'${openId}',nikke_area_id:f.area};
  const detail=await call('GetUserCharacterDetails',{...base,name_codes:f.owned.map(c=>c.name_code)});
  const outpost=await call('GetUserProfileOutpostInfo',{...base});
- let basic=null,nickErr='';
- try{basic=await call('GetUserProfileBasicInfo',{...base})}catch(e){nickErr=String(e&&e.message||e)}
+ let basic=null,nickErr='',tries=0;
+ for(const w of WAITS){
+  if(w)await sleep(w);
+  tries++;
+  try{basic=await call('GetUserProfileBasicInfo',{...base});nickErr='';break}
+  catch(e){nickErr=String(e&&e.message||e)}}
  const bi=(basic&&basic.basic_info)||{};
  const nick=bi.nickname||bi.role_name||'';
  if(!nick&&!nickErr)nickErr='shape:'+Object.keys(basic||{}).join('|');
- if(!nick)nickErr+=' | outpost:'+Object.keys(outpost||{}).join('|')+' / '+Object.keys(outpost.outpost_info||{}).join('|');
+ if(!nick)nickErr+=' (시도 '+tries+'회) | outpost:'+Object.keys(outpost||{}).join('|')+' / '+Object.keys(outpost.outpost_info||{}).join('|');
  servers.push({area:f.area,nickname:nick,nickname_error:nick?'':nickErr,owned:f.owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]})}
 payload={open_id:'${openId}',servers:servers};`
 
