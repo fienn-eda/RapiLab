@@ -6,7 +6,9 @@
 없으면 빈 창이 뜨고, 그 증상은 "앱이 안 켜진다"로 보고된다.
 """
 import socket
+import sys
 import threading
+import types
 from http.server import BaseHTTPRequestHandler, HTTPServer
 
 import pytest
@@ -190,6 +192,38 @@ def test_the_webview_profile_stays_in_the_same_place_across_launches(tmp_path, m
     first = desktop.webview_storage_dir(desktop.SYNC_PORTS[0])
     assert first == desktop.webview_storage_dir(desktop.SYNC_PORTS[0])
     assert tmp_path in first.parents
+
+
+def test_the_window_keeps_local_storage_between_launches(tmp_path, monkeypatch):
+    """pywebview의 기본은 비공개 모드이고, 그 뜻은 로컬 저장소를 안 남긴다는 것이다.
+
+    이 앱의 프로필 - 동기화한 로스터, 미사용 니케, 보관한 결과 - 이 전부 거기
+    산다. 그래서 이 한 줄이 빠지면 유저는 앱을 켤 때마다 모든 계정을 처음부터
+    다시 동기화해야 한다(2026-08-09 보고). storage_path를 넘기는 것만으로는
+    부족하다: 자리는 정해지지만 내용이 종료와 함께 사라진다.
+    """
+    started: dict[str, object] = {}
+
+    fake_webview = types.SimpleNamespace(
+        create_window=lambda *a, **k: None,
+        start=lambda **kwargs: started.update(kwargs),
+    )
+    monkeypatch.setitem(sys.modules, "webview", fake_webview)
+    monkeypatch.setattr(desktop, "guard_webview", lambda: None)
+    monkeypatch.setattr(desktop, "pick_port", lambda: desktop.SYNC_PORTS[0])
+    monkeypatch.setattr(desktop, "_serve", lambda port: None)
+    monkeypatch.setattr(desktop, "wait_until_serving", lambda url, **k: True)
+    monkeypatch.setattr(desktop, "webview_storage_dir", lambda port: tmp_path / str(port))
+    monkeypatch.setitem(
+        sys.modules, "app.updater",
+        types.SimpleNamespace(update_if_available=lambda: False),
+    )
+    monkeypatch.setattr(sys, "argv", ["RapiLab.exe"])
+
+    desktop.main()
+
+    assert started["private_mode"] is False
+    assert started["storage_path"] == str(tmp_path / str(desktop.SYNC_PORTS[0]))
 
 
 def test_each_instance_gets_its_own_webview_profile(tmp_path, monkeypatch):

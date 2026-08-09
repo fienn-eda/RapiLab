@@ -190,8 +190,12 @@ def webview_storage_dir(port: int) -> Path:
     그래서 `guard_webview()`도 걸리지 않는다 - 복구가 없는 빈 창이다. 포트는
     이미 인스턴스마다 다르고 후보가 넷뿐이라, 폴더도 넷을 넘지 않는다.
 
-    비공개 모드는 건드리지 않는다 - 쿠키와 로컬 저장소를 남기지 않는 것은 폴더
-    자리와 무관한 별개의 선택이고, 함께 바꾸면 지금 동작이 달라진다.
+    이 폴더가 실제로 무언가를 담으려면 비공개 모드가 꺼져 있어야 한다 -
+    `webview.start(private_mode=False)`. 둘은 별개의 선택이 아니었다:
+    pywebview의 기본값(`private_mode=True`)은 "cookies and local storage are not
+    preserved"라, 자리를 못박아도 로컬 저장소는 종료와 함께 사라진다. 이 앱의
+    프로필(동기화한 로스터)이 거기 살기 때문에, 유저는 앱을 켤 때마다 모든
+    계정을 다시 동기화해야 했다(2026-08-09 보고).
     """
     from app.paths import writable_dir
 
@@ -320,7 +324,11 @@ def main() -> None:
     # `--debug`면 창에서 우클릭으로 개발자 도구가 열린다. 배포 빌드는 콘솔이
     # 없어서, 창 안에서 무슨 일이 났는지 볼 방법이 이것뿐이다 - 서버 로그는
     # 브라우저가 겪은 것을 알지 못한다.
+    # private_mode=False라야 로컬 저장소가 종료 뒤에도 남는다. 이 앱의 프로필
+    # (동기화한 로스터·미사용 니케·보관한 결과)이 전부 거기 살기 때문에, 켜져
+    # 있으면 앱을 다시 켤 때마다 계정을 처음부터 동기화해야 한다.
     webview.start(debug="--debug" in sys.argv[1:],
+                  private_mode=False,
                   storage_path=str(webview_storage_dir(port)))
 
 
