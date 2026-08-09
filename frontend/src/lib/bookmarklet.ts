@@ -1,49 +1,33 @@
-// 유저의 blablalink 세션으로 4개 API를 호출해 원시 payload를 우리 앱에 넘기는
+// 유저의 blablalink 세션으로 API를 호출해 원시 payload를 우리 앱에 넘기는
 // 북마크릿. blablalink 페이지 컨텍스트에서 도는 것이 전제다 - 거기서만
 // credentials:'include' fetch가 CORS를 통과한다(2026-07-19 실측).
 //
 // 계정 닉네임은 GetUserProfileBasicInfo의 `data.basic_info.nickname`에 있다
-// (2026-07-25 실측; `role_name`도 같은 값을 담는다). 한 단계 얕게 `data.nickname`을
-// 읽으면 항상 undefined라 화면이 UID로 폴백한다. 이 호출만은 실패해도 삼킨다 -
-// 닉네임은 표시용 부가 정보인데, 이 엔드포인트가 code 1303005("user has not bind
-// role_id")로 떨어지는 것이 관측된 이상 그 실패가 로스터 싱크 전체를 죽여선 안 된다.
+// (2026-07-25 실측; `role_name`도 같은 값이다). 한 단계 얕게 `data.nickname`을
+// 읽으면 항상 undefined다.
 //
-// 다만 삼키되 **왜 비었는지는 payload에 적어 보낸다**(`nickname_error`). 2026-08-09에
-// 세 계정(JP 둘·KR 하나)이 전부 UID로 표시되는 것이 보고됐는데, 앱은 닉네임이 든
-// payload를 넣으면 그대로 저장하는 것이 확인됐다 - 즉 비는 곳은 이 호출이다.
-// 실패 코드인지 응답 모양이 바뀐 것인지는 여기서 적어 보내야만 알 수 있다.
-// 값이 아니라 코드나 최상위 키 이름만 담으므로 계정 정보가 새지 않는다.
+// **이 조회는 최선 노력이다.** blablalink는 code 1300015("Requests are too
+// frequent")로 이것만 거절하는데, 거절을 부르는 것은 우리 묶음이 아니라
+// **ShiftyPad 화면 자신**이다: 그 화면은 뜨면서 프록시를 1.3초에 열세 번 부르고
+// 그중 하나가 이 조회다. 유저가 공유 URL을 복사한 직후 북마크를 누르는 최초
+// 동기화는 정확히 그 몇 초 안이라 늘 거절된다. 호출 하나짜리로 줄여도 거절되고,
+// 로스터 조회는 같은 순간에 멀쩡히 통과한다(2026-08-09 실측).
 //
-// **원인은 요청이 아니라 호출 빈도였다.** code 1300015의 메시지가
-// "Requests are too frequent"이다(2026-08-09 실측). 똑같은 요청을 콘솔에서
-// 하나만 보내면 `code 0 / msg ok / keys basic_info`로 성공한다.
+// 그래서 재시도하지 않는다. **거절된 요청도 제한 창을 민다** - 15/30/60/120초
+// 정적을 두고 다시 물어도 4분 내내 거절됐다. 세 번 더 묻는 것은 완화가 아니라
+// 스스로 못 빠져나오게 만드는 악화다. 같은 이유로, 이 페이지가 **이미** 그
+// 조회를 했으면 아예 묻지 않는다 - Resource Timing 기록은 문서마다 새로
+// 시작하므로 시간 상수 없이 「이 화면이 이미 물었다」를 알 수 있다.
 //
-// 07-25에는 area 81 하나만 봐서 전체가 4호출이었고 닉네임이 멀쩡했는데,
-// 07-30에 다섯 서버를 모두 훑기 시작하면서(e37f5359) 8호출 이상이 됐고 그때부터
-// 묶음의 마지막인 이 호출이 거절된다. 닉네임이 조용히 죽은 시점이 정확히 그때다.
+// 이름을 못 받아도 그것은 실패가 아니다. 앱에서 계정 이름은 유저가 소유하는
+// 라벨이고(types/profile.ts), 동기화는 그것이 비어 있을 때만 씨앗을 심는다.
+// 한 계정에 한 번만 성공하면 되고, 그 뒤로는 `known.namedAreas`가 건너뛴다.
+// 왜 비었는지는 payload의 `nickname_error`에 남긴다 - 값이 아니라 코드와 최상위
+// 키 이름만 담으므로 계정 정보가 새지 않는다.
 //
-// 그래서 두 가지를 한다. (1) `call`이 호출 사이에 최소 간격(GAP)을 둔다 -
-// "너무 잦다"는 말에 맞는 답은 재시도가 아니라 간격이다. (2) 그럼에도 튕기면
-// 이 호출만 백오프로 세 번까지 다시 묻는다. 제한은 계정 하나 안에서가 아니라
-// **세션 전체에 누적**된다: 계정 둘을 연달아 동기화하면 첫 계정은 이름이 붙고
-// 둘째만 UID로 떨어지는 것이 그 증거다(2026-08-09 보고).
-//
-// 순서를 바꿔 이 호출을 앞으로 당기는 것은 답이 아니다. 그러면 마지막 자리에
-// 서는 것이 GetUserProfileOutpostInfo가 되는데, 그쪽은 감싸지 않으므로
-// 동기화 전체가 죽는다.
-//
-// `call`은 `j.msg`까지 실어 던진다(코드만으로는 물어볼 곳이 없었다).
-//
-// 그러면서 코드 분기를 **문자열 정규식에서 `err.code` 비교로** 바꿨다. 메시지가
-// 코드 뒤에 붙는 순간 `/:1302125$/`의 `$` 앵커가 빗나가 "니케를 찾지 못했어요"
-// 자리에 원시 코드가 새어나오는데(아래 문단이 경계하는 그 회귀), 앵커를 넓히려
-// 하면 이번엔 **템플릿 리터럴이 `\s`의 백슬래시를 먹어** 생성된 소스에 `(s|$)`가
-// 박힌다 - 테스트가 잡아주기 전까지 눈에 보이지 않는다. 코드를 숫자로 실어
-// 보내면 두 함정이 한꺼번에 사라진다.
-//
-// 이름이 비었을 때는 이미 성공한 GetUserProfileOutpostInfo의 최상위 키도 같이
-// 적는다. 거기에 이름이 들어 있다면 호출을 늘리지 않고 폴백을 만들 수 있고,
-// 없다면 그 사실이 후보를 하나 지운다 - 어느 쪽이든 재설치 한 번을 아낀다.
+// 에러 코드 분기는 문자열 정규식이 아니라 `err.code` 숫자 비교로 한다. 메시지가
+// 코드 뒤에 붙는 순간 `/:1302125$/`의 `$` 앵커가 빗나가고, 앵커를 넓히려 하면
+// 템플릿 리터럴이 `\s`의 백슬래시를 먹어 생성된 소스에 `(s|$)`가 박힌다.
 //
 // 한 계정이 여러 서버에 로스터를 가질 수 있으므로 다섯 서버를 모두 조회한다.
 // 어느 것을 쓸지는 앱이 정한다 - 여기서는 니케가 있는 서버를 후보로 올리는
@@ -85,22 +69,19 @@ export const LOCAL_SYNC_PORTS = [41573, 41574, 41575, 41576, 8000]
 export interface KnownAccount {
   /** 이 계정의 로스터가 있는 서버들. 비어 있으면 전부 훑는다. */
   areas: number[]
-  /** 이미 이름을 아는 서버들. 그 서버에서는 이름 조회를 아예 건너뛴다. */
+  /** 이미 이름을 아는 서버들. 그 서버에서는 이름 조회를 아예 건너뛴다 -
+   * 이름은 계정당 한 번만 필요하고, 다시 묻는 것은 거절될 뿐이다. */
   namedAreas: number[]
 }
 
 const collectSource = (openId: string, known: KnownAccount): string => `
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const GAP=350;const WAITS=[0,2000,5000];
-let lastCall=0;
 const call=async(ep,body)=>{
- const wait=GAP-(Date.now()-lastCall);
- if(wait>0)await sleep(wait);
- lastCall=Date.now();
  const r=await fetch('https://api.blablalink.com/api/game/proxy/Game/'+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'include'});
  const j=await r.json();
  if(j.code!==0){const e=new Error(ep+':'+j.code+(j.msg?' '+j.msg:''));e.code=j.code;throw e}
  return j.data};
+const NAME_EP='GetUserProfileBasicInfo';
+const PAGE_ASKED=performance.getEntriesByType('resource').some(e=>e.name.indexOf(NAME_EP)>=0);
 const AREAS=[${(known.areas.length ? known.areas : [...SERVER_AREAS]).join(',')}];
 const NAMED=[${known.namedAreas.join(',')}];
 const found=[];let probeErr=null;
@@ -114,17 +95,15 @@ for(const f of found){
  const base={intl_open_id:'${openId}',nikke_area_id:f.area};
  const detail=await call('GetUserCharacterDetails',{...base,name_codes:f.owned.map(c=>c.name_code)});
  const outpost=await call('GetUserProfileOutpostInfo',{...base});
- let basic=null,nickErr='',tries=0,nick='';
- if(NAMED.indexOf(f.area)<0){
-  for(const w of WAITS){
-   if(w)await sleep(w);
-   tries++;
-   try{basic=await call('GetUserProfileBasicInfo',{...base});nickErr='';break}
-   catch(e){nickErr=String(e&&e.message||e)}}
+ let nickErr='',nick='';
+ if(NAMED.indexOf(f.area)>=0){}
+ else if(PAGE_ASKED){nickErr='page already asked - 이 화면 말고 다른 blablalink 화면에서 눌러주세요'}
+ else{
+  let basic=null;
+  try{basic=await call(NAME_EP,{...base})}catch(e){nickErr=String(e&&e.message||e)}
   const bi=(basic&&basic.basic_info)||{};
   nick=bi.nickname||bi.role_name||'';
-  if(!nick&&!nickErr)nickErr='shape:'+Object.keys(basic||{}).join('|');
-  if(!nick)nickErr+=' (시도 '+tries+'회) | outpost:'+Object.keys(outpost||{}).join('|')+' / '+Object.keys(outpost.outpost_info||{}).join('|');}
+  if(!nick&&!nickErr)nickErr='shape:'+Object.keys(basic||{}).join('|');}
  servers.push({area:f.area,nickname:nick,nickname_error:nick?'':nickErr,owned:f.owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]})}
 payload={open_id:'${openId}',servers:servers};`
 

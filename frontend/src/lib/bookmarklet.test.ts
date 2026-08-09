@@ -76,6 +76,8 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
       fetchImpl: FetchImpl,
       /** 다른 「아는 계정」으로 만든 북마크릿을 돌릴 때. 기본은 아무것도 모르는 것. */
       customSource = source,
+      /** 이 페이지가 이미 부른 프록시 URL들. 기본은 아무것도 안 부른 페이지다. */
+      pageCalls: string[] = [],
     ): Promise<{
       payload: Record<string, unknown> | null
       alerts: string[]
@@ -94,21 +96,32 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
         }
         return fetchImpl(url, init)
       }
-      // setTimeout까지 주입한다: 북마크릿은 이름 조회를 백오프로 다시 시도하는데,
-      // 그 대기 길이는 blablalink가 정하는 제품 판단이지 테스트가 정할 것이
-      // 아니다. 여기서는 즉시 깨워 대기 없이 같은 경로를 돈다.
-      const run = new Function('location', 'fetch', 'alert', 'setTimeout', `return ${customSource}`)
+      // setTimeout도 주입한다 - 북마크릿이 대기를 하게 되면 그 길이는 blablalink가
+      // 정하는 제품 판단이지 테스트가 정할 것이 아니다. 여기서는 즉시 깨운다.
+      const run = new Function(
+        'location', 'fetch', 'alert', 'setTimeout', 'performance',
+        `return ${customSource}`,
+      )
       await run(
         { origin: BLABLALINK_ORIGIN },
         wrapped,
         (m: string) => alerts.push(m),
         (fn: () => void, ms: number) => { waits.push(ms); fn() },
+        { getEntriesByType: () => pageCalls.map((name) => ({ name })) },
       )
       return { payload: sent, alerts, waits }
     }
 
     const okFetch = (url: string) =>
       Promise.resolve({ json: () => Promise.resolve({ code: 0, data: responseFor(url) }) })
+
+    // 서버 하나만 잡히게 한다 - responseFor의 GetUserCharacters는 area를 안 가려서
+    // 기본 source(다섯 서버)로 돌리면 서버마다 한 번씩 물어 asked가 5로 쌓인다.
+    // "한 번만 묻는다"를 재려면 찾히는 서버를 하나로 좁혀야 한다.
+    const singleServerSource = decodeURIComponent(
+      buildLocalSyncBookmarklet('1234567890123456789', { areas: [83], namedAreas: [] })
+        .replace(/^javascript:/, ''),
+    )
 
     /** GetUserCharacters를 area별로 갈라 응답하는 fetch를 만든다. `ownedByArea`에
      * 없는 area는 1302125("get info list err")로 실패한다 - 실측대로 "이
@@ -179,72 +192,67 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
       expect(servers?.[0]?.nickname_error).toBe('')
     })
 
-    // 이름 조회는 이 묶음의 마지막 호출이라, 몰아서 던지면 거절된다(2026-08-09
-    // 실측: 같은 요청도 콘솔에서 하나만 보내면 code 0으로 성공한다). 한 번
-    // 튕겨도 다시 물어봐야 이름이 붙는다 - 이게 안 되면 화면은 UID로 떨어진다.
-    it('이름 조회가 한 번 튕겨도 다시 시도해 받아낸다', async () => {
-      // 서버 하나만 잡히게 한다 - 여러 서버면 각자 재시도해서 횟수가 섞인다.
-      let attempts = 0
-      const { payload } = await runBookmarklet((url: string, init?: { body?: string }) => {
-        const body = init?.body ? JSON.parse(init.body) : {}
-        if (url.endsWith('GetUserCharacters') && body.nikke_area_id !== 83) {
-          return Promise.resolve({
-            json: () => Promise.resolve({ code: 1302125, msg: 'get info list err', data: null }),
-          })
-        }
-        if (url.endsWith('GetUserProfileBasicInfo')) {
-          attempts += 1
+    // 거절된 요청도 blablalink의 제한 창을 민다(2026-08-09 실측: 15/30/60/120초
+    // 정적을 두고 다시 물어도 4분 내내 거절됐다). 그래서 재시도는 완화가 아니라
+    // 스스로 못 빠져나오게 만드는 악화다. 한 번 묻고 만다.
+    it('이름 조회는 서버당 한 번만 부른다 - 튕겨도 다시 묻지 않는다', async () => {
+      let asked = 0
+      const { payload } = await runBookmarklet(
+        (url: string) => {
+          if (url.endsWith('GetUserProfileBasicInfo')) asked++
           return Promise.resolve({
             json: () =>
               Promise.resolve(
-                attempts === 1
-                  ? { code: 1300015, msg: 'ok', data: null }
+                url.endsWith('GetUserProfileBasicInfo')
+                  ? { code: 1300015, msg: 'Requests are too frequent', data: null }
                   : { code: 0, data: responseFor(url) },
               ),
           })
-        }
-        return Promise.resolve({ json: () => Promise.resolve({ code: 0, data: responseFor(url) }) })
-      })
-      expect(attempts).toBe(2)
+        },
+        singleServerSource,
+      )
+      expect(asked).toBe(1)
       const servers = payload?.servers as { nickname: string; nickname_error: string }[] | undefined
+      expect(servers?.[0]?.nickname).toBe('')
+      expect(servers?.[0]?.nickname_error).toContain('1300015')
+    })
+
+    // 페이지가 방금 부른 것을 우리가 또 부르면 반드시 거절되고, 그 거절이 창을
+    // 밀어 다음 동기화까지 망친다. 「이 페이지가 이미 물었는가」는 상수 없이
+    // Resource Timing으로 알 수 있다 - 기록은 문서마다 새로 시작한다.
+    it('이 페이지가 이미 이름을 조회했으면 묻지 않는다', async () => {
+      let asked = 0
+      const { payload } = await runBookmarklet(
+        (url: string) => {
+          if (url.endsWith('GetUserProfileBasicInfo')) asked++
+          return Promise.resolve({ json: () => Promise.resolve({ code: 0, data: responseFor(url) }) })
+        },
+        source,
+        ['https://api.blablalink.com/api/game/proxy/Game/GetUserProfileBasicInfo'],
+      )
+      expect(asked).toBe(0)
+      const servers = payload?.servers as { nickname: string; nickname_error: string }[] | undefined
+      expect(servers?.[0]?.nickname).toBe('')
+      expect(servers?.[0]?.nickname_error).toContain('page')
+      // 로스터는 그대로 들어온다 - 막힌 것은 이름 하나다.
+      expect((servers?.[0] as unknown as { owned: unknown[] }).owned.length).toBeGreaterThan(0)
+    })
+
+    // 페이지가 다른 것만 불렀다면 이름 조회는 통과할 수 있다. 그때는 묻는다 -
+    // 계정 하나에 한 번만 성공하면 되고, 그 뒤로는 namedAreas가 건너뛴다.
+    it('페이지가 이름을 조회하지 않았으면 한 번 묻는다', async () => {
+      let asked = 0
+      const { payload } = await runBookmarklet(
+        (url: string) => {
+          if (url.endsWith('GetUserProfileBasicInfo')) asked++
+          return Promise.resolve({ json: () => Promise.resolve({ code: 0, data: responseFor(url) }) })
+        },
+        singleServerSource,
+        ['https://api.blablalink.com/api/game/proxy/Game/HasFinishOnboardingMissionList'],
+      )
+      expect(asked).toBe(1)
+      const servers = payload?.servers as { nickname: string }[] | undefined
       expect(servers?.[0]?.nickname).toBe(NICKNAME)
-      // 결국 받아냈으면 실패 흔적을 남기지 않는다 - 안내 줄이 뜰 이유가 없다.
-      expect(servers?.[0]?.nickname_error).toBe('')
-    })
-
-    it('세 번 다 튕기면 시도 횟수를 적어 보낸다', async () => {
-      let attempts = 0
-      const { payload } = await runBookmarklet((url: string, init?: { body?: string }) => {
-        const body = init?.body ? JSON.parse(init.body) : {}
-        if (url.endsWith('GetUserCharacters') && body.nikke_area_id !== 83) {
-          return Promise.resolve({
-            json: () => Promise.resolve({ code: 1302125, msg: 'get info list err', data: null }),
-          })
-        }
-        if (url.endsWith('GetUserProfileBasicInfo')) attempts += 1
-        return Promise.resolve({
-          json: () =>
-            Promise.resolve(
-              url.endsWith('GetUserProfileBasicInfo')
-                ? { code: 1300015, msg: 'ok', data: null }
-                : { code: 0, data: responseFor(url) },
-            ),
-        })
-      })
-      expect(attempts).toBe(3)
-      const servers = payload?.servers as { nickname_error: string }[] | undefined
-      expect(servers?.[0]?.nickname_error).toContain('시도 3회')
-    })
-
-    // blablalink는 code 1300015 "Requests are too frequent"로 거절한다. 「너무
-    // 잦다」에 맞는 답은 재시도가 아니라 간격이다 - 재시도는 그래도 튕겼을 때의
-    // 보험이고, 이 간격이 없으면 보험만 계속 쓰게 된다.
-    it('호출 사이에 간격을 둔다', async () => {
-      const { waits } = await runBookmarklet(okFetch)
-      const spacing = waits.filter((w) => w > 0)
-      // 다섯 서버를 훑고 서버마다 셋을 더 부르므로 간격을 여러 번 요청한다.
-      expect(spacing.length).toBeGreaterThan(5)
-      expect(Math.max(...spacing)).toBeLessThanOrEqual(1000)
     })
 
     // 이름을 이미 아는 서버에서는 그 호출을 아예 하지 않는다 - 빈도 제한에
