@@ -18,9 +18,15 @@
 //     `GetUserCharacterDetails`=`character_details|state_effects|trace_id`.
 //     2단계 스캔에서 이름 후보가 나온 것은 `basic_info`뿐이었다.
 //
+//   - **먼저 부르는 것은 blablalink 페이지 자신이다.** 페이지가 뜬 지 16초 뒤에
+//     읽은 Resource Timing에 `GetUserProfileBasicInfo`가 이미 들어 있었다
+//     (`GetSavedRoleInfo`·`GetMyGuildInfo`·`GetUserCharacters` 등과 같은 묶음).
+//     유저가 그 몇 초 뒤에 북마크릿을 누르면 늘 쿨다운 안이다 - 우리 묶음을
+//     아무리 줄여도 못 이긴다. 경쟁 상대가 우리 묶음 안에 없었다.
+//
 // **아직 답이 없는 것.**
-//   1. 한 번만 부르는 최초 동기화가 왜 거절되는가 - 누가 먼저 불렀는가? → history
-//   2. 쿨다운이 몇 초인가 (93초 안에는 풀린다는 것까지만 안다)?        → measureWindow
+//   1. 이름을 쿨다운 없는 다른 엔드포인트에서 얻을 수 있는가?  → sniffAlternatives
+//   2. 쿨다운이 몇 초인가 (93초 안에는 풀린다는 것까지만 안다)? → measureWindow
 //
 // **쓰는 법.**
 //   1. blablalink.com에 로그인한 탭에서 F12 → 콘솔.
@@ -217,6 +223,24 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
   }
 
   /**
+   * **이름을 쿨다운 없는 다른 곳에서 얻을 수 있는가.** 페이지가 프로필 호출들보다
+   * 먼저 부르는 `GetSavedRoleInfo`는 이름 그대로 「저장된 게임 롤」이고, 롤에는
+   * 보통 이름이 붙는다. 여기서 나오면 `GetUserProfileBasicInfo`를 아예 안 불러도
+   * 되므로 쿨다운 문제 자체가 사라진다.
+   *
+   * 파라미터 모양을 모르니 두 가지를 다 던진다 - 로그인한 자기 계정에 대한
+   * 것이라면 빈 body로도 답하고, 프로필별이라면 base가 필요하다. 400이든
+   * 에러 코드든 답이 되므로 실패도 표에 남긴다.
+   */
+  const sniffAlternatives = async () => {
+    const p = '대체 경로'
+    await call(p, 'GetSavedRoleInfo', {})
+    await call(p, 'GetSavedRoleInfo', { ...base })
+    await call(p, 'GetMyGuildInfo', { ...base })
+    return table()
+  }
+
+  /**
    * 쿨다운의 길이를 잰다. 한 번 통과시켜 기준을 잡고 곧바로 다시 물어 거절을
    * 확인한 뒤, 정적을 늘려가며 언제 다시 통과하는지 본다.
    *
@@ -263,11 +287,12 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
     staircase,
     contamination,
     history,
+    sniffAlternatives,
     measureWindow,
     table,
     log,
     all,
   }
-  console.log('__probe 준비됨. history() / measureWindow() / all() / roundA() / roundB()')
+  console.log('__probe 준비됨. sniffAlternatives() / measureWindow() / history() / all()')
   return history()
 })()
