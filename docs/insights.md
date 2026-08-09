@@ -99,7 +99,10 @@ full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
   동기화는 이름이 비어 있을 때만 씨앗을 심고, 한 번 정해진 이름은 덮어쓰지
   않는다. 계정 드롭다운 옆에서 직접 바꾼다(`ProfileSwitcher.tsx`).
 - 북마크릿은 **재시도하지 않고**, 서버당 한 번만 묻고, **이 페이지가 이미 그
-  조회를 했으면 아예 묻지 않는다**(`frontend/src/lib/bookmarklet.ts`). Resource
+  조회를 했으면 아예 묻지 않는다**(`frontend/src/lib/bookmarklet.ts`). 이미
+  이름을 아는 서버는 조회 목록(`NAMED`)에서 애초에 빠지지만, 그 목록은
+  북마크릿을 **만들 때**의 스냅샷이라 이름을 붙인 뒤에도 이미 설치된
+  북마크릿에는 반영되지 않는다 — 새로 복사해야 반영된다. Resource
   Timing 기록이 문서마다 새로 시작하는 성질을 쓰므로 **시간 상수가 필요 없다**
   — 쿨다운 길이는 여전히 미측정이고, 그래서 지어내지 않았다.
 - 이름을 못 받는 것은 이제 실패가 아니라 정상 경로다. 화면은 「기다렸다 다시

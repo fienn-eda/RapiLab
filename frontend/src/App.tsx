@@ -124,10 +124,9 @@ function App() {
     () => new Map(supportedUnits.units.map((unit) => [unit.slug, unit])),
     [supportedUnits.units],
   )
-  // 이 open_id에 대해 이미 아는 것. 북마크릿이 조회할 서버 수를 줄이는 데만
-  // 쓴다 - blablalink는 호출이 잦으면 거절하고(code 1300015), 거절당하는 것은
-  // 묶음의 마지막인 이름 조회다. 아는 계정을 다시 동기화하면서 다섯 서버를 또
-  // 훑을 이유가 없다.
+  // 이 open_id에 대해 이미 아는 것. 아는 서버만 조회하는 것은 속도 이득이고
+  // (다섯 서버를 다 훑지 않는다), 이미 아는 이름을 다시 묻지 않는 것은
+  // 거절될 조회(code 1300015)를 아예 안 하는 것이다.
   const knownFor = (openId: string) => {
     const mine = Object.values(state.profiles).filter((p) => p.openId === openId)
     return {

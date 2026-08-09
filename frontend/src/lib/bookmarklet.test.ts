@@ -432,10 +432,10 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
 
 })
 
-// blablalink는 호출이 잦으면 거절한다(code 1300015 "Requests are too frequent")
-// - 그리고 거절당하는 것은 묶음의 마지막인 이름 조회다. 그래서 근본 대책은
-// 간격이나 재시도가 아니라 **호출 수**다. 앱이 이미 아는 계정이면 다섯 서버를
-// 또 훑을 이유가 없고, 이름을 아는 서버라면 이름을 다시 물을 이유도 없다.
+// blablalink는 이름 조회만 code 1300015("Requests are too frequent")로
+// 거절한다 - 로스터 조회는 같은 순간에도 통과한다(2026-08-09 실측). 아는
+// 서버만 조회하는 것은 속도 이득이고(다섯 서버를 다 훑지 않는다), 이미 아는
+// 이름을 다시 묻지 않는 것은 거절될 조회를 안 하는 것이다.
 describe('buildLocalSyncBookmarklet: 아는 계정은 덜 부른다', () => {
   const areasIn = (src: string) => src.match(/const AREAS=\[([^\]]*)\]/)?.[1]
   const namedIn = (src: string) => src.match(/const NAMED=\[([^\]]*)\]/)?.[1]

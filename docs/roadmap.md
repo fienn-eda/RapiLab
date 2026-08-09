@@ -2070,7 +2070,7 @@ snow-white 0.998 · scarlet 0.999. 뒤 셋은 오차 범위이므로 실질 대�
 - [x] **Account 드롭다운이 닉네임 대신 uid로 되돌아가던 원인 — 완료 (2026-07-25).**
       코드 회귀가 아니었다(`ProfileSwitcher`의 `nickname || openId`는 멀쩡). `upsertProfile`이
       재싱크 닉네임을 무조건 덮어써서, 닉네임을 못 읽은 싱크 한 번이 저장된 값을 지웠다.
-      이제 빈 닉네임은 저장된 값을 유지한다(`nickname: args.nickname || existing.nickname`).
+      이제 빈 닉네임은 저장된 값을 유지한다(`nickname: existing.nickname || args.nickname`).
       **이미 비어버린 프로필은 앱에서 북마클릿을 새로 받아 한 번 싱크해야 복구된다** —
       북마크바에 저장된 복사본은 `50176df`(닉네임을 `basic_info`에서 읽기) 이전 버전일 수 있다.
 - [x] **부계정 싱크가 500으로 죽던 원인 — 완료 (2026-07-25).** 코어를 올린 PILGRIM
