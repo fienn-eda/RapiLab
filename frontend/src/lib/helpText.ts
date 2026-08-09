@@ -98,6 +98,9 @@ export const HELP = {
       {
         text: 'RapiLab을 켜 둔 채, blablalink에 로그인한 상태로 그 북마크를 눌러요. 로스터가 이 화면으로 바로 들어와요.',
       },
+      {
+        text: '계정 이름이 UID로 보이면 위 **계정** 드롭다운 옆에서 직접 붙여주세요. blablalink가 이름 조회만 자주 막아서, 이름은 붙을 때도 있고 안 붙을 때도 있어요.',
+      },
     ] as readonly HelpStep[],
 
     resyncHeading: '다시 동기화할 때',

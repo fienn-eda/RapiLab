@@ -20,9 +20,8 @@ interface SyncRosterPanelProps {
     roster: NikkeDraft[]
   }) => void
   /** 이 open_id에 대해 앱이 이미 아는 것 - 어느 서버에 로스터가 있고, 어느
-   * 서버의 이름을 이미 아는지. 북마크릿의 호출 수를 줄이는 데만 쓴다.
-   * blablalink가 호출이 잦으면 거절하므로(code 1300015), 아는 계정을 다시
-   * 동기화할 때 다섯 서버를 또 훑을 이유가 없다. */
+   * 서버의 이름을 이미 아는지. 아는 서버만 조회해 동기화를 빠르게 하고, 이미
+   * 아는 이름은 다시 묻지 않는다(다시 물어도 거절될 뿐이다). */
   knownFor?: (openId: string) => KnownAccount
   /** 활성 프로필이 없는 화면에서는 도움말이 펼쳐진 채로 시작한다 - 아직 아무것도
    * 동기화하지 못한 유저가 토글을 "발견"할 필요가 없어야 한다. */
@@ -46,10 +45,8 @@ export function SyncRosterPanel({
   // 어느 서버를 조회할지. null이면 앱이 아는 대로 - 아는 계정이면 그 서버만,
   // 처음 보는 계정이면 다섯을 다 훑는다. 직접 고르면 그 하나만 본다.
   //
-  // 고르게 하는 이유는 호출 수다. blablalink는 호출이 잦으면 거절하고
-  // (code 1300015), 거절당하는 것은 묶음의 마지막인 이름 조회다. 처음 보는
-  // 계정은 서버를 몰라 다섯을 다 훑느라 8호출이 되는데, 유저는 자기 서버를
-  // 안다 - 물어보면 4호출로 끝난다.
+  // 고르게 하는 이유는 속도다. 처음 보는 계정은 서버를 몰라 다섯을 다 훑는데,
+  // 유저는 자기 서버를 안다.
   const [pickedArea, setPickedArea] = useState<number | null>(null)
   const [summary, setSummary] = useState<string | null>(null)
   // Parse warning lines (e.g. which owned units are not yet supported), shown
@@ -61,24 +58,17 @@ export function SyncRosterPanel({
       const { drafts, warnings } = parseRosterJson(raw)
       onImport({ openId, area, nickname, roster: drafts })
       setSummary(`${drafts.length}기 동기화됨`)
-      // 닉네임은 로스터와 다른 호출(GetUserProfileBasicInfo)에서 오고, 그 실패는
-      // 동기화를 죽이지 않으려고 삼킨다. 삼킨 것을 말하지 않으면 화면이 계정
-      // 이름 자리에 UID를 띄우는데, 유저에게는 그게 「이름이 잘못 나온다」로만
-      // 보이고 무엇을 해야 할지는 알 수 없다.
-      //
-      // 남는 원인은 빈도 제한이다(blablalink code 1300015 "Requests are too
-      // frequent"). 북마크릿이 간격을 두고 재시도까지 하므로 여기까지 오는 것은
-      // 제한이 세션에 누적된 경우 - 계정을 연달아 동기화할 때다. 그때 할 일은
-      // 재설치가 아니라 잠시 기다렸다 다시 하는 것이다. 북마크릿이 적어 보낸
-      // 응답을 그대로 붙인다 - 이것이 없으면 왜 비었는지 물어볼 곳이 없다.
+      // 이름 조회는 최선 노력이다 - ShiftyPad 화면이 뜨면서 같은 조회를 이미
+      // 하기 때문에, 최초 동기화 시점에는 거의 늘 거절된다(2026-08-09 실측).
+      // 그러니 「기다렸다 다시 하세요」는 거짓말이다. 유저가 실제로 할 수 있는
+      // 일은 계정 드롭다운 옆에서 이름을 직접 붙이는 것 하나다.
       setNotes(
         nickname || !nicknameError
           ? warnings
           : [
               ...warnings,
-              '계정 이름을 읽지 못해 UID로 표시했어요. 로스터는 정상이에요. ' +
-                '잠시 뒤 이 계정만 다시 동기화하면 이름이 붙어요.' +
-                (nicknameError ? ` (이름 조회 응답: ${nicknameError})` : ''),
+              '계정 이름을 읽지 못했어요. 로스터는 정상이에요. ' +
+                '위 계정 드롭다운 옆 계정 이름 바꾸기로 원하는 이름을 붙여주세요.',
             ],
       )
     },

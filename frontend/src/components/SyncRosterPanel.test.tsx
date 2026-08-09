@@ -103,9 +103,10 @@ describe('SyncRosterPanel', () => {
   })
 
   // 계정 이름 자리에 UID가 뜨는 것은 「이름이 잘못 나온다」로만 보인다 -
-  // 무엇이 실패했고 무엇을 하면 되는지 말해야 유저가 고칠 수 있다.
-  // 처음 보는 계정은 서버를 몰라 다섯을 다 훑느라 8호출이 되고, 그 마지막인
-  // 이름 조회가 빈도 제한에 걸린다. 유저는 자기 서버를 아니까 물어보면 된다.
+  // 어디서 고치는지를 같이 말해야 유저가 할 일을 안다.
+  //
+  // 서버를 고르면 조회가 빨라진다. 다섯 서버를 훑는 것은 느릴 뿐이고,
+  // 이름이 안 붙는 것과는 무관하다(2026-08-09 실측).
   describe('조회할 서버 고르기', () => {
     const areasIn = (value: string) =>
       decodeURIComponent(value.replace(/^javascript:/, '')).match(/const AREAS=\[([^\]]*)\]/)?.[1]
@@ -162,7 +163,8 @@ describe('SyncRosterPanel', () => {
 
     render(<SyncRosterPanel onImport={vi.fn()} />)
 
-    expect(await screen.findByText(/계정 이름을 읽지 못해 UID로 표시했어요/)).toBeTruthy()
+    expect(await screen.findByText(/계정 이름을 읽지 못했어요/)).toBeTruthy()
+    expect(screen.getByText(/계정 이름 바꾸기/)).toBeTruthy()
     // 로스터까지 실패한 것으로 읽히면 안 된다.
     expect(screen.getByText(/로스터는 정상이에요/)).toBeTruthy()
   })
@@ -182,7 +184,7 @@ describe('SyncRosterPanel', () => {
     render(<SyncRosterPanel onImport={vi.fn()} />)
 
     await screen.findByText(/동기화됨/)
-    expect(screen.queryByText(/계정 이름을 읽지 못해/)).toBeNull()
+    expect(screen.queryByText(/계정 이름을 읽지 못했어요/)).toBeNull()
   })
 
   it('닉네임이 있으면 그런 안내를 하지 않는다', async () => {
@@ -194,7 +196,7 @@ describe('SyncRosterPanel', () => {
     render(<SyncRosterPanel onImport={vi.fn()} />)
 
     await screen.findByText(/동기화됨/)
-    expect(screen.queryByText(/계정 이름을 읽지 못해/)).toBeNull()
+    expect(screen.queryByText(/계정 이름을 읽지 못했어요/)).toBeNull()
   })
 
   it('separates open_id/nickname from the assembled roster when calling onImport', async () => {
