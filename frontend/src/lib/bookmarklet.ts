@@ -14,16 +14,19 @@
 // 실패 코드인지 응답 모양이 바뀐 것인지는 여기서 적어 보내야만 알 수 있다.
 // 값이 아니라 코드나 최상위 키 이름만 담으므로 계정 정보가 새지 않는다.
 //
-// 그 첫 회신은 code 1300015였다 - 우리가 아는 코드가 아니고 문서도 없다.
+// **원인은 요청이 아니라 호출 빈도였다.** code 1300015의 메시지가
+// "Requests are too frequent"이다(2026-08-09 실측). 똑같은 요청을 콘솔에서
+// 하나만 보내면 `code 0 / msg ok / keys basic_info`로 성공한다.
 //
-// **원인은 요청이 아니라 연달아 던지는 것이었다.** 똑같은 요청을 콘솔에서 하나만
-// 보내면 `code 0 / msg ok / keys basic_info`로 성공한다(2026-08-09 실측).
-// 그런데 여기서는 이 호출이 묶음의 마지막이다: 07-25에는 area 81 하나만 봐서
-// 전체가 4호출이었고 닉네임이 멀쩡했는데, 07-30에 다섯 서버를 모두 훑기
-// 시작하면서(e37f5359) 8호출 이상이 됐고 그때부터 마지막 호출이 거절된다.
-// 그래서 이 호출만 백오프를 두고 세 번까지 다시 시도한다 - 1300015가 정확히
-// 무슨 뜻인지는 여전히 모르지만, 「혼자면 되고 몰아서 던지면 안 된다」는
-// 관측에는 재시도가 맞는 답이다.
+// 07-25에는 area 81 하나만 봐서 전체가 4호출이었고 닉네임이 멀쩡했는데,
+// 07-30에 다섯 서버를 모두 훑기 시작하면서(e37f5359) 8호출 이상이 됐고 그때부터
+// 묶음의 마지막인 이 호출이 거절된다. 닉네임이 조용히 죽은 시점이 정확히 그때다.
+//
+// 그래서 두 가지를 한다. (1) `call`이 호출 사이에 최소 간격(GAP)을 둔다 -
+// "너무 잦다"는 말에 맞는 답은 재시도가 아니라 간격이다. (2) 그럼에도 튕기면
+// 이 호출만 백오프로 세 번까지 다시 묻는다. 제한은 계정 하나 안에서가 아니라
+// **세션 전체에 누적**된다: 계정 둘을 연달아 동기화하면 첫 계정은 이름이 붙고
+// 둘째만 UID로 떨어지는 것이 그 증거다(2026-08-09 보고).
 //
 // 순서를 바꿔 이 호출을 앞으로 당기는 것은 답이 아니다. 그러면 마지막 자리에
 // 서는 것이 GetUserProfileOutpostInfo가 되는데, 그쪽은 감싸지 않으므로
@@ -78,13 +81,17 @@ export const LOCAL_SYNC_PORTS = [41573, 41574, 41575, 41576, 8000]
 // 수집 부분. 두 빌더가 같은 것을 쓰므로 한 곳에 둔다 - 전송 방식만 다르다.
 // `payload` 변수에 결과를 담고, 실패는 바깥 try/catch로 던진다.
 const collectSource = (openId: string): string => `
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const GAP=350;const WAITS=[0,2000,5000];
+let lastCall=0;
 const call=async(ep,body)=>{
+ const wait=GAP-(Date.now()-lastCall);
+ if(wait>0)await sleep(wait);
+ lastCall=Date.now();
  const r=await fetch('https://api.blablalink.com/api/game/proxy/Game/'+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'include'});
  const j=await r.json();
  if(j.code!==0){const e=new Error(ep+':'+j.code+(j.msg?' '+j.msg:''));e.code=j.code;throw e}
  return j.data};
-const sleep=ms=>new Promise(r=>setTimeout(r,ms));
-const WAITS=[0,800,2000];
 const AREAS=[${SERVER_AREAS.join(',')}];
 const found=[];let probeErr=null;
 for(const a of AREAS){

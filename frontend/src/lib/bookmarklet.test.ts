@@ -74,9 +74,15 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
      * alert 문구들을 돌려준다. */
     const runBookmarklet = async (
       fetchImpl: FetchImpl,
-    ): Promise<{ payload: Record<string, unknown> | null; alerts: string[] }> => {
+    ): Promise<{
+      payload: Record<string, unknown> | null
+      alerts: string[]
+      /** 북마크릿이 요청한 대기 시간들. 실제로 기다리지는 않는다. */
+      waits: number[]
+    }> => {
       let sent: Record<string, unknown> | null = null
       const alerts: string[] = []
+      const waits: number[] = []
       // 북마크릿은 수집한 것을 로컬 인박스로 POST한다. 그 호출을 가로채면
       // 앱이 받게 될 payload를 그대로 볼 수 있다 - 창도 리스너도 필요 없다.
       const wrapped = (url: string, init?: { body?: string }) => {
@@ -94,9 +100,9 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
         { origin: BLABLALINK_ORIGIN },
         wrapped,
         (m: string) => alerts.push(m),
-        (fn: () => void) => fn(),
+        (fn: () => void, ms: number) => { waits.push(ms); fn() },
       )
-      return { payload: sent, alerts }
+      return { payload: sent, alerts, waits }
     }
 
     const okFetch = (url: string) =>
@@ -226,6 +232,17 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
       expect(attempts).toBe(3)
       const servers = payload?.servers as { nickname_error: string }[] | undefined
       expect(servers?.[0]?.nickname_error).toContain('시도 3회')
+    })
+
+    // blablalink는 code 1300015 "Requests are too frequent"로 거절한다. 「너무
+    // 잦다」에 맞는 답은 재시도가 아니라 간격이다 - 재시도는 그래도 튕겼을 때의
+    // 보험이고, 이 간격이 없으면 보험만 계속 쓰게 된다.
+    it('호출 사이에 간격을 둔다', async () => {
+      const { waits } = await runBookmarklet(okFetch)
+      const spacing = waits.filter((w) => w > 0)
+      // 다섯 서버를 훑고 서버마다 셋을 더 부르므로 간격을 여러 번 요청한다.
+      expect(spacing.length).toBeGreaterThan(5)
+      expect(Math.max(...spacing)).toBeLessThanOrEqual(1000)
     })
 
     it('basic_info 아래의 nickname을 payload의 서버별 항목에 싣는다', async () => {
