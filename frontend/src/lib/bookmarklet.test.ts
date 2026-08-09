@@ -74,6 +74,8 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
      * alert 문구들을 돌려준다. */
     const runBookmarklet = async (
       fetchImpl: FetchImpl,
+      /** 다른 「아는 계정」으로 만든 북마크릿을 돌릴 때. 기본은 아무것도 모르는 것. */
+      customSource = source,
     ): Promise<{
       payload: Record<string, unknown> | null
       alerts: string[]
@@ -95,7 +97,7 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
       // setTimeout까지 주입한다: 북마크릿은 이름 조회를 백오프로 다시 시도하는데,
       // 그 대기 길이는 blablalink가 정하는 제품 판단이지 테스트가 정할 것이
       // 아니다. 여기서는 즉시 깨워 대기 없이 같은 경로를 돈다.
-      const run = new Function('location', 'fetch', 'alert', 'setTimeout', `return ${source}`)
+      const run = new Function('location', 'fetch', 'alert', 'setTimeout', `return ${customSource}`)
       await run(
         { origin: BLABLALINK_ORIGIN },
         wrapped,
@@ -245,6 +247,29 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
       expect(Math.max(...spacing)).toBeLessThanOrEqual(1000)
     })
 
+    // 이름을 이미 아는 서버에서는 그 호출을 아예 하지 않는다 - 빈도 제한에
+    // 걸리는 바로 그 호출이라, 부르지 않는 것이 가장 확실한 대책이다.
+    it('이름을 아는 서버에서는 이름 조회를 하지 않는다', async () => {
+      const known = decodeURIComponent(
+        buildLocalSyncBookmarklet('1234567890123456789', { areas: [83], namedAreas: [83] })
+          .replace(/^javascript:/, ''),
+      )
+      const endpoints: string[] = []
+      const { payload } = await runBookmarklet((url: string) => {
+        endpoints.push(url.split('/').pop() ?? '')
+        return Promise.resolve({ json: () => Promise.resolve({ code: 0, data: responseFor(url) }) })
+      }, known)
+
+      expect(endpoints).not.toContain('GetUserProfileBasicInfo')
+      // 서버 하나만 훑으므로 호출은 셋이다 - 예전 여덟에서 줄어든 것이 핵심이다.
+      expect(endpoints).toHaveLength(3)
+      const servers = payload?.servers as { nickname: string; nickname_error: string }[] | undefined
+      // 이름은 앱이 이미 갖고 있다. 빈 값을 보내면 upsertProfile이 기존 것을 지킨다.
+      expect(servers?.[0]?.nickname).toBe('')
+      // 물어보지 않았으니 실패도 아니다 - 안내 줄이 뜨면 안 된다.
+      expect(servers?.[0]?.nickname_error).toBe('')
+    })
+
     it('basic_info 아래의 nickname을 payload의 서버별 항목에 싣는다', async () => {
       const { payload } = await runBookmarklet(okFetch)
       const servers = payload?.servers as { nickname: string }[] | undefined
@@ -385,6 +410,36 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
     expect(run(1300015)).toContain('1300015')
   })
 
+})
+
+// blablalink는 호출이 잦으면 거절한다(code 1300015 "Requests are too frequent")
+// - 그리고 거절당하는 것은 묶음의 마지막인 이름 조회다. 그래서 근본 대책은
+// 간격이나 재시도가 아니라 **호출 수**다. 앱이 이미 아는 계정이면 다섯 서버를
+// 또 훑을 이유가 없고, 이름을 아는 서버라면 이름을 다시 물을 이유도 없다.
+describe('buildLocalSyncBookmarklet: 아는 계정은 덜 부른다', () => {
+  const areasIn = (src: string) => src.match(/const AREAS=\[([^\]]*)\]/)?.[1]
+  const namedIn = (src: string) => src.match(/const NAMED=\[([^\]]*)\]/)?.[1]
+  const decoded = (openId: string, known?: { areas: number[]; namedAreas: number[] }) =>
+    decodeURIComponent(buildLocalSyncBookmarklet(openId, known).replace(/^javascript:/, ''))
+
+  it('아는 것이 없으면 예전처럼 다섯 서버를 다 훑는다', () => {
+    expect(areasIn(decoded('1234567890123456789'))).toBe('81,82,83,84,85')
+  })
+
+  it('로스터가 있는 서버를 알면 그 서버만 훑는다', () => {
+    const src = decoded('1234567890123456789', { areas: [83], namedAreas: [] })
+    expect(areasIn(src)).toBe('83')
+  })
+
+  it('여러 서버를 쓰는 계정은 그 서버들만 훑는다', () => {
+    const src = decoded('1234567890123456789', { areas: [81, 83], namedAreas: [] })
+    expect(areasIn(src)).toBe('81,83')
+  })
+
+  it('이름을 아는 서버는 이름 조회 목록에서 빠진다', () => {
+    const src = decoded('1234567890123456789', { areas: [81, 83], namedAreas: [81] })
+    expect(namedIn(src)).toBe('81')
+  })
 })
 
 describe('buildLocalSyncBookmarklet: 입력 검증', () => {

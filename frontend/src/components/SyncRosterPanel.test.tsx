@@ -107,7 +107,11 @@ describe('SyncRosterPanel', () => {
   it('닉네임을 못 읽으면 UID로 표시했다고 알리고 할 일을 말한다', async () => {
     vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
     vi.mocked(takeSyncInbox).mockResolvedValueOnce({
-      ...RAW_PAYLOAD, open_id: 'abc123', nickname: '',
+      open_id: 'abc123',
+      servers: [{
+        area: 83, nickname: '', nickname_error: 'GetUserProfileBasicInfo:1300015 too frequent',
+        owned: [], character_details: [], recycle_room_researches: [],
+      }],
     })
 
     render(<SyncRosterPanel onImport={vi.fn()} />)
@@ -115,6 +119,24 @@ describe('SyncRosterPanel', () => {
     expect(await screen.findByText(/계정 이름을 읽지 못해 UID로 표시했어요/)).toBeTruthy()
     // 로스터까지 실패한 것으로 읽히면 안 된다.
     expect(screen.getByText(/로스터는 정상이에요/)).toBeTruthy()
+  })
+
+  // 이름을 이미 아는 계정은 그 조회를 아예 건너뛴다. 물어보지 않았으니 실패도
+  // 아니고, 안내 줄이 뜨면 「뭔가 잘못됐다」로 읽힌다.
+  it('이름 조회를 건너뛴 동기화에서는 아무 말도 하지 않는다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
+    vi.mocked(takeSyncInbox).mockResolvedValueOnce({
+      open_id: 'abc123',
+      servers: [{
+        area: 83, nickname: '', nickname_error: '',
+        owned: [], character_details: [], recycle_room_researches: [],
+      }],
+    })
+
+    render(<SyncRosterPanel onImport={vi.fn()} />)
+
+    await screen.findByText(/동기화됨/)
+    expect(screen.queryByText(/계정 이름을 읽지 못해/)).toBeNull()
   })
 
   it('닉네임이 있으면 그런 안내를 하지 않는다', async () => {

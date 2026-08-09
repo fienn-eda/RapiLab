@@ -3,7 +3,7 @@
 
 import { useEffect, useState } from 'react'
 import { parseShareUrl } from '../lib/shareUrl'
-import { buildLocalSyncBookmarklet } from '../lib/bookmarklet'
+import { buildLocalSyncBookmarklet, type KnownAccount } from '../lib/bookmarklet'
 import { useBookmarkletImport } from '../hooks/useBookmarkletImport'
 import { parseRosterJson } from '../lib/rosterImport'
 import { serverLabel } from '../types/server'
@@ -19,6 +19,11 @@ interface SyncRosterPanelProps {
     nickname: string
     roster: NikkeDraft[]
   }) => void
+  /** 이 open_id에 대해 앱이 이미 아는 것 - 어느 서버에 로스터가 있고, 어느
+   * 서버의 이름을 이미 아는지. 북마크릿의 호출 수를 줄이는 데만 쓴다.
+   * blablalink가 호출이 잦으면 거절하므로(code 1300015), 아는 계정을 다시
+   * 동기화할 때 다섯 서버를 또 훑을 이유가 없다. */
+  knownFor?: (openId: string) => KnownAccount
   /** 활성 프로필이 없는 화면에서는 도움말이 펼쳐진 채로 시작한다 - 아직 아무것도
    * 동기화하지 못한 유저가 토글을 "발견"할 필요가 없어야 한다. */
   defaultHelpOpen?: boolean
@@ -32,6 +37,7 @@ export function SyncRosterPanel({
   onImport,
   defaultHelpOpen = false,
   onActivity,
+  knownFor,
 }: SyncRosterPanelProps) {
   const [helpOpen, setHelpOpen] = useState(defaultHelpOpen)
   const [openId, setOpenId] = useState<string | null>(null)
@@ -58,7 +64,7 @@ export function SyncRosterPanel({
       // 재설치가 아니라 잠시 기다렸다 다시 하는 것이다. 북마크릿이 적어 보낸
       // 응답을 그대로 붙인다 - 이것이 없으면 왜 비었는지 물어볼 곳이 없다.
       setNotes(
-        nickname
+        nickname || !nicknameError
           ? warnings
           : [
               ...warnings,
@@ -143,7 +149,7 @@ export function SyncRosterPanel({
             type="button"
             className="btn btn--ghost"
             onClick={() => {
-              const url = buildLocalSyncBookmarklet(openId)
+              const url = buildLocalSyncBookmarklet(openId, knownFor?.(openId))
               navigator.clipboard?.writeText(url).then(
                 () => setCopied('ok'),
                 // 클립보드가 막힌 환경이면 직접 복사할 수 있게 보여준다.
@@ -168,7 +174,7 @@ export function SyncRosterPanel({
                 readOnly
                 rows={3}
                 aria-label="북마크릿 주소"
-                value={buildLocalSyncBookmarklet(openId)}
+                value={buildLocalSyncBookmarklet(openId, knownFor?.(openId))}
                 onFocus={(e) => e.currentTarget.select()}
               />
             </>

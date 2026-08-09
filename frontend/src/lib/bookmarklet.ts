@@ -80,7 +80,16 @@ export const LOCAL_SYNC_PORTS = [41573, 41574, 41575, 41576, 8000]
 
 // 수집 부분. 두 빌더가 같은 것을 쓰므로 한 곳에 둔다 - 전송 방식만 다르다.
 // `payload` 변수에 결과를 담고, 실패는 바깥 try/catch로 던진다.
-const collectSource = (openId: string): string => `
+/** 앱이 이 계정에 대해 이미 아는 것. 호출 수를 줄이는 데만 쓴다 - 모르면
+ * 예전처럼 다섯 서버를 다 훑고 이름도 매번 새로 묻는다. */
+export interface KnownAccount {
+  /** 이 계정의 로스터가 있는 서버들. 비어 있으면 전부 훑는다. */
+  areas: number[]
+  /** 이미 이름을 아는 서버들. 그 서버에서는 이름 조회를 아예 건너뛴다. */
+  namedAreas: number[]
+}
+
+const collectSource = (openId: string, known: KnownAccount): string => `
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 const GAP=350;const WAITS=[0,2000,5000];
 let lastCall=0;
@@ -92,7 +101,8 @@ const call=async(ep,body)=>{
  const j=await r.json();
  if(j.code!==0){const e=new Error(ep+':'+j.code+(j.msg?' '+j.msg:''));e.code=j.code;throw e}
  return j.data};
-const AREAS=[${SERVER_AREAS.join(',')}];
+const AREAS=[${(known.areas.length ? known.areas : [...SERVER_AREAS]).join(',')}];
+const NAMED=[${known.namedAreas.join(',')}];
 const found=[];let probeErr=null;
 for(const a of AREAS){
  let owned=[];
@@ -104,16 +114,17 @@ for(const f of found){
  const base={intl_open_id:'${openId}',nikke_area_id:f.area};
  const detail=await call('GetUserCharacterDetails',{...base,name_codes:f.owned.map(c=>c.name_code)});
  const outpost=await call('GetUserProfileOutpostInfo',{...base});
- let basic=null,nickErr='',tries=0;
- for(const w of WAITS){
-  if(w)await sleep(w);
-  tries++;
-  try{basic=await call('GetUserProfileBasicInfo',{...base});nickErr='';break}
-  catch(e){nickErr=String(e&&e.message||e)}}
- const bi=(basic&&basic.basic_info)||{};
- const nick=bi.nickname||bi.role_name||'';
- if(!nick&&!nickErr)nickErr='shape:'+Object.keys(basic||{}).join('|');
- if(!nick)nickErr+=' (시도 '+tries+'회) | outpost:'+Object.keys(outpost||{}).join('|')+' / '+Object.keys(outpost.outpost_info||{}).join('|');
+ let basic=null,nickErr='',tries=0,nick='';
+ if(NAMED.indexOf(f.area)<0){
+  for(const w of WAITS){
+   if(w)await sleep(w);
+   tries++;
+   try{basic=await call('GetUserProfileBasicInfo',{...base});nickErr='';break}
+   catch(e){nickErr=String(e&&e.message||e)}}
+  const bi=(basic&&basic.basic_info)||{};
+  nick=bi.nickname||bi.role_name||'';
+  if(!nick&&!nickErr)nickErr='shape:'+Object.keys(basic||{}).join('|');
+  if(!nick)nickErr+=' (시도 '+tries+'회) | outpost:'+Object.keys(outpost||{}).join('|')+' / '+Object.keys(outpost.outpost_info||{}).join('|');}
  servers.push({area:f.area,nickname:nick,nickname_error:nick?'':nickErr,owned:f.owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]})}
 payload={open_id:'${openId}',servers:servers};`
 
@@ -132,14 +143,19 @@ alert(c===300001?'blablalink 로그인이 필요해요.':(c===1303005||c===1)?'�
  *
  * 포트를 훑는 이유는 앱이 비어 있는 첫 포트를 잡기 때문이다.
  */
-export const buildLocalSyncBookmarklet = (openId: string): string => {
+const NOTHING_KNOWN: KnownAccount = { areas: [], namedAreas: [] }
+
+export const buildLocalSyncBookmarklet = (
+  openId: string,
+  known: KnownAccount = NOTHING_KNOWN,
+): string => {
   if (!OPEN_ID.test(openId)) {
     throw new Error(`open ID(${JSON.stringify(openId)})는 숫자로만 이뤄져야 해요.`)
   }
   const source = `(async()=>{
 if(location.origin!=='${BLABLALINK_ORIGIN}'){alert('blablalink 페이지에서 눌러주세요.');return}
 let payload=null;
-try{${collectSource(openId)}
+try{${collectSource(openId, known)}
  let sent=false;
  for(const p of ${JSON.stringify(LOCAL_SYNC_PORTS)}){
   try{const r=await fetch('http://127.0.0.1:'+p+'/api/sync-inbox',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});if(r.ok){sent=true;break}}catch(e){}}

@@ -123,6 +123,18 @@ function App() {
     () => new Map(supportedUnits.units.map((unit) => [unit.slug, unit])),
     [supportedUnits.units],
   )
+  // 이 open_id에 대해 이미 아는 것. 북마크릿이 조회할 서버 수를 줄이는 데만
+  // 쓴다 - blablalink는 호출이 잦으면 거절하고(code 1300015), 거절당하는 것은
+  // 묶음의 마지막인 이름 조회다. 아는 계정을 다시 동기화하면서 다섯 서버를 또
+  // 훑을 이유가 없다.
+  const knownFor = (openId: string) => {
+    const mine = Object.values(state.profiles).filter((p) => p.openId === openId)
+    return {
+      areas: mine.map((p) => p.area),
+      namedAreas: mine.filter((p) => p.nickname !== '').map((p) => p.area),
+    }
+  }
+
   const nameFor = (slug: string) => unitIndex.get(slug)?.name ?? nameFromSlug(slug)
   const burstTiersResolver = (slug: string) => burstTiersFor(slug, unitIndex)
 
@@ -152,7 +164,7 @@ function App() {
 
       {activeProfile === null ? (
         <main className="app__main">
-          <SyncRosterPanel onImport={upsertProfile} defaultHelpOpen />
+          <SyncRosterPanel onImport={upsertProfile} knownFor={knownFor} defaultHelpOpen />
           <div className="empty">
             <p className="empty__text">
               아직 동기화된 계정이 없어요. 위에서 blablalink 동기화를
@@ -305,7 +317,11 @@ function App() {
                   서버에 로스터가 있는 계정은 "어느 서버를 가져올까요?"에
                   답해야 넘어가는데, 그 질문이 감춰진 패널에 뜨면 유저에게는
                   동기화가 멈춘 것으로만 보인다. */}
-              <SyncRosterPanel onImport={upsertProfile} onActivity={() => setTab('sync')} />
+              <SyncRosterPanel
+                onImport={upsertProfile}
+                knownFor={knownFor}
+                onActivity={() => setTab('sync')}
+              />
             </div>
           </main>
         </>
