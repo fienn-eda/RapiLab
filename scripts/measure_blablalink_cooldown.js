@@ -297,19 +297,32 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
    * 거절되면, 예산을 태운 것이 우리 묶음이 아니라 페이지라는 뜻이다. 거절이
    * 재현이다.
    *
-   * F5 직후에 이 파일을 붙여넣으면 자동으로 돈다.
+   * **전제를 먼저 확인한다.** 열두 번을 부르는 것은 ShiftyPad 프로필 화면이지
+   * blablalink의 아무 페이지가 아니다. 페이지가 이름 조회를 부르지 않았다면
+   * 이 실험은 조건이 아예 성립하지 않으므로, 결론을 찍는 대신 멈춘다 -
+   * 전제를 안 보고 낸 판정은 판정이 아니다.
+   *
+   * ShiftyPad 공유 URL에서 F5한 직후에 이 파일을 붙여넣으면 자동으로 돈다.
    */
-  const freshLoad = async () => {
+  const freshLoad = async (force = false) => {
     const rows = history()
     const own = rows.filter((r) => r.ep === 'GetUserProfileBasicInfo')
     console.log(
       `페이지가 프록시를 ${rows.length}번 불렀습니다.` +
         (own.length ? ` 이름 조회는 ${own.map((r) => r.secondsAgo).join('·')}초 전.` : ''),
     )
+    if (!own.length && !force) {
+      console.log(
+        '조건 미충족 - 이 페이지는 이름 조회를 부르지 않았습니다. ShiftyPad 공유 URL' +
+          '(blablalink.com/shiftyspad?uid=...)에서 F5한 직후에 다시 해주세요.' +
+          ' 그래도 강행하려면 freshLoad(true).',
+      )
+      return null
+    }
     const data = await basic('새 로드 직후')
     console.log(
       data
-        ? `[${at()}] 통과 - 로드 직후여도 된다. 예산 모델이 틀렸으니 burst()로 넘어간다.`
+        ? `[${at()}] 통과 - 페이지가 먼저 불렀는데도 된다. 예산 모델이 틀렸으니 burst()로 넘어간다.`
         : `[${at()}] 거절 - 재현 성공. 예산을 태운 것은 우리 묶음이 아니라 페이지다.`,
     )
     return data
