@@ -8,6 +8,12 @@
 // 닉네임은 표시용 부가 정보인데, 이 엔드포인트가 code 1303005("user has not bind
 // role_id")로 떨어지는 것이 관측된 이상 그 실패가 로스터 싱크 전체를 죽여선 안 된다.
 //
+// 다만 삼키되 **왜 비었는지는 payload에 적어 보낸다**(`nickname_error`). 2026-08-09에
+// 세 계정(JP 둘·KR 하나)이 전부 UID로 표시되는 것이 보고됐는데, 앱은 닉네임이 든
+// payload를 넣으면 그대로 저장하는 것이 확인됐다 - 즉 비는 곳은 이 호출이다.
+// 실패 코드인지 응답 모양이 바뀐 것인지는 여기서 적어 보내야만 알 수 있다.
+// 값이 아니라 코드나 최상위 키 이름만 담으므로 계정 정보가 새지 않는다.
+//
 // 한 계정이 여러 서버에 로스터를 가질 수 있으므로 다섯 서버를 모두 조회한다.
 // 어느 것을 쓸지는 앱이 정한다 - 여기서는 니케가 있는 서버를 후보로 올리는
 // 것까지만 한다. 후보를 찾는 첫 단계(GetUserCharacters)만 서버별로 실패를
@@ -61,9 +67,12 @@ for(const f of found){
  const base={intl_open_id:'${openId}',nikke_area_id:f.area};
  const detail=await call('GetUserCharacterDetails',{...base,name_codes:f.owned.map(c=>c.name_code)});
  const outpost=await call('GetUserProfileOutpostInfo',{...base});
- const basic=await call('GetUserProfileBasicInfo',{...base}).catch(()=>null);
+ let basic=null,nickErr='';
+ try{basic=await call('GetUserProfileBasicInfo',{...base})}catch(e){nickErr=String(e&&e.message||e)}
  const bi=(basic&&basic.basic_info)||{};
- servers.push({area:f.area,nickname:bi.nickname||bi.role_name||'',owned:f.owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]})}
+ const nick=bi.nickname||bi.role_name||'';
+ if(!nick&&!nickErr)nickErr='shape:'+Object.keys(basic||{}).join('|');
+ servers.push({area:f.area,nickname:nick,nickname_error:nick?'':nickErr,owned:f.owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]})}
 payload={open_id:'${openId}',servers:servers};`
 
 // 실패 문구. 두 빌더가 같은 코드를 같은 말로 설명해야 한다.

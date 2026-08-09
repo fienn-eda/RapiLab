@@ -37,6 +37,9 @@ export interface BookmarkletImportArgs {
   openId: string
   area: number
   nickname: string
+  /** 닉네임이 빈 이유. 북마크릿이 적어 보낸다 - 실패 코드이거나 응답 최상위
+   * 키 목록이다. 닉네임이 있으면 빈 문자열. */
+  nicknameError: string
   raw: unknown
 }
 
@@ -45,6 +48,8 @@ export interface BookmarkletImportArgs {
 interface ServerPayload {
   area: number
   nickname: string
+  /** 옛 북마크릿에는 없는 필드다 - 없으면 빈 문자열로 읽는다. */
+  nickname_error?: string
   owned: unknown[]
   character_details: unknown[]
   recycle_room_researches: unknown[]
@@ -80,6 +85,7 @@ const toServers = (payload: unknown): ServerPayload[] | null => {
     return (p.servers as ServerPayload[]).map((server) => ({
       ...server,
       nickname: String(server.nickname ?? ''),
+      nickname_error: String(server.nickname_error ?? ''),
     }))
   }
   if (isLegacyPayload(payload)) {
@@ -87,6 +93,7 @@ const toServers = (payload: unknown): ServerPayload[] | null => {
       {
         area: 81,
         nickname: String((payload as RawRosterPayload).nickname ?? ''),
+        nickname_error: '',
         owned: payload.owned,
         character_details: payload.character_details,
         recycle_room_researches: payload.recycle_room_researches,
@@ -131,6 +138,7 @@ export const useBookmarkletImport = (
         openId: id,
         area: server.area,
         nickname: server.nickname,
+        nicknameError: server.nickname_error ?? '',
         raw: assembled,
       })
       setStatus('done')

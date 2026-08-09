@@ -125,6 +125,48 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
       return { fetchImpl, calls }
     }
 
+    // 닉네임이 왜 비었는지는 이 payload에만 남는다 - 없으면 「이름 대신 UID가
+    // 나온다」에서 더 물어볼 곳이 없다(2026-08-09 실제로 그렇게 막혔다).
+    it('이름 조회가 실패하면 그 이유를 payload에 적어 보낸다', async () => {
+      const { payload } = await runBookmarklet((url: string) =>
+        Promise.resolve({
+          json: () =>
+            Promise.resolve(
+              url.endsWith('GetUserProfileBasicInfo')
+                ? { code: 1303005, msg: 'user has not bind role_id', data: null }
+                : { code: 0, data: responseFor(url) },
+            ),
+        }),
+      )
+      const servers = payload?.servers as { nickname: string; nickname_error: string }[] | undefined
+      expect(servers?.[0]?.nickname).toBe('')
+      expect(servers?.[0]?.nickname_error).toContain('1303005')
+    })
+
+    // 호출은 성공했는데 이름이 없는 경우 - 응답 모양이 바뀌면 이렇게 된다.
+    // 값이 아니라 최상위 키 이름만 담으므로 계정 정보가 새지 않는다.
+    it('응답이 성공해도 이름이 없으면 최상위 키를 적어 보낸다', async () => {
+      const { payload } = await runBookmarklet((url: string) =>
+        Promise.resolve({
+          json: () =>
+            Promise.resolve(
+              url.endsWith('GetUserProfileBasicInfo')
+                ? { code: 0, data: { profile: { name: 'elsewhere' } } }
+                : { code: 0, data: responseFor(url) },
+            ),
+        }),
+      )
+      const servers = payload?.servers as { nickname: string; nickname_error: string }[] | undefined
+      expect(servers?.[0]?.nickname).toBe('')
+      expect(servers?.[0]?.nickname_error).toBe('shape:profile')
+    })
+
+    it('이름이 있으면 이유 칸은 비어 있다', async () => {
+      const { payload } = await runBookmarklet(okFetch)
+      const servers = payload?.servers as { nickname_error: string }[] | undefined
+      expect(servers?.[0]?.nickname_error).toBe('')
+    })
+
     it('basic_info 아래의 nickname을 payload의 서버별 항목에 싣는다', async () => {
       const { payload } = await runBookmarklet(okFetch)
       const servers = payload?.servers as { nickname: string }[] | undefined

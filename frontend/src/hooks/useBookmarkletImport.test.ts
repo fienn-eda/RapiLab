@@ -48,6 +48,7 @@ describe('useBookmarkletImport', () => {
         openId: 'abc123',
         area: 81,
         nickname: '',
+        nicknameError: '',
         raw: { units: [] },
       }),
     )
@@ -108,6 +109,7 @@ describe('useBookmarkletImport', () => {
         openId: 'abc123',
         area: 81,
         nickname: 'Fienn',
+        nicknameError: '',
         raw: { units: [] },
       }),
     )
@@ -152,6 +154,7 @@ describe('useBookmarkletImport', () => {
         openId: 'abc123',
         area: 83,
         nickname: 'FIENN',
+        nicknameError: '',
         raw: { units: [] },
       }),
     )
@@ -192,6 +195,7 @@ describe('useBookmarkletImport', () => {
       openId: 'abc123',
       area: 83,
       nickname: '',
+      nicknameError: '',
       raw: { units: [] },
     })
     expect(vi.mocked(assembleRoster).mock.calls[0][0].owned).toHaveLength(10)
@@ -242,6 +246,7 @@ describe('useBookmarkletImport', () => {
         openId: 'abc123',
         area: 81,
         nickname: 'FIENN',
+        nicknameError: '',
         raw: { units: [] },
       }),
     )
