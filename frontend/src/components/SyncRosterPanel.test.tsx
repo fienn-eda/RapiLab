@@ -102,6 +102,33 @@ describe('SyncRosterPanel', () => {
     expect(screen.getByText('1기 동기화됨')).toBeTruthy()
   })
 
+  // 계정 이름 자리에 UID가 뜨는 것은 「이름이 잘못 나온다」로만 보인다 -
+  // 무엇이 실패했고 무엇을 하면 되는지 말해야 유저가 고칠 수 있다.
+  it('닉네임을 못 읽으면 UID로 표시했다고 알리고 할 일을 말한다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
+    vi.mocked(takeSyncInbox).mockResolvedValueOnce({
+      ...RAW_PAYLOAD, open_id: 'abc123', nickname: '',
+    })
+
+    render(<SyncRosterPanel onImport={vi.fn()} />)
+
+    expect(await screen.findByText(/계정 이름을 읽지 못해 UID로 표시했어요/)).toBeTruthy()
+    // 로스터까지 실패한 것으로 읽히면 안 된다.
+    expect(screen.getByText(/로스터는 정상이에요/)).toBeTruthy()
+  })
+
+  it('닉네임이 있으면 그런 안내를 하지 않는다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
+    vi.mocked(takeSyncInbox).mockResolvedValueOnce({
+      ...RAW_PAYLOAD, open_id: 'abc123', nickname: 'Fienn',
+    })
+
+    render(<SyncRosterPanel onImport={vi.fn()} />)
+
+    await screen.findByText(/동기화됨/)
+    expect(screen.queryByText(/계정 이름을 읽지 못해/)).toBeNull()
+  })
+
   it('separates open_id/nickname from the assembled roster when calling onImport', async () => {
     vi.mocked(assembleRoster).mockResolvedValueOnce({ units: [] })
     const onImport = vi.fn()

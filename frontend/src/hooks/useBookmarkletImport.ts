@@ -67,11 +67,20 @@ const isLegacyPayload = (value: unknown): value is RawRosterPayload =>
   Array.isArray((value as RawRosterPayload).recycle_room_researches)
 
 /** 어느 모양으로 왔든 서버 목록 하나로 만든다. 구 payload는 area 81로 조회된
- * 데이터이므로 81을 붙이는 것이 정확하다. */
+ * 데이터이므로 81을 붙이는 것이 정확하다.
+ *
+ * 닉네임은 양쪽 모두 문자열로 맞춘다. `isServerPayload`가 닉네임은 검사하지
+ * 않으므로(있으면 표시용, 없어도 로스터는 멀쩡하다) 필드가 통째로 빠진
+ * payload도 통과하는데, 그대로 흘리면 `undefined`가 프로필에 저장돼 "빈
+ * 닉네임"과 "없는 닉네임"이 갈린다 - 읽는 쪽마다 두 경우를 다 막아야 한다. */
 const toServers = (payload: unknown): ServerPayload[] | null => {
   const p = payload as { servers?: unknown }
   if (Array.isArray(p?.servers)) {
-    return p.servers.every(isServerPayload) ? (p.servers as ServerPayload[]) : null
+    if (!p.servers.every(isServerPayload)) return null
+    return (p.servers as ServerPayload[]).map((server) => ({
+      ...server,
+      nickname: String(server.nickname ?? ''),
+    }))
   }
   if (isLegacyPayload(payload)) {
     return [

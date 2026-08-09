@@ -79,6 +79,23 @@ describe('useBookmarkletImport', () => {
     expect(onRoster).not.toHaveBeenCalled()
   })
 
+  // 닉네임은 로스터와 다른 호출에서 오고 그 실패는 삼켜진다 - 필드가 통째로
+  // 빠진 서버가 와도 로스터는 멀쩡해야 하고, 저장되는 값은 언제나 문자열이어야
+  // 한다. `undefined`가 새면 "빈 닉네임"과 "없는 닉네임"이 갈려 읽는 쪽마다
+  // 두 경우를 다 막아야 한다.
+  it('닉네임이 아예 없는 서버도 빈 문자열로 넘긴다', async () => {
+    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
+    const onRoster = vi.fn()
+    const { nickname: _omitted, ...noNickname } = server(83, 1)
+    inbox({ open_id: 'abc123', servers: [noNickname] })
+
+    renderHook(() => useBookmarkletImport(onRoster))
+
+    await waitFor(() => expect(onRoster).toHaveBeenCalled())
+    expect(onRoster.mock.calls[0][0].nickname).toBe('')
+    expect(onRoster.mock.calls[0][0].area).toBe(83)
+  })
+
   it('payload의 open_id/nickname을 분리해 raw와 함께 onRoster로 넘긴다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()

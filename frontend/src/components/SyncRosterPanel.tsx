@@ -47,7 +47,19 @@ export function SyncRosterPanel({
       const { drafts, warnings } = parseRosterJson(raw)
       onImport({ openId, area, nickname, roster: drafts })
       setSummary(`${drafts.length}기 동기화됨`)
-      setNotes(warnings)
+      // 닉네임은 로스터와 다른 호출(GetUserProfileBasicInfo)에서 오고, 그 실패는
+      // 동기화를 죽이지 않으려고 삼킨다. 삼킨 것을 말하지 않으면 화면이 계정
+      // 이름 자리에 UID를 띄우는데, 유저에게는 그게 「이름이 잘못 나온다」로만
+      // 보이고 무엇을 해야 할지는 알 수 없다.
+      setNotes(
+        nickname
+          ? warnings
+          : [
+              ...warnings,
+              '계정 이름을 읽지 못해 UID로 표시했어요. 로스터는 정상이에요. ' +
+                '아래 북마크릿을 다시 복사해 설치한 뒤 한 번 더 동기화하면 이름이 붙어요.',
+            ],
+      )
     },
     onActivity,
   )
