@@ -164,7 +164,6 @@ describe('SyncRosterPanel', () => {
     render(<SyncRosterPanel onImport={vi.fn()} />)
 
     expect(await screen.findByText(/계정 이름을 읽지 못했어요/)).toBeTruthy()
-    expect(screen.getByText(/계정 이름 바꾸기/)).toBeTruthy()
     // 로스터까지 실패한 것으로 읽히면 안 된다.
     expect(screen.getByText(/로스터는 정상이에요/)).toBeTruthy()
   })

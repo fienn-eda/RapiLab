@@ -106,7 +106,7 @@ export function ProfileSwitcher({
           aria-label="계정 이름 바꾸기"
           onClick={startRename}
         >
-          이름
+          이름 바꾸기
         </button>
       )}
       {renaming && (

@@ -203,6 +203,21 @@ describe('ProfileSwitcher', () => {
     expect(onDelete).not.toHaveBeenCalled()
   })
 
+  // 이름이 UID로 보이는 유저가 화면을 훑어 찾아야 하는 버튼이다. 접근성
+  // 이름만 고정하면 보이는 글자가 조용히 어긋난다.
+  it('이름 바꾸기 버튼은 하는 일을 글자로 보여준다', () => {
+    render(
+      <ProfileSwitcher
+        profiles={[makeProfile({ openId: 'a' })]}
+        activeKey={profileKey('a', 81)}
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: '계정 이름 바꾸기' }).textContent).toBe('이름 바꾸기')
+  })
+
   it('이름 바꾸기를 누르면 현재 이름이 든 입력이 뜨고, 저장하면 그 이름으로 부른다', async () => {
     const onRename = vi.fn()
     const profile = makeProfile({ openId: 'a', nickname: '본계' })
