@@ -37,6 +37,12 @@ interface DraftEditorProps {
    * swapped away all have to be closed: a swap displaces the occupant, so
    * closing the first two alone leaves a back door. */
   fixedSlugs?: string[]
+  /** Which deck the palette's `+` seats into. The palette sits outside this
+   * component, so the choice is the caller's to hold. */
+  activeDeck?: number
+  /** Omit where the player has no say — with one deck there is nothing to
+   * choose, so no picker is drawn and the concept never appears. */
+  onActiveDeckChange?: (deckIndex: number) => void
 }
 
 const TIER_NUMERALS = ['I', 'II', 'III'] as const
@@ -172,6 +178,8 @@ export function DraftEditor({
   burstTiersFor,
   showLocks = true,
   fixedSlugs = [],
+  activeDeck = 0,
+  onActiveDeckChange,
 }: DraftEditorProps) {
   // A slot draws ONE numeral and the rows sort by ONE tier, so both read the
   // nominal tier - the first - and leave the rest to missingBurstTiers.
@@ -215,12 +223,17 @@ export function DraftEditor({
       .map((seat, seatIndex) => ({ seat, seatIndex }))
       .sort((a, b) => (nominalTierFor(a.seat.slug) ?? 4) - (nominalTierFor(b.seat.slug) ?? 4))
 
+  // One deck leaves nothing to choose, and a caller that does not hold the
+  // choice cannot honour it either.
+  const picksDeck = onActiveDeckChange !== undefined && numDecks > 1
+
   return (
     <div className="draft-editor">
       <p className="draft-editor__hint">
-        유닛을 덱 위로 드래그하면 배치돼요. 다른 덱의 빈자리로 드래그하면 옮겨지고,
-        다른 덱의 유닛 위로 드래그하면 둘이 자리를 바꿔요. 슬롯은 소속만 나타내며,
-        버스트 순서는 엔진이 정해요.
+        {picksDeck
+          ? '팔레트에서 + 를 누르면 활성 덱(밝은 테두리)에 앉아요. 덱 이름을 누르면 활성 덱이 바뀌어요. '
+          : '팔레트에서 + 를 누르면 자리에 앉아요. '}
+        슬롯은 소속만 나타내며, 버스트 순서는 엔진이 정해요.
       </p>
       <div className="draft-editor__decks">
         {Array.from({ length: numDecks }, (_, deckIndex) => {
@@ -229,11 +242,11 @@ export function DraftEditor({
           const missing = seats.length > 0 ? missingBurstTiers(seats, burstTiersFor) : []
           return (
             <div
-              className={
-                dropTarget === deckIndex
-                  ? 'draft-editor__deck draft-editor__deck--drop-target'
-                  : 'draft-editor__deck'
-              }
+              className={[
+                'draft-editor__deck',
+                dropTarget === deckIndex ? 'draft-editor__deck--drop-target' : '',
+                picksDeck && activeDeck === deckIndex ? 'draft-editor__deck--active' : '',
+              ].filter(Boolean).join(' ')}
               key={deckIndex}
               // Only preventDefault for a real unit drag: the default action is
               // what refuses the drop, and refusing is right for anything else.
@@ -247,7 +260,24 @@ export function DraftEditor({
               onDrop={(event) => handleDrop(event, deckIndex)}
             >
               <h4 className="draft-editor__deck-title">
-                덱 {deckIndex + 1}
+                {picksDeck ? (
+                  // A toggle, so it reports which deck the next `+` will fill
+                  // rather than reading as a button that does something once.
+                  <button
+                    type="button"
+                    className="draft-editor__deck-pick"
+                    aria-pressed={activeDeck === deckIndex}
+                    // 조사 없이 쓴다 - 「덱 N을/를」은 N을 읽은 소리의 받침이
+                    // 정하는데(1·3·6·7·8은 을, 2·4·5·9는 를), 그걸 위해 숫자
+                    // 읽기 표를 들일 만한 문장이 아니다.
+                    aria-label={`덱 ${deckIndex + 1} 활성 덱으로 선택`}
+                    onClick={() => onActiveDeckChange(deckIndex)}
+                  >
+                    덱 {deckIndex + 1}
+                  </button>
+                ) : (
+                  <>덱 {deckIndex + 1}</>
+                )}
                 {missing.length > 0 && (
                   <span className="draft-editor__deck-warning">
                     {missing.map((tier) => `B${tier}`).join(', ')} 없음

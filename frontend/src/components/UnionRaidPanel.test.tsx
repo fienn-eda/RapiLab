@@ -109,6 +109,22 @@ afterEach(() => {
 })
 
 describe('UnionRaidPanel', () => {
+  // 팔레트의 + 는 「어느 덱에」를 말하지 않는다 - 활성 덱이 그것을 정한다.
+  // 이게 무너지면 전부 덱 1에 쌓이고, 드래그가 죽은 설치형 앱에서는 옮길
+  // 방법도 없어 5덱 편성이라는 기능 자체가 사라진다.
+  it('배치 버튼은 덱 1이 아니라 활성 덱을 채운다', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await screen.findByRole('button', { name: /u0 사용/i })
+    await user.click(screen.getByRole('button', { name: '덱 2 활성 덱으로 선택' }))
+    await user.click(screen.getByRole('button', { name: 'U0 배치' }))
+    expect(screen.getAllByText(/^\d\/5$/).map((e) => e.textContent)).toEqual([
+      '0/5',
+      '1/5',
+      '0/5',
+    ])
+  })
+
   it('기본으로 전투 3회분의 보스 설정을 그린다', () => {
     renderPanel()
     expect(screen.getAllByRole('group', { name: /전투/ })).toHaveLength(3)

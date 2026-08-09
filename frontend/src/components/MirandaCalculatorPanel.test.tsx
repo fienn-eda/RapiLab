@@ -97,6 +97,18 @@ describe('MirandaCalculatorPanel', () => {
       .toBe('miranda-signature')
   })
 
+  // 설치형 앱(WebView2)에서는 드래그가 dragstart 뒤로 죽어 자리에 앉힐 방법이
+  // 없었다. 팔레트의 배치 버튼이 드롭과 같은 결과를 내야 한다.
+  it('배치 버튼만으로 빈자리를 채운다', async () => {
+    renderPanel([state('miranda-signature'), state('crown'), state('ada-wong')])
+    expect(screen.getByText('1/5')).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: '크라운 배치' }))
+    expect(screen.getByText('2/5')).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /크라운 제거/ })).toBeInTheDocument()
+    // 앉은 유닛은 더 이상 앉힐 수 없다.
+    expect(screen.queryByRole('button', { name: '크라운 배치' })).not.toBeInTheDocument()
+  })
+
   it('asks the player to sync when the roster has no Miranda at all', () => {
     renderPanel([state('crown'), state('ada-wong')])
     expect(screen.getByText(/미란다가 로스터에 없어요/)).toBeInTheDocument()

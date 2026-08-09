@@ -100,6 +100,7 @@ export function MirandaCalculatorPanel({
           supportedUnits={supportedUnits}
           usedSlugs={usedSlugs}
           draggable
+          onSeat={(slug) => setDraft((current) => placeUnit(current, 0, slug))}
           investmentFor={investmentFor}
         />
         <div className="draft-layout__decks">

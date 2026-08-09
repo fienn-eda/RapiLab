@@ -46,7 +46,7 @@ import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
 import { BossSummary } from './BossSummary'
 import { DeckResults } from './DeckResults'
-import { DraftEditor, removeUnitBySlug, toRequestDraft } from './DraftEditor'
+import { DraftEditor, placeUnit, removeUnitBySlug, toRequestDraft } from './DraftEditor'
 import { DraftResults } from './DraftResults'
 import { EvaluationResults } from './EvaluationResults'
 import { RaidResults } from './RaidResults'
@@ -189,6 +189,11 @@ export function RecommendPanel({
   // Ephemeral per-request exclusions from the search pool — NOT persisted,
   // reset whenever the active profile changes (see the restore effect).
   const [excludedSlugs, setExcludedSlugs] = useState<Set<string>>(new Set())
+  // Which deck the palette's `+` fills. Clamped at the point of use rather
+  // than resynced when numDecks shrinks: one expression that is always right
+  // beats a second piece of state that can disagree with the first.
+  const [activeDeck, setActiveDeck] = useState(0)
+  const seatDeck = Math.min(activeDeck, numDecks - 1)
   // Set right before a raid/draft raid.submit() call that actually reaches
   // the backend (a cache hit never sets it), and cleared once its success is
   // persisted via onResult - the guard that makes persistence exactly-once
@@ -956,6 +961,7 @@ export function RecommendPanel({
                 supportedUnits={supportedUnits.units}
                 usedSlugs={usedSlugs}
                 draggable
+                onSeat={(slug) => setDraftValue((current) => placeUnit(current, seatDeck, slug))}
                 excludedSlugs={[...excludedSlugs]}
                 onToggleExclude={toggleExclude}
                 investmentFor={investmentFor}
@@ -965,6 +971,8 @@ export function RecommendPanel({
                   numDecks={numDecks}
                   value={draftValue}
                   onChange={setDraftValue}
+                  activeDeck={seatDeck}
+                  onActiveDeckChange={setActiveDeck}
                   portraitFor={portraitFor}
                   nameFor={nameFor}
                   burstTiersFor={burstTiersResolver}

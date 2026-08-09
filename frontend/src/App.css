@@ -1594,6 +1594,8 @@
    whole roster at a glance. */
 .palette__item {
   display: flex;
+  /* Anchors the seat button over the art's lower-left corner. */
+  position: relative;
   /* One width for every chip. Sizing to content makes each chip as wide as its
      own skill numbers - "S1 1" is narrower than "S1 10", and the typeface is
      proportional so even "S1 10" and "S2 10" differ - which leaves the grid
@@ -1670,6 +1672,36 @@
   color: inherit;
   font: inherit;
   cursor: pointer;
+}
+
+/* Seating a unit - the primary action on a draft screen, so it is always
+   visible rather than revealed on hover like the slot's remove button. It sits
+   on the art's lower-left corner: the upper-right is the favorite-item heart,
+   and anchoring from the chip's own padding avoids depending on how wide the
+   portrait happens to be. */
+.palette__seat {
+  position: absolute;
+  left: calc(var(--sp-1) + 2px);
+  bottom: calc(var(--sp-1) + 2px);
+  width: 19px;
+  height: 19px;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  color: var(--accent-contrast);
+  background: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.palette__seat:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
 }
 
 /* Anchors the overload popover. */
@@ -1836,6 +1868,32 @@
 .draft-editor__deck--drop-target {
   border-color: var(--accent);
   background: var(--accent-soft);
+}
+
+/* 팔레트의 + 가 채우는 덱. 드롭 대상과 색을 나눠 쓰되(둘 다 accent) 배경은
+   드래그 쪽에만 둔다 - 활성 덱은 계속 켜져 있어서, 배경까지 칠하면 화면이
+   늘 한 덱만 강조된 것처럼 읽힌다. */
+.draft-editor__deck--active {
+  border-color: var(--accent);
+}
+
+/* 제목 자리에 그대로 앉는 토글 - 덱 이름이 곧 그 덱을 고르는 컨트롤이다. */
+.draft-editor__deck-pick {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+
+.draft-editor__deck-pick[aria-pressed='true'] {
+  color: var(--accent);
+}
+
+.draft-editor__deck-pick:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .draft-editor__deck-title {

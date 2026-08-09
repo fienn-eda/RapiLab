@@ -4,6 +4,34 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 설치형 앱(WebView2)은 `dragstart`만 내고 끝난다 — 브라우저 초록은 앱에 대해 아무 말도 하지 않는다
+
+팔레트에서 덱 빈자리로 끄는 드래그가 솔로 레이드·유니온 레이드·미란다 계산기
+셋 다에서 안 된다는 보고가 들어왔다. 원인은 우리 코드가 아니라 **호스트**였다.
+같은 번들·같은 조작을 호스트만 바꿔 재면:
+
+| 이벤트 | Chromium | WebView2(pywebview 창) |
+|---|---|---|
+| `dragstart` | 온다 | **온다** (`application/x-nikke-slug`도 정상 설정) |
+| `dragenter`/`dragover`/`drop`/`dragend` | 전부 온다 | **하나도 안 온다** |
+| 결과 | 유닛 착석 | 빈 슬롯 그대로 |
+
+드래그는 시작되고 나서 아무 데도 도착하지 않는다. 소스 쪽(`setData`)이 멀쩡해서
+`UnitPalette`/`DraftEditor`를 아무리 읽어도 안 나오고, `fireEvent.drop`을 덱에
+직접 쏘는 jsdom 테스트는 전부 통과한 채였다.
+
+**두 가지가 이 부류를 어렵게 만든다.**
+
+1. **합성 드래그로는 재현되지 않는다.** Playwright의 `dragTo`(CDP
+   `Input.dispatchDragEvent`)는 WebView2에서도 성공한다 — 호스트를 안 타기
+   때문이다. 진짜 `Input.dispatchMouseEvent`로 누름/이동/뗌을 보내야 드러난다.
+2. **브라우저에서 도는 것은 증거가 아니다.** 배포물이 설치형 앱이므로,
+   드래그·클립보드·파일처럼 호스트를 경유하는 UI는 앱 창에서 따로 재야 한다.
+
+포인터 이벤트는 같은 창에서 정상이다(`pointerdown`/`move`/`up`이 다 오고
+`elementFromPoint`가 대상을 정확히 짚는다). 네이티브 드래그 루프가 아예 안 도는
+덕에 마우스 이벤트가 가려지지도 않는다.
+
 ## 미란다 오버로드 임계값은 naive 격차 나누기의 2.5~3배다 - 경계가 「매 사이클」이라서
 
 - 확립: 2026-08-08 (미란다 계산기, Task 7). 어떤 유닛이 웨이크업!3(최종공격력

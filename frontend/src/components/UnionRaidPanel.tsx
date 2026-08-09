@@ -21,7 +21,7 @@ import type { BossProfile } from '../types/recommend'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
-import { DraftEditor, removeUnitBySlug } from './DraftEditor'
+import { DraftEditor, placeUnit, removeUnitBySlug } from './DraftEditor'
 import { EvaluationResults } from './EvaluationResults'
 import { SaveRunButton } from './SaveRunButton'
 import { SavedRunList } from './SavedRunList'
@@ -90,6 +90,12 @@ export function UnionRaidPanel({
   // boss field afterward, while the damage numbers still reflect the old boss.
   const [evaluatedBosses, setEvaluatedBosses] = useState<BossProfile[]>([])
   const [excludedSlugs, setExcludedSlugs] = useState<Set<string>>(new Set())
+  // Which battle's deck the palette's `+` fills. Clamped at the point of use
+  // rather than resynced when numBattles shrinks: one expression that is
+  // always right beats a second piece of state that can disagree with the
+  // first for one render.
+  const [activeDeck, setActiveDeck] = useState(0)
+  const seatDeck = Math.min(activeDeck, numBattles - 1)
   const numBattlesId = useId()
 
   const evaluation = useEvaluateDecks()
@@ -272,6 +278,7 @@ export function UnionRaidPanel({
               supportedUnits={supportedUnits}
               usedSlugs={usedSlugs}
               draggable
+              onSeat={(slug) => setDraftValue((current) => placeUnit(current, seatDeck, slug))}
               excludedSlugs={[...excludedSlugs]}
               onToggleExclude={toggleExclude}
               investmentFor={investmentFor}
@@ -281,6 +288,8 @@ export function UnionRaidPanel({
                 numDecks={numBattles}
                 value={draftValue}
                 onChange={setDraftValue}
+                activeDeck={seatDeck}
+                onActiveDeckChange={setActiveDeck}
                 portraitFor={portraitFor}
                 nameFor={nameFor}
                 burstTiersFor={burstTiersFor}

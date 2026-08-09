@@ -593,3 +593,62 @@ describe('fixedSlugs', () => {
     ).toBeInTheDocument()
   })
 })
+
+// 팔레트의 배치 버튼은 "어느 덱에"를 말하지 않는다 - 그것을 정하는 것이 활성
+// 덱이다. 덱이 하나뿐인 화면에는 고를 것이 없으므로 개념 자체가 안 나타난다.
+describe('활성 덱', () => {
+  const renderDecks = (numDecks: number, activeDeck = 0) => {
+    const onActiveDeckChange = vi.fn()
+    render(
+      <DraftEditor
+        numDecks={numDecks}
+        value={makeEmptyDraft(numDecks)}
+        onChange={vi.fn()}
+        portraitFor={() => null}
+        nameFor={nameFromSlug}
+        burstTiersFor={() => []}
+        activeDeck={activeDeck}
+        onActiveDeckChange={onActiveDeckChange}
+      />,
+    )
+    return onActiveDeckChange
+  }
+
+  it('덱을 눌러 활성 덱을 바꾼다', async () => {
+    const onActiveDeckChange = renderDecks(3)
+    await userEvent.click(screen.getByRole('button', { name: '덱 2 활성 덱으로 선택' }))
+    expect(onActiveDeckChange).toHaveBeenCalledWith(1)
+  })
+
+  it('활성 덱만 눌린 상태로 보고한다', () => {
+    renderDecks(3, 1)
+    expect(screen.getByRole('button', { name: '덱 1 활성 덱으로 선택' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+    expect(screen.getByRole('button', { name: '덱 2 활성 덱으로 선택' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('덱이 하나면 고를 것이 없어 선택 컨트롤을 안 그린다', () => {
+    renderDecks(1)
+    expect(screen.queryByRole('button', { name: /활성 덱으로 선택/ })).not.toBeInTheDocument()
+  })
+
+  // 이 프로퍼티들이 없는 화면(그리고 예전 호출부)은 아무것도 달라지지 않는다.
+  it('활성 덱을 다루지 않는 화면에서는 선택 컨트롤이 없다', () => {
+    render(
+      <DraftEditor
+        numDecks={3}
+        value={makeEmptyDraft(3)}
+        onChange={vi.fn()}
+        portraitFor={() => null}
+        nameFor={nameFromSlug}
+        burstTiersFor={() => []}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: /활성 덱으로 선택/ })).not.toBeInTheDocument()
+  })
+})

@@ -290,3 +290,36 @@ describe('without onToggleExclude', () => {
     expect(chip).not.toHaveAttribute('tabIndex')
   })
 })
+
+// 드래그는 설치형 앱(WebView2)에서 dragstart 뒤로 아무 이벤트도 오지 않아
+// 자리에 앉힐 방법이 되지 못한다. 그래서 배치는 칩 위의 제 버튼이 맡는다 -
+// 칩 본체의 클릭은 이미 "후보 풀에서 빼기"라 겹쳐 쓸 수 없다.
+describe('UnitPalette 클릭 배치', () => {
+  it('onSeat이 주어지면 배치 버튼을 그리고 그 유닛의 슬러그를 넘긴다', async () => {
+    const onSeat = vi.fn()
+    renderPalette({ onSeat })
+    await userEvent.click(screen.getByRole('button', { name: 'Crown 배치' }))
+    expect(onSeat).toHaveBeenCalledWith('crown')
+  })
+
+  it('앉힐 곳이 없는 화면에서는 배치 버튼을 안 그린다', () => {
+    renderPalette()
+    expect(screen.queryByRole('button', { name: /배치/ })).not.toBeInTheDocument()
+  })
+
+  // 앉힐 수 없는 유닛에 버튼을 남기면 눌러도 아무 일이 없다 - draggable이
+  // 같은 두 조건으로 꺼지는 것과 같은 규칙을 따른다.
+  it('이미 앉았거나 풀에서 빠진 유닛에는 배치 버튼이 없다', () => {
+    renderPalette({ onSeat: vi.fn(), usedSlugs: ['crown'], excludedSlugs: ['blanc'] })
+    expect(screen.queryByRole('button', { name: 'Crown 배치' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Blanc 배치' })).not.toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Liter 배치' })).toBeInTheDocument()
+  })
+
+  // 배치가 버튼이 된 덕에 편성이 키보드로도 된다 - 드래그였을 때는 마우스가
+  // 없으면 아예 못 하던 일이다.
+  it('배치 버튼은 탭으로 닿는다', () => {
+    renderPalette({ onSeat: vi.fn() })
+    expect(screen.getByRole('button', { name: 'Crown 배치' })).not.toHaveAttribute('tabIndex', '-1')
+  })
+})

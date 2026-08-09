@@ -63,8 +63,15 @@ interface UnitPaletteProps {
   onToggleExclude?: (slug: string) => void
   /** Draft mode only: slugs already seated in a deck. */
   usedSlugs?: string[]
-  /** Draft mode only: lets an included, unseated unit be dragged onto a deck. */
+  /** Draft mode only: lets an included, unseated unit be dragged onto a deck.
+   * A browser-only convenience - see `onSeat`. */
   draggable?: boolean
+  /** Draft mode only: seats the unit, which is what the `+` on each chip does.
+   * This is the path that has to work: the packaged app's WebView2 fires
+   * `dragstart` and then delivers no dragover or drop at all, so dragging can
+   * never finish there. It also puts seating on the keyboard, which dragging
+   * never could. */
+  onSeat?: (slug: string) => void
   /** Breakthrough/core per slug. Defaults to unknown, which draws the two
    * cells as dashes rather than claiming a unit has none. */
   investmentFor?: (slug: string) => UnitInvestment
@@ -79,6 +86,7 @@ export function UnitPalette({
   onToggleExclude,
   usedSlugs = [],
   draggable = false,
+  onSeat,
   investmentFor = () => NO_INVESTMENT,
 }: UnitPaletteProps) {
   const { portraitFor } = usePortraitManifest()
@@ -192,6 +200,22 @@ export function UnitPalette({
                         </span>
                       </span>
                     </button>
+
+                    {/* Seating is a control of its own, not a second meaning
+                        for the portrait: on the recommend and union tabs the
+                        portrait already toggles pool membership, and one
+                        press cannot mean both. Always visible - it is the
+                        primary action here, not a reveal-on-hover extra. */}
+                    {onSeat && !isExcluded && !isUsed && (
+                      <button
+                        type="button"
+                        className="palette__seat"
+                        aria-label={`${unit.name} 배치`}
+                        onClick={() => onSeat(unit.slug)}
+                      >
+                        <span aria-hidden="true">+</span>
+                      </button>
+                    )}
 
                     {/* Five rows top to bottom: breakthrough, core, then the
                         three skill levels. Breakthrough and core get a cell
