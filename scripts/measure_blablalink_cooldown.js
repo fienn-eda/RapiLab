@@ -19,7 +19,8 @@
 //
 // **쓰는 법.**
 //   1. blablalink.com에 로그인한 탭에서 F12 → 콘솔.
-//   2. 아래 OPEN_ID / AREA를 자기 값으로 채운다(앱 동기화 탭에 둘 다 있다).
+//   2. 아래 ACCOUNT에 ShiftyPad 공유 URL을 그대로 붙이고(open id만 알면 그것도
+//      된다), AREA를 그 계정의 서버로 맞춘다.
 //   3. 파일 전체를 붙여넣는다. all()이 자동으로 돌고 끝에 표를 찍는다(약 7분).
 //   4. 한 단계만 다시 보려면 `__probe.roundA()` 처럼 따로 부른다.
 //   5. 표를 그대로 복사해 오면 된다.
@@ -31,7 +32,7 @@
 // 계정 값은 찍지 않는다. 남기는 것은 code · msg · 응답의 키 이름 · 「이름이
 // 비었는지」뿐이다.
 
-const OPEN_ID = '' // 예: '123456789012345678'
+const ACCOUNT = '' // ShiftyPad 공유 URL 통째로, 또는 open id 숫자만
 const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
 
 // ---------------------------------------------------------------------------
@@ -40,8 +41,20 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
   if (location.origin !== 'https://www.blablalink.com') {
     throw new Error('blablalink.com 탭의 콘솔에서 실행해주세요.')
   }
+  // `frontend/src/lib/shareUrl.ts`와 같은 규칙(uid = "<앞자리>-<open id>"의 base64).
+  // 콘솔에 붙여넣는 물건이라 앱 코드를 import할 수 없어 여기서 한 번 더 푼다.
+  const OPEN_ID = (() => {
+    const raw = ACCOUNT.trim()
+    if (/^\d{6,}$/.test(raw)) return raw
+    try {
+      const uid = new URL(raw).searchParams.get('uid')
+      return uid ? (atob(uid).split('-').at(-1) ?? '') : ''
+    } catch {
+      return ''
+    }
+  })()
   if (!/^\d{6,}$/.test(OPEN_ID)) {
-    throw new Error('맨 위 OPEN_ID를 자기 open id로 채워주세요(숫자만).')
+    throw new Error('맨 위 ACCOUNT에 ShiftyPad 공유 URL이나 open id를 넣어주세요.')
   }
 
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
