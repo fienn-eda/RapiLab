@@ -91,14 +91,6 @@ export function ProfileSwitcher({
           )
         })}
       </select>
-      <button
-        type="button"
-        className="btn btn--icon"
-        aria-label={`${activeLabel} 프로필 삭제`}
-        onClick={handleDelete}
-      >
-        삭제
-      </button>
       {activeKey !== null && (
         <button
           type="button"
@@ -109,6 +101,16 @@ export function ProfileSwitcher({
           이름 바꾸기
         </button>
       )}
+      {/* 삭제가 맨 오른쪽에 선다 - 되돌릴 수 없는 조작이라 자주 쓰는 것 옆에
+          붙여 두면 오눌림이 는다. */}
+      <button
+        type="button"
+        className="btn btn--icon"
+        aria-label={`${activeLabel} 프로필 삭제`}
+        onClick={handleDelete}
+      >
+        삭제
+      </button>
       {renaming && (
         <div className="profile-switcher__rename">
           <label className="field__label" htmlFor={renameFieldId}>

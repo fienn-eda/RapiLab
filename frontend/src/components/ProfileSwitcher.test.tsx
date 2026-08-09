@@ -218,6 +218,23 @@ describe('ProfileSwitcher', () => {
     expect(screen.getByRole('button', { name: '계정 이름 바꾸기' }).textContent).toBe('이름 바꾸기')
   })
 
+  // 삭제는 되돌릴 수 없는 조작이라 맨 오른쪽에 선다 - 자주 쓰는 이름 바꾸기
+  // 옆에 붙여 두면 오눌림이 는다.
+  it('삭제 버튼이 이름 바꾸기보다 뒤에 온다', () => {
+    render(
+      <ProfileSwitcher
+        profiles={[makeProfile({ openId: 'a' })]}
+        activeKey={profileKey('a', 81)}
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    )
+    const rename = screen.getByRole('button', { name: '계정 이름 바꾸기' })
+    const remove = screen.getByRole('button', { name: /프로필 삭제$/ })
+    expect(rename.compareDocumentPosition(remove) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  })
+
   it('이름 바꾸기를 누르면 현재 이름이 든 입력이 뜨고, 저장하면 그 이름으로 부른다', async () => {
     const onRename = vi.fn()
     const profile = makeProfile({ openId: 'a', nickname: '본계' })
