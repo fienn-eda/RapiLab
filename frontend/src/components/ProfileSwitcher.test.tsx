@@ -29,6 +29,7 @@ describe('ProfileSwitcher', () => {
         activeKey={null}
         onSwitch={vi.fn()}
         onDelete={vi.fn()}
+        onRename={vi.fn()}
       />,
     )
     expect(container).toBeEmptyDOMElement()
@@ -45,6 +46,7 @@ describe('ProfileSwitcher', () => {
         activeKey={profileKey('b', 81)}
         onSwitch={vi.fn()}
         onDelete={vi.fn()}
+        onRename={vi.fn()}
       />,
     )
     expect(screen.getByRole('option', { name: '본계 (JP)' })).toBeInTheDocument()
@@ -60,6 +62,7 @@ describe('ProfileSwitcher', () => {
         activeKey={profileKey('no-nick', 81)}
         onSwitch={vi.fn()}
         onDelete={vi.fn()}
+        onRename={vi.fn()}
       />,
     )
     expect(screen.getByRole('option', { name: 'no-nick (JP)' })).toBeInTheDocument()
@@ -76,6 +79,7 @@ describe('ProfileSwitcher', () => {
         activeKey="111111:83"
         onSwitch={vi.fn()}
         onDelete={vi.fn()}
+        onRename={vi.fn()}
       />,
     )
     expect(screen.getByRole('option', { name: 'FIENN (JP)' })).toBeInTheDocument()
@@ -91,6 +95,7 @@ describe('ProfileSwitcher', () => {
         activeKey=":83"
         onSwitch={vi.fn()}
         onDelete={vi.fn()}
+        onRename={vi.fn()}
       />,
     )
     expect(screen.getByRole('option', { name: '이름 없는 계정 (KR)' })).toBeInTheDocument()
@@ -109,6 +114,7 @@ describe('ProfileSwitcher', () => {
         activeKey={profileKey('a', 81)}
         onSwitch={onSwitch}
         onDelete={vi.fn()}
+        onRename={vi.fn()}
       />,
     )
     await user.selectOptions(screen.getByRole('combobox'), '부계 (JP)')
@@ -126,6 +132,7 @@ describe('ProfileSwitcher', () => {
         activeKey={profileKey('a', 81)}
         onSwitch={vi.fn()}
         onDelete={onDelete}
+        onRename={vi.fn()}
       />,
     )
     await user.click(screen.getByRole('button', { name: /삭제/i }))
@@ -150,6 +157,7 @@ describe('ProfileSwitcher', () => {
         activeKey={profileKey('', 81)}
         onSwitch={vi.fn()}
         onDelete={onDelete}
+        onRename={vi.fn()}
       />,
     )
     await user.click(screen.getByRole('button', { name: /삭제/i }))
@@ -168,6 +176,7 @@ describe('ProfileSwitcher', () => {
         activeKey={profileKey('', 81)}
         onSwitch={vi.fn()}
         onDelete={vi.fn()}
+        onRename={vi.fn()}
       />,
     )
     expect(screen.getByRole('option', { name: '이름 없는 계정 (JP)' })).toBeInTheDocument()
@@ -187,9 +196,79 @@ describe('ProfileSwitcher', () => {
         activeKey={profileKey('a', 81)}
         onSwitch={vi.fn()}
         onDelete={onDelete}
+        onRename={vi.fn()}
       />,
     )
     await user.click(screen.getByRole('button', { name: /삭제/i }))
     expect(onDelete).not.toHaveBeenCalled()
+  })
+
+  it('이름 바꾸기를 누르면 현재 이름이 든 입력이 뜨고, 저장하면 그 이름으로 부른다', async () => {
+    const onRename = vi.fn()
+    const profile = makeProfile({ openId: 'a', nickname: '본계' })
+    render(
+      <ProfileSwitcher
+        profiles={[profile]}
+        activeKey={profileKey('a', 81)}
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+        onRename={onRename}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: '계정 이름 바꾸기' }))
+    const input = screen.getByRole('textbox', { name: '계정 이름' })
+    expect((input as HTMLInputElement).value).toBe('본계')
+    await userEvent.clear(input)
+    await userEvent.type(input, 'JP 본계')
+    await userEvent.click(screen.getByRole('button', { name: '저장' }))
+    expect(onRename).toHaveBeenCalledWith('a:81', 'JP 본계')
+  })
+
+  // 이름을 아직 못 읽은 계정이 이 기능이 가장 필요한 계정이다. 그때 입력이
+  // UID로 채워져 있으면 유저가 그것을 지우는 것부터 해야 한다.
+  it('이름이 없는 계정은 빈 입력으로 시작한다', async () => {
+    render(
+      <ProfileSwitcher
+        profiles={[makeProfile({ openId: 'a', nickname: '' })]}
+        activeKey={profileKey('a', 81)}
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: '계정 이름 바꾸기' }))
+    expect((screen.getByRole('textbox', { name: '계정 이름' }) as HTMLInputElement).value).toBe('')
+  })
+
+  it('빈 이름으로는 저장하지 않는다', async () => {
+    const onRename = vi.fn()
+    render(
+      <ProfileSwitcher
+        profiles={[makeProfile({ openId: 'a', nickname: '본계' })]}
+        activeKey={profileKey('a', 81)}
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+        onRename={onRename}
+      />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: '계정 이름 바꾸기' }))
+    await userEvent.clear(screen.getByRole('textbox', { name: '계정 이름' }))
+    await userEvent.click(screen.getByRole('button', { name: '저장' }))
+    expect(onRename).not.toHaveBeenCalled()
+  })
+
+  // 활성 계정이 없는 상태에서 이름 바꾸기 버튼이 눌리면 어느 계정을 바꿀지가
+  // 없다. 삭제 버튼이 activeKey === null에서 아무것도 안 하는 것과 같은 이유다.
+  it('활성 계정이 없으면 이름 바꾸기 버튼이 없다', () => {
+    render(
+      <ProfileSwitcher
+        profiles={[makeProfile({ openId: 'a' })]}
+        activeKey={null}
+        onSwitch={vi.fn()}
+        onDelete={vi.fn()}
+        onRename={vi.fn()}
+      />,
+    )
+    expect(screen.queryByRole('button', { name: '계정 이름 바꾸기' })).toBeNull()
   })
 })

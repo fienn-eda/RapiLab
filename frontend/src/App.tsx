@@ -53,6 +53,7 @@ function App() {
     upsertProfile,
     switchProfile,
     deleteProfile,
+    renameProfile,
     saveResult,
     saveRun,
     renameRun,
@@ -159,6 +160,7 @@ function App() {
           activeKey={state.activeKey}
           onSwitch={switchProfile}
           onDelete={deleteProfile}
+          onRename={(key, name) => renameProfile({ key, name })}
         />
       </header>
 

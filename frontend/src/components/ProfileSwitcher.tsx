@@ -3,6 +3,7 @@
 // merges them. With no profiles yet, App shows its own empty state instead,
 // so this renders nothing.
 
+import { useId, useState } from 'react'
 import { profileKey, type Profile } from '../types/profile'
 import { serverLabel } from '../types/server'
 
@@ -11,6 +12,8 @@ interface ProfileSwitcherProps {
   activeKey: string | null
   onSwitch: (key: string) => void
   onDelete: (key: string) => void
+  /** 계정 이름은 유저의 라벨이다 - 동기화가 못 읽어 오면 여기서 붙인다. */
+  onRename: (key: string, name: string) => void
 }
 
 const UNNAMED = '이름 없는 계정'
@@ -18,7 +21,8 @@ const UNNAMED = '이름 없는 계정'
 /** 프로필은 닉네임으로 불리고, 닉네임을 못 읽은 동기화는 open_id가 대신 선다.
  * 둘 다 없는 동기화가 남긴 프로필도 골라내 지울 수 있어야 하므로 이름이 필요하다.
  * 서버를 뒤에 붙이는 이유: 한 사람이 두 서버에 같은 닉네임으로 있을 수 있고,
- * 그러면 닉네임만으로는 어느 쪽인지 알 수 없다. */
+ * 그러면 닉네임만으로는 어느 쪽인지 알 수 없다. 이름은 유저가 직접 붙일 수
+ * 있다 - 동기화가 못 읽어 오는 경우가 정상 경로다. */
 const labelFor = (profile: Profile): string =>
   `${profile.nickname || profile.openId || UNNAMED} (${serverLabel(profile.area)})`
 
@@ -27,7 +31,12 @@ export function ProfileSwitcher({
   activeKey,
   onSwitch,
   onDelete,
+  onRename,
 }: ProfileSwitcherProps) {
+  const [renaming, setRenaming] = useState(false)
+  const [renameValue, setRenameValue] = useState('')
+  const renameFieldId = useId()
+
   if (profiles.length === 0) return null
 
   const active = profiles.find((p) => profileKey(p.openId, p.area) === activeKey)
@@ -41,6 +50,18 @@ export function ProfileSwitcher({
     if (window.confirm(`"${activeLabel}" 프로필을 삭제할까요? 동기화된 로스터와 캐시된 결과가 함께 삭제돼요.`)) {
       onDelete(activeKey)
     }
+  }
+
+  const startRename = () => {
+    setRenameValue(active?.nickname ?? '')
+    setRenaming(true)
+  }
+
+  const commitRename = () => {
+    const name = renameValue.trim()
+    if (name === '' || activeKey === null) return
+    onRename(activeKey, name)
+    setRenaming(false)
   }
 
   return (
@@ -71,6 +92,39 @@ export function ProfileSwitcher({
       >
         삭제
       </button>
+      {activeKey !== null && (
+        <button
+          type="button"
+          className="btn btn--icon"
+          aria-label="계정 이름 바꾸기"
+          onClick={startRename}
+        >
+          이름
+        </button>
+      )}
+      {renaming && (
+        <div className="profile-switcher__rename">
+          <label className="field__label" htmlFor={renameFieldId}>
+            계정 이름
+          </label>
+          <input
+            id={renameFieldId}
+            className="field__input"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') commitRename()
+              if (e.key === 'Escape') setRenaming(false)
+            }}
+          />
+          <button type="button" className="btn btn--primary" onClick={commitRename}>
+            저장
+          </button>
+          <button type="button" className="btn" onClick={() => setRenaming(false)}>
+            취소
+          </button>
+        </div>
+      )}
     </div>
   )
 }

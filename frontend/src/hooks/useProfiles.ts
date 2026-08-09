@@ -14,6 +14,7 @@ import {
   saveResult as pureSaveResult,
   saveRun as pureSaveRun,
   renameRun as pureRenameRun,
+  renameProfile as pureRenameProfile,
   deleteRun as pureDeleteRun,
   toggleExcluded as pureToggleExcluded,
   switchProfile,
@@ -37,6 +38,8 @@ export interface Profiles {
   }) => void
   switchProfile: (key: string) => void
   deleteProfile: (key: string) => void
+  /** 계정 이름 바꾸기. 이름은 유저의 라벨이라 이것만이 이름을 바꾼다. */
+  renameProfile: (args: { key: string; name: string }) => void
   saveResult: (args: {
     key: string
     hash: string
@@ -142,6 +145,10 @@ export const useProfiles = (): Profiles => {
     setState((current) => deleteProfile(current, key))
   }, [])
 
+  const renameAccount = useCallback((args: { key: string; name: string }) => {
+    setState((current) => pureRenameProfile(current, args.key, args.name))
+  }, [])
+
   const save = useCallback(
     (args: { key: string; hash: string; result: StoredResult; inputs: StoredInputs }) => {
       setState((current) =>
@@ -185,6 +192,7 @@ export const useProfiles = (): Profiles => {
     upsertProfile: upsert,
     switchProfile: switchTo,
     deleteProfile: remove,
+    renameProfile: renameAccount,
     saveResult: save,
     saveRun: keepRun,
     renameRun: rename,
