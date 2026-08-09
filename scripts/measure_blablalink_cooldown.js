@@ -99,6 +99,48 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
     return hits
   }
 
+  /**
+   * **이름 조회 시도를 새로고침 너머까지 기억한다.** 이 조사가 반복해서 막힌
+   * 지점이 「직전 시도가 언제였나」였다 - 거절된 시도도 창을 갱신하는 것으로
+   * 보이는데, 그 시각을 사람의 기억에 의존하면 오염된 런과 진짜 음성을 구분할
+   * 수 없다. localStorage에 남겨 모든 판독에 경과 시간이 따라붙게 한다.
+   *
+   * 시각과 성공 여부만 담는다 - 계정 값은 들어가지 않는다.
+   */
+  const ATTEMPTS_KEY = '__probe_basic_attempts'
+  const readAttempts = () => {
+    try {
+      return JSON.parse(localStorage.getItem(ATTEMPTS_KEY) || '[]')
+    } catch {
+      return []
+    }
+  }
+  const rememberAttempt = (ok) => {
+    const kept = readAttempts().slice(-49)
+    kept.push({ t: Date.now(), ok })
+    localStorage.setItem(ATTEMPTS_KEY, JSON.stringify(kept))
+  }
+  const sinceLastAttempt = () => {
+    const kept = readAttempts()
+    return kept.length ? (Date.now() - kept[kept.length - 1].t) / 1000 : null
+  }
+  const forget = () => {
+    localStorage.removeItem(ATTEMPTS_KEY)
+    console.log('이름 조회 시도 기록을 지웠습니다.')
+  }
+
+  const attemptSummary = () => {
+    const kept = readAttempts()
+    if (!kept.length) return '이름 조회 시도 기록이 없습니다(이 브라우저에서 처음).'
+    const last = kept[kept.length - 1]
+    const recent = kept.filter((a) => Date.now() - a.t < 600000)
+    return (
+      `직전 이름 조회 시도: ${((Date.now() - last.t) / 1000).toFixed(0)}초 전` +
+      `(${last.ok ? '통과' : '거절'}). 최근 10분간 ${recent.length}회` +
+      `(거절 ${recent.filter((a) => !a.ok).length}).`
+    )
+  }
+
   // 북마크릿과 같은 간격을 쓴다 - 여기서만 더 여유를 주면 재는 대상이 달라진다.
   const GAP = 350
   let lastCall = 0
@@ -107,7 +149,19 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
     const wait = GAP - (Date.now() - lastCall)
     if (wait > 0) await sleep(wait)
     lastCall = Date.now()
-    const row = { phase, at: at(), ep, code: null, msg: '', keys: '', nameHits: '', nickname: '' }
+    const isBasic = ep === 'GetUserProfileBasicInfo'
+    const gap = isBasic ? sinceLastAttempt() : null
+    const row = {
+      phase,
+      at: at(),
+      ep,
+      sinceLast: gap === null ? '' : gap.toFixed(0) + 's',
+      code: null,
+      msg: '',
+      keys: '',
+      nameHits: '',
+      nickname: '',
+    }
     try {
       const r = await fetch('https://api.blablalink.com/api/game/proxy/Game/' + ep, {
         method: 'POST',
@@ -120,13 +174,15 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
       row.msg = j.msg || ''
       row.keys = Object.keys(j.data || {}).join('|')
       row.nameHits = scanForName(j.data).join(' , ')
-      if (ep === 'GetUserProfileBasicInfo') {
+      if (isBasic) {
         const bi = (j.data && j.data.basic_info) || {}
         row.nickname = (bi.nickname || bi.role_name) ? '있음' : '빔'
+        rememberAttempt(j.code === 0)
       }
       log.push(row)
       console.log(
         `[${row.at}] ${phase} ${ep} → code ${j.code} ${row.msg}` +
+          (row.sinceLast ? ` (직전 시도로부터 ${row.sinceLast})` : '') +
           (row.nameHits ? ` | 이름 후보: ${row.nameHits}` : ''),
       )
       return j.code === 0 ? j.data : null
@@ -412,10 +468,13 @@ const AREA = 83 // 81=JP 82=NA 83=KR 84=GL 85=SEA
     freshLoad,
     burst,
     measureWindow,
+    attemptSummary,
+    forget,
     table,
     log,
     all,
   }
-  console.log('__probe 준비됨. freshLoad()가 지금 돕니다. 이어서 burst() / measureWindow() / all()')
+  console.log(attemptSummary())
+  console.log('__probe 준비됨. freshLoad()가 지금 돕니다. 이어서 roundB() / burst() / all()')
   return freshLoad()
 })()
