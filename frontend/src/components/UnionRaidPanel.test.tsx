@@ -71,6 +71,7 @@ const unionRotation: RaidRotation = {
 
 const noKeeping = {
   savedRuns: [],
+  excludedSlugs: [],
   onSaveRun: () => true,
   onRenameRun: () => {},
   onDeleteRun: () => {},

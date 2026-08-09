@@ -13,6 +13,7 @@ const makeProfile = (overrides: Partial<Profile> = {}): Profile => ({
   lastResultHash: null,
   lastInputs: null,
   savedRuns: [],
+  excludedSlugs: [],
   ...overrides,
 })
 

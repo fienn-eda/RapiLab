@@ -197,7 +197,7 @@ export function RecommendPanel({
   // A value the effect below can depend on - a fresh Set every render would
   // re-run it forever.
   const excludedKey = [...excludedSlugs].sort().join(',')
-  // Which deck the palette's `+` fills. Clamped at the point of use rather
+  // Which deck a palette press fills. Clamped at the point of use rather
   // than resynced when numDecks shrinks: one expression that is always right
   // beats a second piece of state that can disagree with the first.
   const [activeDeck, setActiveDeck] = useState(0)

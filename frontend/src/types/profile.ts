@@ -98,6 +98,9 @@ export interface Profile {
   lastResultHash: string | null
   lastInputs: StoredInputs | null
   savedRuns: SavedRun[]
+  /** 추천에 쓰지 않기로 한 니케들. 계정마다 하나이고(니케 풀 탭에서 정한다)
+   * 솔로·유니온이 함께 읽는다. */
+  excludedSlugs: string[]
 }
 
 export interface ProfilesState {
@@ -156,6 +159,7 @@ export const upsertProfile = (
         lastResultHash: null,
         lastInputs: null,
         savedRuns: [],
+        excludedSlugs: [],
       }
 
   return {
@@ -264,6 +268,18 @@ export const deleteRun = (state: ProfilesState, key: string, id: string): Profil
     savedRuns: profile.savedRuns.filter((run) => run.id !== id),
   }
   return { ...state, profiles: { ...state.profiles, [key]: updated } }
+}
+
+/** 이 니케를 추천에서 뺄지 뒤집는다. 로스터에 없는 슬러그도 그대로 담는다 -
+ * 동기화가 잠깐 실패해 로스터가 짧아졌다고 판단까지 잃을 이유는 없다. */
+export const toggleExcluded = (state: ProfilesState, key: string, slug: string): ProfilesState => {
+  const profile = state.profiles[key]
+  if (!profile) return state
+
+  const excludedSlugs = profile.excludedSlugs.includes(slug)
+    ? profile.excludedSlugs.filter((s) => s !== slug)
+    : [...profile.excludedSlugs, slug]
+  return { ...state, profiles: { ...state.profiles, [key]: { ...profile, excludedSlugs } } }
 }
 
 /** 한 탭이 보여줄 보관물, 최신순. */

@@ -118,6 +118,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })
@@ -148,6 +149,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })
@@ -203,6 +205,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })
@@ -221,10 +224,9 @@ describe('App', () => {
     expect(screen.queryByRole('radio', { name: '철갑아일랜드 이터' })).not.toBeInTheDocument()
   })
 
-  // 미사용 니케는 그 계정의 로스터를 두고 한 판단이다. 계정을 바꿔도 남아
-  // 있으면, 있지도 않은 니케를 빼 둔 채로 시작하게 된다. (예전에는
-  // RecommendPanel이 자기 상태로 들고 있었고 프로필 복원 이펙트가 비웠다.)
-  it('계정을 바꾸면 미사용 표시가 비워진다', async () => {
+  // 미사용 니케는 그 계정의 로스터를 두고 한 판단이라 계정에 붙어 저장된다.
+  // 계정을 오가도 서로 섞이지 않고, 앱을 다시 켜도 남아야 한다.
+  it('미사용 표시는 계정마다 따로 남고 다시 켜도 살아 있다', async () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue([...SUPPORTED])
     seedProfiles({
@@ -239,6 +241,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
         [ACCT_B]: {
           openId: 'acct-b',
@@ -249,11 +252,12 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })
 
-    render(<App />)
+    const { unmount } = render(<App />)
     const chip = await screen.findByRole('button', { name: 'Red Hood 사용' })
     await user.click(chip)
     expect(screen.getByRole('button', { name: 'Red Hood 사용' })).toHaveAttribute(
@@ -261,11 +265,25 @@ describe('App', () => {
       'false',
     )
 
+    // 부계는 같은 니케를 갖고 있지만 뺀 적이 없다.
     await user.selectOptions(screen.getByLabelText('계정'), '부계 (JP)')
-
     expect(screen.getByRole('button', { name: 'Red Hood 사용' })).toHaveAttribute(
       'aria-pressed',
       'true',
+    )
+
+    // 본계로 돌아오면 그 판단이 그대로 있고, 앱을 다시 켜도 마찬가지다.
+    await user.selectOptions(screen.getByLabelText('계정'), '본계 (JP)')
+    expect(screen.getByRole('button', { name: 'Red Hood 사용' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+
+    unmount()
+    render(<App />)
+    expect(await screen.findByRole('button', { name: 'Red Hood 사용' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
     )
   })
 
@@ -284,6 +302,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
         [ACCT_B]: {
           openId: 'acct-b',
@@ -294,6 +313,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })
@@ -327,6 +347,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
         [ACCT_B]: {
           openId: 'acct-b',
@@ -337,6 +358,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })
@@ -390,6 +412,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
         [ACCT_B]: {
           openId: 'acct-b',
@@ -400,6 +423,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })
@@ -436,6 +460,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })
@@ -482,6 +507,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })
@@ -508,6 +534,7 @@ describe('App', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })
@@ -538,6 +565,7 @@ describe('계산기 탭', () => {
           lastResultHash: null,
           lastInputs: null,
           savedRuns: [],
+          excludedSlugs: [],
         },
       },
     })

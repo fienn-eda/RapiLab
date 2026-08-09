@@ -3,7 +3,8 @@ import {
   emptyProfilesState, upsertProfile, switchProfile, deleteProfile, activeProfile,
   saveResult, getResult, profileKey, RESULTS_CAP,
   saveRun, renameRun, deleteRun, runsForTab, makeRunId, SAVED_RUNS_CAP,
-  type StoredResult, type StoredInputs, type SavedRun,
+  toggleExcluded,
+  type StoredResult, type StoredInputs, type SavedRun, type ProfilesState,
 } from './profile'
 import type { NikkeDraft } from './nikkeDraft'
 
@@ -293,5 +294,50 @@ describe('makeRunId', () => {
 
   it('같은 밀리초에 이미 있으면 다음 번호로 넘어간다', () => {
     expect(makeRunId(1000, [soloRun({ id: '1000-0', savedAt: 1000 })])).toBe('1000-1')
+  })
+})
+
+// 미사용 니케는 계정에 붙는다 - 앱을 다시 켜도, 계정을 오갔다 와도 남아야 한다.
+describe('toggleExcluded', () => {
+  const withProfile = (excludedSlugs: string[]): ProfilesState => ({
+    activeKey: 'A:81',
+    profiles: {
+      'A:81': {
+        openId: 'A',
+        area: 81,
+        nickname: 'A',
+        roster: [],
+        results: {},
+        lastResultHash: null,
+        lastInputs: null,
+        savedRuns: [],
+        excludedSlugs,
+      },
+    },
+  })
+
+  it('없던 슬러그는 넣고, 있던 슬러그는 뺀다', () => {
+    const added = toggleExcluded(withProfile([]), 'A:81', 'crown')
+    expect(added.profiles['A:81'].excludedSlugs).toEqual(['crown'])
+    expect(toggleExcluded(added, 'A:81', 'crown').profiles['A:81'].excludedSlugs).toEqual([])
+  })
+
+  it('다른 계정의 목록은 건드리지 않는다', () => {
+    const two: ProfilesState = {
+      activeKey: 'A:81',
+      profiles: {
+        ...withProfile(['crown']).profiles,
+        'B:81': { ...withProfile([]).profiles['A:81'], openId: 'B', excludedSlugs: ['liter'] },
+      },
+    }
+    const next = toggleExcluded(two, 'A:81', 'blanc')
+    expect(next.profiles['A:81'].excludedSlugs).toEqual(['crown', 'blanc'])
+    expect(next.profiles['B:81'].excludedSlugs).toEqual(['liter'])
+  })
+
+  // 동기화가 잠깐 실패해 로스터가 짧아졌다고 판단까지 잃을 이유는 없다.
+  it('없는 프로필 키에는 아무 일도 하지 않는다', () => {
+    const state = withProfile([])
+    expect(toggleExcluded(state, 'nope:81', 'crown')).toBe(state)
   })
 })

@@ -103,7 +103,10 @@ export function MirandaCalculatorPanel({
           onSeat={(slug) => setDraft((current) => placeUnit(current, 0, slug))}
           investmentFor={investmentFor}
         />
-        <div className="draft-layout__decks">
+        {/* 결과는 편성 옆, 계산 버튼 바로 아래다. 카드 맨 아래에 두면 팔레트가
+            길어질수록 답이 화면 밖으로 밀려나, 눌러 놓고 스크롤을 내려야
+            비로소 보인다. */}
+        <div className="draft-layout__decks draft-layout__decks--with-result">
           <DraftEditor
             numDecks={1}
             value={draft}
@@ -119,18 +122,17 @@ export function MirandaCalculatorPanel({
               {busy ? '계산 중…' : '계산'}
             </button>
           </div>
+          {busy && (
+            <p className="recommend-form__progress" role="status">
+              시뮬레이션을 돌리는 중이에요 — 몇 초 걸려요.
+            </p>
+          )}
+          {error && <p className="field__error" role="alert">{error}</p>}
+          {result && (
+            <MirandaTargets result={result} portraitFor={portraitFor} nameFor={nameFor} />
+          )}
         </div>
       </div>
-
-      {busy && (
-        <p className="recommend-form__progress" role="status">
-          시뮬레이션을 돌리는 중이에요 — 몇 초 걸려요.
-        </p>
-      )}
-      {error && <p className="field__error" role="alert">{error}</p>}
-      {result && (
-        <MirandaTargets result={result} portraitFor={portraitFor} nameFor={nameFor} />
-      )}
     </section>
   )
 }

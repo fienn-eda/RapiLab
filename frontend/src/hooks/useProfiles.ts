@@ -15,6 +15,7 @@ import {
   saveRun as pureSaveRun,
   renameRun as pureRenameRun,
   deleteRun as pureDeleteRun,
+  toggleExcluded as pureToggleExcluded,
   switchProfile,
   upsertProfile,
   type Profile,
@@ -46,6 +47,8 @@ export interface Profiles {
   saveRun: (args: { key: string; run: SavedRun }) => boolean
   renameRun: (args: { key: string; id: string; name: string }) => void
   deleteRun: (args: { key: string; id: string }) => void
+  /** 니케 풀 탭의 미사용 토글. 계정에 붙어 저장된다. */
+  toggleExcluded: (args: { key: string; slug: string }) => void
 }
 
 const STORAGE_KEY = 'nikke-profiles'
@@ -63,7 +66,10 @@ const LEGACY_ROSTER_KEY = 'nikke-roster'
 const migrate = (raw: unknown): ProfilesState => {
   const state = raw as Partial<ProfilesState> & {
     activeOpenId?: string | null
-    profiles?: Record<string, Profile & { area?: number; savedRuns?: SavedRun[] }>
+    profiles?: Record<
+      string,
+      Profile & { area?: number; savedRuns?: SavedRun[]; excludedSlugs?: string[] }
+    >
   }
   const profiles = state.profiles ?? {}
 
@@ -74,8 +80,9 @@ const migrate = (raw: unknown): ProfilesState => {
       ...profile,
       area,
       // 보관 목록이 생기기 전에 저장된 프로필은 이 필드가 없다. 여기서 한 번
-      // 채우면 읽는 쪽마다 `?? []`를 흩뿌리지 않아도 된다.
+      // 채우면 읽는 쪽마다 `?? []`를 흩뿌리지 않아도 된다. 미사용 목록도 같다.
       savedRuns: profile.savedRuns ?? [],
+      excludedSlugs: profile.excludedSlugs ?? [],
     }
   }
 
@@ -168,6 +175,10 @@ export const useProfiles = (): Profiles => {
     setState((current) => pureDeleteRun(current, args.key, args.id))
   }, [])
 
+  const flipExcluded = useCallback((args: { key: string; slug: string }) => {
+    setState((current) => pureToggleExcluded(current, args.key, args.slug))
+  }, [])
+
   return {
     state,
     activeProfile: computeActiveProfile(state),
@@ -178,5 +189,6 @@ export const useProfiles = (): Profiles => {
     saveRun: keepRun,
     renameRun: rename,
     deleteRun: removeRun,
+    toggleExcluded: flipExcluded,
   }
 }

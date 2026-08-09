@@ -1771,13 +1771,33 @@
    itself: drain the portrait's colour and mute the whole card. Excluded units
    stay legible - the decision to drop one gets revisited against the same
    numbers that prompted it. */
+/* 흐리게 하는 대상은 칩의 내용물이지 칩 자체가 아니다. `opacity`를 .palette__item
+   에 걸면 그 칩이 제 쌓임 맥락을 만들어 - 1 미만 opacity는 언제나 그렇다 -
+   안에 있는 오버로드 팝오버가 z-index를 아무리 올려도 그 맥락 밖으로 못 나간다.
+   그래서 뺀 니케에 마우스를 올리면 팝오버가 아랫줄 초상화에 가렸다. */
 .palette__item--excluded {
-  opacity: 0.5;
   border-style: dashed;
+}
+
+/* 흐리게 하는 것은 초상화와 수치이지 그 둘을 감싼 상자가 아니다. `.palette__figure`
+   에 걸면 그 안에 사는 오버로드 팝오버까지 반투명해지는데, opacity는 자식에서
+   되돌릴 수 없다(부모가 그린 결과 전체에 곱해진다) - 읽으라고 띄우는 것이 흐려진다. */
+.palette__item--excluded .palette__portrait,
+.palette__item--excluded .palette__stats,
+.palette__item--excluded .favorite-item {
+  opacity: 0.5;
 }
 
 .palette__item--excluded .palette__portrait {
   filter: grayscale(1);
+}
+
+/* 팝오버는 칩 밖으로 나가 아래·오른쪽 칩 위에 그려진다. 칩 자신이 올라가야
+   형제들 위에 서므로, 띄운 칩에 z-index를 준다 - 팝오버 안쪽의 z-index만으로는
+   형제 칩을 못 넘는다. */
+.palette__item:hover,
+.palette__item:focus-within {
+  z-index: 3;
 }
 
 /* Already seated in a deck: still in the pool, just not available to drag
@@ -1840,6 +1860,20 @@
 
 .draft-layout__decks > .recommend-form__actions {
   flex-shrink: 0;
+}
+
+/* 결과가 이 컬럼에 같이 사는 화면(미란다 계산기). 덱이 하나뿐이라 에디터는
+   제 높이만 쓰면 되고, 남는 자리와 스크롤은 답이 가져간다 - 반대로 두면
+   짧은 에디터가 늘어나 결과를 화면 밖으로 밀어낸다. */
+.draft-layout__decks--with-result .draft-editor {
+  flex: 0 0 auto;
+  overflow-y: visible;
+}
+
+.draft-layout__decks--with-result .miranda-targets {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 @media (max-width: 900px) {
@@ -2238,10 +2272,12 @@ button.draft-editor__slot-grip:hover .draft-editor__slot-portrait {
   border-color: var(--star);
 }
 
-/* .pill--warn과 같은 중립 톤 - 무채색 테두리에 흐린 글자. */
+/* 금색 뱃지와 나란히 서는 은색. 예전엔 --text-muted/--border-strong이라
+   옆의 금색보다 눈에 띄게 어두웠는데, 둘은 같은 급의 답이라 밝기가 갈리면
+   한쪽이 주석처럼 읽힌다. */
 .miranda-badge--silver {
-  color: var(--text-muted);
-  border-color: var(--border-strong);
+  color: var(--silver);
+  border-color: var(--silver);
 }
 
 .miranda-badge b {

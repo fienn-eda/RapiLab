@@ -14,6 +14,8 @@ const ABBREVIATIONS: Record<string, string> = {
   '차지 속도': '차속',
   '크리티컬 확률': '크확',
   '크리티컬 대미지': '크댐',
+  // OVERLOAD_KEYS에는 없다 - 정렬 메뉴가 아니라 표시만 줄인다(Fienn, 2026-08-09).
+  명중률: '명중',
 }
 
 // The order Fienn reads them in (2026-07-25), not the order blablalink happens

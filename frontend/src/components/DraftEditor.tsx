@@ -41,7 +41,7 @@ interface DraftEditorProps {
    * swapped away all have to be closed: a swap displaces the occupant, so
    * closing the first two alone leaves a back door. */
   fixedSlugs?: string[]
-  /** Which deck the palette's `+` seats into. The palette sits outside this
+  /** Which deck a palette press seats into. The palette sits outside this
    * component, so the choice is the caller's to hold. */
   activeDeck?: number
   /** Omit where the player has no say — with one deck there is nothing to
@@ -235,9 +235,10 @@ export function DraftEditor({
     <div className="draft-editor">
       <p className="draft-editor__hint">
         {picksDeck
-          ? '팔레트에서 + 를 누르면 활성 덱(밝은 테두리)에 앉아요. 덱 이름을 누르면 활성 덱이 바뀌어요. '
-          : '팔레트에서 + 를 누르면 자리에 앉아요. '}
-        슬롯은 소속만 나타내며, 버스트 순서는 엔진이 정해요.
+          ? '팔레트의 니케를 누르면 활성 덱(밝은 테두리)에 앉아요. 덱 이름을 누르면 활성 덱이 바뀌어요. '
+          : '팔레트의 니케를 누르면 자리에 앉아요. '}
+        덱에 앉은 니케를 누르면 편성에서 빠져요. 슬롯은 소속만 나타내며, 버스트
+        순서는 엔진이 정해요.
       </p>
       <div className="draft-editor__decks">
         {Array.from({ length: numDecks }, (_, deckIndex) => {

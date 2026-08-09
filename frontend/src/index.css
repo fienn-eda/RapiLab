@@ -81,6 +81,9 @@
 
   /* Breakthrough stars. Gold, the way the game draws them. */
   --star: #ffc93c;
+  /* 금색과 짝을 이루는 은색. --text-muted(#9e9e9e)를 쓰면 옆의 금색 뱃지보다
+     한참 어두워 같은 급의 답으로 안 읽힌다 - 밝기를 금색에 맞춘다. */
+  --silver: #dfe6ee;
   /* Favorite Item (애장품) heart. Orange rather than the usual red so it
      reads as its own fact next to the gold breakthrough stars. */
   --favorite-item: #ff8a3d;

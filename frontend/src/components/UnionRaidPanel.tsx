@@ -98,7 +98,7 @@ export function UnionRaidPanel({
   // A value the unseat effect can depend on - a fresh Set every render would
   // re-run it forever.
   const excludedKey = [...excludedSlugs].sort().join(',')
-  // Which battle's deck the palette's `+` fills. Clamped at the point of use
+  // Which battle's deck a palette press fills. Clamped at the point of use
   // rather than resynced when numBattles shrinks: one expression that is
   // always right beats a second piece of state that can disagree with the
   // first for one render.

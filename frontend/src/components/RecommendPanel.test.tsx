@@ -77,6 +77,7 @@ const noPersistence = {
   restoreResult: null,
   engineVersion: null,
   savedRuns: [],
+  excludedSlugs: [],
   onSaveRun: () => true,
   onRenameRun: () => {},
   onDeleteRun: () => {},
