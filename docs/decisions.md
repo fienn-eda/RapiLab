@@ -5,6 +5,40 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 동기화는 앱이 아는 것을 북마크릿에 실어 호출 수를 줄인다 (부분 성공)
+
+- Date: 2026-08-09
+- Context: blablalink가 이름 조회를 code 1300015("Requests are too frequent")로
+  거절해 계정 이름이 UID로 표시된다. 자세한 관측은 `insights.md`의 같은 제목.
+- Decision: 북마크릿을 만드는 것이 앱이므로, **앱이 아는 것을 실어 보낸다** -
+  프로필에 저장된 `area`(어느 서버에 로스터가 있는지)와 이미 아는 이름. 아는
+  계정은 그 서버만 조회하고(8→4호출), 이름을 아는 서버는 조회 자체를 건너뛴다
+  (3호출). 처음 보는 계정을 위해 **동기화 탭에서 서버를 직접 고르게** 한다 -
+  유저는 자기 서버를 아는데 앱이 혼자 다섯 군데를 뒤지고 있었다.
+- Why: 대안은 간격과 재시도였고 둘 다 넣었지만 부족했다. 「너무 잦다」에 맞는
+  답은 대기가 아니라 호출 수다. 이름이 멀쩡하던 2026-07-25가 4호출이었고,
+  다섯 서버 순회가 들어오며 8호출이 된 날 닉네임이 죽었다.
+- Consequences: **증상이 완전히 사라지지는 않았다** - 각 계정의 최초 동기화는
+  여전히 UID로 표시된다(2026-08-09 기준 미해결, 다음 단계는 `insights.md`).
+  이름 조회를 건너뛸 때는 빈 이름을 보내고 `upsertProfile`의
+  `args.nickname || existing`이 저장된 이름을 지킨다. 그래서 안내 줄의 조건도
+  「이름이 비었다」가 아니라 **「물어봤는데 실패했다」**여야 한다 - 묻지 않은
+  것은 실패가 아니다.
+
+## 프로필은 디스크에 남는다 - `private_mode=False`
+
+- Date: 2026-08-09
+- Context: 앱을 켤 때마다 모든 계정을 다시 동기화해야 했다. pywebview의
+  `webview.start()`가 기본으로 비공개 모드라 로컬 저장소를 안 남긴다.
+- Decision: `private_mode=False`로 띄운다. 프로필(로스터·미사용 니케·보관
+  결과)은 앱을 다시 켜도 남는다.
+- Why: 이 앱의 프로필이 전부 localStorage에 산다. 남기지 않으면 저장 기능이
+  존재하지 않는 것과 같다. 개인정보 측면에서도 새로 나가는 것이 없다 -
+  로컬 앱이고 데이터는 이미 그 기계 안에 있다.
+- Consequences: 저장 폴더는 **포트별**이라(동시 실행 대비) 41573을 잡은
+  인스턴스만 그 프로필을 본다. 단일 실행이 정상 경로이므로 실사용에서는
+  안정적이다.
+
 ## 좌석 배치는 클릭이 맡는다 - 드래그는 브라우저 편의로만 남긴다
 
 - Date: 2026-08-09
