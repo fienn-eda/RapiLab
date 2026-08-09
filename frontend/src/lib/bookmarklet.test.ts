@@ -158,7 +158,7 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
       )
       const servers = payload?.servers as { nickname: string; nickname_error: string }[] | undefined
       expect(servers?.[0]?.nickname).toBe('')
-      expect(servers?.[0]?.nickname_error).toBe('shape:profile')
+      expect(servers?.[0]?.nickname_error).toContain('shape:profile')
     })
 
     it('이름이 있으면 이유 칸은 비어 있다', async () => {
@@ -262,7 +262,7 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
     // 테스트가 이 필터가 실제로 동작하는지(다섯 서버 전부 1302125일 때 사람이
     // 읽을 문구가 뜨는지) 검증한다.
     expect(source).toContain(
-      "catch(e){if(!probeErr&&!/:1302125$/.test(String(e)))probeErr=e;owned=[]}",
+      "catch(e){if(!probeErr&&e.code!==1302125)probeErr=e;owned=[]}",
     )
   })
 
@@ -283,19 +283,28 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
 
 
 
-  it('에러 코드 매칭이 문자열 끝에 고정된다 (:1000 같은 무관한 코드가 공유 URL 분기로 새지 않게)', () => {
-    // catch 블록의 alert(...) 삼항식을 그대로 뽑아 실행해, 실제로 어떤 메시지가
-    // 뜨는지 검증한다 (문자열 포함 여부만 보면 :1000이 :1 취급되는 버그를 못 잡는다).
-    const match = source.match(/alert\((m\.indexOf\('300001'\)[\s\S]*?)\)\}\n\}\)\(\)$/)
+  it('에러 분기는 코드 숫자로 갈린다 (:1000이 :1 취급되지 않게)', () => {
+    // catch(err) 블록을 그대로 뽑아 실행해 실제로 어떤 문구가 뜨는지 본다.
+    // 문자열 매칭이던 시절에는 `/:1$/` 앵커가 이 성질을 지켰는데, 코드 뒤에
+    // 메시지가 붙으면서 앵커가 못 쓰게 됐다 - 이제 err.code로 가른다.
+    const match = source.match(/catch\(err\)\{([\s\S]*)\}\s*\}\)\(\)$/)
     expect(match).not.toBeNull()
-    const alertExprFn = new Function('m', `return (${match![1]})`)
+    const run = (code: number) => {
+      let said = ''
+      new Function('err', 'alert', match![1])(
+        Object.assign(new Error('GetUserCharacters:' + code), { code }),
+        (m: string) => { said = m },
+      )
+      return said
+    }
 
-    // GetUserCharacters:1000은 코드 1이 아니라 1000이므로 공유 URL 분기를 타면 안 된다.
-    expect(alertExprFn('Error: GetUserCharacters:1000')).not.toBe('공유 URL을 다시 확인해주세요.')
-    // 1303005는 여전히 공유 URL 분기를 타야 한다 (:1$ 앵커링 후에도 살아있는 별도 체크).
-    expect(alertExprFn('Error: GetUserCharacterDetails:1303005')).toBe('공유 URL을 다시 확인해주세요.')
-    // 코드가 정확히 1이면 공유 URL 분기를 타야 한다.
-    expect(alertExprFn('Error: GetUserCharacters:1')).toBe('공유 URL을 다시 확인해주세요.')
+    // 코드 1000은 1이 아니다 - 공유 URL 분기를 타면 안 된다.
+    expect(run(1000)).not.toBe('공유 URL을 다시 확인해주세요.')
+    expect(run(1303005)).toBe('공유 URL을 다시 확인해주세요.')
+    expect(run(1)).toBe('공유 URL을 다시 확인해주세요.')
+    expect(run(300001)).toBe('blablalink 로그인이 필요해요.')
+    // 모르는 코드는 원문 그대로 - 이번 1300015처럼 처음 보는 것이 여기로 온다.
+    expect(run(1300015)).toContain('1300015')
   })
 
 })
