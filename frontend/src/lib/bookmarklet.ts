@@ -64,6 +64,12 @@ export const LOCAL_SYNC_PORTS = [41573, 41574, 41575, 41576, 8000]
 
 // 수집 부분. 두 빌더가 같은 것을 쓰므로 한 곳에 둔다 - 전송 방식만 다르다.
 // `payload` 변수에 결과를 담고, 실패는 바깥 try/catch로 던진다.
+//
+// `call`은 호출 사이 최소 간격(GAP)을 둔다. 필요한지는 **재지 않았다** -
+// 페이지 자신이 1.3초에 열세 번을 무간격으로 던져 전부 통과하는 것을 보면
+// 아마 없어도 된다. 그래도 두는 이유는 이 파일이 **브라우저에 설치되는
+// 물건이라 틀렸을 때 전 유저가 재설치해야** 해서다. 이름 조회의 거절과는
+// **무관하다** - 그쪽은 간격으로 안 풀린다는 것이 실측됐다(위 헤더 참고).
 /** 앱이 이 계정에 대해 이미 아는 것. 호출 수를 줄이는 데만 쓴다 - 모르면
  * 예전처럼 다섯 서버를 다 훑고 이름도 매번 새로 묻는다. */
 export interface KnownAccount {
@@ -75,7 +81,13 @@ export interface KnownAccount {
 }
 
 const collectSource = (openId: string, known: KnownAccount): string => `
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+const GAP=350;
+let lastCall=0;
 const call=async(ep,body)=>{
+ const wait=GAP-(Date.now()-lastCall);
+ if(wait>0)await sleep(wait);
+ lastCall=Date.now();
  const r=await fetch('https://api.blablalink.com/api/game/proxy/Game/'+ep,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body),credentials:'include'});
  const j=await r.json();
  if(j.code!==0){const e=new Error(ep+':'+j.code+(j.msg?' '+j.msg:''));e.code=j.code;throw e}

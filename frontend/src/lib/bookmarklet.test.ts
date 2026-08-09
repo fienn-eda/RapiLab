@@ -255,6 +255,18 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
       expect(servers?.[0]?.nickname).toBe(NICKNAME)
     })
 
+    // 간격이 로스터 경로에 실제로 필요한지는 재지 않았다(2026-08-09) - 그래도
+    // 이 파일은 브라우저에 설치되는 물건이라, 틀렸을 때의 비용이 전 유저
+    // 재설치라서 되살렸다. 하네스가 주입한 setTimeout이 `waits`에 요청된
+    // 대기 시간을 모으므로, 그것을 읽어 간격이 실제로 걸리는지 검증한다.
+    it('호출 사이에 최소 간격을 둔다', async () => {
+      const { waits } = await runBookmarklet(okFetch)
+      const spacing = waits.filter((w) => w > 0)
+      // 다섯 서버를 훑고 서버마다 셋을 더 부르므로 간격을 여러 번 요청한다.
+      expect(spacing.length).toBeGreaterThan(5)
+      expect(Math.max(...spacing)).toBeLessThanOrEqual(350)
+    })
+
     // 이름을 이미 아는 서버에서는 그 호출을 아예 하지 않는다 - 빈도 제한에
     // 걸리는 바로 그 호출이라, 부르지 않는 것이 가장 확실한 대책이다.
     it('이름을 아는 서버에서는 이름 조회를 하지 않는다', async () => {
