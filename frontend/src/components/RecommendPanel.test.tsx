@@ -696,6 +696,33 @@ describe('RecommendPanel draft mode', () => {
     // a는 풀로 돌아가 다시 배치할 수 있다.
     expect(screen.getByRole('button', { name: /a 배치/i })).toBeEnabled()
   })
+
+  // 모드를 바꾸면 편성 칸이 통째로 사라진다 - 든 것도 그때 사라져야 한다.
+  // 이 패널이 들린 유닛을 따로 기억하는데 편집기가 그걸 모르면, 돌아왔을 때
+  // 화면엔 든 표시가 없는데 팔레트 클릭만 여전히 "든 자리를 대신 채우기"로
+  // 튀어, 집은 적 없는 A가 조용히 밀려난다.
+  it('모드를 바꿔 편성 칸이 사라지면 든 것도 사라진다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByLabelText(/빈자리만 최적화/i))
+    await screen.findByRole('button', { name: /a 배치/i }) // palette loaded
+
+    await user.click(screen.getByRole('button', { name: /a 배치/i }))
+    await user.click(screen.getByRole('button', { name: /덱 1의 A/ }))
+
+    // 편성 칸이 없는 모드로 갔다가 돌아온다.
+    await user.click(screen.getByLabelText(/전부 최적화/i))
+    await user.click(screen.getByLabelText(/빈자리만 최적화/i))
+
+    // 든 것이 없으니 놓기 버튼도 없고,
+    expect(screen.queryByRole('button', { name: /놓기/ })).not.toBeInTheDocument()
+    // 팔레트를 누르면 A를 밀어내지 않고 빈자리에 앉는다.
+    await user.click(screen.getByRole('button', { name: /b 배치/i }))
+    expect(screen.getByRole('button', { name: /덱 1의 A/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /덱 1의 B/ })).toBeInTheDocument()
+  })
 })
 
 describe('RecommendPanel evaluate mode', () => {

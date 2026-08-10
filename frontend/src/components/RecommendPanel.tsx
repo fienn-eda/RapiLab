@@ -203,9 +203,10 @@ export function RecommendPanel({
   // beats a second piece of state that can disagree with the first.
   const [activeDeck, setActiveDeck] = useState(0)
   const seatDeck = Math.min(activeDeck, numDecks - 1)
-  // 팔레트가 DraftEditor 밖에 있어서, 그 안에서 들린 좌석을 이 상태로
+  // 팔레트가 DraftEditor 밖에 있어서, 그 안에서 들린 유닛을 이 사본으로
   // 따라 안다 - 팔레트 클릭을 "빈자리에 앉히기"와 "든 유닛과 맞바꾸기"로
-  // 가르는 데 쓴다.
+  // 가르는 데 쓴다. 편집기가 든 것이 바뀔 때마다(사라질 때·언마운트될 때까지)
+  // 알려주므로 이쪽에서 손댈 일은 없다.
   const [heldSlug, setHeldSlug] = useState<string | null>(null)
   // Set right before a raid/draft raid.submit() call that actually reaches
   // the backend (a cache hit never sets it), and cleared once its success is
@@ -1000,7 +1001,6 @@ export function RecommendPanel({
                   portraitFor={portraitFor}
                   nameFor={nameFor}
                   burstTiersFor={burstTiersResolver}
-                  heldSlug={heldSlug}
                   onHeldSlugChange={setHeldSlug}
                   // Evaluate has no optimizer to constrain - locking a unit in
                   // place has nothing to mean there.

@@ -694,6 +694,37 @@ describe('DraftEditor', () => {
       expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
     })
 
+    // 든 것을 좌표로 기억하면, 밖에서 value가 통째로 바뀔 때(보관물 복원,
+    // 전투 수 축소, 니케 풀 탭 제외) 그 좌표에 새로 들어온 유닛이 "든 자리"가
+    // 된다 - 한 번 누르면 유저가 집은 적 없는 유닛이 편성에서 빠진다.
+    it('밖에서 든 유닛이 사라지면 그 자리에 온 유닛을 눌러도 안 빠진다', async () => {
+      const onChange = vi.fn()
+      const props = {
+        numDecks: 2,
+        onChange,
+        portraitFor: () => null,
+        nameFor: nameFromSlug,
+        burstTiersFor: (slug: string) => TIERS[slug] ?? [],
+      }
+      // blanc은 B3라 crown(B1) 다음, 즉 저장 순서로도 화면 순서로도 두 번째다.
+      const before: Draft = {
+        decks: [[{ slug: 'crown', locked: false }, { slug: 'blanc', locked: false }], []],
+      }
+      // 같은 자리에 liter가 앉은 다른 편성. blanc은 어디에도 없다.
+      const after: Draft = {
+        decks: [[{ slug: 'crown', locked: false }, { slug: 'liter', locked: false }], []],
+      }
+      const { rerender, container } = render(<DraftEditor {...props} value={before} />)
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Blanc/ }))
+      rerender(<DraftEditor {...props} value={after} />)
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Liter/ }))
+
+      expect(onChange).not.toHaveBeenCalled()
+      expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
+    })
+
     // i===0 빈자리만 놓기 버튼이 되므로, 접근성 트리 노출도 그 하나에만
     // 한정돼야 한다 - 나머지 넷까지 노출되면 스크린리더가 덱마다 "+"를
     // 여러 번 읽는, i===0 제한이 막으려던 바로 그 소음이 aria-hidden 축에서
@@ -715,11 +746,11 @@ describe('DraftEditor', () => {
     })
   })
 
-  // 팔레트가 이 컴포넌트 밖에 있어서, 부모는 좌표가 아니라 슬러그로 무엇이
-  // 들렸는지 알아야 한다. Task 9/10의 setHeldSeat 호출 다섯 곳(집기·제거
-  // 후·이동 후·교환 후·Esc) 전부가 이 알림을 거쳐야 하고, 하나라도 빠지면
-  // 부모의 heldSlug가 조용히 낡는다.
-  describe('든 유닛 알림 (heldSlug)', () => {
+  // 팔레트가 이 컴포넌트 밖에 있어서, 부모는 무엇이 들렸는지 슬러그로 알아야
+  // 한다. 든 것이 바뀌는 길 전부(집기·제거·이동·교환·Esc·편성에서 사라짐·
+  // 언마운트)가 이 알림을 거쳐야 하고, 하나라도 빠지면 부모의 사본이 조용히
+  // 낡아 팔레트 클릭이 엉뚱한 유닛을 밀어낸다.
+  describe('든 유닛 알림 (onHeldSlugChange)', () => {
     const seated: Draft = { decks: [[{ slug: 'crown', locked: false }], []] }
     const both: Draft = {
       decks: [[{ slug: 'crown', locked: false }], [{ slug: 'liter', locked: false }]],
@@ -810,56 +841,61 @@ describe('DraftEditor', () => {
       expect(onHeldSlugChange).toHaveBeenLastCalledWith(null)
     })
 
-    // 팔레트를 눌러 든 자리를 대신 채우면, 부모는 자기 heldSlug를 스스로
-    // null로 내린다 - DraftEditor의 클릭 핸들러를 거치지 않은 처리다. 내부
-    // heldSeat이 이를 따라 지우지 않으면, 방금 팔레트가 채운 자리가 여전히
-    // "든 자리"로 남아 다음 클릭이 집기 대신 즉시 제거로 튄다.
-    it('부모가 heldSlug를 null로 내리면(팔레트가 대신 처리) 든 좌석을 따라 지운다', async () => {
+    // 팔레트를 눌러 든 자리를 대신 채우는 처리는 부모가 한다 - 이 컴포넌트의
+    // 클릭 핸들러를 거치지 않는다. 든 유닛이 편성에서 사라진 것을 여기서 알아
+    // 스스로 내리지 않으면, 방금 팔레트가 채운 자리가 여전히 "든 자리"로 남고
+    // 부모의 사본도 그 유닛을 가리킨 채 낡는다.
+    it('팔레트가 든 자리를 대신 채우면 스스로 내리고 그것도 알린다', async () => {
       const onChange = vi.fn()
       const onHeldSlugChange = vi.fn()
-      const { rerender, container } = render(
+      const props = {
+        numDecks: 2,
+        onChange,
+        portraitFor: () => null,
+        nameFor: nameFromSlug,
+        burstTiersFor: (slug: string) => TIERS[slug] ?? [],
+        onHeldSlugChange,
+      }
+      const { rerender, container } = render(<DraftEditor {...props} value={seated} />)
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+      expect(onHeldSlugChange).toHaveBeenLastCalledWith('crown')
+      expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
+
+      // 팔레트가 든 자리를 liter로 대신 채운다.
+      const replaced: Draft = { decks: [[{ slug: 'liter', locked: false }], []] }
+      rerender(<DraftEditor {...props} value={replaced} />)
+
+      expect(onHeldSlugChange).toHaveBeenLastCalledWith(null)
+      expect(container.querySelector('.draft-editor__slot--held')).toBeNull()
+
+      // 방금 채워진 자리를 누르면 집기여야 한다 - 즉시 제거되면 낡은 자리를
+      // 여전히 "든 자리"로 여기고 있다는 뜻이다.
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Liter/ }))
+      expect(onChange).not.toHaveBeenCalled()
+      expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
+    })
+
+    // 모드를 바꾸면 편성 칸째로 언마운트된다. 부모의 사본은 이 알림으로만
+    // 갱신되므로, 사라지면서 안 내리면 부모는 있지도 않은 든 유닛을 계속 믿고
+    // 다음 팔레트 클릭을 맞바꾸기로 처리한다.
+    it('언마운트되면 든 것이 없어졌음을 알린다', async () => {
+      const onHeldSlugChange = vi.fn()
+      const { unmount } = render(
         <DraftEditor
-          numDecks={2} value={seated} onChange={onChange}
+          numDecks={2} value={seated} onChange={vi.fn()}
           portraitFor={() => null} nameFor={nameFromSlug}
           burstTiersFor={(slug) => TIERS[slug] ?? []}
-          heldSlug={null}
           onHeldSlugChange={onHeldSlugChange}
         />,
       )
 
       await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
-      expect(onHeldSlugChange).toHaveBeenCalledWith('crown')
+      expect(onHeldSlugChange).toHaveBeenLastCalledWith('crown')
 
-      // 부모가 콜백을 받아 자기 heldSlug 상태를 갱신했다고 재현한다.
-      rerender(
-        <DraftEditor
-          numDecks={2} value={seated} onChange={onChange}
-          portraitFor={() => null} nameFor={nameFromSlug}
-          burstTiersFor={(slug) => TIERS[slug] ?? []}
-          heldSlug="crown"
-          onHeldSlugChange={onHeldSlugChange}
-        />,
-      )
-      expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
+      unmount()
 
-      // 팔레트가 든 자리를 liter로 대신 채우고, 부모는 자기 heldSlug를 다시
-      // null로 내린다.
-      const replaced: Draft = { decks: [[{ slug: 'liter', locked: false }], []] }
-      rerender(
-        <DraftEditor
-          numDecks={2} value={replaced} onChange={onChange}
-          portraitFor={() => null} nameFor={nameFromSlug}
-          burstTiersFor={(slug) => TIERS[slug] ?? []}
-          heldSlug={null}
-          onHeldSlugChange={onHeldSlugChange}
-        />,
-      )
-
-      // 방금 채워진 자리를 누르면 집기여야 한다 - 즉시 제거되면 내부 상태가
-      // 낡은 좌표를 여전히 "든 자리"로 여기고 있다는 뜻이다.
-      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Liter/ }))
-      expect(onChange).not.toHaveBeenCalled()
-      expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
+      expect(onHeldSlugChange).toHaveBeenLastCalledWith(null)
     })
   })
 })
