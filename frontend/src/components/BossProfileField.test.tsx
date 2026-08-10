@@ -10,6 +10,7 @@ import { BossProfileField } from './BossProfileField'
 import { bossElementFor } from '../lib/elementAdvantage'
 import { makeDefaultBossProfileDraft } from '../types/bossProfileDraft'
 import type { RaidRotation } from '../types/raidRotation'
+import { HELP } from '../lib/helpText'
 
 const renderField = (onChange = vi.fn()) => {
   render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={onChange} />)
@@ -47,9 +48,7 @@ describe('BossProfileField', () => {
     const bubbleId = button.getAttribute('aria-describedby')
 
     expect(bubbleId).toBeTruthy()
-    expect(document.getElementById(bubbleId!)).toHaveTextContent(
-      '런처(RL)는 어느 거리에서도 받지 않아요',
-    )
+    expect(document.getElementById(bubbleId!)).toHaveTextContent(HELP.boss.rangeBand)
   })
 })
 

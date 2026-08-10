@@ -72,7 +72,7 @@ describe('App', () => {
 
   it('prompts to sync and hides the roster/recommend panel when there is no active profile', async () => {
     await renderSettled(<App />)
-    expect(screen.getByText(/동기화된 계정이 없어요/i)).toBeInTheDocument()
+    expect(screen.getByText(HELP.app.noProfiles)).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: '솔로 레이드' })).not.toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: 'red-hood' })).not.toBeInTheDocument()
   })

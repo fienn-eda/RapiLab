@@ -73,12 +73,12 @@ describe('RaidResults', () => {
     const { rerender } = render(
       <RaidResults decks={decks} combinedTotalDamage={100} swapConverged={false} />,
     )
-    expect(screen.getByText(/상한에 걸려 끝까지 가지 못했어요/)).toBeInTheDocument()
+    expect(screen.getByText(HELP.results.swapCutoff)).toBeInTheDocument()
 
     rerender(<RaidResults decks={decks} combinedTotalDamage={100} swapConverged={true} />)
-    expect(screen.queryByText(/상한에 걸려 끝까지 가지 못했어요/)).not.toBeInTheDocument()
+    expect(screen.queryByText(HELP.results.swapCutoff)).not.toBeInTheDocument()
 
     rerender(<RaidResults decks={decks} combinedTotalDamage={100} />)
-    expect(screen.queryByText(/상한에 걸려 끝까지 가지 못했어요/)).not.toBeInTheDocument()
+    expect(screen.queryByText(HELP.results.swapCutoff)).not.toBeInTheDocument()
   })
 })

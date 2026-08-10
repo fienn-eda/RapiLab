@@ -318,7 +318,7 @@ describe('SyncRosterPanel', () => {
       'aria-expanded',
       'false',
     )
-    expect(screen.getByText(/복사한 URL을 아래 칸에 붙여넣어요/)).not.toBeVisible()
+    expect(screen.getByText(HELP.syncHelp.steps[2].text)).not.toBeVisible()
   })
 
   it('동기화 방법 버튼을 누르면 도움말이 펼쳐진다', () => {
@@ -328,7 +328,7 @@ describe('SyncRosterPanel', () => {
     fireEvent.click(toggle)
 
     expect(toggle).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByText(/복사한 URL을 아래 칸에 붙여넣어요/)).toBeVisible()
+    expect(screen.getByText(HELP.syncHelp.steps[2].text)).toBeVisible()
     // 라벨 없는 아이콘 두 개를 지목하는 것이 이 도움말의 존재 이유다.
     expect(screen.getByAltText(/공유 아이콘/)).toBeVisible()
     expect(screen.getByAltText(/링크 복사하기/)).toBeVisible()
@@ -340,7 +340,7 @@ describe('SyncRosterPanel', () => {
       'aria-expanded',
       'true',
     )
-    expect(screen.getByText(/계정마다 북마크가 따로 필요해요/)).toBeVisible()
+    expect(screen.getByText(HELP.syncHelp.multiAccount)).toBeVisible()
   })
 
   it('서버가 둘이면 어느 것을 가져올지 묻고, 고르기 전엔 임포트하지 않는다', async () => {
@@ -349,7 +349,7 @@ describe('SyncRosterPanel', () => {
 
     render(<SyncRosterPanel onImport={onImport} />)
 
-    expect(await screen.findByText(/어느 서버의 계정을 가져올까요/)).toBeInTheDocument()
+    expect(await screen.findByText(HELP.sync.chooseServer)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /JP \(2기\)/ })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /KR \(1기\)/ })).toBeInTheDocument()
     expect(onImport).not.toHaveBeenCalled()
@@ -388,7 +388,7 @@ describe('SyncRosterPanel', () => {
 
     render(<SyncRosterPanel onImport={vi.fn()} onActivity={onActivity} />)
 
-    await screen.findByText(/어느 서버의 계정을 가져올까요/)
+    await screen.findByText(HELP.sync.chooseServer)
     expect(onActivity).toHaveBeenCalled()
   })
 })

@@ -210,13 +210,13 @@ export function SyncRosterPanel({
           </button>
           {copied === 'ok' && (
             <p className="sync__hint" role="status">
-              {HELP.sync.copied}
+              <HelpText>{HELP.sync.copied}</HelpText>
             </p>
           )}
           {copied === 'manual' && (
             <>
               <p className="sync__hint" role="status">
-                {HELP.sync.copyBlocked}
+                <HelpText>{HELP.sync.copyBlocked}</HelpText>
               </p>
               <textarea
                 className="field__input"
@@ -234,7 +234,7 @@ export function SyncRosterPanel({
           짐작할 수 없으므로 - 니케가 많은 쪽이 늘 정답은 아니다 - 물어본다. */}
       {status === 'choosing' && (
         <div className="sync__servers">
-          <p className="sync__hint">{HELP.sync.chooseServer}</p>
+          <p className="sync__hint"><HelpText>{HELP.sync.chooseServer}</HelpText></p>
           <div className="sync__server-choices">
             {candidates.map(({ area, count }) => (
               <button

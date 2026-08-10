@@ -735,7 +735,7 @@ export function RecommendPanel({
                   onChange={() => switchMode('single')}
                 />
                 단일 덱
-                <span className="group__hint"> — {HELP.recommendMode.single}</span>
+                <span className="group__hint"> — <HelpText>{HELP.recommendMode.single}</HelpText></span>
               </label>
               <label className="radio">
                 <input
@@ -746,7 +746,7 @@ export function RecommendPanel({
                   onChange={() => switchMode('raid')}
                 />
                 전부 최적화
-                <span className="group__hint"> — {HELP.recommendMode.raid}</span>
+                <span className="group__hint"> — <HelpText>{HELP.recommendMode.raid}</HelpText></span>
               </label>
               <label className="radio">
                 <input
@@ -757,7 +757,7 @@ export function RecommendPanel({
                   onChange={() => switchMode('draft')}
                 />
                 빈자리만 최적화
-                <span className="group__hint"> — {HELP.recommendMode.draft}</span>
+                <span className="group__hint"> — <HelpText>{HELP.recommendMode.draft}</HelpText></span>
               </label>
               <label className="radio">
                 <input
@@ -768,7 +768,7 @@ export function RecommendPanel({
                   onChange={() => switchMode('evaluate')}
                 />
                 기대 딜량 계산
-                <span className="group__hint"> — {HELP.recommendMode.evaluate}</span>
+                <span className="group__hint"> — <HelpText>{HELP.recommendMode.evaluate}</HelpText></span>
               </label>
             </div>
 
