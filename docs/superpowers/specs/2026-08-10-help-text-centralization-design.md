@@ -14,7 +14,7 @@
 
 ## 1. 무엇이 오고 무엇이 안 오는가
 
-오는 것은 **읽고 이해하는 문장**이다. 47개 항목, 사용처 51곳 — 항목 4개는 두
+오는 것은 **읽고 이해하는 문장**이다. 48개 항목, 사용처 52곳 — 항목 4개는 두
 자리에서 같은 글자를 쓴다.
 
 안 오는 것과 그 이유:
@@ -85,7 +85,7 @@ raidSplit: (deckCount: number) =>
 있고 CSS는 영향을 받지 않는다.
 
 문제는 **문자열만 받는 자리**다. 여기서 `**`는 굵게 되지 않고 별표 두 개가
-그대로 보인다. 해당 항목 넷에 「평문 전용 — 별표가 글자 그대로 나온다」는 주석을
+그대로 보인다. 해당 항목 다섯에 「평문 전용 — 별표가 글자 그대로 나온다」는 주석을
 단다.
 
 | 항목 | 자리 |
@@ -94,6 +94,7 @@ raidSplit: (deckCount: number) =>
 | `savedRuns.confirmDelete` | `window.confirm()` |
 | `profile.confirmDelete` | `window.confirm()` |
 | `sync.bookmarkletNoAccount` | `setError()` → `<p className="sync__error">`가 평문으로 그린다. 같은 자리에 다른 에러 메시지도 오므로 그 렌더는 `<HelpText>`로 바꾸지 않는다. |
+| `charge.rosterFallbackHint` | `NumberField`의 `hint` — `help`와 달리 `<HelpText>`를 거치지 않고 `{hint}`를 그대로 렌더한다. |
 
 옮기는 나머지 문구는 그리는 지점을 `<HelpText>`로 통일한다. 그래야 「어디서
 `**`가 먹는가」를 외울 필요가 없다. 로스터 가져오기 경고 둘과 이름 조회 실패
@@ -199,6 +200,7 @@ HELP = {
 ### roster
 | 자리 | 이름 |
 |---|---|
+| `lib/rosterImport.ts:54` | `roster.importMalformedUnit` |
 | `UnitFilterBar.tsx:181` | `roster.emptyFilter` |
 | `lib/rosterImport.ts:88` | ✱ `roster.importUnsupported(count, names)` |
 | `lib/rosterImport.ts:97` | ✱ `roster.importUnmeasured(count, names)` |

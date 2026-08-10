@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** 앱 곳곳에 흩어진 설명·안내 문구 47개를 `frontend/src/lib/helpText.ts`의 `HELP` 객체로 모아, 문구 수정이 그 파일 한 곳에서 끝나게 한다.
+**Goal:** 앱 곳곳에 흩어진 설명·안내 문구 48개를 `frontend/src/lib/helpText.ts`의 `HELP` 객체로 모아, 문구 수정이 그 파일 한 곳에서 끝나게 한다.
 
 **Architecture:** 순수 이동이다 — 화면에 보이는 글자는 한 글자도 바뀌지 않는다. 값이 끼는 문구는 템플릿 리터럴을 반환하는 함수가 되고, 어느 문장을 쓸지 고르는 분기는 컴포넌트에 남는다. 문구를 하드코딩하던 테스트도 `HELP`를 참조하게 바꿔, 옮긴 글자가 원본과 같은지를 테스트가 증명하게 만든다.
 
@@ -53,7 +53,7 @@ git diff HEAD~1 -U0 -- frontend/src | grep -E '^[-+].*[가-힣]'
 
 | 파일 | 책임 | 이 계획에서 |
 |---|---|---|
-| `frontend/src/lib/helpText.ts` | 화면 설명 문구 전부 | 47항목 추가, 헤더 주석 갱신 |
+| `frontend/src/lib/helpText.ts` | 화면 설명 문구 전부 | 48항목 추가, 헤더 주석 갱신 |
 | `frontend/src/components/HelpText.tsx` | `**굵게**`를 그리는 인라인 렌더러 | 변경 없음 |
 | 컴포넌트 20개 | 문구를 `HELP` 참조로 | 문자열 리터럴 → 참조 |
 | `frontend/src/lib/rosterImport.ts` | 로스터 파싱 + 경고 생성 | 경고 문구 2개 참조로 |
@@ -1248,7 +1248,7 @@ git log --oneline wip/scaffolding..HEAD
 | §2 규칙 2 분기는 컴포넌트에 | Task 4(DraftEditor), Task 5(describeThreshold), Task 6(closingLine) |
 | §2 규칙 3 평문 전용 | Task 2(pinTitle), Task 3(confirm 둘), Task 7(bookmarkletNoAccount) |
 | §3 그룹 구조 | Global Constraints의 순서 규칙 + 각 태스크의 삽입 위치 |
-| §4 이동 대상 47개 | Task 1(3) + 2(9) + 3(5) + 4(9) + 5(9) + 6(5) + 7(7) = 47 ✓ |
+| §4 이동 대상 48개 | Task 1(3) + 2(9) + 3(5) + 4(9) + 5(9) + 6(5) + 7(7) = 47, 후속 커밋에서 `roster.importMalformedUnit` 1개 추가(Task 7이 아니라 그 뒤 별도 커밋) = 48 ✓ |
 | §5 테스트도 HELP를 참조 | 각 태스크 Step 1 — 39군데 중 29곳을 바꾸고 10곳은 정규식 유지 |
 | §6 중복 3쌍 | Task 2(bench), Task 3(restoreHint), Task 4(evaluateRunning) |
 | §7 검증 | 각 태스크 Step 6 + Task 8 |
