@@ -34,7 +34,7 @@
 
 ### 어떤 assertion을 바꾸고 어떤 것을 두는가
 
-문구를 하드코딩한 assertion은 **11개 파일에 41군데** 있고, 그중 **29군데를 참조로 바꾸고 12군데는 정규식을 유지**한다. 유지하는 두 종류:
+문구를 하드코딩한 assertion은 **11개 파일에 49군데** 있고, 그중 **37군데를 참조로 바꾸고 12군데는 정규식을 유지**한다. 유지하는 두 종류:
 
 - **문장 일부만 재는 자리** — `/9.90% 밑으로 내려가면/`처럼 값 하나를 확인한다. 정확 문자열로 바꾸려면 나머지 인자를 픽스처에서 계산해야 하는데, 그 assertion이 재는 것은 값이지 문장이 아니다.
 - **문구가 함수인데 「없음」을 재는 자리** — 함수에 아무 인자나 넣어 만든 정확 문자열로 부재를 재면, 문구가 바뀌어도 그 특정 조합이 없다는 이유로 초록이 된다.
@@ -1249,22 +1249,26 @@ git log --oneline wip/scaffolding..HEAD
 | §2 규칙 3 평문 전용 | Task 2(pinTitle), Task 3(confirm 둘), Task 7(bookmarkletNoAccount) |
 | §3 그룹 구조 | Global Constraints의 순서 규칙 + 각 태스크의 삽입 위치 |
 | §4 이동 대상 48개 | Task 1(3) + 2(9) + 3(5) + 4(9) + 5(9) + 6(5) + 7(7) = 47, 후속 커밋에서 `roster.importMalformedUnit` 1개 추가(Task 7이 아니라 그 뒤 별도 커밋) = 48 ✓ |
-| §5 테스트도 HELP를 참조 | 각 태스크 Step 1 — 41군데 중 29곳을 바꾸고 12곳은 정규식 유지 |
+| §5 테스트도 HELP를 참조 | 각 태스크 Step 1 — 49군데 중 37곳을 바꾸고 12곳은 정규식 유지 |
 | §6 중복 3쌍 | Task 2(bench), Task 3(restoreHint), Task 4(evaluateRunning) |
 | §7 검증 | 각 태스크 Step 6 + Task 8 |
 
-**assertion 41군데의 태스크별 배분** (합이 맞는지 확인용):
+**assertion 49군데의 태스크별 배분** (합이 맞는지 확인용. 2026-08-10 최종 리뷰에서
+Task 1·2·6의 원래 행이 각각 App.test:75, `results.swapCutoff` 6곳,
+`ladderChargeGone`을 빠뜨린 것으로 드러나 아래 수치로 정정했다 — 자리 자체는
+당시에도 있었고 인자가 바뀐 것도 아니다, 세던 사람이 그 여섯 줄과 두 줄을 지나친
+것뿐이다):
 
 | 태스크 | 바꿈 | 유지 |
 |---|---|---|
-| 1 (app) | `App.test:70` | — |
-| 2 (results) | `DeckResults:9,53` · `RaidResults:9,50,64` · `DraftResults:79` · `RecommendPanel:471,851,971,1034` (10) | `RecommendPanel:854` |
+| 1 (app) | `App.test:70,75` (2) | — |
+| 2 (results) | `DeckResults:10,54` · `RaidResults:10,51,65,76,79,82` · `DraftResults:80,182,194,205` · `RecommendPanel:472,854,974,1037` (16) | `RecommendPanel:857` |
 | 3 (savedRuns) | `SavedRunList:52` | — |
 | 4 (recommend) | `App.test:374,476,482` · `RecommendPanel:109,485` (5) | `RecommendPanel:742,958,1269,1324,1400` (5) |
 | 5 (miranda) | `MirandaCalculatorPanel:114` · `MirandaTargets:72,110,125` (4) | `MirandaTargets:86,99,123,124` (4) |
-| 6 (charge) | `ChargeWindowLadder:96,110` (+113 케이스 확인) | `ChargeWindowLadder:109` |
+| 6 (charge) | `ChargeWindowLadder:97,111,123` (3) | `ChargeWindowLadder:110` |
 | 7 (roster/sync) | `UnitFilterBar:160,166` · `SyncRosterPanel:166,194,212,224` (6) | `SyncRosterPanel:260` |
-| **합** | **29** | **12** |
+| **합** | **37** | **12** |
 
 **2. Placeholder scan** — "TBD"·"적절히"·"비슷하게" 없음. 모든 문자열이 최종 형태로 적혀 있다.
 
