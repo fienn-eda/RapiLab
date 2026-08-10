@@ -3,6 +3,7 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MirandaCalculatorPanel, seatedMirandaSlug } from './MirandaCalculatorPanel'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
+import { HELP } from '../lib/helpText'
 import type { SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 
@@ -111,7 +112,7 @@ describe('MirandaCalculatorPanel', () => {
 
   it('asks the player to sync when the roster has no Miranda at all', () => {
     renderPanel([state('crown'), state('ada-wong')])
-    expect(screen.getByText(/미란다가 로스터에 없어요/)).toBeInTheDocument()
+    expect(screen.getByText(HELP.miranda.notInRoster)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /계산/ })).not.toBeInTheDocument()
   })
 

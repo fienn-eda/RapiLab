@@ -70,6 +70,22 @@ export const HELP = {
     notes: '이 계산에서 판정된 것들이에요',
   },
 
+  miranda: {
+    notInRoster: '미란다가 로스터에 없어요. 동기화 탭에서 로스터를 다시 가져와 주세요.',
+    intro:
+      '미란다는 이미 앉아 있어요. 남은 네 자리를 채우면 파워업!과 웨이크업! 3번불릿을 누가 받는지 알려줘요.',
+    running: '시뮬레이션을 돌리는 중이에요 — 몇 초 걸려요.',
+    gainCapped: (cap: string) => `오버로드 공격력을 상한(${cap})까지 올려도 매 사이클 받지는 못해요`,
+    gainAt: (current: string, threshold: string, gapPoints: number) =>
+      `오버로드 공격력 ${current} → ${threshold}면 매 사이클 받아요 (+${gapPoints.toFixed(2)}%p)`,
+    keepAlways: '오버로드 공격력이 없어도 매 사이클 유지돼요',
+    keepAbove: (threshold: string, current: string, slackPoints: number) =>
+      `오버로드 공격력이 ${threshold} 밑으로 내려가면 매 사이클은 못 받아요 (지금 ${current}, 여유 ${slackPoints.toFixed(2)}%p)`,
+    targetsChange: (cycles: string) => `⚠ ${cycles}사이클에는 파워업!을 받는 니케가 달라요`,
+    burstsFewer: (total: number, bursts: number) =>
+      `⚠ 미란다는 ${total}사이클 중 ${bursts}번만 버스트해요 (같은 1티어에 니케가 둘이에요)`,
+  },
+
   recommend: {
     minRoster: (minimum: number) => `덱을 추천하려면 준비된 니케가 최소 ${minimum}기 필요해요.`,
     searchRunning: (modeLabel: string) =>

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import { MirandaTargets } from './MirandaTargets'
+import { HELP } from '../lib/helpText'
 import type { MirandaTargetsResult } from '../types/mirandaTargets'
 
 const NAMES: Record<string, string> = {
@@ -69,7 +70,8 @@ describe('MirandaTargets', () => {
     })
     // 「2사이클」만 검사하면 버스트-일부-실패 캐비엇("미란다는 2사이클 중…")과
     // 안 갈린다 - 이 캐비엇 특유의 문장까지 확인한다.
-    expect(screen.getByText(/2사이클에는 파워업!을 받는 니케가 달라요/)).toBeInTheDocument()
+    // ⚠ 가 문구에 포함돼 있어 <p> 전체와 정확히 맞는다
+    expect(screen.getByText(HELP.miranda.targetsChange('2'))).toBeInTheDocument()
   })
 
   it('does not flag a change when the first cycle is simply a miss and the rest agree', () => {
@@ -107,7 +109,7 @@ describe('MirandaTargets', () => {
         { index: 2, poweringUp: [], wakeUpCritRate: ['ada-wong'] },
       ],
     })
-    expect(screen.getByText(/미란다는 2사이클 중 1번만 버스트해요/)).toBeInTheDocument()
+    expect(screen.getByText(HELP.miranda.burstsFewer(2, 1))).toBeInTheDocument()
   })
 
   it('states what a unit needs, what it can lose, and when nothing is enough', () => {
@@ -122,7 +124,7 @@ describe('MirandaTargets', () => {
     })
     expect(within(row('크라운')).getByText(/8\.00% → 11\.47%면 매 사이클 받아요 \(\+3\.47%p\)/)).toBeInTheDocument()
     expect(within(row('에이다 웡')).getByText(/9\.90% 밑으로 내려가면 매 사이클은 못 받아요/)).toBeInTheDocument()
-    expect(within(row('신데렐라')).getByText(/오버로드 공격력이 없어도 매 사이클 유지돼요/)).toBeInTheDocument()
+    expect(within(row('신데렐라')).getByText(HELP.miranda.keepAlways)).toBeInTheDocument()
     expect(within(row('이사벨')).getByText(/상한\(58\.52%\)까지 올려도 매 사이클 받지는 못해요/)).toBeInTheDocument()
   })
 

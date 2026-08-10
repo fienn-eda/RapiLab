@@ -9,11 +9,13 @@
 import { useMemo, useState } from 'react'
 import { postMirandaTargets } from '../api/mirandaTargets'
 import { RecommendApiError, describeRecommendApiError } from '../api/recommendApiError'
+import { HELP } from '../lib/helpText'
 import { isDraftComplete, makeEmptyDraft, type Draft } from '../types/draft'
 import type { MirandaTargetsResult } from '../types/mirandaTargets'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { DraftEditor, placeUnit } from './DraftEditor'
+import { HelpText } from './HelpText'
 import { MirandaTargets } from './MirandaTargets'
 import { UnitPalette, type UnitInvestment } from './UnitPalette'
 
@@ -61,7 +63,7 @@ export function MirandaCalculatorPanel({
     return (
       <section className="card" aria-label="미란다 계산기">
         <p className="empty__text">
-          미란다가 로스터에 없어요. 동기화 탭에서 로스터를 다시 가져와 주세요.
+          <HelpText>{HELP.miranda.notInRoster}</HelpText>
         </p>
       </section>
     )
@@ -90,8 +92,7 @@ export function MirandaCalculatorPanel({
         <h2 className="card__title">미란다 계산기</h2>
       </header>
       <p className="group__hint">
-        미란다는 이미 앉아 있어요. 남은 네 자리를 채우면 파워업!과 웨이크업!
-        3번불릿을 누가 받는지 알려줘요.
+        <HelpText>{HELP.miranda.intro}</HelpText>
       </p>
 
       <div className="draft-layout">
@@ -124,7 +125,7 @@ export function MirandaCalculatorPanel({
           </div>
           {busy && (
             <p className="recommend-form__progress" role="status">
-              시뮬레이션을 돌리는 중이에요 — 몇 초 걸려요.
+              <HelpText>{HELP.miranda.running}</HelpText>
             </p>
           )}
           {error && <p className="field__error" role="alert">{error}</p>}

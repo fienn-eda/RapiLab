@@ -4,7 +4,9 @@
 // 두 불릿의 대상은 사이클마다 바뀔 수 있어서, 뱃지는 「전 사이클」이 기본이고
 // 일부 사이클에서만 받으면 n/T가 붙는다.
 
+import { HELP } from '../lib/helpText'
 import type { MirandaTargetsResult } from '../types/mirandaTargets'
+import { HelpText } from './HelpText'
 
 interface MirandaTargetsProps {
   result: MirandaTargetsResult
@@ -51,18 +53,26 @@ export function MirandaTargets({ result, portraitFor, nameFor }: MirandaTargetsP
     if (!row) return null
     if (row.kind === 'gain') {
       if (row.thresholdPercent === null) {
-        return `오버로드 공격력을 상한(${percent(overloadAtkCapPercent)})까지 올려도 매 사이클 받지는 못해요`
+        return HELP.miranda.gainCapped(percent(overloadAtkCapPercent))
       }
       const gap = row.thresholdPercent - row.currentPercent
-      return `오버로드 공격력 ${percent(row.currentPercent)} → ${percent(row.thresholdPercent)}면 매 사이클 받아요 (+${gap.toFixed(2)}%p)`
+      return HELP.miranda.gainAt(
+        percent(row.currentPercent),
+        percent(row.thresholdPercent),
+        gap,
+      )
     }
     // kind가 'keep'이면 지금 받고 있다는 뜻이라 경계는 항상 숫자다 (백엔드
     // overload_thresholds가 이 조합에서만 null을 안 낸다) - null 분기는 gain 쪽뿐.
     const { thresholdPercent } = row
     if (thresholdPercent === null) return null
-    if (thresholdPercent === 0) return '오버로드 공격력이 없어도 매 사이클 유지돼요'
+    if (thresholdPercent === 0) return HELP.miranda.keepAlways
     const slack = row.currentPercent - thresholdPercent
-    return `오버로드 공격력이 ${percent(thresholdPercent)} 밑으로 내려가면 매 사이클은 못 받아요 (지금 ${percent(row.currentPercent)}, 여유 ${slack.toFixed(2)}%p)`
+    return HELP.miranda.keepAbove(
+      percent(thresholdPercent),
+      percent(row.currentPercent),
+      slack,
+    )
   }
 
   return (
@@ -111,12 +121,12 @@ export function MirandaTargets({ result, portraitFor, nameFor }: MirandaTargetsP
 
       {changedCycles.length > 0 && (
         <p className="miranda-targets__caveat">
-          ⚠ {changedCycles.join('·')}사이클에는 파워업!을 받는 니케가 달라요
+          <HelpText>{HELP.miranda.targetsChange(changedCycles.join('·'))}</HelpText>
         </p>
       )}
       {burstCycles < total && (
         <p className="miranda-targets__caveat">
-          ⚠ 미란다는 {total}사이클 중 {burstCycles}번만 버스트해요 (같은 1티어에 니케가 둘이에요)
+          <HelpText>{HELP.miranda.burstsFewer(total, burstCycles)}</HelpText>
         </p>
       )}
       {result.notes.map((note) => (
