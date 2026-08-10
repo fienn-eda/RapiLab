@@ -19,7 +19,7 @@ import {
 import { isDraftComplete, makeEmptyDraft, resizeDraft, type Draft } from '../types/draft'
 import { DEFAULT_UNION_NUM_DECKS, MAX_UNION_NUM_DECKS, MIN_UNION_NUM_DECKS } from '../types/evaluate'
 import { latestRotationFor, type RaidRotation } from '../types/raidRotation'
-import type { BossProfile } from '../types/recommend'
+import type { BossElement, BossProfile } from '../types/recommend'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
@@ -59,8 +59,11 @@ interface UnionRaidPanelProps {
 
 /** 유니온은 전투마다 보스가 달라 하나를 이름에 뽑을 수 없다 — 덱 순서대로
  * 약점을 나열한다. 날짜는 넣지 않는다: 보관 목록이 이름 옆에 저장 시각을
- * 항상 따로 찍는다. */
-export const suggestUnionRunName = (bosses: BossProfileDraft[]): string =>
+ * 항상 따로 찍는다.
+ *
+ * 속성만 읽으므로 폼의 초안(BossProfileDraft)이든 제출된 보스(BossProfile)든
+ * 받는다 - 부르는 쪽은 숫자를 낸 그 스냅샷을 넘겨야 한다. */
+export const suggestUnionRunName = (bosses: { element: BossElement }[]): string =>
   bosses.map((boss) => weaknessLabelOf(boss.element)).join(' ')
 
 const NUM_BATTLES_OPTIONS = Array.from(
@@ -260,7 +263,7 @@ export function UnionRaidPanel({
           <div className="result-head">
             <span className="saved-runs__name">유니온 레이드 {numBattles}전투</span>
             <SaveRunButton
-              suggestedName={suggestUnionRunName(bosses.slice(0, numBattles))}
+              suggestedName={suggestUnionRunName(displayedRun.bosses)}
               onSave={(name) => {
                 const savedAt = Date.now()
                 return onSaveRun({

@@ -144,8 +144,8 @@ describe('UnionRaidPanel', () => {
     expect(within(groups[1]).getByLabelText('전격')).toBeChecked()
   })
 
-  // 이 태스크가 하는 일: 덱 제목이 자리 번호 대신 그 전투의 보스를 부른다.
-  // 아직 안 고른 다른 덱은 자리 번호 그대로 남아야 한다.
+  // 덱 제목은 자리 번호 대신 그 전투의 보스를 부른다. 아직 안 고른 덱은
+  // 부를 이름이 없으므로 자리 번호 그대로 남는다.
   it('전투의 보스 속성을 고르면 그 덱 제목이 약점 이름과 아이콘으로 바뀐다', async () => {
     renderPanel()
     expect(screen.getByRole('heading', { name: /덱 1/ })).toBeInTheDocument()
@@ -232,7 +232,7 @@ describe('UnionRaidPanel', () => {
 
     renderPanel()
     // 덱을 먼저 채운다 - dropOnDeck은 덱 제목으로 찾는데, 보스를 고르고 나면
-    // 그 제목이 자리 번호 대신 보스 이름으로 바뀐다(이 태스크가 하는 일).
+    // 그 제목이 자리 번호 대신 보스 이름이 된다.
     for (let deck = 0; deck < 3; deck += 1) {
       for (let seat = 0; seat < 5; seat += 1) {
         dropOnDeck(deck + 1, `u${deck * 5 + seat}`)
@@ -469,6 +469,35 @@ describe('UnionRaidPanel 결과 보관', () => {
     expect(saved).toHaveLength(1)
     expect(saved[0].tab).toBe('union')
     expect(saved[0].view).toMatchObject({ numBattles: 3 })
+  })
+
+  // 제안 이름은 숫자를 낸 그 보스를 불러야 한다 - 화면의 결과 카드가 제출
+  // 시점 스냅샷을 쓰는 것과 같은 이유다. 결과가 나온 뒤 보스를 만지면 숫자는
+  // 옛 보스의 것인데 이름만 새 보스를 불러, 목록에서 고를 때 거짓말이 된다.
+  it('저장 이름은 제출 시점 보스를 부른다 - 그 뒤에 보스를 바꿔도 따라가지 않는다', async () => {
+    const user = userEvent.setup()
+    evaluationSuccess()
+    renderPanel()
+
+    await screen.findByRole('button', { name: /u0 배치/i })
+    for (let deck = 0; deck < 3; deck += 1) {
+      for (let seat = 0; seat < 5; seat += 1) {
+        dropOnDeck(deck + 1, `u${deck * 5 + seat}`)
+      }
+    }
+    const battles = () => screen.getAllByRole('group', { name: /전투/ })
+    await user.click(within(battles()[0]).getByLabelText('풍압'))
+    await user.click(within(battles()[1]).getByLabelText('전격'))
+    await user.click(within(battles()[2]).getByLabelText('작열'))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    await screen.findByRole('button', { name: '저장' })
+
+    // 결과가 나온 뒤 1번 전투의 보스만 바꾼다. 화면의 숫자는 그대로 옛 보스의
+    // 것이다 - 다시 제출하지 않았으니까.
+    await user.click(within(battles()[0]).getByLabelText('작열'))
+
+    await user.click(screen.getByRole('button', { name: '저장' }))
+    expect(screen.getByLabelText('이름')).toHaveValue('풍압 전격 작열')
   })
 
   it('보관한 유니온 결과를 열면 그때의 세 덱을 다시 그린다', async () => {
