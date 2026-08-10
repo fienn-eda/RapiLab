@@ -197,7 +197,7 @@ describe('UnionRaidPanel', () => {
     renderPanel()
     await screen.findByRole('button', { name: /u0 배치/i }) // palette rendered
     dropOnDeck(1, 'u0')
-    expect(screen.getByRole('button', { name: '덱 1에서 U0 제거' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '덱 1의 U0' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /고정/ })).not.toBeInTheDocument()
   })
 
@@ -205,7 +205,7 @@ describe('UnionRaidPanel', () => {
     const user = userEvent.setup()
     renderPanel()
     dropOnDeck(3, 'u10')
-    expect(screen.getByRole('button', { name: '덱 3에서 U10 제거' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '덱 3의 U10' })).toBeInTheDocument()
 
     await user.selectOptions(screen.getByLabelText('전투 수'), '1')
     expect(screen.getAllByRole('group', { name: /전투/ })).toHaveLength(1)
@@ -214,7 +214,7 @@ describe('UnionRaidPanel', () => {
     expect(screen.getAllByRole('group', { name: /전투/ })).toHaveLength(3)
     // A fresh, empty battle 3 - shrinking and re-growing does not restore the
     // seat it lost.
-    expect(screen.queryByRole('button', { name: '덱 3에서 U10 제거' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '덱 3의 U10' })).not.toBeInTheDocument()
   })
 
   it('편성 15칸을 다 채우고 제출하면 전투마다 자기 몫의 보스와 5명을 evaluate-decks에 보낸다', async () => {
@@ -335,7 +335,7 @@ describe('UnionRaidPanel', () => {
         excludedSlugs={['u0']}
       />,
     )
-    expect(screen.queryByRole('button', { name: '덱 1에서 U0 제거' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '덱 1의 U0' })).not.toBeInTheDocument()
 
     // Refill the emptied seat with a different unit so the deck is complete
     // again, then submit.

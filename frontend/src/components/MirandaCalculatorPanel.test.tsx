@@ -79,7 +79,7 @@ describe('MirandaCalculatorPanel', () => {
     // 좌석은 하나 차 있고 나머지 넷이 비어 있다.
     expect(screen.getByText('1/5')).toBeInTheDocument()
     // 그리고 그 자리는 비울 수 없다.
-    expect(screen.queryByRole('button', { name: /미란다 제거/ })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /덱 1의 미란다/ })).not.toBeInTheDocument()
   })
 
   it('prefers the favorite-item build, falls back to the base one, and reports neither', () => {
@@ -105,7 +105,7 @@ describe('MirandaCalculatorPanel', () => {
     expect(screen.getByText('1/5')).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: '크라운 배치' }))
     expect(screen.getByText('2/5')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /크라운 제거/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /덱 1의 크라운/ })).toBeInTheDocument()
     // 앉은 유닛은 더 이상 앉힐 수 없다.
     expect(screen.queryByRole('button', { name: '크라운 배치' })).not.toBeInTheDocument()
   })

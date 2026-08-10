@@ -5,11 +5,12 @@
 // both a drop target and a drag source, so a unit dropped in the wrong deck
 // is moved rather than removed and re-added.
 //
-// Pressing a seat's face vacates it, and pressing a palette chip fills one.
-// Dragging still works in a browser but cannot be the way in: the packaged
-// app's WebView2 fires `dragstart` and then delivers no drop.
+// Pressing a seat's face picks it up; pressing that same seat again vacates
+// it, and Esc cancels the pick-up. Pressing a palette chip fills an open
+// seat. Dragging still works in a browser but cannot be the way in: the
+// packaged app's WebView2 fires `dragstart` and then delivers no drop.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import type { Draft, DraftSeat } from '../types/draft'
 import { MAX_DRAFT_SEATS_PER_DECK } from '../types/draft'
 import type { DraftDeck } from '../types/recommend'
@@ -204,6 +205,21 @@ export function DraftEditor({
   // deck seats a unit, dropping on a seat trades with its occupant.
   const [swapTarget, setSwapTarget] = useState<string | null>(null)
 
+  // 든 좌석. 「누르면 제거」와 「누르면 이동」을 한 제스처로 잇는 상태다 -
+  // 드래그가 앱에서 죽어 있어 이동은 클릭 두 번으로만 만들 수 있다.
+  const [heldSeat, setHeldSeat] = useState<{ deckIndex: number; seatIndex: number } | null>(null)
+
+  // 집었다가 마음이 바뀌었을 때의 출구. 같은 좌석을 다시 누르는 것은 제거라
+  // 취소로 쓸 수 없다.
+  useEffect(() => {
+    if (!heldSeat) return
+    const cancel = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setHeldSeat(null)
+    }
+    window.addEventListener('keydown', cancel)
+    return () => window.removeEventListener('keydown', cancel)
+  }, [heldSeat])
+
   const handleDrop = (event: React.DragEvent, deckIndex: number) => {
     const slug = event.dataTransfer.getData(DRAG_SLUG_TYPE)
     setDropTarget(null)
@@ -346,6 +362,9 @@ export function DraftEditor({
                         'draft-editor__slot',
                         swapTarget === seat.slug ? 'draft-editor__slot--swap-target' : '',
                         isFixed ? 'draft-editor__slot--fixed' : '',
+                        heldSeat?.deckIndex === deckIndex && heldSeat.seatIndex === seatIndex
+                          ? 'draft-editor__slot--held'
+                          : '',
                       ].filter(Boolean).join(' ')}
                       // A seat accepts a drop even when its deck is full: a
                       // trade is one out for one in, so the deck's capacity
@@ -382,13 +401,23 @@ export function DraftEditor({
                         <button
                           type="button"
                           className="draft-editor__slot-grip"
-                          aria-label={`${where}에서 ${name} 제거`}
+                          aria-label={`덱 ${deckIndex + 1}의 ${name}`}
                           draggable
                           onDragStart={(event) => {
                             event.dataTransfer.setData(DRAG_SLUG_TYPE, seat.slug)
                             event.dataTransfer.effectAllowed = 'move'
                           }}
-                          onClick={() => onChange(removeUnit(value, deckIndex, seatIndex))}
+                          onClick={() => {
+                            const held =
+                              heldSeat?.deckIndex === deckIndex &&
+                              heldSeat.seatIndex === seatIndex
+                            if (held) {
+                              onChange(removeUnit(value, deckIndex, seatIndex))
+                              setHeldSeat(null)
+                              return
+                            }
+                            setHeldSeat({ deckIndex, seatIndex })
+                          }}
                         >
                           {slotFace}
                         </button>

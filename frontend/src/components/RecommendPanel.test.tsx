@@ -697,7 +697,7 @@ describe('RecommendPanel evaluate mode', () => {
     // palette's own "사용" toggle also carries aria-pressed, so scope on the
     // lock button's distinct label ("고정") rather than the pressed role alone.
     dropOnDeck(1, 'a')
-    expect(screen.getByRole('button', { name: '덱 1에서 A 제거' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '덱 1의 A' })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /고정/ })).not.toBeInTheDocument()
   })
 
@@ -911,7 +911,9 @@ describe('RecommendPanel mode switch', () => {
 
     // 딴 모드로 갔다가, 공유된 draftValue의 편성을 바꾼다.
     await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/ }))
-    await user.click(screen.getByRole('button', { name: '덱 1에서 E 제거' }))
+    const eSeat = () => screen.getByRole('button', { name: '덱 1의 E' })
+    await user.click(eSeat())
+    await user.click(eSeat())
     dropOnDeck(1, 'e') // rebuild a full deck so evaluate mode can submit again
 
     // 평가로 돌아온다 - 새로 제출하지 않았으므로 옛 성공 결과가 남아 있으면 안 된다.
@@ -1302,9 +1304,9 @@ describe('RecommendPanel unit-pool exclusion', () => {
     // Seat unit "a" by dropping it on Deck 1, then bench her from the roster tab.
     dropOnDeck(1, 'a')
     // A slot renders a face, not a name — its controls are what say who is in it.
-    expect(screen.getByRole('button', { name: '덱 1에서 A 제거' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '덱 1의 A' })).toBeInTheDocument()
     rerender(<RecommendPanel roster={poolRoster} {...noPersistence} excludedSlugs={['a']} />)
-    expect(screen.queryByRole('button', { name: '덱 1에서 A 제거' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '덱 1의 A' })).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
     await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())

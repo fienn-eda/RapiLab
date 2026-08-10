@@ -2054,6 +2054,12 @@
   cursor: default;
 }
 
+/* 든 좌석. 아직 어디로도 안 갔다는 것을 색으로 남겨 둔다. */
+.draft-editor__slot--held {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* An open slot reads as an invitation, not as a unit that failed to load. */
 .draft-editor__slot--open {
   border-style: dashed;

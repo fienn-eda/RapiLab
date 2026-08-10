@@ -232,7 +232,7 @@ describe('DraftEditor', () => {
     editor(2, value)
     expect(screen.getByRole('heading', { name: /덱 1/ })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /덱 2/ })).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '덱 1에서 Crown 제거' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '덱 1의 Crown' })).toBeInTheDocument()
     expect(screen.queryByText('crown')).not.toBeInTheDocument()
   })
 
@@ -294,13 +294,15 @@ describe('DraftEditor', () => {
     expect(screen.getByRole('button', { pressed: false })).toBeInTheDocument()
   })
 
-  it('removes a seat via its remove button', async () => {
+  it('removes a seat when its control is pressed twice', async () => {
     const user = userEvent.setup()
     const value: Draft = { decks: [[{ slug: 'crown', locked: false }]] }
     const onChange = vi.fn()
     editor(1, value, onChange)
 
-    await user.click(screen.getByRole('button', { name: '덱 1에서 Crown 제거' }))
+    const seat = () => screen.getByRole('button', { name: '덱 1의 Crown' })
+    await user.click(seat())
+    await user.click(seat())
     expect(onChange).toHaveBeenCalledWith({ decks: [[]] })
   })
 
@@ -329,7 +331,7 @@ describe('DraftEditor', () => {
     expect(screen.getByRole('heading', { name: /덱 1/ })).toBeInTheDocument()
   })
 
-  // 좌석 컨트롤은 자리 번호를 유지한다 - 「인디비리아에서 Crown 제거」는 어느
+  // 좌석 컨트롤은 자리 번호를 유지한다 - 「인디비리아의 Crown」은 어느
   // 자리인지 말하지 않는다.
   it('좌석 컨트롤은 덱 라벨과 무관하게 자리 번호로 말한다', () => {
     render(
@@ -343,9 +345,10 @@ describe('DraftEditor', () => {
         deckLabels={[{ text: '인디비리아', iconSrc: '/elements/water.png' }]}
       />,
     )
-    // 제거·고정 두 컨트롤 다 매치해야 한다 - 덱 라벨이 있어도 좌석 컨트롤은
-    // 자리 번호로만 말한다 (showLocks 기본값이 켜져 있어 버튼이 둘이다).
-    expect(screen.getAllByRole('button', { name: /덱 1에서 Crown/ })).toHaveLength(2)
+    // 그립·고정 두 컨트롤 다 확인한다 - 덱 라벨이 있어도 좌석 컨트롤은
+    // 자리 번호로만 말한다.
+    expect(screen.getByRole('button', { name: '덱 1의 Crown' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '덱 1에서 Crown 고정' })).toBeInTheDocument()
   })
 
   describe('burst-tier order', () => {
@@ -386,8 +389,10 @@ describe('DraftEditor', () => {
         decks: [[{ slug: 'blanc', locked: false }, { slug: 'crown', locked: false }]],
       }, onChange)
 
-      await user.click(
-        screen.getByRole('button', { name: `덱 1에서 ${nameFromSlug('crown')} 제거` }))
+      const crownSeat = () =>
+        screen.getByRole('button', { name: `덱 1의 ${nameFromSlug('crown')}` })
+      await user.click(crownSeat())
+      await user.click(crownSeat())
 
       expect(onChange).toHaveBeenCalledWith({ decks: [[{ slug: 'blanc', locked: false }]] })
     })
@@ -467,7 +472,7 @@ describe('DraftEditor', () => {
 
     const slotOf = (deckIndex: number, slug: string) =>
       screen.getByRole('button', {
-        name: `덱 ${deckIndex + 1}에서 ${nameFromSlug(slug)} 제거`,
+        name: `덱 ${deckIndex + 1}의 ${nameFromSlug(slug)}`,
       }).closest('.draft-editor__slot')!
 
     // Two full decks had no way to trade at all: the deck is the drop target
@@ -556,6 +561,59 @@ describe('DraftEditor', () => {
       expect(handled).toBe(true)
     })
   })
+
+  describe('집기와 놓기', () => {
+    const seated: Draft = { decks: [[{ slug: 'crown', locked: false }], []] }
+
+    it('좌석을 한 번 누르면 들리고, 아직 빠지지 않는다', async () => {
+      const onChange = vi.fn()
+      const { container } = editor(2, seated, onChange)
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+
+      expect(onChange).not.toHaveBeenCalled()
+      expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
+    })
+
+    it('같은 좌석을 다시 누르면 제거한다', async () => {
+      const onChange = vi.fn()
+      editor(2, seated, onChange)
+
+      const seat = () => screen.getByRole('button', { name: /덱 1의 Crown/ })
+      await userEvent.click(seat())
+      await userEvent.click(seat())
+
+      expect(onChange).toHaveBeenCalledWith({ decks: [[], []] })
+    })
+
+    it('Esc는 집기를 취소하고 좌석을 그대로 둔다', async () => {
+      const onChange = vi.fn()
+      const { container } = editor(2, seated, onChange)
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+      await userEvent.keyboard('{Escape}')
+
+      expect(onChange).not.toHaveBeenCalled()
+      expect(container.querySelector('.draft-editor__slot--held')).toBeNull()
+    })
+
+    it('고정된 좌석은 들리지 않는다', async () => {
+      const onChange = vi.fn()
+      const { container } = render(
+        <DraftEditor
+          numDecks={2} value={seated} onChange={onChange}
+          portraitFor={() => null} nameFor={nameFromSlug}
+          burstTiersFor={(slug) => TIERS[slug] ?? []}
+          fixedSlugs={['crown']}
+        />,
+      )
+      const grip = container.querySelector('.draft-editor__slot-grip')!
+      await userEvent.click(grip)
+
+      expect(onChange).not.toHaveBeenCalled()
+      expect(container.querySelector('.draft-editor__slot--held')).toBeNull()
+    })
+  })
 })
 
 describe('fixedSlugs', () => {
@@ -589,12 +647,12 @@ describe('fixedSlugs', () => {
     return onChange
   }
 
-  it('draws no remove button for a fixed seat', () => {
+  it('draws no seat control for a fixed seat', () => {
     renderWith(['miranda-signature'])
     expect(
-      screen.queryByRole('button', { name: /miranda-signature 제거/ }),
+      screen.queryByRole('button', { name: /덱 1의 miranda-signature/ }),
     ).not.toBeInTheDocument()
-    expect(screen.getByRole('button', { name: /ada-wong 제거/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /덱 1의 ada-wong/ })).toBeInTheDocument()
   })
 
   it('refuses a drag-out started from the portrait image, not just the grip', () => {
@@ -610,7 +668,7 @@ describe('fixedSlugs', () => {
   })
 
   it('refuses a swap dropped onto a fixed seat', () => {
-    // 제거 버튼과 드래그만 막으면 뒷문이 열려 있다 - 스왑은 점유자를 밀어낸다.
+    // 좌석 컨트롤과 드래그만 막으면 뒷문이 열려 있다 - 스왑은 점유자를 밀어낸다.
     // crown이 다른 덱에 이미 앉아 있어야 seated===true가 되어 실제로
     // swapUnits 분기를 탄다 - 안 그러면 자리 없는 유닛의 moveUnit 분기를
     // 시험하게 된다.
@@ -633,7 +691,7 @@ describe('fixedSlugs', () => {
   it('leaves every seat removable when no slug is fixed', () => {
     renderWith()
     expect(
-      screen.getByRole('button', { name: /miranda-signature 제거/ }),
+      screen.getByRole('button', { name: /덱 1의 miranda-signature/ }),
     ).toBeInTheDocument()
   })
 })
