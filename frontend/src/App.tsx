@@ -22,6 +22,7 @@ import { UnionRaidPanel } from './components/UnionRaidPanel'
 import { CalculatorPanel } from './components/CalculatorPanel'
 import { PrivacyNotice } from './components/PrivacyNotice'
 import { HELP } from './lib/helpText'
+import { HelpText } from './components/HelpText'
 import type { NikkeDraft } from './types/nikkeDraft'
 import type { SavedRun } from './types/profile'
 
@@ -144,11 +145,10 @@ function App() {
         <div className="app__masthead">
           <h1 className="app__title">RapiLab</h1>
           <p className="app__subtitle">
-            blablalink에서 로스터를 동기화하면 엔진이 덱을 구성해줘요.
+            <HelpText>{HELP.app.subtitle}</HelpText>
           </p>
           <p className="app__note">
-            덱 추천은 모든 니케가 재장전 큐브 15레벨을 착용한 것으로 계산합니다.
-            계산기 탭에서는 큐브를 직접 고릅니다.
+            <HelpText>{HELP.app.cubeAssumption}</HelpText>
           </p>
         </div>
 
@@ -168,8 +168,7 @@ function App() {
           <SyncRosterPanel onImport={upsertProfile} knownFor={knownFor} defaultHelpOpen />
           <div className="empty">
             <p className="empty__text">
-              아직 동기화된 계정이 없어요. 위에서 blablalink 동기화를
-              시작해보세요.
+              <HelpText>{HELP.app.noProfiles}</HelpText>
             </p>
           </div>
         </main>

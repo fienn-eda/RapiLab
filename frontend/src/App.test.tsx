@@ -67,7 +67,7 @@ describe('App', () => {
     // The 계산기 tab asks which cube the unit wears, so an unqualified "every
     // Nikke wears a reload cube" is a claim the app contradicts on that screen.
     await renderSettled(<App />)
-    expect(screen.getByText(/덱 추천은 .*재장전 큐브 15레벨/i)).toBeInTheDocument()
+    expect(screen.getByText(HELP.app.cubeAssumption)).toBeInTheDocument()
   })
 
   it('prompts to sync and hides the roster/recommend panel when there is no active profile', async () => {
