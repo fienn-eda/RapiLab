@@ -416,6 +416,15 @@ export function DraftEditor({
                               setHeldSeat(null)
                               return
                             }
+                            if (heldSeat) {
+                              // 차 있는 자리에 놓는 것은 교환이다 - 드래그 드롭이
+                              // 이미 그렇게 해서 두 경로가 같은 규칙이 된다.
+                              const heldSlug =
+                                value.decks[heldSeat.deckIndex]?.[heldSeat.seatIndex]?.slug
+                              if (heldSlug) onChange(swapUnits(value, heldSlug, seat.slug))
+                              setHeldSeat(null)
+                              return
+                            }
                             setHeldSeat({ deckIndex, seatIndex })
                           }}
                         >
@@ -443,9 +452,27 @@ export function DraftEditor({
                   <li
                     key={`open-${i}`}
                     className="draft-editor__slot draft-editor__slot--open"
-                    aria-hidden="true"
+                    // 들고 있을 때만 놓을 수 있다. 누를 수 없는 것을 버튼으로
+                    // 보이게 하지 않으려고 그때만 버튼이 된다.
+                    aria-hidden={heldSeat ? undefined : 'true'}
                   >
-                    <span className="draft-editor__slot-plus">+</span>
+                    {heldSeat && i === 0 ? (
+                      <button
+                        type="button"
+                        className="draft-editor__slot-plus"
+                        aria-label={`덱 ${deckIndex + 1}에 놓기`}
+                        onClick={() => {
+                          const heldSlug =
+                            value.decks[heldSeat.deckIndex]?.[heldSeat.seatIndex]?.slug
+                          if (heldSlug) onChange(moveUnit(value, deckIndex, heldSlug))
+                          setHeldSeat(null)
+                        }}
+                      >
+                        +
+                      </button>
+                    ) : (
+                      <span className="draft-editor__slot-plus">+</span>
+                    )}
                   </li>
                 ))}
               </ul>

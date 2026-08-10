@@ -2074,6 +2074,22 @@
   color: var(--text-muted);
 }
 
+/* 든 것이 있을 때만 이 글자가 버튼이 된다 - 브라우저 기본 버튼 테두리를
+   지워 안 든 상태의 span과 같은 모양을 유지한다. */
+button.draft-editor__slot-plus {
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: var(--text-muted);
+}
+
+button.draft-editor__slot-plus:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 /* The whole face, so vacating a seat is a full-slot target rather than the
    14px corner glyph it used to be. A button reset because it started life as
    a plain div and the slot's art must still fill it edge to edge. */

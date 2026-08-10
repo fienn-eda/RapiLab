@@ -613,6 +613,59 @@ describe('DraftEditor', () => {
       expect(onChange).not.toHaveBeenCalled()
       expect(container.querySelector('.draft-editor__slot--held')).toBeNull()
     })
+
+    it('들고 다른 덱의 빈자리를 누르면 옮긴다', async () => {
+      const onChange = vi.fn()
+      editor(2, seated, onChange)
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+      await userEvent.click(screen.getByRole('button', { name: '덱 2에 놓기' }))
+
+      expect(onChange).toHaveBeenCalledWith({
+        decks: [[], [{ slug: 'crown', locked: false }]],
+      })
+    })
+
+    it('들고 차 있는 자리를 누르면 둘을 교환한다', async () => {
+      const both: Draft = {
+        decks: [[{ slug: 'crown', locked: false }], [{ slug: 'liter', locked: false }]],
+      }
+      const onChange = vi.fn()
+      editor(2, both, onChange)
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+      await userEvent.click(screen.getByRole('button', { name: /덱 2의 Liter/ }))
+
+      expect(onChange).toHaveBeenCalledWith({
+        decks: [[{ slug: 'liter', locked: false }], [{ slug: 'crown', locked: false }]],
+      })
+    })
+
+    it('아무것도 안 들었으면 빈자리는 버튼이 아니다', () => {
+      editor(2, seated)
+      expect(screen.queryByRole('button', { name: /놓기/ })).not.toBeInTheDocument()
+    })
+
+    it('들고 고정된 좌석을 누르면 아무 일도 없고 계속 들고 있다', async () => {
+      const both: Draft = {
+        decks: [[{ slug: 'crown', locked: false }], [{ slug: 'liter', locked: false }]],
+      }
+      const onChange = vi.fn()
+      const { container } = render(
+        <DraftEditor
+          numDecks={2} value={both} onChange={onChange}
+          portraitFor={() => null} nameFor={nameFromSlug}
+          burstTiersFor={(slug) => TIERS[slug] ?? []}
+          fixedSlugs={['liter']}
+        />,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+      await userEvent.click(container.querySelectorAll('.draft-editor__slot-grip')[1])
+
+      expect(onChange).not.toHaveBeenCalled()
+      expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
+    })
   })
 })
 
