@@ -104,7 +104,10 @@ export function MirandaTargets({ result, portraitFor, nameFor }: MirandaTargetsP
                   )}
                   {powerCount > 0 && (
                     <>
-                      <span className="miranda-badge miranda-badge--silver"><span>공격력</span></span>
+                      <span className="miranda-badge miranda-badge--silver">
+                        <span>공격력</span>
+                        {powerCount < total && <b>{powerCount}/{total}</b>}
+                      </span>
                       <span className="miranda-badge miranda-badge--silver">
                         <span>크댐</span>
                         {powerCount < total && <b>{powerCount}/{total}</b>}

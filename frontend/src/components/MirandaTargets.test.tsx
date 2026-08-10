@@ -56,8 +56,24 @@ describe('MirandaTargets', () => {
         { index: 2, poweringUp: ['ada-wong', 'isabel'], wakeUpCritRate: ['ada-wong'] },
       ],
     })
-    expect(within(row('크라운')).getByText('1/2')).toBeInTheDocument()
+    // 공격력·크댐 두 은뱃지가 같은 횟수를 달기 때문에 '1/2'가 두 번 뜬다.
+    expect(within(row('크라운')).getAllByText('1/2')).toHaveLength(2)
     expect(within(row('에이다 웡')).queryByText('1/2')).not.toBeInTheDocument()
+  })
+
+  it('gives the 공격력 badge the same cycle count as 크댐', () => {
+    renderResult({
+      ...base,
+      cycles: [
+        { index: 1, poweringUp: ['ada-wong', 'crown'], wakeUpCritRate: ['ada-wong'] },
+        { index: 2, poweringUp: ['ada-wong', 'isabel'], wakeUpCritRate: ['ada-wong'] },
+      ],
+    })
+    const crownRow = within(row('크라운'))
+    const atkBadge = crownRow.getByText('공격력').closest('.miranda-badge')!
+    const critBadge = crownRow.getByText('크댐').closest('.miranda-badge')!
+    expect(atkBadge).toHaveTextContent('1/2')
+    expect(critBadge).toHaveTextContent('1/2')
   })
 
   it('names the cycles where powering-up changed hands', () => {
