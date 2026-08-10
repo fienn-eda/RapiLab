@@ -6,6 +6,9 @@ import type { BossElement, BossProfile, BossRangeBand } from './recommend'
 
 export interface BossProfileDraft {
   element: BossElement
+  /** 회차에서 고른 보스 이름. 표시 전용이라 BossProfile(wire)에는 가지 않는다.
+   * 속성이 손으로 바뀌면 null로 돌아간다 - 이름이 가리키던 보스가 아니게 된다. */
+  boss_name: string | null
   core_hittable: boolean
   pierce_hits_body_behind_core: boolean
   enemy_def: string
@@ -21,6 +24,7 @@ export interface BossProfileDraft {
  * 다르므로, 공유 기본값 하나로는 한쪽이 틀린 값으로 계산된다. */
 export const makeDefaultBossProfileDraft = (enemyDef = '0'): BossProfileDraft => ({
   element: null,
+  boss_name: null,
   core_hittable: false,
   pierce_hits_body_behind_core: false,
   enemy_def: enemyDef,
@@ -47,6 +51,8 @@ export interface BossProfileValidationResult {
  * repopulate the boss form from a profile's lastInputs. */
 export const bossProfileToDraft = (boss: BossProfile): BossProfileDraft => ({
   element: boss.element,
+  // wire에는 이름이 없다. 복원한 폼은 약점 이름으로 자기를 부른다.
+  boss_name: null,
   core_hittable: boss.core_hittable,
   // 이 필드가 생기기 전에 저장된 프로필은 undefined라, 그대로 두면 체크박스가
   // 비제어 컴포넌트가 된다.

@@ -172,25 +172,19 @@ export function BossProfileField({
   const elementId = useId()
   const rangeBandId = useId()
 
-  // 어느 보스 카드를 눌렀는지. 이름으로 들고 있는 이유는 같은 약점을 가진 보스가
-  // 한 회차에 둘 나올 수 있어서다 — 속성만으로는 어느 쪽인지 못 가른다.
-  const [pickedName, setPickedName] = useState<string | null>(null)
-
-  // 카드는 「이 보스로 계산 중」이라고 말한다. 그래서 약점이 그 보스와 달라진
-  // 순간(사용자가 아이콘을 직접 눌렀을 때) 체크를 놓아야 한다.
-  const picked = rotation?.bosses.find((boss) => boss.name === pickedName) ?? null
-  const selectedName =
-    picked && bossElementFor(picked.weakness) === value.element ? picked.name : null
+  // 이름은 값에 실려 오므로 파생 가드가 필요 없다 - 속성을 바꾸는 모든 길이
+  // 이름을 같이 지운다.
+  const selectedName = value.boss_name
 
   // 공지가 그 단어로 적은 것(약점 · 거리)만 얹고 나머지는 전부 기본값으로 돌린다.
   // 직전 보스의 설정이 남으면 화면에는 새 보스 이름이 적혀 있는데 계산은 옛 보스
   // 가정으로 돈다. 거리를 안 적는 솔로 공지에서는 range_band가 null이라 적정거리도
   // 기본값(모름)으로 남는다.
   const pickRotationBoss = (boss: RotationBoss) => {
-    setPickedName(boss.name)
     onChange({
       ...makeDefaultBossProfileDraft(defaultEnemyDef),
       element: bossElementFor(boss.weakness),
+      boss_name: boss.name,
       effective_range_band: boss.range_band,
       core_diameter_px:
         boss.core_diameter_px === null ? '' : String(boss.core_diameter_px),
@@ -243,7 +237,7 @@ export function BossProfileField({
                   className="visually-hidden"
                   name={elementId}
                   checked={value.element === bossElement}
-                  onChange={() => onChange({ ...value, element: bossElement })}
+                  onChange={() => onChange({ ...value, element: bossElement, boss_name: null })}
                 />
                 <img className="element-picker__icon" src={WEAKNESS_ICON[weakness]} alt="" />
                 <span className="element-picker__name">{elementLabel(weakness)}</span>
@@ -256,7 +250,7 @@ export function BossProfileField({
               className="visually-hidden"
               name={elementId}
               checked={value.element === null}
-              onChange={() => onChange({ ...value, element: null })}
+              onChange={() => onChange({ ...value, element: null, boss_name: null })}
             />
             <span className="element-picker__name">약점 없음</span>
           </label>

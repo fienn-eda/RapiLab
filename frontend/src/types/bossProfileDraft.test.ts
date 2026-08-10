@@ -26,6 +26,7 @@ describe('validateBossProfileDraft', () => {
   it('accepts an elemental, core-hittable, part-destructible boss with a custom DEF and duration', () => {
     const draft: BossProfileDraft = {
       element: 'Fire',
+      boss_name: null,
       core_hittable: true,
       pierce_hits_body_behind_core: false,
       enemy_def: '15000',
@@ -81,6 +82,7 @@ describe('bossProfileToDraft', () => {
   it('round-trips through validate -> toDraft -> validate to an equal BossProfile', () => {
     const draft: BossProfileDraft = {
       element: 'Fire',
+      boss_name: null,
       core_hittable: true,
       pierce_hits_body_behind_core: false,
       enemy_def: '15000',

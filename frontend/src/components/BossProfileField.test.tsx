@@ -260,6 +260,7 @@ describe('BossProfileField 회차 보스 피커', () => {
     expect(onChange).toHaveBeenCalledWith({
       ...makeDefaultBossProfileDraft(),
       element: bossElementFor('Water'),
+      boss_name: '토커티브',
       effective_range_band: 'far',
     })
   })
@@ -345,6 +346,58 @@ describe('BossProfileField 회차 보스 피커', () => {
 
     await user.click(screen.getByRole('radio', { name: '작열' }))
     expect(screen.getByRole('radio', { name: '전격선바스' })).not.toBeChecked()
+  })
+})
+
+describe('BossProfileField 보스 이름', () => {
+  it('회차 보스를 고르면 그 이름을 draft에 담아 올린다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        onChange={onChange}
+        rotation={rotation}
+      />,
+    )
+
+    await user.click(screen.getByRole('radio', { name: '전격선바스' }))
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ boss_name: '선바스' }))
+  })
+
+  // 라벨이 거짓말하지 않게 하는 가드. 이름은 그 속성의 보스를 가리켜 붙은 것이라,
+  // 속성을 손으로 바꾸면 가리킬 대상이 없어진다.
+  it('속성을 직접 바꾸면 보스 이름을 버린다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), element: 'Fire', boss_name: '선바스' }}
+        onChange={onChange}
+        rotation={rotation}
+      />,
+    )
+
+    await user.click(screen.getByRole('radio', { name: '전격' }))
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ boss_name: null }))
+  })
+
+  it('약점 없음을 골라도 보스 이름을 버린다', async () => {
+    const user = userEvent.setup()
+    const onChange = vi.fn()
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), element: 'Fire', boss_name: '선바스' }}
+        onChange={onChange}
+        rotation={rotation}
+      />,
+    )
+
+    await user.click(screen.getByRole('radio', { name: '약점 없음' }))
+
+    expect(onChange).toHaveBeenCalledWith(expect.objectContaining({ boss_name: null }))
   })
 })
 
