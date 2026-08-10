@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { UnionRaidPanel } from './UnionRaidPanel'
+import { UnionRaidPanel, suggestUnionRunName } from './UnionRaidPanel'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
+import { makeDefaultBossProfileDraft } from '../types/bossProfileDraft'
 import type { UserNikkeState } from '../types/userNikkeState'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { RaidRotation } from '../types/raidRotation'
 import type { SavedRun } from '../types/profile'
+import type { BossElement } from '../types/recommend'
 
 vi.mock('../api/evaluateDecks', () => ({
   evaluateDecks: vi.fn(),
@@ -467,5 +469,25 @@ describe('UnionRaidPanel 결과 보관', () => {
     await user.click(screen.getByRole('button', { name: /지난 주 유니온/ }))
 
     expect(screen.getByText('888 총딜')).toBeInTheDocument()
+  })
+})
+
+describe('suggestUnionRunName', () => {
+  const boss = (element: BossElement) => ({ ...makeDefaultBossProfileDraft(), element })
+
+  it('덱 순서대로 약점을 나열한다', () => {
+    expect(suggestUnionRunName([boss('Fire'), boss('Water'), boss('Iron')])).toBe(
+      '수냉 전격 풍압',
+    )
+  })
+
+  it('속성을 안 고른 덱도 자리를 지킨다', () => {
+    expect(suggestUnionRunName([boss('Fire'), boss(null), boss('Fire')])).toBe(
+      '수냉 약점없음 수냉',
+    )
+  })
+
+  it('날짜를 붙이지 않는다 - 목록이 저장 시각을 따로 찍는다', () => {
+    expect(suggestUnionRunName([boss('Fire')])).toBe('수냉')
   })
 })

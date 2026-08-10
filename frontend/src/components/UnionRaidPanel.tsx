@@ -9,6 +9,7 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { useEvaluateDecks } from '../hooks/useEvaluateDecks'
 import { HELP } from '../lib/helpText'
+import { weaknessLabelOf } from '../lib/bossLabel'
 import {
   bossProfileToDraft,
   makeDefaultBossProfileDraft,
@@ -56,12 +57,11 @@ interface UnionRaidPanelProps {
   onDeleteRun: (id: string) => void
 }
 
-/** 유니온은 전투마다 보스가 달라 하나를 이름에 뽑을 수 없다 — 전투 수와 날짜로
- * 구분한다. */
-const suggestUnionRunName = (at: Date, numBattles: number): string => {
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `유니온 ${numBattles}전투 · ${pad(at.getMonth() + 1)}-${pad(at.getDate())}`
-}
+/** 유니온은 전투마다 보스가 달라 하나를 이름에 뽑을 수 없다 — 덱 순서대로
+ * 약점을 나열한다. 날짜는 넣지 않는다: 보관 목록이 이름 옆에 저장 시각을
+ * 항상 따로 찍는다. */
+export const suggestUnionRunName = (bosses: BossProfileDraft[]): string =>
+  bosses.map((boss) => weaknessLabelOf(boss.element)).join(' ')
 
 const NUM_BATTLES_OPTIONS = Array.from(
   { length: MAX_UNION_NUM_DECKS - MIN_UNION_NUM_DECKS + 1 },
@@ -255,7 +255,7 @@ export function UnionRaidPanel({
           <div className="result-head">
             <span className="saved-runs__name">유니온 레이드 {numBattles}전투</span>
             <SaveRunButton
-              suggestedName={suggestUnionRunName(new Date(), numBattles)}
+              suggestedName={suggestUnionRunName(bosses.slice(0, numBattles))}
               onSave={(name) => {
                 const savedAt = Date.now()
                 return onSaveRun({
