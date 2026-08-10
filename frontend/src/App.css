@@ -979,6 +979,24 @@
   color: var(--text-muted);
 }
 
+.group__collapse {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+}
+.group__collapse-icon {
+  width: 16px;
+  height: 16px;
+}
+.group__collapse[aria-expanded='false']::after { content: ' ▸'; }
+.group__collapse[aria-expanded='true']::after { content: ' ▾'; }
+
 .group__empty {
   font-size: 13px;
   color: var(--text-muted);

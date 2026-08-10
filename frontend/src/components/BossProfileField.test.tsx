@@ -640,3 +640,96 @@ describe('BossProfileField 화면에서 재서 넣기', () => {
     expect(options).toEqual(['SG', 'SMG', 'AR'])
   })
 })
+
+describe('BossProfileField 접기', () => {
+  // 머리는 늘 bossHeading이 정한다 - 펼쳐져 있을 때도 같은 이름이다.
+  const toggle = (name: string) => screen.getByRole('button', { name })
+
+  it('처음에는 펼쳐져 있다', () => {
+    render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />)
+
+    expect(toggle('보스 설정')).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByRole('radiogroup', { name: '보스 약점 속성' })).toBeInTheDocument()
+  })
+
+  it('접으면 본문이 사라진다', async () => {
+    const user = userEvent.setup()
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), element: 'Fire', boss_name: '선바스' }}
+        onChange={vi.fn()}
+      />,
+    )
+
+    await user.click(toggle('선바스'))
+
+    expect(toggle('선바스')).toHaveAttribute('aria-expanded', 'false')
+    expect(screen.queryByRole('radiogroup', { name: '보스 약점 속성' })).not.toBeInTheDocument()
+    // getByLabelText는 라벨 전체 텍스트("전투 시간 초")와 정확히 맞아야 하므로 롤로 겨눈다.
+    expect(screen.queryByLabelText(/전투 시간/)).not.toBeInTheDocument()
+  })
+
+  it('보스를 골랐으면 그 이름으로 부른다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), element: 'Fire', boss_name: '선바스' }}
+        onChange={vi.fn()}
+      />,
+    )
+    expect(toggle('선바스')).toBeInTheDocument()
+  })
+
+  it('이름이 없으면 약점 이름으로 부른다', () => {
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), element: 'Fire' }}
+        onChange={vi.fn()}
+      />,
+    )
+    expect(toggle('수냉')).toBeInTheDocument()
+  })
+
+  it('이름도 속성도 없으면 보스 설정이라고 부른다', () => {
+    render(<BossProfileField value={makeDefaultBossProfileDraft()} onChange={vi.fn()} />)
+    expect(toggle('보스 설정')).toBeInTheDocument()
+  })
+
+  // 접힌 안에 오류가 숨으면 계산이 이유 없이 안 되는 것처럼 보인다.
+  it('오류가 있으면 접혀 있어도 펼친다', async () => {
+    const user = userEvent.setup()
+    const view = render(
+      <BossProfileField value={makeDefaultBossProfileDraft()} errors={{}} onChange={vi.fn()} />,
+    )
+
+    await user.click(toggle('보스 설정'))
+    expect(screen.queryByRole('radiogroup', { name: '보스 약점 속성' })).not.toBeInTheDocument()
+
+    view.rerender(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        errors={{ fight_duration: '0보다 커야 해요' }}
+        onChange={() => {}}
+      />,
+    )
+
+    expect(screen.getByText('0보다 커야 해요')).toBeInTheDocument()
+    expect(screen.getByRole('radiogroup', { name: '보스 약점 속성' })).toBeInTheDocument()
+    expect(toggle('보스 설정')).toHaveAttribute('aria-expanded', 'true')
+  })
+
+  it('회차 보스 설명 버튼을 눌러도 접힘 상태는 안 바뀐다', async () => {
+    // HelpTip이 접기 버튼 안에 있으면 버튼 안의 버튼이 되어, 이 클릭이 접기까지 토글한다.
+    const user = userEvent.setup()
+    render(
+      <BossProfileField
+        value={makeDefaultBossProfileDraft()}
+        onChange={vi.fn()}
+        rotation={rotation}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: '회차 보스 설명' }))
+
+    expect(toggle('보스 설정')).toHaveAttribute('aria-expanded', 'true')
+  })
+})

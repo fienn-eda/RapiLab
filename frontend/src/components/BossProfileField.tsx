@@ -3,6 +3,7 @@
 // Mirrors BossProfile in src/types/recommend.ts.
 
 import { useId, useState } from 'react'
+import { bossHeading } from '../lib/bossLabel'
 import {
   REFERENCE_WEAPONS,
   WEAPON_SPREAD_DIAMETER,
@@ -171,6 +172,18 @@ export function BossProfileField({
 }: BossProfileFieldProps) {
   const elementId = useId()
   const rangeBandId = useId()
+  const [collapsed, setCollapsed] = useState(false)
+  const bodyId = useId()
+
+  // 오류가 접힌 안에 숨으면 화면에는 이유 없이 계산이 안 되는 것처럼 보인다.
+  const hasErrors = Object.keys(errors ?? {}).length > 0
+  const showBody = !collapsed || hasErrors
+
+  const heading = bossHeading({
+    bossName: value.boss_name,
+    element: value.element,
+    fallback: '보스 설정',
+  })
 
   // 이름은 값에 실려 오므로 파생 가드가 필요 없다 - 속성을 바꾸는 모든 길이
   // 이름을 같이 지운다.
@@ -200,7 +213,19 @@ export function BossProfileField({
           없어서, 카드를 고르면 어떻게 된다는 설명이 가리킬 대상이 없다. */}
       <legend className="group__legend">
         <span className="group__legend-row">
-          보스 설정
+          {/* HelpTip을 감싸지 않는다 - 버튼 안의 버튼은 무효다. */}
+          <button
+            type="button"
+            className="group__collapse"
+            aria-expanded={showBody}
+            aria-controls={bodyId}
+            onClick={() => setCollapsed((current) => !current)}
+          >
+            {heading.iconSrc && (
+              <img className="group__collapse-icon" src={heading.iconSrc} alt="" />
+            )}
+            {heading.text}
+          </button>
           {rotation && (
             <HelpTip label="회차 보스">
               <HelpText>{HELP.boss.rotationPicker}</HelpText>
@@ -209,214 +234,218 @@ export function BossProfileField({
         </span>
       </legend>
 
-      {rotation && (
-        <RaidRotationPicker
-          rotation={rotation}
-          selectedName={selectedName}
-          onPick={pickRotationBoss}
-        />
-      )}
+      {showBody && (
+        <div id={bodyId}>
+          {rotation && (
+            <RaidRotationPicker
+              rotation={rotation}
+              selectedName={selectedName}
+              onPick={pickRotationBoss}
+            />
+          )}
 
-      <div className="field">
-        <span className="field__label" id={`${elementId}-label`}>
-          보스 약점 속성
-        </span>
-        {/* 진짜 라디오를 시각적으로만 숨긴다. div/button으로 만들면 화살표 이동과
-            화면 낭독기의 그룹 읽기를 둘 다 잃는다. */}
-        <div className="element-picker" role="radiogroup" aria-labelledby={`${elementId}-label`}>
-          {WEAKNESS_CHOICES.map((weakness) => {
-            const bossElement = bossElementFor(weakness)
-            return (
-              <label
-                key={weakness}
-                className="element-picker__option"
-                data-element={weakness}
-              >
+          <div className="field">
+            <span className="field__label" id={`${elementId}-label`}>
+              보스 약점 속성
+            </span>
+            {/* 진짜 라디오를 시각적으로만 숨긴다. div/button으로 만들면 화살표 이동과
+                화면 낭독기의 그룹 읽기를 둘 다 잃는다. */}
+            <div className="element-picker" role="radiogroup" aria-labelledby={`${elementId}-label`}>
+              {WEAKNESS_CHOICES.map((weakness) => {
+                const bossElement = bossElementFor(weakness)
+                return (
+                  <label
+                    key={weakness}
+                    className="element-picker__option"
+                    data-element={weakness}
+                  >
+                    <input
+                      type="radio"
+                      className="visually-hidden"
+                      name={elementId}
+                      checked={value.element === bossElement}
+                      onChange={() => onChange({ ...value, element: bossElement, boss_name: null })}
+                    />
+                    <img className="element-picker__icon" src={WEAKNESS_ICON[weakness]} alt="" />
+                    <span className="element-picker__name">{elementLabel(weakness)}</span>
+                  </label>
+                )
+              })}
+              <label className="element-picker__option element-picker__option--none">
                 <input
                   type="radio"
                   className="visually-hidden"
                   name={elementId}
-                  checked={value.element === bossElement}
-                  onChange={() => onChange({ ...value, element: bossElement, boss_name: null })}
+                  checked={value.element === null}
+                  onChange={() => onChange({ ...value, element: null, boss_name: null })}
                 />
-                <img className="element-picker__icon" src={WEAKNESS_ICON[weakness]} alt="" />
-                <span className="element-picker__name">{elementLabel(weakness)}</span>
+                <span className="element-picker__name">약점 없음</span>
               </label>
-            )
-          })}
-          <label className="element-picker__option element-picker__option--none">
-            <input
-              type="radio"
-              className="visually-hidden"
-              name={elementId}
-              checked={value.element === null}
-              onChange={() => onChange({ ...value, element: null, boss_name: null })}
-            />
-            <span className="element-picker__name">약점 없음</span>
-          </label>
-        </div>
-      </div>
+            </div>
+          </div>
 
-      <div className="field">
-        <span className="field__label-row">
-          <label className="field__label" htmlFor={rangeBandId}>
-            보스 적정거리
-          </label>
-          <HelpTip label="보스 적정거리">
-            <HelpText>{HELP.boss.rangeBand}</HelpText>
-          </HelpTip>
-        </span>
-        <select
-          id={rangeBandId}
-          className="field__input"
-          value={value.effective_range_band ?? ''}
-          onChange={(event) =>
-            onChange({
-              ...value,
-              effective_range_band: (event.target.value || null) as BossRangeBand,
-            })
-          }
-        >
-          <option value="">모름 (보너스 없음)</option>
-          {BOSS_RANGE_BANDS.map((band) => (
-            <option key={band} value={band}>
-              {RANGE_BAND_LABEL[band]}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      {/* 설명 버튼이 <label> 밖에 있는 이유: 라벨 안에서는 아무 클릭이나
-          체크박스를 토글하므로, 설명을 열려던 클릭이 보스 설정을 바꾼다. */}
-      <div className="checkbox-row">
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={value.core_hittable}
-            onChange={(event) =>
-              onChange({
-                ...value,
-                core_hittable: event.target.checked,
-                // 코어를 못 때리면 뚫고 지나갈 것도 없다. 엔진도 두 값을 같이 읽지만,
-                // 폼에서 모순 상태를 아예 만들지 않는 편이 화면이 정직하다.
-                pierce_hits_body_behind_core:
-                  event.target.checked && value.pierce_hits_body_behind_core,
-                // 코어를 못 때리면 크기도 의미가 없다. 값을 남겨 두면 화면에서
-                // 사라진 칸이 계산에는 남는다.
-                core_diameter_px: event.target.checked ? value.core_diameter_px : '',
-              })
-            }
-          />
-          코어 피격 가능
-        </label>
-        <HelpTip label="코어 피격 가능">
-          <HelpText>{HELP.boss.coreHittable}</HelpText>
-        </HelpTip>
-      </div>
-
-      <div className="checkbox-row">
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={value.pierce_hits_body_behind_core}
-            onChange={(event) =>
-              onChange({
-                ...value,
-                pierce_hits_body_behind_core: event.target.checked,
-                core_hittable: event.target.checked || value.core_hittable,
-              })
-            }
-          />
-          상시 코어 2관통
-        </label>
-        <HelpTip label="상시 코어 2관통">
-          <HelpText>{HELP.boss.corePierce}</HelpText>
-        </HelpTip>
-      </div>
-
-      <div className="checkbox-row">
-        <label className="checkbox">
-          <input
-            type="checkbox"
-            checked={value.part_destructible}
-            onChange={(event) =>
-              onChange({ ...value, part_destructible: event.target.checked })
-            }
-          />
-          부위파괴 기믹
-        </label>
-        <HelpTip label="부위파괴 기믹">
-          <HelpText>{HELP.boss.partDestructible}</HelpText>
-        </HelpTip>
-      </div>
-
-      {showElementalInterrupt && (
-        <div className="checkbox-row">
-          <label className="checkbox">
-            <input
-              type="checkbox"
-              checked={value.elemental_interrupt_required}
+          <div className="field">
+            <span className="field__label-row">
+              <label className="field__label" htmlFor={rangeBandId}>
+                보스 적정거리
+              </label>
+              <HelpTip label="보스 적정거리">
+                <HelpText>{HELP.boss.rangeBand}</HelpText>
+              </HelpTip>
+            </span>
+            <select
+              id={rangeBandId}
+              className="field__input"
+              value={value.effective_range_band ?? ''}
               onChange={(event) =>
-                onChange({ ...value, elemental_interrupt_required: event.target.checked })
+                onChange({
+                  ...value,
+                  effective_range_band: (event.target.value || null) as BossRangeBand,
+                })
               }
-            />
-            속성저지 필수
-          </label>
-          <HelpTip label="속성저지 필수">
-            <HelpText>{HELP.boss.elementalInterrupt}</HelpText>
-          </HelpTip>
+            >
+              <option value="">모름 (보너스 없음)</option>
+              {BOSS_RANGE_BANDS.map((band) => (
+                <option key={band} value={band}>
+                  {RANGE_BAND_LABEL[band]}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* 설명 버튼이 <label> 밖에 있는 이유: 라벨 안에서는 아무 클릭이나
+              체크박스를 토글하므로, 설명을 열려던 클릭이 보스 설정을 바꾼다. */}
+          <div className="checkbox-row">
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={value.core_hittable}
+                onChange={(event) =>
+                  onChange({
+                    ...value,
+                    core_hittable: event.target.checked,
+                    // 코어를 못 때리면 뚫고 지나갈 것도 없다. 엔진도 두 값을 같이 읽지만,
+                    // 폼에서 모순 상태를 아예 만들지 않는 편이 화면이 정직하다.
+                    pierce_hits_body_behind_core:
+                      event.target.checked && value.pierce_hits_body_behind_core,
+                    // 코어를 못 때리면 크기도 의미가 없다. 값을 남겨 두면 화면에서
+                    // 사라진 칸이 계산에는 남는다.
+                    core_diameter_px: event.target.checked ? value.core_diameter_px : '',
+                  })
+                }
+              />
+              코어 피격 가능
+            </label>
+            <HelpTip label="코어 피격 가능">
+              <HelpText>{HELP.boss.coreHittable}</HelpText>
+            </HelpTip>
+          </div>
+
+          <div className="checkbox-row">
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={value.pierce_hits_body_behind_core}
+                onChange={(event) =>
+                  onChange({
+                    ...value,
+                    pierce_hits_body_behind_core: event.target.checked,
+                    core_hittable: event.target.checked || value.core_hittable,
+                  })
+                }
+              />
+              상시 코어 2관통
+            </label>
+            <HelpTip label="상시 코어 2관통">
+              <HelpText>{HELP.boss.corePierce}</HelpText>
+            </HelpTip>
+          </div>
+
+          <div className="checkbox-row">
+            <label className="checkbox">
+              <input
+                type="checkbox"
+                checked={value.part_destructible}
+                onChange={(event) =>
+                  onChange({ ...value, part_destructible: event.target.checked })
+                }
+              />
+              부위파괴 기믹
+            </label>
+            <HelpTip label="부위파괴 기믹">
+              <HelpText>{HELP.boss.partDestructible}</HelpText>
+            </HelpTip>
+          </div>
+
+          {showElementalInterrupt && (
+            <div className="checkbox-row">
+              <label className="checkbox">
+                <input
+                  type="checkbox"
+                  checked={value.elemental_interrupt_required}
+                  onChange={(event) =>
+                    onChange({ ...value, elemental_interrupt_required: event.target.checked })
+                  }
+                />
+                속성저지 필수
+              </label>
+              <HelpTip label="속성저지 필수">
+                <HelpText>{HELP.boss.elementalInterrupt}</HelpText>
+              </HelpTip>
+            </div>
+          )}
+
+          {/* 거의 바꾸지 않는 값들이라 접어 둔다. 오류가 있을 때는 강제로 펼쳐
+              제출을 막는 이유가 접힌 상자 안에 숨지 않게 한다. */}
+          <details
+            className="group__details boss-profile__folded"
+            open={
+              errors?.enemy_def || errors?.fight_duration || errors?.core_diameter_px
+                ? true
+                : undefined
+            }
+          >
+            <summary className="group__hint">기타 설정 — {foldedSummary(value)}</summary>
+            <div className="field-row field-row--pair">
+              <NumberField
+                label="적 방어력"
+                value={value.enemy_def}
+                error={errors?.enemy_def}
+                min={0}
+                onChange={(enemy_def) => onChange({ ...value, enemy_def })}
+              />
+              <NumberField
+                label="전투 시간"
+                hint="초"
+                value={value.fight_duration}
+                error={errors?.fight_duration}
+                min={0}
+                step={1}
+                onChange={(fight_duration) => onChange({ ...value, fight_duration })}
+              />
+            </div>
+            {/* 코어를 못 때리는 보스에서는 엔진이 이 값을 무시하므로 칸도 없앤다 -
+                켤 수는 있는데 아무 일도 안 일어나는 칸을 그리지 않는다. */}
+            {value.core_hittable && (
+              <>
+                <NumberField
+                  label="코어 지름"
+                  hint="엔진 단위"
+                  value={value.core_diameter_px}
+                  error={errors?.core_diameter_px}
+                  min={0}
+                  help={HELP.boss.coreDiameter}
+                  onChange={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
+                />
+                <CoreHitRateReadout coreDiameter={value.core_diameter_px} />
+                <CoreMeasurementCalculator
+                  onFill={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
+                />
+              </>
+            )}
+          </details>
         </div>
       )}
-
-      {/* 거의 바꾸지 않는 값들이라 접어 둔다. 오류가 있을 때는 강제로 펼쳐
-          제출을 막는 이유가 접힌 상자 안에 숨지 않게 한다. */}
-      <details
-        className="group__details boss-profile__folded"
-        open={
-          errors?.enemy_def || errors?.fight_duration || errors?.core_diameter_px
-            ? true
-            : undefined
-        }
-      >
-        <summary className="group__hint">기타 설정 — {foldedSummary(value)}</summary>
-        <div className="field-row field-row--pair">
-          <NumberField
-            label="적 방어력"
-            value={value.enemy_def}
-            error={errors?.enemy_def}
-            min={0}
-            onChange={(enemy_def) => onChange({ ...value, enemy_def })}
-          />
-          <NumberField
-            label="전투 시간"
-            hint="초"
-            value={value.fight_duration}
-            error={errors?.fight_duration}
-            min={0}
-            step={1}
-            onChange={(fight_duration) => onChange({ ...value, fight_duration })}
-          />
-        </div>
-        {/* 코어를 못 때리는 보스에서는 엔진이 이 값을 무시하므로 칸도 없앤다 -
-            켤 수는 있는데 아무 일도 안 일어나는 칸을 그리지 않는다. */}
-        {value.core_hittable && (
-          <>
-            <NumberField
-              label="코어 지름"
-              hint="엔진 단위"
-              value={value.core_diameter_px}
-              error={errors?.core_diameter_px}
-              min={0}
-              help={HELP.boss.coreDiameter}
-              onChange={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
-            />
-            <CoreHitRateReadout coreDiameter={value.core_diameter_px} />
-            <CoreMeasurementCalculator
-              onFill={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
-            />
-          </>
-        )}
-      </details>
     </fieldset>
   )
 }
