@@ -164,9 +164,9 @@ describe('SyncRosterPanel', () => {
 
     render(<SyncRosterPanel onImport={vi.fn()} />)
 
-    expect(await screen.findByText(HELP.sync.nameUnavailable)).toBeTruthy()
+    // 문구 전체를 재므로 「로스터는 정상이에요」까지 함께 지켜진다 - 이 안내가
     // 로스터까지 실패한 것으로 읽히면 안 된다.
-    expect(screen.getByText(/로스터는 정상이에요/)).toBeTruthy()
+    expect(await screen.findByText(HELP.sync.nameUnavailable)).toBeTruthy()
   })
 
   // 설치된 북마크릿의 NAMED는 만들 때의 스냅샷이라 이름을 붙인 뒤에도 []로

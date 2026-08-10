@@ -342,7 +342,7 @@ function App() {
         <p className="app__attribution">
           {HELP.attribution.map((line) => (
             <span key={line} className="app__attribution-line">
-              {line}
+              <HelpText>{line}</HelpText>
             </span>
           ))}
         </p>
