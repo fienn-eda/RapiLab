@@ -220,8 +220,9 @@ HELP = {
 
 ## 5. 테스트도 HELP를 참조한다
 
-문구를 하드코딩한 assertion이 **11개 파일에 49군데** 있다. 그대로 두면 마침표
-하나를 고쳐도 테스트가 빨개져서, 중앙화의 목적이 절반만 달성된다.
+이 문서가 옮기는 48개 문구를 하드코딩한 assertion이 **12개 파일에 54군데** 있다.
+그대로 두면 마침표 하나를 고쳐도 테스트가 빨개져서, 중앙화의 목적이 절반만
+달성된다.
 
 ```ts
 // 지금
@@ -238,7 +239,7 @@ expect(await screen.findByText(HELP.results.raidSplit(1))).toBeInTheDocument()
 `/2~5분/`처럼 문장 일부만 재던 것들이 그 증거다. HELP 참조로 바꾸면 오히려 문장
 전체를 재게 되어 assertion이 강해진다.
 
-**49군데 전부를 바꾸지는 않는다.** 두 종류는 정규식을 유지한다:
+**54군데 전부를 바꾸지는 않는다.** 두 종류는 정규식을 유지한다:
 
 - **문장 일부만 재는 자리** — `/9.90% 밑으로 내려가면/`처럼 값 하나를 확인하는
   assertion. 정확 문자열로 바꾸려면 나머지 인자값을 픽스처에서 계산해 넣어야
@@ -250,11 +251,28 @@ expect(await screen.findByText(HELP.results.raidSplit(1))).toBeInTheDocument()
 문구가 **상수**일 때는 존재/부재 쌍을 함께 바꾼다 — 그래야 문구가 바뀔 때 두
 줄이 같이 따라간다.
 
-대상 파일 11개: `App.test.tsx`, `ChargeWindowLadder.test.tsx`,
+대상 파일 12개: `App.test.tsx`, `ChargeWindowLadder.test.tsx`, `DeckCard.test.tsx`,
 `DeckResults.test.tsx`, `DraftResults.test.tsx`,
 `MirandaCalculatorPanel.test.tsx`, `MirandaTargets.test.tsx`,
 `RaidResults.test.tsx`, `RecommendPanel.test.tsx`, `SavedRunList.test.tsx`,
 `SyncRosterPanel.test.tsx`, `UnitFilterBar.test.tsx`.
+
+### 이 숫자를 네 번 틀리게 센 이유
+
+처음 센 값은 20이었고, 그다음 39, 41, 49를 거쳐 54에 닿았다. 자리는 처음부터 다
+있었다 — 세는 방법이 매번 부족했다.
+
+1. **「내가 옮길 문구」 목록을 만들어 그것만 grep했다.** 목록 자체가 불완전하면
+   조용히 통과한다. 문구 하나하나의 고정 조각으로 테스트 트리 **전체**를 훑어야
+   한다.
+2. **괄호를 정규식 그룹으로 흘렸다.** `벤치 (덱에 배정되지 않음)`을 패턴에 넣으면
+   `벤치 덱에 배정되지 않음`을 찾는다. 리터럴 부분문자열 비교라야 한다.
+3. **부모 안에서 렌더되는 컴포넌트의 테스트는 부모 파일에 있다.**
+   `SwapConvergenceNote`는 `RaidResults`와 `DraftResults` 안에서 그려져, 그 문구의
+   assertion 6개가 자기 이름의 테스트 파일이 아니라 두 부모의 파일에 흩어져 있었다.
+   파일 단위로 훑는 방식으로는 절대 안 나온다.
+4. **유지하기로 한 자리는 세다 말기 쉽다.** 「바꾼 것」은 diff에 남아 세기 쉽지만
+   「그대로 둔 것」은 아무 흔적이 없다. 마지막 다섯이 그래서 빠졌다.
 
 ## 6. 부수 이득 — 중복 3쌍
 

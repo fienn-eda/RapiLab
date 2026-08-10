@@ -34,7 +34,7 @@
 
 ### 어떤 assertion을 바꾸고 어떤 것을 두는가
 
-문구를 하드코딩한 assertion은 **11개 파일에 49군데** 있고, 그중 **37군데를 참조로 바꾸고 12군데는 정규식을 유지**한다. 유지하는 두 종류:
+이 브랜치가 옮긴 48개 문구를 하드코딩한 assertion은 **12개 파일에 54군데** 있고, 그중 **37군데를 참조로 바꾸고 17군데는 정규식을 유지**한다. 유지하는 두 종류:
 
 - **문장 일부만 재는 자리** — `/9.90% 밑으로 내려가면/`처럼 값 하나를 확인한다. 정확 문자열로 바꾸려면 나머지 인자를 픽스처에서 계산해야 하는데, 그 assertion이 재는 것은 값이지 문장이 아니다.
 - **문구가 함수인데 「없음」을 재는 자리** — 함수에 아무 인자나 넣어 만든 정확 문자열로 부재를 재면, 문구가 바뀌어도 그 특정 조합이 없다는 이유로 초록이 된다.
@@ -58,7 +58,7 @@ git diff HEAD~1 -U0 -- frontend/src | grep -E '^[-+].*[가-힣]'
 | 컴포넌트 20개 | 문구를 `HELP` 참조로 | 문자열 리터럴 → 참조 |
 | `frontend/src/lib/rosterImport.ts` | 로스터 파싱 + 경고 생성 | 경고 문구 3개 참조로 |
 | `frontend/src/hooks/useBookmarkletImport.ts` | 북마크릿 수신 | 거절 안내 1개 참조로 |
-| 테스트 11개 | | 하드코딩 문구 → `HELP` 참조 |
+| 테스트 12개 | | 하드코딩 문구 → `HELP` 참조 |
 
 ---
 
@@ -1249,26 +1249,33 @@ git log --oneline wip/scaffolding..HEAD
 | §2 규칙 3 평문 전용 | Task 2(pinTitle), Task 3(confirm 둘), Task 7(bookmarkletNoAccount) |
 | §3 그룹 구조 | Global Constraints의 순서 규칙 + 각 태스크의 삽입 위치 |
 | §4 이동 대상 48개 | Task 1(3) + 2(9) + 3(5) + 4(9) + 5(9) + 6(5) + 7(7) = 47, 후속 커밋에서 `roster.importMalformedUnit` 1개 추가(Task 7이 아니라 그 뒤 별도 커밋) = 48 ✓ |
-| §5 테스트도 HELP를 참조 | 각 태스크 Step 1 — 49군데 중 37곳을 바꾸고 12곳은 정규식 유지 |
+| §5 테스트도 HELP를 참조 | 각 태스크 Step 1 — 54군데 중 37곳을 바꾸고 17곳은 정규식 유지 |
 | §6 중복 3쌍 | Task 2(bench), Task 3(restoreHint), Task 4(evaluateRunning) |
 | §7 검증 | 각 태스크 Step 6 + Task 8 |
 
-**assertion 49군데의 태스크별 배분** (합이 맞는지 확인용. 2026-08-10 최종 리뷰에서
-Task 1·2·6의 원래 행이 각각 App.test:75, `results.swapCutoff` 6곳,
-`ladderChargeGone`을 빠뜨린 것으로 드러나 아래 수치로 정정했다 — 자리 자체는
-당시에도 있었고 인자가 바뀐 것도 아니다, 세던 사람이 그 여섯 줄과 두 줄을 지나친
-것뿐이다):
+**assertion 54군데의 태스크별 배분** (합이 맞는지 확인용).
+
+줄번호는 적지 않는다 — 이 작업 동안에만 네 번 밀렸고, 밀린 번호는 확인에 쓸 수
+없으면서 맞는 것처럼 보인다. 파일과 개수는 낡지 않는다.
+
+세 번 정정했다. 원래 표는 **20군데**라 적었고, 리터럴 부분문자열로 전수를 잡아
+41이 되었고, 최종 리뷰가 `results.swapCutoff`(6곳)·`app.noProfiles`·
+`ladderChargeGone`을 찾아 49가 되었고, 마지막 확인에서 유지 쪽 다섯을 더
+찾았다. 자리는 처음부터 다 있었고 세던 사람이 지나쳤을 뿐이다. 왜 세 번이나
+놓쳤는지는 설계문서 §5에 적었다.
 
 | 태스크 | 바꿈 | 유지 |
 |---|---|---|
-| 1 (app) | `App.test:70,75` (2) | — |
-| 2 (results) | `DeckResults:10,54` · `RaidResults:10,51,65,76,79,82` · `DraftResults:80,182,194,205` · `RecommendPanel:472,854,974,1037` (16) | `RecommendPanel:857` |
-| 3 (savedRuns) | `SavedRunList:52` | — |
-| 4 (recommend) | `App.test:374,476,482` · `RecommendPanel:109,485` (5) | `RecommendPanel:742,958,1269,1324,1400` (5) |
-| 5 (miranda) | `MirandaCalculatorPanel:114` · `MirandaTargets:72,110,125` (4) | `MirandaTargets:86,99,123,124` (4) |
-| 6 (charge) | `ChargeWindowLadder:97,111,123` (3) | `ChargeWindowLadder:110` |
-| 7 (roster/sync) | `UnitFilterBar:160,166` · `SyncRosterPanel:166,194,212,224` (6) | `SyncRosterPanel:260` |
-| **합** | **37** | **12** |
+| 1 (app) | App.test (2) | — |
+| 2 (results) | DeckResults (2) · RaidResults (6) · DraftResults (4) · RecommendPanel (4) | RecommendPanel (1) · DeckCard (2) · DeckResults (1) |
+| 3 (savedRuns) | SavedRunList (1) | — |
+| 4 (recommend) | App.test (3) · RecommendPanel (2) | RecommendPanel (5) |
+| 5 (miranda) | MirandaCalculatorPanel (1) · MirandaTargets (3) | MirandaTargets (6) |
+| 6 (charge) | ChargeWindowLadder (3) | ChargeWindowLadder (1) |
+| 7 (roster/sync) | UnitFilterBar (2) · SyncRosterPanel (4) | SyncRosterPanel (1) |
+| **합** | **37** | **17** |
+
+파일은 **12개**다 — 바꿈이 11개 파일에 걸치고, `DeckCard.test.tsx`는 유지만 있다.
 
 **2. Placeholder scan** — "TBD"·"적절히"·"비슷하게" 없음. 모든 문자열이 최종 형태로 적혀 있다.
 
