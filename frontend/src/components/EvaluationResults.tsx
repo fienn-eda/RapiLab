@@ -9,6 +9,8 @@ import { DeckCard, type UnitLookups } from './DeckCard'
 import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
 import { elementLabel } from '../lib/elementName'
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
 import { weaknessFor } from '../lib/elementAdvantage'
 
 // 보스의 본인 속성이 아니라 약점을 이름 붙인다 — 보스 폼이 받는 것이 약점이므로,
@@ -49,8 +51,7 @@ export function EvaluationResults({
         ))}
       </ol>
       <p className="evaluation-results__ordering-note">
-        자리 순서는 엔진이 기대 딜량이 가장 높게 나오도록 고른 거예요. 인게임에서도 이 순서로
-        배치해요.
+        <HelpText>{HELP.results.seatOrder}</HelpText>
       </p>
       <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
     </>

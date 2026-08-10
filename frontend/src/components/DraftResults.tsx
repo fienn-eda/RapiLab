@@ -11,6 +11,7 @@
 
 import type { Draft, DraftSeat } from '../types/draft'
 import type { DraftAllocation, RaidDeck } from '../types/recommend'
+import { BenchNote } from './BenchNote'
 import { DeckCard, type UnitLookups } from './DeckCard'
 import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
@@ -194,11 +195,7 @@ export function DraftResults({
         </ol>
       </section>
 
-      {leftoverSlugs.length > 0 && (
-        <p className="raid-results__leftover">
-          벤치 (덱에 배정되지 않음): {leftoverSlugs.map(nameFor).join(', ')}
-        </p>
-      )}
+      <BenchNote leftoverSlugs={leftoverSlugs} nameFor={nameFor} />
       <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
     </div>
   )

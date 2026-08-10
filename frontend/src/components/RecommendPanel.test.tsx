@@ -22,6 +22,7 @@ import { MIN_DECK_ROSTER_SIZE } from '../types/recommend'
 import type { UserNikkeState } from '../types/userNikkeState'
 import type { SavedRun, StoredInputs, StoredResult } from '../types/profile'
 import type { SupportedUnit } from '../types/supportedUnit'
+import { HELP } from '../lib/helpText'
 
 vi.mock('../api/recommend', () => ({
   recommendDecks: vi.fn(),
@@ -468,7 +469,7 @@ describe('RecommendPanel raid mode', () => {
     expect(screen.getByText('덱 2')).toBeInTheDocument()
     expect(screen.queryByText('#1')).not.toBeInTheDocument()
     expect(screen.getByText('180 딜')).toBeInTheDocument()
-    expect(screen.getByText('벤치 (덱에 배정되지 않음): K')).toBeInTheDocument()
+    expect(screen.getByText(HELP.results.bench('K'))).toBeInTheDocument()
   })
 
   it('shows a persistent in-progress message and disables the button while a raid request is in flight', async () => {
@@ -848,7 +849,7 @@ describe('RecommendPanel mode switch', () => {
     await user.click(screen.getByLabelText(/전부 최적화/i))
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
     // RaidResults-specific text, distinct from DraftEditor's own "Deck N" column headers.
-    expect(await screen.findByText(/이 1개 덱을 모두 함께 편성하세요/)).toBeInTheDocument()
+    expect(await screen.findByText(HELP.results.raidSplit(1))).toBeInTheDocument()
 
     await user.click(screen.getByLabelText(/빈자리만 최적화/i))
     expect(screen.queryByText(/모두 함께 편성/)).not.toBeInTheDocument()
@@ -968,7 +969,7 @@ describe('RecommendPanel mode switch', () => {
     await user.click(screen.getByRole('radio', { name: /전부 최적화/ }))
     await user.click(screen.getByLabelText('속성저지 필수'))
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
-    expect(await screen.findByText(/이 1개 덱을 모두 함께 편성하세요/)).toBeInTheDocument()
+    expect(await screen.findByText(HELP.results.raidSplit(1))).toBeInTheDocument()
 
     // 단일 덱으로 돌아온다 - 재제출하지 않았으므로 옛 결과가 그대로 남아
     // 있고, 그 배지는 방금 다른 모드에서 제출한(속성저지 꺼진) 보스가 아니라
@@ -1031,7 +1032,7 @@ describe('RecommendPanel persistence', () => {
 
     expect(await screen.findByText('덱 1')).toBeInTheDocument()
     expect(screen.getByText('180 딜')).toBeInTheDocument()
-    expect(screen.getByText('벤치 (덱에 배정되지 않음): K')).toBeInTheDocument()
+    expect(screen.getByText(HELP.results.bench('K'))).toBeInTheDocument()
     expect(screen.getByLabelText(/전부 최적화/i)).toBeChecked()
     expect(screen.getByLabelText('덱 개수')).toHaveValue('3')
     expect(recommendRaidDecks).not.toHaveBeenCalled()

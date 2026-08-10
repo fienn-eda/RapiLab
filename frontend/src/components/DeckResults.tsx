@@ -4,6 +4,8 @@
 import type { DeckRecommendation } from '../types/recommend'
 import { DeckCard, type UnitLookups } from './DeckCard'
 import { ExcludedSlugsNote } from './ExcludedSlugsNote'
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
 
 interface DeckResultsProps extends UnitLookups {
   decks: DeckRecommendation[]
@@ -15,7 +17,7 @@ export function DeckResults({ decks, excludedSlugs = [], ...lookups }: DeckResul
   if (decks.length === 0) {
     return (
       <>
-        <p className="empty__text">아직 추천된 덱이 없어요.</p>
+        <p className="empty__text"><HelpText>{HELP.results.emptyDecks}</HelpText></p>
         <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
       </>
     )

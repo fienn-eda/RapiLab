@@ -2,11 +2,12 @@ import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { RaidResults } from './RaidResults'
 import type { DeckRecommendation } from '../types/recommend'
+import { HELP } from '../lib/helpText'
 
 describe('RaidResults', () => {
   it('shows an empty message when there are no decks', () => {
     render(<RaidResults decks={[]} combinedTotalDamage={0} />)
-    expect(screen.getByText('아직 배분된 레이드 덱이 없어요.')).toBeInTheDocument()
+    expect(screen.getByText(HELP.results.emptyRaid)).toBeInTheDocument()
   })
 
   it('renders each deck in allocation order, labeled Deck N (not ranked)', () => {
@@ -47,7 +48,7 @@ describe('RaidResults', () => {
       { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
     ]
     render(<RaidResults decks={decks} combinedTotalDamage={100} leftoverSlugs={['f', 'g']} />)
-    expect(screen.getByText('벤치 (덱에 배정되지 않음): F, G')).toBeInTheDocument()
+    expect(screen.getByText(HELP.results.bench('F, G'))).toBeInTheDocument()
   })
 
   it('renders no bench line when nothing is leftover', () => {
@@ -61,7 +62,7 @@ describe('RaidResults', () => {
   it('lists excluded slugs as not yet supported when there are any', () => {
     render(<RaidResults decks={[]} combinedTotalDamage={0} excludedSlugs={['some-slug']} />)
     expect(
-      screen.getByText('아직 미지원 (탐색에서 제외됨): Some Slug'),
+      screen.getByText(HELP.results.excludedUnsupported('Some Slug')),
     ).toBeInTheDocument()
   })
 

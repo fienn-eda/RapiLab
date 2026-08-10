@@ -77,6 +77,22 @@ export const HELP = {
     evaluate: '직접 짠 덱의 기대 딜량만 빠르게 계산해요, 최적화는 하지 않아요',
   },
 
+  results: {
+    emptyDecks: '아직 추천된 덱이 없어요.',
+    emptyRaid: '아직 배분된 레이드 덱이 없어요.',
+    raidSplit: (deckCount: number) =>
+      `이 ${deckCount}개 덱을 모두 함께 편성하세요 — 각 니케는 정확히 하나의 덱에만 배정돼요. 이것은 순위별 대안이 아니라 하나의 분할이에요.`,
+    bench: (names: string) => `벤치 (덱에 배정되지 않음): ${names}`,
+    seatOrder:
+      '자리 순서는 엔진이 기대 딜량이 가장 높게 나오도록 고른 거예요. 인게임에서도 이 순서로 배치해요.',
+    swapCutoff: '탐색이 상한에 걸려 끝까지 가지 못했어요. 더 나은 배분이 남아 있을 수 있어요.',
+    holdBurst: (names: string) =>
+      `${names}는 첫 풀버스트에 버스트를 아껴주세요 — 그래야 이 수치대로 나와요.`,
+    /** 평문 전용 - title 속성이라 별표가 글자 그대로 나온다. */
+    pinTitle: '고정해서 여기 유지돼요',
+    excludedUnsupported: (names: string) => `아직 미지원 (탐색에서 제외됨): ${names}`,
+  },
+
   sync: {
     /** 북마크릿 주소를 손에 쥔 순간에만 필요한 안내. 전체 절차는 도움말이
      * 따로 말하고, 이쪽은 바로 옆 버튼이 무엇인지 설명한다. */

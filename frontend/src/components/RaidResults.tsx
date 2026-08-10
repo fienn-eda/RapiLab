@@ -6,9 +6,12 @@
 // left on the bench.
 
 import type { DeckRecommendation } from '../types/recommend'
+import { BenchNote } from './BenchNote'
 import { DeckCard, type UnitLookups } from './DeckCard'
 import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
 import { nameFromSlug } from '../lib/unitName'
 import { SwapConvergenceNote } from './SwapConvergenceNote'
 
@@ -35,7 +38,7 @@ export function RaidResults({
   if (decks.length === 0) {
     return (
       <>
-        <p className="empty__text">아직 배분된 레이드 덱이 없어요.</p>
+        <p className="empty__text"><HelpText>{HELP.results.emptyRaid}</HelpText></p>
         <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
       </>
     )
@@ -44,8 +47,7 @@ export function RaidResults({
   return (
     <>
       <p className="raid-results__note">
-        이 {decks.length}개 덱을 모두 함께 편성하세요 — 각 니케는 정확히 하나의 덱에만
-        배정돼요. 이것은 순위별 대안이 아니라 하나의 분할이에요.
+        <HelpText>{HELP.results.raidSplit(decks.length)}</HelpText>
       </p>
       <SwapConvergenceNote swapConverged={swapConverged} />
       <p className="raid-results__combined">
@@ -61,11 +63,7 @@ export function RaidResults({
           />
         ))}
       </ol>
-      {leftoverSlugs.length > 0 && (
-        <p className="raid-results__leftover">
-          벤치 (덱에 배정되지 않음): {leftoverSlugs.map(nameFor).join(', ')}
-        </p>
-      )}
+      <BenchNote leftoverSlugs={leftoverSlugs} nameFor={nameFor} />
       <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
     </>
   )

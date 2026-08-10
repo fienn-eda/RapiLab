@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { DraftResults, matchDecksToSubmitted } from './DraftResults'
 import type { DraftAllocation, RaidDeck } from '../types/recommend'
 import type { Draft } from '../types/draft'
+import { HELP } from '../lib/helpText'
 
 const recommendedDecks: RaidDeck[] = [
   {
@@ -76,7 +77,7 @@ describe('DraftResults', () => {
     expect(screen.queryByText(/드래프트 내 최선/)).not.toBeInTheDocument()
     expect(screen.getByText('덱 1')).toBeInTheDocument()
     expect(screen.getByText('130 딜')).toBeInTheDocument()
-    expect(screen.getByText('벤치 (덱에 배정되지 않음): Bench Unit')).toBeInTheDocument()
+    expect(screen.getByText(HELP.results.bench('Bench Unit'))).toBeInTheDocument()
   })
 
   // The backend's recommended tier can come from a from-scratch pass whose

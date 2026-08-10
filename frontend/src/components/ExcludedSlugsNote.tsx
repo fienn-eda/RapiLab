@@ -1,6 +1,8 @@
 // The "not yet supported" note shared by DeckResults and RaidResults for
 // submitted slugs the backend can't evaluate (not encoded / no local data).
 
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
 import { nameFromSlug } from '../lib/unitName'
 
 interface ExcludedSlugsNoteProps {
@@ -13,7 +15,7 @@ export function ExcludedSlugsNote({ excludedSlugs }: ExcludedSlugsNoteProps) {
   // name to look up - deriving one from the slug is all there is.
   return (
     <p className="deck-results__excluded">
-      아직 미지원 (탐색에서 제외됨): {excludedSlugs.map(nameFromSlug).join(', ')}
+      <HelpText>{HELP.results.excludedUnsupported(excludedSlugs.map(nameFromSlug).join(', '))}</HelpText>
     </p>
   )
 }

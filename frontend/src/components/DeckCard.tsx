@@ -16,6 +16,8 @@ import type { BossProfile, DeckRecommendation } from '../types/recommend'
 import { nameFromSlug } from '../lib/unitName'
 import { BossSummary } from './BossSummary'
 import { formatDamage } from './formatDamage'
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
 
 /** How a result view turns a slug into something a player can recognise.
  * Threaded down from RecommendPanel, which owns both sources. */
@@ -82,7 +84,7 @@ export function DeckCard({
                   <span className="deck-results__portrait deck-results__portrait--missing" />
                 )}
                 {pinnedSlugs.includes(slug) && (
-                  <span className="deck-results__pin" title="고정해서 여기 유지돼요">
+                  <span className="deck-results__pin" title={HELP.results.pinTitle}>
                     <span aria-hidden="true">📌</span>
                     <span className="visually-hidden">고정됨</span>
                   </span>
@@ -96,8 +98,7 @@ export function DeckCard({
       {deck.hold_burst_slugs.length > 0 && (
         <p className="deck-results__hold">
           <span aria-hidden="true">⏳</span>{' '}
-          {deck.hold_burst_slugs.map(nameFor).join(', ')}는 첫 풀버스트에 버스트를
-          아껴주세요 — 그래야 이 수치대로 나와요.
+          <HelpText>{HELP.results.holdBurst(deck.hold_burst_slugs.map(nameFor).join(', '))}</HelpText>
         </p>
       )}
       {(addedSlugs.length > 0 || removedSlugs.length > 0) && (
