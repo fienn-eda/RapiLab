@@ -15,6 +15,7 @@ import { MAX_DRAFT_SEATS_PER_DECK } from '../types/draft'
 import type { DraftDeck } from '../types/recommend'
 import type { BurstTier } from '../types/supportedUnit'
 import { HELP } from '../lib/helpText'
+import type { BossHeading } from '../lib/bossLabel'
 import { HelpText } from './HelpText'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
 
@@ -49,6 +50,10 @@ interface DraftEditorProps {
   /** Omit where the player has no say — with one deck there is nothing to
    * choose, so no picker is drawn and the concept never appears. */
   onActiveDeckChange?: (deckIndex: number) => void
+  /** 덱마다 그 덱이 무엇인지 부르는 이름. 유니온만 넘긴다 - 솔로는 덱이 여럿
+   * 이어도 보스가 하나라 덱마다 다르게 부를 것이 없다. 없으면 자리 번호로
+   * 부른다. */
+  deckLabels?: BossHeading[]
 }
 
 const TIER_NUMERALS = ['I', 'II', 'III'] as const
@@ -186,6 +191,7 @@ export function DraftEditor({
   fixedSlugs = [],
   activeDeck = 0,
   onActiveDeckChange,
+  deckLabels,
 }: DraftEditorProps) {
   // A slot draws ONE numeral and the rows sort by ONE tier, so both read the
   // nominal tier - the first - and leave the rest to missingBurstTiers.
@@ -246,6 +252,8 @@ export function DraftEditor({
           const seats = value.decks[deckIndex] ?? []
           const full = seats.length >= MAX_DRAFT_SEATS_PER_DECK
           const missing = seats.length > 0 ? missingBurstTiers(seats, burstTiersFor) : []
+          const label = deckLabels?.[deckIndex] ?? null
+          const deckName = label?.text ?? `덱 ${deckIndex + 1}`
           return (
             <div
               className={[
@@ -266,6 +274,9 @@ export function DraftEditor({
               onDrop={(event) => handleDrop(event, deckIndex)}
             >
               <h4 className="draft-editor__deck-title">
+                {label?.iconSrc && (
+                  <img className="draft-editor__deck-icon" src={label.iconSrc} alt="" />
+                )}
                 {picksDeck ? (
                   // A toggle, so it reports which deck the next `+` will fill
                   // rather than reading as a button that does something once.
@@ -275,14 +286,24 @@ export function DraftEditor({
                     aria-pressed={activeDeck === deckIndex}
                     // 조사 없이 쓴다 - 「덱 N을/를」은 N을 읽은 소리의 받침이
                     // 정하는데(1·3·6·7·8은 을, 2·4·5·9는 를), 그걸 위해 숫자
-                    // 읽기 표를 들일 만한 문장이 아니다.
-                    aria-label={`덱 ${deckIndex + 1} 활성 덱으로 선택`}
+                    // 읽기 표를 들일 만한 문장이 아니다. 자리 번호를 앞에 두어
+                    // 보스 이름으로 불러도 몇 번째인지 잃지 않는다.
+                    // label.iconSrc로 가른다(label 자체가 아니라) - 유니온은
+                    // 보스를 아직 안 고른 덱에도 폴백 라벨을 채워 보내서,
+                    // label만 보면 "덱 2 덱 2 활성 덱으로 선택"으로 겹쳐
+                    // 읽힌다. iconSrc는 진짜 이름이 있을 때만 채워진다
+                    // (bossLabel.ts) - 아이콘을 그리는 조건과 같다.
+                    aria-label={
+                      label?.iconSrc
+                        ? `덱 ${deckIndex + 1} ${deckName} 활성 덱으로 선택`
+                        : `덱 ${deckIndex + 1} 활성 덱으로 선택`
+                    }
                     onClick={() => onActiveDeckChange(deckIndex)}
                   >
-                    덱 {deckIndex + 1}
+                    {deckName}
                   </button>
                 ) : (
-                  <>덱 {deckIndex + 1}</>
+                  <>{deckName}</>
                 )}
                 {missing.length > 0 && (
                   <span className="draft-editor__deck-warning">

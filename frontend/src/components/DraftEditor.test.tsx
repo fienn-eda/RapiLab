@@ -304,6 +304,50 @@ describe('DraftEditor', () => {
     expect(onChange).toHaveBeenCalledWith({ decks: [[]] })
   })
 
+  it('덱 라벨을 넘기면 그 이름과 아이콘으로 부른다', () => {
+    const { container } = render(
+      <DraftEditor
+        numDecks={2}
+        value={makeEmptyDraft(2)}
+        onChange={() => {}}
+        portraitFor={() => null}
+        nameFor={nameFromSlug}
+        burstTiersFor={() => []}
+        deckLabels={[
+          { text: '인디비리아', iconSrc: '/elements/water.png' },
+          { text: '수냉', iconSrc: '/elements/water.png' },
+        ]}
+      />,
+    )
+    expect(screen.getByRole('heading', { name: /인디비리아/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /수냉/ })).toBeInTheDocument()
+    expect(container.querySelectorAll('.draft-editor__deck-icon')).toHaveLength(2)
+  })
+
+  it('덱 라벨이 없으면 지금처럼 자리 번호로 부른다', () => {
+    editor(2, makeEmptyDraft(2))
+    expect(screen.getByRole('heading', { name: /덱 1/ })).toBeInTheDocument()
+  })
+
+  // 좌석 컨트롤은 자리 번호를 유지한다 - 「인디비리아에서 Crown 제거」는 어느
+  // 자리인지 말하지 않는다.
+  it('좌석 컨트롤은 덱 라벨과 무관하게 자리 번호로 말한다', () => {
+    render(
+      <DraftEditor
+        numDecks={1}
+        value={{ decks: [[{ slug: 'crown', locked: false }]] }}
+        onChange={() => {}}
+        portraitFor={() => null}
+        nameFor={nameFromSlug}
+        burstTiersFor={(slug) => (slug === 'crown' ? [1] : [])}
+        deckLabels={[{ text: '인디비리아', iconSrc: '/elements/water.png' }]}
+      />,
+    )
+    // 제거·고정 두 컨트롤 다 매치해야 한다 - 덱 라벨이 있어도 좌석 컨트롤은
+    // 자리 번호로만 말한다 (showLocks 기본값이 켜져 있어 버튼이 둘이다).
+    expect(screen.getAllByRole('button', { name: /덱 1에서 Crown/ })).toHaveLength(2)
+  })
+
   describe('burst-tier order', () => {
     const numerals = (container: HTMLElement) =>
       [...container.querySelectorAll('.draft-editor__slot-tier')].map((el) => el.textContent)

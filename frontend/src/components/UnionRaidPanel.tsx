@@ -9,7 +9,7 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { useEvaluateDecks } from '../hooks/useEvaluateDecks'
 import { HELP } from '../lib/helpText'
-import { weaknessLabelOf } from '../lib/bossLabel'
+import { bossHeading, weaknessLabelOf } from '../lib/bossLabel'
 import {
   bossProfileToDraft,
   makeDefaultBossProfileDraft,
@@ -309,6 +309,13 @@ export function UnionRaidPanel({
                 // place has nothing to mean on a screen that only scores what
                 // was placed.
                 showLocks={false}
+                deckLabels={bosses.slice(0, numBattles).map((boss, i) =>
+                  bossHeading({
+                    bossName: boss.boss_name,
+                    element: boss.element,
+                    fallback: `덱 ${i + 1}`,
+                  }),
+                )}
               />
               {/* 이 컬럼은 sticky라, 여기 얹은 실행 버튼은 편성과 함께
                   화면에 남는다. */}

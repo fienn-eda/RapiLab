@@ -144,6 +144,23 @@ describe('UnionRaidPanel', () => {
     expect(within(groups[1]).getByLabelText('전격')).toBeChecked()
   })
 
+  // 이 태스크가 하는 일: 덱 제목이 자리 번호 대신 그 전투의 보스를 부른다.
+  // 아직 안 고른 다른 덱은 자리 번호 그대로 남아야 한다.
+  it('전투의 보스 속성을 고르면 그 덱 제목이 약점 이름과 아이콘으로 바뀐다', async () => {
+    renderPanel()
+    expect(screen.getByRole('heading', { name: /덱 1/ })).toBeInTheDocument()
+    expect(document.querySelector('.draft-editor__deck-icon')).toBeNull()
+
+    const groups = screen.getAllByRole('group', { name: /전투/ })
+    await userEvent.click(within(groups[0]).getByLabelText('풍압'))
+
+    expect(screen.getByRole('heading', { name: /풍압/ })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /^덱 1/ })).not.toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /덱 2/ })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /덱 3/ })).toBeInTheDocument()
+    expect(document.querySelectorAll('.draft-editor__deck-icon')).toHaveLength(1)
+  })
+
   it('전투 1에서 회차 보스를 고르면 전투 2의 선택은 그대로다', async () => {
     // 세 전투가 한 화면에 세 개의 radiogroup을 세운다 - 같은 이름을 쓰면 라디오가
     // 하나의 그룹으로 합쳐진다. useId가 전투마다 다른 그룹 이름을 주는 것을
@@ -214,17 +231,19 @@ describe('UnionRaidPanel', () => {
     })
 
     renderPanel()
-    const groups = screen.getAllByRole('group', { name: /전투/ })
-    // 풍압 약점 -> 철갑 보스, 전격 약점 -> 수냉 보스, 작열 약점 -> 풍압 보스.
-    await user.click(within(groups[0]).getByLabelText('풍압'))
-    await user.click(within(groups[1]).getByLabelText('전격'))
-    await user.click(within(groups[2]).getByLabelText('작열'))
-
+    // 덱을 먼저 채운다 - dropOnDeck은 덱 제목으로 찾는데, 보스를 고르고 나면
+    // 그 제목이 자리 번호 대신 보스 이름으로 바뀐다(이 태스크가 하는 일).
     for (let deck = 0; deck < 3; deck += 1) {
       for (let seat = 0; seat < 5; seat += 1) {
         dropOnDeck(deck + 1, `u${deck * 5 + seat}`)
       }
     }
+
+    const groups = screen.getAllByRole('group', { name: /전투/ })
+    // 풍압 약점 -> 철갑 보스, 전격 약점 -> 수냉 보스, 작열 약점 -> 풍압 보스.
+    await user.click(within(groups[0]).getByLabelText('풍압'))
+    await user.click(within(groups[1]).getByLabelText('전격'))
+    await user.click(within(groups[2]).getByLabelText('작열'))
 
     const submit = screen.getByRole('button', { name: /인카운터/ })
     expect(submit).toBeEnabled()
