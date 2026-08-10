@@ -148,6 +148,14 @@ export const HELP = {
       `보관은 ${cap}개까지예요. 목록에서 몇 개를 지우고 다시 저장해주세요.`,
   },
 
+  roster: {
+    emptyFilter: '조건에 맞는 니케가 없어요.',
+    importUnsupported: (count: number, names: string) =>
+      `보유 유닛 중 ${count}기가 아직 미지원이라 추천에서 제외돼요: ${names}`,
+    importUnmeasured: (count: number, names: string) =>
+      `보유 유닛 중 ${count}기가 제외됐어요 — 레벨 400 스탯이 측정된 적이 없어요: ${names}`,
+  },
+
   profile: {
     /** 평문 전용 - window.confirm이라 별표가 글자 그대로 나온다. */
     confirmDelete: (label: string) =>
@@ -162,6 +170,13 @@ export const HELP = {
     copied: '복사했어요. 브라우저에서 북마크를 만들고 주소 칸에 붙여넣어 주세요.',
     copyBlocked: '자동 복사가 막혀 있어요. 아래 주소를 직접 복사해 주세요.',
     chooseServer: '어느 서버의 계정을 가져올까요?',
+    serverChoice: '계정이 있는 서버를 고르면 그 서버만 조회해요. 모르겠으면 자동으로 두세요.',
+    importing: '가져오는 중…',
+    nameUnavailable:
+      '계정 이름을 읽지 못했어요. 로스터는 정상이에요. 위 계정 드롭다운 옆 계정 이름 바꾸기로 원하는 이름을 붙여주세요.',
+    /** 평문 전용 - error 상태로 가고 그 자리는 다른 에러도 쓰므로 HelpText로 안 그린다. */
+    bookmarkletNoAccount:
+      '북마크릿이 계정 정보를 보내지 않았어요. "동기화 방법"을 열어 북마크릿을 다시 설치한 뒤 시도해 주세요.',
   },
 
   syncHelp: {

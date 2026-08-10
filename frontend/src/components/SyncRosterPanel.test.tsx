@@ -5,6 +5,7 @@ import { SyncRosterPanel } from './SyncRosterPanel'
 import { renderSettled } from '../test/renderSettled'
 import { assembleRoster } from '../api/assembleRoster'
 import { takeSyncInbox } from '../api/syncInbox'
+import { HELP } from '../lib/helpText'
 
 // This codebase's mocking convention is vi.mock + vi.mocked (see
 // useBookmarkletImport.test.ts) - ESM named exports can't be intercepted with
@@ -163,7 +164,7 @@ describe('SyncRosterPanel', () => {
 
     render(<SyncRosterPanel onImport={vi.fn()} />)
 
-    expect(await screen.findByText(/계정 이름을 읽지 못했어요/)).toBeTruthy()
+    expect(await screen.findByText(HELP.sync.nameUnavailable)).toBeTruthy()
     // 로스터까지 실패한 것으로 읽히면 안 된다.
     expect(screen.getByText(/로스터는 정상이에요/)).toBeTruthy()
   })
@@ -191,7 +192,7 @@ describe('SyncRosterPanel', () => {
     )
 
     await screen.findByText(/동기화됨/)
-    expect(screen.queryByText(/계정 이름을 읽지 못했어요/)).toBeNull()
+    expect(screen.queryByText(HELP.sync.nameUnavailable)).toBeNull()
   })
 
   // 이름을 이미 아는 계정은 그 조회를 아예 건너뛴다. 물어보지 않았으니 실패도
@@ -209,7 +210,7 @@ describe('SyncRosterPanel', () => {
     render(<SyncRosterPanel onImport={vi.fn()} />)
 
     await screen.findByText(/동기화됨/)
-    expect(screen.queryByText(/계정 이름을 읽지 못했어요/)).toBeNull()
+    expect(screen.queryByText(HELP.sync.nameUnavailable)).toBeNull()
   })
 
   it('닉네임이 있으면 그런 안내를 하지 않는다', async () => {
@@ -221,7 +222,7 @@ describe('SyncRosterPanel', () => {
     render(<SyncRosterPanel onImport={vi.fn()} />)
 
     await screen.findByText(/동기화됨/)
-    expect(screen.queryByText(/계정 이름을 읽지 못했어요/)).toBeNull()
+    expect(screen.queryByText(HELP.sync.nameUnavailable)).toBeNull()
   })
 
   it('separates open_id/nickname from the assembled roster when calling onImport', async () => {

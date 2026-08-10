@@ -21,6 +21,8 @@ import {
 } from '../lib/unitFilter'
 import { OVERLOAD_KEYS } from '../lib/overload'
 import { BURST_TIERS, type NikkeElement } from '../types/supportedUnit'
+import { HelpText } from './HelpText'
+import { HELP } from '../lib/helpText'
 
 // Element order follows the game's own listing, which is also the order the
 // element tokens are declared in index.css.
@@ -178,7 +180,7 @@ export function UnitFilterBar({ value, onChange, shown, total }: UnitFilterBarPr
       )}
 
       {filtering && shown === 0 && total > 0 && (
-        <p className="unit-filter__empty">조건에 맞는 니케가 없어요.</p>
+        <p className="unit-filter__empty"><HelpText>{HELP.roster.emptyFilter}</HelpText></p>
       )}
     </div>
   )

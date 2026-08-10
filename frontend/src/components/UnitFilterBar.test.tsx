@@ -3,6 +3,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { UnitFilterBar } from './UnitFilterBar'
 import { EMPTY_FILTER, type UnitFilterState } from '../lib/unitFilter'
+import { HELP } from '../lib/helpText'
 
 const bar = (value: Partial<UnitFilterState> = {}, counts: { shown?: number; total?: number } = {}) => {
   const onChange = vi.fn()
@@ -157,12 +158,12 @@ describe('UnitFilterBar', () => {
 
   it('says so when the filter matched nothing at all', () => {
     bar({ query: '없는이름' }, { shown: 0, total: 70 })
-    expect(screen.getByText('조건에 맞는 니케가 없어요.')).toBeInTheDocument()
+    expect(screen.getByText(HELP.roster.emptyFilter)).toBeInTheDocument()
   })
 
   // An empty roster is not a filter that matched nothing.
   it('stays quiet when there were no units to begin with', () => {
     bar({ query: '홍' }, { shown: 0, total: 0 })
-    expect(screen.queryByText('조건에 맞는 니케가 없어요.')).not.toBeInTheDocument()
+    expect(screen.queryByText(HELP.roster.emptyFilter)).not.toBeInTheDocument()
   })
 })

@@ -72,11 +72,7 @@ export function SyncRosterPanel({
       setNotes(
         nickname || !nicknameError || alreadyNamed
           ? warnings
-          : [
-              ...warnings,
-              '계정 이름을 읽지 못했어요. 로스터는 정상이에요. ' +
-                '위 계정 드롭다운 옆 계정 이름 바꾸기로 원하는 이름을 붙여주세요.',
-            ],
+          : [...warnings, HELP.sync.nameUnavailable],
       )
     },
     onActivity,
@@ -161,8 +157,7 @@ export function SyncRosterPanel({
               blablalink의 빈도 제한에 걸릴 수 있다. */}
           <div className="sync__servers">
             <p className="sync__hint">
-              계정이 있는 서버를 고르면 그 서버만 조회해요. 모르겠으면 자동으로
-              두세요.
+              <HelpText>{HELP.sync.serverChoice}</HelpText>
             </p>
             <div className="sync__server-choices" role="group" aria-label="조회할 서버">
               <button
@@ -254,11 +249,11 @@ export function SyncRosterPanel({
           </div>
         </div>
       )}
-      {status === 'importing' && <p className="sync__message">가져오는 중…</p>}
+      {status === 'importing' && <p className="sync__message"><HelpText>{HELP.sync.importing}</HelpText></p>}
       {summary && <p className="sync__message">{summary}</p>}
       {notes.map((note, i) => (
         <p className="sync__message" key={i}>
-          {note}
+          <HelpText>{note}</HelpText>
         </p>
       ))}
       {error && (

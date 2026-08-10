@@ -11,6 +11,7 @@
 import { makeEmptyDraft, type NikkeDraft } from '../types/nikkeDraft'
 import { deriveSlug } from './exiaImport'
 import { resolveSlugForUnit } from './resourceIdSlugMap'
+import { HELP } from './helpText'
 
 interface RosterUnit {
   resource_id?: number
@@ -84,19 +85,17 @@ export const parseRosterJson = (
     })
   }
   if (unsupported.length > 0) {
-    warnings.push(
-      `보유 유닛 중 ${unsupported.length}기가 아직 미지원이라 추천에서 ` +
-        `제외돼요: ${unsupported.join(', ')}`,
-    )
+    warnings.push(HELP.roster.importUnsupported(unsupported.length, unsupported.join(', ')))
   }
   // A dropped unit is worth a louder line than an unsupported one: it IS
   // encoded and would be fielded, and the only reason it is missing is a hole in
   // the measured data that a different account happens to expose.
   if (data.unmeasured && data.unmeasured.length > 0) {
     warnings.push(
-      `보유 유닛 중 ${data.unmeasured.length}기가 제외됐어요 — 레벨 400 ` +
-        `스탯이 측정된 적이 없어요: ` +
+      HELP.roster.importUnmeasured(
+        data.unmeasured.length,
         data.unmeasured.map((u) => `${u.name_en} (${u.reason})`).join('; '),
+      ),
     )
   }
   return { drafts, warnings }

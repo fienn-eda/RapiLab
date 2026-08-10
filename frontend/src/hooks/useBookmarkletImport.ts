@@ -20,6 +20,7 @@ import {
   AssembleRosterApiError,
   describeAssembleRosterApiError,
 } from '../api/assembleRosterApiError'
+import { HELP } from '../lib/helpText'
 
 type Status = 'idle' | 'choosing' | 'importing' | 'done' | 'error'
 
@@ -173,9 +174,7 @@ export const useBookmarkletImport = (
       // 왔다면 로스터 모양은 맞으므로, 이것은 조용히 무시할 문제가 아니다.
       const id = String((payload as { open_id?: unknown }).open_id ?? '').trim()
       if (id === '') {
-        setError(
-          '북마크릿이 계정 정보를 보내지 않았어요. "동기화 방법"을 열어 북마크릿을 다시 설치한 뒤 시도해 주세요.',
-        )
+        setError(HELP.sync.bookmarkletNoAccount)
         setStatus('error')
         return
       }
