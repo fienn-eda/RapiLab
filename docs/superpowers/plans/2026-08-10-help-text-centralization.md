@@ -201,6 +201,7 @@ git diff HEAD~1 -U0 -- frontend/src | grep -E '^[-+].*[가-힣]'
 
 **Files:**
 - Modify: `frontend/src/lib/helpText.ts` (`recommendMode` 다음, `sync` 앞에 `results` 그룹 추가)
+- Create: `frontend/src/components/BenchNote.tsx`
 - Modify: `frontend/src/components/DeckResults.tsx:18`
 - Modify: `frontend/src/components/RaidResults.tsx:38`, `:46-49`, `:64-67`
 - Modify: `frontend/src/components/DraftResults.tsx:197-201`
@@ -314,25 +315,39 @@ Expected: PASS. 옮긴 글자가 컴포넌트의 글자와 같다는 증명이�
       </p>
 ```
 
-`RaidResults.tsx:64-67`:
+**벤치 줄은 컴포넌트로 뽑는다.** 두 결과 화면이 같은 줄을 그리고 있어, 문구만 합치면 렌더 블록이 그대로 두 벌 남는다. 이 저장소에는 같은 문제에서 나온 컴포넌트가 이미 둘 있다 — `ExcludedSlugsNote`와 `SwapConvergenceNote`. 벤치도 그 자리다.
+
+새 파일 `frontend/src/components/BenchNote.tsx`:
 
 ```tsx
-      {leftoverSlugs.length > 0 && (
-        <p className="raid-results__leftover">
-          <HelpText>{HELP.results.bench(leftoverSlugs.map(nameFor).join(', '))}</HelpText>
-        </p>
-      )}
+// The bench line shared by both raid-result views (RaidResults and
+// DraftResults): units the allocation left out of every deck.
+
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
+
+interface BenchNoteProps {
+  leftoverSlugs: string[]
+  nameFor: (slug: string) => string
+}
+
+export function BenchNote({ leftoverSlugs, nameFor }: BenchNoteProps) {
+  if (leftoverSlugs.length === 0) return null
+  return (
+    <p className="raid-results__leftover">
+      <HelpText>{HELP.results.bench(leftoverSlugs.map(nameFor).join(', '))}</HelpText>
+    </p>
+  )
+}
 ```
 
-`DraftResults.tsx:197-201` — 같은 문구다:
+`RaidResults.tsx:64-67`과 `DraftResults.tsx:197-201` — 둘 다 같은 한 줄로 바뀐다. 두 파일 모두 `const nameFor = lookups.nameFor ?? nameFromSlug`를 이미 지역변수로 갖고 있으므로 그것을 넘긴다:
 
 ```tsx
-      {leftoverSlugs.length > 0 && (
-        <p className="raid-results__leftover">
-          <HelpText>{HELP.results.bench(leftoverSlugs.map(nameFor).join(', '))}</HelpText>
-        </p>
-      )}
+      <BenchNote leftoverSlugs={leftoverSlugs} nameFor={nameFor} />
 ```
+
+각 파일에 `import { BenchNote } from './BenchNote'`를 추가한다. `leftoverSlugs.length > 0` 가드는 `BenchNote` 안으로 들어갔으므로 호출부에서 지운다.
 
 `EvaluationResults.tsx:51-54`:
 
