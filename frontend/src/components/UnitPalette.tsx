@@ -2,11 +2,11 @@
 // (active profile roster) intersected with engine-supported units
 // (GET /api/supported-units), grouped under B1/B2/B3.
 //
-// A chip is its portrait and its skill levels, nothing else. Clicking the
-// portrait toggles whether that unit is in the candidate pool (default in);
-// an excluded one greys out. Everything a chip used to spell out - name,
-// burst tier, element, overload rolls - is on the hover card instead, so the
-// grid stays dense enough to scan a whole roster at once.
+// A chip is its portrait and its skill levels, nothing else. Clicking
+// anywhere on the chip toggles whether that unit is in the candidate pool
+// (default in); an excluded one greys out. Everything a chip used to spell
+// out - name, burst tier, element, overload rolls - is on the hover card
+// instead, so the grid stays dense enough to scan a whole roster at once.
 //
 // In draft mode (draggable) a portrait can also be dragged onto a deck to
 // seat it there. Dragging is the only way to seat a unit, so draft editing is
@@ -151,6 +151,18 @@ export function UnitPalette({
                 if (isExcluded) classes.push('palette__item--excluded')
                 if (isUsed) classes.push('palette__item--seated')
 
+                // 표적은 칩 테두리 안 전체다. 껍데기 핸들러는 버튼의 disabled를
+                // 우회하므로 같은 조건을 여기서 다시 본다 - 안 그러면 제외된
+                // 칩의 스킬레벨 칸을 눌러 배치할 수 있다.
+                const handleChipClick = onSeat
+                  ? () => {
+                      if (isUsed || isExcluded) return
+                      onSeat(unit.slug)
+                    }
+                  : onToggleExclude
+                    ? () => onToggleExclude(unit.slug)
+                    : undefined
+
                 return (
                   <li
                     key={unit.slug}
@@ -158,6 +170,7 @@ export function UnitPalette({
                     // Element drives a colour, not a word: the chip has no room
                     // to spell it and the hover card already does.
                     data-element={unit.element}
+                    onClick={handleChipClick}
                   >
                     <button
                       type="button"
@@ -181,20 +194,13 @@ export function UnitPalette({
                             ? `${unit.name} 사용`
                             : unit.name
                       }
-                      disabled={onSeat !== undefined && isUsed}
+                      disabled={onSeat !== undefined && (isUsed || isExcluded)}
                       tabIndex={onSeat || onToggleExclude ? undefined : -1}
                       draggable={draggable && !isExcluded && !isUsed}
                       onDragStart={(event) => {
                         event.dataTransfer.setData(DRAG_SLUG_TYPE, unit.slug)
                         event.dataTransfer.effectAllowed = 'move'
                       }}
-                      onClick={
-                        onSeat
-                          ? () => onSeat(unit.slug)
-                          : onToggleExclude
-                            ? () => onToggleExclude(unit.slug)
-                            : undefined
-                      }
                     >
                       <span className="palette__figure">
                         {portrait ? (

@@ -336,4 +336,56 @@ describe('UnitPalette 클릭 배치', () => {
     expect(onSeat).toHaveBeenCalledWith('crown')
     expect(onToggleExclude).not.toHaveBeenCalled()
   })
+
+  // 표적은 버튼(초상화·이름·티어·오버로드)이 아니라 칩 테두리 안 전체다 - 돌파·
+  // 코어·S1/S2/B 칸은 버튼 밖에 있어 예전엔 눌러도 아무 일도 안 났다.
+  it('스킬레벨 칸을 눌러도 배치된다', async () => {
+    const onSeat = vi.fn()
+    render(<UnitPalette {...base} onSeat={onSeat} usedSlugs={[]} />)
+
+    const chip = screen.getByRole('button', { name: /crown 배치/i }).closest('.palette__item')!
+    await userEvent.click(chip.querySelector('.palette__stat--core')!)
+
+    expect(onSeat).toHaveBeenCalledWith('crown')
+  })
+
+  it('초상화를 눌러도 정확히 한 번만 배치된다', async () => {
+    const onSeat = vi.fn()
+    render(<UnitPalette {...base} onSeat={onSeat} usedSlugs={[]} />)
+    await userEvent.click(screen.getByRole('button', { name: /crown 배치/i }))
+    expect(onSeat).toHaveBeenCalledTimes(1)
+  })
+
+  // 니케 풀에서 「안 쓴다」고 정한 유닛이 배치 화면에서 들어오면 그 결정이 무효다.
+  it('제외된 유닛은 칩 어디를 눌러도 배치되지 않는다', async () => {
+    const onSeat = vi.fn()
+    render(<UnitPalette {...base} onSeat={onSeat} usedSlugs={[]} excludedSlugs={['crown']} />)
+
+    const chip = screen.getByRole('button', { name: /crown/i }).closest('.palette__item')!
+    await userEvent.click(chip.querySelector('.palette__stat--core')!)
+    await userEvent.click(chip.querySelector('.palette__name')!)
+
+    expect(onSeat).not.toHaveBeenCalled()
+  })
+
+  it('이미 앉은 유닛도 칩 어디를 눌러도 다시 배치되지 않는다', async () => {
+    const onSeat = vi.fn()
+    render(<UnitPalette {...base} onSeat={onSeat} usedSlugs={['crown']} />)
+
+    const chip = screen.getByRole('button', { name: /crown/i }).closest('.palette__item')!
+    await userEvent.click(chip.querySelector('.palette__stat--core')!)
+
+    expect(onSeat).not.toHaveBeenCalled()
+  })
+
+  // 니케 풀 탭에는 onSeat이 없다. 거기서 제외된 칩까지 막으면 되돌릴 길이 없어진다.
+  it('니케 풀에서는 제외된 칩도 계속 눌린다', async () => {
+    const onToggleExclude = vi.fn()
+    render(<UnitPalette {...base} onToggleExclude={onToggleExclude} excludedSlugs={['crown']} />)
+
+    const chip = screen.getByRole('button', { name: /crown/i }).closest('.palette__item')!
+    await userEvent.click(chip.querySelector('.palette__stat--core')!)
+
+    expect(onToggleExclude).toHaveBeenCalledWith('crown')
+  })
 })

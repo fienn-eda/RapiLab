@@ -1671,6 +1671,7 @@
   background: var(--surface);
   /* Set per element below; the neutral border is the fallback. */
   border-left: 3px solid var(--element, var(--border));
+  cursor: pointer;
 }
 
 .palette__item[data-element='Fire'] {
@@ -1837,6 +1838,14 @@
 .palette__item--seated .palette__portrait {
   outline: 2px solid var(--accent);
   outline-offset: -2px;
+}
+
+/* 니케 풀 탭에도 --excluded가 붙지만 거기서는 눌러야 되돌릴 수 있어 default
+   커서가 어긋난다. onSeat 유무를 클래스로 또 내보내 정확히 가리는 것보다
+   그 어긋남을 감수하는 쪽이 싸다 - 잘못 눌리는 것보다는 낫다. */
+.palette__item--excluded,
+.palette__item--seated {
+  cursor: default;
 }
 
 /* Draft editor ------------------------------------------------------------ */
