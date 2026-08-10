@@ -51,7 +51,7 @@ export const parseRosterJson = (
   const unsupported: string[] = []
   for (const u of data.units) {
     if (!u || !u.name_en || !u.raid400) {
-      warnings.push('유닛에 name_en/raid400이 없어요')
+      warnings.push(HELP.roster.importMalformedUnit)
       continue
     }
     const mapped = resolveSlugForUnit(u.resource_id, u.favorite_item)

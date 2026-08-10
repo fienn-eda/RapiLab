@@ -149,6 +149,7 @@ export const HELP = {
   },
 
   roster: {
+    importMalformedUnit: '유닛에 name_en/raid400이 없어요',
     emptyFilter: '조건에 맞는 니케가 없어요.',
     importUnsupported: (count: number, names: string) =>
       `보유 유닛 중 ${count}기가 아직 미지원이라 추천에서 제외돼요: ${names}`,
