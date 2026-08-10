@@ -560,13 +560,16 @@ square face crop the deck slots, roster tiles and result rows use is pure CSS �
 - **Palette:** owned units (from the active profile's roster) ∩ supported
   (`/api/supported-units`), grouped B1/B2/B3. A chip is a portrait plus a
   five-row stat column (breakthrough, core, S1, S2, B); name, tier, element and
-  overload are on a hover card. Clicking the portrait toggles the unit in or out
-  of the search pool.
+  overload are on a hover card. Anywhere inside a chip's border is the target:
+  pressing it seats that unit in the active deck. Whether a unit is in the
+  search pool at all is decided once for the account on the 니케 풀 tab.
 - **Editor:** 5 decks × 5 square slots, always drawn (an open slot shows `+`).
   Slots are membership (order engine-assigned) with a per-unit **lock toggle**;
-  a unit may sit in at most one deck (enforce client-side). A slot is both a
-  drop target and a drag source, so a misplaced unit is **moved** between decks
-  rather than removed and re-added.
+  a unit may sit in at most one deck (enforce client-side). Pressing a seat
+  picks that unit up; pressing an open `+` moves her, pressing another seat
+  trades the two, pressing her own seat again vacates it, and Esc cancels.
+  Dragging does the same in a browser, but cannot be the only way in: the
+  packaged app's WebView2 fires `dragstart` and then delivers no drop.
 - **Submit:** build `draft` from the editor and POST to `/api/recommend-raid`.
   - Complete draft with `within_draft`/`baseline_total_damage` present → render the
     **three tiers** (baseline → within_draft +Δ1 → recommended +Δ2), a per-deck diff

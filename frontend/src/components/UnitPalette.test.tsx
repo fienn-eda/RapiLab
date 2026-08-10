@@ -338,7 +338,7 @@ describe('UnitPalette 클릭 배치', () => {
   })
 
   // 표적은 버튼(초상화·이름·티어·오버로드)이 아니라 칩 테두리 안 전체다 - 돌파·
-  // 코어·S1/S2/B 칸은 버튼 밖에 있어 예전엔 눌러도 아무 일도 안 났다.
+  // 코어·S1/S2/B 칸은 버튼 밖에 있어서, 껍데기가 받지 않으면 죽은 자리가 된다.
   it('스킬레벨 칸을 눌러도 배치된다', async () => {
     const onSeat = vi.fn()
     render(<UnitPalette {...base} onSeat={onSeat} usedSlugs={[]} />)

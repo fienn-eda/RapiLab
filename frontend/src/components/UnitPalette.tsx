@@ -8,9 +8,10 @@
 // out - name, burst tier, element, overload rolls - is on the hover card
 // instead, so the grid stays dense enough to scan a whole roster at once.
 //
-// In draft mode (draggable) a portrait can also be dragged onto a deck to
-// seat it there. Dragging is the only way to seat a unit, so draft editing is
-// mouse-only; the Use toggle and everything else works from the keyboard.
+// On a seating screen (`onSeat`) a press seats that unit instead, which the
+// keyboard reaches as well as the mouse. `draggable` adds dragging the
+// portrait onto a deck on top of that - a browser-only convenience, since the
+// packaged app's WebView2 delivers no drop.
 
 import { useState } from 'react'
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
