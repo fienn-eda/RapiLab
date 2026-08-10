@@ -93,6 +93,21 @@ export const HELP = {
     excludedUnsupported: (names: string) => `아직 미지원 (탐색에서 제외됨): ${names}`,
   },
 
+  savedRuns: {
+    restoreHint: '이름을 눌러 그때의 결과를 다시 볼 수 있어요',
+    empty: '저장한 결과가 없어요.',
+    /** 평문 전용 - window.confirm이라 별표가 글자 그대로 나온다. */
+    confirmDelete: (name: string) => `"${name}"을(를) 삭제할까요?`,
+    capReached: (cap: number) =>
+      `보관은 ${cap}개까지예요. 목록에서 몇 개를 지우고 다시 저장해주세요.`,
+  },
+
+  profile: {
+    /** 평문 전용 - window.confirm이라 별표가 글자 그대로 나온다. */
+    confirmDelete: (label: string) =>
+      `"${label}" 프로필을 삭제할까요? 동기화된 로스터와 캐시된 결과가 함께 삭제돼요.`,
+  },
+
   sync: {
     /** 북마크릿 주소를 손에 쥔 순간에만 필요한 안내. 전체 절차는 도움말이
      * 따로 말하고, 이쪽은 바로 옆 버튼이 무엇인지 설명한다. */

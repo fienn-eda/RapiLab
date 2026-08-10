@@ -3,6 +3,8 @@
 // 화면을 만들지 않기 위해서다.
 
 import { useId, useState } from 'react'
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
 import { SAVED_RUNS_CAP } from '../types/profile'
 
 interface SaveRunButtonProps {
@@ -61,7 +63,7 @@ export function SaveRunButton({ suggestedName, onSave }: SaveRunButtonProps) {
       </button>
       {refused && (
         <span className="field__error" role="alert">
-          보관은 {SAVED_RUNS_CAP}개까지예요. 목록에서 몇 개를 지우고 다시 저장해주세요.
+          <HelpText>{HELP.savedRuns.capReached(SAVED_RUNS_CAP)}</HelpText>
         </span>
       )}
     </span>

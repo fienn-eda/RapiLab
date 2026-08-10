@@ -6,6 +6,8 @@
 // 컴포넌트로 그려지는데, 그 분기는 각 탭이 이미 하고 있다.
 
 import { useId, useState, type ReactNode } from 'react'
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
 import type { SavedRun } from '../types/profile'
 
 const savedAtLabel = (savedAt: number): string => {
@@ -37,7 +39,7 @@ export function SavedRunList({
   const renameFieldId = useId()
 
   if (runs.length === 0) {
-    return <p className="empty__text">저장한 결과가 없어요.</p>
+    return <p className="empty__text"><HelpText>{HELP.savedRuns.empty}</HelpText></p>
   }
 
   const startRename = (run: SavedRun) => {
@@ -79,7 +81,7 @@ export function SavedRunList({
                   type="button"
                   className="btn"
                   onClick={() => {
-                    if (window.confirm(`"${run.name}"을(를) 삭제할까요?`)) onDelete(run.id)
+                    if (window.confirm(HELP.savedRuns.confirmDelete(run.name))) onDelete(run.id)
                   }}
                 >
                   삭제

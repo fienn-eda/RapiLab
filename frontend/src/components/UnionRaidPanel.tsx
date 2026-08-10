@@ -8,6 +8,7 @@
 
 import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { useEvaluateDecks } from '../hooks/useEvaluateDecks'
+import { HELP } from '../lib/helpText'
 import {
   bossProfileToDraft,
   makeDefaultBossProfileDraft,
@@ -23,6 +24,7 @@ import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
 import { DraftEditor, placeUnit, removeUnitBySlug } from './DraftEditor'
 import { EvaluationResults } from './EvaluationResults'
+import { HelpText } from './HelpText'
 import { SaveRunButton } from './SaveRunButton'
 import { SavedRunList } from './SavedRunList'
 import { makeRunId, type SavedRun, type UnionRunView } from '../types/profile'
@@ -323,7 +325,7 @@ export function UnionRaidPanel({
           <legend className="group__legend">저장한 결과 ({savedRuns.length})</legend>
           <details className="group__details">
             <summary className="group__hint">
-              이름을 눌러 그때의 결과를 다시 볼 수 있어요
+              <HelpText>{HELP.savedRuns.restoreHint}</HelpText>
             </summary>
             <SavedRunList
               runs={savedRuns}

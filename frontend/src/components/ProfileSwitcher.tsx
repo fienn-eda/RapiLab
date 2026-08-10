@@ -4,6 +4,7 @@
 // so this renders nothing.
 
 import { useEffect, useId, useState } from 'react'
+import { HELP } from '../lib/helpText'
 import { profileKey, type Profile } from '../types/profile'
 import { serverLabel } from '../types/server'
 
@@ -54,7 +55,7 @@ export function ProfileSwitcher({
     // open_id files itself under it - and that profile is the one most in need
     // of removing. Only null means no account is selected, so only null returns.
     if (activeKey === null) return
-    if (window.confirm(`"${activeLabel}" 프로필을 삭제할까요? 동기화된 로스터와 캐시된 결과가 함께 삭제돼요.`)) {
+    if (window.confirm(HELP.profile.confirmDelete(activeLabel))) {
       onDelete(activeKey)
     }
   }

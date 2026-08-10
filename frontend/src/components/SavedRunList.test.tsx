@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import { SavedRunList } from './SavedRunList'
+import { HELP } from '../lib/helpText'
 import type { SavedRun } from '../types/profile'
 
 const run = (overrides: Partial<SavedRun> = {}): SavedRun => ({
@@ -49,7 +50,7 @@ describe('SavedRunList', () => {
   it('보관한 것이 없으면 없다고 말한다', () => {
     renderList({ runs: [] })
 
-    expect(screen.getByText(/저장한 결과가 없어요/)).toBeInTheDocument()
+    expect(screen.getByText(HELP.savedRuns.empty)).toBeInTheDocument()
   })
 
   it('열기 전에는 결과를 그리지 않는다', async () => {
