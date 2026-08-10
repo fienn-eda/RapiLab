@@ -34,7 +34,7 @@
 
 ### 어떤 assertion을 바꾸고 어떤 것을 두는가
 
-문구를 하드코딩한 assertion은 **11개 파일에 39군데** 있고, 그중 **29군데를 참조로 바꾸고 10군데는 정규식을 유지**한다. 유지하는 두 종류:
+문구를 하드코딩한 assertion은 **11개 파일에 41군데** 있고, 그중 **29군데를 참조로 바꾸고 12군데는 정규식을 유지**한다. 유지하는 두 종류:
 
 - **문장 일부만 재는 자리** — `/9.90% 밑으로 내려가면/`처럼 값 하나를 확인한다. 정확 문자열로 바꾸려면 나머지 인자를 픽스처에서 계산해야 하는데, 그 assertion이 재는 것은 값이지 문장이 아니다.
 - **문구가 함수인데 「없음」을 재는 자리** — 함수에 아무 인자나 넣어 만든 정확 문자열로 부재를 재면, 문구가 바뀌어도 그 특정 조합이 없다는 이유로 초록이 된다.
@@ -56,9 +56,9 @@ git diff HEAD~1 -U0 -- frontend/src | grep -E '^[-+].*[가-힣]'
 | `frontend/src/lib/helpText.ts` | 화면 설명 문구 전부 | 48항목 추가, 헤더 주석 갱신 |
 | `frontend/src/components/HelpText.tsx` | `**굵게**`를 그리는 인라인 렌더러 | 변경 없음 |
 | 컴포넌트 20개 | 문구를 `HELP` 참조로 | 문자열 리터럴 → 참조 |
-| `frontend/src/lib/rosterImport.ts` | 로스터 파싱 + 경고 생성 | 경고 문구 2개 참조로 |
+| `frontend/src/lib/rosterImport.ts` | 로스터 파싱 + 경고 생성 | 경고 문구 3개 참조로 |
 | `frontend/src/hooks/useBookmarkletImport.ts` | 북마크릿 수신 | 거절 안내 1개 참조로 |
-| 테스트 8개 | | 하드코딩 문구 → `HELP` 참조 |
+| 테스트 11개 | | 하드코딩 문구 → `HELP` 참조 |
 
 ---
 
@@ -1249,11 +1249,11 @@ git log --oneline wip/scaffolding..HEAD
 | §2 규칙 3 평문 전용 | Task 2(pinTitle), Task 3(confirm 둘), Task 7(bookmarkletNoAccount) |
 | §3 그룹 구조 | Global Constraints의 순서 규칙 + 각 태스크의 삽입 위치 |
 | §4 이동 대상 48개 | Task 1(3) + 2(9) + 3(5) + 4(9) + 5(9) + 6(5) + 7(7) = 47, 후속 커밋에서 `roster.importMalformedUnit` 1개 추가(Task 7이 아니라 그 뒤 별도 커밋) = 48 ✓ |
-| §5 테스트도 HELP를 참조 | 각 태스크 Step 1 — 39군데 중 29곳을 바꾸고 10곳은 정규식 유지 |
+| §5 테스트도 HELP를 참조 | 각 태스크 Step 1 — 41군데 중 29곳을 바꾸고 12곳은 정규식 유지 |
 | §6 중복 3쌍 | Task 2(bench), Task 3(restoreHint), Task 4(evaluateRunning) |
 | §7 검증 | 각 태스크 Step 6 + Task 8 |
 
-**assertion 39군데의 태스크별 배분** (합이 맞는지 확인용):
+**assertion 41군데의 태스크별 배분** (합이 맞는지 확인용):
 
 | 태스크 | 바꿈 | 유지 |
 |---|---|---|
@@ -1264,7 +1264,7 @@ git log --oneline wip/scaffolding..HEAD
 | 5 (miranda) | `MirandaCalculatorPanel:114` · `MirandaTargets:72,110,125` (4) | `MirandaTargets:86,99,123,124` (4) |
 | 6 (charge) | `ChargeWindowLadder:96,110` (+113 케이스 확인) | `ChargeWindowLadder:109` |
 | 7 (roster/sync) | `UnitFilterBar:160,166` · `SyncRosterPanel:166,194,212,224` (6) | `SyncRosterPanel:260` |
-| **합** | **29** | **10** |
+| **합** | **29** | **12** |
 
 **2. Placeholder scan** — "TBD"·"적절히"·"비슷하게" 없음. 모든 문자열이 최종 형태로 적혀 있다.
 

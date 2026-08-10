@@ -116,7 +116,7 @@ HELP = {
   draft      (4)   ← 신규
   results    (9)   ← 신규
   savedRuns  (4)   ← 신규
-  roster     (3)   ← 신규
+  roster     (4)   ← 신규
   profile    (1)   ← 신규
   sync       (4+4) ← 기존 + 서버 선택 · 가져오는 중 · 이름 조회 실패 · 북마크릿 계정 누락
   syncHelp / attribution / privacy ← 기존 그대로
@@ -220,7 +220,7 @@ HELP = {
 
 ## 5. 테스트도 HELP를 참조한다
 
-문구를 하드코딩한 assertion이 **11개 파일에 39군데** 있다. 그대로 두면 마침표
+문구를 하드코딩한 assertion이 **11개 파일에 41군데** 있다. 그대로 두면 마침표
 하나를 고쳐도 테스트가 빨개져서, 중앙화의 목적이 절반만 달성된다.
 
 ```ts
@@ -238,7 +238,7 @@ expect(await screen.findByText(HELP.results.raidSplit(1))).toBeInTheDocument()
 `/2~5분/`처럼 문장 일부만 재던 것들이 그 증거다. HELP 참조로 바꾸면 오히려 문장
 전체를 재게 되어 assertion이 강해진다.
 
-**39군데 전부를 바꾸지는 않는다.** 두 종류는 정규식을 유지한다:
+**41군데 전부를 바꾸지는 않는다.** 두 종류는 정규식을 유지한다:
 
 - **문장 일부만 재는 자리** — `/9.90% 밑으로 내려가면/`처럼 값 하나를 확인하는
   assertion. 정확 문자열로 바꾸려면 나머지 인자값을 픽스처에서 계산해 넣어야
@@ -284,5 +284,5 @@ expect(await screen.findByText(HELP.results.raidSplit(1))).toBeInTheDocument()
 
 ## 8. 크기
 
-`helpText.ts` 177줄 → 약 370줄. 컴포넌트 20개 · 라이브러리 2개 · 테스트 8개 수정.
+`helpText.ts` 177줄 → 약 370줄. 컴포넌트 20개 · 라이브러리 2개 · 테스트 11개 수정.
 순 증감은 거의 0 — 글자가 자리를 옮길 뿐이다.
