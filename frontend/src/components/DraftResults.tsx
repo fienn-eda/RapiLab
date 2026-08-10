@@ -15,6 +15,8 @@ import { BenchNote } from './BenchNote'
 import { DeckCard, type UnitLookups } from './DeckCard'
 import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
 import { nameFromSlug } from '../lib/unitName'
 import { RaidResults } from './RaidResults'
 import { SwapConvergenceNote } from './SwapConvergenceNote'
@@ -130,8 +132,7 @@ export function DraftResults({
   return (
     <div className="draft-results">
       <p className="raid-results__note">
-        세 단계로 올라가요: 제출한 드래프트, 드래프트한 유닛만으로 만든
-        최선의 배분, 벤치까지 포함한 추천.
+        <HelpText>{HELP.draft.tiersIntro}</HelpText>
       </p>
       <SwapConvergenceNote swapConverged={swapConverged} />
 

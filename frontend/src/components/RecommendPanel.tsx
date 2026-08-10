@@ -695,7 +695,7 @@ export function RecommendPanel({
       )}
       {mode !== 'evaluate' && rosterTooSmall && (
         <p className="field__error" role="alert">
-          덱을 추천하려면 준비된 니케가 최소 {MIN_DECK_ROSTER_SIZE}기 필요해요.
+          <HelpText>{HELP.recommend.minRoster(MIN_DECK_ROSTER_SIZE)}</HelpText>
         </p>
       )}
     </>
@@ -812,14 +812,16 @@ export function RecommendPanel({
                 상한을 다 쓰지 않고 끝나고(이 로스터는 3,331~3,735후보) 얇은
                 로스터는 훨씬 빠르다. 문구의 폭이 실측보다 넓은 것은 그 몫으로
                 느린 머신을 덮기 위해서다. */}
-            {mode === 'raid' ? '전부 최적화 중' : '빈자리만 최적화 중'} — 수천 번의
-            시뮬레이션을 실행하며 보통 2~5분이 걸려요. 아직 진행 중이니 완료되면
-            버튼이 다시 활성화돼요.
+            <HelpText>
+              {HELP.recommend.searchRunning(
+                mode === 'raid' ? '전부 최적화 중' : '빈자리만 최적화 중',
+              )}
+            </HelpText>
           </p>
         )}
         {mode === 'evaluate' && evaluation.status === 'loading' && (
           <p className="recommend-form__progress" role="status">
-            기대 딜량 계산 중이에요 — 몇 초면 끝나요.
+            <HelpText>{HELP.recommend.evaluateRunning}</HelpText>
           </p>
         )}
 
@@ -942,11 +944,14 @@ export function RecommendPanel({
                 account. What this tab still owes the player is the number: how
                 many of their Nikkes this search may actually field. */}
             <p className="group__hint">
-              {poolKnown ? poolIncluded : effectiveRoster.length}/
-              {poolKnown ? poolTotal : roster.length} 탐색 풀에 포함됨 — 편성하지 않을
-              유닛은 니케 풀 탭에서 정해요
+              <HelpText>
+                {HELP.recommend.poolNote(
+                  poolKnown ? poolIncluded : effectiveRoster.length,
+                  poolKnown ? poolTotal : roster.length,
+                )}
+              </HelpText>
               {poolKnown && unsupportedCount > 0 && (
-                <> (보유 중이나 아직 미지원 {unsupportedCount}기)</>
+                <HelpText>{HELP.recommend.poolUnsupported(unsupportedCount)}</HelpText>
               )}
             </p>
             {supportedUnits.error && <p className="field__error">{supportedUnits.error}</p>}

@@ -70,11 +70,34 @@ export const HELP = {
     notes: '이 계산에서 판정된 것들이에요',
   },
 
+  recommend: {
+    minRoster: (minimum: number) => `덱을 추천하려면 준비된 니케가 최소 ${minimum}기 필요해요.`,
+    searchRunning: (modeLabel: string) =>
+      `${modeLabel} — 수천 번의 시뮬레이션을 실행하며 보통 2~5분이 걸려요. 아직 진행 중이니 완료되면 버튼이 다시 활성화돼요.`,
+    evaluateRunning: '기대 딜량 계산 중이에요 — 몇 초면 끝나요.',
+    poolNote: (included: number, total: number) =>
+      `${included}/${total} 탐색 풀에 포함됨 — 편성하지 않을 유닛은 니케 풀 탭에서 정해요`,
+    /** 앞 공백이 있다 - 위 문장 뒤에 이어 붙는 꼬리다. */
+    poolUnsupported: (count: number) => ` (보유 중이나 아직 미지원 ${count}기)`,
+  },
+
   recommendMode: {
     single: '기대 딜량이 높은 개별 덱을 찾아줘요',
     raid: '설정한 덱 개수만큼 최적화해요',
     draft: '직접 편성한 니케들을 기반으로 나머지 자리를 최적화해요',
     evaluate: '직접 짠 덱의 기대 딜량만 빠르게 계산해요, 최적화는 하지 않아요',
+  },
+
+  draft: {
+    /** 끝 공백이 있다 - seatHintCommon이 뒤에 이어 붙는다. */
+    seatHintWithDeckPick:
+      '팔레트의 니케를 누르면 활성 덱(밝은 테두리)에 앉아요. 덱 이름을 누르면 활성 덱이 바뀌어요. ',
+    /** 끝 공백이 있다 - seatHintCommon이 뒤에 이어 붙는다. */
+    seatHintSingleDeck: '팔레트의 니케를 누르면 자리에 앉아요. ',
+    seatHintCommon:
+      '덱에 앉은 니케를 누르면 편성에서 빠져요. 슬롯은 소속만 나타내며, 버스트 순서는 엔진이 정해요.',
+    tiersIntro:
+      '세 단계로 올라가요: 제출한 드래프트, 드래프트한 유닛만으로 만든 최선의 배분, 벤치까지 포함한 추천.',
   },
 
   results: {

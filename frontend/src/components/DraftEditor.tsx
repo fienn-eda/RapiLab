@@ -14,6 +14,8 @@ import type { Draft, DraftSeat } from '../types/draft'
 import { MAX_DRAFT_SEATS_PER_DECK } from '../types/draft'
 import type { DraftDeck } from '../types/recommend'
 import type { BurstTier } from '../types/supportedUnit'
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
 
 interface DraftEditorProps {
@@ -234,11 +236,10 @@ export function DraftEditor({
   return (
     <div className="draft-editor">
       <p className="draft-editor__hint">
-        {picksDeck
-          ? '팔레트의 니케를 누르면 활성 덱(밝은 테두리)에 앉아요. 덱 이름을 누르면 활성 덱이 바뀌어요. '
-          : '팔레트의 니케를 누르면 자리에 앉아요. '}
-        덱에 앉은 니케를 누르면 편성에서 빠져요. 슬롯은 소속만 나타내며, 버스트
-        순서는 엔진이 정해요.
+        <HelpText>
+          {(picksDeck ? HELP.draft.seatHintWithDeckPick : HELP.draft.seatHintSingleDeck) +
+            HELP.draft.seatHintCommon}
+        </HelpText>
       </p>
       <div className="draft-editor__decks">
         {Array.from({ length: numDecks }, (_, deckIndex) => {

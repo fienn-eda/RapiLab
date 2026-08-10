@@ -107,7 +107,7 @@ describe('RecommendPanel', () => {
   it('disables submit and shows a guard message when the roster has under 5 Nikkes', async () => {
     await renderSettled(<RecommendPanel roster={fullRoster.slice(0, 2)} {...noPersistence} />)
     expect(
-      screen.getByText('덱을 추천하려면 준비된 니케가 최소 5기 필요해요.'),
+      screen.getByText(HELP.recommend.minRoster(MIN_DECK_ROSTER_SIZE)),
     ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
   })
@@ -483,7 +483,9 @@ describe('RecommendPanel raid mode', () => {
     await user.click(screen.getByLabelText(/전부 최적화/i))
     await user.click(screen.getByRole('button', { name: /인카운터/ }))
 
-    expect(await screen.findByRole('status')).toHaveTextContent(/2~5분/)
+    expect(await screen.findByRole('status')).toHaveTextContent(
+      HELP.recommend.searchRunning('전부 최적화 중'),
+    )
     expect(screen.getByRole('button', { name: /전부 최적화 중/i })).toBeDisabled()
 
     resolveRequest({
