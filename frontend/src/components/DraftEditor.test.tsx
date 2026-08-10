@@ -8,6 +8,7 @@ import {
   placeUnit,
   removeUnit,
   removeUnitBySlug,
+  replaceUnit,
   swapUnits,
   toggleLock,
   toRequestDraft,
@@ -104,6 +105,32 @@ describe('missingBurstTiers', () => {
     // B1로 앉히므로, 이 덱을 두고 "B1 없음"이라 말하면 거짓이다.
     const seats = ['rapi-red-hood', 'liter', 'blanc'].map((slug) => ({ slug, locked: false }))
     expect(missingBurstTiers(seats, tiersOf)).toEqual([])
+  })
+})
+
+describe('replaceUnit', () => {
+  it('자리를 물려주므로 꽉 찬 덱에서도 된다', () => {
+    const full: Draft = {
+      decks: [['a', 'b', 'c', 'd', 'e'].map((slug) => ({ slug, locked: false }))],
+    }
+    const next = replaceUnit(full, 'c', 'z')
+    expect(next.decks[0].map((s) => s.slug)).toEqual(['a', 'b', 'z', 'd', 'e'])
+  })
+
+  it('잠금은 자리에 남는다', () => {
+    const draft: Draft = { decks: [[{ slug: 'crown', locked: true }]] }
+    expect(replaceUnit(draft, 'crown', 'liter').decks[0]).toEqual([
+      { slug: 'liter', locked: true },
+    ])
+  })
+
+  it('다른 덱, 다른 자리는 건드리지 않는다', () => {
+    const draft: Draft = {
+      decks: [[{ slug: 'crown', locked: false }, { slug: 'blanc', locked: false }], [{ slug: 'liter', locked: true }]],
+    }
+    expect(replaceUnit(draft, 'crown', 'z')).toEqual({
+      decks: [[{ slug: 'z', locked: false }, { slug: 'blanc', locked: false }], [{ slug: 'liter', locked: true }]],
+    })
   })
 })
 
@@ -685,6 +712,154 @@ describe('DraftEditor', () => {
           openSlots.slice(1).every((slot) => slot.getAttribute('aria-hidden') === 'true'),
         ).toBe(true)
       })
+    })
+  })
+
+  // 팔레트가 이 컴포넌트 밖에 있어서, 부모는 좌표가 아니라 슬러그로 무엇이
+  // 들렸는지 알아야 한다. Task 9/10의 setHeldSeat 호출 다섯 곳(집기·제거
+  // 후·이동 후·교환 후·Esc) 전부가 이 알림을 거쳐야 하고, 하나라도 빠지면
+  // 부모의 heldSlug가 조용히 낡는다.
+  describe('든 유닛 알림 (heldSlug)', () => {
+    const seated: Draft = { decks: [[{ slug: 'crown', locked: false }], []] }
+    const both: Draft = {
+      decks: [[{ slug: 'crown', locked: false }], [{ slug: 'liter', locked: false }]],
+    }
+
+    it('집으면 슬러그를 알린다', async () => {
+      const onHeldSlugChange = vi.fn()
+      render(
+        <DraftEditor
+          numDecks={2} value={seated} onChange={vi.fn()}
+          portraitFor={() => null} nameFor={nameFromSlug}
+          burstTiersFor={(slug) => TIERS[slug] ?? []}
+          onHeldSlugChange={onHeldSlugChange}
+        />,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+
+      expect(onHeldSlugChange).toHaveBeenCalledWith('crown')
+    })
+
+    it('같은 자리를 다시 눌러 제거하면 null을 알린다', async () => {
+      const onHeldSlugChange = vi.fn()
+      render(
+        <DraftEditor
+          numDecks={2} value={seated} onChange={vi.fn()}
+          portraitFor={() => null} nameFor={nameFromSlug}
+          burstTiersFor={(slug) => TIERS[slug] ?? []}
+          onHeldSlugChange={onHeldSlugChange}
+        />,
+      )
+      const seat = () => screen.getByRole('button', { name: /덱 1의 Crown/ })
+
+      await userEvent.click(seat())
+      await userEvent.click(seat())
+
+      expect(onHeldSlugChange).toHaveBeenLastCalledWith(null)
+    })
+
+    it('들고 다른 덱의 빈자리로 옮기면 null을 알린다', async () => {
+      const onHeldSlugChange = vi.fn()
+      render(
+        <DraftEditor
+          numDecks={2} value={seated} onChange={vi.fn()}
+          portraitFor={() => null} nameFor={nameFromSlug}
+          burstTiersFor={(slug) => TIERS[slug] ?? []}
+          onHeldSlugChange={onHeldSlugChange}
+        />,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+      await userEvent.click(screen.getByRole('button', { name: '덱 2에 놓기' }))
+
+      expect(onHeldSlugChange).toHaveBeenLastCalledWith(null)
+    })
+
+    it('들고 찬 자리와 교환하면 null을 알린다', async () => {
+      const onHeldSlugChange = vi.fn()
+      render(
+        <DraftEditor
+          numDecks={2} value={both} onChange={vi.fn()}
+          portraitFor={() => null} nameFor={nameFromSlug}
+          burstTiersFor={(slug) => TIERS[slug] ?? []}
+          onHeldSlugChange={onHeldSlugChange}
+        />,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+      await userEvent.click(screen.getByRole('button', { name: /덱 2의 Liter/ }))
+
+      expect(onHeldSlugChange).toHaveBeenLastCalledWith(null)
+    })
+
+    it('Esc로 취소하면 null을 알린다', async () => {
+      const onHeldSlugChange = vi.fn()
+      render(
+        <DraftEditor
+          numDecks={2} value={seated} onChange={vi.fn()}
+          portraitFor={() => null} nameFor={nameFromSlug}
+          burstTiersFor={(slug) => TIERS[slug] ?? []}
+          onHeldSlugChange={onHeldSlugChange}
+        />,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+      await userEvent.keyboard('{Escape}')
+
+      expect(onHeldSlugChange).toHaveBeenLastCalledWith(null)
+    })
+
+    // 팔레트를 눌러 든 자리를 대신 채우면, 부모는 자기 heldSlug를 스스로
+    // null로 내린다 - DraftEditor의 클릭 핸들러를 거치지 않은 처리다. 내부
+    // heldSeat이 이를 따라 지우지 않으면, 방금 팔레트가 채운 자리가 여전히
+    // "든 자리"로 남아 다음 클릭이 집기 대신 즉시 제거로 튄다.
+    it('부모가 heldSlug를 null로 내리면(팔레트가 대신 처리) 든 좌석을 따라 지운다', async () => {
+      const onChange = vi.fn()
+      const onHeldSlugChange = vi.fn()
+      const { rerender, container } = render(
+        <DraftEditor
+          numDecks={2} value={seated} onChange={onChange}
+          portraitFor={() => null} nameFor={nameFromSlug}
+          burstTiersFor={(slug) => TIERS[slug] ?? []}
+          heldSlug={null}
+          onHeldSlugChange={onHeldSlugChange}
+        />,
+      )
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+      expect(onHeldSlugChange).toHaveBeenCalledWith('crown')
+
+      // 부모가 콜백을 받아 자기 heldSlug 상태를 갱신했다고 재현한다.
+      rerender(
+        <DraftEditor
+          numDecks={2} value={seated} onChange={onChange}
+          portraitFor={() => null} nameFor={nameFromSlug}
+          burstTiersFor={(slug) => TIERS[slug] ?? []}
+          heldSlug="crown"
+          onHeldSlugChange={onHeldSlugChange}
+        />,
+      )
+      expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
+
+      // 팔레트가 든 자리를 liter로 대신 채우고, 부모는 자기 heldSlug를 다시
+      // null로 내린다.
+      const replaced: Draft = { decks: [[{ slug: 'liter', locked: false }], []] }
+      rerender(
+        <DraftEditor
+          numDecks={2} value={replaced} onChange={onChange}
+          portraitFor={() => null} nameFor={nameFromSlug}
+          burstTiersFor={(slug) => TIERS[slug] ?? []}
+          heldSlug={null}
+          onHeldSlugChange={onHeldSlugChange}
+        />,
+      )
+
+      // 방금 채워진 자리를 누르면 집기여야 한다 - 즉시 제거되면 내부 상태가
+      // 낡은 좌표를 여전히 "든 자리"로 여기고 있다는 뜻이다.
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Liter/ }))
+      expect(onChange).not.toHaveBeenCalled()
+      expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
     })
   })
 })

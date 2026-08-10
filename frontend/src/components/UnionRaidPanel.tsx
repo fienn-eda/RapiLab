@@ -23,7 +23,7 @@ import type { BossProfile } from '../types/recommend'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
-import { DraftEditor, placeUnit, removeUnitBySlug } from './DraftEditor'
+import { DraftEditor, placeUnit, removeUnitBySlug, replaceUnit } from './DraftEditor'
 import { EvaluationResults } from './EvaluationResults'
 import { HelpText } from './HelpText'
 import { SaveRunButton } from './SaveRunButton'
@@ -106,6 +106,10 @@ export function UnionRaidPanel({
   // first for one render.
   const [activeDeck, setActiveDeck] = useState(0)
   const seatDeck = Math.min(activeDeck, numBattles - 1)
+  // 팔레트가 DraftEditor 밖에 있어서, 그 안에서 들린 좌석을 이 상태로
+  // 따라 안다 - 팔레트 클릭을 "빈자리에 앉히기"와 "든 유닛과 맞바꾸기"로
+  // 가르는 데 쓴다.
+  const [heldSlug, setHeldSlug] = useState<string | null>(null)
   const numBattlesId = useId()
 
   const evaluation = useEvaluateDecks()
@@ -291,7 +295,16 @@ export function UnionRaidPanel({
               supportedUnits={supportedUnits}
               usedSlugs={usedSlugs}
               draggable
-              onSeat={(slug) => setDraftValue((current) => placeUnit(current, seatDeck, slug))}
+              onSeat={(slug) => {
+                if (heldSlug) {
+                  // 들고 있던 자리를 팔레트 유닛에게 내준다. 들고 있던 쪽은
+                  // 풀로 돌아간다.
+                  setDraftValue((current) => replaceUnit(current, heldSlug, slug))
+                  setHeldSlug(null)
+                  return
+                }
+                setDraftValue((current) => placeUnit(current, seatDeck, slug))
+              }}
               excludedSlugs={[...excludedSlugs]}
               investmentFor={investmentFor}
             />
@@ -305,6 +318,8 @@ export function UnionRaidPanel({
                 portraitFor={portraitFor}
                 nameFor={nameFor}
                 burstTiersFor={burstTiersFor}
+                heldSlug={heldSlug}
+                onHeldSlugChange={setHeldSlug}
                 // There is no optimizer here to constrain - locking a unit in
                 // place has nothing to mean on a screen that only scores what
                 // was placed.

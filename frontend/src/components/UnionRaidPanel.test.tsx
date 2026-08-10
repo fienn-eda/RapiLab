@@ -378,6 +378,25 @@ describe('UnionRaidPanel', () => {
     ).not.toBeNull()
   })
 
+  // 팔레트는 DraftEditor 밖에 있어서, 든 유닛이 있을 때 팔레트를 누르면
+  // "빈자리에 앉히기"가 아니라 "든 자리를 대신 채우기"가 되어야 한다.
+  it('덱에서 유닛을 들고 팔레트의 다른 유닛을 누르면 자리를 바꾼다', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await screen.findByRole('button', { name: /u0 배치/i })
+    // u0를 덱 1에 앉힌다.
+    await user.click(screen.getByRole('button', { name: /u0 배치/i }))
+    // 그 좌석을 든다.
+    await user.click(screen.getByRole('button', { name: /덱 1의 U0/ }))
+    // 팔레트에서 다른 유닛을 누른다.
+    await user.click(screen.getByRole('button', { name: /u1 배치/i }))
+
+    expect(screen.getByRole('button', { name: /덱 1의 U1/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /덱 1의 U0/ })).not.toBeInTheDocument()
+    // u0는 풀로 돌아가 다시 배치할 수 있다.
+    expect(screen.getByRole('button', { name: /u0 배치/i })).toBeEnabled()
+  })
+
   // 답은 보스 설정 바로 아래에 선다. 편성 칸을 스크롤해 지나야 결과가 나오면
   // 안 된다.
   it('결과를 편성 위에 그린다', async () => {

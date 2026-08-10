@@ -7,8 +7,11 @@
 //
 // Pressing a seat's face picks it up; pressing that same seat again vacates
 // it, and Esc cancels the pick-up. Pressing a palette chip fills an open
-// seat. Dragging still works in a browser but cannot be the way in: the
-// packaged app's WebView2 fires `dragstart` and then delivers no drop.
+// seat, or swaps into the held seat if one is held - the palette lives
+// outside this component (in the parent panel), so heldSlug/onHeldSlugChange
+// carry that state across the boundary. Dragging still works in a browser but
+// cannot be the way in: the packaged app's WebView2 fires `dragstart` and
+// then delivers no drop.
 
 import { useEffect, useState } from 'react'
 import type { Draft, DraftSeat } from '../types/draft'
@@ -55,6 +58,10 @@ interface DraftEditorProps {
    * 이어도 보스가 하나라 덱마다 다르게 부를 것이 없다. 없으면 자리 번호로
    * 부른다. */
   deckLabels?: BossHeading[]
+  /** 지금 들려 있는 유닛. 팔레트가 이 컴포넌트 밖에 있어서, 팔레트를 눌렀을 때
+   * 무엇과 바꿀지 부모가 알아야 한다. */
+  heldSlug?: string | null
+  onHeldSlugChange?: (slug: string | null) => void
 }
 
 const TIER_NUMERALS = ['I', 'II', 'III'] as const
@@ -141,6 +148,14 @@ export const swapUnits = (draft: Draft, slug: string, otherSlug: string): Draft 
   }
 }
 
+/** `replacedSlug`가 있던 자리에 `slug`를 앉힌다. 자리를 그대로 물려받으므로
+ * 덱이 꽉 차 있어도 된다 - 하나 나가고 하나 들어온다. */
+export const replaceUnit = (draft: Draft, replacedSlug: string, slug: string): Draft => ({
+  decks: draft.decks.map((seats) =>
+    seats.map((seat) => (seat.slug === replacedSlug ? { slug, locked: seat.locked } : seat)),
+  ),
+})
+
 export const toggleLock = (draft: Draft, deckIndex: number, seatIndex: number): Draft =>
   mapDeck(draft, deckIndex, (seats) =>
     seats.map((seat, i) => (i === seatIndex ? { ...seat, locked: !seat.locked } : seat)),
@@ -193,6 +208,8 @@ export function DraftEditor({
   activeDeck = 0,
   onActiveDeckChange,
   deckLabels,
+  heldSlug,
+  onHeldSlugChange,
 }: DraftEditorProps) {
   // A slot draws ONE numeral and the rows sort by ONE tier, so both read the
   // nominal tier - the first - and leave the rest to missingBurstTiers.
@@ -209,12 +226,31 @@ export function DraftEditor({
   // 드래그가 앱에서 죽어 있어 이동은 클릭 두 번으로만 만들 수 있다.
   const [heldSeat, setHeldSeat] = useState<{ deckIndex: number; seatIndex: number } | null>(null)
 
+  // 팔레트가 이 컴포넌트 밖에 있어서, 든 좌석이 바뀔 때마다 슬러그를 부모에게
+  // 알린다 - 부모가 팔레트 클릭을 "빈자리에 앉히기"와 "든 유닛과 맞바꾸기"로
+  // 가르는 데 필요한 것은 좌표가 아니라 슬러그뿐이다. 이 컴포넌트의 setHeldSeat
+  // 호출은 전부 이 래퍼를 거쳐야 한다.
+  const setHeld = (next: { deckIndex: number; seatIndex: number } | null) => {
+    setHeldSeat(next)
+    onHeldSlugChange?.(
+      next ? (value.decks[next.deckIndex]?.[next.seatIndex]?.slug ?? null) : null,
+    )
+  }
+
+  // 부모가 팔레트 클릭으로 든 유닛을 대신 처리하면(교환) heldSlug 프로퍼티가
+  // null로 내려온다 - 이 클릭은 이 컴포넌트의 핸들러를 거치지 않으므로,
+  // 내부 heldSeat이 따라 지워지지 않으면 팔레트가 방금 채운 자리가 여전히
+  // "든 자리"로 남아 다음 클릭이 집기 대신 즉시 제거로 튄다.
+  useEffect(() => {
+    if (heldSlug === null) setHeldSeat(null)
+  }, [heldSlug])
+
   // 집었다가 마음이 바뀌었을 때의 출구. 같은 좌석을 다시 누르는 것은 제거라
   // 취소로 쓸 수 없다.
   useEffect(() => {
     if (!heldSeat) return
     const cancel = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setHeldSeat(null)
+      if (event.key === 'Escape') setHeld(null)
     }
     window.addEventListener('keydown', cancel)
     return () => window.removeEventListener('keydown', cancel)
@@ -413,19 +449,19 @@ export function DraftEditor({
                               heldSeat.seatIndex === seatIndex
                             if (held) {
                               onChange(removeUnit(value, deckIndex, seatIndex))
-                              setHeldSeat(null)
+                              setHeld(null)
                               return
                             }
                             if (heldSeat) {
                               // 차 있는 자리에 놓는 것은 교환이다 - 드래그 드롭이
                               // 이미 그렇게 해서 두 경로가 같은 규칙이 된다.
-                              const heldSlug =
+                              const heldUnitSlug =
                                 value.decks[heldSeat.deckIndex]?.[heldSeat.seatIndex]?.slug
-                              if (heldSlug) onChange(swapUnits(value, heldSlug, seat.slug))
-                              setHeldSeat(null)
+                              if (heldUnitSlug) onChange(swapUnits(value, heldUnitSlug, seat.slug))
+                              setHeld(null)
                               return
                             }
-                            setHeldSeat({ deckIndex, seatIndex })
+                            setHeld({ deckIndex, seatIndex })
                           }}
                         >
                           {slotFace}
@@ -464,10 +500,10 @@ export function DraftEditor({
                         className="draft-editor__slot-plus"
                         aria-label={`덱 ${deckIndex + 1}에 놓기`}
                         onClick={() => {
-                          const heldSlug =
+                          const heldUnitSlug =
                             value.decks[heldSeat.deckIndex]?.[heldSeat.seatIndex]?.slug
-                          if (heldSlug) onChange(moveUnit(value, deckIndex, heldSlug))
-                          setHeldSeat(null)
+                          if (heldUnitSlug) onChange(moveUnit(value, deckIndex, heldUnitSlug))
+                          setHeld(null)
                         }}
                       >
                         +

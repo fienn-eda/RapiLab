@@ -46,7 +46,7 @@ import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
 import { BossSummary } from './BossSummary'
 import { DeckResults } from './DeckResults'
-import { DraftEditor, placeUnit, removeUnitBySlug, toRequestDraft } from './DraftEditor'
+import { DraftEditor, placeUnit, removeUnitBySlug, replaceUnit, toRequestDraft } from './DraftEditor'
 import { DraftResults } from './DraftResults'
 import { EvaluationResults } from './EvaluationResults'
 import { RaidResults } from './RaidResults'
@@ -203,6 +203,10 @@ export function RecommendPanel({
   // beats a second piece of state that can disagree with the first.
   const [activeDeck, setActiveDeck] = useState(0)
   const seatDeck = Math.min(activeDeck, numDecks - 1)
+  // 팔레트가 DraftEditor 밖에 있어서, 그 안에서 들린 좌석을 이 상태로
+  // 따라 안다 - 팔레트 클릭을 "빈자리에 앉히기"와 "든 유닛과 맞바꾸기"로
+  // 가르는 데 쓴다.
+  const [heldSlug, setHeldSlug] = useState<string | null>(null)
   // Set right before a raid/draft raid.submit() call that actually reaches
   // the backend (a cache hit never sets it), and cleared once its success is
   // persisted via onResult - the guard that makes persistence exactly-once
@@ -973,7 +977,16 @@ export function RecommendPanel({
                 supportedUnits={supportedUnits.units}
                 usedSlugs={usedSlugs}
                 draggable
-                onSeat={(slug) => setDraftValue((current) => placeUnit(current, seatDeck, slug))}
+                onSeat={(slug) => {
+                  if (heldSlug) {
+                    // 들고 있던 자리를 팔레트 유닛에게 내준다. 들고 있던
+                    // 쪽은 풀로 돌아간다.
+                    setDraftValue((current) => replaceUnit(current, heldSlug, slug))
+                    setHeldSlug(null)
+                    return
+                  }
+                  setDraftValue((current) => placeUnit(current, seatDeck, slug))
+                }}
                 excludedSlugs={[...excludedSlugs]}
                 investmentFor={investmentFor}
               />
@@ -987,6 +1000,8 @@ export function RecommendPanel({
                   portraitFor={portraitFor}
                   nameFor={nameFor}
                   burstTiersFor={burstTiersResolver}
+                  heldSlug={heldSlug}
+                  onHeldSlugChange={setHeldSlug}
                   // Evaluate has no optimizer to constrain - locking a unit in
                   // place has nothing to mean there.
                   showLocks={mode !== 'evaluate'}

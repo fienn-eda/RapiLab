@@ -672,6 +672,30 @@ describe('RecommendPanel draft mode', () => {
     expect(optionOne).toBeDisabled()
     expect(optionTwo).not.toBeDisabled()
   })
+
+  // 팔레트는 DraftEditor 밖에 있어서, 든 유닛이 있을 때 팔레트를 누르면
+  // "빈자리에 앉히기"가 아니라 "든 자리를 대신 채우기"가 되어야 한다 -
+  // 유니온 탭과 같은 배선을 이 탭에서도 확인한다.
+  it('덱에서 유닛을 들고 팔레트의 다른 유닛을 누르면 자리를 바꾼다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
+
+    render(<RecommendPanel roster={fullRoster} {...noPersistence} />)
+    await user.click(screen.getByLabelText(/빈자리만 최적화/i))
+    await screen.findByRole('button', { name: /a 배치/i }) // palette loaded
+
+    // a를 덱 1에 앉힌다.
+    await user.click(screen.getByRole('button', { name: /a 배치/i }))
+    // 그 좌석을 든다.
+    await user.click(screen.getByRole('button', { name: /덱 1의 A/ }))
+    // 팔레트에서 다른 유닛을 누른다.
+    await user.click(screen.getByRole('button', { name: /b 배치/i }))
+
+    expect(screen.getByRole('button', { name: /덱 1의 B/ })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /덱 1의 A/ })).not.toBeInTheDocument()
+    // a는 풀로 돌아가 다시 배치할 수 있다.
+    expect(screen.getByRole('button', { name: /a 배치/i })).toBeEnabled()
+  })
 })
 
 describe('RecommendPanel evaluate mode', () => {
