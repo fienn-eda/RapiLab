@@ -19,6 +19,7 @@ import {
   toggleExcluded as pureToggleExcluded,
   switchProfile,
   upsertProfile,
+  SAVED_RUNS_CAP,
   type Profile,
   type ProfilesState,
   type SavedRun,
@@ -163,16 +164,18 @@ export const useProfiles = (): Profiles => {
   )
 
   /** 상한에 걸려 거절됐는지를 돌려준다 - 저장이 조용히 안 되는 화면을 만들지
-   * 않기 위해서다. 거절은 순수 함수가 상태를 그대로 돌려주는 것으로 나타난다. */
-  const keepRun = useCallback((args: { key: string; run: SavedRun }): boolean => {
-    let accepted = false
-    setState((current) => {
-      const next = pureSaveRun(current, args.key, args.run)
-      accepted = next !== current
-      return next
-    })
-    return accepted
-  }, [])
+   * 않기 위해서다. 판정은 setState 밖에서 끝낸다: React는 업데이터를 즉시
+   * 실행한다고 약속하지 않아서, 업데이터 안에서 정한 값을 밖에서 읽으면
+   * 아직 안 정해진 값을 읽는다. */
+  const keepRun = useCallback(
+    (args: { key: string; run: SavedRun }): boolean => {
+      const profile = state.profiles[args.key]
+      if (!profile || profile.savedRuns.length >= SAVED_RUNS_CAP) return false
+      setState((current) => pureSaveRun(current, args.key, args.run))
+      return true
+    },
+    [state],
+  )
 
   const rename = useCallback((args: { key: string; id: string; name: string }) => {
     setState((current) => pureRenameRun(current, args.key, args.id, args.name))

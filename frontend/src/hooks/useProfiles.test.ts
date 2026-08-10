@@ -245,6 +245,49 @@ describe('useProfiles', () => {
     expect(result.current.state.activeKey).toBe('222222:83')
   })
 
+  describe('saveRun 거절 신호', () => {
+    it('빈 프로필에 첫 저장은 거절되지 않는다', () => {
+      localStorage.clear()
+      const { result } = renderHook(() => useProfiles())
+
+      act(() => {
+        result.current.upsertProfile({ openId: 'A', area: 81, nickname: '테스트', roster: [] })
+      })
+      const key = result.current.state.activeKey!
+
+      let accepted: boolean | undefined
+      act(() => {
+        accepted = result.current.saveRun({ key, run: savedRun('1') })
+      })
+
+      expect(accepted).toBe(true)
+      expect(result.current.activeProfile!.savedRuns).toHaveLength(1)
+    })
+
+    it('상한에 찬 프로필에서만 거절한다', () => {
+      localStorage.clear()
+      const { result } = renderHook(() => useProfiles())
+      act(() => {
+        result.current.upsertProfile({ openId: 'B', area: 81, nickname: '가득', roster: [] })
+      })
+      const key = result.current.state.activeKey!
+
+      act(() => {
+        for (let i = 0; i < SAVED_RUNS_CAP; i++) {
+          result.current.saveRun({ key, run: savedRun(String(i)) })
+        }
+      })
+
+      let accepted: boolean | undefined
+      act(() => {
+        accepted = result.current.saveRun({ key, run: savedRun('over') })
+      })
+
+      expect(accepted).toBe(false)
+      expect(result.current.activeProfile!.savedRuns).toHaveLength(SAVED_RUNS_CAP)
+    })
+  })
+
   it('이미 새 스키마면 그대로 둔다', () => {
     localStorage.setItem(
       'nikke-profiles',
