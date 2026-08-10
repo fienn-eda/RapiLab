@@ -47,6 +47,9 @@ export function NikkeCard({
       className={`card roster-card${excluded ? ' roster-card--excluded' : ''}`}
       data-element={element}
       aria-label={`${title} 투자 정보`}
+      // 표적은 카드 테두리 안 전체다. 핸들러가 여기 하나뿐이라 초상화를 눌러도
+      // 버블링으로 같은 핸들러에 한 번 닿는다 - 버튼에도 두면 두 번 불린다.
+      onClick={onToggleExclude}
     >
       {/* The slot is always drawn, even with no portrait to put in it: a
           missing one would otherwise shorten that tile against its row.
@@ -60,7 +63,6 @@ export function NikkeCard({
             className="roster-card__use"
             aria-pressed={!excluded}
             aria-label={`${title} 사용`}
-            onClick={onToggleExclude}
           >
             {portrait ? (
               <img className="roster-card__portrait" src={portrait} alt="" />

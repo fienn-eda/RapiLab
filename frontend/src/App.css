@@ -631,6 +631,10 @@
   --element: var(--el-electric);
 }
 
+.roster-card:has(.roster-card__use) {
+  cursor: pointer;
+}
+
 /* Anchors the breakthrough overlay. */
 .roster-card__figure {
   position: relative;

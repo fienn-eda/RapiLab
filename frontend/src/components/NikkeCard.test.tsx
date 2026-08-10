@@ -1,5 +1,6 @@
-import { describe, it, expect } from 'vitest'
+import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { NikkeCard } from './NikkeCard'
 import { makeEmptyDraft, type NikkeDraft } from '../types/nikkeDraft'
 
@@ -14,6 +15,14 @@ const filledDraft = (): NikkeDraft => ({
   def_: '12000',
   skill_levels: { skill1: '10', skill2: '7', burst: '4' },
   overload_options: [{ id: '1', name: '공격력 증가', value: '18.2' }],
+})
+
+// '공격력 상승'은 abbreviateOverload가 아는 이름(「공격력 증가」)이 아니라 줄여지지
+// 않고 그대로 렌더된다 - 오버로드 줄 어디를 눌러도 토글되는지 보려면 클릭할 진짜
+// 텍스트가 있어야 한다.
+const draftWithOverload = (): NikkeDraft => ({
+  ...makeEmptyDraft(),
+  overload_options: [{ id: '1', name: '공격력 상승', value: '10' }],
 })
 
 const card = (
@@ -96,6 +105,52 @@ describe('NikkeCard', () => {
     card()
     expect(screen.queryAllByRole('textbox')).toHaveLength(0)
     expect(screen.queryAllByRole('spinbutton')).toHaveLength(0)
+    expect(screen.queryByRole('button')).not.toBeInTheDocument()
+  })
+
+  it('오버로드 줄을 눌러도 제외가 토글된다', async () => {
+    const onToggleExclude = vi.fn()
+    render(
+      <NikkeCard
+        draft={draftWithOverload()}
+        index={0}
+        name="Crown"
+        element="Fire"
+        portrait={null}
+        onToggleExclude={onToggleExclude}
+      />,
+    )
+
+    await userEvent.click(screen.getByText(/공격력/))
+
+    expect(onToggleExclude).toHaveBeenCalledTimes(1)
+  })
+
+  it('이름을 눌러도 제외가 토글된다', async () => {
+    const onToggleExclude = vi.fn()
+    render(
+      <NikkeCard draft={makeEmptyDraft()} index={0} name="Crown" element="Fire"
+        portrait={null} onToggleExclude={onToggleExclude} />,
+    )
+    await userEvent.click(screen.getByRole('heading', { name: 'Crown' }))
+    expect(onToggleExclude).toHaveBeenCalledTimes(1)
+  })
+
+  // 초상화는 버튼 안이고 버튼은 껍데기 안이다. 둘 다 핸들러를 들면 한 번 눌러
+  // 두 번 토글돼 아무 일도 안 한 것처럼 보인다.
+  it('초상화를 눌러도 정확히 한 번만 토글된다', async () => {
+    const onToggleExclude = vi.fn()
+    render(
+      <NikkeCard draft={makeEmptyDraft()} index={0} name="Crown" element="Fire"
+        portrait={null} onToggleExclude={onToggleExclude} />,
+    )
+    await userEvent.click(screen.getByRole('button', { name: 'Crown 사용' }))
+    expect(onToggleExclude).toHaveBeenCalledTimes(1)
+  })
+
+  // 제외를 제안하지 않는 화면에서는 카드가 아무 데도 반응하면 안 된다.
+  it('onToggleExclude가 없으면 카드는 눌리지 않는다', async () => {
+    render(<NikkeCard draft={makeEmptyDraft()} index={0} name="Crown" element="Fire" portrait={null} />)
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })
