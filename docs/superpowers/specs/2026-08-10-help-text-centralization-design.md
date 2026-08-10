@@ -84,15 +84,16 @@ raidSplit: (deckCount: number) =>
 컴포넌트다. Fragment를 반환하므로 기존 `<p className="...">` 안에 그대로 넣을 수
 있고 CSS는 영향을 받지 않는다.
 
-문제는 **문자열만 받는 자리**다 — `title=`, `window.confirm()`. 여기서 `**`는
-굵게 되지 않고 별표 두 개가 그대로 보인다. 해당 항목 셋에 「평문 전용 — 별표가
-글자 그대로 나온다」는 주석을 단다.
+문제는 **문자열만 받는 자리**다. 여기서 `**`는 굵게 되지 않고 별표 두 개가
+그대로 보인다. 해당 항목 넷에 「평문 전용 — 별표가 글자 그대로 나온다」는 주석을
+단다.
 
 | 항목 | 자리 |
 |---|---|
 | `results.pinTitle` | `<span title=...>` |
 | `savedRuns.confirmDelete` | `window.confirm()` |
 | `profile.confirmDelete` | `window.confirm()` |
+| `sync.bookmarkletNoAccount` | `setError()` → `<p className="sync__error">`가 평문으로 그린다. 같은 자리에 다른 에러 메시지도 오므로 그 렌더는 `<HelpText>`로 바꾸지 않는다. |
 
 옮기는 나머지 문구는 그리는 지점을 `<HelpText>`로 통일한다. 그래야 「어디서
 `**`가 먹는가」를 외울 필요가 없다. 로스터 가져오기 경고 둘과 이름 조회 실패
@@ -213,11 +214,11 @@ HELP = {
 | `SyncRosterPanel.tsx:77` | `sync.nameUnavailable` |
 | `SyncRosterPanel.tsx:164` | `sync.serverChoice` |
 | `SyncRosterPanel.tsx:257` | `sync.importing` |
-| `hooks/useBookmarkletImport.ts:177` | `sync.bookmarkletNoAccount` |
+| `hooks/useBookmarkletImport.ts:177` | ▣ `sync.bookmarkletNoAccount` |
 
 ## 5. 테스트도 HELP를 참조한다
 
-문구를 하드코딩한 assertion이 8개 파일에 약 20군데 있다. 그대로 두면 마침표
+문구를 하드코딩한 assertion이 **11개 파일에 39군데** 있다. 그대로 두면 마침표
 하나를 고쳐도 테스트가 빨개져서, 중앙화의 목적이 절반만 달성된다.
 
 ```ts
@@ -235,9 +236,23 @@ expect(await screen.findByText(HELP.results.raidSplit(1))).toBeInTheDocument()
 `/2~5분/`처럼 문장 일부만 재던 것들이 그 증거다. HELP 참조로 바꾸면 오히려 문장
 전체를 재게 되어 assertion이 강해진다.
 
-대상 파일: `App.test.tsx`, `ChargeWindowLadder.test.tsx`, `DeckResults.test.tsx`,
-`MirandaTargets.test.tsx`, `RaidResults.test.tsx`, `RecommendPanel.test.tsx`,
-`SavedRunList.test.tsx`, `UnitFilterBar.test.tsx`.
+**39군데 전부를 바꾸지는 않는다.** 두 종류는 정규식을 유지한다:
+
+- **문장 일부만 재는 자리** — `/9.90% 밑으로 내려가면/`처럼 값 하나를 확인하는
+  assertion. 정확 문자열로 바꾸려면 나머지 인자값을 픽스처에서 계산해 넣어야
+  하는데, 그 assertion이 재는 것은 값이지 문장이 아니다.
+- **문구가 함수인데 「없음」을 재는 자리** — `queryByText(...).not.toBeInTheDocument()`.
+  함수에 아무 인자나 넣어 정확 문자열을 만들면, 문구가 바뀌어도 그 특정 조합이
+  없다는 이유로 초록이 된다.
+
+문구가 **상수**일 때는 존재/부재 쌍을 함께 바꾼다 — 그래야 문구가 바뀔 때 두
+줄이 같이 따라간다.
+
+대상 파일 11개: `App.test.tsx`, `ChargeWindowLadder.test.tsx`,
+`DeckResults.test.tsx`, `DraftResults.test.tsx`,
+`MirandaCalculatorPanel.test.tsx`, `MirandaTargets.test.tsx`,
+`RaidResults.test.tsx`, `RecommendPanel.test.tsx`, `SavedRunList.test.tsx`,
+`SyncRosterPanel.test.tsx`, `UnitFilterBar.test.tsx`.
 
 ## 6. 부수 이득 — 중복 3쌍
 
