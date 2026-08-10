@@ -452,9 +452,11 @@ export function DraftEditor({
                   <li
                     key={`open-${i}`}
                     className="draft-editor__slot draft-editor__slot--open"
-                    // 들고 있을 때만 놓을 수 있다. 누를 수 없는 것을 버튼으로
-                    // 보이게 하지 않으려고 그때만 버튼이 된다.
-                    aria-hidden={heldSeat ? undefined : 'true'}
+                    // 들고 있을 때 첫 빈자리만 놓을 수 있다. 누를 수 없는
+                    // 것을 버튼으로 보이게 하지 않으려고 그때만 버튼이 되고,
+                    // 접근성 트리 노출도 그 하나로 한정한다 - 나머지 넷까지
+                    // 노출하면 스크린리더가 덱마다 "+"를 여러 번 읽는다.
+                    aria-hidden={heldSeat && i === 0 ? undefined : 'true'}
                   >
                     {heldSeat && i === 0 ? (
                       <button

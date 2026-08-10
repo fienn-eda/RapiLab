@@ -666,6 +666,26 @@ describe('DraftEditor', () => {
       expect(onChange).not.toHaveBeenCalled()
       expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
     })
+
+    // i===0 빈자리만 놓기 버튼이 되므로, 접근성 트리 노출도 그 하나에만
+    // 한정돼야 한다 - 나머지 넷까지 노출되면 스크린리더가 덱마다 "+"를
+    // 여러 번 읽는, i===0 제한이 막으려던 바로 그 소음이 aria-hidden 축에서
+    // 새는 것이다.
+    it('들었을 때 덱마다 첫 빈자리만 접근성 트리에 노출하고 나머지는 숨긴다', async () => {
+      const { container } = editor(2, seated)
+
+      await userEvent.click(screen.getByRole('button', { name: /덱 1의 Crown/ }))
+
+      const decks = container.querySelectorAll('.draft-editor__deck')
+      expect(decks.length).toBeGreaterThan(0)
+      decks.forEach((deck) => {
+        const openSlots = [...deck.querySelectorAll('.draft-editor__slot--open')]
+        expect(openSlots[0]).not.toHaveAttribute('aria-hidden')
+        expect(
+          openSlots.slice(1).every((slot) => slot.getAttribute('aria-hidden') === 'true'),
+        ).toBe(true)
+      })
+    })
   })
 })
 
