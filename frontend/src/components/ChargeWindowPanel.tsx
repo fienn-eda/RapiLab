@@ -131,7 +131,7 @@ export function ChargeWindowPanel({ roster, nameFor }: ChargeWindowPanelProps) {
             possible, hence a standing caveat rather than a per-result note. */}
         <NumberField
           label="차지속도 합계"
-          hint="(%, 비우면 동기화된 로스터 값)"
+          hint={HELP.charge.rosterFallbackHint}
           help={HELP.charge.speedTotal}
           value={chargeSpeed}
           onChange={setChargeSpeed}
@@ -139,7 +139,7 @@ export function ChargeWindowPanel({ roster, nameFor }: ChargeWindowPanelProps) {
         />
         <NumberField
           label="최대장탄 오버로드"
-          hint="(%, 비우면 동기화된 로스터 값)"
+          hint={HELP.charge.rosterFallbackHint}
           help={HELP.charge.maxAmmo}
           value={maxAmmo}
           onChange={setMaxAmmo}

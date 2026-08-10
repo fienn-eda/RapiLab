@@ -1,6 +1,7 @@
 import { render, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ChargeWindowLadder } from './ChargeWindowLadder'
+import { HELP } from '../lib/helpText'
 import type { ChargeWindowResult } from '../types/chargeWindow'
 
 const outcome = (low: number, high: number, highProbability: number) => ({
@@ -93,7 +94,7 @@ describe('ChargeWindowLadder', () => {
     // because overload did - not because the charge ran out.
     const topped = { ...RESULT, chargeSpeedPercent: 0.1111 }
     render(<ChargeWindowLadder result={topped} />)
-    expect(screen.getByText(/오버로드 상한 24\.00%/)).toBeInTheDocument()
+    expect(screen.getByText(HELP.charge.ladderCeiling('24.00%'))).toBeInTheDocument()
   })
 
   it('does not blame the ceiling for a ladder that ran past it', () => {
@@ -107,7 +108,7 @@ describe('ChargeWindowLadder', () => {
     }
     render(<ChargeWindowLadder result={past} />)
     expect(screen.queryByText(/오버로드 상한/)).not.toBeInTheDocument()
-    expect(screen.getByText(/더 올릴 구간이 없습니다/)).toBeInTheDocument()
+    expect(screen.getByText(HELP.charge.ladderAtLast)).toBeInTheDocument()
   })
 
   it('says the charge is gone when the ladder ran out of frames instead', () => {
@@ -119,6 +120,6 @@ describe('ChargeWindowLadder', () => {
                    { chargeSpeedPercent: 1, interval: 0.43, outcome: outcome(23, 23, 0) }],
     }
     render(<ChargeWindowLadder result={spent} />)
-    expect(screen.getByText(/차지가 이미 사라졌습니다/)).toBeInTheDocument()
+    expect(screen.getByText(HELP.charge.ladderChargeGone)).toBeInTheDocument()
   })
 })

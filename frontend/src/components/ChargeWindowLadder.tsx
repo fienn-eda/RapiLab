@@ -5,7 +5,9 @@
 // number, because the phase the Full Burst window opens at is not the player's
 // to choose and it decides the last shot.
 
+import { HELP } from '../lib/helpText'
 import type { ChargeWindowResult, ShotOutcome } from '../types/chargeWindow'
+import { HelpText } from './HelpText'
 import { HelpTip } from './HelpTip'
 
 const percent = (ratio: number) => `${(ratio * 100).toFixed(2)}%`
@@ -22,15 +24,15 @@ const describeOutcome = (outcome: ShotOutcome) => {
 // total already carried the ladder past that ceiling, in which case blaming the
 // ceiling would contradict the rows above it.
 const closingLine = (result: ChargeWindowResult, gap: number | null): string => {
-  if (gap !== null) return `다음 구간까지 ${(gap * 100).toFixed(2)}%p 남았습니다.`
+  if (gap !== null) return HELP.charge.ladderGap(gap * 100)
   const last = result.thresholds[result.thresholds.length - 1]
   if (last === undefined || last.chargeSpeedPercent >= 1) {
-    return '더 올릴 구간이 없습니다 — 차지가 이미 사라졌습니다.'
+    return HELP.charge.ladderChargeGone
   }
   if (last.chargeSpeedPercent <= result.chargeSpeedCeiling + 1e-9) {
-    return `오버로드 상한 ${percent(result.chargeSpeedCeiling)}까지만 보여줍니다 — 4부위 전부 최고 굴림이 그 상한입니다.`
+    return HELP.charge.ladderCeiling(percent(result.chargeSpeedCeiling))
   }
-  return '더 올릴 구간이 없습니다 — 지금 합계가 이미 마지막 구간입니다.'
+  return HELP.charge.ladderAtLast
 }
 
 export function ChargeWindowLadder({ result }: { result: ChargeWindowResult }) {
@@ -76,7 +78,7 @@ export function ChargeWindowLadder({ result }: { result: ChargeWindowResult }) {
           </tbody>
         </table>
       </div>
-      <p className="charge-ladder__next">{closingLine(result, gap)}</p>
+      <p className="charge-ladder__next"><HelpText>{closingLine(result, gap)}</HelpText></p>
       {/* The count stays in the open because it is the part that has to be
           noticed; the reasoning behind each is read once. */}
       {result.notes.length > 0 && (

@@ -68,6 +68,13 @@ export const HELP = {
     maxAmmo:
       '풀버스트 진입 시 **탄창은 가득**으로 가정해요.',
     notes: '이 계산에서 판정된 것들이에요',
+    ladderGap: (gapPoints: number) => `다음 구간까지 ${gapPoints.toFixed(2)}%p 남았습니다.`,
+    ladderChargeGone: '더 올릴 구간이 없습니다 — 차지가 이미 사라졌습니다.',
+    ladderCeiling: (ceiling: string) =>
+      `오버로드 상한 ${ceiling}까지만 보여줍니다 — 4부위 전부 최고 굴림이 그 상한입니다.`,
+    ladderAtLast: '더 올릴 구간이 없습니다 — 지금 합계가 이미 마지막 구간입니다.',
+    /** 평문 전용 - NumberField의 hint는 HelpText를 거치지 않고 그대로 렌더한다. */
+    rosterFallbackHint: '(%, 비우면 동기화된 로스터 값)',
   },
 
   miranda: {
