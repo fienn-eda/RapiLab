@@ -124,7 +124,7 @@ for(const f of found){
   const bi=(basic&&basic.basic_info)||{};
   nick=bi.nickname||bi.role_name||'';
   if(!nick&&!nickErr)nickErr='shape:'+Object.keys(basic||{}).join('|');}
- servers.push({area:f.area,nickname:nick,nickname_error:nick?'':nickErr,owned:f.owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[]})}
+ servers.push({area:f.area,nickname:nick,nickname_error:nick?'':nickErr,owned:f.owned,character_details:detail.character_details||[],recycle_room_researches:((outpost.outpost_info||{}).recycle_room_researches)||[],synchro_level:(outpost.outpost_info||{}).synchro_level})}
 payload={open_id:'${openId}',servers:servers};`
 
 // 실패 문구. 두 빌더가 같은 코드를 같은 말로 설명해야 한다.

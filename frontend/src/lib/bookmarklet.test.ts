@@ -29,6 +29,13 @@ describe('buildLocalSyncBookmarklet: 수집', () => {
   })
 
 
+  it('싱크로 레벨을 outpost_info에서 꺼내 싣는다', () => {
+    // 유니온 레이드는 레벨 보정이 없어 이 값이 곧 전투 레벨이다. 바로 옆의
+    // outpost_battle_level은 다른 값이므로, 이름을 정확히 고정한다.
+    expect(source).toContain('synchro_level')
+    expect(source).not.toContain('outpost_battle_level')
+  })
+
   it('세 엔드포인트를 모두 부른다', () => {
     for (const ep of [
       'GetUserCharacters',

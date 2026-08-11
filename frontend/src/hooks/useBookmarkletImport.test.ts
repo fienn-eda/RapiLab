@@ -160,6 +160,32 @@ describe('useBookmarkletImport', () => {
     )
   })
 
+  it('서버 payload의 synchro_level을 조립 요청에 실어 보낸다', async () => {
+    // 유니온 레이드는 레벨 보정이 없어 이 값이 곧 전투 레벨이다. 훅은 값을
+    // 해석하지 않고 나르기만 한다 - 해석은 백엔드 조립기가 한다.
+    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
+    inbox({ open_id: 'abc123', servers: [{ ...server(83, 1), synchro_level: 668 }] })
+
+    renderHook(() => useBookmarkletImport(vi.fn()))
+
+    await waitFor(() => expect(assembleRoster).toHaveBeenCalled())
+    expect(vi.mocked(assembleRoster).mock.calls[0][0]).toMatchObject({
+      synchro_level: 668,
+    })
+  })
+
+  it('싱크로 레벨이 없는 옛 북마크릿 payload도 그대로 조립한다', async () => {
+    // 이미 설치된 북마크릿은 설치 시점 소스가 박제된 것이라 이 값을 안 보낸다.
+    // 그래도 동기화는 성공해야 한다 - 없어지는 것은 유니온 스탯뿐이다.
+    vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
+    inbox({ open_id: 'abc123', servers: [server(83, 1)] })
+
+    renderHook(() => useBookmarkletImport(vi.fn()))
+
+    await waitFor(() => expect(assembleRoster).toHaveBeenCalled())
+    expect(vi.mocked(assembleRoster).mock.calls[0][0].synchro_level).toBeUndefined()
+  })
+
   it('서버가 둘이면 고르기 전에는 아무것도 조립하지 않는다', async () => {
     vi.mocked(assembleRoster).mockResolvedValue({ units: [] })
     const onRoster = vi.fn()

@@ -54,6 +54,10 @@ interface ServerPayload {
   owned: unknown[]
   character_details: unknown[]
   recycle_room_researches: unknown[]
+  /** 계정의 싱크로 디바이스 레벨. 유니온 레이드는 레벨 보정이 없어 이 값이 곧
+   * 전투 레벨이다. 옛 북마크릿에는 없는 필드다 - 없으면 백엔드가 유니온용
+   * 스탯을 만들지 않고, 유니온 탭이 그 사실을 알린다. */
+  synchro_level?: number
 }
 
 const isServerPayload = (value: unknown): value is ServerPayload =>
@@ -134,6 +138,7 @@ export const useBookmarkletImport = (
         owned: server.owned,
         character_details: server.character_details,
         recycle_room_researches: server.recycle_room_researches,
+        synchro_level: server.synchro_level,
       })
       onRosterRef.current({
         openId: id,

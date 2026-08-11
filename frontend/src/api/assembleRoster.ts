@@ -8,6 +8,9 @@ export interface RawRosterPayload {
   owned: unknown[]
   character_details: unknown[]
   recycle_room_researches: unknown[]
+  // 계정의 싱크로 디바이스 레벨. 백엔드가 이 레벨로 유니온용 스탯을 조립한다.
+  // 옛 북마크릿은 보내지 않으므로 옵셔널이다.
+  synchro_level?: number
   // 클라이언트 전용 프로필 식별자 - 백엔드는 이 값들을 모른다 (아래 destructure로 배제).
   open_id?: string
   nickname?: string
