@@ -20,6 +20,10 @@ const RESULT: ChargeWindowResult = {
     { chargeSpeedPercent: 0.0556, interval: 0.5133, outcome: outcome(19, 20, 0.481) },
     { chargeSpeedPercent: 0.1111, interval: 0.4967, outcome: outcome(20, 21, 0.134) },
   ],
+  // 이 픽스처는 마지막 행이 상한 한참 아래이고, 백엔드가 "오버로드가 모자라
+  // 잘렸다"고 말한 경우다. 행 목록만으로는 이것과 "답이 먼저 멈췄다"를 구분할
+  // 수 없어 백엔드가 이유를 실어준다.
+  ladderStoppedBy: 'ceiling',
   notes: ['탄창이 창 안에서 비어 재장전이 걸립니다'],
 }
 
@@ -116,10 +120,25 @@ describe('ChargeWindowLadder', () => {
       ...RESULT,
       chargeSpeedPercent: 1,
       chargeSpeedCeiling: 0.24,
+      ladderStoppedBy: 'charge' as const,
       thresholds: [...RESULT.thresholds,
                    { chargeSpeedPercent: 1, interval: 0.43, outcome: outcome(23, 23, 0) }],
     }
     render(<ChargeWindowLadder result={spent} />)
     expect(screen.getByText(HELP.charge.ladderChargeGone)).toBeInTheDocument()
+  })
+
+  it('상한이 남았는데 답이 먼저 멈췄으면 상한을 탓하지 않는다', () => {
+    // 탄창이 타수를 막으면 오버로드는 아직 살 수 있는데도 살 이유가 없다.
+    // 그때 "상한까지만 보여줍니다"는 거짓이다 - 상한은 멀쩡히 남아 있다.
+    const settled = {
+      ...RESULT,
+      chargeSpeedPercent: 0.1111,
+      ladderStoppedBy: 'answer' as const,
+    }
+    render(<ChargeWindowLadder result={settled} />)
+
+    expect(screen.getByText(HELP.charge.ladderAnswerSettled)).toBeInTheDocument()
+    expect(screen.queryByText(/오버로드 상한/)).not.toBeInTheDocument()
   })
 })

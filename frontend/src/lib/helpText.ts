@@ -82,6 +82,10 @@ export const HELP = {
     ladderCeiling: (ceiling: string) =>
       `오버로드 상한 ${ceiling}까지만 보여줍니다 — 4부위 전부 최고 굴림이 그 상한입니다.`,
     ladderAtLast: '더 올릴 구간이 없습니다 — 지금 합계가 이미 마지막 구간입니다.',
+    /** 상한이 아니라 답이 먼저 멈춘 경우. 오버로드는 아직 남았는데 살 이유가
+     * 없다 — 대개 탄창이 타수를 막고 있을 때다. */
+    ladderAnswerSettled:
+      '여기서부터는 더 올려도 결과가 같습니다 — 타수도 확률도 바뀌지 않아요.',
     /** 평문 전용 - NumberField의 hint는 HelpText를 거치지 않고 그대로 렌더해 별표가
      * 글자 그대로 나온다. */
     rosterFallbackHint: '(%, 비우면 동기화된 로스터 값)',

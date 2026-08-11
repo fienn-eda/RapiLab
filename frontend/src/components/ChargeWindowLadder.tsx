@@ -18,21 +18,25 @@ const describeOutcome = (outcome: ShotOutcome) => {
   return `${outcome.highShots}타 ${odds(outcome.highProbability)} / ${outcome.lowShots}타 ${odds(outcome.lowProbability)}`
 }
 
-// What to say under the ladder. A ladder that ends can end for three different
-// reasons and they call for different advice: the frame grid runs to 100%, so a
-// last row short of it means overload ran out first - unless the reader's own
-// total already carried the ladder past that ceiling, in which case blaming the
-// ceiling would contradict the rows above it.
+// What to say under the ladder. A ladder that ends can end for different
+// reasons and they call for different advice, so the backend names the reason
+// (`ladder_stopped_by`) rather than letting this guess from the rows: a last
+// row short of the ceiling means "overload ran out" and "the answer settled
+// first" alike, and only the frame grid can tell those apart.
 const closingLine = (result: ChargeWindowResult, gap: number | null): string => {
   if (gap !== null) return HELP.charge.ladderGap(gap * 100)
   const last = result.thresholds[result.thresholds.length - 1]
-  if (last === undefined || last.chargeSpeedPercent >= 1) {
+  // 차지가 남지 않은 것이 가장 강한 이유다 - 상한도 답도 그 앞에서는 할 말이 없다.
+  if (last === undefined || result.ladderStoppedBy === 'charge') {
     return HELP.charge.ladderChargeGone
   }
-  if (last.chargeSpeedPercent <= result.chargeSpeedCeiling + 1e-9) {
-    return HELP.charge.ladderCeiling(percent(result.chargeSpeedCeiling))
+  // 읽는 사람의 합계가 이미 상한을 넘겨 사다리를 끌고 갔다면, 상한을 탓하는
+  // 말은 위 행들과 모순된다.
+  if (last.chargeSpeedPercent > result.chargeSpeedCeiling + 1e-9) {
+    return HELP.charge.ladderAtLast
   }
-  return HELP.charge.ladderAtLast
+  if (result.ladderStoppedBy === 'answer') return HELP.charge.ladderAnswerSettled
+  return HELP.charge.ladderCeiling(percent(result.chargeSpeedCeiling))
 }
 
 export function ChargeWindowLadder({ result }: { result: ChargeWindowResult }) {

@@ -5,8 +5,8 @@ import pytest
 
 from app.attack_rate import AmmoRefund
 from app.charge_window import (WindowInputs, aggregate_charge_speed,
-                               charge_speed_steps, outcome, reload_intervenes,
-                               shot_interval, shot_times,
+                               charge_speed_steps, ladder_stop_reason, outcome,
+                               reload_intervenes, shot_interval, shot_times,
                                shots_without_magazine_limit, thresholds)
 
 # Scarlet: Black Shadow as Fienn actually measured her (2026-07-29): a 0.30 sec
@@ -163,13 +163,106 @@ def test_a_reload_inside_the_window_still_splits_the_two_counts():
     assert got.low_probability == pytest.approx(1 - got.high_probability)
 
 
-def test_thresholds_only_list_charge_speeds_that_change_the_interval():
+def test_thresholds_only_list_charge_speeds_that_change_the_answer():
     buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
     got = thresholds(buffed)
     assert [round(t.charge_speed_percent * 100, 2) for t in got][:5] == [
         0.0, 5.56, 11.11, 16.67, 22.22]
     intervals = [t.interval for t in got]
     assert intervals == sorted(intervals, reverse=True), "each step must be faster"
+
+
+def _answers(rows):
+    """각 행이 화면에 적히는 대로의 답. 확률은 표가 정수 퍼센트로 적는다."""
+    return [(r.outcome.low_shots, r.outcome.high_shots,
+             round(r.outcome.high_probability * 100)) for r in rows]
+
+
+def test_the_ladder_drops_rows_that_repeat_the_same_answer():
+    """차지속도를 더 사도 표가 같은 답을 반복하면 그 행은 정보가 아니다.
+
+    탄창이 상한이면 프레임을 사도 발이 늘지 않는다. 그때 사다리는 "같은 숫자가
+    반복되는 줄"이 되어 답이 아니라 프레임 격자를 읽게 만든다 - Fienn이
+    「타수가 증가하는 차지속도를 표시해주면」이라고 물은 자리다(2026-08-11).
+    """
+    capped = replace(SCARLET, max_ammo=14, charge_speed_percent=0.0)
+    rows = thresholds(capped, ceiling=0.24)
+    answers = _answers(rows)
+
+    assert all(a != b for a, b in zip(answers, answers[1:])), \
+        f"연달아 같은 답을 적는 행이 남았다: {answers}"
+
+
+def test_that_filter_actually_removes_rows_here():
+    """위 단언은 행이 하나뿐이어도 참이다 - 격자가 실제로 더 잘게 나뉘는데도
+    사다리가 짧아졌음을 따로 고정한다."""
+    capped = replace(SCARLET, max_ammo=14, charge_speed_percent=0.0)
+    grid = [s for s in charge_speed_steps(capped.charge_time) if s <= 0.24 + 1e-9]
+    rows = thresholds(capped, ceiling=0.24)
+
+    assert len(rows) < len(grid), (len(rows), len(grid))
+
+
+@pytest.mark.parametrize("cube", ["resilience", "tactical_bear"])
+def test_the_answer_filter_holds_for_either_cube(cube):
+    """계산기는 큐브를 유저가 고른다 - 두 큐브가 다른 사다리를 만든다.
+
+    택티컬 베어의 탄환 환급은 창 안에서 탄창이 비는지를 바꾸므로 타수도 바뀐다
+    (Fienn이 짚은 지점, 2026-08-11). 필터가 한쪽 큐브에서만 성립하면 다른
+    큐브를 고른 사용자는 여전히 같은 답이 반복되는 표를 본다.
+    """
+    from app.cube_effects import cube_refund_for
+
+    capped = replace(SCARLET, max_ammo=14, charge_speed_percent=0.0,
+                     ammo_refund=cube_refund_for(cube))
+    rows = thresholds(capped, ceiling=0.24)
+    answers = _answers(rows)
+
+    assert rows, "사다리가 비면 아무것도 확인하지 못한다"
+    assert all(a != b for a, b in zip(answers, answers[1:])), \
+        f"{cube}에서 같은 답이 반복된다: {answers}"
+
+
+def test_the_ladder_reports_that_the_answer_settled_not_that_the_ceiling_cut_it():
+    """사다리가 끝난 이유를 화면이 추측하면 안 된다.
+
+    탄창 상한에 걸린 스칼렛은 5.56%에서 답이 멈춰 끝나는데, 오버로드 상한은
+    24%로 한참 위다. 이때 "상한까지만 보여줍니다"라고 적으면 그 말은 거짓이다 -
+    상한은 아직 남았고 살 수 있는데도 살 이유가 없는 것이다.
+    """
+    capped = replace(SCARLET, max_ammo=14, charge_speed_percent=0.0)
+    rows = thresholds(capped, ceiling=0.24)
+
+    assert round(rows[-1].charge_speed_percent * 100, 2) == 5.56
+    assert ladder_stop_reason(capped, rows, ceiling=0.24) == "answer"
+
+
+def test_the_ladder_reports_the_ceiling_when_that_is_what_cut_it():
+    """반대쪽: 버프 스칼렛은 22.22%까지 답이 계속 바뀌고, 격자의 다음 칸인
+    27.78%는 오버로드로 살 수 없다. 그때는 상한이 진짜 이유다."""
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    rows = thresholds(buffed, ceiling=0.24)
+
+    assert round(rows[-1].charge_speed_percent * 100, 2) == 22.22
+    assert ladder_stop_reason(buffed, rows, ceiling=0.24) == "ceiling"
+
+
+def test_without_a_ceiling_the_reason_is_the_answer_settling():
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    rows = thresholds(buffed)
+
+    assert ladder_stop_reason(buffed, rows) == "answer"
+
+
+def test_a_row_that_only_moves_the_odds_still_counts_as_a_new_answer():
+    """확률만 오르는 행은 남는다. 버프 스칼렛의 11.11%는 프레임을 사지만 발은
+    못 사고 20발 확률만 올리는데, 그것도 사용자가 살지 말지 정할 정보다."""
+    buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
+    by_percent = {round(t.charge_speed_percent * 100, 2): t.outcome
+                  for t in thresholds(buffed)}
+
+    assert by_percent[5.56].high_shots == by_percent[11.11].high_shots == 20
+    assert by_percent[11.11].high_probability > by_percent[5.56].high_probability
 
 
 def test_the_ladder_stops_at_a_total_the_player_cannot_reach():
@@ -182,14 +275,21 @@ def test_the_ladder_stops_at_a_total_the_player_cannot_reach():
         0.0, 5.56, 11.11, 16.67, 22.22]
 
 
-def test_without_a_ceiling_the_ladder_runs_until_the_charge_is_gone():
-    """No ceiling is the pure frame-grid question, and it ends where the charge
-    does: at 38.89% Liberalio's cut already covers what is left of the 0.30 sec,
-    so every faster step reads the same 0.43 motion delay and dedupes away."""
+def test_without_a_ceiling_the_ladder_ends_where_the_answer_stops_moving():
+    """상한이 없으면 순수 프레임 격자 질문이고, 답이 멈추는 곳에서 끝난다.
+
+    33.33%에서 22발이 확정(100%)되고, 그보다 빠른 스텝은 프레임을 더 사도 같은
+    22발이라 잘린다 - 격자 자체는 38.89%까지 더 나아가지만(그 지점에서
+    리버렐리오의 컷이 0.30초의 남은 부분을 다 덮어 0.43 모션 딜레이만 남는다)
+    표에 적을 새 답이 없다.
+    """
     buffed = replace(SCARLET, charge_time_reduction_sec=LIBERALIO_CUT)
     rows = thresholds(buffed)
-    assert round(rows[-1].charge_speed_percent * 100, 2) == 38.89
-    assert rows[-1].interval == pytest.approx(SCARLET.motion_delay)
+
+    assert round(rows[-1].charge_speed_percent * 100, 2) == 33.33
+    assert (rows[-1].outcome.high_shots, rows[-1].outcome.low_shots) == (22, 22)
+    # 격자는 더 남아 있었다 - 끝난 이유가 격자 소진이 아니라 답 정지임을 고정한다.
+    assert round(charge_speed_steps(buffed.charge_time)[-1] * 100, 2) > 33.33
 
 
 def test_thresholds_carry_the_shot_counts_fienn_asked_about():

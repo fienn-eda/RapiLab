@@ -161,22 +161,68 @@ def outcome(inputs: WindowInputs) -> Outcome:
     return Outcome(low, 1.0 - high_probability, high, high_probability)
 
 
+def _same_answer(a: Outcome, b: Outcome) -> bool:
+    """두 행이 읽는 사람에게 같은 답인가.
+
+    표는 확률을 정수 퍼센트로 적으므로(프론트 `ChargeWindowLadder`의 `odds`)
+    그보다 잔 차이는 화면에서 구분되지 않는다. 여기서 그 정밀도를 기준으로 삼는
+    이유는, 표에 같은 숫자가 뜨는 행을 남기면 사다리가 답이 아니라 프레임 격자를
+    읽게 만들기 때문이다.
+
+    `low_probability`는 `1 - high_probability`라 따로 보지 않는다.
+    """
+    return (a.low_shots == b.low_shots
+            and a.high_shots == b.high_shots
+            and round(a.high_probability * 100) == round(b.high_probability * 100))
+
+
 def thresholds(inputs: WindowInputs, ceiling: float | None = None) -> list[Threshold]:
-    """One row per charge-speed step that actually changes the cadence.
+    """One row per charge-speed step that actually changes the ANSWER.
+
+    간격이 바뀌는 것만으로는 행을 만들지 않는다. 탄창이 상한이면 프레임을 사도
+    발이 늘지 않아 표가 같은 숫자를 반복하는데, 그것은 "이만큼 사면 무엇이
+    달라지나"에 답하지 않는다 (Fienn, 2026-08-11).
 
     `ceiling` is the highest total the reader could actually reach - overload
     tops out well before the frame grid does, and steps past it are money that
     does not exist. Left out, the ladder answers the pure frame-grid question
-    and runs until the charge itself is gone.
+    and runs until the answer stops moving.
     """
     rows, previous = [], None
     for step in charge_speed_steps(inputs.charge_time):
         if ceiling is not None and step > ceiling + 1e-9:
             break
         stepped = replace(inputs, charge_speed_percent=step)
-        interval = shot_interval(stepped)
-        if previous is not None and interval == previous:
+        result = outcome(stepped)
+        if previous is not None and _same_answer(result, previous):
             continue
-        previous = interval
-        rows.append(Threshold(step, interval, outcome(stepped)))
+        previous = result
+        rows.append(Threshold(step, shot_interval(stepped), result))
     return rows
+
+
+def ladder_stop_reason(inputs: WindowInputs, rows: list[Threshold],
+                       ceiling: float | None = None) -> str:
+    """사다리가 왜 거기서 끝났는가 - `"answer"` / `"ceiling"` / `"charge"`.
+
+    화면은 마지막 행 아래에 이유별로 다른 말을 적는데, 그 판정을 프론트가 행
+    목록만 보고 추측하면 틀린다: 마지막 행이 상한보다 낮다는 사실만으로는 "상한이
+    잘랐다"와 "답이 먼저 멈췄다"를 구분할 수 없다(격자 간격을 알아야 한다).
+    그래서 격자를 아는 이쪽이 답한다.
+
+    - `"ceiling"` — 상한 안에서 살 수 있는 마지막 칸까지 답이 계속 바뀌었고,
+      격자에는 그 위가 더 있었다. 돈이 모자란 것이다.
+    - `"answer"` — 더 살 수 있는데도 살 이유가 없다. 여기서부터는 타수도 확률도
+      그대로다.
+    - `"charge"` — 격자 자체가 끝났다. 차지가 남아 있지 않다.
+    """
+    steps = charge_speed_steps(inputs.charge_time)
+    last_row = rows[-1].charge_speed_percent if rows else None
+    if ceiling is not None and steps[-1] > ceiling + 1e-9:
+        affordable = [s for s in steps if s <= ceiling + 1e-9]
+        if last_row is not None and affordable and last_row < affordable[-1] - 1e-9:
+            return "answer"
+        return "ceiling"
+    if last_row is not None and last_row < steps[-1] - 1e-9:
+        return "answer"
+    return "charge"

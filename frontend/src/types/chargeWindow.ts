@@ -1,6 +1,11 @@
 // Wire and view shapes for POST /api/charge-window. The backend speaks
 // snake_case; everything past the api client speaks camelCase.
 
+/** 사다리가 왜 끝났는가. 행 목록만으로는 구분할 수 없어 백엔드가 알려준다:
+ *  'answer' 더 살 수 있는데 살 이유가 없다 · 'ceiling' 오버로드가 모자란다 ·
+ *  'charge' 차지가 이미 사라졌다. */
+export type LadderStop = 'answer' | 'ceiling' | 'charge'
+
 export interface ShotOutcomeWire {
   low_shots: number
   low_probability: number
@@ -21,6 +26,7 @@ export interface ChargeWindowResultWire {
   charge_speed_ceiling: number
   current: ShotOutcomeWire
   thresholds: ChargeWindowThresholdWire[]
+  ladder_stopped_by: LadderStop
   notes: string[]
 }
 
@@ -44,6 +50,7 @@ export interface ChargeWindowResult {
   chargeSpeedCeiling: number
   current: ShotOutcome
   thresholds: ChargeWindowThreshold[]
+  ladderStoppedBy: LadderStop
   notes: string[]
 }
 
@@ -77,5 +84,6 @@ export const mapChargeWindowResult = (wire: ChargeWindowResultWire): ChargeWindo
     interval: row.interval,
     outcome: mapShotOutcome(row.outcome),
   })),
+  ladderStoppedBy: wire.ladder_stopped_by,
   notes: wire.notes,
 })

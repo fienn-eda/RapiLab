@@ -19,8 +19,9 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.cancellation import CancelToken, Cancelled
 from app.cube_effects import CUBE_NAMES, DEFAULT_CUBE
-from app.charge_window import (outcome, reload_intervenes, shot_interval,
-                               shots_without_magazine_limit, thresholds)
+from app.charge_window import (ladder_stop_reason, outcome, reload_intervenes,
+                               shot_interval, shots_without_magazine_limit,
+                               thresholds)
 from app.charge_window_inputs import (CALCULATOR_SLUGS, LIBERALIO_SLUG, Overrides,
                                       build_inputs, charge_speed_rolls_known)
 from app.deck_allocation import InfeasibleDraft, allocate_decks, recommend_from_draft
@@ -272,6 +273,10 @@ class ChargeWindowResponse(BaseModel):
     charge_speed_ceiling: float
     current: ShotOutcome
     thresholds: list[ChargeWindowThreshold]
+    # 사다리가 왜 거기서 끝났는지. 화면이 마지막 행 아래에 이유별로 다른 말을
+    # 적는데, 행 목록만으로는 "상한이 잘랐다"와 "답이 먼저 멈췄다"를 구분할 수
+    # 없다(격자 간격을 알아야 한다) - 그래서 격자를 아는 쪽이 답한다.
+    ladder_stopped_by: Literal["answer", "ceiling", "charge"]
     notes: list[str]
 
 
@@ -762,6 +767,11 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
     notes = _charge_window_notes(
         request, inputs, current, ceiling, LIBERALIO_SLUG in by_slug,
         charge_speed_rolls_known(by_slug[request.slug]))
+    # A total past the ceiling is the reader's to state - a deck buffer or a
+    # typed value - so the ladder still reaches the row they are standing on.
+    # Cutting below it would hide their own marker.
+    reachable = max(ceiling, inputs.charge_speed_percent)
+    rows = thresholds(inputs, reachable)
     return ChargeWindowResponse(
         interval=shot_interval(inputs),
         magazine=inputs.max_ammo,
@@ -774,11 +784,9 @@ def charge_window_route(request: ChargeWindowRequest) -> ChargeWindowResponse:
                 interval=row.interval,
                 outcome=_shot_outcome(row.outcome),
             )
-            # A total past the ceiling is the reader's to state - a deck buffer
-            # or a typed value - so the ladder still reaches the row they are
-            # standing on. Cutting below it would hide their own marker.
-            for row in thresholds(inputs, max(ceiling, inputs.charge_speed_percent))
+            for row in rows
         ],
+        ladder_stopped_by=ladder_stop_reason(inputs, rows, reachable),
         notes=notes,
     )
 
