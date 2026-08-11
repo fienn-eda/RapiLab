@@ -927,7 +927,8 @@
   align-items: center;
   gap: var(--sp-1);
   padding: var(--sp-2);
-  min-width: 56px;
+  /* 아이콘이 커진 만큼 상자도 넓힌다 - 폭을 두면 다섯 칩이 같은 크기로 선다. */
+  min-width: 72px;
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
   background: var(--surface-2);
@@ -944,13 +945,15 @@
   outline-offset: 1px;
 }
 
+/* 보스 설정에서 가장 먼저 읽는 줄이라 다른 필드보다 크게 잡는다 - 약점 속성은
+   덱을 고르는 첫 조건이다(Fienn, 2026-08-11). */
 .element-picker__icon {
-  width: 28px;
-  height: 28px;
+  width: 38px;
+  height: 38px;
 }
 
 .element-picker__name {
-  font-size: 12px;
+  font-size: 14px;
   color: var(--text-muted);
 }
 
@@ -1008,12 +1011,14 @@
   outline-offset: 1px;
 }
 
+/* 회차 보스 카드도 같은 줄에서 읽히므로 속성 칩과 함께 커진다. */
 .rotation-picker__icon {
-  width: 20px;
-  height: 20px;
+  width: 28px;
+  height: 28px;
 }
 
 .rotation-picker__name {
+  font-size: 17px;
   font-weight: 600;
 }
 
