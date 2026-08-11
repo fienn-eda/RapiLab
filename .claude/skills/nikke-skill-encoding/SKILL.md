@@ -246,7 +246,23 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
      candidates must each take a **different** one (they sit on the bench
      together), so add a suffix like `(지딜)` / `(MG)` / `(1버)`.
 
-13. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
+13. **Add her row to the alias table.** Put
+   `'<slug>': [],  // <the Korean name you just settled>` in its alphabetical
+   place in `frontend/src/lib/nikkeAliases.ts`.
+   `backend/tests/test_nikke_aliases.py` fails until you do, and its message
+   names the missing slug — the table's keys must be exactly the units that
+   appear on screen (`supported_units()`), not `ENCODED_SLUGS`, because a mode
+   variant's base shows up in the palette without being encoded itself.
+
+   **Leave the aliases empty.** What players actually call her (홍련: 흑영 →
+   흑련, 리틀 머메이드 → 세이렌) is Fienn's to fill in; our job is to make the
+   slot exist. An empty array means "not filled in yet", not a defect — and the
+   table doubles as the list of what is still unfilled.
+
+   A base/signature pair and every MODE_VARIANTS candidate each get **their own
+   row**: all of them are drawn in the palette, so all of them are searchable.
+
+14. **Verify**: `PYTHONIOENCODING=utf-8 python -m pytest tests/ -q` (the env var
    avoids cp949 encoding errors with Korean/arrow characters on Windows), then
    the text-vs-encoding audits, which no test can replace because each of them
    checks a thing that registers as a perfectly valid Effect:
