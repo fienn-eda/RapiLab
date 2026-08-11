@@ -11,6 +11,41 @@
   min-height: 100svh;
 }
 
+/* 사이드바와 본문. 사이드바는 자기 폭만 쓰고 나머지를 본문이 가져간다.
+   `align-items: start`가 있어야 sticky가 늘어난 자식에 눌리지 않는다. */
+.app__body {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--sp-5);
+  align-items: start;
+}
+
+/* 스크롤을 따라오는 것이 이 사이드바의 존재 이유다. */
+.app__sidebar {
+  position: sticky;
+  top: var(--sp-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  align-items: flex-start;
+}
+
+.app__sidebar-toggle {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: none;
+  color: var(--text-muted);
+  font: inherit;
+  line-height: 1;
+  padding: var(--sp-1) var(--sp-2);
+  cursor: pointer;
+}
+
+.app__sidebar-toggle:hover {
+  color: var(--text);
+}
+
 /* Title on the left, account picker on the right. They wrap onto separate
    lines rather than squeezing when the window is too narrow to hold both. */
 .app__header {
@@ -471,6 +506,53 @@
   display: flex;
   gap: var(--sp-1);
   border-bottom: 1px solid var(--rule);
+}
+
+/* `hidden` 속성의 display:none은 위 display:flex에 우선순위로 밀린다 - 이 규칙이
+   없으면 접은 사이드바가 자리를 그대로 차지한다. */
+.tabs[hidden] {
+  display: none;
+}
+
+/* 사이드바 안의 탭 목록. 가로 줄이 아니라 세로 목록이므로 밑줄 대신 왼쪽에
+   표시가 붙고, 활성 표시도 아래가 아니라 왼쪽 모서리로 간다. */
+.tabs--side {
+  flex-direction: column;
+  gap: var(--sp-1);
+  border-bottom: 0;
+}
+
+.tabs--side .tabs__tab {
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 0;
+  border-left: 2px solid transparent;
+  margin-bottom: 0;
+  border-radius: var(--radius-sm);
+}
+
+.tabs--side .tabs__tab--active {
+  border-left-color: var(--accent);
+  background: var(--surface-2);
+}
+
+/* 창이 좁으면 사이드바가 가져가는 가로가 아깝다 - 그때는 예전처럼 위에 눕는다.
+   눕고 나면 sticky가 화면 위쪽을 덮으므로 그것도 함께 푼다.
+   이 블록이 `.tabs--side` 정의보다 **뒤에** 있어야 한다 - 특정도가 같아 소스
+   순서가 이기고, 앞에 두면 세로 배치가 그대로 남는다. */
+@media (max-width: 900px) {
+  .app__body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .app__sidebar {
+    position: static;
+  }
+
+  .tabs--side {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
 }
 
 .tabs__tab {

@@ -602,4 +602,37 @@ describe('계산기 탭', () => {
     expect(recommendPanel).toHaveAttribute('aria-labelledby', 'tab-recommend')
     expect(recommendPanel).toHaveAttribute('hidden')
   })
+
+  // 세로 스크롤이 화면 여러 개 길어서, 탭이 맨 위에만 있으면 옮겨 가려고 매번
+  // 위로 올라가야 했다(Fienn, 2026-08-11).
+  it('탭 목록은 사이드바 안에 있다', () => {
+    seedActiveProfile()
+    render(<App />)
+
+    const tablist = screen.getByRole('tablist', { name: '섹션' })
+    expect(tablist.closest('.app__sidebar')).not.toBeNull()
+  })
+
+  it('접으면 탭 목록이 감춰지고 그 선택이 저장된다', async () => {
+    seedActiveProfile()
+    render(<App />)
+    const toggle = screen.getByRole('button', { name: '탭 목록 접기' })
+
+    await userEvent.click(toggle)
+
+    // DOM에는 남는다: 패널의 aria-labelledby가 탭을 가리키므로, 빼 버리면
+    // 화면낭독기에게 패널이 이름 없는 상자가 된다.
+    expect(document.querySelector('.tabs--side')).toHaveAttribute('hidden')
+    expect(screen.getByRole('button', { name: '탭 목록 펼치기' })).toBeInTheDocument()
+    expect(localStorage.getItem('nikke-sidebar-collapsed')).toBe('1')
+  })
+
+  it('접어 둔 채로 다시 열면 접힌 채로 시작한다', () => {
+    seedActiveProfile()
+    localStorage.setItem('nikke-sidebar-collapsed', '1')
+
+    render(<App />)
+
+    expect(screen.getByRole('button', { name: '탭 목록 펼치기' })).toBeInTheDocument()
+  })
 })

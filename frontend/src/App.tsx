@@ -2,7 +2,7 @@
 // blablalink per account (profile), then requests deck recommendations
 // against a boss profile (POST /api/recommend, via RecommendPanel).
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 import { useProfiles } from './hooks/useProfiles'
 import { usePortraitManifest } from './hooks/usePortraitManifest'
@@ -33,6 +33,18 @@ const NO_SAVED_RUNS: SavedRun[] = []
 const NO_EXCLUSIONS: string[] = []
 
 type Tab = 'roster' | 'recommend' | 'union' | 'calculator' | 'sync'
+
+const SIDEBAR_KEY = 'nikke-sidebar-collapsed'
+
+/** 저장된 접힘 상태. 읽기가 막혀 있으면(사생활 모드 등) 펼친 쪽이 기본이다 -
+ * 탭이 보이는 것이 이 사이드바의 존재 이유이기 때문이다. */
+const readSidebarCollapsed = (): boolean => {
+  try {
+    return localStorage.getItem(SIDEBAR_KEY) === '1'
+  } catch {
+    return false
+  }
+}
 
 const TABS: { id: Tab; label: string }[] = [
   { id: 'roster', label: '니케 풀' },
@@ -81,6 +93,17 @@ function App() {
   const raidRotations = useRaidRotations()
   const engineVersion = useEngineVersion()
   const [tab, setTab] = useState<Tab>('roster')
+  // 탭 목록은 사이드바에 고정돼 스크롤을 따라온다. 접는 것은 가로가 필요할 때의
+  // 예외라 선택이 세션을 넘어 남는다 - 매번 다시 접게 만들면 접기가 기능이
+  // 아니라 잔소리가 된다.
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(readSidebarCollapsed)
+  useEffect(() => {
+    try {
+      localStorage.setItem(SIDEBAR_KEY, sidebarCollapsed ? '1' : '0')
+    } catch {
+      // 저장이 막힌 브라우저에서도 접기 자체는 동작해야 한다.
+    }
+  }, [sidebarCollapsed])
 
   const drafts = activeProfile?.roster ?? NO_ROSTER
   const validRoster = useMemo(() => getValidRoster(drafts), [drafts])
@@ -173,23 +196,49 @@ function App() {
           </div>
         </main>
       ) : (
-        <>
-          <div className="tabs" role="tablist" aria-label="섹션">
-            {TABS.map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                id={`tab-${id}`}
-                aria-controls={`panel-${id}`}
-                aria-selected={tab === id}
-                className={tab === id ? 'tabs__tab tabs__tab--active' : 'tabs__tab'}
-                onClick={() => setTab(id)}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
+        <div
+          className={
+            sidebarCollapsed ? 'app__body app__body--collapsed' : 'app__body'
+          }
+        >
+          {/* 세로 스크롤이 화면 여러 개 길이라, 탭이 맨 위에만 있으면 옮겨 가려고
+              매번 위로 올라가야 했다(Fienn, 2026-08-11). 사이드바는 스크롤을
+              따라온다. */}
+          <nav className="app__sidebar" aria-label="섹션">
+            <button
+              type="button"
+              className="app__sidebar-toggle"
+              onClick={() => setSidebarCollapsed((collapsed) => !collapsed)}
+              aria-expanded={!sidebarCollapsed}
+              aria-label={sidebarCollapsed ? '탭 목록 펼치기' : '탭 목록 접기'}
+            >
+              {sidebarCollapsed ? '»' : '«'}
+            </button>
+            {/* 접었을 때 tablist를 DOM에서 빼지 않고 감춘다: 지금 어느 탭인지는
+                패널의 aria-labelledby가 가리키는 사실이라, 그 대상이 사라지면
+                화면낭독기에게 패널이 이름 없는 상자가 된다. */}
+            <div
+              className="tabs tabs--side"
+              role="tablist"
+              aria-label="섹션"
+              hidden={sidebarCollapsed}
+            >
+              {TABS.map(({ id, label }) => (
+                <button
+                  key={id}
+                  type="button"
+                  role="tab"
+                  id={`tab-${id}`}
+                  aria-controls={`panel-${id}`}
+                  aria-selected={tab === id}
+                  className={tab === id ? 'tabs__tab tabs__tab--active' : 'tabs__tab'}
+                  onClick={() => setTab(id)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </nav>
 
           <main className="app__main">
             {/* Both panels stay mounted: a raid run takes 1-2 minutes, and
@@ -324,7 +373,7 @@ function App() {
               />
             </div>
           </main>
-        </>
+        </div>
       )}
 
       {/* 푸터는 프로필이 없을 때도 나온다. 개인정보 안내를 가장 읽고 싶은
