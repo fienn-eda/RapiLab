@@ -1981,6 +1981,12 @@
   border-color: var(--accent);
 }
 
+/* 덱 테두리 안 전체가 표적이다 - 든 니케를 놓거나(든 것이 있을 때) 활성 덱을
+   고른다. 받을 수 없는 덱에는 손 모양을 주지 않는다. */
+.draft-editor__deck--pressable {
+  cursor: pointer;
+}
+
 /* 제목 자리에 그대로 앉는 토글 - 덱 이름이 곧 그 덱을 고르는 컨트롤이다. */
 .draft-editor__deck-pick {
   padding: 0;
