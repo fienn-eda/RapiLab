@@ -212,18 +212,29 @@ docstring이 못박는다: "measured ATK at level 400 AND at the unit's real lev
 
 ### 왜 엔드포인트로 가르지 않나
 
-**`/api/recommend-raid`는 이름과 달리 솔로 탭이 쓴다.** `RecommendPanel`(화면
-제목 "솔로 레이드")이 `useRecommend`와 `useRecommendRaid`를 둘 다 들고, 모드에 따라
-후자로 5덱 배분을 요청한다. 유니온 탭(`UnionRaidPanel`)이 쓰는 것은
-`/api/evaluate-decks` 하나뿐이다.
+**엔드포인트→컨텐츠 매핑이 양방향으로 어긋나 있다.**
 
-즉 엔드포인트→컨텐츠 매핑이 이미 어긋나 있다. 거기에 스탯 정책을 걸면 지금은
-우연히 맞고, 유니온에서도 엔진이 덱을 짜주는 기능이 생겨 `recommend-raid`를
-재사용하는 순간 **조용히 틀린다**. 요청 필드는 그 실수를 구조적으로 막는다.
+- `/api/recommend-raid`는 이름과 달리 **솔로 탭**이 쓴다. `RecommendPanel`(화면
+  제목 "솔로 레이드")이 `useRecommend`와 `useRecommendRaid`를 둘 다 들고, 모드에
+  따라 후자로 5덱 배분을 요청한다.
+- `/api/evaluate-decks`는 **솔로와 유니온이 공유한다.** 솔로 탭의 네 모드는
+  `RecommendMode = 'single' | 'raid' | 'draft' | 'evaluate'`이고, 그 `evaluate`가
+  유니온 탭과 같은 엔드포인트를 부른다. (Fienn이 말한 "솔로레이드 4가지 모드"가
+  이것이다.)
+
+두 번째가 결정적이다. **엔드포인트에 정책을 걸었다면 솔로 탭의 evaluate 모드가
+유니온 스탯으로 계산되어 딜이 3배로 부풀었을 것이고, 그것은 조용한 오류다.**
+요청 필드는 그 실수를 구조적으로 막는다 — 부르는 쪽이 자기 컨텐츠를 말해야 한다.
+
+이 사실은 구현 중 **타입 검사가 잡아냈다**(설계 초안은 "유니온 탭이 쓰는 것은
+evaluate-decks 하나뿐"이라고 잘못 적고 있었다). 그래서 프론트 wire 타입의
+`stat_basis`는 **기본값 없는 필수 필드**로 둔다: 새 호출자가 생기면 컴파일러가
+컨텐츠를 밝히라고 요구한다.
 
 필드는 로스터를 받는 요청 중 이 선택이 의미 있는 둘에 둔다:
 `RecommendRequest`(그리고 그것을 상속하는 `RecommendRaidRequest`)와
-`EvaluateDecksRequest`.
+`EvaluateDecksRequest`. 백엔드 기본값은 `"raid400"`이라 이 필드를 모르는
+클라이언트는 현행 동작을 유지한다.
 
 ### 어떻게
 
@@ -293,12 +304,14 @@ docstring이 못박는다: "measured ATK at level 400 AND at the unit's real lev
 넣고 있고, 지금까지 그 값이 비어 있던 이유는 백엔드가 안 내려줬기 때문이다.
 §2가 내려주기 시작하면 그대로 채워진다.
 
-바뀌는 곳은 둘이다.
+바뀌는 곳은 셋이다.
 
 - **싱크로 레벨 배관**(§2.5): 북마크릿 소스, `useBookmarkletImport`,
   `api/assembleRoster`. 값을 나르기만 하고 해석하지 않는다.
 - **유니온 탭**: 요청에 `stat_basis: 'actual'`을 싣고, 실제 스탯이 없으면 제출을
   막는다.
+- **솔로 탭의 evaluate 모드**: 같은 엔드포인트를 쓰므로 `stat_basis: 'raid400'`을
+  명시한다(§4). 이 한 줄이 빠지면 솔로 결과가 유니온 기준으로 부풀어 오른다.
 
 ## 7. 테스트
 
@@ -325,6 +338,9 @@ docstring이 못박는다: "measured ATK at level 400 AND at the unit's real lev
 **프론트**
 
 - 유니온 요청 본문에 `stat_basis: 'actual'`이 실린다.
+- **솔로 탭 evaluate 모드의 요청 본문에는 `stat_basis: 'raid400'`이 실린다** —
+  두 컨텐츠가 같은 엔드포인트를 쓰므로, 이 값이 새면 솔로 결과가 조용히 3배가
+  된다.
 - 실제 스탯이 없는 로스터에서 유니온 제출이 막히고 안내가 보인다.
 - 실제 스탯이 있으면 막히지 않는다(가드가 항상 막는 게 아님을 고정).
 - `parseRosterJson`이 `actual`을 담은 로스터에서 `actualAtk`를 채운다.
