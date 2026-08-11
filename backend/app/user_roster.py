@@ -47,8 +47,23 @@ def _weapon_stats(weapon_data):
     }
 
 
+def _base_stats(state: UserNikkeState, stat_basis: str) -> dict:
+    """Which of the roster's two stat sets this fight is scored with.
+
+    Solo raid normalizes every account to character level 400; union raid has no
+    level correction and is fought at the account's synchro level. The caller's
+    content decides, so it travels as an argument rather than being inferred
+    here. DEF is 0 on the union side for the same reason it is 0 in the synced
+    roster - the stat model does not produce one.
+    """
+    if stat_basis == "actual":
+        return {"atk": state.actual_atk, "def": 0.0, "max_hp": state.actual_hp}
+    return {"atk": state.atk, "def": state.def_, "max_hp": state.hp}
+
+
 def load_nikke_spec(
-    state: UserNikkeState, data_dir: Path = DATA_DIR, slug_override: str | None = None
+    state: UserNikkeState, data_dir: Path = DATA_DIR, slug_override: str | None = None,
+    stat_basis: str = "raid400",
 ) -> NikkeSpec | None:
     slug = slug_override or state.character_slug
     if slug not in ENCODED_SLUGS:
@@ -120,7 +135,7 @@ def load_nikke_spec(
         burst_cooldown=burst_cooldown,
         element=element,
         weapon=weapon,
-        base_stats={"atk": state.atk, "def": state.def_, "max_hp": state.hp},
+        base_stats=_base_stats(state, stat_basis),
         skill_values=skill_values,
         # OverloadOption models pass through as-is: roster._passive_effects hands
         # them to overload_options_to_effects, which reads .name/.value attributes.
@@ -131,11 +146,13 @@ def load_nikke_spec(
     )
 
 
-def load_roster(states: list[UserNikkeState], data_dir: Path = DATA_DIR):
+def load_roster(states: list[UserNikkeState], data_dir: Path = DATA_DIR,
+                stat_basis: str = "raid400"):
     specs, excluded, seen = [], [], set()
     for state in states:
         slugs = MODE_VARIANTS.get(state.character_slug) or (state.character_slug,)
-        loaded = [s for s in (load_nikke_spec(state, data_dir, slug_override=slug)
+        loaded = [s for s in (load_nikke_spec(state, data_dir, slug_override=slug,
+                                              stat_basis=stat_basis)
                               for slug in slugs) if s is not None]
         specs.extend(loaded)
         if not loaded and state.character_slug not in seen:

@@ -139,3 +139,19 @@ def test_an_ordinary_weapon_keeps_the_file_reload():
 def test_grave_reloads_her_magazine_in_two_loads():
     spec = load_nikke_spec(_state("grave"))
     assert spec.weapon_stats["reload_time"] == 2.0
+
+
+def test_actual_basis_builds_specs_from_the_real_level_stats():
+    """유니온은 싱크로 레벨로 싸우므로 다른 스탯 벌을 쓴다. 두 기준이 같은 값을
+    내면 스위치는 죽은 코드이므로, 다름 자체를 잰다."""
+    state = _state("drake", actual_atk=300_000.0, actual_hp=9_000_000.0)
+
+    specs_400, _ = load_roster([state])
+    specs_actual, _ = load_roster([state], stat_basis="actual")
+
+    assert specs_400[0].base_stats == {"atk": 60_000.0, "def": 3_000.0,
+                                       "max_hp": 1_000_000.0}
+    # DEF가 0인 이유는 스탯 모델이 DEF를 내지 않아 동기화된 로스터의 유니온
+    # 쪽에는 애초에 값이 없기 때문이다.
+    assert specs_actual[0].base_stats == {"atk": 300_000.0, "def": 0.0,
+                                          "max_hp": 9_000_000.0}

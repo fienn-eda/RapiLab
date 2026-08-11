@@ -133,6 +133,12 @@ class RecommendRequest(BaseModel):
     roster: list[UserNikkeState]
     boss: BossProfileIn
     top_n: int = Field(default=5, ge=1)
+    # 어느 스탯 벌로 잴지. 솔로레이드는 전원 레벨 400 보정이고 유니온레이드는
+    # 레벨 보정 자체가 없어 계정 싱크로 레벨로 싸운다. 엔드포인트로 가르지 않는
+    # 이유는 `/api/recommend-raid`가 이름과 달리 솔로 탭의 5덱 배분이기
+    # 때문이다 - 컨텐츠와 엔드포인트가 이미 어긋나 있어, 거기 정책을 걸면
+    # 유니온 추천이 생기는 날 조용히 틀린다. 기본값이 곧 현행 동작이다.
+    stat_basis: Literal["raid400", "actual"] = "raid400"
 
 
 class DeckRecommendation(BaseModel):
@@ -211,6 +217,9 @@ class EvaluateDeckIn(BaseModel):
 class EvaluateDecksRequest(BaseModel):
     roster: list[UserNikkeState]
     decks: list[EvaluateDeckIn]
+    # RecommendRequest의 같은 필드와 뜻이 같다. 이 엔드포인트는 유니온 탭만
+    # 쓰므로 실제로 오는 값은 "actual"이지만, 기본값은 현행 동작으로 둔다.
+    stat_basis: Literal["raid400", "actual"] = "raid400"
 
 
 class EvaluateDecksResponse(BaseModel):
@@ -376,10 +385,34 @@ def _reject_unknown_overload_options(roster: list[UserNikkeState]) -> None:
         )
 
 
+def _reject_missing_actual_stats(roster: list[UserNikkeState]) -> None:
+    """유니온은 싱크로 레벨로 싸우므로 실제 레벨 스탯 없이는 잴 수가 없다.
+
+    400레벨 값으로 대신 재면 유닛 간 상대 ATK가 최대 24% 뒤틀린다 - 레벨은 base
+    커브에만 들어가고 장비·큐브·소장품은 레벨과 무관하게 더해지기 때문이다.
+    그래서 근사하지 않고 거절한다.
+
+    DEF는 보지 않는다: 스탯 모델이 DEF를 내지 않아 동기화된 로스터에서 "없음"과
+    0을 구분할 수 없다.
+    """
+    missing = sorted({s.character_slug for s in roster
+                      if s.actual_atk is None or s.actual_hp is None})
+    if missing:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "실제 레벨 스탯이 없는 니케가 있어요. 북마크릿을 다시 설치하고 "
+                f"로스터를 다시 동기화해 주세요: {', '.join(missing)}"
+            ),
+        )
+
+
 
 def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
     _reject_unknown_overload_options(request.roster)
-    specs, excluded = load_roster(request.roster)
+    if request.stat_basis == "actual":
+        _reject_missing_actual_stats(request.roster)
+    specs, excluded = load_roster(request.roster, stat_basis=request.stat_basis)
     boss = boss_profile(request.boss)
     # SimPool only spawns worker processes for big batches (large rosters);
     # small requests run inline at zero pool cost.
@@ -456,7 +489,9 @@ def _to_recs(decks, pinned_by_deck=None):
 
 def _recommend_raid_sync(request: RecommendRaidRequest, cancel) -> RecommendRaidResponse:
     _reject_unknown_overload_options(request.roster)
-    specs, excluded = load_roster(request.roster)
+    if request.stat_basis == "actual":
+        _reject_missing_actual_stats(request.roster)
+    specs, excluded = load_roster(request.roster, stat_basis=request.stat_basis)
     boss = boss_profile(request.boss)
     if len(request.draft) > request.num_decks:
         raise HTTPException(
@@ -524,7 +559,9 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
     # 평가는 탐색이 없어 수 초에 끝난다. SimPool을 만들지 않으므로 토큰에
     # 접을 풀도 없다 - 인자는 _run_cancellable의 계약을 맞추기 위한 것.
     _reject_unknown_overload_options(request.roster)
-    specs, excluded = load_roster(request.roster)
+    if request.stat_basis == "actual":
+        _reject_missing_actual_stats(request.roster)
+    specs, excluded = load_roster(request.roster, stat_basis=request.stat_basis)
     if not request.decks:
         raise HTTPException(422, "평가할 덱이 없어요.")
 
