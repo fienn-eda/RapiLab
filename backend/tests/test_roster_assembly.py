@@ -155,6 +155,61 @@ def test_the_assumed_cube_level_overrides_what_was_collected(tables):
     )
 
 
+def _rapi_raw(**extra):
+    """The end-to-end test's payload, reusable. Rapi: Red Hood at lv 1 - low
+    enough that a synchro level of 668 cannot be confused with her own level."""
+    raw = {
+        "owned": [{"name_code": 5129, "lv": 1, "core": 6, "grade": 3}],
+        "character_details": [{"name_code": 5129, "grade": 3, "core": 6,
+                               "attractive_lv": 40, "harmony_cube_lv": 0,
+                               "favorite_item_tid": 0, "favorite_item_lv": 0,
+                               "skill1_lv": 10, "skill2_lv": 10, "ulti_skill_lv": 10}],
+        "recycle_room_researches": [
+            {"tid": 1001, "lv": 170}, {"tid": 1101, "lv": 190}, {"tid": 1201, "lv": 150},
+        ],
+    }
+    raw.update(extra)
+    return raw
+
+
+def test_synchro_level_produces_a_second_stat_set(tables):
+    directory = json.loads(DIRECTORY.read_text(encoding="utf-8"))
+    units, _ = assemble_roster(tables, directory, _rapi_raw(synchro_level=668))
+
+    u = units[0]
+    assert set(u["actual"]) == {"hp", "atk", "def"}
+    assert u["actual"]["def"] == 0
+    # The union stats are the SAME unit at a higher level, so they must exceed
+    # the level-400 set rather than merely differ from it.
+    assert u["actual"]["atk"] > u["raid400"]["atk"]
+    assert u["actual"]["hp"] > u["raid400"]["hp"]
+
+
+def test_the_synchro_level_overrides_the_units_own_level(tables):
+    """A Nikke left out of the synchro device sits at lv 1, but fights union
+    content at the synchro level - the player swaps her in (design §1). So her
+    `actual` must be built from 668, not from the 1 the roster reports."""
+    directory = json.loads(DIRECTORY.read_text(encoding="utf-8"))
+    units, _ = assemble_roster(tables, directory, _rapi_raw(synchro_level=668))
+    at_synchro = units[0]["actual"]["atk"]
+
+    # Same account, same unit, but now the device level is 400: the two must
+    # differ, which is only true if the level argument is what drives it.
+    units_400, _ = assemble_roster(tables, directory, _rapi_raw(synchro_level=400))
+    assert units_400[0]["actual"]["atk"] == units_400[0]["raid400"]["atk"]
+    assert at_synchro > units_400[0]["actual"]["atk"]
+
+
+def test_without_a_synchro_level_no_actual_stats_are_invented(tables):
+    """An old bookmarklet sends no synchro level. The sync must still work -
+    raid400 does not depend on it - and simply carry no `actual`."""
+    directory = json.loads(DIRECTORY.read_text(encoding="utf-8"))
+    units, _ = assemble_roster(tables, directory, _rapi_raw())
+
+    assert "actual" not in units[0]
+    assert units[0]["raid400"]["atk"] > 0
+
+
 def test_load_directory_reads_the_committed_snapshot():
     """조립에 필요한 필드가 스냅샷에 실제로 있는지 — 신규 Nikke 갱신 누락을 잡는 가드."""
     from app.roster_assembly import load_directory

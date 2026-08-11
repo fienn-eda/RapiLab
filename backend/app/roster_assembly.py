@@ -96,44 +96,57 @@ def _gear_hp(tables, inp):
     )
 
 
-def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict,
-                  assume_cube_level: int | None = None) -> dict:
-    inp = extract_inputs(entry, owned, detail, assume_cube_level)
-    atk = sa.assemble_atk(tables, character_class=inp["class"], level=400,
+def _stats_at_level(tables, inp: dict, research: dict, level: int) -> dict:
+    """One unit's ATK/HP at `level`, in the wire shape.
+
+    Solo raid normalizes every account to character level 400; union raid has no
+    level correction and is fought at the account's synchro level. Those two are
+    the only callers, and the level is the only thing that differs between them.
+    """
+    atk = sa.assemble_atk(tables, character_class=inp["class"], level=level,
                           grade=inp["grade"], core=inp["core"],
                           affinity_flat=sa.affinity_atk(
                               tables, inp["class"], inp["attractive_lv"]),
                           research_flat=sa.corporation_atk(
                               tables, inp["corporation"], research),
                           extra_flat=_gear_atk(tables, inp))
-    hp = sa.assemble_hp(tables, character_class=inp["class"], level=400,
+    hp = sa.assemble_hp(tables, character_class=inp["class"], level=level,
                         grade=inp["grade"], core=inp["core"],
                         affinity_flat_hp=sa.affinity_hp(
                             tables, inp["class"], inp["attractive_lv"]),
                         research_flat_hp=sa.research_hp(
                             tables, inp["class"], research),
                         extra_flat_hp=_gear_hp(tables, inp))
-    return {
+    # DEF is not modelled - no caller reads it (stat_assembly's module docstring).
+    return {"hp": round(hp), "atk": round(atk), "def": 0}
+
+
+def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict,
+                  assume_cube_level: int | None = None,
+                  synchro_level: int | None = None) -> dict:
+    inp = extract_inputs(entry, owned, detail, assume_cube_level)
+    unit = {
         "name_en": inp["name_en"],
         "resource_id": inp["resource_id"],
-        # Not consumed by the simulation - already folded into raid400 - but the
-        # UI shows them so the user can confirm their roster imported correctly.
+        # Not consumed by the simulation - already folded into the stat sets -
+        # but the UI shows them so the user can confirm their roster imported
+        # correctly.
         "grade": inp["grade"],
         "core": inp["core"],
         # Ownership, not a stat: a dual-slot unit's Favorite Item swaps in a
         # different skill encoding ("-signature"), so the frontend needs to know
         # per user rather than consult a hand-maintained list. The stat effect
-        # of the item is already folded into raid400 above.
+        # of the item is already folded into the stat sets.
         "favorite_item": sa.owns_favorite_item(inp["favorite_item_tid"]),
-        # The item's flat ATK/HP is already folded into raid400 above; this is
-        # its SKILL, which is a separate damage source the engine reads per unit
+        # The item's flat ATK/HP is already folded in; this is its SKILL, which
+        # is a separate damage source the engine reads per unit
         # (collectible_effects). `favorite_item` above stays - it answers a
         # different question, namely which skill encoding to use.
         "collectible": {
             "tid": inp["favorite_item_tid"],
             "level": inp["favorite_item_lv"],
         },
-        "raid400": {"hp": round(hp), "atk": round(atk), "def": 0},
+        "raid400": _stats_at_level(tables, inp, research, 400),
         "skill_levels": {
             "skill1": inp["skill1_lv"],
             "skill2": inp["skill2_lv"],
@@ -141,6 +154,12 @@ def assemble_unit(tables, entry: dict, owned: dict, detail: dict, research: dict
         },
         "overload": assemble_overload(tables, detail),
     }
+    # Union raid has no level normalization, so it needs the same unit at the
+    # account's synchro level. Absent when the sync did not carry that level -
+    # inventing one would be a silent distortion of up to 24% between units.
+    if synchro_level is not None:
+        unit["actual"] = _stats_at_level(tables, inp, research, synchro_level)
+    return unit
 
 
 def assemble_roster(tables, directory: list, raw: dict,
@@ -155,11 +174,17 @@ def assemble_roster(tables, directory: list, raw: dict,
     whole ACCOUNT unsyncable; dropping just that unit keeps the other ~150
     usable, and naming it here is what keeps the drop from looking like the
     Nikke simply vanished.
+
+    `raw["synchro_level"]`이 있으면 유닛마다 그 레벨의 `actual` 스탯이 함께 나온다.
     """
     by_code = {e["name_code"]: e for e in directory}
     details = {d["name_code"]: d for d in raw["character_details"]}
     owned = {o["name_code"]: o for o in raw["owned"]}
     research = {str(r["tid"]): r["lv"] for r in raw["recycle_room_researches"]}
+    # The account's synchro device level, when the sync carried it. `or None`
+    # also folds a 0 into "absent": level 0 is outside the stat table's 1..1200
+    # and would raise rather than produce an honest number.
+    synchro_level = raw.get("synchro_level") or None
     units, unmeasured = [], []
     for code, o in owned.items():
         entry, d = by_code.get(code), details.get(code)
@@ -171,7 +196,8 @@ def assemble_roster(tables, directory: list, raw: dict,
         if entry.get("original_rare") != "SSR":
             continue
         try:
-            units.append(assemble_unit(tables, entry, o, d, research, assume_cube_level))
+            units.append(assemble_unit(tables, entry, o, d, research,
+                                       assume_cube_level, synchro_level))
         except sa.UnmeasuredStat as gap:
             unmeasured.append({"name_en": entry["name_en"], "reason": str(gap.args[0])})
     units.sort(key=lambda u: u["name_en"])
