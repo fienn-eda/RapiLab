@@ -5,6 +5,39 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 이름 검색이 초성과 슬러그(영문 이름)도 받는다 — 2026-07-28 기각을 뒤집는다
+
+- Date: 2026-08-11
+- Context: `docs/superpowers/specs/2026-07-28-roster-search-filter-design.md`
+  §2가 "Fienn 지정"으로 초성 검색과 슬러그 검색을 범위에서 뺐다 — 초성은
+  자모 분해 유틸과 그 테스트가 따로 필요해서, 슬러그는 "식별자지 유저가
+  읽는 이름이 아니라서"였다. 그 스펙이 착륙한 뒤에도 100기 넘는 로스터/
+  팔레트 그리드를 완성형 부분일치만으로 훑는 것은 느리다는 문제가 남았다.
+- Decision: 이름 질의를 세 갈래 OR로 넓힌다 — 한글 완성형 부분일치(기존),
+  초성(`ㅎㄹ` → 홍련), 슬러그(영숫자만 남긴 소문자 비교, 공백과 하이픈을
+  동일시해 `ada wong`도 맞는다). `UnitFilterBar`의 입력 하나가 그대로 세
+  갈래를 다 태운다. 새 코드는 `frontend/src/lib/koreanSearch.ts`
+  (`toChosung`/`isChosungQuery`, 35줄) 하나뿐이고, `unitFilter.ts`의
+  `UnitFacets`에 `slug: string` 필드가 늘었다.
+- Why: 슬러그 검색을 다시 기각하지 않은 이유는 원래 기각 전제("슬러그는
+  식별자")가 이 프로젝트에서는 성립하지 않기 때문이다 — 슬러그는 전부
+  케밥케이스 **영문 이름**이고, `backend/tests/test_resource_id_directory.py`
+  의 `test_each_mapped_slug_names_its_directory_unit`(61-78행)가 그것을
+  이미 ShiftyPad 공개 디렉터리 스냅샷 대조로 고정하고 있다(예외는 콜라보
+  약칭 7건, `SLUG_NAME_EXCEPTIONS`). 그래서 슬러그 검색은 사실상 "영문
+  이름 검색"이고 이미 검증된 불변식에 공짜로 올라탄다 — 백엔드가
+  `name_en`을 새로 내보낼 필요가 없어, 새 비용은 프론트 한 파일뿐이었다.
+  초성 검색은 원래 기각 사유(유틸 필요)가 그대로 남아 있었지만, 그 유틸이
+  35줄·전용 테스트 한 파일로 실제로는 작다고 재평가했다.
+- Consequences: 콜라보 7종(Rei/Ada/Jill/Chisato/Takina 등, 위 테스트 파일
+  24행의 `SLUG_NAME_EXCEPTIONS`가 그 목록이다)은 슬러그가 풀네임이라 ShiftyPad
+  화면이 쓰는 짧은 표기(`Ada`)로는 슬러그 검색이 안 맞고, `ada wong`처럼
+  풀네임으로 쳐야 맞는다 — 알면서 받아들인 한계다. `UnitFacets.slug`
+  필드의 주석에 "식별자로 쓰라고 넣은 것이 아니라 검색에서 영문 이름
+  노릇을 한다"고 남겨 다음 사람이 식별자 용도로 오독하지 않게 했다.
+  초성·슬러그 매칭 둘 다 빈 문자열을 전건 일치로 오인하지 않는 명시적
+  가드가 필요했다 — 그 함정은 `docs/insights.md`("Frontend (React)").
+
 ## 계정 이름은 유저가 소유하는 라벨이다 - 동기화는 씨앗만 심는다
 
 - Date: 2026-08-09
