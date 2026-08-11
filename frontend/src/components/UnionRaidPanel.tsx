@@ -16,7 +16,13 @@ import {
   validateBossProfileDraft,
   type BossProfileDraft,
 } from '../types/bossProfileDraft'
-import { isDraftComplete, makeEmptyDraft, resizeDraft, type Draft } from '../types/draft'
+import {
+  firstDeckWithRoom,
+  isDraftComplete,
+  makeEmptyDraft,
+  resizeDraft,
+  type Draft,
+} from '../types/draft'
 import { DEFAULT_UNION_NUM_DECKS, MAX_UNION_NUM_DECKS, MIN_UNION_NUM_DECKS } from '../types/evaluate'
 import { latestRotationFor, type RaidRotation } from '../types/raidRotation'
 import type { BossElement, BossProfile } from '../types/recommend'
@@ -302,12 +308,23 @@ export function UnionRaidPanel({
               onSeat={(slug) => {
                 if (heldSlug) {
                   // 들고 있던 자리를 팔레트 유닛에게 내준다. 들고 있던 쪽은
-                  // 풀로 돌아간다.
+                  // 풀로 돌아간다. 자리를 물려받는 것이라 덱 크기가 안
+                  // 변하므로 활성 덱도 그대로다.
                   setDraftValue((current) => replaceUnit(current, heldSlug, slug))
                   setHeldSlug(null)
                   return
                 }
-                setDraftValue((current) => placeUnit(current, seatDeck, slug))
+                // 활성 덱이 꽉 차 있으면 다음 빈 덱을 찾는다. 클릭 하나는 한
+                // 번의 배치라 클로저의 draftValue가 최신이다 - 갱신자 안에서
+                // setActiveDeck을 부르면 갱신자가 더 이상 순수하지 않고
+                // StrictMode가 두 번 부른다.
+                const target = firstDeckWithRoom(draftValue, seatDeck, numBattles)
+                if (target === null) return
+                const next = placeUnit(draftValue, target, slug)
+                setDraftValue(next)
+                // 앉힌 직후로 다시 훑는다 - 방금 찬 덱이면 표시가 곧바로 다음
+                // 덱으로 넘어가, 다음 클릭이 어디로 갈지 보인다.
+                setActiveDeck(firstDeckWithRoom(next, target, numBattles) ?? target)
               }}
               excludedSlugs={[...excludedSlugs]}
               investmentFor={investmentFor}

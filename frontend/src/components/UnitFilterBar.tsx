@@ -67,7 +67,7 @@ export function UnitFilterBar({ value, onChange, shown, total }: UnitFilterBarPr
           id={searchId}
           type="search"
           className="unit-filter__search"
-          placeholder="니케 이름"
+          placeholder="이름 · 초성 · 영문"
           value={value.query}
           onChange={(event) => onChange({ ...value, query: event.target.value })}
         />

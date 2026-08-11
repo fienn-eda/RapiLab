@@ -6,12 +6,13 @@
 // is moved rather than removed and re-added.
 //
 // Pressing a seat's face picks it up; pressing that same seat again vacates
-// it, and Esc cancels the pick-up. Pressing a palette chip fills an open
-// seat, or swaps into the held seat if one is held - the palette lives
-// outside this component (in the parent panel), so onHeldSlugChange carries
-// what is held across the boundary. Dragging still works in a browser but
-// cannot be the way in: the packaged app's WebView2 fires `dragstart` and
-// then delivers no drop.
+// it, and Esc cancels the pick-up. With a unit held, pressing anywhere inside
+// a deck puts it there; with nothing held, pressing a deck makes it the active
+// one. Pressing a palette chip fills an open seat, or swaps into the held seat
+// if one is held - the palette lives outside this component (in the parent
+// panel), so onHeldSlugChange carries what is held across the boundary.
+// Dragging still works in a browser but cannot be the way in: the packaged
+// app's WebView2 fires `dragstart` and then delivers no drop.
 
 import { useEffect, useState } from 'react'
 import type { Draft, DraftSeat } from '../types/draft'
@@ -317,12 +318,16 @@ export function DraftEditor({
           const missing = seats.length > 0 ? missingBurstTiers(seats, burstTiersFor) : []
           const label = deckLabels?.[deckIndex] ?? null
           const deckName = label?.text ?? `덱 ${deckIndex + 1}`
+          // 누를 수 있을 때만 손 모양이 뜬다. 든 것이 있으면 꽉 찬 덱은 받지
+          // 못하므로 그때는 표적이 아니다.
+          const pressable = heldSlug !== null ? !full : picksDeck
           return (
             <div
               className={[
                 'draft-editor__deck',
                 dropTarget === deckIndex ? 'draft-editor__deck--drop-target' : '',
                 picksDeck && activeDeck === deckIndex ? 'draft-editor__deck--active' : '',
+                pressable ? 'draft-editor__deck--pressable' : '',
               ].filter(Boolean).join(' ')}
               key={deckIndex}
               // Only preventDefault for a real unit drag: the default action is
@@ -335,6 +340,22 @@ export function DraftEditor({
               }}
               onDragLeave={() => setDropTarget((current) => (current === deckIndex ? null : current))}
               onDrop={(event) => handleDrop(event, deckIndex)}
+              // 덱 테두리 안 전체가 표적이다. 안쪽 컨트롤은 저마다 전파를 끊어
+              // 자기 몫을 가져가므로, 여기 닿는 것은 「덱을 눌렀다」뿐이다.
+              onClick={() => {
+                if (heldSlug !== null) {
+                  const next = moveUnit(value, deckIndex, heldSlug)
+                  // moveUnit은 꽉 찬 덱과 「이미 그 덱」을 거절하며 같은 객체를
+                  // 돌려준다. 거절당했는데 든 것을 내려놓으면, 화면에서 유닛이
+                  // 조용히 사라진 것처럼 보인다.
+                  if (next === value) return
+                  onChange(next)
+                  setHeld(null)
+                  onActiveDeckChange?.(deckIndex)
+                  return
+                }
+                if (picksDeck) onActiveDeckChange(deckIndex)
+              }}
             >
               <h4 className="draft-editor__deck-title">
                 {label?.iconSrc && (
@@ -361,7 +382,14 @@ export function DraftEditor({
                         ? `덱 ${deckIndex + 1} ${deckName} 활성 덱으로 선택`
                         : `덱 ${deckIndex + 1} 활성 덱으로 선택`
                     }
-                    onClick={() => onActiveDeckChange(deckIndex)}
+                    onClick={(event) => {
+                      // 든 채로는 이름도 놓는 자리다 - 표적 한가운데에 죽은
+                      // 띠를 두지 않는다. 껍데기가 이동으로 처리하도록
+                      // 흘려보낸다.
+                      if (heldSlug !== null) return
+                      event.stopPropagation()
+                      onActiveDeckChange(deckIndex)
+                    }}
                   >
                     {deckName}
                   </button>
@@ -439,6 +467,11 @@ export function DraftEditor({
                           // own drag that bubbles up here - the handler has to
                           // refuse it too, not just the attribute.
                           onDragStart={(event) => event.preventDefault()}
+                          // 고정 좌석은 드롭도 거절한다(handleSeatDrop과 같은
+                          // 규칙). 안 끊으면 덱 껍데기가 이 클릭을 「이 덱에
+                          // 놓기」로 받아, 못 건드린다고 말한 자리를 눌러
+                          // 유닛이 그 덱에 들어간다.
+                          onClick={(event) => event.stopPropagation()}
                         >
                           {slotFace}
                         </div>
@@ -452,7 +485,12 @@ export function DraftEditor({
                             event.dataTransfer.setData(DRAG_SLUG_TYPE, seat.slug)
                             event.dataTransfer.effectAllowed = 'move'
                           }}
-                          onClick={() => {
+                          onClick={(event) => {
+                            // 좌석은 자기 몫을 여기서 끝낸다. 안 끊으면 덱
+                            // 껍데기가 같은 클릭을 이동으로 한 번 더 처리한다 -
+                            // 아래에서 내려놓아도 껍데기가 읽는 heldSlug는 같은
+                            // 배치 안이라 아직 옛 값이다.
+                            event.stopPropagation()
                             if (heldSlug === seat.slug) {
                               onChange(removeUnit(value, deckIndex, seatIndex))
                               setHeld(null)
@@ -477,7 +515,10 @@ export function DraftEditor({
                           className="draft-editor__slot-lock"
                           aria-pressed={seat.locked}
                           aria-label={`${where}에서 ${name} 고정`}
-                          onClick={() => onChange(toggleLock(value, deckIndex, seatIndex))}
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            onChange(toggleLock(value, deckIndex, seatIndex))
+                          }}
                         >
                           <LockGlyph />
                         </button>
@@ -503,10 +544,11 @@ export function DraftEditor({
                         type="button"
                         className="draft-editor__slot-plus"
                         aria-label={`덱 ${deckIndex + 1}에 놓기`}
-                        onClick={() => {
-                          onChange(moveUnit(value, deckIndex, heldSlug))
-                          setHeld(null)
-                        }}
+                        // 핸들러가 없는 것이 맞다: 누르면 덱 껍데기가 이동으로
+                        // 받는다(키보드의 Enter/Space도 click을 올려보낸다).
+                        // 같은 일을 하는 핸들러를 두 벌 두면 조용히 갈라진다.
+                        // 버튼으로 남기는 것은 접근성 트리에 노출되는 유일한
+                        // 놓기 컨트롤이기 때문이다.
                       >
                         +
                       </button>

@@ -106,6 +106,7 @@ export function UnitPalette({
   const [filter, setFilter] = useState<UnitFilterState>(EMPTY_FILTER)
 
   const facetsFor = (unit: SupportedUnit): UnitFacets => ({
+    slug: unit.slug,
     name: unit.name,
     element: unit.element,
     burstTier: unit.burstTier,

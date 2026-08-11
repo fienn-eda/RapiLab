@@ -110,6 +110,29 @@ describe('MirandaCalculatorPanel', () => {
     expect(screen.queryByRole('button', { name: '크라운 배치' })).not.toBeInTheDocument()
   })
 
+  // 덱이 꽉 차면 배치 버튼은 placeUnit으로 아무것도 못 한다. 솔로/유니온 탭에는
+  // 있는 「들고 팔레트를 눌러 자리를 물려주기」가 이 화면에만 없어서, 한 명을
+  // 바꾸려면 좌석을 두 번 눌러 빼고 다시 앉히는 수밖에 없었다.
+  it('앉은 니케를 들고 팔레트 니케를 누르면 그 자리를 물려준다', async () => {
+    renderPanel([...FULL, 'snow-white'].map(state))
+
+    for (const name of ['크라운', '에이다 웡', '신데렐라', '이사벨']) {
+      await userEvent.click(screen.getByRole('button', { name: `${name} 배치` }))
+    }
+    expect(screen.getByText('5/5')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: '덱 1의 크라운' }))
+    await userEvent.click(screen.getByRole('button', { name: '백설공주 배치' }))
+
+    expect(screen.getByRole('button', { name: '덱 1의 백설공주' })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '덱 1의 크라운' })).not.toBeInTheDocument()
+    // 하나 나가고 하나 들어왔으므로 자리 수는 그대로다. 미란다도 그대로다.
+    expect(screen.getByText('5/5')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /덱 1의 미란다/ })).not.toBeInTheDocument()
+    // 밀려난 크라운은 다시 앉힐 수 있는 상태로 팔레트에 돌아온다.
+    expect(screen.getByRole('button', { name: '크라운 배치' })).toBeInTheDocument()
+  })
+
   it('asks the player to sync when the roster has no Miranda at all', () => {
     renderPanel([state('crown'), state('ada-wong')])
     expect(screen.getByText(HELP.miranda.notInRoster)).toBeInTheDocument()

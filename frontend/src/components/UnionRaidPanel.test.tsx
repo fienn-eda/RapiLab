@@ -128,6 +128,41 @@ describe('UnionRaidPanel', () => {
     ])
   })
 
+  // Fienn이 든 예: 팔레트에서 15명을 누르면 덱 3개가 차야 한다. 활성 덱이
+  // 찬 뒤로는 열 번의 클릭이 전부 조용히 삼켜지고 있었다.
+  it('덱이 차면 다음 덱으로 넘어가, 15번 누르면 세 덱이 다 찬다', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await screen.findByRole('button', { name: /u0 배치/i })
+
+    for (let i = 0; i < 15; i += 1) {
+      await user.click(screen.getByRole('button', { name: `U${i} 배치` }))
+    }
+
+    expect(screen.getAllByText(/^\d\/5$/).map((e) => e.textContent)).toEqual([
+      '5/5',
+      '5/5',
+      '5/5',
+    ])
+  })
+
+  // 다음 클릭이 어디로 갈지는 눌러 보기 전에 보여야 한다. 앉힌 「직후」 상태로
+  // 다시 훑지 않으면 표시는 여섯 번째 클릭까지 덱 1에 남는다.
+  it('덱이 차는 순간 활성 표시가 다음 덱으로 옮겨간다', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await screen.findByRole('button', { name: /u0 배치/i })
+
+    for (let i = 0; i < 5; i += 1) {
+      await user.click(screen.getByRole('button', { name: `U${i} 배치` }))
+    }
+
+    expect(screen.getByRole('button', { name: '덱 1 활성 덱으로 선택' }))
+      .toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: '덱 2 활성 덱으로 선택' }))
+      .toHaveAttribute('aria-pressed', 'true')
+  })
+
   it('기본으로 전투 3회분의 보스 설정을 그린다', () => {
     renderPanel()
     expect(screen.getAllByRole('group', { name: /전투/ })).toHaveLength(3)

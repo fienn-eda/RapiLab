@@ -628,6 +628,28 @@ describe('RecommendPanel draft mode', () => {
     )
   })
 
+  // 같은 규칙이 이 패널과 유니온 패널에 각각 배선돼 있어, 한쪽만 고치면 다른
+  // 쪽이 조용히 낡는다.
+  it('덱이 차면 팔레트가 다음 덱에 앉힌다', async () => {
+    const user = userEvent.setup()
+    const sixUnits = [
+      ...supportedUnits,
+      { slug: 'f', name: 'F', burstTier: 1 as const, element: 'Iron' as const },
+    ]
+    vi.mocked(getSupportedUnits).mockResolvedValue(sixUnits)
+
+    render(<RecommendPanel roster={[...fullRoster, nikke('f')]} {...noPersistence} />)
+    await user.click(screen.getByLabelText(/빈자리만 최적화/i))
+    await screen.findByRole('button', { name: 'A 배치' })
+
+    for (const name of ['A', 'B', 'C', 'D', 'E', 'F']) {
+      await user.click(screen.getByRole('button', { name: `${name} 배치` }))
+    }
+
+    expect(screen.getByRole('button', { name: '덱 1의 A' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: '덱 2의 F' })).toBeInTheDocument()
+  })
+
   it('shows the backend error message on a failed draft submission (infeasible draft)', async () => {
     const user = userEvent.setup()
     vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)

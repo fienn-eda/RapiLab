@@ -746,6 +746,170 @@ describe('DraftEditor', () => {
     })
   })
 
+  // 덱 이름 글자와 첫 빈자리의 `+` 글자, 이 둘만 표적이었다. 나머지 테두리
+  // 안은 전부 죽어 있어서 「다른 덱으로 옮기기」가 20px 과녁 맞히기였다.
+  describe('덱 몸통 표적', () => {
+    const seated: Draft = { decks: [[{ slug: 'crown', locked: false }], []] }
+    const both: Draft = {
+      decks: [[{ slug: 'crown', locked: false }], [{ slug: 'liter', locked: false }]],
+    }
+    const moved = { decks: [[], [{ slug: 'crown', locked: false }]] }
+
+    const pickable = (
+      value: Draft,
+      onChange: (next: Draft) => void = () => {},
+      onActiveDeckChange: (deckIndex: number) => void = () => {},
+      extra: Partial<React.ComponentProps<typeof DraftEditor>> = {},
+    ) =>
+      render(
+        <DraftEditor
+          numDecks={2}
+          value={value}
+          onChange={onChange}
+          portraitFor={() => null}
+          nameFor={nameFromSlug}
+          burstTiersFor={(slug: string) => TIERS[slug] ?? []}
+          activeDeck={0}
+          onActiveDeckChange={onActiveDeckChange}
+          {...extra}
+        />,
+      )
+
+    /** 덱 컨테이너 자체 - 안쪽 컨트롤이 아니라 테두리 안 빈 면적을 누르는 것과
+     * 같다. jsdom에는 레이아웃이 없어서 이 요소에 직접 디스패치한다. */
+    const deckBody = (container: HTMLElement, deckNumber: number) =>
+      container.querySelectorAll<HTMLElement>('.draft-editor__deck')[deckNumber - 1]
+
+    it('아무것도 안 들었으면 덱 몸통을 누를 때 그 덱이 활성 덱이 된다', async () => {
+      const onActiveDeckChange = vi.fn()
+      const { container } = pickable(seated, () => {}, onActiveDeckChange)
+
+      await userEvent.click(deckBody(container, 2))
+
+      expect(onActiveDeckChange).toHaveBeenCalledWith(1)
+    })
+
+    it('들고 덱 몸통을 누르면 옮기고, 그 덱이 활성 덱이 된다', async () => {
+      const onChange = vi.fn()
+      const onActiveDeckChange = vi.fn()
+      const { container } = pickable(seated, onChange, onActiveDeckChange)
+
+      await userEvent.click(screen.getByRole('button', { name: '덱 1의 Crown' }))
+      await userEvent.click(deckBody(container, 2))
+
+      expect(onChange).toHaveBeenCalledWith(moved)
+      expect(onActiveDeckChange).toHaveBeenLastCalledWith(1)
+    })
+
+    // Fienn의 보고: 「가장 왼쪽 자리만 활성화된다」. 나머지 넷은 버튼이 아닌
+    // 것을 넘어 클릭이 어디로도 안 갔다.
+    it('들고 다른 덱의 세 번째 빈자리를 눌러도 옮긴다', async () => {
+      const onChange = vi.fn()
+      const { container } = pickable(seated, onChange)
+
+      await userEvent.click(screen.getByRole('button', { name: '덱 1의 Crown' }))
+      const open = deckBody(container, 2).querySelectorAll<HTMLElement>(
+        '.draft-editor__slot--open',
+      )
+      expect(open).toHaveLength(5)
+      await userEvent.click(open[2])
+
+      expect(onChange).toHaveBeenCalledWith(moved)
+    })
+
+    // 껍데기가 moveUnit의 거절을 안 보면, 옮기지도 않고 든 것만 내려놓는다 -
+    // 화면에서 유닛이 조용히 사라진 것처럼 보인다.
+    it('꽉 찬 덱 몸통을 누르면 옮기지 않고 계속 들고 있다', async () => {
+      const full: Draft = {
+        decks: [
+          [{ slug: 'crown', locked: false }],
+          ['liter', 'blanc', 'x1', 'x2', 'x3'].map((slug) => ({ slug, locked: false })),
+        ],
+      }
+      const onChange = vi.fn()
+      const onHeldSlugChange = vi.fn()
+      const { container } = pickable(full, onChange, () => {}, { onHeldSlugChange })
+
+      await userEvent.click(screen.getByRole('button', { name: '덱 1의 Crown' }))
+      onHeldSlugChange.mockClear()
+      await userEvent.click(deckBody(container, 2))
+
+      expect(onChange).not.toHaveBeenCalled()
+      expect(onHeldSlugChange).not.toHaveBeenCalled()
+      expect(container.querySelector('.draft-editor__slot--held')).not.toBeNull()
+    })
+
+    // 좌석 버튼이 자기 핸들러에서 setHeld(null)을 불러도, 껍데기가 읽는
+    // heldSlug는 같은 배치 안이라 아직 옛 값이다 - 전파를 안 끊으면 교환하고
+    // 나서 또 이동한다.
+    it('좌석으로 교환할 때 껍데기가 겹쳐 처리하지 않는다', async () => {
+      const onChange = vi.fn()
+      pickable(both, onChange)
+
+      await userEvent.click(screen.getByRole('button', { name: '덱 1의 Crown' }))
+      await userEvent.click(screen.getByRole('button', { name: '덱 2의 Liter' }))
+
+      expect(onChange).toHaveBeenCalledTimes(1)
+      expect(onChange).toHaveBeenCalledWith({
+        decks: [[{ slug: 'liter', locked: false }], [{ slug: 'crown', locked: false }]],
+      })
+    })
+
+    it('잠금 토글은 껍데기로 새지 않는다', async () => {
+      const onActiveDeckChange = vi.fn()
+      pickable(both, () => {}, onActiveDeckChange)
+
+      await userEvent.click(screen.getByRole('button', { name: '덱 2에서 Liter 고정' }))
+
+      expect(onActiveDeckChange).not.toHaveBeenCalled()
+    })
+
+    // 든 채로는 덱 이름도 놓는 자리다 - 표적 한가운데에 죽은 띠를 두지 않는다.
+    it('들고 덱 이름을 눌러도 옮긴다', async () => {
+      const onChange = vi.fn()
+      pickable(seated, onChange)
+
+      await userEvent.click(screen.getByRole('button', { name: '덱 1의 Crown' }))
+      await userEvent.click(screen.getByRole('button', { name: '덱 2 활성 덱으로 선택' }))
+
+      expect(onChange).toHaveBeenCalledWith(moved)
+    })
+
+    it('안 들었을 때 덱 이름은 활성 덱만 한 번 바꾼다', async () => {
+      const onChange = vi.fn()
+      const onActiveDeckChange = vi.fn()
+      pickable(seated, onChange, onActiveDeckChange)
+
+      await userEvent.click(screen.getByRole('button', { name: '덱 2 활성 덱으로 선택' }))
+
+      expect(onActiveDeckChange).toHaveBeenCalledTimes(1)
+      expect(onActiveDeckChange).toHaveBeenCalledWith(1)
+      expect(onChange).not.toHaveBeenCalled()
+    })
+
+    // 덱이 하나면 고를 것이 없다. 껍데기가 onActiveDeckChange의 존재만 보고
+    // 부르면, 미란다 화면에 없는 개념이 생긴다.
+    it('덱이 하나면 몸통을 눌러도 활성 덱을 부르지 않는다', async () => {
+      const onActiveDeckChange = vi.fn()
+      const { container } = render(
+        <DraftEditor
+          numDecks={1}
+          value={{ decks: [[]] }}
+          onChange={() => {}}
+          portraitFor={() => null}
+          nameFor={nameFromSlug}
+          burstTiersFor={(slug: string) => TIERS[slug] ?? []}
+          activeDeck={0}
+          onActiveDeckChange={onActiveDeckChange}
+        />,
+      )
+
+      await userEvent.click(deckBody(container, 1))
+
+      expect(onActiveDeckChange).not.toHaveBeenCalled()
+    })
+  })
+
   // 팔레트가 이 컴포넌트 밖에 있어서, 부모는 무엇이 들렸는지 슬러그로 알아야
   // 한다. 든 것이 바뀌는 길 전부(집기·제거·이동·교환·Esc·편성에서 사라짐·
   // 언마운트)가 이 알림을 거쳐야 하고, 하나라도 빠지면 부모의 사본이 조용히
