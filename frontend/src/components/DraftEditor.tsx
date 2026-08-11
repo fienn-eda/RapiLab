@@ -305,12 +305,18 @@ export function DraftEditor({
 
   return (
     <div className="draft-editor">
-      <p className="draft-editor__hint">
-        <HelpText>
-          {(picksDeck ? HELP.draft.seatHintWithDeckPick : HELP.draft.seatHintSingleDeck) +
-            HELP.draft.seatHintCommon}
-        </HelpText>
-      </p>
+      {/* 접힌 상태에서는 이 박스가 곧 summary라, 박스 아무 데나 눌러도 열린다.
+          내용까지 토글 대상으로 삼지 않는 이유는 읽는 문단이기 때문이다 -
+          거기까지 클릭을 먹으면 문장을 드래그해 읽을 수가 없다. */}
+      <details className="draft-editor__usage">
+        <summary>사용 방법</summary>
+        <p className="draft-editor__hint">
+          <HelpText>
+            {(picksDeck ? HELP.draft.seatHintWithDeckPick : HELP.draft.seatHintSingleDeck) +
+              HELP.draft.seatHintCommon}
+          </HelpText>
+        </p>
+      </details>
       <div className="draft-editor__decks">
         {Array.from({ length: numDecks }, (_, deckIndex) => {
           const seats = value.decks[deckIndex] ?? []

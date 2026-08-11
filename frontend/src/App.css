@@ -1883,11 +1883,27 @@
   gap: var(--sp-3);
 }
 
+/* 편성 방법은 처음 한 번만 읽으면 되는 문단이라 접어 둔다 - 펴 두면 편성
+   칸을 아래로 밀어 스크롤이 길어진다. 접혔을 때 이 박스가 곧 summary이므로
+   테두리 안 어디를 눌러도 열린다. */
+.draft-editor__usage {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  padding: var(--sp-2) var(--sp-3);
+}
+
+.draft-editor__usage > summary {
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
 .draft-editor__hint {
   font-size: 12px;
   font-style: italic;
   color: var(--text-muted);
-  margin: 0;
+  margin: var(--sp-2) 0 0;
 }
 
 /* Palette on the left, decks on the right - a unit can only be dragged into a

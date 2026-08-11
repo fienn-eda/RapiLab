@@ -1201,4 +1201,25 @@ describe('활성 덱', () => {
     )
     expect(screen.queryByRole('button', { name: /활성 덱으로 선택/ })).not.toBeInTheDocument()
   })
+
+  // 편성 방법은 처음 한 번만 읽으면 되는데, 펴 둔 채로는 편성 칸을 아래로 밀어
+  // 스크롤이 길어진다(Fienn, 2026-08-11).
+  it('편성 방법은 「사용 방법」 박스에 접혀 있다', () => {
+    renderDecks(3)
+
+    const box = screen.getByText('사용 방법').closest('details')
+    expect(box).not.toBeNull()
+    expect(box!.open).toBe(false)
+    // 접혀 있어도 내용은 DOM에 있다 - 열면 보이는 그 문장이다.
+    expect(box!.textContent).toMatch(/니케를 누르면/)
+  })
+
+  it('요약을 누르면 펴진다', () => {
+    renderDecks(3)
+    const summary = screen.getByText('사용 방법')
+
+    fireEvent.click(summary)
+
+    expect(summary.closest('details')!.open).toBe(true)
+  })
 })
