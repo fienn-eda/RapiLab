@@ -7,6 +7,7 @@
 // remove it from the search (see the design spec, decision 5).
 
 import { isChosungQuery, toChosung } from './koreanSearch'
+import { aliasesFor } from './nikkeAliases'
 import { abbreviateOverload, type OverloadKey } from './overload'
 import type { BurstTier, NikkeElement } from '../types/supportedUnit'
 
@@ -68,14 +69,24 @@ const overloadValue = (facets: UnitFacets, key: OverloadKey): number => {
  * 보게 만든다 - "ada wong"과 "ada-wong"은 같은 니케다. */
 const alphanumericOnly = (text: string): string => text.toLowerCase().replace(/[^a-z0-9]/g, '')
 
-/** 이름 질의 한 건. 세 갈래를 OR로 본다: 한글 완성형 부분일치, 영문(슬러그),
- * 초성. `query`는 이미 trim·소문자다. */
+/** 유저들이 부르는 별명. 이름과 같은 규칙으로 본다 - 부분일치와 초성 둘 다.
+ * 규칙이 이름과 갈리면 유저가 두 가지를 기억해야 한다. */
+const matchesAlias = (slug: string, query: string): boolean =>
+  aliasesFor(slug).some(
+    (alias) =>
+      alias.toLowerCase().includes(query) ||
+      (isChosungQuery(query) && toChosung(alias).includes(query)),
+  )
+
+/** 이름 질의 한 건. 네 갈래를 OR로 본다: 한글 완성형 부분일치, 영문(슬러그),
+ * 별명, 초성. `query`는 이미 trim·소문자다. */
 const matchesQuery = (facets: UnitFacets, query: string): boolean => {
   if (facets.name.toLowerCase().includes(query)) return true
   // 한글 질의는 영숫자만 남기면 빈 문자열이 되고, 빈 문자열은 모든 슬러그에
   // includes로 맞는다 - 이 가드가 없으면 초성 검색이 아무것도 안 거른다.
   const alphanumeric = alphanumericOnly(query)
   if (alphanumeric !== '' && alphanumericOnly(facets.slug).includes(alphanumeric)) return true
+  if (matchesAlias(facets.slug, query)) return true
   return isChosungQuery(query) && toChosung(facets.name).includes(query)
 }
 

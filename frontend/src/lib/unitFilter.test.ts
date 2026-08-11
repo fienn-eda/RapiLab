@@ -24,9 +24,20 @@ const ROWS: Row[] = [
   { slug: 'alice', name: '앨리스', element: 'Wind', burstTier: 3, overload: [] },
 ]
 
+/** 별명 표는 슬러그로 키를 잡으므로 실재하는 슬러그가 필요하다. ROWS에 섞지
+ * 않는 이유는 「홍련: 흑영」의 초성이 'ㅎㄹㅎㅇ'이라 위 초성 테스트의 'ㅎㄹ'에도
+ * 맞아, 별명과 무관한 단언들을 흔들기 때문이다. */
+const ALIAS_ROWS: Row[] = [
+  { slug: 'scarlet-black-shadow', name: '홍련: 흑영', element: 'Fire', burstTier: 3, overload: [] },
+  { slug: 'little-mermaid', name: '리틀 머메이드', element: 'Water', burstTier: 2, overload: [] },
+  { slug: 'rapi', name: '라피', element: 'Water', burstTier: 1, overload: [] },
+]
+
 const names = (rows: Row[]) => rows.map((row) => row.name)
 const run = (state: Partial<UnitFilterState>) =>
   names(filterAndSort(ROWS, facets, { ...EMPTY_FILTER, ...state }))
+const searchAlias = (query: string) =>
+  names(filterAndSort(ALIAS_ROWS, facets, { ...EMPTY_FILTER, query }))
 
 describe('filterAndSort', () => {
   it('keeps every unit when nothing is filtered', () => {
@@ -100,6 +111,25 @@ describe('filterAndSort', () => {
   it('완성형이 섞인 질의는 초성으로 맞추지 않는다', () => {
     expect(run({ query: '홍ㄹ' })).toEqual([])
     expect(run({ query: '홍' })).toEqual(['홍련'])
+  })
+
+  // 유저들은 공식 표기가 아니라 자기들이 부르는 이름으로 찾는다. 별명은
+  // lib/nikkeAliases.ts가 관리한다.
+  it('별명으로 치면 그 니케가 맞는다', () => {
+    expect(searchAlias('흑련')).toEqual(['홍련: 흑영'])
+    expect(searchAlias('세이렌')).toEqual(['리틀 머메이드'])
+  })
+
+  it('별명도 초성으로 찾을 수 있다', () => {
+    // 이름에 초성이 되는데 별명만 안 되면 유저는 규칙을 둘로 기억해야 한다.
+    // 'ㅎㄹ'은 「홍련: 흑영」의 이름 초성이기도 하므로, 별명 갈래만 재려면
+    // 이름 초성과 겹치지 않는 'ㅅㅇㄹ'(세이렌)로 물어야 한다.
+    expect(searchAlias('ㅅㅇㄹ')).toEqual(['리틀 머메이드'])
+  })
+
+  it('별명이 없는 니케까지 통과시키지는 않는다', () => {
+    expect(searchAlias('흑련')).toHaveLength(1)
+    expect(searchAlias('없는별명')).toEqual([])
   })
 
   it('keeps only the chosen elements, treating an empty list as no filter', () => {
