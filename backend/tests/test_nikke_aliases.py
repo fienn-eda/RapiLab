@@ -14,6 +14,7 @@
 import re
 from pathlib import Path
 
+from app.skill_rules.registry import MODE_VARIANTS
 from app.supported_units import supported_units
 
 ALIAS_FILE = (
@@ -57,3 +58,53 @@ def test_the_alias_table_lists_exactly_the_units_on_screen():
 def test_the_table_is_parsed_at_all():
     """위 단언은 양쪽이 다 비어도 통과한다 - 파싱이 죽지 않았음을 따로 고정한다."""
     assert len(_alias_keys()) > 50
+
+
+def _alias_rows() -> list[tuple[str, list[str]]]:
+    """(슬러그, 별명들). 빈 배열도 그대로 돌려준다."""
+    text = ALIAS_FILE.read_text(encoding="utf-8")
+    body = text.split(TABLE_START, 1)[1].split("\n}", 1)[0]
+    rows = []
+    for slug, inside in re.findall(r"^\s*'([a-z0-9-]+)':\s*\[(.*?)\],", body, re.M):
+        rows.append((slug, re.findall(r"'([^']+)'", inside)))
+    return rows
+
+
+def _family(slug: str) -> str:
+    """이 슬러그가 가리키는 '같은 니케'의 대표.
+
+    애장품 변형(`-signature`)과 모드 변형(MODE_VARIANTS)은 한 니케의 다른
+    빌드다 - 유저가 부르는 이름도 당연히 같으므로, 별명이 겹치는 것은 충돌이
+    아니라 정상이다(브래디 셋이 다 「빵순이」인 것처럼).
+    """
+    base = slug.removesuffix("-signature")
+    for parent, variants in MODE_VARIANTS.items():
+        if base == parent or base in variants:
+            return parent
+    return base
+
+
+def test_an_alias_never_points_at_two_different_nikkes():
+    """한 별명이 서로 다른 니케를 가리키면 검색이 아무것도 좁히지 못한다.
+
+    별명은 그 하나를 부르려고 쓰는 말이라, 둘이 나오면 표가 틀린 것이다.
+    """
+    owner: dict[str, tuple[str, str]] = {}
+    clashes = []
+    for slug, aliases in _alias_rows():
+        for alias in aliases:
+            family = _family(slug)
+            if alias in owner and owner[alias][0] != family:
+                clashes.append(f"{alias}: {owner[alias][1]} vs {slug}")
+            else:
+                owner.setdefault(alias, (family, slug))
+
+    assert not clashes, f"한 별명이 다른 니케를 가리킨다: {clashes}"
+
+
+def test_that_check_would_notice_a_real_clash():
+    """위 단언은 같은 니케의 변형을 눈감아 준다 - 그 관대함이 아무것이나
+    통과시키는 수준이 아님을 고정한다."""
+    assert _family("moran-signature") == _family("moran")
+    assert _family("bready-lingering") == _family("bready")
+    assert _family("moran") != _family("bready")

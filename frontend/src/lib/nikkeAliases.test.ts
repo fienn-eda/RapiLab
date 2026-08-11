@@ -14,21 +14,10 @@ describe('NIKKE_ALIASES', () => {
     }
   })
 
-  // 같은 별명이 두 니케를 가리키면 검색 결과가 둘 다 나와 아무것도 좁히지
-  // 못한다. 별명은 그 하나를 부르려고 쓰는 말이므로 겹치면 표가 틀린 것이다.
-  it('두 니케가 같은 별명을 쓰지 않는다', () => {
-    const seen = new Map<string, string>()
-    const clashes: string[] = []
-    for (const [slug, aliases] of Object.entries(NIKKE_ALIASES)) {
-      for (const alias of aliases) {
-        const owner = seen.get(alias)
-        if (owner !== undefined) clashes.push(`${alias}: ${owner} vs ${slug}`)
-        else seen.set(alias, slug)
-      }
-    }
-
-    expect(clashes).toEqual([])
-  })
+  // 같은 별명이 서로 다른 니케를 가리키는지는 백엔드가 잡는다
+  // (backend/tests/test_nikke_aliases.py). 애장품 변형(-signature)과 모드
+  // 변형은 같은 니케의 다른 빌드라 별명이 겹치는 것이 정상인데, 그 관계는
+  // MODE_VARIANTS를 아는 쪽에서만 판정할 수 있다.
 
   // 별명이 공식 이름의 부분문자열이면 그 줄은 아무 일도 하지 않는다 - 이름
   // 부분일치가 이미 맞히기 때문이다. 표에 죽은 줄이 쌓이는 것을 막는다.
