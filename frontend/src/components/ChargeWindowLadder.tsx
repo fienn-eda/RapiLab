@@ -63,7 +63,9 @@ export function ChargeWindowLadder({ result }: { result: ChargeWindowResult }) {
           <thead>
             <tr>
               <th scope="col">차지속도</th>
-              <th scope="col">간격</th>
+              {/* 차지 시간이 아니라 평타 하나에서 다음 평타까지다 - 차지·모션
+                  딜레이·재장전이 모두 든 값이라 이름이 그것을 말해야 한다. */}
+              <th scope="col">평타 간격</th>
               <th scope="col">타수</th>
             </tr>
           </thead>
