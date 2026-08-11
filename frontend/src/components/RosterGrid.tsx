@@ -55,6 +55,7 @@ export function RosterGrid({
   const facetsFor = (draft: NikkeDraft): UnitFacets => {
     const unit = bySlug.get(draft.character_slug)!
     return {
+      slug: unit.slug,
       name: unit.name,
       element: unit.element,
       burstTier: unit.burstTier,

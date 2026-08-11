@@ -6,6 +6,7 @@
 // `excludedSlugs`, and nothing here may touch it - hiding a unit must never
 // remove it from the search (see the design spec, decision 5).
 
+import { isChosungQuery, toChosung } from './koreanSearch'
 import { abbreviateOverload, type OverloadKey } from './overload'
 import type { BurstTier, NikkeElement } from '../types/supportedUnit'
 
@@ -43,6 +44,10 @@ export const isFiltering = (state: UnitFilterState): boolean =>
 /** 필터·정렬이 유닛에서 읽는 것 전부. 호출부가 자기 저장 모양을 이걸로
  * 환원해 넘기므로, 두 화면이 데이터 구조를 통일하지 않고도 규칙을 공유한다. */
 export interface UnitFacets {
+  /** 검색에서 영문 이름 노릇을 한다: 슬러그가 곧 케밥케이스 영문명이고, 그것을
+   * backend/tests/test_resource_id_directory.py가 고정한다. 식별자로 쓰라고
+   * 넣은 것이 아니다. */
+  slug: string
   name: string
   element: NikkeElement
   burstTier: BurstTier
@@ -59,9 +64,24 @@ const overloadValue = (facets: UnitFacets, key: OverloadKey): number => {
   return Number.isFinite(value) ? value : 0
 }
 
+/** 영숫자만 남긴 소문자. 슬러그의 하이픈과 유저가 치는 공백을 같은 것으로
+ * 보게 만든다 - "ada wong"과 "ada-wong"은 같은 니케다. */
+const alphanumericOnly = (text: string): string => text.toLowerCase().replace(/[^a-z0-9]/g, '')
+
+/** 이름 질의 한 건. 세 갈래를 OR로 본다: 한글 완성형 부분일치, 영문(슬러그),
+ * 초성. `query`는 이미 trim·소문자다. */
+const matchesQuery = (facets: UnitFacets, query: string): boolean => {
+  if (facets.name.toLowerCase().includes(query)) return true
+  // 한글 질의는 영숫자만 남기면 빈 문자열이 되고, 빈 문자열은 모든 슬러그에
+  // includes로 맞는다 - 이 가드가 없으면 초성 검색이 아무것도 안 거른다.
+  const alphanumeric = alphanumericOnly(query)
+  if (alphanumeric !== '' && alphanumericOnly(facets.slug).includes(alphanumeric)) return true
+  return isChosungQuery(query) && toChosung(facets.name).includes(query)
+}
+
 const matches = (facets: UnitFacets, state: UnitFilterState): boolean => {
   const query = state.query.trim().toLowerCase()
-  if (query !== '' && !facets.name.toLowerCase().includes(query)) return false
+  if (query !== '' && !matchesQuery(facets, query)) return false
   if (state.elements.length > 0 && !state.elements.includes(facets.element)) return false
   if (state.burstTiers.length > 0 && !state.burstTiers.includes(facets.burstTier)) return false
   return true
