@@ -13,7 +13,6 @@ import type { Draft, DraftSeat } from '../types/draft'
 import type { DraftAllocation, RaidDeck } from '../types/recommend'
 import { BenchNote } from './BenchNote'
 import { DeckCard, type UnitLookups } from './DeckCard'
-import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
 import { HELP } from '../lib/helpText'
 import { HelpText } from './HelpText'
@@ -24,7 +23,6 @@ import { SwapConvergenceNote } from './SwapConvergenceNote'
 interface DraftResultsProps extends UnitLookups {
   decks: RaidDeck[]
   combinedTotalDamage: number
-  excludedSlugs?: string[]
   leftoverSlugs?: string[]
   withinDraft?: DraftAllocation | null
   baselineTotalDamage?: number | null
@@ -96,7 +94,6 @@ export const matchDecksToSubmitted = (
 export function DraftResults({
   decks,
   combinedTotalDamage,
-  excludedSlugs = [],
   leftoverSlugs = [],
   withinDraft = null,
   baselineTotalDamage = null,
@@ -114,7 +111,6 @@ export function DraftResults({
       <RaidResults
         decks={decks}
         combinedTotalDamage={combinedTotalDamage}
-        excludedSlugs={excludedSlugs}
         leftoverSlugs={leftoverSlugs}
         swapConverged={swapConverged}
         {...lookups}
@@ -197,7 +193,6 @@ export function DraftResults({
       </section>
 
       <BenchNote leftoverSlugs={leftoverSlugs} nameFor={nameFor} />
-      <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
     </div>
   )
 }

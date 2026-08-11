@@ -48,15 +48,10 @@ describe('DeckResults', () => {
     ])
   })
 
-  it('lists excluded slugs as not yet supported when there are any', () => {
-    render(<DeckResults decks={[]} excludedSlugs={['some-slug', 'other-slug']} />)
-    expect(
-      screen.getByText(HELP.results.excludedUnsupported('Some Slug, Other Slug')),
-    ).toBeInTheDocument()
-  })
-
-  it('renders no excluded line when nothing was excluded', () => {
-    render(<DeckResults decks={[]} excludedSlugs={[]} />)
-    expect(screen.queryByText(/아직 미지원/)).not.toBeInTheDocument()
+  // 미지원 슬러그는 결과 화면에서 말하지 않는다 - 니케 풀 탭이 이미 같은
+  // 사실을 말하고, 여기서는 매번 뜨는 배경 소음이었다(Fienn, 2026-08-11).
+  it('미지원 안내를 결과에 끼워 넣지 않는다', () => {
+    render(<DeckResults decks={[]} />)
+    expect(screen.queryByText(/미지원/)).not.toBeInTheDocument()
   })
 })

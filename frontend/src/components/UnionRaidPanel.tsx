@@ -298,7 +298,6 @@ export function UnionRaidPanel({
           <EvaluationResults
             decks={evaluation.decks}
             combinedTotalDamage={evaluation.combinedTotalDamage}
-            excludedSlugs={evaluation.excludedSlugs}
             bosses={evaluatedBosses}
             portraitFor={portraitFor}
             nameFor={nameFor}
@@ -389,7 +388,6 @@ export function UnionRaidPanel({
                   <EvaluationResults
                     decks={view.decks}
                     combinedTotalDamage={view.combinedTotalDamage}
-                    excludedSlugs={view.excludedSlugs}
                     bosses={view.bosses}
                     portraitFor={portraitFor}
                     nameFor={nameFor}

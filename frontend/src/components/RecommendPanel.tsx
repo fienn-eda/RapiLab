@@ -540,13 +540,12 @@ export function RecommendPanel({
       <>
         <BossSummary boss={view.boss} />
         {view.mode === 'single' && (
-          <DeckResults decks={view.decks} excludedSlugs={view.excludedSlugs} {...lookups} />
+          <DeckResults decks={view.decks} {...lookups} />
         )}
         {view.mode === 'raid' && (
           <RaidResults
             decks={view.decks}
             combinedTotalDamage={view.combinedTotalDamage}
-            excludedSlugs={view.excludedSlugs}
             leftoverSlugs={view.leftoverSlugs}
             swapConverged={view.swapConverged}
             {...lookups}
@@ -556,7 +555,6 @@ export function RecommendPanel({
           <DraftResults
             decks={view.decks}
             combinedTotalDamage={view.combinedTotalDamage}
-            excludedSlugs={view.excludedSlugs}
             leftoverSlugs={view.leftoverSlugs}
             withinDraft={view.withinDraft}
             baselineTotalDamage={view.baselineTotalDamage}
@@ -569,7 +567,6 @@ export function RecommendPanel({
           <EvaluationResults
             decks={view.decks}
             combinedTotalDamage={view.combinedTotalDamage}
-            excludedSlugs={view.excludedSlugs}
             bosses={view.decks.map(() => view.boss)}
             {...lookups}
           />
@@ -881,7 +878,6 @@ export function RecommendPanel({
         {mode === 'single' && single.status === 'success' && (
           <DeckResults
             decks={single.decks}
-            excludedSlugs={single.excludedSlugs}
             portraitFor={portraitFor}
             nameFor={nameFor}
             gimmickUnmetFor={singleGimmickUnmetFor}
@@ -891,7 +887,6 @@ export function RecommendPanel({
           <RaidResults
             decks={displayResult.decks}
             combinedTotalDamage={displayResult.combinedTotalDamage}
-            excludedSlugs={displayResult.excludedSlugs}
             leftoverSlugs={displayResult.leftoverSlugs}
             swapConverged={displayResult.swapConverged}
             portraitFor={portraitFor}
@@ -903,7 +898,6 @@ export function RecommendPanel({
           <DraftResults
             decks={displayResult.decks}
             combinedTotalDamage={displayResult.combinedTotalDamage}
-            excludedSlugs={displayResult.excludedSlugs}
             leftoverSlugs={displayResult.leftoverSlugs}
             withinDraft={displayResult.withinDraft}
             baselineTotalDamage={displayResult.baselineTotalDamage}
@@ -924,7 +918,6 @@ export function RecommendPanel({
           <EvaluationResults
             decks={evaluation.decks}
             combinedTotalDamage={evaluation.combinedTotalDamage}
-            excludedSlugs={evaluation.excludedSlugs}
             bosses={evaluation.decks.map(() => evaluateBoss!)}
             portraitFor={portraitFor}
             nameFor={nameFor}

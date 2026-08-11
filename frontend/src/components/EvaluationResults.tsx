@@ -6,7 +6,6 @@
 
 import type { DeckRecommendation, BossElement, BossProfile } from '../types/recommend'
 import { DeckCard, type UnitLookups } from './DeckCard'
-import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
 import { elementLabel } from '../lib/elementName'
 import { HELP } from '../lib/helpText'
@@ -21,8 +20,6 @@ const bossElementLabel = (element: BossElement): string =>
 interface EvaluationResultsProps extends UnitLookups {
   decks: DeckRecommendation[]
   combinedTotalDamage: number
-  /** Submitted slugs the backend can't evaluate yet — shown as "not yet supported". */
-  excludedSlugs?: string[]
   /** 덱 하나당 보스 하나. 유니온 레이드의 세 전투는 각자 보스를 고른다. */
   bosses: BossProfile[]
 }
@@ -30,7 +27,6 @@ interface EvaluationResultsProps extends UnitLookups {
 export function EvaluationResults({
   decks,
   combinedTotalDamage,
-  excludedSlugs = [],
   bosses,
   ...lookups
 }: EvaluationResultsProps) {
@@ -53,7 +49,6 @@ export function EvaluationResults({
       <p className="evaluation-results__ordering-note">
         <HelpText>{HELP.results.seatOrder}</HelpText>
       </p>
-      <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
     </>
   )
 }

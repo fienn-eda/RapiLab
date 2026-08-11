@@ -59,11 +59,10 @@ describe('RaidResults', () => {
     expect(screen.queryByText(/벤치/)).not.toBeInTheDocument()
   })
 
-  it('lists excluded slugs as not yet supported when there are any', () => {
-    render(<RaidResults decks={[]} combinedTotalDamage={0} excludedSlugs={['some-slug']} />)
-    expect(
-      screen.getByText(HELP.results.excludedUnsupported('Some Slug')),
-    ).toBeInTheDocument()
+  // 위 DeckResults와 같은 이유로 여기서도 말하지 않는다.
+  it('미지원 안내를 결과에 끼워 넣지 않는다', () => {
+    render(<RaidResults decks={[]} combinedTotalDamage={0} />)
+    expect(screen.queryByText(/미지원/)).not.toBeInTheDocument()
   })
 
   it('탐색이 잘렸을 때만 경고한다', () => {

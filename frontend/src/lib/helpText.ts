@@ -154,7 +154,6 @@ export const HELP = {
       `${names}는 첫 풀버스트에 버스트를 아껴주세요 — 그래야 이 수치대로 나와요.`,
     /** 평문 전용 - title 속성이라 별표가 글자 그대로 나온다. */
     pinTitle: '고정해서 여기 유지돼요',
-    excludedUnsupported: (names: string) => `아직 미지원 (탐색에서 제외됨): ${names}`,
   },
 
   savedRuns: {

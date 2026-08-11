@@ -8,7 +8,6 @@
 import type { DeckRecommendation } from '../types/recommend'
 import { BenchNote } from './BenchNote'
 import { DeckCard, type UnitLookups } from './DeckCard'
-import { ExcludedSlugsNote } from './ExcludedSlugsNote'
 import { formatDamage } from './formatDamage'
 import { HELP } from '../lib/helpText'
 import { HelpText } from './HelpText'
@@ -18,8 +17,6 @@ import { SwapConvergenceNote } from './SwapConvergenceNote'
 interface RaidResultsProps extends UnitLookups {
   decks: DeckRecommendation[]
   combinedTotalDamage: number
-  /** Submitted slugs the backend can't evaluate yet — shown as "not yet supported". */
-  excludedSlugs?: string[]
   /** Usable units the allocation left out of every deck. */
   leftoverSlugs?: string[]
   /** false일 때만 경고한다 — 없으면(옛 저장 결과) 아무 말도 하지 않는다. */
@@ -29,7 +26,6 @@ interface RaidResultsProps extends UnitLookups {
 export function RaidResults({
   decks,
   combinedTotalDamage,
-  excludedSlugs = [],
   leftoverSlugs = [],
   swapConverged,
   ...lookups
@@ -39,7 +35,6 @@ export function RaidResults({
     return (
       <>
         <p className="empty__text"><HelpText>{HELP.results.emptyRaid}</HelpText></p>
-        <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
       </>
     )
   }
@@ -64,7 +59,6 @@ export function RaidResults({
         ))}
       </ol>
       <BenchNote leftoverSlugs={leftoverSlugs} nameFor={nameFor} />
-      <ExcludedSlugsNote excludedSlugs={excludedSlugs} />
     </>
   )
 }

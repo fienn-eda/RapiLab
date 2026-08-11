@@ -27,7 +27,6 @@ const renderResults = (overrides = {}) =>
   render(<EvaluationResults
     decks={DECKS}
     combinedTotalDamage={150}
-    excludedSlugs={[]}
     bosses={[boss({ element: 'Iron' }), boss({ element: 'Water' })]}
     nameFor={(slug) => slug}
     {...overrides} />)
@@ -63,12 +62,11 @@ describe('EvaluationResults', () => {
     expect(screen.getByText(/순서/)).toBeTruthy()
   })
 
-  it('지원하지 않는 슬러그가 있으면 알려준다', () => {
-    // ExcludedSlugsNote humanizes the slug (nameFromSlug), the same as
-    // RaidResults.test.tsx's "Some Slug" expectation for "some-slug" — so the
-    // rendered text is "Not A Nikke", not the raw slug.
-    renderResults({ excludedSlugs: ['not-a-nikke'] })
-    expect(screen.getByText(/Not A Nikke/)).toBeTruthy()
+  // 미지원 슬러그는 결과 화면에서 말하지 않는다 - 니케 풀 탭이 이미 같은
+  // 사실을 말하고, 여기서는 매번 뜨는 배경 소음이었다(Fienn, 2026-08-11).
+  it('미지원 안내를 결과에 끼워 넣지 않는다', () => {
+    renderResults()
+    expect(screen.queryByText(/미지원/)).not.toBeInTheDocument()
   })
 
   // 전투마다 보스가 다르므로 조건은 카드 밖에 몰아 쓸 수 없다.
