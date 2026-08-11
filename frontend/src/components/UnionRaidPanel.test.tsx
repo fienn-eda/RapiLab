@@ -35,8 +35,19 @@ const nikke = (slug: string): UserNikkeState => ({
   hp: 1_000_000,
   atk: 85_000,
   def_: 12_000,
+  // 유니온은 싱크로 레벨로 싸우므로 동기화된 로스터는 실제 레벨 스탯을 함께
+  // 갖는다. 이게 없는 로스터는 유니온 탭이 아예 막는다 - 그 경우는 아래
+  // `unsyncedRoster`로 따로 만든다.
+  actual_hp: 3_000_000,
+  actual_atk: 250_000,
   skill_levels: { skill1: 10, skill2: 7, burst: 4 },
   overload_options: [],
+})
+
+/** 실제 레벨 스탯이 없는 로스터 - 옛 북마크릿으로 동기화했거나 손으로 입력한 것. */
+const unsyncedRoster: UserNikkeState[] = Array.from({ length: 15 }, (_, i) => {
+  const { actual_hp: _hp, actual_atk: _atk, ...rest } = nikke(`u${i}`)
+  return rest
 })
 
 // 15 units so the three battles' 5-seat decks can actually be filled without
@@ -92,14 +103,18 @@ const renderPanel = (overrides = {}) =>
     />,
   )
 
-/** 세 전투를 전부 채우고 제출한다 - 유니온은 편성이 꽉 차야 실행된다. */
-const fillAndSubmit = async (user: ReturnType<typeof userEvent.setup>) => {
+/** 세 전투의 좌석을 전부 채운다 - 유니온은 편성이 꽉 차야 실행된다. */
+const fillDecks = async () => {
   await screen.findByRole('button', { name: /u0 배치/i })
   for (let deck = 0; deck < 3; deck += 1) {
     for (let seat = 0; seat < 5; seat += 1) {
       dropOnDeck(deck + 1, `u${deck * 5 + seat}`)
     }
   }
+}
+
+const fillAndSubmit = async (user: ReturnType<typeof userEvent.setup>) => {
+  await fillDecks()
   await user.click(screen.getByRole('button', { name: /인카운터/ }))
 }
 
@@ -112,6 +127,39 @@ afterEach(() => {
 })
 
 describe('UnionRaidPanel', () => {
+  it('실제 레벨 스탯이 없으면 제출을 막고 북마크릿 재설치를 안내한다', async () => {
+    // 유니온은 싱크로 레벨로 싸운다. 400레벨 값으로 대신 재면 유닛 간 상대
+    // ATK가 최대 24% 뒤틀리므로 계산을 아예 하지 않는다. 안내가 "동기화를 다시"
+    // 로만 끝나면 옛 북마크릿 사용자는 눌러도 같은 화면을 다시 보게 된다.
+    renderPanel({ roster: unsyncedRoster })
+
+    await fillDecks()
+
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
+    expect(evaluateDecks).not.toHaveBeenCalled()
+    expect(screen.getByText(/북마크릿/)).toBeInTheDocument()
+  })
+
+  it('실제 레벨 스탯이 있으면 막지 않고 stat_basis를 실어 보낸다', async () => {
+    // 가드가 늘 막는 것이 아님을 고정한다 - 이게 없으면 "항상 disabled"인
+    // 구현도 위 테스트를 통과한다.
+    const user = userEvent.setup()
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [],
+      combined_total_damage: 0,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+    renderPanel()
+
+    await fillAndSubmit(user)
+
+    expect(vi.mocked(evaluateDecks).mock.calls[0][0]).toMatchObject({
+      stat_basis: 'actual',
+    })
+  })
+
+
   // 팔레트의 + 는 「어느 덱에」를 말하지 않는다 - 활성 덱이 그것을 정한다.
   // 이게 무너지면 전부 덱 1에 쌓이고, 드래그가 죽은 설치형 앱에서는 옮길
   // 방법도 없어 5덱 편성이라는 기능 자체가 사라진다.
@@ -301,6 +349,8 @@ describe('UnionRaidPanel', () => {
             boss: expect.objectContaining({ element: 'Wind' }),
           },
         ],
+        // 유니온은 레벨 보정이 없어 싱크로 레벨 스탯으로 잰다.
+        stat_basis: 'actual',
       },
       expect.any(AbortSignal),
     )

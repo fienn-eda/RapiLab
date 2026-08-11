@@ -864,6 +864,10 @@ describe('RecommendPanel evaluate mode', () => {
             },
           },
         ],
+        // 솔로 레이드는 네 모드 모두 레벨 400 보정이다. 이 엔드포인트를 유니온
+        // 탭과 공유하므로, 이 값이 'actual'로 새면 솔로 결과가 싱크로 레벨
+        // 스탯으로 조용히 부풀려진다.
+        stat_basis: 'raid400',
       },
       expect.any(AbortSignal),
     )

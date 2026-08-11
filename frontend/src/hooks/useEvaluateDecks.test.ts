@@ -27,6 +27,7 @@ const REQUEST: EvaluateDecksRequest = {
     units: ['liter', 'blanc', 'crown', 'modernia', 'privaty'],
     boss: { element: 'Iron', core_hittable: false, pierce_hits_body_behind_core: false, enemy_def: 0, fight_duration: 180, part_destructible: false, core_diameter_px: null, effective_range_band: null, elemental_interrupt_required: false },
   }],
+  stat_basis: 'raid400',
 }
 
 const RESPONSE: EvaluateDecksResponse = {

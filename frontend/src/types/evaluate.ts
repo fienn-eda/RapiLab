@@ -17,6 +17,13 @@ export interface EvaluateDeckInput {
 export interface EvaluateDecksRequest {
   roster: UserNikkeState[]
   decks: EvaluateDeckInput[]
+  /** 어느 스탯 벌로 잴지. 유니온은 레벨 보정이 없어 계정 싱크로 레벨로
+   *  싸우고(`'actual'`), 솔로는 네 모드 모두 레벨 400 보정이다(`'raid400'`).
+   *
+   *  **이 엔드포인트는 두 컨텐츠가 공유한다** — 유니온 탭과 솔로 탭의 evaluate
+   *  모드가 같이 쓴다. 그래서 기본값 없는 필수 필드다: 부르는 쪽이 자기 컨텐츠를
+   *  말하지 않으면 타입이 거절한다. */
+  stat_basis: 'raid400' | 'actual'
 }
 
 export interface EvaluateDecksResponse {

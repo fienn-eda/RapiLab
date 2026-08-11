@@ -607,6 +607,9 @@ export function RecommendPanel({
           units: seats.map((seat) => seat.slug),
           boss: bossProfile,
         })),
+        // 솔로 레이드는 네 모드 모두 레벨 400 보정이다. 이 엔드포인트를 유니온
+        // 탭과 공유하므로 여기서 명시하지 않으면 유니온 기준으로 재게 된다.
+        stat_basis: 'raid400',
       })
       return
     }

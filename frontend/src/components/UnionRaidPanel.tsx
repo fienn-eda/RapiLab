@@ -144,8 +144,6 @@ export function UnionRaidPanel({
 
   const decksFull = isDraftComplete(draftValue, numBattles)
 
-  const canSubmit = decksFull && allBossesValid && evaluation.status !== 'loading'
-
   const usedSlugs = useMemo(
     () => draftValue.decks.flatMap((seats) => seats.map((seat) => seat.slug)),
     [draftValue],
@@ -161,6 +159,18 @@ export function UnionRaidPanel({
     () => roster.filter((nikke) => !excludedSlugs.has(nikke.character_slug)),
     [roster, excludedSlugs],
   )
+
+  // 유니온은 싱크로 레벨로 싸우므로 실제 레벨 스탯이 있어야 잴 수 있다. 400레벨
+  // 값으로 대신 재면 유닛 간 상대 ATK가 최대 24% 뒤틀린다 - 레벨은 base 커브에만
+  // 들어가고 장비·큐브·소장품은 레벨과 무관하게 더해지기 때문이다.
+  // DEF는 보지 않는다: 스탯 모델이 DEF를 내지 않아 "없음"과 0을 구분할 수 없다.
+  const missingActualStats = useMemo(
+    () => effectiveRoster.some((n) => n.actual_atk == null || n.actual_hp == null),
+    [effectiveRoster],
+  )
+
+  const canSubmit =
+    decksFull && allBossesValid && !missingActualStats && evaluation.status !== 'loading'
 
   // Benching a Nikke also unseats her from whichever battle holds her, so
   // "제외" means the same thing here as in the submitted roster. The decision
@@ -208,6 +218,7 @@ export function UnionRaidPanel({
         units: seats.map((seat) => seat.slug),
         boss: bossProfiles[i],
       })),
+      stat_basis: 'actual',
     })
   }
 
@@ -355,6 +366,7 @@ export function UnionRaidPanel({
               {/* 이 컬럼은 sticky라, 여기 얹은 실행 버튼은 편성과 함께
                   화면에 남는다. */}
               <div className="recommend-form__actions">
+                {missingActualStats && <HelpText>{HELP.sync.unionNeedsActualStats}</HelpText>}
                 <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
                   {evaluation.status === 'loading' ? '계산 중…' : '인카운터!'}
                 </button>
