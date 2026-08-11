@@ -6,7 +6,6 @@ import { useId, useState } from 'react'
 import { bossHeading } from '../lib/bossLabel'
 import {
   REFERENCE_WEAPONS,
-  WEAPON_SPREAD_DIAMETER,
   coreDiameterFromMeasurement,
   coreHitRateGroups,
 } from '../lib/coreHitRate'
@@ -114,7 +113,7 @@ function CoreMeasurementCalculator({ onFill }: { onFill: (engineValue: string) =
         <NumberField label="조준원 (px)" value={reticlePx} min={0} onChange={setReticlePx} />
       </div>
       <div className="core-measure__row">
-        <label className="field__label" htmlFor={weaponId}>기준자 무기</label>
+        <label className="field__label" htmlFor={weaponId}>탄착군 측정한 무기</label>
         <select
           id={weaponId}
           className="field__input"
@@ -125,7 +124,7 @@ function CoreMeasurementCalculator({ onFill }: { onFill: (engineValue: string) =
         >
           {REFERENCE_WEAPONS.map((w) => (
             <option key={w} value={w}>
-              {w} ({WEAPON_SPREAD_DIAMETER[w]})
+              {w}
             </option>
           ))}
         </select>
@@ -334,9 +333,9 @@ export function BossProfileField({
                   })
                 }
               />
-              코어 피격 가능
+              코어 타격 가능
             </label>
-            <HelpTip label="코어 피격 가능">
+            <HelpTip label="코어 타격 가능">
               <HelpText>{HELP.boss.coreHittable}</HelpText>
             </HelpTip>
           </div>

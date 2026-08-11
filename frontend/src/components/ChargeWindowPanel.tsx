@@ -27,7 +27,7 @@ const LIBERALIO_SLUG = 'liberalio'
 // is two different shot counts on identical gear.
 const CUBES = [
   { name: 'resilience', label: '렐릭 베어 (재장전 속도)' },
-  { name: 'tactical_bear', label: '택티컬 베어 (탄환 환급)' },
+  { name: 'tactical_bear', label: '택티컬 베어 (탄환 충전)' },
 ]
 
 const optional = (raw: string): number | null => {

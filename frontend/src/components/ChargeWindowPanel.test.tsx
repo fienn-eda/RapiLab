@@ -169,12 +169,12 @@ describe('ChargeWindowPanel', () => {
     expect(screen.getByText(/탄창은 가득/).closest('.help-tip__bubble')).not.toBeNull()
   })
 
-  it('says the Tactical Bear refund counter is assumed to start at zero', () => {
+  it('says the Tactical Bear recharge counter is assumed to start at zero', () => {
     // Weaker than the magazine assumption beside it - that counter is
     // cumulative over the fight and Asura's reload does not touch it - so it
     // belongs on the cube, not buried in the magazine's sentence.
     stubFetch()
     renderPanel()
-    expect(screen.getByText(/환급 카운터/).closest('.help-tip__bubble')).not.toBeNull()
+    expect(screen.getByText(/충전 카운터/).closest('.help-tip__bubble')).not.toBeNull()
   })
 })

@@ -320,7 +320,7 @@ describe('RecommendPanel', () => {
     await user.click(screen.getByLabelText('수냉'))
     // Exact, not a substring: the help button beside it is named after the
     // same setting, so a loose match finds both.
-    await user.click(screen.getByLabelText('코어 피격 가능'))
+    await user.click(screen.getByLabelText('코어 타격 가능'))
     const enemyDef = screen.getByLabelText('적 방어력')
     await user.clear(enemyDef)
     await user.type(enemyDef, '20000')
@@ -1668,6 +1668,6 @@ describe('RecommendPanel 결과 보관', () => {
     await user.click(screen.getByRole('button', { name: '이 설정으로 폼 채우기' }))
 
     expect(screen.getByLabelText(/적 방어력/)).toHaveValue(12345)
-    expect(screen.getByLabelText('코어 피격 가능')).toBeChecked()
+    expect(screen.getByLabelText('코어 타격 가능')).toBeChecked()
   })
 })

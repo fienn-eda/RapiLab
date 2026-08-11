@@ -22,7 +22,7 @@ describe('BossProfileField', () => {
     const user = userEvent.setup()
     const onChange = renderField()
 
-    await user.click(screen.getByRole('button', { name: '코어 피격 가능 설명' }))
+    await user.click(screen.getByRole('button', { name: '코어 타격 가능 설명' }))
     await user.click(screen.getByRole('button', { name: '부위파괴 기믹 설명' }))
 
     expect(onChange).not.toHaveBeenCalled()
@@ -34,7 +34,7 @@ describe('BossProfileField', () => {
     const user = userEvent.setup()
     const onChange = renderField()
 
-    await user.click(screen.getByLabelText('코어 피격 가능'))
+    await user.click(screen.getByLabelText('코어 타격 가능'))
 
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ core_hittable: true }),
@@ -119,7 +119,7 @@ describe('BossProfileField 속성저지', () => {
 })
 
 describe('BossProfileField 코어 2관통', () => {
-  it('2관통을 켜면 코어 피격 가능도 함께 켜진다', async () => {
+  it('2관통을 켜면 코어 타격 가능도 함께 켜진다', async () => {
     // 코어를 못 때리면 뚫고 지나갈 것이 없다. 모순 상태를 만들 수 없게 한다.
     const user = userEvent.setup()
     const onChange = renderField()
@@ -131,7 +131,7 @@ describe('BossProfileField 코어 2관통', () => {
     )
   })
 
-  it('코어 피격 가능을 끄면 2관통도 꺼진다', async () => {
+  it('코어 타격 가능을 끄면 2관통도 꺼진다', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
     render(
@@ -145,7 +145,7 @@ describe('BossProfileField 코어 2관통', () => {
       />,
     )
 
-    await user.click(screen.getByLabelText('코어 피격 가능'))
+    await user.click(screen.getByLabelText('코어 타격 가능'))
 
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ core_hittable: false, pierce_hits_body_behind_core: false }),
@@ -242,7 +242,7 @@ describe('BossProfileField 회차 보스 피커', () => {
 
   it('보스를 고르면 손으로 켜둔 다른 필드가 전부 초기화된다', async () => {
     // 설계 D2. 이게 없으면 화면에는 「토커티브」라고 적혀 있는데 계산은 직전 보스
-    // 가정(코어 피격 가능 · 부위파괴 · 방어력)으로 돈다.
+    // 가정(코어 타격 가능 · 부위파괴 · 방어력)으로 돈다.
     const user = userEvent.setup()
     const onChange = vi.fn()
     const dirty = {
@@ -473,7 +473,7 @@ describe('BossProfileField 코어 지름', () => {
       />,
     )
 
-    await user.click(screen.getByLabelText('코어 피격 가능'))
+    await user.click(screen.getByLabelText('코어 타격 가능'))
 
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ core_hittable: false, core_diameter_px: '' }),
@@ -616,7 +616,7 @@ describe('BossProfileField 화면에서 재서 넣기', () => {
 
     await user.type(screen.getByRole('spinbutton', { name: /코어 \(px\)/ }), '25')
     await user.type(screen.getByRole('spinbutton', { name: /조준원 \(px\)/ }), '187')
-    await user.selectOptions(screen.getByRole('combobox', { name: '기준자 무기' }), 'AR')
+    await user.selectOptions(screen.getByRole('combobox', { name: '탄착군 측정한 무기' }), 'AR')
 
     // 25 x 75/187 = 10.03
     expect(screen.getByTestId('core-measurement-result')).toHaveTextContent('10.03')
@@ -635,7 +635,7 @@ describe('BossProfileField 화면에서 재서 넣기', () => {
   it('탄착군 10짜리 무기는 기준자로 고를 수 없다 — 판독 오차가 13%다', () => {
     openCore()
 
-    const options = [...screen.getByRole('combobox', { name: '기준자 무기' })
+    const options = [...screen.getByRole('combobox', { name: '탄착군 측정한 무기' })
       .querySelectorAll('option')].map((o) => o.value)
     expect(options).toEqual(['SG', 'SMG', 'AR'])
   })
