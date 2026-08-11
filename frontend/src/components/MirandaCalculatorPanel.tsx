@@ -14,7 +14,7 @@ import { isDraftComplete, makeEmptyDraft, type Draft } from '../types/draft'
 import type { MirandaTargetsResult } from '../types/mirandaTargets'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
-import { DraftEditor, placeUnit } from './DraftEditor'
+import { DraftEditor, placeUnit, replaceUnit } from './DraftEditor'
 import { HelpText } from './HelpText'
 import { MirandaTargets } from './MirandaTargets'
 import { UnitPalette, type UnitInvestment } from './UnitPalette'
@@ -54,6 +54,11 @@ export function MirandaCalculatorPanel({
   const [result, setResult] = useState<MirandaTargetsResult | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // 팔레트가 DraftEditor 밖에 있어서, 그 안에서 들린 유닛을 이 사본으로 따라
+  // 안다 - 팔레트 클릭을 "빈자리에 앉히기"와 "든 유닛에게 자리 물려주기"로
+  // 가르는 데 쓴다. 편집기가 든 것이 바뀔 때마다 알려주므로 이쪽에서 손댈
+  // 일은 없다.
+  const [heldSlug, setHeldSlug] = useState<string | null>(null)
 
   const seats = draft.decks[0] ?? []
   const usedSlugs = seats.map((seat) => seat.slug)
@@ -101,7 +106,16 @@ export function MirandaCalculatorPanel({
           supportedUnits={supportedUnits}
           usedSlugs={usedSlugs}
           draggable
-          onSeat={(slug) => setDraft((current) => placeUnit(current, 0, slug))}
+          onSeat={(slug) => {
+            if (heldSlug) {
+              // 들고 있던 자리를 팔레트 유닛에게 내준다. 들고 있던 쪽은 풀로
+              // 돌아간다. 자리를 물려받는 것이라 덱이 꽉 차 있어도 된다.
+              setDraft((current) => replaceUnit(current, heldSlug, slug))
+              setHeldSlug(null)
+              return
+            }
+            setDraft((current) => placeUnit(current, 0, slug))
+          }}
           investmentFor={investmentFor}
         />
         {/* 결과는 편성 옆, 계산 버튼 바로 아래다. 카드 맨 아래에 두면 팔레트가
@@ -117,6 +131,7 @@ export function MirandaCalculatorPanel({
             burstTiersFor={burstTiersFor}
             showLocks={false}
             fixedSlugs={[mirandaSlug]}
+            onHeldSlugChange={setHeldSlug}
           />
           <div className="recommend-form__actions">
             <button type="button" className="btn btn--primary" onClick={run} disabled={!full || busy}>
