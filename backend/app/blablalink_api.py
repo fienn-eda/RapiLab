@@ -28,10 +28,13 @@ def fetch_roster(caller: SessionCaller, open_id: str, area: int = 81) -> dict:
     outpost = caller.call("GetUserProfileOutpostInfo", dict(base))
     # Only Fienn's account was ever observed; another user's outpost may be
     # absent or empty, which the stat calculator reads as rank 0 everywhere.
+    info = outpost.get("outpost_info") or {}
     return {
         "owned": owned,
         "character_details": detail.get("character_details", []),
-        "recycle_room_researches": (outpost.get("outpost_info") or {}).get(
-            "recycle_room_researches"
-        ) or [],
+        "recycle_room_researches": info.get("recycle_room_researches") or [],
+        # The account's synchro device level: union raid has no level
+        # correction, so this is what every Nikke fights it at. The neighbouring
+        # `outpost_battle_level` is a different number - not this one.
+        "synchro_level": info.get("synchro_level"),
     }

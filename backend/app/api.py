@@ -322,6 +322,11 @@ class AssembleRosterRequest(BaseModel):
     owned: list[dict]
     character_details: list[dict]
     recycle_room_researches: list[dict]
+    # 계정 싱크로 레벨. 옵셔널인 이유는 이미 설치된 북마크릿이 이 값을 안 보내기
+    # 때문이다 - 북마크릿은 설치 시점 소스가 박제된 것이라, 필수로 두면 기존
+    # 사용자의 동기화가 전부 깨진다. 없으면 유니온용 스탯이 없는 로스터가 되고,
+    # 그 사실은 유니온 탭이 알린다.
+    synchro_level: int | None = None
 
 
 app = FastAPI(title="NIKKE Deck Builder")

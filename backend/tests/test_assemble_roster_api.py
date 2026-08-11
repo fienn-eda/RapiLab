@@ -221,3 +221,23 @@ def test_telemetry_actually_emits_under_a_real_default_logging_setup():
     )
     assert "roster_sync" in result.stderr, result.stderr
     assert "client=subprocess-proof" in result.stderr, result.stderr
+
+
+def test_assemble_roster_carries_the_synchro_level_into_actual_stats():
+    """Union raid has no level correction, so the endpoint must hand the synchro
+    level down to the assembler - and say nothing when it has none."""
+    unit = _pilgrim("Attacker")
+    payload = {
+        "owned": [{"name_code": unit["name_code"], "lv": 1}],
+        "character_details": [_bare_detail(unit["name_code"], core=0)],
+        "recycle_room_researches": [],
+    }
+    without = client.post("/api/assemble-roster", json=payload).json()["units"][0]
+    with_level = client.post(
+        "/api/assemble-roster", json={**payload, "synchro_level": 668},
+    ).json()["units"][0]
+
+    # No synchro level -> no union stats, and the sync still succeeds.
+    assert "actual" not in without
+    # With one -> the same unit at 668, which must beat her level-400 numbers.
+    assert with_level["actual"]["atk"] > with_level["raid400"]["atk"]
