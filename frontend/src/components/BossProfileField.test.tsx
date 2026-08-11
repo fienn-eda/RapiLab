@@ -733,3 +733,36 @@ describe('BossProfileField 접기', () => {
     expect(toggle('보스 설정')).toHaveAttribute('aria-expanded', 'true')
   })
 })
+
+describe('BossProfileField 코어 지름', () => {
+  const renderWithCore = () =>
+    render(
+      <BossProfileField
+        value={{ ...makeDefaultBossProfileDraft(), core_hittable: true }}
+        onChange={vi.fn()}
+      />,
+    )
+
+  it('소수를 받는다 - 바로 아래 계산기가 소수를 채우기 때문이다', () => {
+    // 「화면에서 재서 넣기」는 toFixed(2)로 87.50 같은 값을 넣고, 백엔드도
+    // core_diameter_px를 float으로 받는다. 이 칸이 정수만 받으면 폼이 자기
+    // 도구가 채운 값을 거부한다("가장 근접한 유효 값 2개는 87 및 88입니다").
+    renderWithCore()
+
+    const input = screen.getByRole('spinbutton', { name: /코어 지름/ }) as HTMLInputElement
+
+    expect(input.getAttribute('step')).toBe('any')
+  })
+
+  it('계산기가 채우는 소수가 실제로 유효하다', () => {
+    // 위 단언은 속성을 보고, 이쪽은 제약 검증에 물어본다 - 제출을 막는 것은
+    // 속성이 아니라 검증이다.
+    renderWithCore()
+
+    const input = screen.getByRole('spinbutton', { name: /코어 지름/ }) as HTMLInputElement
+    input.value = '87.50'
+
+    expect(input.validity.stepMismatch).toBe(false)
+    expect(input.checkValidity()).toBe(true)
+  })
+})

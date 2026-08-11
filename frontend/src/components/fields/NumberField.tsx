@@ -12,7 +12,9 @@ interface NumberFieldProps {
   error?: string
   min?: number
   max?: number
-  step?: number
+  /** `'any'`는 소수를 그대로 받는다 - 화면에서 재서 환산한 값처럼 눈금이 없는
+   * 양에 쓴다. 생략하면 HTML 기본값이라 정수만 유효해진다. */
+  step?: number | 'any'
   hint?: string
   /** Explanation to fold behind a ? on the label line, as the boss form does.
    * `hint` is the unit or a few words that must stay visible; this is the

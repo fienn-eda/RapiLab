@@ -434,6 +434,10 @@ export function BossProfileField({
                   value={value.core_diameter_px}
                   error={errors?.core_diameter_px}
                   min={0}
+                  // 화면에서 잰 길이를 환산한 값이라 눈금이 없다. 아래 계산기가
+                  // toFixed(2)로 채우고 백엔드도 float으로 받으므로, 정수만
+                  // 받으면 폼이 자기 계산기가 넣은 값을 거부한다.
+                  step="any"
                   help={HELP.boss.coreDiameter}
                   onChange={(core_diameter_px) => onChange({ ...value, core_diameter_px })}
                 />
