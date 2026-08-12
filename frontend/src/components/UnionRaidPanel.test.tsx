@@ -839,6 +839,23 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
     expect(screen.getByRole('button', { name: '덱 3의 U6' })).toBeInTheDocument()
   })
 
+  // 「제외」는 이 앱 어디서나 같은 뜻이다: 덱에서도 빠지고 제출 로스터에서도
+  // 빠진다(UnitPalette의 toggleExcludedSlug). 가져오기는 거르는데 폼 채우기가
+  // 날것으로 앉히면 그 니케는 덱에 있고 로스터에는 없는 상태가 되고, 제출하면
+  // 백엔드가 "엔진이 쓸 수 없는 슬러그예요"라고 답한다.
+  it('"폼 채우기"는 미사용으로 둔 니케를 앉히지 않고 몇 기가 빠졌는지 말한다', async () => {
+    const user = userEvent.setup()
+    renderPanel({ savedRuns: [unionRun()], excludedSlugs: ['u2'] })
+
+    await user.click(screen.getByRole('button', { name: /보관한 유니온/ }))
+    await user.click(screen.getByRole('button', { name: '이 설정으로 폼 채우기' }))
+
+    const deck1 = screen.getByRole('heading', { name: /전격/ }).closest('div')!
+    expect(within(deck1).getByText('U0')).toBeInTheDocument()
+    expect(within(deck1).queryByText('U2')).not.toBeInTheDocument()
+    expect(screen.getByText(HELP.draftActions.droppedUnits(1))).toBeInTheDocument()
+  })
+
   /** 반대 방향의 어긋난 보관물 - draft가 numBattles·bosses·decks 전부보다 크다
    * (전투 수를 늘린 뒤 저장한 경우, submittedDraft로 고치기 전의 보관물).
    * safeNumBattlesFor가 draft.decks.length도 보지 않으면 이 방향에서는 도로

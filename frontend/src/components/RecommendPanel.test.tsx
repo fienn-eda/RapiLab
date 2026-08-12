@@ -1119,6 +1119,43 @@ describe('RecommendPanel persistence', () => {
     expect(recommendRaidDecks).not.toHaveBeenCalled()
   })
 
+  // 계정을 열 때 되돌아오는 마지막 제출도 편성을 담고 있다(빈자리만 최적화).
+  // 마운트 한 번만 보면 안전해 보인다 - 미사용 니케를 자리에서 빼는 이펙트도
+  // 그때 함께 돌기 때문이다. 하지만 engineVersion은 마운트보다 한 박자 늦게
+  // 도착하고(실사용에서는 항상 그렇다), 그때 복원 이펙트가 다시 돌면서 편성을
+  // 새로 앉힌다 - 그 두 번째 실행에는 빼는 이펙트가 따라붙지 않는다(excludedKey가
+  // 안 바뀌었으므로). 유저가 버튼 하나 안 눌러도 덱에는 있고 제출 로스터에는
+  // 없는 상태로 화면이 열리고, 그대로 실행하면 백엔드가 그 슬러그를 못 쓴다고 답한다.
+  it('엔진 버전이 늦게 도착해 다시 복원될 때도 미사용으로 둔 니케는 앉히지 않는다', async () => {
+    const draftInputs: StoredInputs = {
+      mode: 'draft',
+      numDecks: 1,
+      boss: defaultBoss,
+      draft: { decks: [['a', 'b', 'c', 'd', 'e'].map((slug) => ({ slug, locked: false }))] },
+    }
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+
+    const props = {
+      roster: fullRoster,
+      ...noPersistence,
+      excludedSlugs: ['c'],
+      activeKey: 'A',
+      getCached: () => null,
+      onResult: () => {},
+      restoreInputs: draftInputs,
+    }
+    const { rerender } = await renderSettled(
+      <RecommendPanel {...props} restoreResult={null} engineVersion={null} />,
+    )
+
+    rerender(<RecommendPanel {...props} restoreResult={restoreResult} engineVersion="engine-1" />)
+
+    const deck = screen.getByRole('heading', { name: /덱 1/ }).closest('div')!
+    expect(within(deck).getByText('A')).toBeInTheDocument()
+    expect(within(deck).queryByText('C')).not.toBeInTheDocument()
+    expect(screen.getByText(HELP.draftActions.droppedUnits(1))).toBeInTheDocument()
+  })
+
   it('restores a result that only becomes restorable once the engine version arrives', async () => {
     // Whether a stored result is still valid can't be answered until the
     // backend says which engine produced the current numbers, and that answer
@@ -1875,6 +1912,52 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(screen.getByRole('radio', { name: /빈자리만 최적화/ })).toBeChecked()
+  })
+
+  /** 편성까지 들어 있는 보관물 - 「폼 채우기」가 그 편성을 그대로 되돌린다. */
+  const evaluateRun = (): SavedRun => ({
+    id: 'e1',
+    name: '보관한 평가',
+    savedAt: 1754438400000,
+    tab: 'solo',
+    view: {
+      mode: 'evaluate',
+      boss: bossOf('Water'),
+      numDecks: 1,
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 10,
+          burst_damage: 4,
+          normal_attack_damage: 3,
+          skill_damage: 3,
+          hold_burst_slugs: [],
+        },
+      ],
+      combinedTotalDamage: 10,
+      excludedSlugs: [],
+      draft: {
+        decks: [['a', 'b', 'c', 'd', 'e'].map((slug) => ({ slug, locked: false }))],
+      },
+    },
+  })
+
+  // 「제외」는 이 앱 어디서나 같은 뜻이다: 덱에서도 빠지고 제출 로스터에서도
+  // 빠진다(UnitPalette의 toggleExcludedSlug). 팔레트는 제외된 칩의 배치를 막고
+  // 가져오기도 거르는데, 「폼 채우기」가 날것으로 앉히면 그 니케는 덱에 있고
+  // 로스터에는 없는 상태가 된다 - 제출하면 백엔드가 "엔진이 쓸 수 없는
+  // 슬러그예요"라고 답한다(실제로는 유저가 미사용으로 돌린 니케인데).
+  it('"폼 채우기"는 미사용으로 둔 니케를 앉히지 않고 몇 기가 빠졌는지 말한다', async () => {
+    const user = await openWithRuns([evaluateRun()], { excludedSlugs: ['c'] })
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+
+    await user.click(screen.getByRole('button', { name: /보관한 평가/ }))
+    await user.click(screen.getByRole('button', { name: '이 설정으로 폼 채우기' }))
+
+    const deck = screen.getByRole('heading', { name: /덱 1/ }).closest('div')!
+    expect(within(deck).getByText('A')).toBeInTheDocument()
+    expect(within(deck).queryByText('C')).not.toBeInTheDocument()
+    expect(screen.getByText(HELP.draftActions.droppedUnits(1))).toBeInTheDocument()
   })
 
   // 모드가 그대로 유지된 채로 가져오는 경우(예: draft -> draft)에는 화면 전환이

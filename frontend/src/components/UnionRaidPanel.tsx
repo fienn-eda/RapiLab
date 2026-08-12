@@ -10,7 +10,7 @@ import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { useEvaluateDecks } from '../hooks/useEvaluateDecks'
 import { HELP } from '../lib/helpText'
 import { bossHeading, weaknessLabelOf } from '../lib/bossLabel'
-import { canSeatFrom, draftFromResultDecks } from '../lib/importRun'
+import { canSeatFrom, draftFromResultDecks, seatableOnly } from '../lib/importRun'
 import {
   bossProfileToDraft,
   makeDefaultBossProfileDraft,
@@ -475,9 +475,16 @@ export function UnionRaidPanel({
                 // 없는 덱 인덱스를 겨눠 배치를 조용히 삼키고, 긴 쪽은 화면에
                 // 안 보이는 덱에 여전히 유닛이 앉은 채로 남는다.
                 const nextNumBattles = safeNumBattlesFor(view, [])
+                // 그때 앉아 있던 니케가 지금은 로스터에 없거나 미사용일 수 있다 -
+                // 가져오기와 같은 판정을 통과한 좌석만 되돌린다.
+                const { draft: seatable, droppedSlugs } = seatableOnly(
+                  view.draft,
+                  canSeatFrom(roster, excludedSlugs),
+                )
                 changeNumBattles(nextNumBattles)
                 setBosses(padBosses(view.bosses, nextNumBattles))
-                setDraftValue(resizeDraft(view.draft, nextNumBattles))
+                setDraftValue(resizeDraft(seatable, nextNumBattles))
+                setDroppedCount(droppedSlugs.length)
               }}
               onRename={onRenameRun}
               onDelete={onDeleteRun}

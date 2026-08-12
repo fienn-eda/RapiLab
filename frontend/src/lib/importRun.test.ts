@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { canSeatFrom, draftFromResultDecks } from './importRun'
+import { canSeatFrom, draftFromResultDecks, seatableOnly } from './importRun'
 
 /** 기본 조회: 슬러그는 그대로, 전부 앉힐 수 있음. */
 const plain = {
@@ -85,5 +85,38 @@ describe('canSeatFrom', () => {
     expect(canSeat('a')).toBe(true)
     expect(canSeat('b')).toBe(false) // 미사용으로 둔 니케
     expect(canSeat('z')).toBe(false) // 로스터에 없는 니케
+  })
+})
+
+describe('seatableOnly', () => {
+  const draft = {
+    decks: [
+      [
+        { slug: 'a', locked: true },
+        { slug: 'gone', locked: false },
+      ],
+      [{ slug: 'b', locked: false }],
+    ],
+  }
+
+  it('앉힐 수 없는 좌석만 빼고 목록에 담는다', () => {
+    const result = seatableOnly(draft, (slug) => slug !== 'gone')
+
+    expect(result.draft.decks[0]).toEqual([{ slug: 'a', locked: true }])
+    expect(result.draft.decks[1]).toEqual([{ slug: 'b', locked: false }])
+    expect(result.droppedSlugs).toEqual(['gone'])
+  })
+
+  it('잠금은 그대로 둔다 - 그때의 설정으로 되돌리는 것이 목적이다', () => {
+    const result = seatableOnly(draft, () => true)
+
+    expect(result.draft.decks[0][0].locked).toBe(true)
+    expect(result.droppedSlugs).toEqual([])
+  })
+
+  it('덱 개수와 빈 덱은 건드리지 않는다', () => {
+    const result = seatableOnly({ decks: [[], [{ slug: 'gone', locked: false }]] }, () => false)
+
+    expect(result.draft.decks).toEqual([[], []])
   })
 })
