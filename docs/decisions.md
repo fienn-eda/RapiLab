@@ -63,7 +63,9 @@ catalog, see the `nikke-skill-encoding` skill, not here.
   둘이라는 결정적 정책으로 답한다. 탐색은 요청당 최대 1200 시뮬이라 덱마다 6번을
   못 재므로 정책으로 랭킹하고, **보고 단계만** C(4,2)=6을 전수로 재서 진짜 최적을
   고른다(`deck_search.evaluate_deck_best_seating`). 고른 좌석은 결과의 `seating`
-  (그리고 `DeckRecommendation.seating`)으로 나간다.
+  (그리고 `DeckRecommendation.seating`)으로 나간다. 실측 비용: 180초 전투에서
+  덱당 100ms → 561ms, 즉 루주를 든 보고 덱 하나당 +462ms이고 보고 5덱이 전부
+  루주 덱인 최악에도 +2.3초다.
 - Why: 대안은 셋이었다. (1) 모든 시뮬에 6전수 — 경로가 하나라 제일 단순하지만
   루주 덱이 6배 비싸다(시뮬 1회 133ms 실측). (2) 정책만, 6전수 없음 — 제일 싸지만
   실측상 정책이 고른 좌석은 6개 중 4등이고 최적보다 2.01% 낮았다. (3) squad

@@ -485,9 +485,11 @@ def evaluate_deck_best_seating(ordered_deck, boss: BossProfile, **kwargs):
     two of the other four - seat 2 borders 1 and 3, seat 4 borders 3 and 5 - so
     the whole space is C(4,2)=6 and the answer is the true maximum.
 
-    It costs 6 simulations, which is why it is the REPORT path and not the
-    search path: a request scores ~1200 decks (SEARCH_SIM_BUDGET) and cannot pay
-    that per deck. Ranking therefore uses SquadContext.neighbor_slugs's policy
+    It costs 6 simulations - measured at a 180-sec fight, 100 ms plain against
+    561 ms here, so +462 ms per reported deck that holds one, and +2.3 sec in
+    the worst case where all five reported decks do. That is why it is the
+    REPORT path and not the search path: a request scores ~1200 decks
+    (SEARCH_SIM_BUDGET) and cannot pay that per deck. Ranking therefore uses SquadContext.neighbor_slugs's policy
     and only the handful of decks actually shown to the player are re-scored
     here. A deck with no seated-buff unit costs exactly one simulation, as
     before, and carries no `seating` key - there is nothing for the player to
