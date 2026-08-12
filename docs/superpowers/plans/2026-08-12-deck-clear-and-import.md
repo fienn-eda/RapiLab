@@ -41,6 +41,10 @@
     numDecks: number,
     lookups: { ownedSlugFor: (slug: string) => string; canSeat: (slug: string) => boolean },
   ) => ImportedDraft
+  const canSeatFrom: (
+    roster: { character_slug: string }[],
+    excludedSlugs: Set<string>,
+  ) => (slug: string) => boolean
   ```
 
 - [ ] **Step 1: Write the failing test**
@@ -49,7 +53,7 @@
 
 ```ts
 import { describe, expect, it } from 'vitest'
-import { draftFromResultDecks } from './importRun'
+import { canSeatFrom, draftFromResultDecks } from './importRun'
 
 /** 기본 조회: 슬러그는 그대로, 전부 앉힐 수 있음. */
 const plain = {
@@ -125,6 +129,18 @@ describe('draftFromResultDecks', () => {
     expect(draft.decks[1]).toEqual([{ slug: 'b', locked: false }])
   })
 })
+
+describe('canSeatFrom', () => {
+  const roster = [{ character_slug: 'a' }, { character_slug: 'b' }]
+
+  it('로스터에 있고 미사용이 아닌 니케만 앉힌다', () => {
+    const canSeat = canSeatFrom(roster, new Set(['b']))
+
+    expect(canSeat('a')).toBe(true)
+    expect(canSeat('b')).toBe(false) // 미사용으로 둔 니케
+    expect(canSeat('z')).toBe(false) // 로스터에 없는 니케
+  })
+})
 ```
 
 각 테스트가 무엇을 잡는지: 2번은 `ownedSlugFor` 호출을 지우면 빨강, 3번은 `canSeat` 필터를 지우면 빨강(자리 수가 3이 되고 목록이 빈다), 4번은 되돌리기 **전** 슬러그로 물으면 빨강, 6번은 중복 방지를 지우면 빨강.
@@ -190,12 +206,25 @@ export const draftFromResultDecks = (
 
   return { draft: { decks }, droppedSlugs }
 }
+
+/**
+ * `draftFromResultDecks`에 넘길 `canSeat`. 솔로 탭과 유니온 탭이 같은 판정을
+ * 쓰므로 여기 한 벌만 둔다.
+ *
+ * 「제외」는 어디서나 같은 뜻이다: 덱에서도 빠지고 제출 로스터에서도 빠진다
+ * (UnitPalette의 toggleExcludedSlug 주석). 팔레트가 막는 배치를 가져오기가
+ * 대신 해 주면 그 불변식이 깨진다.
+ */
+export const canSeatFrom =
+  (roster: { character_slug: string }[], excludedSlugs: Set<string>) =>
+  (slug: string): boolean =>
+    roster.some((nikke) => nikke.character_slug === slug) && !excludedSlugs.has(slug)
 ```
 
 - [ ] **Step 4: Run test to verify it passes**
 
 Run: `npm --prefix frontend test -- --run src/lib/importRun.test.ts`
-Expected: PASS (6 tests)
+Expected: PASS (7 tests)
 
 - [ ] **Step 5: Commit**
 
@@ -877,7 +906,7 @@ Expected: FAIL — `Unable to find role="button" and name "저장한 결과 가�
 `frontend/src/components/RecommendPanel.tsx` 상단 import 블록에:
 
 ```ts
-import { draftFromResultDecks } from '../lib/importRun'
+import { canSeatFrom, draftFromResultDecks } from '../lib/importRun'
 import { ClearDraftButton } from './ClearDraftButton'
 import { ImportRunButton } from './ImportRunButton'
 ```
@@ -916,11 +945,7 @@ import { ImportRunButton } from './ImportRunButton'
 
     const { draft: imported, droppedSlugs } = draftFromResultDecks(deckSlugs, nextNumDecks, {
       ownedSlugFor: ownedSlugResolver,
-      // 「제외」는 어디서나 같은 뜻이다: 덱에서도 빠지고 제출 로스터에서도
-      // 빠진다(UnitPalette의 toggleExcludedSlug 주석). 팔레트가 막는 배치를
-      // 가져오기가 대신 해 주면 그 불변식이 깨진다.
-      canSeat: (slug) =>
-        roster.some((nikke) => nikke.character_slug === slug) && !excludedSlugs.has(slug),
+      canSeat: canSeatFrom(roster, excludedSlugs),
     })
 
     // 덱 개수를 먼저 바꾼다 - numDecks를 감시하는 resizeDraft 이펙트가 뒤에
@@ -1112,7 +1137,7 @@ Expected: FAIL — 버튼을 찾지 못한다
 `frontend/src/components/UnionRaidPanel.tsx` 상단 import에:
 
 ```ts
-import { draftFromResultDecks } from '../lib/importRun'
+import { canSeatFrom, draftFromResultDecks } from '../lib/importRun'
 import { ClearDraftButton } from './ClearDraftButton'
 import { ImportRunButton } from './ImportRunButton'
 import { ownedSlugFor, ownedSlugIndex } from '../types/supportedUnit'
@@ -1153,8 +1178,7 @@ import { ownedSlugFor, ownedSlugIndex } from '../types/supportedUnit'
       view.numBattles,
       {
         ownedSlugFor: (slug) => ownedSlugFor(slug, ownedSlugs),
-        canSeat: (slug) =>
-          roster.some((nikke) => nikke.character_slug === slug) && !excludedSlugs.has(slug),
+        canSeat: canSeatFrom(roster, excludedSlugs),
       },
     )
 
