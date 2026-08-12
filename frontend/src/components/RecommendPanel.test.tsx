@@ -1119,6 +1119,42 @@ describe('RecommendPanel persistence', () => {
     expect(recommendRaidDecks).not.toHaveBeenCalled()
   })
 
+  // 계정을 열 때 되돌아오는 마지막 제출도 편성을 담고 있다(빈자리만 최적화).
+  // 마운트 한 번만 보면 안전해 보인다 - 미사용 니케를 자리에서 빼는 이펙트도
+  // 그때 함께 돌기 때문이다. 하지만 engineVersion은 마운트보다 한 박자 늦게
+  // 도착하고(실사용에서는 항상 그렇다), 그때 복원 이펙트가 다시 돌면서 편성을
+  // 새로 앉힌다 - 그 두 번째 실행에는 빼는 이펙트가 따라붙지 않는다(excludedKey가
+  // 안 바뀌었으므로). 유저가 버튼 하나 안 눌러도 덱에는 있고 제출 로스터에는
+  // 없는 상태로 화면이 열리고, 그대로 실행하면 백엔드가 그 슬러그를 못 쓴다고 답한다.
+  it('엔진 버전이 늦게 도착해 다시 복원될 때도 미사용으로 둔 니케는 앉히지 않는다', async () => {
+    const draftInputs: StoredInputs = {
+      mode: 'draft',
+      numDecks: 1,
+      boss: defaultBoss,
+      draft: { decks: [['a', 'b', 'c', 'd', 'e'].map((slug) => ({ slug, locked: false }))] },
+    }
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+
+    const props = {
+      roster: fullRoster,
+      ...noPersistence,
+      excludedSlugs: ['c'],
+      activeKey: 'A',
+      getCached: () => null,
+      onResult: () => {},
+      restoreInputs: draftInputs,
+    }
+    const { rerender } = await renderSettled(
+      <RecommendPanel {...props} restoreResult={null} engineVersion={null} />,
+    )
+
+    rerender(<RecommendPanel {...props} restoreResult={restoreResult} engineVersion="engine-1" />)
+
+    const deck = screen.getByRole('heading', { name: /덱 1/ }).closest('div')!
+    expect(within(deck).getByText('A')).toBeInTheDocument()
+    expect(within(deck).queryByText('C')).not.toBeInTheDocument()
+  })
+
   it('restores a result that only becomes restorable once the engine version arrives', async () => {
     // Whether a stored result is still valid can't be answered until the
     // backend says which engine produced the current numbers, and that answer

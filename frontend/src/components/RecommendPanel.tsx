@@ -249,7 +249,15 @@ export function RecommendPanel({
       setMode(restoreInputs.mode)
       setNumDecks(restoreInputs.numDecks)
       setDraft(bossProfileToDraft(restoreInputs.boss))
-      setDraftValue(restoreInputs.draft ?? makeEmptyDraft(restoreInputs.numDecks))
+      // 그 사이 미사용으로 돌린 니케는 앉히지 않는다. 미사용 니케를 자리에서
+      // 빼는 이펙트는 excludedKey가 바뀔 때만 도는데, 이 이펙트는 엔진 버전이
+      // 도착하는 한 박자 뒤에 한 번 더 돌면서 편성을 새로 앉힌다 - 그 두 번째
+      // 실행에는 빼는 이펙트가 따라붙지 않아 여기서 직접 걸러야 한다.
+      const restored = restoreInputs.draft ?? makeEmptyDraft(restoreInputs.numDecks)
+      const { draft: seatable } = seatableOnly(restored, canSeatFrom(roster, excludedSlugs))
+      setDraftValue(seatable)
+      // 제출한 편성은 기록이라 거르지 않는다 - 결과 화면은 「내가 이렇게 냈고
+      // 엔진이 이렇게 바꿨다」를 보여주는 자리다.
       setSubmittedDraft(restoreInputs.mode === 'draft' ? (restoreInputs.draft ?? undefined) : undefined)
       setRaidResultMode(restoreInputs.mode)
       setDisplayResult(restoreResult)
