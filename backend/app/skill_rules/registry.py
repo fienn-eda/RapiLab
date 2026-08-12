@@ -846,6 +846,19 @@ TASTE_INDUCER_SLUGS: dict[str, frozenset[str]] = {
 }
 
 
+# Units with a bullet that targets "self and 2 allies on both sides" - the one
+# targeting shape the scope model resolves per SEATING rather than by a property
+# of the recipients. Listing them is what lets a caller ask "does the seat
+# arrangement change this deck's damage at all", so that only these decks pay
+# the 6-way enumeration (deck_search.evaluate_deck_best_seating) and every other
+# deck stays one simulation.
+#
+# A unit belongs here only if the SEAT decides who its buff reaches. Flora's
+# Iris is not one: its trigger reads an adjacent ally, but the effect line says
+# "Affects all allies", so it is squad-scoped and no seating changes it.
+SEATED_BUFF_SLUGS = frozenset({"rouge"})
+
+
 # A variant whose weapon profile differs from the character's dotgg stats
 # (e.g. a Snipe mode) registers a builder here; the roster loader swaps the
 # assembled profile in after skill values resolve.

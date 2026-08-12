@@ -20,8 +20,27 @@ cooldown reduction).
   `highest_atk_buff_rule` / `round_buff_rule` after `SquadContext.top_atk_slugs`
   ranks the deck by live final ATK, for "N allies with the highest final ATK".
 
-There is **no positional scope** (front/back row, "allies on both sides") —
-approximate positional offensive buffs as `squad` (documented), or defer.
+**"Self and 2 allies on both sides" IS expressible** (2026-08-13) — do NOT
+approximate it as `squad`, which overpays 5 recipients for a 3-recipient bullet.
+Call `SquadContext.neighbor_slugs(caster_slug, registry, time)` and build a
+`"slugs:"` scope from `[caster] + neighbors`, then add the unit's slug to
+`registry.SEATED_BUFF_SLUGS`. Precedent: `rouge.py`'s Sword Coin.
+
+Who the 2 neighbors are is the PLAYER's choice, not a deck property — a back-row
+seat (position 2 or 4) borders any 2 of the other four. So `neighbor_slugs`
+answers with a supplied seating when there is one, and otherwise with the 2
+highest-ATK allies (a cheap deterministic policy the ~1200-sim search can
+afford). The report path re-scores all C(4,2)=6 seatings and keeps the best
+(`deck_search.evaluate_deck_best_seating`), so the number shown to the player is
+the optimum and the seating that produces it rides along in
+`result["seating"]`.
+
+Read the effect line, not the trigger: "Activates when an adjacent ally … .
+Affects all allies" is genuinely `squad` (Flora's Iris), and no seating changes
+it. Only a bullet whose AFFECTS clause names the sides belongs here.
+
+Row position itself (front/back) is still not modelled — a back-row requirement
+is a per-unit assumption stated in the module docstring (Rouge's).
 
 **Weapon- and element-conditional targeting IS precise** ("shotgun allies",
 "all Wind Code allies with assault rifles", "Water and Iron Code allies with

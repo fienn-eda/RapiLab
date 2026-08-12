@@ -155,6 +155,12 @@ class DeckRecommendation(BaseModel):
     # deck: the seat order is preferred playable whenever the scores tie, so
     # this only fills when holding the burst is what the higher score is FOR.
     hold_burst_slugs: list[str] = []
+    # 좌석형 버프를 가진 유닛(루주의 Sword Coin: "자신과 양 옆 아군 2명")이 어느
+    # 둘 옆에 앉은 것으로 채점됐는지 - {시전자: [아군 둘]}. 그 유닛이 없는 덱은
+    # 빈 딕셔너리다. hold_burst_slugs와 같은 성격의 필드로, 덱 목록만으로는
+    # 재현할 수 없는 편성 지시다: 좌석은 버스트 순서와 다른 축이라 덱 순서에
+    # 안 담긴다.
+    seating: dict[str, list[str]] = {}
 
 
 class RecommendResponse(BaseModel):
@@ -441,6 +447,7 @@ def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
                 burst_damage=r["burst_damage"], normal_attack_damage=r["normal_attack_damage"],
                 skill_damage=r["skill_damage"],
                 hold_burst_slugs=r["hold_burst_slugs"],
+                seating=r["seating"],
             )
             for r in results
         ],
@@ -485,6 +492,7 @@ def _to_recs(decks, pinned_by_deck=None):
             burst_damage=d["burst_damage"], normal_attack_damage=d["normal_attack_damage"],
             skill_damage=d["skill_damage"],
             hold_burst_slugs=d["hold_burst_slugs"],
+            seating=d["seating"],
             pinned_slugs=pinned,
         )
         for d, pinned in zip(decks, pinned_by_deck)
@@ -614,7 +622,8 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
             burst_damage=d["burst_damage"],
             normal_attack_damage=d["normal_attack_damage"],
             skill_damage=d["skill_damage"],
-            hold_burst_slugs=d["hold_burst_slugs"]) for d in out["decks"]],
+            hold_burst_slugs=d["hold_burst_slugs"],
+            seating=d["seating"]) for d in out["decks"]],
         combined_total_damage=out["combined_total_damage"],
         excluded_slugs=excluded,
         engine_version=engine_version(),

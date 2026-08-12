@@ -3765,8 +3765,20 @@ snow-white 0.998 · scarlet 0.999. 뒤 셋은 오차 범위이므로 실질 대�
   (`damage_taken_up`·`other_core_damage_sources`는 연결 완료.)
 - **근사 처리:** `pierce_damage_up`는 모든 히트에 적용(실제 관통 히트 게이팅 X),
   스택/에스컬레이션 버프는 정상상태(최댓값) 근사.
-- **미구현 메커니즘:** 노멀어택 횟수 트리거, 위치/최고ATK 아군 타겟팅,
-  무기 변형, 공격속도 변화.
+- **미구현 메커니즘:** 무기 변형, 공격속도 변화.
+  (노멀어택 횟수 트리거·최고ATK 타겟팅은 해소됐고, **위치 타겟팅도 2026-08-13 해소** —
+  `SquadContext.neighbor_slugs` + `registry.SEATED_BUFF_SLUGS`.)
+- **좌석 스코프 잔여 (2026-08-13):** `flora_signature`의 Peace of Mind 두 불릿
+  (Max HP +15.01% · **ATK +45.12% of Flora's ATK**)이 아직 `squad`다. 원문은
+  「self and both adjacent allies」 상태를 가진 아군이라 3명이 맞고, 5명에게 주고 있다.
+  기계장치는 이미 서 있어 `SEATED_BUFF_SLUGS`에 슬러그를 넣고 두 Effect의 스코프만
+  바꾸면 된다. 루주 커밋과 분리한 것은 Fienn의 지시(범위: 루주만).
+- **좌석 화면 표시 (2026-08-13, 미착수):** 백엔드는 `DeckRecommendation.seating`
+  (`{시전자: [아군 둘]}`)을 이미 낸다. 프론트 와이어 타입
+  (`frontend/src/types/recommend.ts`)에는 아직 없다 — 필수 필드로 넣으면 그 타입을
+  쓰는 픽스처 13곳을 같이 고쳐야 해서 별도 작업으로 끊었다(Fienn 지시). 표시가
+  없으면 플레이어는 「루주를 2번/4번 자리에, 양 옆에 X·Y」를 알 수 없고, 그러면
+  보고된 숫자를 재현할 수 없다.
 
 ---
 

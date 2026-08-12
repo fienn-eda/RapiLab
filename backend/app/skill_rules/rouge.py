@@ -5,10 +5,14 @@ modeling assumption - so Coin Flip's back-row Sword Coin is active from the
 start of battle.
 
 Modeled (DPS-relevant):
-- Coin Flip (skills[1]) Sword Coin: squad Attack Damage (the skill affects self +
-  the 2 adjacent allies; approximated as squad, since the scope model has no
-  positional targeting). Continuous from battle start given the back-row
-  assumption; it also sets the Sword Coin status Game Master reads.
+- Coin Flip (skills[1]) Sword Coin: Attack Damage for "self and 2 allies on both
+  sides" - 3 of the 5 seats, not the squad. WHICH 2 comes from
+  `SquadContext.neighbor_slugs`: a back-row seat borders any 2 of the other
+  four, so it is the player's choice, and the engine either takes a supplied
+  seating or falls back to the 2 highest-ATK allies. The report path picks the
+  best of the 6 by measuring them (deck_search.evaluate_deck_best_seating).
+  Continuous from battle start given the back-row assumption; it also sets the
+  Sword Coin status Game Master reads.
 - Coin Flip's full chain: Sword Coin -> Shield Coin (her 30th Full Charge) ->
   Double Sword Coin (her 5th burst), which grants the squad Max HP +15.08% of
   her own, continuously. Shield Coin's own Damage Taken reduction stays
@@ -114,8 +118,10 @@ def build_coin_flip_rules(values):
 
     def apply_sword_coin(context, caster_slug, time, registry):
         context.set_status(caster_slug, SWORD_COIN_STATUS)
+        seated = [caster_slug] + context.neighbor_slugs(caster_slug, registry, time)
         registry.add(
-            Effect("attack_damage_up", sword_coin_attack_damage, "squad", None, caster_slug),
+            Effect("attack_damage_up", sword_coin_attack_damage,
+                   "slugs:" + ",".join(seated), None, caster_slug),
             applied_at=time,
         )
 
@@ -141,7 +147,14 @@ def build_coin_flip_rules(values):
 def build_coin_flip_per_shot_rules(values):
     """Shield Coin arms on the 30th Full Charge while in Sword Coin (she is an
     SR, so every shot is one). Sets the status only - the Damage Taken reduction
-    it carries is survivability."""
+    it carries is survivability.
+
+    This bullet is positional too ("self and 2 allies on both sides"), but that
+    changes nothing here: the status is tracked on the CASTER, who is in the
+    affected set under every seating, and the caster's status is what the two
+    bullets downstream gate on (Double Sword Coin, Game Master's middle Max HP).
+    The scope would only matter if an ALLY's Shield Coin were ever read, and
+    nothing reads it - the effect it carries is unmodeled."""
     threshold = int(float(values["description_value_02"]))
 
     def action(context, caster_slug, time, registry):

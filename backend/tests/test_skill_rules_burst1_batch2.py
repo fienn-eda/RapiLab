@@ -49,15 +49,52 @@ def deck_ctx(src_slug):
     ])
 
 
-def test_rouge_coin_flip_sword_coin_squad_attack_damage_from_battle_start():
-    # Back-row assumption -> Sword Coin active from battle start (squad approx of
-    # "self + 2 adjacent"); also sets the Sword Coin status Game Master reads.
+def test_rouge_coin_flip_sword_coin_attack_damage_from_battle_start():
+    # Back-row assumption -> Sword Coin active from battle start; it also sets
+    # the Sword Coin status Game Master reads. This deck holds one ally, so she
+    # is a neighbor under any seating - who the 2 neighbors are is
+    # test_rouge_sword_coin_reaches_only_the_caster_and_two_allies.
     ctx = deck_ctx("rouge")
     reg = EffectRegistry()
     fire_trigger("battle_start", {"rouge": _coin_flip()}, ctx, reg, 0.0)
     assert round(reg.total_for("attack_damage_up", ALLY, 0.0), 4) == 0.0665
     assert round(reg.total_for("attack_damage_up", ALLY, 999.0), 4) == 0.0665  # continuous
     assert ctx.has_status("rouge", "Sword Coin") is True
+
+
+# "Affects self and 2 allies on both sides" - 5 seats, 3 recipients.
+ROUGE_FIVE_UNIT_ATK = {"rouge": 100.0, "ally1": 400.0, "ally2": 300.0,
+                       "ally3": 200.0, "ally4": 100.0}
+
+
+def _rouge_five_unit_ctx(adjacency=None):
+    return SquadContext(
+        [SquadMember("rouge", burst_tier=1, element="Electric")]
+        + [SquadMember(f"ally{i}", burst_tier=3, element="Fire") for i in (1, 2, 3, 4)],
+        base_atk=ROUGE_FIVE_UNIT_ATK,
+        adjacency=adjacency,
+    )
+
+
+def _sword_coin_recipients(ctx):
+    reg = EffectRegistry()
+    fire_trigger("battle_start", {"rouge": _coin_flip()}, ctx, reg, 0.0)
+    return {member.slug for member in ctx.members
+            if reg.total_for("attack_damage_up",
+                             {"slug": member.slug, "element": member.element}, 0.0) > 0}
+
+
+def test_rouge_sword_coin_reaches_only_the_caster_and_two_allies():
+    # No seating supplied -> the deterministic search-time policy: the 2 allies
+    # with the highest ATK, which is where a player seats her.
+    assert _sword_coin_recipients(_rouge_five_unit_ctx()) == {"rouge", "ally1", "ally2"}
+
+
+def test_rouge_sword_coin_honours_an_explicit_seating():
+    # The report stage tries every neighbor pair, so an explicit seating has to
+    # beat the ATK policy rather than merely agree with it.
+    ctx = _rouge_five_unit_ctx(adjacency={"rouge": ["ally3", "ally4"]})
+    assert _sword_coin_recipients(ctx) == {"rouge", "ally3", "ally4"}
 
 
 ROUGE_MAX_HP = 10_000_000.0

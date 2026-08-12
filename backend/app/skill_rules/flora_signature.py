@@ -45,9 +45,14 @@ bullets must still fire in a cycle where another Burst-2 ally takes the slot.
 there is no representable gap between "stage entered" and "burst used" - the
 distinction that matters is WHO bursts, not when.)
 
-"Allies in the Peace of Mind state" is Petunia's self + both adjacent allies;
-positional targeting has no scope model, so these land as `squad` (Rouge's
-precedent).
+"Allies in the Peace of Mind state" is Petunia's self + both adjacent allies, so
+these two bullets reach 3 of the 5 seats and land here as `squad` - 5 - which
+overpays them. This is now a KNOWN OVERPAY rather than an unrepresentable one:
+the seating axis exists (SquadContext.neighbor_slugs, added for Rouge's Sword
+Coin) and closing it is adding Flora's signature to
+registry.SEATED_BUFF_SLUGS and scoping these two Effects to her neighbors.
+Deliberately deferred (Fienn, 2026-08-13) to keep that change in its own commit;
+the ATK bullet (+45.12% of Flora's ATK) is the one that moves damage.
 
 Not modeled / skipped:
 - The AMOUNT of every heal, shield and Incoming Healing bullet - survivability,
