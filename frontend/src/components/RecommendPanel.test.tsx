@@ -1671,3 +1671,164 @@ describe('RecommendPanel 결과 보관', () => {
     expect(screen.getByLabelText('코어 타격 가능')).toBeChecked()
   })
 })
+
+describe('RecommendPanel — 편성 초기화와 가져오기', () => {
+  const bossOf = (element: 'Fire' | 'Water') => ({
+    element,
+    core_hittable: false,
+    pierce_hits_body_behind_core: false,
+    enemy_def: 31784,
+    fight_duration: 180,
+    part_destructible: false,
+    core_diameter_px: null,
+    effective_range_band: null,
+    elemental_interrupt_required: false,
+  })
+
+  /** 5인 덱 하나를 가진 전부-최적화 보관물. 덱 개수 1로 저장돼 있다. */
+  const raidRun = (): SavedRun => ({
+    id: 'r1',
+    name: '보관한 배분',
+    savedAt: 1754438400000,
+    tab: 'solo',
+    view: {
+      mode: 'raid',
+      boss: bossOf('Water'),
+      numDecks: 1,
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 10,
+          burst_damage: 4,
+          normal_attack_damage: 3,
+          skill_damage: 3,
+          hold_burst_slugs: [],
+          pinned_slugs: [],
+        },
+      ],
+      combinedTotalDamage: 10,
+      excludedSlugs: [],
+      leftoverSlugs: [],
+    },
+  })
+
+  const singleRun = (): SavedRun => ({
+    id: 's1',
+    name: '보관한 단일 덱',
+    savedAt: 1754438400000,
+    tab: 'solo',
+    view: {
+      mode: 'single',
+      boss: bossOf('Water'),
+      numDecks: 3,
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 10,
+          burst_damage: 4,
+          normal_attack_damage: 3,
+          skill_damage: 3,
+          hold_burst_slugs: [],
+        },
+      ],
+      excludedSlugs: [],
+    },
+  })
+
+  const openWithRuns = async (runs: SavedRun[], overrides = {}) => {
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+    const user = userEvent.setup()
+    await renderSettled(
+      <RecommendPanel roster={fullRoster} {...noPersistence} savedRuns={runs} {...overrides} />,
+    )
+    return user
+  }
+
+  it('전부 최적화 결과를 가져오면 편성과 보스가 함께 들어온다', async () => {
+    const user = await openWithRuns([raidRun()])
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+
+    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+
+    // 덱 1이 다섯 자리를 다 받았다.
+    const deck = screen.getByRole('heading', { name: /덱 1/ }).closest('div')!
+    for (const slug of ['A', 'B', 'C', 'D', 'E']) {
+      expect(within(deck).getByText(slug)).toBeInTheDocument()
+    }
+    // 보스도 그 결과의 것으로 바뀌었다. 속성 라디오는 **약점**으로 말하고
+    // (BossProfileField가 bossElementFor로 변환한다) BossProfile.element는
+    // 보스 본인 속성이다: 'Water' 보스의 약점은 '전격'이다. 기본값은
+    // element: null이라 아무 라디오도 안 켜져 있으므로, 이 체크는 가져오기가
+    // 실제로 보스를 넣었을 때만 통과한다.
+    expect(screen.getByRole('radio', { name: '전격' })).toBeChecked()
+  })
+
+  it('단일 덱 결과는 덱 1만 채우고 덱 개수를 건드리지 않는다', async () => {
+    const user = await openWithRuns([singleRun()])
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '2')
+
+    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+
+    expect(screen.getByLabelText('덱 개수')).toHaveValue('2')
+    const deck2 = screen.getByRole('heading', { name: /덱 2/ }).closest('div')!
+    expect(within(deck2).queryByText('A')).not.toBeInTheDocument()
+  })
+
+  it('편성 칸이 없는 모드에서 가져오면 기대 딜량 계산으로 옮겨간다', async () => {
+    const user = await openWithRuns([raidRun()])
+    // 기본 모드는 단일 덱이다 - 편성 칸이 없다.
+
+    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+
+    expect(screen.getByRole('radio', { name: /기대 딜량 계산/ })).toBeChecked()
+  })
+
+  it('빈자리만 최적화 중에 가져오면 그 모드에 남는다', async () => {
+    const user = await openWithRuns([raidRun()])
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/ }))
+
+    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+
+    expect(screen.getByRole('radio', { name: /빈자리만 최적화/ })).toBeChecked()
+  })
+
+  it('미사용으로 둔 니케는 앉히지 않고 몇 기가 빠졌는지 말한다', async () => {
+    const user = await openWithRuns([raidRun()], { excludedSlugs: ['c'] })
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+
+    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+
+    expect(screen.getByText(HELP.draftActions.droppedUnits(1))).toBeInTheDocument()
+    const deck = screen.getByRole('heading', { name: /덱 1/ }).closest('div')!
+    expect(within(deck).queryByText('C')).not.toBeInTheDocument()
+  })
+
+  it('전체 초기화는 편성만 비우고 보스와 덱 개수는 그대로 둔다', async () => {
+    const user = await openWithRuns([])
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '2')
+    await user.click(screen.getByRole('radio', { name: '작열' }))
+    dropOnDeck(1, 'a')
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await user.click(screen.getByRole('button', { name: '전체 초기화' }))
+
+    const deck = screen.getByRole('heading', { name: /덱 1/ }).closest('div')!
+    expect(within(deck).queryByText('A')).not.toBeInTheDocument()
+    expect(screen.getByLabelText('덱 개수')).toHaveValue('2')
+    expect(screen.getByRole('radio', { name: '작열' })).toBeChecked()
+    vi.mocked(window.confirm).mockRestore()
+  })
+
+  it('단일 덱 모드에는 전체 초기화가 없다', async () => {
+    await openWithRuns([])
+
+    expect(screen.queryByRole('button', { name: '전체 초기화' })).not.toBeInTheDocument()
+  })
+})
