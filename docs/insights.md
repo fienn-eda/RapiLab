@@ -4,6 +4,48 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 대상은 위치 어휘 없이 「상태 이름」으로도 지목된다 — 체크리스트 감사가 조용히 실패한 자리
+
+`scripts/audit_target_scopes.py`는 좁은 타게팅 문구를 사람 앞에 늘어놓는 도구다.
+그래서 **안 잡는 문구가 있으면 조용히 실패한다** — 목록에 안 뜬 줄은 검토된 적이
+없는데도 검토된 것처럼 보인다. 플로라 애장품의 좌석 결함이 정확히 그렇게 넘어갔다.
+
+- 감사의 `POSITIONAL`은 위치 어휘(`adjacent`, `both sides`, `back/front row`)만
+  봤다. 플로라의 진짜 결함 줄은 **「Affects all allies in the Peace of Mind
+  state」** — 위치를 한 글자도 안 쓴다. 위치는 그 상태를 **주는** 옆 불릿에만
+  있고(「Affects self and both adjacent allies」), 딜을 움직이는 건 상태를
+  **소비하는** 줄(ATK +45.12%)이다.
+- 그래서 감사는 플로라에 대해 **엉뚱한 줄만** 보여주고 있었다: 상태 지급 불릿(힐,
+  미모델)과 Iris의 트리거 절(효과는 「Affects all allies」라 squad가 맞다).
+- **인코딩 규칙:** 대상 절이 상태 이름을 부르면 **그 상태를 주는 불릿까지 따라가서**
+  스코프를 정할 것. 「effect line을 읽어라」의 한 단계 확장이다.
+- 고친 방법은 `all(y|ies) in the ... state`를 패턴에 넣는 것. 「allies」를 요구하는
+  게 핵심이라 트리거 절(「when in Sword Coin status」·「when the caster is in the
+  Burst state」)은 계속 안 잡힌다 — 그건 수신자를 지목하지 않는다.
+  `tests/test_audit_target_scopes.py`가 잡는 것과 안 잡는 것을 둘 다 못박는다.
+- 수집된 데이터 전체에서 이 어법을 쓰는 건 **플로라뿐**이라, 넓힌 패턴이 소음을
+  만들지 않는다는 것도 세어서 확인했다.
+
+## 자리가 둘이면 각자의 최적을 따로 고를 수 없다
+
+좌석형 유닛이 하나일 때는 「이웃 쌍 C(4,2)=6」을 열거하면 그만이었다. 둘이 되면
+(루주 B1 · 플로라 애장품 B2, 같은 덱에 앉는다) 그 모양이 **틀린 답을 낸다** —
+다섯 자리가 한 줄이라 서로를 제약하므로, 둘의 최적 쌍을 독립으로 고르면 어떤
+편성으로도 못 만드는 배치를 채점한다.
+
+- 올바른 형태는 **배치(자리 순열) 열거 → 유도되는 인접 관계로 접기**다. 5! = 120이
+  루주 덱 6 · 플로라 덱 10 · 둘 다인 덱 18로 접힌다. 접는 이유는 좌석형이 아닌
+  유닛의 자리는 시뮬에 안 보이기 때문이다.
+- **자리 제한을 같이 선언해야 한다.** 루주의 Sword Coin은 「back row」가 조건이라
+  뒷열(0-indexed 1·3)에서만 켜지는데, 인코딩은 그 게이트를 모델링하지 않는다. 제한이
+  없으면 앞열에 앉은 루주에게 버프를 주는 배치가 후보로 들어온다.
+- **끝자리(이웃 1명)를 가지치기하지 말 것.** 「양수 버프는 많이 줄수록 낫다」는
+  이 엔진에서 보장되지 않는다 — 최저 ATK 대상형(Liberalio)이 있어 ATK가 오르면
+  버프를 잃을 수 있다. 단조성 논증 대신 다 재는 게 싸고 안전하다.
+- 테스트는 구현을 되풀이하지 말고 **도메인 사실로** 검증할 것: 「자리 다섯, 인접은
+  |i-j|=1, 루주는 뒷열」로 실현 가능성을 독립으로 브루트포스하면, 구현이 각자
+  최적을 따로 고르는 순간 빨개진다.
+
 ## 「덱 순서」는 두 가지를 동시에 뜻하지 않는다 — 좌석과 버스트 우선순위는 별개의 축이다
 
 루주의 「자신과 양 옆 아군 2명」을 고칠 때 제일 싸 보이는 방법은 `ordered_deck`의
