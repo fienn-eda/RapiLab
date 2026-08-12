@@ -165,6 +165,15 @@ export const HELP = {
       `보관은 ${cap}개까지예요. 목록에서 몇 개를 지우고 다시 저장해주세요.`,
   },
 
+  draftActions: {
+    /** 평문 전용 - window.confirm이라 별표가 글자 그대로 나온다. */
+    confirmClear: '모든 덱을 초기화하시겠습니까?',
+    /** 평문 전용 - 같은 이유. */
+    confirmOverwrite: '지금 편성을 저장한 결과로 바꿀까요?',
+    droppedUnits: (count: number) =>
+      `가져온 편성에서 ${count}기가 빠졌어요 — 지금 로스터에 없거나 미사용으로 둔 니케예요.`,
+  },
+
   roster: {
     importMalformedUnit: '유닛에 name_en/raid400이 없어요',
     emptyFilter: '조건에 맞는 니케가 없어요.',
