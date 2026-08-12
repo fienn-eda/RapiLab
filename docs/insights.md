@@ -4,6 +4,51 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 스코프 결함은 값 검증을 전부 통과한다 — 문구가 아니라 수신자로 재는 감사가 필요하다
+
+그레이브의 Plot Spoiler 크리율 스코프 결함(`docs/decisions.md` 참고)은 기존
+텍스트-인코딩 감사 5종과 테스트 2217개를 전부 통과한 채로 살아 있었다. 스코프는
+값 검증으로 원천적으로 못 잡는다 — 같은 스탯, 같은 숫자, **받는 사람만** 다르기
+때문이다.
+
+- `scripts/audit_target_scopes.py`는 구조적으로 이걸 못 잡는다. 좁은 타게팅
+  "문구"를 사람이 읽으라고 나열할 뿐 어느 효과가 어느 블록 소속인지는 모르고,
+  self 스코프를 하나라도 emit하는 모듈은 통과시킨다(그레이브는 Pierce 효과
+  덕에 통과했다).
+- 새 스크립트 `scripts/audit_self_block_scopes.py`는 문구를 판정하지 않는다.
+  슬롯 값을 하나씩 흔들어 규칙을 실제로 발사하고 **아군 총합이 따라 움직이는지**를
+  관측한다. 조립된 값에 손을 대므로 `drop_tokens`로 슬롯이 재번호된 유닛에서도
+  성립한다.
+- **실패한 접근(기록 가치 있음):** 처음엔 원문 슬롯 번호로 모듈 코드를 grep하는
+  스캔을 짰다 — 성립하지 않는다. `drop_tokens`가 슬롯을 재번호하기 때문에 원문
+  슬롯 번호가 인코딩 슬롯 번호와 다르다(아니스: 스타에서 오탐 — 매니페스트의
+  `drop_tokens [2,3]` 때문에 원문 05가 인코딩 05가 아니다).
+- **고치고 넣은 오탐 하나:** 타키나의 "Affects targets hit:"은 「■ Affects
+  self」 블록 **안**에 있지만 대상이 적이다. 블록 머리말(`■`)뿐 아니라 블록
+  안의 `Affects ...:` 하위 라벨도 스코프 경계로 읽도록 고쳤다.
+- **검증법:** 그레이브의 수정을 되돌리면 정확히 그 슬롯을 지목하고, 복원하면
+  통과한다. 하위 라벨 파싱을 고친 뒤 탐지력이 유지되는지 다시 확인했다.
+- **전수 결과:** 101슬러그, 건너뜀 0, 불일치 0 — 그레이브가 유일했다.
+- **한계(기록 필수):** 조건부 규칙은 이 스크립트가 만드는 합성 컨텍스트에서
+  발동 안 할 수 있어, self 슬롯 165개가 "관측 안 됨"으로 빠진다 — 없다는 뜻이
+  아니라 못 봤다는 뜻이다. `_BUILDERS`가 내는 규칙만 보고 per-shot/periodic/
+  scheduled-nuke 빌더는 범위 밖이다.
+- 감사 스크립트 목록과 두 스크립트가 서로 무엇을 답하는지(문구 나열 vs 수신자
+  관측, 서로를 포함하지 않음)는 `.claude/skills/nikke-skill-encoding/SKILL.md`에
+  정리돼 있다 — 절차는 거기 참고, 여기서 되풀이하지 않는다.
+
+## 파이프 뒤의 `$?`는 파이프의 종료 코드다 — 앞 명령의 것이 아니다
+
+`python audit.py | tail -4; echo "exit=$?"` 같은 명령으로 감사 5종이 전부
+exit 0라고 두 번 보고했는데, 그건 `tail`의 종료 코드였다. 실제로는
+`audit_per_shot_buff_stacking.py`와 `audit_charge_motion_delay.py`가 exit
+1이다 — 둘 다 이번 세션의 변경 이전부터 그랬던, 무관한 미해결 항목이고(후자는
+미답 유닛이 남으면 exit 1이 설계 자체다), 이번 변경이 만든 회귀가 아니다.
+
+실제 명령의 종료 코드를 재려면 파이프 끝의 페이저/필터가 아니라 **잰 대상
+자체**를 확인할 것 — 파이프를 안 거치고 돌리거나, `PIPESTATUS`(bash)를 보거나,
+파이프에 넘기기 전에 먼저 exit code를 잡아 둔다.
+
 ## 삼킨 실패는 몇 주를 산다 — 삼키되 삼켰다는 사실은 남길 것
 
 2026-08-09 하루에 나온 버그 셋이 전부 같은 모양이었다.

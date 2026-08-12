@@ -5,6 +5,64 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 그레이브 Plot Spoiler 크리티컬 확률을 자기 스코프로 되돌린다
+
+- Date: 2026-08-12
+- Context: 그레이브의 Plot Spoiler(버스트)는 원문이 두 블록으로 갈린다 — 「■ Affects
+  self」(Pierce 속성/Pierce Damage/Critical Rate)와 「■ Affects all allies」(Attack
+  Damage/Pierce Damage/Max Ammo +3발). 인코딩은 Critical Rate를 self가 아니라
+  `squad` 스코프로 걸어 뒀다. 그 불릿에서 가장 큰 수치라(버스트 lv1에 이미
+  +53.24%, lv10 +85.19%) 엔진 기본 크리율 15%를 덱 전원에게 68%로 올리고
+  있었다. Fienn이 원문 블록 구분을 읽다 발견했다 — 기존 감사·테스트는 아무것도
+  못 잡고 있었다: `scripts/audit_target_scopes.py`는 좁은 타게팅 문구를 나열할
+  뿐 어느 효과가 어느 블록 소속인지 모르고 self 스코프를 하나라도 내보내는
+  모듈은 통과시키며(그레이브는 Pierce로 통과했다), 기존 단위 테스트는
+  `crit_rate`를 ALLY에 대해 검증해 틀린 동작을 그대로 고정하고 있었다.
+- Decision: `backend/app/skill_rules/grave.py`에서 `crit_rate`를 `squad`에서
+  `self`로 되돌린다. 나머지 다섯 슬롯은 원래부터 자기 블록과 일치했다. 옛
+  assertion을 걷어내고 self/ally를 가르는 테스트를 새로 세웠다.
+- Why: 스코프의 근거는 원문 블록 소속이지 "그 스코프로 계산한 숫자가 그럴듯한가"가
+  아니다. 하필 그 불릿의 최댓값이라 잘못된 스코프가 마치 의도된 후한 스쿼드
+  버프처럼 보였을 뿐이다.
+- Consequences: 아일랜드이터 실덱 덱4 3.982B → 3.382B(−15.1%), 그 항의 덱딜
+  기여 −15.58% → −0.61%. 감사 5종·테스트 2217개를 전부 통과한 채로 실재했던
+  결함이었다는 사실이, 문구가 아니라 수신자를 재는 새 감사
+  (`scripts/audit_self_block_scopes.py`)를 만드는 계기가 됐다 — 방법론은
+  `docs/insights.md`의 "스코프 결함은 값 검증을 전부 통과한다" 참고. commit
+  `22a4a7c4`.
+
+## 리타 Liter Boost를 누적 계단으로 인코딩한다 — 볼륨의 실측 판정을 빌린다
+
+- Date: 2026-08-12
+- Context: Liter Boost 두 불릿 모두 "Effect changes according to the number of
+  activation times. Previous effects trigger repeatedly"이고, 볼륨의 Drop the
+  Beat와 문구·CDR 단계값(2.34/2.70/3.17초)이 같다. 볼륨 쪽의 누적 vs 대체
+  판정은 Fienn이 2026-07-27 사격장 실측(단발 크리/논크리 값의 대수 분리)으로
+  이미 확정했다(`docs/insights.md`, "사격장 한 발이 시뮬 한 시즌보다 낫다").
+  리타 인코딩은 그 판정을 반영하지 못한 채 쿨감을 3단계 값(3.17초) 하나만
+  상시로 걸고, 버스트 버프 셋(최대탄약/치명타피해/ATK)을 첫 발동부터 전부
+  걸고 있었다.
+- Decision: 볼륨과 같은 모델로 되돌린다. 쿨감 2.34 → 5.04 → 8.21초(활성화
+  횟수에 따라 단계가 누적), 버스트 버프는 최대탄약 → +치명타피해 → +ATK
+  순으로 해금되고 각자 자기 지속시간 슬롯을 갖는다. 누적 회계를 하는
+  `escalating_cdr_rule`(버스트 CDR Pulse용, 기존 `escalating_buff_rule`의
+  대응물)을 `volume.py`의 private 함수(`_escalating_cdr_rule`)에서
+  `_helpers.py`로 옮겨 볼륨과 리타가 공유하게 한다.
+- Why: 같은 스킬 문구·같은 수치를 가진, 이미 실측으로 확정된 자매 유닛이
+  있으면 그 판정을 빌리는 편이 처음부터 다시 재는 것보다 타당하다 — 단, 빌린
+  것이지 리타 자신을 잰 게 아니라는 한계를 반드시 남긴다.
+- Consequences: **한계**: 리타 자신의 버스트 사이클은 실측되지 않았다.
+  `backend/app/skill_rules/liter.py`의 모듈 독스트링이 "볼륨의 판정에 올라탄
+  것이지 독립 확인이 아니다"를 명시한다 — 리타 편성으로 첫/둘째/셋째
+  풀버스트 간격을 직접 재면 닫힌다. 아일랜드이터 실덱(같은 좌석): 리타의
+  풀버스트 11 → 14회, 덱 총딜 4.595B → 5.659B(+23.2%), 같은 자리 루주
+  (5.124B)의 순위를 뒤집는다. 게이지 상수 2.0~3.5 전 구간에서 우세 유지.
+  백엔드 2217 passed / 0 failed. 텍스트-인코딩 감사 5종은 이 변경 전후로
+  pass/fail 상태가 그대로다 — `audit_per_shot_buff_stacking`·
+  `audit_charge_motion_delay`는 이 변경 이전부터 exit 1이었고 이 커밋이 만든
+  회귀가 아니다(후자는 미답 유닛이 남으면 exit 1이 설계 자체다). commit
+  `4e8bd504`.
+
 ## 이름 검색이 초성과 슬러그(영문 이름)도 받는다 — 2026-07-28 기각을 뒤집는다
 
 - Date: 2026-08-11
