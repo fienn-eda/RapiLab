@@ -3,11 +3,12 @@ import { fireEvent, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { UnionRaidPanel, suggestUnionRunName } from './UnionRaidPanel'
 import { DRAG_SLUG_TYPE } from './UnitPalette'
+import { HELP } from '../lib/helpText'
 import { makeDefaultBossProfileDraft } from '../types/bossProfileDraft'
 import type { UserNikkeState } from '../types/userNikkeState'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { RaidRotation } from '../types/raidRotation'
-import type { SavedRun } from '../types/profile'
+import type { SavedRun, UnionRunView } from '../types/profile'
 import type { BossElement } from '../types/recommend'
 
 vi.mock('../api/evaluateDecks', () => ({
@@ -556,6 +557,43 @@ describe('UnionRaidPanel 결과 보관', () => {
     expect(saved[0].view).toMatchObject({ numBattles: 3 })
   })
 
+  // 전투 수 셀렉트는 평가가 성공한 뒤에도 계속 조작할 수 있다(게이트는 15칸을
+  // 채우는 것뿐이라 늘리는 데 막을 게 없다) - 저장하면 라이브 값이 아니라 그
+  // 결과가 실제로 낸 전투 수가 남아야 한다.
+  it('전투 수를 늘린 뒤 저장해도 저장되는 전투 수는 평가 당시 값이다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [] },
+      ],
+      combined_total_damage: 10,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+    const saved: SavedRun[] = []
+    renderPanel({
+      onSaveRun: (run: SavedRun) => {
+        saved.push(run)
+        return true
+      },
+    })
+
+    await user.selectOptions(screen.getByLabelText('전투 수'), '1')
+    for (const slug of ['u0', 'u1', 'u2', 'u3', 'u4']) dropOnDeck(1, slug)
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    expect(await screen.findByText('1번 덱 · 무속성')).toBeInTheDocument()
+
+    await user.selectOptions(screen.getByLabelText('전투 수'), '3')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+    await user.click(screen.getByRole('button', { name: '확인' }))
+
+    expect(saved).toHaveLength(1)
+    expect(saved[0].view).toMatchObject({ numBattles: 1 })
+    const view = saved[0].view as UnionRunView
+    expect(view.bosses).toHaveLength(1)
+    expect(view.decks).toHaveLength(1)
+  })
+
   // 제안 이름은 숫자를 낸 그 보스를 불러야 한다 - 화면의 결과 카드가 제출
   // 시점 스냅샷을 쓰는 것과 같은 이유다. 결과가 나온 뒤 보스를 만지면 숫자는
   // 옛 보스의 것인데 이름만 새 보스를 불러, 목록에서 고를 때 거짓말이 된다.
@@ -670,6 +708,24 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
     },
   })
 
+  /** 저장 시점 스냅샷 버그로 남을 수 있는, numBattles가 bosses·decks보다 큰
+   * 보관물 - 로컬스토리지에 이미 있을 수 있어 가져오기가 이런 것도 안전해야
+   * 한다(렌더가 죽지 않아야 한다). */
+  const inconsistentUnionRun = (): SavedRun => ({
+    id: 'u2',
+    name: '어긋난 유니온 보관물',
+    savedAt: 1754438400000,
+    tab: 'union',
+    view: {
+      numBattles: 3,
+      bosses: [bossOf('Water')],
+      draft: { decks: [['u0', 'u1', 'u2', 'u3', 'u4'].map((slug) => ({ slug, locked: false }))] },
+      decks: [deckOf(['u0', 'u1', 'u2', 'u3', 'u4'])],
+      combinedTotalDamage: 10,
+      excludedSlugs: [],
+    },
+  })
+
   it('가져오면 전투 수·보스·편성이 함께 들어온다', async () => {
     const user = userEvent.setup()
     renderPanel({ savedRuns: [unionRun()] })
@@ -710,6 +766,74 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
     vi.spyOn(window, 'confirm').mockReturnValue(true)
     await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
+    vi.mocked(window.confirm).mockRestore()
+
+    expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
+  })
+
+  // 로컬스토리지에 이미 저장된 보관물이 이 모양일 수 있다(저장 시점 스냅샷
+  // 버그) - bosses가 numBattles보다 짧으면 BossProfileField가 undefined를
+  // 받아 렌더가 죽는다(black screen). 가져오기는 그런 보관물에도 안전해야 한다.
+  it('저장된 전투 수가 보스·결과 배열보다 커도 렌더가 죽지 않는다', async () => {
+    const user = userEvent.setup()
+    renderPanel({ savedRuns: [inconsistentUnionRun()] })
+
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+
+    expect(screen.getByLabelText('전투 수')).toHaveValue('3')
+    expect(screen.getAllByRole('group', { name: /전투/ })).toHaveLength(3)
+    const deck1 = screen.getByRole('heading', { name: /전격/ }).closest('div')!
+    expect(within(deck1).getByText('U0')).toBeInTheDocument()
+  })
+
+  // 목록의 「이 설정으로 폼 채우기」(onRestore)는 가져오기와 같은 패턴을 썼던
+  // 자리라 같은 어긋난 보관물에 안전해야 한다.
+  it('"폼 채우기"도 저장된 전투 수가 보스·결과 배열보다 커도 렌더가 죽지 않는다', async () => {
+    const user = userEvent.setup()
+    renderPanel({ savedRuns: [inconsistentUnionRun()] })
+
+    await user.click(screen.getByRole('button', { name: /어긋난 유니온 보관물/ }))
+    await user.click(screen.getByRole('button', { name: '이 설정으로 폼 채우기' }))
+
+    expect(screen.getByLabelText('전투 수')).toHaveValue('3')
+    expect(screen.getAllByRole('group', { name: /전투/ })).toHaveLength(3)
+  })
+
+  // 솔로 탭의 「미사용으로 둔 니케는 앉히지 않고 몇 기가 빠졌는지 말한다」와
+  // 같은 필터인데 이 탭은 지금까지 재지 않고 있었다.
+  it('미사용으로 둔 니케는 앉히지 않고 몇 기가 빠졌는지 말한다', async () => {
+    const user = userEvent.setup()
+    renderPanel({ savedRuns: [unionRun()], excludedSlugs: ['u2'] })
+
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+
+    expect(screen.getByText(HELP.draftActions.droppedUnits(1))).toBeInTheDocument()
+    const deck1 = screen.getByRole('heading', { name: /전격/ }).closest('div')!
+    expect(within(deck1).queryByText('U2')).not.toBeInTheDocument()
+  })
+
+  // importRun과 같은 이유 - 편성을 비웠는데 그 편성으로 나온 옛 결과가 남으면
+  // 빈 편성 위에 총합이 거짓으로 남는다.
+  it('전체 초기화는 화면에 뜬 결과도 함께 내린다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [] },
+      ],
+      combined_total_damage: 60,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+    renderPanel()
+    await fillAndSubmit(user)
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await user.click(screen.getByRole('button', { name: '초기화' }))
     vi.mocked(window.confirm).mockRestore()
 
     expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
