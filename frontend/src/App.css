@@ -1216,6 +1216,51 @@
   margin-left: auto;
 }
 
+/* 고르기 목록은 액션 행 아래로 겹쳐 뜬다. 흐름 안에 펼치면 sticky 덱 컬럼이
+   그만큼 길어져 실행 버튼이 화면 밖으로 밀린다 - 그 컬럼은 뷰포트 높이에
+   묶여 있다(.draft-layout__decks). */
+.import-run {
+  position: relative;
+}
+
+.import-run__list {
+  position: absolute;
+  top: calc(100% + var(--sp-2));
+  left: 0;
+  z-index: 5;
+  min-width: 20rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  margin: 0;
+  padding: var(--sp-2);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  box-shadow: var(--shadow);
+}
+
+.import-run__item {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-3);
+}
+
+/* 이름이 남는 폭을 다 가져가고, 시각과 버튼은 제 크기만 쓴다. */
+.import-run__name {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.import-run__when {
+  flex: 0 0 auto;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 .btn--ghost {
   background: transparent;
   color: var(--accent);
