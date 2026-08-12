@@ -48,18 +48,40 @@ LITER = {
 }
 
 
-def test_liter_full_burst_cdr_and_burst_squad_buffs():
+def test_liter_full_burst_cdr_escalates_cumulatively():
+    # Liter Boost's cooldown half carries the same "previous effects trigger
+    # repeatedly" wording as Volume's Drop the Beat, on the same tier values
+    # (2.34/2.70/3.17), so the tiers ADD: Fienn's 2026-07-27 range measurement
+    # settled that shape.
     ctx = deck_ctx("liter")
     reg = EffectRegistry()
     rules = {"liter": build_liter_rules(LITER)}
 
-    fire_trigger("full_burst_enter", rules, ctx, reg, time=2.0)
-    assert reg.drain_pulses("burst_cooldown_reduction_sec")[0].value == 3.17
+    for want in (2.34, 2.34 + 2.7, 2.34 + 2.7 + 3.17, 2.34 + 2.7 + 3.17):
+        fire_trigger("full_burst_enter", rules, ctx, reg, time=0.0)
+        pulses = reg.drain_pulses("burst_cooldown_reduction_sec")
+        assert round(sum(p.value for p in pulses), 4) == round(want, 4)
 
-    fire_trigger("own_burst_activate", rules, ctx, reg, time=2.0)
-    assert round(reg.total_for("atk_percent", ALLY, 2.0), 4) == round(0.1442 + 0.66, 4)
-    assert round(reg.total_for("max_ammo_percent", ALLY, 2.0), 4) == 0.4517
-    assert round(reg.total_for("other_critical_damage_sources", ALLY, 2.0), 4) == 0.1246
+
+def test_liter_on_burst_buffs_unlock_one_tier_per_use():
+    # Once: Max Ammo. Twice: + Critical Damage. Three times: + ATK. Double
+    # Boost's own squad ATK is a separate bullet and lands on every use, so the
+    # atk_percent total is 66% until Liter Boost's third tier adds 14.42%.
+    ctx = deck_ctx("liter")
+    reg = EffectRegistry()
+    rules = {"liter": build_liter_rules(LITER)}
+
+    # 20s apart, so each use's 5-sec windows have lapsed before the next.
+    for use, (time, ammo, crit, atk) in enumerate([
+        (0.0, 0.4517, 0.0, 0.66),
+        (20.0, 0.4517, 0.1246, 0.66),
+        (40.0, 0.4517, 0.1246, 0.66 + 0.1442),
+        (60.0, 0.4517, 0.1246, 0.66 + 0.1442),
+    ], start=1):
+        fire_trigger("own_burst_activate", rules, ctx, reg, time=time)
+        assert round(reg.total_for("max_ammo_percent", ALLY, time), 4) == round(ammo, 4), use
+        assert round(reg.total_for("other_critical_damage_sources", ALLY, time), 4) == round(crit, 4), use
+        assert round(reg.total_for("atk_percent", ALLY, time), 4) == round(atk, 4), use
 
 
 VOLUME = {

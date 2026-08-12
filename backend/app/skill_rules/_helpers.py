@@ -296,6 +296,28 @@ def escalating_buff_rule(trigger, tiers, refreshing=False):
     return SkillRule(trigger=trigger, action=action)
 
 
+def escalating_cdr_rule(trigger, tier_seconds):
+    """The cooldown-reduction half of an escalating bullet.
+
+    `escalating_buff_rule` covers the registry-effect case; a burst-cooldown
+    reduction is a Pulse instead, so it needs its own accumulator. On the Nth
+    activation every tier unlocked so far fires and they ADD - 2.34, then 5.04,
+    then 8.21 sec (Fienn, 2026-07-27). The range measurement could only prove
+    the tiers escalate, since cumulative and superseding agree on activation 1;
+    Fienn settled which.
+    """
+
+    def action(context, caster_slug, time, registry):
+        n = context.activation_count(caster_slug, trigger)
+        seconds = sum(
+            value for unlock_at, value in enumerate(tier_seconds, start=1) if n >= unlock_at
+        )
+        if seconds:
+            registry.add_pulse(Pulse("burst_cooldown_reduction_sec", seconds, "squad", caster_slug))
+
+    return SkillRule(trigger=trigger, action=action)
+
+
 # Nikkes whose own skills restore a unit's HP. Derived from the collected skill
 # text - `provider_scan.heal_provider_slugs()` re-derives it and
 # tests/test_provider_lists_match_data.py fails when this drifts, so a newly

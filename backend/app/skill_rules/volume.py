@@ -21,9 +21,8 @@ See docs/decisions.md.
 Freestyle (skills[0]) is a self ATK buff on kill, which raid bosses don't grant,
 so it's not modeled.
 """
-from app.effects import Pulse
-from app.skill_rules._helpers import buff_rule, escalating_buff_rule
-from app.squad_engine import SkillRule
+from app.skill_rules._helpers import (buff_rule, escalating_buff_rule,
+                                      escalating_cdr_rule)
 
 SKILL_VALUE_MANIFESTS = {
     "volume": {
@@ -35,28 +34,6 @@ SKILL_VALUE_MANIFESTS = {
         },
     },
 }
-
-
-def _escalating_cdr_rule(trigger, tier_seconds):
-    """The cooldown-reduction half of an escalating bullet.
-
-    `escalating_buff_rule` covers the registry-effect case; a burst-cooldown
-    reduction is a Pulse instead, so it needs its own accumulator. On the Nth
-    activation every tier unlocked so far fires and they ADD - 2.34, then 5.04,
-    then 8.21 sec (Fienn, 2026-07-27). The range measurement could only prove
-    the tiers escalate, since cumulative and superseding agree on activation 1;
-    Fienn settled which.
-    """
-
-    def action(context, caster_slug, time, registry):
-        n = context.activation_count(caster_slug, trigger)
-        seconds = sum(
-            value for unlock_at, value in enumerate(tier_seconds, start=1) if n >= unlock_at
-        )
-        if seconds:
-            registry.add_pulse(Pulse("burst_cooldown_reduction_sec", seconds, "squad", caster_slug))
-
-    return SkillRule(trigger=trigger, action=action)
 
 
 def build_volume_rules(values):
@@ -72,7 +49,7 @@ def build_volume_rules(values):
     crit_rate_duration = float(turn_up["description_value_02"])
 
     return [
-        _escalating_cdr_rule("full_burst_enter", cdr_tiers),
+        escalating_cdr_rule("full_burst_enter", cdr_tiers),
         # Each tier's 5-sec window is far shorter than her burst cooldown, so
         # re-applications never overlap and plain adds are correct.
         escalating_buff_rule("own_burst_activate", [
