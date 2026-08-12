@@ -42,13 +42,13 @@ describe('ImportRunButton', () => {
   it('저장한 결과가 없으면 누를 수 없다', () => {
     render(<ImportRunButton runs={[]} draft={empty} onImport={() => {}} />)
 
-    expect(screen.getByRole('button', { name: '저장한 결과 가져오기' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '결과 가져오기' })).toBeDisabled()
   })
 
   it('누르면 목록이 펼쳐지고 다시 누르면 접힌다', async () => {
     const user = userEvent.setup()
     render(<ImportRunButton runs={[run('r1', '화염 · 전부 최적화')]} draft={empty} onImport={() => {}} />)
-    const toggle = screen.getByRole('button', { name: '저장한 결과 가져오기' })
+    const toggle = screen.getByRole('button', { name: '결과 가져오기' })
 
     await user.click(toggle)
     expect(screen.getByText('화염 · 전부 최적화')).toBeInTheDocument()
@@ -62,7 +62,7 @@ describe('ImportRunButton', () => {
     const user = userEvent.setup()
     render(<ImportRunButton runs={[run('r1', '화염')]} draft={empty} onImport={onImport} />)
 
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(onImport).toHaveBeenCalledWith(expect.objectContaining({ id: 'r1' }))
@@ -74,7 +74,7 @@ describe('ImportRunButton', () => {
     const user = userEvent.setup()
     render(<ImportRunButton runs={[run('r1', '화염')]} draft={empty} onImport={() => {}} />)
 
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(confirmSpy).not.toHaveBeenCalled()
@@ -86,7 +86,7 @@ describe('ImportRunButton', () => {
     const user = userEvent.setup()
     render(<ImportRunButton runs={[run('r1', '화염')]} draft={filled} onImport={onImport} />)
 
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(window.confirm).toHaveBeenCalledOnce()
@@ -102,7 +102,7 @@ describe('ImportRunButton', () => {
       </form>,
     )
 
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(onSubmit).not.toHaveBeenCalled()

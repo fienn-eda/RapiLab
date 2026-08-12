@@ -674,7 +674,7 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
     const user = userEvent.setup()
     renderPanel({ savedRuns: [unionRun()] })
 
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(screen.getByLabelText('전투 수')).toHaveValue('2')
@@ -708,7 +708,7 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
 
     // 이미 앉은 유닛이 있어 가져오기가 덮어쓰기 확인을 묻는다.
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
     vi.mocked(window.confirm).mockRestore()
 
@@ -721,7 +721,7 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
     await fillDecks()
 
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    await user.click(screen.getByRole('button', { name: '전체 초기화' }))
+    await user.click(screen.getByRole('button', { name: '초기화' }))
 
     expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
     expect(screen.getByLabelText('전투 수')).toHaveValue('3')
@@ -731,7 +731,7 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
   it('저장한 결과가 없으면 가져오기를 누를 수 없다', () => {
     renderPanel()
 
-    expect(screen.getByRole('button', { name: '저장한 결과 가져오기' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '결과 가져오기' })).toBeDisabled()
   })
 })
 

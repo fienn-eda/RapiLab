@@ -1211,6 +1211,13 @@
   filter: brightness(1.08);
 }
 
+/* 비활성인데 빨강이 그대로면 누를 수 있어 보인다. 이 앱에는 공통 :disabled
+   스타일이 없어서, 채움이 강한 버튼은 스스로 꺼진 것을 말해야 한다. */
+.btn--danger:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 /* 파괴적인 것만 행의 반대쪽 끝에 선다. 실행과 가져오기는 왼쪽에 모인다. */
 .draft-actions__clear {
   margin-left: auto;

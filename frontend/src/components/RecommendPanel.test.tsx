@@ -1748,7 +1748,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     const user = await openWithRuns([raidRun()])
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
 
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     // 덱 1이 다섯 자리를 다 받았다.
@@ -1769,7 +1769,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
     await user.selectOptions(screen.getByLabelText('덱 개수'), '2')
 
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(screen.getByLabelText('덱 개수')).toHaveValue('2')
@@ -1781,7 +1781,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     const user = await openWithRuns([raidRun()])
     // 기본 모드는 단일 덱이다 - 편성 칸이 없다.
 
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(screen.getByRole('radio', { name: /기대 딜량 계산/ })).toBeChecked()
@@ -1791,7 +1791,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     const user = await openWithRuns([raidRun()])
     await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/ }))
 
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(screen.getByRole('radio', { name: /빈자리만 최적화/ })).toBeChecked()
@@ -1832,7 +1832,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
 
     // 편성이 이미 차 있으므로 가져오기가 덮어쓰기 확인을 한 번 묻는다.
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
     vi.mocked(window.confirm).mockRestore()
 
@@ -1845,7 +1845,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     const user = await openWithRuns([raidRun()], { excludedSlugs: ['c'] })
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
 
-    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(screen.getByText(HELP.draftActions.droppedUnits(1))).toBeInTheDocument()
@@ -1861,7 +1861,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     dropOnDeck(1, 'a')
 
     vi.spyOn(window, 'confirm').mockReturnValue(true)
-    await user.click(screen.getByRole('button', { name: '전체 초기화' }))
+    await user.click(screen.getByRole('button', { name: '초기화' }))
 
     const deck = screen.getByRole('heading', { name: /덱 1/ }).closest('div')!
     expect(within(deck).queryByText('A')).not.toBeInTheDocument()
@@ -1873,6 +1873,6 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
   it('단일 덱 모드에는 전체 초기화가 없다', async () => {
     await openWithRuns([])
 
-    expect(screen.queryByRole('button', { name: '전체 초기화' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '초기화' })).not.toBeInTheDocument()
   })
 })

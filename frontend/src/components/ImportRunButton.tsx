@@ -38,7 +38,7 @@ export function ImportRunButton({ runs, draft, onImport }: ImportRunButtonProps)
         aria-expanded={open}
         onClick={() => setOpen((current) => !current)}
       >
-        저장한 결과 가져오기
+        결과 가져오기
       </button>
 
       {open && (

@@ -25,7 +25,7 @@ export function ClearDraftButton({ draft, onClear }: ClearDraftButtonProps) {
         if (window.confirm(HELP.draftActions.confirmClear)) onClear()
       }}
     >
-      전체 초기화
+      초기화
     </button>
   )
 }

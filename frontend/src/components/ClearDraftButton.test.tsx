@@ -18,7 +18,7 @@ describe('ClearDraftButton', () => {
     const user = userEvent.setup()
     render(<ClearDraftButton draft={filled} onClear={onClear} />)
 
-    await user.click(screen.getByRole('button', { name: '전체 초기화' }))
+    await user.click(screen.getByRole('button', { name: '초기화' }))
 
     expect(onClear).toHaveBeenCalledOnce()
   })
@@ -29,7 +29,7 @@ describe('ClearDraftButton', () => {
     const user = userEvent.setup()
     render(<ClearDraftButton draft={filled} onClear={onClear} />)
 
-    await user.click(screen.getByRole('button', { name: '전체 초기화' }))
+    await user.click(screen.getByRole('button', { name: '초기화' }))
 
     expect(onClear).not.toHaveBeenCalled()
   })
@@ -37,7 +37,7 @@ describe('ClearDraftButton', () => {
   it('편성이 비어 있으면 누를 수 없다', () => {
     render(<ClearDraftButton draft={empty} onClear={() => {}} />)
 
-    expect(screen.getByRole('button', { name: '전체 초기화' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: '초기화' })).toBeDisabled()
   })
 
   it('폼 안에서 제출을 일으키지 않는다', async () => {
@@ -50,7 +50,7 @@ describe('ClearDraftButton', () => {
       </form>,
     )
 
-    await user.click(screen.getByRole('button', { name: '전체 초기화' }))
+    await user.click(screen.getByRole('button', { name: '초기화' }))
 
     expect(onSubmit).not.toHaveBeenCalled()
   })
