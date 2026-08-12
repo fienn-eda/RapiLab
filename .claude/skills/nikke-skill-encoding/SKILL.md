@@ -271,8 +271,19 @@ Work in the `backend/` directory. Tests are TDD and must stay green.
    as `squad` — same stat, same number, wrong recipients),
    `scripts/audit_burst_stage_triggers.py` ("Burst Stage N" wired to
    `own_burst_activate`), `scripts/audit_per_shot_buff_stacking.py` (a per-shot
-   buff that stacks where the text has no "stacks up to" clause), and
+   buff that stacks where the text has no "stacks up to" clause),
+   `scripts/audit_self_block_scopes.py` (a value the text puts under
+   "■ Affects self" that the squad receives anyway — it shakes each slot and
+   watches whether the ALLY's total moves, so it holds even where `drop_tokens`
+   renumbered the slots; Grave's Plot Spoiler paid the whole deck her own
+   +53.24% Critical Rate this way, worth 15% of a real deck's damage), and
    `scripts/audit_charge_motion_delay.py` (step 4's question, unanswered).
+
+   Note that `audit_target_scopes.py` and `audit_self_block_scopes.py` answer
+   different questions and neither subsumes the other: the first lists narrow
+   targeting PHRASES for a human to read, and passes any module that emits a
+   `self` scope somewhere; the second ignores phrasing entirely and measures who
+   actually receives each value.
    Then commit on the WIP branch with a message listing what's modeled and
    deferred.
 
