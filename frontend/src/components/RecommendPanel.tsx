@@ -242,6 +242,9 @@ export function RecommendPanel({
   // is null until then. Without it here, a restorable result would be dropped
   // for good. It settles once per mount, so this stays two firings.
   useEffect(() => {
+    // 계정이 바뀌면 편성도 옛 계정 것으로 통째로 바뀐다 - 그 편성에 대해
+    // 말하던 「N기가 빠졌어요」 안내는 새 편성과 무관하므로 함께 내린다.
+    setDroppedCount(0)
     if (restoreInputs && restoreResult) {
       setMode(restoreInputs.mode)
       setNumDecks(restoreInputs.numDecks)
@@ -453,7 +456,9 @@ export function RecommendPanel({
       if (!displayResult || displayMode !== mode || !displayBoss) return null
       const shared = {
         boss: displayBoss,
-        numDecks,
+        // 라이브 numDecks가 아니라 이 결과가 실제로 낸 덱 수 - 결과가 뜬 뒤
+        // 셀렉트를 만지면 라이브 값은 더 이상 이 결과를 설명하지 않는다.
+        numDecks: displayResult.decks.length,
         decks: displayResult.decks,
         combinedTotalDamage: displayResult.combinedTotalDamage,
         excludedSlugs: displayResult.excludedSlugs,
@@ -550,10 +555,16 @@ export function RecommendPanel({
     if ('draft' in view && view.draft) setDraftValue(view.draft)
   }
 
-  /** 편성 칸을 비운다. 보스도 덱 개수도 모드도 건드리지 않는다. */
+  /** 편성 칸을 비운다. 보스도 덱 개수도 모드도 건드리지 않는다. importRun과
+   * 같은 이유로 화면에 뜬 결과도 함께 내린다 - 안 내리면 빈 편성 위에 옛
+   * 결과가 거짓으로 남는다. */
   const clearDraft = () => {
     setDraftValue(makeEmptyDraft(numDecks))
     setDroppedCount(0)
+    setDisplayResult(null)
+    setDisplayMode(null)
+    setDisplayBoss(null)
+    evaluation.reset()
   }
 
   /** 보관물의 결과 덱을 편성으로 가져온다. 「이 설정으로 폼 채우기」(restoreRun)와
@@ -567,7 +578,10 @@ export function RecommendPanel({
     const deckSlugs = isSingle
       ? [view.decks[0]?.deck ?? []]
       : view.decks.map((deck) => deck.deck)
-    const nextNumDecks = isSingle ? numDecks : view.numDecks
+    // 저장된 view.numDecks가 실제 결과 덱 수보다 작은 보관물이 로컬스토리지에
+    // 이미 있을 수 있다(저장 시점 스냅샷 버그) - 작은 쪽을 쓰면 잘려나간 덱의
+    // 니케가 조용히 사라진다.
+    const nextNumDecks = isSingle ? numDecks : Math.max(view.numDecks, deckSlugs.length)
 
     const { draft: imported, droppedSlugs } = draftFromResultDecks(deckSlugs, nextNumDecks, {
       ownedSlugFor: ownedSlugResolver,
@@ -756,7 +770,8 @@ export function RecommendPanel({
       {(mode === 'draft' || mode === 'evaluate') && (
         <ClearDraftButton draft={draftValue} onClear={clearDraft} />
       )}
-      {droppedCount > 0 && (
+      {/* 편성 칸이 있는 모드에만 - 위 초기화 버튼과 같은 조건이다. */}
+      {(mode === 'draft' || mode === 'evaluate') && droppedCount > 0 && (
         <p className="field__error" role="status">
           <HelpText>{HELP.draftActions.droppedUnits(droppedCount)}</HelpText>
         </p>

@@ -1670,6 +1670,55 @@ describe('RecommendPanel 결과 보관', () => {
     expect(screen.getByLabelText(/적 방어력/)).toHaveValue(12345)
     expect(screen.getByLabelText('코어 타격 가능')).toBeChecked()
   })
+
+  // 결과가 뜬 뒤 덱 개수 셀렉트는 계속 조작할 수 있다(전부 최적화 모드는
+  // 편성 칸이 없어 nonEmptyDeckCount가 항상 0이라 막을 게 없다) - 그 뒤에
+  // 저장하면 라이브 값이 아니라 이 결과가 실제로 낸 덱 수가 남아야 한다.
+  it('전부 최적화 결과를 저장하면 그 결과가 낸 덱 수를 남긴다 - 저장 전에 덱 개수를 바꿔도 안 흔들린다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(recommendRaidDecks).mockResolvedValue({
+      decks: Array.from({ length: 5 }, (_, i) => ({
+        deck: [`slug${i}`],
+        total_damage: 1,
+        burst_damage: 1,
+        normal_attack_damage: 0,
+        skill_damage: 0,
+        hold_burst_slugs: [],
+        pinned_slugs: [],
+      })),
+      combined_total_damage: 5,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+      swap_converged: true,
+      engine_version: 'test-engine-version',
+    })
+    const saved: SavedRun[] = []
+    render(
+      <RecommendPanel
+        roster={fullRoster}
+        {...noPersistence}
+        onSaveRun={(run: SavedRun) => {
+          saved.push(run)
+          return true
+        }}
+      />,
+    )
+
+    await user.click(screen.getByLabelText(/전부 최적화/i))
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    expect(await screen.findByText('덱 5')).toBeInTheDocument()
+
+    // 편성 칸이 없는 모드라 셀렉트를 막을 게 없다 - 결과가 뜬 채로 1까지 줄인다.
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+    await user.click(screen.getByRole('button', { name: '확인' }))
+
+    expect(saved).toHaveLength(1)
+    expect(saved[0].view).toMatchObject({ mode: 'raid', numDecks: 5 })
+    expect(saved[0].view.decks).toHaveLength(5)
+  })
 })
 
 describe('RecommendPanel — 편성 초기화와 가져오기', () => {
@@ -1706,6 +1755,33 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
           pinned_slugs: [],
         },
       ],
+      combinedTotalDamage: 10,
+      excludedSlugs: [],
+      leftoverSlugs: [],
+    },
+  })
+
+  /** 저장 시점 스냅샷 버그로 남을 수 있는, numDecks가 실제 결과 덱 수보다 작은
+   * 보관물 - 로컬스토리지에 이미 있을 수 있어 가져오기가 이런 것도 안전해야
+   * 한다. 다섯 덱인데 개수는 1로 저장돼 있다. */
+  const inconsistentRaidRun = (): SavedRun => ({
+    id: 'r2',
+    name: '어긋난 보관물',
+    savedAt: 1754438400000,
+    tab: 'solo',
+    view: {
+      mode: 'raid',
+      boss: bossOf('Water'),
+      numDecks: 1,
+      decks: ['a', 'b', 'c', 'd', 'e'].map((slug) => ({
+        deck: [slug],
+        total_damage: 10,
+        burst_damage: 4,
+        normal_attack_damage: 3,
+        skill_damage: 3,
+        hold_burst_slugs: [],
+        pinned_slugs: [],
+      })),
       combinedTotalDamage: 10,
       excludedSlugs: [],
       leftoverSlugs: [],
@@ -1751,6 +1827,10 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
     await user.click(screen.getByRole('button', { name: '가져오기' }))
 
+    // raidRun()은 덱 개수 1로 저장돼 있다 - 기본값 5와 다르다. 덱 개수가
+    // 그대로 5였다면 가져온 편성은 그 결과가 정했던 개수가 아니라 지금 화면의
+    // 것을 쓴 것이다.
+    expect(screen.getByLabelText('덱 개수')).toHaveValue('1')
     // 덱 1이 다섯 자리를 다 받았다.
     const deck = screen.getByRole('heading', { name: /덱 1/ }).closest('div')!
     for (const slug of ['A', 'B', 'C', 'D', 'E']) {
@@ -1853,6 +1933,65 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     expect(within(deck).queryByText('C')).not.toBeInTheDocument()
   })
 
+  // 로컬스토리지에 이미 저장된 보관물이 이 모양일 수 있다(저장 시점 스냅샷
+  // 버그) - 가져오기는 그런 보관물에도 니케를 잃지 않아야 한다.
+  it('저장된 덱 개수가 실제 결과보다 작아도 니케가 사라지지 않는다', async () => {
+    const user = await openWithRuns([inconsistentRaidRun()])
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+
+    const deck5 = screen.getByRole('heading', { name: /덱 5/ }).closest('div')!
+    expect(within(deck5).getByText('E')).toBeInTheDocument()
+  })
+
+  // 안내는 actionButtons 안에 있고 그 자리는 단일 덱·전부 최적화 행에도 선다 -
+  // 그 두 모드에는 편성 칸이 없으니 안내도 뜨면 안 된다.
+  it('편성 칸이 없는 모드로 옮기면 빠진 니케 안내가 뜨지 않는다', async () => {
+    const user = await openWithRuns([raidRun()], { excludedSlugs: ['c'] })
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+    expect(screen.getByText(HELP.draftActions.droppedUnits(1))).toBeInTheDocument()
+
+    await user.click(screen.getByRole('radio', { name: /전부 최적화/ }))
+
+    expect(screen.queryByText(HELP.draftActions.droppedUnits(1))).not.toBeInTheDocument()
+  })
+
+  // 프로필 복원 이펙트가 편성을 통째로 갈아치우는데, 그 편성에 대해 말하던
+  // 안내를 남겨두면 새 계정의 편성 옆에 거짓 안내가 남는다.
+  it('계정을 바꾸면 빠진 니케 안내도 함께 내려간다', async () => {
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+    const user = userEvent.setup()
+    const { rerender } = await renderSettled(
+      <RecommendPanel
+        roster={fullRoster}
+        {...noPersistence}
+        activeKey="A"
+        savedRuns={[raidRun()]}
+        excludedSlugs={['c']}
+      />,
+    )
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+    expect(screen.getByText(HELP.draftActions.droppedUnits(1))).toBeInTheDocument()
+
+    rerender(
+      <RecommendPanel
+        roster={fullRoster}
+        {...noPersistence}
+        activeKey="B"
+        savedRuns={[raidRun()]}
+        excludedSlugs={['c']}
+      />,
+    )
+
+    expect(screen.queryByText(HELP.draftActions.droppedUnits(1))).not.toBeInTheDocument()
+  })
+
   it('전체 초기화는 편성만 비우고 보스와 덱 개수는 그대로 둔다', async () => {
     const user = await openWithRuns([])
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
@@ -1874,5 +2013,76 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     await openWithRuns([])
 
     expect(screen.queryByRole('button', { name: '초기화' })).not.toBeInTheDocument()
+  })
+
+  // importRun과 같은 이유 - 편성을 비웠는데 그 편성으로 나온 옛 결과가 남으면
+  // 빈 덱 위에 딜량이 거짓으로 남는다.
+  it('전체 초기화는 화면에 뜬 배분 결과도 함께 내린다', async () => {
+    vi.mocked(recommendRaidDecks).mockResolvedValue({
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          skill_damage: 0,
+          hold_burst_slugs: [],
+          pinned_slugs: [],
+        },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+      swap_converged: true,
+      engine_version: 'test-engine-version',
+    })
+
+    const user = await openWithRuns([])
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/ }))
+    await screen.findByRole('button', { name: /a 배치/i })
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    expect(await screen.findByText('100 딜')).toBeInTheDocument()
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await user.click(screen.getByRole('button', { name: '초기화' }))
+    vi.mocked(window.confirm).mockRestore()
+
+    expect(screen.queryByText('100 딜')).not.toBeInTheDocument()
+  })
+
+  it('전체 초기화는 화면에 뜬 기대 딜량 결과도 함께 내린다', async () => {
+    vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          skill_damage: 0,
+          hold_burst_slugs: [],
+        },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+
+    const user = await openWithRuns([])
+    await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
+    await user.selectOptions(screen.getByLabelText('덱 개수'), '1')
+    await screen.findByRole('button', { name: /a 배치/i })
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await user.click(screen.getByRole('button', { name: '초기화' }))
+    vi.mocked(window.confirm).mockRestore()
+
+    expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
   })
 })
