@@ -1797,6 +1797,50 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     expect(screen.getByRole('radio', { name: /빈자리만 최적화/ })).toBeChecked()
   })
 
+  // 모드가 그대로 유지된 채로 가져오는 경우(예: draft -> draft)에는 화면 전환이
+  // 옛 결과를 대신 가려주지 않는다 - importRun 자신이 displayResult를 내려야
+  // 한다. 위 테스트는 모드 유지만 보고 결과가 사라졌는지는 안 봤다.
+  it('빈자리만 최적화 결과가 떠 있는 채로 다시 가져오면 옛 결과가 내려간다', async () => {
+    vi.mocked(recommendRaidDecks).mockResolvedValue({
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 100,
+          burst_damage: 60,
+          normal_attack_damage: 40,
+          skill_damage: 0,
+          hold_burst_slugs: [],
+          pinned_slugs: [],
+        },
+      ],
+      combined_total_damage: 100,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+      swap_converged: true,
+      engine_version: 'test-engine-version',
+    })
+
+    const user = await openWithRuns([raidRun()])
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/ }))
+    await screen.findByRole('button', { name: /a 배치/i }) // 팔레트 로딩 대기
+    for (const slug of ['a', 'b', 'c', 'd', 'e']) dropOnDeck(1, slug)
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+
+    expect(await screen.findByText('100 딜')).toBeInTheDocument()
+
+    // 편성이 이미 차 있으므로 가져오기가 덮어쓰기 확인을 한 번 묻는다.
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+    vi.mocked(window.confirm).mockRestore()
+
+    // 편성을 갈아치웠으므로 그 편성으로 나온 옛 결과는 화면에서 내려가야 한다 -
+    // 안 내리면 새로 들어온 편성 옆에 옛 딜량이 거짓으로 남는다.
+    expect(screen.queryByText('100 딜')).not.toBeInTheDocument()
+  })
+
   it('미사용으로 둔 니케는 앉히지 않고 몇 기가 빠졌는지 말한다', async () => {
     const user = await openWithRuns([raidRun()], { excludedSlugs: ['c'] })
     await user.click(screen.getByRole('radio', { name: /기대 딜량 계산/ }))
