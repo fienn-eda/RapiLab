@@ -1153,6 +1153,7 @@ describe('RecommendPanel persistence', () => {
     const deck = screen.getByRole('heading', { name: /덱 1/ }).closest('div')!
     expect(within(deck).getByText('A')).toBeInTheDocument()
     expect(within(deck).queryByText('C')).not.toBeInTheDocument()
+    expect(screen.getByText(HELP.draftActions.droppedUnits(1))).toBeInTheDocument()
   })
 
   it('restores a result that only becomes restorable once the engine version arrives', async () => {
