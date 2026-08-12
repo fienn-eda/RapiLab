@@ -145,7 +145,7 @@ export const HELP = {
     emptyDecks: '아직 추천된 덱이 없어요.',
     emptyRaid: '아직 배분된 레이드 덱이 없어요.',
     raidSplit: (deckCount: number) =>
-      `이 ${deckCount}개 덱을 편성하세요 — 각 니케는 하나의 덱에만 배정돼요.`,
+      `이 ${deckCount}개 덱을 편성하세요.`,
     bench: (names: string) => `벤치 (덱에 배정되지 않음): ${names}`,
     seatOrder:
       '자리 순서는 엔진이 기대 딜량이 가장 높게 나오도록 고른 거예요.',
