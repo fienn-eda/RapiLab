@@ -10,6 +10,7 @@ import { useEffect, useId, useMemo, useState, type FormEvent } from 'react'
 import { useEvaluateDecks } from '../hooks/useEvaluateDecks'
 import { HELP } from '../lib/helpText'
 import { bossHeading, weaknessLabelOf } from '../lib/bossLabel'
+import { canSeatFrom, draftFromResultDecks } from '../lib/importRun'
 import {
   bossProfileToDraft,
   makeDefaultBossProfileDraft,
@@ -26,12 +27,15 @@ import {
 import { DEFAULT_UNION_NUM_DECKS, MAX_UNION_NUM_DECKS, MIN_UNION_NUM_DECKS } from '../types/evaluate'
 import { latestRotationFor, type RaidRotation } from '../types/raidRotation'
 import type { BossElement, BossProfile } from '../types/recommend'
+import { ownedSlugFor, ownedSlugIndex } from '../types/supportedUnit'
 import type { BurstTier, SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { BossProfileField } from './BossProfileField'
+import { ClearDraftButton } from './ClearDraftButton'
 import { DraftEditor, placeUnit, removeUnitBySlug, replaceUnit } from './DraftEditor'
 import { EvaluationResults } from './EvaluationResults'
 import { HelpText } from './HelpText'
+import { ImportRunButton } from './ImportRunButton'
 import { SaveRunButton } from './SaveRunButton'
 import { SavedRunList } from './SavedRunList'
 import { makeRunId, type SavedRun, type UnionRunView } from '../types/profile'
@@ -120,6 +124,8 @@ export function UnionRaidPanel({
   // 가르는 데 쓴다. 편집기가 든 것이 바뀔 때마다(사라질 때·언마운트될 때까지)
   // 알려주므로 이쪽에서 손댈 일은 없다.
   const [heldSlug, setHeldSlug] = useState<string | null>(null)
+  // 방금 가져오기에서 앉히지 못한 니케 수. 솔로 탭과 같은 이유로 화면에 남긴다.
+  const [droppedCount, setDroppedCount] = useState(0)
   const numBattlesId = useId()
 
   const evaluation = useEvaluateDecks()
@@ -138,6 +144,10 @@ export function UnionRaidPanel({
     )
     setDraftValue((current) => resizeDraft(current, next))
   }
+
+  // 결과가 부르는 슬러그를 유저가 가진 슬러그로 되돌린다 - 솔로 탭이 쓰는 것과
+  // 같은 표다(bready-lingering -> bready).
+  const ownedSlugs = useMemo(() => ownedSlugIndex(supportedUnits), [supportedUnits])
 
   const validated = useMemo(() => bosses.map((draft) => validateBossProfileDraft(draft)), [bosses])
   const allBossesValid = validated.every((v) => v.value !== undefined)
@@ -204,6 +214,33 @@ export function UnionRaidPanel({
     draftValue,
     numBattles,
   ])
+
+  /** 편성만 비운다. 전투 수도 보스 설정도 그대로다. */
+  const clearDraft = () => {
+    setDraftValue(makeEmptyDraft(numBattles))
+    setDroppedCount(0)
+  }
+
+  const importRun = (run: SavedRun) => {
+    const view = run.view as UnionRunView
+    const { draft: imported, droppedSlugs } = draftFromResultDecks(
+      view.decks.map((deck) => deck.deck),
+      view.numBattles,
+      {
+        ownedSlugFor: (slug) => ownedSlugFor(slug, ownedSlugs),
+        canSeat: canSeatFrom(roster, excludedSlugs),
+      },
+    )
+
+    // changeNumBattles가 bosses/draftValue도 함께 바꾸므로, 뒤따르는 두 setState가
+    // 최종 값을 쥔다 - React가 셋을 한 렌더로 묶는다(onRestore와 같은 순서다).
+    changeNumBattles(view.numBattles)
+    setBosses(view.bosses.map(bossProfileToDraft))
+    setDraftValue(imported)
+    setDroppedCount(droppedSlugs.length)
+    // 편성을 갈아치웠으므로 그 전 편성으로 나온 결과는 화면에서 내린다.
+    evaluation.reset()
+  }
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -369,6 +406,13 @@ export function UnionRaidPanel({
                 <button type="submit" className="btn btn--primary" disabled={!canSubmit}>
                   {evaluation.status === 'loading' ? '계산 중…' : '인카운터!'}
                 </button>
+                <ImportRunButton runs={savedRuns} draft={draftValue} onImport={importRun} />
+                <ClearDraftButton draft={draftValue} onClear={clearDraft} />
+                {droppedCount > 0 && (
+                  <p className="field__error" role="status">
+                    <HelpText>{HELP.draftActions.droppedUnits(droppedCount)}</HelpText>
+                  </p>
+                )}
               </div>
             </div>
           </div>

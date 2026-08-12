@@ -624,6 +624,117 @@ describe('UnionRaidPanel 결과 보관', () => {
   })
 })
 
+describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
+  const bossOf = (element: 'Fire' | 'Water') => ({
+    element,
+    core_hittable: false,
+    pierce_hits_body_behind_core: false,
+    enemy_def: 31784,
+    fight_duration: 180,
+    part_destructible: false,
+    core_diameter_px: null,
+    effective_range_band: null,
+    elemental_interrupt_required: false,
+  })
+
+  const deckOf = (slugs: string[]) => ({
+    deck: slugs,
+    total_damage: 10,
+    burst_damage: 4,
+    normal_attack_damage: 3,
+    skill_damage: 3,
+    hold_burst_slugs: [],
+  })
+
+  /** 두 전투짜리 보관물. */
+  const unionRun = (): SavedRun => ({
+    id: 'u1',
+    name: '보관한 유니온',
+    savedAt: 1754438400000,
+    tab: 'union',
+    view: {
+      numBattles: 2,
+      bosses: [bossOf('Water'), bossOf('Fire')],
+      draft: {
+        decks: [
+          ['u0', 'u1', 'u2', 'u3', 'u4'].map((slug) => ({ slug, locked: false })),
+          ['u5', 'u6', 'u7', 'u8', 'u9'].map((slug) => ({ slug, locked: false })),
+        ],
+      },
+      decks: [
+        deckOf(['u0', 'u1', 'u2', 'u3', 'u4']),
+        deckOf(['u5', 'u6', 'u7', 'u8', 'u9']),
+      ],
+      combinedTotalDamage: 20,
+      excludedSlugs: [],
+    },
+  })
+
+  it('가져오면 전투 수·보스·편성이 함께 들어온다', async () => {
+    const user = userEvent.setup()
+    renderPanel({ savedRuns: [unionRun()] })
+
+    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+
+    expect(screen.getByLabelText('전투 수')).toHaveValue('2')
+    // 덱 제목은 속성이 있으면 약점 낱말이 된다(bossHeading). 'Water' 보스의
+    // 약점은 '전격', 'Fire' 보스의 약점은 '수냉'이다. 기본 보스는
+    // element: null이라 제목이 '덱 N'이므로, 제목이 바뀌었다는 것 자체가
+    // 보스가 들어왔다는 증거다.
+    const deck1 = screen.getByRole('heading', { name: /전격/ }).closest('div')!
+    expect(within(deck1).getByText('U0')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /수냉/ })).toBeInTheDocument()
+  })
+
+  // 편성을 갈아치웠는데 옛 편성의 결과 숫자가 화면에 남으면 거짓말이 된다 -
+  // 가져오기는 evaluation.reset()으로 그 결과를 내려야 한다.
+  it('가져오기는 이전 평가 결과를 화면에서 내린다', async () => {
+    const user = userEvent.setup()
+    vi.mocked(evaluateDecks).mockResolvedValue({
+      decks: [
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [] },
+      ],
+      combined_total_damage: 60,
+      excluded_slugs: [],
+      engine_version: 'test-engine-version',
+    })
+    renderPanel({ savedRuns: [unionRun()] })
+
+    await fillAndSubmit(user)
+    expect(await screen.findByText('총합:', { exact: false })).toBeInTheDocument()
+
+    // 이미 앉은 유닛이 있어 가져오기가 덮어쓰기 확인을 묻는다.
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await user.click(screen.getByRole('button', { name: '저장한 결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+    vi.mocked(window.confirm).mockRestore()
+
+    expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
+  })
+
+  it('전체 초기화는 편성만 비운다', async () => {
+    const user = userEvent.setup()
+    renderPanel()
+    await fillDecks()
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await user.click(screen.getByRole('button', { name: '전체 초기화' }))
+
+    expect(screen.getByRole('button', { name: /인카운터/ })).toBeDisabled()
+    expect(screen.getByLabelText('전투 수')).toHaveValue('3')
+    vi.mocked(window.confirm).mockRestore()
+  })
+
+  it('저장한 결과가 없으면 가져오기를 누를 수 없다', () => {
+    renderPanel()
+
+    expect(screen.getByRole('button', { name: '저장한 결과 가져오기' })).toBeDisabled()
+  })
+})
+
 describe('suggestUnionRunName', () => {
   const boss = (element: BossElement) => ({ ...makeDefaultBossProfileDraft(), element })
 
