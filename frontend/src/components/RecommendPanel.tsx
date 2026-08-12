@@ -61,7 +61,7 @@ import { SavedRunList } from './SavedRunList'
 import { UnitPalette, type UnitInvestment } from './UnitPalette'
 import { HELP } from '../lib/helpText'
 import { HelpText } from './HelpText'
-import { canSeatFrom, draftFromResultDecks } from '../lib/importRun'
+import { canSeatFrom, draftFromResultDecks, seatableOnly } from '../lib/importRun'
 import { ClearDraftButton } from './ClearDraftButton'
 import { ImportRunButton } from './ImportRunButton'
 
@@ -551,8 +551,18 @@ export function RecommendPanel({
     setMode(view.mode)
     setNumDecks(view.numDecks)
     setDraft(bossProfileToDraft(view.boss))
-    // 편성은 draft/evaluate 갈래에만 있다.
-    if ('draft' in view && view.draft) setDraftValue(view.draft)
+    // 편성은 draft/evaluate 갈래에만 있다. 그때 앉아 있던 니케가 지금은 로스터에
+    // 없거나 미사용일 수 있으므로 가져오기와 같은 판정을 통과한 좌석만 되돌린다 -
+    // 안 그러면 덱에는 있고 제출 로스터에는 없는 니케가 생겨, 실행하면 백엔드가
+    // 그 슬러그를 엔진이 모른다고 답한다.
+    if ('draft' in view && view.draft) {
+      const { draft: seatable, droppedSlugs } = seatableOnly(
+        view.draft,
+        canSeatFrom(roster, excludedSlugs),
+      )
+      setDraftValue(seatable)
+      setDroppedCount(droppedSlugs.length)
+    }
   }
 
   /** raid/draft 제출이 떠 있으면 멈추고 pendingSaveRef도 비운다 - cancel이

@@ -51,6 +51,29 @@ export const draftFromResultDecks = (
 }
 
 /**
+ * 이미 편성 모양인 보관물(「이 설정으로 폼 채우기」가 되돌리는 것)에서 지금
+ * 앉힐 수 없는 좌석만 뺀다.
+ *
+ * 결과 덱과 달리 슬러그를 되돌릴 일이 없다 - 저장된 편성은 유저가 직접 앉힌
+ * 것이라 이미 소유 슬러그다. 잠금은 그대로 둔다: 이 경로의 뜻은 「그때의
+ * 설정으로 되돌린다」이고, 그때 잠가 둔 자리는 그 설정의 일부다.
+ */
+export const seatableOnly = (
+  draft: Draft,
+  canSeat: (slug: string) => boolean,
+): ImportedDraft => {
+  const droppedSlugs: string[] = []
+  const decks = draft.decks.map((seats) =>
+    seats.filter((seat) => {
+      if (canSeat(seat.slug)) return true
+      droppedSlugs.push(seat.slug)
+      return false
+    }),
+  )
+  return { draft: { decks }, droppedSlugs }
+}
+
+/**
  * `draftFromResultDecks`에 넘길 `canSeat`. 솔로 탭과 유니온 탭이 같은 판정을
  * 쓰므로 여기 한 벌만 둔다.
  *
