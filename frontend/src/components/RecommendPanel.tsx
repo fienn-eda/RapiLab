@@ -555,6 +555,15 @@ export function RecommendPanel({
     if ('draft' in view && view.draft) setDraftValue(view.draft)
   }
 
+  /** raid/draft 제출이 떠 있으면 멈추고 pendingSaveRef도 비운다 - cancel이
+   * 아직 도착 중인 응답 자체를 막지는 못하므로, 그 응답이 뒤늦게 성공으로
+   * 잡혀도 위 저장 이펙트가 pendingSaveRef 없이는 되살리지 못한다.
+   * evaluation.reset()과 짝지어 쓴다 - 그쪽은 evaluate 모드만 덮는다. */
+  const cancelPendingRaidSubmit = () => {
+    raid.cancel()
+    pendingSaveRef.current = null
+  }
+
   /** 편성 칸을 비운다. 보스도 덱 개수도 모드도 건드리지 않는다. importRun과
    * 같은 이유로 화면에 뜬 결과도 함께 내린다 - 안 내리면 빈 편성 위에 옛
    * 결과가 거짓으로 남는다. */
@@ -565,6 +574,7 @@ export function RecommendPanel({
     setDisplayMode(null)
     setDisplayBoss(null)
     evaluation.reset()
+    cancelPendingRaidSubmit()
   }
 
   /** 보관물의 결과 덱을 편성으로 가져온다. 「이 설정으로 폼 채우기」(restoreRun)와
@@ -599,6 +609,7 @@ export function RecommendPanel({
     setDisplayResult(null)
     setDisplayMode(null)
     setDisplayBoss(null)
+    cancelPendingRaidSubmit()
     // 편성 칸이 없는 모드였다면 받을 칸이 있는 화면으로 데려간다. switchMode가
     // evaluate 결과도 함께 리셋한다.
     switchMode(mode === 'draft' || mode === 'evaluate' ? mode : 'evaluate')

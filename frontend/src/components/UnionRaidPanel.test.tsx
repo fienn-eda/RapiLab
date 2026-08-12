@@ -592,6 +592,37 @@ describe('UnionRaidPanel 결과 보관', () => {
     const view = saved[0].view as UnionRunView
     expect(view.bosses).toHaveLength(1)
     expect(view.decks).toHaveLength(1)
+    // draft도 numBattles와 같은 스냅샷이어야 한다 - 라이브 draftValue를 읽으면
+    // numBattles는 1인데 draft는 이미 3덱으로 늘어난 보관물이 나온다.
+    expect(view.draft.decks).toHaveLength(1)
+    expect(view.draft.decks[0]).toHaveLength(5)
+  })
+
+  // 위 테스트의 반대 방향 - 전투 수를 줄이면 changeNumBattles가 draftValue를
+  // 먼저 줄인다. draft가 라이브면 저장되는 numBattles(평가 당시 3)와 draft(줄인
+  // 뒤의 1덱)가 서로 다른 전투 수를 가리키는 보관물이 나온다.
+  it('전투 수를 줄인 뒤 저장해도 저장되는 편성은 평가 당시 3개 그대로다', async () => {
+    const user = userEvent.setup()
+    evaluationSuccess()
+    const saved: SavedRun[] = []
+    renderPanel({
+      onSaveRun: (run: SavedRun) => {
+        saved.push(run)
+        return true
+      },
+    })
+
+    await fillAndSubmit(user)
+    await screen.findByText('1번 덱 · 무속성')
+
+    await user.selectOptions(screen.getByLabelText('전투 수'), '1')
+    await user.click(screen.getByRole('button', { name: '저장' }))
+    await user.click(screen.getByRole('button', { name: '확인' }))
+
+    expect(saved).toHaveLength(1)
+    const view = saved[0].view as UnionRunView
+    expect(view.numBattles).toBe(3)
+    expect(view.draft.decks.map((seats) => seats.length)).toEqual([5, 5, 5])
   })
 
   // 제안 이름은 숫자를 낸 그 보스를 불러야 한다 - 화면의 결과 카드가 제출
@@ -788,13 +819,70 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
   })
 
   // 목록의 「이 설정으로 폼 채우기」(onRestore)는 가져오기와 같은 패턴을 썼던
-  // 자리라 같은 어긋난 보관물에 안전해야 한다.
-  it('"폼 채우기"도 저장된 전투 수가 보스·결과 배열보다 커도 렌더가 죽지 않는다', async () => {
+  // 자리라 같은 어긋난 보관물에 안전해야 한다. "죽지 않는다"만으로는 부족하다 -
+  // numBattles만 3으로 늘고 draft가 1덱 그대로 남으면 2·3번 전투는 화면엔
+  // 있어도 배치가 조용히 삼켜진다(placeUnit/moveUnit이 없는 덱 인덱스를
+  // 거절한다). 그래서 실제로 앉혀서 확인한다.
+  it('"폼 채우기"도 저장된 전투 수가 보스·결과 배열보다 커도 렌더가 죽지 않고, 늘어난 전투도 앉힐 수 있다', async () => {
     const user = userEvent.setup()
     renderPanel({ savedRuns: [inconsistentUnionRun()] })
 
     await user.click(screen.getByRole('button', { name: /어긋난 유니온 보관물/ }))
     await user.click(screen.getByRole('button', { name: '이 설정으로 폼 채우기' }))
+
+    expect(screen.getByLabelText('전투 수')).toHaveValue('3')
+    expect(screen.getAllByRole('group', { name: /전투/ })).toHaveLength(3)
+
+    dropOnDeck(2, 'u5')
+    expect(screen.getByRole('button', { name: '덱 2의 U5' })).toBeInTheDocument()
+    dropOnDeck(3, 'u6')
+    expect(screen.getByRole('button', { name: '덱 3의 U6' })).toBeInTheDocument()
+  })
+
+  /** 반대 방향의 어긋난 보관물 - draft가 numBattles·bosses·decks 전부보다 크다
+   * (전투 수를 늘린 뒤 저장한 경우, submittedDraft로 고치기 전의 보관물).
+   * safeNumBattlesFor가 draft.decks.length도 보지 않으면 이 방향에서는 도로
+   * numBattles가 draft보다 작게 복원돼, 화면엔 없는 덱(2·3번)에 유닛이 여전히
+   * 앉은 채로 usedSlugs에 잡혀 팔레트에서 풀려날 길이 없다. */
+  const draftOversizedUnionRun = (): SavedRun => ({
+    id: 'u3',
+    name: '편성이 더 큰 보관물',
+    savedAt: 1754438400000,
+    tab: 'union',
+    view: {
+      numBattles: 1,
+      bosses: [bossOf('Water')],
+      draft: {
+        decks: [
+          ['u0', 'u1', 'u2', 'u3', 'u4'].map((slug) => ({ slug, locked: false })),
+          ['u5', 'u6', 'u7', 'u8', 'u9'].map((slug) => ({ slug, locked: false })),
+          ['u10', 'u11', 'u12', 'u13', 'u14'].map((slug) => ({ slug, locked: false })),
+        ],
+      },
+      decks: [deckOf(['u0', 'u1', 'u2', 'u3', 'u4'])],
+      combinedTotalDamage: 10,
+      excludedSlugs: [],
+    },
+  })
+
+  it('편성이 저장된 전투 수보다 큰 보관물도 "폼 채우기"에서 전투 수를 편성 크기까지 늘린다', async () => {
+    const user = userEvent.setup()
+    renderPanel({ savedRuns: [draftOversizedUnionRun()] })
+
+    await user.click(screen.getByRole('button', { name: /편성이 더 큰 보관물/ }))
+    await user.click(screen.getByRole('button', { name: '이 설정으로 폼 채우기' }))
+
+    expect(screen.getByLabelText('전투 수')).toHaveValue('3')
+    expect(screen.getAllByRole('group', { name: /전투/ })).toHaveLength(3)
+    expect(screen.getByRole('button', { name: '덱 2의 U5' })).toBeInTheDocument()
+  })
+
+  it('편성이 저장된 전투 수보다 큰 보관물도 가져오기에서 전투 수를 편성 크기까지 늘린다', async () => {
+    const user = userEvent.setup()
+    renderPanel({ savedRuns: [draftOversizedUnionRun()] })
+
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
 
     expect(screen.getByLabelText('전투 수')).toHaveValue('3')
     expect(screen.getAllByRole('group', { name: /전투/ })).toHaveLength(3)

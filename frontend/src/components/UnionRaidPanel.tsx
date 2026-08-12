@@ -100,6 +100,13 @@ export function UnionRaidPanel({
     Array.from({ length: DEFAULT_UNION_NUM_DECKS }, () => makeDefaultBossProfileDraft()),
   )
   const [draftValue, setDraftValue] = useState<Draft>(() => makeEmptyDraft(DEFAULT_UNION_NUM_DECKS))
+  // 편성도 제출 시점 스냅샷 - evaluatedBosses와 같은 이유(아래 참고). 라이브
+  // draftValue를 그대로 읽으면 결과가 나온 뒤 전투 수를 줄였을 때 이 값만
+  // changeNumBattles로 먼저 줄어들어, numBattles·bosses는 옛 전투 수를 가리키는데
+  // draft만 새 전투 수를 가리키는 보관물이 나온다.
+  const [submittedDraft, setSubmittedDraft] = useState<Draft>(() =>
+    makeEmptyDraft(DEFAULT_UNION_NUM_DECKS),
+  )
   const [touched, setTouched] = useState(false)
   // The boss elements each battle's card was actually scored against,
   // captured at submit time - same reasoning as RecommendPanel's
@@ -202,7 +209,7 @@ export function UnionRaidPanel({
       // 전투 수 셀렉트를 만지면 라이브 값은 더 이상 이 결과를 설명하지 않는다.
       numBattles: evaluatedBosses.length,
       bosses: evaluatedBosses,
-      draft: draftValue,
+      draft: submittedDraft,
       decks: evaluation.decks,
       combinedTotalDamage: evaluation.combinedTotalDamage,
       excludedSlugs: evaluation.excludedSlugs,
@@ -213,7 +220,7 @@ export function UnionRaidPanel({
     evaluation.combinedTotalDamage,
     evaluation.excludedSlugs,
     evaluatedBosses,
-    draftValue,
+    submittedDraft,
   ])
 
   /** 편성만 비운다. 전투 수도 보스 설정도 그대로다. importRun과 같은 이유로
@@ -225,11 +232,15 @@ export function UnionRaidPanel({
     evaluation.reset()
   }
 
-  /** 저장된 numBattles가 실제 bosses/decks 배열보다 작은 보관물이 로컬스토리지에
-   * 이미 있을 수 있다(저장 시점 스냅샷 버그) - 작은 쪽을 쓰면 니케가 조용히
-   * 사라지거나(덱 부족) validated[i]가 undefined라 렌더가 죽는다(보스 부족). */
+  /** 저장된 numBattles가 실제 bosses·decks·draft 배열보다 작은 보관물이
+   * 로컬스토리지에 이미 있을 수 있다(저장 시점 스냅샷 버그) - 작은 쪽을 쓰면
+   * 니케가 조용히 사라지거나(덱 부족) validated[i]가 undefined라 렌더가
+   * 죽는다(보스 부족). draft.decks.length도 봐야 하는 것은 그 반대 방향도
+   * 있어서다: 전투 수를 늘리고 저장하면 numBattles·bosses는 옛 값인데
+   * draftValue는 이미 늘어난 채로 저장된다(고치기 전 submittedDraft가 없던
+   * 시절의 보관물). */
   const safeNumBattlesFor = (view: UnionRunView, deckSlugs: string[][]): number =>
-    Math.max(view.numBattles, view.bosses.length, deckSlugs.length)
+    Math.max(view.numBattles, view.bosses.length, deckSlugs.length, view.draft.decks.length)
 
   /** `numBattles`에 정확히 맞춰 보스 초안을 채운다. changeNumBattles 자신도
    * bosses를 패딩하지만, 그 함수형 갱신은 옛 bosses를 기준으로 하고 이어지는
@@ -265,6 +276,7 @@ export function UnionRaidPanel({
 
     const bossProfiles = validated.slice(0, numBattles).map((v) => v.value!)
     setEvaluatedBosses(bossProfiles)
+    setSubmittedDraft(draftValue)
     void evaluation.submit({
       roster: effectiveRoster,
       decks: draftValue.decks.slice(0, numBattles).map((seats, i) => ({
@@ -456,12 +468,16 @@ export function UnionRaidPanel({
               }}
               onRestore={(run) => {
                 const view = run.view as UnionRunView
-                // bosses가 numBattles보다 짧게 저장된 보관물도 안전해야 한다 -
-                // importRun과 같은 이유(safeNumBattlesFor/padBosses 참고).
+                // bosses가 numBattles보다 짧거나 draft 길이가 numBattles와
+                // 다른 보관물도 안전해야 한다 - importRun과 같은 이유
+                // (safeNumBattlesFor/padBosses 참고). resizeDraft로 draft도
+                // nextNumBattles에 맞춘다 - 안 맞추면 짧은 쪽은 placeUnit이
+                // 없는 덱 인덱스를 겨눠 배치를 조용히 삼키고, 긴 쪽은 화면에
+                // 안 보이는 덱에 여전히 유닛이 앉은 채로 남는다.
                 const nextNumBattles = safeNumBattlesFor(view, [])
                 changeNumBattles(nextNumBattles)
                 setBosses(padBosses(view.bosses, nextNumBattles))
-                setDraftValue(view.draft)
+                setDraftValue(resizeDraft(view.draft, nextNumBattles))
               }}
               onRename={onRenameRun}
               onDelete={onDeleteRun}

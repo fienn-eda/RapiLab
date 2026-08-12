@@ -2085,4 +2085,81 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
 
     expect(screen.queryByText('총합:', { exact: false })).not.toBeInTheDocument()
   })
+
+  // 유니온 탭은 evaluation.reset()이 요청을 끊어서 원래도 안전했다 - 솔로 탭의
+  // evaluation.reset()도 evaluate 모드만 덮을 뿐, raid/draft 제출은 raid 훅이
+  // 따로 떠 있다. 초기화가 pendingSaveRef를 비우지 않으면, 늦게 도착한 응답을
+  // 위 저장 이펙트가 빈 편성 위에 도로 얹는다.
+  it('초기화는 떠 있는 배분 제출도 멈춰, 응답이 늦게 와도 결과가 되살아나지 않는다', async () => {
+    const onResult = vi.fn()
+    let resolveRequest: (value: Awaited<ReturnType<typeof recommendRaidDecks>>) => void = () => {}
+    vi.mocked(recommendRaidDecks).mockImplementation(
+      () => new Promise((resolve) => { resolveRequest = resolve }),
+    )
+
+    const user = await openWithRuns([], { onResult })
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/ }))
+    await screen.findByRole('button', { name: /a 배치/i })
+    dropOnDeck(1, 'a')
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    await user.click(screen.getByRole('button', { name: '초기화' }))
+    vi.mocked(window.confirm).mockRestore()
+
+    resolveRequest({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 999, burst_damage: 0, normal_attack_damage: 0, skill_damage: 0, hold_burst_slugs: [], pinned_slugs: [] },
+      ],
+      combined_total_damage: 999,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+      swap_converged: true,
+      engine_version: 'test-engine-version',
+    })
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument())
+
+    expect(screen.queryByText('999 딜', { exact: false })).not.toBeInTheDocument()
+    expect(onResult).not.toHaveBeenCalled()
+  })
+
+  // importRun과 같은 구멍 - 편성을 통째로 갈아치우면서도 raid 훅에 떠 있는
+  // 제출은 그대로 두고 있었다.
+  it('가져오기도 떠 있는 배분 제출을 멈춰, 응답이 늦게 와도 결과가 되살아나지 않는다', async () => {
+    const onResult = vi.fn()
+    let resolveRequest: (value: Awaited<ReturnType<typeof recommendRaidDecks>>) => void = () => {}
+    vi.mocked(recommendRaidDecks).mockImplementation(
+      () => new Promise((resolve) => { resolveRequest = resolve }),
+    )
+
+    const user = await openWithRuns([raidRun()], { onResult })
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/ }))
+    await screen.findByRole('button', { name: /a 배치/i })
+    await user.click(screen.getByRole('button', { name: /인카운터/ }))
+    expect(await screen.findByRole('status')).toBeInTheDocument()
+
+    // 편성이 아직 비어 있어(draftValue) 가져오기가 덮어쓰기 확인을 묻지 않는다.
+    await user.click(screen.getByRole('button', { name: '결과 가져오기' }))
+    await user.click(screen.getByRole('button', { name: '가져오기' }))
+
+    resolveRequest({
+      decks: [
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 999, burst_damage: 0, normal_attack_damage: 0, skill_damage: 0, hold_burst_slugs: [], pinned_slugs: [] },
+      ],
+      combined_total_damage: 999,
+      excluded_slugs: [],
+      leftover_slugs: [],
+      within_draft: null,
+      baseline_total_damage: null,
+      swap_converged: true,
+      engine_version: 'test-engine-version',
+    })
+    await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument())
+
+    expect(screen.queryByText('999 딜', { exact: false })).not.toBeInTheDocument()
+    expect(onResult).not.toHaveBeenCalled()
+  })
 })
