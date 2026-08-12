@@ -7,14 +7,9 @@
 
 import { useId, useState, type ReactNode } from 'react'
 import { HELP } from '../lib/helpText'
+import { savedAtLabel } from '../lib/savedRunLabel'
 import { HelpText } from './HelpText'
 import type { SavedRun } from '../types/profile'
-
-const savedAtLabel = (savedAt: number): string => {
-  const at = new Date(savedAt)
-  const pad = (n: number) => String(n).padStart(2, '0')
-  return `${pad(at.getMonth() + 1)}-${pad(at.getDate())} ${pad(at.getHours())}:${pad(at.getMinutes())}`
-}
 
 interface SavedRunListProps {
   runs: SavedRun[]

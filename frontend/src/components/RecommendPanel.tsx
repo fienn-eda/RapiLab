@@ -61,6 +61,9 @@ import { SavedRunList } from './SavedRunList'
 import { UnitPalette, type UnitInvestment } from './UnitPalette'
 import { HELP } from '../lib/helpText'
 import { HelpText } from './HelpText'
+import { canSeatFrom, draftFromResultDecks } from '../lib/importRun'
+import { ClearDraftButton } from './ClearDraftButton'
+import { ImportRunButton } from './ImportRunButton'
 
 interface RecommendPanelProps {
   /** The validated, ready subset of the entered roster. */
@@ -214,6 +217,9 @@ export function RecommendPanel({
   // 가르는 데 쓴다. 편집기가 든 것이 바뀔 때마다(사라질 때·언마운트될 때까지)
   // 알려주므로 이쪽에서 손댈 일은 없다.
   const [heldSlug, setHeldSlug] = useState<string | null>(null)
+  // 방금 가져오기에서 앉히지 못한 니케 수. 다음 가져오기나 초기화까지 남는다 -
+  // 5명이어야 할 덱이 4명인 이유를 화면이 말하지 않으면 거짓말이 된다.
+  const [droppedCount, setDroppedCount] = useState(0)
   // Set right before a raid/draft raid.submit() call that actually reaches
   // the backend (a cache hit never sets it), and cleared once its success is
   // persisted via onResult - the guard that makes persistence exactly-once
@@ -236,6 +242,9 @@ export function RecommendPanel({
   // is null until then. Without it here, a restorable result would be dropped
   // for good. It settles once per mount, so this stays two firings.
   useEffect(() => {
+    // 계정이 바뀌면 편성도 옛 계정 것으로 통째로 바뀐다 - 그 편성에 대해
+    // 말하던 「N기가 빠졌어요」 안내는 새 편성과 무관하므로 함께 내린다.
+    setDroppedCount(0)
     if (restoreInputs && restoreResult) {
       setMode(restoreInputs.mode)
       setNumDecks(restoreInputs.numDecks)
@@ -447,7 +456,9 @@ export function RecommendPanel({
       if (!displayResult || displayMode !== mode || !displayBoss) return null
       const shared = {
         boss: displayBoss,
-        numDecks,
+        // 라이브 numDecks가 아니라 이 결과가 실제로 낸 덱 수 - 결과가 뜬 뒤
+        // 셀렉트를 만지면 라이브 값은 더 이상 이 결과를 설명하지 않는다.
+        numDecks: displayResult.decks.length,
         decks: displayResult.decks,
         combinedTotalDamage: displayResult.combinedTotalDamage,
         excludedSlugs: displayResult.excludedSlugs,
@@ -518,6 +529,20 @@ export function RecommendPanel({
     // unrelated change re-runs this and settles without a re-render.
   }, [excludedKey])
 
+  // Evaluation isn't cached and its display is gated purely on `mode`, unlike
+  // raid/draft's raidResultMode/displayResult - so a stray in-flight evaluate
+  // request left running after the player moves to another mode is stopped
+  // here rather than by a render guard. reset() also clears a FINISHED
+  // result, which cancel() cannot touch (there is nothing left in flight to
+  // abort) - draftValue is shared with draft mode, so without it a result
+  // computed for one composition could still render after the player edits
+  // the decks elsewhere and switches back to evaluate.
+  const switchMode = (next: RecommendMode) => {
+    evaluation.cancel()
+    evaluation.reset()
+    setMode(next)
+  }
+
   /** 보관물을 여는 것만으로는 폼이 바뀌지 않는다. 이 버튼을 눌렀을 때만 그때의
    * 설정으로 되돌린다 - 결과는 되돌리지 않는다(조건을 조금 바꿔 다시 돌리는
    * 것이 목적이다). */
@@ -528,6 +553,66 @@ export function RecommendPanel({
     setDraft(bossProfileToDraft(view.boss))
     // 편성은 draft/evaluate 갈래에만 있다.
     if ('draft' in view && view.draft) setDraftValue(view.draft)
+  }
+
+  /** raid/draft 제출이 떠 있으면 멈추고 pendingSaveRef도 비운다 - cancel이
+   * 아직 도착 중인 응답 자체를 막지는 못하므로, 그 응답이 뒤늦게 성공으로
+   * 잡혀도 위 저장 이펙트가 pendingSaveRef 없이는 되살리지 못한다.
+   * evaluation.reset()과 짝지어 쓴다 - 그쪽은 evaluate 모드만 덮는다. */
+  const cancelPendingRaidSubmit = () => {
+    raid.cancel()
+    pendingSaveRef.current = null
+  }
+
+  /** 편성 칸을 비운다. 보스도 덱 개수도 모드도 건드리지 않는다. importRun과
+   * 같은 이유로 화면에 뜬 결과도 함께 내린다 - 안 내리면 빈 편성 위에 옛
+   * 결과가 거짓으로 남는다. */
+  const clearDraft = () => {
+    setDraftValue(makeEmptyDraft(numDecks))
+    setDroppedCount(0)
+    setDisplayResult(null)
+    setDisplayMode(null)
+    setDisplayBoss(null)
+    evaluation.reset()
+    cancelPendingRaidSubmit()
+  }
+
+  /** 보관물의 결과 덱을 편성으로 가져온다. 「이 설정으로 폼 채우기」(restoreRun)와
+   * 다른 일이다 - 저쪽은 그때의 설정으로 되돌리고, 이쪽은 그때 나온 덱 구성을
+   * 편집기에 앉힌다. */
+  const importRun = (run: SavedRun) => {
+    const view = run.view as SoloRunView
+    // 단일 덱 결과는 배분이 아니라 한 덱의 대안 랭킹이라 1위만 가져온다. 덱
+    // 개수도 그 결과가 정할 수 있는 값이 아니므로 지금 값을 지킨다.
+    const isSingle = view.mode === 'single'
+    const deckSlugs = isSingle
+      ? [view.decks[0]?.deck ?? []]
+      : view.decks.map((deck) => deck.deck)
+    // 저장된 view.numDecks가 실제 결과 덱 수보다 작은 보관물이 로컬스토리지에
+    // 이미 있을 수 있다(저장 시점 스냅샷 버그) - 작은 쪽을 쓰면 잘려나간 덱의
+    // 니케가 조용히 사라진다.
+    const nextNumDecks = isSingle ? numDecks : Math.max(view.numDecks, deckSlugs.length)
+
+    const { draft: imported, droppedSlugs } = draftFromResultDecks(deckSlugs, nextNumDecks, {
+      ownedSlugFor: ownedSlugResolver,
+      canSeat: canSeatFrom(roster, excludedSlugs),
+    })
+
+    // 덱 개수를 먼저 바꾼다 - numDecks를 감시하는 resizeDraft 이펙트가 뒤에
+    // 돌면서 방금 넣은 편성을 옛 개수로 자르지 않게 하기 위해서다.
+    setNumDecks(nextNumDecks)
+    setDraftValue(imported)
+    setDroppedCount(droppedSlugs.length)
+    setDraft(bossProfileToDraft(view.boss))
+
+    // 편성을 갈아치웠으므로 그 전 편성으로 나온 결과는 화면에서 내린다.
+    setDisplayResult(null)
+    setDisplayMode(null)
+    setDisplayBoss(null)
+    cancelPendingRaidSubmit()
+    // 편성 칸이 없는 모드였다면 받을 칸이 있는 화면으로 데려간다. switchMode가
+    // evaluate 결과도 함께 리셋한다.
+    switchMode(mode === 'draft' || mode === 'evaluate' ? mode : 'evaluate')
   }
 
   /** 보관물을 읽기 모드로 그린다. gimmickUnmetFor는 넘기지 않는다 - 그 판정은
@@ -675,20 +760,6 @@ export function RecommendPanel({
           : '계산 중…'
   const submitLabel = active.status === 'loading' ? loadingLabel : '인카운터!'
 
-  // Evaluation isn't cached and its display is gated purely on `mode`, unlike
-  // raid/draft's raidResultMode/displayResult - so a stray in-flight evaluate
-  // request left running after the player moves to another mode is stopped
-  // here rather than by a render guard. reset() also clears a FINISHED
-  // result, which cancel() cannot touch (there is nothing left in flight to
-  // abort) - draftValue is shared with draft mode, so without it a result
-  // computed for one composition could still render after the player edits
-  // the decks elsewhere and switches back to evaluate.
-  const switchMode = (next: RecommendMode) => {
-    evaluation.cancel()
-    evaluation.reset()
-    setMode(next)
-  }
-
   // 실행 버튼은 두 자리 중 하나에 선다 - 아래 폼을 볼 것. 내용물은 같으므로
   // 여기서 한 번만 만든다.
   const actionButtons = (
@@ -703,6 +774,18 @@ export function RecommendPanel({
         <button type="button" className="btn" onClick={active.cancel}>
           취소
         </button>
+      )}
+      <ImportRunButton runs={savedRuns} draft={draftValue} onImport={importRun} />
+      {/* 편성 칸이 있는 모드에만. 이 조건 덕분에 단일 덱·전부 최적화 자리의
+          액션 행에는 나오지 않는다. */}
+      {(mode === 'draft' || mode === 'evaluate') && (
+        <ClearDraftButton draft={draftValue} onClear={clearDraft} />
+      )}
+      {/* 편성 칸이 있는 모드에만 - 위 초기화 버튼과 같은 조건이다. */}
+      {(mode === 'draft' || mode === 'evaluate') && droppedCount > 0 && (
+        <p className="field__error" role="status">
+          <HelpText>{HELP.draftActions.droppedUnits(droppedCount)}</HelpText>
+        </p>
       )}
       {mode !== 'evaluate' && rosterTooSmall && (
         <p className="field__error" role="alert">
