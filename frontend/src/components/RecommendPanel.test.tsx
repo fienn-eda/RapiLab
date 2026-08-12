@@ -1942,6 +1942,61 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
     },
   })
 
+  /** 빈자리만 최적화 보관물 중, 엔진이 낸 덱 수가 유저가 제출한 덱 수보다 적은
+   * 것. 백엔드는 로스터가 더 못 채우면 num_decks보다 적은 덱을 돌려주고
+   * (types/recommend.ts의 RecommendRaidResponse), 저장되는 numDecks는 그 결과
+   * 덱 수다 - 그래서 draft(제출한 편성)가 numDecks보다 길 수 있다. */
+  const draftRunWithFewerResultDecks = (): SavedRun => ({
+    id: 'd1',
+    name: '두 덱을 냈지만 세 덱을 짰던 보관물',
+    savedAt: 1754438400000,
+    tab: 'solo',
+    view: {
+      mode: 'draft',
+      boss: bossOf('Water'),
+      numDecks: 1,
+      decks: [
+        {
+          deck: ['a', 'b', 'c', 'd', 'e'],
+          total_damage: 10,
+          burst_damage: 4,
+          normal_attack_damage: 3,
+          skill_damage: 3,
+          hold_burst_slugs: [],
+          pinned_slugs: [],
+        },
+      ],
+      combinedTotalDamage: 10,
+      excludedSlugs: [],
+      leftoverSlugs: [],
+      withinDraft: null,
+      baselineTotalDamage: null,
+      draft: {
+        decks: [
+          [{ slug: 'a', locked: false }],
+          [{ slug: 'b', locked: false }],
+          [{ slug: 'c', locked: false }],
+        ],
+      },
+    },
+  })
+
+  // 「폼 채우기」의 뜻은 「그때의 설정으로 되돌린다」이고, 그때 유저가 짠 것은
+  // 세 덱이다. 결과가 한 덱인 것은 엔진의 답이지 유저의 설정이 아니다. 덱 수를
+  // 결과 쪽에 맞추면 numDecks를 감시하는 resizeDraft 이펙트가 뒤 두 덱을 조용히
+  // 잘라내, 유저가 짰던 편성이 말없이 사라진다.
+  it('"폼 채우기"는 결과가 낸 덱 수보다 편성이 길면 편성 쪽에 맞춘다', async () => {
+    const user = await openWithRuns([draftRunWithFewerResultDecks()])
+    await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/ }))
+
+    await user.click(screen.getByRole('button', { name: /세 덱을 짰던/ }))
+    await user.click(screen.getByRole('button', { name: '이 설정으로 폼 채우기' }))
+
+    expect(screen.getByLabelText('덱 개수')).toHaveValue('3')
+    const deck3 = screen.getByRole('heading', { name: /덱 3/ }).closest('div')!
+    expect(within(deck3).getByText('C')).toBeInTheDocument()
+  })
+
   // 「제외」는 이 앱 어디서나 같은 뜻이다: 덱에서도 빠지고 제출 로스터에서도
   // 빠진다(UnitPalette의 toggleExcludedSlug). 팔레트는 제외된 칩의 배치를 막고
   // 가져오기도 거르는데, 「폼 채우기」가 날것으로 앉히면 그 니케는 덱에 있고

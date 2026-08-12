@@ -560,16 +560,21 @@ export function RecommendPanel({
    * 것이 목적이다). */
   const restoreRun = (run: SavedRun) => {
     const view = run.view as SoloRunView
+    const restoredDraft = 'draft' in view ? view.draft : null
     setMode(view.mode)
-    setNumDecks(view.numDecks)
+    // 되돌릴 덱 수는 유저가 짰던 편성도 담을 만큼이어야 한다. 저장된 numDecks는
+    // 엔진이 실제로 낸 덱 수라(로스터가 못 채우면 요청보다 적게 온다), 그것에만
+    // 맞추면 numDecks를 감시하는 resizeDraft 이펙트가 뒤 덱을 잘라 유저가 짰던
+    // 편성이 말없이 사라진다.
+    setNumDecks(Math.max(view.numDecks, restoredDraft?.decks.length ?? 0))
     setDraft(bossProfileToDraft(view.boss))
     // 편성은 draft/evaluate 갈래에만 있다. 그때 앉아 있던 니케가 지금은 로스터에
     // 없거나 미사용일 수 있으므로 가져오기와 같은 판정을 통과한 좌석만 되돌린다 -
     // 안 그러면 덱에는 있고 제출 로스터에는 없는 니케가 생겨, 실행하면 백엔드가
     // 그 슬러그를 엔진이 모른다고 답한다.
-    if ('draft' in view && view.draft) {
+    if (restoredDraft) {
       const { draft: seatable, droppedSlugs } = seatableOnly(
-        view.draft,
+        restoredDraft,
         canSeatFrom(roster, excludedSlugs),
       )
       setDraftValue(seatable)
