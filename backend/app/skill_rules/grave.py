@@ -2,13 +2,18 @@
 signature weapon).
 
 Modeled (DPS-relevant):
-- Plot Spoiler (skills[2], her burst): self Pierce Damage; squad Attack
-  Damage, Pierce Damage, Critical Rate, and Max Ammunition Capacity +3 ROUNDS
-  (a flat round count, `max_ammo_rounds` - raid_simulator converts it against
-  each recipient's own base magazine, which is why skill_rules can state it
-  without knowing any weapon). All durations are a literal "10 sec" in the
-  skill text (not a data slot), hence the hardcoded constant. Her self HP
-  drain (Prediction) is not modeled.
+- Plot Spoiler (skills[2], her burst). The text is split into two blocks and
+  the scopes follow that split exactly:
+  - "Affects self": Pierce (the property), Pierce Damage, Critical Rate. The
+    Critical Rate is hers alone, and it is the largest number in the bullet -
+    read as a squad buff it pays every ally a crit rate they never get.
+  - "Affects all allies": Attack Damage, Pierce Damage, and Max Ammunition
+    Capacity +3 ROUNDS (a flat round count, `max_ammo_rounds` -
+    raid_simulator converts it against each recipient's own base magazine,
+    which is why skill_rules can state it without knowing any weapon).
+  All durations are a literal "10 sec" in the skill text (not a data slot),
+  hence the hardcoded constant. Her self HP drain and the unlimited ammunition
+  (both Prediction) are not modeled.
 - Heat Emission (skills[0]): "Activates when Prediction status ends" -
   Prediction is granted for exactly 10 sec by her own burst, and Full Burst
   itself lasts 10 sec, so activation is approximated as firing at
@@ -67,9 +72,9 @@ def build_grave_rules(values):
     plot_spoiler = values["plot_spoiler"]
 
     self_pierce = float(plot_spoiler["description_value_02"]) / 100
+    self_crit_rate = float(plot_spoiler["description_value_06"]) / 100
     squad_attack_damage = float(plot_spoiler["description_value_03"]) / 100
     squad_pierce = float(plot_spoiler["description_value_04"]) / 100
-    squad_crit_rate = float(plot_spoiler["description_value_06"]) / 100
     squad_ammo_rounds = float(plot_spoiler["description_value_05"])
     heat_emission_pierce = float(heat_emission["description_value_05"]) / 100
 
@@ -93,7 +98,7 @@ def build_grave_rules(values):
             applied_at=time,
         )
         registry.add(
-            Effect("crit_rate", squad_crit_rate, "squad", PLOT_SPOILER_BUFF_DURATION, caster_slug),
+            Effect("crit_rate", self_crit_rate, "self", PLOT_SPOILER_BUFF_DURATION, caster_slug),
             applied_at=time,
         )
         registry.add(

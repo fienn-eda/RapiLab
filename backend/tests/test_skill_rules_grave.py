@@ -20,7 +20,7 @@ PLOT_SPOILER = {
     "description_value_03": "48.2",   # squad Attack Damage %
     "description_value_04": "39.98",  # squad Pierce Damage %
     "description_value_05": "3",      # squad Max Ammo +N rounds
-    "description_value_06": "85.19",  # squad Critical Rate %
+    "description_value_06": "85.19",  # self Critical Rate %
 }
 OVERHEAT = {
     "description_value_01": "15",     # Overheat I threshold (normals from battle start)
@@ -57,8 +57,19 @@ def test_plot_spoiler_grants_self_pierce_and_squad_buffs():
     assert round(registry.total_for("pierce_damage_up", GRAVE, now=5.0), 4) == 0.9278
     assert round(registry.total_for("pierce_damage_up", ALLY, now=5.0), 4) == 0.3998
     assert round(registry.total_for("attack_damage_up", ALLY, now=5.0), 4) == 0.482
-    assert round(registry.total_for("crit_rate", ALLY, now=5.0), 4) == 0.8519
     assert registry.total_for("attack_damage_up", ALLY, now=15.1) == 0.0  # 10s hardcoded duration
+
+
+def test_plot_spoiler_critical_rate_is_self_only():
+    # The skill text splits into two blocks: Critical Rate sits under "Affects
+    # self" alongside Pierce and unlimited ammo, while only Attack Damage,
+    # Pierce Damage and Max Ammo sit under "Affects all allies".
+    ctx = make_context()
+    registry = EffectRegistry()
+    fire_trigger("own_burst_activate", {"grave": build()}, ctx, registry, time=5.0)
+
+    assert round(registry.total_for("crit_rate", GRAVE, now=5.0), 4) == 0.8519
+    assert registry.total_for("crit_rate", ALLY, now=5.0) == 0.0
 
 
 def test_plot_spoiler_grants_squad_flat_max_ammo():
