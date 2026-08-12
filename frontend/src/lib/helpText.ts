@@ -47,7 +47,7 @@ export const HELP = {
   app: {
     subtitle: 'Shiftypad 데이터 기반 덱 빌더 & 계산기',
     cubeAssumption:
-      '재장전 큐브 15레벨 장착, 버스트 사이클이 밀리지 않은 환경으로 가정해요.',
+      '재장전 큐브 15레벨 장착, 버스트 사이클이 밀리지 않은 환경으로 가정해요. 톡톡이 / 버충은 미구현 상태예요.',
     noProfiles: '아직 동기화된 계정이 없어요. 위에서 blablalink 동기화를 시작해보세요.',
   },
 
