@@ -9,10 +9,12 @@ Modeled (DPS-relevant):
   sides" - 3 of the 5 seats, not the squad. WHICH 2 comes from
   `SquadContext.neighbor_slugs`: a back-row seat borders any 2 of the other
   four, so it is the player's choice, and the engine either takes a supplied
-  seating or falls back to the 2 highest-ATK allies. The report path picks the
-  best of the 6 by measuring them (deck_search.evaluate_deck_best_seating).
-  Continuous from battle start given the back-row assumption; it also sets the
-  Sword Coin status Game Master reads.
+  seating or falls back to the 2 highest-ATK allies. The report path measures
+  every arrangement and keeps the best
+  (deck_search.evaluate_deck_best_seating). Continuous from battle start given
+  the back-row assumption - which is now also declared as a seat restriction in
+  registry.SEATED_BUFF_SLUGS, so no arrangement seats her in the front row and
+  pays the buff anyway. It also sets the Sword Coin status Game Master reads.
 - Coin Flip's full chain: Sword Coin -> Shield Coin (her 30th Full Charge) ->
   Double Sword Coin (her 5th burst), which grants the squad Max HP +15.08% of
   her own, continuously. Shield Coin's own Damage Taken reduction stays
@@ -44,7 +46,8 @@ Not modeled:
 - Shield Coin's Damage Taken reduction - survival.
 """
 from app.effects import Effect
-from app.skill_rules._helpers import cdr_pulse_rule, refreshing_buff_rule
+from app.skill_rules._helpers import (cdr_pulse_rule, refreshing_buff_rule,
+                                      seated_scope)
 from app.squad_engine import SkillRule, has_status
 
 
@@ -118,10 +121,9 @@ def build_coin_flip_rules(values):
 
     def apply_sword_coin(context, caster_slug, time, registry):
         context.set_status(caster_slug, SWORD_COIN_STATUS)
-        seated = [caster_slug] + context.neighbor_slugs(caster_slug, registry, time)
         registry.add(
             Effect("attack_damage_up", sword_coin_attack_damage,
-                   "slugs:" + ",".join(seated), None, caster_slug),
+                   seated_scope(context, caster_slug, registry, time), None, caster_slug),
             applied_at=time,
         )
 

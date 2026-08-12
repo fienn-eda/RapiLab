@@ -476,46 +476,72 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None,
     )
 
 
+def seat_arrangements(ordered_deck):
+    """Every adjacency map this deck's five seats can produce, deduplicated.
+
+    Enumerating SEATS rather than neighbor pairs is what keeps the answer
+    honest once a deck can hold two seated-buff units: a line of five seats
+    constrains them jointly, so picking each one's best pair independently
+    would score a formation the game cannot make. Two units are already
+    possible (Rouge is Burst 1, Flora's Favorite Item Burst 2), so this is not
+    a hypothetical.
+
+    A unit's allowed seats come from SEATED_BUFF_SLUGS - Rouge's bullet needs
+    the back row, Flora's does not. Arrangements collapse to the adjacency they
+    induce, since the seats of everyone else are invisible to the simulation:
+    that is what turns 5! = 120 orders into 6 distinct maps for a Rouge deck,
+    10 for a Flora one (her end seats leave her a single neighbor) and 18 for a
+    deck holding both. Empty when the deck holds no such unit.
+    """
+    slugs = [unit.slug for unit in ordered_deck]
+    if not any(slug in SEATED_BUFF_SLUGS for slug in slugs):
+        return []
+    distinct = {}
+    for arrangement in permutations(slugs):
+        seats = {slug: seat for seat, slug in enumerate(arrangement)}
+        if any(seats[slug] not in SEATED_BUFF_SLUGS[slug]
+               for slug in slugs if slug in SEATED_BUFF_SLUGS):
+            continue
+        adjacency = {
+            slug: [arrangement[j] for j in (seat - 1, seat + 1)
+                   if 0 <= j < len(arrangement)]
+            for seat, slug in enumerate(arrangement) if slug in SEATED_BUFF_SLUGS
+        }
+        key = tuple(sorted((slug, tuple(sorted(mates)))
+                           for slug, mates in adjacency.items()))
+        distinct.setdefault(key, adjacency)
+    return list(distinct.values())
+
+
 def evaluate_deck_best_seating(ordered_deck, boss: BossProfile, **kwargs):
     """`evaluate_deck`, but the seat arrangement is CHOSEN rather than assumed:
-    the deck is scored under every neighbor pair its seated-buff unit could
-    have, and the best one wins. The winner is reported as `result["seating"]`.
+    the deck is scored under every arrangement its seated-buff units could take
+    and the best one wins, reported as `result["seating"]`.
 
-    Exhaustive, not sampled. A back-row seat (position 2 or 4) borders exactly
-    two of the other four - seat 2 borders 1 and 3, seat 4 borders 3 and 5 - so
-    the whole space is C(4,2)=6 and the answer is the true maximum.
+    Exhaustive over `seat_arrangements`, so it is the true maximum rather than a
+    sample - and every candidate is a formation the player can actually field,
+    which is what makes the reported number reproducible.
 
-    It costs 6 simulations - measured at a 180-sec fight, 100 ms plain against
-    561 ms here, so +462 ms per reported deck that holds one, and +2.3 sec in
-    the worst case where all five reported decks do. That is why it is the
-    REPORT path and not the search path: a request scores ~1200 decks
-    (SEARCH_SIM_BUDGET) and cannot pay that per deck. Ranking therefore uses SquadContext.neighbor_slugs's policy
-    and only the handful of decks actually shown to the player are re-scored
-    here. A deck with no seated-buff unit costs exactly one simulation, as
-    before, and carries no `seating` key - there is nothing for the player to
-    arrange.
+    It costs one simulation per arrangement: 6 for a Rouge deck, 10 for a Flora
+    one, 18 for a deck holding both. Measured at a 180-sec fight against a plain
+    evaluation of the same deck, that is +0.47 sec, +1.55 sec and +2.46 sec per
+    reported deck - so a top-5 of decks that all hold both would add ~12 sec.
+    This is why it is the REPORT path and not the search path: a request scores
+    ~1200 decks (SEARCH_SIM_BUDGET) and cannot pay that per deck.
+    Ranking therefore uses SquadContext.neighbor_slugs's policy and only the
+    handful of decks actually shown to the player are re-scored here. A deck
+    with no seated-buff unit costs exactly one simulation, as before, and
+    carries no `seating` key - there is nothing for the player to arrange.
     """
-    seated = [unit.slug for unit in ordered_deck if unit.slug in SEATED_BUFF_SLUGS]
-    if not seated:
+    arrangements = seat_arrangements(ordered_deck)
+    if not arrangements:
         return evaluate_deck(ordered_deck, boss, **kwargs)
-    if len(seated) > 1:
-        # Two seated-buff units cannot be given independent neighbor pairs:
-        # five seats in a line constrain each other, and enumerating pairs
-        # separately would score arrangements no formation can produce. Refusing
-        # is the honest answer until a second such unit is encoded and the
-        # enumeration is rewritten over real seat permutations.
-        raise ValueError(
-            f"deck seats more than one unit with a seating-dependent buff "
-            f"({', '.join(sorted(seated))}); evaluate_deck_best_seating "
-            f"enumerates neighbor pairs for one")
-    caster = seated[0]
-    allies = [unit.slug for unit in ordered_deck if unit.slug != caster]
-    best, best_pair = None, None
-    for pair in combinations(allies, 2):
-        result = evaluate_deck(ordered_deck, boss, adjacency={caster: list(pair)}, **kwargs)
+    best, best_arrangement = None, None
+    for adjacency in arrangements:
+        result = evaluate_deck(ordered_deck, boss, adjacency=adjacency, **kwargs)
         if best is None or result["total_damage"] > best["total_damage"]:
-            best, best_pair = result, pair
-    best["seating"] = {caster: list(best_pair)}
+            best, best_arrangement = result, adjacency
+    best["seating"] = best_arrangement
     return best
 
 

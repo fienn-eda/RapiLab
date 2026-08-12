@@ -137,3 +137,65 @@ def test_burst_adds_squad_atk_on_top_of_its_true_damage():
     assert round(reg.total_for("true_damage_up", ALLY, 20.0), 4) == 0.4239
     assert round(reg.total_for("flat_atk", ALLY, 20.0), 2) == round(CASTER_ATK * 0.8586, 2)
     assert reg.total_for("flat_atk", ALLY, 30.1) == 0.0
+
+
+# "Affects all allies in the Peace of Mind state" - Peace of Mind is Petunia's
+# first bullet, "self and both adjacent allies", granted at battle start and
+# continuous. So the set is Flora plus her 2 neighbors: 3 of the 5 seats.
+FIVE_UNIT_ATK = {"flora-signature": 100.0, "ally1": 400.0, "ally2": 300.0,
+                 "ally3": 200.0, "ally4": 100.0}
+
+
+def _five_unit_ctx(adjacency=None, shielder=None):
+    allies = ["ally1", "ally2", "ally3", "ally4"]
+    if shielder is not None:
+        allies[allies.index(shielder)] = "crown"
+    return SquadContext(
+        [SquadMember("flora-signature", burst_tier=2, element="Electric", weapon="MG")]
+        + [SquadMember(slug, burst_tier=3, element="Fire", weapon="AR") for slug in allies],
+        base_atk={("crown" if slug == shielder else slug): atk
+                  for slug, atk in FIVE_UNIT_ATK.items()},
+        adjacency=adjacency,
+    )
+
+
+def _recipients(reg, ctx, stat, time):
+    return {member.slug for member in ctx.members
+            if reg.total_for(stat, {"slug": member.slug, "element": member.element}, time) > 0}
+
+
+def test_peace_of_mind_max_hp_reaches_only_the_caster_and_two_allies():
+    ctx = _five_unit_ctx()
+    reg = _fire("ally_burst_activate", burster="flora-signature", time=20.0, ctx=ctx)
+    assert _recipients(reg, ctx, "flat_max_hp", 20.0) == {"flora-signature", "ally1", "ally2"}
+
+
+def test_peace_of_mind_atk_reaches_only_the_caster_and_two_allies():
+    ctx = _five_unit_ctx()
+    reg = _fire("ally_burst_activate", burster="flora-signature", time=20.0, ctx=ctx)
+    assert _recipients(reg, ctx, "flat_atk", 20.0) == {"flora-signature", "ally1", "ally2"}
+
+
+def test_the_shielded_atk_path_is_seated_too():
+    # 천장 분기도 같은 불릿이다 - 여기만 squad로 남으면 쉴드를 놓는 아군이 있는
+    # 덱에서만 5명에게 간다.
+    ctx = _five_unit_ctx(shielder="ally2")
+    reg = _fire("battle_start", ctx=ctx)
+    assert _recipients(reg, ctx, "flat_atk", 0.0) == {"flora-signature", "ally1", "crown"}
+
+
+def test_an_explicit_seating_decides_who_is_in_peace_of_mind():
+    ctx = _five_unit_ctx(adjacency={"flora-signature": ["ally3", "ally4"]})
+    reg = _fire("ally_burst_activate", burster="flora-signature", time=20.0, ctx=ctx)
+    assert _recipients(reg, ctx, "flat_atk", 20.0) == {"flora-signature", "ally3", "ally4"}
+
+
+def test_the_all_allies_bullets_stay_squad_wide():
+    # Iris의 True Damage와 Secret Garden은 원문이 "Affects all allies"라 좌석과
+    # 무관하다 - 좌석 스코프가 옆 불릿으로 번지면 여기서 잡힌다.
+    everyone = {"flora-signature", "ally1", "ally2", "ally3", "ally4"}
+    ctx = _five_unit_ctx()
+    assert _recipients(_fire("battle_start", ctx=ctx), ctx, "true_damage_up", 0.0) == everyone
+    ctx = _five_unit_ctx()
+    reg = _fire("own_burst_activate", time=20.0, ctx=ctx)
+    assert _recipients(reg, ctx, "flat_atk", 20.0) == everyone

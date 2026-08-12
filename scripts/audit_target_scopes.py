@@ -61,9 +61,17 @@ NARROW_TARGETS = {
     "bursted allies": re.compile(r"allies who (?:previously cast|have used) their burst", re.I),
 }
 
-# Positional targeting has NO engine scope - squad is the documented fallback.
+# Seat-scoped targeting. Two wordings, and the second is the one that hid a real
+# defect for weeks: a bullet can name the sides directly ("2 allies on both
+# sides"), or name a STATE that a sibling bullet gave to "self and both adjacent
+# allies" and never mention position at all. Flora's Favorite Item pays
+# "all allies in the Peace of Mind state" - worth 45.12% of her ATK - and the
+# first three patterns below cannot see it. Requiring "all(y|ies) in the ...
+# state" keeps it off a trigger clause ("when in Sword Coin status", "when the
+# caster is in the Burst state"), which names no recipients.
 POSITIONAL = re.compile(
-    r"adjacent all(?:y|ies)|allies on both sides|back row|front row", re.I)
+    r"adjacent all(?:y|ies)|allies on both sides|back row|front row|"
+    r"all(?:y|ies) in the .+? state", re.I)
 
 # What a module emitting an exact subset looks like.
 NARROW_SCOPE = re.compile(

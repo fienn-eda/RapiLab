@@ -3768,11 +3768,12 @@ snow-white 0.998 · scarlet 0.999. 뒤 셋은 오차 범위이므로 실질 대�
 - **미구현 메커니즘:** 무기 변형, 공격속도 변화.
   (노멀어택 횟수 트리거·최고ATK 타겟팅은 해소됐고, **위치 타겟팅도 2026-08-13 해소** —
   `SquadContext.neighbor_slugs` + `registry.SEATED_BUFF_SLUGS`.)
-- **좌석 스코프 잔여 (2026-08-13):** `flora_signature`의 Peace of Mind 두 불릿
-  (Max HP +15.01% · **ATK +45.12% of Flora's ATK**)이 아직 `squad`다. 원문은
-  「self and both adjacent allies」 상태를 가진 아군이라 3명이 맞고, 5명에게 주고 있다.
-  기계장치는 이미 서 있어 `SEATED_BUFF_SLUGS`에 슬러그를 넣고 두 Effect의 스코프만
-  바꾸면 된다. 루주 커밋과 분리한 것은 Fienn의 지시(범위: 루주만).
+- **좌석 스코프 (2026-08-13, 착륙):** 루주와 `flora-signature` 둘 다 끝났다.
+  플로라의 Peace of Mind 두 불릿(Max HP +15.01% · **ATK +45.12% of Flora's ATK**)은
+  ATK 쪽이 천장·바닥 두 경로라 실제로는 Effect 셋을 옮겼다. 좌석형 유닛을 **둘 다
+  든 덱**이 가능해지면서(루주 B1 · 플로라 B2) 보고 단계가 「각자 최적 쌍」이 아니라
+  **5칸 배치 전수**로 바뀌었다 — 자리가 서로를 제약해서, 따로 고르면 어떤 편성으로도
+  못 만드는 배치를 채점한다. 배치 수는 루주 덱 6 · 플로라 덱 10 · 둘 다 18.
 - **좌석 화면 표시 (2026-08-13, 미착수):** 백엔드는 `DeckRecommendation.seating`
   (`{시전자: [아군 둘]}`)을 이미 낸다. 프론트 와이어 타입
   (`frontend/src/types/recommend.ts`)에는 아직 없다 — 필수 필드로 넣으면 그 타입을

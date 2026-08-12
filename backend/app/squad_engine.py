@@ -290,11 +290,22 @@ class SquadContext:
 
         Without one, the fallback is the 2 allies with the highest ATK. It is a
         POLICY, not a guess at the optimum: the search scores ~1200 decks per
-        request and cannot afford to try all 6 seatings, so it needs one answer
-        that is deterministic, cheap and close. Whoever wants the true optimum
-        pays for it explicitly (deck_search.evaluate_deck_best_seating), and
-        because the policy is a real seating, the number it produces is one the
-        player can reproduce by seating her that way."""
+        request and cannot afford to try every arrangement, so it needs one
+        answer that is deterministic, cheap and close. Whoever wants the true
+        optimum pays for it explicitly
+        (deck_search.evaluate_deck_best_seating).
+
+        The policy answers per caster, which is exact for one seated unit - the
+        seating it names is a real one the player can field. With TWO in a deck
+        (Rouge and Flora's Favorite Item can share one) they answer
+        independently, and five seats in a line may not grant both their pick:
+        then the RANKING scores an arrangement no formation produces. That is
+        tolerable only because ranking is all it does - every reported number
+        comes from evaluate_deck_best_seating, which enumerates real
+        arrangements. Measured on a deck holding both, the policy sat 4.77%
+        BELOW the true optimum (it hands both casters the same two allies
+        instead of spreading them), so the error is real but small next to the
+        squad-wide scope this replaced."""
         seated = self.adjacency.get(caster_slug)
         if seated is not None:
             return list(seated)

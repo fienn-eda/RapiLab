@@ -10,7 +10,7 @@
 고른다. 여기서 가장 중요한 성질은 **보고된 숫자가 재현 가능하다**는 것이다 -
 결과에 실린 좌석대로 앉히면 정확히 그 숫자가 나와야 한다.
 """
-from itertools import combinations
+from itertools import combinations, permutations
 
 from app.deck_allocation import best_ordering_summary
 from app.deck_search import (BossProfile, evaluate_deck,
@@ -121,6 +121,54 @@ def test_reported_decks_stay_ranked_after_the_seating_re_score():
               for deck in search_best_decks(_specs(SEATED_ROSTER), BOSS, top_n=5)]
 
     assert totals == sorted(totals, reverse=True)
+
+
+# 루주(B1)와 플로라 애장품(B2)은 둘 다 좌석형이고 같은 덱에 앉을 수 있다.
+BOTH_SEATED_DECK = ["rouge", "flora-signature", "drake", "modernia", "maxwell"]
+
+# 좌석은 0-indexed. 루주의 Sword Coin은 「Activates when assigned to the back
+# row」라 뒷열(2번·4번 자리 = 인덱스 1·3)에서만 켜진다. 플로라의 Peace of Mind는
+# 자리 제한이 없다.
+BACK_ROW = (1, 3)
+
+
+def _is_realizable(deck_slugs, seating):
+    """5칸 한 줄에 실제로 앉혀서 이 인접 관계가 나오는가.
+
+    구현을 되풀이하지 않고 도메인 사실만 쓴다 - 자리는 다섯, 인접은 |i-j|=1,
+    루주는 뒷열. 구현이 「각자 최고의 둘」을 독립으로 골라 버리면 여기서 잡힌다:
+    두 유닛이 서로 다른 두 명을 동시에 옆에 둘 수 없는 배치가 존재한다."""
+    for arrangement in permutations(deck_slugs):
+        seats = {slug: seat for seat, slug in enumerate(arrangement)}
+        if "rouge" in seats and seats["rouge"] not in BACK_ROW:
+            continue
+        if all(sorted(mates) == sorted(arrangement[j]
+                                       for j in (seats[slug] - 1, seats[slug] + 1)
+                                       if 0 <= j < len(arrangement))
+               for slug, mates in seating.items()):
+            return True
+    return False
+
+
+def test_a_flora_deck_gets_her_seating_too():
+    deck = _specs(["little-mermaid", "flora-signature", "drake", "modernia", "maxwell"])
+
+    best = evaluate_deck_best_seating(deck, BOSS)
+
+    assert set(best["seating"]) == {"flora-signature"}
+    assert _is_realizable([unit.slug for unit in deck], best["seating"])
+
+
+def test_a_deck_seating_two_such_units_gets_one_arrangement_that_exists():
+    # 좌석은 서로를 제약한다 - 둘의 최적을 따로 고르면 어떤 편성으로도 만들 수
+    # 없는 배치를 채점하게 된다.
+    deck = _specs(BOTH_SEATED_DECK)
+
+    best = evaluate_deck_best_seating(deck, BOSS)
+
+    assert set(best["seating"]) == {"rouge", "flora-signature"}
+    assert _is_realizable(BOTH_SEATED_DECK, best["seating"])
+    assert evaluate_deck(deck, BOSS, adjacency=best["seating"])["total_damage"] == best["total_damage"]
 
 
 def test_a_deck_with_no_seated_buff_keeps_the_plain_result():

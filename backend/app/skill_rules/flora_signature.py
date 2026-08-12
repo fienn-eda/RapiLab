@@ -45,14 +45,17 @@ bullets must still fire in a cycle where another Burst-2 ally takes the slot.
 there is no representable gap between "stage entered" and "burst used" - the
 distinction that matters is WHO bursts, not when.)
 
-"Allies in the Peace of Mind state" is Petunia's self + both adjacent allies, so
-these two bullets reach 3 of the 5 seats and land here as `squad` - 5 - which
-overpays them. This is now a KNOWN OVERPAY rather than an unrepresentable one:
-the seating axis exists (SquadContext.neighbor_slugs, added for Rouge's Sword
-Coin) and closing it is adding Flora's signature to
-registry.SEATED_BUFF_SLUGS and scoping these two Effects to her neighbors.
-Deliberately deferred (Fienn, 2026-08-13) to keep that change in its own commit;
-the ATK bullet (+45.12% of Flora's ATK) is the one that moves damage.
+"Allies in the Peace of Mind state" is Petunia's self + both adjacent allies -
+Peace of Mind is granted at battle start and is continuous, so its holders are
+that same three for the whole fight. Both bullets that pay it are therefore
+SEATED, not squad, and use `seated_buff_rule`; the ATK one is seated on both of
+its paths, since the ceiling and the floor are the same bullet. She is in
+registry.SEATED_BUFF_SLUGS with no row requirement, so an end seat - one
+neighbor instead of two - is among the arrangements the report path measures.
+
+Her other bullets are genuinely squad and must stay so: Iris's True Damage and
+the shield read an ADJACENT ally in their trigger but say "Affects all allies",
+and Secret Garden says it outright.
 
 Not modeled / skipped:
 - The AMOUNT of every heal, shield and Incoming Healing bullet - survivability,
@@ -63,7 +66,8 @@ Not modeled / skipped:
   Increases the stack count of stackable buffs by 1" - the engine has no notion
   of incrementing another unit's stackable-buff count. Same defer as the base.
 """
-from app.skill_rules._helpers import SHIELD_PROVIDER_SLUGS, buff_rule
+from app.skill_rules._helpers import (SHIELD_PROVIDER_SLUGS, buff_rule,
+                                      seated_buff_rule)
 from app.squad_engine import (
     all_conditions,
     burst_stage_entered,
@@ -113,16 +117,16 @@ def build_flora_signature_rules(values):
         # An ally who shields the whole squad keeps the bullet up on their own
         # schedule, which the engine cannot count - deck presence is what can be
         # asked, so this is the ceiling (Crown's Royal Attire precedent).
-        buff_rule("battle_start", [
-            ("flat_atk", shield_atk, "squad", None),
+        seated_buff_rule("battle_start", [
+            ("flat_atk", shield_atk, None),
         ], condition=shielded_by_ally),
-        buff_rule("ally_burst_activate", [
-            ("flat_max_hp", max_hp_bonus, "squad", max_hp_duration),
+        seated_buff_rule("ally_burst_activate", [
+            ("flat_max_hp", max_hp_bonus, max_hp_duration),
         ], condition=stage_two),
         # Her own combo is the floor and the only path when nobody else shields.
         # The two never run together: the same bullet would land twice.
-        buff_rule("ally_burst_activate", [
-            ("flat_atk", shield_atk, "squad", shield_atk_duration),
+        seated_buff_rule("ally_burst_activate", [
+            ("flat_atk", shield_atk, shield_atk_duration),
         ], condition=all_conditions(stage_two, not_condition(shielded_by_ally))),
         buff_rule("own_burst_activate", [
             ("true_damage_up", burst_true_damage, "squad", burst_true_duration),

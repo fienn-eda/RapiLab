@@ -20,27 +20,40 @@ cooldown reduction).
   `highest_atk_buff_rule` / `round_buff_rule` after `SquadContext.top_atk_slugs`
   ranks the deck by live final ATK, for "N allies with the highest final ATK".
 
-**"Self and 2 allies on both sides" IS expressible** (2026-08-13) — do NOT
-approximate it as `squad`, which overpays 5 recipients for a 3-recipient bullet.
-Call `SquadContext.neighbor_slugs(caster_slug, registry, time)` and build a
-`"slugs:"` scope from `[caster] + neighbors`, then add the unit's slug to
-`registry.SEATED_BUFF_SLUGS`. Precedent: `rouge.py`'s Sword Coin.
+**Seat-scoped targeting IS expressible** (2026-08-13) — do NOT approximate it as
+`squad`, which overpays 5 recipients for a 3-recipient bullet. Use
+`_helpers.seated_buff_rule` (or `_helpers.seated_scope`, when the action does
+more than register buffs), then add the unit's slug to
+`registry.SEATED_BUFF_SLUGS`. Consumers: `rouge.py`'s Sword Coin,
+`flora_signature.py`'s Peace of Mind bullets.
 
-Who the 2 neighbors are is the PLAYER's choice, not a deck property — a back-row
+Two wordings land here:
+- **Direct** — "Affects self and 2 allies on both sides" (Rouge).
+- **Indirect** — "Affects all allies in the `<state>` state", where a sibling
+  bullet granted `<state>` to "self and both adjacent allies" (Flora's Peace of
+  Mind). Chase the state to its granter before deciding the scope.
+
+Who the neighbors are is the PLAYER's choice, not a deck property — a back-row
 seat (position 2 or 4) borders any 2 of the other four. So `neighbor_slugs`
 answers with a supplied seating when there is one, and otherwise with the 2
 highest-ATK allies (a cheap deterministic policy the ~1200-sim search can
-afford). The report path re-scores all C(4,2)=6 seatings and keeps the best
-(`deck_search.evaluate_deck_best_seating`), so the number shown to the player is
-the optimum and the seating that produces it rides along in
-`result["seating"]`.
+afford). The report path re-scores every arrangement the five seats can produce
+and keeps the best (`deck_search.evaluate_deck_best_seating`), so the number
+shown to the player is the optimum and the seating that produces it rides along
+in `result["seating"]`.
+
+`SEATED_BUFF_SLUGS` maps the slug to the seats it may occupy (0-indexed), which
+is how a bullet's own row condition gets declared — Rouge's needs the back row
+(`BACK_ROW_SEATS`), Flora's needs nothing (`ANY_SEAT`). Get this right: the
+restriction is what stops an arrangement from seating Rouge in the front row and
+paying her buff anyway, and it decides which JOINT arrangements exist when one
+deck holds two such units (6 distinct maps for a Rouge deck, 10 for a Flora one,
+18 for a deck holding both).
 
 Read the effect line, not the trigger: "Activates when an adjacent ally … .
-Affects all allies" is genuinely `squad` (Flora's Iris), and no seating changes
-it. Only a bullet whose AFFECTS clause names the sides belongs here.
-
-Row position itself (front/back) is still not modelled — a back-row requirement
-is a per-unit assumption stated in the module docstring (Rouge's).
+Affects all allies" is genuinely `squad` (Flora's Iris True Damage), and no
+seating changes it. Only a bullet whose AFFECTS clause names the sides — or
+names a state that does — belongs here.
 
 **Weapon- and element-conditional targeting IS precise** ("shotgun allies",
 "all Wind Code allies with assault rifles", "Water and Iron Code allies with
