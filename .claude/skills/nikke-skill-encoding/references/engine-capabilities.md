@@ -162,6 +162,13 @@ fall back to the fight-wide counter. Every classification site (`_refund_
 sequence`, `magazine_shot_count`, `_refund_carries_windows`) reads this off one
 shared `attack_rate._gated_to_windows(refund)` helper, so a future consumer of
 `windows` cannot reintroduce the fail-open by only fixing one call site.
+`_shared_magazine_shots` (Snow White: Heavy Arms' shared-magazine walk, below)
+is a fourth consumer of refunds but classifies none of them: it keeps no
+per-window counter, so it drops every window-gated refund outright before
+walking instead of reading `_gated_to_windows` per shot. **It does NOT support
+a window-gated refund** — one reaching it goes permanently inert, the same
+outcome the other three sites reach by classification, reached here by
+exclusion instead.
 
 Expose it as `<name>_ammo_refund(values)` and register in
 `registry._SKILL_AMMO_REFUNDS` as `slug: (builder, required_boss_element or

@@ -1145,6 +1145,13 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
     magazine can no longer be read off the rounds remaining - `opening` tracks
     the first and the last is stamped after the refund has been applied.
 
+    A refund gated to windows (`_gated_to_windows`) is dropped before the walk
+    rather than applied: this walk keeps no per-window counter the way
+    `magazine_shot_count` does, so a windowed refund reaching here has no
+    gate left to enforce it. Going inert is the same fail-safe
+    `magazine_shot_count` uses for a refund whose windows resolved to zero -
+    firing it unrestricted would silently ungate it instead.
+
     A timed refill is wired straight into the walk rather than through
     `magazine_shot_count` - this function never calls it, since one magazine
     runs straight through the segments instead of restarting per window. No
@@ -1161,6 +1168,7 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
     cursor = 0.0                 # instant the next charge starts from
     capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(0.0))))
     refunds = _refund_sequence(base.get("ammo_refund"), capacity)
+    refunds = tuple(r for r in refunds if not _gated_to_windows(r))
     refills = sorted(base.get("ammo_refills", ()), key=lambda r: r.time)
     pending_refills = [r for r in refills if r.time >= 0.0]
     rounds = capacity

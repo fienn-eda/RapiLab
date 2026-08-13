@@ -1039,3 +1039,36 @@ def test_a_refund_declared_windowed_but_resolved_to_none_is_permanently_inert():
     assert len(with_unrestricted) > len(unbuffered)
 
 
+def test_a_shared_magazine_walk_drops_a_windowed_refund_instead_of_running_it_unrestricted():
+    # Mirrors test_a_refund_declared_windowed_but_resolved_to_none_is_permanently_inert
+    # for `_shared_magazine_shots` (Snow White: Heavy Arms' shares_magazine walk):
+    # it keeps no per-window counter of its own, so a refund gated to windows -
+    # even one whose windows never resolved - must be dropped before the walk
+    # rather than firing on every shot ungated.
+    base = {"weapon": "SR", "max_ammo": 6, "reload_time": 2.0, "charge_time": 1.2,
+            "damage_percent": 100.0, "charge_damage_percent": 200.0}
+    segment = [{"start": 5.0, "until_shots": 3, "shares_magazine": True,
+               "profile": {"weapon": "SR", "charge_time": 3.2,
+                           "damage_percent": 100.0, "charge_damage_percent": 200.0}}]
+    unrestricted = AmmoRefund(every_shots=6, rounds=1, first_shot=2)
+    windowless = AmmoRefund(every_shots=6, rounds=1, first_shot=2,
+                            needs_own_burst_window=True)  # windows never resolved
+
+    unbuffered = generate_segmented_shots(base, segment, 60.0)
+    with_unrestricted = generate_segmented_shots(
+        {**base, "ammo_refund": unrestricted}, segment, 60.0)
+    with_windowless = generate_segmented_shots(
+        {**base, "ammo_refund": windowless}, segment, 60.0)
+
+    # Misclassifying `windowless` as plain would make it behave exactly like
+    # `unrestricted` - refunding all fight ungated. This walk has no
+    # per-window counter to honor a window even when one resolves, so it must
+    # drop the refund entirely rather than run it unrestricted.
+    assert with_windowless == unbuffered
+    # `unrestricted` (not gated) must still work on this walk - over a fixed
+    # 60-sec fight its extra rounds can tie the unbuffered SHOT COUNT (a
+    # magazine that empties one round later reloads one round later too), so
+    # the timeline itself - not its length - is what proves the refund fired.
+    assert with_unrestricted != unbuffered
+
+
