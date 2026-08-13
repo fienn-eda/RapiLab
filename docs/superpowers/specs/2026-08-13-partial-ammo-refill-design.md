@@ -100,10 +100,15 @@ class AmmoRefill:
 `first_shot=F`를 주면 `F`, `F+every_shots`, `F+2×every_shots`, … 가 된다. 아르카나는
 `(F=2, every=6)`이므로 2·8·14…이고, 6·12·18이 **아니다.**
 
-**가드가 내려간다.** 지금 `AmmoRefund.__post_init__`은 「환급이 발사보다 많으면 탄창이
-안 빈다」를 `rounds >= every_shots`로 본다. 퍼센트는 용량을 알아야 판정되므로, 이
-검증은 `_refund_sequence`(용량 모름)에서 `magazine_shot_count`(용량 앎)로 내려간다.
-순수한 이동이 아니라 **검증 시점이 생성자에서 워크로 늦춰지는 것**이다.
+**가드는 절반만 내려간다.** 지금 검증은 두 겹이다 — `__post_init__`이 인스턴스 하나를
+`rounds >= every_shots`로 즉시 보고, `_refund_sequence`가 합계를 본다. 후자는 이미
+`magazine_shot_count` 안에서 불리므로 워크 시점이다.
+
+- **`rounds`로 선언된 환급의 생성자 검사는 그대로 남는다** — 기존 가드 테스트 둘
+  (`AmmoRefund(10, rounds=10)` 즉시 거절, `(nine, nine)` 워크 시 거절)이 **한 글자도
+  안 바뀌고 초록이어야 한다.**
+- 바뀌는 것은 `_refund_sequence`가 **`capacity`를 받아** 합계를 `rounds_for(capacity)`로
+  계산하는 것뿐이다. 퍼센트 환급은 용량 없이는 판정 자체가 불가능하므로 여기서만 걸린다.
 
 ## 배선 — 깔때기 하나
 
@@ -114,17 +119,41 @@ class AmmoRefill:
 
 ```python
 def magazine_shot_count(capacity, shots_before, refund, *,
-                        magazine_start=None, shot_interval=None,
-                        spinup=None, refills=()):
+                        time_of_round=None, refills=(), stop_time=None):
 ```
 
-- `refills`가 비고 `windows`가 비면 **현재 루프 그대로** 돈다. 시각 산술을 한 줄도
-  하지 않으므로 기존 타임라인은 **비트 동일**이다(`refund is None`과 같은 규약).
-- 아니면 같은 워크를 돌되 라운드 `i`의 시각을
-  `magazine_start + magazine_shot_offset(i, shot_interval, spinup)`로 얻는다. 이미
-  순수 함수라 새 산술이 아니다.
+`time_of_round(i)`는 **이 탄창의 0-기반 i번째 라운드의 절대 시각**을 주는 콜러블이다.
+파라미터가 아니라 콜러블인 이유는 **호출부마다 식이 다르기 때문**이다 — 탄창 무기는
+`magazine_start + magazine_shot_offset(i, shot_interval, spinup)`이고 차지 무기는
+`magazine_start + effective_charge + i * effective_charge`다. `(magazine_start,
+shot_interval, spinup)` 세 값을 넘기는 형태로는 차지 쪽을 만들 수 없다. 이 모듈이
+`max_ammo_percent_at` 등에서 이미 쓰는 콜러블 관용구와 같은 모양이다.
+
+- `refills`가 비고 `windows`가 비면 **현재 루프 그대로** 돈다. `time_of_round`를 한
+  번도 부르지 않으므로 기존 타임라인은 **비트 동일**이다(`refund is None`과 같은 규약).
+- 아니면 같은 워크를 돌되 라운드 시각을 `time_of_round(i)`로 얻는다.
 - **`time < magazine_start`인 `AmmoRefill`은 버린다.** 그것이 판정 2다. 탄창은 시간
   순으로 처리되므로 매 탄창에 전체 튜플을 넘겨도 결과가 같고 상태를 들 필요가 없다.
+- 같은 규칙이 **무기 변형 세그먼트도 공짜로 처리한다.** 세그먼트 중에는 기저 무기가
+  침묵하고, 재개되는 탄창의 `magazine_start`가 그 환급 시각보다 뒤이므로 그냥 버려진다.
+  세그먼트가 이미 「변형은 장전된 채로 도착하므로 그 발은 환급 카운터에 안 센다」로
+  정해 둔 것과 같은 방향이라 새 규칙이 필요 없다.
+
+### `stop_time`이 필요한 이유 — 아르카나는 발당 정확히 1발을 돌려받는다
+
+로테이션은 **6발마다 6발**이다. 순 소모가 0이라 창 안에서 탄창이 **영원히 안 빈다** —
+그리고 그것이 원문이 의도한 것이다(「창 안에서는 재장전 공백이 없다」).
+
+그런데 `_refund_sequence`의 「합계가 1 이상이면 탄창이 안 빈다」 가드는 창 있는 환급을
+**셀 수 없다**(창 밖에서는 안 나가므로 거절하면 과하다). 그래서 그 가드를 못 쓰는데,
+`magazine_shot_count`는 `fight_duration`을 모르므로 **창이 넓으면 워크가 안 끝난다.**
+
+따라서 **시각을 다루는 호출은 `stop_time`을 함께 넘긴다** — 그 시각에 도달한 라운드는
+발사되지 않고 워크가 멈춘다. 호출부는 이미 그 값을 들고 있다(`fight_duration`, 또는
+세그먼트 경로의 `window_end`). 이것은 안전장치일 뿐 아니라 **의미적으로도 옳다**: 전투가
+끝난 뒤의 라운드는 어차피 생성기가 버린다.
+
+`refills`도 `windows`도 없으면 지금처럼 즉시 반환하므로 `stop_time`은 안 쓰인다.
 
 ### 이벤트를 만드는 전처리
 
