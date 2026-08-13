@@ -92,11 +92,18 @@ def fetch_directory():
     log saying nothing about what actually broke - e.g. collect.js's own
     COLLECT_ERROR: no Chrome/Edge executable found; set CHROME_PATH. Capture
     the child's output and fold its stderr into the raised error so both
-    destinations say what failed."""
+    destinations say what failed.
+
+    The decoding is pinned to UTF-8 rather than left to the locale: collect.js
+    writes the unit names it is progressing through, and on a cp949 console
+    `text=True` kills the reader thread on the first non-cp949 byte, leaving
+    `result.stderr` as None - so the failure path this docstring describes would
+    itself fail, with an AttributeError in place of the child's message."""
     SCRATCH.mkdir(parents=True, exist_ok=True)
     result = subprocess.run(
         ["node", "collect.js", "--directory", "--headless", "--out", str(FRESH)],
         cwd=str(COLLECT_DIR), capture_output=True, text=True,
+        encoding="utf-8", errors="replace",
     )
     if result.returncode != 0:
         raise RuntimeError(
@@ -133,6 +140,12 @@ def run(fresh_path=None, dry_run=False, notify=toast):
 
 
 def main():
+    # The scheduled task runs python3 with no console and no PYTHONIOENCODING, so
+    # stdout defaults to the locale codec (cp949 here). The onboarding notice that
+    # only prints when something IS found carries an em dash, which that codec
+    # cannot encode - so the run died in the exact case it exists for and toasted
+    # "점검 실패" instead of "신규 니케 감지". Findings must survive the console.
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--offline", metavar="FILE",
