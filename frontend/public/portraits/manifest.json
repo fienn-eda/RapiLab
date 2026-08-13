@@ -1,7 +1,7 @@
 {
   "source": "lootandwaifus.com",
   "base_url": "https://lootandwaifus.com",
-  "generated": "2026-08-08",
+  "generated": "2026-08-13",
   "note": "Portrait paths read from data/lootandwaifus/char_<slug>.html (data-default-src); regenerate via scripts/download_portraits.py.",
   "portraits": {
     "ada-wong": "mi_c840_00_s.png",
@@ -82,6 +82,7 @@
     "prika": "mi_c601_00_s.webp",
     "privaty": "mi_c170_00_s.webp",
     "privaty-signature": "mi_c170_00_s.webp",
+    "queen-makoto-nijima": "mi_c870_00_s.webp",
     "quency-escape-queen": "mi_c403_00_s.webp",
     "rapi-red-hood": "mi_c016_00_s.webp",
     "rapi-red-hood-b1": "mi_c016_00_s.webp",
@@ -106,6 +107,7 @@
     "tove-signature": "mi_c192_00_s.webp",
     "velvet": "mi_c316_00_s.webp",
     "volume": "mi_c431_00_s.webp",
+    "yukiko-amagi": "mi_c871_00_s.webp",
     "zwei": "mi_c390_00_s.webp",
     "zwei-signature": "mi_c390_00_s.webp"
   }

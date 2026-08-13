@@ -105,6 +105,8 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   851: 'raven', // Raven
   860: 'chisato-nishikigi', // Chisato
   861: 'takina-inoue', // Takina
+  870: 'queen-makoto-nijima', // Queen (Makoto)
+  871: 'yukiko-amagi', // Yukiko
 }
 
 // Base slugs that have a separate "-signature" encoding. Only these can be promoted.

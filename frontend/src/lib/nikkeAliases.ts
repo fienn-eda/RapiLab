@@ -100,6 +100,7 @@ export const NIKKE_ALIASES: Record<string, readonly string[]> = {
   'prika':                          [],  // 프리카
   'privaty':                        [],  // 프리바티
   'privaty-signature':              [],  // 프리바티
+  'queen-makoto-nijima':            [],  // 퀸(마코토)
   'quency-escape-queen':            [],  // 퀀시: 이스케이프 퀸
   'rapi-red-hood':                  [],  // 라피: 레드후드
   'rapi-red-hood-b1':               [],  // 라피: 레드후드(1버)
@@ -124,6 +125,7 @@ export const NIKKE_ALIASES: Record<string, readonly string[]> = {
   'tove-signature':                 [],  // 토브
   'velvet':                         [],  // 벨벳
   'volume':                         [],  // 볼륨
+  'yukiko-amagi':                   [],  // 유키코
   'zwei':                           ['쯔바이'],  // 츠바이
   'zwei-signature':                 ['쯔바이'],  // 츠바이
 }

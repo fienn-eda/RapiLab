@@ -351,6 +351,7 @@ HEAL_PROVIDER_SLUGS = frozenset({
     "prika",
     "red-hood",
     "soline-frost-ticket",
+    "yukiko-amagi",
 })
 
 # Nikkes whose own skills place a shield that reaches the WHOLE squad. Same
@@ -382,6 +383,37 @@ ABSOLUTE_SQUAD_SLUGS = frozenset({
     "emma-tactical-upgrade",
     "eunhwa-tactical-upgrade",
 })
+
+
+# The Persona state, the audience of "all standard Burst 3 allies (except the
+# skill user) in the Persona state" - Queen (Makoto Nijima)'s Baton Pass and
+# Yukiko Amagi's Follow Up. Each collab unit puts HERSELF in it with her own
+# Skill 1 at battle start ("Persona - Johanna", "Persona - Konohana Sakuya"),
+# and nothing else grants it, so the state is exactly "is a Persona unit". Like
+# ABSOLUTE_SQUAD_SLUGS it is a membership the engine's scopes cannot express but
+# that member_subset_buff_rule can resolve exactly, so neither bullet is
+# approximated onto `squad`.
+#
+# Aigis is the collab's third unit and is deliberately absent: she is SR, so she
+# is neither a raid deck candidate nor encoded. Add her here if that changes.
+PERSONA_STATE_SLUGS = frozenset({
+    "queen-makoto-nijima",
+    "yukiko-amagi",
+})
+
+
+def persona_state_allies(context, caster_slug, tier):
+    """"all standard Burst <tier> allies (except the skill user) in the Persona
+    state" - the audience Queen (Makoto Nijima)'s Baton Pass and Yukiko Amagi's
+    Follow Up share, resolved live against the deck. Empty when the caster is
+    the deck's only Persona unit, which is what the game does: neither bullet
+    has anyone to land on."""
+    return [
+        m.slug for m in context.members
+        if m.burst_tier == tier
+        and m.slug in PERSONA_STATE_SLUGS
+        and m.slug != caster_slug
+    ]
 
 
 # Shields that exist but reach only part of the squad, so deck presence alone

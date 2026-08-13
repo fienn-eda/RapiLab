@@ -134,6 +134,7 @@ DISPLAY_NAMES = {
     "phantom-signature":             "팬텀", # Phantom
     "privaty":                       "프리바티", # Privaty
     "privaty-signature":             "프리바티", # Privaty
+    "queen-makoto-nijima":           "퀸(마코토)", # Queen (Makoto)
     "quency-escape-queen":           "퀀시: 이스케이프 퀸", # Quency: Escape Queen
     "raven":                         "레이븐", # Raven
     "red-hood":                      "레드 후드", # Red Hood
@@ -146,4 +147,5 @@ DISPLAY_NAMES = {
     "soda-twinkling-bunny":          "소다: 트윙클링 바니", # Soda: Twinkling Bunny
     "sugar":                         "슈가", # Sugar
     "sugar-signature":               "슈가", # Sugar
+    "yukiko-amagi":                  "유키코", # Yukiko
 }

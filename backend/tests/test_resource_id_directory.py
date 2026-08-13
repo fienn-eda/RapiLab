@@ -29,6 +29,8 @@ SLUG_NAME_EXCEPTIONS = {
     841: "Jill",
     860: "Chisato",
     861: "Takina",
+    870: "Queen (Makoto)",
+    871: "Yukiko",
 }
 
 

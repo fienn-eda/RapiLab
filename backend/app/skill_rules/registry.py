@@ -327,7 +327,15 @@ from app.skill_rules.nayuta import (
 )
 from app.skill_rules.noir import build_noir_rules, finale_burst_percent
 from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika_rules
+from app.skill_rules.queen_makoto_nijima import (
+    build_queen_makoto_nijima_rules,
+    mafreidyne_burst_percent,
+)
 from app.skill_rules.quency_escape_queen import build_quency_rules, the_great_thief_burst_percent
+from app.skill_rules.yukiko_amagi import (
+    build_yukiko_amagi_rules,
+    maragidyne_burst_percent,
+)
 from app.skill_rules.rosanna_chic_ocean import (
     build_rosanna_rules,
     build_spina_periodic_rules,
@@ -642,8 +650,12 @@ _BUILDERS = {
     "nayuta": lambda sv: (build_nayuta_rules(sv), asceticism_burst_percent(sv)),
     "noir": lambda sv: (build_noir_rules(sv), finale_burst_percent(sv)),
     "prika": lambda sv: (build_prika_rules(sv), None),
+    "queen-makoto-nijima": lambda sv: (
+        build_queen_makoto_nijima_rules(sv), mafreidyne_burst_percent(sv)),
     "quency-escape-queen": lambda sv: (build_quency_rules(sv), the_great_thief_burst_percent(sv)),
     "rosanna-chic-ocean": lambda sv: (build_rosanna_rules(sv), None),
+    "yukiko-amagi": lambda sv: (
+        build_yukiko_amagi_rules(sv), maragidyne_burst_percent(sv)),
     "soda-twinkling-bunny": lambda sv: ([], onward_soda_burst_percent(sv)),
     "tove": lambda sv: (build_tove_rules(sv), None),
     "tove-signature": lambda sv: (build_tove_rules(sv), None),
@@ -919,6 +931,11 @@ _BURST_DAMAGE_TYPES = {
     "delta-ninja-thief": "distributed",
     "rapi-red-hood": "projectile_explosion",  # Power of Inheritance = Projectile Explosion skill
     "ein": "true",  # Feather-All Range deals its nuke "as true damage"
+    # Mafreidyne and Maragidyne both deal their nuke "as distributed damage",
+    # and each unit carries her own Distributed Damage buff to multiply it -
+    # Queen's on entering Burst Stage 3, Yukiko's Fire Amp for her burst window.
+    "queen-makoto-nijima": "distributed",
+    "yukiko-amagi": "distributed",
 }
 
 # A Nikke whose damage lands on a cadence it computes for itself, rather than a
