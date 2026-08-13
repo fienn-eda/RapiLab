@@ -4,6 +4,7 @@ from app.attack_rate import (
     RELOAD_FIXED_SECONDS,
     CHARGE_INTERVAL_FLOOR_SECONDS,
     RATE_OF_FIRE_60FPS,
+    AmmoRefund,
     ShotRecord,
     charge_time_with_speed,
     charge_first_bullet_times,
@@ -1002,5 +1003,39 @@ def test_a_clip_weapon_pays_the_fixed_segment_once_per_magazine(speed):
     folded = reload_time_with_speed(0.5 * 3, speed)
     per_load = 3 * reload_time_with_speed(0.5, speed)
     assert per_load - folded == pytest.approx(2 * RELOAD_FIXED_SECONDS)
+
+
+# --- a refund declared windowed but resolved to no windows must fail closed --
+# `needs_own_burst_window=True` (Arcana: Fortune Mate's rotation reload) means
+# the registry could not fill `windows` itself and is trusting the simulator
+# to do it once the burst schedule exists. If that owner's burst never lands
+# before the fight ends, the simulator hands back `windows=()` - and the
+# refund must go permanently silent, not fall back to firing on every shot of
+# the fight the way a bare, undeclared refund would.
+
+def test_a_refund_declared_windowed_but_resolved_to_none_is_permanently_inert():
+    # rounds=1 (not Arcana's real 6) so the comparison object below - what
+    # misclassifying `windowless` as plain would make it behave like - can
+    # actually be walked: a 6-for-6 ratio trips `_refund_sequence`'s
+    # unrelated "never empties" guard on its own (1.0 >= 1) regardless of
+    # windowing, which would crash this comparison rather than demonstrate
+    # the fail-open it stands in for.
+    unrestricted = AmmoRefund(every_shots=6, rounds=1, first_shot=2)
+    windowless = AmmoRefund(every_shots=6, rounds=1, first_shot=2,
+                            needs_own_burst_window=True)  # windows never resolved
+
+    unbuffered = generate_magazine_shot_times(12.0, 18, 1.5, 20.0)
+    with_unrestricted = generate_magazine_shot_times(
+        12.0, 18, 1.5, 20.0, ammo_refund=unrestricted)
+    with_windowless = generate_magazine_shot_times(
+        12.0, 18, 1.5, 20.0, ammo_refund=windowless)
+
+    # Misclassifying `windowless` as plain (fail-open) would make it behave
+    # exactly like `unrestricted` - refilling all fight on the bare phase and
+    # firing more shots than the unbuffered baseline. Classified correctly,
+    # it fires nowhere (empty `windows` never contains any time) and the
+    # timeline is untouched.
+    assert with_windowless == unbuffered
+    assert len(with_unrestricted) > len(unbuffered)
 
 

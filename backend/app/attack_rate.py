@@ -243,6 +243,26 @@ class AmmoRefill:
         return _rounds_from_declaration(self.rounds, self.percent, capacity)
 
 
+def _gated_to_windows(refund):
+    """Whether `refund` fires only inside explicit windows, rather than on the
+    plain fight-wide shot counter.
+
+    True if it already carries `windows`, OR if it is DECLARED to need them
+    (`needs_own_burst_window`) even before any have been resolved. The
+    declaration has to count on its own, not just a non-empty `windows`: a
+    refund built with `needs_own_burst_window=True` whose `windows` resolved
+    to `()` (its owner's own burst never landed before the fight ended, so no
+    window exists to gate it) must stay classified as windowed - and therefore
+    permanently inert, since an empty `windows` tuple never matches any shot -
+    rather than falling through to the plain "counts every shot of the fight"
+    treatment, which would silently UNGATE it (Arcana's rotation reload firing
+    all fight long instead of only inside Making Memories). Shared by every
+    place that splits refunds into "windowed" vs "plain" so the two
+    classifications can never drift apart.
+    """
+    return bool(refund.windows) or refund.needs_own_burst_window
+
+
 def _refund_sequence(refund, capacity):
     """`refund` as a tuple, rejecting a set that never empties the magazine.
 
@@ -254,16 +274,19 @@ def _refund_sequence(refund, capacity):
     percentage can finally be resolved: at one round back per shot the walk
     below would never terminate.
 
-    A windowed refund is excluded from the sum: its window is what bounds the
-    walk (see `magazine_shot_count`'s `stop_time`), not the magazine draining,
-    so it legitimately hands back as much as it spends - Arcana's rotation
-    does exactly that.
+    A refund gated to windows (`_gated_to_windows`) is excluded from the sum:
+    its window is what bounds the walk (see `magazine_shot_count`'s
+    `stop_time`), not the magazine draining, so it legitimately hands back as
+    much as it spends - Arcana's rotation does exactly that. One resolved to
+    zero windows hands back nothing at all, which the sum would only
+    UNDERSTATE by excluding, never overstate into a false "never empties"
+    rejection.
     """
     if refund is None:
         return ()
     refunds = (refund,) if isinstance(refund, AmmoRefund) else tuple(refund)
     if sum(r.rounds_for(capacity) / r.every_shots
-           for r in refunds if not r.windows) >= 1:
+           for r in refunds if not _gated_to_windows(r)) >= 1:
         raise ValueError(
             f"refunds {refunds} together hand back a round per shot, so the "
             "magazine never empties")
@@ -308,20 +331,25 @@ def magazine_shot_count(capacity, shots_before, refund, *,
     magazine can stay alive indefinitely and draining is not a termination
     guarantee once time is in play.
 
-    A windowed refund (`AmmoRefund.windows` set) keeps its OWN local counter,
-    separate from `counter` - its phase is read against "the shot's position
-    inside the current window", not the fight-wide count, and that position
-    restarts at 0 every time a new window opens (Arcana's counter "resets when
-    Making Memories is removed"). A plain refund reads `counter` (the
-    fight-wide count) through the same `fires_at`.
+    A refund gated to windows (`_gated_to_windows` - `AmmoRefund.windows` set,
+    or `needs_own_burst_window` declared even if `windows` resolved empty)
+    keeps its OWN local counter, separate from `counter` - its phase is read
+    against "the shot's position inside the current window", not the
+    fight-wide count, and that position restarts at 0 every time a new window
+    opens (Arcana's counter "resets when Making Memories is removed"). A
+    refund resolved to zero windows never finds one to sit inside, so its
+    local counter never advances and it never fires - permanently inert
+    rather than falling into the plain bucket below and firing on every shot
+    of the fight ungated. A plain refund reads `counter` (the fight-wide
+    count) through the same `fires_at`.
     """
     refunds = _refund_sequence(refund, capacity)
     if not refunds and not refills:
         return capacity, shots_before + capacity
     pending = list(refills)
     pending.sort(key=lambda r: r.time)
-    windowed = [r for r in refunds if r.windows]
-    plain = [r for r in refunds if not r.windows]
+    windowed = [r for r in refunds if _gated_to_windows(r)]
+    plain = [r for r in refunds if not _gated_to_windows(r)]
     local = {id(r): 0 for r in windowed}
     last_window = {id(r): None for r in windowed}
     rounds = capacity
@@ -356,7 +384,7 @@ def magazine_shot_count(capacity, shots_before, refund, *,
 
 def _refund_carries_windows(refund):
     """Whether `refund` (a single AmmoRefund, a sequence of them, or None)
-    includes one with `windows` set.
+    includes one gated to windows (`_gated_to_windows`).
 
     A shape check rather than a call to `_refund_sequence`: that needs a
     magazine capacity to resolve a percentage, which `_walk_magazine` does not
@@ -367,7 +395,7 @@ def _refund_carries_windows(refund):
     if refund is None:
         return False
     refunds = (refund,) if isinstance(refund, AmmoRefund) else refund
-    return any(r.windows for r in refunds)
+    return any(_gated_to_windows(r) for r in refunds)
 
 
 def _walk_magazine(capacity, shots_fired, refund, *,

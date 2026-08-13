@@ -23,12 +23,12 @@ KEEPSAKE_ALBUM = {
 }
 RADIANT_YOUTH = {
     "description_value_01": "20.09",  # self Critical Rate %
-    "description_value_02": "2",      # reloads (not modeled)
+    "description_value_02": "2",      # burst reload rounds; modeled via registry.get_ammo_refill_grant, unread by this file's own build()/arcana_deck_result() helpers
     "description_value_03": "29.99",  # self Attack Damage %
     "description_value_04": "554.4",  # burst nuke % of final ATK
 }
 MEMORIES_AND_MOMENTS = {
-    "description_value_01": "6",      # deferred: Two-times reload count
+    "description_value_01": "6",      # Two-times reload count; modeled via registry.get_skill_ammo_refund, unread by this file's own build()/arcana_deck_result() helpers
     "description_value_02": "1",      # Four-times pellet count; not a damage term, unconsumed
     "description_value_03": "3",      # pellet stack cap; not a damage term, unconsumed
     "description_value_04": "2.49",   # Six-times Precious Moments self ATK % per stack

@@ -83,8 +83,7 @@ burst times are known, from the same [her burst, that cycle's Full Burst end)
 pair the other two phases read off `full_burst_windows`/`own_burst_times`.
 Reloading is what lets her keep firing without a gap inside the window, so
 this is also what raises her shot count above what an unreloaded magazine
-would give - previously a hand-counted floor, now the magazine walk's own
-number.
+would give.
 
 RANGE-TESTED (Fienn, 2026-07-28 - Tove + her + Dorothy: Serendipity + Drake
 (favorite item) + Solin: Frost Ticket, non-crit per-pellet readings)
