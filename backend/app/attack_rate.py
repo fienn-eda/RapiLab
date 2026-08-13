@@ -279,6 +279,26 @@ def magazine_shot_count(capacity, shots_before, refund, *,
     return shots, counter
 
 
+def _walk_magazine(capacity, shots_fired, refund, *,
+                   time_of_round=None, refills=(), stop_time=None):
+    """magazine_shot_count, wired for timed refills only when there are any.
+
+    `magazine_shot_count` only skips asking its clock for a time when BOTH
+    `time_of_round` and `stop_time` are left unpassed - passing `stop_time`
+    alone (even with no refills queued) opens a new time-bounded exit that
+    a refund-only call never had. Gating the whole keyword group on `refills`
+    here is what every magazine-walking generator in this module relies on to
+    keep a refill-free timeline doing no time arithmetic and reaching
+    exactly the shot count it always did. Same keyword shape as
+    `magazine_shot_count` itself, so every call site differs from it only by
+    name."""
+    if not refills:
+        return magazine_shot_count(capacity, shots_fired, refund)
+    return magazine_shot_count(
+        capacity, shots_fired, refund,
+        time_of_round=time_of_round, refills=refills, stop_time=stop_time)
+
+
 def _zero(_time):
     return 0.0
 
@@ -474,6 +494,7 @@ def generate_magazine_shot_times(
     attack_speed_percent_at=_zero,
     ammo_refund=None,
     weapon=None,
+    ammo_refills=(),
 ):
     shots = []
     magazine_start = 0.0
@@ -483,7 +504,11 @@ def generate_magazine_shot_times(
     while magazine_start < fight_duration:
         shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
-        magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, ammo_refund)
+        magazine_size, shots_fired = _walk_magazine(
+            capacity, shots_fired, ammo_refund,
+            time_of_round=lambda i, s=magazine_start, iv=shot_interval, sp=spinup: (
+                s + magazine_shot_offset(i, iv, sp)),
+            refills=ammo_refills, stop_time=fight_duration)
         for i in range(magazine_size):
             shot_time = magazine_start + magazine_shot_offset(i, shot_interval, spinup)
             if shot_time >= fight_duration:
@@ -507,6 +532,7 @@ def generate_charge_shot_times(
     charge_speed_percent_at=_zero,
     charge_time_reduction_sec_at=_zero,
     ammo_refund=None,
+    ammo_refills=(),
 ):
     shots = []
     magazine_start = 0.0
@@ -517,7 +543,18 @@ def generate_charge_shot_times(
             charge_time, charge_speed_percent_at(magazine_start),
             charge_time_reduction_sec_at(magazine_start))
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
-        magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, ammo_refund)
+        magazine_size, shots_fired = _walk_magazine(
+            capacity, shots_fired, ammo_refund,
+            time_of_round=lambda i, s=magazine_start, c=effective_charge: (
+                s + c + i * c),
+            refills=ammo_refills, stop_time=fight_duration)
+        if magazine_size == 0:
+            # A refill's stop_time can end the walk before this magazine's
+            # OWN first round (magazine_start + a full charge) - unlike a
+            # magazine weapon's round 0, which fires at magazine_start itself
+            # and so is always inside the window. Nothing else is left to
+            # fire before fight_duration either.
+            break
         last_shot_time = None
         for i in range(magazine_size):
             shot_time = magazine_start + effective_charge + i * effective_charge
@@ -543,18 +580,19 @@ def generate_shot_times(
     charge_speed_percent_at=_zero,
     charge_time_reduction_sec_at=_zero,
     ammo_refund=None,
+    ammo_refills=(),
 ):
     if weapon in CHARGE_WEAPONS:
         return generate_charge_shot_times(
             charge_time, reload_time, max_ammo, fight_duration,
             max_ammo_percent_at, reload_speed_percent_at, charge_speed_percent_at,
-            ammo_refund=ammo_refund,
+            ammo_refund=ammo_refund, ammo_refills=ammo_refills,
         )
     rate_of_fire = rate_of_fire_for_weapon(weapon)
     return generate_magazine_shot_times(
         rate_of_fire, max_ammo, reload_time, fight_duration,
         max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
-        ammo_refund=ammo_refund, weapon=weapon,
+        ammo_refund=ammo_refund, weapon=weapon, ammo_refills=ammo_refills,
     )
 
 
@@ -568,6 +606,7 @@ def magazine_last_bullet_times(
     attack_speed_percent_at=_zero,
     ammo_refund=None,
     weapon=None,
+    ammo_refills=(),
 ):
     """The subset of a magazine weapon's shot times that actually EMPTY their
     magazine (the round right before a reload) - for a "last bullet fired"
@@ -585,7 +624,8 @@ def magazine_last_bullet_times(
     (faster cadence), so the interval is threaded through to keep these times
     aligned with `generate_magazine_shot_times`. An ammo refund, unlike attack
     speed, DOES move which round empties the magazine - the refunded rounds are
-    fired before the reload - so it is threaded through too."""
+    fired before the reload - so it is threaded through too, and a timed refill
+    alongside it."""
     last_bullets = set()
     magazine_start = 0.0
     shots_fired = 0
@@ -594,7 +634,11 @@ def magazine_last_bullet_times(
     while magazine_start < fight_duration:
         shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
-        magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, ammo_refund)
+        magazine_size, shots_fired = _walk_magazine(
+            capacity, shots_fired, ammo_refund,
+            time_of_round=lambda i, s=magazine_start, iv=shot_interval, sp=spinup: (
+                s + magazine_shot_offset(i, iv, sp)),
+            refills=ammo_refills, stop_time=fight_duration)
         last_round_time = magazine_start + magazine_shot_offset(
             magazine_size - 1, shot_interval, spinup)
         if last_round_time >= fight_duration:
@@ -617,12 +661,14 @@ def charge_last_bullet_times(
     charge_speed_percent_at=_zero,
     charge_time_reduction_sec_at=_zero,
     ammo_refund=None,
+    ammo_refills=(),
 ):
     """Charge-weapon equivalent of `magazine_last_bullet_times` - the round
     that empties each `max_ammo`-shot magazine before reloading. Charge speed
     shortens the per-shot charge time, so it's threaded through to keep these
     times aligned with `generate_charge_shot_times`; an ammo refund moves which
-    round empties the magazine, so it is threaded through as well."""
+    round empties the magazine, so it is threaded through as well, along with
+    any timed refill."""
     last_bullets = set()
     magazine_start = 0.0
     shots_fired = 0
@@ -632,7 +678,16 @@ def charge_last_bullet_times(
             charge_time, charge_speed_percent_at(magazine_start),
             charge_time_reduction_sec_at(magazine_start))
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
-        magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, ammo_refund)
+        magazine_size, shots_fired = _walk_magazine(
+            capacity, shots_fired, ammo_refund,
+            time_of_round=lambda i, s=magazine_start, c=effective_charge: (
+                s + c + i * c),
+            refills=ammo_refills, stop_time=fight_duration)
+        if magazine_size == 0:
+            # This magazine's own first round (magazine_start + a full charge)
+            # already reached fight_duration - nothing of it fired, so there is
+            # no last bullet to record and nothing later will fire either.
+            return last_bullets
         last_round_time = magazine_start + effective_charge + (magazine_size - 1) * effective_charge
         if last_round_time >= fight_duration:
             return last_bullets
@@ -653,6 +708,7 @@ def magazine_first_bullet_times(
     attack_speed_percent_at=_zero,
     ammo_refund=None,
     weapon=None,
+    ammo_refills=(),
 ):
     """Mirror of magazine_last_bullet_times: each magazine's FIRST round,
     INCLUDING the battle-opening magazine at t=0 (a "at the start of battle and
@@ -660,7 +716,8 @@ def magazine_first_bullet_times(
     Magnum/Acid Ammo). A magazine whose first shot would land at or after
     fight_duration never fires - the while guard excludes it. A refund does not
     OPEN a magazine - only a reload does - but it delays the next reload, so it
-    is threaded through to keep these times aligned."""
+    is threaded through to keep these times aligned, along with any timed
+    refill."""
     first_bullets = set()
     magazine_start = 0.0
     shots_fired = 0
@@ -669,7 +726,11 @@ def magazine_first_bullet_times(
         first_bullets.add(magazine_start)
         shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
-        magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, ammo_refund)
+        magazine_size, shots_fired = _walk_magazine(
+            capacity, shots_fired, ammo_refund,
+            time_of_round=lambda i, s=magazine_start, iv=shot_interval, sp=spinup: (
+                s + magazine_shot_offset(i, iv, sp)),
+            refills=ammo_refills, stop_time=fight_duration)
         magazine_empty_at = magazine_start + magazine_shot_offset(
             magazine_size - 1, shot_interval, spinup) + shot_interval
         actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(magazine_empty_at))
@@ -687,12 +748,13 @@ def charge_first_bullet_times(
     charge_speed_percent_at=_zero,
     charge_time_reduction_sec_at=_zero,
     ammo_refund=None,
+    ammo_refills=(),
 ):
     """Charge-weapon mirror: the first charged shot of each magazine (lands
     one effective charge after the magazine starts). A first shot at or after
     fight_duration never fires, so it's checked explicitly. An ammo refund only
     delays the reload, but that moves where the NEXT magazine opens, so it is
-    threaded through."""
+    threaded through, along with any timed refill."""
     first_bullets = set()
     magazine_start = 0.0
     shots_fired = 0
@@ -705,7 +767,11 @@ def charge_first_bullet_times(
             return first_bullets
         first_bullets.add(first_shot)
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
-        magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, ammo_refund)
+        magazine_size, shots_fired = _walk_magazine(
+            capacity, shots_fired, ammo_refund,
+            time_of_round=lambda i, s=magazine_start, c=effective_charge: (
+                s + c + i * c),
+            refills=ammo_refills, stop_time=fight_duration)
         last_round_time = magazine_start + effective_charge + (magazine_size - 1) * effective_charge
         actual_reload_time = reload_time_with_speed(reload_time, reload_speed_percent_at(last_round_time))
         magazine_start = last_round_time + actual_reload_time
@@ -724,6 +790,7 @@ def first_bullet_shot_times(
     charge_speed_percent_at=_zero,
     charge_time_reduction_sec_at=_zero,
     ammo_refund=None,
+    ammo_refills=(),
 ):
     """Weapon-dispatching counterpart of `last_bullet_shot_times` - the subset
     of the shot timeline that OPENS its magazine, for a "at the start of battle
@@ -732,13 +799,13 @@ def first_bullet_shot_times(
         return charge_first_bullet_times(
             charge_time, reload_time, max_ammo, fight_duration,
             max_ammo_percent_at, reload_speed_percent_at, charge_speed_percent_at,
-            ammo_refund=ammo_refund,
+            ammo_refund=ammo_refund, ammo_refills=ammo_refills,
         )
     rate_of_fire = rate_of_fire_for_weapon(weapon)
     return magazine_first_bullet_times(
         rate_of_fire, max_ammo, reload_time, fight_duration,
         max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
-        ammo_refund=ammo_refund, weapon=weapon,
+        ammo_refund=ammo_refund, weapon=weapon, ammo_refills=ammo_refills,
     )
 
 
@@ -754,6 +821,7 @@ def last_bullet_shot_times(
     charge_speed_percent_at=_zero,
     charge_time_reduction_sec_at=_zero,
     ammo_refund=None,
+    ammo_refills=(),
 ):
     """Weapon-dispatching counterpart of `generate_shot_times` - the subset
     of that same shot timeline that empties its magazine, for a "last bullet
@@ -762,13 +830,13 @@ def last_bullet_shot_times(
         return charge_last_bullet_times(
             charge_time, reload_time, max_ammo, fight_duration,
             max_ammo_percent_at, reload_speed_percent_at, charge_speed_percent_at,
-            ammo_refund=ammo_refund,
+            ammo_refund=ammo_refund, ammo_refills=ammo_refills,
         )
     rate_of_fire = rate_of_fire_for_weapon(weapon)
     return magazine_last_bullet_times(
         rate_of_fire, max_ammo, reload_time, fight_duration,
         max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
-        ammo_refund=ammo_refund, weapon=weapon,
+        ammo_refund=ammo_refund, weapon=weapon, ammo_refills=ammo_refills,
     )
 
 
@@ -809,12 +877,17 @@ def _base_shot_records(base, window_start, window_end,
     An ammo refund rides on `base` the way charge_motion_delay does. Its shot
     counter starts fresh per call, which is the same statement as the resume
     semantic: a real weapon transform arrives loaded and its shots are not this
-    magazine's, so they do not count toward the refund trigger."""
+    magazine's, so they do not count toward the refund trigger. A timed refill
+    rides on `base` the same way; it needs no such carve-out (its trigger is a
+    clock, not this magazine's own shots), but it is bounded by `window_end`
+    exactly like the fight-duration cutoff elsewhere, so one dated inside a
+    segment that silences the base weapon finds no magazine here to land on."""
     records = []
     if window_end <= window_start:
         return records
     weapon = base["weapon"]
     refund = base.get("ammo_refund")
+    refills = base.get("ammo_refills", ())
     shots_fired = 0
     if weapon in CHARGE_WEAPONS:
         bonus = base["charge_damage_percent"] / 100 - 1
@@ -825,7 +898,15 @@ def _base_shot_records(base, window_start, window_end,
                 charge_time_reduction_sec_at(magazine_start),
                 base.get("charge_motion_delay", 0.0))
             capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
-            magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, refund)
+            magazine_size, shots_fired = _walk_magazine(
+                capacity, shots_fired, refund,
+                time_of_round=lambda i, s=magazine_start, c=effective_charge: (
+                    s + c + i * c),
+                refills=refills, stop_time=window_end)
+            if magazine_size == 0:
+                # Same boundary as generate_charge_shot_times: this magazine's
+                # own first round already reached window_end before firing.
+                return records
             last_shot_time = None
             for i in range(magazine_size):
                 shot_time = magazine_start + effective_charge + i * effective_charge
@@ -844,7 +925,11 @@ def _base_shot_records(base, window_start, window_end,
         while magazine_start < window_end:
             interval = 1.0 / (rate * (1 + attack_speed_percent_at(magazine_start)))
             capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
-            magazine_size, shots_fired = magazine_shot_count(capacity, shots_fired, refund)
+            magazine_size, shots_fired = _walk_magazine(
+                capacity, shots_fired, refund,
+                time_of_round=lambda i, s=magazine_start, iv=interval, sp=spinup: (
+                    s + magazine_shot_offset(i, iv, sp)),
+                refills=refills, stop_time=window_end)
             for i in range(magazine_size):
                 shot_time = magazine_start + magazine_shot_offset(i, interval, spinup)
                 if shot_time >= window_end:
@@ -938,6 +1023,15 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
     top a partly-spent magazine back up, whether a shot OPENS or EMPTIES its
     magazine can no longer be read off the rounds remaining - `opening` tracks
     the first and the last is stamped after the refund has been applied.
+
+    A timed refill is wired straight into the walk rather than through
+    `magazine_shot_count` - this function never calls it, since one magazine
+    runs straight through the segments instead of restarting per window. No
+    drop rule is needed for a refill dated before this magazine opened: the
+    walk here consumes each refill at most once (`pending_refills` is popped,
+    not reissued per magazine), and applying it against whatever the current
+    magazine holds - full or partly spent - already gives the "wasted during
+    reload" answer for free, the same cap that does it everywhere else.
     """
     weapon = base["weapon"]
     base_bonus = base["charge_damage_percent"] / 100 - 1
@@ -946,6 +1040,8 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
     cursor = 0.0                 # instant the next charge starts from
     capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(0.0))))
     refunds = _refund_sequence(base.get("ammo_refund"), capacity)
+    refills = sorted(base.get("ammo_refills", ()), key=lambda r: r.time)
+    pending_refills = [r for r in refills if r.time >= 0.0]
     rounds = capacity
     shots_fired = 0
     opening = True               # is the next shot this magazine's first?
@@ -973,6 +1069,7 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
             continue
         if shot_time >= fight_duration:
             break
+        rounds = _apply_due_refills(pending_refills, shot_time, rounds, capacity)
         rounds -= 1
         shots_fired += 1
         records.append(ShotRecord(

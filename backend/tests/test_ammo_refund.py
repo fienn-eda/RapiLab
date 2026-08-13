@@ -292,3 +292,118 @@ def test_the_walk_stops_at_the_end_of_the_fight():
         time_of_round=_uniform_clock(0.0, 1.0),
         refills=forever, stop_time=25.0)
     assert size == 25
+
+
+def test_a_refill_adds_shots_to_a_magazine_weapons_timeline():
+    # A 60-round AR magazine at 12/sec fires for 5 sec, so t=1.0 is inside its
+    # firing span (12 rounds already spent, room for the full 6-round refill).
+    # fight_duration ends before EITHER side starts a second magazine (plain's
+    # would open at ~6.15s) - past that point the two schedules run at a
+    # constant offset from each other and a fixed window stops being a clean
+    # comparison (this file's own header notes the same non-monotonicity).
+    without = generate_shot_times("AR", 60, 1.0, 0.0, 6.0)
+    with_refill = generate_shot_times(
+        "AR", 60, 1.0, 0.0, 6.0,
+        ammo_refills=(AmmoRefill(time=1.0, rounds=6),))
+    assert len(with_refill) == len(without) + 6
+
+
+def test_a_refill_adds_shots_to_a_charge_weapons_timeline():
+    without = generate_shot_times("RL", 9, 2.0, 0.3, 180.0)
+    with_refill = generate_shot_times(
+        "RL", 9, 2.0, 0.3, 180.0,
+        ammo_refills=(AmmoRefill(time=1.0, rounds=4),))
+    assert len(with_refill) > len(without)
+
+
+def test_a_timeline_without_refills_is_unchanged():
+    assert generate_shot_times("RL", 9, 2.0, 0.3, 180.0) == \
+        generate_shot_times("RL", 9, 2.0, 0.3, 180.0, ammo_refills=())
+
+
+def test_a_refill_during_the_reload_is_worth_nothing():
+    """The project owner's ruling (2026-08-13): a refill that lands while the
+    unit is reloading is wasted - the reload finishes on its own.
+
+    This is the behavioural test for that rule, and the only place it is
+    observable. Timing is everything: the same refill inside a magazine's
+    firing span lands on a partly-spent magazine and buys shots, while inside
+    the reload gap it lands on a magazine that is about to be full anyway.
+    """
+    # An AR fires 12 rounds/sec, so a 12-round magazine empties one second in
+    # and the 1-second reload runs from t=1.0 to t=2.0. fight_duration stops
+    # short of a second magazine on either side (plain's would open at
+    # ~2.15s) - same reasoning as the magazine-weapons-timeline test above.
+    plain = generate_shot_times("AR", 12, 1.0, 0.0, 2.0)
+    during_reload = generate_shot_times(
+        "AR", 12, 1.0, 0.0, 2.0,
+        ammo_refills=(AmmoRefill(time=1.5, percent=50.0),))
+    while_firing = generate_shot_times(
+        "AR", 12, 1.0, 0.0, 2.0,
+        ammo_refills=(AmmoRefill(time=0.5, percent=50.0),))
+    assert len(during_reload) == len(plain)
+    assert len(while_firing) > len(plain)
+
+
+def test_last_bullet_times_follow_the_refilled_magazine():
+    # The refill extends the magazine, so the round that empties it moves.
+    # t=2.5 is round 30 of the 60-round magazine - well inside its firing
+    # span (unlike t=5.0, which is that magazine's own reload boundary and
+    # would land the refill on a magazine that's already full again).
+    kw = dict(ammo_refills=(AmmoRefill(time=2.5, rounds=4),))
+    times = generate_shot_times("AR", 60, 1.0, 0.0, 180.0, **kw)
+    lasts = last_bullet_shot_times("AR", 60, 1.0, 0.0, 180.0, **kw)
+    assert times[63] in lasts
+    assert times[59] not in lasts
+
+
+def test_a_refill_during_a_weapon_transform_is_wasted():
+    """A transform silences the base weapon, so a refill that lands inside one
+    reaches no magazine - the base weapon resumes AFTER it, and the walk drops
+    anything older than the magazine it is filling. Same shape as the reload
+    gap, and the segment path already rules that a transform's own shots do not
+    count toward a refund's trigger."""
+    profile = dict(weapon="RL", charge_time=1.0, damage_percent=1.0,
+                   charge_damage_percent=100.0)
+    segment = {"start": 5.0, "end": 20.0, "profile": profile}
+    base = dict(RL, ammo_refills=(AmmoRefill(time=10.0, percent=100.0),))
+    during = generate_segmented_shots(base, [segment], 60.0)
+    no_refill = generate_segmented_shots(dict(RL), [segment], 60.0)
+    assert [r.time for r in during] == [r.time for r in no_refill]
+
+
+def test_a_shared_magazine_segment_receives_timed_refills():
+    # Snow White: Heavy Arms' mode draws from her own magazine, so a refill
+    # from an ally reaches her the same as it reaches anyone else. A shorter
+    # window than the full fight avoids the same non-monotonicity as the
+    # magazine-weapons-timeline test above - by 60s the two schedules'
+    # fixed offset happens to cancel out to the same total count.
+    plain_base, segment = _shared_magazine_case()
+    refilled_base, _ = _shared_magazine_case(
+        ammo_refills=(AmmoRefill(time=10.0, percent=100.0),))
+    plain = generate_segmented_shots(plain_base, segment, 20.0)
+    refilled = generate_segmented_shots(refilled_base, segment, 20.0)
+    assert len(refilled) > len(plain)
+
+
+def test_a_refill_reaches_the_base_weapon_through_segmented_shots():
+    # No segment at all here - this is _base_shot_records on its own, proving
+    # a refill reaches it the same as generate_shot_times, not just that a
+    # transform can waste one (the case above).
+    without = generate_segmented_shots(dict(RL), [], 8.0)
+    with_refill = generate_segmented_shots(
+        {**RL, "ammo_refills": (AmmoRefill(time=1.0, rounds=4),)}, [], 8.0)
+    assert len(with_refill) > len(without)
+
+
+def test_a_charge_magazine_that_opens_past_the_window_does_not_crash():
+    """Regression: a charge weapon's round 0 lands one full charge AFTER its
+    magazine starts (unlike a magazine weapon's, which fires AT its magazine's
+    start and so is always inside the window by construction). A refill's
+    stop_time can therefore end the walk before this later magazine's first
+    round ever fires, handing the caller a magazine_size of 0 - which used to
+    read its never-set last-shot time and crash with a TypeError."""
+    times = generate_shot_times(
+        "RL", 9, 2.0, 0.3, 6.0,
+        ammo_refills=(AmmoRefill(time=1.0, rounds=4),))
+    assert len(times) == 12
