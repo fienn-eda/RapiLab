@@ -121,6 +121,18 @@ def magazine_shot_offset(index, shot_interval, spinup):
     return spinup.seconds + (index - spinup.intervals) * shot_interval
 
 
+def _rounds_from_declaration(rounds, percent, capacity):
+    """Whole rounds a fixed `rounds` count (or `percent` of `capacity`, if
+    `rounds` is unset) hands back.
+
+    Shared by `AmmoRefund` and `AmmoRefill`, which differ in what TRIGGERS a
+    hand-back (a shot counter vs. a known time) but not in how big one is.
+    """
+    if rounds:
+        return rounds
+    return round(capacity * percent / 100.0)
+
+
 @dataclass(frozen=True)
 class AmmoRefund:
     """Rounds handed back into the magazine every N shots fired.
@@ -156,9 +168,7 @@ class AmmoRefund:
 
     def rounds_for(self, capacity):
         """Whole rounds this hands back into a magazine of `capacity`."""
-        if self.rounds:
-            return self.rounds
-        return round(capacity * self.percent / 100.0)
+        return _rounds_from_declaration(self.rounds, self.percent, capacity)
 
 
 @dataclass(frozen=True)
@@ -173,8 +183,9 @@ class AmmoRefill:
 
     A refill that lands while the recipient is reloading is WASTED - the reload
     finishes on its own and the rounds are worth nothing (Fienn, 2026-08-13).
-    The walk gets that for free: such a refill is older than the next magazine's
-    start, and the walk drops anything older than the magazine it is filling.
+    No special handling is needed for this: a walk always starts a magazine at
+    full capacity, and a refill is capped at capacity, so one dated before the
+    magazine it would join lands on a magazine with no room and does nothing.
     """
     time: float
     rounds: int = 0
@@ -182,9 +193,7 @@ class AmmoRefill:
 
     def rounds_for(self, capacity):
         """Whole rounds this hands back into a magazine of `capacity`."""
-        if self.rounds:
-            return self.rounds
-        return round(capacity * self.percent / 100.0)
+        return _rounds_from_declaration(self.rounds, self.percent, capacity)
 
 
 def _refund_sequence(refund, capacity):
@@ -233,10 +242,12 @@ def magazine_shot_count(capacity, shots_before, refund, *,
     the absolute time of this magazine's 0-based round i. It is a callable
     rather than a set of parameters because the formula differs by weapon -
     magazine weapons offset by spinup, charge weapons by charge time - and each
-    generator already holds its own. A refill older than this magazine's first
-    round belongs to a reload that already finished, so it is dropped rather
-    than credited here. With no refills the clock is never asked for a time, so
-    a timeline without one does no time arithmetic at all.
+    generator already holds its own. With no refills the clock is never asked
+    for a time, so a timeline without one does no time arithmetic at all. A
+    refill older than this magazine needs no special handling to be worthless:
+    the walk always starts a magazine at full capacity, and a refill is capped
+    at capacity, so one dated before the magazine it would join lands on a
+    magazine with no room and does nothing.
 
     `stop_time` ends the walk at the moment the fight (or the segment) does. A
     refund can hand back as much as the magazine spends - Arcana's rotation
@@ -247,8 +258,7 @@ def magazine_shot_count(capacity, shots_before, refund, *,
     refunds = _refund_sequence(refund, capacity)
     if not refunds and not refills:
         return capacity, shots_before + capacity
-    pending = [r for r in refills
-               if time_of_round is None or r.time >= time_of_round(0)]
+    pending = list(refills)
     pending.sort(key=lambda r: r.time)
     rounds = capacity
     shots = 0

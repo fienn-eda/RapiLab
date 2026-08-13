@@ -247,11 +247,12 @@ def test_a_refill_is_capped_by_what_the_magazine_has_spent():
     assert size == 11
 
 
-def test_a_refill_that_lands_during_the_reload_is_wasted():
-    # The magazine's last round fires at t=9; a refill at t=20 belongs to no
-    # magazine this walk owns, and the NEXT magazine starts after it, so the
-    # drop rule (time < magazine_start) throws it away. Fienn, 2026-08-13:
-    # the reload finishes and the refill is worth nothing.
+def test_a_stale_refill_finds_no_room_in_a_full_magazine():
+    # A refill at t=20 is checked at this magazine's very first round (opens
+    # at t=30, so it is immediately "due") - which is still at full capacity,
+    # since nothing has been spent yet. The ordinary cap that limits every
+    # refill is what makes a stale one worth nothing: min(10, 10 + 4) == 10.
+    # No time-based drop rule is needed for this.
     size, _ = magazine_shot_count(
         10, 0, None,
         time_of_round=_uniform_clock(30.0, 1.0),   # this magazine opens at 30
