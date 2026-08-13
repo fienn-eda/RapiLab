@@ -110,12 +110,33 @@ class AmmoRefill:
 - 바뀌는 것은 `_refund_sequence`가 **`capacity`를 받아** 합계를 `rounds_for(capacity)`로
   계산하는 것뿐이다. 퍼센트 환급은 용량 없이는 판정 자체가 불가능하므로 여기서만 걸린다.
 
-## 배선 — 깔때기 하나
+## 배선 — 깔때기 하나가 아니라 워크 둘
 
 `magazine_shot_count` 호출부는 **11곳**이다: `attack_rate` 안의 여섯 생성기(탄창·차지
 × 발사·마지막탄·첫탄)와 세그먼트 경로 둘, 그리고 `charge_window` 셋. MG 예열이
 배선 지점 넷 때문에 `magazine_shot_offset`을 뽑아야 했던 것과 같은 구조다 — **로직은
 전부 이 함수 안에 둔다.** 생성기 루프에 흩으면 열 군데가 따로 놀다 어긋난다.
+
+**그런데 워크가 하나가 아니다.** `_shared_magazine_shots`(`attack_rate.py:846`)는
+`magazine_shot_count`를 **거치지 않고** `_refund_sequence`를 직접 불러 자기 인라인
+워크로 환급을 적용한다(`:913`) — 세그먼트가 같은 탄창을 쓰는 모드(스노우화이트: 헤비
+암즈)라 발과 세그먼트를 시간 순으로 섞어 걸어야 하기 때문이다. 재장전도 그 안에
+인라인으로 있다(`:921-927`).
+
+따라서 환급 로직은 **두 워크 모두**에 들어가고, 공통 규칙(만기 도래분 적용 + 상한 캡)은
+작은 헬퍼 하나로 한 번만 쓴다:
+
+```python
+def _apply_due_refills(pending, now, rounds, capacity):
+    """Rounds after every refill due at `now` has landed, capped at capacity."""
+```
+
+공유 탄창 워크에는 규칙이 **하나 더** 필요하다 — 인라인 재장전 뒤에 **그보다 오래된
+환급을 버리는 것**이다. 그러지 않으면 재장전 중에 떨어진 환급이 다음 발에서 적용돼
+판정 2를 어긴다. `magazine_shot_count`의 `time < magazine_start` 드롭과 같은 규칙이다.
+
+**이 경로를 빼면 기능이 조용히 유닛별로 갈린다** — 느와르의 아군 환급이 네 좌석에는
+가고 스노우화이트: 헤비 암즈에게만 안 간다. 그녀는 실기록 덱4에 있다.
 
 ```python
 def magazine_shot_count(capacity, shots_before, refund, *,

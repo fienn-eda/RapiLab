@@ -194,7 +194,23 @@ git commit -m "탄약 환급이 탄창 퍼센트로도 선언되게 한다"
 
 **Interfaces:**
 - Consumes: Task 1의 `rounds_for(capacity)`
-- Produces: `AmmoRefill(time:float, rounds:int=0, percent:float=0.0)` (같은 `rounds_for`), `magazine_shot_count(capacity, shots_before, refund, *, time_of_round=None, refills=(), stop_time=None) -> (int, int)`
+- Produces: `AmmoRefill(time:float, rounds:int=0, percent:float=0.0)` (같은 `rounds_for`), `magazine_shot_count(capacity, shots_before, refund, *, time_of_round=None, refills=(), stop_time=None) -> (int, int)`, 그리고 두 워크가 공유하는 `_apply_due_refills(pending, now, rounds, capacity) -> int`
+
+**중요 — 워크는 하나가 아니다.** `_shared_magazine_shots`(`attack_rate.py:846`)는 `magazine_shot_count`를 거치지 않고 `_refund_sequence`를 직접 불러 **자기 인라인 워크**로 환급을 적용한다(`:913`). 이 태스크는 두 워크가 쓸 헬퍼를 만들고 `magazine_shot_count` 쪽만 배선한다. 공유 탄창 워크의 배선은 Task 3이 한다.
+
+```python
+def _apply_due_refills(pending, now, rounds, capacity):
+    """Rounds after every refill due at `now` has landed, capped at capacity.
+
+    Mutates `pending`, which both magazine walks keep as a time-sorted list of
+    the refills they have not spent yet.
+    """
+    while pending and pending[0].time <= now:
+        rounds = min(capacity, rounds + pending.pop(0).rounds_for(capacity))
+    return rounds
+```
+
+`magazine_shot_count`의 워크는 인라인 `while pending ...` 대신 이 헬퍼를 부른다.
 
 - [ ] **Step 1: 실패하는 테스트를 쓴다**
 
@@ -438,7 +454,21 @@ def test_a_refill_during_a_weapon_transform_is_wasted():
     assert [r.time for r in during] == [r.time for r in no_refill]
 ```
 
-> **구현자 주의:** 위 `segment` 딕셔너리의 키 이름은 **추측이다.** `generate_segmented_shots`가 세그먼트에서 무엇을 읽는지 `backend/app/attack_rate.py:946`과 `_segment_shot_records:776`을 열어 확인하고, 기존 세그먼트 테스트(`backend/tests/`에서 `generate_segmented_shots`를 쓰는 파일)가 만드는 것과 **같은 모양**으로 고쳐 쓸 것. 이 테스트의 요지는 키 이름이 아니라 **변형 창 안에 떨어진 환급이 타임라인을 바꾸지 않는다**는 것이다.
+> **구현자 주의:** 위 `segment` 딕셔너리의 키 이름은 **추측이다.** 실제 모양은 `backend/tests/test_ammo_refund.py:89`(`_shared_magazine_case`)에 있다: `dict(start=5.0, until_shots=3, profile=dict(weapon=..., charge_time=..., damage_percent=..., charge_damage_percent=...))`. **이 테스트에는 `shares_magazine=True`를 넣지 말 것** — 그 플래그는 `_shared_magazine_shots`라는 다른 경로로 가고, 거기서는 기저 무기가 침묵하지 않는다. 환급을 base 딕트에 싣는 방법은 같은 파일 `:123`을 볼 것.
+
+그리고 공유 탄창 경로에도 **자기 테스트**가 필요하다(그쪽은 기저 무기가 침묵하지 않으므로 환급이 실제로 도착해야 한다):
+
+```python
+def test_a_shared_magazine_segment_receives_timed_refills():
+    # Snow White: Heavy Arms' mode draws from her own magazine, so a refill
+    # from an ally reaches her the same as it reaches anyone else.
+    plain_base, segment = _shared_magazine_case()
+    refilled_base, _ = _shared_magazine_case(
+        ammo_refills=(AmmoRefill(time=10.0, percent=100.0),))
+    plain = generate_segmented_shots(plain_base, segment, 60.0)
+    refilled = generate_segmented_shots(refilled_base, segment, 60.0)
+    assert len(refilled) > len(plain)
+```
 
 - [ ] **Step 2: 실패를 확인한다**
 
@@ -476,6 +506,30 @@ Expected: FAIL — `TypeError: generate_shot_times() got an unexpected keyword a
 디스패처 둘(`generate_shot_times:448`, `first_bullet_shot_times:629`, `last_bullet_shot_times:659`)은 `ammo_refills`를 그대로 넘기기만 한다.
 
 `_base_shot_records`는 `base.get("ammo_refills", ())`로 읽고, `generate_segmented_shots`는 그 `base` 딕셔너리를 이미 통째로 받으므로 **추가 파라미터가 필요 없다.**
+
+**아홉 번째 지점 — `_shared_magazine_shots`(`:846`).** 이 함수는 `magazine_shot_count`를 거치지 않으므로 위 배선을 **하나도 물려받지 않는다.** 시간 순으로 발마다 걷고 재장전도 인라인(`:921-927`)이라, 오히려 시각을 이미 들고 있어 배선이 더 간단하다:
+
+```python
+    refills = sorted(base.get("ammo_refills", ()), key=lambda r: r.time)
+    pending = [r for r in refills if r.time >= 0.0]
+```
+
+그리고 발마다 `shot_time`이 정해진 직후(`rounds -= 1` **앞**)에:
+
+```python
+        rounds = _apply_due_refills(pending, shot_time, rounds, capacity)
+```
+
+인라인 재장전 뒤(`:925-927`의 `rounds = capacity` 옆)에 **오래된 환급을 버린다**:
+
+```python
+            while pending and pending[0].time < cursor:
+                pending.pop(0)
+```
+
+이것이 「재장전 중에 떨어진 환급은 버려진다」를 이 워크에서 지키는 방법이다. 이 줄이 없으면 재장전 구간에 떨어진 환급이 다음 발에서 적용돼 판정을 어긴다.
+
+**왜 빼면 안 되나:** 이 경로의 소비자는 스노우화이트: 헤비 암즈이고 그녀는 실기록 덱4에 있다. 빼면 느와르의 아군 환급이 네 좌석에는 가고 그녀에게만 안 가, 기능이 조용히 유닛별로 갈린다.
 
 - [ ] **Step 4: 통과와 전체 스위트를 확인한다**
 
