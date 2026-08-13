@@ -1172,6 +1172,12 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
     `magazine_shot_count` uses for a refund whose windows resolved to zero -
     firing it unrestricted would silently ungate it instead.
 
+    The refunds that remain fire on a bare `shots_fired % one.every_shots ==
+    0` rather than through `one.fires_at`, the call `magazine_shot_count`'s
+    equivalent loop makes. `first_shot` is therefore not honoured here: a
+    refund whose rotation phase differs from its period fires on the period
+    alone, off phase.
+
     A timed refill is wired straight into the walk rather than through
     `magazine_shot_count` - this function never calls it, since one magazine
     runs straight through the segments instead of restarting per window. No
