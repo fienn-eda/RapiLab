@@ -178,3 +178,43 @@ def test_the_boss_gate_is_resolved_where_the_encounter_is_known():
     assert resolve_ammo_refunds(both, "Electric") == (BASTION, EAGLE_EYE)
     assert resolve_ammo_refunds(both, "Iron") == (BASTION,)
     assert resolve_ammo_refunds(RL, "Electric") == ()
+
+
+# Tove's Favorite Item build: "Activates after 10 normal attack(s). Affects
+# self. Reload 5.31% of the magazine." She is an AR with 60 rounds, so the
+# percentage is worth 3 whole rounds - the unit the engine hands back.
+TOVE = AmmoRefund(every_shots=10, percent=5.31)
+
+
+def test_a_percentage_refund_resolves_against_the_magazine_it_lands_in():
+    assert TOVE.rounds_for(60) == 3
+
+
+def test_a_percentage_too_small_for_one_round_hands_back_nothing():
+    # 5.31% of 9 is 0.478 - below half a round, so it rounds away.
+    assert TOVE.rounds_for(9) == 0
+
+
+def test_a_refund_declared_in_rounds_ignores_capacity():
+    assert BASTION.rounds_for(9) == 3
+    assert BASTION.rounds_for(600) == 3
+
+
+def test_a_percentage_refund_fires_on_the_same_counter_as_a_round_refund():
+    # 3 rounds back every 10 shots off a 60-round magazine: shots 10..60 each
+    # add 3 when the counter lands, and the magazine walks past its capacity.
+    by_percent = magazine_shot_count(60, 0, TOVE)
+    by_rounds = magazine_shot_count(60, 0, AmmoRefund(every_shots=10, rounds=3))
+    assert by_percent == by_rounds
+
+
+def test_a_percentage_refund_that_outpaces_the_trigger_is_rejected():
+    # 20% of a 60-round magazine is 12 rounds every 10 shots - it never empties.
+    greedy = AmmoRefund(every_shots=10, percent=20.0)
+    with pytest.raises(ValueError, match="never empties"):
+        magazine_shot_count(60, 0, greedy)
+
+
+def test_a_percentage_rounds_to_the_nearest_round_not_down():
+    # 5.31% of 30 is 1.593 - a floor would hand back 1, the game hands back 2.
+    assert AmmoRefund(every_shots=10, percent=5.31).rounds_for(30) == 2

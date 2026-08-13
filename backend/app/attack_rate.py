@@ -138,30 +138,44 @@ class AmmoRefund:
     refund is worth depends on where in the magazine it lands, and a magazine
     that refills mid-fight shifts every later reload against the Full Burst
     window. Faking it as a flat percentage scores non-monotonically.
+
+    A refund states its size either in whole `rounds` or as a `percent` of the
+    magazine it lands in ("Reload 5.31% of the magazine", Tove's Favorite Item).
+    A percentage is rounded to the nearest whole round, the same convention
+    magazine capacity itself uses (Fienn, 2026-08-13).
     """
     every_shots: int
-    rounds: int
+    rounds: int = 0
+    percent: float = 0.0
 
     def __post_init__(self):
-        if self.rounds >= self.every_shots:
+        if self.rounds and self.rounds >= self.every_shots:
             raise ValueError(
                 f"a refund of {self.rounds} every {self.every_shots} shots never "
                 "empties the magazine")
 
+    def rounds_for(self, capacity):
+        """Whole rounds this hands back into a magazine of `capacity`."""
+        if self.rounds:
+            return self.rounds
+        return round(capacity * self.percent / 100.0)
 
-def _refund_sequence(refund):
+
+def _refund_sequence(refund, capacity):
     """`refund` as a tuple, rejecting a set that never empties the magazine.
 
     A unit can hold more than one source at once - EVE reloads 3 rounds every
     10 shots off her own skill and a Tactical Bear cube hands back 3 more on
     the same cadence - and each keeps its own trigger against the shared shot
-    counter. `AmmoRefund` can only vet itself, so the combined rate is checked
-    here: at one round back per shot the walk below would never terminate.
+    counter. `AmmoRefund` can only vet a whole-round refund by itself, so the
+    combined rate is checked here, where the magazine's capacity is known and a
+    percentage can finally be resolved: at one round back per shot the walk
+    below would never terminate.
     """
     if refund is None:
         return ()
     refunds = (refund,) if isinstance(refund, AmmoRefund) else tuple(refund)
-    if sum(r.rounds / r.every_shots for r in refunds) >= 1:
+    if sum(r.rounds_for(capacity) / r.every_shots for r in refunds) >= 1:
         raise ValueError(
             f"refunds {refunds} together hand back a round per shot, so the "
             "magazine never empties")
@@ -177,7 +191,7 @@ def magazine_shot_count(capacity, shots_before, refund):
     sequence of them, or None; None returns the capacity untouched, so every
     timeline without a refund keeps its exact arithmetic.
     """
-    refunds = _refund_sequence(refund)
+    refunds = _refund_sequence(refund, capacity)
     if not refunds:
         return capacity, shots_before + capacity
     rounds = capacity
@@ -189,7 +203,7 @@ def magazine_shot_count(capacity, shots_before, refund):
         counter += 1
         for one in refunds:
             if counter % one.every_shots == 0:
-                rounds = min(capacity, rounds + one.rounds)
+                rounds = min(capacity, rounds + one.rounds_for(capacity))
     return shots, counter
 
 
@@ -855,11 +869,11 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
     """
     weapon = base["weapon"]
     base_bonus = base["charge_damage_percent"] / 100 - 1
-    refunds = _refund_sequence(base.get("ammo_refund"))
     records = []
     pending = list(segments)
     cursor = 0.0                 # instant the next charge starts from
     capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(0.0))))
+    refunds = _refund_sequence(base.get("ammo_refund"), capacity)
     rounds = capacity
     shots_fired = 0
     opening = True               # is the next shot this magazine's first?
@@ -898,7 +912,7 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
         opening = False
         for one in refunds:
             if shots_fired % one.every_shots == 0:
-                rounds = min(capacity, rounds + one.rounds)
+                rounds = min(capacity, rounds + one.rounds_for(capacity))
         cursor = shot_time
         if in_segment:
             seg_left -= 1
