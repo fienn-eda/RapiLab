@@ -10,6 +10,7 @@ stands in for it.
 import pytest
 
 from app.attack_rate import (
+    AmmoRefill,
     AmmoRefund,
     generate_segmented_shots,
     generate_shot_times,
@@ -218,3 +219,75 @@ def test_a_percentage_refund_that_outpaces_the_trigger_is_rejected():
 def test_a_percentage_rounds_to_the_nearest_round_not_down():
     # 5.31% of 30 is 1.593 - a floor would hand back 1, the game hands back 2.
     assert AmmoRefund(every_shots=10, percent=5.31).rounds_for(30) == 2
+
+
+def _uniform_clock(magazine_start, interval):
+    """Round i of a magazine that starts at `magazine_start` and fires every
+    `interval` seconds - the shape both magazine and charge generators reduce
+    to when spinup is absent."""
+    return lambda i: magazine_start + i * interval
+
+
+def test_a_refill_inside_the_magazine_adds_rounds_capped_at_capacity():
+    # A 10-round magazine firing 1/sec from t=0: rounds land at 0..9. A refill
+    # of 40% (4 rounds) at t=5 finds 4 spent, so all 4 come back.
+    size, counter = magazine_shot_count(
+        10, 0, None,
+        time_of_round=_uniform_clock(0.0, 1.0),
+        refills=(AmmoRefill(time=5.0, percent=40.0),))
+    assert (size, counter) == (14, 14)
+
+
+def test_a_refill_is_capped_by_what_the_magazine_has_spent():
+    # Same magazine, refill at t=1: only 1 round is gone, so only 1 comes back.
+    size, _ = magazine_shot_count(
+        10, 0, None,
+        time_of_round=_uniform_clock(0.0, 1.0),
+        refills=(AmmoRefill(time=1.0, percent=40.0),))
+    assert size == 11
+
+
+def test_a_refill_that_lands_during_the_reload_is_wasted():
+    # The magazine's last round fires at t=9; a refill at t=20 belongs to no
+    # magazine this walk owns, and the NEXT magazine starts after it, so the
+    # drop rule (time < magazine_start) throws it away. Fienn, 2026-08-13:
+    # the reload finishes and the refill is worth nothing.
+    size, _ = magazine_shot_count(
+        10, 0, None,
+        time_of_round=_uniform_clock(30.0, 1.0),   # this magazine opens at 30
+        refills=(AmmoRefill(time=20.0, percent=40.0),))
+    assert size == 10
+
+
+def test_no_refills_never_touches_the_clock():
+    # The clock raises if called - with no refills the walk must not ask for a
+    # single round's time, which is what keeps every existing timeline exact.
+    def exploding_clock(_i):
+        raise AssertionError("time_of_round must not be called without refills")
+
+    assert magazine_shot_count(9, 0, BASTION,
+                               time_of_round=exploding_clock) == (9, 9)
+
+
+def test_refills_and_the_shot_counter_refund_stack():
+    # BASTION alone caps out at 17 on a 14-round magazine (one trigger, see
+    # the larger-than-trigger case above). The refill adds 4 more at t=5, and
+    # those extra rounds carry the counter past 20 too, so BASTION fires a
+    # SECOND time: 14 + 4 (refill) + 3 + 3 (two BASTION triggers) = 24.
+    size, _ = magazine_shot_count(
+        14, 0, BASTION,
+        time_of_round=_uniform_clock(0.0, 1.0),
+        refills=(AmmoRefill(time=5.0, rounds=4),))
+    assert size == 24
+
+
+def test_the_walk_stops_at_the_end_of_the_fight():
+    # A refill every round would keep a magazine alive forever - which is what
+    # Arcana's rotation really does inside her window. The walk is bounded by
+    # the moment the fight (or the segment) ends, not by the magazine draining.
+    forever = tuple(AmmoRefill(time=float(t), rounds=1) for t in range(60))
+    size, _ = magazine_shot_count(
+        10, 0, None,
+        time_of_round=_uniform_clock(0.0, 1.0),
+        refills=forever, stop_time=25.0)
+    assert size == 25

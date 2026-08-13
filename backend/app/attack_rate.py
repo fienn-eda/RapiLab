@@ -161,6 +161,32 @@ class AmmoRefund:
         return round(capacity * self.percent / 100.0)
 
 
+@dataclass(frozen=True)
+class AmmoRefill:
+    """Rounds handed back at a KNOWN TIME rather than on a shot counter.
+
+    "Reload 39.88% magazine(s)" on entering Full Burst (Noir) is this shape: the
+    trigger is an event the burst cycle already scheduled, not a count of the
+    recipient's own shots, and the recipient may not even be the caster. The
+    burst cycle is solved before any shot is generated, so these times are known
+    when the magazine walk runs.
+
+    A refill that lands while the recipient is reloading is WASTED - the reload
+    finishes on its own and the rounds are worth nothing (Fienn, 2026-08-13).
+    The walk gets that for free: such a refill is older than the next magazine's
+    start, and the walk drops anything older than the magazine it is filling.
+    """
+    time: float
+    rounds: int = 0
+    percent: float = 0.0
+
+    def rounds_for(self, capacity):
+        """Whole rounds this hands back into a magazine of `capacity`."""
+        if self.rounds:
+            return self.rounds
+        return round(capacity * self.percent / 100.0)
+
+
 def _refund_sequence(refund, capacity):
     """`refund` as a tuple, rejecting a set that never empties the magazine.
 
@@ -182,7 +208,19 @@ def _refund_sequence(refund, capacity):
     return refunds
 
 
-def magazine_shot_count(capacity, shots_before, refund):
+def _apply_due_refills(pending, now, rounds, capacity):
+    """Rounds after every refill due at `now` has landed, capped at capacity.
+
+    Mutates `pending`, which both magazine walks keep as a time-sorted list of
+    the refills they have not spent yet.
+    """
+    while pending and pending[0].time <= now:
+        rounds = min(capacity, rounds + pending.pop(0).rounds_for(capacity))
+    return rounds
+
+
+def magazine_shot_count(capacity, shots_before, refund, *,
+                        time_of_round=None, refills=(), stop_time=None):
     """Rounds this magazine actually fires, and the shot counter afterwards.
 
     Walks the magazine one round at a time because a refund's value depends on
@@ -190,14 +228,38 @@ def magazine_shot_count(capacity, shots_before, refund):
     counter it triggers on runs across magazines. `refund` is one AmmoRefund, a
     sequence of them, or None; None returns the capacity untouched, so every
     timeline without a refund keeps its exact arithmetic.
+
+    `refills` are `AmmoRefill`s anywhere in the fight; `time_of_round(i)` gives
+    the absolute time of this magazine's 0-based round i. It is a callable
+    rather than a set of parameters because the formula differs by weapon -
+    magazine weapons offset by spinup, charge weapons by charge time - and each
+    generator already holds its own. A refill older than this magazine's first
+    round belongs to a reload that already finished, so it is dropped rather
+    than credited here. With no refills the clock is never asked for a time, so
+    a timeline without one does no time arithmetic at all.
+
+    `stop_time` ends the walk at the moment the fight (or the segment) does. A
+    refund can hand back as much as the magazine spends - Arcana's rotation
+    reloads 6 rounds every 6 shots, which is exactly the point of it - so a
+    magazine can stay alive indefinitely and draining is not a termination
+    guarantee once time is in play.
     """
     refunds = _refund_sequence(refund, capacity)
-    if not refunds:
+    if not refunds and not refills:
         return capacity, shots_before + capacity
+    pending = [r for r in refills
+               if time_of_round is None or r.time >= time_of_round(0)]
+    pending.sort(key=lambda r: r.time)
     rounds = capacity
     shots = 0
     counter = shots_before
     while rounds > 0:
+        now = (time_of_round(shots)
+               if time_of_round is not None and (pending or stop_time is not None)
+               else None)
+        if stop_time is not None and now is not None and now >= stop_time:
+            break
+        rounds = _apply_due_refills(pending, now, rounds, capacity)
         rounds -= 1
         shots += 1
         counter += 1
