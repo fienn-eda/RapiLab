@@ -739,6 +739,42 @@ def test_instant_damage_pulse_from_own_burst_activate_stacks_with_burst_nuke():
     assert instant_hits == [{"slug": "attacker", "time": 5.0, "damage": 1000.0, "source": "instant_nuke", "damage_type": "attack"}]
 
 
+def test_instant_damage_pulse_from_ally_burst_activate_lands_at_that_burst():
+    # A unit that answers ANOTHER unit's burst with damage - Queen (Makoto
+    # Nijima)'s "Activates when Follow Up takes effect", the bullet Yukiko's
+    # burst fires by passing her the buff. The pulse must drain at the burst it
+    # reacted to: draining before the ally_burst_activate rules ran left it
+    # banked until Full Burst opened, which moved the hit inside the window and
+    # paid it a Full Burst bonus the cast-time hit never earns.
+    def reacting_nuke(context, caster_slug, time, registry):
+        registry.add_pulse(Pulse("instant_damage_percent", 300.0, "self", caster_slug))
+
+    rules_by_slug = {
+        "buffer": [SkillRule(trigger="ally_burst_activate", action=reacting_nuke,
+                             condition=ally_bursted("attacker"))],
+        "midtier": [],
+        "attacker": [],
+    }
+    result = simulate_raid(
+        make_deck(),
+        rules_by_slug,
+        burst_damage_percents={},
+        base_stats={
+            "buffer": {"atk": 1000, "def": 0, "max_hp": 0},
+            "midtier": {"atk": 0, "def": 0, "max_hp": 0},
+            "attacker": {"atk": 0, "def": 0, "max_hp": 0},
+        },
+        enemy_def=0,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+    )
+    instant_hits = [e for e in result["damage_log"] if e["source"] == "instant_nuke"]
+    assert instant_hits == [{"slug": "buffer", "time": 5.0, "damage": 3000.0,
+                             "source": "instant_nuke", "damage_type": "attack"}]
+
+
 def test_periodic_nuke_fires_repeatedly_on_its_own_fixed_cooldown():
     # A skill on its own fixed cooldown, independent of the burst cycle (e.g.
     # Helm: Aquamarine's Aegis Cannon Suppression Fire, cooldown 4s) - fires

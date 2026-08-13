@@ -1044,13 +1044,20 @@ def _simulate_raid_once(
         context.last_burst_slug = slug
         context.record_burst_time(slug, time)
         fire_trigger("own_burst_activate", {slug: rules_by_slug.get(slug, [])}, context, registry, time)
-        drain_instant_damage(time)
         # Let other units react to THIS unit's burst (e.g. Prika's Encore firing
         # on Mint's Sing Along). Fired across every unit's rules AFTER the
         # burster's own own_burst_activate, so a reacting rule sees the burst's
-        # own effects already applied. ally_burst_activate rules must be buff
-        # appliers (no instant nukes), like periodic_rules.
+        # own effects already applied.
         fire_trigger("ally_burst_activate", rules_by_slug, context, registry, time)
+        # Drained after BOTH, so a reacting rule may deal damage and not only
+        # apply buffs - Queen (Makoto Nijima) answers Yukiko's burst with a
+        # distributed-damage nuke. Draining between the two left such a pulse
+        # banked until the next drain point (Full Burst enter), which both
+        # moved the hit off the burst it answered and paid it that window's
+        # bonus. The burster's own pulses still drain at this same `time`, and
+        # damage is computed in phase 2 against the final registry either way,
+        # so no existing unit's output moves.
+        drain_instant_damage(time)
 
         # A burst-fired nuke whose magnitude depends on a named resource's
         # count - a single gated/scaled additional hit (tick_count=1), or a
