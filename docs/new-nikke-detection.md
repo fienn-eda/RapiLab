@@ -33,8 +33,8 @@
 절대 경로로 실행한다:**
 
 ```
-powershell -ExecutionPolicy Bypass -File C:/Users/fienn/Desktop/NikkeDeckBuilder/scripts/schedule_new_nikke_check.ps1 -Action register
-powershell -ExecutionPolicy Bypass -File C:/Users/fienn/Desktop/NikkeDeckBuilder/scripts/schedule_new_nikke_check.ps1 -Action status
+powershell -ExecutionPolicy Bypass -File C:/Users/fienn/Desktop/RapiLab/scripts/schedule_new_nikke_check.ps1 -Action register
+powershell -ExecutionPolicy Bypass -File C:/Users/fienn/Desktop/RapiLab/scripts/schedule_new_nikke_check.ps1 -Action status
 ```
 
 - **경로는 반드시 메인 체크아웃의 스크립트를 가리켜야 한다.** 작업은 실행된 `.ps1`
@@ -44,7 +44,7 @@ powershell -ExecutionPolicy Bypass -File C:/Users/fienn/Desktop/NikkeDeckBuilder
 - **경로는 슬래시(`/`)로 쓴다.** 백슬래시 경로를 따옴표 없이 셸(예: `!` 로 실행하는
   bash)에 넣으면 `\`가 이스케이프로 먹혀 경로가 뭉개진다. PowerShell은 `-File`에
   슬래시를 그대로 받는다. 백슬래시를 쓰려면 경로를 작은따옴표로 감싼다.
-- 성공하면 `registered '…': daily 19:00, repo C:\Users\fienn\Desktop\NikkeDeckBuilder`
+- 성공하면 `registered '…': daily 19:00, repo C:\Users\fienn\Desktop\RapiLab`
   가 출력된다 — `repo`가 메인 체크아웃을 가리키는지 확인한다.
 - `status`는 등록 상태·마지막 실행 결과·다음 실행 시각을 보여준다. `LastTaskResult`는
   위 종료 코드와 같다(`0` 정상·무소식, `1` 신규 있음, `2` 실패). 단, 아직 한 번도 안
