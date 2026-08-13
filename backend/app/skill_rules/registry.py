@@ -46,6 +46,7 @@ from app.skill_rules.ark_ranger_black import (
     build_ark_ranger_per_shot_rules,
 )
 from app.skill_rules.asuka_shikinami_langley_wille import (
+    annihilation_state_refill,
     build_anti_at_field_per_shot_rules,
     build_anti_at_field_resources,
     build_annihilation_dynamic_hit_count_nukes,
@@ -380,7 +381,7 @@ from app.skill_rules.takina_inoue import (
     build_suppression_initiated_rules,
     build_suppression_initiated_weapon_mode_schedule,
 )
-from app.skill_rules.tove import build_tove_rules
+from app.skill_rules.tove import build_tove_rules, emergency_crafted_bullets_refund
 from app.skill_rules.velvet import build_velvet_per_shot_rules, build_velvet_rules
 from app.skill_rules.red_hood import (
     build_red_hood_rules,
@@ -1376,6 +1377,10 @@ _SKILL_AMMO_REFUNDS = {
     # The Queen's Gaze: "when landing 60 normal attack(s), Reloads 20 round(s)
     # of ammunition" - no boss condition on this one.
     "ludmilla-winter-owner": (queens_gaze_ammo_refund, None),
+    # Emergency-Crafted Bullets, Favorite Item build only: "Activates after 10
+    # normal attack(s). Reload 5.31% of the magazine" - a plain shot counter,
+    # unlike the base build's 5% roll (which stays out of this table).
+    "tove-signature": (emergency_crafted_bullets_refund, None),
 }
 
 
@@ -1394,7 +1399,11 @@ def get_skill_ammo_refund(slug, skill_values):
 # 시각 트리거 환급을 주는 유닛. 값은 시뮬레이터가 버스트 일정에 맞춰 시각으로
 # 바꾼다(raid_simulator.resolve_ammo_refills) - 로스터는 덱을 조립할 뿐 인카운터를
 # 모르므로, 보스 원소 게이트와 같은 이유로 여기서 시각을 만들지 않는다.
-_AMMO_REFILL_GRANTS = {}
+_AMMO_REFILL_GRANTS = {
+    # Annihilation State: "Effect 2: Reloads 21% magazine(s)" - a one-shot
+    # grant at her own burst, not a repeating shot counter.
+    "asuka-shikinami-langley-wille": annihilation_state_refill,
+}
 
 
 def get_ammo_refill_grant(slug, skill_values):

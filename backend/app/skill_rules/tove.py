@@ -16,7 +16,10 @@ Modeled (DPS-relevant):
   own base magazine in raid_simulator) plus the block's squad Critical Damage
   +5.24%. Both continuous under the full-stack assumption below. The crit
   damage does NOT mirror the stack count: "stacks up to 3 time(s)" sits on the
-  Max Ammo line only, so it lands once.
+  Max Ammo line only, so it lands once. The Favorite Item build's own trigger
+  ("Reload 5.31% of the magazine") is a plain shot counter, unlike the base
+  build's roll - `emergency_crafted_bullets_refund`, registered against
+  "tove-signature" only.
 - Modification Successful (dollskills[1]): squad Crit Rate up (continuous while
   Temporary Modification is fully stacked); shotgun allies additionally get
   Attack Speed +42.24% continuously (member-subset scope, gap #3 - live-read
@@ -41,14 +44,13 @@ builds despite their different triggers (Fienn, 2026-07-24):
   for the opening ~5 sec, and it is the base build - the weaker one - that
   carries the small overcredit.
 
-Not modeled (both builds):
-- Emergency-Crafted Bullets' own partial reload ("Reload 5.31% of the
-  magazine(s)"). `attack_rate.AmmoRefund` hands back whole ROUNDS, and 5.31% of
-  an SG magazine rounds to zero of them, so there is nothing to hand back - and
-  the base build's trigger is a 5% roll, which this engine cannot make either.
-  It shortens her own downtime slightly and she is a supporter, so the omission
-  is small.
+Not modeled:
+- The base build's Emergency-Crafted Bullets reload ("There is a 5% chance of
+  activating when attacking") is a probability roll, which this engine cannot
+  make. The Favorite Item build's own trigger is a plain shot counter instead,
+  and is modeled - see `emergency_crafted_bullets_refund`.
 """
+from app.attack_rate import AmmoRefund
 from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
 
 
@@ -119,3 +121,16 @@ def build_tove_rules(values):
         member_subset_buff_rule("own_burst_activate", sg_only,
                                 [("flat_atk", sg_atk, sg_atk_duration)]),
     ]
+
+
+def emergency_crafted_bullets_refund(values):
+    """"Activates after 10 normal attack(s). Affects self. Reload 5.31% of the
+    magazine." - the Favorite Item build's own trigger, a plain shot counter,
+    unlike the base build's 5% roll. She is an AR with 60 rounds, so the
+    percentage is worth 3 whole rounds; it is declared as a percentage anyway
+    so a max-ammo buff moves it the way the game does."""
+    bullet = values["emergency_crafted_bullets"]
+    return AmmoRefund(
+        every_shots=int(bullet["description_value_01"]),
+        percent=float(bullet["description_value_02"]),
+    )

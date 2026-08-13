@@ -25,7 +25,10 @@ debuff on the boss), capped at 30.
   40%, all three for 9 sec. That cut is the state's price and it is not a
   small one: her burst opens the Full Burst window, so the 9 sec cover her
   most valuable shots - 62% of her normal-attack damage in the recorded deck
-  3. Separately, "Annihilation" fires 9 sec
+  3. It also reloads her own magazine 21% on cast (`annihilation_state_refill`)
+  - a one-shot percentage grant at her own burst, not a repeating shot
+  counter, so it goes through `get_ammo_refill_grant` rather than
+  `attack_rate.AmmoRefund`. Separately, "Annihilation" fires 9 sec
   LATER (when Annihilation State ends, not at cast time) - deals 6.62% of
   final ATK as additional damage, once per Anti A.T. Field stack accumulated
   right before that moment (`dynamic_hit_count_nukes` + `fire_delay`), and
@@ -55,10 +58,6 @@ debuff on the boss), capped at 30.
   mechanics.
 
 Not modeled / deferred:
-- Annihilation State's 21% magazine reload: a one-shot percentage refill at her
-  burst. `attack_rate.AmmoRefund` is the mid-magazine refund path but hands back
-  whole ROUNDS on a repeating own-shot counter, so neither its unit nor its
-  trigger fits.
 - Emergency Repair's heating speed / ammo removal / HP recovery / reload speed
   effects: HP and bookkeeping, not damage - not consumed by the engine (see
   "Stats the engine does NOT consume" in engine-capabilities.md).
@@ -146,6 +145,14 @@ def build_annihilation_state_rules(values, caster_atk):
         registry.add(Effect("attack_damage_up", attack_damage, "self", duration, caster_slug), applied_at=time)
 
     return [SkillRule(trigger="own_burst_activate", action=action)]
+
+
+def annihilation_state_refill(values):
+    """Annihilation State's "Effect 2: Reloads 21% magazine(s)" - a one-shot
+    percentage refill at her own burst, not a repeating shot counter."""
+    state = values["annihilation_state"]
+    return {"percent": float(state["description_value_03"]),
+            "scope": "self", "event": "own_burst"}
 
 
 def build_emergency_repair_rules(values):
