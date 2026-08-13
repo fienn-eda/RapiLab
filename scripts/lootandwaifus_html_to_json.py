@@ -79,7 +79,17 @@ def parse_html(raw: str, slug: str) -> tuple[dict, list[str]]:
         if value is None:
             warnings.append(f"no {field}")
 
-    titles = re.findall(r'<div class="skill-title-section[^"]*"[^>]*><h3[^>]*>([^<]+)</h3>', raw)
+    # The section may open with a "Skill 1"/"Skill 2"/"Burst" label before the
+    # name; pages collected before the site added it go straight to the <h3>.
+    # The optional span is spelled out rather than allowing arbitrary markup so
+    # a further change still surfaces as the "found 0 titles" warning instead of
+    # matching something that isn't a skill name.
+    titles = re.findall(
+        r'<div class="skill-title-section[^"]*"[^>]*>'
+        r'(?:<span class="skill-type"[^>]*>[^<]*</span>)?'
+        r'<h3[^>]*>([^<]+)</h3>',
+        raw,
+    )
     titles = [ihtml.unescape(t).strip() for t in titles]
     # 3 = base skills only; 6 = a signature-weapon (애장품) unit whose page also
     # carries the "treasure" (favorite-item) versions, base first then treasure.
