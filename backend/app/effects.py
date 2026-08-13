@@ -208,7 +208,8 @@ class EffectRegistry:
     def add_pulse(self, pulse: Pulse) -> None:
         self._pulses.append(pulse)
 
-    def truncate_open_ended(self, stat: str, source_slug: str, now: float) -> None:
+    def truncate_open_ended(self, stat: str, source_slug: str, now: float,
+                            refresh_group: str | None = None) -> None:
         """Close out a still-open (duration=None) effect from this exact
         (stat, source_slug), so it stops counting as active from `now` onward
         - for a continuous buff a Nikke's own later trigger explicitly ends
@@ -218,12 +219,22 @@ class EffectRegistry:
         before `now`, from raid_simulator's replay-style pass over normal-
         attack shots - correctly respects the closed [applied_at, now) window
         regardless of when this is called relative to the sim's own timeline.
-        No-op if there's no matching open effect. If more than one open effect
-        shares the same (stat, source_slug), all of them are closed - that
-        ambiguity hasn't come up yet."""
+        No-op if there's no matching open effect. Every open effect sharing the
+        (stat, source_slug) is closed, which is what Grave and Arcana want.
+        Pass `refresh_group` to close only the effects added under that bullet
+        name: a unit can hold two continuous buffs on ONE stat where a later
+        trigger ends just one of them (Queen (Makoto Nijima)'s Nuke Boost is
+        permanent, her Nuke Amp stops at Full Burst end, and both are Elemental
+        Advantage Attack Damage). It is the same key `add_refreshing` requires
+        for the same reason - telling a unit's bullets apart on a shared stat."""
         for effect, applied_at in self._entries:
-            if effect.stat == stat and effect.source_slug == source_slug and effect.duration is None:
-                effect.duration = now - applied_at
+            if effect.stat != stat or effect.source_slug != source_slug:
+                continue
+            if effect.duration is not None:
+                continue
+            if refresh_group is not None and effect.refresh_group != refresh_group:
+                continue
+            effect.duration = now - applied_at
         self._version += 1
 
     def drain_pulses(self, stat: str) -> list[Pulse]:

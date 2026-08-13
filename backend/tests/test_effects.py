@@ -168,6 +168,44 @@ def test_truncate_open_ended_only_affects_matching_stat_and_source():
     assert registry.total_for("attack_damage_up", target, now=50.0) == 0.2  # untouched (different stat)
 
 
+def test_truncate_open_ended_named_to_a_bullet_leaves_the_units_other_one_open():
+    # One unit can hold two continuous buffs on the SAME stat from different
+    # bullets, only one of which a later trigger ends: Queen (Makoto Nijima)'s
+    # Nuke Boost is permanent while her Nuke Amp stops when Full Burst ends, and
+    # both are Elemental Advantage Attack Damage. Naming the bullet closes just
+    # that one - the same (stat, source, refresh_group) key add_refreshing
+    # already needs to keep a per-shot buff off a permanent one.
+    registry = EffectRegistry()
+    registry.add(Effect("other_elemental_bonus", 0.1359, "self", None,
+                        "queen-makoto-nijima"), applied_at=0.0)
+    registry.add(Effect("other_elemental_bonus", 0.2556, "self", None,
+                        "queen-makoto-nijima", refresh_group="nuke_amp"), applied_at=10.0)
+    target = make_member("queen-makoto-nijima", "Fire")
+
+    assert registry.total_for("other_elemental_bonus", target, now=15.0) == pytest.approx(0.3915)
+
+    registry.truncate_open_ended("other_elemental_bonus", "queen-makoto-nijima",
+                                 now=20.0, refresh_group="nuke_amp")
+
+    assert registry.total_for("other_elemental_bonus", target, now=15.0) == pytest.approx(0.3915)
+    assert registry.total_for("other_elemental_bonus", target, now=20.0) == pytest.approx(0.1359)
+
+
+def test_truncate_open_ended_without_a_bullet_name_still_closes_every_match():
+    # The un-named call is what Grave and Arcana use, and it must keep closing
+    # all of a source's open effects on the stat - adding the key must not
+    # quietly narrow the existing callers.
+    registry = EffectRegistry()
+    registry.add(Effect("pierce_damage_up", 0.5, "squad", None, "grave"), applied_at=10.0)
+    registry.add(Effect("pierce_damage_up", 0.3, "squad", None, "grave",
+                        refresh_group="overheat_two"), applied_at=10.0)
+
+    registry.truncate_open_ended("pierce_damage_up", "grave", now=30.0)
+
+    target = make_member("ally", "Fire")
+    assert registry.total_for("pierce_damage_up", target, now=50.0) == 0.0
+
+
 def test_add_refreshing_does_not_stack_same_source_reapplications():
     # A buff re-applied every shot (same stat/source/scope) REFRESHES: the active
     # value stays one instance, not the sum of overlapping 3s applications.
