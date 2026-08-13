@@ -29,9 +29,10 @@ charge-speed buffer speed her up when in game it cannot.
 Approximation: the on-core Attack Damage is applied on every Full Charge (core
 hits aren't tracked per-shot), consistent with how core damage is handled globally.
 
-She reads 0.837x of her recorded raid damage - **the largest absolute miss in
-the whole calibration** (-0.630B of 3.860B) - and every input behind that number
-was audited on 2026-07-27 and found correct. Re-auditing them is wasted work:
+She reads 1.072x of her recorded raid damage (+0.278B of 3.860B, 2026-08-13),
+the third largest absolute error in the calibration - and every input behind
+that number was audited on 2026-07-27 and found correct. Re-auditing them is
+wasted work:
 - Her five overload rolls reproduce the damage formula's terms exactly (ATK
   +40.91% -> atk_percent 0.4091; superior code 99.82% + cube 19.09% ->
   other_elemental_bonus 1.1891; charge damage +21.52% on the collectible-scaled
@@ -47,10 +48,12 @@ was audited on 2026-07-27 and found correct. Re-auditing them is wasted work:
   doses of Anis: Star's per-Full-Burst reduction.
 - Calm Depths' charge buff correctly lands on Scarlet (lowest FINAL ATK B3, not
   lowest base), reproducing Fienn's 0.7323 -> 0.5424 sec measurement.
-The shortfall is therefore not an input error in this file. It sits with the
-roster-wide pattern in docs/insights.md: the simulator compresses each deck's
-spread, and deck1's three big dealers (Liberalio, Scarlet, Anis: Star) are three
-of the four largest misses in the run, all in the same direction.
+The residual is therefore not an input error in this file. It sits with the
+weapon-class pattern the calibration reports: SR averages 1.115x and she reads
+below her own class. The engine assumes every core-eligible normal attack hits
+the core (`BossProfile.core_diameter_px` is opt-in and RECORD_BOSS has none), so
+a charge attacker who lands every shot on the core reads as a ceiling, not a
+target - see docs/engine-gaps.md.
 """
 from app.effects import Effect
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, refreshing_buff_rule

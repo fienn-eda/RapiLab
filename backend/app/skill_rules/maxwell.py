@@ -28,10 +28,9 @@ Not modeled / deferred:
   of build_maxwell_rules (not wired to any trigger) rather than approximated
   onto a trigger that would misrepresent it - there's no "enemy count"
   primitive to gate it on anyway.
-- Pierce Shot's "Additional Effect: Pierce": the pierce property has no
-  engine representation (same as Red Hood's Wild Tooth/Red Wolf Pierce,
-  Snow White's Seven Dwarves: I - pierce_damage_up is a damage bucket, not
-  the property itself).
+(Pierce Shot's "Additional Effect: Pierce" is NOT deferred: the engine holds
+the pierce property itself as `has_pierce`, distinct from the `pierce_damage_up`
+bucket, and build_maxwell_rules grants it for the transform's duration.)
 
 Numbers sourced from data/lootandwaifus/char_maxwell.json (skill values);
 dotgg's char_maxwell.json weapon block (SR, 69.04% damage, 250% charge

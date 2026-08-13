@@ -32,7 +32,9 @@ Not modeled / deferred:
 - Decoy avatar (survivability, no damage path).
 - Burst-gauge +12% per 200 ally rounds (gauge charge time is a fixed sim
   input - same defer as Little Mermaid's Bubble Order).
-- Pierce (per convention - not modeled).
+(Snipe Mode's "Gains Pierce" is NOT deferred: the engine holds the pierce
+property itself as `has_pierce`, distinct from the `pierce_damage_up` bucket,
+and it is granted permanently below.)
 - Mode-switch machinery (Preparation for Change, reload-fixed windows):
   meaningless once the mode is held for the whole fight.
 """
