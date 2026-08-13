@@ -19,13 +19,12 @@ Modeled (DPS-relevant):
   its own stat and, like Damage to Parts, never reaches body damage.
   The two Hit Rate halves stack on a shotgun ally (+25.54% together), which
   narrows a 250px spread to 192px - 4.0% -> 6.8% of a 50px core.
-
-Not modeled:
-- Rabbit Twins B's instant partial reload ("Reload 39.88% magazine(s)").
-  `attack_rate.AmmoRefund` is the mid-magazine refund path, but it hands back a
-  fixed round count on the OWNER'S OWN shot counter; this one is a percentage of
-  each recipient's magazine, granted to all allies on Full Burst enter, so
-  neither its unit, its target nor its trigger fits.
+- Rabbit Twins B's instant partial reload ("Reload 39.88% magazine(s)"): a
+  timed squad-wide refill grant on Full Burst enter (`get_ammo_refill_grant`).
+  It lands at the same instant as the Max Ammunition Capacity +5 rounds above,
+  but the engine reads a magazine's capacity once, when the magazine opens - so
+  the 39.88% resolves against the capacity the recipient's current magazine was
+  built with, the same granularity every max-ammo buff already has here.
 """
 from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
 
@@ -48,6 +47,15 @@ SKILL_VALUE_MANIFESTS = {
 
 def finale_burst_percent(values):
     return float(values["finale"]["description_value_01"])
+
+
+def rabbit_twins_b_refill(values):
+    """Rabbit Twins B's "Reload 39.88% magazine(s)": a squad-wide grant at
+    Full Burst entry, alongside (not instead of) the Max Ammunition Capacity
+    +5 rounds this same bullet also carries."""
+    bullet = values["rabbit_twins_b"]
+    return {"percent": float(bullet["description_value_03"]),
+            "scope": "squad", "event": "full_burst_enter"}
 
 
 def shotgun_allies(member, context):

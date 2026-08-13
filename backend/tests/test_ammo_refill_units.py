@@ -53,3 +53,47 @@ def test_tove_base_keeps_its_probability_roll_deferred():
 def test_asuka_reloads_a_fifth_of_her_magazine_at_her_own_burst():
     grant = get_ammo_refill_grant("asuka-shikinami-langley-wille", ASUKA)
     assert grant == {"percent": 21.0, "scope": "self", "event": "own_burst"}
+
+
+# "Activates when entering Full Burst. Affects all allies.", "Max Ammunition
+# Capacity +5 round(s) for 10 sec.", "Reload 39.88% magazine(s)."
+# (char_noir.json skills[1], lv10)
+NOIR_RABBIT_TWINS_B = {
+    "description_value_01": "5", "description_value_02": "10",
+    "description_value_03": "39.88",
+}
+NOIR = {"rabbit_twins_b": NOIR_RABBIT_TWINS_B}
+
+# "Affects all allies.", "Attack damage +10.13% for 10 sec.", "Reloads
+# 33.26% magazine(s).", "Affects self.", "ATK +17.28% ... for 10 sec."
+# (char_little-mermaid.json skills[2], lv10)
+LITTLE_MERMAID_SIRENS_SONG = {
+    "description_value_01": "10.13", "description_value_02": "10",
+    "description_value_03": "33.26", "description_value_04": "17.28",
+    "description_value_05": "10",
+}
+LITTLE_MERMAID = {"sirens_song": LITTLE_MERMAID_SIRENS_SONG}
+
+
+def test_noir_reloads_the_whole_squad_on_full_burst_entry():
+    grant = get_ammo_refill_grant("noir", NOIR)
+    assert grant == {"percent": 39.88, "scope": "squad", "event": "full_burst_enter"}
+
+
+def test_little_mermaid_reloads_the_whole_squad_at_her_own_burst():
+    grant = get_ammo_refill_grant("little-mermaid", LITTLE_MERMAID)
+    assert grant == {"percent": 33.26, "scope": "squad", "event": "own_burst"}
+
+
+def test_a_deck_with_noir_refills_every_seat():
+    """Not a damage assertion - the point is that four other units' shot
+    timelines receive a refill they could not have declared themselves."""
+    from app.raid_simulator import resolve_ammo_refills
+
+    deck = [
+        {"slug": "noir", "ammo_refill_grant": get_ammo_refill_grant("noir", NOIR)},
+        {"slug": "liberalio"},
+        {"slug": "scarlet-black-shadow"},
+    ]
+    refills = resolve_ammo_refills(deck, [{"type": "full_burst_start", "time": 5.0}])
+    assert set(refills) == {"noir", "liberalio", "scarlet-black-shadow"}

@@ -290,6 +290,7 @@ from app.skill_rules.little_mermaid import (
     build_bubble_barrage_scheduled_nukes,
     build_bubble_wave_fb_nuke,
     build_little_mermaid_rules,
+    sirens_song_refill,
 )
 from app.skill_rules.liter import build_liter_rules
 from app.skill_rules.naga import (
@@ -326,7 +327,11 @@ from app.skill_rules.nayuta import (
     build_memory_incineration_weapon_mode_schedule,
     build_nayuta_rules,
 )
-from app.skill_rules.noir import build_noir_rules, finale_burst_percent
+from app.skill_rules.noir import (
+    build_noir_rules,
+    finale_burst_percent,
+    rabbit_twins_b_refill,
+)
 from app.skill_rules.prika import build_lets_get_show_started_rules, build_prika_rules
 from app.skill_rules.queen_makoto_nijima import (
     build_queen_makoto_nijima_rules,
@@ -1403,6 +1408,12 @@ _AMMO_REFILL_GRANTS = {
     # Annihilation State: "Effect 2: Reloads 21% magazine(s)" - a one-shot
     # grant at her own burst, not a repeating shot counter.
     "asuka-shikinami-langley-wille": annihilation_state_refill,
+    # Rabbit Twins B: "Reload 39.88% magazine(s)" - squad-wide, on Full Burst
+    # entry, alongside her separately-encoded Max Ammunition Capacity buff.
+    "noir": rabbit_twins_b_refill,
+    # Siren's Song: "Reloads 33.26% magazine(s)" - squad-wide, at her own
+    # burst.
+    "little-mermaid": sirens_song_refill,
 }
 
 

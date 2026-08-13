@@ -17,6 +17,8 @@ Modeled (DPS-relevant):
   schedule function (`context.shot_times` holds ALL slugs, not just the
   owner's) - no engine extension needed. See
   build_bubble_barrage_scheduled_nukes.
+- Siren's Song's instant partial reload ("Reloads 33.26% magazine(s)"): a
+  timed squad-wide refill grant at her own burst (`get_ammo_refill_grant`).
 
 Not modeled:
 - Explosive Bubble (after 50 of her own normal attacks): it removes Bubble and
@@ -24,9 +26,7 @@ Not modeled:
   damage over the permanent Bubble already modeled - only the stun, which isn't
   modeled. Deliberately not double-counted.
 - Bubble Order's "ally ammo reaches 400 -> Burst Gauge +37%" (gauge fill isn't a
-  consumed stat) and Siren's Song's instant partial reload - a percentage of
-  every ALLY's magazine at her burst, which `attack_rate.AmmoRefund` (whole
-  rounds, on the owner's own shot counter) cannot express.
+  consumed stat).
 
 Cross-note (2026-07-19): Bubble Barrage's squad ammo-expended counter assumes
 "1 shot = 1 round." Velvet's ammo pouch (100/300-round accounting) and
@@ -75,6 +75,14 @@ def build_little_mermaid_rules(values):
             ("atk_percent", self_atk, "self", self_atk_duration),
         ]),
     ]
+
+
+def sirens_song_refill(values):
+    """Siren's Song's "Reloads 33.26% magazine(s)": a squad-wide grant at her
+    own burst, not Full Burst entry - she casts it herself."""
+    song = values["sirens_song"]
+    return {"percent": float(song["description_value_03"]),
+            "scope": "squad", "event": "own_burst"}
 
 
 def build_bubble_wave_fb_nuke(values):
