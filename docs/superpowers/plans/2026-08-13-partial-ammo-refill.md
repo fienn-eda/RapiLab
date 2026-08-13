@@ -254,8 +254,15 @@ def test_a_refill_that_lands_during_the_reload_is_wasted():
         time_of_round=_uniform_clock(30.0, 1.0),   # this magazine opens at 30
         refills=(AmmoRefill(time=20.0, percent=40.0),))
     assert size == 10
+```
 
+**2026-08-14 정정:** 이 스텝에서 계획한 드롭 규칙("the drop rule (time <
+magazine_start) throws it away")은 구현되지 않았다 - Task 2 도중 도달 불가능한 죽은
+코드로 판명됐다(정정은 아래 `:545`). 착륙한 테스트는 이름과 근거가 다르다 -
+`test_a_stale_refill_finds_no_room_in_a_full_magazine`(`backend/tests/test_ammo_refund.py`),
+"이 결과에는 시각 기반 드롭 규칙이 필요 없다 - 상한 캡이 이미 강제한다."
 
+```python
 def test_no_refills_never_touches_the_clock():
     # The clock raises if called - with no refills the walk must not ask for a
     # single round's time, which is what keeps every existing timeline exact.
@@ -386,6 +393,11 @@ Expected: PASS, 2249 passed / 3 skipped. `magazine_shot_count`의 조기 반환 
 `pending = [r for r in refills ...]`의 필터를 `pending = list(refills)`로 잠깐 바꾼다.
 Run: `cd backend && python -m pytest tests/test_ammo_refund.py -k wasted -v`
 Expected: FAIL (`size == 14`, 기대 10). 확인 후 원복한다.
+
+**2026-08-14 정정:** 이 스텝이 상정하는 별도 드롭 필터는 최종 구현에 없다(위
+`:259`, 아래 `:545`와 같은 정정) — `pending`은 어떤 필터도 없이 `list(refills)`로
+시작하고, 상한 캡 하나가 같은 결과를 낸다. 이 스텝으로 확인하려던 성질은 여전히
+참이지만 검증 대상 코드가 존재하지 않으므로 반증할 수 없다.
 
 - [ ] **Step 6: 커밋**
 

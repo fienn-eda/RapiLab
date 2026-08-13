@@ -50,7 +50,7 @@ def test_tove_base_keeps_its_probability_roll_deferred():
     assert get_skill_ammo_refund("tove", TOVE_SIGNATURE) is None
 
 
-def test_asuka_reloads_a_fifth_of_her_magazine_at_her_own_burst():
+def test_asuka_reloads_21_percent_of_her_magazine_at_her_own_burst():
     grant = get_ammo_refill_grant("asuka-shikinami-langley-wille", ASUKA)
     assert grant == {"percent": 21.0, "scope": "self", "event": "own_burst"}
 

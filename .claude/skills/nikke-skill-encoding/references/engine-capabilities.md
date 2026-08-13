@@ -133,10 +133,15 @@ the fight (not per magazine) and the refund is CAPPED at the magazine's capacity
 attack(s) ... Reloads R round(s)": what a refund is worth depends on where in
 the magazine it lands, and it shifts every later reload against the Full Burst
 window, so approximating it as `max_ammo_percent` scores non-monotonically.
-`R` must be `< N` or the magazine never empties (the dataclass rejects it unless
-the refund is window-gated — see `windows` below), and a unit can hold SEVERAL
-sources at once — its own skill plus the Tactical Bear cube — which are vetted
-together in `_refund_sequence`.
+`R` must be `< N` or the magazine never empties. `AmmoRefund.__post_init__`
+only rejects this AT CONSTRUCTION when `rounds >= every_shots` and neither
+`first_shot` nor `windows` is set — a bare `first_shot` (no `windows`) slips
+past the dataclass check the same as a window-gated refund does, but this is
+not a hole: `_refund_sequence` still sums a phase-only refund into its own
+"never empties" check (window-gated refunds are the only ones excluded from
+that sum, because their own window bounds the walk instead — see `windows`
+below). A unit can hold SEVERAL sources at once — its own skill plus the
+Tactical Bear cube — which are vetted together there.
 
 **A refund's size is `rounds` OR `percent` of the magazine it lands in**
 ("Reload 5.31% of the magazine", Tove's Favorite Item) — a percentage rounds to

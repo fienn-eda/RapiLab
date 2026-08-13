@@ -5,7 +5,6 @@ simulator - not the roster - resolves it: the roster assembles a deck and does
 not know the encounter, the same split the boss-element gate on skill refunds
 already uses.
 """
-from app.attack_rate import AmmoRefill
 from app.raid_simulator import resolve_ammo_refills
 
 

@@ -24,8 +24,8 @@ debuff on the boss), capped at 30.
   Attack Damage +36%, and cuts her own Normal Attack Damage Multiplier by
   40%, all three for 9 sec. That cut is the state's price and it is not a
   small one: her burst opens the Full Burst window, so the 9 sec cover her
-  most valuable shots - 62% of her normal-attack damage in the recorded deck
-  3. It also reloads her own magazine 21% on cast (`annihilation_state_refill`)
+  most valuable shots - 62% of her normal-attack damage in the recorded deck.
+  It also reloads her own magazine 21% on cast (`annihilation_state_refill`)
   - a one-shot percentage grant at her own burst, not a repeating shot
   counter, so it goes through `get_ammo_refill_grant` rather than
   `attack_rate.AmmoRefund`. Separately, "Annihilation" fires 9 sec

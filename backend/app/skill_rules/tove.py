@@ -131,6 +131,6 @@ def emergency_crafted_bullets_refund(values):
     so a max-ammo buff moves it the way the game does."""
     bullet = values["emergency_crafted_bullets"]
     return AmmoRefund(
-        every_shots=int(bullet["description_value_01"]),
+        every_shots=int(float(bullet["description_value_01"])),
         percent=float(bullet["description_value_02"]),
     )

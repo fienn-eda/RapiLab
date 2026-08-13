@@ -360,10 +360,10 @@ def test_last_bullet_times_follow_the_refilled_magazine():
 
 def test_a_refill_during_a_weapon_transform_is_wasted():
     """A transform silences the base weapon, so a refill that lands inside one
-    reaches no magazine - the base weapon resumes AFTER it, and the walk drops
-    anything older than the magazine it is filling. Same shape as the reload
-    gap, and the segment path already rules that a transform's own shots do not
-    count toward a refund's trigger."""
+    reaches no magazine - the base weapon resumes AFTER it, and the magazine it
+    resumes into opens at full capacity, leaving the stale refill no room to
+    land. Same shape as the reload gap, and the segment path already rules
+    that a transform's own shots do not count toward a refund's trigger."""
     profile = dict(weapon="RL", charge_time=1.0, damage_percent=1.0,
                    charge_damage_percent=100.0)
     segment = {"start": 5.0, "end": 20.0, "profile": profile}

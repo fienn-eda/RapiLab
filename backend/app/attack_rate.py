@@ -127,7 +127,16 @@ def _rounds_from_declaration(rounds, percent, capacity):
 
     Shared by `AmmoRefund` and `AmmoRefill`, which differ in what TRIGGERS a
     hand-back (a shot counter vs. a known time) but not in how big one is.
+    Exactly one of `rounds`/`percent` must be nonzero: a caller building one
+    from an unvalidated dict of keys (`raid_simulator.resolve_ammo_refills`'s
+    grant) would otherwise get a silently inert refund from two missing keys,
+    or a silently ignored `percent` from two present ones (`rounds` wins the
+    `if` below).
     """
+    if bool(rounds) == bool(percent):
+        raise ValueError(
+            f"a refund/refill needs exactly one of rounds or percent, got "
+            f"rounds={rounds!r} percent={percent!r}")
     if rounds:
         return rounds
     return round(capacity * percent / 100.0)
@@ -335,10 +344,14 @@ def magazine_shot_count(capacity, shots_before, refund, *,
     or `needs_own_burst_window` declared even if `windows` resolved empty)
     keeps its OWN local counter, separate from `counter` - its phase is read
     against "the shot's position inside the current window", not the
-    fight-wide count, and that position restarts at 0 every time a new window
-    opens (Arcana's counter "resets when Making Memories is removed"). A
-    refund resolved to zero windows never finds one to sit inside, so its
-    local counter never advances and it never fires - permanently inert
+    fight-wide count. That local counter restarts at 0 every time THIS
+    function is called - once per magazine, since `local`/`last_window` are
+    built fresh on each call - which also restarts it on a window boundary
+    (Arcana's counter "resets when Making Memories is removed") whenever the
+    window happens to still be open across a reload too; Fienn's readings
+    bound what that costs Arcana's real rate/capacity combinations at <=1
+    shot. A refund resolved to zero windows never finds one to sit inside, so
+    its local counter never advances and it never fires - permanently inert
     rather than falling into the plain bucket below and firing on every shot
     of the fight ungated. A plain refund reads `counter` (the fight-wide
     count) through the same `fires_at`.
@@ -350,6 +363,13 @@ def magazine_shot_count(capacity, shots_before, refund, *,
     pending.sort(key=lambda r: r.time)
     windowed = [r for r in refunds if _gated_to_windows(r)]
     plain = [r for r in refunds if not _gated_to_windows(r)]
+    if time_of_round is None:
+        if pending:
+            raise ValueError(
+                "magazine_shot_count needs time_of_round to place timed refills")
+        if windowed:
+            raise ValueError(
+                "magazine_shot_count needs time_of_round to place a windowed refund")
     local = {id(r): 0 for r in windowed}
     last_window = {id(r): None for r in windowed}
     rounds = capacity

@@ -4,6 +4,7 @@ from app.attack_rate import (
     RELOAD_FIXED_SECONDS,
     CHARGE_INTERVAL_FLOOR_SECONDS,
     RATE_OF_FIRE_60FPS,
+    AmmoRefill,
     AmmoRefund,
     ShotRecord,
     charge_time_with_speed,
@@ -18,6 +19,7 @@ from app.attack_rate import (
     last_bullet_shot_times,
     magazine_first_bullet_times,
     magazine_last_bullet_times,
+    magazine_shot_count,
     rate_of_fire_for_weapon,
 )
 
@@ -1070,5 +1072,35 @@ def test_a_shared_magazine_walk_drops_a_windowed_refund_instead_of_running_it_un
     # magazine that empties one round later reloads one round later too), so
     # the timeline itself - not its length - is what proves the refund fired.
     assert with_unrestricted != unbuffered
+
+
+def test_a_refund_or_refill_needs_exactly_one_of_rounds_or_percent():
+    # Neither set (a misspelled dict key resolving both to their defaults)
+    # must not resolve to a silently-inert 0; both set (a stray leftover key)
+    # must not silently prefer `rounds` over `percent`.
+    with pytest.raises(ValueError, match="exactly one"):
+        AmmoRefund(every_shots=10).rounds_for(60)
+    with pytest.raises(ValueError, match="exactly one"):
+        AmmoRefund(every_shots=10, rounds=3, percent=5.0).rounds_for(60)
+    with pytest.raises(ValueError, match="exactly one"):
+        AmmoRefill(time=1.0).rounds_for(60)
+    with pytest.raises(ValueError, match="exactly one"):
+        AmmoRefill(time=1.0, rounds=3, percent=5.0).rounds_for(60)
+
+
+def test_timed_refills_without_a_clock_raise_a_named_error():
+    # `time_of_round` defaults to None on the 3-positional-argument call
+    # `charge_window.py` uses; passing refills without also passing a clock
+    # must name what's missing rather than crash inside `_apply_due_refills`
+    # comparing a float to None.
+    with pytest.raises(ValueError, match="time_of_round"):
+        magazine_shot_count(9, 0, None, refills=(AmmoRefill(time=1.0, rounds=1),))
+
+
+def test_a_windowed_refund_without_a_clock_raises_a_named_error():
+    windowed = AmmoRefund(every_shots=6, rounds=1, first_shot=2,
+                          windows=((0.0, 5.0),))
+    with pytest.raises(ValueError, match="time_of_round"):
+        magazine_shot_count(9, 0, windowed)
 
 
