@@ -1958,5 +1958,35 @@
     "corporation": "ABNORMAL",
     "corporation_sub_type": null,
     "name_ko": "쿠루미"
+  },
+  {
+    "resource_id": 870,
+    "name_code": 5179,
+    "name_en": "Queen (Makoto)",
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL",
+    "corporation_sub_type": null,
+    "name_ko": "퀸(마코토)"
+  },
+  {
+    "resource_id": 871,
+    "name_code": 5180,
+    "name_en": "Yukiko",
+    "original_rare": "SSR",
+    "class": "Attacker",
+    "corporation": "ABNORMAL",
+    "corporation_sub_type": null,
+    "name_ko": "유키코"
+  },
+  {
+    "resource_id": 872,
+    "name_code": 3019,
+    "name_en": "Aigis",
+    "original_rare": "SR",
+    "class": "Supporter",
+    "corporation": "ABNORMAL",
+    "corporation_sub_type": null,
+    "name_ko": "아이기스"
   }
 ]
