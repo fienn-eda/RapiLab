@@ -164,12 +164,21 @@ class AmmoRefund:
     `first_shot` is that phase (0 falls back to the bare period); `windows` are
     the `[start, end)` spans the counter is even running in, restarting at 0
     with each one - see `fires_at` and `counts`.
+
+    `needs_own_burst_window` flags a refund whose `windows` a registry builder
+    cannot fill in: the window is [the caster's own burst, that cycle's Full
+    Burst end), which only exists once the burst schedule is solved, and a
+    registry builder runs before that (it is building the shot generator's
+    INPUT). The simulator reads the flag and replaces the refund with one
+    carrying real `windows`, once `events` holds the burst times to read them
+    from.
     """
     every_shots: int
     rounds: int = 0
     percent: float = 0.0
     first_shot: int = 0
     windows: tuple = ()
+    needs_own_burst_window: bool = False
 
     def __post_init__(self):
         # A bare refund's only termination guarantee is the magazine draining

@@ -106,6 +106,7 @@ absent field = always fires, matching every existing spec's behavior.
 """
 import inspect
 import warnings
+from dataclasses import replace
 
 from app.accuracy import WEAPON_SPREAD_DIAMETER, core_hit_rate
 from app.attack_rate import AmmoRefill, CHARGE_WEAPONS, generate_segmented_shots
@@ -168,6 +169,34 @@ def resolve_ammo_refunds(weapon, boss_element):
         if required_element is None or required_element == boss_element:
             refunds.append(refund)
     return tuple(refunds)
+
+
+def resolve_ammo_refund_windows(slug, events):
+    """[this slug's own burst, that cycle's Full Burst end) for every cycle
+    its own burst fires.
+
+    Arcana: Fortune Mate's reload rotation counts only the normal attacks she
+    lands while Making Memories is up, and "Resets when Making Memories is
+    removed" - the Full Burst end that clears it (`clear_making_memories`).
+    Reading the end off the event log rather than a fixed constant keeps her
+    window honest in a deck whose Burst 3 moves Full Burst's length (Isabel
+    -5 sec, Modernia +5 sec) - the same reasoning the rotation's OTHER two
+    phases already use via `per_shot_cycle_from_own_burst_to_full_burst_end`.
+    Every "burst" event `simulate_burst_cycle` emits is followed by its own
+    "full_burst_start"/"full_burst_end" pair in that same iteration (the loop
+    only breaks BEFORE firing a cycle whose bursts would land at or past
+    `fight_duration`), so a real event log never leaves one unclosed.
+    """
+    windows = []
+    for event in events:
+        if event["type"] != "burst" or event["slug"] != slug:
+            continue
+        end = next((e["time"] for e in events
+                    if e["type"] == "full_burst_end" and e["time"] > event["time"]),
+                   None)
+        if end is not None:
+            windows.append((event["time"], end))
+    return tuple(windows)
 
 
 def resolve_ammo_refills(deck, events):
@@ -1281,8 +1310,16 @@ def _simulate_raid_once(
         # 큐브와 스킬에서 오는 탄약 환급을 이 인카운터에 맞게 확정한다 - 스킬 쪽은
         # 보스 원소가 조건일 수 있고, 그 정보는 덱을 조립하는 로스터가 아니라
         # 여기에만 있다.
+        refunds = resolve_ammo_refunds(weapon, boss_element)
+        # 창이 필요하다고 선언한 환급(`needs_own_burst_window`)은 레지스트리가
+        # 만들 때는 버스트 일정을 몰라 `windows=()`로 왔다 - 이제 `events`에
+        # 일정이 있으니 여기서 채운다(아르카나의 로테이션 재장전).
+        refunds = tuple(
+            replace(r, windows=resolve_ammo_refund_windows(slug, events))
+            if r.needs_own_burst_window else r
+            for r in refunds)
         weapon = {**weapon,
-                  "ammo_refund": resolve_ammo_refunds(weapon, boss_element),
+                  "ammo_refund": refunds,
                   "ammo_refills": ammo_refills.get(slug, ())}
         # 플랫 발수 버프("최대 장탄 수 ▲ 2발")는 여기서 이 유닛의 기본 장탄에
         # 대한 비율로 환산되어 퍼센트와 한 값으로 합쳐진다 - 발수는 무기마다

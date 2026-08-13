@@ -86,7 +86,7 @@ def test_little_mermaid_reloads_the_whole_squad_at_her_own_burst():
 
 
 def test_a_deck_with_noir_refills_every_seat():
-    """Not a damage assertion - the point is that four other units' shot
+    """Not a damage assertion - the point is that two other units' shot
     timelines receive a refill they could not have declared themselves."""
     from app.raid_simulator import resolve_ammo_refills
 
@@ -97,3 +97,69 @@ def test_a_deck_with_noir_refills_every_seat():
     ]
     refills = resolve_ammo_refills(deck, [{"type": "full_burst_start", "time": 5.0}])
     assert set(refills) == {"noir", "liberalio", "scarlet-black-shadow"}
+
+
+# "Effect 1: Critical Rate ▲ {description_value_01}% continuously.", "Effect 2:
+# Reloads {description_value_02} round(s).", "Effect 3: Attack Damage ▲
+# {description_value_03}% continuously.", "Deals {description_value_04}% of
+# final ATK as Burst Skill damage." (char_arcana-fortune-mate.json skills[2]
+# "Radiant Youth", lv10)
+ARCANA_RADIANT_YOUTH = {
+    "description_value_01": "20.09", "description_value_02": "2",
+    "description_value_03": "29.99", "description_value_04": "554.4",
+}
+
+# "Two times: Reloads {description_value_01} round(s).", "Four times: Happy
+# Memories ... {description_value_02} ... {description_value_03} time(s).",
+# "Six times: Precious Moments ... {description_value_04}% ...
+# {description_value_05} time(s).", "Attack Damage ▲ {description_value_06}%
+# for {description_value_07} sec." (char_arcana-fortune-mate.json skills[1]
+# "Memories and Moments", lv10)
+ARCANA_MEMORIES_AND_MOMENTS = {
+    "description_value_01": "6", "description_value_02": "1",
+    "description_value_03": "3", "description_value_04": "2.49",
+    "description_value_05": "3", "description_value_06": "55",
+    "description_value_07": "10",
+}
+ARCANA = {"radiant_youth": ARCANA_RADIANT_YOUTH,
+          "memories_and_moments": ARCANA_MEMORIES_AND_MOMENTS}
+
+
+def test_arcana_burst_reloads_two_rounds_at_her_own_cast():
+    grant = get_ammo_refill_grant("arcana-fortune-mate", ARCANA)
+    assert grant == {"rounds": 2, "scope": "self", "event": "own_burst"}
+
+
+def test_arcana_rotation_reloads_six_on_the_second_of_a_period_six_phase():
+    refund, element = get_skill_ammo_refund("arcana-fortune-mate", ARCANA)
+    assert refund.rounds == 6
+    assert refund.first_shot == 2
+    assert refund.every_shots == 6
+    assert element is None
+
+
+def test_arcana_rotation_refund_defers_its_window_to_the_simulator():
+    """The registry builds this refund before any burst schedule exists, so it
+    cannot know [her burst, that Full Burst's end) yet - only that it needs
+    one. `windows` stays empty until raid_simulator fills it in."""
+    refund, _element = get_skill_ammo_refund("arcana-fortune-mate", ARCANA)
+    assert refund.windows == ()
+    assert refund.needs_own_burst_window is True
+
+
+def test_arcanas_rotation_window_runs_from_her_burst_to_full_burst_end():
+    """Her counter "Resets when Making Memories is removed", which is that
+    cycle's Full Burst end - so a deck whose Burst 3 lengthens Full Burst
+    lengthens her window too, rather than a 10-second constant."""
+    from app.raid_simulator import resolve_ammo_refund_windows
+
+    events = [
+        {"type": "burst", "tier": 2, "slug": "arcana-fortune-mate", "time": 3.0},
+        {"type": "full_burst_start", "time": 5.0},
+        {"type": "full_burst_end", "time": 17.0},
+        {"type": "burst", "tier": 2, "slug": "arcana-fortune-mate", "time": 43.0},
+        {"type": "full_burst_start", "time": 45.0},
+        {"type": "full_burst_end", "time": 55.0},
+    ]
+    assert resolve_ammo_refund_windows("arcana-fortune-mate", events) == \
+        ((3.0, 17.0), (43.0, 55.0))

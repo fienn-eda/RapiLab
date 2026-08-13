@@ -37,7 +37,9 @@ from app.skill_rules.arcana_fortune_mate import (
     build_fortune_mate_rules,
     build_keepsake_album_resource_gated_buffs,
     build_memories_and_moments_resources,
+    making_memories_burst_refill,
     radiant_youth_burst_percent,
+    rotation_reload_refund,
 )
 from app.skill_rules.ark_ranger_black import (
     build_ark_ranger_black_rules,
@@ -1376,6 +1378,11 @@ def get_ammo_rounds_per_shot(slug):
 # cube's refund, which its wearer gets against any boss and which stacks with
 # this one - a unit can hold both.
 _SKILL_AMMO_REFUNDS = {
+    # Memories and Moments' rotation: "Two times: Reloads 6 round(s)" - the
+    # 2nd/8th/14th normal attack inside Making Memories, gated on her own
+    # burst-to-Full-Burst-end window (`AmmoRefund.needs_own_burst_window`)
+    # rather than a boss condition.
+    "arcana-fortune-mate": (rotation_reload_refund, None),
     # Eagle Eye-Type Exospine: "when landing 10 normal attack(s) on an Electric
     # Code target, Reloads 3 round(s)".
     "eve": (eagle_eye_ammo_refund, "Electric"),
@@ -1405,6 +1412,9 @@ def get_skill_ammo_refund(slug, skill_values):
 # 바꾼다(raid_simulator.resolve_ammo_refills) - 로스터는 덱을 조립할 뿐 인카운터를
 # 모르므로, 보스 원소 게이트와 같은 이유로 여기서 시각을 만들지 않는다.
 _AMMO_REFILL_GRANTS = {
+    # Radiant Youth: "Effect 2: Reloads 2 round(s)" - a one-shot grant at her
+    # own burst, not a repeating shot counter.
+    "arcana-fortune-mate": making_memories_burst_refill,
     # Annihilation State: "Effect 2: Reloads 21% magazine(s)" - a one-shot
     # grant at her own burst, not a repeating shot counter.
     "asuka-shikinami-langley-wille": annihilation_state_refill,

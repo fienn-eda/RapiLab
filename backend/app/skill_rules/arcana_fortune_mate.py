@@ -21,6 +21,15 @@ Modeled (DPS-relevant):
   ATK PER Precious Moments stack, for 15 sec. Clears the `making_memories`
   status so the next cycle's burst re-arms it. Also grants Snapshots of Youth
   (Normal Attack Damage Multiplier +10%, cap 3) each time Happy Memories fires.
+- Radiant Youth (skills[2], her burst) "Effect 2: Reloads 2 round(s)"
+  (`making_memories_burst_refill`): a one-shot grant at her own cast, through
+  `get_ammo_refill_grant` like Asuka's Annihilation State - not a repeating
+  shot counter.
+- Memories and Moments' rotation, reload phase ("Two times: Reloads 6 rounds",
+  `rotation_reload_refund`): the phase this docstring's ROTATION section
+  covers below, expressed as an `AmmoRefund(first_shot=2, windows=...)` rather
+  than the resource fill the other two phases use, because a reload changes
+  the very shot times the fill reads - see "THE RELOAD PHASE" below.
 
 THE PHASE ROTATION (Fienn's in-game observation, 2026-07-28)
 ------------------------------------------------------------
@@ -54,6 +63,29 @@ Tove's attack speed in the squad - which caps BOTH at 3 inside a single window.
 An "N stacks per Full Burst" approximation would have been wrong by 2x in one
 direction or the other depending on who else is seated.
 
+THE RELOAD PHASE - a different primitive from its two siblings
+--------------------------------------------------------------
+Step 2's "Reloads 6 rounds" is on the SAME rotation as Happy Memories and
+Precious Moments, but it cannot go through
+`per_shot_cycle_from_own_burst_to_full_burst_end` the way they do: that fill
+mode runs on `shot_times` that already exist, and a reload changes those very
+shot times (it is what decides where the magazine walk places them) - a
+self-reference the other two phases never have, since a buff or a resource
+stack only ever READS the timeline. So the reload lives in the magazine walk
+itself instead, as `attack_rate.AmmoRefund(first_shot=..., windows=...)`
+(`rotation_reload_refund`) - the same primitive EVE's Eagle Eye and Ludmilla's
+Queen's Gaze use for a plain "every N shots" refund, extended (`first_shot`,
+`windows`) to express a rotation phase gated to a window rather than a
+fight-long cadence. The registry builds the refund before any burst schedule
+exists, so it cannot fill `windows` itself; `needs_own_burst_window=True`
+flags it for `raid_simulator.resolve_ammo_refund_windows` to fill in once the
+burst times are known, from the same [her burst, that cycle's Full Burst end)
+pair the other two phases read off `full_burst_windows`/`own_burst_times`.
+Reloading is what lets her keep firing without a gap inside the window, so
+this is also what raises her shot count above what an unreloaded magazine
+would give - previously a hand-counted floor, now the magazine walk's own
+number.
+
 RANGE-TESTED (Fienn, 2026-07-28 - Tove + her + Dorothy: Serendipity + Drake
 (favorite item) + Solin: Frost Ticket, non-crit per-pellet readings)
 --------------------------------------------------------------------
@@ -83,16 +115,10 @@ E2E on the squad Fienn measured in (Tove + her + Dorothy: Serendipity + Drake
 now reading the live count instead of one stack per cycle. Deck total +2.40%.
 
 Not modeled / deferred:
-- The rotation's reload phase ("Reloads 6 rounds" every 6th normal). The engine
-  CAN hand rounds back mid-magazine (`attack_rate.AmmoRefund`, EVE's Eagle Eye
-  and Ludmilla's Queen's Gaze), but only on a fight-long "every N of the owner's
-  own shots" cadence - this one runs only inside Making Memories, and a refund
-  has no window gate. Her burst's own "Reloads N round(s)" is a single event at
-  cast, which the same primitive cannot express either. The refill is what keeps
-  her firing without a reload gap inside the window, so her shot count is a FLOOR.
 - Happy Memories' pellet count itself: it moves no damage (see above), and the
   engine has no per-pellet shotgun model to hang hit-consistency on.
 """
+from app.attack_rate import AmmoRefund
 from app.effects import Effect, ResourceSpec
 from app.skill_rules._helpers import linear_resource_buff, refreshing_buff_rule
 from app.squad_engine import SkillRule, has_status
@@ -114,15 +140,53 @@ PRECIOUS_MOMENTS_RESOURCE = "precious_moments"
 SNAPSHOTS_RESOURCE = "snapshots_of_youth"
 
 # The rotation: one effect per 2nd normal attack, three effects in order, so
-# each lands every 6th normal starting at its own step. The reload phase (step
-# 2) has no engine representation - see the docstring's deferred note.
+# each lands every 6th normal starting at its own step.
 ROTATION_PERIOD = 6
+RELOAD_FIRST = 2
 HAPPY_MEMORIES_FIRST = 4
 PRECIOUS_MOMENTS_FIRST = 6
 
 
 def radiant_youth_burst_percent(values):
     return float(values["radiant_youth"]["description_value_04"])
+
+
+def making_memories_burst_refill(values):
+    """Radiant Youth's "Effect 2: Reloads {description_value_02} round(s)" - a
+    single event at her own cast, separate from the rotation's reload phase
+    below."""
+    radiant_youth = values["radiant_youth"]
+    return {"rounds": int(float(radiant_youth["description_value_02"])),
+            "scope": "self", "event": "own_burst"}
+
+
+def rotation_reload_refund(values):
+    """The reload phase of the Memories and Moments rotation: "Two times:
+    Reloads {description_value_01} round(s)" - the phase that makes this a
+    rotation rather than a plain "every 6 shots" refund, firing on the 2nd,
+    8th and 14th attack of a window, never the 6th or 12th (Fienn counted to
+    the 18th in game, 2026-07-28).
+
+    `every_shots`/`first_shot` are read as `ROTATION_PERIOD`/`RELOAD_FIRST`
+    rather than slots: the skill text states the rotation's structure as
+    "Two times / Four times / Six times", the same way it hands
+    `HAPPY_MEMORIES_FIRST`/`PRECIOUS_MOMENTS_FIRST` to the other two phases,
+    not as a `description_value`. Only the round count is a slot.
+
+    `windows` is left empty - the window is [her burst, that cycle's Full
+    Burst end), which only exists once the burst schedule is solved, well
+    after this builder runs. `needs_own_burst_window=True` is what tells
+    `raid_simulator` to fill it in (see `resolve_ammo_refund_windows`), the
+    same [own burst, Full Burst end) pair Happy Memories and Precious Moments
+    read via `per_shot_cycle_from_own_burst_to_full_burst_end` - this phase
+    cannot use that fill mode itself because it changes the very shot times
+    the fill would read (see the module docstring's THE RELOAD PHASE).
+    """
+    rotation = values["memories_and_moments"]
+    return AmmoRefund(every_shots=ROTATION_PERIOD,
+                      rounds=int(float(rotation["description_value_01"])),
+                      first_shot=RELOAD_FIRST,
+                      needs_own_burst_window=True)
 
 
 def build_fortune_mate_rules(values):
