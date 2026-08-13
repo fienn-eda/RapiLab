@@ -791,7 +791,7 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 | ~~8~~ | ~~자원-fill-트리거 타 유닛 버프~~ (자원 소유자 아닌 아군에게 버프) | 1 (Maiden) | **완료 (2026-07-16 Phase C, `resource_fill_triggered_buffs`)** | 신규 트리거 |
 | ~~9~~ | ~~reload 후 첫 발("first bullet after reload") per-shot 마커~~ | 1 (Jill Valentine) → **실제 3** | **완료 (2026-07-16 Phase C, `first_bullet` 모드 + `normal_attack_damage_multiplier`)**. **후행 소비 (2026-07-28): asuka-shikinami-langley-wille** — 이 gap이 닫힌 뒤에도 "엔진에 수단이 없다"는 낡은 사유로 2주간 보류돼 있었다(그녀 1.192x의 정체). **arcana-fortune-mate**(Snapshots of Youth)도 같은 사유가 남아 있었고 스택 수만 미확인. → **gap을 닫을 때 그 사유를 인용한 독스트링을 반드시 grep할 것** | 신규 트리거 변형 |
 | — | ~~버스트 외 트리거 즉발 넉~~ / ~~자체 쿨다운 주기 넉~~ | — | **완료** (instant_nuke / periodic_nukes) | 참고 |
-| — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) | **완료 (2026-07-11, `ally_burst_activate`)** | 신규 트리거 |
+| — | ~~교차 유닛 트리거 (타 유닛 버스트에 반응)~~ | 1 (Prika→Mint) → **실제 2** | **완료 (2026-07-11, `ally_burst_activate`)**. **반쪽이었다 (2026-08-13)**: `on_tier_fire`가 `drain_instant_damage`를 이 트리거 **앞에서** 불러, 반응 룰은 버프만 걸 수 있고 즉발 넉은 못 냈다(펄스가 풀버스트 진입까지 적립돼 히트가 반응한 버스트에서 떨어지고 그 창의 보너스까지 받았다). 배출을 뒤로 옮겨 닫음 — 소비: **queen-makoto-nijima**(Follow Up 548.99% 분산딜, 유키코 버스트에 반응) | 신규 트리거 |
 | — | ~~자원 reset / resource_gated_buffs / squad-burst-cycle-conditional fill / dynamic_hit_count_nukes~~ | — | **완료 (2026-07-12)** — Soda·Maiden 소비 | 신규 상태/트리거 |
 | ~~—~~ | ~~attack/charge speed~~ (발사 간격 → 딜) | 2 (Dorothy·Tove) | **완료 (Phase S, 2026-07-16)** — `attack_speed_percent`/`charge_speed_percent` 배선 | 발사 타임라인 |
 | ~~10~~ | ~~소환체 가변 케이던스 스케줄~~ (살아있는 개체 수가 공격 주기를 바꿈) | 1 (Ein) | **완료 (2026-07-17, `scheduled_nukes`)** | 신규 방출 경로 |

@@ -732,8 +732,15 @@ how to encode it, and current engine status.
   any unit's burst tier fires, `raid_simulator` sets `context.last_burst_slug`
   and fires `ally_burst_activate` across every unit's rules. Gate the reacting
   rule with `ally_bursted("<other-slug>")` (and combine with more conditions via
-  `all_conditions(...)`). Buff appliers only, like `periodic_rules`. See
-  `prika.py` (Encore) for the worked example.
+  `all_conditions(...)`). See `prika.py` (Encore) for the worked example.
+- **A reacting bullet may DEAL DAMAGE, not only buff (2026-08-13).**
+  `on_tier_fire` drains instant-damage pulses AFTER the `ally_burst_activate`
+  fire, so `instant_nuke_pulse_rule("ally_burst_activate", ...)` lands at the
+  burst it answered — Queen (Makoto Nijima)'s "when Follow Up takes effect",
+  548.99% as distributed damage, fired by Yukiko passing her the buff. The
+  drain used to sit between the two triggers, which banked such a pulse until
+  Full Burst opened: the hit moved off the burst it answered AND collected that
+  window's Full Burst bonus (3000 → 4500 in the regression test).
 - **Modeling a "status you set on the reacting unit":** the Encore also puts the
   bursting unit into a status (Mint → Singing) continuously from that moment. Set
   it time-stamped: `context.set_status(context.last_burst_slug, "<flag>", time)`;
@@ -1221,6 +1228,49 @@ how to encode it, and current engine status.
   ENEMIES and are unrelated). All agree with their text now. Re-run that check
   when adding one: grep the collected text for `highest[^.\n]*ATK`, keep the
   ally-targeting lines, and compare each against its module's flag.
+
+## A named collab STATE is a membership, not a status the sim tracks
+
+- **What it looks like:** the Persona collab pair target "all standard Burst 3
+  allies (except the skill user) **in the Persona state**" (Queen (Makoto
+  Nijima)'s Baton Pass, Yukiko Amagi's Follow Up), and the state itself is
+  granted by each unit's own Skill 1 at battle start ("Persona - Johanna",
+  "Persona - Konohana Sakuya", continuous, "cannot be removed").
+- **What it is:** nothing grants or removes it, and only collab units have one -
+  so "is in the Persona state" is exactly "is one of these units". Model it as a
+  frozenset (`_helpers.PERSONA_STATE_SLUGS`) and resolve the audience with
+  `member_subset_buff_rule` / a `slugs:` scope, the same shape
+  `ABSOLUTE_SQUAD_SLUGS` uses. Do NOT reach for `set_status`/`has_status`: those
+  exist for a state that turns on and off during the fight, and using them here
+  buys nothing while making the bullet depend on trigger ordering.
+- **The wrapper bullet is not an effect.** "Persona - Johanna: Function: Queen
+  strengthens herself using her Persona. Effect 1: ... Effect 2: ..." is a
+  container; encode the Effects, skip the wrapper.
+- **Watch the deck-size consequence:** an audience of "Burst 3 allies except
+  me, of my collab" is usually ONE unit, and zero in a deck holding only one of
+  the pair. That is the game's own behaviour - do not widen it to `squad` to
+  make the bullet "do something".
+
+## An enemy-element condition can gate half a kit
+
+- **What it looks like:** the Persona pair's bursts read "Activates if a Wind
+  Code enemy is present. **Affects self.** 1 More: ATK ▲ X% for N sec", and
+  their Skill 1/2 then hang bullets off "when 1 More takes effect" - the nukes,
+  the cross-unit buff passes, the ATK riders.
+- **Read the named buff as the gate.** 1 More is the burst's own grant, so
+  "when 1 More takes effect" is `own_burst_activate` + `boss_is_element(<the
+  caster's advantage target>)` - one condition reused across every bullet that
+  names it. Fienn settled the scope from the `Affects self` in that same bullet
+  (2026-08-13): a name introduced under "Affects self" is the caster's own, so
+  an ALLY's 1 More does not fire it.
+- **A buff the PARTNER grants is the other case** and needs the cross-unit
+  trigger instead: Queen's "when Follow Up takes effect" is Yukiko's grant, so
+  it rides `ally_burst_activate` + `ally_bursted("yukiko-amagi")` - carrying the
+  same element gate, because the partner's grant hangs off HER 1 More.
+- **Say so in the docstring.** Against any other boss element these units lose
+  their nukes, their passes and their burst ATK rider, and keep only the burst
+  nuke and the flat self-buffs. A reader who does not know that will mis-read a
+  low recommendation as an encoding bug.
 
 ---
 *Add new mechanics above this line as they come up.*

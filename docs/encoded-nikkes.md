@@ -3,6 +3,21 @@
 `backend/app/skill_rules/registry.py`의 `ENCODED_SLUGS` 기준. 덱 추천 엔진이
 고려할 수 있는 니케는 이 목록뿐이다 (인코딩 안 된 니케는 후보에서 제외됨).
 
+- 마지막 갱신: 2026-08-13 — **페르소나 콜라보 신규 출시 온보딩: 퀸(마코토 니지마)
+  + 유키코(둘 다 ✅).** 둘의 킷은 콜라보 전용 메커니즘 둘 위에 선다. **1 More**는
+  각자의 버스트가 「풍압 코드 적이 있으면」 **자신에게**(원문이 `Affects self`를
+  명시) 주는 버프라, 「1 More가 발동할 때」 불릿은 전부 자기 버스트 +
+  `boss_is_element("Wind")`다 — 우위가 없는 보스에게는 두 유닛 다 킷의 절반이
+  꺼진다. **Follow Up**은 유키코가 퀸에게 넘기는 버프라 퀸의 두 번째 니크(548.99%
+  분산딜)만 아군 버스트에 반응하고, 이걸 위해 **엔진을 1줄 확장**했다:
+  `on_tier_fire`가 `drain_instant_damage`를 `ally_burst_activate` **뒤에서** 부른다
+  (기존 배선은 반응 니크를 풀버스트 진입까지 적립해 그 창의 보너스까지 얹었다 —
+  테스트에서 3000→4500). 기존 101슬러그 출력 불변. 대상 「페르소나 상태의 standard
+  Burst 3 아군(시전자 제외)」은 squad 근사가 아니라 `PERSONA_STATE_SLUGS` +
+  `burst_tier`로 정확히 풀어, 실질적으로 **서로 전용**이다(한쪽만 있는 덱에서는
+  대상 없음 — 게임 그대로). 부수적으로 `truncate_open_ended`가 `refresh_group`을
+  받게 됐다 — 퀸의 Elemental Advantage 불릿 둘이 **한 스탯에 앉아**(Nuke Boost 영구,
+  Nuke Amp는 풀버스트 종료까지) 기존 동작이면 영구 쪽까지 지워졌다.
 - 마지막 갱신: 2026-08-06 — **소다의 Beginner's Rewards 인코딩(gap #22 2차 해소).**
   풀 버스트 길이가 **자원 조건부**로도 정해질 수 있게 됐다: 슬러그당 고정 델타와
   나란히, 그 사이클 Burst 3의 소비 직전 자원값이 단계를 고르는
@@ -78,9 +93,9 @@
   배치별 이력은 git log와
   [`decisions.md`](decisions.md)에, 갭 인벤토리는
   [`engine-gaps.md`](engine-gaps.md)에 있으므로 여기엔 현재 상태만 적는다.
-- 총 **100명**(테이블 행 수) / `ENCODED_SLUGS` **101개** — B1 형태변형
+- 총 **102명**(테이블 행 수) / `ENCODED_SLUGS` **103개** — B1 형태변형
   `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함.
-  (Burst 1: 18명 · Burst 2: 26명 · Burst 3: 56명 — 실제 행 수를 세어 갱신)
+  (Burst 1: 18명 · Burst 2: 26명 · Burst 3: 58명 — 실제 행 수를 세어 갱신)
 - **한 소유 캐릭터가 여러 후보 슬러그로 갈라지는 경우** — `MODE_VARIANTS`(전투 전
   선택이라 덱 탐색이 같은 base의 두 후보를 **동시 편성 금지**): Bready(Taste 2종) ·
   Diesel: Winter Sweets(Intro/Highlight) · Cinderella: Crystal Wave(MG/Snipe) ·
@@ -157,7 +172,7 @@
 | Centi (Signature) | `centi-signature` | Defender | RL | Iron | ⚠ | (신규 2026-07-30, 시그니처/듀얼슬롯) 애장품이 실드 전용이던 스킬2에 딜 버프를 붙인다 — Field Discussion 발동마다 **스쿼드 flat ATK(자 ATK의 4.6%)/8초** + **철갑코드 아군 우월코드 대미지 ▲5.69%/10초**(둘 다 10중첩, `element:Iron` 정확 스코프, `periodic_rules`). 스킬2 주기는 풀차지 쿨감(9초×9.16%/발)을 반영한 **유효 5.96초**(클립 재장전 3분할 포함). 버스트는 base와 동일. 보류: 덱 차지속도·Max Ammo 버프는 정적 값이라 미추종 · 실드·Stockpile 힐·버스트 힐 30.2%(비-DPS) |
 | Maxwell: Ordinary Mechanic | `maxwell-ordinary-mechanic` | Supporter | SR | Wind | ✅ | (신규 2026-07-23, ShiftyPad 수집) 팀 기여 전부 모델됨: FB진입 시 스쿼드 AD+10%/5초·버스트 시 스쿼드 flat ATK(자기 최종 최대HP의 1%)/15초 + 스쿼드 AD+25%/10초·Overcurrent 자ATK+30%×최대5스택(버스트당 1스택 램프, escalating refreshing). 버스트가 자체 무기변환이라 넉 없음 → `burst_percent None`. 보류(전부 자체용/inert): Max HP 스택(풀차지마다 1%×30, 딜 inert)·버스트게이지 fill 7.15%(inert)·Matis UberBuster 버스트 무기변환(자체 단발 캐논, Overcurrent 단계별 차지타임 — 서포터 자체딜 미미) **(2026-08-07) Matis Uberbuster 무기변형 인코딩** — 자기 버스트마다 단발 차지샷(350%·풀차지 300%·1발·Pierce). **차지시간을 Overcurrent 단계가 고정**(3/2.5/2/1.5/0.4초)해서 세그먼트마다 자기 프로필을 싣는 첫 사례. 기본 SR을 침묵시키는 트레이드지만 스윕 **+13.71%**. 같은 날 「Burst Stage 3 진입」 트리거 결함도 수정(`full_burst_enter` → `burst_stage_entered(3)`). |
 
-## Burst 3 (56명)
+## Burst 3 (58명)
 
 > 배치 인코딩(eb1~eb4)과 gap #7 소비 이력은 각 행의 `(신규 날짜)` 표기와 git log
 > 참고. 남은 백로그는 [`roadmap.md`](roadmap.md) To-Do에 있다.
@@ -220,6 +235,8 @@
 | Soda: Twinkling Bunny | `soda-twinkling-bunny` | Attacker | SG | Iron | ✅ | eb3 Pattern-A. Golden Chip 자원(캡50·전투시작 만캡·풀버스트 중 노멀3회마다 +1=`per_shot_every_during_full_burst`, 자신의 Critical Damage 스택 +1.32%/스택)+Onward Soda! 버스트(628.7% 넉 + 칩 **17 감산**(`value_fn`, 바닥 1 — Fienn 실측) + 소비前 스택≥30 게이팅 ATK+65.25%/15s=`resource_gated_buffs`)+**Lucky Golden Chip 공동발동 버프(풀버스트 중 노멀3회마다 자신+최고ATK아군 Attack Damage+10.51%/2초 refresh, `per_shot_rules`의 `every_during_full_burst` 모드, gap #7 완료·2026-07-15)** 모델됨. **(2026-08-06) Beginner's Rewards 두 불릿 모두 인코딩 — ⚠→✅.** 칩 10+에 FB +2초, 20+에 누적 +5초를 **자원 조건부 델타**(`_CONDITIONAL_FULL_BURST_DELTA_BUILDERS` + `simulate_raid`의 고정점 반복)로 모델 — 슬러그당 고정값인 `FULL_BURST_DURATION_DELTA`로는 안 된다(값이 사이클마다 다르고, `Affects all allies`라 그녀가 그 사이클의 B3일 필요도 없다). 같은 상태에 게이팅된 **평타당 넉**(I 52.04% / II 137.06%, 누적)도 함께. 격번 운영에서 창 15.00초·칩 50→33→42→50 순환으로 Fienn 실측과 일치. **(2026-08-07) Hit Rate 인코딩 완료**(`accuracy.core_hit_rate`, opt-in `core_diameter_px`) |
 | Sugar | `sugar` | Attacker | SG | Iron | ⚠ | (신규 2026-07-24, 애장품 배치) Noire Sensor 풀버스트 진입 시 자기 크리율+13.02%/10초 + **SG 아군 최대탄약+83.8%/10초**(`member_subset_buff_rule`, squad 근사 아님)·Trouble Shooter(버스트, 니크 없음) 자기 공속+66%/15초 모델됨. 보류: Black Typhoon 전체 — "엄폐물이 공격받을 때"(엔진에 트리거 부재)에 20% 확률까지 붙어 Fienn이 상시 근사 대신 **defer 결정**(2026-07-24) → 이 인코딩은 floor. **(2026-08-07) Hit Rate 인코딩 완료**(`accuracy.core_hit_rate`, opt-in `core_diameter_px`) |
 | Sugar (애장품) | `sugar-signature` | Attacker | SG | Iron | ⚠ | (신규 2026-07-24) 애장품이 숫자만 키우는 게 아니라 효과를 통째로 추가하는 사례. base 대비 추가: Black Typhoon **엄폐물 온전 시 공격데미지+19.98% 상시**(엔진이 엄폐물 파괴를 모델링하지 않아 항상 온전 — Fienn 승인) + **Fire코드 상대 원소우위 부여**(`element_advantage_grant` + `boss_is_element("Fire")`, Iron은 Fire에 자연우위 없음) · Noire Sensor 자ATK+25.01%/10초 + SG아군 탄약 지속 10→15초 + **Water·Iron SG아군 원소우위공격뎀+40.02%/15초** · Trouble Shooter 자ATK+20%/15초 + 같은 아군군에 +60.01%/15초. 무기 스탯은 base의 ShiftyPad 파일에서(`weapon_source`). 보류: base와 동일(엄폐 피격 트리거) + 엄폐물 HP회복(비-DPS). **(2026-08-07) Hit Rate 인코딩 완료**(`accuracy.core_hit_rate`, opt-in `core_diameter_px`) |
+| Queen (Makoto) | `queen-makoto-nijima` | Attacker | SG | Fire | ✅ | (신규 2026-08-13, 페르소나 콜라보 · ShiftyPad 수집) **1 More = 자기 버스트 + `boss_is_element("Wind")`**(원문 `Affects self`) — 여기 걸린 불릿이 킷의 절반이다. 모델: Nuke Boost 자 원소우위공격뎀+13.59% 영구 · 전투시작·풀버스트종료 자ATK+50.28%/15초 · Attack Damage+30% 영구 · **1 More 시 548.99% 분산딜 즉발 넉** · **Follow Up(유키코가 넘김) 시 548.99% 분산딜** — 이 불릿이 엔진 1줄 확장(`drain_instant_damage`를 `ally_burst_activate` 뒤로)의 첫 소비자다 · Nuke Amp 자 원소우위공격뎀+25.56%(버스트→풀버스트 종료, `truncate_open_ended`에 **불릿 이름을 걸어** 영구 Nuke Boost를 남긴다 — 둘이 같은 스탯이라 이름 없이 닫으면 영구 쪽이 죽는다) · 버스트 스테이지 3 진입 시 자 분산딜+90.01%/10초(`ally_burst_activate`+`burst_stage_entered(3)`) · **Baton Pass** 페르소나 상태 B3 아군(자신 제외)에게 flat ATK=자ATK 35.2%, 영구, **3스택 캡**(1 More당 1스택) · 버스트 넉 1421.69% **distributed** + 1 More 자ATK+30.27%/10초. 대상 집합은 `PERSONA_STATE_SLUGS`+`burst_tier`로 정확히 해소 — 오늘은 유키코 한 명이고, 유키코 없는 덱에서는 Baton Pass·Follow Up 둘 다 대상이 없다(게임 그대로). 보류: Defense Master/Rakukaja(DEF, 비-DPS) |
+| Yukiko | `yukiko-amagi` | Attacker | MG | Fire | ✅ | (신규 2026-08-13, 페르소나 콜라보 · ShiftyPad 수집) 퀸과 같은 1 More 게이트. 모델: 전투시작·풀버스트종료 자ATK+65.37%/15초 · Attack Damage+55.31% 영구 · 1 More 시 400.31% 분산딜 즉발 넉 · Fire Amp 자 분산딜+90.01%(버스트→풀버스트 종료) · 버스트 스테이지 3 진입 시 자 원소우위공격뎀+48.15%/10초 · **Follow Up** 페르소나 상태 B3 아군(자신 제외)에게 flat ATK=자ATK 80.25%/25초 — **퀸의 두 번째 니크를 여는 것이 이 불릿이다** · 버스트 넉 1258.79% **distributed** + 1 More 자ATK+45.33%/10초. Media·Mediarama(3초마다 전체 아군에 자 최대HP 5.7%)로 **`HEAL_PROVIDER_SLUGS` 등재** — 힐 양은 딜이 아니지만 발생 자체는 크라운 Royal Attire의 트리거다. 그 대조가 lootandwaifus/dotgg 텍스트를 읽으므로 **페이지를 함께 수집**했다(안 그러면 `unreadable_slugs`에 들어가 아무것도 검증 못 하는 손 주장이 된다). 보류: 힐 양 · Scarlet Protection(물속성 피해 -17.95%, 비-DPS) |
 
 ---
 

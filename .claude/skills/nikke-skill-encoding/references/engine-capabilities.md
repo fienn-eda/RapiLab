@@ -706,12 +706,22 @@ squad debuff) correctly raises a burst nuke that fired earlier. Safe because
 effects are added with `applied_at >= their time` and `truncate_open_ended`
 mutates in place, so deferring computation never changes an existing value.
 
-`EffectRegistry.truncate_open_ended(stat, source_slug, now)`: for a continuous
-(`duration=None`) buff that a LATER trigger explicitly cancels (not a timer) -
-e.g. Grave's Heat Emission ends when she reuses her burst. Add the effect
-open-ended when it activates; call `truncate_open_ended` in the canceling
-trigger's rule to close its duration to the elapsed time. Replay-safe (mutates
-the stored Effect, so later queries at any time see the correct window).
+`EffectRegistry.truncate_open_ended(stat, source_slug, now, refresh_group=None)`:
+for a continuous (`duration=None`) buff that a LATER trigger explicitly cancels
+(not a timer) - e.g. Grave's Heat Emission ends when she reuses her burst. Add
+the effect open-ended when it activates; call `truncate_open_ended` in the
+canceling trigger's rule to close its duration to the elapsed time. Replay-safe
+(mutates the stored Effect, so later queries at any time see the correct window).
+
+**Pass `refresh_group` when the unit holds MORE THAN ONE continuous buff on that
+stat** (2026-08-13). Without it every open effect sharing (stat, source_slug) is
+closed, which is right for Grave and Arcana but deletes a permanent bullet that
+happens to share the stat: Queen (Makoto Nijima)'s Nuke Boost is permanent and
+"cannot be removed" while her Nuke Amp names Full Burst end as its deactivation,
+and both are Elemental Advantage Attack Damage. Name the cancelable one's
+Effects with a `refresh_group` and close by that name. It is the same key
+`add_refreshing` already requires, for the same reason - telling one unit's
+bullets apart on a shared stat.
 
 ## Stats the engine does NOT consume (encoding is inert — defer instead)
 
@@ -822,7 +832,7 @@ engine-extension decision rather than making it silently mid-encoding.
 |---|---|
 | `battle_start` | once at t=0 (permanent passives, at-start-of-battle skills) |
 | `own_burst_activate` | when THIS Nikke's burst tier fires (its burst skill) |
-| `ally_burst_activate` | when ANY unit's burst tier fires — for a skill that reacts to another unit bursting (e.g. Prika's Encore on Mint's Sing Along). Fired across all units' rules after the burster's own `own_burst_activate`; gate with `ally_bursted("<slug>")`, which reads `context.last_burst_slug`. Buff appliers only (no instant nukes), like `periodic_rules`. |
+| `ally_burst_activate` | when ANY unit's burst tier fires — for a skill that reacts to another unit bursting (e.g. Prika's Encore on Mint's Sing Along). Fired across all units' rules after the burster's own `own_burst_activate`; gate with `ally_bursted("<slug>")`, which reads `context.last_burst_slug`. **Instant nukes work here too** (2026-08-13): `drain_instant_damage` runs AFTER this trigger, so a reacting bullet may deal damage and not only apply buffs — Queen (Makoto Nijima)'s "when Follow Up takes effect" answers Yukiko's burst with 548.99% as distributed damage. Draining between the two triggers used to bank such a pulse until the next drain point (Full Burst enter), which both moved the hit off the burst it answered and paid it that window's bonus. |
 | `full_burst_enter` | when the Full Burst window opens — `FULL_BURST_OPEN_DELAY` AFTER tier-3 fires, so it does NOT reach the B3's own burst damage. Use only for text that really says "at the start of Full Burst" (Crown's One for All is the only encoded one). |
 | `full_burst_end` | when the 10s Full Burst window ends |
 
