@@ -25,7 +25,7 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
-$TaskName = 'NikkeDeckBuilder-NewNikkeCheck'
+$TaskName = 'RapiLab-NewNikkeCheck'
 $Repo = Split-Path -Parent $PSScriptRoot
 $Script = Join-Path $Repo 'scripts\check_new_nikkes.py'
 
