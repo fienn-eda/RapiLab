@@ -19,6 +19,7 @@ from app.cube_effects import DEFAULT_CUBE, assumed_cube_effects, cube_refund_for
 from app.overload_effects import overload_options_to_effects
 from app.skill_rules.registry import (
     build_nikke_rules,
+    get_ammo_refill_grant,
     get_ammo_rounds_per_shot,
     get_burst_anchored_buffs,
     get_burst_cooldown_reduction,
@@ -156,6 +157,12 @@ def assemble_simulation_inputs(ordered_deck):
         weapon_stats[spec.slug] = (
             {**spec.weapon_stats, **timeline} if timeline else spec.weapon_stats
         )
+        # 시각 트리거 환급은 스탯이 아니라 받는 쪽의 발사 타임라인을 바꾸고, 스쿼드
+        # 스코프면 다른 멤버에게 간다. 그래서 무기가 아니라 멤버에 실어 시뮬레이터가
+        # 덱 전체를 보고 나눠 담게 한다.
+        refill_grant = get_ammo_refill_grant(spec.slug, spec.skill_values)
+        if refill_grant is not None:
+            member["ammo_refill_grant"] = refill_grant
         rounds = get_ammo_rounds_per_shot(spec.slug)
         if rounds != (1.0, 1.0):
             ammo_rounds_per_shot[spec.slug] = rounds

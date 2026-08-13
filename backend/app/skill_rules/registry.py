@@ -1391,6 +1391,19 @@ def get_skill_ammo_refund(slug, skill_values):
     return builder(skill_values), required_element
 
 
+# 시각 트리거 환급을 주는 유닛. 값은 시뮬레이터가 버스트 일정에 맞춰 시각으로
+# 바꾼다(raid_simulator.resolve_ammo_refills) - 로스터는 덱을 조립할 뿐 인카운터를
+# 모르므로, 보스 원소 게이트와 같은 이유로 여기서 시각을 만들지 않는다.
+_AMMO_REFILL_GRANTS = {}
+
+
+def get_ammo_refill_grant(slug, skill_values):
+    """{"percent"|"rounds", "scope", "event"} for a Nikke whose skill reloads a
+    magazine at a scheduled moment, else None."""
+    builder = _AMMO_REFILL_GRANTS.get(slug)
+    return builder(skill_values) if builder else None
+
+
 def get_periodic_nuke(slug, skill_values):
     """{"cooldown": seconds, "percent": float} for a Nikke with a skill that
     fires repeatedly on its own fixed cooldown (see raid_simulator's

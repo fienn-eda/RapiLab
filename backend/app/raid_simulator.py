@@ -108,7 +108,7 @@ import inspect
 import warnings
 
 from app.accuracy import WEAPON_SPREAD_DIAMETER, core_hit_rate
-from app.attack_rate import CHARGE_WEAPONS, generate_segmented_shots
+from app.attack_rate import AmmoRefill, CHARGE_WEAPONS, generate_segmented_shots
 from app.burst_cycle import FULL_BURST_OPEN_DELAY, simulate_burst_cycle
 from app.core_damage import core_hit_bonus_for
 from app.damage_formula import calculate_damage
@@ -168,6 +168,38 @@ def resolve_ammo_refunds(weapon, boss_element):
         if required_element is None or required_element == boss_element:
             refunds.append(refund)
     return tuple(refunds)
+
+
+def resolve_ammo_refills(deck, events):
+    """Every timed ammo refill each deck member receives, by slug.
+
+    A grant names its trigger as an event the burst cycle logs - "when entering
+    Full Burst" (Noir) or the caster's own burst (Little Mermaid, Asuka, Arcana)
+    - and its scope as self or the whole squad. Resolving it here rather than in
+    the roster is the same split the boss-element gate on skill refunds uses:
+    the roster assembles a deck and does not know the encounter.
+    """
+    refills = {}
+    for member in deck:
+        grant = member.get("ammo_refill_grant")
+        if not grant:
+            continue
+        if grant["event"] == "full_burst_enter":
+            times = [e["time"] for e in events if e["type"] == "full_burst_start"]
+        else:
+            times = [e["time"] for e in events
+                     if e["type"] == "burst" and e["slug"] == member["slug"]]
+        if not times:
+            continue
+        recipients = ([m["slug"] for m in deck] if grant["scope"] == "squad"
+                      else [member["slug"]])
+        for slug in recipients:
+            refills.setdefault(slug, []).extend(
+                AmmoRefill(time=t, rounds=grant.get("rounds", 0),
+                           percent=grant.get("percent", 0.0))
+                for t in times)
+    return {slug: tuple(sorted(items, key=lambda r: r.time))
+            for slug, items in refills.items()}
 
 
 def core_eligible(source, damage_type):
@@ -1239,12 +1271,19 @@ def _simulate_raid_once(
     def in_full_burst(time):
         return any(start <= time < end for start, end in full_burst_windows)
 
+    # 시각 트리거 환급은 버스트 일정이 정해진 뒤에야 시각을 갖는다. 버스트 사이클은
+    # 발사 시각을 보지 않으므로 여기서 이미 확정돼 있고, 아군에게 가는 환급도 이
+    # 시점에 나눠 담을 수 있다.
+    ammo_refills = resolve_ammo_refills(deck, events)
+
     for slug, weapon in weapon_stats.items():
         target = target_for(slug)
         # 큐브와 스킬에서 오는 탄약 환급을 이 인카운터에 맞게 확정한다 - 스킬 쪽은
         # 보스 원소가 조건일 수 있고, 그 정보는 덱을 조립하는 로스터가 아니라
         # 여기에만 있다.
-        weapon = {**weapon, "ammo_refund": resolve_ammo_refunds(weapon, boss_element)}
+        weapon = {**weapon,
+                  "ammo_refund": resolve_ammo_refunds(weapon, boss_element),
+                  "ammo_refills": ammo_refills.get(slug, ())}
         # 플랫 발수 버프("최대 장탄 수 ▲ 2발")는 여기서 이 유닛의 기본 장탄에
         # 대한 비율로 환산되어 퍼센트와 한 값으로 합쳐진다 - 발수는 무기마다
         # 다른 배율이 되므로 스탯 자체는 스쿼드 스코프로 두고 환산만 수신자
