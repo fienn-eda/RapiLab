@@ -303,8 +303,8 @@ def magazine_shot_count(capacity, shots_before, refund, *,
     separate from `counter` - its phase is read against "the shot's position
     inside the current window", not the fight-wide count, and that position
     restarts at 0 every time a new window opens (Arcana's counter "resets when
-    Making Memories is removed"). A plain refund still reads `counter` through
-    `fires_at`, unchanged from before windows existed.
+    Making Memories is removed"). A plain refund reads `counter` (the
+    fight-wide count) through the same `fires_at`.
     """
     refunds = _refund_sequence(refund, capacity)
     if not refunds and not refills:
@@ -345,20 +345,38 @@ def magazine_shot_count(capacity, shots_before, refund, *,
     return shots, counter
 
 
+def _refund_carries_windows(refund):
+    """Whether `refund` (a single AmmoRefund, a sequence of them, or None)
+    includes one with `windows` set.
+
+    A shape check rather than a call to `_refund_sequence`: that needs a
+    magazine capacity to resolve a percentage, which `_walk_magazine` does not
+    have a reason to ask for otherwise - whether a windowed refund is present
+    is a property of the refund's declaration, not of any magazine it lands
+    in.
+    """
+    if refund is None:
+        return False
+    refunds = (refund,) if isinstance(refund, AmmoRefund) else refund
+    return any(r.windows for r in refunds)
+
+
 def _walk_magazine(capacity, shots_fired, refund, *,
                    time_of_round=None, refills=(), stop_time=None):
-    """magazine_shot_count, wired for timed refills only when there are any.
+    """magazine_shot_count, wired for the clock only when something actually
+    reads it: timed refills, or a windowed refund reading which window a shot
+    falls in.
 
     `magazine_shot_count` only skips asking its clock for a time when BOTH
     `time_of_round` and `stop_time` are left unpassed - passing `stop_time`
     alone (even with no refills queued) opens a new time-bounded exit that
     a refund-only call never had. Gating the whole keyword group on `refills`
-    here is what every magazine-walking generator in this module relies on to
-    keep a refill-free timeline doing no time arithmetic and reaching
-    exactly the shot count it always did. Same keyword shape as
-    `magazine_shot_count` itself, so every call site differs from it only by
-    name."""
-    if not refills:
+    OR a windowed refund is what every magazine-walking generator in this
+    module relies on to keep a refund-free (or plain-refund) timeline doing
+    no time arithmetic and reaching exactly the shot count it always did.
+    Same keyword shape as `magazine_shot_count` itself, so every call site
+    differs from it only by name."""
+    if not refills and not _refund_carries_windows(refund):
         return magazine_shot_count(capacity, shots_fired, refund)
     return magazine_shot_count(
         capacity, shots_fired, refund,

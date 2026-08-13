@@ -12,6 +12,7 @@ import pytest
 from app.attack_rate import (
     AmmoRefill,
     AmmoRefund,
+    generate_magazine_shot_times,
     generate_segmented_shots,
     generate_shot_times,
     last_bullet_shot_times,
@@ -458,14 +459,13 @@ def test_the_window_local_counter_restarts_with_each_window():
     # Two windows, the magazine spanning both. In the second window the phase
     # must start over at 2 rather than carry the first window's count.
     #
-    # Capacity 6 (the brief's original figure) is a defect: rounds still
-    # land every second OUTSIDE a window too - a window gates the refund's
-    # trigger, not the shot itself - so the 7 unbuffered shots in the t=3..9
-    # gap drain a 6-round magazine before it ever reaches the second window
-    # at all (verified: capacity 6 returns (7, 7), and even capacity 7's
-    # coincidental (8, 8) never reaches t=10 either - both stop inside the
-    # gap). 11 is the smallest capacity that survives the gap and actually
-    # exercises the restart.
+    # Rounds land every second whether or not a window is open - a window
+    # gates the refund's TRIGGER, not the shot itself - so the unbuffered
+    # t=3..9 gap between the two windows still spends 7 rounds with nothing
+    # to replace them. Capacity 11 is the smallest magazine that survives
+    # that gap and actually reaches the second window; anything smaller
+    # drains inside the gap and the test would pass without ever exercising
+    # the restart.
     two = AmmoRefund(every_shots=6, rounds=1, first_shot=2,
                      windows=((0.0, 3.0), (10.0, 13.0)))
     # Rounds land at t=0,1,2,...: window one counts t=0,1,2 (local 1,2,3 -
@@ -484,3 +484,29 @@ def test_shots_outside_every_window_never_trigger():
     assert magazine_shot_count(6, 0, late,
                                time_of_round=_uniform_clock(0.0, 1.0),
                                stop_time=100.0) == (6, 6)
+
+
+def test_a_windowed_refund_with_no_refills_reaches_a_real_generator():
+    """Regression: every test above calls magazine_shot_count directly and
+    supplies its own clock, so none of them go through _walk_magazine - the
+    gate every real shot-timeline generator calls. A windowed refund with no
+    refills of its own (Arcana's actual shape: her rotation carries no
+    AmmoRefill) used to reach that gate, get its clock dropped, and crash
+    comparing a window boundary against None on its very first shot.
+    """
+    rotation = AmmoRefund(every_shots=6, rounds=6, first_shot=2,
+                          windows=((0.0, 10.0),))
+    without = generate_magazine_shot_times(12.0, 18, 1.5, 20.0)
+    with_rotation = generate_magazine_shot_times(12.0, 18, 1.5, 20.0,
+                                                  ammo_refund=rotation)
+    # Inside the window the rotation hands back as much as it spends (6 every
+    # 6 shots, on the phase), so the magazine never needs to reload there:
+    # 10 sec at 12 rounds/sec fires continuously.
+    assert len([t for t in with_rotation if t < 10.0]) == 120
+    # Past the window the refund is silent - the same COUNT of shots lands
+    # in the tail as the unbuffered magazine (the exact times differ, since
+    # the window leaves the magazine mid-cycle rather than at a reload
+    # boundary, but the ordinary reload cadence resumes and fires the same
+    # number of rounds by fight_duration).
+    assert len([t for t in with_rotation if t >= 10.0]) == \
+        len([t for t in without if t >= 10.0])
