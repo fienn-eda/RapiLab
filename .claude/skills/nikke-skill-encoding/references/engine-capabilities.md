@@ -133,21 +133,71 @@ the fight (not per magazine) and the refund is CAPPED at the magazine's capacity
 attack(s) ... Reloads R round(s)": what a refund is worth depends on where in
 the magazine it lands, and it shifts every later reload against the Full Burst
 window, so approximating it as `max_ammo_percent` scores non-monotonically.
-`R` must be `< N` or the magazine never empties (the dataclass rejects it), and
-a unit can hold SEVERAL sources at once — its own skill plus the Tactical Bear
-cube — which are vetted together in `_refund_sequence`.
+`R` must be `< N` or the magazine never empties (the dataclass rejects it unless
+the refund is window-gated — see `windows` below), and a unit can hold SEVERAL
+sources at once — its own skill plus the Tactical Bear cube — which are vetted
+together in `_refund_sequence`.
+
+**A refund's size is `rounds` OR `percent` of the magazine it lands in**
+("Reload 5.31% of the magazine", Tove's Favorite Item) — a percentage rounds to
+the nearest whole round against the CAPACITY the recipient's current magazine
+actually opened with, the same granularity every max-ammo buff already uses.
+
+**`first_shot` turns a bare period into a ROTATION PHASE.** Left at 0 (the
+default) the refund fires on every multiple of `every_shots`, the plain "every N
+shots" shape. Set it and the refund instead fires on the `first_shot`-th shot and
+every `every_shots` after — the 2nd, 8th, 14th... of a period-6 rotation, never
+the 6th or 12th (Arcana: Fortune Mate's Memories and Moments reload phase).
+
+**`windows` restricts the counter to explicit `[start, end)` spans**, restarting
+the count at 0 with each one, for a refund that only runs while some other
+status is up rather than fight-long. `needs_own_burst_window=True` flags a
+refund whose window cannot be filled at registry-build time (before the burst
+schedule exists) — [the caster's own burst, that cycle's Full Burst end) — so
+`raid_simulator.resolve_ammo_refund_windows` replaces it with a real `windows`
+tuple once the burst schedule is known. **A refund that declares the flag and
+resolves to zero windows (its own burst never lands before `fight_duration`)
+stays classified as windowed and is therefore permanently inert** — it does NOT
+fall back to the fight-wide counter. Every classification site (`_refund_
+sequence`, `magazine_shot_count`, `_refund_carries_windows`) reads this off one
+shared `attack_rate._gated_to_windows(refund)` helper, so a future consumer of
+`windows` cannot reintroduce the fail-open by only fixing one call site.
 
 Expose it as `<name>_ammo_refund(values)` and register in
 `registry._SKILL_AMMO_REFUNDS` as `slug: (builder, required_boss_element or
 None)`; the roster carries it as `skill_ammo_refund` and `raid_simulator.
 resolve_ammo_refunds` applies the encounter gate, since the roster assembles a
 deck and only the simulator knows the boss. Consumers: `eve` (Eagle Eye, gated
-Electric), `ludmilla_winter_owner` (The Queen's Gaze, ungated).
+Electric), `ludmilla_winter_owner` (The Queen's Gaze, ungated), `tove-signature`
+(Emergency-Crafted Bullets, own shot counter — the base build's identical
+reload sits behind a probability roll instead, see below), `arcana_fortune_mate`
+(the Memories and Moments rotation's reload phase, `first_shot` + `windows`).
 
-What it CANNOT express: a refund that is a PERCENT of the magazine (Noir, Tove,
-Little Mermaid, Asuka), one granted to allies rather than the owner, and one
-whose trigger is anything but the owner's own shot count (a burst, a status
-window, a level-up). Those stay deferred.
+**`attack_rate.AmmoRefill(time=T, rounds=R, percent=P)` is the sibling for a
+refund at a KNOWN TIME instead of a shot counter** — "Reload 39.88%
+magazine(s)" on entering Full Burst (Noir), or at the caster's own burst
+(Little Mermaid, Asuka, Arcana: Fortune Mate) — for a trigger that's an event
+the burst cycle already scheduled rather than a count of the recipient's own
+shots, where the recipient may not even be the caster. Declare it as
+`<name>_refill(values) -> {"rounds"|"percent", "scope": "self"|"squad",
+"event": "full_burst_enter"|"own_burst"}` and register in `registry.
+_AMMO_REFILL_GRANTS`; `raid_simulator.resolve_ammo_refills` reads the trigger
+off the burst-cycle event log (`full_burst_start` events for
+`"full_burst_enter"`, the caster's own `burst` events otherwise) and fans a
+squad-scope grant out to every deck member. **A refill that lands while the
+recipient is reloading is WASTED** — a magazine walk always opens a fresh
+magazine at full capacity and a refill is capped at capacity, so one that lands
+before the magazine it would join finds no room and does nothing; no special
+handling needed. Consumers: `noir` (Rabbit Twins B, squad), `little_mermaid`
+(Siren's Song, squad), `asuka_shikinami_langley_wille` (Annihilation State,
+self), `arcana_fortune_mate` (Radiant Youth's own-burst reload, self).
+
+What neither primitive can express: a refund gated behind a PROBABILITY roll
+("There is a 5% chance of activating when attacking", `tove` base) — this
+engine is deterministic and has nothing that rolls dice, so a probability-gated
+trigger stays deferred regardless of what the refund itself would otherwise be
+able to express. (`tove-signature` carries the identical reload on a plain shot
+counter instead and is the build that's modeled.)
 
 Burst nuke: not a stat — exposed via a `<name>_burst_percent(values)` helper and
 put in the registry entry, applied as the attack coefficient of a burst hit.
@@ -849,8 +899,12 @@ across every encoded slug — run it after encoding a unit.
 
 There is **no** trigger for: normal-attack counts ("after N normal attacks"),
 full-charge-shot counts ("full charge N times"), ally-ammo-expended counters,
-on-kill, HP thresholds, or "when Raptures appear". Effects gated on these must
-be deferred — or, if central, raise extending the engine with a new trigger.
+on-kill, HP thresholds, "when Raptures appear", or a **probability roll**
+("There is a 5% chance of activating when attacking", `tove` base's Emergency-
+Crafted Bullets) — this engine is deterministic and has nothing that rolls
+dice, so a probability-gated effect stays deferred no matter how simple the
+effect behind it is. Effects gated on these must be deferred — or, if central,
+raise extending the engine with a new trigger.
 
 A rule's ACTION has no access to the boss's element, but its **condition does**:
 gate "if the enemy is [element] Code" bullets with
