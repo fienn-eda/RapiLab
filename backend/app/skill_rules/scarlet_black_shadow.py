@@ -34,8 +34,10 @@ Modeled (DPS-relevant):
 
 Not modeled / deferred:
 - Asura's PARTIAL reload at skill levels below 7 ("Reload 30%/60% of the
-  magazine(s)"). The segment boundary is an all-or-nothing fresh magazine, so
-  the segment is only emitted when the slot reads 100.
+  magazine(s)"). `AmmoRefill(percent=...)` can express a partial reload, but
+  production runs her at level 10, where the reload is 100% - the zero-length
+  segment path above already models that exactly, so there is nothing for the
+  partial case to do here.
 
 Charge-weapon note: the base weapon's first shot of a stretch lands one charge
 time after the stretch starts, so a reset at T drops whatever charge was in

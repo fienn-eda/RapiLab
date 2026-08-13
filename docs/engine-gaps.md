@@ -39,13 +39,44 @@
      `damage_formula.py`가 이 버킷을 **의도적으로** 버린다(2026-07-26, 스노우화이트
      1.44x가 반증). 때릴 파츠가 없으니 배선해도 inert다 — **(a)와 같이 세면 안 된다.**
      `anis-sparkling-summer`의 interruption-parts 보너스도 같은 이유로 여기에 속한다.
-3. **부분 재장전/탄약 환급의 단위·트리거 불일치 — 5슬러그.** `arcana-fortune-mate` ·
-   `asuka` · `noir` · `tove` · `little-mermaid`. `attack_rate.AmmoRefund`는 「자기 발수
-   카운터로 정수 발수」 하나뿐인데 이들이 요구하는 건 **탄창 %** · **창 게이트** ·
-   **아군 대상** · **버스트 1회성**이다. 프리미티브 하나로 다섯이 같이 풀린다.
-   느와르(풀버스트 진입 시 아군 전원 39.88%)와 리틀머메이드(버스트 시 아군 전원 %)는
-   덱 전체 발수를 움직인다. 전부 floor — **닫으면 캘리브레이션은 1.0에서 더 멀어진다**
-   (리틀머메이드는 이미 1.154x). 그게 정상이다: `sim/record`는 목표가 아니라 상한이다.
+3. ~~**부분 재장전/탄약 환급의 단위·트리거 불일치 — 5슬러그.**~~ **✅ 해소 (2026-08-13).**
+   `attack_rate.AmmoRefill`(알려진 시각에 트리거되는 탄창 %/라운드, 아군 팬아웃 지원)을
+   신설하고 `AmmoRefund`에 `percent`·`first_shot`·`windows`·`needs_own_burst_window`를
+   얹어, 프리미티브 하나로 5슬러그·6줄을 인코딩했다:
+   - `noir` Rabbit Twins B — 풀버스트 진입 시 **아군 전원** 탄창 39.88%
+     (`AmmoRefill`, squad, `get_ammo_refill_grant`)
+   - `little-mermaid` Siren's Song — 자기 버스트 시 **아군 전원** 탄창 33.26%
+     (`AmmoRefill`, squad, `get_ammo_refill_grant`)
+   - `asuka-shikinami-langley-wille` Annihilation State — 자기 버스트 시 자기 탄창 21%
+     (`AmmoRefill`, self, `get_ammo_refill_grant`)
+   - `arcana-fortune-mate` Radiant Youth Effect 2 — 자기 버스트 시 자기 2발
+     (`AmmoRefill`, self, `get_ammo_refill_grant`)
+   - `arcana-fortune-mate` Memories and Moments 로테이션 — 자기 버스트~그 사이클 풀버스트
+     종료 창 안에서 2/8/14번째 자기 공격마다 6발
+     (`AmmoRefund(first_shot=2, windows=..., needs_own_burst_window=True)`, self)
+   - `tove-signature` Emergency-Crafted Bullets — 자기 10발마다 탄창 5.31%
+     (`AmmoRefund`, self) — `tove`(base)의 5% 확률 롤은 그대로 보류(아래)
+
+   **캘리브레이션 (`measure_record_calibration.py`, 25유닛): 1.060x·18/25·과대 +1.961B
+   → 1.065x·16/25·과대 +2.164B**(과소 −0.204B는 불변). 무기군 평균은 SMG 1.172x→**1.186x**·
+   SR 1.115x→**1.126x**·AR 1.114x→**1.094x**·MG 1.066x→**1.078x**·RL 1.035x(불변).
+   전부 floor(발수만 늘어난다)이므로 예상대로 **상한이 더 위로 밀렸다** — `sim/record`는
+   목표가 아니라 상한(gap #21, 2026-07-31 판정)이고 이 결과는 그 성질 그대로다. 되돌리지
+   않는다(Fienn 승인, 착수 전).
+
+   **비단조 사례 하나 — AR 평균이 내려간 이유.** 느와르·리틀머메이드가 앉은 덱2는
+   1.140x → **1.167x**로 예상대로 올랐지만, 같은 덱의 **프리바티: 시그니처(AR)는
+   1.209x → 1.146x로 내려갔다.** 그녀 자신은 이 6줄 중 아무것도 안 갖고 있고 느와르·
+   리틀머메이드의 스쿼드 환급을 **받는 쪽**일 뿐이다 — 환급이 그녀의 재장전 위상을
+   풀버스트 창에 대해 밀어낸 결과이지 결함이 아니다(`AmmoRefund`/`AmmoRefill`
+   독스트링이 이미 적어 둔 성질: "환급은 스탯이 아니다"). AR은 유닛 3명뿐이라 이
+   하나가 평균을 끌어내려, 다섯 클래스 중 AR만 하락했다.
+
+   **남은 보류:** `tove`(base)의 「공격 시 5% 확률」은 확률 롤이라 이 결정론 엔진이
+   여전히 못 하고, 같은 스킬을 다른 트리거로 갖는 `tove-signature`가 대신 해소를
+   소비한다. `asuka`의 별개 「탄약 100% 제거」 상태머신(Emergency Repair)도 손대지
+   않았다 — HP/예열속도/재장전속도와 한 묶음인 논-딜 통이다. `charge_window.py`는
+   전투 절대 시각이 없는 한 창짜리 계산기라 이 프리미티브의 소비자가 아니다.
 4. **Pattern B (시간감쇠 게이지·다중소스 스택) — 5슬러그.** 아래 갭 #2가 적어 둔 그대로
    남았다. `laplace`·`laplace-signature`(Hero Vision이 버스트 11.9% 트루뎀을 게이트) ·
    `phantom`(**베이스 빌드는 Thief's Vision 84.33% 추가딜이 통째로 보류**) ·
@@ -910,7 +941,7 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 | — | MG 정확도 예열(탄창 앞 29발 코어 손실) | 미집계(opt-in 보스 한정) | 미착수 — 발 인덱스 배선 필요 | 발사 타임라인 |
 | — | ~~`core_damage_rate` 유닛별 상이~~(2.5배 vs 엔진 2.0배) | 5(미란다·미란다 시그니처·퀀시:이스케이프퀸·리틀머메이드·치사토) | **해소 (2026-08-08)** — `core_damage.CORE_DAMAGE_RATE` + `core_hit_bonus_for`, 소비 지점 `raid_simulator` 1줄. 합계 1.055x→1.060x·19/25→18/25 | 스탯 상수 |
 | — | 무기변형 세그먼트 탄착군 — 기저 무기로 근사, 미측정 | 미집계(확인된 사례 나유타 1) | 미착수 — 무기변형 유닛 코어히트율 실측 필요 | 발사 타임라인 |
-| — | **부분 재장전/탄약 환급의 단위·트리거 불일치** (탄창 % · 창 게이트 · 아군 대상 · 버스트 1회성) | **5 (2026-08-13 재집계)**: arcana-fortune-mate·asuka·noir·tove·little-mermaid | 미착수 — `AmmoRefund`는 「자기 발수 카운터로 정수 발수」뿐. 프리미티브 하나로 다섯이 풀린다. 전부 floor | 발사 타임라인 |
+| — | ~~**부분 재장전/탄약 환급의 단위·트리거 불일치**~~ (탄창 % · 창 게이트 · 아군 대상 · 버스트 1회성) | **5 (2026-08-13 재집계)**: arcana-fortune-mate·asuka·noir·tove·little-mermaid | **해소 (2026-08-13)** — `AmmoRefill`(시각 트리거·아군 팬아웃) 신설 + `AmmoRefund`에 `percent`/`first_shot`/`windows` 확장, 6줄 인코딩. 전부 floor라 캘리브레이션 1.060x·18/25 → **1.065x·16/25**로 상한이 더 위로 밀림(정상, `sim/record`는 상한). `tove`(base)의 확률 롤·`asuka`의 탄약제거 상태머신·`charge_window.py`는 계속 보류 | 발사 타임라인 |
 | — | **MG 예열 속도 버프/디버프** (`heating up speed ▲▼100%`) | **2 (2026-08-13)**: rei-ayanami·asuka — **둘 다 실기록 덱3** | 미착수 — `_SPINUP_BY_WEAPON`이 모듈 상수라 스킬 통로가 없다. 예열은 탄창당 1.4833초 실비용 | 발사 타임라인 |
 | 14 | **"엄폐물이 공격받을 때" 트리거** | 2 (sugar·sugar-signature) | 미착수 — 엔진에 피격 개념 없음. 둘 다 floor(Critical Damage +16.39%는 실제 딜 스탯) | 신규 트리거 |
 | 15 | **"아군 니케 행동불능" 트리거** | 3 (rosanna·rosanna-signature·mihara-bonding-chain) | 미착수 — **defer가 맞다**(시뮬은 아군을 안 죽인다). 애장품 빌드는 셀 수 있는 대체 소스가 있어 실피해가 작다 | 신규 트리거 |
