@@ -430,6 +430,28 @@ def test_a_timeline_without_refills_is_unchanged():
         generate_shot_times("RL", 9, 2.0, 0.3, 180.0, ammo_refills=())
 
 
+def test_a_refill_during_the_reload_is_worth_nothing():
+    """The project owner's ruling (2026-08-13): a refill that lands while the
+    unit is reloading is wasted - the reload finishes on its own.
+
+    This is the behavioural test for that rule, and the only place it is
+    observable. Timing is everything: the same refill inside a magazine's
+    firing span lands on a partly-spent magazine and buys shots, while inside
+    the reload gap it lands on a magazine that is about to be full anyway.
+    """
+    # An AR fires 12 rounds/sec, so a 12-round magazine empties one second in
+    # and the 1-second reload runs from t=1.0 to t=2.0.
+    plain = generate_shot_times("AR", 12, 1.0, 0.0, 20.0)
+    during_reload = generate_shot_times(
+        "AR", 12, 1.0, 0.0, 20.0,
+        ammo_refills=(AmmoRefill(time=1.5, percent=50.0),))
+    while_firing = generate_shot_times(
+        "AR", 12, 1.0, 0.0, 20.0,
+        ammo_refills=(AmmoRefill(time=0.5, percent=50.0),))
+    assert len(during_reload) == len(plain)
+    assert len(while_firing) > len(plain)
+
+
 def test_last_bullet_times_follow_the_refilled_magazine():
     # The refill extends the magazine, so the round that empties it moves.
     kw = dict(ammo_refills=(AmmoRefill(time=5.0, rounds=4),))
@@ -520,14 +542,9 @@ Expected: FAIL — `TypeError: generate_shot_times() got an unexpected keyword a
         rounds = _apply_due_refills(pending, shot_time, rounds, capacity)
 ```
 
-인라인 재장전 뒤(`:925-927`의 `rounds = capacity` 옆)에 **오래된 환급을 버린다**:
+**드롭 줄은 넣지 않는다 (판정 R7).** 이 계획의 이전 판본은 인라인 재장전 뒤에 오래된 환급을 버리는 줄을 요구했다. Task 2에서 그것이 **도달 불가능한 죽은 코드**임이 증명됐다 — 두 워크 모두 탄창을 **만탄으로 시작**하고 환급은 상한에 캡되므로, 지나간 환급은 만탄에 적용돼 `min(capacity, capacity + n) == capacity`, 즉 무조건 no-op이다. 「재장전 중 환급은 버려진다」는 판정은 **캡이 이미 강제**한다.
 
-```python
-            while pending and pending[0].time < cursor:
-                pending.pop(0)
-```
-
-이것이 「재장전 중에 떨어진 환급은 버려진다」를 이 워크에서 지키는 방법이다. 이 줄이 없으면 재장전 구간에 떨어진 환급이 다음 발에서 적용돼 판정을 어긴다.
+대신 그 이유를 이 함수 독스트링에 한 문장으로 남긴다.
 
 **왜 빼면 안 되나:** 이 경로의 소비자는 스노우화이트: 헤비 암즈이고 그녀는 실기록 덱4에 있다. 빼면 느와르의 아군 환급이 네 좌석에는 가고 그녀에게만 안 가, 기능이 조용히 유닛별로 갈린다.
 
