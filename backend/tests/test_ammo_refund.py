@@ -407,3 +407,80 @@ def test_a_charge_magazine_that_opens_past_the_window_does_not_crash():
         "RL", 9, 2.0, 0.3, 6.0,
         ammo_refills=(AmmoRefill(time=1.0, rounds=4),))
     assert len(times) == 12
+
+
+def test_the_rotation_phase_fires_on_two_eight_and_fourteen():
+    # Arcana: "Two times: Reloads 6 rounds" is one phase of a period-6
+    # rotation. Fienn counted to the 18th normal in game (2026-07-28): the
+    # 12th does NOT reload. A bare "every 6" would give [6, 12, 18].
+    rotation = AmmoRefund(every_shots=6, rounds=6, first_shot=2)
+    assert [n for n in range(1, 19) if rotation.fires_at(n)] == [2, 8, 14]
+
+
+def test_a_refund_without_a_phase_keeps_the_bare_period():
+    assert [n for n in range(1, 31) if BASTION.fires_at(n)] == [10, 20, 30]
+
+
+def test_a_refund_without_windows_counts_every_shot_of_the_fight():
+    assert BASTION.counts(0.0) and BASTION.counts(179.0)
+
+
+def test_a_windowed_refund_counts_only_shots_inside_a_window():
+    windowed = AmmoRefund(every_shots=6, rounds=6, first_shot=2,
+                          windows=((10.0, 20.0), (50.0, 60.0)))
+    assert not windowed.counts(9.9)
+    assert windowed.counts(10.0)
+    assert not windowed.counts(20.0)      # half-open, like every other window
+    assert windowed.counts(55.0)
+
+
+def test_the_window_local_counter_moves_the_magazine():
+    # Capacity 3, one round back, phase (first=2, period=6), 1 shot/sec, all
+    # inside the window. Shots: 1 -> 2 left; 2 -> 1 left, refund makes it 2;
+    # 3 -> 1 left; 4 -> empty. Four shots out of a three-round magazine.
+    phased = AmmoRefund(every_shots=6, rounds=1, first_shot=2,
+                        windows=((0.0, 100.0),))
+    assert magazine_shot_count(3, 0, phased,
+                               time_of_round=_uniform_clock(0.0, 1.0),
+                               stop_time=100.0) == (4, 4)
+
+
+def test_a_bare_period_would_not_reach_that_magazine_at_all():
+    # The same refund without the phase fires at shot 6, which a three-round
+    # magazine never reaches - so it fires exactly its capacity.
+    bare = AmmoRefund(every_shots=6, rounds=1, windows=((0.0, 100.0),))
+    assert magazine_shot_count(3, 0, bare,
+                               time_of_round=_uniform_clock(0.0, 1.0),
+                               stop_time=100.0) == (3, 3)
+
+
+def test_the_window_local_counter_restarts_with_each_window():
+    # Two windows, the magazine spanning both. In the second window the phase
+    # must start over at 2 rather than carry the first window's count.
+    #
+    # Capacity 6 (the brief's original figure) is a defect: rounds still
+    # land every second OUTSIDE a window too - a window gates the refund's
+    # trigger, not the shot itself - so the 7 unbuffered shots in the t=3..9
+    # gap drain a 6-round magazine before it ever reaches the second window
+    # at all (verified: capacity 6 returns (7, 7), and even capacity 7's
+    # coincidental (8, 8) never reaches t=10 either - both stop inside the
+    # gap). 11 is the smallest capacity that survives the gap and actually
+    # exercises the restart.
+    two = AmmoRefund(every_shots=6, rounds=1, first_shot=2,
+                     windows=((0.0, 3.0), (10.0, 13.0)))
+    # Rounds land at t=0,1,2,...: window one counts t=0,1,2 (local 1,2,3 -
+    # refund on local 2, +1 round); the t=3..9 gap spends 7 rounds with no
+    # refund; window two counts t=10,11,12 (local RESTARTS at 1,2,3 - refund
+    # again on local 2, +1 round). Net: 11 (start) + 1 + 1 (two refunds) - 13
+    # (shots) = 0, so the magazine empties on the 13th shot.
+    assert magazine_shot_count(11, 0, two,
+                               time_of_round=_uniform_clock(0.0, 1.0),
+                               stop_time=100.0) == (13, 13)
+
+
+def test_shots_outside_every_window_never_trigger():
+    late = AmmoRefund(every_shots=6, rounds=1, first_shot=2,
+                      windows=((50.0, 60.0),))
+    assert magazine_shot_count(6, 0, late,
+                               time_of_round=_uniform_clock(0.0, 1.0),
+                               stop_time=100.0) == (6, 6)

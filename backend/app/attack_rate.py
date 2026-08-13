@@ -155,13 +155,35 @@ class AmmoRefund:
     magazine it lands in ("Reload 5.31% of the magazine", Tove's Favorite Item).
     A percentage is rounded to the nearest whole round, the same convention
     magazine capacity itself uses (Fienn, 2026-08-13).
+
+    `first_shot` and `windows` express a ROTATION rather than a plain "every N
+    shots": Arcana: Fortune Mate's skill text reads "Two times: Reloads 6
+    rounds... Resets when Making Memories is removed" - the reload is the 2nd,
+    8th, 14th... attack of a period-6 rotation that only runs while her buff is
+    up, never the 6th or 12th (Fienn counted to the 18th in game, 2026-07-28).
+    `first_shot` is that phase (0 falls back to the bare period); `windows` are
+    the `[start, end)` spans the counter is even running in, restarting at 0
+    with each one - see `fires_at` and `counts`.
     """
     every_shots: int
     rounds: int = 0
     percent: float = 0.0
+    first_shot: int = 0
+    windows: tuple = ()
 
     def __post_init__(self):
-        if self.rounds and self.rounds >= self.every_shots:
+        # A bare refund's only termination guarantee is the magazine draining
+        # to 0, so rounds >= every_shots (net zero or positive drain) is
+        # rejected outright. A rotation is different: it is only ever
+        # meaningful paired with a window (Arcana's counter IS the window
+        # being up), and a window's own end is what stops the walk - the
+        # magazine draining is not required, matching `magazine_shot_count`'s
+        # stop_time break. `first_shot` alone (not just `windows`) has to
+        # exempt it too, because the window can arrive later via `replace()`
+        # (the simulator fills it in once the burst schedule is known) - at
+        # the moment a phased refund is first built, windows may still be ().
+        if (self.rounds and self.rounds >= self.every_shots
+                and not self.first_shot and not self.windows):
             raise ValueError(
                 f"a refund of {self.rounds} every {self.every_shots} shots never "
                 "empties the magazine")
@@ -169,6 +191,22 @@ class AmmoRefund:
     def rounds_for(self, capacity):
         """Whole rounds this hands back into a magazine of `capacity`."""
         return _rounds_from_declaration(self.rounds, self.percent, capacity)
+
+    def fires_at(self, count):
+        """Whether the `count`-th shot this refund has counted triggers it.
+
+        `first_shot` is the rotation's phase: Arcana's reload is the 2nd, 8th,
+        14th ... attack of a period-6 rotation, not the 6th and 12th. Left at 0
+        the phase is the period itself, which is the plain "every N shots" the
+        cube and EVE use.
+        """
+        first = self.first_shot or self.every_shots
+        return count >= first and (count - first) % self.every_shots == 0
+
+    def counts(self, time):
+        """Whether a shot at `time` advances this refund's counter. A refund
+        with no windows counts every shot of the fight."""
+        return not self.windows or any(s <= time < e for s, e in self.windows)
 
 
 @dataclass(frozen=True)
@@ -206,11 +244,17 @@ def _refund_sequence(refund, capacity):
     combined rate is checked here, where the magazine's capacity is known and a
     percentage can finally be resolved: at one round back per shot the walk
     below would never terminate.
+
+    A windowed refund is excluded from the sum: its window is what bounds the
+    walk (see `magazine_shot_count`'s `stop_time`), not the magazine draining,
+    so it legitimately hands back as much as it spends - Arcana's rotation
+    does exactly that.
     """
     if refund is None:
         return ()
     refunds = (refund,) if isinstance(refund, AmmoRefund) else tuple(refund)
-    if sum(r.rounds_for(capacity) / r.every_shots for r in refunds) >= 1:
+    if sum(r.rounds_for(capacity) / r.every_shots
+           for r in refunds if not r.windows) >= 1:
         raise ValueError(
             f"refunds {refunds} together hand back a round per shot, so the "
             "magazine never empties")
@@ -254,18 +298,30 @@ def magazine_shot_count(capacity, shots_before, refund, *,
     reloads 6 rounds every 6 shots, which is exactly the point of it - so a
     magazine can stay alive indefinitely and draining is not a termination
     guarantee once time is in play.
+
+    A windowed refund (`AmmoRefund.windows` set) keeps its OWN local counter,
+    separate from `counter` - its phase is read against "the shot's position
+    inside the current window", not the fight-wide count, and that position
+    restarts at 0 every time a new window opens (Arcana's counter "resets when
+    Making Memories is removed"). A plain refund still reads `counter` through
+    `fires_at`, unchanged from before windows existed.
     """
     refunds = _refund_sequence(refund, capacity)
     if not refunds and not refills:
         return capacity, shots_before + capacity
     pending = list(refills)
     pending.sort(key=lambda r: r.time)
+    windowed = [r for r in refunds if r.windows]
+    plain = [r for r in refunds if not r.windows]
+    local = {id(r): 0 for r in windowed}
+    last_window = {id(r): None for r in windowed}
     rounds = capacity
     shots = 0
     counter = shots_before
     while rounds > 0:
         now = (time_of_round(shots)
-               if time_of_round is not None and (pending or stop_time is not None)
+               if time_of_round is not None
+               and (pending or stop_time is not None or windowed)
                else None)
         if stop_time is not None and now is not None and now >= stop_time:
             break
@@ -273,8 +329,18 @@ def magazine_shot_count(capacity, shots_before, refund, *,
         rounds -= 1
         shots += 1
         counter += 1
-        for one in refunds:
-            if counter % one.every_shots == 0:
+        for one in plain:
+            if one.fires_at(counter):
+                rounds = min(capacity, rounds + one.rounds_for(capacity))
+        for one in windowed:
+            window = next((w for w in one.windows if w[0] <= now < w[1]), None)
+            if window is None:
+                continue
+            if last_window[id(one)] != window:
+                last_window[id(one)] = window
+                local[id(one)] = 0
+            local[id(one)] += 1
+            if one.fires_at(local[id(one)]):
                 rounds = min(capacity, rounds + one.rounds_for(capacity))
     return shots, counter
 
