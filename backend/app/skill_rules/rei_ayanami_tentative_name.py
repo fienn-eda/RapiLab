@@ -10,6 +10,10 @@ Modeled (DPS-relevant):
   from her burst - the window the per-shot nuke below is gated to.
 - Maintenance and Resupply (skills[1]): on entering Full Burst, all allies gain
   flat ATK = 11.61% of the caster's ATK for 10 sec (squad scope).
+- Maintenance and Resupply's second bullet: on Full Burst entry, allies holding
+  a Machine Gun who have already used their Burst Skill get MG heating up speed
+  +100% for 13 sec - halving the 2.28-sec warm-up every one of their magazines
+  pays (docs/measurements/mg-spinup.md).
 - Annihilation Support (skills[0]) Attack-State clause: every 7 normal attacks
   while in Attack State (her own 10s burst window, gap #7's
   `every_during_own_status_window`), a 286.37%-of-final-ATK nuke. "As additional
@@ -25,10 +29,8 @@ Not modeled / deferred:
 - Annihilation Support's Full-Burst clause for "allies in Annihilation State"
   (units-affected +1, attack range +500%, ATK +17.6% of caster ATK) - gated on
   the Annihilation State ally status, also cross-unit and unmodeled.
-- Maintenance and Resupply's "MG heating up speed +100%" for MG allies - a
-  niche MG spin-up mechanic the engine doesn't model.
 """
-from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
+from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, member_subset_buff_rule
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -62,6 +64,8 @@ def build_rei_tentative_rules(values):
     self_atk_duration = float(attack_state["description_value_04"])
     squad_atk = float(maintenance["description_value_03"]) / 100 * caster_atk
     squad_atk_duration = float(maintenance["description_value_04"])
+    heating_speed = float(maintenance["description_value_01"]) / 100
+    heating_duration = float(maintenance["description_value_02"])
 
     return [
         buff_rule("own_burst_activate", [
@@ -69,6 +73,16 @@ def build_rei_tentative_rules(values):
             ("flat_atk", self_atk, "self", self_atk_duration),
         ]),
         buff_rule("full_burst_enter", [("flat_atk", squad_atk, "squad", squad_atk_duration)]),
+        # "Affects all allies with a Machine Gun who have used their Burst
+        # Skills" - the narrow subset Effect.scope can't express, resolved live
+        # so the "already burst" half is read at the trigger's own moment.
+        member_subset_buff_rule(
+            "full_burst_enter",
+            lambda member, context: (
+                member.weapon == "MG"
+                and member.slug in context.burst_used_this_cycle),
+            [("mg_heating_speed_percent", heating_speed, heating_duration)],
+        ),
     ]
 
 

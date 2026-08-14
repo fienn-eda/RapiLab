@@ -1,3 +1,5 @@
+import pytest
+
 from app.effects import EffectRegistry
 from app.skill_rules.rei_ayanami_tentative_name import (
     attack_state_burst_percent,
@@ -96,3 +98,38 @@ def test_annihilation_support_nukes_every_7_in_attack_state_window():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 286.37
+
+
+def test_maintenance_speeds_up_only_mg_allies_who_already_burst():
+    ctx = SquadContext([
+        SquadMember("rei-ayanami-tentative-name", burst_tier=3, element="Wind", weapon="AR"),
+        SquadMember("asuka-shikinami-langley-wille", burst_tier=3, element="Wind", weapon="MG"),
+        SquadMember("liter", burst_tier=1, element="Wind", weapon="SMG"),
+        SquadMember("mg-ally-not-bursted", burst_tier=3, element="Wind", weapon="MG"),
+    ])
+    ctx.burst_used_this_cycle.add("asuka-shikinami-langley-wille")
+    ctx.burst_used_this_cycle.add("liter")  # bursted too, but not MG: pins the weapon half
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", {"rei-ayanami-tentative-name": build()}, ctx, registry, time=5.0)
+
+    mg_ally = {"slug": "asuka-shikinami-langley-wille", "element": "Wind"}
+    smg_ally = {"slug": "liter", "element": "Wind"}
+    unbursted_mg_ally = {"slug": "mg-ally-not-bursted", "element": "Wind"}
+    assert registry.total_for("mg_heating_speed_percent", mg_ally, now=6.0) == pytest.approx(1.0)
+    assert registry.total_for("mg_heating_speed_percent", smg_ally, now=6.0) == pytest.approx(0.0)
+    # not yet in burst_used_this_cycle: pins the burst-used half
+    assert registry.total_for("mg_heating_speed_percent", unbursted_mg_ally, now=6.0) == pytest.approx(0.0)
+
+
+def test_the_heating_buff_lasts_its_stated_thirteen_seconds():
+    ctx = SquadContext([
+        SquadMember("rei-ayanami-tentative-name", burst_tier=3, element="Wind", weapon="AR"),
+        SquadMember("asuka-shikinami-langley-wille", burst_tier=3, element="Wind", weapon="MG"),
+    ])
+    ctx.burst_used_this_cycle.add("asuka-shikinami-langley-wille")
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", {"rei-ayanami-tentative-name": build()}, ctx, registry, time=5.0)
+
+    mg_ally = {"slug": "asuka-shikinami-langley-wille", "element": "Wind"}
+    assert registry.total_for("mg_heating_speed_percent", mg_ally, now=17.9) == pytest.approx(1.0)
+    assert registry.total_for("mg_heating_speed_percent", mg_ally, now=18.1) == pytest.approx(0.0)
