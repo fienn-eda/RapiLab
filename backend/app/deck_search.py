@@ -524,7 +524,7 @@ def evaluate_deck_best_seating(ordered_deck, boss: BossProfile, **kwargs):
 
     It costs one simulation per arrangement: 6 for a Rouge deck, 10 for a Flora
     one, 18 for a deck holding both. Measured at a 180-sec fight against a plain
-    evaluation of the same deck, that is +0.47 sec, +1.55 sec and +2.46 sec per
+    evaluation of the same deck, that is +0.50 sec, +1.64 sec and +2.51 sec per
     reported deck - so a top-5 of decks that all hold both would add ~12 sec.
     This is why it is the REPORT path and not the search path: a request scores
     ~1200 decks (SEARCH_SIM_BUDGET) and cannot pay that per deck.
