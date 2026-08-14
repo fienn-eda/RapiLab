@@ -8,10 +8,24 @@ unlocks her whole Skill 2. In the base build the dagger's only source is a norma
 attack on a target NOT in the Calling Card state - and that same attack applies
 Calling Card for 5 sec, exactly the dagger's own duration - so a stack expires
 the instant the next could be earned and the dagger is pinned at 1 forever
-(Fienn confirmed, 2026-07-24). With the shot-counted source (30 AR shots = 2.5
-sec of fire) two dagger stacks coexist from it, plus one from the Calling Card
-source, so max stacks land about every 5 sec of fire - Fienn's figure, encoded
-as a 60-shot counter (12 shots/sec x 5 sec).
+(Fienn confirmed, 2026-07-24).
+
+**The 60-shot proc cadence is exact, not an approximation** (derived 2026-08-14;
+`tests/test_phantom_dagger_cadence.py` re-derives it from the data). The base
+build's cancellation does not go away here - it applies to source 1 in THIS
+build too. Source 1 grants a stack and applies Calling Card for the same 5 sec,
+so the moment Calling Card lapses and it may fire again is the moment its own
+previous stack expires: past the one stack it contributes right after each proc,
+its net contribution is zero. That leaves the Favorite Item's 30-shot metronome
+as the only thing that accumulates, and the 3-stack cap therefore lands on its
+second tick - **30 x (3 - 1) = 60 shots**, at every fire rate.
+
+Walking it against her real shot timeline gives a proc gap of exactly 60 shots
+(min = median = max) from 6.1 to 40 shots/sec. Below **6.0 shots/sec** - where
+30 shots takes longer than the 5 sec stack lifetime - source 2's own stacks
+expire before the next lands and the dagger can NEVER reach max, so the constant
+would be wrong there; her AR fires 12/sec at base and the game has no
+attack-speed debuff for your own units, so that cliff is out of reach.
 
 Weapon stats come from base Phantom's ShiftyPad file via the manifest's
 `weapon_source`, since ShiftyPad exposes no dollskills and dotgg is dead.
@@ -40,45 +54,29 @@ Modeled (DPS-relevant):
   Damage; Damage Taken +18% for 30 sec when the boss is Fire Code; self Max
   Ammunition Capacity +50% for 10 sec.
 
-Not modeled / deferred - and this build's dagger is the one place in the kit
-where the ENGINE, not the skill, is the limit (2026-08-14):
-- The dagger stack count itself is not tracked as a resource: the 60-shot
-  counter stands in for "max stacks reached", per Fienn's cadence.
+Not modeled / deferred:
+- The dagger stack count is not tracked as a live resource - the 60-shot
+  counter stands in for "max stacks reached". **For the PROC TIMES that is not
+  an approximation** (see the derivation above), so tracking the count would
+  reproduce the cadence this module already fires. What it would change is the
+  Hit Rate below.
+- Her Hit Rate is encoded at ONE stack, the base build's floor, while the true
+  count is a sawtooth 1 -> 2 -> 3 -> 0 whose time-average is **1.48 stacks**
+  (walked against her real shot timeline, 2026-08-14). So this build's core-hit
+  share is an UNDERSTATEMENT.
 
-  What the engine is missing is narrow and specific. Multi-source fills,
-  per-stack expiry, caps and resets all exist (`ResourceSpec` / `_fill_sources`
-  / `ResourceBuff.lifetime`), and two of the dagger's three ingredients are
-  already expressible: the Favorite Item source is "every 30 normal attacks"
-  and the stacks expire 5 sec apart on their own clocks. The missing third is
-  that this resource CONSUMES ITSELF - Thief's Vision's third bullet "Removes
-  stacks" on reaching the cap - and no reset trigger fires on "the count
-  reached its cap". Worse, that consumption also removes Calling Card, which
-  is what re-opens the OTHER dagger source, so one source's fill schedule
-  depends on when the resource emptied. Independent per-source schedules
-  summed after the fact cannot express that; it needs a sequential walk (the
-  shape `_resolve_squad_burst_cycle_resource` already uses for a different
-  resource).
+  It currently costs nothing: hit rate reaches damage only through
+  `BossProfile.core_diameter_px`, which is opt-in and set on no boss the product
+  builds decks against (0 of 6 in `data/raid-rotations.json`, default None).
+  Measured: forcing her dagger to 2 or 3 stacks moves her sweep total by 0.00%.
 
-  Size of the prize, measured 2026-08-14: her real fire rate is 11.16
-  shots/sec, so the 60-shot constant is 5.38 sec while the Calling Card source
-  runs on a 5.00 sec clock - the true cadence is at or below the constant, i.e.
-  the constant UNDERSTATES her procs. The sensitivity is +1.54% at 55 shots and
-  +3.37% at 50, so a real model is worth low single digits.
-- Which is also why her Hit Rate is encoded at ONE stack, the base build's
-  floor, rather than the two or three this build really carries. The count here
-  is a sawtooth, not a level: the third bullet of Thief's Vision "Removes
-  stacks", so every time the dagger reaches 3 it drops back to 0 and rebuilds
-  from two sources at once. Pinning any single value in between would be
-  inventing a duty cycle nobody measured, and the floor is the honest end of
-  that range - so this build's core-hit share (44.4% -> 75.8% of a 50px core)
-  is an UNDERSTATEMENT.
-
-  That understatement currently costs nothing: hit rate reaches damage only
-  through `BossProfile.core_diameter_px`, which is opt-in and set on no boss
-  the product builds decks against (0 of 6 in `data/raid-rotations.json`,
-  default None). Measured: forcing her dagger to 2 or 3 stacks moves her sweep
-  total by 0.00%. It would start to bite the day a raid boss carries a
-  measured core diameter.
+  **And the fix is not to pin 1.48.** Hit rate reaches damage through an AREA
+  RATIO, so the mean of the count and the mean of the resulting core-hit
+  probability are different numbers; substituting a time-averaged stack count
+  into a non-linear path would be wrong in a direction nobody has measured. The
+  honest fix is the step function - the dagger as a real resource driving a
+  count-scaled `ResourceBuff` - and it is worth building on the day a raid boss
+  carries a measured core diameter, not before.
 """
 from app.skill_rules._helpers import (
     buff_rule,
@@ -103,9 +101,11 @@ SKILL_VALUE_MANIFESTS = {
     },
 }
 
-# Shots between Thief's Vision procs: 12 AR shots/sec x the ~5 sec of fire it
-# takes the dagger to reach max stacks with the Favorite Item's extra source
-# (Fienn, 2026-07-24).
+# Shots between Thief's Vision procs. Fienn read this in-game as "about 5 sec of
+# fire" (2026-07-24); walking the skill text shows it is EXACT rather than a
+# cadence fitted to one deck - 30 shots x (3 stacks - 1). See the module
+# docstring for the derivation and `tests/test_phantom_dagger_cadence.py`, which
+# re-derives it from the data so a value change cannot leave it stale.
 VISION_PROC_SHOTS = 60
 # The stacking Distributed Damage bullet has no stated duration - it is removed
 # on Burst Skill use. Held for two proc cycles so the deck sees the 2-3 stacks a

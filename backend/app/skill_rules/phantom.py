@@ -41,8 +41,12 @@ cannot express them:
   This is a DEADLOCK IN THE SKILL, so it is not an engine gap and does not
   belong on a gap list: the counter would read one stack however faithfully it
   were modeled, and a max-stacks bullet that can never fire has no damage to
-  recover. What the engine genuinely cannot express is the FAVORITE ITEM
-  build's dagger - see `phantom_signature.py`.
+  recover.
+
+  The same cancellation runs through the FAVORITE ITEM build too, where it is
+  what makes that build's proc cadence come out to an exact constant rather
+  than something needing a live counter - see `phantom_signature.py`. Neither
+  build is blocked on the engine.
 """
 from app.skill_rules._helpers import buff_rule, refreshing_buff_rule, round_buff_rule
 
