@@ -29,6 +29,11 @@ next magazine boundary - a deliberate approximation matching the max_ammo/reload
 granularity. Default `_zero` leaves cadence untouched, so units with no such
 buff keep their exact original timelines.
 
+heating_speed_percent rides the same `_at(t)` pattern and scales the MG's
+warm-up (`spinup_with_speed`), sampled at the magazine's start beside
+`shot_interval` and `capacity` because the warm-up is a property of the
+magazine it opens.
+
 `{magazine,charge}_last_bullet_times`/`last_bullet_shot_times` mark which of
 those same shot times actually EMPTY their magazine (gap #1's residual "last
 bullet fired" trigger, e.g. Julia's Crescendo). Only `max_ammo_percent`
@@ -103,6 +108,33 @@ def spinup_for_weapon(weapon):
     candidate is its 110px spread under the accuracy model.
     """
     return _SPINUP_BY_WEAPON.get(weapon)
+
+
+def spinup_with_speed(spinup, heating_speed_percent, rate_of_fire):
+    """This warm-up under a live "MG heating up speed" buff or debuff.
+
+    Fienn's ruling (2026-08-14): the arrow scales the DURATION, so up 100%
+    halves the ramp and down 100% doubles it - the same shape as his ruling
+    that Ada's charge speed down 300% means charge time x4. The number of gaps
+    the ramp covers (`intervals`) does NOT move; those 48 rounds just take
+    longer or less long.
+
+    The positive direction deliberately differs from `reload_time_with_speed`,
+    whose `(1 - s)` would erase the ramp entirely at up 100%. The negative
+    direction agrees with it - both give x2 at down 100%.
+
+    The clamp is what keeps a warm-up a slow start rather than an accelerator:
+    the ramp can never be tighter than the weapon's nominal gap. MG_SPINUP only
+    reaches that at +185.4%, so no shipped value touches it.
+    """
+    if spinup is None or not heating_speed_percent:
+        return spinup
+    if heating_speed_percent > 0:
+        seconds = spinup.seconds / (1 + heating_speed_percent)
+    else:
+        seconds = spinup.seconds * (1 - heating_speed_percent)
+    return Spinup(intervals=spinup.intervals,
+                  seconds=max(seconds, spinup.intervals / rate_of_fire))
 
 
 def magazine_shot_offset(index, shot_interval, spinup):
@@ -633,6 +665,7 @@ def generate_magazine_shot_times(
     max_ammo_percent_at=_zero,
     reload_speed_percent_at=_zero,
     attack_speed_percent_at=_zero,
+    heating_speed_percent_at=_zero,
     ammo_refund=None,
     weapon=None,
     ammo_refills=(),
@@ -640,10 +673,12 @@ def generate_magazine_shot_times(
     shots = []
     magazine_start = 0.0
     shots_fired = 0
-    spinup = spinup_for_weapon(weapon)
+    base_spinup = spinup_for_weapon(weapon)
 
     while magazine_start < fight_duration:
         shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
+        spinup = spinup_with_speed(
+            base_spinup, heating_speed_percent_at(magazine_start), rate_of_fire)
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         magazine_size, shots_fired = _walk_magazine(
             capacity, shots_fired, ammo_refund,
@@ -745,6 +780,7 @@ def magazine_last_bullet_times(
     max_ammo_percent_at=_zero,
     reload_speed_percent_at=_zero,
     attack_speed_percent_at=_zero,
+    heating_speed_percent_at=_zero,
     ammo_refund=None,
     weapon=None,
     ammo_refills=(),
@@ -770,10 +806,12 @@ def magazine_last_bullet_times(
     last_bullets = set()
     magazine_start = 0.0
     shots_fired = 0
-    spinup = spinup_for_weapon(weapon)
+    base_spinup = spinup_for_weapon(weapon)
 
     while magazine_start < fight_duration:
         shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
+        spinup = spinup_with_speed(
+            base_spinup, heating_speed_percent_at(magazine_start), rate_of_fire)
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         magazine_size, shots_fired = _walk_magazine(
             capacity, shots_fired, ammo_refund,
@@ -847,6 +885,7 @@ def magazine_first_bullet_times(
     max_ammo_percent_at=_zero,
     reload_speed_percent_at=_zero,
     attack_speed_percent_at=_zero,
+    heating_speed_percent_at=_zero,
     ammo_refund=None,
     weapon=None,
     ammo_refills=(),
@@ -862,10 +901,12 @@ def magazine_first_bullet_times(
     first_bullets = set()
     magazine_start = 0.0
     shots_fired = 0
-    spinup = spinup_for_weapon(weapon)
+    base_spinup = spinup_for_weapon(weapon)
     while magazine_start < fight_duration:
         first_bullets.add(magazine_start)
         shot_interval = 1.0 / (rate_of_fire * (1 + attack_speed_percent_at(magazine_start)))
+        spinup = spinup_with_speed(
+            base_spinup, heating_speed_percent_at(magazine_start), rate_of_fire)
         capacity = max(1, round(max_ammo * (1 + max_ammo_percent_at(magazine_start))))
         magazine_size, shots_fired = _walk_magazine(
             capacity, shots_fired, ammo_refund,
@@ -1007,7 +1048,8 @@ class ShotRecord:
 def _base_shot_records(base, window_start, window_end,
                        max_ammo_percent_at, reload_speed_percent_at,
                        attack_speed_percent_at, charge_speed_percent_at,
-                       charge_time_reduction_sec_at=_zero):
+                       charge_time_reduction_sec_at=_zero,
+                       heating_speed_percent_at=_zero):
     """The base weapon firing over [window_start, window_end) - the same
     arithmetic as generate_{charge,magazine}_shot_times (kept bit-identical so
     a no-segment call reproduces the legacy timeline exactly), restarted with
@@ -1061,10 +1103,12 @@ def _base_shot_records(base, window_start, window_end,
             magazine_start = last_shot_time + actual_reload
     else:
         rate = rate_of_fire_for_weapon(weapon)
-        spinup = spinup_for_weapon(weapon)
+        base_spinup = spinup_for_weapon(weapon)
         magazine_start = window_start
         while magazine_start < window_end:
             interval = 1.0 / (rate * (1 + attack_speed_percent_at(magazine_start)))
+            spinup = spinup_with_speed(
+                base_spinup, heating_speed_percent_at(magazine_start), rate)
             capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
             magazine_size, shots_fired = _walk_magazine(
                 capacity, shots_fired, refund,
@@ -1290,6 +1334,7 @@ def generate_segmented_shots(
     attack_speed_percent_at=_zero,
     charge_speed_percent_at=_zero,
     charge_time_reduction_sec_at=_zero,
+    heating_speed_percent_at=_zero,
 ):
     """Full shot-record timeline for a unit whose weapon profile changes
     inside module-scheduled windows (weapon transforms - see
@@ -1317,7 +1362,7 @@ def generate_segmented_shots(
         records.extend(_base_shot_records(
             base, cursor, stretch_end, max_ammo_percent_at,
             reload_speed_percent_at, attack_speed_percent_at, charge_speed_percent_at,
-            charge_time_reduction_sec_at))
+            charge_time_reduction_sec_at, heating_speed_percent_at))
         if seg is None or seg["start"] >= fight_duration:
             break
         reopened_at = (windows[index + 1]["start"]

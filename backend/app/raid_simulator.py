@@ -1334,6 +1334,11 @@ def _simulate_raid_once(
         attack_speed_percent_at = lambda t, target=target: registry.total_for(
             "attack_speed_percent", target, t
         )
+        # 머신건은 탄창 앞머리에서 공칭 연사에 도달하기까지 예열을 한다
+        # (attack_rate.MG_SPINUP). 그 예열 속도를 움직이는 스킬이 여기로 온다.
+        heating_speed_percent_at = lambda t, target=target: registry.total_for(
+            "mg_heating_speed_percent", target, t
+        )
         charge_speed_percent_at = lambda t, target=target: registry.total_for(
             "charge_speed_percent", target, t
         )
@@ -1357,6 +1362,7 @@ def _simulate_raid_once(
             attack_speed_percent_at=attack_speed_percent_at,
             charge_speed_percent_at=charge_speed_percent_at,
             charge_time_reduction_sec_at=charge_time_reduction_sec_at,
+            heating_speed_percent_at=heating_speed_percent_at,
         )
         shot_times = [r.time for r in shot_records]
         # What each shot ACCOUNTS for toward squad ammo-expended counters. A

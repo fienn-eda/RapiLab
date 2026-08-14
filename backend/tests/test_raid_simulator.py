@@ -3186,6 +3186,45 @@ def test_charge_speed_buff_increases_charge_shots():
     assert na_without and len(na_with) > len(na_without)
 
 
+def _mg_raid_kwargs(fight_duration):
+    # An MG spends the head of every magazine below its nominal 60/s
+    # (attack_rate.MG_SPINUP), and "MG heating up speed" is what scales that ramp.
+    return dict(
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=fight_duration,
+        mode="auto", base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(weapon="MG", max_ammo=300, reload_time=2.0)},
+    )
+
+
+def test_mg_heating_speed_debuff_stretches_the_warm_up():
+    # Down 100% doubles the ramp, so fewer rounds land in a window it outlasts.
+    kwargs = _mg_raid_kwargs(3.0)
+    plain = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    slowed = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": [_grant("mg_heating_speed_percent", -1.0)]},
+        **kwargs)
+    na_plain = [e for e in plain["damage_log"] if e["source"] == "normal_attack"]
+    na_slowed = [e for e in slowed["damage_log"] if e["source"] == "normal_attack"]
+    assert na_plain and len(na_slowed) < len(na_plain)
+    assert sum(e["damage"] for e in na_slowed) < sum(e["damage"] for e in na_plain)
+
+
+def test_mg_heating_speed_default_leaves_normal_attacks_unchanged():
+    # The property the whole extension rests on: a unit with no heating buff
+    # fires at exactly the instants it always did.
+    kwargs = _mg_raid_kwargs(4.0)
+    a = simulate_raid(make_deck(), {"buffer": [], "midtier": [], "attacker": []}, **kwargs)
+    b = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": [_grant("mg_heating_speed_percent", 0.0)]},
+        **kwargs)
+    na_a = [(round(e["time"], 6), e["damage"]) for e in a["damage_log"] if e["source"] == "normal_attack"]
+    na_b = [(round(e["time"], 6), e["damage"]) for e in b["damage_log"] if e["source"] == "normal_attack"]
+    assert na_a == na_b
+
+
 def _one_unit_deck():
     return [{"slug": "gunner", "burst_tier": 3, "element": "Iron",
              "cooldown": 40.0, "weapon": "SR"}]
