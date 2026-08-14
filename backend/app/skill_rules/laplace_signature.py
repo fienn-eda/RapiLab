@@ -16,18 +16,18 @@ Modeled (DPS-relevant):
   count - same shape as Red Hood's Red Wolf / Snow White's Seven Dwarves: I /
   Maxwell's Pierce Shot transform segments). Ticks are typed TRUE damage:
   Additional Effect 2 reads "Normal damage is applied as true damage when
-  Hero Vision is at max stacks" - the max-stacks GATE itself stays unmodeled
-  (Hero Vision's stack counter is deferred, same as base Laplace), but Fienn
-  ruled (2026-07-19) the transform should assume Hero Vision sits at max
-  stacks for its whole life, so every tick is unconditionally true damage -
-  the same steady-state assumption already approved for Red Hood's Glaring
-  Eyes (settles fast, stays settled).
+  Hero Vision is at max stacks", and the segment applies that typing to the
+  whole window because a segment's `damage_type` is fixed when the segment is
+  built, which is before any resource exists to gate it (see the deferral
+  below for the measured cost).
   PLUS a per-tick +11.9%-of-final-ATK true-damage rider ("Deals 11.9% of
-  final ATK as true damage" when Hero Vision is at max stacks - same steady-
-  max assumption) landing alongside each Normal Damage tick: modeled as a
-  `scheduled_nukes` spec (`build_buster_scheduled_nukes`) on the identical
-  93-tick cadence, anchored to the same `context.burst_times["laplace-
-  signature"]` burst times as the weapon-mode segment. The two paths share
+  final ATK as true damage" when Hero Vision is at max stacks) landing
+  alongside each Normal Damage tick: modeled as a `scheduled_nukes` spec
+  (`build_buster_scheduled_nukes`) on the identical 93-tick cadence, anchored
+  to the same `context.burst_times["laplace-signature"]` burst times as the
+  weapon-mode segment, and GATED on the live Hero Vision count - a
+  `scheduled_nukes` resource gate resolves in phase 2, after the resource
+  pass, so each tick reads the counter at its own instant. The two paths share
   the same NOMINAL cadence but reach it by different float computations -
   the segment's interval is 1.0/(BUSTER_SHOTS/duration) (rate_of_fire, then
   its reciprocal), the rider's is duration/BUSTER_SHOTS directly - so they
@@ -48,12 +48,21 @@ Modeled (DPS-relevant):
   one.
 
 Not modeled / deferred (same as base Laplace, plus signature-specific):
-- Hero Vision (dollskills[0]): unchanged from base - Explosion Radius is not
-  a damage multiplier (inert stat) and its decaying stack counter is
-  Pattern B (time-decay gauge), which the engine doesn't model. Its "max
-  stacks" gate is approximated as always-true for the transform window's
-  true-damage typing (see above) per Fienn's 2026-07-19 ruling; the gate
-  itself stays unmodeled.
+- Hero Vision's Explosion Radius payload: not a damage multiplier, inert.
+  (The COUNTER itself is modeled - see `build_hero_vision_signature_resources`
+  - and the 11.9% rider now reads it. What stays unmodeled is the gate on the
+  weapon-mode segment's true-damage TYPING, below.)
+- The max-Hero-Vision gate on the Buster segment's true-damage typing. The
+  counter says the gate is open for 82.5% of her transform ticks, but a
+  `weapon_mode_schedules` profile fixes its `damage_type` when the segment is
+  built - and segments are built while the shot timeline is being generated,
+  BEFORE any resource exists to read. Splitting each window into a typed
+  prefix and an ordinary suffix needs a schedule that can see its own owner's
+  shots, which is a different piece of engine than this one.
+  Measured cost of leaving it: the typing is worth +3.54% of her total on a
+  DEF-carrying boss, so the ~17.5% of ticks that should lose it overstate her
+  by roughly 0.6%. The 11.9% rider, worth +7.34%, is the larger half and IS
+  gated (a −1.23% correction). See `docs/engine-gaps.md`.
 - Hero Bomber's parts-hit 14.78% additional damage: needs a Parts-hit
   trigger the engine lacks (same as base Laplace).
 - Laplace Buster's "Gains Pierce" (Additional Effect 1) IS modeled, as the
@@ -61,11 +70,17 @@ Not modeled / deferred (same as base Laplace, plus signature-specific):
   credits a unit that holds Pierce (Fienn, 2026-07-26).
 (Base Laplace's own Buster transform is NOT deferred - `laplace.py` models it
 as a 5-sec segment riding the tick rate measured here, which Fienn confirmed
-(2026-07-21) is the same for both Busters. What the base build lacks is this
-build's max-Hero-Vision true-damage conversion, since its Hero Vision counter
-is the Pattern B gauge above.)
+(2026-07-21) is the same for both Busters. What the base build lacks is
+Additional Effect 2, the true-damage conversion, which is a signature-only
+bullet. Both builds share Hero Vision and the 11.9% rider it gates; the
+difference that matters there is the stack lifetime - 5 sec on the base
+against 15 here - which is why her gate opens and the base's never does.)
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
+from app.skill_rules.laplace import (
+    build_hero_vision_resources,
+    hero_vision_max_stack_gate,
+)
 
 SKILL_VALUE_MANIFESTS = {
     "laplace-signature": {
@@ -140,11 +155,29 @@ def build_buster_weapon_mode_schedule(values):
     return schedule
 
 
+def build_hero_vision_signature_resources(values):
+    """Hero Vision on this build: the same counter as the base's, but each
+    stack lasts 15 sec instead of 5, so the cap needs only 0.33 Full Charge
+    attacks/sec - a threshold she clears comfortably (0.66/sec measured)."""
+    return build_hero_vision_resources(values)
+
+
 def build_buster_scheduled_nukes(values):
     """The per-tick +11.9% true-damage rider riding alongside each Normal
     Damage tick - same 93-tick cadence, same burst-time anchor as the
     weapon-mode segment (see module docstring), so the two paths never drift
-    out of sync."""
+    out of sync.
+
+    Gated on Hero Vision at max stacks, per the bullet's own wording. Fills
+    stop for the whole transform - Buster ticks are not Full Charge attacks -
+    so the count decays while the rider is firing, and the gate is NOT open for
+    the whole window: 506 of 613 ticks (82.5%) in the tier-3 measurement shell.
+
+    How much of a window survives depends on how long she has been shooting
+    when the burst lands, so it moves with the seat order: a burst she takes
+    early enough that she has not yet landed five Full Charge attacks opens
+    with the gate already shut. That dependence is the reason to read the
+    counter instead of assuming it."""
     buster = values["laplace_buster"]
     rider_percent = float(buster["description_value_04"])
     duration = float(buster["description_value_03"])
@@ -158,4 +191,9 @@ def build_buster_scheduled_nukes(values):
         ]
         return [t for t in times if t < fight_duration]
 
-    return [{"schedule": schedule, "percent": rider_percent, "damage_type": "true"}]
+    return [{
+        "schedule": schedule,
+        "percent": rider_percent,
+        "damage_type": "true",
+        "resource_gate": hero_vision_max_stack_gate(values),
+    }]

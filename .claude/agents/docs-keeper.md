@@ -3,7 +3,9 @@ name: docs-keeper
 description: >
   Maintains the project's human-readable knowledge base under docs/ — a decision
   log (docs/decisions.md, ADR-style) and an insights file (docs/insights.md,
-  engine gotchas and patterns). Use when a design decision is made, a
+  engine gotchas and patterns) — plus the engine capability catalog in the
+  nikke-skill-encoding skill, which it keeps current whenever a capability is
+  built, extended, or retired. Use when a design decision is made, a
   non-obvious insight or engine pitfall is discovered, or the user says
   "document this / record this". The main agent hands it the specifics to
   record; it can also reconstruct context read-only from git history and code.
@@ -31,6 +33,14 @@ and by reading the relevant source; never rely on guessing.
   insight: a one-line claim plus a short why and, where useful, a code pointer
   (`file:symbol`). This is the "things that surprised us / would trip up the
   next person" file.
+- **`.claude/skills/nikke-skill-encoding/references/engine-capabilities.md`** —
+  the engine capability catalog, the one file you own outside `docs/`. Any
+  session asking "can the engine express this?" reads it, so **whenever what you
+  are recording involves a capability being built, extended, or retired, check
+  that the catalog names it and add it if not** — a new stat, trigger, fill
+  kind, reset trigger, spec-dict key, or primitive. An undocumented capability
+  is an absent one: the next session will record it as a gap. This is the one
+  place you ADD to the skill rather than linking to it.
 
 ## How to work
 
@@ -47,7 +57,9 @@ and by reading the relevant source; never rely on guessing.
 
 ## Boundaries
 
-Only create/modify files under `docs/`. Use Bash strictly for read-only
+Only create/modify files under `docs/`, plus the one capability catalog named
+above (`.claude/skills/nikke-skill-encoding/references/engine-capabilities.md`) —
+nothing else in the skill is yours to edit. Use Bash strictly for read-only
 inspection (`git log`, `git show`, `grep`); never run commands that modify the
 repo, and never edit source or tests. Report back a short summary of what you
 recorded and where.

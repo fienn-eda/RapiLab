@@ -317,6 +317,9 @@ def _resource_fill_times(
     OWNER'S OWN burst-fire times instead of the global Full Burst window (e.g.
     Asuka's Anti A.T. Field, "every 10 shots while in Annihilation State" - a
     9s window that starts at HER burst, not the squad's Full Burst window).
+    ("per_shot_every_outside_own_status_window", N, window_duration) is its
+    mirror - shots that fall OUTSIDE that window (e.g. Laplace's Hero Vision,
+    fed by Full Charge attacks and so blind to her own Buster transform ticks).
     ("on_last_bullet",) fires whenever the owner's OWN shot empties its
     magazine (e.g. Julia's Crescendo, "when the last bullet hits the target"
     - see `attack_rate.last_bullet_shot_times`), not on any fixed shot count
@@ -352,6 +355,28 @@ def _resource_fill_times(
         windows = [(bt, bt + window_duration) for bt in own_burst_times]
         in_window = [t for t in shot_times if any(start <= t < end for start, end in windows)]
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
+    if kind == "per_shot_every_outside_own_status_window":
+        # The mirror of the kind above: counts only shots OUTSIDE a status the
+        # owner's own burst opens (e.g. Laplace's Hero Vision, fed by Full
+        # Charge attacks - during her Buster transform her weapon is not a
+        # charge weapon at all, and those transform ticks sit in `shot_times`
+        # alongside her ordinary shots).
+        #
+        # This is not the same filter as "outside Full Burst": the two windows
+        # start together but need not END together (a 5-sec transform inside a
+        # 10-sec Full Burst), and the shots between the two ends are genuine
+        # owner shots that must still count.
+        #
+        # Closed on both ends, like `per_shot_every_outside_full_burst`: a shot
+        # landing exactly on a boundary belongs to the status window, so which
+        # side of a float boundary a coincident shot rounds to cannot change
+        # the count (the last transform tick nominally at burst+duration).
+        n, window_duration = fill[1], fill[2]
+        windows = [(bt, bt + window_duration) for bt in own_burst_times]
+        out_of_window = [
+            t for t in shot_times if not any(start <= t <= end for start, end in windows)
+        ]
+        return [t for i, t in enumerate(out_of_window) if (i + 1) % n == 0]
     if kind == "per_shot_cycle_from_own_burst_to_full_burst_end":
         # ("per_shot_cycle_from_own_burst_to_full_burst_end", first, period):
         # fires at the `first`-th shot of the status window and every `period`
