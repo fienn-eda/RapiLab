@@ -160,9 +160,10 @@ SUPERCOP = {
     "description_value_07": "10",
     "description_value_08": "10",
 }
+# Her real weapon as a builder receives it (no clip split applies to her).
 VALUES = {
     "supercop": SUPERCOP,
-    "caster_weapon_stats": {"weapon": "AR", "reload_time": 1.5},
+    "caster_weapon_stats": {"weapon": "AR", "reload_time": 1.0, "max_ammo": 9},
 }
 
 
@@ -177,7 +178,7 @@ def test_segment_starts_at_her_burst_and_lasts_the_fixed_reload():
     (segment,) = schedule(_Context([20.0]), 180.0)
 
     assert segment["start"] == pytest.approx(20.0)
-    assert segment["end"] == pytest.approx(20.0 + reload_time_with_speed(1.5, 0.9996))
+    assert segment["end"] == pytest.approx(20.0 + reload_time_with_speed(1.0, 0.9996))
 
 
 def test_no_shot_fits_in_the_window_and_it_would_be_harmless_if_one_did():
@@ -210,12 +211,65 @@ def test_no_segment_for_a_burst_at_or_past_the_bell():
 Run: `cd backend && python -m pytest tests/test_skill_rules_jill_valentine_forced_reload.py -v`
 Expected: FAIL — `ImportError: cannot import name 'build_jill_weapon_mode_schedule'`
 
-- [ ] **Step 3: 빌더를 구현한다**
+- [ ] **Step 3a: 공용 헬퍼를 만든다 (컨트롤러 판정, 2026-08-14)**
 
-`backend/app/skill_rules/jill_valentine.py` 파일 끝에 추가하고, 맨 위 import에 `reload_time_with_speed`를 더한다:
+이 계획은 거의 동일한 무발사 세그먼트 클로저를 **셋** 더한다(질·그레이브·아스카). 밀크가 이미 넷째 사본이다. 세 번째 사본을 쓰기 전에 `backend/app/skill_rules/_helpers.py`에 헬퍼를 만들고, **밀크도 여기로 옮긴다** — 그녀의 기존 테스트가 이전을 증명한다.
+
+```python
+def silent_reload_segments(slug, reload_seconds, weapon, *, offset=0.0):
+    """Windows that fire nothing, one per own-burst - the engine's way to spend
+    a reload that a skill forced.
+
+    A segment boundary discards the magazine and resumes with a fresh one, so a
+    window this long IS "Removes N% of ammo" + "Forced Reload". `rate_of_fire`
+    (not `charge_time`) because an explicit-rate profile takes no cadence buffs
+    by contract, so no ally's Charge Speed can shrink the window into leaking a
+    shot; `damage_percent` 0.0 makes a boundary shot harmless regardless.
+    """
+    def schedule(context, fight_duration):
+        segments = []
+        for burst_time in context.burst_times.get(slug, []):
+            start = burst_time + offset
+            if start >= fight_duration:
+                continue
+            segments.append({
+                "start": start,
+                "end": min(start + reload_seconds, fight_duration),
+                "profile": {
+                    "weapon": weapon,
+                    "damage_percent": 0.0,
+                    "rate_of_fire": 1.0 / (reload_seconds * 2),
+                },
+            })
+        return segments
+
+    return schedule
+```
+
+그리고 `milk_blooming_bunny.build_milk_weapon_mode_schedule`의 본문을 이 헬퍼 호출로 바꾼다:
+
+```python
+def build_milk_weapon_mode_schedule(values):
+    """The forced reload, as a segment that fires nothing - see
+    `_helpers.silent_reload_segments`."""
+    return silent_reload_segments(
+        "milk-blooming-bunny",
+        _forced_reload_seconds(values),
+        values["caster_weapon_stats"]["weapon"],
+        offset=embarrassment_entry_offset(values),
+    )
+```
+
+Run: `cd backend && python -m pytest tests/test_skill_rules_milk_blooming_bunny.py -v`
+Expected: PASS, 변경 없이. **빨개지면 헬퍼가 밀크와 다르게 동작하는 것이다.**
+
+- [ ] **Step 3b: 질의 빌더를 구현한다**
+
+`backend/app/skill_rules/jill_valentine.py` 파일 끝에 추가하고, 맨 위 import에 더한다:
 
 ```python
 from app.attack_rate import reload_time_with_speed
+from app.skill_rules._helpers import silent_reload_segments
 ```
 
 ```python
@@ -235,26 +289,11 @@ def build_jill_weapon_mode_schedule(values):
     supercop = values["supercop"]
     fixed_reload_speed = float(supercop["description_value_01"]) / 100
     weapon_stats = values["caster_weapon_stats"]
-    reload_seconds = reload_time_with_speed(weapon_stats["reload_time"], fixed_reload_speed)
-    weapon = weapon_stats["weapon"]
-
-    def schedule(context, fight_duration):
-        segments = []
-        for burst_time in context.burst_times.get("jill-valentine", []):
-            if burst_time >= fight_duration:
-                continue
-            segments.append({
-                "start": burst_time,
-                "end": min(burst_time + reload_seconds, fight_duration),
-                "profile": {
-                    "weapon": weapon,
-                    "damage_percent": 0.0,
-                    "rate_of_fire": 1.0 / (reload_seconds * 2),
-                },
-            })
-        return segments
-
-    return schedule
+    return silent_reload_segments(
+        "jill-valentine",
+        reload_time_with_speed(weapon_stats["reload_time"], fixed_reload_speed),
+        weapon_stats["weapon"],
+    )
 ```
 
 - [ ] **Step 4: 레지스트리에 등록한다**
@@ -528,12 +567,12 @@ HEAT_EMISSION = {
     "description_value_05": "48.4",
 }
 PLOT_SPOILER = {
-    "description_value_01": "10",
-    "description_value_02": "30",
-    "description_value_03": "20",
-    "description_value_04": "25",
+    "description_value_01": "1",
+    "description_value_02": "52.8",
+    "description_value_03": "48.2",
+    "description_value_04": "39.98",
     "description_value_05": "3",
-    "description_value_06": "15",
+    "description_value_06": "85.19",
 }
 # reload_time is 2.0, not her file's 1.0: CLIP_RELOAD_SPLITS["grave"] = 2 (her
 # AR loads 60 rounds in halves) is already multiplied in by user_roster before
@@ -670,28 +709,15 @@ def build_grave_weapon_mode_schedule(values):
     load. `rate_of_fire` (not `charge_time`) so no ally's Charge Speed buff can
     shrink the window into leaking a shot.
     """
-    reload_seconds = heat_emission_seconds(values)
-    weapon = values["caster_weapon_stats"]["weapon"]
-
-    def schedule(context, fight_duration):
-        segments = []
-        for burst_time in context.burst_times.get("grave", []):
-            start = burst_time + PREDICTION_DURATION
-            if start >= fight_duration:
-                continue
-            segments.append({
-                "start": start,
-                "end": min(start + reload_seconds, fight_duration),
-                "profile": {
-                    "weapon": weapon,
-                    "damage_percent": 0.0,
-                    "rate_of_fire": 1.0 / (reload_seconds * 2),
-                },
-            })
-        return segments
-
-    return schedule
+    return silent_reload_segments(
+        "grave",
+        heat_emission_seconds(values),
+        values["caster_weapon_stats"]["weapon"],
+        offset=PREDICTION_DURATION,
+    )
 ```
+
+import에 `from app.skill_rules._helpers import silent_reload_segments`를 더한다 (Task 2 Step 3a에서 만든 것).
 
 - [ ] **Step 5: 무한탄약 버프와 방열 지속시간 정정을 `build_grave_rules`에 넣는다**
 
@@ -1085,18 +1111,37 @@ def test_emergency_repair_dumps_her_magazine_for_a_fixed_reload():
 
 
 def test_emergency_repair_halves_her_own_heating_speed_for_three_seconds():
+    # Call her REAL rule entry point - the heating bullet is added to the
+    # existing rule list, not to a new builder. Match whatever this module's
+    # other tests already use to build her rules.
     registry = EffectRegistry()
     context = SquadContext([SquadMember(SLUG, 3, "Wind", "MG")])
-    rules = build_asuka_rules_including_emergency_repair(VALUES)
+    rules = <her existing rule builder>(VALUES)
 
     fire_trigger(rules, "own_burst_activate", context, SLUG, 20.0, registry)
 
     target = {"slug": SLUG, "element": "Wind"}
     assert registry.total_for("mg_heating_speed_percent", target, 22.9) == pytest.approx(-1.0)
     assert registry.total_for("mg_heating_speed_percent", target, 23.1) == pytest.approx(0.0)
+
+
+def test_the_debuff_actually_slows_her_magazine_end_to_end():
+    """Tasks 5 and 6 only prove the stat is REGISTERED - `total_for` sums any
+    name whether or not a generator reads it. This is the one assertion that
+    the engine consumes it on her own weapon."""
+    from app.attack_rate import generate_magazine_shot_times
+
+    plain = generate_magazine_shot_times(
+        rate_of_fire=60.0, max_ammo=300, reload_time=2.33, fight_duration=20.0,
+        weapon="MG")
+    debuffed = generate_magazine_shot_times(
+        rate_of_fire=60.0, max_ammo=300, reload_time=2.33, fight_duration=20.0,
+        weapon="MG", heating_speed_percent_at=lambda _t: -1.0)
+
+    assert len(debuffed) < len(plain)
 ```
 
-두 번째 테스트의 규칙 빌더 이름은 그녀의 기존 빌더 구조에 맞춘다 — 새 빌더를 만들지 말고 **기존 규칙 리스트에 불릿을 더한다**.
+두 번째 테스트의 규칙 빌더 이름은 그녀의 기존 빌더 구조에 맞춘다 — **새 빌더를 만들지 말고 기존 규칙 리스트에 불릿을 더한다.** 이 모듈의 다른 테스트가 이미 쓰는 진입점을 그대로 쓴다.
 
 - [ ] **Step 2: 실패를 확인한다**
 
@@ -1118,27 +1163,14 @@ def build_asuka_weapon_mode_schedule(values):
     repair = values["emergency_repair"]
     fixed_reload_speed = float(repair["description_value_08"]) / 100
     weapon_stats = values["caster_weapon_stats"]
-    reload_seconds = reload_time_with_speed(weapon_stats["reload_time"], fixed_reload_speed)
-    weapon = weapon_stats["weapon"]
-
-    def schedule(context, fight_duration):
-        segments = []
-        for burst_time in context.burst_times.get("asuka-shikinami-langley-wille", []):
-            if burst_time >= fight_duration:
-                continue
-            segments.append({
-                "start": burst_time,
-                "end": min(burst_time + reload_seconds, fight_duration),
-                "profile": {
-                    "weapon": weapon,
-                    "damage_percent": 0.0,
-                    "rate_of_fire": 1.0 / (reload_seconds * 2),
-                },
-            })
-        return segments
-
-    return schedule
+    return silent_reload_segments(
+        "asuka-shikinami-langley-wille",
+        reload_time_with_speed(weapon_stats["reload_time"], fixed_reload_speed),
+        weapon_stats["weapon"],
+    )
 ```
+
+import에 `reload_time_with_speed`와 `silent_reload_segments`를 더한다. 그녀 픽스처의 무기는 실제 값 `{"weapon": "MG", "reload_time": 2.33, "max_ammo": 300}`을 쓴다.
 
 - [ ] **Step 4: 예열 디버프를 그녀의 기존 규칙에 더한다**
 
