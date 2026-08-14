@@ -437,12 +437,21 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # which shifts which shots fall inside Full Burst and which fit before the
     # fight ends. RATIO 1.0527 -> 1.0524, DELTA 34,754,490 -> 34,564,302 (the
     # absolutes are 660,172,350 without the cube and 694,736,653 with it).
-    assert round(dmg_with / dmg_without, 4) == 1.0524
+    # Re-baselined again the same day: a machine gun's heating now SURVIVES a
+    # short reload, and the reload also ends 12.5 frames before the next round
+    # (both measured). This is the reload path moving, which is what the pin is
+    # for: the cube's 29.69% no longer buys only seconds, it buys a magazine
+    # that opens part way up the ramp. The two runs move in OPPOSITE directions
+    # - without the cube the post-reload pause is a pure cost (660,172,350 ->
+    # 655,848,890) while with it the retention more than pays for the pause
+    # (694,736,653 -> 702,322,805). RATIO 1.0524 -> 1.0709, DELTA 34,564,302 ->
+    # 46,473,915.
+    assert round(dmg_with / dmg_without, 4) == 1.0709
     # Pin the DELTA too, not just the ratio: the ratio moves whenever anything
     # in this deck's damage moves, but a reload-speed change is the only thing
     # that may move the delta. Splitting them is what stops a re-baseline from
     # quietly absorbing a real regression in the reload path.
-    assert round(dmg_with - dmg_without, 0) == 34_564_302.0
+    assert round(dmg_with - dmg_without, 0) == 46_473_915.0
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

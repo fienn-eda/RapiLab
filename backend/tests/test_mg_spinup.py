@@ -7,13 +7,15 @@ are one per thing so a future change says which one it broke.
 """
 import pytest
 
-from app.attack_rate import (MG_SPINUP, RATE_OF_FIRE_60FPS, ShotRecord,
+from app.attack_rate import (HEATING_DECAY_SECONDS, MG_SPINUP,
+                             RATE_OF_FIRE_60FPS, ShotRecord,
                              generate_magazine_shot_times,
                              generate_segmented_shots,
                              magazine_first_bullet_times,
                              magazine_last_bullet_times, magazine_shot_offset,
-                             reload_time_with_speed, spinup_for_weapon,
-                             spinup_with_speed)
+                             post_reload_delay_for_weapon,
+                             ramp_start_after_gap, reload_time_with_speed,
+                             spinup_for_weapon, spinup_with_speed)
 
 F = 1 / 60
 MAGAZINE = 305
@@ -21,6 +23,7 @@ RELOAD_FILE = 1.67          # Rosanna's in-game tooltip, and her data file
 
 # Raw frame numbers, as read.
 FIRST_SHOT, SPINUP_DONE, EMPTY, RELOADED = 863, 1000, 1256, 1367
+NEXT_FIRST_SHOT = 1380      # the second magazine's first round, same reading
 AMMO_AT_FIRST, AMMO_AT_SPINUP_DONE = 304, 256
 
 
@@ -81,13 +84,15 @@ def test_a_magazine_reproduces_the_measured_frame_numbers():
     # on a third unit: 111 frames measured, 109.1 predicted.
     assert reload_time_with_speed(RELOAD_FILE, 0.0) == pytest.approx((RELOADED - EMPTY) * F, abs=2 * F)
     # The engine's own convention is that the last round occupies its interval
-    # too, so the next magazine opens one gap plus a reload after the last shot.
-    # Against the measurement that is 110.1 frames where 111 were read - inside
-    # the same one-frame reading precision as everything else here.
+    # too, so the next magazine opens one gap, a reload and the measured
+    # post-reload pause after the last shot. Against the reading that is 122.6
+    # frames where 124 were read - inside the same one-frame precision as
+    # everything else here.
     assert shots[MAGAZINE] == pytest.approx(
-        shots[MAGAZINE - 1] + F + reload_time_with_speed(RELOAD_FILE, 0.0))
+        shots[MAGAZINE - 1] + F + reload_time_with_speed(RELOAD_FILE, 0.0)
+        + post_reload_delay_for_weapon("MG"))
     assert (shots[MAGAZINE] - shots[MAGAZINE - 1]) == pytest.approx(
-        (RELOADED - EMPTY) * F, abs=2 * F)
+        (NEXT_FIRST_SHOT - EMPTY) * F, abs=2 * F)
 
 
 def test_a_cold_magazine_follows_the_measured_curve():
@@ -140,6 +145,76 @@ def test_a_charge_weapon_is_untouched():
             "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0}
     times = [r.time for r in generate_segmented_shots(base, [], fight_duration=20.0)]
     assert times[:6] == pytest.approx([1.0, 2.0, 3.0, 4.0, 5.0, 6.0])
+
+
+# --- heating survives a short reload, and the pause that follows one ---
+
+def test_a_short_reload_keeps_part_of_the_heating():
+    """Stacked reload speed collapses the reload, and the game does not charge
+    a cold ramp to a magazine that never cooled. Crown plus Privaty reached a
+    31-frame gap and a 26-frame ramp where a cold one is 137."""
+    assert reload_time_with_speed(RELOAD_FILE, 1.5) == 0.0
+    stacked = _one_magazine(reload_speed_percent_at=lambda _t: 1.5)
+    gap = stacked[MAGAZINE] - stacked[MAGAZINE - 1]
+    start = ramp_start_after_gap(MG_SPINUP, gap)
+    assert start == pytest.approx(
+        MG_SPINUP.intervals * (1 - gap / HEATING_DECAY_SECONDS))
+    assert start > 30                     # most of the ramp survived the gap
+    # What this magazine still owes is the curve from `start` to the end. Its
+    # 48th round is already PAST the ramp, so it also pays `start` nominal gaps
+    # - that sum is what the timeline has to show.
+    left = MG_SPINUP.seconds - MG_SPINUP.elapsed(start)
+    assert left < 12 * F                  # against a cold ramp's 137 frames
+    assert (stacked[MAGAZINE + MG_SPINUP.intervals] - stacked[MAGAZINE]
+            == pytest.approx(left + start / RATE_OF_FIRE_60FPS["MG"]))
+
+
+def test_a_natural_reload_still_opens_cold():
+    """The gap has to CLEAR the decay for the ramp to reset, and every natural
+    reload does - Rosanna 1.67 sec, Asuka: WILLE 2.478, and 1.080 even on her
+    forced one. This is the guard against silently handing retention to units
+    the measurement says get none."""
+    shots = _one_magazine()
+    gap = shots[MAGAZINE] - shots[MAGAZINE - 1]
+    assert gap > HEATING_DECAY_SECONDS
+    assert ramp_start_after_gap(MG_SPINUP, gap) == 0.0
+    assert (shots[MAGAZINE + MG_SPINUP.intervals] - shots[MAGAZINE]
+            == pytest.approx(MG_SPINUP.seconds))
+    for reload_seconds in (1.080, 1.67, 2.478):
+        assert ramp_start_after_gap(
+            MG_SPINUP, reload_seconds + 12.5 * F + F) == 0.0
+
+
+def test_the_reload_is_followed_by_a_measured_pause():
+    """All three readings show 12-13 frames between the reload completing and
+    the next round leaving the barrel (13, 12, 12). With it the engine lands on
+    the frame the next magazine's first round was actually read at."""
+    assert post_reload_delay_for_weapon("MG") == pytest.approx(12.5 * F)
+    for weapon in ("AR", "SMG", "SG", "RL", "SR"):
+        assert post_reload_delay_for_weapon(weapon) == 0.0
+    shots = _one_magazine()
+    assert shots[MAGAZINE] - shots[MAGAZINE - 1] == pytest.approx(
+        (NEXT_FIRST_SHOT - EMPTY) * F, abs=2 * F)
+
+
+def test_the_markers_agree_with_the_shots_when_heating_is_retained():
+    """All four magazine walks derive the ramp position themselves, so one left
+    behind would fire a trigger at an instant no shot occupies."""
+    stacked = dict(reload_speed_percent_at=lambda _t: 1.5)
+    shot_list = _one_magazine(**stacked)
+    shots = set(shot_list)
+    walk = dict(rate_of_fire=RATE_OF_FIRE_60FPS["MG"], max_ammo=MAGAZINE,
+                reload_time=RELOAD_FILE, fight_duration=60.0, weapon="MG", **stacked)
+    firsts = magazine_first_bullet_times(**walk)
+    lasts = magazine_last_bullet_times(**walk)
+    assert firsts <= shots and lasts <= shots
+    # the retained magazine's own boundaries, which is where a walk left behind
+    # would land off by the ramp it still thinks it owes
+    assert shot_list[0] in firsts and shot_list[MAGAZINE] in firsts
+    assert shot_list[MAGAZINE - 1] in lasts
+    segmented = [r.time for r in generate_segmented_shots(
+        _mg_base(), [], fight_duration=60.0, **stacked)]
+    assert segmented == pytest.approx(shot_list)
 
 
 # --- "MG heating up speed", the buff that moves the ramp ---
