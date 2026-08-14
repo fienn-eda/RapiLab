@@ -26,8 +26,8 @@ ANNIHILATION_SUPPORT = {
     "description_value_11": "9",       # deferred: duration
 }
 MAINTENANCE_AND_RESUPPLY = {
-    "description_value_01": "100",     # deferred: MG heating up speed %
-    "description_value_02": "13",      # deferred: its duration
+    "description_value_01": "100",     # MG heating up speed %
+    "description_value_02": "13",      # its duration
     "description_value_03": "11.61",   # squad flat ATK = % of caster ATK
     "description_value_04": "10",      # its duration
 }
