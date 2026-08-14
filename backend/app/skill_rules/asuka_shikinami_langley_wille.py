@@ -46,6 +46,15 @@ debuff on the boss), capped at 30.
   (tier 3) always fires immediately before full_burst_enter in the same
   cycle, so "her burst fired this cycle" is exactly "Annihilation State just
   started, still active" at the instant full_burst_enter fires.
+- Emergency Repair's Effect 1 + Effect 2 + Effect 4, all on her own burst: MG
+  heating up speed down 100% for 3 sec (`mg_heating_speed_percent`, negative -
+  a down arrow subtracts) alongside removing 100% of her ammo with a Forced
+  Reload whose speed is fixed at a 60% increase. Effect 2's ammo dump is a
+  `build_asuka_weapon_mode_schedule` segment (see `silent_reload_segments`)
+  covering Effect 4's fixed reload; the segment ends by starting a fresh
+  magazine, so the ramp Effect 1 slows is the new magazine's own warm-up. The
+  two effects land on the same instant but act on two different windows -
+  the debuff's 3 sec and the segment's ~1.08 sec both start there.
 
 - Anti A.T. Field's OWN 15.62%-of-ATK direct-damage component ("every 10
   shots while in Annihilation State, deals 15.62% as damage" - a SEPARATE
@@ -58,12 +67,13 @@ debuff on the boss), capped at 30.
   mechanics.
 
 Not modeled / deferred:
-- Emergency Repair's heating speed / ammo removal / HP recovery / reload speed
-  effects: HP and bookkeeping, not damage - not consumed by the engine (see
-  "Stats the engine does NOT consume" in engine-capabilities.md).
+- Emergency Repair's HP recovery effect (Effect 3): not consumed by the engine
+  (see "Stats the engine does NOT consume" in engine-capabilities.md).
 """
+from app.attack_rate import reload_time_with_speed
 from app.effects import Effect, ResourceSpec
-from app.skill_rules._helpers import instant_nuke_pulse_rule, linear_resource_buff
+from app.skill_rules._helpers import (buff_rule, instant_nuke_pulse_rule,
+                                      linear_resource_buff, silent_reload_segments)
 from app.squad_engine import SkillRule, own_burst_fired_this_cycle
 
 SKILL_VALUE_MANIFESTS = {
@@ -159,11 +169,40 @@ def build_emergency_repair_rules(values):
     repair = values["emergency_repair"]
     attack_damage = float(repair["description_value_01"]) / 100
     duration = float(repair["description_value_02"])
+    heating_speed_down = float(repair["description_value_03"]) / 100
+    heating_speed_duration = float(repair["description_value_04"])
 
     def action(context, caster_slug, time, registry):
         registry.add(Effect("attack_damage_up", attack_damage, "self", duration, caster_slug), applied_at=time)
 
-    return [SkillRule(trigger="full_burst_enter", action=action, condition=own_burst_fired_this_cycle())]
+    return [
+        SkillRule(trigger="full_burst_enter", action=action, condition=own_burst_fired_this_cycle()),
+        # Effect 1: "MG heating up speed down 100% for 3 sec" (slots _03/_04).
+        # Negative, because a down arrow subtracts.
+        buff_rule("own_burst_activate", [
+            ("mg_heating_speed_percent", -heating_speed_down, "self", heating_speed_duration),
+        ]),
+    ]
+
+
+def build_asuka_weapon_mode_schedule(values):
+    """Emergency Repair's "Removes 100% of ammo" (slot _05), as a segment that
+    fires nothing. Its length is her own reload under the same bullet's "Reload
+    speed is fixed at a 60% increase" (slot _08) - "fixed" overrides whatever
+    else is live, so it is derived from that value alone.
+
+    The segment ends by starting a fresh magazine, which re-arms her warm-up -
+    and that new ramp is the one Effect 1's heating debuff slows down. The two
+    halves of this skill meet on the same instant.
+    """
+    repair = values["emergency_repair"]
+    fixed_reload_speed = float(repair["description_value_08"]) / 100
+    weapon_stats = values["caster_weapon_stats"]
+    return silent_reload_segments(
+        "asuka-shikinami-langley-wille",
+        reload_time_with_speed(weapon_stats["reload_time"], fixed_reload_speed),
+        weapon_stats["weapon"],
+    )
 
 
 def build_annihilation_dynamic_hit_count_nukes(values):

@@ -53,6 +53,7 @@ from app.skill_rules.asuka_shikinami_langley_wille import (
     build_anti_at_field_resources,
     build_annihilation_dynamic_hit_count_nukes,
     build_annihilation_state_rules,
+    build_asuka_weapon_mode_schedule,
     build_emergency_repair_rules,
 )
 from app.skill_rules.blanc import build_blanc_rules
@@ -1006,6 +1007,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
     "laplace-ultimate-hero": lambda sv: build_laplace_transform_schedule(sv),  # Warm Up transform, magazine-length window at SMG cadence
     "grave": lambda sv: build_grave_weapon_mode_schedule(sv),  # Prediction's ammo dump + the doubled reload
+    "asuka-shikinami-langley-wille": lambda sv: build_asuka_weapon_mode_schedule(sv),  # Emergency Repair's ammo dump
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at

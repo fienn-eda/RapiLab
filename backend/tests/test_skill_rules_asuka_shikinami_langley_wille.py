@@ -2,6 +2,9 @@
 left-to-right per skill (fixed reference counts like "1 enemy unit(s)" or
 "for 1 time(s)" are not data slots).
 """
+import pytest
+
+from app.attack_rate import generate_magazine_shot_times, reload_time_with_speed
 from app.effects import EffectRegistry
 from app.raid_simulator import simulate_raid
 from app.skill_rules.asuka_shikinami_langley_wille import (
@@ -9,9 +12,12 @@ from app.skill_rules.asuka_shikinami_langley_wille import (
     build_anti_at_field_resources,
     build_annihilation_dynamic_hit_count_nukes,
     build_annihilation_state_rules,
+    build_asuka_weapon_mode_schedule,
     build_emergency_repair_rules,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
+
+SLUG = "asuka-shikinami-langley-wille"
 
 ASUKA_VALUES = {
     # Full left-to-right transcription (no skips): 50-shot nuke threshold,
@@ -35,6 +41,8 @@ ASUKA_VALUES = {
         "description_value_03": "21", "description_value_04": "46.8",
         "description_value_05": "36", "description_value_06": "6.62",
     },
+    # Her real weapon as a builder receives it (no clip split applies to her).
+    "caster_weapon_stats": {"weapon": "MG", "reload_time": 2.33, "max_ammo": 300},
 }
 
 # Module-level fixture names for the assembly verification harness.
@@ -42,15 +50,20 @@ ANTI_AT_FIELD = ASUKA_VALUES["anti_at_field"]
 EMERGENCY_REPAIR = ASUKA_VALUES["emergency_repair"]
 ANNIHILATION_STATE = ASUKA_VALUES["annihilation_state"]
 
-ASUKA = {"slug": "asuka-shikinami-langley-wille", "element": "Wind"}
+ASUKA = {"slug": SLUG, "element": "Wind"}
 ALLY = {"slug": "ally", "element": "Iron"}
 
 
 def make_context():
     return SquadContext([
-        SquadMember("asuka-shikinami-langley-wille", burst_tier=3, element="Wind"),
+        SquadMember(SLUG, burst_tier=3, element="Wind"),
         SquadMember("ally", burst_tier=1, element="Iron"),
     ])
+
+
+class _Context:
+    def __init__(self, burst_times):
+        self.burst_times = {SLUG: burst_times}
 
 
 def test_anti_at_field_resource_fills_during_own_status_window_and_resets_delayed():
@@ -187,3 +200,42 @@ def test_asuka_end_to_end_annihilation_nuke_scales_with_capped_stacks_and_gets_f
     assert all(round(h["time"], 4) == 14.0 for h in hits)
     # 10000 * 6.62% * (1 + full_burst_bonus*0.5) = 662 * 1.5
     assert all(round(h["damage"], 4) == 993.0 for h in hits)
+
+
+def test_emergency_repair_dumps_her_magazine_for_a_fixed_reload():
+    schedule = build_asuka_weapon_mode_schedule(ASUKA_VALUES)
+
+    (segment,) = schedule(_Context([20.0]), 180.0)
+
+    # "Reload speed is fixed at a 60% increase" (slot _08).
+    assert segment["start"] == pytest.approx(20.0)
+    assert segment["end"] == pytest.approx(
+        20.0 + reload_time_with_speed(ASUKA_VALUES["caster_weapon_stats"]["reload_time"], 0.60))
+    assert segment["profile"]["damage_percent"] == 0.0
+
+
+def test_emergency_repair_halves_her_own_heating_speed_for_three_seconds():
+    # Call her REAL rule entry point - the heating bullet is added to the
+    # existing rule list, not to a new builder.
+    registry = EffectRegistry()
+    context = SquadContext([SquadMember(SLUG, 3, "Wind", "MG")])
+    rules = build_emergency_repair_rules(ASUKA_VALUES)
+
+    fire_trigger("own_burst_activate", {SLUG: rules}, context, registry, time=20.0)
+
+    assert registry.total_for("mg_heating_speed_percent", ASUKA, 22.9) == pytest.approx(-1.0)
+    assert registry.total_for("mg_heating_speed_percent", ASUKA, 23.1) == pytest.approx(0.0)
+
+
+def test_the_debuff_actually_slows_her_magazine_end_to_end():
+    """Tasks 5 and 6 only prove the stat is REGISTERED - `total_for` sums any
+    name whether or not a generator reads it. This is the one assertion that
+    the engine consumes it on her own weapon."""
+    plain = generate_magazine_shot_times(
+        rate_of_fire=60.0, max_ammo=300, reload_time=2.33, fight_duration=20.0,
+        weapon="MG")
+    debuffed = generate_magazine_shot_times(
+        rate_of_fire=60.0, max_ammo=300, reload_time=2.33, fight_duration=20.0,
+        weapon="MG", heating_speed_percent_at=lambda _t: -1.0)
+
+    assert len(debuffed) < len(plain)
