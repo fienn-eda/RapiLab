@@ -16,7 +16,8 @@
 - **슬롯 번호를 추론하지 않는다.** 이 계획의 슬롯 번호는 전부 `assemble_skill_values`를 실제로 돌려 읽은 값이다. 새 값이 필요하면 같은 방법으로 읽는다.
 - **엔진 코드는 갈래 2에서만 바뀐다.** Task 2·3·4는 `backend/app/skill_rules/` 와 `backend/tests/` 밖을 건드리지 않는다.
 - **버프가 없을 때 트렁크와 바이트 동일해야 한다.** 갈래 2의 기본값은 `_zero`다.
-- **각 Task의 마지막에 커밋한다.** 커밋 메시지는 한국어, 무엇을/왜만 적고 "예전엔 이랬다"는 쓰지 않는다.
+- **각 Task의 마지막에 커밋한다.** 커밋 메시지는 한국어, 무엇을/왜만 적는다.
+- **"예전엔 이랬다"는 커밋 메시지에도, 독스트링·주석에도 쓰지 않는다.** CLAUDE.md가 금지한다 — 코드는 무엇을·왜만 말하고, 무엇이 바뀌었는지는 git이 안다. 이 계획이 인용문으로 준 문장에 그런 절이 섞여 있으면 **그 절을 빼고** 적는다(계획의 산문이 그대로 코드 주석이 되는 함정).
 - **세그먼트 프로필은 명시적 `rate_of_fire`를 쓴다.** 계약상 명시적 연사 프로필은 어떤 cadence 버프도 받지 않으므로, 아군 차지속도 버프가 무발사 창을 줄여 유령 발사를 흘리지 못한다.
 - **`reload_time_with_speed(reload_time, s) = max(0.0, reload_time * (1 - s) + 0.148)`** — 아핀이다. `s=0`은 항등이 아니다.
 - **기준선은 `2299 passed · 3 skipped`** (2026-08-14, `0ad7ed00` 기준, 107초). 각 Task의 전체 스위트 단계는 이 수에 새 테스트를 더한 값이어야 한다.
@@ -494,8 +495,8 @@ Expected: PASS. `_reject_unrepresentable_overlaps`가 겹침을 거부하므로,
 
 ```
 - "Removes 100% of ammo" when Electric Power, Fully Full Charge ends: a silent
-  segment one reload long, right after the transform window. Before this the
-  base weapon resumed with a fresh magazine and no reload at all.
+  segment one reload long, right after the transform window, so the base weapon
+  does not resume until that reload has been spent.
 ```
 
 - [ ] **Step 7: 전체 스위트**
