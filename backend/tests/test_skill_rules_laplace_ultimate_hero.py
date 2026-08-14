@@ -2,6 +2,7 @@ import pytest
 
 from app.effects import EffectRegistry
 from app.skill_rules.laplace_ultimate_hero import (
+    build_laplace_transform_schedule,
     build_laplace_ultimate_hero_rules,
     laplace_ultimate_hero_burst_percent,
 )
@@ -60,6 +61,15 @@ def make_context():
         SquadMember("laplace-ultimate-hero", burst_tier=3, element="Wind", weapon="RL"),
         SquadMember("ally", burst_tier=1, element="Fire", weapon="AR"),
     ])
+
+
+def _schedule_context():
+    """make_context()'s bare SquadContext has no max_ammo_percent_at -
+    raid_simulator injects that live; build_laplace_transform_schedule's
+    schedule() needs it, so the stub reads it as flat (no overload)."""
+    ctx = make_context()
+    ctx.max_ammo_percent_at = lambda _t: 0.0
+    return ctx
 
 
 LAPLACE = {"slug": "laplace-ultimate-hero", "element": "Wind"}
@@ -214,3 +224,49 @@ def test_battle_start_atk_uses_live_max_hp_when_a_max_hp_buff_is_active():
     fire_trigger("battle_start", {"laplace-ultimate-hero": rules()}, ctx, registry, time=0.0)
     # (800000 + 200000) * 4.05% = 40500 (정적이면 32400에 머문다)
     assert round(registry.total_for("flat_atk", LAPLACE, now=0.0), 2) == 40500.0
+
+
+def test_every_transform_is_followed_by_a_silent_reload_segment():
+    """"Removes 100% of ammo" when Electric Power, Fully Full Charge ends: the
+    base weapon does not resume with a fresh magazine for free - it owes one
+    reload, silent like the transform windows around it.
+
+    At the baseline (period 12.5) the 180s fight cuts the 15th transform's own
+    window short (it would run 179.0-185.0), so it earns no reload of its own
+    - same as any segment truncated by fight_duration. Every transform whose
+    window actually finishes inside the fight gets exactly one."""
+    schedule = build_laplace_transform_schedule(values())
+    fight_duration = 180.0
+    segments = schedule(_schedule_context(), fight_duration)
+
+    transforms = [s for s in segments if s["profile"]["damage_percent"] > 0]
+    reloads = [s for s in segments if s["profile"]["damage_percent"] == 0.0]
+    completed = [
+        t for t in transforms
+        if t["start"] + t["until_shots"] / t["profile"]["rate_of_fire"] < fight_duration
+    ]
+    assert len(reloads) == len(completed)
+    assert len(reloads) == len(transforms) - 1  # the trailing window is the one exception
+
+
+def test_the_reload_segment_starts_where_the_transform_ends():
+    schedule = build_laplace_transform_schedule(values())
+    segments = schedule(_schedule_context(), 180.0)
+
+    transform, reload_segment = segments[0], segments[1]
+    # An `until_shots` window ends AT its last shot's time, not one interval later.
+    interval = 1.0 / transform["profile"]["rate_of_fire"]
+    transform_end = transform["start"] + transform["until_shots"] * interval
+    assert reload_segment["start"] == pytest.approx(transform_end)
+
+
+def test_the_two_segments_do_not_overlap():
+    schedule = build_laplace_transform_schedule(values())
+    segments = sorted(schedule(_schedule_context(), 180.0), key=lambda s: s["start"])
+
+    for earlier, later in zip(segments, segments[1:]):
+        end = earlier.get("end")
+        if end is None:
+            interval = 1.0 / earlier["profile"]["rate_of_fire"]
+            end = earlier["start"] + earlier["until_shots"] * interval
+        assert end <= later["start"] + 1e-9

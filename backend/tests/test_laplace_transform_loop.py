@@ -53,7 +53,10 @@ def test_transform_window_is_one_magazine_at_smg_cadence():
 def test_transform_period_is_build_plus_window_plus_reload():
     schedule = build_laplace_transform_schedule(values())
     segs = schedule(make_context(), fight_duration=180.0)
-    starts = [s["start"] for s in segs]
+    # Segments now alternate transform/reload (see the reload segment tests in
+    # test_skill_rules_laplace_ultimate_hero.py), so the transform TIMES have
+    # to be picked out by until_shots rather than read straight off segs.
+    starts = [s["start"] for s in segs if "until_shots" in s]
     # 4.0 + (120/20) + 2.5 = 12.5
     assert starts[1] - starts[0] == 12.5
     assert starts[:3] == [4.0, 16.5, 29.0]
@@ -63,17 +66,25 @@ def test_window_and_period_scale_with_max_ammo_overload():
     """[최대 장탄 수 증가]가 창을 늘리므로 주기를 상수로 박으면 안 된다."""
     schedule = build_laplace_transform_schedule(values())
     segs = schedule(make_context(max_ammo_percent=0.5), fight_duration=180.0)
-    assert segs[0]["until_shots"] == 180          # round(120 * 1.5)
+    transforms = [s for s in segs if "until_shots" in s]
+    assert transforms[0]["until_shots"] == 180          # round(120 * 1.5)
     # 4.0 + (180/20) + 2.5 = 15.5
-    assert segs[1]["start"] - segs[0]["start"] == 15.5
+    assert transforms[1]["start"] - transforms[0]["start"] == 15.5
 
 
 def test_segments_never_overlap():
+    """Covers BOTH segment shapes now in the schedule: a transform window
+    (until_shots) and the silent reload right after it (end). A reload starts
+    exactly where its transform ends (an `until_shots` window ends AT its last
+    shot), so the boundary is `>=`, not `>`."""
     schedule = build_laplace_transform_schedule(values())
     segs = schedule(make_context(), fight_duration=180.0)
     for earlier, later in zip(segs, segs[1:]):
-        window_end = earlier["start"] + earlier["until_shots"] / SMG_RATE_OF_FIRE
-        assert later["start"] > window_end
+        if "until_shots" in earlier:
+            window_end = earlier["start"] + earlier["until_shots"] / SMG_RATE_OF_FIRE
+        else:
+            window_end = earlier["end"]
+        assert later["start"] >= window_end
 
 
 def _fire_stage_rule(ctx, registry, at=5.0):

@@ -62,6 +62,9 @@ Modeled (DPS-relevant):
   company as soon as a deck adds [Max Ammo Increase]. A stage then lands
   part-way through a window, and once a single window can hold 240 shots it
   skips a reload gap and arrives 6.5 sec sooner.
+- "Removes 100% of ammo" when Electric Power, Fully Full Charge ends: a silent
+  segment one reload long, right after the transform window. Before this the
+  base weapon resumed with a fresh magazine and no reload at all.
 
 Not modeled / deferred:
 - Warm Up's Charge Speed +10% per stack (skills[0]): not modeled as a buff
@@ -69,12 +72,8 @@ Not modeled / deferred:
   (1.0 + 0.9 + 0.8 + 0.7 + 0.6) is the ramp itself. Encoding it as a live
   charge-speed buff on top would double-count it, and it never holds max
   anyway (5 stacks are consumed to fire the transform).
-- The reload gap after a transform: `generate_segmented_shots` resumes the base
-  weapon at the segment's end with a fresh magazine and no reload, so she fires
-  ~2 extra base shots during the 2.5s reload the real cycle spends. At 2.5% a
-  shot this is a rounding error against the transform, and the reload IS
-  counted in the cycle period, which is what actually matters.
 """
+from app.attack_rate import reload_time_with_speed
 from app.effects import Effect, max_ammo_percent_total
 from app.skill_rules._helpers import buff_rule, max_hp_scaled_atk_rule
 from app.squad_engine import SkillRule, burst_stage_entered
@@ -309,10 +308,28 @@ def build_laplace_transform_schedule(values):
             "damage_percent": shot_percent,
             "rate_of_fire": SMG_RATE_OF_FIRE,
         }
-        return [
-            {"start": t, "until_shots": shots, "profile": profile}
-            for t in _transform_times(period, fight_duration)
-        ]
+        reload_seconds = reload_time_with_speed(weapon["reload_time"], 0.0)
+        interval = 1.0 / SMG_RATE_OF_FIRE
+        segments = []
+        for t in _transform_times(period, fight_duration):
+            segments.append({"start": t, "until_shots": shots, "profile": profile})
+            # "Removes 100% of ammo" when Fully Full Charge ends: the base
+            # weapon does not resume until one reload has been spent. An
+            # `until_shots` window ends AT its last shot, so that instant is
+            # where the silent window opens.
+            transform_end = t + shots * interval
+            if transform_end >= fight_duration:
+                continue
+            segments.append({
+                "start": transform_end,
+                "end": min(transform_end + reload_seconds, fight_duration),
+                "profile": {
+                    "weapon": weapon["weapon"],
+                    "damage_percent": 0.0,
+                    "rate_of_fire": 1.0 / (reload_seconds * 2),
+                },
+            })
+        return segments
 
     return schedule
 
