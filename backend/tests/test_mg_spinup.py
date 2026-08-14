@@ -192,6 +192,25 @@ def test_the_production_shot_pass_takes_the_heating_debuff():
         _one_magazine(heating_speed_percent_at=lambda _t: -1.0))
 
 
+def test_the_clamp_floor_ignores_attack_speed():
+    """`spinup_with_speed`'s clamp keeps the ramp no tighter than the weapon's
+    OWN nominal gap (`intervals / rate_of_fire`) - every call site threads in
+    the weapon's nominal rate for that, not a rate an Attack Speed buff has
+    already inflated (which would pull the floor tighter and let the ramp
+    beat the un-buffed weapon's own cadence). Attack Speed +100% doubles the
+    post-ramp cadence; a heating buff far past the +185.4% clamp point pins
+    the ramp itself to the untouched 1/60 sec nominal gap regardless."""
+    slowed = generate_segmented_shots(
+        _mg_base(), [], fight_duration=60.0,
+        attack_speed_percent_at=lambda _t: 1.0,
+        heating_speed_percent_at=lambda _t: 10.0)
+    ramp_gap = slowed[1].time - slowed[0].time
+    assert ramp_gap == pytest.approx(1 / RATE_OF_FIRE_60FPS["MG"])
+    post_ramp_gap = (slowed[MG_SPINUP.intervals + 1].time
+                      - slowed[MG_SPINUP.intervals].time)
+    assert post_ramp_gap == pytest.approx(1 / (2 * RATE_OF_FIRE_60FPS["MG"]))
+
+
 def test_a_weapon_class_with_no_warm_up_ignores_the_buff():
     """`heating` is an MG word; an AR has no ramp for it to scale."""
     ar = dict(rate_of_fire=RATE_OF_FIRE_60FPS["AR"], max_ammo=60,
