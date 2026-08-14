@@ -100,10 +100,12 @@ an ally's Charge Speed cannot shrink the empty window and leak a shot into it.
 Do NOT reach for a segment when the window must keep the unit's LIVE cadence
 buffs - the same contract that makes an explicit `rate_of_fire` safe here also
 freezes attack speed. "Unlimited ammo for a window on the unit's own weapon" is
-that case: raise `max_ammo_percent` for the window instead (see `grave.py`).
-A weapon MODE swap that happens to be unlimited-ammo is different, and a
-segment is right there (see `moran`'s Fair and Square).
+that case: raise `max_ammo_percent` for the window instead. A weapon MODE swap
+that happens to be unlimited-ammo is different, and a segment is right there
+(see `moran`'s Fair and Square).
 ```
+
+**이 문단은 아직 예시를 이름으로 가리키지 않는다.** `max_ammo_percent` 쪽 실사용례는 Task 4가 그레이브에 만들며, 그때 포인터를 여기에 더한다 — 지금 `grave.py`를 가리키면 Task 4 이전의 모든 커밋에서 거짓이 된다.
 
 - [ ] **Step 3: 검증 — 다음 인코더가 찾을 수 있는가**
 
@@ -795,10 +797,17 @@ Run: `cd backend && python -m pytest -q`
 
 `grave.py` 독스트링에서 *"Her self HP drain and the unlimited ammunition (both Prediction) are not modeled."* 를 *"Her self HP drain (Prediction) is not modeled - survivability."* 로 줄이고, Heat Emission 문단의 「removed exactly when Grave uses her burst skill AGAIN」을 툴팁의 두 조건으로 고쳐 쓴다. 무한탄약·이중 재장전·방열 지속시간을 `Modeled` 쪽에 적는다.
 
-- [ ] **Step 11: 커밋**
+- [ ] **Step 11: 카탈로그에 실사용례 포인터를 더한다 (Task 1이 미뤄둔 것)**
+
+Task 1은 「창 동안 라이브 버프를 유지해야 하면 세그먼트가 아니라 `max_ammo_percent`」라는 규칙을 적었지만 **예시를 이름으로 가리키지 않았다** — 그때는 그런 코드가 없었기 때문이다. 이제 있다. `.claude/skills/nikke-skill-encoding/references/engine-capabilities.md`의 그 문장 끝을 고친다:
+
+`raise `max_ammo_percent` for the window instead.`
+→ ``raise `max_ammo_percent` for the window instead (see `grave.py`'s `unlimited_ammo_percent`).``
+
+- [ ] **Step 12: 커밋**
 
 ```bash
-git add backend/app/skill_rules/grave.py backend/app/skill_rules/registry.py backend/tests/test_skill_rules_grave_prediction_cycle.py
+git add backend/app/skill_rules/grave.py backend/app/skill_rules/registry.py backend/tests/test_skill_rules_grave_prediction_cycle.py .claude/skills/nikke-skill-encoding/references/engine-capabilities.md
 git commit -m "그레이브의 Prediction 무한탄약과 이중 재장전을 인코딩하고 방열 지속시간을 바로잡는다"
 ```
 
