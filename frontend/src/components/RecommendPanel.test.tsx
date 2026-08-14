@@ -142,7 +142,7 @@ describe('RecommendPanel', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
-          skill_damage: 0, hold_burst_slugs: [],
+          skill_damage: 0, hold_burst_slugs: [], seating: {},
         },
       ],
       excluded_slugs: [],
@@ -168,7 +168,7 @@ describe('RecommendPanel', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
-          skill_damage: 0, hold_burst_slugs: [],
+          skill_damage: 0, hold_burst_slugs: [], seating: {},
         },
       ],
       excluded_slugs: [],
@@ -193,7 +193,7 @@ describe('RecommendPanel', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
-          skill_damage: 0, hold_burst_slugs: [],
+          skill_damage: 0, hold_burst_slugs: [], seating: {},
         },
       ],
       excluded_slugs: [],
@@ -269,7 +269,7 @@ describe('RecommendPanel', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
-          skill_damage: 0, hold_burst_slugs: [],
+          skill_damage: 0, hold_burst_slugs: [], seating: {},
         },
       ],
       excluded_slugs: [],
@@ -449,8 +449,8 @@ describe('RecommendPanel raid mode', () => {
     const user = userEvent.setup()
     vi.mocked(recommendRaidDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], pinned_slugs: [] },
-        { deck: ['f', 'g', 'h', 'i', 'j'], total_damage: 80, burst_damage: 50, normal_attack_damage: 30, skill_damage: 0, hold_burst_slugs: [], pinned_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], seating: {}, pinned_slugs: [] },
+        { deck: ['f', 'g', 'h', 'i', 'j'], total_damage: 80, burst_damage: 50, normal_attack_damage: 30, skill_damage: 0, hold_burst_slugs: [], seating: {}, pinned_slugs: [] },
       ],
       combined_total_damage: 180,
       excluded_slugs: [],
@@ -799,7 +799,7 @@ describe('RecommendPanel evaluate mode', () => {
     vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], seating: {} },
       ],
       combined_total_damage: 100,
       excluded_slugs: [],
@@ -830,7 +830,7 @@ describe('RecommendPanel evaluate mode', () => {
     vi.mocked(getSupportedUnits).mockResolvedValue(supportedUnits)
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], seating: {} },
       ],
       combined_total_damage: 100,
       excluded_slugs: [],
@@ -885,7 +885,7 @@ describe('RecommendPanel evaluate mode', () => {
     vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], seating: {} },
       ],
       combined_total_damage: 100,
       excluded_slugs: [],
@@ -913,7 +913,7 @@ describe('RecommendPanel mode switch', () => {
     const user = userEvent.setup()
     vi.mocked(recommendRaidDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], pinned_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], seating: {}, pinned_slugs: [] },
       ],
       combined_total_damage: 100,
       excluded_slugs: [],
@@ -942,7 +942,7 @@ describe('RecommendPanel mode switch', () => {
     vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], seating: {} },
       ],
       combined_total_damage: 100,
       excluded_slugs: [],
@@ -971,7 +971,7 @@ describe('RecommendPanel mode switch', () => {
     vi.mocked(getSupportedUnits).mockResolvedValue(makeEvaluateSupportedUnits())
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], seating: {} },
       ],
       combined_total_damage: 100,
       excluded_slugs: [],
@@ -1016,14 +1016,14 @@ describe('RecommendPanel mode switch', () => {
     )
     vi.mocked(recommendDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], seating: {} },
       ],
       excluded_slugs: [],
       engine_version: 'test-engine-version',
     })
     vi.mocked(recommendRaidDecks).mockResolvedValue({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 200, burst_damage: 120, normal_attack_damage: 80, skill_damage: 0, hold_burst_slugs: [], pinned_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 200, burst_damage: 120, normal_attack_damage: 80, skill_damage: 0, hold_burst_slugs: [], seating: {}, pinned_slugs: [] },
       ],
       combined_total_damage: 200,
       excluded_slugs: [],
@@ -1086,7 +1086,7 @@ describe('RecommendPanel persistence', () => {
         total_damage: 100,
         burst_damage: 60,
         normal_attack_damage: 40,
-        skill_damage: 0, hold_burst_slugs: [],
+        skill_damage: 0, hold_burst_slugs: [], seating: {},
         pinned_slugs: [],
       },
     ],
@@ -1204,7 +1204,7 @@ describe('RecommendPanel persistence', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
-          skill_damage: 0, hold_burst_slugs: [],
+          skill_damage: 0, hold_burst_slugs: [], seating: {},
           pinned_slugs: [],
         },
       ],
@@ -1268,7 +1268,7 @@ describe('RecommendPanel persistence', () => {
           total_damage: 999,
           burst_damage: 600,
           normal_attack_damage: 399,
-          skill_damage: 0, hold_burst_slugs: [],
+          skill_damage: 0, hold_burst_slugs: [], seating: {},
           pinned_slugs: [],
         },
       ],
@@ -1311,7 +1311,7 @@ describe('RecommendPanel persistence', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
-          skill_damage: 0, hold_burst_slugs: [],
+          skill_damage: 0, hold_burst_slugs: [], seating: {},
           pinned_slugs: [],
         },
       ],
@@ -1578,7 +1578,7 @@ describe('RecommendPanel 결과 보관', () => {
           total_damage: 100,
           burst_damage: 60,
           normal_attack_damage: 40,
-          skill_damage: 0, hold_burst_slugs: [],
+          skill_damage: 0, hold_burst_slugs: [], seating: {},
         },
       ],
       excluded_slugs: [],
@@ -1649,7 +1649,7 @@ describe('RecommendPanel 결과 보관', () => {
                   total_damage: 777,
                   burst_damage: 400,
                   normal_attack_damage: 300,
-                  skill_damage: 77, hold_burst_slugs: [],
+                  skill_damage: 77, hold_burst_slugs: [], seating: {},
                 },
               ],
               excludedSlugs: [],
@@ -1720,7 +1720,7 @@ describe('RecommendPanel 결과 보관', () => {
         burst_damage: 1,
         normal_attack_damage: 0,
         skill_damage: 0,
-        hold_burst_slugs: [],
+        hold_burst_slugs: [], seating: {},
         pinned_slugs: [],
       })),
       combined_total_damage: 5,
@@ -1788,7 +1788,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
           burst_damage: 4,
           normal_attack_damage: 3,
           skill_damage: 3,
-          hold_burst_slugs: [],
+          hold_burst_slugs: [], seating: {},
           pinned_slugs: [],
         },
       ],
@@ -1816,7 +1816,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
         burst_damage: 4,
         normal_attack_damage: 3,
         skill_damage: 3,
-        hold_burst_slugs: [],
+        hold_burst_slugs: [], seating: {},
         pinned_slugs: [],
       })),
       combinedTotalDamage: 10,
@@ -1841,7 +1841,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
           burst_damage: 4,
           normal_attack_damage: 3,
           skill_damage: 3,
-          hold_burst_slugs: [],
+          hold_burst_slugs: [], seating: {},
         },
       ],
       excludedSlugs: [],
@@ -1931,7 +1931,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
           burst_damage: 4,
           normal_attack_damage: 3,
           skill_damage: 3,
-          hold_burst_slugs: [],
+          hold_burst_slugs: [], seating: {},
         },
       ],
       combinedTotalDamage: 10,
@@ -1962,7 +1962,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
           burst_damage: 4,
           normal_attack_damage: 3,
           skill_damage: 3,
-          hold_burst_slugs: [],
+          hold_burst_slugs: [], seating: {},
           pinned_slugs: [],
         },
       ],
@@ -2027,7 +2027,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
           burst_damage: 60,
           normal_attack_damage: 40,
           skill_damage: 0,
-          hold_burst_slugs: [],
+          hold_burst_slugs: [], seating: {},
           pinned_slugs: [],
         },
       ],
@@ -2164,7 +2164,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
           burst_damage: 60,
           normal_attack_damage: 40,
           skill_damage: 0,
-          hold_burst_slugs: [],
+          hold_burst_slugs: [], seating: {},
           pinned_slugs: [],
         },
       ],
@@ -2201,7 +2201,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
           burst_damage: 60,
           normal_attack_damage: 40,
           skill_damage: 0,
-          hold_burst_slugs: [],
+          hold_burst_slugs: [], seating: {},
         },
       ],
       combined_total_damage: 100,
@@ -2248,7 +2248,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
 
     resolveRequest({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 999, burst_damage: 0, normal_attack_damage: 0, skill_damage: 0, hold_burst_slugs: [], pinned_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 999, burst_damage: 0, normal_attack_damage: 0, skill_damage: 0, hold_burst_slugs: [], seating: {}, pinned_slugs: [] },
       ],
       combined_total_damage: 999,
       excluded_slugs: [],
@@ -2285,7 +2285,7 @@ describe('RecommendPanel — 편성 초기화와 가져오기', () => {
 
     resolveRequest({
       decks: [
-        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 999, burst_damage: 0, normal_attack_damage: 0, skill_damage: 0, hold_burst_slugs: [], pinned_slugs: [] },
+        { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 999, burst_damage: 0, normal_attack_damage: 0, skill_damage: 0, hold_burst_slugs: [], seating: {}, pinned_slugs: [] },
       ],
       combined_total_damage: 999,
       excluded_slugs: [],

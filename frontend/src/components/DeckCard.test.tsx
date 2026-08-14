@@ -11,7 +11,7 @@ const DECK = {
   burst_damage: 500,
   normal_attack_damage: 400,
   skill_damage: 100,
-  hold_burst_slugs: [],
+  hold_burst_slugs: [], seating: {},
 }
 
 describe('DeckCard 속성저지 배지', () => {
@@ -35,10 +35,11 @@ describe('DeckCard 속성저지 배지', () => {
 })
 
 describe('DeckCard 버스트 홀드 안내', () => {
-  // 좌석은 "이 유닛은 첫 풀버스트를 건너뛴다"를 말할 수 없다. 엔진은 동점이면
+  // 덱 순서는 "이 유닛은 첫 풀버스트를 건너뛴다"를 말할 수 없다. 엔진은 동점이면
   // 그대로 플레이할 수 있는 순서를 고르지만, 홀드하는 쪽이 실제로 더 높게
   // 나오면 그 순서가 남고 - 그때는 화면이 플레이어에게 말해줘야 한다.
-  it('아껴야 하는 좌석이 있으면 누구를 아낄지 이름으로 말한다', () => {
+  // (여기서 말하는 순서는 버스트 우선순위다. 자리는 별개 축이고 아래 좌석 안내가 맡는다.)
+  it('아껴야 하는 자리가 있으면 누구를 아낄지 이름으로 말한다', () => {
     render(
       <DeckCard
         label="덱 1"
@@ -55,6 +56,64 @@ describe('DeckCard 버스트 홀드 안내', () => {
     render(<DeckCard label="덱 1" deck={DECK} />)
 
     expect(screen.queryByText(/첫 풀버스트/)).not.toBeInTheDocument()
+  })
+})
+
+describe('DeckCard 좌석 안내', () => {
+  // 좌석은 덱 목록에 안 담긴다 - 목록 순서는 버스트 우선순위이고, 게임에서 자리와
+  // 버스트 순서는 별개 축이다. 그래서 화면이 따로 말해줘야 이 수치가 재현된다.
+  const named = (slug: string) =>
+    ({ a: '루주', b: '드레이크', c: '모더니아' })[slug] ?? slug
+
+  it('누구 양 옆에 누구를 앉힐지 이름으로 말한다', () => {
+    render(
+      <DeckCard
+        label="덱 1"
+        deck={{ ...DECK, seating: { a: { allies: ['b', 'c'], seats: [2, 4] } } }}
+        nameFor={named}
+      />,
+    )
+
+    // 이름은 유닛 행에도 있으므로 안내문 자체가 셋을 다 말하는지를 본다.
+    const line = screen.getByText(/양 옆/)
+    expect(line).toHaveTextContent('루주')
+    expect(line).toHaveTextContent('드레이크')
+    expect(line).toHaveTextContent('모더니아')
+  })
+
+  it('앉을 수 있는 자리가 정해져 있으면 그 자리도 말한다', () => {
+    // 「양 옆에 둘」만 지키면 3번 자리도 만족하는데, 거기는 앞열이라 루주의
+    // 버프가 아예 안 켜진다. 자리를 안 적으면 안내를 그대로 따라도 통째로 놓친다.
+    render(
+      <DeckCard
+        label="덱 1"
+        deck={{ ...DECK, seating: { a: { allies: ['b', 'c'], seats: [2, 4] } } }}
+        nameFor={named}
+      />,
+    )
+
+    expect(screen.getByText(/양 옆/)).toHaveTextContent('2·4번')
+  })
+
+  it('아무 자리나 되면 자리 이야기를 꺼내지 않는다', () => {
+    render(
+      <DeckCard
+        label="덱 1"
+        deck={{
+          ...DECK,
+          seating: { a: { allies: ['b', 'c'], seats: [1, 2, 3, 4, 5] } },
+        }}
+        nameFor={named}
+      />,
+    )
+
+    expect(screen.getByText(/양 옆/)).not.toHaveTextContent('번 자리')
+  })
+
+  it('좌석형 유닛이 없으면 아무것도 안 단다', () => {
+    render(<DeckCard label="덱 1" deck={DECK} />)
+
+    expect(screen.queryByText(/양 옆/)).not.toBeInTheDocument()
   })
 })
 

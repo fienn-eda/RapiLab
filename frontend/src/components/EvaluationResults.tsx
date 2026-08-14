@@ -47,7 +47,7 @@ export function EvaluationResults({
         ))}
       </ol>
       <p className="evaluation-results__ordering-note">
-        <HelpText>{HELP.results.seatOrder}</HelpText>
+        <HelpText>{HELP.results.burstOrder}</HelpText>
       </p>
     </>
   )
