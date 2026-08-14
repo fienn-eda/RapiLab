@@ -4,7 +4,8 @@ left-to-right per skill (fixed reference counts like "1 enemy unit(s)" or
 """
 import pytest
 
-from app.attack_rate import generate_magazine_shot_times, reload_time_with_speed
+from app.attack_rate import (MG_SPINUP, generate_magazine_shot_times,
+                             generate_segmented_shots, reload_time_with_speed)
 from app.effects import EffectRegistry
 from app.raid_simulator import simulate_raid
 from app.skill_rules.asuka_shikinami_langley_wille import (
@@ -228,9 +229,10 @@ def test_emergency_repair_halves_her_own_heating_speed_for_three_seconds():
 
 
 def test_the_debuff_actually_slows_her_magazine_end_to_end():
-    """Tasks 5 and 6 only prove the stat is REGISTERED - `total_for` sums any
-    name whether or not a generator reads it. This is the one assertion that
-    the engine consumes it on her own weapon."""
+    """`registry.total_for` sums any stat name whether or not a generator
+    reads it, so a rule that only reaches the registry proves nothing about
+    consumption. This is the one assertion that the engine's magazine
+    generator itself reacts to `mg_heating_speed_percent`."""
     plain = generate_magazine_shot_times(
         rate_of_fire=60.0, max_ammo=300, reload_time=2.33, fight_duration=20.0,
         weapon="MG")
@@ -239,3 +241,41 @@ def test_the_debuff_actually_slows_her_magazine_end_to_end():
         weapon="MG", heating_speed_percent_at=lambda _t: -1.0)
 
     assert len(debuffed) < len(plain)
+
+
+def test_the_debuff_slows_the_magazine_that_opens_when_her_segment_ends():
+    """Pins the claim both docstrings make: her Emergency Repair segment ends
+    by opening a fresh magazine, and Effect 1's heating debuff - still live
+    inside its own 3-sec window at that instant - is what slows THAT
+    magazine's warm-up. The two tests above are independent of each other and
+    of this path: the segment test above never reads
+    `heating_speed_percent_at`, and the heating test only reads the registry,
+    never runs a magazine. `generate_segmented_shots` (via
+    `_base_shot_records`) is Asuka's REAL weapon pass - the one her simulated
+    shots actually come out of, since she has a weapon-mode segment - so this
+    is the only assertion that runs her own segment and her own rule
+    together, on that generator."""
+    burst_time = 20.0
+    fight_duration = 40.0
+    base = {**ASUKA_VALUES["caster_weapon_stats"], "damage_percent": 5.0}
+    segments = build_asuka_weapon_mode_schedule(ASUKA_VALUES)(_Context([burst_time]), fight_duration)
+    (segment,) = segments
+    debuff_duration = float(ASUKA_VALUES["emergency_repair"]["description_value_04"])
+    # The fresh magazine has to open WHILE the debuff is still live, or the
+    # docstrings' claim that the two effects meet on one instant is false.
+    assert segment["end"] < burst_time + debuff_duration
+
+    def heating_at(t):
+        return -1.0 if burst_time <= t < burst_time + debuff_duration else 0.0
+
+    plain = [r.time for r in generate_segmented_shots(base, segments, fight_duration)]
+    debuffed = [r.time for r in generate_segmented_shots(
+        base, segments, fight_duration, heating_speed_percent_at=heating_at)]
+    plain_after = [t for t in plain if t >= segment["end"]]
+    debuffed_after = [t for t in debuffed if t >= segment["end"]]
+
+    # magazine_shot_offset(MG_SPINUP.intervals, ...) lands exactly at
+    # spinup.seconds - the ramp's own boundary - so this reads the ramp's
+    # length directly off the fresh magazine's own shots, not just its start.
+    assert plain_after[MG_SPINUP.intervals] - segment["end"] == pytest.approx(MG_SPINUP.seconds)
+    assert debuffed_after[MG_SPINUP.intervals] - segment["end"] == pytest.approx(MG_SPINUP.seconds * 2)
