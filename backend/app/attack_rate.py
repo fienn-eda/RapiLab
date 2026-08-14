@@ -59,18 +59,44 @@ CHARGE_WEAPONS = {"RL", "SR"}
 class Spinup:
     """A weapon that reaches its nominal rate of fire only after warming up.
 
-    `intervals` shot gaps at the head of every magazine together take `seconds`,
-    instead of the `intervals / rate_of_fire` they would at top speed; every gap
-    after that is the normal one. Stated as a total rather than as a curve
-    because a total is what the measurement pins - see the shape note below.
+    `points` is the warm-up as a CUMULATIVE CURVE: each entry is `(position on
+    the ramp, seconds from the magazine's first round to that position)`,
+    starting at `(0, 0.0)` and ending where the weapon reaches full speed. The
+    rate is constant between two entries, so `elapsed` interpolates linearly
+    inside a segment.
+
+    A curve rather than one total because the measurement pins the SHAPE, and
+    the shape is what lets a magazine open PART WAY UP the ramp - which is what
+    a reload shorter than the heating decay leaves behind.
     """
-    intervals: int
-    seconds: float
+    points: tuple
+
+    @property
+    def intervals(self):
+        """Shot gaps the warm-up covers before the weapon is at full speed."""
+        return self.points[-1][0]
+
+    @property
+    def seconds(self):
+        """Seconds a COLD magazine spends warming up."""
+        return self.points[-1][1]
 
     @property
     def cost(self):
-        """Seconds a magazine loses to warming up, at 60 rounds/sec."""
+        """Seconds a cold magazine loses to warming up, at 60 rounds/sec."""
         return self.seconds - self.intervals / RATE_OF_FIRE_60FPS["MG"]
+
+    def elapsed(self, position):
+        """Seconds from the magazine's first round to ramp `position`."""
+        if position <= 0:
+            return 0.0
+        start, started_at = self.points[0]
+        for end, ends_at in self.points[1:]:
+            if position <= end:
+                return started_at + ((ends_at - started_at)
+                                     * (position - start) / (end - start))
+            start, started_at = end, ends_at
+        return self.seconds
 
 
 # Fienn, 2026-08-07, frame-by-frame (Rosanna solo, 305-round magazine, no reload
@@ -80,12 +106,12 @@ class Spinup:
 # frames, exactly one per frame. So the nominal 60/sec was never wrong - it is
 # the MAXIMUM, and the engine was handing it out from the first round.
 #
-# The SHAPE of the ramp is NOT measured: two endpoints and a total cannot tell a
-# linear acceleration from any other curve, and a rate rising linearly in time is
-# already ruled out (it would need a negative starting rate to fit 48 rounds in
-# 137 frames). So the ramp is modeled as one reduced constant rate, which
-# reproduces both endpoints and the magazine's total length exactly and differs
-# from the truth only in where those 48 rounds sit inside 2.28 sec.
+# The ramp's SHAPE is measured, not assumed. Three readings that carry ammo
+# counts alongside frame numbers put three points on the curve, and the cost sits
+# at the front: rounds 0-2 of a cold magazine take 56 frames, 2-24 another 55,
+# 24-48 only 26. A rate rising linearly in TIME is ruled out separately (it would
+# need a negative starting rate to fit 48 rounds into 137 frames). What is still
+# unmeasured is the shape INSIDE 2-24, carried here as a straight line.
 #
 # The warm-up is per MAGAZINE and a reload re-arms it, including one a skill
 # forces by dumping the magazine. Heating does not vanish the instant firing
@@ -100,17 +126,15 @@ class Spinup:
 # ramp, Crown plus Privaty a 31-frame gap and a 26-frame ramp, against the cold
 # 137 - up to 1.85 sec charged per magazine that the game does not charge.
 #
-# The ramp's own SHAPE is measured too, and it is not the flat rate this file
-# applies: rounds 0-2 of a cold magazine cost 56 frames, rounds 2-24 another 55,
-# rounds 24-48 only 26. Modelling partial retention means adopting that curve,
-# which also redistributes the 48 rounds of a COLD ramp and therefore moves every
-# shot-counted trigger on every MG - its own piece of work, not a tweak here. The
-# flat rate keeps the cold magazine's total exact, which is what calibration
-# rests on. See docs/engine-gaps.md and docs/measurements/mg-spinup.md.
+# `magazine_shot_offset` still spends this curve as one flat rate, which keeps a
+# cold magazine's total exact - what the calibration rests on - and differs from
+# the truth only in where those 48 rounds sit inside 2.28 sec. Adopting the curve
+# redistributes a COLD ramp as well, and so moves every shot-counted trigger on
+# every MG. See docs/engine-gaps.md and docs/measurements/mg-spinup.md.
 #
 # Also unsettled by that reading: whether Attack Speed shortens the ramp
 # (modeled: no, it is a fixed segment like RELOAD_FIXED_SECONDS).
-MG_SPINUP = Spinup(intervals=48, seconds=137 / 60)
+MG_SPINUP = Spinup(points=((0, 0.0), (2, 56 / 60), (24, 111 / 60), (48, 137 / 60)))
 
 _SPINUP_BY_WEAPON = {"MG": MG_SPINUP}
 
@@ -149,11 +173,13 @@ def spinup_with_speed(spinup, heating_speed_percent, rate_of_fire):
     if spinup is None or not heating_speed_percent:
         return spinup
     if heating_speed_percent > 0:
-        seconds = spinup.seconds / (1 + heating_speed_percent)
+        factor = 1.0 / (1 + heating_speed_percent)
     else:
-        seconds = spinup.seconds * (1 - heating_speed_percent)
-    return Spinup(intervals=spinup.intervals,
-                  seconds=max(seconds, spinup.intervals / rate_of_fire))
+        factor = 1.0 - heating_speed_percent
+    floor = spinup.intervals / rate_of_fire
+    if spinup.seconds * factor < floor:
+        factor = floor / spinup.seconds
+    return Spinup(points=tuple((p, t * factor) for p, t in spinup.points))
 
 
 def magazine_shot_offset(index, shot_interval, spinup):

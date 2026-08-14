@@ -56,6 +56,21 @@ def test_the_spin_up_costs_a_fixed_time_at_the_head_of_each_magazine():
         assert spinup_for_weapon(weapon) is None
 
 
+def test_the_ramp_is_a_curve_with_the_cost_at_the_front():
+    """Three readings that carry ammo counts put three points on the ramp, and
+    they are not a straight line: 56 of a cold magazine's 137 frames go to the
+    first TWO rounds. `docs/measurements/mg-spinup.md`."""
+    assert MG_SPINUP.elapsed(0) == pytest.approx(0.0)
+    assert MG_SPINUP.elapsed(2) == pytest.approx(56 * F)
+    assert MG_SPINUP.elapsed(24) == pytest.approx(111 * F)
+    assert MG_SPINUP.elapsed(48) == pytest.approx(137 * F)
+    assert MG_SPINUP.elapsed(60) == pytest.approx(137 * F)      # past the ramp
+    # 41% of the ramp goes to the first 2 of its 48 rounds.
+    assert MG_SPINUP.elapsed(2) / MG_SPINUP.seconds == pytest.approx(56 / 137)
+    # Linear inside a segment: position 1 is half of the first one.
+    assert MG_SPINUP.elapsed(1) == pytest.approx(28 * F)
+
+
 def test_a_magazine_reproduces_the_measured_frame_numbers():
     shots = _one_magazine()
     # Shot 1 opens the magazine; shot 49 is where the ramp ends; shot 305 empties it.
