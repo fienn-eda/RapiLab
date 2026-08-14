@@ -139,7 +139,11 @@ from app.skill_rules.eunhwa_tactical_upgrade import (
     build_eunhwa_tactical_upgrade_rules,
     build_explosive_round_weapon_mode_schedule,
 )
-from app.skill_rules.grave import build_grave_rules, build_overheat_per_shot_rules
+from app.skill_rules.grave import (
+    build_grave_rules,
+    build_grave_weapon_mode_schedule,
+    build_overheat_per_shot_rules,
+)
 from app.skill_rules.rei_ayanami import (
     annihilation_burst_percent,
     build_preemptive_subdual_per_shot_rules,
@@ -1001,6 +1005,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "moran-signature": lambda sv: build_fair_and_square_weapon_mode_schedule(sv, slug="moran-signature"),
     "scarlet-black-shadow": lambda sv: build_scarlet_weapon_mode_schedule(sv),  # Asura's instant magazine reload on Full Burst entry
     "laplace-ultimate-hero": lambda sv: build_laplace_transform_schedule(sv),  # Warm Up transform, magazine-length window at SMG cadence
+    "grave": lambda sv: build_grave_weapon_mode_schedule(sv),  # Prediction's ammo dump + the doubled reload
 }
 
 # A Nikke whose burst nuke "attacks sequentially N times" - N separate hits at

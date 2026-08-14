@@ -709,7 +709,8 @@ an ally's Charge Speed cannot shrink the empty window and leak a shot into it.
 Do NOT reach for a segment when the window must keep the unit's LIVE cadence
 buffs - the same contract that makes an explicit `rate_of_fire` safe here also
 freezes attack speed. "Unlimited ammo for a window on the unit's own weapon" is
-that case: raise `max_ammo_percent` for the window instead. A weapon MODE swap
+that case: raise `max_ammo_percent` for the window instead (see `grave.py`'s
+`unlimited_ammo_percent`). A weapon MODE swap
 that happens to be unlimited-ammo is different, and a segment is right there
 (see `moran`'s Fair and Square).
 

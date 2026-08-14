@@ -12,22 +12,31 @@ Modeled (DPS-relevant):
     raid_simulator converts it against each recipient's own base magazine,
     which is why skill_rules can state it without knowing any weapon).
   All durations are a literal "10 sec" in the skill text (not a data slot),
-  hence the hardcoded constant. Her self HP drain and the unlimited ammunition
-  (both Prediction) are not modeled.
+  hence the hardcoded constant. Her self HP drain (Prediction) is not modeled -
+  survivability. Prediction's unlimited ammunition IS modeled - see below.
+- Prediction's unlimited ammunition ("Affects self", Plot Spoiler): raises
+  `max_ammo_percent` for the 10-sec window instead of a weapon-mode segment -
+  a segment would freeze her cadence to an explicit `rate_of_fire`, silencing
+  every live attack-speed buff during the exact window her deck's buffs are
+  up. See `unlimited_ammo_percent`.
 - Heat Emission (skills[0]): "Activates when Prediction status ends" -
   Prediction is granted for exactly 10 sec by her own burst, and Full Burst
   itself lasts 10 sec, so activation is approximated as firing at
   full_burst_end IF her own burst fired this cycle (`own_burst_fired_this_cycle`).
-  Per Fienn, the "removed under certain conditions" text means Heat Emission is
-  removed exactly when Grave uses her burst skill AGAIN - so the squad Pierce
-  Damage buff is really a TOGGLE: off during each ~10s Prediction window right
-  after she bursts, on the rest of the time. Modeled with a status flag +
-  `EffectRegistry.truncate_open_ended`: the buff is added open-ended
-  (duration=None) when Heat Emission activates, and closed out (duration set to
-  the elapsed time) the next time her own burst fires - so replay queries for
-  any point in the fight see the correct on/off windows. Her own HP regen and
-  the Burst Gauge fill-speed bonus (gauge_charge_time is a fixed sim input, not
-  consumed) are not modeled.
+  Ends when either of two in-game tooltip conditions fires ("[방열 제거 조건]"):
+  (1) a reload completes to MAX AMMUNITION, or (2) she bursts again. Prediction
+  dumps her ammo and Reload Ratio halves what each load puts back, so it takes
+  a doubled reload to satisfy (1) - `heat_emission_seconds` - and that is far
+  shorter than (2), her 40-sec burst cooldown. So the squad Pierce Damage buff
+  is timed to the doubled reload, not to her next burst: a status flag gates
+  re-triggering while it and its buff are both live, and the buff itself
+  expires on its own duration. The reburst rule
+  (`remove_heat_emission_on_reburst`) only clears the status flag now - a
+  safety net for condition (2), which in practice never arrives before
+  condition (1) already closed the buff out. Also modeled: the forced double
+  reload itself (`build_grave_weapon_mode_schedule`), the segment that spends
+  it. Her own HP regen and the Burst Gauge fill-speed bonus (gauge_charge_time
+  is a fixed sim input, not consumed) are not modeled.
 
 - Overheat (skills[1]), a normal-attack-count escalation on self. Per Fienn
   (verified in-game), the three tiers split into two permanence regimes:
@@ -47,7 +56,9 @@ Modeled (DPS-relevant):
     II is gated on Overheat I; III on having reached Overheat II. See
     `build_overheat_per_shot_rules`. Self-scoped on a supporter, minor DPS weight.
 """
+from app.attack_rate import rate_of_fire_for_weapon, reload_time_with_speed
 from app.effects import Effect
+from app.skill_rules._helpers import silent_reload_segments
 from app.squad_engine import SkillRule, own_burst_fired_this_cycle
 
 SKILL_VALUE_MANIFESTS = {
@@ -66,6 +77,72 @@ PLOT_SPOILER_BUFF_DURATION = 10.0  # the skill text hardcodes "10 sec", not a da
 PREDICTION_DURATION = 10.0  # Plot Spoiler grants Prediction (her status window) for 10 sec
 HEAT_EMISSION_STATUS = "heat_emission_active"
 
+# Prediction's unlimited ammo only has to outlast the window. Four times the
+# rounds an unbuffed AR spends in it is headroom no deck's attack speed
+# reaches, and the magazine is discarded at the window's end anyway.
+UNLIMITED_AMMO_HEADROOM = 4.0
+
+
+def unlimited_ammo_percent(values):
+    """Prediction's unlimited ammunition, as a max-ammo ratio big enough that no
+    reload lands inside the window.
+
+    NOT a weapon-mode segment: a segment would silence her own weapon and take
+    its cadence from an explicit `rate_of_fire`, which by contract ignores live
+    buffs - and this window is exactly when her deck's buffs are up. Raising
+    max ammo keeps every live buff and costs one approximation instead: capacity
+    is sampled at each magazine's START, so the grant reaches the first magazine
+    that begins inside Prediction rather than the one already in flight. That
+    leaves one extra reload in the window, which understates her.
+    """
+    weapon = values["caster_weapon_stats"]
+    rounds = (PREDICTION_DURATION * rate_of_fire_for_weapon(weapon["weapon"])
+              * UNLIMITED_AMMO_HEADROOM)
+    return rounds / weapon["max_ammo"] - 1.0
+
+
+def heat_emission_seconds(values):
+    """How long Heat Emission lives: the lengthened reload it takes to get back
+    to max ammo from empty.
+
+    In-game tooltip "[방열 제거 조건]": Heat Emission is removed (1) when a
+    reload completes to MAX AMMUNITION, or (2) when she bursts again. Condition
+    1 fires first by a wide margin - her burst cooldown is 40 sec - so the
+    status, and everything hanging off it, lives exactly as long as this.
+
+    Reload Ratio down 50% halves what each load puts back, so it takes twice as
+    many loads to reach max, which is what Fienn read in game as "she loads half
+    a magazine twice - the reload just takes twice as long". This is a MULTIPLIER
+    on her reload, not an absolute load count: her AR already loads in halves
+    (`CLIP_RELOAD_SPLITS["grave"] = 2`, folded into `reload_time` before a
+    builder sees it), and the skill halves that ratio again on top.
+
+    Approximation: the reload's fixed animation segment (RELOAD_FIXED_SECONDS)
+    is paid once per lengthened reload, not once per load. Unmeasured either
+    way, and it is 0.148 sec against a multi-second window.
+    """
+    ratio_reduction = float(values["heat_emission"]["description_value_02"]) / 100
+    reload_multiplier = 1 / (1 - ratio_reduction)
+    normal = reload_time_with_speed(values["caster_weapon_stats"]["reload_time"], 0.0)
+    return reload_multiplier * normal
+
+
+def build_grave_weapon_mode_schedule(values):
+    """The ammo dump when Prediction ends, as a segment that fires nothing.
+
+    "Removes 100% of bullets" lands at the end of her own burst's Prediction
+    window, and the reload that follows runs for `heat_emission_seconds` - twice
+    a normal one, because Reload Ratio only puts half the magazine back per
+    load. `rate_of_fire` (not `charge_time`) so no ally's Charge Speed buff can
+    shrink the window into leaking a shot.
+    """
+    return silent_reload_segments(
+        "grave",
+        heat_emission_seconds(values),
+        values["caster_weapon_stats"]["weapon"],
+        offset=PREDICTION_DURATION,
+    )
+
 
 def build_grave_rules(values):
     heat_emission = values["heat_emission"]
@@ -77,6 +154,8 @@ def build_grave_rules(values):
     squad_pierce = float(plot_spoiler["description_value_04"]) / 100
     squad_ammo_rounds = float(plot_spoiler["description_value_05"])
     heat_emission_pierce = float(heat_emission["description_value_05"]) / 100
+    unlimited_ammo = unlimited_ammo_percent(values)
+    heat_emission_duration = heat_emission_seconds(values)
 
     def apply_plot_spoiler(context, caster_slug, time, registry):
         registry.add(
@@ -105,18 +184,31 @@ def build_grave_rules(values):
             Effect("max_ammo_rounds", squad_ammo_rounds, "squad", PLOT_SPOILER_BUFF_DURATION, caster_slug),
             applied_at=time,
         )
+        # Prediction's unlimited ammunition, for the window her own burst opens.
+        registry.add(
+            Effect("max_ammo_percent", unlimited_ammo, "self", PREDICTION_DURATION, caster_slug),
+            applied_at=time,
+        )
 
     def remove_heat_emission_on_reburst(context, caster_slug, time, registry):
+        # Removal condition 2. The buff itself is already timed out by then
+        # (condition 1 fires within two reloads), so only the status flag is
+        # cleared here.
         if context.has_status(caster_slug, HEAT_EMISSION_STATUS):
-            registry.truncate_open_ended("pierce_damage_up", caster_slug, time)
             context.clear_status(caster_slug, HEAT_EMISSION_STATUS)
 
     def apply_heat_emission(context, caster_slug, time, registry):
         if context.has_status(caster_slug, HEAT_EMISSION_STATUS):
             return
         context.set_status(caster_slug, HEAT_EMISSION_STATUS)
+        # The status ends when a reload reaches max ammo (in-game tooltip
+        # condition 1), which the double reload below does. Her burst - the
+        # other removal condition - is 40 sec away and never gets there first,
+        # so `remove_heat_emission_on_reburst` stays only as a safety net.
         registry.add(
-            Effect("pierce_damage_up", heat_emission_pierce, "squad", None, caster_slug), applied_at=time
+            Effect("pierce_damage_up", heat_emission_pierce, "squad",
+                   heat_emission_duration, caster_slug),
+            applied_at=time,
         )
 
     return [

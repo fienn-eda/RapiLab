@@ -3,6 +3,7 @@ from app.skill_rules.grave import (
     PREDICTION_DURATION,
     build_grave_rules,
     build_overheat_per_shot_rules,
+    heat_emission_seconds,
 )
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
@@ -39,8 +40,19 @@ def make_context():
     ])
 
 
+# Same weapon stats as test_skill_rules_grave_prediction_cycle.py: reload_time
+# 2.0 is the AR's own CLIP_RELOAD_SPLITS-doubled value, already folded in by
+# user_roster before a builder sees it (not the skill's separate Reload Ratio
+# halving, which build_grave_rules applies on top).
+CASTER_WEAPON_STATS = {"weapon": "AR", "reload_time": 2.0, "max_ammo": 60}
+
+
 def build():
-    return build_grave_rules({"heat_emission": HEAT_EMISSION, "plot_spoiler": PLOT_SPOILER})
+    return build_grave_rules({
+        "heat_emission": HEAT_EMISSION,
+        "plot_spoiler": PLOT_SPOILER,
+        "caster_weapon_stats": CASTER_WEAPON_STATS,
+    })
 
 
 GRAVE = {"slug": "grave", "element": "Fire"}
@@ -96,37 +108,49 @@ def test_heat_emission_only_triggers_if_grave_burst_this_cycle():
 def test_heat_emission_applies_only_once_while_still_active():
     # If full_burst_end fires again while Heat Emission is already active
     # (e.g. she didn't reburst that cycle but the condition still holds from a
-    # stale flag in a hand-built test), it must not double up.
+    # stale flag in a hand-built test), it must not double up. Checked from
+    # inside the live window - the buff itself is now timed to the doubled
+    # reload (heat_emission_seconds), not open-ended, so a check past that
+    # window would read 0 regardless of doubling and test nothing.
     ctx = make_context()
     ctx.burst_used_this_cycle.add("grave")
     registry = EffectRegistry()
     rules = {"grave": build()}
 
     fire_trigger("full_burst_end", rules, ctx, registry, time=15.0)
-    fire_trigger("full_burst_end", rules, ctx, registry, time=45.0)
+    fire_trigger("full_burst_end", rules, ctx, registry, time=16.0)
 
     # should NOT double up - still just 48.4%, not 96.8%
-    assert round(registry.total_for("pierce_damage_up", ALLY, now=45.0), 4) == 0.484
+    assert round(registry.total_for("pierce_damage_up", ALLY, now=16.0), 4) == 0.484
 
 
-def test_heat_emission_is_removed_when_grave_bursts_again():
-    # Per Fienn: Heat Emission's "removed under certain conditions" means it's
-    # removed exactly when Grave uses her burst again - it's a toggle, off
-    # during each ~10s Prediction window right after she bursts, on otherwise.
+def test_heat_emission_expires_well_before_grave_bursts_again():
+    # In-game tooltip "[방열 제거 조건]" gives Heat Emission two removal
+    # conditions: (1) a reload completes to max ammo, (2) she bursts again.
+    # Reload Ratio's doubled reload satisfies (1) within a few seconds of
+    # activation, long before (2) - her burst cooldown is 40 sec - so the buff
+    # is already gone by the time she could reburst.
     ctx = make_context()
     ctx.burst_used_this_cycle.add("grave")
     registry = EffectRegistry()
+    duration = heat_emission_seconds({
+        "heat_emission": HEAT_EMISSION,
+        "plot_spoiler": PLOT_SPOILER,
+        "caster_weapon_stats": CASTER_WEAPON_STATS,
+    })
 
     fire_trigger("full_burst_end", {"grave": build()}, ctx, registry, time=15.0)  # Heat Emission activates
-    assert round(registry.total_for("pierce_damage_up", ALLY, now=39.9), 4) == 0.484
+    assert round(registry.total_for("pierce_damage_up", ALLY, now=15.0 + duration - 0.01), 4) == 0.484
+    assert registry.total_for("pierce_damage_up", ALLY, now=15.0 + duration + 0.01) == 0.0
 
     # Isolate the removal rule (build()[1]) so Plot Spoiler's own reburst buff
     # (a separate, temporary squad Pierce Damage grant) doesn't mask whether
-    # Heat Emission specifically was closed out.
+    # Heat Emission specifically was closed out. The buff is already expired
+    # by her next burst (condition 2, t=40), so this is a no-op on the
+    # registry - only the status flag (letting the next cycle re-arm) changes.
     removal_only = {"grave": [build()[1]]}
     fire_trigger("own_burst_activate", removal_only, ctx, registry, time=40.0)
     assert registry.total_for("pierce_damage_up", ALLY, now=40.0) == 0.0
-    assert registry.total_for("pierce_damage_up", ALLY, now=100.0) == 0.0
 
 
 def test_heat_emission_reactivates_after_the_next_full_burst_end():
@@ -139,7 +163,10 @@ def test_heat_emission_reactivates_after_the_next_full_burst_end():
     fire_trigger("own_burst_activate", rules, ctx, registry, time=40.0)  # cycle 2 burst: removed
     fire_trigger("full_burst_end", rules, ctx, registry, time=50.0)   # cycle 2 ends: reactivates
 
-    assert round(registry.total_for("pierce_damage_up", ALLY, now=175.0), 4) == 0.484
+    # Checked right after cycle 2's grant, not cycle 1's - the buff is now
+    # timed to the doubled reload (heat_emission_seconds), so a far-future
+    # check (e.g. now=175.0) would read 0 and test nothing.
+    assert round(registry.total_for("pierce_damage_up", ALLY, now=50.0), 4) == 0.484
 
 
 def test_overheat_per_shot_rules_structure():
