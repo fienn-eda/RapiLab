@@ -88,9 +88,13 @@ weapons' measured regressions crossing zero diameter at the same 110% hit
 rate). The share of that circle still inside the boss's core is the area ratio
 (`accuracy.core_hit_rate`), fed into `calculate_damage`'s `core_hit_rate`
 parameter the same way crit already averages over `crit_rate`. This is gated
-on `BossProfile.core_diameter_px` — `None` (the default, and every boss before
-2026-08-07) leaves every core-eligible normal attack at p=1.0, the engine's old
-ceiling, so `hit_rate` is a genuine no-op until an encounter sets a diameter.
+on `BossProfile.core_diameter_px` — `None` (the default) leaves every
+core-eligible normal attack at p=1.0, the engine's old ceiling, so `hit_rate` is
+a genuine no-op until an encounter sets a diameter. Since 2026-08-14 the
+calibration harness sets one (`raid_record.CORE_DIAMETER_PX` = 48.89, Annihilio
+measured in the fight), so a `hit_rate` bullet DOES move the recorded-raid
+numbers for SMG/AR/SG holders; the raid-rotation bosses the app ships still
+carry `null`.
 
 **Even with a diameter set, MG/SR/RL still see nothing** — their base spread
 is already 10px, inside any plausible core, so narrowing it further changes

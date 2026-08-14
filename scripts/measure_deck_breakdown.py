@@ -13,8 +13,11 @@ one it chose for itself. Investment comes from the synced roster by default,
 because per-unit ratios are meaningless against uniform stats.
 
 The boss defaults to the recorded Annihilio solo raid (Iron element, core
-hittable, parts destructible, DEF 31,784, 180 sec) - see docs/decisions.md for
-the record itself.
+hittable with a measured 48.89 diameter, parts destructible, DEF 31,784,
+180 sec) - see docs/decisions.md for the record itself. The core diameter means
+SMG/AR/SG normal attacks here carry a core hit rate below 1.0, so a
+normal_attack figure from this script is not comparable with one taken before
+2026-08-14.
 
 Usage (any cwd):
     python3 scripts/measure_deck_breakdown.py --deck liter,volume,cinderella,mint,snow-white

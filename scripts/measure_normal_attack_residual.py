@@ -13,10 +13,16 @@ Three columns carry the argument:
             k = (record - other_sim) / normal_sim
     f       the same for "too many shots", which also shrinks per-shot riders
             (a rider fires once per shot): f = (record - rest) / (normal + riders)
-    p       the core hit rate that would land the unit on its record. The engine
-            assumes every core-eligible shot hits the core; damage is linear in
+    p       the core hit rate that would land the unit on its record, on top of
+            whatever the baseline already applies. Damage is linear in
             core_hit_bonus_for, so one run at 1.0 and one at 0.0 give every p in
             between by interpolation.
+
+            Since 2026-08-14 RECORD_BOSS carries a measured core_diameter_px, so
+            the baseline already applies the spread term - which means p now
+            reads as `p_aim` alone, the play-condition term gap #21 is about,
+            rather than as the whole core hit rate. Figures quoted below predate
+            that and are the whole term.
 
 Reading them: a term shared across units shows as a shared value; a per-weapon
 constant (rate of fire) shows as k sorting by weapon class; a play-condition
