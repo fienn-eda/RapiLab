@@ -1,5 +1,6 @@
 import pytest
 
+from app.attack_rate import reload_time_with_speed
 from app.effects import EffectRegistry
 from app.skill_rules.laplace_ultimate_hero import (
     build_laplace_transform_schedule,
@@ -258,6 +259,13 @@ def test_the_reload_segment_starts_where_the_transform_ends():
     interval = 1.0 / transform["profile"]["rate_of_fire"]
     transform_end = transform["start"] + transform["until_shots"] * interval
     assert reload_segment["start"] == pytest.approx(transform_end)
+    # The window's LENGTH is her own weapon's affine reload
+    # (reload_time_with_speed), not the raw file value the cycle period
+    # uses - 2.648 sec against CASTER_WEAPON_STATS' 2.5, from the fixed
+    # 0.148 sec segment every reload carries on top of the scaled part.
+    expected_reload_seconds = reload_time_with_speed(CASTER_WEAPON_STATS["reload_time"], 0.0)
+    assert (reload_segment["end"] - reload_segment["start"]
+            == pytest.approx(expected_reload_seconds))
 
 
 def test_the_two_segments_do_not_overlap():

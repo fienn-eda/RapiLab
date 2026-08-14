@@ -63,8 +63,8 @@ Modeled (DPS-relevant):
   part-way through a window, and once a single window can hold 240 shots it
   skips a reload gap and arrives 6.5 sec sooner.
 - "Removes 100% of ammo" when Electric Power, Fully Full Charge ends: a silent
-  segment one reload long, right after the transform window. Before this the
-  base weapon resumed with a fresh magazine and no reload at all.
+  segment one reload long, right after the transform window, so the base weapon
+  does not resume until that reload has been spent.
 
 Not modeled / deferred:
 - Warm Up's Charge Speed +10% per stack (skills[0]): not modeled as a buff

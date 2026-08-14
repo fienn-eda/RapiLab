@@ -73,10 +73,10 @@ def test_window_and_period_scale_with_max_ammo_overload():
 
 
 def test_segments_never_overlap():
-    """Covers BOTH segment shapes now in the schedule: a transform window
-    (until_shots) and the silent reload right after it (end). A reload starts
-    exactly where its transform ends (an `until_shots` window ends AT its last
-    shot), so the boundary is `>=`, not `>`."""
+    """Covers both segment shapes in the schedule: a transform window
+    (until_shots) and the silent reload right after it (end). The boundary is
+    `>=` because a reload segment opens exactly at its transform's end instant
+    (an `until_shots` window ends AT its last shot) - back-to-back, not gapped."""
     schedule = build_laplace_transform_schedule(values())
     segs = schedule(make_context(), fight_duration=180.0)
     for earlier, later in zip(segs, segs[1:]):
