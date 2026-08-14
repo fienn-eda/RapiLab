@@ -22,12 +22,12 @@ Modeled (DPS-relevant):
   against the 30s duration makes the refresh steady state a continuous
   1-tick/sec sustained DoT for the whole fight, modeled as a whole-fight
   periodic sustained nuke. See build_acid_ammo_periodic_nuke.
-
-Not modeled / deferred:
-- Supercop's forced-reload / ammo-removal bookkeeping ("Removes 100% of ammo",
-  "Forced Reload"): the engine has no way to empty a magazine mid-fight.
+- Supercop's "Removes 100% of ammo" + "Forced Reload": a segment that fires
+  nothing, spanning her weapon's reload under the skill's own fixed reload
+  speed. See build_jill_weapon_mode_schedule.
 """
-from app.skill_rules._helpers import buff_rule, round_buff_rule
+from app.attack_rate import reload_time_with_speed
+from app.skill_rules._helpers import buff_rule, round_buff_rule, silent_reload_segments
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -97,3 +97,26 @@ def build_acid_ammo_periodic_nuke(values):
         "percent": float(acid["description_value_01"]),
         "damage_type": "sustained",
     }
+
+
+def build_jill_weapon_mode_schedule(values):
+    """Supercop's "Removes 100% of ammo" + "Forced Reload", as a segment that
+    fires nothing: entering it discards her magazine and the base weapon
+    resumes with a fresh one when it ends, which is what lets her 10-sec buff
+    window spend a FULL magazine.
+
+    The window's length is her own weapon's reload under the skill's "Reload
+    speed is fixed at a 99.96% increase" clause. "Fixed" means it overrides
+    whatever else is live, so the length is derived from that value alone and
+    not from the registry - the same reading Milk's forced reload already
+    implements. `rate_of_fire` (not `charge_time`) so no ally's Charge Speed
+    buff can shrink the empty window into leaking a shot.
+    """
+    supercop = values["supercop"]
+    fixed_reload_speed = float(supercop["description_value_01"]) / 100
+    weapon_stats = values["caster_weapon_stats"]
+    return silent_reload_segments(
+        "jill-valentine",
+        reload_time_with_speed(weapon_stats["reload_time"], fixed_reload_speed),
+        weapon_stats["weapon"],
+    )

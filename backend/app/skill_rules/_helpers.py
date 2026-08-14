@@ -467,6 +467,36 @@ SUBSET_SUSTAINED_DAMAGE_BUFF_SLUGS = frozenset({
 })
 
 
+def silent_reload_segments(slug, reload_seconds, weapon, *, offset=0.0):
+    """Windows that fire nothing, one per own-burst - the engine's way to spend
+    a reload that a skill forced.
+
+    A segment boundary discards the magazine and resumes with a fresh one, so a
+    window this long IS "Removes N% of ammo" + "Forced Reload". `rate_of_fire`
+    (not `charge_time`) because an explicit-rate profile takes no cadence buffs
+    by contract, so no ally's Charge Speed can shrink the window into leaking a
+    shot; `damage_percent` 0.0 makes a boundary shot harmless regardless.
+    """
+    def schedule(context, fight_duration):
+        segments = []
+        for burst_time in context.burst_times.get(slug, []):
+            start = burst_time + offset
+            if start >= fight_duration:
+                continue
+            segments.append({
+                "start": start,
+                "end": min(start + reload_seconds, fight_duration),
+                "profile": {
+                    "weapon": weapon,
+                    "damage_percent": 0.0,
+                    "rate_of_fire": 1.0 / (reload_seconds * 2),
+                },
+            })
+        return segments
+
+    return schedule
+
+
 def max_hp_scaled_atk_rule(
     trigger, percent, scope, duration, base_max_hp, condition=None, refreshing=False,
     refresh_group=None,

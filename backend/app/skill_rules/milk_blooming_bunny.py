@@ -66,7 +66,7 @@ weapon stats from data/dotgg/char_milk-blooming-bunny.json.
 """
 from app.attack_rate import reload_time_with_speed
 from app.raid_simulator import UNTIL_NEXT_OWN_BURST
-from app.skill_rules._helpers import buff_rule
+from app.skill_rules._helpers import buff_rule, silent_reload_segments
 
 SKILL_VALUE_MANIFESTS = {
     "milk-blooming-bunny": {
@@ -151,32 +151,14 @@ def build_milk_burst_anchored_buffs(values):
 
 
 def build_milk_weapon_mode_schedule(values):
-    """The forced reload, as a segment that fires nothing: entering the segment
-    discards whatever is left in her magazine and the base weapon resumes with a
-    fresh one when it ends. `rate_of_fire` (not `charge_time`) so the empty
-    window cannot be shrunk by an ally's Charge Speed buff into leaking a shot."""
-    offset = embarrassment_entry_offset(values)
-    reload_seconds = _forced_reload_seconds(values)
-    weapon = values["caster_weapon_stats"]["weapon"]
-
-    def schedule(context, fight_duration):
-        segments = []
-        for burst_time in context.burst_times.get("milk-blooming-bunny", []):
-            start = burst_time + offset
-            if start >= fight_duration:
-                continue
-            segments.append({
-                "start": start,
-                "end": min(start + reload_seconds, fight_duration),
-                "profile": {
-                    "weapon": weapon,
-                    "damage_percent": 0.0,
-                    "rate_of_fire": 1.0 / (reload_seconds * 2),
-                },
-            })
-        return segments
-
-    return schedule
+    """The forced reload, as a segment that fires nothing - see
+    `_helpers.silent_reload_segments`."""
+    return silent_reload_segments(
+        "milk-blooming-bunny",
+        _forced_reload_seconds(values),
+        values["caster_weapon_stats"]["weapon"],
+        offset=embarrassment_entry_offset(values),
+    )
 
 
 def build_milk_scheduled_nukes(values):

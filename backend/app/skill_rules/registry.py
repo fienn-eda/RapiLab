@@ -93,6 +93,7 @@ from app.skill_rules.cinderella import (
 from app.skill_rules.jill_valentine import (
     build_acid_ammo_periodic_nuke,
     build_jill_rules,
+    build_jill_weapon_mode_schedule,
     build_magnum_per_shot_rules,
 )
 from app.skill_rules.marciana_marine_study import (
@@ -986,6 +987,7 @@ _WEAPON_MODE_SCHEDULE_BUILDERS = {
     "maxwell-ordinary-mechanic": lambda sv: build_matis_uberbuster_weapon_mode_schedule(sv),
     "laplace-signature": lambda sv: laplace_signature.build_buster_weapon_mode_schedule(sv),  # Buster mode, 93 measured ticks
     "milk-blooming-bunny": lambda sv: build_milk_weapon_mode_schedule(sv),  # forced reload: a segment that fires nothing
+    "jill-valentine": lambda sv: build_jill_weapon_mode_schedule(sv),  # Supercop's ammo dump + forced reload
     "nayuta": lambda sv: build_memory_incineration_weapon_mode_schedule(sv),  # Memory Incineration, 10s
     # Overcharge Formula: one charged Pierce shot per burst (1.5s base, 1.2s with
     # the Favorite Item). Each slug anchors on its own burst times.
