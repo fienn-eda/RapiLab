@@ -32,10 +32,10 @@ Weapon stats come from base Phantom's ShiftyPad file via the manifest's
 
 Modeled (DPS-relevant):
 - Thief's Calling Card (dollskills[0]): permanent squad `enemy_def_percent`
-  -32.19%, self Attack Damage +75.17% as a per-shot round grant, and ONE
-  dagger stack's Hit Rate +25.75% held permanently - all three exactly as in
-  the base build. The extra stacks this build genuinely earns are NOT added:
-  see the deferral below.
+  -32.19% and self Attack Damage +75.17% as a per-shot round grant, both
+  exactly as in the base build. Its Hit Rate +25.75% per dagger stack is NOT a
+  flat grant here - it rides the live count (below), which is the one place
+  this build's Calling Card differs from the base's in effect.
 - Thief's Vision (dollskills[1]): self ATK +85.12% for 5 sec and Distributed
   Damage +31.92% for 10 sec every 10 normal attacks, also as in the base. The
   bullet names no stack count, so at 12 AR shots/sec each re-application
@@ -53,38 +53,38 @@ Modeled (DPS-relevant):
 - Secret Trick (dollskills[2], her burst, cd 40): 1457.28% as Distributed
   Damage; Damage Taken +18% for 30 sec when the boss is Fire Code; self Max
   Ammunition Capacity +50% for 10 sec.
+- Thief's Dagger as a live counter (`build_dagger_resource_specs`), driving her
+  Hit Rate as the step function the stack count really traces. The count runs
+  0 -> 1 -> 2 -> spend, never resting at 3: the cap is reached and consumed in
+  the same instant, so a three-stack Hit Rate is never held for any duration.
+  Its time-average over her shots is **1.48 stacks**.
+
+  The PROC side is deliberately left on `VISION_PROC_SHOTS`: the walk's spend
+  times are every 60th shot exactly (see above), so moving the nukes onto the
+  resource would buy nothing and risk the one thing that is proven. The cadence
+  test pins the two against each other.
 
 Not modeled / deferred:
-- The dagger stack count is not tracked as a live resource - the 60-shot
-  counter stands in for "max stacks reached". **For the PROC TIMES that is not
-  an approximation** (see the derivation above), so tracking the count would
-  reproduce the cadence this module already fires. What it would change is the
-  Hit Rate below.
-- Her Hit Rate is encoded at ONE stack, the base build's floor, while the true
-  count is a sawtooth 1 -> 2 -> 3 -> 0 whose time-average is **1.48 stacks**
-  (walked against her real shot timeline, 2026-08-14). So this build's core-hit
-  share is an UNDERSTATEMENT.
-
-  It currently costs nothing: hit rate reaches damage only through
-  `BossProfile.core_diameter_px`, which is opt-in and set on no boss the product
-  builds decks against (0 of 6 in `data/raid-rotations.json`, default None).
-  Measured: forcing her dagger to 2 or 3 stacks moves her sweep total by 0.00%.
-
-  **And the fix is not to pin 1.48.** Hit rate reaches damage through an AREA
-  RATIO, so the mean of the count and the mean of the resulting core-hit
-  probability are different numbers; substituting a time-averaged stack count
-  into a non-linear path would be wrong in a direction nobody has measured. The
-  honest fix is the step function - the dagger as a real resource driving a
-  count-scaled `ResourceBuff` - and it is worth building on the day a raid boss
-  carries a measured core diameter, not before.
+- Nothing in the dagger. (What her Hit Rate is worth depends entirely on the
+  encounter: hit rate reaches damage only when the boss is BOTH `core_hittable`
+  and carries a `core_diameter_px`, and no boss the product builds decks against
+  declares either - `data/raid-rotations.json` has 0 of 6, and both
+  `BossProfile` fields default off. Measured on this deck: 0.00% against the
+  default boss, **+1.68%** against one with the record boss's core hittable at
+  48.89 px. Above two stacks her 75px spread is already inside that core, which
+  is why the third stack would have been worth nothing even if it were held.)
 """
+from app.effects import ResourceSpec
 from app.skill_rules._helpers import (
     buff_rule,
     instant_nuke_pulse_rule,
+    linear_resource_buff,
     refreshing_buff_rule,
     round_buff_rule,
 )
 from app.squad_engine import boss_is_element
+
+THIEFS_DAGGER = "thiefs_dagger"
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -117,11 +117,84 @@ def secret_trick_signature_burst_percent(values):
     return float(values["secret_trick"]["description_value_01"])
 
 
+def dagger_timeline(shot_times, values):
+    """Walk Thief's Dagger over `shot_times`, returning (fill times, spend times).
+
+    One walk feeds both sides of the resource, so the fills and the spends can
+    never disagree about when the dagger emptied. Written straight from the
+    Favorite Item text:
+
+    - source 1 fires on a normal attack against a target NOT carrying Calling
+      Card, and the same attack applies Calling Card. Both last 5 sec, and that
+      shared clock is why the source nets nothing past the stack it grants right
+      after each spend (see the module docstring).
+    - source 2 fires every 30 normal attacks, on a counter of its own.
+    - reaching the 3-stack cap fires Thief's Vision, which removes the stacks
+      and (first bullet) removes Calling Card, re-arming source 1.
+    """
+    card = values["calling_card"]
+    cap = int(float(card["description_value_04"]))
+    stack_seconds = float(card["description_value_05"])
+    calling_card_seconds = float(card["description_value_02"])
+    source_two_shots = int(float(card["description_value_06"]))
+
+    expiries = []
+    calling_card_until = float("-inf")
+    since_source_two = 0
+    fills, spends = [], []
+    for time in shot_times:
+        expiries = [e for e in expiries if e > time]
+        if time >= calling_card_until:
+            if len(expiries) < cap:
+                expiries.append(time + stack_seconds)
+                fills.append(time)
+            calling_card_until = time + calling_card_seconds
+        since_source_two += 1
+        if since_source_two >= source_two_shots:
+            since_source_two = 0
+            if len(expiries) < cap:
+                expiries.append(time + stack_seconds)
+                fills.append(time)
+        if len(expiries) >= cap:
+            spends.append(time)
+            expiries = []
+            calling_card_until = time
+    return fills, spends
+
+
+def build_dagger_resource_specs(values):
+    """Thief's Dagger as a live counter, so her Hit Rate is the step function the
+    stack count really traces instead of the base build's one-stack floor.
+
+    The walk is the module's because the dagger's two sources INTERACT - spending
+    it strips Calling Card, which is the condition re-arming the other source -
+    so no set of independent per-source schedules can express it. Everything
+    after the walk is the engine's: `resource_count` already replaces its
+    baseline at each spend and expires each fill on its own clock, which is
+    exactly the sawtooth.
+    """
+    card = values["calling_card"]
+    cap = int(float(card["description_value_04"]))
+    stack_seconds = float(card["description_value_05"])
+    per_stack_hit_rate = float(card["description_value_03"]) / 100
+    return [ResourceSpec(
+        name=THIEFS_DAGGER,
+        fill=("computed", lambda shot_times: dagger_timeline(shot_times, values)[0]),
+        cap=cap,
+        buffs=[linear_resource_buff("hit_rate", per_stack_hit_rate, "self",
+                                    lifetime=stack_seconds)],
+        resets=[{
+            "trigger": "computed",
+            "value": 0,
+            "times": lambda shot_times: dagger_timeline(shot_times, values)[1],
+        }],
+    )]
+
+
 def build_phantom_signature_rules(values):
     card = values["calling_card"]
     trick = values["secret_trick"]
     def_debuff = float(card["description_value_01"]) / 100
-    dagger_hit_rate = float(card["description_value_03"]) / 100
     damage_taken = float(trick["description_value_02"]) / 100
     damage_taken_duration = float(trick["description_value_03"])
     max_ammo = float(trick["description_value_04"]) / 100
@@ -129,8 +202,8 @@ def build_phantom_signature_rules(values):
     return [
         buff_rule("battle_start", [
             ("enemy_def_percent", -def_debuff, "squad", None),
-            # The base build's single held stack, its floor - see the docstring.
-            ("hit_rate", dagger_hit_rate, "self", None),
+            # Hit Rate is NOT granted here - the dagger drives it as a live
+            # count (`build_dagger_resource_specs`).
         ]),
         buff_rule("own_burst_activate", [
             ("max_ammo_percent", max_ammo, "self", max_ammo_duration),

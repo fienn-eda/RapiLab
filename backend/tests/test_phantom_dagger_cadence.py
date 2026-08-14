@@ -31,51 +31,24 @@ that silently no longer follows.
 """
 import pytest
 
-from app.skill_rules.phantom_signature import VISION_PROC_SHOTS
+from app.skill_rules.phantom_signature import VISION_PROC_SHOTS, dagger_timeline
 
 # Real skill level 10 values (lootandwaifus dollskills[0]), slot indices read
 # off the parsed data rather than counted in the bullet text.
 CALLING_CARD = {
     "description_value_02": "5",    # Calling Card lasts 5 sec
+    "description_value_03": "25.75",  # Hit Rate per dagger stack
     "description_value_04": "3",    # Thief's Dagger stacks up to 3
     "description_value_05": "5",    # ...and lasts for 5 sec
     "description_value_06": "30",   # the Favorite Item source: every 30 normals
 }
+VALUES = {"calling_card": CALLING_CARD}
 
 
-def dagger_procs(shot_times, values=CALLING_CARD):
-    """The times Thief's Dagger reaches max stacks, walked straight from the
-    skill text. Returns (proc times, stack count after each shot)."""
-    cap = int(float(values["description_value_04"]))
-    stack_seconds = float(values["description_value_05"])
-    calling_card_seconds = float(values["description_value_02"])
-    source_two_shots = int(float(values["description_value_06"]))
-
-    expiries = []
-    calling_card_until = float("-inf")
-    since_source_two = 0
-    procs, counts = [], []
-    for time in shot_times:
-        expiries = [e for e in expiries if e > time]
-        if time >= calling_card_until:
-            # Source 1 fires only when the target is NOT carrying Calling Card,
-            # and the same attack re-applies it.
-            if len(expiries) < cap:
-                expiries.append(time + stack_seconds)
-            calling_card_until = time + calling_card_seconds
-        since_source_two += 1
-        if since_source_two >= source_two_shots:
-            since_source_two = 0
-            if len(expiries) < cap:
-                expiries.append(time + stack_seconds)
-        if len(expiries) >= cap:
-            # Thief's Vision: fires, removes the stacks, and its first bullet
-            # removes Calling Card - which is what re-arms source 1.
-            procs.append(time)
-            expiries = []
-            calling_card_until = time
-        counts.append(len(expiries))
-    return procs, counts
+def dagger_procs(shot_times, values=VALUES):
+    """The module's own walk - deliberately NOT a second copy of it here, so the
+    derivation these tests pin is the one the encoding actually runs."""
+    return dagger_timeline(shot_times, values)[1]
 
 
 def even_shots(rate, duration=300.0):
@@ -96,7 +69,7 @@ def test_proc_cadence_is_exactly_the_encoded_constant(rate):
     """Above the cliff the gap is the constant at EVERY rate - which is what
     makes 60 exact rather than a fit to one deck."""
     shots = even_shots(rate)
-    procs, _counts = dagger_procs(shots)
+    procs = dagger_procs(shots)
     gaps = proc_gaps_in_shots(shots, procs)
     assert gaps, f"no procs at {rate}/sec"
     assert set(gaps) == {VISION_PROC_SHOTS}, (
@@ -126,9 +99,7 @@ def test_below_the_cliff_the_dagger_never_reaches_max(rate):
     """At or under 30 shots per stack lifetime, source 2's own stacks expire
     before the next one lands. Unreachable for her AR (12/sec base), but it is
     the one place the encoded constant would be wrong, so it is pinned."""
-    procs, counts = dagger_procs(even_shots(rate))
-    assert procs == []
-    assert max(counts) < int(float(CALLING_CARD["description_value_04"]))
+    assert dagger_procs(even_shots(rate)) == []
 
 
 def test_cliff_is_where_the_two_durations_cross():

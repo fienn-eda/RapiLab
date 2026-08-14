@@ -506,6 +506,23 @@ value_fn(count) at every time. First consumers: `modernia.py` (timed capped),
 `guillotine_winter_slayer.py` (permanent + leveled + core-conditional),
 `cinderella.py` (periodic fill), `laplace.py` (outside-own-status-window).
 
+**`("computed", fn)` hands the walk to the owning module** - `fn(shot_times)`
+returns the fill times. For a resource whose sources INTERACT: where one
+source's next fill depends on when the resource was last spent, per-source
+schedules are not independent and cannot be merged after the fact. Its
+reset-side partner is `{"trigger": "computed", "times": fn, "value": X}`, and
+both sides should come from ONE walk in the module so they cannot disagree
+about when the resource emptied. First consumer: Phantom's Thief's Dagger
+(`phantom_signature.dagger_timeline`) - spending it strips Calling Card, which
+is the very condition re-arming its other source.
+
+**Reach for it only when the interaction is real.** A resource whose sources are
+independent belongs on the declarative kinds below: those the engine can reason
+about, and no unit can get subtly wrong. Everything after the walk is still the
+engine's - `resource_count` replaces its baseline at each spend and expires each
+fill on its own clock, which is exactly a self-consuming sawtooth, so a module
+that reaches for `computed` should still be handing over times and nothing else.
+
 **A resource may have MORE THAN ONE fill source.** In place of a single fill
 spec, `fill` takes a **list of `(fill spec, amount)` pairs**, each running on its
 own schedule and granting its own amount - Mihara's Ensnaring Chains is +10 per
@@ -534,14 +551,17 @@ trigger is added without landing here.
 set or spent rather than only ever accumulating - e.g. Soda's Golden Chip,
 starting the fight at its 50 cap and spending 17 at each of her bursts.
 `ResourceSpec` takes an optional `resets` field: `[{"trigger":
-"battle_start"|"own_burst"|"own_burst_delayed"|"full_burst_end", "value": X,
-"delay": seconds (own_burst_delayed only)}, ...]`. `full_burst_end` fires at
+"battle_start"|"own_burst"|"own_burst_delayed"|"full_burst_end"|"computed",
+"value": X, "delay": seconds (own_burst_delayed only), "times": fn("computed"
+only)}, ...]`. `full_burst_end` fires at
 each Full Burst's end whoever opened it (Arcana: Fortune Mate's Happy Memories,
 cleared there by Keepsake Album's own third bullet) - distinct from
 `own_burst_delayed` with a 10 sec delay, which lands one burst-ordering beat
 early and would cut the window's last shots short. Resets from every spec are
 replayed in TIME order, so each one's pre-value reflects the fills AND any
-earlier reset already applied. There is **no "on reaching cap" trigger.**
+earlier reset already applied. There is no declarative "on reaching cap"
+trigger - a resource that empties itself at its cap uses `"computed"` (above),
+where the module's own walk decides the spend times.
 
 **A spend uses `value_fn(pre_value)` in place of `value`** - for a consumption
 that reads the count it is spending, rather than landing on a fixed number.

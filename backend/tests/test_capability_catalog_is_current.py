@@ -42,6 +42,18 @@ def _catalog():
     return CATALOG.read_text(encoding="utf-8")
 
 
+def _documents(catalog, name):
+    """Whether the catalog names this kind AS A KIND.
+
+    Matching the bare word is not enough: the first new fill kind added after
+    this test landed was `computed`, an ordinary English word that already
+    appeared in the prose, so a substring check passed while the kind itself was
+    undocumented. Every kind in the catalog is written in its literal spec form
+    - `("per_shot_every", N)` - so the double quotes are what distinguish a
+    documented kind from an accidental word match."""
+    return f'"{name}"' in catalog
+
+
 def test_every_resource_fill_kind_is_in_the_catalog():
     kinds = set(re.findall(r'kind == "([a-z_]+)"', _source()))
     kinds |= SEPARATELY_RESOLVED_FILL_KINDS
@@ -50,7 +62,7 @@ def test_every_resource_fill_kind_is_in_the_catalog():
     assert len(kinds) >= 13, f"fill-kind scan found only {sorted(kinds)}"
 
     catalog = _catalog()
-    undocumented = sorted(kind for kind in kinds if kind not in catalog)
+    undocumented = sorted(k for k in kinds if not _documents(catalog, k))
     assert not undocumented, (
         "these ResourceSpec fill kinds exist in raid_simulator but are absent "
         f"from the capability catalog: {undocumented}. Add them to "
@@ -65,7 +77,7 @@ def test_every_resource_reset_trigger_is_in_the_catalog():
     assert len(triggers) >= 4, f"reset-trigger scan found only {sorted(triggers)}"
 
     catalog = _catalog()
-    undocumented = sorted(t for t in triggers if t not in catalog)
+    undocumented = sorted(t for t in triggers if not _documents(catalog, t))
     assert not undocumented, (
         "these ResourceSpec reset triggers exist in raid_simulator but are "
         f"absent from the capability catalog: {undocumented}."

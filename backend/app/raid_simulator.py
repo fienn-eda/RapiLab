@@ -301,7 +301,9 @@ def _resource_fill_times(
     last_bullet_times=(), crit_rate_at=None,
 ):
     """The times a resource gains a stack, from its fill spec and the owner's
-    shot timeline. ("per_shot_every", N) fires at the owner's Nth, 2Nth, ... shot
+    shot timeline. ("computed", fn) hands the walk to the owning module, for a
+    resource whose sources interact (see that branch below); every other kind is
+    declarative. ("per_shot_every", N) fires at the owner's Nth, 2Nth, ... shot
     (count = index+1, matching per_shot_rules' "every N").
     ("per_shot_every_core", core_n, noncore_n) picks core_n on a core-hittable
     boss and noncore_n otherwise - for a skill whose fill rate differs between
@@ -325,6 +327,19 @@ def _resource_fill_times(
     - see `attack_rate.last_bullet_shot_times`), not on any fixed shot count
     or window."""
     kind = fill[0]
+    if kind == "computed":
+        # ("computed", fn): the owning module walks the shot timeline itself and
+        # hands back the fill times. For a resource whose sources INTERACT -
+        # where one source's next fill depends on when the resource was last
+        # spent - the per-source schedules the kinds below produce cannot be
+        # merged after the fact, because they are not independent. Phantom's
+        # Thief's Dagger is the case: spending it strips Calling Card, which is
+        # the very condition re-arming the other source.
+        #
+        # Only reach for this when the interaction is real. A resource whose
+        # sources are independent belongs on the declarative kinds, which the
+        # engine can reason about (and which no unit can get subtly wrong).
+        return list(fill[1](shot_times))
     if kind == "per_critical_hit_every":
         # ("per_critical_hit_every", N): a stack per N EXPECTED critical hits
         # with normal attacks - Julia's signature Crescendo. Unlike the
@@ -1668,6 +1683,16 @@ def _simulate_raid_once(
                     # burst-ordering beat early and would cut the window's last
                     # shots short.
                     reset_events.extend((end, reset_spec) for _start, end in full_burst_windows)
+                elif reset_spec["trigger"] == "computed":
+                    # The owning module walks the shot timeline and hands back
+                    # the spend times - the reset-side partner of the "computed"
+                    # fill kind, for a resource that empties itself on reaching
+                    # its cap rather than on any squad-level event. Both sides
+                    # come from ONE walk in the module, so they cannot disagree
+                    # about when the resource was spent.
+                    reset_events.extend(
+                        (rt, reset_spec) for rt in reset_spec["times"](shot_times)
+                    )
                 else:
                     raise ValueError(f"unknown resource reset trigger: {reset_spec['trigger']}")
             reset_events.sort(key=lambda e: e[0])

@@ -3,6 +3,7 @@ whole Thief's Vision chain her base build can never reach."""
 from app.effects import EffectRegistry
 from app.skill_rules.phantom_signature import (
     VISION_PROC_SHOTS,
+    build_dagger_resource_specs,
     build_phantom_signature_per_shot_rules,
     build_phantom_signature_rules,
     secret_trick_signature_burst_percent,
@@ -70,15 +71,40 @@ def test_burst_grants_self_max_ammo_and_a_fire_gated_damage_taken_debuff():
     assert round(off_element.total_for("max_ammo_percent", SELF, 20.0), 4) == 0.50
 
 
-def test_the_daggers_hit_rate_is_encoded_at_the_base_builds_floor():
-    """One stack, permanent - the same value base Phantom gets. This build
-    really earns two or three, but the third bullet of Thief's Vision removes
-    the stacks, so the count is a sawtooth rather than a level and no measured
-    duty cycle exists. The floor is the honest end of that range."""
+def test_hit_rate_is_not_a_flat_battle_start_grant():
+    """It rides the live dagger count instead (see the resource spec below), so
+    nothing hands it out up front. Pinned because the earlier encoding DID grant
+    a permanent one-stack floor here, and leaving both in place would double it."""
     reg = _fire("battle_start")
-    assert round(reg.total_for("hit_rate", SELF, 0.0), 4) == 0.2575
-    assert round(reg.total_for("hit_rate", SELF, 175.0), 4) == 0.2575
+    assert reg.total_for("hit_rate", SELF, 0.0) == 0.0
     assert reg.total_for("hit_rate", ALLY, 0.0) == 0.0
+
+
+def test_the_dagger_drives_hit_rate_as_a_live_count():
+    """Her Hit Rate is the stack count's step function, self-scope, each stack
+    expiring on its own 5 sec clock - not the base build's one-stack floor."""
+    (spec,) = build_dagger_resource_specs(PHANTOM_SIG)
+    assert spec.cap == 3
+    (buff,) = spec.buffs
+    assert (buff.stat, buff.scope, buff.lifetime) == ("hit_rate", "self", 5.0)
+    assert [round(buff.value_fn(n), 4) for n in (0, 1, 2, 3)] == [
+        0.0, 0.2575, 0.515, 0.7725]
+
+
+def test_the_dagger_spends_itself_at_the_cap():
+    """The consumption is what makes the count a sawtooth. Its times come from
+    the SAME walk as the fills, so the two cannot disagree."""
+    (spec,) = build_dagger_resource_specs(PHANTOM_SIG)
+    assert spec.fill[0] == "computed"
+    (reset,) = spec.resets
+    assert (reset["trigger"], reset["value"]) == ("computed", 0)
+
+    shots = [i / 12.0 for i in range(1, 400)]
+    fills = spec.fill[1](shots)
+    spends = reset["times"](shots)
+    assert fills and spends
+    # Every spend is a shot that also filled - the cap is reached BY a fill.
+    assert set(spends) <= set(fills)
 
 
 def test_three_shot_counters_including_the_vision_proc():

@@ -1172,6 +1172,7 @@ _RESOURCE_SPEC_BUILDERS = {
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_resources(sv),
     "julia": lambda sv: build_crescendo_resources(sv),
     "laplace": lambda sv: build_hero_vision_resources(sv),
+    "phantom-signature": lambda sv: phantom_signature.build_dagger_resource_specs(sv),
     "laplace-signature": lambda sv: laplace_signature.build_hero_vision_signature_resources(sv),
     "julia-signature": lambda sv: julia_signature.build_crescendo_signature_resources(sv),
     "leona": lambda sv: build_leona_resources(sv),
