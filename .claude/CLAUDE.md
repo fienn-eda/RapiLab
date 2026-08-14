@@ -77,3 +77,30 @@ Six living documents track the project. Read the relevant one before work and ke
 - `docs/measurements/` — Fienn's in-game frame-by-frame readings, one file per subject, with the conditions they were taken under and what they do and do not settle. The RAW numbers are never edited; when a model changes, only the interpretation section does. Add a file when a measurement campaign produces data an engine constant rests on.
 
 Encoding methodology and the engine capability catalog live in the `nikke-skill-encoding` skill, not in docs/.
+
+## The engine capability catalog is part of documenting, always
+
+`.claude/skills/nikke-skill-encoding/references/engine-capabilities.md` is what
+any session consults to answer "can the engine express this?". **When you build,
+extend, or retire an engine capability, update it in the SAME change** — a new
+stat, trigger, fill kind, reset trigger, spec-dict key, or primitive. Treat it as
+a seventh living document: it is not optional just because the work was engine
+work rather than an encoding session.
+
+- **Why it keeps getting missed:** the rule is also written in the
+  `nikke-skill-encoding` skill, but that skill is not loaded when the task is an
+  engine gap, a refactor, or a bug fix — which is exactly when capabilities get
+  built. So it is repeated here, where every session reads it.
+- **What it costs when missed:** a capability nobody wrote down is a capability
+  nobody can find, and the next session records it as a gap. The 2026-08-07
+  sweep found five stale defers, four from one unlisted primitive. On 2026-08-14
+  the catalog was found to describe 7 of 13 fill kinds and no multi-source fill
+  at all, and a five-slug "Pattern B" gap had sat open for a month over
+  capabilities that were, four slugs out of five, already built.
+- **Mechanically enforced, partly:** `backend/tests/test_capability_catalog_is_current.py`
+  fails if a resource fill kind or reset trigger exists in the engine but not in
+  the catalog. It checks NAMES only — it cannot tell you the prose is right, and
+  it does not cover stats, triggers, or spec keys. The rule is still yours.
+- Then also update `docs/engine-gaps.md`: a capability that lands usually closes
+  or shrinks a gap entry, and a gap list that still names it is the same failure
+  one file over.
