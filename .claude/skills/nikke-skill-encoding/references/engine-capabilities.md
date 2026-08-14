@@ -114,8 +114,8 @@ whole nuke is the established convention.
 **`hit_rate` reaches damage only through the bullet spread, and only on an
 encounter that opts in (2026-08-07).** A weapon's normal-attack rounds land
 inside a circle whose diameter shrinks as `hit_rate` rises
-(`accuracy.spread_diameter`; base diameters in `WEAPON_SPREAD_DIAMETER` — AR 75
-· SG 250 · SMG 110 · MG/SR/RL 10px, all read off the game data, all three
+(`accuracy.spread_diameter`; converged diameters in `WEAPON_SPREAD_DIAMETER` —
+AR 75 · SG 250 · SMG 110 · MG/SR/RL 10px, all read off the game data, all three
 weapons' measured regressions crossing zero diameter at the same 110% hit
 rate). The share of that circle still inside the boss's core is the area ratio
 (`accuracy.core_hit_rate`), fed into `calculate_damage`'s `core_hit_rate`
@@ -128,9 +128,25 @@ measured in the fight), so a `hit_rate` bullet DOES move the recorded-raid
 numbers for SMG/AR/SG holders; the raid-rotation bosses the app ships still
 carry `null`.
 
-**Even with a diameter set, MG/SR/RL still see nothing** — their base spread
-is already 10px, inside any plausible core, so narrowing it further changes
-nothing; only AR/SG/SMG have room to move. `core_strike`-typed skill damage
+**The spread has a second axis: where the round sits in its magazine
+(2026-08-15).** `accuracy.SPREAD_CONVERGENCE` holds `{weapon: (opening
+diameter, per-round tightening)}` and today has one entry — MG opens every
+magazine at 250px and tightens 7px a round to its converged 10px, which is
+`shot_detail.start_accuracy_circle_scale` / `accuracy_change_pershot`. Against
+the measured 48.89px Annihilio core that makes an MG's first 29 rounds partial
+core hits (p rises 0.038 → 1.0) instead of the guaranteed ones its converged
+diameter alone implies. The round index rides on `ShotRecord.magazine_index`
+and reaches `_core_hit_rate_at`; `None` means "no magazine position to give"
+and takes the converged diameter, which is what a transform segment and the
+frontend mirror get. A reload reopens the circle — it is a MAGAZINE
+convergence, so the index restarts with each magazine. The two axes multiply:
+`hit_rate` scales whatever diameter the round is drawing (UNMEASURED — no
+reading separates that from "hit rate only moves the converged end").
+
+**SR/RL still see nothing, and MG only early in a magazine** — SR/RL carry
+start == end == 10px in the data, inside any plausible core, so narrowing it
+further changes nothing; AR/SG/SMG have room to move at every round, and MG
+only until its circle converges. `core_strike`-typed skill damage
 and `core_eligible_override` summons (e.g. Anis: Star's Shooting Stars) keep
 p=1.0 regardless of `hit_rate` — the text says the hit already lands on the
 core, so aim is not in question. A Pierce holder's body-instance (the second

@@ -4,6 +4,42 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 상수가 1.0으로 고정되는 무기군이 곧 과대 무기군이었다 — 표를 보면 바로 보인다
+
+MG 과대(1.176x)를 예열·재장전 쪽에서 오래 찾았는데, 답은 `accuracy.py`의 표 한 줄
+옆에 있었다. 코어 지름 48.89px 기준으로 무기군을 세우면:
+
+| 무기 | 탄착군 | 코어율 | 실기록 캘리 |
+|---|---:|---:|---:|
+| MG · SR · RL | 10px | **1.000** | 1.176 · 1.122 · 1.035 |
+| SMG | 110px | 0.198 | 1.002 |
+| AR | 75px | 0.425 | 0.957 |
+
+**탄착군이 코어보다 작아 `core_hit_rate`가 상수 1.0으로 접히는 세 무기군이 정확히
+과대인 셋이다.** 2026-08-14 코어 지름 착륙이 SMG(1.148→1.002)·AR(1.114→0.957)만
+고친 것도 같은 이유다 — 그 착륙은 10px 무기군에는 **닿을 수가 없었다.** RL이 셋 중
+가장 낮은 것은 차지 무기라 평타 발수가 적어서고, 무기군 안에서도 평타 비중 순으로
+정렬된다(크라운·마스트 100% 평타가 최상위).
+
+**교훈: 어떤 항이 특정 입력에서 상수로 접히면, 그 입력을 쓰는 대상들은 그 항의
+검증에서 통째로 빠져 있다.** 「hit_rate를 배선했다」는 15유닛 19슬러그를 커버했지만
+MG·SR·RL 보유자에게는 그 배선이 처음부터 no-op이었고, 그 사실이 `spread_diameter`가
+아니라 **캘리브레이션 표**에 드러났다. 능력을 추가할 때 「누구에게 inert한가」를
+같이 적어 두면 다음 잔차 사냥이 여기서 시작한다.
+
+## 「데이터에 이미 있었다」가 네 번째다 — 인접 필드를 통째로 읽는 습관
+
+MG 탄착군의 탄창 내 수렴(`start_accuracy_circle_scale=250` ·
+`end_accuracy_circle_scale=10` · `accuracy_change_pershot=7`)은 처음부터
+`shot_detail`에 있었다. 클립 재장전(`reload_bullet`)·기본 코어 직경·명중률
+탄착군에 이어 **네 번째**로 같은 모양이다.
+
+그리고 같은 레코드를 열어 둔 김에 보면 예열도 거기 있다 — `rate_of_fire=60` ·
+`end_rate_of_fire=4200` · `rate_of_fire_change_pershot=100` ·
+`rate_of_fire_reset_time=100`. 엔진의 램프는 프레임 판독 네 벌로 세운 것인데,
+같은 곡선을 데이터가 자기 단위로 들고 있다(단위 환산은 아직 안 풀었다). **필드
+하나가 필요할 때 그 레코드를 통째로 덤프해 볼 것** — 다음 갭이 옆 칸에 있다.
+
 ## 곡선의 마디에서는 어떤 모델이든 답이 같다 — 가드가 마디만 짚으면 아무것도 안 잰다
 
 MG 램프의 부분 잔존 테스트를 네 점으로 썼다. 전부 통과했고, **평탄식으로 되돌려 봐도
