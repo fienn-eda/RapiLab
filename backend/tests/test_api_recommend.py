@@ -26,6 +26,31 @@ BOSS = {"element": "Water", "core_hittable": False, "enemy_def": 0,
 FEASIBLE = ["little-mermaid", "arcana", "grave", "drake", "modernia"]
 
 
+SEATED = ["rouge", "arcana", "grave", "drake", "modernia"]
+
+
+def test_a_seated_buff_reports_its_allies_and_the_seats_it_may_take():
+    # 「양 옆에 누구」만으로는 부족하다 - 3번 자리도 양 옆이 둘이지만 앞열이라
+    # 루주의 Sword Coin이 아예 안 켜진다. 그 제약은 레지스트리에만 있으므로
+    # 화면이 말할 수 있으려면 응답에 실려야 한다.
+    roster = [_nikke(slug) for slug in SEATED]
+    body = client.post("/api/recommend", json={"roster": roster, "boss": BOSS, "top_n": 1}).json()
+
+    seating = body["decks"][0]["seating"]
+
+    assert set(seating) == {"rouge"}
+    assert len(seating["rouge"]["allies"]) == 2
+    assert set(seating["rouge"]["allies"]) <= set(SEATED) - {"rouge"}
+    assert seating["rouge"]["seats"] == [2, 4]  # 뒷열, 1-indexed
+
+
+def test_a_deck_with_no_seated_buff_reports_no_seating():
+    roster = [_nikke(slug) for slug in FEASIBLE]
+    body = client.post("/api/recommend", json={"roster": roster, "boss": BOSS, "top_n": 1}).json()
+
+    assert body["decks"][0]["seating"] == {}
+
+
 def test_feasible_roster_returns_ranked_decks_and_exclusions():
     roster = [_nikke(slug) for slug in FEASIBLE] + [_nikke("totally-unknown")]
     response = client.post("/api/recommend", json={"roster": roster, "boss": BOSS, "top_n": 3})
@@ -38,7 +63,7 @@ def test_feasible_roster_returns_ranked_decks_and_exclusions():
     first = body["decks"][0]
     assert set(first) == {
         "deck", "total_damage", "burst_damage", "normal_attack_damage", "skill_damage",
-        "hold_burst_slugs",
+        "hold_burst_slugs", "seating",
     }
     assert len(first["deck"]) == 5
     parts = first["burst_damage"] + first["normal_attack_damage"] + first["skill_damage"]
@@ -80,7 +105,7 @@ def test_recommend_raid_partitions_roster_and_reports_leftovers():
     deck = body["decks"][0]
     assert set(deck) == {
         "deck", "total_damage", "burst_damage", "normal_attack_damage", "skill_damage",
-        "hold_burst_slugs", "pinned_slugs",
+        "hold_burst_slugs", "pinned_slugs", "seating",
     }
     assert sorted(deck["deck"]) == sorted(FEASIBLE)
     assert deck["pinned_slugs"] == []

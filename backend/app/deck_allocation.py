@@ -16,7 +16,8 @@ from app.deck_search import (SEARCH_SIM_BUDGET, BossProfile,
                              _summarize, _taste_induced_valid,
                              best_completions, character_of,
                              completions_fit_budget, deck_breaks_gimmick,
-                             deck_is_valid, evaluate_deck, search_best_decks,
+                             deck_is_valid, evaluate_deck,
+                             evaluate_deck_best_seating, search_best_decks,
                              weakness_holders)
 from app.elements import weakness_of
 from app.sim_pool import SimPool, resolve_workers
@@ -672,4 +673,5 @@ def best_ordering_summary(units, boss, pool=None):
     totals = _score_batch(orderings, boss, pool)
     best_i = max(range(len(orderings)),
                  key=lambda i: (totals[i], _seat_order_is_playable(orderings[i]), -i))
-    return _summarize(orderings[best_i], evaluate_deck(orderings[best_i], boss))
+    return _summarize(orderings[best_i],
+                      evaluate_deck_best_seating(orderings[best_i], boss))

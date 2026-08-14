@@ -24,14 +24,18 @@ Some decks broke them incidentally with area damage while hitting the core;
 others had to hit the parts DIRECTLY, and a seat doing that gives up core hits
 to do it (Fienn, 2026-07-31).
 
-The engine has no core hit rate: every core-eligible shot hits the core
-(`core_damage.core_hit_bonus_for`), which is the CEILING of that run, not the run.
-So `sim/record` is expected to sit ABOVE 1.0, and a change that makes normal
-attacks more accurate will RAISE it - that is what the affine reload (1.015 ->
-1.055) and the Tactical Bear refund (1.011 -> 1.015) both did. Do not read a
-combined multiplier moving away from 1.0 as a regression on its own; see
-engine-gaps.md item 21 for how that was pinned down, and
-`scripts/measure_normal_attack_residual.py` to re-derive it.
+Core hit rate splits into two terms and only one of them is modelled. `p_spread`
+is geometry - where the bullets land inside the accuracy circle - and it is what
+`core_diameter_px` below turns on. `p_aim` is where the player pointed, which is
+per-seat and per-play, and the engine has no representation for it (gap #21).
+The uniform-disc model behind `p_spread` assumes the shots are scattered without
+aiming, so on its own it is nearer a FLOOR than a ceiling: a player who tracks
+the core beats it. The two terms push `sim/record` in opposite directions -
+aiming pushes the ratio below 1.0, parts-hitting seats push it above - so a
+combined multiplier is not expected to land on either side by construction, and
+moving away from 1.0 is not a regression on its own. See engine-gaps.md item 21
+and `scripts/measure_normal_attack_residual.py`, which now measures `p_aim`
+alone because `p_spread` is already in the baseline it starts from.
 
 The numbers
 -----------
@@ -53,13 +57,25 @@ mode was never pinned in earlier sessions and is the documented reason deck 2's
 ratio moved without any model change (see docs/roadmap.md).
 """
 
+# Annihilio's core, measured in the fight (Fienn, 2026-08-14): 40 screen px,
+# against an unbuffed SMG accuracy circle of 90 px in the same frame. Screen
+# pixels are not engine units and no resolution formula converts them, so the
+# circle is used as a ruler and only the RATIO crosses over - the SMG circle IS
+# `accuracy.WEAPON_SPREAD_DIAMETER["SMG"]` when unbuffed, and every scale factor
+# (window size, upscaling, letterboxing) cancels. Both readings had to come from
+# one screen for that to hold, and the core had to be read at the distance the
+# boss is actually fought, because the core shrinks with camera distance while
+# the circle does not. See docs/measurements/annihilio-core-diameter.md.
+CORE_DIAMETER_PX = 40.0 * (110.0 / 90.0)
+
 # The boss profile every deck below was fought against. `effective_range_band`
 # is "mid": Annihilio is fought at mid range, so the AR and MG normal attacks in
 # these decks collected the Effective Range bonus and nothing else did (Fienn,
 # 2026-07-31). See raid_simulator.EFFECTIVE_RANGE_BANDS for the weapon lists.
 RECORD_BOSS = dict(element="Iron", core_hittable=True, part_destructible=True,
                    enemy_def=31784.0, fight_duration=180.0,
-                   effective_range_band="mid")
+                   effective_range_band="mid",
+                   core_diameter_px=CORE_DIAMETER_PX)
 
 # The recorded 5-deck total, as reported. See the docstring's note on why this
 # is not simply the sum of RECORD_DECKS.

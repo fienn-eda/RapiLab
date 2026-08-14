@@ -24,8 +24,9 @@ from itertools import combinations, permutations
 from app.elements import weakness_of
 from app.raid_simulator import simulate_raid
 from app.roster import assemble_simulation_inputs
-from app.skill_rules.registry import (TASTE_INDUCER_SLUGS, character_map,
-                                      get_burst_delay, has_burst_delay)
+from app.skill_rules.registry import (SEATED_BUFF_SLUGS, TASTE_INDUCER_SLUGS,
+                                      character_map, get_burst_delay,
+                                      has_burst_delay)
 
 # candidate slug -> the owned character it is a build of, for the seat-exclusion
 # check below. An absent slug is its own character.
@@ -412,7 +413,7 @@ def best_completions(required, candidates, boss: BossProfile, top_n=1, pool=None
         return []
     totals = _score_batch(orderings, boss, pool)
     ranked = sorted(zip(totals, orderings), key=lambda pair: pair[0], reverse=True)
-    return [_summarize(ordered, evaluate_deck(ordered, boss)) for _, ordered in ranked[:top_n]]
+    return _report(ranked, boss, top_n)
 
 
 def feasible_orderings(roster, deck_filter=None):
@@ -438,7 +439,7 @@ def feasible_orderings(roster, deck_filter=None):
 
 
 def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None,
-                  collect_target_grants=False):
+                  collect_target_grants=False, adjacency=None):
     """`max_bursts` ({slug: N}) caps how many times a seat spends its burst, for
     scoring a run the player actually played rather than one the scheduler would
     choose: 0 is a totem seated for its passives alone, 1 an opening burst then
@@ -447,7 +448,12 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None,
 
     `collect_target_grants`는 top-N 대상형 버프가 누구에게 갔는지를 결과에
     싣는다 - 미란다 계산기(app/miranda_targets.py)가 읽는 기록이고, 기본 off라
-    탐색 경로는 오늘 그대로다."""
+    탐색 경로는 오늘 그대로다.
+
+    `adjacency` ({slug: [양 옆 아군 둘]})는 "자신과 양 옆 아군 2명" 불릿이 누구에게
+    가는지를 못박는다. 안 주면 `SquadContext.neighbor_slugs`의 정책(최고 ATK 둘)이
+    답하므로 탐색 경로의 비용은 오늘 그대로고, 최적 좌석이 필요한 쪽은
+    `evaluate_deck_best_seating`을 부른다."""
     inputs = assemble_simulation_inputs(ordered_deck)
     if max_bursts:
         for member in inputs["deck"]:
@@ -466,7 +472,96 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None,
         pierce_hits_body_behind_core=boss.pierce_hits_body_behind_core,
         core_diameter_px=boss.core_diameter_px,
         collect_target_grants=collect_target_grants,
+        adjacency=adjacency,
     )
+
+
+def seat_arrangements(ordered_deck):
+    """Every adjacency map this deck's five seats can produce, deduplicated.
+
+    Enumerating SEATS rather than neighbor pairs is what keeps the answer
+    honest once a deck can hold two seated-buff units: a line of five seats
+    constrains them jointly, so picking each one's best pair independently
+    would score a formation the game cannot make. Two units are already
+    possible (Rouge is Burst 1, Flora's Favorite Item Burst 2), so this is not
+    a hypothetical.
+
+    A unit's allowed seats come from SEATED_BUFF_SLUGS - Rouge's bullet needs
+    the back row, Flora's does not. Arrangements collapse to the adjacency they
+    induce, since the seats of everyone else are invisible to the simulation:
+    that is what turns 5! = 120 orders into 6 distinct maps for a Rouge deck,
+    10 for a Flora one (her end seats leave her a single neighbor) and 18 for a
+    deck holding both. Empty when the deck holds no such unit.
+    """
+    slugs = [unit.slug for unit in ordered_deck]
+    if not any(slug in SEATED_BUFF_SLUGS for slug in slugs):
+        return []
+    distinct = {}
+    for arrangement in permutations(slugs):
+        seats = {slug: seat for seat, slug in enumerate(arrangement)}
+        if any(seats[slug] not in SEATED_BUFF_SLUGS[slug]
+               for slug in slugs if slug in SEATED_BUFF_SLUGS):
+            continue
+        adjacency = {
+            slug: [arrangement[j] for j in (seat - 1, seat + 1)
+                   if 0 <= j < len(arrangement)]
+            for seat, slug in enumerate(arrangement) if slug in SEATED_BUFF_SLUGS
+        }
+        key = tuple(sorted((slug, tuple(sorted(mates)))
+                           for slug, mates in adjacency.items()))
+        distinct.setdefault(key, adjacency)
+    return list(distinct.values())
+
+
+def evaluate_deck_best_seating(ordered_deck, boss: BossProfile, **kwargs):
+    """`evaluate_deck`, but the seat arrangement is CHOSEN rather than assumed:
+    the deck is scored under every arrangement its seated-buff units could take
+    and the best one wins, reported as `result["seating"]`.
+
+    Exhaustive over `seat_arrangements`, so it is the true maximum rather than a
+    sample - and every candidate is a formation the player can actually field,
+    which is what makes the reported number reproducible.
+
+    It costs one simulation per arrangement: 6 for a Rouge deck, 10 for a Flora
+    one, 18 for a deck holding both. Measured at a 180-sec fight against a plain
+    evaluation of the same deck, that is +0.50 sec, +1.64 sec and +2.51 sec per
+    reported deck - so a top-5 of decks that all hold both would add ~12 sec.
+    This is why it is the REPORT path and not the search path: a request scores
+    ~1200 decks (SEARCH_SIM_BUDGET) and cannot pay that per deck.
+    Ranking therefore uses SquadContext.neighbor_slugs's policy and only the
+    handful of decks actually shown to the player are re-scored here. A deck
+    with no seated-buff unit costs exactly one simulation, as before, and
+    carries no `seating` key - there is nothing for the player to arrange.
+    """
+    arrangements = seat_arrangements(ordered_deck)
+    if not arrangements:
+        return evaluate_deck(ordered_deck, boss, **kwargs)
+    best, best_arrangement = None, None
+    for adjacency in arrangements:
+        result = evaluate_deck(ordered_deck, boss, adjacency=adjacency, **kwargs)
+        if best is None or result["total_damage"] > best["total_damage"]:
+            best, best_arrangement = result, adjacency
+    best["seating"] = best_arrangement
+    return best
+
+
+def _report(ranked, boss, top_n):
+    """The leading `top_n` of a ranking, as summaries scored under each deck's
+    BEST seating - and re-sorted on that score.
+
+    The two numbers are not the same measurement. Ranking used
+    SquadContext.neighbor_slugs's cheap policy; the report measures all six
+    seatings and keeps the best. A deck whose arrangement gains more than its
+    neighbor's therefore overtakes it right here, and publishing the ranking
+    order would hand the caller a list that is not in descending order of the
+    totals printed beside it (measured: a 7-unit roster where Rouge is the only
+    Burst 1 puts the 4th deck above the 3rd). Sorting is stable, so decks that
+    come out equal keep the ranking's order.
+    """
+    summaries = [_summarize(ordered, evaluate_deck_best_seating(ordered, boss))
+                 for _, ordered in ranked[:top_n]]
+    summaries.sort(key=lambda entry: entry["total_damage"], reverse=True)
+    return summaries
 
 
 def never_full_bursts(result):
@@ -513,6 +608,11 @@ def _summarize(ordered_deck, result):
         "normal_attack_damage": normal,
         "skill_damage": sum(by_source.values()),
         "hold_burst_slugs": hold_burst_slugs(ordered_deck),
+        # Which allies this deck's seated-buff unit was scored beside, when it
+        # holds one - the arrangement the player has to field for the number
+        # above to be the one they get. Empty for every other deck. Same
+        # contract as hold_burst_slugs: the deck alone does not carry it.
+        "seating": result.get("seating", {}),
         "result": result,
     }
 
@@ -526,12 +626,12 @@ def find_best_decks(roster, boss: BossProfile, top_n=5):
     gate."""
     deck_filter = _gimmick_filter(boss)
     scored = [
-        _summarize(ordered, evaluate_deck(ordered, boss))
+        _summarize(ordered, evaluate_deck_best_seating(ordered, boss))
         for ordered in feasible_orderings(roster, deck_filter)
     ]
     if not scored and deck_filter is not None:
         scored = [
-            _summarize(ordered, evaluate_deck(ordered, boss))
+            _summarize(ordered, evaluate_deck_best_seating(ordered, boss))
             for ordered in feasible_orderings(roster, None)
         ]
     scored.sort(key=lambda entry: entry["total_damage"], reverse=True)
@@ -1024,7 +1124,7 @@ def search_best_decks(roster, boss: BossProfile, top_n=5,
     # identical to scoring the full summaries directly).
     totals = _score_batch(orderings, boss, pool)
     ranked = sorted(zip(totals, orderings), key=lambda pair: pair[0], reverse=True)
-    return [_summarize(ordered, evaluate_deck(ordered, boss)) for _, ordered in ranked[:top_n]]
+    return _report(ranked, boss, top_n)
 
 
 def _resolve_orderings(roster, boss, sim_budget, pool, cascade, deck_filter):

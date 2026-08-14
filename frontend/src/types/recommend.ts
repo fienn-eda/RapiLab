@@ -52,10 +52,26 @@ export interface DeckRecommendation {
   // Everything that was neither a burst nor a normal attack — DoTs, per-shot
   // riders, self-cooldowned procs. The three add up to total_damage.
   skill_damage: number
-  // 좌석 순서만으로는 표현할 수 없는 플레이 지시: 이 슬러그들은 첫 풀버스트에
+  // 덱 순서만으로는 표현할 수 없는 플레이 지시: 이 슬러그들은 첫 풀버스트에
   // 버스트를 아껴야 채점된 그 상태가 걸린다. 거의 항상 빈 배열이다 — 엔진은
   // 동점이면 그대로 플레이 가능한 순서를 고르므로, 홀드가 더 높게 나올 때만 찬다.
   hold_burst_slugs: string[]
+  // 「자신과 양 옆 아군 2명」을 대상으로 하는 버프를 가진 유닛(루주의 Sword Coin,
+  // 플로라 애장품의 Peace of Mind)을 어떻게 앉혀야 위 수치가 나오는지. 그런 유닛이
+  // 없는 덱은 빈 객체다. 이것도 덱 목록에 안 담기는 편성 지시인데, 이유가
+  // hold_burst_slugs와 다르다: 자리는 버스트 우선순위와 **다른 축**이라 애초에
+  // 목록이 표현하는 것이 아니다.
+  seating: Record<string, SeatingEntry>
+}
+
+export interface SeatingEntry {
+  // 시전자 양 옆에 앉힐 아군 둘.
+  allies: string[]
+  // 시전자가 앉을 수 있는 자리(1부터). 원문이 자리를 요구하는 유닛만 좁다 —
+  // 루주는 뒷열이라 [2, 4]. 이 목록이 덱 크기와 같으면 제약이 없다는 뜻이고,
+  // 그때는 화면이 자리 이야기를 꺼내지 않는다. 「양 옆에 둘」만으로는 부족해서
+  // 필요한 필드다: 3번 자리도 양 옆이 둘이지만 앞열이라 루주의 버프가 안 켜진다.
+  seats: number[]
 }
 
 export interface RecommendResponse {

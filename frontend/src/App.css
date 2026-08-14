@@ -1576,7 +1576,10 @@
 
 /* 좌석 순서로는 말할 수 없는 플레이 지시. 헤더의 경고와 달리 문장이라 줄바꿈을
    허용하고, 덱 아래에 붙어 "이 카드에 대한 조건"으로 읽히게 둔다. */
-.deck-results__hold {
+/* 덱 목록만으로는 재현할 수 없는 편성 지시 둘. 성격이 같아 규칙을 공유하되
+   클래스는 나눈다 - 하나는 버스트 타이밍, 하나는 자리 이야기다. */
+.deck-results__hold,
+.deck-results__seating {
   margin: var(--sp-2) 0 0;
   font-size: 12px;
   color: var(--text-muted);

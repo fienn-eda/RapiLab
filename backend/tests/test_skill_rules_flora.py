@@ -35,7 +35,8 @@ def _fire(trigger, time=0.0):
 def test_iris_true_damage_is_permanent_and_squad_wide():
     # "when either adjacent ally reaches max HP" - allies never lose HP in the
     # sim, so Fienn ruled this always-on (2026-07-24). Adjacency has no scope
-    # model, so it is squad (Rouge precedent).
+    # 트리거일 뿐이고, 효과 줄은 "Affects all allies"라 squad가 이 불릿의 제
+    # 스코프다 - 좌석과 무관하다.
     reg = _fire("battle_start")
     assert round(reg.total_for("true_damage_up", SELF, 0.0), 4) == 0.3097
     assert round(reg.total_for("true_damage_up", ALLY, 0.0), 4) == 0.3097

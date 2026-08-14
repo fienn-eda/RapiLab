@@ -94,3 +94,45 @@ def test_every_recorded_deck_is_a_five_unit_deck_with_positive_damage():
         assert deck_total(name) == sum(deck.values())
     seated = [slug for deck in RECORD_DECKS.values() for slug in deck]
     assert len(seated) == len(set(seated)), "a unit is seated in two decks"
+
+
+def test_the_record_boss_carries_annihilios_measured_core():
+    """Annihilio's core is a screen reading divided by a screen reading.
+
+    Fienn read 40 px of core against a 90 px unbuffed SMG accuracy circle in the
+    same frame (2026-08-14). Screen pixels are not engine units, so the circle
+    is the ruler: it IS `WEAPON_SPREAD_DIAMETER["SMG"]` when unbuffed, and only
+    the ratio crosses over. Deriving the constant here rather than restating
+    48.89 is what makes this a guard - if the SMG spread diameter is ever
+    corrected, a core pinned to the old one becomes wrong silently.
+    """
+    from app.accuracy import WEAPON_SPREAD_DIAMETER, core_hit_rate
+    from raid_record import RECORD_BOSS
+
+    core = RECORD_BOSS["core_diameter_px"]
+    assert core == pytest.approx(40.0 * (WEAPON_SPREAD_DIAMETER["SMG"] / 90.0))
+
+    # The point of the constant is that it moves damage, and it only can where
+    # the spread is wider than the core. SMG and AR are the classes that shift;
+    # the 10 px classes stay at 1.0 and that is why deck 1 cannot move.
+    assert core_hit_rate("SMG", 0.0, core) < 1.0
+    assert core_hit_rate("AR", 0.0, core) < 1.0
+    assert core_hit_rate("MG", 0.0, core) == 1.0
+    assert core_hit_rate("SR", 0.0, core) == 1.0
+    assert core_hit_rate("RL", 0.0, core) == 1.0
+
+
+def test_the_record_boss_keys_are_boss_profile_fields():
+    """Four scripts spread RECORD_BOSS straight into BossProfile.
+
+    They do that so a new fact about the encounter reaches all of them without
+    an edit each; the cost is that a key which is not a field breaks every
+    calibration script at once, at call time rather than here.
+    """
+    from app.deck_search import BossProfile
+    from raid_record import RECORD_BOSS
+
+    boss = BossProfile(**RECORD_BOSS)
+
+    assert boss.core_diameter_px == RECORD_BOSS["core_diameter_px"]
+    assert boss.effective_range_band == "mid"

@@ -33,8 +33,19 @@ class SquadContext:
         part_destructible: bool = False,
         core_hittable: bool = False,
         target_grants: list[dict] | None = None,
+        adjacency: dict[str, list[str]] | None = None,
     ):
         self.members = members
+        # slug -> the 2 allies seated beside it, for a bullet that targets
+        # "self and 2 allies on both sides" (Rouge's Sword Coin). This is a
+        # SEPARATE axis from the deck list order, which is burst priority (see
+        # deck_search._buffer_seat_valid) - in game the player arranges the 5
+        # seats freely and taps whichever burst is ready, so reading adjacency
+        # off the list index would tie together two things the game keeps
+        # apart. None (the search-time default) means no seating was chosen and
+        # `neighbor_slugs` falls back to its policy; the report stage supplies a
+        # concrete one (deck_search.evaluate_deck_best_seating).
+        self.adjacency: dict[str, list[str]] = adjacency or {}
         # each member's base (summary) ATK, so a rule targeting "the N allies with
         # the highest final ATK" can rank them live (see top_atk_slugs). Injected by
         # raid_simulator; empty for contexts that don't need ranking.
@@ -266,6 +277,39 @@ class SquadContext:
                 "stats": list(grant_stats), "targets": list(targets),
             })
         return targets
+
+    def neighbor_slugs(self, caster_slug: str, registry, time: float) -> list[str]:
+        """The 2 allies seated beside `caster_slug` - the other half of a bullet
+        that reads "Affects self and 2 allies on both sides".
+
+        A back-row seat (position 2 or 4) always has exactly 2 neighbors, and
+        they can be ANY 2 of the other four: seat 2 borders 1 and 3, seat 4
+        borders 3 and 5. So this is a free choice the player makes, not a
+        property of the deck - which is why an explicit `adjacency` wins when
+        one was supplied.
+
+        Without one, the fallback is the 2 allies with the highest ATK. It is a
+        POLICY, not a guess at the optimum: the search scores ~1200 decks per
+        request and cannot afford to try every arrangement, so it needs one
+        answer that is deterministic, cheap and close. Whoever wants the true
+        optimum pays for it explicitly
+        (deck_search.evaluate_deck_best_seating).
+
+        The policy answers per caster, which is exact for one seated unit - the
+        seating it names is a real one the player can field. With TWO in a deck
+        (Rouge and Flora's Favorite Item can share one) they answer
+        independently, and five seats in a line may not grant both their pick:
+        then the RANKING scores an arrangement no formation produces. That is
+        tolerable only because ranking is all it does - every reported number
+        comes from evaluate_deck_best_seating, which enumerates real
+        arrangements. Measured on a deck holding both, the policy sat 4.77%
+        BELOW the true optimum (it hands both casters the same two allies
+        instead of spreading them), so the error is real but small next to the
+        squad-wide scope this replaced."""
+        seated = self.adjacency.get(caster_slug)
+        if seated is not None:
+            return list(seated)
+        return self.top_atk_slugs(2, caster_slug, registry, time)
 
     def longest_charge_time_slugs(self, n: int) -> list[str]:
         """The `n` members with the longest BASIC charge time - Mana's Metal

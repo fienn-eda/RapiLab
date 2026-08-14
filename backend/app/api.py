@@ -35,7 +35,7 @@ from app.paths import frontend_dist
 from app.raid_rotations import load_rotations
 from app.roster_assembly import assemble_roster, load_directory, to_roster_json
 from app.sim_pool import SimPool
-from app.skill_rules.registry import MODE_VARIANTS
+from app.skill_rules.registry import MODE_VARIANTS, SEATED_BUFF_SLUGS
 from app.stat_assembly import load_stat_tables
 from app.supported_units import supported_units as _supported_units
 from app.user_roster import load_roster
@@ -130,6 +130,23 @@ def boss_profile(boss: BossProfileIn) -> BossProfile:
     return BossProfile(**boss.model_dump())
 
 
+def seating_view(seating: dict[str, list[str]]) -> dict[str, "SeatingEntry"]:
+    """엔진이 고른 인접 관계에 시전자별 자리 조건을 붙여 화면이 쓸 형태로 만든다.
+
+    엔진 쪽 `seating`은 그대로 `evaluate_deck`에 되먹일 수 있는 **재생 입력**이라
+    {시전자: [아군 둘]} 형태를 유지한다. 자리 조건을 거기 섞지 않고 이 경계에서
+    얹는 이유가 그것이다 - 섞으면 재생 경로가 보기용 필드를 들고 다니게 된다.
+
+    자리는 레지스트리에 0-indexed로 있고 화면은 1부터 세므로 +1 한다."""
+    return {
+        caster: SeatingEntry(
+            allies=list(allies),
+            seats=[seat + 1 for seat in SEATED_BUFF_SLUGS[caster]],
+        )
+        for caster, allies in seating.items()
+    }
+
+
 class RecommendRequest(BaseModel):
     roster: list[UserNikkeState]
     boss: BossProfileIn
@@ -140,6 +157,23 @@ class RecommendRequest(BaseModel):
     # 때문이다 - 컨텐츠와 엔드포인트가 이미 어긋나 있어, 거기 정책을 걸면
     # 유니온 추천이 생기는 날 조용히 틀린다. 기본값이 곧 현행 동작이다.
     stat_basis: Literal["raid400", "actual"] = "raid400"
+
+
+class SeatingEntry(BaseModel):
+    """좌석형 버프를 가진 유닛 하나를 어떻게 앉혀야 채점된 값이 나오는지.
+
+    `allies`만으로는 부족하다. 세 번째 자리도 양 옆이 둘이지만 **앞열**이라,
+    거기 앉은 루주는 Sword Coin이 아예 안 켜진다 - 「양 옆에 누구」를 만족시키고도
+    버프를 통째로 놓칠 수 있다는 뜻이다. 그 자리 조건은 엔진의 레지스트리에만
+    있으므로 화면이 말할 수 있으려면 여기 실려야 한다.
+
+    `seats`는 **1-indexed** 화면 자리 번호다(엔진은 0부터 센다). 시전자마다
+    다르므로 - 루주는 뒷열 `[2, 4]`, 플로라 애장품은 조건이 없어 다섯 전부 -
+    읽는 쪽은 슬러그를 알 필요 없이 「덱 크기보다 짧으면 제약이 있다」로 판단하면
+    된다."""
+
+    allies: list[str]
+    seats: list[int]
 
 
 class DeckRecommendation(BaseModel):
@@ -155,6 +189,11 @@ class DeckRecommendation(BaseModel):
     # deck: the seat order is preferred playable whenever the scores tie, so
     # this only fills when holding the burst is what the higher score is FOR.
     hold_burst_slugs: list[str] = []
+    # 좌석형 버프를 가진 유닛(루주의 Sword Coin: "자신과 양 옆 아군 2명")을 어떻게
+    # 앉혀야 위 수치가 나오는지 - {시전자: SeatingEntry}. 그 유닛이 없는 덱은 빈
+    # 딕셔너리다. hold_burst_slugs와 같은 성격의 필드로, 덱 목록만으로는 재현할 수
+    # 없는 편성 지시다: 좌석은 버스트 순서와 다른 축이라 덱 순서에 안 담긴다.
+    seating: dict[str, SeatingEntry] = {}
 
 
 class RecommendResponse(BaseModel):
@@ -441,6 +480,7 @@ def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
                 burst_damage=r["burst_damage"], normal_attack_damage=r["normal_attack_damage"],
                 skill_damage=r["skill_damage"],
                 hold_burst_slugs=r["hold_burst_slugs"],
+                seating=seating_view(r["seating"]),
             )
             for r in results
         ],
@@ -485,6 +525,7 @@ def _to_recs(decks, pinned_by_deck=None):
             burst_damage=d["burst_damage"], normal_attack_damage=d["normal_attack_damage"],
             skill_damage=d["skill_damage"],
             hold_burst_slugs=d["hold_burst_slugs"],
+            seating=seating_view(d["seating"]),
             pinned_slugs=pinned,
         )
         for d, pinned in zip(decks, pinned_by_deck)
@@ -614,7 +655,8 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
             burst_damage=d["burst_damage"],
             normal_attack_damage=d["normal_attack_damage"],
             skill_damage=d["skill_damage"],
-            hold_burst_slugs=d["hold_burst_slugs"]) for d in out["decks"]],
+            hold_burst_slugs=d["hold_burst_slugs"],
+            seating=seating_view(d["seating"])) for d in out["decks"]],
         combined_total_damage=out["combined_total_damage"],
         excluded_slugs=excluded,
         engine_version=engine_version(),

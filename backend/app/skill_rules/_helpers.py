@@ -53,6 +53,36 @@ def buff_rule(trigger, buffs, condition=None, time_condition=None):
     return _rule(trigger, action, condition, time_condition)
 
 
+def seated_scope(context, caster_slug, registry, time):
+    """The scope of a bullet that reaches the caster's SEAT - herself plus the 2
+    allies beside her.
+
+    Two wordings land here. The direct one names the sides ("Affects self and 2
+    allies on both sides", Rouge's Sword Coin). The indirect one names a STATE
+    that a sibling bullet granted to "self and both adjacent allies" ("Affects
+    all allies in the Peace of Mind state", Flora's Favorite Item) - the state's
+    holders are that same three, so the scope is the same.
+
+    Who the 2 are is `SquadContext.neighbor_slugs`: the seating if one was
+    supplied, otherwise its policy. The caster leads the list because every one
+    of these wordings includes her."""
+    return "slugs:" + ",".join(
+        [caster_slug] + context.neighbor_slugs(caster_slug, registry, time))
+
+
+def seated_buff_rule(trigger, buffs, condition=None):
+    """Like buff_rule, but scoped to the caster's seat (see seated_scope).
+    buffs: list of (stat, value, duration) - no scope, since the seat IS the
+    scope and it is only known when the rule fires."""
+
+    def action(context, caster_slug, time, registry):
+        scope = seated_scope(context, caster_slug, registry, time)
+        for stat, value, duration in buffs:
+            registry.add(Effect(stat, value, scope, duration, caster_slug), applied_at=time)
+
+    return _rule(trigger, action, condition)
+
+
 def refreshing_buff_rule(trigger, buffs, condition=None, refresh_group=None):
     """Like buff_rule, but each buff REFRESHES instead of stacking (see
     EffectRegistry.add_refreshing) - for a per-shot buff re-applied every shot,

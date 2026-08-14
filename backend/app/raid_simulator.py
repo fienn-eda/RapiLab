@@ -776,6 +776,9 @@ def _simulate_raid_once(
     conditional_full_burst_deltas=None,
     full_burst_stage_overrides=None,
     collect_target_grants=False,
+    # {slug: [양 옆 아군 둘]} - "자신과 양 옆 아군 2명" 불릿의 좌석. 안 주면
+    # SquadContext.neighbor_slugs의 정책이 답한다.
+    adjacency=None,
 ):
     weapon_stats = weapon_stats or {}
     # None means "no band read for this encounter", which pays nobody. An
@@ -816,6 +819,7 @@ def _simulate_raid_once(
         part_destructible=part_destructible,
         core_hittable=core_hittable,
         target_grants=target_grants,
+        adjacency=adjacency,
     )
     registry = EffectRegistry()
     # Damage is RECORDED as events during phase 1 (buffs are applied but no

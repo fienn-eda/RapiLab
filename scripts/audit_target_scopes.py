@@ -16,9 +16,12 @@ The engine can express, EXACTLY, all of these:
   - except self     -> a member filter on m.slug != caster_slug
   - N highest ATK   -> highest_atk_buff_rule / round_buff_rule(("top_atk", n))
   - bursted allies  -> a member filter reading context.burst_used_this_cycle
-Only POSITIONAL targeting ("both adjacent allies", "2 allies on both sides") has
-no scope, and is the one that may honestly be approximated as squad - say so in
-the docstring when you do.
+  - self + both     -> SquadContext.neighbor_slugs -> a "slugs:" scope, and the
+    adjacent allies    unit's slug in registry.SEATED_BUFF_SLUGS so the report
+                       path measures every seating (2026-08-13)
+There is no longer a targeting shape this engine cannot express, so "squad" is
+never the honest answer to a narrow line - it is a defect or a deliberate,
+dated deferral written in the module docstring.
 
 The audit cannot judge: it cannot tell WHICH Effect a text line became, and a
 narrow line whose payload is an inert stat (Hit Rate, Damage to Parts) is
@@ -58,9 +61,17 @@ NARROW_TARGETS = {
     "bursted allies": re.compile(r"allies who (?:previously cast|have used) their burst", re.I),
 }
 
-# Positional targeting has NO engine scope - squad is the documented fallback.
+# Seat-scoped targeting. Two wordings, and the second is the one that hid a real
+# defect for weeks: a bullet can name the sides directly ("2 allies on both
+# sides"), or name a STATE that a sibling bullet gave to "self and both adjacent
+# allies" and never mention position at all. Flora's Favorite Item pays
+# "all allies in the Peace of Mind state" - worth 45.12% of her ATK - and the
+# first three patterns below cannot see it. Requiring "all(y|ies) in the ...
+# state" keeps it off a trigger clause ("when in Sword Coin status", "when the
+# caster is in the Burst state"), which names no recipients.
 POSITIONAL = re.compile(
-    r"adjacent all(?:y|ies)|allies on both sides|back row|front row", re.I)
+    r"adjacent all(?:y|ies)|allies on both sides|back row|front row|"
+    r"all(?:y|ies) in the .+? state", re.I)
 
 # What a module emitting an exact subset looks like.
 NARROW_SCOPE = re.compile(
@@ -167,7 +178,12 @@ def main():
             for kind, array, index, name, line in narrow:
                 print(f"    [{kind}] {array}[{index}] {name}: {line}")
             for array, index, name, line in positional:
-                print(f"    [positional - no engine scope] {array}[{index}] {name}: {line}")
+                # The engine HAS a seating scope since 2026-08-13, so this is no
+                # longer "nothing can be done" - read each line against its
+                # module: an AFFECTS clause naming the sides wants
+                # neighbor_slugs + SEATED_BUFF_SLUGS, while a line that only
+                # TRIGGERS on an adjacent ally is squad and needs nothing.
+                print(f"    [positional - wants a seating scope?] {array}[{index}] {name}: {line}")
             print()
 
     print(f"{len(readers)} character file(s) for {len(skill_registry.ENCODED_SLUGS)} encoded slug(s)\n")

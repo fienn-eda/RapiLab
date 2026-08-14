@@ -10,9 +10,11 @@
 `accuracy.core_hit_rate`를 **명중률 0으로 고정해** 호출하도록 감싼다. 두 값의 차가
 곧 그 유닛의 인코딩된 명중이 사 준 딜이다.
 
-**코어 지름은 가정이다.** 보스 코어 크기 실측이 아직 없어 기본 50px을 쓴다(설계
-문서가 역산한 51.1px과 2% 차이). 절대 수치가 아니라 「인코딩이 배선됐는가」와
-「유닛 사이 크기 순서」를 보는 도구다.
+**코어 지름의 기본값은 애니힐리오 실측 `raid_record.CORE_DIAMETER_PX`(48.89)다.**
+실측이 있는 유일한 보스라 기본값으로 쓸 뿐, 이 셸의 보스가 애니힐리오라는 뜻은
+아니다 — 코어는 보스마다 다르다(사격장 표적은 같은 mid에서 33.40으로 1.46배 차이).
+여기서 읽을 것은 절대 수치가 아니라 「인코딩이 배선됐는가」와 「유닛 사이 크기
+순서」다. 2026-08-14 이전 판은 실측이 없어 50px을 가정했다.
 
 **셸은 `sweep_slug_damage.py`와 같아서 같은 한계를 갖는다.** 티어 3 셸에는 다른
 Burst 3이 없는데, 디젤: 윈터 스위츠(Highlight)는 `burst_delay`로 첫 사이클을
@@ -29,6 +31,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import app.accuracy as accuracy  # noqa: E402
 import app.raid_simulator as raid_simulator  # noqa: E402
@@ -40,6 +43,7 @@ from app.deck_search import (  # noqa: E402
 )
 from app.models import UserNikkeState  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
+from raid_record import CORE_DIAMETER_PX  # noqa: E402
 
 # sweep_slug_damage.py와 같은 셸: 재는 유닛의 티어를 셸이 갖지 않아야 그 유닛이
 # 로테이션에서 밀려나지 않는다.
@@ -132,8 +136,10 @@ class _blind:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--core-diameter", type=float, default=50.0,
-                        help="가정하는 보스 코어 지름 px (기본 50)")
+    # 콘솔이 cp949라 help 문구에 em dash를 쓰면 --help가 UnicodeEncodeError로 죽는다.
+    parser.add_argument("--core-diameter", type=float, default=CORE_DIAMETER_PX,
+                        help=f"보스 코어 지름 px "
+                             f"(기본 {CORE_DIAMETER_PX:.2f}, 애니힐리오 실측)")
     parser.add_argument("--slug", action="append",
                         help="이 슬러그만 잰다 (반복 가능)")
     args = parser.parse_args()

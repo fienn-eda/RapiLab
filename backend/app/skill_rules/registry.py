@@ -852,6 +852,35 @@ TASTE_INDUCER_SLUGS: dict[str, frozenset[str]] = {
 }
 
 
+# Units with a bullet that reaches the caster's SEAT - herself and the 2 allies
+# beside her - mapped to the seats that unit may occupy. Seats are 0-indexed
+# over the deck's five positions; the back row is 2 and 4 on screen, so 1 and 3
+# here. Listing them is what lets a caller ask "does the seat arrangement change
+# this deck's damage at all", so that only these decks pay the arrangement
+# enumeration (deck_search.evaluate_deck_best_seating) and every other deck
+# stays one simulation. The seat restriction is part of the answer, not decor:
+# it decides which arrangements exist, which matters most when one deck holds
+# two of these units and their seats constrain each other.
+#
+# A unit belongs here only if the SEAT decides who its buff REACHES. Flora's
+# Iris True Damage is not one: its trigger reads an adjacent ally, but the
+# effect line says "Affects all allies", so it is squad-scoped and no seating
+# changes it. Read the AFFECTS clause, never the trigger.
+ANY_SEAT = (0, 1, 2, 3, 4)
+BACK_ROW_SEATS = (1, 3)
+
+SEATED_BUFF_SLUGS = {
+    # "Activates when assigned to the back row in battle. Affects self and 2
+    # allies on both sides." - the row is the bullet's own condition.
+    "rouge": BACK_ROW_SEATS,
+    # Peace of Mind is granted to "self and both adjacent allies" at battle
+    # start, and two later bullets pay "all allies in the Peace of Mind state".
+    # No row requirement, so an end seat is legal - and gives her one neighbour
+    # instead of two, which the enumeration is free to find worse.
+    "flora-signature": ANY_SEAT,
+}
+
+
 # A variant whose weapon profile differs from the character's dotgg stats
 # (e.g. a Snipe mode) registers a builder here; the roster loader swaps the
 # assembled profile in after skill values resolve.

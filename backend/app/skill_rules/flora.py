@@ -6,8 +6,10 @@ Modeled (DPS-relevant):
 - Iris (skills[1]): squad True Damage +30.97%, permanent. The skill text gates it
   on "when either adjacent ally reaches max HP", but the sim never damages
   allies, so they are always at max HP - Fienn ruled it always-on (2026-07-24).
-  Adjacency has no scope model, so the squad-wide half of the bullet is what
-  lands (Rouge's precedent for "self + both adjacent allies"). Modelling it as
+  Squad is the bullet's own scope, not an approximation of adjacency: the
+  effect line reads "Affects all allies" and only the TRIGGER names an adjacent
+  ally, so no seating changes who this reaches (which is why Flora is not in
+  registry.SEATED_BUFF_SLUGS). Modelling it as
   permanent also erases the base/Favorite-Item duration difference on this
   bullet (5 sec vs 10 sec), which is the cost of the ruling.
 - Secret Garden (skills[2], her burst, cd 40): squad True Damage +42.39% for

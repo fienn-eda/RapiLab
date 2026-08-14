@@ -28,9 +28,9 @@ HOW: 문구를 읽어 판정하지 않는다 - 슬롯 값을 하나씩 바꿔 �
     슬롯은 관측되지 않는다(`관측 안 됨`으로 표시). 없다는 뜻이 아니다.
   - `_BUILDERS`가 내는 규칙만 본다. per-shot / periodic / scheduled-nuke 빌더는
     범위 밖이다.
-  - 「self and 2 allies on both sides」 같은 위치 기반 타게팅은 squad 근사가
-    정당하다고 문서화돼 있으므로(references/engine-capabilities.md) 불일치로
-    세지 않고 참고로만 적는다.
+  - 「self and 2 allies on both sides」 같은 위치 기반 타게팅은 2026-08-13부터
+    표현 가능하다(`SquadContext.neighbor_slugs` + `SEATED_BUFF_SLUGS`). 그러니
+    이런 줄이 squad로 인코딩돼 있으면 참고가 아니라 **불일치**다 - 읽고 판단할 것.
 
 WHEN TO RUN: 니케를 인코딩한 뒤, 스코프를 건드린 뒤, 새 데이터를 수집한 뒤.
 

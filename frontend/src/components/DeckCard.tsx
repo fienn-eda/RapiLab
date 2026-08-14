@@ -101,6 +101,20 @@ export function DeckCard({
           <HelpText>{HELP.results.holdBurst(deck.hold_burst_slugs.map(nameFor).join(', '))}</HelpText>
         </p>
       )}
+      {Object.entries(deck.seating).map(([caster, seat]) => (
+        <p className="deck-results__seating" key={caster}>
+          <HelpText>
+            {HELP.results.seating(
+              nameFor(caster),
+              seat.allies.map(nameFor).join(', '),
+              // 앉을 수 있는 자리가 덱 전체면 제약이 없다는 뜻이라 자리 이야기를
+              // 꺼내지 않는다. 슬러그를 보고 판단하지 않는 것이 핵심이다 - 어느
+              // 유닛이 자리를 타는지는 엔진이 정하고 여기로 실려 온다.
+              seat.seats.length < deck.deck.length ? seat.seats.join('·') : null,
+            )}
+          </HelpText>
+        </p>
+      ))}
       {(addedSlugs.length > 0 || removedSlugs.length > 0) && (
         <div className="deck-results__diff">
           {addedSlugs.length > 0 && (
