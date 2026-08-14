@@ -461,7 +461,28 @@ OWN burst-fire times (`context.burst_times`) instead of the squad's global
 Full Burst window - for a self-status whose window starts at the owner's own
 burst and has a different length/offset than Full Burst (Asuka's Anti A.T.
 Field, "every 10 shots while in Annihilation State" - a 9s window that starts
-at HER burst, not the squad's Full Burst start), `("on_last_bullet",)` = +1
+at HER burst, not the squad's Full Burst start),
+`("per_shot_every_outside_own_status_window", N, window_duration)` = that
+window's MIRROR, counting only shots OUTSIDE it (Laplace's Hero Vision, fed by
+Full Charge attacks: during her Buster transform her weapon is not a charge
+weapon at all, and those transform ticks sit in `shot_times` right alongside her
+ordinary shots - **do not reach for the outside-Full-Burst kind instead**, the
+two windows start together but need not END together, so a 5-sec transform
+inside a 10-sec Full Burst would silently drop five seconds of genuine shots),
+`("per_shot_every_outside_full_burst", N)` = the mirror of the Full Burst kind,
+counting only shots outside any Full Burst window (closed on BOTH ends, so a
+shot landing exactly on a boundary counts as inside),
+`("per_shot_cycle_from_own_burst_to_full_burst_end", first, period)` = fires at
+the `first`-th shot of each own-burst-to-Full-Burst-end window and every
+`period` after, with **the count restarted in each window** - that restart is
+the whole difference from `per_shot_every_during_own_status_window`, which
+concatenates every window's shots before counting (fine for a status whose
+stacks reset anyway, wrong for a phase rotation),
+`("per_critical_hit_every", N)` = +1 stack per N EXPECTED critical hits with
+normal attacks, which needs the owner's LIVE crit rate rather than a shot index
+(Julia: Signature's Crescendo), `("at_battle_start",)` = a single fill at t=0,
+`("on_full_burst_end_after_own_burst",)` = at each Full Burst end that follows
+the owner's own burst (Mihara's Restraint Chains), `("on_last_bullet",)` = +1
 stack every time the owner's OWN shot empties its magazine (Julia's
 Crescendo, "Activates when the last bullet hits the target" - see
 `attack_rate.last_bullet_shot_times`, not any fixed shot count or window),
@@ -482,16 +503,44 @@ vs shot-loop phase ordering. The resolution pass emits each buff as a STEP FUNCT
 of delta Effects over the fill/expiry events, so `total_for`'s running sum equals
 value_fn(count) at every time. First consumers: `modernia.py` (timed capped),
 `guillotine_winter_slayer.py` (permanent + leveled + core-conditional),
-`cinderella.py` (periodic fill). Pattern B time-draining gauges / transforms (Ark
-Ranger battery, blocked additionally on part-destruction fills) remain deferred.
-See `special-mechanics.md`.
+`cinderella.py` (periodic fill), `laplace.py` (outside-own-status-window).
+
+**A resource may have MORE THAN ONE fill source.** In place of a single fill
+spec, `fill` takes a **list of `(fill spec, amount)` pairs**, each running on its
+own schedule and granting its own amount - Mihara's Ensnaring Chains is +10 per
+chain discharge and +1 per 40 normal attacks during Full Burst. `_fill_sources`
+normalises the two shapes, so a bare spec is just sugar for `[(spec, 1)]`. Every
+source's times are computed independently and merged before the count is read.
+
+**So "multi-source stacks" is NOT a gap** - together with per-stack expiry
+(`lifetime`, below), `cap`, and `resets`, most of what reads like a
+"time-decaying gauge" in skill text is already expressible. What genuinely is
+NOT: a resource that **consumes itself on reaching its cap** (no reset trigger
+fires on "count reached cap"), and - the harder half - one whose consumption
+changes when ANOTHER source can fill, since sources are scheduled independently
+and merged after the fact rather than walked in order. Phantom's Favorite Item
+dagger is the live example; see `docs/engine-gaps.md`.
+
+**Before recording any of this as deferred, check THIS file, not a module
+docstring.** A deferral note is a claim about the engine on the day it was
+written. The catalog listed 7 of 13 fill kinds and no multi-source form until
+2026-08-14, and in the meantime a five-slug "Pattern B" gap sat open for
+capabilities that were four of them already built.
+`tests/test_capability_catalog_is_current.py` fails if a fill kind or reset
+trigger is added without landing here.
 
 **Resource resets (value REPLACED, not incremented):** for a resource that gets
 set or spent rather than only ever accumulating - e.g. Soda's Golden Chip,
 starting the fight at its 50 cap and spending 17 at each of her bursts.
 `ResourceSpec` takes an optional `resets` field: `[{"trigger":
-"battle_start"|"own_burst"|"own_burst_delayed", "value": X, "delay": seconds
-(own_burst_delayed only)}, ...]`.
+"battle_start"|"own_burst"|"own_burst_delayed"|"full_burst_end", "value": X,
+"delay": seconds (own_burst_delayed only)}, ...]`. `full_burst_end` fires at
+each Full Burst's end whoever opened it (Arcana: Fortune Mate's Happy Memories,
+cleared there by Keepsake Album's own third bullet) - distinct from
+`own_burst_delayed` with a 10 sec delay, which lands one burst-ordering beat
+early and would cut the window's last shots short. Resets from every spec are
+replayed in TIME order, so each one's pre-value reflects the fills AND any
+earlier reset already applied. There is **no "on reaching cap" trigger.**
 
 **A spend uses `value_fn(pre_value)` in place of `value`** - for a consumption
 that reads the count it is spending, rather than landing on a fixed number.
@@ -642,10 +691,22 @@ owner's burst times - so the unit module precomputes the time list and the
 engine only emits it, keeping summon bookkeeping out of the simulator. Declare
 spec dicts `{"schedule": fn(context, fight_duration) -> times, "percent",
 "damage_type"(optional), "full_burst_bonus_eligible"(optional),
-"core_eligible"(optional)}`; wire via
+"core_eligible"(optional), "resource_gate"(optional)}`; wire via
 `_SCHEDULED_NUKE_BUILDERS` / `get_scheduled_nukes`, threaded by `roster` into
 `simulate_raid`'s `scheduled_nukes` param. Times at or past `fight_duration` are
-dropped. Logged with `source="scheduled"`. **`core_eligible: True` opts one
+dropped. Logged with `source="scheduled"`.
+
+**`resource_gate` gates or scales each tick on a named resource, read at that
+tick's OWN time** - the same 4-tuple `(name, cap, lifetime, scale_fn)` that
+`resource_scaled_nukes` uses, and the recorded `percent` is multiplied by
+`scale_fn(count)`. Use `lambda count: 1.0 if count >= cap else 0.0` for a
+binary "while the stack is at max" gate (Laplace's 11.9% true-damage rider),
+or `lambda count: count` to scale with the stack. This resolves in **phase 2**,
+after the resource pass, which is why it can read a counter that the schedule
+itself could not: schedules run while the shot timeline is still being built.
+That ordering is also the reason a `weapon_mode_schedules` profile's
+`damage_type` **cannot** be gated this way - the profile is fixed when the
+segment is built, before any resource exists. **`core_eligible: True` opts one
 scheduled instance into the Core Damage bonus**, against the general rule that
 only `source == "normal_attack"` collects it. Reach for it when the ticks are a
 SUMMON shooting rather than an effect ticking - a star or drone that aims and
