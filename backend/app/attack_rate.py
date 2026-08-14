@@ -971,6 +971,7 @@ def first_bullet_shot_times(
     attack_speed_percent_at=_zero,
     charge_speed_percent_at=_zero,
     charge_time_reduction_sec_at=_zero,
+    heating_speed_percent_at=_zero,
     ammo_refund=None,
     ammo_refills=(),
 ):
@@ -987,6 +988,7 @@ def first_bullet_shot_times(
     return magazine_first_bullet_times(
         rate_of_fire, max_ammo, reload_time, fight_duration,
         max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
+        heating_speed_percent_at=heating_speed_percent_at,
         ammo_refund=ammo_refund, weapon=weapon, ammo_refills=ammo_refills,
     )
 
@@ -1002,6 +1004,7 @@ def last_bullet_shot_times(
     attack_speed_percent_at=_zero,
     charge_speed_percent_at=_zero,
     charge_time_reduction_sec_at=_zero,
+    heating_speed_percent_at=_zero,
     ammo_refund=None,
     ammo_refills=(),
 ):
@@ -1018,6 +1021,7 @@ def last_bullet_shot_times(
     return magazine_last_bullet_times(
         rate_of_fire, max_ammo, reload_time, fight_duration,
         max_ammo_percent_at, reload_speed_percent_at, attack_speed_percent_at,
+        heating_speed_percent_at=heating_speed_percent_at,
         ammo_refund=ammo_refund, weapon=weapon, ammo_refills=ammo_refills,
     )
 
