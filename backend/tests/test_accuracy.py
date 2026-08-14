@@ -1,7 +1,7 @@
 import pytest
 
-from app.accuracy import (WEAPON_SPREAD_DIAMETER, ZERO_SPREAD_HIT_RATE,
-                          core_hit_rate, spread_diameter)
+from app.accuracy import (SPREAD_CONVERGENCE, WEAPON_SPREAD_DIAMETER,
+                          ZERO_SPREAD_HIT_RATE, core_hit_rate, spread_diameter)
 
 
 def test_base_diameters_are_the_values_in_the_game_data():
@@ -10,6 +10,57 @@ def test_base_diameters_are_the_values_in_the_game_data():
     assert WEAPON_SPREAD_DIAMETER == {
         "AR": 75.0, "SG": 250.0, "SMG": 110.0, "MG": 10.0, "SR": 10.0, "RL": 10.0,
     }
+
+
+def test_only_the_mg_converges_within_a_magazine():
+    # start/end/accuracy_change_pershot across the collected raws: MG is the one
+    # class whose start and end differ, and every other class carries a
+    # per-shot change of 0.
+    assert SPREAD_CONVERGENCE == {"MG": (250.0, 7.0)}
+
+
+def test_the_mg_opens_a_magazine_wide_and_tightens_per_round():
+    assert spread_diameter("MG", 0.0, magazine_index=0) == 250.0
+    assert spread_diameter("MG", 0.0, magazine_index=1) == 243.0
+    assert spread_diameter("MG", 0.0, magazine_index=20) == 110.0
+
+
+def test_the_mg_floors_at_its_converged_diameter():
+    # (250 - 10) / 7 = 34.3 rounds, and it never tightens past `end`.
+    assert spread_diameter("MG", 0.0, magazine_index=34) == 12.0
+    assert spread_diameter("MG", 0.0, magazine_index=35) == 10.0
+    assert spread_diameter("MG", 0.0, magazine_index=9999) == 10.0
+
+
+def test_a_non_converging_weapon_ignores_the_magazine_index():
+    for weapon in ("AR", "SG", "SMG", "SR", "RL"):
+        assert (spread_diameter(weapon, 0.0, magazine_index=0)
+                == WEAPON_SPREAD_DIAMETER[weapon])
+
+
+def test_no_magazine_index_keeps_the_converged_diameter():
+    """The default is what every caller that does not track magazine position
+    gets - a transform segment, and the frontend mirror - so wiring the
+    convergence cannot silently widen a spread nobody asked about."""
+    assert spread_diameter("MG", 0.0) == 10.0
+    assert core_hit_rate("MG", 0.0, 48.89) == 1.0
+
+
+def test_hit_rate_narrows_the_opening_spread_too():
+    # The hit-rate factor multiplies whatever diameter the weapon draws at that
+    # point in the magazine, not just the converged one. UNMEASURED: no reading
+    # separates this from "hit rate only moves the converged end".
+    assert spread_diameter("MG", 0.55, magazine_index=0) == pytest.approx(125.0)
+
+
+def test_the_first_rounds_of_an_mg_magazine_miss_the_core():
+    # The recorded Annihilio core is 48.89px, so an MG opens a magazine hitting
+    # it 3.8% of the time and is inside it by round 29.
+    assert core_hit_rate("MG", 0.0, 48.89, magazine_index=0) == pytest.approx(
+        (48.89 / 250) ** 2)
+    assert core_hit_rate("MG", 0.0, 48.89, magazine_index=28) == pytest.approx(
+        (48.89 / 54) ** 2)
+    assert core_hit_rate("MG", 0.0, 48.89, magazine_index=29) == 1.0
 
 
 def test_hit_rate_narrows_the_spread_linearly():

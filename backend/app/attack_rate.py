@@ -1156,6 +1156,12 @@ class ShotRecord:
     # segment's `weapon` label alone never decides a spread (raid_simulator's
     # _core_hit_rate_at).
     always_core_hit: bool = False
+    # This round's position in its own magazine, which is what an MG's aiming
+    # circle tightens against (accuracy.SPREAD_CONVERGENCE). None where the
+    # magazine has no position to give: a segment fires a declared profile and
+    # never reloads, and its `weapon` label is a hand-written archetype rather
+    # than a measured circle, so it takes the converged diameter.
+    magazine_index: int | None = None
 
 
 def _base_shot_records(base, window_start, window_end,
@@ -1210,7 +1216,8 @@ def _base_shot_records(base, window_start, window_end,
                     return records
                 records.append(ShotRecord(
                     shot_time, weapon, base["damage_percent"], bonus,
-                    is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1)))
+                    is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1),
+                    magazine_index=i))
                 last_shot_time = shot_time
             actual_reload = reload_time_with_speed(base["reload_time"], reload_speed_percent_at(last_shot_time))
             magazine_start = last_shot_time + actual_reload
@@ -1236,7 +1243,8 @@ def _base_shot_records(base, window_start, window_end,
                     return records
                 records.append(ShotRecord(
                     shot_time, weapon, base["damage_percent"], 0.0,
-                    is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1)))
+                    is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1),
+                    magazine_index=i))
             last_round_at = magazine_start + magazine_shot_offset(
                 magazine_size - 1, interval, spinup, ramp_start)
             magazine_empty_at = last_round_at + interval

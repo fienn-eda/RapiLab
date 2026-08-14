@@ -937,8 +937,14 @@ def _simulate_raid_once(
         weapon = (weapon_stats.get(slug) or {}).get("weapon")
         return weapon in in_range_weapons
 
-    def _core_hit_rate_at(slug, time, is_normal_attack, always_core_hit=False):
+    def _core_hit_rate_at(slug, time, is_normal_attack, always_core_hit=False,
+                          magazine_index=None):
         """이 인스턴스의 발 중 코어에 드는 비율.
+
+        `magazine_index`는 이 발이 탄창의 몇 번째인가다 — MG의 조준원은 탄창이
+        비어 갈수록 조여지므로 같은 유닛의 같은 명중률에서도 발마다 값이 다르다
+        (`accuracy.SPREAD_CONVERGENCE`). 탄창 위치가 없는 인스턴스는 수렴값을
+        받는다.
 
         탄착군이 좌우하는 것은 평타뿐이다. `core_strike`는 스킬이 코어를
         때린다고 원문에 적힌 딜이고, 소환물은 스스로 조준하므로(아니스:
@@ -976,7 +982,8 @@ def _simulate_raid_once(
             # 무기는 지어낸 탄착군 대신 예전의 상한 동작으로 떨어진다.
             return 1.0
         return core_hit_rate(
-            weapon, _stat_bundle(slug, time)["hit_rate"], core_diameter_px
+            weapon, _stat_bundle(slug, time)["hit_rate"], core_diameter_px,
+            magazine_index
         )
 
     def _damage_instance(
@@ -1091,6 +1098,7 @@ def _simulate_raid_once(
         slug, percent, time, source, damage_type="attack",
         extra_charge_bonus=0.0, resource_gate=None, extra_flat_atk=0.0,
         on_charge_weapon=None, core_eligible_override=None, always_core_hit=False,
+        magazine_index=None,
     ):
         damage_events.append({
             "slug": slug, "percent": percent, "time": time, "source": source,
@@ -1105,6 +1113,10 @@ def _simulate_raid_once(
             # This shot came from a weapon-mode segment that declares it always
             # lands on the core, so no spread math applies to it.
             "always_core_hit": always_core_hit,
+            # Which round of its magazine this was, for the weapons whose aiming
+            # circle tightens as the magazine empties. None = not a magazine
+            # round, so the converged diameter applies.
+            "magazine_index": magazine_index,
         })
 
     def _resolve_percent(ev):
@@ -1585,7 +1597,8 @@ def _simulate_raid_once(
             record(slug, rec.damage_percent, shot_time, "normal_attack",
                    damage_type=damage_type, extra_charge_bonus=rec.extra_charge_bonus,
                    on_charge_weapon=rec.weapon in CHARGE_WEAPONS,
-                   always_core_hit=rec.always_core_hit)
+                   always_core_hit=rec.always_core_hit,
+                   magazine_index=rec.magazine_index)
         shot_times_by_slug[slug] = shot_times
 
     # "For N round(s)" (bullet-count) buffs expire when the affected ally
@@ -1954,7 +1967,7 @@ def _simulate_raid_once(
         )
 
         share = _core_hit_rate_at(ev["slug"], ev["time"], is_normal_attack,
-                                  ev["always_core_hit"])
+                                  ev["always_core_hit"], ev["magazine_index"])
 
         def instance(on_core, weight=1.0):
             return {

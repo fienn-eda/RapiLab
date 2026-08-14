@@ -22,13 +22,14 @@ def _deck(weapon):
     ]
 
 
-def _weapon(weapon):
+def _weapon(weapon, **overrides):
     return {"weapon": weapon, "damage_percent": 100.0, "max_ammo": 999,
-            "reload_time": 0.0, "charge_time": 0.0, "charge_damage_percent": 100.0}
+            "reload_time": 0.0, "charge_time": 0.0, "charge_damage_percent": 100.0,
+            **overrides}
 
 
 def _log(weapon, *, core_diameter_px, striker_rules=(), two_pierce=False,
-         weapon_mode_schedules=None):
+         weapon_mode_schedules=None, fight_duration=1.5, **weapon_overrides):
     return simulate_raid(
         _deck(weapon),
         {"b1": [], "b2": [], "striker": list(striker_rules)},
@@ -38,9 +39,9 @@ def _log(weapon, *, core_diameter_px, striker_rules=(), two_pierce=False,
         # The fight ends before any Full Burst window opens, so the core bonus is
         # the only major modifier in play.
         gauge_charge_time=30.0,
-        fight_duration=1.5,
+        fight_duration=fight_duration,
         base_crit_rate=0.0,
-        weapon_stats={"striker": _weapon(weapon)},
+        weapon_stats={"striker": _weapon(weapon, **weapon_overrides)},
         core_hittable=True,
         core_diameter_px=core_diameter_px,
         pierce_hits_body_behind_core=two_pierce,
@@ -73,11 +74,48 @@ def test_no_core_diameter_leaves_every_shot_on_the_core():
     ("AR", 10000.0 * (1 + (50 / 75) ** 2)),
     ("SMG", 10000.0 * (1 + (50 / 110) ** 2)),
     ("SG", 10000.0 * (1 + (50 / 250) ** 2)),
-    # An MG's spread converges to 10px, already inside a 50px core.
-    ("MG", 20000.0),
+    # An MG converges to 10px, well inside a 50px core - but it OPENS a magazine
+    # at 250px, so its first round is the widest shot any weapon here fires and
+    # collects the same 4% a shotgun does.
+    ("MG", 10000.0 * (1 + (50 / 250) ** 2)),
 ])
 def test_each_weapon_collects_its_area_ratio(weapon, expected):
     assert _first_shot(weapon, core_diameter_px=50.0) == pytest.approx(expected)
+
+
+def test_an_mg_magazine_tightens_onto_the_core_as_it_empties():
+    """The measured convergence (250px -> 10px at 7px a round) spread across the
+    rounds it actually takes: 29 rounds to reach a 50px core, and every round
+    after that is a full core hit.
+
+    The fight runs long enough for round 60 to land: a cold MG spends 2.28 sec
+    on its warm-up ramp, so 1.5 sec does not even empty the converging stretch.
+    """
+    shots = _shots(_log("MG", core_diameter_px=50.0, fight_duration=4.0))
+    assert shots[0] == pytest.approx(10000.0 * (1 + (50 / 250) ** 2))
+    assert shots[10] == pytest.approx(10000.0 * (1 + (50 / 180) ** 2))
+    assert shots[28] == pytest.approx(10000.0 * (1 + (50 / 54) ** 2))
+    assert shots[29] == 20000.0
+    assert shots[60] == 20000.0
+
+
+def test_the_mg_spread_reopens_with_the_next_magazine():
+    """It is a MAGAZINE convergence, so a reload hands the next magazine the
+    same wide opening - the same shape as the warm-up ramp, and the reason the
+    round index rides on the shot record rather than counting shots fired."""
+    shots = _shots(_log("MG", core_diameter_px=50.0, max_ammo=5, reload_time=0.1))
+    wide = pytest.approx(10000.0 * (1 + (50 / 250) ** 2))
+    assert shots[0] == wide
+    assert shots[5] == wide, "round 0 of the second magazine is wide again"
+    assert shots[4] == pytest.approx(10000.0 * (1 + (50 / 222) ** 2))
+
+
+def test_a_charge_weapon_is_unmoved_by_the_magazine_index():
+    # SR/RL carry start == end in the data, so tracking their magazine position
+    # must not change a number. Guards the general form against an MG-shaped
+    # special case leaking onto every weapon.
+    shots = _shots(_log("SR", core_diameter_px=50.0, fight_duration=4.0))
+    assert shots and all(s == 20000.0 for s in shots)
 
 
 def test_a_hit_rate_buff_narrows_the_spread_and_raises_the_damage():
