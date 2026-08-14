@@ -87,14 +87,20 @@ class Spinup:
 # reproduces both endpoints and the magazine's total length exactly and differs
 # from the truth only in where those 48 rounds sit inside 2.28 sec.
 #
-# The warm-up is per MAGAZINE: every reload re-arms it, including one a skill
-# forces by dumping the magazine (Fienn, in game, 2026-08-14). A unit whose kit
-# empties its own magazine therefore pays a fresh ramp each time it fires -
-# Asuka: WILLE's Emergency Repair is the case that made this worth asking about,
-# since it moves the cost from "once a magazine runs dry" to "once a burst".
+# The warm-up is per MAGAZINE and a reload does re-arm it, including one a skill
+# forces by dumping the magazine (Fienn, in game, 2026-08-14). This models it as
+# a COLD start every time, which is the floor rather than the truth: heating
+# bleeds off over time rather than dropping the instant a reload begins, so a
+# short reload keeps part of it and the next magazine opens faster than this
+# says. The decay rate is unmeasured - the one frame reading behind MG_SPINUP
+# covers a single magazine and never records the next one's ramp - so the ramp
+# starts at index 0 regardless of how long the preceding reload took. A unit
+# whose kit forces SHORT reloads is charged the most by that approximation;
+# Asuka: WILLE's Emergency Repair (a 1.08-sec fixed reload against her natural
+# 2.478) is the largest instance. See docs/engine-gaps.md.
 #
-# What this one reading still does not settle: whether Attack Speed shortens the
-# ramp (modeled: no, it is a fixed segment like RELOAD_FIXED_SECONDS).
+# Also unsettled by that reading: whether Attack Speed shortens the ramp
+# (modeled: no, it is a fixed segment like RELOAD_FIXED_SECONDS).
 MG_SPINUP = Spinup(intervals=48, seconds=137 / 60)
 
 _SPINUP_BY_WEAPON = {"MG": MG_SPINUP}
