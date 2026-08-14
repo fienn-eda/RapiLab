@@ -25,7 +25,8 @@ Modeled (DPS-relevant):
 - Secret Trick: Rampages of Thieves (skills[2], her burst, cd 40): 1457.28% of
   final ATK as Distributed Damage.
 
-Not modeled / deferred:
+Not modeled - because the skill cannot reach them, not because the engine
+cannot express them:
 - **Thief's Dagger and everything gated on its max stacks** - i.e. Thief's
   Vision's 84.33% additional damage and its stacking Distributed Damage +12.86%.
   Fienn confirmed (2026-07-24) that in the BASE build the dagger cannot reach max
@@ -36,6 +37,12 @@ Not modeled / deferred:
   Item build adds a shot-counted dagger source that breaks the deadlock, and
   encodes these bullets. The same pin is what makes her Hit Rate above exactly
   one stack rather than the text's three.
+
+  This is a DEADLOCK IN THE SKILL, so it is not an engine gap and does not
+  belong on a gap list: the counter would read one stack however faithfully it
+  were modeled, and a max-stacks bullet that can never fire has no damage to
+  recover. What the engine genuinely cannot express is the FAVORITE ITEM
+  build's dagger - see `phantom_signature.py`.
 """
 from app.skill_rules._helpers import buff_rule, refreshing_buff_rule, round_buff_rule
 

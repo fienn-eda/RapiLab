@@ -8,6 +8,11 @@ from app.skill_rules.laplace import (
 from app.squad_engine import SquadContext, SquadMember
 
 # Real skill level 10 values from lootandwaifus.com (base build).
+HERO_VISION = {
+    "description_value_01": "3.57",  # Explosion Radius (not a damage multiplier)
+    "description_value_02": "5",     # stacks up to 5 time(s)
+    "description_value_03": "5",     # ...and lasts for 5 sec (15 on the signature)
+}
 HERO_BOMBER = {
     "description_value_01": "81.66",  # last-bullet additional damage % of final ATK
     "description_value_02": "14.78",  # deferred: parts-hit additional damage %

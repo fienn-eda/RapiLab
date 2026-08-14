@@ -208,8 +208,10 @@ from app.skill_rules.drake import (
     drake_special_burst_percent,
 )
 from app.skill_rules.laplace import (
+    build_buster_scheduled_nukes,
     build_buster_weapon_mode_schedule,
     build_hero_bomber_per_shot_rules,
+    build_hero_vision_resources,
     build_laplace_rules,
     laplace_buster_burst_percent,
 )
@@ -640,7 +642,7 @@ _BUILDERS = {
     "snow-white-heavy-arms": lambda sv: (build_snow_white_heavy_arms_rules(sv), None),  # burst is the Fully Active state change (weapon-mode segment), no direct nuke
     "drake": lambda sv: (build_drake_rules(sv), drake_special_burst_percent(sv)),
     "drake-signature": lambda sv: (build_drake_signature_rules(sv), drake_signature_burst_percent(sv)),
-    "laplace": lambda sv: (build_laplace_rules(sv), laplace_buster_burst_percent(sv)),  # no ally buffs; Hero Vision deferred
+    "laplace": lambda sv: (build_laplace_rules(sv), laplace_buster_burst_percent(sv)),  # no ally buffs; Hero Vision is a resource
     "laplace-signature": lambda sv: (
         laplace_signature.build_laplace_signature_rules(sv),
         laplace_signature.laplace_buster_signature_burst_percent(sv),
@@ -993,6 +995,7 @@ _SCHEDULED_NUKE_BUILDERS = {
     "rosanna-chic-ocean": lambda sv: build_spina_scheduled_nukes(sv),  # Spina di Rosa, 15 ticks per cast
     "laplace-ultimate-hero": lambda sv: build_laplace_stage_nukes(sv),  # Mjolnir's 934.76% x Over Energy stage
     "nayuta": lambda sv: build_memory_incineration_scheduled_nukes(sv),  # Full Charge in Memory Incineration
+    "laplace": lambda sv: build_buster_scheduled_nukes(sv),  # per-tick true-damage rider, gated on max Hero Vision
     "laplace-signature": lambda sv: laplace_signature.build_buster_scheduled_nukes(sv),  # per-tick true-damage rider
     "rapi-red-hood": lambda sv: build_attachable_projectiles_scheduled_nukes(sv),  # Attachable Projectiles launcher
     "rapi-red-hood-b1": lambda sv: build_attachable_projectiles_scheduled_nukes(
@@ -1159,6 +1162,8 @@ _RESOURCE_SPEC_BUILDERS = {
     "arcana-fortune-mate": lambda sv: build_memories_and_moments_resources(sv),
     "asuka-shikinami-langley-wille": lambda sv: build_anti_at_field_resources(sv),
     "julia": lambda sv: build_crescendo_resources(sv),
+    "laplace": lambda sv: build_hero_vision_resources(sv),
+    "laplace-signature": lambda sv: laplace_signature.build_hero_vision_signature_resources(sv),
     "julia-signature": lambda sv: julia_signature.build_crescendo_signature_resources(sv),
     "leona": lambda sv: build_leona_resources(sv),
     "modernia": lambda sv: build_modernia_resources(sv),

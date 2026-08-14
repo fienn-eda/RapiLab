@@ -35,12 +35,31 @@ Modeled (DPS-relevant):
   `build_firepower_explosion_per_shot_rules`.
 
 Not modeled / deferred:
-- The Firepower Gauge as a live resource. The 3-burst period is Fienn's in-game
-  observation, held as a constant rather than derived from the fill rates: the
-  +2-per-normal term makes the real refill depend on how fast she shoots, so a
-  deck that buffs her attack or charge speed could in principle reach 100 a
-  burst sooner. Deriving it needs the recharge tick's rate, which the skill text
-  gives as a bare "+1" with no interval.
+- The Firepower Gauge as a live resource - and measured to be inert
+  (2026-08-14), so this is a closed question, not a gap. The constant is not a
+  stand-in for
+  something unknown: simulating the gauge straight from the skill text
+  reproduces Fienn's 1st/4th/7th observation exactly, and the answer is
+  structurally locked, so a live gauge would return the same three.
+
+  The arithmetic. She opens at 100 (battle start), a qualifying burst spends
+  all 100, and a non-qualifying one puts back +2 per normal attack for the
+  10-sec Firepower Charge window plus +45 when that window ends. At her
+  measured 0.99-1.06 shots/sec that is 66-68 a cycle, so two cycles are needed
+  to clear 100 and Super Firepower lands every third burst. Checked across six
+  decks - every one gives 1, 4, 7.
+
+  Why a faster deck cannot move it. Reaching 100 inside ONE cycle needs
+  1 + 2N + 45 >= 100, i.e. N >= 27 normal attacks in the 10-sec window: 2.7
+  shots/sec, two and a half times what a Rocket Launcher does. The period only
+  stretches past three below 2 shots per window. The whole realistic band sits
+  in the interior.
+
+  This also settles the one ambiguity in the text. "Firepower Charge: Charges
+  the Firepower Gauge for 10 sec ... Increases the Firepower Gauge's charge by
+  1" reads either as a one-shot +1 or as +1 per tick across the 10 sec, and the
+  bullet names no interval. Both readings were simulated; both give 1, 4, 7 -
+  an ambiguity that cannot change any number is not a blocker.
 - Explosion Radius +200% (not a damage multiplier), Burst Gauge filling speed
   (not DPS), and all of Healthy Body's survivability (invulnerability, debuff
   immunity, incoming-healing) are skipped.

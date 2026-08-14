@@ -40,10 +40,30 @@ Modeled (DPS-relevant):
   Damage; Damage Taken +18% for 30 sec when the boss is Fire Code; self Max
   Ammunition Capacity +50% for 10 sec.
 
-Not modeled / deferred:
+Not modeled / deferred - and this build's dagger is the one place in the kit
+where the ENGINE, not the skill, is the limit (2026-08-14):
 - The dagger stack count itself is not tracked as a resource: the 60-shot
-  counter stands in for "max stacks reached", per Fienn's cadence. If the
-  engine ever grows a real multi-source stack model this should be revisited.
+  counter stands in for "max stacks reached", per Fienn's cadence.
+
+  What the engine is missing is narrow and specific. Multi-source fills,
+  per-stack expiry, caps and resets all exist (`ResourceSpec` / `_fill_sources`
+  / `ResourceBuff.lifetime`), and two of the dagger's three ingredients are
+  already expressible: the Favorite Item source is "every 30 normal attacks"
+  and the stacks expire 5 sec apart on their own clocks. The missing third is
+  that this resource CONSUMES ITSELF - Thief's Vision's third bullet "Removes
+  stacks" on reaching the cap - and no reset trigger fires on "the count
+  reached its cap". Worse, that consumption also removes Calling Card, which
+  is what re-opens the OTHER dagger source, so one source's fill schedule
+  depends on when the resource emptied. Independent per-source schedules
+  summed after the fact cannot express that; it needs a sequential walk (the
+  shape `_resolve_squad_burst_cycle_resource` already uses for a different
+  resource).
+
+  Size of the prize, measured 2026-08-14: her real fire rate is 11.16
+  shots/sec, so the 60-shot constant is 5.38 sec while the Calling Card source
+  runs on a 5.00 sec clock - the true cadence is at or below the constant, i.e.
+  the constant UNDERSTATES her procs. The sensitivity is +1.54% at 55 shots and
+  +3.37% at 50, so a real model is worth low single digits.
 - Which is also why her Hit Rate is encoded at ONE stack, the base build's
   floor, rather than the two or three this build really carries. The count here
   is a sawtooth, not a level: the third bullet of Thief's Vision "Removes
@@ -51,8 +71,14 @@ Not modeled / deferred:
   from two sources at once. Pinning any single value in between would be
   inventing a duty cycle nobody measured, and the floor is the honest end of
   that range - so this build's core-hit share (44.4% -> 75.8% of a 50px core)
-  is an UNDERSTATEMENT. A stack model, or an in-game reading of the sawtooth,
-  is what would close it.
+  is an UNDERSTATEMENT.
+
+  That understatement currently costs nothing: hit rate reaches damage only
+  through `BossProfile.core_diameter_px`, which is opt-in and set on no boss
+  the product builds decks against (0 of 6 in `data/raid-rotations.json`,
+  default None). Measured: forcing her dagger to 2 or 3 stacks moves her sweep
+  total by 0.00%. It would start to bite the day a raid boss carries a
+  measured core diameter.
 """
 from app.skill_rules._helpers import (
     buff_rule,
