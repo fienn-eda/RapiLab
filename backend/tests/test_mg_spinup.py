@@ -11,7 +11,7 @@ from app.attack_rate import (MG_SPINUP, RATE_OF_FIRE_60FPS, ShotRecord,
                              generate_magazine_shot_times,
                              generate_segmented_shots,
                              magazine_first_bullet_times,
-                             magazine_last_bullet_times,
+                             magazine_last_bullet_times, magazine_shot_offset,
                              reload_time_with_speed, spinup_for_weapon,
                              spinup_with_speed)
 
@@ -88,6 +88,33 @@ def test_a_magazine_reproduces_the_measured_frame_numbers():
         shots[MAGAZINE - 1] + F + reload_time_with_speed(RELOAD_FILE, 0.0))
     assert (shots[MAGAZINE] - shots[MAGAZINE - 1]) == pytest.approx(
         (RELOADED - EMPTY) * F, abs=2 * F)
+
+
+def test_a_cold_magazine_follows_the_measured_curve():
+    """The ramp's total is unchanged - what moves is where its rounds sit."""
+    shots = _one_magazine()
+    assert shots[2] == pytest.approx(56 * F)
+    assert shots[24] == pytest.approx(111 * F)
+    assert shots[MG_SPINUP.intervals] == pytest.approx(137 * F)
+    assert shots[MAGAZINE - 1] == pytest.approx((EMPTY - FIRST_SHOT) * F)
+
+
+def test_a_magazine_can_open_part_way_up_the_ramp():
+    """The two short-reload readings, read straight off the curve: a magazine
+    that keeps 24 of the 48 ramp rounds pays 26 frames, not the 68.5 a flat
+    ramp would charge for those same 24 gaps."""
+    interval = 1 / RATE_OF_FIRE_60FPS["MG"]
+    assert magazine_shot_offset(24, interval, MG_SPINUP, 24) == pytest.approx(26 * F)
+    assert magazine_shot_offset(46, interval, MG_SPINUP, 2) == pytest.approx(81 * F)
+    # ramp_start defaults to a cold magazine
+    assert magazine_shot_offset(48, interval, MG_SPINUP) == pytest.approx(137 * F)
+    # past the ramp the nominal gap resumes
+    assert magazine_shot_offset(25, interval, MG_SPINUP, 24) == pytest.approx(27 * F)
+    # A point INSIDE a segment, where the curve and a flat ramp disagree. The
+    # assertions above all land on the curve's own knots (2, 24, 48), where a
+    # flat rate happens to give the same answer - so they alone do not hold the
+    # shape down.
+    assert magazine_shot_offset(10, interval, MG_SPINUP, 2) == pytest.approx(25 * F)
 
 
 def test_a_magazine_takes_longer_than_the_nominal_rate_says():
@@ -219,8 +246,8 @@ def test_the_clamp_floor_ignores_attack_speed():
         _mg_base(), [], fight_duration=60.0,
         attack_speed_percent_at=lambda _t: 1.0,
         heating_speed_percent_at=lambda _t: 10.0)
-    ramp_gap = slowed[1].time - slowed[0].time
-    assert ramp_gap == pytest.approx(1 / RATE_OF_FIRE_60FPS["MG"])
+    ramp_total = slowed[MG_SPINUP.intervals].time - slowed[0].time
+    assert ramp_total == pytest.approx(MG_SPINUP.intervals / RATE_OF_FIRE_60FPS["MG"])
     post_ramp_gap = (slowed[MG_SPINUP.intervals + 1].time
                       - slowed[MG_SPINUP.intervals].time)
     assert post_ramp_gap == pytest.approx(1 / (2 * RATE_OF_FIRE_60FPS["MG"]))

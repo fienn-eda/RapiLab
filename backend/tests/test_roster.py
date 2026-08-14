@@ -428,12 +428,21 @@ def test_cube_reload_speed_effect_moves_damage_through_the_reload_path(monkeypat
     # magazine-and-reload cycle, so the seconds a reload saving buys are worth
     # fewer shots - the same mechanism the charge motion delay produced when it
     # landed, and the reason this assertion is split from the delta below.
-    assert round(dmg_with / dmg_without, 4) == 1.0527
+    # Re-baselined 2026-08-14: the machine gun's warm-up is a measured CURVE
+    # rather than one flat reduced rate, so a magazine's 48 ramp rounds sit
+    # where they were read - rounds 0-2 take 56 of the ramp's 137 frames. The
+    # ramp's total and the magazine's length are unchanged, so this is not the
+    # reload path moving: the saving still buys the same seconds, but every
+    # ramp round except the last one now lands later inside its own magazine,
+    # which shifts which shots fall inside Full Burst and which fit before the
+    # fight ends. RATIO 1.0527 -> 1.0524, DELTA 34,754,490 -> 34,564,302 (the
+    # absolutes are 660,172,350 without the cube and 694,736,653 with it).
+    assert round(dmg_with / dmg_without, 4) == 1.0524
     # Pin the DELTA too, not just the ratio: the ratio moves whenever anything
     # in this deck's damage moves, but a reload-speed change is the only thing
     # that may move the delta. Splitting them is what stops a re-baseline from
     # quietly absorbing a real regression in the reload path.
-    assert round(dmg_with - dmg_without, 0) == 34_754_490.0
+    assert round(dmg_with - dmg_without, 0) == 34_564_302.0
 
 
 def test_weapon_mode_schedules_key_exists_in_assembled_inputs():

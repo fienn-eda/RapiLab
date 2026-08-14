@@ -126,11 +126,10 @@ class Spinup:
 # ramp, Crown plus Privaty a 31-frame gap and a 26-frame ramp, against the cold
 # 137 - up to 1.85 sec charged per magazine that the game does not charge.
 #
-# `magazine_shot_offset` still spends this curve as one flat rate, which keeps a
-# cold magazine's total exact - what the calibration rests on - and differs from
-# the truth only in where those 48 rounds sit inside 2.28 sec. Adopting the curve
-# redistributes a COLD ramp as well, and so moves every shot-counted trigger on
-# every MG. See docs/engine-gaps.md and docs/measurements/mg-spinup.md.
+# `magazine_shot_offset` spends this curve, so a cold magazine's TOTAL is the
+# measured 137 frames - what the calibration rests on - and the 48 rounds inside
+# it sit where they were read rather than evenly. See docs/engine-gaps.md and
+# docs/measurements/mg-spinup.md.
 #
 # Also unsettled by that reading: whether Attack Speed shortens the ramp
 # (modeled: no, it is a fixed segment like RELOAD_FIXED_SECONDS).
@@ -182,20 +181,27 @@ def spinup_with_speed(spinup, heating_speed_percent, rate_of_fire):
     return Spinup(points=tuple((p, t * factor) for p, t in spinup.points))
 
 
-def magazine_shot_offset(index, shot_interval, spinup):
+def magazine_shot_offset(index, shot_interval, spinup, ramp_start=0.0):
     """Seconds from a magazine's first round to its `index`-th one.
 
-    The single place the spin-up is applied, because two call sites generate
-    magazine timelines - `generate_magazine_shot_times` and the segmented
-    `_base_shot_records` - and they are contractually bit-identical when there
-    are no segments.
+    `ramp_start` is the ramp position this magazine OPENS at - 0.0 for a cold
+    magazine, higher when the reload before it was short enough that some
+    heating survived. It defaults to a cold start, so a caller that does not
+    track heating gets the timeline it always had.
+
+    The single place the spin-up is applied, because four call sites generate
+    magazine timelines - `generate_magazine_shot_times`, the segmented
+    `_base_shot_records` and the two bullet-marker walks - and they are
+    contractually bit-identical when there are no segments.
     """
     if spinup is None or index <= 0:
         return index * shot_interval
-    ramp_interval = spinup.seconds / spinup.intervals
-    if index <= spinup.intervals:
-        return index * ramp_interval
-    return spinup.seconds + (index - spinup.intervals) * shot_interval
+    position = ramp_start + index
+    spent = spinup.elapsed(ramp_start)
+    if position <= spinup.intervals:
+        return spinup.elapsed(position) - spent
+    return ((spinup.seconds - spent)
+            + (position - spinup.intervals) * shot_interval)
 
 
 def _rounds_from_declaration(rounds, percent, capacity):

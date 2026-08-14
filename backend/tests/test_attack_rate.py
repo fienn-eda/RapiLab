@@ -133,11 +133,13 @@ def test_charge_reload_speed_up_shortens_the_gap_between_magazines():
 
 def test_generate_shot_times_dispatches_to_magazine_for_non_charge_weapons():
     shots = generate_shot_times(
-        weapon="MG", max_ammo=3, reload_time=1.0, charge_time=0.0, fight_duration=0.25,
+        weapon="MG", max_ammo=3, reload_time=1.0, charge_time=0.0, fight_duration=1.0,
     )
-    # MG rate of fire is 60/sec -> shots ~1/60s apart
+    # An MG reaches its nominal 60/sec only after warming up, and the warm-up's
+    # cost sits at the front - rounds 0-2 of a magazine span 56 frames, not 3.
     assert len(shots) == 3
     assert shots[0] == 0.0
+    assert shots[2] == pytest.approx(56 / 60)
 
 
 def test_generate_shot_times_dispatches_to_charge_for_charge_weapons():
