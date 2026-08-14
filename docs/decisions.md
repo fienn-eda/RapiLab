@@ -5,6 +5,32 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 아스카 예열 회복 컨트롤 기술은 엔진에 넣지 않는다 — 0.938x는 결함이 아니라 기술차
+
+- Date: 2026-08-14
+- Context: 아스카(WILLE)의 버스트 Emergency Repair는 탄약 100%를 비워 강제
+  재장전을 걸고 MG 예열을 3초간 100% 늦춘다. 둘 다 배선했다 — 강제 재장전은
+  무언의 `weapon_mode_schedules` 세그먼트, 감속은 `mg_heating_speed_percent`
+  스탯. 실기록 대조에서 그녀가 **0.938x**(기록보다 낮음)로 나와 결함처럼
+  보였다. Fienn이 인게임에서 확인했다: MG는 **스킬로 강제된 재장전을 포함해
+  모든 재장전 뒤에** 예열이 필요하다 — 엔진의 탄창당 예열 모델은 맞고, 청구되는
+  비용은 실재한다.
+- Ruling (Fienn, 2026-08-14): 그 손실의 상당 부분을 플레이어가 컨트롤 기술로
+  회복할 수 있지만, **그 기술은 엔진에 넣지 않는다.**
+- Why: 그 회복은 스킬 텍스트가 아니라 플레이어 조작이 만드는 결과다 — 넣으면
+  스킬 텍스트가 뒷받침하지 않는 숫자가 모델에 들어간다. 같은 종류의 괴리가 이미
+  `ade-agent-bunny`에 있다: 그녀의 기록은 풀차지가 아니라 톡톡이(tap-fire)로
+  찍혀 `measure_record_calibration.py`의 캐비엇 목록에 "기록이 재는 것은
+  인코딩이 아니라 기록 쪽 문제"라고 적혀 있고, 아스카도 같은 캐비엇에 속한다.
+- Consequences: 0.938x는 결함이 아니라 **기대되는 값**이다 — 기록은 기술을 쓴
+  플레이고 시뮬은 스킬 텍스트 그대로 돈다. 덱3에서 메커니즘을 하나씩 꺼서 잰
+  결과 −13.9pt 전체가 세그먼트(강제 재장전) 몫이고, 예열 자체는 +0.005만큼
+  오히려 이득이다 — 레이 아야나미의 +100% MG 아군 버프와 그녀 자신의 −100%가
+  창의 일부에서 상쇄돼 그 구간은 합이 0이기 때문이다. 길이 0인 강제 재장전만
+  가정해도 0.987x로 남아, 14pt 중 약 9pt는 탄창 폐기와 재무장된 예열 자체가
+  만드는 손실이다. 이 결정이 지키는 규칙: **플레이어 기술이 만든 간극을
+  메우려고 인코딩을 조정하지 않는다.**
+
 ## 애니힐리오 실측 코어를 실기록에 켠다 — `RECORD_BOSS`가 opt-in을 켠 첫 인카운터
 
 - Date: 2026-08-14
