@@ -140,6 +140,14 @@ RECORD_CAVEATS = {
         "Her output is a floor/ceiling bracket, not a point estimate - part "
         "destruction fills her battery on a schedule nobody can know. See the "
         "BossProfile.part_destructible decision in docs/decisions.md.",
+    "asuka-shikinami-langley-wille":
+        "Emergency Repair dumps her magazine on every burst, and a machine gun "
+        "pays a fresh warm-up after any reload - both encoded, both real costs "
+        "the game charges. A player recovers much of that with control "
+        "technique, which the engine does not model (Fienn, 2026-08-14), so the "
+        "record is a play that used it and the sim is the skill text alone. "
+        "Same shape as Ade's tap-firing: closing the gap would mean putting "
+        "numbers into her encoding that her skills do not support.",
 }
 
 
