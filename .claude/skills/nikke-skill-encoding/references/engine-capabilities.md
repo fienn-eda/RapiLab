@@ -160,6 +160,7 @@ Scheduling stats (change the burst rotation / shot timing, not per-hit damage):
 | `max_ammo_percent` | scales base magazine size (increases and decreases both apply to BASE, summed) | "Max Ammunition Capacity ▲/▼ X%" |
 | `max_ammo_rounds` | adds whole ROUNDS to the magazine, on top of the percent: `round(base × (1+pct) + rounds)`. State the round count as-is - `raid_simulator` converts it against each recipient's own base magazine, so a squad-scope grant correctly means +67% to an SG and +2% to an MG | "Max Ammunition Capacity ▲ N round(s)" (no `%`) |
 | `reload_speed_percent` | shortens reloads | "Reloading Speed ▲ X%" |
+| `mg_heating_speed_percent` | scales how long a machine gun's per-magazine warm-up lasts. A MACHINE GUN spends 2.2833 sec at the head of every magazine reaching its nominal 60 rounds/sec (`attack_rate.MG_SPINUP`, measured); this stat scales that DURATION, leaving the 48 gaps it covers alone. ▲ divides, ▼ multiplies: ▲100% → 1.1417 sec, ▼100% → 4.5667 sec (Fienn, 2026-08-14 — the same shape as his charge-speed ruling that Ada's ▼300% means charge time ×4). Sampled per magazine at its start, like `attack_speed_percent`. Clamped so the ramp can never beat the weapon's nominal gap — a warm-up is a slow start, not an accelerator. No other weapon class has a warm-up, so this reaches MG recipients only | "MG heating up speed ▲/▼ X%" (the game uses "heating" for machine guns alone) |
 
 **Mid-magazine ammo refund — NOT a stat, and NOT a Max Ammo percentage.**
 `attack_rate.AmmoRefund(every_shots=N, rounds=R)` hands `R` rounds back into the

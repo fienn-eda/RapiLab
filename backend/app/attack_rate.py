@@ -94,14 +94,17 @@ class Spinup:
 # than that keeps part of it and the next magazine opens faster than a cold one.
 #
 # This models every magazine as a cold start, which is exact whenever the gap
-# reaches 1.16667 sec and a floor below it. Every reload in the shipped roster
-# clears that bar - Rosanna 1.67, Asuka: WILLE 2.478 natural and 1.080 on her
-# forced reload (7.4% retained at worst, 0% once the 13-frame delay that reading
-# also caught is counted). Stacked reload-speed buffs are what would breach it.
-# The retention CURVE below the threshold is unmeasured, which is why nothing
-# interpolates: that reading's own gap (2.0667 sec) sits above the decay, so it
-# pins the duration and re-confirms the 137-frame ramp, not the partial case.
-# See docs/engine-gaps.md and docs/measurements/mg-spinup.md.
+# reaches 1.16667 sec and a floor below it. Natural reloads clear that bar
+# (Rosanna 1.67, Asuka: WILLE 2.478, and 1.080 even on her forced one), so the
+# floor binds on STACKED reload speed: with Crown plus a level-15 reload cube a
+# 63-frame gap leaves a ramp of 81 frames against the cold 137, i.e. 41% of the
+# heat survives and such a deck is over-charged 0.933 sec every magazine.
+#
+# Nothing interpolates yet because the retention CURVE is not settled. Decay is
+# far slower than linear early on - linear would predict 123 frames where 81 was
+# read - and the two readings admit a hold-then-release shape (~52.9 frames held,
+# ~17.1 releasing) that fits with zero degrees of freedom. A third gap length
+# would test it. See docs/engine-gaps.md and docs/measurements/mg-spinup.md.
 #
 # Also unsettled by that reading: whether Attack Speed shortens the ramp
 # (modeled: no, it is a fixed segment like RELOAD_FIXED_SECONDS).
