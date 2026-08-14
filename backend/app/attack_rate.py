@@ -87,17 +87,21 @@ class Spinup:
 # reproduces both endpoints and the magazine's total length exactly and differs
 # from the truth only in where those 48 rounds sit inside 2.28 sec.
 #
-# The warm-up is per MAGAZINE and a reload does re-arm it, including one a skill
-# forces by dumping the magazine (Fienn, in game, 2026-08-14). This models it as
-# a COLD start every time, which is the floor rather than the truth: heating
-# bleeds off over time rather than dropping the instant a reload begins, so a
-# short reload keeps part of it and the next magazine opens faster than this
-# says. The decay rate is unmeasured - the one frame reading behind MG_SPINUP
-# covers a single magazine and never records the next one's ramp - so the ramp
-# starts at index 0 regardless of how long the preceding reload took. A unit
-# whose kit forces SHORT reloads is charged the most by that approximation;
-# Asuka: WILLE's Emergency Repair (a 1.08-sec fixed reload against her natural
-# 2.478) is the largest instance. See docs/engine-gaps.md.
+# The warm-up is per MAGAZINE and a reload re-arms it, including one a skill
+# forces by dumping the magazine. Heating does not vanish the instant firing
+# stops - it bleeds off over 70 frames (1.16667 sec, Fienn's frame reading of
+# the same Rosanna run: last round 1256, fully released 1326), so a gap SHORTER
+# than that keeps part of it and the next magazine opens faster than a cold one.
+#
+# This models every magazine as a cold start, which is exact whenever the gap
+# reaches 1.16667 sec and a floor below it. Every reload in the shipped roster
+# clears that bar - Rosanna 1.67, Asuka: WILLE 2.478 natural and 1.080 on her
+# forced reload (7.4% retained at worst, 0% once the 13-frame delay that reading
+# also caught is counted). Stacked reload-speed buffs are what would breach it.
+# The retention CURVE below the threshold is unmeasured, which is why nothing
+# interpolates: that reading's own gap (2.0667 sec) sits above the decay, so it
+# pins the duration and re-confirms the 137-frame ramp, not the partial case.
+# See docs/engine-gaps.md and docs/measurements/mg-spinup.md.
 #
 # Also unsettled by that reading: whether Attack Speed shortens the ramp
 # (modeled: no, it is a fixed segment like RELOAD_FIXED_SECONDS).
