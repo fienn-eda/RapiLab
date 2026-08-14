@@ -7,7 +7,20 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-08-13
+- 마지막 갱신: 2026-08-14
+- **강제 재장전 프리미티브 확산 + MG 예열 속도 배선 (2026-08-14)**: 질 발렌타인·
+  라플라스: 얼티메이트 히어로·그레이브·아스카에 발사 0개 세그먼트
+  (`_helpers.silent_reload_segments`)로 강제 재장전/탄약 제거를 배선하고, 신규
+  스탯 `mg_heating_speed_percent`로 레이 아야나미(Tentative Name)의 MG 아군 예열
+  가속 버프와 아스카 자신의 예열 감속 디버프를 배선했다. 그레이브는 같은
+  배치에서 Heat Emission의 스쿼드 Pierce Damage 버프가 다음 자기 버스트까지
+  무기한으로 걸려 있던 기존 결함도 정정(방열이 실제로 꺼지는 조건 — 이중
+  재장전 — 에 바운드). 갭 #11(강제 재장전/탄약 제거 상태머신)은 2026-07-20에
+  이미 닫혀 있었으나 인코더가 읽는 카탈로그(`engine-capabilities.md`) 누락으로
+  세 유닛이 계속 막혀 있었다 — [[stale-defers-need-the-catalog-not-the-docstring]]
+  네 번째 사례. 기준선 백엔드 **2299 → 2332 passed**(3 skipped 불변). 실기록
+  캘리브레이션 **1.065x·16/25 → 1.062x·16/25**(±15% 이내 유닛 수 불변), MG 평균
+  1.078x → 1.094x. 상세: `docs/engine-gaps.md`, `docs/encoded-nikkes.md`.
 - **페르소나 콜라보 온보딩 (2026-08-13)**: 퀸(마코토 니지마) `queen-makoto-nijima`
   · 유키코 `yukiko-amagi`. `ENCODED_SLUGS` 101→**103**. 기준선 **백엔드 2252 passed ·
   프론트 880 passed / 73 files · 타입에러 0**. 아이기스(872)는 SR이라 대상 외.

@@ -10,8 +10,9 @@
 이 문서의 우선순위 표는 **lootandwaifus 44유닛에 문구 스캔을 한 번 돌린 결과**다(「집계
 방법」 절). 레지스트리가 103슬러그·95모듈로 커진 지금 그 카운트는 순위 근거가 못 된다.
 **인코딩된 95모듈의 독스트링에서 「Not modeled」 불릿을 전부 뽑아 다시 셌고**
-(`scripts/census_deferred_bullets.py` — 오늘 140건, 갭 98 / 스코프 42),
-같은 날 캘리브레이션도 다시 쟀다(`measure_record_calibration.py`).
+(`scripts/census_deferred_bullets.py` — 그날 140건, 갭 98 / 스코프 42; 2026-08-14
+강제 재장전·MG 예열 배치 착륙 후 재측정하면 134건, 갭 92 / 스코프 42 — 아래 "재집계
+방법과 그 함정" 절 참고), 같은 날 캘리브레이션도 다시 쟀다(`measure_record_calibration.py`).
 
 **캘리브레이션 (2026-08-13): 1.060x · 18/25 · 과대 합계 +1.961B / 과소 −0.204B**
 (SMG 1.172x · SR 1.115x · AR 1.114x · MG 1.066x · RL 1.035x, 캐비엇 2유닛 제외).
@@ -83,12 +84,19 @@
    소비한다. `asuka`의 별개 「탄약 100% 제거」 상태머신(Emergency Repair)도 손대지
    않았다 — HP/예열속도/재장전속도와 한 묶음인 논-딜 통이다. `charge_window.py`는
    전투 절대 시각이 없는 한 창짜리 계산기라 이 프리미티브의 소비자가 아니다.
-4. **Pattern B (시간감쇠 게이지·다중소스 스택) — 5슬러그.** 아래 갭 #2가 적어 둔 그대로
-   남았다. `laplace`·`laplace-signature`(Hero Vision이 버스트 11.9% 트루뎀을 게이트) ·
-   `phantom`(**베이스 빌드는 Thief's Vision 84.33% 추가딜이 통째로 보류**) ·
-   `phantom-signature`(명중을 1스택으로 못박아 과소) · `neon-vision-eye`(화력 게이지를
-   3버스트 상수로 대체).
-5. **MG 예열 속도 버프/디버프 — 2슬러그, 새로 열린 갭.** 아래 별도 절.
+4. **Pattern B (시간감쇠 게이지·다중소스 스택) — 5슬러그로 셌지만 실제 갭은 4다.**
+   아래 갭 #2가 적어 둔 그대로 남았다. `laplace`·`laplace-signature`(Hero Vision이
+   버스트 11.9% 트루뎀을 게이트) · `phantom-signature`(명중을 1스택으로 못박아 과소) ·
+   `neon-vision-eye`(화력 게이지를 3버스트 상수로 대체). **`phantom`(베이스)의 Thief's
+   Vision 84.33% 추가딜은 갭이 아니다** — Fienn 확인(2026-07-24): 베이스 빌드의 대거는
+   애초에 최대 스택에 닿을 수 없다(스택 소스가 자기 Calling Card 부여 대상 아닌
+   평타뿐인데, 그 평타가 곧바로 5초짜리 Calling Card를 걸어 대거 자신의 지속시간과
+   정확히 같은 순간 만료된다 — 1스택에서 영원히 고정). 엔진 한계가 아니라 **게임
+   자체의 교착**이고, `docs/engine-gaps.md`의 기존 "참고 — 다중 소스 스택 자원" 절도
+   같은 결론이다. `scripts/census_deferred_bullets.py`는 이 구분을 못 해 여전히
+   gap 통에 센다 — 아래 "재집계 방법과 그 함정" 참고.
+5. ~~**MG 예열 속도 버프/디버프 — 2슬러그, 새로 열린 갭.**~~ **✅ 해소 (2026-08-14).**
+   아래 별도 절.
 6. **관통 타격 수 모델 — 2슬러그.** `dorothy-serendipity`(160펠릿 Pierce 범위 +200%) ·
    `red-hood`(+100%). 엔진의 관통→딜 통로가 `pierce_hits_body_behind_core` 불리언
    하나라 곱할 자리가 없다.
@@ -117,23 +125,113 @@ attacked」(갭 #14), 아스카의 「**heating** speed」(위 새 갭), 리틀�
 소비자로 셌는데 실제로는 `damage_to_parts_up`(엔진이 **의도적으로** 버리는 버킷)이었다.
 **착수 전에 해당 모듈 독스트링을 직접 열어 확인하는 규칙은 그대로다.**
 
-## 새 갭: MG 예열 **속도**를 스킬이 못 건드린다 (2026-08-13)
+**갭 #11(강제 재장전/탄약 제거 상태머신)은 2026-07-20에 이미 해소돼 있었다** — 아래
+갭 상세 #11 절 그대로다. 그런데도 질 발렌타인·라플라스: 얼티메이트 히어로·그레이브·
+아스카 넷이 전부 같은 메커니즘("Removes N% of ammo" + "Forced Reload")을 각자
+독스트링에 계속 보류로 적고 있었다(그레이브는 Prediction의 무제한 탄약과는 별개로,
+Heat Emission이 강제하는 자기 이중 재장전이 바로 이 형태). **막은 건 엔진이 아니라
+카탈로그였다** — "샷 0개 세그먼트 = 탄약 제거 + 강제 재장전"이라는 관용구가 `#11`이
+닫힌 그날 `docs/engine-gaps.md`에는 적혔지만, 인코더가 실제로 펼쳐 읽는
+`.claude/skills/nikke-skill-encoding/references/engine-capabilities.md`에는 한 줄도
+안 들어갔다. 이번 배치(2026-08-14, Task 1)에서 그 카탈로그에 항목을 추가하고 나서야
+네 모듈이 한꺼번에 풀렸다. **[[stale-defers-need-the-catalog-not-the-docstring]]의
+네 번째 사례** — 앞 세 번은 위 "보류 전수 감사"의 `has_pierce`·`AmmoRefund`·
+`set_external_stat_immunity`, 그리고 이 문서 위쪽의 MG 예열 절.
 
-MG 예열이 2026-08-07에 착륙하면서 열린 갭이다. `attack_rate._SPINUP_BY_WEAPON`은
-모듈 상수이고 `spinup_for_weapon(weapon)`은 무기 클래스만 받으므로, **스킬이 예열을
-빠르게/느리게 만들 통로가 없다.**
+**census 스크립트에는 함정이 둘 더 있다(둘 다 스크립트는 안 고친다, 함정만 기록).**
 
-게임에는 그 문구가 실재한다 — `rei-ayanami`의 Maintenance and Resupply가 MG 아군에게
-「MG heating up speed ▲100%」, `asuka-shikinami-langley-wille`의 Emergency Repair가
-「▼100%」다. **둘 다 실기록 덱3에 앉아 있다.**
+1. **스코프 필터가 같은 갭을 유닛마다 다른 통에 담을 수 있다.** 계획 착수 전
+   아스카의 불릿은 "Emergency Repair's heating speed / ammo removal / HP recovery /
+   reload speed effects: HP and bookkeeping, not damage"처럼 **네 가지 서로 다른
+   효과를 한 불릿에 뭉쳐** 적고 있었다. 그중 "HP recovery" 한 단어 때문에 스코프
+   정규식(`HP recover`)이 불릿 전체를 "딜 개념 아님"으로 걸러, 진짜 갭인 탄약
+   제거·예열 감속까지 같이 숨겼다. 반면 같은 메커니즘을 적은 질의 불릿은 "HP"를
+   전혀 언급하지 않아 정확히 gap 통에 잡혔다. **하나의 갭이 문구 차이만으로 gap과
+   scope에 갈라 앉아 있었던 것** — 2026-08-14 이전 census 출력에서 직접 확인:
+   질은 gap(95건 중 1) · 아스카는 scope(42건 중 1)였다. 이 배치가 둘 다 모델링하면서
+   질의 불릿은 gap 통에서, 아스카의 옛 불릿은 scope 통에서 사라지고 그 자리를
+   "Emergency Repair's HP recovery effect (Effect 3)"라는 좁은 새 불릿이 메웠다 —
+   scope 총수는 42로 안 변했지만(43번째 자백이 아니라 42건 자체가 갱신된 것),
+   내용은 이제 정확하다.
+2. **`deferred_bullets()`는 「Not modeled」 절 뒤에 오는 다른 절까지 전부 삼킨다.**
+   시작 헤딩만 찾고 끝은 독스트링 끝까지이기 때문이다. 최악의 사례는 `laplace.py`
+   (베이스, `laplace-ultimate-hero`가 아니다): "Not modeled / deferred (most of her
+   kit):" 바로 다음 줄이 "Modeled (weapon transform, 2026-07-21):"이고, 그 아래
+   Laplace Buster 변형에 대한 **모델링된** 불릿이 gap 통에 "엔진이 못 한다"로
+   잘못 세어진다(Hero Vision·Hero Bomber 파츠딜·시그니처 무기 세 불릿만 진짜 갭).
+   `deferred_bullets()`는 고치지 않는다 — 헤딩 뒤 첫 "Modeled" 서브헤딩을 별도로
+   인식하려면 정규식이 아니라 파서가 필요하고, 지금 규모(모듈 95개 중 확인된 오탐
+   laplace 1건)에서는 비용 대비 이득이 낮다. **읽는 사람이 알고 걸러야 한다.**
 
-**막는 것:** 예열은 탄창당 **1.4833초**의 실비용이므로(`docs/measurements/mg-spinup.md`)
-±100%는 실제 숫자다. 아스카는 딜의 54%가 발사 수에 선형인 카운터라 특히 민감하다.
+**2026-08-14 재측정**(이 배치 착수 직전 vs 착수 후, `census_deferred_bullets.py`):
+137건(gap 95·scope 42) → **134건(gap 92·scope 42)**. gap에서 사라진 세 불릿은 전부
+"이제 모델됨"이다 — jill_valentine(강제 재장전)·laplace_ultimate_hero(변형 종료 후
+재장전 공백)·rei_ayanami_tentative_name("MG heating up speed +100%"). scope 42건은
+총수만 보면 그대로지만, 아스카의 불릿 하나가 위 1번대로 교체됐다. **95→92는 열린
+갭이 3개 줄었다는 뜻이지, 92개가 전부 열린 갭이라는 뜻이 아니다** — 위 함정 둘이
+남아 있는 한 gap 카운트는 상한이지 정답이 아니다.
 
-**두 독스트링이 이걸 "niche"/"not consumed by the engine"이라고 적고 있는데, 그 문장은
-예열 자체가 엔진에 없던 시절에 쓴 것이다** — [[stale-defers-need-the-catalog-not-the-docstring]]의
-세 번째 사례. **필요한 배선:** `spinup_for_weapon`이 무기만이 아니라 수신자의 라이브
-버프도 보게 하고(`Spinup.seconds`에 배수), 예열을 소비하는 네 생성기가 그 값을 받게 하는 것.
+## MG 예열 **속도** 갭 — ✅ 해소 (2026-08-14)
+
+MG 예열이 2026-08-07에 착륙하면서 열린 갭이었다. `attack_rate._SPINUP_BY_WEAPON`은
+모듈 상수이고 `spinup_for_weapon(weapon)`은 무기 클래스만 받아서, 스킬이 예열을
+빠르게/느리게 만들 통로가 없었다.
+
+게임에는 그 문구가 실재한다 — `rei-ayanami-tentative-name`의 Maintenance and
+Resupply가 (Full Burst 진입 시, 이미 자기 버스트를 쓴) MG 아군에게 「MG heating up
+speed ▲100%, 13초」, `asuka-shikinami-langley-wille`의 Emergency Repair가 자기 자신에게
+「▼100%, 3초」(같은 순간 탄약 100% 제거 + 강제 재장전과 함께). **둘 다 실기록 덱3에
+앉아 있다** — 나머지 셋(`rapi-red-hood-b1`·`crown`과 아스카 자신)이 레이의 버프를
+받는 MG 아군.
+
+예열은 탄창당 **1.4833초**의 실비용이므로(`docs/measurements/mg-spinup.md`) ±100%는
+실제 숫자다. 아스카는 딜의 54%가 발사 수에 선형인 카운터라 특히 민감하다.
+
+**해소:** 신규 엔진 스탯 `mg_heating_speed_percent`(라이브 버프, 배수로 합산) +
+`spinup_with_speed(spinup, heating_speed_percent, rate_of_fire)`가 예열을 소비하는
+생성기 쪽에서 그 배수를 받는다. 레이는 `member_subset_buff_rule`로 "MG 아군 +
+이미 버스트함" 스코프를 정확히 표현하고, 아스카는 자기 예열 감속을 같은 순간의
+탄약 제거·강제 재장전 세그먼트와 나란히 건다(세그먼트가 새 탄창을 열고, 그 새
+탄창의 예열이 감속 대상). 상세: `backend/app/attack_rate.py`,
+`backend/app/skill_rules/rei_ayanami_tentative_name.py`,
+`backend/app/skill_rules/asuka_shikinami_langley_wille.py`.
+
+**측정 (2026-08-14, `measure_record_calibration.py` / `sweep_slug_damage.py`,
+계획 착수 직전 커밋 vs 착륙 후 비교):**
+
+| | 이전 | 이후 |
+|---|---:|---:|
+| 실기록 합계 | 1.065x | **1.062x** |
+| ±15% 이내 | 16/25 | 16/25 (불변) |
+| MG 평균(n=6) | 1.078x | **1.094x** |
+| SR 평균(n=5) | 1.126x | **1.122x** |
+| AR 평균(n=3) | 1.094x | **1.092x** |
+| SMG/RL 평균 | 1.186x / 1.035x | 불변 |
+| 덱3 합계 | 1.050x | **1.031x** |
+
+덱3 유닛별(이전 → 이후): rapi-red-hood-b1 1.008x → **1.070x**(레이의 버프 수령),
+crown 1.221x → **1.341x**(수령), rei-ayanami-tentative-name 1.041x → 1.036x(자기
+버프는 자기 발사에 안 걸린다 — 대상은 "MG 아군", 그녀 자신은 AR), asuka 1.020x →
+**0.938x**(강제 재장전 + 자기 예열 감속 이중 비용), helm-signature 1.303x →
+1.285x(그녀 킷은 이 배치와 무관하지만 덱3 버스트 로테이션이 같이 흔들려 소폭
+움직였다 — 원인을 캐지 않고 그대로 적는다).
+
+**고정 셸 스윕**(`sweep_slug_damage.py --compare`): rei-ayanami-tentative-name
+**+3.04%**(746,357,259 → 769,079,507 — 그녀 셸에 crown이 들어 있어 그 MG 버프가
+셸 총딜에 잡힌다) · asuka-shikinami-langley-wille **−18.65%**(878,327,403 →
+714,521,756 — 강제 재장전과 예열 감속 둘을 동시에 지는 유닛의 합산 비용, 아래
+갭 #11 절의 "새 소비자 넷" addendum과 같은 값).
+
+**방향을 미리 재단하지 않고 측정값 그대로 적는다:** MG 평균은 과대 쪽으로 더
+움직였고(1.078x → 1.094x, `sim/record`는 상한이지 목표가 아니다 — gap #21), 같은
+배치 안에서 아스카 개인은 반대 방향(1.020x → 0.938x, 과소)으로 움직였다. 둘 다
+같은 코드 변경(레이의 버프 + 아스카 자신의 강제 재장전·예열 감속)의 결과이고,
+어느 쪽도 그 자체로 결함이라고 판정하지 않는다.
+
+**두 독스트링이 이걸 "niche"/"not consumed by the engine"이라고 적고 있던 것은,
+예열 자체가 엔진에 없던 시절에 쓴 문장이었다** —
+[[stale-defers-need-the-catalog-not-the-docstring]]의 세 번째 사례(네 번째 사례는
+위 "재집계 방법과 그 함정"의 갭 #11 카탈로그 누락).
 
 ## SMG 예열은 없다 — 가설 기각, 그런데 1.148x는 남는다 (2026-08-08)
 
@@ -948,7 +1046,7 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 | — | ~~`core_damage_rate` 유닛별 상이~~(2.5배 vs 엔진 2.0배) | 5(미란다·미란다 시그니처·퀀시:이스케이프퀸·리틀머메이드·치사토) | **해소 (2026-08-08)** — `core_damage.CORE_DAMAGE_RATE` + `core_hit_bonus_for`, 소비 지점 `raid_simulator` 1줄. 합계 1.055x→1.060x·19/25→18/25 | 스탯 상수 |
 | — | 무기변형 세그먼트 탄착군 — 기저 무기로 근사, 미측정 | 미집계(확인된 사례 나유타 1) | 미착수 — 무기변형 유닛 코어히트율 실측 필요 | 발사 타임라인 |
 | — | ~~**부분 재장전/탄약 환급의 단위·트리거 불일치**~~ (탄창 % · 창 게이트 · 아군 대상 · 버스트 1회성) | **5 (2026-08-13 재집계)**: arcana-fortune-mate·asuka·noir·tove·little-mermaid | **해소 (2026-08-13)** — `AmmoRefill`(시각 트리거·아군 팬아웃) 신설 + `AmmoRefund`에 `percent`/`first_shot`/`windows` 확장, 6줄 인코딩. 전부 floor라 캘리브레이션 1.060x·18/25 → **1.065x·16/25**로 상한이 더 위로 밀림(정상, `sim/record`는 상한). `tove`(base)의 확률 롤·`asuka`의 탄약제거 상태머신·`charge_window.py`는 계속 보류 | 발사 타임라인 |
-| — | **MG 예열 속도 버프/디버프** (`heating up speed ▲▼100%`) | **2 (2026-08-13)**: rei-ayanami·asuka — **둘 다 실기록 덱3** | 미착수 — `_SPINUP_BY_WEAPON`이 모듈 상수라 스킬 통로가 없다. 예열은 탄창당 1.4833초 실비용 | 발사 타임라인 |
+| ~~—~~ | ~~**MG 예열 속도 버프/디버프**~~ (`heating up speed ▲▼100%`) | 2: rei-ayanami-tentative-name(▲, 3 MG 아군)·asuka(▼, 자기) — **둘 다 실기록 덱3** | **해소 (2026-08-14)** — `mg_heating_speed_percent` + `spinup_with_speed`. 합계 1.065x → 1.062x·16/25 불변, MG 평균 1.078x → **1.094x**, 덱3 1.050x → 1.031x | 발사 타임라인 |
 | 14 | **"엄폐물이 공격받을 때" 트리거** | 2 (sugar·sugar-signature) | 미착수 — 엔진에 피격 개념 없음. 둘 다 floor(Critical Damage +16.39%는 실제 딜 스탯) | 신규 트리거 |
 | 15 | **"아군 니케 행동불능" 트리거** | 3 (rosanna·rosanna-signature·mihara-bonding-chain) | 미착수 — **defer가 맞다**(시뮬은 아군을 안 죽인다). 애장품 빌드는 셀 수 있는 대체 소스가 있어 실피해가 작다 | 신규 트리거 |
 | — | **관통 타격 수 모델** (Pierce 범위 배수) | 2 (dorothy-serendipity 160펠릿 +200% · red-hood +100%) | 미착수 — 통로가 `pierce_hits_body_behind_core` 불리언 하나라 곱할 자리가 없다 | 데미지 경로 |
@@ -2193,6 +2291,39 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
   실제 운용(진입 빈도)과 기존 프리미티브의 부수 효과(세그먼트 resume) 양쪽에 대조하기
   전에 확정하면 확장 규모를 크게 과대평가하게 된다.
 - 참고: `data/lootandwaifus/char_milk-blooming-bunny.json`.
+
+**새 소비자 넷 (2026-08-14) — 갭 자체는 4년 전이 아니라 4주 전에 닫혔는데, 카탈로그
+누락 때문에 계속 막혀 있었다** (위 "재집계 방법과 그 함정"의 카탈로그-누락 절 참고).
+`silent_reload_segments`(`_helpers.py`, 밀크의 기존 빌더를 이 공용 헬퍼로 옮기면서
+신설)를 질 발렌타인·라플라스: 얼티메이트 히어로·그레이브·아스카 넷이 쓴다:
+
+- **질 발렌타인** — Supercop의 "Removes 100% of ammo" + "Forced Reload"를 발사 0개
+  세그먼트로. 그녀는 탄창 9발이라 세그먼트 길이(≈0.15초)가 짧다. 고정 셸 스윕
+  **+0.16%**(1,589,695,147 → 1,592,297,046) — 잔여 보류가 없어져 완성도 ⚠→✅는
+  아니고(원래도 ✅), `docs/encoded-nikkes.md`에서 "잔여: 강제 재장전 북키핑" 문구를
+  뗀다.
+- **라플라스: 얼티메이트 히어로** — 변형 종료("Removes 100% of ammo")마다 재장전
+  길이의 무음 세그먼트를 붙여, 그전까지 기본무기가 그 사이 공짜로 쏘던 근사(2.5%
+  샷 ~2발)를 없앤다. 고정 셸 스윕 **−0.28%**(681,436,306 → 679,510,551).
+- **그레이브** — 두 프리미티브를 각자 맞는 자리에 쓴다. Prediction(스킬0, 버스트)의
+  무제한 탄약은 `max_ammo_percent` 경로로(세그먼트가 아니라 — 세그먼트는 명시적
+  `rate_of_fire`라 그 창 동안 라이브 공속 버프를 다 얼려버리는데, Prediction은
+  정확히 그 창에 덱 버프가 몰리는 순간이라 이 부작용이 값을 죽인다). Heat
+  Emission이 강제하는 **자기 이중 재장전**은 이 절의 세그먼트 관용구 그대로
+  (`build_grave_weapon_mode_schedule`이 `silent_reload_segments`를 호출) — 이게
+  그녀가 네 소비자 중 하나인 이유다. 같은 배치에서 **기존 결함도 바로잡았다**:
+  Heat Emission의 스쿼드 Pierce Damage 버프가 "다음 자기 버스트까지"
+  무기한으로 걸려 40초 주기 중 30초를 살고 있었는데, 인게임 툴팁상 방열은 (1)
+  재장전이 최대 장탄에 닿거나 (2) 재버스트할 때 꺼지고 (1)이 훨씬 먼저 물린다 —
+  Prediction이 탄약을 비우고 Reload Ratio를 반토막 내므로 최대 장탄에 닿으려면
+  재장전을 **두 번** 해야 하고(`heat_emission_seconds`), 그 두 번째 재장전이
+  끝나는 순간 버프가 꺼진다. 결과적으로 스쿼드 Pierce Damage 창이 훨씬 짧아졌다.
+  고정 셸 스윕 **−0.32%**(419,106,192 → 417,779,983) — 이게 **그레이브가 든 덱이
+  내려가는 크기**다(그녀는 실기록 어느 덱에도 없어 스윕에서만 보인다).
+- **아스카** — Emergency Repair의 "Removes 100% of ammo" + "Forced Reload"(고정
+  60% 재장전속도 증가)를 같은 세그먼트로, MG 예열 감속(위 절)과 나란히. 고정 셸
+  스윕 **−18.65%**(878,327,403 → 714,521,756) — 네 소비자 중 유일하게 두 비용을
+  동시에 진다(강제 재장전 자체 + 새 탄창의 느려진 예열).
 
 ### 12. 하모니 큐브 효과 배선 — ✅ 완료 (2026-07-20, 전원 Resilience Lv.15 가정)
 
