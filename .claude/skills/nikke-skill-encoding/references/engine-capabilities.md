@@ -694,6 +694,25 @@ the existing `caster_atk`/`caster_def`/`caster_max_hp` keys) -
 the segment is "my own charge shot, buffed" rather than a separate cannon.
 See `docs/superpowers/specs/2026-07-18-weapon-transform-design.md`.
 
+**A segment that fires nothing IS an ammo dump + forced reload.** A segment
+boundary is this engine's "discard the magazine, resume with a fresh one", so a
+window that emits no shots models "Removes N% of ammo" + "forced reload"
+exactly, and a zero-length segment models an instant full reload. Two idioms,
+both already in production: `milk_blooming_bunny.py` (a
+`reload_time_with_speed`-long window whose profile's interval is twice the
+window, so no shot fits, and `damage_percent: 0.0` so a boundary shot would be
+harmless anyway) and `scarlet_black_shadow.py` (zero length, for Asura's
+"Reload 100% of the magazine(s)"). Use an explicit `rate_of_fire` profile, never
+`charge_time`: an explicit-rate profile takes NO cadence buffs by contract, so
+an ally's Charge Speed cannot shrink the empty window and leak a shot into it.
+
+Do NOT reach for a segment when the window must keep the unit's LIVE cadence
+buffs - the same contract that makes an explicit `rate_of_fire` safe here also
+freezes attack speed. "Unlimited ammo for a window on the unit's own weapon" is
+that case: raise `max_ammo_percent` for the window instead (see `grave.py`).
+A weapon MODE swap that happens to be unlimited-ammo is different, and a
+segment is right there (see `moran`'s Fair and Square).
+
 **Not every weapon-transform kit needs the segment primitive itself - three
 plan-2 consumers resolved without touching it (2026-07-19):**
 `cinderella-crystal-wave`'s MG/Snipe choice is a pre-battle, held-for-the-
