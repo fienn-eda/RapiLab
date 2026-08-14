@@ -103,7 +103,6 @@ export function DeckCard({
       )}
       {Object.entries(deck.seating).map(([caster, seat]) => (
         <p className="deck-results__seating" key={caster}>
-          <span aria-hidden="true">🪑</span>{' '}
           <HelpText>
             {HELP.results.seating(
               nameFor(caster),
