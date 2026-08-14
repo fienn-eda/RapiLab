@@ -109,9 +109,9 @@ def test_heat_emission_applies_only_once_while_still_active():
     # If full_burst_end fires again while Heat Emission is already active
     # (e.g. she didn't reburst that cycle but the condition still holds from a
     # stale flag in a hand-built test), it must not double up. Checked from
-    # inside the live window - the buff itself is now timed to the doubled
-    # reload (heat_emission_seconds), not open-ended, so a check past that
-    # window would read 0 regardless of doubling and test nothing.
+    # inside the live window - the buff's duration is heat_emission_seconds
+    # (the doubled reload), so a check past that window reads 0 and would
+    # test nothing regardless of doubling.
     ctx = make_context()
     ctx.burst_used_this_cycle.add("grave")
     registry = EffectRegistry()
@@ -163,9 +163,9 @@ def test_heat_emission_reactivates_after_the_next_full_burst_end():
     fire_trigger("own_burst_activate", rules, ctx, registry, time=40.0)  # cycle 2 burst: removed
     fire_trigger("full_burst_end", rules, ctx, registry, time=50.0)   # cycle 2 ends: reactivates
 
-    # Checked right after cycle 2's grant, not cycle 1's - the buff is now
-    # timed to the doubled reload (heat_emission_seconds), so a far-future
-    # check (e.g. now=175.0) would read 0 and test nothing.
+    # Checked right after cycle 2's grant, not cycle 1's - the buff's
+    # duration is heat_emission_seconds (the doubled reload), so a check long
+    # after activation reads 0 and would test nothing.
     assert round(registry.total_for("pierce_damage_up", ALLY, now=50.0), 4) == 0.484
 
 

@@ -30,9 +30,9 @@ Modeled (DPS-relevant):
   shorter than (2), her 40-sec burst cooldown. So the squad Pierce Damage buff
   is timed to the doubled reload, not to her next burst: a status flag gates
   re-triggering while it and its buff are both live, and the buff itself
-  expires on its own duration. The reburst rule
-  (`remove_heat_emission_on_reburst`) only clears the status flag now - a
-  safety net for condition (2), which in practice never arrives before
+  expires on its own duration (`heat_emission_duration`), so the reburst rule
+  (`remove_heat_emission_on_reburst`) only has the status flag left to clear -
+  a safety net for condition (2), which in practice never arrives before
   condition (1) already closed the buff out. Also modeled: the forced double
   reload itself (`build_grave_weapon_mode_schedule`), the segment that spends
   it. Her own HP regen and the Burst Gauge fill-speed bonus (gauge_charge_time
@@ -135,6 +135,15 @@ def build_grave_weapon_mode_schedule(values):
     a normal one, because Reload Ratio only puts half the magazine back per
     load. `rate_of_fire` (not `charge_time`) so no ally's Charge Speed buff can
     shrink the window into leaking a shot.
+
+    Limitation: this segment anchors on `burst_time + PREDICTION_DURATION`, a
+    fixed 10-sec offset, while `apply_heat_emission` (build_grave_rules) fires
+    the Heat Emission Pierce Damage buff on the live `full_burst_end` trigger,
+    whose timing follows the deck's actual Full Burst length. Both represent
+    the same in-game moment (Prediction ending), but Full Burst length is not
+    fixed in this engine - Isabel shortens it by 5 sec, Modernia extends it by
+    5 sec - so a deck carrying either separates the ammo dump from the Heat
+    Emission buff by up to 5 sec.
     """
     return silent_reload_segments(
         "grave",
