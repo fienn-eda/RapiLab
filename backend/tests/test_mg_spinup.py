@@ -233,23 +233,39 @@ def test_heating_speed_down_100_percent_doubles_the_ramp():
     scaled = spinup_with_speed(MG_SPINUP, -1.0, RATE_OF_FIRE_60FPS["MG"])
     assert scaled.seconds == pytest.approx(MG_SPINUP.seconds * 2)
     assert scaled.intervals == MG_SPINUP.intervals
+    # Slowing the ramp never approaches the floor, so every segment doubles.
+    assert scaled.elapsed(2) == pytest.approx(112 * F)
+    assert scaled.elapsed(24) == pytest.approx(222 * F)
 
 
-def test_heating_speed_up_100_percent_halves_the_ramp():
+def test_heating_speed_up_100_percent_halves_what_it_can():
+    """The arrow scales the DURATION, but a warm-up is a slow start and not an
+    accelerator, so no segment may go tighter than the weapon's nominal gap.
+    Halving 56/55/26 gives 28/27.5/13, and the last is floored at its own 24
+    frames - so a cold 137 becomes 79.5."""
     scaled = spinup_with_speed(MG_SPINUP, 1.0, RATE_OF_FIRE_60FPS["MG"])
-    assert scaled.seconds == pytest.approx(MG_SPINUP.seconds / 2)
+    assert scaled.seconds == pytest.approx(79.5 * F)
     assert scaled.intervals == MG_SPINUP.intervals
+    assert scaled.elapsed(2) == pytest.approx(28 * F)
+    assert scaled.elapsed(24) == pytest.approx(55.5 * F)
 
 
-def test_the_ramp_can_never_beat_the_nominal_rate():
-    """A warm-up is a slow start, not an accelerator. 137/60 sec over 48 gaps
-    only reaches the nominal 48/60 at +185.4%, so clamp above that."""
-    reached_at = MG_SPINUP.seconds / (MG_SPINUP.intervals / RATE_OF_FIRE_60FPS["MG"]) - 1
-    assert reached_at == pytest.approx(1.854166, abs=1e-6)
-    scaled = spinup_with_speed(MG_SPINUP, 5.0, RATE_OF_FIRE_60FPS["MG"])
-    assert scaled.seconds == pytest.approx(
-        MG_SPINUP.intervals / RATE_OF_FIRE_60FPS["MG"])
-    assert scaled.intervals == MG_SPINUP.intervals
+def test_no_segment_of_the_ramp_beats_the_nominal_gap():
+    """Where the clamp actually binds: the ramp's tail is only 1.083 frames a
+    round, so it reaches the nominal 1.0 at +8.3% while the head still has 28
+    frames a round to give."""
+    nominal = 1 / RATE_OF_FIRE_60FPS["MG"]
+    for heating in (0.5, 1.0, 5.0, 20.0):
+        scaled = spinup_with_speed(MG_SPINUP, heating, RATE_OF_FIRE_60FPS["MG"])
+        assert scaled.intervals == MG_SPINUP.intervals
+        start, started_at = scaled.points[0]
+        for end, ends_at in scaled.points[1:]:
+            assert (ends_at - started_at) / (end - start) >= nominal - 1e-12
+            start, started_at = end, ends_at
+    # Once every segment is floored the ramp is a flat nominal run and cannot
+    # shrink further.
+    assert spinup_with_speed(MG_SPINUP, 100.0, RATE_OF_FIRE_60FPS["MG"]).seconds \
+        == pytest.approx(MG_SPINUP.intervals * nominal)
 
 
 def test_an_unbuffed_unit_is_bit_identical_to_the_default():
@@ -321,8 +337,9 @@ def test_the_clamp_floor_ignores_attack_speed():
         _mg_base(), [], fight_duration=60.0,
         attack_speed_percent_at=lambda _t: 1.0,
         heating_speed_percent_at=lambda _t: 10.0)
-    ramp_total = slowed[MG_SPINUP.intervals].time - slowed[0].time
-    assert ramp_total == pytest.approx(MG_SPINUP.intervals / RATE_OF_FIRE_60FPS["MG"])
+    ramp_tail_gap = (slowed[MG_SPINUP.intervals].time
+                     - slowed[MG_SPINUP.intervals - 1].time)
+    assert ramp_tail_gap == pytest.approx(1 / RATE_OF_FIRE_60FPS["MG"])
     post_ramp_gap = (slowed[MG_SPINUP.intervals + 1].time
                       - slowed[MG_SPINUP.intervals].time)
     assert post_ramp_gap == pytest.approx(1 / (2 * RATE_OF_FIRE_60FPS["MG"]))

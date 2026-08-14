@@ -204,9 +204,12 @@ def spinup_with_speed(spinup, heating_speed_percent, rate_of_fire):
     whose `(1 - s)` would erase the ramp entirely at up 100%. The negative
     direction agrees with it - both give x2 at down 100%.
 
-    The clamp is what keeps a warm-up a slow start rather than an accelerator:
-    the ramp can never be tighter than the weapon's nominal gap. MG_SPINUP only
-    reaches that at +185.4%, so no shipped value touches it.
+    The clamp is per SEGMENT, which is what keeps a warm-up a slow start rather
+    than an accelerator: no stretch of the ramp may be tighter than the weapon's
+    nominal gap. It binds where the ramp is already nearly at speed - MG_SPINUP's
+    tail runs 1.083 frames a round and floors at +8.3%, while its head still has
+    28 frames a round to give. So up 100% takes a cold 137 frames to 79.5, not to
+    the 68.5 a whole-ramp halving would give.
     """
     if spinup is None or not heating_speed_percent:
         return spinup
@@ -214,10 +217,15 @@ def spinup_with_speed(spinup, heating_speed_percent, rate_of_fire):
         factor = 1.0 / (1 + heating_speed_percent)
     else:
         factor = 1.0 - heating_speed_percent
-    floor = spinup.intervals / rate_of_fire
-    if spinup.seconds * factor < floor:
-        factor = floor / spinup.seconds
-    return Spinup(points=tuple((p, t * factor) for p, t in spinup.points))
+    nominal = 1.0 / rate_of_fire
+    points = [spinup.points[0]]
+    start, started_at = spinup.points[0]
+    for end, ends_at in spinup.points[1:]:
+        span = end - start
+        duration = max((ends_at - started_at) * factor, span * nominal)
+        points.append((end, points[-1][1] + duration))
+        start, started_at = end, ends_at
+    return Spinup(points=tuple(points))
 
 
 def magazine_shot_offset(index, shot_interval, spinup, ramp_start=0.0):
