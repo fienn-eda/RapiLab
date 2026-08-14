@@ -52,9 +52,13 @@ debuff on the boss), capped at 30.
   Reload whose speed is fixed at a 60% increase. Effect 2's ammo dump is a
   `build_asuka_weapon_mode_schedule` segment (see `silent_reload_segments`)
   covering Effect 4's fixed reload; the segment ends by starting a fresh
-  magazine, so the ramp Effect 1 slows is the new magazine's own warm-up. The
-  two effects land on the same instant but act on two different windows -
-  the debuff's 3 sec and the segment's ~1.08 sec both start there.
+  magazine, whose warm-up is scaled by whatever `mg_heating_speed_percent`
+  total is live the instant it opens - `registry.total_for` sums Effect 1's
+  own -100% against every other producer targeting her (e.g. Rei Ayanami:
+  Tentative Name's Maintenance and Resupply, +100% to a bursted MG ally for
+  13 sec). Effect 1's 3 sec window covers the segment's own ~1.08 sec
+  entirely, so an ally buff of that size reaching her for the whole segment
+  cancels the debuff and leaves that magazine's warm-up unmodified.
 
 - Anti A.T. Field's OWN 15.62%-of-ATK direct-damage component ("every 10
   shots while in Annihilation State, deals 15.62% as damage" - a SEPARATE
@@ -192,8 +196,11 @@ def build_asuka_weapon_mode_schedule(values):
     else is live, so it is derived from that value alone.
 
     The segment ends by starting a fresh magazine, which re-arms her warm-up -
-    and that new ramp is the one Effect 1's heating debuff slows down. The two
-    halves of this skill meet on the same instant.
+    that new ramp is scaled by whatever `mg_heating_speed_percent` total is
+    live the instant it opens, Effect 1's own -100% summed against any other
+    producer targeting her. An MG ally buffer reaching her for the segment's
+    whole span (e.g. Rei Ayanami: Tentative Name's Maintenance and Resupply)
+    cancels Effect 1 out and leaves the new magazine's warm-up unmodified.
     """
     repair = values["emergency_repair"]
     fixed_reload_speed = float(repair["description_value_08"]) / 100
