@@ -93,18 +93,20 @@ class Spinup:
 # the same Rosanna run: last round 1256, fully released 1326), so a gap SHORTER
 # than that keeps part of it and the next magazine opens faster than a cold one.
 #
-# This models every magazine as a cold start, which is exact whenever the gap
-# reaches 1.16667 sec and a floor below it. Natural reloads clear that bar
-# (Rosanna 1.67, Asuka: WILLE 2.478, and 1.080 even on her forced one), so the
-# floor binds on STACKED reload speed: with Crown plus a level-15 reload cube a
-# 63-frame gap leaves a ramp of 81 frames against the cold 137, i.e. 41% of the
-# heat survives and such a deck is over-charged 0.933 sec every magazine.
+# This models every magazine as a cold start, exact whenever the gap clears the
+# decay and a floor below it. Natural reloads clear it (Rosanna 1.67 sec, Asuka:
+# WILLE 2.478, and 1.080 even on her forced one), so the floor binds on STACKED
+# reload speed: Crown plus a level-15 cube leaves a 63-frame gap and an 81-frame
+# ramp, Crown plus Privaty a 31-frame gap and a 26-frame ramp, against the cold
+# 137 - up to 1.85 sec charged per magazine that the game does not charge.
 #
-# Nothing interpolates yet because the retention CURVE is not settled. Decay is
-# far slower than linear early on - linear would predict 123 frames where 81 was
-# read - and the two readings admit a hold-then-release shape (~52.9 frames held,
-# ~17.1 releasing) that fits with zero degrees of freedom. A third gap length
-# would test it. See docs/engine-gaps.md and docs/measurements/mg-spinup.md.
+# The ramp's own SHAPE is measured too, and it is not the flat rate this file
+# applies: rounds 0-2 of a cold magazine cost 56 frames, rounds 2-24 another 55,
+# rounds 24-48 only 26. Modelling partial retention means adopting that curve,
+# which also redistributes the 48 rounds of a COLD ramp and therefore moves every
+# shot-counted trigger on every MG - its own piece of work, not a tweak here. The
+# flat rate keeps the cold magazine's total exact, which is what calibration
+# rests on. See docs/engine-gaps.md and docs/measurements/mg-spinup.md.
 #
 # Also unsettled by that reading: whether Attack Speed shortens the ramp
 # (modeled: no, it is a fixed segment like RELOAD_FIXED_SECONDS).
