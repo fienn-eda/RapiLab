@@ -9,6 +9,7 @@
 // always emits one) takes that same path: raw slug, reported as unsupported.
 
 import { makeEmptyDraft, type NikkeDraft } from '../types/nikkeDraft'
+import type { OverloadLine } from '../types/userNikkeState'
 import { deriveSlug } from './exiaImport'
 import { resolveSlugForUnit } from './resourceIdSlugMap'
 import { HELP } from './helpText'
@@ -27,7 +28,10 @@ interface RosterUnit {
   collectible?: { tid: number; level: number }
   raid400: { hp: number; atk: number; def: number }
   actual?: { hp: number; atk: number; def: number }
-  overload?: { name: string; value: number; lines?: { slot: string; value: number }[] }[]
+  // The roll shape is the shared one rather than a restatement of it: the sync
+  // carries an option row and a roll level per line, and a local copy that
+  // listed only slot and value would read as though it did not.
+  overload?: { name: string; value: number; lines?: OverloadLine[] }[]
   skill_levels?: { skill1: number; skill2: number; burst: number }
 }
 interface RosterJson {

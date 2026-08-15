@@ -126,8 +126,40 @@ def test_a_known_type_at_an_unobserved_level_is_kept(tables):
     assert lines == [{
         "name": "차지 대미지 증가",
         "value": pytest.approx(14.63, abs=0.01),
-        "lines": [{"slot": "head", "value": pytest.approx(14.63, abs=0.01)}],
+        "lines": [{"slot": "head", "index": 1, "level": 15,
+                   "value": pytest.approx(14.63, abs=0.01)}],
     }]
+
+
+def test_each_roll_carries_the_level_it_rolled_at(tables):
+    """The roll level is what the game emphasises a line by, so it has to survive.
+
+    In-game a level 15 roll is drawn on a black row and a level 12-14 one in
+    bright blue, both against the plain styling of anything lower - so a
+    per-piece view needs the level, not just the percent. `decode_option`
+    already reads it exactly off the option id; inverting the value back
+    through the table instead would be a guess wherever the table's level is a
+    fill rather than a measurement (type 7 has no measured 12/13/14).
+    """
+    detail = {"head_equip_option1_id": 7000515,   # 우월코드 lv15 - the black row
+              "head_equip_option2_id": 7000513,   # lv13 - the bright blue one
+              "head_equip_option3_id": 7000508}   # lv8 - plain
+    by_name = {row["name"]: row for row in assemble_overload(tables, detail)}
+    levels = sorted(line["level"] for line in by_name["우월코드 대미지 증가"]["lines"])
+    assert levels == [8, 13, 15]
+
+
+def test_each_roll_carries_its_option_index(tables):
+    """Which of a gear piece's three option rows a roll sits in.
+
+    The game lists a piece's rolls in that fixed order, so reproducing the
+    screen needs it; grouping by effect type throws it away otherwise.
+    """
+    detail = {"leg_equip_option1_id": 7000811,    # 공격력
+              "leg_equip_option3_id": 7001002}    # 차지 속도, third row - slot 2 empty
+    by_name = {row["name"]: row for row in assemble_overload(tables, detail)}
+    assert by_name["공격력 증가"]["lines"][0]["index"] == 1
+    assert by_name["차지 속도 증가"]["lines"][0]["index"] == 3
 
 
 def test_the_rolls_behind_a_total_survive_as_lines(tables):

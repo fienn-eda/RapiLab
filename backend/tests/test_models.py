@@ -72,3 +72,33 @@ def test_actual_level_stats_default_to_none():
         overload_options=[],
     )
     assert s.actual_atk is None
+
+
+def test_an_overload_line_keeps_the_row_and_level_the_gear_screen_needs():
+    """Parsing must not quietly drop what the per-piece view is drawn from.
+
+    The gear screen lays a piece's rolls out in option-row order and emphasises
+    each by the level it rolled at, so `index` and `level` are part of the wire
+    contract rather than decoration. Pydantic ignores undeclared fields instead
+    of rejecting them, so leaving them off the model loses them with no error -
+    and this model is the declared source of truth the TypeScript mirror is
+    kept in step with.
+    """
+    option = OverloadOption.model_validate({
+        "name": "우월코드 대미지 증가",
+        "value": 29.16,
+        "lines": [{"slot": "head", "index": 2, "value": 29.16, "level": 15}],
+    })
+    [line] = option.lines
+    assert (line.index, line.level) == (2, 15)
+
+
+def test_an_overload_line_synced_before_the_gear_screen_still_parses():
+    """A roster stored before those fields existed must not become unloadable."""
+    option = OverloadOption.model_validate({
+        "name": "공격력 증가",
+        "value": 4.77,
+        "lines": [{"slot": "arm", "value": 4.77}],
+    })
+    [line] = option.lines
+    assert (line.index, line.level) == (None, None)

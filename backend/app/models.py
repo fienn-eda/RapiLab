@@ -16,12 +16,21 @@ class SkillLevels(BaseModel):
 class OverloadLine(BaseModel):
     """One overload roll on one gear piece, before same-type rolls are summed.
 
-    `slot` is head / torso / arm / leg. Nothing renders it yet - it is carried so
-    a per-piece view can label the rolls without another sync.
+    `slot` is head / torso / arm / leg, `index` the option row (1..3) the roll
+    occupies on that piece, and `level` the 1..15 tier it rolled at - together
+    the three place a roll on the game's own gear screen, which squares the
+    four pieces up, lists each piece's rolls in row order, and emphasises a
+    line by its level rather than its percent.
+
+    `index` and `level` are optional because a roster synced before they were
+    carried has neither, and inventing them would fake an emphasis the player
+    never rolled. Such a roster shows the summed view instead.
     """
 
     slot: str
     value: float
+    index: int | None = None
+    level: int | None = None
 
 
 class OverloadOption(BaseModel):

@@ -9,11 +9,21 @@ export interface SkillLevels {
 }
 
 /** One overload roll on one gear piece, before same-type rolls are summed.
- *  `slot` is head / torso / arm / leg. Nothing renders it yet — it is carried so
- *  a per-piece view can label the rolls without another sync. */
+ *
+ *  `slot` is head / torso / arm / leg, `index` the option row (1–3) the roll
+ *  occupies on that piece, and `level` the 1–15 tier it rolled at. Together the
+ *  three place a roll on the gear screen the roster tab's detail mode redraws:
+ *  four pieces in a square, each piece's rolls in row order, emphasised by
+ *  level rather than by percent.
+ *
+ *  `index` and `level` are absent on a roster synced before they were carried.
+ *  Absent means "not known" — never a default, since a made-up level would show
+ *  an emphasis the player never rolled. */
 export interface OverloadLine {
   slot: string
   value: number // float
+  index?: number // int, 1–3
+  level?: number // int, 1–15
 }
 
 /** One aggregated overload stat line, summed across all 4 gear pieces. */

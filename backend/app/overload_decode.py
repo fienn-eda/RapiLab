@@ -102,6 +102,15 @@ def assemble_overload(tables, detail: dict) -> list[dict]:
     edits; the lines are what `charge_speed_percent_from_lines` needs, since a
     total alone cannot be decomposed back into the rolls that produced it.
 
+    A line carries the `slot` it sits on, the option row `index` (1..3) it
+    occupies there, and the `level` it rolled at, alongside its value. Those
+    three are what reproduces the game's own gear screen, which lays the four
+    pieces out in a square, lists each piece's rolls in row order, and
+    emphasises a line by its level rather than its percent. All three are read
+    off the option id here and would be unrecoverable downstream: grouping by
+    effect type discards slot and row, and a percent inverts back to a level
+    only where the value table measured that level rather than filling it.
+
     Effect types the engine has no consumer for are dropped from the returned
     lines - `unconsumed_effect_types`, which is DEF alone: the damage formula
     reads the ENEMY's defence, never an ally's, so an ally DEF stat would ride
@@ -132,6 +141,6 @@ def assemble_overload(tables, detail: dict) -> list[dict]:
                 continue
             value = overload_value(tables, etype, level)
             totals[etype] += value
-            lines[etype].append({"slot": slot, "value": value})
+            lines[etype].append({"slot": slot, "index": n, "value": value, "level": level})
     return [{"name": names[str(t)], "value": round(v, 2), "lines": lines[t]}
             for t, v in totals.items()]
