@@ -3203,6 +3203,12 @@ catalog, see the `nikke-skill-encoding` skill, not here.
 
 ## 측정 불가한 무한탄창 무기변형은 엔진 표준 무기 발사속도를 앵커로 — Moran
 
+> **폐기 (2026-08-15).** 「측정이 원천적으로 어렵다」가 틀렸다 — 그녀의 1스킬 2번 불릿이
+> 5발마다 대미지를 띄우므로 그 프레임을 세면 된다. 프록시로 쓴 20발/초는 **20% 느렸고**
+> (실측 24발/초, 3프레임을 7.4σ로 기각), 명시 `rate_of_fire`는 케이던스 버프를 안 받는
+> 측정 앵커라 클래스 상수를 빌려 둔 것이 보수적 기본값이 아니라 **조용한 오류**였다.
+> `docs/measurements/moran-spear-mode.md`.
+
 - Date: 2026-07-22
 - Context: 무기변형 잔여 배치의 마지막 3명(takina·moran·velvet)을 닫는 과정. Moran의 Fair and Square!(버스트)는 10초간 AR을 **무한탄창 SMG**로 바꿔 14.7%/발을 쏜다. 다른 모든 변형은 Fienn 실측 발수(또는 charge time·탄창캡 같은 원문 슬롯)를 앵커로 세그먼트를 만들었지만, Moran은 **탄창이 무한이라 인게임에서 발수를 세는 것 자체가 비현실적**이고(Fienn), prydwen·nikke.gg·lootandwaifus 어느 가이드도 초당 발사수를 싣지 않는다.
 - Alternatives considered: (a) 변형을 계속 defer — 측정이 원천적으로 어려운데 무기한 대기가 된다. (b) 발사속도를 임의 추정 — CLAUDE.md "기술 세부를 지어내지 말라" 위반. (c) 변형이 **실제로 SMG**라는 점을 이용해 엔진의 정규 SMG 발사속도(`RATE_OF_FIRE_60FPS["SMG"]` = 20발/초, Fienn이 60fps로 측정해둔 무기클래스 상수)를 앵커로 쓴다. 채택(Fienn 승인).
@@ -3238,6 +3244,14 @@ catalog, see the `nikke-skill-encoding` skill, not here.
 - **Update 2026-08-13 — `refresh_group`이 `truncate_open_ended`에도 옵션 인자로 확장됐다.** 퀸(마코토 니지마)이 처음으로 한 유닛이 같은 스탯에 계속형 버프를 둘(영구 Nuke Boost + 풀버스트 종료까지인 Nuke Amp, 둘 다 Elemental Advantage Attack Damage) 들고 나중 트리거가 그중 하나만 끝내는 형태를 냈다 — 기존 `truncate_open_ended`는 `(stat, source_slug)`가 같은 열린 효과를 전부 닫아 영구 쪽까지 죽였을 것이다. `add_refreshing`이 같은 이유로 이미 요구하는 `refresh_group`을 선택 인자로 받게 확장해 그 불릿만 닫는다 — 인자를 안 주면 기존 동작(전부 닫힘) 그대로라 그레이브·아르카나는 불변. `backend/app/effects.py::EffectRegistry.truncate_open_ended`.
 
 ## 차지속도 공식 교체: `÷(1+s)` → `×(1−s)`, 프레임 단위 내림, 측정 기반 하한
+
+> **하한 부분만 폐기 (2026-08-15).** 공식(`×(1−s)`)과 프레임 내림은 그대로 유효하다.
+> 틀린 것은 **하한의 정체**다 — 여기 적힌 「메커니즘은 추정」이라는 캐비엇이 맞았고,
+> 그 값 10/29 = 0.3448초는 신데렐라 무기의 **180발/분**(0.33333초 = 정확히 30발,
+> 정수 20프레임)을 「29~30발」의 아래쪽 끝으로 읽은 것이었다. 전역 상수는 삭제되고
+> 유닛별 `CHARGE_ROUNDS_PER_MINUTE`로 갔다 — 맨 위 「차지 무기의 `rate_of_fire`는
+> 바닥값으로 받는다」 참고.
+
 - Date: 2026-07-20 ~ 2026-07-21
 - Context: `attack_rate.py`의 차지속도 모델은 재장전속도처럼 `charge_time / (1 + speed)`였다. Cinderella: Crystal Wave의 Flawless Glass(자기 차지속도 +100%)를 인코딩하는 과정에서, 이 공식은 10초에 20발을 예측하는데 Fienn의 실측(60fps, 최대탄약 오버로드로 재장전 배제)은 **29~30발/10초**였다.
 - Alternatives considered: (a) 공식은 그대로 두고 Cinderella 한 명만 측정된 케이던스로 역산한 수치를 손으로 건넨다 — 이 수정 이전엔 실제로 이렇게 하고 있었다. 근본 공식이 틀려 있으므로 다음 소비자마다 같은 역산을 반복해야 하고 원인을 안 고친다. (b) `×(1−s)`로 교체하되 연속값을 그대로 쓴다(하한 없음) — +100% 이상에서 차지시간이 0 이하가 되어 발사가 무한해지고, Cinderella의 실측 상한(29~30발/10초)을 설명할 수 없다. (c) `×(1−s)` + 프레임(1/60초) 단위 내림 + 측정 기반 하한. 채택.
