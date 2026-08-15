@@ -98,6 +98,7 @@ FILLED_SURFACE_TOKENS = [
     "accent",
     "accent-contrast",
     "accent-soft",
+    "accent-on-light",
 ]
 
 
@@ -157,14 +158,22 @@ def main():
         a, b = grounds[names[i]], grounds[names[i + 1]]
         print(f"  {names[i]} vs {names[i+1]}: {ratio(a, b):.2f}")
 
-    # Two surfaces are filled rather than outlined: the primary button (white)
-    # and the pressed draft-slot lock (red). Whatever sits on them needs to clear
-    # 4.5:1 too - including translucent fills, composited over the ground they
-    # are painted on before the ratio is taken.
+    # Three surfaces are filled rather than outlined: the primary button (white),
+    # the pressed draft-slot lock (red), and the roster tab's top-roll gear row,
+    # which flips to --primary. Whatever sits on them needs to clear 4.5:1 too -
+    # including translucent fills, composited over the ground they are painted on
+    # before the ratio is taken.
+    #
+    # The gear row is why --accent-on-light exists: plain --accent measures 3.39
+    # there and fails, which nobody noticed until the row was drawn (2026-08-15).
+    # It is listed so the next palette change re-checks it instead of trusting
+    # that one hand calculation.
     print("\nText on filled surfaces:")
     filled = [
         (tokens["primary-contrast"], tokens["primary"], "on the primary button"),
         (tokens["accent-contrast"], tokens["accent"], "near-black on red"),
+        (tokens["accent-on-light"], tokens["primary"],
+         "top-roll value on the flipped gear row"),
     ]
     accent_soft_rgb, accent_soft_alpha = parse_rgba(tokens["accent-soft"])
     for ground_label, ground_hex in grounds.items():

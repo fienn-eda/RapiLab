@@ -817,9 +817,17 @@
 
 /* The flipped ground is what forces the darker red here: plain --accent on
    --primary measures 3.39 and fails, where this one measures 5.25. Same red,
-   only dark enough for the ground it landed on. */
+   only dark enough for the ground it landed on.
+
+   It also forces the heavier weight. Dark ink on a light ground reads thinner
+   than light ink on a dark one at the same weight, so this row looked lighter
+   than the 12-14 rows it is meant to outrank while both computed to 600
+   (Fienn, 2026-08-16). One step up on the variable font's weight axis puts the
+   two back on equal footing - the axis runs 300-900, so 700 is a real weight
+   and not a synthesised one. */
 .gear__roll[data-tier='max'] .gear__value {
   color: var(--accent-on-light);
+  font-weight: 700;
 }
 
 /* Roster card ------------------------------------------------------------- */
