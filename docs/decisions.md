@@ -5,6 +5,38 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 유닛별 연사는 표 + 감사로 받는다 — 무기 소스를 옮기지 않는다
+
+- Date: 2026-08-15
+- Context: `shot_detail.rate_of_fire`는 **유닛별**인데 엔진은 무기군 상수
+  (`RATE_OF_FIRE_60FPS`)를 쓴다. 인코딩 103슬러그 중 어긋나는 건 **질: 발렌타인
+  하나**로, 9발짜리 AR을 150발/분(2.5발/초)으로 쏘는데 클래스 상수 720을 받아
+  평타가 **4.8배**였다. Fienn 인게임 실측으로 확정됐다 — **발 간격 24(±1)프레임**.
+- Decision: `attack_rate.ROUNDS_PER_MINUTE`(슬러그 → 분당 발수) + 프레임 격자
+  변환 `rounds_per_second` + `user_roster`가 `weapon_stats["rate_of_fire"]`로
+  실어 보내고 `rate_of_fire_for_profile`이 있으면 그것을, 없으면 클래스 값을
+  쓴다. 그리고 `scripts/audit_rate_of_fire.py`가 인코딩 전 슬러그를 수집
+  데이터와 대조한다.
+- Why 표인가: 이 필드는 **ShiftyPad raw 번들에만** 있는데 그 파일은 rid로 키가
+  잡혀 슬러그 매핑을 사람이 줘야 하고, 인코딩 슬러그 대부분이 무기를 dotgg에서
+  읽는데 **dotgg 레코드엔 연사 필드가 아예 없다**. `core_damage.CORE_DAMAGE_RATE`가
+  같은 이유로 같은 모양이라 그 관례를 그대로 따랐다.
+- Why 감사가 본체인가: 표는 한 줄이고 값어치도 작다(그녀는 Fienn 로스터에 없어
+  **실기록 캘리브레이션이 1도 안 움직인다**). **아무도 이 필드를 안 보고 있었기
+  때문에** 4.8배가 조용히 살아 있었고, 같은 모양의 유닛이 온보딩되면 또 조용히
+  통과한다. 막는 것은 표가 아니라 감사다.
+- Alternatives considered: (a) 무기 소스를 ShiftyPad로 옮긴다 — 기각, 인코딩
+  103슬러그 중 83개가 dotgg에서 무기를 읽어 영향 범위가 이 결함에 비해 지나치게
+  크다. (b) 클래스 표를 rpm에서 유도하도록 바꾼다 — 기각(YAGNI), 값이 동일하고
+  load-bearing 상수를 건드릴 이유가 없다. 유도식은 감사와 카탈로그에 적어 두면
+  같은 역할을 한다. (c) 클래스 rpm을 손으로 적는다 — 기각, 클래스가 통째로 바뀐
+  날을 못 본다. 감사는 **데이터에서 최빈값**을 클래스로 읽는다.
+- Consequences: 실기록 캘리 **1.042x · 19/25 · 무기군 평균 전부 불변**. 백엔드
+  2398 → **2405 passed**. 부수적으로 `audit_core_damage_rate.py`가 **트렁크에서
+  이미 깨져 있던 것**이 드러나 같이 고쳤다 — 페르소나 콜라보 둘
+  (`queen-makoto-nijima` → `Queen (Makoto)`, `yukiko-amagi` → `Yukiko`)이 공유
+  별칭 표에 없어 두 슬러그가 그 감사에서 통째로 빠져 있었다.
+
 ## MG 탄착군의 탄창 내 수렴만 배선하고, `p_조준`은 손대지 않는다
 
 - Date: 2026-08-15

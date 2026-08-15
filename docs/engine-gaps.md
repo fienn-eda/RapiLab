@@ -698,6 +698,36 @@ Flash 미모델의 과소와 우연히 상쇄돼 그럴듯해 보였다. 순 효
 
 설계: `docs/superpowers/specs/2026-08-07-dorothy-pellet-counter-design.md`.
 
+## 연사가 무기군 상수였다 — ✅ 착륙 (2026-08-15)
+
+`shot_detail.rate_of_fire`는 **유닛별**(분당 발수)인데 엔진은
+`RATE_OF_FIRE_60FPS` 무기군 상수를 쓰고 있었다. 인코딩 103슬러그를 데이터와
+대조한 결과 어긋나는 것은 **질: 발렌타인 하나** — 9발짜리 AR을 150발/분
+(2.5발/초)으로 쏘는데 클래스의 720을 받아 **평타가 4.8배**였다. Fienn 인게임
+실측이 확정했다(**발 간격 24±1프레임**, `docs/measurements/rate-of-fire-frame-grid.md`).
+
+**해소:** `attack_rate.ROUNDS_PER_MINUTE` + `rounds_per_second`(60fps 격자) +
+`user_roster`가 `weapon_stats["rate_of_fire"]`로 실어 보내고
+`rate_of_fire_for_profile`이 있으면 그것을 쓴다. **없으면 클래스 값**이라
+나머지 102슬러그는 불변이다. 감사는 `scripts/audit_rate_of_fire.py`.
+
+**클래스 상수 넷은 틀리지 않았고, 이제 유도가 있다** — `60 / ceil(60 ÷ 공칭)`이
+AR 12.0 · SG 1.5 · SMG 20.0 · MG 60.0을 전부 재현한다. SMG의 공칭 24와 MG의
+공칭 70이 엔진 값과 다른 것은 격자 올림의 결과지 오류가 아니다.
+
+**착륙 결과:** 실기록 캘리 **1.042x · 19/25 · 무기군 평균 전부 불변**(그녀가
+Fienn 로스터에 없다). 백엔드 2398 → **2405 passed**. 값어치는 캘리가 아니라
+**감사**다 — 아무도 이 필드를 안 보고 있어서 4.8배가 조용히 살아 있었고, 같은
+모양의 유닛이 온보딩되면 또 통과했을 것이다.
+
+**남은 것 — 차지 무기의 `rate_of_fire`.** RL·SR도 유닛별로 다른데(RL 60·120·
+**180**·300, SR **200**·60) 엔진은 안 읽는다. 신데렐라의 180 = **0.3333초/발**은
+`CHARGE_INTERVAL_FLOOR_SECONDS = 10/29 = 0.3448`이 유도된 바로 그 실측(차지 0에서
+10초 29~30발)과 같은 값이라 **전역 추론 상수를 유닛별 데이터로 바꿀 후보**다.
+단 스칼렛: 블랙 섀도우의 60 = 1.0초/발은 차지 0.3초인 그녀를 오히려 느리게
+만들므로 일괄 적용은 안 된다. SR·RL은 현재 2·3위 과대 무기군(1.122x·1.035x)이라
+실기록 잔차를 움직일 수 있는 몇 안 되는 항이다.
+
 ## MG 정확도 예열 — 탄창 앞 29발이 코어를 놓친다 — ✅ 착륙 (2026-08-15)
 
 MG만 탄창 안에서 탄착군이 좁아진다(`start=250px → end=10px`, 발당 −7px, 29발째에
@@ -1428,6 +1458,8 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 | ~~22~~ | ~~풀 버스트 길이가 전역 상수다~~ (`FULL_BURST_DURATION = 10.0`) | 2 직접(Isabel −5초 · Modernia +5초) + **간접**(Arcana의 게이트 · Dorothy: Serendipity · Arcana: Fortune Mate) | **완료 (2026-08-05)** — 풀 버스트 창 길이가 그 사이클을 연 Burst 3에서 읽힌다(`FULL_BURST_DURATION_DELTA` + `burst_cycle`), 그리고 `SkillRule`에 트리거 자신의 시각을 아는 `time_condition`(`own_burst_status_active`)이 생겼다. 소비자: Isabel·Modernia(직접, 자기 FB 길이) · Arcana(간접, 「수레바퀴 상태로 FB 종료」 게이트가 이제 FB를 실제로 줄이는 Burst 3 뒤에서만 열린다 — 오늘은 Isabel뿐) · Dorothy: Serendipity(간접, Radiant Wings의 FB 지속 버프가 실제 창 길이를 따라간다) · Arcana: Fortune Mate(간접, Making Memories를 open-ended+truncate로 재모델해 창 길이를 묻지 않게 하고, 같은 상태가 게이팅하는 두 스택 카운터의 채움 창도 실제 풀 버스트 종료를 따라가게 함). **Soda: Twinkling Bunny의 FB +2/3초는 별도 사유로 계속 보류** — 그녀의 확장은 FB 스케줄이 고정된 뒤에야 쌓이는 자원(Golden Chip)에 종속돼 순환이라, `docs/roadmap.md` To-Do에 별도 티켓 | 타이밍 |
 | — | ~~hit rate~~ (탄착군 → 코어히트율 확률) | 15(11 엔진 능력 해소·재인코딩 대기, 4 잔여 사유변경) | **해소 (2026-08-07)** — `accuracy.core_hit_rate`, opt-in(`core_diameter_px`), 캘리브레이션 불변 | 스탯 배선 |
 | — | Burst Gauge fill speed (딜/타이밍 아님) | 미집계 | **구현 안 함** (defer 유지) | 범위 밖 |
+| — | ~~연사가 무기군 상수~~(유닛별 `shot_detail.rate_of_fire` 미사용) | 1 (질: 발렌타인, 평타 4.8배) | **해소 (2026-08-15)** — `attack_rate.ROUNDS_PER_MINUTE` + `rounds_per_second`(60fps 격자) + `weapon_stats["rate_of_fire"]`. 캘리 불변(그녀가 로스터에 없다), 값어치는 `scripts/audit_rate_of_fire.py`가 다음 유닛을 잡는 것. 클래스 상수 넷은 격자 유도로 재현됨 | 발사 타임라인 |
+| — | 차지 무기의 유닛별 `rate_of_fire` 미사용 | 미집계(RL 4종·SR 2종 값이 갈린다) | 미착수 — 신데렐라 180rpm = 0.3333초가 전역 `CHARGE_INTERVAL_FLOOR_SECONDS`(0.3448)의 유도 실측과 같은 값. 단 스칼렛 60rpm은 그녀를 느리게 만들어 일괄 적용 불가 | 발사 타임라인 |
 | — | ~~MG 정확도 예열~~(탄창 앞 29발 코어 손실) | 미집계(실기록 MG 5유닛 전부에 문다) | **해소 (2026-08-15)** — `accuracy.SPREAD_CONVERGENCE` + `ShotRecord.magazine_index`. 합계 1.044x→1.042x · MG 1.176x→1.164x · 다른 무기군 불변. 남은 MG 과대는 `p_조준`(갭 #21)이다 | 발사 타임라인 |
 | — | ~~`core_damage_rate` 유닛별 상이~~(2.5배 vs 엔진 2.0배) | 5(미란다·미란다 시그니처·퀀시:이스케이프퀸·리틀머메이드·치사토) | **해소 (2026-08-08)** — `core_damage.CORE_DAMAGE_RATE` + `core_hit_bonus_for`, 소비 지점 `raid_simulator` 1줄. 합계 1.055x→1.060x·19/25→18/25 | 스탯 상수 |
 | — | 무기변형 세그먼트 탄착군 — 기저 무기로 근사, 미측정 | 미집계(확인된 사례 나유타 1, 실기록에서 1.151x→1.137x로 실제로 문다) | 미착수 — 무기변형 유닛 코어히트율 실측 필요 | 발사 타임라인 |

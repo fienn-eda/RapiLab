@@ -787,6 +787,25 @@ ENTIRE weapon profile for a window - a burst-triggered cannon transform
 (Snow White, Maxwell), a sustained buffed-cadence window (Laplace's Hero
 Vision, via the dual slug `laplace-signature`), or a migrated
 `scheduled_nukes` approximation (Red Hood's Step 3, see below).
+**A unit's BASE weapon may fire at a rate its class does not (2026-08-15).**
+`attack_rate.RATE_OF_FIRE_60FPS` is per weapon class, and every one of its four
+entries falls out of `rounds_per_second(rpm)` = `60 / ceil(60 / (rpm/60))` —
+the game data's rounds-per-MINUTE put on the 60fps grid (AR 720→12 · SG 90→1.5 ·
+SMG 1440→**20**, its 2.5-frame interval rounding up to 3 · MG 4200→**60**, its
+0.857 rounding up to 1, which Fienn's 256-rounds-in-256-frames reading confirms
+independently). A unit whose own rpm differs is listed in
+`attack_rate.ROUNDS_PER_MINUTE` and `user_roster` joins it onto that unit's
+`weapon_stats["rate_of_fire"]`, which `rate_of_fire_for_profile` prefers over
+the class constant; ABSENT means "the class rate is right", so an ordinary unit
+is untouched. Today the table holds one slug — Jill: Valentine's 9-round AR
+fires 150/min, not 720, and the class constant made her normal attack **4.8x**
+(Fienn read 24±1 frames between her rounds, 2026-08-15). Do NOT hand-add a slug:
+the field lives only in ShiftyPad raw bundles keyed by rid (dotgg, where most
+units' weapon stats come from, has no rate field at all), so
+`scripts/audit_rate_of_fire.py` is what decides membership by comparing every
+encoded slug against the collected data. Charge weapons are out of scope — they
+never read the class table.
+
 `attack_rate.generate_segmented_shots()` builds a per-segment ShotRecord
 timeline instead of one flat cadence: inside a segment the unit's BASE
 weapon is genuinely silenced (not just double-counted-and-subtracted) and
