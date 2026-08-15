@@ -752,6 +752,21 @@ this reuses the same tick_count/tick_interval loop instead of requiring a fake
 resource just to get repeating ticks. First consumer: Mana's Fatal Error!
 (396%/sec flat Sustained-typed DoT, 10 ticks).
 
+**`"fire_delay"` (optional, seconds) moves the whole tick train later**, for a
+rider that rides the burst's own HITS rather than landing with the cast. Absent
+= 0.0, so every spec written before it keeps landing exactly where it did. Use
+it only with a MEASURED gap - it is not a place to guess a plausible delay.
+First consumer: Cinderella's Glass Slippers riders, whose ten hits start 0.95
+sec after the cast and are 0.200 sec apart (Fienn, 2026-08-15). Two things
+follow from the delay and are the reason it exists: each tick reads the
+resource at a different instant (bursting at zero Beautiful stacks, exactly the
+four riders landing after the first stack arrived deal damage), and the ticks
+sit INSIDE the Full Burst window the cast opened, so they collect its bonus
+while the burst bullet - computed at the cast, one beat before the window -
+does not. Do not reach for it to model a burst bullet's own sequential hits:
+those are settled at the cast and `burst_hit_counts` records them there on
+purpose (see below).
+
 **Self-scheduled nuke (summoned entities):** damage on a cadence the UNIT
 computes, for when `periodic_nukes`' fixed interval can't express it - a summoned
 entity whose attack rate depends on how many of it are alive (Ein's Near
@@ -1000,6 +1015,16 @@ defense is a flat per-hit subtraction, so pre-multiplying overcounts whenever
 `enemy_def > 0`. `burst_hit_counts={slug: N}` (default 1) wired via
 `_BURST_HIT_COUNTS`/`get_burst_hit_count`; `on_tier_fire` records N identical
 events. First consumers: Cinderella (10x), Julia-signature (5x).
+
+**The same instant is a measurement, not a shortcut.** The hits DO land apart
+in game - Cinderella's ten span 1.80 sec, starting 0.95 sec after the cast
+(Fienn, 2026-08-15) - and they land inside the Full Burst window her own Burst
+3 cast opened, yet the range test reads no Full Burst bonus on them. So the
+volley's damage is settled at the cast, and recording every hit there is what
+reproduces it. Do not "improve" this by spreading the hits over their real
+landing times: that hands them a bonus the game does not pay. A rider that
+genuinely resolves per-hit is declared separately, with `fire_delay` on a
+`resource_scaled_nukes` spec.
 
 **Record-then-compute:** `simulate_raid` RECORDS every damage instance
 (burst/instant/periodic/per-shot nukes + normal attacks) as an event during

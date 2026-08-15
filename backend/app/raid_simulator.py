@@ -1218,6 +1218,15 @@ def _simulate_raid_once(
             # window (Mana's Fatal Error!, confirmed in-game).
             after_cast = spec.get("resolves_after_cast", False)
             tick_base = time + FULL_BURST_OPEN_DELAY if after_cast else time
+            # `fire_delay` (optional): a MEASURED gap from the cast to the first
+            # tick, for a rider that rides the burst's own hits instead of
+            # landing with the cast. Cinderella's Glass Slippers is the first
+            # consumer - her ten hits start 0.95 sec after the cast and are
+            # 0.200 sec apart (Fienn, 2026-08-15), which is why each rider
+            # reads a different Beautiful count and why they collect the Full
+            # Burst bonus that the burst bullet itself does not. Absent = 0.0,
+            # so every existing spec keeps landing exactly where it did.
+            tick_base += spec.get("fire_delay", 0.0)
             for i in range(spec["tick_count"]):
                 tick_time = tick_base + i * spec["tick_interval"]
                 record(
@@ -1232,7 +1241,17 @@ def _simulate_raid_once(
         # A burst that "attacks sequentially N times" deals N SEPARATE hits, not
         # one hit at N*percent - defense is a flat per-hit subtraction (see
         # damage_formula), so splitting into hits changes the total whenever
-        # enemy_def > 0. All N hits land at the same instant.
+        # enemy_def > 0.
+        #
+        # All N hits are recorded at the SAME instant even though they land
+        # apart in game: the volley's damage is settled at the cast. Cinderella
+        # is the measured case (Fienn, 2026-08-15) - her ten hits land 0.95 to
+        # 2.75 sec after the cast, inside the Full Burst window her own cast
+        # opened, and still take no Full Burst bonus. Recording them at the
+        # cast is what keeps that right; spreading them over their real landing
+        # times would hand them a bonus the game does not pay. A rider that
+        # DOES resolve per-hit is a separate spec and says so with
+        # `resource_scaled_nukes`' `fire_delay`.
         # `burst_resolves_after_cast` names the one thing a caller has to get
         # right: whether this burst's damage lands AT the cast or a beat later.
         # For a Burst 3 that beat is exactly when Full Burst opens, so a bullet
