@@ -805,25 +805,40 @@ units' weapon stats come from, has no rate field at all), so
 `scripts/audit_rate_of_fire.py` is what decides membership by comparing every
 encoded slug against the collected data.
 
-**A charge weapon's rpm is a FLOOR, not a cadence (2026-08-15).** RL/SR units
-never read `RATE_OF_FIRE_60FPS` — their cadence is `charge_time` plus the
-unit's own fire-to-charge pause. Their `rate_of_fire` is instead the shortest
-gap the weapon can fire at, which only binds once charge speed drives the
-charge toward zero, and it lives in `attack_rate.CHARGE_ROUNDS_PER_MINUTE`
-(joined onto the timeline by `roster` as `charge_interval_floor`, read by
-`shot_interval_with_speed`'s `interval_floor`). Five of the 31 collected charge
-weapons beat the 60/min default: Laplace: Ultimate Hero and Neon: Vision Eye
-300, Liberalio 200, Cinderella 180, Anis: Star 120 — 12, 12, 18, 20 and 30
-whole frames. **Those five are exactly the units with no pause**, which is the
-finding rather than a coincidence: a pause and a rate-of-fire floor are
-ALTERNATIVES (applying both counts the same wait twice), and
-`test_a_zero_pause_charge_weapon_always_has_a_rate_of_fire` pins that every
-zero-pause slug has an entry and no entry also carries a pause. The class
-default 60/min is NOT a floor and is deliberately absent from the table —
-Scarlet: Black Shadow carries it and fires every 0.7325 sec — so a unit not in
-the table has no floor but the frame grid. See
-`registry.INFERRED_NO_CHARGE_MOTION_DELAY` for the one zero that is inferred
-from this table rather than timed in game.
+**A charge weapon's rpm is a FLOOR, not a cadence, and `input_type` decides
+which units have one (2026-08-15).** RL/SR units never read
+`RATE_OF_FIRE_60FPS` — their cadence is `charge_time` plus the unit's own
+fire-to-charge pause. `shot_detail.input_type` splits the 31 collected charge
+weapons cleanly and explains both facts at once:
+
+- **`UP` (26 units)** — fires on RELEASE. You let go to shoot and must press
+  again to start charging, so there is a fire-motion→charge-motion **pause**
+  (all 11 timed so far are nonzero). Their `rate_of_fire` is 60 for every one
+  of them and nobody reads it — it is a placeholder.
+- **`DOWN_Charge` (5 units)** — charges and fires while the trigger is HELD.
+  Never releasing means **no pause** (four measured at zero), and the loop's
+  own speed becomes the floor instead: Laplace: Ultimate Hero and Neon: Vision
+  Eye 300/min, Liberalio 200, Cinderella 180, Anis: Star 120 — 12, 12, 18, 20
+  and 30 whole frames.
+
+So a pause and a rate-of-fire floor are ALTERNATIVES, not layers (applying both
+counts the same wait twice). The floor lives in
+`attack_rate.CHARGE_ROUNDS_PER_MINUTE`, joined onto the timeline by `roster` as
+`charge_interval_floor` and read by `shot_interval_with_speed`'s
+`interval_floor`. The class default 60/min is deliberately absent from the
+table — Scarlet: Black Shadow carries it and fires every 0.7325 sec — so a unit
+not in the table has no floor but the frame grid.
+
+**Encoding a new charge weapon: read `input_type` first.** It classifies her
+before anyone times her — `DOWN_Charge` means zero pause plus her own rpm,
+`UP` means a pause (carry `ASSUMED_CHARGE_MOTION_DELAY_SECONDS` until Fienn
+times her). `scripts/audit_rate_of_fire.py` checks both implications in both
+directions, so a unit that breaks the pattern is the first counterexample and
+shows up as a failure rather than passing quietly. It is still a floor and not
+a cadence: reading these rpm as sustained fire rates would put Liberalio at
+~2.2x of her recorded damage, Neon ~1.95x, Anis: Star ~1.40x.
+`registry.INFERRED_NO_CHARGE_MOTION_DELAY` holds the one zero that comes from
+this rule rather than from a clock.
 
 `attack_rate.generate_segmented_shots()` builds a per-segment ShotRecord
 timeline instead of one flat cadence: inside a segment the unit's BASE

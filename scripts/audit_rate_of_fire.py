@@ -24,6 +24,13 @@
 맞춰 보는 검사는 차지 무기엔 돌리지 않는다: 스칼렛: 블랙 섀도우가 그 기본값을
 가진 채 0.7325초마다 쏘므로 60은 바닥값이 아니다.
 
+**그리고 `input_type`이 그 둘을 함께 예언한다** — 이 스크립트의 네 번째 검사다.
+`UP`은 방아쇠를 **놓을 때** 발사하므로 다시 눌러 차지를 시작하는 멈춤이 있고,
+`DOWN_Charge`는 **누르고 있는 동안** 차지·발사를 반복하므로 멈춤이 없고 대신 그 루프
+속도에 걸린다. 수집된 31정이 이 선으로 정확히 갈린다(UP 26 / DOWN_Charge 5). 그래서
+새로 온보딩하는 차지 무기는 **재기 전에도 어느 쪽인지 알 수 있고**, 어긋나면 그것이
+이 읽기의 첫 반례다.
+
 테스트가 아니라 스크립트인 이유: `data/`는 gitignore라 워크트리나 CI에서 없을 수
 있고, 조건부 테스트로 만들면 데이터가 없는 곳에서 조용히 skip된다.
 """
@@ -38,12 +45,13 @@ sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "backend"))
 from app.attack_rate import (CHARGE_ROUNDS_PER_MINUTE, CHARGE_WEAPONS,  # noqa: E402
                              RATE_OF_FIRE_60FPS, ROUNDS_PER_MINUTE,
                              rounds_per_second)
-from app.skill_rules.registry import ENCODED_SLUGS  # noqa: E402
+from app.skill_rules.registry import (ENCODED_SLUGS,  # noqa: E402
+                                      get_charge_motion_delay)
 from audit_core_damage_rate import RAW_NAME_ALIASES, character_name  # noqa: E402
 
 
 def collect(raw_dir):
-    """{영문 이름: (rid, 무기, 분당 발수)} - 수집된 번들이 적은 연사.
+    """{영문 이름: (rid, 무기, 분당 발수, 입력 방식)} - 수집된 번들이 적은 연사.
 
     MG의 `rate_of_fire`는 예열 램프의 시작값이라 공칭 최대는
     `end_rate_of_fire`다. 그것을 안 읽으면 MG 전원이 1발/초로 읽힌다.
@@ -55,8 +63,50 @@ def collect(raw_dir):
         detail = bundle["detail"]["shot_detail"]
         weapon = detail["weapon_type"]
         field = "end_rate_of_fire" if weapon == "MG" else "rate_of_fire"
-        observed[name] = (path.stem, weapon, float(detail[field]))
+        observed[name] = (path.stem, weapon, float(detail[field]),
+                          detail["input_type"])
     return observed
+
+
+HOLD_TO_FIRE = "DOWN_Charge"
+
+
+def check_input_types(observed, slug_for_name):
+    """`input_type`이 예언하는 두 가지가 실제로 성립하는지 본다.
+
+    `DOWN_Charge`(누르고 있는 동안 차지·발사 반복) → 멈춤이 없고 바닥값 표에 있다.
+    그 밖(`UP`, 놓을 때 발사) → 멈춤이 있고 표에 없다.
+
+    이건 상관관계가 아니라 메커니즘이라 **새 유닛을 재기 전에도 분류해 준다**.
+    어긋나는 유닛이 나오면 그게 이 읽기의 첫 반례이므로 조용히 넘기지 않는다.
+    """
+    problems = []
+    for name, (rid, weapon, _rpm, input_type) in sorted(observed.items()):
+        if weapon not in CHARGE_WEAPONS:
+            continue
+        slug = slug_for_name.get(name)
+        if slug is None:
+            continue          # 미인코딩 - 멈춤 표에 자리가 없다
+        hold = input_type == HOLD_TO_FIRE
+        listed = slug in CHARGE_ROUNDS_PER_MINUTE
+        pause = get_charge_motion_delay(slug)
+        if hold and not listed:
+            problems.append(
+                f"{slug}: {input_type}인데 CHARGE_ROUNDS_PER_MINUTE에 없다 "
+                f"(rid {rid}) - 누르고 쏘는 무기는 자기 연사에 걸린다")
+        if not hold and listed:
+            problems.append(
+                f"{slug}: {input_type}인데 CHARGE_ROUNDS_PER_MINUTE에 올라 있다 "
+                f"(rid {rid}) - 놓고 쏘는 무기의 연사 60은 자리채움이다")
+        if hold and pause:
+            problems.append(
+                f"{slug}: {input_type}인데 모션 딜레이 {pause:.3f}초를 갖고 있다 - "
+                "멈춤과 바닥값은 대안이라 둘 중 하나는 안 읽힌다")
+        if not hold and not pause:
+            problems.append(
+                f"{slug}: {input_type}인데 모션 딜레이가 0이다 - 놓고 쏘는 무기 26정 중 "
+                "잰 11명은 전원 멈춤이 있었다")
+    return problems
 
 
 def main():
@@ -78,9 +128,10 @@ def main():
     # 읽고, 거기서 벗어난 유닛만 유닛별 표의 대상이다. 손으로 적으면 클래스가
     # 통째로 바뀐 날을 못 본다.
     per_weapon = collections.defaultdict(collections.Counter)
-    for _, weapon, rpm in observed.values():
+    for _, weapon, rpm, _input_type in observed.values():
         per_weapon[weapon][rpm] += 1
 
+    slug_for_name = {}
     problems, checked, overrides_seen = [], 0, {}
     for slug in sorted(ENCODED_SLUGS):
         name = RAW_NAME_ALIASES.get(slug) or character_name(slug)
@@ -90,7 +141,8 @@ def main():
         if name not in observed:
             problems.append(f"{slug}: raw에 {name!r}가 없다")
             continue
-        rid, weapon, rpm = observed[name]
+        slug_for_name.setdefault(name, slug)
+        rid, weapon, rpm, _input_type = observed[name]
         checked += 1
         charge = weapon in CHARGE_WEAPONS
         table_name = "CHARGE_ROUNDS_PER_MINUTE" if charge else "ROUNDS_PER_MINUTE"
@@ -139,6 +191,13 @@ def main():
     listed_slugs = set(ROUNDS_PER_MINUTE) | set(CHARGE_ROUNDS_PER_MINUTE)
     for slug in sorted(listed_slugs - set(ENCODED_SLUGS)):
         print(f"  (표에만 있고 인코딩 안 된 슬러그: {slug})")
+
+    by_input = collections.Counter(
+        input_type for _, weapon, _, input_type in observed.values()
+        if weapon in CHARGE_WEAPONS)
+    print(f"\n차지 무기 입력 방식: "
+          + " · ".join(f"{k} {v}정" for k, v in sorted(by_input.items())))
+    problems.extend(check_input_types(observed, slug_for_name))
 
     if problems:
         print("\n어긋남:", file=sys.stderr)

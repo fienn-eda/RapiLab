@@ -819,11 +819,15 @@ def test_no_charge_weapon_is_left_silently_at_zero():
 def test_a_zero_pause_charge_weapon_always_has_a_rate_of_fire():
     """The floor branch of `shot_interval_with_speed` is only reachable by a
     unit whose pause is zero, and for her the bound has to come from somewhere.
-    Every one of them carries her weapon's own rate of fire - which is the
-    finding rather than a coincidence: the units Fienn checked in game and
-    found no pause on are exactly the units whose rate of fire is above the
-    charge class's 60 rounds/min. A new zero-pause unit missing from the table
-    would be modelled as able to fire arbitrarily fast under charge speed."""
+    Every one of them carries her weapon's own rate of fire - which follows
+    from a mechanism rather than a coincidence: `shot_detail.input_type` splits
+    the 31 collected charge weapons into `UP` (fires on release, so there is a
+    fire-to-charge pause, and rpm is a 60 placeholder nobody reads) and
+    `DOWN_Charge` (charges and fires while held, so no pause, and the loop's
+    own speed is the floor). `scripts/audit_rate_of_fire.py` checks that split
+    against the collected data; this pins the engine-side half of it, so a new
+    zero-pause unit missing from the table cannot be modelled as able to fire
+    arbitrarily fast under charge speed."""
     from app.skill_rules.registry import (INFERRED_NO_CHARGE_MOTION_DELAY,
                                           NO_CHARGE_MOTION_DELAY,
                                           get_charge_motion_delay)
