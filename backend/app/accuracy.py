@@ -73,16 +73,32 @@ def spread_diameter(weapon, hit_rate, magazine_index=None):
     if magazine_index is not None:
         start, per_shot = SPREAD_CONVERGENCE.get(weapon, (base, 0.0))
         base = max(base, start - per_shot * magazine_index)
-    return base * max(0.0, 1.0 - hit_rate / ZERO_SPREAD_HIT_RATE)
+    return base * hit_rate_factor(hit_rate)
 
 
-def core_hit_rate(weapon, hit_rate, core_diameter, magazine_index=None):
+def hit_rate_factor(hit_rate):
+    """명중률이 탄착군 지름에 곱하는 계수. 선언된 지름도 같은 계수를 받는다."""
+    return max(0.0, 1.0 - hit_rate / ZERO_SPREAD_HIT_RATE)
+
+
+def core_hit_rate(weapon, hit_rate, core_diameter, magazine_index=None,
+                  base_diameter=None):
     """조준점이 코어 중심에 있을 때 코어에 드는 발의 비율.
 
     탄착군 전체가 코어 안에 들어가면 전부 맞고, 그렇지 않으면 두 원의
     면적비다.
+
+    `base_diameter`는 무기군 표 대신 쓰는 **측정된** 지름이다 — 무기변형
+    세그먼트가 자기 조준원을 재서 선언할 때의 통로다(모란의 창모드 150).
+    선언된 지름에는 탄창 수렴을 적용하지 않는다: 수렴은 MG에서만 측정됐고
+    세그먼트는 재장전을 하지 않아 탄창 위치 자체가 없다. 명중률 계수는 그대로
+    곱한다 — 두 판독이 같은 명중률에서 나왔으므로 그 축은 이미 약분돼 있고,
+    지름은 무버프 기준으로 환산돼 여기 들어온다.
     """
-    diameter = spread_diameter(weapon, hit_rate, magazine_index)
+    if base_diameter is None:
+        diameter = spread_diameter(weapon, hit_rate, magazine_index)
+    else:
+        diameter = base_diameter * hit_rate_factor(hit_rate)
     if diameter <= core_diameter:
         return 1.0
     return (core_diameter / diameter) ** 2

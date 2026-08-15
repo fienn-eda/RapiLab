@@ -154,14 +154,36 @@ hit on a `pierce_hits_body_behind_core` boss) is weighted by the same
 probability: a round that missed the core has no core to pass through. See
 `accuracy.py`.
 
-**A weapon-mode segment may declare `always_core_hit: True` on its profile**
-(2026-08-07), which puts that segment's shots on the core with no spread math at
-all. Nayuta's Memory Incineration is the case Fienn measured in play: the
-transform turns her submachine gun into a charged shot that never misses the
-core. Do NOT infer this from the segment's `weapon` string — that label is a
-hand-written archetype, and `_core_hit_rate_at` deliberately reads the unit's
-REAL weapon for a segment without the declaration (an undeclared segment's
-spread is still an open, unmeasured approximation).
+**A weapon-mode segment may declare its own aiming behaviour on its profile.**
+Two keys, and both come ONLY from an in-game measurement — never from the
+segment's `weapon` string, which is a hand-written archetype.
+`_core_hit_rate_at` deliberately reads the unit's REAL weapon for an undeclared
+segment.
+
+- **`always_core_hit: True`** (2026-08-07) — that segment's shots are on the
+  core with no spread math at all. Measured for Nayuta's Memory Incineration,
+  Zwei's Overcharge Formula and Snow White's Seven Dwarves: I.
+- **`spread_diameter: <float>`** (2026-08-15) — the segment draws a DIFFERENT
+  circle, measured, in the same game units as `accuracy.WEAPON_SPREAD_DIAMETER`
+  (AR 75 · SMG 110 · SG 250 · MG/SR/RL 10). Moran's spear mode is the case:
+  150, twice her Assault Rifle's 75. Hit rate scales a declared diameter the
+  same way it scales a class one; magazine convergence does not apply (measured
+  on MG only, and segments never reload).
+
+**How a diameter gets measured**: only the RATIO of two lengths read in the SAME
+frame is usable — there is no screen-px→game-unit formula, and the one written
+down in 2026-08-08 was wrong and retracted
+(`docs/measurements/accuracy-circle-and-core-px.md`). Moran's 150 came from
+100px transformed against 50px untransformed at the same hit rate, so both the
+screen scale and the hit-rate factor cancel: `75 × 100/50`.
+
+**Not every transform needs either key.** Fienn checked five in 2026-08-15 and
+two came back negative — Grave's circle does not change at all, and
+Jill: Valentine's narrows only because her burst raises Hit Rate, which the
+engine already models through the ordinary stat. And where the unit's BASE
+weapon is an SR/RL (or a converged MG), its 10-unit circle is already inside any
+boss core, so the approximation cannot change a number no matter what the
+segment does — that covers 12 of the 20 segment slugs.
 
 **Every collected Hit Rate bullet is encoded as of 2026-08-07** (15 units, 19
 slugs). `tests/test_hit_rate_bullets_are_encoded.py` cross-checks the skill text

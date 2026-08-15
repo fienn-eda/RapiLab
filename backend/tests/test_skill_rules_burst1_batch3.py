@@ -162,6 +162,36 @@ def test_moran_transform_is_an_unlimited_ammo_smg_at_canonical_rate():
     assert "damage_type" not in profile      # ordinary attack damage, no true conversion
 
 
+def test_moran_spear_mode_carries_its_measured_spread_not_the_base_ars():
+    """Her spear mode is NOT core-locked (Fienn, 2026-08-15), so unlike Nayuta's
+    transform it needs a diameter rather than `always_core_hit`. The number comes
+    from the RATIO of two readings taken in the same frame at the same hit rate -
+    100px transformed against 50px not - so the screen scale and the hit-rate
+    factor both cancel and no px-to-engine formula is needed (there is none; see
+    docs/measurements/accuracy-circle-and-core-px.md).
+
+    The declaration is load-bearing: without it she collects her Assault Rifle's
+    75, which is TWICE as tight as what was measured.
+    """
+    from app.accuracy import WEAPON_SPREAD_DIAMETER, core_hit_rate
+    from app.skill_rules.moran import (SPEAR_MODE_SPREAD_DIAMETER,
+                                       build_fair_and_square_weapon_mode_schedule)
+
+    assert SPEAR_MODE_SPREAD_DIAMETER == WEAPON_SPREAD_DIAMETER["AR"] * (100 / 50)
+    assert SPEAR_MODE_SPREAD_DIAMETER == 150.0
+
+    ctx = deck_ctx("moran")
+    ctx.burst_times["moran"] = [10.0]
+    profile = build_fair_and_square_weapon_mode_schedule(MORAN)(ctx, 180.0)[0]["profile"]
+    assert profile["spread_diameter"] == 150.0
+
+    # And it actually moves the number: against the measured 48.89 core her
+    # spear mode lands a quarter of the core hits her AR would.
+    core = 48.89
+    assert round(core_hit_rate("AR", 0.0, core, base_diameter=150.0), 9) == round(
+        core_hit_rate("AR", 0.0, core) / 4, 9)
+
+
 # Base ("skills") level-10 values - slug "tove". Same slot MEANINGS as the
 # Favorite Item, only smaller numbers, so one builder serves both.
 TOVE_BASE_MODIFICATION_SUCCESSFUL = {

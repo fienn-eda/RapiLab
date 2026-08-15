@@ -938,7 +938,7 @@ def _simulate_raid_once(
         return weapon in in_range_weapons
 
     def _core_hit_rate_at(slug, time, is_normal_attack, always_core_hit=False,
-                          magazine_index=None):
+                          magazine_index=None, declared_spread=None):
         """이 인스턴스의 발 중 코어에 드는 비율.
 
         `magazine_index`는 이 발이 탄창의 몇 번째인가다 — MG의 조준원은 탄창이
@@ -965,14 +965,23 @@ def _simulate_raid_once(
         셈이 된다.
 
         그래서 세그먼트가 조준원을 바꾸는 경우는 라벨이 아니라 **선언**으로
-        들어온다: 프로필의 `always_core_hit`(→ ShotRecord)이 선 세그먼트는
-        p=1.0이다. 나유타의 Memory Incineration이 그렇다(Fienn 인게임 확인,
-        2026-08-07) - 차지 방식으로 바뀌면서 코어를 언제나 맞힌다. 선언이 없는
-        세그먼트는 여전히 기저 무기를 쓰고, 그 근사는 미측정으로 남는다
-        (docs/superpowers/specs/2026-08-07-hit-rate-core-accuracy-design.md §9).
+        들어온다. 선언은 둘이고 둘 다 실측에서만 온다:
+
+        - `always_core_hit` — 그 세그먼트는 코어를 언제나 맞힌다(p=1.0).
+          나유타 · 츠바이 · 스노우화이트가 그렇다(Fienn 인게임 확인).
+        - `spread_diameter` — 코어 고정은 아니지만 조준원을 **재서** 아는 경우.
+          모란의 창모드가 그렇다(기저 AR 75에 대해 150).
+
+        선언이 없는 세그먼트는 여전히 기저 무기를 쓰고, 그 근사는 미측정으로
+        남는다. 다만 기저가 SR/RL이거나 수렴한 MG면 지름 10이 코어보다 좁아
+        어차피 1.0이므로, 근사가 실제로 무는 건 기저가 AR/SMG/SG인 세그먼트뿐이다
+        (docs/engine-gaps.md의 재집계).
         """
         if core_diameter_px is None or not is_normal_attack or always_core_hit:
             return 1.0
+        if declared_spread is not None:
+            return core_hit_rate(None, _stat_bundle(slug, time)["hit_rate"],
+                                 core_diameter_px, base_diameter=declared_spread)
         weapon = (weapon_stats.get(slug) or {}).get("weapon")
         if weapon not in WEAPON_SPREAD_DIAMETER:
             # accuracy.spread_diameter는 모르는 무기에 KeyError를 던진다(근거
@@ -1098,6 +1107,7 @@ def _simulate_raid_once(
         slug, percent, time, source, damage_type="attack",
         extra_charge_bonus=0.0, resource_gate=None, extra_flat_atk=0.0,
         on_charge_weapon=None, core_eligible_override=None, always_core_hit=False,
+        spread_diameter=None,
         magazine_index=None,
     ):
         damage_events.append({
@@ -1113,6 +1123,10 @@ def _simulate_raid_once(
             # This shot came from a weapon-mode segment that declares it always
             # lands on the core, so no spread math applies to it.
             "always_core_hit": always_core_hit,
+            # A segment that MEASURED its own aiming circle rather than being
+            # core-locked, in accuracy.WEAPON_SPREAD_DIAMETER's units. None =
+            # fall back to the base weapon's.
+            "spread_diameter": spread_diameter,
             # Which round of its magazine this was, for the weapons whose aiming
             # circle tightens as the magazine empties. None = not a magazine
             # round, so the converged diameter applies.
@@ -1598,6 +1612,7 @@ def _simulate_raid_once(
                    damage_type=damage_type, extra_charge_bonus=rec.extra_charge_bonus,
                    on_charge_weapon=rec.weapon in CHARGE_WEAPONS,
                    always_core_hit=rec.always_core_hit,
+                   spread_diameter=rec.spread_diameter,
                    magazine_index=rec.magazine_index)
         shot_times_by_slug[slug] = shot_times
 
@@ -1967,7 +1982,8 @@ def _simulate_raid_once(
         )
 
         share = _core_hit_rate_at(ev["slug"], ev["time"], is_normal_attack,
-                                  ev["always_core_hit"], ev["magazine_index"])
+                                  ev["always_core_hit"], ev["magazine_index"],
+                                  ev["spread_diameter"])
 
         def instance(on_core, weight=1.0):
             return {

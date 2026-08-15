@@ -232,6 +232,30 @@ def test_a_segment_may_declare_that_it_always_strikes_the_core():
     assert shots and all(s == 20000.0 for s in shots)
 
 
+def test_a_segment_may_declare_its_own_measured_aiming_circle():
+    """Moran's spear mode: not core-locked, but its circle was MEASURED, so the
+    segment declares a diameter instead of `always_core_hit`. It is the same
+    kind of statement - a measured property of the transform that its `weapon`
+    label could never carry - and it replaces the base weapon's diameter for
+    exactly that segment's shots. Here an SG (250) declaring 100 collects
+    (50/100)^2 = 25% instead of its own 4%."""
+    shots = _shots(_log("SG", core_diameter_px=50.0,
+                        weapon_mode_schedules=_transform(spread_diameter=100.0)))
+    assert shots and all(s == pytest.approx(12500.0) for s in shots)
+
+
+def test_a_declared_spread_covers_the_segment_and_nothing_else():
+    schedules = {"striker": lambda context, fight_duration: [
+        {"start": 0.0, "end": 1.0,
+         "profile": {"weapon": "SR", "damage_percent": 100.0, "charge_time": 0.0,
+                     "charge_damage_percent": 100.0, "rate_of_fire": 4.0,
+                     "spread_diameter": 100.0}}
+    ]}
+    shots = _shots(_log("SG", core_diameter_px=50.0, weapon_mode_schedules=schedules))
+    assert pytest.approx(12500.0) in shots, "the segment's own shots use the declaration"
+    assert pytest.approx(10400.0) in shots, "shots after the window use the SG's 250"
+
+
 def test_an_always_core_segment_still_reads_the_hit_rate_for_base_shots():
     """The declaration covers the segment's own shots and nothing else: with the
     window ending at 1.0 sec, the shots after it are back on the SG's spread."""
