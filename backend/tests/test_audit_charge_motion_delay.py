@@ -15,6 +15,8 @@ import audit_charge_motion_delay as audit  # noqa: E402
 
 from app.skill_rules.registry import (  # noqa: E402
     ASSUMED_CHARGE_MOTION_DELAY_SECONDS,
+    INFERRED_NO_CHARGE_MOTION_DELAY,
+    NO_CHARGE_MOTION_DELAY,
     STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY,
     TIMED_CHARGE_MOTION_DELAY,
     _ASSUMED_CHARGE_MOTION_DELAY,
@@ -57,7 +59,27 @@ def test_status_for_separates_the_accepted_stand_in_from_the_open_question():
     assert audit.status_for("milk-blooming-bunny") == "TIMED"
     assert audit.status_for("mint") == "TIMED"
     assert audit.status_for("liberalio") == "none (confirmed)"
-    assert audit.status_for("cinderella") == "none (inferred)"
+    assert audit.status_for("cinderella") == "none (confirmed)"
+
+
+def test_cinderella_no_longer_rests_on_an_inference():
+    """Her zero came off the rate-of-fire table until Fienn timed 37 shots: the
+    mean interval is 19.583 frames, which rules out a 22-frame pause at 15.5
+    sigma and leaves the floor model standing."""
+    assert "cinderella" in NO_CHARGE_MOTION_DELAY
+    assert "cinderella" not in INFERRED_NO_CHARGE_MOTION_DELAY
+
+
+def test_no_charge_weapon_is_left_unanswered():
+    """Both open groups are empty, which is what makes the audit exit 0. A newly
+    encoded charge weapon lands in `assumed` and turns it red again.
+
+    Asserted on the tables rather than by walking every slug: the walk needs the
+    gitignored weapon dumps to tell a charge weapon from the rest, so it would
+    pass vacuously on a checkout that has none.
+    """
+    assert _ASSUMED_CHARGE_MOTION_DELAY == frozenset()
+    assert INFERRED_NO_CHARGE_MOTION_DELAY == frozenset()
 
 
 def test_an_accepted_stand_in_is_not_an_unanswered_question():

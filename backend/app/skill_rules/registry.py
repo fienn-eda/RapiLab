@@ -1318,25 +1318,26 @@ NO_CHARGE_MOTION_DELAY = frozenset({
     "neon-vision-eye",
     "laplace-ultimate-hero",
     "anis-star",
-})
-
-# 실측이 아니라 데이터에서 유도된 0. 신데렐라의 「멈춤 0.34483초」는 사실 멈춤이
-# 아니라 그녀 무기의 **180발/분 연사 상한**이었다: 그 값은 차속 +100%로 그녀의
-# 1.0초 차지를 0으로 만든 상태의 판독(10초에 29~30발)에서 보수적인 29를 골라
-# 10/29로 적은 것인데, 데이터가 말하는 180발/분은 0.33333초 = 정확히 30발이고
-# 60fps 격자 위의 정수 프레임(20)이다.
-#
-# 이 읽기를 떠받치는 건 `shot_detail.input_type`이다: 그녀도 위 넷과 같은
-# `DOWN_Charge`(누른 채 차지·발사를 반복 - 놓지 않으니 멈춤이 생길 자리가 없다)이고,
-# 나머지 26정은 전부 `UP`(놓을 때 발사)이며 잰 11명이 전원 멈춤을 갖고 있다.
-# `attack_rate.CHARGE_ROUNDS_PER_MINUTE` 위의 주석 참고.
-#
-# 그래서 멈춤은 0으로 두고 상한을 따로 준다. **다만 그녀의 멈춤을 직접 잰 사람은
-# 아직 없다** - 위 넷과 달리 관측이 아니라 추론이므로 `audit_charge_motion_delay.py`가
-# 계속 질문으로 띄운다.
-INFERRED_NO_CHARGE_MOTION_DELAY = frozenset({
+    # Timed 2026-08-15, 37 shots in one magazine. Her Charge Speed +100% drives
+    # the charge to zero, so the shot-to-shot gap IS whatever bounds her: the
+    # readings average 19.583 frames, which puts a 22-frame pause 15.5 sigma
+    # away and leaves the 180 rounds/min floor standing. She reads 0.417 frames
+    # FASTER than that floor (2.7 sigma) - see docs/roadmap.md, deliberately not
+    # acted on. docs/measurements/cinderella-charge-interval.md.
     "cinderella",
 })
+
+# 실측이 아니라 데이터에서 유도된 0 — 지금은 비어 있다.
+#
+# 이 통이 있었던 이유는 신데렐라였다. 그녀의 「멈춤 0.34483초」는 사실 멈춤이 아니라
+# 무기의 **180발/분 연사 상한**이었고, 그 읽기를 떠받친 건 `shot_detail.input_type`
+# 이다: 그녀는 `DOWN_Charge`(누른 채 차지·발사를 반복 - 놓지 않으니 멈춤이 생길
+# 자리가 없다)이고, `UP`(놓을 때 발사) 26정은 잰 11명이 전원 멈춤을 갖는다.
+# 2026-08-15에 37발을 재서 그 추론이 맞았음이 확인됐고 그녀는 위 통으로 옮겼다.
+#
+# 추론된 0은 관측된 0과 구분해 둘 값어치가 있다 — 같은 자리에서 나온 추론이 또
+# 필요해지면 여기 담고, `audit_charge_motion_delay.py`가 질문으로 띄운다.
+INFERRED_NO_CHARGE_MOTION_DELAY = frozenset()
 
 # What an untimed charge weapon carries until someone puts a clock on her.
 #
