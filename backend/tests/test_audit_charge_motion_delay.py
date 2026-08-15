@@ -22,11 +22,17 @@ from app.skill_rules.registry import (  # noqa: E402
 )
 
 
-def test_only_milk_is_still_waiting_for_a_timing():
-    """Every other untimed charge weapon was measured to barely depend on the
-    value (scripts/measure_charge_delay_sensitivity.py), so she is the only one
-    left worth a clock."""
-    assert _ASSUMED_CHARGE_MOTION_DELAY == frozenset({"milk-blooming-bunny"})
+def test_no_charge_weapon_is_waiting_for_a_timing():
+    """Milk was the last one worth a clock and Fienn timed her, so this group is
+    empty until a newly encoded charge weapon joins it."""
+    assert _ASSUMED_CHARGE_MOTION_DELAY == frozenset()
+
+
+def test_milk_is_timed_at_the_frame_her_reading_lands_on():
+    """Her 9 delay readings average 21.889 frames, which rounds to the same 22
+    the stand-in carries - so registering her moves no damage, and the point of
+    the entry is that it is now a measurement rather than a guess."""
+    assert TIMED_CHARGE_MOTION_DELAY["milk-blooming-bunny"] == 22 / 60
 
 
 def test_the_two_stand_in_groups_are_disjoint():
@@ -48,7 +54,7 @@ def test_a_timed_unit_is_never_carrying_a_stand_in():
 
 def test_status_for_separates_the_accepted_stand_in_from_the_open_question():
     assert audit.status_for("rouge") == "stand-in (accepted)"
-    assert audit.status_for("milk-blooming-bunny") == "assumed"
+    assert audit.status_for("milk-blooming-bunny") == "TIMED"
     assert audit.status_for("mint") == "TIMED"
     assert audit.status_for("liberalio") == "none (confirmed)"
     assert audit.status_for("cinderella") == "none (inferred)"

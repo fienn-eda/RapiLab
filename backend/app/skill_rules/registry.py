@@ -1296,6 +1296,15 @@ TIMED_CHARGE_MOTION_DELAY = {
     # one weapon, so both slugs share the pause.
     "centi": centi.CHARGE_MOTION_DELAY,
     "centi-signature": centi.CHARGE_MOTION_DELAY,
+    # Milk makes it three frame-number readings on the same 22 (Fienn,
+    # 2026-08-15): 9 delays averaging 21.889 frames, sd 1.27, in a range test
+    # with no charge-speed buff on her. The pair checks itself - her 11 charges
+    # average 60.364 frames against a 1.00 sec weapon file, and charge + delay
+    # (82.253) matches the measured shot gap (82.556) to 0.3 of a frame. She was
+    # the one unit the sensitivity sweep said was worth timing, at 3.07%; the
+    # answer landing on the stand-in is why that number does not move.
+    # docs/measurements/milk-blooming-bunny-charge.md.
+    "milk-blooming-bunny": 22 / 60,
 }
 
 # Charge weapons Fienn has checked and found NO pause on. The engine's default
@@ -1335,21 +1344,26 @@ INFERRED_NO_CHARGE_MOTION_DELAY = frozenset({
 # of herself, and a pause is the common case: of the 18 units checked so far 14
 # have one. Mint read 1.502x of her recorded damage on exactly this assumption.
 #
-# 22 frames is the value the two FRAME-NUMBER readings agree on - Bready (SR,
-# 49 readings, checked against her charge and shot gap to 0.042 of a frame) and
-# Centi (RL). Those two are the best-resolved measurements in the table and they
-# span both charge weapon classes, which is why the stand-in comes from them
-# rather than from the Full-Burst-clock readings, whose 0.01-sec display skips
-# 0.04 in places (docs/measurements/bready-charge.md).
+# 22 frames is the value every FRAME-NUMBER reading agrees on - Bready (SR, 49
+# readings, checked against her charge and shot gap to 0.042 of a frame), Centi
+# (RL), and Milk (SR, 9 readings averaging 21.889). Those are the best-resolved
+# measurements in the table and they span both charge weapon classes, which is
+# why the stand-in comes from them rather than from the Full-Burst-clock
+# readings, whose 0.01-sec display skips 0.04 in places
+# (docs/measurements/bready-charge.md, milk-blooming-bunny-charge.md).
+#
+# Milk is the one unit that was ever timed BECAUSE she carried this stand-in -
+# the sensitivity sweep put her at 3.07%, the largest of the seventeen - and she
+# came back on it. That is the strongest evidence the value has.
 #
 # This is a STAND-IN, not an answer: the real values run 0.34 to 0.43 and four
 # units have none at all.
 ASSUMED_CHARGE_MOTION_DELAY_SECONDS = 22 / 60
 
-# Still waiting for a clock - the audit keeps asking about these.
-_ASSUMED_CHARGE_MOTION_DELAY = frozenset({
-    "milk-blooming-bunny",
-})
+# Still waiting for a clock - the audit keeps asking about these. Empty today:
+# Milk was the last one worth timing and she has been timed. A newly encoded
+# charge weapon lands here until someone answers for her.
+_ASSUMED_CHARGE_MOTION_DELAY = frozenset()
 
 # Carrying the stand-in as their ANSWER, because measuring them would not change
 # one (Fienn's decision, 2026-08-15).

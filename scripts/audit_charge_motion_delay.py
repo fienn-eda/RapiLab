@@ -148,10 +148,17 @@ def main():
               "(scripts/measure_charge_delay_sensitivity.py).")
     unanswered = [r for r in rows if is_unanswered(r[0])]
     if unanswered:
+        # Only explain the statuses actually present - a note about `assumed`
+        # rows when there are none reads as a finding rather than as boilerplate.
+        open_statuses = {r[0] for r in unanswered}
         print("\nASK FIENN whether these pause between a charged shot and the next charge.")
-        print("An `assumed` row is carrying a stand-in, not an answer - it is still wrong")
-        print("for whoever turns out to have no pause at all, as four checked units do.")
-        print("An `inferred` row is a zero read off the rate-of-fire table, not a clock.")
+        if "assumed" in open_statuses:
+            print("An `assumed` row is carrying a stand-in, not an answer - it is still wrong")
+            print("for whoever turns out to have no pause at all, as four checked units do.")
+        if "none (inferred)" in open_statuses:
+            print("An `inferred` row is a zero read off the rate-of-fire table, not a clock.")
+        if "UNVERIFIED" in open_statuses:
+            print("An `UNVERIFIED` row is modelled with no pause at all because nobody looked.")
         print("   " + ", ".join(sorted(r[1] for r in unanswered)))
     return 1 if unanswered else 0
 
