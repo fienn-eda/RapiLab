@@ -170,6 +170,17 @@ segment.
   same way it scales a class one; magazine convergence does not apply (measured
   on MG only, and segments never reload).
 
+**An explicit `rate_of_fire` on a segment profile is a MEASUREMENT ANCHOR, so
+measure it.** It takes no cadence buffs precisely because the reading already
+includes every in-game modifier — which makes a borrowed class constant sitting
+in that slot a silent error, not a conservative default. Moran's spear mode
+carried the SMG class's 20/sec as an explicit stand-in for three weeks and was
+**20% slow**: Fienn's frame reading of her 5-hit trigger puts her at 2.46 ± 0.07
+frames a round, rejecting 3 frames at 7.4σ and landing 0.55σ from 2.5 (24/sec,
+the SMG's NOMINAL 1440 rpm before the frame-grid rounding). Do not generalise
+that to the SMG class — the record's three SMG units read 1.002x at 20/sec and
+would go to ~1.15x at 24. `docs/measurements/moran-spear-mode.md`.
+
 **How a diameter gets measured**: only the RATIO of two lengths read in the SAME
 frame is usable — there is no screen-px→game-unit formula, and the one written
 down in 2026-08-08 was wrong and retracted

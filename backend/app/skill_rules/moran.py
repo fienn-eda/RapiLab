@@ -45,7 +45,6 @@ DPS debuff), taunts, the HP-recovery on the transform, and the HP-threshold
 Perseverance effect.
 
 """
-from app.attack_rate import rate_of_fire_for_weapon
 from app.skill_rules._helpers import (
     buff_rule,
     cdr_pulse_rule,
@@ -141,6 +140,29 @@ def build_moran_rules(values):
     ]
 
 
+# 창모드의 초당 발수. **실측이다** — 2026-07-22에 「재기 전까지」로 승인됐던 SMG
+# 클래스 상수 20발/초는 20% 느렸다.
+#
+# Fienn 프레임 판독(부계정, 2026-08-15): 1스킬 2번 불릿(「무기변경 상태라면 일반공격
+# 5회 명중 시」)의 대미지가 뜨는 프레임 11개 — 2520 · 2532 · 2547 · 2558 · 2571 ·
+# 2582 · 2595 · 2607 · 2619 · 2631 · 2643. 트리거 사이가 정확히 5발이므로
+# **123프레임 / 50발 = 발당 2.460 ± 0.073프레임**이다.
+#
+#   후보                        5발당    σ
+#   엔진 현행 20발/초 (3프레임)   15.00   7.36  기각
+#   1440rpm = 24발/초 (2.5)     12.50   0.55  ★
+#   30발/초 (2프레임)            10.00   6.27  기각
+#
+# 채택값은 판독 평균(24.39)이 아니라 **24.0**이다. 2.5프레임은 SMG의 공칭 1440rpm이고
+# 판독이 거기서 0.55σ이므로, 소수 셋째 자리는 노이즈를 적합하는 것이다.
+#
+# **이것을 SMG 클래스로 일반화하면 안 된다.** 실기록의 SMG 3유닛은 20발/초에서
+# 평균 1.002x인데 24발/초면 발수가 20% 늘어 1.15x 부근으로 간다. 즉 진짜 SMG는
+# 격자 올림(3프레임)이 맞고, 그녀의 창모드가 2.5프레임으로 도는 별개 무기다.
+# 게임 데이터에 변형 무기 레코드가 없어(스킬 상세에 연사 필드가 없다) 출처는 실측뿐이다.
+# 원본: docs/measurements/moran-spear-mode.md
+SPEAR_MODE_ROUNDS_PER_SECOND = 24.0
+
 # 창모드의 조준원, `accuracy.WEAPON_SPREAD_DIAMETER`와 같은 게임 단위.
 #
 # Fienn 인게임 판독(부계정, 2026-08-15): 변형 중 **100px**, 변형이 아닐 때 **50px**.
@@ -172,12 +194,11 @@ def build_fair_and_square_weapon_mode_schedule(values, slug="moran"):
     (infinite ammo makes an in-game count impractical, and no guide publishes
     one), so the count follows from the rate and the 10-sec window.
 
-    The cadence is the engine's canonical SMG rate (`rate_of_fire_for_weapon`,
-    20 shots/sec) - the transform IS an SMG, so this is a measured weapon-class
-    constant, not an invented number (Fienn approved this proxy 2026-07-22). As
-    an explicit `rate_of_fire` it takes no cadence buffs, matching every other
-    measurement-anchored segment; revisit if the transform's real rate is ever
-    measured.
+    The cadence is MEASURED as of 2026-08-15 (SPEAR_MODE_ROUNDS_PER_SECOND, 24
+    shots/sec) - it used to be the engine's canonical SMG rate as a stand-in,
+    which turned out to be 20% slow. As an explicit `rate_of_fire` it takes no
+    cadence buffs, matching every other measurement-anchored segment - and that
+    is now justified by a reading rather than by convention.
 
     `spread_diameter` is measured too, and it has to be DECLARED because the
     engine reads spread from the BASE weapon and never from a segment's
@@ -188,7 +209,7 @@ def build_fair_and_square_weapon_mode_schedule(values, slug="moran"):
     profile = {
         "weapon": "SMG",
         "damage_percent": float(fair["description_value_01"]),  # 14.7
-        "rate_of_fire": rate_of_fire_for_weapon("SMG"),
+        "rate_of_fire": SPEAR_MODE_ROUNDS_PER_SECOND,
         "spread_diameter": SPEAR_MODE_SPREAD_DIAMETER,
     }
     window = float(fair["description_value_04"])  # unlimited-ammo duration, 10s

@@ -141,9 +141,10 @@ def test_moran_squad_cdr_and_caster_scaled_flat_atk():
     assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == round(300000 * 0.4257, 2)
 
 
-def test_moran_transform_is_an_unlimited_ammo_smg_at_canonical_rate():
+def test_moran_transform_is_an_unlimited_ammo_smg_at_its_measured_rate():
     from app.attack_rate import rate_of_fire_for_weapon
-    from app.skill_rules.moran import build_fair_and_square_weapon_mode_schedule
+    from app.skill_rules.moran import (SPEAR_MODE_ROUNDS_PER_SECOND,
+                                       build_fair_and_square_weapon_mode_schedule)
 
     schedule = build_fair_and_square_weapon_mode_schedule(MORAN)
     ctx = deck_ctx("moran")
@@ -156,8 +157,12 @@ def test_moran_transform_is_an_unlimited_ammo_smg_at_canonical_rate():
     profile = segments[0]["profile"]
     assert profile["weapon"] == "SMG"
     assert profile["damage_percent"] == 14.7
-    # infinite ammo -> no measured count; anchored to the canonical SMG rate.
-    assert profile["rate_of_fire"] == rate_of_fire_for_weapon("SMG") == 20.0
+    # Measured, not the SMG class constant it used to borrow: Fienn's frame
+    # reading of the 5-hit trigger puts her at 2.46 +- 0.07 frames a round,
+    # which rejects the class's 3 frames (20/sec) at 7.4 sigma and sits 0.55
+    # sigma from 2.5 (docs/measurements/moran-spear-mode.md).
+    assert profile["rate_of_fire"] == SPEAR_MODE_ROUNDS_PER_SECOND == 24.0
+    assert profile["rate_of_fire"] != rate_of_fire_for_weapon("SMG")
     assert "until_shots" not in segments[0]  # end-bounded, not a measured count
     assert "damage_type" not in profile      # ordinary attack damage, no true conversion
 
