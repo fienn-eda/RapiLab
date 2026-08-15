@@ -81,7 +81,6 @@
 .app__note {
   color: var(--text-muted);
   font-size: 13px;
-  font-style: italic;
   max-width: var(--measure);
 }
 
@@ -835,7 +834,6 @@
 
 .field__hint {
   font-weight: 400;
-  font-style: italic;
   opacity: 0.85;
 }
 
@@ -1062,7 +1060,6 @@
 
 .group__hint {
   font-weight: 400;
-  font-style: italic;
   color: var(--text-muted);
 }
 
@@ -2069,7 +2066,6 @@
 
 .draft-editor__hint {
   font-size: 12px;
-  font-style: italic;
   color: var(--text-muted);
   margin: var(--sp-2) 0 0;
 }
