@@ -121,11 +121,15 @@ per shot that the engine does not model.
 
 The likely mechanism is Auto Fire itself: the volley of 5 (or 15) sequential
 hits has to play out before the next charge can start, which is why this shows
-up on her and not on charge weapons generally. The engine's own
-CHARGE_INTERVAL_FLOOR points the same way - 10/29 = 0.345 sec came from
-Cinderella firing 29 shots in 10 sec with her charge driven to ~0 by +100%
-charge speed, i.e. it is what remains when the charge vanishes. That is a
-per-shot RECOVERY, not a floor.
+up on her and not on charge weapons generally.
+
+The engine used to be read as pointing the same way, and no longer is. Its
+charge-interval floor (10/29 = 0.345 sec) was taken as a per-shot RECOVERY -
+what remained of Cinderella's cadence once +100% charge speed drove her charge
+to ~0. That residual turns out to be her weapon's own rate of fire instead
+(180 rounds/min = 0.33333 sec, attack_rate.CHARGE_ROUNDS_PER_MINUTE), so it
+says nothing about a recovery either way. Snow White's 44.1 sec rests on her
+own shot count alone.
 
 What is NOT settled is how the 44.1 sec splits between her two modes: a flat
 0.526 sec per shot fits, and so does a recovery proportional to the volley

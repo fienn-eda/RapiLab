@@ -14,6 +14,7 @@ backup buffer among same-tier Nikkes.
 """
 from dataclasses import dataclass, field
 
+from app.attack_rate import CHARGE_ROUNDS_PER_MINUTE, charge_interval_floor_for
 from app.collectible_effects import collectible_modifiers
 from app.cube_effects import DEFAULT_CUBE, assumed_cube_effects, cube_refund_for
 from app.overload_effects import overload_options_to_effects
@@ -144,6 +145,11 @@ def assemble_simulation_inputs(ordered_deck):
         motion_delay = get_charge_motion_delay(spec.slug)
         if motion_delay:
             timeline["charge_motion_delay"] = motion_delay
+        # 멈춤이 없는 차지 무기는 대신 자기 연사에 걸린다 - 클래스 기본값을 쓰는
+        # 유닛은 안 실어 보내야 타임라인이 예전과 바이트 단위로 같다
+        # (attack_rate.CHARGE_ROUNDS_PER_MINUTE).
+        if spec.slug in CHARGE_ROUNDS_PER_MINUTE:
+            timeline["charge_interval_floor"] = charge_interval_floor_for(spec.slug)
         ammo_refund = cube_refund_for(spec.cube)
         if ammo_refund is not None:
             timeline["ammo_refund"] = ammo_refund

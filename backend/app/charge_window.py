@@ -35,6 +35,9 @@ class WindowInputs:
     # decides whether the magazine empties inside the window at all, which on
     # this screen is the difference between two whole shot counts.
     ammo_refund: AmmoRefund | None = None
+    # 멈춤이 없는 무기를 대신 묶는 자기 연사 상한
+    # (attack_rate.charge_interval_floor_for). None이면 클래스 기본값.
+    interval_floor: float | None = None
 
 
 def shot_interval(inputs: WindowInputs) -> float:
@@ -43,6 +46,7 @@ def shot_interval(inputs: WindowInputs) -> float:
         inputs.charge_speed_percent,
         inputs.charge_time_reduction_sec,
         motion_delay=inputs.motion_delay,
+        interval_floor=inputs.interval_floor,
     )
 
 

@@ -644,20 +644,53 @@ def reload_time_with_speed(reload_time, reload_speed_percent):
     return max(0.0, reload_time * (1 - reload_speed_percent) + RELOAD_FIXED_SECONDS)
 
 
-# The shortest gap the game allows between charged shots. Anchored to one
-# in-game measurement (Fienn, 2026-07-20): Cinderella, whose Flawless Glass
-# gives Charge Speed +100% - enough to drive her 1.0-sec charge to zero - fires
-# 29-30 shots in 10 sec with a max-ammo overload preventing a reload. The
-# conservative 29 is used.
+# 차지가 사라져도 남는 가장 짧은 발 간격은 **그 유닛의 `shot_detail.rate_of_fire`**다.
 #
-# Two caveats, both deliberate rather than hidden. The floor MECHANISM is
-# inferred: something bounds the cadence once charge time reaches zero, and a
-# minimum gap reproduces the observation, but the game could equally be
-# capping charge speed itself - the two are indistinguishable from one data
-# point. And the value comes from a Rocket Launcher; whether a Sniper Rifle
-# floors at the same number is untested. Only units that reach ~65%+ charge
-# speed touch it at all, so today that is Cinderella alone.
-CHARGE_INTERVAL_FLOOR_SECONDS = 10.0 / 29
+# 수집된 차지 무기 31정 중 26정이 60발/분이고, 벗어나는 다섯이 전부 아래 표에 있다.
+# 그 다섯이 정확히 Fienn이 인게임에서 「멈춤이 없다」고 확인한 넷
+# (`registry.NO_CHARGE_MOTION_DELAY`) 더하기 신데렐라다 — 18유닛을 점검해 넷이 0으로
+# 나왔는데 그 넷이 하필 이 다섯 안에 들어갈 확률은 C(5,4)/C(18,4) = 0.16%다.
+# 멈춤이 없는 무기는 대신 자기 연사에 걸리고, 멈춤이 있는 무기는 그 멈춤에 걸린다.
+#
+# 신데렐라가 이 표를 확증한다. 옛 전역 상수 10/29 = 0.34483초는 그녀 하나에서
+# 유도됐다 — 차속 +100%로 1.0초 차지를 0으로 만든 상태에서 10초에 **29~30발**,
+# 보수적인 29를 채택한 값이다. 그런데 데이터가 말하는 그녀의 연사는 180발/분 =
+# **0.33333초 = 정확히 10초에 30발**이고, 그것은 같은 판독의 위쪽 끝이다. 게다가
+# 60fps 격자 위에서 다섯 값이 전부 정수 프레임이다(12·18·20·30프레임)인 반면
+# 10/29는 20.69프레임으로 격자에 앉지 않는다.
+#
+# **나머지 26정이 공유하는 기본값 60은 바닥값이 아니다.** 스칼렛: 블랙 섀도우도
+# 60발/분(=1.0초)인데 실측 발 간격은 0.7325초이고
+# (`docs/measurements/scarlet-black-shadow-charge.md`), 브래디의 차지는 57프레임
+# =0.95초로 읽힌다. 1.0초를 바닥으로 깔면 1.0초 차지 유닛의 차지속도 버프가 통째로
+# 죽는다. 그래서 표에 없는 유닛에게는 **바닥값이 없다**(`None`).
+#
+# 그래도 구멍이 안 나는 이유: 이 바닥값은 **멈춤이 없는 유닛에게만** 닿는다
+# (`shot_interval_with_speed`의 다른 가지). 멈춤이 0으로 기록된 유닛은 전원 이 표에
+# 있고, 그것을 `test_a_zero_pause_charge_weapon_always_has_a_rate_of_fire`가 못박는다.
+DEFAULT_CHARGE_ROUNDS_PER_MINUTE = 60.0
+
+CHARGE_ROUNDS_PER_MINUTE = {
+    "laplace-ultimate-hero": 300,   # 0.2초 = 12프레임
+    "neon-vision-eye": 300,
+    "liberalio": 200,               # 0.3초 = 18프레임
+    "cinderella": 180,              # 0.33333초 = 20프레임
+    "anis-star": 120,               # 0.5초 = 30프레임
+}
+
+
+def charge_interval_floor(rounds_per_minute):
+    """이 분당 발수가 허용하는 가장 짧은 발 간격(초)."""
+    return 60.0 / rounds_per_minute
+
+
+def charge_interval_floor_for(slug):
+    """이 니케의 차지 무기가 낼 수 있는 가장 짧은 발 간격, 또는 알려진 게 없으면
+    `None` - `CHARGE_ROUNDS_PER_MINUTE` 위의 주석 참고."""
+    rounds_per_minute = CHARGE_ROUNDS_PER_MINUTE.get(slug)
+    if rounds_per_minute is None:
+        return None
+    return charge_interval_floor(rounds_per_minute)
 
 
 # Some units pause between firing a charged shot and starting the next charge -
@@ -679,7 +712,8 @@ CHARGE_MOTION_DELAY_SECONDS = 0.4
 FRAME_SECONDS = 1.0 / 60
 
 
-def charge_time_with_speed(charge_time, charge_speed_percent, flat_reduction_sec=0.0):
+def charge_time_with_speed(charge_time, charge_speed_percent, flat_reduction_sec=0.0,
+                           interval_floor=None):
     """Charge TIME from a charge-SPEED modifier and any flat-seconds cut.
 
     Charge speed is NOT reciprocal the way reload speed is. A buff of n% cuts
@@ -737,15 +771,15 @@ def charge_time_with_speed(charge_time, charge_speed_percent, flat_reduction_sec
     it. Reload got there by measurement (six readings, 2026-07-29) and carries a
     fixed segment on top that charge does not - see RELOAD_FIXED_SECONDS.
 
-    The floor can never make a weapon SLOWER than its own unbuffed charge:
-    Scarlet: Black Shadow's base charge is 0.3 sec, already quicker than the
-    floor measured on Cinderella's Rocket Launcher, and a blanket minimum
-    would have silently slowed her down. That the two disagree is itself
-    evidence the floor is not one global constant - see the note above it.
+    `interval_floor` is the shortest gap this weapon can fire at - the unit's
+    own `charge_interval_floor_for`. `None` means none is known, and then only
+    the frame grid itself bounds the charge. It can never make a weapon SLOWER
+    than its own unbuffed charge: Scarlet: Black Shadow's base charge is 0.3 sec
+    and a blanket minimum would have silently slowed her down.
     """
     # The floor is measured against the UNBUFFED charge, so a weapon already
     # quicker than it is bounded by its own base, not slowed to it.
-    floor = min(charge_time, CHARGE_INTERVAL_FLOOR_SECONDS)
+    floor = min(charge_time, FRAME_SECONDS if interval_floor is None else interval_floor)
     return max(_reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec), floor)
 
 
@@ -765,23 +799,26 @@ def _reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec):
 
 
 def shot_interval_with_speed(charge_time, charge_speed_percent, flat_reduction_sec=0.0,
-                             motion_delay=0.0):
+                             motion_delay=0.0, interval_floor=None):
     """Seconds from one charged shot to the next: the buffed charge plus the
     unit's fire-to-charge motion delay.
 
-    `CHARGE_INTERVAL_FLOOR_SECONDS` applies only when that delay is UNKNOWN.
-    The floor is itself a motion delay - what remained of Cinderella's cadence
-    once +100% charge speed took her charge to zero - generalised to everyone
-    because hers was the only one measured. A unit whose own delay has since
-    been timed is already bounded by it, so flooring her charge as well counts
-    the same pause twice, and for a charge shorter than the floor it cancels
-    charge-speed buffs entirely: Scarlet: Black Shadow charges in 0.30 sec, and
-    Liberalio's flat 0.19 sec cut would vanish against a 0.345 floor.
+    The two are alternatives, not layers. A unit that PAUSES between a shot and
+    the next charge is bounded by that pause, and flooring her charge as well
+    would count it twice - for a charge shorter than the floor it would cancel
+    charge-speed buffs entirely (Scarlet: Black Shadow charges in 0.30 sec, and
+    Liberalio's flat 0.19 sec cut would vanish against a 0.345 floor). A unit
+    with NO pause is bounded instead by her weapon's own rate of fire, which
+    `interval_floor` carries (`charge_interval_floor_for`). Every unit recorded
+    as having no pause turns out to be one whose rate of fire is above the
+    charge class's 60 rounds/min - see `CHARGE_ROUNDS_PER_MINUTE`, where the
+    26 units at that default are exactly the ones that never reach this branch.
     """
     reduced = _reduced_charge(charge_time, charge_speed_percent, flat_reduction_sec)
     if motion_delay:
         return max(0.0, reduced) + motion_delay
-    return max(reduced, min(charge_time, CHARGE_INTERVAL_FLOOR_SECONDS))
+    floor = min(charge_time, FRAME_SECONDS if interval_floor is None else interval_floor)
+    return max(reduced, floor)
 
 
 def rate_of_fire_for_weapon(weapon: str) -> float:
@@ -1244,7 +1281,8 @@ def _base_shot_records(base, window_start, window_end,
             effective_charge = shot_interval_with_speed(
                 base["charge_time"], charge_speed_percent_at(magazine_start),
                 charge_time_reduction_sec_at(magazine_start),
-                base.get("charge_motion_delay", 0.0))
+                base.get("charge_motion_delay", 0.0),
+                base.get("charge_interval_floor"))
             capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
             magazine_size, shots_fired = _walk_magazine(
                 capacity, shots_fired, refund,
@@ -1302,7 +1340,7 @@ def _base_shot_records(base, window_start, window_end,
 
 def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
                           charge_time_reduction_sec_at=_zero, motion_delay=0.0,
-                          stop_at=None):
+                          interval_floor=None, stop_at=None):
     """Shots of one override window. Cadence: charge-style profiles
     (charge_time) honor live charge-speed buffs; explicit rate_of_fire
     profiles are measurement anchors and take NO cadence buffs (the measured
@@ -1324,7 +1362,7 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
     if profile.get("charge_time"):
         interval = shot_interval_with_speed(
             profile["charge_time"], charge_speed_percent_at(start),
-            charge_time_reduction_sec_at(start), motion_delay)
+            charge_time_reduction_sec_at(start), motion_delay, interval_floor)
     else:
         interval = 1.0 / profile["rate_of_fire"]
     charge = profile.get("charge_damage_percent")
@@ -1429,7 +1467,8 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
             in_segment = True
         charge = shot_interval_with_speed(
             profile["charge_time"], charge_speed_percent_at(cursor),
-            charge_time_reduction_sec_at(cursor), base.get("charge_motion_delay", 0.0))
+            charge_time_reduction_sec_at(cursor), base.get("charge_motion_delay", 0.0),
+            base.get("charge_interval_floor"))
         shot_time = cursor + charge
         # A segment opening mid-charge takes over: the pending shot is
         # abandoned exactly as the default path drops base shots past a
@@ -1540,6 +1579,7 @@ def generate_segmented_shots(
                        if index + 1 < len(windows) else None)
         seg_records, cursor = _segment_shot_records(
             seg, fight_duration, charge_speed_percent_at, charge_time_reduction_sec_at,
-            base.get("charge_motion_delay", 0.0), stop_at=reopened_at)
+            base.get("charge_motion_delay", 0.0),
+            base.get("charge_interval_floor"), stop_at=reopened_at)
         records.extend(seg_records)
     return records

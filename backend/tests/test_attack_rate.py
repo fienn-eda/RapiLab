@@ -2,12 +2,14 @@ import pytest
 
 from app.attack_rate import (
     RELOAD_FIXED_SECONDS,
-    CHARGE_INTERVAL_FLOOR_SECONDS,
+    CHARGE_ROUNDS_PER_MINUTE,
     RATE_OF_FIRE_60FPS,
     ROUNDS_PER_MINUTE,
     AmmoRefill,
     AmmoRefund,
     ShotRecord,
+    charge_interval_floor,
+    charge_interval_floor_for,
     charge_time_with_speed,
     charge_first_bullet_times,
     charge_last_bullet_times,
@@ -346,22 +348,44 @@ def test_charge_speed_shortens_charge_by_its_own_percent():
     assert [round(t, 4) for t in shots] == [0.7, 1.4]
 
 
-def test_charge_speed_at_full_shortening_lands_on_the_measured_floor():
-    # +100% drives the charge to zero, so the game's minimum gap between
-    # charged shots is what remains - anchored to Cinderella's 29 shots/10s.
-    shots = generate_charge_shot_times(
-        charge_time=1.0, reload_time=1.0, max_ammo=3, fight_duration=1.2,
-        charge_speed_percent_at=lambda t: 1.0,
-    )
-    assert [round(t, 4) for t in shots] == [
-        round(CHARGE_INTERVAL_FLOOR_SECONDS * k, 4) for k in (1, 2, 3)]
+def test_charge_speed_at_full_shortening_lands_on_the_weapons_own_rate_of_fire():
+    """+100% drives the charge to zero, so what remains is the weapon's own
+    shortest gap - and that gap is PER UNIT, read from
+    `shot_detail.rate_of_fire`. Cinderella's 180 rounds/min is the reading the
+    old global 10/29 was inferred from: 0.33333 sec is exactly 30 shots in the
+    10 sec Fienn read as 29-30."""
+    floor = charge_interval_floor_for("cinderella")
+
+    assert floor == pytest.approx(1 / 3)
+    assert round(10.0 / floor) == 30
+    base = {"weapon": "RL", "charge_time": 1.0, "max_ammo": 24,
+            "reload_time": 2.0, "damage_percent": 100.0,
+            "charge_damage_percent": 200.0, "charge_interval_floor": floor}
+    shots = [r.time for r in generate_segmented_shots(
+        base, [], 1.2, charge_speed_percent_at=lambda t: 1.0)]
+    assert [round(t, 4) for t in shots] == [round(floor * k, 4) for k in (1, 2, 3)]
 
 
-def test_charge_speed_floor_never_slows_a_weapon_below_its_own_base():
-    # Scarlet: Black Shadow's base charge (0.3s) is already quicker than the
-    # floor measured on an RL; a blanket minimum would have slowed her down.
+def test_every_charge_weapon_that_deviates_floors_on_a_whole_frame():
+    """The five deviants land on 12, 18, 20 and 30 frames of a 60 fps grid,
+    which the old inferred 10/29 (20.69 frames) did not - the same grid every
+    other charge timing in this engine snaps to."""
+    for rounds_per_minute in CHARGE_ROUNDS_PER_MINUTE.values():
+        frames = charge_interval_floor(rounds_per_minute) * 60
+        assert frames == pytest.approx(round(frames)), rounds_per_minute
+
+
+def test_a_floor_can_never_slow_a_weapon_below_its_own_base_charge():
+    """Scarlet: Black Shadow charges in 0.30 sec - quicker than the 1.0 sec her
+    weapon's nominal 60 rounds/min would imply, which is the reading that keeps
+    that default out of the floor table. With no floor of her own, nothing but
+    the frame grid bounds her charge; her CADENCE is bounded by her 0.43 sec
+    pause instead, one branch up in `shot_interval_with_speed`."""
     assert charge_time_with_speed(0.3, 0.0) == pytest.approx(0.3)
-    assert charge_time_with_speed(0.3, 1.0) == pytest.approx(0.3)
+    assert charge_time_with_speed(0.3, 1.0) == pytest.approx(1 / 60)
+    # And a floor LARGER than the base charge is clamped to it rather than
+    # slowing the weapon down to it.
+    assert charge_time_with_speed(0.3, 0.0, interval_floor=1.0) == pytest.approx(0.3)
 
 
 def test_charge_speed_down_lengthens_the_charge():
@@ -492,7 +516,9 @@ def test_charge_speed_callable_shortens_profile_charge():
         SR_BASE, [seg], 60.0, charge_speed_percent_at=lambda t: 1.0)
     cannon = [r for r in records if r.damage_percent == 499.5][0]
     # +100% shortens the 5s cannon charge to zero, so it fires one floor-gap in.
-    assert cannon.time == pytest.approx(10.0 + CHARGE_INTERVAL_FLOOR_SECONDS)
+    # A transform profile has no rate of fire of its own, so only the frame grid
+    # bounds it.
+    assert cannon.time == pytest.approx(10.0 + 1 / 60)
 
 
 def test_fight_duration_clips_segment_shots():
@@ -644,8 +670,8 @@ def test_the_charge_left_by_a_flat_cut_keeps_its_fraction():
     grid afterwards.
 
     Scarlet: Black Shadow is the case that matters and she needs
-    `shot_interval_with_speed`, because her 0.30 charge sits under
-    CHARGE_INTERVAL_FLOOR_SECONDS and only the timed-delay branch skips it."""
+    `shot_interval_with_speed`, because her 0.30 charge sits under every floor
+    in the table and only the timed-delay branch skips it."""
     from app.attack_rate import shot_interval_with_speed
 
     # 0.30 - 0.1911 = 0.1089 sec of charge left - 6.53 frames, carried as such.
@@ -680,9 +706,12 @@ def test_flat_reduction_and_percent_compose():
 
 
 def test_charge_floor_still_bounds_the_combination():
-    # A huge flat reduction cannot drive the interval below the unit's floor.
-    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=5.0) == pytest.approx(
-        CHARGE_INTERVAL_FLOOR_SECONDS)
+    # A huge flat reduction cannot drive the interval below the unit's floor -
+    # and with no rate of fire known, below one frame.
+    assert charge_time_with_speed(1.0, 0.0, flat_reduction_sec=5.0) == pytest.approx(1 / 60)
+    assert charge_time_with_speed(
+        1.0, 0.0, flat_reduction_sec=5.0,
+        interval_floor=charge_interval_floor_for("neon-vision-eye")) == pytest.approx(0.2)
 
 
 # --- per-unit charge motion delay --------------------------------------------
@@ -692,17 +721,16 @@ def test_charge_floor_still_bounds_the_combination():
 # drops Scarlet: Black Shadow from 0.981x of her recorded damage to 0.559x.
 
 def test_a_measured_pause_replaces_the_floor_instead_of_stacking_on_it():
-    """`CHARGE_INTERVAL_FLOOR_SECONDS` is what bounds a charge weapon's cadence
-    once charge speed drives the charge to zero, and 10/29 is Cinderella's own
-    residual read in exactly that state. It therefore stands in for a pause
-    nobody has measured - so a unit whose pause IS measured must use hers, not
-    both. Red Hood settles that they differ: her transform window fires 33 shots
-    in 10 sec (0.303 sec apart) where Cinderella's floor is 0.345.
+    """The two bounds are alternatives, not layers. A weapon with no pause is
+    bounded by its own rate of fire once charge speed drives the charge to
+    zero; a weapon WITH a pause is bounded by that pause, and applying both
+    would count the same wait twice.
     """
-    from app.attack_rate import shot_interval_with_speed, CHARGE_INTERVAL_FLOOR_SECONDS
+    from app.attack_rate import shot_interval_with_speed
 
-    # Unmeasured: the floor still stands in, exactly as before.
-    assert shot_interval_with_speed(1.0, 1.0) == CHARGE_INTERVAL_FLOOR_SECONDS
+    # No pause: the weapon's own floor bounds her.
+    assert shot_interval_with_speed(
+        1.0, 1.0, interval_floor=charge_interval_floor_for("neon-vision-eye")) == 0.2
     assert shot_interval_with_speed(1.0, 0.0) == 1.0
     # Measured: the pause is the bound. Stacking the floor on top of it had Mint
     # firing every 0.735 sec at full charge speed instead of every 0.39.
@@ -735,6 +763,7 @@ def test_an_untimed_charge_weapon_carries_the_measured_stand_in_not_zero():
     her record. Until someone puts a clock on her she carries the frame-resolved
     pause Bready and Centi share, one SR and one RL."""
     from app.skill_rules.registry import (ASSUMED_CHARGE_MOTION_DELAY_SECONDS,
+                                          INFERRED_NO_CHARGE_MOTION_DELAY,
                                           NO_CHARGE_MOTION_DELAY,
                                           TIMED_CHARGE_MOTION_DELAY,
                                           get_charge_motion_delay)
@@ -742,11 +771,13 @@ def test_an_untimed_charge_weapon_carries_the_measured_stand_in_not_zero():
     assert ASSUMED_CHARGE_MOTION_DELAY_SECONDS == pytest.approx(22 / 60)
     for slug in ("maiden-ice-rose", "red-hood", "takina-inoue", "ein"):
         assert get_charge_motion_delay(slug) == pytest.approx(22 / 60), slug
-    # Cinderella is not one of them: the "floor" was always HER pause, measured
-    # by driving her charge to zero, so she carries her own number.
-    assert get_charge_motion_delay("cinderella") == pytest.approx(10 / 29)
+    # Cinderella is not one of them either, but for the opposite reason: the
+    # 10/29 she used to carry was never a pause, it was her weapon's 180
+    # rounds/min showing through once her charge hit zero.
+    assert get_charge_motion_delay("cinderella") == 0.0
+    assert charge_interval_floor_for("cinderella") == pytest.approx(1 / 3)
     # A measured answer always wins over the stand-in, in both directions.
-    for slug in NO_CHARGE_MOTION_DELAY:
+    for slug in NO_CHARGE_MOTION_DELAY | INFERRED_NO_CHARGE_MOTION_DELAY:
         assert get_charge_motion_delay(slug) == 0.0, slug
     for slug, delay in TIMED_CHARGE_MOTION_DELAY.items():
         assert get_charge_motion_delay(slug) == pytest.approx(delay), slug
@@ -759,7 +790,8 @@ def test_no_charge_weapon_is_left_silently_at_zero():
     import json
     from pathlib import Path
 
-    from app.skill_rules.registry import (NO_CHARGE_MOTION_DELAY,
+    from app.skill_rules.registry import (INFERRED_NO_CHARGE_MOTION_DELAY,
+                                          NO_CHARGE_MOTION_DELAY,
                                           TIMED_CHARGE_MOTION_DELAY,
                                           _BUILDERS, get_charge_motion_delay)
 
@@ -776,10 +808,33 @@ def test_no_charge_weapon_is_left_silently_at_zero():
                     weapon = json.loads(path.read_text(encoding="utf-8")).get("weapon")
         if weapon not in ("SR", "RL"):
             continue
-        known = slug in TIMED_CHARGE_MOTION_DELAY or slug in NO_CHARGE_MOTION_DELAY
+        known = (slug in TIMED_CHARGE_MOTION_DELAY
+                 or slug in NO_CHARGE_MOTION_DELAY
+                 or slug in INFERRED_NO_CHARGE_MOTION_DELAY)
         if not known and not get_charge_motion_delay(slug):
             silent.append(slug)
     assert silent == []
+
+
+def test_a_zero_pause_charge_weapon_always_has_a_rate_of_fire():
+    """The floor branch of `shot_interval_with_speed` is only reachable by a
+    unit whose pause is zero, and for her the bound has to come from somewhere.
+    Every one of them carries her weapon's own rate of fire - which is the
+    finding rather than a coincidence: the units Fienn checked in game and
+    found no pause on are exactly the units whose rate of fire is above the
+    charge class's 60 rounds/min. A new zero-pause unit missing from the table
+    would be modelled as able to fire arbitrarily fast under charge speed."""
+    from app.skill_rules.registry import (INFERRED_NO_CHARGE_MOTION_DELAY,
+                                          NO_CHARGE_MOTION_DELAY,
+                                          get_charge_motion_delay)
+
+    for slug in NO_CHARGE_MOTION_DELAY | INFERRED_NO_CHARGE_MOTION_DELAY:
+        assert charge_interval_floor_for(slug) is not None, slug
+    # The reverse too: a pause and a rate-of-fire floor are ALTERNATIVES, so a
+    # unit in the table who also carried a pause would have one of the two
+    # silently unread.
+    for slug in CHARGE_ROUNDS_PER_MINUTE:
+        assert get_charge_motion_delay(slug) == 0.0, slug
 
 
 def test_a_timed_unit_carries_its_own_delay_rather_than_the_shared_default():
@@ -890,18 +945,17 @@ def test_charge_motion_delay_lengthens_the_shot_interval_and_nothing_else():
     assert len(with_delay) < len(without)
 
 
-# --- The cadence floor stands in for an UNMEASURED motion delay -----------
-# CHARGE_INTERVAL_FLOOR_SECONDS (10/29) is what remained of Cinderella's cadence
-# once a +100% charge-speed buff took her charge to zero - i.e. her own
-# fire-to-charge gap, generalised to everyone because nobody else's was known.
-# A unit whose delay HAS been timed already carries that bound explicitly, so
-# flooring her charge on top double-counts it, and for a charge shorter than the
-# floor it cancels charge-speed buffs outright.
+# --- The cadence floor is the weapon's own rate of fire --------------------
+# A charge weapon with no fire-to-charge pause is bounded instead by
+# `shot_detail.rate_of_fire`, which is per unit (attack_rate's
+# CHARGE_ROUNDS_PER_MINUTE). A unit whose pause HAS been timed already carries
+# that bound explicitly, so flooring her charge on top double-counts it, and
+# for a charge shorter than the floor it cancels charge-speed buffs outright.
 
 def test_a_timed_units_charge_is_not_floored_because_her_delay_already_bounds_her():
     """Scarlet: Black Shadow's real cycle is a 0.30 sec charge plus a 0.43 sec
     motion delay (Fienn, 2026-07-28). Liberalio cuts a flat 0.19 sec off the
-    CHARGE. Flooring the 0.30 charge at 10/29 would swallow the whole cut."""
+    CHARGE. Flooring the 0.30 charge at all would swallow the whole cut."""
     from app.attack_rate import shot_interval_with_speed
 
     unbuffed = shot_interval_with_speed(0.30, 0.0, 0.0, motion_delay=0.43)
@@ -911,19 +965,20 @@ def test_a_timed_units_charge_is_not_floored_because_her_delay_already_bounds_he
     assert with_liberalio == pytest.approx(0.54, abs=0.001)
 
 
-def test_a_unit_with_no_timed_delay_still_gets_the_floor():
+def test_a_unit_with_no_pause_is_bounded_by_her_own_rate_of_fire():
     """Cinderella holds a permanent +100% charge speed from her own kit, so her
-    charge is zero all fight and the floor IS her cadence. Nothing about her
-    may move until someone times her."""
-    from app.attack_rate import shot_interval_with_speed, CHARGE_INTERVAL_FLOOR_SECONDS
+    charge is zero all fight and her weapon's 180 rounds/min IS her cadence.
+    Her old 10/29 was that same number read one shot short."""
+    from app.attack_rate import shot_interval_with_speed
 
-    assert shot_interval_with_speed(1.0, 1.0) == pytest.approx(CHARGE_INTERVAL_FLOOR_SECONDS)
-    assert shot_interval_with_speed(1.0, 0.0) == pytest.approx(1.0)
+    floor = charge_interval_floor_for("cinderella")
+    assert shot_interval_with_speed(1.0, 1.0, interval_floor=floor) == pytest.approx(1 / 3)
+    assert shot_interval_with_speed(1.0, 0.0, interval_floor=floor) == pytest.approx(1.0)
 
 
 def test_a_timed_delay_bounds_the_cadence_where_the_floor_used_to():
     # Mint at +100% charge speed: her charge really does reach zero, and what is
-    # left is her own 0.39, not Cinderella's 0.345 stacked on top of it.
+    # left is her own 0.39, not another unit's floor stacked on top of it.
     from app.attack_rate import shot_interval_with_speed
 
     assert shot_interval_with_speed(1.0, 1.0, motion_delay=0.39) == pytest.approx(0.39)

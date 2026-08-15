@@ -223,10 +223,17 @@ def test_flawless_glass_charge_speed_is_the_raw_skill_value():
 
 
 def test_flawless_glass_reproduces_the_measured_shots_per_ten_seconds():
-    # Fienn measured 29-30 shots in 10 sec with the buff up and no reload.
-    from app.attack_rate import charge_time_with_speed
-    interval = charge_time_with_speed(1.0, flawless_glass_charge_speed(CINDERELLA))
-    assert 10.0 / interval == pytest.approx(29, abs=0.5)  # measured 29-30
+    """Fienn measured 29-30 shots in 10 sec with the buff up and no reload.
+
+    Her charge really does reach zero, so what the reading actually timed was
+    her weapon's own 180 rounds/min - 0.33333 sec, exactly 30 shots, the top of
+    that range. The engine used to read it as a pause of 10/29 sec and generalise
+    it to every charge weapon (attack_rate.CHARGE_ROUNDS_PER_MINUTE)."""
+    from app.attack_rate import charge_interval_floor_for, charge_time_with_speed
+    interval = charge_time_with_speed(
+        1.0, flawless_glass_charge_speed(CINDERELLA),
+        interval_floor=charge_interval_floor_for("cinderella"))
+    assert 10.0 / interval == pytest.approx(29.5, abs=0.5)  # measured 29-30
 
 
 def test_flawless_glass_charge_speed_is_a_permanent_self_buff():

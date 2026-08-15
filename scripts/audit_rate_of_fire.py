@@ -1,4 +1,4 @@
-"""`attack_rate`의 연사 표 둘을 수집 데이터와 대조한다.
+"""`attack_rate`의 연사 표 셋을 수집 데이터와 대조한다.
 
 언제 쓰나: 로스터를 재동기화한 뒤, 새 니케를 온보딩한 뒤, 그리고 연사가 관련된
 값을 만지기 전에. 표는 손으로 적혀 있고 데이터는 갱신되므로 둘이 갈라지는 날이
@@ -18,9 +18,11 @@
 평타가 4.8배였다. 아무도 이 필드를 안 보고 있었기 때문에 조용히 통과했고, 같은
 모양의 유닛이 온보딩되면 또 통과한다.
 
-차지 무기(RL/SR)는 제외한다 — 케이던스를 `charge_time`과 유닛별 모션 딜레이로
-잡으므로 `RATE_OF_FIRE_60FPS`를 아예 안 읽는다. 그쪽의 `rate_of_fire`가 무엇을
-뜻하는지는 미해결이라 여기서 판정하지 않는다(`docs/engine-gaps.md`).
+차지 무기(RL/SR)도 같은 세 가지를 보되 표는 `CHARGE_ROUNDS_PER_MINUTE`다. 그쪽의
+`rate_of_fire`는 케이던스가 아니라 **바닥값**이다 — 차지가 0이 돼도 남는 가장 짧은
+발 간격이고, 멈춤이 없는 유닛에게만 걸린다. 그래서 클래스 기본값(60)과 엔진 상수를
+맞춰 보는 검사는 차지 무기엔 돌리지 않는다: 스칼렛: 블랙 섀도우가 그 기본값을
+가진 채 0.7325초마다 쏘므로 60은 바닥값이 아니다.
 
 테스트가 아니라 스크립트인 이유: `data/`는 gitignore라 워크트리나 CI에서 없을 수
 있고, 조건부 테스트로 만들면 데이터가 없는 곳에서 조용히 skip된다.
@@ -33,8 +35,9 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parents[1] / "backend"))
 
-from app.attack_rate import (CHARGE_WEAPONS, RATE_OF_FIRE_60FPS,  # noqa: E402
-                             ROUNDS_PER_MINUTE, rounds_per_second)
+from app.attack_rate import (CHARGE_ROUNDS_PER_MINUTE, CHARGE_WEAPONS,  # noqa: E402
+                             RATE_OF_FIRE_60FPS, ROUNDS_PER_MINUTE,
+                             rounds_per_second)
 from app.skill_rules.registry import ENCODED_SLUGS  # noqa: E402
 from audit_core_damage_rate import RAW_NAME_ALIASES, character_name  # noqa: E402
 
@@ -88,33 +91,37 @@ def main():
             problems.append(f"{slug}: raw에 {name!r}가 없다")
             continue
         rid, weapon, rpm = observed[name]
-        if weapon in CHARGE_WEAPONS:
-            continue
         checked += 1
+        charge = weapon in CHARGE_WEAPONS
+        table_name = "CHARGE_ROUNDS_PER_MINUTE" if charge else "ROUNDS_PER_MINUTE"
+        table = CHARGE_ROUNDS_PER_MINUTE if charge else ROUNDS_PER_MINUTE
         class_rpm = per_weapon[weapon].most_common(1)[0][0]
-        listed = ROUNDS_PER_MINUTE.get(slug)
+        listed = table.get(slug)
         if rpm == class_rpm:
             if listed is not None:
                 problems.append(
                     f"{slug}: 데이터가 클래스와 같은 {rpm:.0f}인데 "
-                    f"ROUNDS_PER_MINUTE에 {listed}로 올라 있다")
+                    f"{table_name}에 {listed}로 올라 있다")
             continue
         overrides_seen[slug] = (rid, weapon, rpm, class_rpm)
         if listed is None:
             problems.append(
                 f"{slug}: {weapon} 클래스는 {class_rpm:.0f}인데 데이터는 "
-                f"{rpm:.0f}(rid {rid}) - ROUNDS_PER_MINUTE에 없다")
+                f"{rpm:.0f}(rid {rid}) - {table_name}에 없다")
         elif float(listed) != rpm:
             problems.append(
                 f"{slug}: 데이터는 {rpm:.0f}(rid {rid})인데 표는 {listed}")
 
-    print(f"{checked}슬러그 대조 (차지 무기 제외)")
+    print(f"{checked}슬러그 대조")
     for weapon, counts in sorted(per_weapon.items()):
-        if weapon in CHARGE_WEAPONS:
-            continue
         class_rpm = counts.most_common(1)[0][0]
-        engine = RATE_OF_FIRE_60FPS.get(weapon)
         derived = rounds_per_second(class_rpm)
+        if weapon in CHARGE_WEAPONS:
+            # 차지 무기의 클래스 값은 바닥값이 아니다 - 위 독스트링 참고.
+            print(f"  {weapon:<4} 클래스 {class_rpm:>6.0f}발/분 -> {derived:>5.2f}발/초"
+                  f"  (바닥값 아님, 유닛별 표만 쓴다)")
+            continue
+        engine = RATE_OF_FIRE_60FPS.get(weapon)
         mark = "" if engine == derived else f"  <-- 표는 {engine}"
         print(f"  {weapon:<4} 클래스 {class_rpm:>6.0f}발/분 -> {derived:>5.2f}발/초"
               f"  (엔진 {engine}){mark}")
@@ -129,7 +136,8 @@ def main():
         print(f"  {slug:<28}{weapon:<4} {rpm:>6.0f}발/분 -> "
               f"{rounds_per_second(rpm):>5.2f}발/초  (클래스 {class_rpm:.0f}, rid {rid})")
 
-    for slug in sorted(set(ROUNDS_PER_MINUTE) - set(ENCODED_SLUGS)):
+    listed_slugs = set(ROUNDS_PER_MINUTE) | set(CHARGE_ROUNDS_PER_MINUTE)
+    for slug in sorted(listed_slugs - set(ENCODED_SLUGS)):
         print(f"  (표에만 있고 인코딩 안 된 슬러그: {slug})")
 
     if problems:
@@ -137,7 +145,7 @@ def main():
         for line in problems:
             print(f"  {line}", file=sys.stderr)
         return 1
-    print("\nattack_rate의 연사 표 둘 다 수집 데이터와 일치한다.")
+    print("\nattack_rate의 연사 표 셋 다 수집 데이터와 일치한다.")
     return 0
 
 

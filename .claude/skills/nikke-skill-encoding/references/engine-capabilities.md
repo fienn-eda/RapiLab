@@ -803,8 +803,27 @@ fires 150/min, not 720, and the class constant made her normal attack **4.8x**
 the field lives only in ShiftyPad raw bundles keyed by rid (dotgg, where most
 units' weapon stats come from, has no rate field at all), so
 `scripts/audit_rate_of_fire.py` is what decides membership by comparing every
-encoded slug against the collected data. Charge weapons are out of scope — they
-never read the class table.
+encoded slug against the collected data.
+
+**A charge weapon's rpm is a FLOOR, not a cadence (2026-08-15).** RL/SR units
+never read `RATE_OF_FIRE_60FPS` — their cadence is `charge_time` plus the
+unit's own fire-to-charge pause. Their `rate_of_fire` is instead the shortest
+gap the weapon can fire at, which only binds once charge speed drives the
+charge toward zero, and it lives in `attack_rate.CHARGE_ROUNDS_PER_MINUTE`
+(joined onto the timeline by `roster` as `charge_interval_floor`, read by
+`shot_interval_with_speed`'s `interval_floor`). Five of the 31 collected charge
+weapons beat the 60/min default: Laplace: Ultimate Hero and Neon: Vision Eye
+300, Liberalio 200, Cinderella 180, Anis: Star 120 — 12, 12, 18, 20 and 30
+whole frames. **Those five are exactly the units with no pause**, which is the
+finding rather than a coincidence: a pause and a rate-of-fire floor are
+ALTERNATIVES (applying both counts the same wait twice), and
+`test_a_zero_pause_charge_weapon_always_has_a_rate_of_fire` pins that every
+zero-pause slug has an entry and no entry also carries a pause. The class
+default 60/min is NOT a floor and is deliberately absent from the table —
+Scarlet: Black Shadow carries it and fires every 0.7325 sec — so a unit not in
+the table has no floor but the frame grid. See
+`registry.INFERRED_NO_CHARGE_MOTION_DELAY` for the one zero that is inferred
+from this table rather than timed in game.
 
 `attack_rate.generate_segmented_shots()` builds a per-segment ShotRecord
 timeline instead of one flat cadence: inside a segment the unit's BASE

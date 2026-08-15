@@ -15,7 +15,7 @@ the burst cycle (e.g. Helm: Aquamarine's Aegis Cannon Suppression Fire) - see
 separate from `_BUILDERS` so the ~25 existing builders' 2-tuple return shape
 never has to change for the one or two Nikkes that need this.
 """
-from app.attack_rate import CHARGE_INTERVAL_FLOOR_SECONDS, CHARGE_MOTION_DELAY_SECONDS
+from app.attack_rate import CHARGE_MOTION_DELAY_SECONDS
 from app.skill_rules._helpers import (SQUAD_DISTRIBUTED_DAMAGE_BUFF_SLUGS,
                                       SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS)
 from app.skill_rules.ada_wong import build_ada_wong_rules, build_flash_grenade_periodic_nuke
@@ -1296,16 +1296,6 @@ TIMED_CHARGE_MOTION_DELAY = {
     # one weapon, so both slugs share the pause.
     "centi": centi.CHARGE_MOTION_DELAY,
     "centi-signature": centi.CHARGE_MOTION_DELAY,
-    # Cinderella's was measured before this table existed and was filed as
-    # something else: `attack_rate.CHARGE_INTERVAL_FLOOR_SECONDS` (10/29 sec) is
-    # what remained of her cadence once Flawless Glass's +100% Charge Speed took
-    # her 1.0-sec charge to zero, i.e. 29 shots in 10 sec with no reload. What
-    # remains when the charge vanishes IS the pause, so it is her timing, not a
-    # generic floor - snow_white_heavy_arms.py's docstring reaches the same
-    # reading independently. Naming it here also stops the double count:
-    # `shot_interval_with_speed` applies the floor only to a unit with no
-    # delay of her own.
-    "cinderella": CHARGE_INTERVAL_FLOOR_SECONDS,   # 0.34483
 }
 
 # Charge weapons Fienn has checked and found NO pause on. The engine's default
@@ -1319,6 +1309,20 @@ NO_CHARGE_MOTION_DELAY = frozenset({
     "neon-vision-eye",
     "laplace-ultimate-hero",
     "anis-star",
+})
+
+# 실측이 아니라 데이터에서 유도된 0. 신데렐라의 「멈춤 0.34483초」는 사실 멈춤이
+# 아니라 그녀 무기의 **180발/분 연사 상한**이었다: 그 값은 차속 +100%로 그녀의
+# 1.0초 차지를 0으로 만든 상태의 판독(10초에 29~30발)에서 보수적인 29를 골라
+# 10/29로 적은 것인데, 데이터가 말하는 180발/분은 0.33333초 = 정확히 30발이고
+# 60fps 격자 위의 정수 프레임(20)이다. 위 넷이 전부 연사가 60을 넘는 유닛이라는
+# 것이 이 읽기를 떠받친다 - `attack_rate.CHARGE_ROUNDS_PER_MINUTE`.
+#
+# 그래서 멈춤은 0으로 두고 상한을 따로 준다. **다만 그녀의 멈춤을 직접 잰 사람은
+# 아직 없다** - 위 넷과 달리 관측이 아니라 추론이므로 `audit_charge_motion_delay.py`가
+# 계속 질문으로 띄운다.
+INFERRED_NO_CHARGE_MOTION_DELAY = frozenset({
+    "cinderella",
 })
 
 # What an untimed charge weapon carries until someone puts a clock on her.
@@ -1363,7 +1367,7 @@ _CHARGE_MOTION_DELAY = {
     **{slug: ASSUMED_CHARGE_MOTION_DELAY_SECONDS for slug in _ASSUMED_CHARGE_MOTION_DELAY},
     # A measured answer always wins over the stand-in, including a measured zero.
     **TIMED_CHARGE_MOTION_DELAY,
-    **{slug: 0.0 for slug in NO_CHARGE_MOTION_DELAY},
+    **{slug: 0.0 for slug in NO_CHARGE_MOTION_DELAY | INFERRED_NO_CHARGE_MOTION_DELAY},
 }
 
 

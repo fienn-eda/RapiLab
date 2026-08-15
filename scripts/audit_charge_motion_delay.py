@@ -15,9 +15,16 @@ encoding any SR/RL Nikke.
 An unchecked unit no longer sits at zero: she carries the frame-resolved 22
 frames Bready and Centi share (registry.ASSUMED_CHARGE_MOTION_DELAY_SECONDS),
 which is a better guess than "no pause at all" but is still a guess - the real
-values run 0.34 to 0.43 and four units have none. So BOTH `assumed` and
-`UNVERIFIED` are questions for Fienn, and the exit code stays non-zero while
-either is non-empty.
+values run 0.34 to 0.43 and four units have none. So `assumed`, `inferred` and
+`UNVERIFIED` are all questions for Fienn, and the exit code stays non-zero while
+any of them is non-empty.
+
+`inferred` is a zero nobody watched: the four units confirmed to have no pause
+are exactly the four whose `shot_detail.rate_of_fire` beats the charge class's
+60 rounds/min, and Cinderella is the fifth unit with such a rate of fire
+(attack_rate.CHARGE_ROUNDS_PER_MINUTE). That reading is what her old "pause" of
+10/29 sec really was - her weapon's 180 rounds/min showing through once her
+charge hit zero - but it is an inference from a table, not a clock on her.
 
 How Fienn times one (see docs/insights.md): read the Full Burst clock at the
 instant the charged bullet leaves and again when the next charge gauge starts
@@ -37,7 +44,9 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "backend"))
 
+from app.attack_rate import charge_interval_floor_for  # noqa: E402
 from app.skill_rules.registry import (  # noqa: E402
+    INFERRED_NO_CHARGE_MOTION_DELAY,
     NO_CHARGE_MOTION_DELAY,
     TIMED_CHARGE_MOTION_DELAY,
     _BUILDERS,
@@ -84,28 +93,35 @@ def main():
             status = "TIMED"
         elif slug in NO_CHARGE_MOTION_DELAY:
             status = "none (confirmed)"
+        elif slug in INFERRED_NO_CHARGE_MOTION_DELAY:
+            status = "none (inferred)"
         elif get_charge_motion_delay(slug):
             status = "assumed"
         else:
             status = "UNVERIFIED"
-        rows.append((status, slug, weapon or "?", get_charge_motion_delay(slug)))
+        floor = charge_interval_floor_for(slug)
+        rows.append((status, slug, weapon or "?", get_charge_motion_delay(slug), floor))
 
-    order = {"TIMED": 0, "assumed": 1, "none (confirmed)": 2, "UNVERIFIED": 3}
-    print(f"{'status':<17} {'unit':<38} {'wpn':<4} {'delay':>6}")
-    for status, slug, weapon, delay in sorted(rows, key=lambda r: (order[r[0]], r[1])):
-        print(f"{status:<17} {slug:<38} {weapon:<4} {delay:>6.2f}")
+    order = {"TIMED": 0, "assumed": 1, "none (confirmed)": 2,
+             "none (inferred)": 3, "UNVERIFIED": 4}
+    print(f"{'status':<17} {'unit':<38} {'wpn':<4} {'delay':>6} {'floor':>7}")
+    for status, slug, weapon, delay, floor in sorted(rows, key=lambda r: (order[r[0]], r[1])):
+        shown = f"{floor:.3f}" if floor is not None else "-"
+        print(f"{status:<17} {slug:<38} {weapon:<4} {delay:>6.2f} {shown:>7}")
 
     unverified = [r for r in rows if r[0] == "UNVERIFIED"]
     assumed = [r for r in rows if r[0] == "assumed"]
+    inferred = [r for r in rows if r[0] == "none (inferred)"]
     print(f"\n{len(rows)} charge-weapon units: "
           f"{sum(1 for r in rows if r[0] == 'TIMED')} timed, {len(assumed)} assumed, "
-          f"{sum(1 for r in rows if r[0].startswith('none'))} confirmed none, "
-          f"{len(unverified)} UNVERIFIED")
-    unanswered = unverified + assumed
+          f"{sum(1 for r in rows if r[0] == 'none (confirmed)')} confirmed none, "
+          f"{len(inferred)} inferred none, {len(unverified)} UNVERIFIED")
+    unanswered = unverified + assumed + inferred
     if unanswered:
         print("\nASK FIENN whether these pause between a charged shot and the next charge.")
         print("An `assumed` row is carrying a stand-in, not an answer - it is still wrong")
         print("for whoever turns out to have no pause at all, as four checked units do.")
+        print("An `inferred` row is a zero read off the rate-of-fire table, not a clock.")
         print("   " + ", ".join(sorted(r[1] for r in unanswered)))
     return 1 if unanswered else 0
 

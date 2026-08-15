@@ -10,6 +10,7 @@ calculator applies, because WHO receives it is itself part of the rule.
 """
 from dataclasses import dataclass
 
+from app.attack_rate import charge_interval_floor_for
 from app.charge_window import WindowInputs, aggregate_charge_speed
 from app.cube_effects import DEFAULT_CUBE, assumed_cube_effects, cube_refund_for
 from app.effects import EffectRegistry
@@ -168,6 +169,7 @@ def build_inputs(state, with_liberalio, overrides, liberalio_state=None,
     return WindowInputs(
         charge_time=weapon["charge_time"],
         motion_delay=get_charge_motion_delay(spec.slug),
+        interval_floor=charge_interval_floor_for(spec.slug),
         max_ammo=max(1, round(weapon["max_ammo"] * (1 + total_ammo_percent))),
         reload_time=weapon["reload_time"],
         charge_speed_percent=charge_speed,
