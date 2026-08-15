@@ -7,7 +7,9 @@ import pytest
 from app.effects import EffectRegistry, ResourceSpec
 from app.raid_simulator import simulate_raid
 from app.skill_rules.cinderella import (
+    GLASS_SLIPPERS_FIRST_HIT_DELAY,
     GLASS_SLIPPERS_HIT_COUNT,
+    GLASS_SLIPPERS_HIT_INTERVAL,
     build_beautiful_max_hp_rules,
     build_beautiful_resources,
     build_flawless_glass_charge_speed_rules,
@@ -159,7 +161,11 @@ def test_glass_slippers_additional_hit_mirrors_beautiful_stack_count():
     assert spec["cap"] == 12
     assert spec["base_percent"] == 28.9
     assert spec["scale_fn"](7) == 7  # mirrors the count directly
-    assert (spec["tick_count"], spec["tick_interval"]) == (1, 0.0)
+    # One rider per burst HIT on the measured cadence, not a single hit at cast
+    # time: Fienn counted ten of them in-game (2026-08-15).
+    assert (spec["tick_count"], spec["tick_interval"]) == (
+        GLASS_SLIPPERS_HIT_COUNT, GLASS_SLIPPERS_HIT_INTERVAL)
+    assert spec["fire_delay"] == GLASS_SLIPPERS_FIRST_HIT_DELAY
 
 
 def test_cinderella_end_to_end_burst_hits_and_mirrored_additional_hit():
@@ -204,9 +210,72 @@ def test_cinderella_end_to_end_burst_hits_and_mirrored_additional_hit():
     assert all(round(h["damage"], 4) == round(offense * 13.6592, 4) for h in burst_hits)
     # burst fires at t=9 (gauge_charge_time); Beautiful ticks at t=3,6,9 -> 3
     # stacks by then -> mirrored hit percent = 28.9 * 3.
-    assert len(mirrored) == 1
-    assert round(mirrored[0]["damage"], 4) == round(offense * (28.9 * 3 / 100), 4)
+    #
+    # Ten riders, one per burst hit: 0.95s after the cast, then 0.2s apart
+    # (t=9.95 .. 11.75). The next Beautiful tick is t=12, so all ten read the
+    # same 3 stacks. They land INSIDE the Full Burst window the cast opened, so
+    # unlike the burst hits themselves they collect its +0.5 - the measured
+    # asymmetry (Fienn, 2026-08-15).
+    assert len(mirrored) == GLASS_SLIPPERS_HIT_COUNT
+    assert all(round(m["damage"], 4) == round(offense * (28.9 * 3 / 100) * 1.5, 4)
+               for m in mirrored)
     assert len(per_shot_hits) > 0  # every full-charge shot deals the 136.6% additional hit
+
+
+def test_glass_slippers_riders_read_the_stack_count_at_their_own_hit_time():
+    """Fienn's in-game reading (2026-08-15): bursting at zero Beautiful stacks,
+    exactly FOUR of the ten riders dealt damage - the ones landing after the
+    first stack arrived.
+
+    The measured cadence (first hit 0.95s after the cast, then every 0.2s)
+    reproduces that count only if each rider reads the resource at its OWN
+    time. Freeze them all at cast time and every rider reads zero; fire them
+    all at cast time and the four that mattered never separate from the six
+    that did not.
+    """
+    deck = [
+        {"slug": "buffer", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "cinderella", "burst_tier": 3, "element": "Fire", "cooldown": 40.0},
+    ]
+    base_stats = {
+        "buffer": {"atk": 0, "def": 0, "max_hp": 0},
+        "midtier": {"atk": 0, "def": 0, "max_hp": 0},
+        "cinderella": {"atk": 10000, "def": 0, "max_hp": CASTER_MAX_HP},
+    }
+    weapon_stats = {
+        "cinderella": {"weapon": "RL", "damage_percent": 10.0, "max_ammo": 20,
+                       "reload_time": 1.0, "charge_time": 1.0, "charge_damage_percent": 100.0},
+    }
+    result = simulate_raid(
+        deck,
+        {"buffer": [], "midtier": [], "cinderella": []},
+        burst_damage_percents={"cinderella": glass_slippers_burst_percent(CINDERELLA)},
+        base_stats=base_stats,
+        # Burst at t=1, before Beautiful's first tick at t=3: the riders then
+        # straddle that tick (t=1.95 .. 3.75) instead of all reading one count.
+        enemy_def=0, gauge_charge_time=1.0, fight_duration=15.0, mode="auto", base_crit_rate=0.0,
+        weapon_stats=weapon_stats,
+        resource_specs={"cinderella": build_beautiful_resources(CINDERELLA)},
+        resource_scaled_nukes={"cinderella": build_glass_slippers_resource_scaled_nuke(CINDERELLA)},
+        burst_hit_counts={"cinderella": GLASS_SLIPPERS_HIT_COUNT},
+    )
+    burst_time = next(e["time"] for e in result["events"]
+                      if e["type"] == "burst" and e["slug"] == "cinderella")
+    assert burst_time == pytest.approx(1.0)
+
+    riders = sorted((e for e in result["damage_log"] if e["source"] == "resource_scaled_nuke"),
+                    key=lambda e: e["time"])
+    assert len(riders) == GLASS_SLIPPERS_HIT_COUNT
+    expected_times = [burst_time + GLASS_SLIPPERS_FIRST_HIT_DELAY + i * GLASS_SLIPPERS_HIT_INTERVAL
+                      for i in range(GLASS_SLIPPERS_HIT_COUNT)]
+    assert [r["time"] for r in riders] == pytest.approx(expected_times)
+
+    # Beautiful's first stack lands at t=3.0, so riders at 3.15/3.35/3.55/3.75
+    # mirror one stack and the six before it mirror none.
+    paid = [r for r in riders if r["damage"] > 0]
+    assert len(paid) == 4
+    assert [r["time"] for r in paid] == pytest.approx([3.15, 3.35, 3.55, 3.75])
 
 
 # Module-level fixture aliases so the assembly verification harness

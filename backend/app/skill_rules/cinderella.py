@@ -16,8 +16,19 @@ Modeled (DPS-relevant):
 - Glass Slippers, Full Contact. (skills[2], her burst): deals 1365.92% of final
   ATK as damage, attacking sequentially 10 times - 10 separate hits
   (`burst_hit_counts`, each independently defense-subtracted). While in
-  Beautiful status, an additional hit whose magnitude "mirrors the stack count
-  of Beautiful" (28.9% * count, via `resource_scaled_nukes`).
+  Beautiful status, each of those hits carries an additional hit whose
+  magnitude "mirrors the stack count of Beautiful" (28.9% * count, via
+  `resource_scaled_nukes`).
+
+  The two halves are computed at DIFFERENT instants, and that is the whole of
+  why they are wired differently (Fienn's range test, 2026-08-15). The ten
+  1365.92% hits are settled at the CAST - they land 0.95..2.75 sec later, on
+  the measured 0.200 sec cadence, but they carry the cast's buffs and no Full
+  Burst bonus, so recording them at cast time is what makes their damage right.
+  The riders resolve later: each mirrors the Beautiful count at its own landing
+  time and collects the Full Burst bonus the window pays. Measured, the riders
+  take 2.04x / 2.08x the per-percent damage the burst bullet takes, in two
+  range tests at 1 and 12 stacks.
 
 Not modeled / deferred:
 - Decoy creation (both the battle-start and burst-tier-3-entry copies) - pure
@@ -52,6 +63,13 @@ SKILL_VALUE_MANIFESTS = {
 
 
 GLASS_SLIPPERS_HIT_COUNT = 10  # skill text: "Attacks sequentially for 10 time(s)" (fixed, not a data slot)
+
+# The cadence the ten hits actually land on, measured in-game (Fienn,
+# 2026-08-15): the first lands 0.95 sec after the cast and they are 0.200 sec
+# apart, so the volley spans 1.80 sec. Neither number is in the skill data -
+# "sequentially" is the only word the text spends on timing.
+GLASS_SLIPPERS_FIRST_HIT_DELAY = 0.95
+GLASS_SLIPPERS_HIT_INTERVAL = 0.2
 
 
 def glass_slippers_burst_percent(values):
@@ -143,10 +161,26 @@ def build_beautiful_max_hp_rules(values, caster_max_hp):
 
 
 def build_glass_slippers_resource_scaled_nuke(values):
+    """The mirrored additional hit - one per burst HIT, not one per burst.
+
+    Fienn's in-game reading (2026-08-15) settles three things the skill text
+    does not say. Ten of these riders appear, one per hit. They land on the
+    measured cadence (0.95 sec after the cast, then 0.200 sec apart), which is
+    why each one mirrors the Beautiful count at ITS OWN time: bursting at zero
+    stacks, exactly the four riders landing after the first stack arrived dealt
+    damage. And because that cadence puts every rider inside the Full Burst
+    window the cast opened, they collect its +0.5 while the burst bullet -
+    computed at the cast, one beat before the window - does not. The range-test
+    pair reads that asymmetry directly: the riders take 2.04x/2.08x the
+    per-percent damage the burst bullet takes.
+    """
     gs = values["glass_slippers"]
     additional = float(gs["description_value_03"])
     cap = int(float(values["dirt_resistant_mirror"]["description_value_05"]))
     return [{
         "resource": "beautiful", "cap": cap, "base_percent": additional,
-        "scale_fn": lambda count: count, "tick_count": 1, "tick_interval": 0.0,
+        "scale_fn": lambda count: count,
+        "tick_count": GLASS_SLIPPERS_HIT_COUNT,
+        "tick_interval": GLASS_SLIPPERS_HIT_INTERVAL,
+        "fire_delay": GLASS_SLIPPERS_FIRST_HIT_DELAY,
     }]
