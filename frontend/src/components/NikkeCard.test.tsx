@@ -154,3 +154,113 @@ describe('NikkeCard', () => {
     expect(screen.queryByRole('button')).not.toBeInTheDocument()
   })
 })
+
+// 인게임 장비 화면을 되돌린 표시다: 네 부위를 정사각으로 놓고, 부위마다 옵션
+// 행 셋을 세우고, 롤을 수치가 아니라 단계로 강조한다.
+describe('NikkeCard 오버로드 상세', () => {
+  // 머리에 세 행이 다 찼고, 몸통에 한 행만 있고, 팔·다리는 비었다.
+  const geared = (): NikkeDraft => ({
+    ...makeEmptyDraft(),
+    overload_options: [
+      {
+        id: '1',
+        name: '우월코드 대미지 증가',
+        value: '55.52',
+        lines: [
+          { slot: 'head', index: 1, value: 29.16, level: 15 },
+          { slot: 'head', index: 3, value: 26.36, level: 13 },
+        ],
+      },
+      {
+        id: '2',
+        name: '공격력 증가',
+        value: '15.88',
+        lines: [
+          { slot: 'head', index: 2, value: 11.11, level: 10 },
+          { slot: 'torso', index: 1, value: 4.77, level: 1 },
+        ],
+      },
+    ],
+  })
+
+  const detailCard = (draft: NikkeDraft = geared()) =>
+    render(
+      <NikkeCard draft={draft} index={0} name="Crown" element="Fire" portrait={null}
+        overloadDetail />,
+    )
+
+  it('네 부위를 인게임 배치 순서로 그린다', () => {
+    detailCard()
+    const slots = screen.getAllByRole('heading', { level: 4 }).map((h) => h.textContent)
+    expect(slots).toEqual(['머리', '몸통', '팔', '다리'])
+  })
+
+  it('부위마다 옵션 행을 셋 그린다 - 롤이 없는 행도 자리를 지킨다', () => {
+    const { container } = detailCard()
+    expect(container.querySelectorAll('.gear__piece')).toHaveLength(4)
+    expect(container.querySelectorAll('.gear__roll')).toHaveLength(12)
+  })
+
+  it('한 부위 안을 인게임과 같은 옵션 행 순서로 세운다', () => {
+    const { container } = detailCard()
+    const head = container.querySelector('.gear__piece')!
+    const names = [...head.querySelectorAll('.gear__name')].map((n) => n.textContent)
+    expect(names).toEqual(['[우월코드 대미지]', '[공격력]', '[우월코드 대미지]'])
+  })
+
+  it('요약의 축약이 아니라 인게임처럼 전체 이름을 쓴다', () => {
+    detailCard()
+    expect(screen.getAllByText('[우월코드 대미지]').length).toBeGreaterThan(0)
+    expect(screen.queryByText('우코')).not.toBeInTheDocument()
+  })
+
+  it('합계가 아니라 롤 하나하나의 수치를 보여준다', () => {
+    detailCard()
+    expect(screen.getByText('29.16%')).toBeInTheDocument()
+    expect(screen.getByText('26.36%')).toBeInTheDocument()
+    // 55.52는 두 롤의 합계다 - 상세 모드가 말하는 값이 아니다.
+    expect(screen.queryByText('55.52%')).not.toBeInTheDocument()
+  })
+
+  it('15단계 롤을 최고 강조로 표시한다', () => {
+    detailCard()
+    expect(screen.getByText('29.16%').closest('.gear__roll')).toHaveAttribute('data-tier', 'max')
+  })
+
+  it('12~14단계 롤을 중간 강조로 표시한다', () => {
+    detailCard()
+    expect(screen.getByText('26.36%').closest('.gear__roll')).toHaveAttribute('data-tier', 'high')
+  })
+
+  it('11단계 이하는 강조하지 않는다', () => {
+    detailCard()
+    expect(screen.getByText('11.11%').closest('.gear__roll')).not.toHaveAttribute('data-tier')
+  })
+
+  it('끄면 격자 대신 요약 줄로 돌아간다', () => {
+    const { container } = render(
+      <NikkeCard draft={geared()} index={0} name="Crown" element="Fire" portrait={null} />,
+    )
+    expect(container.querySelector('.gear')).toBeNull()
+    expect(screen.getByText('우코')).toBeInTheDocument()
+  })
+
+  // 합계는 롤로 되돌릴 수 없다. 격자를 그리면 스탯이 통째로 빠진 채 완성된
+  // 장비처럼 보이므로, 요약을 지키고 왜 못 보여주는지 말한다.
+  it('롤을 안 실은 옛 로스터는 요약을 지키고 재동기화를 안내한다', () => {
+    const { container } = detailCard({
+      ...makeEmptyDraft(),
+      overload_options: [{ id: '1', name: '공격력 증가', value: '18.2' }],
+    })
+    expect(container.querySelector('.gear')).toBeNull()
+    expect(screen.getByText('공')).toBeInTheDocument()
+    expect(screen.getByText(/다시 동기화/)).toBeInTheDocument()
+  })
+
+  it('오버로드가 아예 없으면 없다고만 말한다', () => {
+    const { container } = detailCard(makeEmptyDraft())
+    expect(container.querySelector('.gear')).toBeNull()
+    expect(screen.getByText('오버로드 없음')).toBeInTheDocument()
+    expect(screen.queryByText(/다시 동기화/)).not.toBeInTheDocument()
+  })
+})

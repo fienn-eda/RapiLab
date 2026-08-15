@@ -194,6 +194,9 @@ export const HELP = {
   roster: {
     importMalformedUnit: '유닛에 name_en/raid400이 없어요',
     emptyFilter: '조건에 맞는 니케가 없어요.',
+    /** 합계는 롤로 되돌릴 수 없다 - 부위별로 보여주려면 동기화가 롤을 실어야
+     * 한다. 왜 이 니케만 격자가 아닌지 말해주지 않으면 고장으로 읽힌다. */
+    gearNeedsResync: '부위별로 보려면 로스터를 **다시 동기화**해 주세요',
     importUnsupported: (count: number, names: string) =>
       `보유 유닛 중 ${count}기가 아직 미지원이라 추천에서 제외돼요: ${names}`,
     importUnmeasured: (count: number, names: string) =>

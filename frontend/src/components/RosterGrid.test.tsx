@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { RosterGrid } from './RosterGrid'
@@ -204,5 +204,81 @@ describe('RosterGrid', () => {
       await user.click(screen.getByRole('button', { name: '작열' }))
       expect(screen.getByText('2기 중 1기 표시 중')).toBeInTheDocument()
     })
+  })
+})
+
+// 인게임 장비 화면을 되돌려 보는 모드. 탭 전체가 한꺼번에 바뀌어야 유닛끼리
+// 같은 열에서 비교된다 - 카드마다 따로 펴면 그 비교가 깨진다.
+describe('RosterGrid 오버로드 상세 모드', () => {
+  const geared = (slug: string): NikkeDraft => ({
+    ...draft(slug),
+    overload_options: [
+      {
+        id: `${slug}-1`,
+        name: '우월코드 대미지 증가',
+        value: '29.16',
+        lines: [{ slot: 'head', index: 1, value: 29.16, level: 15 }],
+      },
+    ],
+  })
+
+  const gearedGrid = (slugs: string[] = ['crown', 'liter']) =>
+    render(
+      <RosterGrid
+        drafts={slugs.map(geared)}
+        supportedUnits={SUPPORTED}
+        portraitFor={() => null}
+      />,
+    )
+
+  const toggle = () => screen.getByRole('checkbox', { name: '오버로드 옵션 상세' })
+
+  beforeEach(() => localStorage.clear())
+
+  // 「우코」로 세지 않는다 - 정렬 메뉴에도 같은 글자가 있어 카드 밖까지 잡힌다.
+  it('기본은 요약 줄이다', () => {
+    const { container } = gearedGrid()
+    expect(toggle()).not.toBeChecked()
+    expect(container.querySelector('.gear')).toBeNull()
+    expect(container.querySelectorAll('.overload__name')).toHaveLength(2)
+  })
+
+  it('켜면 보이는 카드가 모두 장비 격자로 바뀐다', async () => {
+    const { container } = gearedGrid()
+    await userEvent.click(toggle())
+    expect(container.querySelectorAll('.gear')).toHaveLength(2)
+    expect(container.querySelectorAll('.overload__name')).toHaveLength(0)
+  })
+
+  // 매번 다시 켜게 만들면 모드가 아니라 잔소리가 된다 - 사이드바 접힘과 같다.
+  it('선택이 다음에 열 때까지 남는다', async () => {
+    const first = gearedGrid()
+    await userEvent.click(toggle())
+    first.unmount()
+
+    const { container } = gearedGrid()
+    expect(toggle()).toBeChecked()
+    expect(container.querySelectorAll('.gear')).toHaveLength(2)
+  })
+
+  // 사생활 모드 등으로 저장이 막혀도 모드 자체는 동작해야 한다.
+  it('저장이 막혀 있어도 켜진다', async () => {
+    const setItem = vi
+      .spyOn(Storage.prototype, 'setItem')
+      .mockImplementation(() => {
+        throw new Error('storage disabled')
+      })
+    const { container } = gearedGrid()
+    await userEvent.click(toggle())
+    expect(container.querySelectorAll('.gear')).toHaveLength(2)
+    setItem.mockRestore()
+  })
+
+  // 로스터가 비면 필터 툴바도 없다 - 아무것도 못 바꾸는 스위치만 남으면 안 된다.
+  it('지원 유닛이 하나도 없으면 스위치를 내놓지 않는다', () => {
+    render(
+      <RosterGrid drafts={[draft('2b')]} supportedUnits={SUPPORTED} portraitFor={() => null} />,
+    )
+    expect(screen.queryByRole('checkbox', { name: '오버로드 옵션 상세' })).not.toBeInTheDocument()
   })
 })

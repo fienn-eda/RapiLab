@@ -10,9 +10,12 @@
 
 import type { NikkeDraft } from '../types/nikkeDraft'
 import type { NikkeElement } from '../types/supportedUnit'
+import { byGearPiece } from '../lib/overload'
+import { HELP } from '../lib/helpText'
 import { FavoriteItemBadge } from './FavoriteItemBadge'
+import { HelpText } from './HelpText'
 import { InvestmentBadge } from './InvestmentBadge'
-import { OverloadLines, SkillLevels } from './InvestmentSummary'
+import { OverloadGearGrid, OverloadLines, SkillLevels } from './InvestmentSummary'
 
 interface NikkeCardProps {
   draft: NikkeDraft
@@ -29,6 +32,10 @@ interface NikkeCardProps {
   /** Omit on a screen with no recommendation to narrow; the portrait is then
    * a plain image rather than a control that does nothing. */
   onToggleExclude?: () => void
+  /** Redraw the overload as the game's gear screen - the four pieces and their
+   * option rows - instead of the per-stat totals. Decided for the whole tab at
+   * once, so two units can still be read against each other. */
+  overloadDetail?: boolean
 }
 
 export function NikkeCard({
@@ -39,8 +46,12 @@ export function NikkeCard({
   portrait,
   excluded = false,
   onToggleExclude,
+  overloadDetail = false,
 }: NikkeCardProps) {
   const title = name || draft.character_slug.trim() || `니케 ${index + 1}`
+  // Null whenever the rolls behind the totals cannot be placed on gear - see
+  // byGearPiece. The totals are still true, so they are what gets shown.
+  const pieces = overloadDetail ? byGearPiece(draft.overload_options) : null
 
   return (
     <section
@@ -86,7 +97,20 @@ export function NikkeCard({
 
       <h3 className="roster-card__name">{title}</h3>
       <SkillLevels levels={draft.skill_levels} />
-      <OverloadLines options={draft.overload_options} emptyText="오버로드 없음" />
+      {pieces ? (
+        <OverloadGearGrid pieces={pieces} />
+      ) : (
+        <>
+          <OverloadLines options={draft.overload_options} emptyText="오버로드 없음" />
+          {/* Only when detail was asked for and there was something to detail:
+              a unit with no overload at all has nothing a re-sync would add. */}
+          {overloadDetail && draft.overload_options.length > 0 && (
+            <p className="overload__note">
+              <HelpText>{HELP.roster.gearNeedsResync}</HelpText>
+            </p>
+          )}
+        </>
+      )}
     </section>
   )
 }

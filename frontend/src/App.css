@@ -207,6 +207,28 @@
   gap: var(--sp-3);
 }
 
+/* A detail tile carries two columns of gear, each spelling its stat names out
+   in full, so it needs roughly twice the width a summed tile does. 380px is
+   what the widest row ("[우월코드 대미지] 85.37%") needs twice over plus the
+   card's own padding; shrink it if lib/overload.ts's formatOverloadName is ever
+   switched to the abbreviated names. */
+.roster__grid--detail {
+  grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+}
+
+/* The switch that turns the roster's tiles into gear screens. Sits under the
+   filter toolbar rather than inside it: the toolbar is shared with the
+   recommend palette, which has no gear to show. */
+.roster__mode {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-2);
+  font-size: 13px;
+  color: var(--text-muted);
+  cursor: pointer;
+  user-select: none;
+}
+
 /* Unit filter toolbar ----------------------------------------------------- */
 
 /* Sits above a unit grid in both tabs. Wraps rather than scrolls: the roster
@@ -686,6 +708,111 @@
 .overload__empty {
   font-size: 13px;
   color: var(--text-muted);
+}
+
+/* Said only under the detail switch, where a tile that stayed summed otherwise
+   reads as broken rather than as older data. */
+.overload__note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+/* Gear screen (overload detail) ------------------------------------------- */
+
+/* The four pieces as the game squares them up: head and torso across the top,
+   arm and leg beneath. That IS the order lib/overload.ts's GEAR_SLOTS lists
+   them in, so two columns are the whole layout - no per-slot placement. */
+.gear {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-2);
+}
+
+.gear__piece {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-1);
+  min-width: 0;
+}
+
+.gear__slot {
+  margin: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.gear__rolls {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gear__roll {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--sp-2);
+  min-width: 0;
+  padding: 2px var(--sp-2);
+  border-radius: var(--radius-sm);
+  background: var(--surface-2);
+  font-size: 12px;
+}
+
+.gear__name {
+  color: var(--text);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.gear__value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* An unrolled row is drawn as an outline rather than filled, so the piece keeps
+   its three-row height without claiming a roll it does not have. */
+.gear__roll:has(.gear__empty) {
+  justify-content: center;
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--rule);
+}
+
+.gear__empty {
+  color: var(--text-muted);
+}
+
+/* The game emphasises a roll by its level: 12-14 brightens the value, 15 flips
+   the whole row's contrast. The flip is reproduced, not copied - the game's
+   screen is light so flipping darkens a row, and this one is dark so the same
+   flip lightens it. The brightening uses the app's accent rather than the
+   game's blue, which on this screen already means the Water element. */
+.gear__roll[data-tier='high'] .gear__value {
+  color: var(--accent);
+}
+
+.gear__roll[data-tier='max'] {
+  background: var(--primary);
+}
+
+.gear__roll[data-tier='max'] .gear__name {
+  color: var(--primary-contrast);
+}
+
+.gear__roll[data-tier='max'] .gear__value {
+  color: var(--accent);
 }
 
 /* Roster card ------------------------------------------------------------- */
