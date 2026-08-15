@@ -67,6 +67,12 @@
   --accent: #ff2233;
   --accent-contrast: #0a0a0a;
   --accent-soft: rgba(255, 34, 51, 0.18);
+  /* The same red for the few places the ground is inverted to --primary. The
+     accent is tuned to a near-black surface, where it measures 4.58; on
+     --primary it drops to 3.39 and fails. Same hue (355) and saturation, only
+     the lightness comes down (0.57 -> 0.40), so it still reads as the one red
+     rather than a second signal: 5.25 on --primary. */
+  --accent-on-light: #cc0010;
 
   /* Element identity, so a portrait can state its element without a label.
      This is the one place colour carries game data, and it is why the chrome

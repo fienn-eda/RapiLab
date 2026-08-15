@@ -798,7 +798,11 @@
    the whole row's contrast. The flip is reproduced, not copied - the game's
    screen is light so flipping darkens a row, and this one is dark so the same
    flip lightens it. The brightening uses the app's accent rather than the
-   game's blue, which on this screen already means the Water element. */
+   game's blue, which on this screen already means the Water element.
+
+   15 keeps 12-14's brightened value and adds the flip on top, the way the game
+   stacks them - so climbing a tier accumulates emphasis instead of swapping
+   one signal for another. */
 .gear__roll[data-tier='high'] .gear__value {
   color: var(--accent);
 }
@@ -811,8 +815,11 @@
   color: var(--primary-contrast);
 }
 
+/* The flipped ground is what forces the darker red here: plain --accent on
+   --primary measures 3.39 and fails, where this one measures 5.25. Same red,
+   only dark enough for the ground it landed on. */
 .gear__roll[data-tier='max'] .gear__value {
-  color: var(--accent);
+  color: var(--accent-on-light);
 }
 
 /* Roster card ------------------------------------------------------------- */
