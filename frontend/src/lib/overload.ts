@@ -147,3 +147,33 @@ const inRowOrder = (rolls: GearRoll[]): GearRoll[] =>
   rolls.every((roll) => roll.index != null)
     ? [...rolls].sort((a, b) => a.index! - b.index!)
     : sortOverload(rolls)
+
+// Every gear piece offers three overload rows, rolled or not.
+const ROWS_PER_PIECE = 3
+
+/** A piece's rolls laid out on its option rows, padded to the three the gear
+ * screen always shows. An empty row is `undefined`.
+ *
+ * Placed by row number rather than packed together, because the rows a piece is
+ * missing are not always its last ones. DEF rolls never reach the frontend -
+ * overload_decode drops them as `unconsumed_effect_types` - so a piece whose
+ * second row rolled DEF arrives here as rows 1 and 3. Packing would slide the
+ * survivors up and blank the bottom row, claiming the piece rolled its first
+ * two rows when what it actually has is a hole in the middle.
+ *
+ * Rolls with no row number are packed instead: which row is blank is precisely
+ * what a roster synced before the numbers were carried cannot say, and guessing
+ * would put the hole somewhere the player can check and find wrong. */
+export const gearRows = (rolls: GearRoll[]): (GearRoll | undefined)[] => {
+  const placed = rolls.every((roll) => roll.index != null)
+  const rows: (GearRoll | undefined)[] = Array.from({
+    length: Math.max(
+      ROWS_PER_PIECE,
+      placed ? Math.max(0, ...rolls.map((roll) => roll.index!)) : rolls.length,
+    ),
+  })
+  rolls.forEach((roll, packedRow) => {
+    rows[placed ? roll.index! - 1 : packedRow] = roll
+  })
+  return rows
+}

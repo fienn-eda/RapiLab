@@ -3,6 +3,7 @@ import {
   abbreviateOverload,
   byGearPiece,
   formatOverloadName,
+  gearRows,
   GEAR_SLOTS,
   OVERLOAD_KEYS,
   rollTier,
@@ -152,5 +153,41 @@ describe('byGearPiece', () => {
 
   it('오버로드가 아예 없으면 null이다', () => {
     expect(byGearPiece([])).toBeNull()
+  })
+})
+
+// 장비 하나가 인게임처럼 세 행을 갖는다. 어느 행이 비는가는 자리를 당겨 붙이면
+// 틀린다 - 방어력 롤은 엔진이 안 쓴다고 백엔드가 버리므로, 2행이 방어력이던
+// 장비는 우리에게 1행과 3행만 온다. 그 구멍은 실제로 자주 생긴다.
+describe('gearRows', () => {
+  const roll = (name: string, index?: number) => ({ name, value: 1, index })
+
+  it('세 행을 채운다 - 롤이 모자라면 빈 자리로', () => {
+    expect(gearRows([roll('공격력 증가', 1)]).map((r) => r?.name)).toEqual([
+      '공격력 증가',
+      undefined,
+      undefined,
+    ])
+  })
+
+  it('빠진 행 번호의 자리를 지킨다', () => {
+    const rows = gearRows([roll('우월코드 대미지 증가', 1), roll('공격력 증가', 3)])
+    expect(rows.map((r) => r?.name)).toEqual(['우월코드 대미지 증가', undefined, '공격력 증가'])
+  })
+
+  // 행 번호를 안 실은 로스터는 어느 행이 비었는지 알 방법이 없다. 당겨 붙이는
+  // 것이 없는 정보를 지어내지 않는 유일한 선택이다.
+  it('행 번호가 없으면 앞에서부터 채운다', () => {
+    const rows = gearRows([roll('우월코드 대미지 증가'), roll('공격력 증가')])
+    expect(rows.map((r) => r?.name)).toEqual(['우월코드 대미지 증가', '공격력 증가', undefined])
+  })
+
+  it('롤이 없는 장비도 세 행을 낸다', () => {
+    expect(gearRows([])).toHaveLength(3)
+  })
+
+  // 행이 셋보다 많아질 일은 없지만, 생긴다면 조용히 잘리는 것이 최악이다.
+  it('네 번째 행이 오면 잘라내지 않고 늘린다', () => {
+    expect(gearRows([roll('공격력 증가', 4)])).toHaveLength(4)
   })
 })

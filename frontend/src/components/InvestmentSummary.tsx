@@ -7,11 +7,11 @@
 import {
   abbreviateOverload,
   formatOverloadName,
+  gearRows,
   GEAR_SLOT_LABEL,
   rollTier,
   sortOverload,
   type GearPiece,
-  type GearRoll,
 } from '../lib/overload'
 
 type Displayable = string | number
@@ -73,16 +73,6 @@ export function OverloadLines({ options, emptyText }: OverloadLinesProps) {
   )
 }
 
-// Every gear piece offers three overload rows, whether or not the player has
-// rolled them - so the grid draws three regardless.
-const ROWS_PER_PIECE = 3
-
-/** A piece's rows, padded out to the three the screen always shows. Never
- * shorter than the rolls handed in: a piece that somehow carried a fourth
- * should show it rather than lose it silently. */
-const rowsOf = (rolls: GearRoll[]): (GearRoll | undefined)[] =>
-  Array.from({ length: Math.max(ROWS_PER_PIECE, rolls.length) }, (_, row) => rolls[row])
-
 /** One unit's overload drawn the way the game's own equipment screen draws it:
  * the four pieces squared up - head and torso above, arm and leg below - each
  * listing its option rows in order, each row emphasised by the level it rolled
@@ -102,7 +92,7 @@ export function OverloadGearGrid({ pieces }: { pieces: GearPiece[] }) {
         <li key={slot} className="gear__piece">
           <h4 className="gear__slot">{GEAR_SLOT_LABEL[slot]}</h4>
           <ul className="gear__rolls">
-            {rowsOf(rolls).map((roll, row) => (
+            {gearRows(rolls).map((roll, row) => (
               <li
                 key={row}
                 className="gear__roll"

@@ -201,6 +201,34 @@ describe('NikkeCard 오버로드 상세', () => {
     expect(container.querySelectorAll('.gear__roll')).toHaveLength(12)
   })
 
+  // 백엔드가 방어력 롤을 버리므로(엔진이 안 쓴다) 2행이 방어력이던 장비는 1행과
+  // 3행만 온다. 당겨 붙이면 「1·2행을 굴렸다」고 말하는 셈이 된다.
+  it('빠진 행이 가운데면 빈 자리도 가운데다', () => {
+    const { container } = detailCard({
+      ...makeEmptyDraft(),
+      overload_options: [
+        {
+          id: '1',
+          name: '우월코드 대미지 증가',
+          value: '29.16',
+          lines: [{ slot: 'head', index: 1, value: 29.16, level: 15 }],
+        },
+        {
+          id: '2',
+          name: '공격력 증가',
+          value: '11.11',
+          lines: [{ slot: 'head', index: 3, value: 11.11, level: 10 }],
+        },
+      ],
+    })
+    const head = container.querySelector('.gear__piece')!
+    expect([...head.querySelectorAll('.gear__roll')].map((r) => r.textContent)).toEqual([
+      '[우월코드 대미지]29.16%',
+      '—',
+      '[공격력]11.11%',
+    ])
+  })
+
   it('한 부위 안을 인게임과 같은 옵션 행 순서로 세운다', () => {
     const { container } = detailCard()
     const head = container.querySelector('.gear__piece')!
