@@ -26,15 +26,17 @@ from app.skill_rules.registry import ENCODED_SLUGS, get_skill_value_manifest  # 
 from app.skill_values import load_character_data  # noqa: E402
 
 # 콜라보 유닛은 raw 쪽 이름이 짧다. 우리 슬러그가 쓰는 성까지 붙은 이름과 이어야
-# 한다 - 이 일곱만 예외이고, 나머지는 영문 이름이 그대로 일치한다.
+# 한다 - 이 아홉만 예외이고, 나머지는 영문 이름이 그대로 일치한다.
 RAW_NAME_ALIASES = {
     "ada-wong": "Ada",
     "asuka-shikinami-langley-wille": "Asuka: WILLE",
     "chisato-nishikigi": "Chisato",
     "jill-valentine": "Jill",
+    "queen-makoto-nijima": "Queen (Makoto)",
     "rei-ayanami": "Rei",
     "rei-ayanami-tentative-name": "Rei (Tentative Name)",
     "takina-inoue": "Takina",
+    "yukiko-amagi": "Yukiko",
 }
 
 
