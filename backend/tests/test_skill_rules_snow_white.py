@@ -115,6 +115,10 @@ def test_burst_transform_is_single_5s_charged_cannon_shot():
             "damage_percent": 499.5,
             "charge_damage_percent": 1000.0,
             "charge_time": 5.0,
+            # The transformed shot is core-locked in play (Fienn, 2026-08-15).
+            # Declared, not read off the "SR" label: spread comes from her BASE
+            # weapon, an AR at 75 units, which would give this shot 0.425.
+            "always_core_hit": True,
         },
     }]
 

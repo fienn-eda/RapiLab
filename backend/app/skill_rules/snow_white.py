@@ -96,12 +96,19 @@ def snow_white_periodic_nuke(values):
 
 
 def build_seven_dwarves_weapon_mode_schedule(values):
+    """`always_core_hit`: the transformed shot lands on the core in play (Fienn,
+    in game, 2026-08-15). It has to be DECLARED rather than read off the
+    profile's "SR" label, because spread is looked up from the BASE weapon and
+    hers is an Assault Rifle - 75 units against a 48.89 core is a core hit rate
+    of 0.425, so the approximation was costing this shot more than half its core
+    bonus."""
     burst = values["seven_dwarves_i"]
     profile = {
         "weapon": "SR",
         "damage_percent": float(burst["description_value_02"]),
         "charge_damage_percent": float(burst["description_value_03"]),
         "charge_time": float(burst["description_value_01"]),
+        "always_core_hit": True,
     }
 
     def schedule(context, fight_duration):

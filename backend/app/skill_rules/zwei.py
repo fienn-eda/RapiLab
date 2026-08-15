@@ -197,6 +197,14 @@ def build_overcharge_weapon_mode_schedule(values, slug="zwei"):
     The charge time goes in as `charge_time`, not `rate_of_fire`: unlike
     Nayuta's "Charge time: Fixed at 1.8 sec", nothing here pins the value, so an
     ally's Charge Speed buff should move it.
+
+    `always_core_hit`: the transformed shot lands on the core in play (Fienn,
+    in game, 2026-08-15). It has to be DECLARED because spread is looked up from
+    the BASE weapon, and hers is a Shotgun - 250 units against a 48.89 core is a
+    core hit rate of 0.038, so the approximation was costing this shot nearly
+    all of its core bonus. Zwei is the widest-spread case in the table; the same
+    reading settles Snow White (AR base) and, negatively, Grave and
+    Jill: Valentine, whose transforms Fienn checked and found NOT core-locked.
     """
     overcharge = values["overcharge_formula"]
     profile = {
@@ -204,6 +212,7 @@ def build_overcharge_weapon_mode_schedule(values, slug="zwei"):
         "damage_percent": float(overcharge["description_value_02"]),
         "charge_damage_percent": float(overcharge["description_value_03"]),
         "charge_time": float(overcharge["description_value_01"]),
+        "always_core_hit": True,
     }
 
     def schedule(context, fight_duration):
