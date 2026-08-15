@@ -17,6 +17,28 @@ def _state(slug, **overrides):
     return UserNikkeState(**payload)
 
 
+def test_a_units_own_rate_of_fire_reaches_its_weapon_stats():
+    """Jill: Valentine's AR fires at 2.5 rounds/sec, not the class's 12 - Fienn
+    read 24 (+-1) frames between her rounds (2026-08-15) and the collected
+    `shot_detail.rate_of_fire` says 150 rounds/min. dotgg, which is where her
+    weapon stats are read from, carries no rate field at all, so the value
+    rides `attack_rate.ROUNDS_PER_MINUTE` and is joined on here."""
+    spec = load_nikke_spec(_state("jill-valentine"))
+    assert spec is not None
+    assert spec.weapon_stats["weapon"] == "AR"
+    assert spec.weapon_stats["max_ammo"] == 9
+    assert spec.weapon_stats["rate_of_fire"] == 2.5
+
+
+def test_a_unit_at_its_class_rate_carries_no_rate_of_fire():
+    """Absent means "the class constant", so the ordinary case is untouched and
+    a reader can tell "no override" from "an override that happens to match"."""
+    spec = load_nikke_spec(_state("privaty"))
+    assert spec is not None
+    assert spec.weapon_stats["weapon"] == "AR"
+    assert "rate_of_fire" not in spec.weapon_stats
+
+
 def test_loads_drake_end_to_end_from_real_data_files():
     spec = load_nikke_spec(_state("drake"))
     assert spec is not None

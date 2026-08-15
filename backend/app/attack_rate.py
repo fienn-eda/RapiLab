@@ -52,6 +52,39 @@ RATE_OF_FIRE_60FPS = {
     "SG": 1.5,
 }
 
+# 게임 데이터의 `shot_detail.rate_of_fire`는 **분당** 발수다. 발사 간격은 60fps
+# 격자에 올림되므로 실제 연사는 공칭보다 느릴 수 있고, 그 한 식이
+# `RATE_OF_FIRE_60FPS` 넷을 전부 재현한다:
+#
+#   AR   720 → 12.00발/초 →  5.000프레임 →  5 → 12.00
+#   SG    90 →  1.50      → 40.000       → 40 →  1.50
+#   SMG 1440 → 24.00      →  2.500       →  3 → 20.00
+#   MG  4200 → 70.00      →  0.857       →  1 → 60.00
+#
+# MG의 60은 Fienn의 프레임 판독(256발/256프레임)이 독립적으로 확인한 값이라,
+# 격자 유도와 실측이 같은 답을 준다. MG의 `rate_of_fire`(60)는 예열 램프의
+# **시작값**이고 끝값은 `end_rate_of_fire`다.
+def rounds_per_second(rounds_per_minute):
+    """이 분당 발수가 60fps 격자 위에서 실제로 내는 초당 발수."""
+    return 60.0 / math.ceil(60.0 / (rounds_per_minute / 60.0))
+
+
+# 무기군 상수가 틀리는 유닛의 분당 발수. **여기 없으면 무기군 값이 맞다는 뜻**이다.
+#
+# 왜 표인가: 이 필드는 ShiftyPad raw 번들에만 있는데(`data/shiftypad/raw/*.json`),
+# 그 파일은 rid로 키가 잡혀 슬러그 매핑을 사람이 줘야 하고, 인코딩 슬러그 대부분이
+# 무기를 dotgg에서 읽는데 dotgg 레코드에는 연사 필드가 아예 없다.
+# `core_damage.CORE_DAMAGE_RATE`가 같은 이유로 같은 모양이며, 낡는 것은
+# `scripts/audit_rate_of_fire.py`가 수집 데이터와 대조해 막는다.
+#
+# 질: 발렌타인은 9발짜리 AR이다 — 클래스의 720이 아니라 150발/분이고, 게임은 그
+# 느린 연사를 발당 딜로 갚아 준다(71.09%/발 대 프리바티 13.65%, 초당으로는
+# 177.7% 대 163.8%로 거의 같다). 무기군 상수로 쏘면 그녀 평타가 4.8배가 된다.
+# Fienn 인게임 실측(2026-08-15): **발 간격 24(±1)프레임** — 150발/분 그대로다.
+ROUNDS_PER_MINUTE = {
+    "jill-valentine": 150,
+}
+
 CHARGE_WEAPONS = {"RL", "SR"}
 
 
@@ -755,6 +788,19 @@ def rate_of_fire_for_weapon(weapon: str) -> float:
     return RATE_OF_FIRE_60FPS[weapon]
 
 
+def rate_of_fire_for_profile(profile) -> float:
+    """This weapon profile's rounds per second.
+
+    A profile may carry its own `rate_of_fire`, which is how a unit whose
+    cadence is not its class's arrives (`ROUNDS_PER_MINUTE`, joined on in
+    `user_roster`) and also how a weapon-mode segment declares a fixed rate.
+    Absent means the class constant - so the ordinary unit is untouched and
+    "no override" stays distinguishable from "an override that matches".
+    """
+    rate = profile.get("rate_of_fire")
+    return rate if rate is not None else rate_of_fire_for_weapon(profile["weapon"])
+
+
 def generate_magazine_shot_times(
     rate_of_fire,
     max_ammo,
@@ -1222,7 +1268,7 @@ def _base_shot_records(base, window_start, window_end,
             actual_reload = reload_time_with_speed(base["reload_time"], reload_speed_percent_at(last_shot_time))
             magazine_start = last_shot_time + actual_reload
     else:
-        rate = rate_of_fire_for_weapon(weapon)
+        rate = rate_of_fire_for_profile(base)
         base_spinup = spinup_for_weapon(weapon)
         post_reload_delay = post_reload_delay_for_weapon(weapon)
         ramp_start = 0.0

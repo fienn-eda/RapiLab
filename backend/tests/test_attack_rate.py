@@ -4,6 +4,7 @@ from app.attack_rate import (
     RELOAD_FIXED_SECONDS,
     CHARGE_INTERVAL_FLOOR_SECONDS,
     RATE_OF_FIRE_60FPS,
+    ROUNDS_PER_MINUTE,
     AmmoRefill,
     AmmoRefund,
     ShotRecord,
@@ -21,6 +22,7 @@ from app.attack_rate import (
     magazine_last_bullet_times,
     magazine_shot_count,
     rate_of_fire_for_weapon,
+    rounds_per_second,
 )
 
 
@@ -29,6 +31,30 @@ def test_rate_of_fire_matches_fienns_60fps_table():
     assert rate_of_fire_for_weapon("MG") == 60.0
     assert rate_of_fire_for_weapon("SMG") == 20.0
     assert rate_of_fire_for_weapon("SG") == 1.5
+
+
+def test_the_class_table_is_the_frame_grid_applied_to_the_game_data():
+    """Each class's rounds-per-minute put through `rounds_per_second` reproduces
+    the measured constant, which is what makes the two SMG/MG surprises benign:
+    the nominal rates are 24 and 70 per second and the 60fps grid rounds their
+    intervals up to 3 and 1 frames."""
+    assert rounds_per_second(720) == RATE_OF_FIRE_60FPS["AR"]      # 5 frames
+    assert rounds_per_second(90) == RATE_OF_FIRE_60FPS["SG"]       # 40 frames
+    assert rounds_per_second(1440) == RATE_OF_FIRE_60FPS["SMG"]    # 2.5 -> 3
+    assert rounds_per_second(4200) == RATE_OF_FIRE_60FPS["MG"]     # 0.857 -> 1
+
+
+def test_a_round_never_takes_less_than_a_frame():
+    # The MG's nominal 70/sec is the case: the grid is what caps it at 60.
+    assert rounds_per_second(6000) == 60.0
+
+
+def test_the_per_unit_table_holds_only_units_the_class_rate_is_wrong_for():
+    # Jill: Valentine's AR is a 9-round marksman rifle - 150 rounds/min against
+    # the class's 720. Fienn read 24 (+-1) frames between her rounds in game
+    # (2026-08-15), which is exactly the 2.5/sec this rpm decodes to.
+    assert ROUNDS_PER_MINUTE == {"jill-valentine": 150}
+    assert rounds_per_second(ROUNDS_PER_MINUTE["jill-valentine"]) == 2.5
 
 
 def test_magazine_shots_are_evenly_spaced_within_one_magazine():
@@ -380,6 +406,9 @@ AR_BASE = {"weapon": "AR", "damage_percent": 14.71, "max_ammo": 60,
            "reload_time": 1.5, "charge_time": 0.0, "charge_damage_percent": 100.0}
 SR_BASE = {"weapon": "SR", "damage_percent": 69.04, "max_ammo": 6,
            "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 250.0}
+# Jill: Valentine's shape - an AR whose own cadence is not its class's.
+AR_SLOW = {**AR_BASE, "max_ammo": 9, "damage_percent": 71.09, "reload_time": 1.0,
+           "rate_of_fire": 2.5}
 SR_ODD = {"weapon": "SR", "damage_percent": 63.11, "max_ammo": 6,
           "reload_time": 2.33, "charge_time": 1.19, "charge_damage_percent": 250.0}
 CANNON = {"weapon": "SR", "damage_percent": 499.5,
@@ -412,6 +441,22 @@ def test_fixed_window_silences_base_and_fires_profile_rate():
     assert inside[0].time == 10.25          # start + 1/rate
     assert len(inside) == 39                # k*0.25 < 10.0 → k <= 39
     assert all(r.extra_charge_bonus == 0.0 for r in inside)
+
+
+def test_a_base_profile_may_carry_its_own_rate_of_fire():
+    """A weapon whose cadence is not its class's brings it on the profile, the
+    same channel `max_ammo` and `reload_time` already travel on. Jill:
+    Valentine's 9-round AR fires every 0.4 sec, not the class's 1/12."""
+    records = generate_segmented_shots(AR_SLOW, [], 10.0)
+    assert [r.time for r in records][:4] == pytest.approx([0.0, 0.4, 0.8, 1.2])
+    # 9 rounds at 0.4 sec, then the 1.0-sec reload plus the fixed segment.
+    assert records[9].time == pytest.approx(9 * 0.4 + RELOAD_FIXED_SECONDS + 1.0)
+
+
+def test_a_base_profile_without_one_still_takes_the_class_rate():
+    records = generate_segmented_shots(AR_BASE, [], 10.0)
+    assert [r.time for r in records][:3] == [0.0, pytest.approx(1 / 12),
+                                             pytest.approx(2 / 12)]
 
 
 def test_base_resumes_with_fresh_magazine_at_window_end():

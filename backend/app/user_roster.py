@@ -13,6 +13,7 @@ when the source (or the override) is shiftypad.
 """
 from pathlib import Path
 
+from app.attack_rate import ROUNDS_PER_MINUTE, rounds_per_second
 from app.collectible_effects import collectible_modifiers
 from app.models import UserNikkeState
 from app.roster import NikkeSpec
@@ -110,6 +111,15 @@ def load_nikke_spec(
         splits = get_clip_reload_splits(slug)
         if splits > 1:
             weapon_stats = {**weapon_stats, "reload_time": weapon_stats["reload_time"] * splits}
+        # A unit whose weapon does not fire at its class's rate carries its own,
+        # because the file these stats come from has no rate field at all - see
+        # attack_rate.ROUNDS_PER_MINUTE. Before the mode override for the same
+        # reason the clip count is: the rate describes the weapon this unit was
+        # collected with, and an override replaces that weapon outright.
+        rounds_per_minute = ROUNDS_PER_MINUTE.get(slug)
+        if rounds_per_minute is not None:
+            weapon_stats = {**weapon_stats,
+                            "rate_of_fire": rounds_per_second(rounds_per_minute)}
         override = get_weapon_profile_override(slug, skill_values, weapon_stats)
         if override is not None:
             weapon_stats = override

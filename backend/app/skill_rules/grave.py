@@ -56,7 +56,7 @@ Modeled (DPS-relevant):
     II is gated on Overheat I; III on having reached Overheat II. See
     `build_overheat_per_shot_rules`. Self-scoped on a supporter, minor DPS weight.
 """
-from app.attack_rate import rate_of_fire_for_weapon, reload_time_with_speed
+from app.attack_rate import rate_of_fire_for_profile, reload_time_with_speed
 from app.effects import Effect
 from app.skill_rules._helpers import silent_reload_segments
 from app.squad_engine import SkillRule, own_burst_fired_this_cycle
@@ -96,7 +96,7 @@ def unlimited_ammo_percent(values):
     leaves one extra reload in the window, which understates her.
     """
     weapon = values["caster_weapon_stats"]
-    rounds = (PREDICTION_DURATION * rate_of_fire_for_weapon(weapon["weapon"])
+    rounds = (PREDICTION_DURATION * rate_of_fire_for_profile(weapon)
               * UNLIMITED_AMMO_HEADROOM)
     return rounds / weapon["max_ammo"] - 1.0
 
