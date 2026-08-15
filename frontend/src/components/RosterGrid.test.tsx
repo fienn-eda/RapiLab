@@ -231,16 +231,34 @@ describe('RosterGrid 오버로드 상세 모드', () => {
       />,
     )
 
-  const toggle = () => screen.getByRole('checkbox', { name: '오버로드 옵션 상세' })
+  const toggle = () => screen.getByRole('button', { name: '오버로드 옵션 상세' })
 
   beforeEach(() => localStorage.clear())
 
   // 「우코」로 세지 않는다 - 정렬 메뉴에도 같은 글자가 있어 카드 밖까지 잡힌다.
   it('기본은 요약 줄이다', () => {
     const { container } = gearedGrid()
-    expect(toggle()).not.toBeChecked()
+    expect(toggle()).toHaveAttribute('aria-pressed', 'false')
     expect(container.querySelector('.gear')).toBeNull()
     expect(container.querySelectorAll('.overload__name')).toHaveLength(2)
+  })
+
+  // 눌린 상태를 색으로만 말하면 색을 못 읽는 사람에게는 상태가 없다.
+  it('눌린 상태를 aria-pressed로 말한다', async () => {
+    gearedGrid()
+    await userEvent.click(toggle())
+    expect(toggle()).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  // 격자의 빨간 수치와 흰 행이 무슨 뜻인지는 화면 어디에도 안 적혀 있다.
+  it('버튼 옆 툴팁이 단계별 표기 규칙을 말한다', () => {
+    gearedGrid()
+    expect(screen.getByRole('button', { name: '오버로드 옵션 상세 설명' })).toBeInTheDocument()
+    const tip = screen.getByRole('tooltip')
+    expect(tip).toHaveTextContent('12~14단계')
+    expect(tip).toHaveTextContent('15단계')
+    expect(tip).toHaveTextContent('빨간색 수치')
+    expect(tip).toHaveTextContent('흰색 바탕')
   })
 
   it('켜면 보이는 카드가 모두 장비 격자로 바뀐다', async () => {
@@ -257,7 +275,7 @@ describe('RosterGrid 오버로드 상세 모드', () => {
     first.unmount()
 
     const { container } = gearedGrid()
-    expect(toggle()).toBeChecked()
+    expect(toggle()).toHaveAttribute('aria-pressed', 'true')
     expect(container.querySelectorAll('.gear')).toHaveLength(2)
   })
 
@@ -279,6 +297,7 @@ describe('RosterGrid 오버로드 상세 모드', () => {
     render(
       <RosterGrid drafts={[draft('2b')]} supportedUnits={SUPPORTED} portraitFor={() => null} />,
     )
-    expect(screen.queryByRole('checkbox', { name: '오버로드 옵션 상세' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '오버로드 옵션 상세' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('tooltip')).not.toBeInTheDocument()
   })
 })

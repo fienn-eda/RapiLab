@@ -216,17 +216,41 @@
   grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
 }
 
-/* The switch that turns the roster's tiles into gear screens. Sits under the
-   filter toolbar rather than inside it: the toolbar is shared with the
-   recommend palette, which has no gear to show. */
+/* The switch that turns the roster's tiles into gear screens, with the legend
+   for what the gear rows' colours mean beside it. Sits under the filter toolbar
+   rather than inside it: the toolbar is shared with the recommend palette,
+   which has no gear to show. */
 .roster__mode {
   display: flex;
   align-items: center;
   gap: var(--sp-2);
+}
+
+/* Pressed is filled white, unpressed is filled black, and the white edge is
+   what makes the unpressed state read as a button at all against a ground
+   only a shade lighter than it. The fill IS the state, so the two swap
+   foreground and background rather than merely tinting - both directions
+   measure 17.68 (scripts/check_palette_contrast.py, "on the primary button").
+   aria-pressed carries the same fact for anyone the colour does not reach. */
+.roster__mode-toggle {
+  padding: var(--sp-1) var(--sp-3);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--primary-contrast);
+  color: var(--primary);
+  font: inherit;
   font-size: 13px;
-  color: var(--text-muted);
   cursor: pointer;
   user-select: none;
+}
+
+.roster__mode-toggle[aria-pressed='true'] {
+  background: var(--primary);
+  color: var(--primary-contrast);
+}
+
+.roster__mode-toggle:hover {
+  border-color: var(--primary-hover);
 }
 
 /* Unit filter toolbar ----------------------------------------------------- */

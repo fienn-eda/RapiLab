@@ -21,6 +21,9 @@ import {
   type UnitFacets,
   type UnitFilterState,
 } from '../lib/unitFilter'
+import { HELP } from '../lib/helpText'
+import { HelpText } from './HelpText'
+import { HelpTip } from './HelpTip'
 import { NikkeCard } from './NikkeCard'
 import { UnitFilterBar } from './UnitFilterBar'
 
@@ -103,15 +106,27 @@ export function RosterGrid({
             total={supported.length}
           />
           {/* 필터 툴바가 아니라 여기에 있다 - 툴바는 추천 팔레트와 공유하는데,
-              장비 격자는 로스터 카드에만 있는 표시다. */}
-          <label className="roster__mode">
-            <input
-              type="checkbox"
-              checked={overloadDetail}
-              onChange={(event) => setOverloadDetail(event.target.checked)}
-            />
-            오버로드 옵션 상세
-          </label>
+              장비 격자는 로스터 카드에만 있는 표시다.
+
+              체크박스가 아니라 눌린 상태를 가진 버튼이다. 켜고 끄는 것이 폼에
+              제출할 값이 아니라 화면을 바꾸는 동작이라, 눌러 둔 버튼 쪽이 지금
+              무엇을 보고 있는지를 더 곧게 말한다. 상태는 색으로도 보이지만
+              aria-pressed가 진짜 답이다 - 색만으로는 상태가 없는 사람이 있다. */}
+          <div className="roster__mode">
+            <button
+              type="button"
+              className="roster__mode-toggle"
+              aria-pressed={overloadDetail}
+              onClick={() => setOverloadDetail(!overloadDetail)}
+            >
+              오버로드 옵션 상세
+            </button>
+            {/* 격자의 빨간 수치와 흰 행이 무슨 뜻인지는 화면 어디에도 안 적혀
+                있다. 버튼 안이 아니라 옆에 둔다 - 버튼 안의 버튼은 무효다. */}
+            <HelpTip label="오버로드 옵션 상세">
+              <HelpText>{HELP.roster.gearTierLegend}</HelpText>
+            </HelpTip>
+          </div>
         </>
       )}
 
