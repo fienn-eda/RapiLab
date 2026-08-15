@@ -16,8 +16,15 @@ An unchecked unit no longer sits at zero: she carries the frame-resolved 22
 frames Bready and Centi share (registry.ASSUMED_CHARGE_MOTION_DELAY_SECONDS),
 which is a better guess than "no pause at all" but is still a guess - the real
 values run 0.34 to 0.43 and four units have none. So `assumed`, `inferred` and
-`UNVERIFIED` are all questions for Fienn, and the exit code stays non-zero while
-any of them is non-empty.
+`UNVERIFIED` are questions for Fienn, and the exit code stays non-zero while any
+of them is non-empty.
+
+`stand-in (accepted)` is the one untimed status that is NOT a question. Those
+units were scored across the whole range of real delays and their damage barely
+moved (scripts/measure_charge_delay_sensitivity.py, all under 2% and most under
+1%, against an allocation search whose own spread is +-5%), so the stand-in is
+their answer rather than a placeholder. Keeping them red would leave this audit
+red forever, and an audit that is always red stops being read.
 
 `inferred` is a zero nobody watched: the four units confirmed to have no pause
 are exactly the four whose `shot_detail.rate_of_fire` beats the charge class's
@@ -48,6 +55,7 @@ from app.attack_rate import charge_interval_floor_for  # noqa: E402
 from app.skill_rules.registry import (  # noqa: E402
     INFERRED_NO_CHARGE_MOTION_DELAY,
     NO_CHARGE_MOTION_DELAY,
+    STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY,
     TIMED_CHARGE_MOTION_DELAY,
     _BUILDERS,
     get_charge_motion_delay,
@@ -78,6 +86,32 @@ def _base_candidates(slug):
         yield "-".join(parts[:cut])
 
 
+def status_for(slug):
+    """Which of the six answers this unit has about her fire-to-charge pause."""
+    if slug in TIMED_CHARGE_MOTION_DELAY:
+        return "TIMED"
+    if slug in NO_CHARGE_MOTION_DELAY:
+        return "none (confirmed)"
+    if slug in INFERRED_NO_CHARGE_MOTION_DELAY:
+        return "none (inferred)"
+    if slug in STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY:
+        return "stand-in (accepted)"
+    if get_charge_motion_delay(slug):
+        return "assumed"
+    return "UNVERIFIED"
+
+
+def is_unanswered(status):
+    """Whether this status is still a question for Fienn - what the exit code is.
+
+    `stand-in (accepted)` is NOT one. Those units were measured to barely depend
+    on the value (registry.STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY), so the
+    stand-in is their answer and keeping them red would make the whole audit red
+    forever - which is how a tool stops being read.
+    """
+    return status in ("UNVERIFIED", "assumed", "none (inferred)")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     p.add_argument("--all", action="store_true",
@@ -89,34 +123,30 @@ def main():
         weapon = _weapon(slug)
         if not args.all and weapon not in CHARGE_WEAPONS:
             continue
-        if slug in TIMED_CHARGE_MOTION_DELAY:
-            status = "TIMED"
-        elif slug in NO_CHARGE_MOTION_DELAY:
-            status = "none (confirmed)"
-        elif slug in INFERRED_NO_CHARGE_MOTION_DELAY:
-            status = "none (inferred)"
-        elif get_charge_motion_delay(slug):
-            status = "assumed"
-        else:
-            status = "UNVERIFIED"
+        status = status_for(slug)
         floor = charge_interval_floor_for(slug)
         rows.append((status, slug, weapon or "?", get_charge_motion_delay(slug), floor))
 
-    order = {"TIMED": 0, "assumed": 1, "none (confirmed)": 2,
-             "none (inferred)": 3, "UNVERIFIED": 4}
-    print(f"{'status':<17} {'unit':<38} {'wpn':<4} {'delay':>6} {'floor':>7}")
+    order = {"TIMED": 0, "assumed": 1, "stand-in (accepted)": 2,
+             "none (confirmed)": 3, "none (inferred)": 4, "UNVERIFIED": 5}
+    print(f"{'status':<19} {'unit':<38} {'wpn':<4} {'delay':>6} {'floor':>7}")
     for status, slug, weapon, delay, floor in sorted(rows, key=lambda r: (order[r[0]], r[1])):
         shown = f"{floor:.3f}" if floor is not None else "-"
-        print(f"{status:<17} {slug:<38} {weapon:<4} {delay:>6.2f} {shown:>7}")
+        print(f"{status:<19} {slug:<38} {weapon:<4} {delay:>6.2f} {shown:>7}")
 
-    unverified = [r for r in rows if r[0] == "UNVERIFIED"]
-    assumed = [r for r in rows if r[0] == "assumed"]
-    inferred = [r for r in rows if r[0] == "none (inferred)"]
+    accepted = [r for r in rows if r[0] == "stand-in (accepted)"]
     print(f"\n{len(rows)} charge-weapon units: "
-          f"{sum(1 for r in rows if r[0] == 'TIMED')} timed, {len(assumed)} assumed, "
+          f"{sum(1 for r in rows if r[0] == 'TIMED')} timed, "
+          f"{sum(1 for r in rows if r[0] == 'assumed')} assumed, "
+          f"{len(accepted)} stand-in accepted, "
           f"{sum(1 for r in rows if r[0] == 'none (confirmed)')} confirmed none, "
-          f"{len(inferred)} inferred none, {len(unverified)} UNVERIFIED")
-    unanswered = unverified + assumed + inferred
+          f"{sum(1 for r in rows if r[0] == 'none (inferred)')} inferred none, "
+          f"{sum(1 for r in rows if r[0] == 'UNVERIFIED')} UNVERIFIED")
+    if accepted:
+        print(f"\n{len(accepted)} units keep the stand-in as their answer - measuring them")
+        print("was scored and would not move a recommendation "
+              "(scripts/measure_charge_delay_sensitivity.py).")
+    unanswered = [r for r in rows if is_unanswered(r[0])]
     if unanswered:
         print("\nASK FIENN whether these pause between a charged shot and the next charge.")
         print("An `assumed` row is carrying a stand-in, not an answer - it is still wrong")

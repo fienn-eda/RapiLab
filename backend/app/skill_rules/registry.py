@@ -1343,11 +1343,38 @@ INFERRED_NO_CHARGE_MOTION_DELAY = frozenset({
 # 0.04 in places (docs/measurements/bready-charge.md).
 #
 # This is a STAND-IN, not an answer: the real values run 0.34 to 0.43 and four
-# units have none at all, so every slug below is still a question for Fienn and
-# `scripts/audit_charge_motion_delay.py` keeps asking.
+# units have none at all.
 ASSUMED_CHARGE_MOTION_DELAY_SECONDS = 22 / 60
 
+# Still waiting for a clock - the audit keeps asking about these.
 _ASSUMED_CHARGE_MOTION_DELAY = frozenset({
+    "milk-blooming-bunny",
+})
+
+# Carrying the stand-in as their ANSWER, because measuring them would not change
+# one (Fienn's decision, 2026-08-15).
+#
+# `scripts/measure_charge_delay_sensitivity.py` scored every untimed unit across
+# the whole range real delays span - 0.34 to 0.43, the extremes of the 14 timed
+# units - and printed how much damage moves between the two ends. That swing is
+# an upper bound on what timing a unit can buy, and since the stand-in sits near
+# the middle of the range, the real error is roughly half of it:
+#
+#     maiden-ice-rose 1.94%   eunhwa-tactical-upgrade 1.92%   laplace 1.27%
+#     ein 1.16%   rouge 1.12%   maxwell-ordinary-mechanic 0.94%
+#     d-killer-wife 0.81%   maxwell 0.80%   red-hood 0.69%   ada-wong 0.54%
+#     arcana 0.53%   diesel-winter-sweets-highlight 0.50%   dolla 0.46%
+#     takina-inoue 0.05%   diesel-winter-sweets-intro -0.13%
+#     laplace-signature -0.15%
+#
+# The two negatives are firing PHASE against the Full Burst window, not a gain
+# from waiting longer - the same non-monotonic shape the Tactical Bear ammo
+# refund has. For scale, the allocation search's own spread is +-5%, so a swing
+# under 1% cannot decide a recommendation.
+#
+# Milk: Blooming Bunny is the one left out of this table at 3.07%, and she is
+# what `_ASSUMED_CHARGE_MOTION_DELAY` now holds alone.
+STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY = frozenset({
     "ada-wong",
     "arcana",
     "d-killer-wife",
@@ -1361,14 +1388,16 @@ _ASSUMED_CHARGE_MOTION_DELAY = frozenset({
     "maiden-ice-rose",
     "maxwell",
     "maxwell-ordinary-mechanic",
-    "milk-blooming-bunny",
     "red-hood",
     "rouge",
     "takina-inoue",
 })
 
 _CHARGE_MOTION_DELAY = {
-    **{slug: ASSUMED_CHARGE_MOTION_DELAY_SECONDS for slug in _ASSUMED_CHARGE_MOTION_DELAY},
+    # Both stand-in groups carry the same value - they differ in whether anyone
+    # is still going to measure them, not in what the engine does with them.
+    **{slug: ASSUMED_CHARGE_MOTION_DELAY_SECONDS
+       for slug in _ASSUMED_CHARGE_MOTION_DELAY | STAND_IN_ACCEPTED_CHARGE_MOTION_DELAY},
     # A measured answer always wins over the stand-in, including a measured zero.
     **TIMED_CHARGE_MOTION_DELAY,
     **{slug: 0.0 for slug in NO_CHARGE_MOTION_DELAY | INFERRED_NO_CHARGE_MOTION_DELAY},
