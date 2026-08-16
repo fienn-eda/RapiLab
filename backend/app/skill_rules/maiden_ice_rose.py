@@ -60,7 +60,7 @@ Not modeled / deferred:
   15-sec window, which no RL cadence approaches, so the cap cannot bind and the
   stacks are added plainly.
 """
-from app.effects import Effect, ResourceSpec
+from app.effects import Effect, ResourceBuff, ResourceSpec
 from app.skill_rules._helpers import instant_nuke_pulse_rule
 from app.squad_engine import SkillRule, boss_is_element
 
@@ -86,6 +86,9 @@ SKILL_VALUE_MANIFESTS = {
 
 
 MP_CAP = 12  # skill text: "MP can be accumulated up to a maximum of 12" (fixed, not a data slot)
+# Her Meditation stack, published because an ally reads it: Flora's Petunia
+# raises the stack count of stackable buffs, and this is one (her MP is not).
+MEDITATION = "meditation"
 # How long after her own burst fires the "MP is used" self-buff becomes
 # active - strictly greater than 0 so it doesn't retroactively boost that
 # same burst's own Diamond Dust damage (confirmed in-game, Fienn 2026-07-12),
@@ -181,30 +184,48 @@ def build_blessings_upon_you_per_shot_rules(values):
     return [(1, "every", [instant_nuke_pulse_rule("per_shot", nuke)])]
 
 
-def build_meditation_per_shot_rules(values, caster_max_hp):
-    """Meditation's 3rd bullet: self Max HP +6.34% of her own, 15 sec, on every
-    6th Full Charge (every shot is one, on an RL).
+def build_meditation_resources(values, caster_max_hp):
+    """Meditation's 3rd bullet: self Max HP +6.34% of her own for 15 sec, one
+    stack per 6 Full Charges (every shot is one, on an RL), STACKS UP TO 10.
 
-    This reaches damage through Blessings Upon You, which converts her LIVE Max
-    HP into ATK - she is one of the engine's few Max-HP consumers, and the stack
-    she grants herself was the one thing that conversion could not see.
+    **It does not reach damage today, and did not before this either.** The
+    claim it used to carry - that Blessings Upon You picks it up by converting
+    her LIVE Max HP into ATK - holds only if the two are called in that order by
+    hand, which is what its unit test did. In the simulator the conversion is an
+    `own_burst_activate` rule running INSIDE the burst cycle, while this stack is
+    emitted by a pass that runs after it, so the conversion reads a registry that
+    has none of it. Measured 2026-08-17: multiplying the per-stack value by 100
+    moves her damage by 0.0000%. Wired correctly anyway - the fix belongs in the
+    ordering (see docs/roadmap.md), and a stack that is right is what that fix
+    will need.
 
-    Stacks plainly rather than through a cap group: the text's cap of 10 needs
-    60 charged shots inside one 15-sec window, which no RL cadence reaches (six
-    shots is already about a magazine plus its reload), so the cap cannot bind.
+    A REFRESHING stack (`lifetime_refreshes`): each new stack restarts the 15
+    sec for the whole stack, so the count climbs to the cap as long as she lands
+    a proc within 15 sec of the last (Fienn, range test 2026-08-17). It was
+    previously modeled as independent 15-sec Effects with no cap at all, on the
+    reasoning that ten stacks would need sixty charged shots inside ONE fixed
+    15-sec window - which no RL cadence reaches. That reasoning was wrong: the
+    window is not fixed, it is renewed by every proc. The plain timed rule holds
+    her at about two stacks; the cap of 10 is real and it binds.
     """
     meditation = values["meditation"]
     threshold = int(float(meditation["description_value_03"]))
     per_stack = caster_max_hp * float(meditation["description_value_04"]) / 100
     duration = float(meditation["description_value_05"])
-
-    def action(context, caster_slug, time, registry):
-        registry.add(
-            Effect("flat_max_hp", per_stack, "self", duration, caster_slug),
-            applied_at=time,
+    cap = int(float(meditation["description_value_06"]))
+    return [
+        ResourceSpec(
+            name=MEDITATION,
+            fill=("per_shot_every", threshold),
+            cap=cap,
+            buffs=[ResourceBuff(
+                stat="flat_max_hp", scope="self",
+                value_fn=lambda count: per_stack * count,
+                lifetime=duration, lifetime_refreshes=True,
+            )],
+            stackable_buff=True,
         )
-
-    return [(threshold, "every", [SkillRule(trigger="per_shot", action=action)])]
+    ]
 
 
 def build_diamond_dust_dynamic_hit_count_nukes(values):

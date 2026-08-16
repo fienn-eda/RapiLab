@@ -155,24 +155,51 @@ class SquadContext:
         self.resource_resets.setdefault((slug, name), []).append((time, pre_value, post_value))
 
     def resource_count(
-        self, slug: str, name: str, time: float, cap: float, lifetime: float | None = None
+        self, slug: str, name: str, time: float, cap: float, lifetime: float | None = None,
+        lifetime_refreshes: bool = False,
     ) -> float:
         """`slug`'s resource `name` at `time`, clamped to `cap`. A permanent
         resource (lifetime=None) sums every fill at or before `time`; a timed one
         (lifetime seconds) sums only fills still active - a fill at tf is active
         for [tf, tf+lifetime), i.e. those in (time-lifetime, time]. The latest
         reset at or before `time` (if any) replaces the running baseline with
-        its post-value; fills before that reset no longer count."""
+        its post-value; fills before that reset no longer count.
+
+        `lifetime_refreshes` picks a THIRD semantic: each fill restarts the
+        clock for the WHOLE stack, so the count keeps climbing while consecutive
+        fills stay within `lifetime` of each other, and the whole stack expires
+        together `lifetime` after the LAST one. Maiden: Ice Rose's Meditation
+        works this way - "Max HP +6.34% for 15 sec, stacks up to 10" reaches its
+        cap because every proc renews the 15 sec, not because ten of them land
+        inside one fixed window (Fienn, range test 2026-08-17). Under the plain
+        timed rule the count instead settles at "fills per lifetime", which for
+        her is about two - the reason her cap was once written off as unable to
+        bind.
+        """
         baseline = 0.0
         baseline_time = float("-inf")
         for reset_time, _pre_value, post_value in self.resource_resets.get((slug, name), []):
             if reset_time <= time and reset_time > baseline_time:
                 baseline_time = reset_time
                 baseline = post_value
+        fills = [
+            (fill_time, amount)
+            for fill_time, amount in self.resource_fills.get((slug, name), [])
+            if fill_time <= time and fill_time > baseline_time
+        ]
+        if lifetime is not None and lifetime_refreshes:
+            chain = 0.0
+            last_fill = None
+            for fill_time, amount in sorted(fills):
+                if last_fill is not None and fill_time - last_fill > lifetime:
+                    chain = 0.0  # the gap broke the chain; this fill starts anew
+                chain += amount
+                last_fill = fill_time
+            if last_fill is None or time > last_fill + lifetime:
+                return min(cap, baseline)
+            return min(cap, baseline + chain)
         total = baseline
-        for fill_time, amount in self.resource_fills.get((slug, name), []):
-            if fill_time > time or fill_time <= baseline_time:
-                continue
+        for fill_time, amount in fills:
             if lifetime is not None and fill_time <= time - lifetime:
                 continue
             total += amount

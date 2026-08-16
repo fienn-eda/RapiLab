@@ -313,7 +313,7 @@ from app.skill_rules.maiden_ice_rose import (
     build_blessings_upon_you_per_shot_rules,
     build_blessings_upon_you_rules,
     build_diamond_dust_dynamic_hit_count_nukes,
-    build_meditation_per_shot_rules,
+    build_meditation_resources,
     build_mp_resources,
 )
 from app.skill_rules.mast_romantic_maid import (build_mast_rules,
@@ -1151,8 +1151,9 @@ _PER_SHOT_RULE_BUILDERS = {
     "liberalio": lambda sv: build_liberalio_per_shot_rules(sv),
     "ludmilla-winter-owner": lambda sv: build_ludmilla_per_shot_rules(sv),
     "chisato-nishikigi": lambda sv: build_chisato_per_shot_rules(sv),
-    "maiden-ice-rose": lambda sv: (build_blessings_upon_you_per_shot_rules(sv)
-                                   + build_meditation_per_shot_rules(sv, sv["caster_max_hp"])),
+    # Meditation moved to a ResourceSpec (a capped, refreshing stack) - see
+    # _RESOURCE_SPEC_BUILDERS below.
+    "maiden-ice-rose": lambda sv: build_blessings_upon_you_per_shot_rules(sv),
     "miranda": lambda sv: build_health_up_hit_rate_rules(sv["health_up"]),
     "miranda-signature": lambda sv: build_health_up_rules(sv["health_up"]),
     "mint": lambda sv: build_here_i_go_rules({**sv["here_i_go"], "caster_atk": sv["caster_atk"]}),
@@ -1181,7 +1182,8 @@ _RESOURCE_SPEC_BUILDERS = {
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
     "cinderella": lambda sv: build_beautiful_resources(sv),
     "soda-twinkling-bunny": lambda sv: build_golden_chip_resources(sv),
-    "maiden-ice-rose": lambda sv: build_mp_resources(sv),
+    "maiden-ice-rose": lambda sv: (build_mp_resources(sv)
+                                   + build_meditation_resources(sv, sv["caster_max_hp"])),
     "elegg-boom-and-shock": lambda sv: build_elegg_ghost_resources(sv),
     "mihara-bonding-chain": lambda sv: build_ensnaring_chain_resources(sv),
     "diesel-winter-sweets-intro": lambda sv: build_diesel_resource_specs(sv),

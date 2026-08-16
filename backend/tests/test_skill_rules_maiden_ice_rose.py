@@ -2,7 +2,9 @@
 left-to-right per skill (fixed reference counts like "1 enemy unit(s)" or
 "for 1 time(s)" are not data slots).
 """
-from app.effects import EffectRegistry
+import pytest
+
+from app.effects import Effect, EffectRegistry
 from app.raid_simulator import simulate_raid
 from app.skill_rules.maiden_ice_rose import (
     MP_CAP,
@@ -10,7 +12,7 @@ from app.skill_rules.maiden_ice_rose import (
     build_blessings_upon_you_per_shot_rules,
     build_blessings_upon_you_rules,
     build_diamond_dust_dynamic_hit_count_nukes,
-    build_meditation_per_shot_rules,
+    build_meditation_resources,
     build_mp_resources,
 )
 from app.squad_engine import SquadContext, SquadMember
@@ -78,6 +80,31 @@ def test_blessings_upon_you_self_buff_does_not_retroactively_boost_its_own_cast(
     assert reg.total_for("flat_atk", MAIDEN, now=5.0) == 0.0
 
 
+def test_meditation_is_a_capped_stack_whose_life_refreshes_on_every_proc():
+    """"Max HP ▲ 6.34% for 15 sec, stacks up to 10", one stack per 6 Full
+    Charges. Each new stack restarts the 15 sec for the whole stack (Fienn,
+    range test 2026-08-17), so the count climbs to the cap instead of settling
+    at "procs per 15 sec".
+
+    That cap used to be written off as unable to bind - the reasoning assumed
+    all ten had to land inside ONE fixed 15-sec window. They do not; the window
+    keeps moving, so the cap is real and the engine was holding her at about two
+    stacks."""
+    (spec,) = build_meditation_resources(MAIDEN_VALUES, caster_max_hp=50000)
+    assert spec.name == "meditation"
+    assert spec.cap == 10
+    assert spec.fill == ("per_shot_every", 6)
+
+    (buff,) = spec.buffs
+    assert buff.stat == "flat_max_hp"
+    assert buff.scope == "self"
+    assert buff.lifetime == 15.0
+    assert buff.lifetime_refreshes is True
+    # 6.34% of her own Max HP per stack.
+    assert buff.value_fn(1) == pytest.approx(0.0634 * 50000)
+    assert buff.value_fn(10) == pytest.approx(10 * 0.0634 * 50000)
+
+
 def test_blessings_upon_you_self_buff_is_active_for_damage_after_the_cast():
     ctx = make_context()
     reg = EffectRegistry()
@@ -88,32 +115,32 @@ def test_blessings_upon_you_self_buff_is_active_for_damage_after_the_cast():
     assert reg.total_for("other_elemental_bonus", MAIDEN, now=15.1) == 0.0  # 10s window
 
 
-def test_meditation_stacks_max_hp_on_every_sixth_full_charge():
-    ps = build_meditation_per_shot_rules(MAIDEN_VALUES, caster_max_hp=50000)
-    assert len(ps) == 1
-    threshold, mode, rules = ps[0]
-    assert (threshold, mode) == (6, "every")
-
+def test_meditation_stacks_do_not_expire_one_by_one():
+    """The test this replaces pinned the OPPOSITE rule - it asserted the first
+    stack lapsing 15 sec after its own proc while the second lived on. That is
+    the plain timed semantic, and it is what held her at about two stacks and
+    made her "stacks up to 10" look unreachable. Each proc renews the whole
+    stack (Fienn, range test 2026-08-17), so nothing lapses until 15 sec after
+    the LAST one - and then all of it does."""
     ctx = make_context()
-    reg = EffectRegistry()
-    for rule in rules:
-        rule.action(ctx, "maiden-ice-rose", 10.0, reg)
     per_stack = 50000 * 0.0634
-    assert round(reg.total_for("flat_max_hp", MAIDEN, now=10.0), 4) == round(per_stack, 4)
-    # 두 번째 발동은 쌓인다 (첫 스택이 살아 있는 동안)
-    for rule in rules:
-        rule.action(ctx, "maiden-ice-rose", 16.0, reg)
-    assert round(reg.total_for("flat_max_hp", MAIDEN, now=16.0), 4) == round(2 * per_stack, 4)
-    assert round(reg.total_for("flat_max_hp", MAIDEN, now=25.1), 4) == round(per_stack, 4)  # 첫 스택 15초 만료
-    assert reg.total_for("flat_max_hp", MAIDEN, now=31.1) == 0.0
+    (spec,) = build_meditation_resources(MAIDEN_VALUES, caster_max_hp=50000)
+    for t in (10.0, 16.0):
+        ctx.fill_resource("maiden-ice-rose", spec.name, 1, time=t)
+    (buff,) = spec.buffs
 
+    def value_at(t):
+        return buff.value_fn(ctx.resource_count(
+            "maiden-ice-rose", spec.name, t, spec.cap, buff.lifetime,
+            lifetime_refreshes=buff.lifetime_refreshes))
 
-def test_meditation_is_self_scoped():
-    ps = build_meditation_per_shot_rules(MAIDEN_VALUES, caster_max_hp=50000)
-    reg = EffectRegistry()
-    for rule in ps[0][2]:
-        rule.action(make_context(), "maiden-ice-rose", 10.0, reg)
-    assert reg.total_for("flat_max_hp", {"slug": "ally", "element": "Iron"}, now=10.0) == 0.0
+    assert value_at(10.0) == pytest.approx(per_stack)
+    assert value_at(16.0) == pytest.approx(2 * per_stack)
+    # The old rule dropped the t=10 stack here. The refresh keeps both.
+    assert value_at(25.1) == pytest.approx(2 * per_stack)
+    # 15 sec after the LAST proc, the whole stack goes at once.
+    assert value_at(30.9) == pytest.approx(2 * per_stack)
+    assert value_at(31.1) == pytest.approx(0.0)
 
 
 def test_meditation_stacks_feed_her_own_max_hp_scaled_atk():
@@ -121,8 +148,11 @@ def test_meditation_stacks_feed_her_own_max_hp_scaled_atk():
     # 자기 Meditation 스택은 "엔진이 Max HP를 안 쓴다"는 사유로 빠져 있었다.
     ctx = make_context()
     reg = EffectRegistry()
-    for rule in build_meditation_per_shot_rules(MAIDEN_VALUES, caster_max_hp=50000)[0][2]:
-        rule.action(ctx, "maiden-ice-rose", 1.0, reg)
+    # One Meditation stack, as the resolution pass would emit it.
+    (spec,) = build_meditation_resources(MAIDEN_VALUES, caster_max_hp=50000)
+    (buff,) = spec.buffs
+    reg.add(Effect(buff.stat, buff.value_fn(1), buff.scope, None, "maiden-ice-rose"),
+            applied_at=1.0)
     for rule in build_blessings_upon_you_rules(MAIDEN_VALUES, caster_max_hp=50000):
         rule.action(ctx, "maiden-ice-rose", 5.0, reg)
     live_max_hp = 50000 * (1 + 0.0634)

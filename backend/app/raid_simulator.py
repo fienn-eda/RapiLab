@@ -1868,7 +1868,10 @@ def _simulate_raid_once(
                     }
                 prev_value = 0.0
                 for event_time in sorted(buff_step_times):
-                    count = context.resource_count(slug, spec.name, event_time, spec.cap, buff.lifetime)
+                    count = context.resource_count(
+                        slug, spec.name, event_time, spec.cap, buff.lifetime,
+                        lifetime_refreshes=buff.lifetime_refreshes,
+                    )
                     value = buff.value_fn(count)
                     if value != prev_value:
                         registry.add(

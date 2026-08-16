@@ -407,6 +407,52 @@ def test_resource_count_accumulates_all_fills_up_to_time_when_permanent():
     assert count(10.0) == 3
 
 
+def test_a_refreshing_stack_survives_while_fills_keep_arriving_inside_its_life():
+    """Maiden: Ice Rose's Meditation stack, "Max HP +6.34% for 15 sec, stacks up
+    to 10": each NEW stack restarts the 15 sec for the whole stack (Fienn,
+    range test 2026-08-17), so the count keeps climbing as long as she lands a
+    proc within 15 sec of the last one.
+
+    That is not the plain timed semantic, where each fill expires on its own
+    clock and the count settles at "fills per 15 sec" instead of climbing."""
+    ctx = make_context(SquadMember("maiden-ice-rose", burst_tier=3, element="Electric"))
+    for t in (0.0, 9.0, 18.0, 27.0):        # 9 sec apart: inside the 15-sec life
+        ctx.fill_resource("maiden-ice-rose", "meditation", 1, time=t)
+    count = lambda t: ctx.resource_count(
+        "maiden-ice-rose", "meditation", t, cap=10, lifetime=15.0,
+        lifetime_refreshes=True)
+
+    assert count(0.0) == 1
+    assert count(9.0) == 2
+    # The plain timed rule would have dropped the t=0 fill by now (0 + 15 < 18);
+    # the refresh keeps the whole stack alive.
+    assert count(18.0) == 3
+    assert count(27.0) == 4
+    # It dies 15 sec after the LAST fill, all at once.
+    assert count(41.9) == 4
+    assert count(42.1) == 0
+
+
+def test_a_refreshing_stack_restarts_after_a_gap_longer_than_its_life():
+    ctx = make_context(SquadMember("maiden-ice-rose", burst_tier=3, element="Electric"))
+    for t in (0.0, 9.0, 40.0):              # 31 sec gap breaks the chain
+        ctx.fill_resource("maiden-ice-rose", "meditation", 1, time=t)
+    count = lambda t: ctx.resource_count(
+        "maiden-ice-rose", "meditation", t, cap=10, lifetime=15.0,
+        lifetime_refreshes=True)
+
+    assert count(9.0) == 2
+    assert count(40.0) == 1, "the chain broke, so this fill starts a new stack"
+
+
+def test_a_refreshing_stack_still_clamps_to_its_cap():
+    ctx = make_context(SquadMember("maiden-ice-rose", burst_tier=3, element="Electric"))
+    for i in range(20):
+        ctx.fill_resource("maiden-ice-rose", "meditation", 1, time=i * 5.0)
+    assert ctx.resource_count("maiden-ice-rose", "meditation", 95.0, cap=10,
+                              lifetime=15.0, lifetime_refreshes=True) == 10
+
+
 def test_resource_count_clamps_to_cap():
     ctx = make_context(SquadMember("soda-twinkling-bunny", burst_tier=3, element="Iron"))
     ctx.fill_resource("soda-twinkling-bunny", "chip", 50, time=0.0)

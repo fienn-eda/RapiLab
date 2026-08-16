@@ -78,12 +78,21 @@ class ResourceBuff:
     emitted as a step function over the resource's fill schedule (see
     raid_simulator's resolution pass). `lifetime` None = a permanent stack that
     accumulates (Guillotine's EXP); a number = a timed stack that expires that
-    many seconds after each fill (Modernia's 10-sec stacks)."""
+    many seconds after each fill (Modernia's 10-sec stacks).
+
+    `lifetime_refreshes` picks the third semantic: each fill restarts the clock
+    for the WHOLE stack, so the count climbs while consecutive fills stay inside
+    `lifetime` and the stack expires together after the last one (Maiden: Ice
+    Rose's Meditation - see SquadContext.resource_count). Reach for it when the
+    skill text pairs "for N sec" with "stacks up to N" and the stacks are seen
+    to reach that cap in game; the plain timed rule instead settles at "fills
+    per lifetime"."""
 
     stat: str
     scope: str
     value_fn: Callable[[float], float]
     lifetime: float | None = None
+    lifetime_refreshes: bool = False
 
 
 @dataclass
@@ -108,6 +117,17 @@ class ResourceSpec:
     # burst spending 17 of the chip, Elegg's ghosts spending 9 at the cap). See
     # raid_simulator's resolution pass.
     resets: list[dict] = field(default_factory=list)
+    # Whether this resource IS a stacking buff in the game's sense - a status
+    # the unit carries with a "stacks up to N" clause - as opposed to a gauge or
+    # counter that merely happens to be modeled the same way. Only the former
+    # can be reached by an outside effect that raises stack counts (Flora's
+    # Petunia, "Increases the stack count of stackable buffs by 1").
+    #
+    # DECLARED, never inferred: Maiden: Ice Rose carries both kinds at once -
+    # her Meditation stack is a buff and takes Flora's +1, while her MP is a
+    # gauge her burst spends and does NOT (Fienn, range test 2026-08-17). No
+    # property of the spec itself separates them.
+    stackable_buff: bool = False
 
 
 def _matches_scope(scope: str, target: dict) -> bool:
