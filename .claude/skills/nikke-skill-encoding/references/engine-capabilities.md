@@ -351,6 +351,17 @@ How an instance gets a non-`attack` type:
   e.g. Takina Inoue's burst "normal attacks deal true damage for 10 sec".
 - **instant nukes** are always `attack` for now (no unit needs otherwise).
 
+**★ For a NORMAL ATTACK, delivery and true-damage typing are INDEPENDENT axes**
+(Fienn, 2026-08-16). A rocket launcher's shot converted to true damage is still
+a rocket, so it collects Projectile Explosion Damage **and** `true_damage_up`,
+and ignores DEF. The single `damage_type` tag cannot say both, so
+`_damage_instance` adds the weapon's delivery bucket
+(`raid_simulator.weapon_delivery_type` — only RL delivers one) on top of
+whatever the tag selects, for every `source == "normal_attack"` instance. Skill
+damage is NOT covered: a nuke fired by an RL unit is not a projectile explosion
+unless its own spec says so. Encoding a converted RL normal attack therefore
+needs nothing extra — the engine already keeps both buckets.
+
 Semantics (confirmed against the nikke.gg glossary - see
 `damage-formula-reference.md`): `true` damage **ignores enemy DEF** (a
 `true`-typed instance is computed with `enemy_def=0`); `attack_damage_up` is a
@@ -790,9 +801,18 @@ binary "while the stack is at max" gate (Laplace's 11.9% true-damage rider),
 or `lambda count: count` to scale with the stack. This resolves in **phase 2**,
 after the resource pass, which is why it can read a counter that the schedule
 itself could not: schedules run while the shot timeline is still being built.
-That ordering is also the reason a `weapon_mode_schedules` profile's
-`damage_type` **cannot** be gated this way - the profile is fixed when the
-segment is built, before any resource exists. **`core_eligible: True` opts one
+
+**A `weapon_mode_schedules` profile can carry the SAME 4-tuple as
+`damage_type_gate`** (2026-08-16) — the segment's `damage_type` then applies
+only where the gate is open. The profile is still fixed when the segment is
+built, so the gate rides the `ShotRecord` and phase 2 answers it at each shot's
+own time. A tick whose gate is shut is **not untyped**: it falls back to what
+its weapon delivers (`weapon_delivery_type`), i.e. exactly the type an ungated
+shot of that weapon would carry, and pays DEF like one. First consumer is
+Laplace: Signature's Buster, whose Additional Effect 2 reads "normal damage is
+applied as true damage **when** Hero Vision is at max stacks" — it reuses
+`hero_vision_max_stack_gate`, the same tuple her 11.9% rider passes as
+`resource_gate`, so one counter answers both paths. **`core_eligible: True` opts one
 scheduled instance into the Core Damage bonus**, against the general rule that
 only `source == "normal_attack"` collects it. Reach for it when the ticks are a
 SUMMON shooting rather than an effect ticking - a star or drone that aims and

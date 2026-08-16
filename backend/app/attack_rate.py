@@ -1246,6 +1246,12 @@ class ShotRecord:
     is_first_bullet: bool
     is_last_bullet: bool
     damage_type: str | None = None
+    # A `resource_gate` 4-tuple (name, cap, lifetime, gate_fn) deciding whether
+    # `damage_type` applies to THIS shot. A segment's typing is fixed when the
+    # segment is built, which is before any resource exists to read; carrying the
+    # gate lets phase 2 answer it at the shot's own time instead. Shut = the shot
+    # falls back to what its weapon delivers. None = the typing is unconditional.
+    damage_type_gate: tuple | None = None
     in_segment: bool = False
     # A transform whose shots land on the core every time, whatever spread the
     # unit's real weapon draws (Nayuta's Memory Incineration). Declared on the
@@ -1407,7 +1413,8 @@ def _segment_shot_records(seg, fight_duration, charge_speed_percent_at,
     records = [
         ShotRecord(t, profile["weapon"], profile["damage_percent"], bonus,
                    is_first_bullet=False, is_last_bullet=False,
-                   damage_type=profile.get("damage_type"), in_segment=True,
+                   damage_type=profile.get("damage_type"),
+                   damage_type_gate=profile.get("damage_type_gate"), in_segment=True,
                    always_core_hit=bool(profile.get("always_core_hit")),
                    spread_diameter=profile.get("spread_diameter"))
         for t in times if t < fight_duration
@@ -1506,6 +1513,7 @@ def _shared_magazine_shots(base, segments, fight_duration, max_ammo_percent_at,
             shot_time, profile["weapon"], profile["damage_percent"], bonus,
             is_first_bullet=opening, is_last_bullet=False,
             damage_type=profile.get("damage_type") if in_segment else None,
+            damage_type_gate=profile.get("damage_type_gate") if in_segment else None,
             in_segment=in_segment,
             always_core_hit=in_segment and bool(profile.get("always_core_hit")),
             spread_diameter=profile.get("spread_diameter") if in_segment else None))

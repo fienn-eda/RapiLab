@@ -14,12 +14,18 @@ Modeled (DPS-relevant):
   as a `weapon_mode_schedules` segment (`until_shots: BUSTER_SHOTS=93`, rate
   of fire = BUSTER_SHOTS / duration = 9.3/s, Fienn's in-game measured tick
   count - same shape as Red Hood's Red Wolf / Snow White's Seven Dwarves: I /
-  Maxwell's Pierce Shot transform segments). Ticks are typed TRUE damage:
-  Additional Effect 2 reads "Normal damage is applied as true damage when
-  Hero Vision is at max stacks", and the segment applies that typing to the
-  whole window because a segment's `damage_type` is fixed when the segment is
-  built, which is before any resource exists to gate it (see the deferral
-  below for the measured cost).
+  Maxwell's Pierce Shot transform segments). Additional Effect 2 reads "Normal
+  damage is applied as true damage when Hero Vision is at max stacks", so the
+  ticks carry `damage_type: "true"` behind a `damage_type_gate` - the same
+  gate tuple the 11.9% rider uses, so one counter answers both paths and they
+  cannot drift apart. A tick whose gate is shut is typed as what her weapon
+  delivers (`projectile_explosion`, she is an RL) and pays enemy DEF.
+  Either way the tick collects Projectile Explosion Damage: delivery and
+  true-damage typing are independent axes (Fienn, 2026-08-16). Measured on a
+  DEF-8,000 boss in a Mint deck (`scripts/measure_laplace_buster_typing.py`):
+  the gate is worth −3.08% of her damage and the delivery bucket +11.85% on top
+  of that, +8.40% net, with 519 of 689 ticks true. Neither shows up in
+  `sweep_slug_damage.py` - its boss has no DEF and its shell no such buffer.
   PLUS a per-tick +11.9%-of-final-ATK true-damage rider ("Deals 11.9% of
   final ATK as true damage" when Hero Vision is at max stacks) landing
   alongside each Normal Damage tick: modeled as a `scheduled_nukes` spec
@@ -50,19 +56,8 @@ Modeled (DPS-relevant):
 Not modeled / deferred (same as base Laplace, plus signature-specific):
 - Hero Vision's Explosion Radius payload: not a damage multiplier, inert.
   (The COUNTER itself is modeled - see `build_hero_vision_signature_resources`
-  - and the 11.9% rider now reads it. What stays unmodeled is the gate on the
-  weapon-mode segment's true-damage TYPING, below.)
-- The max-Hero-Vision gate on the Buster segment's true-damage typing. The
-  counter says the gate is open for 82.5% of her transform ticks, but a
-  `weapon_mode_schedules` profile fixes its `damage_type` when the segment is
-  built - and segments are built while the shot timeline is being generated,
-  BEFORE any resource exists to read. Splitting each window into a typed
-  prefix and an ordinary suffix needs a schedule that can see its own owner's
-  shots, which is a different piece of engine than this one.
-  Measured cost of leaving it: the typing is worth +3.54% of her total on a
-  DEF-carrying boss, so the ~17.5% of ticks that should lose it overstate her
-  by roughly 0.6%. The 11.9% rider, worth +7.34%, is the larger half and IS
-  gated (a −1.23% correction). See `docs/engine-gaps.md`.
+  - and BOTH consumers now read it: the 11.9% rider and the segment's
+  true-damage typing.)
 - Hero Bomber's parts-hit 14.78% additional damage: needs a Parts-hit
   trigger the engine lacks (same as base Laplace).
 - Laplace Buster's "Gains Pierce" (Additional Effect 1) IS modeled, as the
@@ -133,9 +128,18 @@ def build_hero_bomber_signature_per_shot_rules(values):
 
 
 def build_buster_weapon_mode_schedule(values):
-    """Laplace Buster's Normal Damage phase: 93 measured ticks over the
-    10-sec transform window, typed true damage (steady max-Hero-Vision
-    assumption - see module docstring)."""
+    """Laplace Buster's Normal Damage phase: 93 measured ticks over the 10-sec
+    transform window.
+
+    Additional Effect 2 reads "Normal damage is applied as true damage when Hero
+    Vision is at max stacks", so the typing carries the same gate as the rider
+    beside it - the two paths read one counter and cannot drift apart. Fills stop
+    for the whole transform (Buster ticks are not Full Charge attacks), so the
+    count only decays inside a window and a window that opens shut stays shut.
+
+    A tick whose gate is shut is not untyped: it is a rocket, so it is typed
+    exactly as her ordinary RL normal attack is (raid_simulator's
+    `weapon_delivery_type`), and it pays enemy DEF like one."""
     buster = values["laplace_buster"]
     damage_percent = float(buster["description_value_02"])
     duration = float(buster["description_value_03"])
@@ -144,6 +148,7 @@ def build_buster_weapon_mode_schedule(values):
         "damage_percent": damage_percent,
         "rate_of_fire": BUSTER_SHOTS / duration,
         "damage_type": "true",
+        "damage_type_gate": hero_vision_max_stack_gate(values),
     }
 
     def schedule(context, fight_duration):

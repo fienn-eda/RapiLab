@@ -921,6 +921,60 @@ def test_non_true_typed_nuke_still_subtracts_enemy_defense():
     assert burst_hits[0]["damage"] == 8000.0  # (10000 - 2000) * 1.0 coeff, attack-typed
 
 
+def _rl_weapon():
+    # `charge_damage_percent` must be non-zero: an RL is a charge weapon, so a
+    # 0% full-charge multiplier makes every shot deal 0 damage and the ratio
+    # assertions below would hold vacuously.
+    return {"weapon": "RL", "damage_percent": 10.0, "max_ammo": 10,
+            "reload_time": 2.0, "charge_time": 1.0, "charge_damage_percent": 100.0}
+
+
+def _rl_normal_attack_turned_true(with_projectile_explosion):
+    """An RL unit's first normal attack while a skill has converted her normal
+    attacks to true damage, with and without a Projectile Explosion buff."""
+    def grant(context, caster_slug, time, registry):
+        registry.add(Effect("normal_attacks_deal_true", 1.0, "self", None, caster_slug),
+                     applied_at=time)
+        if with_projectile_explosion:
+            registry.add(
+                Effect("projectile_explosion_damage_up", 0.5, "self", None, caster_slug),
+                applied_at=time)
+
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [],
+         "attacker": [SkillRule(trigger="battle_start", action=grant)]},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=2000,
+        gauge_charge_time=5.0,
+        fight_duration=20.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _rl_weapon()},
+    )
+    return _first_normal_attack(result)
+
+
+def test_a_true_typed_normal_attack_still_collects_its_weapons_bucket():
+    """Projectile Explosion Damage follows the WEAPON, not the damage typing:
+    a rocket launcher's normal attack is a projectile explosion whether or not
+    a skill has converted it to true damage (Fienn, 2026-08-16).
+
+    The two axes are independent - "true" decides DEF and `true_damage_up`,
+    the weapon decides the delivery bucket - so reading `damage_type` alone
+    to pick ONE bucket silently drops the other."""
+    without = _rl_normal_attack_turned_true(False)
+    with_pe = _rl_normal_attack_turned_true(True)
+
+    # The conversion really happened, so this is the true-typed case and not a
+    # plain projectile-explosion hit that would pass trivially.
+    assert without["damage_type"] == "true"
+    # Ratio rather than an absolute: the charge bonus and the weapon percent
+    # divide out, leaving exactly the bucket under test.
+    assert with_pe["damage"] == pytest.approx(without["damage"] * 1.5)
+
+
 def test_rocket_launcher_normal_attacks_are_projectile_explosion_typed():
     # RL normal attacks are projectile explosions, so a squad Projectile
     # Explosion Damage buff raises them (on top of the still-global attack buff).

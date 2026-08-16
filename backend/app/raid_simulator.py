@@ -596,6 +596,18 @@ _TYPE_BUCKETS = {
     "sequential": ["sequential_attack_damage_up"],
 }
 
+
+def weapon_delivery_type(weapon_type):
+    """The damage type a weapon's own normal attacks DELIVER, before any skill
+    converts them. Only a rocket launcher delivers a bucket of its own.
+
+    Delivery and typing are independent axes: a skill can convert a unit's
+    normal attacks to true damage, but the shot is still a rocket, so it still
+    collects Projectile Explosion Damage (Fienn, 2026-08-16). Reading
+    `damage_type` alone to pick ONE bucket drops whichever axis lost.
+    """
+    return "projectile_explosion" if weapon_type == "RL" else "attack"
+
 # Every registry stat phase-2 damage computation can read (_damage_instance,
 # _normal_attack_percent). All are constant within one state epoch, so the
 # whole bundle is resolved once per (target, epoch, registry version) - see
@@ -998,6 +1010,7 @@ def _simulate_raid_once(
     def _damage_instance(
         slug, percent, time, damage_type="attack", extra_charge_bonus=0.0, extra_flat_atk=0.0,
         hits_core=False, on_charge_weapon=None, is_normal_attack=False, core_hit_share=1.0,
+        weapon=None,
     ):
         bundle = _stat_bundle(slug, time)
         # True Damage ignores enemy DEF (nikke.gg glossary).
@@ -1089,7 +1102,17 @@ def _simulate_raid_once(
             damage_taken_up=bundle["damage_taken_up"],
         )
         # Type-specific Damage-Up buckets apply only to instances of that type.
-        for bucket in _TYPE_BUCKETS[damage_type]:
+        buckets = list(_TYPE_BUCKETS[damage_type])
+        # ...and a normal attack ALSO collects what its weapon delivers, which is
+        # a separate axis from the typing: an RL shot converted to true damage is
+        # still a rocket, so it keeps Projectile Explosion Damage on top of
+        # `true_damage_up` (Fienn, 2026-08-16). Non-RL weapons deliver "attack",
+        # whose bucket list is empty, so this adds nothing for them.
+        if is_normal_attack and weapon is not None:
+            for bucket in _TYPE_BUCKETS[weapon_delivery_type(weapon)]:
+                if bucket not in buckets:
+                    buckets.append(bucket)
+        for bucket in buckets:
             terms[bucket] = bundle[bucket]
         return calculate_damage(**terms)
 
@@ -1098,10 +1121,10 @@ def _simulate_raid_once(
         # window (e.g. Takina Inoue's burst: "normal attacks deal true damage").
         if registry.total_for("normal_attacks_deal_true", target_for(slug), time) > 0:
             return "true"
-        # Otherwise a rocket launcher's normal attacks are projectile explosions.
-        if weapon_type == "RL":
-            return "projectile_explosion"
-        return "attack"
+        # Otherwise the shot is typed by what the weapon delivers. The converted
+        # case above does NOT lose that bucket - `_damage_instance` adds it back
+        # from the shot's own weapon (see weapon_delivery_type).
+        return weapon_delivery_type(weapon_type)
 
     def record(
         slug, percent, time, source, damage_type="attack",
@@ -1109,11 +1132,20 @@ def _simulate_raid_once(
         on_charge_weapon=None, core_eligible_override=None, always_core_hit=False,
         spread_diameter=None,
         magazine_index=None,
+        weapon=None,
+        damage_type_gate=None,
     ):
         damage_events.append({
             "slug": slug, "percent": percent, "time": time, "source": source,
             "damage_type": damage_type, "extra_charge_bonus": extra_charge_bonus,
             "resource_gate": resource_gate, "extra_flat_atk": extra_flat_atk,
+            # Whether `damage_type` actually applies to this instance, answered
+            # in phase 2 against the resource count at its own time.
+            "damage_type_gate": damage_type_gate,
+            # The weapon this instance was actually fired by - a segment fires a
+            # different one than the unit's own. None = not a normal attack, so
+            # there is no delivery bucket to collect (see weapon_delivery_type).
+            "weapon": weapon,
             # None = decide from the unit's base weapon; a normal attack pins
             # the weapon its own shot record actually fired.
             "on_charge_weapon": on_charge_weapon,
@@ -1144,6 +1176,24 @@ def _simulate_raid_once(
         name, cap, lifetime, scale_fn = ev["resource_gate"]
         count = context.resource_count(ev["slug"], name, ev["time"], cap, lifetime)
         return ev["percent"] * scale_fn(count)
+
+    def _resolve_damage_type(ev):
+        # A segment can type its shots CONDITIONALLY - Laplace: Signature's
+        # Buster reads "normal damage is applied as true damage when Hero Vision
+        # is at max stacks". The segment is built while the shot timeline is
+        # generated, before any resource exists to read, so the condition is
+        # answered here instead, at each shot's own time.
+        #
+        # Shut = the shot is typed by what its weapon delivers, exactly as an
+        # ungated shot of that weapon would be. It does NOT become plain
+        # "attack": the rocket is still a rocket (see weapon_delivery_type).
+        if ev["damage_type_gate"] is None:
+            return ev["damage_type"]
+        name, cap, lifetime, gate_fn = ev["damage_type_gate"]
+        count = context.resource_count(ev["slug"], name, ev["time"], cap, lifetime)
+        if gate_fn(count) > 0:
+            return ev["damage_type"]
+        return weapon_delivery_type(ev["weapon"])
 
     def drain_instant_damage(time):
         # A passive that deals damage on a trigger OTHER than the caster's own
@@ -1632,7 +1682,9 @@ def _simulate_raid_once(
                    on_charge_weapon=rec.weapon in CHARGE_WEAPONS,
                    always_core_hit=rec.always_core_hit,
                    spread_diameter=rec.spread_diameter,
-                   magazine_index=rec.magazine_index)
+                   magazine_index=rec.magazine_index,
+                   weapon=rec.weapon,
+                   damage_type_gate=rec.damage_type_gate)
         shot_times_by_slug[slug] = shot_times
 
     # "For N round(s)" (bullet-count) buffs expire when the affected ally
@@ -1994,8 +2046,11 @@ def _simulate_raid_once(
         """
         is_normal_attack = ev["source"] == "normal_attack"
         percent = _normal_attack_percent(ev) if is_normal_attack else _resolve_percent(ev)
+        # Resolved once and used everywhere below, so the core test, the damage
+        # and the log all describe the same instance.
+        damage_type = _resolve_damage_type(ev)
         hits_core = core_hittable and (
-            core_eligible(ev["source"], ev["damage_type"])
+            core_eligible(ev["source"], damage_type)
             if ev["core_eligible_override"] is None
             else ev["core_eligible_override"]
         )
@@ -2010,16 +2065,17 @@ def _simulate_raid_once(
                 "time": ev["time"],
                 "damage": _damage_instance(
                     ev["slug"], percent, ev["time"],
-                    damage_type=ev["damage_type"],
+                    damage_type=damage_type,
                     extra_charge_bonus=ev["extra_charge_bonus"],
                     extra_flat_atk=ev["extra_flat_atk"],
                     hits_core=on_core,
                     core_hit_share=share,
                     on_charge_weapon=ev["on_charge_weapon"],
                     is_normal_attack=is_normal_attack,
+                    weapon=ev["weapon"],
                 ) * weight,
                 "source": ev["source"],
-                "damage_type": ev["damage_type"],
+                "damage_type": damage_type,
             }
 
         pierces = (

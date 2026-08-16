@@ -8,6 +8,9 @@ from types import SimpleNamespace
 import pytest
 
 from app.effects import EffectRegistry
+# The module-level HERO_VISION below is this build's skill VALUES; the resource's
+# own name is a separate constant, so it is aliased rather than shadowed.
+from app.skill_rules.laplace import HERO_VISION as HERO_VISION_RESOURCE
 from app.skill_rules.laplace_signature import (
     BUSTER_SHOTS,
     build_buster_scheduled_nukes,
@@ -78,16 +81,33 @@ def test_buster_weapon_mode_schedule_shape():
     schedule = build_buster_weapon_mode_schedule(LAPLACE_SIGNATURE_VALUES)
     context = SimpleNamespace(burst_times={"laplace-signature": [20.0]})
     segments = schedule(context, 180.0)
-    assert segments == [{
-        "start": 20.0,
-        "until_shots": 93,
-        "profile": {
-            "weapon": "RL",
-            "damage_percent": 22.2,
-            "rate_of_fire": pytest.approx(9.3),
-            "damage_type": "true",
-        },
-    }]
+    (segment,) = segments
+    assert segment["start"] == 20.0
+    assert segment["until_shots"] == 93
+    profile = segment["profile"]
+    # The gate is compared separately below - a 4-tuple carrying a lambda has no
+    # useful equality, and pinning the dict whole would only assert that some
+    # gate is present.
+    gate = profile.pop("damage_type_gate")
+    assert profile == {
+        "weapon": "RL",
+        "damage_percent": 22.2,
+        "rate_of_fire": pytest.approx(9.3),
+        "damage_type": "true",
+    }
+
+
+def test_buster_segment_typing_is_gated_on_max_hero_vision():
+    """The typing carries the SAME gate as the 11.9% rider, so one counter
+    answers both paths and they cannot drift apart."""
+    schedule = build_buster_weapon_mode_schedule(LAPLACE_SIGNATURE_VALUES)
+    context = SimpleNamespace(burst_times={"laplace-signature": [20.0]})
+    (segment,) = schedule(context, 180.0)
+    name, cap, lifetime, gate_fn = segment["profile"]["damage_type_gate"]
+
+    assert (name, cap, lifetime) == (HERO_VISION_RESOURCE, 5, 15.0)
+    assert [gate_fn(count) for count in (0, 4)] == [0.0, 0.0]
+    assert gate_fn(5) == 1.0
 
 
 def test_buster_weapon_mode_schedule_one_segment_per_own_burst():

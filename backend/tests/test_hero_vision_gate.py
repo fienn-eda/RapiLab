@@ -13,7 +13,7 @@ attacks/sec on the base and 0.33/sec on the signature.
 """
 import pytest
 
-from app.raid_simulator import _resource_fill_times
+from app.raid_simulator import _resource_fill_times, simulate_raid
 from app.skill_rules.laplace import (
     HERO_VISION,
     build_buster_scheduled_nukes,
@@ -23,6 +23,7 @@ from app.skill_rules.laplace_signature import (
     build_buster_scheduled_nukes as build_signature_buster_scheduled_nukes,
 )
 from app.skill_rules.laplace_signature import (
+    build_buster_weapon_mode_schedule,
     build_hero_vision_signature_resources,
 )
 from app.squad_engine import SquadContext, SquadMember
@@ -156,3 +157,64 @@ def test_rider_rides_every_buster_tick():
     sig_ctx = make_context("laplace-signature")
     sig_ctx.burst_times["laplace-signature"] = [10.0]
     assert len(signature["schedule"](sig_ctx, 180.0)) == 93
+
+
+# --------------------------------------------------------------------------
+# The gate reaches the transform's own TICKS, not just the rider beside them
+# --------------------------------------------------------------------------
+
+SIG = "laplace-signature"
+
+
+def _buster_tick_types(gauge_charge_time):
+    """The damage types of her normal attacks when she bursts at
+    `gauge_charge_time`.
+
+    That one number decides the gate: bursting early leaves her no time to land
+    the five Full Charge attacks Hero Vision needs, bursting late gives her
+    plenty. Nothing else differs between the two runs, so any difference in the
+    types is the gate and only the gate.
+    """
+    values = signature_values()
+    deck = [
+        {"slug": "b1", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "b2", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": SIG, "burst_tier": 3, "element": "Iron", "cooldown": 40.0},
+    ]
+    result = simulate_raid(
+        deck,
+        {"b1": [], "b2": [], SIG: []},
+        burst_damage_percents={},
+        base_stats={m["slug"]: {"atk": 10000, "def": 0, "max_hp": 0} for m in deck},
+        enemy_def=2000,
+        gauge_charge_time=gauge_charge_time,
+        # Long enough to cover her whole 10-sec transform and no longer, so a
+        # second burst never muddies the sample.
+        fight_duration=gauge_charge_time + 11.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={SIG: {"weapon": "RL", "damage_percent": 10.0, "max_ammo": 999,
+                            "reload_time": 0.0, "charge_time": 1.0,
+                            "charge_damage_percent": 100.0}},
+        weapon_mode_schedules={SIG: build_buster_weapon_mode_schedule(values)},
+        resource_specs={SIG: build_hero_vision_signature_resources(values)},
+    )
+    return {e["damage_type"] for e in result["damage_log"]
+            if e["slug"] == SIG and e["source"] == "normal_attack"}
+
+
+def test_buster_ticks_are_true_typed_only_while_the_gate_is_open():
+    """Additional Effect 2 reads "Normal damage is applied as true damage WHEN
+    Hero Vision is at max stacks", so the transform's ticks are true damage only
+    for as long as the counter says so - and the counter cannot say so at a
+    burst she takes before landing five Full Charge attacks.
+
+    Fills stop for the whole transform (Buster ticks are not Full Charge
+    attacks), so a window that opens shut stays shut."""
+    assert "true" not in _buster_tick_types(1.0)
+
+
+def test_buster_ticks_are_true_typed_when_she_bursts_at_max_stacks():
+    """The other side of the same gate - without this, typing every tick
+    ordinary would also pass."""
+    assert "true" in _buster_tick_types(30.0)
