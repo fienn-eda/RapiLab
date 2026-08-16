@@ -63,33 +63,69 @@ def test_noir_rabbit_twins_b_grants_flat_rounds_on_full_burst():
     assert reg.total_for("max_ammo_rounds", ALLY, 10.1) == 0.0
 
 
+def _noir_with_squadmate_ctx():
+    """Noir plus Blanc - her own in-game squad (777) - so Finale's third bullet,
+    "with an ally from the same squad still on the battlefield", is armed."""
+    return SquadContext([
+        SquadMember("noir", burst_tier=3, element="Wind", weapon="SG"),
+        SquadMember("blanc", burst_tier=2, element="Wind", weapon="AR"),
+        SquadMember("ally", burst_tier=1, element="Iron"),
+    ])
+
+
 def test_noir_finale_burst_parts_buffs_stack_then_expire():
     reg = EffectRegistry()
-    fire_trigger("own_burst_activate", {"noir": build_noir_rules(NOIR)}, deck_ctx("noir"), reg, 0.0)
+    fire_trigger("own_burst_activate", {"noir": build_noir_rules(NOIR)},
+                 _noir_with_squadmate_ctx(), reg, 0.0)
     # both parts buffs active in the first 10s -> sum
     assert round(reg.total_for("damage_to_interruption_parts_up", ALLY, 0.0), 4) == round(0.2323 + 0.1936, 4)
     assert round(reg.total_for("damage_to_interruption_parts_up", ALLY, 11.0), 4) == 0.1936  # 10s one expired
     assert reg.total_for("damage_to_interruption_parts_up", ALLY, 31.0) == 0.0  # 30s one expired
 
 
+def test_noir_finale_squad_bullet_needs_a_777_squadmate():
+    """Finale's third bullet reads "Activates with an ally from the same squad
+    still on the battlefield". Noir's in-game squad is 777 - Blanc and Rouge,
+    and nobody else - so without one of them in the deck it does not fire.
+
+    It used to be applied unconditionally, which paid every deck a Hit Rate the
+    game only gives her alongside a twin. Blanc's identically-worded bullet was
+    gated correctly all along; this is the same clause on the other unit.
+    """
+    reg = EffectRegistry()
+    fire_trigger("own_burst_activate", {"noir": build_noir_rules(NOIR)},
+                 _noir_weapon_ctx(), reg, 0.0)
+    noir = {"slug": "noir", "element": "Wind"}
+    ar_ally = {"slug": "ar-ally", "element": "Fire"}
+    # Only the shotgun bullet survives - Noir is a shotgun, the AR ally is not.
+    assert round(reg.total_for("hit_rate", noir, 0.0), 4) == 0.1393
+    assert reg.total_for("hit_rate", ar_ally, 0.0) == 0.0
+    # The shotgun bullet's own parts half still lands; the 30-sec one does not.
+    assert round(reg.total_for("damage_to_interruption_parts_up", noir, 0.0), 4) == 0.2323
+    assert reg.total_for("damage_to_interruption_parts_up", noir, 11.0) == 0.0
+
+
 def test_noir_finale_burst_percent():
     assert finale_burst_percent(NOIR) == 351.64
 
 
-def _noir_weapon_ctx():
-    return SquadContext([
+def _noir_weapon_ctx(with_squadmate=False):
+    members = [
         SquadMember("noir", burst_tier=3, element="Wind", weapon="SG"),
         SquadMember("sg-ally", burst_tier=1, element="Iron", weapon="SG"),
         SquadMember("ar-ally", burst_tier=2, element="Fire", weapon="AR"),
-    ])
+    ]
+    if with_squadmate:
+        members.append(SquadMember("rouge", burst_tier=1, element="Electric", weapon="SR"))
+    return SquadContext(members)
 
 
 def test_noir_finale_hit_rate_pays_shotguns_twice_and_everyone_once():
     """Finale carries two Hit Rate bullets: +13.93% for 10s to shotgun allies
     (the exact weapon subset), and +11.61% for 30s to everyone. A shotgun holds
-    both."""
+    both - with a 777 squadmate present to arm the second one."""
     reg = EffectRegistry()
-    ctx = _noir_weapon_ctx()
+    ctx = _noir_weapon_ctx(with_squadmate=True)
     fire_trigger("own_burst_activate", {"noir": build_noir_rules(NOIR)}, ctx, reg, 0.0)
     noir = {"slug": "noir", "element": "Wind"}
     sg_ally = {"slug": "sg-ally", "element": "Iron"}

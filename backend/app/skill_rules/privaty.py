@@ -60,8 +60,9 @@ of a SkillRule, same pattern as Helm's Aegis Cannon.
 from app.effects import Effect, Pulse
 from app.squad_engine import SkillRule
 
-# Privaty runs with her signature weapon completed (Fienn confirmed), so the
-# manifest reads the dollskills arrays, not the base skills.
+# One manifest per build: the base slug reads `skills`, the Favorite Item slug
+# reads `dollskills`. Which one a user fights with comes from their roster's
+# per-unit `favorite_item` flag, never from an assumption here.
 SKILL_VALUE_MANIFESTS = {
     "privaty": {
         "source": "dotgg",

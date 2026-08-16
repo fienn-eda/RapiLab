@@ -27,7 +27,10 @@ Modeled (DPS-relevant):
   as base Julia's Crescendo, differing only in the fill (base fills on the last
   bullet of a magazine; the signature fills on crit count).
 - Marcato (dollskills[1]): every 8 expected critical hits, 88% of final ATK.
-  "As additional damage", so Full-Burst-Bonus eligible.
+  It rides her own shots, so it is computed at each proc's own time and takes
+  the Full Burst bonus on whichever land inside a window - the timing decides
+  it, not the "as additional damage" wording (that text rule was deleted
+  2026-07-28).
 - Climax's gated rider: an additional 544.5% when Crescendo is at max stacks,
   as a `resource_scaled_nukes` entry whose scale_fn is 1 at the cap and 0 below
   it - identical in shape to base Julia's.

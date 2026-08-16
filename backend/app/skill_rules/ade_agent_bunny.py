@@ -23,8 +23,12 @@ They sit a uniform 1.06x below the model, and the cause is her COLLECTIBLE
 weapon's own 250% full charge to 265.775%. Nothing in the engine models
 collectible skill effects - see docs/engine-gaps.md #17.
 
-Not modeled: Spy Lens / Minimum Effective Range STACKING (the 4.44%-per-stack
-ramp to max - approximated as permanently maxed). Her burst has no enemy nuke.
+Not modeled: every Minimum Effective Range bullet - Spy Lens's 4.44%-per-stack
+ramp (approximated as permanently maxed, since the ATK bullet it gates is what
+matters) and her burst's own +55.56% for 10 sec. The engine holds no
+minimum-effective-range stat: since 2026-07-31 the effective-range bonus is
+decided by the encounter (`BossProfile.effective_range_band`), which no skill
+can move, so encoding either would be inert. Her burst has no enemy nuke.
 
 The effective-range bonus itself is no longer an engine gap: since 2026-07-31
 `BossProfile.effective_range_band` pays the measured +0.30 to the weapon classes

@@ -231,10 +231,11 @@ def _over_energy_stage_rule(values, caster_max_hp):
     (~22.5s at the measured baseline), so pre-adding future-dated effects here
     is replay-safe (the same pre-add pattern `periodic_rules` uses).
 
-    Each stage REPLACES the previous one (refreshing, one group) - the skill
-    lists 2/3/7/10.5% as the value AT each stage, read as an escalating tier
-    rather than a cumulative sum. If the original text turns out to be
-    cumulative, only the value passed here changes.
+    Each stage REPLACES the previous one in the registry (refreshing, one
+    group), but the VALUE it carries is cumulative: the skill says "[Each
+    subsequent effect triggers all effects before it]", so stage 2 is worth 1+2
+    and stage 4 is worth 1+2+3+4 = +22.5% Max HP (Fienn, 2026-07-24). Refreshing
+    is what stops the sum being double-counted when the next stage lands.
     """
     s1 = values["electric_power_full_full_charge"]
     s2 = values["over_energy"]

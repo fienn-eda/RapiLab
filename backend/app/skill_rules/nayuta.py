@@ -13,8 +13,8 @@ Fienn's cycle-accuracy preference).
 
 Per Fienn, "exceeds N stacks" here means "reaches N stacks" (>= N), not a
 strict > N - confirmed against his in-game knowledge, since the literal
-"exceeds 30" (Stage 3) would otherwise be impossible (30 is also the max cap,
-`description_value_02` == `description_value_03` == 30).
+"exceeds 30" (Stage 3) would otherwise be impossible: Stage 3's threshold is
+also the stack cap (`description_value_11` == `description_value_03` == 30).
 
 Timeline (the Nth stack lands at t=N*3, since the first stack lands at t=3s):
 Stage 1 (reaches 2 stacks) at t=6s, Stage 2 (reaches 10 stacks) at t=30s,

@@ -138,9 +138,25 @@ def test_a_burst_nuke_worded_as_plain_damage_does_not_take_the_bonus():
     assert get_burst_resolves_after_cast("crown") is False         # no burst nuke at all
 
 
+QUENCY_EXPLORE_ROUTE = {
+    "description_value_01": "2", "description_value_02": "1",
+    "description_value_03": "1.36", "description_value_04": "10", "description_value_05": "2",
+    "description_value_06": "2.45", "description_value_07": "10", "description_value_08": "2",
+    "description_value_09": "2", "description_value_10": "1",
+    "description_value_11": "2.71", "description_value_12": "10", "description_value_13": "1",
+    "description_value_14": "4.9", "description_value_15": "10", "description_value_16": "1",
+    "description_value_17": "3", "description_value_18": "2",
+    "description_value_19": "4.08", "description_value_20": "5", "description_value_21": "0.5",
+    "description_value_22": "7.36", "description_value_23": "5", "description_value_24": "0.5",
+}
+
+
 def test_build_nikke_rules_returns_the_great_thief_burst_percent_for_quency():
     skill_values = {
         "secure_route": {"description_value_01": "49.58", "description_value_02": "25.25", "description_value_03": "16.73"},
+        # Explore Route: her ATK / Hit Rate steady states are summed from these
+        # per-stage (value, cap) pairs, so the builder needs the whole skill.
+        "explore_route": QUENCY_EXPLORE_ROUTE,
         "the_great_thief": {
             "description_value_01": "57.08", "description_value_02": "10",
             "description_value_03": "25.87", "description_value_04": "10",

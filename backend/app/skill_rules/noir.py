@@ -12,9 +12,12 @@ Modeled (DPS-relevant):
   +19.36% for 30s. The shotgun bullet's Hit Rate uses the EXACT weapon subset;
   its Damage-to-Interruption-Parts twin stays on the squad approximation it was
   encoded with (changing that moves damage, and is not this change's business).
-  The second bullet's "with an ally from the same squad still on the
-  battlefield" gate is always true in a sim where nobody dies, so it applies
-  unconditionally to the squad. "Interruption Parts" (저지 부위) is the zone an
+  The second bullet reads "Activates with an ally from the same squad still on
+  the battlefield" - her in-game SQUAD, 777, which is Blanc and Rouge and nobody
+  else. Nobody dies in this sim, so "still on the battlefield" is always true,
+  but "from the same squad" is a deck question and is gated on it
+  (`SQUAD_777_SLUGS`). Blanc's identically-worded bullet has always been gated
+  the same way. "Interruption Parts" (저지 부위) is the zone an
   interruption gimmick makes you hit - NOT a destructible part - so it goes to
   its own stat and, like Damage to Parts, never reaches body damage.
   The two Hit Rate halves stack on a shotgun ally (+25.54% together), which
@@ -27,6 +30,13 @@ Modeled (DPS-relevant):
   built with, the same granularity every max-ammo buff already has here.
 """
 from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
+from app.squad_engine import deck_contains_any
+
+# Noir's in-game squad, minus herself: the audience of Finale's "with an ally
+# from the same squad still on the battlefield". 777 is Blanc, Noir and Rouge -
+# three units, all encoded (`detail.squad` in their ShiftyPad bundles, rids
+# 270/271/272). Blanc carries the same clause and names the same pair.
+SQUAD_777_SLUGS = frozenset({"blanc", "rouge"})
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -92,12 +102,17 @@ def build_noir_rules(values):
         member_subset_buff_rule("own_burst_activate", shotgun_allies, [
             ("hit_rate", sg_hit_rate, sg_duration),
         ]),
+        # The shotgun bullet's Damage-to-Interruption-Parts twin keeps the squad
+        # approximation it has carried since the encoding landed - narrowing that
+        # one moves real damage numbers, which is a separate change from this one.
+        # It rides the shotgun bullet, so it is NOT gated on a squadmate.
+        buff_rule("own_burst_activate", [
+            ("damage_to_interruption_parts_up", parts_1, "squad", parts_1_duration),
+        ]),
+        # The third bullet needs a 777 squadmate on the field - see the module
+        # docstring. Both of its halves are gated together.
         buff_rule("own_burst_activate", [
             ("hit_rate", squad_hit_rate, "squad", squad_hit_rate_duration),
-            # Its Damage-to-Interruption-Parts twin keeps the squad approximation
-            # it has carried since the encoding landed - narrowing that one moves
-            # real damage numbers, which is a separate change from this one.
-            ("damage_to_interruption_parts_up", parts_1, "squad", parts_1_duration),
             ("damage_to_interruption_parts_up", parts_2, "squad", parts_2_duration),
-        ]),
+        ], condition=deck_contains_any(SQUAD_777_SLUGS)),
     ]

@@ -35,6 +35,7 @@ SKILL_VALUE_MANIFESTS = {
         "test_module": "test_skill_rules_quency_escape_queen",
         "keys": {
             "secure_route": ("skills", 0),
+            "explore_route": ("skills", 1),
             "the_great_thief": ("skills", 2),
         },
         "drop_tokens": {
@@ -44,9 +45,40 @@ SKILL_VALUE_MANIFESTS = {
 }
 
 
-STEADY_STATE_ATK = 2.45 * 10 + 4.9 * 10 + 7.36 * 5  # Explore Route stages 1-3, fully stacked
-# The same three stages' Hit Rate stacks, on the same caps (10 / 10 / 5).
-STEADY_STATE_HIT_RATE = 1.36 * 10 + 2.71 * 10 + 4.08 * 5
+# Explore Route's three stages, as (value slot, stack-cap slot) pairs. Each stage
+# carries a Hit Rate line and an ATK line, and each line states its own cap - so
+# the settled total is value x cap summed over the three, and every term is a
+# slot that moves with skill level.
+_ATK_STAGES = ((6, 7), (14, 15), (22, 23))
+_HIT_RATE_STAGES = ((3, 4), (11, 12), (19, 20))
+
+
+def _settled(values, stages):
+    route = values["explore_route"]
+    return sum(
+        float(route[f"description_value_{value:02d}"])
+        * float(route[f"description_value_{cap:02d}"])
+        for value, cap in stages
+    )
+
+
+def steady_state_atk(values):
+    """Explore Route's three ATK stages, all at their caps: 110.3% at skill 10.
+
+    Read from the slots, not written down: the stages scale with skill level
+    (1.43% at level 1 against 2.45% at 10), so a literal would simulate every
+    roster at max on this one skill.
+    """
+    return _settled(values, _ATK_STAGES)
+
+
+def steady_state_hit_rate(values):
+    """The same three stages' Hit Rate, on the same caps: 61.1% at skill 10.
+
+    This is the half that decides something - 61.1% pulls a submachine gun's
+    110px spread inside a 50px core, and level 1's 35.9% does not.
+    """
+    return _settled(values, _HIT_RATE_STAGES)
 
 
 def the_great_thief_burst_percent(values):
@@ -68,8 +100,8 @@ def build_quency_rules(values):
 
     return [
         buff_rule("battle_start", [
-            ("atk_percent", STEADY_STATE_ATK / 100, "self", None),
-            ("hit_rate", STEADY_STATE_HIT_RATE / 100, "self", None),
+            ("atk_percent", steady_state_atk(values) / 100, "self", None),
+            ("hit_rate", steady_state_hit_rate(values) / 100, "self", None),
             ("distributed_damage_up", distributed_damage, "self", None),
             ("other_core_damage_sources", core_damage, "self", None),
             ("crit_rate", crit_rate, "self", None),

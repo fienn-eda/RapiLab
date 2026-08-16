@@ -41,10 +41,11 @@ Modeled (DPS-relevant):
   bullet names no stack count, so at 12 AR shots/sec each re-application
   refreshes the live grant instead of adding to it.
 - Thief's Vision (dollskills[1]) at max dagger stacks, every 60 shots:
-  * 84.33% of final ATK as ADDITIONAL damage. "Additional damage" is
-    Full-Burst-Bonus eligible (the project's standing rule), and unlike a burst
-    nuke it is computed at its own time, so it genuinely can land inside a Full
-    Burst window - it is emitted as an instant-damage pulse with the flag set.
+  * 84.33% of final ATK as additional damage. It rides her own shots, so it is
+    computed at each proc's own time and collects the Full Burst bonus on
+    whichever land inside a window - the TIMING decides it, not the wording (the
+    "as additional damage" text rule was deleted 2026-07-28). Emitted as an
+    instant-damage pulse, which takes no eligibility flag for that reason.
   * 250% of final ATK as Distributed Damage to all enemies.
   * self Distributed Damage +12.86%, up to 3 stacks. The text removes the stacks
     on Burst Skill use, so they rebuild each burst cycle rather than sitting at

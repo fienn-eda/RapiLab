@@ -36,7 +36,8 @@ Modeled (DPS-relevant):
 - Shades of White (skills[1]): charge-window refreshing self ATK +46.84%/5s
   and Damage to Parts +62.64%/5s (fires every shot - the 1.2s/3.2s charge
   cadence never lets the 5s window lapse); self ATK +73.92%/10s on entering
-  Burst Stage 3 (own_burst_activate, see precedent note above); Fully-Active-
+  Burst Stage 3 (`ally_burst_activate` + `burst_stage_entered(3)`, see the
+  precedent note above); Fully-Active-
   only Charge Damage +528%/1 round and Sequential attack damage +158.4%/1
   round, folded into the Fully Active segment profile and the boosted Auto
   Fire pulse respectively (both are always-on for a Fully Active shot, so
