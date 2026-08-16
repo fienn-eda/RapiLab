@@ -120,10 +120,18 @@
 - 총 **102명**(테이블 행 수) / `ENCODED_SLUGS` **103개** — B1 형태변형
   `rapi-red-hood-b1`은 별도 행 없이 `rapi-red-hood` 행에 포함.
   (Burst 1: 18명 · Burst 2: 26명 · Burst 3: 58명 — 실제 행 수를 세어 갱신)
-- **한 소유 캐릭터가 여러 후보 슬러그로 갈라지는 경우** — `MODE_VARIANTS`(전투 전
-  선택이라 덱 탐색이 같은 base의 두 후보를 **동시 편성 금지**): Bready(Taste 2종) ·
-  Diesel: Winter Sweets(Intro/Highlight) · Cinderella: Crystal Wave(MG/Snipe) ·
-  Rapi: Red Hood(B3/B1). 시그니처(애장품) 듀얼슬롯(Centi · Drake · Flora · Helm ·
+- **한 소유 캐릭터가 여러 후보 슬러그로 갈라지는 경우** — `MODE_VARIANTS`. 한 캐릭터를
+  두 번 쓰는 셈이라 덱 탐색이 같은 base의 두 후보를 **동시 편성 금지**한다
+  (`_no_character_clash`). 다만 **모드를 무엇이 정하는지는 넷이 서로 다르다**:
+  - **플레이어가 고른다** — Cinderella: Crystal Wave(MG/Snipe) ·
+    Diesel: Winter Sweets(Intro/Highlight, 버스트 타이밍).
+  - **버스트 티어 규칙이 이미 제약한다** — Rapi: Red Hood(B3/B1).
+  - **덱이 정한다 — Bready(Taste 2종)만 그렇다.** 그녀는 지속딜/분산딜을 올리는 버프를
+    **받아야** 그 상태에 들어가므로, 유도자가 없는 덱은 게임이 만들지 못하는 유닛을
+    채점하게 된다(Fienn 덱5 기준 그녀 크레딧의 18.7% = 10.7억). 그래서 이 넷 중
+    **그녀에게만** 추가 관문이 걸려 있다 — `registry.TASTE_INDUCER_SLUGS` +
+    `deck_search._taste_induced_valid`(탐색 생성기 · `deck_is_valid` · `deck_allocation`
+    교환마다). 유도자 없는 브래디 덱은 탐색이 안 내고 유저가 직접 짜면 **422**다. 시그니처(애장품) 듀얼슬롯(Centi · Drake · Flora · Helm ·
   Julia · Laplace · Miranda · Moran · Phantom · Privaty · Rosanna · Sugar ·
   Tove · Zwei)은 이와 별개로 base와 독립된 roster 엔트리다. 어느 쪽이 로스터에
   실리는지는 프런트 `resolveSlugForUnit`이 **유닛별 `favorite_item` 플래그**로
