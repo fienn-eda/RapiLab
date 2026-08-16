@@ -203,29 +203,47 @@ def test_asuka_end_to_end_annihilation_nuke_scales_with_capped_stacks_and_gets_f
     assert all(round(h["damage"], 4) == 993.0 for h in hits)
 
 
-def test_emergency_repair_dumps_her_magazine_for_a_fixed_reload():
+def test_emergency_repair_dumps_her_magazine_when_annihilation_fires():
+    """Emergency Repair's second bullet reads "Activates when using
+    Annihilation", and Annihilation is "After Annihilation State ends" - so the
+    ammo dump lands 9 sec after her burst, not at the cast (Fienn, 2026-08-16).
+
+    Which end of the window it sits at is the whole question for her Anti A.T.
+    Field stacks: those are built by her shots INSIDE that same 9 sec, so a
+    magazine dumped at the start eats the window that feeds them."""
     schedule = build_asuka_weapon_mode_schedule(ASUKA_VALUES)
+    annihilation_state_duration = float(
+        ASUKA_VALUES["annihilation_state"]["description_value_02"])
 
     (segment,) = schedule(_Context([20.0]), 180.0)
 
+    start = 20.0 + annihilation_state_duration
+    assert segment["start"] == pytest.approx(start)
     # "Reload speed is fixed at a 60% increase" (slot _08).
-    assert segment["start"] == pytest.approx(20.0)
     assert segment["end"] == pytest.approx(
-        20.0 + reload_time_with_speed(ASUKA_VALUES["caster_weapon_stats"]["reload_time"], 0.60))
+        start + reload_time_with_speed(ASUKA_VALUES["caster_weapon_stats"]["reload_time"], 0.60))
     assert segment["profile"]["damage_percent"] == 0.0
 
 
-def test_emergency_repair_halves_her_own_heating_speed_for_three_seconds():
-    # Call her REAL rule entry point - the heating bullet is added to the
-    # existing rule list, not to a new builder.
+def test_emergency_repair_heating_debuff_starts_when_annihilation_fires():
+    """Effect 1 rides the same "when using Annihilation" trigger as the ammo
+    dump, so its 3 sec run from her burst + 9, not from the burst. Call her REAL
+    rule entry point - the heating bullet is added to the existing rule list,
+    not to a new builder."""
     registry = EffectRegistry()
     context = SquadContext([SquadMember(SLUG, 3, "Wind", "MG")])
     rules = build_emergency_repair_rules(ASUKA_VALUES)
 
     fire_trigger("own_burst_activate", {SLUG: rules}, context, registry, time=20.0)
 
-    assert registry.total_for("mg_heating_speed_percent", ASUKA, 22.9) == pytest.approx(-1.0)
-    assert registry.total_for("mg_heating_speed_percent", ASUKA, 23.1) == pytest.approx(0.0)
+    # Her Annihilation State window [20, 29) must be clean: this debuff is what
+    # was holding her stack ramp down inside the very window that builds it.
+    assert registry.total_for("mg_heating_speed_percent", ASUKA, 20.1) == pytest.approx(0.0)
+    assert registry.total_for("mg_heating_speed_percent", ASUKA, 28.9) == pytest.approx(0.0)
+    # Live for 3 sec from burst + 9.
+    assert registry.total_for("mg_heating_speed_percent", ASUKA, 29.1) == pytest.approx(-1.0)
+    assert registry.total_for("mg_heating_speed_percent", ASUKA, 31.9) == pytest.approx(-1.0)
+    assert registry.total_for("mg_heating_speed_percent", ASUKA, 32.1) == pytest.approx(0.0)
 
 
 def test_the_debuff_actually_slows_her_magazine_end_to_end():
@@ -261,12 +279,17 @@ def test_the_debuff_slows_the_magazine_that_opens_when_her_segment_ends():
     segments = build_asuka_weapon_mode_schedule(ASUKA_VALUES)(_Context([burst_time]), fight_duration)
     (segment,) = segments
     debuff_duration = float(ASUKA_VALUES["emergency_repair"]["description_value_04"])
+    # Both halves of bullet 2 fire together, when Annihilation does - so the
+    # debuff window is anchored there, not at the burst.
+    debuff_start = burst_time + float(
+        ASUKA_VALUES["annihilation_state"]["description_value_02"])
+    assert segment["start"] == pytest.approx(debuff_start)
     # The fresh magazine has to open WHILE the debuff is still live, or the
     # docstrings' claim that the two effects meet on one instant is false.
-    assert segment["end"] < burst_time + debuff_duration
+    assert segment["end"] < debuff_start + debuff_duration
 
     def heating_at(t):
-        return -1.0 if burst_time <= t < burst_time + debuff_duration else 0.0
+        return -1.0 if debuff_start <= t < debuff_start + debuff_duration else 0.0
 
     plain = [r.time for r in generate_segmented_shots(base, segments, fight_duration)]
     debuffed = [r.time for r in generate_segmented_shots(

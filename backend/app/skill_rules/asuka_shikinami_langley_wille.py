@@ -46,19 +46,30 @@ debuff on the boss), capped at 30.
   (tier 3) always fires immediately before full_burst_enter in the same
   cycle, so "her burst fired this cycle" is exactly "Annihilation State just
   started, still active" at the instant full_burst_enter fires.
-- Emergency Repair's Effect 1 + Effect 2 + Effect 4, all on her own burst: MG
-  heating up speed down 100% for 3 sec (`mg_heating_speed_percent`, negative -
-  a down arrow subtracts) alongside removing 100% of her ammo with a Forced
-  Reload whose speed is fixed at a 60% increase. Effect 2's ammo dump is a
-  `build_asuka_weapon_mode_schedule` segment (see `silent_reload_segments`)
-  covering Effect 4's fixed reload; the segment ends by starting a fresh
-  magazine, whose warm-up is scaled by whatever `mg_heating_speed_percent`
-  total is live the instant it opens - `registry.total_for` sums Effect 1's
-  own -100% against every other producer targeting her (e.g. Rei Ayanami:
-  Tentative Name's Maintenance and Resupply, +100% to a bursted MG ally for
-  13 sec). Effect 1's 3 sec window covers the segment's own ~1.08 sec
-  entirely, so an ally buff of that size reaching her for the whole segment
-  cancels the debuff and leaves that magazine's warm-up unmodified.
+- Emergency Repair's Effect 1 + Effect 2 + Effect 4, all **when Annihilation
+  fires** - that bullet reads "Activates when using Annihilation", and
+  Annihilation is "After Annihilation State ends", so they land a full state
+  duration (9 sec) after the burst that started it, NOT at the cast (Fienn,
+  2026-08-16). The delay is read from Annihilation State's own slot, the same
+  value `fire_delay` uses, so the two can never disagree.
+  Effect 1 is MG heating up speed down 100% for 3 sec
+  (`mg_heating_speed_percent`, negative - a down arrow subtracts) alongside
+  Effect 2 removing 100% of her ammo with Effect 4's Forced Reload fixed at a
+  60% speed increase. The ammo dump is a `build_asuka_weapon_mode_schedule`
+  segment (see `silent_reload_segments`, `offset=`) covering that reload; the
+  segment ends by starting a fresh magazine, whose warm-up is scaled by
+  whatever `mg_heating_speed_percent` total is live the instant it opens -
+  `registry.total_for` sums Effect 1's own -100% against every other producer
+  targeting her (e.g. Rei Ayanami: Tentative Name's Maintenance and Resupply,
+  +100% to a bursted MG ally for 13 sec, which still spans this later window).
+  Effect 1's 3 sec covers the segment's own ~2.08 sec entirely, so an ally
+  buff of that size reaching her for the whole segment cancels the debuff and
+  leaves that magazine's warm-up unmodified.
+  **Where this sits is load-bearing for her Anti A.T. Field stacks.** They are
+  built by her shots inside the SAME 9 sec, so a magazine dumped at the cast
+  ate the window that feeds them: she reached 25 stacks of her 30 cap. Landing
+  it at the far end instead, she fires 505 shots in that window rather than 250
+  and pins the cap in every cycle.
 
 - Anti A.T. Field's OWN 15.62%-of-ATK direct-damage component ("every 10
   shots while in Annihilation State, deals 15.62% as damage" - a SEPARATE
@@ -175,17 +186,29 @@ def build_emergency_repair_rules(values):
     duration = float(repair["description_value_02"])
     heating_speed_down = float(repair["description_value_03"]) / 100
     heating_speed_duration = float(repair["description_value_04"])
+    # Bullet 2 fires "when using Annihilation", and Annihilation is "After
+    # Annihilation State ends" - so its effects land a whole state duration
+    # after the burst that started it. Read from Annihilation State's own slot,
+    # the same value `fire_delay` uses, so the two can never disagree.
+    annihilation_delay = float(values["annihilation_state"]["description_value_02"])
 
     def action(context, caster_slug, time, registry):
         registry.add(Effect("attack_damage_up", attack_damage, "self", duration, caster_slug), applied_at=time)
 
+    def heating_action(context, caster_slug, time, registry):
+        # Effect 1: "MG heating up speed down 100% for 3 sec" (slots _03/_04).
+        # Negative, because a down arrow subtracts. Applied at a FUTURE instant:
+        # the registry stores (effect, applied_at) and answers by time, so a
+        # window that opens later needs no delayed-trigger machinery.
+        registry.add(
+            Effect("mg_heating_speed_percent", -heating_speed_down, "self",
+                   heating_speed_duration, caster_slug),
+            applied_at=time + annihilation_delay,
+        )
+
     return [
         SkillRule(trigger="full_burst_enter", action=action, condition=own_burst_fired_this_cycle()),
-        # Effect 1: "MG heating up speed down 100% for 3 sec" (slots _03/_04).
-        # Negative, because a down arrow subtracts.
-        buff_rule("own_burst_activate", [
-            ("mg_heating_speed_percent", -heating_speed_down, "self", heating_speed_duration),
-        ]),
+        SkillRule(trigger="own_burst_activate", action=heating_action),
     ]
 
 
@@ -209,6 +232,9 @@ def build_asuka_weapon_mode_schedule(values):
         "asuka-shikinami-langley-wille",
         reload_time_with_speed(weapon_stats["reload_time"], fixed_reload_speed),
         weapon_stats["weapon"],
+        # Same "when using Annihilation" trigger as Effect 1 above: the dump
+        # lands after Annihilation State ends, not at the burst that opened it.
+        offset=float(values["annihilation_state"]["description_value_02"]),
     )
 
 
