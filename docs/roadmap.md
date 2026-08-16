@@ -7,7 +7,35 @@
 엔진 갭 인벤토리(확장 우선순위)는 `docs/engine-gaps.md`,
 스킬 인코딩 방법은 `nikke-skill-encoding` 스킬 참고.
 
-- 마지막 갱신: 2026-08-15
+- 마지막 갱신: 2026-08-16
+- **문서 정정 7건 (2026-08-16).** 「엔진 완성도에 뭐가 남았나」를 세다가 **이 문서와
+  `engine-gaps.md`가 이미 끝난 일을 미착수로 들고 있는 것**을 일곱 찾아 고쳤다:
+  ① 「11슬러그 Hit Rate 재인코딩 — 아직 어느 모듈도 등록 안 함」(실제 **18모듈**이
+  등록, 가드 테스트 `test_hit_rate_bullets_are_encoded.py`도 통과) · ② `engine-gaps.md`의
+  같은 문장 · ③ 백로그의 「미연결 stat 5종」(넷은 배선 완료, 남은 건 `shield_damage_up`
+  하나이고 그건 의도된 defer) + 「미구현 메커니즘 = 무기 변형·공격속도」(**둘 다
+  구현됨**) · ④ `engine-gaps.md`의 「레이 아야나미는 1.039x 과대」(오늘 재면
+  **0.923x 과소**라 경고의 전제가 뒤집혔다) · ⑤ 「무기변형 세그먼트 탄착군」 절이
+  **7슬러그 열림**에서 멈춰 있던 것(바로 다음 절에서 7이 전부 닫혔다) ·
+  ⑥ `engine-gaps.md` 「권장 착수 순서」가 **Pattern B를 여전히 남은 방향으로** 들고
+  있던 것(2026-08-14 완전 해소) · ⑦ 「소장품 lv15 3유닛 스탯 어긋남」이 **같은
+  2026-08-07 덤프에서 더는 재현되지 않는다**(그 사이 스탯 모델 재적합이 닫았다).
+  ⑦은 **테스트를 돌려서 알았다** — 문서만 읽었으면 못 봤다.
+  덤으로 **베이스라인 숫자도 정정**됐다: 조건부 3건이 워크트리에서만 skip되므로
+  메인 체크아웃 기준선은 **2427 passed / 0 skipped**이지 「2424/3」이 아니다.
+  census·캘리 숫자도 실측값으로 갱신했다(**132건 · 갭 89 / 스코프 43**,
+  **1.050x · 19/25**), 그리고 **갭 89를 「할 일 89」로 읽지 말라**는 분류 주석을
+  달았다(솔로보스 무발동 문구 · census 오탐 · 우리가 못 정하는 것을 걷어내면
+  **착수 가능한 건 열 남짓**이다).
+  교훈은 [[stale-defers-need-the-catalog-not-the-docstring]]과
+  같은 모양이다 — **적어 두지 않은 능력만 갭으로 다시 기록되는 게 아니라, 끝났다고
+  안 고친 문장도 다음 세션에 「아직 안 됐다」로 읽힌다.** 이번엔 여섯 중 넷이
+  **닫은 그날 그 문서의 다른 절만 고치고 요약·백로그·착수순서를 안 고친** 형태였다.
+- **리베랄리오 차지는 수집 데이터의 1.5초를 그대로 쓴다 — 실측 88프레임은 기록만
+  (Fienn 결정, 2026-08-16).** 두 독립 측정(흑련 차분 grant · 발-발 간격)이 `base=88f`로
+  수렴하고 데이터의 90f는 **12.6σ** 어긋나지만, 둘 다 **간접**이고 캘리도 같은 방향이라
+  (SR이 이미 1.122x 과대인데 88f면 발수가 +2.4%) 반영을 보류했다. **모르는 게 아니라
+  보류한 것이다.** 재검토 조건과 죽은 가설 열 개는 아래 To-Do와 `docs/decisions.md`.
 - **신데렐라 다단히트가 착륙했다 — 고칠 것은 불릿2 하나였고, 불릿1은 건드리지
   않는 것이 정답이었다 (2026-08-15).** Fienn의 표기값 실측(1·12스택 두 벌)이
   「10히트를 실제 착탄 시각으로 흩뿌린다」를 기각했다. 첫 히트가 **FB 진입 0.95초
@@ -1266,11 +1294,23 @@ Fienn의 사용 보고. 용어 셋은 라벨 교체이고, 나머지 셋은 화�
       값이었고, 그 뒤의 엔진 작업들이 평타 경로를 바꿔 실제로는 1.036x에 앉는다.
       아래 경고는 여전히 유효하다: 1.036x를 「코어가 48.89다」의 증거로 읽으면 안 된다.
       실측이 코어를 정했고, 남은 잔차가 `p_조준`(gap #21)의 크기를 위에서 눌러 준다.
-- [ ] **소장품 lv15 유닛의 스탯이 실측과 어긋난다 (명중과 무관, 새 데이터가 드러냄).**
-      `test_assemble_roster_matches_the_collector_scrape`가 159유닛 중 3에서 실패한다 —
-      Rapi: Red Hood(atk −12·hp −270) · Anis: Star(atk −2·hp −60) · Neon: Vision
-      Eye(atk −2). 전부 **모델이 실측보다 낮다**. 이 테스트는 로컬 수집 덤프가 있을
-      때만 도는 조건부라 지금까지 skip이었고, 2026-08-07 재수집으로 처음 깨어났다.
+- [x] **소장품 lv15 유닛의 스탯이 실측과 어긋난다 → ✅ 재현되지 않는다 (2026-08-16 확인).**
+      **같은 2026-08-07자 덤프**(`tools/collect-blablalink/roster.json`·`details.json`,
+      파일 시각 그대로)로 `test_assemble_roster_matches_the_collector_scrape`가
+      **통과**한다. 즉 데이터가 바뀐 게 아니라 **그 사이 코드가 닫았다.**
+      그 뒤 스탯 모델을 건드린 커밋은 둘 — `7d85e152`(코어는 장비 윗줄 전부에
+      곱해진다, 적합 상수 11개 삭제) · `3eda5826`(싱크로 레벨 스탯). **어느 쪽이
+      닫았는지는 이분하지 않았다**(닫힌 항목에 커밋 하나를 더 태우는 값어치가 없다).
+      다만 아래 「남은 후보」가 **「등급이 스탯에 얹히는지」**였고 `7d85e152`가 바로
+      코어/등급 축의 재적합이라 정황은 그쪽을 가리킨다.
+      **★ 베이스라인 주의:** 이 테스트를 포함한 조건부 3건은 **메인 체크아웃에서만**
+      돈다(워크트리엔 gitignore된 수집 덤프가 안 딸려온다). 그래서 「2424 passed /
+      3 skipped」는 **워크트리 숫자**이고, 메인 체크아웃 기준선은
+      **2427 passed / 0 skipped**다.
+
+      경위(원래 증상): 159유닛 중 3에서 실패했다 — Rapi: Red Hood(atk −12·hp −270) ·
+      Anis: Star(atk −2·hp −60) · Neon: Vision Eye(atk −2). 전부 **모델이 실측보다
+      낮았다**. 2026-08-07 재수집으로 이 조건부 테스트가 처음 깨어나며 드러났다.
 
       **좁혀둔 것:**
       - 셋의 공통점은 **소장품 레벨 15**(`favorite_item_lv=15`). lv0(Liter)·lv2(Moran)
@@ -1783,13 +1823,19 @@ Fienn의 사용 보고. 용어 셋은 라벨 교체이고, 나머지 셋은 화�
       합계를 대조해 명중의 효과 타입 번호와 값 곡선을 fit(`base_stat_folded =
       [6, 13]`의 정체가 여기서 확정) → `data/nikke-stat-tables/tables.json`의
       `overload.values`/`type_name` 반영.
-- [ ] **11슬러그(엔진 블로커 해소 그룹)의 Hit Rate 재인코딩 — 아직 어느 모듈도
-      `hit_rate`를 Effect로 등록하지 않는다.** 대상: dorothy-serendipity ·
-      jill-valentine · phantom(+시그니처) · chisato-nishikigi · miranda(+시그니처) ·
-      quency-escape-queen · nayuta · soda-twinkling-bunny · sugar(+시그니처) ·
-      drake(+시그니처) · noir. 도로시: 세렌디피티가 최대 수혜자다 — 2026-08-07
-      Flash 착륙으로 두 명중 버프가 실제로 110% 특이점을 넘어, 그녀 발의 36%가
-      SG 코어히트 100%가 된다(명중 인코딩이 사는 몫 +18.88%). 상세는
+- [x] **11슬러그(엔진 블로커 해소 그룹)의 Hit Rate 재인코딩 — 완료.** 위 「15유닛
+      19슬러그 재인코딩 완료」와 **같은 작업이었다**. 이 항목은 그 줄이 체크된 뒤에도
+      「아직 어느 모듈도 `hit_rate`를 Effect로 등록하지 않는다」로 남아 있었는데,
+      2026-08-16 확인 결과 **18개 모듈이 등록한다**: anchor-innocent-maid ·
+      chisato-nishikigi · diesel-winter-sweets · dorothy-serendipity · drake(+시그니처,
+      듀얼슬러그 1모듈) · jill-valentine · leona · mast-romantic-maid ·
+      miranda(+시그니처, 듀얼슬러그 1모듈) · modernia · nayuta · noir ·
+      phantom · phantom-signature · quency-escape-queen · soda-twinkling-bunny ·
+      sugar · sugar-signature. 위 목록의 11슬러그가 전부 그 안에 있고,
+      `tests/test_hit_rate_bullets_are_encoded.py` 3건이 수집 데이터와 모듈을 대조해
+      같은 틈이 다시 벌어지면 실패한다(통과 확인). 도로시: 세렌디피티가 최대 수혜자였다 —
+      2026-08-07 Flash 착륙으로 두 명중 버프가 실제로 110% 특이점을 넘어, 그녀 발의
+      36%가 SG 코어히트 100%가 된다(명중 인코딩이 사는 몫 +18.88%). 상세는
       `docs/encoded-nikkes.md` 각 행.
 - [ ] **`core_diameter_px`는 API 전용 — 프론트엔드 미노출.** `BossProfileField.tsx`는
       `core_hittable`과 `pierce_hits_body_behind_core`만 그린다(의도된 스코프,
@@ -3059,15 +3105,29 @@ snow-white 0.998 · scarlet 0.999. 뒤 셋은 오차 범위이므로 실질 대�
 
 정확도를 위해 언젠가 다뤄야 하지만 지금은 근사/보류한 것들 (각 모듈에 주석).
 
-- **미연결 stat(나머지):** `sustained_damage_up`, `true_damage_up`, `shield_damage_up`,
-  `projectile_explosion_damage_up`, `distributed_damage_up` 등은 공식엔 있으나 아직
-  `raid_simulator`가 안 읽음. 필요한 유닛 인코딩 시 해당 버킷만 한 줄로 연결, 가짜 금지.
-  (`damage_taken_up`·`other_core_damage_sources`는 연결 완료.)
-- **근사 처리:** `pierce_damage_up`는 모든 히트에 적용(실제 관통 히트 게이팅 X),
-  스택/에스컬레이션 버프는 정상상태(최댓값) 근사.
-- **미구현 메커니즘:** 무기 변형, 공격속도 변화.
-  (노멀어택 횟수 트리거·최고ATK 타겟팅은 해소됐고, **위치 타겟팅도 2026-08-13 해소** —
-  `SquadContext.neighbor_slugs` + `registry.SEATED_BUFF_SLUGS`.)
+- **미연결 stat — 이제 `shield_damage_up` 하나뿐 (2026-08-16 확인).** 여기 같이
+  적혀 있던 `sustained_damage_up`·`true_damage_up`·`distributed_damage_up`·
+  `projectile_explosion_damage_up`은 **전부 배선됐다** —
+  `raid_simulator._TYPE_BUCKETS`가 데미지 타입별로 읽고 `_BUNDLE_STATS`가 실어
+  나른다(`projectile_attachment_damage_up`·`sequential_attack_damage_up`도 같이 있다).
+  남은 `shield_damage_up`은 **의도된 defer**다: 시뮬에 실드를 가진 대상이 없어
+  배선해도 inert이고, 유일한 소유자인 레이 아야나미의 「실드에 주는 대미지 +700.5%」도
+  같은 이유로 보류다. 필요한 유닛 인코딩 시 해당 버킷만 한 줄로 연결, 가짜 금지.
+- **근사 처리:** `pierce_damage_up`는 관통 **보유자**에게만 붙지만
+  (`has_pierce` 게이트, Fienn 2026-07-26) 그 유닛의 **모든 히트**에 적용된다 —
+  실제 관통 히트 수 게이팅은 없다(관통 타격 수 모델 자체가 없다, 위 갭 참고).
+  스택/에스컬레이션 버프는 **유닛마다 다르다** — `ResourceSpec`으로 진짜 카운터가 된
+  것(줄리아·신데렐라·소다·라플라스 Hero Vision 등)과 정상상태(최댓값) 근사로 남은 것이
+  섞여 있고, **정본은 각 모듈 독스트링이다.**
+- **미구현 메커니즘:** 여기 적혀 있던 둘(무기 변형 · 공격속도 변화)은 **둘 다
+  구현됐다.** 이 줄이 「엔진에 미구현이 하나도 없다」는 뜻은 아니다 — 열린 갭 목록의
+  정본은 `docs/engine-gaps.md`다.
+  무기 변형은 `weapon_mode_schedules` 세그먼트 프리미티브로 2026-07-19에(v1+계획 2),
+  공격속도/차지속도는 Phase S(2026-07-16, `attack_speed_percent`·`charge_speed_percent`)로
+  들어갔다. 노멀어택 횟수 트리거·최고ATK 타겟팅도 해소됐고, **위치 타겟팅도
+  2026-08-13 해소** — `SquadContext.neighbor_slugs` + `registry.SEATED_BUFF_SLUGS`.
+  (열려 있는 관련 갭은 별개다: 세그먼트의 `damage_type`을 자원으로 게이트할 수 없는 것,
+  차지속도 **스택** 버프가 없는 것 — `docs/engine-gaps.md`.)
 - **좌석 스코프 (2026-08-13, 착륙):** 루주와 `flora-signature` 둘 다 끝났다.
   플로라의 Peace of Mind 두 불릿(Max HP +15.01% · **ATK +45.12% of Flora's ATK**)은
   ATK 쪽이 천장·바닥 두 경로라 실제로는 Effect 셋을 옮겼다. 좌석형 유닛을 **둘 다
