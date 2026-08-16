@@ -20,6 +20,7 @@
 import argparse
 import math
 import sys
+from itertools import combinations_with_replacement
 from pathlib import Path
 
 # 이 환경의 콘솔은 cp949라 한글과 em-dash에서 UnicodeEncodeError로 죽는다.
@@ -58,6 +59,28 @@ def integer_percents_in(low, high):
     return [p for p in range(0, 201) if low <= p / 100 < high]
 
 
+# 오버로드 차속 한 줄이 굴릴 수 있는 15개 값 (1~15레벨).
+LINE_VALUES = (1.98, 2.28, 2.57, 2.86, 3.16, 3.45, 3.75, 4.04,
+               4.33, 4.63, 4.92, 5.21, 5.51, 5.80, 6.09)
+
+
+def roll_totals_reaching(percents, max_lines=6):
+    """그 정수 퍼센트들에 도달하는 굴림 **합계**의 범위와 조합 수.
+
+    왜 합계인가: 로스터가 굴림을 잃어버려도 화면의 차속 표기(합계)는 남는다. 그래서
+    「이 판독이 성립하려면 표기가 몇 %여야 하나」가 실제로 대조 가능한 질문이고,
+    그 답이 표기값과 어긋나면 **분해를 어떻게 고르든 판독이 설명되지 않는다** —
+    굴림 오독 가설이 거기서 죽는다.
+    """
+    wanted = set(percents)
+    totals = []
+    for n in range(1, max_lines + 1):
+        for combo in combinations_with_replacement(LINE_VALUES, n):
+            if charge_speed_percent_from_lines(combo) in wanted:
+                totals.append(round(sum(combo), 2))
+    return (min(totals), max(totals), len(totals)) if totals else None
+
+
 def solve(charge_time, measured, se, lines=None):
     charge_frames = charge_time * 60
     # 실측이 가리키는 정수 프레임: 95% 구간 안의 정수들.
@@ -84,6 +107,16 @@ def solve(charge_time, measured, se, lines=None):
             need = [p - percent for p in allowed]
             print(f"       엔진의 {percent:.0f}%에서 모자란 양: "
                   f"{['%+d%%p' % d for d in need]}")
+        reach = roll_totals_reaching(allowed)
+        if reach:
+            lo_t, hi_t, count = reach
+            verdict = ""
+            if lines:
+                total = round(sum(lines), 2)
+                verdict = ("  <- 표기 합계가 이 안" if lo_t <= total <= hi_t
+                           else f"  <- ★ 표기 합계 {total:.2f}%는 이 **밖**이다")
+            print(f"       이 프레임을 내는 굴림 **합계** 범위: "
+                  f"[{lo_t:.2f}%, {hi_t:.2f}%]  ({count}개 조합){verdict}")
 
 
 def main():
