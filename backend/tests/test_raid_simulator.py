@@ -2433,6 +2433,59 @@ def _normals(result, slug="attacker"):
     return [e for e in result["damage_log"] if e["source"] == "normal_attack" and e["slug"] == slug]
 
 
+def test_a_periodic_nukes_rider_lands_only_on_ticks_inside_a_full_burst():
+    """Snow White's Seven Dwarves: V & VI carries "Activates when USING THIS
+    SKILL during Full Burst: Critical Rate ▲ 26.1% for 10 sec" beside its own
+    periodic nuke. The skill fires on its own cooldown either way; what the
+    clause gates is whether the rider comes with it.
+
+    So the test is the tick's own time: a tick before the window leaves nothing
+    behind, a tick inside it leaves the buff. This pass runs AFTER the burst
+    cycle, so the windows are known here - unlike `periodic_rules`, which runs
+    before it and cannot ask."""
+    spec = {"cooldown": 1.0, "percent": 100.0,
+            # Short enough that each tick's grant covers only the shots right
+            # after it, so the two ticks can be told apart.
+            "full_burst_rider": [("attack_damage_up", 1.0, "self", 0.5)]}
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=2.0, fight_duration=8.0, mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=9999)},
+        periodic_nukes={"attacker": spec},
+    )
+    (start, _end), *_ = full_burst_windows(result)
+    assert start > 1.0, "the t=1.0 tick has to fall OUTSIDE the window"
+    shots = _normals(result)
+
+    def normalised_after(t):
+        shot = next(s for s in shots if s["time"] > t)
+        # Divide the Full Burst bonus out - the in-window shot carries it too,
+        # and a flat expectation would quietly assert it away.
+        return shot["damage"] / fb_factor(result, shot["time"])
+
+    assert normalised_after(1.0) == pytest.approx(1000.0)          # tick outside
+    assert normalised_after(start + 1.0) == pytest.approx(2000.0)  # tick inside
+
+
+def test_a_periodic_nuke_without_a_rider_grants_nothing():
+    """The key is opt-in: a spec without it behaves exactly as before."""
+    spec = {"cooldown": 1.0, "percent": 100.0}
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=2.0, fight_duration=8.0, mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=9999)},
+        periodic_nukes={"attacker": spec},
+    )
+    for shot in _normals(result):
+        assert shot["damage"] == pytest.approx(1000.0 * fb_factor(result, shot["time"]))
+
+
 def test_a_resource_can_be_filled_by_an_ALLYS_shots_inside_the_owners_window():
     """Rei Ayanami (Tentative Name)'s "Anti A.T. Field stacks ▲ 10" writes into
     a resource that is ASUKA's - filled by REI's shots, counted inside ASUKA's

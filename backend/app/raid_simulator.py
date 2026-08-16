@@ -2002,10 +2002,29 @@ def _simulate_raid_once(
         damage_type = spec.get("damage_type", "attack")
         hit_count = spec.get("hit_count", 1)
 
+        # `full_burst_rider` (optional): buffs that come WITH the tick, but only
+        # when the tick itself lands inside a Full Burst window - Snow White's
+        # Seven Dwarves: V & VI, "Activates when using this skill during Full
+        # Burst: Critical Rate +26.1% for 10 sec". The skill fires on its own
+        # cooldown either way; the clause gates the rider, not the nuke.
+        #
+        # This pass runs AFTER the burst cycle, so the windows are known here -
+        # `periodic_rules` runs BEFORE it and cannot ask the same question.
+        # Refreshing, per the NIKKE one-source convention: a spec whose cooldown
+        # is shorter than the rider's duration must not stack with itself.
+        rider = spec.get("full_burst_rider")
+
         def _tick(tick_time, slug=slug, percent=percent, damage_type=damage_type,
-                  hit_count=hit_count):
+                  hit_count=hit_count, rider=rider):
             for _ in range(hit_count):
                 record(slug, percent, tick_time, "periodic", damage_type=damage_type)
+            if rider and any(s <= tick_time < e for s, e in full_burst_windows):
+                for index, (stat, value, scope, duration) in enumerate(rider):
+                    registry.add_refreshing(
+                        Effect(stat, value, scope, duration, slug,
+                               refresh_group=f"periodic_fb_rider_{slug}_{index}"),
+                        applied_at=tick_time,
+                    )
 
         if spec.get("during_full_burst"):
             # Ticks only inside Full Burst windows, anchored to each window's

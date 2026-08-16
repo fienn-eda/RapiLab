@@ -317,6 +317,20 @@ at t=cooldown, 2*cooldown, ... up to `fight_duration`, logged with
 register in `registry._PERIODIC_NUKE_BUILDERS` (see
 `registry.get_periodic_nuke`).
 
+**`"full_burst_rider": [(stat, value, scope, duration), ...]`** (2026-08-16) —
+buffs that come WITH a tick, but only when the TICK ITSELF lands inside a Full
+Burst window. Snow White's Seven Dwarves: V & VI is the first consumer:
+"Activates when **using this skill** during Full Burst. Affects self. Critical
+Rate ▲ 26.1% for 10 sec." Note what is gated — the skill ticks on its cooldown
+either way, so the clause gates the RIDER, not the nuke. **Do not reach for
+`during_full_burst` for this shape**: that one deletes the out-of-window ticks'
+damage, which the text does not say. Registered refreshing, so a spec whose
+cooldown is shorter than the rider's duration cannot stack the grant with
+itself. **This pass is the one that can ask the question** — it runs AFTER the
+burst cycle, so `full_burst_windows` is populated; `periodic_rules` runs BEFORE
+it and sees an empty `burst_times`, which is why a `time_condition` there
+cannot answer "am I in a Full Burst".
+
 ## Damage typing (which Damage-Up buff applies to which instance)
 
 Every damage instance has a `damage_type`; a type-specific Damage-Up bucket is

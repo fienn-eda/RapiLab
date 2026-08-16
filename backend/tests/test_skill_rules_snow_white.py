@@ -23,7 +23,7 @@ DETERMINATION = {
 }
 SEVEN_DWARVES_V_VI = {
     "description_value_01": "144.73",  # damage %
-    "description_value_02": "26.1",    # self Critical Rate % during Full Burst (deferred rider)
+    "description_value_02": "26.1",    # self Critical Rate % on a Full-Burst tick
     "description_value_03": "10",      # its duration sec
 }
 SEVEN_DWARVES_I = {
@@ -100,7 +100,16 @@ def test_determination_fires_every_30_shots_with_additional_damage():
 
 def test_seven_dwarves_v_vi_is_cd15_periodic_nuke():
     assert SEVEN_DWARVES_V_VI_COOLDOWN == 15.0
-    assert snow_white_periodic_nuke(SNOW_WHITE_VALUES) == {"cooldown": 15.0, "percent": 144.73}
+    assert snow_white_periodic_nuke(SNOW_WHITE_VALUES) == {
+        "cooldown": 15.0,
+        "percent": 144.73,
+        # "Activates when using this skill during Full Burst: Critical Rate
+        # ▲ 26.1% for 10 sec" - the skill fires on its own cooldown either way,
+        # so what the clause gates is the rider, judged at the TICK's own time.
+        # Plain `crit_rate`, not `normal_attack_crit_rate`: the text scopes it
+        # to nothing narrower than "Critical Rate".
+        "full_burst_rider": [("crit_rate", 0.261, "self", 10.0)],
+    }
 
 
 def test_burst_transform_is_single_5s_charged_cannon_shot():

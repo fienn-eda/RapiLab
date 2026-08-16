@@ -12,7 +12,12 @@ Modeled (DPS-relevant):
   refreshes the live grant rather than adding to it.
 - Seven Dwarves: V & VI (skills[1]): a periodic AoE nuke on its own 15s
   cooldown, independent of the burst cycle - 144.73% of final ATK
-  (`get_periodic_nuke`).
+  (`get_periodic_nuke`), PLUS the rider its second bullet gates: "Activates
+  when using this skill during Full Burst. Affects self. Critical Rate ▲ 26.1%
+  for 10 sec." The skill ticks on its cooldown either way, so what the clause
+  gates is the RIDER, judged at each tick's own time - `full_burst_rider` on
+  the periodic spec. That pass runs after the burst cycle, so the windows are
+  known there; `periodic_rules` runs before it and could not have asked.
 - Seven Dwarves: I (skills[2], her burst): the weapon transform - self weapon
   becomes a 5s-charge, 1-round cannon: 499.5% of final ATK per shot, 1000%
   Full Charge Damage. Modeled as a `weapon_mode_schedules` segment
@@ -23,12 +28,6 @@ Modeled (DPS-relevant):
   for exactly that one round (`round_buff_rule`, shots=1).
 
 Not modeled / deferred:
-- Seven Dwarves: V & VI's "Critical Rate +26.1% for 10 sec" rider: gated on
-  "using this skill during Full Burst," but the periodic-nuke path has no
-  window-check primitive (it fires on its own fixed cadence, not through the
-  triggered-rule/registry pipeline a condition could hook into) - deferring
-  rather than applying it unconditionally, which would overstate her outside
-  Full Burst.
 - Determination's own ATK +8.28%/5 sec on the transform's charged shot: it does
   not apply, and it does not need to be made not to. Fienn (2026-08-07): the
   charge itself takes 5 sec, so a buff that lasts 5 sec has run out by the time
@@ -91,8 +90,28 @@ def build_determination_per_shot_rules(values):
 
 
 def snow_white_periodic_nuke(values):
-    return {"cooldown": SEVEN_DWARVES_V_VI_COOLDOWN,
-            "percent": float(values["seven_dwarves_v_vi"]["description_value_01"])}
+    """Seven Dwarves: V & VI - the 144.73% AoE on its own 15s cooldown, plus the
+    rider its second bullet gates: "Activates when using this skill during Full
+    Burst. Affects self. Critical Rate ▲ 26.1% for 10 sec."
+
+    The skill fires on its cooldown either way, so the clause gates the RIDER,
+    not the nuke - which makes the question "was this tick inside a window",
+    answered at the tick's own time by `full_burst_rider`. Plain `crit_rate`:
+    the text scopes it to nothing narrower than "Critical Rate". At 15s cooldown
+    against a 10s duration the grant never overlaps itself, but it is registered
+    refreshing anyway (engine side), so a shorter cooldown could not stack it.
+    """
+    dwarves = values["seven_dwarves_v_vi"]
+    return {
+        "cooldown": SEVEN_DWARVES_V_VI_COOLDOWN,
+        "percent": float(dwarves["description_value_01"]),
+        "full_burst_rider": [(
+            "crit_rate",
+            float(dwarves["description_value_02"]) / 100,
+            "self",
+            float(dwarves["description_value_03"]),
+        )],
+    }
 
 
 def build_seven_dwarves_weapon_mode_schedule(values):
