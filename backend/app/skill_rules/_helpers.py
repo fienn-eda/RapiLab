@@ -431,6 +431,21 @@ PERSONA_STATE_SLUGS = frozenset({
     "yukiko-amagi",
 })
 
+# Units who can be in "Annihilation State", the same shape of membership as
+# PERSONA_STATE_SLUGS - a named status the engine's scopes cannot express, read
+# by an ALLY's bullet rather than by its own holder. Rei Ayanami (Tentative
+# Name)'s Annihilation Support buffs "all allies in Annihilation State status",
+# and Asuka: WILLE is the only unit who has it.
+#
+# It differs from the Persona state in one way that matters: Persona is
+# self-applied at battle start and never removed, so membership alone answers
+# it, while Annihilation State is opened by the holder's OWN burst and runs 9
+# sec. So a consumer must ALSO check `context.burst_used_this_cycle` - being
+# the right unit is necessary, not sufficient.
+ANNIHILATION_STATE_SLUGS = frozenset({
+    "asuka-shikinami-langley-wille",
+})
+
 
 def persona_state_allies(context, caster_slug, tier):
     """"all standard Burst <tier> allies (except the skill user) in the Persona

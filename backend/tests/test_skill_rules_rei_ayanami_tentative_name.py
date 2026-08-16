@@ -55,6 +55,7 @@ def make_context():
 
 def build():
     return build_rei_tentative_rules({
+        "annihilation_support": ANNIHILATION_SUPPORT,
         "maintenance_and_resupply": MAINTENANCE_AND_RESUPPLY,
         "attack_state": ATTACK_STATE,
         "caster_atk": CASTER_ATK,
@@ -130,18 +131,53 @@ def test_anti_at_field_nuke_is_gated_to_asukas_annihilation_state_window():
     assert pulses[0].value == pytest.approx(590.64)
 
 
-def test_the_stack_rider_stays_out_because_it_has_no_headroom():
-    """"Anti A.T. Field stacks ▲ 10" is deliberately NOT wired. Asuka alone
-    pins her own 30-stack cap inside every Annihilation State window (measured
-    2026-08-16: 505 shots at +1 per 10), so the rider would add nothing while
-    costing a cross-unit fill source and the risk of overshooting that cap."""
-    rules = build_annihilation_support_per_shot_rules(
-        {"annihilation_support": ANNIHILATION_SUPPORT})
+def test_annihilation_state_allies_get_flat_atk_from_her_on_full_burst():
+    """"Activates when entering Full Burst. Affects all allies in Annihilation
+    State status ... ATK ▲ 17.6% of the skill user's ATK for 9 sec."
+
+    Annihilation State is Asuka: WILLE's and nobody else's
+    (`ANNIHILATION_STATE_SLUGS`), and she is only IN it once her own burst has
+    opened it - so the audience is that membership AND having bursted this
+    cycle, exactly like the MG-heating bullet beside it. The two siblings on the
+    same clause ("units affected ▲1", "attack range ▲500%") are inert against a
+    single boss and stay out."""
+    ctx = SquadContext([
+        SquadMember("rei-ayanami-tentative-name", burst_tier=3, element="Wind", weapon="AR"),
+        SquadMember("asuka-shikinami-langley-wille", burst_tier=3, element="Wind", weapon="MG"),
+        SquadMember("liter", burst_tier=1, element="Wind", weapon="SMG"),
+    ])
+    ctx.burst_used_this_cycle.add("asuka-shikinami-langley-wille")
+    ctx.burst_used_this_cycle.add("liter")  # bursted, but has no Annihilation State
     registry = EffectRegistry()
-    for _threshold, _mode, subrules in rules:
-        for rule in subrules:
-            rule.action(make_context(), "rei-ayanami-tentative-name", 5.0, registry)
-    assert registry.total_for("anti_at_field", REI, 5.0) == 0.0
+    fire_trigger("full_burst_enter", {"rei-ayanami-tentative-name": build()}, ctx, registry, time=5.0)
+
+    asuka = {"slug": "asuka-shikinami-langley-wille", "element": "Wind"}
+    other = {"slug": "liter", "element": "Wind"}
+    expected = 0.176 * CASTER_ATK
+    # Her squad-wide 11.61% flat ATK lands on everyone, so the Annihilation
+    # State share is the DIFFERENCE between the two allies.
+    assert (registry.total_for("flat_atk", asuka, now=6.0)
+            - registry.total_for("flat_atk", other, now=6.0)) == pytest.approx(expected)
+    # ...and it runs 9 sec, its own stated duration, not the 10 the squad buff has.
+    assert (registry.total_for("flat_atk", asuka, now=14.5)
+            - registry.total_for("flat_atk", other, now=14.5)) == pytest.approx(0.0)
+
+
+def test_annihilation_state_atk_needs_the_ally_to_have_bursted():
+    """She is only in Annihilation State after her own burst opens it, so a
+    deck-mate who has not bursted this cycle is not in the audience."""
+    ctx = SquadContext([
+        SquadMember("rei-ayanami-tentative-name", burst_tier=3, element="Wind", weapon="AR"),
+        SquadMember("asuka-shikinami-langley-wille", burst_tier=3, element="Wind", weapon="MG"),
+        SquadMember("liter", burst_tier=1, element="Wind", weapon="SMG"),
+    ])
+    registry = EffectRegistry()
+    fire_trigger("full_burst_enter", {"rei-ayanami-tentative-name": build()}, ctx, registry, time=5.0)
+
+    asuka = {"slug": "asuka-shikinami-langley-wille", "element": "Wind"}
+    other = {"slug": "liter", "element": "Wind"}
+    assert (registry.total_for("flat_atk", asuka, now=6.0)
+            - registry.total_for("flat_atk", other, now=6.0)) == pytest.approx(0.0)
 
 
 def test_maintenance_speeds_up_only_mg_allies_who_already_burst():

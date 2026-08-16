@@ -298,7 +298,7 @@ def _expected_crit_positions(times, threshold, crit_rate_at):
 
 def _resource_fill_times(
     fill, shot_times, core_hittable, fight_duration, full_burst_windows=(), own_burst_times=(),
-    last_bullet_times=(), crit_rate_at=None,
+    last_bullet_times=(), crit_rate_at=None, shot_times_by_slug=None,
 ):
     """The times a resource gains a stack, from its fill spec and the owner's
     shot timeline. ("computed", fn) hands the walk to the owning module, for a
@@ -370,6 +370,29 @@ def _resource_fill_times(
         windows = [(bt, bt + window_duration) for bt in own_burst_times]
         in_window = [t for t in shot_times if any(start <= t < end for start, end in windows)]
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
+    if kind == "per_shot_every_during_own_status_window_by_ally":
+        # ("per_shot_every_during_own_status_window_by_ally", N, window_duration,
+        # ally_slug): the window is the OWNER'S (their own burst opens it) but
+        # the shots counted are the ALLY'S. For a status one unit carries and
+        # another unit's kit writes into - Rei Ayanami (Tentative Name)'s
+        # "Anti A.T. Field stacks +10" every 18 of HER normal attacks against a
+        # target in the status ASUKA put there.
+        #
+        # The count RESTARTS in each window, matching the per-shot rule that
+        # fires the same bullet's damage half: the status is removed when the
+        # window ends, so a part-finished count has nothing to carry.
+        #
+        # An ally who is not in the deck has no shot times, so the source
+        # contributes nothing - the resource simply keeps its own fills, which
+        # is what the game does.
+        n, window_duration, ally_slug = fill[1], fill[2], fill[3]
+        ally_shots = (shot_times_by_slug or {}).get(ally_slug, [])
+        fills = []
+        for burst_time in own_burst_times:
+            start, end = burst_time, burst_time + window_duration
+            inside = [t for t in ally_shots if start <= t < end]
+            fills.extend(t for i, t in enumerate(inside) if (i + 1) % n == 0)
+        return sorted(fills)
     if kind == "per_shot_every_outside_own_status_window":
         # The mirror of the kind above: counts only shots OUTSIDE a status the
         # owner's own burst opens (e.g. Laplace's Hero Vision, fed by Full
@@ -1770,6 +1793,9 @@ def _simulate_raid_once(
                     source, shot_times, core_hittable, fight_duration, full_burst_windows,
                     context.burst_times.get(slug, []), last_bullet_times_by_slug.get(slug, set()),
                     crit_rate_at=_crit_rate_at_for(target_for(slug)),
+                    # This pass runs after EVERY unit's shot loop, so a source
+                    # driven by an ally's shots can read them here.
+                    shot_times_by_slug=shot_times_by_slug,
                 )
                 for ft in source_times:
                     context.fill_resource(slug, spec.name, amount, ft)

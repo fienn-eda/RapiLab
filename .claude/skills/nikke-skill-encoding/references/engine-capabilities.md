@@ -540,6 +540,16 @@ Full Burst window - for a self-status whose window starts at the owner's own
 burst and has a different length/offset than Full Burst (Asuka's Anti A.T.
 Field, "every 10 shots while in Annihilation State" - a 9s window that starts
 at HER burst, not the squad's Full Burst start),
+**`("per_shot_every_during_own_status_window_by_ally", N, window_duration,
+ally_slug)`** (2026-08-16) = the window is still the OWNER'S, but the shots
+counted are the NAMED ALLY'S, and the count RESTARTS in each window. For a
+resource one unit holds and another unit's kit writes into: Rei Ayanami
+(Tentative Name)'s "Anti A.T. Field stacks ▲ 10" every 18 of HER normal attacks
+against the status ASUKA put on the boss. An ally who is not in the deck has no
+shot times, so the source contributes nothing on its own. **The owner's `cap`
+still clamps the merged total** (`resource_count` takes `spec.cap`), which is
+what stops a +10-a-time source running past the 30 the holder's skill states.
+See "Writing into an ally's resource" below for how the source gets there.
 `("per_shot_every_outside_own_status_window", N, window_duration)` = that
 window's MIRROR, counting only shots OUTSIDE it (Laplace's Hero Vision, fed by
 Full Charge attacks: during her Buster transform her weapon is not a charge
@@ -582,6 +592,26 @@ of delta Effects over the fill/expiry events, so `total_for`'s running sum equal
 value_fn(count) at every time. First consumers: `modernia.py` (timed capped),
 `guillotine_winter_slayer.py` (permanent + leveled + core-conditional),
 `cinderella.py` (periodic fill), `laplace.py` (outside-own-status-window).
+
+**Writing into an ALLY's resource** (2026-08-16). A skill can add stacks to a
+resource another unit owns - Rei Ayanami (Tentative Name)'s "Anti A.T. Field
+stacks ▲ 10" fills Asuka: WILLE's counter. The stacks belong to the HOLDER
+(their `cap`, their consumers, their reset), but the numbers belong to the
+WRITER's skill data, so the writer declares a CONTRIBUTION and `roster` merges
+it onto the holder's spec:
+
+    registry._RESOURCE_CONTRIBUTION_BUILDERS[slug] -> [
+        {"target": holder_slug, "resource": name, "fill": <fill kind>, "amount": N},
+    ]
+
+`roster._merge_resource_contributions` appends `(fill, amount)` to the target's
+`ResourceSpec.fill`, promoting a single-source spec to the list form.
+**A contribution whose target is not in the deck is dropped** - the stacks have
+nowhere to land, which is what the game does when you field the writer without
+the holder. **The cap is never widened**, so the merged total still clamps to
+what the holder's own skill states; check that before assuming a contribution
+does anything, because a holder who already pins their own cap gives it no
+headroom (measured for exactly this pair - see `docs/roadmap.md`).
 
 **`("computed", fn)` hands the walk to the owning module** - `fn(shot_times)`
 returns the fill times. For a resource whose sources INTERACT: where one

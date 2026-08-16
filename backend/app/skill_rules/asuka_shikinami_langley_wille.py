@@ -102,6 +102,12 @@ SLUG = "asuka-shikinami-langley-wille"
 # pins the two together so the constant cannot drift from her skill data.
 ANNIHILATION_STATE_DURATION = 9.0
 
+# The resource's name, published for the same reason as the duration: an ally
+# writes into it. Rei Ayanami (Tentative Name)'s "Anti A.T. Field stacks ▲ 10"
+# merges a fill source onto THIS resource (see roster's contribution merge), and
+# the 30 cap declared below is what clamps the result.
+ANTI_AT_FIELD = "anti_at_field"
+
 SKILL_VALUE_MANIFESTS = {
     "asuka-shikinami-langley-wille": {
         "source": "lootandwaifus",
@@ -136,7 +142,7 @@ def build_anti_at_field_resources(values):
 
     return [
         ResourceSpec(
-            name="anti_at_field",
+            name=ANTI_AT_FIELD,
             fill=("per_shot_every_during_own_status_window", fill_every, duration),
             cap=cap,
             buffs=[linear_resource_buff("damage_taken_up", per_stack, "squad", lifetime=stack_lifetime)],

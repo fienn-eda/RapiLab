@@ -184,6 +184,46 @@ def helm_aquamarine_spec():
     )
 
 
+def _real_specs(slugs):
+    states = [UserNikkeState.model_validate({
+        "character_slug": slug, "level": 200, "core_level": 0,
+        "hp": 1_000_000.0, "atk": 60_000.0, "def_": 3_000.0,
+        "skill_levels": {"skill1": 10, "skill2": 10, "burst": 10},
+    }) for slug in slugs]
+    specs, excluded = load_roster(states)
+    assert not excluded, excluded
+    return specs
+
+
+def _anti_at_field_sources(inputs):
+    (spec,) = [s for s in inputs["resource_specs"]["asuka-shikinami-langley-wille"]
+               if s.name == "anti_at_field"]
+    return spec.fill if isinstance(spec.fill, list) else [(spec.fill, 1)]
+
+
+def test_rei_adds_a_fill_source_to_asukas_anti_at_field_only_when_fielded():
+    """"Anti A.T. Field stacks ▲ 10" is REI's bullet writing into ASUKA's
+    resource. The numbers are Rei's, so they are declared in her module and
+    merged here - the fill source only exists when both are actually fielded,
+    which is what the game does.
+
+    The cap stays Asuka's: `resource_count` clamps the merged total, so the
+    contribution can never push the count past the 30 her skill states."""
+    alone = _anti_at_field_sources(
+        assemble_simulation_inputs(_real_specs(["asuka-shikinami-langley-wille"])))
+    assert len(alone) == 1, "her own fill only"
+
+    both = _anti_at_field_sources(assemble_simulation_inputs(
+        _real_specs(["asuka-shikinami-langley-wille", "rei-ayanami-tentative-name"])))
+    contributed = [(fill, amount) for fill, amount in both if fill != alone[0][0]]
+    assert len(contributed) == 1
+    (fill, amount) = contributed[0]
+    assert amount == 10
+    assert fill[0] == "per_shot_every_during_own_status_window_by_ally"
+    assert fill[1] == 18                                  # her own threshold
+    assert fill[3] == "rei-ayanami-tentative-name"        # whose shots feed it
+
+
 def test_assemble_produces_deck_entries_with_scheduler_fields():
     inputs = assemble_simulation_inputs(minimal_feasible_deck())
     deck = inputs["deck"]

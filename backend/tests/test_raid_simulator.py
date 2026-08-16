@@ -2433,6 +2433,41 @@ def _normals(result, slug="attacker"):
     return [e for e in result["damage_log"] if e["source"] == "normal_attack" and e["slug"] == slug]
 
 
+def test_a_resource_can_be_filled_by_an_ALLYS_shots_inside_the_owners_window():
+    """Rei Ayanami (Tentative Name)'s "Anti A.T. Field stacks ▲ 10" writes into
+    a resource that is ASUKA's - filled by REI's shots, counted inside ASUKA's
+    own Annihilation State window, and clamped by ASUKA's own cap.
+
+    The clamp is the point: the contribution is +10 a time against a cap of 30,
+    so an unclamped source would inflate every consumer of that count (Asuka's
+    Annihilation nuke mirrors it, and its Damage Taken debuff is squad-scoped).
+    """
+    spec = ResourceSpec(
+        name="field", cap=30,
+        fill=[(("per_shot_every_during_own_status_window_by_ally", 5, 3.0, "buffer"), 10)],
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.1 * c)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=2.0, fight_duration=8.0, mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=9999),
+                      "buffer": _ar_weapon(max_ammo=9999)},
+        resource_specs={"attacker": [spec]},
+    )
+    shots = _normals(result)
+    # Before the owner's burst opens the window there is nothing to fill on.
+    assert shots[0]["damage"] == pytest.approx(1000.0 * fb_factor(result, shots[0]["time"]))
+    # The ally's "every 5th" fires enough times to ask for more than the cap,
+    # and `resource_count` clamps it: the buff plateaus at 0.1 * 30, never above.
+    # `fb_factor` is not decoration - the last shot sits inside a Full Burst
+    # window, and a flat expectation would quietly assert that bonus away.
+    assert shots[-1]["damage"] == pytest.approx(
+        1000.0 * (1 + 0.1 * 30) * fb_factor(result, shots[-1]["time"]))
+
+
 def test_resource_spec_permanent_linear_buff_steps_up_and_caps():
     # A named resource filled every 2 shots, granting a permanent damage_taken_up
     # of 0.5 PER stack, capped at 2 stacks. AR fires 12/s; per_shot_every 2 fires

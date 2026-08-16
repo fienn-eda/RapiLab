@@ -152,6 +152,7 @@ from app.skill_rules.rei_ayanami import (
 )
 from app.skill_rules.rei_ayanami_tentative_name import (
     attack_state_burst_percent,
+    build_anti_at_field_stack_contributions,
     build_annihilation_support_per_shot_rules,
     build_rei_tentative_rules,
 )
@@ -1578,6 +1579,23 @@ def get_resource_specs(slug, skill_values):
     raid_simulator's `resource_specs` param), or None for the vast majority
     without one."""
     builder = _RESOURCE_SPEC_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+# A Nikke whose kit writes into ANOTHER unit's resource. The stacks belong to
+# the target's `ResourceSpec` (and are clamped by the target's own cap), but the
+# numbers belong to the contributor's skill data - so the contributor declares
+# the fill source and `roster` merges it onto the target when BOTH are fielded.
+# Each entry returns a list of {"target", "resource", "fill", "amount"}.
+_RESOURCE_CONTRIBUTION_BUILDERS = {
+    "rei-ayanami-tentative-name": lambda sv: build_anti_at_field_stack_contributions(sv),
+}
+
+
+def get_resource_contributions(slug, skill_values):
+    """Fill sources this Nikke adds to an ALLY's resource, or None for the vast
+    majority who add none. See `_RESOURCE_CONTRIBUTION_BUILDERS`."""
+    builder = _RESOURCE_CONTRIBUTION_BUILDERS.get(slug)
     return builder(skill_values) if builder else None
 
 

@@ -38,6 +38,7 @@ from app.skill_rules.registry import (
     get_dynamic_hit_count_nukes,
     get_periodic_rules,
     get_resource_fill_triggered_buffs,
+    get_resource_contributions,
     get_resource_gated_buffs,
     get_resource_scaled_nukes,
     get_resource_specs,
@@ -89,6 +90,27 @@ def _passive_effects(spec: NikkeSpec, collectible_effects):
     )
 
 
+def _merge_resource_contributions(resource_specs, contributions):
+    """Append each contributor's fill source to the TARGET's ResourceSpec.
+
+    A contribution is dropped when its target is not in this deck - the stacks
+    have nowhere to land, which is the game's own answer to fielding the writer
+    without the holder. The target's `cap` is untouched, so it still clamps the
+    merged total (`SquadContext.resource_count` takes it) - a contribution can
+    never push the count past what the holder's own skill states.
+
+    `ResourceSpec.fill` is either one source or a list of (source, amount)
+    pairs (see raid_simulator's `_fill_sources`), so a single-source spec is
+    promoted to the list form on first contribution.
+    """
+    for contribution in contributions:
+        for spec in resource_specs.get(contribution["target"], []):
+            if spec.name != contribution["resource"]:
+                continue
+            sources = spec.fill if isinstance(spec.fill, list) else [(spec.fill, 1)]
+            spec.fill = [*sources, (contribution["fill"], contribution["amount"])]
+
+
 def assemble_simulation_inputs(ordered_deck):
     deck = []
     rules_by_slug = {}
@@ -99,6 +121,10 @@ def assemble_simulation_inputs(ordered_deck):
     periodic_rules = {}
     per_shot_rules = {}
     resource_specs = {}
+    # Fill sources one Nikke's kit adds to ANOTHER's resource, merged after the
+    # per-unit loop so the target's spec exists by then. Collected rather than
+    # applied inline because a contributor can be assembled before its target.
+    resource_contributions = []
     burst_damage_types = {}
     burst_resolves_after_cast = set()
     ammo_rounds_per_shot = {}
@@ -229,6 +255,10 @@ def assemble_simulation_inputs(ordered_deck):
         if resource_spec:
             resource_specs[spec.slug] = resource_spec
 
+        contribution = get_resource_contributions(spec.slug, skill_values)
+        if contribution:
+            resource_contributions.extend(contribution)
+
         resource_scaled_nuke = get_resource_scaled_nukes(spec.slug, skill_values)
         if resource_scaled_nuke:
             resource_scaled_nukes[spec.slug] = resource_scaled_nuke
@@ -256,6 +286,8 @@ def assemble_simulation_inputs(ordered_deck):
         burst_anchored_buff = get_burst_anchored_buffs(spec.slug, skill_values)
         if burst_anchored_buff:
             burst_anchored_buffs[spec.slug] = burst_anchored_buff
+
+    _merge_resource_contributions(resource_specs, resource_contributions)
 
     return {
         "deck": deck,
