@@ -2521,6 +2521,57 @@ def test_a_resource_can_be_filled_by_an_ALLYS_shots_inside_the_owners_window():
         1000.0 * (1 + 0.1 * 30) * fb_factor(result, shots[-1]["time"]))
 
 
+def test_a_resource_can_be_filled_by_an_ALLYS_shots_with_no_window():
+    """Flora's Petunia, "after landing 100 normal attacks ... increases the
+    stack count of stackable buffs by 1" - the same cross-unit write as Rei's,
+    but with no window at all: her counter runs the whole fight.
+
+    The owner has no fill of its own here, so the entire count comes from the
+    ally - and the owner's cap still clamps it."""
+    spec = ResourceSpec(
+        name="stack", cap=3,
+        fill=[(("per_shot_every_by_ally", 5, "buffer"), 1)],
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.1 * c)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=2.0, fight_duration=8.0, mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=9999),
+                      "buffer": _ar_weapon(max_ammo=9999)},
+        resource_specs={"attacker": [spec]},
+    )
+    shots = _normals(result)
+    # 아군의 5번째 발이 아직 안 나온 첫 발은 0스택.
+    assert shots[0]["damage"] == pytest.approx(1000.0 * fb_factor(result, shots[0]["time"]))
+    # 창이 없으니 전투 내내 차고, 상한 3에서 멈춘다.
+    assert shots[-1]["damage"] == pytest.approx(
+        1000.0 * (1 + 0.1 * 3) * fb_factor(result, shots[-1]["time"]))
+
+
+def test_an_ally_fill_from_a_unit_not_in_the_deck_contributes_nothing():
+    """배선된 기여자가 편성에 없으면 그 자원은 자기 fill만 갖는다 - 인게임과 같다."""
+    spec = ResourceSpec(
+        name="stack", cap=3,
+        fill=[(("per_shot_every_by_ally", 5, "nobody"), 1)],
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.1 * c)],
+    )
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [], "attacker": []},
+        burst_damage_percents={}, base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0, gauge_charge_time=2.0, fight_duration=8.0, mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": _ar_weapon(max_ammo=9999),
+                      "buffer": _ar_weapon(max_ammo=9999)},
+        resource_specs={"attacker": [spec]},
+    )
+    for shot in _normals(result):
+        assert shot["damage"] == pytest.approx(1000.0 * fb_factor(result, shot["time"]))
+
+
 def test_resource_spec_permanent_linear_buff_steps_up_and_caps():
     # A named resource filled every 2 shots, granting a permanent damage_taken_up
     # of 0.5 PER stack, capped at 2 stacks. AR fires 12/s; per_shot_every 2 fires

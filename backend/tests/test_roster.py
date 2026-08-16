@@ -224,6 +224,74 @@ def test_rei_adds_a_fill_source_to_asukas_anti_at_field_only_when_fielded():
     assert fill[3] == "rei-ayanami-tentative-name"        # whose shots feed it
 
 
+def _sources(inputs, slug, resource):
+    (spec,) = [s for s in inputs["resource_specs"][slug] if s.name == resource]
+    return spec.fill if isinstance(spec.fill, list) else [(spec.fill, 1)]
+
+
+def _flora_sources(inputs, slug, resource):
+    return [(fill, amount) for fill, amount in _sources(inputs, slug, resource)
+            if fill[0] == "per_shot_every_by_ally"]
+
+
+def test_flora_raises_the_stack_count_of_every_electric_allys_stackable_buff():
+    """Petunia: "Activates after landing 100 normal attacks. Affects all
+    Electric Code allies. Increases the stack count of stackable buffs by 1."
+
+    Unlike Rei's contribution this names no single target - it is scoped by
+    ELEMENT and by whether the resource is a stacking buff at all, so the merge
+    resolves it against the live deck."""
+    inputs = assemble_simulation_inputs(_real_specs(["flora", "cinderella", "helm"]))
+    contributed = _flora_sources(inputs, "cinderella", "beautiful")
+    assert len(contributed) == 1
+    (fill, amount) = contributed[0]
+    assert amount == 1
+    assert fill[1] == 100      # 평타 100발마다
+    assert fill[2] == "flora"  # 누구의 평타인가
+
+
+def test_the_signature_flora_reads_the_same_bullet_from_its_own_slots():
+    """두 빌드의 매니페스트 `source`가 달라서 같은 불릿의 슬롯 번호가 한 칸
+    어긋난다 - 기저의 매핑을 그대로 쓰면 시그니처는 「5발마다 100스택」을 읽는다.
+    값이 둘 다 그럴듯한 숫자라 조용히 틀린다."""
+    inputs = assemble_simulation_inputs(
+        _real_specs(["flora-signature", "cinderella", "helm"]))
+    ((fill, amount),) = _flora_sources(inputs, "cinderella", "beautiful")
+    assert (fill[1], amount) == (100, 1)
+    assert fill[2] == "flora-signature"
+
+
+def test_floras_stack_bump_skips_a_resource_that_is_a_gauge_not_a_buff():
+    """메이든은 두 자원을 동시에 갖는다 - Meditation은 버프라 받고, MP는 그녀
+    버스트가 쓰는 게이지라 안 받는다(Fienn 사격장 실측 2026-08-17). 스펙 자체의
+    성질로는 안 갈리므로 `stackable_buff` 선언이 가른다."""
+    inputs = assemble_simulation_inputs(
+        _real_specs(["flora", "maiden-ice-rose", "crown"]))
+    assert len(_flora_sources(inputs, "maiden-ice-rose", "meditation")) == 1
+    assert _flora_sources(inputs, "maiden-ice-rose", "mp") == []
+
+
+def test_floras_stack_bump_skips_a_non_electric_holder():
+    """원문이 "all Electric Code allies"라 원소가 관문이다."""
+    from app.roster import _merge_resource_contributions
+    from app.effects import ResourceSpec
+
+    specs = {
+        "electric_holder": [ResourceSpec(name="stack", fill=("periodic", 1.0),
+                                         cap=12, stackable_buff=True)],
+        "wind_holder": [ResourceSpec(name="stack", fill=("periodic", 1.0),
+                                     cap=12, stackable_buff=True)],
+    }
+    _merge_resource_contributions(specs, [{
+        "target_filter": {"element": "Electric", "stackable_buff": True},
+        "fill": ("per_shot_every_by_ally", 100, "flora"), "amount": 1,
+    }], [{"slug": "electric_holder", "element": "Electric"},
+         {"slug": "wind_holder", "element": "Wind"}])
+
+    assert isinstance(specs["electric_holder"][0].fill, list)
+    assert specs["wind_holder"][0].fill == ("periodic", 1.0)
+
+
 def test_assemble_produces_deck_entries_with_scheduler_fields():
     inputs = assemble_simulation_inputs(minimal_feasible_deck())
     deck = inputs["deck"]

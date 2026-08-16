@@ -62,9 +62,9 @@ Not modeled / skipped:
   not damage. Their occurrence is what the engine consumes: the shield is the
   link in the combo above, and Flora is in `HEAL_PROVIDER_SLUGS`, so a deck-mate
   whose bullet arms on any ally healing (Crown) sees her.
-- Petunia's "after landing 100 normal attacks, all Electric Code allies:
-  Increases the stack count of stackable buffs by 1" - the engine has no notion
-  of incrementing another unit's stackable-buff count. Same defer as the base.
+(Petunia's "after landing 100 normal attacks, all Electric Code allies:
+Increases the stack count of stackable buffs by 1" is modeled, sharing the base
+build's `build_petunia_stack_contributions` - same slots, same bullet.)
 """
 from app.skill_rules._helpers import (SHIELD_PROVIDER_SLUGS, buff_rule,
                                       seated_buff_rule)
@@ -91,6 +91,10 @@ SKILL_VALUE_MANIFESTS = {
 }
 
 BURST_STAGE = 2  # she is Burst 2; her Petunia bullet keys off entering that stage
+# The stack-count bullet's ("attacks", "stacks") pair. Her manifest reads
+# lootandwaifus, which numbers this bullet one slot later than the base build's
+# shiftypad source - see flora.PETUNIA_STACK_SLOTS.
+PETUNIA_STACK_SLOTS = ("description_value_04", "description_value_05")
 
 
 def build_flora_signature_rules(values):

@@ -38,9 +38,11 @@ stat". That was written before Phase S wired `charge_speed_percent`; it is now
 modeled - see `flawless_glass_charge_speed`. It is one of her biggest levers,
 since every shot she fires also carries the 136.6% additional hit.)
 """
-from app.effects import Effect, ResourceSpec
-from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, max_hp_scaled_atk_rule
-from app.squad_engine import SkillRule, burst_stage_entered
+from app.effects import ResourceSpec
+from app.skill_rules._helpers import (buff_rule, instant_nuke_pulse_rule,
+                                      linear_resource_buff,
+                                      max_hp_scaled_atk_rule)
+from app.squad_engine import burst_stage_entered
 
 BURST_STAGE = 3  # skill text: "entering Burst Stage 3" (a fixed reference, not a data slot)
 
@@ -122,44 +124,30 @@ def build_flawless_glass_charge_speed_rules(values):
     return [buff_rule("battle_start", [("charge_speed_percent", speed, "self", None)])]
 
 
-def build_beautiful_resources(values):
-    """The stack COUNT only - Glass Slippers' mirrored hit reads it. Beautiful's
-    own Max HP per stack cannot ride this spec's `buffs` (see
-    `build_beautiful_max_hp_rules`)."""
-    dm = values["dirt_resistant_mirror"]
-    interval = float(dm["description_value_03"])
-    cap = int(float(dm["description_value_05"]))
-    return [ResourceSpec(name="beautiful", fill=("periodic", interval), cap=cap, buffs=[])]
+def build_beautiful_resources(values, caster_max_hp):
+    """Beautiful: a stack every 3 sec while her decoy stands, up to 12, each
+    worth "Max HP +1.6% continuously".
 
+    ONE spec carries both halves of the stack - the COUNT that Glass Slippers'
+    mirrored hit reads, and the Max HP that Flawless Glass converts into ATK off
+    her LIVE Max HP. They have to be the same number: Flora's Petunia raises the
+    count of a stackable buff, and a Max HP ramp wired separately would keep
+    paying for the unbumped count.
 
-def build_beautiful_max_hp_rules(values, caster_max_hp):
-    """Beautiful's "Max HP +1.6% continuously, stacks up to 12 times", which
-    Flawless Glass's ATK then reads off her LIVE Max HP.
-
-    Laid down at battle start as the whole ramp - one permanent effect per
-    stack, each with the `applied_at` its stack really arrives at. The decoy is
-    up from battle start and never drops, so the schedule is fully determined
-    and pre-adding it is exact (the same reason periodic_rules may pre-add).
-
-    Why not the `beautiful` ResourceSpec's own `buffs`: pre-adding is EXACT for
-    her and simpler. Her decoy is up from battle start and never drops, so the
-    fill is fully determined at t=0 and the schedule needs no shot timeline at
-    all. (The ordering that used to force this choice - resource buffs resolving
-    after the burst cycle, where the conversion reads - no longer does: the
-    simulator's fixed-point loop feeds late `flat_max_hp` back. So a future
-    bullet that DOES depend on the shot timeline may use the ResourceSpec.)
+    (The Max HP used to be a battle-start rule that pre-added the whole ramp,
+    because resource buffs resolve after the burst cycle where the conversion
+    reads. simulate_raid's fixed-point loop now feeds that back, so the
+    resource can own it.)
     """
     dm = values["dirt_resistant_mirror"]
     interval = float(dm["description_value_03"])
     per_stack = float(dm["description_value_04"]) / 100 * caster_max_hp
     cap = int(float(dm["description_value_05"]))
-
-    def action(context, caster_slug, time, registry):
-        for stack in range(1, cap + 1):
-            registry.add(Effect("flat_max_hp", per_stack, "self", None, caster_slug),
-                         applied_at=time + interval * stack)
-
-    return [SkillRule(trigger="battle_start", action=action)]
+    return [ResourceSpec(
+        name="beautiful", fill=("periodic", interval), cap=cap,
+        buffs=[linear_resource_buff("flat_max_hp", per_stack, "self")],
+        stackable_buff=True,
+    )]
 
 
 def build_glass_slippers_resource_scaled_nuke(values):

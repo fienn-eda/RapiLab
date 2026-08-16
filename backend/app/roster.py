@@ -90,25 +90,48 @@ def _passive_effects(spec: NikkeSpec, collectible_effects):
     )
 
 
-def _merge_resource_contributions(resource_specs, contributions):
+def _add_fill_source(spec, contribution):
+    """`ResourceSpec.fill` is either one source or a list of (source, amount)
+    pairs (see raid_simulator's `_fill_sources`), so a single-source spec is
+    promoted to the list form on first contribution."""
+    sources = spec.fill if isinstance(spec.fill, list) else [(spec.fill, 1)]
+    spec.fill = [*sources, (contribution["fill"], contribution["amount"])]
+
+
+def _merge_resource_contributions(resource_specs, contributions, members):
     """Append each contributor's fill source to the TARGET's ResourceSpec.
 
-    A contribution is dropped when its target is not in this deck - the stacks
-    have nowhere to land, which is the game's own answer to fielding the writer
-    without the holder. The target's `cap` is untouched, so it still clamps the
-    merged total (`SquadContext.resource_count` takes it) - a contribution can
-    never push the count past what the holder's own skill states.
+    A contribution names its targets one of two ways:
 
-    `ResourceSpec.fill` is either one source or a list of (source, amount)
-    pairs (see raid_simulator's `_fill_sources`), so a single-source spec is
-    promoted to the list form on first contribution.
+    - `"target"` + `"resource"` - one named slug's one named resource (Rei
+      Ayanami writing into Asuka's Anti A.T. Field).
+    - `"target_filter"` - a CLASS of resources, resolved against the live deck.
+      Flora's Petunia says "affects all Electric Code allies: increases the
+      stack count of stackable buffs by 1" and names nobody, so its targets are
+      whichever fielded members match. Keys are `element` and `stackable_buff`,
+      both matched exactly; `stackable_buff` is what keeps the bump off a gauge
+      that merely happens to be modeled as a resource (Maiden's MP).
+
+    A contribution is dropped when nothing matches - the stacks have nowhere to
+    land, which is the game's own answer to fielding the writer without a
+    holder. Each target's `cap` is untouched, so it still clamps the merged
+    total (`SquadContext.resource_count` takes it) - a contribution can never
+    push a count past what the holder's own skill states.
     """
+    element_of = {m["slug"]: m["element"] for m in members}
     for contribution in contributions:
-        for spec in resource_specs.get(contribution["target"], []):
-            if spec.name != contribution["resource"]:
+        target_filter = contribution.get("target_filter")
+        if target_filter is None:
+            for spec in resource_specs.get(contribution["target"], []):
+                if spec.name == contribution["resource"]:
+                    _add_fill_source(spec, contribution)
+            continue
+        for slug, specs in resource_specs.items():
+            if element_of.get(slug) != target_filter["element"]:
                 continue
-            sources = spec.fill if isinstance(spec.fill, list) else [(spec.fill, 1)]
-            spec.fill = [*sources, (contribution["fill"], contribution["amount"])]
+            for spec in specs:
+                if spec.stackable_buff == target_filter["stackable_buff"]:
+                    _add_fill_source(spec, contribution)
 
 
 def assemble_simulation_inputs(ordered_deck):
@@ -287,7 +310,7 @@ def assemble_simulation_inputs(ordered_deck):
         if burst_anchored_buff:
             burst_anchored_buffs[spec.slug] = burst_anchored_buff
 
-    _merge_resource_contributions(resource_specs, resource_contributions)
+    _merge_resource_contributions(resource_specs, resource_contributions, deck)
 
     return {
         "deck": deck,

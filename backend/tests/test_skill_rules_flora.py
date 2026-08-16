@@ -1,9 +1,18 @@
-"""Flora (base build) - a healer whose DPS contribution is True Damage buffs."""
+"""Flora (base build) - a healer whose DPS contribution is True Damage buffs
+plus Petunia's stack-count bump on Electric allies."""
 from app.effects import EffectRegistry
-from app.skill_rules.flora import build_flora_rules
+from app.skill_rules.flora import (
+    build_flora_rules,
+    build_petunia_stack_contributions,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 # ShiftyPad native slots (data/shiftypad/flora.json, level 10).
+PETUNIA = {
+    "description_value_01": "1", "description_value_02": "1",
+    "description_value_03": "100", "description_value_04": "1",
+    "description_value_05": "4", "description_value_06": "5",
+}
 IRIS = {
     "description_value_01": "90", "description_value_02": "10.22",
     "description_value_03": "10", "description_value_04": "30.97",
@@ -13,7 +22,7 @@ SECRET_GARDEN = {
     "description_value_01": "10.45", "description_value_02": "42.39",
     "description_value_03": "10",
 }
-FLORA = {"iris": IRIS, "secret_garden": SECRET_GARDEN}
+FLORA = {"petunia": PETUNIA, "iris": IRIS, "secret_garden": SECRET_GARDEN}
 
 SELF = {"slug": "flora", "element": "Electric"}
 ALLY = {"slug": "ally", "element": "Fire"}
@@ -54,10 +63,26 @@ def test_burst_stacks_its_true_damage_on_top_for_ten_seconds():
     assert round(reg.total_for("true_damage_up", ALLY, 30.1), 4) == 0.3097
 
 
-def test_heals_shields_and_the_stack_count_buff_are_not_emitted():
-    """Heals/shields/Incoming Healing are not damage, and "increase the stack
-    count of stackable buffs" has no engine concept at all."""
+def test_heals_shields_and_the_stack_count_buff_are_not_emitted_as_rules():
+    """Heals/shields/Incoming Healing are not damage. The stack-count bump IS
+    modeled, but as a resource CONTRIBUTION rather than an Effect - so it must
+    not show up here either (see the contribution test below)."""
     for trigger in ("battle_start", "own_burst_activate", "full_burst_enter"):
         reg = _fire(trigger)
         for stat in ("shield_amount", "flat_max_hp", "atk_percent", "flat_atk"):
             assert reg.total_for(stat, SELF, 0.0) == 0.0
+
+
+def test_petunia_bumps_the_stack_count_of_electric_allies_stackable_buffs():
+    """"Activates after landing 100 normal attacks. Affects all Electric Code
+    allies. Increases the stack count of stackable buffs by 1."
+
+    The slots are the ShiftyPad numbering her manifest reads - _03 is the shot
+    threshold and _04 the amount. The lootandwaifus-sourced signature build has
+    the same bullet one slot later, which is why the pair is a parameter.
+    """
+    (contribution,) = build_petunia_stack_contributions(FLORA)
+    assert contribution["target_filter"] == {"element": "Electric",
+                                             "stackable_buff": True}
+    assert contribution["fill"] == ("per_shot_every_by_ally", 100, "flora")
+    assert contribution["amount"] == 1

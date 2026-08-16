@@ -83,7 +83,6 @@ from app.skill_rules.cinderella_crystal_wave import (
 )
 from app.skill_rules.cinderella import (
     GLASS_SLIPPERS_HIT_COUNT,
-    build_beautiful_max_hp_rules,
     build_beautiful_resources,
     build_flawless_glass_charge_speed_rules,
     build_flawless_glass_per_shot_rules,
@@ -385,7 +384,11 @@ from app.skill_rules.snow_white_heavy_arms import (
     build_snow_white_heavy_arms_rules,
 )
 from app.skill_rules import centi
-from app.skill_rules.flora import build_flora_rules
+from app.skill_rules import flora
+from app.skill_rules.flora import (
+    build_flora_rules,
+    build_petunia_stack_contributions,
+)
 from app.skill_rules import rosanna as rosanna_base
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
 from app.skill_rules import sugar_signature
@@ -514,7 +517,6 @@ def _build_takina(sv):
 def _build_cinderella(sv):
     rules = build_flawless_glass_rules(sv, sv["caster_max_hp"])
     rules += build_flawless_glass_charge_speed_rules(sv)
-    rules += build_beautiful_max_hp_rules(sv, sv["caster_max_hp"])
     return rules, glass_slippers_burst_percent(sv)
 
 
@@ -1180,7 +1182,7 @@ _RESOURCE_SPEC_BUILDERS = {
     "leona": lambda sv: build_leona_resources(sv),
     "modernia": lambda sv: build_modernia_resources(sv),
     "guillotine-winter-slayer": lambda sv: build_guillotine_resources(sv),
-    "cinderella": lambda sv: build_beautiful_resources(sv),
+    "cinderella": lambda sv: build_beautiful_resources(sv, sv["caster_max_hp"]),
     "soda-twinkling-bunny": lambda sv: build_golden_chip_resources(sv),
     "maiden-ice-rose": lambda sv: (build_mp_resources(sv)
                                    + build_meditation_resources(sv, sv["caster_max_hp"])),
@@ -1591,6 +1593,13 @@ def get_resource_specs(slug, skill_values):
 # Each entry returns a list of {"target", "resource", "fill", "amount"}.
 _RESOURCE_CONTRIBUTION_BUILDERS = {
     "rei-ayanami-tentative-name": lambda sv: build_anti_at_field_stack_contributions(sv),
+    # Both Flora builds carry the same Petunia bullet, but each passes its OWN
+    # slug (the fill names whose shots feed it) and its OWN slot pair (their
+    # manifests read different sources, which number the bullet differently).
+    "flora": lambda sv: build_petunia_stack_contributions(
+        sv, "flora", flora.PETUNIA_STACK_SLOTS),
+    "flora-signature": lambda sv: build_petunia_stack_contributions(
+        sv, "flora-signature", flora_signature.PETUNIA_STACK_SLOTS),
 }
 
 

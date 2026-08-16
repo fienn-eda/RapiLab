@@ -1019,16 +1019,32 @@ allies. Increases the stack count of stackable buffs by 1.」**
         16초 풀차지 최대 16회면 2스택이었을 것이다.
       · **메이든 MP = 안 받는다.** t=16에 2스택으로, 풀버스트 1사이클 뒤의
         플로라 없을 때와 **동일**하다. 게이지이지 버프가 아니다.
-- [ ] **남은 배선 (A7 2단계).** ⓐ `stackable_buff=True`를 신데렐라 `beautiful` ·
-      츠바이 `pierce_attacks_101`에 세운다(메이든 `meditation`은 1단계에서 이미 섰고,
-      `mp`는 안 선다) · ⓑ 플로라의 기여 = **창 없는 per-shot fill 종류**(평타 100발마다)
-      + **원소 스코프 기여 병합**(오늘의 `_merge_resource_contributions`는 슬러그·자원을
-      이름으로 지목한다) · ⓒ 카탈로그 · ⓓ 스윕 측정.
-      **★ 신데렐라엔 함정이 하나 더 있다** — 그녀의 아름다움 Max HP 램프는
-      `build_beautiful_max_hp_rules`가 **battle_start에 통째로 미리 깔아** 두므로
-      `beautiful` 자원의 카운트와 **별개 배선**이다. 플로라의 +1은 자원만 올리고 Max HP는
-      안 올린다. 순서 갭이 닫혔으니 이제 그 램프를 `ResourceSpec`의 `buffs`로 옮길 수
-      있고, 2단계는 그걸 함께 해야 한다.
+- [x] **배선 완료 (A7 2단계).** ⓐ `stackable_buff=True` — 신데렐라 `beautiful` ·
+      츠바이 `pierce_attacks_101`(메이든 `meditation`은 1단계에서 이미 섰고, `mp`는
+      안 선다) · ⓑ 신규 fill 종류 **`per_shot_every_by_ally`**(창 없이 지목한 아군의
+      N번째 평타마다) · ⓒ `_merge_resource_contributions`에 **`target_filter`**
+      (원소 + `stackable_buff`로 라이브 덱에서 대상을 고른다 — 원문이 대상을 이름으로
+      안 부른다) · ⓓ 카탈로그 · engine-gaps · encoded-nikkes.
+- [x] **★ 두 플로라 빌드의 슬롯 번호가 다르다.** 같은 불릿인데 `flora`는
+      shiftypad라 `_03`(발수)/`_04`(스택), `flora-signature`는 lootandwaifus라
+      `_04`/`_05`다. 기저의 매핑을 그대로 쓰면 시그니처는 **「5발마다 100스택」**을
+      읽는데 둘 다 그럴듯한 숫자라 조용히 틀린다 — 테스트가 잡았다. 슬롯 쌍은 각
+      모듈이 소유하고(`PETUNIA_STACK_SLOTS`) 공유 빌더가 받는다.
+      **매니페스트의 `source`가 슬롯을 정한다는 규칙이 빌드 간에도 적용된다.**
+- [x] **★ 신데렐라의 Max HP 램프를 자원으로 이관했다.** 그녀의 아름다움 Max HP는
+      `build_beautiful_max_hp_rules`가 battle_start에 통째로 미리 깔고 있었고, 그건
+      `beautiful` 자원의 카운트와 **별개 배선**이라 플로라의 +1이 카운트만 올리고
+      Max HP는 옛 카운트로 남았을 것이다. 순서 갭이 닫혔으니 램프가 자원의 `buffs`로
+      들어간다 — 이제 한 숫자다. 그 김에 「Flawless Glass가 램프를 진짜로 보는가」를
+      **시뮬을 통과시키는** 테스트로 고정했다(두 빌더를 손으로 부르는 유닛 테스트는
+      이 배선에 대해 아무 말도 안 한다 — 메이든에서 정확히 그게 결함을 숨겼다).
+- [x] **실측 (`scripts/measure_flora_stack_bump.py`, 덱 고정·기여만 토글).**
+      홀더 기준 **신데렐라 +1.171% · 츠바이(애장품) +2.599% · 메이든 +1.062%**,
+      덱 기준 +0.792 / +2.335 / +0.551%. 츠바이가 가장 큰 것은 그 스택이 **스쿼드
+      스코프 크리율**이라 덱 전원이 함께 오르기 때문(크라운 +2.26%·헬름 +4.33%).
+      **★ 기저 츠바이엔 그 스택이 아예 없다** — Frame Analysis의 크리 스택은 애장품
+      불릿이라 `zwei-signature`에만 배선돼 있다. 처음에 `zwei`로 재서 +0.000%가
+      나왔는데, 그건 「상한에 박혔다」가 아니라 **자원이 없었다**는 뜻이었다.
 
 ### 스노우화이트의 풀버스트 라이더 (2026-08-16, A6)
 

@@ -164,9 +164,18 @@
 7. **엄폐물 피격 트리거 (갭 #14) — 2슬러그.** `sugar`·`sugar-signature`, 둘 다 floor.
    Critical Damage +16.39%는 실제 딜 스탯이다.
 
-그 아래로: 아군 스택형 버프의 스택 +1(`flora`·`flora-signature`, 2슬러그) ·
-크로스유닛 타깃 상태(`rei-ayanami`의 Anti A.T. Field 590.64%) · 아군 행동불능 트리거
-(갭 #15, `rosanna`×2·`mihara-bonding-chain` — **defer가 맞다**, 시뮬은 아군을 안 죽인다).
+그 아래로: 크로스유닛 타깃 상태(`rei-ayanami`의 Anti A.T. Field 590.64%) ·
+아군 행동불능 트리거(갭 #15, `rosanna`×2·`mihara-bonding-chain` — **defer가 맞다**,
+시뮬은 아군을 안 죽인다).
+
+**✅ 아군 스택형 버프의 스택 +1도 착륙했다 (2026-08-17).** `flora`·`flora-signature`
+둘 다. 신규 fill 종류 `per_shot_every_by_ally`(창 없이 지목한 아군의 N번째 평타마다)
++ `_merge_resource_contributions`의 **원소 스코프 기여**(`target_filter`, 원문이 대상을
+이름으로 안 부른다) + `ResourceSpec.stackable_buff`(게이지와 버프를 가르는 **선언**,
+추론 아님 — 메이든이 둘을 동시에 갖는다). 보유자 셋을 재니 홀더 기준
+**신데렐라 +1.17% · 츠바이(애장품) +2.60% · 메이든 +1.06%**, 덱 기준 +0.79 / +2.34 /
++0.55%(`scripts/measure_flora_stack_bump.py`). 츠바이가 가장 큰 것은 그 스택이
+**스쿼드 스코프 크리율**이라 덱 전원이 함께 오르기 때문이다.
 
 **✅ 레이 아야나미의 Anti A.T. Field는 착륙했다 (2026-08-16).** 신규 per-shot 모드
 `every_during_ally_status_window`(아군 버스트 앵커 + **창마다 리셋**)로 590.64% 넉이
@@ -1703,7 +1712,7 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 | 14 | **"엄폐물이 공격받을 때" 트리거** | 2 (sugar·sugar-signature) | 미착수 — 엔진에 피격 개념 없음. 둘 다 floor(Critical Damage +16.39%는 실제 딜 스탯) | 신규 트리거 |
 | 15 | **"아군 니케 행동불능" 트리거** | 3 (rosanna·rosanna-signature·mihara-bonding-chain) | 미착수 — **defer가 맞다**(시뮬은 아군을 안 죽인다). 애장품 빌드는 셀 수 있는 대체 소스가 있어 실피해가 작다 | 신규 트리거 |
 | — | **관통 타격 수 모델** (Pierce 범위 배수) | 2 (dorothy-serendipity 160펠릿 +200% · red-hood +100%) | 미착수 — 통로가 `pierce_hits_body_behind_core` 불리언 하나라 곱할 자리가 없다 | 데미지 경로 |
-| — | **아군 스택형 버프의 스택 수 +1** | 2 (flora·flora-signature) | 미착수 — 다른 유닛의 스택 카운트를 증가시키는 개념이 엔진에 없다 | 신규 효과 |
+| — | ~~**아군 스택형 버프의 스택 수 +1**~~ | 2 (flora·flora-signature) | **해소 (2026-08-17)** — 신규 fill 종류 `per_shot_every_by_ally`(창 없이 지목한 아군의 N번째 평타마다) + `target_filter`로 **원소 스코프 기여**(원문이 「all Electric Code allies」라 대상을 이름으로 안 부른다) + `ResourceSpec.stackable_buff`. **그 플래그는 선언이지 추론이 아니다** — 메이든이 버프(Meditation)와 게이지(MP)를 동시에 갖고 +1은 앞의 것만 받는다(Fienn 사격장 2026-08-17). 홀더 셋 실측: 신데렐라 **+1.17%** · 츠바이(애장품) **+2.60%** · 메이든 **+1.06%**(덱 +0.79/+2.34/+0.55%). 츠바이가 가장 큰 것은 그 스택이 **스쿼드 스코프 크리율**이기 때문. 같이 정리한 것: 신데렐라의 Beautiful Max HP 램프를 battle_start 선-적재에서 **자원의 `buffs`로 이관**(안 그러면 +1이 카운트만 올리고 Max HP는 옛 카운트로 남는다) | 신규 효과 |
 | — | **크로스유닛 타깃 상태** (Anti A.T. Field) | 1 (rei-ayanami, 그녀의 주 페이로드 590.64%) | 미착수 — **닫기 전 주의**: 그녀는 이 floor를 안고도 이미 1.039x 과대다 | 신규 상태 |
 
 > **핵심 결론:** #1 하나가 압도적이다. 노멀공격 카운터(20명)와 풀차지 카운터(19명)는

@@ -163,7 +163,11 @@ def build_pierce_equation_per_shot_rules(values):
 def build_frame_analysis_resources(values):
     """Frame Analysis's second bullet: a capped Crit Rate stack, one per normal
     attack she lands while Pierce Attacks 101 (her burst's 10-sec all-ally buff)
-    is up, each stack living 5 sec."""
+    is up, each stack living 5 sec.
+
+    A stacking BUFF in the game's sense, so Flora's Petunia raises its count -
+    confirmed in the range (Fienn, 2026-08-17): the count climbs while Zwei
+    fires nothing herself, which only Flora's shots can explain."""
     frame = values["frame_analysis"]
     crit_rate_per_stack = float(frame["description_value_06"]) / 100
     cap = int(float(frame["description_value_08"]))
@@ -177,6 +181,7 @@ def build_frame_analysis_resources(values):
             cap=cap,
             buffs=[linear_resource_buff("crit_rate", crit_rate_per_stack, "squad",
                                         lifetime=stack_lifetime)],
+            stackable_buff=True,
         )
     ]
 

@@ -370,6 +370,18 @@ def _resource_fill_times(
         windows = [(bt, bt + window_duration) for bt in own_burst_times]
         in_window = [t for t in shot_times if any(start <= t < end for start, end in windows)]
         return [t for i, t in enumerate(in_window) if (i + 1) % n == 0]
+    if kind == "per_shot_every_by_ally":
+        # ("per_shot_every_by_ally", N, ally_slug): every Nth of the ALLY'S
+        # normal attacks fills the owner's resource, for the whole fight - no
+        # window and no dependence on the owner's own shots. Flora's Petunia,
+        # "activates after landing 100 normal attacks ... increases the stack
+        # count of stackable buffs by 1", which her allies hold.
+        #
+        # An ally who is not in the deck has no shot times, so the source
+        # contributes nothing and the resource keeps only its own fills.
+        n, ally_slug = fill[1], fill[2]
+        ally_shots = (shot_times_by_slug or {}).get(ally_slug, [])
+        return [t for i, t in enumerate(ally_shots) if (i + 1) % n == 0]
     if kind == "per_shot_every_during_own_status_window_by_ally":
         # ("per_shot_every_during_own_status_window_by_ally", N, window_duration,
         # ally_slug): the window is the OWNER'S (their own burst opens it) but

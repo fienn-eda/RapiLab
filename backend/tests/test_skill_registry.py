@@ -10,6 +10,7 @@ from app.skill_rules.registry import (
     get_full_burst_duration_delta,
     get_per_shot_rules,
     get_periodic_nuke,
+    get_resource_specs,
     get_periodic_rules,
 )
 
@@ -293,11 +294,16 @@ def test_build_nikke_rules_returns_flawless_glass_burst_percent_for_cinderella()
         "caster_weapon_stats": {"charge_time": 1.0, "max_ammo": 24},
     }
     rules, burst_percent = build_nikke_rules("cinderella", skill_values)
-    # Flawless Glass's stage-3 ATK buff and permanent Charge Speed buff, plus
-    # Beautiful's Max HP ramp - which the ATK buff reads live, so both must be
-    # built from the SAME sv or the ramp is silently absent.
-    assert [r.trigger for r in rules] == ["ally_burst_activate", "battle_start", "battle_start"]
+    # Flawless Glass's stage-3 ATK buff and her permanent Charge Speed buff.
+    assert [r.trigger for r in rules] == ["ally_burst_activate", "battle_start"]
     assert burst_percent == 1365.92
+    # Beautiful's Max HP per stack rides the resource, and the ATK buff reads it
+    # live - so it too must be built from the SAME sv, or the ramp is silently
+    # absent (the original point of this regression test).
+    (beautiful,) = get_resource_specs("cinderella", skill_values)
+    (max_hp_buff,) = beautiful.buffs
+    assert max_hp_buff.stat == "flat_max_hp"
+    assert max_hp_buff.value_fn(12) == pytest.approx(1_000_000 * 0.016 * 12)
 
 
 def test_takina_event_rules_registered():

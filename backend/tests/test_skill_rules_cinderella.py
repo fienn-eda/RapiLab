@@ -10,7 +10,6 @@ from app.skill_rules.cinderella import (
     GLASS_SLIPPERS_FIRST_HIT_DELAY,
     GLASS_SLIPPERS_HIT_COUNT,
     GLASS_SLIPPERS_HIT_INTERVAL,
-    build_beautiful_max_hp_rules,
     build_beautiful_resources,
     build_flawless_glass_charge_speed_rules,
     build_flawless_glass_per_shot_rules,
@@ -113,44 +112,31 @@ def test_flawless_glass_per_shot_nuke_takes_the_full_burst_bonus():
 
 
 def test_beautiful_resource_ticks_every_3_sec_capped_at_12():
-    specs = build_beautiful_resources(CINDERELLA)
+    specs = build_beautiful_resources(CINDERELLA, CASTER_MAX_HP)
     assert len(specs) == 1
     spec = specs[0]
     assert isinstance(spec, ResourceSpec)
     assert spec.name == "beautiful"
     assert spec.fill == ("periodic", 3.0)
     assert spec.cap == 12
-    # The resource carries the COUNT only. Its Max HP per stack rides a
-    # battle-start rule instead (see below): resource buffs resolve after the
-    # shot loop, too late for Flawless Glass's live Max HP read.
-    assert spec.buffs == []
+    # ONE spec carries both halves: the count Glass Slippers' rider reads and
+    # the Max HP Flawless Glass converts. Flora's Petunia raises the count of a
+    # stackable buff, so a separately-wired Max HP ramp would keep paying for
+    # the unbumped count.
+    assert spec.stackable_buff is True
+    (max_hp_buff,) = spec.buffs
+    assert max_hp_buff.stat == "flat_max_hp"
+    assert max_hp_buff.scope == "self"
+    assert max_hp_buff.lifetime is None  # "continuously"
 
 
 def test_beautiful_max_hp_ramps_one_stack_every_three_seconds_to_twelve():
-    rules = build_beautiful_max_hp_rules(CINDERELLA, CASTER_MAX_HP)
-    reg = EffectRegistry()
-    for rule in rules:
-        rule.action(make_context(), "cinderella", 0.0, reg)
+    (spec,) = build_beautiful_resources(CINDERELLA, CASTER_MAX_HP)
+    (buff,) = spec.buffs
     per_stack = CASTER_MAX_HP * 0.016  # 1.6% of final Max HP per stack
-    assert reg.total_for("flat_max_hp", CINDY, now=0.0) == 0.0  # first tick is at t=3
-    assert round(reg.total_for("flat_max_hp", CINDY, now=10.0), 4) == round(3 * per_stack, 4)
-    assert round(reg.total_for("flat_max_hp", CINDY, now=36.0), 4) == round(12 * per_stack, 4)
-    # Capped at 12 and continuous - it never grows past the cap, never expires.
-    assert round(reg.total_for("flat_max_hp", CINDY, now=179.0), 4) == round(12 * per_stack, 4)
-
-
-def test_beautiful_max_hp_feeds_flawless_glass_own_atk():
-    # The two bullets are wired together: her ATK buff reads LIVE Max HP, so a
-    # burst after the ramp is worth 12 stacks more ATK than one at t=0.
-    reg = EffectRegistry()
-    for rule in build_beautiful_max_hp_rules(CINDERELLA, CASTER_MAX_HP):
-        rule.action(make_context(), "cinderella", 0.0, reg)
-    ctx = make_context()
-    ctx.last_burst_slug = "cinderella"
-    for rule in build_flawless_glass_rules(CINDERELLA, CASTER_MAX_HP):
-        rule.action(ctx, "cinderella", 40.0, reg)
-    live_max_hp = CASTER_MAX_HP * (1 + 12 * 0.016)
-    assert round(reg.total_for("flat_atk", CINDY, now=40.0), 4) == round(live_max_hp * 0.0271, 4)
+    assert buff.value_fn(0) == 0.0
+    assert round(buff.value_fn(3), 4) == round(3 * per_stack, 4)
+    assert round(buff.value_fn(12), 4) == round(12 * per_stack, 4)
 
 
 def test_glass_slippers_additional_hit_mirrors_beautiful_stack_count():
@@ -195,17 +181,18 @@ def test_cinderella_end_to_end_burst_hits_and_mirrored_additional_hit():
         enemy_def=0, gauge_charge_time=9.0, fight_duration=15.0, mode="auto", base_crit_rate=0.0,
         weapon_stats=weapon_stats,
         per_shot_rules={"cinderella": build_flawless_glass_per_shot_rules(CINDERELLA)},
-        resource_specs={"cinderella": build_beautiful_resources(CINDERELLA)},
+        resource_specs={"cinderella": build_beautiful_resources(CINDERELLA, CASTER_MAX_HP)},
         resource_scaled_nukes={"cinderella": build_glass_slippers_resource_scaled_nuke(CINDERELLA)},
         burst_hit_counts={"cinderella": GLASS_SLIPPERS_HIT_COUNT},
     )
     burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
     mirrored = [e for e in result["damage_log"] if e["source"] == "resource_scaled_nuke"]
     per_shot_hits = [e for e in result["damage_log"] if e["source"] == "per_shot_nuke"]
-    # Flawless Glass's flat_atk (2.71% of 50000 = 1355) fires in the SAME
-    # on_tier_fire call as the burst nuke and the mirrored hit, so both are
-    # boosted by it: offense = 10000 + 1355 = 11355.
-    offense = 10000 + 50000 * 0.0271
+    # Flawless Glass's flat_atk is 2.71% of her LIVE Max HP, and by the burst at
+    # t=9 Beautiful has ticked three times - so it reads 50000 * (1 + 3*1.6%),
+    # not the bare 50000. It fires in the SAME on_tier_fire call as the burst
+    # nuke and the mirrored hit, so both are boosted by it.
+    offense = 10000 + CASTER_MAX_HP * (1 + 3 * 0.016) * 0.0271
     assert len(burst_hits) == GLASS_SLIPPERS_HIT_COUNT
     assert all(round(h["damage"], 4) == round(offense * 13.6592, 4) for h in burst_hits)
     # burst fires at t=9 (gauge_charge_time); Beautiful ticks at t=3,6,9 -> 3
@@ -256,7 +243,7 @@ def test_glass_slippers_riders_read_the_stack_count_at_their_own_hit_time():
         # straddle that tick (t=1.95 .. 3.75) instead of all reading one count.
         enemy_def=0, gauge_charge_time=1.0, fight_duration=15.0, mode="auto", base_crit_rate=0.0,
         weapon_stats=weapon_stats,
-        resource_specs={"cinderella": build_beautiful_resources(CINDERELLA)},
+        resource_specs={"cinderella": build_beautiful_resources(CINDERELLA, CASTER_MAX_HP)},
         resource_scaled_nukes={"cinderella": build_glass_slippers_resource_scaled_nuke(CINDERELLA)},
         burst_hit_counts={"cinderella": GLASS_SLIPPERS_HIT_COUNT},
     )
@@ -318,3 +305,40 @@ def test_flawless_glass_charge_speed_is_a_permanent_self_buff():
     assert reg.total_for("charge_speed_percent", cind, now=170.0) == pytest.approx(1.0)
     # self-scoped: an ally's cadence is untouched
     assert reg.total_for("charge_speed_percent", {"slug": "ally", "element": "Iron"}, now=0.0) == 0.0
+
+
+def test_beautiful_max_hp_reaches_flawless_glass_in_a_real_simulation():
+    """Beautiful의 Max HP가 Flawless Glass의 ATK 환산에 실제로 닿는지는 시뮬을
+    통과시켜야만 확인된다.
+
+    두 빌더를 손으로 순서대로 부르는 유닛 테스트는 이 배선에 대해 아무 말도 하지
+    않는다 - 메이든에서 정확히 그 함정이 실제 결함을 숨기고 있었다(2026-08-17).
+    """
+    deck = [
+        {"slug": "buffer", "burst_tier": 1, "element": "Iron", "cooldown": 20.0},
+        {"slug": "midtier", "burst_tier": 2, "element": "Iron", "cooldown": 20.0},
+        {"slug": "cinderella", "burst_tier": 3, "element": "Fire", "cooldown": 40.0},
+    ]
+    result = simulate_raid(
+        deck,
+        {"buffer": [], "midtier": [],
+         "cinderella": build_flawless_glass_rules(CINDERELLA, CASTER_MAX_HP)},
+        burst_damage_percents={"cinderella": glass_slippers_burst_percent(CINDERELLA)},
+        base_stats={"buffer": {"atk": 0, "def": 0, "max_hp": 0},
+                    "midtier": {"atk": 0, "def": 0, "max_hp": 0},
+                    "cinderella": {"atk": 10000, "def": 0, "max_hp": CASTER_MAX_HP}},
+        enemy_def=0, gauge_charge_time=9.0, fight_duration=15.0, mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"cinderella": {
+            "weapon": "RL", "damage_percent": 10.0, "max_ammo": 20,
+            "reload_time": 1.0, "charge_time": 1.0, "charge_damage_percent": 100.0}},
+        resource_specs={"cinderella": build_beautiful_resources(CINDERELLA, CASTER_MAX_HP)},
+        burst_hit_counts={"cinderella": GLASS_SLIPPERS_HIT_COUNT},
+    )
+    # 버스트는 t=9, Beautiful은 t=3·6·9에 틱 -> 3스택 -> 라이브 Max HP는
+    # 50000 * (1 + 3*1.6%) = 52400. 환산이 그걸 못 보면 50000을 쓴다.
+    live_max_hp = CASTER_MAX_HP * (1 + 3 * 0.016)
+    offense = 10000 + live_max_hp * 0.0271
+    burst_hits = [e for e in result["damage_log"] if e["source"] == "burst"]
+    assert len(burst_hits) == GLASS_SLIPPERS_HIT_COUNT
+    assert all(h["damage"] == pytest.approx(offense * 13.6592) for h in burst_hits)

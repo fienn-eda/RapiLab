@@ -564,6 +564,12 @@ shot times, so the source contributes nothing on its own. **The owner's `cap`
 still clamps the merged total** (`resource_count` takes `spec.cap`), which is
 what stops a +10-a-time source running past the 30 the holder's skill states.
 See "Writing into an ally's resource" below for how the source gets there.
+**`("per_shot_every_by_ally", N, ally_slug)`** (2026-08-17) = the windowless
+version of that: every Nth of the NAMED ALLY'S normal attacks, for the whole
+fight, with no dependence on the owner's own shots or on any status. Flora's
+Petunia, "activates after landing 100 normal attacks ... increases the stack
+count of stackable buffs by 1", which her Electric allies hold. Same two
+properties: an absent ally contributes nothing, and the owner's `cap` clamps.
 `("per_shot_every_outside_own_status_window", N, window_duration)` = that
 window's MIRROR, counting only shots OUTSIDE it (Laplace's Hero Vision, fed by
 Full Charge attacks: during her Buster transform her weapon is not a charge
@@ -626,6 +632,30 @@ the holder. **The cap is never widened**, so the merged total still clamps to
 what the holder's own skill states; check that before assuming a contribution
 does anything, because a holder who already pins their own cap gives it no
 headroom (measured for exactly this pair - see `docs/roadmap.md`).
+
+A bullet that names no target uses `"target_filter"` instead of
+`"target"`/`"resource"`, and the merge resolves it against the LIVE deck
+(2026-08-17):
+
+    {"target_filter": {"element": "Electric", "stackable_buff": True},
+     "fill": ("per_shot_every_by_ally", 100, writer_slug), "amount": 1}
+
+Both keys are matched exactly. Flora's Petunia is the consumer: "affects all
+Electric Code allies. Increases the stack count of stackable buffs by 1."
+
+**`ResourceSpec.stackable_buff` is what the second key reads, and it is
+DECLARED, never inferred.** It means "this resource is a stacking BUFF in the
+game's sense" as opposed to a gauge or counter the engine merely models the same
+way. No property of the spec separates the two - Maiden: Ice Rose carries both
+at once and takes Flora's +1 on her Meditation stack but not on her MP (Fienn,
+range test 2026-08-17). Set it from evidence, not from the shape of the spec.
+Holders declared so far: `cinderella.beautiful`, `maiden_ice_rose.meditation`,
+and `zwei-signature.pierce_attacks_101` (a Favorite-Item bullet - the base Zwei
+has no such stack at all, so measure against the signature build).
+
+What such a bullet raises is the CURRENT count, not the cap (Fienn, 2026-08-16),
+so it only pays where a real counter sits below its cap - a stacking buff the
+engine already approximates at its steady-state maximum gains nothing from it.
 
 **`("computed", fn)` hands the walk to the owning module** - `fn(shot_times)`
 returns the fill times. For a resource whose sources INTERACT: where one

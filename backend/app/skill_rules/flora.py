@@ -16,17 +16,19 @@ Modeled (DPS-relevant):
   10 sec. A separate source from Iris, so the two sum. Her burst deals no
   damage, so the registry's burst percent is None.
 
+- Petunia (skills[0]), 2nd bullet: "after landing 100 normal attacks, all
+  Electric Code allies: Increases the stack count of stackable buffs by 1".
+  See build_petunia_stack_contributions.
+
 Not modeled / skipped:
 - Every heal, shield and Incoming Healing bullet (Petunia's 1%/sec regen and
   +4% Incoming Healing, Iris's 10.22% Max-HP shield, Secret Garden's 10.45%
   Max-HP heal) - survivability, not damage.
-- Petunia's "after landing 100 normal attacks, all Electric Code allies:
-  Increases the stack count of stackable buffs by 1". The 100-shot counter is
-  expressible (per_shot_rules), but the EFFECT is not: the engine has no notion
-  of reaching into another unit's stackable buff and incrementing its count.
-  Deferred as a whole rather than encoded as some substitute stat.
 """
 from app.skill_rules._helpers import buff_rule
+
+
+SLUG = "flora"
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -34,11 +36,53 @@ SKILL_VALUE_MANIFESTS = {
         "source": "shiftypad",
         "test_module": "test_skill_rules_flora",
         "keys": {
+            "petunia": ("skills", 0),
             "iris": ("skills", 1),
             "secret_garden": ("skills", 2),
         },
     },
 }
+
+
+# Petunia's 2nd bullet, ("how many normal attacks", "how many stacks"). The two
+# Flora builds read DIFFERENT sources (`SKILL_VALUE_MANIFESTS`), and the source
+# is what numbers the slots - shiftypad puts this bullet's pair at _03/_04,
+# lootandwaifus at _04/_05. So each build owns its own mapping and the shared
+# builder takes it, rather than one of them being silently wrong.
+PETUNIA_STACK_SLOTS = ("description_value_03", "description_value_04")
+
+
+def build_petunia_stack_contributions(values, caster_slug=SLUG,
+                                      slots=PETUNIA_STACK_SLOTS):
+    """Petunia's 2nd bullet: "Activates after landing 100 normal attacks.
+    Affects all Electric Code allies. Increases the stack count of stackable
+    buffs by 1."
+
+    It names no target, so it is a CLASS-scoped contribution (`target_filter`):
+    the merge in `roster` resolves it against whichever fielded members are
+    Electric AND hold a resource declared `stackable_buff`. The holders' own
+    caps still clamp the merged total, which is what keeps "+1 a time" from
+    running past what their skills state.
+
+    What it raises is the CURRENT count, not the cap (Fienn, 2026-08-16) - so it
+    only pays where a real counter sits below its cap. A stacking buff the
+    engine already approximates at its steady-state maximum gains nothing.
+
+    Which resources are "stackable buffs" is DECLARED, not inferred: Maiden
+    carries a buff (Meditation) and a gauge (MP) at once and takes the bump only
+    on the first (Fienn, range test 2026-08-17). See `ResourceSpec.stackable_buff`.
+
+    No "except the skill user" clause, so she is in her own scope - she holds no
+    such resource today, which is why that costs nothing to state correctly.
+    """
+    petunia = values["petunia"]
+    threshold_slot, amount_slot = slots
+    return [{
+        "target_filter": {"element": "Electric", "stackable_buff": True},
+        "fill": ("per_shot_every_by_ally",
+                 int(float(petunia[threshold_slot])), caster_slug),
+        "amount": float(petunia[amount_slot]),
+    }]
 
 
 def build_flora_rules(values):
