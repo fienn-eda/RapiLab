@@ -22,12 +22,21 @@ both, and the search picks whichever scores higher. Fienn's ruling
 she is paired with distributed-damage buffers now only because the available
 sustained-damage buffers are weak, and a strong one shipping later flips it.
 
-**Caveat this leaves open:** the search can pick `bready-recommended` in a
-deck whose buffers are all sustained-damage (or vice versa), which in game
-would put her in the other state. Nothing in the engine ties the choice to
-the deck's actual buff kinds, so the mode is an assertion by the caller, not
-a derivation. Read a recommended Bready deck as "field her this way IF your
-buffs put her in this state".
+**The deck has to actually induce the state, and that is enforced.**
+`registry.TASTE_INDUCER_SLUGS` maps each variant to the slugs whose buffs
+enter it, and `deck_search._taste_induced_valid` refuses a deck holding a
+variant without one: in the search's generators, in `deck_is_valid` (so a
+hand-built deck is rejected as infeasible too), and on every
+`deck_allocation` exchange - a swap can keep a deck's shape while stripping
+the buffer she needs. So the mode a deck reports is one the game can
+produce, not an assertion by the caller. There is deliberately no Taste-less
+third build; the measurement behind that is on `_taste_induced_valid`.
+
+The inducer lists are SQUAD-scoped on purpose - she has to RECEIVE the buff,
+so a unit whose own text reads "Affects self" does not count, and neither
+does one whose buff reaches only a subset she is not in (Ark: Ranger Black's
+is Wind-Code assault rifles; Bready is a Water SR). See
+`_helpers.SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS` and its neighbours.
 
 Modeled (DPS-relevant), both modes:
 - Lonely Gourmet (skills[0]) on entering Full Burst: self ATK +70.01% for
@@ -62,7 +71,6 @@ She is an SR, so every shot is a Full Charge (N=1 in `per_shot_rules`, the
 Velvet convention).
 
 Not modeled / deferred:
-- Detecting which Taste the deck actually induces - see the caveat above.
 - Neither burst has a nuke ("Deals X%" appears only in Favorite Candy), so
   the registry burst percent is None for both modes.
 
