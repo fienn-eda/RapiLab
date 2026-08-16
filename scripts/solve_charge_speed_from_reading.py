@@ -38,15 +38,17 @@ from app.overload_decode import charge_speed_percent_from_lines  # noqa: E402
 READINGS = (
     # (슬러그, 차지초, 오버로드 굴림, 실측 발간격f, SE, 비고)
     #
-    # 편성이 갈리는 축이다: 단독 둘은 엔진과 0.00σ, 5인 둘은 +2%p와 맞는다.
-    ("bready [단독]", 1.0, (6.09,), 57.000, 0.0319,
-     "재장전 큐브 Lv15 명시, 딜레이 22f를 뺀 확정 차지 (bready-charge.md)"),
-    ("prika [단독]", 1.0, (4.92,), 57.000, 0.1606,
-     "차속을 건드리는 자기 스킬 없음, n=31 (prika-charge.md)"),
-    ("liberalio [5인]", 1.5, (6.09,), 83.000, 0.159,
-     "재측정 1차 n=35, 분포 81x2 82x9 83x11 84x13 (85f는 0회)"),
-    ("neon-vision-eye [5인]", 1.0, (6.09, 1.98, 4.63, 4.33), 49.115, 0.160,
-     "멈춤 0 — 간격이 곧 차지, n=26"),
+    # 갈리는 축은 편성이 아니라 `input_type`이다 — UP 둘은 엔진과 0.0σ, 차속을 타는
+    # DOWN_Charge 둘은 엔진에서 5.5~12.6σ 벗어난다. 편성은 무관하다(리베랄리오는
+    # 단독 83.000f · 5인 83.174f로 사실상 같다).
+    ("bready [UP]", 1.0, (6.09,), 57.000, 0.0319,
+     "단독, 재장전 큐브 Lv15 명시, 딜레이 22f를 뺀 확정 차지 (bready-charge.md)"),
+    ("prika [UP]", 1.0, (4.92,), 57.000, 0.1606,
+     "단독, 차속을 건드리는 자기 스킬 없음, n=31 (prika-charge.md)"),
+    ("liberalio [DOWN_Charge]", 1.5, (6.09,), 83.000, 0.159,
+     "**단독** 재측정 n=35, 분포 81x2 82x9 83x11 84x13 (85f는 0회)"),
+    ("neon-vision-eye [DOWN_Charge]", 1.0, (6.09, 1.98, 4.63, 4.33), 49.115, 0.160,
+     "5인, 멈춤 0 — 간격이 곧 차지, n=26"),
 )
 
 
@@ -123,8 +125,37 @@ def solve(charge_time, measured, se, lines=None):
                   f"[{lo_t:.2f}%, {hi_t:.2f}%]  ({count}개 조합){verdict}")
 
 
+# 양자화 지점 후보들. 엔진과 Fienn 가설은 **반올림 방향이 반대**라는 것이 요점이다:
+# 「차속이 사는 프레임을 내림」은 차지를 길게, 「차지 시간을 내림」은 짧게 만든다.
+# 판독이 어느 쪽을 고르는지가 곧 판정이다 (docs/measurements/charge-speed-scaling.md).
+def quantisation_models(base_frames, percent):
+    s = percent / 100
+    cont = base_frames * (1 - s)
+    engine = base_frames - math.floor(base_frames * s)
+    return {
+        "엔진  base-floor(base*s)": engine,
+        "Fienn floor(base*(1-s))": math.floor(cont),
+        "      ceil(base*(1-s))": math.ceil(cont),
+        "      연속값": cont,
+        "      비례 -2.06%": engine * 0.9794,
+    }
+
+
+def compare_models(charge_time, measured, se, lines):
+    """양자화 후보들을 이 판독에 대조한다. 새 프레임 판독을 받으면 이것부터."""
+    base = charge_time * 60
+    percent = charge_speed_percent_from_lines(lines)
+    print(f"  차지 {charge_time:.2f}초 = {base:.0f}f · 굴림 {list(lines)} -> 정수 {percent:.0f}%")
+    print(f"  실측 {measured:.3f}f ± {se:.3f}")
+    for label, value in quantisation_models(base, percent).items():
+        sigma = abs(value - measured) / se if se else float("nan")
+        print(f"    {label:<26}{value:8.3f}f   {sigma:6.1f}σ")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    p.add_argument("--models", action="store_true",
+                   help="역산 대신 양자화 모델 후보들을 판독에 대조한다")
     p.add_argument("--charge", type=float, help="차지 시간(초)")
     p.add_argument("--measured", type=float, help="실측 발 간격(프레임)")
     p.add_argument("--se", type=float, default=0.0, help="실측 평균의 표준오차")
@@ -133,13 +164,22 @@ def main():
     args = p.parse_args()
 
     if args.charge and args.measured:
-        solve(args.charge, args.measured, args.se, tuple(args.lines or ()) or None)
+        lines = tuple(args.lines or ()) or None
+        if args.models:
+            if not lines:
+                p.error("--models 는 --lines 가 있어야 한다")
+            compare_models(args.charge, args.measured, args.se, lines)
+        else:
+            solve(args.charge, args.measured, args.se, lines)
         return
 
     for slug, charge, lines, measured, se, note in READINGS:
         print(f"\n=== {slug} ===")
         print(f"  {note}")
-        solve(charge, measured, se, lines)
+        if args.models:
+            compare_models(charge, measured, se, lines)
+        else:
+            solve(charge, measured, se, lines)
 
 
 if __name__ == "__main__":
