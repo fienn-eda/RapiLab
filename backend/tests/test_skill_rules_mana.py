@@ -50,27 +50,84 @@ def test_metal_gamma_grants_permanent_self_atk_buff_from_battle_start():
     assert round(reg.total_for("atk_percent", MANA, now=180.0), 4) == 0.5808  # never expires
 
 
-def test_metal_sigma_buffs_only_fire_on_full_burst_enter_if_own_burst_fired_this_cycle():
-    # Metal sigma starts active at battle start and is restored whenever Mana
-    # casts her own burst before Full Burst ends - in this engine's strict
-    # burst1->burst2->burst3->full-burst ordering, her own (tier-3) burst
-    # always fires immediately before full_burst_enter in the same cycle, so
-    # "her burst fired this cycle" is exactly "Metal sigma is active" at the
-    # instant full_burst_enter checks it - own_burst_fired_this_cycle().
+def _run_cycle(ctx, rules, reg, time, mana_bursts):
+    """One burst cycle: the tier-3 cast, Full Burst entry, Full Burst end.
+
+    Mirrors raid_simulator's ordering, including that `burst_used_this_cycle`
+    is still populated while `full_burst_end` rules run and cleared after.
+    """
+    if mana_bursts:
+        ctx.burst_used_this_cycle.add("mana")
+    fire_trigger("full_burst_enter", {"mana": rules}, ctx, reg, time)
+    fire_trigger("full_burst_end", {"mana": rules}, ctx, reg, time + 10.0)
+    ctx.burst_used_this_cycle.clear()
+
+
+def test_metal_sigma_is_spent_at_full_burst_and_restored_only_if_she_cast():
+    """Metal sigma is a STATUS that carries across cycles, not a per-cycle check.
+
+    Fienn's in-game reading (2026-08-17), in a deck where a second Burst 3
+    shares the slot:
+
+        battle start -> sigma ON
+        cycle 1, Mana bursts   -> FB entry: sigma present, buffs fire, sigma OFF
+                               -> FB end:   she cast this window, sigma ON again
+        cycle 2, the OTHER B3  -> FB entry: sigma present, buffs fire, sigma OFF
+                               -> FB end:   she did not cast, sigma stays OFF
+        cycle 3, Mana bursts   -> FB entry: no sigma, NO buffs
+
+    So the buff lands on the cycle AFTER the one she bursts in. Reading it as
+    `own_burst_fired_this_cycle()` put it on exactly the wrong cycles: her own
+    burst damage collected an ATK buff the game gives the next window instead.
+    Only a deck with two Burst 3s can tell the difference - alone she casts
+    every cycle, so sigma is restored every cycle and the two readings agree.
+    """
     ctx = make_context()
     rules = build_metal_sigma_rules(MANA_VALUES)
+    reg = EffectRegistry()
+    fire_trigger("battle_start", {"mana": rules}, ctx, reg, 0.0)
 
-    reg_without = EffectRegistry()
-    fire_trigger("full_burst_enter", {"mana": rules}, ctx, reg_without, time=5.0)
-    assert reg_without.total_for("attack_damage_up", MANA, now=5.0) == 0.0
-    assert reg_without.total_for("atk_percent", MANA, now=5.0) == 0.0
+    # Cycle 1 - she bursts. Sigma was up from battle start, so the buffs fire.
+    _run_cycle(ctx, rules, reg, time=5.0, mana_bursts=True)
+    assert round(reg.total_for("attack_damage_up", MANA, now=5.0), 4) == 0.2112
+    assert round(reg.total_for("atk_percent", MANA, now=5.0), 4) == 0.6336
 
-    ctx.burst_used_this_cycle.add("mana")
-    reg_with = EffectRegistry()
-    fire_trigger("full_burst_enter", {"mana": rules}, ctx, reg_with, time=5.0)
-    assert round(reg_with.total_for("attack_damage_up", MANA, now=5.0), 4) == 0.2112
-    assert round(reg_with.total_for("atk_percent", MANA, now=5.0), 4) == 0.6336
-    assert reg_with.total_for("attack_damage_up", MANA, now=15.1) == 0.0  # 10s duration
+    # Cycle 2 - the other Burst 3 takes the slot. Sigma was restored at cycle
+    # 1's Full Burst end, so the buffs fire again even though she did not cast.
+    _run_cycle(ctx, rules, reg, time=35.0, mana_bursts=False)
+    assert round(reg.total_for("attack_damage_up", MANA, now=35.0), 4) == 0.2112
+    assert round(reg.total_for("atk_percent", MANA, now=35.0), 4) == 0.6336
+
+    # Cycle 3 - she bursts, but cycle 2 did not restore sigma, so nothing fires.
+    _run_cycle(ctx, rules, reg, time=65.0, mana_bursts=True)
+    assert reg.total_for("attack_damage_up", MANA, now=65.0) == 0.0
+    assert reg.total_for("atk_percent", MANA, now=65.0) == 0.0
+
+    # Cycle 4 - cycle 3's cast restored it, so it is up again.
+    _run_cycle(ctx, rules, reg, time=95.0, mana_bursts=False)
+    assert round(reg.total_for("attack_damage_up", MANA, now=95.0), 4) == 0.2112
+
+
+def test_metal_sigma_fires_every_cycle_when_she_is_the_only_burst_3():
+    """Alone in her tier she casts every cycle, so Full Burst end restores sigma
+    every cycle and the buffs never miss one. This is the shape the old
+    per-cycle reading was validated against, and it is unchanged."""
+    ctx = make_context()
+    rules = build_metal_sigma_rules(MANA_VALUES)
+    reg = EffectRegistry()
+    fire_trigger("battle_start", {"mana": rules}, ctx, reg, 0.0)
+    for cycle, start in enumerate((5.0, 35.0, 65.0)):
+        _run_cycle(ctx, rules, reg, time=start, mana_bursts=True)
+        assert round(reg.total_for("atk_percent", MANA, now=start), 4) == 0.6336, cycle
+
+
+def test_metal_sigma_buffs_last_ten_seconds():
+    ctx = make_context()
+    rules = build_metal_sigma_rules(MANA_VALUES)
+    reg = EffectRegistry()
+    fire_trigger("battle_start", {"mana": rules}, ctx, reg, 0.0)
+    _run_cycle(ctx, rules, reg, time=5.0, mana_bursts=True)
+    assert reg.total_for("attack_damage_up", MANA, now=15.1) == 0.0
 
 
 def test_fatal_error_self_buff_triggers_on_own_burst_activate():

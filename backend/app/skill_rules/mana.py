@@ -12,16 +12,36 @@ Modeled (DPS-relevant):
   this project's existing steady-state precedent for statuses no simulated
   fight here ever actually breaks.
 - Metal sigma (skills[1]): on entering Full Burst, self Attack Damage +21.12%
-  and ATK +63.36% (of her own final ATK, i.e. `atk_percent`), both for 10
-  sec. The real trigger is "while in Metal sigma status" (started at battle
-  start, consumed by this same effect, restored when she casts her own burst
-  before Full Burst ends) - but in this engine's strict burst1->burst2->
-  burst3->full-burst ordering, her own (tier-3) burst always fires
-  immediately before full_burst_enter in the SAME cycle, so "her burst fired
-  this cycle" (`own_burst_fired_this_cycle()`) is exactly equivalent to
-  "Metal sigma is active" at the instant full_burst_enter checks it - no
-  separate status bookkeeping needed for any deck this engine can simulate
-  (one attacker per burst tier).
+  and ATK +63.36% (of her own final ATK, i.e. `atk_percent`), both for 10 sec -
+  gated on the Metal sigma STATUS, which the same bullet then spends
+  ("Removes Metal sigma").
+
+  Sigma is a status that CARRIES ACROSS CYCLES, not a per-cycle check, and the
+  distinction is load-bearing in a deck with two Burst 3s. Fienn's in-game
+  reading (2026-08-17):
+
+      battle start -> sigma ON
+      cycle 1, Mana bursts  -> FB entry: sigma present, buffs fire, sigma OFF
+                            -> FB end:   she cast this window, sigma ON again
+      cycle 2, the OTHER B3 -> FB entry: sigma present, buffs fire, sigma OFF
+                            -> FB end:   she did not cast, sigma stays OFF
+      cycle 3, Mana bursts  -> FB entry: no sigma, NO buffs
+
+  So the fourth bullet ("Activates if the skill user has cast Burst Skill
+  before Full Burst ends") is settled at Full Burst END, and the payoff lands
+  on the cycle AFTER the one she bursts in. Modeled with an explicit status:
+  `battle_start` sets it, `full_burst_enter` spends it, `full_burst_end`
+  restores it when `own_burst_fired_this_cycle()` (still populated there -
+  the simulator clears `burst_used_this_cycle` after the trigger runs).
+
+  This used to read `own_burst_fired_this_cycle()` on `full_burst_enter`,
+  which put the buffs on exactly the wrong cycles: her own burst damage
+  collected an ATK buff the game pays the next window instead. The docstring
+  justified it as "no deck this engine can simulate has two attackers in a
+  tier" - which is false; `burst_cycle`'s `chosen = eligible[0]` alternates
+  same-tier members. Alone in her tier she casts every cycle, so sigma is
+  restored every cycle and the two readings agree - which is why it went
+  unnoticed.
 - Fatal Error! (her burst): self Sustained Damage +52.8% for 10 sec, plus a
   flat (non-resource-scaled) Sustained-typed DoT - 396% of final ATK per
   second, 10 ticks one second apart (`resource_scaled_nukes` with no
@@ -54,7 +74,12 @@ is exactly what happened. See `build_metal_sigma_charge_rules`.)
 """
 from app.effects import Effect
 from app.skill_rules._helpers import buff_rule
-from app.squad_engine import SkillRule, own_burst_fired_this_cycle
+from app.squad_engine import SkillRule, has_status, own_burst_fired_this_cycle
+
+# "Metal σ", the status her Skill 2 spends at Full Burst entry and re-earns at
+# Full Burst end. Tracked as a flag rather than an Effect: its own payload is
+# Burst Gauge filling speed, which the engine does not consume.
+METAL_SIGMA_STATUS = "metal_sigma"
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -81,16 +106,34 @@ def build_metal_gamma_rules(values):
 
 
 def build_metal_sigma_rules(values):
+    """Metal sigma's three moments: granted at battle start, SPENT at Full Burst
+    entry for the two self buffs, and restored at Full Burst end if she cast her
+    own burst inside that window. See the module docstring for the in-game
+    sequence this reproduces."""
     sigma = values["metal_sigma"]
     attack_damage = float(sigma["description_value_02"]) / 100
     duration = float(sigma["description_value_03"])
     atk = float(sigma["description_value_04"]) / 100
 
-    def action(context, caster_slug, time, registry):
+    def grant_sigma(context, caster_slug, time, registry):
+        # The status itself. Its own payload - Burst Gauge filling speed +70.4% -
+        # is not a stat the engine consumes, so only the flag is kept.
+        context.set_status(caster_slug, METAL_SIGMA_STATUS)
+
+    def spend_sigma(context, caster_slug, time, registry):
         registry.add(Effect("attack_damage_up", attack_damage, "self", duration, caster_slug), applied_at=time)
         registry.add(Effect("atk_percent", atk, "self", duration, caster_slug), applied_at=time)
+        context.clear_status(caster_slug, METAL_SIGMA_STATUS)  # "Removes Metal σ."
 
-    return [SkillRule(trigger="full_burst_enter", action=action, condition=own_burst_fired_this_cycle())]
+    return [
+        SkillRule(trigger="battle_start", action=grant_sigma),
+        SkillRule(trigger="full_burst_enter", action=spend_sigma,
+                  condition=has_status(METAL_SIGMA_STATUS)),
+        # "Activates if the skill user has cast Burst Skill before Full Burst
+        # ends" - settled at the window's end, so it can only pay the NEXT one.
+        SkillRule(trigger="full_burst_end", action=grant_sigma,
+                  condition=own_burst_fired_this_cycle()),
+    ]
 
 
 def build_fatal_error_self_buff_rules(values):
