@@ -4392,3 +4392,95 @@ def test_target_grants_carry_mirandas_two_bullets_when_asked_for():
     assert wake_up[0]["targets"] == ["carry_a"]
     # 파워업!은 B1 시전 순간, 웨이크업!3은 그 직후 풀버스트 진입 순간.
     assert wake_up[0]["time"] > powering_up[0]["time"]
+
+
+# --- 「ATK ▲ Max HP의 X%」 환산과 나중 패스의 flat_max_hp -----------------------
+#
+# 환산은 버스트 사이클 안에서 도는 SkillRule이고, flat_max_hp를 쓰는 곳 둘 -
+# 샷 루프의 per-shot 룰과 자원 해석 - 은 그보다 뒤에 돈다. 그래서 그 둘은
+# 환산에 안 보였다(2026-08-17 측정: 각각 100배로 키워도 덱 딜 0.0000%).
+# simulate_raid의 고정점 루프가 앞 패스의 그것들을 다음 패스에 그림자로 넘긴다.
+
+_MAX_HP_CONVERSION_BASE = 800_000.0
+_ALLY_MAX_HP_GRANT = 100_000.0
+
+
+def _sg_weapon():
+    return {"weapon": "SG", "damage_percent": 10.0, "max_ammo": 1000,
+            "reload_time": 1.0, "charge_time": 0.0, "charge_damage_percent": 0.0}
+
+
+def _attacker_burst_damage(result):
+    """공격자의 버스트 딜 한 방. flat_atk 말고는 아무 수정자도 안 붙도록 픽스처를
+    짰으므로 이 값은 곧 `base_atk + flat_atk`다."""
+    bursts = [e for e in result["damage_log"]
+              if e["slug"] == "attacker" and e["source"] == "burst"]
+    assert bursts, "공격자의 버스트 딜이 하나도 없다 - 픽스처가 잘못됐다"
+    return bursts[0]["damage"]
+
+
+def _run_max_hp_conversion_sim(**extra):
+    from app.skill_rules._helpers import max_hp_scaled_atk_rule
+
+    deck = make_deck()
+    rules = {"buffer": [], "midtier": [], "attacker": [max_hp_scaled_atk_rule(
+        "own_burst_activate", 0.01, "self", None,
+        base_max_hp=_MAX_HP_CONVERSION_BASE)]}
+    rules.update(extra.pop("rules", {}))
+    return simulate_raid(
+        deck, rules,
+        burst_damage_percents={"attacker": 100.0},
+        base_stats=make_base_stats(),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=60.0, mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={m["slug"]: _sg_weapon() for m in deck},
+        **extra,
+    )
+
+
+def test_a_per_shot_ally_max_hp_buff_reaches_a_burst_max_hp_conversion():
+    """Rouge의 형태. 아군의 per-shot squad Max HP는 샷 루프에서 붙는데, 그걸
+    ATK로 바꾸는 룰은 버스트 사이클에서 돈다."""
+    result = _run_max_hp_conversion_sim(per_shot_rules={"buffer": [
+        (1, "every", [refreshing_buff_rule("per_shot", [
+            ("flat_max_hp", _ALLY_MAX_HP_GRANT, "squad", None)])]),
+    ]})
+    # (800000 + 100000) * 1% = 9000. 못 보면 8000이라 18000이 나온다.
+    assert _attacker_burst_damage(result) == pytest.approx(10000 + 9000)
+
+
+def test_a_resource_derived_max_hp_stack_reaches_the_owners_own_conversion():
+    """메이든의 형태. 자기 자원이 낸 flat_max_hp를 자기 환산이 읽는다."""
+    result = _run_max_hp_conversion_sim(resource_specs={"attacker": [ResourceSpec(
+        name="meditation", fill=("per_shot_every", 1), cap=2.0,
+        buffs=[ResourceBuff(stat="flat_max_hp", scope="self",
+                            value_fn=lambda count: 50_000.0 * count)],
+    )]})
+    # 버스트 시점엔 이미 상한 2스택 = +100000이므로 위와 같은 9000.
+    assert _attacker_burst_damage(result) == pytest.approx(10000 + 9000)
+
+
+def test_a_deck_with_no_max_hp_conversion_resolves_in_exactly_one_pass():
+    """이 설계에서 가장 중요한 성질: 환산 소비자가 없으면 오늘과 같다 - 늦은
+    flat_max_hp가 있어도 아무도 안 읽으므로 두 번째 패스를 살 이유가 없다."""
+    deck = make_deck()
+    result = simulate_raid(
+        deck, {m["slug"]: [] for m in deck},
+        burst_damage_percents={}, base_stats=make_base_stats(),
+        enemy_def=0, gauge_charge_time=5.0, fight_duration=60.0, mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={m["slug"]: _sg_weapon() for m in deck},
+        per_shot_rules={"buffer": [
+            (1, "every", [refreshing_buff_rule("per_shot", [
+                ("flat_max_hp", _ALLY_MAX_HP_GRANT, "squad", None)])]),
+        ]},
+    )
+    assert result["full_burst_passes"] == {"passes": 1, "converged": True}
+
+
+def test_a_conversion_with_no_late_max_hp_resolves_in_exactly_one_pass():
+    """반대쪽 절반: 환산은 있는데 나중 패스가 flat_max_hp를 안 쓰면, 넘길 그림자가
+    비어 있으므로 역시 한 패스다."""
+    result = _run_max_hp_conversion_sim()
+    assert result["full_burst_passes"] == {"passes": 1, "converged": True}
+    assert _attacker_burst_damage(result) == pytest.approx(10000 + 8000)

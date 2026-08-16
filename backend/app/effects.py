@@ -170,6 +170,25 @@ class EffectRegistry:
         self._entries.append((effect, applied_at))
         self._version += 1
 
+    def checkpoint(self) -> int:
+        """A marker for "everything added from here on", to be handed back to
+        `entries_since`. raid_simulator takes one when the burst cycle ends, so
+        it can tell which effects were written by the passes that run AFTER it -
+        the ones a burst-time reader could not have seen (see
+        SquadContext.live_max_hp)."""
+        return len(self._entries)
+
+    def entries_since(self, checkpoint: int, stat: str) -> list[tuple[Effect, float]]:
+        """The `stat` effects added after `checkpoint`, in application order.
+
+        Durations are read live, so call this once the pass is over: a later
+        `add_refreshing` truncates an earlier effect IN PLACE, and reading
+        before that lands hands out a window the simulation did not actually
+        have."""
+        return [(effect, applied_at)
+                for effect, applied_at in self._entries[checkpoint:]
+                if effect.stat == stat]
+
     def set_external_stat_immunity(self, slug: str, stat: str) -> None:
         """`slug` stops receiving `stat` from anyone but itself - Liberalio's
         "Gains immunity to Increase/Decrease Charge Speed effects".

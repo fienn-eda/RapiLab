@@ -565,7 +565,7 @@ def max_hp_scaled_atk_rule(
     def action(context, caster_slug, time, registry):
         by_slug = {m.slug: m for m in context.members}
         target = {"slug": caster_slug, "element": by_slug[caster_slug].element}
-        live_max_hp = base_max_hp + registry.total_for("flat_max_hp", target, time)
+        live_max_hp = context.live_max_hp(base_max_hp, target, time, registry)
         effect = Effect("flat_atk", live_max_hp * percent, scope, duration, caster_slug, refresh_group)
         if refreshing:
             registry.add_refreshing(effect, applied_at=time)

@@ -762,6 +762,12 @@ resolved stage table back in as `full_burst_stage_overrides` until a pass
 reproduces its own input. Results carry
 `full_burst_passes = {"passes": N, "converged": bool}`.
 
+That loop now iterates a SECOND quantity to the same fixed point: the
+`flat_max_hp` written after the burst cycle, which the "ATK ▲ X% of Max HP"
+conversion needs and could not otherwise see (see `flat_max_hp` below). The pass
+count in `full_burst_passes` counts passes of the whole loop, so it covers both
+axes; a deck that needs neither still resolves in exactly one pass.
+
 Two properties to preserve if you add a second consumer. **A deck with no such
 unit resolves in exactly one pass** - the resolver returns an empty dict and the
 loop exits, so cost and output are unchanged for everyone else; that invariant is
@@ -1172,17 +1178,39 @@ a Max-HP-scaled ATK consumer.
 The consumer side is `_helpers.max_hp_scaled_atk_rule(trigger, percent, scope,
 duration, base_max_hp, condition=None, refreshing=False)` — use it instead of
 multiplying the static `values["caster_max_hp"]` at build time. It resolves
-`base_max_hp + total_for("flat_max_hp", caster, time)` when the rule FIRES and
-registers the result as `flat_atk`.
+`SquadContext.live_max_hp(base_max_hp, caster, time, registry)` when the rule
+FIRES and registers the result as `flat_atk`.
+
+**Every source of `flat_max_hp` counts, including ones written by a LATER pass
+of the same simulation.** The conversion runs inside the burst cycle, but two
+places write Max HP after it — the shot loop's per-shot rules (Rouge's Card
+Throw) and the resource-resolution pass (Maiden's Meditation `ResourceBuff`).
+`simulate_raid` iterates to a fixed point over those: pass 1 collects the
+`flat_max_hp` added after the burst cycle, pass 2 hands it back as a read-only
+shadow that `live_max_hp` reads alongside the live registry. Always two passes
+at most (Max HP does not affect the timeline), and exactly one when the deck has
+no conversion consumer or writes no late Max HP — so encode a Max-HP buff in
+whatever pass fits the skill text and do NOT contort it into a burst-cycle rule
+to be seen.
+
+Before this the two late sources measured as exactly zero — both of them, and
+that had been true of Rouge's since she was encoded (2026-08-17: multiplying
+either by 100 moved deck damage 0.0000%).
 
 **Semantics are a snapshot**, deliberately: the conversion happens once per
 trigger, so a Max-HP buff that lands AFTER the ATK buff does not retroactively
-grow it. A unit whose Max HP keeps rising mid-fight must re-fire the rule at
-each change. This keeps the damage hot path (`_stat_bundle` / `total_for`'s
-segment tables) untouched — not making deck search heavier is a hard constraint
-(Fienn). Consumers: `laplace_ultimate_hero`, `maxwell_ordinary_mechanic`,
-`cinderella`, `maiden_ice_rose` (the last inlines the same conversion because
-its bullet lands at a delayed instant).
+grow it — the shadow respects each late effect's own window, so a 5-sec Max HP
+is only visible for those 5 sec. A unit whose Max HP keeps rising mid-fight must
+re-fire the rule at each change. This keeps the damage hot path (`_stat_bundle`
+/ `total_for`'s segment tables) untouched — not making deck search heavier is a
+hard constraint (Fienn). Consumers: `laplace_ultimate_hero`,
+`maxwell_ordinary_mechanic`, `cinderella`, `maiden_ice_rose` (the last inlines
+the same conversion because its bullet lands at a delayed instant).
+
+One rule for anyone adding a consumer: **the conversion must run inside the
+burst cycle**, i.e. as a `SkillRule`. A conversion placed in a post-pass would
+see the late `flat_max_hp` twice — once from the live registry, once from the
+shadow.
 
 **Valid formula terms that raid_simulator just doesn't wire from the registry
 yet** — a real gap, not a dead end: `shield_damage_up` and `final_atk_modifier`.

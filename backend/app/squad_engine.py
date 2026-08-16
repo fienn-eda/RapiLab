@@ -34,6 +34,7 @@ class SquadContext:
         core_hittable: bool = False,
         target_grants: list[dict] | None = None,
         adjacency: dict[str, list[str]] | None = None,
+        late_flat_max_hp=None,
     ):
         self.members = members
         # slug -> the 2 allies seated beside it, for a bullet that targets
@@ -70,6 +71,13 @@ class SquadContext:
         # core_hittable flag), so a rule gated on core existence (e.g.
         # Cinderella: Crystal Wave's MG-mode core-strike nuke) can read it.
         self.core_hittable: bool = core_hittable
+        # An EffectRegistry holding the `flat_max_hp` that a LATER pass of this
+        # same simulation writes - see live_max_hp.
+        self._late_flat_max_hp = late_flat_max_hp
+        # Whether any rule actually asked for a Max HP conversion. raid_simulator
+        # only pays for a second simulation pass when one did: a deck whose late
+        # passes write flat_max_hp that nobody converts gains nothing from it.
+        self.max_hp_conversion_used: bool = False
         # top-N 대상형 버프가 누구에게 갔는지의 기록. None이면 아무것도 남기지
         # 않는다 - 탐색은 한 요청에 수만 번 돌므로 기본이 off여야 한다.
         # 미란다 계산기가 이 로그를 읽는다(app/miranda_targets.py) - 덱 안의 모든
@@ -243,6 +251,31 @@ class SquadContext:
         return [
             m for m in self.members if m.burst_tier == tier and m.slug != exclude_slug
         ]
+
+    def live_max_hp(self, base_max_hp: float, target: dict, time: float,
+                    registry) -> float:
+        """캐릭터정보 Max HP + `time`에 활성인 `flat_max_hp` 전부.
+
+        「전부」에 **이 시뮬의 나중 패스가 쓸 것**도 포함된다는 게 이 메서드의
+        존재 이유다. 환산("ATK ▲ 캐스터 Max HP의 X%")은 버스트 사이클 안에서
+        도는데 `flat_max_hp`를 쓰는 곳 둘 - 샷 루프의 per-shot 룰(Rouge의 Card
+        Throw)과 자원 해석(Maiden의 Meditation) - 은 그보다 뒤에 돈다. 그래서
+        환산이 라이브 레지스트리만 읽으면 그 둘은 통째로 안 보인다(2026-08-17
+        측정: 둘 다 100배로 키워도 덱 딜이 0.0000% 움직였다).
+
+        `raid_simulator`가 앞 패스에서 모은 그것들을 레지스트리 하나에 담아
+        `late_flat_max_hp`로 넘겨 준다. 읽기 전용 그림자이고 라이브 레지스트리와
+        겹치지 않으므로 이중 계상은 없다 - 담기는 건 버스트 사이클이 끝난 뒤에
+        붙은 것뿐이다. 시간축을 그대로 가진 Effect들이라 5초짜리 Max HP는 5초
+        동안만 보인다.
+
+        스냅샷 의미론은 그대로다: 값은 `time`에 고정되고, 이후 도착할 Max HP는
+        이미 걸린 flat_atk를 소급해 키우지 않는다."""
+        self.max_hp_conversion_used = True
+        total = registry.total_for("flat_max_hp", target, time)
+        if self._late_flat_max_hp is not None:
+            total += self._late_flat_max_hp.total_for("flat_max_hp", target, time)
+        return base_max_hp + total
 
     def top_atk_slugs(self, n: int, caster_slug: str, registry, time: float,
                       member_filter=None, include_caster: bool = False,

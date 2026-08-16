@@ -51,14 +51,10 @@ Modeled (DPS-relevant): an "mp" resource, capped at 12.
   buffs, gap #8). See build_blessings_fill_triggered_buffs.
 
 - Meditation (skills[0]), 3rd bullet: self Max HP +6.34% of her own, 15 sec, on
-  every 6th Full Charge. It reaches damage through Blessings Upon You, which
-  converts her LIVE Max HP into ATK - so the stack she grants herself is worth
-  real output, not just survivability.
-
-Not modeled / deferred:
-- Meditation's stack cap of 10: reaching it needs 60 charged shots inside one
-  15-sec window, which no RL cadence approaches, so the cap cannot bind and the
-  stacks are added plainly.
+  every 6th Full Charge, stacking up to 10 - a REFRESHING stack, so the cap
+  really binds (see build_meditation_resources). It reaches damage through
+  Blessings Upon You, which converts her LIVE Max HP into ATK - so the stack she
+  grants herself is worth real output, not just survivability.
 """
 from app.effects import Effect, ResourceBuff, ResourceSpec
 from app.skill_rules._helpers import instant_nuke_pulse_rule
@@ -170,7 +166,7 @@ def build_blessings_upon_you_rules(values, caster_max_hp):
         # inlined here because this bullet lands at the delayed instant.
         by_slug = {m.slug: m for m in context.members}
         target = {"slug": caster_slug, "element": by_slug[caster_slug].element}
-        live_max_hp = caster_max_hp + registry.total_for("flat_max_hp", target, applied_at)
+        live_max_hp = context.live_max_hp(caster_max_hp, target, applied_at, registry)
         registry.add(
             Effect("flat_atk", live_max_hp * self_atk_pct_of_max_hp, "self", self_atk_duration, caster_slug),
             applied_at=applied_at,
@@ -188,16 +184,12 @@ def build_meditation_resources(values, caster_max_hp):
     """Meditation's 3rd bullet: self Max HP +6.34% of her own for 15 sec, one
     stack per 6 Full Charges (every shot is one, on an RL), STACKS UP TO 10.
 
-    **It does not reach damage today, and did not before this either.** The
-    claim it used to carry - that Blessings Upon You picks it up by converting
-    her LIVE Max HP into ATK - holds only if the two are called in that order by
-    hand, which is what its unit test did. In the simulator the conversion is an
-    `own_burst_activate` rule running INSIDE the burst cycle, while this stack is
-    emitted by a pass that runs after it, so the conversion reads a registry that
-    has none of it. Measured 2026-08-17: multiplying the per-stack value by 100
-    moves her damage by 0.0000%. Wired correctly anyway - the fix belongs in the
-    ordering (see docs/roadmap.md), and a stack that is right is what that fix
-    will need.
+    It reaches damage through Blessings Upon You, which converts her LIVE Max HP
+    into ATK. That conversion is an `own_burst_activate` rule inside the burst
+    cycle while this stack is emitted by the resource pass afterwards, so seeing
+    it takes simulate_raid's fixed-point loop, which hands the late `flat_max_hp`
+    back as a shadow on the next pass (`SquadContext.live_max_hp`). Worth 5.23%
+    of her damage in a Liter/Crown/Blanc/Helm deck (measured 2026-08-17).
 
     A REFRESHING stack (`lifetime_refreshes`): each new stack restarts the 15
     sec for the whole stack, so the count climbs to the cap as long as she lands

@@ -94,10 +94,13 @@ def build_card_throw_per_shot_rules(values, caster_max_hp):
 
     Its sibling bullet (the burst-cooldown cut) stays a per-cycle approximation
     because a cooldown change must be settled before the rotation is scheduled,
-    and per-shot rules run after that. A Max HP grant carries no such ordering
-    constraint - it is a damage INPUT, read at each damage instance's own time -
-    so there is no reason for it to inherit the approximation. It matters
-    because Max HP feeds every "ATK ▲ X% of Max HP" conversion in the deck.
+    and per-shot rules run after that. A Max HP grant carries no such constraint:
+    the "ATK ▲ X% of Max HP" conversions that read it fire inside the burst
+    cycle, but simulate_raid's fixed-point loop hands them this pass's late
+    `flat_max_hp` on the next one, so a grant written here is seen at the right
+    instants without being pinned to the rotation. It matters because Max HP
+    feeds every such conversion in the deck - worth +0.50% to a
+    Maxwell/Laplace: Ultimate Hero deck's total (measured 2026-08-17).
     """
     max_hp = caster_max_hp * float(values["description_value_02"]) / 100
     duration = float(values["description_value_03"])

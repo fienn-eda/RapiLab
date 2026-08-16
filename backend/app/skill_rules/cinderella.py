@@ -141,11 +141,13 @@ def build_beautiful_max_hp_rules(values, caster_max_hp):
     up from battle start and never drops, so the schedule is fully determined
     and pre-adding it is exact (the same reason periodic_rules may pre-add).
 
-    Why not the `beautiful` ResourceSpec's own `buffs`: the simulator resolves
-    resource buffs AFTER the shot loop, while max_hp_scaled_atk_rule reads
-    flat_max_hp DURING it, at the instant her burst fires. A ResourceBuff here
-    measures as exactly zero (verified 2026-07-27) - the resource can express
-    the count for a nuke, but not a stat another rule has to see live.
+    Why not the `beautiful` ResourceSpec's own `buffs`: pre-adding is EXACT for
+    her and simpler. Her decoy is up from battle start and never drops, so the
+    fill is fully determined at t=0 and the schedule needs no shot timeline at
+    all. (The ordering that used to force this choice - resource buffs resolving
+    after the burst cycle, where the conversion reads - no longer does: the
+    simulator's fixed-point loop feeds late `flat_max_hp` back. So a future
+    bullet that DOES depend on the shot timeline may use the ResourceSpec.)
     """
     dm = values["dirt_resistant_mirror"]
     interval = float(dm["description_value_03"])

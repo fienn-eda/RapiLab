@@ -748,19 +748,32 @@ def simulate_raid(*args, **kwargs):
     인과가 한 방향이지만(사이클 k의 판정은 k-1까지의 샷만 본다) 이 엔진은
     스케줄러를 통째로 먼저 돌리므로 패스 단위로 같은 답에 도달한다.
 
-    그런 유닛이 없으면 해석기가 빈 딕셔너리를 돌려주고 첫 패스에서 종료한다 -
-    결과도 비용도 오늘과 같다.
+    수렴량이 둘째로 하나 더 있다 - **버스트 사이클 뒤에 쓰인 flat_max_hp**다.
+    "ATK ▲ 캐스터 Max HP의 X%" 환산은 버스트 사이클 안에서 도는데 그 스탯을 쓰는
+    곳 둘(샷 루프의 per-shot 룰, 자원 해석)은 그보다 뒤에 돌아서, 한 패스로는
+    환산이 그 둘을 통째로 못 본다. 앞 패스가 모아 둔 것을 다음 패스에 그림자로
+    넘겨 함께 읽게 한다(`SquadContext.live_max_hp`).
+
+    이쪽은 항상 두 패스 만에 멈춘다: Max HP는 타임라인을 안 바꾸므로 패스 2의
+    늦은 flat_max_hp는 패스 1과 같은 집합이다. 환산 소비자가 없거나 늦은
+    flat_max_hp가 없으면 빈 튜플이 오가고 첫 패스에서 끝난다.
+
+    두 축 중 어느 것도 안 걸리는 덱은 해석기가 빈 딕셔너리와 빈 튜플을 돌려주고
+    첫 패스에서 종료한다 - 결과도 비용도 오늘과 같다.
     """
     overrides = {}
+    late_max_hp = ()
     result = None
     for attempt in range(MAX_FULL_BURST_PASSES):
-        result, resolved = _simulate_raid_once(
-            *args, **kwargs, full_burst_stage_overrides=overrides
+        result, resolved, resolved_max_hp = _simulate_raid_once(
+            *args, **kwargs, full_burst_stage_overrides=overrides,
+            late_flat_max_hp=late_max_hp,
         )
-        if resolved == overrides:
+        if resolved == overrides and resolved_max_hp == late_max_hp:
             result["full_burst_passes"] = {"passes": attempt + 1, "converged": True}
             return result
         overrides = resolved
+        late_max_hp = resolved_max_hp
     result["full_burst_passes"] = {"passes": MAX_FULL_BURST_PASSES, "converged": False}
     # `converged: False`만으로는 아무도 못 본다 - 이 플래그를 읽는 하류가 없다.
     # 질의 헬퍼를 하나 더 만들어도 `scripts/`의 소비자 16개 중 2개만 부르는
@@ -854,6 +867,10 @@ def _simulate_raid_once(
     # {slug: [양 옆 아군 둘]} - "자신과 양 옆 아군 2명" 불릿의 좌석. 안 주면
     # SquadContext.neighbor_slugs의 정책이 답한다.
     adjacency=None,
+    # 앞 패스가 **버스트 사이클 뒤에** 쓴 flat_max_hp 효과들. "ATK ▲ Max HP의
+    # X%" 환산이 이 패스에서 그걸 함께 읽는다(SquadContext.live_max_hp). 레코드
+    # 튜플이라 패스 간 동일성 비교가 곧 수렴 판정이다 - simulate_raid 참고.
+    late_flat_max_hp=(),
 ):
     weapon_stats = weapon_stats or {}
     # None means "no band read for this encounter", which pays nobody. An
@@ -883,6 +900,15 @@ def _simulate_raid_once(
     # 대상 판정 기록은 계산기 화면 전용이라 기본이 off다. 켜져야만 리스트가
     # 생기고, 그래야 탐색이 도는 수만 번의 시뮬이 오늘과 같은 할당을 한다.
     target_grants = [] if collect_target_grants else None
+    # 앞 패스가 모은 늦은 flat_max_hp를 읽기 전용 그림자 레지스트리로 되살린다.
+    # 라이브 레지스트리와 겹치지 않으므로 이중 계상은 없다: 담긴 것은 이 패스의
+    # 버스트 사이클이 아직 만들지 않은 것들뿐이다.
+    late_max_hp_registry = None
+    if late_flat_max_hp:
+        late_max_hp_registry = EffectRegistry()
+        for stat, value, scope, duration, source, group, at in late_flat_max_hp:
+            late_max_hp_registry.add(
+                Effect(stat, value, scope, duration, source, group), applied_at=at)
     context = SquadContext(
         [SquadMember(m["slug"], m["burst_tier"], m["element"], m.get("weapon")) for m in deck],
         base_atk={m["slug"]: base_stats[m["slug"]]["atk"] for m in deck},
@@ -895,6 +921,7 @@ def _simulate_raid_once(
         core_hittable=core_hittable,
         target_grants=target_grants,
         adjacency=adjacency,
+        late_flat_max_hp=late_max_hp_registry,
     )
     registry = EffectRegistry()
     # Damage is RECORDED as events during phase 1 (buffs are applied but no
@@ -1395,6 +1422,9 @@ def _simulate_raid_once(
         on_full_burst_enter=on_full_burst_enter,
         on_full_burst_end=on_full_burst_end,
     )
+    # 여기부터 붙는 flat_max_hp는 버스트 사이클 안에서 도는 "ATK ▲ Max HP의 X%"
+    # 환산이 볼 수 없었던 것들이다 - 다음 패스에 넘겨 주려고 표시해 둔다.
+    post_burst_cycle = registry.checkpoint()
 
     # Full Burst windows [start, end) from the burst-cycle's own event log, so
     # a resource fill gated to "during Full Burst" (e.g. Soda's Golden Chip)
@@ -2173,8 +2203,18 @@ def _simulate_raid_once(
     }
     if target_grants is not None:
         result["target_grants"] = target_grants
-    return result, _resolve_conditional_fb_deltas(
-        context, events, conditional_full_burst_deltas)
+    # 환산을 부른 룰이 하나도 없으면 넘겨 봐야 아무도 안 읽으므로 빈 튜플을
+    # 돌려준다 - 그래야 그런 덱이 두 번째 패스를 사지 않는다.
+    late_max_hp_records = ()
+    if context.max_hp_conversion_used:
+        late_max_hp_records = tuple(
+            (e.stat, e.value, e.scope, e.duration, e.source_slug, e.refresh_group, at)
+            for e, at in registry.entries_since(post_burst_cycle, "flat_max_hp")
+        )
+    return (result,
+            _resolve_conditional_fb_deltas(
+                context, events, conditional_full_burst_deltas),
+            late_max_hp_records)
 
 
 # `inspect.signature` follows `__wrapped__`, so introspecting the public name
@@ -2182,10 +2222,10 @@ def _simulate_raid_once(
 # Set here rather than beside the wrapper because `_simulate_raid_once` is
 # defined below it.
 #
-# One entry in that list is not a real parameter for a caller: the wrapper
-# supplies `full_burst_stage_overrides` itself on every iteration
-# (`_simulate_raid_once(deck, **kwargs, full_burst_stage_overrides=overrides)`),
-# so passing it through `simulate_raid(**kwargs)` raises `TypeError: got
-# multiple values for keyword argument`. The advertised signature is honest
-# about every other parameter.
+# Two entries in that list are not real parameters for a caller: the wrapper
+# supplies `full_burst_stage_overrides` and `late_flat_max_hp` itself on every
+# iteration (they are what it iterates TO a fixed point), so passing either
+# through `simulate_raid(**kwargs)` raises `TypeError: got multiple values for
+# keyword argument`. The advertised signature is honest about every other
+# parameter.
 simulate_raid.__wrapped__ = _simulate_raid_once

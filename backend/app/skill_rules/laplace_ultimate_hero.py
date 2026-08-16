@@ -276,7 +276,7 @@ def _over_energy_stage_rule(values, caster_max_hp):
                        "self", None, caster_slug, _OVER_ENERGY_GROUP),
                 applied_at=at,
             )
-            live_max_hp = caster_max_hp + registry.total_for("flat_max_hp", target, at)
+            live_max_hp = context.live_max_hp(caster_max_hp, target, at, registry)
             registry.add_refreshing(
                 Effect("flat_atk", live_max_hp * atk_pct, "self", None,
                        caster_slug, _ELECTRIC_POWER_GROUP),
