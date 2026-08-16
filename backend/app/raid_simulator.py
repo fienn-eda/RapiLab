@@ -1572,6 +1572,30 @@ def _simulate_raid_once(
                     ("per_shot_every_during_own_status_window", n, window_duration), shot_times,
                     core_hittable, fight_duration, full_burst_windows, anchors,
                 ))
+            elif mode == "every_during_ally_status_window":
+                # A status an ALLY's burst opens, gating THIS unit's shot
+                # counter - Rei Ayanami (Tentative Name) fires "after landing 18
+                # normal attacks against a target in Anti A.T. Field status", a
+                # status only Asuka: WILLE puts on the boss and only for her
+                # Annihilation State's own duration. With no such ally in the
+                # deck there are no windows and the rule never fires, which is
+                # the game's own answer.
+                #
+                # The count RESTARTS in each window (Fienn, 2026-08-16) - like
+                # "cycle_from_own_burst_to_full_burst_end" and unlike
+                # "every_during_own_status_window", which concatenates every
+                # window's shots before counting. The status is REMOVED when the
+                # window ends ("Anti A.T. Field status is removed after the
+                # effect is triggered"), so a part-finished count has nothing
+                # left to carry.
+                n, window_duration, ally_slug = threshold
+                ally_fires = set()
+                for anchor in context.burst_times.get(ally_slug, []):
+                    start, end = anchor, anchor + window_duration
+                    inside = [t for t in shot_times if start <= t < end]
+                    ally_fires.update(
+                        t for i, t in enumerate(inside) if (i + 1) % n == 0)
+                window_fire_times[idx] = ally_fires
             elif mode == "cycle_from_own_burst_to_full_burst_end":
                 first, period = threshold
                 window_fire_times[idx] = set(_resource_fill_times(

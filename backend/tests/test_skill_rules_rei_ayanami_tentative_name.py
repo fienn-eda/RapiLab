@@ -1,6 +1,10 @@
 import pytest
 
 from app.effects import EffectRegistry
+from app.skill_rules.asuka_shikinami_langley_wille import (
+    ANNIHILATION_STATE_DURATION,
+    SLUG as ASUKA_SLUG,
+)
 from app.skill_rules.rei_ayanami_tentative_name import (
     attack_state_burst_percent,
     build_annihilation_support_per_shot_rules,
@@ -89,8 +93,11 @@ def test_maintenance_grants_squad_flat_atk_on_full_burst_enter():
 
 def test_annihilation_support_nukes_every_7_in_attack_state_window():
     rules = build_annihilation_support_per_shot_rules({"annihilation_support": ANNIHILATION_SUPPORT})
-    assert len(rules) == 1
-    threshold, mode, subrules = rules[0]
+    # The skill carries a second counter on a different status (Anti A.T.
+    # Field, an ally's) - select this one rather than assume it stands alone.
+    own_window = [r for r in rules if r[1] == "every_during_own_status_window"]
+    assert len(own_window) == 1
+    threshold, mode, subrules = own_window[0]
     assert (threshold, mode) == ((7, ATTACK_STATE_WINDOW), "every_during_own_status_window")
 
     registry = EffectRegistry()
@@ -98,6 +105,43 @@ def test_annihilation_support_nukes_every_7_in_attack_state_window():
     pulses = registry.drain_pulses("instant_damage_percent")
     assert len(pulses) == 1
     assert pulses[0].value == 286.37
+
+
+def test_anti_at_field_nuke_is_gated_to_asukas_annihilation_state_window():
+    """Her headline collab payload: "after landing 18 normal attack(s) against a
+    target in Anti A.T. Field status ... 590.64% of final ATK as additional
+    damage". Only Asuka: WILLE puts that status on the boss, and only for her
+    Annihilation State's own duration - so the window is anchored to an ALLY's
+    burst and the count restarts with it.
+
+    The window length is Asuka's, so it is imported from her module rather than
+    written here twice."""
+    rules = build_annihilation_support_per_shot_rules(
+        {"annihilation_support": ANNIHILATION_SUPPORT})
+    anti_at = [r for r in rules if r[1] == "every_during_ally_status_window"]
+    assert len(anti_at) == 1
+    threshold, _mode, subrules = anti_at[0]
+    assert threshold == (18, ANNIHILATION_STATE_DURATION, ASUKA_SLUG)
+
+    registry = EffectRegistry()
+    subrules[0].action(make_context(), "rei-ayanami-tentative-name", 5.0, registry)
+    pulses = registry.drain_pulses("instant_damage_percent")
+    assert len(pulses) == 1
+    assert pulses[0].value == pytest.approx(590.64)
+
+
+def test_the_stack_rider_stays_out_because_it_has_no_headroom():
+    """"Anti A.T. Field stacks ▲ 10" is deliberately NOT wired. Asuka alone
+    pins her own 30-stack cap inside every Annihilation State window (measured
+    2026-08-16: 505 shots at +1 per 10), so the rider would add nothing while
+    costing a cross-unit fill source and the risk of overshooting that cap."""
+    rules = build_annihilation_support_per_shot_rules(
+        {"annihilation_support": ANNIHILATION_SUPPORT})
+    registry = EffectRegistry()
+    for _threshold, _mode, subrules in rules:
+        for rule in subrules:
+            rule.action(make_context(), "rei-ayanami-tentative-name", 5.0, registry)
+    assert registry.total_for("anti_at_field", REI, 5.0) == 0.0
 
 
 def test_maintenance_speeds_up_only_mg_allies_who_already_burst():

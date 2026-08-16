@@ -31,6 +31,12 @@ Not modeled / deferred:
   the Annihilation State ally status, also cross-unit and unmodeled.
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule, member_subset_buff_rule
+# The Anti A.T. Field window belongs to Asuka - it is her Annihilation State -
+# so its length and her slug are imported rather than restated here.
+from app.skill_rules.asuka_shikinami_langley_wille import (
+    ANNIHILATION_STATE_DURATION,
+    SLUG as ASUKA_SLUG,
+)
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -87,14 +93,41 @@ def build_rei_tentative_rules(values):
 
 
 def build_annihilation_support_per_shot_rules(values):
-    """gap #7: every 7 normal attacks while in Attack State (her own 10s burst
-    window) a 286.37%-of-final-ATK "additional damage" nuke. The Anti A.T. Field
-    payload on the same skill is deferred (cross-unit target status)."""
+    """Two shot counters on one skill, gated on two DIFFERENT statuses.
+
+    Attack State (her own 10s burst window): every 7 normal attacks, a
+    286.37%-of-final-ATK "additional damage" nuke - gap #7's
+    `every_during_own_status_window`.
+
+    Anti A.T. Field (an ALLY's status, on the boss): every 18 normal attacks
+    "against a target in Anti A.T. Field status", a 590.64% nuke. Only Asuka:
+    WILLE puts that status there and only for her Annihilation State's own
+    duration, so this rides `every_during_ally_status_window` anchored to HER
+    bursts - with no Asuka in the deck there are no windows and it never fires,
+    which is the game's own answer. The count restarts with each window because
+    the status is removed when the window ends (Fienn, 2026-08-16).
+
+    The 590.64% bullet also reads "Anti A.T. Field stacks ▲ 10", and that half
+    stays out: Asuka alone pins her own 30-stack cap inside every window
+    (measured 2026-08-16 - 505 shots at +1 per 10 fills 50 stacks' worth), so
+    the rider has no headroom to write into. Wiring it would buy nothing and
+    cost a cross-unit fill source whose own fill times depend on the count it
+    changes.
+    """
     annihilation = values["annihilation_support"]
     threshold = int(float(annihilation["description_value_04"]))
     nuke_percent = float(annihilation["description_value_05"])
-    return [(
-        (threshold, ATTACK_STATE_WINDOW),
-        "every_during_own_status_window",
-        [instant_nuke_pulse_rule("per_shot", nuke_percent)],
-    )]
+    anti_at_threshold = int(float(annihilation["description_value_01"]))
+    anti_at_percent = float(annihilation["description_value_02"])
+    return [
+        (
+            (threshold, ATTACK_STATE_WINDOW),
+            "every_during_own_status_window",
+            [instant_nuke_pulse_rule("per_shot", nuke_percent)],
+        ),
+        (
+            (anti_at_threshold, ANNIHILATION_STATE_DURATION, ASUKA_SLUG),
+            "every_during_ally_status_window",
+            [instant_nuke_pulse_rule("per_shot", anti_at_percent)],
+        ),
+    ]

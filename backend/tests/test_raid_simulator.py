@@ -921,6 +921,57 @@ def test_non_true_typed_nuke_still_subtracts_enemy_defense():
     assert burst_hits[0]["damage"] == 8000.0  # (10000 - 2000) * 1.0 coeff, attack-typed
 
 
+def test_every_during_ally_status_window_counts_only_in_that_allys_windows():
+    """A status one ALLY's burst opens, gating another unit's shot counter.
+
+    Rei Ayanami (Tentative Name) fires "after landing 18 normal attacks against
+    a target in Anti A.T. Field status" - a status only Asuka: WILLE puts there,
+    for her Annihilation State's own duration. So the window is anchored to an
+    ally's burst, not the counter-holder's, and the count RESTARTS at each
+    window (Fienn, 2026-08-16): every fire sits exactly N shots into its own
+    window, not N shots into the concatenation of all of them."""
+    n, window = 20, 3.0
+    result = simulate_raid(
+        make_deck(),
+        {"buffer": [], "midtier": [],
+         "attacker": []},
+        burst_damage_percents={},
+        base_stats=make_base_stats(attacker_atk=10000),
+        enemy_def=0,
+        gauge_charge_time=2.0,
+        # The cycle is paced by the slowest tier's cooldown (attacker, 40 sec),
+        # so a 40-sec fight holds ONE window - too few to tell the two counting
+        # rules apart.
+        fight_duration=120.0,
+        mode="auto",
+        base_crit_rate=0.0,
+        weapon_stats={"attacker": {"weapon": "AR", "damage_percent": 10.0,
+                                   "max_ammo": 9999, "reload_time": 0.0,
+                                   "charge_time": 0.0, "charge_damage_percent": 100.0}},
+        per_shot_rules={"attacker": [(
+            (n, window, "buffer"), "every_during_ally_status_window",
+            [instant_nuke_pulse_rule("per_shot", 100.0)],
+        )]},
+    )
+
+    ally_bursts = [e["time"] for e in result["events"]
+                   if e["type"] == "burst" and e["slug"] == "buffer"]
+    assert len(ally_bursts) >= 2, "need several windows to tell the two rules apart"
+    windows = [(t, t + window) for t in ally_bursts]
+    shots = sorted(e["time"] for e in result["damage_log"]
+                   if e["slug"] == "attacker" and e["source"] == "normal_attack")
+    fires = sorted(e["time"] for e in result["damage_log"]
+                   if e["slug"] == "attacker" and e["source"] == "per_shot_nuke")
+
+    assert fires, "the rule never fired at all"
+    for fire in fires:
+        owning = [w for w in windows if w[0] <= fire < w[1]]
+        assert owning, f"fire at {fire} is outside every ally window"
+        start, _end = owning[0]
+        # The restart signature: counted from THIS window's first shot.
+        assert sum(1 for s in shots if start <= s <= fire) == n
+
+
 def _rl_weapon():
     # `charge_damage_percent` must be non-zero: an RL is a charge weapon, so a
     # 0% full-charge multiplier makes every shot deal 0 damage and the ratio

@@ -9,6 +9,8 @@ from app.attack_rate import (MG_SPINUP, generate_magazine_shot_times,
 from app.effects import EffectRegistry
 from app.raid_simulator import simulate_raid
 from app.skill_rules.asuka_shikinami_langley_wille import (
+    ANNIHILATION_STATE_DURATION,
+    SLUG as MODULE_SLUG,
     build_anti_at_field_per_shot_rules,
     build_anti_at_field_resources,
     build_annihilation_dynamic_hit_count_nukes,
@@ -201,6 +203,16 @@ def test_asuka_end_to_end_annihilation_nuke_scales_with_capped_stacks_and_gets_f
     assert all(round(h["time"], 4) == 14.0 for h in hits)
     # 10000 * 6.62% * (1 + full_burst_bonus*0.5) = 662 * 1.5
     assert all(round(h["damage"], 4) == 993.0 for h in hits)
+
+
+def test_annihilation_state_duration_constant_matches_the_data():
+    """`ANNIHILATION_STATE_DURATION` is published for an ALLY to read (Rei
+    Ayanami: Tentative Name's Anti A.T. Field clause). It is the only place in
+    this module that states the duration as a literal instead of reading
+    `values`, so this pins it to the skill data it stands for."""
+    assert ANNIHILATION_STATE_DURATION == pytest.approx(
+        float(ASUKA_VALUES["annihilation_state"]["description_value_02"]))
+    assert MODULE_SLUG == SLUG
 
 
 def test_emergency_repair_dumps_her_magazine_when_annihilation_fires():

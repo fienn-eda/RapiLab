@@ -395,7 +395,23 @@ magazine, incl. t=0 - gap #9, Jill's Magnum), `"every_during_full_burst"`
 Velvet), `"every_outside_full_burst"` (its complement: only shots outside
 every FB window - Velvet's Sticky Fingers), `"every_during_own_status_window"`
 (threshold=`(N, window_duration)`, window anchored at the CASTER'S OWN burst
-times - gap #7, Asuka/Grave), `"sequence"` (gap #10, Scarlet: Black
+times - gap #7, Asuka/Grave),
+**`"every_during_ally_status_window"`** (2026-08-16, threshold=
+`(N, window_duration, ally_slug)`) - the window is anchored at ANOTHER unit's
+burst times, for a status a DECKMATE puts on the boss. Two things differ from
+the own-status mode: the anchor, and **the count RESTARTS in each window**
+(like `cycle_from_own_burst_to_full_burst_end`, unlike
+`every_during_own_status_window`, which concatenates every window's shots
+before counting). Restart is right when the status is REMOVED at the window's
+end, so a part-finished count has nothing to carry. With no such ally in the
+deck there are no windows and the rule never fires - the game's own answer,
+not a silent zero. First consumer: Rei Ayanami (Tentative Name)'s "after
+landing 18 normal attack(s) against a target in Anti A.T. Field status", a
+status only Asuka: WILLE applies and only for her Annihilation State's 9 sec.
+**The window length belongs to the ALLY, so import it from her module**
+(`asuka_shikinami_langley_wille.ANNIHILATION_STATE_DURATION` / `SLUG`) rather
+than restating the number - a guard test pins that constant to her skill data.
+`"sequence"` (gap #10, Scarlet: Black
 Shadow: `threshold` is `{"requirements": [3, 6, 9], "own_burst_window":
 (duration, [1, 2, 3])}` and the rules slot holds ONE RULE LIST PER STAGE -
 a single running counter fires stage k once count >= the ACTIVE requirement

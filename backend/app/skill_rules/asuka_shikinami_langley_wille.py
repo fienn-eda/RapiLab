@@ -91,6 +91,17 @@ from app.skill_rules._helpers import (buff_rule, instant_nuke_pulse_rule,
                                       linear_resource_buff, silent_reload_segments)
 from app.squad_engine import SkillRule, own_burst_fired_this_cycle
 
+SLUG = "asuka-shikinami-langley-wille"
+
+# How long Annihilation State - and with it the Anti A.T. Field status she puts
+# on the boss - lasts from her burst. Published because an ALLY's kit reads it:
+# Rei Ayanami (Tentative Name) fires "against a target in Anti A.T. Field
+# status", a window only Asuka opens, and writing 9 in her module too would be
+# the same number in two places. Every other use inside this module still comes
+# from `values`; `test_annihilation_state_duration_constant_matches_the_data`
+# pins the two together so the constant cannot drift from her skill data.
+ANNIHILATION_STATE_DURATION = 9.0
+
 SKILL_VALUE_MANIFESTS = {
     "asuka-shikinami-langley-wille": {
         "source": "lootandwaifus",
@@ -229,7 +240,7 @@ def build_asuka_weapon_mode_schedule(values):
     fixed_reload_speed = float(repair["description_value_08"]) / 100
     weapon_stats = values["caster_weapon_stats"]
     return silent_reload_segments(
-        "asuka-shikinami-langley-wille",
+        SLUG,
         reload_time_with_speed(weapon_stats["reload_time"], fixed_reload_speed),
         weapon_stats["weapon"],
         # Same "when using Annihilation" trigger as Effect 1 above: the dump
