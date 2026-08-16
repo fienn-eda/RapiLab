@@ -1,0 +1,109 @@
+"""프레임 판독이 요구하는 차지속도를 역산한다 — 엔진이 쓰는 값과 대조용.
+
+**왜 이 방향인가.** 차지속도의 양자화는 이미 정해져 있다: 굴림은 정수 퍼센트로
+반올림되고(같은 값끼리 먼저 합산), 그 퍼센트가 사는 프레임은 내림된다. 브래디
+실측이 프레임 격자를 **13.5σ로 확정**했고 커뮤니티의 「0.01초 반올림」을 같은
+자리에서 기각했다(`docs/measurements/bready-charge.md`). **격자를 다시 의심하지 말 것.**
+
+그래서 남은 질문은 격자가 아니라 **입력**이다: 실측 발 간격이 정수 프레임 하나를
+가리키면, 그 프레임 수를 사는 차속 퍼센트 범위는 유일하게 결정된다. 엔진이 그
+유닛에게 주는 퍼센트가 그 범위 밖이면, 어긋난 것은 공식이 아니라 **차속 총량**이다.
+
+**쓸 때:** 차지 무기 프레임 판독을 새로 받았을 때. 「엔진이 왜 이 유닛에서만
+틀리나」를 물을 때. 엔진 함수를 직접 부르므로 규칙이 바뀌어도 이 스크립트는
+드리프트하지 않는다.
+
+사용법 (아무 cwd):
+    python scripts/solve_charge_speed_from_reading.py
+    python scripts/solve_charge_speed_from_reading.py --charge 1.5 --measured 83.174 --se 0.224
+"""
+import argparse
+import math
+import sys
+from pathlib import Path
+
+# 이 환경의 콘솔은 cp949라 한글과 em-dash에서 UnicodeEncodeError로 죽는다.
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8")
+
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "backend"))
+
+from app.attack_rate import charge_frames_bought  # noqa: E402
+from app.overload_decode import charge_speed_percent_from_lines  # noqa: E402
+
+# Fienn 인게임 프레임 판독. 원본과 조건은 docs/measurements/ 아래 각 파일.
+# `se`는 그 파일의 간격들에서 직접 계산한 평균의 표준오차.
+# `note`는 그 판독의 큐브 등 조건 — 대조에 필요한 만큼만.
+READINGS = (
+    # (슬러그, 차지초, 오버로드 굴림, 실측 발간격f, SE, 비고)
+    ("bready", 1.0, (6.09,), 57.000, 0.0319,
+     "대조군 — 재장전 큐브 Lv15 명시, 딜레이 22f를 뺀 확정 차지 (bready-charge.md)"),
+    ("liberalio", 1.5, (6.09,), 83.174, 0.224,
+     "멈춤 0 — 간격이 곧 차지 (charge-speed-scaling.md)"),
+    ("neon-vision-eye", 1.0, (6.09, 1.98, 4.63, 4.33), 49.115, 0.160,
+     "멈춤 0 — 간격이 곧 차지 (charge-speed-scaling.md)"),
+)
+
+
+def percent_window(charge_frames, bought):
+    """`bought` 프레임을 정확히 사는 차속 비율의 반열린 구간 [낮, 높).
+
+    `charge_frames_bought`가 `int(프레임 x 비율)`이므로 역상은 구간이다.
+    """
+    return bought / charge_frames, (bought + 1) / charge_frames
+
+
+def integer_percents_in(low, high):
+    """그 구간 안에 드는 정수 퍼센트 — 엔진이 실제로 만들어낼 수 있는 값들."""
+    return [p for p in range(0, 201) if low <= p / 100 < high]
+
+
+def solve(charge_time, measured, se, lines=None):
+    charge_frames = charge_time * 60
+    # 실측이 가리키는 정수 프레임: 95% 구간 안의 정수들.
+    lo, hi = measured - 1.96 * se, measured + 1.96 * se
+    candidates = [f for f in range(math.floor(lo), math.ceil(hi) + 1) if lo <= f <= hi]
+    if not candidates:
+        candidates = [round(measured)]
+
+    print(f"  차지 {charge_time:.2f}초 = {charge_frames:.0f}프레임")
+    print(f"  실측 {measured:.3f}f ± {se:.3f}  ->  95% 구간 [{lo:.3f}, {hi:.3f}]")
+    if lines:
+        percent = charge_speed_percent_from_lines(lines)
+        bought = charge_frames_bought(charge_time, percent / 100)
+        print(f"  엔진: 굴림 {list(lines)} 합계 {sum(lines):.2f}% -> 정수 {percent:.0f}% "
+              f"-> {bought}프레임 삼 -> **{charge_frames - bought:.0f}f**")
+    print(f"  실측이 가리키는 정수 프레임: {candidates}")
+    for frames in candidates:
+        bought = charge_frames - frames
+        low, high = percent_window(charge_frames, bought)
+        allowed = integer_percents_in(low, high)
+        print(f"    {frames}f  <- {bought:.0f}프레임 삼  <- 차속 "
+              f"[{low * 100:.3f}%, {high * 100:.3f}%)  정수 후보 {allowed}")
+        if lines:
+            need = [p - percent for p in allowed]
+            print(f"       엔진의 {percent:.0f}%에서 모자란 양: "
+                  f"{['%+d%%p' % d for d in need]}")
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    p.add_argument("--charge", type=float, help="차지 시간(초)")
+    p.add_argument("--measured", type=float, help="실측 발 간격(프레임)")
+    p.add_argument("--se", type=float, default=0.0, help="실측 평균의 표준오차")
+    p.add_argument("--lines", nargs="*", type=float, default=None,
+                   help="오버로드 차속 굴림 (예: --lines 6.09)")
+    args = p.parse_args()
+
+    if args.charge and args.measured:
+        solve(args.charge, args.measured, args.se, tuple(args.lines or ()) or None)
+        return
+
+    for slug, charge, lines, measured, se, note in READINGS:
+        print(f"\n=== {slug} ===")
+        print(f"  {note}")
+        solve(charge, measured, se, lines)
+
+
+if __name__ == "__main__":
+    main()
