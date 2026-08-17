@@ -5,6 +5,135 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 애니힐리오 실기록을 채점지표에서 내린다 — 로스터가 전투보다 6주 뒤 것이었다
+
+- Date: 2026-08-17
+- Context: 신데렐라:CW가 절대오차 1위(1.237x, +0.516B)로 나와 조사하던 중, Fienn
+  지적 — 캘리브레이션 로스터의 오버로드는 **지금** 것인데 애니힐리오 전투 자체는
+  **6주 전**이다. 확인해 보니 전투는 **2026-07-06**(`raid_record.py` 독스트링),
+  로스터 동기화는 **2026-08-07**이고, `tools/collect-blablalink/`의 가장 이른
+  스냅샷도 **2026-07-31**로 전투보다 3주 늦다 — 그 시점 로스터가 아예 없어
+  **되돌릴 수 없다.**
+- Decision: 애니힐리오 실기록을 채점지표에서 **내린다**(보류). 기록·덱·로테이션·
+  큐브는 실제 전투를 충실히 옮긴 자료로서 `raid_record.py`에 그대로 남기되,
+  **잔차로 엔진 결함을 판정하는 데는 더 이상 쓰지 않는다.** 신데렐라:CW 오차 자체의
+  조사도 함께 보류. 다음 채점지표는 곧 출시되는 레이드로 교체한다.
+- Why:
+  - 오버로드·장비는 시간이 지나면 **늘기만** 하는데 시뮬은 **오늘의** 로스터를
+    읽으므로, 기록과 로스터 사이의 시차가 곧 유닛마다 **크기를 알 수 없는 과대
+    항**이 된다.
+  - 신데렐라 하나의 문제가 아니라는 것을 확인했다 — 그녀의 오버로드는 이 전투에서
+    그녀 딜의 **21.7%**다(덱2를 그녀 오버로드만 빼고 재채점하면 1.237x →
+    **0.969x**, 즉 빼면 반대로 과소가 된다). 그건 그녀만의 수치가 아니라 **모든
+    유닛이 지고 있는 항의 크기**다.
+- Consequences:
+  - 이 잔차에 기대고 있던 결론들은 **폐기가 아니라 재확인 대기**다 — 합계
+    1.075x·18/25, 무기군별 평균, 그리고 **갭 #21의 코어 비중 상관**(r=+0.677,
+    22유닛). `docs/engine-gaps.md` 갭 #21 항목 머리에 경고를 달았다.
+  - `raid_record.py`에 `RECORD_DATE`·`RETIRED_AS_METRIC`을 **산문이 아니라
+    데이터**로 신설했고, `scripts/measure_record_calibration.py`가 그 배너를
+    출력 **맨 위**에 찍는다 — 파일 안에만 적으면 아무도 안 본다는 것을
+    `full_burst_passes.converged`가 이미 보여줬다. 배너가 읽히도록 콘솔 cp949
+    깨짐도 함께 고쳤다.
+  - **새 레이드에서 지켜야 할 절차 하나:** 로스터를 기록과 **같은 날** 동기화할
+    것. 이번 실패는 모델이 아니라 절차에서 왔다.
+
+## 확률 발동 트리거는 기대값으로 처리한다 — 굴리지 않는다 (A9)
+
+- Date: 2026-08-17
+- Context: "공격 시 X% 확률로 발동"류 트리거가, 이 결정론 엔진이 확률을 못 굴린다는
+  이유로 보류돼 있었다(gap A9).
+- Decision (Fienn): 확률은 **기대값**으로 처리한다 — 「p% 확률」 = **100/p 발마다**
+  확정 발동. 신규 `_helpers.expected_shots_per_proc(chance_percent)`(발 단위로
+  반올림; 0 또는 100 초과 입력은 `ValueError`).
+- Why: 엔진은 **이미** 다른 확률들을 전부 이렇게 다루고 있었다 — 크리는 히트마다
+  `crit_rate`로 스케일되고, 코어히트는 면적비(`accuracy.core_hit_rate`)로
+  처리되며, `per_critical_hit_every`는 실제 크리를 세는 대신 라이브 크리율을
+  누적한다. 확률 **트리거**만 "못 한다"고 남겨 둔 것이 일관성 없는 예외였다.
+- Consequences:
+  - 범위가 예상보다 훨씬 작았다. 인코딩 103슬러그 원문 전수 census 결과 확률
+    **트리거**를 가진 것은 **2유닛(×2빌드)뿐**이었다. 그물을 `random`/`odds`/
+    `% of the time`까지 넓히면 16슬러그가 걸리지만 추가 12건은 전부 「무작위
+    **적** 대상」이라 단일보스 레이드에선 무의미했다. 실제로 새로 배선한 것은
+    Tove 기저의 Emergency-Crafted Bullets(5% → 20발마다) 하나뿐이다.
+  - **이 규칙이 안 풀어 주는 것이 있다.** Sugar의 Black Typhoon은 "엄폐물 피격 시
+    20% 확률"인데, 기대값 규칙은 **이벤트 스트림을 솎아낼 뿐** 그 스트림 자체
+    (엄폐물 피격)를 만들지 못한다 — p=1.0이어도 똑같이 막힌다. 애장품 빌드는
+    확률이 아예 없는데도 **같은 이유로** 여전히 보류다(갭 #14).
+    `docs/engine-gaps.md`가 20% 확률 자체를 장애물처럼 적어 두고 있어 함께
+    정정했다.
+  - 실측: Tove 기저 딜 +1.07%, 덱(크라운·헬름·레드후드·블랑) +0.20%(자기 탄창만
+    건드리는 self 환급이라 작은 게 맞다). 캘리브레이션 1.075x·18/25 불변(Tove는
+    실기록 5덱에 없음).
+
+## 플로라의 「중첩 수 ▲1」— 대상은 원소 스코프, `stackable_buff`는 선언이지 추론이 아니다
+
+- Date: 2026-08-17
+- Context: Petunia 2번불릿 원문 "Activates after landing 100 normal attacks.
+  Affects all Electric Code allies. Increases the stack count of stackable
+  buffs by 1." — 대상을 이름으로 부르지 않고 원소 + "중첩형 버프"라는 **성질**로만
+  지목한다.
+- Decision: 세 가지를 신설했다.
+  - fill 종류 `("per_shot_every_by_ally", N, ally_slug)` — 창도 없고 소유자 자기
+    샷과도 무관하게, 지목한 아군의 N번째 평타마다.
+  - `roster._merge_resource_contributions`의 `target_filter` — 원소 +
+    `stackable_buff`로 **라이브 덱에서** 대상을 고른다(기존 `target`/`resource`
+    형태는 그대로 유지).
+  - `ResourceSpec.stackable_buff` — 대상 자원이 "게임 의미의 중첩 버프"인지를
+    **명시 선언**하는 불리언.
+- Why (`stackable_buff`를 추론이 아니라 선언으로 둔 이유가 핵심): **메이든:
+  아이스로즈가 두 종류를 동시에 갖는다** — Meditation은 중첩형 버프라 +1을 받아야
+  하고, MP는 그녀 버스트가 쓰는 게이지라 받으면 안 된다. Fienn 사격장
+  실측(2026-08-17)으로 확인했다. **스펙 자체의 모양(shape)만으로는 이 둘이 갈리지
+  않는다** — 둘 다 "카운터가 오르고 상한이 있다"는 같은 구조다. 그래서 추론 규칙을
+  짜는 대신 홀더마다 손으로 선언한다. 지금 선 것: `cinderella.beautiful` ·
+  `maiden_ice_rose.meditation` · `zwei-signature.pierce_attacks_101`(애장품 전용
+  불릿 — 기저 츠바이엔 그 자원 자체가 없다).
+- Consequences:
+  - 신데렐라의 Beautiful Max HP 램프를 `battle_start` 선-적재 방식에서 자원의
+    `buffs`로 이관했다 — 안 그러면 +1이 카운트만 올리고 Max HP는 옛 카운트로 남는
+    어긋남이 생긴다. 이 이관은 같은 날 앞선 결정(고정점 루프에 축 추가, 아래)이
+    순서 갭을 닫아서 가능해졌다. 캘리브레이션 전 항목 불변으로 등가 확인.
+  - 실측(홀더): 신데렐라 +1.171% · 츠바이(애장품) +2.599% · 메이든 +1.062%. 덱:
+    +0.792% / +2.335% / +0.551%. 츠바이가 가장 큰 것은 그 스택이 **스쿼드 스코프
+    크리율**이라 덱 전원이 함께 오르기 때문이다.
+  - 신규 스크립트 `scripts/measure_flora_stack_bump.py`(덱 고정·기여만 토글).
+
+## Max HP 환산이 나중 패스의 `flat_max_hp`를 읽게 한다 — 고정점 루프에 두 번째 축을 얹는다
+
+- Date: 2026-08-17
+- Context: "ATK ▲ 캐스터 Max HP의 X%" 환산(`_helpers.max_hp_scaled_atk_rule` +
+  `maiden_ice_rose`의 인라인 사본)은 **버스트 사이클 안**에서 도는 SkillRule인데,
+  `flat_max_hp`를 쓰는 곳 둘 — 샷 루프의 per-shot 룰(Rouge의 Card Throw)과 자원
+  해석 패스(Maiden의 Meditation) — 은 그보다 **뒤에** 돈다. 그래서 그 둘이 쓰는
+  Max HP가 환산에 통째로 안 보였고, 각각 100배로 키워도 덱 딜이 0.0000% 움직였다.
+- Decision: `simulate_raid`의 **기존 고정점 루프**(소다 풀버스트 확장용으로 이미
+  있던 것)에 **두 번째 수렴량**을 얹는다. 패스 1이 「버스트 사이클 뒤에 쓰인
+  `flat_max_hp`」를 모아 돌려주고, 패스 2가 그걸 **읽기 전용 그림자
+  EffectRegistry**로 받아 신규 `SquadContext.live_max_hp`에서 라이브 레지스트리와
+  **함께** 읽는다. 신규 API: `EffectRegistry.checkpoint()` / `entries_since()`,
+  `_simulate_raid_once`의 `late_flat_max_hp` 파라미터와 세 번째 반환값.
+- Why (기각한 대안 둘이 핵심):
+  - **환산을 후처리 패스로 옮기기**(`resource_gated_buffs` 옆): 기각.
+    `SquadContext.top_atk_slugs`(미란다·나가·레오나·마나·맥스웰이 쓴다)가 **버스트
+    사이클 안에서 `flat_atk`를 읽는다.** 환산이 밖으로 나가면 그 랭킹이 교정된
+    ATK를 못 보게 되어 **오늘 맞던 것이 틀어진다.**
+  - **Effect 값을 지연 평가(deferred value)로 두기**: 같은 이유로 기각. 페이즈
+    1에서 `flat_atk`를 읽는 소비자가 있으면 불완전한 레지스트리로 조기 확정된다.
+- Consequences:
+  - Max HP는 타임라인을 안 바꾸므로 **항상 두 패스 안에 수렴**한다. 환산 소비자가
+    없거나 늦은 `flat_max_hp`가 없으면 빈 튜플이 오가고 **한 패스**로 끝난다(벤치
+    `evaluate_deck` 159.55 → 160.24ms, 그 덱은 둘 다 없음).
+  - **새 규칙, 테스트로는 안 막혀 있음:** 환산 소비자는 반드시 버스트 사이클
+    안(SkillRule)에 있어야 한다 — 후처리에 놓으면 라이브 + 그림자로 **이중
+    계상**된다. 소비자가 넷뿐이라 규칙으로만 카탈로그에 적어 뒀다.
+  - 실측: 메이든 덱(리터·크라운·블랑·헬름) +2.95%(그녀 본인 +5.23%) ·
+    Rouge+맥스웰+라플라스UH 덱 +0.50%. 캘리브레이션 전 항목 불변(실기록 덱에 해당
+    유닛이 없다).
+  - 결과 키 `full_burst_passes`는 **이름을 바꾸지 않기로 했다**(Fienn 결정) —
+    이제 두 축(풀버스트 확장 + Max HP)을 함께 세지만, 이름을 바꾸면 이 문서의
+    과거 기록까지 건드려야 한다. 카탈로그에 「두 축을 센다」고 적어 뒀다.
+
 ## 리베랄리오 차지 시간은 수집 데이터의 1.5초를 쓴다 — 실측 88프레임은 기록만
 
 - Date: 2026-08-16
