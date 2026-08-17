@@ -69,6 +69,32 @@ def test_modernia_evolution_resource_is_timed_capped_crit_and_ammo():
     assert round(ammo.value_fn(5), 4) == round(-0.0504 * 5, 4)
 
 
+def test_modernia_evolution_stacks_share_one_clock_and_reach_the_cap():
+    """"stacks up to 5 time(s) and lasts for 10 sec" is ONE clock that every new
+    stack restarts (the Raven ruling), not five independent 10-sec timers. Her
+    200-hit mark comes round every ~4 sec, well inside 10, so the chain never
+    breaks and the count walks to the cap. The old reading settled at "fills per
+    lifetime" - 3 - and left the last two stacks unreachable."""
+    (spec,) = build_modernia_resources(MODERNIA)
+    assert all(buff.lifetime_refreshes for buff in spec.buffs)
+
+    ctx = deck_ctx("modernia", "Fire")
+    for mark in range(1, 8):
+        ctx.fill_resource("modernia", "evolution", 1.0, mark * 4.0)
+
+    crit = spec.buffs[0]
+    assert ctx.resource_count("modernia", "evolution", 28.0, spec.cap, crit.lifetime,
+                              lifetime_refreshes=True) == 5
+    assert ctx.resource_count("modernia", "evolution", 28.0, spec.cap,
+                              crit.lifetime) == 3
+
+    # A gap wider than the stack's life still breaks the chain - that is the
+    # whole difference from a permanent counter.
+    ctx.fill_resource("modernia", "evolution", 1.0, 60.0)
+    assert ctx.resource_count("modernia", "evolution", 60.0, spec.cap, crit.lifetime,
+                              lifetime_refreshes=True) == 1
+
+
 def test_modernia_per_hit_additional_damage_every_shot():
     ps = build_modernia_per_shot_rules(MODERNIA)
     assert len(ps) == 2

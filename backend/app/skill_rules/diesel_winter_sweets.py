@@ -175,7 +175,12 @@ def build_diesel_highlight_rules(values):
 
 def build_diesel_resource_specs(values):
     """Full Charge stacks: every RL shot is a full charge, so +1 per shot,
-    capped at 2, each stack living 3 sec."""
+    capped at 2.
+
+    "Sustained Damage ▲ 318.14% for 3 sec. Stacks up to 2 times" is ONE clock
+    the pair shares, restarted by every shot (the Raven ruling), so the pair
+    survives the gap between her charged shots and falls off together 3 sec
+    after the last one - not one stack at a time."""
     return [
         ResourceSpec(
             name="full_charge_encore",
@@ -187,6 +192,7 @@ def build_diesel_resource_specs(values):
                     _f(values, "sing_now", 4) / 100,
                     "self",
                     lifetime=_f(values, "sing_now", 5),
+                    lifetime_refreshes=True,
                 )
             ],
         )

@@ -163,7 +163,14 @@ def build_pierce_equation_per_shot_rules(values):
 def build_frame_analysis_resources(values):
     """Frame Analysis's second bullet: a capped Crit Rate stack, one per normal
     attack she lands while Pierce Attacks 101 (her burst's 10-sec all-ally buff)
-    is up, each stack living 5 sec.
+    is up, the stack living 5 sec.
+
+    Those 5 sec are ONE clock every new stack restarts (`lifetime_refreshes`,
+    the Raven ruling). Her SG fills the cap inside the window under either
+    reading; what the shared clock changes is the TAIL - all three stacks fall
+    off together 5 sec after her last shot in the window instead of decaying one
+    at a time. The buff is squad-scoped, so that tail alone is worth +1.70% to
+    the deck (`scripts/audit_stack_lifetime_refresh.py`).
 
     A stacking BUFF in the game's sense, so Flora's Petunia raises its count -
     confirmed in the range (Fienn, 2026-08-17): the count climbs while Zwei
@@ -180,7 +187,7 @@ def build_frame_analysis_resources(values):
             fill=("per_shot_every_during_own_status_window", 1, status_duration),
             cap=cap,
             buffs=[linear_resource_buff("crit_rate", crit_rate_per_stack, "squad",
-                                        lifetime=stack_lifetime)],
+                                        lifetime=stack_lifetime, lifetime_refreshes=True)],
             stackable_buff=True,
         )
     ]

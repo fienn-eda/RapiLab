@@ -11,8 +11,13 @@ Modeled (DPS-relevant):
   via `periodic_rules` (see `raid_simulator`), like Takina Inoue's Battlefield
   Control.
 - Crescendo (skills[1]): "Activates when the last bullet hits the target" -
-  self Critical Damage +24.79%, stacks up to 5 times, each stack lasting 15
-  sec (`ResourceSpec` with `fill=("on_last_bullet",)`, cap 5).
+  self Critical Damage +24.79%, stacks up to 5 times, the stack lasting 15 sec
+  (`ResourceSpec` with `fill=("on_last_bullet",)`, cap 5). The 15 sec is ONE
+  clock every new stack restarts (`lifetime_refreshes`, the Raven ruling), so
+  emptying a magazine every ~8 sec walks her to the cap and holds her there.
+  Read as five independent timers she sat at 2 and the top three stacks were
+  unreachable - worth **+9.22% to her, +1.86% to the deck** on a DEF-8000 boss
+  (`scripts/audit_stack_lifetime_refresh.py`).
 - Climax (skills[2], her burst): deals 544.5% of final ATK as damage to the 5
   enemy unit(s) with the highest final DEF (in a solo-boss raid, a single
   hit) - plus, "when Crescendo is at max stacks," an ADDITIONAL 544.5% hit
@@ -62,7 +67,8 @@ def build_crescendo_resources(values):
             name="crescendo",
             fill=("on_last_bullet",),
             cap=cap,
-            buffs=[linear_resource_buff("other_critical_damage_sources", per_stack, "self", lifetime=lifetime)],
+            buffs=[linear_resource_buff("other_critical_damage_sources", per_stack, "self",
+                                    lifetime=lifetime, lifetime_refreshes=True)],
         )
     ]
 
