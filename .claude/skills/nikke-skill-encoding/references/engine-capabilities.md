@@ -445,6 +445,19 @@ status only Asuka: WILLE applies and only for her Annihilation State's 9 sec.
 **The window length belongs to the ALLY, so import it from her module**
 (`asuka_shikinami_langley_wille.ANNIHILATION_STATE_DURATION` / `SLUG`) rather
 than restating the number - a guard test pins that constant to her skill data.
+**`"every_n_critical_hits"`** (threshold=N) counts EXPECTED critical hits rather
+than shots: each shot adds that unit's LIVE crit rate at its own time and the
+rule fires every time the running total crosses N, carrying the remainder. The
+engine never rolls a crit, so there is no "was this shot a crit" event to count -
+this is the same expected-value treatment the damage path already uses (see
+`_helpers.expected_shots_per_proc` for the rule that generalises it). **Do not
+fold it to a fixed shot count at build time** (`N / own_crit_rate`): Fienn's
+acceptance condition (2026-07-20) was that a deck's crit buffs must move it, and
+a build-time constant ignores every ally buffer. Known limit: the shot loop runs
+per unit, so crit buffs applied by an ALLY's per-shot rules processed later are
+not reflected (burst / Full-Burst-triggered crit buffs are - that covers the
+usual buffers). First consumers: EVE's Unstable Energy (44 crits), Julia:
+Signature's Crescendo.
 `"sequence"` (gap #10, Scarlet: Black
 Shadow: `threshold` is `{"requirements": [3, 6, 9], "own_burst_window":
 (duration, [1, 2, 3])}` and the rules slot holds ONE RULE LIST PER STAGE -
@@ -814,6 +827,26 @@ when `use_pre_reset` is set. Wired via `raid_simulator`'s `resource_gated_buffs`
 param, exposed per-Nikke via `_RESOURCE_GATED_BUFF_BUILDERS` /
 `get_resource_gated_buffs`. First consumer: Soda's ATK +65.25%/15s (gated on
 Golden Chip's pre-reset count >= 30).
+
+**Holding a unit's burst back — `burst_delay` on the deck entry.** For a unit
+whose burst is not simply "ready when the cooldown says so". `burst_cycle`'s
+member dict takes an optional `burst_delay`, and all three forms fold into one
+ready-time (`_ready_at`), so tier selection and eligibility keep the same
+arithmetic:
+
+- `{"skip_cycles": N}` — out of the opening N cycles. Diesel: Winter Sweets'
+  Highlight needs a cycle to pass before the status is settled, so a static slug
+  would over-credit it.
+- `{"not_before": T}` — held until T seconds.
+- `{"min_interval": S}` — stretches the EFFECTIVE cooldown to S. Elegg: Boom and
+  Shock uses `not_before` 78s + `min_interval` 54s, both derived from her own
+  fill values.
+
+**The trap: `min_interval` measures from the ACTUAL fire time (`last_fired_at`),
+not the CDR-rewound `last_used_at`.** It stands for a resource filling on wall
+clock, and a wall-clock resource does not fill faster because an ally cut the
+cooldown. A delayed unit alone in its tier would stall the cycle, but
+`ALLOWED_SHAPES` puts at least two units in Burst 3, so search never hits that.
 
 **Per-cycle Full Burst length.** Two shapes, and picking the wrong one is the
 whole difficulty:

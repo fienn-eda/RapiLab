@@ -5,6 +5,25 @@
 정하기 위한 문서. `special-mechanics.md`(패턴 카탈로그)와
 `encoded-nikkes.md`(유닛별 보류 내역)의 상위 집계판이다.
 
+## 이 문서를 고치는 법 — 상태는 두 곳에만 적는다 (2026-08-17)
+
+**갭 표가 「됐나 안 됐나」의 출처**이고, 그 갭을 다루는 절(있으면)이 「왜·어떻게」를
+말한다. **그 둘 말고 상태를 되뇌는 목록을 새로 만들지 말 것.**
+
+이건 취향이 아니라 이 문서가 실제로 틀렸던 방식이다. **본문 없이 상태만 적는 목록은
+반드시 어긋난다** — 닫는 사람은 자기가 쓰는 절을 고치지 그 목록을 찾아가지 않기
+때문이다. 확인된 사례:
+
+- 「Pattern B」가 해소 뒤 **한 달 넘게** 옛 「권장 착수 순서」 목록에서 열린 방향으로
+  읽혔다. 그 목록은 2026-08-17에 걷어냈다.
+- 레이 아야나미의 Anti A.T. Field가 **착륙 다음 줄에 착륙했다고 적혀 있는데도**
+  바로 위 요약줄과 갭 표에서 미착수로 남아 있었다(2026-08-17에 코드 대조로 발견).
+
+그래서 갭을 닫을 때 고칠 자리는 **표 행 + 그 절 제목** 둘이다. 셋째 자리가 보이면
+그 자리를 지우는 것이 맞다. 우선순위(「임팩트 순」)는 **순서**를 말하는 목록이지
+상태를 말하는 목록이 아니다 — 다만 그 항목들은 본문을 함께 싣고 있어서 지금까지
+어긋나지 않았다.
+
 ## 재집계 — 아래 「우선순위 요약」 표는 44유닛 시절 것이다 (2026-08-13)
 
 이 문서의 우선순위 표는 **lootandwaifus 44유닛에 문구 스캔을 한 번 돌린 결과**다(「집계
@@ -1669,6 +1688,12 @@ Fienn 실측 6점(2026-07-29, 60fps), 최대 잔차 **1.10프레임**:
 
 ## 우선순위 요약 (막힌 유닛 수 기준 — 카운트 기준일 2026-07, 맨 위 재집계 절 참고)
 
+**이 표가 상태의 출처다.** 갭을 닫으면 여기 「확장 규모」 칸을 **해소 (날짜) —
+무엇으로**로 바꾸고 갭 이름에 취소선을 긋는다. 그게 안 되어 있으면 그 갭은 열린
+것으로 읽힌다 — 코드에 능력이 있어도 그렇다(2026-08-17에 그 상태로 발견된 행이
+있었다). 표만으로는 「왜」를 알 수 없으니 사연이 있는 갭은 아래 절에 본문을 쓰고,
+**상태는 여기서만** 말한다. 위 「이 문서를 고치는 법」 참고.
+
 | # | 엔진 갭 | 막힌 유닛 (근사) | 확장 규모 | 성격 |
 |---|---|---:|---|---|
 | ~~1~~ | **per-shot 트리거 + 발사 카운터** (노멀공격 N회 / 풀차지 N회 / N shot마다 / 마지막 탄) | ~30 (합집합) | **완료 (2026-07-11 `per_shot_rules`, 2026-07-12 "마지막 탄" 잔여 변형까지 완료)** | 신규 트리거 |
@@ -3223,66 +3248,19 @@ Fienn이 2026-08-03에 맥스웰로 실측해 **배율이 변형된 무기에도
 
 ## 권장 착수 순서
 
-- ~~#4 데미지 타입 배선~~ — ✅ 완료 (2026-07-10, 데미지 타입 모델링).
-- ~~#1 per-shot 트리거 + 카운터~~ — ✅ 완료 (2026-07-11, `per_shot_rules` + record-then-compute).
-- ~~#2 자원 트래킹 (Pattern A)~~ — ✅ 완료 (2026-07-12, named-resource).
-- ~~count-스케일 넉 경로~~ — ✅ 완료 (2026-07-12, `resource_scaled_nukes` + `burst_hit_counts`
-  + periodic fill; 첫 소비자 Julia/Julia-signature/Cinderella/Guillotine).
-- ~~자원 reset + resource_gated_buffs + FB창 한정 fill + squad-burst-cycle-conditional
-  fill + dynamic_hit_count_nukes~~ — ✅ 완료 (2026-07-12, eb3 Pattern-A 배치: Quency·
-  Soda·Maiden).
-- ~~fire_delay+own_burst_delayed + own-status-window fill + full_burst_bonus_eligible
-  + resource_scaled_nukes의 resource 선택화~~ — ✅ 완료 (2026-07-12, eb4 배치: Asuka·
-  Mana). Pattern A는 이제 (Ark Ranger류 Pattern B와 소수 미검증 후보를 제외하면)
-  사실상 소진됨.
-- ~~#7 FB창/자기상태창 한정 per-shot 트리거~~ — ✅ 완료 (2026-07-15,
-  `per_shot_rules`의 `every_during_full_burst`/`every_during_own_status_window`
-  모드; Soda·Asuka 잔여 소비). 같은 날 기존 per-shot 능력만으로 helm-aquamarine·
-  anis-sparkling-summer도 신규 인코딩(Phase A1). **같은 날 후속 배치로 grave·velvet도
-  gap #7 소비 완료** (Overheat II/III·Bullets of Love). jill-valentine 재검증 중
-  신규 소규모 갭 **#9 reload 후 첫 발 마커** 발견(미착수). rapi-red-hood는 gap
-  #7·#9 어느 것으로도 안 풀리는 프로젝타일-런치 상태머신으로 확인, 보류.
-1. **막힌 나머지 per-shot 유닛 재인코딩 배치** — gap #7 소비자는 이제 Soda·Asuka·
-   Grave·Velvet 4명, 남은 후보는 modernia(검증 전) 하나. 이 배치의 나머지 가치는
-   gap #1/#2 잔여 per-shot 유닛(rei-ayanami류 등)에 있음 — 데이터 확인 → 인코딩.
-- ~~#5 enemy-element 조건 (boss_element)~~ — ✅ 완료 (2026-07-16,
-  `boss_is_element` + `enemy_def_percent` 배선; Brid ⚠→✅·Helm:Aqua·Marciana(신규) 소비).
-- ~~ark-ranger-black (gap #2 Pattern B, 개별)~~ — ✅ 브래킷 우회로 인코딩 완료
-  (2026-07-16, `part_destructible` 보스 플래그). Pattern B **일반 프리미티브**는
-  여전히 미착수(아래 2번 항목).
-- ~~#3 무기종/티어부분집합 스코프 + #6 FB창 periodic + #8 자원-fill-트리거 타 유닛
-  버프 + #9 reload 후 첫 발 마커~~ — ✅ 완료 (2026-07-16 Phase C 배치; 소비
-  Ark·Arcana·Tove·Ada Wong(신규)·Little Mermaid·Maiden·Jill).
-2. **남은 방향:** ~~#2 Pattern B(시간감쇠 게이지·변신, 일반 프리미티브 — Mihara류)~~
-   [**2026-08-14 완전 해소** — 다섯 슬러그 중 엔진 갭이었던 것은 하나도 없었다.
-   상세는 위 「Pattern B 해체」 절. **2026-08-16 정정:** 이 줄이 그때 안 고쳐져
-   착수 순서만 보는 사람에게는 계속 열린 방향으로 읽히고 있었다] ·
-   상태머신(~~diesel-winter-sweets~~[**2026-07-19 완료** — Intro/Highlight 2슬러그,
-   위 버스트 스케줄 정책 소비]·~~bready~~[완료]·~~eve~~[**2026-07-20 완료** —
-   `every_n_critical_hits`]·~~milk-blooming-bunny~~[**2026-07-20 완료** — gap #11 재분류]) ·
-   ~~무기변형~~(**v1+계획 2 완료, 2026-07-19** — `weapon_mode_schedules` 세그먼트
-   primitive, snow-white·maxwell·laplace-signature·red-hood 소비(v1) +
-   `MODE_VARIANTS` 듀얼슬러그(cinderella-crystal-wave-mg/-snipe)·
-   `full_burst_windows`+`boss_core_hittable`(rapi-red-hood 발사기 완성 + 신규
-   rapi-red-hood-b1)·`every_during_segment`/`every_outside_segment`(snow-white-
-   heavy-arms, 신규 상태머신 불필요로 판명)(계획 2) 소비; velvet 변형딜·laplace
-   base 5초 변형만 잔여(보류 확정), 상세는 위 "이미 만든 것" 참고) ·
-   ~~아군 총탄 카운터~~(**2026-07-18 완료** — `scheduled_nukes`+`context.shot_times`
-   병합으로 확장 없이 해결, Little Mermaid ⚠→✅) ·
-   ~~not-in-Full-Burst per-shot 창 필터~~(**2026-07-18 완료** —
-   `every_outside_full_burst`, Velvet Sticky Fingers 소비) ·
-   ~~**유닛별 버스트 스케줄 정책**~~(**2026-07-19 완료** — `burst_cycle` 멤버가
-   선택적 `burst_delay`를 가짐: `{"skip_cycles": N}`(앞 N사이클 제외) ·
-   `{"not_before": T}`(T초 전 금지) · `{"min_interval": S}`(실효 쿨을 S로 연장).
-   세 형태 모두 멤버별 ready time 한 곳(`_ready_at`)에 합쳐져 티어 선택과
-   eligibility가 동일 산술을 유지한다(기존 fractional-CDR 반올림 회귀 방어 유지).
-   **소비**: diesel-winter-sweets-highlight(`skip_cycles: 1` — 1사이클을 걸러야
-   Highlight 상태가 확정되므로 정적 슬러그로는 과대평가) ·
-   elegg-boom-and-shock(`not_before` 78초 + `min_interval` 54초, 둘 다 그녀의
-   fill 값에서 유도). **함정**: `min_interval`은 CDR로 되감기는 `last_used_at`이
-   아니라 **실제 발동 시각(`last_fired_at`)** 에서 재야 한다 — 벽시계로 차는
-   자원은 아군 CDR로 빨라지지 않는다. 지연 유닛이 자기 티어에 혼자면 사이클이
-   안 뜨지만, `ALLOWED_SHAPES`상 B3는 항상 2명 이상이라 탐색에선 발생 불가).
+**남은 일감은 위 「임팩트 순」이 순서까지 정해 두었고, 어떤 갭이 열려 있는지는
+갭 표가 정한다.** 이 자리에는 2026-07-10 ~ 07-19의 엔진 확장 changelog가 있었는데,
+전부 완료 항목이라 「상세는 위 …절」로 가리키기만 하면서 **상태를 한 번 더 되뇌고
+있었다.** 실제로 그 목록의 `Pattern B` 줄이 해소 뒤 한 달 넘게 열린 방향으로 읽혔고,
+그 사실이 그 줄 안에 정정으로 적혀 있었다(2026-08-16). 되뇜을 지우는 것이 그 결함을
+고치는 방법이라 2026-08-17에 걷어냈다.
 
-각 확장은 TDD로, 인벤토리가 증명한 최소 범위만. 착수 시 이 문서의 해당 유닛 목록으로
-"진짜 풀리는지"를 검증하고, 풀린 유닛은 배치 인코딩한다.
+그 목록에만 있던 능력 하나 — 버스트 스케줄 정책 `burst_delay`의 세 형태
+(`skip_cycles` · `not_before` · `min_interval`)와 **`min_interval`은 CDR로 되감기는
+`last_used_at`이 아니라 실제 발동 시각 `last_fired_at`에서 재야 한다**는 함정 — 은
+사라지지 않고 **엔진 능력 카탈로그로 옮겼다**(`engine-capabilities.md`, 「Holding a
+unit's burst back」). 능력 문서의 제자리는 원래 거기다.
+
+착수 방식은 그대로다: 확장은 TDD로, 인벤토리가 증명한 **최소 범위만**. 착수할 때
+이 문서의 해당 유닛 목록으로 「진짜 풀리는지」를 먼저 검증하고, 풀린 유닛은 배치
+인코딩한다.
