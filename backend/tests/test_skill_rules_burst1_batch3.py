@@ -6,7 +6,11 @@ from app.effects import EffectRegistry
 from app.skill_rules.little_mermaid import build_little_mermaid_rules
 from app.skill_rules.moran import build_bring_it_on_per_shot_rules, build_moran_rules
 from app.skill_rules.soline_frost_ticket import build_soline_frost_ticket_rules
-from app.skill_rules.tove import build_tove_rules
+from app.skill_rules.tove import (
+    build_tove_rules,
+    emergency_crafted_bullets_chance_refund,
+    emergency_crafted_bullets_refund,
+)
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 ALLY = {"slug": "ally", "element": "Fire"}
@@ -577,3 +581,28 @@ def test_tove_base_burst_atk_window_is_ten_seconds_not_fifteen():
     # 2.32% of caster ATK per stack, x3 stacks (the derived full-stack steady state).
     assert round(reg.total_for("flat_atk", ALLY, 0.0), 2) == round(300000 * 0.0232 * 3, 2)
     assert reg.total_for("flat_atk", ALLY, 10.1) == 0.0
+
+
+def test_tove_base_chance_trigger_becomes_its_expected_shot_interval():
+    """"There is a 5% chance of activating when attacking" - a roll this
+    deterministic engine cannot make, taken at its expected value instead
+    (Fienn's ruling, 2026-08-17): one proc per 20 shots.
+
+    The two builds put DIFFERENT MEANINGS in the same slot - `_01` is a chance
+    on the base and a shot count on the Favorite Item - so they cannot share a
+    builder here even though the rest of the kit does.
+    """
+    refund = emergency_crafted_bullets_chance_refund(
+        {"emergency_crafted_bullets": TOVE_BASE_EMERGENCY_CRAFTED_BULLETS})
+    assert refund.every_shots == 20
+    assert refund.percent == 5.31
+    assert refund.rounds == 0  # 탄창의 퍼센트로 선언한다, 발수가 아니라
+
+
+def test_tove_favorite_item_refund_still_reads_its_slot_as_a_shot_count():
+    """같은 슬롯을 확률로 읽으면 시그니처가 「10% 확률 = 10발마다」가 되어
+    우연히 그럴듯한 숫자를 낸다 - 그래서 이쪽도 함께 못박는다."""
+    refund = emergency_crafted_bullets_refund(
+        {"emergency_crafted_bullets": TOVE_SIG_EMERGENCY_CRAFTED_BULLETS})
+    assert refund.every_shots == 10
+    assert refund.percent == 5.31

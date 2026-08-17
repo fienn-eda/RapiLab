@@ -400,7 +400,11 @@ from app.skill_rules.takina_inoue import (
     build_suppression_initiated_rules,
     build_suppression_initiated_weapon_mode_schedule,
 )
-from app.skill_rules.tove import build_tove_rules, emergency_crafted_bullets_refund
+from app.skill_rules.tove import (
+    build_tove_rules,
+    emergency_crafted_bullets_chance_refund,
+    emergency_crafted_bullets_refund,
+)
 from app.skill_rules.velvet import build_velvet_per_shot_rules, build_velvet_rules
 from app.skill_rules.red_hood import (
     build_red_hood_rules,
@@ -1490,10 +1494,11 @@ _SKILL_AMMO_REFUNDS = {
     # The Queen's Gaze: "when landing 60 normal attack(s), Reloads 20 round(s)
     # of ammunition" - no boss condition on this one.
     "ludmilla-winter-owner": (queens_gaze_ammo_refund, None),
-    # Emergency-Crafted Bullets, Favorite Item build only: "Activates after 10
-    # normal attack(s). Reload 5.31% of the magazine" - a plain shot counter,
-    # unlike the base build's 5% roll (which stays out of this table).
+    # Emergency-Crafted Bullets. The two builds trigger it differently and read
+    # `_01` as different things - a shot count on the Favorite Item, a chance on
+    # the base - so each gets its own builder (see the module).
     "tove-signature": (emergency_crafted_bullets_refund, None),
+    "tove": (emergency_crafted_bullets_chance_refund, None),
 }
 
 

@@ -20,6 +20,11 @@ TOVE_SIGNATURE_EMERGENCY_CRAFTED_BULLETS = {
 }
 TOVE_SIGNATURE = {"emergency_crafted_bullets": TOVE_SIGNATURE_EMERGENCY_CRAFTED_BULLETS}
 
+# 같은 불릿의 base 빌드(char_tove-nikke.json skills[0], lv10). 다른 것은 `_01`
+# 하나뿐인데 그 하나가 발수가 아니라 **확률**이다.
+TOVE_BASE = {"emergency_crafted_bullets": {
+    **TOVE_SIGNATURE_EMERGENCY_CRAFTED_BULLETS, "description_value_01": "5"}}
+
 # "Effect 1: Normal Attack Damage Multiplier -40% for 9 sec", "Effect 2:
 # Reloads 21% magazine(s)", "Effect 3: ATK +46.8%", "Effect 4: Attack Damage
 # +36%", "Deals 6.62% of final ATK as additional damage"
@@ -44,10 +49,19 @@ def test_tove_signature_hands_back_three_rounds_of_her_sixty():
     assert refund.rounds_for(60) == 3
 
 
-def test_tove_base_keeps_its_probability_roll_deferred():
-    # "There is a 5% chance of activating when attacking" - the engine is
-    # deterministic, so the base build stays out of _SKILL_AMMO_REFUNDS.
-    assert get_skill_ammo_refund("tove", TOVE_SIGNATURE) is None
+def test_tove_base_takes_its_probability_roll_at_expected_value():
+    """"There is a 5% chance of activating when attacking" - the engine never
+    rolls, so the trigger is resolved at its expected value of one proc per 20
+    shots (Fienn's ruling, 2026-08-17).
+
+    Fed the BASE fixture on purpose: `description_value_01` is a CHANCE here and
+    a shot count on the Favorite Item, and the signature's 10 would come out as
+    "every 10 shots" under either reading - a fixture mix-up this test could not
+    see.
+    """
+    refund, element = get_skill_ammo_refund("tove", TOVE_BASE)
+    assert refund == AmmoRefund(every_shots=20, percent=5.31)
+    assert element is None
 
 
 def test_asuka_reloads_21_percent_of_her_magazine_at_her_own_burst():

@@ -128,6 +128,26 @@ measured in the fight), so a `hit_rate` bullet DOES move the recorded-raid
 numbers for SMG/AR/SG holders; the raid-rotation bosses the app ships still
 carry `null`.
 
+**A "chance to activate" trigger is resolved at its EXPECTED VALUE, not rolled
+(Fienn, 2026-08-17).** The engine is deterministic and already treats every
+other probability this way — each hit scaled by `crit_rate`, each shot by
+`core_hit_rate`, `per_critical_hit_every` accumulating the live crit rate rather
+than counting real crits. So "there is a p% chance of activating when attacking"
+becomes one activation every `100/p` shots, via
+`_helpers.expected_shots_per_proc(chance_percent)` (rounded to a whole shot,
+because the counters that consume it index shots). First consumer: Tove's base
+Emergency-Crafted Bullets, 5% → every 20 shots.
+
+Two things this does NOT license. **It does not unblock a chance sitting on a
+trigger the engine has no timeline for** — Sugar's Black Typhoon is "a 20%
+chance of activating when COVER IS ATTACKED", and with no incoming attacks
+modeled there is no event stream to thin; it stays deferred at p=1.0 as much as
+at p=0.2 (gap #14). And **it does not let one builder serve two builds whose
+slot means different things**: Tove's `description_value_01` is a chance on the
+base and a shot count on the Favorite Item, so each has its own builder. Sharing
+one would have reloaded the base every 5 shots — four times too often, and
+plausible enough to survive review.
+
 **The spread has a second axis: where the round sits in its magazine
 (2026-08-15).** `accuracy.SPREAD_CONVERGENCE` holds `{weapon: (opening
 diameter, per-round tightening)}` and today has one entry — MG opens every

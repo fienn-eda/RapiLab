@@ -16,10 +16,15 @@ Modeled (DPS-relevant):
   own base magazine in raid_simulator) plus the block's squad Critical Damage
   +5.24%. Both continuous under the full-stack assumption below. The crit
   damage does NOT mirror the stack count: "stacks up to 3 time(s)" sits on the
-  Max Ammo line only, so it lands once. The Favorite Item build's own trigger
-  ("Reload 5.31% of the magazine") is a plain shot counter, unlike the base
-  build's roll - `emergency_crafted_bullets_refund`, registered against
-  "tove-signature" only.
+  Max Ammo line only, so it lands once.
+- Emergency-Crafted Bullets' reload ("Reload 5.31% of the magazine"), on BOTH
+  builds. Their triggers differ and so do their builders: the Favorite Item
+  counts shots ("after 10 normal attacks", `emergency_crafted_bullets_refund`),
+  the base rolls ("5% chance when attacking",
+  `emergency_crafted_bullets_chance_refund`) and is taken at its expected
+  interval of 20 shots. Worth +1.07% of her own damage, +0.20% of a
+  Crown/Helm/Red Hood/Blanc deck (measured 2026-08-17) - it is a self-only
+  refund, so it moves her magazine and nobody else's.
 - Modification Successful (dollskills[1]): squad Crit Rate up (continuous while
   Temporary Modification is fully stacked); shotgun allies additionally get
   Attack Speed +42.24% continuously (member-subset scope, gap #3 - live-read
@@ -36,22 +41,20 @@ multiplier. That is now derived rather than asserted, and it holds on BOTH
 builds despite their different triggers (Fienn, 2026-07-24):
 
   The Favorite Item stacks on "every 10 normal attacks". The base stacks on a
-  "5% chance when attacking", which this engine cannot roll - taken at expected
-  value that is one proc per 20 shots. At the engine's AR cadence (12 shots/sec)
-  20 shots is ~1.7 sec, so the 3-stack cap is reached by ~60 shots (~5 sec) and
-  the ~1.7-sec refill interval stays well inside each stack's 5-sec life, so it
-  never decays back. In a 180-sec fight the assumption is therefore wrong only
-  for the opening ~5 sec, and it is the base build - the weaker one - that
-  carries the small overcredit.
+  "5% chance when attacking", taken at its expected value of one proc per 20
+  shots (`_helpers.expected_shots_per_proc`). At the engine's AR cadence (12
+  shots/sec) 20 shots is ~1.7 sec, so the 3-stack cap is reached by ~60 shots
+  (~5 sec) and the ~1.7-sec refill interval stays well inside each stack's
+  5-sec life, so it never decays back. In a 180-sec fight the assumption is
+  therefore wrong only for the opening ~5 sec, and it is the base build - the
+  weaker one - that carries the small overcredit.
 
 Not modeled:
-- The base build's Emergency-Crafted Bullets reload ("There is a 5% chance of
-  activating when attacking") is a probability roll, which this engine cannot
-  make. The Favorite Item build's own trigger is a plain shot counter instead,
-  and is modeled - see `emergency_crafted_bullets_refund`.
+- Nothing DPS-relevant.
 """
 from app.attack_rate import AmmoRefund
-from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
+from app.skill_rules._helpers import (buff_rule, expected_shots_per_proc,
+                                      member_subset_buff_rule)
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -125,12 +128,30 @@ def build_tove_rules(values):
 
 def emergency_crafted_bullets_refund(values):
     """"Activates after 10 normal attack(s). Affects self. Reload 5.31% of the
-    magazine." - the Favorite Item build's own trigger, a plain shot counter,
-    unlike the base build's 5% roll. She is an AR with 60 rounds, so the
-    percentage is worth 3 whole rounds; it is declared as a percentage anyway
-    so a max-ammo buff moves it the way the game does."""
+    magazine." - the Favorite Item build's trigger, a plain shot counter. She is
+    an AR with 60 rounds, so the percentage is worth 3 whole rounds; it is
+    declared as a percentage anyway so a max-ammo buff moves it the way the game
+    does."""
     bullet = values["emergency_crafted_bullets"]
     return AmmoRefund(
         every_shots=int(float(bullet["description_value_01"])),
+        percent=float(bullet["description_value_02"]),
+    )
+
+
+def emergency_crafted_bullets_chance_refund(values):
+    """The same bullet on the BASE build, whose trigger is "There is a 5% chance
+    of activating when attacking" - taken at its expected value, one proc per 20
+    shots (`expected_shots_per_proc`).
+
+    Separate from the Favorite Item builder on purpose: `description_value_01`
+    holds a CHANCE here and a SHOT COUNT there, so the one slot means two things
+    and one function cannot read both. Sharing it would make the base build
+    reload every 5 shots - four times too often, and a number plausible enough
+    to survive review.
+    """
+    bullet = values["emergency_crafted_bullets"]
+    return AmmoRefund(
+        every_shots=expected_shots_per_proc(float(bullet["description_value_01"])),
         percent=float(bullet["description_value_02"]),
     )

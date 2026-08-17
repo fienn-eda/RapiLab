@@ -573,3 +573,29 @@ def max_hp_scaled_atk_rule(
             registry.add(effect, applied_at=time)
 
     return _rule(trigger, action, condition)
+
+
+def expected_shots_per_proc(chance_percent):
+    """"There is an X% chance of activating when attacking" -> how many shots
+    one activation costs on average.
+
+    This engine is deterministic: it never rolls, and the damage path already
+    resolves every other probability by its expected value (each hit is scaled
+    by `crit_rate`, each shot by `core_hit_rate`, and `every_n_critical_hits`
+    accumulates the live crit rate rather than counting real crits). Fienn's
+    ruling, 2026-08-17: a chance-to-activate trigger is resolved the same way -
+    a p% chance per shot becomes one proc every 100/p shots.
+
+    What this does NOT unblock: a chance sitting on a trigger the engine has no
+    timeline for. Sugar's Black Typhoon is "a 20% chance of activating when
+    COVER IS ATTACKED", and the engine models no incoming attacks, so there is
+    no event stream to thin - it stays deferred at p=1.0 as much as at p=0.2.
+
+    Rounded to a whole shot, because the counters that consume it
+    (`AmmoRefund.every_shots`, per-shot rule thresholds) index shots.
+    """
+    if not 0 < chance_percent <= 100:
+        raise ValueError(
+            f"chance must be a percentage in (0, 100], got {chance_percent!r} - "
+            f"a 0% chance never procs and has no expected interval")
+    return max(1, round(100 / chance_percent))
