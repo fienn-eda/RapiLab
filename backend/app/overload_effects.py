@@ -4,9 +4,16 @@ Fienn confirmed overload values are additive on top of the base stat shown
 in the character info tab (not already folded in), so these are modeled as
 ordinary percentage-bonus Effects with duration=None (always active).
 
-Some overload stats (crit rate, charge speed, max ammo) have no consumer yet
-because the attack-rate model they'd feed into doesn't exist. They're still
-named and converted so nothing is silently dropped before that model exists.
+All eight stats in NAME_TO_STAT now reach damage: crit rate and the two crit /
+charge damage buckets through `calculate_damage`, charge speed and max ammo
+through `attack_rate` (charge cadence and magazine size), and hit rate through
+`accuracy.core_hit_rate` on an encounter that sets a core diameter.
+
+`other_elemental_bonus` is the one with a gate rather than a consumer problem:
+`calculate_damage` pays it only when the holder actually has elemental
+advantage, so a big roll is worth exactly zero against a same-element boss.
+Cinderella: Crystal Wave is Iron and the calibration boss is Iron, which makes
+her 90.01% line inert there (measured 2026-08-17).
 """
 from app.effects import Effect
 from app.overload_decode import (GEAR_SLOTS, MAX_LEVEL,
