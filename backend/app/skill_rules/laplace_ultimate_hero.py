@@ -68,10 +68,20 @@ Modeled (DPS-relevant):
 
 Not modeled / deferred:
 - Warm Up's Charge Speed +10% per stack (skills[0]): not modeled as a buff
-  because it is already IN the measurement - the 4.0s build time Fienn timed
-  (1.0 + 0.9 + 0.8 + 0.7 + 0.6) is the ramp itself. Encoding it as a live
-  charge-speed buff on top would double-count it, and it never holds max
-  anyway (5 stacks are consumed to fire the transform).
+  because it is already IN the constant - the 4.0s build (1.0 + 0.9 + 0.8 +
+  0.7 + 0.6) IS that ramp. Encoding it as a live charge-speed buff on top would
+  double-count it, and it never holds max anyway (5 stacks are consumed to fire
+  the transform).
+
+  **A range reading of ~4.4s and "5% per stack" is not evidence against this**
+  (`docs/measurements/charge-speed-scaling.md`). That reading came from an alt
+  account whose skill levels were all 1, and the per-stack value is LEVEL
+  SCALED: `description_value_02` is 5% at Lv1 and 10% at Lv10. A Lv1 ramp is
+  1.00 + 0.95 + 0.90 + 0.85 + 0.80 = 4.50s, which is what was timed. The deck
+  builder simulates max levels, so 4.0s is the right constant and stays
+  (Fienn, 2026-08-17). The transform PERIOD is a separate open question - 16.1s
+  read against 12.5s modeled - and skill level does not touch it, since the
+  transform's 120 rounds and the 5-stack cap are both level-independent.
 """
 from app.attack_rate import reload_time_with_speed
 from app.effects import Effect, max_ammo_percent_total
