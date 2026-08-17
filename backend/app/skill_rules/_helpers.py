@@ -272,13 +272,24 @@ def round_buff_rule(trigger, buffs, shots=1, cap=None):
     return SkillRule(trigger=trigger, action=action)
 
 
-def linear_resource_buff(stat, per_stack, scope, lifetime=None):
+def linear_resource_buff(stat, per_stack, scope, lifetime=None, lifetime_refreshes=False):
     """A resource-derived buff whose value grows linearly with the stack count:
     `per_stack` per stack (e.g. Guillotine's EXP: ATK +1.81% per stack; Modernia's
-    Crit Damage +14.25% per stack). lifetime None = permanent accumulation; a
-    number = each stack expires that many seconds after its fill. Build a
-    ResourceSpec around one or more of these (see effects.ResourceSpec)."""
-    return ResourceBuff(stat=stat, scope=scope, value_fn=lambda count: per_stack * count, lifetime=lifetime)
+    Crit Damage +14.25% per stack). Build a ResourceSpec around one or more of
+    these (see effects.ResourceSpec).
+
+    Three lifetimes, and the skill text picks:
+    - `None` = permanent accumulation ("stacks up to N ... continuously"), and
+      also the exact model for a timed stack whose fills always arrive inside
+      its duration (Leona's Roar, Centi's Field Discussion).
+    - a number with `lifetime_refreshes=True` = "stacks up to N and lasts for D
+      sec": ONE clock the whole stack shares, restarted by every fill. This is
+      the usual reading of that clause.
+    - a number alone = each stack on its own clock. The rarer case - justify it
+      in the docstring.
+    """
+    return ResourceBuff(stat=stat, scope=scope, value_fn=lambda count: per_stack * count,
+                        lifetime=lifetime, lifetime_refreshes=lifetime_refreshes)
 
 
 def leveled_resource_buff(stat, per_level, level_fn, scope, lifetime=None):

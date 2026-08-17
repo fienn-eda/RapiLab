@@ -8,7 +8,11 @@ Modeled (DPS-relevant):
   of Critical Damage +14.25% AND Max Ammunition Capacity -5.04% (the ammo line is
   a `▼`, so each stack SHRINKS her magazine), each stacking up to 5 and lasting
   10 sec - modeled as one "evolution" resource (filled every 200 shots, cap 5)
-  driving two 10-sec linear buffs.
+  driving two linear buffs. The 10 sec is ONE clock every new stack restarts
+  (`lifetime_refreshes`, the Raven ruling): her 200-hit mark comes round every
+  ~4 sec, so the chain never breaks and she holds the cap. Read as five
+  independent timers she settled at 3 - worth **+2.95% to her, +1.33% to the
+  deck** on a DEF-8000 boss (`scripts/audit_stack_lifetime_refresh.py`).
 - Giant Leap (skills[1]) squad Hit Rate +8.56% for 15 sec on Full Burst entry.
   It buys HER nothing - an MG's spread converges to 10px, already inside any
   plausible core - but it is "Affects all allies", so it is the deck's SG/SMG/AR
@@ -108,10 +112,11 @@ def build_modernia_resources(values):
             cap=stack_cap,
             buffs=[
                 linear_resource_buff(
-                    "other_critical_damage_sources", crit_per_stack, "self", lifetime=stack_duration
+                    "other_critical_damage_sources", crit_per_stack, "self",
+                    lifetime=stack_duration, lifetime_refreshes=True,
                 ),
                 linear_resource_buff("max_ammo_percent", -ammo_cut_per_stack, "self",
-                                     lifetime=stack_duration),
+                                     lifetime=stack_duration, lifetime_refreshes=True),
             ],
         )
     ]

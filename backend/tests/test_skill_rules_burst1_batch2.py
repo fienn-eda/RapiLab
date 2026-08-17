@@ -322,6 +322,34 @@ def test_zwei_frame_analysis_crit_stacks_are_capped_and_gated_on_pierce_attacks_
     assert round(buff.value_fn(3), 4) == 0.45  # 3 stacks * 15%
 
 
+def test_zwei_crit_stacks_share_one_clock_and_die_together():
+    """"Critical Rate ▲ 15% for 5 sec, stacks up to 3 time(s)" is ONE clock
+    every new stack restarts (the Raven ruling). Inside her 10-sec window her SG
+    fills it faster than 5 sec either way, so the cap is reached under both
+    readings - what the shared clock changes is the TAIL: the three stacks fall
+    off together 5 sec after her last shot in the window instead of decaying one
+    at a time. She buffs the squad's crit rate, so that tail is worth
+    +1.70% to the deck (scripts/audit_stack_lifetime_refresh.py)."""
+    (spec,) = build_frame_analysis_resources(ZWEI)
+    buff = spec.buffs[0]
+    assert buff.lifetime_refreshes is True
+
+    ctx = SquadContext([SquadMember("zwei-signature", burst_tier=1, element="Electric")])
+    for shot in range(1, 8):
+        ctx.fill_resource("zwei-signature", "pierce_attacks_101", 1.0, shot * 0.67)
+
+    # Her last shot in the window lands at 4.69. Just before the shared clock
+    # runs out the squad still holds all three stacks, where per-stack expiry
+    # has already walked them down to one.
+    assert ctx.resource_count("zwei-signature", "pierce_attacks_101", 9.5, spec.cap,
+                              buff.lifetime, lifetime_refreshes=True) == 3
+    assert ctx.resource_count("zwei-signature", "pierce_attacks_101", 9.5, spec.cap,
+                              buff.lifetime) == 1
+    # Then the whole stack goes at once, 5 sec after that last shot.
+    assert ctx.resource_count("zwei-signature", "pierce_attacks_101", 9.7, spec.cap,
+                              buff.lifetime, lifetime_refreshes=True) == 0
+
+
 DKW = {
     "calm_sniping": {"description_value_01": "3", "description_value_02": "13.55", "description_value_03": "10"},
     # Assault Formation (skills[1]), Lv.10, left-to-right: CDR count/sec (deferred),

@@ -149,6 +149,30 @@ def test_full_charge_stacks_cap_at_two_and_expire_after_three_seconds():
     assert buff.value_fn(2) == 6.3628
 
 
+def test_full_charge_stacks_share_one_clock():
+    """"for 3 sec. Stacks up to 2 times" is ONE clock every shot restarts (the
+    Raven ruling). Her charged shots come ~2 sec apart, inside 3, so the pair
+    holds through the gap and then goes together - where per-stack expiry drops
+    the older half while the newer one lives on."""
+    (spec,) = build_diesel_resource_specs(VALUES)
+    buff = spec.buffs[0]
+    assert buff.lifetime_refreshes is True
+
+    ctx = SquadContext([SquadMember(DIESEL_HIGHLIGHT, 3, "Fire", "RL")])
+    for shot in range(1, 4):
+        ctx.fill_resource(DIESEL_HIGHLIGHT, "full_charge_encore", 1.0, shot * 2.0)
+
+    # 1.5 sec past her last shot: the shared clock still holds both, per-stack
+    # expiry has already dropped the older one.
+    assert ctx.resource_count(DIESEL_HIGHLIGHT, "full_charge_encore", 7.5, spec.cap,
+                              buff.lifetime, lifetime_refreshes=True) == 2
+    assert ctx.resource_count(DIESEL_HIGHLIGHT, "full_charge_encore", 7.5, spec.cap,
+                              buff.lifetime) == 1
+    # Both stacks expire together, 3 sec after the last shot.
+    assert ctx.resource_count(DIESEL_HIGHLIGHT, "full_charge_encore", 9.1, spec.cap,
+                              buff.lifetime, lifetime_refreshes=True) == 0
+
+
 # --- Damage-over-time nukes ---------------------------------------------
 
 
