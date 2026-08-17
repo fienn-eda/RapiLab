@@ -633,6 +633,29 @@ value_fn(count) at every time. First consumers: `modernia.py` (timed capped),
 `guillotine_winter_slayer.py` (permanent + leveled + core-conditional),
 `cinderella.py` (periodic fill), `laplace.py` (outside-own-status-window).
 
+**READ THE CLAUSE BEFORE PICKING A LIFETIME.** "stacks up to N time(s) and
+lasts for D sec" is NOT N independent D-second timers. It is ONE timer the
+whole stack shares, and every new stack restarts it (the Raven ruling, Fienn
+2026-07-17; re-confirmed in the range on Maiden: Ice Rose 2026-08-17). So:
+
+- **Fills faster than D → the count reaches the cap and holds.** The chain can
+  only break on a gap LONGER than D. If the unit's own cadence never leaves
+  such a gap, `lifetime=None` (permanent accumulation) reproduces the game
+  exactly, and that is the encoding to use - `leona.py`, `centi.py` and
+  `rosanna_signature.py` all say so in their docstrings, with a test asserting
+  the inequality (a gap wider than D turns the test red).
+- **Only reach for a numeric `lifetime` when the count really does decay** -
+  a fill source that stops (a window closing, a transform taking the weapon
+  away). `ResourceBuff.lifetime_refreshes` is the flag for "timed, but the
+  whole stack shares one clock"; plain `lifetime` means per-stack expiry, which
+  is the rarer reading and the one to justify in the docstring.
+- **"stacks up to N ... continuously" is the permanent one** - that word is the
+  discriminator (Guillotine's EXP, Soda's Golden Chip, Cinderella's Beautiful).
+- Arithmetic of the shape "the cap can't bind, the cycle is longer than the
+  buff" is the tell that per-stack expiry was assumed. It was wrong on eight
+  encodings; `scripts/audit_stack_lifetime_refresh.py` censuses every bullet
+  pairing a cap with a duration and measures what the reading is worth.
+
 **Writing into an ALLY's resource** (2026-08-16). A skill can add stacks to a
 resource another unit owns - Rei Ayanami (Tentative Name)'s "Anti A.T. Field
 stacks ▲ 10" fills Asuka: WILLE's counter. The stacks belong to the HOLDER

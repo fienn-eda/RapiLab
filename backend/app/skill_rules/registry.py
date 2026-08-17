@@ -1063,14 +1063,9 @@ _BURST_HIT_COUNTS = {
 # ... applying buffs/debuffs) - see raid_simulator's `periodic_rules`. Kept
 # separate from _BUILDERS (event-triggered rules) and _PERIODIC_NUKE_BUILDERS.
 _PERIODIC_RULE_BUILDERS = {
-    # Her Full Charge hits keep cutting Field Discussion's cooldown, so the
-    # cycle it fires on is shorter than the listed 9 sec.
-    "centi-signature": lambda sv: [
-        (
-            centi.field_discussion_effective_cooldown(sv),
-            centi.build_field_discussion_periodic_rules(sv),
-        ),
-    ],
+    # Centi's Skill 2 also fires on a cut-down cooldown, but both its buffs
+    # stack to a cap, so it is a `_RESOURCE_SPEC_BUILDERS` entry filled
+    # `("periodic", ...)` instead - same tick times, a count on top.
     "dolla": lambda sv: [
         (
             ENTREPRENEURSHIP_COOLDOWN,
@@ -1195,6 +1190,8 @@ _RESOURCE_SPEC_BUILDERS = {
     "diesel-winter-sweets-intro": lambda sv: build_diesel_resource_specs(sv),
     "diesel-winter-sweets-highlight": lambda sv: build_diesel_resource_specs(sv),
     "zwei-signature": lambda sv: build_frame_analysis_resources(sv),
+    "rosanna-signature": lambda sv: rosanna_signature.build_frenzy_resources(sv),
+    "centi-signature": lambda sv: centi.build_field_discussion_resources(sv),
 }
 
 # A Nikke with a burst-fired nuke whose magnitude is gated/scaled by a named

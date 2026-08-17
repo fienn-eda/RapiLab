@@ -1,14 +1,16 @@
 """Centi's Favorite Item build - the same burst as base Centi, plus two buffs
 hung off Skill 2's cycle, whose length her Full Charge cooldown cut decides."""
+import pytest
+
 from app.effects import EffectRegistry
 from app.skill_rules.centi import (
     FIELD_DISCUSSION_COOLDOWN,
     build_centi_rules,
-    build_field_discussion_periodic_rules,
+    build_field_discussion_resources,
     field_discussion_effective_cooldown,
     start_construction_burst_percent,
 )
-from app.skill_rules.registry import get_periodic_rules
+from app.skill_rules.registry import get_periodic_rules, get_resource_specs
 from app.squad_engine import SquadContext, SquadMember, fire_trigger
 
 MAINTAIN_FORTIFICATION = {
@@ -62,43 +64,52 @@ def _fire(trigger, rules, time=0.0):
     return reg
 
 
-def _fire_skill_2(time=0.0):
-    return _fire("periodic", build_field_discussion_periodic_rules(CENTI_SIG), time)
+def test_skill_2_drives_one_ten_stack_counter_on_its_own_cycle():
+    (spec,) = build_field_discussion_resources(CENTI_SIG)
+    assert spec.name == "field_discussion"
+    assert spec.fill == ("periodic", field_discussion_effective_cooldown(CENTI_SIG))
+    assert spec.cap == 10
 
 
-def test_field_discussion_gives_the_squad_caster_scaled_atk():
-    reg = _fire_skill_2()
-    for member in (SELF, IRON_ALLY, FIRE_ALLY):
-        assert round(reg.total_for("flat_atk", member, 0.0), 4) == 4600.0
-    assert round(reg.total_for("flat_atk", SELF, 7.9), 4) == 4600.0
-    assert reg.total_for("flat_atk", SELF, 8.1) == 0.0
+def test_the_squad_atk_scales_with_the_caster_and_the_count():
+    (spec,) = build_field_discussion_resources(CENTI_SIG)
+    atk = next(b for b in spec.buffs if b.stat == "flat_atk")
+    assert atk.scope == "squad"
+    assert round(atk.value_fn(1), 4) == 4600.0
+    assert round(atk.value_fn(10), 4) == 46000.0
 
 
 def test_only_iron_code_allies_get_the_elemental_bonus():
-    reg = _fire_skill_2()
-    assert round(reg.total_for("other_elemental_bonus", SELF, 0.0), 4) == 0.0569
-    assert round(reg.total_for("other_elemental_bonus", IRON_ALLY, 0.0), 4) == 0.0569
-    assert reg.total_for("other_elemental_bonus", FIRE_ALLY, 0.0) == 0.0
-    # It outlasts the ATK buff by two seconds.
-    assert round(reg.total_for("other_elemental_bonus", SELF, 9.9), 4) == 0.0569
-    assert reg.total_for("other_elemental_bonus", SELF, 10.1) == 0.0
+    (spec,) = build_field_discussion_resources(CENTI_SIG)
+    elemental = next(b for b in spec.buffs if b.stat == "other_elemental_bonus")
+    assert elemental.scope == "element:Iron"
+    assert round(elemental.value_fn(1), 4) == 0.0569
+    assert round(elemental.value_fn(10), 4) == 0.569
 
 
-def test_repeat_activations_stack_rather_than_refresh():
-    """Both buffs read "Stacks up to 10 times", so two activations inside one
-    buff window are worth two stacks - never one refreshed stack."""
-    reg = EffectRegistry()
-    rules = {"centi-signature": build_field_discussion_periodic_rules(CENTI_SIG)}
-    ctx = _context()
-    for tick in (5.0, 10.0):
-        fire_trigger("periodic", rules, ctx, reg, tick)
-    assert round(reg.total_for("flat_atk", SELF, 10.0), 4) == 9200.0
-    assert round(reg.total_for("flat_atk", SELF, 13.1), 4) == 4600.0
+def test_both_stacks_reach_the_cap_because_her_cycle_outruns_them():
+    """"Stacks up to 10 times and lasts for 8 sec" (and 10 for the elemental
+    bullet) is ONE timer per stack-set that every new stack restarts (the Raven
+    ruling; Fienn confirmed the caps bind in game, 2026-08-17). Her cycle is
+    what makes the distinction decidable, and it decides it: the gap between
+    fills is the cooldown itself, and that never reaches the SHORTER of the two
+    durations, so neither counter can lapse and a permanent accumulation is the
+    faithful model. Per-stack expiry would hold her at 2 of the 10 stacks."""
+    (spec,) = build_field_discussion_resources(CENTI_SIG)
+    assert all(buff.lifetime is None for buff in spec.buffs)
+
+    gap = field_discussion_effective_cooldown(CENTI_SIG)
+    shortest_duration = float(FIELD_DISCUSSION["description_value_05"])
+    assert gap < shortest_duration, f"a {gap:.2f}s cycle would drop the counter"
 
 
-def test_field_discussion_rules_are_labeled_periodic():
-    assert all(r.trigger == "periodic"
-               for r in build_field_discussion_periodic_rules(CENTI_SIG))
+def test_a_split_stack_cap_is_refused_rather_than_guessed():
+    """One counter serves both bullets only while their caps agree; if the data
+    ever disagrees they are two different stacks and need a resource each."""
+    split = dict(CENTI_SIG, maintain_fortification=dict(
+        MAINTAIN_FORTIFICATION, description_value_05="5"))
+    with pytest.raises(ValueError, match="share a stack cap"):
+        build_field_discussion_resources(split)
 
 
 def test_full_charge_cooldown_cut_shortens_the_skill_2_cycle():
@@ -113,13 +124,15 @@ def test_full_charge_cooldown_cut_shortens_the_skill_2_cycle():
 
 
 def test_the_registry_hands_the_shortened_cooldown_to_the_engine():
-    """The buffs only land if the registry threads them through as periodic
-    rules - a builder nobody calls is silently inert."""
-    groups = get_periodic_rules("centi-signature", CENTI_SIG)
-    assert groups is not None and len(groups) == 1
-    cooldown, rules = groups[0]
-    assert round(cooldown, 4) == 5.7378
-    assert [r.trigger for r in rules] == ["periodic"]
+    """The buffs only land if the registry threads them through - a builder
+    nobody calls is silently inert. They moved from periodic rules to a
+    resource when the stacks were found to reach their cap, so BOTH sides are
+    asserted: the old path must be empty or the buffs would land twice."""
+    assert get_periodic_rules("centi-signature", CENTI_SIG) is None
+    specs = get_resource_specs("centi-signature", CENTI_SIG)
+    assert specs is not None and len(specs) == 1
+    assert specs[0].fill == ("periodic", pytest.approx(5.7378, abs=1e-4))
+    assert {buff.stat for buff in specs[0].buffs} == {"flat_atk", "other_elemental_bonus"}
 
 
 def test_the_favorite_item_leaves_the_burst_alone():

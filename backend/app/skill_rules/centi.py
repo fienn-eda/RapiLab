@@ -16,12 +16,14 @@ Modeled (DPS-relevant), base build:
 
 Modeled (DPS-relevant), Favorite Item build - everything above, unchanged (the
 item leaves her burst alone, so both builds share `build_centi_rules`), plus:
-- Field Discussion (dollskills[1], cd 9): all allies ATK +4.6% of her own ATK for
-  8 sec, stacking up to 10. Her headline contribution.
+- Field Discussion (dollskills[1], cd 9): all allies ATK +4.6% of her own ATK
+  PER STACK, stacking up to 10. Her headline contribution.
 - Maintain Fortification (dollskills[0]): all Iron Code allies (herself included)
-  Elemental Advantage Attack Damage +5.69% for 10 sec, stacking up to 10, fired
-  by that same Skill 2 activation. Advantage-gated by the damage formula, so it
-  pays out only against an Electric Code boss.
+  Elemental Advantage Attack Damage +5.69% per stack, up to 10, fired by that
+  same Skill 2 activation. Advantage-gated by the damage formula, so it pays
+  out only against an Electric Code boss.
+- Both counts come from one `ResourceSpec` filled on her Skill 2 cycle - see
+  `build_field_discussion_resources` for why the caps really do bind.
 - Maintain Fortification's Full Charge cooldown cut (9.16% of Skill 2's cooldown
   per full charge) decides both buffs' uptime, so it is modeled as a shortened
   periodic cooldown - see `field_discussion_effective_cooldown`.
@@ -31,8 +33,10 @@ the gap after it empties is three 0.5-sec loads rather than one
 (registry.CLIP_RELOAD_SPLITS). Her cadence - and the cooldown cut derived from
 it - accounts for that.
 
-Neither stack cap binds: the cycle is ~5.7 sec against 8- and 10-sec buffs, so at
-most 2 of the 10 stacks are ever live.
+Both stack caps bind: the 5.96-sec cycle keeps restarting the 8- and 10-sec
+timers the stacks share, so the counts climb to 10 and hold (Fienn confirmed in
+game, 2026-08-17). This file used to say the opposite - "at most 2 of the 10
+stacks are ever live" - which was per-stack-expiry arithmetic.
 
 Not modeled / deferred:
 - The shared shield (6.38% of final Max HP in the base build, 7% with the item),
@@ -41,7 +45,8 @@ Not modeled / deferred:
 - In the base build the Full Charge cooldown cut has nothing to accelerate -
   Skill 2 only raises a shield there - so it changes no damage and is left out.
 """
-from app.skill_rules._helpers import buff_rule
+from app.effects import ResourceSpec
+from app.skill_rules._helpers import buff_rule, linear_resource_buff
 
 # Seconds she waits between a charged shot and the next charge: 22 frames,
 # measured by Fienn (2026-07-30). Written as a frame count because that is the
@@ -113,19 +118,49 @@ def field_discussion_effective_cooldown(values):
     return FIELD_DISCUSSION_COOLDOWN / (1 + cut_per_second)
 
 
-def build_field_discussion_periodic_rules(values):
-    """Skill 2's activation carries both Favorite Item buffs. Fired by the
-    engine's periodic_rules at `field_discussion_effective_cooldown`, not by an
-    event trigger; trigger="periodic" is a label."""
+def build_field_discussion_resources(values):
+    """Skill 2's activation carries both Favorite Item buffs, and both are
+    stacking ones: "stacks up to 10 times and lasts for 8 sec" (squad ATK) and
+    "...for 10 sec" (Iron-Code Elemental Advantage Attack Damage). One counter
+    drives both, filled every `field_discussion_effective_cooldown`.
+
+    Each stack restarts the ONE timer the stack shares (the Raven ruling, Fienn
+    2026-07-17; Maiden: Ice Rose's range test 2026-08-17), and Fienn confirmed
+    2026-08-17 that this counter reaches its cap in game. Her cycle is 5.96 sec
+    against 8- and 10-sec stacks, so no gap can break the chain and the count
+    climbs to 10 and stays there. A permanent accumulation reproduces that
+    exactly - Leona's Roar is encoded the same way for the same reason. Read as
+    10 independent timers, the cycle instead held at most 2 stacks, which is
+    what these buffs used to be worth: the correction is **her +55.76% / the
+    deck +48.94%** (`scripts/measure_buffrule_stack_refresh.py`).
+
+    The cap is the ONLY thing that can bind here, so it is read from the skill
+    data rather than assumed - a shorter cycle (a deck's charge-speed buffs)
+    only tightens the chain, never breaks it.
+
+    ONE counter drives both because the two bullets fire on the same event and
+    neither can lapse; their stated durations differ (8 vs 10 sec) and would
+    need a counter each the moment a cycle longer than 8 sec could arise. The
+    two caps are checked against each other rather than assumed equal, so that
+    day announces itself here.
+    """
     discussion = values["field_discussion"]
     fortification = values["maintain_fortification"]
     squad_atk = float(discussion["description_value_03"]) / 100 * values["caster_atk"]
-    squad_atk_duration = float(discussion["description_value_05"])
     elemental = float(fortification["description_value_04"]) / 100
-    elemental_duration = float(fortification["description_value_06"])
-    return [
-        buff_rule("periodic", [
-            ("flat_atk", squad_atk, "squad", squad_atk_duration),
-            ("other_elemental_bonus", elemental, "element:Iron", elemental_duration),
-        ]),
-    ]
+    cap = int(float(discussion["description_value_04"]))
+    elemental_cap = int(float(fortification["description_value_05"]))
+    if cap != elemental_cap:
+        raise ValueError(
+            f"Centi's two Skill-2 buffs no longer share a stack cap "
+            f"({cap} vs {elemental_cap}); they need a resource each"
+        )
+    return [ResourceSpec(
+        name="field_discussion",
+        fill=("periodic", field_discussion_effective_cooldown(values)),
+        cap=cap,
+        buffs=[
+            linear_resource_buff("flat_atk", squad_atk, "squad"),
+            linear_resource_buff("other_elemental_bonus", elemental, "element:Iron"),
+        ],
+    )]
