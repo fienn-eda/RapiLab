@@ -1,7 +1,10 @@
 """Rosanna's Favorite Item build - adds a permanent elemental buff, a shot-counted
 Frenzy source her base build can never reach, and a Water-Code damage-taken debuff."""
+from app.attack_rate import generate_shot_times
 from app.effects import EffectRegistry
+from app.skill_rules.registry import get_resource_specs
 from app.skill_rules.rosanna_signature import (
+    build_frenzy_resources,
     build_rosanna_signature_per_shot_rules,
     build_rosanna_signature_rules,
     vendetta_signature_burst_percent,
@@ -70,50 +73,54 @@ def test_water_code_damage_taken_debuff_is_squad_scoped_and_gated():
         "damage_taken_up", SELF, 20.0) == 0.0
 
 
-def test_two_shot_counters_crit_at_120_and_frenzy_at_500():
+def test_the_crit_counter_is_the_only_per_shot_rule_left():
+    """Frenzy moved to a resource when its cap was found to bind; the crit
+    bullet names no stack count, so it stays a refreshing per-shot rule."""
     rules = build_rosanna_signature_per_shot_rules(ROSANNA_SIG)
-    assert sorted(every for every, _mode, _rules in rules) == [120, 500]
+    assert [every for every, _mode, _rules in rules] == [120]
     assert {mode for _every, mode, _rules in rules} == {"every"}
 
-    by_count = {every: shot_rules for every, _mode, shot_rules in rules}
+    (_every, _mode, shot_rules), = rules
     reg = EffectRegistry()
-    ctx = _ctx()
-    fire_trigger("per_shot", {"rosanna-signature": by_count[120]}, ctx, reg, 5.0)
+    fire_trigger("per_shot", {"rosanna-signature": shot_rules}, _ctx(), reg, 5.0)
     assert round(reg.total_for("crit_rate", SELF, 5.0), 4) == 0.1934
 
-    reg = EffectRegistry()
-    fire_trigger("per_shot", {"rosanna-signature": by_count[500]}, ctx, reg, 11.0)
-    assert round(reg.total_for("atk_percent", SELF, 11.0), 4) == 0.2261
-    assert reg.total_for("atk_percent", ALLY, 11.0) == 0.0
-    assert reg.total_for("atk_percent", SELF, 41.1) == 0.0  # 30s
+
+def test_frenzy_is_a_ten_stack_self_atk_counter_every_500_shots():
+    (spec,) = build_frenzy_resources(ROSANNA_SIG)
+    assert spec.name == "frenzy"
+    assert spec.fill == ("per_shot_every", 500)
+    assert spec.cap == 10
+    (buff,) = spec.buffs
+    assert buff.stat == "atk_percent"
+    assert buff.scope == "self"
+    assert round(buff.value_fn(1), 4) == 0.2261
+    assert round(buff.value_fn(10), 4) == 2.261
 
 
-def test_frenzy_stacks_when_the_counter_completes_again_inside_its_duration():
-    # 500 MG shots take ~11.1s of wall clock against a 30s buff, so a few
-    # instances overlap - the engine produces the real count rather than the
-    # skill text's unreachable 10-stack cap.
-    rules = build_rosanna_signature_per_shot_rules(ROSANNA_SIG)
-    frenzy = next(shot_rules for every, _m, shot_rules in rules if every == 500)
-    reg = EffectRegistry()
-    ctx = _ctx()
-    for t in (11.1, 22.2, 33.3):
-        fire_trigger("per_shot", {"rosanna-signature": frenzy}, ctx, reg, t)
-    assert round(reg.total_for("atk_percent", SELF, 33.3), 4) == round(0.2261 * 3, 4)
+def test_frenzy_reaches_its_cap_because_her_cadence_outruns_the_timer():
+    """"Stacks up to 10 times and lasts for 30 sec" is ONE timer every new
+    stack restarts (the Raven ruling; Fienn confirmed the cap binds in game,
+    2026-08-17), so the count climbs while consecutive fills stay inside 30
+    sec. Her MG puts 500 shots ~15 sec apart, nowhere near it, so the chain
+    cannot break and a permanent accumulation is the faithful model - the same
+    reasoning Leona's Roar is encoded on. Read as 10 independent timers, she
+    sat at the 2-3 instances that happen to overlap."""
+    (spec,) = build_frenzy_resources(ROSANNA_SIG)
+    assert spec.buffs[0].lifetime is None
+
+    shots = generate_shot_times("MG", 300, 1.67, 0.0, 180.0)
+    fills = shots[499::500]
+    gaps = [b - a for a, b in zip(fills, fills[1:])]
+    stated_duration = float(CAPO_DEI_CAPI["description_value_11"])
+    assert max(gaps) < stated_duration, f"a gap of {max(gaps):.2f}s would drop the count"
 
 
-def test_the_crit_buff_refreshes_while_frenzy_keeps_stacking():
-    """Only Frenzy's text names a stack count ("Stacks up to 10 times"); the
-    crit bullet does not, so it refreshes. 120 MG shots take 2.0 sec against a
-    3 sec duration, and the two bullets must not collapse into each other."""
-    by_count = {every: shot_rules for every, _mode, shot_rules in
-                build_rosanna_signature_per_shot_rules(ROSANNA_SIG)}
-    reg = EffectRegistry()
-    ctx = _ctx()
-    for time in (2.0, 4.0, 6.0, 8.0):
-        fire_trigger("per_shot", {"rosanna-signature": by_count[120]}, ctx, reg, time)
-    assert round(reg.total_for("crit_rate", SELF, 8.0), 4) == 0.1934
-
-    fire_trigger("per_shot", {"rosanna-signature": by_count[500]}, ctx, reg, 11.1)
-    fire_trigger("per_shot", {"rosanna-signature": by_count[120]}, ctx, reg, 12.0)
-    assert round(reg.total_for("atk_percent", SELF, 12.0), 4) == 0.2261
-    assert round(reg.total_for("crit_rate", SELF, 12.0), 4) == 0.1934
+def test_the_registry_threads_frenzy_through_as_a_resource():
+    """A builder nobody calls is silently inert - and Frenzy must not ALSO
+    remain a per-shot rule, or every stack would land twice."""
+    specs = get_resource_specs("rosanna-signature", ROSANNA_SIG)
+    assert specs is not None and len(specs) == 1
+    assert specs[0].name == "frenzy"
+    assert all(every != 500
+               for every, _mode, _rules in build_rosanna_signature_per_shot_rules(ROSANNA_SIG))

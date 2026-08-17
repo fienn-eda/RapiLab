@@ -19,12 +19,15 @@ Modeled (DPS-relevant):
 - On the Lam (dollskills[0]): self Critical Rate +19.34% for 3 sec every 120
   normal attacks, as in the base build. Unlike Frenzy below, that bullet names
   no stack count, so it refreshes rather than stacks.
-- Capo dei Capi (dollskills[1]): Frenzy, self ATK +22.61% for 30 sec, every 500
-  normal attacks on the stage target. At the engine's MG rate (60 shots/sec, 300
-  rounds, 1.67s reload) 500 shots take ~11.1 sec of wall clock, so about 2-3
-  instances overlap at steady state. The engine produces that real count; the
-  skill text's 10-stack cap is NOT reachable from this source alone (it assumes
-  the ally-incapacitation source too), so no cap is imposed here.
+- Capo dei Capi (dollskills[1]): Frenzy, self ATK +22.61% per stack, one stack
+  per 500 normal attacks on the stage target, capped at 10 - a `ResourceSpec`,
+  see `build_frenzy_resources`. Her 500 shots take ~15 sec of wall clock
+  against a 30-sec stack, and that duration is one shared timer every stack
+  restarts, so the chain never breaks and she climbs to the cap. Reading it as
+  10 independent 30-sec timers instead pinned her at the 2-3 instances that
+  happen to overlap, which is what this bullet used to hold - worth
+  **her +55.85% / the deck +20.90%** on a DEF-8000 boss
+  (`scripts/measure_buffrule_stack_refresh.py`).
 - Vendetta (dollskills[2], her burst, cd 40): 1310.4% plus the always-on
   Concealment rider's 561.6%, identical to the base build - see `rosanna.py`
   for why the rider is folded in rather than gated.
@@ -38,7 +41,8 @@ Not modeled / deferred:
 - The Burst Gauge fill (36.54%) - gauge charge time is a fixed sim input.
 - Concealment's untargetability and the enemy buff-strip - no engine concept.
 """
-from app.skill_rules._helpers import buff_rule, refreshing_buff_rule
+from app.effects import ResourceSpec
+from app.skill_rules._helpers import buff_rule, linear_resource_buff, refreshing_buff_rule
 from app.squad_engine import boss_is_element
 
 
@@ -80,19 +84,35 @@ def build_rosanna_signature_rules(values):
 
 def build_rosanna_signature_per_shot_rules(values):
     lam = values["on_the_lam"]
-    capo = values["capo_dei_capi"]
     crit_shots = int(float(lam["description_value_01"]))
     crit_rate = float(lam["description_value_03"]) / 100
     crit_duration = float(lam["description_value_04"])
-    frenzy_shots = int(float(capo["description_value_08"]))
-    frenzy_atk = float(capo["description_value_09"]) / 100
-    frenzy_duration = float(capo["description_value_11"])
     return [
         (crit_shots, "every", [
             refreshing_buff_rule("per_shot",
                                  [("crit_rate", crit_rate, "self", crit_duration)]),
         ]),
-        (frenzy_shots, "every", [
-            buff_rule("per_shot", [("atk_percent", frenzy_atk, "self", frenzy_duration)]),
-        ]),
     ]
+
+
+def build_frenzy_resources(values):
+    """Frenzy: "ATK +22.61%. Stacks up to 10 times and lasts for 30 sec", one
+    stack per 500 normal attacks.
+
+    The 30 sec is ONE timer the whole stack shares, restarted by every new
+    stack (the Raven ruling, Fienn 2026-07-17; Maiden: Ice Rose's range test
+    2026-08-17), and Fienn confirmed 2026-08-17 that this counter does reach
+    its cap in game. Her 500 shots take ~15 sec of wall clock, so no gap comes
+    close to 30 - the chain never breaks, and the count simply climbs to the
+    cap and stays. A permanent accumulation reproduces that exactly, which is
+    how Leona's Roar is encoded for the same reason; per-stack expiry would
+    instead settle at the 2-3 overlapping instances this bullet used to hold.
+    """
+    capo = values["capo_dei_capi"]
+    return [ResourceSpec(
+        name="frenzy",
+        fill=("per_shot_every", int(float(capo["description_value_08"]))),
+        cap=int(float(capo["description_value_10"])),
+        buffs=[linear_resource_buff(
+            "atk_percent", float(capo["description_value_09"]) / 100, "self")],
+    )]
