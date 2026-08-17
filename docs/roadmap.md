@@ -1187,10 +1187,12 @@ allies. Increases the stack count of stackable buffs by 1.」**
       ±15% **19/25 불변**, 미달 합계 −0.296B → **−0.200B**.
       **floor를 닫는 게 맞는 방향이었고(그녀는 과소였다) 조금 넘어갔다** — 이 프로젝트가
       반복해서 본 모양이다: 맞는 방향의 수정이 그 아래 깔린 반대 방향 오차를 드러낸다.
-- [ ] **같은 스킬의 셋째 불릿은 아직 보류.** 「Annihilation State인 아군에게
-      ATK +17.6% of caster ATK / 9초」 — **아군 상태**라 이번 모드(타깃 상태)로는
-      안 풀린다. 페이로드는 아스카 한 명에게만 가고, 같이 적힌 「대상 수 ▲1」·
-      「사거리 ▲500%」는 단일 보스에서 inert다.
+- [x] **같은 스킬의 셋째 불릿도 이후 지시로 배선됐다** (2026-08-16). 「Annihilation
+      State인 아군에게 ATK +17.6% of caster ATK / 9초」 — 타깃 상태가 아니라 **아군
+      상태**라 그 모드로는 안 풀렸고, `member_subset_buff_rule`이
+      `_helpers.ANNIHILATION_STATE_SLUGS` + `context.burst_used_this_cycle`로 거는
+      형태가 됐다(`rei_ayanami_tentative_name.py`). 페이로드는 아스카 한 명에게만
+      가고, 같이 적힌 「대상 수 ▲1」·「사거리 ▲500%」는 단일 보스에서 여전히 inert다.
 
 ### 인코딩 전수 점검 — 103 슬러그 (2026-08-17)
 
