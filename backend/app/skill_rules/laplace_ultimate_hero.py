@@ -12,14 +12,17 @@ same route red-hood took. Modeling it took her end-to-end damage from 46.4M to
 125.4M (2.70x) on a 180s solo-raid shell.
 
 The cycle is DERIVED, never hardcoded: the transform ends when the magazine
-empties, so its length scales with [Max Ammo Increase]. At the measured
-baseline (120 rounds, 2.5s reload) the period is 4.0 (Warm Up build) + 6.0
-(120/20 at SMG cadence) + 2.5 (reload) = 12.5s, matching Fienn's measured
-"about every 12.5 seconds".
+empties, so its length scales with [Max Ammo Increase]. At the baseline
+(120 rounds, 2.5s file reload) the period is 4.0 (Warm Up build) + 0.617
+(weapon-change motion) + 5.0 (120 at 24/s) + 2.648 (reload) = 12.265s.
+
+**The cadence is 24 shots/sec, not the SMG class constant 20** (Fienn's range
+reading, 2026-08-17): a magazine spans 293 and 292 frames first-shot to
+last-shot, ~2.5 frames per shot. See `docs/measurements/laplace-uh-transform-loop.md`.
 
 Modeled (DPS-relevant):
 - The weapon transform (skills[0]): each cycle silences her base RL and empties
-  one magazine at 9.45%/shot, 20 shots/sec (`build_laplace_transform_schedule`,
+  one magazine at 9.45%/shot, 24 shots/sec (`build_laplace_transform_schedule`,
   a weapon-mode segment). NO charge damage - Fienn measured that these shots do
   not take the 250% full-charge multiplier. `rate_of_fire` makes the profile a
   measurement anchor, so it takes no cadence buffs.
@@ -79,9 +82,11 @@ Not modeled / deferred:
   SCALED: `description_value_02` is 5% at Lv1 and 10% at Lv10. A Lv1 ramp is
   1.00 + 0.95 + 0.90 + 0.85 + 0.80 = 4.50s, which is what was timed. The deck
   builder simulates max levels, so 4.0s is the right constant and stays
-  (Fienn, 2026-08-17). The transform PERIOD is a separate open question - 16.1s
-  read against 12.5s modeled - and skill level does not touch it, since the
-  transform's 120 rounds and the 5-stack cap are both level-independent.
+  (Fienn, 2026-08-17). The transform PERIOD looked like a second anomaly at the
+  time - 16.1s read against 12.5s modeled - and it was not one either: that
+  reading spanned stretches where the range boss briefly vanishes, which drops
+  the aim and breaks the burst. Read on continuous fire only, the loop is
+  11.883s on that account and the model reproduces it (see `_plan_from_percent`).
 """
 from app.attack_rate import reload_time_with_speed
 from app.effects import Effect, max_ammo_percent_total
@@ -90,8 +95,18 @@ from app.squad_engine import SkillRule, burst_stage_entered
 
 SLUG = "laplace-ultimate-hero"
 
-# Fienn's in-game measurement (2026-07-24).
-SMG_RATE_OF_FIRE = 20.0        # the transformed weapon fires at SMG cadence
+# The transformed weapon's cadence, measured in the range on continuous-fire
+# stretches (Fienn, 2026-08-17): one magazine spans 293 and 292 frames between
+# its first and last shot, i.e. ~2.5 frames per shot. NOT the project's SMG
+# class constant, which is 20.0 - that one is the nominal 1440rpm (24.00/s)
+# rounded UP to a 3-frame grid, and this weapon does not sit on that grid.
+# Do not "fix" it back to RATE_OF_FIRE_60FPS["SMG"] for consistency.
+TRANSFORM_RATE_OF_FIRE = 24.0
+# The weapon change costs animation before the first transformed shot lands:
+# reload-complete to first transformed shot measured 305 frames, of which the
+# Warm Up build (5 full charges, same reading) is 268. See the module docstring
+# for what the remainder does and does not separate.
+TRANSFORM_MOTION_SECONDS = 37 / 60
 WARM_UP_BUILD_SECONDS = 4.0    # 5 full charges: 1.0 + 0.9 + 0.8 + 0.7 + 0.6
 OVER_ENERGY_MAX_STAGE = 4
 OVER_ENERGY_BURST_STAGE = 3    # "[Burst Stage 3 entry]" - the stage, not her cast
@@ -99,7 +114,7 @@ OVER_ENERGY_BURST_STAGE = 3    # "[Burst Stage 3 entry]" - the stage, not her ca
 # How many transform windows the Pierce grant is pre-registered for. A SkillRule
 # is not handed `fight_duration`, and effects landing past the fight's end never
 # become active, so this is a runaway guard sized far above any fight - 200
-# windows is ~2500 sec at the measured 12.5 sec period - not a quality knob.
+# windows is ~2500 sec at the baseline 12.3 sec period - not a quality knob.
 PREREGISTERED_TRANSFORMS = 200
 
 _ELECTRIC_POWER_GROUP = "electric_power_atk"
@@ -113,16 +128,31 @@ def _plan_from_percent(weapon, max_ammo_percent):
     Nothing here is a constant: the magazine the transform has to empty scales
     with [Max Ammo Increase] exactly like a normal magazine does (same
     `round(max_ammo * (1 + pct))` rule attack_rate uses), and the window is
-    just that magazine at SMG cadence. Period = Warm Up build + window +
-    reload. At the measured baseline (120 rounds, 2.5s reload) this is
-    4.0 + 6.0 + 2.5 = 12.5s, matching Fienn's "about every 12.5 seconds"."""
+    just that magazine at the transformed cadence.
+
+    Period = Warm Up build + weapon-change motion + window + reload, and the
+    reload term is the SAME expression the silent segment spends
+    (`reload_time_with_speed`), so the loop closes: the base weapon gets back
+    exactly build + motion between one reload ending and the next window
+    opening. Using the raw file value here instead left the two 0.148s apart.
+
+    At the baseline (120 rounds, 2.5s file reload) this is
+    4.0 + 0.617 + 5.0 + 2.648 = 12.265s. Fienn's range reading of the same loop
+    - first transformed shot to first transformed shot - is 713 frames =
+    11.883s on an account whose skill levels are 1 (a 4.47s build, not 4.0) and
+    whose Resilience cube shortens the reload to 1.917s; those two account
+    differences are the whole gap."""
     shots = max(1, round(int(weapon["max_ammo"]) * (1 + max_ammo_percent)))
-    window = shots / SMG_RATE_OF_FIRE
-    return shots, window, WARM_UP_BUILD_SECONDS + window + float(weapon["reload_time"])
+    window = shots / TRANSFORM_RATE_OF_FIRE
+    reload_seconds = reload_time_with_speed(float(weapon["reload_time"]), 0.0)
+    period = WARM_UP_BUILD_SECONDS + TRANSFORM_MOTION_SECONDS + window + reload_seconds
+    return shots, window, period
 
 
 def _transform_times(period, fight_duration):
-    times, t = [], WARM_UP_BUILD_SECONDS
+    """When each transform's FIRST SHOT lands - the build and the weapon-change
+    motion both come before it."""
+    times, t = [], WARM_UP_BUILD_SECONDS + TRANSFORM_MOTION_SECONDS
     while t < fight_duration:
         times.append(t)
         t += period
@@ -162,7 +192,7 @@ def _stage_times(period, window, shots, normals_per_stage, fight_duration):
         index = full_windows - 1 if remainder == 0 else full_windows
         if index >= len(times):
             break
-        into_window = window if remainder == 0 else remainder / SMG_RATE_OF_FIRE
+        into_window = window if remainder == 0 else remainder / TRANSFORM_RATE_OF_FIRE
         out.append((stage, times[index] + into_window))
     return out
 
@@ -317,10 +347,10 @@ def build_laplace_transform_schedule(values):
         profile = {
             "weapon": "SMG",
             "damage_percent": shot_percent,
-            "rate_of_fire": SMG_RATE_OF_FIRE,
+            "rate_of_fire": TRANSFORM_RATE_OF_FIRE,
         }
         reload_seconds = reload_time_with_speed(weapon["reload_time"], 0.0)
-        interval = 1.0 / SMG_RATE_OF_FIRE
+        interval = 1.0 / TRANSFORM_RATE_OF_FIRE
         segments = []
         for t in _transform_times(period, fight_duration):
             segments.append({"start": t, "until_shots": shots, "profile": profile})

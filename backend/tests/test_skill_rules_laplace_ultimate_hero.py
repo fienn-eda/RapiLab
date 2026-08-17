@@ -139,8 +139,9 @@ def test_pierce_rides_the_transform_window_not_her_burst():
     (Electric Power, Fully Full Charge). Mjolnir's text names no Pierce at all,
     so hanging it off her burst was both the wrong source and the wrong window.
 
-    At the measured baseline the transform runs 4.0-10.0, 16.5-22.5, ... (a 6.0
-    sec magazine on a 12.5 sec period)."""
+    At the baseline the transform runs 4.617-9.617, 16.881-21.881, ... (a 5.0
+    sec magazine at 24 shots/sec, on a 12.265 sec period - the first shot comes
+    after the Warm Up build AND the weapon-change motion)."""
     ctx = make_context()
     registry = EffectRegistry()
     rs = {"laplace-ultimate-hero": rules()}
@@ -148,16 +149,16 @@ def test_pierce_rides_the_transform_window_not_her_burst():
     assert registry.total_for("has_pierce", LAPLACE, now=5.0) == 0.0
 
     fire_trigger("full_burst_enter", rs, ctx, registry, time=5.0)
-    for inside in (4.0, 9.9, 16.5, 22.4):
+    for inside in (4.7, 9.5, 17.0, 21.8):
         assert registry.total_for("has_pierce", LAPLACE, now=inside) == 1.0, inside
-    for outside in (0.0, 3.9, 10.1, 16.4, 22.6):
+    for outside in (0.0, 4.5, 9.8, 16.8, 22.0):
         assert registry.total_for("has_pierce", LAPLACE, now=outside) == 0.0, outside
-    assert registry.total_for("has_pierce", ALLY, now=4.0) == 0.0  # self-only
+    assert registry.total_for("has_pierce", ALLY, now=4.7) == 0.0  # self-only
 
 
 def test_pierce_windows_stretch_with_max_ammo_like_the_transform_does():
-    """The window is the magazine at SMG cadence, so [Max Ammo Increase] makes
-    it longer - the same derivation the transform schedule itself uses."""
+    """The window is the magazine at the transformed cadence, so [Max Ammo
+    Increase] makes it longer - the same derivation the schedule itself uses."""
     from app.effects import Effect
 
     ctx = make_context()
@@ -165,9 +166,9 @@ def test_pierce_windows_stretch_with_max_ammo_like_the_transform_does():
     registry.add(Effect("max_ammo_percent", 0.5, "self", None, "laplace-ultimate-hero"),
                  applied_at=0.0)
     fire_trigger("full_burst_enter", {"laplace-ultimate-hero": rules()}, ctx, registry, time=5.0)
-    # 120 -> 180 rounds = a 9.0 sec window, so 4.0-13.0 instead of 4.0-10.0.
-    assert registry.total_for("has_pierce", LAPLACE, now=12.9) == 1.0
-    assert registry.total_for("has_pierce", LAPLACE, now=13.1) == 0.0
+    # 120 -> 180 rounds = a 7.5 sec window, so 4.617-12.117 instead of -9.617.
+    assert registry.total_for("has_pierce", LAPLACE, now=12.0) == 1.0
+    assert registry.total_for("has_pierce", LAPLACE, now=12.2) == 0.0
 
 
 def test_over_energy_stages_are_counted_in_shots_not_in_whole_transforms():
@@ -183,27 +184,30 @@ def test_over_energy_stages_are_counted_in_shots_not_in_whole_transforms():
 
     weapon = dict(CASTER_WEAPON_STATS)
     shots, window, period = _plan_from_percent(weapon, 0.0)
-    assert (shots, window, period) == (120, 6.0, 12.5)
+    assert (shots, window) == (120, 5.0)
+    assert period == pytest.approx(12.2647, abs=1e-4)
     baseline = _stage_times(period, window, shots, 240, 200.0)
-    # Stage 1 at the end of the 2nd window (4.0 + 12.5 + 6.0), stage 2 two more.
-    assert [t for _, t in baseline][:2] == pytest.approx([22.5, 47.5])
+    # Stage 1 at the end of the 2nd window (4.617 + 12.265 + 5.0), stage 2 two more.
+    assert [t for _, t in baseline][:2] == pytest.approx([21.8813, 46.4107], abs=1e-4)
 
     # +50% max ammo: 180 shots a window, so stage 1 needs 1 window + 60 shots
-    # and lands 3.0 sec INTO the second one rather than at its end. The clock
-    # does not move (4.0 + 15.5 + 3.0 = 22.5): 240 shots take 12 sec of firing
-    # either way and both layouts cross exactly one reload gap.
+    # and lands 2.5 sec INTO the second one rather than at its end. The clock
+    # does not move (4.617 + 14.765 + 2.5 = 21.881): 240 shots take 10 sec of
+    # firing either way and both layouts cross exactly one reload gap.
     shots, window, period = _plan_from_percent(weapon, 0.5)
-    assert (shots, window, period) == (180, 9.0, 15.5)
+    assert (shots, window) == (180, 7.5)
+    assert period == pytest.approx(14.7647, abs=1e-4)
     mid = _stage_times(period, window, shots, 240, 200.0)
-    assert mid[0][1] == pytest.approx(4.0 + period + 60 / 20.0) == pytest.approx(22.5)
+    assert mid[0][1] == pytest.approx(4.6167 + period + 60 / 24.0, abs=1e-4)
+    assert mid[0][1] == pytest.approx(21.8813, abs=1e-4)
 
     # +100%: 240 shots fit in ONE window, so the stage skips a reload gap
-    # entirely and arrives 6.5 sec sooner. That is the case the old "2
+    # entirely and arrives 7.3 sec sooner. That is the case the old "2
     # transforms per stage" constant could never express.
     shots, window, period = _plan_from_percent(weapon, 1.0)
-    assert (shots, window) == (240, 12.0)
+    assert (shots, window) == (240, 10.0)
     fast = _stage_times(period, window, shots, 240, 200.0)
-    assert fast[0][1] == pytest.approx(16.0)
+    assert fast[0][1] == pytest.approx(14.6167, abs=1e-4)
     assert fast[0][1] < baseline[0][1]
 
 

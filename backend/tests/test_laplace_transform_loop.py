@@ -1,12 +1,15 @@
 """Laplace: Ultimate Hero의 변신 루프 - 세그먼트 창, Over Energy 단계, Mjolnir 추가딜.
 
-앵커는 전부 Fienn 인게임 실측(2026-07-24). 기본 무기는 ShiftyPad 원본
-(RL, 120발, 2.5%, charge 1.0s, reload 2.5s) - 주기 4.0 + 6.0 + 2.5 = 12.5초가
-실측 "약 12.5초마다 변신"과 일치한다.
+앵커는 Fienn 인게임 실측(2026-07-24 · 케이던스와 모션은 2026-08-17 재측정).
+기본 무기는 ShiftyPad 원본(RL, 120발, 2.5%, charge 1.0s, reload 2.5s) - 주기는
+빌드 4.0 + 무기변경 모션 0.617 + 창 5.0(120발 ÷ 24발/초) + 재장전 2.648 =
+12.265초다. `docs/measurements/laplace-uh-transform-loop.md`.
 """
 from app.effects import Effect, EffectRegistry
 from app.skill_rules.laplace_ultimate_hero import (
-    SMG_RATE_OF_FIRE,
+    TRANSFORM_MOTION_SECONDS,
+    TRANSFORM_RATE_OF_FIRE,
+    WARM_UP_BUILD_SECONDS,
     build_laplace_stage_nukes,
     build_laplace_transform_schedule,
     build_laplace_ultimate_hero_rules,
@@ -37,14 +40,17 @@ def make_context(max_ammo_percent=0.0):
     return ctx
 
 
-def test_transform_window_is_one_magazine_at_smg_cadence():
+def test_transform_window_is_one_magazine_at_the_measured_cadence():
     schedule = build_laplace_transform_schedule(values())
     segs = schedule(make_context(), fight_duration=180.0)
 
     first = segs[0]
-    assert first["start"] == 4.0                       # Warm Up 5 full charges
+    # 빌드(풀차지 5발) 다음에 무기변경 모션이 있고, 그제서야 첫 발이 나간다.
+    assert first["start"] == WARM_UP_BUILD_SECONDS + TRANSFORM_MOTION_SECONDS
     assert first["until_shots"] == 120                 # empties the magazine
-    assert first["profile"]["rate_of_fire"] == SMG_RATE_OF_FIRE
+    # 24발/초는 실측이다. 무기군 SMG 상수(20.0)로 되돌리지 말 것 - 그 값은
+    # 공칭 1440rpm을 3프레임 격자로 올림한 것이고 이 무기는 그 격자에 없다.
+    assert first["profile"]["rate_of_fire"] == TRANSFORM_RATE_OF_FIRE == 24.0
     assert first["profile"]["damage_percent"] == 9.45
     # Fienn: SMG 대미지에 차지대미지 미적용
     assert "charge_damage_percent" not in first["profile"]
@@ -57,9 +63,9 @@ def test_transform_period_is_build_plus_window_plus_reload():
     # test_skill_rules_laplace_ultimate_hero.py), so the transform TIMES have
     # to be picked out by until_shots rather than read straight off segs.
     starts = [s["start"] for s in segs if "until_shots" in s]
-    # 4.0 + (120/20) + 2.5 = 12.5
-    assert starts[1] - starts[0] == 12.5
-    assert starts[:3] == [4.0, 16.5, 29.0]
+    # 4.0 + 0.6167 + (120/24) + 2.648 = 12.2647
+    assert round(starts[1] - starts[0], 4) == 12.2647
+    assert [round(s, 4) for s in starts[:3]] == [4.6167, 16.8813, 29.146]
 
 
 def test_window_and_period_scale_with_max_ammo_overload():
@@ -68,8 +74,8 @@ def test_window_and_period_scale_with_max_ammo_overload():
     segs = schedule(make_context(max_ammo_percent=0.5), fight_duration=180.0)
     transforms = [s for s in segs if "until_shots" in s]
     assert transforms[0]["until_shots"] == 180          # round(120 * 1.5)
-    # 4.0 + (180/20) + 2.5 = 15.5
-    assert transforms[1]["start"] - transforms[0]["start"] == 15.5
+    # 4.0 + 0.6167 + (180/24) + 2.648 = 14.7647
+    assert round(transforms[1]["start"] - transforms[0]["start"], 4) == 14.7647
 
 
 def test_segments_never_overlap():
@@ -81,7 +87,7 @@ def test_segments_never_overlap():
     segs = schedule(make_context(), fight_duration=180.0)
     for earlier, later in zip(segs, segs[1:]):
         if "until_shots" in earlier:
-            window_end = earlier["start"] + earlier["until_shots"] / SMG_RATE_OF_FIRE
+            window_end = earlier["start"] + earlier["until_shots"] / TRANSFORM_RATE_OF_FIRE
         else:
             window_end = earlier["end"]
         assert later["start"] >= window_end
@@ -100,15 +106,15 @@ def test_over_energy_stages_are_cumulative_every_two_transforms():
     registry = EffectRegistry()
     _fire_stage_rule(ctx, registry)
 
-    # stage 1 = 2번째 변신 창이 끝나는 순간 = 16.5 + 6.0 = 22.5
-    assert registry.total_for("flat_max_hp", LAPLACE, now=22.4) == 0.0
-    assert round(registry.total_for("flat_max_hp", LAPLACE, now=22.5), 2) == round(CASTER_MAX_HP * 0.02, 2)
-    # stage 2 = 4번째 창 끝 = 47.5 → 2 + 3 = 5%
-    assert round(registry.total_for("flat_max_hp", LAPLACE, now=47.5), 2) == round(CASTER_MAX_HP * 0.05, 2)
-    # stage 3 = 6번째 창 끝 = 72.5 → 2 + 3 + 7 = 12%
-    assert round(registry.total_for("flat_max_hp", LAPLACE, now=72.5), 2) == round(CASTER_MAX_HP * 0.12, 2)
-    # stage 4 = 8번째 창 끝 = 97.5 → 2 + 3 + 7 + 10.5 = 22.5%
-    assert round(registry.total_for("flat_max_hp", LAPLACE, now=97.5), 2) == round(CASTER_MAX_HP * 0.225, 2)
+    # stage 1 = 2번째 변신 창이 끝나는 순간 = 16.8813 + 5.0 = 21.8813
+    assert registry.total_for("flat_max_hp", LAPLACE, now=21.8) == 0.0
+    assert round(registry.total_for("flat_max_hp", LAPLACE, now=21.9), 2) == round(CASTER_MAX_HP * 0.02, 2)
+    # stage 2 = 4번째 창 끝 = 46.41 → 2 + 3 = 5%
+    assert round(registry.total_for("flat_max_hp", LAPLACE, now=46.5), 2) == round(CASTER_MAX_HP * 0.05, 2)
+    # stage 3 = 6번째 창 끝 = 70.94 → 2 + 3 + 7 = 12%
+    assert round(registry.total_for("flat_max_hp", LAPLACE, now=71.0), 2) == round(CASTER_MAX_HP * 0.12, 2)
+    # stage 4 = 8번째 창 끝 = 95.47 → 2 + 3 + 7 + 10.5 = 22.5%
+    assert round(registry.total_for("flat_max_hp", LAPLACE, now=95.5), 2) == round(CASTER_MAX_HP * 0.225, 2)
 
 
 def test_electric_power_atk_is_reapplied_with_the_bigger_max_hp():
