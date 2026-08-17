@@ -1198,8 +1198,10 @@ _RESOURCE_SPEC_BUILDERS = {
 # resource's count (e.g. a "mirrors the stack count" additional hit, or a
 # Hero-Level-scaled DoT) - see raid_simulator's `resource_scaled_nukes` param.
 # Each entry returns a list of spec dicts: {"resource", "cap", "base_percent",
-# "scale_fn", "tick_count", "tick_interval", "lifetime"(optional),
-# "damage_type"(optional)}.
+# "scale_fn", "tick_count", "tick_interval", "damage_type"(optional)}.
+# No lifetime here: the count is answered with the RESOURCE's own clock
+# (effects.ResourceSpec.lifetime), so a gate cannot disagree with the stack it
+# gates on.
 _RESOURCE_SCALED_NUKE_BUILDERS = {
     "ark-ranger-black": lambda sv: build_ark_ranger_dots(sv),
     "cinderella": lambda sv: build_glass_slippers_resource_scaled_nuke(sv),
@@ -1216,7 +1218,7 @@ _RESOURCE_SCALED_NUKE_BUILDERS = {
 # A Nikke with a BUFF gated/scaled by a named resource's count, read at the
 # owner's own burst times by default - see raid_simulator's
 # `resource_gated_buffs` param. Each entry returns a list of spec dicts:
-# {"resource", "cap", "use_pre_reset"(optional), "lifetime"(optional),
+# {"resource", "cap", "use_pre_reset"(optional),
 # "gate_fn"+"value" OR "value_per_stack", "scope" OR "member_filter",
 # "at"(optional, "full_burst_end"), "stat", "duration"}.
 _RESOURCE_GATED_BUFF_BUILDERS = {

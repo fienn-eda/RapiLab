@@ -103,9 +103,9 @@ def test_buster_segment_typing_is_gated_on_max_hero_vision():
     schedule = build_buster_weapon_mode_schedule(LAPLACE_SIGNATURE_VALUES)
     context = SimpleNamespace(burst_times={"laplace-signature": [20.0]})
     (segment,) = schedule(context, 180.0)
-    name, cap, lifetime, gate_fn = segment["profile"]["damage_type_gate"]
+    name, cap, gate_fn = segment["profile"]["damage_type_gate"]
 
-    assert (name, cap, lifetime) == (HERO_VISION_RESOURCE, 5, 15.0)
+    assert (name, cap) == (HERO_VISION_RESOURCE, 5)
     assert [gate_fn(count) for count in (0, 4)] == [0.0, 0.0]
     assert gate_fn(5) == 1.0
 

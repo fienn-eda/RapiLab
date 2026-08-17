@@ -149,7 +149,7 @@ def test_roar_stacks_do_not_expire_individually():
     permanent accumulation is the faithful model. Modelling it as per-stack
     expiry would pin her at 2 stacks for the whole fight."""
     (spec,) = build_leona_resources(LEONA)
-    assert spec.buffs[0].lifetime is None
+    assert spec.lifetime is None
 
     shots = generate_shot_times("SG", 9, 1.5, 0.0, 180.0)
     fills = shots[ROAR_SHOT_COUNT - 1::ROAR_SHOT_COUNT]

@@ -116,8 +116,12 @@ def build_crescendo_signature_resources(values):
                 "other_critical_damage_sources",
                 float(cres["description_value_02"]) / 100,
                 "self",
-                lifetime=float(cres["description_value_04"]),
             )],
+            # Same clause as base Julia's Crescendo, same shared clock: 15 sec
+            # restarted by every stack. Her crit cadence fills it far inside
+            # that, so the cap is held under either reading here.
+            lifetime=float(cres["description_value_04"]),
+            lifetime_refreshes=True,
         )
     ]
 

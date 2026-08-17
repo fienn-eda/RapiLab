@@ -318,7 +318,7 @@ def test_zwei_frame_analysis_crit_stacks_are_capped_and_gated_on_pierce_attacks_
     buff = spec.buffs[0]
     assert buff.stat == "crit_rate"
     assert buff.scope == "squad"
-    assert buff.lifetime == 5.0
+    assert spec.lifetime == 5.0
     assert round(buff.value_fn(3), 4) == 0.45  # 3 stacks * 15%
 
 
@@ -332,7 +332,7 @@ def test_zwei_crit_stacks_share_one_clock_and_die_together():
     +1.70% to the deck (scripts/audit_stack_lifetime_refresh.py)."""
     (spec,) = build_frame_analysis_resources(ZWEI)
     buff = spec.buffs[0]
-    assert buff.lifetime_refreshes is True
+    assert spec.lifetime_refreshes is True
 
     ctx = SquadContext([SquadMember("zwei-signature", burst_tier=1, element="Electric")])
     for shot in range(1, 8):
@@ -342,12 +342,12 @@ def test_zwei_crit_stacks_share_one_clock_and_die_together():
     # runs out the squad still holds all three stacks, where per-stack expiry
     # has already walked them down to one.
     assert ctx.resource_count("zwei-signature", "pierce_attacks_101", 9.5, spec.cap,
-                              buff.lifetime, lifetime_refreshes=True) == 3
+                              spec.lifetime, lifetime_refreshes=True) == 3
     assert ctx.resource_count("zwei-signature", "pierce_attacks_101", 9.5, spec.cap,
-                              buff.lifetime) == 1
+                              spec.lifetime) == 1
     # Then the whole stack goes at once, 5 sec after that last shot.
     assert ctx.resource_count("zwei-signature", "pierce_attacks_101", 9.7, spec.cap,
-                              buff.lifetime, lifetime_refreshes=True) == 0
+                              spec.lifetime, lifetime_refreshes=True) == 0
 
 
 DKW = {

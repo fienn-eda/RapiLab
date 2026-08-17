@@ -107,7 +107,7 @@ def test_frenzy_reaches_its_cap_because_her_cadence_outruns_the_timer():
     reasoning Leona's Roar is encoded on. Read as 10 independent timers, she
     sat at the 2-3 instances that happen to overlap."""
     (spec,) = build_frenzy_resources(ROSANNA_SIG)
-    assert spec.buffs[0].lifetime is None
+    assert spec.lifetime is None
 
     shots = generate_shot_times("MG", 300, 1.67, 0.0, 180.0)
     fills = shots[499::500]

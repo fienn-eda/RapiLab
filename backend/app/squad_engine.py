@@ -132,6 +132,12 @@ class SquadContext:
         # count toward the total; resource_count uses the latest reset at or
         # before the query time as its baseline instead of 0.
         self.resource_resets: dict[tuple[str, str], list[tuple[float, float, float]]] = {}
+        # (slug, resource-name) -> (lifetime, lifetime_refreshes), registered
+        # from each ResourceSpec at simulation setup. It is the ONE place a
+        # resource's clock lives, so every reader of the count agrees about
+        # when the stack expires - the buffs, and the gates that decide a nuke
+        # or a damage typing. See register_resource / resource_count.
+        self.resource_semantics: dict[tuple[str, str], tuple[float | None, bool]] = {}
         # 사이클별 Full Burst 확장 단계 [(start, end, {슬러그: 단계})]. 초가 아니라
         # 단계를 싣는 것은 소비자(소다의 per-shot 넉)가 "II단계인가"를 묻지
         # "5.0초인가"를 묻지 않기 때문 - 초에서 단계를 역추론하면 값이 우연히
@@ -149,6 +155,12 @@ class SquadContext:
 
     def record_burst_time(self, slug: str, time: float) -> None:
         self.burst_times[slug].append(time)
+
+    def register_resource(self, slug: str, spec) -> None:
+        """Record how long `spec`'s stack lives, so every later count query
+        answers with the resource's own clock rather than whatever the call
+        site happened to know. Called once per ResourceSpec at setup."""
+        self.resource_semantics[(slug, spec.name)] = (spec.lifetime, spec.lifetime_refreshes)
 
     def fill_resource(self, slug: str, name: str, amount: float, time: float) -> None:
         """Record that `slug`'s resource `name` gained `amount` at `time`."""
@@ -183,7 +195,17 @@ class SquadContext:
         timed rule the count instead settles at "fills per lifetime", which for
         her is about two - the reason her cap was once written off as unable to
         bind.
+
+        A resource REGISTERED on this context (see register_resource) answers
+        with its own clock and ignores both arguments, so every call site -
+        the buff pass, a nuke's `resource_gate`, a segment's damage typing, a
+        deferred gated buff - reads one semantic. The arguments remain for a
+        context with no registration, which is how the unit tests drive this
+        directly.
         """
+        registered = self.resource_semantics.get((slug, name))
+        if registered is not None:
+            lifetime, lifetime_refreshes = registered
         baseline = 0.0
         baseline_time = float("-inf")
         for reset_time, _pre_value, post_value in self.resource_resets.get((slug, name), []):

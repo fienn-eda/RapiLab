@@ -96,7 +96,7 @@ def test_both_stacks_reach_the_cap_because_her_cycle_outruns_them():
     durations, so neither counter can lapse and a permanent accumulation is the
     faithful model. Per-stack expiry would hold her at 2 of the 10 stacks."""
     (spec,) = build_field_discussion_resources(CENTI_SIG)
-    assert all(buff.lifetime is None for buff in spec.buffs)
+    assert spec.lifetime is None
 
     gap = field_discussion_effective_cooldown(CENTI_SIG)
     shortest_duration = float(FIELD_DISCUSSION["description_value_05"])

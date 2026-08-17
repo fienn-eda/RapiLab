@@ -182,8 +182,14 @@ def build_dagger_resource_specs(values):
         name=THIEFS_DAGGER,
         fill=("computed", lambda shot_times: dagger_timeline(shot_times, values)[0]),
         cap=cap,
-        buffs=[linear_resource_buff("hit_rate", per_stack_hit_rate, "self",
-                                    lifetime=stack_seconds)],
+        buffs=[linear_resource_buff("hit_rate", per_stack_hit_rate, "self")],
+        # "Stacks up to 3 times and lasts for 5 sec" - one clock the stack
+        # shares. The walk below reaches the cap and spends it in the same
+        # instant either way (source 1 is gated on the absence of a status that
+        # lasts exactly as long as the stack, so it can never add to a live
+        # one); the shared clock only changes how the leftovers decay.
+        lifetime=stack_seconds,
+        lifetime_refreshes=True,
         resets=[{
             "trigger": "computed",
             "value": 0,

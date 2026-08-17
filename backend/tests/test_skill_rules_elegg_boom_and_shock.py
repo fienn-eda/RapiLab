@@ -78,7 +78,7 @@ def test_ghost_atk_buff_is_caster_scaled_and_gated_at_one_ghost():
     atk_buff = ghost_spec().buffs[0]
     assert atk_buff.stat == "flat_atk"
     assert atk_buff.scope == "element:Water"  # she is Water, so it includes her
-    assert atk_buff.lifetime is None  # "continuously"
+    assert ghost_spec().lifetime is None  # "continuously"
     assert atk_buff.value_fn(0) == 0.0
     assert atk_buff.value_fn(1) == ELEGG_ATK * 0.162
     assert atk_buff.value_fn(13) == ELEGG_ATK * 0.162  # a threshold, not a ramp

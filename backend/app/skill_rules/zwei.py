@@ -186,8 +186,9 @@ def build_frame_analysis_resources(values):
             name="pierce_attacks_101",
             fill=("per_shot_every_during_own_status_window", 1, status_duration),
             cap=cap,
-            buffs=[linear_resource_buff("crit_rate", crit_rate_per_stack, "squad",
-                                        lifetime=stack_lifetime, lifetime_refreshes=True)],
+            buffs=[linear_resource_buff("crit_rate", crit_rate_per_stack, "squad")],
+            lifetime=stack_lifetime,
+            lifetime_refreshes=True,
             stackable_buff=True,
         )
     ]

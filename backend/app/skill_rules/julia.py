@@ -67,8 +67,9 @@ def build_crescendo_resources(values):
             name="crescendo",
             fill=("on_last_bullet",),
             cap=cap,
-            buffs=[linear_resource_buff("other_critical_damage_sources", per_stack, "self",
-                                    lifetime=lifetime, lifetime_refreshes=True)],
+            buffs=[linear_resource_buff("other_critical_damage_sources", per_stack, "self")],
+        lifetime=lifetime,
+        lifetime_refreshes=True,
         )
     ]
 

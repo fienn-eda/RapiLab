@@ -72,8 +72,13 @@ def test_hero_vision_cap_and_lifetime_come_from_the_data():
     (signature,) = build_hero_vision_signature_resources(signature_values())
     assert base.name == signature.name == HERO_VISION
     assert base.cap == signature.cap == 5
-    # The lifetime is NOT a ResourceSpec field - it is read at gate time, so it
-    # rides the gate tuple. This is where the two builds diverge.
+    # The stack's clock belongs to the RESOURCE, which is what lets this one
+    # carry a lifetime at all - it has no buffs to hang one on.
+    assert base.buffs == signature.buffs == []
+    assert (base.lifetime, signature.lifetime) == (5.0, 15.0)
+    assert base.lifetime_refreshes is signature.lifetime_refreshes is True
+    # The fill's own window is a different number: the transform she stops
+    # charging during, not the stack's life.
     assert base.fill[2] == 5.0        # the base transform's own duration
     assert signature.fill[2] == 10.0  # the signature's
 
@@ -125,18 +130,56 @@ def _gate_of(specs):
 def test_rider_is_gated_shut_below_max_stacks():
     for specs in (build_buster_scheduled_nukes(base_values()),
                   build_signature_buster_scheduled_nukes(signature_values())):
-        name, cap, lifetime, scale_fn = _gate_of(specs)
+        name, cap, scale_fn = _gate_of(specs)
         assert name == HERO_VISION
         assert cap == 5
         assert [scale_fn(count) for count in (0, 1, 4)] == [0.0, 0.0, 0.0]
         assert scale_fn(5) == 1.0
 
 
-def test_gate_lifetime_is_the_builds_own_stack_duration():
-    _n, _c, base_lifetime, _f = _gate_of(build_buster_scheduled_nukes(base_values()))
-    _n, _c, sig_lifetime, _f = _gate_of(
-        build_signature_buster_scheduled_nukes(signature_values()))
-    assert (base_lifetime, sig_lifetime) == (5.0, 15.0)
+def test_her_own_charge_cadence_opens_the_gate_on_the_base_build():
+    """The base gate was once written off as unable to open at all: a 5-sec
+    stack was read as needing five Full Charges INSIDE one 5-sec window, i.e.
+    1.00/sec against her 0.68/sec. On a clock the stack shares the requirement
+    is instead "consecutive charges no more than 5 sec apart", which she clears
+    with room to spare - so the count climbs to the cap and the 11.9% rider
+    fires. This test pins the distinction rather than the rate: at her cadence
+    the gate is open, and under per-stack expiry it never would be."""
+    (spec,) = build_hero_vision_resources(base_values())
+    ctx = make_context("laplace")
+    ctx.register_resource("laplace", spec)
+    for i in range(1, 8):  # a Full Charge every 1.47 sec, her measured cadence
+        ctx.fill_resource("laplace", HERO_VISION, 1.0, i * 1.47)
+
+    assert ctx.resource_count("laplace", HERO_VISION, 10.3, spec.cap) == 5
+    # The discarded reading, on the same fills: never more than fills-per-life.
+    ctx.resource_semantics[("laplace", HERO_VISION)] = (spec.lifetime, False)
+    assert ctx.resource_count("laplace", HERO_VISION, 10.3, spec.cap) == 4
+
+
+def test_the_stack_still_drains_when_her_charges_stop():
+    """The shared clock is not a permanent counter: her Buster window feeds it
+    nothing, so a long enough window empties the stack and shuts the gate
+    partway through - which is the whole reason the two builds' durations (5 vs
+    15 sec) matter at all."""
+    (spec,) = build_hero_vision_resources(base_values())
+    ctx = make_context("laplace")
+    ctx.register_resource("laplace", spec)
+    for i in range(1, 6):
+        ctx.fill_resource("laplace", HERO_VISION, 1.0, i * 1.47)
+
+    assert ctx.resource_count("laplace", HERO_VISION, 7.35, spec.cap) == 5
+    assert ctx.resource_count("laplace", HERO_VISION, 12.4, spec.cap) == 0
+
+
+def test_the_gate_names_no_lifetime_of_its_own():
+    """It used to carry a copy of the stack's duration, which is one place too
+    many for a number the game keeps once: a gate that could disagree with the
+    stack it gates on is a gate that will. The count now comes back on the
+    resource's registered clock."""
+    for gate in (_gate_of(build_buster_scheduled_nukes(base_values())),
+                 _gate_of(build_signature_buster_scheduled_nukes(signature_values()))):
+        assert len(gate) == 3
 
 
 def test_rider_rides_every_buster_tick():

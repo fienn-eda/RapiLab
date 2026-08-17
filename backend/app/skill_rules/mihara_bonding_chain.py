@@ -174,7 +174,7 @@ def build_mihara_scheduled_nukes(values, slug="mihara-bonding-chain"):
             "percent": dot_percent,
             "schedule": ensnaring_ticks,
             "damage_type": "sustained",
-            "resource_gate": (ENSNARING_CHAINS, cap, None, lambda count: count),
+            "resource_gate": (ENSNARING_CHAINS, cap, lambda count: count),
         },
     ]
 

@@ -69,7 +69,9 @@ as a 5-sec segment riding the tick rate measured here, which Fienn confirmed
 Additional Effect 2, the true-damage conversion, which is a signature-only
 bullet. Both builds share Hero Vision and the 11.9% rider it gates; the
 difference that matters there is the stack lifetime - 5 sec on the base
-against 15 here - which is why her gate opens and the base's never does.)
+against 15 here. Both gates open on a clock the stack shares; what the longer
+duration buys this build is surviving the transform window, where Full Charges
+stop - 96% of the fight at cap here against 69% on the base.)
 """
 from app.skill_rules._helpers import buff_rule, instant_nuke_pulse_rule
 from app.skill_rules.laplace import (
@@ -161,9 +163,15 @@ def build_buster_weapon_mode_schedule(values):
 
 
 def build_hero_vision_signature_resources(values):
-    """Hero Vision on this build: the same counter as the base's, but each
-    stack lasts 15 sec instead of 5, so the cap needs only 0.33 Full Charge
-    attacks/sec - a threshold she clears comfortably (0.66/sec measured)."""
+    """Hero Vision on this build: the same counter as the base's, but the stack
+    lasts 15 sec instead of 5.
+
+    The clock is shared and restarted by every Full Charge, so what the two
+    builds' durations really decide is how long the count survives a Buster
+    window, where fills stop: 15 sec outlasts the 10-sec transform, 5 sec does
+    not outlast even the base's 5-sec one by much. Measured on her own
+    timeline, the counter sits at its cap 96% of the fight here against 69% on
+    the base."""
     return build_hero_vision_resources(values)
 
 
