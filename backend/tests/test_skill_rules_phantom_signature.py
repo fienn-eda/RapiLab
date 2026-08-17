@@ -86,7 +86,8 @@ def test_the_dagger_drives_hit_rate_as_a_live_count():
     (spec,) = build_dagger_resource_specs(PHANTOM_SIG)
     assert spec.cap == 3
     (buff,) = spec.buffs
-    assert (buff.stat, buff.scope, buff.lifetime) == ("hit_rate", "self", 5.0)
+    assert (buff.stat, buff.scope) == ("hit_rate", "self")
+    assert (spec.lifetime, spec.lifetime_refreshes) == (5.0, True)
     assert [round(buff.value_fn(n), 4) for n in (0, 1, 2, 3)] == [
         0.0, 0.2575, 0.515, 0.7725]
 

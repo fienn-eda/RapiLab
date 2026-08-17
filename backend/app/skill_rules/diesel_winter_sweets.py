@@ -191,10 +191,10 @@ def build_diesel_resource_specs(values):
                     "sustained_damage_up",
                     _f(values, "sing_now", 4) / 100,
                     "self",
-                    lifetime=_f(values, "sing_now", 5),
-                    lifetime_refreshes=True,
                 )
             ],
+            lifetime=_f(values, "sing_now", 5),
+            lifetime_refreshes=True,
         )
     ]
 

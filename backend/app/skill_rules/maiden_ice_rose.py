@@ -213,8 +213,9 @@ def build_meditation_resources(values, caster_max_hp):
             buffs=[ResourceBuff(
                 stat="flat_max_hp", scope="self",
                 value_fn=lambda count: per_stack * count,
-                lifetime=duration, lifetime_refreshes=True,
             )],
+            lifetime=duration,
+            lifetime_refreshes=True,
             stackable_buff=True,
         )
     ]

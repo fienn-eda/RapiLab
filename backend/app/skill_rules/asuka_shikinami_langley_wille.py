@@ -145,7 +145,13 @@ def build_anti_at_field_resources(values):
             name=ANTI_AT_FIELD,
             fill=("per_shot_every_during_own_status_window", fill_every, duration),
             cap=cap,
-            buffs=[linear_resource_buff("damage_taken_up", per_stack, "squad", lifetime=stack_lifetime)],
+            buffs=[linear_resource_buff("damage_taken_up", per_stack, "squad")],
+            # "for 30 sec, stacks up to 30 time(s)" - one clock the stack
+            # shares. Her 10-shot mark comes round far faster than 30 sec, so
+            # the cap is held under either reading; the shared clock is simply
+            # what the clause says.
+            lifetime=stack_lifetime,
+            lifetime_refreshes=True,
             resets=[{"trigger": "own_burst_delayed", "delay": duration, "value": 0}],
         )
     ]

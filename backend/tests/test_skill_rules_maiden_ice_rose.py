@@ -98,8 +98,8 @@ def test_meditation_is_a_capped_stack_whose_life_refreshes_on_every_proc():
     (buff,) = spec.buffs
     assert buff.stat == "flat_max_hp"
     assert buff.scope == "self"
-    assert buff.lifetime == 15.0
-    assert buff.lifetime_refreshes is True
+    assert spec.lifetime == 15.0
+    assert spec.lifetime_refreshes is True
     # 6.34% of her own Max HP per stack.
     assert buff.value_fn(1) == pytest.approx(0.0634 * 50000)
     assert buff.value_fn(10) == pytest.approx(10 * 0.0634 * 50000)
@@ -131,8 +131,8 @@ def test_meditation_stacks_do_not_expire_one_by_one():
 
     def value_at(t):
         return buff.value_fn(ctx.resource_count(
-            "maiden-ice-rose", spec.name, t, spec.cap, buff.lifetime,
-            lifetime_refreshes=buff.lifetime_refreshes))
+            "maiden-ice-rose", spec.name, t, spec.cap, spec.lifetime,
+            lifetime_refreshes=spec.lifetime_refreshes))
 
     assert value_at(10.0) == pytest.approx(per_stack)
     assert value_at(16.0) == pytest.approx(2 * per_stack)

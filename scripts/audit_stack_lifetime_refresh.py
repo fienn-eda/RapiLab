@@ -1,4 +1,4 @@
-"""Which timed resource stacks would change if their lifetime REFRESHED?
+"""Is every timed stack read on the clock its skill text gives it?
 
 WHY: NIKKE's "X, stacks up to N time(s) and lasts for D sec" clause is ONE
 timer the whole stack shares - every new stack restarts D for all of them, so
@@ -6,13 +6,13 @@ the count climbs toward the cap while consecutive fills stay inside D (the
 Raven ruling, Fienn 2026-07-17; re-confirmed on Maiden: Ice Rose in the range,
 2026-08-17). Read as N independent D-second timers instead, a counter settles
 at "fills per lifetime" and a cap the game reaches every fight is never
-touched. `ResourceBuff.lifetime_refreshes` encodes the right rule.
+touched. `ResourceSpec.lifetime` + `lifetime_refreshes` encode the right rule.
 
-This answers the only question that decides whether a unit is affected: does
-the semantic CHANGE the count? It does not when fills already arrive fast
-enough to hold the cap under the independent-timer rule, and it does not when
-they are so far apart that the chain breaks anyway. So the audit reports both
-the count and the damage, and a unit is only worth opening when one moves.
+Every affected encoding was corrected on 2026-08-17, so this now reads as a
+GUARD: it reports each resource's declared clock beside what the discarded
+reading would have made of the same fill timeline, and what that would cost in
+damage. A row where the two counts differ is a row where the declaration is
+load-bearing - if one ever drifts back, the number here moves.
 
 It reports in two parts, because the bug has two hiding places:
 
@@ -32,10 +32,10 @@ test, not a licence to flip the flag.
 The counts come from the engine's own `SquadContext.resource_count` over the
 fill timeline a real 180-second deck simulation produces - never a
 reimplementation (docs/insights.md: measurement scripts must ask the module).
-The damage half wraps `resource_count` itself rather than flipping the flag on
-each buff, because a resource's lifetime also travels inside the gate tuples
-that decide nukes and damage typing, and those call sites take no flag -
-Laplace's Hero Vision has NO buff at all, only a gate.
+The damage half rewrites what the resources REGISTER rather than any one
+buff, because a count is also read by the gates that decide a nuke or a damage
+typing - Laplace's Hero Vision has no buff at all, only gates, and measuring
+her any other way reads "no effect" for the wrong reason.
 
 WHEN TO RUN: after encoding a resource that pairs a `cap` with a duration, and
 whenever the stack semantics are revisited.
@@ -47,8 +47,9 @@ whenever the stack semantics are revisited.
     python scripts/audit_stack_lifetime_refresh.py --slug leona \
         --assume-lifetime leona:roar:5
 
-Exit code is 1 when any resource's count or damage moves, so it reads as a
-checklist rather than a gate.
+Exit code is 1 when a resource's count would change under the OTHER reading
+while its spec has not declared the shared clock - i.e. when an encoding still
+owes the question an answer.
 """
 import argparse
 import inspect
@@ -160,9 +161,8 @@ class _Watcher:
                 a_slug, a_name, a_seconds = watcher.assume
                 for spec in specs:
                     if slug == a_slug and spec.name == a_name:
-                        for buff in spec.buffs:
-                            buff.lifetime = a_seconds
-                            buff.lifetime_refreshes = True
+                        spec.lifetime = a_seconds
+                        spec.lifetime_refreshes = True
             if specs:
                 watcher.specs[slug] = specs
             return specs
@@ -184,31 +184,31 @@ class _Watcher:
         return best, best_ctx
 
 
-class _GlobalRefresh:
-    """Make EVERY finite-lifetime read use the refreshing rule, by wrapping
-    `resource_count` itself.
+class _PerStackExpiry:
+    """Read every timed stack the OLD way - each stack on its own clock -
+    by rewriting the semantics the resources registered.
 
-    Flipping `ResourceBuff.lifetime_refreshes` reaches only the count-scaled
-    BUFF path. A resource's lifetime also travels in the 4-tuples that gate
-    nukes and damage typing (`resource_gate`), and those call sites pass no
-    such flag, so a unit whose resource exists only to answer a gate would
-    measure as "no effect" for the wrong reason."""
+    This is the counterfactual now that the clock belongs to the ResourceSpec
+    and every read path honours it: the question is no longer "what would
+    refreshing buy" but "what would the discarded reading cost", which is the
+    same number from the other side and stays meaningful as a guard."""
 
     def __init__(self):
-        self._original = squad_engine.SquadContext.resource_count
+        self._original = squad_engine.SquadContext.register_resource
 
     def __enter__(self):
         original = self._original
 
-        def patched(ctx, slug, name, time, cap, lifetime=None, lifetime_refreshes=False):
-            return original(ctx, slug, name, time, cap, lifetime,
-                            lifetime_refreshes=lifetime is not None)
+        def patched(ctx, slug, spec):
+            original(ctx, slug, spec)
+            if spec.lifetime is not None:
+                ctx.resource_semantics[(slug, spec.name)] = (spec.lifetime, False)
 
-        squad_engine.SquadContext.resource_count = patched
+        squad_engine.SquadContext.register_resource = patched
         return self
 
     def __exit__(self, *exc):
-        squad_engine.SquadContext.resource_count = self._original
+        squad_engine.SquadContext.register_resource = self._original
 
 
 def _deck_for(slug, boss, shell_override=None):
@@ -229,12 +229,23 @@ def _deck_for(slug, boss, shell_override=None):
 
 
 def _counts(ctx, slug, name, cap, lifetime, refreshes):
+    """The count over the fight under ONE rule.
+
+    The context answers with the resource's registered clock and ignores the
+    arguments, which is the point of registering it - so the counterfactual
+    column has to swap the registration for the length of the walk rather than
+    pass a different lifetime and be quietly overruled."""
     steps = int(FIGHT_DURATION / GRID_STEP) + 1
-    return [
-        ctx.resource_count(slug, name, i * GRID_STEP, cap, lifetime,
-                           lifetime_refreshes=refreshes)
-        for i in range(steps)
-    ]
+    key = (slug, name)
+    registered = ctx.resource_semantics.get(key)
+    ctx.resource_semantics[key] = (lifetime, refreshes)
+    try:
+        return [ctx.resource_count(slug, name, i * GRID_STEP, cap) for i in range(steps)]
+    finally:
+        if registered is None:
+            ctx.resource_semantics.pop(key, None)
+        else:
+            ctx.resource_semantics[key] = registered
 
 
 def _summary(counts):
@@ -291,8 +302,8 @@ def main():
     shell = args.shell.split(",") if args.shell else None
     slugs = [args.slug] if args.slug else sorted(skill_registry._RESOURCE_SPEC_BUILDERS)
 
-    print(f"{'slug':<30} {'resource':<20} {'stat':<28} cap  life  "
-          f"plain max/mean  refresh max/mean  moves")
+    print(f"{'slug':<30} {'resource':<22} cap  life  refreshes  "
+          f"per-stack max/mean  shared max/mean  differs")
     moved = []
     for slug in slugs:
         # The deck is built INSIDE the watcher: roster.py builds the
@@ -304,34 +315,31 @@ def main():
                 continue
             evaluate_deck(deck, boss)
         for spec in watcher.specs.get(slug, []):
-            for buff in spec.buffs:
-                if buff.lifetime is None:
-                    continue
-                fills, ctx = watcher.fills_for(slug, spec.name)
-                if not fills:
-                    print(f"{slug:<30} {spec.name:<20} {buff.stat:<28} "
-                          f"-- no fills in this deck --")
-                    continue
-                plain = _summary(_counts(ctx, slug, spec.name, spec.cap, buff.lifetime, False))
-                fresh = _summary(_counts(ctx, slug, spec.name, spec.cap, buff.lifetime, True))
-                differs = (abs(plain["max"] - fresh["max"]) > 1e-9
-                           or abs(plain["mean"] - fresh["mean"]) > 1e-9)
-                if differs:
-                    moved.append(slug)
-                print(f"{slug:<30} {spec.name:<20} {buff.stat:<28} "
-                      f"{spec.cap:>3.0f} {buff.lifetime:>5.1f}  "
-                      f"{plain['max']:>4.1f}/{plain['mean']:>5.2f}     "
-                      f"{fresh['max']:>4.1f}/{fresh['mean']:>5.2f}      "
-                      f"{'YES' if differs else 'no'}"
-                      f"{'  (refreshing already)' if buff.lifetime_refreshes else ''}")
-                if args.verbose:
-                    times = [round(t, 2) for t, _ in sorted(fills)]
-                    gaps = [round(b - a, 2) for a, b in zip(times, times[1:])]
-                    print(f"    fills({len(times)}): {times[:14]}"
-                          f"{' ...' if len(times) > 14 else ''}")
-                    print(f"    gaps: {gaps[:13]}{' ...' if len(gaps) > 13 else ''}")
+            if spec.lifetime is None:
+                continue
+            fills, ctx = watcher.fills_for(slug, spec.name)
+            if not fills:
+                print(f"{slug:<30} {spec.name:<22} -- no fills in this deck --")
+                continue
+            plain = _summary(_counts(ctx, slug, spec.name, spec.cap, spec.lifetime, False))
+            shared = _summary(_counts(ctx, slug, spec.name, spec.cap, spec.lifetime, True))
+            differs = (abs(plain["max"] - shared["max"]) > 1e-9
+                       or abs(plain["mean"] - shared["mean"]) > 1e-9)
+            if differs and not spec.lifetime_refreshes:
+                moved.append(slug)
+            print(f"{slug:<30} {spec.name:<22} {spec.cap:>3.0f} {spec.lifetime:>5.1f}  "
+                  f"{str(spec.lifetime_refreshes):<9}  "
+                  f"{plain['max']:>4.1f}/{plain['mean']:>5.2f}          "
+                  f"{shared['max']:>4.1f}/{shared['mean']:>5.2f}      "
+                  f"{'YES' if differs else 'no'}")
+            if args.verbose:
+                times = [round(t, 2) for t, _ in sorted(fills)]
+                gaps = [round(b - a, 2) for a, b in zip(times, times[1:])]
+                print(f"    fills({len(times)}): {times[:14]}"
+                      f"{' ...' if len(times) > 14 else ''}")
+                print(f"    gaps: {gaps[:13]}{' ...' if len(gaps) > 13 else ''}")
 
-    print("\nDamage under the refreshing rule, every read path (gates included):")
+    print("\nWhat per-stack expiry would cost, every read path (gates included):")
     for slug in slugs:
         deck = _deck_for(slug, boss, shell)
         if deck is None:
@@ -342,14 +350,12 @@ def main():
             with _Watcher(assume=(a_slug, a_name, float(a_seconds))):
                 after = evaluate_deck(_deck_for(slug, boss, shell), boss)
         else:
-            with _GlobalRefresh():
+            with _PerStackExpiry():
                 after = evaluate_deck(deck, boss)
         her_before = sum(e["damage"] for e in before["damage_log"] if e["slug"] == slug)
         her_after = sum(e["damage"] for e in after["damage_log"] if e["slug"] == slug)
         deck_delta = (after["total_damage"] / before["total_damage"] - 1) * 100
         own_delta = (her_after / her_before - 1) * 100 if her_before else float("nan")
-        if abs(deck_delta) > 0.005 or abs(own_delta) > 0.005:
-            moved.append(slug)
         print(f"  {slug:<32} own {own_delta:+7.2f}%   deck {deck_delta:+7.2f}%")
     return 1 if moved else 0
 

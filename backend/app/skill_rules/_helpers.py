@@ -272,33 +272,34 @@ def round_buff_rule(trigger, buffs, shots=1, cap=None):
     return SkillRule(trigger=trigger, action=action)
 
 
-def linear_resource_buff(stat, per_stack, scope, lifetime=None, lifetime_refreshes=False):
+def linear_resource_buff(stat, per_stack, scope):
     """A resource-derived buff whose value grows linearly with the stack count:
     `per_stack` per stack (e.g. Guillotine's EXP: ATK +1.81% per stack; Modernia's
     Crit Damage +14.25% per stack). Build a ResourceSpec around one or more of
     these (see effects.ResourceSpec).
 
-    Three lifetimes, and the skill text picks:
-    - `None` = permanent accumulation ("stacks up to N ... continuously"), and
-      also the exact model for a timed stack whose fills always arrive inside
-      its duration (Leona's Roar, Centi's Field Discussion).
-    - a number with `lifetime_refreshes=True` = "stacks up to N and lasts for D
-      sec": ONE clock the whole stack shares, restarted by every fill. This is
-      the usual reading of that clause.
-    - a number alone = each stack on its own clock. The rarer case - justify it
-      in the docstring.
+    How long the stack lives is the RESOURCE's property, set on the
+    `ResourceSpec` - the game gives the stack one clock and every reader of the
+    count shares it. The skill text picks between three:
+    - `lifetime=None` = permanent accumulation ("stacks up to N ...
+      continuously"), and also the exact model for a timed stack whose fills
+      always arrive inside its duration (Leona's Roar, Centi's Field Discussion).
+    - `lifetime=D, lifetime_refreshes=True` = "stacks up to N and lasts for D
+      sec": one clock the whole stack shares, restarted by every fill. The usual
+      reading of that clause.
+    - `lifetime=D` alone = each stack on its own clock. The rarer case - justify
+      it where it is used.
     """
-    return ResourceBuff(stat=stat, scope=scope, value_fn=lambda count: per_stack * count,
-                        lifetime=lifetime, lifetime_refreshes=lifetime_refreshes)
+    return ResourceBuff(stat=stat, scope=scope, value_fn=lambda count: per_stack * count)
 
 
-def leveled_resource_buff(stat, per_level, level_fn, scope, lifetime=None):
+def leveled_resource_buff(stat, per_level, level_fn, scope):
     """A resource-derived buff scaled by a LEVEL derived from the stack count,
     not the raw count - e.g. Guillotine's Hero Level (= EXP // 10, capped),
     granting per-level buffs. `level_fn` maps the (capped) count to the level;
     the buff value is `per_level * level`, so it steps only when the level rises."""
     return ResourceBuff(
-        stat=stat, scope=scope, value_fn=lambda count: per_level * level_fn(count), lifetime=lifetime
+        stat=stat, scope=scope, value_fn=lambda count: per_level * level_fn(count)
     )
 
 

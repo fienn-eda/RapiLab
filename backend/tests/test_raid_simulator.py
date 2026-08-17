@@ -2602,7 +2602,8 @@ def test_resource_spec_timed_stacks_expire_after_lifetime():
     # filled in (t-0.5, t] = fills at odd j with i-6 < j <= i.
     spec = ResourceSpec(
         name="evo", fill=("per_shot_every", 2), cap=5,
-        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.5 * c, lifetime=0.5)],
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.5 * c)],
+        lifetime=0.5,
     )
     result = simulate_raid(
         make_deck(),
@@ -2936,7 +2937,8 @@ def test_resource_spec_fill_on_last_bullet_stacks_only_when_the_magazine_empties
     # shot index 2 (t=2/12) and index 5 (t=1.25+2/12).
     spec = ResourceSpec(
         name="crescendo", fill=("on_last_bullet",), cap=5,
-        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.1 * c, lifetime=15.0)],
+        buffs=[ResourceBuff(stat="damage_taken_up", scope="self", value_fn=lambda c: 0.1 * c)],
+        lifetime=15.0,
     )
     result = simulate_raid(
         make_deck(),
@@ -3841,7 +3843,7 @@ def test_scheduled_nuke_resource_gate_scales_each_tick_by_the_live_count():
         resource_specs={"attacker": [spec]},
         scheduled_nukes={"attacker": [{
             "percent": 100.0, "schedule": schedule,
-            "resource_gate": ("ensnaring", 20, None, lambda count: count),
+            "resource_gate": ("ensnaring", 20, lambda count: count),
         }]},
     )
     ticks = sorted(

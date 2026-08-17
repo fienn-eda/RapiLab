@@ -92,10 +92,12 @@ def build_leona_resources(values):
             fill=("per_shot_every", int(float(roar["description_value_01"]))),
             cap=int(float(roar["description_value_03"])),
             buffs=[
-                # lifetime=None: one refreshed counter, not per-stack expiry -
-                # see the module docstring for why her cadence settles it.
+                # The spec's lifetime stays None: one refreshed counter, not
+                # per-stack expiry - see the module docstring for why her
+                # cadence makes permanence the exact model rather than an
+                # approximation.
                 linear_resource_buff(
-                    "crit_rate", float(roar["description_value_02"]) / 100, "squad", lifetime=None
+                    "crit_rate", float(roar["description_value_02"]) / 100, "squad"
                 ),
             ],
         )

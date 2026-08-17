@@ -76,23 +76,14 @@ class ResourceBuff:
     maps the resource's count (already clamped to the spec's cap) to the buff's
     value - linear (per_stack * count) or tiered (per_level * level(count)). It's
     emitted as a step function over the resource's fill schedule (see
-    raid_simulator's resolution pass). `lifetime` None = a permanent stack that
-    accumulates (Guillotine's EXP); a number = a timed stack that expires that
-    many seconds after each fill (Modernia's 10-sec stacks).
+    raid_simulator's resolution pass).
 
-    `lifetime_refreshes` picks the third semantic: each fill restarts the clock
-    for the WHOLE stack, so the count climbs while consecutive fills stay inside
-    `lifetime` and the stack expires together after the last one (Maiden: Ice
-    Rose's Meditation - see SquadContext.resource_count). Reach for it when the
-    skill text pairs "for N sec" with "stacks up to N" and the stacks are seen
-    to reach that cap in game; the plain timed rule instead settles at "fills
-    per lifetime"."""
+    How long the stack lives is NOT here: it belongs to the resource, which is
+    the thing the game gives a clock (see ResourceSpec.lifetime)."""
 
     stat: str
     scope: str
     value_fn: Callable[[float], float]
-    lifetime: float | None = None
-    lifetime_refreshes: bool = False
 
 
 @dataclass
@@ -108,6 +99,26 @@ class ResourceSpec:
     fill: tuple
     cap: float
     buffs: list[ResourceBuff] = field(default_factory=list)
+    # The stack's own clock, shared by EVERYTHING that reads the count - its
+    # buffs, and the gates that gate a nuke or a damage typing on it. The game
+    # gives the stack one clock, so the engine keeps one too: a resource whose
+    # readers could disagree about when it expires is a resource the game does
+    # not have. Registered on the SquadContext at simulation setup, which is
+    # what lets a resource with NO buffs at all still carry a lifetime -
+    # Laplace's Hero Vision exists only to answer a gate.
+    #
+    # None = a permanent stack that accumulates ("stacks up to N ...
+    # continuously" - Guillotine's EXP), and also the exact model for a timed
+    # stack whose fills always arrive inside its duration (Leona's Roar).
+    # A number with `lifetime_refreshes` = "stacks up to N and lasts for D sec":
+    # every fill restarts D for the WHOLE stack, so the count climbs while
+    # consecutive fills stay inside D and the stack expires together after the
+    # last one. That is the usual reading of the clause (the Raven ruling,
+    # Fienn 2026-07-17). A number alone = each stack on its own clock, which
+    # settles at "fills per lifetime" - the rarer case, to be justified where it
+    # is used.
+    lifetime: float | None = None
+    lifetime_refreshes: bool = False
     # Optional list of {"trigger": "battle_start"|"own_burst"|
     # "own_burst_delayed"|"full_burst_end", "value": X}: the resource is SET to
     # X (not incremented) once at battle start - e.g. Soda's Golden Chip

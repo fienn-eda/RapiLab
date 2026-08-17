@@ -85,7 +85,7 @@ def test_anti_at_field_damage_taken_buff_is_per_stack_and_squad_scoped():
     buff = spec.buffs[0]
     assert buff.stat == "damage_taken_up"
     assert buff.scope == "squad"
-    assert buff.lifetime == 30.0
+    assert (spec.lifetime, spec.lifetime_refreshes) == (30.0, True)
     assert round(buff.value_fn(10), 4) == round(0.083, 4)  # 10 stacks * 0.83%
 
 

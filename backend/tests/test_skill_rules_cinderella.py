@@ -127,7 +127,7 @@ def test_beautiful_resource_ticks_every_3_sec_capped_at_12():
     (max_hp_buff,) = spec.buffs
     assert max_hp_buff.stat == "flat_max_hp"
     assert max_hp_buff.scope == "self"
-    assert max_hp_buff.lifetime is None  # "continuously"
+    assert spec.lifetime is None  # "continuously"
 
 
 def test_beautiful_max_hp_ramps_one_stack_every_three_seconds_to_twelve():

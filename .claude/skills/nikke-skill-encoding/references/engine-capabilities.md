@@ -620,14 +620,24 @@ gate_fn, delta), ...])` = a stateful walk over the GLOBAL burst-cycle event log
 matches AND `gate_fn(current_count)` is true (Maiden's MP: "+1 if MP==0 on any
 squad member's Burst Stage 1", "+1 if MP>=1 on Full Burst enter" - see
 `_resolve_squad_burst_cycle_resource` below). `buffs` are `ResourceBuff`s built with `linear_resource_buff(stat, per_stack,
-scope, lifetime=None)` (value = per_stack × count) or `leveled_resource_buff(stat,
-per_level, level_fn, scope, lifetime=None)` (value = per_level × level_fn(count),
-for a Hero-Level-style tier); an arbitrary `value_fn` is allowed for a threshold
-buff. `lifetime=None` = a permanent stack that accumulates (ramps then plateaus at
-the cap); a number = a timed stack that expires that many seconds after each fill.
-The count itself is a function of time — `SquadContext.resource_count(slug, name,
-time, cap, lifetime)` — never a mutable total, so it's safe across the burst-cycle
-vs shot-loop phase ordering. The resolution pass emits each buff as a STEP FUNCTION
+scope)` (value = per_stack × count) or `leveled_resource_buff(stat, per_level,
+level_fn, scope)` (value = per_level × level_fn(count), for a Hero-Level-style
+tier); an arbitrary `value_fn` is allowed for a threshold buff.
+
+**The stack's clock is on the SPEC, not on its buffs** (`lifetime` +
+`lifetime_refreshes`, hoisted 2026-08-17). The game gives a stack one clock, so
+everything reading the count shares it — the buffs AND the gates that gate a
+nuke or a damage typing on it. Two consequences worth knowing: a resource with
+NO buffs at all can still carry a lifetime (Laplace's Hero Vision exists only to
+answer a gate, and there was nowhere to put its clock while the field lived on
+`ResourceBuff`), and two bullets whose durations really do differ need a
+resource EACH rather than two buffs on one (Centi's 8-sec ATK and 10-sec
+elemental stacks share a counter only because neither can lapse at her cadence;
+`build_field_discussion_resources` raises if their caps ever diverge).
+`simulate_raid` registers every spec on the context before anything can query a
+count, so the count itself is a function of time —
+`SquadContext.resource_count(slug, name, time, cap)` — never a mutable total,
+and never a per-call-site opinion about when the stack died. The resolution pass emits each buff as a STEP FUNCTION
 of delta Effects over the fill/expiry events, so `total_for`'s running sum equals
 value_fn(count) at every time. First consumers: `modernia.py` (timed capped),
 `guillotine_winter_slayer.py` (permanent + leveled + core-conditional),
@@ -933,15 +943,16 @@ spec dicts `{"schedule": fn(context, fight_duration) -> times, "percent",
 dropped. Logged with `source="scheduled"`.
 
 **`resource_gate` gates or scales each tick on a named resource, read at that
-tick's OWN time** - the same 4-tuple `(name, cap, lifetime, scale_fn)` that
-`resource_scaled_nukes` uses, and the recorded `percent` is multiplied by
+tick's OWN time** - the same 3-tuple `(name, cap, scale_fn)` that
+`resource_scaled_nukes` uses (it names no lifetime: the count comes back on the
+resource's own registered clock), and the recorded `percent` is multiplied by
 `scale_fn(count)`. Use `lambda count: 1.0 if count >= cap else 0.0` for a
 binary "while the stack is at max" gate (Laplace's 11.9% true-damage rider),
 or `lambda count: count` to scale with the stack. This resolves in **phase 2**,
 after the resource pass, which is why it can read a counter that the schedule
 itself could not: schedules run while the shot timeline is still being built.
 
-**A `weapon_mode_schedules` profile can carry the SAME 4-tuple as
+**A `weapon_mode_schedules` profile can carry the SAME 3-tuple as
 `damage_type_gate`** (2026-08-16) — the segment's `damage_type` then applies
 only where the gate is open. The profile is still fixed when the segment is
 built, so the gate rides the `ShotRecord` and phase 2 answers it at each shot's

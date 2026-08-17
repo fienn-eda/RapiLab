@@ -100,8 +100,8 @@ def test_ensnaring_dot_ticks_every_second_scaled_per_stack():
     dot = build_mihara_scheduled_nukes(MIHARA_VALUES)[1]
     assert dot["percent"] == 25.08
     assert dot["damage_type"] == "sustained"
-    resource, cap, lifetime, scale_fn = dot["resource_gate"]
-    assert (resource, cap, lifetime) == ("ensnaring_chains", 20.0, None)
+    resource, cap, scale_fn = dot["resource_gate"]
+    assert (resource, cap) == ("ensnaring_chains", 20.0)
     assert scale_fn(13) == 13
     context = make_context()
 

@@ -59,7 +59,7 @@ def test_crescendo_resource_fills_on_last_bullet_capped_at_5_lasting_15_sec():
     buff = spec.buffs[0]
     assert buff.stat == "other_critical_damage_sources"
     assert buff.scope == "self"
-    assert buff.lifetime == 15.0
+    assert spec.lifetime == 15.0
     assert round(buff.value_fn(5), 4) == round(0.2479 * 5, 4)
 
 
@@ -71,15 +71,15 @@ def test_crescendo_stacks_share_one_clock_and_reach_the_cap():
     the top three stacks unreachable."""
     (spec,) = build_crescendo_resources(JULIA_VALUES)
     buff = spec.buffs[0]
-    assert buff.lifetime_refreshes is True
+    assert spec.lifetime_refreshes is True
 
     ctx = SquadContext([SquadMember("julia", burst_tier=3, element="Iron")])
     for magazine in range(1, 7):
         ctx.fill_resource("julia", "crescendo", 1.0, magazine * 8.0)
 
-    assert ctx.resource_count("julia", "crescendo", 48.0, spec.cap, buff.lifetime,
+    assert ctx.resource_count("julia", "crescendo", 48.0, spec.cap, spec.lifetime,
                               lifetime_refreshes=True) == 5
-    assert ctx.resource_count("julia", "crescendo", 48.0, spec.cap, buff.lifetime) == 2
+    assert ctx.resource_count("julia", "crescendo", 48.0, spec.cap, spec.lifetime) == 2
 
 
 def test_climax_resource_scaled_nuke_gates_on_crescendo_at_max_stacks():

@@ -112,12 +112,14 @@ def build_modernia_resources(values):
             cap=stack_cap,
             buffs=[
                 linear_resource_buff(
-                    "other_critical_damage_sources", crit_per_stack, "self",
-                    lifetime=stack_duration, lifetime_refreshes=True,
-                ),
-                linear_resource_buff("max_ammo_percent", -ammo_cut_per_stack, "self",
-                                     lifetime=stack_duration, lifetime_refreshes=True),
+                    "other_critical_damage_sources", crit_per_stack, "self"),
+                linear_resource_buff("max_ammo_percent", -ammo_cut_per_stack, "self"),
             ],
+            # Both bullets are the same stack, so they share its clock - which
+            # is the reason a lifetime belongs to the resource and not to each
+            # buff hung off it.
+            lifetime=stack_duration,
+            lifetime_refreshes=True,
         )
     ]
 

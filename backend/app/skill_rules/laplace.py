@@ -16,14 +16,16 @@ Modeled (DPS-relevant):
   same rate as this base Buster - so the base 5-sec window is ~46 ticks. Every
   tick is ordinary damage: the signature's "Normal damage is applied as true
   damage" conversion is a signature-only bullet, absent from these skills.
-- Hero Vision (skills[0]): a Full-Charge stack counter, up to 5, each stack
-  lasting 5 sec. Its own payload - Explosion Radius - is not a damage
-  multiplier and stays inert, but the counter GATES Laplace Buster's "11.9% of
-  final ATK as true damage when Hero Vision is at max stacks", so it is a
-  `ResourceSpec` and the rider reads it per tick
-  (`build_buster_scheduled_nukes`). At her fire rate the gate never opens; see
-  that builder for the arithmetic and for why a constant "never" would be the
-  wrong way to say so.
+- Hero Vision (skills[0]): a Full-Charge stack counter, up to 5, the stack
+  lasting 5 sec on a clock every charge restarts. Its own payload - Explosion
+  Radius - is not a damage multiplier and stays inert, but the counter GATES
+  Laplace Buster's "11.9% of final ATK as true damage when Hero Vision is at
+  max stacks", so it is a `ResourceSpec` and the rider reads it per tick
+  (`build_buster_scheduled_nukes`). Her charges come 1.37 sec apart against
+  that 5-sec clock, so the counter holds its cap 69% of the fight and the gate
+  is open for most of every Buster window - see that builder for how the
+  opposite conclusion was once reached, and `hero_vision_lifetime` for the
+  reading that settles it.
 
 Not modeled / deferred:
 - Hero Bomber's parts-hit 14.78% additional damage - needs a Parts-hit trigger
@@ -61,36 +63,54 @@ def hero_vision_cap(values):
 
 
 def hero_vision_lifetime(values):
-    """"...and lasts for 5 sec" - 15 on the signature build. Each stack carries
-    its own timer (the project's ResourceSpec convention, Modernia's precedent),
-    so the count decays one stack at a time once the fills stop."""
+    """"...and lasts for 5 sec" - 15 on the signature build. ONE clock the whole
+    stack shares, restarted by every Full Charge (the Raven ruling, Fienn
+    2026-07-17), so the count climbs while her charges keep coming and the stack
+    drops together once they stop.
+
+    Her cadence is what makes that decisive. Measured on her own timeline: 98
+    fills, median gap 1.37 sec against a 5-sec stack, and 91 of 97 gaps inside
+    it - the six that are not are her Buster windows, where Full Charges stop
+    by construction. So the counter sits at its cap 69% of the fight, where
+    per-stack expiry put it at 0% and closed the gate below for good."""
     return float(values["hero_vision"]["description_value_03"])
 
 
 def build_hero_vision_resources(values, slug_duration_key="laplace_buster"):
-    """Hero Vision: +1 per Full Charge attack, capped, each stack expiring on
-    its own clock.
+    """Hero Vision: +1 per Full Charge attack, capped, on the shared clock
+    `hero_vision_lifetime` describes.
+
+    **This resource carries no buffs at all** - Explosion Radius moves no
+    damage. It exists only so the gates below have a real count to read, and it
+    is the reason a resource's lifetime belongs to the SPEC: there is no buff
+    here to hang one on.
 
     The fill deliberately excludes her own Buster transform window. Her weapon
     during that window is not a charge weapon, so its ticks are not Full Charge
     attacks - but they land in the simulator's `shot_times` exactly like her
     ordinary shots, and counting them would let the gauge feed itself out of the
-    very transform whose damage reads it."""
+    very transform whose damage reads it. That exclusion is also what still
+    makes the count fall: the stack's clock runs out partway into a long enough
+    window, so a window can start open and end shut."""
     duration = float(values[slug_duration_key]["description_value_03"])
     return [ResourceSpec(
         name=HERO_VISION,
         fill=("per_shot_every_outside_own_status_window", 1, duration),
         cap=hero_vision_cap(values),
+        lifetime=hero_vision_lifetime(values),
+        lifetime_refreshes=True,
     )]
 
 
 def hero_vision_max_stack_gate(values):
-    """The `resource_gate` 4-tuple for "when Hero Vision is at max stacks": a
+    """The `resource_gate` 3-tuple for "when Hero Vision is at max stacks": a
     binary gate, not a scale. `resource_count` already clamps to the cap, so
-    "at max" is "equal to the cap"."""
+    "at max" is "equal to the cap".
+
+    The tuple names no lifetime: the count is answered with the resource's own
+    registered clock, so this gate and the resource cannot drift apart."""
     cap = hero_vision_cap(values)
-    return (HERO_VISION, cap, hero_vision_lifetime(values),
-            lambda count: 1.0 if count >= cap else 0.0)
+    return (HERO_VISION, cap, lambda count: 1.0 if count >= cap else 0.0)
 
 
 def build_laplace_rules(values):
@@ -143,15 +163,17 @@ def build_buster_scheduled_nukes(values):
 
     The gate is real, not assumed: `resource_gate` is resolved in the
     simulator's phase 2, after the resource pass, so each tick reads Hero
-    Vision at its OWN time. On this build the gate never opens at all - 0 of
-    322 ticks in the tier-3 measurement shell - because a base stack lasts only
-    5 sec, so the 5-stack cap needs 1.00 Full Charge attacks/sec sustained and
-    she fires 0.68/sec. Forcing it open would be worth +4.72% of her total, so
-    the zero is load-bearing rather than incidental.
+    Vision at its OWN time, on the resource's own clock.
 
-    It is still worth wiring rather than leaving the bullet deferred: a deck
-    that pushes her charge rate past 1.00/sec turns the gate on, and that is
-    the one thing a hardcoded "never" could not do."""
+    **It opens.** This docstring used to say the opposite - "0 of 322 ticks" -
+    on the arithmetic that a 5-sec stack needs 1.00 Full Charge attacks/sec
+    sustained while she fires 0.68/sec. That is what five INDEPENDENT 5-sec
+    timers would need: five charges inside one window. The stack shares one
+    clock instead (`hero_vision_lifetime`), so the requirement is only that
+    consecutive charges come less than 5 sec apart, and her median gap is 1.37.
+    Measured on this build: the counter sits at its cap 69% of the fight, and
+    reading it the old way costs her 11.61% of her damage (2.12% of her deck's)
+    - `scripts/audit_stack_lifetime_refresh.py`."""
     buster = values["laplace_buster"]
     duration = float(buster["description_value_03"])
     rider_percent = float(buster["description_value_04"])

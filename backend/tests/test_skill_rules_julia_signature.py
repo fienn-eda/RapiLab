@@ -107,7 +107,7 @@ def test_each_crescendo_stack_is_crit_damage_for_fifteen_seconds():
 
     assert buff.stat == "other_critical_damage_sources"
     assert buff.scope == "self"
-    assert buff.lifetime == 15.0
+    assert (spec.lifetime, spec.lifetime_refreshes) == (15.0, True)
     assert round(buff.value_fn(1), 4) == 0.2479
     assert round(buff.value_fn(5), 4) == round(0.2479 * 5, 4)
 

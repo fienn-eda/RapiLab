@@ -935,6 +935,13 @@ def _simulate_raid_once(
         adjacency=adjacency,
         late_flat_max_hp=late_max_hp_registry,
     )
+    # Each resource's clock, registered BEFORE anything can query a count, so
+    # the buff pass and the gates that read the same stack cannot disagree
+    # about when it expires. A resource with no buffs at all still gets one -
+    # Laplace's Hero Vision exists only to answer a gate.
+    for slug, specs in resource_specs.items():
+        for spec in specs:
+            context.register_resource(slug, spec)
     registry = EffectRegistry()
     # Damage is RECORDED as events during phase 1 (buffs are applied but no
     # damage is computed yet), then computed in a single phase-2 pass once EVERY
@@ -1235,8 +1242,8 @@ def _simulate_raid_once(
         # phase 2, exactly like a deferred buff (see module docstring).
         if ev["resource_gate"] is None:
             return ev["percent"]
-        name, cap, lifetime, scale_fn = ev["resource_gate"]
-        count = context.resource_count(ev["slug"], name, ev["time"], cap, lifetime)
+        name, cap, scale_fn = ev["resource_gate"]
+        count = context.resource_count(ev["slug"], name, ev["time"], cap)
         return ev["percent"] * scale_fn(count)
 
     def _resolve_damage_type(ev):
@@ -1251,8 +1258,8 @@ def _simulate_raid_once(
         # "attack": the rocket is still a rocket (see weapon_delivery_type).
         if ev["damage_type_gate"] is None:
             return ev["damage_type"]
-        name, cap, lifetime, gate_fn = ev["damage_type_gate"]
-        count = context.resource_count(ev["slug"], name, ev["time"], cap, lifetime)
+        name, cap, gate_fn = ev["damage_type_gate"]
+        count = context.resource_count(ev["slug"], name, ev["time"], cap)
         if gate_fn(count) > 0:
             return ev["damage_type"]
         return weapon_delivery_type(ev["weapon"])
@@ -1320,7 +1327,7 @@ def _simulate_raid_once(
             # scaling (e.g. Mana's Fatal Error!) reuses this same tick_count/
             # tick_interval loop, just with no resource_gate to resolve later.
             resource_gate = (
-                (spec["resource"], spec["cap"], spec.get("lifetime"), spec["scale_fn"])
+                (spec["resource"], spec["cap"], spec["scale_fn"])
                 if spec.get("resource") is not None else None
             )
             # Same rule as the burst bullet below: a spec that opts into the
@@ -1904,16 +1911,14 @@ def _simulate_raid_once(
                 # combined a buffed resource with one, e.g. Asuka + Maiden
                 # sharing Burst 3 - see test_interaction_asuka_maiden_shared_burst_tier.py).
                 buff_step_times = set(fill_times) | set(reset_times)
-                if buff.lifetime is not None:
+                if spec.lifetime is not None:
                     buff_step_times |= {
-                        ft + buff.lifetime for ft in fill_times if ft + buff.lifetime < fight_duration
+                        ft + spec.lifetime for ft in fill_times if ft + spec.lifetime < fight_duration
                     }
                 prev_value = 0.0
                 for event_time in sorted(buff_step_times):
-                    count = context.resource_count(
-                        slug, spec.name, event_time, spec.cap, buff.lifetime,
-                        lifetime_refreshes=buff.lifetime_refreshes,
-                    )
+                    # The clock comes off the registered resource, not from here.
+                    count = context.resource_count(slug, spec.name, event_time, spec.cap)
                     value = buff.value_fn(count)
                     if value != prev_value:
                         registry.add(
@@ -1987,7 +1992,7 @@ def _simulate_raid_once(
                         continue
                 else:
                     count = context.resource_count(
-                        slug, spec["resource"], read_time, spec["cap"], spec.get("lifetime")
+                        slug, spec["resource"], read_time, spec["cap"]
                     )
                 # `value_per_stack` scales with the count instead of gating on
                 # it; a zero count then simply grants nothing.

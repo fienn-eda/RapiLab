@@ -58,12 +58,12 @@ def test_modernia_evolution_resource_is_timed_capped_crit_and_ammo():
     assert spec.cap == 5
     crit, ammo = spec.buffs
     assert crit.stat == "other_critical_damage_sources"
-    assert crit.lifetime == 10.0  # timed, not permanent
+    assert spec.lifetime == 10.0  # timed, not permanent
     # value_fn scales by the (already-capped) stack count; capping is the
     # resolution pass's job (resource_count clamps before value_fn).
     assert round(crit.value_fn(3), 4) == round(0.1425 * 3, 4)
     assert ammo.stat == "max_ammo_percent"
-    assert ammo.lifetime == 10.0
+    assert spec.lifetime == 10.0
     # "Max Ammunition Capacity ▼ 5.04%" - the arrow is a subtraction marker, so
     # each Evolution stack SHRINKS her magazine rather than growing it.
     assert round(ammo.value_fn(5), 4) == round(-0.0504 * 5, 4)
@@ -76,22 +76,22 @@ def test_modernia_evolution_stacks_share_one_clock_and_reach_the_cap():
     breaks and the count walks to the cap. The old reading settled at "fills per
     lifetime" - 3 - and left the last two stacks unreachable."""
     (spec,) = build_modernia_resources(MODERNIA)
-    assert all(buff.lifetime_refreshes for buff in spec.buffs)
+    assert all(spec.lifetime_refreshes for buff in spec.buffs)
 
     ctx = deck_ctx("modernia", "Fire")
     for mark in range(1, 8):
         ctx.fill_resource("modernia", "evolution", 1.0, mark * 4.0)
 
     crit = spec.buffs[0]
-    assert ctx.resource_count("modernia", "evolution", 28.0, spec.cap, crit.lifetime,
+    assert ctx.resource_count("modernia", "evolution", 28.0, spec.cap, spec.lifetime,
                               lifetime_refreshes=True) == 5
     assert ctx.resource_count("modernia", "evolution", 28.0, spec.cap,
-                              crit.lifetime) == 3
+                              spec.lifetime) == 3
 
     # A gap wider than the stack's life still breaks the chain - that is the
     # whole difference from a permanent counter.
     ctx.fill_resource("modernia", "evolution", 1.0, 60.0)
-    assert ctx.resource_count("modernia", "evolution", 60.0, spec.cap, crit.lifetime,
+    assert ctx.resource_count("modernia", "evolution", 60.0, spec.cap, spec.lifetime,
                               lifetime_refreshes=True) == 1
 
 
@@ -183,7 +183,8 @@ def test_guillotine_exp_resource_fill_is_core_conditional_capped_at_100():
 def test_guillotine_exp_grants_linear_self_atk():
     spec = build_guillotine_resources(GUILLOTINE)[0]
     exp_atk = spec.buffs[0]
-    assert exp_atk.stat == "atk_percent" and exp_atk.scope == "self" and exp_atk.lifetime is None
+    assert exp_atk.stat == "atk_percent" and exp_atk.scope == "self"
+    assert spec.lifetime is None  # "stacks up to 100 time(s) continuously"
     assert round(exp_atk.value_fn(50), 4) == round(0.0181 * 50, 4)
 
 
