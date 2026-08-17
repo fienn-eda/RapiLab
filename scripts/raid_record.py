@@ -1,6 +1,34 @@
-"""Fienn's recorded Annihilio solo raid - the single source of truth.
+"""Fienn's recorded Annihilio solo raid - RETIRED as a scoring target.
 
-This is the only ground truth the simulator is scored against, and until
+**Do not chase a per-unit residual in here (Fienn, 2026-08-17).** The fight was
+recorded 2026-07-06; the roster the calibration scores it against is whatever
+was last SYNCED, and the current one is from 2026-08-07 - six weeks of gear
+progress later. Overload options are part of that gear, they only grow, and the
+sim reads today's. So every unit's residual carries an unknown per-unit
+over-credit, and no snapshot from the record's own date exists to recover it -
+the earliest dated roster in `tools/collect-blablalink/` is 2026-07-31, itself
+three weeks after the fight.
+
+How big that can be: Cinderella: Crystal Wave's overload options are worth
++21.7% of her simulated damage in this fight (measured 2026-08-17 by scoring
+deck 2 with them removed). Strip them and she reads 0.969x instead of 1.237x.
+Nobody knows how much of that she was wearing on 2026-07-06, and that is the
+whole problem - it is not specific to her, it is the size of the term every
+unit carries.
+
+The numbers below stay as a RECORD: they are a real fight, faithfully
+transcribed, and the deck/rotation/cube facts around them are still true. What
+they are no longer is a metric. The next scoring target is the raid releasing
+shortly, whose roster must be synced ON THE DAY OF THE RECORD - that is the one
+thing this file could not give a later session, and the only thing that makes a
+residual attributable.
+
+Conclusions drawn from these residuals that a later session may want to re-test
+against the new record rather than trust: the combined 1.075x and its 18/25, the
+per-weapon-class means, and gap #21's core-share correlation (r=+0.677 over 22
+units), which is a correlation over exactly these contaminated residuals.
+
+This was the only ground truth the simulator was scored against, and until
 2026-07-27 it lived nowhere: every calibration session rebuilt the deck list in
 conversation and threw it away, so the next session could not reproduce the
 number it was asked to explain. A ratio nobody can re-derive is a claim, not a
@@ -80,6 +108,19 @@ RECORD_BOSS = dict(element="Iron", core_hittable=True, part_destructible=True,
 # The recorded 5-deck total, as reported. See the docstring's note on why this
 # is not simply the sum of RECORD_DECKS.
 RECORD_TOTAL = 34_767_622_294.0
+
+# The day the fight was played and its damage log read. Carried as data, not
+# prose, because the one thing that decides whether a residual here is
+# attributable is how far the scoring roster has drifted from it - see the
+# docstring, and the banner measure_record_calibration.py prints from this.
+RECORD_DATE = "2026-07-06"
+RETIRED_AS_METRIC = (
+    "이 기록은 채점지표에서 내렸다 (Fienn, 2026-08-17). 전투는 {date}이고 로스터는 "
+    "마지막 동기화 시점의 것이라, 그 사이 늘어난 오버로드만큼 유닛별 잔차가 위로 "
+    "밀려 있다. 그 시점 로스터 스냅샷이 없어 되돌릴 수도 없다. 기록으로는 유효하니 "
+    "읽되, 여기 숫자로 엔진 결함을 판정하지 말 것 - 다음 지표는 곧 나올 레이드이고, "
+    "그 로스터는 기록과 같은 날 동기화해야 한다."
+)
 
 B = 1_000_000_000.0
 

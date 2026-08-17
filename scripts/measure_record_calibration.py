@@ -31,8 +31,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from app.deck_search import BossProfile, evaluate_deck, feasible_orderings  # noqa: E402
 from app.user_roster import load_roster  # noqa: E402
 from raid_record import (  # noqa: E402
-    RECORD_BOSS, RECORD_CAVEATS, RECORD_CUBES, RECORD_DECKS, RECORD_ROTATIONS,
-    deck_total)
+    RECORD_BOSS, RECORD_CAVEATS, RECORD_CUBES, RECORD_DATE, RECORD_DECKS,
+    RECORD_ROTATIONS, RETIRED_AS_METRIC, deck_total)
 from roster_fixture import (REAL_ROSTER_JSON, add_roster_argument,  # noqa: E402
                             real_roster)
 
@@ -184,6 +184,10 @@ def main():
     p.add_argument("--element", default=RECORD_BOSS["element"],
                    help="override the boss's code - for what-if sweeps only")
     args = p.parse_args()
+    # Windows 콘솔은 cp949라 한글 출력이 깨진다. 맨 위 배너가 이 스크립트에서
+    # 가장 중요한 줄이므로 읽히게 만든다.
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
     roster = real_roster(args.roster)
     if roster is None:
@@ -202,9 +206,14 @@ def main():
     if args.deck and args.deck not in RECORD_DECKS:
         sys.exit(f"ERROR: unknown deck {args.deck!r} - have {', '.join(RECORD_DECKS)}")
 
+    # 배너를 맨 위에 찍는 것이 요점이다. 이 숫자들은 계속 유용하지만 채점지표는
+    # 아니고, 그 사실이 파일 안에만 있으면 아무도 안 본다.
+    print(textwrap.fill(RETIRED_AS_METRIC.format(date=RECORD_DATE), width=78))
+    print()
     print(f"boss:   {args.element}, DEF {boss.enemy_def:,.0f}, "
           f"{boss.fight_duration:.0f}s, core hittable, parts destructible")
-    print(f"roster: real synced roster ({len(roster)} units)\n")
+    print(f"record: {RECORD_DATE}")
+    print(f"roster: real synced roster ({len(roster)} units) - {Path(args.roster).name}\n")
 
     if args.orderings:
         for name in names:
