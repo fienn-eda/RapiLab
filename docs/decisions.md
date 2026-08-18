@@ -5,6 +5,30 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 「제외한 니케」 필터 칩은 속성·단계와 같은 켬/끔 규약 하나다 — 숨기기도, 제외/사용 2칩 그룹도 아니다
+
+- Date: 2026-08-18
+- Context: 니케 검색 필터(속성·단계 칩, `UnitFilterBar`)에 후보 풀(니케 풀
+  제외/재활성화, `UnitPalette`의 `excludedSlugs`)을 반영하는 축을 추가하면서,
+  그 축이 "선택한 것만 남기기"(속성·단계와 같은 극성)인지 "선택한 것을
+  숨기기"(반대 극성)인지, 아니면 별도 2칩 그룹인지부터 정해야 했다.
+- Alternatives considered: (a) **숨기기** — 켜면 제외한 니케를 그리드에서 뺀다.
+  (b) **제외/사용 2칩 그룹** — 라디오처럼 상태를 나눠 보여준다. Fienn이 둘 다
+  기각(커밋 `19a150ce`).
+- Decision: 속성·단계 칩과 **같은 켬/끔 규약** — 켜면 제외한 니케만 남고, 안 켜면
+  아무것도 안 거른다(`UnitFilterState.excludedOnly`,
+  `frontend/src/lib/unitFilter.ts`). 후보 풀 개념이 없는 화면(미란다 계산기)엔
+  칩 자체가 안 뜬다 — `UnitFilterBar`의 `excludable` prop을
+  `excludedSlugs !== undefined`로 판정하려고 그 prop의 기본값 `= []`부터
+  없앴다(`UnitPalette.tsx`) — 기본값이 있으면 "안 줌"과 "빈 배열 줌"을 못 가른다.
+- Why: 「제외 안 한 니케만」이 이 앱의 기본 화면 그 자체라 따로 고를 값이 아니다 —
+  2칩 그룹은 있지도 않은 상태(둘 다 꺼짐)를 위해 자리를 하나 더 만든다. 숨기기는
+  반대 극성이라 옆의 두 축과 나란히 있을 때 "이 축만 반대로 읽어야 하나"를 매번
+  다시 확인해야 한다.
+- Consequences: 필터 축이 하나 늘 때마다 규약을 새로 고민할 필요가 없다 — 다중
+  값이면 토글 배열(`elements`/`burstTiers`), 있음/없음뿐이면 이 켬/끔 패턴을
+  그대로 복붙한다. 착륙 시점 프론트 939 passed(73 files), 타입에러 0 · lint 0.
+
 ## 스택의 시계는 자원의 것이다 — 수명을 `ResourceSpec`으로 올리고 라플라스의 게이트를 연다
 
 - Date: 2026-08-17
