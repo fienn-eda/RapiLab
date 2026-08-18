@@ -1474,7 +1474,10 @@ describe('RecommendPanel unit-pool exclusion', () => {
         <RecommendPanel roster={sixRoster} {...noPersistence} excludedSlugs={excludedSlugs} />,
       )
       await user.click(screen.getByRole('radio', { name: /빈자리만 최적화/i }))
-      await screen.findByRole('button', { name: /Anne 배치/i })
+      // 이름만 본다 - 제외된 칩은 「배치」가 아니라 「제외됨」이라고 자신을
+      // 소개하므로, 여기서 「배치」를 기다리면 제외를 건 호출부에서는 영영
+      // 안 온다.
+      await screen.findByRole('button', { name: /Anne/i })
       return user
     }
 
@@ -1495,7 +1498,9 @@ describe('RecommendPanel unit-pool exclusion', () => {
     it('leaves an exclusion intact across a filter that hides that unit', async () => {
       const user = await draftModeWith(['b'])
       await user.click(screen.getByRole('button', { name: '철갑' }))
-      expect(screen.queryByRole('button', { name: /Anne 배치/i })).not.toBeInTheDocument()
+      // 「배치」로 물으면 제외된 칩은 필터와 무관하게 언제나 없어서, 필터를
+      // 안 걸어도 통과하는 단언이 된다.
+      expect(screen.queryByRole('button', { name: /Anne/i })).not.toBeInTheDocument()
 
       await user.click(screen.getByRole('button', { name: /인카운터/ }))
       await waitFor(() => expect(recommendRaidDecks).toHaveBeenCalled())

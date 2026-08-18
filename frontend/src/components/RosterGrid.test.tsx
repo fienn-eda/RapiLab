@@ -75,6 +75,16 @@ describe('RosterGrid 미사용 토글', () => {
     grid(['crown'])
     expect(screen.queryByRole('button', { name: /사용/ })).not.toBeInTheDocument()
   })
+
+  // 뺀 니케는 흐려질 뿐 격자에서 사라지지 않는다 - 70기가 넘는 탭에서 「내가 뭘
+  // 뺐더라」를 되짚으려면 필터가 있어야 한다.
+  it('「제외한 니케」 필터가 뺀 니케만 남긴다', async () => {
+    withToggle(['crown', 'liter'], ['liter'])
+    await userEvent.click(screen.getByRole('button', { name: '제외한 니케' }))
+    expect(screen.getByRole('heading', { name: 'Liter' })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: 'Crown' })).not.toBeInTheDocument()
+    expect(screen.getByText('2기 중 1기 표시 중')).toBeInTheDocument()
+  })
 })
 
 describe('RosterGrid', () => {

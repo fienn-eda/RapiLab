@@ -4,6 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { UnitPalette } from './UnitPalette'
 import type { SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
+import { HELP } from '../lib/helpText'
 
 vi.mock('../hooks/usePortraitManifest', () => ({
   usePortraitManifest: () => ({ portraitFor: () => null }),
@@ -387,5 +388,82 @@ describe('UnitPalette 클릭 배치', () => {
     await userEvent.click(chip.querySelector('.palette__stat--core')!)
 
     expect(onToggleExclude).toHaveBeenCalledWith('crown')
+  })
+})
+
+// 니케 풀에서 뺀 니케는 팔레트에서 흐려질 뿐 사라지지는 않는다 - 그래서
+// 「내가 뭘 뺐더라」를 되짚으려면 필터가 필요하다.
+describe('UnitPalette 제외한 니케 필터', () => {
+  it('켜면 제외된 니케만 남는다', async () => {
+    const user = userEvent.setup()
+    render(<UnitPalette {...base} excludedSlugs={['liter']} />)
+    await user.click(screen.getByRole('button', { name: '제외한 니케' }))
+    expect(screen.getByRole('button', { name: /liter 사용/i })).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /crown 사용/i })).not.toBeInTheDocument()
+  })
+
+  // 미란다 계산기에는 후보 풀이 없다 - 거기서 이 칩은 언제나 빈 격자를 만든다.
+  it('후보 풀이 없는 화면에는 칩 자체가 없다', () => {
+    render(<UnitPalette {...base} excludedSlugs={undefined} onToggleExclude={undefined} />)
+    expect(screen.queryByRole('button', { name: '제외한 니케' })).not.toBeInTheDocument()
+  })
+})
+
+// 제외를 푸는 곳은 니케 풀 탭이다. 솔로·유니온의 팔레트에는 되돌릴 컨트롤이
+// 없으므로, 누름에 아무 답도 없으면 칩이 고장 난 것으로 읽힌다.
+describe('UnitPalette 제외된 칩을 눌렀을 때', () => {
+  const seatingWithExcluded = () => {
+    const onSeat = vi.fn()
+    render(<UnitPalette {...base} onSeat={onSeat} excludedSlugs={['crown']} />)
+    return onSeat
+  }
+  const bubbleOn = (name: RegExp) =>
+    screen
+      .getByRole('button', { name })
+      .closest('.palette__item')!
+      .querySelector('.palette__blocked')
+
+  it('어디서 풀 수 있는지 그 칩 옆에 말해준다', async () => {
+    const onSeat = seatingWithExcluded()
+    await userEvent.click(screen.getByRole('button', { name: /crown 제외됨/i }))
+    expect(onSeat).not.toHaveBeenCalled()
+    expect(bubbleOn(/crown/i)).toHaveTextContent(HELP.draft.excludedElsewhere)
+  })
+
+  // 버튼 밖(돌파·코어·스킬레벨 칸)도 같은 칩이다.
+  it('스킬레벨 칸을 눌러도 같은 안내가 뜬다', async () => {
+    seatingWithExcluded()
+    const chip = screen.getByRole('button', { name: /crown/i }).closest('.palette__item')!
+    await userEvent.click(chip.querySelector('.palette__stat--core')!)
+    expect(bubbleOn(/crown/i)).toHaveTextContent(HELP.draft.excludedElsewhere)
+  })
+
+  // 말풍선은 aria-hidden이라, 화면을 못 보는 사람에게 답을 전하는 것은 이쪽뿐이다.
+  it('라이브 영역으로도 읽힌다', async () => {
+    const { container } = render(
+      <UnitPalette {...base} onSeat={vi.fn()} excludedSlugs={['crown']} />,
+    )
+    const live = container.querySelector('[aria-live="polite"]')!
+    expect(live).toHaveTextContent('')
+    await userEvent.click(screen.getByRole('button', { name: /crown 제외됨/i }))
+    expect(live).toHaveTextContent(HELP.draft.excludedElsewhere)
+  })
+
+  // 다른 칩을 눌렀다는 것 자체가 안내를 다 읽었다는 뜻이다.
+  it('다른 니케를 배치하면 안내가 걷힌다', async () => {
+    const onSeat = seatingWithExcluded()
+    await userEvent.click(screen.getByRole('button', { name: /crown 제외됨/i }))
+    await userEvent.click(screen.getByRole('button', { name: /liter 배치/i }))
+    expect(onSeat).toHaveBeenCalledWith('liter')
+    expect(bubbleOn(/crown/i)).toBeNull()
+  })
+
+  // 배치는 못 하지만 눌리기는 해야 한다 - disabled면 그 누름이 아예 안 와서
+  // 왜 안 되는지 말할 기회가 없다.
+  it('칩은 죽지 않고 「눌러도 안 된다」만 알린다', () => {
+    seatingWithExcluded()
+    const chip = screen.getByRole('button', { name: /crown 제외됨/i })
+    expect(chip).not.toBeDisabled()
+    expect(chip).toHaveAttribute('aria-disabled', 'true')
   })
 })

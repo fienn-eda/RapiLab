@@ -13,9 +13,12 @@ interface Row {
   element: UnitFacets['element']
   burstTier: UnitFacets['burstTier']
   overload: { name: string; value: number | string }[]
+  /** 대부분의 행에는 상관없는 축이라 생략할 수 있게 둔다 - 빠뜨린 행은 「제외
+   * 안 함」이고, 그것이 이 앱의 기본 상태다. */
+  excluded?: boolean
 }
 
-const facets = (row: Row): UnitFacets => row
+const facets = (row: Row): UnitFacets => ({ ...row, excluded: row.excluded ?? false })
 
 const ROWS: Row[] = [
   { slug: 'scarlet', name: '홍련', element: 'Fire', burstTier: 3, overload: [{ name: '공격력 증가', value: 40.91 }] },
@@ -179,6 +182,7 @@ describe('isFiltering', () => {
     expect(isFiltering({ ...EMPTY_FILTER, query: '홍' })).toBe(true)
     expect(isFiltering({ ...EMPTY_FILTER, elements: ['Fire'] })).toBe(true)
     expect(isFiltering({ ...EMPTY_FILTER, burstTiers: [2] })).toBe(true)
+    expect(isFiltering({ ...EMPTY_FILTER, excludedOnly: true })).toBe(true)
   })
 
   it('ignores whitespace-only search text', () => {
@@ -189,5 +193,31 @@ describe('isFiltering', () => {
   // button are about hiding, so a sort choice must not raise them.
   it('is false for a sort choice alone', () => {
     expect(isFiltering({ ...EMPTY_FILTER, sortKey: '우코', sortDir: 'desc' })).toBe(false)
+  })
+})
+
+// 니케 풀에서 뺀 니케를 다시 찾아보는 축. 다른 칩들과 같은 「선택한 것만 표시」
+// 규약이라, 안 켜면 아무것도 안 거른다.
+describe('제외한 니케 축', () => {
+  const ROWS_WITH_EXCLUSION: Row[] = [
+    { slug: 'a', name: '가', element: 'Fire', burstTier: 1, overload: [], excluded: true },
+    { slug: 'b', name: '나', element: 'Fire', burstTier: 1, overload: [] },
+    { slug: 'c', name: '다', element: 'Water', burstTier: 1, overload: [], excluded: true },
+  ]
+  const withExclusion = (state: Partial<UnitFilterState>) =>
+    names(filterAndSort(ROWS_WITH_EXCLUSION, facets, { ...EMPTY_FILTER, ...state }))
+
+  it('꺼져 있으면 제외 여부를 안 본다', () => {
+    expect(withExclusion({})).toEqual(['가', '나', '다'])
+  })
+
+  it('켜면 제외된 니케만 남는다', () => {
+    expect(withExclusion({ excludedOnly: true })).toEqual(['가', '다'])
+  })
+
+  // 축들은 AND로 만난다 - 「제외한 화염 니케」가 나와야지 「제외했거나 화염」이
+  // 아니다.
+  it('다른 축과 겹쳐서 걸린다', () => {
+    expect(withExclusion({ excludedOnly: true, elements: ['Fire'] })).toEqual(['가'])
   })
 })

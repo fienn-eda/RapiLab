@@ -45,13 +45,22 @@ interface UnitFilterBarProps {
   /** 필터를 통과한 개수와 전체 개수. 숨긴 유닛이 있을 때만 쓰인다. */
   shown: number
   total: number
+  /** 이 화면에 후보 풀이라는 개념이 있는가. 없으면 「제외」 칩을 안 그린다 -
+   * 아무것도 제외될 수 없는 화면에서 그 칩은 언제나 빈 격자를 만든다. */
+  excludable?: boolean
 }
 
 /** 다중 선택 축에서 한 값을 켜고 끈다. */
 const toggle = <T,>(list: T[], value: T): T[] =>
   list.includes(value) ? list.filter((item) => item !== value) : [...list, value]
 
-export function UnitFilterBar({ value, onChange, shown, total }: UnitFilterBarProps) {
+export function UnitFilterBar({
+  value,
+  onChange,
+  shown,
+  total,
+  excludable = false,
+}: UnitFilterBarProps) {
   const searchId = useId()
   const sortId = useId()
   const sortDirId = useId()
@@ -153,6 +162,23 @@ export function UnitFilterBar({ value, onChange, shown, total }: UnitFilterBarPr
             </button>
           ))}
         </div>
+
+        {/* 속성·단계와 같은 「선택한 것만 표시」 규약이라 같은 칩 모양을 쓴다.
+            아이콘이 없는 축이라 글자로 서고, 그래서 다른 칩들과 높이를 맞추는
+            것은 CSS 몫이다. 축이 하나뿐이라 role="group"은 안 붙인다 - 버튼
+            자신의 글자가 이미 그 이름이다. */}
+        {excludable && (
+          <div className="unit-filter__chips">
+            <button
+              type="button"
+              className="unit-filter__chip unit-filter__chip--text"
+              aria-pressed={value.excludedOnly}
+              onClick={() => onChange({ ...value, excludedOnly: !value.excludedOnly })}
+            >
+              제외한 니케
+            </button>
+          </div>
+        )}
       </div>
 
       {filtering && (
@@ -171,6 +197,7 @@ export function UnitFilterBar({ value, onChange, shown, total }: UnitFilterBarPr
                 query: EMPTY_FILTER.query,
                 elements: EMPTY_FILTER.elements,
                 burstTiers: EMPTY_FILTER.burstTiers,
+                excludedOnly: EMPTY_FILTER.excludedOnly,
               })
             }
           >

@@ -20,6 +20,10 @@ export interface UnitFilterState {
   elements: NikkeElement[]
   /** 빈 배열 = 전부 표시. */
   burstTiers: BurstTier[]
+  /** 켜면 니케 풀에서 제외한 니케만 남는다. 다중 선택 축이 아니라 켬/끔인
+   * 이유는 값이 둘뿐이기 때문이다 - 「제외 안 한 니케만」은 이 앱의 기본 화면
+   * 그 자체라 따로 고를 것이 없다. */
+  excludedOnly: boolean
   sortKey: SortKey
   sortDir: 'asc' | 'desc'
 }
@@ -31,6 +35,7 @@ export const EMPTY_FILTER: UnitFilterState = {
   query: '',
   elements: [],
   burstTiers: [],
+  excludedOnly: false,
   sortKey: '우코',
   sortDir: 'desc',
 }
@@ -40,7 +45,8 @@ export const EMPTY_FILTER: UnitFilterState = {
 export const isFiltering = (state: UnitFilterState): boolean =>
   state.query.trim() !== '' ||
   state.elements.length > 0 ||
-  state.burstTiers.length > 0
+  state.burstTiers.length > 0 ||
+  state.excludedOnly
 
 /** 필터·정렬이 유닛에서 읽는 것 전부. 호출부가 자기 저장 모양을 이걸로
  * 환원해 넘기므로, 두 화면이 데이터 구조를 통일하지 않고도 규칙을 공유한다. */
@@ -53,6 +59,10 @@ export interface UnitFacets {
   element: NikkeElement
   burstTier: BurstTier
   overload: { name: string; value: number | string }[]
+  /** 니케 풀에서 제외된 니케인가. 유닛이 아니라 화면이 아는 값이라 호출부가
+   * 실어 준다 - 후보 풀이라는 개념이 없는 화면(미란다 계산기)에서는 언제나
+   * false다. */
+  excluded: boolean
 }
 
 /** 한 오버로드 옵션의 4부위 합산값. 안 굴렸으면 0 - 실제 기여가 0이므로
@@ -95,6 +105,7 @@ const matches = (facets: UnitFacets, state: UnitFilterState): boolean => {
   if (query !== '' && !matchesQuery(facets, query)) return false
   if (state.elements.length > 0 && !state.elements.includes(facets.element)) return false
   if (state.burstTiers.length > 0 && !state.burstTiers.includes(facets.burstTier)) return false
+  if (state.excludedOnly && !facets.excluded) return false
   return true
 }
 

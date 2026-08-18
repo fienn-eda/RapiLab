@@ -368,6 +368,17 @@
   border-radius: var(--radius-sm);
 }
 
+/* 아이콘이 없는 축(제외한 니케)의 칩. 글자 높이에 맡기면 옆의 아이콘 칩들보다
+   낮게 서서 한 줄이 어긋나므로 같은 상자 높이를 쓴다 - 폭만 글자를 따라간다. */
+.unit-filter__chip--text {
+  display: inline-flex;
+  align-items: center;
+  height: var(--filter-chip-box);
+  padding: 0 var(--sp-3);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+}
+
 .unit-filter__icon {
   display: block;
   height: var(--filter-icon);
@@ -2203,6 +2214,29 @@
 .palette__item--excluded,
 .palette__item--seated {
   cursor: default;
+}
+
+/* 「니케 풀에서 풀어 주세요」. 오버로드 팝오버(.palette__details)는 아래로 열리고
+   이쪽은 옆으로 열린다 - 누르는 동안 마우스가 칩 위에 있어 둘이 반드시 같이 뜨기
+   때문이다. z-index는 그 팝오버(2)와 떠 있는 칩(3)보다 위다: 답이 가리면 안 된다.
+   테두리가 accent인 것은 이것이 앱이 가리키는 것이기 때문이고, 배경이 불투명한
+   것은 --shadow가 없어 경계를 배경과 테두리만으로 세우기 때문이다. */
+.palette__blocked {
+  position: absolute;
+  top: 0;
+  left: calc(100% + var(--sp-1));
+  z-index: 4;
+  width: max-content;
+  max-width: 180px;
+  margin: 0;
+  padding: var(--sp-2);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: left;
 }
 
 /* Draft editor ------------------------------------------------------------ */

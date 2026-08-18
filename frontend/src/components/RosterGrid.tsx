@@ -87,6 +87,7 @@ export function RosterGrid({
       element: unit.element,
       burstTier: unit.burstTier,
       overload: draft.overload_options,
+      excluded: excludedSet.has(draft.character_slug),
     }
   }
 
@@ -104,6 +105,7 @@ export function RosterGrid({
             onChange={setFilter}
             shown={visible.length}
             total={supported.length}
+            excludable
           />
           {/* 필터 툴바가 아니라 여기에 있다 - 툴바는 추천 팔레트와 공유하는데,
               장비 격자는 로스터 카드에만 있는 표시다.

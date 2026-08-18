@@ -13,12 +13,13 @@
 // portrait onto a deck on top of that - a browser-only convenience, since the
 // packaged app's WebView2 delivers no drop.
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { usePortraitManifest } from '../hooks/usePortraitManifest'
 import { BURST_TIERS, type SupportedUnit } from '../types/supportedUnit'
 import type { UserNikkeState } from '../types/userNikkeState'
 import { elementLabel } from '../lib/elementName'
 import { EMPTY_FILTER, filterAndSort, type UnitFacets, type UnitFilterState } from '../lib/unitFilter'
+import { HELP } from '../lib/helpText'
 import { FavoriteItemBadge } from './FavoriteItemBadge'
 import { OverloadLines, SkillPip } from './InvestmentSummary'
 import { UnitFilterBar } from './UnitFilterBar'
@@ -33,6 +34,11 @@ export interface UnitInvestment {
 }
 
 const STAR_SLOTS = 3
+
+/** 「니케 풀에서 풀어 주세요」 말풍선이 떠 있는 시간(ms). 답이지 알림이 아니라
+ * 스스로 사라진다 - 닫기 버튼을 달면 유저가 치워야 할 것이 하나 더 생기고,
+ * 안 사라지면 팔레트 밖을 눌렀을 때 말풍선만 남는다. */
+const BLOCKED_NOTICE_MS = 4000
 
 /** dataTransfer key for a dragged unit. A custom type (rather than text/plain)
  * keeps a stray drag from elsewhere in the page reading as a unit drop. */
@@ -86,7 +92,7 @@ const NO_INVESTMENT: UnitInvestment = {}
 export function UnitPalette({
   roster,
   supportedUnits,
-  excludedSlugs = [],
+  excludedSlugs,
   onToggleExclude,
   usedSlugs = [],
   draggable = false,
@@ -96,8 +102,19 @@ export function UnitPalette({
   const { portraitFor } = usePortraitManifest()
   const ownedBySlug = new Map(roster.map((nikke) => [nikke.character_slug, nikke]))
   const usedSet = new Set(usedSlugs)
-  const excludedSet = new Set(excludedSlugs)
+  const excludedSet = new Set(excludedSlugs ?? [])
   const shown = supportedUnits.filter((unit) => ownedBySlug.has(unit.slug))
+
+  /** 배치 화면에서 제외된 칩을 눌렀을 때 뜨는 말풍선의 주인. 같은 칩을 다시
+   * 눌러도 시계가 처음부터 가도록 nonce를 함께 센다 - slug만 담으면 React가
+   * 같은 값이라고 보고 상태를 안 바꿔, 사라지려던 말풍선이 그대로 사라진다. */
+  const [blocked, setBlocked] = useState<{ slug: string; nonce: number } | null>(null)
+
+  useEffect(() => {
+    if (blocked === null) return
+    const timer = setTimeout(() => setBlocked(null), BLOCKED_NOTICE_MS)
+    return () => clearTimeout(timer)
+  }, [blocked])
 
   // Owned by the palette rather than by RecommendPanel: nothing outside this
   // component may read the filter, precisely because reading it would invite
@@ -111,6 +128,7 @@ export function UnitPalette({
     element: unit.element,
     burstTier: unit.burstTier,
     overload: ownedBySlug.get(unit.slug)!.overload_options,
+    excluded: excludedSet.has(unit.slug),
   })
 
   // Sorted across the whole palette, then partitioned by tier below - a
@@ -126,8 +144,17 @@ export function UnitPalette({
           onChange={setFilter}
           shown={visible.length}
           total={shown.length}
+          excludable={excludedSlugs !== undefined}
         />
       )}
+      {/* 처음부터 자리를 지키는 라이브 영역. 문구와 함께 영역 자체가 새로 붙으면
+          스크린리더가 놓치는 일이 있어, 문장만 갈아 끼운다. role="status" 대신
+          같은 뜻의 속성 둘을 직접 거는 이유는, 팔레트를 품은 화면이 제 진행
+          상황을 알리는 status를 이미 갖고 있어서다 - 한 화면에 status가 둘이면
+          어느 쪽이 그 화면의 답인지 말할 수 없다. */}
+      <p className="visually-hidden" aria-live="polite" aria-atomic="true">
+        {blocked === null ? '' : HELP.draft.excludedElsewhere}
+      </p>
       {BURST_TIERS.map((tier) => {
         const units = visible.filter((unit) => unit.burstTier === tier)
         if (units.length === 0) return null
@@ -156,9 +183,19 @@ export function UnitPalette({
                 // 표적은 칩 테두리 안 전체다. 껍데기 핸들러는 버튼의 disabled를
                 // 우회하므로 같은 조건을 여기서 다시 본다 - 안 그러면 제외된
                 // 칩의 스킬레벨 칸을 눌러 배치할 수 있다.
+                //
+                // 제외된 칩은 막되 침묵하지는 않는다: 제외를 푸는 곳은 니케 풀
+                // 탭이라 이 화면에는 되돌릴 컨트롤이 없고, 아무 답도 없으면
+                // 칩이 고장 난 것으로 읽힌다.
                 const handleChipClick = onSeat
                   ? () => {
-                      if (isUsed || isExcluded) return
+                      if (isExcluded) {
+                        setBlocked((prev) => ({ slug: unit.slug, nonce: (prev?.nonce ?? 0) + 1 }))
+                        return
+                      }
+                      // 다른 칩을 눌렀다는 것 자체가 말풍선을 다 읽었다는 뜻이다.
+                      setBlocked(null)
+                      if (isUsed) return
                       onSeat(unit.slug)
                     }
                   : onToggleExclude
@@ -191,12 +228,19 @@ export function UnitPalette({
                         onSeat
                           ? isUsed
                             ? `${unit.name} 배치됨`
-                            : `${unit.name} 배치`
+                            : isExcluded
+                              ? `${unit.name} 제외됨`
+                              : `${unit.name} 배치`
                           : onToggleExclude
                             ? `${unit.name} 사용`
                             : unit.name
                       }
-                      disabled={onSeat !== undefined && (isUsed || isExcluded)}
+                      // 앉은 칩은 진짜로 죽는다 - 앉았다는 테두리가 이미 이유를
+                      // 말한다. 제외된 칩은 aria-disabled로 「눌러도 안 된다」만
+                      // 알리고 초점과 클릭은 살려 둔다: 왜 안 되는지는 누른
+                      // 뒤에야 뜨는데, disabled면 그 누름이 아예 안 온다.
+                      disabled={onSeat !== undefined && isUsed}
+                      aria-disabled={onSeat !== undefined && isExcluded ? true : undefined}
                       tabIndex={onSeat || onToggleExclude ? undefined : -1}
                       draggable={draggable && !isExcluded && !isUsed}
                       onDragStart={(event) => {
@@ -248,6 +292,16 @@ export function UnitPalette({
                       <SkillPip label="S2" level={owned.skill_levels.skill2} />
                       <SkillPip label="B" level={owned.skill_levels.burst} />
                     </ul>
+
+                    {/* 칩 오른쪽으로 열린다 - 오버로드 팝오버가 아래로 열리는데,
+                        누르는 동안은 마우스가 칩 위에 있어 둘이 동시에 떠 있다.
+                        읽히는 것은 팔레트 뿌리의 라이브 영역 쪽이라 여기서는
+                        숨긴다: 같은 문장을 두 번 읽어 준다. */}
+                    {blocked?.slug === unit.slug && (
+                      <p className="palette__blocked" aria-hidden="true">
+                        {HELP.draft.excludedElsewhere}
+                      </p>
+                    )}
                   </li>
                 )
               })}

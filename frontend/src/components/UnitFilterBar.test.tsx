@@ -5,7 +5,10 @@ import { UnitFilterBar } from './UnitFilterBar'
 import { EMPTY_FILTER, type UnitFilterState } from '../lib/unitFilter'
 import { HELP } from '../lib/helpText'
 
-const bar = (value: Partial<UnitFilterState> = {}, counts: { shown?: number; total?: number } = {}) => {
+const bar = (
+  value: Partial<UnitFilterState> = {},
+  counts: { shown?: number; total?: number; excludable?: boolean } = {},
+) => {
   const onChange = vi.fn()
   render(
     <UnitFilterBar
@@ -13,6 +16,7 @@ const bar = (value: Partial<UnitFilterState> = {}, counts: { shown?: number; tot
       onChange={onChange}
       shown={counts.shown ?? 5}
       total={counts.total ?? 5}
+      excludable={counts.excludable}
     />,
   )
   return onChange
@@ -165,5 +169,41 @@ describe('UnitFilterBar', () => {
   it('stays quiet when there were no units to begin with', () => {
     bar({ query: '홍' }, { shown: 0, total: 0 })
     expect(screen.queryByText(HELP.roster.emptyFilter)).not.toBeInTheDocument()
+  })
+})
+
+// 속성·단계와 같은 칩이지만 아이콘이 없는 축이라 글자가 그 이름이다.
+describe('UnitFilterBar 제외한 니케 칩', () => {
+  // 후보 풀이라는 개념이 없는 화면(미란다 계산기)에서 이 칩은 언제나 빈 격자를
+  // 만든다 - 켤 수는 있는데 답이 없는 컨트롤을 남기지 않는다.
+  it('후보 풀이 없는 화면에는 안 나온다', () => {
+    bar()
+    expect(screen.queryByRole('button', { name: '제외한 니케' })).not.toBeInTheDocument()
+  })
+
+  it('켜면 제외한 니케만 남기라고 알린다', async () => {
+    const user = userEvent.setup()
+    const onChange = bar({}, { excludable: true })
+    const chip = screen.getByRole('button', { name: '제외한 니케' })
+    expect(chip).toHaveAttribute('aria-pressed', 'false')
+    await user.click(chip)
+    expect(onChange).toHaveBeenCalledWith({ ...EMPTY_FILTER, excludedOnly: true })
+  })
+
+  it('켜져 있으면 눌린 채로 서고, 다시 누르면 꺼진다', async () => {
+    const user = userEvent.setup()
+    const onChange = bar({ excludedOnly: true }, { excludable: true })
+    const chip = screen.getByRole('button', { name: '제외한 니케' })
+    expect(chip).toHaveAttribute('aria-pressed', 'true')
+    await user.click(chip)
+    expect(onChange).toHaveBeenCalledWith({ ...EMPTY_FILTER, excludedOnly: false })
+  })
+
+  // 숨기는 축이므로 「필터 해제」가 걷어가는 것에 포함된다.
+  it('필터 해제가 이 축도 같이 끈다', async () => {
+    const user = userEvent.setup()
+    const onChange = bar({ excludedOnly: true }, { excludable: true })
+    await user.click(screen.getByRole('button', { name: '필터 해제' }))
+    expect(onChange).toHaveBeenCalledWith(EMPTY_FILTER)
   })
 })
