@@ -36,13 +36,16 @@ the main agent updating this file.
 **Roster is sync-only.** The roster comes exclusively from a blablalink sync
 (the bookmarklet flow below); there is no manual entry form and no
 ExiaInvasion file import — both were removed. The roster display
-(`RosterGrid` / `NikkeCard`) is read-only. If ShiftyPad/blablalink can't supply
-a field the deck search needs, that's an engine-data gap to raise with the main
-agent, not something to patch over with a manual-input form.
+(`RosterGrid` / `NikkeCard`) never edits investment data; the one thing a card
+click changes is whether that Nikke is **excluded** from the search. If
+ShiftyPad/blablalink can't supply a field the deck search needs, that's an
+engine-data gap to raise with the main agent, not something to patch over with
+a manual-input form.
 
-The app is **two tabs**, Roster and Recommend. Both panels stay mounted and only
-toggle `hidden`: a raid run takes 1–2 minutes, and unmounting the recommend
-panel to switch tabs would abandon a request already in flight.
+The app is **five tabs** in a collapsible sidebar — 니케 풀, 솔로 레이드, 유니온
+레이드, 계산기, 동기화 (`TABS` in `App.tsx` is the list). Every panel stays
+mounted and only toggles `hidden`: a raid run takes 1–2 minutes, and unmounting
+a panel to switch tabs would abandon a request already in flight.
 
 ## Multi-account profiles
 
