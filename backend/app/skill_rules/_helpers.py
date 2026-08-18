@@ -281,7 +281,15 @@ def round_buff_rule(trigger, buffs, shots=1, cap=None, from_own_shot=False):
                            concurrent, cap_group, from_own_shot)
             )
 
-    return SkillRule(trigger=trigger, action=action)
+    rule = SkillRule(trigger=trigger, action=action)
+    # Tagged so a DECK can be asked "does anyone here hand a round buff to
+    # somebody else?" without a hand-maintained list of granters going stale.
+    # That question is the gate on the hold-fire tactic: holding fire only ever
+    # pays by preserving such a buff (see `hold_fire_segments`), so a deck
+    # without one never needs the alternative scored.
+    rule.grants_round_buff_to_allies = any(
+        scope_spec != "self" for _stat, _value, scope_spec in buffs)
+    return rule
 
 
 def linear_resource_buff(stat, per_stack, scope):
@@ -561,6 +569,83 @@ def silent_reload_segments(slug, reload_seconds, weapon, *, offset=0.0):
                     "rate_of_fire": 1.0 / (reload_seconds * 2),
                 },
             })
+        return segments
+
+    return schedule
+
+
+# A released shot is fired JUST before Full Burst closes, not at the bell: the
+# window is half-open, so a shot landing exactly on the end is outside it and
+# would lose the Full Burst bonus the tactic exists to collect. One frame in.
+HOLD_FIRE_RELEASE_MARGIN = 1.0 / 60
+
+
+def hold_fire_segments(weapon_stats, slug, *, release_shots=0,
+                       release_margin=HOLD_FIRE_RELEASE_MARGIN):
+    """Windows where the player deliberately HOLDS FIRE - one per Full Burst the
+    unit opened with her own burst.
+
+    A round-count buff is spent BY a bullet, so not firing keeps it: an ally's
+    "for N round(s)" buff stays up for the whole window, and every skill hit
+    inside it lands under it - Mihara's chain DoT and Dragging Chain, Ein's Near
+    Feathers. That is a real in-game tactic (Fienn, 2026-08-18).
+
+    **This is a PLAY DECISION, not a unit property**, and nothing here turns it
+    on. Holding fire adds nothing by itself; it only ever pays by preserving an
+    ally's buff, so in a deck without one it is a straight loss - measured at
+    -31.66% for Mihara and -27.39% for Ein. See `deck_search.evaluate_deck`'s
+    `hold_fire`, which is where the caller chooses, the same way `max_bursts`
+    already models "what the player actually did in this run".
+
+    `release_shots=1` fires exactly one shot just inside the window's close -
+    the full charge she held and let go. `0` holds throughout, for a unit whose
+    single shot is not worth the release (Mihara's MG).
+
+    The window comes from `context.full_burst_windows`, so an extension counts
+    (Modernia's +5 sec, Soda's staged one) rather than a hardcoded 10.
+    """
+    weapon = weapon_stats["weapon"]
+
+    def schedule(context, fight_duration):
+        segments = []
+        for burst_time in context.burst_times.get(slug, []):
+            # Full Burst opens just AFTER the Burst-3 cast, so hers is the first
+            # window starting at or after her own burst.
+            window = next(((s, e) for s, e in context.full_burst_windows
+                           if s >= burst_time), None)
+            if window is None:
+                continue
+            start, end = window[0], min(window[1], fight_duration)
+            if end - start <= release_margin:
+                continue
+            if release_shots:
+                # Shots land at start + k * interval and an `until_shots` window
+                # ends at its last one, so one interval short of the close puts
+                # the release just inside Full Burst and hands the base weapon
+                # back the remaining sliver.
+                segments.append({
+                    "start": start,
+                    "until_shots": release_shots,
+                    "profile": {
+                        "weapon": weapon,
+                        "damage_percent": weapon_stats["damage_percent"],
+                        "rate_of_fire": release_shots / (end - start - release_margin),
+                        "charge_damage_percent": weapon_stats.get(
+                            "charge_damage_percent", 0.0),
+                    },
+                })
+            else:
+                # Nothing fires: the rate is slower than the window is long, the
+                # same shape `silent_reload_segments` uses to spend a reload.
+                segments.append({
+                    "start": start,
+                    "end": end,
+                    "profile": {
+                        "weapon": weapon,
+                        "damage_percent": 0.0,
+                        "rate_of_fire": 1.0 / (2 * (end - start)),
+                    },
+                })
         return segments
 
     return schedule

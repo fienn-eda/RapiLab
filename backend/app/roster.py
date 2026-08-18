@@ -42,10 +42,12 @@ from app.skill_rules.registry import (
     get_resource_gated_buffs,
     get_resource_scaled_nukes,
     get_resource_specs,
+    get_hold_fire_release_shots,
     get_scheduled_nukes,
     get_unlimited_ammo_duration,
     get_weapon_mode_schedules,
 )
+from app.skill_rules._helpers import hold_fire_segments
 from app.squad_engine import SkillRule
 
 
@@ -135,7 +137,7 @@ def _merge_resource_contributions(resource_specs, contributions, members):
                     _add_fill_source(spec, contribution)
 
 
-def assemble_simulation_inputs(ordered_deck):
+def assemble_simulation_inputs(ordered_deck, hold_fire=()):
     deck = []
     rules_by_slug = {}
     burst_damage_percents = {}
@@ -305,6 +307,18 @@ def assemble_simulation_inputs(ordered_deck):
             scheduled_nukes[spec.slug] = scheduled_nuke
 
         weapon_mode_schedule = get_weapon_mode_schedules(spec.slug, skill_values)
+        if spec.slug in hold_fire:
+            # The player held fire through this unit's own Full Bursts. A unit
+            # that ALSO transforms her weapon would need the two schedules
+            # composed; none of today's hold-fire units does, so a collision is
+            # raised rather than silently resolved one way.
+            if weapon_mode_schedule is not None:
+                raise ValueError(
+                    f"{spec.slug!r} holds fire and already has a weapon-mode "
+                    f"schedule - compose the two before enabling this")
+            weapon_mode_schedule = hold_fire_segments(
+                spec.weapon_stats, spec.slug,
+                release_shots=get_hold_fire_release_shots(spec.slug))
         if weapon_mode_schedule:
             weapon_mode_schedules[spec.slug] = weapon_mode_schedule
 

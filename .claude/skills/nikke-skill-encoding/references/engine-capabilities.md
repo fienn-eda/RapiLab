@@ -612,6 +612,40 @@ Two traps:
   past the window; Nayuta and Moran fire a segment, which never reloads), so
   wiring this into shot generation would model the same thing twice.
 
+**Holding fire through your own Full Burst (2026-08-18):** a round buff is spent
+BY a bullet, so a unit who deliberately does not fire keeps an ally's buff for
+the whole window and every skill hit in it lands under that buff. Real in-game
+tactic on Mihara (chain DoT + Dragging Chain), Ein (Near Feathers) and Ada Wong.
+Built with `_helpers.hold_fire_segments(weapon_stats, slug, release_shots=N)`,
+one segment per Full Burst the unit opened herself, read off
+`context.full_burst_windows` so an extension counts. `release_shots=1` fires the
+held full charge one frame inside the close (`HOLD_FIRE_RELEASE_MARGIN`) - on
+the bell it would be outside the half-open window and lose the Full Burst bonus
+the tactic exists to collect; `0` holds throughout.
+
+**It is a PLAY DECISION, and encoding must not make it a unit property.**
+Holding fire adds nothing by itself - it only pays by preserving somebody
+else's buff - so in a deck without one it is a straight loss (measured: Mihara
+−31.66%, Ein −27.39%). `registry._HOLD_FIRE_TACTICS` only says the tactic
+EXISTS for a unit and how many shots she releases; switching it on is
+`deck_search.evaluate_deck`'s `hold_fire`, the same category as `max_bursts`.
+The chooser is `evaluate_deck_best_seating` (REPORT path, never the search hot
+path), gated by `evaluate_deck_hold_fire_options`: a deck is only offered the
+alternative when it holds such a unit AND somebody in it grants a round buff to
+an ally. That gate reads `SkillRule.grants_round_buff_to_allies`, set by
+`round_buff_rule` itself, so a newly encoded granter is covered the day it lands
+rather than the day someone remembers a table.
+
+**A hold needs the unit's damage model to survive being fired ONCE.** Ada Wong
+plays the tactic in game and is deliberately absent from the table: her Special
+Modification is "Charge Speed ▼300%" (charge time ×4), which the engine does not
+put on the timeline at all - a 1-round charge-speed grant can never reach the
+magazine boundary where charge speed is sampled, so `ada_wong.py` folds the pair
+into a NET charge_damage_bonus (15/4 − 1 = +2.75) instead. That approximation
+pays the ×4 time cost in FEWER SHOTS, which is exactly what the tactic stops
+doing: her released shot would charge in 1.0 sec instead of 4.0 and carry +2.75
+instead of +15.0. Re-encode the pair before encoding her hold.
+
 **Highest-final-ATK top-N targeting:** for "N allies with the highest final
 ATK". `highest_atk_buff_rule(trigger, n, [(stat, value, duration), ...])`
 applies timed buffs to the top-n; `round_buff_rule(..., ("top_atk", n))` does

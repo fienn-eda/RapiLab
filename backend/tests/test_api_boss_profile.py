@@ -76,7 +76,8 @@ def test_evaluate_deck_forwards_every_boss_field_the_simulator_accepts(monkeypat
         captured.update(kwargs)
         return {"total_damage": 0.0, "damage_log": [], "events": []}
 
-    monkeypatch.setattr(deck_search, "assemble_simulation_inputs", lambda deck: {})
+    monkeypatch.setattr(deck_search, "assemble_simulation_inputs",
+                        lambda deck, **kwargs: {})
     monkeypatch.setattr(deck_search, "simulate_raid", fake_simulate_raid)
     deck_search.evaluate_deck([], deck_search.BossProfile())
 

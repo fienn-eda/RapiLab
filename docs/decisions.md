@@ -5,6 +5,37 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 홀드 파이어는 유닛 속성이 아니라 런의 선택이고, 게이트는 규칙에서 읽는다
+
+- Date: 2026-08-18
+- Context: 미하라·에이다·아인에게 「자기 버스트로 연 풀 버스트 동안 평타를 일부러
+  안 쏴서 미란다의 크확 「1발 유지」를 창 내내 살리고 스킬딜을 전부 크리로 박는」
+  실전 택틱이 있다(Fienn). 엔진은 사격을 결정론적으로 생성하므로 「안 쏜다」를
+  표현할 방법이 없었다.
+- Alternatives considered: (a) 유닛 속성으로 박는다 — **기각, 측정으로**:
+  미란다 없는 덱에서 홀드는 미하라 **−31.66%**·아인 **−27.39%**다. (b) 엔진이
+  자동 판정(그 창에 라운드 버프가 살아 있으면 홀드) — 샷타임↔그랜트창↔홀드결정이
+  물려 되먹임 루프가 된다. 미채택. (c) 탐색 핫패스에서 둘 다 재기 — 요청당
+  ~1200덱을 재는데 감당 못 한다(`evaluate_deck_best_seating` 독스트링의 좌석
+  배치와 같은 논리).
+- Decision: **런의 선택으로 받는다** — `evaluate_deck(hold_fire={slug})`,
+  `max_bursts`와 같은 범주. 고르는 곳은 **리포트 경로**
+  `evaluate_deck_best_seating`이고, 후보는 `evaluate_deck_hold_fire_options`가
+  낸다: 덱에 택틱 대상 유닛이 있고 **동시에** 라운드 버프를 남에게 주는 유닛이
+  있을 때만 대안을 채점한다. 부분집합을 다 낸다 — 「둘 다 홀드」가 최적이 아닌
+  실측 사례가 있다(아인+에이다 덱에서 에이다까지 홀드하면 덱 총딜 −3%p).
+- Why: 게이트를 **슬러그 목록이 아니라 규칙 태그**(`grants_round_buff_to_allies`,
+  `round_buff_rule`이 직접 붙인다)로 읽는 게 핵심이다 — 새 라운드 버프 제공자가
+  인코딩되는 날 자동으로 포함되고, 손유지 목록이 낡을 자리가 없다.
+- Consequences: 고정 셸 스윕 **101 중 0 변경**, 벤치 `evaluate_deck` 무변화
+  (184.34/175.58ms vs 세션 이전 180.87/177.71ms — 노이즈 범위). 즉 **끄면 오늘
+  그대로**다. 측정(180초, 대상을 top-ATK로): 미하라+미란다 덱 **+2.15%** ·
+  아인+미란다 **+0.83%** · **아인+미란다+타키나 +7.37%**(니어페더가 트루뎀이라
+  방무댐 버퍼와 곱해진다 — Fienn 지적대로다). **에이다는 대상에서 뺐다**: 그녀
+  Special Modification의 차지속도 ▼300%가 타임라인에 없고 넷 차지댐(+2.75) 근사로
+  접혀 있는데, 그 근사의 전제(×4 시간 비용을 「샷 수가 줄어서」 낸다)가 한 발만
+  쏘는 이 택틱에서 무너진다. 백엔드 2524 passed.
+
 ## 라운드 버프는 소모한 탄에서 닫히고, 탄이 만든 버프는 다음 탄의 것이며, 문구 없으면 중첩 안 한다
 
 - Date: 2026-08-18

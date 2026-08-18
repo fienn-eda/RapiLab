@@ -25,7 +25,8 @@ from app.elements import weakness_of
 from app.raid_simulator import simulate_raid
 from app.roster import assemble_simulation_inputs
 from app.skill_rules.registry import (SEATED_BUFF_SLUGS, TASTE_INDUCER_SLUGS,
-                                      character_map, get_burst_delay,
+                                      character_map, deck_grants_ally_round_buffs,
+                                      get_burst_delay, get_hold_fire_release_shots,
                                       has_burst_delay)
 
 # candidate slug -> the owned character it is a build of, for the seat-exclusion
@@ -439,7 +440,7 @@ def feasible_orderings(roster, deck_filter=None):
 
 
 def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None,
-                  collect_target_grants=False, adjacency=None):
+                  collect_target_grants=False, adjacency=None, hold_fire=()):
     """`max_bursts` ({slug: N}) caps how many times a seat spends its burst, for
     scoring a run the player actually played rather than one the scheduler would
     choose: 0 is a totem seated for its passives alone, 1 an opening burst then
@@ -453,8 +454,16 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None,
     `adjacency` ({slug: [양 옆 아군 둘]})는 "자신과 양 옆 아군 2명" 불릿이 누구에게
     가는지를 못박는다. 안 주면 `SquadContext.neighbor_slugs`의 정책(최고 ATK 둘)이
     답하므로 탐색 경로의 비용은 오늘 그대로고, 최적 좌석이 필요한 쪽은
-    `evaluate_deck_best_seating`을 부른다."""
-    inputs = assemble_simulation_inputs(ordered_deck)
+    `evaluate_deck_best_seating`을 부른다.
+
+    `hold_fire` (슬러그 집합)는 그 유닛이 **자기 버스트로 연 풀 버스트 동안 평타를
+    의도적으로 안 쐈다**는 것이다 - 탄으로 소모되는 「N발 유지」 버프를 창 내내
+    살려 스킬딜을 전부 그 아래에 놓는 실전 택틱이다(Fienn, 2026-08-18).
+    `max_bursts`와 같은 범주다: **런에서 내린 결정이지 유닛 속성이 아니므로**
+    레지스트리에서 오지 않는다. 라운드 버프를 남에게 주는 유닛이 덱에 없으면
+    홀드는 순손해라(미하라 −31.66%·아인 −27.39% 실측) 부를 이유도 없다 -
+    `evaluate_deck_hold_fire_options`가 그 게이트를 답한다."""
+    inputs = assemble_simulation_inputs(ordered_deck, hold_fire=hold_fire)
     if max_bursts:
         for member in inputs["deck"]:
             if member["slug"] in max_bursts:
@@ -474,6 +483,31 @@ def evaluate_deck(ordered_deck, boss: BossProfile, max_bursts=None,
         collect_target_grants=collect_target_grants,
         adjacency=adjacency,
     )
+
+
+def evaluate_deck_hold_fire_options(ordered_deck):
+    """The `hold_fire` sets worth SCORING for this deck, cheapest first.
+
+    Always includes the empty set (nobody holds - today's answer). The
+    alternatives only appear when the deck actually holds a unit the tactic is
+    played on AND somebody in it hands out a "for N round(s)" buff: holding fire
+    removes shots and adds nothing on its own, so with no such buff to preserve
+    the alternative is a guaranteed loss and is not worth a simulation.
+
+    Subsets rather than one all-on set, because holding is not jointly good: in
+    a deck with three Burst 3s, Ada holding while Ein also holds cost the deck
+    3 percentage points against Ein holding alone, since she barely bursts and
+    threw her normal attacks away for a window she rarely opened."""
+    slugs = [unit.slug for unit in ordered_deck]
+    holders = [slug for slug in slugs if get_hold_fire_release_shots(slug) is not None]
+    if not holders:
+        return [frozenset()]
+    inputs = assemble_simulation_inputs(ordered_deck)
+    if not deck_grants_ally_round_buffs(inputs["rules_by_slug"]):
+        return [frozenset()]
+    return [frozenset(subset)
+            for size in range(len(holders) + 1)
+            for subset in combinations(holders, size)]
 
 
 def seat_arrangements(ordered_deck):
@@ -532,16 +566,32 @@ def evaluate_deck_best_seating(ordered_deck, boss: BossProfile, **kwargs):
     handful of decks actually shown to the player are re-scored here. A deck
     with no seated-buff unit costs exactly one simulation, as before, and
     carries no `seating` key - there is nothing for the player to arrange.
+
+    The HOLD-FIRE tactic is chosen here for the same reason and on the same
+    terms (`evaluate_deck_hold_fire_options`): whether to stop firing through a
+    unit own Full Burst is a play decision, worth several percent when an ally
+    round buff is there to preserve and a straight loss when it is not, and the
+    gate means a deck that cannot use it still costs exactly one simulation.
+    The winner is reported as `result["hold_fire"]`, absent when nobody holds.
     """
     arrangements = seat_arrangements(ordered_deck)
-    if not arrangements:
+    holds = evaluate_deck_hold_fire_options(ordered_deck)
+    if not arrangements and holds == [frozenset()]:
         return evaluate_deck(ordered_deck, boss, **kwargs)
-    best, best_arrangement = None, None
-    for adjacency in arrangements:
-        result = evaluate_deck(ordered_deck, boss, adjacency=adjacency, **kwargs)
-        if best is None or result["total_damage"] > best["total_damage"]:
-            best, best_arrangement = result, adjacency
-    best["seating"] = best_arrangement
+    best, best_arrangement, best_hold = None, None, frozenset()
+    for adjacency in arrangements or [None]:
+        for hold in holds:
+            # Not passed when nobody holds, so a deck that cannot use the tactic
+            # calls `evaluate_deck` with exactly the arguments it always did.
+            held = {"hold_fire": hold} if hold else {}
+            result = evaluate_deck(ordered_deck, boss, adjacency=adjacency,
+                                   **held, **kwargs)
+            if best is None or result["total_damage"] > best["total_damage"]:
+                best, best_arrangement, best_hold = result, adjacency, hold
+    if arrangements:
+        best["seating"] = best_arrangement
+    if best_hold:
+        best["hold_fire"] = sorted(best_hold)
     return best
 
 

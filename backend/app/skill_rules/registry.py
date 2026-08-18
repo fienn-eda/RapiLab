@@ -1019,6 +1019,45 @@ _SCHEDULED_NUKE_BUILDERS = {
         sv, slug="rapi-red-hood-b1", stage3_requirement_cut=False),
 }
 
+# Units the "hold fire through your own Full Burst" tactic is played on, with
+# how many shots are RELEASED just before the window closes. Holding keeps an
+# ally's "for N round(s)" buff alive - it is spent by a bullet - so every skill
+# hit in the window lands under it (Fienn, 2026-08-18: Mihara's chain DoT, Ein's
+# Near Feathers). Being on this table only says the tactic EXISTS for her; it is
+# switched on per run by `deck_search.evaluate_deck`'s `hold_fire`, never here,
+# because holding fire is a straight loss without such a buff.
+#
+# Ada Wong belongs to the tactic in game but is deliberately absent: her Special
+# Modification's "Charge Speed v300%" is not on the engine's timeline at all
+# (ada_wong.py folds it into a net charge_damage_bonus, because a 1-round charge
+# speed grant can never reach a magazine boundary). Her released shot would
+# therefore charge in 1.0 sec instead of 4.0 and carry +2.75 Charge Damage
+# instead of +15.0 - both wrong in the one shot the tactic turns on. Encoding
+# her hold needs that pair re-encoded first.
+_HOLD_FIRE_TACTICS = {
+    "mihara-bonding-chain": 0,   # MG; the single shot is not worth releasing
+    "ein": 1,                    # SR; releases the held full charge
+}
+
+
+def get_hold_fire_release_shots(slug):
+    """How many shots this Nikke releases at the end of a held Full Burst, or
+    None if the hold-fire tactic is not played on her at all."""
+    return _HOLD_FIRE_TACTICS.get(slug)
+
+
+def deck_grants_ally_round_buffs(rules_by_slug):
+    """Whether any member hands a "for N round(s)" buff to somebody other than
+    herself - the gate on scoring a hold-fire alternative for this deck.
+
+    Read off the rules themselves (`grants_round_buff_to_allies`, set by
+    `round_buff_rule`) rather than a list of granter slugs, so a newly encoded
+    granter is covered the day it lands instead of the day someone remembers
+    this table."""
+    return any(getattr(rule, "grants_round_buff_to_allies", False)
+               for rules in rules_by_slug.values() for rule in rules)
+
+
 # A Nikke whose own burst grants her [Unlimited Ammunition], with how long it
 # lasts. Shots taken in that window spend no ammunition, so an ally's "for N
 # round(s)" buff on her does not tick down there (see
