@@ -246,27 +246,39 @@ def member_subset_buff_rule(trigger, member_filter, buffs, condition=None,
     return _rule(trigger, action, condition, time_condition)
 
 
-def round_buff_rule(trigger, buffs, shots=1, cap=None):
+def round_buff_rule(trigger, buffs, shots=1, cap=None, from_own_shot=False):
     """"For N round(s)" buffs, whose duration is measured in the affected ally's
     NEXT `shots` normal attacks (bullets), not seconds - e.g. Zwei's Pierce
     Equation, Miranda's Wake Up crit rate. Records a RoundGrant per buff; the shot
     loop turns each into a timed Effect covering exactly those shots. buffs:
     (stat, value, scope_spec) where scope_spec is "squad"/"self"/"element:X" or a
     dynamic ("top_atk", n) resolved to the top-ATK allies at grant time.
-    `cap` is the skill's "stacks up to N time(s)" limit, if it has one: no
-    recipient holds more than `cap` concurrent grants from THIS rule (see
-    effects.RoundGrant). Rules built without it are uncapped as before."""
+    `cap` is the skill's "stacks up to N time(s)" limit. **Leaving it out means
+    the bullet does not stack** (cap 1), not that it stacks without bound: that
+    clause is the only marker the text gives, and a bullet without it holds one
+    at a time (Fienn, 2026-08-18). See effects.RoundGrant.
+
+    `from_own_shot` says the caster's own NORMAL ATTACK is what creates the
+    grant ("Activates when normal attack hits ... for N round(s)"). That bullet
+    has already left, so it neither carries the buff nor spends it - the buff is
+    the next bullet's. Set it on a per-shot rule whose trigger IS the shot, and
+    leave it off when the shot is only the marker for something else (Jill
+    Valentine's Magnum Ammo activates on reloading to max ammunition, with the
+    magazine's first bullet standing in for when that happened)."""
 
     # One cap group per rule instance, so a caster's other round-grant rules -
-    # including ones granting the same stat - never share this rule's cap.
-    cap_group = f"round_grant_cap_{next(_round_cap_group_ids)}" if cap is not None else None
+    # including ones granting the same stat - never share this rule's cap, and
+    # two different skills granting the same stat still add up.
+    cap_group = f"round_grant_cap_{next(_round_cap_group_ids)}"
+    concurrent = 1 if cap is None else cap
 
     def action(context, caster_slug, time, registry):
         for stat, value, scope_spec in buffs:
             scope = _resolve_scope(scope_spec, context, caster_slug, registry, time,
                                    grant_stats=(stat,))
             registry.add_round_grant(
-                RoundGrant(stat, value, scope, caster_slug, shots, time, cap, cap_group)
+                RoundGrant(stat, value, scope, caster_slug, shots, time,
+                           concurrent, cap_group, from_own_shot)
             )
 
     return SkillRule(trigger=trigger, action=action)

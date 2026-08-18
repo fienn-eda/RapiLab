@@ -83,7 +83,7 @@ def build_assault_formation_rules(values):
         # seconds-based window. She therefore holds Pierce for one shot in three,
         # which is what her own squad Pierce Damage buff credits on her.
         (CALM_SNIPING_PIERCE_SHOT_COUNT, "every", [
-            round_buff_rule("per_shot", [("has_pierce", 1.0, "self")], shots=1),
+            round_buff_rule("per_shot", [("has_pierce", 1.0, "self")], shots=1, from_own_shot=True),
         ]),
     ]
 

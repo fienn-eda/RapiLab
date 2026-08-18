@@ -287,18 +287,23 @@ def test_zwei_pierce_equation_stacks_pierce_per_full_burst_normal_attack():
     assert grants[0].cap_group is not None
 
 
-def test_zwei_pierce_stack_cap_is_separate_from_her_uncapped_full_burst_grant():
+def test_zwei_pierce_stack_cap_is_separate_from_her_non_stacking_full_burst_grant():
     # Both round grants are Zwei's own pierce_damage_up, but only the per-shot
-    # one caps, and its cap group must not swallow the Full Burst grant.
+    # one says "stacks up to 3 time(s)"; the Full Burst one holds one at a time.
+    # They are separate bullets, so their cap groups must not be shared - two
+    # skills granting the same stat still add up.
     reg = EffectRegistry()
     fire_trigger("full_burst_enter", {"zwei": build_zwei_rules(ZWEI)}, deck_ctx("zwei"), reg, 0.0)
     for _, _, skill_rules in build_pierce_equation_per_shot_rules(ZWEI):
         for rule in skill_rules:
             rule.action(deck_ctx("zwei"), "zwei", 4.0, reg)
     by_value = {round(g.value, 4): g for g in reg.round_grants()}
-    assert by_value[0.2013].cap is None       # Full Burst grant: uncapped
+    assert by_value[0.2013].cap == 1          # Full Burst grant: no stack clause
     assert by_value[0.2499].cap == 3
     assert by_value[0.2013].cap_group != by_value[0.2499].cap_group
+    # And only the per-shot bullet is the one her own normal attack creates.
+    assert by_value[0.2499].from_own_shot
+    assert not by_value[0.2013].from_own_shot
 
 
 def test_zwei_frame_analysis_crit_stacks_are_capped_and_gated_on_pierce_attacks_101():

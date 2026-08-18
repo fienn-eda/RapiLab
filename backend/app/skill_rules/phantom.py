@@ -95,7 +95,7 @@ def build_phantom_per_shot_rules(values):
     return [
         (1, "every", [
             round_buff_rule("per_shot", [("attack_damage_up", attack_damage, "self")],
-                            shots=rounds),
+                            shots=rounds, from_own_shot=True),
         ]),
         (vision_shots, "every", [
             refreshing_buff_rule("per_shot", [

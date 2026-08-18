@@ -156,7 +156,7 @@ def build_pierce_equation_per_shot_rules(values):
 
     return [(1, "every_during_full_burst", [
         round_buff_rule("per_shot", [("pierce_damage_up", stack_pierce, "squad")],
-                        shots=stack_rounds, cap=stack_cap),
+                        shots=stack_rounds, cap=stack_cap, from_own_shot=True),
     ])]
 
 

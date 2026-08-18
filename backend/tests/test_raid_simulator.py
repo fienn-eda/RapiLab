@@ -1895,14 +1895,15 @@ def _zwei_pierce_stacks_per_sniper_shot(per_shot_rules):
     return {time: round((damage / unbuffed - 1) / 0.2499, 4) for time, damage in plain.items()}
 
 
-def test_uncapped_round_grants_pile_up_on_a_charge_weapon_allys_post_reload_shot():
-    # Baseline for the cap: without one, every grant Zwei made during the SR's
-    # charge+reload gap lands on the single shot that ends it. The gap is 3.648
-    # sec (the reload carries the fixed 0.148 segment), which fits six grants.
-    uncapped = round_buff_rule("per_shot", [("pierce_damage_up", 0.2499, "squad")], shots=1)
-    stacks = _zwei_pierce_stacks_per_sniper_shot([(1, "every_during_full_burst", [uncapped])])
-    assert stacks[round(11.148, 4)] == 6.0
-    assert max(stacks.values()) == 6.0
+def test_a_round_buff_with_no_stack_clause_stays_at_one_however_many_pile_up():
+    # Six of Zwei's grants overlap the shot that ends the SR's charge+reload gap
+    # (3.648 sec, the reload carrying the fixed 0.148 segment). Without a
+    # "stacks up to N time(s)" clause the recipient still holds ONE - that
+    # clause is the only marker a bullet gives (Fienn, 2026-08-18).
+    plain = round_buff_rule("per_shot", [("pierce_damage_up", 0.2499, "squad")], shots=1)
+    stacks = _zwei_pierce_stacks_per_sniper_shot([(1, "every_during_full_burst", [plain])])
+    assert stacks[round(11.148, 4)] == 1.0
+    assert max(stacks.values()) == 1.0
 
 
 def test_capped_round_grant_holds_a_charge_weapon_ally_to_the_skills_stack_cap():

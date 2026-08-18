@@ -8,7 +8,11 @@ Miranda's: every "for N round(s)" buff behaves this way.
 """
 import pytest
 
-from app.raid_simulator import _round_grant_shot_window, simulate_raid
+from app.raid_simulator import (
+    ROUND_GRANT_EPSILON,
+    _round_grant_shot_window,
+    simulate_raid,
+)
 from app.skill_rules._helpers import round_buff_rule
 from app.skill_rules.registry import get_unlimited_ammo_duration
 from tests.test_raid_simulator import (
@@ -22,11 +26,12 @@ FIGHT = 100.0
 
 
 def test_without_a_window_the_next_shot_still_ends_a_one_round_buff():
-    # The ordinary rule: live from the grant, ended by the shot after the Nth
-    # spending one.
+    # The ordinary rule: live from the grant, ended by the Nth spending bullet,
+    # which it still covers.
     shots = [1.0, 2.0, 3.0, 4.0]
-    assert _round_grant_shot_window(shots, 1.5, 1, [], FIGHT) == (1.5, 3.0)
-    assert _round_grant_shot_window(shots, 1.5, 2, [], FIGHT) == (1.5, 4.0)
+    eps = ROUND_GRANT_EPSILON
+    assert _round_grant_shot_window(shots, 1.5, 1, [], FIGHT) == (1.5, 2.0 + eps)
+    assert _round_grant_shot_window(shots, 1.5, 2, [], FIGHT) == (1.5, 3.0 + eps)
 
 
 def test_without_a_window_a_buff_that_outlives_the_shots_runs_to_fight_end():
@@ -65,7 +70,8 @@ def test_a_count_frozen_by_a_later_window_resumes_nowhere():
 
 def test_a_buff_already_spent_before_the_window_is_untouched_by_it():
     shots = [1.0, 2.0, 5.0]
-    assert _round_grant_shot_window(shots, 0.5, 1, [(4.0, 12.0)], FIGHT) == (0.5, 2.0)
+    assert _round_grant_shot_window(shots, 0.5, 1, [(4.0, 12.0)], FIGHT) == (
+        0.5, 1.0 + ROUND_GRANT_EPSILON)
 
 
 def test_a_window_ending_before_their_first_shot_still_covers_the_window():

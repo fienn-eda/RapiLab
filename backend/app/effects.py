@@ -68,6 +68,14 @@ class RoundGrant:
     granted_at: float
     cap: int | None = None
     cap_group: str | None = None
+    # Whether the recipient's OWN BULLET is what created this grant. When it is,
+    # that bullet has already left and carries nothing - the buff belongs to the
+    # next one (Fienn, 2026-08-18) - so it is neither covered nor the spender.
+    # False for a grant whose trigger merely happens to be timestamped on a shot:
+    # Jill Valentine's Magnum Ammo activates on RELOADING to max ammunition and
+    # uses the magazine's first bullet only as the marker for when that
+    # happened, so those 9 rounds are the magazine's first 9.
+    from_own_shot: bool = False
 
 
 @dataclass

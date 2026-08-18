@@ -17,6 +17,7 @@ import pytest
 
 from app.effects import RoundGrant
 from app.raid_simulator import (
+    ROUND_GRANT_EPSILON,
     _capped_round_grant_segments,
     _round_grant_shot_window,
     simulate_raid,
@@ -35,7 +36,8 @@ FIGHT = 100.0
 def test_the_window_opens_at_the_grant_not_at_the_next_shot():
     # Granted at 1.5 with the recipient's next shot at 2.0: the 0.5 sec in
     # between is inside the buff.
-    assert _round_grant_shot_window([1.0, 2.0, 3.0], 1.5, 1, [], FIGHT) == (1.5, 3.0)
+    assert _round_grant_shot_window([1.0, 2.0, 3.0], 1.5, 1, [], FIGHT) == (
+        1.5, 2.0 + ROUND_GRANT_EPSILON)
 
 
 def test_the_buff_is_still_held_between_the_grant_and_the_bullet_that_spends_it():
@@ -43,10 +45,11 @@ def test_the_buff_is_still_held_between_the_grant_and_the_bullet_that_spends_it(
     # held - the whole gap belongs to it, however long the recipient idles.
     # Phantom's "Attack Damage for 1 round(s) on every normal attack" is
     # exactly this: it must be up when her burst fires between two of her shots.
-    start, end = _round_grant_shot_window([2.0, 9.0, 9.5], 1.5, 1, [], FIGHT)
-    assert (start, end) == (1.5, 9.0)
-    assert start <= 5.0 < end   # idling between the grant and the next bullet
-    assert start <= 2.0 < end   # and the bullet the buff was granted on
+    start, end = _round_grant_shot_window([2.0, 9.0, 9.5], 2.0, 1, [], FIGHT,
+                                          from_own_shot=True)
+    assert (start, end) == (2.0 + ROUND_GRANT_EPSILON, 9.0 + ROUND_GRANT_EPSILON)
+    assert start <= 5.0 < end        # idling between the grant and the next bullet
+    assert not start <= 2.0 < end    # but not the bullet that granted it
 
 
 def test_which_shots_the_buff_covers_is_unchanged_by_the_new_anchor():

@@ -553,22 +553,38 @@ trigger and crits under it. Nothing to encode — the window is
 `_round_grant_shot_window`'s job — but it does mean a same-trigger nuke on the
 recipient IS in scope, which is easy to assume away.
 
-**The gap BEFORE the spending bullet belongs to the buff too.** A round buff is
-spent BY a bullet, so between two bullets it is still held: the window runs to
-the shot AFTER the Nth spending one, not to that shot. Tightening it to "ends on
-the bullet that spends it" reads plausible and is wrong — Phantom's own "Attack
-Damage +75.17% for 1 round(s) on every normal attack" has to be up when her
-burst fires between two of her shots, and tightening it cost her 2.9% in the
-fixed-shell sweep.
+**It ends ON the bullet that spends it, and the gap before that bullet is still
+inside it.** A round buff is spent BY a bullet, so between two bullets it is
+still held — which is what puts Phantom's own "Attack Damage for 1 round(s) on
+every normal attack" on the burst she fires between two of her shots. But
+nothing after that bullet is under it: letting the window run to the shot AFTER
+the spender (as it did briefly) over-runs by a whole shot gap, which is 3.2 sec
+on a recipient in a Fully Active charge window.
 
-**A "stacks up to N time(s)" cap is INSTANTANEOUS.** `round_buff_rule(...,
-cap=N)` is resolved by `_capped_round_grant_segments` as a step function per
-(bullet, stat): at any moment the `cap` newest live grants count, older ones are
-pushed out, and an older grant that outlives the ones that pushed it out is held
-again. Do not reach for "drop a grant that `cap` newer ones overlap" — that only
-agreed with the game while every window began at the shot it covered, and once
-windows start at the grant they chain into each other and it read Zwei's 3-stack
-Pierce Equation down to 1 on the shot it is meant to pay 3 on.
+**A bullet's grant belongs to the NEXT bullet — pass `from_own_shot=True`**
+when the caster's own normal attack is what creates the grant ("Activates when
+normal attack hits … for N round(s)"). That bullet has already left, so it
+neither carries the buff nor spends it; without the flag every bullet would buff
+itself. **Do not infer the flag from the timestamp** — Jill Valentine's Magnum
+Ammo activates on RELOADING to max ammunition and only uses the magazine's first
+bullet as the marker for when, so that bullet is one of its nine. Consumers with
+the flag: `phantom`, `phantom_signature`, `ein`, `d_killer_wife`,
+`dorothy_serendipity`, `zwei` (Pierce Equation's per-shot bullet).
+
+**Without a "stacks up to N time(s)" clause a round buff does NOT stack.**
+`cap` left out means one at a time, not unbounded — that clause is the only
+marker the text gives (Fienn, 2026-08-18), the same rule the timed-buff side
+already follows. Two different bullets granting the same stat still add up:
+each `round_buff_rule` instance is its own cap group.
+
+**The cap is INSTANTANEOUS.** `_capped_round_grant_segments` resolves each
+(bullet, stat) as a step function: at any moment the `cap` newest live grants
+count, older ones are pushed out, and an older grant that outlives the ones that
+pushed it out is held again. Do not reach for "drop a grant that `cap` newer
+ones overlap" — that only agreed with the game while every window began at the
+shot it covered, and once windows start at the grant they chain into each other
+and it read Zwei's 3-stack Pierce Equation down to 1 on the shot it is meant to
+pay 3 on.
 
 **[Unlimited Ammunition] freezes the count (2026-08-18).** A shot fired under
 the status spends nothing, so it is covered by the buff and does not tick it
@@ -1503,13 +1519,15 @@ See `rapi_red_hood.py` and `anis_star.py` for worked branching examples, and
 - `cdr_pulse_rule(trigger, seconds, scope="squad")`.
 - `highest_atk_buff_rule(trigger, n, buffs)` where `buffs` is `(stat, value,
   duration)` - timed buffs on the n highest-final-ATK allies (except caster).
-- `round_buff_rule(trigger, buffs, shots=1, cap=None)` where `buffs` is
-  `(stat, value, scope_spec)` - a "for N round(s)" bullet-count buff;
-  `scope_spec` is a static scope string or `("top_atk", n)`. Live from the grant
-  and covering the recipient's skill damage too, not only their bullets. The
-  count is in ammunition SPENT: a recipient under [Unlimited Ammunition] does
-  not tick it down. `cap` is the skill's "stacks up to N time(s)", enforced per
-  instant.
+- `round_buff_rule(trigger, buffs, shots=1, cap=None, from_own_shot=False)`
+  where `buffs` is `(stat, value, scope_spec)` - a "for N round(s)"
+  bullet-count buff; `scope_spec` is a static scope string or `("top_atk", n)`.
+  Live from the grant to the bullet that spends it, covering the recipient's
+  skill damage too. The count is in ammunition SPENT: a recipient under
+  [Unlimited Ammunition] does not tick it down. `cap` is the skill's "stacks up
+  to N time(s)", enforced per instant; omitting it means no stacking, not
+  unbounded. `from_own_shot=True` when the caster's own normal attack creates
+  the grant.
 - `escalating_buff_rule(trigger, tiers)` / `instant_nuke_pulse_rule(trigger, pct)`
   (see their own sections above).
 

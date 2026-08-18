@@ -109,7 +109,7 @@ def build_flash_per_shot_rules(values):
                 ("hit_rate", hit_rate, "self"),
                 ("attack_damage_up", attack_damage, "self"),
                 ("has_pierce", 1.0, "self"),
-            ], shots=shots),
+            ], shots=shots, from_own_shot=True),
         ]),
     ]
 

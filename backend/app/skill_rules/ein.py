@@ -171,7 +171,7 @@ def build_ein_per_shot_rules(values):
     charge_damage = float(shot["description_value_03"]) / 100
     rounds = int(float(shot["description_value_04"]))
     return [(1, "every", [
-        round_buff_rule("per_shot", [("charge_damage_bonus", charge_damage, "self")], shots=rounds),
+        round_buff_rule("per_shot", [("charge_damage_bonus", charge_damage, "self")], shots=rounds, from_own_shot=True),
     ])]
 
 

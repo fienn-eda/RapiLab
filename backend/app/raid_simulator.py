@@ -106,6 +106,7 @@ absent field = always fires, matching every existing spec's behavior.
 """
 import inspect
 import warnings
+from bisect import bisect_left, bisect_right
 from collections import defaultdict
 from dataclasses import replace
 
@@ -121,6 +122,15 @@ from app.squad_engine import SquadContext, SquadMember, fire_trigger
 # How far past a window's end an "after this window ends" event is placed, so
 # it orders after anything landing on the boundary instant itself.
 AFTER_WINDOW_EPSILON = 1e-3
+
+# How far a "for N round(s)" window is nudged so that a half-open
+# [applied_at, applied_at + duration) interval can express "up to and including
+# this bullet, and nothing else at that instant". Used at both ends: past the
+# bullet that SPENDS the buff, and past the bullet that GRANTED it (which has
+# already left, so it carries nothing - Fienn, 2026-08-18). Small enough that it
+# can never swallow a distinct event: the closest two recorded times ever sit is
+# the 1e-6 that orders burst-cycle events, a thousand times wider than this.
+ROUND_GRANT_EPSILON = 1e-9
 
 BASE_CRIT_RATE = 0.15
 
@@ -552,37 +562,37 @@ def _capped_round_grant_segments(entries, cap):
 
 
 def _round_grant_shot_window(shot_times, granted_at, shots, unlimited_windows,
-                             fight_duration):
+                             fight_duration, from_own_shot=False):
     """(start, end) of the Effect a "for N round(s)" grant becomes on ONE
-    recipient.
+    recipient, or None when it can carry nothing.
 
-    **The buff is live from the moment it is granted.** The round count says
-    when it ENDS, never when it starts, and it reaches everything the recipient
-    does in the meantime - crucially their SKILL damage, not only the bullet
-    that spends it (Fienn, in-game 2026-08-18: Miranda's "Critical Rate 85.42%
-    for 1 round" lands on Marciana: Marine Study on entering Full Burst, and her
-    Flagged Target Designation nuke - fired on that same trigger, before her
-    next bullet - crits under it).
+    **The buff is live from the moment it is granted, and it reaches skill
+    damage** - nukes and burst damage of the recipient, not just their bullets
+    (Fienn, in-game 2026-08-18: Miranda's "Critical Rate 85.42% for 1 round"
+    lands on Marciana: Marine Study as Full Burst opens, and her Flagged Target
+    Designation nuke - fired on that same trigger - crits under it).
 
-    Anchoring at the first covered SHOT instead, as this did until 2026-08-18,
-    is invisible for normal attacks: by construction the recipient has no shot
-    between the grant and that one, so the covered shots are the same either
-    way. What it silently dropped was everything else in the gap.
+    **The buff a bullet creates applies to the NEXT bullet** (Fienn, same day).
+    With `from_own_shot`, the recipient's bullet at the instant of the grant is
+    therefore neither covered by the buff nor the one that spends it: it has
+    already left. That is what makes a per-shot self-grant tile - each bullet's
+    grant covers exactly the following bullet - instead of every bullet buffing
+    itself. The flag is the RULE's claim, not a timestamp coincidence: Jill
+    Valentine's Magnum Ammo is granted by a RELOAD and only marked on the
+    magazine's first bullet, so that bullet is one of its nine.
 
-    The count is in AMMUNITION SPENT, not in shots fired. A recipient under
-    [Unlimited Ammunition] spends none, so shots taken inside one of their
-    `unlimited_windows` are covered by the buff yet do not tick it down. Three
-    boundaries end the buff, whichever lands first:
+    Three boundaries end it, whichever lands first:
 
-    - the shot AFTER the Nth ammunition-spending shot - the ordinary rule, and
-      the only one that exists for a recipient with no window. The buff stays up
-      through the gap before that shot ON PURPOSE: a round buff is spent BY a
-      bullet, so between two bullets it is still held, and Phantom's own
-      "Attack Damage for 1 round(s) on every normal attack" is exactly a buff
-      that must be live when her burst fires between two of her shots;
-    - the END of an unlimited-ammunition window the buff is still alive in: the
-      game spends the round there rather than carrying the buff onward (Fienn,
-      2026-08-18); or
+    - the Nth ammunition-spending bullet after the grant, which the buff covers
+      and stops just past (`ROUND_GRANT_EPSILON`). The stretch BEFORE that
+      bullet belongs to the buff however long the recipient idles - a round buff
+      is spent by a bullet, so between two bullets it is still held, which is
+      what puts Phantom's own "Attack Damage for 1 round(s)" on the burst she
+      fires between two of her shots;
+    - the END of an unlimited-ammunition window the buff is still alive in: a
+      shot fired under [Unlimited Ammunition] spends nothing, so it neither
+      ticks the count down nor ends the buff, and the game spends the round when
+      the status drops instead (Fienn, 2026-08-18); or
     - the end of the fight, for a grant nothing ever spends.
 
     A "for N round(s)" bullet carries no seconds of its own in any collected
@@ -595,14 +605,22 @@ def _round_grant_shot_window(shot_times, granted_at, shots, unlimited_windows,
     convention, and a window end is ordered BEFORE a shot landing at the same
     instant - that shot spends ammunition, so the buff is already gone.
     """
+    # `shot_times` is sorted, so finding where the grant falls in it is a
+    # bisect rather than a scan per grant.
+    if from_own_shot:
+        first_later = bisect_right(shot_times, granted_at)
+        start = granted_at + ROUND_GRANT_EPSILON
+    else:
+        first_later = bisect_left(shot_times, granted_at)
+        start = granted_at
 
     def spends_ammunition(time):
         return not any(ws <= time < we for ws, we in unlimited_windows)
 
     # 0 sorts before 1, which is what puts a window end ahead of a shot sharing
     # its instant.
-    events = [(we, 0) for _ws, we in unlimited_windows if we > granted_at]
-    events += [(time, 1) for time in shot_times if time >= granted_at]
+    events = [(we, 0) for _ws, we in unlimited_windows if we > start]
+    events += [(time, 1) for time in shot_times[first_later:]]
     events.sort()
 
     spent = 0
@@ -615,12 +633,10 @@ def _round_grant_shot_window(shot_times, granted_at, shots, unlimited_windows,
         if not spends_ammunition(time):
             continue
         spent += 1
-        if spent > shots:
-            end = time
+        if spent >= shots:
+            end = time + ROUND_GRANT_EPSILON
             break
-    # A grant whose whole window has already closed by the time it is made
-    # carries nothing - it cannot reach damage recorded before it.
-    return (granted_at, end) if end > granted_at else None
+    return (start, end) if end > start else None
 
 
 def _sequence_fire_rules(spec, stage_rules, shot_times, own_burst_times):
@@ -1923,23 +1939,22 @@ def _simulate_raid_once(
             shot_window = _round_grant_shot_window(
                 shot_times, grant.granted_at, grant.shots, unlimited_windows,
                 fight_duration,
+                # Only the CASTER can have been the one whose bullet made this
+                # grant; an ally whose shot merely lands at the same instant
+                # still carries it.
+                from_own_shot=grant.from_own_shot and grant.source_slug == slug,
             )
             if shot_window is None:
                 continue
-            start, end = shot_window
-            if grant.cap is None:
-                registry.add(
-                    Effect(grant.stat, grant.value, f"slugs:{slug}", end - start,
-                           grant.source_slug),
-                    applied_at=start,
-                )
-                continue
-            # A skill with a "stacks up to N time(s)" limit is resolved as one
-            # step function per (bullet, stat) rather than grant by grant - the
-            # limit is on how many are held AT ONCE. Grants of other skills, and
-            # of the same caster's other rules, cap separately (`cap_group`).
+            # Every round grant has a concurrency limit - "stacks up to N
+            # time(s)" when the text says so, and 1 when it does not, because
+            # that clause is the only marker a bullet gives (Fienn 2026-08-18).
+            # So each (bullet, stat) is resolved as one step function rather
+            # than grant by grant: the limit is on how many are held AT ONCE.
+            # Grants of other skills, and of the same caster's other rules, are
+            # separate bullets and add up normally (`cap_group`).
             capped[(grant.cap_group, grant.stat, grant.source_slug)].append(
-                (order, grant, start, end)
+                (order, grant, *shot_window)
             )
         for (_cap_group, stat, source_slug), entries in capped.items():
             cap = entries[0][1].cap
