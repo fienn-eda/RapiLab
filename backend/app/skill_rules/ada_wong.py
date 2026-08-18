@@ -12,21 +12,33 @@ Modeled (DPS-relevant):
   time condition v 1 sec for 10 sec" makes FB windows opened by HER OWN burst
   tick at 1s instead (own_burst_interval, Fienn 2026-07-16).
 - Secret Agent (skills[2], her burst): self ATK ^ 40% and True Damage ^ 42%
-  for 10 sec, plus Special Modification for 1 round. Fienn's 2026-07-16 ruling
-  ("Charge Speed v 300%" = charge time x(1+3.0), model both halves) hit the
-  engine's magazine-boundary trap: charge speed is evaluated once per magazine
-  start, so a 1-round charge_speed_percent Effect granted mid-magazine covers
-  no boundary and the slowdown NEVER lands (verified in
-  test_one_round_charge_speed_grant_is_inert_mid_magazine) - the raw pair
-  would credit +1500% Charge Damage without paying the x4 charge time. Per
-  the ruling's documented fallback, the pair is applied as a NET 1-round
-  charge_damage_bonus instead: +15.0 scaled down by the x4 unpaid time cost,
-  15/4 - 1 = +2.75 net. Buff-only burst (no burst nuke percent).
+  for 10 sec, plus Special Modification for 1 round. Buff-only burst (no burst
+  nuke percent).
+- Special Modification, BOTH halves, as a one-shot weapon-mode segment
+  (2026-08-18). Fienn's 2026-07-16 ruling ("Charge Speed v 300%" = charge time
+  x(1+3.0), model both halves) had hit the engine's magazine-boundary trap:
+  charge speed is evaluated once per magazine start, so a 1-round
+  charge_speed_percent Effect granted mid-magazine covers no boundary and the
+  slowdown NEVER lands (still true - see
+  test_one_round_charge_speed_grant_is_inert_mid_magazine). The pair was
+  therefore folded into a NET charge_damage_bonus, +15.0 scaled down by the x4
+  unpaid time cost (15/4 - 1 = +2.75) - which paid that time in FEWER SHOTS
+  rather than in a longer charge. A SEGMENT has no such trap: it STATES its own
+  charge time, so the slow shot is declared rather than sampled, and
+  `until_shots: 1` is exactly "for 1 round(s)" - her second shot onward is the
+  plain RL again (Fienn, 2026-08-18). 4.0 sec charge (1.0 x 4), 1750% Charge
+  Damage (250% + 1500%). A deck Charge Speed buff still shortens it, because a
+  `charge_time` profile honours live cadence buffs by contract.
+
+  Residual: a segment boundary hands back a FRESH magazine, so she is credited
+  one extra round per burst cycle that the real Special Modification spends out
+  of the six she had. Small, and in her favour; the alternative understated the
+  whole bullet instead.
 
 Not modeled / deferred:
 - Covert Support's HP recovery (survival, not DPS).
 """
-from app.skill_rules._helpers import buff_rule, member_subset_buff_rule, round_buff_rule
+from app.skill_rules._helpers import buff_rule, member_subset_buff_rule
 
 
 SKILL_VALUE_MANIFESTS = {
@@ -60,15 +72,6 @@ def build_ada_wong_rules(values):
     self_atk_duration = float(secret["description_value_02"])
     self_true = float(secret["description_value_03"]) / 100
     self_true_duration = float(secret["description_value_04"])
-    special_mod_rounds = int(float(secret["description_value_05"]))      # 1 round
-    charge_time_cost = 1 + float(secret["description_value_06"]) / 100   # x4 charge time
-    charge_damage = float(secret["description_value_07"]) / 100          # +15.0 nominal
-    # Net approximation (see module docstring): the slowdown can't land within
-    # a 1-round window, so fold its time cost into the damage bonus instead -
-    # the nominal bonus divided by the x4 time cost, minus the round's own
-    # baseline (Fienn's documented fallback: 15/4 - 1 = +2.75).
-    net_charge_damage = charge_damage / charge_time_cost - 1             # = +2.75
-
     def bursted_b3(member, context):
         return member.burst_tier == 3 and member.slug in context.burst_used_this_cycle
 
@@ -81,10 +84,40 @@ def build_ada_wong_rules(values):
             ("atk_percent", self_atk, "self", self_atk_duration),
             ("true_damage_up", self_true, "self", self_true_duration),
         ]),
-        round_buff_rule("own_burst_activate", [
-            ("charge_damage_bonus", net_charge_damage, "self"),
-        ], shots=special_mod_rounds),
+        # Special Modification is the segment below, not a round buff: it has to
+        # change the charge TIME as well as the damage.
     ]
+
+
+def build_special_modification_weapon_mode_schedule(values):
+    """Secret Agent's Special Modification: her FIRST normal attack after the
+    burst charges x4 as long and carries the full Charge Damage bonus; from the
+    second shot on she is a plain RL again (Fienn, in-game 2026-08-18).
+
+    `until_shots` is what makes "for 1 round(s)" exact, and a segment STATES its
+    own charge time instead of sampling `charge_speed_percent` at a magazine
+    boundary - the trap that had forced the old net-damage approximation (see
+    the module docstring)."""
+    secret = values["secret_agent"]
+    weapon = values["caster_weapon_stats"]
+    rounds = int(float(secret["description_value_05"]))                  # 1 round
+    charge_time_cost = 1 + float(secret["description_value_06"]) / 100   # x4 charge time
+    charge_damage = float(secret["description_value_07"])                # +1500%
+    profile = {
+        "weapon": weapon["weapon"],
+        "damage_percent": weapon["damage_percent"],
+        "charge_time": weapon["charge_time"] * charge_time_cost,
+        # Charge Damage is one additive group, so the skill's bonus joins her
+        # weapon's own full-charge multiplier rather than replacing it.
+        "charge_damage_percent": weapon["charge_damage_percent"] + charge_damage,
+    }
+
+    def schedule(context, fight_duration):
+        return [{"start": burst_time, "until_shots": rounds, "profile": profile}
+                for burst_time in context.burst_times.get("ada-wong", [])
+                if burst_time < fight_duration]
+
+    return schedule
 
 
 def build_flash_grenade_periodic_nuke(values):

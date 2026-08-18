@@ -73,11 +73,40 @@ def test_the_window_is_the_real_one_so_an_extension_counts():
 def test_the_table_says_who_plays_it_and_who_releases():
     assert get_hold_fire_release_shots(MIHARA) == 0
     assert get_hold_fire_release_shots("ein") == 1
-    # Ada Wong plays it in game, but her Special Modification's charge slowdown
-    # is not on the engine's timeline, so her released shot would be wrong in
-    # both its timing and its Charge Damage - see the table's own comment.
-    assert get_hold_fire_release_shots("ada-wong") is None
+    assert get_hold_fire_release_shots("ada-wong") == 1
     assert get_hold_fire_release_shots("snow-white") is None
+
+
+def test_adas_released_shot_is_her_special_modification_not_a_plain_rl():
+    # The charge she holds through the window IS the Special Modification shot,
+    # so the hold REPLACES that one-shot segment rather than running beside it -
+    # and the round is still unspent when she lets go, so it carries the whole
+    # 1750% (250% weapon + 1500% skill), not her plain 250%.
+    ordering = _ordering(["miranda-signature", "liter", "crown", "ada-wong",
+                          "helm-signature"], "ada-wong")
+    inputs = assemble_simulation_inputs(ordering, hold_fire={"ada-wong"})
+
+    class _Context:
+        burst_times = {"ada-wong": [2.6]}
+        full_burst_windows = [(2.6, 12.6)]
+
+    (segment,) = inputs["weapon_mode_schedules"]["ada-wong"](_Context(), 180.0)
+    assert segment["until_shots"] == 1
+    assert segment["profile"]["charge_damage_percent"] == 1750.0
+    # Timing is the hold's, not the charge's: she lets go one frame inside the
+    # close, whenever the x4 charge happened to finish.
+    shot = segment["start"] + 1.0 / segment["profile"]["rate_of_fire"]
+    assert shot == pytest.approx(12.6 - HOLD_FIRE_RELEASE_MARGIN)
+
+
+def test_holding_ada_pays_in_a_deck_that_can_preserve_her_buff():
+    deck = ["miranda-signature", "liter", "crown", "ada-wong", "helm-signature"]
+    ordering = _ordering(deck, "ada-wong")
+    assert evaluate_deck_hold_fire_options(ordering) == [frozenset(),
+                                                         frozenset({"ada-wong"})]
+    plain = evaluate_deck(ordering, BOSS)
+    held = evaluate_deck(ordering, BOSS, hold_fire={"ada-wong"})
+    assert held["total_damage"] > plain["total_damage"]
 
 
 def test_the_gate_reads_the_rules_not_a_list_of_granter_slugs():
@@ -128,8 +157,10 @@ def test_holding_pays_when_there_is_a_buff_to_preserve_and_costs_when_there_is_n
             < evaluate_deck(bare, BOSS)["total_damage"])
 
 
-def test_holding_a_unit_that_also_transforms_her_weapon_is_refused_not_guessed():
+def test_holding_a_transforming_unit_that_never_declared_its_release_is_refused():
+    # Ada is allowed because she declared what the released shot is; a unit who
+    # has not is a collision the engine must not resolve by guess.
     deck = ["miranda-signature", "liter", "crown", "snow-white", "helm-signature"]
-    with pytest.raises(ValueError, match="weapon-mode schedule"):
+    with pytest.raises(ValueError, match="released shot"):
         assemble_simulation_inputs(_ordering(deck, "snow-white"),
                                    hold_fire={"snow-white"})

@@ -42,6 +42,7 @@ from app.skill_rules.registry import (
     get_resource_gated_buffs,
     get_resource_scaled_nukes,
     get_resource_specs,
+    get_hold_fire_release_profile,
     get_hold_fire_release_shots,
     get_scheduled_nukes,
     get_unlimited_ammo_duration,
@@ -309,16 +310,20 @@ def assemble_simulation_inputs(ordered_deck, hold_fire=()):
         weapon_mode_schedule = get_weapon_mode_schedules(spec.slug, skill_values)
         if spec.slug in hold_fire:
             # The player held fire through this unit's own Full Bursts. A unit
-            # that ALSO transforms her weapon would need the two schedules
-            # composed; none of today's hold-fire units does, so a collision is
-            # raised rather than silently resolved one way.
-            if weapon_mode_schedule is not None:
+            # who ALSO transforms her weapon may only be held when she has
+            # declared what the released shot is - that declaration is what says
+            # the hold REPLACES her segment rather than needing to run beside it
+            # (Ada Wong: the charge she holds IS her Special Modification shot).
+            # Without one, a collision is raised rather than resolved by guess.
+            release_profile = get_hold_fire_release_profile(spec.slug, skill_values)
+            if weapon_mode_schedule is not None and release_profile is None:
                 raise ValueError(
                     f"{spec.slug!r} holds fire and already has a weapon-mode "
-                    f"schedule - compose the two before enabling this")
+                    f"schedule - declare its released shot before enabling this")
             weapon_mode_schedule = hold_fire_segments(
                 spec.weapon_stats, spec.slug,
-                release_shots=get_hold_fire_release_shots(spec.slug))
+                release_shots=get_hold_fire_release_shots(spec.slug),
+                release_profile=release_profile)
         if weapon_mode_schedule:
             weapon_mode_schedules[spec.slug] = weapon_mode_schedule
 

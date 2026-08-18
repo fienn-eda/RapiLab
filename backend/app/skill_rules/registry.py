@@ -18,7 +18,11 @@ never has to change for the one or two Nikkes that need this.
 from app.attack_rate import CHARGE_MOTION_DELAY_SECONDS
 from app.skill_rules._helpers import (SQUAD_DISTRIBUTED_DAMAGE_BUFF_SLUGS,
                                       SQUAD_SUSTAINED_DAMAGE_BUFF_SLUGS)
-from app.skill_rules.ada_wong import build_ada_wong_rules, build_flash_grenade_periodic_nuke
+from app.skill_rules.ada_wong import (
+    build_ada_wong_rules,
+    build_flash_grenade_periodic_nuke,
+    build_special_modification_weapon_mode_schedule,
+)
 from app.skill_rules.ade_agent_bunny import build_ade_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
 from app.skill_rules.anis_sparkling_summer import (
@@ -1027,23 +1031,42 @@ _SCHEDULED_NUKE_BUILDERS = {
 # switched on per run by `deck_search.evaluate_deck`'s `hold_fire`, never here,
 # because holding fire is a straight loss without such a buff.
 #
-# Ada Wong belongs to the tactic in game but is deliberately absent: her Special
-# Modification's "Charge Speed v300%" is not on the engine's timeline at all
-# (ada_wong.py folds it into a net charge_damage_bonus, because a 1-round charge
-# speed grant can never reach a magazine boundary). Her released shot would
-# therefore charge in 1.0 sec instead of 4.0 and carry +2.75 Charge Damage
-# instead of +15.0 - both wrong in the one shot the tactic turns on. Encoding
-# her hold needs that pair re-encoded first.
 _HOLD_FIRE_TACTICS = {
     "mihara-bonding-chain": 0,   # MG; the single shot is not worth releasing
     "ein": 1,                    # SR; releases the held full charge
+    "ada-wong": 1,               # RL; the held charge IS her Special Modification shot
 }
+
+# What the released shot is, when it is not the unit's ordinary normal attack.
+# Ada's held charge is Special Modification, so her hold REPLACES that one-shot
+# segment instead of running beside it - the x4 charge is spent inside the
+# window she is holding through anyway, and the round is still unspent when she
+# lets go, so it carries the full 1750% Charge Damage.
+_HOLD_FIRE_RELEASE_PROFILE_BUILDERS = {
+    "ada-wong": lambda sv: build_special_modification_weapon_mode_schedule(sv)(
+        _SingleBurstContext(), 1.0)[0]["profile"],
+}
+
+
+class _SingleBurstContext:
+    """Enough context to pull one segment's PROFILE out of a schedule function -
+    the times are the hold's, so any burst time will do."""
+    burst_times = {"ada-wong": [0.0]}
+    full_burst_windows = ()
 
 
 def get_hold_fire_release_shots(slug):
     """How many shots this Nikke releases at the end of a held Full Burst, or
     None if the hold-fire tactic is not played on her at all."""
     return _HOLD_FIRE_TACTICS.get(slug)
+
+
+def get_hold_fire_release_profile(slug, skill_values):
+    """The weapon profile the released shot uses, or None to use her ordinary
+    normal attack. A unit with one may have her own weapon-mode schedule
+    REPLACED by the hold, since the released shot is that segment's shot."""
+    builder = _HOLD_FIRE_RELEASE_PROFILE_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
 
 
 def deck_grants_ally_round_buffs(rules_by_slug):
@@ -1075,6 +1098,9 @@ _UNLIMITED_AMMO_DURATIONS = {
 # A Nikke whose burst swaps her weapon profile for a window (weapon-mode
 # segments - see raid_simulator's `weapon_mode_schedules` and the design spec).
 _WEAPON_MODE_SCHEDULE_BUILDERS = {
+    # Special Modification: her first shot after the burst, x4 charge time and
+    # the full Charge Damage bonus ("for 1 round(s)" = until_shots 1).
+    "ada-wong": lambda sv: build_special_modification_weapon_mode_schedule(sv),
     # Explosive Round: one true-damage exploding shot per own-burst (Fienn,
     # in-game 2026-08-08 - the text names no duration).
     "eunhwa-tactical-upgrade": lambda sv: build_explosive_round_weapon_mode_schedule(sv),

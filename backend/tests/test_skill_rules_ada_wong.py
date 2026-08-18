@@ -1,7 +1,8 @@
 """Ada Wong: Covert Support bursted-B3 subset buffs (gap #3), Flash Grenade
 during-FB true-damage periodic nuke with own-burst 1s enhancement (gap #6),
-Secret Agent self buffs + Special Modification (net charge-damage
-approximation - see the module docstring and the magazine-boundary test)."""
+Secret Agent self buffs + Special Modification as a one-shot segment (x4 charge
+time AND the full Charge Damage - see the module docstring for why a segment is
+what finally lets both halves land)."""
 from app.effects import EffectRegistry
 from app.raid_simulator import simulate_raid
 from app.skill_rules._helpers import round_buff_rule
@@ -78,7 +79,7 @@ def test_covert_support_hits_only_bursted_b3_allies():
     assert registry.total_for("true_damage_up", bursted, 15.1) == 0.0
 
 
-def test_secret_agent_self_buffs_and_special_modification_grant():
+def test_secret_agent_self_buffs():
     ctx = SquadContext([SquadMember("ada-wong", 3, "Electric")])
     registry = EffectRegistry()
     fire_trigger("own_burst_activate", {"ada-wong": build()}, ctx, registry, time=5.0)
@@ -88,15 +89,48 @@ def test_secret_agent_self_buffs_and_special_modification_grant():
     assert registry.total_for("true_damage_up", ada, 5.0) == 0.42
     assert registry.total_for("atk_percent", ada, 15.1) == 0.0
 
-    # Special Modification: 1-round net charge-damage grant (+15.0 nominal
-    # scaled by the x4 unpaid charge-time cost -> 15/4 - 1 = +2.75).
-    grants = registry.round_grants()
-    assert len(grants) == 1
-    grant = grants[0]
-    assert grant.stat == "charge_damage_bonus"
-    assert grant.value == 2.75
-    assert grant.shots == 1
-    assert grant.scope == "self"
+    # Special Modification is NOT a round grant any more: it has to change the
+    # charge TIME as well as the damage, which only a segment can state.
+    assert registry.round_grants() == []
+
+
+def test_special_modification_is_one_slow_heavy_shot_then_the_plain_rl():
+    from app.skill_rules.ada_wong import build_special_modification_weapon_mode_schedule
+
+    values = dict(VALUES, caster_weapon_stats={
+        "weapon": "RL", "damage_percent": 61.3, "charge_time": 1.0,
+        "charge_damage_percent": 250.0, "max_ammo": 6, "reload_time": 2.0})
+    schedule = build_special_modification_weapon_mode_schedule(values)
+
+    class _Context:
+        burst_times = {"ada-wong": [2.6, 42.6]}
+
+    segments = schedule(_Context(), 180.0)
+    assert [s["start"] for s in segments] == [2.6, 42.6]
+    for segment in segments:
+        # "for 1 round(s)" - exactly one shot, then the base weapon resumes.
+        assert segment["until_shots"] == 1
+        # Charge Speed v300% = charge time x4, the half the old net-damage
+        # approximation could never pay.
+        assert segment["profile"]["charge_time"] == 4.0
+        # Charge Damage is one additive group: her weapon's 250% plus the
+        # skill's 1500%, NOT the 275% the scaled-down approximation implied.
+        assert segment["profile"]["charge_damage_percent"] == 1750.0
+        assert segment["profile"]["damage_percent"] == 61.3
+
+
+def test_a_burst_past_the_bell_opens_no_segment():
+    from app.skill_rules.ada_wong import build_special_modification_weapon_mode_schedule
+
+    values = dict(VALUES, caster_weapon_stats={
+        "weapon": "RL", "damage_percent": 61.3, "charge_time": 1.0,
+        "charge_damage_percent": 250.0, "max_ammo": 6, "reload_time": 2.0})
+
+    class _Context:
+        burst_times = {"ada-wong": [2.6, 190.0]}
+
+    assert [s["start"] for s in
+            build_special_modification_weapon_mode_schedule(values)(_Context(), 180.0)] == [2.6]
 
 
 def test_flash_grenade_spec():

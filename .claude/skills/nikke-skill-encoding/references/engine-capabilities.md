@@ -637,14 +637,27 @@ an ally. That gate reads `SkillRule.grants_round_buff_to_allies`, set by
 rather than the day someone remembers a table.
 
 **A hold needs the unit's damage model to survive being fired ONCE.** Ada Wong
-plays the tactic in game and is deliberately absent from the table: her Special
-Modification is "Charge Speed ▼300%" (charge time ×4), which the engine does not
-put on the timeline at all - a 1-round charge-speed grant can never reach the
-magazine boundary where charge speed is sampled, so `ada_wong.py` folds the pair
-into a NET charge_damage_bonus (15/4 − 1 = +2.75) instead. That approximation
-pays the ×4 time cost in FEWER SHOTS, which is exactly what the tactic stops
-doing: her released shot would charge in 1.0 sec instead of 4.0 and carry +2.75
-instead of +15.0. Re-encode the pair before encoding her hold.
+was blocked on exactly this until 2026-08-18: her Special Modification is
+"Charge Speed ▼300%" + "Charge Damage ▲1500%" for 1 round, and the engine folded
+the pair into a NET charge_damage_bonus (15/4 − 1 = +2.75) because a 1-round
+charge-speed grant can never reach the magazine boundary where charge speed is
+sampled. That approximation pays the ×4 time cost in FEWER SHOTS - which is
+exactly what the tactic stops doing. The fix was to stop approximating: a
+one-shot SEGMENT states its own charge time, so both halves land (4.0 sec charge,
+250% + 1500% = 1750% Charge Damage, `until_shots: 1` = "for 1 round(s)").
+
+**When a hold-fire unit already has a weapon-mode segment, the hold REPLACES
+it** - and she has to say so, by declaring the released shot in
+`registry._HOLD_FIRE_RELEASE_PROFILE_BUILDERS`. Ada's held charge IS her Special
+Modification shot: the damage comes from that profile, the timing from the hold.
+A transforming unit with no such declaration raises rather than being resolved
+by guess.
+
+**A one-shot segment is the general answer to "for 1 round(s)" that has to
+change CADENCE, not just damage.** A round-count buff on a stat the shot loop
+samples per magazine (charge speed, attack speed, max ammo) can never land from
+a `round_buff_rule` - the grant lives inside a magazine, the sample happens at
+its edge. Declare the shot instead.
 
 **Highest-final-ATK top-N targeting:** for "N allies with the highest final
 ATK". `highest_atk_buff_rule(trigger, n, [(stat, value, duration), ...])`

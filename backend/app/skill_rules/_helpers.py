@@ -580,7 +580,7 @@ def silent_reload_segments(slug, reload_seconds, weapon, *, offset=0.0):
 HOLD_FIRE_RELEASE_MARGIN = 1.0 / 60
 
 
-def hold_fire_segments(weapon_stats, slug, *, release_shots=0,
+def hold_fire_segments(weapon_stats, slug, *, release_shots=0, release_profile=None,
                        release_margin=HOLD_FIRE_RELEASE_MARGIN):
     """Windows where the player deliberately HOLDS FIRE - one per Full Burst the
     unit opened with her own burst.
@@ -600,6 +600,12 @@ def hold_fire_segments(weapon_stats, slug, *, release_shots=0,
     `release_shots=1` fires exactly one shot just inside the window's close -
     the full charge she held and let go. `0` holds throughout, for a unit whose
     single shot is not worth the release (Mihara's MG).
+
+    `release_profile` is what that shot IS, when it is not just her ordinary
+    normal attack: Ada Wong's held charge is her Special Modification shot, so
+    holding REPLACES that one-shot segment rather than running beside it. Only
+    the damage is taken from the profile - the timing is the hold's, since the
+    x4 charge is spent inside the window she is holding through anyway.
 
     The window comes from `context.full_burst_windows`, so an extension counts
     (Modernia's +5 sec, Soda's staged one) rather than a hardcoded 10.
@@ -623,14 +629,18 @@ def hold_fire_segments(weapon_stats, slug, *, release_shots=0,
                 # ends at its last one, so one interval short of the close puts
                 # the release just inside Full Burst and hands the base weapon
                 # back the remaining sliver.
+                released = release_profile or weapon_stats
                 segments.append({
                     "start": start,
                     "until_shots": release_shots,
                     "profile": {
                         "weapon": weapon,
-                        "damage_percent": weapon_stats["damage_percent"],
+                        "damage_percent": released["damage_percent"],
+                        # An explicit rate, never the profile's own charge_time:
+                        # what decides when the shot leaves is when she lets go,
+                        # not how long the charge took.
                         "rate_of_fire": release_shots / (end - start - release_margin),
-                        "charge_damage_percent": weapon_stats.get(
+                        "charge_damage_percent": released.get(
                             "charge_damage_percent", 0.0),
                     },
                 })
