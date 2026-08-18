@@ -532,6 +532,63 @@ def _round_grant_over_cap(index, grant, start, end, windows):
     return newer_overlapping >= grant.cap
 
 
+def _round_grant_shot_window(shot_times, granted_at, shots, unlimited_windows,
+                             fight_duration):
+    """(start, end) of the Effect a "for N round(s)" grant becomes on ONE
+    recipient, or None when the grant never covers a shot of theirs.
+
+    The count is in AMMUNITION SPENT, not in shots fired. A recipient under
+    [Unlimited Ammunition] spends none, so shots taken inside one of their
+    `unlimited_windows` are covered by the buff yet do not tick it down (Fienn,
+    in-game: Miranda's "Critical Rate for 1 round" survives on Nayuta and Grave
+    for their whole window). Two boundaries end the buff, whichever lands first:
+
+    - the shot AFTER the Nth ammunition-spending shot - the ordinary rule, and
+      the only one that exists for a recipient with no window; or
+    - the END of an unlimited-ammunition window the buff is still alive in: the
+      game spends the round there rather than carrying the buff onward (Fienn,
+      2026-08-18).
+
+    The second boundary is also what keeps the buff bounded. A "for N round(s)"
+    bullet carries no seconds of its own in any collected skill text (checked
+    across every encoded unit - the only place rounds and seconds meet is "Max
+    Ammunition Capacity +N round(s) for 10 sec", which is a seconds buff whose
+    VALUE is a round count), so a window end is the only clock such a buff has.
+    Were a future bullet ever to pair rounds WITH a duration, that duration
+    would have to clamp this window too.
+
+    `unlimited_windows` are half-open [start, end), the engine's Full Burst
+    convention, and a window end is ordered BEFORE a shot landing at the same
+    instant - that shot spends ammunition, so the buff is already gone.
+    """
+    covered = [t for t in shot_times if t >= granted_at]
+    if not covered:
+        return None
+    start = covered[0]
+
+    def spends_ammunition(time):
+        return not any(ws <= time < we for ws, we in unlimited_windows)
+
+    # 0 sorts before 1, which is what puts a window end ahead of a shot sharing
+    # its instant.
+    events = [(we, 0) for _ws, we in unlimited_windows if we > granted_at]
+    events += [(time, 1) for time in covered]
+    events.sort()
+
+    spent = 0
+    for time, is_shot in events:
+        if not is_shot:
+            # The window ended with the buff still alive: consumed here. If no
+            # shot of theirs landed first, nothing ever carried it.
+            return (start, time) if time > start else None
+        if not spends_ammunition(time):
+            continue
+        spent += 1
+        if spent > shots:
+            return (start, time)
+    return (start, fight_duration)
+
+
 def _sequence_fire_rules(spec, stage_rules, shot_times, own_burst_times):
     """gap #10 (Scarlet's Fleetly Fading Breakthrough): one running shot
     counter walks a staged requirement table - stage k fires its rules once
@@ -871,6 +928,10 @@ def _simulate_raid_once(
     resource_fill_triggered_buffs=None,
     scheduled_nukes=None,
     weapon_mode_schedules=None,
+    # {슬러그: 초} - 그 유닛의 자기 버스트가 거는 [장탄 수 무한]의 지속시간.
+    # 그 창 안의 사격은 탄을 쓰지 않으므로 "N발 유지" 버프가 깎이지 않는다
+    # (_round_grant_shot_window). 사격 생성은 건드리지 않는다.
+    unlimited_ammo_durations=None,
     burst_anchored_buffs=None,
     ammo_rounds_per_shot=None,
     conditional_full_burst_deltas=None,
@@ -894,6 +955,7 @@ def _simulate_raid_once(
             f"expected one of {sorted(EFFECTIVE_RANGE_BANDS)} or None")
     in_range_weapons = EFFECTIVE_RANGE_BANDS.get(effective_range_band, frozenset())
     weapon_mode_schedules = weapon_mode_schedules or {}
+    unlimited_ammo_durations = unlimited_ammo_durations or {}
     periodic_nukes = periodic_nukes or {}
     burst_damage_types = burst_damage_types or {}
     burst_resolves_after_cast = burst_resolves_after_cast or set()
@@ -1783,19 +1845,39 @@ def _simulate_raid_once(
                    damage_type_gate=rec.damage_type_gate)
         shot_times_by_slug[slug] = shot_times
 
+    # Each unit's [Unlimited Ammunition] windows, anchored on their own burst -
+    # every skill that grants it does so from the caster's own burst skill, for
+    # a duration the unit's module reads out of its own slot. Built here rather
+    # than in the shot loop because `context.burst_times` is only complete once
+    # every unit's bursts are recorded.
+    #
+    # This is a STATUS axis and nothing more: it decides whether a shot spends
+    # ammunition, NOT how the shots are generated. Each unlimited-ammo unit
+    # already models the no-reload side of the status its own way (Grave raises
+    # `max_ammo_percent` past the window, Nayuta and Moran fire a segment, which
+    # never reloads), so letting this suppress reloads too would model the same
+    # thing twice.
+    unlimited_windows_by_slug = {
+        slug: [(burst_time, burst_time + duration)
+               for burst_time in context.burst_times.get(slug, [])]
+        for slug, duration in unlimited_ammo_durations.items()
+    }
+
     # "For N round(s)" (bullet-count) buffs expire when the affected ally
-    # fires N normal attacks, not after a fixed time. Turn each grant that
-    # targets a unit into a concrete Effect whose window covers exactly its
-    # next N shots after the grant (from the first covered shot up to the next
-    # uncovered shot / fight end), so phase 2 applies the buff to precisely
-    # those shots and nothing after. A squad grant is consumed independently
-    # by each ally's own shots (one Effect per unit). Runs as a SECOND pass
-    # after ALL units' shot loops (gap #9 refactor), so grants recorded by
-    # per-shot rules - of this unit or a later-processed one - convert too;
-    # burst-cycle-trigger grants (Zwei, Miranda) exist before any shot loop,
-    # so their covering shots are unchanged by the move.
+    # SPENDS N rounds of ammunition, not after a fixed time. Turn each grant
+    # that targets a unit into a concrete Effect whose window covers exactly
+    # those shots (from the first covered shot up to the shot that ends it /
+    # the end of an unlimited-ammunition window it is still alive in / fight
+    # end), so phase 2 applies the buff to precisely those shots and nothing
+    # after - see `_round_grant_shot_window`. A squad grant is consumed
+    # independently by each ally's own shots (one Effect per unit). Runs as a
+    # SECOND pass after ALL units' shot loops (gap #9 refactor), so grants
+    # recorded by per-shot rules - of this unit or a later-processed one -
+    # convert too; burst-cycle-trigger grants (Zwei, Miranda) exist before any
+    # shot loop, so their covering shots are unchanged by the move.
     for slug, shot_times in shot_times_by_slug.items():
         target = target_for(slug)
+        unlimited_windows = unlimited_windows_by_slug.get(slug, [])
         windows = []  # (grant, start, end) for the grants hitting THIS unit
         for grant in registry.round_grants():
             if grant.scope == "self":
@@ -1804,12 +1886,13 @@ def _simulate_raid_once(
                 covers_unit = _matches_scope(grant.scope, target)
             if not covers_unit:
                 continue
-            covered = [t for t in shot_times if t >= grant.granted_at][: grant.shots]
-            if not covered:
+            shot_window = _round_grant_shot_window(
+                shot_times, grant.granted_at, grant.shots, unlimited_windows,
+                fight_duration,
+            )
+            if shot_window is None:
                 continue
-            after_covered = [t for t in shot_times if t > covered[-1]]
-            window_end = after_covered[0] if after_covered else fight_duration
-            windows.append((grant, covered[0], window_end))
+            windows.append((grant, shot_window[0], shot_window[1]))
         for index, (grant, start, end) in enumerate(windows):
             if _round_grant_over_cap(index, grant, start, end, windows):
                 continue

@@ -77,9 +77,25 @@ SKILL_VALUE_MANIFESTS = {
         "keys": {
             "high_speed_evolution": ("skills", 0),
             "giant_leap": ("skills", 1),
+            # New World is here for ONE value - how long its [Unlimited
+            # Ammunition] lasts. The rest of the burst (Destroy Mode) stays
+            # unmodeled on purpose; see the module docstring.
+            "new_world": ("skills", 2),
         },
     },
 }
+
+
+def new_world_unlimited_ammo_duration(values):
+    """New World's "Unlimited ammunition for 15 sec".
+
+    Almost always dead weight, and deliberately so: she is played as a
+    burst-ABSTAINING normal-attack dealer (see the module docstring), so she
+    opens no window at all in her best shape and this returns a duration nothing
+    anchors on. It exists for the thinner shapes that can force her a fallback
+    burst - there the status is real, and an ally's "for N round(s)" buff on her
+    must stop ticking for it."""
+    return float(values["new_world"]["description_value_02"])
 
 
 def build_modernia_rules(values):

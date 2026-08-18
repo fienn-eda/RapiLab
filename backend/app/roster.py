@@ -43,6 +43,7 @@ from app.skill_rules.registry import (
     get_resource_scaled_nukes,
     get_resource_specs,
     get_scheduled_nukes,
+    get_unlimited_ammo_duration,
     get_weapon_mode_schedules,
 )
 from app.squad_engine import SkillRule
@@ -158,6 +159,7 @@ def assemble_simulation_inputs(ordered_deck):
     resource_fill_triggered_buffs = {}
     scheduled_nukes = {}
     weapon_mode_schedules = {}
+    unlimited_ammo_durations = {}
     burst_anchored_buffs = {}
     conditional_full_burst_deltas = {}
 
@@ -306,6 +308,10 @@ def assemble_simulation_inputs(ordered_deck):
         if weapon_mode_schedule:
             weapon_mode_schedules[spec.slug] = weapon_mode_schedule
 
+        unlimited_ammo_duration = get_unlimited_ammo_duration(spec.slug, skill_values)
+        if unlimited_ammo_duration:
+            unlimited_ammo_durations[spec.slug] = unlimited_ammo_duration
+
         burst_anchored_buff = get_burst_anchored_buffs(spec.slug, skill_values)
         if burst_anchored_buff:
             burst_anchored_buffs[spec.slug] = burst_anchored_buff
@@ -332,6 +338,7 @@ def assemble_simulation_inputs(ordered_deck):
         "resource_fill_triggered_buffs": resource_fill_triggered_buffs,
         "scheduled_nukes": scheduled_nukes,
         "weapon_mode_schedules": weapon_mode_schedules,
+        "unlimited_ammo_durations": unlimited_ammo_durations,
         "burst_anchored_buffs": burst_anchored_buffs,
         "conditional_full_burst_deltas": conditional_full_burst_deltas,
     }

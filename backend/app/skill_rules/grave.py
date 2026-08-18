@@ -101,6 +101,18 @@ def unlimited_ammo_percent(values):
     return rounds / weapon["max_ammo"] - 1.0
 
 
+def prediction_unlimited_ammo_duration(values):
+    """How long Prediction's [Unlimited Ammunition] lasts. The skill text spells
+    "10 sec" out as a literal rather than a slot, which is why this is the same
+    constant the rest of Prediction runs on rather than a `description_value`.
+
+    Separate from `unlimited_ammo_percent`, which models the no-reload SIDE of
+    the status on her own shot timeline. This one is the status itself, and what
+    reads it is whether an ALLY'S "for N round(s)" buff on her ticks down (see
+    raid_simulator's `unlimited_ammo_durations`)."""
+    return PREDICTION_DURATION
+
+
 def heat_emission_seconds(values):
     """How long Heat Emission lives: the lengthened reload it takes to get back
     to max ammo from empty.

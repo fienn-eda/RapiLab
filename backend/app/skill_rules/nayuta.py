@@ -151,6 +151,13 @@ def _memory_incineration_window(asceticism):
             float(asceticism["description_value_07"]))
 
 
+def memory_incineration_unlimited_ammo_duration(values):
+    """Memory Incineration's "Additional Effect: Unlimited ammunition for 10
+    sec" - its own slot, NOT the transform's Duration slot beside it. The two
+    read the same 10 sec today, so only the slot names which is which."""
+    return float(values["asceticism"]["description_value_08"])
+
+
 def build_memory_incineration_weapon_mode_schedule(values):
     """Asceticism's self weapon transform: for 10 sec her normal attack becomes a
     1.8-sec charge shot at 275.18% of final ATK, 250% of that on Full Charge.

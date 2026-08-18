@@ -41,12 +41,21 @@ MODERNIA = {
         "description_value_04": "29.38",  # self ATK %
         "description_value_05": "10",     # its duration
     },
+    # New World, her burst. Only slot 02 is read - Destroy Mode itself stays
+    # unmodeled because she is played burst-abstaining (see the module docstring).
+    "new_world": {
+        "description_value_01": "5",      # squad Full Burst Duration + sec
+        "description_value_02": "15",     # [Unlimited Ammunition] duration
+        "description_value_03": "2.24",   # Destroy Mode damage %
+        "description_value_04": "15",     # its duration
+    },
 }
 
 # Module-level aliases so the assembly verification harness
 # (test_skill_value_assembly.py) can resolve the fixtures by name.
 HIGH_SPEED_EVOLUTION = MODERNIA["high_speed_evolution"]
 GIANT_LEAP = MODERNIA["giant_leap"]
+NEW_WORLD = MODERNIA["new_world"]
 
 
 def test_modernia_evolution_resource_is_timed_capped_crit_and_ammo():

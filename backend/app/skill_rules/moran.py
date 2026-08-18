@@ -182,6 +182,12 @@ SPEAR_MODE_ROUNDS_PER_SECOND = 24.0
 SPEAR_MODE_SPREAD_DIAMETER = 150.0
 
 
+def fair_and_square_unlimited_ammo_duration(values):
+    """Fair and Square!'s "Unlimited ammunition for 10 sec", which shares slot 04
+    with the Attract taunt beside it (one value, two effects in the text)."""
+    return float(values["fair_and_square"]["description_value_04"])
+
+
 def build_fair_and_square_weapon_mode_schedule(values, slug="moran"):
     """Fair and Square!'s weapon transform: for 10 sec her AR becomes an
     unlimited-ammo SMG dealing 14.7% of final ATK per shot.

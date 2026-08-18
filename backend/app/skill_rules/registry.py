@@ -143,6 +143,7 @@ from app.skill_rules.grave import (
     build_grave_rules,
     build_grave_weapon_mode_schedule,
     build_overheat_per_shot_rules,
+    prediction_unlimited_ammo_duration,
 )
 from app.skill_rules.rei_ayanami import (
     annihilation_burst_percent,
@@ -255,6 +256,7 @@ from app.skill_rules.modernia import (
     build_modernia_per_shot_rules,
     build_modernia_resources,
     build_modernia_rules,
+    new_world_unlimited_ammo_duration,
 )
 from app.skill_rules.helm import (
     aegis_cannon_burst_percent,
@@ -330,12 +332,14 @@ from app.skill_rules.moran import (
     build_moran_base_rules,
     build_moran_fervor_cooldown_reduction,
     build_moran_rules,
+    fair_and_square_unlimited_ammo_duration,
 )
 from app.skill_rules.nayuta import (
     asceticism_burst_percent,
     build_memory_incineration_scheduled_nukes,
     build_memory_incineration_weapon_mode_schedule,
     build_nayuta_rules,
+    memory_incineration_unlimited_ammo_duration,
 )
 from app.skill_rules.noir import (
     build_noir_rules,
@@ -1015,6 +1019,20 @@ _SCHEDULED_NUKE_BUILDERS = {
         sv, slug="rapi-red-hood-b1", stage3_requirement_cut=False),
 }
 
+# A Nikke whose own burst grants her [Unlimited Ammunition], with how long it
+# lasts. Shots taken in that window spend no ammunition, so an ally's "for N
+# round(s)" buff on her does not tick down there (see
+# raid_simulator's `_round_grant_shot_window`). Census confirmed by Fienn
+# (2026-08-18) - these four and nobody else. A window that merely outlasts its
+# own magazine is NOT this status: see get_unlimited_ammo_duration.
+_UNLIMITED_AMMO_DURATIONS = {
+    "grave": lambda sv: prediction_unlimited_ammo_duration(sv),           # Prediction, 10 sec
+    "nayuta": lambda sv: memory_incineration_unlimited_ammo_duration(sv),  # Memory Incineration, 10 sec
+    "moran": lambda sv: fair_and_square_unlimited_ammo_duration(sv),       # Fair and Square!, 10 sec
+    "moran-signature": lambda sv: fair_and_square_unlimited_ammo_duration(sv),
+    "modernia": lambda sv: new_world_unlimited_ammo_duration(sv),          # New World, 15 sec
+}
+
 # A Nikke whose burst swaps her weapon profile for a window (weapon-mode
 # segments - see raid_simulator's `weapon_mode_schedules` and the design spec).
 _WEAPON_MODE_SCHEDULE_BUILDERS = {
@@ -1552,6 +1570,26 @@ def get_scheduled_nukes(slug, skill_values):
     """List of specs for a Nikke whose damage lands on a self-computed schedule
     (see raid_simulator's `scheduled_nukes`), or None for Nikkes without one."""
     builder = _SCHEDULED_NUKE_BUILDERS.get(slug)
+    return builder(skill_values) if builder else None
+
+
+def get_unlimited_ammo_duration(slug, skill_values):
+    """How many seconds this Nikke's own burst grants her [Unlimited
+    Ammunition], or None for the vast majority who never get it.
+
+    Only four units in the collected data have the status (Fienn confirmed the
+    census, 2026-08-18): Grave, Nayuta, Moran and Modernia. Every one of them
+    grants it in her OWN BURST skill, which is why the engine anchors the window
+    on `context.burst_times` rather than taking a schedule function.
+
+    It is NOT the same thing as a weapon transform that happens not to reload.
+    Red Hood's Red Wolf swaps in a 99-round magazine that simply outlasts its
+    own 10-sec window - her skill text never says "Unlimited ammunition", her
+    shots still spend rounds, and a "for N round(s)" buff on her is consumed
+    normally (Fienn, 2026-08-18). Read the status off the skill text, never off
+    "does this window reload".
+    """
+    builder = _UNLIMITED_AMMO_DURATIONS.get(slug)
     return builder(skill_values) if builder else None
 
 
