@@ -22,19 +22,22 @@ FIGHT = 100.0
 
 
 def test_without_a_window_the_next_shot_still_ends_a_one_round_buff():
-    # The ordinary rule, unchanged: covered from the first shot at/after the
-    # grant, ended by the shot after the Nth.
+    # The ordinary rule: live from the grant, ended by the shot after the Nth
+    # spending one.
     shots = [1.0, 2.0, 3.0, 4.0]
-    assert _round_grant_shot_window(shots, 1.5, 1, [], FIGHT) == (2.0, 3.0)
-    assert _round_grant_shot_window(shots, 1.5, 2, [], FIGHT) == (2.0, 4.0)
+    assert _round_grant_shot_window(shots, 1.5, 1, [], FIGHT) == (1.5, 3.0)
+    assert _round_grant_shot_window(shots, 1.5, 2, [], FIGHT) == (1.5, 4.0)
 
 
 def test_without_a_window_a_buff_that_outlives_the_shots_runs_to_fight_end():
-    assert _round_grant_shot_window([1.0], 0.0, 3, [], FIGHT) == (1.0, FIGHT)
+    assert _round_grant_shot_window([1.0], 0.0, 3, [], FIGHT) == (0.0, FIGHT)
 
 
-def test_a_grant_that_reaches_no_shot_of_theirs_becomes_nothing():
-    assert _round_grant_shot_window([1.0, 2.0], 5.0, 1, [], FIGHT) is None
+def test_a_grant_that_reaches_no_shot_of_theirs_still_exists():
+    # Nothing of theirs spends it, so nothing ends it before the fight does.
+    # It used to produce no Effect at all, which also denied it to any skill
+    # damage of theirs in the meantime.
+    assert _round_grant_shot_window([1.0, 2.0], 5.0, 1, [], FIGHT) == (5.0, FIGHT)
 
 
 def test_shots_inside_an_unlimited_window_do_not_spend_the_buff():
@@ -42,14 +45,14 @@ def test_shots_inside_an_unlimited_window_do_not_spend_the_buff():
     # spends a round, so the buff lives to the window's end instead of dying on
     # the shot at 4.0.
     shots = [1.0, 3.0, 4.0, 5.0, 6.0, 20.0]
-    assert _round_grant_shot_window(shots, 2.5, 1, [(2.0, 12.0)], FIGHT) == (3.0, 12.0)
+    assert _round_grant_shot_window(shots, 2.5, 1, [(2.0, 12.0)], FIGHT) == (2.5, 12.0)
 
 
 def test_the_buff_is_consumed_when_the_unlimited_window_ends():
     # No shot at all between the last in-window shot and the window's end - the
     # end itself consumes it, so it does not coast on to the next shot.
     shots = [3.0, 50.0]
-    assert _round_grant_shot_window(shots, 2.5, 1, [(2.0, 12.0)], FIGHT) == (3.0, 12.0)
+    assert _round_grant_shot_window(shots, 2.5, 1, [(2.0, 12.0)], FIGHT) == (2.5, 12.0)
 
 
 def test_a_count_frozen_by_a_later_window_resumes_nowhere():
@@ -57,24 +60,25 @@ def test_a_count_frozen_by_a_later_window_resumes_nowhere():
     # one, the window then freezes the count, and its end consumes what is left
     # rather than handing the rest back.
     shots = [1.0, 5.0, 6.0, 7.0, 30.0]
-    assert _round_grant_shot_window(shots, 0.5, 3, [(4.0, 12.0)], FIGHT) == (1.0, 12.0)
+    assert _round_grant_shot_window(shots, 0.5, 3, [(4.0, 12.0)], FIGHT) == (0.5, 12.0)
 
 
 def test_a_buff_already_spent_before_the_window_is_untouched_by_it():
     shots = [1.0, 2.0, 5.0]
-    assert _round_grant_shot_window(shots, 0.5, 1, [(4.0, 12.0)], FIGHT) == (1.0, 2.0)
+    assert _round_grant_shot_window(shots, 0.5, 1, [(4.0, 12.0)], FIGHT) == (0.5, 2.0)
 
 
-def test_a_window_ending_before_their_first_shot_leaves_nothing_to_carry_it():
-    # Consumed at 12.0 with no shot of theirs in between, so no Effect exists -
-    # anchoring it on the shot at 20.0 would resurrect a spent buff.
-    assert _round_grant_shot_window([20.0], 2.5, 1, [(2.0, 12.0)], FIGHT) is None
+def test_a_window_ending_before_their_first_shot_still_covers_the_window():
+    # No bullet of theirs carries it, but the buff was live for those 9.5 sec
+    # and their skill damage in them is under it. It ends at 12.0 all the same -
+    # extending it to the shot at 20.0 would resurrect a spent buff.
+    assert _round_grant_shot_window([20.0], 2.5, 1, [(2.0, 12.0)], FIGHT) == (2.5, 12.0)
 
 
 def test_a_shot_landing_exactly_at_the_window_end_is_outside_it():
     # Windows are half-open, so the shot at 12.0 spends a round - and the window
     # end is ordered first, which is what makes the buff already gone by then.
-    assert _round_grant_shot_window([3.0, 12.0], 2.5, 1, [(2.0, 12.0)], FIGHT) == (3.0, 12.0)
+    assert _round_grant_shot_window([3.0, 12.0], 2.5, 1, [(2.0, 12.0)], FIGHT) == (2.5, 12.0)
 
 
 def test_end_to_end_a_round_grant_covers_the_recipients_whole_unlimited_window():

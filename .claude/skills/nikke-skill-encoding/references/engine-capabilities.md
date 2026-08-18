@@ -537,11 +537,38 @@ Assault.
 affected ally's next N AMMUNITION-SPENDING normal attacks, not seconds — e.g.
 Zwei's Pierce Equation, Miranda's Wake Up. Build with `round_buff_rule(trigger,
 [(stat, value, scope_spec)], shots=N)`; it records a `RoundGrant` that
-`simulate_raid` turns into a real timed Effect covering exactly those shots per
-affected unit (squad grants are consumed per-ally). `scope_spec` is a static
-scope string or `("top_atk", n)`. No engine param to thread — `RoundGrant`s live
-on the registry. See `zwei.py` (squad) / `miranda.py` (top-1). Detail in
+`simulate_raid` turns into a real timed Effect per affected unit (squad grants
+are consumed per-ally). `scope_spec` is a static scope string or
+`("top_atk", n)`. No engine param to thread — `RoundGrant`s live on the
+registry. See `zwei.py` (squad) / `miranda.py` (top-1). Detail in
 `special-mechanics.md` ("For N round(s) is a bullet-count duration").
+
+**It is live from the GRANT, and it reaches skill damage (2026-08-18).** The
+round count says when the buff ENDS, never when it starts, and while it is up it
+covers everything the recipient does — nukes and burst damage included, not just
+the bullet that spends it (Fienn, in-game). The tactic that settled it: Miranda's
+"Critical Rate 85.42% for 1 round" landing on Marciana: Marine Study as Full
+Burst opens, where her Flagged Target Designation nuke fires on that same
+trigger and crits under it. Nothing to encode — the window is
+`_round_grant_shot_window`'s job — but it does mean a same-trigger nuke on the
+recipient IS in scope, which is easy to assume away.
+
+**The gap BEFORE the spending bullet belongs to the buff too.** A round buff is
+spent BY a bullet, so between two bullets it is still held: the window runs to
+the shot AFTER the Nth spending one, not to that shot. Tightening it to "ends on
+the bullet that spends it" reads plausible and is wrong — Phantom's own "Attack
+Damage +75.17% for 1 round(s) on every normal attack" has to be up when her
+burst fires between two of her shots, and tightening it cost her 2.9% in the
+fixed-shell sweep.
+
+**A "stacks up to N time(s)" cap is INSTANTANEOUS.** `round_buff_rule(...,
+cap=N)` is resolved by `_capped_round_grant_segments` as a step function per
+(bullet, stat): at any moment the `cap` newest live grants count, older ones are
+pushed out, and an older grant that outlives the ones that pushed it out is held
+again. Do not reach for "drop a grant that `cap` newer ones overlap" — that only
+agreed with the game while every window began at the shot it covered, and once
+windows start at the grant they chain into each other and it read Zwei's 3-stack
+Pierce Equation down to 1 on the shot it is meant to pay 3 on.
 
 **[Unlimited Ammunition] freezes the count (2026-08-18).** A shot fired under
 the status spends nothing, so it is covered by the buff and does not tick it
@@ -1476,10 +1503,13 @@ See `rapi_red_hood.py` and `anis_star.py` for worked branching examples, and
 - `cdr_pulse_rule(trigger, seconds, scope="squad")`.
 - `highest_atk_buff_rule(trigger, n, buffs)` where `buffs` is `(stat, value,
   duration)` - timed buffs on the n highest-final-ATK allies (except caster).
-- `round_buff_rule(trigger, buffs, shots=1)` where `buffs` is `(stat, value,
-  scope_spec)` - a "for N round(s)" bullet-count buff; `scope_spec` is a static
-  scope string or `("top_atk", n)`. The count is in ammunition SPENT: a
-  recipient under [Unlimited Ammunition] does not tick it down.
+- `round_buff_rule(trigger, buffs, shots=1, cap=None)` where `buffs` is
+  `(stat, value, scope_spec)` - a "for N round(s)" bullet-count buff;
+  `scope_spec` is a static scope string or `("top_atk", n)`. Live from the grant
+  and covering the recipient's skill damage too, not only their bullets. The
+  count is in ammunition SPENT: a recipient under [Unlimited Ammunition] does
+  not tick it down. `cap` is the skill's "stacks up to N time(s)", enforced per
+  instant.
 - `escalating_buff_rule(trigger, tiers)` / `instant_nuke_pulse_rule(trigger, pct)`
   (see their own sections above).
 

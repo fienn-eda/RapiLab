@@ -2730,9 +2730,16 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
   (`per_shot_rules`, after/every N) + 모든 넉을 "버프 적용 후" 일괄 계산해 per-shot
   스쿼드 버프가 버스트 넉까지 반영. 첫 소비자 Brid: Journey Ahead. 2026-07-11.
 - **탄수("N round") 지속시간 버프**: "for N round(s)"는 초가 아니라 **대상 아군이
-  소모한 탄 N발**로 만료. `RoundGrant` + `round_buff_rule` → 정확히 그 샷들만
-  덮는 timed Effect로 변환(squad는 아군별 개별 소모). 첫 소비자 Zwei/Miranda.
-  2026-07-12.
+  소모한 탄 N발**로 만료. `RoundGrant` + `round_buff_rule` → timed Effect로 변환
+  (squad는 아군별 개별 소모). 첫 소비자 Zwei/Miranda. 2026-07-12.
+  **(2026-08-18) 버프는 「부여 시점」부터 살아 있고 스킬 딜에도 걸린다**(Fienn
+  인게임) — 창을 수신자의 다음 탄이 아니라 `granted_at`부터 연다. 같은 트리거의
+  자기 넉(마르차나 Flagged Target)이 이 창에 들어온다. 끝은 종전대로 **N번째
+  소모탄 다음 샷** — 탄과 탄 사이도 버프 보유 구간이다(팬텀).
+- **「stacks up to N」 캡은 순간 규칙이다**: `_capped_round_grant_segments`가
+  (불릿, 스탯)별 계단함수로 푼다 — 어느 순간이든 최신 `cap`개만 세고, 밀려났던
+  것도 밀어낸 쪽이 먼저 끝나면 되살아난다. 종전의 「겹치면 버린다」는 창이
+  덮는 샷에서 시작할 때만 같은 답이었다. 2026-08-18.
 - **[장탄 수 무한] 상태 축**: 그 창 안의 사격은 탄을 안 쓰므로 「N발 유지」 버프가
   깎이지 않고, **창이 끝날 때** 소모된다(Fienn 인게임, 2026-08-18).
   `_UNLIMITED_AMMO_DURATIONS` → `unlimited_ammo_durations` → `_round_grant_shot_window`.
