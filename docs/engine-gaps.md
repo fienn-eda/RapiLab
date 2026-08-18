@@ -2729,10 +2729,15 @@ schedule 함수가 부착 시각 리스트를 계산한 뒤, 각 부착 시각�
 - **per-shot 트리거 + record-then-compute (gap #1)**: 발사 카운트 트리거
   (`per_shot_rules`, after/every N) + 모든 넉을 "버프 적용 후" 일괄 계산해 per-shot
   스쿼드 버프가 버스트 넉까지 반영. 첫 소비자 Brid: Journey Ahead. 2026-07-11.
-- **탄수("N round") 지속시간 버프**: "for N round(s)"는 초가 아니라 **대상 아군의
-  다음 N발**로 만료. `RoundGrant` + `round_buff_rule` → 샷 루프가 정확히 그 N발만
+- **탄수("N round") 지속시간 버프**: "for N round(s)"는 초가 아니라 **대상 아군이
+  소모한 탄 N발**로 만료. `RoundGrant` + `round_buff_rule` → 정확히 그 샷들만
   덮는 timed Effect로 변환(squad는 아군별 개별 소모). 첫 소비자 Zwei/Miranda.
   2026-07-12.
+- **[장탄 수 무한] 상태 축**: 그 창 안의 사격은 탄을 안 쓰므로 「N발 유지」 버프가
+  깎이지 않고, **창이 끝날 때** 소모된다(Fienn 인게임, 2026-08-18).
+  `_UNLIMITED_AMMO_DURATIONS` → `unlimited_ammo_durations` → `_round_grant_shot_window`.
+  해당 유닛은 넷뿐(그레이브·나유타·목단·모더니아). **사격 생성은 안 건드린다** —
+  넷 다 재장전 쪽은 이미 각자 모델하고 있어 이중 계상이 된다. 2026-08-18.
 - **최고 final ATK top-N 타겟팅**: "N ally unit(s) with the highest final ATK"를
   적용 시점 실시간 랭킹으로 정확 대상 지정. `SquadContext.base_atk`+`top_atk_slugs`,
   `slugs:` 스코프, `highest_atk_buff_rule`. 첫 소비자 Miranda. 2026-07-12.

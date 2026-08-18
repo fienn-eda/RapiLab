@@ -534,14 +534,40 @@ Julia (base)'s Crescendo/Climax, Helm's Frontline Command, Privaty's LD
 Assault.
 
 **"For N round(s)" buffs (bullet-count duration):** a buff whose duration is the
-affected ally's next N normal-attack shots, not seconds — e.g. Zwei's Pierce
-Equation, Miranda's Wake Up. Build with `round_buff_rule(trigger, [(stat, value,
-scope_spec)], shots=N)`; it records a `RoundGrant` that `simulate_raid`'s shot
-loop turns into a real timed Effect covering exactly the next N shots per affected
-unit (squad grants are consumed per-ally). `scope_spec` is a static scope string
-or `("top_atk", n)`. No engine param to thread — `RoundGrant`s live on the
-registry. See `zwei.py` (squad) / `miranda.py` (top-1). Detail in
+affected ally's next N AMMUNITION-SPENDING normal attacks, not seconds — e.g.
+Zwei's Pierce Equation, Miranda's Wake Up. Build with `round_buff_rule(trigger,
+[(stat, value, scope_spec)], shots=N)`; it records a `RoundGrant` that
+`simulate_raid` turns into a real timed Effect covering exactly those shots per
+affected unit (squad grants are consumed per-ally). `scope_spec` is a static
+scope string or `("top_atk", n)`. No engine param to thread — `RoundGrant`s live
+on the registry. See `zwei.py` (squad) / `miranda.py` (top-1). Detail in
 `special-mechanics.md` ("For N round(s) is a bullet-count duration").
+
+**[Unlimited Ammunition] freezes the count (2026-08-18).** A shot fired under
+the status spends nothing, so it is covered by the buff and does not tick it
+down; the buff is consumed when the WINDOW ends, not one shot later (Fienn,
+in-game). Nothing to do when encoding a round buff — `_round_grant_shot_window`
+applies it to every one of them. What an encoding DOES owe is the other side:
+if the unit you are encoding gets [Unlimited Ammunition], declare how long for.
+
+**Unlimited-ammunition windows:** `registry._UNLIMITED_AMMO_DURATIONS[slug]` →
+a function reading the seconds out of the unit's own burst slot, surfaced by
+`get_unlimited_ammo_duration` and threaded to `simulate_raid` as
+`unlimited_ammo_durations={slug: seconds}`. The window is anchored on the unit's
+OWN BURST times, which is where every skill granting the status puts it. Census
+(Fienn, 2026-08-18) — `grave` (Prediction, 10s), `nayuta` (Memory Incineration,
+10s), `moran`/`moran-signature` (Fair and Square!, 10s), `modernia` (New World,
+15s), and nobody else.
+
+Two traps:
+- **Read the status off the skill TEXT, never off "does this window reload".**
+  Red Hood's Red Wolf swaps in a 99-round magazine that outlasts its own 10-sec
+  window, so it never reloads — but her text never says "Unlimited ammunition",
+  her shots still spend rounds, and a round buff on her is consumed normally.
+- **It is a STATUS axis only — it does not generate shots.** Each of the four
+  already models the no-reload side its own way (Grave raises `max_ammo_percent`
+  past the window; Nayuta and Moran fire a segment, which never reloads), so
+  wiring this into shot generation would model the same thing twice.
 
 **Highest-final-ATK top-N targeting:** for "N allies with the highest final
 ATK". `highest_atk_buff_rule(trigger, n, [(stat, value, duration), ...])`
@@ -1452,7 +1478,8 @@ See `rapi_red_hood.py` and `anis_star.py` for worked branching examples, and
   duration)` - timed buffs on the n highest-final-ATK allies (except caster).
 - `round_buff_rule(trigger, buffs, shots=1)` where `buffs` is `(stat, value,
   scope_spec)` - a "for N round(s)" bullet-count buff; `scope_spec` is a static
-  scope string or `("top_atk", n)`.
+  scope string or `("top_atk", n)`. The count is in ammunition SPENT: a
+  recipient under [Unlimited Ammunition] does not tick it down.
 - `escalating_buff_rule(trigger, tiers)` / `instant_nuke_pulse_rule(trigger, pct)`
   (see their own sections above).
 

@@ -5,6 +5,39 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 「N발 유지」의 계수는 발사한 샷이 아니라 소모한 탄이다
+
+- Date: 2026-08-18
+- Context: Fienn이 미란다(애장품) Wake Up!의 「크리티컬 확률 85.42% · 1발 유지」가
+  [장탄 수 무한] 아군에게 걸렸을 때 엔진이 어떻게 처리하는지 물었다. 확인 결과
+  엔진은 라운드 그랜트를 **발사 시각**만으로 셌고([장탄 수 무한]이라는 개념이
+  아예 없었다), 그 크리율이 그레이브에게 0.083초·나유타에게 0.05초만 살았다.
+  인게임에서는 그 상태의 사격이 **탄을 소모하지 않는 판정**이라 버프가 안 깎인다
+  (Fienn).
+- Alternatives considered: (a) 무한탄창 창을 **사격 생성**에도 물려 재장전을
+  없앤다 — 기각. 넷 다 재장전 쪽을 이미 각자 모델하고 있다(그레이브는
+  `max_ammo_percent`, 나유타·목단은 세그먼트) → 이중 계상. (b) 창이 끝난 뒤
+  **다음 탄 소모 샷**에 소비된다고 본다 — Fienn이 「창이 사라지면 소모한다」로
+  정정. 딜 차이는 1발이지만 규칙은 그의 것이 맞다. (c) 「재장전 안 하는 변신 창」을
+  전부 이 상태로 친다 — 기각, 레드후드가 반례다(아래).
+- Decision: 상태 축을 따로 둔다. 유닛이 자기 버스트 슬롯에서 창 길이를 선언하고
+  (`registry._UNLIMITED_AMMO_DURATIONS` → `unlimited_ammo_durations`),
+  `_round_grant_shot_window`가 **소모 샷만** 세며, 살아 있는 채로 창이 끝나면
+  거기서 버프를 종료한다. 창이 없는 수신자에겐 종전과 같은 답을 낸다.
+- Why: 「N발 유지」의 N은 게임에서 탄 소모 카운터고, 상태는 그 카운터를 멈춘다.
+  이건 미란다 한 명의 규칙이 아니라 **모든 「N발 유지」 버프에 적용되는 상태의
+  규칙**이므로(Fienn), 스킬 쪽이 아니라 변환 패스에 넣어야 한 번만 적는다.
+- Consequences: 해당 유닛은 넷뿐이다(Fienn census, 2026-08-18) — 그레이브
+  (Prediction 10초) · 나유타(Memory Incineration 10초) · 목단(Fair and Square!
+  10초) · 모더니아(New World 15초). **레드후드는 아니다** — Red Wolf는 99발
+  탄창이 자기 창보다 길 뿐이고 원문에 「Unlimited ammunition」이 없다. 크로스유닛
+  라운드 그랜트를 가진 건 미란다(top-ATK)와 츠바이(스쿼드) 둘뿐이라 영향 범위도
+  그 곱이다. 측정(`scripts/measure_unlimited_ammo_round_grants.py`):
+  미란다(애장품)+나유타 **+17.58%** · +목단 **+8.06%** · 츠바이(애장품)+그레이브
+  **+2.37%**. 나머지 쌍은 0.00%이고 이유가 각각 다르다(스크립트 독스트링).
+  모더니아 New World가 매니페스트에 처음 실렸고(슬롯 02 하나만 읽는다), 그
+  드리프트 가드가 `NEW_WORLD` 픽스처를 요구했다. 착륙 시점 백엔드 2492 passed.
+
 ## 「제외한 니케」 필터 칩은 속성·단계와 같은 켬/끔 규약 하나다 — 숨기기도, 제외/사용 2칩 그룹도 아니다
 
 - Date: 2026-08-18
