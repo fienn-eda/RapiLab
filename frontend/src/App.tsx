@@ -21,6 +21,7 @@ import { SyncRosterPanel } from './components/SyncRosterPanel'
 import { UnionRaidPanel } from './components/UnionRaidPanel'
 import { CalculatorPanel } from './components/CalculatorPanel'
 import { PrivacyNotice } from './components/PrivacyNotice'
+import { Wordmark } from './components/Wordmark'
 import { HELP } from './lib/helpText'
 import { HelpText } from './components/HelpText'
 import type { NikkeDraft } from './types/nikkeDraft'
@@ -166,7 +167,10 @@ function App() {
     <div className="app">
       <header className="app__header">
         <div className="app__masthead">
-          <h1 className="app__title">RapiLab</h1>
+          <h1 className="app__title">
+            <Wordmark />
+            <span className="visually-hidden">RapiLab</span>
+          </h1>
           <p className="app__subtitle">
             <HelpText>{HELP.app.subtitle}</HelpText>
           </p>

@@ -67,10 +67,25 @@
   margin-left: auto;
 }
 
+/* 제목은 이제 글자가 아니라 워드마크 그림이다. font-size가 남아 있는 것은
+   .wordmark가 자기 높이를 em으로 잡기 때문 - 이 값이 워드마크의 기준 크기다. */
 .app__title {
   font-size: 28px;
-  font-weight: 650;
-  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+/* 높이가 1em이 아닌 이유: viewBox가 잉크에 딱 맞게 잘려 있어서 그 917 units는
+   글자 크기(1000 upem)가 아니라 어센더~디센더 구간이다. 그래서 height를 그냥
+   1em으로 두면 글자보다 커진다.
+
+   0.97em은 교체 전 제목과 대문자 높이를 맞춘 값이다. 예전 제목(RapiLab Sans
+   650 @ 28px)의 대문자가 20.0px였고, 워드마크의 대문자는 height × 675/917 이라
+   20.0 × 917/675 / 28 = 0.97em 에서 같아진다. 글자꼴만 바꾸고 크기는 그대로
+   두려는 값이므로, 제목을 키우고 싶다면 여기가 아니라 위의 font-size를 만질 것. */
+.wordmark {
+  display: block;
+  height: 0.97em;
+  width: auto;
 }
 
 .app__subtitle {
