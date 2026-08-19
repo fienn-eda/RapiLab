@@ -56,6 +56,11 @@ Not modeled / deferred:
   endpoint (`attack_rate.tap_fire_wins`). A player who releases half-way is
   therefore modelled as doing worse than either mode, which is what the
   arithmetic says they are doing.
+- **The frame a tap does bank.** A tap is modelled at exactly 100%, but a real
+  hand holds one or two frames and Fienn's readings came out at 104% and 107%.
+  The engine therefore UNDERSTATES a tapped shot by 3-7%, which is the safe
+  direction: it can only make the recommender prefer tapping less often than the
+  game does, never more.
 """
 from app.skill_rules._helpers import buff_rule, highest_atk_buff_rule
 

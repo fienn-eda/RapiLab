@@ -1250,6 +1250,19 @@ options, so the damage is continuous even where the reported mode is not — for
 Alice the two are within 5% at the default cube's reload speed, and the
 collectible's charge-damage multiplier alone flips which one is named.
 
+**A tap is modelled at exactly 100%, which understates it by 3-7%.** A real hand
+holds one or two frames, and those frames bank a slice of the ramp (Alice read
+104% and 107% against a 90-frame charge). The error is in the safe direction: the
+recommender can only prefer tapping LESS often than the game does.
+
+**Charge speed reaches this decision through more than one door.** Alice is the
+worked example: her own burst's `charge_speed_percent` (+80.15%) cuts 80 of her 90
+frames, and her Skill 1's CASTER-BASED `charge_time_reduction_sec` (0.17505 sec =
+10.5 frames, which she is eligible for herself) erases the rest — so inside her
+Full Burst the charge is **zero**, not the 10 frames the percentage alone implies.
+Do not re-derive a unit's effective charge by hand when explaining a result; spy on
+`shot_interval_with_speed` and read what the magazine actually got.
+
 `attack_rate.generate_segmented_shots()` builds a per-segment ShotRecord
 timeline instead of one flat cadence: inside a segment the unit's BASE
 weapon is genuinely silenced (not just double-counted-and-subtracted) and
