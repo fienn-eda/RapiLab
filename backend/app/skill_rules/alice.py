@@ -9,12 +9,19 @@ Two measured numbers carry it, both from Fienn's frame reading of 2026-08-19
 - **Her fire-to-charge pause is 15 frames**, the shortest in
   `registry.TIMED_CHARGE_MOTION_DELAY` and a counterexample to handing untimed
   charge weapons the 22-frame stand-in.
-- **She is a tap-fire candidate** (`registry.TAP_FIRE_CANDIDATES`): releasing at
-  the start of the charge fires a 100% shot every 15 frames, and the engine
-  weighs that against a full charge once per magazine. Which one wins is the
-  DECK's answer, not hers - reload speed decides it, so she taps outside her
-  burst window in a Crown + Privaty + Resilience-cube deck and full-charges
-  everywhere else.
+- **She is a tap-fire candidate** (`registry.TAP_FIRE_CANDIDATES`): outside her
+  burst window, releasing at the start of the charge fires a 100% shot every 15
+  frames, and the engine weighs that against a full charge once per magazine.
+  Which one wins is the DECK's answer, not hers - reload speed decides it, so she
+  taps outside her burst in a Crown + Privaty + Resilience-cube deck and
+  full-charges elsewhere.
+
+INSIDE her burst window the question does not arise, and reading the engine's
+"full charge" there as an instruction to WAIT is the trap. Her burst's Charge
+Speed (+80.15%) cuts 80 of her 90 frames and Skill 1's caster-based 0.17505 sec
+erases the remaining 10, so the charge is **zero**: pressing the trigger already
+gives 383%. Tap and full charge are the same action there, and it is the stretch
+that produces 40 shots per 10 sec.
 
 Her weapon is the hardest-charging one in the game: **Full Charge Damage 350%**
 in the data file (250% for almost every other charge weapon; Cinderella 200%,

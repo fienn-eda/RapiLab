@@ -72,12 +72,15 @@ describe('DeckCard 버스트 홀드 안내', () => {
     expect(screen.getByText(/톡톡이/)).toHaveTextContent('앨리스')
   })
 
-  // 「버스트 중에 톡톡이」로 읽히면 정확히 거꾸로다 - 차속 버프가 걸린 구간이야말로
-  // 풀차지가 거의 공짜라 기다려야 하는 구간이다. 문구는 두 모드를 다 말해야 한다.
-  it('톡톡이 안내는 풀차지 구간도 같이 말한다', () => {
+  // 문구가 구간을 지시하면 안 된다 - 차속이 세게 걸린 구간은 차지가 0이라 톡톡이와
+  // 풀차지가 같은 동작이고, 「그때는 풀차지」로 읽히면 플레이어가 손을 늦춰 발수를
+  // 잃는다. 대신 톡톡이가 이득인 조건을 말한다.
+  it('톡톡이 안내는 구간이 아니라 이득인 조건을 말한다', () => {
     render(<DeckCard label="덱 1" deck={{ ...DECK, tap_fire_slugs: ['alice'] }} />)
 
-    expect(screen.getByText(/톡톡이/)).toHaveTextContent('풀차지')
+    const note = screen.getByText(/톡톡이/)
+    expect(note).toHaveTextContent('재장전')
+    expect(note).not.toHaveTextContent('버스트 중')
   })
 
   it('톡톡이 전제가 없으면 아무것도 안 단다', () => {
