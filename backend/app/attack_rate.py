@@ -871,6 +871,21 @@ def full_charge_positions(capacity, full_charges):
     return frozenset((j * capacity) // full_charges for j in range(full_charges))
 
 
+def mixed_charge_round_offset(index, capacity, full_cost, tap_cost, full_positions):
+    """매거진 시작에서 `index`번째 탄이 발사되기까지의 시간.
+
+    발마다 소요가 갈리므로 균등 간격이 아니라 누적합이다. 탄환 환급으로 매거진이
+    용량을 넘어 이어질 수 있으므로 배치는 `capacity`를 주기로 **순환**한다 -
+    풀차지 주기가 유지되어야 창도 유지되기 때문이다.
+    """
+    whole, rest = divmod(index + 1, capacity)
+    full_rounds = len(full_positions)
+    total = whole * (full_rounds * full_cost + (capacity - full_rounds) * tap_cost)
+    for i in range(rest):
+        total += full_cost if i in full_positions else tap_cost
+    return total
+
+
 def optimal_full_charges(capacity, reload_seconds, charge_seconds, full_delay,
                          tap_interval, full_charge_percent, window=None):
     """이 매거진에서 풀차지로 쏠 발수 k(0..capacity).
@@ -1405,22 +1420,33 @@ def _base_shot_records(base, window_start, window_end,
                 charge_time_reduction_sec_at(magazine_start),
                 motion_delay, base.get("charge_interval_floor"))
             capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
-            # 톡톡이를 저울질하는 유닛은 매거진마다 두 끝 중 나은 쪽을 고른다. 차지속도가
-            # 이미 이 granularity로 샘플되므로 새 축이 생기지 않고, 판정이 닫힌 형태라
-            # 탐색도 없다 - `tap_fire_wins` 참고. 멈춤이 없으면 톡톡이 간격이 0이 되어
-            # 무한 연사가 되므로 그 유닛은 애초에 후보가 아니다(registry 쪽 불변식).
-            bonus = full_bonus
+            # 톡톡이를 저울질하는 유닛은 매거진마다 풀차지 몇 발을 섞을지 고른다.
+            # 차지속도가 이미 이 granularity로 샘플되므로 새 축이 생기지 않는다.
+            # 톡톡이 간격은 멈춤과 **다른 실측값**이고(밀크 22f 대 15f), 실측이
+            # 없는 유닛만 멈춤으로 대신한다 - `registry.TAP_FIRE_INTERVAL` 참고.
+            full_positions = None
+            tap_cost = None
             if base.get("tap_fire") and motion_delay:
-                if tap_fire_wins(
-                        effective_charge - motion_delay, motion_delay,
-                        base["charge_damage_percent"], capacity,
-                        reload_time_with_speed(
-                            base["reload_time"], reload_speed_percent_at(magazine_start))):
-                    effective_charge, bonus = motion_delay, 0.0
+                tap_cost = base.get("tap_fire_interval") or motion_delay
+                full_charges = optimal_full_charges(
+                    capacity,
+                    reload_time_with_speed(
+                        base["reload_time"], reload_speed_percent_at(magazine_start)),
+                    effective_charge - motion_delay, motion_delay, tap_cost,
+                    base["charge_damage_percent"], base.get("full_charge_window"))
+                if full_charges < capacity:
+                    full_positions = full_charge_positions(capacity, full_charges)
+            if full_positions is None:
+                # 전부 풀차지 - 예전 경로와 산술이 바이트 단위로 같아야 한다.
+                def time_of_round_i(i, s=magazine_start, c=effective_charge):
+                    return s + c + i * c
+            else:
+                def time_of_round_i(i, s=magazine_start, c=effective_charge,
+                                    t=tap_cost, cap=capacity, p=full_positions):
+                    return s + mixed_charge_round_offset(i, cap, c, t, p)
             magazine_size, shots_fired = _walk_magazine(
                 capacity, shots_fired, refund,
-                time_of_round=lambda i, s=magazine_start, c=effective_charge: (
-                    s + c + i * c),
+                time_of_round=time_of_round_i,
                 refills=refills, stop_time=window_end)
             if magazine_size == 0:
                 # Same boundary as generate_charge_shot_times: this magazine's
@@ -1428,11 +1454,13 @@ def _base_shot_records(base, window_start, window_end,
                 return records
             last_shot_time = None
             for i in range(magazine_size):
-                shot_time = magazine_start + effective_charge + i * effective_charge
+                shot_time = time_of_round_i(i)
                 if shot_time >= window_end:
                     return records
+                is_full = full_positions is None or (i % capacity) in full_positions
                 records.append(ShotRecord(
-                    shot_time, weapon, base["damage_percent"], bonus,
+                    shot_time, weapon, base["damage_percent"],
+                    full_bonus if is_full else 0.0,
                     is_first_bullet=(i == 0), is_last_bullet=(i == magazine_size - 1),
                     magazine_index=i))
                 last_shot_time = shot_time

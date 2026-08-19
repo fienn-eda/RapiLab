@@ -307,3 +307,60 @@ def test_the_widest_block_never_exceeds_the_ceiling():
             blocks = [b - a for a, b in zip(positions, positions[1:])]
             blocks.append(capacity - positions[-1])
             assert max(blocks) <= -(-capacity // k), (capacity, k)
+
+
+def _milk_weapon(**overrides):
+    weapon = {
+        "weapon": "SR",
+        "charge_time": MILK_CHARGE_TIME,
+        "charge_damage_percent": MILK_FULL_CHARGE_PERCENT,
+        "damage_percent": 100.0,
+        "max_ammo": MILK_CAPACITY,
+        "reload_time": MILK_RELOAD_TIME,
+        "charge_motion_delay": MILK_MOTION_DELAY,
+        "tap_fire": True,
+        "tap_fire_interval": MILK_TAP_INTERVAL,
+        "full_charge_window": MILK_WINDOW,
+    }
+    weapon.update(overrides)
+    return weapon
+
+
+def test_milks_magazine_mixes_one_full_charge_with_five_taps():
+    """매거진 여섯 발 가운데 첫 탄만 차지 보너스를 갖는다."""
+    shots = generate_segmented_shots(_milk_weapon(), (), 6.0)
+    magazine = shots[:MILK_CAPACITY]
+    assert [s.extra_charge_bonus > 0 for s in magazine] == [True, False, False, False, False, False]
+
+
+def test_the_taps_are_spaced_by_the_tap_interval_not_the_pause():
+    """톡톡이끼리의 간격은 15프레임이지 그녀의 멈춤 22프레임이 아니다 — 이 구분이
+    없으면 발수를 47% 과소평가한다."""
+    shots = generate_segmented_shots(_milk_weapon(), (), 6.0)
+    gaps = [b.time - a.time for a, b in zip(shots, shots[1:])][:4]
+    for gap in gaps:
+        assert gap == pytest.approx(MILK_TAP_INTERVAL)
+
+
+def test_the_full_charge_shot_costs_charge_plus_pause():
+    """첫 탄은 차지 1초와 멈춤 22프레임을 함께 치른다."""
+    shots = generate_segmented_shots(_milk_weapon(), (), 6.0)
+    assert shots[0].time == pytest.approx(MILK_CHARGE_TIME + MILK_MOTION_DELAY)
+
+
+def test_a_unit_without_a_tap_interval_falls_back_to_its_pause():
+    """실측이 없으면 지금까지의 동작 그대로 멈춤을 톡톡이 간격으로 쓴다.
+
+    「지금까지의 동작」은 옛 `tap_fire_wins`의 이항 판정이다 - 그리고 밀크의 실제
+    수치(차지 1초 + 멈춤 22프레임, 재장전 2초)에서 그 판정은 풀차지 승리다
+    (`tap_fire_wins(1.0, 22/60, 250.0, 6, 2.148)`가 `False`). 톡톡이 간격을 멈춤과
+    같게 두면 풀차지 대비 연사 이득이 전혀 없이 배율 250%만 잃으므로, 이 매거진은
+    폴백 아래서도 풀차지 케이던스(차지+멈춤)로 뽑혀야 옳다 - 톡톡이 간격 자체(멈춤
+    단독)가 아니다.
+    """
+    weapon = _milk_weapon(full_charge_window=None)
+    weapon.pop("tap_fire_interval")
+    shots = generate_segmented_shots(weapon, (), 6.0)
+    gaps = [b.time - a.time for a, b in zip(shots, shots[1:])][:3]
+    for gap in gaps:
+        assert gap == pytest.approx(MILK_CHARGE_TIME + MILK_MOTION_DELAY)
