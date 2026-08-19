@@ -1266,8 +1266,10 @@ among the rest. **If no `k` survives, it falls back to `k = C`** (every shot
 full charge), the cadence that revisits full charge most often; that fallback
 is a "best available", not a guarantee — a single reload longer than the
 window still loses it, and then it is the GAME losing the window, not a bug in
-this function (`scripts/audit_milk_tap_fire.py` flags any magazine where the
-model itself loses the window it COULD have kept). A unit with no
+this function (`backend/scripts/audit_milk_tap_fire.py` flags any magazine
+whose worst gap between full charges exceeds the window — it does not
+distinguish a loss the model could have avoided from one the game itself
+forced). A unit with no
 `full_charge_window` (Alice — her Pierce is HP-gated, not refreshed by
 charging) carries no such constraint and `k=0` (an all-tap magazine) is a
 legal answer for her.
@@ -1289,8 +1291,8 @@ declares them. Two things gate membership:
   `tests/test_manual_tap_fire.py` pins it.
 - **A stand-in pause is not good enough** when the verdict is close, and the
   tap interval needs its OWN measurement rather than riding on the pause (see
-  above). Milk: Blooming Bunny is in — pause 21.889f (n=9) and tap interval
-  14.810f (n=21), both measured 2026-08-19/20. Ein is the next obvious
+  above). Milk: Blooming Bunny is in — pause 21.889f (n=9, measured 2026-08-15)
+  and tap interval 14.810f (n=21, measured 2026-08-19). Ein is the next obvious
   candidate (same SR weapon) but carries only the 22-frame motion-delay
   stand-in and no tap-interval reading at all, so she stays off until someone
   times her.

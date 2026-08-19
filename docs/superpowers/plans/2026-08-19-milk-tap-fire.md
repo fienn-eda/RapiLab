@@ -361,7 +361,9 @@ def optimal_full_charges(capacity, reload_seconds, charge_seconds, full_delay,
     이 함수는 잃는 폭이 가장 작은 배치를 고를 뿐이다 - 그래서 이 폴백이 보장하는
     것은 「창을 지킨다」가 아니라 「지킬 수 있으면 지킨다」이다. 밀크의 실제 값은
     이 분기에 닿지 않는다(차지+멈춤 1.37초 + 재장전 2.0초 = 3.37초 < 창 6초,
-    그녀의 강제 재장전 3.0초를 넣어도 4.37초). **그것이 그녀의 Pierce를 영구로
+    그녀의 강제 재장전 3.0초를 넣어도 4.37초 — 파일값 기준. 엔진은 재장전에
+    `RELOAD_FIXED_SECONDS` 0.148초를 더하므로 실제로는 3.515초·강제재장전
+    4.515초이며, 어느 쪽이든 창 아래다). **그것이 그녀의 Pierce를 영구로
     두는 근사가 실제로 기대는 사실이다.**
     """
     if tap_interval <= 0:
@@ -606,8 +608,10 @@ def test_milks_cadence_actually_keeps_her_pierce_window():
 
     스윕은 그녀가 실제로 만날 수 있는 범위다 - 장탄은 오버로드·버프로 늘 수 있고,
     재장전은 버프로 짧아지거나 그녀의 강제 재장전(「50% 감소 고정」 = 3초)까지 길어진다.
-    그 범위에서는 전부 풀차지의 최악 간격이 `1.3667 + 재장전 <= 4.37초 < 6초`라 창을
-    지킬 수 있는 k가 언제나 있고, 따라서 엔진이 고른 k도 반드시 지켜야 한다.
+    그 범위에서는 전부 풀차지의 최악 간격이 `1.3667 + 재장전 <= 4.37초 < 6초`(파일값
+    기준; 엔진의 아핀 재장전은 `RELOAD_FIXED_SECONDS` 0.148초를 더해 4.515초가 되며
+    여전히 창 아래다)라 창을 지킬 수 있는 k가 언제나 있고, 따라서 엔진이 고른 k도
+    반드시 지켜야 한다.
     """
     from app.attack_rate import FRAME_SECONDS, optimal_full_charges
     charge, delay, tap = 1.0, 22 * FRAME_SECONDS, 15 * FRAME_SECONDS
@@ -655,9 +659,12 @@ TAP_FIRE_CANDIDATES = frozenset({"alice", "milk-blooming-bunny"})
   it is the GAME losing the window rather than the model. What makes the
   permanent grant sound for HER is an inequality about her own numbers -
   `charge + delay + reload` = 1.37 + 2.0 = **3.37 sec against a 6 sec window**,
-  and 4.37 sec even under her forced reload's fixed 3 sec. She never reaches
-  the branch where the window cannot be kept. The day that inequality breaks,
-  this grant stops being an approximation and becomes an error.
+  and 4.37 sec even under her forced reload's fixed 3 sec. (Those are the file
+  values; the engine's reload is affine and adds `RELOAD_FIXED_SECONDS` = 0.148
+  sec, so the numbers it actually runs on are 3.515 sec and 4.515 sec - still
+  both under the 6 sec window.) She never reaches the branch where the window
+  cannot be kept. The day that inequality breaks, this grant stops being an
+  approximation and becomes an error.
 
   **This is the load-bearing approximation of her encoding.** The earlier
   justification - "she is an SR, so every shot IS a full charge" - became false

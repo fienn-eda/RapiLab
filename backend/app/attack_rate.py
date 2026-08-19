@@ -862,9 +862,11 @@ def tap_fire_wins(charge_seconds, motion_delay, charge_damage_percent,
 def full_charge_positions(capacity, full_charges):
     """매거진 안에서 풀차지로 쏠 탄의 인덱스 - 균등 배치.
 
-    `j=0`이 0번 탄이므로 **첫 탄은 항상 풀차지**다. 그것이 강제 재장전 직후의
-    거동이자 Fienn이 적은 조작(「첫 탄 풀차지(관통효과 얻음)」)이고, 덕분에
-    매거진 경계가 곧 창을 새로 여는 지점이 된다.
+    `j=0`이 0번 탄이므로 **`k >= 1`이면 첫 탄은 항상 풀차지**다(`k <= 0`이면
+    빈 집합을 돌려주고 매거진이 전탐이다 - 앨리스처럼 창이 없어 톡톡이가 이기는
+    경우). 첫 탄 풀차지가 강제 재장전 직후의 거동이자 Fienn이 적은 조작(「첫 탄
+    풀차지(관통효과 얻음)」)이고, 덕분에 매거진 경계가 곧 창을 새로 여는 지점이
+    된다.
     """
     if full_charges <= 0:
         return frozenset()

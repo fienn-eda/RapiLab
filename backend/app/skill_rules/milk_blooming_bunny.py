@@ -66,9 +66,12 @@ Modeled (DPS-relevant):
   it is the GAME losing the window rather than the model. What makes the
   permanent grant sound for HER is an inequality about her own numbers -
   `charge + delay + reload` = 1.37 + 2.0 = **3.37 sec against a 6 sec window**,
-  and 4.37 sec even under her forced reload's fixed 3 sec. She never reaches
-  the branch where the window cannot be kept. The day that inequality breaks,
-  this grant stops being an approximation and becomes an error.
+  and 4.37 sec even under her forced reload's fixed 3 sec. (Those are the file
+  values; the engine's reload is affine and adds `RELOAD_FIXED_SECONDS` = 0.148
+  sec, so the numbers it actually runs on are 3.515 sec and 4.515 sec - still
+  both under the 6 sec window.) She never reaches the branch where the window
+  cannot be kept. The day that inequality breaks, this grant stops being an
+  approximation and becomes an error.
 
   **This is the load-bearing approximation of her encoding.** The earlier
   justification - "she is an SR, so every shot IS a full charge" - became false

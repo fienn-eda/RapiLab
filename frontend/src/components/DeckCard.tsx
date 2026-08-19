@@ -57,6 +57,11 @@ export function DeckCard({
   nameFor = nameFromSlug,
   gimmickUnmetFor,
 }: DeckCardProps) {
+  // 옛 SavedRun(이 브랜치 이전에 저장한 기록)에는 이 필드가 아예 없다 - engine_version
+  // 캐시와 달리 SavedRun은 로스터가 바뀌어도 안 지워지므로, localStorage JSON이 TS
+  // 타입의 필수 선언을 못 잡는다. 없으면 빈 객체로 대신해 아래 네 곳이 전부
+  // `undefined[slug]`로 안 터지게 한다.
+  const fullRounds = deck.partial_charge_full_rounds ?? {}
   return (
     <li className="deck-results__item">
       <div className="deck-results__header">
@@ -104,14 +109,14 @@ export function DeckCard({
       {/* 톡톡이 좌석을 「배율을 실제로 버렸는가」로 갈라 문구를 고른다. 어느 쪽인지는
           엔진이 정해서 실어 보내므로(`partial_charge_slugs`) 여기서 슬러그를 보고
           판단하지 않는다 — 홀드 안내·좌석 안내와 같은 계약이다. */}
-      {deck.partial_charge_slugs.filter((slug) => !deck.partial_charge_full_rounds[slug]).length >
+      {deck.partial_charge_slugs.filter((slug) => !fullRounds[slug]).length >
         0 && (
         <p className="deck-results__hold">
           <span aria-hidden="true">👆</span>{' '}
           <HelpText>
             {HELP.results.tapFireAlways(
               deck.partial_charge_slugs
-                .filter((slug) => !deck.partial_charge_full_rounds[slug])
+                .filter((slug) => !fullRounds[slug])
                 .map(nameFor)
                 .join(', '),
             )}
@@ -119,12 +124,12 @@ export function DeckCard({
         </p>
       )}
       {deck.partial_charge_slugs
-        .filter((slug) => deck.partial_charge_full_rounds[slug] > 0)
+        .filter((slug) => fullRounds[slug] > 0)
         .map((slug) => (
           <p className="deck-results__hold" key={`tap-mixed-${slug}`}>
             <span aria-hidden="true">👆</span>{' '}
             <HelpText>
-              {HELP.results.tapFireMixed(nameFor(slug), deck.partial_charge_full_rounds[slug])}
+              {HELP.results.tapFireMixed(nameFor(slug), fullRounds[slug])}
             </HelpText>
           </p>
         ))}

@@ -347,7 +347,9 @@ Heat Emission이 강제하는 자기 이중 재장전이 바로 이 형태). **�
 잃는다). 밀크의 실제 수치(장탄 6·재장전 2초, 강제재장 3초 포함)는 이 분기에 닿지
 않는다 — 그것이 Pierce를 영구로 두는 근사가 실제로 기대는 사실이다. 스톡 장탄
 6·재장전 2초에서 최적은 `k=1`(첫 탄만 풀차지, 나머지 다섯 발 톡톡이), 무기딜 축으로
-약 +10.5%. 상세 메커니즘·창 제약 공식·후보 게이트는 능력 카탈로그
+약 +8.6%(전투 600초 정상상태, 엔진 실측 `audit_milk_tap_fire.py` — 재장전을 파일값
+2.0초로 손계산한 +10.5%는 `RELOAD_FIXED_SECONDS` 항을 빠뜨린 값이었다). 상세
+메커니즘·창 제약 공식·후보 게이트는 능력 카탈로그
 (`.claude/skills/nikke-skill-encoding/references/engine-capabilities.md`)의 톡톡이
 절 참고. **검산은 손계산이 아니라 엔진에 직접 물어서 한다**:
 `backend/scripts/audit_milk_tap_fire.py`가 `generate_segmented_shots`가 실제로 만든

@@ -128,6 +128,31 @@ describe('DeckCard 버스트 홀드 안내', () => {
 
     expect(screen.queryByText(/톡톡이/)).not.toBeInTheDocument()
   })
+
+  // 이 브랜치 이전에 저장한 SavedRun에는 `partial_charge_full_rounds`가 아예 없다 -
+  // restorableResult의 캐시와 달리 SavedRun은 engine_version으로 무효화되지 않고
+  // 「로스터가 바뀌어도 안 지워지는」 기록이라(types/profile.ts), 옛 저장본을 펼치면
+  // 이 필드가 undefined인 채로 렌더된다. TS 타입은 필수 필드라고 선언해도
+  // localStorage JSON은 캐스팅될 뿐이라 못 잡는다 - 안 터지고 「항상 톡톡이」로
+  // 안전하게 떨어져야 한다.
+  it('옛 저장본처럼 partial_charge_full_rounds가 없어도 안 터지고 항상 톡톡이로 말한다', () => {
+    const { partial_charge_full_rounds: _omit, ...oldShapeDeck } = DECK
+    render(
+      <DeckCard
+        label="덱 1"
+        deck={{
+          ...oldShapeDeck,
+          tap_fire_slugs: ['milk-blooming-bunny'],
+          partial_charge_slugs: ['milk-blooming-bunny'],
+        } as unknown as typeof DECK}
+        nameFor={(slug) => (slug === 'milk-blooming-bunny' ? '밀크: 블루밍 바니' : slug)}
+      />,
+    )
+
+    const note = screen.getByText(/톡톡이/)
+    expect(note).toHaveTextContent('밀크: 블루밍 바니')
+    expect(note).toHaveTextContent('항상')
+  })
 })
 
 describe('DeckCard 좌석 안내', () => {

@@ -950,22 +950,34 @@ def full_charges_per_magazine(shot_records):
     쓴다. 평균은 정수가 아니고, 첫 매거진 하나는 전투 시작 구간이라 대표성이 없다.
     매거진 위치가 없는 기록(세그먼트 샷)은 세지 않는다 - 그 샷들은 자기 매거진에서
     온 것이 아니다.
+
+    **통째로 풀차지인 매거진(톡톡이 샷이 하나도 없는 매거진)은 후보에서 뺀다.**
+    차속이 세게 걸린 구간에서는 그 구간의 매거진 전체가 `k=capacity`로 풀차지될 수
+    있는데, 그것을 다른 매거진의 「풀차지 섞임」과 함께 최빈값에 넣으면 최빈값이
+    `capacity`가 되어버린다 - 그러면 화면이 「풀차지 6회 + 톡톡이로 계산했어요」라는
+    모순된 문구를 낸다(6발 매거진을 6번 풀차지했다면 그 매거진의 톡톡이는 0발이다).
+    남는 매거진이 하나도 없으면(호출부가 이미 「이 슬러그가 톡톡이를 한 발이라도
+    썼는지」로 게이팅하므로 실전에서는 안 일어나지만) 0을 돌려준다.
     """
     per_magazine = []
-    current = None
+    current_full = None
+    current_has_tap = False
     for record in shot_records:
         if record.magazine_index is None:
             continue
         if record.magazine_index == 0:
-            if current is not None:
-                per_magazine.append(current)
-            current = 0
-        if current is None:
+            if current_full is not None and current_has_tap:
+                per_magazine.append(current_full)
+            current_full = 0
+            current_has_tap = False
+        if current_full is None:
             continue
         if record.extra_charge_bonus > 0:
-            current += 1
-    if current is not None:
-        per_magazine.append(current)
+            current_full += 1
+        else:
+            current_has_tap = True
+    if current_full is not None and current_has_tap:
+        per_magazine.append(current_full)
     if not per_magazine:
         return 0
     return Counter(per_magazine).most_common(1)[0][0]
