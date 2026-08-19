@@ -11,14 +11,14 @@ const recommendedDecks: RaidDeck[] = [
     total_damage: 130,
     burst_damage: 80,
     normal_attack_damage: 50,
-    skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {},
+    skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {},
     pinned_slugs: ['a'],
   },
 ]
 
 const withinDraft: DraftAllocation = {
   decks: [
-    { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 110, burst_damage: 70, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {}, pinned_slugs: [] },
+    { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 110, burst_damage: 70, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {}, pinned_slugs: [] },
   ],
   combined_total_damage: 110,
   leftover_slugs: [],
@@ -94,8 +94,8 @@ describe('DraftResults', () => {
 
   it('shows an empty per-deck diff when the result is a permutation of the submitted decks (content-matched, not index-matched)', () => {
     const permutedRecommended: RaidDeck[] = [
-      { deck: ['f', 'g', 'h', 'i', 'j'], total_damage: 60, burst_damage: 40, normal_attack_damage: 20, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {}, pinned_slugs: [] },
-      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 70, burst_damage: 45, normal_attack_damage: 25, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {}, pinned_slugs: [] },
+      { deck: ['f', 'g', 'h', 'i', 'j'], total_damage: 60, burst_damage: 40, normal_attack_damage: 20, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {}, pinned_slugs: [] },
+      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 70, burst_damage: 45, normal_attack_damage: 25, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {}, pinned_slugs: [] },
     ]
     render(
       <DraftResults
@@ -112,8 +112,8 @@ describe('DraftResults', () => {
 
   it('shows exactly one add/remove pair when a permuted result has one real unit swap', () => {
     const permutedWithOneSwap: RaidDeck[] = [
-      { deck: ['f', 'g', 'h', 'i', 'j'], total_damage: 60, burst_damage: 40, normal_attack_damage: 20, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {}, pinned_slugs: [] },
-      { deck: ['a', 'b', 'c', 'd', 'z'], total_damage: 70, burst_damage: 45, normal_attack_damage: 25, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {}, pinned_slugs: [] },
+      { deck: ['f', 'g', 'h', 'i', 'j'], total_damage: 60, burst_damage: 40, normal_attack_damage: 20, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {}, pinned_slugs: [] },
+      { deck: ['a', 'b', 'c', 'd', 'z'], total_damage: 70, burst_damage: 45, normal_attack_damage: 25, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {}, pinned_slugs: [] },
     ]
     render(
       <DraftResults
@@ -141,7 +141,7 @@ describe('DraftResults', () => {
     const ownedSlugFor = (slug: string) =>
       slug.startsWith('bready') ? 'bready' : slug
     const resolvedDecks: RaidDeck[] = [
-      { deck: ['bready-lingering', 'b', 'c', 'd', 'e'], total_damage: 70, burst_damage: 45, normal_attack_damage: 25, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {}, pinned_slugs: ['bready-lingering'] },
+      { deck: ['bready-lingering', 'b', 'c', 'd', 'e'], total_damage: 70, burst_damage: 45, normal_attack_damage: 25, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {}, pinned_slugs: ['bready-lingering'] },
     ]
     const drafted: Draft = {
       decks: [

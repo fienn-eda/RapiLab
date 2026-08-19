@@ -27,7 +27,7 @@ from app.roster import assemble_simulation_inputs
 from app.skill_rules.registry import (SEATED_BUFF_SLUGS, TASTE_INDUCER_SLUGS,
                                       character_map, deck_grants_ally_round_buffs,
                                       get_burst_delay, get_hold_fire_release_shots,
-                                      has_burst_delay)
+                                      has_burst_delay, is_tap_fire_candidate)
 
 # candidate slug -> the owned character it is a build of, for the seat-exclusion
 # check below. An absent slug is its own character.
@@ -112,6 +112,15 @@ def _seat_order_is_playable(ordered_units):
         if len(members) > 1 and _skips_opening_cycle(members[0]):
             return False
     return True
+
+
+def tap_fire_slugs(ordered_deck):
+    """이 덱에서 톡톡이로 계산된 좌석 - `registry.TAP_FIRE_CANDIDATES` 멤버 전원.
+
+    후보라는 것 자체가 「이 유닛은 손으로 톡톡 눌러 쏜다」는 뜻이다. 자기 차속이 차지를
+    0으로 미는 구간에서도 손은 똑같이 톡톡이이고, 다만 그때는 눌러도 풀차지라 배율을
+    하나도 안 버린다 - `partial_charge_slugs`가 그 구분을 답한다."""
+    return [spec.slug for spec in ordered_deck if is_tap_fire_candidate(spec.slug)]
 
 
 def hold_burst_slugs(ordered_deck):
@@ -658,11 +667,12 @@ def _summarize(ordered_deck, result):
         "normal_attack_damage": normal,
         "skill_damage": sum(by_source.values()),
         "hold_burst_slugs": hold_burst_slugs(ordered_deck),
-        # 엔진이 실제로 톡톡이를 고른 좌석. 유닛의 속성이 아니라 **이 덱에서의 결과**다
-        # - 같은 유닛이 재장전 빠른 덱에서는 톡톡이, 느린 덱에서는 풀차지가 된다
-        # (raid_simulator의 `tap_fire_used`). 그래서 덱 목록만으로는 재현할 수 없고,
-        # hold_burst_slugs·seating과 같은 계약으로 실려 온다.
-        "tap_fire_slugs": result.get("tap_fire_used", []),
+        "tap_fire_slugs": tap_fire_slugs(ordered_deck),
+        # 그중 **배율을 실제로 버린** 좌석 - 차지가 살아 있는 구간에서도 톡톡이가 이겨서
+        # 무차지 샷을 쏜 경우다. 유닛의 속성이 아니라 **이 덱에서의 결과**이고(재장전이
+        # 부호를 정한다) 덱 목록만으로는 재현할 수 없어, hold_burst_slugs·seating과 같은
+        # 계약으로 실려 온다. 비어 있으면 그 유닛은 차지가 0인 구간에서만 톡톡이다.
+        "partial_charge_slugs": result.get("tap_fire_used", []),
         # Which allies this deck's seated-buff unit was scored beside, when it
         # holds one - the arrangement the player has to field for the number
         # above to be the one they get. Empty for every other deck. Same

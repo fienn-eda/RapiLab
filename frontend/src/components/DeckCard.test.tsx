@@ -11,7 +11,7 @@ const DECK = {
   burst_damage: 500,
   normal_attack_damage: 400,
   skill_damage: 100,
-  hold_burst_slugs: [], tap_fire_slugs: [], seating: {},
+  hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {},
 }
 
 describe('DeckCard 속성저지 배지', () => {
@@ -60,30 +60,49 @@ describe('DeckCard 버스트 홀드 안내', () => {
 
   // 톡톡이도 홀드와 같은 성격의 지시다: 수치가 그 조작을 전제로 계산됐으니
   // 그렇게 안 하면 이 딜이 안 나온다. 누가 해당되는지는 엔진이 실어 보낸다.
-  it('톡톡이를 전제로 계산된 자리가 있으면 누구인지 이름으로 말한다', () => {
+  it('배율까지 버린 자리는 「항상 톡톡이」로 말한다', () => {
     render(
       <DeckCard
         label="덱 1"
-        deck={{ ...DECK, tap_fire_slugs: ['alice'] }}
+        deck={{ ...DECK, tap_fire_slugs: ['alice'], partial_charge_slugs: ['alice'] }}
         nameFor={(slug) => (slug === 'alice' ? '앨리스' : slug)}
       />,
     )
 
-    expect(screen.getByText(/톡톡이/)).toHaveTextContent('앨리스')
+    const note = screen.getByText(/톡톡이/)
+    expect(note).toHaveTextContent('앨리스')
+    expect(note).toHaveTextContent('항상')
   })
 
-  // 문구가 구간을 지시하면 안 된다 - 차속이 세게 걸린 구간은 차지가 0이라 톡톡이와
-  // 풀차지가 같은 동작이고, 「그때는 풀차지」로 읽히면 플레이어가 손을 늦춰 발수를
-  // 잃는다. 대신 톡톡이가 이득인 조건을 말한다.
-  it('톡톡이 안내는 구간이 아니라 이득인 조건을 말한다', () => {
-    render(<DeckCard label="덱 1" deck={{ ...DECK, tap_fire_slugs: ['alice'] }} />)
+  // 차속이 세게 걸린 구간은 차지가 0이라 눌러도 풀차지다 - 손은 톡톡이인데 잃는 것이
+  // 없다. 그 구간에서만 톡톡이인 덱은 「버스트 턴은 톡톡이, 아닐 때는 X」다.
+  it('배율을 안 버린 자리는 버스트 턴만 톡톡이라고 말한다', () => {
+    render(
+      <DeckCard
+        label="덱 1"
+        deck={{ ...DECK, tap_fire_slugs: ['alice'], partial_charge_slugs: [] }}
+        nameFor={(slug) => (slug === 'alice' ? '앨리스' : slug)}
+      />,
+    )
 
     const note = screen.getByText(/톡톡이/)
-    expect(note).toHaveTextContent('재장전')
-    expect(note).not.toHaveTextContent('버스트 중')
+    expect(note).toHaveTextContent('앨리스')
+    expect(note).toHaveTextContent('버스트 턴은 톡톡이')
   })
 
-  it('톡톡이 전제가 없으면 아무것도 안 단다', () => {
+  // 화면은 「무엇을 하라」까지만 말한다 - 왜 이득인지는 안 적는다(Fienn).
+  it('톡톡이 안내는 이유를 적지 않는다', () => {
+    render(
+      <DeckCard
+        label="덱 1"
+        deck={{ ...DECK, tap_fire_slugs: ['alice'], partial_charge_slugs: ['alice'] }}
+      />,
+    )
+
+    expect(screen.getByText(/톡톡이/)).not.toHaveTextContent('재장전')
+  })
+
+  it('톡톡이 좌석이 없으면 아무것도 안 단다', () => {
     render(<DeckCard label="덱 1" deck={DECK} />)
 
     expect(screen.queryByText(/톡톡이/)).not.toBeInTheDocument()
