@@ -5,6 +5,37 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 앱 제목은 폰트를 동봉하지 않고 **아웃라인으로 구운 워드마크**로 낸다
+
+- Date: 2026-08-20
+- Context: 앱 제목 `RapiLab`을 NIKKE의 「Footstep, Walk, Run」 이벤트 로고 느낌으로
+  바꾸고 싶었고, Fienn이 [Daggersquare](https://www.1001fonts.com/daggersquare-font.html)
+  (Néstor Delgado, 2015)를 골랐다. 그런데 이 폰트는 **1001Fonts FFC** 라이선스이고,
+  RapiLab은 public 저장소이면서 exe를 릴리스로 배포한다.
+- Alternatives considered: (a) 기존 나눔스퀘어처럼 `frontend/public/fonts/`에
+  woff2로 넣고 `@font-face`. (b) 저작자에게 서면 허락을 받고 (a). (c) OFL/Apache
+  폰트로 다시 고른다. (d) **폰트로 글자를 조판해 패스로 변환한 SVG만 남긴다.**
+- Decision: **(d).** `scripts/build_wordmark.py`가 OTF에서 `RapiLab` 일곱 글자를
+  커닝까지 적용해 조판하고 아웃라인을 뽑아 `frontend/src/components/Wordmark.tsx`를
+  생성한다. 폰트 파일은 저장소에 없고, 스크립트는 경로를 인자로 받는다.
+- Why: FFC는 §5에서 폰트 파일을 `published` 하는 것을, §6에서 앱이 폰트를
+  `offering it as a download` 하는 것을 금지한다. public 저장소의 raw `.woff2`와
+  PyInstaller `_internal/frontend/fonts/`의 꺼낼 수 있는 파일이 정확히 그 둘이라
+  (a)는 그대로 위반이다. 반면 §2는 상업적 사용 허용 목록에 **`logos`를 명시**하고,
+  §3의 수정 금지는 원문이 `"This pertains all files within the downloadable font
+  zip-file"` — **zip 안의 파일**에 걸리는 조항이다. 폰트로 로고를 만들고 그 결과물만
+  배포하는 것은 §2가 정면으로 허용하는 용도이고, 산출물에 폰트가 없으니 §5·§6이
+  적용될 대상 자체가 없다. (b)는 답장을 기다려야 하고, (c)는 Fienn이 고른 글자꼴을
+  버린다. 덤으로 워드마크는 **2.2KB**로 woff2보다 작고 FOUT이 없다.
+- Consequences: 제목 문구나 글자꼴을 바꾸려면 폰트를 다시 받아 스크립트를 돌려야
+  한다 — 그래서 스크립트 docstring에 받는 곳을 적어 뒀다. `.tsx`로 내는 이유는
+  프론트엔드에 SVG를 파일로 import하는 전례가 없어서다(인라인 JSX 전례는
+  `DraftEditor.tsx`에 있다) — 빌드 설정도 타입 선언도 새로 필요하지 않다. 제목이
+  그림이 되었으므로 읽히는 이름은 `<h1>` 안의 `.visually-hidden` 텍스트가 대고,
+  워드마크 자신은 `aria-hidden`이다. **dafont 배포본에는 라이선스 파일이 아예 없고**
+  사이트 라벨만 「100% Free」인데, OTF는 1001fonts 것과 md5가 같다 — 판단은 zip에
+  동봉된 EULA로 해야지 사이트 라벨로 하면 안 된다.
+
 ## 톡톡이는 바닥값이 아니라 **매거진마다의 두 갈래 선택**이다 (앞 항목 전면 정정)
 
 - Date: 2026-08-19 (같은 날, 아래 항목을 뒤집는다)

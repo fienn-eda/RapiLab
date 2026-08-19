@@ -942,6 +942,26 @@
 
 로드맵보다 잘게 쪼갠 실행 항목. 끝나면 `[x]`로 체크.
 
+### 앱 제목 워드마크 (2026-08-20, Fienn의 글자꼴 탐색에서)
+
+- [x] **제목 `RapiLab`이 Daggersquare Oblique 아웃라인 워드마크가 됐다.** 폰트를
+      동봉하지 않고 글자를 패스로 구워 `frontend/src/components/Wordmark.tsx`로
+      낸다 — 1001Fonts FFC가 폰트 파일의 게시(§5)와 다운로드 제공(§6)을 금지하는데
+      RapiLab은 public 저장소 + exe 릴리스라 `public/fonts/`에 넣는 길이 막혀 있다.
+      로고 제작 자체는 §2가 명시 허용한다. 근거 전문은 `docs/decisions.md`.
+      생성기는 `scripts/build_wordmark.py`(폰트 경로를 인자로 받는다 — 저장소에
+      폰트가 없으므로 직접 받아야 한다). 산출물 **2.2KB**.
+- [x] **크기는 교체 전과 맞췄다.** viewBox가 잉크에 딱 맞아 `height:1em`이면 글자
+      보다 커진다. 예전 제목의 대문자가 20.0px였고 워드마크 대문자는
+      `height × 675/917`이라 **0.97em**에서 같아진다 — 브라우저에서 재서 고른 값이다.
+      글자꼴만 바꾸고 크기는 그대로 두려는 것이므로, 키우려면 `.app__title`의
+      `font-size`를 만질 것.
+- [x] **읽히는 이름은 그대로 유지된다.** 제목이 그림이 됐으므로 `<h1>` 안의
+      `.visually-hidden` 텍스트가 이름을 대고 워드마크는 `aria-hidden`이다.
+      `App.test.tsx`의 「앱 이름을 RapiLab으로 내건다」가 그대로 통과한다.
+      착륙 시점 프론트 943 → **946 passed** (74 files), 타입에러 0 · lint 에러 0.
+      Vite dev를 Playwright로 띄워 실제 브라우저에서 확인했다.
+
 ### 앨리스 인코딩 + 부분 차지 샷(톡톡이) (2026-08-19, Fienn 제보·실측)
 
 - [x] **앨리스 수집·인코딩** — ShiftyPad 정본(rid 191) + lootandwaifus 원문. SR ·
