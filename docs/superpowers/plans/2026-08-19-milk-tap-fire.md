@@ -596,17 +596,28 @@ def test_milk_is_a_tap_fire_candidate():
     assert is_tap_fire_candidate("milk-blooming-bunny")
 
 
-def test_milks_permanent_pierce_rests_on_the_cadence_keeping_the_window():
-    """Pierce를 영구로 두는 근사의 **유일한** 논거는 케이던스가 창을 지킨다는 것이다.
-    창을 지키는 k가 없으면 전부 풀차지로 물러나고, 그때도 모든 샷이 풀차지라
-    창은 지켜진다. 어느 분기에서도 Pierce가 안 끊긴다."""
+def test_milks_cadence_actually_keeps_her_pierce_window():
+    """Pierce를 영구로 두는 근사가 기대는 것 - 그녀의 케이던스가 창을 **실제로** 지킨다.
+
+    `k >= 1`을 주장하는 것으로는 부족하다: 창이 있으면 엔진이 `k=0`을 아예 후보에서
+    빼고 기본값이 `capacity`이므로 그것은 어떤 입력에서도 구조적으로 참이고, 최악
+    간격 계산이 통째로 깨져도 초록이다. 그래서 **최악 간격 자체를 재서** 창과 비교한다.
+
+    스윕은 그녀가 실제로 만날 수 있는 범위다 - 장탄은 오버로드·버프로 늘 수 있고,
+    재장전은 버프로 짧아지거나 그녀의 강제 재장전(「50% 감소 고정」 = 3초)까지 길어진다.
+    그 범위에서는 전부 풀차지의 최악 간격이 `1.3667 + 재장전 <= 4.37초 < 6초`라 창을
+    지킬 수 있는 k가 언제나 있고, 따라서 엔진이 고른 k도 반드시 지켜야 한다.
+    """
     from app.attack_rate import FRAME_SECONDS, optimal_full_charges
+    charge, delay, tap = 1.0, 22 * FRAME_SECONDS, 15 * FRAME_SECONDS
+    window = 6.0
     for capacity in range(1, 21):
-        for reload_seconds in (0.0, 1.0, 2.0, 4.0, 8.0):
+        for reload_seconds in (0.5, 1.0, 2.0, 3.0):
             k = optimal_full_charges(
-                capacity, reload_seconds, 1.0, 22 * FRAME_SECONDS,
-                15 * FRAME_SECONDS, 250.0, 6.0)
-            assert k >= 1
+                capacity, reload_seconds, charge, delay, tap, 250.0, window)
+            block = -(-capacity // k)
+            worst_gap = charge + delay + (block - 1) * tap + reload_seconds
+            assert worst_gap <= window, (capacity, reload_seconds, k, worst_gap)
 ```
 
 - [ ] **Step 2: 실패를 확인한다**
