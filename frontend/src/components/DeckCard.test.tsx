@@ -72,12 +72,12 @@ describe('DeckCard 버스트 홀드 안내', () => {
     expect(screen.getByText(/톡톡이/)).toHaveTextContent('앨리스')
   })
 
-  // 창 밖까지 톡톡이하라고 읽히면 엔진이 계산한 것보다 많이 쏘게 된다 -
-  // 발 간격은 바닥값이라 차지가 길어지는 구간에서는 안 걸린다.
-  it('톡톡이 안내는 버스트 창 안으로 범위를 한정한다', () => {
+  // 「버스트 중에 톡톡이」로 읽히면 정확히 거꾸로다 - 차속 버프가 걸린 구간이야말로
+  // 풀차지가 거의 공짜라 기다려야 하는 구간이다. 문구는 두 모드를 다 말해야 한다.
+  it('톡톡이 안내는 풀차지 구간도 같이 말한다', () => {
     render(<DeckCard label="덱 1" deck={{ ...DECK, tap_fire_slugs: ['alice'] }} />)
 
-    expect(screen.getByText(/톡톡이/)).toHaveTextContent('버스트 10초')
+    expect(screen.getByText(/톡톡이/)).toHaveTextContent('풀차지')
   })
 
   it('톡톡이 전제가 없으면 아무것도 안 단다', () => {

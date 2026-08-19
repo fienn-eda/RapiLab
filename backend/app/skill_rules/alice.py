@@ -3,13 +3,24 @@ thing: firing her charge weapon more often.
 
 Her burst deals no damage. Every point of her output is normal attacks, which
 makes her cadence - not her buff list - the load-bearing part of this encoding.
-See `registry.MANUAL_TAP_FIRE_INTERVAL` for the 17-frame tap floor she is
-modelled with, and why that floor only binds inside her own burst window.
+Two measured numbers carry it, both from Fienn's frame reading of 2026-08-19
+(docs/measurements/alice-tap-fire.md):
+
+- **Her fire-to-charge pause is 15 frames**, the shortest in
+  `registry.TIMED_CHARGE_MOTION_DELAY` and a counterexample to handing untimed
+  charge weapons the 22-frame stand-in.
+- **She is a tap-fire candidate** (`registry.TAP_FIRE_CANDIDATES`): releasing at
+  the start of the charge fires a 100% shot every 15 frames, and the engine
+  weighs that against a full charge once per magazine. Which one wins is the
+  DECK's answer, not hers - reload speed decides it, so she taps outside her
+  burst window in a Crown + Privaty + Resilience-cube deck and full-charges
+  everywhere else.
 
 Her weapon is the hardest-charging one in the game: **Full Charge Damage 350%**
-against 250% for almost every other charge weapon (Cinderella 200%, Scarlet:
-Black Shadow 150%). That is what makes waiting for the charge worth it outside
-her burst, and it is why the tap floor is a FLOOR rather than a cadence.
+in the data file (250% for almost every other charge weapon; Cinderella 200%,
+Scarlet: Black Shadow 150%), and 383% on Fienn's account once the collectible's
+charge-damage multiplier is on. That is why waiting for the charge is usually
+worth it, and why the tap only wins where the reload has been removed.
 
 Modeled (DPS-relevant):
 - Energizing Carrot (skills[0], on Full Burst entry): the 2 allies with the
@@ -38,15 +49,13 @@ Not modeled / deferred:
   answers "does this deck contain a unit that heals", a question about the real
   fight rather than about the sim's HP model, and in a real fight she drops
   under 80% and heals. Crown's Royal Attire is its only consumer.
-- **Partial-charge shots.** A player with fast reloads beats her full-charge
-  cadence by tapping OUTSIDE her burst window too, trading the 350% multiplier
-  for shots (Fienn, range test 2026-08-19, with Crown + Privaty + a level-15
-  Resilience cube, which reach 125.20% Reload Speed and remove the reload
-  entirely). The break-even is Reload Speed +62.4%. The engine cannot express
-  it: `ShotRecord` has no "was this a full charge" property, so
-  `charge_damage_percent` is applied to every shot unconditionally. Until that
-  property exists, this encoding is a FLOOR for her in reload-heavy decks. See
-  docs/engine-gaps.md.
+- **Partial holds between the two ends.** The engine only ever fires a full
+  charge or a bare tap, because nothing in between can win: damage is linear in
+  the gauge and the interval is that hold plus a fixed pause, so the efficiency
+  `multiplier(h) / (h + delay)` is monotone in h and the optimum is always an
+  endpoint (`attack_rate.tap_fire_wins`). A player who releases half-way is
+  therefore modelled as doing worse than either mode, which is what the
+  arithmetic says they are doing.
 """
 from app.skill_rules._helpers import buff_rule, highest_atk_buff_rule
 

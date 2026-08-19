@@ -1,6 +1,7 @@
 """Alice - a Burst-3 SR Attacker whose burst deals no damage and whose whole
-output is normal attacks. Her cadence lives in `registry.MANUAL_TAP_FIRE_INTERVAL`
-and `tests/test_manual_tap_fire.py`; this module covers her three skills.
+output is normal attacks. Her cadence lives in her measured 15-frame pause
+(`registry.TIMED_CHARGE_MOTION_DELAY`) and the tap-fire decision covered by
+`tests/test_manual_tap_fire.py`; this module covers her three skills.
 """
 import pytest
 

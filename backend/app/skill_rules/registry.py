@@ -1398,6 +1398,13 @@ TIMED_CHARGE_MOTION_DELAY = {
     # answer landing on the stand-in is why that number does not move.
     # docs/measurements/milk-blooming-bunny-charge.md.
     "milk-blooming-bunny": 22 / 60,
+    # 앨리스는 표에서 가장 짧다 - 22프레임 stand-in을 주면 안 된다는 반례이기도 하다
+    # (Fienn 프레임 판독 2026-08-19: 딜레이 n=12 평균 21.889가 아니라 **14.75**,
+    # sd 0.62, 범위 13~15). 같은 영상의 톡톡이 발사 간격이 15.38프레임인 것이
+    # 교차검증이다 - 톡톡이는 차지가 0이므로 그 간격이 곧 이 딜레이다. 자기 검산도
+    # 통과한다: 차지 87.92 + 딜레이 14.75 = 102.67 대 실측 발간격 101.73(0.95프레임).
+    # docs/measurements/alice-tap-fire.md.
+    "alice": 15 / 60,
 }
 
 # Charge weapons Fienn has checked and found NO pause on. The engine's default
@@ -1518,46 +1525,36 @@ def get_charge_motion_delay(slug):
     return _CHARGE_MOTION_DELAY.get(slug, 0.0)
 
 
-# 수동 톡톡이 - 차지를 시작하자마자 방아쇠를 놓아 발사하는 조작 - 를 상시 유지한다고
-# 가정하는 유닛과, 그 손이 낼 수 있는 가장 짧은 발 간격.
+# 매거진마다 **톡톡이와 풀차지를 저울질할** 유닛.
 #
-# **위의 두 표 어디에도 넣을 수 없다.** `TIMED_CHARGE_MOTION_DELAY`는 게임이 정하는
-# 발사↔차지 멈춤의 실측값이고 이건 플레이어의 손이 정한다.
-# `attack_rate.CHARGE_ROUNDS_PER_MINUTE`는 `shot_detail.rate_of_fire`에서 유도되는
-# 표라 `scripts/audit_rate_of_fire.py`가 `input_type`과 양방향으로 대조한다 - 앨리스는
-# `UP`이므로 거기 올리면 감사가 실패한다.
+# 톡톡이는 차지를 시작하자마자 방아쇠를 놓는 조작이다. 그 샷은 게이지를 전혀 안 채우고
+# (Fienn 실측 2026-08-19: 게이지가 오르는 첫 프레임과 발사 프레임이 같다) 대미지는
+# 게이지 퍼센트에 정확히 비례하므로, **톡톡이 샷의 배율은 정확히 100%**다. 대신 발
+# 간격이 차지를 뺀 멈춤 하나로 줄어든다.
 #
-# **FLOOR로 실려 간다**(`attack_rate.shot_interval_with_speed`의 floor 분기,
-# `roster`가 `charge_interval_floor`로 전달). 차지가 이보다 길면 차지가 케이던스를
-# 정하므로, 톡톡이는 그 유닛의 차속이 차지를 이 값 아래로 밀어낸 구간에서만 저절로
-# 성립한다. 앨리스에게 그것은 자기 버스트 10초 창이다(Wonderland 차속 +80.15%;
-# 창 밖에는 오버로드뿐이라 차지가 1.37초로 돌아온다).
+# **간격 표가 아니라 옵트인 집합인 이유**: 톡톡이 간격은 새로 잴 값이 아니라 그 유닛의
+# `TIMED_CHARGE_MOTION_DELAY`(멈춤) 그 자체다 - 차지가 0이니 남는 것이 멈춤뿐이다.
+# 앨리스에게서 두 값이 실제로 같게 나왔다(딜레이 14.75f / 톡톡이 간격 15.38f).
+# 그래서 **멈춤이 없는 유닛은 후보가 될 수 없다** - 톡톡이 간격이 0이 되어 무한 연사가
+# 된다. `tests/test_manual_tap_fire.py`가 이 불변식을 못박는다.
 #
-# 앨리스 17프레임 = 0.28333초 = 풀버스트 10초에 35발. Fienn 실측(2026-08-19):
-# 인게임 오토가 같은 창에서 23발, 수동 톡톡이가 40발 이상. 그 사이에서 35발을 채택한
-# 것이고, 23도 40도 아닌 이 값은 측정이 아니라 **판단**이다. 프레임 격자에 앉히는
-# 이유는 위 다섯 값과 같다 - 210발/분(0.28571초)으로 적으면 35번째 샷이 정확히
-# t=10.0에 서서 창 밖으로 떨어진다.
+# 어느 쪽이 이길지는 **재장전이 정한다.** 톡톡이는 탄창을 훨씬 빨리 비우고 그 비용을
+# 재장전이 받아내므로, 재장전이 사라진 덱에서는 비용도 사라진다. 그래서 같은 유닛이
+# 버스트 창 안에서는 풀차지, 창 밖에서는 톡톡이가 되는 일이 실제로 생긴다(Fienn 사격장
+# 2026-08-19, 크라운+프리바티+회복력 큐브 15렙). **그걸 런 단위 플래그 하나로 받으면
+# 안 된다** - 그 덱에서 구간별 최적이 최선의 단일 모드보다 +27.6%다. 판정은
+# `attack_rate.tap_fire_wins`가 매거진 시작마다 닫힌 형태로 답한다(탐색 없음).
 #
-# **알려진 과소평가 하나:** 재장전이 빠른 덱에서는 버스트 창 밖에서도 톡톡이가 이긴다.
-# 부분 차지 샷은 풀차지 배율(앨리스 350%)을 잃는 대신 발수를 벌므로, 재장전이 그
-# 발수의 비용을 안 먹을 때 부호가 뒤집힌다 - 손익분기는 재장전속도 **+62.4%**(재장전
-# 0.900초)이고, 크라운+프리바티+회복력 큐브는 125.20%로 재장전이 아예 사라진다
-# (Fienn 사격장 확인, 2026-08-19). 엔진은 그걸 표현할 수 없다: `ShotRecord`에 「이
-# 샷이 풀차지인가」를 묻는 자리가 없어 `charge_damage_percent`가 모든 샷에 무조건
-# 곱해지기 때문이다. 그 자리가 생기기 전까지 이 floor 모델은 재장전 무거운 덱에서
-# 앨리스를 과소평가한다. docs/engine-gaps.md 참고.
-MANUAL_TAP_FIRE_INTERVAL = {
-    "alice": 17 / 60,
-}
+# 옵트인인 이유는 다른 차지 무기들의 멈춤이 대부분 22프레임 stand-in이라, 켜면 측정
+# 안 된 값 위에서 모드가 갈리기 때문이다. 앨리스는 실측 15프레임이라 켠다. 밀크:
+# 블루밍 바니와 아인이 다음 후보인데(같은 SR 무기, 손익분기 탭 간격 19.9프레임에
+# stand-in 22프레임이라 부호가 값에 민감하다) 그들 멈춤을 다시 재기 전까지는 끄고 둔다.
+TAP_FIRE_CANDIDATES = frozenset({"alice"})
 
 
-def get_manual_tap_fire_interval(slug):
-    """이 니케의 수동 톡톡이 발 간격(초), 또는 그렇게 모델하지 않으면 `None`.
-
-    반환값은 케이던스가 아니라 바닥값이다 - `MANUAL_TAP_FIRE_INTERVAL` 참고.
-    """
-    return MANUAL_TAP_FIRE_INTERVAL.get(slug)
+def is_tap_fire_candidate(slug):
+    """이 니케의 매거진마다 톡톡이/풀차지를 저울질할지 - `TAP_FIRE_CANDIDATES` 참고."""
+    return slug in TAP_FIRE_CANDIDATES
 
 
 # Nikkes who refill a magazine in several loads instead of one. The count comes

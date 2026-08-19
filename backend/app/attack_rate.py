@@ -835,6 +835,30 @@ def shot_interval_with_speed(charge_time, charge_speed_percent, flat_reduction_s
     return max(reduced, floor)
 
 
+def tap_fire_wins(charge_seconds, motion_delay, charge_damage_percent,
+                  capacity, reload_seconds):
+    """톡톡이(차지 시작 즉시 발사)가 풀차지보다 이 매거진에서 더 많은 딜을 내는가.
+
+    **중간 지점은 볼 필요가 없다.** 대미지 배율은 붙잡은 시간에 비례하고(Fienn 실측
+    2026-08-19: HUD가 표시하는 게이지 퍼센트가 곧 배율이고, 차지 전 100%에서
+    풀차지까지 선형) 발 간격은 거기에 멈춤을 더한 것이다. 그러면 한 발의 효율
+    `배율(h) / (h + 딜레이)`의 도함수 부호가 **h와 무관**해지므로, 최적은 언제나
+    h=0(톡톡이) 아니면 h=차지시간(풀차지) 둘 중 하나다. 그래서 판정이 두 값의 비교로
+    닫히고 탐색이 필요 없다.
+
+    재장전이 부호를 정한다: 톡톡이는 탄창을 훨씬 빨리 비우므로 그 비용을 재장전이
+    받아내고, 재장전이 사라진 덱에서는 그 비용도 사라진다. 그래서 같은 유닛이 창
+    안에서는 풀차지, 창 밖에서는 톡톡이가 되는 일이 실제로 생긴다(Fienn 사격장
+    2026-08-19, 크라운+프리바티+회복력 큐브).
+    """
+    def per_magazine(hold_seconds, multiplier):
+        return capacity * multiplier / (capacity * (hold_seconds + motion_delay)
+                                        + reload_seconds)
+
+    return (per_magazine(0.0, 1.0)
+            > per_magazine(charge_seconds, charge_damage_percent / 100))
+
+
 def rate_of_fire_for_weapon(weapon: str) -> float:
     return RATE_OF_FIRE_60FPS[weapon]
 
@@ -1301,15 +1325,27 @@ def _base_shot_records(base, window_start, window_end,
     refills = base.get("ammo_refills", ())
     shots_fired = 0
     if weapon in CHARGE_WEAPONS:
-        bonus = base["charge_damage_percent"] / 100 - 1
+        full_bonus = base["charge_damage_percent"] / 100 - 1
+        motion_delay = base.get("charge_motion_delay", 0.0)
         magazine_start = window_start
         while magazine_start < window_end:
             effective_charge = shot_interval_with_speed(
                 base["charge_time"], charge_speed_percent_at(magazine_start),
                 charge_time_reduction_sec_at(magazine_start),
-                base.get("charge_motion_delay", 0.0),
-                base.get("charge_interval_floor"))
+                motion_delay, base.get("charge_interval_floor"))
             capacity = max(1, round(base["max_ammo"] * (1 + max_ammo_percent_at(magazine_start))))
+            # 톡톡이를 저울질하는 유닛은 매거진마다 두 끝 중 나은 쪽을 고른다. 차지속도가
+            # 이미 이 granularity로 샘플되므로 새 축이 생기지 않고, 판정이 닫힌 형태라
+            # 탐색도 없다 - `tap_fire_wins` 참고. 멈춤이 없으면 톡톡이 간격이 0이 되어
+            # 무한 연사가 되므로 그 유닛은 애초에 후보가 아니다(registry 쪽 불변식).
+            bonus = full_bonus
+            if base.get("tap_fire") and motion_delay:
+                if tap_fire_wins(
+                        effective_charge - motion_delay, motion_delay,
+                        base["charge_damage_percent"], capacity,
+                        reload_time_with_speed(
+                            base["reload_time"], reload_speed_percent_at(magazine_start))):
+                    effective_charge, bonus = motion_delay, 0.0
             magazine_size, shots_fired = _walk_magazine(
                 capacity, shots_fired, refund,
                 time_of_round=lambda i, s=magazine_start, c=effective_charge: (

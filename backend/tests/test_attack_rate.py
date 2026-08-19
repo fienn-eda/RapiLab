@@ -792,7 +792,6 @@ def test_no_charge_weapon_is_left_silently_at_zero():
 
     from app.skill_rules.registry import (INFERRED_NO_CHARGE_MOTION_DELAY,
                                           NO_CHARGE_MOTION_DELAY,
-                                          MANUAL_TAP_FIRE_INTERVAL,
                                           TIMED_CHARGE_MOTION_DELAY,
                                           _BUILDERS, get_charge_motion_delay)
 
@@ -811,14 +810,7 @@ def test_no_charge_weapon_is_left_silently_at_zero():
             continue
         known = (slug in TIMED_CHARGE_MOTION_DELAY
                  or slug in NO_CHARGE_MOTION_DELAY
-                 or slug in INFERRED_NO_CHARGE_MOTION_DELAY
-                 # 톡톡이로 모델하는 유닛의 0은 아무도 안 본 0이 아니다: 그녀의
-                 # 상한은 멈춤이 아니라 플레이어의 손이고, 그 값이
-                 # MANUAL_TAP_FIRE_INTERVAL에 floor로 적혀 있다. 이 가드가 막으려는
-                 # 것 - 차속으로 무한정 빨라지는 유닛 - 은 그래서 생기지 않는다.
-                 # 「그럼 그 손의 간격이 얼마냐」는 여전히 열린 질문이고,
-                 # scripts/audit_charge_motion_delay.py가 계속 묻는다.
-                 or slug in MANUAL_TAP_FIRE_INTERVAL)
+                 or slug in INFERRED_NO_CHARGE_MOTION_DELAY)
         if not known and not get_charge_motion_delay(slug):
             silent.append(slug)
     assert silent == []

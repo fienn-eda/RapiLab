@@ -1619,6 +1619,7 @@ def _simulate_raid_once(
     shot_times_by_slug = {}
     ammo_rounds_by_slug = {}
     last_bullet_times_by_slug = {}
+    tap_fire_used = set()
 
     def in_full_burst(time):
         return any(start <= time < end for start, end in full_burst_windows)
@@ -1688,6 +1689,13 @@ def _simulate_raid_once(
             heating_speed_percent_at=heating_speed_percent_at,
         )
         shot_times = [r.time for r in shot_records]
+        # 톡톡이를 저울질하는 유닛이 실제로 그 모드를 고른 매거진이 있었는지. 화면은
+        # 「이 덱에서 어떻게 계산했는지」를 말해야 하는데, 그 답이 이제 유닛의 속성이
+        # 아니라 **덱의 재장전 속도와 차속 창**에 달렸다. 톡톡이 샷은 차지 보너스가
+        # 0이고 풀차지 샷은 0보다 크므로 기록에서 그대로 읽힌다.
+        if weapon.get("tap_fire") and any(
+                r.extra_charge_bonus == 0.0 for r in shot_records):
+            tap_fire_used.add(slug)
         # What each shot ACCOUNTS for toward squad ammo-expended counters. A
         # pouch skill fires one bullet and books hundreds of rounds, and which
         # pouch skill is doing the spending depends on the Full Burst window.
@@ -2366,6 +2374,9 @@ def _simulate_raid_once(
     }
     if target_grants is not None:
         result["target_grants"] = target_grants
+    # 톡톡이를 고른 유닛이 없는 덱은 키 자체를 안 싣는다 - 거의 모든 덱이 그렇다.
+    if tap_fire_used:
+        result["tap_fire_used"] = sorted(tap_fire_used)
     # 환산을 부른 룰이 하나도 없으면 넘겨 봐야 아무도 안 읽으므로 빈 튜플을
     # 돌려준다 - 그래야 그런 덱이 두 번째 패스를 사지 않는다.
     late_max_hp_records = ()

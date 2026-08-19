@@ -1207,35 +1207,48 @@ a cadence: reading these rpm as sustained fire rates would put Liberalio at
 `registry.INFERRED_NO_CHARGE_MOTION_DELAY` holds the one zero that comes from
 this rule rather than from a clock.
 
-**A THIRD source of a floor: manual tap-fire (톡톡이), 2026-08-19.** A player can
-release an `UP` weapon the instant the charge starts, giving up the charge
-multiplier for shots. For a unit whose own Charge Speed drives her charge below
-what her hand can keep up with, the tap costs nothing — the shot is a full
-charge anyway — and her cadence becomes the hand rather than the weapon.
-`registry.MANUAL_TAP_FIRE_INTERVAL` carries that per-unit interval and `roster`
-joins it onto the timeline as the same `charge_interval_floor`, so no engine
-arithmetic changed: `max(reduced_charge, floor)` already says "tap when the
-charge is short, wait for it when it is long".
+**Tap-fire (톡톡이) — a partially charged shot, 2026-08-19.** A player can release
+an `UP` weapon the instant the charge starts. Fienn's range readings settled what
+that shot is (docs/measurements/alice-tap-fire.md):
 
-Three consequences worth knowing before you reach for it:
+- **Damage is exactly the charge gauge percentage the HUD displays**, which
+  starts at 100% BEFORE any charge and rises linearly to the weapon's Full Charge
+  Damage. Eight readings fit `damage / gauge%` to within 0.4%, all of it explained
+  by the displayed integer rounding. So a partial charge is neither "no bonus
+  unless full" nor "proportional from zero" — it is 100% plus a linear ramp.
+- **A tap fills no gauge at all** (the frame the gauge starts rising IS the firing
+  frame), so a tapped shot is exactly 100%: charge bonus 0.
+- **Its interval is the unit's fire-to-charge pause and nothing else** — Alice's
+  tapped shots come 15.38 frames apart against a measured 14.75-frame pause.
 
-- **It is not a pause and must not be written as one.** `TIMED_CHARGE_MOTION_DELAY`
-  is measured game behaviour; this is a claim about how the player plays.
-  `CHARGE_ROUNDS_PER_MINUTE` is derived from `shot_detail.rate_of_fire` and
-  `scripts/audit_rate_of_fire.py` cross-checks it against `input_type`, so an
-  `UP` unit put there fails the audit.
-- **The floor and a pause are exclusive**, same as above: a unit carrying both
-  never reaches the floor branch at all. `tests/test_manual_tap_fire.py` pins it.
-- **The engine cannot model the tap when it is NOT free.** `ShotRecord` has no
-  "was this a full charge" property, so `charge_damage_percent` is applied to
-  every shot unconditionally. A player with fast reloads profits from tapping
-  even at full charge time (Alice's break-even is Reload Speed +62.4%), and that
-  regime is unrepresentable — the floor model is a FLOOR for those decks. See
-  docs/engine-gaps.md.
+**Only the two endpoints can ever be optimal.** Damage is linear in the hold and
+the interval is that hold plus a constant, so `multiplier(h) / (h + delay)` has a
+derivative whose SIGN does not depend on h. Full charge or bare tap; nothing
+between. `attack_rate.tap_fire_wins` is that comparison, and because it closes in
+one expression there is no search.
 
-Alice is the only unit modelled this way today: 17 frames (0.28333 sec, 35 shots
-in a 10-sec Full Burst), from Fienn's readings of 23 shots on auto-fire and 40+
-by hand in the same window (docs/measurements/alice-tap-fire.md).
+**Which end wins is the DECK's answer, not the unit's.** The tap empties the
+magazine far faster, so the reload pays for it — and a deck that removes the
+reload removes the cost. The same Alice therefore full-charges inside her own
+burst window (charge speed makes the full charge nearly free) and taps outside it
+when reloads are fast. `_base_shot_records` decides once per magazine, the same
+granularity at which charge speed is already sampled, and stamps the chosen
+bonus onto each `ShotRecord`.
+
+Opt in with `registry.TAP_FIRE_CANDIDATES`; `roster` joins it onto the timeline as
+`tap_fire`. Two things gate membership:
+
+- **The unit needs a measured pause.** The tap interval IS that pause, so a unit
+  without one would tap infinitely fast. `tests/test_manual_tap_fire.py` pins it.
+- **A stand-in pause is not good enough** when the verdict is close. Milk:
+  Blooming Bunny and Ein are the obvious next candidates (same SR weapon), but
+  their break-even tap interval is 19.9 frames against a 22-frame stand-in, so the
+  SIGN rides on an unmeasured number. They stay off until someone times them.
+
+**Do not read a mode flip as instability.** The engine returns the max of two
+options, so the damage is continuous even where the reported mode is not — for
+Alice the two are within 5% at the default cube's reload speed, and the
+collectible's charge-damage multiplier alone flips which one is named.
 
 `attack_rate.generate_segmented_shots()` builds a per-segment ShotRecord
 timeline instead of one flat cadence: inside a segment the unit's BASE

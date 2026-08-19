@@ -59,7 +59,6 @@ from app.skill_rules.registry import (  # noqa: E402
     TIMED_CHARGE_MOTION_DELAY,
     _BUILDERS,
     get_charge_motion_delay,
-    get_manual_tap_fire_interval,
 )
 
 CHARGE_WEAPONS = ("SR", "RL")
@@ -125,10 +124,7 @@ def main():
         if not args.all and weapon not in CHARGE_WEAPONS:
             continue
         status = status_for(slug)
-        # 톡톡이로 모델하는 유닛은 무기의 연사가 아니라 플레이어의 손이 바닥값을
-        # 정한다. 그 floor를 안 보여주면 「멈춤 0」 행이 「아무 것에도 안 걸린다」로
-        # 읽히는데, 실제로는 차지가 짧아진 구간에서 그 손이 상한을 만든다.
-        floor = get_manual_tap_fire_interval(slug) or charge_interval_floor_for(slug)
+        floor = charge_interval_floor_for(slug)
         rows.append((status, slug, weapon or "?", get_charge_motion_delay(slug), floor))
 
     order = {"TIMED": 0, "assumed": 1, "stand-in (accepted)": 2,

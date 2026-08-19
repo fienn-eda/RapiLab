@@ -1,110 +1,165 @@
-"""수동 톡톡이(차지 시작 직후 발사)를 상시 유지한다고 가정하는 유닛의 발 간격.
+"""톡톡이 — 차지를 채우지 않고 바로 놓아 배율을 버리고 발수를 버는 조작.
 
-오토 사격의 발사↔차지 멈춤과는 다른 값이다. 멈춤은 게임이 정하고 이건 플레이어의
-손이 정하므로, 실측 표(`TIMED_CHARGE_MOTION_DELAY`)에도 무기 데이터에서 유도되는
-표(`CHARGE_ROUNDS_PER_MINUTE`)에도 들어가지 않는다 - 후자에 넣으면
-`scripts/audit_rate_of_fire.py`가 「`UP`인데 표에 올라 있다」로 실패한다.
+Fienn 사격장 실측(2026-08-19, 앨리스 1인 편성, docs/measurements/alice-tap-fire.md)이
+두 가지를 확정했다:
 
-이 값이 FLOOR로 실려 가는 것이 핵심이다. 차지가 이보다 길면 차지가 케이던스를
-정하므로, 톡톡이는 그녀 차속이 살아 있는 구간에서만 저절로 성립한다.
+1. **부분 차지 대미지는 HUD가 표시하는 게이지 퍼센트 그 자체다.** 게이지는 차지 전에
+   이미 100%로 시작해 풀차지에서 383%까지 오르고, 대미지는 그 값에 정확히 비례한다
+   (8개 판독, 편차 −0.40%~+0.15%, 표시값 정수 반올림으로 전부 설명됨).
+2. **톡톡이는 게이지를 전혀 안 채운다** — 게이지가 오르는 첫 프레임과 발사 프레임이
+   같다. 그래서 톡톡이 샷은 정확히 **100%**, 즉 차지 보너스가 0이다.
+
+그래서 이건 「바닥값」이 아니라 **한 샷을 어디서 놓느냐**의 문제이고, 중간 지점은 볼
+필요가 없다(`tap_fire_wins`의 독스트링 참고). 남는 것은 매거진마다 두 끝 중 어느
+쪽이 나은지 고르는 일뿐이다.
 """
 import pytest
 
-from app.attack_rate import FRAME_SECONDS, shot_interval_with_speed
-from app.charge_window import WindowInputs, shot_times
-from app.skill_rules.registry import (MANUAL_TAP_FIRE_INTERVAL,
+from app.attack_rate import (FRAME_SECONDS, generate_segmented_shots,
+                             shot_interval_with_speed, tap_fire_wins)
+from app.skill_rules.registry import (TAP_FIRE_CANDIDATES,
                                       get_charge_motion_delay,
-                                      get_manual_tap_fire_interval)
+                                      is_tap_fire_candidate)
 
-# 앨리스의 무기 (data/shiftypad/alice.json)
+# 앨리스의 무기 (data/shiftypad/alice.json) + Fienn 계정의 소장품 차지대미지
 ALICE_CHARGE_TIME = 1.5
 ALICE_MAX_AMMO = 6
 ALICE_RELOAD_TIME = 2.0
-# 버스트 Wonderland 차속 80.15% + Fienn 계정 오버로드 8.96%
+ALICE_FULL_CHARGE_PERCENT = 383.0      # 실측(소장품 포함). 데이터 기본값은 350.
+ALICE_MOTION_DELAY = 15 * FRAME_SECONDS
+# 버스트 Wonderland 차속 80.15% + 그날 판독이 시사하는 오버로드 약 7.5~9%
 ALICE_BURST_CHARGE_SPEED = 0.8015 + 0.0896
-# 버스트 밖에는 오버로드뿐이다
 ALICE_RESTING_CHARGE_SPEED = 0.0896
 # 크라운 44.35 + 프리바티 51.16 + 회복력 큐브 29.69 = 125.20%, 재장전이 사라지는 지점
 NO_RELOAD_SPEED = 1.2520
 
 
-def test_alice_taps_at_seventeen_frames():
-    """17프레임 = 0.28333초 = 풀버스트 10초에 35발.
+def test_alices_motion_delay_is_the_measured_fifteen_frames():
+    """실측 14.75프레임(n=12, sd 0.62, 범위 13~15)이 프레임 격자에서 15에 앉는다.
 
-    Fienn 실측(2026-08-19): 인게임 오토가 FB 10초 구간에 23발, 수동 톡톡이가 40발
-    이상. 그 사이에서 35발을 채택했다. 프레임 격자 위의 값이어야 하는 이유는
-    `CHARGE_ROUNDS_PER_MINUTE`의 다섯 값이 전부 정수 프레임인 것과 같다 - 210발/분
-    (0.28571초)로 적으면 35번째 샷이 정확히 t=10.0에 서서 창 밖으로 떨어진다.
+    같은 영상의 톡톡이 발사 간격 15.38프레임과 같은 값인 것이 교차검증이다 —
+    톡톡이는 차지가 0이므로 그 간격이 곧 딜레이다.
     """
-    assert get_manual_tap_fire_interval("alice") == pytest.approx(17 * FRAME_SECONDS)
-    assert get_manual_tap_fire_interval("alice") == pytest.approx(0.283333, abs=1e-6)
+    assert get_charge_motion_delay("alice") == pytest.approx(15 * FRAME_SECONDS)
 
 
-def test_a_tap_fire_unit_carries_no_motion_delay():
-    """멈춤과 톡톡이 간격은 `shot_interval_with_speed`에서 배타적인 두 분기다.
-
-    멈춤이 실려 가면 floor 분기에 아예 도달하지 못하므로 톡톡이 간격이 조용히
-    무시된다. 그래서 이건 취향이 아니라 불변식이다.
-    """
-    for slug in MANUAL_TAP_FIRE_INTERVAL:
-        assert get_charge_motion_delay(slug) == 0.0, slug
+def test_every_tap_fire_candidate_has_a_motion_delay():
+    """톡톡이 간격은 그 유닛의 멈춤 그 자체다. 멈춤이 0이면 톡톡이가 무한 연사가
+    되므로, 딜레이가 없는 유닛은 후보가 될 수 없다."""
+    for slug in TAP_FIRE_CANDIDATES:
+        assert get_charge_motion_delay(slug) > 0.0, slug
+        assert is_tap_fire_candidate(slug)
 
 
-def _alice_window(charge_speed, reload_speed=NO_RELOAD_SPEED):
-    return WindowInputs(
-        charge_time=ALICE_CHARGE_TIME,
-        motion_delay=0.0,
-        max_ammo=ALICE_MAX_AMMO,
-        reload_time=ALICE_RELOAD_TIME,
-        charge_speed_percent=charge_speed,
-        charge_time_reduction_sec=0.0,
-        reload_speed_percent=reload_speed,
-        interval_floor=get_manual_tap_fire_interval("alice"),
-    )
+def _wins(charge_speed, reload_speed):
+    # 딜레이를 실어 재야 `차지 + 딜레이` 분기를 타고, 거기서 딜레이를 빼면 그 시점의
+    # 유효 차지시간이 나온다 - 엔진이 매거진 시작에 하는 계산과 같다.
+    interval = shot_interval_with_speed(
+        ALICE_CHARGE_TIME, charge_speed, motion_delay=ALICE_MOTION_DELAY)
+    charge = interval - ALICE_MOTION_DELAY
+    reload_seconds = max(0.0, ALICE_RELOAD_TIME * (1 - reload_speed)) + 0.148
+    return tap_fire_wins(charge, ALICE_MOTION_DELAY, ALICE_FULL_CHARGE_PERCENT,
+                         ALICE_MAX_AMMO, reload_seconds)
 
 
-def test_her_burst_window_lands_the_measured_thirty_five_shots():
-    """재장전이 사라진 조건에서 10초에 35발 - Fienn이 잰 그 조건이다."""
-    shots = shot_times(_alice_window(ALICE_BURST_CHARGE_SPEED), start_charged=False)
-    assert len(shots) == 35
+def test_tap_fire_wins_outside_her_burst_when_the_reload_is_gone():
+    """Fienn 사격장 확인(크라운+프리바티+재장전 큐브 15렙): 자기 버스트가 아닐 때
+    톡톡이가 자동사격보다 딜이 높다. 재장전이 톡톡이의 유일한 비용인데 그 조합이
+    재장전을 아예 없애기 때문이다."""
+    assert _wins(ALICE_RESTING_CHARGE_SPEED, NO_RELOAD_SPEED)
 
 
-def test_outside_her_burst_the_charge_sets_the_cadence():
-    """창 밖에서는 차지 1.367초가 톡톡이 간격보다 길어 floor가 안 걸린다.
+def test_full_charge_wins_outside_her_burst_when_the_reload_is_normal():
+    """같은 구간이라도 재장전 버프가 없으면 부호가 뒤집힌다 - 탄창 6발을 4.8배 빨리
+    비우는 값을 못 낸다."""
+    assert not _wins(ALICE_RESTING_CHARGE_SPEED, 0.0)
 
-    그녀의 차속은 전부 버스트 창 10초 안에만 있다(버스트 Wonderland +80.15%,
-    스킬1의 캐스터 기준 감소도 풀버스트 진입에 묶여 있다). 창 밖에는 오버로드뿐이라
-    차지가 82프레임으로 돌아오고, 톡톡이로 벌 발수가 없다.
+
+def test_full_charge_wins_inside_her_burst_window():
+    """창 안에서는 차속이 차지를 10프레임까지 밀어 풀차지가 거의 공짜다. 그걸 버리고
+    100%로 쏘는 것은 어느 재장전에서도 손해다."""
+    assert not _wins(ALICE_BURST_CHARGE_SPEED, 0.0)
+    assert not _wins(ALICE_BURST_CHARGE_SPEED, NO_RELOAD_SPEED)
+
+
+def test_the_full_charge_interval_reproduces_the_measured_reading():
+    """차속 없이 수동 풀차지를 이어 쏜 실측 발간격은 101.73프레임(n=11)이었다.
+
+    모델은 `차지 + 딜레이` = 90 + 15 = 105프레임을 준다. 차이 3.2%는 차지 시작
+    프레임 판독이 늦게 잡히는 쪽으로 치우친 것과 같은 방향이다(같은 영상의 차지
+    실측이 87.92프레임으로 파일값 90보다 작다).
     """
     interval = shot_interval_with_speed(
+        ALICE_CHARGE_TIME, 0.0, motion_delay=ALICE_MOTION_DELAY)
+    assert interval / FRAME_SECONDS == pytest.approx(105.0)
+    assert abs(interval / FRAME_SECONDS / 101.73 - 1) < 0.035
+
+
+def test_the_two_modes_are_close_enough_that_the_collectible_flips_the_verdict():
+    """엔진 기본값(회복력 큐브 15렙 = 재장전속도 +29.69%)에서 두 모드가 5% 안에 있고,
+    소장품 차지대미지가 그 안에서 부호를 뒤집는다.
+
+    **그래도 점수는 안 흔들린다** - 엔진이 큰 쪽을 고르므로 출력은 두 값의 max이고,
+    뒤집히는 것은 화면에 표시되는 모드뿐이다. 이 테스트는 그 민감도가 실재한다는
+    사실을 못박아, 나중에 「앨리스가 왜 덱마다 다르게 나오냐」가 버그로 오해되지
+    않게 한다.
+    """
+    cube_reload = max(0.0, ALICE_RELOAD_TIME * (1 - 0.2969)) + 0.148
+    charge = shot_interval_with_speed(
         ALICE_CHARGE_TIME, ALICE_RESTING_CHARGE_SPEED,
-        interval_floor=get_manual_tap_fire_interval("alice"))
-    assert interval == pytest.approx(1.36667, abs=1e-5)
-    shots = shot_times(_alice_window(ALICE_RESTING_CHARGE_SPEED), start_charged=False)
-    assert len(shots) == 7
+        motion_delay=ALICE_MOTION_DELAY) - ALICE_MOTION_DELAY
+    # 데이터 파일 그대로(소장품 없음)
+    assert tap_fire_wins(charge, ALICE_MOTION_DELAY, 350.0, ALICE_MAX_AMMO, cube_reload)
+    # Fienn 계정처럼 소장품이 붙으면 풀차지가 이긴다
+    assert not tap_fire_wins(charge, ALICE_MOTION_DELAY, ALICE_FULL_CHARGE_PERCENT,
+                             ALICE_MAX_AMMO, cube_reload)
 
 
-def test_the_deck_result_names_who_the_player_has_to_tap():
-    """화면은 슬러그를 보고 판단하지 않는다 - 누가 톡톡이 전제인지는 엔진이 정해서
-    실어 보낸다(`hold_burst_slugs`와 같은 계약). 그래서 표에 유닛이 추가되는 날
-    화면에도 그날 나온다.
+def _alice_base(**over):
+    base = {
+        "weapon": "SR",
+        "damage_percent": 69.04,
+        "charge_damage_percent": ALICE_FULL_CHARGE_PERCENT,
+        "charge_time": ALICE_CHARGE_TIME,
+        "max_ammo": ALICE_MAX_AMMO,
+        "reload_time": ALICE_RELOAD_TIME,
+        "charge_motion_delay": ALICE_MOTION_DELAY,
+        "tap_fire": True,
+    }
+    base.update(over)
+    return base
+
+
+def test_the_timeline_switches_modes_at_her_burst_window():
+    """엔진이 매거진마다 고른다 - 창 밖은 톡톡이(배율 0 보너스), 창 안은 풀차지.
+
+    재장전이 사라진 덱이라 창 밖에서 톡톡이가 이긴다. 이 전환이 런의 선택 하나로는
+    표현되지 않는 부분이고(단일 모드 최선 대비 +27.6%), 판정이 닫힌 형태라 탐색은
+    필요 없다.
     """
-    from types import SimpleNamespace
+    def charge_speed_at(time):
+        return ALICE_BURST_CHARGE_SPEED if time < 10.0 else ALICE_RESTING_CHARGE_SPEED
 
-    from app.deck_search import tap_fire_slugs
+    records = generate_segmented_shots(
+        _alice_base(), [], 40.0,
+        reload_speed_percent_at=lambda _t: NO_RELOAD_SPEED,
+        charge_speed_percent_at=charge_speed_at)
+    inside = [r for r in records if r.time < 10.0]
+    outside = [r for r in records if r.time >= 12.0]
+    assert inside and outside
+    # 창 안: 풀차지 배율이 실려 있다
+    assert all(r.extra_charge_bonus == pytest.approx(ALICE_FULL_CHARGE_PERCENT / 100 - 1)
+               for r in inside)
+    # 창 밖: 톡톡이라 차지 보너스가 없다
+    assert all(r.extra_charge_bonus == 0.0 for r in outside)
 
-    deck = [SimpleNamespace(slug=s) for s in ("alice", "ein", "crown")]
-    assert tap_fire_slugs(deck) == ["alice"]
-    assert tap_fire_slugs([SimpleNamespace(slug="crown")]) == []
 
-
-def test_the_tap_interval_is_a_floor_not_a_cadence():
-    """차속이 컷을 넘어 차지가 1프레임까지 떨어져도 발 간격은 17프레임에 선다.
-
-    커뮤니티가 앨리스에게 권하는 「차속 98.889%」(풀차지 1.5초 = 90프레임에서
-    89/90)가 그 지점이다. 손이 더 빨라지지는 않으므로 floor가 답이 된다.
-    """
-    interval = shot_interval_with_speed(
-        ALICE_CHARGE_TIME, 0.98889,
-        interval_floor=get_manual_tap_fire_interval("alice"))
-    assert interval == pytest.approx(17 * FRAME_SECONDS)
+def test_a_unit_that_is_not_a_candidate_never_taps():
+    """옵트인이 아닌 차지 무기는 오늘 그대로 - 전부 풀차지다."""
+    records = generate_segmented_shots(
+        _alice_base(tap_fire=False), [], 40.0,
+        reload_speed_percent_at=lambda _t: NO_RELOAD_SPEED,
+        charge_speed_percent_at=lambda _t: ALICE_RESTING_CHARGE_SPEED)
+    assert records
+    assert all(r.extra_charge_bonus == pytest.approx(ALICE_FULL_CHARGE_PERCENT / 100 - 1)
+               for r in records)

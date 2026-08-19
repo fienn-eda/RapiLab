@@ -27,7 +27,7 @@ from app.roster import assemble_simulation_inputs
 from app.skill_rules.registry import (SEATED_BUFF_SLUGS, TASTE_INDUCER_SLUGS,
                                       character_map, deck_grants_ally_round_buffs,
                                       get_burst_delay, get_hold_fire_release_shots,
-                                      get_manual_tap_fire_interval, has_burst_delay)
+                                      has_burst_delay)
 
 # candidate slug -> the owned character it is a build of, for the seat-exclusion
 # check below. An absent slug is its own character.
@@ -112,19 +112,6 @@ def _seat_order_is_playable(ordered_units):
         if len(members) > 1 and _skips_opening_cycle(members[0]):
             return False
     return True
-
-
-def tap_fire_slugs(ordered_deck):
-    """Seats whose scored shot count assumes the PLAYER taps (톡톡이) rather than
-    letting auto-fire run - empty for every other deck.
-
-    Same contract as `hold_burst_slugs`: the number on screen is only the number
-    the player gets if they play it that way, and nothing between here and the
-    screen can work that out from the deck list alone. Who taps is the engine's
-    to say (`registry.MANUAL_TAP_FIRE_INTERVAL`), not the UI's, so a unit added
-    to that table shows up on screen the same day."""
-    return [spec.slug for spec in ordered_deck
-            if get_manual_tap_fire_interval(spec.slug) is not None]
 
 
 def hold_burst_slugs(ordered_deck):
@@ -671,7 +658,11 @@ def _summarize(ordered_deck, result):
         "normal_attack_damage": normal,
         "skill_damage": sum(by_source.values()),
         "hold_burst_slugs": hold_burst_slugs(ordered_deck),
-        "tap_fire_slugs": tap_fire_slugs(ordered_deck),
+        # 엔진이 실제로 톡톡이를 고른 좌석. 유닛의 속성이 아니라 **이 덱에서의 결과**다
+        # - 같은 유닛이 재장전 빠른 덱에서는 톡톡이, 느린 덱에서는 풀차지가 된다
+        # (raid_simulator의 `tap_fire_used`). 그래서 덱 목록만으로는 재현할 수 없고,
+        # hold_burst_slugs·seating과 같은 계약으로 실려 온다.
+        "tap_fire_slugs": result.get("tap_fire_used", []),
         # Which allies this deck's seated-buff unit was scored beside, when it
         # holds one - the arrangement the player has to field for the number
         # above to be the one they get. Empty for every other deck. Same
