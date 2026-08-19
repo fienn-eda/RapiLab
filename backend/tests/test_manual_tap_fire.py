@@ -222,19 +222,50 @@ def test_a_bigger_magazine_forces_a_second_full_charge():
     assert _milk_k(capacity=14) == 2
 
 
-def test_the_chosen_cadence_always_keeps_the_window():
-    """**불변식** — 고른 k가 창을 지키거나, 못 지키면 전부 풀차지로 물러난다.
-    이것이 밀크의 Pierce를 영구로 두는 근사를 떠받치는 유일한 논거다."""
+def _milk_worst_gap(capacity, full_charges, reload_seconds):
+    """풀차지 `full_charges`발을 균등 배치했을 때 연속한 두 풀차지 사이의 최악 간격.
+
+    `optimal_full_charges`가 후보를 거르는 데 쓰는 식과 같은 것을, 테스트가
+    독립적으로 다시 쓴 것이다 - 구현이 자기 식으로 자기를 검증하지 않게.
+    """
+    block = -(-capacity // full_charges)
+    return (MILK_CHARGE_TIME + MILK_MOTION_DELAY
+            + (block - 1) * MILK_TAP_INTERVAL + reload_seconds)
+
+
+def test_the_chosen_cadence_keeps_the_window_whenever_any_cadence_can():
+    """**불변식** - 창을 지킬 수 있는 k가 하나라도 있으면 고른 k가 그것을 지킨다.
+
+    전부 풀차지(k=C)가 「언제나 안전」한 것은 **아니다**: 그때 최악 간격은
+    `차지+멈춤+재장전`까지 줄지만, 재장전 하나가 창보다 길면 그 값도 창을 넘는다
+    (예: 장탄 6 · 재장전 8초 -> 9.37초 > 6초). 그때는 모델이 아니라 게임이 창을
+    잃는 것이므로, 주장은 「항상 지킨다」가 아니라 「지킬 수 있으면 지킨다」여야 한다.
+    """
     for capacity in range(1, 21):
         for reload_seconds in (0.0, 0.5, 1.0, 2.0, 4.0, 8.0):
             k = _milk_k(capacity=capacity, reload_seconds=reload_seconds)
             assert 1 <= k <= capacity
-            if k == capacity:
-                continue
-            block = -(-capacity // k)
-            worst_gap = (MILK_CHARGE_TIME + MILK_MOTION_DELAY
-                         + (block - 1) * MILK_TAP_INTERVAL + reload_seconds)
-            assert worst_gap <= MILK_WINDOW, (capacity, reload_seconds, k)
+            feasible = [j for j in range(1, capacity + 1)
+                        if _milk_worst_gap(capacity, j, reload_seconds) <= MILK_WINDOW]
+            if feasible:
+                assert _milk_worst_gap(capacity, k, reload_seconds) <= MILK_WINDOW, (
+                    capacity, reload_seconds, k)
+            else:
+                # 어떤 케이던스로도 못 지킨다 - 최악 간격이 가장 작은 k=C로 물러난다.
+                assert k == capacity, (capacity, reload_seconds, k)
+
+
+def test_milks_real_numbers_never_reach_the_window_she_cannot_keep():
+    """밀크의 Pierce를 영구로 두는 근사가 **실제로** 기대는 사실.
+
+    그녀의 차지+멈춤+재장전이 창보다 짧으므로, 창을 못 지키는 분기에 닿지 않는다.
+    그녀의 강제 재장전(「50% 감소 고정」 = 2초 base에 대해 3초)까지 넣어도 그렇다.
+    이 부등식이 깨지는 날 그녀의 영구 Pierce는 근사가 아니라 오류가 된다.
+    """
+    for reload_seconds in (2.0, 3.0):
+        worst_gap_at_full_charge = (
+            MILK_CHARGE_TIME + MILK_MOTION_DELAY + reload_seconds)
+        assert worst_gap_at_full_charge < MILK_WINDOW, reload_seconds
 
 
 def test_without_a_window_the_answer_matches_the_old_two_way_test():
