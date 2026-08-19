@@ -1225,7 +1225,8 @@ that shot is (docs/measurements/alice-tap-fire.md):
   (tap 15.38f, pause 14.75f). **Milk: Blooming Bunny disproved that rule,
   2026-08-19-20**: her pause is 21.889 frames (n=9) but her tap interval is
   14.810 frames (n=21) — about 16σ apart. Applying Alice's coincidence to Milk
-  would undercount her tap-fire shot rate by 47%. A slug absent from the table
+  would undercount her tap-fire shot rate by 32% (her true rate is 1.48x that
+  estimate). A slug absent from the table
   still falls back to the pause (`get_tap_fire_interval` returns `None`,
   `_base_shot_records` substitutes `motion_delay`) — the old behaviour, not a
   new default, and it is only ever safe to READ, never to assume, that the two
