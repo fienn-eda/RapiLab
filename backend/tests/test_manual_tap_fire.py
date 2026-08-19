@@ -178,7 +178,7 @@ def test_a_unit_that_is_not_a_candidate_never_taps():
 def test_milks_tap_interval_is_not_her_motion_delay():
     """밀크의 두 실측은 다른 값이다 — 톡톡이 14.810f(n=21) 대 멈춤 21.889f(n=9),
     약 16시그마. 앨리스에서 둘이 같게 나온 것은 우연이었고, 그녀에게 멈춤을
-    톡톡이 간격으로 주면 발수를 47% 과소평가한다.
+    톡톡이 간격으로 주면 발수를 32% 과소평가한다(참 발수가 그 추정의 1.48배).
     docs/measurements/milk-blooming-bunny-tap-fire.md
     """
     assert get_tap_fire_interval("milk-blooming-bunny") == pytest.approx(15 * FRAME_SECONDS)
@@ -342,7 +342,7 @@ def test_milks_magazine_mixes_one_full_charge_with_five_taps():
 
 def test_the_taps_are_spaced_by_the_tap_interval_not_the_pause():
     """톡톡이끼리의 간격은 15프레임이지 그녀의 멈춤 22프레임이 아니다 — 이 구분이
-    없으면 발수를 47% 과소평가한다."""
+    없으면 발수를 32% 과소평가한다(참 발수가 그 추정의 1.48배)."""
     shots = generate_segmented_shots(_milk_weapon(), (), 6.0)
     gaps = [b.time - a.time for a, b in zip(shots, shots[1:])][:4]
     for gap in gaps:
