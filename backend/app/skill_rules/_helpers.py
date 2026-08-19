@@ -389,6 +389,7 @@ def escalating_cdr_rule(trigger, tier_seconds):
 # the engine has no heal event, so deck presence is what can be asked.
 HEAL_PROVIDER_SLUGS = frozenset({
     "ada-wong",
+    "alice",
     "anchor-innocent-maid",
     "anis-star",
     "asuka-shikinami-langley-wille",

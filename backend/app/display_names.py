@@ -70,6 +70,7 @@ DISPLAY_NAMES = {
 
     # --- Burst 2 ---
     "ade-agent-bunny":           "에이드: 에이전트 바니", # Ade: Agent Bunny
+    "alice":                     "앨리스",               # Alice
     "anchor-innocent-maid":      "앵커: 이노센트 메이드", # Anchor: Innocent Maid
     "arcana":                    "아르카나", # Arcana
     "arcana-fortune-mate":       "아르카나: 포츈 메이트", # Arcana: Fortune Mate

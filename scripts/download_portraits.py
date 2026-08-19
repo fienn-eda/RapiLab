@@ -57,6 +57,11 @@ BASE_URL = "https://lootandwaifus.com"
 
 # Engine build-variants that have no character page of their own; they share the
 # base character's portrait. Keyed engine-slug -> lootandwaifus html slug.
+#
+# A unit whose lootandwaifus URL differs from her engine slug does NOT belong
+# here - the collected file is renamed to `char_<engine-slug>.html` instead, so
+# every consumer (this script, lootandwaifus_html_to_json, the text audits)
+# finds it by the one name they all already use. Alice's page is /alice-nikke.
 SLUG_ALIASES = {
     "bready-lingering": "bready",
     "bready-recommended": "bready",

@@ -44,6 +44,7 @@ from app.skill_rules.registry import (
     get_resource_specs,
     get_hold_fire_release_profile,
     get_hold_fire_release_shots,
+    get_manual_tap_fire_interval,
     get_scheduled_nukes,
     get_unlimited_ammo_duration,
     get_weapon_mode_schedules,
@@ -202,7 +203,14 @@ def assemble_simulation_inputs(ordered_deck, hold_fire=()):
         # 멈춤이 없는 차지 무기는 대신 자기 연사에 걸린다 - 클래스 기본값을 쓰는
         # 유닛은 안 실어 보내야 타임라인이 예전과 바이트 단위로 같다
         # (attack_rate.CHARGE_ROUNDS_PER_MINUTE).
-        if spec.slug in CHARGE_ROUNDS_PER_MINUTE:
+        tap_interval = get_manual_tap_fire_interval(spec.slug)
+        if tap_interval is not None:
+            # 수동 톡톡이를 상시 유지한다고 보는 유닛은 무기의 연사가 아니라 플레이어의
+            # 손이 바닥값을 정한다 (registry.MANUAL_TAP_FIRE_INTERVAL). 멈춤과는
+            # 배타적이라 - 멈춤이 실리면 floor 분기에 도달하지 못한다 - 위 두 갈래가
+            # 같은 유닛에서 겹치지 않는 것은 registry 쪽 불변식이다.
+            timeline["charge_interval_floor"] = tap_interval
+        elif spec.slug in CHARGE_ROUNDS_PER_MINUTE:
             timeline["charge_interval_floor"] = charge_interval_floor_for(spec.slug)
         ammo_refund = cube_refund_for(spec.cube)
         if ammo_refund is not None:

@@ -101,6 +101,12 @@ export function DeckCard({
           <HelpText>{HELP.results.holdBurst(deck.hold_burst_slugs.map(nameFor).join(', '))}</HelpText>
         </p>
       )}
+      {deck.tap_fire_slugs.length > 0 && (
+        <p className="deck-results__hold">
+          <span aria-hidden="true">👆</span>{' '}
+          <HelpText>{HELP.results.tapFire(deck.tap_fire_slugs.map(nameFor).join(', '))}</HelpText>
+        </p>
+      )}
       {Object.entries(deck.seating).map(([caster, seat]) => (
         <p className="deck-results__seating" key={caster}>
           <HelpText>

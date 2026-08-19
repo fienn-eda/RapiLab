@@ -38,7 +38,7 @@ describe('useRecommend', () => {
 
   it('goes loading -> success and stores the returned decks', async () => {
     const decks = [
-      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], seating: {} },
+      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
     ]
     vi.mocked(recommendDecks).mockResolvedValue({ decks, excluded_slugs: [], engine_version: 'test-engine-version' })
 
@@ -55,7 +55,7 @@ describe('useRecommend', () => {
 
   it('exposes the excluded slugs the backend reports', async () => {
     const decks = [
-      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], seating: {} },
+      { deck: ['a', 'b', 'c', 'd', 'e'], total_damage: 100, burst_damage: 60, normal_attack_damage: 40, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
     ]
     vi.mocked(recommendDecks).mockResolvedValue({ decks, excluded_slugs: ['some-slug'], engine_version: 'test-engine-version' })
 

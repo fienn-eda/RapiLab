@@ -1,11 +1,12 @@
 {
   "source": "lootandwaifus.com",
   "base_url": "https://lootandwaifus.com",
-  "generated": "2026-08-13",
+  "generated": "2026-08-19",
   "note": "Portrait paths read from data/lootandwaifus/char_<slug>.html (data-default-src); regenerate via scripts/download_portraits.py.",
   "portraits": {
     "ada-wong": "mi_c840_00_s.png",
     "ade-agent-bunny": "mi_c315_00_s.webp",
+    "alice": "mi_c191_00_s.webp",
     "anchor-innocent-maid": "mi_c355_00_s.webp",
     "anis-sparkling-summer": "mi_c015_00_s.webp",
     "anis-star": "mi_c017_00_s.webp",

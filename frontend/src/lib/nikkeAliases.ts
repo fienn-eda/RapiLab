@@ -24,6 +24,7 @@
 export const NIKKE_ALIASES: Record<string, readonly string[]> = {
   'ada-wong':                       ['웡', '아다'],  // 에이다
   'ade-agent-bunny':                ['바이드', '바니에이드'],  // 에이드: 에이전트 바니
+  'alice':                          [],  // 앨리스
   'anchor-innocent-maid':           ['메앵커'],  // 앵커: 이노센트 메이드
   'anis-sparkling-summer':          ['수니스'],  // 아니스: 스파클링 서머
   'anis-star':                      ['돌니스', '별니스'],  // 아니스: 스타

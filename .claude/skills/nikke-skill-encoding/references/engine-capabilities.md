@@ -1207,6 +1207,36 @@ a cadence: reading these rpm as sustained fire rates would put Liberalio at
 `registry.INFERRED_NO_CHARGE_MOTION_DELAY` holds the one zero that comes from
 this rule rather than from a clock.
 
+**A THIRD source of a floor: manual tap-fire (톡톡이), 2026-08-19.** A player can
+release an `UP` weapon the instant the charge starts, giving up the charge
+multiplier for shots. For a unit whose own Charge Speed drives her charge below
+what her hand can keep up with, the tap costs nothing — the shot is a full
+charge anyway — and her cadence becomes the hand rather than the weapon.
+`registry.MANUAL_TAP_FIRE_INTERVAL` carries that per-unit interval and `roster`
+joins it onto the timeline as the same `charge_interval_floor`, so no engine
+arithmetic changed: `max(reduced_charge, floor)` already says "tap when the
+charge is short, wait for it when it is long".
+
+Three consequences worth knowing before you reach for it:
+
+- **It is not a pause and must not be written as one.** `TIMED_CHARGE_MOTION_DELAY`
+  is measured game behaviour; this is a claim about how the player plays.
+  `CHARGE_ROUNDS_PER_MINUTE` is derived from `shot_detail.rate_of_fire` and
+  `scripts/audit_rate_of_fire.py` cross-checks it against `input_type`, so an
+  `UP` unit put there fails the audit.
+- **The floor and a pause are exclusive**, same as above: a unit carrying both
+  never reaches the floor branch at all. `tests/test_manual_tap_fire.py` pins it.
+- **The engine cannot model the tap when it is NOT free.** `ShotRecord` has no
+  "was this a full charge" property, so `charge_damage_percent` is applied to
+  every shot unconditionally. A player with fast reloads profits from tapping
+  even at full charge time (Alice's break-even is Reload Speed +62.4%), and that
+  regime is unrepresentable — the floor model is a FLOOR for those decks. See
+  docs/engine-gaps.md.
+
+Alice is the only unit modelled this way today: 17 frames (0.28333 sec, 35 shots
+in a 10-sec Full Burst), from Fienn's readings of 23 shots on auto-fire and 40+
+by hand in the same window (docs/measurements/alice-tap-fire.md).
+
 `attack_rate.generate_segmented_shots()` builds a per-segment ShotRecord
 timeline instead of one flat cadence: inside a segment the unit's BASE
 weapon is genuinely silenced (not just double-counted-and-subtracted) and

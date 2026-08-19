@@ -305,9 +305,9 @@ describe('UnionRaidPanel', () => {
     const user = userEvent.setup()
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], seating: {} },
-        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [], seating: {} },
-        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [], seating: {} },
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
+        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
+        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
       ],
       combined_total_damage: 60,
       excluded_slugs: [],
@@ -366,7 +366,7 @@ describe('UnionRaidPanel', () => {
     const user = userEvent.setup()
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], seating: {} },
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
       ],
       combined_total_damage: 10,
       excluded_slugs: [],
@@ -395,7 +395,7 @@ describe('UnionRaidPanel', () => {
     const user = userEvent.setup()
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['u1', 'u2', 'u3', 'u4', 'u5'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], seating: {} },
+        { deck: ['u1', 'u2', 'u3', 'u4', 'u5'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
       ],
       combined_total_damage: 10,
       excluded_slugs: [],
@@ -489,9 +489,9 @@ describe('UnionRaidPanel', () => {
     const user = userEvent.setup()
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], seating: {} },
-        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [], seating: {} },
-        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [], seating: {} },
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
+        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
+        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
       ],
       combined_total_damage: 60,
       excluded_slugs: [],
@@ -519,9 +519,9 @@ describe('UnionRaidPanel 결과 보관', () => {
   const evaluationSuccess = () => {
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], seating: {} },
-        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [], seating: {} },
-        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [], seating: {} },
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
+        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
+        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
       ],
       combined_total_damage: 60,
       excluded_slugs: [],
@@ -564,7 +564,7 @@ describe('UnionRaidPanel 결과 보관', () => {
     const user = userEvent.setup()
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], seating: {} },
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
       ],
       combined_total_damage: 10,
       excluded_slugs: [],
@@ -678,7 +678,7 @@ describe('UnionRaidPanel 결과 보관', () => {
             bosses: [boss, boss, boss],
             draft: { decks: [[], [], []] },
             decks: [
-              { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 888, burst_damage: 500, normal_attack_damage: 300, skill_damage: 88, hold_burst_slugs: [], seating: {} },
+              { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 888, burst_damage: 500, normal_attack_damage: 300, skill_damage: 88, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
             ],
             combinedTotalDamage: 888,
             excludedSlugs: [],
@@ -712,7 +712,7 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
     burst_damage: 4,
     normal_attack_damage: 3,
     skill_damage: 3,
-    hold_burst_slugs: [], seating: {},
+    hold_burst_slugs: [], tap_fire_slugs: [], seating: {},
   })
 
   /** 두 전투짜리 보관물. */
@@ -780,9 +780,9 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
     const user = userEvent.setup()
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], seating: {} },
-        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [], seating: {} },
-        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [], seating: {} },
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
+        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
+        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
       ],
       combined_total_damage: 60,
       excluded_slugs: [],
@@ -925,9 +925,9 @@ describe('UnionRaidPanel — 편성 초기화와 가져오기', () => {
     const user = userEvent.setup()
     vi.mocked(evaluateDecks).mockResolvedValue({
       decks: [
-        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], seating: {} },
-        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [], seating: {} },
-        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [], seating: {} },
+        { deck: ['u0', 'u1', 'u2', 'u3', 'u4'], total_damage: 10, burst_damage: 6, normal_attack_damage: 4, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
+        { deck: ['u5', 'u6', 'u7', 'u8', 'u9'], total_damage: 20, burst_damage: 12, normal_attack_damage: 8, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
+        { deck: ['u10', 'u11', 'u12', 'u13', 'u14'], total_damage: 30, burst_damage: 18, normal_attack_damage: 12, skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], seating: {} },
       ],
       combined_total_damage: 60,
       excluded_slugs: [],

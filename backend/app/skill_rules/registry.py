@@ -24,6 +24,7 @@ from app.skill_rules.ada_wong import (
     build_special_modification_weapon_mode_schedule,
 )
 from app.skill_rules.ade_agent_bunny import build_ade_rules
+from app.skill_rules.alice import build_alice_rules
 from app.skill_rules.anchor_innocent_maid import build_anchor_rules
 from app.skill_rules.anis_sparkling_summer import (
     build_anis_sparkling_summer_rules,
@@ -566,6 +567,7 @@ _BUILDERS = {
     "anis-star": _build_anis_star,
     "anis-sparkling-summer": lambda sv: (build_anis_sparkling_summer_rules(sv), None),
     "ade-agent-bunny": lambda sv: (build_ade_rules(sv), None),
+    "alice": lambda sv: (build_alice_rules(sv), None),  # Wonderland is buff-only
     "anchor-innocent-maid": lambda sv: (build_anchor_rules(sv), None),
     "arcana": lambda sv: (build_arcana_rules(sv), arcana_burst_percent(sv)),
     "arcana-fortune-mate": lambda sv: (build_fortune_mate_rules(sv), radiant_youth_burst_percent(sv)),
@@ -1514,6 +1516,48 @@ def get_charge_motion_delay(slug):
     """Seconds this Nikke waits between a charged shot and the next charge; 0
     for the vast majority - see `_CHARGE_MOTION_DELAY`."""
     return _CHARGE_MOTION_DELAY.get(slug, 0.0)
+
+
+# 수동 톡톡이 - 차지를 시작하자마자 방아쇠를 놓아 발사하는 조작 - 를 상시 유지한다고
+# 가정하는 유닛과, 그 손이 낼 수 있는 가장 짧은 발 간격.
+#
+# **위의 두 표 어디에도 넣을 수 없다.** `TIMED_CHARGE_MOTION_DELAY`는 게임이 정하는
+# 발사↔차지 멈춤의 실측값이고 이건 플레이어의 손이 정한다.
+# `attack_rate.CHARGE_ROUNDS_PER_MINUTE`는 `shot_detail.rate_of_fire`에서 유도되는
+# 표라 `scripts/audit_rate_of_fire.py`가 `input_type`과 양방향으로 대조한다 - 앨리스는
+# `UP`이므로 거기 올리면 감사가 실패한다.
+#
+# **FLOOR로 실려 간다**(`attack_rate.shot_interval_with_speed`의 floor 분기,
+# `roster`가 `charge_interval_floor`로 전달). 차지가 이보다 길면 차지가 케이던스를
+# 정하므로, 톡톡이는 그 유닛의 차속이 차지를 이 값 아래로 밀어낸 구간에서만 저절로
+# 성립한다. 앨리스에게 그것은 자기 버스트 10초 창이다(Wonderland 차속 +80.15%;
+# 창 밖에는 오버로드뿐이라 차지가 1.37초로 돌아온다).
+#
+# 앨리스 17프레임 = 0.28333초 = 풀버스트 10초에 35발. Fienn 실측(2026-08-19):
+# 인게임 오토가 같은 창에서 23발, 수동 톡톡이가 40발 이상. 그 사이에서 35발을 채택한
+# 것이고, 23도 40도 아닌 이 값은 측정이 아니라 **판단**이다. 프레임 격자에 앉히는
+# 이유는 위 다섯 값과 같다 - 210발/분(0.28571초)으로 적으면 35번째 샷이 정확히
+# t=10.0에 서서 창 밖으로 떨어진다.
+#
+# **알려진 과소평가 하나:** 재장전이 빠른 덱에서는 버스트 창 밖에서도 톡톡이가 이긴다.
+# 부분 차지 샷은 풀차지 배율(앨리스 350%)을 잃는 대신 발수를 벌므로, 재장전이 그
+# 발수의 비용을 안 먹을 때 부호가 뒤집힌다 - 손익분기는 재장전속도 **+62.4%**(재장전
+# 0.900초)이고, 크라운+프리바티+회복력 큐브는 125.20%로 재장전이 아예 사라진다
+# (Fienn 사격장 확인, 2026-08-19). 엔진은 그걸 표현할 수 없다: `ShotRecord`에 「이
+# 샷이 풀차지인가」를 묻는 자리가 없어 `charge_damage_percent`가 모든 샷에 무조건
+# 곱해지기 때문이다. 그 자리가 생기기 전까지 이 floor 모델은 재장전 무거운 덱에서
+# 앨리스를 과소평가한다. docs/engine-gaps.md 참고.
+MANUAL_TAP_FIRE_INTERVAL = {
+    "alice": 17 / 60,
+}
+
+
+def get_manual_tap_fire_interval(slug):
+    """이 니케의 수동 톡톡이 발 간격(초), 또는 그렇게 모델하지 않으면 `None`.
+
+    반환값은 케이던스가 아니라 바닥값이다 - `MANUAL_TAP_FIRE_INTERVAL` 참고.
+    """
+    return MANUAL_TAP_FIRE_INTERVAL.get(slug)
 
 
 # Nikkes who refill a magazine in several loads instead of one. The count comes

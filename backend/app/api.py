@@ -189,6 +189,10 @@ class DeckRecommendation(BaseModel):
     # deck: the seat order is preferred playable whenever the scores tie, so
     # this only fills when holding the burst is what the higher score is FOR.
     hold_burst_slugs: list[str] = []
+    # 위 수치가 **수동 톡톡이**(차지하자마자 발사)를 전제로 계산된 좌석
+    # (deck_search's `tap_fire_slugs`). hold_burst_slugs와 같은 성격 - 덱 목록만
+    # 봐서는 알 수 없는 플레이 지시라 엔진이 실어 보낸다.
+    tap_fire_slugs: list[str] = []
     # 좌석형 버프를 가진 유닛(루주의 Sword Coin: "자신과 양 옆 아군 2명")을 어떻게
     # 앉혀야 위 수치가 나오는지 - {시전자: SeatingEntry}. 그 유닛이 없는 덱은 빈
     # 딕셔너리다. hold_burst_slugs와 같은 성격의 필드로, 덱 목록만으로는 재현할 수
@@ -480,6 +484,7 @@ def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
                 burst_damage=r["burst_damage"], normal_attack_damage=r["normal_attack_damage"],
                 skill_damage=r["skill_damage"],
                 hold_burst_slugs=r["hold_burst_slugs"],
+                tap_fire_slugs=r["tap_fire_slugs"],
                 seating=seating_view(r["seating"]),
             )
             for r in results
@@ -525,6 +530,7 @@ def _to_recs(decks, pinned_by_deck=None):
             burst_damage=d["burst_damage"], normal_attack_damage=d["normal_attack_damage"],
             skill_damage=d["skill_damage"],
             hold_burst_slugs=d["hold_burst_slugs"],
+            tap_fire_slugs=d["tap_fire_slugs"],
             seating=seating_view(d["seating"]),
             pinned_slugs=pinned,
         )
@@ -656,6 +662,7 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
             normal_attack_damage=d["normal_attack_damage"],
             skill_damage=d["skill_damage"],
             hold_burst_slugs=d["hold_burst_slugs"],
+            tap_fire_slugs=d["tap_fire_slugs"],
             seating=seating_view(d["seating"])) for d in out["decks"]],
         combined_total_damage=out["combined_total_damage"],
         excluded_slugs=excluded,

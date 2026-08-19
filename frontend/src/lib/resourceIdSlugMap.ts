@@ -48,6 +48,7 @@ export const RESOURCE_ID_TO_SLUG: Record<number, string> = {
   170: 'privaty', // Privaty — dual-slot base; promoted per the roster
   182: 'guillotine-winter-slayer', // Guillotine: Winter Slayer
   183: 'maiden-ice-rose', // Maiden: Ice Rose
+  191: 'alice', // Alice
   192: 'tove', // Tove — dual-slot base; promoted per the roster
   194: 'ludmilla-winter-owner', // Ludmilla: Winter Owner
   202: 'dolla', // Dolla

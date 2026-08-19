@@ -11,7 +11,7 @@ const DECK = {
   burst_damage: 500,
   normal_attack_damage: 400,
   skill_damage: 100,
-  hold_burst_slugs: [], seating: {},
+  hold_burst_slugs: [], tap_fire_slugs: [], seating: {},
 }
 
 describe('DeckCard 속성저지 배지', () => {
@@ -56,6 +56,34 @@ describe('DeckCard 버스트 홀드 안내', () => {
     render(<DeckCard label="덱 1" deck={DECK} />)
 
     expect(screen.queryByText(/첫 풀버스트/)).not.toBeInTheDocument()
+  })
+
+  // 톡톡이도 홀드와 같은 성격의 지시다: 수치가 그 조작을 전제로 계산됐으니
+  // 그렇게 안 하면 이 딜이 안 나온다. 누가 해당되는지는 엔진이 실어 보낸다.
+  it('톡톡이를 전제로 계산된 자리가 있으면 누구인지 이름으로 말한다', () => {
+    render(
+      <DeckCard
+        label="덱 1"
+        deck={{ ...DECK, tap_fire_slugs: ['alice'] }}
+        nameFor={(slug) => (slug === 'alice' ? '앨리스' : slug)}
+      />,
+    )
+
+    expect(screen.getByText(/톡톡이/)).toHaveTextContent('앨리스')
+  })
+
+  // 창 밖까지 톡톡이하라고 읽히면 엔진이 계산한 것보다 많이 쏘게 된다 -
+  // 발 간격은 바닥값이라 차지가 길어지는 구간에서는 안 걸린다.
+  it('톡톡이 안내는 버스트 창 안으로 범위를 한정한다', () => {
+    render(<DeckCard label="덱 1" deck={{ ...DECK, tap_fire_slugs: ['alice'] }} />)
+
+    expect(screen.getByText(/톡톡이/)).toHaveTextContent('버스트 10초')
+  })
+
+  it('톡톡이 전제가 없으면 아무것도 안 단다', () => {
+    render(<DeckCard label="덱 1" deck={DECK} />)
+
+    expect(screen.queryByText(/톡톡이/)).not.toBeInTheDocument()
   })
 })
 
