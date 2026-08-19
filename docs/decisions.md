@@ -5,6 +5,34 @@ real alternatives — data sources, stack, scope, modeling conventions — not
 routine implementation. For *how to encode a Nikke* and the engine capability
 catalog, see the `nikke-skill-encoding` skill, not here.
 
+## 워드마크는 **빨강의 희소성을 의도적으로 쓴다** — 규칙의 예외지 폐기가 아니다
+
+- Date: 2026-08-20
+- Context: 아래 결정으로 만든 워드마크의 색·굵기·기울기를 정해야 했다. 샘플을 흰색
+  단색 · `--accent` 단색 · Rapi/Lab 분할 · 그라디언트 · 속 빈 것으로 놓고 골랐다.
+- Alternatives considered: (a) `--text` 흰색 단색. (b) `--accent` 단색.
+  (c) Rapi는 흰색 Lab은 빨강으로 분할. (d) **`--text` → `--accent` 가로
+  그라디언트.** (e) 속 빈 것(획만).
+- Decision: **(d), 굵기 +40 units, 기울기 10°(배포본 Oblique).** Fienn의 선택이다.
+- Why: (e)는 헤더 크기에서 성립하지 않는다 — 획 16 units를 27px 높이로 줄이면
+  `16 × 27/917 = 0.47px`라 서브픽셀로 뭉개진다. 굵기 +40은 세로기둥 132 units
+  기준 +30%인데, **+90쯤에서 `a`·`p`의 속공간이 메워져** 그 위로는 못 간다 —
+  이 글자꼴엔 굵은 웨이트가 없어(두 파일 다 weightClass 400) 굵기가 획을 덧대는
+  합성이기 때문이다. 기울기는 배포본 Oblique를 그대로 썼다: Regular에 10°를
+  걸어도 같은 그림이지만(좌표 372개 비교, 최대 오차 0.81/1000 units) 디자이너가
+  만든 파일을 쓰는 쪽이 §3의 「adapt 금지」를 건드릴 여지가 없다. 폭 차이 0.01%는
+  배포본 좌표가 정수로 반올림된 결과다.
+- Consequences: **`index.css`의 「Keeping red rare」 규칙과 정면으로 부딪힌다** —
+  제목은 항상 화면에 있으므로 빨강이 더는 드물지 않고, 활성 탭·선택 칩·포커스
+  링·에러가 「여기 봐」라고 말하는 힘이 그만큼 깎인다. 나는 (a)를 권했고 Fienn이
+  (d)를 골랐다. 그래서 `index.css`의 그 주석에 **예외를 명시로 적어 뒀다** —
+  안 적으면 다음 세션이 그 주석을 근거로 이걸 되돌린다. 예외지 새 허가가 아니다:
+  상시 표시되는 다른 것에는 여전히 빨강을 쓰지 않는다. 그라디언트 양 끝은
+  **토큰(`var(--text)`·`var(--accent)`)이지 색값이 아니다** — 팔레트를 바꾸면
+  워드마크도 따라간다. `Wordmark.test.tsx`가 그 계약을 지킨다. 덧댄 획 때문에
+  viewBox가 917 → 957로 커져서 `.wordmark`의 높이가 0.97em → **0.984em**으로
+  다시 뽑혔다. **`--weight`를 바꾸면 이 값도 다시 뽑아야 한다.**
+
 ## 앱 제목은 폰트를 동봉하지 않고 **아웃라인으로 구운 워드마크**로 낸다
 
 - Date: 2026-08-20
