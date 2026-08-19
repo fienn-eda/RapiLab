@@ -149,3 +149,22 @@ def test_overconfident_ticks_five_times_across_the_ten_second_status():
         pytest.approx(t) for t in (22.0, 24.0, 26.0, 28.0, 30.0)
     ]
 
+
+def test_milk_is_a_tap_fire_candidate():
+    """그녀의 조작은 Pierce 창을 지키는 최소 비용으로 풀차지를 넣고 나머지를
+    톡톡이로 쏘는 것이다 — docs/measurements/milk-blooming-bunny-tap-fire.md"""
+    from app.skill_rules.registry import is_tap_fire_candidate
+    assert is_tap_fire_candidate("milk-blooming-bunny")
+
+
+def test_milks_permanent_pierce_rests_on_the_cadence_keeping_the_window():
+    """Pierce를 영구로 두는 근사의 **유일한** 논거는 케이던스가 창을 지킨다는 것이다.
+    창을 지키는 k가 없으면 전부 풀차지로 물러나고, 그때도 모든 샷이 풀차지라
+    창은 지켜진다. 어느 분기에서도 Pierce가 안 끊긴다."""
+    from app.attack_rate import FRAME_SECONDS, optimal_full_charges
+    for capacity in range(1, 21):
+        for reload_seconds in (0.0, 1.0, 2.0, 4.0, 8.0):
+            k = optimal_full_charges(
+                capacity, reload_seconds, 1.0, 22 * FRAME_SECONDS,
+                15 * FRAME_SECONDS, 250.0, 6.0)
+            assert k >= 1

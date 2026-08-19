@@ -24,7 +24,9 @@ Timeline per own burst at `bt` (all derived from slots / her weapon, not
 hardcoded): Overconfident immunity covers `bt .. bt + 10`; she then spends one
 full charge plus the 0.5s hold that arms the trigger, so Embarrassment enters at
 `bt + 11.5` and its forced reload runs to `bt + 14.5`. The state itself then
-holds until her next burst.
+holds until her next burst. Embarrassment's entry clause reads "when Full
+Charge lasts for 0.5 sec or more", so a tapped shot cannot arm it either - the
+entry offset below is unchanged by tap fire.
 
 Modeled (DPS-relevant):
 - Embarrassment entry (skills[0]): 290% of final ATK as Distributed Damage to
@@ -50,9 +52,30 @@ Modeled (DPS-relevant):
 
 - "Gain Pierce for 6 sec" on every full charge (skills[0]): the `has_pierce`
   property, which is what lets her two "Pierce Damage +X%" clauses pay out at
-  all. She is an SR, so every shot IS a full charge and 6 sec is far longer
-  than her cadence - the window never lapses, so it is granted permanently from
-  battle start rather than re-applied per shot.
+  all. It is granted permanently from battle start, and what justifies that is
+  her CADENCE rather than her weapon: she is a tap-fire candidate
+  (`registry.TAP_FIRE_CANDIDATES`), and `attack_rate.optimal_full_charges`
+  picks the number of full charges per magazine under the constraint that no
+  two of them are more than `FULL_CHARGE_WINDOW` = 6 sec apart. Where no such
+  number exists it falls back to firing the whole magazine at full charge -
+  the arrangement that strikes a full charge as often as the magazine allows,
+  whose worst gap is `charge + delay + reload`.
+
+  That fallback is the best available cadence, but it is NOT an unconditional
+  guarantee: a reload longer than the window outruns every cadence, and then
+  it is the GAME losing the window rather than the model. What makes the
+  permanent grant sound for HER is an inequality about her own numbers -
+  `charge + delay + reload` = 1.37 + 2.0 = **3.37 sec against a 6 sec window**,
+  and 4.37 sec even under her forced reload's fixed 3 sec. She never reaches
+  the branch where the window cannot be kept. The day that inequality breaks,
+  this grant stops being an approximation and becomes an error.
+
+  **This is the load-bearing approximation of her encoding.** The earlier
+  justification - "she is an SR, so every shot IS a full charge" - became false
+  the moment tap fire arrived: a tapped shot does not renew Pierce (the clause
+  reads "when performing a Full Charge attack"). Had the grant been left
+  standing on that sentence, the engine would have tapped the whole magazine
+  and collected Pierce for free, overstating her.
 
 Not modeled / deferred:
 - Distributed Damage's "all enemies" split: a raid sim is a single boss, so
@@ -120,9 +143,11 @@ def build_milk_rules(values):
              _f(values, "embarrassment_explosion", 5)),
         ]),
         # Embarrassment Suppression: "Gain Pierce for 6 sec" on every Full
-        # Charge. Her every shot IS a full charge, so the window never lapses
-        # - permanent from battle start is the same outcome, and it is what
-        # makes the Pierce Damage above (and Bunny allies' buffs) count.
+        # Charge. Her cadence (tap-fire candidate, `optimal_full_charges`)
+        # never lets two full charges drift more than the 6-sec window apart
+        # - see the module docstring - so permanent from battle start is the
+        # same outcome, and it is what makes the Pierce Damage above (and
+        # Bunny allies' buffs) count.
         buff_rule("battle_start", [("has_pierce", 1.0, "self", None)]),
     ]
 

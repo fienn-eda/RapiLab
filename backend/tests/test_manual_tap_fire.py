@@ -10,8 +10,11 @@ Fienn 사격장 실측(2026-08-19, 앨리스 1인 편성, docs/measurements/alic
    같다. 그래서 톡톡이 샷은 정확히 **100%**, 즉 차지 보너스가 0이다.
 
 그래서 이건 「바닥값」이 아니라 **한 샷을 어디서 놓느냐**의 문제이고, 중간 지점은 볼
-필요가 없다(`tap_fire_wins`의 독스트링 참고). 남는 것은 매거진마다 두 끝 중 어느
-쪽이 나은지 고르는 일뿐이다.
+필요가 없다(`tap_fire_wins`의 독스트링 참고).
+
+**밀크가 여기에 한 축을 더했다.** 그녀의 풀차지는 대미지 말고도 Pierce 6초를
+되살리므로, 매거진을 통째로 한 모드로 쏘는 것이 답이 아니다 - 매거진 **안에서**
+섞어야 하고, 몇 발을 섞을지는 `optimal_full_charges`가 창 제약 아래 고른다.
 """
 import pytest
 
@@ -47,8 +50,12 @@ def test_alices_motion_delay_is_the_measured_fifteen_frames():
 
 
 def test_every_tap_fire_candidate_has_a_motion_delay():
-    """톡톡이 간격은 그 유닛의 멈춤 그 자체다. 멈춤이 0이면 톡톡이가 무한 연사가
-    되므로, 딜레이가 없는 유닛은 후보가 될 수 없다."""
+    """멈춤이 0인 유닛은 후보가 될 수 없다.
+
+    톡톡이 간격이 멈춤과 다른 값이라는 것이 밀크에서 드러났지만(TAP_FIRE_INTERVAL),
+    멈춤 0은 여전히 배제 조건이다 - 멈춤을 안 재놓고 톡톡이 간격만 재는 일이
+    없어야 하고, 실측이 없는 유닛은 멈춤으로 대신하므로 그때 무한 연사가 된다.
+    """
     for slug in TAP_FIRE_CANDIDATES:
         assert get_charge_motion_delay(slug) > 0.0, slug
         assert is_tap_fire_candidate(slug)
