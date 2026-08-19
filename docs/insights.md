@@ -4,6 +4,28 @@ Engine gotchas and reusable patterns — the things that surprised us or would
 trip up the next person. Grouped by topic. For the encoding procedure and the
 full stat/trigger/scope catalog, see the `nikke-skill-encoding` skill.
 
+## 플레이 조작은 케이던스가 아니라 **바닥값**으로 선언하면 조건이 저절로 나온다
+
+- 확립: 2026-08-19 (앨리스 톡톡이).
+- 톡톡이(차지 시작 직후 발사)를 「전투 전체 35발」로 박으려다 뒤집었다. 그렇게 하면
+  그녀 차속이 없는 구간에서도 35발을 쏘고, 게다가 **풀차지 판정까지** 받는다
+  (평타 총량이 1.83배). 대신 그 17프레임을 `interval_floor`로 넣으니
+  `shot_interval_with_speed`의 `max(잔여차지, floor)`가 그대로 답이 됐다 —
+  차지가 짧으면 손이 상한, 길면 차지가 상한. **버스트 창 안에서만 톡톡이가 걸리는
+  것이 조건문 없이 나온다.**
+- 일반형: **「플레이어가 이렇게 하면 더 빠르다」는 상한이지 속도가 아니다.** 상한으로
+  적으면 그것이 실제로 걸리는 구간을 엔진이 계산해 주고, 속도로 적으면 안 걸리는
+  구간까지 그 속도를 준다. 5정의 `DOWN_Charge` 유닛이 이미 같은 모양이다.
+- 같이 배운 것: **플레이 스타일 가정을 실측 표에 섞지 말 것.**
+  `TIMED_CHARGE_MOTION_DELAY`는 게임이 정하는 값이고
+  `CHARGE_ROUNDS_PER_MINUTE`는 `shot_detail.rate_of_fire`에서 유도되는 값이라
+  `scripts/audit_rate_of_fire.py`가 `input_type`과 대조한다 — `UP`인 앨리스를 거기
+  넣으면 감사가 실패한다. 자기 이름의 상수(`MANUAL_TAP_FIRE_INTERVAL`)로 분리해야
+  「이건 우리가 가정한 값」이 코드에서 보인다.
+- **남은 한계는 그 자리에 그대로 있다** — 차지가 긴데도 톡톡이가 이기는 덱(재장전
+  속도 +62.4% 이상)은 표현할 수 없다. `ShotRecord`에 풀차지 여부가 없어
+  `charge_damage_percent`가 모든 샷에 무조건 곱해지기 때문이다.
+
 ## 고정 픽스처가 낸 크기는 부호까지 로스터 의존이다 — 「+0.83%」가 다음 스프레드에서 −1.65%였다
 
 - 확립: 2026-08-18 (홀드 파이어 사이클 단위 탐색 검토 중).
