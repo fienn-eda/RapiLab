@@ -104,14 +104,30 @@ export function DeckCard({
       {/* 톡톡이 좌석을 「배율을 실제로 버렸는가」로 갈라 문구를 고른다. 어느 쪽인지는
           엔진이 정해서 실어 보내므로(`partial_charge_slugs`) 여기서 슬러그를 보고
           판단하지 않는다 — 홀드 안내·좌석 안내와 같은 계약이다. */}
-      {deck.partial_charge_slugs.length > 0 && (
+      {deck.partial_charge_slugs.filter((slug) => !deck.partial_charge_full_rounds[slug]).length >
+        0 && (
         <p className="deck-results__hold">
           <span aria-hidden="true">👆</span>{' '}
           <HelpText>
-            {HELP.results.tapFireAlways(deck.partial_charge_slugs.map(nameFor).join(', '))}
+            {HELP.results.tapFireAlways(
+              deck.partial_charge_slugs
+                .filter((slug) => !deck.partial_charge_full_rounds[slug])
+                .map(nameFor)
+                .join(', '),
+            )}
           </HelpText>
         </p>
       )}
+      {deck.partial_charge_slugs
+        .filter((slug) => deck.partial_charge_full_rounds[slug] > 0)
+        .map((slug) => (
+          <p className="deck-results__hold" key={`tap-mixed-${slug}`}>
+            <span aria-hidden="true">👆</span>{' '}
+            <HelpText>
+              {HELP.results.tapFireMixed(nameFor(slug), deck.partial_charge_full_rounds[slug])}
+            </HelpText>
+          </p>
+        ))}
       {deck.tap_fire_slugs.some((slug) => !deck.partial_charge_slugs.includes(slug)) && (
         <p className="deck-results__hold">
           <span aria-hidden="true">👆</span>{' '}

@@ -196,6 +196,7 @@ class DeckRecommendation(BaseModel):
     # 그중 배율을 실제로 버린 좌석. 비어 있으면 그 유닛은 차지가 0으로 내려간 구간
     # (자기 차속 버프 중)에서만 톡톡이이고, 그때는 눌러도 풀차지라 잃는 것이 없다.
     partial_charge_slugs: list[str] = []
+    partial_charge_full_rounds: dict[str, int] = {}
     # 좌석형 버프를 가진 유닛(루주의 Sword Coin: "자신과 양 옆 아군 2명")을 어떻게
     # 앉혀야 위 수치가 나오는지 - {시전자: SeatingEntry}. 그 유닛이 없는 덱은 빈
     # 딕셔너리다. hold_burst_slugs와 같은 성격의 필드로, 덱 목록만으로는 재현할 수
@@ -489,6 +490,7 @@ def _recommend_sync(request: RecommendRequest, cancel) -> RecommendResponse:
                 hold_burst_slugs=r["hold_burst_slugs"],
                 tap_fire_slugs=r["tap_fire_slugs"],
                 partial_charge_slugs=r["partial_charge_slugs"],
+                partial_charge_full_rounds=r["partial_charge_full_rounds"],
                 seating=seating_view(r["seating"]),
             )
             for r in results
@@ -536,6 +538,7 @@ def _to_recs(decks, pinned_by_deck=None):
             hold_burst_slugs=d["hold_burst_slugs"],
             tap_fire_slugs=d["tap_fire_slugs"],
             partial_charge_slugs=d["partial_charge_slugs"],
+            partial_charge_full_rounds=d["partial_charge_full_rounds"],
             seating=seating_view(d["seating"]),
             pinned_slugs=pinned,
         )
@@ -669,6 +672,7 @@ def _evaluate_decks_sync(request: EvaluateDecksRequest, cancel) -> EvaluateDecks
             hold_burst_slugs=d["hold_burst_slugs"],
             tap_fire_slugs=d["tap_fire_slugs"],
             partial_charge_slugs=d["partial_charge_slugs"],
+            partial_charge_full_rounds=d["partial_charge_full_rounds"],
             seating=seating_view(d["seating"])) for d in out["decks"]],
         combined_total_damage=out["combined_total_damage"],
         excluded_slugs=excluded,

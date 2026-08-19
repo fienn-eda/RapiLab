@@ -372,3 +372,29 @@ def test_a_unit_without_a_tap_interval_falls_back_to_its_pause():
     gaps = [b.time - a.time for a, b in zip(shots, shots[1:])][:3]
     for gap in gaps:
         assert gap == pytest.approx(MILK_MOTION_DELAY)
+
+
+def test_full_charges_per_magazine_reads_the_timeline():
+    """화면이 「풀차지 N회 + 톡톡이」라고 말할 때의 N - 손으로 세지 않고
+    엔진이 만든 기록에서 읽는다."""
+    from app.raid_simulator import full_charges_per_magazine
+    shots = generate_segmented_shots(_milk_weapon(), (), 30.0)
+    assert full_charges_per_magazine(shots) == 1
+
+
+def test_a_magazine_fired_entirely_at_full_charge_counts_them_all():
+    """톡톡이를 안 쓰는 유닛은 매거진 전체가 풀차지다."""
+    from app.raid_simulator import full_charges_per_magazine
+    weapon = _milk_weapon()
+    weapon["tap_fire"] = False
+    shots = generate_segmented_shots(weapon, (), 30.0)
+    assert full_charges_per_magazine(shots) == MILK_CAPACITY
+
+
+def test_an_all_tap_magazine_reports_zero():
+    """앨리스처럼 창이 없어 매거진을 통째로 톡톡이로 쏘면 0 - 화면은 그때
+    기존의 「항상 톡톡이」 문구를 골라야 한다."""
+    from app.raid_simulator import full_charges_per_magazine
+    shots = generate_segmented_shots(
+        _milk_weapon(full_charge_window=None, reload_time=0.0), (), 30.0)
+    assert full_charges_per_magazine(shots) == 0

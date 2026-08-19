@@ -32,7 +32,7 @@ const REQUEST: EvaluateDecksRequest = {
 
 const RESPONSE: EvaluateDecksResponse = {
   decks: [{ deck: ['liter', 'blanc', 'crown', 'modernia', 'privaty'],
-            total_damage: 100, burst_damage: 60, normal_attack_damage: 30, skill_damage: 10, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {} }],
+            total_damage: 100, burst_damage: 60, normal_attack_damage: 30, skill_damage: 10, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {} }],
   combined_total_damage: 100,
   excluded_slugs: [],
   engine_version: 'abcdef012345',

@@ -176,11 +176,17 @@ export const HELP = {
      * 잃는 것이 없다. 그 구간에서만 톡톡이면 `burstOnly`, 차지가 살아 있는 구간에서도
      * 톡톡이가 이겼으면 `always`다.
      *
+     * 매거진 안에서 두 모드를 **섞는** 유닛은 세 번째 문구를 쓴다(`tapFireMixed`).
+     * 밀크: 블루밍 바니의 풀차지는 Pierce 6초를 되살리므로, 「항상 톡톡이」는 그녀에게
+     * 거짓이고 그대로 두면 플레이어가 관통특화를 잃는다.
+     *
      * **이유는 안 적는다**(Fienn, 2026-08-19) — 화면은 「무엇을 하라」까지만 말한다.
      */
     tapFireAlways: (names: string) => `${names}는 항상 톡톡이로 계산했어요.`,
     tapFireBurstOnly: (names: string) =>
       `${names}는 버스트 턴은 톡톡이, 아닐 때는 톡톡이 X 로 계산했어요.`,
+    tapFireMixed: (names: string, fullRounds: number) =>
+      `${names} 풀차지 ${fullRounds}회 + 톡톡이로 계산했어요.`,
     /**
      * 「자신과 양 옆 아군 2명」을 대상으로 하는 버프(루주의 Sword Coin, 플로라
      * 애장품의 Peace of Mind)를 위한 편성 지시. `seats`가 좁을 때만 자리 번호를

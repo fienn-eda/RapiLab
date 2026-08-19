@@ -5,9 +5,9 @@ import type { BossProfile } from '../types/recommend'
 
 const DECKS = [
   { deck: ['liter', 'blanc', 'crown', 'modernia', 'privaty'],
-    total_damage: 100, burst_damage: 60, normal_attack_damage: 30, skill_damage: 10, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {} },
+    total_damage: 100, burst_damage: 60, normal_attack_damage: 30, skill_damage: 10, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {} },
   { deck: ['rouge', 'volume', 'mint', 'grave', 'noir'],
-    total_damage: 50, burst_damage: 30, normal_attack_damage: 15, skill_damage: 5, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {} },
+    total_damage: 50, burst_damage: 30, normal_attack_damage: 15, skill_damage: 5, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {} },
 ]
 
 const boss = (overrides: Partial<BossProfile> = {}): BossProfile => ({
@@ -36,7 +36,7 @@ const DECK = {
   total_damage: 1000,
   burst_damage: 500,
   normal_attack_damage: 400,
-  skill_damage: 100, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {},
+  skill_damage: 100, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {},
 }
 
 describe('EvaluationResults', () => {

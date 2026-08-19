@@ -11,7 +11,8 @@ const DECK = {
   burst_damage: 500,
   normal_attack_damage: 400,
   skill_damage: 100,
-  hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {},
+  hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [],
+  partial_charge_full_rounds: {}, seating: {},
 }
 
 describe('DeckCard 속성저지 배지', () => {
@@ -72,6 +73,26 @@ describe('DeckCard 버스트 홀드 안내', () => {
     const note = screen.getByText(/톡톡이/)
     expect(note).toHaveTextContent('앨리스')
     expect(note).toHaveTextContent('항상')
+  })
+
+  // 밀크: 블루밍 바니처럼 매거진 안에서 풀차지와 톡톡이를 섞는 좌석은 「항상
+  // 톡톡이」가 거짓이다 - 발수를 숫자로 말하는 세 번째 문구를 받는다.
+  it('풀차지를 섞는 좌석은 발수를 적어 안내한다', () => {
+    render(
+      <DeckCard
+        label="덱 1"
+        deck={{
+          ...DECK,
+          partial_charge_slugs: ['milk-blooming-bunny'],
+          partial_charge_full_rounds: { 'milk-blooming-bunny': 1 },
+        }}
+        nameFor={(slug) => (slug === 'milk-blooming-bunny' ? '밀크: 블루밍 바니' : slug)}
+      />,
+    )
+
+    const note = screen.getByText(/풀차지 1회 \+ 톡톡이로 계산했어요/)
+    expect(note).toHaveTextContent('밀크: 블루밍 바니')
+    expect(screen.queryByText(/항상 톡톡이로 계산했어요/)).not.toBeInTheDocument()
   })
 
   // 차속이 세게 걸린 구간은 차지가 0이라 눌러도 풀차지다 - 손은 톡톡이인데 잃는 것이

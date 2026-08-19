@@ -673,6 +673,7 @@ def _summarize(ordered_deck, result):
         # 부호를 정한다) 덱 목록만으로는 재현할 수 없어, hold_burst_slugs·seating과 같은
         # 계약으로 실려 온다. 비어 있으면 그 유닛은 차지가 0인 구간에서만 톡톡이다.
         "partial_charge_slugs": result.get("tap_fire_used", []),
+        "partial_charge_full_rounds": result.get("tap_fire_full_rounds", {}),
         # Which allies this deck's seated-buff unit was scored beside, when it
         # holds one - the arrangement the player has to field for the number
         # above to be the one they get. Empty for every other deck. Same

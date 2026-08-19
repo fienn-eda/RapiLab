@@ -64,6 +64,10 @@ export interface DeckRecommendation {
   // 구간에서만 톡톡이이고, 그때는 눌러도 풀차지라 잃는 것이 없다 — 문구가 두
   // 갈래로 갈리는 유일한 근거다.
   partial_charge_slugs: string[]
+  // 매거진 하나에 든 풀차지 발수(최빈값) - 화면이 「풀차지 N회 + 톡톡이」라고 말할
+  // 때의 N. 0이면 창이 없어 매거진을 통째로 톡톡이로 쏘는 유닛이라 「항상
+  // 톡톡이」 문구를 쓴다.
+  partial_charge_full_rounds: Record<string, number>
   // 「자신과 양 옆 아군 2명」을 대상으로 하는 버프를 가진 유닛(루주의 Sword Coin,
   // 플로라 애장품의 Peace of Mind)을 어떻게 앉혀야 위 수치가 나오는지. 그런 유닛이
   // 없는 덱은 빈 객체다. 이것도 덱 목록에 안 담기는 편성 지시인데, 이유가

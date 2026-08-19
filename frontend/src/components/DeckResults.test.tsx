@@ -17,14 +17,14 @@ describe('DeckResults', () => {
         total_damage: 5_000_000,
         burst_damage: 3_000_000,
         normal_attack_damage: 1_200_000,
-        skill_damage: 800_000, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {},
+        skill_damage: 800_000, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {},
       },
       {
         deck: ['mast', 'privaty', 'drake', 'grave', 'crown'],
         total_damage: 4_000_000,
         burst_damage: 2_500_000,
         normal_attack_damage: 1_500_000,
-        skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], seating: {},
+        skill_damage: 0, hold_burst_slugs: [], tap_fire_slugs: [], partial_charge_slugs: [], partial_charge_full_rounds: {}, seating: {},
       },
     ]
     render(<DeckResults decks={decks} />)

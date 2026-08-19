@@ -107,7 +107,7 @@ absent field = always fires, matching every existing spec's behavior.
 import inspect
 import warnings
 from bisect import bisect_left, bisect_right
-from collections import defaultdict
+from collections import Counter, defaultdict
 from dataclasses import replace
 
 from app.accuracy import WEAPON_SPREAD_DIAMETER, core_hit_rate
@@ -943,6 +943,34 @@ def _stage_seconds(stage_table, conditional_full_burst_deltas):
     return seconds
 
 
+def full_charges_per_magazine(shot_records):
+    """매거진 하나에 든 풀차지 발수 - 화면이 「풀차지 N회 + 톡톡이」라고 말할 때의 N.
+
+    매거진마다 다를 수 있으므로(차속 창이 열린 구간은 다른 k가 나온다) **최빈값**을
+    쓴다. 평균은 정수가 아니고, 첫 매거진 하나는 전투 시작 구간이라 대표성이 없다.
+    매거진 위치가 없는 기록(세그먼트 샷)은 세지 않는다 - 그 샷들은 자기 매거진에서
+    온 것이 아니다.
+    """
+    per_magazine = []
+    current = None
+    for record in shot_records:
+        if record.magazine_index is None:
+            continue
+        if record.magazine_index == 0:
+            if current is not None:
+                per_magazine.append(current)
+            current = 0
+        if current is None:
+            continue
+        if record.extra_charge_bonus > 0:
+            current += 1
+    if current is not None:
+        per_magazine.append(current)
+    if not per_magazine:
+        return 0
+    return Counter(per_magazine).most_common(1)[0][0]
+
+
 def _simulate_raid_once(
     deck,
     rules_by_slug,
@@ -1620,6 +1648,7 @@ def _simulate_raid_once(
     ammo_rounds_by_slug = {}
     last_bullet_times_by_slug = {}
     tap_fire_used = set()
+    tap_fire_full_rounds = {}
 
     def in_full_burst(time):
         return any(start <= time < end for start, end in full_burst_windows)
@@ -1696,6 +1725,7 @@ def _simulate_raid_once(
         if weapon.get("tap_fire") and any(
                 r.extra_charge_bonus == 0.0 for r in shot_records):
             tap_fire_used.add(slug)
+            tap_fire_full_rounds[slug] = full_charges_per_magazine(shot_records)
         # What each shot ACCOUNTS for toward squad ammo-expended counters. A
         # pouch skill fires one bullet and books hundreds of rounds, and which
         # pouch skill is doing the spending depends on the Full Burst window.
@@ -2377,6 +2407,7 @@ def _simulate_raid_once(
     # 톡톡이를 고른 유닛이 없는 덱은 키 자체를 안 싣는다 - 거의 모든 덱이 그렇다.
     if tap_fire_used:
         result["tap_fire_used"] = sorted(tap_fire_used)
+        result["tap_fire_full_rounds"] = tap_fire_full_rounds
     # 환산을 부른 룰이 하나도 없으면 넘겨 봐야 아무도 안 읽으므로 빈 튜플을
     # 돌려준다 - 그래야 그런 덱이 두 번째 패스를 사지 않는다.
     late_max_hp_records = ()
