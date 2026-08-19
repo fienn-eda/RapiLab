@@ -859,6 +859,67 @@ def tap_fire_wins(charge_seconds, motion_delay, charge_damage_percent,
             > per_magazine(charge_seconds, charge_damage_percent / 100))
 
 
+def full_charge_positions(capacity, full_charges):
+    """매거진 안에서 풀차지로 쏠 탄의 인덱스 - 균등 배치.
+
+    `j=0`이 0번 탄이므로 **첫 탄은 항상 풀차지**다. 그것이 강제 재장전 직후의
+    거동이자 Fienn이 적은 조작(「첫 탄 풀차지(관통효과 얻음)」)이고, 덕분에
+    매거진 경계가 곧 창을 새로 여는 지점이 된다.
+    """
+    if full_charges <= 0:
+        return frozenset()
+    return frozenset((j * capacity) // full_charges for j in range(full_charges))
+
+
+def optimal_full_charges(capacity, reload_seconds, charge_seconds, full_delay,
+                         tap_interval, full_charge_percent, window=None):
+    """이 매거진에서 풀차지로 쏠 발수 k(0..capacity).
+
+    한 발은 풀차지면 `charge_seconds + full_delay`, 톡톡이면 `tap_interval`이
+    걸리고 배율은 각각 `full_charge_percent/100`과 1.0이다. 그러면
+
+        효율(k) = (C + k(M-1)) / (C*tap + R + k(charge + delay - tap))
+
+    가 되어 `(p+ak)/(q+bk)` 꼴이므로 **k에 대해 단조**다 - 도함수 부호가 k와
+    무관하다. 그래서 답은 언제나 허용 구간의 **양 끝** 중 하나이지 중간의 어떤
+    k가 아니고, 이는 `tap_fire_wins`의 「중간 지점은 항상 지배당한다」를 한 축
+    위로 올린 것이다. 그래도 아래는 0..C를 그냥 훑는다: C가 작아 비용이 없고,
+    창 제약의 `ceil(C/k)`를 근사 없이 그대로 처리할 수 있기 때문이다.
+
+    `window`는 **풀차지를 다시 쳐야 하는 주기**다(밀크의 Pierce 6초). k발을
+    균등 배치하면 한 블록이 최대 `ceil(C/k)`발이고 재장전은 그중 한 블록에
+    통째로 붙으므로, 연속한 두 풀차지 사이의 최악 간격은
+
+        (charge + delay) + (ceil(C/k) - 1)*tap + R
+
+    이다. 이 값이 창을 넘는 k는 후보에서 빠진다. **어떤 k도 창을 못 지키면
+    전부 풀차지로 물러난다** - 모든 샷이 풀차지면 창은 언제나 지켜지므로 그것이
+    안전한 쪽이고, 밀크의 Pierce를 영구로 두는 근사가 기대는 것이 이 폴백이다.
+    """
+    if tap_interval <= 0:
+        # 톡톡이 간격이 0이면 무한 연사가 된다 - 애초에 후보가 아니다.
+        return capacity
+    full_cost = charge_seconds + full_delay
+    multiplier = full_charge_percent / 100
+    best_k, best_rate = capacity, None
+    for k in range(capacity + 1):
+        if window is not None:
+            if k == 0:
+                # 창이 있는데 풀차지를 한 발도 안 쏘면 창을 잃는다.
+                continue
+            block = -(-capacity // k)
+            worst_gap = (full_cost + (block - 1) * tap_interval + reload_seconds)
+            if worst_gap > window:
+                continue
+        damage = capacity + k * (multiplier - 1)
+        duration = (capacity * tap_interval + reload_seconds
+                    + k * (full_cost - tap_interval))
+        rate = damage / duration
+        if best_rate is None or rate > best_rate:
+            best_k, best_rate = k, rate
+    return best_k
+
+
 def rate_of_fire_for_weapon(weapon: str) -> float:
     return RATE_OF_FIRE_60FPS[weapon]
 

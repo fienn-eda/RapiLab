@@ -15,7 +15,8 @@ Fienn 사격장 실측(2026-08-19, 앨리스 1인 편성, docs/measurements/alic
 """
 import pytest
 
-from app.attack_rate import (FRAME_SECONDS, generate_segmented_shots,
+from app.attack_rate import (FRAME_SECONDS, full_charge_positions,
+                             generate_segmented_shots, optimal_full_charges,
                              shot_interval_with_speed, tap_fire_wins)
 from app.skill_rules.registry import (TAP_FIRE_CANDIDATES,
                                       get_charge_motion_delay,
@@ -192,3 +193,86 @@ def test_alice_has_no_full_charge_window():
     """앨리스의 Pierce는 HP 조건이라 풀차지가 갱신하지 않는다. 창이 없으면 매거진을
     통째로 톡톡이로 쏘는 것이 허용된다."""
     assert get_full_charge_window("alice") is None
+
+
+MILK_CAPACITY = 6
+MILK_CHARGE_TIME = 1.0
+MILK_FULL_CHARGE_PERCENT = 250.0
+MILK_RELOAD_TIME = 2.0
+MILK_MOTION_DELAY = 22 * FRAME_SECONDS
+MILK_TAP_INTERVAL = 15 * FRAME_SECONDS
+MILK_WINDOW = 6.0
+
+
+def _milk_k(capacity=MILK_CAPACITY, reload_seconds=MILK_RELOAD_TIME):
+    return optimal_full_charges(
+        capacity, reload_seconds, MILK_CHARGE_TIME, MILK_MOTION_DELAY,
+        MILK_TAP_INTERVAL, MILK_FULL_CHARGE_PERCENT, MILK_WINDOW)
+
+
+def test_milk_at_stock_ammo_fires_one_full_charge_a_magazine():
+    """Fienn 조작 그대로 — 매거진 첫 탄만 풀차지, 나머지 다섯 발은 톡톡이."""
+    assert _milk_k() == 1
+
+
+def test_a_bigger_magazine_forces_a_second_full_charge():
+    """장탄이 커지면 한 매거진이 Pierce 6초를 넘기므로 풀차지가 하나 더 든다 —
+    Fienn이 「풀차지 → 톡톡이 → 풀차지 → 톡톡이」라고 적은 그 패턴이고,
+    하드코딩이 아니라 창 제약에서 떨어져 나온다."""
+    assert _milk_k(capacity=14) == 2
+
+
+def test_the_chosen_cadence_always_keeps_the_window():
+    """**불변식** — 고른 k가 창을 지키거나, 못 지키면 전부 풀차지로 물러난다.
+    이것이 밀크의 Pierce를 영구로 두는 근사를 떠받치는 유일한 논거다."""
+    for capacity in range(1, 21):
+        for reload_seconds in (0.0, 0.5, 1.0, 2.0, 4.0, 8.0):
+            k = _milk_k(capacity=capacity, reload_seconds=reload_seconds)
+            assert 1 <= k <= capacity
+            if k == capacity:
+                continue
+            block = -(-capacity // k)
+            worst_gap = (MILK_CHARGE_TIME + MILK_MOTION_DELAY
+                         + (block - 1) * MILK_TAP_INTERVAL + reload_seconds)
+            assert worst_gap <= MILK_WINDOW, (capacity, reload_seconds, k)
+
+
+def test_without_a_window_the_answer_matches_the_old_two_way_test():
+    """앨리스에게는 창이 없으므로 답이 두 끝뿐이고, 그 판정은 기존 `tap_fire_wins`와
+    **동치**여야 한다 — 효율이 k에 대해 단조라 f(0) > f(C) ⟺ 톡톡이 승."""
+    for capacity in (1, 3, 6, 10):
+        for reload_seconds in (0.0, 0.5, 1.0, 2.0, 5.0):
+            for charge_seconds in (0.0, 0.25, 1.5, 3.0):
+                k = optimal_full_charges(
+                    capacity, reload_seconds, charge_seconds, ALICE_MOTION_DELAY,
+                    ALICE_MOTION_DELAY, ALICE_FULL_CHARGE_PERCENT, None)
+                taps_win = tap_fire_wins(
+                    charge_seconds, ALICE_MOTION_DELAY, ALICE_FULL_CHARGE_PERCENT,
+                    capacity, reload_seconds)
+                assert k == (0 if taps_win else capacity), (
+                    capacity, reload_seconds, charge_seconds, k, taps_win)
+
+
+def test_a_unit_with_no_pause_cannot_tap():
+    """톡톡이 간격이 0이면 무한 연사가 된다 — 전부 풀차지로 물러난다."""
+    assert optimal_full_charges(6, 2.0, 1.0, 0.0, 0.0, 250.0, None) == 6
+
+
+def test_full_charges_are_spread_evenly_and_the_first_round_is_one():
+    """첫 탄은 항상 풀차지다 — 강제 재장전 직후의 거동이자 Fienn 조작 4번."""
+    assert full_charge_positions(6, 1) == frozenset({0})
+    assert full_charge_positions(6, 2) == frozenset({0, 3})
+    assert full_charge_positions(14, 2) == frozenset({0, 7})
+    assert full_charge_positions(6, 6) == frozenset(range(6))
+    assert full_charge_positions(6, 0) == frozenset()
+
+
+def test_the_widest_block_never_exceeds_the_ceiling():
+    """제약식이 쓰는 `ceil(C/k)`가 실제 배치의 최대 블록과 맞는지 — 두 곳이
+    어긋나면 창을 지킨다고 믿으면서 안 지키게 된다."""
+    for capacity in range(1, 21):
+        for k in range(1, capacity + 1):
+            positions = sorted(full_charge_positions(capacity, k))
+            blocks = [b - a for a, b in zip(positions, positions[1:])]
+            blocks.append(capacity - positions[-1])
+            assert max(blocks) <= -(-capacity // k), (capacity, k)
