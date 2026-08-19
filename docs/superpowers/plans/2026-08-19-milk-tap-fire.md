@@ -753,11 +753,9 @@ Expected: 장탄 6·재장전 2.0s에서 **풀차지 수 = 매거진 수**(k=1),
 - `docs/encoded-nikkes.md` — 밀크의 완성도 등급과 남은 보류를 갱신한다.
 - `docs/roadmap.md` — To-Do 반영.
 
-- [ ] **Step 5: 프론트가 밀크를 안내하는지 확인한다**
+- [ ] **Step 5: 프론트는 Task 6에서 다룬다 — 여기서는 건드리지 않는다**
 
-Run: `grep -n "톡톡이" frontend/src/components/DeckCard.tsx`
-
-백엔드가 주는 `tap_fire_slugs` / `partial_charge_slugs`를 그대로 렌더한다면 코드 변경이 **필요 없다** — 밀크가 저절로 들어간다. 슬러그를 하드코딩한 자리가 있으면 그때만 고친다.
+확인은 이미 끝났다: `DeckCard.tsx`는 슬러그를 하드코딩하지 않고 백엔드가 주는 `partial_charge_slugs`를 그대로 렌더하므로 밀크가 저절로 들어간다. 문제는 렌더가 아니라 **문구가 밀크에게 거짓이 된다**는 것이고(「항상 톡톡이로 계산했어요」), 그것은 Task 6이 고친다.
 
 - [ ] **Step 6: 전체 검증**
 
@@ -773,6 +771,230 @@ Expected: 백엔드·프론트 모두 통과, 타입에러 0.
 ```bash
 git add backend/scripts/audit_milk_tap_fire.py docs/ .claude/skills/
 git commit -m "밀크 톡톡이 검산 스크립트와 문서 갱신"
+```
+
+
+---
+
+### Task 6: 매거진당 풀차지 발수를 화면까지 나른다
+
+현재 문구는 `${names}는 항상 톡톡이로 계산했어요.`인데 **밀크에게는 거짓**이다 - 그녀는 매거진마다 풀차지를 섞어야 Pierce가 산다. 화면이 「항상 톡톡이」라고 말하면 플레이어가 풀차지를 빼먹고 관통특화를 잃는다. 앨리스 때 안내 문구가 버스트 중에 손을 늦추게 만들었던 것과 같은 실패 모드다.
+
+Fienn 문안(2026-08-19): **「바밀크 풀차지 1회 + 톡톡이로 계산했어요.」** - 발수를 숫자로 말한다. 그러려면 엔진이 그 수를 실어 보내야 한다.
+
+**Files:**
+- Modify: `backend/app/raid_simulator.py` (`tap_fire_used` 감지 옆)
+- Modify: `backend/app/deck_search.py:675` 근처
+- Modify: `backend/app/api.py:198, 491, 538, 671`
+- Modify: `frontend/src/types/recommend.ts:66` 근처
+- Modify: `frontend/src/lib/helpText.ts` (`tapFireAlways` 옆)
+- Modify: `frontend/src/components/DeckCard.tsx:107-113`
+- Test: `backend/tests/test_manual_tap_fire.py`, `frontend/src/components/DeckCard.test.tsx`
+
+**Interfaces:**
+- Consumes: Task 3의 혼합 케이던스 (`ShotRecord.extra_charge_bonus`, `ShotRecord.magazine_index`)
+- Produces: 시뮬레이터 결과 키 `tap_fire_full_rounds: dict[str, int]` -> API 필드 `partial_charge_full_rounds: dict[str, int]` -> 프론트 `deck.partial_charge_full_rounds`
+
+- [ ] **Step 1: 실패하는 테스트를 쓴다**
+
+`backend/tests/test_manual_tap_fire.py`에 추가한다. `_milk_weapon`은 Task 3이 정의한 헬퍼다:
+
+```python
+def test_full_charges_per_magazine_reads_the_timeline():
+    """화면이 「풀차지 N회 + 톡톡이」라고 말할 때의 N - 손으로 세지 않고
+    엔진이 만든 기록에서 읽는다."""
+    from app.raid_simulator import full_charges_per_magazine
+    shots = generate_segmented_shots(_milk_weapon(), (), 30.0)
+    assert full_charges_per_magazine(shots) == 1
+
+
+def test_a_magazine_fired_entirely_at_full_charge_counts_them_all():
+    """톡톡이를 안 쓰는 유닛은 매거진 전체가 풀차지다."""
+    from app.raid_simulator import full_charges_per_magazine
+    weapon = _milk_weapon()
+    weapon["tap_fire"] = False
+    shots = generate_segmented_shots(weapon, (), 30.0)
+    assert full_charges_per_magazine(shots) == MILK_CAPACITY
+
+
+def test_an_all_tap_magazine_reports_zero():
+    """앨리스처럼 창이 없어 매거진을 통째로 톡톡이로 쏘면 0 - 화면은 그때
+    기존의 「항상 톡톡이」 문구를 골라야 한다."""
+    from app.raid_simulator import full_charges_per_magazine
+    shots = generate_segmented_shots(
+        _milk_weapon(full_charge_window=None, reload_time=0.0), (), 30.0)
+    assert full_charges_per_magazine(shots) == 0
+```
+
+- [ ] **Step 2: 실패를 확인한다**
+
+Run: `cd backend && python -m pytest tests/test_manual_tap_fire.py -k full_charges_per_magazine -v`
+Expected: FAIL - `ImportError: cannot import name 'full_charges_per_magazine'`
+
+- [ ] **Step 3: 시뮬레이터가 발수를 센다**
+
+`backend/app/raid_simulator.py`에 모듈 스코프 함수를 넣는다(`tap_fire_used`를 쓰는 함수보다 위):
+
+```python
+def full_charges_per_magazine(shot_records):
+    """매거진 하나에 든 풀차지 발수 - 화면이 「풀차지 N회 + 톡톡이」라고 말할 때의 N.
+
+    매거진마다 다를 수 있으므로(차속 창이 열린 구간은 다른 k가 나온다) **최빈값**을
+    쓴다. 평균은 정수가 아니고, 첫 매거진 하나는 전투 시작 구간이라 대표성이 없다.
+    매거진 위치가 없는 기록(세그먼트 샷)은 세지 않는다 - 그 샷들은 자기 매거진에서
+    온 것이 아니다.
+    """
+    per_magazine = []
+    current = None
+    for record in shot_records:
+        if record.magazine_index is None:
+            continue
+        if record.magazine_index == 0:
+            if current is not None:
+                per_magazine.append(current)
+            current = 0
+        if current is None:
+            continue
+        if record.extra_charge_bonus > 0:
+            current += 1
+    if current is not None:
+        per_magazine.append(current)
+    if not per_magazine:
+        return 0
+    return Counter(per_magazine).most_common(1)[0][0]
+```
+
+`from collections import Counter`가 이미 import되어 있는지 확인하고, 없으면 파일 관례에 맞는 자리에 추가한다.
+
+`tap_fire_used = set()` 옆에 초기화를 더한다:
+
+```python
+    tap_fire_full_rounds = {}
+```
+
+`tap_fire_used.add(slug)` 바로 아래에 한 줄:
+
+```python
+            tap_fire_full_rounds[slug] = full_charges_per_magazine(shot_records)
+```
+
+`result["tap_fire_used"] = sorted(tap_fire_used)` 옆에:
+
+```python
+        result["tap_fire_full_rounds"] = tap_fire_full_rounds
+```
+
+- [ ] **Step 4: deck_search와 api가 나른다**
+
+`backend/app/deck_search.py`의 `"partial_charge_slugs": result.get("tap_fire_used", []),` 바로 아래:
+
+```python
+        "partial_charge_full_rounds": result.get("tap_fire_full_rounds", {}),
+```
+
+`backend/app/api.py`의 `partial_charge_slugs: list[str] = []` 바로 아래:
+
+```python
+    partial_charge_full_rounds: dict[str, int] = {}
+```
+
+`api.py`에서 `partial_charge_slugs=` 가 나오는 **세 자리 전부**(491·538·671 근처)에, 그 줄 바로 아래에 같은 소스 변수를 쓰는 줄을 더한다. 예를 들어 그 자리가 `partial_charge_slugs=r["partial_charge_slugs"],` 이면:
+
+```python
+                partial_charge_full_rounds=r["partial_charge_full_rounds"],
+```
+
+이고, `d[...]`를 쓰는 자리에서는 `d`를 쓴다. **세 자리를 모두 고쳐야 한다** - 한 곳이라도 빠지면 그 응답 경로에서만 필드가 비어 화면이 조용히 기존 문구로 돌아간다.
+
+- [ ] **Step 5: 백엔드 테스트가 통과하는지 본다**
+
+Run: `cd backend && python -m pytest -q`
+Expected: 통과.
+
+- [ ] **Step 6: 프론트 타입과 문구**
+
+`frontend/src/types/recommend.ts`의 `partial_charge_slugs: string[]` 아래:
+
+```ts
+  partial_charge_full_rounds: Record<string, number>
+```
+
+`frontend/src/lib/helpText.ts`의 `tapFireAlways` 아래에 문구를 더한다(Fienn 문안, 2026-08-19):
+
+```ts
+    tapFireMixed: (names: string, fullRounds: number) =>
+      `${names} 풀차지 ${fullRounds}회 + 톡톡이로 계산했어요.`,
+```
+
+`tapFireAlways` 위 주석 블록의 마지막 줄 앞에 한 문단을 더한다:
+
+```
+     * 매거진 안에서 두 모드를 **섞는** 유닛은 세 번째 문구를 쓴다(`tapFireMixed`).
+     * 밀크: 블루밍 바니의 풀차지는 Pierce 6초를 되살리므로, 「항상 톡톡이」는 그녀에게
+     * 거짓이고 그대로 두면 플레이어가 관통특화를 잃는다.
+```
+
+`frontend/src/components/DeckCard.tsx`에서 `partial_charge_slugs`를 렌더하는 블록(현재 107~113줄, `tapFireAlways`를 부르는 `<p>` 하나)을 아래로 교체한다. 풀차지 발수가 0이면 기존 「항상 톡톡이」, 1 이상이면 새 문구다:
+
+```tsx
+      {deck.partial_charge_slugs.filter((slug) => !deck.partial_charge_full_rounds[slug]).length >
+        0 && (
+        <p className="deck-results__hold">
+          <span aria-hidden="true">&#128070;</span>{' '}
+          <HelpText>
+            {HELP.results.tapFireAlways(
+              deck.partial_charge_slugs
+                .filter((slug) => !deck.partial_charge_full_rounds[slug])
+                .map(nameFor)
+                .join(', '),
+            )}
+          </HelpText>
+        </p>
+      )}
+      {deck.partial_charge_slugs
+        .filter((slug) => deck.partial_charge_full_rounds[slug] > 0)
+        .map((slug) => (
+          <p className="deck-results__hold" key={`tap-mixed-${slug}`}>
+            <span aria-hidden="true">&#128070;</span>{' '}
+            <HelpText>
+              {HELP.results.tapFireMixed(nameFor(slug), deck.partial_charge_full_rounds[slug])}
+            </HelpText>
+          </p>
+        ))}
+```
+
+**주의**: 위의 `&#128070;`는 기존 코드에 있는 손가락 이모지 자리다. 교체할 때 **기존 줄의 이모지 문자를 그대로 옮겨 쓰고**, HTML 엔티티로 바꾸지 마라.
+
+- [ ] **Step 7: 프론트 테스트**
+
+`frontend/src/components/DeckCard.test.tsx`의 덱 fixture에 `partial_charge_full_rounds`를 더해 타입을 맞추고, 새 테스트를 하나 추가한다. fixture 헬퍼의 이름은 그 파일에서 실제로 쓰이는 것으로 맞춘다:
+
+```tsx
+it('풀차지를 섞는 좌석은 발수를 적어 안내한다', () => {
+  renderDeckCard(
+    makeDeck({
+      partial_charge_slugs: ['milk-blooming-bunny'],
+      partial_charge_full_rounds: { 'milk-blooming-bunny': 1 },
+    }),
+  )
+  expect(screen.getByText(/풀차지 1회 \+ 톡톡이로 계산했어요/)).toBeInTheDocument()
+  expect(screen.queryByText(/항상 톡톡이로 계산했어요/)).not.toBeInTheDocument()
+})
+```
+
+- [ ] **Step 8: 프론트 검증**
+
+```bash
+cd frontend && npm test
+cd .. && npx --prefix frontend tsc -b --noEmit frontend
+```
+Expected: 통과, 타입에러 0. `partial_charge_full_rounds`를 안 넣은 다른 fixture가 타입에러를 낼 수 있다 - 그 fixture들에도 빈 객체를 더한다.
+
+- [ ] **Step 9: 커밋**
+
+```bash
+git add backend/ frontend/
+git commit -m "톡톡이 안내가 풀차지 발수를 말한다 - 「항상 톡톡이」는 밀크에게 거짓이다"
 ```
 
 ---
@@ -791,5 +1013,6 @@ git commit -m "밀크 톡톡이 검산 스크립트와 문서 갱신"
 | §설계 6 테스트 8종 | Task 1~4에 분산 |
 | §설계 7 파일 목록 | 전부 |
 | §손계산 예측 재확인 | Task 5 Step 2 |
+| 화면 문구 (스펙 밖 — Fienn 문안 2026-08-19) | Task 6 |
 
 **타입 일관성** — `optimal_full_charges`의 인자 순서가 Task 2 정의, Task 3 호출, Task 4 테스트에서 모두 `(capacity, reload_seconds, charge_seconds, full_delay, tap_interval, full_charge_percent, window)`로 같다. `full_charge_positions(capacity, full_charges)`, `mixed_charge_round_offset(index, capacity, full_cost, tap_cost, full_positions)`도 정의와 호출이 일치한다.
