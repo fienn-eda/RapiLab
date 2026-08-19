@@ -454,8 +454,17 @@ def test_the_full_charge_shot_costs_charge_plus_pause():
 
 
 def test_a_unit_without_a_tap_interval_falls_back_to_its_pause():
-    """실측이 없으면 지금까지의 동작 그대로 멈춤을 톡톡이 간격으로 쓴다."""
-    weapon = _milk_weapon(full_charge_window=None)
+    """실측이 없으면 지금까지의 동작 그대로 멈춤을 톡톡이 간격으로 쓴다.
+
+    **재장전을 0으로 두어 톡톡이가 이기는 지점에서 재야** 폴백값이 간격에 드러난다.
+    그녀의 기본 재장전 2초에서는 22프레임 톡톡이가 풀차지에 진다(매거진당 1.4286 대
+    1.4706). 그러면 매거진이 통째로 풀차지가 되고 발 간격은 폴백값이 아니라
+    차지+멈춤이 되어, 폴백이 통째로 깨져도 이 테스트가 초록일 수 있다.
+
+    같은 계산이 이 인코딩의 근거이기도 하다 - 22프레임과 15프레임이 **부호를
+    뒤집는다**. 그래서 밀크의 톡톡이 간격을 따로 잰 것이다.
+    """
+    weapon = _milk_weapon(full_charge_window=None, reload_time=0.0)
     weapon.pop("tap_fire_interval")
     shots = generate_segmented_shots(weapon, (), 6.0)
     gaps = [b.time - a.time for a, b in zip(shots, shots[1:])][:3]
