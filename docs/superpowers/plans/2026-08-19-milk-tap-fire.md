@@ -407,7 +407,7 @@ def test_milks_magazine_mixes_one_full_charge_with_five_taps():
     """매거진 여섯 발 가운데 첫 탄만 차지 보너스를 갖는다."""
     shots = generate_segmented_shots(_milk_weapon(), (), 6.0)
     magazine = shots[:MILK_CAPACITY]
-    assert [s.bonus > 0 for s in magazine] == [True, False, False, False, False, False]
+    assert [s.extra_charge_bonus > 0 for s in magazine] == [True, False, False, False, False, False]
 
 
 def test_the_taps_are_spaced_by_the_tap_interval_not_the_pause():
@@ -711,10 +711,10 @@ def milk_weapon(max_ammo=6, reload_time=2.0):
 
 def report(label, weapon):
     shots = generate_segmented_shots(weapon, (), FIGHT)
-    fulls = [s.time for s in shots if s.bonus > 0]
+    fulls = [s.time for s in shots if s.extra_charge_bonus > 0]
     gaps = [b - a for a, b in zip(fulls, fulls[1:])]
     worst = max(gaps) if gaps else 0.0
-    damage = sum(s.damage_percent * (1 + s.bonus) for s in shots)
+    damage = sum(s.damage_percent * (1 + s.extra_charge_bonus) for s in shots)
     print(f"{label:28s} 발수 {len(shots):3d}  풀차지 {len(fulls):3d}  "
           f"최대간격 {worst:5.2f}s  누적배율 {damage:8.1f}"
           f"{'  ** 창 초과 **' if worst > WINDOW + 1e-9 else ''}")
