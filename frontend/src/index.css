@@ -58,6 +58,13 @@
   /* White is what you press; red is what the app is pointing at - the active
      tab, a selected chip, a focus ring, an error. Keeping red rare is what
      lets it mean "look here" when it does appear.
+
+     The wordmark is the one deliberate exception (Fienn, 2026-08-20): the app
+     title fades --text into --accent. It is a permanent element, so it does
+     spend some of red's rarity - the trade was made with that named and
+     accepted. It is an exception, not a new licence: red still does not
+     belong on anything else that is always on screen.
+
      The contrast token is near-black, not white: white on this red is 3.80,
      which fails; near-black is 5.21. */
   --primary: #f2f2f2;
