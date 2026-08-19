@@ -1218,32 +1218,81 @@ that shot is (docs/measurements/alice-tap-fire.md):
   unless full" nor "proportional from zero" — it is 100% plus a linear ramp.
 - **A tap fills no gauge at all** (the frame the gauge starts rising IS the firing
   frame), so a tapped shot is exactly 100%: charge bonus 0.
-- **Its interval is the unit's fire-to-charge pause and nothing else** — Alice's
-  tapped shots come 15.38 frames apart against a measured 14.75-frame pause.
+- **Its interval is a separately measured value, not derivable from the
+  pause** — `registry.TAP_FIRE_INTERVAL`, joined onto the timeline as
+  `tap_fire_interval`. For a while this slot held "the tap interval IS the
+  pause", because Alice's two readings sit on the same 15-frame grid step
+  (tap 15.38f, pause 14.75f). **Milk: Blooming Bunny disproved that rule,
+  2026-08-19-20**: her pause is 21.889 frames (n=9) but her tap interval is
+  14.810 frames (n=21) — about 16σ apart. Applying Alice's coincidence to Milk
+  would undercount her tap-fire shot rate by 47%. A slug absent from the table
+  still falls back to the pause (`get_tap_fire_interval` returns `None`,
+  `_base_shot_records` substitutes `motion_delay`) — the old behaviour, not a
+  new default, and it is only ever safe to READ, never to assume, that the two
+  agree.
 
-**Only the two endpoints can ever be optimal.** Damage is linear in the hold and
-the interval is that hold plus a constant, so `multiplier(h) / (h + delay)` has a
-derivative whose SIGN does not depend on h. Full charge or bare tap; nothing
-between. `attack_rate.tap_fire_wins` is that comparison, and because it closes in
-one expression there is no search.
+**Only the two endpoints can ever be optimal — for a single magazine fired in
+one mode.** Damage is linear in the hold and the interval is that hold plus a
+constant, so `multiplier(h) / (h + delay)` has a derivative whose SIGN does not
+depend on h. Full charge or bare tap; nothing between. `attack_rate.tap_fire_wins`
+is that comparison, and because it closes in one expression there is no search.
+It still answers the whole-magazine, no-window case correctly (see below), and a
+test pins the two functions as equivalent there.
 
-**Which end wins is the DECK's answer, not the unit's.** The tap empties the
-magazine far faster, so the reload pays for it — and a deck that removes the
-reload removes the cost. The same Alice therefore full-charges inside her own
-burst window (charge speed makes the full charge nearly free) and taps outside it
-when reloads are fast. `_base_shot_records` decides once per magazine, the same
-granularity at which charge speed is already sampled, and stamps the chosen
-bonus onto each `ShotRecord`.
+**A magazine can MIX the two ends, 2026-08-20.** `tap_fire_wins` only compares
+"all full charge" against "all tap" for the WHOLE magazine — correct when
+nothing else is at stake, but Milk's full charge also refreshes a state
+(`has_pierce`, 6 sec) that a magazine fired entirely as taps would let lapse.
+`attack_rate.optimal_full_charges` generalizes the same monotonicity argument
+along a second axis: efficiency as a function of `k` (how many of the
+magazine's `C` shots are full charges) is still of the shape `(p + ak) / (q +
+bk)`, hence monotone in `k`, so picking the best `k` is a plain sweep over
+`0..C` rather than a search. `full_charge_positions` spaces those `k` shots
+evenly through the magazine (index 0 is always included — the post-reload
+"첫 탄 풀차지" behaviour Fienn measured), and `mixed_charge_round_offset` turns
+that placement into the cumulative shot-by-shot timeline `_base_shot_records`
+actually walks — the two modes are interleaved WITHIN one magazine, not chosen
+per-magazine.
 
-Opt in with `registry.TAP_FIRE_CANDIDATES`; `roster` joins it onto the timeline as
-`tap_fire`. Two things gate membership:
+**The recall window is a constraint on `k`, not a separate search, 2026-08-20.**
+`registry.FULL_CHARGE_WINDOW` (joined onto the timeline as `full_charge_window`)
+is for a unit whose full charge grants something with a lifetime that must be
+kept alive, not just extra damage — Milk's 6-sec Pierce window is the only
+entry so far. With it set, `optimal_full_charges` rejects any `k` whose worst
+gap between consecutive full charges — `(charge + delay) + (ceil(C/k) - 1) *
+tap + reload` — exceeds the window, then picks the highest-efficiency survivor
+among the rest. **If no `k` survives, it falls back to `k = C`** (every shot
+full charge), the cadence that revisits full charge most often; that fallback
+is a "best available", not a guarantee — a single reload longer than the
+window still loses it, and then it is the GAME losing the window, not a bug in
+this function (`scripts/audit_milk_tap_fire.py` flags any magazine where the
+model itself loses the window it COULD have kept). A unit with no
+`full_charge_window` (Alice — her Pierce is HP-gated, not refreshed by
+charging) carries no such constraint and `k=0` (an all-tap magazine) is a
+legal answer for her.
 
-- **The unit needs a measured pause.** The tap interval IS that pause, so a unit
-  without one would tap infinitely fast. `tests/test_manual_tap_fire.py` pins it.
-- **A stand-in pause is not good enough** when the verdict is close. Milk:
-  Blooming Bunny and Ein are the obvious next candidates (same SR weapon), but
-  their break-even tap interval is 19.9 frames against a 22-frame stand-in, so the
-  SIGN rides on an unmeasured number. They stay off until someone times them.
+**Which cadence wins is still the DECK's answer, not the unit's.** The tap
+empties the magazine far faster, so the reload pays for it — and a deck that
+removes the reload removes the cost. The same Alice therefore full-charges
+inside her own burst window (charge speed makes the full charge nearly free)
+and taps outside it when reloads are fast. `_base_shot_records` re-decides `k`
+once per magazine, the same granularity at which charge speed is already
+sampled, and stamps the chosen bonus onto each `ShotRecord`.
+
+Opt in with `registry.TAP_FIRE_CANDIDATES`; `roster` joins it onto the timeline
+as `tap_fire`, plus `tap_fire_interval` and `full_charge_window` when the slug
+declares them. Two things gate membership:
+
+- **The unit needs a measured pause.** A zero `get_charge_motion_delay` means
+  an unmeasured tap interval falls back to zero too and taps infinitely fast.
+  `tests/test_manual_tap_fire.py` pins it.
+- **A stand-in pause is not good enough** when the verdict is close, and the
+  tap interval needs its OWN measurement rather than riding on the pause (see
+  above). Milk: Blooming Bunny is in — pause 21.889f (n=9) and tap interval
+  14.810f (n=21), both measured 2026-08-19/20. Ein is the next obvious
+  candidate (same SR weapon) but carries only the 22-frame motion-delay
+  stand-in and no tap-interval reading at all, so she stays off until someone
+  times her.
 
 **Do not read a mode flip as instability.** The engine returns the max of two
 options, so the damage is continuous even where the reported mode is not — for
