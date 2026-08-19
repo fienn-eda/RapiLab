@@ -30,6 +30,7 @@ from app.skill_rules.registry import (
     get_burst_delay,
     get_conditional_full_burst_delta,
     get_full_burst_duration_delta,
+    get_full_charge_window,
     get_self_stun,
     get_skill_ammo_refund,
     get_burst_hit_count,
@@ -44,6 +45,7 @@ from app.skill_rules.registry import (
     get_resource_specs,
     get_hold_fire_release_profile,
     get_hold_fire_release_shots,
+    get_tap_fire_interval,
     is_tap_fire_candidate,
     get_scheduled_nukes,
     get_unlimited_ammo_duration,
@@ -206,10 +208,17 @@ def assemble_simulation_inputs(ordered_deck, hold_fire=()):
         if spec.slug in CHARGE_ROUNDS_PER_MINUTE:
             timeline["charge_interval_floor"] = charge_interval_floor_for(spec.slug)
         if is_tap_fire_candidate(spec.slug):
-            # 매거진마다 톡톡이(차지 시작 즉시 발사, 배율 100%)와 풀차지를 저울질한다
-            # (registry.TAP_FIRE_CANDIDATES). 톡톡이 간격은 새 값이 아니라 위
-            # `charge_motion_delay` 그 자체이므로 여기서 더 실어 보낼 것이 없다.
+            # 매거진마다 풀차지 몇 발을 섞을지 저울질한다(registry.TAP_FIRE_CANDIDATES).
+            # 톡톡이 간격은 멈춤과 **다른 실측값**이므로 따로 실어 보낸다 - 앨리스는
+            # 두 값이 같아 결과가 안 움직이고, 밀크는 22프레임 대 15프레임으로 갈린다.
             timeline["tap_fire"] = True
+            tap_interval = get_tap_fire_interval(spec.slug)
+            if tap_interval is not None:
+                timeline["tap_fire_interval"] = tap_interval
+            # 풀차지가 되살리는 창이 있으면 케이던스가 그것을 지켜야 한다(밀크의 Pierce).
+            full_charge_window = get_full_charge_window(spec.slug)
+            if full_charge_window is not None:
+                timeline["full_charge_window"] = full_charge_window
         ammo_refund = cube_refund_for(spec.cube)
         if ammo_refund is not None:
             timeline["ammo_refund"] = ammo_refund

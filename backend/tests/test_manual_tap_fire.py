@@ -19,6 +19,8 @@ from app.attack_rate import (FRAME_SECONDS, generate_segmented_shots,
                              shot_interval_with_speed, tap_fire_wins)
 from app.skill_rules.registry import (TAP_FIRE_CANDIDATES,
                                       get_charge_motion_delay,
+                                      get_full_charge_window,
+                                      get_tap_fire_interval,
                                       is_tap_fire_candidate)
 
 # 앨리스의 무기 (data/shiftypad/alice.json) + Fienn 계정의 소장품 차지대미지
@@ -163,3 +165,30 @@ def test_a_unit_that_is_not_a_candidate_never_taps():
     assert records
     assert all(r.extra_charge_bonus == pytest.approx(ALICE_FULL_CHARGE_PERCENT / 100 - 1)
                for r in records)
+
+
+def test_milks_tap_interval_is_not_her_motion_delay():
+    """밀크의 두 실측은 다른 값이다 — 톡톡이 14.810f(n=21) 대 멈춤 21.889f(n=9),
+    약 16시그마. 앨리스에서 둘이 같게 나온 것은 우연이었고, 그녀에게 멈춤을
+    톡톡이 간격으로 주면 발수를 47% 과소평가한다.
+    docs/measurements/milk-blooming-bunny-tap-fire.md
+    """
+    assert get_tap_fire_interval("milk-blooming-bunny") == pytest.approx(15 * FRAME_SECONDS)
+    assert get_charge_motion_delay("milk-blooming-bunny") == pytest.approx(22 * FRAME_SECONDS)
+
+
+def test_alices_two_values_agree_so_she_does_not_move():
+    """앨리스는 멈춤 14.75f · 톡톡이 15.38f로 둘 다 15프레임에 앉는다. 값이 같으므로
+    분리해도 그녀의 타임라인은 한 발도 안 움직인다 — 그것이 이 변경의 회귀 기준이다."""
+    assert get_tap_fire_interval("alice") == get_charge_motion_delay("alice")
+
+
+def test_milk_declares_the_window_that_forces_a_full_charge():
+    """「Gain Pierce for 6 sec」 — 스킬 원문에서 읽은 값이지 조작에서 나온 값이 아니다."""
+    assert get_full_charge_window("milk-blooming-bunny") == pytest.approx(6.0)
+
+
+def test_alice_has_no_full_charge_window():
+    """앨리스의 Pierce는 HP 조건이라 풀차지가 갱신하지 않는다. 창이 없으면 매거진을
+    통째로 톡톡이로 쏘는 것이 허용된다."""
+    assert get_full_charge_window("alice") is None
