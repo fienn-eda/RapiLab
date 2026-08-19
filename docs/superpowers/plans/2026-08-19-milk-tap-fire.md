@@ -224,19 +224,37 @@ def test_a_bigger_magazine_forces_a_second_full_charge():
     assert _milk_k(capacity=14) == 2
 
 
-def test_the_chosen_cadence_always_keeps_the_window():
-    """**불변식** — 고른 k가 창을 지키거나, 못 지키면 전부 풀차지로 물러난다.
-    이것이 밀크의 Pierce를 영구로 두는 근사를 떠받치는 유일한 논거다."""
+def _milk_worst_gap(capacity, full_charges, reload_seconds):
+    """풀차지 `full_charges`발을 균등 배치했을 때 연속한 두 풀차지 사이의 최악 간격.
+
+    `optimal_full_charges`가 후보를 거르는 데 쓰는 식과 같은 것을, 테스트가
+    독립적으로 다시 쓴 것이다 - 구현이 자기 식으로 자기를 검증하지 않게.
+    """
+    block = -(-capacity // full_charges)
+    return (MILK_CHARGE_TIME + MILK_MOTION_DELAY
+            + (block - 1) * MILK_TAP_INTERVAL + reload_seconds)
+
+
+def test_the_chosen_cadence_keeps_the_window_whenever_any_cadence_can():
+    """**불변식** - 창을 지킬 수 있는 k가 하나라도 있으면 고른 k가 그것을 지킨다.
+
+    전부 풀차지(k=C)가 「언제나 안전」한 것은 **아니다**: 그때 최악 간격은
+    `차지+멈춤+재장전`까지 줄지만, 재장전 하나가 창보다 길면 그 값도 창을 넘는다
+    (예: 장탄 6 · 재장전 8초 -> 9.37초 > 6초). 그때는 모델이 아니라 게임이 창을
+    잃는 것이므로, 주장은 「항상 지킨다」가 아니라 「지킬 수 있으면 지킨다」여야 한다.
+    """
     for capacity in range(1, 21):
         for reload_seconds in (0.0, 0.5, 1.0, 2.0, 4.0, 8.0):
             k = _milk_k(capacity=capacity, reload_seconds=reload_seconds)
             assert 1 <= k <= capacity
-            if k == capacity:
-                continue
-            block = -(-capacity // k)
-            worst_gap = (MILK_CHARGE_TIME + MILK_MOTION_DELAY
-                         + (block - 1) * MILK_TAP_INTERVAL + reload_seconds)
-            assert worst_gap <= MILK_WINDOW, (capacity, reload_seconds, k)
+            feasible = [j for j in range(1, capacity + 1)
+                        if _milk_worst_gap(capacity, j, reload_seconds) <= MILK_WINDOW]
+            if feasible:
+                assert _milk_worst_gap(capacity, k, reload_seconds) <= MILK_WINDOW, (
+                    capacity, reload_seconds, k)
+            else:
+                # 어떤 케이던스로도 못 지킨다 - 최악 간격이 가장 작은 k=C로 물러난다.
+                assert k == capacity, (capacity, reload_seconds, k)
 
 
 def test_without_a_window_the_answer_matches_the_old_two_way_test():
@@ -331,9 +349,19 @@ def optimal_full_charges(capacity, reload_seconds, charge_seconds, full_delay,
 
         (charge + delay) + (ceil(C/k) - 1)*tap + R
 
-    이다. 이 값이 창을 넘는 k는 후보에서 빠진다. **어떤 k도 창을 못 지키면
-    전부 풀차지로 물러난다** - 모든 샷이 풀차지면 창은 언제나 지켜지므로 그것이
-    안전한 쪽이고, 밀크의 Pierce를 영구로 두는 근사가 기대는 것이 이 폴백이다.
+    이다. 이 값이 창을 넘는 k는 후보에서 빠진다.
+
+    **어떤 k도 창을 못 지키면 전부 풀차지로 물러난다.** 그것이 그 상황에서
+    풀차지를 가장 자주 치는 배치이기 때문이다 - 그때 최악 간격은
+    `(charge + delay) + R`까지 줄고, 그보다 짧게 만들 방법은 없다.
+
+    **다만 그 값도 창을 넘을 수 있다.** 재장전 하나가 창보다 길면 어떤
+    케이던스로도 창을 못 지킨다. 그때는 모델이 아니라 게임이 창을 잃는 것이고,
+    이 함수는 잃는 폭이 가장 작은 배치를 고를 뿐이다 - 그래서 이 폴백이 보장하는
+    것은 「창을 지킨다」가 아니라 「지킬 수 있으면 지킨다」이다. 밀크의 실제 값은
+    이 분기에 닿지 않는다(차지+멈춤 1.37초 + 재장전 2.0초 = 3.37초 < 창 6초,
+    그녀의 강제 재장전 3.0초를 넣어도 4.37초). **그것이 그녀의 Pierce를 영구로
+    두는 근사가 실제로 기대는 사실이다.**
     """
     if tap_interval <= 0:
         # 톡톡이 간격이 0이면 무한 연사가 된다 - 애초에 후보가 아니다.
@@ -597,9 +625,18 @@ TAP_FIRE_CANDIDATES = frozenset({"alice", "milk-blooming-bunny"})
   (`registry.TAP_FIRE_CANDIDATES`), and `attack_rate.optimal_full_charges`
   picks the number of full charges per magazine under the constraint that no
   two of them are more than `FULL_CHARGE_WINDOW` = 6 sec apart. Where no such
-  number exists it falls back to firing the whole magazine at full charge,
-  which keeps the window trivially. So the window never lapses on EITHER
-  branch, and the permanent grant is that outcome written down.
+  number exists it falls back to firing the whole magazine at full charge -
+  the arrangement that strikes a full charge as often as the magazine allows,
+  whose worst gap is `charge + delay + reload`.
+
+  That fallback is the best available cadence, but it is NOT an unconditional
+  guarantee: a reload longer than the window outruns every cadence, and then
+  it is the GAME losing the window rather than the model. What makes the
+  permanent grant sound for HER is an inequality about her own numbers -
+  `charge + delay + reload` = 1.37 + 2.0 = **3.37 sec against a 6 sec window**,
+  and 4.37 sec even under her forced reload's fixed 3 sec. She never reaches
+  the branch where the window cannot be kept. The day that inequality breaks,
+  this grant stops being an approximation and becomes an error.
 
   **This is the load-bearing approximation of her encoding.** The earlier
   justification - "she is an SR, so every shot IS a full charge" - became false
